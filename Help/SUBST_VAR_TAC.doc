@@ -1,0 +1,31 @@
+\DOC SUBST_VAR_TAC
+
+\TYPE {SUBST_VAR_TAC : thm -> tactic}
+
+\SYNOPSIS
+Use an equation to substitute ``safely'' in goal.
+
+\DESCRIBE
+When applied to a theorem with an equational hypothesis {A |- s = t}, {SUBST_ 
+VAR_TAC} has no effect if {s} and {t} are alpha-equivalent. Otherwise, if 
+either side of the equation is a variable not free in the other side, or a 
+constant, and the conclusion contains no free variables not free in some 
+assumption of the goal, then the theorem is used to replace that constant or 
+variable throughout the goal, assumptions and conclusions. If none of these 
+cases apply, or the conclusion is not even an equation, the application fails.
+
+\FAILURE
+Fails if applied to a non-equation for which none of the cases above hold.
+
+\USES
+By some sequence like {REPEAT(FIRST_X_ASSUM SUBST_VAR_TAC)} one can use all 
+possible assumptions to substitute ``safely'', in the sense that it will not 
+change the provability status of the goal. This is sometimes a useful prelude 
+to other automatic techniques. 
+
+\COMMENTS
+
+\SEEALSO
+SUBST1_TAC, SUBST_ALL_TAC.
+
+\ENDDOC

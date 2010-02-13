@@ -1,0 +1,18 @@
+\DOC is_uexists
+
+\TYPE {is_uexists : term -> bool}
+
+\SYNOPSIS
+Tests if a term is of the form `there exists a unique ...'
+
+\DESCRIBE
+If {t} has the form {?!x. p[x]} (there exists a unique {x} such that {p[x]} 
+then {is_uexists t} returns {true}, otherwise {false}.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+dest_uexists, is_exists, is_forall.
+
+\ENDDOC

@@ -1,0 +1,56 @@
+\DOC monotonicity_theorems
+
+\TYPE {monotonicity_theorems : thm list ref}
+
+\SYNOPSIS
+List of monotonicity theorems for inductive definitions package.
+
+\DESCRIBE
+The various tools for making inductive definitions, such as
+{new_inductive_definition}, need to prove certain `monotonicity'
+side-conditions. They attempt to do so automatically by using various
+pre-proved theorems asserting the monotonicity of certain opertators. Normally,
+all this happens smoothly without user intervention, but if the inductive
+definition involves new operators, you may need to augment this list with
+corresponding monotonicity theorems.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+Suppose we define a `lexical order' construct:
+{
+  # let LEX = define
+     `(LEX(<<) [] l <=> F) /\
+      (LEX(<<) l [] <=> F) /\
+      (LEX(<<) (CONS h1 t1) (CONS h2 t2) <=>
+            if h1 << h2 then LENGTH t1 = LENGTH t2
+            else (h1 = h2) /\ LEX(<<) t1 t2)`;;
+}
+If we want to make an inductive definition that uses this --- for example a
+lexicographic path order on a representation of first-order terms --- we need
+to add a theorem asserting that this operation is monotonic. To prove it, we
+first establish a lemma:
+{
+  # let LEX_LENGTH = prove
+     (`!l1 l2 R. LEX(R) l1 l2 ==> (LENGTH l1 = LENGTH l2)`,
+      REPEAT(LIST_INDUCT_TAC THEN SIMP_TAC[LEX]) THEN ASM_MESON_TAC[LENGTH]);;
+}
+\noindent and hence derive monotonicity:
+{
+  # let MONO_LEX = prove
+     (`(!x:A y:A. R x y ==> S x y) ==> LEX R x y ==> LEX S x y`,
+      DISCH_TAC THEN
+      MAP_EVERY (fun t -> SPEC_TAC(t,t)) [`x:A list`; `y:A list`] THEN
+      REPEAT(LIST_INDUCT_TAC THEN REWRITE_TAC[LEX]) THEN
+      ASM_MESON_TAC[LEX_LENGTH]);;
+}
+\noindent We can now make the inductive definitions package aware of it by:
+{
+  # monotonicity_theorems := MONO_LEX::(!monotonicity_theorems);;
+}
+
+\SEEALSO
+new_inductive_definition.
+
+\ENDDOC

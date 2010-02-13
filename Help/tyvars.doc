@@ -1,0 +1,24 @@
+\DOC tyvars
+
+\TYPE {tyvars : hol_type -> hol_type list}
+
+\SYNOPSIS
+Returns a list of the type variables in a type.
+
+\DESCRIBE
+When applied to a type, {tyvars} returns a list (possibly empty) of the type
+variables that it involves.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # tyvars `:(A->bool)->A`;;
+  val it : hol_type list = [`:A`]
+}
+
+\SEEALSO
+type_vars_in_term.
+
+\ENDDOC

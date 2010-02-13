@@ -1,0 +1,17 @@
+\DOC tl
+
+\TYPE {tl : 'a list -> 'a list}
+
+\SYNOPSIS
+Computes the tail of a list (the original list less the first element).
+
+\DESCRIBE
+{tl [x1;...;xn]} returns {[x2;...;xn]}.
+
+\FAILURE
+Fails with {tl} if the list is empty.
+
+\SEEALSO
+hd, el.
+
+\ENDDOC

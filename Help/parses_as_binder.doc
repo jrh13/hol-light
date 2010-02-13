@@ -1,0 +1,27 @@
+\DOC parses_as_binder
+
+\TYPE {parses_as_binder : string -> bool}
+
+\SYNOPSIS
+Tests if a string has binder status in the parser.
+
+\DESCRIBE
+Certain identifiers {c} have binder status, meaning that {`c x. y`} is parsed 
+as a shirthand for {`(c) (\x. y)'}. The call {parses_as_binder "c"} tests if
+{c} is one of the identifiers with binder status.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # parses_as_binder "!";;
+  val it : bool = true
+  # parses_as_binder "==>";;
+  val it : bool = false
+}
+
+\SEEALSO
+binders, parses_as_binder, unparse_as_binder.
+
+\ENDDOC

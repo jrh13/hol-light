@@ -1,0 +1,17 @@
+\DOC K
+
+\TYPE {K : 'a -> 'b -> 'a}
+
+\SYNOPSIS
+Forms a constant function: {(K x) y} = {x}.
+
+\KEYWORDS
+combinator, constant.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+C, F_F, I, o, W.
+
+\ENDDOC

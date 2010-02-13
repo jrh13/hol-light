@@ -1,0 +1,23 @@
+\DOC load_on_path
+
+\TYPE {load_on_path : string list -> string -> unit}
+
+\SYNOPSIS
+Finds a file on a path and loads it into HOL Light.
+
+\DESCRIBE
+When given a filename and a path, the file is found either directly by its
+filename or on the given path, as explained in {file_on_path}. An initial
+dollar sign {$} in each path is interpreted as a reference to the current
+setting of {hol_dir}. (To get an actual {$} at the start of the filename,
+actually use two dollar signs {$$}.) It is then loaded into HOL, updating the
+list of loaded files.
+
+\FAILURE
+Fails if the file is not found or generates an exception when loaded (e.g. a
+syntax problem or runtime exception).
+
+\SEEALSO
+file_on_path, hol_expand_directory, load_path, loads, loadt, needs.
+
+\ENDDOC

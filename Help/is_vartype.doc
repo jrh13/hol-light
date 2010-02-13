@@ -1,0 +1,31 @@
+\DOC is_vartype
+
+\TYPE {is_vartype : hol_type -> bool}
+
+\SYNOPSIS
+Tests a type to see if it is a type variable.
+
+\DESCRIBE
+Returns {true} if applied to a type variable. For types that are not type
+variables it returns {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_vartype `:A`;;
+  val it : bool = true
+
+  # is_vartype `:bool`;;
+  val it : bool = false
+
+  # is_vartype (mk_vartype "bool");;
+  val it : bool = true
+  
+}
+
+\SEEALSO
+mk_vartype, dest_vartype.
+
+\ENDDOC

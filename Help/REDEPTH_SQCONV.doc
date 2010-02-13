@@ -1,0 +1,21 @@
+\DOC REDEPTH_SQCONV
+
+\TYPE {REDEPTH_SQCONV : strategy}
+
+\SYNOPSIS
+Applies simplification bottom-up to all subterms, retraversing changed ones.
+
+\DESCRIBE
+HOL Light's simplification functions (e.g. {SIMP_TAC}) have their traversal
+algorithm controlled by a ``strategy''. {REDEPTH_SQCONV} is a strategy
+corresponding to {REDEPTH_CONV} for ordinary conversions: simplification is
+applied bottom-up to all subterms, retraversing changed ones.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+DEPTH_SQCONV, ONCE_DEPTH_SQCONV, REDEPTH_CONV, TOP_DEPTH_SQCONV,
+TOP_SWEEP_SQCONV.
+
+\ENDDOC

@@ -1,0 +1,52 @@
+\DOC prioritize_int
+
+\TYPE {prioritize_int : unit -> unit}
+
+\SYNOPSIS
+Give integer type {int} priority in operator overloading.
+
+\DESCRIBE
+Symbols for several arithmetical (`{+}', `{-}', ...) and relational (`{<}',
+`{>=}', ...) operators are overloaded so that they may denote the operators
+for several different number systems, particularly {num} (natural numbers),
+{int} (integers) and {real} (real numbers). The choice is normally made based
+on some known types, or the presence of operators that are not overloaded for
+the number systems. (For example, numerals like {42} are always assumed to be
+of type {num}, while the division operator `{/}' is only defined for {real}.)
+In the absence of any such indication, a default choice will be made. The
+effect of {prioritize_int()} is to make {int}, the integer type, the
+default.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+With integer priority, most things are interpreted as type {int}
+{
+  # prioritize_int();;
+  val it : unit = ()
+
+  # type_of `x + y`;;
+  val it : hol_type = `:int`
+}
+\noindent except that numerals are always of type {num}, and so:
+{
+  # type_of `x + 1`;;
+  val it : hol_type = `:num`
+}
+\noindent and any explicit type information is used before using the defaults:
+{
+  # type_of `(x:real) + y`;;
+  val it : hol_type = `:real`
+}
+
+\COMMENTS
+It is perhaps better practice to insert types explicitly to avoid dependence on
+such defaults, otherwise proofs can become context-dependent. However it is
+often very convenient.
+
+\SEEALSO
+make_overloadable, overload_interface, prioritize_num, prioritize_overload,
+prioritize_real, the_overload_skeletons.
+
+\ENDDOC

@@ -1,0 +1,63 @@
+\DOC new_specification
+
+\TYPE {new_specification : string list -> thm -> thm}
+
+\SYNOPSIS
+Introduces a constant or constants satisfying a given property.
+
+\DESCRIBE
+The ML function {new_specification} implements the primitive rule of
+constant specification for the HOL logic.
+Evaluating:
+{
+   new_specification ["c1";...;"cn"] |- ?x1...xn. t
+}
+\noindent simultaneously introduces new constants named {c1}, ..., {cn}
+satisfying the property:
+{
+   |- t[c1,...,cn/x1,...,xn]
+}
+\noindent This theorem is returned by the call to {new_specification}.
+
+\FAILURE
+{new_specification} fails if any one of {`c1`}, ..., {`cn`} is already a
+constant.
+
+\USES
+{new_specification} can be used to introduce constants that satisfy a given
+property without having to make explicit equational constant definitions for
+them.  For example, the built-in constants {MOD} and {DIV} are defined in the
+system by first proving the theorem:
+{
+  # DIVMOD_EXIST_0;;
+  val it : thm =
+    |- !m n. ?q r. if n = 0 then q = 0 /\ r = 0 else m = q * n + r /\ r < n
+}
+\noindent Skolemizing it to made the parametrization explicit:
+{
+  # let th = REWRITE_RULE[SKOLEM_THM] DIVMOD_EXIST_0;;
+  val th : thm =
+    |- ?q r.
+           !m n.
+               if n = 0
+               then q m n = 0 /\ r m n = 0
+               else m = q m n * n + r m n /\ r m n < n
+}
+\noindent and then making the constant specification:
+{
+  # new_specification ["DIV"; "MOD"] th;;
+}
+\noindent giving the theorem:
+{
+  # DIVISION_0;;
+  val it : thm =
+    |- !m n.
+           if n = 0
+           then m DIV n = 0 /\ m MOD n = 0
+           else m = m DIV n * n + m MOD n /\ m MOD n < n
+}
+
+\SEEALSO
+define, new_definition.
+
+\ENDDOC

@@ -1,0 +1,26 @@
+\DOC CHANGED_TAC
+
+\TYPE {CHANGED_TAC : tactic -> tactic}
+
+\SYNOPSIS
+Makes a tactic fail if it has no effect.
+
+\KEYWORDS
+tactical.
+
+\DESCRIBE
+When applied to a tactic {t}, the tactical {CHANGED_TAC} gives a new tactic
+which is the same as {t} if that has any effect, and otherwise fails.
+
+\FAILURE
+The application of {CHANGED_TAC} to a tactic never fails. The resulting
+tactic fails if the basic tactic either fails or has no effect.
+
+\USES
+Occasionally useful in controlling complicated tctic compositions. Also 
+sometimes convenient just to check that a step did indeed modify a goal.
+
+\SEEALSO
+TRY, VALID.
+
+\ENDDOC

@@ -1,0 +1,21 @@
+\DOC basic_ss
+
+\TYPE {basic_ss : thm list -> simpset}
+
+\SYNOPSIS
+Construct a straightforward simpset from a list of theorems.
+
+\DESCRIBE
+In their maximal generality, simplification operations in HOL Light (as invoked
+by {SIMP_TAC}) are controlled by a `simpset'. A call {basic_ss thl} gives a
+straightforward simpset used by the default simplifier instances like
+{SIMP_TAC}, which has the given theorems as well as the basic rewrites and
+conversions, and no other provers.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+basic_convs, basic_rewrites, empty_ss, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

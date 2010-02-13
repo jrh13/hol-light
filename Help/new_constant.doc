@@ -1,0 +1,30 @@
+\DOC new_constant
+
+\TYPE {new_constant : string * hol_type -> unit}
+
+\SYNOPSIS
+Declares a new constant.
+
+\DESCRIBE
+A call {new_constant("c",`:ty`)} makes {c} a constant with most general type 
+{ty}.
+
+\FAILURE
+Fails if there is already a constant of that name in the current theory.
+
+\EXAMPLE
+{
+
+  #new_constant("graham's_number",`:num`);;
+  val it : unit = ()
+}
+
+\USES
+Can be useful for declaring some arbitrary parameter, but more usually a 
+prelude to some new axioms about the constant introduced. Take care when using 
+{new_axiom}!
+
+\SEEALSO
+constants, new_axiom, new_definition.
+
+\ENDDOC

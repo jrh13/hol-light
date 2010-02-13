@@ -1,0 +1,48 @@
+\DOC TAUT
+
+\TYPE {TAUT : term -> thm}
+
+\SYNOPSIS
+Proves a propositional tautology.
+
+\DESCRIBE
+The call {TAUT `t`} where {t} is a propositional tautology, will prove it 
+automatically and return {|- t}. A propositional tautology is 
+a formula built up using the logical connectives `{~}', `{/\}', `{\/}', `{==>}' 
+and `{<=>}' from terms that can be considered ``atomic'' that is logically 
+valid whatever truth-values are assigned to the atomic formulas.
+
+\FAILURE
+Fails if {t} is not a propositional tautology.
+
+\EXAMPLE
+Here is a simple and potentially useful tautology:
+{
+  # TAUT `a \/ b ==> c <=> (a ==> c) /\ (b ==> c)`;;
+  val it : thm = |- a \/ b ==> c <=> (a ==> c) /\ (b ==> c)
+}
+\noindent and here is a more surprising one:
+{
+  # TAUT `(p ==> q) \/ (q ==> p)`;;
+  val it : thm = |- (p ==> q) \/ (q ==> p)
+}
+\noindent Note that the ``atomic'' formulas need not just be variables:
+{
+  # TAUT `(x > 2 ==> y > 3) \/ (y < 3 ==> x > 2)`;;
+  val it : thm = |- (x > 2 ==> y > 3) \/ (y < 3 ==> x > 2)
+}
+
+\USES
+Solving a tautologous goal completely by {CONV_TAC TAUT}, or generating a 
+tautology to massage the goal into a more convenient equivalent form by
+{REWRITE_TAC[TAUT `...`]} or {ONCE_REWRITE_TAC[TAUT `...`]}.
+
+\COMMENTS
+The algorithm used is quite naive, and not efficient on large formulas. For 
+more general first-order reasoning, with quantifier instantiation, use
+MESON-based methods.
+
+\SEEALSO
+BOOL_CASES_TAC, ITAUT, ITAUT_TAC, MESON, MESON_TAC.
+
+\ENDDOC

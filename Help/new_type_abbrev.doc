@@ -1,0 +1,35 @@
+\DOC new_type_abbrev
+
+\TYPE {new_type_abbrev : string * hol_type -> unit}
+
+\SYNOPSIS
+Sets up a new type abbreviation.
+
+\DESCRIBE
+A call {new_type_abbrev("ab",`:ty`} creates a new type abbreviation {ab} for
+the type {ty}. In future, {`:ab`} may be used rather than the perhaps
+complicated expresion {`:ty`}. Note that the association is purely an
+abbreviation for parsing. Type abbreviations have no logical significance;
+types are internally represented after the abbreviations have been fully
+expanded. At present, type abbreviations are not reversed when printing types,
+mainly because this may contract abbreviations where it is unwanted.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # new_type_abbrev("bitvector",`:bool list`);;
+  val it : unit = ()
+
+  # `LENGTH(x:bitvector)`;;
+  val it : term = `LENGTH x`
+
+  # type_of (rand it);;
+  val it : hol_type = `:(bool)list`
+}
+
+\SEEALSO
+define_type, new_type_definition, remove_type_abbrev, type_abbrevs.
+
+\ENDDOC

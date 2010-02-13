@@ -1,0 +1,32 @@
+\DOC string_of_file
+
+\TYPE {string_of_file : string -> string}
+
+\SYNOPSIS
+Read file and convert content into a string.
+
+\DESCRIBE
+When given a filename, the function {strings_of_file} attempts to open the file
+for input, and if this is successful reads and closes it, returning the 
+contents as a single string.
+
+\FAILURE
+Fails if the file cannot be opened (e.g. it does not exist, or the permissions
+are wrong).
+
+\EXAMPLE
+If the file {/tmp/greeting} contains the text
+{
+Hello world
+Goodbye world
+}
+\noindent then
+{
+  # string_of_file "/tmp/greeting";;
+  val it : string = "Hello world\nGoodbye world"
+}
+
+\SEEALSO
+file_of_string, strings_of_file.
+
+\ENDDOC

@@ -1,0 +1,42 @@
+\DOC CHANGED_CONV
+
+\TYPE {CHANGED_CONV : conv -> conv}
+
+\SYNOPSIS
+Makes a conversion fail if applying it leaves a term unchanged.
+
+\KEYWORDS
+conversional.
+
+\DESCRIBE
+For a conversion {cnv}, the construct {CHANGED_CONV c} gives a new conversion 
+that has the same action as {cnv}, except that it will fail on terms {t} such
+that {cnv t} returns a reflexive theorem {|- t = t}, or more precisely 
+{|- t = t'} where {t} and {t'} are alpha-equivalent.
+
+\FAILURE
+Never fails when applied to the conversion, but fails on further application to 
+a term if the original conversion does or it returns a reflexive theorem.
+
+\EXAMPLE
+{
+  # ONCE_DEPTH_CONV num_CONV `x + 0`;;
+  val it : thm = |- x + 0 = x + 0
+  
+  # CHANGED_CONV(ONCE_DEPTH_CONV num_CONV) `x + 0`;;
+  Exception: Failure "CHANGED_CONV".
+  
+  # CHANGED_CONV(ONCE_DEPTH_CONV num_CONV) `6`;;
+  val it : thm = |- 6 = SUC 5
+  
+  # REPEATC(CHANGED_CONV(ONCE_DEPTH_CONV num_CONV)) `6`;;
+  val it : thm = |- 6 = SUC (SUC (SUC (SUC (SUC (SUC 0)))))
+}
+
+\USES
+{CHANGED_CONV} is used to transform a conversion that may leave terms
+unchanged, and therefore may cause a nonterminating computation if repeated,
+into one that can safely be repeated until application of it fails to
+substantially modify its input term, as in the last example above.
+
+\ENDDOC

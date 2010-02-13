@@ -1,0 +1,32 @@
+\DOC RECALL_ACCEPT_TAC
+
+\TYPE {RECALL_ACCEPT_TAC : ('a -> thm) -> 'a -> goal -> goalstate}
+
+\SYNOPSIS
+Delay evaluation of theorem-producing function till needed.
+
+\DESCRIBE
+Given a theorem-producing inference rule {f} and its argument {a}, the tactic 
+{RECALL_ACCEPT_TAC f a} will evaluate {th = f a} and do {ACCEPT_TAC th}, but 
+only when the tactic is applied to a goal.
+
+\FAILURE
+Never fails until subsequently applied to a goal, but then may fail if the
+theorem-producing function does.
+
+\EXAMPLE
+You might for example do
+{
+  RECALL_ACCEPT_TAC (EQT_ELIM o NUM_REDUCE_CONV) `16 EXP 53 < 15 EXP 55`;;
+}
+\noindent and the call 
+{
+  (EQT_ELIM o NUM_REDUCE_CONV) `16 EXP 53 < 15 EXP 55`
+}
+\noindent will be delayed until the tactic is applied.
+
+\USES
+Delaying a time-consuming compound inference rule in a tactic script until it 
+is actually used.
+
+\ENDDOC

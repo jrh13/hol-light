@@ -1,0 +1,35 @@
+\DOC SIMPLE_CHOOSE
+
+\TYPE {SIMPLE_CHOOSE : term -> thm -> thm}
+
+\SYNOPSIS
+Existentially quantifies a hypothesis of a theorem.
+
+\DESCRIBE
+A call {SIMPLE_CHOOSE `v` th} existentially quantifies a hypothesis of the
+theorem over the variable {v}. It is intended for use when there is only one
+hypothesis so that the choice of assumption is unambiguous. In general, it
+picks the one that happens to be first in the list.
+
+\FAILURE
+Fails if {v} is not a variable or if it is free in the conclusion of the 
+theorem {th}.
+
+\EXAMPLE
+{
+  # let th = SYM(ASSUME `x:num = y`);;
+  val th : thm = x = y |- y = x
+  # SIMPLE_EXISTS `x:num` th;;
+  val it : thm = x = y |- ?x. y = x
+
+  # SIMPLE_CHOOSE `x:num` it;;
+  val it : thm = ?x. x = y |- ?x. y = x
+}
+
+\COMMENTS
+The more general function is {CHOOSE}, but this is simpler in the special case.
+
+\SEEALSO
+CHOOSE, EXISTS, SIMPLE_EXISTS.
+
+\ENDDOC

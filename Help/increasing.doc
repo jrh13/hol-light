@@ -1,0 +1,27 @@
+\DOC increasing
+
+\TYPE {increasing : ('a -> 'b) -> 'a -> 'a -> bool}
+
+\SYNOPSIS
+Returns a total ordering based on a measure function
+
+\DESCRIBE
+When applied to a ``measure'' function {f}, the call {increasing f} returns a 
+binary function ordering elements in a call {increasing f x y} by
+{f(x) <? f(y)}, where the ordering {<?} is the OCaml polymorphic ordering.
+
+\FAILURE
+Never fails unless the measure function does.
+
+\EXAMPLE
+{
+  # let nums = -5 -- 5;;
+  val nums : int list = [-5; -4; -3; -2; -1; 0; 1; 2; 3; 4; 5]
+  # sort (increasing abs) nums;;
+  val it : int list = [0; 1; -1; 2; -2; 3; -3; 4; -4; 5; -5]
+}
+
+\SEEALSO
+<?, decreasing, sort.
+
+\ENDDOC

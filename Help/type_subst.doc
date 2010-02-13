@@ -1,0 +1,27 @@
+\DOC type_subst
+
+\TYPE {type_subst : (hol_type * hol_type) list -> hol_type -> hol_type}
+
+\SYNOPSIS
+Substitute chosen types for type variables in a type.
+
+\DESCRIBE
+The call {type_subst [ty1,tv1; ... ; tyn,tvn] ty} where each {tyi} is a type
+and each {tvi} is a type variable, will systematically replace each instance of
+{tvi} in the type {ty} by the corresponding type {tyi}.
+
+\FAILURE
+Never fails. If some of the {tvi} are not type variables they will be ignored,
+and if several {tvi} are the same, the first one in the list will be used to
+determine the substitution.
+
+\EXAMPLE
+{
+  # type_subst [`:num`,`:A`; `:bool`,`:B`] `:A->(B)list->A#B#C`;;
+  val it : hol_type = `:num->(bool)list->num#bool#C`
+}
+
+\SEEALSO
+inst, tysubst.
+
+\ENDDOC

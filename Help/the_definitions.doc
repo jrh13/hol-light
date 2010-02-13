@@ -1,0 +1,59 @@
+\DOC the_definitions
+
+\TYPE {the_definitions : thm list ref}
+
+\SYNOPSIS
+List of all definitions introduced so far.
+
+\DESCRIBE
+The reference variable {the_definitions} holds the list of definitions made so
+far. Various definitional rules such as {new_definition} automatically augment
+it. Note that in some cases (e.g. {new_inductive_definition}) the stored form
+of the definition may look very different from what the user sees or enters at
+the top level.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+If we examine the list in HOL Light's initial state, we see the most recent
+definition at the head ({superadmissible} is connected with HOL's automated
+definitional rule {define}) and the oldest, logical truth {T}, at the tail:
+{
+  # !the_definitions;;
+  val it : thm list =
+    [|- !(<<) p s t.
+            superadmissible (<<) p s t <=>
+            admissible (<<) (\f a. T) s p ==> tailadmissible (<<) p s t;
+     ...
+     ...
+     |- (/\) = (\p q. (\f. f p q) = (\f. f T T)); |- T <=> (\p. p) = (\p. p)]
+}
+If we make a new definition of any sort, e.g.
+{
+  # new_definition `false <=> F`;;
+  val it : thm = |- false <=> F
+}
+\noindent we will see a new entry at the head:
+{
+  # !the_definitions;;
+  val it : thm list =
+    [|- false <=> F;
+     ...
+     ...
+     |- (/\) = (\p q. (\f. f p q) = (\f. f T T)); |- T <=> (\p. p) = (\p. p)]
+}
+
+\USES
+This list is not logically necessary and is not part of HOL Light's logical
+core, but it is used outside the core so that multiple instances of the same
+definition are quietly ``ignored'' rather than rejected. (By contrast, the list
+of new constants introduced by definitions is logically necessary to avoid
+inconsistent redefinition.) Users may also sometimes find it convenient.
+
+\SEEALSO
+axioms, constants, define, definitions, new_definition,
+new_inductive_definition, new_recursive_definition, new_specification,
+the_inductive_definitions, the_specifications.
+
+\ENDDOC

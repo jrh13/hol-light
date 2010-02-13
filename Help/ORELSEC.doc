@@ -1,0 +1,31 @@
+\DOC ORELSEC
+
+\TYPE {(ORELSEC) : conv -> conv -> conv}
+
+\SYNOPSIS
+Applies the first of two conversions that succeeds.
+
+\KEYWORDS
+conversional.
+
+\DESCRIBE
+{(c1 ORELSEC c2) `t`} returns the result of applying the conversion {c1} to
+the term {`t`} if this succeeds.  Otherwise {(c1 ORELSEC c2) `t`} returns the
+result of applying the conversion {c2} to the term {`t`}.
+
+\FAILURE
+{(c1 ORELSEC c2) `t`} fails both {c1} and {c2}  fail when applied to {`t`}.
+
+\EXAMPLE
+{
+  # (NUM_ADD_CONV ORELSEC NUM_MULT_CONV) `2 + 2`;;
+  val it : thm = |- 2 + 2 = 4
+
+  #  (NUM_ADD_CONV ORELSEC NUM_MULT_CONV) `1 * 1`;;
+  val it : thm = |- 1 * 1 = 1
+}
+
+\SEEALSO
+FIRST_CONV, THENC.
+
+\ENDDOC

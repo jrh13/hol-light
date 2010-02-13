@@ -1,0 +1,42 @@
+\DOC PROP_ATOM_CONV
+
+\TYPE {PROP_ATOM_CONV : conv -> conv}
+
+\SYNOPSIS
+Applies a conversion to the `atomic subformulas' of a formula.
+
+\DESCRIBE
+When applied to a Boolean term, {PROP_ATOM_CONV conv} descends recursively
+through any number of the core propositional connectives `{~}', `{/\}', `{\/}',
+`{==>}' and `{<=>}', as well as the quantifiers `{!x. p[x]}', `{?x. p[x]}' and
+`{?!x. p[x]}'. When it reaches a subterm that can no longer be decomposed into
+any of those items (e.g. the starting term if it is not of Boolean type), the
+conversion {conv} is tried, with a reflexive theorem returned in case of 
+failure. That is, the conversion is applied to the ``atomic subformulas'' in 
+the usual sense of first-order logic.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Here we swap all equations in a formula, but not any logical equivalences that
+are part of its logical structure: 
+{
+ # PROP_ATOM_CONV(ONCE_DEPTH_CONV SYM_CONV)
+    `(!x. x = y ==> x = z) <=> (y = z <=> 1 + z = z + 1)`;;
+  val it : thm =
+    |- ((!x. x = y ==> x = z) <=> y = z <=> 1 + z = z + 1) <=>
+       (!x. y = x ==> z = x) <=>
+       z = y <=>
+       z + 1 = 1 + z
+}
+\noindent By contrast, just {ONCE_DEPTH_CONV SYM_CONV} would just swap the 
+top-level logical equivalence.
+
+\USES
+Carefully constraining the application of conversions.
+
+\SEEALSO
+DEPTH_BINOP_CONV, ONCE_DEPTH_CONV.
+
+\ENDDOC

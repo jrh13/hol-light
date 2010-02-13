@@ -1,0 +1,40 @@
+\DOC EXISTS_TAC
+
+\TYPE {EXISTS_TAC : term -> tactic}
+
+\SYNOPSIS
+Reduces existentially quantified goal to one involving a specific witness.
+
+\KEYWORDS
+tactic, quantifier, existential, choose, witness.
+
+\DESCRIBE
+When applied to a term {u} and a goal {A ?- ?x. t}, the tactic
+{EXISTS_TAC} reduces the goal to {A ?- t[u/x]} (substituting {u}
+for all free instances of {x} in {t}, with variable renaming if
+necessary to avoid free variable capture).
+{
+    A ?- ?x. t
+   =============  EXISTS_TAC `u`
+    A ?- t[u/x]
+}
+
+\FAILURE
+Fails unless the goal's conclusion is existentially quantified and the
+term supplied has the same type as the quantified variable in the goal.
+
+\EXAMPLE
+The goal:
+{
+  # g `?x. 1 < x /\ x < 3`;;
+}
+\noindent can be solved by:
+{
+  # e(EXISTS_TAC `2` THEN ARITH_TAC);;
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+EXISTS.
+
+\ENDDOC

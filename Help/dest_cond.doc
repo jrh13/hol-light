@@ -1,0 +1,21 @@
+\DOC dest_cond
+
+\TYPE {dest_cond : term -> term * (term * term)}
+
+\SYNOPSIS
+Breaks apart a conditional into the three terms involved.
+
+\DESCRIBE
+{dest_cond} is a term destructor for conditionals:
+{
+   dest_cond `if t then t1 else t2`
+}
+\noindent returns {(`t`,`t1`,`t2`)}.
+
+\FAILURE
+Fails with {dest_cond} if term is not a conditional.
+
+\SEEALSO
+mk_cond, is_cond.
+
+\ENDDOC

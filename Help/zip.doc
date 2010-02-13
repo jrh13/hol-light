@@ -1,0 +1,17 @@
+\DOC zip
+
+\TYPE {zip : 'a list -> 'b list -> ('a * 'b) list}
+
+\SYNOPSIS
+Converts a pair of lists into a list of pairs.
+
+\DESCRIBE
+{zip [x1;...;xn] [y1;...;yn]} returns {[(x1,y1);...;(xn,yn)]}.
+
+\FAILURE
+Fails if the two lists are of different lengths.
+
+\SEEALSO
+unzip.
+
+\ENDDOC

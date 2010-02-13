@@ -1,0 +1,17 @@
+\DOC o
+
+\TYPE {o : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b}
+
+\SYNOPSIS
+Composes two functions: {(f o g) x} = {f (g x)}.
+
+\KEYWORDS
+combinator.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+C, F_F, I, K, W.
+
+\ENDDOC

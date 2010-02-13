@@ -1,0 +1,23 @@
+\DOC null_meta
+
+\TYPE {null_meta : term list * instantiation}
+
+\SYNOPSIS
+Empty metavariable information.
+
+\DESCRIBE
+This is a pair consisting of an empty list of terms and a null instantiation
+(see {null_inst}). It is used inside most tactics to indicate that they do
+nothing interesting with metavariables.
+
+\FAILURE
+Not applicable.
+
+\COMMENTS
+This is not intended for general use, but readers writing custom tactics from 
+scratch may find it convenient.
+
+\SEEALSO
+null_inst.
+
+\ENDDOC

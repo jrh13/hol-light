@@ -1,0 +1,29 @@
+\DOC UNDISCH_TAC
+
+\TYPE {UNDISCH_TAC : term -> tactic}
+
+\SYNOPSIS
+Undischarges an assumption.
+
+\KEYWORDS
+tactic, discharge.
+
+\DESCRIBE
+{
+          A ?- t
+   ====================  UNDISCH_TAC `v`
+    A - {{v}} ?- v ==> t
+}
+
+\FAILURE
+{UNDISCH_TAC} will fail if {`v`} is not an assumption.
+
+\COMMENTS
+{UNDISCH}arging {`v`} will remove all assumptions that are alpha-equivalent to 
+{`v`}.
+
+\SEEALSO
+DISCH, DISCH_ALL, DISCH_TAC, DISCH_THEN, STRIP_TAC, UNDISCH, UNDISCH_ALL,
+UNDISCH_THEN.
+
+\ENDDOC

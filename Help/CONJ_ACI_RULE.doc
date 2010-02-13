@@ -1,0 +1,32 @@
+\DOC CONJ_ACI_RULE
+
+\TYPE {CONJ_ACI_RULE : term -> thm}
+
+\SYNOPSIS
+Proves equivalence of two conjunctions containing same set of conjuncts.
+
+\DESCRIBE
+The call {CONJ_ACI_RULE `t1 /\ ... /\ tn <=> u1 /\ ... /\ um`}, where both
+sides of the equation are conjunctions of exactly the same set of conjuncts,
+(with arbitrary ordering, association, and repetitions), will return the
+corresponding theorem {|- t1 /\ ... /\ tn <=> u1 /\ ... /\ um}.
+
+\FAILURE
+Fails if applied to a term that is not a Boolean equation or the two sets of 
+conjuncts are different.
+
+\EXAMPLE
+{
+  # CONJ_ACI_RULE `(a /\ b) /\ (a /\ c) <=> (a /\ (c /\ a)) /\ b`;;
+  val it : thm = |- (a /\ b) /\ a /\ c <=> (a /\ c /\ a) /\ b
+}
+
+\COMMENTS
+The same effect can be had with the more general {AC} construct. However, for 
+the special case of conjunction, {CONJ_ACI_RULE} is substantially more 
+efficient when there are many conjuncts involved.
+
+\SEEALSO
+AC, CONJ_CANON_CONV, DISJ_ACI_RULE.
+
+\ENDDOC

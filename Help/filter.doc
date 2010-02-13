@@ -1,0 +1,21 @@
+\DOC filter
+
+\TYPE {filter : ('a -> bool) -> 'a list -> 'a list}
+
+\SYNOPSIS
+Filters a list to the sublist of elements satisfying a predicate.
+
+\KEYWORDS
+list.
+
+\DESCRIBE
+{filter p l} applies {p} to every element of {l}, returning a list of those
+that satisfy {p}, in the order they appeared in the original list.
+
+\FAILURE
+Fails if the predicate fails on any element.
+
+\SEEALSO
+mapfilter, partition, remove.
+
+\ENDDOC

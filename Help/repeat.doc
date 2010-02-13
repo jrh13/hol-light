@@ -1,0 +1,28 @@
+\DOC repeat
+
+\TYPE {repeat : ('a -> 'a) -> 'a -> 'a}
+
+\SYNOPSIS
+Repeatedly apply a function until it fails.
+
+\DESCRIBE
+The call {repeat f x} successively applies {f} over and over again starting 
+with {x}, and stops at the first point when a {Failure _} exception occurs.
+
+\FAILURE
+Never fails. If {f} fails at once it returns {x}.
+
+\EXAMPLE
+{
+  # repeat (snd o dest_forall) `!x y z. x + y + z < 1`;;
+  val it : term = `x + y + z < 1`
+}
+
+\COMMENTS
+If you know exactly how many times you want to apply it, you may prefer 
+{funpow}.
+
+\SEEALSO
+funpow, fail.
+
+\ENDDOC

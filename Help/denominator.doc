@@ -1,0 +1,31 @@
+\DOC denominator
+
+\TYPE {denominator : num -> num}
+
+\SYNOPSIS
+Returns denominator of rational number in canonical form.
+
+\DESCRIBE
+Given a rational number as supported by the {Num} library, {denominator} returns
+the denominator $q$ from the rational number cancelled to its reduced form,
+$p/q$ where $q > 0$ and $p$ and $q$ have no common factor.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # denominator(Int 22 // Int 7);;
+  val it : num = 7
+  # denominator(Int 0);;       
+  val it : num = 1
+  # denominator(Int 100);;       
+  val it : num = 1
+  # denominator(Int 4 // Int(-2));;
+  val it : num = 1
+}
+
+\SEEALSO
+numdom, numerator.
+
+\ENDDOC

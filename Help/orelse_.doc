@@ -1,0 +1,11 @@
+\DOC orelse_
+
+\TYPE {orelse_ : tactic -> tactic -> tactic}
+
+\SYNOPSIS
+Non-infix version of {ORELSE}.
+
+\SEEALSO
+ORELSE.
+
+\ENDDOC

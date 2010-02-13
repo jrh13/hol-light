@@ -1,0 +1,28 @@
+\DOC make_args
+
+\TYPE {make_args : string -> term list -> hol_type list -> term list}
+
+\SYNOPSIS
+Make a list of terms with stylized variable names 
+
+\DESCRIBE
+The call {make_args "s" avoids [ty0; ...; tyn]} constructs a list of variables 
+of types {ty0}, ..., {tyn}, normally called {s0}, ..., {sn} but primed if
+necessary to avoid clashing with any in {avoids}
+ 
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # make_args "arg" [`arg2:num`] [`:num`; `:num`; `:num`];;
+  val it : term list = [`arg0`; `arg1`; `arg2'`]
+}
+
+\USES
+Constructing arbitrary but relatively natural names for argument lists.
+
+\SEEALSO
+genvar, variant.
+
+\ENDDOC

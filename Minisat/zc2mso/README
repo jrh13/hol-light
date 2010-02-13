@@ -1,0 +1,70 @@
+zc2mso.C contains code to translate proofs produced by zChaff to the proof
+format used by MiniSat 1.14p.
+
+To compile zChaff:
+==================
+
+You need to make two changes to the zChaff source file "zchaff_solver.cpp"
+before the usual "make". (This is based on zchaff.2004.11.15, but will
+probably be the same or very similar in other versions.)
+
+1. Uncomment (remove "//" from) the following line (about line 48)
+
+   #define VERIFY_ON
+
+2. Change the filename around line 51 from "resolve_trace" to 
+   "/tmp/resolve_trace", so it becomes:
+
+   ofstream verify_out("/tmp/resolve_trace");
+
+These will, respectively, make zChaff record a proof, and make it
+leave this proof in /tmp/resolve_trace instead of whatever the current
+directory is.
+
+To compile zc2mso:
+==================
+
+Put zc2mso.C in some dir. Put symbolic links to (or copy) the following files
+from the Minisat 1.14p sources in the same dir:
+
+File.C
+File.h
+Global.h
+Proof.C
+Proof.h
+SolverTypes.h
+Sort.h
+
+Make sure zlib is installed on your system. Do:
+
+g++ -O3 File.C Proof.C zc2mso.C -lz -o zc2mso
+
+To use:
+=======
+./zc2mso input_DIMACS_problem.cnf -z input_zChaff_trace -m output_minisat_proof [-c]
+
+The -c option will invoke a (slow) proof checker after translating. This also
+reports the total number of resolutions in the output proof.
+
+To use from within HOL Light:
+=============================
+
+First read ../README.
+
+Use the function ZSAT_TAUT_PROVE, which has exactly the same semantics as
+SAT_TAUT_PROVE, except that zChaff is invoked instead of Minisat, and an
+automatic zc2mso invocation is added on.
+
+The dir containing the zc2mso binary needs to be in the current path. The
+zchaff binary or a link to it (with zChaff compiled with proof production
+enabled) should be in the dir pointed to by the satdir variable defined on line
+63 of ../Minisat/satTools.ml.
+
+Notes:
+======
+1) The output proof contains all the initial causes but only the participating
+   chains.
+2) If "output_minisat_proof" already exists then the translator runs but
+   in the end silently refuses to overwrite it.
+3) The DIMACS parser and proof checker are copied from the Minisat 1.14p
+   sources. Copyright notice included in zc2mso.C.

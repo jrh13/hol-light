@@ -1,0 +1,32 @@
+\DOC is_gabs
+
+\TYPE {is_gabs : term -> bool}
+
+\SYNOPSIS
+Tests if a term is a basic or generalized abstraction.
+
+\DESCRIBE
+The call {is_gabs t} tests if {t} is either a basic logical abstraction (as
+identified by {is_abs}) or a generalized one (a standard composite logical
+structure to support a non-variable vastruct). If so, it returns {true}, and
+otherwise it returns {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+This shows that ordinary abstractions are allowed:
+{
+  # is_gabs `\x. x + 1`;;
+  val it : bool = true
+}
+\noindent while the following shows a more typical case:
+{
+  # is_gabs `\(x,y,z). x + y + z + 1`;;
+  val it : bool = true
+}
+
+\SEEALSO
+GEN_BETA_CONV, dest_gabs, mk_gabs.
+
+\ENDDOC

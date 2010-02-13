@@ -1,0 +1,30 @@
+\DOC list_mk_disj
+
+\TYPE {list_mk_disj : term list -> term}
+
+\SYNOPSIS
+Constructs the disjunction of a list of terms.
+
+\DESCRIBE
+{list_mk_disj([`t1`;...;`tn`])} returns {`t1 \/ ... \/ tn`}.
+
+\FAILURE
+Fails with {list_mk_disj} if the list is empty or if the list has more than
+one element, one or more of which are not of type {`:bool`}.
+
+\EXAMPLE
+{
+  # list_mk_disj [`T`;`F`;`T`];;
+  val it : term = `T \/ F \/ T`
+
+  # list_mk_disj [`T`;`1`;`F`];;
+  Exception: Failure "mk_binary".
+
+  # list_mk_disj [`1`];;
+  val it : term = `1`
+}
+
+\SEEALSO
+disjuncts, is_disj, mk_disj.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC inst_goal
+
+\TYPE {inst_goal : instantiation -> goal -> goal}
+
+\SYNOPSIS
+Apply higher-order instantiation to a goal.
+
+\DESCRIBE
+The call {inst_goal i g} where {i} is an instantiation (as returned by
+{term_match} for example), will perform the instantiation indicated by {i} in
+both assumptions and conclusion of the goal {g}.
+
+\FAILURE
+Should never fail on a valid instantiation.
+
+\COMMENTS
+Probably only of specialist interest to those writing tactics from scratch.
+
+\SEEALSO
+compose_insts, instantiate, INSTANTIATE, INSTANTIATE_ALL, 
+PART_MATCH, term_match.
+
+\ENDDOC

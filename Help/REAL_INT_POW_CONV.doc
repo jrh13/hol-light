@@ -1,0 +1,33 @@
+\DOC REAL_INT_POW_CONV
+
+\TYPE {REAL_INT_POW_CONV : conv}
+
+\SYNOPSIS
+Conversion to perform exponentiation on a integer literal of type {:real}.
+
+\DESCRIBE
+The call {REAL_INT_POW_CONV `c pow n`} where {c} is an integer literal of type
+{:real} and {n} is a numeral of type {:num}, returns {|- c pow n = d} where {d}
+is the canonical integer literal that is equal to {c} raised to the {n}th
+power. The literal {c} may be of the form {&n} or {-- &n} (with nonzero {n} in
+the latter case) and the result will be of the same form.
+
+\FAILURE
+Fails if applied to a term that is not a permitted integer literal of type
+{:real} raised to a numeral power.
+
+\EXAMPLE
+{
+  # REAL_INT_POW_CONV `(-- &2) pow 77`;;
+  val it : thm = |- -- &2 pow 77 = -- &151115727451828646838272
+}
+
+\COMMENTS
+The related function {REAL_RAT_POW_CONV} subsumes this functionality, also
+applying to rational literals. Unless the restriction to integers is desired or
+a tiny efficiency difference matters, it should be used in preference.
+
+\SEEALSO
+INT_POW_CONV, REAL_INT_POW_CONV, REAL_INT_REDUCE_CONV.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC get_const_type
+
+\TYPE {get_const_type : string -> hol_type}
+
+\SYNOPSIS
+Gets the generic type of a constant from the name of the constant.
+
+\DESCRIBE
+{get_const_type "c"} returns the generic type of {`c`}, if {`c`} is a constant.
+
+\FAILURE
+{get_const_type st} fails if {st} is not the name of a constant.
+
+\EXAMPLE
+{
+  # get_const_type "COND";;
+  val it : hol_type = `:bool->A->A->A`
+}
+
+\SEEALSO
+dest_const, is_const.
+
+\ENDDOC

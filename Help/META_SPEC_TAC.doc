@@ -1,0 +1,32 @@
+\DOC META_SPEC_TAC
+
+\TYPE {META_SPEC_TAC : term -> thm -> tactic}
+
+\SYNOPSIS
+Replaces universally quantified variable in theorem with metavariable.
+
+\DESCRIBE
+Given a variable {v} and a theorem {th} of the form {A |- !x. p[x]}, the
+tactic {META_SPEC_TAC `v` th} is a tactic that adds the theorem {A |- p[v]} to
+the assumptions of the goal, with {v} a new metavariable. This can later be
+instantiated, e.g. by {UNIFY_ACCEPT_TAC}, and it is as if the instantiation
+were done at this point.
+
+\FAILURE
+Fails if {v} is not a variable.
+
+\EXAMPLE
+See {UNIFY_ACCEPT_TAC} for an example of using metavariables.
+
+\USES
+Delaying instantiations until the right choice becomes clearer.
+
+\COMMENTS
+Users should probably steer clear of using metavariables if possible. Note that
+the metavariable instantiations apply across the whole fringe of goals, not 
+just the current goal, and can lead to confusion.
+
+\SEEALSO
+EXISTS_TAC, EXISTS_TAC, UNIFY_ACCEPT_TAC, X_META_EXISTS_TAC.
+
+\ENDDOC

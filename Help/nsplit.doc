@@ -1,0 +1,30 @@
+\DOC nsplit
+
+\TYPE {nsplit : ('a -> 'b * 'a) -> 'c list -> 'a -> 'b list * 'a}
+
+\SYNOPSIS
+Applies a destructor in right-associative mode a specified number of times.
+
+\DESCRIBE
+If {d} is an inverse to a binary constructor {f}, then 
+{
+  nsplit d l (f(x1,f(x2,...f(xn,y))))
+}
+\noindent where the list {l} has length {k}, returns
+{
+  ([x1;...;xk],f(x(k+1),...f(xn,y))
+}
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # nsplit dest_conj [1;2;3] `a /\ b /\ c /\ d /\ e /\ f`;;
+  val it : term list * term = ([`a`; `b`; `c`], `d /\ e /\ f`)
+}
+
+\SEEALSO
+splitlist, rev_splitlist, striplist.
+
+\ENDDOC

@@ -1,0 +1,27 @@
+\DOC mk_cons
+
+\TYPE {mk_cons : term -> term -> term}
+
+\SYNOPSIS
+Constructs a {CONS} pair.
+
+\DESCRIBE
+{mk_cons `h` `t`} returns {`CONS h t`}.
+
+\FAILURE
+Fails if second term is not of list type or if the first term is not of the
+same type as the elements of the list.
+
+\EXAMPLE
+{
+  # mk_cons `1` `l:num list`;;
+  val it : term = `CONS 1 l`
+
+  # mk_cons `1` `[2;3;4]`;;
+  val it : term = `[1; 2; 3; 4]`
+}
+
+\SEEALSO
+dest_cons, dest_list, is_cons, is_list, mk_flist, mk_list.
+
+\ENDDOC

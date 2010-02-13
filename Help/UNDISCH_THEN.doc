@@ -1,0 +1,24 @@
+\DOC UNDISCH_THEN
+
+\TYPE {UNDISCH_THEN : term -> thm_tactic -> tactic}
+
+\SYNOPSIS
+Undischarges an assumption and applies theorem-tactic to it.
+
+\DESCRIBE
+The tactic {UNDISCH_THEN `a` ttac} applied to a goal {A |- t} takes {a} out of
+the assumptions to give a goal {A - {{a}} |- t}, and applies the theorem-tactic
+{ttac} to the assumption {.. |- a} and that new goal.
+
+\FAILURE
+Fails if {a} is not an assumption; when applied to the goal it fails exactly if 
+the theorem-tactic fails on the modified goal.
+
+\COMMENTS
+The tactic {UNDISCH_TAC `t`} can be considered the special case of
+{UNDISCH_THEN `t` MP_TAC}.
+
+\SEEALSO
+FIND_ASSUM, FIRST_X_ASSUM, UNDISCH_TAC.
+
+\ENDDOC

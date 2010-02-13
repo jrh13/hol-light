@@ -1,0 +1,69 @@
+\DOC REAL_POLY_CONV
+
+\TYPE {REAL_POLY_CONV : term -> thm}
+
+\SYNOPSIS
+Converts a real polynomial into canonical form.
+
+\DESCRIBE
+Given a term of type {:real} that is built up using addition, subtraction,
+negation, multiplication, and inversion and division of constants,
+{REAL_POLY_CONV} converts it into a canonical polynomial form and returns a
+theorem asserting the equivalence of the original and canonical terms. The
+basic elements need not simply be variables or constants; anything not built up
+using the operators given above will be considered `atomic' for the purposes of
+this conversion, for example {inv(x)} where {x} is a variable. The canonical
+polynomial form is a `multiplied out' sum of products, with the monomials
+(product terms) ordered according to the canonical OCaml order on terms. In
+particular, it is just {&0} if the polynomial is identically zero.
+
+\FAILURE
+Never fails, even if the term has the wrong type; in this case it merely
+returns a reflexive theorem.
+
+\EXAMPLE
+This illustrates how terms are `multiplied out':
+{
+  # REAL_POLY_CONV
+     `(x + &1) * (x pow 2 + &1) * (x pow 4 + &1)`;;
+  val it : thm =
+    |- (x + &1) * (x pow 2 + &1) * (x pow 4 + &1) =
+       x pow 7 + x pow 6 + x pow 5 + x pow 4 + x pow 3 + x pow 2 + x + &1
+}
+\noindent and the following is an example of how a complicated algebraic
+identity (due to Liouville?) simplifies to zero. Note that division is
+permissible because it is only by constants.
+{
+  # REAL_POLY_CONV
+     `((x1 + x2) pow 4 + (x1 + x3) pow 4 + (x1 + x4) pow 4 +
+       (x2 + x3) pow 4 + (x2 + x4) pow 4 + (x3 + x4) pow 4) / &6 +
+      ((x1 - x2) pow 4 + (x1 - x3) pow 4 + (x1 - x4) pow 4 +
+       (x2 - x3) pow 4 + (x2 - x4) pow 4 + (x3 - x4) pow 4) / &6 -
+      (x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2) pow 2`;;
+  val it : thm =
+    |- ((x1 + x2) pow 4 +
+        (x1 + x3) pow 4 +
+        (x1 + x4) pow 4 +
+        (x2 + x3) pow 4 +
+        (x2 + x4) pow 4 +
+        (x3 + x4) pow 4) /
+       &6 +
+       ((x1 - x2) pow 4 +
+        (x1 - x3) pow 4 +
+        (x1 - x4) pow 4 +
+        (x2 - x3) pow 4 +
+        (x2 - x4) pow 4 +
+        (x3 - x4) pow 4) /
+       &6 -
+       (x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2) pow 2 =
+       &0
+}
+
+\USES
+Keeping terms in normal form. For simply proving equalities, {REAL_RING} is
+more powerful and usually more convenient.
+
+\SEEALSO
+INT_POLY_CONV, REAL_ARITH, REAL_RING, SEMIRING_NORMALIZERS_CONV.
+
+\ENDDOC

@@ -1,0 +1,19 @@
+\DOC the_inductive_types
+
+\TYPE {the_inductive_types : (string * (thm * thm)) list ref}
+
+\SYNOPSIS
+List of previously declared inductive types.
+
+\DESCRIBE
+This reference variable contains a list of the inductive types, together with 
+their induction and recursion theorems as returned by {define_type}. The list 
+is automatically extended by a call of {define_type}.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+define_type.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC PURE_SIMP_RULE
+
+\TYPE {PURE_SIMP_RULE : thm list -> thm -> thm}
+
+\SYNOPSIS
+Simplify conclusion of a theorem repeatedly by conditional contextual
+rewriting, not using default simplifications.
+
+\DESCRIBE
+A call {SIMP_CONV thl (|- tm)} will return {|- tm'} where {tm'} results from
+applying the theorems in {thl} as (conditional) rewrite rules. Howver, the
+{PURE} prefix indicates that it will not automatically include the usual
+built-in simplifications (see {basic_rewrites} and {basic_convs}). For more
+details on this kind of conditional rewriting, see {SIMP_CONV}.
+
+\FAILURE
+Never fails, but may return the input theorem unchanged if no simplifications
+were applicable.
+
+\SEEALSO
+ONCE_SIMP_RULE, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

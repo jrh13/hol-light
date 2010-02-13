@@ -1,0 +1,18 @@
+\DOC dpty
+
+\TYPE {dpty : pretype}
+
+\SYNOPSIS
+Dummy pretype.
+
+\DESCRIBE
+This is a dummy pretype, intended as a placeholder until the correct one is 
+discovered.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+pretype_of_type, type_of_pretype.
+
+\ENDDOC

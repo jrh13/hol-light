@@ -1,0 +1,40 @@
+\DOC SYM
+
+\TYPE {SYM : thm -> thm}
+
+\SYNOPSIS
+Swaps left-hand and right-hand sides of an equation.
+
+\KEYWORDS
+rule, symmetry, equality.
+
+\DESCRIBE
+When applied to a theorem {A |- t1 = t2}, the inference rule {SYM} returns
+{A |- t2 = t1}.
+{
+    A |- t1 = t2
+   --------------  SYM
+    A |- t2 = t1
+}
+
+\FAILURE
+Fails unless the theorem is equational.
+
+\EXAMPLE
+{
+  # NUM_REDUCE_CONV `12 * 12`;;
+  val it : thm = |- 12 * 12 = 144
+
+  # SYM it;;
+  val it : thm = |- 144 = 12 * 12
+}
+
+\COMMENTS
+The {SYM} rule requires the input theorem to be a simple equation, without 
+additional structure such as outer universal quantifiers. To reverse equality 
+signs deeper inside theorems, you may use {GSYM} instead.
+
+\SEEALSO
+GSYM, REFL, TRANS.
+
+\ENDDOC

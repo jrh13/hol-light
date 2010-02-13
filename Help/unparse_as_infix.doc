@@ -1,0 +1,23 @@
+\DOC unparse_as_infix
+
+\TYPE {unparse_as_infix : string -> unit}
+
+\SYNOPSIS
+Removes string from the list of infix operators.
+
+\DESCRIBE
+Certain identifiers are treated as infix operators with a given precedence and 
+associativity (left or right). The call {unparse_as_infix "op"} removes {op} 
+from the list of infix identifiers, if it was indeed there.
+
+\FAILURE
+Never fails, even if the given string did not originally have infix status.
+
+\COMMENTS
+Take care with applying this to some of the built-in operators, or parsing may 
+fail in existing libraries.
+
+\SEEALSO
+get_infix_status, infixes, parse_as_infix.
+
+\ENDDOC

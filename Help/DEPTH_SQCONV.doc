@@ -1,0 +1,23 @@
+\DOC DEPTH_SQCONV
+
+\TYPE {DEPTH_SQCONV : strategy}
+
+\SYNOPSIS
+Applies simplification repeatedly to all the sub-terms of a term, in bottom-up
+order.
+
+\DESCRIBE
+HOL Light's simplification functions (e.g. {SIMP_TAC}) have their traversal
+algorithm controlled by a ``strategy''. {DEPTH_SQCONV} is a strategy
+corresponding to {DEPTH_CONV} for ordinary conversions: simplification is
+applied repeatedly to all the sub-terms of a term, in bottom-up
+order.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+DEPTH_CONV, ONCE_DEPTH_SQCONV, REDEPTH_SQCONV, TOP_DEPTH_SQCONV,
+TOP_SWEEP_SQCONV.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC dest_eq
+
+\TYPE {dest_eq : term -> term * term}
+
+\SYNOPSIS
+Term destructor for equality.
+
+\DESCRIBE
+{dest_eq(`t1 = t2`)} returns {(`t1`,`t2`)}.
+
+\FAILURE
+Fails with {dest_eq} if term is not an equality.
+
+\EXAMPLE
+{
+  # dest_eq `2 + 2 = 4`;;
+  val it : term * term = (`2 + 2`, `4`)
+}
+
+\SEEALSO
+is_eq, mk_eq.
+
+\ENDDOC

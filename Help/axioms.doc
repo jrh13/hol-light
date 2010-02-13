@@ -1,0 +1,30 @@
+\DOC axioms
+
+\TYPE {axioms : unit -> thm list}
+
+\SYNOPSIS
+Returns the current set of axioms.
+
+\DESCRIBE
+A call {axioms()} returns the current list of axioms.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Under normal circumstances, the list of axioms will be as follows, containing
+the axioms of infinity, choice and extensionality.
+{
+  # axioms();;
+  val it : thm list =
+    [|- ?f. ONE_ONE f /\ ~ONTO f; |- !P x. P x ==> P ((@) P);
+     |- !t. (\x. t x) = t]
+}
+If other axioms are used, the consistency of the resulting theory cannot be
+guaranteed. However, new definitions and type definitions are always safe and
+are not considered as true `axioms'.
+
+\SEEALSO
+define, definitions, new_axiom, new_definition, the_definitions.
+
+\ENDDOC

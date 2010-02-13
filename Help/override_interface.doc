@@ -1,0 +1,61 @@
+\DOC override_interface
+
+\TYPE {override_interface : string * term -> unit}
+
+\SYNOPSIS
+Map identifier to specific underlying constant.
+
+\DESCRIBE
+A call to {override_interface("name",`cname`)} makes the parser map
+instances of identifier {name} to whatever constant is called {cname}. Note
+that the term {`cname`} in the call may either be that constant or a variable
+of the appropriate type. This contrasts with {overload_interface}, which can
+make the same identifier map to several underlying constants, depending on
+type. A call to {override_interface} removes all other overloadings of the
+identifier, if any.
+
+\FAILURE
+Fails unless the term is a constant or variable.
+
+\EXAMPLE
+You might want to make the exponentiation operation {EXP} on natural numbers
+parse and print as `{^}'. You can do this with
+{
+  # override_interface("^",`(EXP)`);;
+  val it : unit = ()
+}
+Note that the special parse status (infix in this case) is based on the
+interface identifier, not the underlying constant, so that does not make `{^}'
+parse as infix:
+{
+  # EXP;;
+  val it : thm = |- (!m. ^ m 0 = 1) /\ (!m n. ^ m (SUC n) = m * ^ m n)
+}
+\noindent but you can do that with a separate {parse_as_infix} call. It is also 
+possible to override polymorphic constants, and all instances will be handled.
+For example, HOL Light's built-in list operations don't look much like OCaml:
+{
+  # APPEND;;
+  val it : thm =
+    |- (!l. APPEND [] l = l) /\
+       (!h t l. APPEND (CONS h t) l = CONS h (APPEND t l))
+}
+\noindent but after a few interface modifications:
+{
+  # parse_as_infix("::",(25,"right"));;
+  # parse_as_infix("@",(16,"right"));;
+  # override_interface("::",`CONS`);;
+  # override_interface("@",`APPEND`);;
+}
+\noindent it looks closer (you can remove the spaces round {::} using 
+{unspaced_binops}):
+{
+  # APPEND;;
+  val it : thm = |- (!l. [] @ l = l) /\ (!h t l. h :: t @ l = h :: (t @ l))
+}
+
+\SEEALSO
+overload_interface, parse_as_infix, reduce_interface, remove_interface,
+the_interface, the_overload_skeletons.
+
+\ENDDOC

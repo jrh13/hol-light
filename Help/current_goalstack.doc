@@ -1,0 +1,22 @@
+\DOC current_goalstack
+
+\TYPE {current_goalstack : goalstack ref}
+
+\SYNOPSIS
+Reference variable holding current goalstack.
+
+\DESCRIBE
+The reference variable {current_goalstack} contains the current goalstack. A 
+goalstack is a type containing a list of goalstates.
+
+\FAILURE
+Not applicable.
+
+\COMMENTS
+Users will probably not often want to examine this variable explicitly, since 
+various proof commands modify it in various ways.
+
+\SEEALSO
+b, g, e, r.
+
+\ENDDOC

@@ -1,0 +1,17 @@
+\DOC I
+
+\TYPE {I : 'a -> 'a}
+
+\SYNOPSIS
+Performs identity operation: {I x} = {x}.
+
+\KEYWORDS
+combinator, identity.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+C, K, F_F, o, W.
+
+\ENDDOC

@@ -1,0 +1,40 @@
+\DOC NUM_PRE_CONV
+
+\TYPE {NUM_PRE_CONV : term -> thm}
+
+\SYNOPSIS
+Proves what the cutoff predecessor of a natural number numeral is.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} is a numeral (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_PRE_CONV `PRE n`} returns the theorem:
+{
+   |- PRE n = s
+}
+\noindent where {s} is the numeral that denotes the cutoff predecessor of the
+natural number denoted by {n} (that is, the result of subtracting 1 from it, or 
+zero if it is already zero).
+
+\FAILURE
+{NUM_PRE_CONV tm} fails if {tm} is not of the form  {`PRE n`}, where {n} is a 
+numeral.
+
+\EXAMPLE
+{
+  # NUM_PRE_CONV `PRE 0`;;
+  val it : thm = |- PRE 0 = 0
+  
+  # NUM_PRE_CONV `PRE 12345`;;
+  val it : thm = |- PRE 12345 = 12344
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_REDUCE_CONV, NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
+
+\ENDDOC

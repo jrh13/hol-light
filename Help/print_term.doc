@@ -1,0 +1,23 @@
+\DOC print_term
+
+\TYPE {print_term : term -> unit}
+
+\SYNOPSIS
+Prints a HOL term (without quotes) to the standard output.
+
+\DESCRIBE
+The call {print_term tm} prints the usual textual representation of the
+term {tm} to the standard output. The string is just {tm} not {`tm`}.
+
+\FAILURE
+Never fails.
+
+\USES
+Producing debugging output in complex rules. Note that terms are already
+printed at the toplevel anyway, so it is not needed to examine results
+interactively.
+
+\SEEALSO
+pp_print_qterm, pp_print_term, print_qterm.
+
+\ENDDOC

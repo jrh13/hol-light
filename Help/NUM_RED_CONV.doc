@@ -1,0 +1,60 @@
+\DOC NUM_RED_CONV
+
+\TYPE {NUM_RED_CONV : term -> thm}
+
+\SYNOPSIS
+Performs one arithmetic or relational operation on natural number numerals by
+proof.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+When applied to a term that is either a unary operator application
+{`SUC n`}, {`PRE n`} or {`FACT n`} for a numeral {n}, or a relational operator
+application {`m < n`},  {`m <= n`},  {`m > n`}, {`m >= n`} or {`m = n`}, or a
+binary arithmetic operation {`m + n`},  {`m - n`}, {`m * n`},  {`m EXP n`},
+{`m DIV n`} or {`m MOD n`} applied to numerals {m} and {n}, the conversion
+{NUM_RED_CONV} will `reduce' it and return a theorem asserting its equality to
+the reduced form.
+
+\FAILURE
+{NUM_RED_CONV tm} fails if {tm} is not of one of the forms specified.
+
+\EXAMPLE
+{
+  # NUM_RED_CONV `2 + 2`;;
+  val it : thm = |- 2 + 2 = 4
+
+  # NUM_RED_CONV `1089 < 2231`;;
+  val it : thm = |- 1089 < 2231 <=> T
+
+  # NUM_RED_CONV `FACT 11`;;
+  val it : thm = |- FACT 11 = 39916800
+}
+Note that the immediate operands must be numerals. For deeper reduction of
+combinations of numerals, use {NUM_REDUCE_CONV}:
+{
+  # NUM_RED_CONV `(432 - 234) + 198`;;
+  Exception: Failure "REWRITES_CONV".
+
+  # NUM_REDUCE_CONV `(432 - 234) + 198`;;
+  val it : thm = |- 432 - 234 + 198 = 396
+}
+
+\USES
+Access to this `one-step' reduction is not usually especially useful, but if 
+you want to add a conversion {conv} for some other operator on numbers, you can
+conveniently incorporate it into {NUM_REDUCE_CONV} with
+{
+  # let NUM_REDUCE_CONV' = DEPTH_CONV(REAL_RAT_RED_CONV ORELSEC conv);;
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_PRE_CONV, NUM_REDUCE_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV,
+REAL_RAT_RED_CONV.
+
+\ENDDOC

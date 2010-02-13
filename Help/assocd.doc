@@ -1,0 +1,31 @@
+\DOC assocd
+
+\TYPE {assocd : 'a -> ('a * 'b) list -> 'b -> 'b}
+
+\SYNOPSIS
+Looks up item in association list taking default in case of failure.
+
+\DESCRIBE
+The call {assocd x [x1,y1; ...; xn,yn] y} returns the first {yi} in the list 
+where the corresponding {xi} is the same as {x}. If there is no such item, it 
+returns the value {y}. This is similar to {assoc} except that the latter will 
+fail rather than take a default.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # assocd 2 [1,2; 2,4; 3,6] (-1);;
+  val it : int = 4
+  # assocd 4 [1,2; 2,4; 3,6] (-1);;
+  val it : int = -1
+}
+
+\USES
+Simple lookup without exception handling.
+
+\SEEALSO
+assoc, rev_assocd.
+
+\ENDDOC

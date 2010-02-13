@@ -1,0 +1,41 @@
+\DOC NUM_REDUCE_TAC
+
+\TYPE {NUM_REDUCE_TAC : tactic}
+
+\SYNOPSIS
+Evaluate subexpressions of goal built up from natural number numerals.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+When applied to a goal, {NUM_REDUCE_TAC} performs a recursive bottom-up 
+evaluation by proof of subterms of the conclusion built from numerals using the
+unary operators `{SUC}', `{PRE}' and `{FACT}' and the binary arithmetic (`{+}',
+`{-}', `{*}', `{EXP}', `{DIV}', `{MOD}') and relational (`{<}', `{<=}', `{>}',
+`{>=}', `{=}') operators, as well as propagating constants through logical
+operations, e.g. {T /\ x <=> x}, returning a new subgoal where all these 
+subexpressions are reduced.
+
+\FAILURE
+Never fails, but may have no effect.
+
+\EXAMPLE
+{
+  # g `1 EXP 3 + 12 EXP 3 = 1729 /\ 9 EXP 3 + 10 EXP 3 = 1729`;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+  `1 EXP 3 + 12 EXP 3 = 1729 /\ 9 EXP 3 + 10 EXP 3 = 1729`
+  
+  # e NUM_REDUCE_TAC;;
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_PRE_CONV, NUM_REDUCE_CONV, NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV,
+NUM_SUC_CONV, REAL_RAT_REDUCE_CONV.
+
+\ENDDOC

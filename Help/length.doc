@@ -1,0 +1,14 @@
+\DOC length
+
+\TYPE {length : 'a list -> int}
+
+\SYNOPSIS
+Computes the length of a list: {length [x1;...;xn]} returns {n}.
+
+\KEYWORDS
+list.
+
+\FAILURE
+Never fails.
+
+\ENDDOC

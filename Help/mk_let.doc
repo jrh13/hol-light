@@ -1,0 +1,27 @@
+\DOC mk_let
+
+\TYPE {mk_let : (term * term) list * term -> term}
+
+\SYNOPSIS
+Constructs a let-expression.
+
+\DESCRIBE
+Given argument {([l1,r1; ...; ln,rn],bod)}, the {mk_let} constructor produces
+the let-expression {let l1 = r1 and ... and ln = rn in bod}.
+
+\FAILURE
+Fails if the list of left-hand and right-hand sides is empty or if some
+corresponding pair of left-hand and right-hand sides have different types.
+
+\EXAMPLE
+{
+  # mk_let([`x:num`,`1`],`x + 2`);;
+  val it : term = `let x = 1 in x + 2`
+
+  # mk_let([`CONS (h:bool) t`,`[F;F;F;F]`; `z:num`,`1`],`h ==> z = 2`);;
+  val it : term = `let CONS h t = [F; F; F; F] and z = 1 in h ==> z = 2`
+}
+\SEEALSO
+mk_let, is_let.
+
+\ENDDOC

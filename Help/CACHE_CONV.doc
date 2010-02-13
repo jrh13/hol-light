@@ -1,0 +1,39 @@
+\DOC CACHE_CONV
+
+\TYPE {CACHE_CONV : (term -> thm) -> term -> thm}
+
+\SYNOPSIS
+Accelerates a conversion by cacheing previous results.
+
+\DESCRIBE
+If {cnv} is any conversion, then {CACHE_CONV cnv} gives a new conversion that 
+is functionally identical but keeps a cache of previous arguments and results, 
+and simply returns the cached result if the same input is encountered again.
+
+\FAILURE
+Never fails, though the subsequent application to a term may.
+
+\EXAMPLE
+The following call takes a while, making several applications to the same 
+expression:
+{
+  # time (DEPTH_CONV NUM_RED_CONV) `31 EXP 31 + 31 EXP 31 + 31 EXP 31`;;
+  CPU time (user): 1.542
+  val it : thm =
+    |- 31 EXP 31 + 31 EXP 31 + 31 EXP 31 =
+       51207522392169707875831929087177944268134203293
+}
+\noindent whereas the cached variant is faster since the result for {31 EXP 31} 
+is stored away and re-used after the first call:
+{
+  # time (DEPTH_CONV(CACHE_CONV NUM_RED_CONV)) 
+         `31 EXP 31 + 31 EXP 31 + 31 EXP 31`;;
+  CPU time (user): 0.461
+  val it : thm =
+    |- 31 EXP 31 + 31 EXP 31 + 31 EXP 31 =
+       51207522392169707875831929087177944268134203293
+}
+
+\SEEALSO
+
+\ENDDOC

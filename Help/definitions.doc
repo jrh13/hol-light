@@ -1,0 +1,29 @@
+\DOC definitions
+
+\TYPE {definitions : unit -> thm list}
+
+\SYNOPSIS
+Returns the current set of primitive definitions.
+
+\DESCRIBE
+A call {definitions()} returns the current list of basic definitions made in 
+the HOL Light kernel.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+This is a more logically primitive list than the one maintained in the list
+{!the_definitions}, and is intended mainly for auditing a proof development 
+that uses axioms to ensure that no axioms and definitions clash. Under normal
+circumstances axioms are not used and so this information is not needed.
+Definitions returned by {definitions()} are in their primitive equational form,
+and include everything defined in the kernel. By contrast, those in the list
+{!the_definitions} are often quantified and eta-expanded, and the list may be
+incomplete since it is only maintained outside the logical kernel as a 
+convenience.
+
+\SEEALSO
+define, new_axiom, new_definition, the_definitions.
+
+\ENDDOC

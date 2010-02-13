@@ -1,0 +1,31 @@
+\DOC MP_TAC
+
+\TYPE {MP_TAC : thm_tactic}
+
+\SYNOPSIS
+Adds a theorem as an entecedent to the conclusion of the goal.
+
+\KEYWORDS
+tactic, modus, ponens, implication, antecedent.
+
+\DESCRIBE
+When applied to the theorem {A' |- s} and the goal {A ?- t}, the tactic
+{MP_TAC} reduces the goal to {A ?- s ==> t}. Unless {A'} is a subset of
+{A}, this is an invalid tactic.
+{
+       A ?- t
+   ==============  MP_TAC (A' |- s)
+    A ?- s ==> t
+}
+
+\FAILURE
+Never fails.
+
+\USES
+For moving assumptions into the conclusion of the goal, which often makes it
+easier to manipulate via {REWRITE_TAC} or decompose by {ANTS_TAC}.
+
+\SEEALSO
+MATCH_MP_TAC, MP, UNDISCH_TAC.
+
+\ENDDOC

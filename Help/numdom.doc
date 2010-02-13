@@ -1,0 +1,31 @@
+\DOC numdom
+
+\TYPE {numdom : num -> num * num}
+
+\SYNOPSIS
+Returns numerator and denominator of normalized fraction.
+
+\DESCRIBE
+Given a rational number as supported by the {Num} library, {numdom} returns a 
+numerator-denominator pair corresponding to that rational number cancelled down 
+to its reduced form, $p/q$ where $q > 0$ and $p$ and $q$ have no common factor.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # numdom(Int 22 // Int 7);;
+  val it : num * num = (22, 7)
+  # numdom(Int 0);;
+  val it : num * num = (0, 1)
+  # numdom(Int 100);;
+  val it : num * num = (100, 1)
+  # numdom(Int 4 // Int(-2));;
+  val it : num * num = (-2, 1)
+}
+
+\SEEALSO
+denominator, numerator.
+
+\ENDDOC

@@ -1,0 +1,34 @@
+\DOC needs
+
+\TYPE {needs : string -> unit}
+
+\SYNOPSIS
+Load a file if not already loaded.
+
+\DESCRIBE
+The given file is loaded from the path as for {loadt}, unless it has already
+been loaded into the current session (by {loads}, {loadt} or {needs}) and has
+apparently (based on an MD5 checksum) not changed since then.
+
+\FAILURE
+Fails if the file is not found or generates a failure on loading.
+
+\EXAMPLE
+If a proof relies on more number theory, you might start it with
+{
+  needs "Library/prime.ml";;
+  needs "Library/pocklington.ml";;
+}
+If necessary, these files will be loaded as for {loadt}. However, if they have
+already been loaded (e.g. if the current proof is a component of a larger proof
+that has already used them), they will not be reloaded.
+
+\USES
+The {needs} function gives a simple form of dependency management. It is good
+practice to start every file with a {needs} declaration for any library that it
+depends on.
+
+\SEEALSO
+loads, loadt.
+
+\ENDDOC

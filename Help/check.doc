@@ -1,0 +1,31 @@
+\DOC check
+
+\TYPE {check : ('a -> bool) -> 'a -> 'a}
+
+\SYNOPSIS
+Checks that a value satisfies a predicate.
+
+\DESCRIBE
+{check p x} returns {x} if the application {p x} yields {true}. Otherwise,
+{check p x} fails.
+
+\FAILURE
+{check p x} fails with {Failure "check"} if the predicate {p} yields
+{false} when applied to the value {x}.
+
+\EXAMPLE
+{
+  # check is_var `x:bool`;;
+  val it : term = `x`
+  # check is_var `x + 2`;;
+  Exception: Failure "check".
+}
+
+\USES
+Can be used to filter out candidates from a set of terms, e.g. to apply 
+theorem-tactics to assumptions with a certain pattern.
+
+\SEEALSO
+can.
+
+\ENDDOC

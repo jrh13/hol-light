@@ -1,0 +1,32 @@
+\DOC nothing
+
+\TYPE {nothing : 'a -> 'b list * 'a}
+
+\SYNOPSIS
+Trivial parser that parses nothing.
+
+\DESCRIBE
+The parser {nothing} parses nothing: it returns the empty list as its parsed 
+item and all the input as its unparsed input. 
+
+\FAILURE
+Never fails.
+
+\USES
+This can be useful in alternations (`{||}') with other parsers producing a list
+of items.
+
+\COMMENTS
+This is one of a suite of combinators for manipulating ``parsers''. A parser is
+simply a function whose OCaml type is some instance of
+{:('a)list -> 'b * ('a)list}. The function should take a list of objects of
+type {:'a} (e.g. characters or tokens), parse as much of it as possible from
+left to right, and return a pair consisting of the object derived from parsing
+(e.g. a term or a special syntax tree) and the list of elements that were not
+processed.
+
+\SEEALSO
+++, ||, >>, a, atleast, elistof, finished, fix, leftbin, listof, many,
+possibly, rightbin, some.
+
+\ENDDOC

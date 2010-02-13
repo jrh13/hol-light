@@ -1,0 +1,34 @@
+\DOC defined
+
+\TYPE {defined : ('a, 'b) func -> 'a -> bool}
+
+\SYNOPSIS
+Tests if a finite partial function is defined on a certain domain value.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type 
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. The call {defined f x} returns {true} if the finite partial function {f} 
+is defined on domain value {x}, and {false} otherwise.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # defined (1 |=> 2) 1;;
+  val it : bool = true
+
+  # defined (1 |=> 2) 2;;
+  val it : bool = false
+
+  # defined undefined 1;;
+  val it : bool = false
+}
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefined.
+
+\ENDDOC

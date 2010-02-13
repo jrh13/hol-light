@@ -1,0 +1,24 @@
+\DOC pretype_of_type
+
+\TYPE {pretype_of_type : hol_type -> pretype}
+
+\SYNOPSIS
+Converts a type into a pretype.
+
+\DESCRIBE
+HOL Light uses ``pretypes'' and ``preterms'' as intermediate structures for 
+parsing and typechecking, which are later converted to types and terms. A call 
+{preterm_of_term `tm`} converts in the other direction, from a normal HOL term
+back to a preterm.
+
+\FAILURE
+Never fails.
+
+\USES
+User manipulation of pretypes is not usually necessary, unless you seek to 
+radically change aspects of parsing and typechecking.
+
+\SEEALSO
+preterm_of_term, type_of_pretype.
+
+\ENDDOC

@@ -1,0 +1,25 @@
+\DOC LAND_CONV
+
+\TYPE {LAND_CONV : conv -> conv}
+
+\SYNOPSIS
+Apply a conversion to left-hand argument of binary operator.
+
+\DESCRIBE
+If {c} is a conversion where {c `l`} gives {|- l = l'}, then 
+{LAND_CONV c `op l r`} gives {|- op l r = op l' r}.
+ 
+\FAILURE
+Fails if the underlying conversion does or returns an inappropriate theorem 
+(i.e. is not really a conversion).
+
+\EXAMPLE
+{
+  # LAND_CONV NUM_ADD_CONV `(2 + 2) + (2 + 2)`;;
+  val it : thm = |- (2 + 2) + 2 + 2 = 4 + 2 + 2
+}
+
+\SEEALSO
+ABS_CONV, COMB_CONV, COMB_CONV2, RAND_CONV, RATOR_CONV, SUB_CONV.
+
+\ENDDOC

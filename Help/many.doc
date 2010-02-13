@@ -1,0 +1,30 @@
+\DOC many
+
+\TYPE {many : ('a -> 'b * 'a) -> 'a -> 'b list * 'a}
+
+\SYNOPSIS
+Parses zero or more successive items using given parser.
+
+\DESCRIBE
+If {p} is a parser then {many p} gives a new parser that parses a series of 
+successive items using {p} and returns the result as a list, with the expected 
+left-to-right order.
+
+\FAILURE
+The immediate call {many} never fails. The resulting parser may fail when 
+applied, though any {Noparse} exception in the core parser will be trapped.
+
+\COMMENTS
+This is one of a suite of combinators for manipulating ``parsers''. A parser is
+simply a function whose OCaml type is some instance of
+{:('a)list -> 'b * ('a)list}. The function should take a list of objects of
+type {:'a} (e.g. characters or tokens), parse as much of it as possible from
+left to right, and return a pair consisting of the object derived from parsing
+(e.g. a term or a special syntax tree) and the list of elements that were not
+processed.
+
+\SEEALSO
+++, ||, >>, a, atleast, elistof, finished, fix, leftbin, listof, nothing,
+possibly, rightbin, some.
+
+\ENDDOC

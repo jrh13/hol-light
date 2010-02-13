@@ -1,0 +1,27 @@
+\DOC shareout
+
+\TYPE {shareout : 'a list list -> 'b list -> 'b list list}
+
+\SYNOPSIS
+Shares out the elements of the second list according to pattern in first.
+
+\DESCRIBE
+The call {shareout pat l} shares out the elements of {l} into the same groups 
+as the pattern list {pat}, while keeping them in the same order. If there are 
+more elements in {l} than needed, they will be discarded, but if there are 
+fewer, failure will occur.
+
+\FAILURE
+Fails if there are too few elements in the second list.
+
+\EXAMPLE
+{
+  # shareout [[1;2;3]; [4;5]; [6]; [7;8;9]] (explode "abcdefghijklmnopq");;
+  val it : string list list =
+    [["a"; "b"; "c"]; ["d"; "e"]; ["f"]; ["g"; "h"; "i"]]
+}
+
+\SEEALSO
+chop_list.
+
+\ENDDOC

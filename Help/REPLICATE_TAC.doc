@@ -1,0 +1,24 @@
+\DOC REPLICATE_TAC
+
+\TYPE {REPLICATE_TAC : int -> tactic -> tactic}
+
+\SYNOPSIS
+Apply a tactic a specific number of times.
+
+\DESCRIBE
+The call {REPLICATE n tac} gives a new tactic that it equivalent to an {n}-fold 
+repetition of {tac}, i.e. {tac THEN tac THEN ... THEN tac}.
+  
+\FAILURE
+The call {REPLICATE n tac} never fails, but when applied to a goal it will fail 
+if the tactic does.
+
+\EXAMPLE
+We might conceivably want to strip off exactly three universal quantifiers from 
+a goal that contains more than three. We can use {REPLICATE_TAC 3 GEN_TAC} to 
+do that.
+
+\SEEALSO
+EVERY, MAP_EVERY, THEN.
+
+\ENDDOC

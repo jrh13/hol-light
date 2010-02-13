@@ -1,0 +1,36 @@
+\DOC SPEC_VAR
+
+\TYPE {SPEC_VAR : thm -> term * thm}
+
+\SYNOPSIS
+Specializes the conclusion of a theorem, returning the chosen variant.
+
+\KEYWORDS
+rule.
+
+\DESCRIBE
+When applied to a theorem {A |- !x. t}, the inference rule {SPEC_VAR} returns
+the term {x'} and the theorem {A |- t[x'/x]}, where {x'} is a variant
+of {x} chosen to avoid clashing with free variables in assumptions.
+{
+     A |- !x. t
+   --------------  SPEC_VAR
+    A |- t[x'/x]
+}
+\FAILURE
+Fails unless the theorem's conclusion is universally quantified.
+
+\EXAMPLE
+Note how the variable is renamed to avoid the free {m} in the assumptions:
+{
+  #  let th = ADD_ASSUM `m = 1` ADD_SYM;;
+  val th : thm = m = 1 |- !m n. m + n = n + m
+
+  # SPEC_VAR th;;
+  val it : term * thm = (`m'`, m = 1 |- !n. m' + n = n + m')
+}
+
+\SEEALSO
+GEN, GENL, GEN_ALL, GEN_TAC, SPEC, SPECL, SPEC_ALL.
+
+\ENDDOC

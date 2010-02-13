@@ -1,0 +1,64 @@
+\DOC prove_inductive_relations_exist
+
+\TYPE {prove_inductive_relations_exist : term -> thm}
+
+\SYNOPSIS
+Prove existence of inductively defined relations without defining them.
+
+\DESCRIBE
+The function {prove_inductive_relations_exist} should be given a specification
+for an inductively defined relation {R}, or more generally a family
+{R1,...,Rn} of mutually inductive relations; the required format is explained
+further in the entry for {new_inductive_definition}. It returns an existential
+theorem {A |- ?R1 ... Rn. rules /\ induction /\ cases}, where {rules},
+{induction} and {cases} are the rule, induction and cases theorems, explained
+further in the entry for {new_inductive_definition}. In contrast with
+{new_inductive_definition}, no actual definitions are made. The assumption list
+{A} is normally empty, but will include any monotonicity hypotheses that were
+not proven automatically.
+
+\FAILURE
+Fails if the form of the rules is wrong.
+
+\EXAMPLE
+The traditional example of even and odd numbers:
+{
+  # prove_inductive_relations_exist
+     `even(0) /\ odd(1) /\
+      (!n. even(n) ==> odd(n + 1)) /\
+      (!n. odd(n) ==> even(n + 1))`;;
+  val it : thm =
+    |- ?even odd.
+           (even 0 /\
+            odd 1 /\
+            (!n. even n ==> odd (n + 1)) /\
+            (!n. odd n ==> even (n + 1))) /\
+           (!odd' even'.
+                even' 0 /\
+                odd' 1 /\
+                (!n. even' n ==> odd' (n + 1)) /\
+                (!n. odd' n ==> even' (n + 1))
+                ==> (!a0. odd a0 ==> odd' a0) /\ (!a1. even a1 ==> even' a1)) /\
+           (!a0. odd a0 <=> a0 = 1 \/ (?n. a0 = n + 1 /\ even n)) /\
+           (!a1. even a1 <=> a1 = 0 \/ (?n. a1 = n + 1 /\ odd n))
+}
+\noindent Here is a example where we get a nonempty list of hypotheses because
+HOL cannot prove monotonicity (and indeed, it doesn't hold).
+{
+  # prove_inductive_relations_exist `!x. ~P(x) ==> P(x+1)`;;
+  val it : thm =
+    !P P'.
+        (!a. P a ==> P' a)
+        ==> (!a. (?x. a = x + 1 /\ ~P x) ==> (?x. a = x + 1 /\ ~P' x))
+    |- ?P. (!x. ~P x ==> P (x + 1)) /\
+           (!P'. (!x. ~P' x ==> P' (x + 1)) ==> (!a. P a ==> P' a)) /\
+           (!a. P a <=> (?x. a = x + 1 /\ ~P x))
+}
+
+\USES
+Using existence of inductive relations as an auxiliary device inside a proof.
+
+\SEEALSO
+derive_strong_induction, new_inductive_definition, prove_monotonicity_hyps.
+
+\ENDDOC

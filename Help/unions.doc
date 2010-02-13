@@ -1,0 +1,25 @@
+\DOC unions
+
+\TYPE {unions : 'a list list -> 'a list}
+
+\SYNOPSIS
+Performs the union of a set of sets.
+
+\DESCRIBE
+Applied to a list of lists, {union} returns a list of all the elements of them, 
+in some unspecified order, with no repetitions. It can be considered as the
+union of the family of `sets'.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # unions [[1;2]; [2;2;2;]; [2;3;4;5]];;
+  val it : int list = [1; 2; 3; 4; 5]
+}
+
+\SEEALSO
+intersect, subtract.
+
+\ENDDOC

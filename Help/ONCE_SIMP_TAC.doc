@@ -1,0 +1,26 @@
+\DOC ONCE_SIMP_TAC
+
+\TYPE {ONCE_SIMP_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Simplify conclusion of goal once by conditional contextual rewriting.
+
+\DESCRIBE
+When applied to a goal {A ?- g}, the tactic {ONCE_SIMP_TAC thl} returns a new
+goal {A ?- g'} where {g'} results from applying the theorems in {thl} as
+(conditional) rewrite rules, as well as built-in simplifications (see
+{basic_rewrites} and {basic_convs}). For more details on this kind of
+conditional rewriting, see {SIMP_CONV}. The {ONCE} prefix indicates that
+the first applicable terms in a toplevel term will be simplified once only. 
+Moreover, in contrast to the other simplification tactics, any unsolved 
+subgoals arising from conditions on rewrites will be split off as new goals, 
+allowing simplification to proceed more interactively.
+
+\FAILURE
+Never fails, though may not change the goal if no simplifications are
+applicable.
+
+\SEEALSO
+ONCE_SIMP_CONV, ONCE_SIMP_RULE, SIMP_CONV, SIMP_TAC.
+
+\ENDDOC

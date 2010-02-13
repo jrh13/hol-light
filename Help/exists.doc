@@ -1,0 +1,29 @@
+\DOC exists
+
+\TYPE {exists : ('a -> bool) -> 'a list -> bool}
+
+\SYNOPSIS
+Tests a list to see if some element satisfy a predicate.
+
+\KEYWORDS
+list.
+
+\DESCRIBE
+{exists p [x1;...;xn]} returns {true} if {(p xi)} is true for some {xi} in the
+list. Otherwise, for example if the list is empty, it returns {false}. 
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # exists (fun n -> n mod 2 = 0) [2;3;5;7;11;13;17];;
+  val it : bool = true
+  # exists (fun n -> n mod 2 = 0) [3;5;7;9;11;13;15];;
+  val it : bool = false
+}
+
+\SEEALSO
+find, forall, tryfind, mem, assoc, rev_assoc.
+
+\ENDDOC

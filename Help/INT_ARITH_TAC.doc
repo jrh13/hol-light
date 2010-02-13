@@ -1,0 +1,46 @@
+\DOC INT_ARITH_TAC
+
+\TYPE {INT_ARITH_TAC : tactic}
+
+\SYNOPSIS
+Attempt to prove goal using basic algebra and linear arithmetic over the
+integers.
+
+\DESCRIBE
+The tactic {INT_ARITH_TAC} is the tactic form of {INT_ARITH}. Roughly
+speaking, it will automatically prove any formulas over the reals that are
+efectively universally quantified and can be proved valid by algebraic
+normalization and linear equational and inequality reasoning. See {REAL_ARITH}
+for more information about the algorithm used and its scope.
+
+\FAILURE
+Fails if the goal is not in the subset solvable by these means, or is not
+valid.
+
+\EXAMPLE
+Here is a goal that holds by virtue of pure algebraic normalization:
+{
+  # prioritize_int();;
+  val it : unit = ()
+
+  # g `(x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2) *
+       (y1 pow 2 + y2 pow 2 + y3 pow 2 + y4 pow 2) =
+       (x1 * y1 - x2 * y2 - x3 * y3 - x4 * y4) pow 2  +
+       (x1 * y2 + x2 * y1 + x3 * y4 - x4 * y3) pow 2  +
+       (x1 * y3 - x2 * y4 + x3 * y1 + x4 * y2) pow 2  +
+       (x1 * y4 + x2 * y3 - x3 * y2 + x4 * y1) pow 2`;;
+}
+\noindent and here is one that holds by linear inequality reasoning:
+{
+  # g `!x y:int. abs(x + y) < abs(x) + abs(y) + &1`;;
+}
+\noindent so either goal is solved simply by:
+{
+  # e INT_ARITH_TAC;;
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+ARITH_TAC, ASM_INT_ARITH_TAC, INT_ARITH, REAL_ARITH_TAC.
+
+\ENDDOC

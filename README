@@ -1,0 +1,151 @@
+                             HOL LIGHT
+
+HOL Light is an interactive theorem prover / proof checker. It is
+written in Objective CAML (OCaml) and uses the toplevel from OCaml as
+its front end. This is the HOL Light homepage:
+
+        http://www.cl.cam.ac.uk/~jrh13/hol-light/index.html
+
+For more detailed information on installation and usage than the brief
+notes below, see the Tutorial:
+
+        http://www.cl.cam.ac.uk/~jrh13/hol-light/tutorial.pdf
+
+and refer to the reference manual for more details of individual
+functions:
+
+        http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.html (HTML files)
+        http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.pdf (one PDF file)
+
+        *       *       *       *       *       *       *       *
+
+                             INSTALLATION
+
+HOL Light should work with any recent version of OCaml, which can be
+downloaded here:
+
+        http://caml.inria.fr/ocaml/index.en.html
+
+I've tried it on 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3 and 3.10.0. For
+versions < 3.10, the camlp4 preprocessor bundled with OCaml is used
+to provide syntax extensions. For versions of OCaml >= 3.10, camlp5
+(>= 4.07) is used instead which you need to install separately:
+
+        http://pauillac.inria.fr/~ddr/camlp5/
+
+The instructions below assume a Unix-like environment such as Linux
+[or Cygwin (see www.cygwin.com) under Windows], but the steps
+automated by the Makefile are easy enough to invoke manually. There's
+more detail on doing that in the Tutorial.
+
+(0) Unpack the file to give a directory 'hol_light' and enter it, e.g. by
+
+        tar xvfz hol_light.tar.gz
+        cd ./hol_light
+
+There are now two alternatives: launch the OCaml toplevel and directly
+load the HOL Light source files into it, or create a standalone image
+with all the HOL Light sources pre-loaded. The latter is more
+convenient, but requires a separate checkpointing program, which may not
+be available for some platforms. First the basic approach:
+
+(1) Do 'make'. This ought to build the appropriate syntax extension
+    file ('pa_j.cmo') for the version of OCaml that you're using. If you
+    have the camlp4 or camlp5 libraries in a non-standard place rather
+    than /usr/local/lib/ocaml/camlp4 or /usr/local/lib/ocaml/camlp5
+    then you may get an error like this
+
+      Error while loading "pa_extend.cmo": file not found in path.
+
+    in which case you should add the right directory to CAMLP4LIB or
+    CAMLP5LIB, e.g.
+
+      export CAMLP5LIB=$HOME/mylib/ocaml/camlp5
+
+(2) Do 'ocaml' (possibly 'ocamlnum' on some platforms --- see [*] below).
+    You should see a prompt, something like:
+
+                Objective Caml version 3.08.2
+
+        #
+
+(3) At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
+    command, not the prompt) followed by a newline. This should rebuild
+    all the core HOL Light theories, and terminate after a few minutes
+    with the usual OCaml prompt, something like:
+
+        val define : term -> thm = <fun>
+        - : unit = ()
+        val help : string -> unit = <fun>
+        - : unit = ()
+                Camlp5 Parsing version 3.10
+
+        #
+
+    HOL Light is now ready for the user to start proving theorems. You
+    can also use the load process (2) and (3) in other directories, but
+    you should either set the environment variable HOLLIGHT_DIR to point
+    to the directory containing the HOL source files, or change the
+    first line of "hol.ml" to give that explicitly, from
+
+        let hol_dir = ref (try Sys.getenv "HOLLIGHT_DIR" with Not_found -> Sys.getcwd());;
+
+    to, for example
+
+        let hol_dir = "/home/johnh/hol_light";;
+
+    or
+
+        let hol_dir = "/usr/share/hol";;
+
+Now for the alternative approach of building a standalone image. The
+Makefile will conveniently automate this process if you are running
+under Linux and have the 'ckpt' checkpointing program on your path.
+Simply type
+
+        make hol
+
+in the 'hol_light' directory, and a standalone HOL Light image called
+'hol' should be created. If desired you can move or copy this to some
+other place such as '~/bin' or '/usr/local/bin'. You then simply type
+'hol' (or './hol') to start the system up and start proving theorems.
+
+Note that although the HOL binary will work on its own, it does not
+pre-load all the source files. You will probably want to keep the
+sources available to be loaded later as needed (if you need additional
+mathematical theories or tools), so it's better to unpack the HOL
+distribution somewhere permanent before doing "make hol".
+
+If you later develop a large body of proofs or tools, you can save the
+augmented system using the command "self_destruct" (this is the same
+approach as in the Makefile) rather than re-load each time.
+
+If you don't have 'ckpt' installed it can be obtained here:
+
+        http://www.cs.wisc.edu/~zandy/ckpt/
+
+For operating systems other than Linux, you may find a suitable
+alternative to 'ckpt' on the following page; you can then simply change
+the "ckpt" command name in the HOL Light Makefile as appropriate.
+Unfortunately I don't know of any such checkpointing program for
+Windows; I would be glad to hear of one.
+
+        http://www.checkpointing.org
+
+The directory "Examples" may give an idea of the kind of thing that
+might be done, or may be useful in further work.
+
+Thanks to Carl Witty for help with Camlp4 porting and advice on
+checkpointing programs.
+
+        *       *       *       *       *       *       *       *
+
+[*] HOL Light uses the OCaml 'num' library for multiple-precision
+rationals. On many platforms, including Linux and native Windows, this
+will be loaded automatically by the HOL root file 'hol.ml'. However,
+OCaml on some platforms (notably Cygwin) does not support dynamic
+loading, hence the need to use 'ocamlnum', a toplevel with the 'num'
+library already installed. This is normally created as part of the
+OCaml build, but if not, you can make your own with:
+
+    ocamlmktop -o ocamlnum nums.cma

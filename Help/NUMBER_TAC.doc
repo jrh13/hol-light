@@ -1,0 +1,42 @@
+\DOC NUMBER_TAC
+
+\TYPE {NUMBER_TAC : tactic}
+
+\SYNOPSIS
+Automated tactic for elementary divisibility properties over the natural
+numbers.
+
+\DESCRIBE
+The tactic {NUMBER_TAC} is a partly heuristic tactic that can often
+automatically prove elementary ``divisibility'' properties of the natural
+numbers. The precise subset that is dealt with is difficult to describe
+rigorously, but many universally quantified combinations of {divides},
+{coprime}, {gcd} and congruences {(x == y) (mod n)} can be proved
+automatically, as well as some existentially quantified goals. See the
+documentation for {INTEGER_RULE} for a larger set of representative examples.
+
+\FAILURE
+Fails if the goal is not accessible to the methods used.
+
+\EXAMPLE
+A typical elementary divisibility property is that if two numbers are congruent 
+with respect to two coprime (without non-trivial common factors) moduli, then 
+they are congruent with respect to their product:
+{
+  # g `!m n x y:num. (x == y) (mod m) /\ (x == y) (mod n) /\ coprime(m,n) 
+                     ==> (x == y) (mod (m * n))`;;
+  ...
+}
+\noindent It can be solved automatically using {NUMBER_TAC}:
+{
+  # e NUMBER_TAC;;
+  ...
+  val it : goalstack = No subgoals
+}
+The analogous goal without the coprimality assumption will fail, and indeed the 
+goal would be false without it.
+
+\SEEALSO
+ARITH_TAC, INTEGER_TAC, NUMBER_RULE, NUM_RING.
+
+\ENDDOC

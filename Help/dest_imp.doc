@@ -1,0 +1,27 @@
+\DOC dest_imp
+
+\TYPE {dest_imp : term -> term * term}
+
+\SYNOPSIS
+Breaks apart an implication into antecedent and consequent.
+
+\DESCRIBE
+{dest_imp} is a term destructor for implications. Thus
+{
+   dest_imp `t1 ==> t2`
+}
+\noindent returns
+{
+   (`t1`,`t2`)
+}
+\FAILURE
+Fails with {dest_imp} if term is not an implication.
+
+\COMMENTS
+Previous version of {dest_imp} treats negations as an implication
+with {F} as the conclusion. This is renamed to {dest_neg_imp}.
+
+\SEEALSO
+mk_imp, is_imp, strip_imp, dest_neg_imp.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC dest_var
+
+\TYPE {dest_var : term -> string * hol_type}
+
+\SYNOPSIS
+Breaks apart a variable into name and type.
+
+\DESCRIBE
+{dest_var `var:ty`} returns {("var",`:ty`)}.
+
+\FAILURE
+Fails with {dest_var} if term is not a variable.
+
+\EXAMPLE
+{
+  # dest_var `x:num`;;
+  val it : string * hol_type = ("x", `:num`)
+}
+
+\SEEALSO
+mk_var, is_var, dest_const, dest_comb, dest_abs, name_of.
+
+\ENDDOC

@@ -1,0 +1,37 @@
+\DOC string_of_thm
+
+\TYPE {string_of_thm : thm -> string}
+
+\SYNOPSIS
+Converts a HOL theorem to a string representation.
+
+\DESCRIBE
+The call {string_of_thm th} produces a textual representation of the theorem
+{th} as a string, similar to what is printed automatically at the toplevel.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # string_of_thm ADD_CLAUSES;;
+  val it : string =
+    "|- (!n. 0 + n = n) /\\\n   (!m. m + 0 = m) /\\\n   (!m n. SUC m + n = SUC (m 
+  + n)) /\\\n   (!m n. m + SUC n = SUC (m + n))"
+
+  # print_string it;;
+  |- (!n. 0 + n = n) /\
+     (!m. m + 0 = m) /\
+     (!m n. SUC m + n = SUC (m + n)) /\
+     (!m n. m + SUC n = SUC (m + n))
+  val it : unit = ()
+}
+
+\COMMENTS
+The string may contain newlines for large terms, broken in a similar fashion to 
+automatic printing.
+
+\SEEALSO
+string_of_thm, string_of_type.
+
+\ENDDOC

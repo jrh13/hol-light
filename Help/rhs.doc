@@ -1,0 +1,23 @@
+\DOC rhs
+
+\TYPE {rhs : term -> term}
+
+\SYNOPSIS
+Returns the right-hand side of an equation.
+
+\DESCRIBE
+{rhs `t1 = t2`} returns {`t2`}.
+
+\FAILURE
+Fails with {rhs} if term is not an equality.
+
+\EXAMPLE
+{
+  # rhs `2 + 2 = 4`;;
+  val it : term = `4`
+}
+
+\SEEALSO
+dest_eq, lhs, rand.
+
+\ENDDOC

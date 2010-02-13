@@ -1,0 +1,19 @@
+\DOC infixes
+
+\TYPE {infixes : unit -> (string * (int * string)) list}
+
+\SYNOPSIS
+Lists the infixes currently recognized by the parser.
+
+\DESCRIBE
+The function {infixes} should be applied to the unit {()} and will then return
+a list of all the infixes currently recognized by the parser together with 
+their precedence and associativity (left or right).
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+get_infix_status, parse_as_infix, unparse_as_infix.
+
+\ENDDOC

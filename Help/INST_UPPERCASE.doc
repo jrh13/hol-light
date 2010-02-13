@@ -1,0 +1,54 @@
+\DOC INST
+
+\TYPE {INST : (term * term) list -> thm -> thm}
+
+\SYNOPSIS
+Instantiates free variables in a theorem.
+
+\DESCRIBE
+When {INST [t1,x1; ...; tn,xn]} is applied to a theorem, it gives a new
+theorem that systematically replaces free instances of each variable {xi} with
+the corresponding term {ti} in both assumptions and conclusion.
+{
+               A |- t
+   -----------------------------------  INST_TYPE [t1,x1;...;tn,xn]
+    A[t1,...,tn/x1,...,xn]
+        |- t[t1,...,tn/x1,...,xn]
+}
+Bound variables will be renamed if necessary to avoid capture. All variables 
+are substituted in parallel, so there is no problem if there is an overlap 
+between the terms {ti} and {xi}.
+
+\FAILURE
+Fails if any of the pairs {ti,xi} in the instantiation list has {xi} and {ti}
+with different types, or {xi} a non-variable. Multiple instances of the same
+{xi} in the list are not trapped, but only the first one will be used
+consistently.
+
+\EXAMPLE
+Here is a simple example
+{
+  # let th = SPEC_ALL ADD_SYM;;
+  val th : thm = |- m + n = n + m
+  # INST [`1`,`m:num`; `x:num`,`n:num`] th;;
+  val it : thm = |- 1 + x = x + 1
+}
+\noindent and here is one where bound variable renaming is needed.
+{
+  # let th = SPEC_ALL LE_EXISTS;;
+  val th : thm = |- m <= n <=> (?d. n = m + d)
+  # INST [`d:num`,`m:num`] th;;
+  val it : thm = |- d <= n <=> (?d'. n = d + d')
+}
+
+\USES
+This is the most efficient way to obtain instances of a theorem; though
+sometimes more convenient, {SPEC} and {SPECL} are significantly slower.
+
+\COMMENTS
+This is one of HOL Light's 10 primitive inference rules.
+
+\SEEALSO
+INST_TYPE, ISPEC, ISPECL, SPEC, SPECL.
+
+\ENDDOC

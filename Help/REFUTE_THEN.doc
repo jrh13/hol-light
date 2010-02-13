@@ -1,0 +1,49 @@
+\DOC REFUTE_THEN
+
+\TYPE {REFUTE_THEN : thm_tactic -> goal -> goalstate}
+
+\SYNOPSIS
+Assume the negation of the goal and apply theorem-tactic to it.
+
+\DESCRIBE
+The tactic {REFUTE_THEN ttac} applied to a goal {g}, assumes the negation of
+the goal and applies {ttac} to it and a similar goal with a conclusion of {F}. 
+More precisely, if the original goal {A ?- u} is unnegated and {ttac}'s action 
+is
+{
+    A ?- F
+   ========  ttac (ASSUME `~u`)
+    B ?- v
+}
+\noindent then we have
+{
+     A ?- u
+   ==============  REFUTE_THEN ttac
+     B ?- v
+}
+For example, if {ttac} is just {ASSUME_TAC}, this corresponds to a classic 
+`proof by contradiction':
+{                                  
+         A ?- u                        
+   =================  REFUTE_THEN ASSUME_TAC
+    A u {{~u}} ?- F                                   
+}                                                
+Whatever {ttac} may be, if the conclusion {u} of the goal is negated, the
+effect is the same except that the assumed theorem will not be double-negated,
+so the effect is the same as {DISCH_THEN}. 
+
+\FAILURE
+Never fails unless the underlying theorem-tactic {ttac} does.
+
+\USES
+Classical `proof by contradiction'.
+
+\COMMENTS
+When applied to an unnegated goal, this tactic embodies implicitly the 
+classical principle of `proof by contradiction', but for negated goals the 
+tactic is also intuitionistically valid.
+
+\SEEALSO
+BOOL_CASES_TAC, DISCH_THEN.
+
+\ENDDOC

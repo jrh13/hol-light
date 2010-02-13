@@ -1,0 +1,65 @@
+\DOC ONCE_ASM_REWRITE_TAC
+
+\TYPE {ONCE_ASM_REWRITE_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Rewrites a goal once including built-in rewrites and the goal's assumptions.
+
+\KEYWORDS
+tactic.
+
+\DESCRIBE
+{ONCE_ASM_REWRITE_TAC} behaves in the same way as {ASM_REWRITE_TAC},
+but makes one pass only through the term of the goal. The order in
+which the given theorems are applied is an implementation matter and
+the user should not depend on any ordering. See {GEN_REWRITE_TAC} for
+more information on rewriting a goal in HOL.
+
+\FAILURE
+{ONCE_ASM_REWRITE_TAC} does not fail and, unlike {ASM_REWRITE_TAC},
+does not diverge. The resulting tactic may not be valid, if the
+rewrites performed add new assumptions to the theorem eventually
+proved.
+
+\EXAMPLE
+The use of {ONCE_ASM_REWRITE_TAC} to control the amount of rewriting
+performed is illustrated on this goal:
+{
+  # g `a = b /\ b = c ==> (P a b <=> P c a)`;;
+  Warning: inventing type variables
+  Warning: Free variables in goal: P, a, b, c
+  val it : goalstack = 1 subgoal (1 total)
+
+  `a = b /\ b = c ==> (P a b <=> P c a)`
+
+  # e STRIP_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`a = b`]
+   1 [`b = c`]
+
+  `P a b <=> P c a`
+}
+The application of {ONCE_ASM_REWRITE_TAC} rewrites each applicable subterm just
+once:
+{
+  # e(ONCE_ASM_REWRITE_TAC[]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`a = b`]
+   1 [`b = c`]
+
+  `P b c <=> P c b`
+}
+
+\USES
+{ONCE_ASM_REWRITE_TAC} can be applied once or iterated as required to
+give the effect of {ASM_REWRITE_TAC}, either to avoid divergence or to
+save inference steps.
+
+\SEEALSO
+basic_rewrites, ASM_REWRITE_TAC, GEN_REWRITE_TAC, ONCE_ASM_REWRITE_TAC,
+ONCE_REWRITE_TAC, PURE_ASM_REWRITE_TAC, PURE_ONCE_ASM_REWRITE_TAC,
+PURE_ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBST_TAC.
+
+\ENDDOC

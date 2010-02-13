@@ -1,0 +1,22 @@
+\DOC COMB_CONV
+
+\TYPE {COMB_CONV : conv -> conv}
+
+\SYNOPSIS
+Applies a conversion to the two sides of an application.
+
+\DESCRIBE
+If {c} is a conversion such that {c `f`} returns {|- f = f'} and
+{c `x`} returns {|- x = x'}, then {COMB_CONV c `f x`} returns
+{|- f x = f' x'}. That is, the conversion {c} is applied to the two
+immediate subterms.
+
+\FAILURE
+Never fails when applied to the initial conversion. On application to the term, 
+it fails if conversion given as the argument does, or if the theorem returned
+by it is inappropriate.
+
+\SEEALSO
+BINOP_CONV, COMB2_CONV, LAND_CONV, RAND_CONV, RATOR_CONV
+
+\ENDDOC

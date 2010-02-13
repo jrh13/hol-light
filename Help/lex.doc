@@ -1,0 +1,40 @@
+\DOC lex
+
+\TYPE {lex : string list -> lexcode list}
+
+\SYNOPSIS
+Lexically analyze an input string.
+
+\DESCRIBE
+The function {lex} expects a list of single-character strings representing
+input (as produced by {explode}, for example) and analyzes it into a sequence
+of tokens according to HOL Light lexical conventions. A token is either
+{Ident "s"} or {Resword "s"}; in each case this encodes a string but in the
+latter case indicates that the string is a reserved word.
+
+Lexical analysis essentially regards any number of alphanumeric characters (see
+{isalnum}) or any number of symbolic characters (see {issymb}) as a single
+token, except that certain brackets (see {isbra}) are only allowed to be
+single-character tokens and other separators (see {issep}) can only be combined
+with multiple instances of themselves not other characters. Whitespace
+including spaces, tabs and newlines (see {isspace}) is eliminated and serves
+only to separate tokens that would otherwise be one. Comments introduced by the
+comment token (see {comment_token}) are removed.
+
+\FAILURE
+Fails if the input is highly malformed, e.g. contains illegal characters.
+
+\EXAMPLE
+{
+  # lex(explode "if p+1=2 then x + 1 else y - 1");;
+  val it : lexcode list =
+    [Resword "if"; Ident "p"; Ident "+"; Ident "1"; Ident "="; Ident "2";
+     Resword "then"; Ident "x"; Ident "+"; Ident "1"; Resword "else";
+     Ident "y"; Ident "-"; Ident "1"]
+}
+
+\SEEALSO
+comment_token, explode, isalnum, isbra, issep, isspace, issymb,
+is_reserved_word, parse_term, parse_type.
+
+\ENDDOC

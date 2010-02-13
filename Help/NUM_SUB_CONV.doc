@@ -1,0 +1,45 @@
+\DOC NUM_SUB_CONV
+
+\TYPE {NUM_SUB_CONV : term -> thm}
+
+\SYNOPSIS
+Proves what the cutoff difference of two natural number numerals is.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} and {m} are numerals (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_SUB_CONV `n - m`} returns the theorem:
+{
+   |- n - m = s
+}
+\noindent where {s} is the numeral that denotes the result of subtracting the 
+natural number denoted by {m} from the one denoted by {n}, returning zero for 
+all cases where {m} is greater than {n} (cutoff subtraction over the natural 
+numbers).
+
+\FAILURE
+{NUM_SUB_CONV tm} fails if {tm} is not of the form  {`n - m`}, where {n} and
+{m} are numerals.
+
+\EXAMPLE
+{
+  # NUM_SUB_CONV `4321 - 1234`;;
+  val it : thm = |- 4321 - 1234 = 3087
+
+  # NUM_SUB_CONV `77 - 88`;;
+  val it : thm = |- 77 - 88 = 0
+}
+
+\COMMENTS
+Note that subtraction over type {:num} is defined as this cutoff subtraction. 
+If you want a number system with negative numbers, use {:int} or {:real}.
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_PRE_CONV, NUM_REDUCE_CONV, NUM_RED_CONV, NUM_REL_CONV, NUM_SUC_CONV.
+
+\ENDDOC

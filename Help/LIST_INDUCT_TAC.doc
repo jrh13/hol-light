@@ -1,0 +1,99 @@
+\DOC LIST_INDUCT_TAC
+
+\TYPE {LIST_INDUCT_TAC : tactic}
+
+\SYNOPSIS
+Performs tactical proof by structural induction on lists.
+
+\KEYWORDS
+tactic, list, induction.
+
+\DESCRIBE
+{LIST_INDUCT_TAC} reduces a goal {A ?- !l. P[l]}, where {l} ranges over lists,
+to two subgoals corresponding to the base and step cases in a proof by
+structural induction on {l}. The induction hypothesis appears among the
+assumptions of the subgoal for the step case.  The specification of
+{LIST_INDUCT_TAC} is:
+{
+                     A ?- !l. P
+   =====================================================  LIST_INDUCT_TAC
+    A |- P[[]/l]   A u {{P[t/l]}} ?- P[CONS h t/l]
+}
+
+\FAILURE
+{LIST_INDUCT_TAC g} fails unless the conclusion of the goal {g} has the form
+{`!l. t`}, where the variable {l} has type {(ty)list} for some type {ty}.
+
+\EXAMPLE
+Many simple list theorems can be proved simply by list induction then just
+first-order reasoning (or even rewriting) with definitions of the operations
+involved. For example if we want to prove that mapping a composition of
+functions over a list is the same as successive mapping of the two functions:
+{
+  # g `!l f:A->B g:B->C. MAP (g o f) l = MAP g (MAP f l)`;;
+}
+\noindent we can start by list induction:
+{
+  # e LIST_INDUCT_TAC;;
+  val it : goalstack = 2 subgoals (2 total)
+
+   0 [`!f g. MAP (g o f) t = MAP g (MAP f t)`]
+
+  `!f g. MAP (g o f) (CONS h t) = MAP g (MAP f (CONS h t))`
+
+  `!f g. MAP (g o f) [] = MAP g (MAP f [])`
+}
+\noindent and each resulting subgoal is just solved at once by:
+{
+  # e(ASM_REWRITE_TAC[MAP; o_THM]);;
+}
+
+\COMMENTS
+Essentially the same effect can be had by {MATCH_MP_TAC list_INDUCT}. This does
+not subsequently break down the goal in such a convenient way, but gives more
+control over choice of variable. For example, starting with the same goal:
+{
+  # g `!l f:A->B g:B->C. MAP (g o f) l = MAP g (MAP f l)`;;
+}
+\noindent we get:
+{
+  # e(MATCH_MP_TAC list_INDUCT);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `(!f g. MAP (g o f) [] = MAP g (MAP f [])) /\
+   (!a0 a1.
+        (!f g. MAP (g o f) a1 = MAP g (MAP f a1))
+        ==> (!f g. MAP (g o f) (CONS a0 a1) = MAP g (MAP f (CONS a0 a1))))`
+}
+\noindent and after getting rid of some trivia:
+{
+  # e(REWRITE_TAC[MAP]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a0 a1.
+       (!f g. MAP (g o f) a1 = MAP g (MAP f a1))
+       ==> (!f g.
+                CONS ((g o f) a0) (MAP (g o f) a1) =
+                CONS (g (f a0)) (MAP g (MAP f a1)))`
+}
+\noindent we can carefully choose the variable names:
+{
+  # e(MAP_EVERY X_GEN_TAC [`k:A`; `l:A list`]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `(!f g. MAP (g o f) l = MAP g (MAP f l))
+   ==> (!f g.
+            CONS ((g o f) k) (MAP (g o f) l) =
+            CONS (g (f k)) (MAP g (MAP f l)))`
+}
+\noindent This kind of control can be useful when the sub-proof is more
+challenging. Here of course the same simple pattern as before works:
+{
+  # e(SIMP_TAC[o_THM]);;
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+INDUCT_TAC, MATCH_MP_TAC, WF_INDUCT_TAC.
+
+\ENDDOC

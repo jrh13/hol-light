@@ -1,0 +1,17 @@
+\DOC the_interface
+
+\TYPE {the_interface : (string * (string * hol_type)) list ref}
+
+\SYNOPSIS
+List of active interface mappings.
+
+\DESCRIBE
+HOL Light allows the same identifier to map to one or more underlying constants 
+using an overloading mechanism with resolution based on type. The reference 
+variable {the_interface} stores the current list of all interface mappings. 
+
+\SEEALSO
+make_overloadable, overload_interface, override_interface, prioritize_overload,
+reduce_interface, remove_interface, the_interface, the_overload_skeletons.
+
+\ENDDOC

@@ -1,0 +1,17 @@
+\DOC C
+
+\TYPE {C : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c}
+
+\SYNOPSIS
+Permutes first two arguments to curried function: {C f x y} = {f y x}.
+
+\KEYWORDS
+combinator, permute.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+F_F, I, K, W.
+
+\ENDDOC

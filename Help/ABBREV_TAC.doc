@@ -1,0 +1,42 @@
+\DOC ABBREV_TAC
+
+\TYPE {ABBREV_TAC : term -> (string * thm) list * term -> goalstate}
+
+\SYNOPSIS
+Tactic to introduce an abbreviation.
+
+\DESCRIBE
+The tactic {ABBREV_TAC `x = t`} abbreviates any instances of the term {t} in
+the goal (assumptions or conclusion) with {x}, and adds a new assumption {t =
+x}. (Reversed so that rules like {ASM_REWRITE_TAC} will not immediately expand
+it again.) The LHS may be of the form {f x} in which case abstraction will
+happen first.
+
+\FAILURE
+Fails unless the left-hand side is a variable or a variable applied to a list
+of variable arguments.
+
+\EXAMPLE
+{
+  # g `(12345 + 12345) + f(12345 + 12345) = f(12345 + 12345)`;;
+  Warning: Free variables in goal: f
+  val it : goalstack = 1 subgoal (1 total)
+
+  `(12345 + 12345) + f (12345 + 12345) = f (12345 + 12345)`
+
+  #  e(ABBREV_TAC `n = 12345 + 12345`);;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`12345 + 12345 = n`]
+
+  `n + f n = f n`
+}
+
+\USES
+Convenient for abbreviating large and unwieldy expressions as a sort of `local
+definition'.
+
+\SEEALSO
+EXPAND_TAC.
+
+\ENDDOC

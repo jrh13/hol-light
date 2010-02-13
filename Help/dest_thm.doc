@@ -1,0 +1,23 @@
+\DOC dest_thm
+
+\TYPE {dest_thm : thm -> term list * term}
+
+\SYNOPSIS
+Breaks a theorem into assumption list and conclusion.
+
+\DESCRIBE
+{dest_thm (t1,...,tn |- t)} returns {([`t1`;...;`tn`],`t`)}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # dest_thm (ASSUME `1 = 0`);;
+  val it : term list * term = ([`1 = 0`], `1 = 0`)
+}
+
+\SEEALSO
+concl, hyp.
+
+\ENDDOC

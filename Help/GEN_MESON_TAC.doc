@@ -1,0 +1,37 @@
+\DOC GEN_MESON_TAC
+
+\TYPE {GEN_MESON_TAC : int -> int -> int -> thm list -> tactic}
+
+\SYNOPSIS
+First-order proof search with specified search limits and increment.
+
+\DESCRIBE
+This is a slight generalization of the usual tactics for first-order proof 
+search. Normally {MESON}, {MESON_TAC} and {ASM_MESON_TAC} explore the search
+space by successively increasing a size limit from 0, increasing it by 1 per 
+step and giving up when a depth of 50 is reached. The more general tactic
+{GEN_MESON_TAC} allows the user to specify the starting, finishing and stepping 
+value, but is otherwise identical to {ASM_MESON_TAC}. In fact, that is defined 
+as:
+{
+  # let ASM_MESON_TAC = GEN_MESON_TAC 0 50 1;;
+}
+
+\FAILURE
+If the goal is unprovable, {GEN_MESON_TAC} will fail, though not necessarily in 
+a feasible amount of time.
+
+\USES
+Normally, the defaults built into {MESON_TAC} and {ASM_MESON_TAC} are
+reasonably effective. However, very occasionally a goal exhibits a small search
+space yet still requires a deep proof, so you may find {GEN_MESON_TAC} with a
+larger ``maximum'' value than 50 useful. Another potential use is to start the
+search at a depth that you know will succeed, to reduce the search time when a
+proof is re-run. However, the inconvenience of doing this is seldom repaid by a
+dramatic improvement in performance, since exploration is normally at least 
+exponential with the size bound.
+
+\SEEALSO
+ASM_MESON_TAC, MESON, MESON_TAC.
+
+\ENDDOC

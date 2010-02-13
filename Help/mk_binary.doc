@@ -1,0 +1,34 @@
+\DOC mk_binary
+
+\TYPE {mk_binary : string -> term * term -> term}
+
+\SYNOPSIS
+Constructs an instance of a named monomorphic binary operator.
+
+\DESCRIBE
+The call {mk_binary s (l,r)} constructs a binary application {(op l) r} where
+{op} is the monomorphic constant with name {s}. Note that it will in general
+{{\em not}} work if the constant is polymorphic.
+
+\FAILURE
+If there is no constant at all with name {s}, or if the constant is polymorphic
+and the terms do not match its most general type.
+
+\EXAMPLE
+This case works fine:
+{
+  # mk_binary "+" (`1`,`2`);;
+  val it : term = `1 + 2`
+}
+\noindent but here we hit the monomorphism restriction:
+{
+  # mk_binary "=" (`a:A`,`b:A`);;
+  val it : term = `a = b`
+  # mk_binary "=" (`1`,`2`);;
+  Exception: Failure "mk_binary".
+}
+
+\SEEALSO
+dest_binary, is_binary, mk_binop.
+
+\ENDDOC

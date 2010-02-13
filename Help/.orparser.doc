@@ -1,0 +1,30 @@
+\DOC ||
+
+\TYPE {(||) : ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b}
+
+\SYNOPSIS
+Produce alternative composition of two parsers.
+
+\DESCRIBE
+If {p1} and {p2} are two parsers, {p1 || p2} is a new parser that first tries
+to parse the input using {p1}, and if that fails with exception {Noparse},
+tries {p2} instead. The output is whatever parse result was achieved together
+with the unparsed input.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+This is one of a suite of combinators for manipulating ``parsers''. A parser is
+simply a function whose OCaml type is some instance of
+{:('a)list -> 'b * ('a)list}. The function should take a list of objects of
+type {:'a} (e.g. characters or tokens), parse as much of it as possible from
+left to right, and return a pair consisting of the object derived from parsing
+(e.g. a term or a special syntax tree) and the list of elements that were not
+processed.
+
+\SEEALSO
+++, >>, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
+possibly, rightbin, some.
+
+\ENDDOC

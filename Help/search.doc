@@ -1,0 +1,74 @@
+\DOC search
+
+\TYPE {search : term list -> (string * thm) list}
+
+\SYNOPSIS
+Search the database of theorems according to query patterns.
+
+\DESCRIBE
+The {search} function is intended to locate a desired theorem by searching
+based on term patterns or names. The database of theorems to be searched is
+held in {theorems}, which initially contains all theorems individually bound to
+OCaml identifiers in the main system, and can be augmented or otherwise
+modified by the user. (See in particular the update script in
+{update_database.ml} which creates a database according to the current
+OCaml environment.)
+
+The input to {search} is a list of terms that are treated as patterns.
+Normally, a term {pat} is interpreted as a search for `a theorem with any
+subterm of the form {pat}', e.g. a pattern {x + y} for any subterm of the form
+{s + t}. However, several syntax functions create composite terms that are
+interpreted specially by {search}:
+
+\begin{{itemize}}
+
+\item {omit pat} --- Search for theorems {{\em not}} satisfying {pat}
+
+\item {exactly `t`} --- Search for theorems with subterms alpha-equivalent to
+{t} (not just of the general form {t})
+
+\item {name "str"} --- Search for theorems whose name contains {str} as a
+substring.
+
+\end{{itemize}}
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Search for theorems with a subterm of the form {s <= t / u}:
+{
+  # search [`x <= y / z`];;
+  val it : (string * thm) list =
+    [("RAT_LEMMA4",
+      |- &0 < y1 /\ &0 < y2 ==> (x1 / y1 <= x2 / y2 <=> x1 * y2 <= x2 * y1));
+     ("REAL_LE_DIV", |- !x y. &0 <= x /\ &0 <= y ==> &0 <= x / y);
+     ("REAL_LE_DIV2_EQ", |- !x y z. &0 < z ==> (x / z <= y / z <=> x <= y));
+     ("REAL_LE_RDIV_EQ", |- !x y z. &0 < z ==> (x <= y / z <=> x * z <= y));
+     ("SUM_BOUND_GEN",
+      |- !s t b.
+             FINITE s /\ ~(s = {{}}) /\ (!x. x IN s ==> f x <= b / &(CARD s))
+             ==> sum s f <= b)]
+}
+Search for theorems whose name contains {"CROSS"} and whose conclusion involves
+the cardinality function {CARD}:
+{
+  # search [name "CROSS"; `CARD`];;
+  Warning: inventing type variables
+  val it : (string * thm) list =
+    [("CARD_CROSS",
+      |- !s t. FINITE s /\ FINITE t ==> CARD (s CROSS t) = CARD s * CARD t)]
+}
+Search for theorems that involve finiteness of the image of a set under a
+function, but also do not involve logical equivalence:
+{
+  # search [`FINITE(IMAGE f s)`; omit `(<=>)`];;
+  Warning: inventing type variables
+  val it : (string * thm) list =
+    [("FINITE_IMAGE", |- !f s. FINITE s ==> FINITE (IMAGE f s))]
+}
+
+\SEEALSO
+theorems.
+
+\ENDDOC

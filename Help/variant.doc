@@ -1,0 +1,43 @@
+\DOC variant
+
+\TYPE {variant : term list -> term -> term}
+
+\SYNOPSIS
+Modifies a variable name to avoid clashes.
+
+\DESCRIBE
+The call {variant avoid v} returns a variant of {v}, with the name changed by 
+adding primes as much as necessary to avoid clashing with any free variables of 
+the terms in the list {avoid}. Usually {avoid} is just a list of variables, in 
+which case {v} is renamed so as to be different from all of them.
+
+The exact form of the variable name should not be relied on, except that the
+original variable will be returned unmodified unless it is free in some term in
+the {avoid} list.
+
+\FAILURE
+{variant l t} fails if any term in the list {l} is not a variable or if
+{t} is neither a variable nor a constant.
+
+\EXAMPLE
+The following shows a few typical cases:
+{
+  # variant [`y:bool`; `z:bool`] `x:bool`;;
+  val it : term = `x`
+
+  # variant [`x:bool`; `x':num`; `x'':num`] `x:bool`;;
+  val it : term = `x'`
+
+  # variant [`x:bool`; `x':bool`; `x'':bool`] `x:bool`;;
+  val it : term = `x'''`
+}
+
+\USES
+The function {variant} is extremely useful for complicated derived rules which
+need to rename variables to avoid free variable capture while still making the
+role of the variable obvious to the user.
+
+\SEEALSO
+genvar, hide_constant.
+
+\ENDDOC

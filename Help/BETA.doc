@@ -1,0 +1,42 @@
+\DOC BETA
+
+\TYPE {BETA : term -> thm}
+
+\SYNOPSIS
+Special primitive case of beta-reduction.
+
+\DESCRIBE
+Given a term of the form {(\x. t[x]) x}, i.e. a lambda-term applied to exactly 
+the same variable that occurs in the abstraction, {BETA} returns the theorem
+{|- (\x. t[x]) x = t[x]}.
+ 
+\FAILURE
+Fails if the term is not of the required form.
+
+\EXAMPLE
+{
+  # BETA `(\n. n + 1) n`;;
+  val it : thm = |- (\n. n + 1) n = n + 1
+}
+\noindent Note that more general beta-reduction is not handled by {BETA}, but 
+will be by {BETA_CONV}:
+{
+  # BETA `(\n. n + 1) m`;;
+  Exception: Failure "BETA: not a trivial beta-redex".
+  # BETA_CONV `(\n. n + 1) m`;;
+  val it : thm = |- (\n. n + 1) m = m + 1
+}
+
+\USES
+This is more efficient than {BETA_CONV} in the special case in which it works, 
+because no traversal and replacement of the body of the abstraction is needed.
+
+\COMMENTS
+This is one of HOL Light's 10 primitive inference rules. The more general case
+of beta-reduction, where a lambda-term is applied to any term, is implemented
+by {BETA_CONV}, derived in terms of this primitive.
+
+\SEEALSO
+BETA_CONV.
+
+\ENDDOC

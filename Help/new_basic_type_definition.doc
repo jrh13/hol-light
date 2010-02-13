@@ -1,0 +1,54 @@
+\DOC new_basic_type_definition
+
+\TYPE {new_basic_type_definition : string -> string * string -> thm -> thm * thm}
+
+\SYNOPSIS
+Introduces a new type in bijection with a nonempty subset of an existing type.
+
+\DESCRIBE
+The call {new_basic_type_definition "ty" ("mk","dest") th} where {th} is
+a theorem of the form {|- P x} (say {x} has type {rep}) will introduce a new
+type called {ty} plus two new constants {mk:rep->ty} and {dest:ty->rep},
+and return two theorems that together assert that {mk} and {dest} establish a
+bijection between the universe of the new type {ty} and the subset of the type
+{rep} identified by the predicate {P}: {|- mk(dest a) = a} and
+{|- P r <=> dest(mk r) = r}. If the theorem involves type variables {A1,...,An}
+then the new type will be an $n$-ary type constructor rather than a basic type.
+The theorem is needed to ensure that that set is nonempty; all types in HOL are
+nonempty.
+
+\FAILURE
+Fails if any of the type or constant names is already in use, if the theorem
+has a nonempty list of hypotheses, if the conclusion of the theorem is not a
+combination, or if its rator {P} contains free variables.
+
+\EXAMPLE
+Here we define a basic type with 32 elements:
+{
+  # let th = ARITH_RULE `(\x. x < 32) 0`;;
+  val th : thm = |- (\x. x < 32) 0
+  # let absth,repth = new_basic_type_definition "32" ("mk_32","dest_32") th;;
+  val absth : thm = |- mk_32 (dest_32 a) = a
+  val repth : thm = |- (\x. x < 32) r <=> dest_32 (mk_32 r) = r
+}
+\noindent and here is a declaration of a type of finite sets over a base type,
+a unary type constructor:
+{
+  # let th = CONJUNCT1 FINITE_RULES;;
+  val th : thm = |- FINITE {{}}
+
+  # let tybij = new_basic_type_definition "fin" ("mk_fin","dest_fin") th;;
+  val tybij : thm * thm =
+    (|- mk_fin (dest_fin a) = a, |- FINITE r <=> dest_fin (mk_fin r) = r)
+}
+\noindent so now types like {:(num)fin} make sense.
+
+\COMMENTS
+This is the primitive principle of type definition in HOL Light, but other
+functions like {define_type} or {new_type_definition} are usually more
+convenient.
+
+\SEEALSO
+define_type, new_type_definition.
+
+\ENDDOC

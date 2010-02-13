@@ -1,0 +1,26 @@
+\DOC mk_neg
+
+\TYPE {mk_neg : term -> term}
+
+\SYNOPSIS
+Constructs a logical negation.
+
+\DESCRIBE
+{mk_neg `t`} returns {`~t`}.
+
+\FAILURE
+Fails with {mk_neg} unless {t} is of type {bool}.
+
+\EXAMPLE
+{
+  # mk_neg `p /\ q`;;
+  val it : term = `~(p /\ q)`
+
+  # mk_neg `~p`;;
+  val it : term = `~ ~p`
+}
+
+\SEEALSO
+dest_neg, is_neg.
+
+\ENDDOC

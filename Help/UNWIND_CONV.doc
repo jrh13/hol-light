@@ -1,0 +1,37 @@
+\DOC UNWIND_CONV
+
+\TYPE {UNWIND_CONV : term -> thm}
+
+\SYNOPSIS
+Eliminates existentially quantified variables that are equated to something.
+
+\KEYWORDS
+conversion.
+
+\DESCRIBE
+The conversion {UNWIND_CONV}, applied to a formula with one or more existential
+quantifiers, eliminates any existential quantifiers where the body contains a
+conjunct equating its variable to some other term (with that variable not free
+in it).
+
+\FAILURE
+{UNWIND_CONV tm} fails if {tm} is not reducible according to that description.
+
+\EXAMPLE
+{
+  # UNWIND_CONV `?a b c d. b = 7 /\ 2 = d /\ a + b + c + d = 97`;;
+  val it : thm =
+    |- (?a b c d. b = 7 /\ 2 = d /\ a + b + c + d = 97) <=>
+       (?a c. a + 7 + c + 2 = 97)
+
+  # UNWIND_CONV `?w x y z. w = z /\ x = 1 /\ x + y = z /\ y = 42`;;
+  val it : thm = |- (?w x y z. w = z /\ x = 1 /\ x + y = z /\ y = 42) <=> T
+
+  # UNWIND_CONV `x = 2`;;
+  Exception: Failure "CHANGED_CONV".
+}
+
+\SEEALSO
+FORALL_UNWIND_CONV.
+
+\ENDDOC

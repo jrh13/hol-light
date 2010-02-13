@@ -1,0 +1,53 @@
+\DOC vfree_in
+
+\TYPE {vfree_in : term -> term -> bool}
+
+\SYNOPSIS
+Teste whether a variable (or constant) occurs free in a term.
+
+\DESCRIBE
+The call {vfree_in v t}, where {v} is a variable (or constant, though this is 
+not usually exploited) and {t} any term, tests whether {v} occurs free in {t},
+and returns {true} if so, {false} if not. This is functionally equivalent to
+{mem v (frees t)} but may be more efficient because it never constructs the
+list of free variables explicitly.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Here's a simple example:
+{
+  # vfree_in `x:num` `x + y + 1`;;
+  val it : bool = true
+
+  # vfree_in `x:num` `x /\ y /\ z`;;
+  val it : bool = false
+}
+To see how using {vfree_in} can be more efficient than examining the free 
+variable list explicitly, consider a huge term with one free and one
+bound variable: 
+{ 
+
+  # let tm = mk_abs(`p:bool`,funpow 17 (fun s -> mk_conj(s,s)) `p /\ q`);;
+  ....
+}
+\noindent It takes an appreciable time to get the list of free variables:
+{
+  # time frees tm;;
+  CPU time (user): 0.31
+  val it : term list = [`q`]
+}
+\noindent yet we can test if {p} or {q} is free almost instantaneously. Only a 
+little of the term needs to be traversed to find the answer (just one level in 
+the case of {p}, since it is bound at the outer term constructor).
+{
+  #  time (vfree_in `q:bool`) tm;;
+  CPU time (user): 0.
+  val it : bool = true
+}
+
+\SEEALSO
+free_in, frees, freesin.
+
+\ENDDOC

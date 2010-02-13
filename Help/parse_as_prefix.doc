@@ -1,0 +1,19 @@
+\DOC parse_as_prefix
+
+\TYPE {parse_as_prefix : string -> unit}
+
+\SYNOPSIS
+Gives an identifier prefix status.
+
+\DESCRIBE
+Certain identifiers {c} have prefix status, meaning that combinations of the 
+form {c f x} will be parsed as {c (f x)} rather than the usual {(c f) x}. The 
+call {parse_as_prefix "c"} adds {c} to the list of such identifiers.
+
+\FAILURE
+Never fails, even if the string already has prefix status.
+
+\SEEALSO
+is_prefix, prefixes, unparse_as_prefix.
+
+\ENDDOC

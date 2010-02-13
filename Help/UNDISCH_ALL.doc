@@ -1,0 +1,31 @@
+\DOC UNDISCH_ALL
+
+\TYPE {UNDISCH_ALL : thm -> thm}
+
+\SYNOPSIS
+Iteratively undischarges antecedents in a chain of implications.
+
+\KEYWORDS
+rule, undischarge, antecedent.
+
+\DESCRIBE
+{
+    A |- t1 ==> ... ==> tn ==> t
+   ------------------------------  UNDISCH_ALL
+        A, t1, ..., tn |- t
+}
+
+\FAILURE
+Unlike {UNDISCH}, {UNDISCH_ALL} will, when called on something other than an
+implication, return its argument unchanged rather than failing.
+
+\EXAMPLE
+{
+  # UNDISCH_ALL(TAUT `p ==> q ==> r ==> p /\ q /\ r`);;
+  val it : thm = p, q, r |- p /\ q /\ r
+}
+
+\SEEALSO
+DISCH, DISCH_ALL, DISCH_TAC, DISCH_THEN, STRIP_TAC, UNDISCH, UNDISCH_TAC.
+
+\ENDDOC

@@ -1,0 +1,7 @@
+(*
+ * Original HOL4 code for satisfiability testing by Mike Gordon (2004)
+ * DIMACS cnf parsing code improved by Ken Friis Larsen (2004?)
+ * MiniSat proof reconstruction and HOL Light port by Hasan Amjad (2005-6)
+ * Implicit definitional CNF and minor improvements by John Harrison (2006-7)
+ * zChaff to MiniSat proof translator by Hasan Amjad (2007)
+ *)

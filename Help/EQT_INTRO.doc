@@ -1,0 +1,30 @@
+\DOC EQT_INTRO
+
+\TYPE {EQT_INTRO : thm -> thm}
+
+\SYNOPSIS
+Introduces equality with {T}.
+
+\KEYWORDS
+rule, truth.
+
+\DESCRIBE
+{
+      A |- tm
+   ---------------  EQF_INTRO
+    A |- tm <=> T
+}
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # EQT_INTRO (REFL `2`);;
+  val it : thm = |- 2 = 2 <=> T
+}
+
+\SEEALSO
+EQF_ELIM, EQF_INTRO, EQT_ELIM.
+
+\ENDDOC

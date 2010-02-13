@@ -1,0 +1,135 @@
+\DOC define_type
+
+\TYPE {define_type : string -> thm * thm}
+
+\SYNOPSIS
+Automatically define user-specified inductive data types.
+
+\DESCRIBE
+The function {define_type} automatically defines an inductive data type or a 
+mutually inductive family of them. These may optionally contain nested 
+instances of other inductive data types. The function returns two theorems that 
+together identify the type up to isomorphism. The input is just a string 
+indicating the desired pattern of recursion. The simplest case where we define 
+a single type is:
+{
+   "op = C1 ty ... ty | C2 ty ... ty | ... | Cn ty ... ty"
+}
+\noindent where {op} is the name of the type constant or type operator to be
+defined, {C1}, ..., {Cn} are identifiers, and each {ty} is either a (logical)
+type expression valid in the current theory (in which case {ty} must not
+contain {op}) or just the identifier "{op}' itself. 
+
+A string of this form describes an n-ary type operator {op}, where n is the
+number of distinct type variables in the types {ty} on the right hand side of
+the equation.  If n is zero then {op} is a type constant; otherwise {op} is an
+n-ary type operator.  The type described by the specification has {n} distinct
+constructors {C1}, ..., {Cn}.  Each constructor {Ci} is a function that takes
+arguments whose types are given by the associated type expressions {ty} in the
+specification. If one or more of the type expressions {ty} is the type {op}
+itself, then the equation specifies a recursive data type.  In any
+specification, at least one constructor must be non-recursive, i.e. all its
+arguments must have types which already exist in the current theory.
+
+Each of the types {ty} above may be built from the type being defined using 
+other inductive type operators already defined, e.g. {list}. Moreover, one can 
+actually have a mutually recursive family of types, where the format is a 
+sequence of specifications in the above form separated by semicolons:
+{
+  "op1 = C1_1 ty ... ty | C1_2 ty ... ty | ... | C1_n1 ty ... ty;
+   op2 = C2_1 ty ... ty | ... | C2_n2 ty ... ty;
+   ...
+   opk = Ck_1 ty ... ty | ... | ... | Ck_nk ty ... ty"
+}
+
+Given a type specification of the form described above, {define_type} makes an
+appropriate type definition for the type operator or type operators.  It then
+makes appropriate definitions for the constants {Ci_j} and automatically proves 
+and returns two theorems that characterize the type up to isomorphism. Roughly, 
+the first theorem allows one to prove properties over the new (family of) types 
+by (mutual) induction, while the latter allows one to defined functions by 
+recursion. Rather than presenting these in full generality, it is probably 
+easier to consider some simple examples.
+
+\FAILURE
+The evaluation fails if one of the types or constructor constants is already 
+defined, or if there are certain improper kinds of recursion, e.g. involving 
+function spaces of one of the types being defined.
+
+\EXAMPLE
+The following call to {define_type} defines {tri} to be a simple enumerated
+type with exactly three distinct values:
+{
+  # define_type "tri = ONE | TWO | THREE";;
+  val it : thm * thm =
+    (|- !P. P ONE /\ P TWO /\ P THREE ==> (!x. P x),
+     |- !f0 f1 f2. ?fn. fn ONE = f0 /\ fn TWO = f1 /\ fn THREE = f2)
+}
+\noindent The theorem returned is a degenerate `primitive recursion' theorem
+for the concrete type {tri}.  An example of a recursive type that can be
+defined using {define_type} is a type of binary trees:
+{
+  # define_type "btree = LEAF A | NODE btree btree";;
+  val it : thm * thm =
+    (|- !P. (!a. P (LEAF a)) /\ (!a0 a1. P a0 /\ P a1 ==> P (NODE a0 a1))
+            ==> (!x. P x),
+     |- !f0 f1.
+            ?fn. (!a. fn (LEAF a) = f0 a) /\
+                 (!a0 a1. fn (NODE a0 a1) = f1 a0 a1 (fn a0) (fn a1)))
+}
+\noindent The theorem returned by {define_type} in this case asserts the unique
+existence of functions defined by primitive recursion over labelled binary
+trees. For an example of nested recursion, here we use the type of lists in a 
+nested fashion to define a type of first-order terms:
+{
+  # define_type "term = Var num | Fn num (term list)";;
+  val it : thm * thm =
+    (|- !P0 P1.
+            (!a. P0 (Var a)) /\
+            (!a0 a1. P1 a1 ==> P0 (Fn a0 a1)) /\
+            P1 [] /\
+            (!a0 a1. P0 a0 /\ P1 a1 ==> P1 (CONS a0 a1))
+            ==> (!x0. P0 x0) /\ (!x1. P1 x1),
+     |- !f0 f1 f2 f3.
+            ?fn0 fn1.
+                (!a. fn1 (Var a) = f0 a) /\
+                (!a0 a1. fn1 (Fn a0 a1) = f1 a0 a1 (fn0 a1)) /\
+                fn0 [] = f2 /\
+                (!a0 a1. fn0 (CONS a0 a1) = f3 a0 a1 (fn1 a0) (fn0 a1)))
+}
+\noindent and here we have an example of mutual recursion, defining syntax 
+trees for commands and expressions for a hypothetical programming language:
+{
+  # define_type "command = Assign num expression 
+                         | Ite expression command command;
+                 expression = Variable num 
+                            | Constant num
+                            | Plus expression expression
+                            | Valof command";;
+  val it : thm * thm =
+    (|- !P0 P1.
+            (!a0 a1. P1 a1 ==> P0 (Assign a0 a1)) /\
+            (!a0 a1 a2. P1 a0 /\ P0 a1 /\ P0 a2 ==> P0 (Ite a0 a1 a2)) /\
+            (!a. P1 (Variable a)) /\
+            (!a. P1 (Constant a)) /\
+            (!a0 a1. P1 a0 /\ P1 a1 ==> P1 (Plus a0 a1)) /\
+            (!a. P0 a ==> P1 (Valof a))
+            ==> (!x0. P0 x0) /\ (!x1. P1 x1),
+     |- !f0 f1 f2 f3 f4 f5.
+            ?fn0 fn1.
+                (!a0 a1. fn0 (Assign a0 a1) = f0 a0 a1 (fn1 a1)) /\
+                (!a0 a1 a2.
+                     fn0 (Ite a0 a1 a2) =
+                     f1 a0 a1 a2 (fn1 a0) (fn0 a1) (fn0 a2)) /\
+                (!a. fn1 (Variable a) = f2 a) /\
+                (!a. fn1 (Constant a) = f3 a) /\
+                (!a0 a1. fn1 (Plus a0 a1) = f4 a0 a1 (fn1 a0) (fn1 a1)) /\
+                (!a. fn1 (Valof a) = f5 a (fn0 a)))
+}
+
+\SEEALSO
+INDUCT_THEN, new_recursive_definition, new_type_abbrev, prove_cases_thm,
+prove_constructors_distinct, prove_constructors_one_one, prove_induction_thm,
+prove_rec_fn_exists.
+
+\ENDDOC

@@ -1,0 +1,43 @@
+\DOC instantiate
+
+\TYPE {instantiate : instantiation -> term -> term}
+
+\SYNOPSIS
+Apply a higher-order instantiation to a term.
+
+\DESCRIBE
+The call {instantiate i t}, where {i} is an instantiation as returned by
+{term_match}, will perform the instantiation indicated by {i} in the term {t}:
+types and terms will be instantiated and the beta-reductions that are part of
+higher-order matching will be applied.
+
+\FAILURE
+Should never fail on a valid instantiation.
+
+\EXAMPLE
+We first compute an instantiation:
+{
+  # let t = `(!x. P x) <=> ~(?x. P x)`;;
+  Warning: inventing type variables
+  val t : term = `(!x. P x) <=> ~(?x. P x)`
+
+  # let i = term_match [] (lhs t) `!p. prime(p) ==> p = 2 \/ ODD(p)`;;
+  val i : instantiation =
+    ([(1, `P`)], [(`\p. prime p ==> p = 2 \/ ODD p`, `P`)],
+     [(`:num`, `:?61195`)])
+}
+\noindent and now apply it. Notice that the type variable name is not
+corrected, as is done inside {PART_MATCH}:
+{
+  # instantiate i t;;
+  val it : term =
+    `(!x. prime x ==> x = 2 \/ ODD x) <=> ~(?x. prime x ==> x = 2 \/ ODD x)`
+}
+
+\COMMENTS
+This is probably not useful for most users.
+
+\SEEALSO
+compose_insts, INSTANTIATE, INSTANTIATE_ALL, inst_goal, PART_MATCH, term_match.
+
+\ENDDOC

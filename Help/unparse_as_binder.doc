@@ -1,0 +1,35 @@
+\DOC unparse_as_binder
+
+\TYPE {unparse_as_binder : string -> unit}
+
+\SYNOPSIS
+Stops the quotation parser from treating a name as a binder.
+
+\DESCRIBE
+Certain identifiers {c} have binder status, meaning that {`c x. y`} is parsed 
+as a shirthand for {`(c) (\x. y)'}. The call {unparse_as_binder "c"} will 
+remove {c} from the list of binders if it is there.
+
+\FAILURE
+Never fails, even if the string was not a binder.
+
+\EXAMPLE
+{
+  # `!x. x < 2`;;
+  val it : term = `!x. x < 2`
+
+  # unparse_as_binder "!";;
+  val it : unit = ()
+  # `!x. x < 2`;;
+  Exception: Failure "Unexpected junk after term".
+}
+
+\COMMENTS
+Removing binder status for the pre-existing binders like the quantifiers should 
+only be done with great care, since it can cause other parser invocations to 
+break.
+
+\SEEALSO
+binders, parses_as_binder, parse_as_binder.
+
+\ENDDOC

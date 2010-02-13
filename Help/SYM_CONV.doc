@@ -1,0 +1,30 @@
+\DOC SYM_CONV
+
+\TYPE {SYM_CONV : term -> thm}
+
+\SYNOPSIS
+Interchanges the left and right-hand sides of an equation.
+
+\KEYWORDS
+conversion, symmetry, equality.
+
+\DESCRIBE
+When applied to an equational term {t1 = t2}, the conversion
+{SYM_CONV} returns the theorem:
+{
+   |- t1 = t2 <=> t2 = t1
+}
+
+\FAILURE
+Fails if applied to a term that is not an equation.
+
+\EXAMPLE
+{
+  # SYM_CONV `2 = x`;; 
+  val it : thm = |- 2 = x <=> x = 2
+}
+
+\SEEALSO
+SYM.
+
+\ENDDOC

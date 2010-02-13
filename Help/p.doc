@@ -1,0 +1,26 @@
+\DOC p
+
+\TYPE {p : unit -> goalstack}
+
+\SYNOPSIS
+Prints the top level of the subgoal package goal stack.
+
+\DESCRIBE
+The function {p} is part of the subgoal package, and prints the current
+goalstate.
+
+\FAILURE
+Never fails.
+
+\USES
+Examining the proof state during an interactive proof session.
+
+\COMMENTS
+Strictly speaking this function is side-effect-free. It simply {{\em returns}}
+the current goalstate. However, automatic printing will normally then print it,
+so that is the net effect.
+
+\SEEALSO
+b, e, g, r.
+
+\ENDDOC

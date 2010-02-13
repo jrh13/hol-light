@@ -1,0 +1,34 @@
+\DOC genvar
+
+\TYPE {genvar : hol_type -> term}
+
+\SYNOPSIS
+Returns a `fresh' variable with specified type.
+
+\DESCRIBE
+When given a type, {genvar} returns a variable of that type whose name has not
+previously been produced by {genvar}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+The following indicates the typical stylized form of the names (this should
+not be relied on, of course):
+{
+  # genvar `:bool`;;
+  val it : term = `_56799`
+}
+There is no guard against users' own variables clashing, but if the user avoids
+names in the same lexical style, that can be guaranteed.
+
+\USES
+The unique variables are useful in writing derived rules, for specializing
+terms without having to worry about such things as free variable capture.
+If the names are to be visible to a typical user, the function {variant} can
+provide rather more meaningful names.
+
+\SEEALSO
+variant.
+
+\ENDDOC

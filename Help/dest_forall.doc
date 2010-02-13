@@ -1,0 +1,18 @@
+\DOC dest_forall
+
+\TYPE {dest_forall : term -> term * term}
+
+\SYNOPSIS
+Breaks apart a universally quantified term into quantified variable and body.
+
+\DESCRIBE
+{dest_forall} is a term destructor for universal quantification:
+{dest_forall `!var. t`} returns {(`var`,`t`)}.
+
+\FAILURE
+Fails with {dest_forall} if term is not a universal quantification.
+
+\SEEALSO
+is_forall, mk_forall, strip_forall.
+
+\ENDDOC

@@ -1,0 +1,29 @@
+\DOC hol_expand_directory
+
+\TYPE {hol_expand_directory : string -> string}
+
+\SYNOPSIS
+Modifies directory name starting with {$} to include HOL directory
+
+\DESCRIBE
+The function {hol_expand_directory} takes a string indicating a directory. If 
+it does not begin with a dollar sign {$}, the string is returned unchanged. 
+Otherwise, the initial dollar sign is replaced with the current HOL Light 
+directory {hol_dir}. To get an actual {$} at the start of the returned
+directory, actually use two dollar signs {$$}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # hol_dir;;
+  val it : string ref = {contents = "/home/johnh/holl"}
+  # hol_expand_directory "$/Help";;
+  val it : string = "/home/johnh/holl/Help"
+}
+
+\SEEALSO
+file_on_path, help_path, load_on_path, load_path.
+
+\ENDDOC

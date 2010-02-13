@@ -1,0 +1,32 @@
+\DOC meson_brand
+
+\TYPE {meson_brand : bool ref}
+
+\SYNOPSIS
+Makes {MESON} handle equations using Brand's transformation.
+
+\DESCRIBE
+This is one of several parameters determining the behavior of {MESON},
+{MESON_TAC} and related rules and tactics. When {meson_brand} is {true},
+equations are handled inside {MESON} by applying Brand's transformation. When
+it is {false}, as it is by default, equations are handled in a more ``naive''
+way, which nevertheless appears generally better.
+
+\FAILURE
+Not applicable.
+
+\USES
+For users requiring fine control over the algorithms used in {MESON}'s
+first-order proof search.
+
+\COMMENTS
+For more details of Brand's modification, see his paper ``Proving theorems with
+the modification method'', SIAM Journal on Computing volume 4, 1975.
+See also Moser and Steinbach's Munich technical report ``STE-modification
+revisited'' (AR-97-03, 1997) for another look at the subject.
+
+\SEEALSO
+meson_chatty, meson_dcutin, meson_depth, meson_prefine, meson_skew,
+meson_split_limit,
+
+\ENDDOC

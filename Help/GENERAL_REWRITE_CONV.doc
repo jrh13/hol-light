@@ -1,0 +1,22 @@
+\DOC GENERAL_REWRITE_CONV
+
+\TYPE {GENERAL_REWRITE_CONV : bool -> (conv -> conv) -> gconv net -> thm list -> conv}
+
+\SYNOPSIS
+Rewrite with theorems as well as an existing net.
+
+\DESCRIBE
+The call {GENERAL_REWRITE_CONV b cnvl net thl} will regard {thl} as rewrite 
+rules, and if {b = true}, also potentially as conditional rewrite rules. These 
+extra rules will be incorporated into the existing {net}, and rewriting applied 
+with a search strategy {cnvl} (e.g. {DEPTH_CONV}).
+
+\COMMENTS
+This is mostly for internal use, but it can sometimes be more efficient when 
+rewriting with large sets of theorems repeatedly if they are first composed 
+into a net and then augmented like this.
+
+\SEEALSO
+GEN_REWRITE_CONV, REWRITES_CONV.
+
+\ENDDOC

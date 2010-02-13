@@ -1,0 +1,40 @@
+\DOC INT_OF_REAL_THM
+
+\TYPE {INT_OF_REAL_THM : thm -> thm}
+
+\SYNOPSIS
+Map a universally quantified theorem from reals to integers.
+
+\DESCRIBE
+We often regard integers as a subset of the reals, so any universally
+quantified theorem over the reals also holds for the integers, and indeed any 
+other subset. In HOL, integers and reals are completely separate types ({int}
+and {real} respectively). However, there is a natural injection (actually
+called {dest_int}) from integers to reals that maps integer operations to their
+real counterparts, and using this we can similarly show that any universally
+quantified formula over the reals also holds over the integers with operations
+mapped to the right type. The rule {INT_OF_REAL_THM} embodies this procedure;
+given a universally quantified theorem over the reals, it maps it to a
+corresponding theorem over the integers.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # REAL_ABS_TRIANGLE;;
+  val it : thm = |- !x y. abs (x + y) <= abs x + abs y
+  # map dest_var (variables(concl it));;
+  val it : (string * hol_type) list = [("y", `:real`); ("x", `:real`)]
+
+  # INT_OF_REAL_THM REAL_ABS_TRIANGLE;;
+  val it : thm = |- !x y. abs (x + y) <= abs x + abs y
+  # map dest_var (variables(concl it));;
+  val it : (string * hol_type) list = [("y", `:int`); ("x", `:int`)]
+}
+
+\SEEALSO
+ARITH_RULE, INT_ARITH, INT_ARITH_CONV, INT_ARITH_TAC, NUM_TO_INT_CONV,
+REAL_ARITH.
+
+\ENDDOC

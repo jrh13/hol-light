@@ -1,0 +1,42 @@
+\DOC DEPTH_BINOP_CONV
+
+\TYPE {DEPTH_BINOP_CONV : term -> (term -> thm) -> term -> thm}
+
+\SYNOPSIS
+Applied a conversion to the leaves of a tree of binary operator expressions.
+
+\DESCRIBE
+If a term {t} is built up from terms {t1,...,tn} using a binary operator {op}
+(for example {op (op t1 t2) (op (op t3 t4) t5)}), the call
+{DEPTH_BINOP_CONV `op` cnv t} will apply the conversion {cnv} to each {ti} to
+give a theorem {|- ti = ti'}, and return the equational theorem {|- t = t'}
+where {t'} results from replacing each {ti} in {t} with the corresponding
+{ti'}.
+
+\FAILURE
+Fails only if the core conversion {cnv} fails on one of the chosen subterms.
+
+\EXAMPLE
+One can always completely evaluate arithmetic expressions with
+{NUM_REDUCE_CONV}, e.g.
+{
+  # NUM_REDUCE_CONV `(1 + 2) + (3 * (4 + 5) + 6) + (7 DIV 8)`;;
+  val it : thm = |- (1 + 2) + (3 * (4 + 5) + 6) + 7 DIV 8 = 36
+}
+However, if one wants for some reason not to reduce the top-level combination
+of additions, one can do instead:
+{
+  # DEPTH_BINOP_CONV `(+):num->num->num` NUM_REDUCE_CONV
+   `(1 + 2)   + (3 * (4 + 5) + 6) + (7 DIV 8)`;;
+  val it : thm =
+    |- (1 + 2) + (3 * (4 + 5) + 6) + 7 DIV 8 = (1 + 2) + (27 + 6) + 0
+    # NUM_REDUCE_CONV `(1 + 2) + (3 * (4 + 5) + 6) + (7 DIV 8)`;;
+}
+Note that the subterm {`3 * (4 + 5)`} did get completely evaluated, because the
+addition was not part of the toplevel tree, but was nested inside a
+multiplication.
+
+\SEEALSO
+BINOP_CONV, ONCE_DEPTH_CONV, PROP_ATOM_CONV, TOP_DEPTH_CONV.
+
+\ENDDOC

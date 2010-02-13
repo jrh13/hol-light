@@ -1,0 +1,22 @@
+\DOC bool_ty
+
+\TYPE {bool_ty : hol_type}
+
+\SYNOPSIS
+The type {`:bool`}.
+
+\DESCRIBE
+This name is bound to the HOL type {:bool}.
+
+\FAILURE
+Not applicable.
+
+\USES
+Exploiting the very common type {:bool} inside derived rules without the 
+inefficiency or inconvenience of calling a quotation parser or explicit
+constructor.
+
+\SEEALSO
+aty, bty.
+
+\ENDDOC

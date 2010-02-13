@@ -1,0 +1,31 @@
+\DOC BINDER_CONV
+
+\TYPE {BINDER_CONV : conv -> term -> thm}
+
+\SYNOPSIS
+Applies conversion to the body of a binder.
+
+\DESCRIBE
+If {c} is a conversion such that {c `t`} returns {|- t = t'}, then 
+{BINDER_CONV c `b (\x. t)`} returns {|- b (\x. t) = b (\x. t')}, i.e. applies 
+the core conversion to the body of a `binder'. In fact, {b} here can be any 
+term, but it is typically a binder constant such as a quantifier.
+
+\FAILURE
+Fails if the core conversion does, or if the theorem returned by it is not of 
+the right form.
+
+\EXAMPLE
+{
+  # BINDER_CONV SYM_CONV `@n. n = m + 1`;;
+  val it : thm = |- (@n. n = m + 1) = (@n. m + 1 = n)
+
+  # BINDER_CONV (REWR_CONV SWAP_FORALL_THM) `!x y z. x + y + z = y + x + z`;;
+  val it : thm =
+    |- (!x y z. x + y + z = y + x + z) <=> (!x z y. x + y + z = y + x + z)
+}
+
+\SEEALSO
+ABS_CONV, RAND_CONV, RATOR_CONV.
+
+\ENDDOC

@@ -1,0 +1,37 @@
+\DOC EXISTS_EQUATION
+
+\TYPE {EXISTS_EQUATION : term -> thm -> thm}
+
+\SYNOPSIS
+Derives existence from explicit equational constraint.
+
+\DESCRIBE
+Given a term {`x = t`} where {x} does not occur free in {t}, and a 
+theorem {A |- p[x]}, the rule {EXISTS_EQUATION} returns
+{A - {{x = t}} |- ?x. p[x]}. Normally, the equation {x = t} is one of the 
+hypotheses of the theorem, so this rule allows one to derive an existence 
+assertion ignoring the actual ``definition''.
+
+\FAILURE
+Fails if the term is not an equation, if the LHS is not a variable, or if the 
+variable occurs free in the RHS.
+
+\EXAMPLE
+{
+  # let th = (UNDISCH o EQT_ELIM o SIMP_CONV[ARITH]) 
+     `x = 3 ==> ODD(x) /\ x > 2`;;
+  val th : thm = x = 3 |- ODD x /\ x > 2
+
+  # EXISTS_EQUATION `x = 3` th;;
+  val it : thm = |- ?x. ODD x /\ x > 2
+}
+\noindent Note that it is not obligatory for the term to be an assumption:
+{
+  # EXISTS_EQUATION `x = 1` (REFL `x:num`);;
+  val it : thm = |- ?x. x = x
+}
+
+\SEEALSO
+EXISTS, SIMPLE_EXISTS.
+
+\ENDDOC

@@ -1,0 +1,38 @@
+\DOC SUBS_CONV
+
+\TYPE {SUBS_CONV : thm list -> term -> thm}
+
+\SYNOPSIS
+Substitution conversion.
+
+\DESCRIBE
+The call {SUBS_CONV [th1; ...; th2] t}, where the theorems in the list are all
+equations, will return the theorem {|- t = t'} where {t'} results from
+substituting any terms that are the same as the left-hand side of some {thi}
+with the corresponding right-hand side. Note that no matching or instantiation
+is done, in contrast to rewriting conversions.
+
+\FAILURE
+May fail if the theorems are not equational.
+
+\EXAMPLE
+Here we substitute with a simplification theorem, but only instances that are
+the same as the LHS:
+{
+  # SUBS_CONV[ARITH_RULE `x + 0 = x`] `(x + 0) + (y + 0) + (x + 0) + (0 + 0)`;;
+  val it : thm =
+    |- (x + 0) + (y + 0) + (x + 0) + 0 + 0 = x + (y + 0) + x + 0 + 0
+}
+\noindent By contrast, the analogous rewriting conversion will treat the
+variable {x} as universally quantified and replace more subterms by matching
+the LHS against them:
+{
+  # REWRITE_CONV[ARITH_RULE `x + 0 = x`]
+     `(x + 0) + (y + 0) + (x + 0) + (0 + 0)`;;
+  val it : thm = |- (x + 0) + (y + 0) + (x + 0) + 0 + 0 = x + y + x
+}
+
+\SEEALSO
+GEN_REWRITE_CONV, REWR_CONV, REWRITE_CONV, PURE_REWRITE_CONV.
+
+\ENDDOC

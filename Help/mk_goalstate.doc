@@ -1,0 +1,19 @@
+\DOC mk_goalstate
+
+\TYPE {mk_goalstate : goal -> goalstate}
+
+\SYNOPSIS
+Converts a goal into a 1-element goalstate.
+
+\DESCRIBE
+Given a goal {g}, the call {mk_goalstate g} converts it into a goalstate with
+that goal as its only member. (A goalstate consists of a list of subgoals as 
+well as justification and metavariable information.)
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+g, set_goal, TAC_PROOF.
+
+\ENDDOC

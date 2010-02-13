@@ -1,0 +1,29 @@
+\DOC parse_as_binder
+
+\TYPE {parse_as_binder : string -> unit}
+
+\SYNOPSIS
+Makes the quotation parser treat a name as a binder.
+
+\DESCRIBE
+The call {parse_as_binder "c"} will make the quotation parser treat {c} as a
+binder, that is, allow the syntactic sugaring {`c x. y`} as a shorthand for
+{`c (\x. y)`}. As with normal binders, e.g. the universal quantifier, the
+special syntactic status may be suppressed by enclosing {c} in parentheses:
+{(c)}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # parse_as_binder "infinitely_many";;
+  val it : unit = ()
+  # `infinitely_many p:num. prime(p)`;;
+  `infinitely_many p. prime(p)`;;
+}
+
+\SEEALSO
+binders, parses_as_binder, unparse_as_binder.
+
+\ENDDOC

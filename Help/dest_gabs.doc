@@ -1,0 +1,36 @@
+\DOC dest_gabs
+
+\TYPE {dest_gabs : term -> term * term}
+
+\SYNOPSIS
+Breaks apart a generalized abstraction into abstracted varstruct and body.
+
+\DESCRIBE
+{dest_pabs} is a term destructor for generalized abstractions: for example with
+a paired varstruct the effect on {dest_pabs `\(v1..(..)..vn). t`} is to return
+the pair {(`(v1..(..)..vn)`,`t`)}. It will also act as for {dest_abs} on basic
+abstractions.
+
+\FAILURE
+Fails unless the term is a basic or generalized abstraction.
+
+\EXAMPLE
+These are fairly typical applications:
+{
+  # dest_gabs `\(x,y). x + y`;;
+  val it : term * term = (`x,y`, `x + y`)
+
+  # dest_gabs `\(CONS h t). h + 1`;;
+  val it : term * term = (`CONS h t`, `h + 1`)
+}
+\noindent while the following shows that it also works on basic abstractions:
+{
+  # dest_gabs `\x. x`;;
+  Warning: inventing type variables
+  val it : term * term = (`x`, `x`)
+}
+
+\SEEALSO
+GEN_BETA_CONV, is_gabs, mk_gabs, strip_gabs.
+
+\ENDDOC

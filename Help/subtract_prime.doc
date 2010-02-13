@@ -1,0 +1,30 @@
+\DOC subtract'
+
+\TYPE {subtract' : ('a -> 'a -> bool) -> 'a list -> 'a list -> 'a list}
+
+\SYNOPSIS
+Subtraction of sets modulo an equivalence.
+
+\DESCRIBE
+The call {subtract' r l1 l2} removes from the list {l1} all elements {x} such
+that there is an {x'} in {l2} with {r x x'}. If {l1} and {l2} were free of
+equivalents under {r}, the resulting list will be too, so this is a set
+operation modulo an equivalence. The function {subtract} is the special case
+where the relation is just equality.
+
+\FAILURE
+Fails only if the function {r} fails.
+
+\EXAMPLE
+{
+  # subtract' (fun x y -> abs(x) = abs(y)) [-1; 2; 1] [-2; -3; 4; -4];;
+  val it : int list = [-1; 1]
+}
+
+\USES
+Maintaining sets modulo an equivalence such as alpha-equivalence.
+
+\SEEALSO
+insert', mem', union, union', unions'.
+
+\ENDDOC

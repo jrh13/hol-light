@@ -1,0 +1,29 @@
+\DOC the_specifications
+
+\TYPE {the_specifications : thm list ref}
+
+\SYNOPSIS
+List of all constant specifications introduced so far.
+
+\DESCRIBE
+The reference variable {the_specifications} holds the list of constant
+specifications made so far by {new_specification}. It is a list of triples,
+with the first two components being the list of variables and the existential
+theorem used as input, and the last being the returned theorem.
+
+\FAILURE
+Not applicable.
+
+\USES
+This list is not logically necessary and is not part of HOL Light's logical
+core, but it is used outside the core so that multiple instances of the same
+specification are quietly ``ignored'' rather than rejected. (By contrast, the
+list of new constants introduced by definitions is logically necessary to avoid
+inconsistent redefinition.) Users may also sometimes find it convenient.
+
+\SEEALSO
+axioms, constants, define, new_definition, new_inductive_definition,
+new_recursive_definition, new_specification, the_definitions,
+the_inductive_definitions.
+
+\ENDDOC

@@ -1,0 +1,35 @@
+\DOC ARITH_TAC
+
+\TYPE {ARITH_TAC : tactic}
+
+\SYNOPSIS
+Tactic for proving arithmetic goals needing basic rearrangement and linear
+inequality reasoning only.
+
+\DESCRIBE
+{ARITH_TAC} will automatically prove goals that require basic algebraic
+normalization and inequality reasoning over the natural numbers. For nonlinear
+equational reasoning use {NUM_RING} and derivatives.
+
+\FAILURE
+Fails if the automated methods do not suffice.
+
+\EXAMPLE
+{
+  # g `1 <= x /\ x <= 3 ==> x = 1 \/ x = 2 \/ x = 3`;;
+  Warning: Free variables in goal: x
+  val it : goalstack = 1 subgoal (1 total)
+
+  `1 <= x /\ x <= 3 ==> x = 1 \/ x = 2 \/ x = 3`
+
+  # e ARITH_TAC;;
+  val it : goalstack = No subgoals
+}
+
+\USES
+Solving basic arithmetic goals.
+
+\SEEALSO
+ARITH_RULE, ASM_ARITH_TAC, INT_ARITH_TAC, NUM_RING, REAL_ARITH_TAC.
+
+\ENDDOC

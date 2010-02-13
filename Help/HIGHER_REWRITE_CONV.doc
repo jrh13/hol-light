@@ -1,0 +1,59 @@
+\DOC HIGHER_REWRITE_CONV
+
+\TYPE {HIGHER_REWRITE_CONV : thm list -> bool -> term -> thm}
+
+\SYNOPSIS
+Rewrite once using more general higher order matching.
+
+\DESCRIBE
+The call {HIGHER_REWRITE_CONV [th1;...;thn] flag t} will find a higher-order 
+match for the whole term {t} against one of the left-hand sides of the 
+equational theorems in the list {[th1;...;thn]}. Each such theorem should be of 
+the form {|- P pat <=> t} where {f} is a variable. A free subterm {pat'} of {t}
+will be found that matches (in the usual restricted higher-order sense) the
+pattern {pat}. If the {flag} argument is true, this will be some topmost
+matchable term, while if it is false, some innermost matchable term will be
+selected. The rewrite is then applied by instantiating {P} to a lambda-term
+reflecting how {t} is built up from {pat'}, and beta-reducing as in normal
+higher-order matching. However, this process is more general than HOL Light's
+normal higher-order matching (as in {REWRITE_CONV} etc., with core behaviour
+inherited from {PART_MATCH}), because {pat'} need not be uniquely determined by
+bound variable correspondences.
+
+\FAILURE
+Fails if no match is found.
+
+\EXAMPLE
+The theorem {COND_ELIM_THM} can be applied to eliminate conditionals:
+{
+  # COND_ELIM_THM;;
+  val it : thm = |- P (if c then x else y) <=> (c ==> P x) /\ (~c ==> P y)
+}
+\noindent in a term like this:
+{
+  # let t = `z = if x = 0 then if y = 0 then 0 else x + y else x + y`;;
+  val t : term = `z = (if x = 0 then if y = 0 then 0 else x + y else x + y)`
+}
+\noindent either outermost first:
+{
+  # HIGHER_REWRITE_CONV[COND_ELIM_THM] true t;;
+  val it : thm =
+    |- z = (if x = 0 then if y = 0 then 0 else x + y else x + y) <=>
+       (x = 0 ==> z = (if y = 0 then 0 else x + y)) /\ (~(x = 0) ==> z = x + y)
+}
+\noindent or innermost first:
+{
+  # HIGHER_REWRITE_CONV[COND_ELIM_THM] false t;;
+  val it : thm =
+    |- z = (if x = 0 then if y = 0 then 0 else x + y else x + y) <=>
+       (y = 0 ==> z = (if x = 0 then 0 else x + y)) /\
+       (~(y = 0) ==> z = (if x = 0 then x + y else x + y))
+}
+
+\USES
+Applying general simplification patterns without manual instantiation.
+
+\SEEALSO
+PART_MATCH, REWRITE_CONV.
+
+\ENDDOC

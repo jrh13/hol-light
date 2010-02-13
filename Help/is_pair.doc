@@ -1,0 +1,27 @@
+\DOC is_pair
+
+\TYPE {is_pair : term -> bool}
+
+\SYNOPSIS
+Tests a term to see if it is a pair.
+
+\DESCRIBE
+{is_pair `(t1,t2)`} returns {true}. If the term is not a pair the result is
+{false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_pair `1,2,3`;;
+  val it : bool = true
+
+  # is_pair `[1;2;3]`;;
+  val it : bool = false
+}
+
+\SEEALSO
+dest_pair, is_cons, mk_pair.
+
+\ENDDOC

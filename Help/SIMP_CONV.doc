@@ -1,0 +1,53 @@
+\DOC SIMP_CONV
+
+\TYPE {SIMP_CONV : thm list -> conv}
+
+\SYNOPSIS
+Simplify a term repeatedly by conditional contextual rewriting.
+
+\DESCRIBE
+A call {SIMP_CONV thl tm} will return {|- tm = tm'} where {tm'} results from
+applying the theorems in {thl} as (conditional) rewrite rules, as well as
+built-in simplifications (see {basic_rewrites} and {basic_convs}).
+
+The theorems are first split up into individual rewrite rules, either
+conditional ({|- c ==> l = r}) or unconditional ({|- l = r}), as described in
+the documentation for {mk_rewrites}. These are then applied repeatedly to
+replace subterms in the goal that are instances {l'} of the left-hand side with
+a corresponding {r'}. Rewrite rules that are permutative, with each side an
+instance of the other, have an ordering imposed on them so that they tend to
+force terms into canonical form rather than looping (see {ORDERED_REWR_CONV}).
+In the case of applying a conditional rewrite, the condition {c} needs to be
+eliminated before the rewrite can be applied. This is attempted by recursively
+applying the same simplifications to {c} in the hope of reducing it to {T}. If
+this can be done, the conditional rewrite is applied, otherwise not. To add
+additional provers to dispose of side-conditions beyond application of the
+basic rewrites, see {mk_prover} and {ss_of_provers}.
+
+\FAILURE
+Never fails, but may return a reflexive theorem {|- tm = tm} if no
+simplifications can be made.
+
+\EXAMPLE
+Here we use the conditional and contextual facilities:
+{
+  # SIMP_CONV[SUB_ADD; ARITH_RULE `0 < n ==> 1 <= n`]
+        `0 < n ==> (n - 1) + 1 = n + f(k + 1)`;;
+  val it : thm =
+  |- 0 < n ==> n - 1 + 1 = n + f (k + 1) <=> 0 < n ==> n = n + f (k + 1)
+}
+\noindent and here we show how a permutative rewrite achieves normalization
+(the same would work with plain {REWRITE_CONV}:
+{
+  # REWRITE_CONV[ADD_AC] `(a + c + e) + ((b + a + d) + e):num`;;
+  val it : thm = |- (a + c + e) + (b + a + d) + e = a + a + b + c + d + e + e
+}
+
+\COMMENTS                                                              
+For simply rewriting with unconditional equations, {REWRITE_CONV} and relatives
+are simpler and more efficient.
+
+\SEEALSO
+ASM_SIMP_TAC, ONCE_SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

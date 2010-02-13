@@ -1,0 +1,33 @@
+\DOC is_iff
+
+\TYPE {is_iff : term -> bool}
+
+\SYNOPSIS
+Tests if a term is an equation between Boolean terms (iff / logical
+equivalence).
+
+\DESCRIBE
+Recall that in HOL, the Boolean operation variously called logical equivalence,
+bi-implication or `if and only if' (iff) is simply the equality relation on
+Boolean type. The call {is_iff t} returns {true} if {t} is an equality between
+terms of Boolean type, and {false} otherwise.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_iff `p = T`;;
+  val it : bool = true
+
+  # is_iff `p <=> q`;;
+  val it : bool = true
+
+  # is_iff `0 = 1`;;
+  val it : bool = false
+}
+
+\SEEALSO
+dest_iff, is_eq, mk_iff.
+
+\ENDDOC

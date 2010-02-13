@@ -1,0 +1,36 @@
+\DOC NOT_INTRO
+
+\TYPE {NOT_INTRO : thm -> thm}
+
+\SYNOPSIS
+Transforms {|- t ==> F} into {|- ~t}.
+
+\KEYWORDS
+rule, negation, implication.
+
+\DESCRIBE
+When applied to a theorem {A |- t ==> F}, the inference rule {NOT_INTRO}
+returns the theorem {A |- ~t}.
+{
+    A |- t ==> F
+   --------------  NOT_INTRO
+      A |- ~t
+}
+
+\FAILURE
+Fails unless the theorem has an implicative conclusion with {F}
+as the consequent.
+
+\EXAMPLE
+{
+  # let th = TAUT `F ==> F`;;
+  val th : thm = |- F ==> F
+
+  # NOT_INTRO th;;
+  val it : thm = |- ~F
+}
+
+\SEEALSO
+EQF_ELIM, EQF_INTRO, NOT_ELIM.
+
+\ENDDOC

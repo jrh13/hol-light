@@ -1,0 +1,22 @@
+\DOC ONCE_ASM_SIMP_TAC
+
+\TYPE {ONCE_ASM_SIMP_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Simplify toplevel applicable terms in goal using assumptions and context.
+
+\DESCRIBE
+A call to {ONCE_ASM_SIMP_TAC[theorems]} will apply conditional contextual
+rewriting with {theorems} and the current assumptions of the goal to the goal's
+conclusion. The {ONCE} prefix means that the toplevel simplification is only
+applied once to the toplevel terms, though any conditional subgoals generated
+are then simplfied repeatedly. For more details on this kind of rewriting, see
+{SIMP_CONV}. If the extra generality of contextual conditional rewriting is not
+needed, {ONCE_ASM_REWRITE_TAC} is usually more efficient.
+
+\FAILURE
+Never fails, but may loop indefinitely.
+
+\SEEALSO
+ASM_SIMP_TAC, ONCE_ASM_REWRITE_TAC, SIMP_CONV, SIMP_TAC, REWRITE_TAC.
+\ENDDOC

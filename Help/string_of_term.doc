@@ -1,0 +1,29 @@
+\DOC string_of_term
+
+\TYPE {string_of_term : term -> string}
+
+\SYNOPSIS
+Converts a HOL term to a string representation.
+
+\DESCRIBE
+The call {string_of_term tm} produces a textual representation of the term {tm}
+as a string, similar to what is printed automatically at the toplevel, though 
+without the surrounding quotes.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # string_of_term `x + 1 < 2 <=> x = 0`;;
+  val it : string = "x + 1 < 2 <=> x = 0"
+}
+
+\COMMENTS
+The string may contain newlines for large terms, broken in a similar fashion to 
+automatic printing.
+
+\SEEALSO
+string_of_thm, string_of_type.
+
+\ENDDOC

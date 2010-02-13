@@ -1,0 +1,27 @@
+\DOC uniq
+
+\TYPE {uniq : 'a list -> 'a list}
+
+\SYNOPSIS
+Eliminate adjacent identical elements from a list.
+
+\DESCRIBE
+When applied to a list, {uniq} gives a new list that results from coalescing
+adjacent (only) elements of the list into one.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # uniq [1;2;3;1;2;3];;
+  val it : int list = [1; 2; 3; 1; 2; 3]
+
+  # uniq [1;1;1;2;3;3;3;3;4];;
+  val it : int list = [1; 2; 3; 4]
+}
+
+\SEEALSO
+setify, sort.
+
+\ENDDOC

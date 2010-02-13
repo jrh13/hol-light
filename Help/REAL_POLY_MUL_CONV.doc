@@ -1,0 +1,36 @@
+\DOC REAL_POLY_MUL_CONV
+
+\TYPE {REAL_POLY_MUL_CONV : term -> thm}
+
+\SYNOPSIS
+Multiplies two real polynomials while retaining canonical form.
+
+\DESCRIBE
+For many purposes it is useful to retain polynomials in a canonical form. For
+more information on the usual normal form in HOL Light, see the function
+{REAL_POLY_CONV}, which converts a polynomial to normal form while proving the
+equivalence of the original and normalized forms. The function
+{REAL_POLY_MUL_CONV} is a more delicate conversion that, given a term {p1 * p2}
+where {p1} and {p2} are real polynomials in normal form, returns a theorem 
+{|- p1 * p2 = p} where {p} is in normal form.
+
+\FAILURE
+Fails if applied to a term that is not the product of two real terms. If these
+subterms are not polynomials in normal form, the overall normalization is not
+guaranteed.
+
+\EXAMPLE
+{
+  # REAL_POLY_MUL_CONV `(x pow 2 + x) * (x pow 2 + -- &1 * x + &1)`;;
+  val it : thm = |- (x pow 2 + x) * (x pow 2 + -- &1 * x + &1) = x pow 4 + x
+}
+
+\USES
+More delicate polynomial operations that simply the direct normalization with 
+{REAL_POLY_CONV}.
+
+\SEEALSO
+REAL_ARITH, REAL_POLY_ADD_CONV, REAL_POLY_CONV, REAL_POLY_NEG_CONV,
+REAL_POLY_POW_CONV, REAL_POLY_SUB_CONV, REAL_RING.
+
+\ENDDOC

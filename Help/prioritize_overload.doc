@@ -1,0 +1,56 @@
+\DOC prioritize_overload
+
+\TYPE {prioritize_overload : hol_type -> unit}
+
+\SYNOPSIS
+Give overloaded constants involving a given type priority in operator
+overloading.
+
+\DESCRIBE
+In general, overloaded operators in the concrete syntax, such as `{+}', are
+ambigous, referring to one of several underlying constants. The choice is
+normally made based on some known types, or the presence of operators that are
+not overloaded for the number systems. (For example, numerals like {42} are
+always assumed to be of type {num}, while the division operator `{/}' is only
+defined for {real}.) In the absence of any such indication, a default choice
+will be made. The effect of {prioritize_overload `:ty`} is to run through the 
+overloaded symbols making the first instance of each where the generic type 
+variables in the type skeleton are replaced by type {`:ty`} the first priority 
+when no other indication is made.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+With real priority, most things are interpreted as type {real}:
+{
+  # prioritize_overload `:real`;;
+  val it : unit = ()
+
+  # type_of `x + y`;;
+  val it : hol_type = `:real`
+}
+\noindent By making {int} the priority, everything is interpreted as {int}:
+{
+  # prioritize_overload `:int`;;
+  val it : unit = ()
+
+  # type_of `x + y`;;
+  val it : hol_type = `:int`
+}
+\noindent unless there is some explicit type information to the contrary:
+{
+  # type_of `(x:real) + y`;;
+  val it : hol_type = `:real`
+}
+
+\COMMENTS
+It is perhaps better practice to insert types explicitly to avoid dependence on
+such defaults, otherwise proofs can become context-dependent. However it is
+often very convenient.
+
+\SEEALSO
+make_overloadable, overload_interface, prioritize_int, prioritize_num,
+prioritize_real, the_overload_skeletons.
+
+\ENDDOC

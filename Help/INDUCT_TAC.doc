@@ -1,0 +1,60 @@
+\DOC INDUCT_TAC
+
+\TYPE {INDUCT_TAC : tactic}
+
+\SYNOPSIS
+Performs tactical proof by mathematical induction on the natural numbers.
+
+\KEYWORDS
+tactic, induction.
+
+\DESCRIBE
+{INDUCT_TAC} reduces a goal {A ?- !n. P[n]}, where {n} has type {num}, to two
+subgoals corresponding to the base and step cases in a proof by mathematical
+induction on {n}. The induction hypothesis appears among the assumptions of the
+subgoal for the step case.  The specification of {INDUCT_TAC} is:
+{
+                A ?- !n. P
+    ========================================  INDUCT_TAC
+     A ?- P[0/n]     A u {{P}} ?- P[SUC n'/n]
+}
+\noindent where {n'} is a primed variant of {n} that does not appear free in
+the assumptions {A} (usually, {n'} is just {n}).
+
+\FAILURE
+{INDUCT_TAC g} fails unless the conclusion of the goal {g} has the form
+{`!n. t`}, where the variable {n} has type {num}.
+
+\EXAMPLE
+Suppose we want to prove the classic `sum of the first {n} integers' theorem:
+{
+  # g `!n. nsum(1..n) (\i. i) = (n * (n + 1)) DIV 2`;;
+}
+\noindent This is a classic example of an inductive proof. If we apply
+induction, we get two subgoals:
+{
+  # e INDUCT_TAC;;
+  val it : goalstack = 2 subgoals (2 total)
+
+   0 [`nsum (1 .. n) (\i. i) = (n * (n + 1)) DIV 2`]
+
+  `nsum (1 .. SUC n) (\i. i) = (SUC n * (SUC n + 1)) DIV 2`
+
+  `nsum (1 .. 0) (\i. i) = (0 * (0 + 1)) DIV 2`
+}
+\noindent each of which can be solved by just:
+{
+  # e(ASM_REWRITE_TAC[NSUM_CLAUSES_NUMSEG] THEN ARITH_TAC);;
+}
+
+\COMMENTS
+Essentially the same effect can be had by {MATCH_MP_TAC num_INDUCTION}. This
+does not subsequently break down the goal in such a convenient way, but gives
+more control over choice of variable. You can also equally well use it for
+other kinds of induction, e.g. use {MATCH_MP_TAC num_WF} for wellfounded
+(complete, noetherian) induction.
+
+\SEEALSO
+LIST_INDUCT_TAC, MATCH_MP_TAC, WF_INDUCT_TAC.
+
+\ENDDOC

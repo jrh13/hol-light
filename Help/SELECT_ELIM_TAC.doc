@@ -1,0 +1,43 @@
+\DOC SELECT_ELIM_TAC
+
+\TYPE {SELECT_ELIM_TAC : tactic}
+
+\SYNOPSIS
+Eliminate select terms from a goal.
+
+\DESCRIBE
+The tactic {SELECT_ELIM_TAC} attempts to remove from a goal any select terms, 
+i.e. instances of the Hilbert choice operator {@x. P[x]}. First, any instances 
+that occur inside their own predicate, i.e. {P[@x. P[x]]}, are replaced simply 
+by {?x. P[x]}, as with {SELECT_CONV}. Other select-terms are eliminated by 
+replacing each on with a new variable {v} and adding a corresponding instance 
+of the axiom {SELECT_AX}, of the form {!x. P[x] ==> P[v]}. Note that the latter 
+does not strictly preserve logical equivalence, only implication. So it is
+possible to replace a provable goal by an unprovable one. But since not much is
+provable about a select term except via the axiom {SELECT_AX}, this is not
+likely in practice.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Suppose we set the goal:
+{
+  # g `(@n. n < 3) < 3 /\ (@n. n < 3) < 5`;;
+}
+\noindent An application of {SELECT_ELIM_TAC} returns:
+{
+  # e SELECT_ELIM_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!_73133. (!x. x < 3 ==> _73133 < 3) ==> (?n. n < 3) /\ _73133 < 5`
+}
+
+\USES
+This is already applied as an initial normalization by {MESON} and other rules.
+Users may occasionally find it helpful.
+
+\SEEALSO
+SELECT_CONV.
+
+\ENDDOC

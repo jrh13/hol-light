@@ -1,0 +1,29 @@
+\DOC possibly
+
+\TYPE {possibly : ('a -> 'b * 'a) -> 'a -> 'b list * 'a}
+
+\SYNOPSIS
+Attempts to parse, returning empty list of items in case of failure.
+
+\DESCRIBE
+If {p} is a parser, then {possibly p} is another parser that attempts to parse 
+with {p} and if successful returns the result as a singleton list, but will 
+return the empty list instead if the core parser {p} raises {Noparse}.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+This is one of a suite of combinators for manipulating ``parsers''. A parser is
+simply a function whose OCaml type is some instance of
+{:('a)list -> 'b * ('a)list}. The function should take a list of objects of
+type {:'a} (e.g. characters or tokens), parse as much of it as possible from
+left to right, and return a pair consisting of the object derived from parsing
+(e.g. a term or a special syntax tree) and the list of elements that were not
+processed.
+
+\SEEALSO
+++, ||, >>, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
+rightbin, some.
+
+\ENDDOC

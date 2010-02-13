@@ -1,0 +1,26 @@
+\DOC merge
+
+\TYPE {merge : ('a -> 'a -> bool) -> 'a list -> 'a list -> 'a list}
+
+\SYNOPSIS
+Merges together two sorted lists with respect to a given ordering.
+
+\DESCRIBE
+If two lists {l1} and {l2} are sorted with respect to the given ordering {ord}, 
+then {merge ord l1 l2} will merge them into a sorted list of all the elements. 
+The merge keeps any duplicates; it is not a set operation.
+
+\FAILURE
+Never fails, but if the lists are not appropriately sorted the results will not 
+in general be correct.
+
+\EXAMPLE
+{
+  # merge (<) [1;2;3;4;5;6] [2;4;6;8];;
+  val it : int list = [1; 2; 2; 3; 4; 4; 5; 6; 6; 8]
+}
+
+\SEEALSO
+mergesort, sort, uniq.
+
+\ENDDOC

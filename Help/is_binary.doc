@@ -1,0 +1,32 @@
+\DOC is_binary
+
+\TYPE {is_binary : string -> term -> bool}
+
+\SYNOPSIS
+Tests if a term is an application of a named binary operator.
+
+\DESCRIBE
+The call {is_binary s tm} tests if term {tm} is an instance of a binary
+operator {(op l) r} where {op} is a constant with name {s}. If so, it returns
+true; otherwise it returns false. Note that {op} is required to be a constant.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+This one succeeds:
+{
+  # is_binary "+" `1 + 2`;;
+  val it : bool = true
+}
+\noindent but this one fails unless {f} has been declared a constant:
+{
+  # is_binary "f" `f x y`;;
+  Warning: inventing type variables
+  val it : bool = false
+}
+
+\SEEALSO
+dest_binary, is_binop, is_comb, mk_binary.
+
+\ENDDOC

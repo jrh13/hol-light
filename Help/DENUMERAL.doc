@@ -1,0 +1,21 @@
+\DOC DENUMERAL
+
+\TYPE {DENUMERAL : thm -> thm}
+
+\SYNOPSIS
+Remove instances of the {NUMERAL} constant from a theorem.
+
+\DESCRIBE
+The call {DENUMERAL th} removes from the conclusion of {th} any instances of
+the constant {NUMERAL}, used in the internal representation of numerals.
+
+\FAILURE
+Never fails.
+
+\USES
+Only intended for users manipulating the internal structure of numerals.
+
+\SEEALSO
+NUM_REDUCE_CONV.
+
+\ENDDOC

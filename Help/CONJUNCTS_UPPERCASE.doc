@@ -1,0 +1,33 @@
+\DOC CONJUNCTS
+
+\TYPE {CONJUNCTS : thm -> thm list}
+
+\SYNOPSIS
+Recursively splits conjunctions into a list of conjuncts.
+
+\KEYWORDS
+rule, conjunction.
+
+\DESCRIBE
+Flattens out all conjuncts, regardless of grouping. Returns a singleton list
+if the input theorem is not a conjunction.
+{
+       A |- t1 /\ t2 /\ ... /\ tn
+   -----------------------------------  CONJUNCTS
+    A |- t1   A |- t2   ...   A |- tn
+}
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # CONJUNCTS(ASSUME `(x /\ y) /\ z /\ w`);;
+  val it : thm list =
+    [(x /\ y) /\ z /\ w |- x; (x /\ y) /\ z /\ w |- y; (x /\ y) /\ z /\ w 
+     |- z; (x /\ y) /\ z /\ w |- w]
+}
+
+\SEEALSO
+CONJ, CONJUNCT1, CONJUNCT2, CONJ_PAIR.
+
+\ENDDOC

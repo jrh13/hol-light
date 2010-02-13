@@ -1,0 +1,29 @@
+\DOC CONJ
+
+\TYPE {CONJ : thm -> thm -> thm}
+
+\SYNOPSIS
+Introduces a conjunction.
+
+\KEYWORDS
+rule, conjunction.
+
+\DESCRIBE
+{
+    A1 |- t1      A2 |- t2
+   ------------------------  CONJ
+     A1 u A2 |- t1 /\ t2
+}
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # CONJ (NUM_REDUCE_CONV `2 + 2`) (ASSUME `p:bool`);;
+  val it : thm = p |- 2 + 2 = 4 /\ p
+}
+
+\SEEALSO
+CONJUNCT1, CONJUNCT2, CONJUNCTS, CONJ_PAIR.
+
+\ENDDOC

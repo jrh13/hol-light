@@ -1,0 +1,28 @@
+\DOC set_eq
+
+\TYPE {set_eq : 'a list -> 'a list -> bool}
+
+\SYNOPSIS
+Tests two `sets' for equality.
+
+\DESCRIBE
+{set_eq l1 l2} returns {true} if every element of {l1} appears in {l2} and
+every element of {l2} appears in {l1}. Otherwise it returns {false}. In other 
+words, it tests if the lists are the same considered as sets, i.e. ignoring 
+duplicates.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # set_eq [1;2] [2;1;2];;
+  val it : bool = true
+  # set_eq [1;2] [1;3];;
+  val it : bool = false
+}
+
+\SEEALSO
+setify, union, intersect, subtract.
+
+\ENDDOC

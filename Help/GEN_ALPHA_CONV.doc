@@ -1,0 +1,30 @@
+\DOC GEN_ALPHA_CONV
+
+\TYPE {GEN_ALPHA_CONV : term -> term -> thm}
+
+\SYNOPSIS
+Renames the bound variable of an abstraction or binder.
+
+\DESCRIBE
+The conversion {GEN_ALPHA_CONV} provides alpha conversion for lambda
+abstractions of the form {`\x. t`}, as well as other terms of the form
+{`b (\x. t)`} such as quantifiers and other binders. (Note that whether {b} is
+a constant or parses as a binder is irrelevant, though this is usually the case
+in applications.) The call {GEN_ALPHA_CONV `y` `\x. t`} returns
+{
+   |- (\x. t)  = (\y. t[y/x])
+}
+\noindent while {GEN_ALPHA_CONV `y` `b (\x. t)`} returns
+{
+   |- b (\x. t)  = b (\y. t[y/x])
+}
+
+\FAILURE
+{GEN_ALPHA_CONV `y` tm} fails if {y} is not a variable, or if {tm} does not
+have one of the forms {`\x. t`} or {`b (\x. t)`}, or if the types of {x} and
+{y} differ, or if {y} is already free in the body {t}.
+
+\SEEALSO
+alpha, ALPHA, ALPHA_CONV.
+
+\ENDDOC

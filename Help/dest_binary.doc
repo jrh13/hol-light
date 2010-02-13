@@ -1,0 +1,27 @@
+\DOC dest_binary
+
+\TYPE {dest_binary : string -> term -> term * term}
+
+\SYNOPSIS
+Breaks apart an instance of a binary operator with given name.
+
+\DESCRIBE
+The call {dest_binary s tm} will, if {tm} is a binary operator application
+{(op l) r} where {op} is a constant with name {s}, return the two arguments to
+which it is applied as a pair {l,r}. Otherwise, it fails. Note that {op} is
+required to be a constant.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+This one succeeds:
+{
+  # dest_binary "+" `1 + 2`;;
+  val it : term * term = (`1`, `2`)
+}
+
+\SEEALSO
+dest_binop, is_binary, is_comb, mk_binary.
+
+\ENDDOC

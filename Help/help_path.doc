@@ -1,0 +1,22 @@
+\DOC help_path
+
+\TYPE {help_path : string list ref}
+
+\SYNOPSIS
+Path where HOL Light tries to find help files.
+
+\DESCRIBE
+The reference variable {help_path} gives a list of directories. When using the
+online {help} function, HOL Light will search in these places for help files.
+An initial dollar sign {$} in each path is interpreted as a reference to the
+current setting of {hol_dir}. To get an actual {$} at the start of the
+filename, actually use two dollar signs {$$}.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+file_on_path, help, hol_dir, hol_expand_directory, load_on_path, load_path,
+loads, loadt.
+
+\ENDDOC

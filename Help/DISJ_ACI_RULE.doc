@@ -1,0 +1,32 @@
+\DOC DISJ_ACI_RULE
+
+\TYPE {DISJ_ACI_RULE : term -> thm}
+
+\SYNOPSIS
+Proves equivalence of two disjunctions containing same set of disjuncts.
+
+\DESCRIBE
+The call {DISJ_ACI_RULE `t1 \/ ... \/ tn <=> u1 \/ ... \/ um`}, where both
+sides of the equation are disjunctions of exactly the same set of disjuncts,
+(with arbitrary ordering, association, and repetitions), will return the
+corresponding theorem {|- t1 \/ ... \/ tn <=> u1 \/ ... \/ um}.
+
+\FAILURE
+Fails if applied to a term that is not a Boolean equation or the two sets of
+disjuncts are different.
+
+\EXAMPLE
+{
+  # DISJ_ACI_RULE `(p \/ q) \/ (q \/ r) <=> r \/ q \/ p`;;
+  val it : thm = |- (p \/ q) \/ q \/ r <=> r \/ q \/ p
+}
+
+\COMMENTS
+The same effect can be had with the more general {AC} construct. However, for
+the special case of disjunction, {DISJ_ACI_RULE} is substantially more
+efficient when there are many disjuncts involved.
+
+\SEEALSO
+AC, CONJ_ACI_RULE, DISJ_CANON_CONV.
+
+\ENDDOC

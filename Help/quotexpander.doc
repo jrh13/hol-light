@@ -1,0 +1,27 @@
+\DOC quotexpander
+
+\TYPE {quotexpander : string -> string}
+
+\SYNOPSIS
+Quotation expander.
+
+\DESCRIBE
+This function determines how anything in {`backquotes`} is expanded on input.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # quotexpander "1 + 1";;
+  val it : string = "parse_term \"1 + 1\""
+  # quotexpander ":num";;
+  val it : string = "parse_type \"num\""
+}
+
+\COMMENTS
+Not intended for general use, but automatically invoked when anything is typed 
+in backquotes {`like this`}. May be of some interest for users wishing to 
+change the behavior of the quotation parser.
+
+\ENDDOC

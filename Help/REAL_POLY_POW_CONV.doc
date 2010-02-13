@@ -1,0 +1,37 @@
+\DOC REAL_POLY_POW_CONV
+
+\TYPE {REAL_POLY_POW_CONV : term -> thm}
+
+\SYNOPSIS
+Raise real polynomial to numeral power while retaining canonical form.
+
+\DESCRIBE
+For many purposes it is useful to retain polynomials in a canonical form. For
+more information on the usual normal form in HOL Light, see the function
+{REAL_POLY_CONV}, which converts a polynomial to normal form while proving the
+equivalence of the original and normalized forms. The function
+{REAL_POLY_POW_CONV} is a more delicate conversion that, given a term 
+{p1 pow n} where {p} is a real polynomial in normal form and {n} a numeral,
+returns a theorem {|- p pow n = p'} where {p'} is in normal form.
+
+\FAILURE
+Fails if applied to a term that is not a real term raised to a numeral power.
+If the subterm is not a polynomial in normal form, the overall normalization is
+not guaranteed.
+
+\EXAMPLE
+{
+  # REAL_POLY_POW_CONV `(x + &1) pow 4`;;
+  val it : thm =
+    |- (x + &1) pow 4 = x pow 4 + &4 * x pow 3 + &6 * x pow 2 + &4 * x + &1
+}
+
+\USES
+More delicate polynomial operations that simply the direct normalization with 
+{REAL_POLY_CONV}.
+
+\SEEALSO
+REAL_ARITH, REAL_POLY_ADD_CONV, REAL_POLY_CONV, REAL_POLY_MUL_CONV,
+REAL_POLY_NEG_CONV, REAL_POLY_SUB_CONV, REAL_RING.
+
+\ENDDOC

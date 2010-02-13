@@ -1,0 +1,36 @@
+\DOC CHOOSE
+
+\TYPE {CHOOSE : term * thm -> thm -> thm}
+
+\SYNOPSIS
+Eliminates existential quantification using deduction from a
+particular witness.
+
+\KEYWORDS
+rule, existential.
+
+\DESCRIBE
+When applied to a term-theorem pair {(v,A1 |- ?x. s)} and a second
+theorem of the form {A2 |- t}, the inference rule {CHOOSE}
+produces the theorem {A1 u (A2 - {{s[v/x]}}) |- t}.
+{
+    A1 |- ?x. s[x]    A2 |- t
+   -------------------------------  CHOOSE (`v`,(A1 |- ?x. s))
+     A1 u (A2 - {{s[v/x]}}) |- t
+}
+\noindent Where {v} is not free in {A2 - {{s[v/x]}}}, {s} or {t}.
+
+\FAILURE
+Fails unless the terms and theorems correspond as indicated above; in
+particular, {v} must be a variable and have the same type as the variable
+existentially quantified over, and it must not be free in {A2 - {{s[v/x]}}}, 
+{s} or {t}.
+
+\COMMENTS
+For the special case of simply existentially quantifying an assumption over a
+variable, {SIMPLE_CHOOSE} is easier.
+
+\SEEALSO
+CHOOSE_TAC, EXISTS, EXISTS_TAC, SIMPLE_CHOOSE.
+
+\ENDDOC

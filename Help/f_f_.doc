@@ -1,0 +1,11 @@
+\DOC f_f_
+
+\TYPE {f_f_ : ('a -> 'b) -> ('c -> 'd) -> 'a * 'c -> 'b * 'd}
+
+\SYNOPSIS
+Non-infix version of {F_F}.
+
+\SEEALSO
+F_F.
+
+\ENDDOC

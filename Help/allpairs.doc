@@ -1,0 +1,24 @@
+\DOC allpairs
+
+\TYPE {allpairs : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list}
+
+\SYNOPSIS
+Compute list of all results from applying function to pairs from two lists.
+
+\DESCRIBE
+The call {allpairs f [x1;...;xm] [y1;...;yn]} returns the list of results
+{[f x1 y1; f x1 y2; ... ; f x1 yn; f x2 y1; ...; f xm yn]}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # allpairs (fun x y -> (x,y)) [1;2;3] [4;5];;
+  val it : (int * int) list = [(1, 4); (1, 5); (2, 4); (2, 5); (3, 4); (3, 5)]
+}
+
+\SEEALSO
+map2, zip.
+
+\ENDDOC

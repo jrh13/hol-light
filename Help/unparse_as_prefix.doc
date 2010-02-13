@@ -1,0 +1,19 @@
+\DOC unparse_as_prefix
+
+\TYPE {unparse_as_prefix : string -> unit}
+
+\SYNOPSIS
+Removes prefix status for an identifier.
+
+\DESCRIBE
+Certain identifiers {c} have prefix status, meaning that combinations of the
+form {c f x} will be parsed as {c (f x)} rather than the usual {(c f) x}. The
+call {unparse_as_prefix "c"} removes {c} from the list of such identifiers.
+
+\FAILURE
+Never fails, regardless of whether {c} originally did have prefix status.
+
+\SEEALSO
+is_prefix, parse_as_prefix, prefixes.
+
+\ENDDOC

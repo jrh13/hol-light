@@ -1,0 +1,28 @@
+\DOC ASM_FOL_TAC
+
+\TYPE {ASM_FOL_TAC : (string * thm) list * term -> goalstate}
+
+\SYNOPSIS
+Fix up function arities for first-order proof search.
+
+\DESCRIBE
+This function attempts to make the assumptions of a goal more `first-order'. 
+Functions that are not consistently used with the same arity, e.g. a function 
+{f} that is sometimes applied {f(a)} and sometimes used as an argument to other 
+functions, {g(f)}, will be identified. Applications of the function will then 
+be modified by the introduction of the identity function {I} (which can be
+thought of later as binary `function application') so that {f(a)} becomes 
+{I f a}. This gives a more natural formulation as a prelude to traditional
+first-order proof search.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+This function is not intended for general use, but is part of the initial
+normalization in {MESON} and {MESON_TAC}.
+
+\SEEALSO
+MESON, MESON_TAC.
+
+\ENDDOC

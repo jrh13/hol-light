@@ -1,0 +1,32 @@
+\DOC gcd_num
+
+\TYPE {gcd_num : num -> num -> num}
+
+\SYNOPSIS
+Computes greatest common divisor of two unlimited-precision integers.
+
+\DESCRIBE
+The call {gcd_num m n} for two unlimited-precision (type {num}) integers {m}
+and {n} returns the (positive) greatest common divisor of {m} and {n}. If 
+both {m} and {n} are zero, it returns zero.
+
+\FAILURE
+Fails if either number is not an integer (the type {num} supports arbitrary 
+rationals).
+
+\EXAMPLE
+{
+  # gcd_num (Int 35) (Int(-77));;
+  val it : num = 7
+  
+  # gcd_num (Int 11) (Int 0);;
+  val it : num = 11
+  
+  # gcd_num (Int 22 // Int 7) (Int 2);;
+  Exception: Failure "big_int_of_ratio".
+}
+
+\SEEALSO
+gcd, lcm_num.
+
+\ENDDOC

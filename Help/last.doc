@@ -1,0 +1,17 @@
+\DOC last
+
+\TYPE {last : 'a list -> 'a}
+
+\SYNOPSIS
+Computes the last element of a list.
+
+\DESCRIBE
+{last [x1;...;xn]} returns {xn}.
+
+\FAILURE
+Fails with {last} if the list is empty.
+
+\SEEALSO
+butlast, hd, tl, el.
+
+\ENDDOC

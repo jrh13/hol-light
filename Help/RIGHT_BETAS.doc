@@ -1,0 +1,26 @@
+\DOC RIGHT_BETAS
+
+\TYPE {RIGHT_BETAS : term list -> thm -> thm}
+
+\SYNOPSIS
+Apply and beta-reduce equational theorem with abstraction on RHS.
+
+\DESCRIBE
+Given a list of arguments {[`a1`; ...; `an`]} and a theorem of the form
+{A |- f = \x1 ... xn. t[x1,...xn]}, the rule {RIGHT_BETAS} returns
+{A |- f a1 ... an = t[a1,...,an]}. That is, it applies the theorem to the list 
+of arguments and beta-reduces the right-hand side.
+
+\FAILURE
+Fails if the argument types are wrong or the RHS has too few abstractions.
+
+\EXAMPLE
+{
+  # RIGHT_BETAS [`x:num`; `y:num`] (ASSUME `f = \a b c. a + b + c + 1`);;
+  val it : thm = f = (\a b c. a + b + c + 1) |- f x y = (\c. x + y + c + 1)
+}
+
+\SEEALSO
+BETA_CONV, BETAS_CONV.
+
+\ENDDOC

@@ -1,0 +1,73 @@
+\DOC define
+
+\TYPE {define : term -> thm}
+
+\SYNOPSIS
+Defines a general recursive function.
+
+\DESCRIBE
+The function {define} should be applied to a conjunction of `definitional'
+clauses {`def_1[f] /\ ... /\ def_n[f]`} for some variable {f}, where each
+clause {def_i} is a universally quantified equation with an application of {f}
+to arguments on the left-hand side. The idea is that these clauses define the
+action of {f} on arguments of various kinds, for example on an empty list and
+nonempty list:
+{
+  (f [] = a) /\ (!h t. CONS h t = k[f,h,t])
+}
+\noindent or on even numbers and odd numbers:
+{
+  (!n. f(2 * n) = a[f,n]) /\ (!n. f(2 * n + 1) = b[f,n])
+}
+The {define} function attempts to prove that there is indeed a function
+satisfying all these properties, and if it succceeds it defines a new function
+{f} and returns the input term with the variable {f} replaced by the newly
+defined constant.
+
+\FAILURE
+Fails if the definition is malformed or if some of the necessary conditions for
+the definition to be admissible cannot be proved automatically, or if there is
+already a constant of the given name.
+
+\EXAMPLE
+This is a `multifactorial' function:
+{
+  # define
+      `multifactorial m n =
+          if m = 0 then 1
+          else if n <= m then n else n * multifactorial m (n - m)`;;
+  val it : thm =
+  |- multifactorial m n =
+     (if m = 0 then 1 else if n <= m then n else n * multifactorial m (n - m))
+}
+Note that it fails without the {m = 0} guard because then there's no reason
+to suppose that {n - m} decreases and hence the recursion is apparently
+illfounded. Perhaps a more surprising example is the Collatz function:
+{
+  # define
+     `!n. collatz(n) = if n <= 1 then n
+                       else if EVEN(n) then collatz(n DIV 2)
+                       else collatz(3 * n + 1)`;;
+}
+Note that the definition was made successfully because there provably is a
+function satisfying these recursion equations, notwithstanding the fact that it
+is unknown whether the recursion is wellfounded. (Tail-recursive functions are
+always logically consistent, though they may not have any useful provable
+properties.)
+
+\COMMENTS
+Assuming the definition is well-formed and the constant name is unused, failure
+indicates that {define} was unable to prove one or both of the following two
+properties: (i) the clauses are not mutually inconsistent (more than one clause
+could apply to some arguments, and the results are not obviously the same), or
+(ii) the definition is recursive and no ordering justifying the recursion could
+be arrived at by the automated heuristic. In order to make progress in such
+cases, try applying {prove_recursive_functions_exist} to the same definition
+with existential quantification over {f}, to see the unproven side-conditions.
+An example is in the documentation for {prove_recursive_functions_exist}.
+
+\SEEALSO
+new_definition, new_recursive_definition, new_specification,
+prove_recursive_functions_exist.
+
+\ENDDOC

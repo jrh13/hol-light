@@ -1,0 +1,24 @@
+\DOC dest_pair
+
+\TYPE {dest_pair : term -> term * term}
+
+\SYNOPSIS
+Breaks apart a pair into two separate terms.
+
+\DESCRIBE
+{dest_pair} is a term destructor for pairs: {dest_pair `(t1,t2)`} returns
+{(`t1`,`t2`)}.
+
+\FAILURE
+Fails with {dest_pair} if term is not a pair.
+
+\EXAMPLE
+{
+  # dest_pair `(1,2),(3,4),(5,6)`;;
+  val it : term * term = (`1,2`, `(3,4),5,6`)
+}
+
+\SEEALSO
+dest_cons, is_pair, mk_pair.
+
+\ENDDOC

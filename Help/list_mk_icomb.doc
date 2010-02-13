@@ -1,0 +1,34 @@
+\DOC list_mk_icomb
+
+\TYPE {list_mk_icomb : string -> term list -> term}
+
+\SYNOPSIS
+Applies constant to list of arguments, instantiating constant type as needed.
+
+\DESCRIBE
+The call {list_mk_icomb "c" [a1; ...; an]} will make the term {c a1 ... an}
+where c is a constant, after first instantiating {c}'s generic type so that the
+types are compatible.
+
+\FAILURE
+Fails if {c} is not a constant or if the types cannot be instantiated to match
+up with the argument list.
+
+\EXAMPLE
+This would fail with the basic {list_mk_comb} function
+{
+  # list_mk_icomb "=" [`1`; `2`];;
+  val it : term = `1 = 2`
+}
+
+\COMMENTS
+Note that in general the generic type of the constant is only instantiated 
+sufficiently to make its type match the arguments, which does not necessarily 
+determine it completely. Unless you are sure this will be sufficient, it is 
+safer and probably more efficient to instantiate the type manually using {inst} 
+first.
+
+\SEEALSO
+list_mk_comb, mk_mconst, mk_icomb.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC empty_net
+
+\TYPE {empty_net : 'a net}
+
+\SYNOPSIS
+Empty term net.
+
+\DESCRIBE
+Term nets (type {'a net}) are a lookup structure associating objects of type
+{'a}, e.g. conversions, with a corresponding `pattern' term. For a given term,
+one can then relatively quickly look up all objects whose pattern terms might
+possibly match to it. This is used, for example, in rewriting to quickly filter
+out obviously inapplicable rewrites rather than attempting each one in turn.
+The (polymorphic) object {empty_net} is the term net with no objects defined;
+it can then be augmented by {enter} or {merge_nets} and used in {lookup}.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+enter, lookup, merge_nets.
+
+\ENDDOC

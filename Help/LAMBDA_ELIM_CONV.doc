@@ -1,0 +1,34 @@
+\DOC LAMBDA_ELIM_CONV
+
+\TYPE {LAMBDA_ELIM_CONV : conv}
+
+\SYNOPSIS
+Eliminate lambda-terms that are not part of quantifiers from Boolean term.
+
+\DESCRIBE
+When applied to a Boolean term, {LAMBDA_ELIM_CONV} returns an equivalent
+version with `bare' lambda-terms (those not part of quantifiers) removed. They
+are replaced with new `function' variables and suitable hypotheses about them;
+for example a lambda-term {\x. t[x]} is replaced by a function {f} with an
+additional hypothesis {!x. f x = t[x]}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  #  LAMBDA_ELIM_CONV `MAP (\x. x + 1) l = l'`;;
+  val it : thm =
+    |- MAP (\x. x + 1) l = l' <=>
+       (!_73141. (!x. _73141 x = x + 1) ==> MAP _73141 l = l')
+}
+
+\USES
+This is mostly intended for normalization prior to automated proof procedures,
+and is used by {MESON}, for example. However, it may sometimes be useful in
+itself.
+
+\SEEALSO
+SELECT_ELIM_TAC, CONDS_ELIM_CONV.
+
+\ENDDOC

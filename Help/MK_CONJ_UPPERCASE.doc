@@ -1,0 +1,34 @@
+\DOC MK_CONJ
+
+\TYPE {MK_CONJ : thm -> thm -> thm}
+
+\SYNOPSIS
+Conjoin both sides of two equational theorems.
+
+\DESCRIBE
+Given two theorems, each with a Boolean equation as conclusion, {MK_CONJ}
+returns the equation resulting from conjoining their respective sides:
+{
+         A |- p <=> p'   B |- q <=> q'
+      ----------------------------------- MK_CONJ
+           A u B |- p /\ q <=> p' /\ q'
+}
+
+\FAILURE
+Fails unless both input theorems are Boolean equations (iff).
+
+\EXAMPLE
+{
+  # let th1 = ARITH_RULE `0 < n <=> ~(n = 0)`
+    and th2 = ARITH_RULE `1 <= n <=> ~(n = 0)`;;
+  val th1 : thm = |- 0 < n <=> ~(n = 0)
+  val th2 : thm = |- 1 <= n <=> ~(n = 0)
+
+  # MK_CONJ th1 th2;;
+  val it : thm = |- 0 < n /\ 1 <= n <=> ~(n = 0) /\ ~(n = 0)
+}
+
+\SEEALSO
+AP_TERM, AP_THM, MK_BINOP, MK_COMB, MK_DISJ, MK_EXISTS, MK_FORALL.
+
+\ENDDOC

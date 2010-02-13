@@ -1,0 +1,25 @@
+\DOC dest_binder
+
+\TYPE {dest_binder : string -> term -> term * term}
+
+\SYNOPSIS
+Breaks apart a ``binder''.
+
+\DESCRIBE
+Applied to a term {tm} of the form {`c (\x. t)`} where {c} is a constant whose
+name is {"s"}, the call {dest_binder "c" tm} returns {(`x`,`t`)}. Note that 
+this is actually independent of whether the name parses as a binder, but the 
+usual application is where it does.
+
+\FAILURE
+Fails if the term is not of the appropriate form with a constant of the same 
+name.
+
+\EXAMPLE
+The call {dest_binder "!"} is the same as {dest_forall}, and is in fact how 
+that function is implemented.
+
+\SEEALSO
+dest_abs, dest_comb, dest_const, dest_var.
+
+\ENDDOC

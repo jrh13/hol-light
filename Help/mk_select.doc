@@ -1,0 +1,17 @@
+\DOC mk_select
+
+\TYPE {mk_select : term * term -> term}
+
+\SYNOPSIS
+Constructs a choice binding.
+
+\DESCRIBE
+The call {mk_select(`v`,`t`)} returns the choice term {`@v. t`}.
+
+\FAILURE
+Fails if {v} is not a variable.
+
+\SEEALSO
+is_slect, mk_select.
+
+\ENDDOC

@@ -1,0 +1,129 @@
+\DOC new_inductive_definition
+
+\TYPE {new_inductive_definition : term -> thm * thm * thm}
+
+\SYNOPSIS
+Define a relation or family of relations inductively.
+
+\DESCRIBE
+The function {new_inductive_definition} is applied to a conjunction of
+``rules'' of the form {!x1...xn. Pi ==> Ri t1 ... tk}. This conjunction is
+interpreted as an inductive definition of a set of relations {Ri} (however many
+appear in the consequents of the rules). That is, the relations are defined to
+be the smallest ones closed under the rules. The function
+{new_inductive_definition} will convert this into explicit definitions, define
+a new constant for each {Ri}, and return a triple of theorems. The first one
+will be the ``rule'' theorem, which essentially matches the input clauses
+except that the {Ri} are now the new constants; this simply says that the new
+relations are indeed closed under the rules. The second theorem is an induction
+theorem, asserting that the relations are the least ones closed under the
+rules. Finally, the cases theorem gives a case analysis theorem showing how
+each set of values satisfying the relation may be composed.
+
+\FAILURE
+Fails if the clauses are malformed, if the constants are already in use, or if
+there are unproven monotonicity hypotheses. In the last case, you can try
+{prove_inductive_relations_exist} to examine these hypotheses, and either try
+to prove them manually or extend {monotonicity_theorems} to let HOL do it.
+
+\EXAMPLE
+A classic example where we have mutual induction is the set of even and odd
+numbers:
+{
+  # let eo_RULES,eo_INDUCT, eo_CASES = new_inductive_definition
+     `even(0) /\ odd(1) /\
+      (!n. even(n) ==> odd(n + 1)) /\
+      (!n. odd(n) ==> even(n + 1))`;;
+  val eo_RULES : thm =
+    |- even 0 /\
+       odd 1 /\
+       (!n. even n ==> odd (n + 1)) /\
+       (!n. odd n ==> even (n + 1))
+  val eo_INDUCT : thm =
+    |- !odd' even'.
+           even' 0 /\
+           odd' 1 /\
+           (!n. even' n ==> odd' (n + 1)) /\
+           (!n. odd' n ==> even' (n + 1))
+           ==> (!a0. odd a0 ==> odd' a0) /\ (!a1. even a1 ==> even' a1)
+  val eo_CASES : thm =
+    |- (!a0. odd a0 <=> a0 = 1 \/ (?n. a0 = n + 1 /\ even n)) /\
+       (!a1. even a1 <=> a1 = 0 \/ (?n. a1 = n + 1 /\ odd n))
+}
+Note that the `rules' theorem corresponds exactly to the input, and says that
+indeed the relations do satisfy the rules. The `induction' theorem says that
+the relations are the minimal ones satisfying the rules. You can use this to
+prove properties by induction, e.g. the relationship with the pre-defined
+concepts of odd and even:
+{
+  # g `(!n. odd(n) ==> ODD(n)) /\ (!n. even(n) ==> EVEN(n))`;;
+}
+\noindent applying the induction theorem:
+{
+  # e(MATCH_MP_TAC eo_INDUCT);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `EVEN 0 /\
+   ODD 1 /\
+   (!n. EVEN n ==> ODD (n + 1)) /\
+   (!n. ODD n ==> EVEN (n + 1))`
+}
+\noindent This is easily finished off by, for example:
+{
+  # e(REWRITE_TAC[GSYM NOT_EVEN; EVEN_ADD; ARITH]);;
+  val it : goalstack = No subgoals
+}
+
+For another example, consider defining a simple propositional logic:
+{
+  # parse_as_infix("-->",(13,"right"));;
+  val it : unit = ()
+  # let form_tybij = define_type "form = False | --> form form";;
+  val form_tybij : thm * thm =
+    (|- !P. P False /\ (!a0 a1. P a0 /\ P a1 ==> P (a0 --> a1)) ==> (!x. P x),
+     |- !f0 f1.
+            ?fn. fn False = f0 /\
+                 (!a0 a1. fn (a0 --> a1) = f1 a0 a1 (fn a0) (fn a1)))
+}
+\noindent and making an inductive definition of the provability relation:
+{
+  # parse_as_infix("|--",(11,"right"));;
+  val it : unit = ()
+
+  # let provable_RULES,provable_INDUCT,provable_CASES = new_inductive_definition
+   `(!p. p IN A ==> A |-- p) /\
+    (!p q. A |-- p --> (q --> p)) /\
+    (!p q r. A |-- (p --> q --> r) --> (p --> q) --> (p --> r)) /\
+    (!p. A |-- ((p --> False) --> False) --> p) /\
+    (!p q. A |-- p --> q /\ A |-- p ==> A |-- q)`;;
+  val provable_RULES : thm =
+    |- !A. (!p. p IN A ==> A |-- p) /\
+           (!p q. A |-- p --> q --> p) /\
+           (!p q r. A |-- (p --> q --> r) --> (p --> q) --> p --> r) /\
+           (!p. A |-- ((p --> False) --> False) --> p) /\
+           (!p q. A |-- p --> q /\ A |-- p ==> A |-- q)
+  val provable_INDUCT : thm =
+    |- !A |--'.
+           (!p. p IN A ==> |--' p) /\
+           (!p q. |--' (p --> q --> p)) /\
+           (!p q r. |--' ((p --> q --> r) --> (p --> q) --> p --> r)) /\
+           (!p. |--' (((p --> False) --> False) --> p)) /\
+           (!p q. |--' (p --> q) /\ |--' p ==> |--' q)
+           ==> (!a. A |-- a ==> |--' a)
+  val provable_CASES : thm =
+    |- !A a.
+           A |-- a <=>
+           a IN A \/
+           (?p q. a = p --> q --> p) \/
+           (?p q r. a = (p --> q --> r) --> (p --> q) --> p --> r) \/
+           (?p. a = ((p --> False) --> False) --> p) \/
+           (?p. A |-- p --> a /\ A |-- p)
+}
+Note that {A} is not universally quantified in the clauses, and is therefore
+treated as a parameter.
+
+\SEEALSO
+derive_strong_induction, prove_inductive_relations_exist, 
+prove_monotonicity_hyps.
+
+\ENDDOC

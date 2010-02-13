@@ -1,0 +1,2391 @@
+thm:
+REFL `x`
+gives `|- x = x`
+
+TRANS `ASM1 |- a = b` `ASM2 |- b = c`
+gives `ASM1+ASM2 |- a = c`
+
+MK_COMB (`ASM1 |- f = g`, `ASM2 |- a = b`)
+gives `ASM1+ASM2 |- (f a) = (g b)`
+
+ABS `x` `ASM1{-x} |- a=b`
+gives `ASM1 |- \x.a = \x.b`
+
+BETA is useless; use BETA_CONV
+
+ASSUME `a`
+gives `a |- a`
+
+EQ_MP `ASM1 |- a = b` `ASM2 |- a`
+gives `ASM1+ASM2 |- b`
+
+DEDUCT_ANTISYM_RULE `ASM1 |- a` `ASM2 |- b`
+gives `(ASM1-{b})+(ASM2-{a}) |- a=b`
+
+INST_TYPE instantiation theorem
+gives a new theorem with type variables instantiated
+
+INST instantiation theorem
+gives a new theorem with variables instantiated
+
+equal:
+BETA_CONV `(\x. A) y`
+gives `|- (\x. A) y = A[y/x]`
+
+AP_TERM `f` `ASM1 |- a = b`
+gives `ASM1 |- (f a) = (f b)`
+
+AP_THM `ASM1 |- f = g` `a`
+gives `ASM1 |- (f a) = (g a)`
+
+SYM `ASM1 |- a = b`
+gives `ASM1 |- b = a`
+
+ALPHA `(\x.x)` `(\y.y)`
+gives `|- (\x.x) = (\y.y)`
+
+ALPHA_CONV `y` `(\x.x)`
+gives `|- (\x.x) = (\y.y)`
+
+GEN_ALPHA_CONV `y` `!x. P[x]`
+gives `|- (!x. P[x]) = (!y. P[y])` (it looks inside one level of application)
+
+MK_BINOP `(+)` (`ASM1 |- a = b`, `ASM2 |- c = d`)
+gives `ASM1+ASM2 |- a + c = b + d`
+
+A conversion takes a term and returns an equality theorem with the term on
+the lhs (or it fails).
+
+NO_CONV is a conversion which always fails.
+ALL_CONV is a conversion which always succeeds without changing the term.
+c1 THENC c2 rewrites with c1 then c2.
+c1 ORELSEC c2 rewrites with c1; if it fails, it rewrites with c2 instead.
+FIRST_CONV [c1;...;cn] rewrites with the first non-failing conversion in
+           the list.
+EVERY_CONV [c1;...;cn] rewrites with the first conversion, then the
+           second, then ... then the last.
+REPEATC c rewrites with c until it fails (and returns the result of the
+        last successful rewrite).
+CHANGED_CONV c rewrites with c, but fails if the result is alpha-equivalent
+             to the original term.
+TRY_CONV c rewrites with c; if it fails, it does not change the term
+         (and does not fail).
+
+RATOR_CONV c uses the conversion to rewrite the operator of a combination.
+RAND_CONV c uses the conversion to rewrite the operand of a combination.
+LAND_CONV c uses the conversion to rewrite the first argument of
+          a binary function.
+COMB2_CONV c1 c2 uses c1 to rewrite the operator and c2 to rewrite the
+           operand of a combination.
+COMB_CONV c rewrites both the operator and operand of a combination with c.
+ABS_CONV c rewrites the body of an abstraction with c.
+BINDER_CONV c rewrites the body of an abstraction or of a
+            binder/abstraction combination.
+SUB_CONV c either rewrites both parts of a combination, or the body
+         of an abstraction, or does nothing (it never fails).
+BINOP_CONV c rewrites both arguments of a binary function.
+THENQC c1 c2 is like (c1 THENC c2) ORELSEC c1 ORELSEC c2
+THENCQC c1 c2 is like (c1 THENC c2) ORELSEC c1
+REPEATQC c rewrites with c one or more times, until it fails (returning
+         the last succeeding rewrite; if the initial rewrite fails,
+         then REPEATQC fails)
+COMB2_QCONV c1 c2 is like
+            (RATOR_CONV c1 THENC RAND_CONV c2) ORELSEC RATOR_CONV c1 ORELSEC RAND_CONV c2
+COMB_QCONV c = COMB2_QCONV c c
+SUB_QCONV c is like ABS_CONV c ORELSEC COMB_QCONV c
+ONCE_DEPTH_QCONV c uses c to rewrite all maximal applicable terms
+                 (terms which are not properly contained in another
+                 applicable term).  Fails if c does not apply to any terms.
+DEPTH_QCONV c repeatedly rewrites with c (in a single bottom-up sweep),
+            failing if c does not apply anywhere.
+REDEPTH_QCONV c rewrites with c (in a bottom-up sweep); after any
+              successful rewrite, it starts over again at the leaves
+              of the new term.  Fails if c does not apply anywhere.
+TOP_DEPTH_QCONV c repeatedly rewrites with c top-to-bottom;
+                recursively do something like:
+                do (rewrite current until no change)
+                   then rewrite children with TOP_DEPTH_QCONV
+                until no change
+TOP_SWEEP_QCONV c rewrite with c top-to-bottom; something like:
+                (rewrite current until no change)
+                then rewrite children with TOP_SWEEP_QCONV
+
+ONCE_DEPTH_CONV, DEPTH_CONV, REDEPTH_CONV, TOP_DEPTH_CONV, TOP_SWEEP_CONV:
+like the QCONV variants, except they never fail
+
+SINGLE_DEPTH_CONV c rewrites maximal applicable subterms with c,
+                  then rewrites parents of changed terms bottom-up
+
+DEPTH_BINOP_CONV op c
+                 For example, DEPTH_BINOP_CONV `+` c rewrites
+                 x,y,z,w in `(x + ((y + z) + w))` (fails if any
+                 of these rewrites fail)
+
+PATH_CONV path c
+          For example, PATH_CONV ["b";"l";"r";"r"] c rewrites the
+          operand of the operand of the operator of the abstraction body
+          with c.
+
+SYM_CONV rewrites `a = b` to `b = a`
+
+CONV_RULE c th uses c to rewrite the conclusion of the theorem
+          (and return a new theorem).
+
+SUBS_CONV ths is a conversion.  It takes its list of equality
+          theorems and rewrites (anywhere in its argument term)
+          any lhs to its corresponding rhs (matching with alpha-equivalence).
+
+BETA_RULE takes a theorem, does all possible beta reductions, and
+          returns the new theorem.
+GSYM applies symmetry on all outermost equalities in the conclusion
+     of a theorem.
+SUBS applies SUBS_CONV to the conclusion of a theorem.
+
+CACHE_CONV c is equivalent to c, except that it caches all
+           conversion applications.
+
+bool:
+PINST tyin tmin th instantiates types in th according to tyin and terms
+      according to tmin.
+
+PROVE_HYP th1 th2
+If the conclusion of th1 is a hypothesis of th2, then returns th2
+except that this hypothesis is replaced by the hypotheses of th1; otherwise
+returns th2 unchanged.
+
+T_DEF: `T = ((\x:bool. x) = (\x:bool. x))`
+
+TRUTH: `|- T`
+
+EQT_ELIM `ASM1 |- a = T` gives `ASM1 |- a`
+
+EQT_INTRO `ASM1 |- a` gives `ASM1 |- a = T`
+
+AND_DEF: `(/\) = \t1 t2. (\f:bool->bool->bool. f t1 t2) = (\f. f T T)`
+CONJ `ASM1 |- a` `ASM2 |- b` gives `ASM1+ASM2 |- a /\ b`
+CONJUNCT1 `ASM |- a /\ b` gives `ASM1 |- a`
+CONJUNCT2 `ASM |- a /\ b` gives `ASM1 |- b`
+CONJ_PAIR th = (CONJUNCT1 th, CONJUNCT2 th)
+CONJUNCTS th gives a list of theorems, one for each conjunct of the
+          conclusion of th (no matter how they are associated)
+
+IMP_DEF: `(==>) = \t1 t2. t1 /\ t2 = t1`
+MP `ASM1 |- a ==> b` `ASM2 |- a` gives `ASM1+ASM2 |- b`
+DISCH `a` `ASM,a |- b` gives `ASM |- a ==> b`
+DISCH_ALL repeats DISCH until there are no more hypotheses.
+UNDISCH `ASM |- a ==> b` gives `ASM,a |- b`
+UNDISCH_ALL repeats UNDISCH until the conclusion is not an implication
+IMP_ANTISYM_RULE `ASM1 |- a ==> b` `ASM2 |- b ==> a` gives `ASM1+ASM2 |- a = b`
+ADD_ASSUM `a` `ASM |- b` gives `ASM,a |- b`
+EQ_IMP_RULE `ASM |- (a:bool) = b` gives (`ASM |- a ==> b`, `ASM |- b ==> a`)
+IMP_TRANS `ASM1 |- a ==> b` `ASM2 |- b ==> c` gives `ASM1+ASM2 |- a ==> c`
+
+FORALL_DEF: `(!) = \P:A->bool. P = \x. T`
+SPEC `a` `ASM |- !x.P[x]` gives `ASM |- P[a]`
+SPECL [`a`;`b`;`c`] `ASM |- !x y z.P[x,y,z]` gives `ASM |- P[a,b,c]`
+SPEC_VAR `ASM |- !x.P[x]` gives (`x17`, `ASM |- P[x17]`)
+SPEC_ALL repeats SPEC_VAR until the conclusion is not a "forall", and returns
+         the final theorem.
+ISPEC is like SPEC, except that the specialized term may be an instance
+      of the type of the quantified variable (in which case the theorem
+      is type-instantiated first), rather than matching exactly.
+ISPECL is like SPECL with type instantiations.
+GEN `x` `ASM |- P[x]` gives `ASM |- !x. P[x]` (if x is not free in ASM)
+GENL [`x`;`y`;`z`] `ASM |- P[x,y,z]` gives `ASM |- !x y z. P[x,y,z]`
+GEN_ALL generalizes over all variables free in the conclusion but not
+        in the assumptions
+
+EXISTS_DEF: `(?) = \P:A->bool. !Q. (!x. P x ==> Q) ==> Q`
+EXISTS (`?x. P[x]`,`a`) `ASM |- P[a]` gives `ASM |- ?x. P[x]`
+SIMPLE_EXISTS `x` `ASM |- P[x]` gives `ASM |- ?x. P[x]`
+CHOOSE (`x`,`ASM1 |- ?y.P[y]`) `ASM2,P[x] |- a` gives `ASM1+ASM2 |- a`
+SIMPLE_CHOOSE `x` `ASM,P[x] |- a` gives `ASM,?x.P[x] |- a` (P[x] must be
+              the first hypothesis)
+
+OR_DEF: `(\/) = \t1 t2. !t. (t1 ==> t) ==> (t2 ==> t) ==> t`
+DISJ1 `ASM |- a` `b` gives `ASM |- a \/ b`
+DISJ2 `a` `ASM |- b` gives `ASM |- a \/ b`
+DISJ_CASES `ASM1 |- a \/ b` `ASM2,a |- c` `ASM3,b |- c` gives
+           `ASM1,ASM2,ASM3 |- c`
+SIMPLE_DISJ_CASES `ASM1,a |- c` `ASM2,b |- c` gives
+                  `ASM1,ASM2,a \/ b |- c` (a and b must be the first
+                  hypotheses)
+
+F_DEF: `F = !t:bool. t`
+NOT_DEF: `(~) = \t. t ==> F`
+NOT_ELIM `ASM |- ~a` gives `ASM |- a ==> F`
+NOT_INTRO `ASM |- a ==> F` gives `ASM |- ~a`
+EQF_INTRO `ASM |- ~a` gives `ASM |- a = F`
+EQF_ELIM `ASM |- a = F` gives `ASM |- ~a`
+NEG_DISCH `a` `ASM,a |- F` gives `ASM |- ~a` (if the conclusion of the
+          initial theorem is not F, then NEG_DISCH acts like DISCH)
+CONTR `a` `ASM |- F` gives `ASM |- a`
+
+EXISTS_UNIQUE_DEF: `(?!) = \P:A->bool. ((?) P) /\ (!x y. ((P x) /\ (P y)) ==> (x = y))`
+EXISTENCE `ASM |- ?!x. P[x]` gives `ASM |- ?x. P[x]`
+
+drule:
+
+MK_CONJ `ASM1 |- a = b` `ASM2 |- c = d` gives `ASM1,ASM2 |- a /\ c = b /\ d`
+MK_DISJ `ASM1 |- a = b` `ASM2 |- c = d` gives `ASM1,ASM2 |- a \/ c = b \/ d`
+MK_FORALL `x` `ASM |- a = b` gives `ASM |- (!x.a) = (!x.b)`
+MK_EXISTS `x` `ASM |- a = b` gives `ASM |- (?x.a) = (?x.b)`
+
+BETAS_CONV (n:int) is a conversion which rewrites with BETA_CONV n times.
+(so BETAS_CONV 3 rewrites `(\x y z.P[x,y,z]) a b c` to `P[a,b,c]`)
+
+INSTANTIATE takes an "instantiation" and a theorem and instantiates
+the theorem.  (I haven't figured out yet what an "instantiation" is.)
+INSTANTIATE_ALL has the same type as INSTANTIATE.
+
+For the rest of the file, I will treat '@' as a metavariable for
+an instantiation (written postfix).  For instance, I may mention
+the terms `a ==> b`, `a@`, and `b@`; this means that
+`a@ ==> b@` is an instantiation of `a ==> b`.
+
+In some cases where I use this notation, universal quantification is
+allowed; that is, where I mention terms `a` and `a@`, the implementation
+would allow `!x. P[x]` and `P[b]`.
+
+PART_MATCH partfn th tm matches (partfn (concl (SPEC_ALL th))) against tm
+and instantiates the theorem appropriately.
+
+MATCH_MP ith th is like MP, except it uses matching instead of
+requiring an exact match.
+
+HIGHER_REWRITE_CONV ths top
+A conversion which finds the first largest (if top == true) or smallest
+(if top == false) subterm which matches (using higher-order matching)
+a lhs of a conclusion in ths, and rewrites it.
+
+tactics:
+
+t1 THEN t2
+Apply t1, then apply t2 to all subgoals created.
+
+t THENL [t1;t2;...;tn]
+Apply t, then apply t1 to the first subgoal, ..., tn to the last subgoal
+(there must be exactly n subgoals).
+
+t1 ORELSE t2
+Apply t1; if it fails, apply T2.
+
+FAIL_TAC s
+A tactic which always fails (with error message s).
+
+NO_TAC
+A tactic which always fails.
+
+ALL_TAC
+A tactic which does nothing (the identity tactic).
+
+TRY t = tac ORELSE ALL_TAC
+
+REPEAT t
+Apply t, then apply it again to all subgoals, etc.; until it fails.
+
+EVERY [t1;...;tn] = t1 THEN ... THEN tn
+
+FIRST [t1;...;tn] = t1 ORELSE ... ORELSE tn
+
+MAP_EVERY tf [x1;...;xn] = tf x1 THEN ... THEN tf xn
+
+MAP_FIRST tf [x1;...;xn] = tf x1 ORELSE ... ORELSE tf xn
+
+CHANGED_TAC t
+Apply t; fail if the result is a single subgoal which is equal to the
+original goal (warning: does not use alpha-equivalence!)
+
+A "theorem tactic" is a function from theorems to tactics.
+A "theorem tactical" is a function from theorem tactics to theorem tactics.
+Equivalently: a theorem tactical is a function from theorem tactics
+and theorems to tactics.
+
+In other words, a theorem tactic takes a theorem and does something
+to the current goal using that theorem.
+
+A theorem tactical takes a theorem tactic and a theorem and does something
+to the current goal.  Typically, it will preprocess the theorem somehow
+before handing the result to the theorem tactic.  (In fact, the
+tactical may apply the theorem tactic multiple times, sequentially
+or in parallel (in different subgoals).)
+
+The functions in this section manipulate theorem tacticals.
+I will write out pseudo-definitions of these functions that pretend
+that a theorem tactical is a function from theorems to theorems which
+happens to side-effect the goal; remember that the actual type is
+very different than this.
+
+(thtc1 THEN_TCL thtc2) tht th
+= tht (thtc1 (thtc2 th))
+
+(thtc1 ORELSE_TCL thtc2) tht th
+= (tht (thtc1 th)) ORELSE (tht (thtc2 th))
+
+ALL_THEN = I
+(all_then is the theorem tactical which does nothing to the theorem
+before handing it to the theorem tactic)
+
+NO_THEN
+theorem tactical which always fails
+
+REPEAT_TCL thtc
+= (thtc THEN_TCL (REPEAT_TCL thtc)) ORELSE_TCL ALL_THEN
+
+REPEAT_GTCL ???
+I don't understand why REPEAT_GTCL is different than REPEAT_TCL.
+Fortunately, REPEAT_GTCL is never used, so it can't be very important :-)
+
+EVERY_TCL [thtc1;...;thtcn] = thtc1 THEN_TCL ... THEN_TCL thtcn
+FIRST_TCL [thtc1;...;thtcn] = thtc1 ORELSE_TCL ... ORELSE_TCL thtcn
+
+LABEL_TAC s th
+Adds th as a new assumption, with label s.  (Assumes that any hypotheses
+of th are also hypotheses of the goal.)
+
+ASSUME_TAC = LABEL_TAC ""
+
+USE_ASSUM s tht
+Find the first assumption with label s (call this assumption th).
+Applies tactic (tht th).
+
+FIND_ASSUM tht tm
+Find the first assumption whose conclusion is equal (not alpha-equivalent!)
+to tm (call this assumption th).  Applies tactic (tht th).
+
+POP_ASSUM tht
+Call the first (most recently added) assumption th.  Removes th
+from assumption list, and applies tactic (tht th).
+
+ASSUM_LIST thlt
+Applies tactic (thlt thl), where thl is the list of assumptions.
+
+POP_ASSUM_LIST thlt
+Applies tactic (thlt thl) after removing all assumptions, where thl
+is the list of assumptions.
+
+EVERY_ASSUM tht = ASSUM_LIST (MAP_EVERY tht)
+
+(* This is not the actual definition; I think it is equivalent. *)
+FIRST_ASSUM tht = ASSUM_LIST (MAP_FIRST tht)
+
+RULE_ASSUM_TAC thth
+Replaces every assumption with thth applied to that assumption.
+
+ASM thlt thl
+Applies tactic (thlt (asm @ thl)), where asm is the list of assumptions.
+
+ACCEPT_TAC th
+A tactic which solves the current goal, assuming the conclusion of th
+is alpha-equivalent to the goal.
+
+CONV_TAC c
+Create tactic from a conversion. This allows the conversion to return
+|- p rather than |- p = T on a term "p". It also eliminates any goals of
+the form "T" automatically.
+
+REFL_TAC
+Accepts if the current goal is of the form `a = a`.
+
+ABS_TAC
+Converts goal `(\x. a) = (\x. b)` to `a = b`.
+
+MK_COMB_TAC
+Converts goal `f a = g b` to `f = g` and `a = b`.
+
+AP_TERM_TAC
+Converts goal `f a = f b` to `a = b`.
+
+AP_THM_TAC
+Converts goal `f a = g a` to `f = g`.
+
+BINOP_TAC
+Converts goal `f a b = f c d` to `a = c` and `b = d`.
+
+SUBST1_TAC `|- a = b`
+Converts goal `P[a]` to `P[b]`
+
+SUBST_ALL_TAC `|- a = b`
+Rewrites `a` to `b` in goal and all assumptions.
+
+BETA_TAC
+Does all possible beta-reductions in goal.
+
+DISCH_TAC
+Converts goal `a ==> b` to `b` and adds `a` as a new assumption.
+(Treats goal `~a` as `a ==> F`.)
+
+MP_TAC `|- a`
+Converts goal `b` to `a ==> b`.
+
+EQ_TAC
+Converts goal `(a:bool) = b` to `a ==> b` and `b ==> a`.
+
+UNDISCH_TAC `a`
+Finds an assumption with a conclusion alpha-equivalent to `a`.
+Removes this assumption, and converts goal `b` to `a ==> b`.
+
+SPEC_TAC (`x`,`a`)
+Converts goal `P[a]` to `!x. P[x]`
+
+X_GEN_TAC `x`
+Converts goal `!y. P[y]` to `P[x]`
+
+GEN_TAC
+Converts goal `!x. P[x]` to `P[x]`
+
+EXISTS_TAC `a`
+Converts goal `?x. P[x]` to `P[a]`
+
+X_CHOOSE_TAC `x` `|- ?y. P[y]`
+Adds a new assumption `P[x]`
+
+CHOOSE_TAC `|- ?x. P[x]`
+Adds a new assumption `P[x]`
+
+CONJ_TAC
+Converts goal `a /\ b` to `a` and `b`
+
+DISJ1_TAC
+Converts goal `a \/ b` to `a`
+
+DISJ2_TAC
+Converts goal `a \/ b` to `b`
+
+DISJ_CASES_TAC `|- a \/ b`
+Creates two subgoals.  Adds assumption `a` in one subgoal, `b` in the other.
+
+CONTR_TAC `|- F`
+Accepts the goal.
+
+MATCH_ACCEPT_TAC `|- a`
+First applies (REPEAT GEN_TAC), then accepts if the conclusion is an
+instance of `a`
+
+MATCH_MP_TAC `|- a ==> b`
+Converts a goal `b@` into `a@`.
+
+CONJUNCTS_THEN2 tht1 tht2 `|- a /\ b`
+Applies tactic (tht1 `|- a`) THEN (tht2 `|- b`)
+
+CONJUNCTS_THEN tht `|- a /\ b`
+Applies tactic (tht `|- a`) THEN (tht `|- b`)
+
+DISJ_CASES_THEN2 tht1 tht2 `|- a \/ b`
+Generates two subgoals.  Applies (tht1 `|- a`) in one subgoal,
+(tht2 `|- b`) in the other.
+
+DISJ_CASES_THEN tht `|- a \/ b`
+Generates two subgoals.  Applies (tht `|- a`) in one subgoal,
+(tht `|- b`) in the other.
+
+DISCH_THEN tht
+Converts goal `a ==> b` to `b`, then applies tactic (tht `|- a`).
+(Treats `~a` as `a ==> F`)
+
+X_CHOOSE_THEN `x` tht `|- ?y. P[y]`
+Applies tactic (tht `|- P[x]`)
+
+CHOOSE_THEN tht `|- ?x. P[x]`
+Applies tactic (tht `|- P[x]`)
+
+STRIP_THM_THEN = FIRST_TCL [CONJUNCTS_THEN; DISJ_CASES_THEN; CHOOSE_THEN]
+(That is, it acts like CONJUNCTS_THEN, DISJ_CASES_THEN, or CHOOSE_THEN,
+depending on whether the theorem is a conjunction, disjunction, or
+exists.)
+
+ANTE_RES_THEN tht `|- a@`
+For every assumption `|- a ==> b`, applies tactic (tht `|- b@`)
+
+IMP_RES_THEN tht `|- a ==> b`
+For every assumption `|- a@`, applies tactic (tht `|- b@`)
+
+STRIP_ASSUME_TAC th
+Starts with (REPEAT_TCL STRIP_THM_THEN) applied to th.
+Call the resulting theorem(s) gth.  If gth is `F`, or equal to the
+goal, then solve the goal; if gth is already an assumption, do nothing;
+otherwise, add gth as an assumption.
+
+STRUCT_CASES_TAC th
+Starts with (REPEAT_TCL STRIP_THM_THEN) applied to th.
+Call the resulting theorem(s) gth.  If gth is an equality, then use
+it to rewrite the goal; otherwise, add gth as an assumption.
+
+STRIP_GOAL_THEN tht
+= FIRST [GEN_TAC; CONJ_TAC; DISCH_THEN tht]
+(If the current goal is a forall, then generalize; if it is a conjunction,
+prove the two cases separately; if it is an implication `a ==> b` then
+convert to `b` and apply (tht `a`).)
+
+STRIP_TAC = STRIP_GOAL_THEN STRIP_ASSUME_TAC
+
+ABBREV_TAC `x = a`
+Rewrites `a` to `x` in the goal and all assumptions, then adds `a = x`
+as a new assumption.
+
+EXPAND_TAC `x`
+Finds the first assumption of the form `a = x`, rewrites `x` to `a` in
+the goal, and beta-reduces the goal.
+
+UNDISCH_THEN `a` tht
+Finds an assumption `|- a`, removes the assumption, and applies the
+tactic (tht `|- a`)
+
+FIRST_X_ASSUM tht
+Like FIRST_ASSUM, but removes the assumption successfully used by the
+tactic.
+
+SUBGOAL_THEN `a` tht
+Creates two subgoals.  In the first, changes the goal to `a`.
+In the second, applies tactic (tht `|- a`).
+
+FREEZE_THEN tht `|- a`
+Applies tactic (tht `|- a`) (while "freezing variables"?  Does this have
+something to do with metavariables?  I don't understand this...) (???)
+
+X_META_EXISTS_TAC `x`
+Converts goal `?y. P[y]` to `P[x]`, where `x` is a metavariable.
+
+META_EXISTS_TAC
+Converts goal `?x. P[x]` to `P[x]`, where `x` is a metavariable.
+
+META_SPEC_TAC `x` `!y. P[y]` adds a new assumption `P[x]`, where
+`x` is a metavariable.
+
+CHEAT_TAC
+Introduce the goal as a new axiom, then solve the goal.
+
+RECALL_ACCEPT_TAC f x = ACCEPT_TAC (f x)
+As a side-effect, prints out the time taken to compute (f x); delays
+this computation until it is required.
+
+ANTS_TAC
+Converts goal `(p ==> q) ==> r` to `p` and `q ==> r`
+
+itab:
+ITAUT_TAC
+Intuitionistic theorem prover: understands
+and,forall,implies,not,iff (boolean equality),or,exists,T,F;
+applies a long list of rules dealing with the above types of terms
+until it runs out of rules to apply or proves the theorem.
+Either succeeds or leaves the goal state unchanged.
+
+ITAUT `a` gives `|-a` if ITAUT can prove it.
+
+CONTRAPOS `|- a ==> b` gives `|- ~b ==> ~a`
+
+simp:
+REWR_CONV `|- a = b`
+A conversion which rewrites `a@` to `b@`
+
+A conditional rewrite is a conversion which produces a theorem
+of the form `|- P ==> (a = b)`.  This rewrites `a` to `b` under
+the condition `P`.  Previous conversionals cannot deal with conditional
+rewrites.
+
+IMP_REWR_CONV `|- P ==> (a = b)`
+A conversion which rewrites `a@` to `b@` under the condition `P@`.
+
+ORDERED_REWR_CONV ord `|- a = b`
+A conversion which rewrites `a@` to `b@` if (ord `a@` `b@`)
+(otherwise it fails)
+
+ORDERED_IMP_REWR_CONV ord `|- P ==> (a = b)`
+A conversion which rewrites `a@` to `b@` under the condition `P@`
+if (ord `a@` `b@`)
+
+term_order
+An ordering function which is AC-compatible for any binary operator.
+
+net_of_thm rep `|- P ==> (a = b)` (or `|- a = b`) net
+Adds a component to net which matches a term and returns a
+conversion rewriting that term.
+If rep is true and `a` appears in `b`, then it rewrites `(a = b)` to `T`.
+If rep is true and the rewrite is permutative, then it uses an
+ordered rewrite to rewrite `a` to `b`.
+If neither of the above is true, then it uses an ordinary rewrite.
+Conditional rewrites are entered as level 3; unconditional as level 1.
+
+net_of_conv tm conv net
+Adds a component to net which matches tm and returns conv.  Entered as level 2.
+
+net_of_cong th net
+Adds a component to net for a congruence rule.  (This is a rule of the
+form `P1 ==> (P2 ==> (...(Pn ==> (a = b))))` ).  Entered at level 4.
+
+mk_rewrites cf th rew_list
+Prepends rewrites for th to new_list
+I will describe the action in terms of a notional
+add_rew function.
+(add_rew l `|- !x. P[x]`) --> (add_rew l `|- P[x]`)
+(add_rew l `|- P1 /\ P2`) --> (add_rew l `|- P1`), (add_rew l `|- P2`)
+if cf, then (add_rew l `|- P1 ==> P2`) --> (add_rew (`P1`::l) `|- P2`)
+(add_rew l `|- a = b`) adds a conditional rewrite with conditions l
+         (if l is empty, this is an unconditional rewrite;
+         if cf is false, then l is always empty)
+(add_rew l `|- ~(a = b)`) --> (add_rew l `|- (a = b) = F`), (add_rew l `|- (b = a) = F`)
+(add_rew l `|- ~a`) --> (add_rew l `|- a = F`)
+If none of the above hold, (add_rew l `|- a`) --> (add_rew l `|- a = T`)
+
+REWRITES_CONV net `a`
+Looks up `a` in the net, and applies the resulting conversion to `a`.
+
+There's a lot of generality in the simpset data structure which is not
+used; I'm not going to try to understand the general-purpose operation,
+but only the portions of it which are actually used in HOL Light.
+Of the four fields in the simpset data structure, only the first ever
+changes: the second is always basic_prover, the third is always the
+empty list, and the fourth is always (mk_rewrites true).
+The first field is a conversion net.
+
+basic_prover strat ss lev `a`
+Tries to prove `|- a`.  Succeeds if `a` = `T`, or if
+(strat ss lev `a`) proves `|- a = T`.
+
+(* None of the following are ever called.
+ss_of_thms thms ss
+Augments a simpset with a list of theorems (using the rewrite maker
+from the simpset to add the theorems to the conversion net).
+
+ss_of_conv keytm conv ss
+Augments a simpset with a conversion (using (net_of_conv keytm conv)
+to add the conversion to the conversion net).
+
+ss_of_prover newprover ss
+Replaces the prover in the simpset with newprover.
+
+ss_of_provers newprovers ss
+Prepends newprovers to the list of subprovers in the simpset.
+
+ss_of_maker newmaker ss
+Replaces the rewrite maker in the simpset with newmaker.
+*)
+
+AUGMENT_SIMPSET th ss
+Uses the rewrite maker from the simpset (always (mk_rewrites true))
+to create a list of rewrite theorems from th; use (net_of_thm true)
+to add these theorems to the conversion net in the simpset.
+
+Note: IMP_REWRITES_CONV and GEN_SUB_CONV have a different signature than
+what I am documenting; if you ever want to call them directly,
+look at the source.  I will first describe the meaning of these functions;
+then I will describe their implementation.
+(IMP_REWRITES_CONV strat ss lev) is a conversion which looks up the
+term in the ss conversion net.  It tries unconditional rewrites before
+conditional rewrites.  It will only accept a conditional rewrite if
+(strat ss (lev-1)) can rewrite the condition to `T`.
+(GEN_SUB_CONV strat ss lev) rewrites combinations and abstractions
+in a depth-first manner by calling (strat ss lev) on subterms.  It
+has special handling for if-then-else and implications; it adds
+the condition to the simpset before simplifying the rest of the expression.
+Both of these functions fail if they perform no rewrites.
+
+IMP_REWRITES_CONV strat ss lev
+Try to find a conversion for tm at level < 4 (i.e., not a
+congruence rule) which is either unconditional or (if lev > 0) such that
+the condition can be rewritten to `T` by (strat ss (lev-1)).
+
+RUN_SUB_CONV -- called only by GEN_SUB_CONV; not documented.
+
+GEN_SUB_CONV strat ss lev
+Try to find a congruence rule for tm (i.e., a rule at level 4).
+The conclusion of a congruence rule is of the form
+`A[x1,...,xn] = A[x1',...,xn']`, so tm must be of the form `A[a1,...,an]`.
+Each hypothesis of a congruence rule is either of the form
+`xi = xi'` or `P[x1',...,x(i-1)'] ==> (xi = xi')`.
+In the former case, use (strat ss lev) to rewrite `a1` to `a1'`;
+in the latter case, use AUGMENT_SIMPSET to add
+`P[a1',...,a(i-1)']` to ss (getting ss') and use (strat ss' lev) for
+the rewrite.
+Combine all of these rewrites to rewrite `A[a1,...,an]` to
+`A[a1',...,an']`.
+If this fails, then if tm is `f a`, then use (strat ss lev) to
+rewrite `f` to `g` and `a` to `b` and return `|- f a = g b`.
+If tm is `\x. a[x]`, then use (strat ss lev) to rewrite `a[x]` to `b[x]`
+and return `|- (\x. a[x]) = (\x. b[x])`.
+Throughout GEN_SUB_CONV (in both the congruence rule case, and the combination
+case), if the call to strat fails to rewrite `a`, then it rewrites
+`a` to `a`; but if all the calls to strat fail (so that GEN_SUB_CONV
+would rewrite tm to tm), GEN_SUB_CONV fails instead.
+
+Note that there are only two congruence rules used in HOL Light: one for
+rewriting `if g then t else e` and one for rewriting `p ==> q`.
+
+ONCE_DEPTH_SQCONV ss lev
+= (IMP_REWRITES_CONV ONCE_DEPTH_SQCONV ss lev) ORELSEC
+  (GEN_SUB_CONV ONCE_DEPTH_SQCONF ss lev)
+
+DEPTH_SQCONV ss lev
+= THENQC (GEN_SUB_CONV DEPTH_SQCONV ss lev)
+         (IMP_REWRITES_CONV DEPTH_SQCONV ss lev)
+
+REDEPTH_SQCONV ss lev
+= REPEATQC (DEPTH_CONV ss lev)
+
+TOP_DEPTH_SQCONV ss lev
+= REPEATQC ((IMP_REWRITES_CONV TOP_DEPTH_SQCONV ss lev) ORELSEC
+            (GEN_SUB_CONV TOP_DEPTH_SQCONV ss lev))
+
+TOP_SWEEP_SQCONV ss lev
+= THENQC (REPEATC (IMP_REWRITES_CONV TOP_SWEEP_SQCONV ss lev))
+         (GEN_SUB_CONV TOP_SWEEP_SQCONV ss lev)
+
+Basic rewrites:
+There is a global set of "basic rewrites".  These are canonicalized with
+(mk_rewrites false) (so there is no handling of conditional rewrites),
+and added to a basic conversion net.
+
+set_basic_rewrites thl: sets the "basic rewrite" set to thl
+extend_basic_rewrites thl: adds thl to the "basic rewrite" set
+basic_rewrites (): retrieves the (canonicalized) "basic rewrite" set
+basic_net (): retrieves the conversion net for the "basic rewrite" set
+
+There is also a set of basic congruences; since HOL has only two congruence
+rules, I won't bother documenting set_basic_congs, extend_basic_congs,
+basic_congs.
+
+GENERAL_REWRITE_CONV rep cnvl net thl
+Canonicalizes thl with (mk_rewrites false), adds these conversions
+to net with (net_of_thm rep) (giving final_net), and then rewrites with
+(cnvl (REWRITES_CONV final_net)).
+
+GEN_REWRITE_CONV cnvl thl
+= GENERAL_REWRITE_CONV false cnvl empty_net thl
+
+PURE_REWRITE_CONV thl
+= GENERAL_REWRITE_CONV true TOP_DEPTH_CONV empty_net thl
+
+REWRITE_CONV thl
+= GENERAL_REWRITE_CONV true TOP_DEPTH_CONV (basic_net()) thl
+
+PURE_ONCE_REWRITE_CONV thl
+= GENERAL_REWRITE_CONV false ONCE_DEPTH_CONV empty_net thl
+
+ONCE_REWRITE_CONV thl
+= GENERAL_REWRITE_CONV false ONCE_DEPTH_CONV (basic_net()) thl
+
+LIMITED_REWRITE_CONV n thl
+Rewrite n times with
+(GEN_REWRITE_CONV ONCE_DEPTH_CONV ths THENC
+ GENERAL_REWRITE_CONV true TOP_DEPTH_CONV (basic_net()) [])
+
+GEN_REWRITE_RULE cnvl thl
+= CONV_RULE(GEN_REWRITE_CONV cnvl thl)
+
+PURE_REWRITE_RULE thl
+= CONV_RULE(PURE_REWRITE_CONV thl)
+
+REWRITE_RULE thl
+= CONV_RULE(REWRITE_CONV thl)
+
+PURE_ONCE_REWRITE_RULE thl
+= CONV_RULE(PURE_ONCE_REWRITE_CONV thl)
+
+ONCE_REWRITE_RULE thl
+= CONV_RULE(ONCE_REWRITE_CONV thl)
+
+PURE_ASM_REWRITE_RULE, ASM_REWRITE_RULE,
+PURE_ONCE_ASM_REWRITE_RULE, ONCE_ASM_REWRITE_RULE
+As non-"ASM_", but adds theorem hypotheses to the rewrite list.
+
+GEN_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC,
+PURE_ONCE_REWRITE_TAC, ONCE_REWRITE_TAC
+As "_RULE", but use CONV_TAC instead of CONV_RULE.
+
+PURE_ASM_REWRITE_TAC, ASM_REWRITE_TAC,
+PURE_ONCE_ASM_REWRITE_TAC, ONCE_ASM_REWRITE_TAC
+As non-"ASM_", but adds current assumptions to the rewrite list.
+
+GEN_SIMPLIFY_CONV strat ss lev thl
+Use AUGMENT_SIMPSET to add thl to ss (giving ss'); then do
+TRY_CONV (strat ss' lev)
+
+ONCE_SIMPLIFY_CONV ss
+= GEN_SIMPLIFY_CONV ONCE_DEPTH_SQCONV ss 1
+
+SIMPLIFY_CONV ss
+= GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV ss 3
+
+empty_ss: an empty simpset (no conversions in the conversion net)
+
+basic_ss thl
+Canonicalizes thl with (mk_rewrites true), then adds the rewrites
+to (basic_net()) with (net_of_thm true).  Also adds the basic congruences.
+Returns the resulting simpset.
+
+SIMP_CONV
+= SIMPLIFY_CONV (basic_ss [])
+
+PURE_SIMP_CONV
+= SIMPLIFY_CONV empty_ss
+
+ONCE_SIMP_CONV
+= ONCE_SIMPLIFY_CONV (basic_ss []) thl
+
+SIMP_RULE, PURE_SIMP_RULE, ONCE_SIMP_RULE
+As "_CONV", but calls CONV_RULE
+
+SIMP_TAC, PURE_SIMP_TAC, ONCE_SIMP_TAC
+As "_CONV", but calls CONV_TAC
+
+ASM_SIMP_TAC, PURE_ASM_SIMP_TAC, ONCE_ASM_SIMP_TAC
+As non-"ASM_", but adds current assumptions to the rewrite list
+
+theorems:
+
+val ( EQ_REFL ) : thm = |- !x. x = x
+val ( EQ_REFL_T ) : thm = |- !x. (x = x) = T
+val ( EQ_SYM ) : thm = |- !x y. (x = y) ==> (y = x)
+val ( EQ_SYM_EQ ) : thm = |- !x y. (x = y) = y = x
+val ( EQ_TRANS ) : thm = |- !x y z. (x = y) /\ (y = z) ==> (x = z)
+val ( REFL_CLAUSE ) : thm = |- !x. (x = x) = T
+
+AC thl `a = b`
+Returns `|- a = b` or fails; succeeds if ordered rewriting using thl
+can rewrite `a = b` to `T` or `c = c`
+
+val ( BETA_THM ) : thm = |- !f y. (\x. f x) y = f y
+val ( ABS_SIMP ) : thm = |- !t1 t2. (\x. t1) t2 = t1
+val ( CONJ_ASSOC ) : thm = |- !t1 t2 t3. t1 /\ t2 /\ t3 = (t1 /\ t2) /\ t3
+val ( CONJ_SYM ) : thm = |- !t1 t2. t1 /\ t2 = t2 /\ t1
+val ( CONJ_ACI ) : thm =
+  |- (p /\ q = q /\ p) /\
+     ((p /\ q) /\ r = p /\ q /\ r) /\
+     (p /\ q /\ r = q /\ p /\ r) /\
+     (p /\ p = p) /\
+     (p /\ p /\ q = p /\ q)
+val ( DISJ_ASSOC ) : thm = |- !t1 t2 t3. t1 \/ t2 \/ t3 = (t1 \/ t2) \/ t3
+val ( DISJ_SYM ) : thm = |- !t1 t2. t1 \/ t2 = t2 \/ t1
+val ( DISJ_ACI ) : thm =
+  |- (p \/ q = q \/ p) /\
+     ((p \/ q) \/ r = p \/ q \/ r) /\
+     (p \/ q \/ r = q \/ p \/ r) /\
+     (p \/ p = p) /\
+     (p \/ p \/ q = p \/ q)
+val ( FORALL_SIMP ) : thm = |- !t. (!x. t) = t
+val ( EXISTS_SIMP ) : thm = |- !t. (?x. t) = t
+val ( EQ_CLAUSES ) : thm =
+  |- !t. ((T = t) = t) /\ ((t = T) = t) /\ ((F = t) = ~t) /\ ((t = F) = ~t)
+val ( NOT_CLAUSES_WEAK ) : thm = |- (~T = F) /\ (~F = T)
+val ( AND_CLAUSES ) : thm =
+  |- !t. (T /\ t = t) /\
+         (t /\ T = t) /\
+         (F /\ t = F) /\
+         (t /\ F = F) /\
+         (t /\ t = t)
+val ( OR_CLAUSES ) : thm =
+  |- !t. (T \/ t = T) /\
+         (t \/ T = T) /\
+         (F \/ t = t) /\
+         (t \/ F = t) /\
+         (t \/ t = t)
+val ( IMP_CLAUSES ) : thm =
+  |- !t. (T ==> t = t) /\
+         (t ==> T = T) /\
+         (F ==> t = T) /\
+         (t ==> t = T) /\
+         (t ==> F = ~t)
+
+REFL_CLAUSE, EQ_CLAUSES, NOT_CLAUSES_WEAK, AND_CLAUSES, OR_CLAUSES,
+IMP_CLAUSES, FORALL_SIMP, EXISTS_SIMP, BETA_THM, and `((x = x) ==> p) = p`
+are all "basic rewrites".
+
+val ( EXISTS_UNIQUE_THM ) : thm =
+  |- !P. (?!x. P x) = (?x. P x) /\ (!x x'. P x /\ P x' ==> (x = x'))
+val ( EXISTS_REFL ) : thm = |- !a. ?x. x = a
+val ( EXISTS_UNIQUE_REFL ) : thm = |- !a. ?!x. x = a
+val ( EXISTS_UNIQUE_ALT ) : thm = |- !P. (?!x. P x) = (?x. !y. P y = x = y)
+val ( UNWIND_THM1 ) : thm = |- !P a. (?x. (a = x) /\ P x) = P a
+val ( UNWIND_THM2 ) : thm = |- !P a. (?x. (x = a) /\ P x) = P a
+val ( SWAP_FORALL_THM ) : thm = |- !P. (!x y. P x y) = (!y x. P x y)
+val ( SWAP_EXISTS_THM ) : thm = |- !P. (?x y. P x y) = (?y x. P x y)
+val ( FORALL_AND_THM ) : thm =
+  |- !P Q. (!x. P x /\ Q x) = (!x. P x) /\ (!x. Q x)
+val ( AND_FORALL_THM ) : thm =
+  |- !P Q. (!x. P x) /\ (!x. Q x) = (!x. P x /\ Q x)
+val ( LEFT_AND_FORALL_THM ) : thm = |- !P Q. (!x. P x) /\ Q = (!x. P x /\ Q)
+val ( RIGHT_AND_FORALL_THM ) : thm = |- !P Q. P /\ (!x. Q x) = (!x. P /\ Q x)
+val ( EXISTS_OR_THM ) : thm =
+  |- !P Q. (?x. P x \/ Q x) = (?x. P x) \/ (?x. Q x)
+val ( OR_EXISTS_THM ) : thm =
+  |- !P Q. (?x. P x) \/ (?x. Q x) = (?x. P x \/ Q x)
+val ( LEFT_OR_EXISTS_THM ) : thm = |- !P Q. (?x. P x) \/ Q = (?x. P x \/ Q)
+val ( RIGHT_OR_EXISTS_THM ) : thm = |- !P Q. P \/ (?x. Q x) = (?x. P \/ Q x)
+val ( LEFT_EXISTS_AND_THM ) : thm = |- !P Q. (?x. P x /\ Q) = (?x. P x) /\ Q
+val ( RIGHT_EXISTS_AND_THM ) : thm = |- !P Q. (?x. P /\ Q x) = P /\ (?x. Q x)
+val ( TRIV_EXISTS_AND_THM ) : thm =
+  |- !P Q. (?x. P /\ Q) = (?x. P) /\ (?x. Q)
+val ( LEFT_AND_EXISTS_THM ) : thm = |- !P Q. (?x. P x) /\ Q = (?x. P x /\ Q)
+val ( RIGHT_AND_EXISTS_THM ) : thm = |- !P Q. P /\ (?x. Q x) = (?x. P /\ Q x)
+val ( TRIV_AND_EXISTS_THM ) : thm =
+  |- !P Q. (?x. P) /\ (?x. Q) = (?x. P /\ Q)
+val ( TRIV_FORALL_OR_THM ) : thm = |- !P Q. (!x. P \/ Q) = (!x. P) \/ (!x. Q)
+val ( TRIV_OR_FORALL_THM ) : thm = |- !P Q. (!x. P) \/ (!x. Q) = (!x. P \/ Q)
+val ( RIGHT_IMP_FORALL_THM ) : thm =
+  |- !P Q. P ==> (!x. Q x) = (!x. P ==> Q x)
+val ( RIGHT_FORALL_IMP_THM ) : thm =
+  |- !P Q. (!x. P ==> Q x) = P ==> (!x. Q x)
+val ( LEFT_IMP_EXISTS_THM ) : thm =
+  |- !P Q. (?x. P x) ==> Q = (!x. P x ==> Q)
+val ( LEFT_FORALL_IMP_THM ) : thm =
+  |- !P Q. (!x. P x ==> Q) = (?x. P x) ==> Q
+val ( TRIV_FORALL_IMP_THM ) : thm =
+  |- !P Q. (!x. P ==> Q) = (?x. P) ==> (!x. Q)
+val ( TRIV_EXISTS_IMP_THM ) : thm =
+  |- !P Q. (?x. P ==> Q) = (!x. P) ==> (?x. Q)
+
+ind-defs:
+
+RIGHT_BETAS [`x`;`y`] `|- f = \x y. A[x,y]` gives
+`|- f x y = A[x,y]`
+
+HALF_BETA_EXPAND [`x`;`y`] `|- f = \x y. A[x,y]` gives
+`|- !x y. f x y = A[x,y]`
+
+SIMPLE_DISJ_PAIR `P \/ Q |- R` gives
+(`P |- R`, `Q |- R`)
+
+FORALL_IMPS_CONV
+Rewrites `!x y. P[x,y] ==> Q` to `(?x y. P[x,y]) ==> Q`
+
+AND_IMPS_CONV
+Rewrites:
+(*    (!x1..xn. P1[xs] ==> Q[xs]) /\ ... /\ (!x1..xn. Pm[xs] ==> Q[xs])      *)
+(* -> (!x1..xn. P1[xs] \/ ... \/ Pm[xs] ==> Q[xs])                           *)
+
+EXISTS_EQUATION `x = a` `ASM,x = a |- P[x]`
+gives `ASM |- ?x. P[x]`
+
+val ( MONO_AND ) : thm = |- (A ==> B) /\ (C ==> D) ==> A /\ C ==> B /\ D
+val ( MONO_OR ) : thm = |- (A ==> B) /\ (C ==> D) ==> A \/ C ==> B \/ D
+val ( MONO_IMP ) : thm = |- (B ==> A) /\ (C ==> D) ==> (A ==> C) ==> B ==> D
+val ( MONO_NOT ) : thm = |- (B ==> A) ==> ~A ==> ~B
+val ( MONO_FORALL ) : thm = |- (!x. P x ==> Q x) ==> (!x. P x) ==> (!x. Q x)
+val ( MONO_EXISTS ) : thm = |- (!x. P x ==> Q x) ==> (?x. P x) ==> (?x. Q x)
+
+BACKCHAIN_TAC:
+"Simplified version of MATCH_MP_TAC to avoid quantifier troubles."
+
+MONO_ABS_TAC:
+(*   ?- (\x. P[x]) x1 .. xn ==> (\y. Q[y]) x1 .. xn                          *)
+(* ==================================================                        *)
+(*     ?- !x1. P[x1] x2 .. xn ==> Q[x1] x2 .. xn                             *)
+
+mono_tactics:
+A global variable holding a set of tactics for proving monotonicity.
+
+APPLY_MONOTAC
+Prove `a ==> a` automatically; otherwise, select a tactic from
+mono_tactics and apply it.
+
+MONO_STEP_TAC
+= REPEAT GEN_TAC THEN APPLY_MONOTAC
+
+MONO_TAC
+= REPEAT MONO_STEP_TAC THEN ASM_REWRITE_TAC[]
+
+class:
+
+This is an axiom:
+val ( ETA_AX ) : thm = |- !t. (\x. t x) = t
+
+ETA_CONV
+Rewrites `(\x. f x)` to `f`
+
+val ( EQ_EXT ) : thm = |- !f g. (!x. f x = g x) ==> (f = g)
+val ( FUN_EQ_THM ) : thm = |- !f g. (f = g) = (!x. f x = g x)
+
+EXT `|- (!x. f x = g x)` gives `|- f = x`
+
+This is an axiom:
+val ( SELECT_AX ) : thm = |- !P x. P x ==> P ((@) P)
+
+val ( EXISTS_THM ) : thm = |- (?) = (\P. P ((@) P))
+
+SELECT_INTRO `|- P a` gives `|- P ((@) P)`
+
+SELECT_RULE `|- ?x. P[x]` gives `|- P[ @x. P[x] ]`
+
+SELECT_ELIM `|- P ((@) P)` (`x`, `P x |- a`) gives `|- a`
+
+SELECT_CONV rewrites `P[ @x. P[x] ]` to `?x. P[x]`
+
+val ( SELECT_REFL ) : thm = |- !x. (@y. y = x) = x
+val ( SELECT_UNIQUE ) : thm = |- !P x. (!y. P y = y = x) ==> ((@) P = x)
+
+SELECT_REFL is a "basic rewrite".
+
+new_specification ["foo";"bar";"baz"] `?x y z.P[x,y,z]`
+Defines "foo", "bar", and "baz" as new constants, and returns a theorem
+`|- P[foo,bar,baz]`
+
+simple_new_specification th
+Like new_specification, but gets the new constant names from the
+bound variable names in the theorem.
+
+new_type_definition "newtype" ("newtypeABS","newtypeREP") `|- ?x. P[x]`
+Creates a new type "newtype", which is isomorphic to a subset
+of the type of the bound variable `x` ("oldtype").  Creates new constants
+"newtypeABS", which maps from oldtype to newtype, and "newtypeREP",
+which maps from newtype to oldtype.
+Returns a theorem
+`|- (!(a:newtype). newtypeABS (newtypeREP a) = a) /\
+    (!(r:oldtype). P[r] = (newtypeREP (newtypeABS r) = r))`
+
+val ( EXCLUDED_MIDDLE ) : thm = |- !t. t \/ ~t
+val ( BOOL_CASES_AX ) : thm = |- !t. (t = T) \/ (t = F)
+
+BOOL_CASES_TAC `a`
+Creates two subgoals.  In the first, rewrite `a` to `T` within the goal;
+in the second, rewrite `a` to `F`.
+
+ASM_CASES_TAC `a`
+Creates two subgoals.  In the first, add `a` as an assumption; in the second,
+add `~a` as an assumption.
+
+TAUT tm
+Tries to prove the term.  Starts with (REPEAT GEN_TAC), then rewrites with
+the basic rewrites and does case splits on free boolean variables
+using BOOL_CASES_TAC.
+
+val ( DE_MORGAN_THM ) : thm =
+  |- !t1 t2. (~(t1 /\ t2) = ~t1 \/ ~t2) /\ (~(t1 \/ t2) = ~t1 /\ ~t2)
+val ( NOT_CLAUSES ) : thm = |- (!t. ~~t = t) /\ (~T = F) /\ (~F = T)
+val ( NOT_IMP ) : thm = |- !t1 t2. ~(t1 ==> t2) = t1 /\ ~t2
+val ( CONTRAPOS_THM ) : thm = |- !t1 t2. ~t1 ==> ~t2 = t2 ==> t1
+
+NOT_CLAUSES is a "basic rewrite".
+
+CCONTR `a` `~a |- F` gives `|- a`
+
+CONTRAPOS_CONV rewrites `a ==> b` to `~b ==> ~a`
+
+val ( NOT_EXISTS_THM ) : thm = |- !P. ~(?x. P x) = (!x. ~P x)
+val ( EXISTS_NOT_THM ) : thm = |- !P. (?x. ~P x) = ~(!x. P x)
+val ( NOT_FORALL_THM ) : thm = |- !P. ~(!x. P x) = (?x. ~P x)
+val ( FORALL_NOT_THM ) : thm = |- !P. (!x. ~P x) = ~(?x. P x)
+val ( LEFT_FORALL_OR_THM ) : thm = |- !P Q. (!x. P x \/ Q) = (!x. P x) \/ Q
+val ( RIGHT_FORALL_OR_THM ) : thm = |- !P Q. (!x. P \/ Q x) = P \/ (!x. Q x)
+val ( LEFT_OR_FORALL_THM ) : thm = |- !P Q. (!x. P x) \/ Q = (!x. P x \/ Q)
+val ( RIGHT_OR_FORALL_THM ) : thm = |- !P Q. P \/ (!x. Q x) = (!x. P \/ Q x)
+val ( LEFT_IMP_FORALL_THM ) : thm =
+  |- !P Q. (!x. P x) ==> Q = (?x. P x ==> Q)
+val ( LEFT_EXISTS_IMP_THM ) : thm =
+  |- !P Q. (?x. P x ==> Q) = (!x. P x) ==> Q
+val ( RIGHT_IMP_EXISTS_THM ) : thm =
+  |- !P Q. P ==> (?x. Q x) = (?x. P ==> Q x)
+val ( RIGHT_EXISTS_IMP_THM ) : thm =
+  |- !P Q. (?x. P ==> Q x) = P ==> (?x. Q x)
+
+This is the definition of COND, also known as if-then-else.  That is,
+if the parser sees "if c then t else e", it transforms it into
+"COND c t e".  (Actually, it does the same for "c => t | e".)
+val ( COND_DEF ) : thm =
+  |- COND = (\t t1 t2. @x. ((t = T) ==> (x = t1)) /\ ((t = F) ==> (x = t2)))
+
+val ( COND_CLAUSES ) : thm =
+  |- !t1 t2. ((if T then t1 else t2) = t1) /\ ((if F then t1 else t2) = t2)
+
+COND_CLAUSES is a "basic rewrite".
+
+val ( COND_EXPAND ) : thm =
+  |- !b t1 t2. (if b then t1 else t2) = (~b \/ t1) /\ (b \/ t2)
+val ( COND_ID ) : thm = |- !b t. (if b then t else t) = t
+val ( COND_RAND ) : thm =
+  |- !b f x y. f (if b then x else y) = (if b then f x else f y)
+val ( COND_RATOR ) : thm =
+  |- !b f g x. (if b then f else g) x = (if b then f x else g x)
+val ( COND_ABS ) : thm =
+  |- !b f g. (\x. if b then f x else g x) = (if b then f else g)
+val ( MONO_COND ) : thm =
+  |- (A ==> B) /\ (C ==> D) ==> (if b then A else C) ==> (if b then B else D)
+
+MONO_COND will automatically be used by MONO_TAC to prove
+monotonicity for COND expressions.
+
+val ( COND_ELIM_THM ) : thm =
+  |- P (if c then x else y) = (c ==> P x) /\ (~c ==> P y)
+
+COND_ELIM_CONV rewrites `P[if c then x else y]` to
+`(c ==> P[x]) /\ (~c ==> P[y])`
+
+COND_CASES_TAC does a case split on a COND expression in the goal.
+If the goal is `P[if c then x else y]`, then in one subgoal,
+it adds an assumption `c` and changes the goal to `P[x]` (and then
+rewrites `c` to `T` in the goal).
+In the other subgoal, it adds an assumption `~c`, changes the goal to
+`P[y]`, and rewrites `c` to `F`.  (If `c` has the form `~d`, then instead,
+it adds an assumption `d` and rewrites `d` to `T`.)
+
+val ( SKOLEM_THM ) : thm = |- !P. (!x. ?y. P x y) = (?y. !x. P x (y x))
+val ( UNIQUE_SKOLEM_ALT ) : thm =
+  |- !P. (!x. ?!y. P x y) = (?f. !x y. P x y = f x = y)
+val ( UNIQUE_SKOLEM_THM ) : thm =
+  |- !P. (!x. ?!y. P x y) = (?!f. !x. P x (f x))
+
+The theorem `|- (if x = x then y else z) = y` is a "basic rewrite".
+
+This is the definition of `(o)`, the function composition operator.
+val o_DEF : thm = |- !f g. f o g = (\x. f (g x))
+
+This is the definition of `I`, the identity function.
+val ( I_DEF ) : thm = |- I = (\x. x)
+
+val o_THM : thm = |- !f g x. (f o g) x = f (g x)
+val o_ASSOC : thm = |- !f g h. f o g o h = (f o g) o h
+val ( I_THM ) : thm = |- !x. I x = x
+val ( I_O_ID ) : thm = |- !f. (I o f = f) /\ (f o I = f)
+val ( EXISTS_ONE_REP ) : thm = |- ?b. b
+
+This defines a new type "one", with one element; and functions that
+map between bool and one (where the single element of "one" maps to `T`).
+val one_tydef : thm =
+  |- (!a. one_ABS (one_REP a) = a) /\ (!r. r = one_REP (one_ABS r) = r)
+
+This is the definition of "one", the name of the sole value of type "one".
+val one_DEF : thm = |- one = (@x. T)
+
+val one : thm = |- !v. v = one
+val one_axiom : thm = |- !f g. f = g
+val one_Axiom : thm = |- !e. ?!fn. fn one = e
+
+canon:
+
+PRESIMP_CONV is a conversion which simplifies literal `T` and `F` as the
+arguments of not,and,or,implies,equality, etc.; and moves connectives
+out of quantifiers whenever possible.
+
+NNF_CONV and NNFC_CONV move negations inward past and,or,implies,forall,
+exists,exists_unique,iff.  These conversions also eliminate iff
+and implication.  (There are two possible ways to eliminate
+iff; NNF_CONV uses the method which makes DNF smaller, and NNFC_CONV uses
+the method which makes CNF smaller.)
+
+SKOLEM_CONV moves existential quantifiers outward past or,and,forall.
+(skolemizing when an existential moves past a universal).  Does not handle
+existentials inside negations.
+
+PRENEX_CONV moves universal quantifiers outward past or,and.
+
+MINISCOPE_FORALL moves universal quantifiers inward past or,and,forall.
+(For instance, `!x y. P x y \/ Q y` would become `!y. (!x. P x y) \/ Q y`.)
+
+PROP_CNF_CONV uses DeMorgan's laws and associativity to move to
+conjunctive normal form.
+
+PROP_DNF_CONV uses DeMorgan's laws and associativity to move to
+disjunctive normal form.
+
+REFUTE_THEN tht changes the goal from `p` to `F` and runs tht on the
+assumption `|- ~p`.
+
+SPLIT_TAC lev
+Starts by replacing any assumption `|- a /\ b` with separate assumptions
+`|- a` and `|- b`.  Then, up to lev levels deep, it removes an assumption
+`|- a \/ b`, splits into two subgoals, adds assumption `|- a` in one
+subgoal, and adds assumption `|- b` in the other.
+
+EQ_ABS_CONV rewrites `f = \x y z. A[x,y,z]` to `!x y z. f x y z = A[x,y,z]`.
+It never fails.
+
+DELAMB_CONV repeatedly rewrites `(\x. s x) = t` to `!x. s x = t x`
+(and similarly if the lambda is on the right) and applies beta reduction
+until no more progress can be made.  It never fails.
+
+I'm not documenting GEN_FOL_CONV.
+FOL_CONV takes a term and makes sure that for every constant, whenever
+it is used, it is always applied to the same number of arguments.  It
+does this by finding the minimal number of arguments for each constant;
+anywhere it is applied to more arguments, the application
+`f x1 ... xn` is changed to `I (f x1 ... x(n-1)) xn` (this process
+is repeated, if necessary).
+
+ASM_FOL_TAC
+Uses the technique of FOL_CONV, but applies throughout the entire goalstate
+(goal and assumptions).
+
+meson:
+
+A general first-order theorem prover.
+
+ASM_MESON_TAC thl
+Tries to prove the goal using meson; uses the assumptions and the theorems
+in thl.
+
+MESON_TAC thl
+Tries to prove the goal using meson; ignores assumptions.
+
+GEN_MESON_TAC min max step thl
+Like MESON_TAC but with explicit start (min), finish (max) and step (step) for 
+the iterative deepening.
+
+quot:
+
+define_quotient_type "newtype" ("newtypeABS","newtypeREP") `\x y. P[x,y]`
+Defines a new type "newtype" with a bijection to a subset of "oldtype->bool"
+(where "oldtype" is the type of `x`).  This subset is defined by the
+predicate `\s. ?x. s = \y. P[x,y]`.  (If `P[x,y]` is symmetric,
+reflexive, and transitive, then "newtype" is isomorphic to the
+quotient of "oldtype" by P.)
+Along with the new type, it also defines new constants "newtypeABS"
+and "newtypeREP", and returns theorems:
+(`|- newtypeABS (newtypeREP a) = a`,
+ `|- (?x. r = (\x y. P[x,y]) x) = newtypeREP (newtypeABS r) = r`)
+
+lift_function:
+(* Given a welldefinedness theorem for a curried function f, of the form:    *)
+(*                                                                           *)
+(* |- !x1 x1' .. xn xn'. (x1 == x1') /\ ... /\ (xn == xn')                   *)
+(*                       ==> (f x1 .. xn == f x1' .. f nx')                  *)
+(*                                                                           *)
+(* where each "==" is either equality or some fixed binary relation R, a     *)
+(* new operator called "opname" is introduced which lifts "f" up to the      *)
+(* R-equivalence classes. Two theorems are returned: the actual definition   *)
+(* and a useful consequence for lifting theorems.                            *)
+(*                                                                           *)
+(* The function also needs the second (more complicated) type bijection, and *)
+(* the reflexivity and transitivity (not symmetry!) of the equivalence       *)
+(* relation. The use also gives a name for the new function.                 *)
+
+lift_theorem:
+(* Lifts a theorem. This can be done by higher order rewriting alone.        *)
+(*                                                                           *)
+(* NB! All and only the first order variables must be bound by quantifiers.  *)
+
+recursion.ml:
+
+Functions for defining recursive functions. Mostly subsumed by "define", but 
+sometimes useful for efficiency or other reasons.
+
+pair.ml:
+
+This is the definition of LET.
+val ( LET_DEF ) : thm = |- !f x. LET f x = f x
+
+This is the definition of LET_END.
+val ( LET_END_DEF ) : thm = |- !t. LET_END t = t
+
+This is the definition of GABS.
+val ( GABS_DEF ) : thm = |- !P. GABS P = (@) P
+
+This is the definition of GEQ.
+val ( GEQ_DEF ) : thm = |- !a b. GEQ a b = a = b
+
+LET, LET_END, GABS, and GEQ are syntactic markers used by the
+parser and printer, so that you can read in a let expression, or
+an extended lambda expression, and print it back out.
+
+The term `let x = 3 and y = 4 in x+y` would be parsed as
+`LET (\x y. LET_END (x+y)) 3 4`.
+
+This is the definition of mk_pair.
+val mk_pair_def : thm = |- !x y. mk_pair x y = (\a b. (a = x) /\ (b = y))
+
+val ( PAIR_EXISTS_THM ) : thm = |- ?x a b. x = mk_pair a b
+
+This defines a new type (a,b)prod, which is in bijection with a subset
+of the type `a->b->bool` (the range of the function mk_pair).
+val prod_tybij : thm =
+  |- (!a. ABS_prod (REP_prod a) = a) /\
+     (!r. (?a b. r = mk_pair a b) = REP_prod (ABS_prod r) = r)
+
+val ( REP_ABS_PAIR ) : thm =
+  |- !x y. REP_prod (ABS_prod (mk_pair x y)) = mk_pair x y
+
+This defines the infix "," (comma) operator.
+val ( COMMA_DEF ) : thm = |- !x y. x,y = ABS_prod (mk_pair x y)
+
+This defines the FST function.
+val ( FST_DEF ) : thm = |- !p. FST p = (@x. ?y. p = x,y)
+
+This defines the SND function.
+val ( SND_DEF ) : thm = |- !p. SND p = (@y. ?x. p = x,y)
+
+val ( PAIR_EQ ) : thm = |- !x y a b. (x,y = a,b) = (x = a) /\ (y = b)
+val ( PAIR_SURJECTIVE ) : thm = |- !p. ?x y. p = x,y
+val ( FST ) : thm = |- !x y. FST (x,y) = x
+val ( SND ) : thm = |- !x y. SND (x,y) = y
+val ( PAIR ) : thm = |- !x. FST x,SND x = x
+
+FST, SND, and PAIR are "basic rewrites".
+
+This defines the CURRY function.
+val ( CURRY_DEF ) : thm = |- !f x y. CURRY f x y = f (x,y)
+
+This defines the UNCURRY function.
+val ( UNCURRY_DEF ) : thm = |- !f x y. UNCURRY f (x,y) = f x y
+
+This defines the PASSOC function.
+val ( PASSOC_DEF ) : thm = |- !f x y z. PASSOC f (x,y,z) = f ((x,y),z)
+
+Let me describe extended lambda expressions.  The "variable"
+for a lambda expression can actually be an arbitrary expression;
+`(\P[x,y]. Q[x,y])` is taken to mean:
+`@f. !x y. (f (P[x,y])) = Q[x,y]`
+This makes perfect sense for pairs; for instance,
+`\(x,y).x` is equal to `FST`.  It also makes sense in other situations:
+`\(x+&1).x` is equal to `\x.x-&1`.  Other cases are stranger:
+`\(x*2).x` is a function which divides even numbers by 2, but its
+behavior on odd numbers is undefined.
+Extended binders of all sorts are defined by extension.
+`!(x*2).P[x]` means `(!) (\(x*2).P[x])`; the value of this expression
+may not be determined, since it may depend on the (unspecified) behavior
+of the lambda term on odd arguments.
+`!(x,y).P[x,y]` is perfectly meaningful, although not necessarily useful;
+it means the same thing as `!x y.P[x,y]`.
+
+`let (x,y) = (1,2) in x+y` also has the expected meaning.
+
+I said above that
+`(\P[x,y]. Q[x,y])` is taken to mean:
+`@f. !x y. (f (P[x,y])) = Q[x,y]`
+However, to allow these functions to be printed back out in the same
+syntax they were read in, special markers are used. GABS is defined
+to equal `(@)`, and GEQ is defined to equal `(=)`, so the internal
+form of the above is actually `GABS (\f. !x y. GEQ (f (P[x,y])) Q[x,y])`.
+
+PAIRED_BETA_CONV handles beta reduction of extended lambda expressions
+whose arguments are pairs.
+
+GEN_PAIR_TAC converts a goal of the form `!x. P[x]` (where `x` has a
+pair type) to `P[(FST x, SND x)]`; but a comment says that rewriting with
+FORALL_PAIR_THM (below) is better.
+
+val ( FORALL_PAIR_THM ) : thm = |- (!p. P p) = (!p1 p2. P (p1,p2))
+val ( EXISTS_PAIR_THM ) : thm = |- (?p. P p) = (?p1 p2. P (p1,p2))
+
+let_CONV reduces a "let" expression.  (Again, it handles extended
+definitions, if they only use pairs.)
+
+LET_TAC
+replaces "let x = t in p[x]" in goal with "p[x]" given a new
+hypothesis "t = x".
+
+GEN_BETA_CONV reduces generalized beta-redexes such as 
+`(\(x,y). x + y) (1,2)`
+
+num.ml:
+
+We define a new type, "ind"; we are going to axiomatize that "ind" has
+an infinite number of elements.
+
+This is the definition of ONE_ONE.
+val ( ONE_ONE ) : thm =
+  |- !f. ONE_ONE f = (!x1 x2. (f x1 = f x2) ==> (x1 = x2))
+
+This is the definition of ONTO.
+val ( ONTO ) : thm = |- !f. ONTO f = (!y. ?x. y = f x)
+
+This is an axiom!  (Note that `f` has type `ind->ind`.)
+val ( INFINITY_AX ) : thm = |- ?f. ONE_ONE f /\ ~ONTO f
+
+val ( IND_SUC_0_EXISTS ) : thm =
+  |- ?f z. (!x1 x2. (f x1 = f x2) = x1 = x2) /\ (!x. ~(f x = z))
+
+Now we define constants IND_SUC and IND_0, using new_specification with
+IND_SUC_0_EXISTS.  These are the two theorems returned.
+val ( IND_SUC_INJ ) : thm = |- !x1 x2. (IND_SUC x1 = IND_SUC x2) = x1 = x2
+val ( IND_SUC_0 ) : thm = |- !x. ~(IND_SUC x = IND_0)
+
+Now define the natural number representations as a subset of ind, using the
+inductive definition
+   `NUM_REP IND_0 /\
+    (!i. NUM_REP i ==> NUM_REP (IND_SUC i))`
+This returns the following theorems:
+val ( NUM_REP_RULES ) : thm =
+  |- NUM_REP IND_0 /\ (!i. NUM_REP i ==> NUM_REP (IND_SUC i))
+val ( NUM_REP_INDUCT ) : thm =
+  |- !NUM_REP'. NUM_REP' IND_0 /\ (!i. NUM_REP' i ==> NUM_REP' (IND_SUC i))
+                ==> (!a. NUM_REP a ==> NUM_REP' a)
+val ( NUM_REP_CASES ) : thm =
+  |- !a. NUM_REP a = (a = IND_0) \/ (?i. (a = IND_SUC i) /\ NUM_REP i)
+
+Now we define the type "num", which has a bijection with the NUM_REP
+subset of ind.  This gives the following theorems:
+val num_tydef : thm * thm =
+  (|- mk_num (dest_num a) = a, |- NUM_REP r = dest_num (mk_num r) = r)
+
+This is the definition of _0.
+val ( ZERO_DEF ) : thm = |- _0 = mk_num IND_0
+
+This is the definition of SUC.
+val ( SUC_DEF ) : thm = |- !n. SUC n = mk_num (IND_SUC (dest_num n))
+
+val ( NOT_SUC ) : thm = |- !n. ~(SUC n = _0)
+val ( SUC_INJ ) : thm = |- !m n. (SUC m = SUC n) = m = n
+val num_INDUCTION : thm =
+  |- !P. P _0 /\ (!n. P n ==> P (SUC n)) ==> (!n. P n)
+val num_Axiom : thm =
+  |- !e f. ?!fn. (fn _0 = e) /\ (!n. fn (SUC n) = f (fn n) n)
+
+This is the definition of NUMERAL.
+The HOL Light parser reads decimal numbers and turns them internally
+into terms starting with NUMERAL; then the printer turns them back
+into decimal numbers.
+val ( NUMERAL ) : thm = |- !n. NUMERAL n = n
+
+Now we can use the decimal number 0, rather than the symbol _0; we prove
+new versions of the above four theorems, replacing _0 with 0.  (We give
+them the same names as the old theorems, which are now inaccessible.)
+
+val ( NOT_SUC ) : thm = |- !n. ~(SUC n = 0)
+val ( SUC_INJ ) : thm = |- !m n. (SUC m = SUC n) = m = n
+val num_INDUCTION : thm = |- !P. P 0 /\ (!n. P n ==> P (SUC n)) ==> (!n. P n)
+val num_Axiom : thm =
+  |- !e f. ?!fn. (fn 0 = e) /\ (!n. fn (SUC n) = f (fn n) n)
+
+INDUCT_TAC takes a goal `!x. P[x]` and creates subgoals `P[0]` and
+`P[SUC n]` (the latter with an assumption `P[n]`).
+
+val num_RECURSION : thm =
+  |- !e f. ?fn. (fn 0 = e) /\ (!n. fn (SUC n) = f (fn n) n)
+
+val num_CASES : thm = |- !m. (m = 0) \/ (?n. m = SUC n)
+
+arith.ml:
+
+This is the definition of PRE (predecessor).
+val ( PRE ) : thm = |- (PRE 0 = 0) /\ (!n. PRE (SUC n) = n)
+
+This is the definition of (+).
+val ( ADD ) : thm = |- (!n. 0 + n = n) /\ (!m n. SUC m + n = SUC (m + n))
+
+val ( ADD_0 ) : thm = |- !m. m + 0 = m
+val ( ADD_SUC ) : thm = |- !m n. m + SUC n = SUC (m + n)
+val ( ADD_CLAUSES ) : thm =
+  |- (!n. 0 + n = n) /\
+     (!m. m + 0 = m) /\
+     (!m n. SUC m + n = SUC (m + n)) /\
+     (!m n. m + SUC n = SUC (m + n))
+val ( ADD_SYM ) : thm = |- !m n. m + n = n + m
+val ( ADD_ASSOC ) : thm = |- !m n p. m + n + p = (m + n) + p
+val ( ADD_AC ) : thm =
+  |- (m + n = n + m) /\ ((m + n) + p = m + n + p) /\ (m + n + p = n + m + p)
+val ( ADD_EQ_0 ) : thm = |- !m n. (m + n = 0) = (m = 0) /\ (n = 0)
+val ( EQ_ADD_LCANCEL ) : thm = |- !m n p. (m + n = m + p) = n = p
+val ( EQ_ADD_RCANCEL ) : thm = |- !m n p. (m + p = n + p) = m = n
+val ( EQ_ADD_LCANCEL_0 ) : thm = |- !m n. (m + n = m) = n = 0
+val ( EQ_ADD_RCANCEL_0 ) : thm = |- !m n. (m + n = n) = m = 0
+
+These are the definitions of BIT0 and BIT1.  The HOL Light parser
+parses decimal numbers into terms made of 0, BIT0, and BIT1, surrounded
+by NUMERAL.
+val ( BIT0 ) : thm = |- !n. BIT0 n = n + n
+val ( BIT1 ) : thm = |- !n. BIT1 n = SUC (n + n)
+
+val ( BIT0_THM ) : thm = |- !n. NUMERAL (BIT0 n) = NUMERAL n + NUMERAL n
+val ( BIT1_THM ) : thm =
+  |- !n. NUMERAL (BIT1 n) = SUC (NUMERAL n + NUMERAL n)
+val ( ONE ) : thm = |- 1 = SUC 0
+val ( TWO ) : thm = |- 2 = SUC 1
+val ( ADD1 ) : thm = |- !m. SUC m = m + 1
+
+This is the definition of (*)
+val ( MULT ) : thm = |- (!n. 0 * n = 0) /\ (!m n. SUC m * n = m * n + n)
+
+val ( MULT_0 ) : thm = |- !m. m * 0 = 0
+val ( MULT_SUC ) : thm = |- !m n. m * SUC n = m + m * n
+val ( MULT_CLAUSES ) : thm =
+  |- (!n. 0 * n = 0) /\
+     (!m. m * 0 = 0) /\
+     (!n. 1 * n = n) /\
+     (!m. m * 1 = m) /\
+     (!m n. SUC m * n = m * n + n) /\
+     (!m n. m * SUC n = m + m * n)
+val ( MULT_SYM ) : thm = |- !m n. m * n = n * m
+val ( LEFT_ADD_DISTRIB ) : thm = |- !m n p. m * (n + p) = m * n + m * p
+val ( RIGHT_ADD_DISTRIB ) : thm = |- !m n p. (m + n) * p = m * p + n * p
+val ( MULT_ASSOC ) : thm = |- !m n p. m * n * p = (m * n) * p
+val ( MULT_AC ) : thm =
+  |- (m * n = n * m) /\ ((m * n) * p = m * n * p) /\ (m * n * p = n * m * p)
+val ( MULT_EQ_0 ) : thm = |- !m n. (m * n = 0) = (m = 0) \/ (n = 0)
+val ( EQ_MULT_LCANCEL ) : thm =
+  |- !m n p. (m * n = m * p) = (m = 0) \/ (n = p)
+val ( EQ_MULT_RCANCEL ) : thm =
+  |- !m n p. (m * p = n * p) = (m = n) \/ (p = 0)
+val ( MULT_2 ) : thm = |- !n. 2 * n = n + n
+val ( MULT_EQ_1 ) : thm = |- !m n. (m * n = 1) = (m = 1) /\ (n = 1)
+
+This is the definition of EXP (exponentiation).
+val ( EXP ) : thm = |- (!m. m EXP 0 = 1) /\ (!m n. m EXP SUC n = m * m EXP n)
+
+val ( EXP_EQ_0 ) : thm = |- !m n. (m EXP n = 0) = (m = 0) /\ ~(n = 0)
+val ( EXP_ADD ) : thm = |- !m n p. m EXP (n + p) = m EXP n * m EXP p
+val ( EXP_ONE ) : thm = |- !n. 1 EXP n = 1
+val ( EXP_1 ) : thm = |- !n. n EXP 1 = n
+val ( EXP_2 ) : thm = |- !n. n EXP 2 = n * n
+val ( MULT_EXP ) : thm = |- !p m n. (m * n) EXP p = m EXP p * n EXP p
+val ( EXP_MULT ) : thm = |- !m n p. m EXP (n * p) = m EXP n EXP p
+
+This is the definition of (<=)
+val ( LE ) : thm =
+  |- (!m. m <= 0 = m = 0) /\ (!m n. m <= SUC n = (m = SUC n) \/ m <= n)
+
+This is the definition of (<)
+val ( LT ) : thm = |- (!m. m < 0 = F) /\ (!m n. m < SUC n = (m = n) \/ m < n)
+
+This is the definition of (>=)
+val ( GE ) : thm = |- !n m. m >= n = n <= m
+
+This is the definition of (>)
+val ( GT ) : thm = |- !n m. m > n = n < m
+
+val ( LE_SUC_LT ) : thm = |- !m n. SUC m <= n = m < n
+val ( LT_SUC_LE ) : thm = |- !m n. m < SUC n = m <= n
+val ( LE_SUC ) : thm = |- !m n. SUC m <= SUC n = m <= n
+val ( LT_SUC ) : thm = |- !m n. SUC m < SUC n = m < n
+val ( LE_0 ) : thm = |- !n. 0 <= n
+val ( LT_0 ) : thm = |- !n. 0 < SUC n
+val ( LE_REFL ) : thm = |- !n. n <= n
+val ( LT_REFL ) : thm = |- !n. ~(n < n)
+val ( LE_ANTISYM ) : thm = |- !m n. m <= n /\ n <= m = m = n
+val ( LT_ANTISYM ) : thm = |- !m n. ~(m < n /\ n < m)
+val ( LET_ANTISYM ) : thm = |- !m n. ~(m <= n /\ n < m)
+val ( LTE_ANTISYM ) : thm = |- !m n. ~(m < n /\ n <= m)
+val ( LE_TRANS ) : thm = |- !m n p. m <= n /\ n <= p ==> m <= p
+val ( LT_TRANS ) : thm = |- !m n p. m < n /\ n < p ==> m < p
+val ( LET_TRANS ) : thm = |- !m n p. m <= n /\ n < p ==> m < p
+val ( LTE_TRANS ) : thm = |- !m n p. m < n /\ n <= p ==> m < p
+val ( LE_CASES ) : thm = |- !m n. m <= n \/ n <= m
+val ( LT_CASES ) : thm = |- !m n. m < n \/ n < m \/ (m = n)
+val ( LET_CASES ) : thm = |- !m n. m <= n \/ n < m
+val ( LTE_CASES ) : thm = |- !m n. m < n \/ n <= m
+val ( LE_LT ) : thm = |- !m n. m <= n = m < n \/ (m = n)
+val ( LT_LE ) : thm = |- !m n. m < n = m <= n /\ ~(m = n)
+val ( NOT_LE ) : thm = |- !m n. ~(m <= n) = n < m
+val ( NOT_LT ) : thm = |- !m n. ~(m < n) = n <= m
+val ( LT_IMP_LE ) : thm = |- !m n. m < n ==> m <= n
+val ( EQ_IMP_LE ) : thm = |- !m n. (m = n) ==> m <= n
+val ( LE_EXISTS ) : thm = |- !m n. m <= n = (?d. n = m + d)
+val ( LT_EXISTS ) : thm = |- !m n. m < n = (?d. n = m + SUC d)
+val ( LE_ADD ) : thm = |- !m n. m <= m + n
+val ( LE_ADDR ) : thm = |- !m n. n <= m + n
+val ( LT_ADD ) : thm = |- !m n. m < m + n = 0 < n
+val ( LT_ADDR ) : thm = |- !m n. n < m + n = 0 < m
+val ( LE_ADD_LCANCEL ) : thm = |- !m n p. m + n <= m + p = n <= p
+val ( LE_ADD_RCANCEL ) : thm = |- !m n p. m + p <= n + p = m <= n
+val ( LT_ADD_LCANCEL ) : thm = |- !m n p. m + n < m + p = n < p
+val ( LT_ADD_RCANCEL ) : thm = |- !m n p. m + p < n + p = m < n
+val ( LE_ADD2 ) : thm = |- !m n p q. m <= p /\ n <= q ==> m + n <= p + q
+val ( LET_ADD2 ) : thm = |- !m n p q. m <= p /\ n < q ==> m + n < p + q
+val ( LTE_ADD2 ) : thm = |- !m n p q. m < p /\ n <= q ==> m + n < p + q
+val ( LT_ADD2 ) : thm = |- !m n p q. m < p /\ n < q ==> m + n < p + q
+val ( LT_MULT ) : thm = |- !m n. 0 < m * n = 0 < m /\ 0 < n
+val ( LE_MULT2 ) : thm = |- !m n p q. m <= n /\ p <= q ==> m * p <= n * q
+val ( LT_LMULT ) : thm = |- !m n p. ~(m = 0) /\ n < p ==> m * n < m * p
+val ( LE_MULT_LCANCEL ) : thm = |- !m n p. m * n <= m * p = (m = 0) \/ n <= p
+val ( LE_MULT_RCANCEL ) : thm = |- !m n p. m * p <= n * p = m <= n \/ (p = 0)
+val ( LT_MULT_LCANCEL ) : thm = |- !m n p. m * n < m * p = ~(m = 0) /\ n < p
+val ( LT_MULT_RCANCEL ) : thm = |- !m n p. m * p < n * p = m < n /\ ~(p = 0)
+val ( EQ_SUC ) : thm = |- !m n. (SUC m = SUC n) = m = n
+val ( LT_MULT2 ) : thm = |- !m n p q. m < n /\ p < q ==> m * p < n * q
+val ( LE_SQUARE_REFL ) : thm = |- !n. n <= n * n
+val num_WF : thm = |- !P. (!n. (!m. m < n ==> P m) ==> P n) ==> (!n. P n)
+val num_WOP : thm = |- !P. (?n. P n) = (?n. P n /\ (!m. m < n ==> ~P m))
+val num_MAX : thm =
+  |- !P. (?x. P x) /\ (?M. !x. P x ==> x <= M) =
+         (?m. P m /\ (!x. P x ==> x <= m))
+
+These are the definitions of EVEN and ODD.
+val ( EVEN ) : thm = |- (EVEN 0 = T) /\ (!n. EVEN (SUC n) = ~EVEN n)
+val ( ODD ) : thm = |- (ODD 0 = F) /\ (!n. ODD (SUC n) = ~ODD n)
+
+val ( NOT_EVEN ) : thm = |- !n. ~EVEN n = ODD n
+val ( NOT_ODD ) : thm = |- !n. ~ODD n = EVEN n
+val ( EVEN_OR_ODD ) : thm = |- !n. EVEN n \/ ODD n
+val ( EVEN_AND_ODD ) : thm = |- !n. ~(EVEN n /\ ODD n)
+val ( EVEN_ADD ) : thm = |- !m n. EVEN (m + n) = EVEN m = EVEN n
+val ( EVEN_MULT ) : thm = |- !m n. EVEN (m * n) = EVEN m \/ EVEN n
+val ( EVEN_EXP ) : thm = |- !m n. EVEN (m EXP n) = EVEN m /\ ~(n = 0)
+val ( ODD_ADD ) : thm = |- !m n. ODD (m + n) = ~(ODD m = ODD n)
+val ( ODD_MULT ) : thm = |- !m n. ODD (m * n) = ODD m /\ ODD n
+val ( ODD_EXP ) : thm = |- !m n. ODD (m EXP n) = ODD m \/ (n = 0)
+val ( EVEN_DOUBLE ) : thm = |- !n. EVEN (2 * n)
+val ( ODD_DOUBLE ) : thm = |- !n. ODD (SUC (2 * n))
+val ( EVEN_EXISTS_LEMMA ) : thm =
+  |- !n. (EVEN n ==> (?m. n = 2 * m)) /\ (~EVEN n ==> (?m. n = SUC (2 * m)))
+val ( EVEN_EXISTS ) : thm = |- !n. EVEN n = (?m. n = 2 * m)
+val ( ODD_EXISTS ) : thm = |- !n. ODD n = (?m. n = SUC (2 * m))
+
+This is the definition of (-).  Note that according to this
+definition, if a<b, then a-b = 0.
+val ( SUB ) : thm = |- (!m. m - 0 = m) /\ (!m n. m - SUC n = PRE (m - n))
+
+val ( SUB_0 ) : thm = |- !m. (0 - m = 0) /\ (m - 0 = m)
+val ( SUB_PRESUC ) : thm = |- !m n. PRE (SUC m - n) = m - n
+val ( SUB_SUC ) : thm = |- !m n. SUC m - SUC n = m - n
+val ( SUB_REFL ) : thm = |- !n. n - n = 0
+val ( ADD_SUB ) : thm = |- !m n. (m + n) - n = m
+val ( ADD_SUB2 ) : thm = |- !m n. (m + n) - m = n
+val ( SUB_EQ_0 ) : thm = |- !m n. (m - n = 0) = m <= n
+val ( ADD_SUBR2 ) : thm = |- !m n. m - (m + n) = 0
+val ( ADD_SUBR ) : thm = |- !m n. n - (m + n) = 0
+val ( SUB_ADD ) : thm = |- !m n. n <= m ==> (m - n + n = m)
+val ( SUB_ADD_LCANCEL ) : thm = |- !m n p. (m + n) - (m + p) = n - p
+val ( SUB_ADD_RCANCEL ) : thm = |- !m n p. (m + p) - (n + p) = m - n
+val ( LEFT_SUB_DISTRIB ) : thm = |- !m n p. m * (n - p) = m * n - m * p
+val ( RIGHT_SUB_DISTRIB ) : thm = |- !m n p. (m - n) * p = m * p - n * p
+
+This is the definition of FACT (factorial).
+val ( FACT ) : thm = |- (FACT 0 = 1) /\ (!n. FACT (SUC n) = SUC n * FACT n)
+
+val ( FACT_LT ) : thm = |- !n. 0 < FACT n
+val ( FACT_LE ) : thm = |- !n. 1 <= FACT n
+val ( FACT_MONO ) : thm = |- !m n. m <= n ==> FACT m <= FACT n
+val ( DIVMOD_EXIST ) : thm =
+  |- !m n. ~(n = 0) ==> (?q r. (m = q * n + r) /\ r < n)
+
+This is the simultaneous definition, using new_specification, of DIV
+and MOD.
+val ( DIVISION ) : thm =
+  |- !m n. ~(n = 0) ==> (m = m DIV n * n + m MOD n) /\ m MOD n < n
+
+val ( DIVMOD_UNIQ_LEMMA ) : thm =
+  |- !m n q1 r1 q2 r2.
+         ((m = q1 * n + r1) /\ r1 < n) /\ (m = q2 * n + r2) /\ r2 < n
+         ==> (q1 = q2) /\ (r1 = r2)
+val ( DIVMOD_UNIQ ) : thm =
+  |- !m n q r. (m = q * n + r) /\ r < n ==> (m DIV n = q) /\ (m MOD n = r)
+val ( MOD_UNIQ ) : thm =
+  |- !m n q r. (m = q * n + r) /\ r < n ==> (m MOD n = r)
+val ( DIV_UNIQ ) : thm =
+  |- !m n q r. (m = q * n + r) /\ r < n ==> (m DIV n = q)
+val ( MOD_MULT ) : thm = |- !m n. ~(m = 0) ==> ((m * n) MOD m = 0)
+val ( DIV_MULT ) : thm = |- !m n. ~(m = 0) ==> ((m * n) DIV m = n)
+val ( DIV_DIV ) : thm =
+  |- !m n p. ~(n * p = 0) ==> (m DIV n DIV p = m DIV (n * p))
+val ( MOD_LT ) : thm = |- !m n. m < n ==> (m MOD n = m)
+val ( MOD_EQ ) : thm = |- !m n p q. (m = n + q * p) ==> (m MOD p = n MOD p)
+val ( DIV_MOD ) : thm =
+  |- !m n p. ~(n * p = 0) ==> ((m DIV n) MOD p = (m MOD (n * p)) DIV n)
+val ( DIV_1 ) : thm = |- !n. n DIV 1 = n
+val ( EXP_LT_0 ) : thm = |- !n x. 0 < x EXP n = ~(x = 0) \/ (n = 0)
+val ( DIV_LE ) : thm = |- !m n. ~(n = 0) ==> m DIV n <= m
+val ( DIV_MUL_LE ) : thm = |- !m n. n * m DIV n <= m
+val ( DIV_0 ) : thm = |- !n. ~(n = 0) ==> (0 DIV n = 0)
+val ( MOD_0 ) : thm = |- !n. ~(n = 0) ==> (0 MOD n = 0)
+val ( DIV_LT ) : thm = |- !m n. m < n ==> (m DIV n = 0)
+val ( MOD_MOD ) : thm =
+  |- !m n p. ~(n * p = 0) ==> (m MOD (n * p) MOD n = m MOD n)
+val ( MOD_MOD_REFL ) : thm = |- !m n. ~(n = 0) ==> (m MOD n MOD n = m MOD n)
+val ( DIV_MULT2 ) : thm =
+  |- !m n p. ~(m * p = 0) ==> ((m * n) DIV (m * p) = n DIV p)
+val ( MOD_MULT2 ) : thm =
+  |- !m n p. ~(m * p = 0) ==> ((m * n) MOD (m * p) = m * n MOD p)
+val ( MOD_1 ) : thm = |- !n. n MOD 1 = 0
+val ( MOD_EXISTS ) : thm =
+  |- !m n. (?q. m = n * q) = (if n = 0 then m = 0 else m MOD n = 0)
+val ( LT_EXP ) : thm =
+  |- !x m n.
+         x EXP m < x EXP n =
+         2 <= x /\ m < n \/ (x = 0) /\ ~(m = 0) /\ (n = 0)
+val ( LE_EXP ) : thm =
+  |- !x m n.
+         x EXP m <= x EXP n =
+         (if x = 0 then (m = 0) ==> (n = 0) else (x = 1) \/ m <= n)
+val ( DIV_MONO ) : thm = |- !m n p. ~(p = 0) /\ m <= n ==> m DIV p <= n DIV p
+val ( DIV_MONO_LT ) : thm =
+  |- !m n p. ~(p = 0) /\ m + p <= n ==> m DIV p < n DIV p
+val ( LE_LDIV ) : thm = |- !a b n. ~(a = 0) /\ b <= a * n ==> b DIV a <= n
+val ( LE_RDIV_EQ ) : thm =
+  |- !a b n. ~(a = 0) ==> (n <= b DIV a = a * n <= b)
+val ( LE_LDIV_EQ ) : thm =
+  |- !a b n. ~(a = 0) ==> (b DIV a <= n = b < a * (n + 1))
+val ( DIV_EQ_0 ) : thm = |- !m n. ~(n = 0) ==> ((m DIV n = 0) = m < n)
+val ( MOD_EQ_0 ) : thm =
+  |- !m n. ~(n = 0) ==> ((m MOD n = 0) = (?q. m = q * n))
+val ( EVEN_MOD ) : thm = |- !n. EVEN n = n MOD 2 = 0
+val ( ODD_MOD ) : thm = |- !n. ODD n = n MOD 2 = 1
+val ( MOD_MULT_RMOD ) : thm =
+  |- !m n p. ~(n = 0) ==> ((m * p MOD n) MOD n = (m * p) MOD n)
+val ( MOD_MULT_LMOD ) : thm =
+  |- !m n p. ~(n = 0) ==> ((m MOD n * p) MOD n = (m * p) MOD n)
+val ( MOD_MULT_MOD2 ) : thm =
+  |- !m n p. ~(n = 0) ==> ((m MOD n * p MOD n) MOD n = (m * p) MOD n)
+val ( MOD_EXP_MOD ) : thm =
+  |- !m n p. ~(n = 0) ==> ((m MOD n) EXP p MOD n = m EXP p MOD n)
+val ( MOD_MULT_ADD ) : thm = |- !m n p. (m * n + p) MOD n = p MOD n
+val ( MOD_ADD_MOD ) : thm =
+  |- !a b n. ~(n = 0) ==> ((a MOD n + b MOD n) MOD n = (a + b) MOD n)
+val ( DIV_ADD_MOD ) : thm =
+  |- !a b n.
+         ~(n = 0)
+         ==> (((a + b) MOD n = a MOD n + b MOD n) =
+              (a + b) DIV n =
+              a DIV n + b DIV n)
+val ( DIV_REFL ) : thm = |- !n. ~(n = 0) ==> (n DIV n = 1)
+val ( MOD_LE ) : thm = |- !m n. ~(n = 0) ==> m MOD n <= m
+val ( DIV_MONO2 ) : thm =
+  |- !m n p. ~(p = 0) /\ p <= m ==> n DIV m <= n DIV p
+val ( SUB_ELIM_THM ) : thm =
+  |- P (a - b) = (!d. ((b = a + d) ==> P 0) /\ ((a = b + d) ==> P d))
+
+SUB_ELIM_CONV rewrites with SUB_ELIM_THM (directly above).
+
+SUB_ELIM_TAC takes a goal `P[a-b]` and creates two subgoals.  In the
+first, the goal is changed to `P[0]`, `b` is rewritten to `a+d`
+throughout the goal state, and an assumption `b = a+d` is added.
+In the second, the goal is changed to `P[d]`, `a` is rewritten
+to `b+d` throughout the goal state, and an assumption `a=b+d` is added.
+
+val ( PRE_ELIM_THM ) : thm =
+  |- P (PRE n) = (!m. ((n = 0) ==> P 0) /\ ((n = SUC m) ==> P m))
+
+PRE_ELIM_CONV rewrites with PRE_ELIM_THM (directly above).
+
+PRE_ELIM_TAC takes a goal `P[PRE n]` and creates two subgoals.  In the
+first, the goal is changed to `P[0]`, `n` is rewritten to `0` throughout
+the goal state, and an assumption `n=0` is added.  In the second, the
+goal is changed to `P[m]`, `n` is rewritten to `SUC m` throughout
+the goal state, and an assumption `n = SUC m` is added.
+
+val ( DIVMOD_ELIM_THM ) : thm =
+  |- ~(n = 0)
+     ==> (P (m DIV n) (m MOD n) = (!q r. (m = q * n + r) /\ r < n ==> P q r))
+
+DIVMOD_ELIM_TAC finds either a subterm `m DIV n` or `m MOD n` in
+the current goal.  It uses these to view the goal as `P[m DIV n,m MOD n]`.
+It then changes the goal to
+`~(n = 0) /\
+  ((m = q*n + r) /\ r < n ==> P[q;r]`
+
+NUM_CANCEL_CONV rewrites `(c+(b+a)) = (b+d)+a` to `c=d`
+
+LE_IMP `|- a <= b` gives (GEN_ALL `|- b <= p ==> a <= p`)
+
+wf.ml:
+
+This is the definition of WF.
+val ( WF ) : thm =
+  |- !(<<). WF (<<) = (!P. (?x. P x) ==> (?x. P x /\ (!y. y << x ==> ~P y)))
+
+val ( WF_EQ ) : thm =
+  |- WF (<<) = (!P. (?x. P x) = (?x. P x /\ (!y. y << x ==> ~P y)))
+val ( WF_IND ) : thm =
+  |- WF (<<) = (!P. (!x. (!y. y << x ==> P y) ==> P x) ==> (!x. P x))
+val ( WF_DCHAIN ) : thm = |- WF (<<) = ~(?s. !n. s (SUC n) << s n)
+val ( WF_UREC ) : thm =
+  |- WF (<<)
+     ==> (!H. (!f g x. (!z. z << x ==> (f z = g z)) ==> (H f x = H g x))
+              ==> (!f g. (!x. f x = H f x) /\ (!x. g x = H g x) ==> (f = g)))
+val ( WF_UREC_WF ) : thm =
+  |- (!H. (!f g x. (!z. z << x ==> (f z = g z)) ==> (H f x = H g x))
+          ==> (!f g. (!x. f x = H f x) /\ (!x. g x = H g x) ==> (f = g)))
+     ==> WF (<<)
+val ( WF_REC ) : thm =
+  |- WF (<<)
+     ==> (!H. (!f g x. (!z. z << x ==> (f z = g z)) ==> (H f x = H g x))
+              ==> (?f. !x. f x = H f x))
+val ( WF_REC_WF ) : thm =
+  |- (!H. (!f g x. (!z. z << x ==> (f z = g z)) ==> (H f x = H g x))
+          ==> (?f. !x. f x = H f x))
+     ==> WF (<<)
+val ( WF_EREC ) : thm =
+  |- WF (<<)
+     ==> (!H. (!f g x. (!z. z << x ==> (f z = g z)) ==> (H f x = H g x))
+              ==> (?!f. !x. f x = H f x))
+val ( WF_SUBSET ) : thm =
+  |- (!x y. x << y ==> x <<< y) /\ WF (<<<) ==> WF (<<)
+val ( WF_MEASURE_GEN ) : thm = |- !m. WF (<<) ==> WF (\x x'. m x << m x')
+val ( WF_LEX_DEPENDENT ) : thm =
+  |- !R S.
+         WF R /\ (!a. WF (S a))
+         ==> WF (\(r1,s1). \(r2,s2). R r1 r2 \/ (r1 = r2) /\ S r1 s1 s2)
+val ( WF_LEX ) : thm =
+  |- !R S.
+         WF R /\ WF S
+         ==> WF (\(r1,s1). \(r2,s2). R r1 r2 \/ (r1 = r2) /\ S s1 s2)
+val ( WF_POINTWISE ) : thm =
+  |- WF (<<) /\ WF (<<<) ==> WF (\(x1,y1). \(x2,y2). x1 << x2 /\ y1 <<< y2)
+val ( WF_num ) : thm = |- WF (<)
+val ( WF_REC_num ) : thm =
+  |- !H. (!f g n. (!m. m < n ==> (f m = g m)) ==> (H f n = H g n))
+         ==> (?f. !n. f n = H f n)
+
+This is the definition of measure.
+val measure : thm = |- !m. measure m = (\x y. m x < m y)
+
+val ( WF_MEASURE ) : thm = |- !m. WF (measure m)
+val ( WF_REFL ) : thm = |- !x. WF (<<) ==> ~(x << x)
+val ( WF_REC_TAIL ) : thm =
+  |- !P g h. ?f. !x. f x = (if P x then f (g x) else h x)
+
+WF_INDUCT_THEN 
+WF_INDUCT_TAC
+Perform wellfounded induction over a nominated measure function. Sometimes
+avoids explicit "!n t. size(t) = n ==> ..." goal.
+
+calc_num.ml:
+
+mangle takes a theorem and rewrites its conclusion to elide NUMERAL.
+
+val ( ARITH_ZERO ) : thm = |- (NUMERAL 0 = 0) /\ (BIT0 _0 = _0)
+val ( ARITH_SUC ) : thm =
+  |- (!n. SUC (NUMERAL n) = NUMERAL (SUC n)) /\
+     (SUC _0 = BIT1 _0) /\
+     (!n. SUC (BIT0 n) = BIT1 n) /\
+     (!n. SUC (BIT1 n) = BIT0 (SUC n))
+val ( ARITH_PRE ) : thm =
+  |- (!n. PRE (NUMERAL n) = NUMERAL (PRE n)) /\
+     (PRE _0 = _0) /\
+     (!n. PRE (BIT0 n) = (if n = _0 then _0 else BIT1 (PRE n))) /\
+     (!n. PRE (BIT1 n) = BIT0 n)
+val ( ARITH_ADD ) : thm =
+  |- (!m n. NUMERAL m + NUMERAL n = NUMERAL (m + n)) /\
+     (_0 + _0 = _0) /\
+     (!n. _0 + BIT0 n = BIT0 n) /\
+     (!n. _0 + BIT1 n = BIT1 n) /\
+     (!n. BIT0 n + _0 = BIT0 n) /\
+     (!n. BIT1 n + _0 = BIT1 n) /\
+     (!m n. BIT0 m + BIT0 n = BIT0 (m + n)) /\
+     (!m n. BIT0 m + BIT1 n = BIT1 (m + n)) /\
+     (!m n. BIT1 m + BIT0 n = BIT1 (m + n)) /\
+     (!m n. BIT1 m + BIT1 n = BIT0 (SUC (m + n)))
+val ( ARITH_MULT ) : thm =
+  |- (!m n. NUMERAL m * NUMERAL n = NUMERAL (m * n)) /\
+     (_0 * _0 = _0) /\
+     (!n. _0 * BIT0 n = _0) /\
+     (!n. _0 * BIT1 n = _0) /\
+     (!n. BIT0 n * _0 = _0) /\
+     (!n. BIT1 n * _0 = _0) /\
+     (!m n. BIT0 m * BIT0 n = BIT0 (BIT0 (m * n))) /\
+     (!m n. BIT0 m * BIT1 n = BIT0 m + BIT0 (BIT0 (m * n))) /\
+     (!m n. BIT1 m * BIT0 n = BIT0 n + BIT0 (BIT0 (m * n))) /\
+     (!m n. BIT1 m * BIT1 n = BIT1 m + BIT0 n + BIT0 (BIT0 (m * n)))
+val ( ARITH_EXP ) : thm =
+  |- (!m n. NUMERAL m EXP NUMERAL n = NUMERAL (m EXP n)) /\
+     (_0 EXP _0 = BIT1 _0) /\
+     (!m. BIT0 m EXP _0 = BIT1 _0) /\
+     (!m. BIT1 m EXP _0 = BIT1 _0) /\
+     (!n. _0 EXP BIT0 n = _0 EXP n * _0 EXP n) /\
+     (!m n. BIT0 m EXP BIT0 n = BIT0 m EXP n * BIT0 m EXP n) /\
+     (!m n. BIT1 m EXP BIT0 n = BIT1 m EXP n * BIT1 m EXP n) /\
+     (!n. _0 EXP BIT1 n = _0) /\
+     (!m n. BIT0 m EXP BIT1 n = BIT0 m * BIT0 m EXP n * BIT0 m EXP n) /\
+     (!m n. BIT1 m EXP BIT1 n = BIT1 m * BIT1 m EXP n * BIT1 m EXP n)
+val ( ARITH_EVEN ) : thm =
+  |- (!n. EVEN (NUMERAL n) = EVEN n) /\
+     (EVEN _0 = T) /\
+     (!n. EVEN (BIT0 n) = T) /\
+     (!n. EVEN (BIT1 n) = F)
+val ( ARITH_ODD ) : thm =
+  |- (!n. ODD (NUMERAL n) = ODD n) /\
+     (ODD _0 = F) /\
+     (!n. ODD (BIT0 n) = F) /\
+     (!n. ODD (BIT1 n) = T)
+val ( ARITH_LE ) : thm =
+  |- (!m n. NUMERAL m <= NUMERAL n = m <= n) /\
+     (_0 <= _0 = T) /\
+     (!n. BIT0 n <= _0 = n = _0) /\
+     (!n. BIT1 n <= _0 = F) /\
+     (!n. _0 <= BIT0 n = T) /\
+     (!n. _0 <= BIT1 n = T) /\
+     (!m n. BIT0 m <= BIT0 n = m <= n) /\
+     (!m n. BIT0 m <= BIT1 n = m <= n) /\
+     (!m n. BIT1 m <= BIT0 n = m < n) /\
+     (!m n. BIT1 m <= BIT1 n = m <= n)
+val ( ARITH_LT ) : thm =
+  |- (!m n. NUMERAL m < NUMERAL n = m < n) /\
+     (_0 < _0 = F) /\
+     (!n. BIT0 n < _0 = F) /\
+     (!n. BIT1 n < _0 = F) /\
+     (!n. _0 < BIT0 n = _0 < n) /\
+     (!n. _0 < BIT1 n = T) /\
+     (!m n. BIT0 m < BIT0 n = m < n) /\
+     (!m n. BIT0 m < BIT1 n = m <= n) /\
+     (!m n. BIT1 m < BIT0 n = m < n) /\
+     (!m n. BIT1 m < BIT1 n = m < n)
+val ( ARITH_GE ) : thm =
+  |- (!m n. NUMERAL n >= NUMERAL m = n >= m) /\
+     _0 >= _0 /\
+     (!n. _0 >= BIT0 n = n = _0) /\
+     (!n. ~(_0 >= BIT1 n)) /\
+     (!n. BIT0 n >= _0) /\
+     (!n. BIT1 n >= _0) /\
+     (!m n. BIT0 n >= BIT0 m = n >= m) /\
+     (!m n. BIT1 n >= BIT0 m = n >= m) /\
+     (!m n. BIT0 n >= BIT1 m = n > m) /\
+     (!m n. BIT1 n >= BIT1 m = n >= m)
+val ( ARITH_GT ) : thm =
+  |- (!m n. NUMERAL n > NUMERAL m = n > m) /\
+     ~(_0 > _0) /\
+     (!n. ~(_0 > BIT0 n)) /\
+     (!n. ~(_0 > BIT1 n)) /\
+     (!n. BIT0 n > _0 = n > _0) /\
+     (!n. BIT1 n > _0) /\
+     (!m n. BIT0 n > BIT0 m = n > m) /\
+     (!m n. BIT1 n > BIT0 m = n >= m) /\
+     (!m n. BIT0 n > BIT1 m = n > m) /\
+     (!m n. BIT1 n > BIT1 m = n > m)
+val ( ARITH_EQ ) : thm =
+  |- (!m n. (NUMERAL m = NUMERAL n) = m = n) /\
+     ((_0 = _0) = T) /\
+     (!n. (BIT0 n = _0) = n = _0) /\
+     (!n. (BIT1 n = _0) = F) /\
+     (!n. (_0 = BIT0 n) = _0 = n) /\
+     (!n. (_0 = BIT1 n) = F) /\
+     (!m n. (BIT0 m = BIT0 n) = m = n) /\
+     (!m n. (BIT0 m = BIT1 n) = F) /\
+     (!m n. (BIT1 m = BIT0 n) = F) /\
+     (!m n. (BIT1 m = BIT1 n) = m = n)
+val ( ARITH_SUB ) : thm =
+  |- (!m n. NUMERAL m - NUMERAL n = NUMERAL (m - n)) /\
+     (_0 - _0 = _0) /\
+     (!n. _0 - BIT0 n = _0) /\
+     (!n. _0 - BIT1 n = _0) /\
+     (!n. BIT0 n - _0 = BIT0 n) /\
+     (!n. BIT1 n - _0 = BIT1 n) /\
+     (!m n. BIT0 m - BIT0 n = BIT0 (m - n)) /\
+     (!m n. BIT0 m - BIT1 n = PRE (BIT0 (m - n))) /\
+     (!m n. BIT1 m - BIT0 n = (if n <= m then BIT1 (m - n) else _0)) /\
+     (!m n. BIT1 m - BIT1 n = BIT0 (m - n))
+val ( ARITH ) : thm =
+  |- ((NUMERAL 0 = 0) /\ (BIT0 _0 = _0)) /\
+     ((!n. SUC (NUMERAL n) = NUMERAL (SUC n)) /\
+      (SUC _0 = BIT1 _0) /\
+      (!n. SUC (BIT0 n) = BIT1 n) /\
+      (!n. SUC (BIT1 n) = BIT0 (SUC n))) /\
+     ((!n. PRE (NUMERAL n) = NUMERAL (PRE n)) /\
+      (PRE _0 = _0) /\
+      (!n. PRE (BIT0 n) = (if n = _0 then _0 else BIT1 (PRE n))) /\
+      (!n. PRE (BIT1 n) = BIT0 n)) /\
+     ((!m n. NUMERAL m + NUMERAL n = NUMERAL (m + n)) /\
+      (_0 + _0 = _0) /\
+      (!n. _0 + BIT0 n = BIT0 n) /\
+      (!n. _0 + BIT1 n = BIT1 n) /\
+      (!n. BIT0 n + _0 = BIT0 n) /\
+      (!n. BIT1 n + _0 = BIT1 n) /\
+      (!m n. BIT0 m + BIT0 n = BIT0 (m + n)) /\
+      (!m n. BIT0 m + BIT1 n = BIT1 (m + n)) /\
+      (!m n. BIT1 m + BIT0 n = BIT1 (m + n)) /\
+      (!m n. BIT1 m + BIT1 n = BIT0 (SUC (m + n)))) /\
+     ((!m n. NUMERAL m * NUMERAL n = NUMERAL (m * n)) /\
+      (_0 * _0 = _0) /\
+      (!n. _0 * BIT0 n = _0) /\
+      (!n. _0 * BIT1 n = _0) /\
+      (!n. BIT0 n * _0 = _0) /\
+      (!n. BIT1 n * _0 = _0) /\
+      (!m n. BIT0 m * BIT0 n = BIT0 (BIT0 (m * n))) /\
+      (!m n. BIT0 m * BIT1 n = BIT0 m + BIT0 (BIT0 (m * n))) /\
+      (!m n. BIT1 m * BIT0 n = BIT0 n + BIT0 (BIT0 (m * n))) /\
+      (!m n. BIT1 m * BIT1 n = BIT1 m + BIT0 n + BIT0 (BIT0 (m * n)))) /\
+     ((!m n. NUMERAL m EXP NUMERAL n = NUMERAL (m EXP n)) /\
+      (_0 EXP _0 = BIT1 _0) /\
+      (!m. BIT0 m EXP _0 = BIT1 _0) /\
+      (!m. BIT1 m EXP _0 = BIT1 _0) /\
+      (!n. _0 EXP BIT0 n = _0 EXP n * _0 EXP n) /\
+      (!m n. BIT0 m EXP BIT0 n = BIT0 m EXP n * BIT0 m EXP n) /\
+      (!m n. BIT1 m EXP BIT0 n = BIT1 m EXP n * BIT1 m EXP n) /\
+      (!n. _0 EXP BIT1 n = _0) /\
+      (!m n. BIT0 m EXP BIT1 n = BIT0 m * BIT0 m EXP n * BIT0 m EXP n) /\
+      (!m n. BIT1 m EXP BIT1 n = BIT1 m * BIT1 m EXP n * BIT1 m EXP n)) /\
+     ((!n. EVEN (NUMERAL n) = EVEN n) /\
+      (EVEN _0 = T) /\
+      (!n. EVEN (BIT0 n) = T) /\
+      (!n. EVEN (BIT1 n) = F)) /\
+     ((!n. ODD (NUMERAL n) = ODD n) /\
+      (ODD _0 = F) /\
+      (!n. ODD (BIT0 n) = F) /\
+      (!n. ODD (BIT1 n) = T)) /\
+     ((!m n. (NUMERAL m = NUMERAL n) = m = n) /\
+      ((_0 = _0) = T) /\
+      (!n. (BIT0 n = _0) = n = _0) /\
+      (!n. (BIT1 n = _0) = F) /\
+      (!n. (_0 = BIT0 n) = _0 = n) /\
+      (!n. (_0 = BIT1 n) = F) /\
+      (!m n. (BIT0 m = BIT0 n) = m = n) /\
+      (!m n. (BIT0 m = BIT1 n) = F) /\
+      (!m n. (BIT1 m = BIT0 n) = F) /\
+      (!m n. (BIT1 m = BIT1 n) = m = n)) /\
+     ((!m n. NUMERAL m <= NUMERAL n = m <= n) /\
+      (_0 <= _0 = T) /\
+      (!n. BIT0 n <= _0 = n = _0) /\
+      (!n. BIT1 n <= _0 = F) /\
+      (!n. _0 <= BIT0 n = T) /\
+      (!n. _0 <= BIT1 n = T) /\
+      (!m n. BIT0 m <= BIT0 n = m <= n) /\
+      (!m n. BIT0 m <= BIT1 n = m <= n) /\
+      (!m n. BIT1 m <= BIT0 n = m < n) /\
+      (!m n. BIT1 m <= BIT1 n = m <= n)) /\
+     ((!m n. NUMERAL m < NUMERAL n = m < n) /\
+      (_0 < _0 = F) /\
+      (!n. BIT0 n < _0 = F) /\
+      (!n. BIT1 n < _0 = F) /\
+      (!n. _0 < BIT0 n = _0 < n) /\
+      (!n. _0 < BIT1 n = T) /\
+      (!m n. BIT0 m < BIT0 n = m < n) /\
+      (!m n. BIT0 m < BIT1 n = m <= n) /\
+      (!m n. BIT1 m < BIT0 n = m < n) /\
+      (!m n. BIT1 m < BIT1 n = m < n)) /\
+     ((!m n. NUMERAL n >= NUMERAL m = n >= m) /\
+      _0 >= _0 /\
+      (!n. _0 >= BIT0 n = n = _0) /\
+      (!n. ~(_0 >= BIT1 n)) /\
+      (!n. BIT0 n >= _0) /\
+      (!n. BIT1 n >= _0) /\
+      (!m n. BIT0 n >= BIT0 m = n >= m) /\
+      (!m n. BIT1 n >= BIT0 m = n >= m) /\
+      (!m n. BIT0 n >= BIT1 m = n > m) /\
+      (!m n. BIT1 n >= BIT1 m = n >= m)) /\
+     ((!m n. NUMERAL n > NUMERAL m = n > m) /\
+      ~(_0 > _0) /\
+      (!n. ~(_0 > BIT0 n)) /\
+      (!n. ~(_0 > BIT1 n)) /\
+      (!n. BIT0 n > _0 = n > _0) /\
+      (!n. BIT1 n > _0) /\
+      (!m n. BIT0 n > BIT0 m = n > m) /\
+      (!m n. BIT1 n > BIT0 m = n >= m) /\
+      (!m n. BIT0 n > BIT1 m = n > m) /\
+      (!m n. BIT1 n > BIT1 m = n > m)) /\
+     (!m n. NUMERAL m - NUMERAL n = NUMERAL (m - n)) /\
+     (_0 - _0 = _0) /\
+     (!n. _0 - BIT0 n = _0) /\
+     (!n. _0 - BIT1 n = _0) /\
+     (!n. BIT0 n - _0 = BIT0 n) /\
+     (!n. BIT1 n - _0 = BIT1 n) /\
+     (!m n. BIT0 m - BIT0 n = BIT0 (m - n)) /\
+     (!m n. BIT0 m - BIT1 n = PRE (BIT0 (m - n))) /\
+     (!m n. BIT1 m - BIT0 n = (if n <= m then BIT1 (m - n) else _0)) /\
+     (!m n. BIT1 m - BIT1 n = BIT0 (m - n))
+
+NUM_SUC_CONV rewrites a term of the form `SUC k`, where k is a numeral.
+NUM_ADD_CONV rewrites a term of the form `j + k`, where j and k are numerals.
+NUM_SUC_CONV' and NUM_ADD_CONV' are the same, except that they expect
+numerals without the NUMERAL tag.
+
+NUM_PRE_CONV rewrites a term of the form `PRE k`, where k is a numeral.
+
+NUM_REL_CONV rewrites a term of the form `j OP k`, where j and k
+are numerals, and op is (<), (<=), (>), (>=), (=).
+NUM_REL_CONV' is the same, except that it expects numerals without
+the NUMERAL tag and does not deal with (>) or (>=).
+
+NUM_EQ_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_GE_CONV, NUM_GT_CONV
+Like NUM_REL_CONV, but only works if the op matches the conversion
+name.  (You could always use NUM_REL_CONV instead of these, unless
+you deliberately want to fail on the wrong op.  These will be
+very slightly more efficient.)
+
+NUM_EVEN_CONV, NUM_ODD_CONV
+rewrite terms of the form `EVEN k` and `ODD k` respectively, where k
+is a numeral.
+
+NUM_SUB_CONV rewrites a term of the form `j - k`, where j and k
+are numerals.
+
+NUM_MULT_CONV rewrites a term of the form `j * k`, where j and k
+are numerals.
+NUM_MULT_CONV' is the same, except that it expects numerals without
+the NUMERAL tag.
+
+NUM_EXP_CONV rewrites a term of the form `j EXP k`, where j and k
+are numerals.
+
+NUM_DIV_CONV and NUM_MOD_CONV rewrite terms of the forms `j DIV k`
+and `j MOD k` respectively, where j and k are numerals.
+NUM_DIVMOD_CONV (j:Num.num) (k:Num.num) produces a theorem
+`|- (J DIV K = JDIVK) /\ (J MOD K = JMODK)`, where J and K
+are the numerals for j and k, and JDIVK and JMODK are the appropriate
+numerals.  (NUM_DIV_CONV and NUM_MID_CONV each call this function;
+if you need to compute both DIV and MOD, it's about twice as
+fast to do both together with NUM_DIVMOD_CONV.)
+
+NUM_FACT_CONV rewrites terms of the form `FACT k` where k is a numeral.
+
+NUM_RED_CONV reduces `SUC j`, `PRE j`, `FACT j`, `j < k`, `j <= k`,
+`j > k`, `j >= k`, `j = k`, `EVEN j`, `ODD j`, `j + k`, `j - k`,
+`j * k`, `j EXP k`, `j DIV k`, or `j MOD k` (where j and k are numerals).
+
+NUM_REDUCE_CONV reduces the above numeral expressions depth-first
+throughout the expression.
+
+NUM_REDUCE_TAC reduces numeral expressions in the goal.
+
+num_CONV rewrites `j` to `SUC (J-1)`, where J-1 is the numeral for j - 1.
+
+EXPAND_CASES_CONV rewrites `!n. n < 5 ==> P[n]` to
+`P[0] /\ P[1] /\ P[2] /\ P[3] /\ P[4]`
+
+ind-types.ml:
+
+val ( INJ_INVERSE2 ) : thm =
+  |- !P. (!x1 y1 x2 y2. (P x1 y1 = P x2 y2) = (x1 = x2) /\ (y1 = y2))
+         ==> (?X Y. !x y. (X (P x y) = x) /\ (Y (P x y) = y))
+
+This is the definition of NUMPAIR.
+val ( NUMPAIR ) : thm = |- !x y. NUMPAIR x y = 2 EXP x * (2 * y + 1)
+
+val ( NUMPAIR_INJ_LEMMA ) : thm =
+  |- !x1 y1 x2 y2. (NUMPAIR x1 y1 = NUMPAIR x2 y2) ==> (x1 = x2)
+val ( NUMPAIR_INJ ) : thm =
+  |- !x1 y1 x2 y2. (NUMPAIR x1 y1 = NUMPAIR x2 y2) = (x1 = x2) /\ (y1 = y2)
+
+This is the simultaneous definition of NUMFST and NUMSND (using
+new_specification).
+val ( NUMPAIR_DEST ) : thm =
+  |- !x y. (NUMFST (NUMPAIR x y) = x) /\ (NUMSND (NUMPAIR x y) = y)
+
+This is the definition of NUMSUM.
+val ( NUMSUM ) : thm =
+  |- !b x. NUMSUM b x = (if b then SUC (2 * x) else 2 * x)
+
+val ( NUMSUM_INJ ) : thm =
+  |- !b1 x1 b2 x2. (NUMSUM b1 x1 = NUMSUM b2 x2) = (b1 = b2) /\ (x1 = x2)
+
+This is the simultaneous definition of NUMLEFT and NUMRIGHT
+(using new_specification).
+val ( NUMSUM_DEST ) : thm =
+  |- !x y. (NUMLEFT (NUMSUM x y) = x) /\ (NUMRIGHT (NUMSUM x y) = y)
+
+This is the definition of INJN.
+val ( INJN ) : thm = |- !m. INJN m = (\n a. n = m)
+
+val ( INJN_INJ ) : thm = |- !n1 n2. (INJN n1 = INJN n2) = n1 = n2
+
+This is the definition of INJA.
+val ( INJA ) : thm = |- !a. INJA a = (\n b. b = a)
+
+val ( INJA_INJ ) : thm = |- !a1 a2. (INJA a1 = INJA a2) = a1 = a2
+
+This is the definition of INJF.
+val ( INJF ) : thm = |- !f. INJF f = (\n. f (NUMFST n) (NUMSND n))
+
+val ( INJF_INJ ) : thm = |- !f1 f2. (INJF f1 = INJF f2) = f1 = f2
+
+This is the definition of INJP.
+val ( INJP ) : thm =
+  |- !f1 f2.
+         INJP f1 f2 =
+         (\n a. if NUMLEFT n then f1 (NUMRIGHT n) a else f2 (NUMRIGHT n) a)
+
+val ( INJP_INJ ) : thm =
+  |- !f1 f1' f2 f2'. (INJP f1 f2 = INJP f1' f2') = (f1 = f1') /\ (f2 = f2')
+
+These are the definitions of ZCONSTR and ZBOT.
+val ( ZCONSTR ) : thm =
+  |- !c i r. ZCONSTR c i r = INJP (INJN (SUC c)) (INJP (INJA i) (INJF r))
+val ( ZBOT ) : thm = |- ZBOT = INJP (INJN 0) (@z. T)
+
+val ( ZCONSTR_ZBOT ) : thm = |- !c i r. ~(ZCONSTR c i r = ZBOT)
+
+This is the definition (via new_inductive_definition) of
+ZRECSPACE_ZBOT.
+val ( ZRECSPACE_RULES ) : thm =
+  |- ZRECSPACE ZBOT /\
+     (!c i r. (!n. ZRECSPACE (r n)) ==> ZRECSPACE (ZCONSTR c i r))
+val ( ZRECSPACE_INDUCT ) : thm =
+  |- !ZRECSPACE'. ZRECSPACE' ZBOT /\
+                  (!c i r.
+                       (!n. ZRECSPACE' (r n)) ==> ZRECSPACE' (ZCONSTR c i r))
+                  ==> (!a. ZRECSPACE a ==> ZRECSPACE' a)
+val ( ZRECSPACE_CASES ) : thm =
+  |- !a. ZRECSPACE a =
+         (a = ZBOT) \/ (?c i r. (a = ZCONSTR c i r) /\ (!n. ZRECSPACE (r n)))
+
+This is the definition of a new type, "(A)recspace"; and its in and out
+functions, "_mk_rec" and "_dest_rec".
+val recspace_tydef : thm * thm =
+  (|- _mk_rec (_dest_rec a) = a, |- ZRECSPACE r = _dest_rec (_mk_rec r) = r)
+
+These are the definitions of BOTTOM and CONSTR.
+val ( BOTTOM ) : thm = |- BOTTOM = _mk_rec ZBOT
+val ( CONSTR ) : thm =
+  |- !c i r. CONSTR c i r = _mk_rec (ZCONSTR c i (\n. _dest_rec (r n)))
+
+val ( MK_REC_INJ ) : thm =
+  |- !x y. (_mk_rec x = _mk_rec y) ==> ZRECSPACE x /\ ZRECSPACE y ==> (x = y)
+val ( DEST_REC_INJ ) : thm = |- !x y. (_dest_rec x = _dest_rec y) = x = y
+val ( CONSTR_BOT ) : thm = |- !c i r. ~(CONSTR c i r = BOTTOM)
+val ( CONSTR_INJ ) : thm =
+  |- !c1 i1 r1 c2 i2 r2.
+         (CONSTR c1 i1 r1 = CONSTR c2 i2 r2) =
+         (c1 = c2) /\ (i1 = i2) /\ (r1 = r2)
+val ( CONSTR_IND ) : thm =
+  |- !P. P BOTTOM /\ (!c i r. (!n. P (r n)) ==> P (CONSTR c i r))
+         ==> (!x. P x)
+val ( CONSTR_REC ) : thm =
+  |- !Fn. ?f. !c i r. f (CONSTR c i r) = Fn c i r (\n. f (r n))
+
+This is the definition of FCONS.
+val ( FCONS ) : thm =
+  |- (!a f. FCONS a f 0 = a) /\ (!a f n. FCONS a f (SUC n) = f n)
+
+val ( FCONS_UNDO ) : thm = |- !f. f = FCONS (f 0) (f o SUC)
+
+This is the definition of FNIL.
+val ( FNIL ) : thm = |- !n. FNIL n = (@x. T)
+
+sucivate 5 = `SUC (SUC (SUC (SUC (SUC 0))))`
+(for example)
+
+SCRUB_EQUATION `x = a` `x = a |- P[x]` gives `|- P[a]`
+
+list.ml:
+
+LIST_INDUCT_TAC takes a goal of the form `!l. P[l]` and creates two
+subgoals: `P[ [] ]` and `P[CONS h t]`.  The latter subgoal has a new
+assumption `P[t]`.
+
+Definitions of list-related functions:
+val ( HD ) : thm = |- HD (CONS h t) = h
+val ( TL ) : thm = |- TL (CONS h t) = t
+val ( APPEND ) : thm =
+  |- (!l. APPEND [] l = l) /\
+     (!h t l. APPEND (CONS h t) l = CONS h (APPEND t l))
+val ( REVERSE ) : thm =
+  |- (REVERSE [] = []) /\ (REVERSE (CONS x l) = APPEND (REVERSE l) [x])
+val ( LENGTH ) : thm =
+  |- (LENGTH [] = 0) /\ (!h t. LENGTH (CONS h t) = SUC (LENGTH t))
+val ( MAP ) : thm =
+  |- (!f. MAP f [] = []) /\ (!f h t. MAP f (CONS h t) = CONS (f h) (MAP f t))
+val ( LAST ) : thm = |- LAST (CONS h t) = (if t = [] then h else LAST t)
+val ( REPLICATE ) : thm =
+  |- (REPLICATE 0 x = []) /\ (REPLICATE (SUC n) x = CONS x (REPLICATE n x))
+val ( NULL ) : thm = |- (NULL [] = T) /\ (NULL (CONS h t) = F)
+val ( ALL ) : thm = |- (ALL P [] = T) /\ (ALL P (CONS h t) = P h /\ ALL P t)
+val ( EX ) : thm = |- (EX P [] = F) /\ (EX P (CONS h t) = P h \/ EX P t)
+val ( ITLIST ) : thm =
+  |- (ITLIST f [] b = b) /\ (ITLIST f (CONS h t) b = f h (ITLIST f t b))
+val ( MEM ) : thm =
+  |- (MEM x [] = F) /\ (MEM x (CONS h t) = (x = h) \/ MEM x t)
+val ( ALL2_DEF ) : thm =
+  |- (ALL2 P [] l2 = l2 = []) /\
+     (ALL2 P (CONS h1 t1) l2 =
+      (if l2 = [] then F else P h1 (HD l2) /\ ALL2 P t1 (TL l2)))
+val ( MAP2_DEF ) : thm =
+  |- (MAP2 f [] l = []) /\
+     (MAP2 f (CONS h1 t1) l = CONS (f h1 (HD l)) (MAP2 f t1 (TL l)))
+val ( EL ) : thm = |- (EL 0 l = HD l) /\ (EL (SUC n) l = EL n (TL l))
+val ( FILTER ) : thm =
+  |- (FILTER P [] = []) /\
+     (FILTER P (CONS h t) =
+      (if P h then CONS h (FILTER P t) else FILTER P t))
+val ( ASSOC ) : thm =
+  |- ASSOC a (CONS h t) = (if FST h = a then SND h else ASSOC a t)
+val ( ITLIST2_DEF ) : thm =
+  |- (ITLIST2 f [] l2 b = b) /\
+     (ITLIST2 f (CONS h1 t1) l2 b = f h1 (HD l2) (ITLIST2 f t1 (TL l2) b))
+val ( ZIP_DEF ) : thm =
+  |- (ZIP [] l2 = []) /\
+     (ZIP (CONS h1 t1) l2 = CONS (h1,HD l2) (ZIP t1 (TL l2)))
+
+More convenient forms of some of the above:
+val ( ALL2 ) : thm =
+  |- (ALL2 P [] [] = T) /\
+     (ALL2 P (CONS h1 t1) [] = F) /\
+     (ALL2 P [] (CONS h2 t2) = F) /\
+     (ALL2 P (CONS h1 t1) (CONS h2 t2) = P h1 h2 /\ ALL2 P t1 t2)
+val ( MAP2 ) : thm =
+  |- (MAP2 f [] [] = []) /\
+     (MAP2 f (CONS h1 t1) (CONS h2 t2) = CONS (f h1 h2) (MAP2 f t1 t2))
+val ( ITLIST2 ) : thm =
+  |- (ITLIST2 f [] [] b = b) /\
+     (ITLIST2 f (CONS h1 t1) (CONS h2 t2) b = f h1 h2 (ITLIST2 f t1 t2 b))
+val ( ZIP ) : thm =
+  |- (ZIP [] [] = []) /\
+     (ZIP (CONS h1 t1) (CONS h2 t2) = CONS (h1,h2) (ZIP t1 t2))
+
+val ( NOT_CONS_NIL ) : thm = |- !h t. ~(CONS h t = [])
+val ( LAST_CLAUSES ) : thm =
+  |- (LAST [h] = h) /\ (LAST (CONS h (CONS k t)) = LAST (CONS k t))
+val ( APPEND_NIL ) : thm = |- !l. APPEND l [] = l
+val ( APPEND_ASSOC ) : thm =
+  |- !l m n. APPEND l (APPEND m n) = APPEND (APPEND l m) n
+val ( REVERSE_APPEND ) : thm =
+  |- !l m. REVERSE (APPEND l m) = APPEND (REVERSE m) (REVERSE l)
+val ( REVERSE_REVERSE ) : thm = |- !l. REVERSE (REVERSE l) = l
+val ( CONS_11 ) : thm =
+  |- !h1 h2 t1 t2. (CONS h1 t1 = CONS h2 t2) = (h1 = h2) /\ (t1 = t2)
+val list_CASES : thm = |- !l. (l = []) \/ (?h t. l = CONS h t)
+val ( LENGTH_APPEND ) : thm =
+  |- !l m. LENGTH (APPEND l m) = LENGTH l + LENGTH m
+val ( MAP_APPEND ) : thm =
+  |- !f l1 l2. MAP f (APPEND l1 l2) = APPEND (MAP f l1) (MAP f l2)
+val ( LENGTH_MAP ) : thm = |- !l f. LENGTH (MAP f l) = LENGTH l
+val ( LENGTH_EQ_NIL ) : thm = |- !l. (LENGTH l = 0) = l = []
+val ( MAP_o ) : thm = |- !f g l. MAP (g o f) l = MAP g (MAP f l)
+val ( MAP_EQ ) : thm =
+  |- !f g l. ALL (\x. f x = g x) l ==> (MAP f l = MAP g l)
+val ( ALL_IMP ) : thm =
+  |- !P Q l. (!x. MEM x l /\ P x ==> Q x) /\ ALL P l ==> ALL Q l
+val ( NOT_EX ) : thm = |- !P l. ~EX P l = ALL (\x. ~P x) l
+val ( NOT_ALL ) : thm = |- !P l. ~ALL P l = EX (\x. ~P x) l
+val ( ALL_MAP ) : thm = |- !P f l. ALL P (MAP f l) = ALL (P o f) l
+val ( ALL_T ) : thm = |- !l. ALL (\x. T) l
+val ( MAP_EQ_ALL2 ) : thm =
+  |- !l m. ALL2 (\x y. f x = f y) l m ==> (MAP f l = MAP f m)
+val ( ALL2_MAP ) : thm =
+  |- !P f l. ALL2 P (MAP f l) l = ALL (\a. P (f a) a) l
+val ( MAP_EQ_DEGEN ) : thm = |- !l f. ALL (\x. f x = x) l ==> (MAP f l = l)
+val ( ALL2_AND_RIGHT ) : thm =
+  |- !l m P Q. ALL2 (\x y. P x /\ Q x y) l m = ALL P l /\ ALL2 Q l m
+val ( ITLIST_EXTRA ) : thm =
+  |- !l. ITLIST f (APPEND l [a]) b = ITLIST f l (f a b)
+val ( ALL_MP ) : thm =
+  |- !P Q l. ALL (\x. P x ==> Q x) l /\ ALL P l ==> ALL Q l
+val ( FORALL_ALL ) : thm = |- !l. (!x. ALL (P x) l) = ALL (\a. !x. P x a) l
+val ( AND_ALL ) : thm = |- !l. ALL P l /\ ALL Q l = ALL (\x. P x /\ Q x) l
+val ( EX_IMP ) : thm =
+  |- !P Q l. (!x. MEM x l /\ P x ==> Q x) /\ EX P l ==> EX Q l
+val ( ALL_MEM ) : thm = |- !P l. (!x. MEM x l ==> P x) = ALL P l
+val ( LENGTH_REPLICATE ) : thm = |- !n x. LENGTH (REPLICATE n x) = n
+val ( EX_MAP ) : thm = |- !P f l. EX P (MAP f l) = EX (P o f) l
+val ( EXISTS_EX ) : thm = |- !P l. (?x. EX (P x) l) = EX (\s. ?x. P x s) l
+val ( FORALL_ALL ) : thm = |- !P l. (!x. ALL (P x) l) = ALL (\s. !x. P x s) l
+val ( MEM_APPEND ) : thm =
+  |- !x l1 l2. MEM x (APPEND l1 l2) = MEM x l1 \/ MEM x l2
+val ( MEM_MAP ) : thm =
+  |- !f y l. MEM y (MAP f l) = (?x. MEM x l /\ (y = f x))
+val ( FILTER_APPEND ) : thm =
+  |- !P l1 l2. FILTER P (APPEND l1 l2) = APPEND (FILTER P l1) (FILTER P l2)
+val ( FILTER_MAP ) : thm =
+  |- !P f l. FILTER P (MAP f l) = MAP f (FILTER (P o f) l)
+val ( MEM_FILTER ) : thm = |- !P l x. MEM x (FILTER P l) = P x /\ MEM x l
+val ( EX_MEM ) : thm = |- !P l. EX P l = (?x. P x /\ MEM x l)
+val ( MAP_FST_ZIP ) : thm =
+  |- !l1 l2. (LENGTH l1 = LENGTH l2) ==> (MAP FST (ZIP l1 l2) = l1)
+val ( MAP_SND_ZIP ) : thm =
+  |- !l1 l2. (LENGTH l1 = LENGTH l2) ==> (MAP SND (ZIP l1 l2) = l2)
+val ( MEM_ASSOC ) : thm = |- !l x. MEM (x,ASSOC x l) l = MEM x (MAP FST l)
+val ( ALL_APPEND ) : thm =
+  |- !P l1 l2. ALL P (APPEND l1 l2) = ALL P l1 /\ ALL P l2
+val ( MEM_EL ) : thm = |- !l n. n < LENGTH l ==> MEM (EL n l) l
+val ( ALL2_MAP2 ) : thm =
+  |- !l m. ALL2 P (MAP f l) (MAP g m) = ALL2 (\x y. P (f x) (g y)) l m
+val ( AND_ALL2 ) : thm =
+  |- !P Q l m. ALL2 P l m /\ ALL2 Q l m = ALL2 (\x y. P x y /\ Q x y) l m
+val ( ALL2_ALL ) : thm = |- !P l. ALL2 P l l = ALL (\x. P x x) l
+val ( APPEND_EQ_NIL ) : thm =
+  |- !l m. (APPEND l m = []) = (l = []) /\ (m = [])
+
+val ( MONO_ALL ) : thm = |- (!x. P x ==> Q x) ==> ALL P l ==> ALL Q l
+val ( MONO_ALL2 ) : thm =
+  |- (!x y. P x y ==> Q x y) ==> ALL2 P l l' ==> ALL2 Q l l'
+MONO_ALL and MONO_ALL2 will automatically be used by MONO_TAC.
+
+LIST_CONV conv uses conv to rewrite every member of a (literal) list.
+
+realax.ml:
+The operators +,-,*,<,<=,>,>= are overloaded; there are versions for
+num, real, int.  If an expression does not make it clear which type is
+used, they default to the current "prioritized" type.
+
+pioritize_num() sets operator overloading to default to the type num.
+
+This is the definition of dist.
+val dist : thm = |- !n m. dist (m,n) = m - n + n - m
+
+val ( DIST_REFL ) : thm = |- !n. dist (n,n) = 0
+val ( DIST_LZERO ) : thm = |- !n. dist (0,n) = n
+val ( DIST_RZERO ) : thm = |- !n. dist (n,0) = n
+val ( DIST_SYM ) : thm = |- !m n. dist (m,n) = dist (n,m)
+val ( DIST_LADD ) : thm = |- !m p n. dist (m + n,m + p) = dist (n,p)
+val ( DIST_RADD ) : thm = |- !m p n. dist (m + p,n + p) = dist (m,n)
+val ( DIST_LADD_0 ) : thm = |- !m n. dist (m + n,m) = n
+val ( DIST_RADD_0 ) : thm = |- !m n. dist (m,m + n) = n
+val ( DIST_LMUL ) : thm = |- !m n p. m * dist (n,p) = dist (m * n,m * p)
+val ( DIST_RMUL ) : thm = |- !m n p. dist (m,n) * p = dist (m * p,n * p)
+val ( DIST_EQ_0 ) : thm = |- !m n. (dist (m,n) = 0) = m = n
+val ( DIST_ELIM_THM ) : thm =
+  |- P (dist (x,y)) = (!d. ((x = y + d) ==> P d) /\ ((y = x + d) ==> P d))
+

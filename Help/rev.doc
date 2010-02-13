@@ -1,0 +1,17 @@
+\DOC rev
+
+\TYPE {rev : 'a list -> 'a list}
+
+\SYNOPSIS
+Reverses a list.
+
+\KEYWORDS
+list.
+
+\DESCRIBE
+{rev [x1;...;xn]} returns {[xn;...;x1]}.
+
+\FAILURE
+Never fails.
+
+\ENDDOC

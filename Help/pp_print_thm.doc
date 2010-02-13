@@ -1,0 +1,21 @@
+\DOC pp_print_thm
+
+\TYPE {pp_print_thm : formatter -> thm -> unit}
+
+\SYNOPSIS
+Prints a theorem to formatter.
+
+\DESCRIBE
+The call {pp_print_thm fmt th} prints the usual textual representation of the
+theorem {th} to the formatter {fmt}.
+
+\FAILURE
+Should never fail unless the formatter does.
+
+\COMMENTS
+The usual case where the formatter is the standard output is {print_thm}.
+
+\SEEALSO
+print_thm.
+
+\ENDDOC

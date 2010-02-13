@@ -1,0 +1,31 @@
+\DOC dest_fun_ty
+
+\TYPE {dest_fun_ty : hol_type -> hol_type * hol_type}
+
+\SYNOPSIS
+Break apart a function type into domain and range.
+
+\DESCRIBE
+The call {dest_fun_ty `:s->t`} breaks apart the function type {s->t} and 
+returns the pair {`:s`,`:t`}.
+
+\FAILURE
+Fails if the type given as argument is not a function type (constructor 
+{"fun"}).
+
+\EXAMPLE
+{
+  # dest_fun_ty `:A->B`;;      
+  val it : hol_type * hol_type = (`:A`, `:B`)
+
+  # dest_fun_ty `:num->num->bool`;;
+  val it : hol_type * hol_type = (`:num`, `:num->bool`)
+
+  # dest_fun_ty `:A#B`;;
+  Exception: Failure "dest_fun_ty".
+}
+
+\SEEALSO
+dest_type, mk_fun_ty.
+
+\ENDDOC

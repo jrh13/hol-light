@@ -1,0 +1,37 @@
+\DOC new_type
+
+\TYPE {new_type : string * int -> unit}
+
+\SYNOPSIS
+Declares a new type or type constructor.
+
+\DESCRIBE
+A call {new_type("t",n)} declares a new {n}-ary type constructor called {t}; if
+{n} is zero, this is just a new base type.
+
+\FAILURE
+Fails if HOL is there is already a type operator of that name in the current
+theory.
+
+\EXAMPLE
+A version of ZF set theory might declare a new type {set} and start using it as
+follows:
+{
+  # new_type("set",0);;    
+  val it : unit = ()
+  # new_constant("mem",`:set->set->bool`);;
+  val it : unit = ()
+  # parse_as_infix("mem",(11,"right"));;
+  val it : unit = ()
+  # let ZF_EXT = new_axiom `(!z. z mem x <=> z mem y) ==> (x = y)`;;
+  val ( ZF_EXT ) : thm = |- (!z. z mem x <=> z mem y) ==> x = y
+}
+
+\COMMENTS
+As usual, asserting new concepts is discouraged; if possible it is better to 
+use type definitions; see {new_type_definition} and {define_type}.
+
+\SEEALSO
+define_type, new_axiom, new_constant, new_definition, new_type_definition. 
+
+\ENDDOC

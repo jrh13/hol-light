@@ -1,0 +1,52 @@
+\DOC NO_TAC
+
+\TYPE {NO_TAC : tactic}
+
+\SYNOPSIS
+Tactic that always fails.
+
+\KEYWORDS
+tactic.
+
+\DESCRIBE
+Whatever goal it is applied to, {NO_TAC} always fails with {Failure "NO_TAC"}.
+
+\FAILURE
+Always fails.
+
+\EXAMPLE
+However trivial the goal, {NO_TAC} always fails:
+{
+  # g `T`;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+  `T`
+  
+  # e NO_TAC;;
+  Exception: Failure "NO_TAC".
+}
+\noindent however, {tac THEN NO_TAC} will never reach {NO_TAC} if {tac} leaves 
+no subgoals:
+{
+  # e(REWRITE_TAC[] THEN NO_TAC);;
+  val it : goalstack = No subgoals
+}
+
+\USES
+Can be useful in forcing certain ``speculative'' tactics to fail unless they 
+solve the goal completely. For example, you might wish to break down a huge 
+conjunction of goals and attempt to solve as many conjuncts as possible by 
+just rewriting with a list of theorems {[thl]}. You could do:
+{
+  REPEAT CONJ_TAC THEN REWRITE_TAC[thl]
+}
+\noindent However, if you don't want to apply the rewrites unless they result 
+in an immediate solution, you can do instead:
+{
+  REPEAT CONJ_TAC THEN TRY(REWRITE_TAC[thl] THEN NO_TAC)
+}
+
+\SEEALSO
+ALL_TAC, ALL_THEN, FAIL_TAC, NO_THEN.
+
+\ENDDOC

@@ -1,0 +1,30 @@
+\DOC binops
+
+\TYPE {binops : term -> term -> term list}
+
+\SYNOPSIS
+Repeatedly breaks apart an iterated binary operator into components.
+
+\DESCRIBE
+The call {binops op t} repeatedly breaks down applications of the binary 
+operator {op} within {t}. If {t} is of the form {(op l) r} (thinking of {op} as 
+infix, {l op r}), then it recursively breaks down {l} and {r} in the same way 
+and appends the results. Otherwise, a singleton list of the original term is 
+returned.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # binops `(+):num->num->num` `((1 + 2) + 3) + 4 + 5 + 6`;;
+  val it : term list = [`1`; `2`; `3`; `4`; `5`; `6`]
+
+  # binops `(+):num->num->num` `F`;;
+  val it : term list = [`F`]
+}
+
+\SEEALSO
+dest_binop, mk_binop, striplist.
+
+\ENDDOC

@@ -1,0 +1,25 @@
+\DOC report
+
+\TYPE {report : string -> unit}
+
+\SYNOPSIS
+Prints a string and a following line break.
+
+\DESCRIBE
+The call {report s} prints the string {s} to the terminal and then a following 
+newline.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # report "Proof completed OK";;
+  Proof completed OK
+  val it : unit = ()
+}
+
+\SEEALSO
+remark, warn.
+
+\ENDDOC

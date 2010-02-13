@@ -1,0 +1,35 @@
+\DOC |->
+
+\TYPE {(|->) : 'a -> 'b -> ('a, 'b) func -> ('a, 'b) func}
+
+\SYNOPSIS
+Modify a finite partial function at one point.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type 
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc.  If {f} is a finite partial function then {(x |-> y) f} gives a modified
+version that maps {x} to {y} (whether or not {f} was defined on {x} before and
+regardless of the old value) but is otherwise the same.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # let f = (1 |-> 2) undefined;;
+  val f : (int, int) func = <func>
+  # let g = (1 |-> 3) f;;
+  val g : (int, int) func = <func>
+  # apply f 1;;
+  val it : int = 2
+  # apply g 1;;
+  val it : int = 3
+}
+
+\SEEALSO
+|=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

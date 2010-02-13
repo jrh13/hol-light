@@ -1,0 +1,27 @@
+\DOC rat_of_term
+
+\TYPE {rat_of_term : term -> num}
+
+\SYNOPSIS
+Converts a canonical rational literal of type {:real} to an OCaml number.
+
+\DESCRIBE
+The call {rat_of_term t} where term {t} is a canonical rational literal of type
+{:real} returns the corresponding OCaml rational number (type {num}). The 
+canonical literals are integer literals {&n} for numeral {n}, {-- &n} for a
+nonzero numeral {n}, or ratios {&p / &q} or {-- &p / &q} where {p} is nonzero,
+{q > 1} and {p} and {q} share no common factor.
+
+\FAILURE
+Fails when applied to a term that is not a canonical rational literal.
+
+\EXAMPLE
+{
+  # rat_of_term `-- &22 / &7`;;
+  val it : num = -22/7
+}
+
+\SEEALSO
+is_ratconst, mk_realintconst, REAL_RAT_REDUCE_CONV, term_of_rat.
+
+\ENDDOC

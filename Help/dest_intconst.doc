@@ -1,0 +1,27 @@
+\DOC dest_intconst
+
+\TYPE {dest_intconst : term -> num}
+
+\SYNOPSIS
+Converts an integer literal of type {:int} to an OCaml number.
+
+\DESCRIBE
+The call {dest_intconst t} where {t} is a canonical integer literal of type
+{:int}, returns the corresponding OCaml number (type {num}). The permissible
+forms of integer literals are `{&n}' for a numeral {n} or `{-- &n}' for a
+nonzero numeral {n}.
+
+\FAILURE
+Fails if applied to a term that is not a canonical integer literal of type
+{:int}.
+
+\EXAMPLE
+{
+  # dest_intconst `-- &11 :int`;;
+  val it : num = -11
+}
+
+\SEEALSO
+dest_realintconst, is_intconst, mk_intconst.
+
+\ENDDOC

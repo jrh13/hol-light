@@ -1,0 +1,25 @@
+\DOC rand
+
+\TYPE {rand : term -> term}
+
+\SYNOPSIS
+Returns the operand from a combination (function application).
+
+\DESCRIBE
+{rand `t1 t2`} returns {`t2`}.
+
+\FAILURE
+Fails with {rand} if term is not a combination.
+
+\EXAMPLE
+{
+  # rand `SUC 0`;;
+  val it : term = `0`
+  # rand `x + y`;;
+  val it : term = `y`
+}
+
+\SEEALSO
+rator, lhand, dest_comb.
+
+\ENDDOC

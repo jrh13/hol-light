@@ -1,0 +1,21 @@
+\DOC num_0
+
+\TYPE {num_0 : num}
+
+\SYNOPSIS
+Constant zero in unlimited-size integers.
+
+\DESCRIBE
+The constant {num_0} is bound to the integer constant 0 in the 
+unlimited-precision numbers provided by the OCaml {Num} library.
+
+\FAILURE
+Not applicable.
+
+\USES
+Exactly the same as {Int 0}, but may save recreation of a cons cell each time.
+
+\SEEALSO
+num_1, num_2, num_10.
+
+\ENDDOC

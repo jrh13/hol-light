@@ -1,0 +1,11 @@
+\DOC orelse_tcl_
+
+\TYPE {orelse_tcl_ : thm_tactical -> thm_tactical -> thm_tactical}
+
+\SYNOPSIS
+Non-infix version of {ORELSE_TCL}.
+
+\SEEALSO
+ORELSE_TCL.
+
+\ENDDOC

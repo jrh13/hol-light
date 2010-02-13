@@ -1,0 +1,30 @@
+\DOC rator
+
+\TYPE {rator : term -> term}
+
+\SYNOPSIS
+Returns the operator from a combination (function application).
+
+\DESCRIBE
+{rator(`t1 t2`)} returns {`t1`}.
+
+\FAILURE
+Fails with {rator} if term is not a combination.
+
+\EXAMPLE
+{
+  # rator `f(x)`;;        
+  Warning: inventing type variables
+  val it : term = `f`
+  
+  # rator `~p`;;
+  val it : term = `(~)`
+  
+  # rator `x + y`;;
+  val it : term = `(+) x`
+}
+
+\SEEALSO
+dest_comb, lhand, lhs, rand.
+
+\ENDDOC

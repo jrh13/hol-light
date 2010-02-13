@@ -1,0 +1,32 @@
+\DOC report_timing
+
+\TYPE {report_timing : bool ref}
+
+\SYNOPSIS
+Flag to determine whether {time} function outputs CPU time measure.
+
+\DESCRIBE
+When {report_timing} is true, a call {time f x} will evaluate {f x} as usual 
+but also as a side-effect print out the CPU time taken. If {report_timing} is 
+false, nothing will be printed. Times are already printed in this way 
+automatically as informative output in some rules like {MESON}, so this can be 
+used to silence them.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+{
+  # time NUM_REDUCE_CONV `2 EXP 300 < 2 EXP 200`;;
+  CPU time (user): 0.13
+  val it : thm = |- 2 EXP 300 < 2 EXP 200 <=> F
+  # report_timing := false;;
+  val it : unit = ()
+  # time NUM_REDUCE_CONV `2 EXP 300 < 2 EXP 200`;;
+  val it : thm = |- 2 EXP 300 < 2 EXP 200 <=> F
+}
+
+\SEEALSO
+time.
+
+\ENDDOC

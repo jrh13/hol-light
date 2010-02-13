@@ -1,0 +1,19 @@
+\DOC isalnum
+
+\TYPE {isalnum : string -> bool}
+
+\SYNOPSIS
+Tests if a one-character string is alphanumeric.
+
+\DESCRIBE
+The call {isalnum s} tests whether the first character of string {s} (normally 
+it is the only character) is alphanumeric, i.e. an uppercase or lowercase 
+letter, a digit, an underscore or a prime character.
+
+\FAILURE
+Fails if the string is empty.            
+
+\SEEALSO
+isalpha, isbra, isnum, issep, isspace, issymb.
+
+\ENDDOC

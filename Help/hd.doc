@@ -1,0 +1,17 @@
+\DOC hd
+
+\TYPE {hd : 'a list -> 'a}
+
+\SYNOPSIS
+Computes the first element (the head) of a list.
+
+\DESCRIBE
+{hd [x1;...;xn]} returns {x1}.
+
+\FAILURE
+Fails with {hd} if the list is empty.
+
+\SEEALSO
+tl, el.
+
+\ENDDOC

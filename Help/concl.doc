@@ -1,0 +1,28 @@
+\DOC concl
+
+\TYPE {concl : thm -> term}
+
+\SYNOPSIS
+Returns the conclusion of a theorem.
+
+\DESCRIBE
+When applied to a theorem {A |- t}, the function {concl} returns {t}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # ADD_SYM;;           
+  val it : thm = |- !m n. m + n = n + m
+  # concl ADD_SYM;;
+  val it : term = `!m n. m + n = n + m`
+
+  # concl (ASSUME `1 = 0`);;
+  val it : term = `1 = 0`
+}
+
+\SEEALSO
+dest_thm, hyp.
+
+\ENDDOC

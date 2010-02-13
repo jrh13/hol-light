@@ -1,0 +1,26 @@
+\DOC mk_abs
+
+\TYPE {mk_abs : term * term -> term}
+
+\SYNOPSIS
+Constructs an abstraction.
+
+\DESCRIBE
+If {v} is a variable and {t} any term, then {mk_abs(v,t)} produces the 
+abstraction term {\v. t}. It is not necessary that {v} should occur free in 
+{t}. 
+
+\FAILURE
+Fails if {v} is not a variable. See {mk_gabs} for constructing generalized 
+abstraction terms.
+
+\EXAMPLE
+{
+  # mk_abs(`x:num`,`x + 1`);;
+  val it : term = `\x. x + 1`
+}
+
+\SEEALSO
+dest_abs, is_abs, mk_gabs.
+
+\ENDDOC

@@ -1,0 +1,62 @@
+\DOC CHOOSE_THEN
+
+\TYPE {CHOOSE_THEN : thm_tactical}
+
+\SYNOPSIS
+Applies a tactic generated from the body of existentially quantified theorem.
+
+\KEYWORDS
+theorem-tactic, existential.
+
+\DESCRIBE
+When applied to a theorem-tactic {ttac}, an existentially quantified
+theorem {A' |- ?x. t}, and a goal, {CHOOSE_THEN} applies the tactic {ttac
+(t[x'/x] |- t[x'/x])} to the goal, where {x'} is a variant of {x} chosen not to
+be free in the assumption list of the goal. Thus if:
+{
+    A ?- s1
+   =========  ttac (t[x'/x] |- t[x'/x])
+    B ?- s2
+}
+\noindent then
+{
+    A ?- s1
+   ==========  CHOOSE_THEN ttac (A' |- ?x. t)
+    B ?- s2
+}
+\noindent This is invalid unless {A'} is a subset of {A}.
+
+\FAILURE
+Fails unless the given theorem is existentially quantified, or if the
+resulting tactic fails when applied to the goal.
+
+\EXAMPLE
+This theorem-tactical and its relatives are very useful for using existentially
+quantified theorems. For example one might use the inbuilt theorem
+{
+  LT_EXISTS = |- !m n. m < n <=> (?d. n = m + SUC d)
+}
+\noindent to help solve the goal
+{
+  # g `x < y ==> 0 < y * y`;;
+}
+\noindent by starting with the following tactic
+{
+  # e(DISCH_THEN(CHOOSE_THEN SUBST1_TAC o REWRITE_RULE[LT_EXISTS]));;
+}
+\noindent reducing the goal to
+{
+  val it : goalstack = 1 subgoal (1 total)
+
+  `0 < (x + SUC d) * (x + SUC d)`
+}
+\noindent which can then be finished off quite easily, by, for example just 
+{ARITH_TAC}, or 
+{
+  # e(REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES; LT_0]);;
+}
+
+\SEEALSO
+CHOOSE_TAC, X_CHOOSE_THEN.
+
+\ENDDOC

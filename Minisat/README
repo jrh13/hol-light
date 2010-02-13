@@ -1,0 +1,52 @@
+This code interfaces HOL Light to the MiniSat propositional prover, so
+that the proof logs produced by MiniSat can be turned into HOL Light
+derivations.
+
+The code also supports zChaff by using a translator from zChaff to
+MiniSat proof format. See the subdirectory "zc2mso" and the README
+file there for more information about the use of zChaff.
+
+Most of this code was written by Hasan Amjad (see CREDITS for more
+detail).
+
+To use this code, you need to have a copy of MiniSat, specifically its
+proof-logging version "MiniSat-p" installed. For downloads, see:
+
+  http://www.cs.chalmers.se/Cs/Research/FormalMethods/MiniSat/MiniSat.html
+
+By default, the code will look for MiniSat on your PATH. If it
+doesn't find it, you can explicitly indicate the directory that
+contains the MiniSat binary by changing the assignment of the
+variable "satdir" defined on line 63, e.g.
+
+  let satdir = "/home/johnh/bin/"
+
+(The expected name for the binary within this directory is "minisat"
+or "minsat.exe" according to platform. You can change this if desired
+by modifying "SatSolvers.ml".)
+
+Then you can load the code from this directory
+
+  #use "Minisat/make.ml";;
+
+and a new tautology-proving function SAT_PROVE is made available.
+This can be used either to prove tautologies:
+
+  # SAT_PROVE `p ==> p`;;
+  val it : thm = |- p ==> p
+
+or to provide, via an exception, a counterexample for non-tautologies:
+
+  # SAT_PROVE `p==> q`;;
+  Exception: Sat_counterexample |- ~q /\ p ==> ~(p ==> q).
+
+There is a file here called "taut.ml" containing some larger examples.
+
+Note that the code uses OCaml's string [Str] library. This is normally
+loaded dynamically, but on some platforms such as Cygwin you may need to
+construct a new OCaml toplevel explicitly including it before loading
+HOL Light, using for example:
+
+ ocamlmktop -o ocamlnumunixstr unix.cma nums.cma str.cma
+
+since HOL Light already needs the "Unix" and "num" libraries anyway.

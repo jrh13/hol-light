@@ -1,0 +1,27 @@
+\DOC is_abs
+
+\TYPE {is_abs : term -> bool}
+
+\SYNOPSIS
+Tests a term to see if it is an abstraction.
+
+\DESCRIBE
+{is_abs `\var. t`} returns {true}. If the term is not an abstraction the
+result is {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_abs `\x. x + 1`;;
+  val it : bool = true
+
+  # is_abs `!x. x >= 0`;;
+  val it : bool = false
+}
+
+\SEEALSO
+mk_abs, dest_abs, is_var, is_const, is_comb.
+
+\ENDDOC

@@ -1,0 +1,30 @@
+\DOC dest_setenum
+
+\TYPE {dest_setenum : term -> term list}
+
+\SYNOPSIS
+Breaks apart a set enumeration.
+
+\DESCRIBE
+{dest_setenum} is a term destructor for set enumerations:
+{dest_setenum `{{t1,...,tn}}`} returns {[`t1`;...;`tn`]}. Note that the list 
+follows the syntactic pattern of the set enumeration, even if it contains 
+duplicates. (The underlying set is still a set logically, of course, but can be 
+represented redundantly.)
+
+\FAILURE
+Fails if the term is not a set enumeration.
+
+\EXAMPLE
+{
+  # dest_setenum `{{1,2,3,4}}`;;
+  val it : term list = [`1`; `2`; `3`; `4`]
+
+  # dest_setenum `{{1,2,1,2}}`;;
+  val it : term list = [`1`; `2`; `1`; `2`]
+}
+
+\SEEALSO
+dest_list, is_setenum, mk_fset, mk_setenum.
+
+\ENDDOC

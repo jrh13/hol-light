@@ -1,0 +1,23 @@
+\DOC meson_chatty
+
+\TYPE {meson_chatty : bool ref}
+
+\SYNOPSIS
+Make {MESON}'s output more verbose and detailed.
+
+\DESCRIBE
+This is one of several parameters determining the behavior of {MESON},
+{MESON_TAC} and related rules and tactics. When {meson_chatty} is set to 
+{true}, {MESON} provides more verbose output, reporting at each level of 
+iterative deepening search the current size limit and number of inferences on a 
+fresh line. When {meson_chatty} is {false}, as it is by default, the core 
+inference numbers are condensed into 1-line output.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+meson_brand, meson_dcutin, meson_depth, meson_prefine, meson_skew,
+meson_split_limit,
+
+\ENDDOC

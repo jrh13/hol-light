@@ -1,0 +1,97 @@
+\DOC RING
+
+\TYPE {RING : (term -> num) * (num -> term) * conv * term * term * term * term * term * term * term * thm * thm * (term -> thm) -> term -> thm}
+
+\SYNOPSIS
+Generic ring procedure.
+
+\DESCRIBE
+The {RING} function takes a number of arguments specifying a ring structure and
+giving operations for computing and proving over it. Specifically the call is:
+{
+  RING(toterm,tonum,EQ_CONV,
+       neg,add,sub,inv,mul,div,pow,
+       INTEGRAL_TH,FIELD_TH,POLY_CONV)
+}
+\noindent where {toterm} is a conversion from constant terms in the structure
+to rational numbers (e.g. {rat_of_term} for the reals), {tonum} is the opposite
+(e.g. {term_of_rat} for the reals), {EQ_CONV} is an equality test conversion
+(e.g. {REAL_RAT_EQ_CONV}), {neg} is negation, {add} is addition, {sub} is
+subtraction, {inv} is multiplicative inverse, {div} is division, {pow} is
+power, {INTEGRAL_TH} is an integrality theorem and {FIELD_TH} is a field
+theorem (see below) and {POLY_CONV} is a polynomial normalization theorem for
+the structure as returned by {SEMIRING_NORMALIZERS_CONV} (e.g. {REAL_POLY_CONV}
+for the reals).
+
+The integrality theorem essentially states that if a product is zero, so is one
+of the factors (i.e. the structure is an integral domain), but this is stated
+in an unnatural way to allow application to structures without negation. It is
+permissible in this case to use boolean variables instead of operators such as
+negation and subtraction. The precise form of the theorem (notation for natural
+numbers, but this is supposed to be over the same structure):
+{
+  |- (!x. 0 * x = 0) /\
+     (!x y z. x + y = x + z <=> y = z) /\
+     (!w x y z. w * y + x * z = w * z + x * y <=> w = x \/ y = z)
+}
+
+The field theorem is of the following form. It is not logically necessary, and
+if the structure is not a field you can just pass in {TRUTH} instead. However,
+it is usually beneficial for performance to include it.
+{
+  |- !x y. ~(x = y) <=> ?z. (x - y) * z = 1
+}
+
+It returns a proof procedure that will attempt to prove a formula that, after
+suitable normalization, can be considered a universally quantified Boolean
+combination of equations and inequations between terms of the right type. If
+that formula holds in all integral domains, it will prove it. Any ``alien''
+atomic formulas that are not natural number equations will not contribute to
+the proof.
+
+\FAILURE
+Fails if the theorems are malformed.
+
+\EXAMPLE
+The instantiation for the real numbers (in fact this is already available under
+the name {REAL_RING}) could be coded as:
+{
+  let REAL_RING =
+    let REAL_INTEGRAL = prove
+     (`(!x. &0 * x = &0) /\
+       (!x y z. (x + y = x + z) <=> (y = z)) /\
+       (!w x y z. (w * y + x * z = w * z + x * y) <=> (w = x) \/ (y = z))`,
+      REWRITE_TAC[MULT_CLAUSES; EQ_ADD_LCANCEL] THEN
+      REWRITE_TAC[GSYM REAL_OF_NUM_EQ;
+                  GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_MUL] THEN
+      ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
+      REWRITE_TAC[GSYM REAL_ENTIRE] THEN REAL_ARITH_TAC)
+    and REAL_INVERSE = prove
+     (`!x y:real. ~(x = y) <=> ?z. (x - y) * z = &1`,
+      REPEAT GEN_TAC THEN
+      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM REAL_SUB_0] THEN
+      MESON_TAC[REAL_MUL_RINV; REAL_MUL_LZERO; REAL_ARITH `~(&1 = &0)`]) in
+    RING(rat_of_term,term_of_rat,REAL_RAT_EQ_CONV,
+         `(--):real->real`,`(+):real->real->real`,`(-):real->real->real`,
+         `(inv):real->real`,`(*):real->real->real`,`(/):real->real->real`,
+         `(pow):real->num->real`,
+         REAL_INTEGRAL,REAL_INVERSE,REAL_POLY_CONV);;
+}
+\noindent after which, for example, we can verify a reduction for cubic
+equations to quadratics entirely automatically:
+{
+  # REAL_RING
+     `p = (&3 * a1 - a2 pow 2) / &3 /\
+      q = (&9 * a1 * a2 - &27 * a0 - &2 * a2 pow 3) / &27 /\
+      z = x - a2 / &3 /\
+      x * w = w pow 2 - p / &3 /\
+      ~(p = &0)
+      ==> (z pow 3 + a2 * z pow 2 + a1 * z + a0 = &0 <=>
+          (w pow 3) pow 2 - q * (w pow 3) - p pow 3 / &27 = &0)`;;
+}
+
+\SEEALSO
+ideal_cofactors, NUM_RING, REAL_FIELD, REAL_RING, real_ideal_cofactors,
+RING_AND_IDEAL_CONV.
+
+\ENDDOC

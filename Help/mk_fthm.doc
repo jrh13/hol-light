@@ -1,0 +1,31 @@
+\DOC mk_fthm
+
+\TYPE {mk_fthm : term list * term -> thm}
+
+\SYNOPSIS
+Create arbitrary theorem by adding additional `false' assumption.
+
+\DESCRIBE
+The call {mk_fthm(asl,c)} returns a theorem with conclusion {c} and assumption
+list {asl} together with the special assumption {_FALSITY_}, which is defined
+to be logically equivalent to {F} (false). This is the closest approach to 
+{mk_thm} that does not involve adding a new axiom and so potentially 
+compromising soundness. 
+
+\FAILURE
+Fails if any of the given terms does not have Boolean type.
+
+\EXAMPLE
+{
+  # mk_fthm([],`1 = 2`);;
+  val it : thm = _FALSITY_ |- 1 = 2
+}
+
+\USES
+Used for validity-checking of justification functions as a sanity check in 
+tactic applications: see {VALID}.
+
+\SEEALSO
+CHEAT_TAC, mk_thm, new_axiom, VALID.
+
+\ENDDOC

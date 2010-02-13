@@ -1,0 +1,31 @@
+\DOC META_EXISTS_TAC
+
+\TYPE {META_EXISTS_TAC : (string * thm) list * term -> goalstate}
+
+\SYNOPSIS
+Changes existentially quantified variable to metavariable.
+
+\DESCRIBE
+Given a goal of the form {A ?- ?x. t[x]}, the tactic {X_META_EXISTS_TAC} gives
+the new goal {A ?- t[x]} where {x} is a new metavariable. In the resulting
+proof, it is as if the variable has been assigned here to the later choice for
+this metavariable, which can be made through for example {UNIFY_ACCEPT_TAC}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+See {UNIFY_ACCEPT_TAC} for an example of using metavariables.
+
+\USES
+Delaying instantiations until the correct term becomes clearer. 
+
+\COMMENTS
+Users should probably steer clear of using metavariables if possible. Note that 
+the metavariable instantiations apply across the whole fringe of goals, not 
+just the current goal, and can lead to confusion.
+
+\SEEALSO
+EXISTS_TAC, META_SPEC_TAC, UNIFY_ACCEPT_TAC, X_META_EXISTS_TAC.
+
+\ENDDOC

@@ -1,0 +1,35 @@
+\DOC unspaced_binops
+
+\TYPE {unspaced_binops : string list ref}
+
+\SYNOPSIS
+Determines which binary operators are printed with surrounding spaces.
+
+\DESCRIBE
+The reference variable {unspaced_binops} is one of several settable parameters
+controlling printing of terms by {pp_print_term}, and hence the automatic
+printing of terms and theorems at the toplevel. It holds a list of the names of
+infix binary operators that are printed without surrounding spaces. By default,
+it contains just the pairing operation `{,}', the numeric range `{..}' and the 
+cartesian power indexing `{$}'.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+{
+  # `x + 1`;;
+  val it : term = `x + 1`
+
+  # unspaced_binops := "+"::(!unspaced_binops);;
+  val it : unit = ()
+  # `x + 1`;;
+  val it : term = `x+1`
+}
+
+\SEEALSO
+pp_print_term, prebroken_binops, print_all_thm,
+print_unambiguous_comprehensions, reverse_interface_mapping,
+typify_universal_set.
+
+\ENDDOC

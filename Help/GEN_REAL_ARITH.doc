@@ -1,0 +1,50 @@
+\DOC GEN_REAL_ARITH
+
+\TYPE {GEN_REAL_ARITH : ((thm list * thm list * thm list -> positivstellensatz -> thm) -> thm list * thm list * thm list -> thm) -> term -> thm}
+
+\SYNOPSIS
+Initial normalization and proof reconstruction wrapper for real decision
+procedure.
+
+\DESCRIBE
+The function {GEN_REAL_ARITH} takes two arguments, the first of which is an 
+underlying `prover', and the second a term to prove. This function is mainly 
+intended for internal use: the function {REAL_ARITH} is essentially implemented 
+as
+{
+  GEN_REAL_ARITH REAL_LINEAR_PROVER
+}
+The wrapper {GEN_REAL_ARITH} performs various initial normalizations, such as
+eliminating {max}, {min} and {abs}, and passes to the prover a proof
+reconstruction function, say {reconstr}, and a triple of theorem lists to
+refute. The theorem lists are respectively a list of equations of the form {A_i
+|- p_i = &0}, a list of non-strict inequalities of the form {B_j |- q_i >= &0},
+and a list of strict inequalities of the form {C_k |- r_k > &0}, with both
+sides being real in each case. The underlying prover merely needs to find a
+``Positivstellensatz'' refutation, and pass the triple of theorems actually
+used and the Positivstellensatz refutation back to the reconstruction function
+{reconstr}. A Positivstellensatz refutation is essentially a representation of
+how to add and multiply equalities or inequalities chosen from the list to
+reach a trivially false equation or inequality such as {&0 > &0}. Note that the
+underlying prover may choose to augment the list of inequalities before
+proceeding with the proof, e.g. {REAL_LINEAR_PROVER} adds theorems {|- &0 <=
+&n} for relevant numeral terms {&n}. This is why the interface passes in a
+reconstruction function rather than simply expecting a Positivstellensatz
+refutation back.
+ 
+\FAILURE
+Never fails at this stage, though it may fail when subsequently applied to a 
+term.
+
+\EXAMPLE
+As noted, the built-in decision procedure {REAL_ARITH} is a simple application. 
+See also the file {Examples/sos.ml}, where a more sophisticated nonlinear 
+prover is plugged into {GEN_REAL_ARITH} in place of {REAL_LINEAR_PROVER}.
+
+\COMMENTS
+Mainly intended for experts.
+
+\SEEALSO
+REAL_ARITH, REAL_LINEAR_PROVER, REAL_POLY_CONV.
+
+\ENDDOC

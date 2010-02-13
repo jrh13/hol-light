@@ -1,0 +1,29 @@
+\DOC alpha
+
+\TYPE {alpha : term -> term -> term}
+
+\SYNOPSIS
+Changes the name of a bound variable.
+
+\DESCRIBE
+The call {alpha `v'` `\v. t[v]`} returns the second argument with the top bound
+variable changed to {v'}, and other variables renamed if necessary.
+
+\FAILURE
+Fails if the first term is not a variable, or if the second is not an
+abstraction, if the corresponding types are not the same, or if the desired new 
+variable is already free in the abstraction.
+
+\EXAMPLE
+{
+  # alpha `y:num` `\x y. x + y + 2`;;
+  val it : term = `\y y'. y + y' + 2`
+
+  # alpha `y:num` `\x. x + y + 1`;;
+  Exception: Failure "alpha: Invalid new variable".
+}
+
+\SEEALSO
+ALPHA, aconv.
+
+\ENDDOC

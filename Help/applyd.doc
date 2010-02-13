@@ -1,0 +1,31 @@
+\DOC applyd
+
+\TYPE {applyd : ('a, 'b) func -> ('a -> 'b) -> 'a -> 'b}
+
+\SYNOPSIS
+Applies a finite partial function, with a backup function for undefined points.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. If {f} is a finite partial function, {g} a conventional function and {x}
+an argument, {tryapply f g x} tries to apply {f} to {x} as with {apply f x},
+but instead returns {g x} is {f} is undefined on {x}.
+
+\FAILURE
+Can only fail if the backup function fails.
+
+\EXAMPLE
+{
+  # applyd undefined (fun x -> x) 1;;
+  val it : int = 1
+  # applyd (1 |=> 2) (fun x -> x) 1;;
+  val it : int = 2
+}
+
+\SEEALSO
+|->, |=>, apply, choose, combine, defined, dom, foldl, foldr,
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

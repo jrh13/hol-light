@@ -1,0 +1,29 @@
+\DOC F_F
+
+\TYPE {(F_F) : ('a -> 'b) -> ('c -> 'd) -> 'a * 'c -> 'b * 'd}
+
+\SYNOPSIS
+
+Infix operator. Applies two functions to a pair: 
+{(f F_F g) (x,y)} = {(f x, g y)}.
+
+\KEYWORDS
+
+\LIBRARY
+
+\DESCRIBE
+
+\FAILURE
+
+Never fails.
+
+\EXAMPLE
+
+\USES
+
+\COMMENTS
+
+\SEEALSO
+f_f_
+
+\ENDDOC

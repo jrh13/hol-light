@@ -1,0 +1,29 @@
+\DOC types
+
+\TYPE {types : unit -> (string * int) list}
+
+\SYNOPSIS
+Lists all the types presently declared.
+
+\DESCRIBE
+The function {types} should be applied to {()} and returns a list of all the
+type constructors declared, in the form of arity-name pairs.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+In the initial state we have:
+{
+  # types();;
+  val it : (string * int) list =
+    [("finite_sum", 2); ("cart", 2); ("finite_image", 1); ("int", 0);
+     ("real", 0); ("hreal", 0); ("nadd", 0); ("3", 0); ("2", 0); ("list", 1);
+     ("option", 1); ("sum", 2); ("recspace", 1); ("num", 0); ("ind", 0);
+     ("prod", 2); ("1", 0); ("bool", 0); ("fun", 2)]
+}
+
+\SEEALSO
+axioms, constants, new_type, new_type_definition.
+
+\ENDDOC

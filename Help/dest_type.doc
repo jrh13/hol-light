@@ -1,0 +1,29 @@
+\DOC dest_type
+
+\TYPE {dest_type : hol_type -> string * hol_type list}
+
+\SYNOPSIS
+Breaks apart a type (other than a variable type).
+
+\DESCRIBE
+{dest_type(`:(ty1,...,tyn)op`)} returns {("op",[`:ty1`;...;`:tyn`])}.
+
+\FAILURE
+Fails with {dest_type} if the type is a type variable.
+
+\EXAMPLE
+{
+  # dest_type `:bool`;;
+  val it : string * hol_type list = ("bool", [])
+
+  # dest_type `:(bool)list`;;
+  val it : string * hol_type list = ("list", [`:bool`])
+
+  # dest_type `:num -> bool`;;
+  val it : string * hol_type list = ("fun", [`:num`; `:bool`])
+}
+
+\SEEALSO
+mk_type, dest_vartype.
+
+\ENDDOC

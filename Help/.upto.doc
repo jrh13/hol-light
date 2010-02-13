@@ -1,0 +1,23 @@
+\DOC --
+
+\TYPE {(--) : int -> int -> int list}
+
+\SYNOPSIS
+Gives a finite list of integers between the given bounds.
+
+\DESCRIBE
+The call {m--n} returns the list of consecutive numbers from {m} to {n}.
+
+\EXAMPLE
+{
+  # 1--10;;
+  val it : int list = [1; 2; 3; 4; 5; 6; 7; 8; 9; 10]
+  # 5--5;;
+  val it : int list = [5]
+  # (-1)--1;;
+  val it : int list = [-1; 0; 1]
+  # 2--1;;
+  val it : int list = []
+}
+
+\ENDDOC

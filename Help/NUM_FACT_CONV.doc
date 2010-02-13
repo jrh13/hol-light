@@ -1,0 +1,42 @@
+\DOC NUM_FACT_CONV
+
+\TYPE {NUM_FACT_CONV : term -> thm}
+
+\SYNOPSIS
+Proves what the factorial of a natural number numeral is.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} is a numeral (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_FACT_CONV `FACT n`} returns the theorem:
+{
+   |- FACT n = s
+}
+\noindent where {s} is the numeral that denotes the factorial of the natural 
+number denoted by {n}.
+
+\FAILURE
+{NUM_FACT_CONV tm} fails if {tm} is not of the form  {`FACT n`}, where {n} is a
+numeral.
+
+\EXAMPLE
+{
+  # NUM_FACT_CONV `FACT 0`;;
+  val it : thm = |- FACT 0 = 1
+
+  # NUM_FACT_CONV `FACT 6`;;
+  val it : thm = |- FACT 6 = 720
+
+  # NUM_FACT_CONV `FACT 30`;;
+  val it : thm = |- FACT 30 = 265252859812191058636308480000000
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MIN_CONV, 
+NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV, NUM_PRE_CONV, NUM_REDUCE_CONV,
+NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
+
+\ENDDOC

@@ -1,0 +1,28 @@
+\DOC set_basic_convs
+
+\TYPE {set_basic_convs : (string * (term * conv)) list -> unit}
+
+\SYNOPSIS
+Assign the set of default conversions.
+
+\DESCRIBE
+The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.) 
+have default sets of (conditional) equations and other conversions that are 
+applied by default, except in the {PURE_} variants. The latter are normally
+term transformations that cannot be expressed as single (conditional or
+unconditional) rewrite rules. A call to {set_basic_convs l} where {l} is a list
+of items ("name",(`pat`,conv)) will make the default conversions just that set,
+using the name {name} to refer to each one and restricting it to subterms
+encountered that match {pat}.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+Normally, users will only want to extend the existing set of conversions using 
+{extend_basic_convs}. 
+
+\SEEALSO
+basic_convs, extend_basic_convs, set_basic_rewrites, REWRITE_TAC, SIMP_TAC.
+
+\ENDDOC

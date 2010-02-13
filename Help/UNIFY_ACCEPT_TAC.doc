@@ -1,0 +1,80 @@
+\DOC UNIFY_ACCEPT_TAC
+
+\TYPE {UNIFY_ACCEPT_TAC : term list -> thm -> 'a * term -> ('b list * instantiation) * 'c list * (instantiation -> 'd list -> thm)}
+
+\SYNOPSIS
+Unify free variables in theorem and metavariables in goal to accept theorem.
+
+\DESCRIBE
+Given a list {l} of assignable metavariables, a theorem {th} of the form {A |-
+t} and a goal {A' ?- t'}, the tactic {UNIFY_ACCEPT_TAC} attempts to unify {t}
+and {t'} by instantiating free variables in {t} and metavariables in the list
+{l} in the goal {t'} so that they match, then accepts the theorem as the
+solution of the goal.
+
+\FAILURE
+Fails if no unification will work. In fact, type instantiation is not at 
+present included in the unification.
+
+\EXAMPLE
+An inherently uninteresting but instructive example is the goal:
+{
+  # g `(?x:num. p(x) /\ q(x) /\ r(x)) ==> ?y. p(y) /\ (q(y) <=> r(y))`;;
+}
+\noindent which could of course be solved directly by {MESON_TAC[]} or 
+{ITAUT_TAC}. In fact, the process we will outline is close to what {ITAUT_TAC} 
+does automatically. Let's start with:
+{
+  # e STRIP_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+   0 [`p x`]
+   1 [`q x`]
+   2 [`r x`]
+  
+  `?y. p y /\ (q y <=> r y)`
+}
+\noindent and defer the actual choice of existential witness by introducing a 
+metavariable:
+{
+  # e (X_META_EXISTS_TAC `n:num` THEN CONJ_TAC);;
+  val it : goalstack = 2 subgoals (2 total)
+  
+   0 [`p x`]
+   1 [`q x`]
+   2 [`r x`]
+  
+  `q n <=> r n`
+  
+   0 [`p x`]
+   1 [`q x`]
+   2 [`r x`]
+  
+  `p n`
+}
+\noindent Now we finally fix the metavariable to match our assumption:
+{
+  # e(FIRST_X_ASSUM(UNIFY_ACCEPT_TAC [`n:num`]));;
+  val it : goalstack = 1 subgoal (1 total)
+  
+   0 [`p x`]
+   1 [`q x`]
+   2 [`r x`]
+  
+  
+  `q x <=> r x`
+}
+\noindent Note that the metavariable has also been correspondingly instantiated 
+in the remaining goal, which we can solve easily:
+{
+  # e(ASM_REWRITE_TAC[]);;
+  val it : goalstack = No subgoals
+}
+
+\USES
+Terminating proof search when using metavariables. Used in {ITAUT_TAC}
+
+\SEEALSO
+ACCEPT_TAC, ITAUT, ITAUT_TAC, MATCH_ACCEPT_TAC.
+
+\ENDDOC

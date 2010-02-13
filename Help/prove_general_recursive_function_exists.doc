@@ -1,0 +1,84 @@
+\DOC prove_general_recursive_function_exists
+
+\TYPE {prove_general_recursive_function_exists : term -> thm}
+
+\SYNOPSIS
+Proves existence of general recursive function.
+
+\DESCRIBE
+The function {prove_general_recursive_function_exists} should be applied
+to an existentially quantified term {`?f. def_1[f] /\ ... /\ def_n[f]`}, where
+each clause {def_i} is a universally quantified equation with an application of
+{f} to arguments on the left-hand side. The idea is that these clauses define
+the action of {f} on arguments of various kinds, for example on an empty list
+and nonempty list:
+{
+  ?f. (f [] = a) /\ (!h t. CONS h t = k[f,h,t])
+}
+\noindent or on even numbers and odd numbers:
+{
+  ?f. (!n. f(2 * n) = a[f,n]) /\ (!n. f(2 * n + 1) = b[f,n])
+}
+The returned value is a theorem whose conclusion matches the input term, with
+zero, one or two assumptions, depending on what conditions had been proven
+automatically. Roughly, one assumption states that the clauses are not mutually
+contradictory, as in
+{
+  ?f. (!n. f(n + 1) = 1) /\ (!n. f(n + 2) = 2)
+}
+\noindent and the other states that there is some wellfounded order making any
+recursion admissible.
+
+\FAILURE
+Fails only if the definition is malformed. However it is possible that for an
+inadmissible definition the assumptions of the theorem may not hold.
+
+\EXAMPLE
+In the definition of the Fibonacci numbers, the function successfully
+eliminates all the hypotheses and just proves the claimed existence assertion:
+{
+  # prove_general_recursive_function_exists
+     `?fib. fib 0 = 1 /\ fib 1 = 1 /\
+            !n. fib(n + 2) = fib(n) + fib(n + 1)`;;
+  val it : thm =
+    |- ?fib. fib 0 = 1 /\ fib 1 = 1 /\ (!n. fib (n + 2) = fib n + fib (n + 1))
+}
+\noindent whereas in the following case, the function cannot automatically
+discover the appropriate ordering to make the recursion admissible, so an
+assumption is included:
+{
+  # let eth = prove_general_recursive_function_exists
+     `?upto. !m n. upto m n =
+                    if n < m then []
+                    else if m = n then [n]
+                    else  CONS m (upto (m + 1) n)`;;
+  val eth : thm =
+    ?(<<). WF (<<) /\ (!m n. (T /\ ~(n < m)) /\ ~(m = n) ==> m + 1,n << m,n)
+    |- ?upto. !m n.
+                  upto m n =
+                  (if n < m
+                   then []
+                   else if m = n then [n] else CONS m (upto (m + 1) n))
+}
+\noindent You can prove the condition by supplying an appropriate ordering, e.g.
+{
+  # let wfth = prove(hd(hyp eth),
+                       EXISTS_TAC `measure (\(m:num,n:num). n - m)` THEN
+                       REWRITE_TAC[WF_MEASURE; measure] THEN ARITH_TAC);;
+  val wfth : thm =
+    |- ?(<<). WF (<<) /\ (!m n. (T /\ ~(n < m)) /\ ~(m = n) ==> m + 1,n << m,n)
+}
+\noindent and so get the pure existence theorem with {PROVE_HYP wfth eth}.
+
+\USES
+To prove existence of a recursive function defined by clauses without actually
+defining it. In order to define it, use {define}. To further forestall attempts
+to prove conditions automatically, consider
+{pure_prove_recursive_function_exists} or even
+{instantiate_casewise_recursion}.
+
+\SEEALSO
+define, instantiate_casewise_recursion,
+pure_prove_recursive_function_exists.
+
+\ENDDOC

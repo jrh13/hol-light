@@ -1,0 +1,27 @@
+\DOC striplist
+
+\TYPE {striplist : ('a -> 'a * 'a) -> 'a -> 'a list}
+
+\SYNOPSIS
+Applies a binary destructor repeatedly, flattening the construction tree into a 
+list.
+
+\DESCRIBE
+If a destructor function {d} inverts a binary constructor {f}, for example
+{dest_comb} for {mk_comb}, and fails when applied to components {xi}, then
+when applied to any object built up repeatedly by {f} applied to base values 
+{xi} returns the list {[x1;...;xn]}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # striplist dest_conj `(a /\ (b /\ ((c /\ d) /\ e)) /\ f) /\ g`;;
+  val it : term list = [`a`; `b`; `c`; `d`; `e`; `f`; `g`]
+}
+
+\SEEALSO
+splitlist, rev_splitlist, end_itlist.
+
+\ENDDOC

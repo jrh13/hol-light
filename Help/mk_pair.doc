@@ -1,0 +1,23 @@
+\DOC mk_pair
+
+\TYPE {mk_pair : term * term -> term}
+
+\SYNOPSIS
+Constructs object-level pair from a pair of terms.
+
+\DESCRIBE
+{mk_pair(`t1`,`t2`)} returns {`(t1,t2)`}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # mk_pair(`x:real`,`T`);;  
+  val it : term = `x,T`
+}
+
+\SEEALSO
+dest_pair, is_pair, mk_cons.
+
+\ENDDOC

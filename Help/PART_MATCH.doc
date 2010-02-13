@@ -1,0 +1,68 @@
+\DOC PART_MATCH
+
+\TYPE {PART_MATCH : (term -> term) -> thm -> term -> thm}
+
+\SYNOPSIS
+Instantiates a theorem by matching part of it to a term.
+
+\DESCRIBE
+When applied to a `selector' function of type {term -> term}, a theorem and a
+term:
+{
+   PART_MATCH fn (A |- !x1...xn. t) tm
+}
+\noindent the function {PART_MATCH} applies {fn} to {t'} (the result of
+specializing universally quantified variables in the conclusion of the
+theorem), and attempts to match the resulting term to the argument term
+{tm}.  If it succeeds, the appropriately instantiated version of the
+theorem is returned. Limited higher-order matching is supported, and some
+attempt is made to maintain bound variable names in higher-order matching.
+
+\FAILURE
+Fails if the selector function {fn} fails when applied to the instantiated
+theorem, or if the match fails with the term it has provided.
+
+\EXAMPLE
+Suppose that we have the following theorem:
+{
+   th = |- !x. x ==> x
+}
+\noindent then the following:
+{
+   PART_MATCH (fst o dest_imp) th `T`
+}
+\noindent results in the theorem:
+{
+   |- T ==> T
+}
+\noindent because the selector function picks the antecedent of the
+implication (the inbuilt specialization gets rid of the universal
+quantifier), and matches it to {T}. For a higher-order case rather similar to
+what goes on inside HOL's {INDUCT_TAC}:
+{
+  # num_INDUCTION;;
+  val it : thm = |- !P. P 0 /\ (!n. P n ==> P (SUC n)) ==> (!n. P n)
+
+  # PART_MATCH rand it `!n. n <= n * n`;;
+  val it : thm =
+    |- 0 <= 0 * 0 /\ (!n. n <= n * n ==> SUC n <= SUC n * SUC n)
+       ==> (!n. n <= n * n)
+}
+To show a more interesting case with higher-order matching, where the pattern
+is not quite a higher-order pattern in the usual sense, consider the theorem:
+{
+  # let th = MESON[num_CASES; NOT_SUC]
+     `(!n. P(SUC n)) <=> !n. ~(n = 0) ==> P n`
+  ...
+  val th : thm = |- (!n. P (SUC n)) <=> (!n. ~(n = 0) ==> P n)
+}
+\noindent and instantiate it as follows:
+{
+  # PART_MATCH lhs th `!n. 1 <= SUC n`;;
+  val it : thm = |- (!n. 1 <= SUC n) <=> (!n. ~(n = 0) ==> 1 <= n)
+}
+
+\SEEALSO
+GEN_PART_MATCH, INST_TYPE, INST_TY_TERM, match, MATCH_MP, REWR_CONV.
+
+\ENDDOC

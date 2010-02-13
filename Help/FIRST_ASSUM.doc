@@ -1,0 +1,44 @@
+\DOC FIRST_ASSUM
+
+\TYPE {FIRST_ASSUM : thm_tactic -> tactic}
+
+\SYNOPSIS
+Applied theorem-tactic to first assumption possible.
+
+\KEYWORDS
+theorem-tactical, assumption.
+
+\DESCRIBE
+The tactic
+{
+   FIRST_ASSUM ttac ([A1; ...; An], g)
+}
+\noindent has the effect of applying the first tactic which can be produced by
+{ttac} from the assumptions {(.. |- A1)}, ..., {(.. |- An)} and which
+succeeds when applied to the goal. Failures of {ttac} to produce a tactic are
+ignored. The similar function {FIRST_X_ASSUM} is the same except that the 
+assumption used is then removed from the goal.
+
+\FAILURE
+Fails if {ttac (.. |- Ai)} fails for every assumption {Ai}, or if the
+assumption list is empty, or if all the tactics produced by {ttac} fail when
+applied to the goal.
+
+\EXAMPLE
+The tactic
+{
+   FIRST_ASSUM (fun asm -> CONTR_TAC asm  ORELSE  ACCEPT_TAC asm)
+}
+\noindent searches the assumptions for either a contradiction or the desired
+conclusion. The tactic
+{
+   FIRST_ASSUM MATCH_MP_TAC
+}
+\noindent searches the assumption list for an implication whose conclusion
+matches the goal, reducing the goal to the antecedent of the corresponding
+instance of this implication.
+
+\SEEALSO
+ASSUM_LIST, EVERY, EVERY_ASSUM, FIRST, FIRST_X_ASSUM, MAP_EVERY, MAP_FIRST.
+
+\ENDDOC

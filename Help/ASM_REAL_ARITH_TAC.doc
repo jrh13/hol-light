@@ -1,0 +1,53 @@
+\DOC ASM_REAL_ARITH_TAC
+
+\TYPE {ASM_REAL_ARITH_TAC : tactic}
+
+\SYNOPSIS
+Attempt to prove goal using basic algebra and linear arithmetic over the reals.
+
+\DESCRIBE
+The tactic {ASM_REAL_ARITH_TAC} is the tactic form of {REAL_ARITH}. Roughly
+speaking, it will automatically prove any formulas over the reals that are
+efectively universally quantified and can be proved valid by algebraic
+normalization and linear equational and inequality reasoning. See {REAL_ARITH}
+for more information about the algorithm used and its scope. Unlike plain
+{REAL_ARITH_TAC}, {ASM_REAL_ARITH_TAC} uses any assumptions that are not
+universally quantified as additional hypotheses.
+
+\FAILURE
+Fails if the goal is not in the subset solvable by these means, or is not
+valid.
+
+\EXAMPLE
+This example illustrates how {ASM_REAL_ARITH_TAC} uses assumptions while
+{REAL_ARITH_TAC} does not. Of course, this is for illustration only: plain
+{REAL_ARITH_TAC} would solve the entire goal before application of {STRIP_TAC}.
+{
+  # g `!x y z:real. abs(x) <= y ==> abs(x - z) <= abs(y + abs(z))`;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+  `!x y z. abs x <= y ==> abs (x - z) <= abs (y + abs z)`
+  
+  # e(REPEAT STRIP_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+  
+    0 [`abs x <= y`]
+  
+  `abs (x - z) <= abs (y + abs z)`
+  
+  # e REAL_ARITH_TAC;;
+  Exception: Failure "linear_ineqs: no contradiction".
+  # e ASM_REAL_ARITH_TAC;;
+  val it : goalstack = No subgoals
+}
+
+\COMMENTS
+For nonlinear equational reasoning, use {CONV_TAC REAL_RING} or {CONV_TAC
+REAL_FIELD}. For nonlinear inequality reasoning, there are no powerful rules
+built into HOL Light, but the additional derived rules defined in
+{Examples/sos.ml} and {Rqe/make.ml} may be useful.
+
+\SEEALSO
+ARITH_TAC, INT_ARITH_TAC, REAL_ARITH, REAL_ARITH_TAC, REAL_FIELD, REAL_RING.
+
+\ENDDOC

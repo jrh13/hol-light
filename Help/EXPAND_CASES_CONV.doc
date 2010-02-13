@@ -1,0 +1,36 @@
+\DOC EXPAND_CASES_CONV
+
+\TYPE {EXPAND_CASES_CONV : conv}
+
+\SYNOPSIS
+Expand a numerical range {`!i. i < n ==> P[i]`}.
+
+\DESCRIBE
+When applied to a term of the form {`!i. i < n ==> P[i]`} for some {P[i]} and a 
+numeral {n}, the conversion {EXPAND_CASES_CONV} returns 
+{
+  |- (!i. i < n ==> P[i]) <=> P[0] /\ ... /\ P[n-1]
+}
+
+\FAILURE
+Fails if applied to a term that is not of the right form.
+
+\EXAMPLE
+{
+  # EXPAND_CASES_CONV `(!n. n < 5 ==> ~(n = 0) ==> 12 MOD n = 0)`;;
+  val it : thm =
+    |- (!n. n < 5 ==> ~(n = 0) ==> 12 MOD n = 0) <=>
+       (~(1 = 0) ==> 12 MOD 1 = 0) /\
+       (~(2 = 0) ==> 12 MOD 2 = 0) /\
+       (~(3 = 0) ==> 12 MOD 3 = 0) /\
+       (~(4 = 0) ==> 12 MOD 4 = 0)
+
+  # (EXPAND_CASES_CONV THENC NUM_REDUCE_CONV)
+      `(!n. n < 5 ==> ~(n = 0) ==> 12 MOD n = 0)`;;     
+  val it : thm = |- (!n. n < 5 ==> ~(n = 0) ==> 12 MOD n = 0) <=> T
+}
+
+\SEEALSO
+NUM_REDUCE_CONV.
+
+\ENDDOC

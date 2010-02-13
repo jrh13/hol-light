@@ -1,0 +1,29 @@
+\DOC HAS_SIZE_CONV
+
+\TYPE {HAS_SIZE_CONV : term -> thm}
+
+\SYNOPSIS
+Converts statement about set's size into existential enumeration.
+
+\DESCRIBE
+Given a term of the form {`s HAS_SIZE n`} for a numeral {n}, the conversion 
+{HAS_SIZE_CONV} returns an equivalent form postulating the existence of {n} 
+pairwise distinct elements that make up the set.
+
+\FAILURE
+Fails if applied to a term of the wrong form.
+
+\EXAMPLE
+{
+  # HAS_SIZE_CONV `s HAS_SIZE 1`;;
+  ...
+  val it : thm = |- s HAS_SIZE 1 <=> (?a. s = {{a}})
+
+  # HAS_SIZE_CONV `t HAS_SIZE 3`;;
+  ...
+  val it : thm =
+    |- t HAS_SIZE 3 <=>
+       (?a a' a''. ~(a' = a'') /\ ~(a = a') /\ ~(a = a'') /\ t = {{a, a', a''}})
+}
+
+\ENDDOC

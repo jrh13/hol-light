@@ -1,0 +1,43 @@
+\DOC GEN_NNF_CONV
+
+\TYPE {GEN_NNF_CONV : bool -> conv * (term -> thm * thm) -> conv}
+
+\SYNOPSIS
+General NNF (negation normal form) conversion.
+
+\DESCRIBE
+The function {GEN_NNF_CONV} is a highly general conversion for putting a term
+in `negation normal form' (NNF). This means that other propositional
+connectives are eliminated in favour of conjunction (`{/\}'), disjunction
+(`{\/}') and negation (`{~}'), and the negations are pushed down to the level
+of atomic formulas, also through universal and existential quantifiers, with
+double negations eliminated.
+
+This function is very general. The first, boolean, argument determines how
+logical equivalences `{p <=> q}' are split. If the flag is {true}, toplevel
+equivalences are split ``conjunctively'' into `{(p \/ ~q) /\ (~p \/ q)}', while
+if it is false they are split ``disjunctively'' into 
+`{(p /\ q) \/ (~p /\ ~q)}'. At subformulas, the effect is modified
+appropriately in order to make the resulting formula simpler in conjunctive
+normal form (if the flag is true) or disjunctive normal form (if the flag is
+false).
+
+The second argument has two components. The first is a conversion to apply to
+literals, that is atomic formulas or their negations. The second is a slightly
+more elaborate variant of the same thing, taking an atomic formula {p} and
+returning desired equivalences for both {p} and {~p} in a pair. This interface
+avoids multiple recomputations in terms involving many nested logical
+equivalences, where otherwise the core conversion would be called several
+times.
+
+\FAILURE
+Never fails but may have no effect.
+
+\COMMENTS
+The simple functions like {NNF_CONV} should be adequate most of the time, with
+this somewhat intricate interface being reserved for special situations.
+
+\SEEALSO
+NNF_CONV, NNFC_CONV.
+
+\ENDDOC

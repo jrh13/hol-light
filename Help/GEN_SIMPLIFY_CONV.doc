@@ -1,0 +1,21 @@
+\DOC GEN_SIMPLIFY_CONV
+
+\TYPE {GEN_SIMPLIFY_CONV : strategy -> simpset -> int -> thm list -> conv}
+
+\SYNOPSIS
+General simplification with given strategy and simpset and theorems.
+
+\DESCRIBE
+The call {GEN_SIMPLIFY_CONV strat ss n thl} incorporates the rewrites and
+conditional rewrites derived from {thl} into the simpset {ss}, then simplifies
+using that simpset, controlling the traversal of the term by {strat}, and
+starting at level {n}.
+
+\FAILURE
+Never fails unless some component is malformed.
+
+\SEEALSO
+GEN_REWRITE_CONV, ONCE_SIMPLIFY_CONV, SIMPLIFY_CONV, SIMP_CONV, SIMP_RULE,
+SIMP_TAC.
+
+\ENDDOC

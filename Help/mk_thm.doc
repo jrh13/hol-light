@@ -1,0 +1,36 @@
+\DOC mk_thm
+
+\TYPE {mk_thm : term list * term -> thm}
+
+\SYNOPSIS
+Creates an arbitrary theorem as an axiom (dangerous!)
+
+\DESCRIBE
+The function {mk_thm} can be used to construct an arbitrary theorem. It is
+applied to a pair consisting of the desired assumption list (possibly empty)
+and conclusion. All the terms therein should be of type {bool}.
+{
+   mk_thm([`a1`;...;`an`],`c`) = ({{a1,...,an}} |- c)
+}
+\FAILURE
+Fails unless all the terms provided for assumptions and conclusion are of type
+{bool}.
+
+\EXAMPLE
+The following shows how to create a simple contradiction:
+{
+   #mk_thm([],`F`);;
+   |- F
+}
+
+\COMMENTS
+Although {mk_thm} can be useful for experimentation or temporarily plugging
+gaps, its use should be avoided if at all possible in important proofs, because
+it can be used to create theorems leading to contradictions. You can check
+whether any axioms have been asserted by {mk_thm} or {new_axiom} by the call
+{axioms()}.
+
+\SEEALSO
+CHEAT_TAC, mk_fthm, new_axiom.
+
+\ENDDOC

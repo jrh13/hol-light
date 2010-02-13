@@ -1,0 +1,24 @@
+\DOC hol_version
+
+\TYPE {hol_version : string}
+
+\SYNOPSIS
+A string indicating the version of HOL Light.
+
+\DESCRIBE
+This string is a numeric version number for HOL Light.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+On my laptop, the value is:
+{
+  # hol_version;;
+  val it : string = "2.10"
+}
+
+\SEEALSO
+startup_banner.
+
+\ENDDOC

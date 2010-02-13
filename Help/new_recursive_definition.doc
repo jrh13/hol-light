@@ -1,0 +1,82 @@
+\DOC new_recursive_definition
+
+\TYPE {new_recursive_definition : thm -> term -> thm}
+
+\SYNOPSIS
+Define recursive function over inductive type.
+
+\DESCRIBE
+{new_recursive_definition} provides the facility for defining primitive
+recursive functions on arbitrary inductive types.  The first argument is the
+primitive recursion theorem for the concrete type in question; this is normally
+the second theorem obtained from {define_type}. The second argument is a term
+giving the desired primitive recursive function definition. The value returned
+by {new_recursive_definition} is a theorem stating the primitive recursive
+definition requested by the user. This theorem is derived by formal proof from
+an instance of the general primitive recursion theorem given as the second
+argument.
+
+Let {C1}, ..., {Cn} be the constructors of the type, and let `{(Ci vs)}'
+represent a (curried) application of the {i}th constructor to a sequence of
+variables.  Then a curried primitive recursive function {fn} over {ty} can be
+specified by a conjunction of (optionally universally-quantified) clauses of
+the form:
+{
+   fn v1 ... (C1 vs1) ... vm  =  body1   /\
+   fn v1 ... (C2 vs2) ... vm  =  body2   /\
+                             .
+                             .
+   fn v1 ... (Cn vsn) ... vm  =  bodyn
+}
+\noindent where the variables {v1}, ..., {vm}, {vs} are distinct in each
+clause, and where in the {i}th clause {fn} appears (free) in {bodyi} only
+as part of an application of the form:
+{
+   `fn t1 ... v ... tm`
+}
+\noindent in which the variable {v} of type {ty} also occurs among the
+variables {vsi}.
+
+If {<definition>} is a conjunction of clauses, as described above, then
+evaluating:
+{
+   new_recursive_definition th `<definition>`;;
+}
+\noindent automatically proves the existence of a function {fn} that satisfies
+the defining equations, and then declares a new constant with this definition
+as its specification.
+
+{new_recursive_definition} also allows the supplied definition to omit clauses
+for any number of constructors.  If a defining equation for the {i}th
+constructor is omitted, then the value of {fn} at that constructor:
+{
+   fn v1 ... (Ci vsi) ... vn
+}
+\noindent is left unspecified ({fn}, however, is still a total function).
+
+\FAILURE
+Fails if the definition cannot be matched up with the recursion theorem
+provided (you may find that {define} still works in such cases), or if there is
+already a constant of the given name.
+
+\EXAMPLE
+The following defines a function to produce the union of a list of sets:
+{
+  # let LIST_UNION = new_recursive_definition list_RECURSION
+    `(LIST_UNION [] = {{}}) /\
+     (LIST_UNION (CONS h t) = h UNION (LIST_UNION t))`;;
+      Warning: inventing type variables
+  val ( LIST_UNION ) : thm =
+    |- LIST_UNION [] = {{}} /\ LIST_UNION (CONS h t) = h UNION LIST_UNION t
+}
+
+\COMMENTS
+For many purposes, {define} is a simpler way of defining recursive types; it
+has a simpler interface (no need to specify the recursion theorem to use) and
+it is more general. However, for suitably constrained definitions
+{new_recursive_definition} works well and is much more efficient.
+
+\SEEALSO
+define, prove_inductive_relations_exist, prove_recursive_functions_exist.
+
+\ENDDOC

@@ -1,0 +1,46 @@
+\DOC TRANS
+
+\TYPE {TRANS : thm -> thm -> thm}
+
+\SYNOPSIS
+Uses transitivity of equality on two equational theorems.
+
+\KEYWORDS
+rule, transitivity, equality.
+
+\DESCRIBE
+When applied to a theorem {A1 |- t1 = t2} and a theorem {A2 |- t2 = t3}, the
+inference rule {TRANS} returns the theorem {A1 u A2 |- t1 = t3}.
+{
+    A1 |- t1 = t2   A2 |- t2 = t3
+   -------------------------------  TRANS
+         A1 u A2 |- t1 = t3
+}
+\FAILURE
+Fails unless the theorems are equational, with the right side of the first
+being the same as the left side of the second.
+
+\EXAMPLE
+The following shows identical uses of {TRANS}, one on Boolean equations (shown
+as {<=>}) and one on numerical equations.
+{
+  # let t1 = ASSUME `a:bool = b` and t2 = ASSUME `b:bool = c`;;
+  val t1 : thm = a <=> b |- a <=> b
+  val t2 : thm = b <=> c |- b <=> c
+  # TRANS t1 t2;;
+  val it : thm = a <=> b, b <=> c |- a <=> c
+
+  # let t1 = ASSUME `x:num = 1` and t2 = num_CONV `1`;;
+  val t1 : thm = x = 1 |- x = 1
+  val t2 : thm = |- 1 = SUC 0
+  # TRANS t1 t2;;
+  val it : thm = x = 1 |- x = SUC 0
+}
+
+\COMMENTS
+This is one of HOL Light's 10 primitive inference rules.
+
+\SEEALSO
+EQ_MP, IMP_TRANS, REFL, SYM.
+
+\ENDDOC

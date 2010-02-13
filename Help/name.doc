@@ -1,0 +1,17 @@
+\DOC name
+
+\TYPE {name : string -> term}
+
+\SYNOPSIS
+Query to {search} for a theorem whose name contains a string.
+
+\DESCRIBE
+The function {name} is intended for use solely with the {search} function.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+search.
+
+\ENDDOC

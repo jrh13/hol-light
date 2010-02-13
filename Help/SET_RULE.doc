@@ -1,0 +1,32 @@
+\DOC SET_RULE
+
+\TYPE {SET_RULE : term -> thm}
+
+\SYNOPSIS
+Attempt to prove elementary set-theoretic lemma.
+
+\DESCRIBE
+The function {SET_RULE} is a crude automated prover for set-theoretic facts.
+When applied to a term, it expands various set-theoretic definitions explicitly
+and then attempts to solve the result using {MESON}.
+
+\FAILURE
+Fails if the simple translation does not suffice, or the resulting goal is too
+deep for {MESON}.
+
+\EXAMPLE
+{
+  # SET_RULE `{{x | ~(x IN s <=> x IN t)}} = (s DIFF t) UNION (t DIFF s)`;;
+  ...
+  val it : thm = |- {{x | ~(x IN s <=> x IN t)}} = s DIFF t UNION t DIFF s
+
+  # SET_RULE
+     `UNIONS {{t y | y IN x INSERT s}} = t x UNION UNIONS {{t y | y IN s}}`;;
+  val it : thm =
+    |- UNIONS {{t y | y IN x INSERT s}} = t x UNION UNIONS {{t y | y IN s}}
+}
+
+\SEEALSO
+MESON, MESON_TAC[], SET_TAC.
+
+\ENDDOC

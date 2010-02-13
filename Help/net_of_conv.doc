@@ -1,0 +1,22 @@
+\DOC net_of_conv
+
+\TYPE {net_of_conv : term -> 'a -> (int * 'a) net -> (int * 'a) net}
+
+\SYNOPSIS
+The underlying machinery in rewriting and simplification assembles
+(conditional) rewrite rules and other conversions into a net, including a
+priority number so that, for example, pure rewrites get applied before
+conditional rewrites. A call {net_of_conv `pat` cnv net} will add {cnv} to
+{net} with priority 2 (lower than pure rewrites but higher than conditional
+ones) to give a new net; this net can be used by {REWRITES_CONV}, for example.
+The term {pat} is a pattern used inside the net to place {conv} appropriately
+(see {enter} for more details). This means that {cnv} will never even be tried
+on terms that clearly cannot be instances of {pat}.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+enter, net_of_cong, lookup, net_of_thm, REWRITES_CONV.
+
+\ENDDOC

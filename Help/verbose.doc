@@ -1,0 +1,52 @@
+\DOC verbose
+
+\TYPE {verbose : bool ref}
+
+\SYNOPSIS
+Flag to control verbosity of informative output.
+
+\DESCRIBE
+When the value of {verbose} is set to {true}, the function {remark} will output 
+its string argument whenever called. This is used for most informative output 
+in automated rules.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+Consider this call MESON to prove a first-order formula:
+{
+  # MESON[] `!f g:num->num. (?!x. x = g(f(x))) <=> (?!y. y = f(g(y)))`;;
+  0..0..1..solved at 4
+  CPU time (user): 0.01
+  0..0..1..2..6..11..19..28..37..46..94..151..247..366..584..849..solved at 969
+  CPU time (user): 0.12
+  0..0..1..solved at 4
+  CPU time (user): 0.
+  0..0..1..2..6..11..19..28..37..46..94..151..247..366..584..849..solved at 969
+  CPU time (user): 0.06
+  val it : thm = |- !f g. (?!x. x = g (f x)) <=> (?!y. y = f (g y))
+}
+\noindent By changing the verbosity level, most of the output disappears:
+{
+  # verbose := false;;
+  val it : unit = ()
+  # MESON[] `!f g:num->num. (?!x. x = g(f(x))) <=> (?!y. y = f(g(y)))`;;
+  CPU time (user): 0.01
+  CPU time (user): 0.13
+  CPU time (user): 0.
+  CPU time (user): 0.081
+  val it : thm = |- !f g. (?!x. x = g (f x)) <=> (?!y. y = f (g y))
+}
+\noindent and if we also disable timing reporting the action is silent:
+{
+  # report_timing := false;;
+  val it : unit = ()
+  # MESON[] `!f g:num->num. (?!x. x = g(f(x))) <=> (?!y. y = f(g(y)))`;;
+  val it : thm = |- !f g. (?!x. x = g (f x)) <=> (?!y. y = f (g y))
+}
+
+\SEEALSO
+remark, report_timing.
+
+\ENDDOC

@@ -1,0 +1,34 @@
+\DOC ETA_CONV
+
+\TYPE {ETA_CONV : term -> thm}
+
+\SYNOPSIS
+Performs a toplevel eta-conversion.
+
+\KEYWORDS
+conversion, extentionality.
+
+\DESCRIBE
+{ETA_CONV} maps an eta-redex {`\x. t x`}, where {x} does not occur free in {t},
+to the theorem {|- (\x. t x) = t}.
+
+\FAILURE
+Fails if the input term is not an eta-redex.
+
+\EXAMPLE
+{
+  # ETA_CONV `\n. SUC n`;;
+  val it : thm = |- (\n. SUC n) = SUC
+  
+  # ETA_CONV `\n. 1 + n`;;
+  val it : thm = |- (\n. 1 + n) = (+) 1
+  
+  # ETA_CONV `\n. n + 1`;;
+  Exception: Failure "ETA_CONV".
+}
+
+\COMMENTS
+The same basic effect can be achieved by rewriting with {ETA_AX}. The theorem
+{ETA_AX} is one of HOL Light's three mathematical axioms.
+
+\ENDDOC

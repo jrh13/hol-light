@@ -1,0 +1,25 @@
+\DOC prove_monotonicity_hyps
+
+\TYPE {prove_monotonicity_hyps : thm -> thm}
+
+\SYNOPSIS
+Attempt to prove monotonicity hypotheses of theorem automatically.
+
+\DESCRIBE
+Given a theorem {A |- t}, the rule {prove_monotonicity_hyps} attempts to prove 
+and remove all hypotheses that are not equations, by breaking them down and 
+repeatedly using {MONO_TAC}. Any that are equations or are not automatically 
+provable will be left as they are.
+
+\FAILURE
+Never fails but may have no effect.
+
+\COMMENTS
+Normally, this kind of reasoning is automated by the inductive definitions 
+package, so explicit use of this tactic is rare.                    
+
+\SEEALSO
+MONO_TAC, monotonicity_theorems, new_inductive_definition, 
+prove_inductive_relations_exist.
+
+\ENDDOC

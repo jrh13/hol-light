@@ -1,0 +1,27 @@
+\DOC REMOVE_THEN
+
+\TYPE {REMOVE_THEN : string -> thm_tactic -> tactic}
+
+\SYNOPSIS
+Apply a theorem tactic to named assumption, removing the assumption.
+
+\DESCRIBE
+The tactic {USE_THEN "name" ttac} applies the theorem-tactic {ttac} to the 
+assumption labelled {name} (or the first in the list if there is more than      
+one), removing the assumption from the goal.
+
+\FAILURE
+Fails if there is no assumption of that name or if the theorem-tactic fails 
+when applied to it.
+
+\EXAMPLE
+See {LABEL_TAC} for a relevant example.
+
+\USES
+Using an assumption identified by name that will not be needed again in the 
+proof.
+
+\SEEALSO
+ASSUME, FIND_ASSUM, LABEL_TAC, REMOVE_THEN, USE_THEN 
+
+\ENDDOC

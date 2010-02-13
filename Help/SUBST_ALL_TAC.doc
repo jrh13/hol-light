@@ -1,0 +1,70 @@
+\DOC SUBST_ALL_TAC
+
+\TYPE {SUBST_ALL_TAC : thm -> tactic}
+
+\SYNOPSIS
+Substitutes using a single equation in both the assumptions and conclusion of a
+goal.
+
+\KEYWORDS
+tactic.
+
+\DESCRIBE
+{SUBST_ALL_TAC} breaches the style of natural deduction, where the assumptions
+are kept fixed.  Given a theorem {A |- u = v} and a goal {([A1;...;An] ?-  t)},
+{SUBST_ALL_TAC (A |- u = v)} transforms the assumptions {A1},...,{An} and the
+term {t} into {A1[v/u]},...,{An[v/u]} and {t[v/u]} respectively, by
+substituting {v} for each free occurrence of {u} in both the assumptions and
+the conclusion of the goal.
+{
+           {{A1,...,An}} ?- t
+   =================================  SUBST_ALL_TAC (A |- u = v)
+    {{A1[v/u],...,An[v/u]}} ?- t[v/u]
+}
+\noindent The assumptions of the theorem used to substitute with are not added
+to the assumptions of the goal, but they are recorded in the proof.  If {A} is
+not a subset of the assumptions of the goal (up to alpha-conversion), then
+{SUBST_ALL_TAC (A |- u = v)} results in an invalid tactic.
+
+{SUBST_ALL_TAC} automatically renames bound variables to prevent
+free variables in {v} becoming bound after substitution.
+
+\FAILURE
+{SUBST_ALL_TAC th (A ?- t)} fails if the conclusion of {th} is not an equation.
+No change is made to the goal if no occurrence of the left-hand side of
+{th} appears free in {(A ?- t)}.
+
+\EXAMPLE
+Suppose we start with the goal:
+{
+  # g `!p x y. 1 = x /\ p(x - 1) ==> p(x EXP 2 - x)`;;
+}
+\noindent and, as often, begin by breaking it down routinely:
+{
+  # e(REPEAT STRIP_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+  
+   0 [`1 = x`]
+   1 [`p (x - 1)`]
+
+  `p (x EXP 2 - x)`
+}
+\noindent Now we can use {SUBST_ALL_TAC} to substitute {1} for {x} in both
+assumptions and conclusion:
+{
+  # e(FIRST_X_ASSUM(SUBST_ALL_TAC o SYM));;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`p (1 - 1)`]
+
+  `p (1 EXP 2 - 1)`
+}
+One can finish things off in various ways, e.g.
+{
+  # e(POP_ASSUM MP_TAC THEN CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[]);;
+}
+
+\SEEALSO
+ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBST1_TAC, SUBST_TAC.
+
+\ENDDOC

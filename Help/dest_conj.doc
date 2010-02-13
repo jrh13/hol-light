@@ -1,0 +1,17 @@
+\DOC dest_conj
+
+\TYPE {dest_conj : term -> term * term}
+
+\SYNOPSIS
+Term destructor for conjunctions.
+
+\DESCRIBE
+{dest_conj(`t1 /\ t2`)} returns {(`t1`,`t2`)}.
+
+\FAILURE
+Fails with {dest_conj} if term is not a conjunction.
+
+\SEEALSO
+is_conj, mk_conj.
+
+\ENDDOC

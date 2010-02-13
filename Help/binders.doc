@@ -1,0 +1,26 @@
+\DOC binders
+
+\TYPE {binders : unit -> string list}
+
+\SYNOPSIS
+Lists the binders.
+
+\DESCRIBE
+The function {binders} returns a list of all the binders declared so far. A
+binder {b} is then parsed in constructs like {b x. t[x]} as an abbreviation for
+{(b) (\x. t[x])}. The set of binders can be changed with {parse_as_binder} and
+{unparse_as_binder}.
+
+\FAILURE
+Never fails
+
+\EXAMPLE
+{
+  # binders();;
+  val it : string list = ["\\"; "!"; "?"; "?!"; "@"; "minimal"; "lambda"]
+}
+\SEEALSO
+parse_as_binder, parses_as_binder, parse_as_infix, parse_as_prefix,
+unparse_as_binder.
+
+\ENDDOC

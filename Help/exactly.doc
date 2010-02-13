@@ -1,0 +1,17 @@
+\DOC exactly
+
+\TYPE {exactly : term -> term}
+
+\SYNOPSIS
+Query to {search} for a term alpha-equivalent to pattern.
+
+\DESCRIBE
+The function {exactly} is intended for use solely with the {search} function.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+search.
+
+\ENDDOC

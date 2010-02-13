@@ -1,0 +1,25 @@
+\DOC explode
+
+\TYPE {explode : string -> string list}
+
+\SYNOPSIS
+Converts a string into a list of single-character strings.
+
+\DESCRIBE
+{explode s} returns the list of single-character strings that make up {s}, in
+the order in which they appear in {s}. If {s} is the empty string, then an
+empty list is returned.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # explode "example";;
+  val it : string list = ["e"; "x"; "a"; "m"; "p"; "l"; "e"]
+}
+
+\SEEALSO
+implode.
+
+\ENDDOC

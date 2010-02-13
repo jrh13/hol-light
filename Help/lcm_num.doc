@@ -1,0 +1,26 @@
+\DOC lcm_num
+
+\TYPE {lcm_num : num -> num -> num}
+
+\SYNOPSIS
+Computes lowest common multiple of two unlimited-precision integers.
+
+\DESCRIBE
+The call {lcm_num m n} for two unlimited-precision (type {num}) integers {m} and
+{n} returns the (positive) lowest common multiple of {m} and {n}. If either {m}
+or {n} (or both) are both zero, it returns zero.
+
+\FAILURE
+Fails if either number is not an integer (the type {num} supports arbitrary 
+rationals).
+
+\EXAMPLE
+{
+  # lcm_num (Int 35) (Int(-77));;
+  val it : num = 385
+}
+
+\SEEALSO
+gcd, gcd_num.
+
+\ENDDOC

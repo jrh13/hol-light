@@ -1,0 +1,21 @@
+\DOC parse_inductive_type_specification
+
+\TYPE {parse_inductive_type_specification : string -> (hol_type * (string * hol_type list) list) list}
+
+\SYNOPSIS
+Parses the specification for an inductive type into a structured format.
+
+\DESCRIBE
+The underlying function {define_type_raw} used inside {define_type} expects the
+inductive type specification in a more structured format. The function
+{parse_inductive_type_specification} parses the usual string form as handed to
+{define_type} and yields this structured form. In fact, {define_type} is just
+the composition of {define_type_raw} and {parse_inductive_type_specification}.
+
+\FAILURE
+Fails if there is a parsing error in the inductive type specification.
+
+\SEEALSO
+define_type, define_type_raw.
+
+\ENDDOC

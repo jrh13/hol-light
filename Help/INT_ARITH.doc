@@ -1,0 +1,32 @@
+\DOC INT_ARITH
+
+\TYPE {INT_ARITH : term -> thm}
+
+\SYNOPSIS
+Proves integer theorems needing basic rearrangement and linear inequality
+reasoning only.
+
+\DESCRIBE
+{INT_ARITH} is a rule for automatically proving natural number theorems using
+basic algebraic normalization and inequality reasoning.
+
+\FAILURE
+Fails if the term is not boolean or if it cannot be proved using the basic
+methods employed, e.g. requiring nonlinear inequality reasoning.
+
+\EXAMPLE
+{
+  # INT_ARITH `!x y:int. x <= y + &1 ==> x + &2 < y + &4`;;
+  val it : thm = |- !x y. x <= y + &1 ==> x + &2 < y + &4
+
+  # INT_ARITH `(x + y:int) pow 2 = x pow 2 + &2 * x * y + y pow 2`;;
+  val it : thm = |- (x + y) pow 2 = x pow 2 + &2 * x * y + y pow 2
+}
+
+\USES
+Disposing of elementary arithmetic goals.
+
+\SEEALSO
+ARITH_RULE, INT_ARITH_TAC, NUM_RING, REAL_ARITH, REAL_FIELD, REAL_RING.
+
+\ENDDOC

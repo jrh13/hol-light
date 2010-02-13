@@ -1,0 +1,34 @@
+\DOC loads
+
+\TYPE {loads : string -> unit}
+
+\SYNOPSIS
+Load a file from the HOL Light system tree.
+
+\DESCRIBE
+Finds the named file, either by its absolute pathname or by starting in the
+base of the HOL installation stored by {hol_dir}, and loads it.
+
+\FAILURE
+Fails if the file is not found or generates an exception.
+
+\EXAMPLE
+To load a library with more number theory:
+{
+  # loads "Library/prime.ml";;
+  - : unit = ()
+  val ( MULT_MONO_EQ ) : thm = |- !m i n. SUC n * m = SUC n * i <=> m = i
+  ...
+  ...
+  val ( GCD_CONV ) : term -> thm = <fun>
+  val it : unit = ()
+}
+
+\USES
+Loading HOL Light standard libraries without accidentally picking up other
+files of the same name in the current directory or on {load_path}
+
+\SEEALSO
+loadt, needs.
+
+\ENDDOC

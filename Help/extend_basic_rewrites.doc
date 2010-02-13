@@ -1,0 +1,21 @@
+\DOC extend_basic_rewrites
+
+\TYPE {extend_basic_rewrites : thm list -> unit}
+
+\SYNOPSIS
+Extend the set of default rewrites used by rewriting and simplification.
+
+\DESCRIBE
+The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.)
+have default sets of (conditional) equations and other conversions that are
+applied by default, except in the {PURE_} variants. A call to
+{extend_basic_rewrites thl} extends the former with the list of theorems {thl},
+so they will thereafter happen by default.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+basic_rewrites, extend_basic_convs, set_basic_rewrites.
+
+\ENDDOC

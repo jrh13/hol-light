@@ -1,0 +1,24 @@
+\DOC ss_of_congs
+
+\TYPE {ss_of_congs : thm list -> simpset -> simpset}
+
+\SYNOPSIS
+Add congruence rules to a simpset.
+
+\DESCRIBE
+In their maximal generality, simplification operations in HOL Light (as invoked 
+by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and
+unconditional rewrite rules, conversions and provers for conditions, as well as
+a determination of how to use the prover on the conditions and how to process 
+theorems into rewrites. A call {ss_of_congs thl ss} adds {thl} as new 
+congruence rules to the simpset {ss} to yield a new simpset. For an 
+illustration of how congruence rules can be used, see {extend_basic_congs}.
+
+\FAILURE
+Never fails unless the congruence rules are malformed.
+
+\SEEALSO
+mk_rewrites, SIMP_CONV, ss_of_conv, ss_of_maker, ss_of_prover, ss_of_provers,
+ss_of_thms.
+
+\ENDDOC

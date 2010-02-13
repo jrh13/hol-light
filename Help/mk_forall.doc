@@ -1,0 +1,23 @@
+\DOC mk_forall
+
+\TYPE {mk_forall : term * term -> term}
+
+\SYNOPSIS
+Term constructor for universal quantification.
+
+\DESCRIBE
+{mk_forall(`v`,`t`)} returns {`!v. t`}.
+
+\FAILURE
+Fails with if first term is not a variable or if {t} is not of type {`:bool`}.
+
+\EXAMPLE
+{
+  # mk_forall(`x:num`,`x + 1 = 1 + x`);;
+  val it : term = `!x. x + 1 = 1 + x`
+}
+
+\SEEALSO
+dest_forall, is_forall, list_mk_forall.
+
+\ENDDOC

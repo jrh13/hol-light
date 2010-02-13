@@ -1,0 +1,51 @@
+\DOC NUM_RING
+
+\TYPE {NUM_RING : term -> thm}
+
+\SYNOPSIS
+Ring decision procedure instantiated to natural numbers.
+
+\DESCRIBE
+The rule {NUM_RING} should be applied to a formula that, after suitable 
+normalization, can be considered a universally quantified Boolean combination 
+of equations and inequations between terms of type {:num}. If that formula 
+holds in all integral domains, {NUM_RING} will prove it. Any ``alien'' atomic
+formulas that are not natural number equations will not contribute to the proof 
+but will not in themselves cause an error. The function is a particular 
+instantiation of {RING}, which is a more generic procedure for ring and 
+semiring structures.
+
+\FAILURE
+Fails if the formula is unprovable by the methods employed. This does not 
+necessarily mean that it is not valid for {:num}, but rather that it is not
+valid on all integral domains (see below).
+
+\EXAMPLE
+The following formula is proved because it holds in all integral domains:
+{
+  # NUM_RING `(x + y) EXP 2 = x EXP 2 ==> y = 0 \/ y + 2 * x = 0`;;     
+  1 basis elements and 0 critical pairs
+  Translating certificate to HOL inferences
+  val it : thm = |- (x + y) EXP 2 = x EXP 2 ==> y = 0 \/ y + 2 * x = 0
+}
+\noindent but the following isn't, even though over {:num} it is equivalent:
+{
+  # NUM_RING `(x + y) EXP 2 = x EXP 2 ==> y = 0 \/ x = 0`;;
+  2 basis elements and 1 critical pairs
+  3 basis elements and 2 critical pairs
+  3 basis elements and 1 critical pairs
+  4 basis elements and 1 critical pairs
+  4 basis elements and 0 critical pairs
+  Exception: Failure "find".
+}
+
+\COMMENTS
+Note that since we are working over {:num}, which is not really a ring, cutoff
+subtraction is not true ring subtraction and the ability of {NUM_RING} to
+handle it is limited. Instantiations of {RING} to actual rings, such as
+{REAL_RING}, have no such problems.
+
+\SEEALSO
+ARITH_RULE, ARITH_TAC, ideal_cofactors, NUM_NORMALIZE_CONV, REAL_RING, RING.
+
+\ENDDOC

@@ -1,0 +1,25 @@
+\DOC list_mk_gabs
+
+\TYPE {list_mk_gabs : term list * term -> term}
+
+\SYNOPSIS
+Iteratively makes a generalized abstraction.
+
+\DESCRIBE
+The call {list_mk_gabs([vs1; ...; vsn],t)} constructs an interated generalized
+abstraction {\vs1. \vs2. ... \vsn. t}. See {mk_gabs} for more details on 
+constructing generalized abstractions.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # list_mk_gabs([`(x:num,y:num)`; `(w:num,z:num)`],`x + w + 1`);;      
+  val it : term = `\(x,y). \(w,z). x + w + 1`
+}
+
+\SEEALSO
+dest_gabs, is_gabs, mk_gabs.
+
+\ENDDOC

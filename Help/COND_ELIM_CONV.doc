@@ -1,0 +1,52 @@
+\DOC COND_ELIM_CONV
+
+\TYPE {COND_ELIM_CONV : term -> thm}
+
+\SYNOPSIS
+Conversion to eliminate one free conditional subterm.
+
+\DESCRIBE
+When applied to a term {`....(if p then x else y)...`} containing a free
+conditional subterm, {COND_ELIM_CONV} returns a theorem asserting its
+equivalence to a term with the conditional eliminated:
+{
+  |- ....(if p then x else y).... <=>
+     (p ==> ....x....) /\ (~p ==> ....y....)
+}
+If the term contains many free conditional subterms, a topmost one will be
+used.
+
+\FAILURE
+Fails if there are no free conditional subterms.
+
+\EXAMPLE
+We can prove the little equivalence noted by Dijkstra in EWD1176 automatically:
+{
+  # REAL_ARITH `!a b:real. a + b >= max a b <=> a >= &0 /\ b >= &0`;;
+  val it : thm = |- !a b. a + b >= max a b <=> a >= &0 /\ b >= &0
+}
+However, if our automated tools were unfamiliar with {max}, we might expand its
+definition (theorem {real_max}) and then eliminate the resulting conditional by
+{COND_ELIM_CONV}:
+{
+  # COND_ELIM_CONV `a + b >= (if a <= b then b else a) <=> a >= &0 /\ b >= &0`;;
+  val it : thm =
+    |- (a + b >= (if a <= b then b else a) <=> a >= &0 /\ b >= &0) <=>
+       (a <= b ==> (a + b >= b <=> a >= &0 /\ b >= &0)) /\
+       (~(a <= b) ==> (a + b >= a <=> a >= &0 /\ b >= &0))
+}
+
+\USES
+Eliminating conditionals as a prelude to other automated proof steps that are
+not equipped to handle them.
+
+\COMMENTS
+Note that logically it should only be necessary for {p} to be free in the whole
+term, not the two branches {x} and {y}. However, as an artifact of the current
+implementation, we need them to be free too. The more sophisticated
+{CONDS_ELIM_CONV} handles this better.
+
+\SEEALSO
+COND_CASES_TAC, CONDS_ELIM_CONV.
+
+\ENDDOC

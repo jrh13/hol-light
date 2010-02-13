@@ -1,0 +1,50 @@
+\DOC SKOLEM_CONV
+
+\TYPE {SKOLEM_CONV : conv}
+
+\SYNOPSIS
+Completely Skolemize a term already in negation normal form.
+
+\DESCRIBE
+Skolemization amounts to rewriting with the equivalence
+{
+  # SKOLEM_THM;;
+  val it : thm = |- !P. (!x. ?y. P x y) <=> (?y. !x. P x (y x))
+}
+The conversion {SKOLEM_CONV} will apply this transformation and pull out
+quantifiers to give a form with all existential quantifiers pulled to the
+outside. However, it assumes that the input is in negation
+normal form, i.e. built up by conjunction and disjunction from possibly negated
+atomic formulas.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Here is a simple example:
+{
+  # SKOLEM_CONV `(!x. ?y. P x y) \/ (?u. !v. ?z. P (f u v) z)`;;
+  Warning: inventing type variables
+  val it : thm =
+    |- (!x. ?y. P x y) \/ (?u. !v. ?z. P (f u v) z) <=>
+       (?y u z. (!x. P x (y x)) \/ (!v. P (f u v) (z v)))
+}
+However, note that it doesn't work properly when the input involves
+implication, and hence is not in NNF:
+{
+  # SKOLEM_CONV `(!x. ?y. P x y) ==> (?u. !v. ?z. P (f u v) z)`;;
+  Warning: inventing type variables
+   val it : thm =
+    |- (!x. ?y. P x y) ==> (?u. !v. ?z. P (f u v) z) <=>
+       (?y. !x. P x (y x)) ==> (?u z. !v. P (f u v) (z v))
+}
+
+\USES
+A useful component in decision procedures, to simplify the class of formulas
+that need to be considered. Used internally in several such procedures like
+{MESON_TAC}.
+
+\SEEALSO
+NNF_CONV, NNFC_CONV, PRENEX_CONV.
+
+\ENDDOC

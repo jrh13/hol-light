@@ -1,0 +1,33 @@
+\DOC do_list
+
+\TYPE {do_list : ('a -> 'b) -> 'a list -> unit}
+
+\SYNOPSIS
+Apply imperative function to each element of a list.
+
+\DESCRIBE
+The call {do_list f [x1; ... ; xn]} evaluates in sequence the expressions 
+{f x1}, ..., {f xn} in that order, discarding the results. Presumably the 
+applications will have some side-effect, such as printing something to the 
+terminal.
+
+\EXAMPLE
+{
+  # do_list (fun x -> print_string x; print_newline()) (explode "john");;
+  j
+  o
+  h
+  n
+  val it : unit = ()
+
+  # do_list (fun x -> print_string x) (rev(explode "nikolas"));;
+  salokinval it : unit = ()
+}
+
+\USES
+Running imperative code parametrized by list members.
+
+\SEEALSO
+map.
+
+\ENDDOC
