@@ -1,0 +1,30 @@
+\DOC file_on_path
+
+\TYPE {file_on_path : string list -> string -> string}
+
+\SYNOPSIS
+Expands relative filename to first available one in path.
+
+\DESCRIBE
+When given an absolute filename, (e.g. on Linux/Unix one starting with a slash
+or tilde), this function returns it unchanged. Otherwise it tries to find the
+file in one of the directories in the path argument. An initial dollar sign {$}
+in each path is interpreted as a reference to the current setting of {hol_dir}.
+To get an actual {$} at the start of the filename, actually use two dollar
+signs {$$}.
+
+\FAILURE
+Fails if no file is found on the path.
+
+\EXAMPLE
+{
+  # file_on_path (!load_path) "Library/analysis.ml";;
+  val it : string = "/home/johnh/holl/Library/analysis.ml"
+  # file_on_path (!load_path) "Library/wibble.ml";;
+  Exception: Not_found.
+}
+
+\SEEALSO
+help_path, hol_dir, load_on_path, load_path, loads, loadt, needs.
+
+\ENDDOC

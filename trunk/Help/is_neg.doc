@@ -1,0 +1,18 @@
+\DOC is_neg
+
+\TYPE {is_neg : term -> bool}
+
+\SYNOPSIS
+Tests a term to see if it is a logical negation.
+
+\DESCRIBE
+{is_neg `~t`} returns {true}. If the term is not a logical negation the result
+is {false}.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+dest_neg, mk_neg.
+
+\ENDDOC

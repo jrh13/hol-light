@@ -1,0 +1,22 @@
+\DOC PURE_ASM_SIMP_TAC
+
+\TYPE {PURE_ASM_SIMP_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Perform simplification of goal by conditional contextual rewriting using
+assumptions.
+
+\DESCRIBE
+A call to {PURE_ASM_SIMP_TAC[theorems]} will apply conditional contextual
+rewriting with {theorems} and the current assumptions of the goal to the goal's
+conclusion, but not the default simplfiications (see {basic_rewrites} and
+{basic_convs}). For more details on this kind of rewriting, see {SIMP_CONV}. If
+the extra generality of contextual conditional rewriting is not needed,
+{REWRITE_TAC} is usually more efficient.
+
+\FAILURE
+Never fails, but may loop indefinitely.
+
+\SEEALSO
+ASM_REWRITE_TAC, ASM_SIMP_TAC, SIMP_CONV, SIMP_TAC, REWRITE_TAC.
+\ENDDOC

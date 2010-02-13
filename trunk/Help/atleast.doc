@@ -1,0 +1,29 @@
+\DOC atleast
+
+\TYPE {atleast : int -> ('a -> 'b * 'a) -> 'a -> 'b list * 'a}
+
+\SYNOPSIS
+Parses at least a given number of successive items using given parser.
+
+\DESCRIBE
+If {p} is a parser and {n} an integer, {atleast n p} is a new parser
+that attempts to parse at least {n} successive items using parser {p} and fails
+otherwise. Unless {n} is positive, this is equivalent to {many p}.
+
+\FAILURE
+The call to {atleast n p} itself never fails.
+
+\COMMENTS
+This is one of a suite of combinators for manipulating ``parsers''. A parser is
+simply a function whose OCaml type is some instance of
+{:('a)list -> 'b * ('a)list}. The function should take a list of objects of
+type {:'a} (e.g. characters or tokens), parse as much of it as possible from
+left to right, and return a pair consisting of the object derived from parsing
+(e.g. a term or a special syntax tree) and the list of elements that were not
+processed.
+
+\SEEALSO
+++, ||, >>, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
+possibly, rightbin, some.
+
+\ENDDOC

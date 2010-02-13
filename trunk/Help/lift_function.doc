@@ -1,0 +1,118 @@
+\DOC lift_function
+
+\TYPE {lift_function : thm -> thm * thm -> string -> thm -> thm * thm}
+
+\SYNOPSIS
+Lift a function on representing type to quotient type of equivalence classes.
+
+\DESCRIBE
+Suppose type {qty} is a quotient type of {rty} under an equivalence relation
+{R:rty->rty->bool}, as defined by {define_quotient_type}, and {f} is a function
+{f:ty1->...->tyn->ty}, some {tyi} being the representing type {rty}. The term
+{lift_function} should be applied to (i) a theorem of the form
+{|- (?x. r = R x) <=> rep(abs r) = r} as returned by {define_quotient_type},
+(ii) a pair of
+theorems asserting that {R} is reflexive and transitive, (iii) a desired name
+for the counterpart of {f} lifted to the type of equivalence classes, and (iv)
+a theorem asserting that {f} is ``welldefined'', i.e. respects the equivalence
+class. This last theorem essentially asserts that the value of {f} is
+independent of the choice of representative: any {R}-equivalent inputs give an
+equal output, or an {R}-equivalent one. Syntactically, the welldefinedness
+theorem should be of the form:
+{
+  |- !x1 x1' .. xn xn'. (x1 == x1') /\ ... /\ (xn == xn')
+                        ==> (f x1 .. xn == f x1' .. f nx')
+}
+\noindent where each {==} may be either equality or the relation {R}, the
+latter of course only if the type of that argument is {rty}. The reflexivity
+and transitivity theorems should be
+{
+  |- !x. R x x
+}
+\noindent and
+{
+  |- !x y z. R x y /\ R y z ==> R x z
+}
+It returns two theorems, a definition and a consequential theorem that can be
+used by {lift_theorem} later.
+
+\FAILURE
+Fails if the theorems are malformed or if there is already a constant of the
+given name.
+
+\EXAMPLE
+Suppose that we have defined a type of finite multisets as in the documentation
+for {define_quotient_type}, based on the equivalence relation {multisame} on
+lists. First we prove that the equivalence relation {multisame} is indeed
+reflexive and transitive:
+{
+  # let MULTISAME_REFL,MULTISAME_TRANS = (CONJ_PAIR o prove)
+     (`(!l:(A)list. multisame l l) /\
+       (!l1 l2 l3:(A)list.
+            multisame l1 l2 /\ multisame l2 l3 ==> multisame l1 l3)`,
+      REWRITE_TAC[multisame] THEN MESON_TAC[]);;
+}
+We would like to define the multiplicity of an element in a multiset. First we
+define this notion on the representing type of lists:
+{
+  # let listmult = new_definition
+     `listmult a l = LENGTH (FILTER (\x:A. x = a) l)`;;
+}
+\noindent and prove that it is welldefined. Note that the second argument is
+the only one we want to lift to the quotient type, so that's the only one for
+which we use the relation {multisame}. For the first argument and the result we
+only use equality:
+{
+  # let LISTMULT_WELLDEF = prove
+     (`!a a':A l l'.
+        a = a' /\ multisame l l' ==> listmult a l = listmult a' l'`,
+      SIMP_TAC[listmult; multisame]);;
+}
+\noindent Now we can lift it to a multiplicity function on the quotient type:
+{
+  # let multiplicity,multiplicity_th =
+      lift_function multiset_rep (MULTISAME_REFL,MULTISAME_TRANS)
+      "multiplicity" LISTMULT_WELLDEF;;
+  val multiplicity : thm =
+    |- multiplicity a l = (@u. ?l. listmult a l = u /\ list_of_multiset l l)
+  val multiplicity_th : thm =
+    |- listmult a l = multiplicity a (multiset_of_list (multisame l))
+}
+Another example is the `union' of multisets, which we can consider as the
+lifting of the {APPEND} operation on lists, which we show is welldefined:
+{
+  # let APPEND_WELLDEF = prove
+     (`!l l' m m' :A list.
+         multisame l l' /\ multisame m m'
+         ==> multisame (APPEND l m) (APPEND l' m')`,
+      SIMP_TAC[multisame; FILTER_APPEND]);;
+}
+\noindent and lift as follows:
+{
+  # let munion,munion_th =
+      lift_function multiset_rep (MULTISAME_REFL,MULTISAME_TRANS)
+      "munion" APPEND_WELLDEF;;
+  val munion : thm =
+    |- munion l m =
+       multiset_of_list
+       (\u. ?l m.
+                multisame (APPEND l m) u /\
+                list_of_multiset l l /\
+                list_of_multiset m m)
+  val munion_th : thm =
+    |- multiset_of_list (multisame (APPEND l m)) =
+       munion (multiset_of_list (multisame l)) (multiset_of_list (multisame m))
+}
+For continuation of this example, showing how to lift theorems from the
+representing functions to the functions on the quotient type, see the
+documentation entry for {lift_theorem}.
+
+\COMMENTS
+If, as in these examples, the representing type is parametrized by type
+variables, make sure that the same type variables are used consistently in the
+various theorems.
+
+\SEEALSO
+define_quotient_type, lift_theorem.
+
+\ENDDOC

@@ -1,0 +1,30 @@
+\DOC DNF_CONV
+
+\TYPE {DNF_CONV : conv}
+
+\SYNOPSIS
+Converts a term already in negation normal form into disjunctive normal form.
+
+\DESCRIBE
+When applied to a term already in negation normal form (see {NNF_CONV}),
+meaning that all other propositional connectives have been eliminated in favour
+of disjunction, disjunction and negation, and negation is only applied to
+atomic formulas, {DNF_CONV} puts the term into an equivalent disjunctive normal
+form, which is a right-associated disjunction of conjunctions without
+repetitions. No reduction by subsumption is performed, however, e.g. from
+{a \/ a /\ b} to just {a}).
+
+\FAILURE
+Never fails; non-Boolean terms will just yield a reflexive theorem.
+
+\EXAMPLE
+{
+  # DNF_CONV `(a \/ b) /\ (a \/ c /\ e)`;;
+  val it : thm =
+    |- (a \/ b) /\ (a \/ c /\ e) <=> a \/ a /\ b \/ a /\ c /\ e \/ b /\ c /\ e
+}
+
+\SEEALSO
+CNF_CONV, NNF_CONV, WEAK_CNF_CONV, WEAK_DNF_CONV.
+
+\ENDDOC

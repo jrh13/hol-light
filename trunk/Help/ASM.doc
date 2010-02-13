@@ -1,0 +1,24 @@
+\DOC ASM
+
+\TYPE {ASM : (thm list -> tactic) -> thm list -> tactic}
+
+\SYNOPSIS
+Augments a tactic's theorem list with the assumptions.
+
+\DESCRIBE
+If {tac} is a tactic that expects a list of theorems as its arguments, e.g.
+{MESON_TAC}, {REWRITE_TAC} or {SET_TAC}, then {ASM tac} converts it to a tactic
+where that list is augmented by the goal's assumptions.
+
+\FAILURE
+Never fails (though the resulting tactic may do).
+
+\EXAMPLE
+{
+The inbuilt {ASM_REWRITE_TAC} is in fact defined as just {ASM REWRITE_TAC}.
+}
+
+\SEEALSO
+ASSUM_LIST, FREEZE_THEN, MESON_TAC, REWRITE_TAC, SET_TAC.
+
+\ENDDOC

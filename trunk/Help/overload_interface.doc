@@ -1,0 +1,55 @@
+\DOC overload_interface
+
+\TYPE {overload_interface : string * term -> unit}
+
+\SYNOPSIS
+Overload a symbol so it may denote a particular underlying constant.
+
+\DESCRIBE
+HOL Light allows the same identifier to denote several different underlying
+constants. A call to {overload_interface("ident",`cname`)}, where {cname} is
+either a constant to be denoted or a variable with the same name and type (if
+the constant is not yet defined) will include {cname} as one of the possible
+overload resolutions of the symbol {ident}. Moreover, when the resolution is
+not possible from type information, {cname} will now be the default. However, 
+before any calls to {overload_interface}, the constant must have been declared 
+overloadable with {make_overloadable}, and the term {`cname`} must have a type 
+that is an instance of the most general ``type skeleton'' specified there.
+
+\FAILURE
+Fails if the identifier has not been declared overloadble, if the term is not a
+constant or variable, or it its type is not an instance of the declared type 
+skeleton.
+
+\EXAMPLE
+The symbol `{+}' has an overload skeleton of type {`:A->A->A`}. Here we 
+overload it on type {:bool} to denote logical `or'. (This is just for 
+illustration; it's strongly recommended that you don't do this, since you will 
+typically need to add more type annotations in terms to compensate for the 
+ambiguity.)
+{
+  # overload_interface("+",`(\/)`);;
+  val it : unit = ()
+}
+\noindent Now we can use the symbol `{+}' with multiple meanings in the same 
+terms; the underlying constants are still the original ones, though:
+{
+  # `(x = 1) + (1 + 1 = 2)`;;
+  val it : term = `(x = 1) + (1 + 1 = 2)`
+}
+You can also overload polymorphic symbols, e.g. overload `{+}' so that it maps 
+to list append:
+{
+  # overload_interface("+",`APPEND`);;
+  Warning: inventing type variables
+  val it : unit = ()
+
+  # APPEND;;
+  val it : thm = |- (!l. [] + l = l) /\ (!h t l. CONS h t + l = CONS h (t + l))
+}
+
+\SEEALSO
+make_overloadable, override_interface, prioritize_overload, reduce_interface,
+remove_interface, the_interface, the_overload_skeletons.
+
+\ENDDOC

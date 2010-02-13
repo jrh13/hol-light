@@ -1,0 +1,11 @@
+\DOC then_
+
+\TYPE {then_ : tactic -> tactic -> tactic}
+
+\SYNOPSIS
+Non-infix version of {THEN}.
+
+\SEEALSO
+THEN.
+
+\ENDDOC

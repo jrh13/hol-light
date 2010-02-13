@@ -1,0 +1,25 @@
+\DOC dest_vartype
+
+\TYPE {dest_vartype : hol_type -> string}
+
+\SYNOPSIS
+Breaks a type variable down to its name.
+
+\DESCRIBE
+{dest_vartype ":A"} returns {"A"} when {A} is a type variable.
+
+\FAILURE
+Fails with {dest_vartype} if the type is not a type variable.
+
+\EXAMPLE
+{
+  # dest_vartype `:A`;;
+  val it : string = "A"
+
+  # dest_vartype `:A->B`;;
+  Exception: Failure "dest_vartype: type constructor not a variable".
+}
+\SEEALSO
+mk_vartype, is_vartype, dest_type.
+
+\ENDDOC

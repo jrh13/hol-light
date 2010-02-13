@@ -1,0 +1,74 @@
+\DOC lookup
+
+\TYPE {lookup : term -> 'a net -> 'a list}
+
+\SYNOPSIS
+Look up term in a term net.
+
+\DESCRIBE
+Term nets (type {'a net}) are a lookup structure associating objects of type
+{'a}, e.g. conversions, with a corresponding `pattern' term. For a given term,
+one can then relatively quickly look up all objects whose pattern terms might
+possibly match to it. This is used, for example, in rewriting to quickly filter
+out obviously inapplicable rewrites rather than attempting each one in turn.
+The call {lookup t net} for a term {t} returns the list of objects whose
+patterns might possibly be matchable to {t}. Note that this is conservative: if
+the pattern could be matched (even higher-order matched) in the sense of
+{term_match}, it will be in the list, but it is possible that some
+non-matchable objects will be returned. (For example, a pattern term {x + x}
+will match any term of the form {a + b}, even if {a} and {b} are the same.) It
+is intended that nets are a first-level filter for efficiency; finer
+discrimination may be embodied in the subsequent action with the list of
+returned objects.
+ 
+\FAILURE
+Never fails.
+
+\EXAMPLE
+If we want to create ourselves the kind of automated rewriting with the basic 
+rewrites that is done by {REWRITE_CONV}, we could simply try in succession all 
+the rewrites:
+{
+  # let BASIC_REWRITE_CONV' = FIRST_CONV (map REWR_CONV (basic_rewrites()));;
+  val ( BASIC_REWRITE_CONV' ) : conv = <fun>
+}
+However, it would be more efficient to use the left-hand sides as patterns
+in a term net to organize the different rewriting conversions:
+{
+  # let rewr_net = 
+      let enter_thm th = enter (freesl(hyp th)) (lhs(concl th),REWR_CONV th) in
+      itlist enter_thm (basic_rewrites()) empty_net;;
+}
+Now given a term, we get only the items with matchable patterns, usually much 
+less than the full list:
+{
+  # lookup `(\x. x + 1) 2` rewr_net;;
+  val it : (term -> thm) list = [<fun>]
+
+  # lookup `T /\ T` rewr_net;;
+  val it : (term -> thm) list = [<fun>; <fun>; <fun>]
+}
+The three items returned in the last call are rewrites based on the theorems
+{|- T /\ t <=> t}, {|- t /\ T <=> t} and {|- t /\ t <=> t}, which are the only 
+ones matchable. We can use this net for a more efficient version of the same 
+conversion:
+{
+  # let BASIC_REWRITE_CONV tm = FIRST_CONV (lookup tm rewr_net) tm;;
+  val ( BASIC_REWRITE_CONV ) : term -> conv = <fun>
+}
+To see that it is indeed more efficient, consider:
+{ 
+  # let tm = funpow 8 (fun x -> mk_conj(x,x)) `T`;;
+  ...
+  time (DEPTH_CONV BASIC_REWRITE_CONV) tm;;
+  CPU time (user): 0.08
+  ...
+  time (DEPTH_CONV BASIC_REWRITE_CONV') tm;;
+  CPU time (user): 1.121
+  ...
+}
+
+\SEEALSO
+empty_net, enter, merge_nets.
+
+\ENDDOC

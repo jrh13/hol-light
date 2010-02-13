@@ -1,0 +1,20 @@
+\DOC delete_parser
+
+\TYPE {delete_parser : string -> unit}
+
+\SYNOPSIS
+Uninstall a user parser.
+
+\DESCRIBE
+HOL Light allows user parsing functions to be installed, and will try them on
+all terms during parsing before the usual parsers. The call {delete_parser "s"}
+removes any parsers associated with string {"s"}.
+
+\FAILURE
+Never fails, regardless of whether there are any parsers associated with the
+string.
+
+\SEEALSO
+install_parser, installed_parsers, try_user_parser.
+
+\ENDDOC

@@ -1,0 +1,37 @@
+\DOC dest_numeral
+
+\TYPE {dest_numeral : term -> num}
+
+\SYNOPSIS
+Converts a HOL numeral term to unlimited-precision integer.
+
+\DESCRIBE
+The call {dest_numeral t} where {t} is the HOL numeral representation of {n},
+returns {n} as an unlimited-precision intger (type {num}). It fails if the term
+is not a numeral.
+
+\FAILURE
+Fails if the term is not a numeral.
+
+\EXAMPLE
+{
+  # dest_numeral `0`;;
+  val it : num = 0
+
+  # dest_numeral `18446744073709551616`;;
+  val it : num = 18446744073709551616
+}
+
+\COMMENTS
+The similar function {dest_small_numeral} maps to a machine integer, which
+means it may overflow. So the use of {dest_numeral} is better unless you are
+very sure of the range. 
+{
+  # dest_small_numeral `18446744073709551616`;;
+  Exception: Failure "int_of_big_int".
+}
+
+\SEEALSO
+dest_small_numeral, is_numeral, mk_numeral, mk_small_numeral, rat_of_term.
+
+\ENDDOC

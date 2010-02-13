@@ -1,0 +1,34 @@
+\DOC NUM_TO_INT_CONV
+
+\TYPE {NUM_TO_INT_CONV : conv}
+
+\SYNOPSIS
+Maps an assertion over natural numbers to equivalent over reals.
+
+\DESCRIBE
+Given a term, with arbitrary quantifier alternations over the natural numbers,
+{NUM_TO_INT_CONV} proves its equivalence to a term involving integer operations
+and quantifiers. Some preprocessing removes certain natural-specific operations
+such as {PRE} and cutoff subtraction, quantifiers are systematically
+relativized to the set of positive integers.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # NUM_TO_INT_CONV `n - m <= n`;;
+  val it : thm =
+    |- n - m <= n <=>
+       (!i. ~(&0 <= i) \/
+            (~(&m = &n + i) \/ &0 <= &n) /\ (~(&n = &m + i) \/ i <= &n))
+}
+
+\USES
+Mostly intended as a preprocessing step to allow rules for the integers to 
+deduce facts about natural numbers too.
+
+\SEEALSO
+ARITH_RULE, INT_ARITH, INT_OF_REAL_THM, NUM_SIMPLIFY_CONV.
+
+\ENDDOC

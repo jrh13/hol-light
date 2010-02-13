@@ -1,0 +1,66 @@
+\DOC FIND_ASSUM
+
+\TYPE {FIND_ASSUM : thm_tactic -> term -> tactic}
+
+\SYNOPSIS
+Apply a theorem-tactic to the the first assumption equal to given term.
+
+\DESCRIBE
+The tactic {FIND_ASSUM ttac `t`} finds the first assumption whose conclusion is 
+{t}, and applies {ttac} to it. If there is no such assumption, the call fails.
+
+\FAILURE
+Fails if there is no assumption the same as the given term, or if the 
+theorem-tactic itself fails on the assumption.
+
+\EXAMPLE
+Suppose we set up this goal:
+{
+  # g `0 = x /\ y = 0 ==> f(x + f(y)) = f(f(f(x) * x * y))`;;
+}
+\noindent and move the hypotheses into the assumption list:
+{
+  # e STRIP_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+   0 [`0 = x`]
+   1 [`y = 0`]
+  
+  `f (x + f y) = f (f (f x * x * y))`
+}
+We can't just use {ASM_REWRITE_TAC[]} to solve the goal, but we can more 
+directly use the assumptions:
+{
+  # e(FIND_ASSUM SUBST1_TAC `y = 0` THEN 
+      FIND_ASSUM (SUBST1_TAC o SYM) `0 = x`);;
+  val it : goalstack = 1 subgoal (1 total)
+  
+   0 [`0 = x`]
+   1 [`y = 0`]
+  
+  `f (0 + f 0) = f (f (f 0 * 0 * 0))`
+}
+\noindent after which simple rewriting solves the goal:
+{
+  # e(REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES]);;
+  val it : goalstack = No subgoals
+}
+
+\USES
+Identifying an assumption to use by explicitly quoting it.
+
+\COMMENTS
+A similar effect can be achieved by {ttac(ASSUME `t`)}. The use of {FIND_ASSUM} 
+may be considered preferable because it immediately fails if there is no 
+assumption {t}, whereas the {ASSUME} construct only generates a validity 
+failure. Still, the the above example, it would have been a little briefer to
+write:
+{
+  # e(REWRITE_TAC[ASSUME `y = 0`; SYM(ASSUME `0 = x`); 
+                  ADD_CLAUSES; MULT_CLAUSES]);;
+}
+
+\SEEALSO
+ASSUME, VALID.
+
+\ENDDOC

@@ -1,0 +1,27 @@
+\DOC num_of_string
+
+\TYPE {num_of_string : string -> num}
+
+\SYNOPSIS
+Converts decimal, hex or binary string representation into number.
+
+\DESCRIBE
+The call {num_of_string "n"} converts the string {"n"} into an OCaml
+unlimited-precision number (type {num}). The string may be simply a sequence of
+decimal digits (e.g. {"123"}), or a hexadecimal representation starting with
+{0x} as in C (e.g. {"0xFF"}), or a binary number starting with {0b} (e.g.
+{"0b101"}).
+
+\FAILURE
+Fails unless the string is a valid representation of one of these forms.
+
+\EXAMPLE
+{
+  # num_of_string "0b11000000";;
+  val it : num = 192
+}
+
+\SEEALSO
+dest_numeral, mk_numeral.
+
+\ENDDOC

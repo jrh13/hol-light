@@ -1,0 +1,28 @@
+\DOC INT_MIN_CONV
+
+\TYPE {INT_MIN_CONV : conv}
+
+\SYNOPSIS
+Conversion to perform addition on two integer literals of type {:int}.
+
+\DESCRIBE
+The call {INT_MIN_CONV `min c1 c2`} where {c1} and {c2} are integer literals
+of type {:int}, returns {|- min c1 c2 = d} where {d} is the canonical integer
+literal that is equal to {min c1 c2}. The literals {c1} and {c2} may be of the
+form {&n} or {-- &n} (with nonzero {n} in the latter case) and the result will
+be of the same form.
+
+\FAILURE
+Fails if applied to a term that is not the minimum operator applied to two
+permitted integer literals of type {:int}.
+
+\EXAMPLE
+{
+  # INT_MIN_CONV `min (-- &1) (&2)`;;
+  val it : thm = |- min (-- &1) (&2) = &2
+}
+
+\SEEALSO
+INT_REDUCE_CONV, REAL_RAT_REDUCE_CONV.
+
+\ENDDOC

@@ -1,0 +1,22 @@
+\DOC print_goal
+
+\TYPE {print_goal : goal -> unit}
+
+\SYNOPSIS
+Print a goal.
+
+\DESCRIBE
+{print_goalstack g} prints the goal {g} to standard output, with no following
+newline.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+This is invoked automatically when something of type {goal} is produced at
+the top level, so manual invocation is not normally needed.
+
+\SEEALSO
+print_goalstack, print_term.
+
+\ENDDOC

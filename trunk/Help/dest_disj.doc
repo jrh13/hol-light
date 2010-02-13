@@ -1,0 +1,21 @@
+\DOC dest_disj
+
+\TYPE {dest_disj : term -> term * term}
+
+\SYNOPSIS
+Breaks apart a disjunction into the two disjuncts.
+
+\DESCRIBE
+{dest_disj} is a term destructor for disjunctions:
+{
+   dest_disj `t1 \/ t2`
+}
+\noindent returns {(`t1`,`t2`)}.
+
+\FAILURE
+Fails with {dest_disj} if term is not a disjunction.
+
+\SEEALSO
+is_disj, mk_disj.
+
+\ENDDOC

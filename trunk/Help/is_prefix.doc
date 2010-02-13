@@ -1,0 +1,19 @@
+\DOC is_prefix
+
+\TYPE {is_prefix : string -> bool}
+
+\SYNOPSIS
+Tests if an identifier has prefix status.
+
+\DESCRIBE
+Certain identifiers {c} have prefix status, meaning that combinations of the 
+form {c f x} will be parsed as {c (f x)} rather than the usual {(c f) x}. The 
+call {is_prefix "c"} tests if {c} is one of those identifiers.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+parse_as_prefix, prefixes, unparse_as_prefix.
+
+\ENDDOC

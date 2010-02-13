@@ -1,0 +1,32 @@
+\DOC EQT_ELIM
+
+\TYPE {EQT_ELIM : thm -> thm}
+
+\SYNOPSIS
+Eliminates equality with {T}.
+
+\KEYWORDS
+rule, truth.
+
+\DESCRIBE
+{
+    A |- tm <=> T
+   ---------------  EQT_ELIM
+      A |- tm
+}
+\FAILURE
+Fails if the argument theorem is not of the form {A |- tm <=> T}.
+
+\EXAMPLE
+{
+  # REFL `T`;;
+  val it : thm = |- T <=> T
+  
+  # EQT_ELIM it;;
+  val it : thm = |- T
+}
+
+\SEEALSO
+EQF_ELIM, EQF_INTRO, EQT_INTRO.
+
+\ENDDOC

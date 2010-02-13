@@ -1,0 +1,35 @@
+\DOC strip_ncomb
+
+\TYPE {strip_ncomb : int -> term -> term * term list}
+
+\SYNOPSIS
+Strip away a given number of arguments from a combination.
+
+\DESCRIBE
+Given a number {n} and a combination term {`f a1 ... an`}, the function 
+{strip_ncomb} returns the result of stripping away exactly {n} arguments:
+the pair {`f`,[`a1`;...;`an`]}. Note that exactly {n} arguments are stripped 
+even if {f} is a combination.
+
+\FAILURE
+Fails if there are not {n} arguments to strip off.
+
+\EXAMPLE
+Note how the behaviour is more limited compared with simple {strip_comb}:
+{
+  # strip_ncomb 2 `f u v x y z`;;
+  Warning: inventing type variables
+  val it : term * term list = (`f u v x`, [`y`; `z`])
+
+  # strip_comb `f u v x y z`;;
+  Warning: inventing type variables
+  val it : term * term list = (`f`, [`u`; `v`; `x`; `y`; `z`])
+}
+
+\USES
+Delicate term decompositions.
+
+\SEEALSO
+strip_comb.
+
+\ENDDOC

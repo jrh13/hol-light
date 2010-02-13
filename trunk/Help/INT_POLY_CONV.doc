@@ -1,0 +1,54 @@
+\DOC INT_POLY_CONV
+
+\TYPE {INT_POLY_CONV : term -> thm}
+
+\SYNOPSIS
+Converts a integer polynomial into canonical form.
+
+\DESCRIBE
+Given a term of type {:int} that is built up using addition, subtraction,
+negation and multiplication, {INT_POLY_CONV} converts it into a canonical
+polynomial form and returns a theorem asserting the equivalence of the original
+and canonical terms. The basic elements need not simply be variables or
+constants; anything not built up using the operators given above will be
+considered `atomic' for the purposes of this conversion. The canonical
+polynomial form is a `multiplied out' sum of products, with the monomials
+(product terms) ordered according to the canonical OCaml order on terms. In
+particular, it is just {&0} if the polynomial is identically zero.
+
+\FAILURE
+Never fails, even if the term has the wrong type; in this case it merely
+returns a reflexive theorem.
+
+\EXAMPLE
+This illustrates how terms are `multiplied out':
+{
+  # INT_POLY_CONV `(x + y) pow 3`;;
+  val it : thm =
+    |- (x + y) pow 3 = x pow 3 + &3 * x pow 2 * y + &3 * x * y pow 2 + y pow 3
+}
+\noindent while the following verifies a remarkable `sum of cubes' identity due
+to Yasutoshi Kohmoto:
+{
+  # INT_POLY_CONV 
+     `(&1679616 * a pow 16 - &66096 * a pow 10 * b pow 6 + 
+       &153 * a pow 4 * b pow 12) pow 3 + 
+      (-- &1679616 * a pow 16 - &559872 * a pow 13 * b pow 3 - 
+       &27216 * a pow 10 * b pow 6 + &3888 * a pow 7 * b pow 9 + 
+       &63 * a pow 4 * b pow 12 - &3 * a * b pow 15) pow 3 + 
+      (&1679616 * a pow 15 * b + &279936 * a pow 12 * b pow 4 - 
+       &11664 * a pow 9 * b pow 7 - 
+       &648 * a pow 6 * b pow 10 + &9 * a pow 3 * b pow 13 + b pow 16) pow 3`;;
+ val it : thm =
+  |- ... = 
+     b pow 48
+}
+
+\USES
+Keeping terms in normal form. For simply proving equalities, {INT_RING} is
+more powerful and usually more convenient.
+
+\SEEALSO
+INT_ARITH, INT_RING, REAL_POLY_CONV, SEMIRING_NORMALIZERS_CONV.
+
+\ENDDOC

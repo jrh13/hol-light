@@ -1,0 +1,28 @@
+\DOC thm_frees
+
+\TYPE {thm_frees : thm -> term list}
+
+\SYNOPSIS
+Returns a list of the variables free in a theorem's assumptions and conclusion.
+
+\DESCRIBE
+When applied to a theorem, {A |- t}, the function {thm_frees} returns a list,
+without repetitions, of those variables which are free either in {t} or in
+some member of the assumption list {A}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # let th = CONJUNCT1 (ASSUME `p /\ q`);;
+  val th : thm = p /\ q |- p
+
+  # thm_frees th;;
+  val it : term list = [`q`; `p`]
+}
+
+\SEEALSO
+frees, freesl, free_in.
+
+\ENDDOC

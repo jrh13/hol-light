@@ -1,0 +1,21 @@
+\DOC equals_thm
+
+\TYPE {equals_thm : thm -> thm -> bool}
+
+\SYNOPSIS
+Equality test on theorems.
+
+\DESCRIBE
+The call {equals_thm th1 th2} returns {true} if and only if both the 
+conclusions and assumptions of the two theorems {th1} and {th2} are exactly the 
+same. The same can be achieved by a simple equality test, but it is better 
+practice to use this function because it will also work in the proof recording  
+version of HOL Light (see the {Proofrecording} subdirectory).
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+=?.
+
+\ENDDOC

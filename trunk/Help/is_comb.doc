@@ -1,0 +1,26 @@
+\DOC is_comb
+
+\TYPE {is_comb : term -> bool}
+
+\SYNOPSIS
+Tests a term to see if it is a combination (function application).
+
+\DESCRIBE
+{is_comb "t1 t2"} returns {true}. If the term is not a combination the result
+is {false}.
+
+\FAILURE
+Never fails
+
+\EXAMPLE
+{
+  # is_comb `x + 1`;;
+  val it : bool = true
+  # is_comb `T`;;
+  val it : bool = false
+}
+
+\SEEALSO
+dest_comb, is_var, is_const, is_abs, mk_comb.
+
+\ENDDOC

@@ -1,0 +1,18 @@
+\DOC is_imp
+
+\TYPE {is_imp : term -> bool}
+
+\SYNOPSIS
+Tests if a term is an application of implication.
+
+\DESCRIBE
+The call {is_imp t} returns {true} if {t} is of the form {p ==> q} for some {p} 
+and {q}, and returns {false} otherwise.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+dest_imp.
+
+\ENDDOC

@@ -1,0 +1,45 @@
+\DOC mk_gabs
+
+\TYPE {mk_gabs : term * term -> term}
+
+\SYNOPSIS
+Constructs a generalized abstraction.
+
+\DESCRIBE
+Given a pair of terms {s} and {t}, the call {mk_gabs(s,t)} constructs a 
+canonical `generalized abstraction' that is thought of as `some function that 
+always maps {s} to {t}'. In the case where {s} is a variable, the result is an 
+ordinary abstraction as constructed by {mk_abs}. In other cases, the canonical 
+composite structure is created. Note that the logical construct is welldefined 
+even if there is no function mapping {s} to {t}, and this function will 
+always succeed, even if the resulting structure is not really useful.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Here is a simple abstraction:
+{
+  # mk_gabs(`x:bool`,`~x`);;
+  val it : term = `\x. ~x`
+}
+\noindent and here are a couple of potentially useful generalized ones:
+{
+  # mk_gabs(`(x:num,y:num)`,`x + y + 1`);;
+  val it : term = `\(x,y). x + y + 1`
+
+  # mk_gabs(`CONS (h:num) t`,`if h = 0 then t else CONS h t`);;
+  val it : term = `\CONS h t. if h = 0 then t else CONS h t`
+}
+\noindent while here is a vacuous one about which nothing interesting will be 
+proved, because there is no welldefined function that always maps {x + y} to 
+{x}:
+{
+  # mk_gabs(`x + y:num`,`x:num`);;
+  val it : term = `\(x + y). x`
+}
+
+\SEEALSO
+dest_gabs, GEN_BETA_CONV, is_gabs, list_mk_gabs.
+
+\ENDDOC

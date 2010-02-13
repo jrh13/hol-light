@@ -1,0 +1,38 @@
+\DOC INT_REDUCE_CONV
+
+\TYPE {INT_REDUCE_CONV : conv}
+
+\SYNOPSIS
+Evaluate subexpressions built up from integer literals of type {:int}, by
+proof.
+
+\DESCRIBE
+When applied to a term, {INT_REDUCE_CONV} performs a recursive bottom-up
+evaluation by proof of subterms built from integer literals of type {:int}
+using the unary operators `{--}', `{inv}' and `{abs}', and the binary
+arithmetic (`{+}', `{-}', `{*}', `{/}', `{pow}') and relational (`{<}', `{<=}',
+`{>}', `{>=}', `{=}') operators, as well as propagating literals through
+logical operations, e.g. {T /\ x <=> x}, returning a theorem that the original
+and reduced terms are equal. The permissible integer literals are of the form
+{&n} or {-- &n} for numeral {n}, nonzero in the negative case.
+
+\FAILURE
+Never fails, but may have no effect.
+
+\EXAMPLE
+{
+  # INT_REDUCE_CONV
+     `if &5 pow 4 < &4 pow 5 then (&2 pow 3 - &1) pow 2 + &1 else &99`;;
+  val it : thm =
+    |- (if &5 pow 4 < &4 pow 5 then (&2 pow 3 - &1) pow 2 + &1 else &99) = &50
+}
+
+\COMMENTS
+The corresponding {INT_REDUCE_CONV} works for the type of integers. The more
+general function {REAL_RAT_REDUCE_CONV} works similarly over {:int} but for
+arbitrary rational literals.
+
+\SEEALSO
+INT_RED_CONV, REAL_RAT_REDUCE_CONV.
+
+\ENDDOC

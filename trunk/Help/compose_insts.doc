@@ -1,0 +1,25 @@
+\DOC compose_insts
+
+\TYPE {compose_insts : instantiation -> instantiation -> instantiation}
+
+\SYNOPSIS
+Compose two instantiations.
+
+\DESCRIBE
+Given two instantiations {i1} and {i2} (with type {instantiation}, as returned
+by {term_match} for example), the call {compose_insts i1 i2} will give a new
+instantiation that results from composing them, with {i1} applied first and 
+then {i2}. For example, {instantiate (compose_insts i1 i2) t} should be the
+same as {instantiate i2 (instantiate i1 t)}.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+Mostly of specialized interest; used in sequencing tactics like {THEN} to 
+compose metavariable instantiations.
+
+\SEEALSO
+instantiate, INSTANTIATE, INSTANTIATE_ALL, inst_goal, PART_MATCH, term_match.
+
+\ENDDOC

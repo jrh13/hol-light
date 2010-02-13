@@ -1,0 +1,32 @@
+\DOC choose
+
+\TYPE {choose : ('a, 'b) func -> 'a * 'b}
+
+\SYNOPSIS
+Picks an arbitrary element from the graph of a finite partial function.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. If {f} is a finite partial function, {choose f} picks an arbitrary pair of
+values from its graph, i.e. a pair {x,y} where {f} maps {x} to {y}. The
+particular choice is implementation-defined, and it is not likely to be the
+most obvious `first' value.
+
+\FAILURE
+Fails if and only if the finite partial function is completely undefined.
+
+\EXAMPLE
+{
+  # let f = itlist I [1 |-> 2; 2 |-> 3; 3 |-> 4] undefined;;
+  val f : (int, int) func = <func>
+  # choose f;;
+  val it : int * int = (2, 3)
+}
+
+\SEEALSO
+|->, |=>, apply, applyd, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

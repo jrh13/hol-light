@@ -1,0 +1,45 @@
+\DOC SUBGOAL_TAC
+
+\TYPE {SUBGOAL_TAC : string -> term -> tactic list -> tactic}
+
+\SYNOPSIS
+Encloses the sub-proof of a named lemma.
+
+\DESCRIBE
+The call {SUBGOAL_TAC "name" `t` [tac]} introduces a new subgoal {t} with the
+current assumptions, runs on that subgoal the tactic {tac}, and attaches the
+resuly as a new hypothesis called {name} in the current subgoal. The {[tac]}
+argument is always a one-element list, for stylistic reasons. If {tac} does not
+prove the goal, any resulting subgoals from it will appear first.
+
+\FAILURE
+Fails if {t} is not Boolean or if {tac} fails on it.
+
+\EXAMPLE
+If we want to prove
+{
+  # g `(n MOD 2) IN {{0,1}}`;;
+}
+\noindent we might start by establishing a lemma:
+{
+  # e(SUBGOAL_TAC "ml2" `n MOD 2 < 2` [SIMP_TAC[DIVISION; ARITH]]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`n MOD 2 < 2`] (ml2)
+
+  `n MOD 2 IN {{0, 1}}`
+}
+\noindent after which, for example, we could finish things with
+{
+  # e(REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+      POP_ASSUM MP_TAC THEN ARITH_TAC);;
+  val it : goalstack = No subgoals
+}
+
+\USES
+Structuring proofs via a sequence of simple lemmas.
+
+\SEEALSO
+SUBGOAL_THEN.
+
+\ENDDOC

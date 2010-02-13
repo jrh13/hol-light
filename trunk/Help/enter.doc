@@ -1,0 +1,69 @@
+\DOC enter
+
+\TYPE {enter : term list -> term * 'a -> 'a net -> 'a net}
+
+\SYNOPSIS
+Enter an object and its pattern term into a term net.
+
+\DESCRIBE
+Term nets (type {'a net}) are a lookup structure
+associating objects of type {'a}, e.g. conversions, with a corresponding
+`pattern' term. For a given term, one can then relatively quickly look up all
+objects whose pattern terms might possibly match to it. This is used, for
+example, in rewriting to quickly filter out obviously inapplicable rewrites
+rather than attempting each one in turn. The call {enter lconsts (pat,obj) net}
+enters the item {obj} into a net {obj} with indexing pattern term {pat}. The
+list {lconsts} lists variables that should be considered `local constants' when
+matching, so will only match terms with exactly the same variable in
+corresponding places.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Here we construct a net with the conversions for various arithmetic operations
+on numerals, each with a pattern term to identify the class of terms to which
+it might apply:
+{
+  let arithnet = itlist (enter [])
+     [`SUC n`,NUM_SUC_CONV;
+      `m + n:num`,NUM_ADD_CONV;
+      `m - n:num`,NUM_SUB_CONV;
+      `m * n:num`,NUM_MULT_CONV;
+      `m EXP n`,NUM_EXP_CONV;
+      `m DIV n`,NUM_DIV_CONV;
+      `m MOD n`,NUM_MOD_CONV]
+     empty_net;;
+}
+Now we can define a conversion that uses lookup in this net as a first-stage
+filter and tries to apply the results.
+{
+  let NUM_ARITH_CONV tm = FIRST_CONV (lookup tm arithnet) tm;;
+}
+
+Note that this is functionally not really different from just
+{
+ let NUM_ARITH_CONV' =
+   FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_SUB_CONV; NUM_MULT_CONV;
+               NUM_EXP_CONV; NUM_DIV_CONV; NUM_MOD_CONV];;
+}
+\noindent but it may be significantly more efficient because instead of
+successive attempts to apply the conversions, each one is only invoked when
+the term has the right pattern.
+{
+  # let tm = funpow 5 (fun x -> mk_binop `(*):num->num->num` x x) `12`;;
+  ...
+  time (DEPTH_CONV NUM_ARITH_CONV) term;;
+  CPU time (user): 0.12
+  ...
+  time (DEPTH_CONV NUM_ARITH_CONV') term;;
+  CPU time (user): 0.22
+  ...
+}
+In situations with very many conversions, each one quite fast, the difference
+can be much more striking.
+
+\SEEALSO
+empty_net, lookup, merge_nets.
+
+\ENDDOC

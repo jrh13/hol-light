@@ -1,0 +1,21 @@
+\DOC dest_select
+
+\TYPE {dest_select : term -> term * term}
+
+\SYNOPSIS
+Breaks apart a choice term into selected variable and body.
+
+\DESCRIBE
+{dest_select} is a term destructor for choice terms:
+{
+   dest_select `@var. t`
+}
+\noindent returns {(`var`,`t`)}.
+
+\FAILURE
+Fails with {dest_select} if term is not an epsilon-term.
+
+\SEEALSO
+mk_select, is_select.
+
+\ENDDOC

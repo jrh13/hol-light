@@ -1,0 +1,40 @@
+\DOC mk_prover
+
+\TYPE {mk_prover : ('a -> conv) -> ('a -> thm list -> 'a) -> 'a -> prover}
+
+\SYNOPSIS
+Construct a prover from applicator and state augmentation function.
+
+\DESCRIBE
+The HOL Light simplifier (e.g. as invoked by {SIMP_TAC}) allows provers of type
+{prover} to be installed into simpsets, to automatically dispose of
+side-conditions. These may maintain a state dynamically and augment it as more
+theorems become available (e.g. a theorem {p |- p} becomes available when
+simplifying the consequenct of an implication {`p ==> q`}). In order to allow
+maximal flexibility in the data structure used to maintain state, provers are
+set up in an `object-oriented' style, where the context is part of the prover
+function itself. A call {mk_prover app aug} where {app: 'a -> conv} is an
+application operation to prove a term using the context of type {'a} and {aug :
+'a -> thm list -> 'a} is an augmentation operation to add whatever
+representation of the theorem list in the state of the prover is chosen, gives
+a canonical prover of this form. The crucial point is that the type {'a} is
+invisible in the resulting prover, so different provers can maintain their
+state in different ways. (In the trivial case, one might just use {thm list}
+for the state, and appending for the augmentation.)
+
+\FAILURE
+Does not normally fail unless the functions provided are abnormal.
+
+\USES
+This is mostly for experts wishing to customize the simplifier.
+
+\COMMENTS
+I learned of this ingenious trick for maintaining context from Don Syme, who
+discovered it by reading some code written by Richard Boulton. I was told by
+Simon Finn that there are similar ideas in the functional language literature
+for simulating existential types.
+
+\SEEALSO
+apply_prover, augment, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

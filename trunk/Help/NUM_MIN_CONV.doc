@@ -1,0 +1,36 @@
+\DOC NUM_MIN_CONV
+
+\TYPE {NUM_MIN_CONV : term -> thm}
+
+\SYNOPSIS
+Proves what the minimum of two natural number numerals is.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} and {m} are numerals (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_MIN_CONV `MIN m n`} returns the theorem:
+{
+   |- MIN m n = s
+}
+\noindent where {s} is the numeral that denotes the minimum of the natural
+numbers denoted by {n} and {m}.
+
+\FAILURE
+{NUM_MIN_CONV tm} fails if {tm} is not of the form  {`MIN m n`}, where {n} and
+{m} are numerals.
+
+\EXAMPLE
+{
+  # NUM_MIN_CONV `MIN 11 12`;;
+  val it : thm = |- MIN 11 12 = 12
+}
+
+\SEEALSO
+NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV, NUM_FACT_CONV,
+NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MOD_CONV,
+NUM_MULT_CONV, NUM_ODD_CONV, NUM_PRE_CONV, NUM_REDUCE_CONV, NUM_RED_CONV,
+NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
+
+\ENDDOC

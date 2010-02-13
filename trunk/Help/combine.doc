@@ -1,0 +1,46 @@
+\DOC combine
+
+\TYPE {combine : ('a -> 'a -> 'a) -> ('a -> bool) -> ('b, 'a) func -> ('b, 'a) func -> ('b, 'a) func}
+
+\SYNOPSIS
+Combine together two finite partial functions using pointwise operation.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. If {f} and {g} are finite partial functions, then {combine op z f g} will
+combine them together in the following somewhat complicated way. If just one of
+the functions {f} and {g} is defined at point {x}, that will give the value of
+the combined function. If both {f} and {g} are defined at {x} with values {y1}
+and {y2}, the value of the combined function will be {op y1 y2}. However, if
+the resulting value {y} satisfies the predicate {z}, the new function will be
+undefined at that point; the intuition is that the two values {y1} and {y2}
+cancel each other out.
+
+\FAILURE
+Can only fail if the given operation fails.
+
+\EXAMPLE
+{
+  # let f = itlist I [1 |-> 2; 2 |-> 3; 3 |-> 6] undefined
+    and g = itlist I [1 |-> 5; 2 |-> -3] undefined;;
+  val f : (int, int) func = <func>
+  val g : (int, int) func = <func>
+
+  # graph(combine (+) (fun x -> x = 0) f g);;
+  val it : (int * int) list = [(1, 7); (3, 6)]
+}
+
+\USES
+When finite partial functions are used to represent values with a numeric
+domain (e.g. matrices or polynomials), this can be used to perform addition
+pointwise by using addition for the {op} argument. Using a zero test as the
+predicate {z} will ensure that no zero values are included in the result,
+giving a canonical representation.
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, defined, dom, foldl, foldr,
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

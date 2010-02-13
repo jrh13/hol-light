@@ -1,0 +1,67 @@
+\DOC COND_CASES_TAC
+
+\TYPE {COND_CASES_TAC : tactic}
+
+\SYNOPSIS
+Induces a case split on a conditional expression in the goal.
+
+\KEYWORDS
+tactic, conditional, cases.
+
+\DESCRIBE
+{COND_CASES_TAC} searches for a free conditional subterm in the term of a goal,
+i.e. a subterm of the form {if p then u else v}, choosing some topmost one if
+there are several. It then induces a case split over {p} as follows:
+{
+                       A ?- t
+    ==========================================  COND_CASES_TAC
+     A u {{p}} ?- t[T/p; u/(if p then u else v)]
+     A u {{~p}} ?- t[F/p; v/(if p then u else v)]
+}
+\noindent where {p} is not a constant, and the term {p then u else v} is free
+in {t}. Note that it both enriches the assumptions and inserts the assumed
+value into the conditional.
+
+\FAILURE
+{COND_CASES_TAC} fails if there is no conditional sub-term as described above.
+
+\EXAMPLE
+We can prove the following just by {REAL_ARITH `!x y:real. x <= max x y`}, but
+it is instructive to consider a manual proof.
+{
+  # g `!x y:real. x <= max x y`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!x y. x <= max x y`
+
+  # e(REPEAT GEN_TAC THEN REWRITE_TAC[real_max]);;'
+  val it : goalstack = 1 subgoal (1 total)
+
+  `x <= (if x <= y then y else x)`
+
+  # e COND_CASES_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`~(x <= y)`]
+
+  `x <= x`
+}
+
+\USES
+Useful for case analysis and replacement in one step, when there is a
+conditional sub-term in the term part of the goal.  When there is more than
+one such sub-term and one in particular is to be analyzed, {COND_CASES_TAC}
+cannot always be depended on to choose the `desired' one. It can, however, be
+used repeatedly to analyze all conditional sub-terms of a goal.
+
+\COMMENTS
+Note that logically it should only be necessary for {p} to be free in the whole
+term, not the two branches {x} and {y}. However, as an artifact of the current
+implementation, we need them to be free too. The more sophisticated
+conversion {CONDS_ELIM_CONV} handles this better.
+
+\SEEALSO
+ASM_CASES_TAC, COND_ELIM_CONV, CONDS_ELIM_CONV, DISJ_CASES_TAC,
+STRUCT_CASES_TAC.
+
+\ENDDOC

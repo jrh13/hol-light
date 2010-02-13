@@ -1,0 +1,37 @@
+\DOC INSTANTIATE
+
+\TYPE {INSTANTIATE : instantiation -> thm -> thm}
+
+\SYNOPSIS
+Apply a higher-order instantiation to conclusion of a theorem.
+
+\DESCRIBE
+The call {INSTANTIATE i t}, where {i} is an instantiation as returned by
+{term_match}, will perform the instantiation indicated by {i} in the conclusion
+of the theorem {th}: types and terms will be instantiated and the
+beta-reductions that are part of higher-order matching will be applied.
+                                  
+\FAILURE
+Fails if the instantiation is impossible because of free term or type variables 
+in the hypotheses.
+
+\EXAMPLE
+{
+  # let t = lhs(concl(SPEC_ALL NOT_FORALL_THM));;
+  val t : term = `~(!x. P x)`
+  # let i = term_match [] t `~(!n. prime(n) ==> ODD(n))`;;
+  val i : instantiation =
+    ([(1, `P`)], [(`\n. prime n ==> ODD n`, `P`)], [(`:num`, `:A`)])
+
+  # INSTANTIATE i (SPEC_ALL NOT_FORALL_THM);;
+  val it : thm = |- ~(!x. prime x ==> ODD x) <=> (?x. ~(prime x ==> ODD x))
+}
+
+\COMMENTS
+This is not intended for general use. {PART_MATCH} is generally a more 
+convenient packaging.
+
+\SEEALSO
+instantiate, INSTANTIATE_ALL, PART_MATCH, term_match.
+
+\ENDDOC

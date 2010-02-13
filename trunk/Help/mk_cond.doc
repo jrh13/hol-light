@@ -1,0 +1,18 @@
+\DOC mk_cond
+
+\TYPE {mk_cond : term * term * term -> term}
+
+\SYNOPSIS
+Constructs a conditional term.
+
+\DESCRIBE
+{mk_cond(`t`,`t1`,`t2`)} returns {`if t then t1 else t2`}.
+
+\FAILURE
+Fails with {mk_cond} if {t} is not of type {`:bool`} or if {t1} and {t2} are
+of different types.
+
+\SEEALSO
+dest_cond, is_cond.
+
+\ENDDOC

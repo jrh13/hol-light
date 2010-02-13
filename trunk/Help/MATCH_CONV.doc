@@ -1,0 +1,71 @@
+\DOC MATCH_CONV
+
+\TYPE {MATCH_CONV : term -> thm}
+
+\SYNOPSIS
+Expands application of pattern-matching construct to particular case.
+
+\KEYWORDS
+conversion.
+
+\DESCRIBE
+The conversion {MATCH_CONV} will reduce the application of a pattern to a
+specific argument, either for a term {match x with ...} or {(function ...) x}.
+In the case of a sequential pattern, the first match will be reduced, resulting
+either in a conditional expression or simply one of the cases if it can be
+deduced just from the pattern. In the case of a single pattern, it will be
+reduced immediately.
+
+\FAILURE
+{MATCH_CONV tm} fails if {tm} is neither of the two applications of a pattern
+to an argument.
+
+\EXAMPLE
+In cases where the structure of the argument determines the match, a complete
+reduction is performed:
+{
+  # MATCH_CONV `match [1;2;3;4;5] with CONS x (CONS y z) -> z`;;
+  val it : thm =
+    |- (match [1; 2; 3; 4; 5] with CONS x (CONS y z) -> z) = [3; 4; 5]
+}
+\noindent However, only one reduction is performed for a sequential match:
+{
+  # MATCH_CONV `(function [] -> 0 | CONS h t -> h + 1) [1;2;3;4]`;;
+  val it : thm =
+    |- (function [] -> 0 | CONS h t -> h + 1) [1; 2; 3; 4] =
+       (function CONS h t -> h + 1) [1; 2; 3; 4]
+}
+\noindent so the conversion may need to be repeated:
+{ 
+  # TOP_DEPTH_CONV MATCH_CONV 
+     `(function [] -> 0 | CONS h t -> h + 1) [1;2;3;4]`;;
+  val it : thm = |- (function [] -> 0 | CONS h t -> h + 1) [1; 2; 3; 4] = 1 + 1
+}
+\noindent In cases where the structure of the argument cannot be determined, a
+conditional expression or other more involved result may be returned:
+{
+  # MATCH_CONV `(function [] -> 0 | CONS h t -> h + 1) l`;;
+  val it : thm =
+    |- (function [] -> 0 | CONS h t -> h + 1) l =
+       (if [] = l then (function [] -> 0) l else (function CONS h t -> h + 1) l)
+}
+
+\COMMENTS
+The simple cases where the structure completely determines the result are built
+into the default rewrites, though nothing will happen in more general cases,
+even if the conditions can be discharged straightforwardly, e.g:
+{
+  # REWRITE_CONV[] `match [1;2;3] with CONS h t when h = 1  -> h + LENGTH t`;;
+  val it : thm =
+    |- (match [1; 2; 3] with CONS h t when h = 1 -> h + LENGTH t) =
+       1 + LENGTH [2; 3]
+  # REWRITE_CONV[] `match [1;2;3] with CONS h t when h < 7 -> h + LENGTH t`;;
+  val it : thm =
+    |- (match [1; 2; 3] with CONS h t when h < 7 -> h + LENGTH t) =
+       (match [1; 2; 3] with CONS h t when h < 7 -> h + LENGTH t)
+}
+
+\SEEALSO
+BETA_CONV, GEN_BETA_CONV.
+
+\ENDDOC

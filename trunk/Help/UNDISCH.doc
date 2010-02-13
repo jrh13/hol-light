@@ -1,0 +1,30 @@
+\DOC UNDISCH
+
+\TYPE {UNDISCH : thm -> thm}
+
+\SYNOPSIS
+Undischarges the antecedent of an implicative theorem.
+
+\KEYWORDS
+rule, undischarge, antecedent.
+
+\DESCRIBE
+{
+    A |- t1 ==> t2
+   ----------------  UNDISCH
+     A, t1 |- t2
+}
+
+\FAILURE
+{UNDISCH} will fail on theorems which are not implications.
+
+\EXAMPLE
+{
+  # UNDISCH(TAUT `p /\ q ==> p`);;
+  val it : thm = p /\ q |- p
+}
+
+\SEEALSO
+DISCH, DISCH_ALL, DISCH_TAC, DISCH_THEN, STRIP_TAC, UNDISCH_ALL, UNDISCH_TAC.
+
+\ENDDOC

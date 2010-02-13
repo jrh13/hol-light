@@ -1,0 +1,45 @@
+\DOC basic_rewrites
+
+\TYPE {basic_rewrites : unit -> thm list}
+
+\SYNOPSIS
+Returns the set of built-in theorems used, by default, in rewriting.
+
+\DESCRIBE
+The list of theorems returned by {basic_rewrites()} is applied by default in 
+rewriting conversions, rules and tactics such as {ONCE_REWRITE_CONV}, 
+{REWRITE_RULE} and {SIMP_TAC}, though not in the `pure' variants like
+{PURE_REWRITE_TAC}. This default set can be modified using
+{extend_basic_rewrites}, {set_basic_rewrites}. Other conversions, not
+necessarily expressible as rewriting with a theorem, can be added using 
+{set_basic_convs} and {extend_basic_convs} and examined by {basic_convs}.
+
+\EXAMPLE
+The following shows the list of default rewrites in the standard HOL Light 
+state. Most of them are basic logical tautologies.
+{
+# basic_rewrites();;
+val it : thm list =
+  [|- FST (x,y) = x; |- SND (x,y) = y; |- FST x,SND x = x;
+   |- (if x = x then y else z) = y; |- (if T then t1 else t2) = t1;
+   |- (if F then t1 else t2) = t2; |- ~ ~t <=> t; |- ~T <=> F; |- ~F <=> T;
+   |- (@y. y = x) = x; |- x = x <=> T; |- (T <=> t) <=> t;
+   |- (t <=> T) <=> t; |- (F <=> t) <=> ~t; |- (t <=> F) <=> ~t; |- ~T <=> F;
+   |- ~F <=> T; |- T /\ t <=> t; |- t /\ T <=> t; |- F /\ t <=> F;
+   |- t /\ F <=> F; |- t /\ t <=> t; |- T \/ t <=> T; |- t \/ T <=> T;
+   |- F \/ t <=> t; |- t \/ F <=> t; |- t \/ t <=> t; |- T ==> t <=> t;
+   |- t ==> T <=> T; |- F ==> t <=> T; |- t ==> t <=> T; |- t ==> F <=> ~t;
+   |- (!x. t) <=> t; |- (?x. t) <=> t; |- (\x. f x) y = f y;
+   |- x = x ==> p <=> p]
+}
+
+\USES
+The {basic_rewrites} are included in the set of equations used by some
+of the rewriting tools.
+
+\SEEALSO
+extend_basic_rewrites, set_basic_rewrites, set_basic_convs, extend_basic_convs, 
+basic_convs, REWRITE_CONV, REWRITE_RULE, REWRITE_TAC, SIMP_CONV, SIMP_RULE, 
+SIMP_TAC.
+
+\ENDDOC

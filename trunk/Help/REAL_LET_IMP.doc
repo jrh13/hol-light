@@ -1,0 +1,31 @@
+\DOC REAL_LET_IMP
+
+\TYPE {REAL_LET_IMP : thm -> thm}
+
+\SYNOPSIS
+Perform transitivity chaining for mixed strict/non-strict real number
+inequality.
+
+\DESCRIBE
+When applied to a theorem {A |- s <= t} where {s} and {t} have type {real}, the
+rule {REAL_LE_IMP} returns {A |- !x1...xn z. t < z ==> s < z}, where {z} is
+some variable and the {x1,...,xn} are free variables in {s} and {t}.
+
+\FAILURE
+Fails if applied to a theorem whose conclusion is not of the form {`s <= t`}
+for some real number terms {s} and {t}.
+
+\EXAMPLE
+{
+  # REAL_LET_IMP (REAL_ARITH `abs(x + y) <= abs(x) + abs(y)`);;
+  val it : thm = |- !x y z. abs x + abs y < z ==> abs (x + y) < z
+}
+
+\USES
+Can make transitivity chaining in goals easier, e.g. by
+{FIRST_ASSUM(MATCH_MP_TAC o REAL_LE_IMP)}.
+
+\SEEALSO
+LE_IMP, REAL_ARITH, REAL_LE_IMP.
+
+\ENDDOC

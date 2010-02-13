@@ -1,0 +1,28 @@
+\DOC CONJ_CANON_CONV
+
+\TYPE {CONJ_CANON_CONV : term -> thm}
+
+\SYNOPSIS
+Puts an iterated conjunction in canonical form.
+
+\DESCRIBE
+When applied to a term, {CONJ_CANON_CONV} splits it into the set of conjuncts
+and produces a theorem asserting the equivalence of the term and the new term
+with the disjuncts right-associated without repetitions and in a canonical
+order.
+
+\FAILURE
+Fails if applied to a non-Boolean term. If applied to a term that is not a
+conjunction, it will trivially work in the sense of regarding it as a single
+conjunct and returning a reflexive theorem.
+
+\EXAMPLE
+{
+  # CONJ_CANON_CONV `(a /\ b) /\ ((b /\ d) /\ a) /\ c`;;
+  val it : thm = |- (a /\ b) /\ ((b /\ d) /\ a) /\ c <=> a /\ b /\ c /\ d
+}
+
+\SEEALSO
+AC, CONJ_ACI_CONV, DISJ_CANON_CONV.
+
+\ENDDOC

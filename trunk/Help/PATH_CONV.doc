@@ -1,0 +1,41 @@
+\DOC PATH_CONV
+
+\TYPE {PATH_CONV : string -> conv -> conv}
+
+\SYNOPSIS
+Applies a conversion to the subterm indicated by a path string.
+
+\DESCRIBE
+The call {PATH_CONV p cnv} gives a new conversion that applies {cnv} to the
+subterm of a term identified by the path string {p}. This path string is
+interpreted as a sequence of direction indications:
+
+\begin{{itemize}}
+
+\item {"b"}: take the body of an abstraction
+
+\item {"l"}: take the left (rator) path in an application
+
+\item {"r"}: take the right (rand) path in an application
+
+\end{{itemize}}
+
+\FAILURE
+The basic call to the path string and conversion never fails, but when applied
+to the term it may, if the path is not meaningful or if the conversion itself
+fails on the indicated subterm.
+
+\USES
+More concise indication of sub-conversion application than by composing
+{RATOR_CONV}, {RAND_CONV} and {ABS_CONV}.
+
+\EXAMPLE
+{
+  # PATH_CONV "rlr" NUM_ADD_CONV `(1 + 2) + (3 + 4) + (5 + 6)`;;
+  val it : thm = |- (1 + 2) + (3 + 4) + 5 + 6 = (1 + 2) + 7 + 5 + 6
+}
+
+\SEEALSO
+find_path, follow_path.
+
+\ENDDOC

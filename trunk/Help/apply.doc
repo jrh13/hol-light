@@ -1,0 +1,27 @@
+\DOC apply
+
+\TYPE {apply : ('a, 'b) func -> 'a -> 'b}
+
+\SYNOPSIS
+Applies a finite partial function, failing on undefined points.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type 
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. If {f} is a finite partial function and {x} an argument, {apply f x} tries
+to apply {f} to {x} and fails if it is undefined.
+
+\EXAMPLE
+{
+  # apply undefined 1;;
+  Exception: Failure "apply".
+  # apply (1 |=> 2) 1;;
+  val it : int = 2
+}
+
+\SEEALSO
+|->, |=>, applyd, choose, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC map2
+
+\TYPE {map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list}
+
+\SYNOPSIS
+Maps a binary function over two lists to create one new list.
+
+\DESCRIBE
+{map2 f ([x1;...;xn],[y1;...;yn])} returns {[f(x1,y1);...;f(xn,yn)]}.
+
+\FAILURE
+Fails with {map2} if the two lists are of different lengths.
+
+\EXAMPLE
+{
+  # map2 (+) [1;2;3] [30;20;10];;   
+  val it : int list = [31; 22; 13]
+}
+
+\SEEALSO
+map, uncurry.
+
+\ENDDOC

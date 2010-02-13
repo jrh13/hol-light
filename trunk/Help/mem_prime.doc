@@ -1,0 +1,31 @@
+\DOC mem'
+
+\TYPE {mem' : ('a -> 'b -> bool) -> 'a -> 'b list -> bool}
+
+\SYNOPSIS
+Tests if an element is equivalent to a member of a list w.r.t. some relation.
+
+\DESCRIBE
+If {r} is a binary relation, {x} an element and {l} a list, the call 
+{mem' r x l} tests if there is an element in the list {l} that is equivalent to 
+{x} according to {r}, that is, if {r x x'} holds for some {x'} in {l}. The 
+function {mem} is the special case where the relation is equality.
+
+\FAILURE
+Fails only if the relation {r} fails.
+
+\EXAMPLE
+{
+  # mem' (fun x y -> abs(x) = abs(y)) (-1) [1;2;3];;
+  val it : bool = true
+  # mem' (fun x y -> abs(x) = abs(y)) (-1) [2;3;4];;
+  val it : bool = false
+}
+
+\USES
+Set operations modulo some equivalence such as alpha-equivalence.
+
+\SEEALSO
+insert', mem, subtract', union', unions'.
+
+\ENDDOC

@@ -1,0 +1,14 @@
+                            BOYER-MOORE AUTOMATION
+
+                      (c) Petros Papapanagiotou 2008-2009
+                           University of Edinburgh
+
+This code implements and extends for HOL Light some of the classic
+techniques due to Boyer and Moore for automating inductive proofs. It
+is described in the MSc thesis "On the Automation of Inductive Proofs
+in HOL Light", available online:
+
+  http://www.inf.ed.ac.uk/publications/thesis/online/IM070466.pdf
+
+The code builds on earlier work by Richard Boulton in HOL88 (see
+"Boyer-Moore automation for the HOL System").

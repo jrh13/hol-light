@@ -1,0 +1,33 @@
+\DOC freesin
+
+\TYPE {freesin : term list -> term -> bool}
+
+\SYNOPSIS
+Tests if all free variables of a term appear in a list.
+
+\DESCRIBE
+The call {freesin l t} tests whether all free variables of {t} occur in the 
+list {l}. The special case where {l = []} will therefore test whether {t} is 
+closed (i.e. contains no free variables).
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # freesin [] `!x y. x + y >= 0`;;
+  val it : bool = true
+  # freesin [] `x + y >= 0`;;
+  val it : bool = false
+  # freesin [`x:num`; `y:num`; `z:num`] `x + y >= 0`;;
+  val it : bool = true
+}
+
+\USES
+Can be attractive to fold together some free-variable tests without explicitly 
+constructing the set of free variables in a term.
+
+\SEEALSO
+frees, freesl, vfree_in.
+
+\ENDDOC

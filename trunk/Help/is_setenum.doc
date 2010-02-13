@@ -1,0 +1,30 @@
+\DOC is_setenum
+
+\TYPE {is_setenum : term -> bool}
+
+\SYNOPSIS
+Tests if a term is a set enumeration.
+
+\DESCRIBE
+When applied to a term that is an explicit set enumeration {`{{t1,...,tn}}`},
+the function {is_setenum} returns {true}; otherwise it returns {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_setenum `1 INSERT 2 INSERT {{}}`;;
+  val it : bool = true
+
+  # is_setenum `{{1,2,3,4,1,2,3,4}}`;;
+  val it : bool = true
+
+  # is_setenum `1 INSERT 2 INSERT s`;;
+  val it : bool = false
+}
+
+\SEEALSO
+dest_setenum, mk_fset, mk_setenum.
+
+\ENDDOC

@@ -1,0 +1,34 @@
+\DOC MK_FORALL
+
+\TYPE {MK_FORALL : term -> thm -> thm}
+
+\SYNOPSIS
+Universally quantifies both sides of equational theorem.
+
+\DESCRIBE
+Given a theorem {th} whose conclusion is a Boolean equation (iff), the rule 
+{MK_FORALL `v` th} universally quantifies both sides of {th} over the variable 
+{v}, provided it is not free in the hypotheses
+{
+             A |- p <=> q
+      ---------------------------- MK_FORALL `v` [where v not free in A]
+        A |- (!v. p) <=> (!v. q)
+}
+
+\FAILURE
+Fails if the term is not a variable or is free in the hypotheses of the 
+theorem, or if the theorem does not have a Boolean equation for its conclusion.
+
+\EXAMPLE
+{
+  # let th = ARITH_RULE `f(x:A) >= 1 <=> ~(f(x) = 0)`;;
+  val th : thm = |- f x >= 1 <=> ~(f x = 0)
+  
+  # MK_FORALL `x:A` th;;
+  val it : thm = |- (!x. f x >= 1) <=> (!x. ~(f x = 0))
+}
+
+\SEEALSO
+AP_TERM, AP_THM, MK_BINOP, MK_COMB, MK_CONJ, MK_DISJ, MK_EXISTS.
+
+\ENDDOC

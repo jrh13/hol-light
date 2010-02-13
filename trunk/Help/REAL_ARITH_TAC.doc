@@ -1,0 +1,47 @@
+\DOC REAL_ARITH_TAC
+
+\TYPE {REAL_ARITH_TAC : tactic}
+
+\SYNOPSIS
+Attempt to prove goal using basic algebra and linear arithmetic over the reals.
+
+\DESCRIBE
+The tactic {REAL_ARITH_TAC} is the tactic form of {REAL_ARITH}. Roughly
+speaking, it will automatically prove any formulas over the reals that are
+efectively universally quantified and can be proved valid by algebraic
+normalization and linear equational and inequality reasoning. See {REAL_ARITH}
+for more information about the algorithm used and its scope.
+
+\FAILURE
+Fails if the goal is not in the subset solvable by these means, or is not
+valid.
+
+\EXAMPLE
+Here is a goal that holds by virtue of pure algebraic normalization:
+{
+  # g `(x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2) pow 2 =
+       ((x1 + x2) pow 4 + (x1 + x3) pow 4 + (x1 + x4) pow 4 +
+        (x2 + x3) pow 4 + (x2 + x4) pow 4 + (x3 + x4) pow 4 +
+        (x1 - x2) pow 4 + (x1 - x3) pow 4 + (x1 - x4) pow 4 +
+        (x2 - x3) pow 4 + (x2 - x4) pow 4 + (x3 - x4) pow 4) / &6`;;
+}
+\noindent and here is one that holds by linear inequality reasoning:
+{
+  # g `&26 < x / &2 ==> abs(x / &4 + &1) < abs(x / &3)`;;
+}
+\noindent so either goal is solved simply by:
+{
+  # e REAL_ARITH_TAC;;
+  val it : goalstack = No subgoals
+}
+
+\COMMENTS
+For nonlinear equational reasoning, use {CONV_TAC REAL_RING} or {CONV_TAC
+REAL_FIELD}. For nonlinear inequality reasoning, there are no powerful rules
+built into HOL Light, but the additional derived rules defined in
+{Examples/sos.ml} and {Rqe/make.ml} may be useful.
+
+\SEEALSO
+ARITH_TAC, ASM_REAL_ARITH_TAC, INT_ARITH_TAC, REAL_ARITH, REAL_FIELD, REAL_RING.
+
+\ENDDOC

@@ -1,0 +1,50 @@
+\DOC INST_TYPE
+
+\TYPE {INST_TYPE : (hol_type * hol_type) list -> thm -> thm}
+
+\SYNOPSIS
+Instantiates types in a theorem.
+
+\KEYWORDS
+rule, type, instantiate.
+
+\DESCRIBE
+{INST_TYPE [ty1,tv1;...;tyn,tvn]} will systematically replaces all instances of 
+each type variable {tvi} by the corresponding type {tyi} in both assumptions 
+and conclusions of a theorem:
+{
+               A |- t
+   -----------------------------------  INST_TYPE [ty1,tv1;...;tyn,tvn]
+    A[ty1,...,tyn/tv1,...,tvn]
+        |- t[ty1,...,tyn/tv1,...,tvn]
+}
+Variables will be renamed if necessary to prevent variable capture.
+
+\FAILURE
+Never fails.
+
+\USES
+{INST_TYPE} is employed to make use of polymorphic theorems.
+
+\EXAMPLE
+Suppose one wanted to specialize the theorem {EQ_SYM_EQ} for
+particular values, the first attempt could be to use {SPECL} as
+follows:
+{
+  # SPECL [`a:num`; `b:num`] EQ_SYM_EQ ;;
+  Exception: Failure "SPECL".
+}
+\noindent The failure occurred because {EQ_SYM_EQ} contains polymorphic types.
+The desired specialization can be obtained by using {INST_TYPE}:
+{
+  # SPECL [`a:num`; `b:num`] (INST_TYPE [`:num`,`:A`] EQ_SYM_EQ) ;;
+  val it : thm = |- a = b <=> b = a
+}
+
+\COMMENTS
+This is one of HOL Light's 10 primitive inference rules.
+
+\SEEALSO
+INST, ISPEC, ISPECL.
+
+\ENDDOC

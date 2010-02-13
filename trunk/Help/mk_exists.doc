@@ -1,0 +1,23 @@
+\DOC mk_exists
+
+\TYPE {mk_exists : term * term -> term}
+
+\SYNOPSIS
+Term constructor for existential quantification.
+
+\DESCRIBE
+{mk_exists(`v`,`t`)} returns {`?v. t`}.
+
+\FAILURE
+Fails with if first term is not a variable or if {t} is not of type {`:bool`}.
+
+\EXAMPLE
+{
+  # mk_exists(`x:num`,`x + 1 = 1 + x`);;
+  val it : term = `?x. x + 1 = 1 + x`
+}
+
+\SEEALSO
+dest_exists, is_exists, list_mk_exists.
+
+\ENDDOC

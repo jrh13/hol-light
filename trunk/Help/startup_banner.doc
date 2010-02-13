@@ -1,0 +1,29 @@
+\DOC startup_banner
+
+\TYPE {startup_banner : string}
+
+\SYNOPSIS
+The one-line startup banner for HOL Light.
+
+\DESCRIBE
+This string is the startup banner for HOL Light, and is displayed when
+standalone images (see {self_destruct}) are started up. It  is only available
+in HOL images created using checkpointing (as in the default Linux build
+arising from {make all}), not when the HOL Light sources have simply been
+loaded into the OCaml toplevel without checkpointing.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+On my home computer, the value is currently:
+{
+  # startup_banner;;
+  val it : string =
+    "        HOL Light 2.10, built 16 March 2006 on OCaml 3.08.3"
+}
+
+\SEEALSO
+self_destruct.
+
+\ENDDOC

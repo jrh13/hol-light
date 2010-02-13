@@ -1,0 +1,22 @@
+\DOC term_unify
+
+\TYPE {term_unify : term list -> term -> term -> instantiation}
+
+\SYNOPSIS
+Unify two terms.
+
+\DESCRIBE
+Given two terms {tm1} and {tm2}, a call {term_unify vars tm1 tm2} attempts to 
+find instantiations of the variables {vars} in the two terms to make them 
+alpha-equivalent. At present, no type instantiation is done. The unification is 
+also purely first-order. In these respects it is less general than 
+{term_match}, and this may be improved in the future.
+
+\FAILURE
+Fails if the two terms are not first-order unifiable by instantiating the given 
+variables without type instantiation.
+
+\SEEALSO
+instantiate, term_match.
+
+\ENDDOC

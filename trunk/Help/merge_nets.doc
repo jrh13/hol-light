@@ -1,0 +1,41 @@
+\DOC merge_nets
+
+\TYPE {merge_nets : 'a net * 'a net -> 'a net}
+
+\SYNOPSIS
+Merge together two term nets.
+
+\DESCRIBE
+Term nets (type {'a net}) are a lookup structure associating objects of type
+{'a}, e.g. conversions, with a corresponding `pattern' term. For a given term,
+one can then relatively quickly look up all objects whose pattern terms might
+possibly match to it. This is used, for example, in rewriting to quickly filter
+out obviously inapplicable rewrites rather than attempting each one in turn.
+The call {merge_nets(net1,net2)} merges two nets together; the list of objects 
+is the union of those objects in the two nets {net1} and {net2}, with the term
+patterns adjusted appropriately.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+If we have one term net containing the addition conversion:
+{
+  # let net1 = enter [] (`x + y`,NUM_ADD_CONV) empty_net;;
+  ...
+}
+\noindent and another with beta-conversion:
+{
+  # let net2 = enter [] (`(\x. t) y`,BETA_CONV) empty_net;;
+  ...
+}
+\noindent we can combine them into a single net:
+{
+  # let net = merge_nets(net1,net2);;
+  ...
+}
+
+\SEEALSO
+empty_net, enter, lookup.
+
+\ENDDOC

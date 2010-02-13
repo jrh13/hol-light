@@ -1,0 +1,30 @@
+\DOC TRY_CONV
+
+\TYPE {TRY_CONV : conv -> conv}
+
+\SYNOPSIS
+Attempts to apply a conversion; applies identity conversion in case of failure.
+
+\KEYWORDS
+conversion, failure.
+
+\DESCRIBE
+{TRY_CONV c `t`} attempts to apply the conversion {c} to the term {`t`}; if
+this fails, then the identity conversion is applied instead giving the 
+reflexive theorem {|- t = t}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # num_CONV `0`;;
+  Exception: Failure "num_CONV".
+  # TRY_CONV num_CONV `0`;;
+  val it : thm = |- 0 = 0
+}
+
+\SEEALSO
+ALL_CONV.
+
+\ENDDOC

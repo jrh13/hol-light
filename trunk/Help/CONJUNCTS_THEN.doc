@@ -1,0 +1,54 @@
+\DOC CONJUNCTS_THEN
+
+\TYPE {CONJUNCTS_THEN : thm_tactical}
+
+\SYNOPSIS
+Applies a theorem-tactic to each conjunct of a theorem.
+
+\KEYWORDS
+theorem-tactic, conjunction.
+
+\DESCRIBE
+{CONJUNCTS_THEN} takes a theorem-tactic {ttac}, and a theorem {t} whose
+conclusion must be a conjunction. {CONJUNCTS_THEN} breaks {t} into two new
+theorems, {t1} and {t2} which are {CONJUNCT1} and {CONJUNCT2} of {t}
+respectively, and then returns a new tactic: {ttac t1 THEN ttac t2}. That is,
+{
+   CONJUNCTS_THEN ttac (A |- l /\ r) =  ttac (A |- l) THEN ttac (A |- r)
+}
+\noindent so if
+{
+   A1 ?- t1                       A2 ?- t2
+  ==========  ttac (A |- l)      ==========  ttac (A |- r)
+   A2 ?- t2                       A3 ?- t3
+}
+\noindent then
+{
+    A1 ?- t1
+   ==========  CONJUNCTS_THEN ttac (A |- l /\ r)
+    A3 ?- t3
+}
+
+\FAILURE
+{CONJUNCTS_THEN ttac} will fail if applied to a theorem whose conclusion is not
+a conjunction.
+
+\COMMENTS
+{CONJUNCTS_THEN ttac (A |- u1 /\ ... /\ un)} results in the tactic:
+{
+   ttac (A |- u1) THEN ttac (A |- u2 /\ ... /\ un)
+}
+\noindent The iterated effect:
+{
+   ttac (A |- u1) THEN ... THEN ttac(A |- un)
+}
+\noindent can be achieved by
+{
+  REPEAT_TCL CONJUNCTS_THEN ttac (A |- u1 /\ ... /\ un)
+}
+
+\SEEALSO
+CONJUNCT1, CONJUNCT2, CONJUNCTS, CONJUNCTS_TAC, CONJUNCTS_THEN2,
+STRIP_THM_THEN.
+
+\ENDDOC

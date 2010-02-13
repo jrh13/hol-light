@@ -1,0 +1,25 @@
+\DOC MK_COMB_TAC
+
+\TYPE {MK_COMB_TAC : tactic}
+
+\SYNOPSIS
+Breaks down a goal between function applications into equality of functions and 
+arguments.
+
+\DESCRIBE
+Given a goal whose conclusion is an equation between function applications 
+{A ?- f x = g y}, the tactic {MK_COMB_TAC} breaks it down to two subgoals 
+expressing equality of the corresponding rators and rands:
+{
+            A ?- f x = g y
+   ================================  MK_COMB_TAC
+      A ?- f = g      A ?- x = y
+}
+
+\FAILURE
+Fails if the conclusion of the goal is not an equation between applications.
+
+\SEEALSO
+ABS_TAC, AP_TERM_TAC, AP_THM_TAC, BINOP_TAC, MK_COMB.
+
+\ENDDOC

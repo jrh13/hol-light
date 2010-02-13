@@ -1,0 +1,27 @@
+\DOC mk_iff
+
+\TYPE {mk_iff : term * term -> term}
+
+\SYNOPSIS
+Constructs a logical equivalence (Boolean equation).
+
+\DESCRIBE
+{mk_iff(`t1`,`t2`)} returns {`t1 <=> t2`}. 
+
+\FAILURE
+Fails with unless {t1} and {t2} both have Boolean type.
+
+\EXAMPLE
+{
+  # mk_iff(`x = 1`,`1 = x`);;
+  val it : term = `x = 1 <=> 1 = x`
+}
+
+\COMMENTS
+Simply {mk_eq} has the same effect on successful calls. However {mk_iff} is 
+slightly more efficient, and will fail if the terms do not have Boolean type.
+
+\SEEALSO
+dest_iff, is_iff,mk_eq.
+
+\ENDDOC

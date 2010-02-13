@@ -1,0 +1,31 @@
+\DOC |=>
+
+\TYPE {(|=>) : 'a -> 'b -> ('a, 'b) func}
+
+\SYNOPSIS
+Gives a one-point finite partial function.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. The call {x |=> y} gives a finite partial function that maps {x} to {y}
+and is undefined for all arguments other than {x}.
+
+\EXAMPLE
+{
+  # let f = (1 |=> 2);;
+  val f : (int, int) func = <func>
+  
+  # apply f 1;;
+  val it : int = 2
+  
+  # apply f 2;;
+  Exception: Failure "apply".
+}
+
+\SEEALSO
+|->, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

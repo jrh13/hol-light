@@ -1,0 +1,37 @@
+\DOC AP_THM
+
+\TYPE {AP_THM : thm -> term -> thm}
+
+\SYNOPSIS
+Proves equality of equal functions applied to a term.
+
+\KEYWORDS
+rule.
+
+\DESCRIBE
+When applied to a theorem {A |- f = g} and a term {x}, the inference
+rule {AP_THM} returns the theorem {A |- f x = g x}.
+{
+      A |- f = g
+   ----------------  AP_THM (A |- f = g) `x`
+    A |- f x = g x
+}
+
+\FAILURE
+Fails unless the conclusion of the theorem is an equation, both sides
+of which are functions whose domain type is the same as that of the
+supplied term.
+
+\EXAMPLE
+{
+  # REWRITE_RULE[GSYM FUN_EQ_THM] ADD1;;
+  val it : thm = |- SUC = (\m. m + 1)
+
+  # AP_THM it `11`;;
+  val it : thm = |- SUC 11 = (\m. m + 1) 11
+}
+
+\SEEALSO
+AP_TERM, ETA_CONV, MK_COMB.
+
+\ENDDOC

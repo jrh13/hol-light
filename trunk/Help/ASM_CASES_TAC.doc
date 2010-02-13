@@ -1,0 +1,52 @@
+\DOC ASM_CASES_TAC
+
+\TYPE {ASM_CASES_TAC : term -> tactic}
+
+\SYNOPSIS
+Given a term, produces a case split based on whether or not that
+term is true.
+
+\KEYWORDS
+tactic, cases.
+
+\DESCRIBE
+Given a term {u}, {ASM_CASES_TAC} applied to a goal produces two
+subgoals, one with {u} as an assumption and one with {~u}:
+{
+               A ?-  t
+   ================================  ASM_CASES_TAC `u`
+    A u {{u}} ?- t   A u {{~u}} ?- t
+}
+
+\FAILURE
+Fails if {u} does not have boolean type.
+
+\EXAMPLE
+The tactic {ASM_CASES_TAC `&0 <= u`} can be used to produce a case analysis
+on {`&0 <= u`}:
+{
+  # g `&0 <= (u:real) pow 2`;;
+  Warning: Free variables in goal: u
+  val it : goalstack = 1 subgoal (1 total)
+
+  `&0 <= u pow 2`
+
+  # e(ASM_CASES_TAC `&0 <= u`);;
+  val it : goalstack = 2 subgoals (2 total)
+
+   0 [`~(&0 <= u)`]
+
+  `&0 <= u pow 2`
+
+   0 [`&0 <= u`]
+
+  `&0 <= u pow 2`
+}
+
+\USES
+Performing a case analysis according to whether a given term is true or false.
+
+\SEEALSO
+BOOL_CASES_TAC, COND_CASES_TAC, ITAUT, DISJ_CASES_TAC, STRUCT_CASES_TAC, TAUT.
+
+\ENDDOC

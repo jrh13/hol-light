@@ -1,0 +1,33 @@
+\DOC REAL_RAT_SUB_CONV
+
+\TYPE {REAL_RAT_SUB_CONV : conv}
+
+\SYNOPSIS
+Conversion to perform subtraction on two rational literals of type {:real}.
+
+\DESCRIBE
+The call {REAL_RAT_SUB_CONV `c1 - c2`} where {c1} and {c2} are rational
+literals of type {:real}, returns {|- c1 - c2 = d} where {d} is the canonical
+rational literal that is equal to {c1 - c2}. The literals {c1} and {c2} may
+be integer literals ({&n} or {-- &n}), ratios ({&p / &q} or {-- &p / &q}), or
+decimals ({#DDD.DDDD} or {#DDD.DDDDeNN}). The result {d} is always put in the
+form {&p / &q} or {-- &p / &q} with {q > 1} and {p} and {q} sharing no common
+factor, or simply {&p} or {-- &p} when that is impossible.
+
+\FAILURE
+Fails if applied to a term that is not the subtraction function applied to two
+permitted rational literals of type {:real}.
+
+\EXAMPLE
+{
+  # REAL_RAT_SUB_CONV `&355 / &113 - #3.1415926`;;
+  val it : thm = |- &355 / &113 - #3.1415926 = &181 / &565000000
+}
+
+\SEEALSO
+REAL_RAT_ABS_CONV, REAL_RAT_ADD_CONV, REAL_RAT_DIV_CONV, REAL_RAT_EQ_CONV,
+REAL_RAT_GE_CONV, REAL_RAT_GT_CONV, REAL_RAT_INV_CONV, REAL_RAT_LE_CONV,
+REAL_RAT_LT_CONV, REAL_RAT_MAX_CONV, REAL_RAT_MIN_CONV, REAL_RAT_MUL_CONV,
+REAL_RAT_NEG_CONV, REAL_RAT_POW_CONV, REAL_RAT_REDUCE_CONV, REAL_RAT_RED_CONV.
+
+\ENDDOC

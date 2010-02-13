@@ -1,0 +1,26 @@
+\DOC CHEAT_TAC
+
+\TYPE {CHEAT_TAC : tactic}
+
+\SYNOPSIS
+Proves goal by asserting it as an axiom.
+
+\DESCRIBE
+Given any goal {A ?- p}, the tactic {CHEAT_TAC} solves it by using {mk_thm}, 
+which in turn involves essentially asserting the goal as a new axiom.
+
+\FAILURE
+Never fails.
+
+\USES
+Temporarily plugging boring parts of a proof to deal with the interesting 
+parts.
+
+\COMMENTS
+Needless to say, this should be used with caution since once new axioms are 
+asserted there is no guarantee that logical consistency is preserved.
+
+\SEEALSO
+new_axiom, mk_thm.
+
+\ENDDOC

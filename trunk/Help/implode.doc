@@ -1,0 +1,27 @@
+\DOC implode
+
+\TYPE {implode : string list -> string}
+
+\SYNOPSIS
+Concatenates a list of strings into one string.
+
+\DESCRIBE
+{implode [s1;...;sn]} returns the string formed by concatenating the
+strings {s1 ... sn}. If {n} is zero (the list is empty), then the empty string
+is returned.
+
+\FAILURE
+Never fails; accepts empty or multi-character component strings.
+
+\EXAMPLE
+{
+  # implode ["e";"x";"a";"m";"p";"l";"e"];;
+  val it : string = "example"
+  # implode ["ex";"a";"mpl";"";"e"];;
+  val it : string = "example"
+}
+
+\SEEALSO
+explode.
+
+\ENDDOC

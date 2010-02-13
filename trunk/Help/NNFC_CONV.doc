@@ -1,0 +1,43 @@
+\DOC NNFC_CONV
+
+\TYPE {NNFC_CONV : conv}
+
+\SYNOPSIS
+Convert a term to negation normal form.
+
+\DESCRIBE
+The conversion {NNFC_CONV} proves a term equal to an equivalent in `negation
+normal form' (NNF). This means that other propositional connectives are
+eliminated in favour of conjunction (`{/\}'), disjunction (`{\/}') and negation
+(`{~}'), and the negations are pushed down to the level of atomic formulas,
+also through universal and existential quantifiers, with double negations
+eliminated.
+
+\FAILURE
+Never fails; on non-Boolean terms it just returns a reflexive theorem.
+
+\EXAMPLE
+{
+  # NNFC_CONV `(!x. p(x) <=> q(x)) ==> ~ ?y. p(y) /\ ~q(y)`;;
+  Warning: inventing type variables
+  val it : thm =
+    |- (!x. p x <=> q x) ==> ~(?y. p y /\ ~q y) <=>
+       (?x. (p x \/ q x) /\ (~p x \/ ~q x)) \/ (!y. ~p y \/ q y)
+}
+
+\USES
+Mostly useful as a prelude to automated proof procedures, but users may
+sometimes find it useful.
+
+\COMMENTS
+A toplevel equivalence {p <=> q} is converted to {(p \/ ~q) /\ (~p \/ q)}. In
+general this ``splitting'' of equivalences is done with the expectation that
+the final formula may be put into conjunctive normal form (CNF), as a prelude
+to a proof (rather than refutation) procedure. An otherwise similar conversion
+{NNC_CONV} prefers a `disjjunctive' splitting and is better suited for a term
+that will later be translated to DNF for refutation.
+
+\SEEALSO
+GEN_NNF_CONV, NNF_CONV.
+
+\ENDDOC

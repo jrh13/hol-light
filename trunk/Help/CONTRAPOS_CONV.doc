@@ -1,0 +1,27 @@
+\DOC CONTRAPOS_CONV
+
+\TYPE {CONTRAPOS_CONV : term -> thm}
+
+\SYNOPSIS
+Proves the equivalence of an implication and its contrapositive.
+
+\KEYWORDS
+conversion, contrapositive, implication.
+
+\DESCRIBE
+When applied to an implication {`p ==> q`}, the conversion {CONTRAPOS_CONV}
+returns the theorem:
+{
+   |- (p ==> q) <=> (~q ==> ~p)
+}
+
+\FAILURE
+Fails if applied to a term that is not an implication.
+
+\COMMENTS
+The same effect can be had by {GEN_REWRITE_CONV I [GSYM CONTRAPOS_THM]}
+
+\SEEALSO
+CONTRAPOS.
+
+\ENDDOC

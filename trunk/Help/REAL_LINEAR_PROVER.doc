@@ -1,0 +1,48 @@
+\DOC REAL_LINEAR_PROVER
+
+\TYPE {REAL_LINEAR_PROVER : (thm list * thm list * thm list -> positivstellensatz -> thm) -> thm list * thm list * thm list -> thm}
+
+\SYNOPSIS
+Refute real equations and inequations by linear reasoning (not intended for
+general use).
+
+\DESCRIBE
+The {REAL_LINEAR_PROVER} function should be given two arguments. The first is a
+proof translator that constructs a contradiction from a tuple of three theorem
+lists using a Positivstellensatz refutation, which is essentially a
+representation of how to add and multiply equalities or inequalities chosen
+from the list to reach a trivially false equation or inequality such as 
+{&0 > &0}. The second argument is a triple of theorem lists, respectively a
+list of equations of the form {A_i |- p_i = &0}, a list of non-strict
+inequalities of the form {B_j |- q_i >= &0}, and a list of strict inequalities
+of the form {C_k |- r_k > &0}, with both sides being real in each case. Any
+theorems not of that form will not lead to an error, but will be ignored and
+cannot contribute to the proof. The prover attempts to construct a
+Positivstellensatz refutation by normalization as in {REAL_POLY_CONV} then
+linear inequality reasoning, and if successful will apply the translator
+function to this refutation to obtain {D |- F} where all assumptions {D} occurs
+among the {A_i}, {B_j} or {C_k}. Otherwise, or if the translator itself fails,
+the call fails.
+
+\FAILURE
+Fails if there is no refutation using linear reasoning or if an improper form
+inhibits proof for other reasons, or if the translator fails.
+
+\USES
+This is not intended for general use. The core real inequality reasoner
+{REAL_ARITH} is implemented by:
+{
+  # let REAL_ARITH = GEN_REAL_ARITH REAL_LINEAR_PROVER;;
+}
+In this way, all specifically linear functionality is isolated in
+{REAL_LINEAR_PROVER}, and the rest of the infrastructure of Positivstellensatz
+proof translation and initial normalization (including elimination of {abs},
+{max}, {min}, conditional expressions etc.) is available for use with more
+advanced nonlinear provers. Such a prover, based on semidefinite programming
+and requiring support of an external SDP solver to find Positivstellensatz
+refutations, can be found in {Examples/sos.ml}.
+
+\SEEALSO
+GEN_REAL_ARITH, REAL_ARITH, REAL_POLY_CONV.
+
+\ENDDOC

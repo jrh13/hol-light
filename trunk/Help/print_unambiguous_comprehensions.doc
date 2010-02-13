@@ -1,0 +1,42 @@
+\DOC print_unambiguous_comprehensions
+
+\TYPE {print_unambiguous_comprehensions : bool ref}
+
+\SYNOPSIS
+Determines whether bound variables in set abstractions are made explicit.
+
+\DESCRIBE
+The reference variable {print_unambiguous_comprehensions} is one of several
+settable parameters controlling printing of terms by {pp_print_term}, and hence
+the automatic printing of terms and theorems at the toplevel. When it is
+{true}, all set comprehensions are printed with an explicit indication of the
+bound variables in the middle: {`{{t | vs | p}}`}. When it is {false}, as it is
+by default, this printing of the set of bound variables is only done when the
+term would otherwise fail to match the default parsing behaviour on input, and
+otherwise just printed as {`{{t | p}}`}. The parsing behaviour for such a term is
+to take the bound variables to be those free in both {t} and {p}, unless there
+is just one variable free in {t} (in which case that variable is the only bound
+one) or there are none free in {p} (in which case all free variables of {t} are
+taken).
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+{
+  # print_unambiguous_comprehensions := false;;
+  val it : unit = ()
+  # `{{x + y | x | EVEN(x)}}`;;
+  val it : term = `{{x + y | EVEN x}}`
+
+  # print_unambiguous_comprehensions := true;;
+  val it : unit = ()
+  # `{{x + y | x | EVEN(x)}}`;;
+  val it : term = `{{x + y | x | EVEN x}}`
+}
+
+\SEEALSO
+pp_print_term, prebroken_binops, print_all_thm, reverse_interface_mapping,
+typify_universal_set, unspaced_binops.
+
+\ENDDOC

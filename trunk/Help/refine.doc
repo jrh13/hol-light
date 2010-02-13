@@ -1,0 +1,21 @@
+\DOC refine
+
+\TYPE {refine : refinement -> goalstack}
+
+\SYNOPSIS
+Applies a refinement to the current goalstack.
+
+\DESCRIBE
+The call {refine r} applies the refinement {r} to the current goalstate, adding
+the resulting goalstate at the head of the current goalstack list. (A goalstate
+consists of a list of subgoals as well as justification and metavariable
+information.)
+
+\FAILURE
+Fails if the refinement fails.
+
+\COMMENTS
+Most users will not want to handle refinements explicitly. Usually one just 
+applies a tactic to the first goal in a goalstate.
+
+\ENDDOC

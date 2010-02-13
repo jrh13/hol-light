@@ -1,0 +1,58 @@
+\DOC SELECT_CONV
+
+\TYPE {SELECT_CONV : term -> thm}
+
+\SYNOPSIS
+Eliminates an epsilon term by introducing an existential quantifier.
+
+\KEYWORDS
+conversion, epsilon.
+
+\DESCRIBE
+The conversion {SELECT_CONV} expects a boolean term of the form
+{`P[@x.P[x]/x]`}, which asserts that the epsilon term {@x.P[x]} denotes
+a value, {x} say, for which {P[x]} holds.  This assertion is equivalent
+to saying that there exists such a value, and {SELECT_CONV} applied to a
+term of this form returns the theorem {|- P[@x.P[x]/x] = ?x. P[x]}.
+
+\FAILURE
+Fails if applied to a term that is not of the form {`P[@x.P[x]/x]`}.
+
+\EXAMPLE
+{
+  # SELECT_CONV `(@n. n < m) < m`;;
+  val it : thm = |- (@n. n < m) < m <=> (?n. n < m)
+}
+\USES
+Particularly useful in conjunction with {CONV_TAC} for proving properties
+of values denoted by epsilon terms.  For example, suppose that one wishes
+to prove the goal
+{
+  # g `!m. 0 < m ==> (@n. n < m) < SUC m`;;
+}
+\noindent We start off:
+{
+  # e(REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC(ARITH_RULE `!m n. m < n ==> m < SUC n`));;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`0 < m`]
+
+  `(@n. n < m) < m`
+}
+\noindent This is now in the correct form for using {SELECT_CONV}:
+{
+  # e(CONV_TAC SELECT_CONV);;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`0 < m`]
+
+  `?n. n < m`
+}
+\noindent and the resulting subgoal is straightforward to prove, e.g.
+by {ASM_MESON_TAC[]} or {EXISTS_TAC `0` THEN ASM_REWRITE_TAC[]}.
+
+\SEEALSO
+SELECT_ELIM, SELECT_INTRO, SELECT_RULE.
+
+\ENDDOC

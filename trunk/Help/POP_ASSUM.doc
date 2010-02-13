@@ -1,0 +1,83 @@
+\DOC POP_ASSUM
+
+\TYPE {POP_ASSUM : thm_tactic -> tactic}
+
+\SYNOPSIS
+Applies tactic generated from the first element of a goal's assumption list.
+
+\KEYWORDS
+theorem-tactic, assumption.
+
+\DESCRIBE
+When applied to a theorem-tactic and a goal, {POP_ASSUM} applies
+the theorem-tactic to the first element of the assumption list,
+and applies the resulting tactic to the goal without the first
+assumption in its assumption list:
+{
+    POP_ASSUM f ({{A1;...;An}} ?- t) = f (... |- A1) ({{A2;...;An}} ?- t)
+}
+
+\FAILURE
+Fails if the assumption list of the goal is empty, or the theorem-tactic
+fails when applied to the popped assumption, or if the resulting tactic
+fails when applied to the goal (with depleted assumption list).
+
+\COMMENTS
+It is possible simply to use the theorem {ASSUME `A1`} as required rather than
+use {POP_ASSUM}; this will also maintain {A1} in the assumption list,
+which is generally useful. In addition, this approach can equally well be
+applied to assumptions other than the first.
+
+There are admittedly times when {POP_ASSUM} is convenient, but it is unwise to
+use it if there is more than one assumption in the assumption list, since this
+introduces a dependency on the ordering and makes proofs somewhat brittle with 
+respect to changes.
+
+Another point to consider is that if the relevant assumption has been obtained
+by {DISCH_TAC}, it is often cleaner to use {DISCH_THEN} with a theorem-tactic.
+For example, instead of:
+{
+   DISCH_TAC THEN POP_ASSUM (fun th -> SUBST1_TAC (SYM th))
+}
+\noindent one might use
+{
+   DISCH_THEN (SUBST1_TAC o SYM)
+}
+
+\EXAMPLE
+Starting with the goal:
+{
+  # g `!f x. 0 = x ==> f(x * f(x)) = f(x)`;;
+}
+\noindent and breaking it down:
+{
+  # e(REPEAT STRIP_TAC);; 
+  val it : goalstack = 1 subgoal (1 total)
+  
+   0 [`0 = x`]
+  
+  `f (x * f x) = f x`
+}
+\noindent we might use the equation to substitute backwards:
+{
+  # e(POP_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[MULT_CLAUSES]);;
+}
+\noindent but another alternative would have been:
+{
+  # e(REWRITE_TAC[MULT_CLAUSES; SYM(ASSUME `0 = x`)]);;
+}
+\noindent and we could even have avoided putting the equation in the 
+assumptions at all by from the beginning doing:
+{
+  # e(REPEAT GEN_TAC THEN DISCH_THEN(SUBST1_TAC o SYM) THEN 
+      REWRITE_TAC[MULT_CLAUSES]);;   
+}
+
+\USES
+Making more delicate use of an assumption than rewriting or resolution
+using it.
+
+\SEEALSO
+ASSUME, ASSUM_LIST, EVERY_ASSUM, POP_ASSUM_LIST, REWRITE_TAC.
+
+\ENDDOC

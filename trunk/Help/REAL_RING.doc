@@ -1,0 +1,94 @@
+\DOC REAL_RING
+
+\TYPE {REAL_RING : term -> thm}
+
+\SYNOPSIS
+Ring decision procedure instantiated to real numbers.
+
+\DESCRIBE
+The rule {REAL_RING} should be applied to a formula that, after suitable
+normalization, can be considered a universally quantified Boolean combination
+of equations and inequations between terms of type {:real}. If that formula
+holds in all integral domains, {REAL_RING} will prove it. Any ``alien'' atomic
+formulas that are not real number equations will not contribute to the proof
+but will not in themselves cause an error. The function is a particular
+instantiation of {RING}, which is a more generic procedure for ring and
+semiring structures.
+
+\FAILURE
+Fails if the formula is unprovable by the methods employed. This does not
+necessarily mean that it is not valid for {:real}, but rather that it is not
+valid on all integral domains (see below).
+
+\EXAMPLE
+This simple example is based on the inversion of a homographic function (from
+Gosper's notes on continued fractions):
+{
+  # REAL_RING
+     `y * (c * x + d) = a * x + b ==> x * (c * y - a) = b - d * y`;;
+  2 basis elements and 0 critical pairs
+  val it : thm = |- y * (c * x + d) = a * x + b ==> x * (c * y - a) = b - d * y
+}
+The following more complicated example verifies a classic Cardano reduction
+formula for cubic equations:
+{
+  # REAL_RING
+     `p = (&3 * a1 - a2 pow 2) / &3 /\
+      q = (&9 * a1 * a2 - &27 * a0 - &2 * a2 pow 3) / &27 /\
+      z = x - a2 / &3 /\
+      x * w = w pow 2 - p / &3 /\
+      ~(p = &0)
+      ==> (z pow 3 + a2 * z pow 2 + a1 * z + a0 = &0 <=>
+          (w pow 3) pow 2 - q * (w pow 3) - p pow 3 / &27 = &0)`;;
+  ...
+}
+Note that formulas depending on specific features of the real numbers are not
+always provable by this generic ring procedure. For example we can prove:
+{
+  # REAL_RING
+     `s pow 2 = &2
+      ==> (x pow 4 + &1 = &0 <=>
+           x pow 2 + s * x + &1 = &0 \/ x pow 2 - s * x + &1 = &0)`;;
+  ...
+}
+\noindent but not the much simpler real-specific fact:
+{
+  # REAL_RING `x pow 4 + 1 = &0 ==> F`;;
+  Exception: Failure "tryfind".
+}
+To support real-specific nonlinear reasoning, you may like to investigate the
+experimental decision procedure in {Examples/sos.ml}. For general support for
+division (fields) see {REAL_FIELD}.
+
+\USES
+Often useful for generating non-trivial algebraic lemmas. Even when it is not
+capable of solving the whole problem, it can often deal with the most tedious
+algebraic parts. For example after loading in the definitions of trig
+functions:
+{
+  # needs "Library/transc.ml";;
+}
+\noindent you may wish to prove a tedious trig identity such as:
+{
+  # g `(--((&7 * cos x pow 6) * sin x) * &7) / &49 -
+       (--((&5 * cos x pow 4) * sin x) * &5) / &25 * &3 +
+        --((&3 * cos x pow 2) * sin x) + sin x =
+       sin x pow 7`;;
+}
+\noindent which can be done by {REAL_RING} together with one simple lemma:
+{
+  # SIN_CIRCLE;;
+  val it : thm = |- !x. sin x pow 2 + cos x pow 2 = &1
+}
+\noindent as follows:
+{
+  # e(MP_TAC(SPEC `x:real` SIN_CIRCLE) THEN CONV_TAC REAL_RING);;
+  2 basis elements and 0 critical pairs
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+ARITH_RULE, ARITH_TAC, INT_RING, NUM_RING, real_ideal_cofactors, REAL_ARITH,
+REAL_FIELD, RING.
+
+\ENDDOC

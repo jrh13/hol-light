@@ -1,0 +1,33 @@
+\DOC REAL_INT_MUL_CONV
+
+\TYPE {REAL_INT_MUL_CONV : conv}
+
+\SYNOPSIS
+Conversion to perform multiplication on two integer literals of type {:real}.
+
+\DESCRIBE
+The call {REAL_INT_MUL_CONV `c1 * c2`} where {c1} and {c2} are integer literals
+of type {:real}, returns {|- c1 * c2 = d} where {d} is the canonical integer
+literal that is equal to {c1 * c2}. The literals {c1} and {c2} may be of the
+form {&n} or {-- &n} (with nonzero {n} in the latter case) and the result will
+be of the same form.
+
+\FAILURE
+Fails if applied to a term that is not the product of two permitted integer
+literals of type {:real}.
+
+\EXAMPLE
+{
+  # REAL_INT_MUL_CONV `&6 * -- &9`;;
+  val it : thm = |- &6 * -- &9 = -- &54
+}
+
+\COMMENTS
+The related function {REAL_RAT_MUL_CONV} subsumes this functionality, also
+applying to rational literals. Unless the restriction to integers is desired or
+a tiny efficiency difference matters, it should be used in preference.
+
+\SEEALSO
+INT_MUL_CONV, REAL_RAT_MUL_CONV, REAL_INT_REDUCE_CONV.
+
+\ENDDOC

@@ -1,0 +1,39 @@
+\DOC parse_as_infix
+
+\TYPE {parse_as_infix : string * (int * string) -> unit}
+
+\SYNOPSIS
+Adds identifier to list of infixes, with given precedence and associativity.
+
+\DESCRIBE
+Certain identifiers are treated as infix operators with a given precedence and 
+associativity (left or right). The call {parse_as_infix("op",(p,a))} adds {op} 
+to the infix operators with precedence {p} and associativity {a} (it should be 
+one of the two strings {"left"} or {"right"}). Note that the infix status is 
+based purely on the name, which can be alphanumeric or symbolic, and does not 
+depend on whether the name denotes a constant.
+
+\FAILURE
+Never fails; if the given string was already an infix, its precedence and 
+associativity are changed to the new values.
+
+\EXAMPLE
+{
+  # strip_comb `n choose k`;;
+  Warning: inventing type variables
+  val it : term * term list = (`n`, [`choose`; `k`])
+
+  # parse_as_infix("choose",(22,"right"));;
+  val it : unit = ()
+  # strip_comb `n choose k`;;
+  Warning: inventing type variables
+  val it : term * term list = (`(choose)`, [`n`; `k`])
+}
+
+\USES
+Adding user-defined binary operators.
+
+\SEEALSO
+get_infix_status, infixes, unparse_as_infix.
+
+\ENDDOC

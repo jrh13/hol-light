@@ -1,0 +1,35 @@
+\DOC VALID
+
+\TYPE {VALID : tactic -> tactic}
+
+\SYNOPSIS
+Tries to ensure that a tactic is valid.
+
+\KEYWORDS
+tactical.
+
+\DESCRIBE
+For any tactic {t}, the application {VALID t} gives a new tactic that does 
+exactly the same as {t} except that it also checks validity of the tactic 
+and will fail if it is violated. Validity means that the subgoals produced by 
+{t} can, if proved, be used by the justification function given by {t} to
+construct a theorem corresponding to the original goal.
+
+This check is performed by actually creating, using {mk_fthm}, theorems
+corresponding to the subgoals, and seeing if the result of applying the
+justification function to them gives a theorem corresponding to the original
+goal. If it does, then {VALID t} simply applies {t}, and if not it fails. In
+principle, the extra dummy hypothesis used by {mk_fthm} (necessary to ensure
+logical soundness) could interfere with the mechanism of the tactic, but this
+never seems to happen.
+
+\COMMENTS
+You can always force validity checking whenever it is applied by using {VALID}
+on a tactic. But if the goal is initially proved by using the subgoal stack
+this is probably not necessary since {VALID} is already implicitly applied in
+the {e} (expand) function.
+
+\SEEALSO
+CHANGED_TAC, e, mk_fthm, TRY.
+
+\ENDDOC

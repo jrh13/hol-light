@@ -1,0 +1,20 @@
+\DOC empty_ss
+
+\TYPE {empty_ss : simpset}
+
+\SYNOPSIS
+Simpset consisting of only the default rewrites and conversions.
+
+\DESCRIBE
+In their maximal generality, simplification operations in HOL Light (as invoked 
+by {SIMP_TAC}) are controlled by a `simpset'. The simpset {empty_ss} has just 
+the basic rewrites and conversions (see {basic_rewrites} and {basic_convs}), 
+and no other provers.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+basic_convs, basic_rewrites, basic_ss, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

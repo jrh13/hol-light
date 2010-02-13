@@ -1,0 +1,30 @@
+\DOC union
+
+\TYPE {union : 'a list -> 'a list -> 'a list}
+
+\SYNOPSIS
+Computes the union of two `sets'.
+
+\KEYWORDS
+list, set.
+
+\DESCRIBE
+{union l1 l2} returns a list consisting of the elements of {l1} not already in 
+{l2} concatenated with {l2}. If {l1} and {l2} are initially free from 
+duplicates, this gives a set-theoretic union operation.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # union [1;2;3] [1;5;4;3];;
+  val it : int list = [2; 1; 5; 4; 3]
+  # union [1;1;1] [1;2;3;2];;
+  val it : int list = [1; 2; 3; 2]
+}
+
+\SEEALSO
+setify, set_equal, intersect, subtract.
+
+\ENDDOC

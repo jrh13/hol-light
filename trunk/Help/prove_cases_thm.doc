@@ -1,0 +1,46 @@
+\DOC prove_cases_thm
+
+\TYPE {prove_cases_thm : thm -> thm}
+
+\SYNOPSIS
+Proves a structural cases theorem for an automatically-defined concrete type.
+
+\DESCRIBE
+{prove_cases_thm} takes as its argument a structural induction theorem, in the
+form returned by {prove_induction_thm} for an automatically-defined concrete
+type.  When applied to such a theorem, {prove_cases_thm} automatically proves
+and returns a theorem which states that every value the concrete type in
+question is denoted by the value returned by some constructor of the type.
+
+\FAILURE
+Fails if the argument is not a theorem of the form returned by
+{prove_induction_thm}
+
+\EXAMPLE
+The following type definition for labelled binary trees:
+{
+  # let ith,rth = define_type "tree = LEAF num | NODE tree tree";;
+  val ith : thm =
+    |- !P. (!a. P (LEAF a)) /\ (!a0 a1. P a0 /\ P a1 ==> P (NODE a0 a1))
+           ==> (!x. P x)
+  val rth : thm =
+    |- !f0 f1.
+           ?fn. (!a. fn (LEAF a) = f0 a) /\
+                (!a0 a1. fn (NODE a0 a1) = f1 a0 a1 (fn a0) (fn a1))
+}
+\noindent returns an induction theorem {ith} that can then be fed to
+{prove_cases_thm}:
+{
+  # prove_cases_thm ith;;
+  val it : thm = |- !x. (?a. x = LEAF a) \/ (?a0 a1. x = NODE a0 a1)
+}
+
+\COMMENTS
+An easier interface is {cases "tree"}. This function is mainly intended to
+generate the cases theorems for that function.
+
+\SEEALSO
+cases, define_type, INDUCT_THEN, new_recursive_definition,
+prove_constructors_distinct, prove_constructors_one_one, prove_induction_thm.
+
+\ENDDOC

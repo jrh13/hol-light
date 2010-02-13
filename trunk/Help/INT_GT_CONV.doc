@@ -1,0 +1,28 @@
+\DOC INT_GT_CONV
+
+\TYPE {INT_GT_CONV : conv}
+
+\SYNOPSIS
+Conversion to prove whether one integer literal of type {:int} is {<}
+another.
+
+\DESCRIBE
+The call {INT_GT_CONV `c1 > c2`} where {c1} and {c2} are integer
+litersls of type {:int}, returns whichever of {|- c1 > c2 <=> T} or
+{|- c1 > c2 <=> F} is true. By an integer literal we mean either {&n} or
+{-- &n} where {n} is a numeral.
+
+\FAILURE
+Fails if applied to a term that is not the appropriate inequality comparison on
+two permitted integer literals of type {:int}.
+
+\EXAMPLE
+{
+  # INT_GT_CONV `&1 > &2`;;
+  val it : thm = |- &1 > &2 <=> F
+}
+
+\SEEALSO
+INT_REDUCE_CONV, REAL_RAT_GT_CONV.
+
+\ENDDOC

@@ -1,0 +1,68 @@
+\DOC let_CONV
+
+\TYPE {let_CONV : term -> thm}
+
+\SYNOPSIS
+Evaluates {let}-terms in the HOL logic.
+
+\KEYWORDS
+conversion.
+
+\DESCRIBE
+The conversion {let_CONV} implements evaluation of object-language {let}-terms.
+When applied to a {let}-term of the form:
+{
+   let v1 = t1 and ... and vn = tn in t
+}
+\noindent where {v1}, ..., {vn} are variables, {let_CONV} proves and returns
+the theorem:
+{
+   |- (let v1 = t1 and ... and vn = tn in t) = t[t1,...,tn/v1,...,vn]
+}
+\noindent where {t[t1,...,tn/v1,...,vn]} denotes the result of substituting
+{ti} for {v1} in parallel in {t}, with automatic renaming of bound variables
+to prevent free variable capture.
+
+{let_CONV} also works on {let}-terms that bind terms built up from applications 
+of inductive type constructors. For example, if {<tup>} is an
+arbitrarily-nested tuple of distinct variables {v1}, ..., {vn} and {<val>} is a
+structurally similar tuple of values, that is {<val>} equals
+{<tup>[t1,...,tn/v1,...,vn]} for some terms {t1}, ..., {tn}, then: 
+{
+   let_CONV `let <tup> = <val> in t`
+}
+\noindent returns
+{
+  |- (let <tup> = <val> in t) = t[t1,...,tn/v1,...,vn]
+}
+\noindent That is, the term {ti} is substituted for the corresponding variable
+{vi} in {t}.  This form of {let}-reduction also works with simultaneous binding
+of tuples using {and}.
+
+\FAILURE
+{let_CONV tm} fails if {tm} is not a reducible {let}-term of one of the forms
+specified above.
+
+\EXAMPLE
+A simple example of the use of {let_CONV} to eliminate a single local variable
+is the following:
+{
+  # let_CONV `let x = 1 in x+y`;;
+  val it : thm = |- (let x = 1 in x + y) = 1 + y
+}
+\noindent and an example showing a tupled binding is:
+{
+  # let_CONV `let (x,y) = (1,2) in x+y`;;
+  val it : thm = |- (let x,y = 1,2 in x + y) = 1 + 2
+}
+\noindent Simultaneous introduction of two bindings
+is illustrated by:
+{
+  # let_CONV `let x = 1 and y = 2 in x + y + z`;;
+  val it : thm = |- (let x = 1 and y = 2 in x + y + z) = 1 + 2 + z
+}
+
+\SEEALSO
+BETA_CONV, GEN_BETA_CONV.
+
+\ENDDOC

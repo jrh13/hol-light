@@ -1,0 +1,31 @@
+\DOC file_of_string
+
+\TYPE {file_of_string : string -> string}
+
+\SYNOPSIS
+Write out a string to a named file.
+
+\DESCRIBE
+Given a filename {fn} and a string {s}, the call {file_of_string fn s} attempts 
+to open the file {fn} for writing and writes the string {s} to it before 
+closing. If the file exists, it will be overwritten, and otherwise a new file 
+will be created.
+
+\FAILURE
+Fails if the file cannot be opened for writing.
+
+\EXAMPLE
+The call
+{
+  # file_of_string "/tmp/hello" "Hello world\nGoodbye world";;
+  val it : unit = ()
+}
+will result in a file {/tmp/hello} containing the text:
+{
+Hello world
+Goodbye world
+
+\SEEALSO
+string_of_file, strings_of_file.
+
+\ENDDOC

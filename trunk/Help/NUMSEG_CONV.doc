@@ -1,0 +1,30 @@
+\DOC NUMSEG_CONV
+
+\TYPE {NUMSEG_CONV : conv}
+
+\SYNOPSIS
+Expands a specific interval {m..n} to a set enumeration.
+
+\DESCRIBE
+When applied to a term {`m..n`} (the segment of natural numbers between
+{m} and {n}) for specific numerals {m} and {n}, the conversion {NUMSEG_CONV}
+returns a theorem of the form {|- m..n = {{m, ..., n}}} expressing that segment
+as a set enumeration.
+
+\FAILURE
+Fails unless applied to a term of the form {m..n} for specific numerals {m} and
+{n}.
+
+\EXAMPLE
+{
+  # NUMSEG_CONV `7..11`;;
+  val it : thm = |- 7..11 = {7, 8, 9, 10, 11}
+
+  # NUMSEG_CONV `24..7`;;
+  val it : thm = |- 24..7 = {}
+}
+
+\SEEALSO
+SET_RULE, SET_TAC.
+
+\ENDDOC

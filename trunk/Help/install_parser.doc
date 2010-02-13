@@ -1,0 +1,21 @@
+\DOC install_parser
+
+\TYPE {install_parser : string * (lexcode list -> preterm * lexcode list) -> unit}
+
+\SYNOPSIS
+Install a user parser.
+
+\DESCRIBE
+HOL Light allows user parsing functions to be installed, and will try them on
+all terms during parsing before the usual parsers. The call
+{install_parser(s,p)} installs the parser {p} among the user parsers to try in
+this way. The string {s} is there so that the parser can conveniently be
+deleted again.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+delete_parser, installed_parsers, try_user_parser.
+
+\ENDDOC

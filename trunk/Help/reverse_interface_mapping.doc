@@ -1,0 +1,42 @@
+\DOC reverse_interface_mapping
+
+\TYPE {reverse_interface_mapping : bool ref}
+
+\SYNOPSIS
+Determines whether interface map is printed on output (default {true}).
+
+\DESCRIBE
+The reference variable {reverse_interface_mapping} is one of several settable
+parameters controlling printing of terms by {pp_print_term}, and hence the
+automatic printing of terms and theorems at the toplevel. When
+{reverse_interface_mapping} is {true} (as it is by default), the front-end
+interface map for a constant or variable is printed. When it is {false}, the
+core constant or variable is printed.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+Here is a simple library theorem about real numbers as it usually appears:
+{
+  # reverse_interface_mapping := true;;
+  val it : unit = ()
+  # REAL_EQ_SUB_LADD;;
+  val it : thm = |- !x y z. x = y - z <=> x + z = y
+}
+\noindent but with another setting of {reverse_interface_mapping} we see that 
+the usual symbol `{+}' is an interface for {real_add}, while the `iff' sign is 
+just an interface for Boolean equality:
+{  
+  # reverse_interface_mapping := false;;
+  val it : unit = ()
+  # REAL_EQ_SUB_LADD;;
+  val it : thm = |- !x y z. (x = real_sub y z) = real_add x z = y
+}
+
+\SEEALSO
+pp_print_term, prebroken_binops, print_all_thm,
+print_unambiguous_comprehensions, the_interface, typify_universal_set,
+unspaced_binops.
+
+\ENDDOC

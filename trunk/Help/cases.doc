@@ -1,0 +1,31 @@
+\DOC cases
+
+\TYPE {cases : string -> thm}
+
+\SYNOPSIS
+Produce cases theorem for an inductive type.
+
+\DESCRIBE
+A call {cases "ty"} where {"ty"} is the name of a recursive type defined with 
+{define_type}, returns a ``cases'' theorem asserting that each element of the 
+type is an instance of one of the type constructors. The effect is exactly 
+the same is if {prove_cases_thm} were applied to the induction theorem produced
+by {define_type}, and the documentation for {prove_cases_thm} gives a lengthier
+discussion.
+
+\FAILURE
+Fails if {ty} is not the name of a recursive type.
+
+\EXAMPLE
+{
+  # cases "num";;
+  val it : thm = |- !m. m = 0 \/ (?n. m = SUC n)
+
+  # cases "list";;
+  val it : thm = |- !x. x = [] \/ (?a0 a1. x = CONS a0 a1)
+}
+
+\SEEALSO
+define_type, distinctness, injectivity, prove_cases_thm.
+
+\ENDDOC

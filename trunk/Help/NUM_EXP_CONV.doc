@@ -1,0 +1,45 @@
+\DOC NUM_EXP_CONV
+
+\TYPE {NUM_EXP_CONV : term -> thm}
+
+\SYNOPSIS
+Proves what the exponential of two natural number numerals is.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} and {m} are numerals (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_EXP_CONV `n EXP m`} returns the theorem:
+{
+   |- n EXP m = s
+}
+\noindent where {s} is the numeral that denotes the natural number denoted by 
+{n} raised to the power of the one denoted by {m}.
+
+\FAILURE
+{NUM_EXP_CONV tm} fails if {tm} is not of the form  {`n EXP m`}, where {n} and
+{m} are numerals.
+
+\EXAMPLE
+{
+  # NUM_EXP_CONV `2 EXP 64`;;
+  val it : thm = |- 2 EXP 64 = 18446744073709551616
+
+  # NUM_EXP_CONV `1 EXP 99`;;
+  val it : thm = |- 1 EXP 99 = 1
+
+  # NUM_EXP_CONV `0 EXP 0`;;
+  val it : thm = |- 0 EXP 0 = 1
+
+  # NUM_EXP_CONV `0 EXP 10000`;;
+  val it : thm = |- 0 EXP 10000 = 0
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_FACT_CONV,
+NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MIN_CONV, 
+NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV, NUM_PRE_CONV, NUM_REDUCE_CONV,
+NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
+
+\ENDDOC

@@ -1,0 +1,39 @@
+\DOC NUM_CANCEL_CONV
+
+\TYPE {NUM_CANCEL_CONV : term -> thm}
+
+\SYNOPSIS
+Cancels identical terms from both sides of natural number equation.
+
+\DESCRIBE
+Given an equational term {`t1 + ... + tn = s1 + ... + sm`} (with arbitrary 
+association of the additions) where both sides have natural number type, the
+conversion identifies common elements among the {ti} and {si}, and cancels them
+from both sides, returning a theorem: 
+{
+  |- t1 + ... + tn = s1 + ... + sm <=> u1 + ... + uk = v1 + ... + vl
+}
+\noindent where the {ui} and {vi} are the remaining elements of the {ti} and 
+{si} respectively, in some order.
+
+\FAILURE
+Fails if applied to a term that is not an equation between natural number 
+terms.
+
+\EXAMPLE
+{
+  # NUM_CANCEL_CONV `(a + b + x * y + SUC c) + d = SUC c + d + y * z`;;
+  val it : thm =
+    |- (a + b + x * y + SUC c) + d = SUC c + d + y * z <=>
+       x * y + b + a = y * z
+}
+
+\USES
+Simplifying equations where explicitly directing the cancellation would be 
+tedious. However, this is mostly intended for ``bootstrapping'', before more 
+powerful rules like {ARITH_RULE} and {NUM_RING} are available.
+
+\SEEALSO
+ARITH_CONV, ARITH_RULE, ARITH_TAC, NUM_RING.
+
+\ENDDOC

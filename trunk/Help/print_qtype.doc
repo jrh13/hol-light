@@ -1,0 +1,22 @@
+\DOC print_qtype
+
+\TYPE {print_qtype : hol_type -> unit}
+
+\SYNOPSIS
+Prints a type with colon and surrounding quotes to standard output.
+
+\DESCRIBE
+The call {print_type ty} prints the usual textual representation of the
+type {ty} to the standard output, that is {`:ty`}.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+This is the function that is invoked automatically in the toplevel when
+printing types.
+
+\SEEALSO
+pp_print_qtype, pp_print_type, print_type.
+
+\ENDDOC

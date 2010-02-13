@@ -1,0 +1,27 @@
+\DOC RING_AND_IDEAL_CONV
+
+\TYPE {RING_AND_IDEAL_CONV : (term -> num) * (num -> term) * conv * term * term * term * term * term * term * term * thm * (term -> thm) -> (term -> thm) * (term list -> term -> term list)}
+
+\SYNOPSIS
+Returns a pair giving a ring proof procedure and an ideal membership routine.
+
+\DESCRIBE
+This function combines the functionality of {RING} and {ideal_cofactors}. Each 
+of these requires the same rather lengthy input. When you want to apply both to 
+the same set of parameters, you can do so using {RING_AND_IDEAL_CONV}. That is:
+{
+  RING_AND_IDEAL_CONV parms
+}
+\noindent is functionally equivalent to:
+{
+  RING parms,ideal_cofactors parms
+}
+For more information, see the documentation for those two functions.
+
+\FAILURE
+Fails if the parameters are wrong.
+
+\SEEALSO
+ideal_cofactors, RING.
+
+\ENDDOC

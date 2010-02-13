@@ -1,0 +1,60 @@
+\DOC AC
+
+\TYPE {AC : thm -> term -> thm}
+
+\SYNOPSIS
+Proves equality of terms using associative, commutative, and optionally
+idempotence laws.
+
+\KEYWORDS
+conversion, associative, commutative.
+
+\DESCRIBE
+Suppose {_} is a function, which is assumed to be infix in the following
+syntax, and {acth} is a theorem expressing associativity and commutativity in
+the particular canonical form:
+{
+   acth = |- m _ n = n _ m /\
+             (m _ n) _ p = m _ n _ p /\
+             m _ n _ p = n _ m _ p
+}
+\noindent Then {AC acth} will prove equations whose left and right sides can be
+made identical using these associative and commutative laws. If the input
+theorem also has idempotence property in this canonical form:
+{
+  |- (p _ q = q _ p) /\
+     ((p _ q) _ r = p _ q _ r) /\
+     (p _ q _ r = q _ p _ r) /\
+     (p _ p = p) /\
+     (p _ p _ q = p _ q)
+}
+then idempotence will also be applied.
+
+\FAILURE
+Fails if the terms are not proved equivalent under the appropriate laws. This
+may happen because the input theorem does not have the correct canonical form.
+The latter problem will not in itself cause failure until it is applied to the
+term.
+
+\EXAMPLE
+{
+  # AC ADD_AC `1 + 2 + 3 = 2 + 1 + 3`;;
+  val it : thm = |- 1 + 2 + 3 = 2 + 1 + 3
+  # AC CONJ_ACI `p /\ (q /\ p) <=> (p /\ q) /\ (p /\ q)`;;
+  val it : thm = |- p /\ q /\ p <=> (p /\ q) /\ p /\ q
+}
+
+\COMMENTS
+Note that pre-proved theorems in the correct canonical form for {AC} are
+already present for many standard operators, e.g. {ADD_AC}, {MULT_AC},
+{INT_ADD_AC}, {INT_MUL_AC}, {REAL_ADD_AC}, {REAL_MUL_AC}, {CONJ_ACI},
+{DISJ_ACI} and {INSERT_AC}. The underlying algorithm is not particularly
+delicate, and normalization under the associative/commutative/idempotent laws
+can be achieved by direct rewriting with the same canonical theorems. For some
+cases, specially optimized rules are available such as {CONJ_ACI_RULE} and
+{DISJ_ACI_RULE}.
+
+\SEEALSO
+ASSOC_CONV, CONJ_ACI_RULE, DISJ_ACI_RULE, SYM_CONV.
+
+\ENDDOC

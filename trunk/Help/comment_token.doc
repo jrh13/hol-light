@@ -1,0 +1,42 @@
+\DOC comment_token
+
+\TYPE {comment_token : lexcode ref}
+
+\SYNOPSIS
+HOL Light comment token.
+
+\DESCRIBE
+Users may insert comments in HOL Light terms that are ignored in parsing.
+Comments are introduced by a special comment token and terminated by the next
+end of line. (There are no multi-line comments supported in HOL Light terms.)
+The reference {comment_token} stores the token that introduces a comment, which
+by default is {Resword "//"} as in BCPL, C++, Java etc. The user may change it
+to another token, though this should be done with care in case other proofs
+break.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+Here we change the comment token to be `{--}' (as used in Ada, Eiffel, Haskell, 
+Occam and several other programming languages):
+{
+  # comment_token := Ident "--";;
+  val it : unit = ()
+}
+\noindent and we can test that it works:
+{
+  # `let wordsize = 32 -- may change to 64 later
+     and radix = 2     -- only care about binary
+     in radix EXP wordsize`;;
+  val it : term = `let wordsize = 32 and radix = 2 in radix EXP wordsize`
+}
+
+\COMMENTS
+Comments are handled at the level of the lexical analyzer, so can also be used
+in types and the strings used for the specification of inductive types.
+
+\SEEALSO
+define_type, lex, parse_inductive_type_specification, parse_term, parse_type.
+
+\ENDDOC

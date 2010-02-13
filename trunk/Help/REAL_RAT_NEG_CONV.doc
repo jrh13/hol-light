@@ -1,0 +1,33 @@
+\DOC REAL_RAT_NEG_CONV
+
+\TYPE {REAL_RAT_NEG_CONV : term -> thm}
+
+\SYNOPSIS
+Conversion to negate a rational literal of type {:real}.
+
+\DESCRIBE
+The call {REAL_RAT_NEG_CONV `--c`}, where {c} is a rational literal of type
+{:real}, returns the theorem {|- --c = d} where {d} is the canonical rational
+literal that is equal to {c}'s negation. The literal {c} may be an integer
+literal ({&n} or {-- &n}), a ratio ({&p / &q} or {-- &p / &q}), or a decimal
+({#DDD.DDDD} or {#DDD.DDDDeNN}). The returned value {d} is always put in the
+form {&p / &q} or {-- &p / &q} with {q > 1} and {p} and {q} sharing no common
+factor, or simply {&p} or {-- &p} when that is impossible.
+
+\FAILURE
+Fails if applied to a term that is not the negation of one of the permitted
+forms of rational literal of type {:real}.
+
+\EXAMPLE
+{
+  # REAL_RAT_NEG_CONV `-- (-- &3 / &2)`;;
+  val it : thm = |- --(-- &3 / &2) = &3 / &2
+}
+
+\SEEALSO
+REAL_RAT_ABS_CONV, REAL_RAT_ADD_CONV, REAL_RAT_DIV_CONV, REAL_RAT_EQ_CONV,
+REAL_RAT_GE_CONV, REAL_RAT_GT_CONV, REAL_RAT_INV_CONV, REAL_RAT_LE_CONV,
+REAL_RAT_LT_CONV, REAL_RAT_MAX_CONV, REAL_RAT_MIN_CONV, REAL_RAT_MUL_CONV,
+REAL_RAT_POW_CONV, REAL_RAT_REDUCE_CONV, REAL_RAT_RED_CONV, REAL_RAT_SUB_CONV.
+
+\ENDDOC

@@ -1,0 +1,30 @@
+\DOC union'
+
+\TYPE {union' : ('a -> 'a -> bool) -> 'a list -> 'a list -> 'a list}
+
+\SYNOPSIS
+Union of sets modulo an equivalence.
+
+\DESCRIBE
+The call {union' r l1 l2} appends to the list {l2} all those elements {x} of
+{l1} for which there is not already an equivalent {x'} with {r x x'} in {l2} or
+earlier in {l1}. If {l1} and {l2} were free of equivalents under {r}, the
+resulting list will be too, so this is a set operation modulo an equivalence. 
+The function {union} is the special case where the relation is just equality.
+
+\FAILURE
+Fails only if the function {r} fails.
+
+\EXAMPLE
+{
+  # union' (fun x y -> abs(x) = abs(y)) [-1; 2; 1] [-2; -3; 4; -4];;
+  val it : int list = [1; -2; -3; 4; -4]
+}
+
+\USES
+Maintaining sets modulo an equivalence such as alpha-equivalence.
+
+\SEEALSO
+insert', mem', subtract', union, unions'.
+
+\ENDDOC

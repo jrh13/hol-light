@@ -1,0 +1,34 @@
+\DOC is_const
+
+\TYPE {is_const : term -> bool}
+
+\SYNOPSIS
+Tests a term to see if it is a constant.
+
+\DESCRIBE
+{is_const `const:ty`} returns {true}. If the term is not a constant the
+result is {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_const `T`;;
+  val it : bool = true
+  # is_const `x:bool`;;
+  val it : bool = false
+}
+Note that numerals are not constants; they are composite constructs hidden by 
+prettyprinting:
+{
+  # is_const `0`;;
+  val it : bool = false
+  # is_numeral `12345`;;
+  val it : bool = true
+}
+
+\SEEALSO
+dest_const, is_abs, is_comb, is_numeral, is_var, mk_const.
+
+\ENDDOC

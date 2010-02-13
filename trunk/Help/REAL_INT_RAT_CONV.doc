@@ -1,0 +1,35 @@
+\DOC REAL_INT_RAT_CONV
+
+\TYPE {REAL_INT_RAT_CONV : conv}
+
+\SYNOPSIS
+Convert basic rational constant of real type to canonical form.
+
+\DESCRIBE
+When applied to a term that is a rational constant of type {:real},
+{REAL_INT_RAT_CONV} converts it to an explicit ratio {&p / &q} or {-- &p / &q}; 
+{q} is always there, even if it is {1}.
+
+\FAILURE
+Never fails; simply has no effect if it is not applied to a suitable constant.
+
+\EXAMPLE
+{
+  # REAL_INT_RAT_CONV `&22 / &7`;;
+  val it : thm = |- &22 / &7 = &22 / &7
+
+  # REAL_INT_RAT_CONV `&42`;;
+  val it : thm = |- &42 = &42 / &1
+
+  # REAL_INT_RAT_CONV `#3.1415926`;;
+  val it : thm = |- #3.1415926 = &31415926 / &10000000
+}
+
+\USES
+Mainly for internal use as a preprocessing step in rational-number 
+calculations.
+
+\SEEALSO
+REAL_RAT_REDUCE_CONV.
+
+\ENDDOC

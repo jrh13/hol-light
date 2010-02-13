@@ -1,0 +1,34 @@
+\DOC SET_TAC
+
+\TYPE {SET_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Attempt to prove goal using basic set-theoretic reasoning.
+
+\DESCRIBE
+When applied to a goal and a list of lemmas to use, the tactic {SET_TAC} puts
+the lemmas into the goal as antecedents, expands various set-theoretic
+definitions explicitly and then attempts to solve the result using {MESON}. It 
+does not by default use the assumption list of the goal, but this can be done 
+using {ASM SET_TAC} in place of plain {SET_TAC}.
+
+\FAILURE
+Fails if the simple translation does not suffice, or the resulting goal is too
+deep for {MESON}.
+
+\EXAMPLE
+Given the following goal:
+{
+  # g `!s. (UNIONS s = {{}}) <=> !t. t IN s ==> t = {{}}`;;
+}
+\noindent the following solves it:
+{
+  # e(SET_TAC[]);;
+  ...
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+ASM, MESON, MESON_TAC, SET_RULE.
+
+\ENDDOC

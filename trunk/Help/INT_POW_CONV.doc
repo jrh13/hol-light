@@ -1,0 +1,28 @@
+\DOC INT_POW_CONV
+
+\TYPE {INT_POW_CONV : conv}
+
+\SYNOPSIS
+Conversion to perform exponentiation on a integer literal of type {:int}.
+
+\DESCRIBE
+The call {INT_POW_CONV `c pow n`} where {c} is an integer literal of type
+{:int} and {n} is a numeral of type {:num}, returns {|- c pow n = d} where {d}
+is the canonical integer literal that is equal to {c} raised to the {n}th
+power. The literal {c} may be of the form {&n} or {-- &n} (with nonzero {n} in
+the latter case) and the result will be of the same form.
+
+\FAILURE
+Fails if applied to a term that is not a permitted integer literal of type
+{:int} raised to a numeral power.
+
+\EXAMPLE
+{
+  # INT_POW_CONV `(-- &2) pow 77`;;
+  val it : thm = |- -- &2 pow 77 = -- &151115727451828646838272
+}
+
+\SEEALSO
+INT_POW_CONV, INT_REDUCE_CONV.
+
+\ENDDOC

@@ -1,0 +1,30 @@
+\DOC is_type
+
+\TYPE {is_type : hol_type -> bool}
+
+\SYNOPSIS
+Tests whether a type is an instance of a type constructor.
+
+\DESCRIBE
+{is_type ty} returns {true} if {ty} is a base type or constructed by an outer 
+type constructor, and {false} if it is a type variable.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_type `:bool`;;
+  val it : bool = true
+
+  # is_type `:bool->int`;;
+  val it : bool = true
+
+  # is_type `:Tyvar`;;
+  val it : bool = false
+}
+
+\SEEALSO
+get_type_arity, is_vartype.
+
+\ENDDOC

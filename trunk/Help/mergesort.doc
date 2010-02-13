@@ -1,0 +1,27 @@
+\DOC mergesort
+
+\TYPE {mergesort : ('a -> 'a -> bool) -> 'a list -> 'a list}
+
+\SYNOPSIS
+Sorts the list with respect to given ordering using mergesort algorithm.
+
+\DESCRIBE
+If {ord} is a total order, a call {mergesort ord l} will sort the list {l} 
+according to the order {ord}. It works internally by a mergesort algorithm. 
+From a user's point of view, this just means: (i) its worst-case performance is 
+much better than {sort}, which uses quicksort, but (ii) it will not reliably 
+topologically sort for a non-total order, whereas {sort} will.
+
+\FAILURE
+Never fails unless the ordering function fails.
+
+\EXAMPLE
+{
+  # mergesort (<) [6;2;5;9;2;5;3];;
+  val it : int list = [2; 2; 3; 5; 5; 6; 9]
+}
+
+\SEEALSO
+merge, sort.
+
+\ENDDOC

@@ -1,0 +1,37 @@
+\DOC the_type_definitions
+
+\TYPE {the_type_definitions : ((string * string * string) * (thm * thm)) list ref}
+
+\SYNOPSIS
+List of type definitions made so far.
+
+\DESCRIBE
+The reference variable {the_type_definitions} holds a list of entries, one for 
+each type definition made so far with {new_type_definition}. It is not normally 
+explicitly manipulated by the user, but is automatically augmented by each call
+of {new_type_definition}. Each entry contains three strings (the type name,
+type constructor name and destructor name) and two theorems (the input
+nonemptiness theorem and the returned type bijections). That is, for a call:
+{
+  bijth = new_type_definition tyname (absname,repname) nonempth;;
+}
+\noindent the entry created in this list is:
+{
+ (tyname,absname,repname),(nonempth,bijth)
+}
+Note that the entries made using other interfaces to 
+{new_basic_type_definition}, such as {define_type}, are not included in this 
+list.
+
+\FAILURE
+Not applicable.
+
+\USES
+This is mainly intended for internal use in {new_type_definition}, so that 
+repeated instances of the same definition are ignored rather than rejected. 
+Some users may find the information useful too.
+
+\SEEALSO
+axioms, constants, new_type_definition, the_definitions.
+
+\ENDDOC

@@ -1,0 +1,32 @@
+\DOC itlist2
+
+\TYPE {itlist2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c}
+
+\SYNOPSIS
+Applies a paired function between adjacent elements of 2 lists.
+
+\KEYWORDS
+list.
+
+\DESCRIBE
+{itlist2 f ([x1;...;xn],[y1;...;yn]) z} returns
+{
+   f x1 y1 (f x2 y2 ... (f xn yn z)...)
+}
+\noindent It returns {z} if both lists are empty.
+
+\FAILURE
+Fails if the two lists are of different lengths.
+
+\EXAMPLE
+This takes a `dot product' of two vectors of integers:
+{
+  # let dot v w = itlist2 (fun x y z -> x * y + z) v w 0;;
+  val dot : int list -> int list -> int = <fun>
+  # dot [1;2;3] [4;5;6];;
+  val it : int = 32
+}
+\SEEALSO
+itlist, rev_itlist, end_itlist, uncurry.
+
+\ENDDOC

@@ -1,0 +1,58 @@
+\DOC WF_INDUCT_TAC
+
+\TYPE {WF_INDUCT_TAC : term -> (string * thm) list * term -> goalstate}
+
+\SYNOPSIS
+Performs wellfounded induction with respect to a given `measure'.
+
+\DESCRIBE
+The tactic {WF_INDUCT_TAC} is applied to two arguments. The second is a goal to
+prove, and the first is an expression to use as a ``measure''. The result is a
+new subgoal where the same goal is to be proved but as an assumption it holds
+for all smaller values of the measure, universally quantified over the free
+variables in the measure term (which should also be free in the goal).
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Suppose we define a Euclidean GCD algorithm:
+{
+  # let egcd = define
+     `egcd(m,n) = if m = 0 then n
+                  else if n = 0 then m
+                  else if m <= n then egcd(m,n - m)
+                  else egcd(m - n,n)`;;
+}
+\noindent and after picking up from the library an infix `{divides}' relation
+for divisibility:
+{
+  # needs "Library/prime.ml";;
+}
+\noindent we want to prove something about the result, e.g.
+{
+  # g `!m n d. d divides egcd(m,n) <=> d divides m /\ d divides n`;;
+}
+\noindent A natural way to proceed is by induction on the sum of the arguments:
+{
+  # e(GEN_TAC THEN GEN_TAC THEN WF_INDUCT_TAC `m + n`);;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`!m'' n'.
+             m'' + n' < m + n
+             ==> (!d. d divides egcd (m'',n') <=> d divides m'' /\ d divides n')`]
+
+  `!d. d divides egcd (m,n) <=> d divides m /\ d divides n`
+}
+\noindent Note that we have the same goal, but an assumption that it holds for
+smaller values of the measure term.
+
+\COMMENTS
+Wellfounded induction can always be performed on any relation by using {WF_IND}
+together with an assumption of wellfoundedness such as {num_WF} or
+{WF_MEASURE}. This tactic is just a slightly more convenient packaging.
+
+\SEEALSO
+INDUCT_TAC, LIST_INDUCT_TAC.
+
+\ENDDOC

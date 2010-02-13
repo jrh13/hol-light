@@ -1,0 +1,3 @@
+HOL interface to cddlib to provide a faster linear prover.
+
+(c) Lars Schewe (schewe@mathematik.tu-darmstadt.de), 2007

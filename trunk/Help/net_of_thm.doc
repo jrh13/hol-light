@@ -1,0 +1,30 @@
+\DOC net_of_thm
+
+\TYPE {net_of_thm : bool -> thm -> (int * (term -> thm)) net -> (int * (term -> thm)) net}
+
+\SYNOPSIS
+Insert a theorem into a net as a (conditional) rewrite.
+
+\DESCRIBE
+The underlying machinery in rewriting and simplification assembles
+(conditional) rewrite rules and other conversions into a net, including a
+priority number so that, for example, pure rewrites get applied before
+conditional rewrites. Such a net can then be used by {REWRITES_CONV}. A call
+{net_of_thm rf th net} where {th} is a pure or conditional equation (as
+constructed by {mk_rewrites}, for example) will insert that rewrite rule into
+the net with priority 1 (the highest) for a pure rewrite or 3 for a
+conditional rewrite, to yield an updated net.
+
+If {rf} is {true}, it indicates that this net will be used for repeated
+rewriting (e.g. as in {REWRITE_CONV} rather than {ONCE_REWRITE_CONV}), and
+therefore equations are simply discarded without changing the net if the LHS
+occurs free in the RHS. This does not exclude more complicated looping
+situations, but is still useful.
+
+\FAILURE
+Fails on a theorem that is neither a pure nor conditional equation.
+
+\SEEALSO
+mk_rewrites, net_of_cong, net_of_conv, REWRITES_CONV.
+
+\ENDDOC

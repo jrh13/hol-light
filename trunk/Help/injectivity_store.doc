@@ -1,0 +1,19 @@
+\DOC injectivity_store
+
+\TYPE {injectivity_store : (string * thm) list ref}
+
+\SYNOPSIS
+Internal theorem list of injectivity theorems.
+
+\DESCRIBE
+This list contains all the injectivity theorems (see {injectivity}) for the
+recursive types defined so far. It is automatically extended by {define_type}
+and used as a cache by {injectivity}.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+define_type, distinctness_store, extend_rectype_net, injectivity.
+
+\ENDDOC

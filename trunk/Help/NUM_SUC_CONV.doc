@@ -1,0 +1,39 @@
+\DOC NUM_SUC_CONV
+
+\TYPE {NUM_SUC_CONV : term -> thm}
+
+\SYNOPSIS
+Proves what the successor of a natural number numeral is.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} is a numeral (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_SUC_CONV `SUC n`} returns the theorem:
+{
+   |- SUC n = s
+}
+\noindent where {s} is the numeral that denotes the successor of the natural 
+number denoted by {n} (that is, the result of adding 1 to it).
+
+\FAILURE
+{NUM_SUC_CONV tm} fails if {tm} is not of the form  {`SUC n`}, where {n} is a 
+numeral.
+
+\EXAMPLE
+{
+  # NUM_SUC_CONV `SUC 0`;;
+  val it : thm = |- SUC 0 = 1
+
+  # NUM_SUC_CONV `SUC 12345`;;
+  val it : thm = |- SUC 12345 = 12346
+}
+
+\SEEALSO
+NUM_ADD_CONV, num_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_PRE_CONV, NUM_REDUCE_CONV, NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV.
+
+\ENDDOC

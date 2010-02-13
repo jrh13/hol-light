@@ -1,0 +1,39 @@
+\DOC IMP_REWR_CONV
+
+\TYPE {IMP_REWR_CONV : thm -> term -> thm}
+
+\SYNOPSIS
+Basic conditional rewriting conversion.
+
+\DESCRIBE
+Given an equational theorem {A |- !x1...xn. p ==> s = t} that expresses a 
+conditional rewrite rule, the conversion {IMP_REWR_CONV} gives a conversion
+that applied to any term {s'} will attempt to match the left-hand side of the
+equation {s = t} to {s'}, and return the corresponding theorem 
+{A |- p' ==> s' = t'}.
+
+\FAILURE
+Fails if the theorem is not of the right form or the two terms cannot be 
+matched, for example because the variables that need to be instantiated are 
+free in the hypotheses {A}.
+
+\EXAMPLE
+We use the following theorem:
+{
+  # DIV_MULT;;
+  val it : thm = |- !m n. ~(m = 0) ==> (m * n) DIV m = n
+}
+\noindent to make a conditional rewrite:
+{
+  # IMP_REWR_CONV DIV_MULT `(2 * x) DIV 2`;;
+  val it : thm = |- ~(2 = 0) ==> (2 * x) DIV 2 = x
+}
+
+\USES
+One of the building-blocks for conditional rewriting as implemented by 
+{SIMP_CONV}, {SIMP_RULE}, {SIMP_TAC} etc.
+
+\SEEALSO
+ORDERED_IMP_REWR_CONV, REWR_CONV, SIMP_CONV.
+
+\ENDDOC

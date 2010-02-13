@@ -1,0 +1,42 @@
+\DOC NUM_ODD_CONV
+
+\TYPE {NUM_ODD_CONV : conv}
+
+\SYNOPSIS
+Proves whether a natural number numeral is odd.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} is a numeral (e.g. {0}, {1}, {2}, {3},...), then {NUM_ODD_CONV `n`}
+returns one of the theorems:
+{
+  |- ODD(n) <=> T
+}
+\noindent or
+{
+  |- ODD(n) <=> F 
+}
+\noindent according to whether the number denoted by {n} is odd.
+
+\FAILURE
+Fails if applied to a term that is not of the form {`ODD n`} with {n} a 
+numeral.
+
+\EXAMPLE
+{
+  # NUM_ODD_CONV `ODD 123`;;
+  val it : thm = |- ODD 123 <=> T
+  
+  # NUM_ODD_CONV `ODD 1234`;;
+  val it : thm = |- ODD 1234 <=> F
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_PRE_CONV,
+NUM_REDUCE_CONV, NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
+
+\ENDDOC

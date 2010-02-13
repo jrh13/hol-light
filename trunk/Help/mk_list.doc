@@ -1,0 +1,33 @@
+\DOC mk_list
+
+\TYPE {mk_list : term list * hol_type -> term}
+
+\SYNOPSIS
+Constructs object-level list from list of terms.
+
+\DESCRIBE
+{mk_list([`t1`;...;`tn`],`:ty`)} returns {`[t1;...;tn]:(ty)list`}.
+The type argument is required so that empty lists can be constructed. If you
+know the list is nonempty, you can just use {mk_flist} where this is not
+required.
+
+\FAILURE
+Fails with if any term in the list is not of the type specified as the second
+argument.
+
+\EXAMPLE
+{
+  # mk_list([`1`; `2`],`:num`);;                
+  val it : term = `[1; 2]`
+
+  # mk_list([],`:num`);;
+  val it : term = `[]`
+
+  # type_of it;;
+  val it : hol_type = `:(num)list`
+}
+
+\SEEALSO
+dest_cons, dest_list, is_cons, is_list, mk_cons, mk_flist.
+
+\ENDDOC

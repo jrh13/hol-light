@@ -1,0 +1,34 @@
+\DOC augment
+
+\TYPE {augment : prover -> thm list -> prover}
+
+\SYNOPSIS
+Augments a prover's context with new theorems.
+
+\DESCRIBE
+The HOL Light simplifier (e.g. as invoked by {SIMP_TAC}) allows provers of type
+{prover} to be installed into simpsets, to automatically dispose of
+side-conditions. These may maintain a state dynamically and augment it as more
+theorems become available (e.g. a theorem {p |- p} becomes available when
+simplifying the consequenct of an implication {`p ==> q`}). In order to allow
+maximal flexibility in the data structure used to maintain state, provers are
+set up in an `object-oriented' style, where the context is part of the prover
+function itself. A call {augment p thl} maps a prover {p} to a new prover with
+theorems {thl} added to the initial state.
+
+\FAILURE
+Never fails unless the prover is abnormal.
+
+\USES
+This is mostly for experts wishing to customize the simplifier.
+
+\COMMENTS
+I learned of this ingenious trick for maintaining context from Don Syme, who
+discovered it by reading some code written by Richard Boulton. I was told by
+Simon Finn that there are similar ideas in the functional language literature
+for simulating existential types.
+
+\SEEALSO
+apply_prover, mk_prover, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

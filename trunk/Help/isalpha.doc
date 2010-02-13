@@ -1,0 +1,19 @@
+\DOC isalpha
+
+\TYPE {isalpha : string -> bool}
+
+\SYNOPSIS
+Tests if a one-character string is alphabetic.
+
+\DESCRIBE
+The call {isalpha s} tests whether the first character of string {s} (normally 
+it is the only character) is alphabetic, i.e. an uppercase or lowercase 
+letter, an underscore or a prime character.
+
+\FAILURE
+Fails if the string is empty.            
+
+\SEEALSO
+isalnum, isbra, isnum, issep, isspace, issymb.
+
+\ENDDOC

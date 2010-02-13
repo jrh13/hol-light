@@ -1,0 +1,56 @@
+\DOC TOP_DEPTH_CONV
+
+\TYPE {TOP_DEPTH_CONV : conv -> conv}
+
+\SYNOPSIS
+Applies a conversion top-down to all subterms, retraversing changed ones.
+
+\KEYWORDS
+conversional.
+
+\DESCRIBE
+{TOP_DEPTH_CONV c tm} repeatedly applies the conversion {c} to all the subterms
+of the term {tm}, including the term {tm} itself. The supplied conversion {c}
+is applied to the subterms of {tm} in top-down order and is applied repeatedly
+(zero or more times, as is done by {REPEATC}) at each subterm until it fails.
+If a subterm {t} is changed (except for alpha-equivalence) by virtue of the
+application of {c} to its own subterms, then the term into which {t} is
+transformed is retraversed by applying {TOP_DEPTH_CONV c} to it.
+
+\FAILURE
+{TOP_DEPTH_CONV c tm} never fails but can diverge.
+
+\EXAMPLE
+Both {TOP_DEPTH_CONV} and {REDEPTH_CONV} repeatedly apply a conversion until no
+more applications are possible anywhere in the term. For example,
+{TOP_DEPTH_CONV BETA_CONV} or {REDEPTH_CONV BETA_CONV} will eliminate all beta
+redexes:
+{
+  # TOP_DEPTH_CONV BETA_CONV `(\x. (\y. (\z. z + y) (y + 1)) (x + 2)) 3`;;
+  val it : thm =
+    |- (\x. (\y. (\z. z + y) (y + 1)) (x + 2)) 3 = ((3 + 2) + 1) + 3 + 2
+}
+The main difference is that {TOP_DEPTH_CONV} proceeds top-down, whereas
+{REDEPTH_CONV} proceeds bottom-up. Reasons for preferring {TOP_DEPTH_CONV}
+might be that a transformation near the top obviates the need for
+transformations lower down. For example, this is quick because everything is
+done by one top-level rewrite:
+{
+  # let conv = GEN_REWRITE_CONV I [MULT_CLAUSES] ORELSEC NUM_RED_CONV;;
+  val conv : conv = <fun>
+
+  # time (TOP_DEPTH_CONV conv) `0 * 25 EXP 100`;;
+  CPU time (user): 0.
+  val it : thm = |- 0 * 25 EXP 100 = 0
+}
+\noindent whereas the following takes markedly longer:
+{
+  # time (REDEPTH_CONV conv) `0 * 25 EXP 100`;;
+  CPU time (user): 2.573
+  val it : thm = |- 0 * 25 EXP 100 = 0
+}
+
+\SEEALSO
+DEPTH_CONV, ONCE_DEPTH_CONV, REDEPTH_CONV, TOP_SWEEP_CONV.
+
+\ENDDOC

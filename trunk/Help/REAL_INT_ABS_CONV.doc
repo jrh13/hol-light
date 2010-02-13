@@ -1,0 +1,33 @@
+\DOC REAL_INT_ABS_CONV
+
+\TYPE {REAL_INT_ABS_CONV : conv}
+
+\SYNOPSIS
+Conversion to produce absolute value of an integer literal of type {:real}.
+
+\DESCRIBE
+The call {REAL_INT_ABS_CONV `abs c`}, where {c} is an integer literal of type
+{:real}, returns the theorem {|- abs c = d} where {d} is the canonical integer
+literal that is equal to {c}'s absolute value. The literal {c} may be of the
+form {&n} or {-- &n} (with nonzero {n} in the latter case) and the result will
+be of the same form.
+
+\FAILURE
+Fails if applied to a term that is not the negation of one of the permitted
+forms of integer literal of type {:real}.
+
+\EXAMPLE
+{
+  # REAL_INT_ABS_CONV `abs(-- &42)`;;
+  val it : thm = |- abs (-- &42) = &42
+}
+
+\COMMENTS
+The related function {REAL_RAT_ABS_CONV} subsumes this functionality, also
+applying to rational literals. Unless the restriction to integers is desired or
+a tiny efficiency difference matters, it should be used in preference.
+
+\SEEALSO
+INT_ABS_CONV, REAL_RAT_ABS_CONV, REAL_INT_REDUCE_CONV.
+
+\ENDDOC

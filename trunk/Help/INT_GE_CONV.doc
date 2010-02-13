@@ -1,0 +1,28 @@
+\DOC INT_GE_CONV
+
+\TYPE {INT_GE_CONV : conv}
+
+\SYNOPSIS
+Conversion to prove whether one integer literal of type {:int} is {>=}
+another.
+
+\DESCRIBE
+The call {INT_GE_CONV `c1 >= c2`} where {c1} and {c2} are integer
+litersls of type {:int}, returns whichever of {|- c1 >= c2 <=> T} or
+{|- c1 >= c2 <=> F} is true. By an integer literal we mean either {&n} or
+{-- &n} where {n} is a numeral.
+
+\FAILURE
+Fails if applied to a term that is not the appropriate inequality comparison on
+two permitted integer literals of type {:int}.
+
+\EXAMPLE
+{
+  # INT_GE_CONV `&7 >= &6`;;
+  val it : thm = |- &7 >= &6 <=> T
+}
+
+\SEEALSO
+INT_REDUCE_CONV, REAL_RAT_GE_CONV.
+
+\ENDDOC

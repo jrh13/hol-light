@@ -1,0 +1,25 @@
+\DOC subset
+
+\TYPE {subset : 'a list -> 'a list -> bool}
+
+\SYNOPSIS
+Tests if one list is a subset of another.
+
+\DESCRIBE
+The call {subset l1 l2} returns {true} if every element of {l1} also occurs in 
+{l2}, regardless of whether an element appears once or more than once in each 
+list. So when {l1} and {l2} are regarded as sets, this is a subset test.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # subset [1;1;2;2] [1;2;3];;
+  val it : bool = true
+}
+
+\SEEALSO
+insert, intersect, set_eq, setify, subtract, union.
+
+\ENDDOC

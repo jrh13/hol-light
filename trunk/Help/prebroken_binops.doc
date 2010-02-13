@@ -1,0 +1,27 @@
+\DOC prebroken_binops
+
+\TYPE {prebroken_binops : string list ref}
+
+\SYNOPSIS
+Determines which binary operators are line-broken to the left
+
+\DESCRIBE
+The reference variable {prebroken_binops} is one of several settable parameters
+controlling printing of terms by {pp_print_term}, and hence the automatic
+printing of terms and theorems at the toplevel. It holds a list of the names of 
+binary operators that, when a line break is needed, will be printed after the 
+line break rather than before it. By default it contains just implication.
+
+\FAILURE
+Not applicable.
+
+\COMMENTS
+Putting more operators such as conjunction in this list gives an output format 
+closer to the one advocated in Lamport's ``How to write a large formula'' 
+paper.
+
+\SEEALSO
+pp_print_term, print_all_thm, print_unambiguous_comprehensions,
+reverse_interface_mapping, typify_universal_set, unspaced_binops.
+
+\ENDDOC

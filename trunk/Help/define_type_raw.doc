@@ -1,0 +1,24 @@
+\DOC define_type_raw
+
+\TYPE {define_type_raw : (hol_type * (string * hol_type list) list) list -> thm * thm}
+
+\SYNOPSIS
+Like {define_type} but from a more structured representation than a string.
+
+\DESCRIBE
+The core functionality of {define_type_raw} is the same as {define_type}, but
+the input is a more structured format for the type specification. In fact,
+{define_type} is just the composition of {define_type_raw} and
+{parse_inductive_type_specification}.
+
+\FAILURE
+May fail for the usual reasons {define_type} may.
+
+\USES
+Not intended for general use, but sometimes useful in proof tools that want to
+generate inductive types.
+
+\SEEALSO
+define_type, parse_inductive_type_specification.
+
+\ENDDOC

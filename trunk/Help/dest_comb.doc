@@ -1,0 +1,33 @@
+\DOC dest_comb
+
+\TYPE {dest_comb : term -> term * term}
+
+\SYNOPSIS
+Breaks apart a combination (function application) into rator and rand.
+
+\DESCRIBE
+{dest_comb} is a term destructor for combinations:
+{
+   dest_comb `t1 t2`
+}
+\noindent returns {(`t1`,`t2`)}.
+
+\FAILURE
+Fails with {dest_comb} if term is not a combination.
+
+\EXAMPLE
+{
+  # dest_comb `SUC 0`;;
+  val it : term * term = (`SUC`, `0`)
+}
+We can use {dest_comb} to reveal more about the internal representation of 
+numerals:
+{
+  # dest_comb `12`;;
+  val it : term * term = (`NUMERAL`, `BIT0 (BIT0 (BIT1 (BIT1 _0)))`)
+}
+
+\SEEALSO
+dest_abs, dest_const, dest_var, is_comb, list_mk_comb, mk_comb, strip_comb.
+
+\ENDDOC

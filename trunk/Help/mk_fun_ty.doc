@@ -1,0 +1,27 @@
+\DOC mk_fun_ty
+
+\TYPE {mk_fun_ty : hol_type -> hol_type -> hol_type}
+
+\SYNOPSIS
+Construct a function type.
+
+\DESCRIBE
+The call {mk_fun_ty ty1 ty2} gives the function type {ty1->ty2}. This is an 
+exact synonym of {mk_type("fun",[ty1; ty2])}, but a little more convenient.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # mk_fun_ty `:num` `:num`;;
+  val it : hol_type = `:num->num`
+  
+  # itlist mk_fun_ty [`:A`; `:B`; `:C`] `:bool`;;
+  val it : hol_type = `:A->B->C->bool`
+}
+
+\SEEALSO
+dest_type, mk_type.
+
+\ENDDOC

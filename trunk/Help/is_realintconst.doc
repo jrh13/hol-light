@@ -1,0 +1,27 @@
+\DOC is_realintconst
+
+\TYPE {is_realintconst : term -> bool}
+
+\SYNOPSIS
+Tests if a term is an integer literal of type {:real}.
+
+\DESCRIBE
+The call {is_realintconst t} tests whether the term {t} is a canonical integer
+literal of type {:real}, i.e. either `{&n}' for a numeral {n} or `{-- &n}' for 
+a nonzero numeral {n}. If so it returns {true}, otherwise {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_realintconst `-- &3 :real`;;
+  val it : bool = true
+  # is_realintconst `&1 :int`;;
+  val it : bool = false
+}
+
+\SEEALSO
+dest_realintconst, is_intconst, is_ratconst, mk_realintconst.
+
+\ENDDOC

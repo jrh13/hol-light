@@ -1,0 +1,37 @@
+\DOC gcd
+
+\TYPE {gcd : int -> int -> int}
+
+\SYNOPSIS
+Computes greatest common divisor of two integers.
+
+\DESCRIBE
+The call {gcd m n} for two integers {m} and {n} returns the (nonnegative)
+greatest common divisor of {m} and {n}. If {m} and {n} are both zero, it
+returns zero.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # gcd 10 12;;
+  val it : int = 2
+
+  # gcd 11 27;;
+  val it : int = 1
+
+  # gcd (-33) 76;;
+  val it : int = 1
+
+  # gcd 0 99;;
+  val it : int = 99
+
+  # gcd 0 0;;
+  val it : int = 0
+}
+
+\SEEALSO
+gcd_num, lcm_num.
+
+\ENDDOC

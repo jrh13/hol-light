@@ -1,0 +1,22 @@
+\DOC aty
+
+\TYPE {aty : hol_type}
+
+\SYNOPSIS
+The type variable {`:A`}.
+
+\DESCRIBE
+This name is bound to the HOL type {:A}.
+
+\FAILURE     
+Not applicable.
+
+\USES
+Exploiting the very common type variable {:A} inside derived rules (e.g. an 
+instantiation list for {inst} or {type_subst}) without the inefficiency or
+inconvenience of calling a quotation parser or explicit constructor.
+
+\SEEALSO
+bty, bool_ty.
+
+\ENDDOC

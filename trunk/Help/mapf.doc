@@ -1,0 +1,32 @@
+\DOC mapf
+
+\TYPE {mapf : ('a -> 'b) -> ('c, 'a) func -> ('c, 'b) func}
+
+\SYNOPSIS
+Maps a function over the range of a finite partial function
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type 
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. The function {mapf f p} applies the (ordinary OCaml) function {f} to all 
+the range elements of a finite partial function, so if it originally mapped 
+{xi} to {yi} for it now maps {xi} to {f(yi)}.
+
+\FAILURE
+Fails if the function fails on one of the {yi}.
+
+\EXAMPLE
+{
+  # let f = (1 |=> 2);;
+  val f : (int, int) func = <func>
+  # mapf string_of_int f;;
+  val it : (int, string) func = <func>
+  # apply it 1;;
+}
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

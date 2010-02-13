@@ -1,0 +1,23 @@
+\DOC mk_eq
+
+\TYPE {mk_eq : term * term -> term}
+
+\SYNOPSIS
+Constructs an equation.
+
+\DESCRIBE
+{mk_eq(`t1`,`t2`)} returns {`t1 = t2`}.
+
+\FAILURE
+Fails with {mk_eq} if {t1} and {t2} have different types.
+
+\EXAMPLE
+{
+  # mk_eq(`1`,`2`);;
+  val it : term = `1 = 2`
+}
+
+\SEEALSO
+dest_eq, is_eq.
+
+\ENDDOC

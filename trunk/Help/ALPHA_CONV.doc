@@ -1,0 +1,37 @@
+\DOC ALPHA_CONV
+
+\TYPE {ALPHA_CONV : term -> term -> thm}
+
+\SYNOPSIS
+Renames the bound variable of a lambda-abstraction.
+
+\KEYWORDS
+conversion, alpha.
+
+\DESCRIBE
+If {`y`} is a variable of type {ty} and {`\x. t`} is an abstraction in which
+the bound variable {x} also has type {ty} and {y} does not occur free in {t},
+then {ALPHA_CONV `y` `\x. t`} returns the theorem: 
+{
+   |- (\x. t) = (\y. t[y/x])
+}
+
+\FAILURE
+Fails if the first argument is not a variable, the second is not an 
+abstraction, if the types of the new variable and the bound variable in the 
+abstraction differ, or if the new variable is already free in the body of the 
+abstraction.
+
+\EXAMPLE
+{
+  # ALPHA_CONV `y:num` `\x. x + 1`;;
+  val it : thm = |- (\x. x + 1) = (\y. y + 1)
+
+  #  ALPHA_CONV `y:num` `\x. x + y`;;
+  Exception: Failure "alpha: Invalid new variable".
+}
+
+\SEEALSO
+ALPHA, GEN_ALPHA_CONV.
+
+\ENDDOC

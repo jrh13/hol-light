@@ -1,0 +1,77 @@
+\DOC DISJ_CASES_THEN2
+
+\TYPE {DISJ_CASES_THEN2 : thm_tactic -> thm_tactic -> thm_tactic}
+
+\SYNOPSIS
+Applies separate theorem-tactics to the two disjuncts of a theorem.
+
+\KEYWORDS
+theorem-tactic, disjunction, cases.
+
+\DESCRIBE
+If the theorem-tactics {ttac1} and {ttac2}, applied to the {ASSUME}d left and right
+disjunct of a theorem {|- u \/ v} respectively, produce results as follows when
+applied to a goal {(A ?- t)}:
+{
+    A ?- t                                    A ?- t
+   =========  ttac1 (u |- u)      and        =========  ttac2 (v |- v)
+    A ?- t1                                   A ?- t2
+}
+\noindent then applying {DISJ_CASES_THEN2 ttac1 ttac2 (|- u \/ v)} to the
+goal {(A ?- t)} produces two subgoals.
+{
+           A ?- t
+   ======================  DISJ_CASES_THEN2 ttac1 ttac2 (|- u \/ v)
+    A ?- t1      A ?- t2
+}
+
+\FAILURE
+Fails if the theorem is not a disjunction.  An invalid tactic is produced if
+the theorem has any hypothesis which is not alpha-convertible to an assumption
+of the goal.
+
+\EXAMPLE
+Given the theorem
+{
+  # let th = SPEC `m:num` num_CASES;;
+  val th : thm = |- m = 0 \/ (?n. m = SUC n)
+}
+\noindent and a goal:
+{
+  # g `PRE m = m <=> m = 0`;;
+}
+\noindent the following produces two subgoals:
+{
+  # e(DISJ_CASES_THEN2 SUBST1_TAC MP_TAC th);;
+  val it : goalstack = 2 subgoals (2 total)
+
+  `(?n. m = SUC n) ==> (PRE m = m <=> m = 0)`
+
+  `PRE 0 = 0 <=> 0 = 0`
+}
+\noindent The first subgoal has had the disjunct {m = 0} used
+for a substitution, and the second has added the disjunct as
+an antecedent. Alternatively, we can make the second theorem-tactic
+also choose a witness for the existential quantifier and follow by
+also substituting:
+{
+  # e(DISJ_CASES_THEN2 SUBST1_TAC (CHOOSE_THEN SUBST1_TAC) th);;
+  val it : goalstack = 2 subgoals (2 total)
+
+  `PRE (SUC n) = SUC n <=> SUC n = 0`
+
+  `PRE 0 = 0 <=> 0 = 0`
+}
+\noindent Either subgoal can be finished with {ARITH_TAC}, but the way, but so 
+could the initial goal.
+
+\USES
+Building cases tacticals. For example, {DISJ_CASES_THEN} could be defined by:
+{
+  let DISJ_CASES_THEN f = DISJ_CASES_THEN2 f f
+}
+
+\SEEALSO
+STRIP_THM_THEN, CHOOSE_THEN, CONJUNCTS_THEN, CONJUNCTS_THEN2, DISJ_CASES_THEN.
+
+\ENDDOC

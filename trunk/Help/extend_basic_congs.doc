@@ -1,0 +1,44 @@
+\DOC extend_basic_congs
+
+\TYPE {extend_basic_congs : thm list -> unit}
+
+\SYNOPSIS
+Extends the set of congruence rules used by the simplifier.
+
+\DESCRIBE
+The HOL Light simplifier (as invoked by {SIMP_TAC} etc.) uses congruence rules 
+to determine how it uses context when descending through a term. These are 
+essentially theorems showing how to decompose one equality to a series of other 
+inequalities in context. A call to {extend_basic_congs thl} adds the congruence 
+rules in {thl} to the defaults.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+By default, the simplifier uses context {p} when simplifying {q} within an 
+implication {p ==> q}. Some users would like the simplifier to do likewise for
+a conjunction {p /\ q}, which is not done by default:
+{
+  # SIMP_CONV[] `x = 1 /\ x < 2`;; 
+  val it : thm = |- x = 1 /\ x < 2 <=> x = 1 /\ x < 2
+}
+\noindent You can make it do so with
+{
+  # extend_basic_congs
+     [TAUT `(p <=> p') ==> (p' ==> (q <=> q')) ==> (p /\ q <=> p' /\ q')`];;
+  val it : unit = ()
+}
+\noindent as you can see:
+{
+  # SIMP_CONV[] `x = 1 /\ x < 2`;; 
+  val it : thm = |- x = 1 /\ x < 2 <=> x = 1 /\ 1 < 2
+
+  # SIMP_CONV[ARITH] `x = 1 /\ x < 2`;;   
+  val it : thm = |- x = 1 /\ x < 2 <=> x = 1
+}
+
+\SEEALSO
+basic_congs, set_basic_congs, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

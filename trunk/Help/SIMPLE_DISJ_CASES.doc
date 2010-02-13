@@ -1,0 +1,44 @@
+\DOC SIMPLE_DISJ_CASES
+
+\TYPE {SIMPLE_DISJ_CASES : thm -> thm -> thm}
+
+\SYNOPSIS
+Disjoins hypotheses of two theorems with same conclusion.
+
+\DESCRIBE
+The rule {SIMPLE_DISJ_CASES} takes two `case' theorems with alpha-equivalent
+conclusions and returns a theorem with the first hypotheses disjoined:
+{
+
+        A u {{p}} |- r    B u {{q}} |- r
+      ----------------------------------- SIMPLE_DISJ_CASES
+            A u B u {{p \/ q}} |- r
+}
+To avoid dependency on the order of the hypotheses, it is only recommended when 
+each theorem has exactly one hypothesis:
+{
+         {{p}} |- r    {{q}} |- r 
+      ----------------------------------- SIMPLE_DISJ_CASES
+                {{p \/ q}} |- r
+}
+For more sophisticated or-elimination, use {DISJ_CASES}.
+
+\FAILURE
+Fails if the conclusions of the theorems are not alpha-equivalent.
+
+\EXAMPLE
+{
+  # let [th1; th2] = map (UNDISCH o TAUT)
+      [`~p ==> p ==> q`; `q ==> p ==> q`];;
+  ...
+  val th1 : thm = ~p |- p ==> q
+  val th2 : thm = q |- p ==> q
+
+  # SIMPLE_DISJ_CASES th1 th2;;
+  val it : thm = ~p \/ q |- p ==> q
+}
+
+\SEEALSO
+DISJ_CASES, DISJ_CASES_TAC, DISJ_CASES_THEN, DISJ_CASES_THEN2, DISJ1, DISJ2.
+
+\ENDDOC

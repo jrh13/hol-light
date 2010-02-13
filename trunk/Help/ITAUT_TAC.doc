@@ -1,0 +1,59 @@
+\DOC ITAUT_TAC
+
+\TYPE {ITAUT_TAC : tactic}
+
+\SYNOPSIS
+Simple intuitionistic logic prover.
+
+\DESCRIBE
+The tactic {ITAUT} attempts to prove the goal using a basic tableau-type proof
+search for intuitionistic first-order logic. The restriction to intuitionistic
+logic means that no principles such as the ``law of the excluded middle'' or
+``law of double negation'' are used.
+
+\FAILURE
+May fail if the goal is unprovable, e.g. for purely propositional problems. For
+unsolvable problems with quantifiers it usually just loops.
+
+\EXAMPLE
+Suppose we try to prove the logical equivalence of ``contraposition'', already
+embedded in the pre-proved theorem {CONTRAPOS_THM}:
+{
+  # g `!p q. (p ==> q) <=> (~q ==> ~p)`;;
+}
+\noindent by splitting it into two subgoals:
+{
+  # e(REPEAT GEN_TAC THEN EQ_TAC);;
+  val it : goalstack = 2 subgoals (2 total)
+
+  `(~q ==> ~p) ==> p ==> q`
+
+  `(p ==> q) ==> ~q ==> ~p`
+}
+\noindent The first subgoal (printed at the bottom) can be solved by
+{ITAUT_TAC}, indicating that it's intuitionistically valid:
+{
+  # e ITAUT_TAC;;
+  ...
+  val it : goalstack = 1 subgoal (1 total)
+
+  `(~q ==> ~p) ==> p ==> q`
+}
+\noindent but the other one isn't, though it is solvable by full classical
+logic:
+{
+  # e(MESON_TAC[]);;
+  val it : goalstack = No subgoals
+}
+
+\COMMENTS
+Normally, first-order reasoning should be performed by {MESON_TAC[]}, which is
+much more powerful, complete for all classical logic, and handles equality. The
+function {ITAUT_TAC} is mainly for ``bootstrapping'' purposes. Nevertheless it
+may sometimes be intellectually interesting to see that certain logial formulas
+are provable intuitionistically.
+
+\SEEALSO
+ITAUT, MESON_TAC.
+
+\ENDDOC

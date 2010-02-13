@@ -1,0 +1,45 @@
+\DOC NUM_REDUCE_CONV
+
+\TYPE {NUM_REDUCE_CONV : term -> thm}
+
+\SYNOPSIS
+Evaluate subexpressions built up from natural number numerals, by proof.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+When applied to a term, {NUM_REDUCE_CONV} performs a recursive bottom-up
+evaluation by proof of subterms built from numerals using the unary operators
+`{SUC}', `{PRE}' and `{FACT}' and the binary arithmetic (`{+}', `{-}', `{*}',
+`{EXP}', `{DIV}', `{MOD}') and relational (`{<}', `{<=}', `{>}', `{>=}', `{=}')
+operators, as well as propagating constants through logical operations, e.g. {T
+/\ x <=> x}, returning a theorem that the original and reduced terms are equal.
+
+\FAILURE
+Never fails, but may have no effect.
+
+\EXAMPLE
+{
+  # NUM_REDUCE_CONV `(432 - 234) + 198`;;
+  val it : thm = |- 432 - 234 + 198 = 396
+
+  # NUM_REDUCE_CONV
+      `if 100 < 200 then 2 EXP (8 DIV 2) else 3 EXP ((26 EXP 0) * 3)`;;
+  val it : thm =
+   |- (if 100 < 200 then 2 EXP (8 DIV 2) else 3 EXP (26 EXP 0 * 3)) = 16
+
+  # NUM_REDUCE_CONV `(!x. f(x + 2 + 2) < f(x + 0)) ==> f(12 * x) = f(12 * 12)`;;
+  val it : thm =
+    |- (!x. f (x + 2 + 2) < f (x + 0)) ==> f (12 * x) = f (12 * 12) <=>
+       (!x. f (x + 4) < f (x + 0)) ==> f (12 * x) = f 144
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_PRE_CONV, NUM_REDUCE_TAC, NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV,
+NUM_SUC_CONV, REAL_RAT_REDUCE_CONV.
+
+\ENDDOC

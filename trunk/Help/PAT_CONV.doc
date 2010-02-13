@@ -1,0 +1,38 @@
+\DOC PAT_CONV
+
+\TYPE {PAT_CONV : term -> conv -> conv}
+
+\SYNOPSIS
+Apply a conversion at subterms identified by a ``pattern'' lambda-abstraction.
+
+\DESCRIBE
+The call {PAT_CONV `\x1 ... xn. t[x1,...,xn]` cnv} gives a new conversion that
+applies {cnv} to subterms of the target term corresponding to the free
+instances of any {xi} in the pattern {t[x1,...,xn]}. The fact that the pattern 
+is a function has no logical significance; it is just used as a convenient 
+format for the pattern.
+
+\FAILURE
+Never fails until applied to a term, but then it may fail if the core
+conversion does on the chosen subterms.
+
+\EXAMPLE
+Here we choose to evaluate just two subterms:
+{
+  # PAT_CONV `\x. x + a + x` NUM_ADD_CONV `(1 + 2) + (3 + 4) + (5 + 6)`;;
+  val it : thm = |- (1 + 2) + (3 + 4) + 5 + 6 = 3 + (3 + 4) + 11
+}
+\noindent while here we swap two particular quantifiers in a long chain:
+{
+  #  PAT_CONV `\x. !x1 x2 x3 x4 x5. x` (REWR_CONV SWAP_FORALL_THM)
+      `!a b c d e f g h. something`;;
+  Warning: inventing type variables
+  Warning: inventing type variables
+  val it : thm =
+    |- (!a b c d e f g h. something) <=> (!a b c d e g f h. something)
+}
+
+\SEEALSO
+ABS_CONV, BINDER_CONV, BINOP_CONV, PATH_CONV, RAND_CONV, RATOR_CONV.
+
+\ENDDOC

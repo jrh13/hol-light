@@ -1,0 +1,30 @@
+\DOC mk_intconst
+
+\TYPE {mk_intconst : num -> term}
+
+\SYNOPSIS
+Converts an OCaml number to a canonical integer literal of type {:int}.
+
+\DESCRIBE
+The call {mk_intconst n} where {n} is an OCaml number (type {num}) produces
+the canonical integer literal of type {:int} representing the integer {n}. This
+will be of the form `{&m}' for a numeral {m} (when {n} is nonnegative) or 
+`{-- &m}' for a nonzero numeral {m} (when {n} is negative).
+
+\FAILURE
+Fails if applied to a number that is not an integer (type {num} also includes
+rational numbers).
+
+\EXAMPLE
+{
+  # mk_intconst (Int (-101));;
+  val it : term = `-- &101`
+
+  # type_of it;;
+  val it : hol_type = `:int`
+}
+
+\SEEALSO
+dest_intconst, is_intconst, mk_realintconst.
+
+\ENDDOC

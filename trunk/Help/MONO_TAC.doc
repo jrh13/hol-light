@@ -1,0 +1,43 @@
+\DOC MONO_TAC
+
+\TYPE {MONO_TAC : tactic}
+
+\SYNOPSIS
+Attempt to prove monotonicity theorem automatically.
+
+\DESCRIBE
+
+\FAILURE
+Never fails but may have no effect.
+
+\EXAMPLE
+We set up the following goal:
+{
+  # g `(!x. P x ==> Q x) ==> (?y. P y /\ ~Q y) ==> (?y. Q y /\ ~P y)`;;
+  ...
+}
+\noindent and after breaking it down, we reach the standard form expected for 
+monotonicity goals:
+{
+  # e STRIP_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+   0 [`!x. P x ==> Q x`]
+  
+  `(?y. P y /\ ~Q y) ==> (?y. Q y /\ ~P y)`
+}
+\noindent Indeed, it is solved automatically:
+{
+  # e MONO_TAC;;
+  val it : goalstack = No subgoals
+}
+
+\COMMENTS
+Normally, this kind of reasoning is automated by the inductive definitions 
+package, so explicit use of this tactic is rare.
+
+\SEEALSO
+monotonicity_theorems, new_inductive_definition, 
+prove_inductive_relations_exist, prove_monotonicity_hyps.
+
+\ENDDOC

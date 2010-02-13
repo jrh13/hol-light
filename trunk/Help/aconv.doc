@@ -1,0 +1,42 @@
+\DOC aconv
+
+\TYPE {aconv : term -> term -> bool}
+
+\SYNOPSIS
+Tests for alpha-convertibility of terms.
+
+\KEYWORDS
+alpha.
+
+\DESCRIBE
+When applied to two terms, {aconv} returns {true} if they are
+alpha-convertible, and {false} otherwise.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+A simple case of alpha-convertibility is the renaming of a single quantified
+variable:
+{
+  # aconv `?x. x <=> T` `?y. y <=> T`;;
+  val it : bool = true
+}
+but other cases can be more involved:
+{
+# aconv `\x y z. x + y + z` `\y x z. y + x + z`;;
+val it : bool = true
+}
+
+\COMMENTS
+The code for alpha-conversion first checks for simple equality with pointer 
+equality shortcutting, and can therefore often returns {true} without a full 
+traversal.
+
+In principle, most of the HOL Light deductive apparatus should work modulo 
+alpha-conversion. At least, all the primitive inference rules do.
+
+\SEEALSO
+ALPHA, ALPHA_CONV.
+
+\ENDDOC

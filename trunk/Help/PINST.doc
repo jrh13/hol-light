@@ -1,0 +1,38 @@
+\DOC PINST
+
+\TYPE {PINST : (hol_type * hol_type) list -> (term * term) list -> thm -> thm}
+
+\SYNOPSIS
+Instantiate types and terms in a theorem.
+
+\DESCRIBE
+The call {PINST [ty1,tv1; ...; tyn,tvn] [tm1,v1; ...; tmk,vk] th} instantiates 
+both types and terms in the theorem {th} using the two instantiation 
+lists. The {tyi} should be types, the {tvi} type variables, the {tmi} terms and 
+the {vi} term variables. Note carefully that the {vi} refer to variables in the 
+theorem {{\em before}} type instantiation, but the {tmi} should be replacements 
+for the type-instantiated ones. More explicitly, the behaviour is as follows.
+First, the type variables in {th} are instantiated according to the list
+{[ty1,tv1; ...; tyn,tvn]}, exactly as for {INST_TYPE}. Moreover the same type
+instantiation is applied to the variables in the second list, to give
+{[tm1,v1'; ...; tmk,vk']}. This is then used to instantiate the already 
+type-instantiated theorem.
+
+\FAILURE
+Fails if the instantiation lists are ill-formed, as with {INST} and 
+{INST_TYPE}, for example if some {tvi} is not a type variable.
+
+\EXAMPLE
+{
+  # let th = MESON[] `(x:A = y) <=> (y = x)`;;
+  ...
+  val th : thm = |- x = y <=> y = x
+
+  # PINST [`:num`,`:A`] [`2 + 2`,`x:A`; `4`,`y:A`] th;;
+  val it : thm = |- 2 + 2 = 4 <=> 4 = 2 + 2
+}
+
+\SEEALSO
+INST, INST_TYPE.
+
+\ENDDOC

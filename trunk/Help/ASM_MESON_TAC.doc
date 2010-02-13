@@ -1,0 +1,22 @@
+\DOC ASM_MESON_TAC
+
+\TYPE {ASM_MESON_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Automated first-order proof search tactic using assumptions of goal.
+
+\DESCRIBE
+A call to {ASM_MESON_TAC[theorems]} will attempt to establish the goal using
+pure first-order reasining, taking {theorems} and the assumptions of the goal
+as the starting-point. It will usually either solve the goal completely or run
+for an infeasible length of time before terminating, but it may sometimes fail
+quickly. For more details, see {MESON} or {MESON_TAC}.
+
+\FAILURE
+Fails if the goal is unprovable within the search bounds, though not
+necessarily in a feasible amount of time.
+
+\SEEALSO
+GEN_MESON_TAC, MESON, MESON_TAC.
+
+\ENDDOC

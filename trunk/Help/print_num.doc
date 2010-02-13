@@ -1,0 +1,16 @@
+\DOC print_num
+
+\TYPE {print_num : num -> unit}
+
+\SYNOPSIS
+Print an arbitrary-precision number to the terminal.
+
+\DESCRIBE
+This function prints an arbitrary-precision (type {num}) number to the 
+terminal. It is automatically invoked on anything of type {num} at the toplevel 
+anyway, but it may sometimes be useful to issue it under user control.
+
+\FAILURE
+Never fails.
+
+\ENDDOC

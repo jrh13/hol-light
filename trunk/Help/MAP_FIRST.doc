@@ -1,0 +1,76 @@
+\DOC MAP_FIRST
+
+\TYPE {MAP_FIRST : ('a -> tactic) -> 'a list -> tactic}
+
+\SYNOPSIS
+Applies first tactic that succeeds in a list given by mapping a function over a
+list.
+
+\KEYWORDS
+theorem-tactical, list.
+
+\DESCRIBE
+When applied to a tactic-producing function {f} and an operand list
+{[x1;...;xn]}, the elements of which have the same type as {f}'s domain
+type, {MAP_FIRST} maps the function {f} over the list, producing a list of
+tactics, then tries applying these tactics to the goal till one succeeds.
+If {f(xm)} is the first to succeed, then the overall effect is the same
+as applying {f(xm)}. Thus:
+{
+   MAP_FIRST f [x1;...;xn] = (f x1) ORELSE ... ORELSE (f xn)
+}
+
+\FAILURE
+The application of {MAP_FIRST} to a function and tactic list fails iff
+the function does when applied to any of the elements of the list. The
+resulting tactic fails iff all the resulting tactics fail when
+applied to the goal.
+
+\EXAMPLE
+Using the definition of integer-valued real numbers:
+{
+  # needs "Library/floor.ml";;
+}
+\noindent we have a set of `composition' theorems asserting that the predicate
+is closed under various arithmetic operations:
+{
+  # INTEGER_CLOSED;;
+  val it : thm =
+    |- (!n. integer (&n)) /\
+       (!x y. integer x /\ integer y ==> integer (x + y)) /\
+       (!x y. integer x /\ integer y ==> integer (x - y)) /\
+       (!x y. integer x /\ integer y ==> integer (x * y)) /\
+       (!x r. integer x ==> integer (x pow r)) /\
+       (!x. integer x ==> integer (--x)) /\
+       (!x. integer x ==> integer (abs x))
+}
+\noindent if we want to prove that some composite term has integer type:
+{
+  # g `integer(x) /\ integer(y)
+       ==> integer(&2 * (x - &1) pow 7 + &11 * (y + &1))`;;
+  ...
+  # e(REPEAT STRIP_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`integer x`]
+   1 [`integer y`]
+
+  `integer (&2 * (x - &1) pow 7 + &11 * (y + &1))`
+}
+A direct proof using {ASM_MESON_TAC[INTEGER_CLOSED]} works fine. However if we
+want to control the application of composition theorems more precisely we
+might do:
+{
+  # let INT_CLOSURE_TAC =
+      MAP_FIRST MATCH_MP_TAC (CONJUNCTS(CONJUNCT2 INTEGER_CLOSED)) THEN
+      TRY CONJ_TAC;;
+}
+\noindent and then could solve the goal by:
+{
+  e(REPEAT INT_CLOSURE_TAC THEN ASM_REWRITE_TAC[CONJUNCT1 INTEGER_CLOSED]);;
+}
+
+\SEEALSO
+EVERY, FIRST, MAP_EVERY, ORELSE.
+
+\ENDDOC

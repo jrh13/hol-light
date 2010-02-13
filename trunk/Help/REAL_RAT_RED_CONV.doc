@@ -1,0 +1,45 @@
+\DOC REAL_RAT_RED_CONV
+
+\TYPE {REAL_RAT_RED_CONV : term -> thm}
+
+\SYNOPSIS
+Performs one arithmetic or relational operation on rational literals of type
+{:real}.
+
+\DESCRIBE
+When applied to any of the terms {`--c`}, {`inv c`}, {`abs c`}, {`c1 + c2`},
+{`c1 - c2`}, {`c1 * c2`}, {`c1 / c2`}, {`c pow n`}, {`c1 <= c2`}, {`c1 < c2`},
+{`c1 >= c2`}, {`c1 > c2`}, {`c1 = c2`}, where {c}, {c1} and {c2} are rational
+literals of type {:real} and {n} is a numeral of type {:num},
+{REAL_RAT_RED_CONV} returns a theorem asserting the equivalence of the term to
+a canonical rational (for the arithmetic operators) or a truth-value (for the
+relational operators).
+
+The permissible rational literals are integer literals ({&n} or {-- &n}),
+ratios ({&p / &q} or {-- &p / &q}), or decimals ({#DDD.DDDD} or
+{#DDD.DDDDeNN}). Any numeric result is always put in the form {&p / &q} or
+{-- &p / &q} with {q > 1} and {p} and {q} sharing no common factor, or simply
+{&p} or {-- &p} when that is impossible.
+
+\FAILURE
+Fails if applied to an inappropriate term, or if {c} is zero in {`inv c`}, or
+if {c2} is zero in {c1 / c2}.
+
+\USES
+More convenient for most purposes is {REAL_RAT_REDUCE_CONV}, which applies
+these evaluation conversions recursively at depth. But access to this
+`one-step' reduction can be handy if you want to add a conversion {conv} for
+some other operator on real number literals, which you can conveniently
+incorporate it into {REAL_RAT_REDUCE_CONV} with
+{
+  # let REAL_RAT_REDUCE_CONV' =
+      DEPTH_CONV(REAL_RAT_RED_CONV ORELSEC conv);;
+}
+
+\SEEALSO
+REAL_RAT_ABS_CONV, REAL_RAT_ADD_CONV, REAL_RAT_DIV_CONV, REAL_RAT_EQ_CONV,
+REAL_RAT_GE_CONV, REAL_RAT_GT_CONV, REAL_RAT_INV_CONV, REAL_RAT_LE_CONV,
+REAL_RAT_LT_CONV, REAL_RAT_MAX_CONV, REAL_RAT_MIN_CONV, REAL_RAT_MUL_CONV,
+REAL_RAT_NEG_CONV, REAL_RAT_POW_CONV, REAL_RAT_REDUCE_CONV, REAL_RAT_SUB_CONV.
+
+\ENDDOC

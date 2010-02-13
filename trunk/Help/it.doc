@@ -1,0 +1,28 @@
+\DOC it
+
+\TYPE {it : 'a}
+
+\SYNOPSIS
+Binds the value of the last expression evaluated at top level.
+
+\DESCRIBE
+The identifier {it} is bound to the value of the last expression evaluated
+at top level. Declarations do not effect the value of {it}.
+
+\EXAMPLE
+{
+  # 2 + 3;;
+  val it : int = 5
+  # let x = 2*3;;
+  val x : int = 6
+  # it;;
+  val it : int = 5
+  # it + 12;;
+  val it : int = 17
+}
+
+\USES
+Used in evaluating expressions that require the value of the last evaluated
+expression.
+
+\ENDDOC

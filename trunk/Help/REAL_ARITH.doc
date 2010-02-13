@@ -1,0 +1,53 @@
+\DOC REAL_ARITH
+
+\TYPE {REAL_ARITH : term -> thm}
+
+\SYNOPSIS
+Attempt to prove term using basic algebra and linear arithmetic over the reals.
+
+\DESCRIBE
+{REAL_ARITH} is the basic tool for proving elementary lemmas about real
+equations and inequalities. Given a term, it first applies various
+normalizations, eliminating constructs such as {max}, {min} and {abs} by
+introducing case splits, splitting over the arms of conditionals and putting
+any equations and inequalities into a form {p(x) <><> 0} where {<><>} is an
+equality or inequality function and {p(x)} is in a normal form for polynomials
+as produced by {REAL_POLY_CONV}. The problem is split into the refutation of
+various conjunctions of such subformulas. A refutation of each is attempted
+using simple linear inequality reasoning (essentially Fourier-Motzkin
+elimination). Note that no non-trivial nonlinear inequality reasoning is
+performed (see below).
+
+\FAILURE
+Fails if the term is not provable using the algorithm sketched above.
+
+\EXAMPLE
+Here is some simple inequality reasoning, showing how constructs like {abs},
+{max} and {min} can be handled:
+{
+  # REAL_ARITH
+      `abs(x) < min e d / &2 /\ abs(y) < min e d / &2 ==> abs(x + y) < d + e`;;
+  val it : thm =
+    |- abs x < min e d / &2 /\ abs y < min e d / &2 ==> abs (x + y) < d + e
+}
+The following example also involves inequality reasoning, but the initial
+algebraic normalization is critical to make the pieces match up:
+{
+  # REAL_ARITH `(&1 + x) * (&1 - x) * (&1 + x pow 2) < &1 ==> &0 < x pow 4`;;
+  val it : thm = |- (&1 + x) * (&1 - x) * (&1 + x pow 2) < &1 ==> &0 < x pow 4
+}
+
+\USES
+Very convenient for providing elementary lemmas that would otherwise be painful
+to prove manually.
+
+\COMMENTS
+For nonlinear equational reasoning, use {REAL_RING} or {REAL_FIELD}. For
+nonlinear inequality reasoning, there are no powerful rules built into HOL
+Light, but the additional derived rules defined in {Examples/sos.ml} and
+{Rqe/make.ml} may be useful.
+
+\SEEALSO
+ARITH_TAC, INT_ARITH_TAC, REAL_ARITH_TAC, REAL_FIELD, REAL_RING.
+
+\ENDDOC

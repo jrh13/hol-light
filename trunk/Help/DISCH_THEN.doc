@@ -1,0 +1,58 @@
+\DOC DISCH_THEN
+
+\TYPE {DISCH_THEN : thm_tactic -> tactic}
+
+\SYNOPSIS
+Undischarges an antecedent of an implication and passes it to a theorem-tactic.
+
+\KEYWORDS
+theorem-tactic, undischarge, antecedent, implication.
+
+\DESCRIBE
+{DISCH_THEN} removes the antecedent and then creates a theorem by {ASSUME}ing
+it. This new theorem is passed to the theorem-tactic given as {DISCH_THEN}'s
+argument. The consequent tactic is then applied. Thus:
+{
+   DISCH_THEN ttac (asl ?- t1 ==> t2) = ttac (ASSUME `t1`) (asl ?- t2)
+}
+\noindent For example, if
+{
+    A ?- t
+   ========  ttac (ASSUME `u`)
+    B ?- v
+}
+\noindent then
+{
+    A ?- u ==> t
+   ==============  DISCH_THEN ttac
+       B ?- v
+}
+\noindent Note that {DISCH_THEN} treats {`~u`} as {`u ==> F`}.
+
+\FAILURE
+{DISCH_THEN} will fail for goals that are not implications or negations.
+
+\EXAMPLE
+Given the goal:
+{
+  # g `!x. x = 0 ==> f(x) * x = x + 2 * x`;;
+}
+\noindent we can discharge the antecedent and substitute with it immediately
+by:
+{
+  # e(GEN_TAC THEN DISCH_THEN SUBST1_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `f 0 * 0 = 0 + 2 * 0`
+}
+\noindent and now {REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES]} will finish the job.
+
+\COMMENTS
+The tactical {REFUTE_THEN} provides a more general classical `assume otherwise'
+function.
+
+\SEEALSO
+DISCH, DISCH_ALL, DISCH_TAC, REFUTE_THEN, STRIP_TAC, UNDISCH, UNDISCH_ALL,
+UNDISCH_TAC.
+
+\ENDDOC

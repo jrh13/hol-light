@@ -1,0 +1,2019 @@
+(* ========================================================================= *)
+(* Generic iterated operations and special cases of sums over N and R.       *)
+(*                                                                           *)
+(*              (c) Copyright, John Harrison 1998-2007                       *)
+(*              (c) Copyright, Lars Schewe 2007                              *)
+(* ========================================================================= *)
+
+prioritize_num();;
+
+(* ------------------------------------------------------------------------- *)
+(* A natural notation for segments of the naturals.                          *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("..",(15,"right"));;
+
+let numseg = new_definition
+  `m..n = {x:num | m <= x /\ x <= n}`;;
+
+let FINITE_NUMSEG = prove
+ (`!m n. FINITE(m..n)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+  EXISTS_TAC `{x:num | x <= n}` THEN REWRITE_TAC[FINITE_NUMSEG_LE] THEN
+  SIMP_TAC[SUBSET; IN_ELIM_THM; numseg]);;
+
+let NUMSEG_COMBINE_R = prove
+ (`!m p n. m <= p + 1 /\ p <= n ==> ((m..p) UNION ((p+1)..n) = m..n)`,
+  REWRITE_TAC[EXTENSION; IN_UNION; numseg; IN_ELIM_THM] THEN ARITH_TAC);;
+
+let NUMSEG_COMBINE_L = prove
+ (`!m p n. m <= p /\ p <= n + 1 ==> ((m..(p-1)) UNION (p..n) = m..n)`,
+  REWRITE_TAC[EXTENSION; IN_UNION; numseg; IN_ELIM_THM] THEN ARITH_TAC);;
+
+let NUMSEG_LREC = prove
+ (`!m n. m <= n ==> (m INSERT ((m+1)..n) = m..n)`,
+  REWRITE_TAC[EXTENSION; IN_INSERT; numseg; IN_ELIM_THM] THEN ARITH_TAC);;
+
+let NUMSEG_RREC = prove
+ (`!m n. m <= n ==> (n INSERT (m..(n-1)) = m..n)`,
+  REWRITE_TAC[EXTENSION; IN_INSERT; numseg; IN_ELIM_THM] THEN ARITH_TAC);;
+
+let NUMSEG_REC = prove
+ (`!m n. m <= SUC n ==> (m..SUC n = (SUC n) INSERT (m..n))`,
+  SIMP_TAC[GSYM NUMSEG_RREC; SUC_SUB1]);;
+
+let IN_NUMSEG = prove
+ (`!m n p. p IN (m..n) <=> m <= p /\ p <= n`,
+  REWRITE_TAC[numseg; IN_ELIM_THM]);;
+
+let IN_NUMSEG_0 = prove
+ (`!m n. m IN (0..n) <=> m <= n`,
+  REWRITE_TAC[IN_NUMSEG; LE_0]);;
+
+let NUMSEG_SING = prove
+ (`!n. n..n = {n}`,
+  REWRITE_TAC[EXTENSION; IN_SING; IN_NUMSEG] THEN ARITH_TAC);;
+
+let NUMSEG_EMPTY = prove
+ (`!m n. (m..n = {}) <=> n < m`,
+  REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_NUMSEG] THEN
+  MESON_TAC[NOT_LE; LE_TRANS; LE_REFL]);;
+
+let CARD_NUMSEG_LEMMA = prove
+ (`!m d. CARD(m..(m+d)) = d + 1`,
+  GEN_TAC THEN INDUCT_TAC THEN
+  ASM_SIMP_TAC[ADD_CLAUSES; NUMSEG_REC; NUMSEG_SING; FINITE_RULES;
+               ARITH_RULE `m <= SUC(m + d)`; CARD_CLAUSES; FINITE_NUMSEG;
+               NOT_IN_EMPTY; ARITH; IN_NUMSEG; ARITH_RULE `~(SUC n <= n)`]);;
+
+let CARD_NUMSEG = prove
+ (`!m n. CARD(m..n) = (n + 1) - m`,
+  REPEAT GEN_TAC THEN
+  DISJ_CASES_THEN MP_TAC (ARITH_RULE `n:num < m \/ m <= n`) THENL
+   [ASM_MESON_TAC[NUMSEG_EMPTY; CARD_CLAUSES;
+                  ARITH_RULE `n < m ==> ((n + 1) - m = 0)`];
+    SIMP_TAC[LE_EXISTS; LEFT_IMP_EXISTS_THM; CARD_NUMSEG_LEMMA] THEN
+    REPEAT STRIP_TAC THEN ARITH_TAC]);;
+
+let HAS_SIZE_NUMSEG = prove
+ (`!m n. (m..n) HAS_SIZE ((n + 1) - m)`,
+  REWRITE_TAC[HAS_SIZE; FINITE_NUMSEG; CARD_NUMSEG]);;
+
+let CARD_NUMSEG_1 = prove
+ (`!n. CARD(1..n) = n`,
+  REWRITE_TAC[CARD_NUMSEG] THEN ARITH_TAC);;
+
+let HAS_SIZE_NUMSEG_1 = prove
+ (`!n. (1..n) HAS_SIZE n`,
+  REWRITE_TAC[CARD_NUMSEG; HAS_SIZE; FINITE_NUMSEG] THEN ARITH_TAC);;
+
+let NUMSEG_CLAUSES = prove
+ (`(!m. m..0 = if m = 0 then {0} else {}) /\
+   (!m n. m..SUC n = if m <= SUC n then (SUC n) INSERT (m..n) else m..n)`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[IN_NUMSEG; NOT_IN_EMPTY; IN_INSERT] THEN
+  POP_ASSUM MP_TAC THEN ARITH_TAC);;
+
+let FINITE_INDEX_NUMSEG = prove
+ (`!s:A->bool.
+        FINITE s =
+        ?f. (!i j. i IN (1..CARD(s)) /\ j IN (1..CARD(s)) /\ (f i = f j)
+                   ==> (i = j)) /\
+            (s = IMAGE f (1..CARD(s)))`,
+  GEN_TAC THEN EQ_TAC THENL
+   [ALL_TAC; MESON_TAC[FINITE_NUMSEG; FINITE_IMAGE]] THEN
+  DISCH_TAC THEN
+  MP_TAC(ISPECL [`s:A->bool`; `CARD(s:A->bool)`] HAS_SIZE_INDEX) THEN
+  ASM_REWRITE_TAC[HAS_SIZE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `f:num->A` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\n. f(n - 1):A` THEN
+  ASM_REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[ARITH_RULE `1 <= i /\ i <= n <=> ~(i = 0) /\ i - 1 < n`] THEN
+    ASM_MESON_TAC[ARITH_RULE
+     `~(x = 0) /\ ~(y = 0) /\ (x - 1 = y - 1) ==> (x = y)`];
+    ASM_MESON_TAC
+     [ARITH_RULE `m < C ==> (m = (m + 1) - 1) /\ 1 <= m + 1 /\ m + 1 <= C`;
+      ARITH_RULE `1 <= i /\ i <= n <=> ~(i = 0) /\ i - 1 < n`]]);;
+
+let FINITE_INDEX_NUMBERS = prove
+ (`!s:A->bool.
+        FINITE s =
+         ?k:num->bool f. (!i j. i IN k /\ j IN k /\ (f i = f j) ==> (i = j)) /\
+                         FINITE k /\ (s = IMAGE f k)`,
+  MESON_TAC[FINITE_INDEX_NUMSEG; FINITE_NUMSEG; FINITE_IMAGE]);;
+
+let DISJOINT_NUMSEG = prove
+ (`!m n p q. DISJOINT (m..n) (p..q) <=> n < p \/ q < m \/ n < m \/ q < p`,
+  REWRITE_TAC[DISJOINT; IN_NUMSEG; EXTENSION; IN_INTER; NOT_IN_EMPTY] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[DE_MORGAN_THM; NOT_LE] THEN
+  EQ_TAC THENL [MESON_TAC[LT_ANTISYM]; ARITH_TAC]);;
+
+let NUMSEG_ADD_SPLIT = prove
+ (`!m n p. m <= n + 1 ==> (m..(n+p) = (m..n) UNION (n+1..n+p))`,
+  REWRITE_TAC[EXTENSION; IN_UNION; IN_NUMSEG] THEN ARITH_TAC);;
+
+let NUMSEG_OFFSET_IMAGE = prove
+ (`!m n p. (m+p..n+p) = IMAGE (\i. i + p) (m..n)`,
+  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG] THEN
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_THEN(fun th -> EXISTS_TAC `x - p:num` THEN MP_TAC th); ALL_TAC] THEN
+  ARITH_TAC);;
+
+let SUBSET_NUMSEG = prove
+ (`!m n p q. (m..n) SUBSET (p..q) <=> n < m \/ p <= m /\ n <= q`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[SUBSET; IN_NUMSEG] THEN
+  EQ_TAC THENL [MESON_TAC[LE_TRANS; NOT_LE; LE_REFL]; ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Equivalence with the more ad-hoc comprehension notation.                  *)
+(* ------------------------------------------------------------------------- *)
+
+let NUMSEG_LE = prove
+ (`!n. {x | x <= n} = 0..n`,
+  REWRITE_TAC[EXTENSION; IN_NUMSEG; IN_ELIM_THM] THEN ARITH_TAC);;
+
+let NUMSEG_LT = prove
+ (`!n. {x | x < n} = if n = 0 then {} else 0..(n-1)`,
+  GEN_TAC THEN COND_CASES_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_NUMSEG; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+  ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Conversion to evaluate m..n for specific numerals.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let NUMSEG_CONV =
+  let pth_0 = MESON[NUMSEG_EMPTY] `n < m ==> m..n = {}`
+  and pth_1 = MESON[NUMSEG_SING] `m..m = {m}`
+  and pth_2 = MESON[NUMSEG_LREC; ADD1] `m <= n ==> m..n = m INSERT (SUC m..n)`
+  and ns_tm = `(..)` and m_tm = `m:num` and n_tm = `n:num` in
+  let rec NUMSEG_CONV tm =
+    let nstm,nt = dest_comb tm in
+    let nst,mt = dest_comb nstm in
+    if nst <> ns_tm then failwith "NUMSEG_CONV" else
+    let m = dest_numeral mt and n = dest_numeral nt in
+    if n </ m then MP_CONV NUM_LT_CONV (INST [mt,m_tm; nt,n_tm] pth_0)
+    else if n =/ m then INST [mt,m_tm] pth_1
+    else let th = MP_CONV NUM_LE_CONV (INST [mt,m_tm; nt,n_tm] pth_2) in
+         CONV_RULE(funpow 2 RAND_CONV
+          (LAND_CONV NUM_SUC_CONV THENC NUMSEG_CONV)) th in
+  NUMSEG_CONV;;
+
+(* ------------------------------------------------------------------------- *)
+(* Topological sorting of a finite set.                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let TOPOLOGICAL_SORT = prove
+ (`!(<<). (!x y:A. x << y /\ y << x ==> x = y) /\
+          (!x y z. x << y /\ y << z ==> x << z)
+          ==> !n s. s HAS_SIZE n
+                    ==> ?f. s = IMAGE f (1..n) /\
+                            (!j k. j IN 1..n /\ k IN 1..n /\ j < k
+                                   ==> ~(f k << f j))`,
+  GEN_TAC THEN DISCH_TAC THEN
+  SUBGOAL_THEN `!n s. s HAS_SIZE n /\ ~(s = {})
+                      ==> ?a:A. a IN s /\ !b. b IN (s DELETE a) ==> ~(b << a)`
+  ASSUME_TAC THENL
+   [INDUCT_TAC THEN
+    REWRITE_TAC[HAS_SIZE_0; HAS_SIZE_SUC; TAUT `~(a /\ ~a)`] THEN
+    X_GEN_TAC `s:A->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `a:A`) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `a:A`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `s DELETE (a:A)`) THEN
+    ASM_SIMP_TAC[SET_RULE `a IN s ==> (s DELETE a = {} <=> s = {a})`] THEN
+    ASM_CASES_TAC `s = {a:A}` THEN ASM_REWRITE_TAC[] THENL
+     [EXISTS_TAC `a:A` THEN SET_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_THEN `b:A` STRIP_ASSUME_TAC) THEN
+    ASM_CASES_TAC `((a:A) << (b:A)) :bool` THENL
+     [EXISTS_TAC `a:A`; EXISTS_TAC `b:A`] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  INDUCT_TAC THENL
+   [SIMP_TAC[HAS_SIZE_0; NUMSEG_CLAUSES; ARITH; IMAGE_CLAUSES; NOT_IN_EMPTY];
+    ALL_TAC] THEN
+  REWRITE_TAC[HAS_SIZE_SUC] THEN X_GEN_TAC `s:A->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`SUC n`; `s:A->bool`]) THEN
+  ASM_REWRITE_TAC[HAS_SIZE_SUC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A` MP_TAC) THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `s DELETE (a:A)`) THEN ASM_SIMP_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `f:num->A` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\k. if k = 1 then a:A else f(k - 1)` THEN
+  SIMP_TAC[ARITH_RULE `1 <= k ==> ~(SUC k = 1)`; SUC_SUB1] THEN
+  SUBGOAL_THEN `!i. i IN 1..SUC n <=> i = 1 \/ 1 < i /\ (i - 1) IN 1..n`
+   (fun th -> REWRITE_TAC[EXTENSION; IN_IMAGE; th])
+  THENL [REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC; ALL_TAC] THEN CONJ_TAC THENL
+   [X_GEN_TAC `b:A` THEN ASM_CASES_TAC `b:A = a` THENL
+     [ASM_MESON_TAC[]; ALL_TAC] THEN
+    FIRST_ASSUM(fun th -> ONCE_REWRITE_TAC[MATCH_MP
+     (SET_RULE `~(b = a) ==> (b IN s <=> b IN (s DELETE a))`) th]) THEN
+    ONCE_REWRITE_TAC[COND_RAND] THEN
+    ASM_REWRITE_TAC[IN_IMAGE; IN_NUMSEG] THEN
+    EQ_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+    DISCH_THEN(X_CHOOSE_TAC `i:num`) THEN EXISTS_TAC `i + 1` THEN
+    ASM_SIMP_TAC[ARITH_RULE `1 <= x ==> 1 < x + 1 /\ ~(x + 1 = 1)`; ADD_SUB];
+    MAP_EVERY X_GEN_TAC [`j:num`; `k:num`] THEN
+    MAP_EVERY ASM_CASES_TAC [`j = 1`; `k = 1`] THEN
+    ASM_REWRITE_TAC[LT_REFL] THENL
+     [STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[];
+      ARITH_TAC;
+      STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Analogous finiteness theorem for segments of integers.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let FINITE_INTSEG = prove
+ (`(!l r. FINITE {x:int | l <= x /\ x <= r}) /\
+   (!l r. FINITE {x:int | l <= x /\ x < r}) /\
+   (!l r. FINITE {x:int | l < x /\ x <= r}) /\
+   (!l r. FINITE {x:int | l < x /\ x < r})`,
+  MATCH_MP_TAC(TAUT `(a ==> b) /\ a ==> a /\ b`) THEN CONJ_TAC THENL
+   [DISCH_TAC THEN REPEAT CONJ_TAC THEN POP_ASSUM MP_TAC THEN
+    REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN INT_ARITH_TAC;
+    REPEAT GEN_TAC THEN ASM_CASES_TAC `&0:int <= r - l` THEN
+    ASM_SIMP_TAC[INT_ARITH `~(&0 <= r - l:int) ==> ~(l <= x /\ x <= r)`] THEN
+    ASM_SIMP_TAC[EMPTY_GSPEC; FINITE_EMPTY] THEN 
+    MATCH_MP_TAC FINITE_SUBSET THEN 
+    EXISTS_TAC `IMAGE (\n. l + &n) (0..num_of_int(r - l))` THEN
+    ASM_SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG] THEN
+    REWRITE_TAC[SUBSET; IN_IMAGE; IN_ELIM_THM] THEN
+    REWRITE_TAC[GSYM INT_OF_NUM_LE; IN_NUMSEG] THEN
+    X_GEN_TAC `x:int` THEN STRIP_TAC THEN EXISTS_TAC `num_of_int(x - l)` THEN
+    ASM_SIMP_TAC[INT_OF_NUM_OF_INT; INT_SUB_LE] THEN ASM_INT_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Generic iteration of operation over set with finite support.              *)
+(* ------------------------------------------------------------------------- *)
+
+let neutral = new_definition
+  `neutral op = @x. !y. (op x y = y) /\ (op y x = y)`;;
+
+let monoidal = new_definition
+  `monoidal op <=> (!x y. op x y = op y x) /\
+                   (!x y z. op x (op y z) = op (op x y) z) /\
+                   (!x:A. op (neutral op) x = x)`;;
+
+let MONOIDAL_AC = prove
+ (`!op. monoidal op
+        ==> (!a. op (neutral op) a = a) /\
+            (!a. op a (neutral op) = a) /\
+            (!a b. op a b = op b a) /\
+            (!a b c. op (op a b) c = op a (op b c)) /\
+            (!a b c. op a (op b c) = op b (op a c))`,
+  REWRITE_TAC[monoidal] THEN MESON_TAC[]);;
+
+let support = new_definition
+  `support op (f:A->B) s = {x | x IN s /\ ~(f x = neutral op)}`;;
+
+let iterate = new_definition
+  `iterate op (s:A->bool) f =
+        if FINITE(support op f s)
+        then ITSET (\x a. op (f x) a) (support op f s) (neutral op)
+        else neutral op`;;
+
+let IN_SUPPORT = prove
+ (`!op f x s. x IN (support op f s) <=> x IN s /\ ~(f x = neutral op)`,
+  REWRITE_TAC[support; IN_ELIM_THM]);;
+
+let SUPPORT_SUPPORT = prove
+ (`!op f s. support op f (support op f s) = support op f s`,
+  REWRITE_TAC[support; IN_ELIM_THM; EXTENSION] THEN REWRITE_TAC[CONJ_ACI]);;
+
+let SUPPORT_EMPTY = prove
+ (`!op f s. (!x. x IN s ==> (f(x) = neutral op)) <=> (support op f s = {})`,
+  REWRITE_TAC[IN_SUPPORT; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+  MESON_TAC[]);;
+
+let SUPPORT_SUBSET = prove
+ (`!op f s. (support op f s) SUBSET s`,
+  SIMP_TAC[SUBSET; IN_SUPPORT]);;
+
+let FINITE_SUPPORT = prove
+ (`!op f s. FINITE s ==> FINITE(support op f s)`,
+  MESON_TAC[SUPPORT_SUBSET; FINITE_SUBSET]);;
+
+let SUPPORT_CLAUSES = prove
+ (`(!f. support op f {} = {}) /\
+   (!f x s. support op f (x INSERT s) =
+       if f(x) = neutral op then support op f s
+       else x INSERT (support op f s)) /\
+   (!f x s. support op f (s DELETE x) = (support op f s) DELETE x) /\
+   (!f s t. support op f (s UNION t) =
+                    (support op f s) UNION (support op f t)) /\
+   (!f s t. support op f (s INTER t) =
+                    (support op f s) INTER (support op f t)) /\
+   (!f s t. support op f (s DIFF t) =
+                    (support op f s) DIFF (support op f t)) /\
+   (!f g s.  support op g (IMAGE f s) = IMAGE f (support op (g o f) s))`,
+  REWRITE_TAC[support; EXTENSION; IN_ELIM_THM; IN_INSERT; IN_DELETE; o_THM;
+    IN_IMAGE; NOT_IN_EMPTY; IN_UNION; IN_INTER; IN_DIFF; COND_RAND] THEN
+  REPEAT STRIP_TAC THEN TRY COND_CASES_TAC THEN ASM_MESON_TAC[]);;
+
+let SUPPORT_DELTA = prove
+ (`!op s f a. support op (\x. if x = a then f(x) else neutral op) s =
+              if a IN s then support op f {a} else {}`,
+  REWRITE_TAC[EXTENSION; support; IN_ELIM_THM; IN_SING] THEN
+  REPEAT GEN_TAC THEN REPEAT COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; NOT_IN_EMPTY]);;
+
+let FINITE_SUPPORT_DELTA = prove
+ (`!op f a. FINITE(support op (\x. if x = a then f(x) else neutral op) s)`,
+  REWRITE_TAC[SUPPORT_DELTA] THEN REPEAT GEN_TAC THEN
+  COND_CASES_TAC THEN SIMP_TAC[FINITE_RULES; FINITE_SUPPORT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Key lemmas about the generic notion.                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let ITERATE_SUPPORT = prove
+ (`!op f s. iterate op (support op f s) f = iterate op s f`,
+  SIMP_TAC[iterate; SUPPORT_SUPPORT]);;
+
+let ITERATE_EXPAND_CASES = prove
+ (`!op f s. iterate op s f =
+              if FINITE(support op f s) then iterate op (support op f s) f
+              else neutral op`,
+  SIMP_TAC[iterate; SUPPORT_SUPPORT]);;
+
+let ITERATE_CLAUSES_GEN = prove
+ (`!op. monoidal op
+        ==> (!(f:A->B). iterate op {} f = neutral op) /\
+            (!f x s. monoidal op /\ FINITE(support op (f:A->B) s)
+                     ==> (iterate op (x INSERT s) f =
+                                if x IN s then iterate op s f
+                                else op (f x) (iterate op s f)))`,
+  GEN_TAC THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN
+  MP_TAC(ISPECL [`\x a. (op:B->B->B) ((f:A->B)(x)) a`; `neutral op :B`]
+   FINITE_RECURSION) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[monoidal]; ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[iterate; SUPPORT_CLAUSES; FINITE_RULES] THEN
+  GEN_REWRITE_TAC (LAND_CONV o RATOR_CONV o LAND_CONV) [COND_RAND] THEN
+  ASM_REWRITE_TAC[SUPPORT_CLAUSES; FINITE_INSERT; COND_ID] THEN
+  ASM_CASES_TAC `(f:A->B) x = neutral op` THEN
+  ASM_SIMP_TAC[IN_SUPPORT] THEN COND_CASES_TAC THEN ASM_MESON_TAC[monoidal]);;
+
+let ITERATE_CLAUSES = prove
+ (`!op. monoidal op
+        ==> (!f. iterate op {} f = neutral op) /\
+            (!f x s. FINITE(s)
+                     ==> (iterate op (x INSERT s) f =
+                          if x IN s then iterate op s f
+                          else op (f x) (iterate op s f)))`,
+  SIMP_TAC[ITERATE_CLAUSES_GEN; FINITE_SUPPORT]);;
+
+let ITERATE_UNION = prove
+ (`!op. monoidal op
+        ==> !f s t. FINITE s /\ FINITE t /\ DISJOINT s t
+                    ==> (iterate op (s UNION t) f =
+                         op (iterate op s f) (iterate op t f))`,
+  let lemma = prove
+   (`(s UNION (x INSERT t) = x INSERT (s UNION t)) /\
+     (DISJOINT s (x INSERT t) <=> ~(x IN s) /\ DISJOINT s t)`,
+    SET_TAC[]) in
+  GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN REPEAT DISCH_TAC THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES; IN_UNION; UNION_EMPTY; REAL_ADD_RID; lemma;
+               FINITE_UNION] THEN
+  ASM_MESON_TAC[monoidal]);;
+
+let ITERATE_UNION_GEN = prove
+ (`!op. monoidal op
+        ==> !(f:A->B) s t. FINITE(support op f s) /\ FINITE(support op f t) /\
+                           DISJOINT (support op f s) (support op f t)
+                           ==> (iterate op (s UNION t) f =
+                                op (iterate op s f) (iterate op t f))`,
+  ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
+  SIMP_TAC[SUPPORT_CLAUSES; ITERATE_UNION]);;
+
+let ITERATE_DIFF = prove
+ (`!op. monoidal op
+        ==> !f s t. FINITE s /\ t SUBSET s
+                    ==> (op (iterate op (s DIFF t) f) (iterate op t f) =
+                         iterate op s f)`,
+  let lemma = prove
+   (`t SUBSET s ==> (s = (s DIFF t) UNION t) /\ DISJOINT (s DIFF t) t`,
+    SET_TAC[]) in
+  MESON_TAC[lemma; ITERATE_UNION; FINITE_UNION; FINITE_SUBSET; SUBSET_DIFF]);;
+
+let ITERATE_DIFF_GEN = prove
+ (`!op. monoidal op
+        ==> !f:A->B s t. FINITE (support op f s) /\
+                         (support op f t) SUBSET (support op f s)
+                         ==> (op (iterate op (s DIFF t) f) (iterate op t f) =
+                              iterate op s f)`,
+  ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
+  SIMP_TAC[SUPPORT_CLAUSES; ITERATE_DIFF]);;
+
+let ITERATE_INCL_EXCL = prove
+ (`!op. monoidal op
+        ==> !s t f. FINITE s /\ FINITE t
+                    ==> op (iterate op s f) (iterate op t f) =
+                        op (iterate op (s UNION t) f)
+                           (iterate op (s INTER t) f)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE
+    `a UNION b = ((a DIFF b) UNION (b DIFF a)) UNION (a INTER b)`] THEN
+  GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o ONCE_DEPTH_CONV)
+    [SET_RULE `s:A->bool = s DIFF t UNION s INTER t`] THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o ONCE_DEPTH_CONV)
+    [SET_RULE `t:A->bool = t DIFF s UNION s INTER t`] THEN
+  ASM_SIMP_TAC[ITERATE_UNION; FINITE_UNION; FINITE_DIFF; FINITE_INTER;
+    SET_RULE `DISJOINT (s DIFF s' UNION s' DIFF s) (s INTER s')`;
+    SET_RULE `DISJOINT (s DIFF s') (s' DIFF s)`;
+    SET_RULE `DISJOINT (s DIFF s') (s' INTER s)`;
+    SET_RULE `DISJOINT (s DIFF s') (s INTER s')`] THEN
+  FIRST_X_ASSUM(fun th -> REWRITE_TAC[MATCH_MP MONOIDAL_AC th]));;
+
+let ITERATE_CLOSED = prove
+ (`!op. monoidal op
+        ==> !P. P(neutral op) /\ (!x y. P x /\ P y ==> P (op x y))
+                ==> !f:A->B s. (!x. x IN s /\ ~(f x = neutral op) ==> P(f x))
+                               ==> P(iterate op s f)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[GSYM IN_SUPPORT] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN POP_ASSUM MP_TAC THEN
+  SPEC_TAC(`support op (f:A->B) s`,`s:A->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES; FINITE_INSERT; IN_INSERT]);;
+
+let ITERATE_RELATED = prove
+ (`!op. monoidal op
+        ==> !R. R (neutral op) (neutral op) /\
+                (!x1 y1 x2 y2. R x1 x2 /\ R y1 y2 ==> R (op x1 y1) (op x2 y2))
+                ==> !f:A->B g s.
+                      FINITE s /\
+                      (!x. x IN s ==> R (f x) (g x))
+                      ==> R (iterate op s f) (iterate op s g)`,
+  GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN STRIP_TAC THEN GEN_TAC THEN
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES; FINITE_INSERT; IN_INSERT]);;
+
+let ITERATE_EQ_NEUTRAL = prove
+ (`!op. monoidal op
+        ==> !f:A->B s. (!x. x IN s ==> (f(x) = neutral op))
+                       ==> (iterate op s f = neutral op)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `support op (f:A->B) s = {}` ASSUME_TAC THENL
+   [ASM_MESON_TAC[EXTENSION; NOT_IN_EMPTY; IN_SUPPORT];
+    ASM_MESON_TAC[ITERATE_CLAUSES; FINITE_RULES; ITERATE_SUPPORT]]);;
+
+let ITERATE_SING = prove
+ (`!op. monoidal op ==> !f:A->B x. (iterate op {x} f = f x)`,
+  SIMP_TAC[ITERATE_CLAUSES; FINITE_RULES; NOT_IN_EMPTY] THEN
+  MESON_TAC[monoidal]);;
+
+let ITERATE_DELETE = prove
+ (`!op. monoidal op
+        ==> !f:A->B s a. FINITE s /\ a IN s
+                         ==> op (f a) (iterate op (s DELETE a) f) =
+                             iterate op s f`,
+  MESON_TAC[ITERATE_CLAUSES; FINITE_DELETE; IN_DELETE; INSERT_DELETE]);;
+
+let ITERATE_DELTA = prove
+ (`!op. monoidal op
+        ==> !f a s. iterate op s (\x. if x = a then f(x) else neutral op) =
+                    if a IN s then f(a) else neutral op`,
+  GEN_TAC THEN DISCH_TAC THEN ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
+  REWRITE_TAC[SUPPORT_DELTA] THEN REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES] THEN REWRITE_TAC[SUPPORT_CLAUSES] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[ITERATE_CLAUSES; ITERATE_SING]);;
+
+let ITERATE_IMAGE = prove
+ (`!op. monoidal op
+       ==> !f:A->B g:B->C s.
+                (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+                ==> (iterate op (IMAGE f s) g = iterate op s (g o f))`,
+  GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
+  SUBGOAL_THEN
+   `!s. FINITE s /\
+        (!x y:A. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+        ==> (iterate op (IMAGE f s) (g:B->C) = iterate op s (g o f))`
+  ASSUME_TAC THENL
+   [REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    ASM_SIMP_TAC[ITERATE_CLAUSES; IMAGE_CLAUSES; FINITE_IMAGE] THEN
+    REWRITE_TAC[o_THM; IN_INSERT] THEN ASM_MESON_TAC[IN_IMAGE];
+    GEN_TAC THEN DISCH_TAC THEN ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC(TAUT
+     `(a <=> a') /\ (a' ==> (b = b'))
+      ==> (if a then b else c) = (if a' then b' else c)`) THEN
+    REWRITE_TAC[SUPPORT_CLAUSES] THEN REPEAT STRIP_TAC THENL
+     [MATCH_MP_TAC FINITE_IMAGE_INJ_EQ THEN ASM_MESON_TAC[IN_SUPPORT];
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[IN_SUPPORT]]]);;
+
+let ITERATE_BIJECTION = prove
+ (`!op. monoidal op
+        ==>  !f:A->B p s.
+                (!x. x IN s ==> p(x) IN s) /\
+                (!y. y IN s ==> ?!x. x IN s /\ p(x) = y)
+                ==> iterate op s f = iterate op s (f o p)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `iterate op (IMAGE (p:A->A) s) (f:A->B)` THEN CONJ_TAC THENL
+   [AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_IMAGE];
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+      (INST_TYPE [aty,bty] ITERATE_IMAGE))] THEN
+  ASM_MESON_TAC[]);;
+
+let ITERATE_ITERATE_PRODUCT = prove
+ (`!op. monoidal op
+        ==> !s:A->bool t:A->B->bool x:A->B->C.
+                FINITE s /\ (!i. i IN s ==> FINITE(t i))
+                ==> iterate op s (\i. iterate op (t i) (x i)) =
+                    iterate op {i,j | i IN s /\ j IN t i} (\(i,j). x i j)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[NOT_IN_EMPTY; SET_RULE `{a,b | F} = {}`; ITERATE_CLAUSES] THEN
+  REWRITE_TAC[SET_RULE `{i,j | i IN a INSERT s /\ j IN t i} =
+            IMAGE (\j. a,j) (t a) UNION {i,j | i IN s /\ j IN t i}`] THEN
+  ASM_SIMP_TAC[FINITE_INSERT; ITERATE_CLAUSES; IN_INSERT] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(fun th ->
+   W(MP_TAC o PART_MATCH (lhand o rand) (MATCH_MP ITERATE_UNION th) o
+   rand o snd)) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[FINITE_IMAGE; FINITE_PRODUCT_DEPENDENT; IN_INSERT] THEN
+    REWRITE_TAC[DISJOINT; EXTENSION; IN_IMAGE; IN_INTER; NOT_IN_EMPTY;
+                IN_ELIM_THM; EXISTS_PAIR_THM; FORALL_PAIR_THM; PAIR_EQ] THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  DISCH_THEN SUBST1_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  FIRST_ASSUM(fun th ->
+   W(MP_TAC o PART_MATCH (lhand o rand) (MATCH_MP ITERATE_IMAGE th) o
+   rand o snd)) THEN
+  ANTS_TAC THENL
+   [SIMP_TAC[FORALL_PAIR_THM] THEN CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN
+    ASM_SIMP_TAC[PAIR_EQ];
+    DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[o_DEF] THEN
+    CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN REWRITE_TAC[ETA_AX]]);;
+
+let ITERATE_EQ = prove
+ (`!op. monoidal op
+        ==> !f:A->B g s.
+              (!x. x IN s ==> f x = g x) ==> iterate op s f = iterate op s g`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  SUBGOAL_THEN `support op g s = support op (f:A->B) s` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_SUPPORT] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+   `FINITE(support op (f:A->B) s) /\
+    (!x. x IN (support op f s) ==> f x = g x)`
+  MP_TAC THENL [ASM_MESON_TAC[IN_SUPPORT]; REWRITE_TAC[IMP_CONJ]] THEN
+  SPEC_TAC(`support op (f:A->B) s`,`t:A->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN ASM_SIMP_TAC[ITERATE_CLAUSES] THEN
+  MESON_TAC[IN_INSERT]);;
+
+let ITERATE_EQ_GENERAL = prove
+ (`!op. monoidal op
+        ==> !s:A->bool t:B->bool f:A->C g h.
+                (!y. y IN t ==> ?!x. x IN s /\ h(x) = y) /\
+                (!x. x IN s ==> h(x) IN t /\ g(h x) = f x)
+                ==> iterate op s f = iterate op t g`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `t = IMAGE (h:A->B) s` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `iterate op s ((g:B->C) o (h:A->B))` THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[ITERATE_EQ; o_THM];
+    CONV_TAC SYM_CONV THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_IMAGE) THEN
+    ASM_MESON_TAC[]]);;
+
+let ITERATE_EQ_GENERAL_INVERSES = prove
+ (`!op. monoidal op
+        ==> !s:A->bool t:B->bool f:A->C g h k.
+                (!y. y IN t ==> k(y) IN s /\ h(k y) = y) /\
+                (!x. x IN s ==> h(x) IN t /\ k(h x) = x /\ g(h x) = f x)
+                ==> iterate op s f = iterate op t g`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_EQ_GENERAL) THEN
+  EXISTS_TAC `h:A->B` THEN ASM_MESON_TAC[]);;
+
+let ITERATE_INJECTION = prove
+ (`!op. monoidal op
+          ==> !f:A->B p:A->A s.
+                      FINITE s /\
+                      (!x. x IN s ==> p x IN s) /\
+                      (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
+                      ==> iterate op s (f o p) = iterate op s f`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_BIJECTION) THEN
+  MP_TAC(ISPECL [`s:A->bool`; `p:A->A`] SURJECTIVE_IFF_INJECTIVE) THEN
+  ASM_REWRITE_TAC[SUBSET; IN_IMAGE] THEN ASM_MESON_TAC[]);;
+
+let ITERATE_UNION_NONZERO = prove
+ (`!op. monoidal op
+        ==> !f:A->B s t.
+                FINITE(s) /\ FINITE(t) /\
+                (!x. x IN (s INTER t) ==> f x = neutral(op))
+                ==> iterate op (s UNION t) f =
+                    op (iterate op s f) (iterate op t f)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
+  REWRITE_TAC[SUPPORT_CLAUSES] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_UNION) THEN
+  ASM_SIMP_TAC[FINITE_SUPPORT; DISJOINT; IN_INTER; IN_SUPPORT; EXTENSION] THEN
+  ASM_MESON_TAC[IN_INTER; NOT_IN_EMPTY]);;
+
+let ITERATE_OP = prove
+ (`!op. monoidal op
+        ==> !f g s. FINITE s
+                    ==> iterate op s (\x. op (f x) (g x)) =
+                        op (iterate op s f) (iterate op s g)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES; MONOIDAL_AC]);;
+
+let ITERATE_SUPERSET = prove
+ (`!op. monoidal op
+        ==> !f:A->B u v.
+            u SUBSET v /\
+            (!x. x IN v /\ ~(x IN u) ==> f(x) = neutral op)
+            ==> iterate op v f = iterate op u f`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[support; EXTENSION; IN_ELIM_THM] THEN ASM_MESON_TAC[SUBSET]);;
+
+let ITERATE_IMAGE_NONZERO = prove
+ (`!op. monoidal op
+        ==> !g:B->C f:A->B s.
+                    FINITE s /\
+                    (!x y. x IN s /\ y IN s /\ ~(x = y) /\ f x = f y
+                           ==> g(f x) = neutral op)
+                    ==> iterate op (IMAGE f s) g = iterate op s (g o f)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  GEN_TAC THEN GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[IMAGE_CLAUSES; ITERATE_CLAUSES; FINITE_IMAGE] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `s:A->bool`] THEN
+  REWRITE_TAC[IN_INSERT] THEN REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `iterate op s ((g:B->C) o (f:A->B)) = iterate op (IMAGE f s) g`
+  SUBST1_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[IN_IMAGE] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[o_THM] THEN
+  SUBGOAL_THEN `(g:B->C) ((f:A->B) a) = neutral op` SUBST1_TAC THEN
+  ASM_MESON_TAC[MONOIDAL_AC]);;
+
+let ITERATE_CASES = prove
+ (`!op. monoidal op
+        ==> !s P f g:A->B.
+                FINITE s
+                ==> iterate op s (\x. if P x then f x else g x) =
+                    op (iterate op {x | x IN s /\ P x} f)
+                       (iterate op {x | x IN s /\ ~P x} g)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC
+   `op (iterate op {x | x IN s /\ P x} (\x. if P x then f x else (g:A->B) x))
+       (iterate op {x | x IN s /\ ~P x} (\x. if P x then f x else g x))` THEN
+  CONJ_TAC THENL
+   [FIRST_ASSUM(fun th -> ASM_SIMP_TAC[GSYM(MATCH_MP ITERATE_UNION th);
+      FINITE_RESTRICT;
+      SET_RULE `DISJOINT {x | x IN s /\ P x} {x | x IN s /\ ~P x}`]) THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN SET_TAC[];
+    BINOP_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_EQ) THEN
+    SIMP_TAC[IN_ELIM_THM]]);;
+
+let ITERATE_OP_GEN = prove
+ (`!op. monoidal op
+        ==> !f g:A->B s.
+                FINITE(support op f s) /\ FINITE(support op g s)
+                ==> iterate op s (\x. op (f x) (g x)) =
+                    op (iterate op s f) (iterate op s g)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `iterate op (support op f s UNION support op g s)
+                         (\x. op ((f:A->B) x) (g x))` THEN
+  CONJ_TAC THENL
+   [CONV_TAC SYM_CONV;
+    ASM_SIMP_TAC[ITERATE_OP; FINITE_UNION] THEN BINOP_TAC] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_SUPERSET) THEN
+  REWRITE_TAC[support; IN_ELIM_THM; SUBSET; IN_UNION] THEN
+  ASM_MESON_TAC[monoidal]);;
+
+let ITERATE_CLAUSES_NUMSEG = prove
+ (`!op. monoidal op
+        ==> (!m. iterate op (m..0) f = if m = 0 then f(0) else neutral op) /\
+            (!m n. iterate op (m..SUC n) f =
+                      if m <= SUC n then op (iterate op (m..n) f) (f(SUC n))
+                      else iterate op (m..n) f)`,
+  REWRITE_TAC[NUMSEG_CLAUSES] THEN REPEAT STRIP_TAC THEN
+  COND_CASES_TAC THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES; FINITE_NUMSEG; IN_NUMSEG; FINITE_EMPTY] THEN
+  REWRITE_TAC[ARITH_RULE `~(SUC n <= n)`; NOT_IN_EMPTY] THEN
+  ASM_MESON_TAC[monoidal]);;
+
+let ITERATE_PAIR = prove
+ (`!op. monoidal op
+        ==> !f m n. iterate op (2*m..2*n+1) f =
+                    iterate op (m..n) (\i. op (f(2*i)) (f(2*i+1)))`,
+  GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
+  INDUCT_TAC THEN CONV_TAC NUM_REDUCE_CONV THENL
+   [ASM_SIMP_TAC[num_CONV `1`; ITERATE_CLAUSES_NUMSEG] THEN
+    REWRITE_TAC[ARITH_RULE `2 * m <= SUC 0 <=> m = 0`] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[MULT_EQ_0; ARITH];
+    REWRITE_TAC[ARITH_RULE `2 * SUC n + 1 = SUC(SUC(2 * n + 1))`] THEN
+    ASM_SIMP_TAC[ITERATE_CLAUSES_NUMSEG] THEN
+    REWRITE_TAC[ARITH_RULE `2 * m <= SUC(SUC(2 * n + 1)) <=> m <= SUC n`;
+                ARITH_RULE `2 * m <= SUC(2 * n + 1) <=> m <= SUC n`] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[ARITH_RULE `2 * SUC n = SUC(2 * n + 1)`;
+                ARITH_RULE `2 * SUC n + 1 = SUC(SUC(2 * n + 1))`] THEN
+    ASM_MESON_TAC[monoidal]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Sums of natural numbers.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+prioritize_num();;
+
+let nsum = new_definition
+  `nsum = iterate (+)`;;
+
+let NEUTRAL_ADD = prove
+ (`neutral((+):num->num->num) = 0`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[ADD_CLAUSES]);;
+
+let NEUTRAL_MUL = prove
+ (`neutral(( * ):num->num->num) = 1`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[MULT_CLAUSES; MULT_EQ_1]);;
+
+let MONOIDAL_ADD = prove
+ (`monoidal((+):num->num->num)`,
+  REWRITE_TAC[monoidal; NEUTRAL_ADD] THEN ARITH_TAC);;
+
+let MONOIDAL_MUL = prove
+ (`monoidal(( * ):num->num->num)`,
+  REWRITE_TAC[monoidal; NEUTRAL_MUL] THEN ARITH_TAC);;
+
+let NSUM_CLAUSES = prove
+ (`(!f. nsum {} f = 0) /\
+   (!x f s. FINITE(s)
+            ==> (nsum (x INSERT s) f =
+                 if x IN s then nsum s f else f(x) + nsum s f))`,
+  REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_UNION = prove
+ (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
+           ==> (nsum (s UNION t) f = nsum s f + nsum t f)`,
+  SIMP_TAC[nsum; ITERATE_UNION; MONOIDAL_ADD]);;
+
+let NSUM_DIFF = prove
+ (`!f s t. FINITE s /\ t SUBSET s
+           ==> (nsum (s DIFF t) f = nsum s f - nsum t f)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(ARITH_RULE `(x + z = y:num) ==> (x = y - z)`) THEN
+  ASM_SIMP_TAC[nsum; ITERATE_DIFF; MONOIDAL_ADD]);;
+
+let NSUM_INCL_EXCL = prove
+ (`!s t (f:A->num).
+     FINITE s /\ FINITE t
+     ==> nsum s f + nsum t f = nsum (s UNION t) f + nsum (s INTER t) f`,
+  REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_INCL_EXCL THEN REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_SUPPORT = prove
+ (`!f s. nsum (support (+) f s) f = nsum s f`,
+  SIMP_TAC[nsum; iterate; SUPPORT_SUPPORT]);;
+
+let NSUM_ADD = prove
+ (`!f g s. FINITE s ==> (nsum s (\x. f(x) + g(x)) = nsum s f + nsum s g)`,
+  SIMP_TAC[nsum; ITERATE_OP; MONOIDAL_ADD]);;
+
+let NSUM_ADD_GEN = prove
+ (`!f g s.
+       FINITE {x | x IN s /\ ~(f x = 0)} /\ FINITE {x | x IN s /\ ~(g x = 0)}
+       ==> nsum s (\x. f x + g x) = nsum s f + nsum s g`,
+  REWRITE_TAC[GSYM NEUTRAL_ADD; GSYM support; nsum] THEN
+  MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_ADD);;
+
+let NSUM_EQ_0 = prove
+ (`!f s. (!x:A. x IN s ==> (f(x) = 0)) ==> (nsum s f = 0)`,
+  REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
+  SIMP_TAC[ITERATE_EQ_NEUTRAL; MONOIDAL_ADD]);;
+
+let NSUM_0 = prove
+ (`!s:A->bool. nsum s (\n. 0) = 0`,
+  SIMP_TAC[NSUM_EQ_0]);;
+
+let NSUM_LMUL = prove
+ (`!f c s:A->bool. nsum s (\x. c * f(x)) = c * nsum s f`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = 0` THEN
+  ASM_REWRITE_TAC[MULT_CLAUSES; NSUM_0] THEN REWRITE_TAC[nsum] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  SUBGOAL_THEN `support (+) (\x:A. c * f(x)) s = support (+) f s` SUBST1_TAC
+  THENL [ASM_SIMP_TAC[support; MULT_EQ_0; NEUTRAL_ADD]; ALL_TAC] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[NEUTRAL_ADD; MULT_CLAUSES] THEN
+  UNDISCH_TAC `FINITE (support (+) f (s:A->bool))` THEN
+  SPEC_TAC(`support (+) f (s:A->bool)`,`t:A->bool`) THEN
+  REWRITE_TAC[GSYM nsum] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; MULT_CLAUSES; LEFT_ADD_DISTRIB]);;
+
+let NSUM_RMUL = prove
+ (`!f c s:A->bool. nsum s (\x. f(x) * c) = nsum s f * c`,
+  ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[NSUM_LMUL]);;
+
+let NSUM_LE = prove
+ (`!f g s. FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x))
+           ==> nsum s f <= nsum s g`,
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; LE_REFL; LE_ADD2; IN_INSERT]);;
+
+let NSUM_LT = prove
+ (`!f g s:A->bool.
+        FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) /\
+        (?x. x IN s /\ f(x) < g(x))
+         ==> nsum s f < nsum s g`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `s = (a:A) INSERT (s DELETE a)` SUBST1_TAC THENL
+   [UNDISCH_TAC `a:A IN s` THEN SET_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[NSUM_CLAUSES; FINITE_DELETE; IN_DELETE] THEN
+  ASM_SIMP_TAC[LTE_ADD2; NSUM_LE; IN_DELETE; FINITE_DELETE]);;
+
+let NSUM_LT_ALL = prove
+ (`!f g s. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
+           ==> nsum s f < nsum s g`,
+  MESON_TAC[MEMBER_NOT_EMPTY; LT_IMP_LE; NSUM_LT]);;
+
+let NSUM_EQ = prove
+ (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (nsum s f = nsum s g)`,
+  REWRITE_TAC[nsum] THEN
+  MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_CONST = prove
+ (`!c s. FINITE s ==> (nsum s (\n. c) = (CARD s) * c)`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; CARD_CLAUSES] THEN
+  REPEAT STRIP_TAC THEN ARITH_TAC);;
+
+let NSUM_POS_BOUND = prove
+ (`!f b s. FINITE s /\ nsum s f <= b ==> !x:A. x IN s ==> f x <= b`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; NOT_IN_EMPTY; IN_INSERT] THEN
+  MESON_TAC[LE_0; ARITH_RULE
+   `0 <= x /\ 0 <= y /\ x + y <= b ==> x <= b /\ y <= b`]);;
+
+let NSUM_EQ_0_IFF = prove
+ (`!s. FINITE s ==> (nsum s f = 0 <=> !x. x IN s ==> f x = 0)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[NSUM_EQ_0] THEN
+  ASM_MESON_TAC[ARITH_RULE `n = 0 <=> n <= 0`; NSUM_POS_BOUND]);;
+
+let NSUM_DELETE = prove
+ (`!f s a. FINITE s /\ a IN s ==> f(a) + nsum(s DELETE a) f = nsum s f`,
+  SIMP_TAC[nsum; ITERATE_DELETE; MONOIDAL_ADD]);;
+
+let NSUM_SING = prove
+ (`!f x. nsum {x} f = f(x)`,
+  SIMP_TAC[NSUM_CLAUSES; FINITE_RULES; NOT_IN_EMPTY; ADD_CLAUSES]);;
+
+let NSUM_DELTA = prove
+ (`!s a. nsum s (\x. if x = a:A then b else 0) = if a IN s then b else 0`,
+  REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
+  SIMP_TAC[ITERATE_DELTA; MONOIDAL_ADD]);;
+
+let NSUM_SWAP = prove
+ (`!f:A->B->num s t.
+      FINITE(s) /\ FINITE(t)
+      ==> (nsum s (\i. nsum t (f i)) = nsum t (\j. nsum s (\i. f i j)))`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; NSUM_0; NSUM_ADD; ETA_AX]);;
+
+let NSUM_IMAGE = prove
+ (`!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+           ==> (nsum (IMAGE f s) g = nsum s (g o f))`,
+  REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_SUPERSET = prove
+ (`!f:A->num u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = 0))
+        ==> (nsum v f = nsum u f)`,
+  SIMP_TAC[nsum; GSYM NEUTRAL_ADD; ITERATE_SUPERSET; MONOIDAL_ADD]);;
+
+let NSUM_UNION_RZERO = prove
+ (`!f:A->num u v.
+        FINITE u /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = 0))
+        ==> (nsum (u UNION v) f = nsum u f)`,
+  let lemma = prove(`u UNION v = u UNION (v DIFF u)`,SET_TAC[]) in
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[lemma] THEN
+  MATCH_MP_TAC NSUM_SUPERSET THEN ASM_MESON_TAC[IN_UNION; IN_DIFF; SUBSET]);;
+
+let NSUM_UNION_LZERO = prove
+ (`!f:A->num u v.
+        FINITE v /\ (!x. x IN u /\ ~(x IN v) ==> (f(x) = 0))
+        ==> (nsum (u UNION v) f = nsum v f)`,
+  MESON_TAC[NSUM_UNION_RZERO; UNION_COMM]);;
+
+let NSUM_RESTRICT = prove
+ (`!f s. FINITE s ==> (nsum s (\x. if x IN s then f(x) else 0) = nsum s f)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC[]);;
+
+let NSUM_BOUND = prove
+ (`!s f b. FINITE s /\ (!x:A. x IN s ==> f(x) <= b)
+           ==> nsum s f <= (CARD s) * b`,
+  SIMP_TAC[GSYM NSUM_CONST; NSUM_LE]);;
+
+let NSUM_BOUND_GEN = prove
+ (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) <= b DIV (CARD s))
+           ==> nsum s f <= b`,
+  SIMP_TAC[IMP_CONJ; CARD_EQ_0; LE_RDIV_EQ] THEN REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `nsum s (\x. CARD(s:A->bool) * f x) <= CARD s * b` MP_TAC THENL
+   [ASM_SIMP_TAC[NSUM_BOUND];
+    ASM_SIMP_TAC[NSUM_LMUL; LE_MULT_LCANCEL; CARD_EQ_0]]);;
+
+let NSUM_BOUND_LT = prove
+ (`!s f b. FINITE s /\ (!x:A. x IN s ==> f x <= b) /\ (?x. x IN s /\ f x < b)
+           ==> nsum s f < (CARD s) * b`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LTE_TRANS THEN
+  EXISTS_TAC `nsum s (\x:A. b)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_LT THEN ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[];
+    ASM_SIMP_TAC[NSUM_CONST; LE_REFL]]);;
+
+let NSUM_BOUND_LT_ALL = prove
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < b)
+           ==> nsum s f <  (CARD s) * b`,
+  MESON_TAC[MEMBER_NOT_EMPTY; LT_IMP_LE; NSUM_BOUND_LT]);;
+
+let NSUM_BOUND_LT_GEN = prove
+ (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b DIV (CARD s))
+           ==> nsum s f < b`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LTE_TRANS THEN
+  EXISTS_TAC `nsum (s:A->bool) (\a. f(a) + 1)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_LT_ALL THEN ASM_SIMP_TAC[] THEN ARITH_TAC;
+    MATCH_MP_TAC NSUM_BOUND_GEN THEN
+    ASM_REWRITE_TAC[ARITH_RULE `a + 1 <= b <=> a < b`]]);;
+
+let NSUM_UNION_EQ = prove
+ (`!s t u. FINITE u /\ (s INTER t = {}) /\ (s UNION t = u)
+           ==> (nsum s f + nsum t f = nsum u f)`,
+  MESON_TAC[NSUM_UNION; DISJOINT; FINITE_SUBSET; SUBSET_UNION]);;
+
+let NSUM_EQ_SUPERSET = prove
+ (`!f s t:A->bool.
+        FINITE t /\ t SUBSET s /\
+        (!x. x IN t ==> (f x = g x)) /\
+        (!x. x IN s /\ ~(x IN t) ==> (f(x) = 0))
+        ==> (nsum s f = nsum t g)`,
+  MESON_TAC[NSUM_SUPERSET; NSUM_EQ]);;
+
+let NSUM_RESTRICT_SET = prove
+ (`!P s f. nsum {x:A | x IN s /\ P x} f = nsum s (\x. if P x then f(x) else 0)`,
+  ONCE_REWRITE_TAC[GSYM NSUM_SUPPORT] THEN
+  REWRITE_TAC[support; NEUTRAL_ADD; IN_ELIM_THM] THEN
+  REWRITE_TAC[MESON[] `~((if P x then f x else a) = a) <=> P x /\ ~(f x = a)`;
+              GSYM CONJ_ASSOC] THEN
+  REPEAT GEN_TAC THEN MATCH_MP_TAC NSUM_EQ THEN SIMP_TAC[IN_ELIM_THM]);;
+
+let NSUM_NSUM_RESTRICT = prove
+ (`!R f s t.
+        FINITE s /\ FINITE t
+        ==> (nsum s (\x. nsum {y | y IN t /\ R x y} (\y. f x y)) =
+             nsum t (\y. nsum {x | x IN s /\ R x y} (\x. f x y)))`,
+  REPEAT GEN_TAC THEN SIMP_TAC[NSUM_RESTRICT_SET] THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP NSUM_SWAP th]));;
+
+let CARD_EQ_NSUM = prove
+ (`!s. FINITE s ==> ((CARD s) = nsum s (\x. 1))`,
+  SIMP_TAC[NSUM_CONST; MULT_CLAUSES]);;
+
+let NSUM_MULTICOUNT_GEN = prove
+ (`!R:A->B->bool s t k.
+        FINITE s /\ FINITE t /\
+        (!j. j IN t ==> (CARD {i | i IN s /\ R i j} = k(j)))
+        ==> (nsum s (\i. (CARD {j | j IN t /\ R i j})) =
+             nsum t (\i. (k i)))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `nsum s (\i:A. nsum {j:B | j IN t /\ R i j} (\j. 1))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_EQ THEN ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    ASM_SIMP_TAC[CARD_EQ_NSUM; FINITE_RESTRICT];
+    FIRST_ASSUM(fun t -> ONCE_REWRITE_TAC[MATCH_MP NSUM_NSUM_RESTRICT t]) THEN
+    MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC[NSUM_CONST; FINITE_RESTRICT] THEN
+    REWRITE_TAC[MULT_CLAUSES]]);;
+
+let NSUM_MULTICOUNT = prove
+ (`!R:A->B->bool s t k.
+        FINITE s /\ FINITE t /\
+        (!j. j IN t ==> (CARD {i | i IN s /\ R i j} = k))
+        ==> (nsum s (\i. (CARD {j | j IN t /\ R i j})) = (k * CARD t))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `nsum t (\i:B. k)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_MULTICOUNT_GEN THEN ASM_REWRITE_TAC[];
+    ASM_SIMP_TAC[NSUM_CONST] THEN REWRITE_TAC[MULT_AC]]);;
+
+let NSUM_IMAGE_GEN = prove
+ (`!f:A->B g s.
+        FINITE s
+        ==> (nsum s g =
+             nsum (IMAGE f s) (\y. nsum {x | x IN s /\ (f(x) = y)} g))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
+   `nsum s (\x:A. nsum {y:B | y IN IMAGE f s /\ (f x = y)} (\y. g x))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_EQ THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:A` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN `{y | y IN IMAGE (f:A->B) s /\ (f x = y)} = {(f x)}`
+     (fun th -> REWRITE_TAC[th; NSUM_SING; o_THM]) THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_SING; IN_IMAGE] THEN
+    ASM_MESON_TAC[];
+    GEN_REWRITE_TAC (funpow 2 RAND_CONV o ABS_CONV o RAND_CONV)
+     [GSYM ETA_AX] THEN
+    ASM_SIMP_TAC[NSUM_NSUM_RESTRICT; FINITE_IMAGE]]);;
+
+let NSUM_GROUP = prove
+ (`!f:A->B g s t.
+        FINITE s /\ IMAGE f s SUBSET t
+        ==> nsum t (\y. nsum {x | x IN s /\ f(x) = y} g) = nsum s g`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `g:A->num`; `s:A->bool`] NSUM_IMAGE_GEN) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+  MATCH_MP_TAC NSUM_SUPERSET THEN ASM_REWRITE_TAC[] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ_0 THEN ASM SET_TAC[]);;
+
+let NSUM_SUBSET = prove
+ (`!u v f. FINITE u /\ FINITE v /\ (!x:A. x IN (u DIFF v) ==> f(x) = 0)
+           ==> nsum u f <= nsum v f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->num`; `u INTER v :A->bool`] NSUM_UNION) THEN
+  DISCH_THEN(fun th -> MP_TAC(SPEC `v DIFF u :A->bool` th) THEN
+                       MP_TAC(SPEC `u DIFF v :A->bool` th)) THEN
+  REWRITE_TAC[SET_RULE `(u INTER v) UNION (u DIFF v) = u`;
+              SET_RULE `(u INTER v) UNION (v DIFF u) = v`] THEN
+  ASM_SIMP_TAC[FINITE_DIFF; FINITE_INTER] THEN
+  REPEAT(ANTS_TAC THENL [SET_TAC[]; DISCH_THEN SUBST1_TAC]) THEN
+  ASM_SIMP_TAC[NSUM_EQ_0] THEN ARITH_TAC);;
+
+let NSUM_SUBSET_SIMPLE = prove
+ (`!u v f. FINITE v /\ u SUBSET v ==> nsum u f <= nsum v f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_SUBSET THEN
+  ASM_MESON_TAC[IN_DIFF; SUBSET; FINITE_SUBSET]);;
+
+let NSUM_IMAGE_NONZERO = prove
+ (`!d:B->num i:A->B s.
+    FINITE s /\
+    (!x y. x IN s /\ y IN s /\ ~(x = y) /\ i x = i y ==> d(i x) = 0)
+    ==> nsum (IMAGE i s) d = nsum s (d o i)`,
+  REWRITE_TAC[GSYM NEUTRAL_ADD; nsum] THEN
+  MATCH_MP_TAC ITERATE_IMAGE_NONZERO THEN REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_BIJECTION = prove
+ (`!f p s:A->bool.
+                (!x. x IN s ==> p(x) IN s) /\
+                (!y. y IN s ==> ?!x. x IN s /\ p(x) = y)
+                ==> nsum s f = nsum s (f o p)`,
+  REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_BIJECTION THEN
+  REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_NSUM_PRODUCT = prove
+ (`!s:A->bool t:A->B->bool x.
+        FINITE s /\ (!i. i IN s ==> FINITE(t i))
+        ==> nsum s (\i. nsum (t i) (x i)) =
+            nsum {i,j | i IN s /\ j IN t i} (\(i,j). x i j)`,
+  REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_ITERATE_PRODUCT THEN
+  REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_EQ_GENERAL = prove
+ (`!s:A->bool t:B->bool f g h.
+        (!y. y IN t ==> ?!x. x IN s /\ h(x) = y) /\
+        (!x. x IN s ==> h(x) IN t /\ g(h x) = f x)
+        ==> nsum s f = nsum t g`,
+  REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_EQ_GENERAL THEN
+  REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_EQ_GENERAL_INVERSES = prove
+ (`!s:A->bool t:B->bool f g h k.
+        (!y. y IN t ==> k(y) IN s /\ h(k y) = y) /\
+        (!x. x IN s ==> h(x) IN t /\ k(h x) = x /\ g(h x) = f x)
+        ==> nsum s f = nsum t g`,
+  REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_EQ_GENERAL_INVERSES THEN
+  REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_INJECTION = prove
+ (`!f p s. FINITE s /\
+           (!x. x IN s ==> p x IN s) /\
+           (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
+           ==> nsum s (f o p) = nsum s f`,
+  REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
+  REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_UNION_NONZERO = prove
+ (`!f s t. FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> f(x) = 0)
+           ==> nsum (s UNION t) f = nsum s f + nsum t f`,
+  REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_UNION_NONZERO THEN REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_UNIONS_NONZERO = prove
+ (`!f s. FINITE s /\ (!t:A->bool. t IN s ==> FINITE t) /\
+         (!t1 t2 x. t1 IN s /\ t2 IN s /\ ~(t1 = t2) /\ x IN t1 /\ x IN t2
+                    ==> f x = 0)
+         ==> nsum (UNIONS s) f = nsum s (\t. nsum t f)`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[UNIONS_0; UNIONS_INSERT; NSUM_CLAUSES; IN_INSERT] THEN
+  MAP_EVERY X_GEN_TAC [`t:A->bool`; `s:(A->bool)->bool`] THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN ASM_SIMP_TAC[NSUM_CLAUSES] THEN
+  ANTS_TAC THENL  [ASM_MESON_TAC[]; DISCH_THEN(SUBST_ALL_TAC o SYM)] THEN
+  STRIP_TAC THEN MATCH_MP_TAC NSUM_UNION_NONZERO THEN
+  ASM_SIMP_TAC[FINITE_UNIONS; IN_INTER; IN_UNIONS] THEN ASM_MESON_TAC[]);;
+
+let NSUM_CASES = prove
+ (`!s P f g. FINITE s
+             ==> nsum s (\x:A. if P x then f x else g x) =
+                 nsum {x | x IN s /\ P x} f + nsum {x | x IN s /\ ~P x} g`,
+  REWRITE_TAC[nsum; GSYM NEUTRAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_CASES THEN REWRITE_TAC[MONOIDAL_ADD]);;
+
+let NSUM_CLOSED = prove
+ (`!P f:A->num s.
+        P(0) /\ (!x y. P x /\ P y ==> P(x + y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(nsum s f)`,
+  REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_ADD) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:num->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_ADD; GSYM nsum]);;
+
+let NSUM_ADD_NUMSEG = prove
+ (`!f g m n. nsum(m..n) (\i. f(i) + g(i)) = nsum(m..n) f + nsum(m..n) g`,
+  SIMP_TAC[NSUM_ADD; FINITE_NUMSEG]);;
+
+let NSUM_LE_NUMSEG = prove
+ (`!f g m n. (!i. m <= i /\ i <= n ==> f(i) <= g(i))
+             ==> nsum(m..n) f <= nsum(m..n) g`,
+  SIMP_TAC[NSUM_LE; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let NSUM_EQ_NUMSEG = prove
+ (`!f g m n. (!i. m <= i /\ i <= n ==> (f(i) = g(i)))
+             ==> (nsum(m..n) f = nsum(m..n) g)`,
+  MESON_TAC[NSUM_EQ; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let NSUM_CONST_NUMSEG = prove
+ (`!c m n. nsum(m..n) (\n. c) = ((n + 1) - m) * c`,
+  SIMP_TAC[NSUM_CONST; FINITE_NUMSEG; CARD_NUMSEG]);;
+
+let NSUM_EQ_0_NUMSEG = prove
+ (`!f s. (!i. m <= i /\ i <= n ==> (f(i) = 0)) ==> (nsum(m..n) f = 0)`,
+  SIMP_TAC[NSUM_EQ_0; IN_NUMSEG]);;
+
+let NSUM_EQ_0_IFF_NUMSEG = prove
+ (`!f m n. nsum (m..n) f = 0 <=> !i. m <= i /\ i <= n ==> f i = 0`,
+  SIMP_TAC[NSUM_EQ_0_IFF; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let NSUM_TRIV_NUMSEG = prove
+ (`!f m n. n < m ==> (nsum(m..n) f = 0)`,
+  MESON_TAC[NSUM_EQ_0_NUMSEG; LE_TRANS; NOT_LT]);;
+
+let NSUM_SING_NUMSEG = prove
+ (`!f n. nsum(n..n) f = f(n)`,
+  SIMP_TAC[NSUM_SING; NUMSEG_SING]);;
+
+let NSUM_CLAUSES_NUMSEG = prove
+ (`(!m. nsum(m..0) f = if m = 0 then f(0) else 0) /\
+   (!m n. nsum(m..SUC n) f = if m <= SUC n then nsum(m..n) f + f(SUC n)
+                             else nsum(m..n) f)`,
+  MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG MONOIDAL_ADD) THEN
+  REWRITE_TAC[NEUTRAL_ADD; nsum]);;
+
+let NSUM_SWAP_NUMSEG = prove
+ (`!a b c d f.
+     nsum(a..b) (\i. nsum(c..d) (f i)) =
+     nsum(c..d) (\j. nsum(a..b) (\i. f i j))`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC NSUM_SWAP THEN REWRITE_TAC[FINITE_NUMSEG]);;
+
+let NSUM_ADD_SPLIT = prove
+ (`!f m n p.
+        m <= n + 1 ==> (nsum (m..(n+p)) f = nsum(m..n) f + nsum(n+1..n+p) f)`,
+  SIMP_TAC[NUMSEG_ADD_SPLIT; NSUM_UNION; DISJOINT_NUMSEG; FINITE_NUMSEG;
+           ARITH_RULE `x < x + 1`]);;
+
+let NSUM_OFFSET = prove
+ (`!p f m n. nsum(m+p..n+p) f = nsum(m..n) (\i. f(i + p))`,
+  SIMP_TAC[NUMSEG_OFFSET_IMAGE; NSUM_IMAGE; EQ_ADD_RCANCEL; FINITE_NUMSEG] THEN
+  REWRITE_TAC[o_DEF]);;
+
+let NSUM_OFFSET_0 = prove
+ (`!f m n. m <= n ==> (nsum(m..n) f = nsum(0..n-m) (\i. f(i + m)))`,
+  SIMP_TAC[GSYM NSUM_OFFSET; ADD_CLAUSES; SUB_ADD]);;
+
+let NSUM_CLAUSES_LEFT = prove
+ (`!f m n. m <= n ==> nsum(m..n) f = f(m) + nsum(m+1..n) f`,
+  SIMP_TAC[GSYM NUMSEG_LREC; NSUM_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
+  ARITH_TAC);;
+
+let NSUM_CLAUSES_RIGHT = prove
+ (`!f m n. 0 < n /\ m <= n ==> nsum(m..n) f = nsum(m..n-1) f + f(n)`,
+  GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
+  SIMP_TAC[LT_REFL; NSUM_CLAUSES_NUMSEG; SUC_SUB1]);;
+
+let NSUM_PAIR = prove
+ (`!f m n. nsum(2*m..2*n+1) f = nsum(m..n) (\i. f(2*i) + f(2*i+1))`,
+  MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_ADD) THEN
+  REWRITE_TAC[nsum; NEUTRAL_ADD]);;
+
+let th = prove
+ (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
+              ==> nsum s (\i. f(i)) = nsum s g) /\
+   (!f g a b. (!i. a <= i /\ i <= b ==> f(i) = g(i))
+              ==> nsum(a..b) (\i. f(i)) = nsum(a..b) g) /\
+   (!f g p.   (!x. p x ==> f x = g x)
+              ==> nsum {y | p y} (\i. f(i)) = nsum {y | p y} g)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ THEN
+  ASM_SIMP_TAC[IN_ELIM_THM; IN_NUMSEG]) in
+  extend_basic_congs (map SPEC_ALL (CONJUNCTS th));;
+
+(* ------------------------------------------------------------------------- *)
+(* Thanks to finite sums, we can express cardinality of finite union.        *)
+(* ------------------------------------------------------------------------- *)
+
+let CARD_UNIONS = prove
+ (`!s:(A->bool)->bool.
+        FINITE s /\ (!t. t IN s ==> FINITE t) /\
+        (!t u. t IN s /\ u IN s /\ ~(t = u) ==> t INTER u = {})
+        ==> CARD(UNIONS s) = nsum s CARD`,
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[UNIONS_0; UNIONS_INSERT; NOT_IN_EMPTY; IN_INSERT] THEN
+  REWRITE_TAC[CARD_CLAUSES; NSUM_CLAUSES] THEN
+  MAP_EVERY X_GEN_TAC [`t:A->bool`; `f:(A->bool)->bool`] THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_SIMP_TAC[NSUM_CLAUSES] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (SUBST1_TAC o SYM) STRIP_ASSUME_TAC) THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_UNION_EQ THEN
+  ASM_SIMP_TAC[FINITE_UNIONS; FINITE_UNION; INTER_UNIONS] THEN
+  REWRITE_TAC[EMPTY_UNIONS; IN_ELIM_THM] THEN ASM MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Sums of real numbers.                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+prioritize_real();;
+
+let sum = new_definition
+  `sum = iterate (+)`;;
+
+let NEUTRAL_REAL_ADD = prove
+ (`neutral((+):real->real->real) = &0`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[REAL_ADD_LID; REAL_ADD_RID]);;
+
+let NEUTRAL_REAL_MUL = prove
+ (`neutral(( * ):real->real->real) = &1`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[REAL_MUL_LID; REAL_MUL_RID]);;
+
+let MONOIDAL_REAL_ADD = prove
+ (`monoidal((+):real->real->real)`,
+  REWRITE_TAC[monoidal; NEUTRAL_REAL_ADD] THEN REAL_ARITH_TAC);;
+
+let MONOIDAL_REAL_MUL = prove
+ (`monoidal(( * ):real->real->real)`,
+  REWRITE_TAC[monoidal; NEUTRAL_REAL_MUL] THEN REAL_ARITH_TAC);;
+
+let SUM_CLAUSES = prove
+ (`(!f. sum {} f = &0) /\
+   (!x f s. FINITE(s)
+            ==> (sum (x INSERT s) f =
+                 if x IN s then sum s f else f(x) + sum s f))`,
+  REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_UNION = prove
+ (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
+           ==> (sum (s UNION t) f = sum s f + sum t f)`,
+  SIMP_TAC[sum; ITERATE_UNION; MONOIDAL_REAL_ADD]);;
+
+let SUM_DIFF = prove
+ (`!f s t. FINITE s /\ t SUBSET s ==> (sum (s DIFF t) f = sum s f - sum t f)`,
+  SIMP_TAC[REAL_EQ_SUB_LADD; sum; ITERATE_DIFF; MONOIDAL_REAL_ADD]);;
+
+let SUM_INCL_EXCL = prove
+ (`!s t (f:A->real).
+     FINITE s /\ FINITE t
+     ==> sum s f + sum t f = sum (s UNION t) f + sum (s INTER t) f`,
+  REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_INCL_EXCL THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_SUPPORT = prove
+ (`!f s. sum (support (+) f s) f = sum s f`,
+  SIMP_TAC[sum; iterate; SUPPORT_SUPPORT]);;
+
+let SUM_ADD = prove
+ (`!f g s. FINITE s ==> (sum s (\x. f(x) + g(x)) = sum s f + sum s g)`,
+  SIMP_TAC[sum; ITERATE_OP; MONOIDAL_REAL_ADD]);;
+
+let SUM_ADD_GEN = prove
+ (`!f g s.
+       FINITE {x | x IN s /\ ~(f x = &0)} /\ FINITE {x | x IN s /\ ~(g x = &0)}
+       ==> sum s (\x. f x + g x) = sum s f + sum s g`,
+  REWRITE_TAC[GSYM NEUTRAL_REAL_ADD; GSYM support; sum] THEN
+  MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_REAL_ADD);;
+
+let SUM_EQ_0 = prove
+ (`!f s. (!x:A. x IN s ==> (f(x) = &0)) ==> (sum s f = &0)`,
+  REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
+  SIMP_TAC[ITERATE_EQ_NEUTRAL; MONOIDAL_REAL_ADD]);;
+
+let SUM_0 = prove
+ (`!s:A->bool. sum s (\n. &0) = &0`,
+  SIMP_TAC[SUM_EQ_0]);;
+
+let SUM_LMUL = prove
+ (`!f c s:A->bool. sum s (\x. c * f(x)) = c * sum s f`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN
+  ASM_REWRITE_TAC[REAL_MUL_LZERO; SUM_0] THEN REWRITE_TAC[sum] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  SUBGOAL_THEN `support (+) (\x:A. c * f(x)) s = support (+) f s` SUBST1_TAC
+  THENL [ASM_SIMP_TAC[support; REAL_ENTIRE; NEUTRAL_REAL_ADD]; ALL_TAC] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[NEUTRAL_REAL_ADD; REAL_MUL_RZERO] THEN
+  UNDISCH_TAC `FINITE (support (+) f (s:A->bool))` THEN
+  SPEC_TAC(`support (+) f (s:A->bool)`,`t:A->bool`) THEN
+  REWRITE_TAC[GSYM sum] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; REAL_MUL_RZERO; REAL_MUL_LZERO;
+           REAL_ADD_LDISTRIB]);;
+
+let SUM_RMUL = prove
+ (`!f c s:A->bool. sum s (\x. f(x) * c) = sum s f * c`,
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[SUM_LMUL]);;
+
+let SUM_NEG = prove
+ (`!f s. sum s (\x. --(f(x))) = --(sum s f)`,
+  ONCE_REWRITE_TAC[REAL_ARITH `--x = --(&1) * x`] THEN
+  SIMP_TAC[SUM_LMUL]);;
+
+let SUM_SUB = prove
+ (`!f g s. FINITE s ==> (sum s (\x. f(x) - g(x)) = sum s f - sum s g)`,
+  ONCE_REWRITE_TAC[real_sub] THEN SIMP_TAC[SUM_NEG; SUM_ADD]);;
+
+let SUM_LE = prove
+ (`!f g s. FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) ==> sum s f <= sum s g`,
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; REAL_LE_REFL; REAL_LE_ADD2; IN_INSERT]);;
+
+let SUM_LT = prove
+ (`!f g s:A->bool.
+        FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) /\
+        (?x. x IN s /\ f(x) < g(x))
+         ==> sum s f < sum s g`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `s = (a:A) INSERT (s DELETE a)` SUBST1_TAC THENL
+   [UNDISCH_TAC `a:A IN s` THEN SET_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[SUM_CLAUSES; FINITE_DELETE; IN_DELETE] THEN
+  ASM_SIMP_TAC[REAL_LTE_ADD2; SUM_LE; IN_DELETE; FINITE_DELETE]);;
+
+let SUM_LT_ALL = prove
+ (`!f g s. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
+           ==> sum s f < sum s g`,
+  MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE; SUM_LT]);;
+
+let SUM_EQ = prove
+ (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (sum s f = sum s g)`,
+  REWRITE_TAC[sum] THEN
+  MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_ABS = prove
+ (`!f s. FINITE(s) ==> abs(sum s f) <= sum s (\x. abs(f x))`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; REAL_ABS_NUM; REAL_LE_REFL;
+           REAL_ARITH `abs(a) <= b ==> abs(x + a) <= abs(x) + b`]);;
+
+let SUM_ABS_LE = prove
+ (`!f:A->real g s.
+        FINITE s /\ (!x. x IN s ==> abs(f x) <= g x)
+        ==> abs(sum s f) <= sum s g`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `sum s (\x:A. abs(f x))` THEN
+  ASM_SIMP_TAC[SUM_ABS] THEN MATCH_MP_TAC SUM_LE THEN
+  ASM_REWRITE_TAC[]);;
+
+let SUM_CONST = prove
+ (`!c s. FINITE s ==> (sum s (\n. c) = &(CARD s) * c)`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; CARD_CLAUSES; GSYM REAL_OF_NUM_SUC] THEN
+  REPEAT STRIP_TAC THEN REAL_ARITH_TAC);;
+
+let SUM_POS_LE = prove
+ (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x)) ==> &0 <= sum s f`,
+  REWRITE_TAC[REWRITE_RULE[SUM_0] (ISPEC `\x. &0` SUM_LE)]);;
+
+let SUM_POS_BOUND = prove
+ (`!f b s. FINITE s /\ (!x. x IN s ==> &0 <= f x) /\ sum s f <= b
+           ==> !x:A. x IN s ==> f x <= b`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; NOT_IN_EMPTY; IN_INSERT] THEN
+  MESON_TAC[SUM_POS_LE;
+   REAL_ARITH `&0 <= x /\ &0 <= y /\ x + y <= b ==> x <= b /\ y <= b`]);;
+
+let SUM_POS_EQ_0 = prove
+ (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f x) /\ (sum s f = &0)
+         ==> !x. x IN s ==> f x = &0`,
+  REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN
+  MESON_TAC[SUM_POS_BOUND; SUM_POS_LE]);;
+
+let SUM_ZERO_EXISTS = prove
+ (`!(u:A->real) s.
+         FINITE s /\ sum s u = &0
+         ==> (!i. i IN s ==> u i = &0) \/
+             (?j k. j IN s /\ u j < &0 /\ k IN s /\ u k > &0)`,
+  REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (MESON[REAL_ARITH `(&0 <= --u <=> ~(u > &0)) /\ (&0 <= u <=> ~(u < &0))`]
+     `(?j k:A. j IN s /\ u j < &0 /\ k IN s /\ u k > &0) \/
+      (!i. i IN s ==> &0 <= u i) \/ (!i. i IN s ==> &0 <= --(u i))`) THEN
+  ASM_REWRITE_TAC[] THEN DISJ1_TAC THENL
+   [ALL_TAC; ONCE_REWRITE_TAC[REAL_ARITH `x = &0 <=> --x = &0`]] THEN
+  MATCH_MP_TAC SUM_POS_EQ_0 THEN ASM_REWRITE_TAC[SUM_NEG; REAL_NEG_0]);;
+
+let SUM_DELETE = prove
+ (`!f s a. FINITE s /\ a IN s ==> sum (s DELETE a) f = sum s f - f(a)`,
+  SIMP_TAC[REAL_ARITH `y = z - x <=> x + y = z:real`; sum; ITERATE_DELETE;
+           MONOIDAL_REAL_ADD]);;
+
+let SUM_DELETE_CASES = prove
+ (`!f s a. FINITE s
+           ==> sum (s DELETE a) f = if a IN s then sum s f - f(a)
+                                    else sum s f`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[SET_RULE `~(a IN s) ==> (s DELETE a = s)`; SUM_DELETE]);;
+
+let SUM_SING = prove
+ (`!f x. sum {x} f = f(x)`,
+  SIMP_TAC[SUM_CLAUSES; FINITE_RULES; NOT_IN_EMPTY; REAL_ADD_RID]);;
+
+let SUM_DELTA = prove
+ (`!s a. sum s (\x. if x = a:A then b else &0) = if a IN s then b else &0`,
+  REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
+  SIMP_TAC[ITERATE_DELTA; MONOIDAL_REAL_ADD]);;
+
+let SUM_SWAP = prove
+ (`!f:A->B->real s t.
+      FINITE(s) /\ FINITE(t)
+      ==> (sum s (\i. sum t (f i)) = sum t (\j. sum s (\i. f i j)))`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; SUM_0; SUM_ADD; ETA_AX]);;
+
+let SUM_IMAGE = prove
+ (`!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+           ==> (sum (IMAGE f s) g = sum s (g o f))`,
+  REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_SUPERSET = prove
+ (`!f:A->real u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = &0))
+        ==> (sum v f = sum u f)`,
+  SIMP_TAC[sum; GSYM NEUTRAL_REAL_ADD; ITERATE_SUPERSET; MONOIDAL_REAL_ADD]);;
+
+let SUM_UNION_RZERO = prove
+ (`!f:A->real u v.
+        FINITE u /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = &0))
+        ==> (sum (u UNION v) f = sum u f)`,
+  let lemma = prove(`u UNION v = u UNION (v DIFF u)`,SET_TAC[]) in
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[lemma] THEN
+  MATCH_MP_TAC SUM_SUPERSET THEN
+  ASM_MESON_TAC[IN_UNION; IN_DIFF; SUBSET]);;
+
+let SUM_UNION_LZERO = prove
+ (`!f:A->real u v.
+        FINITE v /\ (!x. x IN u /\ ~(x IN v) ==> (f(x) = &0))
+        ==> (sum (u UNION v) f = sum v f)`,
+  MESON_TAC[SUM_UNION_RZERO; UNION_COMM]);;
+
+let SUM_RESTRICT = prove
+ (`!f s. FINITE s ==> (sum s (\x. if x IN s then f(x) else &0) = sum s f)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_EQ THEN ASM_SIMP_TAC[]);;
+
+let SUM_BOUND = prove
+ (`!s f b. FINITE s /\ (!x:A. x IN s ==> f(x) <= b)
+           ==> sum s f <= &(CARD s) * b`,
+  SIMP_TAC[GSYM SUM_CONST; SUM_LE]);;
+
+let SUM_BOUND_GEN = prove
+ (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) <= b / &(CARD s))
+           ==> sum s f <= b`,
+  MESON_TAC[SUM_BOUND; REAL_DIV_LMUL; REAL_OF_NUM_EQ; HAS_SIZE_0;
+            HAS_SIZE]);;
+
+let SUM_ABS_BOUND = prove
+ (`!s f b. FINITE s /\ (!x:A. x IN s ==> abs(f(x)) <= b)
+           ==> abs(sum s f) <= &(CARD s) * b`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `sum s (\x:A. abs(f x))` THEN
+  ASM_SIMP_TAC[SUM_BOUND; SUM_ABS]);;
+
+let SUM_BOUND_LT = prove
+ (`!s f b. FINITE s /\ (!x:A. x IN s ==> f x <= b) /\ (?x. x IN s /\ f x < b)
+           ==> sum s f < &(CARD s) * b`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+  EXISTS_TAC `sum s (\x:A. b)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_LT THEN ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[];
+    ASM_SIMP_TAC[SUM_CONST; REAL_LE_REFL]]);;
+
+let SUM_BOUND_LT_ALL = prove
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < b)
+           ==> sum s f <  &(CARD s) * b`,
+  MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE; SUM_BOUND_LT]);;
+
+let SUM_BOUND_LT_GEN = prove
+ (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b / &(CARD s))
+           ==> sum s f < b`,
+  MESON_TAC[SUM_BOUND_LT_ALL; REAL_DIV_LMUL; REAL_OF_NUM_EQ; HAS_SIZE_0;
+            HAS_SIZE]);;
+
+let SUM_UNION_EQ = prove
+ (`!s t u. FINITE u /\ (s INTER t = {}) /\ (s UNION t = u)
+           ==> (sum s f + sum t f = sum u f)`,
+  MESON_TAC[SUM_UNION; DISJOINT; FINITE_SUBSET; SUBSET_UNION]);;
+
+let SUM_EQ_SUPERSET = prove
+ (`!f s t:A->bool.
+        FINITE t /\ t SUBSET s /\
+        (!x. x IN t ==> (f x = g x)) /\
+        (!x. x IN s /\ ~(x IN t) ==> (f(x) = &0))
+        ==> (sum s f = sum t g)`,
+  MESON_TAC[SUM_SUPERSET; SUM_EQ]);;
+
+let SUM_RESTRICT_SET = prove
+ (`!P s f. sum {x | x IN s /\ P x} f = sum s (\x. if P x then f x else &0)`,
+  ONCE_REWRITE_TAC[GSYM SUM_SUPPORT] THEN
+  REWRITE_TAC[support; NEUTRAL_REAL_ADD; IN_ELIM_THM] THEN
+  REWRITE_TAC[MESON[] `~((if P x then f x else a) = a) <=> P x /\ ~(f x = a)`;
+              GSYM CONJ_ASSOC] THEN
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SUM_EQ THEN SIMP_TAC[IN_ELIM_THM]);;
+
+let SUM_SUM_RESTRICT = prove
+ (`!R f s t.
+        FINITE s /\ FINITE t
+        ==> (sum s (\x. sum {y | y IN t /\ R x y} (\y. f x y)) =
+             sum t (\y. sum {x | x IN s /\ R x y} (\x. f x y)))`,
+  REPEAT GEN_TAC THEN SIMP_TAC[SUM_RESTRICT_SET] THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP SUM_SWAP th]));;
+
+let CARD_EQ_SUM = prove
+ (`!s. FINITE s ==> (&(CARD s) = sum s (\x. &1))`,
+  SIMP_TAC[SUM_CONST; REAL_MUL_RID]);;
+
+let SUM_MULTICOUNT_GEN = prove
+ (`!R:A->B->bool s t k.
+        FINITE s /\ FINITE t /\
+        (!j. j IN t ==> (CARD {i | i IN s /\ R i j} = k(j)))
+        ==> (sum s (\i. &(CARD {j | j IN t /\ R i j})) =
+             sum t (\i. &(k i)))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `sum s (\i:A. sum {j:B | j IN t /\ R i j} (\j. &1))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_EQ THEN ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    ASM_SIMP_TAC[CARD_EQ_SUM; FINITE_RESTRICT];
+    FIRST_ASSUM(fun th ->
+      ONCE_REWRITE_TAC[MATCH_MP SUM_SUM_RESTRICT th]) THEN
+    MATCH_MP_TAC SUM_EQ THEN
+    ASM_SIMP_TAC[SUM_CONST; FINITE_RESTRICT] THEN
+    REWRITE_TAC[REAL_MUL_RID]]);;
+
+let SUM_MULTICOUNT = prove
+ (`!R:A->B->bool s t k.
+        FINITE s /\ FINITE t /\
+        (!j. j IN t ==> (CARD {i | i IN s /\ R i j} = k))
+        ==> (sum s (\i. &(CARD {j | j IN t /\ R i j})) = &(k * CARD t))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `sum t (\i:B. &k)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_MULTICOUNT_GEN THEN ASM_REWRITE_TAC[];
+    ASM_SIMP_TAC[SUM_CONST; REAL_OF_NUM_MUL] THEN REWRITE_TAC[MULT_AC]]);;
+
+let SUM_IMAGE_GEN = prove
+ (`!f:A->B g s.
+        FINITE s
+        ==> (sum s g =
+             sum (IMAGE f s) (\y. sum {x | x IN s /\ (f(x) = y)} g))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
+   `sum s (\x:A. sum {y:B | y IN IMAGE f s /\ (f x = y)} (\y. g x))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_EQ THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:A` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN `{y | y IN IMAGE (f:A->B) s /\ (f x = y)} = {(f x)}`
+     (fun th -> REWRITE_TAC[th; SUM_SING; o_THM]) THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_SING; IN_IMAGE] THEN
+    ASM_MESON_TAC[];
+    GEN_REWRITE_TAC (funpow 2 RAND_CONV o ABS_CONV o RAND_CONV)
+     [GSYM ETA_AX] THEN
+    ASM_SIMP_TAC[SUM_SUM_RESTRICT; FINITE_IMAGE]]);;
+
+let SUM_GROUP = prove
+ (`!f:A->B g s t.
+        FINITE s /\ IMAGE f s SUBSET t
+        ==> sum t (\y. sum {x | x IN s /\ f(x) = y} g) = sum s g`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `g:A->real`; `s:A->bool`] SUM_IMAGE_GEN) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+  MATCH_MP_TAC SUM_SUPERSET THEN ASM_REWRITE_TAC[] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_EQ_0 THEN ASM SET_TAC[]);;
+
+let REAL_OF_NUM_SUM = prove
+ (`!f s. FINITE s ==> (&(nsum s f) = sum s (\x. &(f x)))`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; NSUM_CLAUSES; GSYM REAL_OF_NUM_ADD]);;
+
+let SUM_SUBSET = prove
+ (`!u v f. FINITE u /\ FINITE v /\
+           (!x. x IN (u DIFF v) ==> f(x) <= &0) /\
+           (!x:A. x IN (v DIFF u) ==> &0 <= f(x))
+           ==> sum u f <= sum v f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->real`; `u INTER v :A->bool`] SUM_UNION) THEN
+  DISCH_THEN(fun th -> MP_TAC(SPEC `v DIFF u :A->bool` th) THEN
+                       MP_TAC(SPEC `u DIFF v :A->bool` th)) THEN
+  REWRITE_TAC[SET_RULE `(u INTER v) UNION (u DIFF v) = u`;
+              SET_RULE `(u INTER v) UNION (v DIFF u) = v`] THEN
+  ASM_SIMP_TAC[FINITE_DIFF; FINITE_INTER] THEN
+  REPEAT(ANTS_TAC THENL [SET_TAC[]; DISCH_THEN SUBST1_TAC]) THEN
+  MATCH_MP_TAC(REAL_ARITH `&0 <= --x /\ &0 <= y ==> a + x <= a + y`) THEN
+  ASM_SIMP_TAC[GSYM SUM_NEG; FINITE_DIFF] THEN CONJ_TAC THEN
+  MATCH_MP_TAC SUM_POS_LE THEN
+  ASM_SIMP_TAC[FINITE_DIFF; REAL_LE_RNEG; REAL_ADD_LID]);;
+
+let SUM_SUBSET_SIMPLE = prove
+ (`!u v f. FINITE v /\ u SUBSET v /\ (!x:A. x IN (v DIFF u) ==> &0 <= f(x))
+
+           ==> sum u f <= sum v f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_SUBSET THEN
+  ASM_MESON_TAC[IN_DIFF; SUBSET; FINITE_SUBSET]);;
+
+let SUM_IMAGE_NONZERO = prove
+ (`!d:B->real i:A->B s.
+    FINITE s /\
+    (!x y. x IN s /\ y IN s /\ ~(x = y) /\ i x = i y ==> d(i x) = &0)
+    ==> sum (IMAGE i s) d = sum s (d o i)`,
+  REWRITE_TAC[GSYM NEUTRAL_REAL_ADD; sum] THEN
+  MATCH_MP_TAC ITERATE_IMAGE_NONZERO THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_BIJECTION = prove
+ (`!f p s:A->bool.
+                (!x. x IN s ==> p(x) IN s) /\
+                (!y. y IN s ==> ?!x. x IN s /\ p(x) = y)
+                ==> sum s f = sum s (f o p)`,
+  REWRITE_TAC[sum] THEN MATCH_MP_TAC ITERATE_BIJECTION THEN
+  REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_SUM_PRODUCT = prove
+ (`!s:A->bool t:A->B->bool x.
+        FINITE s /\ (!i. i IN s ==> FINITE(t i))
+        ==> sum s (\i. sum (t i) (x i)) =
+            sum {i,j | i IN s /\ j IN t i} (\(i,j). x i j)`,
+  REWRITE_TAC[sum] THEN MATCH_MP_TAC ITERATE_ITERATE_PRODUCT THEN
+  REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_EQ_GENERAL = prove
+ (`!s:A->bool t:B->bool f g h.
+        (!y. y IN t ==> ?!x. x IN s /\ h(x) = y) /\
+        (!x. x IN s ==> h(x) IN t /\ g(h x) = f x)
+        ==> sum s f = sum t g`,
+  REWRITE_TAC[sum] THEN MATCH_MP_TAC ITERATE_EQ_GENERAL THEN
+  REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_EQ_GENERAL_INVERSES = prove
+ (`!s:A->bool t:B->bool f g h k.
+        (!y. y IN t ==> k(y) IN s /\ h(k y) = y) /\
+        (!x. x IN s ==> h(x) IN t /\ k(h x) = x /\ g(h x) = f x)
+        ==> sum s f = sum t g`,
+  REWRITE_TAC[sum] THEN MATCH_MP_TAC ITERATE_EQ_GENERAL_INVERSES THEN
+  REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_INJECTION = prove
+ (`!f p s. FINITE s /\
+           (!x. x IN s ==> p x IN s) /\
+           (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
+           ==> sum s (f o p) = sum s f`,
+  REWRITE_TAC[sum] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
+  REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_UNION_NONZERO = prove
+ (`!f s t. FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> f(x) = &0)
+           ==> sum (s UNION t) f = sum s f + sum t f`,
+  REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_UNION_NONZERO THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_UNIONS_NONZERO = prove
+ (`!f s. FINITE s /\ (!t:A->bool. t IN s ==> FINITE t) /\
+         (!t1 t2 x. t1 IN s /\ t2 IN s /\ ~(t1 = t2) /\ x IN t1 /\ x IN t2
+                    ==> f x = &0)
+         ==> sum (UNIONS s) f = sum s (\t. sum t f)`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[UNIONS_0; UNIONS_INSERT; SUM_CLAUSES; IN_INSERT] THEN
+  MAP_EVERY X_GEN_TAC [`t:A->bool`; `s:(A->bool)->bool`] THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN ASM_SIMP_TAC[SUM_CLAUSES] THEN
+  ANTS_TAC THENL  [ASM_MESON_TAC[]; DISCH_THEN(SUBST_ALL_TAC o SYM)] THEN
+  STRIP_TAC THEN MATCH_MP_TAC SUM_UNION_NONZERO THEN
+  ASM_SIMP_TAC[FINITE_UNIONS; IN_INTER; IN_UNIONS] THEN ASM_MESON_TAC[]);;
+
+let SUM_CASES = prove
+ (`!s P f g. FINITE s
+             ==> sum s (\x:A. if P x then f x else g x) =
+                 sum {x | x IN s /\ P x} f + sum {x | x IN s /\ ~P x} g`,
+  REWRITE_TAC[sum; GSYM NEUTRAL_REAL_ADD] THEN
+  MATCH_MP_TAC ITERATE_CASES THEN REWRITE_TAC[MONOIDAL_REAL_ADD]);;
+
+let SUM_CASES_1 = prove
+ (`!s a. FINITE s /\ a IN s
+         ==> sum s (\x. if x = a then y else f(x)) = sum s f + (y - f a)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SUM_CASES] THEN
+  ASM_SIMP_TAC[GSYM DELETE; SUM_DELETE] THEN
+  ASM_SIMP_TAC[SET_RULE `a IN s ==> {x | x IN s /\ x = a} = {a}`] THEN
+  REWRITE_TAC[SUM_SING] THEN REAL_ARITH_TAC);;
+
+let SUM_LE_INCLUDED = prove
+ (`!f:A->real g:B->real s t i.
+        FINITE s /\ FINITE t /\
+        (!y. y IN t ==> &0 <= g y) /\
+        (!x. x IN s ==> ?y. y IN t /\ i y = x /\ f(x) <= g(y))
+        ==> sum s f <= sum t g`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `sum (IMAGE (i:B->A) t) (\y. sum {x | x IN t /\ i x = y} g)` THEN
+  CONJ_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC REAL_EQ_IMP_LE THEN
+    MATCH_MP_TAC(GSYM SUM_IMAGE_GEN) THEN ASM_REWRITE_TAC[]] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `sum s (\y. sum {x | x IN t /\ (i:B->A) x = y} g)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_LE THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:A` THEN
+    DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `y:B` THEN
+    STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC `sum {y:B} g` THEN CONJ_TAC THENL
+     [ASM_REWRITE_TAC[SUM_SING]; ALL_TAC];
+    ALL_TAC] THEN
+  MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN ASM_SIMP_TAC[FINITE_IMAGE] THEN
+  ASM_SIMP_TAC[SUM_POS_LE; FINITE_RESTRICT; IN_ELIM_THM] THEN
+  ASM SET_TAC[]);;
+
+let SUM_IMAGE_LE = prove
+ (`!f:A->B g s.
+        FINITE s /\
+        (!x. x IN s ==> &0 <= g(f x))
+        ==> sum (IMAGE f s) g <= sum s (g o f)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_LE_INCLUDED THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+  ASM_REWRITE_TAC[o_THM] THEN EXISTS_TAC `f:A->B` THEN
+  MESON_TAC[REAL_LE_REFL]);;
+
+let SUM_CLOSED = prove
+ (`!P f:A->real s.
+        P(&0) /\ (!x y. P x /\ P y ==> P(x + y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(sum s f)`,
+  REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_REAL_ADD) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:real->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_REAL_ADD; GSYM sum]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Specialize them to sums over intervals of numbers.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let SUM_ADD_NUMSEG = prove
+ (`!f g m n. sum(m..n) (\i. f(i) + g(i)) = sum(m..n) f + sum(m..n) g`,
+  SIMP_TAC[SUM_ADD; FINITE_NUMSEG]);;
+
+let SUM_SUB_NUMSEG = prove
+ (`!f g m n. sum(m..n) (\i. f(i) - g(i)) = sum(m..n) f - sum(m..n) g`,
+   SIMP_TAC[SUM_SUB; FINITE_NUMSEG]);;
+
+let SUM_LE_NUMSEG = prove
+ (`!f g m n. (!i. m <= i /\ i <= n ==> f(i) <= g(i))
+             ==> sum(m..n) f <= sum(m..n) g`,
+  SIMP_TAC[SUM_LE; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let SUM_EQ_NUMSEG = prove
+ (`!f g m n. (!i. m <= i /\ i <= n ==> (f(i) = g(i)))
+             ==> (sum(m..n) f = sum(m..n) g)`,
+  MESON_TAC[SUM_EQ; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let SUM_ABS_NUMSEG = prove
+ (`!f m n. abs(sum(m..n) f) <= sum(m..n) (\i. abs(f i))`,
+  SIMP_TAC[SUM_ABS; FINITE_NUMSEG]);;
+
+let SUM_CONST_NUMSEG = prove
+ (`!c m n. sum(m..n) (\n. c) = &((n + 1) - m) * c`,
+  SIMP_TAC[SUM_CONST; FINITE_NUMSEG; CARD_NUMSEG]);;
+
+let SUM_EQ_0_NUMSEG = prove
+ (`!f s. (!i. m <= i /\ i <= n ==> (f(i) = &0)) ==> (sum(m..n) f = &0)`,
+  SIMP_TAC[SUM_EQ_0; IN_NUMSEG]);;
+
+let SUM_TRIV_NUMSEG = prove
+ (`!f m n. n < m ==> (sum(m..n) f = &0)`,
+  MESON_TAC[SUM_EQ_0_NUMSEG; LE_TRANS; NOT_LT]);;
+
+let SUM_POS_LE_NUMSEG = prove
+ (`!m n f. (!p. m <= p /\ p <= n ==> &0 <= f(p)) ==> &0 <= sum(m..n) f`,
+  SIMP_TAC[SUM_POS_LE; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let SUM_POS_EQ_0_NUMSEG = prove
+ (`!f m n. (!p. m <= p /\ p <= n ==> &0 <= f(p)) /\ (sum(m..n) f = &0)
+           ==> !p. m <= p /\ p <= n ==> (f(p) = &0)`,
+  MESON_TAC[SUM_POS_EQ_0; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let SUM_SING_NUMSEG = prove
+ (`!f n. sum(n..n) f = f(n)`,
+  SIMP_TAC[SUM_SING; NUMSEG_SING]);;
+
+let SUM_CLAUSES_NUMSEG = prove
+ (`(!m. sum(m..0) f = if m = 0 then f(0) else &0) /\
+   (!m n. sum(m..SUC n) f = if m <= SUC n then sum(m..n) f + f(SUC n)
+                            else sum(m..n) f)`,
+  MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG MONOIDAL_REAL_ADD) THEN
+  REWRITE_TAC[NEUTRAL_REAL_ADD; sum]);;
+
+let SUM_SWAP_NUMSEG = prove
+ (`!a b c d f.
+     sum(a..b) (\i. sum(c..d) (f i)) = sum(c..d) (\j. sum(a..b) (\i. f i j))`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SUM_SWAP THEN
+  REWRITE_TAC[FINITE_NUMSEG]);;
+
+let SUM_ADD_SPLIT = prove
+ (`!f m n p.
+        m <= n + 1 ==> (sum (m..(n+p)) f = sum(m..n) f + sum(n+1..n+p) f)`,
+  SIMP_TAC[NUMSEG_ADD_SPLIT; SUM_UNION; DISJOINT_NUMSEG; FINITE_NUMSEG;
+           ARITH_RULE `x < x + 1`]);;
+
+let SUM_OFFSET = prove
+ (`!p f m n. sum(m+p..n+p) f = sum(m..n) (\i. f(i + p))`,
+  SIMP_TAC[NUMSEG_OFFSET_IMAGE; SUM_IMAGE;
+           EQ_ADD_RCANCEL; FINITE_NUMSEG] THEN
+  REWRITE_TAC[o_DEF]);;
+
+let SUM_OFFSET_0 = prove
+ (`!f m n. m <= n ==> (sum(m..n) f = sum(0..n-m) (\i. f(i + m)))`,
+  SIMP_TAC[GSYM SUM_OFFSET; ADD_CLAUSES; SUB_ADD]);;
+
+let SUM_CLAUSES_LEFT = prove
+ (`!f m n. m <= n ==> sum(m..n) f = f(m) + sum(m+1..n) f`,
+  SIMP_TAC[GSYM NUMSEG_LREC; SUM_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
+  ARITH_TAC);;
+
+let SUM_CLAUSES_RIGHT = prove
+ (`!f m n. 0 < n /\ m <= n ==> sum(m..n) f = sum(m..n-1) f + f(n)`,
+  GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
+  SIMP_TAC[LT_REFL; SUM_CLAUSES_NUMSEG; SUC_SUB1]);;
+
+let SUM_PAIR = prove
+ (`!f m n. sum(2*m..2*n+1) f = sum(m..n) (\i. f(2*i) + f(2*i+1))`,
+  MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_REAL_ADD) THEN
+  REWRITE_TAC[sum; NEUTRAL_REAL_ADD]);;
+
+let REAL_OF_NUM_SUM_NUMSEG = prove
+ (`!f m n. (&(nsum(m..n) f) = sum (m..n) (\i. &(f i)))`,
+  SIMP_TAC[REAL_OF_NUM_SUM; FINITE_NUMSEG]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Partial summation and other theorems specific to number segments.         *)
+(* ------------------------------------------------------------------------- *)
+
+let SUM_PARTIAL_SUC = prove
+ (`!f g m n.
+        sum (m..n) (\k. f(k) * (g(k + 1) - g(k))) =
+            if m <= n then f(n + 1) * g(n + 1) - f(m) * g(m) -
+                           sum (m..n) (\k. g(k + 1) * (f(k + 1) - f(k)))
+            else &0`,
+  GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[SUM_TRIV_NUMSEG; GSYM NOT_LE] THEN
+  ASM_REWRITE_TAC[SUM_CLAUSES_NUMSEG] THENL
+   [COND_CASES_TAC THEN ASM_SIMP_TAC[] THENL [REAL_ARITH_TAC; ASM_ARITH_TAC];
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LE]) THEN
+  DISCH_THEN(DISJ_CASES_THEN2 SUBST_ALL_TAC ASSUME_TAC) THEN
+  ASM_SIMP_TAC[GSYM NOT_LT; SUM_TRIV_NUMSEG; ARITH_RULE `n < SUC n`] THEN
+  ASM_SIMP_TAC[GSYM ADD1; ADD_CLAUSES] THEN REAL_ARITH_TAC);;
+
+let SUM_PARTIAL_PRE = prove
+ (`!f g m n.
+        sum (m..n) (\k. f(k) * (g(k) - g(k - 1))) =
+            if m <= n then f(n + 1) * g(n) - f(m) * g(m - 1) -
+                           sum (m..n) (\k. g k * (f(k + 1) - f(k)))
+            else &0`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`f:num->real`; `\k. (g:num->real)(k - 1)`;
+                 `m:num`; `n:num`] SUM_PARTIAL_SUC) THEN
+  REWRITE_TAC[ADD_SUB] THEN DISCH_THEN SUBST1_TAC THEN
+  COND_CASES_TAC THEN REWRITE_TAC[]);;
+
+let SUM_DIFFS = prove
+ (`!m n. sum(m..n) (\k. f(k) - f(k + 1)) =
+          if m <= n then f(m) - f(n + 1) else &0`,
+  ONCE_REWRITE_TAC[REAL_ARITH `a - b = -- &1 * (b - a)`] THEN
+  ONCE_REWRITE_TAC[SUM_PARTIAL_SUC] THEN
+  REWRITE_TAC[REAL_SUB_REFL; REAL_MUL_RZERO; SUM_0] THEN
+  REAL_ARITH_TAC);;
+
+let SUM_DIFFS_ALT = prove
+ (`!m n. sum(m..n) (\k. f(k + 1) - f(k)) =
+          if m <= n then f(n + 1) - f(m) else &0`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_NEG_SUB] THEN
+  SIMP_TAC[SUM_NEG; SUM_DIFFS] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_NEG_SUB; REAL_NEG_0]);;
+
+let SUM_COMBINE_R = prove
+ (`!f m n p. m <= n + 1 /\ n <= p
+             ==> sum(m..n) f + sum(n+1..p) f = sum(m..p) f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_UNION_EQ THEN
+  REWRITE_TAC[FINITE_NUMSEG; EXTENSION; IN_INTER; IN_UNION; NOT_IN_EMPTY;
+              IN_NUMSEG] THEN
+  ASM_ARITH_TAC);;
+
+let SUM_COMBINE_L = prove
+ (`!f m n p. 0 < n /\ m <= n /\ n <= p + 1
+             ==> sum(m..n-1) f + sum(n..p) f = sum(m..p) f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_UNION_EQ THEN
+  REWRITE_TAC[FINITE_NUMSEG; EXTENSION; IN_INTER; IN_UNION; NOT_IN_EMPTY;
+              IN_NUMSEG] THEN
+  ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Extend congruences to deal with sum. Note that we must have the eta       *)
+(* redex or we'll get a loop since f(x) will lambda-reduce recursively.      *)
+(* ------------------------------------------------------------------------- *)
+
+let th = prove
+ (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
+              ==> sum s (\i. f(i)) = sum s g) /\
+   (!f g a b. (!i. a <= i /\ i <= b ==> f(i) = g(i))
+              ==> sum(a..b) (\i. f(i)) = sum(a..b) g) /\
+   (!f g p.   (!x. p x ==> f x = g x)
+              ==> sum {y | p y} (\i. f(i)) = sum {y | p y} g)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_EQ THEN
+  ASM_SIMP_TAC[IN_ELIM_THM; IN_NUMSEG]) in
+  extend_basic_congs (map SPEC_ALL (CONJUNCTS th));;
+
+(* ------------------------------------------------------------------------- *)
+(* Some special algebraic rearrangements.                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_SUB_POW = prove
+ (`!x y n.
+        1 <= n ==> x pow n - y pow n =
+                   (x - y) * sum(0..n-1) (\i. x pow i * y pow (n - 1 - i))`,
+  REWRITE_TAC[GSYM SUM_LMUL] THEN
+  REWRITE_TAC[REAL_ARITH
+   `(x - y) * (a * b):real = (x * a) * b - a * (y * b)`] THEN
+  SIMP_TAC[GSYM real_pow; ADD1; ARITH_RULE
+    `1 <= n /\ x <= n - 1
+     ==> n - 1 - x = n - (x + 1) /\ SUC(n - 1 - x) = n - x`] THEN
+  REWRITE_TAC[SUM_DIFFS_ALT; LE_0] THEN
+  SIMP_TAC[SUB_0; SUB_ADD; SUB_REFL; real_pow; REAL_MUL_LID; REAL_MUL_RID]);;
+
+let REAL_SUB_POW_R1 = prove
+ (`!x n. 1 <= n ==> x pow n - &1 = (x - &1) * sum(0..n-1) (\i. x pow i)`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o SPECL [`x:real`; `&1`] o MATCH_MP REAL_SUB_POW) THEN
+  REWRITE_TAC[REAL_POW_ONE; REAL_MUL_RID]);;
+
+let REAL_SUB_POW_L1 = prove
+ (`!x n. 1 <= n ==> &1 - x pow n = (&1 - x) * sum(0..n-1) (\i. x pow i)`,
+  ONCE_REWRITE_TAC[GSYM REAL_NEG_SUB] THEN
+  SIMP_TAC[REAL_SUB_POW_R1] THEN REWRITE_TAC[REAL_MUL_LNEG]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Make natural numbers the default again.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+prioritize_num();;

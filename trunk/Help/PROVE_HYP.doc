@@ -1,0 +1,42 @@
+\DOC PROVE_HYP
+
+\TYPE {PROVE_HYP : thm -> thm -> thm}
+
+\SYNOPSIS
+Eliminates a provable assumption from a theorem.
+
+\KEYWORDS
+rule, assumption.
+
+\DESCRIBE
+When applied to two theorems, {PROVE_HYP} gives a new theorem with the
+conclusion of the second and the union of the assumption list minus the
+conclusion of the first theorem.
+{
+     A1 |- t1     A2 |- t2
+   ------------------------  PROVE_HYP
+    (A1 u A2) - {{t1}} |- t2
+}
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # let th1 = CONJUNCT2(ASSUME `p /\ q /\ r`)
+    and th2 = CONJUNCT2(ASSUME `q /\ r`);;
+  val th1 : thm = p /\ q /\ r |- q /\ r
+  val th2 : thm = q /\ r |- r
+
+  # PROVE_HYP th1 th2;;
+  val it : thm = p /\ q /\ r |- r
+}
+
+\COMMENTS
+This is sometimes known as the Cut rule. It is not necessary for the conclusion
+of the first theorem to be the same as an assumption of the second, but
+{PROVE_HYP} is otherwise of doubtful value.
+
+\SEEALSO
+DEDUCT_ANTISYM_RULE, DISCH, MP, UNDISCH.
+
+\ENDDOC

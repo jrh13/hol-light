@@ -1,0 +1,42 @@
+\DOC lhand
+
+\TYPE {lhand : term -> term}
+
+\SYNOPSIS
+Take left-hand argument of a binary operator.
+
+\DESCRIBE
+When applied to a term {t} that is an application of a binary operator to two 
+arguments, i.e. is of the form {(op l) r}, the call {lhand t} will return the 
+left-hand argument {l}. The terms {op} and {r} are arbitrary, though in many 
+applications {op} is a constant such as addition or equality.
+
+\FAILURE
+Fails if the term is not of the indicated form.
+
+\EXAMPLE
+{
+  # lhand `1 + 2`;;
+  val it : term = `1`
+  
+  # lhand `2 + 2 = 4`;;
+  val it : term = `2 + 2`
+  
+  # lhand `f x y z`;;
+  Warning: inventing type variables
+  val it : term = `y`
+  
+  # lhand `if p then q else r`;;
+  Warning: inventing type variables
+  val it : term = `q`
+}
+
+\COMMENTS
+On equations, {lhand} has the same effect as {lhs}, but may be slightly quicker
+because it does not check whether the operator {op} is indeed the equality
+constant.
+
+\SEEALSO
+lhs, rand, rhs.
+
+\ENDDOC

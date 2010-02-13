@@ -1,0 +1,20 @@
+\DOC print_fpf
+
+\TYPE {print_fpf : ('a, 'b) func -> unit}
+
+\SYNOPSIS
+Print a finite partial function.
+
+\DESCRIBE
+This prints a finite partial function but only as a trivial string `{<func>}'.
+Installed automatically at the top level and probably not useful for most 
+users.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

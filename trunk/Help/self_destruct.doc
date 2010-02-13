@@ -1,0 +1,73 @@
+\DOC self_destruct
+
+\TYPE {self_destruct : string -> unit}
+
+\SYNOPSIS
+Exits HOL Light but saves current state ready to restart.
+
+\DESCRIBE
+This operation is only available in HOL images created using checkpointing (as
+in the default Linux build arising from {make all}), not when the HOL Light
+sources have simply been loaded into the OCaml toplevel without checkpointing.
+A call {self_destruct s} will exit the current OCaml / HOL Light session, but
+save the current state to an image {hol.snapshot}. Users can then start this
+image; it will display the usual banner and also the string {s}, and the user
+will then be in the same state as before {self_destruct}.
+
+\FAILURE
+Never fails, except in the face of OS-level problems such as running out of
+disc space.
+
+\USES
+Very useful to start HOL Light quickly with many background theories or tools
+loaded, rather than needing to rebuild them from sources.
+
+\COMMENTS
+Unfortunately I do not know of any checkpointing tool that can give this
+behaviour under Windows or Mac OS X. However, it works very nicely in Linux.
+
+\EXAMPLE
+Suppose that all the proofs you are doing at the moment need more theorems
+about prime numbers, and also a list of all prime numbers up to 1000. We reach
+a suitable state:
+{
+  # needs "Library/prime.ml";;
+  ...
+  # let primes_1000 = rev(rev_itlist
+      (fun q ps -> if exists (fun p -> q mod p = 0) ps then ps else q::ps)
+      (2--1000) []);;
+  ...
+}
+\noindent and now issue the checkpointing command:
+{
+  self_destruct "Preloaded with prime number material";;
+}
+HOL Light will exit and a new file {hol.snapshot} will be created. You might
+want to rename it as {hol.prime} in the OS so it has a more intuitive name and
+doesn't get overwritten by later checkpoints
+{
+  $ mv hol.snapshot hol.prime
+}
+\noindent You can then start the new image just by {hol.prime}:
+{
+  $ hol.prime
+          HOL Light 2.10, built 16 March 2006 on OCaml 3.08.3
+          Preloaded with prime number material
+
+  val it : unit = ()
+  #
+}
+\noindent and continue where you left off, with all the prime-number material
+available instantly:
+{
+  # PRIME_DIVPROD;;
+  val it : thm =
+    |- !p a b. prime p /\ p divides a * b ==> p divides a \/ p divides b
+  # el 100 primes_1000;;
+  val it : int = 547
+}
+
+\SEEALSO
+checkpoint, startup_banner.
+
+\ENDDOC

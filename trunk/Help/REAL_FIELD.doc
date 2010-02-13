@@ -1,0 +1,39 @@
+\DOC REAL_FIELD
+
+\TYPE {REAL_FIELD : term -> thm}
+
+\SYNOPSIS
+Prove basic `field' facts over the reals.
+
+\DESCRIBE
+Most of the built-in HOL arithmetic decision procedures have limited ability to 
+deal with inversion or division. {REAL_FIELD} is an enhancement of {REAL_RING} 
+that has the same underlying method but first performs various case-splits, 
+reducing a goal involving the inverse {inv(t)} of a term {t} to the cases where
+{t = 0} where {t * inv(t) = &1}, repeatedly for all such {t}. After
+subsequently splitting the goal into normal form, {REAL_RING} (for algebraic
+reasoning) is applied; if this fails then {REAL_ARITH} is also tried, since
+this allows some {t = 0} cases to be excluded by simple linear reasoning.
+
+\FAILURE
+Fails if the term is not provable using the methods described.
+
+\EXAMPLE
+Here we do some simple algebraic simplification, ruling out the degenerate 
+{x = &0} case using the inequality in the antecedent.
+{
+  # REAL_FIELD `!x. &0 < x ==> &1 / x - &1 / (x + &1) = &1 / (x * (x + &1))`;;
+  ...
+  val it : thm = |- !x. &0 < x ==> &1 / x - &1 / (x + &1) = &1 / (x * (x + &1))
+}
+
+\COMMENTS
+Except for the discharge of conditions using linear reasoning, this rule is 
+essentially equational. For nonlinear inequality reasoning, there are no
+powerful rules built into HOL Light, but the additional derived rules defined
+in {Examples/sos.ml} and {Rqe/make.ml} may be useful.
+
+\SEEALSO
+ARITH_TAC, INT_ARITH_TAC, REAL_ARITH, REAL_ARITH_TAC, REAL_RING.
+
+\ENDDOC

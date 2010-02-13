@@ -1,0 +1,23 @@
+\DOC variables
+
+\TYPE {variables : term -> term list}
+
+\SYNOPSIS
+Determines the variables used, free or bound, in a given term.
+
+\DESCRIBE
+Given a term argument, {variables} returns a list of variables that occur free
+or bound in that term.
+
+\EXAMPLE
+{
+  # variables `\a:bool. a`;;
+  val it : term list = [`a`]
+  # variables `(a:num) + (b:num)`;;
+  val it : term list = [`b`; `a`]
+}
+
+\SEEALSO
+frees, free_in.
+
+\ENDDOC

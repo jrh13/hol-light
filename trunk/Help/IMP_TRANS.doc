@@ -1,0 +1,38 @@
+\DOC IMP_TRANS
+
+\TYPE {IMP_TRANS : thm -> thm -> thm}
+
+\SYNOPSIS
+Implements the transitivity of implication.
+
+\KEYWORDS
+rule, implication, transitivity.
+
+\DESCRIBE
+When applied to theorems {A1 |- t1 ==> t2} and {A2 |- t2 ==> t3},
+the inference rule {IMP_TRANS} returns the theorem {A1 u A2 |- t1 ==> t3}.
+{
+    A1 |- t1 ==> t2   A2 |- t2 ==> t3
+   -----------------------------------  IMP_TRANS
+         A1 u A2 |- t1 ==> t3
+}
+
+\FAILURE
+Fails unless the theorems are both implicative, with the consequent of the
+first being the same as the antecedent of the  second (up to alpha-conversion).
+
+\EXAMPLE
+{
+  # let th1 = TAUT `p /\ q /\ r ==> p /\ q`
+    and th2 = TAUT `p /\ q ==> p`;;
+  val th1 : thm = |- p /\ q /\ r ==> p /\ q
+  val th2 : thm = |- p /\ q ==> p
+
+  # IMP_TRANS th1 th2;;
+  val it : thm = |- p /\ q /\ r ==> p
+}
+
+\SEEALSO
+IMP_ANTISYM_RULE, SYM, TRANS.
+
+\ENDDOC

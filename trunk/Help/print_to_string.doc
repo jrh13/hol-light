@@ -1,0 +1,30 @@
+\DOC print_to_string
+
+\TYPE {print_to_string : (formatter -> 'a -> 'b) -> 'a -> string}
+
+\SYNOPSIS
+Modifies a formatting printing function to return its output as a string.
+
+\DESCRIBE
+If {p} is a printing function whose first argument is a formatter (a standard
+OCaml datatype indicating an output for printing functions), {print_to_string
+P} gives a function that invokes it and collects and returns its output as a
+string.
+
+\FAILURE
+Fails only if the core printing function fails.
+
+\EXAMPLE
+The standard function {string_of_term} is defined as:
+{
+  # let string_of_term = print_to_string pp_print_term;;
+}
+
+\USES
+Converting a general printing function to a `convert to string' function, as in 
+the example above.
+
+\SEEALSO
+pp_print_term, pp_print_thm, pp_print_type.
+
+\ENDDOC

@@ -1,0 +1,33 @@
+\DOC ORDERED_IMP_REWR_CONV
+
+\TYPE {ORDERED_IMP_REWR_CONV : (term -> term -> bool) -> thm -> term -> thm}
+
+\SYNOPSIS
+Basic conditional rewriting conversion restricted by term order.
+
+\DESCRIBE
+Given an ordering relation {ord}, an equational theorem {A |- !x1...xn. p ==> s
+= t} that expresses a conditional rewrite rule, the conversion
+{ORDERED_IMP_REWR_CONV} gives a conversion that applied to any term {s'} will
+attempt to match the left-hand side of the equation {s = t} to {s'}, and return
+the corresponding theorem {A |- p' ==> s' = t'}, but only if {ord `s'` `t'`},
+i.e. if the left-hand side is ``greater'' in the ordering than the right-hand
+side, after instantiation. If the ordering condition is violated, it will fail,
+even if the match is fine.
+
+\FAILURE
+Fails if the theorem is not of the right form or the two terms cannot be 
+matched, for example because the variables that need to be instantiated are 
+free in the hypotheses {A}, or if the ordering requirement fails.
+
+\EXAMPLE
+
+\USES
+Applying conditional rewrite rules that are permutative and would loop without 
+some ordering restriction. Applied automatically to some permutative rewrite 
+rules in the simplifier, e.g. in {SIMP_CONV}.
+
+\SEEALSO
+IMP_REWR_CONV, ORDERED_REWR_CONV, REWR_CONV, SIMP_CONV, term_order.
+
+\ENDDOC

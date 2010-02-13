@@ -1,0 +1,132 @@
+\DOC SUBGOAL_THEN
+
+\TYPE {SUBGOAL_THEN : term -> thm_tactic -> tactic}
+
+\SYNOPSIS
+Introduces a lemma as a new subgoal.
+
+\KEYWORDS
+theorem-tactic, lemma.
+
+\DESCRIBE
+The user proposes a lemma and is then invited to prove it under the current
+assumptions. The lemma is then used with the {thm_tactic} to apply to the goal.
+That is, if
+{
+    A1 ?- t1
+   ==========  ttac (t |- t)
+    A2 ?- t2
+}
+\noindent then
+{
+         A1 ?- t1
+   ====================  SUBGOAL_THEN `t` ttac
+    A1 ?- t   A2 ?- t2
+}
+In the quite common special case where {ttac} is {ASSUME_TAC}, the net
+behaviour is simply to present the user with two subgoals, one in which the
+lemma is to be proved and one in which it may be assumed:
+{
+         A1 ?- t1
+   ============================  SUBGOAL_THEN `t` ASSUME_TAC
+    A1 ?- t   A1 u {{t}} ?- t2
+}
+
+\FAILURE
+{SUBGOAL_THEN} will fail if an attempt is made to use a non-boolean term as a
+lemma.
+
+\USES
+Introducing lemmas into the same basic proof script without separately binding
+them to names. This is often a good structuring technique for large tactic
+proofs, where separate lemmas might look artificial because of all the ad-hoc
+context in which they occur.
+
+\EXAMPLE
+Consider the proof of the Knaster-Tarski fixpoint theorem, to be found in
+{Library/card.ml}. This (in its set-lattice context) states that every
+monotonic function has a fixpoint. After setting the initial goal:
+{
+  # g `!f. (!s t. s SUBSET t ==> f(s) SUBSET f(t)) ==> ?s:A->bool. f(s) = s`;;
+}
+\noindent we start off the proof, already proceeding via a series of lemmas
+with {SUBGOAL_THEN}, though we will focus our attention on a later one:
+{
+  # e(REPEAT STRIP_TAC THEN MAP_EVERY ABBREV_TAC
+       [`Y = {{b:A->bool | f(b) SUBSET b}}`; `a:A->bool = INTERS Y`] THEN
+      SUBGOAL_THEN `!b:A->bool. b IN Y <=> f(b) SUBSET b` ASSUME_TAC THENL
+       [EXPAND_TAC "Y" THEN REWRITE_TAC[IN_ELIM_THM]; ALL_TAC] THEN
+      SUBGOAL_THEN `!b:A->bool. b IN Y ==> f(a:A->bool) SUBSET b`
+      ASSUME_TAC THENL
+       [ASM_MESON_TAC[SUBSET_TRANS; IN_INTERS; SUBSET]; ALL_TAC]);;
+  ...
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`!s t. s SUBSET t ==> f s SUBSET f t`]
+   1 [`{{b | f b SUBSET b}} = Y`]
+   2 [`INTERS Y = a`]
+   3 [`!b. b IN Y <=> f b SUBSET b`]
+   4 [`!b. b IN Y ==> f a SUBSET b`]
+
+  `?s. f s = s`
+}
+Now we select a particularly interesting lemma:
+{
+  # e(SUBGOAL_THEN `f(a:A->bool) SUBSET a` ASSUME_TAC);;
+  val it : goalstack = 2 subgoals (2 total)
+
+   0 [`!s t. s SUBSET t ==> f s SUBSET f t`]
+   1 [`{{b | f b SUBSET b}} = Y`]
+   2 [`INTERS Y = a`]
+   3 [`!b. b IN Y <=> f b SUBSET b`]
+   4 [`!b. b IN Y ==> f a SUBSET b`]
+   5 [`f a SUBSET a`]
+
+  `?s. f s = s`
+
+   0 [`!s t. s SUBSET t ==> f s SUBSET f t`]
+   1 [`{{b | f b SUBSET b}} = Y`]
+   2 [`INTERS Y = a`]
+   3 [`!b. b IN Y <=> f b SUBSET b`]
+   4 [`!b. b IN Y ==> f a SUBSET b`]
+
+  `f a SUBSET a`
+}
+\noindent The lemma is relatively easy to prove by giving {MESON_TAC} the right
+lemmas:
+{
+  # e(ASM_MESON_TAC[IN_INTERS; SUBSET]);;
+  ...
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`!s t. s SUBSET t ==> f s SUBSET f t`]
+   1 [`{{b | f b SUBSET b}} = Y`]
+   2 [`INTERS Y = a`]
+   3 [`!b. b IN Y <=> f b SUBSET b`]
+   4 [`!b. b IN Y ==> f a SUBSET b`]
+   5 [`f a SUBSET a`]
+
+  `?s. f s = s`
+}
+\noindent and the remaining subgoal is also quite easy for {MESON_TAC}:
+{
+  # e(ASM_MESON_TAC[SUBSET_ANTISYM; IN_INTERS]);;
+  ...
+  val it : goalstack = No subgoals
+}
+On the other hand, without splitting off the last lemmas, {MESON_TAC} finds the
+automated step rather large. If you step back three steps with
+{
+  # b(); b(); b();;
+}
+\noindent then although the following works, it takes half a minute:
+{
+  # e(ASM_MESON_TAC[IN_INTERS; SUBSET; SUBSET_ANTISYM]);;
+  ....
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+MATCH_MP_TAC, MP_TAC, SUBGOAL_TAC.
+
+\ENDDOC

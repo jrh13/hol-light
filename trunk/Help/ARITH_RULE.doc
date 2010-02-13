@@ -1,0 +1,38 @@
+\DOC ARITH_RULE
+
+\TYPE {ARITH_RULE : term -> thm}
+
+\SYNOPSIS
+Automatically proves natural number arithmetic theorems needing basic
+rearrangement and linear inequality reasoning only.
+
+\DESCRIBE
+The function {ARITH_RULE} can automatically prove natural number theorems using
+basic algebraic normalization and inequality reasoning. For nonlinear
+equational reasoning use {NUM_RING}.
+
+\FAILURE
+Fails if the term is not boolean or if it cannot be proved using the basic
+methods employed, e.g. requiring nonlinear inequality reasoning.
+
+\EXAMPLE
+{
+  # ARITH_RULE `x = 1 ==> y <= 1 \/ x < y`;;
+  val it : thm = |- x = 1 ==> y <= 1 \/ x < y
+
+  # ARITH_RULE `x <= 127 ==> ((86 * x) DIV 256 = x DIV 3)`;;
+  val it : thm = |- x <= 127 ==> (86 * x) DIV 256 = x DIV 3
+
+  # ARITH_RULE
+     `2 * a * b EXP 2 <= b * a * b ==> (SUC c - SUC(a * b * b) <= c)`;;
+  val it : thm =
+    |- 2 * a * b EXP 2 <= b * a * b ==> SUC c - SUC (a * b * b) <= c
+}
+
+\USES
+Disposing of elementary arithmetic goals.
+
+\SEEALSO
+ARITH_CONV, ARITH_TAC, INT_ARITH, NUM_RING, REAL_ARITH, REAL_FIELD, REAL_RING.
+
+\ENDDOC

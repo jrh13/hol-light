@@ -1,0 +1,31 @@
+\DOC parse_term
+
+\TYPE {parse_term : string -> term}
+
+\SYNOPSIS
+Parses a string into a HOL term.
+
+\DESCRIBE
+The call {parse_term "s"} parses the string {s} into a HOL term. This is the
+function that is invoked automatically when a term is written in quotations
+{`s`}.
+
+\FAILURE
+Fails in the event of a syntax error or unparsed input.
+
+\EXAMPLE
+{
+  # parse_term "p /\\ q ==> r";;
+  val it : term = `p /\ q ==> r`
+}
+
+\COMMENTS
+Note that backslash characters should be doubled up when entering OCaml 
+strings, as in the example above, since they are the string escape character.
+This is handled automatically by the quotation parser, so one doesn't need to 
+do it (indeed shouldn't do it) when entering quotations between backquotes.
+
+\SEEALSO
+lex, parse_type.
+
+\ENDDOC

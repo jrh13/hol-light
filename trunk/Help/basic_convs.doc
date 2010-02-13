@@ -1,0 +1,29 @@
+\DOC basic_convs
+
+\TYPE {basic_convs : unit -> (string * (term * conv)) list}
+
+\SYNOPSIS
+List the current default conversions used in rewriting and simplification.
+
+\DESCRIBE
+The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.) 
+have default sets of (conditional) equations and other conversions that are 
+applied by default, except in the {PURE_} variants. A call to {basic_convs()} 
+returns the current set of conversions.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+In the default HOL Light state the only conversion is for generalized beta 
+reduction. All the other default simplifications are done by rewrite rules.
+{
+  # basic_convs();;
+  val it : (string * (term * conv)) list =
+    [("GEN_BETA_CONV", (`GABS (\a. b) c`, <fun>))]
+}
+
+\SEEALSO
+basic_rewrites, extend_basic_convs, set_basic_convs.
+
+\ENDDOC

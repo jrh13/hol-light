@@ -1,0 +1,34 @@
+\DOC REAL_RAT_POW_CONV
+
+\TYPE {REAL_RAT_POW_CONV : conv}
+
+\SYNOPSIS
+Conversion to perform exponentiation on a rational literal of type {:real}.
+
+\DESCRIBE
+The call {REAL_RAT_POW_CONV `c pow n`} where {c} is a rational literal of
+type {:real} and {n} is a numeral of type {:num}, returns {|- c pow n = d}
+where {d} is the canonical rational literal that is equal to {c} raised to the
+{n}th power. The literal {c} may be an integer literal ({&n} or {-- &n}),
+a ratios ({&p / &q} or {-- &p / &q}), or a decimal ({#DDD.DDDD} or
+{#DDD.DDDDeNN}). The result {d} is always put in the form {&p / &q} or
+{-- &p / &q} with {q > 1} and {p} and {q} sharing no common factor, or simply
+{&p} or {-- &p} when that is impossible.
+
+\FAILURE
+Fails if applied to a term that is not a permitted rational literal of type
+{:real} raised to a numeral power.
+
+\EXAMPLE
+{
+  # REAL_RAT_POW_CONV `#1.414 pow 2`;;
+  val it : thm = |- #1.414 pow 2 = &1999396 / &1000000
+}
+
+\SEEALSO
+REAL_RAT_ABS_CONV, REAL_RAT_ADD_CONV, REAL_RAT_DIV_CONV, REAL_RAT_EQ_CONV,
+REAL_RAT_GE_CONV, REAL_RAT_GT_CONV, REAL_RAT_INV_CONV, REAL_RAT_LE_CONV,
+REAL_RAT_LT_CONV, REAL_RAT_MAX_CONV, REAL_RAT_MIN_CONV, REAL_RAT_MUL_CONV,
+REAL_RAT_NEG_CONV, REAL_RAT_REDUCE_CONV, REAL_RAT_RED_CONV, REAL_RAT_SUB_CONV.
+
+\ENDDOC

@@ -1,0 +1,30 @@
+\DOC LE_IMP
+
+\TYPE {LE_IMP : thm -> thm}
+
+\SYNOPSIS
+Perform transitivity chaining for non-strict natural number inequality.
+
+\DESCRIBE
+When applied to a theorem {A |- s <= t} where {s} and {t} have type {num}, the
+rule {LE_IMP} returns {A |- !x1...xn z. t <= z ==> s <= z}, where {z} is some
+variable and the {x1,...,xn} are free variables in {s} and {t}.
+
+\FAILURE
+Fails if applied to a theorem whose conclusion is not of the form {`s <= t`}
+for some natural number terms {s} and {t}.
+
+\EXAMPLE
+{
+  # LE_IMP (ARITH_RULE `n <= SUC(m + n)`);;
+  val it : thm = |- !m n p. SUC (m + n) <= p ==> n <= p
+}
+
+\USES
+Can make transitivity chaining in goals easier, e.g. by
+{FIRST_ASSUM(MATCH_MP_TAC o LE_IMP)}.
+
+\SEEALSO
+ARITH_RULE, REAL_LE_IMP, REAL_LET_IMP.
+
+\ENDDOC

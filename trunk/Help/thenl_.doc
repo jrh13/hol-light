@@ -1,0 +1,11 @@
+\DOC thenl_
+
+\TYPE {thenl_ : tactic -> tactic list -> tactic}
+
+\SYNOPSIS
+Non-infix version of {THENL}.
+
+\SEEALSO
+THENL.
+
+\ENDDOC

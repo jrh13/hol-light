@@ -1,0 +1,19 @@
+\DOC dest_exists
+
+\TYPE {dest_exists : term -> term * term}
+
+\SYNOPSIS
+Breaks apart an existentially quantified term into quantified variable and
+body.
+
+\DESCRIBE
+{dest_exists} is a term destructor for existential quantification:
+{dest_exists `?var. t`} returns {(`var`,`t`)}.
+
+\FAILURE
+Fails with {dest_exists} if term is not an existential quantification.
+
+\SEEALSO
+is_exists, mk_exists, strip_exists.
+
+\ENDDOC

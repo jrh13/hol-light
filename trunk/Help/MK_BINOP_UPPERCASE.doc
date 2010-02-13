@@ -1,0 +1,29 @@
+\DOC MK_BINOP
+
+\TYPE {MK_BINOP : term -> thm * thm -> thm}
+
+\SYNOPSIS
+Compose equational theorems with binary operator.
+
+\DESCRIBE
+Given a term {op} and the pair of theorems {(|- l = l'),(|- r = r')}, the
+function {MK_BINOP} returns the theorem {|- op l r = op l' r'}, provided the
+types are compatible.
+
+\FAILURE
+Fails if the types are incompatible for the term {op l r}.
+
+\EXAMPLE
+{
+  # let th1 = NUM_REDUCE_CONV `2 * 2`
+    and th2 = NUM_REDUCE_CONV `2 EXP 2`;;
+  val th1 : thm = |- 2 * 2 = 4
+  val th2 : thm = |- 2 EXP 2 = 4
+  # MK_BINOP `(+):num->num->num` (th1,th2);;
+  val it : thm = |- 2 * 2 + 2 EXP 2 = 4 + 4
+}
+
+\SEEALSO
+BINOP_CONV, DEPTH_BINOP_CONV, MK_COMB.
+
+\ENDDOC

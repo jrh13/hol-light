@@ -1,0 +1,32 @@
+\DOC name_of
+
+\TYPE {name_of : term -> string}
+
+\SYNOPSIS
+Gets the name of a constant or variable.
+
+\DESCRIBE
+When applied to a term that is either a constant or a variable, {name_of}
+returns its name (its true name, even if there is an interface mapping for it
+in effect). When applied to any other term, it returns the empty string.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # name_of `x:int`;;
+  val it : string = "x"
+
+  # name_of `SUC`;;
+  val it : string = "SUC"
+
+  # name_of `x + 1`;;
+  val it : string = ""
+
+}
+
+\SEEALSO
+dest_const, dest_var.
+
+\ENDDOC

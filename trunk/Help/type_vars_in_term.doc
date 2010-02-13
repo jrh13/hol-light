@@ -1,0 +1,31 @@
+\DOC type_vars_in_term
+
+\TYPE {type_vars_in_term : term -> hol_type list}
+
+\SYNOPSIS
+Returns the set of type variables used in a term.
+
+\DESCRIBE
+The call {type_vars_in_term t} returns the set of all type variables occurring 
+anywhere inside any subterm of {t}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Note that the list of types occurring somewhere in the term may be larger than 
+the set of type variables in the term's toplevel type. For example:
+{
+  # type_vars_in_term `!x:A. x = x`;;
+  val it : hol_type list = [`:A`]
+}
+\noindent whereas
+{
+  # tyvars(type_of `!x:A. x = x`);;
+  val it : hol_type list = []
+}
+
+\SEEALSO
+frees, tyvars.
+
+\ENDDOC

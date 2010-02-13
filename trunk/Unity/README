@@ -1,0 +1,93 @@
+(*-------------------------------------------------------------------------*)
+
+   Author:       (c) Copyright 1989-2008 by Flemming Andersen
+   Date:         November 17, 2003
+   Last update:  January 27, 2008
+
+(*-------------------------------------------------------------------------*)
+
+This is a very brief introduction to the first version of UNITY
+defined in HOL Light.
+
+Defining UNITY in HOL started as part of my PhD-work back in 1989. At
+that time only HOL88 was available. I was very excited when Prof. Mike
+Gordon first sent me a version on tape of his powerful theorem prover
+that allows us to reason about specifications defined in the
+implementation of a polymorphic, typed higher order logic. Later I
+ported HOL_UNITY to HOL90, HOL98, and HOL4, but this is the first port
+to HOL Light. I would like to thank John Harrison for encouraging me
+to finally publish this work as it has been resting on my book shelf
+for way too long.
+
+Since HOL88 did originally not support built-in functions for
+specifying recursive functions (they were later added by Konrad Slind),
+the UNITY LEADSTO property is defined as a basic inductive definition
+in HOL.
+
+The UNITY theory defined in this directory was the first
+implementation of UNITY the way it was originally defined in [CM88]:
+
+   Parallel Program Design - A Foundation 
+   K. Mani Chandy
+   Jayadev Misra
+   Addison Wesley, 1988.
+
+Many other mechanizations and other derivatives of this logic has been
+developed since then.
+
+Using the HOL theorem prover, the files:
+
+   aux_definitions.ml
+   mk_state_logic.ml
+   mk_unless.ml
+   mk_ensures.ml
+   mk_leadsto.ml
+   mk_comp_unity.ml
+
+define the UNLESS, STABLE, and ENSURES properties as pre-post
+conditions for a general state transition system over the entire
+domain as defined by the polymorphic type system supported by the HOL
+logic.  The LEADSTO property is defined as the transitive and
+disjunctive closure of ENSURES properties.
+
+The file:
+
+   mk_comp_unity.ml
+
+proves the compositional properties presented in [CM88], and
+
+   mk_unity_prog.ml
+
+defines the combinator expressions used by the HOL_UNITY compiler (to
+be released later).
+
+Using the definition of UNLESS, STABLE, ENSURES, and LEADSTO, it was
+possible to prove all lemmas, theorems, and corollaries presented in
+[CM88] for the above mentioned properties.  Furthermore, the HOL
+implementation made it possible to formally derive the two induction
+principles used in the book and the formal definition of the much
+discussed substitution axiom is naturally derived from the
+implementation in HOL.
+
+More documentation, features, and examples will be added as soon as I
+get time to port the HOL_UNITY compiler and other sub-tools that were
+originally part of the HOL_UNITY system that my research group and I
+developed while we were working at Tele Danmark until it was closed in
+1996.
+
+If you have any questions regarding the current first release of
+HOL_UNITY in HOL Light, you may reach me through email to either:
+
+   fa AT vip.cybercity.dk
+or
+   Flemming.L.Andersen AT intel.com
+
+You can also look for my old thesis and some published papers that
+describes more about the HOL_UNITY implementation and its use at:
+
+   http://fa.homepage.dk
+
+The web-page is unfortunately not up-to-date but it is a quick
+reference for some of my past work until my next release.
+
+(*-------------------------------------------------------------------------*)

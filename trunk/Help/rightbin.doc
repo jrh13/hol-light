@@ -1,0 +1,41 @@
+\DOC rightbin
+
+\TYPE {rightbin : ('a -> 'b * 'c) -> ('c -> 'd * 'a) -> ('d -> 'b -> 'b -> 'b) -> string -> 'a -> 'b * 'c}
+
+\SYNOPSIS
+Parses iterated right-associated binary operator.
+
+\DESCRIBE
+If {p} is a parser for ``items'' of some kind, {s} is a parser for some        
+``separator'', {c} is a `constructor' function taking an element as parsed by   
+{s} and two other elements as parsed by {p} and giving a new such element, and 
+{e} is an error message, then {leftbin p s c e} will parse an iterated sequence 
+of items by {p} and separated by something parsed with {s}. It will repeatedly 
+apply the constructor function {c} to compose these elements into one, 
+associating to the right. For example, the input:
+{
+  <p1> <s1> <p2> <s2> <p3> <s3> <p4>                                     
+}                             
+meaning successive segments {pi} that are parsed by {p} and {sj} that are
+parsed by {s}, will result in 
+{
+  c s1 c1 (c s2 p2 (c s3 p3 p4))
+}       
+
+\FAILURE
+The call {rightbin p s c e} never fails, though the resulting parser may.
+
+\COMMENTS
+This is one of a suite of combinators for manipulating ``parsers''. A parser is
+simply a function whose OCaml type is some instance of 
+{:('a)list -> 'b * ('a)list}. The function should take a list of objects of
+type {:'a} (e.g. characters or tokens), parse as much of it as possible from
+left to right, and return a pair consisting of the object derived from parsing
+(e.g. a term or a special syntax tree) and the list of elements that were not
+processed.
+
+\SEEALSO
+++, ||, >>, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
+possibly, some.
+
+\ENDDOC

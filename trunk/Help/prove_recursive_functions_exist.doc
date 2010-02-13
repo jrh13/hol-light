@@ -1,0 +1,91 @@
+\DOC prove_recursive_functions_exist
+
+\TYPE {prove_recursive_functions_exist : thm -> term -> thm}
+
+\SYNOPSIS
+Prove existence of recursive function over inductive type.
+
+\DESCRIBE
+This function has essentially the same interface and functionality as 
+{new_recursive_definition}, but it merely proves the existence of the function 
+rather than defining it.
+
+The first argument to {prove_recursive_functions_exist} is the primitive
+recursion theorem for the concrete type in question; this is normally the
+second theorem obtained from {define_type}. The second argument is a term
+giving the desired primitive recursive function definition. The value returned
+by {prove_recursive_functions_exist} is a theorem stating the existence of a
+function satisfying the `definition' clauses. This theorem is derived by formal
+proof from an instance of the general primitive recursion theorem given as the
+second argument.
+
+Let {C1}, ..., {Cn} be the constructors of this type, and let `{(Ci vs)}'
+represent a (curried) application of the {i}th constructor to a sequence of
+variables.  Then a curried primitive recursive function {fn} over {ty} can be
+specified by a conjunction of (optionally universally-quantified) clauses of
+the form:
+{
+   fn v1 ... (C1 vs1) ... vm  =  body1   /\
+   fn v1 ... (C2 vs2) ... vm  =  body2   /\
+                             .
+                             .
+   fn v1 ... (Cn vsn) ... vm  =  bodyn
+}
+\noindent where the variables {v1}, ..., {vm}, {vs} are distinct in each
+clause, and where in the {i}th clause {fn} appears (free) in {bodyi} only
+as part of an application of the form:
+{                            
+   `fn t1 ... v ... tm`
+}                                                    
+\noindent in which the variable {v} of type {ty} also occurs among the
+variables {vsi}.
+                                              
+If {<definition>} is a conjunction of clauses, as described above, then
+evaluating:
+{                                                                      
+   prove_recursive_functions_exist th `<definition>`;;                              
+}
+\noindent automatically proves the existence of a function {fn} that satisfies
+the defining equations supplied, and returns a theorem:
+{
+  |- ?fn. <definition>
+}
+{prove_recursive_functions_exist} also allows the supplied definition to omit
+clauses for any number of constructors.  If a defining equation for the {i}th
+constructor is omitted, then the value of {fn} at that constructor: 
+{
+   fn v1 ... (Ci vsi) ... vn                                                 
+}                                                                          
+\noindent is left unspecified ({fn}, however, is still a total function).
+
+\FAILURE
+Fails if the clauses cannot be matched up with the recursion theorem. You may
+find that {prove_general_recursive_function_exists} still works in such cases.
+
+\EXAMPLE
+Here we show that there exists a product function:
+{
+  prove_recursive_functions_exist num_RECURSION 
+   `(prod f 0 = 1) /\ (!n. prod f (SUC n) = f(SUC n) * prod f n)`;;
+  val it : thm =
+    |- ?prod. prod f 0 = 1 /\ (!n. prod f (SUC n) = f (SUC n) * prod f n)
+}
+
+\COMMENTS
+Often {prove_general_recursive_function_exists} is an easier route to the same 
+goal. Its interface is simpler (no need to specify the recursion theorem) and 
+it is more powerful. However, for suitably constrained definitions 
+{prove_recursive_functions_exist} works well and is much more efficient.
+
+\USES
+It is more usual to want to actually make definitions of recursive functions. 
+However, if a recursive function is needed in the middle of a proof, and seems 
+to ad-hoc for general use, you may just use {prove_recursive_functions_exist}, 
+perhaps adding the ``definition'' as an assumption of the goal with 
+{CHOOSE_TAC}.
+
+\SEEALSO
+new_inductive_definition, new_recursive_definition,
+prove_general_recursive_function_exists.
+
+\ENDDOC

@@ -1,0 +1,40 @@
+\DOC ISPECL
+
+\TYPE {ISPECL : term list -> thm -> thm}
+
+\SYNOPSIS
+Specializes a theorem zero or more times, with type instantiation if necessary.
+
+\KEYWORDS
+rule, type.
+
+\DESCRIBE
+{ISPECL} is an iterative version of {ISPEC}
+{
+         A |- !x1...xn.t
+   ----------------------------  ISPECL [`t1`,...,`tn`]
+    A |- t[t1,...tn/x1,...,xn]
+}
+\noindent (where {ti} is free for {xi} in {tm}).
+
+\FAILURE
+{ISPECL} fails if the list of terms is longer than the number of
+quantified variables in the term, if the type instantiation fails, or
+if the type variable being instantiated is free in the assumptions.
+
+\EXAMPLE
+{
+  # ISPECL [`x:num`; `2`] EQ_SYM_EQ;;
+  val it : thm = |- x = 2 <=> 2 = x
+}
+\noindent Note that the corresponding call to {SPECL} would fail because of the
+type mismatch:
+{
+  # SPECL [`x:num`; `2`] EQ_SYM_EQ;;
+  Exception: Failure "SPECL".
+}
+
+\SEEALSO
+INST_TYPE, INST, ISPEC, SPEC, SPECL, type_match.
+
+\ENDDOC

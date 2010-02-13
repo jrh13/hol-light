@@ -1,0 +1,45 @@
+\DOC NUM_REL_CONV
+
+\TYPE {NUM_REL_CONV : term -> thm}
+
+\SYNOPSIS
+Performs relational operation on natural number numerals by proof.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+When applied to a term that is a relational operator
+application {`m < n`},  {`m <= n`},  {`m > n`}, {`m >= n`} or {`m = n`} applied
+to numerals {m} and {n}, the conversion {NUM_REL_CONV} will `reduce' it and
+return a theorem asserting its equality to {`T`} or {`F`} as appropriate.
+
+\FAILURE
+{NUM_REL_CONV tm} fails if {tm} is not of one of the forms specified.
+
+\EXAMPLE
+{
+  # NUM_REL_CONV `1089 < 2231`;;
+  val it : thm = |- 1089 < 2231 <=> T
+
+  # NUM_REL_CONV `1089 >= 2231`;;
+  val it : thm = |- 1089 >= 2231 <=> F
+}
+Note that the immediate operands must be numerals. For deeper reduction of
+combinations of numerals, use {NUM_REDUCE_CONV}.
+{
+  # NUM_REL_CONV `2 + 2 = 4`;;
+  Exception: Failure "REWRITES_CONV".
+
+  # NUM_REDUCE_CONV `2 + 2 = 4`;;
+  val it : thm = |- 2 + 2 = 4 <=> T
+}
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_PRE_CONV, NUM_REDUCE_CONV, NUM_RED_CONV, NUM_SUB_CONV, NUM_SUC_CONV,
+REAL_RAT_RED_CONV.
+
+\ENDDOC

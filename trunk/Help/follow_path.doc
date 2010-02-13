@@ -1,0 +1,36 @@
+\DOC follow_path
+
+\TYPE {follow_path : string -> term -> term}
+
+\SYNOPSIS
+Find the subterm of a given term indicated by a path.
+
+\DESCRIBE
+A call {follow_path p t} follows path {p} inside {t} and returns the subterm 
+encountered. The path is a string with the successive characters interpreted as 
+follows:
+
+\begin{{itemize}}
+
+\item {"b"}: take the body of an abstraction
+
+\item {"l"}: take the left (rator) path in an application 
+
+\item {"r"}: take the right (rand) path in an application
+
+\end{{itemize}}
+
+\FAILURE
+Fails if the path is not meaningful for the term, e.g. if a {"b"} is 
+encountered for a subterm that is not an abstraction.
+
+\EXAMPLE
+{
+  # follow_path "rrlr" `1 + 2 + 3 + 4 + 5`;;
+  val it : term = `3`
+}
+
+\SEEALSO
+find_path, PATH_CONV.
+
+\ENDDOC

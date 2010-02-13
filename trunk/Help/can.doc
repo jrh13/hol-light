@@ -1,0 +1,26 @@
+\DOC can
+
+\TYPE {can : ('a -> 'b) -> 'a -> bool}
+
+\SYNOPSIS
+Tests for failure.
+
+\DESCRIBE
+{can f x} evaluates to {true} if the application of {f} to {x} succeeds.
+It evaluates to {false} if the application with a {Failure _} exception.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # can hd [1;2];;
+  val it : bool = true
+  # can hd [];;
+  val it : bool = false
+}
+
+\SEEALSO
+check.
+
+\ENDDOC

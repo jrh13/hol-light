@@ -1,0 +1,24 @@
+\DOC parse_preterm
+
+\TYPE {parse_preterm : lexcode list -> preterm * lexcode list}
+
+\SYNOPSIS
+Parses a preterm.
+
+\DESCRIBE
+The call {parse_preterm t}, where {t} is a list of lexical tokens (as produced
+by {lex}), parses the tokens and returns a preterm as well as the unparsed
+tokens.
+
+\FAILURE
+Fails if there is a syntax error in the token list.
+
+\USES
+This is mostly an internal function; pretypes and preterms are used as an
+intermediate representation for typechecking and overload resolution and are
+not normally of concern to users.
+
+\SEEALSO
+lex, parse_pretype, parse_term, parse_type.
+
+\ENDDOC

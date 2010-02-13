@@ -1,0 +1,29 @@
+\DOC mk_small_numeral
+
+\TYPE {mk_small_numeral : int -> term}
+
+\SYNOPSIS
+Maps a nonnegative integer to corresponding numeral term.
+
+\DESCRIBE
+The call {mk_small_numeral n} where {n} is a nonnegative OCaml machine integer
+returns the HOL numeral representation of {n}.
+
+\FAILURE
+Fails if the argument is negative.
+
+\EXAMPLE
+{
+  # mk_small_numeral 12;;
+  val it : term = `12`
+}
+
+\COMMENTS
+The similar function {mk_numeral} works from an unlimited precision integer,
+OCaml type {num}. However, none of HOL's inference rules depend on the
+behaviour of machine integers, so logical soundness is not an issue.
+
+\SEEALSO
+dest_numeral, dest_small_numeral, is_numeral, mk_numeral, term_of_rat. 
+
+\ENDDOC

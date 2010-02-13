@@ -1,0 +1,18 @@
+\DOC isspace
+
+\TYPE {isspace : string -> bool}
+
+\SYNOPSIS
+Tests if a one-character string is some kind of space.
+
+\DESCRIBE
+The call {isspace s} tests whether the first character of string {s} (normally 
+it is the only character) is a `space' of some kind, including tab and newline.
+
+\FAILURE
+Fails if the string is empty.
+
+\SEEALSO
+isalnum, isalpha, isbra, isnum, issep, issymb.
+
+\ENDDOC

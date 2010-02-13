@@ -1,0 +1,26 @@
+\DOC SIMP_TAC
+
+\TYPE {SIMP_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Simplify a goal repeatedly by conditional contextual rewriting.
+
+\DESCRIBE
+When applied to a goal {A ?- g}, the tactic {SIMP_TAC thl} returns a new
+goal {A ?- g'} where {g'} results from applying the theorems in {thl} as
+(conditional) rewrite rules, as well as built-in simplifications (see
+{basic_rewrites} and {basic_convs}). For more details, see {SIMP_CONV}.
+
+\FAILURE
+Never fails, though may not change the goal if no simplifications are
+applicable.
+
+\COMMENTS
+To add the assumptions of the goal to the rewrites, use {ASM_SIMP_TAC} (or just
+{ASM SIMP_TAC}).
+
+\SEEALSO
+ASM, ASM_SIMP_TAC, mk_rewrites, ONCE_SIMP_CONV, REWRITE_TAC, SIMP_CONV,
+SIMP_RULE.
+
+\ENDDOC

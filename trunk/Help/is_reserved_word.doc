@@ -1,0 +1,20 @@
+\DOC is_reserved_word
+
+\TYPE {is_reserved_word : string -> bool}
+
+\SYNOPSIS
+Tests if a string is one of the reserved words.
+
+\DESCRIBE
+Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}', 
+meaning that they are special to the parser and cannot be used as ordinary 
+identifiers. The call {is_reserved_word s} tests if the string {s} is one of 
+them.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+reserved_words, reserve_words, unreserve_words.
+
+\ENDDOC

@@ -1,0 +1,43 @@
+\DOC foldl
+
+\TYPE {foldl : ('a -> 'b -> 'c -> 'a) -> 'a -> ('b, 'c) func -> 'a}
+
+\SYNOPSIS
+Folds an operation iteratively over the graph of a finite partial function.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. If a finite partial function {p} has graph {[x1,y1; ...; xn,yn]} then the
+application {foldl f a p} returns
+{
+ f (f ... (f (f a x1 y1) x2 y2) ...) xn yn
+}
+Note that the order in which the pairs are operated on depends on the internal
+structure of the finite partial function, and is often not the most obvious.
+
+\FAILURE
+Fails if one of the embedded function applications does.
+
+\EXAMPLE
+The {graph} function is implemented based on the following invocation of
+{foldl}, with an additional sorting phase afterwards:
+{
+  # let f = (1 |-> 2) (2 |=> 3);;
+  val f : (int, int) func = <func>
+
+  # graph f;;
+  val it : (int * int) list = [(1, 2); (2, 3)]
+
+  #  foldl (fun a x y -> (x,y)::a) [] f;;
+  val it : (int * int) list = [(1, 2); (2, 3)]
+}
+Note that in this case the order happened to be the same, but this is an 
+accident.
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldr,
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

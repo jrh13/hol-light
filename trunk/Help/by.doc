@@ -1,0 +1,15 @@
+\DOC by
+
+\TYPE {by : tactic -> refinement}
+
+\SYNOPSIS
+Converts a tactic to a refinement.
+
+\DESCRIBE
+The call {by tac} for a tactic {tac} gives a refinement of the current list of 
+subgoals that applies {tac} to the first subgoal. 
+
+\COMMENTS
+Only of interest to users who want to handle `refinements' explicitly.
+
+\ENDDOC

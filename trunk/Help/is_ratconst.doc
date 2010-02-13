@@ -1,0 +1,29 @@
+\DOC is_ratconst
+
+\TYPE {is_ratconst : term -> bool}
+
+\SYNOPSIS
+Tests if a term is a canonical rational literal of type {:real}.
+
+\DESCRIBE
+The call {is_ratconst t} tests whether the term {t} is a canonical rational
+literal of type {:real}. This means an integer literal {&n} for numeral {n},
+{-- &n} for a nonzero numeral {n}, or a ratio {&p / &q} or {-- &p / &q} where 
+{p} is nonzero, {q > 1} and {p} and {q} share no common factor. If so, 
+{is_ratconst} returns {true}, and otherwise {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_ratconst `&22 / &7`;;
+  val it : bool = true
+  # is_ratconst `&4 / &2`;;
+  val it : bool = false
+}
+
+\SEEALSO
+is_realintconst, rat_of_term, REAL_RAT_REDUCE_CONV, term_of_rat.
+
+\ENDDOC

@@ -1,0 +1,29 @@
+\DOC mk_setenum
+
+\TYPE {mk_setenum : term list * hol_type -> term}
+
+\SYNOPSIS
+Constructs an explicit set enumeration from a list of elements.
+
+\DESCRIBE
+When applied to a list of terms {[`t1`; ...; `tn`]} and a type {ty}, where each
+term in the list has type {ty}, the function {mk_setenum} constructs an
+explicit set enumeration term {`{{t1, ..., tn}}`}. Note that duplicated
+elements are maintained in the resulting term, though this is logically the
+same as the set without them. The type is needed so that the empty set can be 
+constructed; if you know that the list is nonempty, you can use {mk_fset} 
+instead.
+
+\FAILURE
+Fails if some term in the list has the wrong type, i.e. not {ty}.
+
+\EXAMPLE
+{
+  # mk_setenum([`1`; `2`; `3`],`:num`);;
+  val it : term = `{{1, 2, 3}}`
+}
+
+\SEEALSO
+dest_setenum, is_setenum, mk_fset, mk_list.
+
+\ENDDOC

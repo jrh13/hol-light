@@ -1,0 +1,27 @@
+\DOC unions'
+
+\TYPE {unions' : ('a -> 'a -> bool) -> 'a list list -> 'a list}
+
+\SYNOPSIS
+Compute union of a family of sets modulo an equivalence.
+
+\DESCRIBE
+If {r} is an equivalence relation an {l} a list of lists, the call
+{unions' r l} returns a list with one representative of each {r}-equivalence 
+class occurring in any of the members. It thus gives a union of a family of 
+sets with no duplicates under the equivalence {r}.
+
+\FAILURE
+Fails only if the relation {r} fails.
+
+\EXAMPLE
+{
+  # unions' (fun x y -> abs(x) = abs(y))
+     [[-1; 2; 3]; [-2; -3; -4]; [4; 5; -6]];;
+  val it : int list = [-1; -2; -3; 4; 5; -6]
+}
+
+\SEEALSO
+insert', mem', subtract', union', unions.
+
+\ENDDOC

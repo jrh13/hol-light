@@ -1,0 +1,32 @@
+\DOC BETA_TAC
+
+\TYPE {BETA_TAC : tactic}
+
+\SYNOPSIS
+Beta-reduces all the beta-redexes in the conclusion of a goal.
+
+\KEYWORDS
+tactic.
+
+\DESCRIBE
+When applied to a goal {A ?- t}, the tactic {BETA_TAC} produces a new goal
+which results from beta-reducing all beta-redexes, at any depth, in {t}.
+Variables are renamed where necessary to avoid free variable capture.
+{
+    A ?- ...((\x. s1) s2)...
+   ==========================  BETA_TAC
+     A ?- ...(s1[s2/x])...
+}
+
+\FAILURE
+Never fails, but will have no effect if there are no beta-redexes.
+
+\COMMENTS
+Beta-reduction, and indeed, generalized beta reduction ({GEN_BETA_CONV}) are 
+already among the basic rewrites, so happen anyway simply on {REWRITE_TAC[]}. 
+But occasionally it is convenient to be able to invoke them separately.
+
+\SEEALSO
+BETA_CONV, BETA_RULE, GEN_BETA_CONV.
+
+\ENDDOC

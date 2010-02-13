@@ -1,0 +1,30 @@
+\DOC PRENEX_CONV
+
+\TYPE {PRENEX_CONV : conv}
+
+\SYNOPSIS
+Puts a term already in NNF into prenex form.
+
+\DESCRIBE
+When applied to a term already in negation normal form (see {NNF_CONV}, for
+example), the conversion {PRENEX_CONV} proves it equal to an equivalent in
+prenex form, with all quantifiers at the top level and a propositional body.
+
+\FAILURE
+Never fails; even on non-Boolean terms it will just produce a reflexive
+theorem.
+
+\EXAMPLE
+{
+  # PRENEX_CONV `(!x. ?y. P x y) \/ (?u. !v. ?w. Q u v w)`;;
+  Warning: inventing type variables
+  val it : thm =
+    |- (!x. ?y. P x y) \/ (?u. !v. ?w. Q u v w) <=>
+       (!x. ?y u. !v. ?w. P x y \/ Q u v w)
+}
+
+\SEEALSO
+CNF_CONV, DNF_CONV, NNFC_CONV, NNF_CONV, SKOLEM_CONV, WEAK_CNF_CONV,
+WEAK_DNF_CONV.
+
+\ENDDOC

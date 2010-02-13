@@ -1,0 +1,46 @@
+\DOC ALL_TAC
+
+\TYPE {ALL_TAC : tactic}
+
+\SYNOPSIS
+Passes on a goal unchanged.
+
+\KEYWORDS
+tactic, identity.
+
+\DESCRIBE
+{ALL_TAC} applied to a goal {g} simply produces the subgoal list {[g]}. It is
+the identity for the {THEN} tactical.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Suppose we want to solve the goal:
+{
+  # g `~(n MOD 2 = 0) <=> n MOD 2 = 1`;;
+  ...
+}
+We could just solve it with {e ARITH_TAC}, but suppose we want to introduce a 
+little lemma that {n MOD 2 < 2}, proving that by {ARITH_TAC}. We could do
+{
+  # e(SUBGOAL_THEN `n MOD 2 < 2` ASSUME_TAC THENL
+       [ARITH_TAC;
+        ...rest of proof...]);;
+}
+However if we split off many lemmas, we get a deeply nested proof structure 
+that's a bit confusing. In cases where the proofs of the lemmas are trivial 
+one-liners like this we might just want to keep the proof basically linear with
+{
+  # e(SUBGOL_THEN `n MOD 2 < 2` ASSUME_TAC THENL [ARITH_TAC; ALL_TAC] THEN
+      ...rest of proof...);;
+}
+
+\USES
+Keeping proof structures linear, as in the above example, or convenient 
+algebraic combinations in complicated tactic structures.
+
+\SEEALSO
+NO_TAC, REPEAT, THENL.
+
+\ENDDOC

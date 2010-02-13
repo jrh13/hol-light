@@ -1,0 +1,44 @@
+\DOC DEDUCT_ANTISYM_RULE
+
+\TYPE {DEDUCT_ANTISYM_RULE : thm -> thm -> thm}
+
+\SYNOPSIS
+Deduces logical equivalence from deduction in both directions.
+
+\DESCRIBE
+When applied to two theorems, this rule deduces logical equivalence between
+their conclusions with a modified assumption list:
+{
+        A |- p       B |- q
+  ----------------------------------
+   (A - {{q}}) u (B - {{p}}) |- p <=> q
+}
+The special case when {A = {{q}}} and {B = {{p}}} is perhaps the easiest to
+understand:
+{
+
+        {{q}} |- p        {{p}} |- q
+       --------------------------
+              |- p <=> q
+}
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # let th1 = SYM(ASSUME `x:num = y`)
+    and th2 = SYM(ASSUME `y:num = x`);;
+  val th1 : thm = x = y |- y = x
+  val th2 : thm = y = x |- x = y
+  # DEDUCT_ANTISYM_RULE th1 th2;;
+  val it : thm = |- y = x <=> x = y
+}
+
+\COMMENTS
+This is one of HOL Light's 10 primitive inference rules.
+
+\SEEALSO
+IMP_ANTISYM_RULE, PROVE_HYP.
+
+\ENDDOC

@@ -1,0 +1,27 @@
+\DOC index
+
+\TYPE {index : 'a -> 'a list -> int}
+
+\SYNOPSIS
+Returns position of given element in list.
+
+\DESCRIBE
+The call {index x l} where l is a list returns the position number of the first 
+instance of x in the list, failing if there is none. The indices start at zero, 
+corresponding to {el}.
+
+\EXAMPLE
+{
+  # index "j" (explode "abcdefghijklmnopqrstuvwxyz");;
+  val it : int = 9
+}
+This is a sort of inverse to the indexing into a string by {el}:
+{
+  # el 9 (explode "abcdefghijklmnopqrstuvwxyz");;
+  val it : string = "j"
+}
+
+\SEEALSO
+el, find.
+
+\ENDDOC

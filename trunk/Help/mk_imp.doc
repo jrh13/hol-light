@@ -1,0 +1,23 @@
+\DOC mk_imp
+
+\TYPE {mk_imp : term * term -> term}
+
+\SYNOPSIS
+Constructs an implication.
+
+\DESCRIBE
+{mk_imp(`t1`,`t2`)} returns {`t1 ==> t2`}.
+
+\FAILURE
+Fails with {mk_imp} if either {t1} or {t2} are not of type {`:bool`}.
+
+\EXAMPLE
+{
+  # mk_imp(`p /\ q`,`r:bool`);;
+  val it : term = `p /\ q ==> r`
+}
+
+\SEEALSO
+dest_imp, is_imp, list_mk_imp.
+
+\ENDDOC

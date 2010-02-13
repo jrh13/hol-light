@@ -1,0 +1,51 @@
+\DOC new_basic_definition
+
+\TYPE {new_basic_definition : term -> thm}
+
+\SYNOPSIS
+Makes a simple new definition of the form {c = t}.
+
+\DESCRIBE
+If {t} is a closed term and {c} a variable whose name has not been used as a
+constant, then {new_basic_definition `c = t`} will define a new constant {c}
+and return the theorem {|- c = t} for that new constant (not the variable in
+the given term). There is an additional restriction that all type variables
+involved in {t} must occur in the constant's type.
+
+\FAILURE
+Fails if {c} is already a constant.
+
+\EXAMPLE
+Here is a simple example
+{
+  # let googolplex = new_basic_definition
+     `googolplex = 10 EXP (10 EXP 100)`;;
+  val googolplex : thm = |- googolplex = 10 EXP (10 EXP 100)
+}
+\noindent and of course we can equally well use logical equivalence:
+{
+  # let true_def = new_basic_definition `true <=> T`;;
+  val true_def : thm = |- true <=> T
+}
+\noindent The following example helps to explain why the restriction on type
+variables is present:
+{
+  # new_basic_definition `trivial <=> !x y:A. x = y`;;
+  Exception:
+  Failure "new_definition: Type variables not reflected in constant".
+}
+If we had been allowed to get back a definitional theorem, we could separately
+type-instantiate it to the 1-element type {1} and the 2-element type {bool}. In
+one case the RHS is true, and in the other it is false, yet both are asserted
+equal to the constant {trivial}.
+
+\COMMENTS
+There are simpler or more convenient ways of making definitions, such as
+{define} and {new_definition}, but this is the primitive principle underlying
+them all.
+
+\SEEALSO
+define, new_definition, new_inductive_definition, new_recursive_definition,
+new_specification.
+
+\ENDDOC

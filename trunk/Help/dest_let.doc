@@ -1,0 +1,25 @@
+\DOC dest_let
+
+\TYPE {dest_let : term -> (term * term) list * term}
+
+\SYNOPSIS
+Breaks apart a let-expression.
+
+\DESCRIBE
+{dest_let} is a term destructor for general let-expressions:
+{dest_let `let x1 = e1 and ... and xn = en in E`} returns a pair
+of the list {[`x1`,`e1`; ... ; `xn`,`en`]} and {`E`}.
+
+\FAILURE
+Fails with {dest_let} if term is not a {let}-expression.
+
+\EXAMPLE
+{
+  # dest_let `let m = 256 and n = 65536 in (x MOD m + y MOD m) MOD n`;;
+  val it : (term * term) list * term =
+    ([(`m`, `256`); (`n`, `65536`)], `(x MOD m + y MOD m) MOD n`)
+}
+\SEEALSO
+mk_let, is_let.
+
+\ENDDOC

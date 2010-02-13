@@ -1,0 +1,30 @@
+\DOC num_CONV
+
+\TYPE {num_CONV : term -> thm}
+
+\SYNOPSIS
+Provides definitional axiom for a nonzero numeral.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+{num_CONV} is an axiom-scheme from which one may obtain a defining equation for
+any numeral not equal to {0} (i.e. {1}, {2}, {3},...).  If
+{`n`} is such a constant, then {num_CONV `n`} returns the theorem:
+{
+   |- n = SUC m
+}
+\noindent where {m} is the numeral that denotes the predecessor of the
+number denoted by {n}.
+
+\FAILURE
+{num_CONV tm} fails if {tm} is {`0`} or if not {tm} is not a numeral.
+
+\EXAMPLE
+{
+  # num_CONV `3`;;
+  val it : thm = |- 3 = SUC 2
+}
+
+\ENDDOC

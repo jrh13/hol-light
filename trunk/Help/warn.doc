@@ -1,0 +1,28 @@
+\DOC warn
+
+\TYPE {warn : bool -> string -> unit}
+
+\SYNOPSIS
+Prints out a warning string
+
+\DESCRIBE
+When applied to a boolean value {b} and a string {s}, the call {warn b s}
+prints out ``{Warning: s}'' and a following newline to the terminal if {b} is 
+true and otherwise does nothing.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # let n = 7;;
+  val n : int = 7
+  # warn (n <> 0) "Nonzero value";;
+  Warning: Nonzero value
+  val it : unit = ()
+}
+
+\SEEALSO
+remark, report.
+
+\ENDDOC

@@ -1,0 +1,40 @@
+\DOC subst
+
+\TYPE {subst : (term * term) list -> term -> term}
+
+\SYNOPSIS
+Substitute terms for other terms inside a term.
+
+\DESCRIBE
+The call {subst [t1',t1; ...; tn',tn] t} systmatically replaces free instances
+of each term {ti} inside {t} with the corresponding {ti'} from the
+instantiation list. (A subterm is considered free if none of its free variables 
+are bound by its context.) Bound variables will be renamed if necessary to
+avoid capture.
+
+\FAILURE
+Fails if any of the pairs {ti',ti} in the instantiation list has {ti} and {ti'}
+with different types. Multiple instances of the same {ti} in the list are not
+trapped, but only the first one will be used consistently.
+
+\EXAMPLE
+Here is a relatively simple example
+{
+  # subst [`x + 1`,`1 + 2`] `(1 + 2) + 1 + 2 + 3`;;
+  val it : term = `(x + 1) + 1 + 2 + 3`
+}
+\noindent and here is a more complex instance where renaming of bound variables
+is needed:
+{
+  # subst [`x:num`,`1`] `!x. x > 0 <=> x >= 1`;;
+  val it : term = `!x'. x' > 0 <=> x' >= x`
+}
+
+\COMMENTS
+This is the most general term substitution function, but if all the {ti} are 
+variables, the {vsubst} function is more efficient.
+
+\SEEALSO
+inst, vsubst.
+
+\ENDDOC

@@ -1,0 +1,27 @@
+\DOC is_intconst
+
+\TYPE {is_intconst : term -> bool}
+
+\SYNOPSIS
+Tests if a term is an integer literal of type {:int}.
+
+\DESCRIBE
+The call {is_intconst t} tests whether the term {t} is a canonical integer
+literal of type {:int}, i.e. either `{&n}' for a numeral {n} or `{-- &n}' for
+a nonzero numeral {n}. If so it returns {true}, otherwise {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_intconst `-- &3 :int`;;
+  val it : bool = true
+  # is_intconst `-- &0 :int`;;
+  val it : bool = false
+}
+
+\SEEALSO
+dest_intconst, is_realintconst, mk_intconst.
+
+\ENDDOC

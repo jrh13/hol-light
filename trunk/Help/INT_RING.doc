@@ -1,0 +1,75 @@
+\DOC INT_RING
+
+\TYPE {INT_RING : term -> thm}
+
+\SYNOPSIS
+Ring decision procedure instantiated to integers.
+
+\DESCRIBE
+The rule {INT_RING} should be applied to a formula that, after suitable
+normalization, can be considered a universally quantified Boolean combination
+of equations and inequations between terms of type {:int}. If that formula
+holds in all integral domains, {INT_RING} will prove it. Any ``alien'' atomic
+formulas that are not integer equations will not contribute to the proof but
+will not in themselves cause an error. The function is a particular
+instantiation of {RING}, which is a more generic procedure for ring and
+semiring structures.
+
+\FAILURE
+Fails if the formula is unprovable by the methods employed. This does not
+necessarily mean that it is not valid for {:int}, but rather that it is not
+valid on all integral domains (see below).
+
+\EXAMPLE
+Here is a nice identity taken from one of Ramanujan's notebooks:
+{
+  # INT_RING 
+     `!a b c:int.
+       a + b + c = &0
+       ==> &2 * (a * b + a * c + b * c) pow 2 = 
+             a pow 4 + b pow 4 + c pow 4 /\
+           &2 * (a * b + a * c + b * c) pow 4 =
+             (a * (b - c)) pow 4 + (b * (a - c)) pow 4 + (c * (a - b)) pow 4`;;
+  ...
+  val it : thm =
+    |- !a b c.
+           a + b + c = &0
+           ==> &2 * (a * b + a * c + b * c) pow 2 = a pow 4 + b pow 4 + c pow 4 /\
+               &2 * (a * b + a * c + b * c) pow 4 =
+               (a * (b - c)) pow 4 + (b * (a - c)) pow 4 + (c * (a - b)) pow 4
+}
+The reasoning {INT_RING} is capable of includes, of course, the degenerate case 
+of simple algebraic identity, e.g. Brahmagupta's identity:
+{
+  # INT_RING `(a pow 2 + b pow 2) * (c pow 2 + d pow 2) =
+              (a * c - b * d) pow 2 + (a * d + b * c) pow 2`;;
+}
+\noindent or the more complicated 4-squares variant:
+{
+  # INT_RING
+    `(x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2) *
+     (y1 pow 2 + y2 pow 2 + y3 pow 2 + y4 pow 2) =
+     (x1 * y1 - x2 * y2 - x3 * y3 - x4 * y4) pow 2 +
+     (x1 * y2 + x2 * y1 + x3 * y4 - x4 * y3) pow 2 +
+     (x1 * y3 - x2 * y4 + x3 * y1 + x4 * y2) pow 2 +
+     (x1 * y4 + x2 * y3 - x3 * y2 + x4 * y1) pow 2`;;
+  ...
+}
+Note that formulas depending on specific features of the integers are not
+always provable by this generic ring procedure. For example we cannot prove:
+{
+  # INT_RING `x pow 2 = &2 ==> F`;;
+  1 basis elements and 0 critical pairs
+  Exception: Failure "find".
+}
+Although it is possible to deal with special cases like this, there can be no
+general algorithm for testing such properties over the integers: the set of
+true universally quantified equations over the integers with addition and
+multiplication is not recursively enumerable. (This follows from Matiyasevich's
+results on diophantine sets leading to the undecidability of Hilbert's 10th
+problem.)
+
+\SEEALSO
+INT_ARITH, INT_ARITH_TAC, int_ideal_cofactors, NUM_RING, REAL_RING, REAL_FIELD.
+
+\ENDDOC

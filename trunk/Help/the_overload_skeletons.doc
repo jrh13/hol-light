@@ -1,0 +1,39 @@
+\DOC the_overload_skeletons
+
+\TYPE {the_overload_skeletons : (string * hol_type) list ref}
+
+\SYNOPSIS
+List of overload skeletons for all overloadable identifiers.
+
+\DESCRIBE
+HOL Light allows the same identifier to denote several different underlying
+constants, with the choice being determined by types and/or an order of
+priority (see {prioritize_overload}). The reference variable 
+{the_overload_skeletons} contains a list of all the overloadable symbols (you 
+can add more using {make_overloadable}) and their type skeletons. All constants 
+to which an identifier is overloaded must have a type that is an instance of 
+this skeleton, although you can make it a type variable in which case any type 
+would be allowed.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+In the initial state of HOL Light:
+{
+# !the_overload_skeletons;;
+val it : (string * hol_type) list =
+  [("gcd", `:A#A->A`); ("coprime", `:A#A->bool`); ("mod", `:A->A->A->bool`);
+   ("divides", `:A->A->bool`); ("&", `:num->A`); ("min", `:A->A->A`);
+   ("max", `:A->A->A`); ("abs", `:A->A`); ("inv", `:A->A`);
+   ("pow", `:A->num->A`); ("--", `:A->A`); (">=", `:A->A->bool`);
+   (">", `:A->A->bool`); ("<=", `:A->A->bool`); ("<", `:A->A->bool`);
+   ("/", `:A->A->A`); ("*", `:A->A->A`); ("-", `:A->A->A`);
+   ("+", `:A->A->A`)]
+}
+
+\SEEALSO
+make_overloadable, overload_interface, override_interface, prioritize_overload, 
+reduce_interface, remove_interface, the_interface.
+
+\ENDDOC

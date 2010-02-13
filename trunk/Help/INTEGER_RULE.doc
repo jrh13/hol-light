@@ -1,0 +1,61 @@
+\DOC INTEGER_RULE
+
+\TYPE {INTEGER_RULE : term -> thm}
+
+\SYNOPSIS
+Automatically prove elementary divisibility property over the integers.
+
+\DESCRIBE
+{INTEGER_RULE} is a partly heuristic rule that can often
+automatically prove elementary ``divisibility'' properties of the integers. The 
+precise subset that is dealt with is difficult to describe rigorously, but many 
+universally quantified combinations of {divides}, {coprime}, {gcd} and 
+congruences {(x == y) (mod n)} can be proved automatically, as well as some 
+existentially quantified goals. The examples below may give a feel for what can 
+be done.
+
+\FAILURE
+Fails if the goal is not accessible to the methods used.
+
+\EXAMPLE
+All sorts of elementary Boolean combinations of divisibility and congruence 
+properties can be solved, e.g.
+{
+  # INTEGER_RULE 
+     `!x y n:int. (x == y) (mod n) ==> (n divides x <=> n divides y)`;;
+  ...
+  val it : thm = |- !x y n. (x == y) (mod n) ==> (n divides x <=> n divides y)
+
+  # INTEGER_RULE 
+     `!a b d:int. d divides gcd(a,b) <=> d divides a /\ d divides b`;;
+  ...
+  val it : thm = 
+   |- !a b d. d divides gcd (a,b) <=> d divides a /\ d divides b
+}
+\noindent including some less obvious ones:
+{
+  # INTEGER_RULE
+     `!x y. coprime(x * y,x pow 2 + y pow 2) <=> coprime(x,y)`;;
+  ...
+  val it : thm = |- !x y. coprime (x * y,x pow 2 + y pow 2) <=> coprime (x,y)
+}
+\noindent A limited class of existential goals is solvable too, e.g. a classic
+sufficient condition for a linear congruence to have a solution: 
+{
+  # INTEGER_RULE `!a b n:int. coprime(a,n) ==> ?x. (a * x == b) (mod n)`;;
+  ...
+  val it : thm = |- !a b n. coprime (a,n) ==> (?x. (a * x == b) (mod n))
+}
+\noindent or the two-number Chinese Remainder Theorem:
+{
+  # INTEGER_RULE
+    `!a b u v:int. coprime(a,b) ==> ?x. (x == u) (mod a) /\ (x == v) (mod b)`;;
+  ...
+  val it : thm =
+  |- !a b u v. coprime (a,b) ==> (?x. (x == u) (mod a) /\ (x == v) (mod b))
+}
+
+\SEEALSO
+ARITH_RULE, INTEGER_TAC, INT_ARITH, INT_RING, NUMBER_RULE.
+
+\ENDDOC

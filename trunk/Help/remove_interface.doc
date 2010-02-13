@@ -1,0 +1,20 @@
+\DOC remove_interface
+
+\TYPE {remove_interface : string -> unit}
+
+\SYNOPSIS
+Remove all overload/interface mappings for an identifier.
+
+\DESCRIBE
+HOL Light allows an identifier to map to a specific constant (see
+{override_interface}) or be overloaded to several depending on type (see
+{overload_interface}). A call to {remove_interface "ident"} removes all such
+mappings for the identifier {ident}.
+
+\FAILURE
+Never fails, whether or not there were any interface mappings in effect.
+
+\SEEALSO
+overload_interface, override_interface, reduce_interface, the_interface.
+
+\ENDDOC

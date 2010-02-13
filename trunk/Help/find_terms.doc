@@ -1,0 +1,30 @@
+\DOC find_terms
+
+\TYPE {find_terms : (term -> bool) -> term -> term list}
+
+\SYNOPSIS
+Searches a term for all subterms that satisfy a predicate.
+
+\DESCRIBE
+A list of subterms of a given term that satisfy the predicate is returned.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+This is a simple example:
+{
+  # find_terms is_var `x + y + z`;;
+  val it : term list = [`z`; `y`; `x`]
+}
+\noindent while the following shows that the terms returned may overlap or
+contain each other: 
+{
+  # find_terms is_comb `x + y + z`;;
+  val it : term list = [`(+) y`; `y + z`; `(+) x`; `x + y + z`]
+}
+
+\SEEALSO
+find_term.
+
+\ENDDOC

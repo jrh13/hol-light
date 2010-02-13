@@ -1,0 +1,33 @@
+\DOC undefined
+
+\TYPE {undefined : ('a, 'b) func}
+
+\SYNOPSIS
+Completely undefined finite partial function.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type 
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. The value {undefined} is the `empty' finite partial function that is
+nowhere defined.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+{
+  # (undefined:(string,term)func);;
+  val it : (string, term) func = <func>
+  # apply it "anything";;
+  Exception: Failure "apply".
+}
+
+\USES
+Starting a function to be augmented pointwise.
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefine.
+
+\ENDDOC

@@ -1,0 +1,29 @@
+\DOC CONJUNCT2
+
+\TYPE {CONJUNCT2 : thm -> thm}
+
+\SYNOPSIS
+Extracts right conjunct of theorem.
+
+\KEYWORDS
+rule, conjunction.
+
+\DESCRIBE
+{
+    A |- t1 /\ t2
+   ---------------  CONJUNCT2
+       A |- t2
+}
+\FAILURE
+Fails unless the input theorem is a conjunction.
+
+\EXAMPLE
+{
+  # CONJUNCT2(ASSUME `p /\ q`);;
+  val it : thm = p /\ q |- q
+}
+
+\SEEALSO
+CONJ_PAIR, CONJUNCT1, CONJ, CONJUNCTS.
+
+\ENDDOC

@@ -1,0 +1,44 @@
+\DOC instantiate_casewise_recursion
+
+\TYPE {instantiate_casewise_recursion : term -> thm}
+
+\SYNOPSIS
+Instantiate the general scheme for a recursive function existence assertion.
+
+\DESCRIBE
+The function {instantiate_casewise_recursion} should be applied to an
+existentially quantified term {`?f. def_1[f] /\ ... /\ def_n[f]`},
+where each clause {def_i} is a universally quantified equation with an
+application of {f} to arguments on the left-hand side. The idea is that these
+clauses define the action of {f} on arguments of various kinds, for example on
+an empty list and nonempty list:
+{
+  ?f. (f [] = a) /\ (!h t. CONS h t = k[f,h,t])
+}
+\noindent or on even numbers and odd numbers:
+{
+  ?f. (!n. f(2 * n) = a[f,n]) /\ (!n. f(2 * n + 1) = b[f,n])
+}
+The returned value is a theorem whose conclusion matches the input term, with
+an assumption sufficient for the existence assertion. This is not normally in a
+very convenient form for the user.
+
+\FAILURE
+Fails only if the definition is malformed. However it is possible that for an
+inadmissible definition the assumption of the theorem may not hold.
+
+\USES
+This is seldom a convenient function for users. Normally, use
+{prove_general_recursive_function_exists} to prove something like this while
+attempting to discharge the side-conditions automatically, or {define} to
+actually make a definition. In situations where the automatic discharge of the
+side-conditions fails, one may prefer instead
+{pure_prove_recursive_function_exists}. The even more minimal
+{instantiate_casewise_recursion} is for the rare cases where one wants to force
+no processing at all of the side-conditions to be undertaken.
+
+\SEEALSO
+define, prove_general_recursive_function_exists,
+pure_prove_recursive_function_exists.
+
+\ENDDOC

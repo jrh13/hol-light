@@ -1,0 +1,38 @@
+\DOC type_match
+
+\TYPE {type_match : hol_type -> hol_type -> (hol_type * hol_type) list -> (hol_type * hol_type) list}
+
+\SYNOPSIS
+Computes a type instantiation to match one type to another.
+
+\DESCRIBE
+The call {type_match vty cty []} will if possible find an instantiation of the 
+type variables in {vty} to make it the same as {cty}, and will fail if this is 
+not possible. The instantiation is returned in a list of term-variable pairs as 
+expected by type instantiation operations like {inst} and {INST_TYPE}. More 
+generally, {type_match vty cty env} will attempt to find such a match assuming 
+that the instantiations already in the list {env} are needed (this is helpful, 
+for example, in matching multiple pairs of types in parallel).
+
+\FAILURE
+Fails if there is no match under the chosen constraints.
+
+\EXAMPLE
+Here is a basic example with an empty last argument:
+{
+  # type_match `:A->B->bool` `:num->num->bool` [];;
+  val it : (hol_type * hol_type) list = [(`:num`, `:A`); (`:num`, `:B`)]
+}
+\noindent and here is an illustration of how the extra argument can be used to 
+perform parallel matches.
+{
+  # itlist2 type_match
+      [`:A->A->bool`; `:B->B->bool`] [`:num->num->bool`; `:bool->bool->bool`]
+      [];;
+  val it : (hol_type * hol_type) list = [(`:num`, `:A`); (`:bool`, `:B`)]
+}
+
+\SEEALSO
+inst, INST_TYPE, mk_mconst, term_match.
+
+\ENDDOC

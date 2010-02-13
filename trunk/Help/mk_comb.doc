@@ -1,0 +1,28 @@
+\DOC mk_comb
+
+\TYPE {mk_comb : term * term -> term}
+
+\SYNOPSIS
+Constructs a combination.
+
+\DESCRIBE
+Given two terms {f} and {x}, the call {mk_comb(f,x)} returns the combination or 
+application {f x}. It is necessary that {f} has a function type with domain
+type the same as {x}'s type.
+
+\FAILURE
+Fails if the types of the terms are not compatible as specified above.
+
+\EXAMPLE
+{
+  # mk_comb(`SUC`,`0`);;
+  val it : term = `SUC 0`
+
+  #  mk_comb(`SUC`,`T`);;
+  Exception: Failure "mk_comb: types do not agree".
+}
+
+\SEEALSO
+dest_comb, is_comb, list_mk_comb, list_mk_icomb, mk_icomb.
+ 
+\ENDDOC

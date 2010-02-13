@@ -1,0 +1,29 @@
+\DOC rev_assoc
+
+\TYPE {rev_assoc : 'a -> ('b * 'a) list -> 'b}
+
+\SYNOPSIS
+Searches a list of pairs for a pair whose second component equals a specified
+value.
+
+\KEYWORDS
+list.
+
+\DESCRIBE
+{rev_assoc y [(x1,y1);...;(xn,yn)]} returns the first {xi} in the list
+such that {yi} equals {y}.
+
+\FAILURE
+Fails if no matching pair is found. This will always be the case if the list
+is empty.
+
+\EXAMPLE
+{
+  # rev_assoc 2 [(1,4);(3,2);(2,5);(2,6)];;         
+  val it : int = 3
+}
+
+\SEEALSO
+assoc, find, mem, tryfind, exists, forall.
+
+\ENDDOC

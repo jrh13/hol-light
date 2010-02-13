@@ -1,0 +1,48 @@
+\DOC NUM_DIV_CONV
+
+\TYPE {NUM_DIV_CONV : term -> thm}
+
+\SYNOPSIS
+Proves what the truncated quotient of two natural number numerals is.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} and {m} are numerals (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_DIV_CONV `n DIV m`} returns the theorem:
+{
+   |- n DIV m = s
+}
+\noindent where {s} is the numeral that denotes the truncated quotient of the
+numbers denoted by {n} and {m}.
+
+\FAILURE
+{NUM_DIV_CONV tm} fails if {tm} is not of the form  {`n DIV m`}, where {n} and
+{m} are numerals, or if the second numeral {m} is zero.
+
+\EXAMPLE
+{
+  # NUM_DIV_CONV `99 DIV 9`;;
+  val it : thm = |- 99 DIV 9 = 11
+
+  # NUM_DIV_CONV `334 DIV 3`;;
+  val it : thm = |- 334 DIV 3 = 111
+
+  # NUM_DIV_CONV `11 DIV 0`;;
+  Exception: Failure "NUM_DIV_CONV".
+}
+
+\COMMENTS
+For definiteness, quotients with zero denominator are in fact designed to be
+zero. However, it is perhaps bad style to rely on this fact, so the conversion
+just fails in this case.
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIVMOD_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV,
+NUM_MAX_CONV, NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV,
+NUM_PRE_CONV, NUM_REDUCE_CONV, NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV,
+NUM_SUC_CONV.
+
+\ENDDOC

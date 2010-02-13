@@ -1,0 +1,30 @@
+\DOC list_mk_conj
+
+\TYPE {list_mk_conj : term list -> term}
+
+\SYNOPSIS
+Constructs the conjunction of a list of terms.
+
+\DESCRIBE
+{list_mk_conj([`t1`;...;`tn`])} returns {`t1 /\ ... /\ tn`}.
+
+\FAILURE
+Fails with {list_mk_conj} if the list is empty or if the list has more than
+one element, one or more of which are not of type {`:bool`}.
+
+\EXAMPLE
+{
+  # list_mk_conj [`T`;`F`;`T`];;
+  val it : term = `T /\ F /\ T`
+
+  # list_mk_conj [`T`;`1`;`F`];;
+  Exception: Failure "mk_binary".
+
+  # list_mk_conj [`1`];;
+  val it : term = `1`
+}
+
+\SEEALSO
+conjuncts, mk_conj.
+
+\ENDDOC

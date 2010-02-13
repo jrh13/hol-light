@@ -1,0 +1,31 @@
+\DOC dom
+
+\TYPE {dom : ('a, 'b) func -> 'a list}
+
+\SYNOPSIS
+Returns domain of a finite partial function.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type 
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. The {dom} operation returns the domain of such a function, i.e. the set of 
+points on which it is defined.
+
+\FAILURE
+Attempts to sort the resulting list, so may fail if the domain type does
+not admit comparisons.
+
+\EXAMPLE
+{
+  # dom (1 |=> "1");;              
+  val it : int list = [1]
+  # dom(itlist I [2|->4; 3|->6] undefined);;
+  val it : int list = [2; 3]
+}
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, foldl, foldr, 
+graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

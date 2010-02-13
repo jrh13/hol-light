@@ -1,0 +1,21 @@
+\DOC TOP_DEPTH_SQCONV
+
+\TYPE {TOP_DEPTH_SQCONV : strategy}
+
+\SYNOPSIS
+Applies simplification top-down to all subterms, retraversing changed ones.
+
+\DESCRIBE
+HOL Light's simplification functions (e.g. {SIMP_TAC}) have their traversal
+algorithm controlled by a ``strategy''. {TOP_DEPTH_SQCONV} is a strategy
+corresponding to {TOP_DEPTH_CONV} for ordinary conversions: simplification is
+applied top-down to all subterms, retraversing changed ones.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+DEPTH_SQCONV, ONCE_DEPTH_SQCONV, REDEPTH_SQCONV, TOP_DEPTH_CONV,
+TOP_SWEEP_SQCONV.
+
+\ENDDOC

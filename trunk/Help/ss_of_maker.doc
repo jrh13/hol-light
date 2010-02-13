@@ -1,0 +1,26 @@
+\DOC ss_of_maker
+
+\TYPE {ss_of_maker : (thm -> thm list -> thm list) -> simpset -> simpset}
+
+\SYNOPSIS
+Change the rewrite maker in a simpset.
+
+\DESCRIBE
+In their maximal generality, simplification operations in HOL Light (as invoked 
+by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and 
+unconditional rewrite rules, conversions and provers for conditions, as well as 
+a determination of how to use the prover on the conditions and how to process 
+theorems into rewrites. A call {ss_of_maker maker ss} changes the ``rewrite 
+maker'' in {ss} to yield a new simpset; use of this simpset with additional 
+theorems will process those theorems using the new rewrite maker. The default 
+rewrite maker is {mk_rewrites} with an appropriate flag, and it is unusual to 
+want to change it.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+mk_rewrites, SIMP_CONV, ss_of_congs, ss_of_conv, ss_of_prover, ss_of_provers,
+ss_of_thms.
+
+\ENDDOC

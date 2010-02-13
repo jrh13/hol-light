@@ -1,0 +1,23 @@
+\DOC equals_goal
+
+\TYPE {equals_goal : goal -> goal -> bool}
+
+\SYNOPSIS
+Equality test on goals.
+
+\DESCRIBE
+The relation {equals_goal} tests if two goals have exactly the same structure, 
+with the same assumptions, conclusions and even labels, with the assumptions in 
+the same order. The only respect in which this differs from a pure equality 
+tests is that the various term components are tested modulo alpha-conversion.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+Probably not generally useful. Used inside {CHANGED_TAC}.
+
+\SEEALSO
+CHANGED_TAC, equals_thm.
+
+\ENDDOC

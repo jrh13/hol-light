@@ -1,0 +1,29 @@
+\DOC is_hidden
+
+\TYPE {is_hidden : string -> bool}
+
+\SYNOPSIS
+Determines whether a constant is hidden.
+
+\DESCRIBE
+This predicate returns {true} if the named {ML} constant has been hidden by
+the function {hide_constant}; it returns {false} if the constant is not hidden.
+Hiding a constant forces the quotation parser to treat the constant as
+ a variable (lexical rules permitting).
+
+\EXAMPLE
+{
+  # is_hidden "SUC";;
+  val it : bool = false
+  
+  # hide_constant "SUC";;
+  val it : unit = ()
+  
+  # is_hidden "SUC";;
+  val it : bool = true
+}
+
+\SEEALSO
+hide_constant, unhide_constant
+
+\ENDDOC

@@ -1,0 +1,26 @@
+\DOC pow10
+
+\TYPE {pow10 : int -> num}
+
+\SYNOPSIS
+Returns power of 10 as umlimited-size integer.
+
+\DESCRIBE
+When applied to an integer {n} (type {int}), {pow10} returns $10^n$ as an
+unlimited-precision integer (type {num}). The argument may be negative.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # pow10(-1);; 
+  val it : num = 1/10
+  # pow10(16);;
+  val it : num = 10000000000000000
+}
+
+\SEEALSO
+pow2.
+
+\ENDDOC

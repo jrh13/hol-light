@@ -1,0 +1,32 @@
+\DOC listof
+
+\TYPE {listof : ('a -> 'b * 'c) -> ('c -> 'd * 'a) -> string -> 'a -> 'b list * 'c}
+
+\SYNOPSIS
+Parses a separated list of items.
+
+\DESCRIBE
+If {p} is a parser for ``items'' of some kind, {s} is a parser for a
+``separator'', and {e} is an error message, then {listof p s e} parses a
+nonempty list of successive items using {p}, where adjacent items are separated
+by something parseable by {s}. If a separator is parsed successfully but there
+is no following item that can be parsed by {s}, an exception {Failure e} is
+raised. (So note that the separator must not terminate the final element.)
+
+\FAILURE
+The call {listof p s e} itself never fails, though the resulting parser may.
+
+\COMMENTS
+This is one of a suite of combinators for manipulating ``parsers''. A parser is
+simply a function whose OCaml type is some instance of
+{:('a)list -> 'b * ('a)list}. The function should take a list of objects of
+type {:'a} (e.g. characters or tokens), parse as much of it as possible from
+left to right, and return a pair consisting of the object derived from parsing
+(e.g. a term or a special syntax tree) and the list of elements that were not
+processed.
+
+\SEEALSO
+++, ||, >>, a, atleast, elistof, finished, fix, leftbin, many, nothing,
+possibly, rightbin, some.
+
+\ENDDOC

@@ -1,0 +1,24 @@
+\DOC ss_of_provers
+
+\TYPE {ss_of_provers : prover list -> simpset -> simpset}
+
+\SYNOPSIS
+Add new provers to a simpset.
+
+\DESCRIBE
+In their maximal generality, simplification operations in HOL Light (as invoked 
+by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and 
+unconditional rewrite rules, conversions and provers for conditions, as well as 
+a determination of how to use the prover on the conditions and how to process 
+theorems into rewrites. A call {ss_of_provers prs ss} adds the provers in {prs} 
+to the simpset {ss} to yield a new simpset. See {mk_prover} for more 
+explanation of how to create something of type {prover}.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+mk_prover, mk_rewrites, SIMP_CONV, ss_of_congs, ss_of_conv, ss_of_maker, 
+ss_of_prover, ss_of_thms.
+
+\ENDDOC

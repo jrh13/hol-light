@@ -1,0 +1,25 @@
+\DOC string_of_type
+
+\TYPE {string_of_type : hol_type -> string}
+
+\SYNOPSIS
+Converts a HOL type to a string representation.
+
+\DESCRIBE
+The call {string_of_type ty} produces a textual representation of the type {ty} 
+as a string, similar to what is printed automatically at the toplevel, though 
+without the surrounding quotes and colon.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # string_of_type bool_ty;;
+  val it : string = "bool"
+}
+
+\SEEALSO
+string_of_term, string_of_thm.
+
+\ENDDOC

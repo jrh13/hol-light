@@ -1,0 +1,18 @@
+\DOC type_abbrevs
+
+\TYPE {type_abbrevs : unit -> (string * hol_type) list}
+
+\SYNOPSIS
+Lists all current type abbreviations.
+
+\DESCRIBE
+The call {type_abbrevs()} returns a list of all current type abbreviations, 
+which are applied when parsing types but have no logical significance.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+new_type_abbrev, remove_type_abbrev.
+
+\ENDDOC

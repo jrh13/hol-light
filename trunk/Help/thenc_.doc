@@ -1,0 +1,11 @@
+\DOC thenc_
+
+\TYPE {thenc_ : conv -> conv -> conv}
+
+\SYNOPSIS
+Non-infix version of {THENC}.
+
+\SEEALSO
+THENC.
+
+\ENDDOC

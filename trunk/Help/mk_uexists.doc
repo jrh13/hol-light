@@ -1,0 +1,23 @@
+\DOC mk_uexists
+
+\TYPE {mk_uexists : term * term -> term}
+
+\SYNOPSIS
+Term constructor for unique existence.
+
+\DESCRIBE
+{mk_uexists(`v`,`t`)} returns {`?!v. t`}.
+
+\FAILURE
+Fails with if first term is not a variable or if {t} is not of type {`:bool`}.
+
+\EXAMPLE
+{
+  # mk_uexists(`n:num`,`prime(n) /\ EVEN(n)`);;
+  val it : term = `?!n. prime n /\ EVEN n`
+}
+
+\SEEALSO
+dest_uexists, is_uexists, mk_exists.
+
+\ENDDOC

@@ -1,0 +1,11 @@
+\DOC orelsec_
+
+\TYPE {orelsec_ : conv -> conv -> conv}
+
+\SYNOPSIS
+Non-infix version of {ORELSEC}.
+
+\SEEALSO
+ORELSEC.
+
+\ENDDOC

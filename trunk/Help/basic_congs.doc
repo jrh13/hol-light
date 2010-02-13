@@ -1,0 +1,41 @@
+\DOC basic_congs
+
+\TYPE {basic_congs : unit -> thm list}
+
+\SYNOPSIS
+Lists the congruence rules used by the simplifier.
+
+\DESCRIBE
+The HOL Light simplifier (as invoked by {SIMP_TAC} etc.) uses congruence rules
+to determine how it uses context when descending through a term. These are
+essentially theorems showing how to decompose one equality to a series of other
+inequalities in context. A call to {basic_congs()} returns those congruences
+that are built into the system.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Here is the effect in HOL Light's initial state:
+{
+  # basic_congs();;
+  val it : thm list =
+    [|- (!x. x IN s ==> f x = g x) ==> sum s (\i. f i) = sum s g;
+     |- (!i. a <= i /\ i <= b ==> f i = g i)
+        ==> sum (a..b) (\i. f i) = sum (a..b) g;
+     |- (!x. p x ==> f x = g x) ==> sum {{y | p y}} (\i. f i) = sum {{y | p y}} g;
+     |- (!x. x IN s ==> f x = g x) ==> nsum s (\i. f i) = nsum s g;
+     |- (!i. a <= i /\ i <= b ==> f i = g i)
+        ==> nsum (a..b) (\i. f i) = nsum (a..b) g;
+     |- (!x. p x ==> f x = g x) ==> nsum {{y | p y}} (\i. f i) = nsum {{y | p y}} g;
+     |- (g <=> g')
+        ==> (g' ==> t = t')
+        ==> (~g' ==> e = e')
+        ==> (if g then t else e) = (if g' then t' else e');
+     |- (p <=> p') ==> (p' ==> (q <=> q')) ==> (p ==> q <=> p' ==> q')]
+}
+
+\SEEALSO
+extend_basic_congs, set_basic_congs, SIMP_CONV, SIMP_RULE, SIMP_TAC.
+
+\ENDDOC

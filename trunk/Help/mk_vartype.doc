@@ -1,0 +1,34 @@
+\DOC mk_vartype
+
+\TYPE {mk_vartype : string -> hol_type}
+
+\SYNOPSIS
+Constructs a type variable of the given name.
+
+\DESCRIBE
+{mk_vartype "A")} returns a type variable {`:A`}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # mk_vartype "Test";;
+  val it : hol_type = `:Test`
+
+  # mk_vartype "bool";;
+  val it : hol_type = `:bool`
+}
+Note that the second type is {{\em not}} the inbuilt type of Booleans, even
+though it prints like it.
+
+\COMMENTS
+{mk_vartype} can be used to create type variables with names which will not
+parse, i.e. they cannot be entered by quotation. Using such type variables is
+probably bad practice. HOL Light convention is to start type variables with an
+uppercase letter.
+
+\SEEALSO
+dest_vartype, is_vartype, mk_type.
+
+\ENDDOC

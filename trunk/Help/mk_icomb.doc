@@ -1,0 +1,31 @@
+\DOC mk_icomb
+
+\TYPE {mk_icomb : term * term -> term}
+
+\SYNOPSIS
+Makes a combination, instantiating types in rator if necessary.
+
+\DESCRIBE
+The call {mk_icomb(f,x)} makes the combination {f x}, just as with {mk_comb}, 
+but if necessary to ensure the types are compatible it will instantiate type 
+variables in {f} first.
+
+\FAILURE
+Fails if the rator type is impossible to instantiate comparibly.
+
+\EXAMPLE
+The analogous call to the following using plain {mk_const} would fail:
+{
+  # mk_icomb(`(!)`,`\x. x = 1`);;
+  Warning: inventing type variables
+  val it : term = `!x. x = 1`
+}
+
+\USES
+A handy way of making combinations involving polymorphic constants, without 
+needing a manual instantiation of the generic type.
+
+\SEEALSO
+list_mk_icomb, mk_comb, type_match.
+
+\ENDDOC

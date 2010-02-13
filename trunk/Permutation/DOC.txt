@@ -1,0 +1,121 @@
+                  THEORY OF PERMUTATIONS ON LISTS
+            (c) Marco Maggesi <maggesi@math.unifi.it>, 2005-2007
+           Distributed with HOL Light under same license terms
+
+
+The present library provides a simple theory about permutations on lists.
+Some theorems and definition provided by this contribution are listed below.
+
+
+Changes (since version distributed with HOL-Light 2.20)
+=======================================================
+
+- An implementation of the Quick Sort algorithm (file qsort.ml).
+
+- Some new useful theorems (e.g., LIST_UNIQ_COUNT PERMUTED_COUNT PERMUTATION_COUNT).
+
+- Several proofs have been rewritten in a clearer/faster.
+
+- Removed (but kept in legacy.ml for now) several theorems falling in
+  one or more of the following categories:
+    * boring trivialities,
+    * intermediate lemmas used only to prove stronger results,
+    * things that were supposed to be useful but have not been actually used,
+    * other unfortunate/unloved/misspelled stuff.
+
+
+Some theorems proved in this library
+====================================
+
+
+Additional definitions about lists
+----------------------------------
+
+DELETE1               |- (!x. DELETE1 x [] = []) /\
+		         (!x h t. DELETE1 x (h :: t) =
+			          (if x = h then t else h :: DELETE1 x t))
+COUNT                 |- (!x. COUNT x [] = 0) /\
+ 		         (!x h t. COUNT x (h :: t) =
+			          (if x = h then SUC (COUNT x t) else COUNT x t))
+LIST_UNIQ             |- LIST_UNIQ [] /\
+                         (!x. LIST_UNIQ [x]) /\
+ 			 (!x xs. LIST_UNIQ (x :: xs) <=>
+			         ~MEM x xs /\ LIST_UNIQ xs)
+
+
+Definition of permuted lists
+----------------------------
+
+let PERMUTED_RULES, PERMUTED_INDUCT, PERMUTED_CASES =
+  new_inductive_definition
+  `[] PERMUTED [] /\
+   (!h t1 t2. t1 PERMUTED t2 ==> h :: t1 PERMUTED h :: t2) /\
+   (!l1 l2 l3. l1 PERMUTED l2 /\ l2 PERMUTED l3 ==> l1 PERMUTED l3) /\
+   (!x y t. x :: y :: t PERMUTED y :: x :: t)`;;
+
+
+Some theorems about permuted lists
+----------------------------------
+
+PERMUTED_RFL            |- !l. l PERMUTED l
+PERMUTED_SYM            |- !xs l2. xs PERMUTED l2 <=> l2 PERMUTED xs
+PERMUTED_TRS            |- !xs l2 l3. xs PERMUTED l2 /\ l2 PERMUTED l3
+			              ==> xs PERMUTED l3
+PERMUTED_NIL_EQ_NIL     |- (!l. [] PERMUTED l <=> l = []) /\
+			   (!l. l PERMUTED [] <=> l = [])
+PERMUTED_MAP            |- !f l1 l2. l1 PERMUTED l2
+			             ==> MAP f l1 PERMUTED MAP f l2
+PERMUTED_LENGTH         |- !l1 l2. l1 PERMUTED l2 ==> LENGTH l1 = LENGTH l2
+PERMUTED_MEM            |- !a l1 l2. l1 PERMUTED l2 ==> (MEM a l1 <=> MEM a l2)
+PERMUTED_SWAP_HEAD      |- !a b l. a :: b :: l PERMUTED b :: a :: l
+PERMUTED_CONS_DELETE1   |- !a l. MEM a l ==> l PERMUTED a :: DELETE1 a l
+PERMUTED_DELETE1        |- (!h t l. h :: t PERMUTED l <=>
+			            MEM h l /\ t PERMUTED DELETE1 h l) /\
+                           (!h t l. l PERMUTED h :: t <=>
+			            MEM h l /\ DELETE1 h l PERMUTED t)
+PERMUTED_COUNT          |- !l1 l2. l1 PERMUTED l2 <=>
+			           (!x. COUNT x l1 = COUNT x l2)
+PERMUTED_TAIL           |- !h t1 t2. h :: t1 PERMUTED h :: t2 <=>
+			             t1 PERMUTED t2
+PERMUTED_LIST_UNIQ      |- !xs ys. xs PERMUTED ys
+			           ==> (LIST_UNIQ xs <=> LIST_UNIQ ys)
+PERMUTED_ALL            |- !P xs ys. xs PERMUTED ys ==> (ALL P xs <=> ALL P ys)
+
+
+Definition of permutation
+-------------------------
+
+REVPERM                 |- REVPERM 0 = [] /\ REVPERM (SUC n) = n :: REVPERM n
+PERMUTATION             |- !l. PERMUTATION l <=> REVPERM (LENGTH l) PERMUTED l
+
+
+Theorems about finite permutations
+----------------------------------
+
+PERMUTATION_NIL         |- PERMUTATION []
+PERMUTATION_LIST_UNIQ   |- !l. PERMUTATION l ==> LIST_UNIQ l
+PERMUTATION_MEM         |- !l. PERMUTATION l ==> (!i. MEM i l <=> i < LENGTH l)
+PERMUTATION_COUNT       |- !l. PERMUTATION l <=>
+		               (!x. COUNT x l = (if x<LENGTH l then 1 else 0))
+PERMUTATION_SET_OF_LIST |- !l. PERMUTATION l <=>
+			       set_of_list l = {n | n < LENGTH l}
+MEM_PERMUTATION         |- !l. (!n. n < LENGTH l ==> MEM n l) ==> PERMUTATION l
+PERMUTATION_UNIQ_LT     |- !l. PERMUTATION l <=>
+                               LIST_UNIQ l /\ (!n. MEM n l ==> n < LENGTH l)
+
+
+Quick sort
+----------
+
+QSORT                   |- (!le. QSORT le [] = []) /\
+                           (!le h t. QSORT le (h :: t) =
+			        APPEND (QSORT le (FILTER (\x. ~le h x) t))
+ 				       (h :: QSORT le (FILTER (\x. le h x) t)))
+COUNT_QSORT             |- !le x l. COUNT x (QSORT le l) = COUNT x l
+QSORT_PERMUTED          |- !le l. QSORT le l PERMUTED l
+ALL_QSORT               |- !P le l. ALL P (QSORT le l) <=> ALL P l
+LENGTH_QSORT            |- !le l. LENGTH (QSORT le l) = LENGTH l
+MEM_QSORT               |- !le l x. MEM x (QSORT le l) <=> MEM x l
+ORDERED_QSORT           |- !le l. (!x y. le x y \/ le y x) /\
+                                  (!x y z. le x y \/ le y z ==> le x z)
+ 				  ==> ORDERED le (QSORT le l)

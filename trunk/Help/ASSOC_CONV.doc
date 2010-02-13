@@ -1,0 +1,36 @@
+\DOC ASSOC_CONV
+
+\TYPE {ASSOC_CONV : thm -> term -> thm}
+
+\SYNOPSIS
+Right-associates a term with respect to an associative binary operator.
+
+\DESCRIBE
+The conversion {ASSOC_CONV} expects a theorem asserting that a certain binary 
+operator is associative, in the standard form (with optional universal 
+quantifiers):
+{
+  x op (y op z) = (x op y) op z
+}
+It is then applied to a term, and will right-associate any toplevel 
+combinations built up from the operator {op}. Note that if {op} is polymorphic, 
+the type instance of the theorem needs to be the same as in the term to which 
+it is applied.
+
+\FAILURE
+May fail if the theorem is malformed. On application to the term, it never
+fails, but returns a reflexive theorem when itis inapplicable.
+
+\EXAMPLE
+{
+  # ASSOC_CONV ADD_ASSOC `((1 + 2) + 3) + (4 + 5) + (6 + 7)`;;
+  val it : thm = |- ((1 + 2) + 3) + (4 + 5) + 6 + 7 = 1 + 2 + 3 + 4 + 5 + 6 + 7
+
+  # ASSOC_CONV CONJ_ASSOC `((p /\ q) /\ (r /\ s)) /\ t`;;
+  val it : thm = |- ((p /\ q) /\ r /\ s) /\ t <=> p /\ q /\ r /\ s /\ t
+}
+
+\SEEALSO
+AC, CNF_CONV, CONJ_ACI_RULE, DISJ_ACI_RULE, DNF_CONV.
+
+\ENDDOC

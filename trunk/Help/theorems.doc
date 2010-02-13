@@ -1,0 +1,35 @@
+\DOC theorems
+
+\TYPE {theorems : (string * thm) list ref}
+
+\SYNOPSIS
+Database of theorems for {search} tools.
+
+\DESCRIBE
+The reference variable {theorems} holds a list of name-theorem pairs that is
+used by {search} to find theorems according to term patterns or by name.
+Initially, this contains all theorems individually bound to OCaml identifiers
+in the main system. However, it can be updated by users, and there is a script
+in {update_database.ml} that will automatically update the database
+according to the current OCaml bindings.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+In the initial HOL Light state we see:
+{
+  # theorems;;
+  val it : (string * thm) list ref =
+    {contents =
+      [("ABSORPTION", |- !x s. x IN s <=> x INSERT s = s);
+       ("ABS_SIMP", |- !t1 t2. (\x. t1) t2 = t1);
+       ("ADD", |- (!n. 0 + n = n) /\ (!m n. SUC m + n = SUC (m + n)));
+       ("ADD1", |- !m. SUC m = m + 1); ("ADD_0", |- !m. m + 0 = m);
+    ...
+}
+
+\SEEALSO
+search.
+
+\ENDDOC

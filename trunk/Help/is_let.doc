@@ -1,0 +1,27 @@
+\DOC is_let
+
+\TYPE {is_let : term -> bool}
+
+\SYNOPSIS
+Tests a term to see if it is a {let}-expression.
+
+\DESCRIBE
+{is_let `let x1 = e1 and ... and xn = en in E`} returns {true}.
+If the term is not a {let}-expression of any kind, the result is {false}.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_let `let x = 1 in x + x`;;
+  val it : bool = true
+
+  # is_let `let x = 2 and y = 3 in y + x`;;
+  val it : bool = true
+}
+
+\SEEALSO
+mk_let, dest_let.
+
+\ENDDOC

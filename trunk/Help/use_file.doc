@@ -1,0 +1,18 @@
+\DOC use_file
+
+\TYPE {use_file : string -> unit}
+
+\SYNOPSIS
+Load a file, much like OCaml's {#use} directive.
+
+\DESCRIBE
+Essentially the same as OCaml's {#use} directive, but a regular OCaml function 
+and therefore easier to exploit programmatically.
+
+\FAILURE
+Only fails if the included file causes failure.
+
+\SEEALSO
+loads, loadt.
+
+\ENDDOC

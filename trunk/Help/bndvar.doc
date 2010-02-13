@@ -1,0 +1,23 @@
+\DOC bndvar
+
+\TYPE {bndvar : term -> term}
+
+\SYNOPSIS
+Returns the bound variable of an abstraction.
+
+\DESCRIBE
+{bndvar `\var. t`} returns {`var`}.
+
+\FAILURE
+Fails unless the term is an abstraction.
+
+\EXAMPLE
+{
+  # bndvar `\x. x + 1`;;
+  val it : term = `x`
+}
+
+\SEEALSO
+body, dest_abs.
+
+\ENDDOC

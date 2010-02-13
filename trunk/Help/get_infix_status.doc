@@ -1,0 +1,28 @@
+\DOC get_infix_status
+
+\TYPE {get_infix_status : string -> int * string}
+
+\SYNOPSIS
+Get the precedence and associativity of an infix operator.
+
+\DESCRIBE
+Certain identifiers are treated as infix operators with a given precedence and 
+associativity (left or right). The call {get_infix_status "op"} looks up {op} 
+in this list and returns a pair consisting of its precedence and its 
+associativity; the latteris one of the strings {"left"} or {"right"}.
+
+\FAILURE
+Fails if the given string does not have infix status.
+
+\EXAMPLE
+{
+  # get_infix_status "/";;
+  val it : int * string = (22, "left")
+  # get_infix_status "UNION";;
+  val it : int * string = (16, "right")
+}
+
+\SEEALSO
+infixes, parse_as_infix, unparse_as_infix.
+
+\ENDDOC

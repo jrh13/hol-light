@@ -1,0 +1,43 @@
+\DOC NUM_EQ_CONV
+
+\TYPE {NUM_EQ_CONV : conv}
+
+\SYNOPSIS
+Proves equality or inequality of two numerals.
+
+\KEYWORDS
+conversion, number, arithmetic.
+
+\DESCRIBE
+If {n} and {m} are two numerals (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_EQ_CONV `n = m`} returns:
+
+{
+   |- (n = m) <=> T       or       |- (n = m) <=> F
+}
+\noindent depending on whether the natural numbers represented by {n} and {m}
+are equal or not equal, respectively.
+
+\FAILURE
+{NUM_EQ_CONV tm} fails if {tm} is not of the form {`n = m`}, where {n} and {m}
+are numerals.
+
+\EXAMPLE
+{
+  # NUM_EQ_CONV `1 = 2`;;
+  val it : thm = |- 1 = 2 <=> F
+
+  # NUM_EQ_CONV `12 = 12`;;
+  val it : thm = |- 12 = 12 <=> T
+}
+
+\USES
+Performing basic arithmetic reasoning while producing a proof.
+
+\SEEALSO
+NUM_ADD_CONV, NUM_DIV_CONV, NUM_EVEN_CONV, NUM_EXP_CONV, NUM_FACT_CONV,
+NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MIN_CONV,
+NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV, NUM_PRE_CONV, NUM_REDUCE_CONV,
+NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
+
+\ENDDOC

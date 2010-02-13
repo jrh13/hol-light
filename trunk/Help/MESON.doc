@@ -1,0 +1,56 @@
+\DOC MESON
+
+\TYPE {MESON : thm list -> term -> thm}
+
+\SYNOPSIS
+Attempt to prove a term by first-order proof search.
+
+\DESCRIBE
+A call {MESON[theorems] `tm`} will attempt to prove {tm} using pure first-order
+reasining, taking {theorems} as the starting-point. It will usually either
+solve the goal completely or run for an infeasible length of time before
+terminating, but it may sometimes fail quickly. 
+
+Although {MESON} is capable of some fairly non-obvious pieces of first-order
+reasoning, and will handle equality adequately, it does purely logical
+reasoning. It will exploit no special properties of the constants in the goal,
+other than equality and logical primitives. Any properties that are needed must
+be supplied explicitly in the theorem list, e.g. {LE_REFL} to tell it that {<=}
+on natural numbers is reflexive, or {REAL_ADD_SYM} to tell it that addition on
+real numbers is symmetric.
+
+\FAILURE
+Will fail if the term is not provable, but not necessarily in a feasible amount 
+of time.
+
+\EXAMPLE
+A typical application is to prove some elementary logical lemma for use inside 
+a tactic proof:
+{
+  # MESON[] `!P. P F /\ P T ==> !x. P x`;;
+  ...
+  val it : thm = |- !P. P F /\ P T ==> (!x. P x)
+}
+To prove the following lemma, we need to provide the key property of real 
+negation:
+{  
+  # MESON[REAL_NEG_NEG] `(!x. P(--x)) ==> !x:real. P x`;;
+  ...
+  val it : thm = |- (!x. P (--x)) ==> (!x. P x)
+}
+\noindent If the lemma is not supplied, {MESON} will fail:
+{
+  # MESON[] `(!x. P(--x)) ==> !x:real. P x`;;
+  ...
+  Exception: Failure "solve_goal: Too deep".
+}
+{MESON} is also capable of proving less straightforward results; see the 
+documentation for {MESON_TAC} to find more examples.
+
+\USES
+Generating simple logical lemmas as part of a large proof.
+
+\SEEALSO
+ASM_MESON_TAC, GEN_MESON_TAC, MESON_TAC.
+
+\ENDDOC

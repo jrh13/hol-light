@@ -1,0 +1,46 @@
+\DOC CONDS_ELIM_CONV
+
+\TYPE {CONDS_ELIM_CONV : conv}
+
+\SYNOPSIS
+Remove all conditional expressions from a Boolean formula.
+
+\DESCRIBE
+When applied to a Boolean term, {CONDS_ELIM_CONV} identifies subterms that are
+conditional expressions of the form `{if p then x else y}', and eliminates
+them. First they are ``pulled out'' as far as possible, e.g.
+from `{f (if p then x else y)}' to `{if p then f(x) else f(y)}' and so on. When
+a quantifier that binds one of the variables in the expression is reached, the
+subterm is of Boolean type, say `{if p then q else r}', and it is replaced by a
+propositional equivalent of the form `{p /\ q \/ ~p /\ r}'.
+
+\FAILURE
+Never fails, but will just return a reflexive theorem if the term is not
+Boolean.
+
+\EXAMPLE
+Note that in contrast to {COND_ELIM_CONV}, there are no freeness restrictions,
+and the Boolean split will be done inside quantifiers if necessary:
+{
+  # CONDS_ELIM_CONV `!x y. (if x <= y then y else x) <= z ==> x <= z`;;
+  val it : thm =
+    |- (!x y. (if x <= y then y else x) <= z ==> x <= z) <=>
+       (!x y. ~(x <= y) \/ (y <= z ==> x <= z))
+}
+
+\USES
+Mostly for initial normalization in automated rules, but may be helpful for
+other uses.
+
+\COMMENTS
+The function {CONDS_CELIM_CONV} is functionally similar, but will do the final
+propositional splitting in a ``conjunctive'' rather than ``disjunctive'' way.
+The disjunctive way is usually better when the term will subsequently be passed
+to a refutation procedure, whereas the conjunctive form is better for
+non-refutation procedures. In each case, the policy is changed in an
+appropriate way after passing through quantifiers.
+
+\SEEALSO
+COND_CASES_TAC, COND_ELIM_CONV, CONDS_CELIM_CONV.
+
+\ENDDOC

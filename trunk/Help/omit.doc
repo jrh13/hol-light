@@ -1,0 +1,17 @@
+\DOC omit
+
+\TYPE {omit : term -> term}
+
+\SYNOPSIS
+Omit anything satisfying the given {search} query.
+
+\DESCRIBE
+The function {omit} is intended for use solely with the {search} function.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+search.
+
+\ENDDOC

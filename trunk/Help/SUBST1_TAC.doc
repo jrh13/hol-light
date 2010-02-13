@@ -1,0 +1,69 @@
+\DOC SUBST1_TAC
+
+\TYPE {SUBST1_TAC : thm_tactic}
+
+\SYNOPSIS
+Makes a simple term substitution in a goal using a single equational theorem.
+
+\KEYWORDS
+tactic.
+
+\DESCRIBE
+Given a theorem {A' |- u = v} and a goal {(A ?- t)}, the tactic {SUBST1_TAC (A'
+|- u = v)} rewrites the term {t} into {t[v/u]}, by substituting {v} for each
+free occurrence of {u} in {t}:
+{
+      A ?- t
+   =============  SUBST1_TAC (A' |- u = v)
+    A ?- t[v/u]
+}
+\noindent The assumptions of the theorem used to substitute with are not added
+to the assumptions of the goal but are recorded in the proof.  If {A'} is not a
+subset of the assumptions {A} of the goal (up to alpha-conversion), then
+{SUBST1_TAC (A' |- u = v)} results in an invalid tactic. {SUBST1_TAC}
+automatically renames bound variables to prevent free variables in {v} becoming
+bound after substitution. However, by contrast with rewriting tactics such as 
+{REWRITE_TAC}, it does not instantiate free or universally quantified variables 
+in the theorem to make them match the target term. This makes it less powerful 
+but also more precisely controlled.
+
+\FAILURE
+{SUBST1_TAC th (A ?- t)} fails if the conclusion of {th} is not an equation.
+No change is made to the goal if no free occurrence of the left-hand side
+of {th} appears in {t}.
+
+\EXAMPLE
+Suppose we start with the goal:
+{
+  # g `!p x y. 1 = x /\ p(1) ==> p(x)`;;
+}
+We could, of course, solve it immediately with {MESON_TAC[]}. However, for a
+more ``manual'' proof, we might do:
+{
+  # e(REPEAT STRIP_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`1 = x`]
+   1 [`p 1`]
+
+  `p x`
+}
+\noindent and then use {SUBST1_TAC} to substitute:
+{
+  # e(FIRST_X_ASSUM(SUBST1_TAC o SYM));;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`p 1`]
+
+  `p 1`
+}
+\noindent after which just {ASM_REWRITE_TAC[]} will finish.
+
+\USES
+{SUBST1_TAC} can be used when rewriting with a single theorem using tactics
+such as {REWRITE_TAC} is too expensive or would diverge.
+
+\SEEALSO
+ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBST_ALL_TAC.
+
+\ENDDOC

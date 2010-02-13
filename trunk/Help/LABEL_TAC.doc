@@ -1,0 +1,92 @@
+\DOC LABEL_TAC
+
+\TYPE {LABEL_TAC : string -> thm_tactic}
+
+\SYNOPSIS
+Add an assumption with a named label to a goal.
+
+\DESCRIBE
+Given a theorem {th}, the tactic {LABEL_TAC "name" th} will add {th} as a new
+hypothesis, just as {ASSUME_TAC} does, but will also give it {name} as a label.
+The name will show up when the goal is printed, and can be used to refer to the
+theorem in tactics like {USE_THEN} and {REMOVE_THEN}.
+
+\FAILURE
+Never fails, though may be invalid if the theorem has assumptions that are not
+a subset of those in the goal, up to alpha-equivalence.
+
+\EXAMPLE
+Suppose we want to prove that a binary relation {<<=} that is antisymmetric and
+has a strong wellfoundedness property is also antisymmetric and transitive, and
+hence a wellorder:
+{
+  # g `(!x y. x <<= y /\ y <<= x ==> x = y) /\
+       (!s. ~(s = {{}}) ==> ?a:A. a IN s /\ !x. x IN s ==> a <<= x)
+       ==> (!x y. x <<= y \/ y <<= x) /\
+           (!x y z. x <<= y /\ y <<= z ==> x <<= z)`;;
+}
+\noindent We might start by putting the two hypotheses on the assumption list
+with intuitive names:
+{
+  # e(DISCH_THEN(CONJUNCTS_THEN2 (LABEL_TAC "antisym") (LABEL_TAC "wo")));;
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`!x y. x <<= y /\ y <<= x ==> x = y`] (antisym)
+   1 [`!s. ~(s = {{}}) ==> (?a. a IN s /\ (!x. x IN s ==> a <<= x))`] (wo)
+
+  `(!x y. x <<= y \/ y <<= x) /\ (!x y z. x <<= y /\ y <<= z ==> x <<= z)`
+}
+Now we break down the goal a bit
+{
+  # e(REPEAT STRIP_TAC);;
+  val it : goalstack = 2 subgoals (2 total)
+
+   0 [`!x y. x <<= y /\ y <<= x ==> x = y`] (antisym)
+   1 [`!s. ~(s = {{}}) ==> (?a. a IN s /\ (!x. x IN s ==> a <<= x))`] (wo)
+   2 [`x <<= y`]
+   3 [`y <<= z`]
+
+  `x <<= z`
+
+   0 [`!x y. x <<= y /\ y <<= x ==> x = y`] (antisym)
+   1 [`!s. ~(s = {{}}) ==> (?a. a IN s /\ (!x. x IN s ==> a <<= x))`] (wo)
+
+  `x <<= y \/ y <<= x`
+}
+\noindent We want to specialize the wellordering assumption to an appropriate
+set for each case, and we can identify it using the label {wo}; the problem is
+then simple set-theoretic reasoning:
+{
+  # e(USE_THEN "wo" (MP_TAC o SPEC `{x:A,y:A}`) THEN SET_TAC[]);;
+  ...
+  val it : goalstack = 1 subgoal (1 total)
+
+   0 [`!x y. x <<= y /\ y <<= x ==> x = y`] (antisym)
+   1 [`!s. ~(s = {{}}) ==> (?a. a IN s /\ (!x. x IN s ==> a <<= x))`] (wo)
+   2 [`x <<= y`]
+   3 [`y <<= z`]
+
+  `x <<= z`
+}
+\noindent Similarly for the other one:
+{
+  # e(USE_THEN "wo" (MP_TAC o SPEC `{x:A,y:A,z:A}`) THEN SET_TAC[]);;
+  ...
+  val it : goalstack = No subgoals
+}
+
+\USES
+Convenient for referring to an assumption explicitly, just as in mathematics
+books one sometimes marks a theorem with an asterisk or dagger, then refers to
+it using that symbol.
+
+\COMMENTS
+There are other ways of identifying assumptions than by label, but they are not
+always convenient. For example, explicitly doing {ASSUME `asm`} is cumbersome
+if {asm} is large, and using its number in the assumption list can make proofs
+very brittle under later changes.
+
+\SEEALSO
+ASSUME_TAC, REMOVE_THEN, USE_THEN.
+
+\ENDDOC

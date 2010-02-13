@@ -1,0 +1,22 @@
+\DOC print_qterm
+
+\TYPE {print_qterm : term -> unit}
+
+\SYNOPSIS
+Prints a HOL term with surrounding quotes to standard output.
+
+\DESCRIBE
+The call {print_term tm} prints the usual textual representation of the
+term {tm} to the standard output, that is {`:tm`}.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+This is the function that is invoked automatically in the toplevel when
+printing terms.
+
+\SEEALSO
+pp_print_qterm, pp_print_term, print_term.
+
+\ENDDOC

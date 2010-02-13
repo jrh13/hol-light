@@ -1,0 +1,28 @@
+\DOC INT_SUB_CONV
+
+\TYPE {INT_SUB_CONV : conv}
+
+\SYNOPSIS
+Conversion to perform subtraction on two integer literals of type {:int}.
+
+\DESCRIBE
+The call {INT_SUB_CONV `c1 - c2`} where {c1} and {c2} are integer literals
+of type {:int}, returns {|- c1 - c2 = d} where {d} is the canonical integer
+literal that is equal to {c1 - c2}. The literals {c1} and {c2} may be of the
+form {&n} or {-- &n} (with nonzero {n} in the latter case) and the result will
+be of the same form.
+
+\FAILURE
+Fails if applied to a term that is not the difference of two permitted integer
+literals of type {:int}.
+
+\EXAMPLE
+{
+  # INT_SUB_CONV `&33 - &77`;;
+  val it : thm = |- &33 - &77 = -- &44
+}
+
+\SEEALSO
+INT_REDUCE_CONV, REAL_RAT_SUB_CONV.
+
+\ENDDOC

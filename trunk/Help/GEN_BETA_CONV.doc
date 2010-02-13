@@ -1,0 +1,45 @@
+\DOC GEN_BETA_CONV
+
+\TYPE {GEN_BETA_CONV : term -> thm}
+
+\SYNOPSIS
+Beta-reduces general beta-redexes (e.g. paired ones).
+
+\KEYWORDS
+conversion.
+
+\DESCRIBE
+The conversion {GEN_BETA_CONV} will perform beta-reduction of simple
+beta-redexes in the manner of {BETA_CONV}, or of generalized beta-redexes such
+as paired redexes.
+
+\FAILURE
+{GEN_BETA_CONV tm} fails if {tm} is neither a simple nor a tupled beta-redex.
+
+\EXAMPLE
+The following examples show the action of {GEN_BETA_CONV} on tupled redexes and
+others:
+{
+  # GEN_BETA_CONV `(\x. x + 1) 2`;;
+  val it : thm = |- (\x. x + 1) 2 = 2 + 1
+
+  # GEN_BETA_CONV `(\(x,y,z). x + y + z) (1,2,3)`;;
+  val it : thm = |- (\(x,y,z). x + y + z) (1,2,3) = 1 + 2 + 3
+
+  # GEN_BETA_CONV `(\[a;b;c]. b) [1;2;3]`;;
+  val it : thm = |- (\[a; b; c]. b) [1; 2; 3] = 2
+}
+However, it will fail if there is a mismatch between the varstruct and the
+argument, or if it is unable to make sense of the generalized abstraction:
+{
+  # GEN_BETA_CONV `(\(SUC n). n) 3`;;
+  Exception: Failure "term_pmatch".
+
+  # GEN_BETA_CONV `(\(x,y,z). x + y + z) (1,x)`;;
+  Exception: Failure "dest_comb: not a combination".
+}
+
+\SEEALSO
+BETA_CONV, MATCH_CONV.
+
+\ENDDOC

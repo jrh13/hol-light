@@ -1,0 +1,92 @@
+\DOC SEMIRING_NORMALIZERS_CONV
+
+\TYPE {SEMIRING_NORMALIZERS_CONV : thm -> thm -> (term -> bool) * conv * conv * conv -> (term -> term -> bool) -> (term -> thm) * (term -> thm) * (term -> thm) * (term -> thm) * (term -> thm) * (term -> thm)}
+
+\SYNOPSIS
+Produces normalizer functions over a ring or even a semiring.
+
+\DESCRIBE
+The function {SEMIRING_NORMALIZERS_CONV} should be given two theorems about
+some binary operators that we write as infix `{+}', `{*}' and `{^}' and
+ground terms `{ZERO}' and `{ONE}'. (The conventional symbols make the import of
+the theorem easier to grasp, but they are essentially arbitrary.) The first
+theorem is of the following form, essentially stating that the operators form a
+semiring structure with `{^}' as the ``power'' operator:
+{
+  |- (!x y z. x + (y + z) = (x + y) + z) /\
+     (!x y. x + y = y + x) /\
+     (!x. ZERO + x = x) /\
+     (!x y z. x * (y * z) = (x * y) * z) /\
+     (!x y. x * y = y * x) /\
+     (!x. ONE * x = x) /\
+     (!x. ZERO * x = ZERO) /\
+     (!x y z. x * (y + z) = x * y + x * z) /\
+     (!x. x^0 = ONE) /\
+     (!x n. x^(SUC n) = x * x^n)
+}
+The second theorem may just be {TRUTH = |- T}, in which case it will be assumed
+that the structure is just a semiring. Otherwise, it may be of the following
+form for ``negation'' ({neg}) and ``subtraction'' functions, plus a
+ground term {MINUS1} thought of as {-1}:
+{
+  |- (!x. neg x = MINUS1 * x) /\
+     (!x y. x - y = x + MINUS1 * y)
+}
+If the second theorem is provided, the eventual normalizer will also handle the
+negation and subtraction operations. Generally this is beneficial, but is
+impossible on structures like {:num} with no negative numbers.
+
+The remaining arguments are a tuple. The first is an ordering on terms, used to
+determine the polynomial form. Normally, the default OCaml ordering is fine.
+The rest are intended to be functions for operating on `constants' (e.g.
+numerals), which should handle at least `{ZERO}', `{ONE}' and, in the case of a
+ring, `{MINUS1}'. The functions are: (i) a test for membership in the set of
+`constants', (ii) an addition conversion on constants, (iii) a multiplication
+conversion on constants, and (iv) a conversion to raise a constant to a numeral
+power. Note that no subtraction or negation operations are needed explicitly
+because this is subsumed in the presence of {-1} as a constant.
+
+The function then returns conversions for putting terms of the structure into a
+canonical form, essentially multiplied-out polynomials with a particular
+ordering. The functions respectively negate, add, subtract, multiply,
+exponentiate terms already in the canonical form, putting the result back in
+canonical form. The final return value is an overall normalization function.
+
+\FAILURE
+Fails if the theorems are malformed.
+
+\EXAMPLE
+There are already instantiations of the main normalizer for natural numbers
+({NUM_NORMALIZE_CONV}) and real numbers ({REAL_POLY_CONV}). Here is how the
+latter is first constructed (it is later enhanced to handle some additional
+functions more effectively, so use the inbuilt definition, not this one):
+{
+  # let REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_SUB_CONV,
+        REAL_POLY_MUL_CONV,REAL_POLY_POW_CONV,REAL_POLY_CONV =
+      SEMIRING_NORMALIZERS_CONV REAL_POLY_CLAUSES REAL_POLY_NEG_CLAUSES
+       (is_ratconst,
+        REAL_RAT_ADD_CONV,REAL_RAT_MUL_CONV,REAL_RAT_POW_CONV)
+       (<);;
+  val ( REAL_POLY_NEG_CONV ) : term -> thm = <fun>
+  val ( REAL_POLY_ADD_CONV ) : term -> thm = <fun>
+  val ( REAL_POLY_SUB_CONV ) : term -> thm = <fun>
+  val ( REAL_POLY_MUL_CONV ) : term -> thm = <fun>
+  val ( REAL_POLY_POW_CONV ) : term -> thm = <fun>
+  val ( REAL_POLY_CONV ) : term -> thm = <fun>
+}
+For examples of the resulting main function in action, see {REAL_POLY_CONV}.
+
+\USES
+This is a highly generic function, intended only for occasional use by experts.
+Users reasoning in any sort of ring structure may find it a useful
+building-block for a decision procedure.
+
+\COMMENTS
+This is a subcomponent of more powerful generic decision procedures such as
+{RING}. These can handle more sophisticated reasoning that direct equality
+through normalization.
+
+\SEEALSO
+ideal_cofactors, NUM_NORMALIZE_CONV, REAL_POLY_CONV, RING_AND_IDEAL_CONV.
+
+\ENDDOC

@@ -1,0 +1,21 @@
+\DOC constants
+
+\TYPE {constants : unit -> (string * hol_type) list}
+
+\SYNOPSIS
+Returns a list of the constants currently defined.
+
+\DESCRIBE
+The call
+{
+   constants();;
+}
+returns a list of all the constants that have been defined so far.
+
+\FAILURE
+Never fails.
+
+\SEEALSO
+axioms, binders, infixes.
+
+\ENDDOC

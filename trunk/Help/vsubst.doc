@@ -1,0 +1,41 @@
+\DOC vsubst
+
+\TYPE {vsubst : (term * term) list -> term -> term}
+
+\SYNOPSIS
+Substitute terms for variables inside a term.
+
+\DESCRIBE
+The call {vsubst [t1,x1; ...; tn,xn] t} systmatically replaces free instances
+of each variable {xi} inside {t} with the corresponding {ti} from the
+instantiation list. Bound variables will be renamed if necessary to avoid
+capture.
+
+\FAILURE
+Fails if any of the pairs {ti,xi} in the instantiation list has {xi} and {ti}
+with different types, or {xi} a non-variable. Multiple instances of the same
+{xi} in the list are not trapped, but only the first one will be used
+consistently.
+
+\EXAMPLE
+Here is a relatively simple example
+{
+  # vsubst [`1`,`x:num`; `2`,`y:num`] `x + y + 3`;;
+  val it : term = `1 + 2 + 3`
+}
+\noindent and here is a more complex instance where renaming of bound variables
+is needed:
+{
+  # vsubst [`y:num`,`x:num`] `!y. x + y < x + y + 1`;;
+  val it : term = `!y'. y + y' < y + y' + 1`
+}
+
+\COMMENTS
+An analogous function {subst} is more general, and will substitute for free
+occurrences of any term, not just variables. However, {vsubst} is generally
+much more efficient if you do just need substitution for variables.
+
+\SEEALSO
+inst, subst.
+
+\ENDDOC

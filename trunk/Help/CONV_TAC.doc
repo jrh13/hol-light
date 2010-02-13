@@ -1,0 +1,68 @@
+\DOC CONV_TAC
+
+\TYPE {CONV_TAC : conv -> tactic}
+
+\SYNOPSIS
+Makes a tactic from a conversion.
+
+\KEYWORDS
+conversional, tactical.
+
+\DESCRIBE
+If {c} is a conversion, then {CONV_TAC c} is a tactic that applies {c} to the
+goal.  That is, if {c} maps a term {`g`} to the theorem {|- g = g'}, then the
+tactic {CONV_TAC c} reduces a goal {g} to the subgoal {g'}.  More precisely, if
+{c `g`} returns {A' |- g = g'}, then:
+{
+         A ?- g
+     ===============  CONV_TAC c
+         A ?- g'
+}
+\noindent In the special case where {`g`} is {`T`}, the call immediately solves 
+the goal rather than generating a subgoal {A ?- T}. And in a slightly liberal 
+interpretation of ``conversion'', the conversion may also just prove the goal 
+and return {A' |- g}, in which case again the goal will be completely solved.
+
+Note that in all cases the conversion {c} should return a theorem whose
+assumptions are also among the assumptions of the goal (normally, the
+conversion will returns a theorem with no assumptions). {CONV_TAC} does not
+fail if this is not the case, but the resulting tactic will be invalid, so the
+theorem ultimately proved using this tactic will have more assumptions than
+those of the original goal.
+
+\FAILURE
+{CONV_TAC c} applied to a goal {A ?- g} fails if {c} fails when applied to the
+term {g}. The function returned by {CONV_TAC c} will also fail if the function
+{c} is not, in fact, a conversion (i.e. a function that maps a term {t} to a
+theorem {|- t = t'}).
+
+\USES
+{CONV_TAC} can be used to apply simplifications that can't be expressed as
+equations (rewrite rules).  For example, a goal:
+{
+  # g `abs(pi - &22 / &7) <= abs(&355 / &113 - &22 / &7)`;;
+}
+\noindent can be simplified by rational number arithmetic:
+{
+  # e(CONV_TAC REAL_RAT_REDUCE_CONV);;
+  val it : goalstack = 1 subgoal (1 total)
+  
+  `abs (pi - &22 / &7) <= &1 / &791`
+}
+It is also handy for invoking decision procedures that only have a ``rule'' 
+form, and no special ``tactic'' form. (Indeed, the tactic form can be defined
+in terms of the rule form by using {CONV_TAC}.) For example, the goal:
+{
+  # g `!x:real. &0 < x ==> &1 / x - &1 / (x + &1) = &1 / (x * (x + &1))`;;
+}
+\noindent can be solved by:
+{
+  # e(CONV_TAC REAL_FIELD);;
+  ...
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+CONV_RULE.
+
+\ENDDOC

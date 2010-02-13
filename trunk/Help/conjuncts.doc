@@ -1,0 +1,40 @@
+\DOC conjuncts
+
+\TYPE {conjuncts : term -> term list}
+
+\SYNOPSIS
+Iteratively breaks apart a conjunction.
+
+\DESCRIBE
+If a term {t} is a conjunction {p /\ q}, then {conjuncts t} will recursively
+break down {p} and {q} into conjuncts and append the resulting lists. Otherwise
+it will return the singleton list {[t]}. So if {t} is of the form
+{t1 /\ ... /\ tn} with any reassociation, no {ti} itself being a conjunction, 
+the list returned will be {[t1; ...; tn]}. But
+{
+   conjuncts(list_mk_conj([t1;...;tn]))
+}
+\noindent will not return {[t1;...;tn]} if any of {t1},...,{tn} is a
+conjunction.
+
+\FAILURE
+Never fails, even if the term is not boolean.
+
+\EXAMPLE
+{
+  # conjuncts `((p /\ q) /\ r) /\ ((p /\ s /\ t) /\ u)`;;
+  val it : term list = [`p`; `q`; `r`; `p`; `s`; `t`; `u`]
+
+  # conjuncts(list_mk_conj [`a /\ b`; `c:bool`; `d /\ e /\ f`]);;
+  val it : term list = [`a`; `b`; `c`; `d`; `e`; `f`]
+}
+
+\COMMENTS
+Because {conjuncts} splits both the left and right sides of a conjunction,
+this operation is not the inverse of {list_mk_conj}. You can also use 
+{splitlist dest_conj} to split in a right-associated way only.
+
+\SEEALSO
+dest_conj, disjuncts, is_conj.
+
+\ENDDOC

@@ -1,0 +1,42 @@
+\DOC NUM_SIMPLIFY_CONV
+
+\TYPE {NUM_SIMPLIFY_CONV : conv}
+
+\SYNOPSIS
+Eliminates predecessor, cutoff subtraction, even and odd, division and modulus.
+
+\DESCRIBE
+When applied to a term, {NUM_SIMPLIFY_CONV} tries to get rid of instances of
+the natural number operators {PRE}, {DIV}, {MOD} and {-} (which is cutoff
+subtraction), as well as the {EVEN} and {ODD} predicates, by rephrasing
+properties in terms of multiplication and addition, adding new variables if
+necessary. Some attempt is made to introduce quantifiers so that they are 
+effectively universally quantified. However, the input formula should be in NNF 
+for this aspect to be completely reliable.
+
+\FAILURE
+Should never fail, but in obscure situations may leave some instance of the
+troublesome operators (for example, if they are mapped over a list instead of
+simply applied).
+
+\EXAMPLE
+{
+  # NUM_SIMPLIFY_CONV `~(n = 0) ==> PRE(n) + 1 = n`;;
+  val it : thm =
+    |- ~(n = 0) ==> PRE n + 1 = n <=>
+       (!m. ~(n = SUC m) /\ (~(m = 0) \/ ~(n = 0)) \/ n = 0 \/ m + 1 = n)
+}
+
+\USES
+Not really intended for most users, but a prelude inside several automated
+routines such as {ARITH_RULE}. It is because of this preprocessing step that
+such rules can handle these troublesome operators to some extent, e.g.
+{
+  # ARITH_RULE `~(n = 0) ==> n DIV 3 < n`;;
+  val it : thm = |- ~(n = 0) ==> n DIV 3 < n
+}
+
+\SEEALSO
+ARITH_CONV, ARITH_RULE, ARITH_TAC, NUM_RING.
+
+\ENDDOC

@@ -1,0 +1,47 @@
+\DOC ITAUT
+
+\TYPE {ITAUT : term -> thm}
+
+\SYNOPSIS
+Attempt to prove term using intuitionistic first-order logic.
+
+\DESCRIBE
+The call {ITAUT `p`} attempts to prove {p} using a basic tableau-type proof
+search for intuitionistic first-order logic. The restriction to intuitionistic
+logic means that no principles such as the ``law of the excluded middle'' or
+``law of double negation'' are used.
+
+\FAILURE
+Fails if the goal is non-Boolean. May also fail if it's unprovable, though more
+usually this results in indefinite looping.
+
+\EXAMPLE
+This is intuitionistically valid, so it works:
+{
+  # ITAUT `~(~(~p)) ==> ~p`;;
+  ...
+  val it : thm = |- ~ ~ ~p ==> ~p
+}
+\noindent whereas this, one of the main non-intuitionistic principles, is not:
+{
+  # ITAUT `~(~p) ==> p`;;
+  Searching with limit 0
+  Searching with limit 1
+  Searching with limit 2
+  Searching with limit 3
+  ...
+}
+\noindent so the procedure loops; you can as usual terminate such loops with
+control-C.
+
+\COMMENTS
+Normally, first-order reasoning should be performed by {MESON[]}, which is much
+more powerful, complete for all classical logic, and handles equality. The
+function {ITAUT} is mainly for ``bootstrapping'' purposes. Nevertheless it may
+sometimes be intellectually interesting to see that certain logical formulas
+are provable intuitionistically.
+
+\SEEALSO
+BOOL_CASES_TAC, ITAUT_TAC, MESON, MESON_TAC.
+
+\ENDDOC

@@ -1,0 +1,51 @@
+\DOC qmap
+
+\TYPE {qmap : ('a -> 'a) -> 'a list -> 'a list}
+
+\SYNOPSIS
+Maps a function of type {'a -> 'a} over a list, optimizing the unchanged case.
+
+\DESCRIBE
+The call {qmap f [x1;...;xn]} returns the list {[f(x1);...;f(xn)]}. In this
+respect it behaves like {map}. However with {qmap}, the function {f} must have
+the same domain and codomain type, and in cases where the function returns the
+argument unchanged (actually pointer-equal, tested by `{==}'), the
+implementation often avoids rebuilding an equal copy of the list, so can be
+much more efficient.
+
+\FAILURE
+Fails if one of the embedded evaluations of {f} fails, but not otherwise.
+
+\EXAMPLE
+Let us map the identity function over a million numbers:
+{
+# let million = 1--1000000;;
+val million : int list =
+  [1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20; 21;
+   ...]
+}
+First we use ordinary {map}; the computation takes some time because the list
+is traversed and reconstructed, giving a fresh copy:
+{
+  # time (map I) million == million;;
+  CPU time (user): 2.95
+  val it : bool = false
+}
+But {qmap} is markedly faster, uses no extra heap memory, and the result is
+pointer-equal to the input:
+{
+  # time (qmap I) million == million;;
+  CPU time (user): 0.13
+  val it : bool = true
+}
+
+\USES
+Many logical operations, such as substitution, may in common cases return their
+arguments unchanged. In this case it is very useful to optimize the traversal
+in this way. Several internal logical manipulations like {vsubst} use this
+technique.
+
+\SEEALSO
+map.
+
+\ENDDOC

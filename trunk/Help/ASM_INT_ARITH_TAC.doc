@@ -1,0 +1,49 @@
+\DOC ASM_INT_ARITH_TAC
+
+\TYPE {ASM_INT_ARITH_TAC : tactic}
+
+\SYNOPSIS
+Attempt to prove goal using basic algebra and linear arithmetic over the
+integers.
+
+\DESCRIBE
+The tactic {ASM_INT_ARITH_TAC} is the tactic form of {INT_ARITH}. Roughly
+speaking, it will automatically prove any formulas over the reals that are
+efectively universally quantified and can be proved valid by algebraic
+normalization and linear equational and inequality reasoning. See {REAL_ARITH}
+for more information about the algorithm used and its scope. Unlike plain
+{INT_ARITH_TAC}, {ASM_INT_ARITH_TAC} uses any assumptions that are not
+universally quantified as additional hypotheses.
+
+\FAILURE
+Fails if the goal is not in the subset solvable by these means, or is not
+valid.
+
+\EXAMPLE
+This example illustrates how {ASM_INT_ARITH_TAC} uses assumptions while
+{INT_ARITH_TAC} does not. Of course, this is for illustration only: plain
+{INT_ARITH_TAC} would solve the entire goal before application of {STRIP_TAC}.
+{
+  # g `!x y:int. x <= y /\ &2 * y <= &2 * x + &1 ==> x = y`;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+  `!x y. x <= y /\ &2 * y <= &2 * x + &1 ==> x = y`
+  
+  # e(REPEAT STRIP_TAC);;
+  val it : goalstack = 1 subgoal (1 total)
+  
+    0 [`x <= y`]
+    1 [`&2 * y <= &2 * x + &1`]
+  
+  `x = y`
+  
+  # e INT_ARITH_TAC;;
+  Exception: Failure "linear_ineqs: no contradiction".
+  # e ASM_INT_ARITH_TAC;;
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+ARITH_TAC, INT_ARITH, INT_ARITH_TAC, REAL_ARITH_TAC.
+
+\ENDDOC

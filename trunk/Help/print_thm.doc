@@ -1,0 +1,18 @@
+\DOC print_thm
+
+\TYPE {print_thm : thm -> unit}
+
+\SYNOPSIS
+Prints a HOL theorem to the standard output.
+
+\DESCRIBE
+The call {print_thm th} prints the usual textual representation of the 
+theorem {th} to the standard output.
+
+\COMMENTS
+This is invoked automatically at the toplevel when theorems are printed.
+
+\SEEALSO
+print_type, print_term.
+
+\ENDDOC

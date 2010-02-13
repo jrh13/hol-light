@@ -1,0 +1,28 @@
+\DOC setify
+
+\TYPE {setify : 'a list -> 'a list}
+
+\SYNOPSIS
+Removes repeated elements from a list. Makes a list into a `set'.
+
+\DESCRIBE
+{setify l} removes repeated elements from {l}, leaving the last occurrence of
+each duplicate in the list. 
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # setify [1;2;3;1;4;3];;
+  val it : int list = [1; 2; 3; 4]
+}
+
+\COMMENTS
+The current implementation will in fact return a sorted list according to the 
+basic OCaml polymorphic ordering.
+
+\SEEALSO
+uniq.
+
+\ENDDOC

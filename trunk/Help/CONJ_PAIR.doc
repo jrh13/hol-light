@@ -1,0 +1,31 @@
+\DOC CONJ_PAIR
+
+\TYPE {CONJ_PAIR : thm -> thm * thm}
+
+\SYNOPSIS
+Extracts both conjuncts of a conjunction.
+
+\KEYWORDS
+rule, conjunction.
+
+\DESCRIBE
+{
+       A |- t1 /\ t2
+   ----------------------  CONJ_PAIR
+    A |- t1      A |- t2
+}
+\noindent The two resultant theorems are returned as a pair.
+
+\FAILURE
+Fails if the input theorem is not a conjunction.
+
+\EXAMPLE
+{
+  # CONJ_PAIR(ASSUME `p /\ q`);;
+  val it : thm * thm = (p /\ q |- p, p /\ q |- q)
+}
+
+\SEEALSO
+CONJUNCT1, CONJUNCT2, CONJ, CONJUNCTS.
+
+\ENDDOC

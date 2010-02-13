@@ -1,0 +1,32 @@
+\DOC graph
+
+\TYPE {graph : ('a, 'b) func -> ('a * 'b) list}
+
+\SYNOPSIS
+Returns the graph of a finite partial function.
+
+\DESCRIBE
+This is one of a suite of operations on finite partial functions, type
+{('a,'b)func}. These may sometimes be preferable to ordinary functions since
+they permit more operations such as equality comparison, extraction of domain
+etc. The {graph} function takes a finite partial function that maps {x1} to
+{y1}, ..., {xn} to {yn} and returns its graph as a set/list:
+{[x1,y1; ...; xn,yn]}.
+
+\FAILURE
+Attempts to sort the resulting list, so may fail if the type of the pairs does 
+not permit comparison.
+
+\EXAMPLE
+{
+  # graph undefined;;
+  val it : ('a * 'b) list = []
+  # graph (1 |=> 2);;
+  val it : (int * int) list = [(1, 2)]
+}
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr,
+is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

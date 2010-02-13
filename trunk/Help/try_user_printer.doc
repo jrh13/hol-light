@@ -1,0 +1,33 @@
+\DOC try_user_printer
+
+\TYPE {try_user_printer : term -> unit}
+
+\SYNOPSIS
+Try user-defined printers on a term.
+
+\DESCRIBE
+HOL Light allows arbitrary user printers to be inserted into the toplevel
+printer so that they are invoked on all applicable subterms (see
+{install_user_printer}). The call {try_user_printer tm} attempts all installed 
+user printers on the term {tm} in an implementation-defined order. If one 
+succeeds, the call returns {()}, and otherwise it fails.
+
+\FAILURE
+Fails if no user printer is applicable to the given term (e.g. if no user 
+printers have been installed).
+
+\EXAMPLE
+After installing the printer for variables with types in the example for 
+{install_user_printer}, you can try:
+{
+  # try_user_printer `x:num`;;
+  (x:num)val it : unit = ()
+  
+  # try_user_printer `1`;;
+  Exception: Failure "tryfind".
+}
+
+\SEEALSO
+delete_user_printer, install_user_printer.
+
+\ENDDOC

@@ -1,0 +1,26 @@
+\DOC extend_rectype_net
+
+\TYPE {extend_rectype_net : string * ('a * 'b * thm) -> unit}
+
+\SYNOPSIS
+Extends internal store of distinctness and injectivity theorems for a new 
+inductive type.
+
+\DESCRIBE
+HOL Light maintains several data structures based on the current set of 
+distinctness and injectivity theorems for the inductive data type so far 
+defined. A call {extend_rectype_net ("tyname",(_,_,rth))} where {rth} is the 
+recursion theorem for the type as returned as the second item from 
+{define_type}, extend these structures for a new type. Two arguments are 
+ignored just for regularity with some other internal data structures.
+
+\FAILURE
+Never fails, even if the theorem is malformed.
+
+\COMMENTS
+This functoin is called automatically by {define_type}, and normally users will
+not need to invoke it explicitly.
+
+\SEEALSO
+basic_rectype_net, define_type, distinctness_store, injectivity_store. 
+\ENDDOC

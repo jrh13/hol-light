@@ -1,0 +1,35 @@
+\DOC mk_mconst
+
+\TYPE {mk_mconst : string * hol_type -> term}
+
+\SYNOPSIS
+Constructs a constant with type matching.
+
+\DESCRIBE
+{mk_mconst("const",`:ty`)} returns the constant {`const:ty`}.
+
+\FAILURE
+Fails with {mk_mconst: ...} if the string supplied is not the name of a known
+constant, or if it is known but the type supplied is not the correct type for
+the constant.
+
+\EXAMPLE
+{
+  # mk_mconst ("T",`:bool`);;
+  val it : term = `T`
+
+  # mk_mconst ("T",`:num`);;
+  Exception: Failure "mk_const: generic type cannot be instantiated".
+}
+
+\COMMENTS
+The primitive HOL Light facility for making constants is {mk_const}, which
+takes a type instantiation to apply to the constant's generic type. The
+function {mk_mconst} requires type matching and so is in general somewhat less
+efficient. However it is sometimes more convenient, and a natural inverse for
+{dest_const}.
+
+\SEEALSO
+mk_const, dest_const, is_const, mk_var, mk_comb, mk_abs.
+
+\ENDDOC

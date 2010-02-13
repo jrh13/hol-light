@@ -1,0 +1,33 @@
+\DOC splitlist
+
+\TYPE {splitlist : ('a -> 'b * 'a) -> 'a -> 'b list * 'a}
+
+\SYNOPSIS
+Applies a binary destructor repeatedly in left-associative mode.
+
+\DESCRIBE
+If a destructor function {d} inverts a binary constructor {f}, for example
+{dest_comb} for {mk_comb}, and fails when applied to {y}, then:
+{
+  splitlist d (f(x1,f(x2,f(...f(xn,y)))))
+}
+\noindent returns
+{
+  ([x1; ... ; xn],y)
+}
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+The function {strip_forall} is actually just defined as
+{splitlist dest_forall}, which acts as follows:
+{
+  # splitlist dest_forall `!x y z. x + y = z`;;
+  val it : term list * term = ([`x`; `y`; `z`], `x + y = z`)
+}
+
+\SEEALSO
+itlist, rev_splitlist, striplist.
+
+\ENDDOC

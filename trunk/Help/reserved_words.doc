@@ -1,0 +1,28 @@
+\DOC reserved_words
+
+\TYPE {reserved_words : unit -> string list}
+
+\SYNOPSIS
+Returns the list of reserved words.
+
+\DESCRIBE
+Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}', 
+meaning that they are special to the parser and cannot be used as ordinary 
+identifiers. The call {reserved_words()} returns a list of such identifiers.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+In the default HOL state:
+{
+  # reserved_words();;
+  val it : string list =
+    ["("; ")"; "["; "]"; "{"; "}"; ":"; ";"; "."; "|"; "let"; "in"; "and";
+     "if"; "then"; "else"; "//"]
+}
+
+\SEEALSO
+is_reserved_word, reserve_words, unreserve_words.
+
+\ENDDOC

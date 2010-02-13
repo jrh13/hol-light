@@ -1,0 +1,26 @@
+\DOC null_inst
+
+\TYPE {null_inst : instantiation}
+
+\SYNOPSIS
+Empty instantiation.
+
+\DESCRIBE
+Several functions use objects of type {instantiation}, consisting of type and
+term instantiations and higher-order matching information. This instantiation
+{null_inst} is the trivial instantiation that does nothing.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+Instantiating a term with it has no effect: 
+{
+  # instantiate null_inst `x + 1 = 2`;;
+  val it : term = `x + 1 = 2`
+}
+
+\SEEALSO
+instantiate, INSTANTIATE, INSTANTIATE_ALL, term_match.
+
+\ENDDOC

@@ -1,0 +1,23 @@
+\DOC TOP_SWEEP_SQCONV
+
+\TYPE {TOP_SWEEP_SQCONV : strategy}
+
+\SYNOPSIS
+Applies simplification top-down at all levels, but after descending to
+subterms, does not return to higher ones.
+
+\DESCRIBE
+HOL Light's simplification functions (e.g. {SIMP_TAC}) have their traversal
+algorithm controlled by a ``strategy''. {TOP_SWEEP_SQCONV} is a strategy
+corresponding to {TOP_SWEEP_CONV} for ordinary conversions: simplification is
+applied top-down at all levels, but after descending to subterms, does not
+return to higher ones.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+DEPTH_SQCONV, ONCE_DEPTH_SQCONV, REDEPTH_SQCONV, TOP_DEPTH_SQCONV,
+TOP_SWEEP_CONV.
+
+\ENDDOC

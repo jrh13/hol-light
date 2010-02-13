@@ -1,0 +1,69 @@
+\DOC define_quotient_type
+
+\TYPE {define_quotient_type : string -> string * string -> term -> thm * thm}
+
+\SYNOPSIS
+Defines a quotient type based on given equivalence relation.
+
+\DESCRIBE
+The call {define_quotient_type "qty" ("abs","rep") `R`}, where {R:A->A->bool}
+is a binary relation, defines a new ``quotient type'' {:qty} and two new
+functions {abs:(A->bool)->qty} and {rep:qty->(A->bool)}, and returns the pair
+of theorems {|- abs(rep a) = a} and {|- (?x. r = R x) <=> rep(abs r) = r}.
+Normally, {R} will be an equivalence relation (reflexive, symmetric and
+transitive), in which case the quotient type will be in bijection with the set
+of {R}-equivalence classes.
+
+\FAILURE
+Fails if there is already a type {qty} or if either {abs} or {rep} is already
+in use as a constant.
+
+\EXAMPLE
+For some purposes we may want to use ``multisets'' or ``bags''. These are like
+sets in that order is irrelevant, but like lists in that multiplicity is
+counted. We can define a type of finite multisets as a quotient of lists by the
+relation:
+{
+  # let multisame = new_definition
+     `multisame l1 l2 <=> !a:A. FILTER (\x. x = a) l1 = FILTER (\x. x = a) l2`;;
+}
+\noindent as follows:
+{
+  # let multiset_abs,multiset_rep =
+      define_quotient_type "multiset" ("multiset_of_list","list_of_multiset")
+      `multisame:A list -> A list -> bool`;;
+  val multiset_abs : thm = |- multiset_of_list (list_of_multiset a) = a
+  val multiset_rep : thm =
+    |- (?x. r = multisame x) <=> list_of_multiset (multiset_of_list r) = r
+}
+For development of this example, see the documentation entries for
+{lift_function} and {lift_theorem} (in that order). Similarly we could define a
+type of finite sets by:
+{
+  define_quotient_type "finiteset" ("finiteset_of_list","list_of_finiteset")
+   `\l1 l2. !a:A. MEM a l1 <=> MEM a l2`;;
+  val it : thm * thm =
+    (|- finiteset_of_list (list_of_finiteset a) = a,
+     |- (?x. r = (\l1 l2. !a. MEM a l1 <=> MEM a l2) x) <=>
+        list_of_finiteset (finiteset_of_list r) = r)
+}
+
+\USES
+Convenient creation of quotient structures. Using related functions
+{lift_function} and {lift_theorem}, functions, relations and theorems can be
+lifted from the representing type to the type of equivalence classes. As well
+as those shown above, characteristic applications are the definition of
+rationals as equivalence classes of pairs of integers under
+cross-multiplication, or of `directions' as equivalence classes of vectors
+under parallelism.
+
+\COMMENTS
+If {R} is not an equivalence relation, the basic operation of
+{define_quotient_type} will work equally well, but the usefulness of the new
+type will be limited. In particular, {lift_function} and {lift_theorem} may not
+be usable.
+
+\SEEALSO
+lift_function, lift_theorem.
+
+\ENDDOC

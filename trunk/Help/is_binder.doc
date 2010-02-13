@@ -1,0 +1,32 @@
+\DOC is_binder
+
+\TYPE {is_binder : string -> term -> bool}
+
+\SYNOPSIS
+Tests if a term is a binder construct with named constant.
+
+\DESCRIBE
+The call {is_binder "c" t} tests whether the term {t} has the form of an 
+application of a constant {c} to an abstraction. Note that this has nothing to 
+do with the parsing status of the name {c} as a binder, but only the form of
+the term.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+{
+  # is_binder "!" `!x. x >= 0`;;
+  val it : bool = true
+}
+\noindent Note how only the basic logical form is tested, even taking in things
+that we wouldn't really think of as binders:
+{
+  # is_binder "=" `(=) (\x. x + 1)`;;
+  val it : bool = true
+}
+
+\SEEALSO
+dest_binder, mk_binder.
+
+\ENDDOC

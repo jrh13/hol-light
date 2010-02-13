@@ -1,0 +1,38 @@
+\DOC term_match
+
+\TYPE {term_match : term list -> term -> term -> instantiation}
+
+\SYNOPSIS
+Match one term against another.
+
+\DESCRIBE
+The call {term_match lcs t t'} attempts to find an instantiation for free
+variables in {t}, not permitting assignment of `local constant' variables in
+the list {lcs}, so that it is alpha-equivalent to {t'}. If it succeeds, the
+appropriate instantiation is returned. Otherwise it fails. The matching is
+higher-order in a limited sense; see {PART_MATCH} for more illustrations.
+
+\FAILURE
+Fails if terms cannot be matched.
+
+\EXAMPLE
+{
+  # term_match [] `x + y + 1` `(y + 1) + z + 1`;;
+  val it : instantiation = ([], [(`z`, `y`); (`y + 1`, `x`)], [])
+
+  # term_match [] `~(?x:A. P x)` `~(?n. 5 < n /\ n < 6)`;;
+  val it : instantiation =
+    ([(1, `P`)], [(`\n. 5 < n /\ n < 6`, `P`)], [(`:num`, `:A`)])
+}
+
+\COMMENTS
+This function can occasionally `succeed' yet produce a match that does not in 
+fact work. In typical uses, this will be implicitly checked by a subsequent 
+inference process. However, to get a self-contained matching effect, the user 
+should check that the instantiation returned does achieve a match, e.g. by 
+applying {instantiate}.
+
+\SEEALSO
+instantiate, INSTANTIATE, PART_MATCH.
+
+\ENDDOC

@@ -1,0 +1,27 @@
+\DOC BETAS_CONV
+
+\TYPE {BETAS_CONV : conv}
+
+\SYNOPSIS
+Beta conversion over multiple arguments.
+
+\DESCRIBE
+Given a term {t} of the form {`(\x1 ... xn. t[x1,...,xn]) s1 ... sn`}, the call
+{BETAS_CONV t} returns
+{
+  |- (\x1 ... xn. t[x1,...,xn]) s1 ... sn = t[s1,...,sn]
+}
+
+\FAILURE
+Fails if the term is not of the form shown, for some {n}.
+
+\EXAMPLE
+{
+  # BETAS_CONV `(\x y. x + y) 1 2`;;
+  val it : thm = |- (\x y. x + y) 1 2 = 1 + 2
+}
+
+\SEEALSO
+BETA_CONV, RIGHT_BETAS.
+
+\ENDDOC

@@ -1,0 +1,36 @@
+\DOC BETA_RULE
+
+\TYPE {BETA_RULE : thm -> thm}
+
+\SYNOPSIS
+Beta-reduces all the beta-redexes in the conclusion of a theorem.
+
+\KEYWORDS
+rule.
+
+\DESCRIBE
+When applied to a theorem {A |- t}, the inference rule {BETA_RULE} beta-reduces
+all beta-redexes, at any depth, in the conclusion {t}. Variables are renamed
+where necessary to avoid free variable capture.
+{
+    A |- ....((\x. s1) s2)....
+   ----------------------------  BETA_RULE
+      A |- ....(s1[s2/x])....
+}
+\FAILURE
+Never fails, but will have no effect if there are no beta-redexes.
+
+\EXAMPLE
+The following example is a simple reduction which illustrates variable
+renaming:
+{
+  # let x = ASSUME `f = ((\x y. x + y) y)`;;
+  val x : thm = f = (\x y. x + y) y |- f = (\x y. x + y) y
+
+  # BETA_RULE x;;
+  val it : thm = f = (\x y. x + y) y |- f = (\y'. y + y')
+}
+\SEEALSO
+BETA_CONV, BETA_TAC, GEN_BETA_CONV.
+
+\ENDDOC

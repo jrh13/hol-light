@@ -1,0 +1,133 @@
+*****************************************************
+****                                             ****
+****          PROOF OBJECTS FOR HOL-LIGHT        ****
+****                                             ****
+****          Steven Obua (obua@in.tum.de)       ****
+****         Technische Universität München      ****
+****                February 2005                ****
+****                                             ****
+*****************************************************
+
+LICENSE: The usual Hol-light license applies.
+
+********************************************
+* How to set up proof objects in Hol-light *
+********************************************
+
+There are two environment variables that need to be set in order to
+generate and save proof objects.
+
+Example:
+export HOLPROOFOBJECTS=EXTENDED
+export HOLPROOFEXPORTDIR=/home/obua/tmp/holproofexport
+
+1. HOLPROOFOBJECTS
+This environment variable switches proof objects on and off. In addition,
+it allows to choose between two different modes of proof objects. It can
+have one of three different values: NONE, BASIC, EXTENDED. If it is not set
+or different from those three values (the check is case-sensitive),
+NONE is assumed.
+
+NONE
+        Proof objects are switched off.
+
+BASIC
+        Proof objects are switched on.
+
+EXTENDED
+        Proof objects are switched on. In contrast to BASIC, not only
+        the hol-light kernel generates proof objects, but also selected
+        theorem generating functions (like SYM) generate proof objects,
+        replacing and therefore abbreviating the primitive proof objects.
+
+If you want to generate proof objects, the EXTENDED mode is the recommended
+one. Hol-light needs much less memory in EXTENDED mode than in BASIC mode,
+and it generates more compact proof objects on disk, too. The BASIC mode
+might be useful if the proof object importer does not understand the EXTENDED
+proof objects, but only the BASIC proof objects.
+The proof object importer that comes with Isabelle/HOL understands EXTENDED
+proof objects.
+
+2. HOLPROOFEXPORTDIR
+If proof objects are switched on, this environment variable needs to point
+to a writeable directory, otherwise an exception is thrown when the user
+tries to save his proof objects.
+
+After setting these environment variables, see the following instructions.
+
+*******************************************************
+* How to build a "proof objects" version of HOL Light *
+*******************************************************
+
+Just go into the following subdirectory, which starts empty except for
+the Makefile:
+
+  Proofrecording/hol_light
+
+and type "make" (or "make hol" etc. if building an image). This will
+
+ (1) Copy all the core HOL Light files into this directory
+ (2) Copy those that need to be radically changed from ../diffs
+ (3) Systematically change "prove" into named "nprove" calls
+
+Now you should just be able to start HOL Light as usual, but from
+within this directory "Proofrecording/hol_light", and the various
+proof recording options will be available to you; see below.
+
+Note that the "unix" library is needed. If on a platform like Cygwin
+where dynamic loading isn't supported, you need to use a standalone
+image with both the "unix" and "num" libraries preinstalled, e.g. by
+
+  ocamlmktop -o ocamlnumunix nums.cma unix.cma
+
+************************************
+* Using proof objects in Hol-light *
+************************************
+
+There are basically three commands that are at your disposal for dealing
+with proof objects:
+
+1. save_thm : string -> thm -> thm
+"save_thm n th" saves the proof of the given theorem th under the given
+name n in the proof database. It returns as a value the unmodified theorem.
+
+2. nprove: string -> term * tactic -> thm
+"nprove n x" calls "prove x", saves the proof of the resulting theorem
+under the given name n in the proof database, and returns the theorem.
+
+3. export_saved_proofs: (string option) -> unit
+"export_saved_proofs (Some <thyname>)" saves the whole current proof
+database to the subdirectory $HOLPROOFEXPORTDIR/hollight/<thyname>.
+For "export_saved_proofs None" the destination directory is
+  $HOLPROOFEXPORTDIR/hollight/hollight.
+
+*********************************************************
+* No built-in equality of theorems (and proofs) anymore *
+*********************************************************
+
+With the introduction of proof objects, theorems now not only consist
+of a list of assumptions and a conclusion, but of a proof object as well.
+Therefore even if theorems A and B state the same proposition,
+they might not be equal under built-in equality "=", because the proof
+for A might differ from the proof of B. Therefore built-in equality
+for theorems is now forbidden, a comparison "A = B" fails with
+the following message:
+
+Exception: Invalid_argument "equal: functional value".
+
+If theorems need to be compared, the function
+  equals_thm: thm -> thm -> bool
+can be used. This function only compares assumptions and
+conclusion, and ignores the proof object.
+
+********************
+* Acknowledgements *
+********************
+
+Thanks to Sebastian Skalberg for his tremendous help with
+porting his HOL4 code to Hol-light. Thanks to Tobias Nipkow for his idea
+on how to detect calls to the built-in equality of theorems during runtime,
+and thanks to Virgile Prevosto for his proposal on how to statically
+detect calls to the built-in equality on theorems.
+Last, but not least, thanks to John Harrison for including and integrating
+this proof object stuff in his very nice and clean Hol-light distribution.

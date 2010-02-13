@@ -1,0 +1,27 @@
+\DOC mk_binder
+
+\TYPE {mk_binder : string -> term * term -> term}
+
+\SYNOPSIS
+Constructs a term with a named constant applied to an abstraction.
+
+\DESCRIBE
+The call {mk_binder "c" (x,t)} returns the term {c (\x. t)} where {c} is a 
+constant with the given name appropriately type-instantiated. Note that the 
+binder parsing status of {c} is irrelevant, though only if it is parsed as a 
+binder will the resulting term be printed and parseable as {c x. t}.
+ 
+\FAILURE
+Failus if {x} is not a variable, if there is no constant {c} or if the type of 
+that constant cannot be instantiated to match the abstraction.
+
+\EXAMPLE
+{
+  # mk_binder "!" (`x:num`,`x + 1 > 0`);;
+  val it : term = `!x. x + 1 > 0`
+}
+
+\SEEALSO
+dest_binder, is_binder.
+
+\ENDDOC

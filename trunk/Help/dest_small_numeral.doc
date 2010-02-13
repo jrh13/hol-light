@@ -1,0 +1,35 @@
+\DOC dest_small_numeral
+
+\TYPE {dest_small_numeral : term -> int}
+
+\SYNOPSIS
+Converts a HOL numeral term to machine integer.
+
+\DESCRIBE
+The call {dest_small_numeral t} where {t} is the HOL numeral representation of
+{n}, returns {n} as an OCaml machine integer. It fails if the term is not a
+numeral or the result doesn't fit in a machine integer. 
+
+\FAILURE
+Fails if the term is not a numeral or if the result doesn't fit in a machine
+integer.
+
+\EXAMPLE
+{
+  #  dest_small_numeral `12`;;
+  val it : int = 12
+
+  # dest_small_numeral `18446744073709551616`;;
+  Exception: Failure "int_of_big_int".
+}
+
+\COMMENTS
+If overflow is a danger, you may be better off using OCaml type {num} and the
+analogous function {dest_numeral}. However, none of HOL's inference rules 
+depend on the behaviour of machine integers, so logical soundness is not an 
+issue.
+
+\SEEALSO
+dest_numeral, is_numeral, mk_numeral, mk_small_numeral, rat_of_term.
+
+\ENDDOC

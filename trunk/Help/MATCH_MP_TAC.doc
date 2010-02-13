@@ -1,0 +1,55 @@
+\DOC MATCH_MP_TAC
+
+\TYPE {MATCH_MP_TAC : thm_tactic}
+
+\SYNOPSIS
+Reduces the goal using a supplied implication, with matching.
+
+\KEYWORDS
+tactic, modus ponens, implication.
+
+\DESCRIBE
+When applied to a theorem of the form
+{
+   A' |- !x1...xn. s ==> t
+}
+\noindent {MATCH_MP_TAC} produces a tactic that reduces a goal whose conclusion
+{t'} is a substitution and/or type instance of {t} to the corresponding
+instance of {s}. Any variables free in {s} but not in {t} will be existentially
+quantified in the resulting subgoal:
+{
+     A ?- t'
+  ======================  MATCH_MP_TAC (A' |- !x1...xn. s ==> t)
+     A ?- ?z1...zp. s'
+}
+\noindent where {z1}, ..., {zp} are (type instances of) those variables among
+{x1}, ..., {xn} that do not occur free in {t}. Note that this is not a valid
+tactic unless {A'} is a subset of {A}.
+
+\EXAMPLE
+The following goal might be solved by case analysis:
+{
+  # g `!n:num. n <= n * n`;;
+}
+We can ``manually'' perform induction by using the following theorem:
+{
+  # num_INDUCTION;;
+  val it : thm = |- !P. P 0 /\ (!n. P n ==> P (SUC n)) ==> (!n. P n)
+}
+\noindent which is useful with {MATCH_MP_TAC} because of higher-order matching:
+{
+  # e(MATCH_MP_TAC num_INDUCTION);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `0 <= 0 * 0 /\ (!n. n <= n * n ==> SUC n <= SUC n * SUC n)`
+}
+\noindent The goal can be finished with {ARITH_TAC}.
+
+\FAILURE
+Fails unless the theorem is an (optionally universally quantified) implication
+whose consequent can be instantiated to match the goal.
+
+\SEEALSO
+EQ_MP, MATCH_MP, MP, MP_TAC, PART_MATCH.
+
+\ENDDOC

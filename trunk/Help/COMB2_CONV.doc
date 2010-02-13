@@ -1,0 +1,22 @@
+\DOC COMB2_CONV
+
+\TYPE {COMB2_CONV : (term -> thm) -> (term -> thm) -> term -> thm}
+
+\SYNOPSIS
+Applies two conversions to the two sides of an application.
+
+\DESCRIBE
+If {c1} and {c2} are conversions such that {c1 `f`} returns {|- f = f'} and
+{c2 `x`} returns {|- x = x'}, then {COMB_CONV c1 c2 `f x`} returns
+{|- f x = f' x'}. That is, the conversions {c1} and {c2} are applied
+respectively to the two immediate subterms.
+
+\FAILURE
+Never fails when applied to the initial conversions. On application to the term,
+it fails if either {c1} or {c2} does, or if either returns a theorem that is of
+the wrong form.
+
+\SEEALSO
+BINOP_CONV, COMB_CONV, LAND_CONV, RAND_CONV, RATOR_CONV
+
+\ENDDOC

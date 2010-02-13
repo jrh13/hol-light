@@ -1,0 +1,19 @@
+\DOC dest_cons
+
+\TYPE {dest_cons : term -> term * term}
+
+\SYNOPSIS
+Breaks apart a `CONS pair' into head and tail.
+
+\DESCRIBE
+{dest_cons} is a term destructor for `CONS pairs'. When applied to a term
+representing a nonempty list {`[t;t1;...;tn]`} (which is equivalent to {`CONS t
+[t1;...;tn]`}), it returns the pair of terms {(`t`,`[t1;...;tn]`)}.
+
+\FAILURE
+Fails with {dest_cons} if the term is not a non-empty list.
+
+\SEEALSO
+dest_list, is_cons, is_list, mk_cons, mk_list.
+
+\ENDDOC
