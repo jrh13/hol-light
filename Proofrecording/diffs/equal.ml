@@ -19,6 +19,20 @@ let lhs = fst o dest_eq;;
 let rhs = snd o dest_eq;;
 
 (* ------------------------------------------------------------------------- *)
+(* Similar to variant, but even avoids constants, and ignores types.         *)
+(* ------------------------------------------------------------------------- *)
+
+let mk_primed_var =
+  let rec svariant avoid s =
+    if mem s avoid or (can get_const_type s & not(is_hidden s)) then
+      svariant avoid (s^"'")
+    else s in
+  fun avoid v ->
+    let s,ty = dest_var v in
+    let s' = svariant (mapfilter (fst o dest_var) avoid) s in
+    mk_var(s',ty);;
+
+(* ------------------------------------------------------------------------- *)
 (* General case of beta-conversion.                                          *)
 (* ------------------------------------------------------------------------- *)
 

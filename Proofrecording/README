@@ -1,10 +1,15 @@
 *****************************************************
 ****                                             ****
 ****          PROOF OBJECTS FOR HOL-LIGHT        ****
+****              EXPORTATION TO COQ             ****
 ****                                             ****
 ****          Steven Obua (obua@in.tum.de)       ****
 ****         Technische Universität München      ****
 ****                February 2005                ****
+****                     and                     ****
+**** Chantal Keller (keller@lix.polytechnique.fr)****
+**** Laboratoire d'Informatique de Polytechnique ****
+****                January 2010                 ****
 ****                                             ****
 *****************************************************
 
@@ -22,11 +27,11 @@ export HOLPROOFOBJECTS=EXTENDED
 export HOLPROOFEXPORTDIR=/home/obua/tmp/holproofexport
 
 1. HOLPROOFOBJECTS
-This environment variable switches proof objects on and off. In addition,
-it allows to choose between two different modes of proof objects. It can
-have one of three different values: NONE, BASIC, EXTENDED. If it is not set
-or different from those three values (the check is case-sensitive),
-NONE is assumed.
+This environment variable switches proof objects on and off. In
+addition, it allows to choose between two different modes of proof
+objects. It can have one of four different values: NONE, BASIC,
+EXTENDED, COQ. If it is not set or different from those three values
+(the check is case-sensitive), NONE is assumed.
 
 NONE
         Proof objects are switched off.
@@ -119,6 +124,50 @@ If theorems need to be compared, the function
   equals_thm: thm -> thm -> bool
 can be used. This function only compares assumptions and
 conclusion, and ignores the proof object.
+
+***************************************
+* Eporting the proof objects into Coq *
+***************************************
+
+It is now possible to export the proof objects in a format that is
+readable for Coq, such that the theorems can be re-checked and used in
+Coq. The differences with the standard exportation system are:
+
+1. Set the environment variable HOLPROOFOBJECTS to COQ:
+
+COQ
+        The same as for EXTENDED, but proof objects are not exported to
+        an XML format but to a format that is readable by Coq.
+
+2. To start HOL-Light, the ocamlgraph and str libraries are needed. You
+have to install ocamlgraph, then use a standalone image with both these
+libraries preinstalled. This can be done automatically by executing
+
+  make top
+
+The top-level that is created has the name top.
+
+3. In addition with the commands save_thm and nprove, you dispose of
+three commands to perform the exportation:
+
+- export_saved_proofs: unit -> unit
+"export_saved_proofs ()" saves the whole current proof database to the
+subdirectory $HOLPROOFEXPORTDIR/hollight/hollight.
+
+- export_one_proof: string -> unit
+"export_one_proof "foobar"" saves the proof of the theorem foobar to the
+subdirectory $HOLPROOFEXPORTDIR/hollight/hollight.
+
+- export_list: string list -> unit
+"export_list l" saves the proofs of all the theorems of l to the
+subdirectory $HOLPROOFEXPORTDIR/hollight/hollight.
+
+
+4. To exploit the theorems that have been exported, you have to download
+the Coq's interface at
+<http://perso.ens-lyon.fr/chantal.keller/Documents-recherche/Stage09/hollightcoq-coq.tar.gz>.
+A README file explains how to use it.
+
 
 ********************
 * Acknowledgements *

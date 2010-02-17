@@ -25,7 +25,7 @@ module type Proofobject_primitives =
     val proof_ABS : term -> proof -> proof
     val proof_INST_TYPE : (hol_type * hol_type) list -> proof -> proof
     val proof_INST : (term * term) list -> proof -> proof
-    val proof_new_definition : string -> term -> proof
+    val proof_new_definition : string -> hol_type -> term -> proof
     val proof_CONJ : proof -> proof -> proof
     val proof_CONJUNCT1 : proof -> proof
     val proof_CONJUNCT2 : proof -> proof
@@ -175,7 +175,7 @@ module Proofobjects : Proofobject_primitives = struct
 
   let proof_INST s p = writeln "INST" (mk_proof (Pinst(inc_references p, map pair2libsubstrec s)))
 
-  let proof_new_definition cname t = writeln "new_definition" (mk_proof (Pdef (THEORY_NAME, cname, t)))
+  let proof_new_definition cname _ t = writeln "new_definition" (mk_proof (Pdef (THEORY_NAME, cname, t)))
 
   let proof_new_axiom axname t = writeln "new_axiom" (mk_proof (Paxm (axname, t)))
 

@@ -26,7 +26,7 @@ module type Proofobject_primitives =
     val proof_ABS : term -> proof -> proof
     val proof_INST_TYPE : (hol_type * hol_type) list -> proof -> proof
     val proof_INST : (term * term) list -> proof -> proof
-    val proof_new_definition : string -> term -> proof
+    val proof_new_definition : string -> hol_type -> term -> proof
     val proof_CONJ : proof -> proof -> proof
     val proof_CONJUNCT1 : proof -> proof
     val proof_CONJUNCT2 : proof -> proof
@@ -73,7 +73,7 @@ module Proofobjects : Proofobject_primitives = struct
   let proof_ABS _ _ = dummy ()
   let proof_INST_TYPE _ _ = dummy ()
   let proof_INST _ _ = dummy ()
-  let proof_new_definition _ _ = dummy ()
+  let proof_new_definition _ _ _ = dummy ()
   let proof_CONJ _ _ = dummy ()
   let proof_CONJUNCT1 _ = dummy ()
   let proof_CONJUNCT2 _ = dummy ()

@@ -19,14 +19,14 @@ BINDIR=${HOME}/bin
 
 # This is the list of source files in the HOL Light core
 
-HOLSRC=sys.ml lib.ml type.ml term.ml thm.ml basics.ml nets.ml           \
+HOLSRC=system.ml lib.ml type.ml term.ml thm.ml basics.ml nets.ml        \
        preterm.ml parser.ml printer.ml equal.ml bool.ml drule.ml        \
-       tactics.ml itab.ml simp.ml theorems.ml ind-defs.ml class.ml      \
+       tactics.ml itab.ml simp.ml theorems.ml ind_defs.ml class.ml      \
        trivia.ml canon.ml meson.ml quot.ml recursion.ml pair.ml         \
-       num.ml arith.ml wf.ml calc_num.ml normalizer.ml grobner.ml       \
-       ind-types.ml list.ml realax.ml calc_int.ml realarith.ml          \
-       real.ml calc_rat.ml int.ml sets.ml iter.ml cart.ml define.ml     \
-       help.ml database.ml
+       nums.ml arith.ml wf.ml calc_num.ml normalizer.ml grobner.ml      \
+       ind_types.ml lists.ml realax.ml calc_int.ml realarith.ml         \
+       real.ml calc_rat.ml int.ml sets.ml iterate.ml cart.ml define.ml  \
+       help.ml database.ml update_database.ml
 
 # Build the camlp4 syntax extension file (camlp5 for OCaml >= 3.10)
 
@@ -35,12 +35,6 @@ pa_j.cmo: sources pa_j.ml; if test `ocamlc -version | cut -c1-4` = "3.10" -o `oc
                    else ocamlc -c -pp "camlp4r pa_extend.cmo q_MLast.cmo" -I +camlp4 pa_j.ml; \
                    fi
 
-# Choose the source for the camlp4 syntax extension based on OCaml version
-# If this doesn't work, pick the one for (or closest to) the major version
-# of OCaml you're using.
-
-pa_j.ml: pa_j_3.04.ml pa_j_3.06.ml pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.10.ml; cp pa_j_`ocamlc -version | cut -c1-4`.ml pa_j.ml || cp pa_j_3.10.ml pa_j.ml
-
 # Copy over and modify the sources
 
 sources:; cp ../../*.ml .; \
@@ -48,11 +42,28 @@ sources:; cp ../../*.ml .; \
           java -jar ../tools/nametheorems.jar *.ml; \
           rm *.ml.old
 
+# Choose the source for the camlp4 syntax extension based on OCaml version
+# If this doesn't work, pick the one for (or closest to) the major version
+# of OCaml you're using.
+
+pa_j.ml: pa_j_3.04.ml pa_j_3.06.ml pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.10.ml; cp pa_j_`ocamlc -version | cut -c1-4`.ml pa_j.ml || cp pa_j_3.11.ml pa_j.ml
+
+# Compile depgraph
+
+depgraph.ml:; cp ../diffs/depgraph.ml .
+
+depgraph: depgraph.ml; ocamlc -a -I +ocamlgraph graph.cma -o depgraph.cma depgraph.ml
+
+
+# Create a top-level using str and depgraph
+
+top: depgraph; ocamlmktop -o top -I +ocamlgraph graph.cma depgraph.cma str.cma
+
 # Build a standalone hol image called "hol" (needs Linux and ckpt program)
 
-hol: pa_j.cmo ${HOLSRC} Examples/update_database.ml;                    \
+hol: pa_j.cmo ${HOLSRC} update_database.ml;                    \
      if test `uname` = Linux; then                                      \
-     echo -e '#use "make.ml";;\nloadt "Examples/update_database.ml";;\nself_destruct "";;' | ckpt -a SIGUSR1 -n hol.snapshot ocaml;\
+     echo -e '#use "make.ml";;\nloadt "update_database.ml";;\nself_destruct "";;' | ckpt -a SIGUSR1 -n hol.snapshot ocaml;\
      mv hol.snapshot hol;                                               \
      else                                                               \
      echo '******************************************************';     \
@@ -60,37 +71,39 @@ hol: pa_j.cmo ${HOLSRC} Examples/update_database.ml;                    \
      echo '******************************************************';     \
      fi
 
-# Build an image with multivatiate calculus preloaded.
+# Build an image with multivariate calculus preloaded.
 
 hol.multivariate: ./hol                                                 \
-     Multivariate/misc.ml Multivariate/vectors.ml                       \
+     Library/card.ml Library/permutations.ml Multivariate/misc.ml       \
+     Library/products.ml Library/floor.ml Multivariate/vectors.ml       \
      Multivariate/determinants.ml Multivariate/topology.ml              \
-     Multivariate/convex.ml Multivariate/dimension.ml                   \
-     Multivariate/analysis.ml Multivariate/clifford.ml                  \
-     Multivariate/integration.ml Multivariate/measure.ml                \
-     Multivariate/multivariate_database.ml Examples/update_database.ml; \
-     echo -e 'loadt "Multivariate/make.ml";;\nloadt "Examples/update_database.ml";;\nself_destruct "Preloaded with multivariate analysis";;' | ./hol; mv hol.snapshot hol.multivariate;
+     Multivariate/convex.ml Multivariate/polytope.ml                    \
+     Multivariate/dimension.ml Multivariate/derivatives.ml              \
+     Multivariate/clifford.ml Multivariate/integration.ml               \
+     Multivariate/measure.ml                                            \
+     Multivariate/multivariate_database.ml update_database.ml;          \
+     echo -e 'loadt "Multivariate/make.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate analysis";;' | ./hol; mv hol.snapshot hol.multivariate;
 
 # Build an image with analysis and SOS procedure preloaded
 
 hol.sosa: ./hol                                                         \
-     Examples/analysis.ml Examples/transc.ml                            \
-     Examples/sos.ml Examples/update_database.ml;                       \
-     echo -e 'loadt "Examples/analysis.ml";;\nloadt "Examples/transc.ml";;\nloadt "Examples/sos.ml";;\nloadt "Examples/update_database.ml";;\nself_destruct "Preloaded with analysis and SOS";;' | ./hol; mv hol.snapshot hol.sosa;
+     Library/analysis.ml Library/transc.ml                              \
+     Examples/sos.ml update_database.ml;                                \
+     echo -e 'loadt "Library/analysis.ml";;\nloadt "Library/transc.ml";;\nloadt "Examples/sos.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with analysis and SOS";;' | ./hol; mv hol.snapshot hol.sosa;
 
 # Build an image with cardinal arithmetic preloaded
 
-hol.card: ./hol Examples/card.ml; Examples/update_database.ml;          \
-        echo -e 'loadt "Examples/card.ml";;\nloadt "Examples/update_database.ml";;\nself_destruct "Preloaded with cardinal arithmetic";;' | ./hol; mv hol.snapshot hol.card;
+hol.card: ./hol Library/card.ml; update_database.ml;                    \
+        echo -e 'loadt "Library/card.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with cardinal arithmetic";;' | ./hol; mv hol.snapshot hol.card;
 
 # Build an image with multivariate-based complex analysis preloaded
 
 hol.complex: ./hol.multivariate                                         \
-        Multivariate/complex.ml Multivariate/canal.ml                   \
-        Multivariate/transc.ml Multivariate/real.ml                     \
-        Multivariate/cauchy.ml Multivariate/complex_database.ml         \
-        Examples/update_database.ml;                                    \
-        echo -e 'loadt "Multivariate/complex.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transc.ml";;\nloadt "Multivariate/real.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "Examples/update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
+        Library/binomial.ml Library/iter.ml Multivariate/complexes.ml   \
+        Multivariate/canal.ml Multivariate/transcendentals.ml           \
+        Multivariate/realanalysis.ml Multivariate/cauchy.ml             \
+        Multivariate/complex_database.ml update_database.ml;            \
+        echo -e 'loadt "Multivariate/complexes.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transcendentals.ml";;\nloadt "Multivariate/realanalysis.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
 
 # Build all those
 
@@ -100,6 +113,8 @@ all: hol hol.multivariate hol.sosa hol.card hol.complex;
 
 install: hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivariate hol.sosa hol.card hol.complex ${BINDIR}
 
-# Clean up all compiled files
+# Clean up all generated files
 
-clean:; rm -f *.ml *.ml.old pa_j.cmi pa_j.cmo hol hol.multivariate hol.sosa hol.card hol.complex;
+clean:; rm -f *.ml *.ml.old pa_j.cmi pa_j.cmo hol hol.multivariate hol.sosa hol.card
+
+clean_all: clean; rm -f *~ *.cma *.cmi *.cmo top top.exe
