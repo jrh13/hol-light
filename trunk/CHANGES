@@ -1,5 +1,12 @@
+Tue 16th Feb 2010       Proofrecording/README Proofrecording/diffs/equal.ml, Proofrecording/diffs/hol.ml, Proofrecording/diffs/proofobjects_dummy.ml, Proofrecording/diffs/proofobjects_init.ml,  Proofrecording/diffs/proofobjects_trt.ml, Proofrecording/hol_light/Makefile, Proofrecording/diffs/depgraph.ml [new file],  Proofrecording/diffs/proofobjects_coq.ml [new file]
+
+Installed several updates from Chantal Keller to the proof-recording
+infrastructure, slightly tweaked and merged with my latest updates. This fixes
+a few incompatibilities and also extends the proof-recording infrastructure to
+produce Coq proofs (set HOLPROOFOBJECTS=COQ). The new code uses the ocamlgraph
+library, so there is a new entry "top" in the Makefile to make it.
+
 ********************** FIRST GOOGLE CODE VERSION **********************
-****************** http://code.google.com/p/hol-light/ ****************
 
 Fri 12th Feb 2010       passim
 

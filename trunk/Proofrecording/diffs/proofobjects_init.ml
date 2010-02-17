@@ -1,16 +1,21 @@
-let (use_proofobjects, use_extended_proofobjects) =
+let (use_proofobjects, use_extended_proofobjects, use_coq) =
   try
     let n = Sys.getenv "HOLPROOFOBJECTS" in
     if n = "BASIC" then
-      (true, false)
+      (true, false, false)
     else if n = "EXTENDED" then
-      (true, true)
+      (true, true, false)
+    else if n = "COQ" then
+      (true, true, true)
     else
-      (false, false)
-  with Not_found -> (false, false);;
+      (false, false, false)
+  with Not_found -> (false, false, false);;
 
 let _ =
   if use_proofobjects then
-    loads "proofobjects_trt.ml"
+    if use_coq then
+      loads "proofobjects_coq.ml"
+    else
+      loads "proofobjects_trt.ml"
   else
     loads "proofobjects_dummy.ml";;
