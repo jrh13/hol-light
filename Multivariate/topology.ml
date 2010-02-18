@@ -907,6 +907,10 @@ let INTERIOR_MAXIMAL = prove
  (`!s t. t SUBSET s /\ open t ==> t SUBSET (interior s)`,
   REWRITE_TAC[interior; SUBSET; IN_ELIM_THM] THEN MESON_TAC[]);;
 
+let INTERIOR_MAXIMAL_EQ = prove
+ (`!s t. open s ==> (s SUBSET interior t <=> s SUBSET t)`,
+  MESON_TAC[SUBSET_TRANS; INTERIOR_SUBSET; INTERIOR_MAXIMAL]);;
+
 let INTERIOR_UNIQUE = prove
  (`!s t. t SUBSET s /\ open t /\ (!t'. t' SUBSET s /\ open t' ==> t' SUBSET t)
          ==> (interior s = t)`,
@@ -1045,6 +1049,10 @@ let CLOSURE_INTER_SUBSET = prove
 let CLOSURE_MINIMAL = prove
  (`!s t. s SUBSET t /\ closed t ==> (closure s) SUBSET t`,
   REWRITE_TAC[HULL_MINIMAL; CLOSURE_HULL]);;
+
+let CLOSURE_MINIMAL_EQ = prove
+ (`!s t:real^N->bool. closed t ==> (closure s SUBSET t <=> s SUBSET t)`,
+  MESON_TAC[SUBSET_TRANS; CLOSURE_SUBSET; CLOSURE_MINIMAL]);;
 
 let CLOSURE_UNIQUE = prove
  (`!s t. s SUBSET t /\ closed t /\
@@ -5955,6 +5963,19 @@ let BALL_1 = prove
   REWRITE_TAC[dist; NORM_REAL; GSYM drop; DROP_SUB; LIFT_DROP; DROP_ADD] THEN
   REAL_ARITH_TAC);;
 
+let FINITE_INTERVAL_1 = prove
+ (`(!a b. FINITE(interval[a,b]) <=> drop b <= drop a) /\
+   (!a b. FINITE(interval(a,b)) <=> drop b <= drop a)`,
+  REWRITE_TAC[OPEN_CLOSED_INTERVAL_1] THEN
+  REWRITE_TAC[SET_RULE `s DIFF {a,b} = s DELETE a DELETE b`] THEN
+  REWRITE_TAC[FINITE_DELETE] THEN REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `interval[a,b] = IMAGE lift {x | drop a <= x /\ x <= drop b}`
+  SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    CONJ_TAC THENL [MESON_TAC[LIFT_DROP]; ALL_TAC] THEN
+    REWRITE_TAC[IN_INTERVAL_1; IN_ELIM_THM; LIFT_DROP];
+    SIMP_TAC[FINITE_IMAGE_INJ_EQ; LIFT_EQ; FINITE_REAL_INTERVAL]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some stuff for half-infinite intervals too; maybe I need a notation?      *)
 (* ------------------------------------------------------------------------- *)
@@ -6228,7 +6249,7 @@ let SEGMENT_SCALAR_MULTIPLE = prove
 
 let FINITE_INTER_COLLINEAR_OPEN_SEGMENTS = prove
  (`!a b c d:real^N.
-        collinear{a,b,c,d}
+        collinear{a,b,c}
         ==> (FINITE(segment(a,b) INTER segment(c,d)) <=>
              segment(a,b) INTER segment(c,d) = {})`,
   REPEAT GEN_TAC THEN ABBREV_TAC `m:real^N = b - a` THEN POP_ASSUM MP_TAC THEN
@@ -6242,30 +6263,55 @@ let FINITE_INTER_COLLINEAR_OPEN_SEGMENTS = prove
   SIMP_TAC[VECTOR_SUB_RZERO; NORM_MUL; NORM_BASIS; DIMINDEX_GE_1; LE_REFL] THEN
   ASM_REWRITE_TAC[real_abs; REAL_MUL_RID] THEN DISCH_THEN SUBST_ALL_TAC THEN
   POP_ASSUM(K ALL_TAC) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] COLLINEAR_SUBSET)) THEN
-  DISCH_THEN(fun th ->
-   MP_TAC(SPEC `{vec 0:real^N,basis 1,x}` th) THEN
-   MP_TAC(SPEC `{vec 0:real^N,basis 1,y}` th)) THEN
-  SIMP_TAC[COLLINEAR_LEMMA_ALT; BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL] THEN
-  ANTS_TAC THENL
-   [REWRITE_TAC[VECTOR_MUL_LID] THEN SET_TAC[];
-    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-    X_GEN_TAC `a:real` THEN DISCH_THEN SUBST_ALL_TAC] THEN
-  ANTS_TAC THENL
-   [REWRITE_TAC[VECTOR_MUL_LID] THEN SET_TAC[];
-    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-    X_GEN_TAC `b:real` THEN DISCH_THEN SUBST_ALL_TAC] THEN
-  SUBST1_TAC(VECTOR_ARITH `vec 0:real^N = &0 % basis 1`) THEN
-  SIMP_TAC[SEGMENT_SCALAR_MULTIPLE; BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL;
-   VECTOR_MUL_RCANCEL; IMAGE_EQ_EMPTY; FINITE_IMAGE_INJ_EQ; SET_RULE
+  ASM_CASES_TAC `collinear{vec 0:real^N,&1 % basis 1,y}` THENL
+   [POP_ASSUM MP_TAC THEN
+    SIMP_TAC[COLLINEAR_LEMMA_ALT; BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL] THEN
+    MATCH_MP_TAC(TAUT
+     `~a /\ (b ==> c ==> d) ==> a \/ b ==> a \/ c ==> d`) THEN
+    CONJ_TAC THENL
+     [SIMP_TAC[VECTOR_MUL_LID; BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL];
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+    X_GEN_TAC `b:real` THEN DISCH_THEN SUBST_ALL_TAC THEN
+    X_GEN_TAC `a:real` THEN DISCH_THEN SUBST_ALL_TAC THEN
+    REWRITE_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RID] THEN
+    SUBST1_TAC(VECTOR_ARITH `vec 0:real^N = &0 % basis 1`) THEN
+    SIMP_TAC[SEGMENT_SCALAR_MULTIPLE; BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL;
+     VECTOR_MUL_RCANCEL; IMAGE_EQ_EMPTY; FINITE_IMAGE_INJ_EQ; SET_RULE
      `(!x y. x % v = y % v <=> x = y)
       ==> {x % v | P x} INTER {x % v | Q x} =
           IMAGE (\x. x % v) {x | P x /\ Q x}`] THEN
-  REWRITE_TAC[REAL_ARITH `(&0 < x /\ x < &1 \/ &1 < x /\ x < &0) /\
-                          (b < x /\ x < a \/ a < x /\ x < b) <=>
+    REWRITE_TAC[REAL_ARITH `(&0 < x /\ x < &1 \/ &1 < x /\ x < &0) /\
+                            (b < x /\ x < a \/ a < x /\ x < b) <=>
                        max (&0) (min a b) < x /\ x < min (&1) (max a b)`] THEN
-  REWRITE_TAC[FINITE_REAL_INTERVAL; EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM] THEN
-  SIMP_TAC[GSYM REAL_LT_BETWEEN; GSYM NOT_EXISTS_THM] THEN REAL_ARITH_TAC);;
+    SIMP_TAC[FINITE_REAL_INTERVAL; EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM] THEN
+    SIMP_TAC[GSYM REAL_LT_BETWEEN; GSYM NOT_EXISTS_THM] THEN REAL_ARITH_TAC;
+    DISCH_TAC THEN ASM_CASES_TAC
+     `segment(vec 0:real^N,&1 % basis 1) INTER segment (x,y) = {}` THEN
+    ASM_REWRITE_TAC[FINITE_EMPTY] THEN DISCH_THEN(K ALL_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    REWRITE_TAC[open_segment; IN_DIFF; NOT_IN_EMPTY;
+                DE_MORGAN_THM; IN_INTER; IN_INSERT] THEN
+    DISCH_THEN(X_CHOOSE_THEN `p:real^N` STRIP_ASSUME_TAC) THEN
+    UNDISCH_TAC `~collinear{vec 0:real^N,&1 % basis 1, y}` THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[VECTOR_MUL_LID]) THEN
+    REWRITE_TAC[VECTOR_MUL_LID] THEN
+    MATCH_MP_TAC COLLINEAR_SUBSET THEN
+    EXISTS_TAC `{p,x:real^N, y, vec 0, basis 1}` THEN
+    CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+    MP_TAC(ISPECL [`{y:real^N,vec 0,basis 1}`; `p:real^N`; `x:real^N`]
+        COLLINEAR_TRIPLES) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+    REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY] THEN CONJ_TAC THENL
+     [ONCE_REWRITE_TAC[SET_RULE `{p,x,y} = {x,p,y}`] THEN
+      MATCH_MP_TAC BETWEEN_IMP_COLLINEAR THEN
+      ASM_REWRITE_TAC[BETWEEN_IN_SEGMENT];
+      ALL_TAC] THEN
+    ASM_SIMP_TAC[GSYM COLLINEAR_4_3] THEN
+    ONCE_REWRITE_TAC[SET_RULE `{p,x,z,w} = {w,z,p,x}`] THEN
+    SIMP_TAC[COLLINEAR_4_3; BASIS_NONZERO; DIMINDEX_GE_1; ARITH] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP BETWEEN_IMP_COLLINEAR o
+        GEN_REWRITE_RULE I [GSYM BETWEEN_IN_SEGMENT])) THEN
+    REPEAT(POP_ASSUM MP_TAC) THEN SIMP_TAC[INSERT_AC]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Closure of halfspaces and hyperplanes.                                    *)

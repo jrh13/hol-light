@@ -6362,6 +6362,18 @@ let BETWEEN_SYM = prove
  (`!a b x. between x (a,b) <=> between x (b,a)`,
   REWRITE_TAC[between] THEN NORM_ARITH_TAC);;
 
+let BETWEEN_ANTISYM = prove
+ (`!a b c. between a (b,c) /\ between b (a,c) ==> a = b`,
+  REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
+
+let BETWEEN_TRANS = prove                       
+ (`!a b c c. between a (b,c) /\ between d (a,c) ==> between d (b,c)`,
+  REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
+
+let BETWEEN_TRANS_2 = prove                                
+ (`!a b c d. between a (b,c) /\ between d (a,b) ==> between a (c,d)`,
+  REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;                     
+
 let BETWEEN_NORM = prove
  (`!a b x:real^N.
      between x (a,b) <=> norm(x - a) % (b - x) = norm(b - x) % (x - a)`,
