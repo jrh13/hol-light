@@ -2372,6 +2372,22 @@ let FUNCTION_FACTORS_LEFT = prove
     REWRITE_TAC[FUN_EQ_THM; o_THM] THEN MESON_TAC[]) in
   REWRITE_TAC[lemma; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
 
+let SURJECTIVE_FORALL_THM = prove
+ (`!f:A->B. (!y. ?x. f x = y) <=> (!P. (!x. P(f x)) <=> (!y. P y))`,
+  GEN_TAC THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN MESON_TAC[]);;
+
+let SURJECTIVE_EXISTS_THM = prove
+ (`!f:A->B. (!y. ?x. f x = y) <=> (!P. (?x. P(f x)) <=> (?y. P y))`,
+  GEN_TAC THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `\y:B. !x:A. ~(f x = y)`) THEN MESON_TAC[]);;
+
+let SURJECTIVE_IMAGE_THM = prove
+ (`!f:A->B. (!y. ?x. f x = y) <=> (!P. IMAGE f {x | P(f x)} = {x | P x})`,
+  GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN
+  EQ_TAC THENL [ALL_TAC; DISCH_THEN(MP_TAC o SPEC `\y:B. T`)] THEN
+  MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Injectivity and surjectivity of image under a function.                   *)
 (* ------------------------------------------------------------------------- *)
