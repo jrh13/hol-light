@@ -342,9 +342,9 @@ let MEM_EL = prove
 let MEM_EXISTS_EL = prove
  (`!l x. MEM x l <=> ?i. i < LENGTH l /\ x = EL i l`,
   LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[LENGTH; EL; MEM; CONJUNCT1 LT] THEN
-  GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV                                        
-   [MESON[num_CASES] `(?i. P i) <=> P 0 \/ (?i. P(SUC i))`] THEN 
-  REWRITE_TAC[LT_SUC; LT_0; EL; HD; TL]);; 
+  GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV
+   [MESON[num_CASES] `(?i. P i) <=> P 0 \/ (?i. P(SUC i))`] THEN
+  REWRITE_TAC[LT_SUC; LT_0; EL; HD; TL]);;
 
 let ALL2_MAP2 = prove
  (`!l m. ALL2 P (MAP f l) (MAP g m) = ALL2 (\x y. P (f x) (g y)) l m`,
@@ -369,6 +369,29 @@ let LENGTH_MAP2 = prove
  (`!f l m. (LENGTH l = LENGTH m) ==> (LENGTH(MAP2 f l m) = LENGTH m)`,
   GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
   ASM_SIMP_TAC[LENGTH; NOT_CONS_NIL; NOT_SUC; MAP2; SUC_INJ]);;
+
+let MAP_EQ_NIL  = prove
+ (`!f l. MAP f l = [] <=> l = []`,
+  GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC[MAP; NOT_CONS_NIL]);;
+
+let INJECTIVE_MAP = prove
+ (`!f:A->B. (!l m. MAP f l = MAP f m ==> l = m) <=>
+            (!x y. f x = f y ==> x = y)`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`[x:A]`; `[y:A]`]) THEN
+    ASM_REWRITE_TAC[MAP; CONS_11];
+    REPEAT LIST_INDUCT_TAC THEN ASM_SIMP_TAC[MAP; NOT_CONS_NIL; CONS_11] THEN
+    ASM_MESON_TAC[]]);;
+
+let SURJECTIVE_MAP = prove
+ (`!f:A->B. (!m. ?l. MAP f l = m) <=> (!y. ?x. f x = y)`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [X_GEN_TAC `y:B` THEN FIRST_X_ASSUM(MP_TAC o SPEC `[y:B]`) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    LIST_INDUCT_TAC THEN REWRITE_TAC[MAP; CONS_11; NOT_CONS_NIL; MAP_EQ_NIL];
+    MATCH_MP_TAC list_INDUCT] THEN
+  ASM_MESON_TAC[MAP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
