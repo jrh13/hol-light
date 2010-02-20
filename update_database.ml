@@ -5,141 +5,211 @@
 (* The core system already has such a database set up. Use this file if you  *)
 (* want to update the database beyond the core, so you can search it.        *)
 (*                                                                           *)
-(* The trickery to get at the OCaml environment is due to oleg@pobox.com     *)
-(* (see his message to the caml-list on Tuesday 26th September 2006).        *)
+(* The trickery to get at the OCaml environment is due to Roland Zumkeller.  *)
+(* It works by copying some internal data structures and casting into the    *)
+(* copy using Obj.magic.                                                     *)
 (* ========================================================================= *)
 
-(* !!!!!!! You must set this to point at the source directory in
-   !!!!!!! which OCaml was built. (And don't do "make clean" beforehand.)
- *)
+(* Execute any OCaml expression given as a string. *)
 
-let ocaml_source_dir =
-  Filename.concat (Sys.getenv "HOME")
-  ("software/ocaml-"^Sys.ocaml_version);;
+let exec = ignore o Toploop.execute_phrase false Format.std_formatter
+  o !Toploop.parse_toplevel_phrase o Lexing.from_string;;
 
-do_list (fun s -> Topdirs.dir_directory(Filename.concat ocaml_source_dir s))
-        ["parsing"; "typing"; "toplevel"; "utils"];;
-
-(* This must be loaded first! It is stateful, and affects Predef *)
-#load "ident.cmo";;
-
-#load "misc.cmo";;
-#load "path.cmo";;
-#load "types.cmo";;
-#load "btype.cmo";;
-#load "tbl.cmo";;
-#load "subst.cmo";;
-#load "predef.cmo";;
-#load "datarepr.cmo";;
-#load "config.cmo";;
-#load "consistbl.cmo";;
-#load "clflags.cmo";;
-#load "env.cmo";;
-#load "ctype.cmo";;
-#load "printast.cmo";;
-#load "oprint.cmo";;
-#load "primitive.cmo";;
-#load "printtyp.cmo";;
+type dummy;;
 
 (* ------------------------------------------------------------------------- *)
-(* Get the toplevel environment as raw data.                                 *)
+(* Basic data structures copied from OCaml. May be version-dependent.        *)
 (* ------------------------------------------------------------------------- *)
 
-let get_value_bindings env =
-   let rec get_val acc = function
-        | Env.Env_empty -> acc
-        | Env.Env_value (next, ident, val_descr) ->
-                get_val ((ident,val_descr)::acc) next
-        | Env.Env_type (next,_,_) -> get_val acc next
-        | Env.Env_exception (next,_,_) -> get_val acc next
-        | Env.Env_module (next,_,_) -> get_val acc next
-        | Env.Env_modtype (next,_,_) -> get_val acc next
-        | Env.Env_class (next,_,_) -> get_val acc next
-        | Env.Env_cltype (next,_,_) -> get_val acc next
-        | Env.Env_open (next,_) -> get_val acc next
-  in get_val [] (Env.summary env);;
+type label = int;;
+
+(*** from ./typing/ident.ml: ***)
+
+type ident_t = { stamp: int; name: string; mutable flags: int };;
+
+type 'a tbl =
+    Empty
+  | Node of 'a tbl * 'a data * 'a tbl * int
+
+and 'a data =
+  { ident: ident_t;
+    data: 'a;
+    previous: 'a data option };;
+
+(*** from ./typing/path.ml: ***)
+
+type path_t =
+    Pident of ident_t
+  | Pdot of path_t * string * int
+  | Papply of path_t * path_t;;
+
+(*** from typing/types.ml: ***)
+
+type type_expr =
+  { mutable desc: type_desc;
+    mutable level: int;
+    mutable id: int }
+
+and type_desc =
+    Tvar
+  | Tarrow of label * type_expr * type_expr * commutable
+  | Ttuple of type_expr list
+  | Tconstr of path_t * type_expr list * abbrev_memo ref
+  | Tobject of type_expr * (path_t * type_expr list) option ref
+  | Tfield of string * field_kind * type_expr * type_expr
+  | Tnil
+  | Tlink of type_expr
+  | Tsubst of type_expr
+  | Tvariant of row_desc
+  | Tunivar
+  | Tpoly of type_expr * type_expr list
+
+and row_desc =
+    { row_fields: (label * row_field) list;
+      row_more: type_expr;
+      row_bound: type_expr list;
+      row_closed: bool;
+      row_fixed: bool;
+      row_name: (path_t * type_expr list) option }
+
+and row_field =
+    Rpresent of type_expr option
+  | Reither of bool * type_expr list * bool * row_field option ref
+  | Rabsent
+
+and abbrev_memo =
+    Mnil
+  | Mcons of path_t * type_expr * type_expr * abbrev_memo
+  | Mlink of abbrev_memo ref
+
+and field_kind =
+    Fvar of field_kind option ref
+  | Fpresent
+  | Fabsent
+
+and commutable =
+    Cok
+  | Cunknown
+  | Clink of commutable ref;;
+
+type value_description =
+  { val_type: type_expr;
+    val_kind: dummy };;
+
+type module_type =
+    Tmty_ident of path_t
+  | Tmty_signature of signature
+  | Tmty_functor of ident_t * module_type * module_type
+
+and signature = signature_item list
+
+and signature_item =
+    Tsig_value of ident_t * value_description
+  | Tsig_type of ident_t * dummy * dummy
+  | Tsig_exception of ident_t * dummy
+  | Tsig_module of ident_t * module_type * dummy
+  | Tsig_modtype of ident_t * dummy
+  | Tsig_class of ident_t * dummy * dummy
+  | Tsig_cltype of ident_t * dummy * dummy;;
+
+
+(*** from ./typing/env.ml: ***)
+
+exec (
+"type env_t = {
+  values: (path_t * value_description) tbl;
+" ^ (if (let v = String.sub Sys.ocaml_version 0 4 in v = "3.09" or v = "3.10") then "" else
+"  annotations: dummy;
+") ^
+"  constrs: dummy;
+  labels: dummy;
+  types: dummy;
+  modules: (path_t * module_type) tbl;
+  modtypes: dummy;
+  components: dummy;
+  classes: dummy;
+  cltypes: dummy;
+  summary: dummy
+};;");;
 
 (* ------------------------------------------------------------------------- *)
-(* Convert a type to a string, for ease of comparison.                       *)
+(* End of basic data structures copied from OCaml.                           *)
 (* ------------------------------------------------------------------------- *)
 
-let type_to_str (x : Types.type_expr) =
-  Printtyp.type_expr Format.str_formatter x;
-         Format.flush_str_formatter ();;
+
+(* Iterate over the entries of a table. *)
+
+let rec iterTbl (f : ident_t -> 'a -> unit) = function
+  | Empty -> ()
+  | Node (t1,d,t2,_) ->
+      f d.ident d.data;
+      iterTbl f t1;
+      iterTbl f t2;;
+
+(* If the given type is simple return its name, otherwise None. *)
+
+let rec get_simple_type = function
+  | Tlink { desc = Tconstr (Pident p,[],_) } -> Some p.name
+  | Tlink { desc = d } -> get_simple_type d
+  | _ -> None;;
+
+(* Evaluate any OCaml expression given as a string. *)
+
+let eval n =
+  exec ("let buf__ = ( " ^ n ^ " );;");
+  Obj.magic (Toploop.getvalue "buf__");;
+
+(* Register all theorems added since the last update. *)
+
+let update_database =
+  let lastStamp = ref 0
+  and currentStamp = ref 0
+  and thms = Hashtbl.create 5000 in
+
+  let ifNew f i x =
+    if i.stamp > !lastStamp then
+      ((if i.stamp > !currentStamp then currentStamp := i.stamp);
+       f i x) in
+
+  let rec regVal pfx = ifNew (fun i vd ->
+    let n = pfx ^ i.name in
+      if n <> "buf__" then
+        (if get_simple_type vd.val_type.desc = Some "thm"
+         then Hashtbl.replace thms n (eval n)
+         else Hashtbl.remove thms n))
+
+  and regMod pfx = ifNew (fun i mt ->
+       match mt with
+         | Tmty_signature sg ->
+             let pfx' = pfx ^ i.name ^ "." in
+             List.iter (function
+               | Tsig_value (i',vd) -> regVal pfx' i' vd
+               | Tsig_module (i',mt',_) -> regMod pfx' i' mt'
+               | _ -> ()) sg
+         | _ -> ())
+
+  in fun () ->
+    let env = Obj.magic !Toploop.toplevel_env in
+    iterTbl (fun i (_,vd) -> regVal "" i vd) env.values;
+    iterTbl (fun i (_,mt) -> regMod "" i mt) env.modules;
+    lastStamp := !currentStamp;
+    theorems := Hashtbl.fold (fun s t l -> (s,t)::l) thms [];;
 
 (* ------------------------------------------------------------------------- *)
 (* Put an assignment of a theorem database in the named file.                *)
 (* ------------------------------------------------------------------------- *)
 
 let make_database_assignment filename =
-  let all_bnds = get_value_bindings (!Toploop.toplevel_env) in
-  let thm_bnds = filter (fun (ident,val_descr) ->
-                          type_to_str val_descr.Types.val_type = "thm")
-                        all_bnds in
-  let names =
-    subtract (map (fun (ident,val_descr) -> Ident.name ident) thm_bnds)
-             ["it"] in
-  let entries = map (fun n -> "\""^n^"\","^n) (uniq(sort (<) names)) in
-  let text = "theorems :=\n[\n"^
-             end_itlist (fun a b -> a^";\n"^b) entries^"\n];;\n" in
-  file_of_string filename text;;
+  update_database();
+  (let allnames = uniq(sort (<) (map fst (!theorems))) in
+   let names = subtract allnames ["it"] in
+   let entries = map (fun n -> "\""^n^"\","^n) names in
+   let text = "theorems :=\n[\n"^
+              end_itlist (fun a b -> a^";\n"^b) entries^"\n];;\n" in
+   file_of_string filename text);;
 
 (* ------------------------------------------------------------------------- *)
-(* Remove bindings in first list from second assoc list (all ordered).       *)
-(* ------------------------------------------------------------------------- *)
-
-let rec demerge s l =
-  match (s,l) with
-    u::t,(x,y as p)::m ->
-        if u = x then demerge t m
-        else if u < x then demerge t l
-        else p::(demerge s m)
-  | _ -> l;;
-
-(* ------------------------------------------------------------------------- *)
-(* Incrementally update database.                                            *)
-(* ------------------------------------------------------------------------- *)
-
-let update_database =
-  let value_bindings_checked = ref 0
-  and theorem_bindings_existing = ref undefined in
-  let listify l = if l = [] then "[]"
-                  else "[\n"^end_itlist (fun a b -> a^";\n"^b) l^"\n]\n" in
-  let purenames = map (fun n -> "\""^n^"\"")
-  and pairnames = map (fun n -> "\""^n^"\","^n) in
-  fun () ->
-    let old_count = !value_bindings_checked
-    and old_ths = !theorem_bindings_existing in
-    let all_bnds = get_value_bindings (!Toploop.toplevel_env) in
-    let new_bnds = funpow old_count tl all_bnds in
-    let new_count = old_count + length new_bnds
-    and new_ths =
-      rev_itlist (fun (ident,val_descr) ->
-        let n = Ident.name ident in
-        if type_to_str val_descr.Types.val_type = "thm" & n <> "it"
-        then (n |-> ()) else undefine n) new_bnds old_ths in
-    value_bindings_checked := new_count;
-    if new_ths = old_ths then () else
-    (print_string "Updating search database\n";
-     theorem_bindings_existing := new_ths;
-     let all_ths = combine (fun _ _ -> ()) (fun _ -> false) old_ths new_ths in
-     let del_ths = combine (fun _ _ -> ()) (fun _ -> true) all_ths new_ths
-     and add_ths = combine (fun _ _ -> ()) (fun _ -> true) all_ths old_ths in
-     let del_names = mergesort (<) (foldr (fun a _ l -> a::l) del_ths [])
-     and add_names = mergesort (<) (foldr (fun a _ l -> a::l) add_ths []) in
-     let exptext =
-      "theorems :=\n merge (increasing fst) (demerge "^
-      (listify(purenames del_names))^
-      " (!theorems)) "^
-      (listify(pairnames add_names))^
-      ";;\n" in
-     (let filename = Filename.temp_file "database" ".ml" in
-      file_of_string filename exptext;
-      loadt filename;
-      Sys.remove filename));;
-
-(* ------------------------------------------------------------------------- *)
-(* Include a call to this on each search.                                    *)
+(* Search (automatically updates)                                            *)
 (* ------------------------------------------------------------------------- *)
 
 let search =
@@ -161,7 +231,7 @@ let search =
     | Comb(Var("<match theorem name>",_),Var(pat,_)) -> name_contains pat
     | Comb(Var("<match aconv>",_),pat) -> exists_subterm_satisfying (aconv pat)
     | pat -> exists_subterm_satisfying (can (term_match [] pat)) in
-  fun pats -> 
+  fun pats ->
     update_database();
     let triv,nontriv = partition is_var pats in
     (if triv <> [] then
@@ -175,7 +245,5 @@ let search =
 (* ------------------------------------------------------------------------- *)
 (* Update to bring things back to current state.                             *)
 (* ------------------------------------------------------------------------- *)
-
-theorems := [];;
 
 update_database();;
