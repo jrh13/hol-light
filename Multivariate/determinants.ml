@@ -1383,10 +1383,13 @@ let GEOM_ORIGIN_CONV,GEOM_TRANSLATE_CONV =
          (!Q. (!s. Q s) <=> (!s. Q(IMAGE (IMAGE (\x. a + x)) s))) /\
          (!Q. (?s. Q s) <=> (?s. Q(IMAGE (IMAGE (\x. a + x)) s))) /\
          (!P. (!g:real^1->real^N. P g) <=> (!g. P ((\x. a + x) o g))) /\
-         (!P. (?g:real^1->real^N. P g) <=> (?g. P ((\x. a + x) o g)))) /\
-        (!P. {x | P x} = IMAGE (\x. a + x) {x | P(a + x)}) /\
-        (!Q. {s | Q s} =
-             IMAGE (IMAGE (\x. a + x)) {s | Q(IMAGE (\x. a + x) s)})`,
+         (!P. (?g:real^1->real^N. P g) <=> (?g. P ((\x. a + x) o g))) /\
+         (!Q. (!l. Q l) <=> (!l. Q(MAP (\x. a + x) l))) /\             
+         (!Q. (?l. Q l) <=> (?l. Q(MAP (\x. a + x) l)))) /\           
+        ((!P. {x | P x} = IMAGE (\x. a + x) {x | P(a + x)}) /\
+         (!Q. {s | Q s} =
+              IMAGE (IMAGE (\x. a + x)) {s | Q(IMAGE (\x. a + x) s)}) /\
+         (!R. {l | R l} = IMAGE (MAP (\x. a + x)) {l | R(MAP (\x. a + x) l)}))`,
     GEN_TAC THEN MATCH_MP_TAC QUANTIFY_SURJECTION_HIGHER_THM THEN
     X_GEN_TAC `y:real^N` THEN EXISTS_TAC `y - a:real^N` THEN
     VECTOR_ARITH_TAC) in
@@ -1469,9 +1472,12 @@ let GEOM_BASIS_MULTIPLE_RULE =
               (!Q. (!s. Q s) <=> (!s. Q (IMAGE (IMAGE f) s))) /\
               (!Q. (?s. Q s) <=> (?s. Q (IMAGE (IMAGE f) s))) /\
               (!P. (!g:real^1->real^N. P g) <=> (!g. P (f o g))) /\
-              (!P. (?g:real^1->real^N. P g) <=> (?g. P (f o g)))) /\
-             (!P. {x | P x} = IMAGE f {x | P(f x)}) /\
-             (!Q. {s | Q s} = IMAGE (IMAGE f) {s | Q(IMAGE f s)})`,
+              (!P. (?g:real^1->real^N. P g) <=> (?g. P (f o g))) /\
+              (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\             
+              (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\
+             ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\
+              (!Q. {s | Q s} = IMAGE (IMAGE f) {s | Q(IMAGE f s)}) /\
+              (!R. {l | R l} = IMAGE (MAP f) {l | R(MAP f l)}))`,
     REPEAT GEN_TAC THEN DISCH_TAC THEN
     FIRST_ASSUM(ASSUME_TAC o
           MATCH_MP ORTHOGONAL_TRANSFORMATION_SURJECTIVE) THEN
@@ -1647,12 +1653,17 @@ let GEOM_NORMALIZE_RULE =
              (!P. (!g:real^1->real^N. P g) <=>
                   (!g. P ((\x. norm(a) % x) o g))) /\
              (!P. (?g:real^1->real^N. P g) <=>
-                  (?g. P ((\x. norm(a) % x) o g)))) /\
-            (!P. {x:real^N | P x} =
+                  (?g. P ((\x. norm(a) % x) o g))) /\
+             (!Q. (!l. Q l) <=> (!l. Q(MAP (\x:real^N. norm(a) % x) l))) /\             
+             (!Q. (?l. Q l) <=> (?l. Q(MAP (\x:real^N. norm(a) % x) l)))) /\
+            ((!P. {x:real^N | P x} =
                   IMAGE (\x. norm(a) % x) {x | P(norm(a) % x)}) /\
-            (!Q. {s:real^N->bool | Q s} =
-                 IMAGE (IMAGE (\x. norm(a) % x))
-                       {s | Q(IMAGE (\x. norm(a) % x) s)})`,
+             (!Q. {s:real^N->bool | Q s} =
+                  IMAGE (IMAGE (\x. norm(a) % x))
+                       {s | Q(IMAGE (\x. norm(a) % x) s)}) /\
+             (!R. {l:(real^N)list | R l} = 
+                  IMAGE (MAP (\x:real^N. norm(a) % x)) 
+                        {l | R(MAP (\x:real^N. norm(a) % x) l)}))`,
     GEN_TAC THEN DISCH_TAC THEN
     MP_TAC(ISPEC `\x:real^N. norm(a:real^N) % x`
       (INST_TYPE [`:real^1`,`:C`] QUANTIFY_SURJECTION_HIGHER_THM)) THEN
