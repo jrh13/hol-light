@@ -6366,13 +6366,13 @@ let BETWEEN_ANTISYM = prove
  (`!a b c. between a (b,c) /\ between b (a,c) ==> a = b`,
   REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
 
-let BETWEEN_TRANS = prove                       
+let BETWEEN_TRANS = prove
  (`!a b c c. between a (b,c) /\ between d (a,c) ==> between d (b,c)`,
   REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
 
-let BETWEEN_TRANS_2 = prove                                
+let BETWEEN_TRANS_2 = prove
  (`!a b c d. between a (b,c) /\ between d (a,b) ==> between a (c,d)`,
-  REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;                     
+  REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
 
 let BETWEEN_NORM = prove
  (`!a b x:real^N.
@@ -6801,35 +6801,27 @@ let QUANTIFY_SURJECTION_THM = prove
   SUBGOAL_THEN `!s. IMAGE (f:A->B) (IMAGE g s) = s` ASSUME_TAC THENL
    [ASM SET_TAC[]; CONJ_TAC THENL [ASM MESON_TAC[]; ASM SET_TAC[]]]);;
 
-let QUANTIFY_SURJECTION_HIGHER_THM = prove
- (`!f:A->B.
-        (!y. ?x. f x = y)
-        ==> ((!P. (!x. P x) <=> (!x. P (f x))) /\
-             (!P. (?x. P x) <=> (?x. P (f x))) /\
-             (!Q. (!s. Q s) <=> (!s. Q(IMAGE f s))) /\
-             (!Q. (?s. Q s) <=> (?s. Q(IMAGE f s))) /\
-             (!Q. (!s. Q s) <=> (!s. Q(IMAGE (IMAGE f) s))) /\
+let QUANTIFY_SURJECTION_HIGHER_THM = prove                                     
+ (`!f:A->B.                                                  
+        (!y. ?x. f x = y)                                                      
+        ==> ((!P. (!x. P x) <=> (!x. P (f x))) /\                              
+             (!P. (?x. P x) <=> (?x. P (f x))) /\                              
+             (!Q. (!s. Q s) <=> (!s. Q(IMAGE f s))) /\              
+             (!Q. (?s. Q s) <=> (?s. Q(IMAGE f s))) /\   
+             (!Q. (!s. Q s) <=> (!s. Q(IMAGE (IMAGE f) s))) /\          
              (!Q. (?s. Q s) <=> (?s. Q(IMAGE (IMAGE f) s))) /\
-             (!P. (!g:C->B. P g) <=> (!g. P(f o g))) /\
-             (!P. (?g:C->B. P g) <=> (?g. P(f o g)))) /\
-            (!P. {x | P x} = IMAGE f {x | P(f x)}) /\
-            (!Q. {s | Q s} = IMAGE (IMAGE f) {s | Q(IMAGE f s)})`,
-  GEN_TAC THEN DISCH_TAC THEN
-  FIRST_ASSUM(ASSUME_TAC o MATCH_MP QUANTIFY_SURJECTION_THM) THEN
-  ASM_REWRITE_TAC[] THEN
-  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM SURJECTIVE_IMAGE]) THEN
-  DISCH_THEN(ASSUME_TAC o MATCH_MP QUANTIFY_SURJECTION_THM) THEN
-  ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
-  ASM_REWRITE_TAC[ISPEC `IMAGE (f:A->B)` ETA_AX; IMAGE_ID] THEN
-  MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
-   [GEN_TAC THEN FIRST_ASSUM(X_CHOOSE_TAC `g:B->A` o
-      GEN_REWRITE_RULE I [SURJECTIVE_RIGHT_INVERSE]) THEN
-    EQ_TAC THEN SIMP_TAC[] THEN
-    SUBGOAL_THEN `!h:C->B. ?g:C->A. f o g = h` MP_TAC THENL
-     [ALL_TAC; MESON_TAC[]] THEN
-    REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN ASM_MESON_TAC[];
-    DISCH_TAC THEN ASM_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`]]);;
-
+             (!P. (!g:C->B. P g) <=> (!g. P(f o g))) /\      
+             (!P. (?g:C->B. P g) <=> (?g. P(f o g))) /\                   
+             (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\             
+             (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\             
+            ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\
+             (!Q. {s | Q s} = IMAGE (IMAGE f) {s | Q(IMAGE f s)}) /\
+             (!R. {l | R l} = IMAGE (MAP f) {l | R(MAP f l)}))`,               
+  GEN_TAC THEN DISCH_TAC THEN CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN
+  ASM_REWRITE_TAC[GSYM SURJECTIVE_FORALL_THM; GSYM SURJECTIVE_EXISTS_THM;
+            GSYM SURJECTIVE_IMAGE_THM; SURJECTIVE_IMAGE; SURJECTIVE_MAP] THEN
+  REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN ASM_MESON_TAC[]);;
+                                                         
 (* ------------------------------------------------------------------------- *)
 (* Apply such quantifier and set expansions once per level at depth.         *)
 (* In the PARTIAL version, avoid expanding named variables in list.          *)
