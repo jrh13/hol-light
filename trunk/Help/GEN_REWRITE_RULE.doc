@@ -51,7 +51,7 @@ theorems.
 \EXAMPLE
 Suppose we have a theorem of the form:
 {
-   thm = |- (1 + 2) + 3 = (3 + 1) + 2
+   mythm = |- (1 + 2) + 3 = (3 + 1) + 2
 }
 \noindent and we would like to rewrite the left-hand side with the
 theorem {ADD_SYM} without changing the right hand side. This can be
