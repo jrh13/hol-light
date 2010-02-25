@@ -673,6 +673,22 @@ let INTERS_FACES_FINITE_ALTBOUND = prove
     `d - (d + &2):int < i <=> -- &1 <= i`] THEN
   REWRITE_TAC[AFF_DIM_GE]);;
 
+let FACES_OF_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N s.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> {t | t face_of (IMAGE f s)} = IMAGE (IMAGE f) {t | t face_of s}`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[face_of; SUBSET_IMAGE; SET_RULE
+   `{y | (?x. P x /\ y = f x) /\ Q y} = {f x |x| P x /\ Q(f x)}`] THEN
+  REWRITE_TAC[SET_RULE `IMAGE f {x | P x} = {f x | P x}`] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  FIRST_ASSUM(fun th ->
+   REWRITE_TAC[MATCH_MP CONVEX_LINEAR_IMAGE_EQ th;
+               MATCH_MP OPEN_SEGMENT_LINEAR_IMAGE th;
+               MATCH_MP (SET_RULE
+   `(!x y. f x = f y ==> x = y)  ==> (!s x. f x IN IMAGE f s <=> x IN s)`)
+   (CONJUNCT2 th)]));;
+
 (* ------------------------------------------------------------------------- *)
 (* Exposed faces (faces that are intersection with supporting hyperplane).   *)
 (* ------------------------------------------------------------------------- *)
@@ -978,6 +994,20 @@ let EXTREME_POINT_OF_INTER = prove
            ==> x extreme_point_of (s INTER t)`,
   REWRITE_TAC[extreme_point_of; IN_INTER] THEN MESON_TAC[]);;
 
+let EXTREME_POINTS_OF_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> {y | y extreme_point_of (IMAGE f s)} =
+            IMAGE f {x | x extreme_point_of s}`,
+
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_SEGMENT_LINEAR_IMAGE) THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_GSPEC; SUBSET;
+              extreme_point_of; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  ASM_SIMP_TAC[FUN_IN_IMAGE; IN_ELIM_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Facets.                                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -1034,9 +1064,13 @@ let EDGE_OF_LINEAR_IMAGE = prove
  (`!f:real^M->real^N c s.
       linear f /\ (!x y. f x = f y ==> x = y)
       ==> ((IMAGE f c) edge_of (IMAGE f s) <=> c edge_of s)`,
-  REWRITE_TAC[edge_of] THEN GEOM_TRANSFORM_TAC[]);;               
+  REWRITE_TAC[edge_of] THEN GEOM_TRANSFORM_TAC[]);;
 
 add_linear_invariants [EDGE_OF_LINEAR_IMAGE];;
+
+let EDGE_OF_IMP_SUBSET = prove
+ (`!s t. s edge_of t ==> s SUBSET t`,
+  SIMP_TAC[edge_of; face_of]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of extreme points.                                              *)

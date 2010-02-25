@@ -5791,6 +5791,41 @@ let vertices = new_definition
 let edges = new_definition
  `edges s = {{v,w} | segment[v,w] edge_of s}`;;
 
+let VERTICES_TRANSLATION = prove
+ (`!a s. vertices (IMAGE (\x. a + x) s) = IMAGE (\x. a + x) (vertices s)`,
+  REWRITE_TAC[vertices] THEN GEOM_TRANSLATE_TAC[]);;
+
+let VERTICES_LINEAR_IMAGE = prove
+ (`!f s. linear f /\ (!x y. f x = f y ==> x = y)
+         ==> vertices(IMAGE f s) = IMAGE f (vertices s)`,
+  REWRITE_TAC[vertices; EXTREME_POINTS_OF_LINEAR_IMAGE]);;
+
+let EDGES_TRANSLATION = prove
+ (`!a s. edges (IMAGE (\x. a + x) s) = IMAGE (IMAGE (\x. a + x)) (edges s)`,
+  REWRITE_TAC[edges] THEN GEOM_TRANSLATE_TAC[] THEN SET_TAC[]);;
+
+let EDGES_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N s.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> edges(IMAGE f s) = IMAGE (IMAGE f) (edges s)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[edges] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_GSPEC; FORALL_IN_IMAGE] THEN CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
+    REWRITE_TAC[IN_IMAGE] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+    REWRITE_TAC[EXISTS_IN_GSPEC] THEN
+    SUBGOAL_THEN `?v w. x = (f:real^M->real^N) v /\ y = f w` MP_TAC THENL
+     [ASM_MESON_TAC[ENDS_IN_SEGMENT; EDGE_OF_IMP_SUBSET; SUBSET; IN_IMAGE];
+      REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+      DISCH_THEN(CONJUNCTS_THEN SUBST_ALL_TAC)];
+    MAP_EVERY X_GEN_TAC [`v:real^M`; `w:real^M`] THEN DISCH_TAC THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN
+    MAP_EVERY EXISTS_TAC [`(f:real^M->real^N) v`; `(f:real^M->real^N) w`]] THEN
+  REWRITE_TAC[IMAGE_CLAUSES] THEN
+  ASM_MESON_TAC[EDGE_OF_LINEAR_IMAGE; CLOSED_SEGMENT_LINEAR_IMAGE]);;
+
+add_translation_invariants [VERTICES_TRANSLATION; EDGES_TRANSLATION];;
+add_linear_invariants [VERTICES_LINEAR_IMAGE; EDGES_LINEAR_IMAGE];;
 
 (*** Correspondence with Flypaper:
 
