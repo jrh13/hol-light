@@ -69,10 +69,7 @@ let element (d,v) i = tryapplyd v i (Int 0);;
 let mapa f (d,v) =
   d,foldl (fun a i c -> (i |--> f(c)) a) undefined v;;
 
-let is_zero (d,v) =
-  match v with
-    Empty -> true
-  | _ -> false;;
+let is_zero (d,v) = is_undefined v;;
 
 (* ------------------------------------------------------------------------- *)
 (* Vectors. Conventionally indexed 1..n.                                     *)
@@ -722,7 +719,7 @@ let minimal_convex_hull =
 (* ------------------------------------------------------------------------- *)
 
 let equation_cmul c eq =
-  if c =/ Int 0 then Empty else mapf (fun d -> c */ d) eq;;
+  if c =/ Int 0 then undefined else mapf (fun d -> c */ d) eq;;
 
 let equation_add eq1 eq2 = combine (+/) (fun x -> x =/ Int 0) eq1 eq2;;
 
