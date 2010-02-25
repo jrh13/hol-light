@@ -113,7 +113,9 @@ let subst =
           mk_abs(v,ssubst ilist' bod)
     | _ -> tm in
   fun ilist ->
-    let ts,xs = unzip ilist in
+    let theta = filter (fun (s,t) -> Pervasives.compare s t <> 0) ilist in
+    if theta = [] then (fun tm -> tm) else
+    let ts,xs = unzip theta in
     fun tm ->
       let gs = variants (variables tm) (map (genvar o type_of) xs) in
       let tm' = ssubst (zip gs xs) tm in
@@ -168,8 +170,8 @@ let mk_icomb(tm1,tm2) =
 (* Instantiates types for constant c and iteratively makes combination.      *)
 (* ------------------------------------------------------------------------- *)
 
-let list_mk_icomb cname args =                        
-  let atys,_ = nsplit dest_fun_ty args (get_const_type cname) in                
+let list_mk_icomb cname args =
+  let atys,_ = nsplit dest_fun_ty args (get_const_type cname) in
   let tyin = itlist2 (fun g a -> type_match g (type_of a)) atys args [] in
   list_mk_comb(mk_const(cname,tyin),args);;
 
