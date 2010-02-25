@@ -1,7 +1,33 @@
+Thu 25th Feb 2010       Examples/sos.ml
+
+Replaced a couple of explicit uses of the Empty constructor for finite partial 
+functions by "undefined" and "is_undefined". This was causing a clash with the 
+Empty constructor for the tbl type in the new update_database.ml, and avoiding 
+the constructors is good practice anyway (maybe I should make it an abstract 
+type).
+
+Wed 24th Feb 2010       basics.ml
+
+Tweaked "subst" to filter out trivial substitutions from the instantiation list
+first. This is a small thing but was actually ultimately responsible for some
+extreme slowness of UNWIND_CONV on very large terms owing to the underlying
+REWR_CONV SWAP_EXISTS_THM. For example defining the following
+
+  let test n =
+    let t = `m < n + 1` in
+    let tm = funpow n (fun x -> mk_conj(x,t)) t in
+    let et = list_mk_exists([`m:num`;`n:num`],tm) in
+    time (REWR_CONV SWAP_EXISTS_THM) et; 1;;
+
+then "test 100000" used to take 9.5 seconds, and now takes 0.5. There are still
+some wasteful things going, so it might be worth explicitly optimizing
+UNWIND_CONV, but this is much better than before and might have beneficial
+effects elsewhere too.
+
 Fri 19th Feb 2010       update_database.ml, Examples/update_database.ml [new file]
 
-Moved the old update_database.ml script back into Examples and installed 
-instead the somewhat nicer one from Roland Zumkeller, which doesn't rely on the 
+Moved the old update_database.ml script back into Examples and installed
+instead the somewhat nicer one from Roland Zumkeller, which doesn't rely on the
 OCaml sources.
 
 Fri 19th Feb 2010       sets.ml
