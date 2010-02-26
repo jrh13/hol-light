@@ -136,6 +136,15 @@ let int_abs_th = prove
   GEN_TAC THEN REWRITE_TAC[int_abs; real_abs] THEN COND_CASES_TAC THEN
   REWRITE_TAC[GSYM int_neg; int_neg_th; int_abstr]);;
 
+let int_sgn = new_definition
+  `int_sgn x = int_of_real(real_sgn(real_of_int x))`;;
+
+let int_sgn_th = prove
+ (`!x. real_of_int(int_sgn x) = real_sgn(real_of_int x)`,
+  GEN_TAC THEN REWRITE_TAC[int_sgn; real_sgn; GSYM int_rep] THEN 
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  MESON_TAC[is_int]);;
+
 let int_max = new_definition
   `int_max x y = int_of_real(max (real_of_int x) (real_of_int y))`;;
 
@@ -242,7 +251,7 @@ let INT_OF_REAL_THM =
     COND_CASES_TAC THEN REWRITE_TAC[]) in
   let thlist = map GSYM
    [int_eq; int_le; int_lt; int_ge; int_gt;
-    int_of_num_th; int_neg_th; int_add_th; int_mul_th;
+    int_of_num_th; int_neg_th; int_add_th; int_mul_th; int_sgn_th;
     int_sub_th; int_abs_th; int_max_th; int_min_th; int_pow_th; cond_th] in
   let REW_RULE = GEN_REWRITE_RULE DEPTH_CONV thlist in
   let int_tm_of_real_var v =
@@ -285,6 +294,7 @@ let INT_ABS_NZ = INT_OF_REAL_THM REAL_ABS_NZ;;
 let INT_ABS_POS = INT_OF_REAL_THM REAL_ABS_POS;;
 let INT_ABS_POW = INT_OF_REAL_THM REAL_ABS_POW;;
 let INT_ABS_REFL = INT_OF_REAL_THM REAL_ABS_REFL;;
+let INT_ABS_SGN = INT_OF_REAL_THM REAL_ABS_SGN;;
 let INT_ABS_SIGN = INT_OF_REAL_THM REAL_ABS_SIGN;;
 let INT_ABS_SIGN2 = INT_OF_REAL_THM REAL_ABS_SIGN2;;
 let INT_ABS_STILLNZ = INT_OF_REAL_THM REAL_ABS_STILLNZ;;
@@ -478,6 +488,11 @@ let INT_POW_ONE = INT_OF_REAL_THM REAL_POW_ONE;;
 let INT_POW_POW = INT_OF_REAL_THM REAL_POW_POW;;
 let INT_POW_ZERO = INT_OF_REAL_THM REAL_POW_ZERO;;
 let INT_RNEG_UNIQ = INT_OF_REAL_THM REAL_RNEG_UNIQ;;
+let INT_SGN = INT_OF_REAL_THM real_sgn;;
+let INT_SGN_0 = INT_OF_REAL_THM REAL_SGN_0;;
+let INT_SGN_ABS = INT_OF_REAL_THM REAL_SGN_ABS;;
+let INT_SGN_MUL = INT_OF_REAL_THM REAL_SGN_MUL;;
+let INT_SGN_NEG = INT_OF_REAL_THM REAL_SGN_NEG;;
 let INT_SOS_EQ_0 = INT_OF_REAL_THM REAL_SOS_EQ_0;;
 let INT_SUB_0 = INT_OF_REAL_THM REAL_SUB_0;;
 let INT_SUB_ABS = INT_OF_REAL_THM REAL_SUB_ABS;;

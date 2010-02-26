@@ -1,9 +1,35 @@
+Thu 25th Feb 2010       real.ml, int.ml
+
+Added the definitions of the real and integer signum function. I was
+tempted to add the interface "sgn" for both of them, but perhaps one
+doesn't want to be deprived of that as a variable name. New theorems
+(and of course INT_OF_REAL_THM is updated):
+
+  real_sgn
+  REAL_ABS_SGN
+  REAL_SGN
+  REAL_SGN_0
+  REAL_SGN_ABS
+  REAL_SGN_DIV
+  REAL_SGN_INV
+  REAL_SGN_MUL
+  REAL_SGN_NEG
+  
+  int_sgn
+  int_sgn_th
+  INT_ABS_SGN
+  INT_SGN
+  INT_SGN_0
+  INT_SGN_ABS
+  INT_SGN_MUL
+  INT_SGN_NEG
+
 Thu 25th Feb 2010       Examples/sos.ml
 
-Replaced a couple of explicit uses of the Empty constructor for finite partial 
-functions by "undefined" and "is_undefined". This was causing a clash with the 
-Empty constructor for the tbl type in the new update_database.ml, and avoiding 
-the constructors is good practice anyway (maybe I should make it an abstract 
+Replaced a couple of explicit uses of the Empty constructor for finite partial
+functions by "undefined" and "is_undefined". This was causing a clash with the
+Empty constructor for the tbl type in the new update_database.ml, and avoiding
+the constructors is good practice anyway (maybe I should make it an abstract
 type).
 
 Wed 24th Feb 2010       basics.ml

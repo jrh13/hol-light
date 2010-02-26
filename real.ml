@@ -1308,6 +1308,54 @@ let REAL_POW_EQ_EQ = prove
     REWRITE_RULE[EVEN_EXISTS]) THEN ASM_REWRITE_TAC[GSYM REAL_POW_POW]);;
 
 (* ------------------------------------------------------------------------- *)
+(* The sign of a real number, as a real number.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let real_sgn = new_definition
+ `(real_sgn:real->real) x =
+        if &0 < x then &1 else if x < &0 then -- &1 else &0`;;
+
+let REAL_SGN_0 = prove
+ (`real_sgn(&0) = &0`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let REAL_SGN_NEG = prove
+ (`!x. real_sgn(--x) = --(real_sgn x)`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let REAL_SGN_ABS = prove
+ (`!x. real_sgn(x) * abs(x) = x`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let REAL_ABS_SGN = prove
+ (`!x. abs(real_sgn x) = real_sgn(abs x)`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let REAL_SGN = prove
+ (`!x. real_sgn x = x / abs x`,
+  GEN_TAC THEN ASM_CASES_TAC `x = &0` THENL
+   [ASM_REWRITE_TAC[real_div; REAL_MUL_LZERO; REAL_SGN_0];
+    GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [GSYM REAL_SGN_ABS] THEN
+    ASM_SIMP_TAC[real_div; GSYM REAL_MUL_ASSOC; REAL_ABS_ZERO;
+                 REAL_MUL_RINV; REAL_MUL_RID]]);;
+
+let REAL_SGN_MUL = prove
+ (`!x y. real_sgn(x * y) = real_sgn(x) * real_sgn(y)`,
+  REWRITE_TAC[REAL_SGN; REAL_ABS_MUL; real_div; REAL_INV_MUL] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_SGN_INV = prove
+ (`!x. real_sgn(inv x) = real_sgn x`,
+  REWRITE_TAC[real_sgn; REAL_LT_INV_EQ; GSYM REAL_INV_NEG;
+              REAL_ARITH `x < &0 <=> &0 < --x`]);;
+
+let REAL_SGN_DIV = prove
+ (`!x y. real_sgn(x / y) = real_sgn(x) / real_sgn(y)`,
+  REWRITE_TAC[REAL_SGN; REAL_ABS_DIV] THEN
+  REWRITE_TAC[real_div; REAL_INV_MUL; REAL_INV_INV] THEN
+  REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* Useful "without loss of generality" lemmas.                               *)
 (* ------------------------------------------------------------------------- *)
 

@@ -582,6 +582,7 @@ theorems :=
 "INT_ABS_POS",INT_ABS_POS;
 "INT_ABS_POW",INT_ABS_POW;
 "INT_ABS_REFL",INT_ABS_REFL;
+"INT_ABS_SGN",INT_ABS_SGN;
 "INT_ABS_SIGN",INT_ABS_SIGN;
 "INT_ABS_SIGN2",INT_ABS_SIGN2;
 "INT_ABS_STILLNZ",INT_ABS_STILLNZ;
@@ -796,6 +797,11 @@ theorems :=
 "INT_POW_POW",INT_POW_POW;
 "INT_POW_ZERO",INT_POW_ZERO;
 "INT_RNEG_UNIQ",INT_RNEG_UNIQ;
+"INT_SGN",INT_SGN;
+"INT_SGN_0",INT_SGN_0;
+"INT_SGN_ABS",INT_SGN_ABS;
+"INT_SGN_MUL",INT_SGN_MUL;
+"INT_SGN_NEG",INT_SGN_NEG;
 "INT_SOS_EQ_0",INT_SOS_EQ_0;
 "INT_SUB",INT_SUB;
 "INT_SUB_0",INT_SUB_0;
@@ -1287,6 +1293,7 @@ theorems :=
 "REAL_ABS_POS",REAL_ABS_POS;
 "REAL_ABS_POW",REAL_ABS_POW;
 "REAL_ABS_REFL",REAL_ABS_REFL;
+"REAL_ABS_SGN",REAL_ABS_SGN;
 "REAL_ABS_SIGN",REAL_ABS_SIGN;
 "REAL_ABS_SIGN2",REAL_ABS_SIGN2;
 "REAL_ABS_STILLNZ",REAL_ABS_STILLNZ;
@@ -1562,6 +1569,13 @@ theorems :=
 "REAL_POW_SUB",REAL_POW_SUB;
 "REAL_POW_ZERO",REAL_POW_ZERO;
 "REAL_RNEG_UNIQ",REAL_RNEG_UNIQ;
+"REAL_SGN",REAL_SGN;
+"REAL_SGN_0",REAL_SGN_0;
+"REAL_SGN_ABS",REAL_SGN_ABS;
+"REAL_SGN_DIV",REAL_SGN_DIV;
+"REAL_SGN_INV",REAL_SGN_INV;
+"REAL_SGN_MUL",REAL_SGN_MUL;
+"REAL_SGN_NEG",REAL_SGN_NEG;
 "REAL_SOS_EQ_0",REAL_SOS_EQ_0;
 "REAL_SUB_0",REAL_SUB_0;
 "REAL_SUB_ABS",REAL_SUB_ABS;
@@ -1953,6 +1967,8 @@ theorems :=
 "int_pow",int_pow;
 "int_pow_th",int_pow_th;
 "int_rep",int_rep;
+"int_sgn",int_sgn;
+"int_sgn_th",int_sgn_th;
 "int_sub",int_sub;
 "int_sub_th",int_sub_th;
 "is_int",is_int;
@@ -2037,6 +2053,7 @@ theorems :=
 "real_of_num",real_of_num;
 "real_of_num_th",real_of_num_th;
 "real_pow",real_pow;
+"real_sgn",real_sgn;
 "real_sub",real_sub;
 "set_of_list",set_of_list;
 "sndcart",sndcart;
