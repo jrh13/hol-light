@@ -1251,6 +1251,86 @@ let AFF_LT_SPECIAL_SCALE = prove
   MATCH_MP_TAC AFFSIGN_SPECIAL_SCALE THEN
   ASM_REWRITE_TAC[sgn_lt] THEN REAL_ARITH_TAC);;
 
+let AFF_GE_0_N = prove
+ (`!s:real^N->bool.
+        FINITE s /\ ~(vec 0 IN s)
+        ==> aff_ge {vec 0} s =
+                {y | ?u. (!x. x IN s ==> &0 <= u x) /\
+                         y = vsum s (\x. u x % x)}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[aff_ge_def; AFFSIGN] THEN
+  REWRITE_TAC[SET_RULE `{a} UNION s = a INSERT s`] THEN
+  ASM_SIMP_TAC[SUM_CLAUSES; VSUM_CLAUSES; sgn_ge; IN_ELIM_THM] THEN
+  REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `y:real^N` THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN EQ_TAC THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `f:real^N->real` THEN
+  STRIP_TAC THENL
+   [EXISTS_TAC `f:real^N->real` THEN ASM_REWRITE_TAC[];
+    EXISTS_TAC `\x:real^N. if x = vec 0 then &1 - sum s f else f x` THEN
+    SUBGOAL_THEN `!x:real^N. x IN s ==> ~(x = vec 0)` MP_TAC THENL
+     [ASM SET_TAC[]; ASM SIMP_TAC[] THEN REAL_ARITH_TAC]]);;
+
+let AFF_GE_0_CONVEX_HULL = prove
+ (`!s:real^N->bool.
+        FINITE s /\ ~(s = {}) /\ ~(vec 0 IN s)
+        ==> aff_ge {vec 0} s = {t % y | &0 <= t /\ y IN convex hull s}`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[AFF_GE_0_N; CONVEX_HULL_FINITE] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN CONJ_TAC THENL
+   [X_GEN_TAC `y:real^N` THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:real^N->real` STRIP_ASSUME_TAC) THEN
+    ASM_CASES_TAC `sum s (f:real^N->real) = &0` THENL
+     [MP_TAC(ISPECL [`f:real^N->real`; `s:real^N->bool`]
+        SUM_POS_EQ_0) THEN
+      ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+      SUBGOAL_THEN `y:real^N = vec 0` SUBST_ALL_TAC THENL
+       [ASM_SIMP_TAC[VSUM_EQ_0; VECTOR_MUL_EQ_0]; ALL_TAC] THEN
+      UNDISCH_THEN `vec 0 = vsum s (\x:real^N. f x % x)`
+       (SUBST1_TAC o SYM) THEN
+      EXISTS_TAC `&0` THEN REWRITE_TAC[REAL_POS; VECTOR_MUL_LZERO] THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+      DISCH_THEN(X_CHOOSE_TAC `a:real^N`) THEN
+      MAP_EVERY EXISTS_TAC
+       [`a:real^N`; `\x:real^N. if x = a then &1 else &0`] THEN
+      REWRITE_TAC[COND_RAND; COND_RATOR; VECTOR_MUL_LZERO] THEN
+      ASM_SIMP_TAC[REAL_POS; COND_ID; SUM_DELTA; VSUM_DELTA] THEN
+      REWRITE_TAC[VECTOR_MUL_LID];
+      EXISTS_TAC `sum s (f:real^N->real)` THEN
+      EXISTS_TAC `vsum s (\x:real^N. (inv(sum s f) * f x) % x)` THEN
+      ASM_SIMP_TAC[SUM_POS_LE; GSYM VECTOR_MUL_ASSOC; VSUM_LMUL] THEN
+      ASM_SIMP_TAC[VECTOR_MUL_ASSOC; VECTOR_MUL_LID; REAL_MUL_RINV] THEN
+      EXISTS_TAC `\x:real^N. (inv(sum s f) * f x)` THEN
+      ASM_SIMP_TAC[REAL_LE_MUL; REAL_LE_INV_EQ; SUM_POS_LE] THEN
+      ASM_SIMP_TAC[GSYM VECTOR_MUL_ASSOC; VSUM_LMUL; SUM_LMUL] THEN
+      ASM_SIMP_TAC[REAL_MUL_LINV]];
+    MAP_EVERY X_GEN_TAC [`t:real`; `y:real^N`] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:real^N->real` MP_TAC) THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    DISCH_THEN(ASSUME_TAC o SYM) THEN
+    EXISTS_TAC `\x. t * (f:real^N->real) x` THEN
+    ASM_SIMP_TAC[REAL_LE_MUL; GSYM VECTOR_MUL_ASSOC; VSUM_LMUL]]);;
+
+let AFF_GE_0_CONVEX_HULL_ALT = prove
+ (`!s:real^N->bool.
+        FINITE s /\ ~(vec 0 IN s)
+        ==> aff_ge {vec 0} s =
+            vec 0 INSERT {t % y | &0 < t /\ y IN convex hull s}`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `s:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[AFF_GE_EQ_AFFINE_HULL; CONVEX_HULL_EMPTY] THEN
+    REWRITE_TAC[AFFINE_HULL_SING; NOT_IN_EMPTY] THEN SET_TAC[];
+    ASM_SIMP_TAC[AFF_GE_0_CONVEX_HULL; EXTENSION; IN_ELIM_THM; IN_INSERT] THEN
+    X_GEN_TAC `y:real^N` THEN ASM_CASES_TAC `y:real^N = vec 0` THEN
+    ASM_REWRITE_TAC[] THENL
+     [EXISTS_TAC `&0` THEN ASM_REWRITE_TAC[REAL_POS; VECTOR_MUL_LZERO] THEN
+      ASM_REWRITE_TAC[MEMBER_NOT_EMPTY; CONVEX_HULL_EQ_EMPTY];
+      AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `t:real` THEN
+      AP_TERM_TAC THEN ABS_TAC THEN
+      ASM_CASES_TAC `t = &0` THEN
+      ASM_REWRITE_TAC[VECTOR_MUL_LZERO; REAL_LT_REFL] THEN
+      ASM_REWRITE_TAC[REAL_LT_LE]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Definition and properties of conv0.                                       *)
 (* ------------------------------------------------------------------------- *)
