@@ -575,6 +575,25 @@ let PERMUTATION_INVERSE_COMPOSE = prove
   GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [o_ASSOC] THEN
   ASM_REWRITE_TAC[I_O_ID]);;
 
+let PERMUTATION_COMPOSE_EQ = prove
+ (`(!p q:A->A. permutation(p) ==> (permutation(p o q) <=> permutation q)) /\
+   (!p q:A->A. permutation(q) ==> (permutation(p o q) <=> permutation p))`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP PERMUTATION_INVERSE) THEN
+  EQ_TAC THEN ASM_SIMP_TAC[PERMUTATION_COMPOSE] THENL
+   [DISCH_THEN(MP_TAC o SPEC `inverse(p:A->A)` o MATCH_MP
+     (REWRITE_RULE[IMP_CONJ_ALT] PERMUTATION_COMPOSE));
+    DISCH_THEN(MP_TAC o SPEC `inverse(q:A->A)` o MATCH_MP
+     (REWRITE_RULE[IMP_CONJ] PERMUTATION_COMPOSE))] THEN
+  ASM_SIMP_TAC[GSYM o_ASSOC; PERMUTATION_INVERSE_WORKS] THEN
+  ASM_SIMP_TAC[o_ASSOC; PERMUTATION_INVERSE_WORKS] THEN
+  REWRITE_TAC[I_O_ID]);;
+
+let PERMUTATION_COMPOSE_SWAP = prove
+ (`(!p a b:A. permutation(swap(a,b) o p) <=> permutation p) /\
+   (!p a b:A. permutation(p o swap(a,b)) <=> permutation p)`,
+  SIMP_TAC[PERMUTATION_COMPOSE_EQ; PERMUTATION_SWAP]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relation to "permutes".                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -794,3 +813,12 @@ let SUM_OVER_PERMUTATIONS_INSERT = prove
     DISCH_THEN SUBST_ALL_TAC THEN
     FIRST_X_ASSUM(MP_TAC o AP_TERM `(\p:A->A. swap(a:A,c) o p)`) THEN
     REWRITE_TAC[o_ASSOC; SWAP_IDEMPOTENT; I_O_ID]]);;
+
+let SUM_OVER_PERMUTATIONS_NUMSEG = prove
+ (`!f m n. m <= n
+           ==> sum {p | p permutes (m..n)} f =
+               sum(m..n) (\i. sum {p | p permutes (m+1..n)}
+                                  (\q. f(swap(m,i) o q)))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[GSYM NUMSEG_LREC] THEN
+  MATCH_MP_TAC SUM_OVER_PERMUTATIONS_INSERT THEN
+  REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN ARITH_TAC);;
