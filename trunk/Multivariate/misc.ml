@@ -365,13 +365,25 @@ let HULL_UNION_SUBSET = prove
  (`!P s t. (P hull s) UNION (P hull t) SUBSET (P hull (s UNION t))`,
   SIMP_TAC[UNION_SUBSET; HULL_MONO; SUBSET_UNION]);;
 
-let HULL_UNION = prove
- (`!P s t. (!f. (!s. s IN f ==> P s) ==> P(INTERS f))
-           ==> (P hull (s UNION t) = P hull ((P hull s) UNION (P hull t)))`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
-   [MATCH_MP_TAC HULL_MONO THEN MESON_TAC[SUBSET; IN_UNION; HULL_SUBSET];
-    MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[HULL_UNION_SUBSET] THEN
-    ASM_SIMP_TAC[P_HULL]]);;
+let HULL_UNION = prove                                       
+ (`!P s t. P hull (s UNION t) = P hull (P hull s UNION P hull t)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[hull] THEN     
+  AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; UNION_SUBSET] THEN
+  MESON_TAC[SUBSET_HULL]);;                                               
+
+let HULL_UNION_LEFT = prove        
+ (`!P s t:A->bool.                                     
+        P hull (s UNION t) = P hull (P hull s UNION t)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[hull] THEN                
+  AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; UNION_SUBSET] THEN
+  MESON_TAC[SUBSET_HULL]);;                                           
+                                                                         
+let HULL_UNION_RIGHT = prove        
+ (`!P s t:A->bool.
+        P hull (s UNION t) = P hull (s UNION P hull t)`,        
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[hull] THEN     
+  AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; UNION_SUBSET] THEN
+  MESON_TAC[SUBSET_HULL]);;                        
 
 let HULL_REDUNDANT_EQ = prove
  (`!P a s. a IN (P hull s) <=> (P hull (a INSERT s) = P hull s)`,
@@ -428,7 +440,16 @@ let IS_HULL = prove
  (`!P s. (!f. (!s. s IN f ==> P s) ==> P(INTERS f))
          ==> (P s <=> ?t. s = P hull t)`,
   MESON_TAC[HULL_P; P_HULL]);;
-  
+
+let HULLS_EQ = prove                              
+ (`!P s t.                                       
+        (!f. (!s. s IN f ==> P s) ==> P (INTERS f)) /\                 
+        s SUBSET P hull t /\ t SUBSET P hull s           
+        ==> P hull s = P hull t`,                                
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN             
+  CONJ_TAC THEN MATCH_MP_TAC HULL_MINIMAL THEN  
+  ASM_SIMP_TAC[P_HULL]);;                              
+
 (* ------------------------------------------------------------------------- *)
 (* Archimedian properties and useful consequences.                           *)
 (* ------------------------------------------------------------------------- *)
