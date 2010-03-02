@@ -1,3 +1,9 @@
+Mon  1st Mar 2010       update_database.ml
+
+Added alphabetic sorting of the results to the "search" function. Note that the
+reference variable "theorems" itself is not sorted, but sorting is imposed
+afterwards on the filtered results (likewise in "make_database_assignment").
+
 Thu 25th Feb 2010       real.ml, int.ml
 
 Added the definitions of the real and integer signum function. I was
@@ -14,7 +20,7 @@ doesn't want to be deprived of that as a variable name. New theorems
   REAL_SGN_INV
   REAL_SGN_MUL
   REAL_SGN_NEG
-  
+
   int_sgn
   int_sgn_th
   INT_ABS_SGN
