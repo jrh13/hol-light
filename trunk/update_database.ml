@@ -240,7 +240,8 @@ let search =
           end_itlist (fun s t -> s^", "^t) (map (fst o dest_var) triv))
      else ());
     (if nontriv = [] & triv <> [] then []
-     else itlist (filter o filterpred) pats (!theorems));;
+     else sort (increasing fst) 
+               (itlist (filter o filterpred) pats (!theorems)));;
 
 (* ------------------------------------------------------------------------- *)
 (* Update to bring things back to current state.                             *)
