@@ -200,9 +200,10 @@ let ASM_CASES_TAC t = DISJ_CASES_TAC(SPEC t EXCLUDED_MIDDLE);;
 (* ------------------------------------------------------------------------- *)
 
 let TAUT =
+  let PROP_REWRITE_TAC = REWRITE_TAC[] in
   let RTAUT_TAC (asl,w) =
     let ok t = type_of t = bool_ty & can (find_term is_var) t & free_in t w in
-    (REWRITE_TAC[] THEN
+    (PROP_REWRITE_TAC THEN
      W((fun t1 t2 -> t1 THEN t2) (REWRITE_TAC[]) o BOOL_CASES_TAC o
        hd o sort free_in o find_terms ok o snd)) (asl,w) in
   let TAUT_TAC = REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN REPEAT RTAUT_TAC in
@@ -389,6 +390,20 @@ let COND_RATOR = prove
 let COND_ABS = prove
  (`!b (f:A->B) g. (\x. if b then f x else g x) = (if b then f else g)`,
   REPEAT GEN_TAC THEN BOOL_CASES_TAC `b:bool` THEN REWRITE_TAC[ETA_AX]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Redefine TAUT to freeze in the rewrites including COND.                   *)
+(* ------------------------------------------------------------------------- *)
+
+let TAUT =                                                                   
+  let PROP_REWRITE_TAC = REWRITE_TAC[] in
+  let RTAUT_TAC (asl,w) =
+    let ok t = type_of t = bool_ty & can (find_term is_var) t & free_in t w in
+    (PROP_REWRITE_TAC THEN
+     W((fun t1 t2 -> t1 THEN t2) (REWRITE_TAC[]) o BOOL_CASES_TAC o
+       hd o sort free_in o find_terms ok o snd)) (asl,w) in
+  let TAUT_TAC = REPEAT(GEN_TAC ORELSE CONJ_TAC) THEN REPEAT RTAUT_TAC in
+  fun tm -> prove(tm,TAUT_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Throw monotonicity in.                                                    *)

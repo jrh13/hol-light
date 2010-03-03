@@ -1,3 +1,12 @@
+Tue  2nd Mar 2010       class.ml
+
+Jeremy Bem had pointed out that TAUT has an implicit dependency on the current
+default rewrites because of the embedded REWRITE_TAC[]. This can make it do
+more than it should if the rewrites are expanded, or stop working if they are
+contracted. Fixed this by partially evaluating the REWRITE_TAC[] in the 
+definition, though this means defining it twice in class.ml, once as a sort of
+bootstrapping version without the COND rewrites, and one after.
+
 Mon  1st Mar 2010       update_database.ml
 
 Added alphabetic sorting of the results to the "search" function. Note that the
