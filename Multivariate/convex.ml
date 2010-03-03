@@ -2854,6 +2854,21 @@ let DIM_OPEN = prove
  (`!s:real^N->bool. open s /\ ~(s = {}) ==> dim s = dimindex(:N)`,
   SIMP_TAC[DIM_EQ_FULL; SPAN_OPEN]);;
 
+let AFF_DIM_INSERT = prove
+ (`!a:real^N s.
+        aff_dim (a INSERT s) =
+        if a IN affine hull s then aff_dim s else aff_dim s + &1`,
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN MATCH_MP_TAC SET_PROVE_CASES THEN
+  SIMP_TAC[AFF_DIM_EMPTY; AFF_DIM_SING; AFFINE_HULL_EMPTY; NOT_IN_EMPTY] THEN
+  CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC[RIGHT_IMP_FORALL_THM] THEN
+  MAP_EVERY X_GEN_TAC [`b:real^N`; `s:real^N->bool`; `a:real^N`] THEN
+  GEOM_ORIGIN_TAC `b:real^N` THEN
+  SIMP_TAC[AFFINE_HULL_EQ_SPAN; AFF_DIM_DIM_0; HULL_INC; IN_INSERT] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `s:real^N->bool`] THEN
+  DISCH_THEN(K ALL_TAC) THEN
+  SPEC_TAC(`(vec 0:real^N) INSERT s`,`s:real^N->bool`) THEN
+  SIMP_TAC[DIM_INSERT; INT_OF_NUM_ADD] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Caratheodory's theorem.                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -3402,6 +3417,29 @@ let AFF_DIM_AFFINE_INTER_HYPERPLANE = prove
                  SET_RULE `~(s SUBSET t) ==> ~(s DIFF t = {})`] THEN
     SPEC_TAC(`aff_dim (s INTER {x:real^N | a dot x = b})`,`i:int`) THEN
     INT_ARITH_TAC]);;
+
+let AFF_DIM_LT_FULL = prove
+ (`!s. aff_dim s < &(dimindex(:N)) <=> ~(affine hull s = (:real^N))`,
+  GEN_TAC THEN REWRITE_TAC[GSYM AFF_DIM_EQ_FULL] THEN
+  MP_TAC(ISPEC `s:real^N->bool` AFF_DIM_LE_UNIV) THEN ARITH_TAC);;
+
+let AFF_LOWDIM_SUBSET_HYPERPLANE = prove
+ (`!s:real^N->bool.
+        aff_dim s < &(dimindex(:N))
+        ==> ?a b. ~(a = vec 0) /\ s SUBSET {x | a dot x = b}`,
+  MATCH_MP_TAC SET_PROVE_CASES THEN CONJ_TAC THENL
+   [DISCH_TAC THEN EXISTS_TAC `basis 1:real^N` THEN
+    SIMP_TAC[EMPTY_SUBSET; BASIS_NONZERO; LE_REFL; DIMINDEX_GE_1];
+    MAP_EVERY X_GEN_TAC [`c:real^N`; `s:real^N->bool`] THEN
+    CONV_TAC(ONCE_DEPTH_CONV(GEN_ALPHA_CONV `a:real^N`)) THEN
+    GEN_GEOM_ORIGIN_TAC `c:real^N` ["a"] THEN
+    SIMP_TAC[AFF_DIM_DIM_0; HULL_INC; IN_INSERT; INT_OF_NUM_LT] THEN
+    REPEAT GEN_TAC THEN DISCH_TAC THEN
+    DISCH_THEN(MP_TAC o MATCH_MP LOWDIM_SUBSET_HYPERPLANE) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:real^N` THEN
+    STRIP_TAC THEN EXISTS_TAC `(u:real^N) dot c` THEN
+    ASM_REWRITE_TAC[DOT_RADD; REAL_EQ_ADD_LCANCEL_0] THEN
+    ASM_MESON_TAC[SPAN_INC; SUBSET_TRANS]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Openness and compactness are preserved by convex hull operation.          *)
@@ -6435,6 +6473,33 @@ let CONVEX_RELATIVE_INTERIOR_CLOSURE = prove
                REAL_ARITH `&0 < x ==> ~(&1 + x = &0)`;
                REAL_MUL_LID; REAL_ADD_RDISTRIB; REAL_DIV_RMUL;
                REAL_LT_IMP_NZ; REAL_LE_ADDL; NORM_POS_LE; REAL_SUB_REFL]);;
+
+let CONNECTED_INTER_RELATIVE_FRONTIER = prove
+ (`!s t:real^N->bool.
+        connected s /\ s SUBSET affine hull t /\
+        ~(s INTER t = {}) /\ ~(s DIFF t = {})
+        ==> ~(s INTER (closure t DIFF relative_interior t) = {})`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_LOCAL]) THEN
+  REWRITE_TAC[] THEN MAP_EVERY EXISTS_TAC
+   [`s INTER relative_interior t:real^N->bool`;
+    `s DIFF closure t:real^N->bool`] THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC OPEN_IN_SUBTOPOLOGY_INTER_SUBSET THEN
+    EXISTS_TAC `affine hull t:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC OPEN_IN_INTER THEN
+    REWRITE_TAC[OPEN_IN_RELATIVE_INTERIOR; OPEN_IN_SUBTOPOLOGY_REFL] THEN
+    REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV];
+    ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
+    MATCH_MP_TAC OPEN_IN_OPEN_INTER THEN
+    REWRITE_TAC[GSYM CLOSED_OPEN; CLOSED_CLOSURE];
+    ASM SET_TAC[];
+    MATCH_MP_TAC(SET_RULE
+     `i SUBSET t /\ t SUBSET c ==> (s INTER i) INTER (s DIFF c) = {}`) THEN
+    REWRITE_TAC[RELATIVE_INTERIOR_SUBSET; CLOSURE_SUBSET];
+    MP_TAC(ISPEC `t:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[];
+    MP_TAC(ISPEC `t:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
+    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Slightly shaper supporting hyperplane results.                            *)

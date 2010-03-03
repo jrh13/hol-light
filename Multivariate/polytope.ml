@@ -1029,6 +1029,10 @@ let FACET_OF_IMP_FACE_OF = prove
  (`!f s. f facet_of s ==> f face_of s`,
   SIMP_TAC[facet_of]);;
 
+let FACET_OF_IMP_SUBSET = prove
+ (`!f s. f facet_of s ==> f SUBSET s`,
+  SIMP_TAC[FACET_OF_IMP_FACE_OF; FACE_OF_IMP_SUBSET]);;
+
 let FACET_OF_TRANSLATION_EQ = prove
  (`!a f s.
         (IMAGE (\x. a + x) f) facet_of (IMAGE (\x. a + x) s) <=> f facet_of s`,
@@ -2307,6 +2311,64 @@ let FINITE_POLYHEDRON_EXTREME_POINTS = prove
   REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
   GEN_TAC THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
   REWRITE_TAC[SET_RULE `{v | {v} = {a}} = {a}`; FINITE_SING]);;
+
+let RELATIVE_INTERIOR_OF_POLYHEDRON = prove
+ (`!s:real^N->bool.
+        polyhedron s
+        ==> relative_interior s = s DIFF UNIONS {f | f facet_of s}`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM
+   (MP_TAC o GEN_REWRITE_RULE I [POLYHEDRON_INTER_AFFINE_MINIMAL]) THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
+   [RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN
+  SIMP_TAC[LEFT_IMP_EXISTS_THM; RIGHT_AND_EXISTS_THM; LEFT_AND_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC
+   [`f:(real^N->bool)->bool`; `a:(real^N->bool)->real^N`;
+    `b:(real^N->bool)->real`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `f:(real^N->bool)->bool`;
+                 `a:(real^N->bool)->real^N`; `b:(real^N->bool)->real`]
+        FACET_OF_POLYHEDRON_EXPLICIT) THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `f:(real^N->bool)->bool`;
+                 `a:(real^N->bool)->real^N`; `b:(real^N->bool)->real`]
+        RELATIVE_INTERIOR_POLYHEDRON_EXPLICIT) THEN
+  ASM_REWRITE_TAC[] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_TAC] THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> P x \/ x IN t) /\ (!x. x IN t ==> ~P x)
+    ==> {x | x IN s /\ P x} = s DIFF t`) THEN
+  REWRITE_TAC[FORALL_IN_UNIONS] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ; FORALL_IN_GSPEC] THEN
+  CONJ_TAC THENL
+   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    REWRITE_TAC[IN_UNIONS; IN_ELIM_THM] THEN
+    REWRITE_TAC[LEFT_AND_EXISTS_THM; TAUT `(a /\ b) /\ c <=> b /\ a /\ c`] THEN
+    ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+    ASM_REWRITE_TAC[UNWIND_THM2; IN_ELIM_THM; IN_INTER] THEN
+    MATCH_MP_TAC(SET_RULE
+     `(!x. P x ==> Q x \/ R x) ==> (!x. P x ==> Q x) \/ (?x. P x /\ R x)`) THEN
+    X_GEN_TAC `h:real^N->bool` THEN DISCH_TAC THEN
+    REWRITE_TAC[GSYM REAL_LE_LT] THEN
+    SUBGOAL_THEN `(x:real^N) IN INTERS f` MP_TAC THENL
+     [ASM SET_TAC[]; ALL_TAC] THEN
+    REWRITE_TAC[IN_INTERS] THEN
+    DISCH_THEN(MP_TAC o SPEC `h:real^N->bool`) THEN
+    SUBGOAL_THEN `h = {x:real^N | a h dot x <= b h}` MP_TAC THENL
+     [ASM_MESON_TAC[]; ASM_REWRITE_TAC[] THEN SET_TAC[]];
+    X_GEN_TAC `h:real^N->bool` THEN
+    DISCH_THEN(X_CHOOSE_THEN `g:real^N->bool` STRIP_ASSUME_TAC) THEN
+    X_GEN_TAC `x:real^N` THEN ASM_REWRITE_TAC[IN_INTER; IN_ELIM_THM] THEN
+    ASM_MESON_TAC[REAL_LT_REFL]]);;
+
+let RELATIVE_FRONTIER_OF_POLYHEDRON = prove
+ (`!s:real^N->bool.
+        polyhedron s
+        ==> s DIFF relative_interior s = UNIONS {f | f facet_of s}`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[RELATIVE_INTERIOR_OF_POLYHEDRON] THEN
+  MATCH_MP_TAC(SET_RULE `f SUBSET s ==> s DIFF (s DIFF f) = f`) THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_UNIONS; IN_ELIM_THM] THEN
+  MESON_TAC[FACET_OF_IMP_SUBSET; SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A characterization of polytopes as having finitely many faces.            *)

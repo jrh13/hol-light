@@ -1189,6 +1189,24 @@ let FRONTIER_INTER_SUBSET = prove
     ==> cst DIFF (s INTER t) SUBSET (cs DIFF s) UNION (ct DIFF t)`) THEN
   REWRITE_TAC[CLOSURE_INTER_SUBSET]);;
 
+let FRONTIER_INTERIORS = prove
+ (`!s. frontier s = (:real^N) DIFF interior(s) DIFF interior((:real^N) DIFF s)`,
+  REWRITE_TAC[frontier; CLOSURE_INTERIOR] THEN SET_TAC[]);;
+  
+let CONNECTED_INTER_FRONTIER = prove
+ (`!s t:real^N->bool. 
+        connected s /\ ~(s INTER t = {}) /\ ~(s DIFF t = {})
+        ==> ~(s INTER frontier t = {})`,
+  REWRITE_TAC[FRONTIER_INTERIORS] THEN REPEAT STRIP_TAC THEN 
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_LOCAL]) THEN
+  REWRITE_TAC[] THEN MAP_EVERY EXISTS_TAC           
+   [`s INTER interior t:real^N->bool`; 
+    `s INTER (interior((:real^N) DIFF t))`] THEN
+  SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_INTERIOR] THEN 
+  MAP_EVERY (MP_TAC o C ISPEC INTERIOR_SUBSET) 
+   [`t:real^N->bool`; `(:real^N) DIFF t`] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A variant of nets (slightly non-standard but good for our purposes).      *)
 (* ------------------------------------------------------------------------- *)
