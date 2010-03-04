@@ -6501,6 +6501,17 @@ let CONNECTED_INTER_RELATIVE_FRONTIER = prove
     MP_TAC(ISPEC `t:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
     ASM SET_TAC[]]);;
 
+let CLOSED_RELATIVE_FRONTIER = prove
+ (`!s:real^N->bool. closed(closure s DIFF relative_interior s)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC CLOSED_IN_CLOSED_TRANS THEN
+  EXISTS_TAC `affine hull s:real^N->bool` THEN
+  REWRITE_TAC[CLOSED_AFFINE_HULL] THEN MATCH_MP_TAC CLOSED_IN_DIFF THEN
+  REWRITE_TAC[OPEN_IN_RELATIVE_INTERIOR] THEN
+  MATCH_MP_TAC CLOSED_SUBSET THEN REWRITE_TAC[CLOSED_CLOSURE] THEN
+  MATCH_MP_TAC(SET_RULE
+   `s SUBSET closure t /\ closure t = t ==> s SUBSET t`) THEN
+  SIMP_TAC[SUBSET_CLOSURE; HULL_SUBSET; CLOSURE_EQ; CLOSED_AFFINE_HULL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Slightly shaper supporting hyperplane results.                            *)
 (* ------------------------------------------------------------------------- *)
@@ -9746,6 +9757,20 @@ let SEGMENT_EQ = prove
      [ASM SET_TAC[]; ALL_TAC] THEN
     ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_SEGMENT_OPEN_CLOSED] THEN
     ASM_REWRITE_TAC[SUBSET_ANTISYM_EQ]]);;
+
+let COMPACT_SEGMENT = prove
+ (`!a b. compact(segment[a,b])`,
+  SIMP_TAC[SEGMENT_CONVEX_HULL; COMPACT_CONVEX_HULL; FINITE_IMP_COMPACT;
+           FINITE_INSERT; FINITE_EMPTY]);;
+
+let BOUNDED_SEGMENT = prove
+ (`(!a b:real^N. bounded(segment[a,b])) /\
+   (!a b:real^N. bounded(segment(a,b)))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(MESON[BOUNDED_SUBSET]
+   `bounded s /\ t SUBSET s ==> bounded s /\ bounded t`) THEN
+  REWRITE_TAC[SEGMENT_OPEN_SUBSET_CLOSED] THEN
+  MESON_TAC[COMPACT_IMP_BOUNDED; COMPACT_SEGMENT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relations between components and path components.                         *)
