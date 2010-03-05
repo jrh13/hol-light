@@ -1192,18 +1192,18 @@ let FRONTIER_INTER_SUBSET = prove
 let FRONTIER_INTERIORS = prove
  (`!s. frontier s = (:real^N) DIFF interior(s) DIFF interior((:real^N) DIFF s)`,
   REWRITE_TAC[frontier; CLOSURE_INTERIOR] THEN SET_TAC[]);;
-  
+
 let CONNECTED_INTER_FRONTIER = prove
- (`!s t:real^N->bool. 
+ (`!s t:real^N->bool.
         connected s /\ ~(s INTER t = {}) /\ ~(s DIFF t = {})
         ==> ~(s INTER frontier t = {})`,
-  REWRITE_TAC[FRONTIER_INTERIORS] THEN REPEAT STRIP_TAC THEN 
+  REWRITE_TAC[FRONTIER_INTERIORS] THEN REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_LOCAL]) THEN
-  REWRITE_TAC[] THEN MAP_EVERY EXISTS_TAC           
-   [`s INTER interior t:real^N->bool`; 
+  REWRITE_TAC[] THEN MAP_EVERY EXISTS_TAC
+   [`s INTER interior t:real^N->bool`;
     `s INTER (interior((:real^N) DIFF t))`] THEN
-  SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_INTERIOR] THEN 
-  MAP_EVERY (MP_TAC o C ISPEC INTERIOR_SUBSET) 
+  SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_INTERIOR] THEN
+  MAP_EVERY (MP_TAC o C ISPEC INTERIOR_SUBSET)
    [`t:real^N->bool`; `(:real^N) DIFF t`] THEN
   ASM SET_TAC[]);;
 
@@ -5384,7 +5384,7 @@ let COMPACT_CLOSED_SUMS = prove
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   EXISTS_TAC `\n. (f o (sub:num->num)) n - (a o sub) n:real^N` THEN
   CONJ_TAC THENL [ASM_REWRITE_TAC[VECTOR_ADD_SUB; o_THM]; ALL_TAC] THEN
-  MATCH_MP_TAC LIM_SUB THEN ASM_SIMP_TAC[LIM_SUBSEQUENCE; ETA_AX])
+  MATCH_MP_TAC LIM_SUB THEN ASM_SIMP_TAC[LIM_SUBSEQUENCE; ETA_AX]);;
 
 let CLOSED_COMPACT_SUMS = prove
  (`!s:real^N->bool t.
