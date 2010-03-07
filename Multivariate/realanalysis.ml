@@ -188,6 +188,10 @@ let REAL_BOUNDED_POS_LT = prove
   MESON_TAC[REAL_LT_IMP_LE;
             REAL_ARITH `&0 < &1 + abs(y) /\ (x <= y ==> x < &1 + abs(y))`]);;
 
+let REAL_BOUNDED_SUBSET = prove
+ (`!s t. real_bounded t /\ s SUBSET t ==> real_bounded s`,
+  MESON_TAC[REAL_BOUNDED; BOUNDED_SUBSET; IMAGE_SUBSET]);;
+
 let real_compact = new_definition
  `real_compact s <=> compact(IMAGE lift s)`;;
 
@@ -2357,6 +2361,11 @@ let IS_REALINTERVAL_INTERVAL = prove
  (`!a b. is_realinterval(real_interval(a,b)) /\
          is_realinterval(real_interval[a,b])`,
   REWRITE_TAC[is_realinterval; IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
+
+let REAL_BOUNDED_REAL_INTERVAL = prove
+ (`(!a b. real_bounded(real_interval[a,b])) /\
+   (!a b. real_bounded(real_interval(a,b)))`,
+  REWRITE_TAC[IMAGE_LIFT_REAL_INTERVAL; REAL_BOUNDED; BOUNDED_INTERVAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Real continuity and differentiability.                                    *)
@@ -8388,6 +8397,24 @@ let STEINHAUS_TRIVIAL = prove
   MATCH_MP_TAC NEGLIGIBLE_COUNTABLE THEN
   MATCH_MP_TAC DISCRETE_IMP_COUNTABLE THEN
   ASM_MESON_TAC[REAL_NOT_LT]);;
+
+let REAL_STEINHAUS = prove
+ (`!s. real_measurable s /\ &0 < real_measure s
+       ==> ?d. &0 < d /\
+               real_interval(--d,d) SUBSET {x - y | x IN s /\ y IN s}`,
+  GEN_TAC THEN SIMP_TAC[IMP_CONJ; REAL_MEASURE_MEASURE] THEN
+  REWRITE_TAC[IMP_IMP; REAL_MEASURABLE_MEASURABLE] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP STEINHAUS) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN
+  REWRITE_TAC[SUBSET; BALL_INTERVAL; IN_INTERVAL_1; IN_REAL_INTERVAL] THEN
+  REWRITE_TAC[SET_RULE `{g x y | x IN IMAGE f s /\ y IN IMAGE f t} =
+                        {g (f x) (f y) | x IN s /\ y IN t}`] THEN
+  REWRITE_TAC[GSYM LIFT_SUB] THEN
+  REWRITE_TAC[SET_RULE `{lift(f x y) | P x y} = IMAGE lift {f x y | P x y}`;
+              IN_IMAGE_LIFT_DROP; GSYM FORALL_DROP] THEN
+  REWRITE_TAC[DROP_SUB; DROP_VEC; LIFT_DROP; DROP_ADD] THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bernstein polynomials.                                                    *)

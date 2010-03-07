@@ -5994,6 +5994,26 @@ let FINITE_INTERVAL_1 = prove
     REWRITE_TAC[IN_INTERVAL_1; IN_ELIM_THM; LIFT_DROP];
     SIMP_TAC[FINITE_IMAGE_INJ_EQ; LIFT_EQ; FINITE_REAL_INTERVAL]]);;
 
+let BALL_INTERVAL = prove
+ (`!x:real^1 e. ball(x,e) = interval(x - lift e,x + lift e)`,
+  REWRITE_TAC[EXTENSION; IN_BALL; IN_INTERVAL_1; DIST_REAL] THEN
+  REWRITE_TAC[GSYM drop; DROP_SUB; DROP_ADD; LIFT_DROP] THEN REAL_ARITH_TAC);;
+
+let CBALL_INTERVAL = prove
+ (`!x:real^1 e. cball(x,e) = interval[x - lift e,x + lift e]`,
+  REWRITE_TAC[EXTENSION; IN_CBALL; IN_INTERVAL_1; DIST_REAL] THEN
+  REWRITE_TAC[GSYM drop; DROP_SUB; DROP_ADD; LIFT_DROP] THEN REAL_ARITH_TAC);;
+
+let BALL_INTERVAL_0 = prove
+ (`!e. ball(vec 0:real^1,e) = interval(--lift e,lift e)`,
+  GEN_TAC THEN REWRITE_TAC[BALL_INTERVAL] THEN AP_TERM_TAC THEN
+  BINOP_TAC THEN VECTOR_ARITH_TAC);;
+
+let CBALL_INTERVAL_0 = prove
+ (`!e. cball(vec 0:real^1,e) = interval[--lift e,lift e]`,
+  GEN_TAC THEN REWRITE_TAC[CBALL_INTERVAL] THEN AP_TERM_TAC THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN BINOP_TAC THEN VECTOR_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some stuff for half-infinite intervals too; maybe I need a notation?      *)
 (* ------------------------------------------------------------------------- *)
