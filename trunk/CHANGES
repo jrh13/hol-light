@@ -1,9 +1,15 @@
+Sat  6th Mar 2010       Examples/vitali.ml [new file]
+
+Added a simple example, the existence of a non-measurable set. Since it doesn't
+seem likely to be useful for anything, I didn't put it in the Multivariate
+measure theory itself.
+
 Tue  2nd Mar 2010       class.ml
 
 Jeremy Bem had pointed out that TAUT has an implicit dependency on the current
 default rewrites because of the embedded REWRITE_TAC[]. This can make it do
 more than it should if the rewrites are expanded, or stop working if they are
-contracted. Fixed this by partially evaluating the REWRITE_TAC[] in the 
+contracted. Fixed this by partially evaluating the REWRITE_TAC[] in the
 definition, though this means defining it twice in class.ml, once as a sort of
 bootstrapping version without the COND rewrites, and one after.
 
