@@ -6472,6 +6472,26 @@ let OPEN_HALFSPACE_COMPONENT_GT = prove
   MP_TAC(ISPECL [`basis i:real^N`; `a:real`] OPEN_HALFSPACE_GT) THEN
   ASM_SIMP_TAC[DOT_BASIS]);;
 
+let OPEN_POSITIVE_MULTIPLES = prove
+ (`!s:real^N->bool. open s ==> open {c % x | &0 < c /\ x IN s}`,
+  REWRITE_TAC[open_def; FORALL_IN_GSPEC] THEN GEN_TAC THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`c:real`; `x:real^N`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `c * e:real` THEN ASM_SIMP_TAC[REAL_LT_MUL] THEN
+  X_GEN_TAC `y:real^N` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `inv(c) % y:real^N`) THEN ANTS_TAC THENL
+   [SUBGOAL_THEN `x:real^N = inv c % c % x` SUBST1_TAC THENL
+     [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID;
+                   REAL_LT_IMP_NZ];
+      ASM_SIMP_TAC[DIST_MUL; real_abs; REAL_LT_INV_EQ; REAL_LT_IMP_LE] THEN
+      ONCE_REWRITE_TAC[REAL_ARITH `inv c * x:real = x / c`] THEN
+      ASM_MESON_TAC[REAL_LT_LDIV_EQ; REAL_MUL_SYM]];
+    DISCH_TAC THEN REWRITE_TAC[IN_ELIM_THM] THEN
+    EXISTS_TAC `c:real` THEN EXISTS_TAC `inv(c) % y:real^N` THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV; REAL_LT_IMP_NZ] THEN
+    VECTOR_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Closures and interiors of halfspaces.                                     *)
 (* ------------------------------------------------------------------------- *)

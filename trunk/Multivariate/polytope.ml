@@ -2726,6 +2726,136 @@ let POLYTOPE_UNION_CONVEX_HULL_FACETS = prove
     ASM_REWRITE_TAC[] THEN EXPAND_TAC "k" THEN REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Finitely generated cone is polyhedral, and hence closed.                  *)
+(* ------------------------------------------------------------------------- *)
+
+let POLYHEDRON_CONVEX_CONE_HULL = prove
+ (`!s:real^N->bool. FINITE s ==> polyhedron(convex_cone hull s)`,
+  GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[CONVEX_CONE_HULL_EMPTY; POLYHEDRON_EMPTY];
+    DISCH_TAC] THEN
+  SUBGOAL_THEN
+    `polyhedron(convex hull ((vec 0:real^N) INSERT s))`
+  MP_TAC THENL
+   [MATCH_MP_TAC POLYTOPE_IMP_POLYHEDRON THEN
+    REWRITE_TAC[polytope] THEN ASM_MESON_TAC[FINITE_INSERT];
+    REWRITE_TAC[polyhedron] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[SKOLEM_THM; RIGHT_IMP_EXISTS_THM]) THEN
+    FIRST_X_ASSUM(X_CHOOSE_THEN `a:(real^N->bool)->real^N` MP_TAC) THEN
+    DISCH_THEN(X_CHOOSE_TAC `b:(real^N->bool)->real`)] THEN
+  SUBGOAL_THEN `~(f:(real^N->bool)->bool = {})` ASSUME_TAC THENL
+   [DISCH_THEN SUBST_ALL_TAC THEN FIRST_X_ASSUM(MP_TAC o
+     GEN_REWRITE_RULE RAND_CONV [INTERS_0]) THEN
+    DISCH_THEN(MP_TAC o AP_TERM `bounded:(real^N->bool)->bool`) THEN
+    ASM_SIMP_TAC[NOT_BOUNDED_UNIV; BOUNDED_CONVEX_HULL; FINITE_IMP_BOUNDED;
+                 FINITE_INSERT; FINITE_EMPTY];
+    ALL_TAC] THEN
+  EXISTS_TAC `{h:real^N->bool | h IN f /\ b h = &0}` THEN
+  ASM_SIMP_TAC[FINITE_RESTRICT; IN_ELIM_THM] THEN CONJ_TAC THENL
+   [ALL_TAC;
+    X_GEN_TAC `h:real^N->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `h:real^N->bool`) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ONCE_ASM_REWRITE_TAC[] THEN
+    MAP_EVERY EXISTS_TAC
+     [`(a:(real^N->bool)->real^N) h`; `(b:(real^N->bool)->real) h`] THEN
+    ASM_REWRITE_TAC[]] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC HULL_MINIMAL THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUBSET_TRANS THEN
+      EXISTS_TAC `convex hull ((vec 0:real^N) INSERT s)` THEN CONJ_TAC THENL
+       [SIMP_TAC[SUBSET; HULL_INC; IN_INSERT]; ASM_REWRITE_TAC[]] THEN
+      MATCH_MP_TAC(SET_RULE `s SUBSET t ==> INTERS t SUBSET INTERS s`) THEN
+      SET_TAC[];
+      MATCH_MP_TAC CONVEX_CONE_INTERS THEN
+      X_GEN_TAC `h:real^N->bool` THEN REWRITE_TAC[IN_ELIM_THM] THEN
+      STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `h:real^N->bool`) THEN
+      ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o CONJUNCT2) THEN
+      REWRITE_TAC[CONVEX_CONE_HALFSPACE_LE]];
+    ALL_TAC] THEN
+  REWRITE_TAC[SUBSET; IN_INTERS; IN_ELIM_THM] THEN X_GEN_TAC `x:real^N` THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `!h:real^N->bool. h IN f ==> ?t. &0 < t /\ (t % x) IN h`
+  MP_TAC THENL
+   [X_GEN_TAC `h:real^N->bool` THEN DISCH_TAC THEN
+    ASM_CASES_TAC `(b:(real^N->bool)->real) h = &0` THENL
+     [EXISTS_TAC `&1` THEN ASM_SIMP_TAC[REAL_LT_01; VECTOR_MUL_LID];
+      ALL_TAC] THEN
+    SUBGOAL_THEN `&0 < (b:(real^N->bool)->real) h` ASSUME_TAC THENL
+     [ASM_REWRITE_TAC[REAL_LT_LE] THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EXTENSION]) THEN
+      DISCH_THEN(MP_TAC o SPEC `vec 0:real^N`) THEN
+      SIMP_TAC[HULL_INC; IN_INSERT; IN_INTERS] THEN
+      DISCH_THEN(MP_TAC o SPEC `h:real^N->bool`) THEN ASM_REWRITE_TAC[] THEN
+      SUBGOAL_THEN `h = {x:real^N | a h dot x <= b h}`
+       (fun th -> GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [th])
+      THENL [ASM_MESON_TAC[]; REWRITE_TAC[IN_ELIM_THM; DOT_RZERO]];
+      ALL_TAC] THEN
+    SUBGOAL_THEN `(vec 0:real^N) IN interior h` MP_TAC THENL
+     [SUBGOAL_THEN `h = {x:real^N | a h dot x <= b h}` SUBST1_TAC THENL
+       [ASM_MESON_TAC[];
+        ASM_SIMP_TAC[INTERIOR_HALFSPACE_LE; IN_ELIM_THM; DOT_RZERO]];
+      REWRITE_TAC[IN_INTERIOR; SUBSET; IN_BALL_0; LEFT_IMP_EXISTS_THM] THEN
+      X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+      ASM_CASES_TAC `x:real^N = vec 0` THENL
+       [EXISTS_TAC `&1` THEN
+        ASM_SIMP_TAC[VECTOR_MUL_RZERO; REAL_LT_01; NORM_0];
+        EXISTS_TAC `e / &2 / norm(x:real^N)` THEN
+        ASM_SIMP_TAC[REAL_HALF; REAL_LT_DIV; NORM_POS_LT] THEN
+        FIRST_X_ASSUM MATCH_MP_TAC THEN
+        REWRITE_TAC[NORM_MUL; REAL_ABS_DIV; REAL_ABS_NUM; REAL_ABS_NORM] THEN
+        ASM_SIMP_TAC[REAL_DIV_RMUL; NORM_EQ_0] THEN ASM_REAL_ARITH_TAC]];
+    ALL_TAC] THEN
+  REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `t:(real^N->bool)->real` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `x:real^N = inv(inf(IMAGE t (f:(real^N->bool)->bool))) %
+                           inf(IMAGE t f) % x`
+  SUBST1_TAC THENL
+   [GEN_REWRITE_TAC LAND_CONV [GSYM VECTOR_MUL_LID] THEN
+    REWRITE_TAC[VECTOR_MUL_ASSOC] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_MUL_LINV THEN
+    MATCH_MP_TAC REAL_LT_IMP_NZ THEN
+    ASM_SIMP_TAC[REAL_LT_INF_FINITE; FINITE_IMAGE; IMAGE_EQ_EMPTY] THEN
+    ASM_SIMP_TAC[FORALL_IN_IMAGE];
+    ALL_TAC] THEN
+  MATCH_MP_TAC(REWRITE_RULE[conic] CONIC_CONVEX_CONE_HULL) THEN
+  ASM_SIMP_TAC[REAL_LE_INV_EQ; REAL_LE_INF_FINITE; FINITE_IMAGE;
+               IMAGE_EQ_EMPTY; REAL_LT_IMP_LE; FORALL_IN_IMAGE] THEN
+  MATCH_MP_TAC(SET_RULE `!s t. s SUBSET t /\ x IN s ==> x IN t`) THEN
+  EXISTS_TAC `convex hull ((vec 0:real^N) INSERT s)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC HULL_MINIMAL THEN
+    REWRITE_TAC[CONVEX_CONVEX_CONE_HULL] THEN
+    ASM_SIMP_TAC[INSERT_SUBSET; HULL_SUBSET] THEN
+    ASM_SIMP_TAC[CONIC_CONVEX_CONE_HULL; CONIC_CONTAINS_0;
+                 CONVEX_CONE_HULL_EQ_EMPTY];
+    ASM_REWRITE_TAC[IN_INTERS] THEN X_GEN_TAC `h:real^N->bool` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN `inf(IMAGE (t:(real^N->bool)->real) f) % x:real^N =
+                  (&1 - inf(IMAGE t f) / t h) % vec 0 +
+                  (inf(IMAGE t f) / t h) % t h % x`
+    SUBST1_TAC THENL
+     [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; VECTOR_MUL_RZERO; VECTOR_ADD_LID;
+                   REAL_DIV_RMUL; REAL_LT_IMP_NZ];
+      ALL_TAC] THEN
+    MATCH_MP_TAC IN_CONVEX_SET THEN
+    ASM_SIMP_TAC[REAL_LE_RDIV_EQ; REAL_LE_LDIV_EQ] THEN
+    REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_LID] THEN
+    ASM_SIMP_TAC[REAL_INF_LE_FINITE; REAL_LE_INF_FINITE;
+                 FINITE_IMAGE; IMAGE_EQ_EMPTY] THEN
+    ASM_REWRITE_TAC[FORALL_IN_IMAGE; EXISTS_IN_IMAGE] THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN REPEAT CONJ_TAC THENL
+     [SUBGOAL_THEN `h = {x:real^N | a h dot x <= b h}` SUBST1_TAC THENL
+       [ASM_MESON_TAC[]; ASM_SIMP_TAC[CONVEX_HALFSPACE_LE]];
+      SUBGOAL_THEN `(vec 0:real^N) IN convex hull (vec 0 INSERT s)` MP_TAC
+      THENL [SIMP_TAC[HULL_INC; IN_INSERT]; ALL_TAC] THEN
+      ASM_REWRITE_TAC[IN_INTERS] THEN ASM_MESON_TAC[];
+      ASM SET_TAC[REAL_LE_REFL]]]);;
+
+let CLOSED_CONVEX_CONE_HULL = prove
+ (`!s:real^N->bool. FINITE s ==> closed(convex_cone hull s)`,
+  MESON_TAC[POLYHEDRON_IMP_CLOSED; POLYHEDRON_CONVEX_CONE_HULL]);;
+
+(* ------------------------------------------------------------------------- *)
 (* The notion of n-simplex where n is an integer >= -1.                      *)
 (* ------------------------------------------------------------------------- *)
 
