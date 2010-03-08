@@ -7,6 +7,8 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "class.ml";;
+
 (* ------------------------------------------------------------------------- *)
 (* Combinators. We don't bother with S and K, which seem of little use.      *)
 (* ------------------------------------------------------------------------- *)
@@ -85,5 +87,5 @@ let one_Axiom = prove
 (* Add the type "1" to the inductive type store.                             *)
 (* ------------------------------------------------------------------------- *)
 
-inductive_type_store := 
+inductive_type_store :=
   ("1",(1,one_INDUCT,one_RECURSION))::(!inductive_type_store);;

@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "bool.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Type of instantiations, with terms, types and higher-order data.          *)
+(* ------------------------------------------------------------------------- *)
+
 type instantiation =
   (int * term) list * (term * term) list * (hol_type * hol_type) list;;
 
@@ -174,7 +180,7 @@ let (term_match:term list -> term -> term -> instantiation) =
     match (vtm,ctm) with
       Var(_,_),_ ->
        (try let ctm' = rev_assoc vtm env in
-            if Pervasives.compare ctm' ctm = 0 then sofar 
+            if Pervasives.compare ctm' ctm = 0 then sofar
             else failwith "term_pmatch"
         with Failure "find" ->
             if mem vtm lconsts then
@@ -230,7 +236,7 @@ let (term_match:term list -> term -> term -> instantiation) =
     if homs = [] then insts else
     let (env,ctm,vtm) = hd homs in
     if is_var vtm then
-      if Pervasives.compare ctm vtm = 0 
+      if Pervasives.compare ctm vtm = 0
        then term_homatch lconsts tyins (insts,tl homs) else
       let newtyins = safe_insert (type_of ctm,snd(dest_var vtm)) tyins
       and newinsts = (ctm,vtm)::insts in
@@ -249,7 +255,7 @@ let (term_match:term list -> term -> term -> instantiation) =
         let ni =
           let chop,cargs = strip_comb ctm in
           if Pervasives.compare cargs pats = 0 then
-            if Pervasives.compare chop vhop = 0 
+            if Pervasives.compare chop vhop = 0
             then insts else safe_inserta (chop,vhop) insts else
           let ginsts = map
             (fun p -> (if is_var p then p else genvar(type_of p)),p) pats in

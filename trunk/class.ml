@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "ind_defs.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Eta-axiom, corresponding conversion, and extensionality.                  *)
+(* ------------------------------------------------------------------------- *)
+
 let ETA_AX = new_axiom
   `!t:A->B. (\x. t x) = t`;;
 
@@ -395,7 +401,7 @@ let COND_ABS = prove
 (* Redefine TAUT to freeze in the rewrites including COND.                   *)
 (* ------------------------------------------------------------------------- *)
 
-let TAUT =                                                                   
+let TAUT =
   let PROP_REWRITE_TAC = REWRITE_TAC[] in
   let RTAUT_TAC (asl,w) =
     let ok t = type_of t = bool_ty & can (find_term is_var) t & free_in t w in

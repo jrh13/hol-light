@@ -7,6 +7,8 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "equal.ml";;
+
 (* ------------------------------------------------------------------------- *)
 (* Set up parse status of basic and derived logical constants.               *)
 (* ------------------------------------------------------------------------- *)
@@ -200,7 +202,7 @@ let IMP_TRANS =
   let pq = `p ==> q`
   and qr = `q ==> r` in
   let p,q = dest_imp pq and r = rand qr in
-  let pth = 
+  let pth =
     itlist DISCH [pq; qr; p] (MP (ASSUME qr) (MP (ASSUME pq) (ASSUME p))) in
   fun th1 th2 ->
         let x,y = dest_imp(concl th1)

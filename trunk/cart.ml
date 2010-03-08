@@ -4,6 +4,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "iterate.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Association of a number with an indexing type.                            *)
+(* ------------------------------------------------------------------------- *)
+
 let dimindex = new_definition
   `dimindex(s:A->bool) = if FINITE(:A) then CARD(:A) else 1`;;
 

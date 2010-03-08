@@ -1,3 +1,5 @@
+needs "help.ml";;
+
 theorems :=
 [
 "ABSORPTION",ABSORPTION;

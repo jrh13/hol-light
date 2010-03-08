@@ -10,6 +10,8 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "calc_rat.ml";;
+
 (* ------------------------------------------------------------------------- *)
 (* Representing predicate.                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -141,7 +143,7 @@ let int_sgn = new_definition
 
 let int_sgn_th = prove
  (`!x. real_of_int(int_sgn x) = real_sgn(real_of_int x)`,
-  GEN_TAC THEN REWRITE_TAC[int_sgn; real_sgn; GSYM int_rep] THEN 
+  GEN_TAC THEN REWRITE_TAC[int_sgn; real_sgn; GSYM int_rep] THEN
   REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
   MESON_TAC[is_int]);;
 

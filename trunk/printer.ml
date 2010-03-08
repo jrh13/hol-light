@@ -7,6 +7,8 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "parser.ml";;
+
 include Format;;
 
 set_max_boxes 100;;

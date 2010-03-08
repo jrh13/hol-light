@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "ind_types.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Standard tactic for list induction using MATCH_MP_TAC list_INDUCT         *)
+(* ------------------------------------------------------------------------- *)
+
 let LIST_INDUCT_TAC =
   let list_INDUCT = prove
    (`!P:(A)list->bool. P [] /\ (!h t. P t ==> P (CONS h t)) ==> !l. P l`,

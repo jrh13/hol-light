@@ -7,6 +7,8 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "nums.ml";;
+
 (* ------------------------------------------------------------------------- *)
 (* Note: all the following proofs are intuitionistic and intensional, except *)
 (* for the least number principle num_WOP.                                   *)

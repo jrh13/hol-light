@@ -1,3 +1,10 @@
+Sun  7th Mar 2010       passim
+
+Moved more hol-online changes upstream, adding explicit "needs" directives to
+the core files in the toplevel directory. Also modified the
+"make_database_assignment" function in "update_database.ml" so that it adds
+such a directive at the top of any file it creates.
+
 Sat  6th Mar 2010       Examples/vitali.ml [new file]
 
 Added a simple example, the existence of a non-measurable set. Since it doesn't
