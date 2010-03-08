@@ -4,6 +4,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "cart.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Constant supporting casewise definitions.                                 *)
+(* ------------------------------------------------------------------------- *)
+
 let CASEWISE_DEF = new_recursive_definition list_RECURSION
  `(CASEWISE [] f x = @y. T) /\
   (CASEWISE (CONS h t) f x =

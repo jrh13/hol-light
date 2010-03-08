@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "tactics.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Accept a theorem modulo unification.                                      *)
+(* ------------------------------------------------------------------------- *)
+
 let UNIFY_ACCEPT_TAC mvs th (asl,w) =
   let insts = term_unify mvs (concl th) w in
   ([],insts),[],

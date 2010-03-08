@@ -5,6 +5,8 @@
 (*              (c) Copyright, Lars Schewe 2007                              *)
 (* ========================================================================= *)
 
+needs "sets.ml";;
+
 prioritize_num();;
 
 (* ------------------------------------------------------------------------- *)
@@ -257,8 +259,8 @@ let FINITE_INTSEG = prove
     REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN INT_ARITH_TAC;
     REPEAT GEN_TAC THEN ASM_CASES_TAC `&0:int <= r - l` THEN
     ASM_SIMP_TAC[INT_ARITH `~(&0 <= r - l:int) ==> ~(l <= x /\ x <= r)`] THEN
-    ASM_SIMP_TAC[EMPTY_GSPEC; FINITE_EMPTY] THEN 
-    MATCH_MP_TAC FINITE_SUBSET THEN 
+    ASM_SIMP_TAC[EMPTY_GSPEC; FINITE_EMPTY] THEN
+    MATCH_MP_TAC FINITE_SUBSET THEN
     EXISTS_TAC `IMAGE (\n. l + &n) (0..num_of_int(r - l))` THEN
     ASM_SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG] THEN
     REWRITE_TAC[SUBSET; IN_IMAGE; IN_ELIM_THM] THEN

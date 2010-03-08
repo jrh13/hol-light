@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "canon.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Some parameters controlling MESON behaviour.                              *)
+(* ------------------------------------------------------------------------- *)
+
 let meson_depth = ref false;;   (* Use depth not inference bound.            *)
 
 let meson_prefine = ref true;;  (* Use Plaisted's positive refinement.       *)
@@ -438,7 +444,7 @@ let GEN_MESON_TAC =
               "Searching with maximum size "^(string_of_int n)^".");
          Format.print_newline())
        else if !verbose then
-        (Format.print_string(string_of_int (!inferences)^".."); 
+        (Format.print_string(string_of_int (!inferences)^"..");
          Format.print_flush())
        else ());
       try let gi =

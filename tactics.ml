@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "drule.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* The common case of trivial instantiations.                                *)
+(* ------------------------------------------------------------------------- *)
+
 let null_inst = ([],[],[] :instantiation);;
 
 let null_meta = (([]:term list),null_inst);;
@@ -589,18 +595,18 @@ let (CHOOSE_THEN: thm_tactical) =
 let STRIP_THM_THEN =
   FIRST_TCL [CONJUNCTS_THEN; DISJ_CASES_THEN; CHOOSE_THEN];;
 
-let (ANTE_RES_THEN: thm_tactical) =                                             
-  fun ttac ante ->                                                              
-    ASSUM_LIST                                                                 
-     (fun asl ->                                                              
+let (ANTE_RES_THEN: thm_tactical) =
+  fun ttac ante ->
+    ASSUM_LIST
+     (fun asl ->
         let tacs = mapfilter (fun imp -> ttac (MATCH_MP imp ante)) asl in
         if tacs = [] then failwith "IMP_RES_THEN"
         else EVERY tacs);;
 
-let (IMP_RES_THEN: thm_tactical) =                                             
-  fun ttac imp ->                                                              
-    ASSUM_LIST                                                                 
-     (fun asl ->                                                              
+let (IMP_RES_THEN: thm_tactical) =
+  fun ttac imp ->
+    ASSUM_LIST
+     (fun asl ->
         let tacs = mapfilter (fun ante -> ttac (MATCH_MP imp ante)) asl in
         if tacs = [] then failwith "IMP_RES_THEN"
         else EVERY tacs);;

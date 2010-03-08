@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "calc_int.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Some lemmas needed now just to drive the decision procedure.              *)
+(* ------------------------------------------------------------------------- *)
+
 let REAL_LTE_TOTAL = prove
  (`!x y. x < y \/ y <= x`,
   REWRITE_TAC[real_lt] THEN CONV_TAC TAUT);;

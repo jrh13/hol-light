@@ -7,6 +7,8 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "lib.ml";;
+
 module type Hol_kernel =
   sig
       type hol_type = private

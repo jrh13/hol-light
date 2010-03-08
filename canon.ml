@@ -7,6 +7,12 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "trivia.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Pre-simplification.                                                       *)
+(* ------------------------------------------------------------------------- *)
+
 let PRESIMP_CONV =
   GEN_REWRITE_CONV TOP_DEPTH_CONV
    [NOT_CLAUSES; AND_CLAUSES; OR_CLAUSES; IMP_CLAUSES; EQ_CLAUSES;

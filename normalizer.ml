@@ -4,6 +4,8 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
+needs "calc_num.ml";;
+
 let SEMIRING_NORMALIZERS_CONV =
   let SEMIRING_PTHS = prove
    (`(!x:A y z. add x (add y z) = add (add x y) z) /\

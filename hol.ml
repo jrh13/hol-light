@@ -148,7 +148,7 @@ loads "real.ml";;       (* Derived properties of reals                       *)
 loads "calc_rat.ml";;   (* Calculation with rational-valued reals            *)
 loads "int.ml";;        (* Definition of integers                            *)
 loads "sets.ml";;       (* Basic set theory.                                 *)
-loads "iterate.ml";     (* Iterated operations                               *)
+loads "iterate.ml";;    (* Iterated operations                               *)
 loads "cart.ml";;       (* Finite Cartesian products                         *)
 loads "define.ml";;     (* Support for general recursive definitions         *)
 

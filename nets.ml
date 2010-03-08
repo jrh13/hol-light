@@ -7,10 +7,7 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-type term_label = Vnet                          (* variable (instantiable)   *)
-                 | Lcnet of (string * int)      (* local constant            *)
-                 | Cnet of (string * int)       (* constant                  *)
-                 | Lnet of int;;                (* lambda term (abstraction) *)
+needs "basics.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Term nets are a finitely branching tree structure; at each level we       *)
@@ -20,6 +17,11 @@ type term_label = Vnet                          (* variable (instantiable)   *)
 (* anyway it's useful to allow our restricted second order matches: if       *)
 (* the head is a variable then then whole term is treated as a variable.     *)
 (* ------------------------------------------------------------------------- *)
+
+type term_label = Vnet                          (* variable (instantiable)   *)
+                 | Lcnet of (string * int)      (* local constant            *)
+                 | Cnet of (string * int)       (* constant                  *)
+                 | Lnet of int;;                (* lambda term (abstraction) *)
 
 type 'a net = Netnode of (term_label * 'a net) list * 'a list;;
 

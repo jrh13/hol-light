@@ -204,7 +204,8 @@ let make_database_assignment filename =
   (let allnames = uniq(sort (<) (map fst (!theorems))) in
    let names = subtract allnames ["it"] in
    let entries = map (fun n -> "\""^n^"\","^n) names in
-   let text = "theorems :=\n[\n"^
+   let text = "needs \"help.ml\";;\n\n"^
+              "theorems :=\n[\n"^
               end_itlist (fun a b -> a^";\n"^b) entries^"\n];;\n" in
    file_of_string filename text);;
 
@@ -240,7 +241,7 @@ let search =
           end_itlist (fun s t -> s^", "^t) (map (fst o dest_var) triv))
      else ());
     (if nontriv = [] & triv <> [] then []
-     else sort (increasing fst) 
+     else sort (increasing fst)
                (itlist (filter o filterpred) pats (!theorems)));;
 
 (* ------------------------------------------------------------------------- *)
