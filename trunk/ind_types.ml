@@ -766,8 +766,7 @@ let parse_inductive_type_specification =
 (* ------------------------------------------------------------------------- *)
 
 let sum_INDUCT,sum_RECURSION =
-  let define_type = define_type_raw o parse_inductive_type_specification in
-  define_type "sum = INL A | INR B";;
+  define_type_raw (parse_inductive_type_specification "sum = INL A | INR B");;
 
 let OUTL = new_recursive_definition sum_RECURSION
   `OUTL (INL x :A+B) = x`;;
@@ -880,12 +879,12 @@ let define_type_raw =
 (* ------------------------------------------------------------------------- *)
 
 let option_INDUCT,option_RECURSION =
-  let define_type = define_type_raw o parse_inductive_type_specification in
-  define_type "option = NONE | SOME A";;
+  define_type_raw
+   (parse_inductive_type_specification "option = NONE | SOME A");;
 
 let list_INDUCT,list_RECURSION =
-  let define_type = define_type_raw o parse_inductive_type_specification in
-  define_type "list = NIL | CONS A list";;
+  define_type_raw
+   (parse_inductive_type_specification "list = NIL | CONS A list");;
 
 (* ------------------------------------------------------------------------- *)
 (* Tools for proving injectivity and distinctness of constructors.           *)
