@@ -5231,6 +5231,16 @@ let CONVEX_CONE_HULL_EQ_EMPTY = prove
   GEN_TAC THEN EQ_TAC THEN
   MESON_TAC[SUBSET_EMPTY; HULL_SUBSET; CONVEX_CONE_HULL_EMPTY]);;
 
+let CONVEX_HULL_SUBSET_CONVEX_CONE_HULL = prove
+ (`!s. convex hull s SUBSET convex_cone hull s`,
+  GEN_TAC THEN MATCH_MP_TAC HULL_ANTIMONO THEN
+  SIMP_TAC[convex_cone; SUBSET; IN]);;
+
+let CONIC_HULL_SUBSET_CONVEX_CONE_HULL = prove
+ (`!s. conic hull s SUBSET convex_cone hull s`,
+  GEN_TAC THEN MATCH_MP_TAC HULL_ANTIMONO THEN
+  SIMP_TAC[convex_cone; SUBSET; IN]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Epigraphs of convex functions.                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -5511,65 +5521,38 @@ let UNIT_INTERVAL_CONVEX_HULL = prove
     ASM_MESON_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* And this is a finite set of vertices.                                     *)
+(* Representation of any interval as a finite convex hull.                   *)
 (* ------------------------------------------------------------------------- *)
 
-let UNIT_CUBE_CONVEX_HULL = prove
- (`?s:real^N->bool. FINITE s /\ (interval [vec 0,vec 1] = convex hull s)`,
-  EXISTS_TAC
-   `{x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
-                    ==> ((x$i = &0) \/ (x$i = &1))}` THEN
-  REWRITE_TAC[UNIT_INTERVAL_CONVEX_HULL] THEN
-  MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC
-   `IMAGE (\s. (lambda i. if i IN s then &1 else &0):real^N)
-          {t | t SUBSET (1..dimindex(:N))}` THEN
-  ASM_SIMP_TAC[FINITE_POWERSET; FINITE_IMAGE; FINITE_NUMSEG] THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_IMAGE] THEN
-  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN EXISTS_TAC
-   `{i | 1 <= i /\ i <= dimindex(:N) /\ ((x:real^N)$i = &1)}` THEN
-  SIMP_TAC[CART_EQ; IN_ELIM_THM; IN_NUMSEG; LAMBDA_BETA] THEN
-  ASM_MESON_TAC[]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Hence any cube (could do any nonempty interval).                          *)
-(* ------------------------------------------------------------------------- *)
-
-let CUBE_CONVEX_HULL = prove
- (`!x:real^N d.
-        &0 < d
-        ==> ?s. FINITE s /\
-                (interval[(x - lambda i. d),(x + lambda i. d)] =
-                 convex hull s)`,
-  REPEAT STRIP_TAC THEN
+let CLOSED_INTERVAL_AS_CONVEX_HULL = prove
+ (`!a b:real^N. ?s. FINITE s /\ interval[a,b] = convex hull s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `interval[a:real^N,b] = {}` THENL
+   [ASM_MESON_TAC[CONVEX_HULL_EMPTY; FINITE_EMPTY]; ALL_TAC] THEN
+  ASM_SIMP_TAC[CLOSED_INTERVAL_IMAGE_UNIT_INTERVAL] THEN
   SUBGOAL_THEN
-   `interval[(x - lambda i. d),(x + lambda i. d)] =
-    IMAGE (\y:real^N. (x - lambda i. d) + (&2 * d) % y) (interval[vec 0,vec 1])`
-  SUBST1_TAC THENL
-   [ALL_TAC;
-    X_CHOOSE_TAC `s:real^N->bool` UNIT_CUBE_CONVEX_HULL THEN
-    EXISTS_TAC `IMAGE (\y:real^N. (x - lambda i. d) + (&2 * d) % y) s` THEN
-    ASM_SIMP_TAC[CONVEX_HULL_AFFINITY; FINITE_IMAGE]] THEN
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_INTERVAL] THEN X_GEN_TAC `y:real^N` THEN
-  SIMP_TAC[VECTOR_SUB_COMPONENT; LAMBDA_BETA; VECTOR_ADD_COMPONENT;
-           VEC_COMPONENT] THEN
-  EQ_TAC THENL
-   [DISCH_TAC THEN
-    EXISTS_TAC `inv(&2 * d) % (y - (x - (lambda i. d):real^N))`;
-    DISCH_THEN(X_CHOOSE_THEN `z:real^N` STRIP_ASSUME_TAC)] THEN
-  ASM_SIMP_TAC[VECTOR_SUB_COMPONENT; LAMBDA_BETA; VECTOR_ADD_COMPONENT;
-               VEC_COMPONENT; VECTOR_MUL_COMPONENT;
-                REAL_LE_LMUL; REAL_LE_MUL; REAL_POS; REAL_LT_IMP_LE;
-        VECTOR_MUL_COMPONENT; CART_EQ;
-        REAL_ARITH `x - d <= x - d + e /\ x - d + e <= x + d <=>
-                    &0 <= e /\ e <= (&2 * d) * &1`] THEN
-  ASM_SIMP_TAC[REAL_MUL_ASSOC; REAL_MUL_RINV; REAL_ENTIRE; REAL_OF_NUM_EQ;
-               ARITH_EQ; REAL_LT_IMP_NZ] THEN
-  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-  ASM_SIMP_TAC[GSYM real_div; REAL_LE_LDIV_EQ; REAL_LE_RDIV_EQ;
-               REAL_LT_MUL; REAL_OF_NUM_LT; ARITH] THEN
-  REWRITE_TAC[REAL_MUL_LZERO; REAL_SUB_LE] THEN
-  ASM_REWRITE_TAC[REAL_ARITH `y - (x - d) <= &1 * &2 * d <=> y <= x + d`] THEN
-  REPEAT STRIP_TAC THEN REAL_ARITH_TAC);;
+   `?s:real^N->bool. FINITE s /\ interval[vec 0,vec 1] = convex hull s`
+  STRIP_ASSUME_TAC THENL
+   [EXISTS_TAC
+     `{x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
+                      ==> ((x$i = &0) \/ (x$i = &1))}` THEN
+    REWRITE_TAC[UNIT_INTERVAL_CONVEX_HULL] THEN
+    MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC
+     `IMAGE (\s. (lambda i. if i IN s then &1 else &0):real^N)
+            {t | t SUBSET (1..dimindex(:N))}` THEN
+    ASM_SIMP_TAC[FINITE_POWERSET; FINITE_IMAGE; FINITE_NUMSEG] THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_IMAGE] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN EXISTS_TAC
+     `{i | 1 <= i /\ i <= dimindex(:N) /\ ((x:real^N)$i = &1)}` THEN
+    SIMP_TAC[CART_EQ; IN_ELIM_THM; IN_NUMSEG; LAMBDA_BETA] THEN
+    ASM_MESON_TAC[];
+    EXISTS_TAC `IMAGE (\x:real^N. a + x)
+                      (IMAGE (\x. (lambda i. ((b:real^N)$i - a$i) * x$i))
+                             (s:real^N->bool))` THEN
+    ASM_SIMP_TAC[FINITE_IMAGE; CONVEX_HULL_TRANSLATION] THEN
+    AP_TERM_TAC THEN MATCH_MP_TAC(GSYM CONVEX_HULL_LINEAR_IMAGE) THEN
+    SIMP_TAC[linear; CART_EQ; LAMBDA_BETA; VECTOR_ADD_COMPONENT;
+             VECTOR_MUL_COMPONENT] THEN
+    REPEAT STRIP_TAC THEN REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bounded convex function on open set is continuous.                        *)
@@ -5762,8 +5745,8 @@ let CONVEX_ON_CONTINUOUS = prove
    `?b. !y:real^N. y IN interval[(x - lambda i. d),(x + lambda i. d)]
                    ==> f(y) <= b`
   STRIP_ASSUME_TAC THENL
-   [MP_TAC(SPECL [`x:real^N`; `d:real`] CUBE_CONVEX_HULL) THEN
-    ASM_REWRITE_TAC[] THEN
+   [MP_TAC(ISPECL [`x - (lambda i. d):real^N`; `x + (lambda i. d):real^N`]
+        CLOSED_INTERVAL_AS_CONVEX_HULL) THEN
     DISCH_THEN(X_CHOOSE_THEN `c:real^N->bool` STRIP_ASSUME_TAC) THEN
     ASM_REWRITE_TAC[] THEN ASM_CASES_TAC `c = {}:real^N->bool` THEN
     ASM_REWRITE_TAC[CONVEX_HULL_EMPTY; NOT_IN_EMPTY] THEN
