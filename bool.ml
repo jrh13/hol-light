@@ -15,9 +15,14 @@ needs "equal.ml";;
 
 parse_as_prefix "~";;
 
-map parse_as_binder ["\\"; "!"; "?"; "?!"];;
+parse_as_binder "\\";;
+parse_as_binder "!";;
+parse_as_binder "?";;
+parse_as_binder "?!";;
 
-map parse_as_infix ["==>",(4,"right"); "\\/",(6,"right"); "/\\",(8,"right")];;
+parse_as_infix ("==>",(4,"right"));;
+parse_as_infix ("\\/",(6,"right"));;
+parse_as_infix ("/\\",(8,"right"));;
 
 (* ------------------------------------------------------------------------- *)
 (* Set up more orthodox notation for equations and equivalence.              *)

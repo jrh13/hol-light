@@ -35,10 +35,10 @@ let DIMINDEX_UNIQUE = prove
 (* ------------------------------------------------------------------------- *)
 
 let finite_image_tybij =
-  let th = prove
+  new_type_definition "finite_image" ("finite_index","dest_finite_image")
+  (prove
    (`?x. x IN 1..dimindex(:A)`,
-    EXISTS_TAC `1` THEN REWRITE_TAC[IN_NUMSEG; LE_REFL; DIMINDEX_GE_1]) in
-  new_type_definition "finite_image" ("finite_index","dest_finite_image") th;;
+    EXISTS_TAC `1` THEN REWRITE_TAC[IN_NUMSEG; LE_REFL; DIMINDEX_GE_1]));;
 
 let FINITE_IMAGE_IMAGE = prove
  (`UNIV:(A)finite_image->bool = IMAGE finite_index (1..dimindex(:A))`,

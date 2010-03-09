@@ -1,3 +1,8 @@
+Mon  8th Mar 2010       bool.ml, ind_types.ml, cart.ml, int.ml, realax.ml
+
+Made minor stylistic changes following hol-online. These essentially make it 
+easier to recognize parsing directives and definitions.
+
 Mon  8th Mar 2010       Proofrecording/diffs/basics.ml [new file]
 
 Chantal Keller pointed out that the "needs" directive is wrong in the

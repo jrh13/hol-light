@@ -1264,15 +1264,25 @@ do_list override_interface
  ["&",`hreal_of_num:num->hreal`;
   "inv",`hreal_inv:hreal->hreal`];;
 
-let [hreal_of_num,hreal_of_num_th;
-     hreal_add,hreal_add_th;
-     hreal_mul,hreal_mul_th;
-     hreal_le,hreal_le_th;
-     hreal_inv,hreal_inv_th] =
-  map2 (lift_function (snd hreal_tybij) (NADD_EQ_REFL,NADD_EQ_TRANS))
-       ["hreal_of_num"; "hreal_add"; "hreal_mul"; "hreal_le"; "hreal_inv"]
-       [NADD_OF_NUM_WELLDEF; NADD_ADD_WELLDEF; NADD_MUL_WELLDEF;
-        NADD_LE_WELLDEF; NADD_INV_WELLDEF];;
+let hreal_of_num,hreal_of_num_th =
+  lift_function (snd hreal_tybij) (NADD_EQ_REFL,NADD_EQ_TRANS)
+  "hreal_of_num" NADD_OF_NUM_WELLDEF;;
+
+let hreal_add,hreal_add_th =
+  lift_function (snd hreal_tybij) (NADD_EQ_REFL,NADD_EQ_TRANS)
+  "hreal_add" NADD_ADD_WELLDEF;;
+
+let hreal_mul,hreal_mul_th =
+  lift_function (snd hreal_tybij) (NADD_EQ_REFL,NADD_EQ_TRANS)
+  "hreal_mul" NADD_MUL_WELLDEF;;
+
+let hreal_le,hreal_le_th =
+  lift_function (snd hreal_tybij) (NADD_EQ_REFL,NADD_EQ_TRANS)
+  "hreal_le" NADD_LE_WELLDEF;;
+
+let hreal_inv,hreal_inv_th =
+  lift_function (snd hreal_tybij) (NADD_EQ_REFL,NADD_EQ_TRANS)
+  "hreal_inv" NADD_INV_WELLDEF;;
 
 let HREAL_COMPLETE =
   let th1 = ASSUME `(P:nadd->bool) = (\x. Q(mk_hreal((===) x)))` in
@@ -1700,17 +1710,29 @@ let TREAL_INV_WELLDEF = prove
 let real_tybij =
   define_quotient_type "real" ("mk_real","dest_real") `(treal_eq)`;;
 
-let [real_of_num,real_of_num_th;
-     real_neg,real_neg_th;
-     real_add,real_add_th;
-     real_mul,real_mul_th;
-     real_le,real_le_th;
-     real_inv,real_inv_th] =
-   map2 (lift_function (snd real_tybij) (TREAL_EQ_REFL,TREAL_EQ_TRANS))
-        ["real_of_num"; "real_neg"; "real_add";
-         "real_mul"; "real_le"; "real_inv"]
-        [TREAL_OF_NUM_WELLDEF; TREAL_NEG_WELLDEF; TREAL_ADD_WELLDEF;
-         TREAL_MUL_WELLDEF; TREAL_LE_WELLDEF; TREAL_INV_WELLDEF];;
+let real_of_num,real_of_num_th =
+  lift_function (snd real_tybij) (TREAL_EQ_REFL,TREAL_EQ_TRANS)
+  "real_of_num" TREAL_OF_NUM_WELLDEF;;
+
+let real_neg,real_neg_th =
+  lift_function (snd real_tybij) (TREAL_EQ_REFL,TREAL_EQ_TRANS)
+  "real_neg" TREAL_NEG_WELLDEF;;
+
+let real_add,real_add_th =
+  lift_function (snd real_tybij) (TREAL_EQ_REFL,TREAL_EQ_TRANS)
+  "real_add" TREAL_ADD_WELLDEF;;
+
+let real_mul,real_mul_th =
+  lift_function (snd real_tybij) (TREAL_EQ_REFL,TREAL_EQ_TRANS)
+  "real_mul" TREAL_MUL_WELLDEF;;
+
+let real_le,real_le_th =
+  lift_function (snd real_tybij) (TREAL_EQ_REFL,TREAL_EQ_TRANS)
+  "real_le" TREAL_LE_WELLDEF;;
+
+let real_inv,real_inv_th =
+  lift_function (snd real_tybij) (TREAL_EQ_REFL,TREAL_EQ_TRANS)
+  "real_inv" TREAL_INV_WELLDEF;;
 
 let [REAL_ADD_SYM; REAL_ADD_ASSOC; REAL_ADD_LID; REAL_ADD_LINV;
      REAL_MUL_SYM; REAL_MUL_ASSOC; REAL_MUL_LID;
