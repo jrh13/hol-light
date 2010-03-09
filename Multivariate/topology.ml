@@ -5900,6 +5900,74 @@ let INTERVAL_TRANSLATION = prove
 add_translation_invariants
  [CONJUNCT1 INTERVAL_TRANSLATION; CONJUNCT2 INTERVAL_TRANSLATION];;
 
+let EMPTY_AS_INTERVAL = prove
+ (`{} = interval[vec 1,vec 0]`,
+  SIMP_TAC[EXTENSION; NOT_IN_EMPTY; IN_INTERVAL; VEC_COMPONENT] THEN
+  GEN_TAC THEN DISCH_THEN(MP_TAC o SPEC `1`) THEN
+  REWRITE_TAC[LE_REFL; DIMINDEX_GE_1] THEN REAL_ARITH_TAC);;
+
+let UNIT_INTERVAL_NONEMPTY = prove
+ (`~(interval[vec 0:real^N,vec 1] = {}) /\
+   ~(interval(vec 0:real^N,vec 1) = {})`,
+  SIMP_TAC[INTERVAL_NE_EMPTY; VEC_COMPONENT; REAL_LT_01; REAL_POS]);;
+
+let IMAGE_STRETCH_INTERVAL = prove
+ (`!a b:real^N m.
+    IMAGE (\x. lambda k. m(k) * x$k) (interval[a,b]) =
+        if interval[a,b] = {} then {}
+        else interval[(lambda k. min (m(k) * a$k) (m(k) * b$k)):real^N,
+                      (lambda k. max (m(k) * a$k) (m(k) * b$k))]`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC[IMAGE_CLAUSES] THEN
+  ASM_SIMP_TAC[EXTENSION; IN_IMAGE; CART_EQ; IN_INTERVAL; AND_FORALL_THM;
+               TAUT `(a ==> b) /\ (a ==> c) <=> a ==> b /\ c`;
+                LAMBDA_BETA; GSYM LAMBDA_SKOLEM] THEN
+  X_GEN_TAC `x:real^N` THEN MATCH_MP_TAC(MESON[]
+   `(!x. p x ==> (q x <=> r x))
+    ==> ((!x. p x ==> q x) <=> (!x. p x ==> r x))`) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [INTERVAL_NE_EMPTY]) THEN
+  MATCH_MP_TAC MONO_FORALL THEN
+  X_GEN_TAC `k:num` THEN ASM_CASES_TAC `1 <= k /\ k <= dimindex(:N)` THEN
+  ASM_REWRITE_TAC[] THEN ASM_CASES_TAC `(m:num->real) k = &0` THENL
+   [ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_MAX_ACI; REAL_MIN_ACI] THEN
+    ASM_MESON_TAC[REAL_LE_ANTISYM; REAL_LE_REFL];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_FIELD `~(m = &0) ==> (x = m * y <=> y = x / m)`] THEN
+  REWRITE_TAC[UNWIND_THM2] THEN FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP
+   (REAL_ARITH `~(z = &0) ==> &0 < z \/ &0 < --z`))
+  THENL
+   [ALL_TAC;
+    ONCE_REWRITE_TAC[GSYM REAL_LE_NEG2] THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    REWRITE_TAC[REAL_ARITH `--(max a b) = min (--a) (--b)`;
+                REAL_ARITH `--(min a b) = max (--a) (--b)`; real_div;
+                GSYM REAL_MUL_RNEG; GSYM REAL_INV_NEG] THEN
+    REWRITE_TAC[GSYM real_div]] THEN
+  ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_LE_RDIV_EQ] THEN
+  ASM_SIMP_TAC[real_min; real_max; REAL_LE_LMUL_EQ; REAL_LE_RMUL_EQ] THEN
+  REAL_ARITH_TAC);;
+
+let INTERVAL_IMAGE_STRETCH_INTERVAL = prove
+ (`!a b:real^N m. ?u v:real^N.
+     IMAGE (\x. lambda k. m k * x$k) (interval[a,b]) = interval[u,v]`,
+  REWRITE_TAC[IMAGE_STRETCH_INTERVAL] THEN MESON_TAC[EMPTY_AS_INTERVAL]);;
+
+let CLOSED_INTERVAL_IMAGE_UNIT_INTERVAL = prove
+ (`!a b:real^N.
+        ~(interval[a,b] = {})
+        ==> interval[a,b] = IMAGE (\x:real^N. a + x)
+                                  (IMAGE (\x. (lambda i. (b$i - a$i) * x$i))
+                                         (interval[vec 0:real^N,vec 1]))`,
+  REWRITE_TAC[INTERVAL_NE_EMPTY] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[IMAGE_STRETCH_INTERVAL; UNIT_INTERVAL_NONEMPTY] THEN
+  REWRITE_TAC[GSYM INTERVAL_TRANSLATION] THEN
+  REWRITE_TAC[EXTENSION; IN_INTERVAL] THEN
+  SIMP_TAC[LAMBDA_BETA; VECTOR_ADD_COMPONENT; VEC_COMPONENT] THEN
+  GEN_TAC THEN REWRITE_TAC[REAL_MUL_RZERO; REAL_MUL_RID] THEN
+  MATCH_MP_TAC(MESON[] `(!x. P x <=> Q x) ==> ((!x. P x) <=> (!x. Q x))`) THEN
+  POP_ASSUM MP_TAC THEN MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:num` THEN
+  ASM_CASES_TAC `1 <= i /\ i <= dimindex(:N)` THEN ASM_REWRITE_TAC[] THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some special cases for intervals in R^1.                                  *)
 (* ------------------------------------------------------------------------- *)
