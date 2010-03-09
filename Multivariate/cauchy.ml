@@ -1324,10 +1324,6 @@ let HAS_PATH_INTEGRAL_SWAP = prove
   MESON_TAC[REVERSEPATH_LINEPATH; VALID_PATH_LINEPATH;
             HAS_PATH_INTEGRAL_REVERSEPATH]);;
 
-let SEGMENT_SYM = prove
- (`!a b. segment[a,b] = segment[b,a]`,
-  REWRITE_TAC[SEGMENT_CONVEX_HULL; INSERT_AC]);;
-
 let PATH_INTEGRAL_SWAP = prove
  (`!f a b.
         f continuous_on (segment[a,b])
@@ -7213,3 +7209,320 @@ let SECOND_CARTAN_THM_DIM_1 = prove
      FIRST_X_ASSUM MATCH_MP_TAC THEN
      REWRITE_TAC [COMPLEX_IN_BALL_0; COMPLEX_NORM_CX] THEN
      ASM_REAL_ARITH_TAC]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Old stuff I may just delete soon.                                         *)
+(* ------------------------------------------------------------------------- *)
+
+(*****
+ ***** All this now seems redundant, though let's keep it since it may
+ ***** be useful to derive a later generalization of the continuity
+ ***** property, which would be valuable for all paths
+ *****
+
+let WINDING_NUMBER_CIRCLEPATH_CENTRE = prove
+ (`!r z. ~(r = &0) ==> winding_number(circlepath(z,r),z) = Cx(&1)`,
+  REPEAT STRIP_TAC THEN SIMP_TAC[winding_number; CX_2PII_NZ; COMPLEX_FIELD
+   `~(x = Cx(&0)) ==> ((Cx(&1) / x) * y = Cx(&1) <=> y = x)`] THEN
+  MATCH_MP_TAC PATH_INTEGRAL_UNIQUE THEN
+  REWRITE_TAC[HAS_PATH_INTEGRAL; VECTOR_DERIVATIVE_CIRCLEPATH] THEN
+  REWRITE_TAC[CIRCLEPATH; COMPLEX_RING `(z + r) - z:complex = r`] THEN
+  ASM_SIMP_TAC[CEXP_NZ; CX_INJ; COMPLEX_FIELD
+   `~(r = Cx(&0)) /\ ~(e = Cx(&0))
+    ==> Cx(&1) / (r * e) * t * p * i * r * e = t * p * i`] THEN
+  MP_TAC(ISPECL [`vec 0:real^1`; `vec 1:real^1`; `Cx(&2) * Cx pi * ii`]
+         HAS_INTEGRAL_CONST) THEN
+  REWRITE_TAC[CONTENT_UNIT; VECTOR_MUL_LID]);;
+
+let CAUCHY_INTEGRAL_CIRCLEPATH_CENTRE = prove
+ (`!f s z r.
+        convex s /\ f holomorphic_on s /\ z IN interior s /\ &0 < r /\
+        path_image (circlepath(z,r)) SUBSET s
+        ==> ((\w. f(w) / (w - z)) has_path_integral
+             (Cx(&2) * Cx(pi) * ii * f(z))) (circlepath(z,r))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`f:complex->complex`; `s:complex->bool`; `{}:complex->bool`;
+    `circlepath(z,r)`; `z:complex`] CAUCHY_INTEGRAL_FORMULA_WEAK) THEN
+  ASM_SIMP_TAC[WINDING_NUMBER_CIRCLEPATH_CENTRE; REAL_LT_IMP_NZ;
+               COMPLEX_MUL_LID] THEN
+  DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[VALID_PATH_CIRCLEPATH] THEN
+  REWRITE_TAC[FINITE_RULES; PATHSTART_CIRCLEPATH; PATHFINISH_CIRCLEPATH] THEN
+  ASM_SIMP_TAC[HOLOMORPHIC_ON_IMP_CONTINUOUS_ON; IN_DIFF; NOT_IN_EMPTY] THEN
+  CONJ_TAC THENL
+   [SUBGOAL_THEN `f holomorphic_on (interior s)` MP_TAC THENL
+     [ASM_MESON_TAC[HOLOMORPHIC_ON_SUBSET; INTERIOR_SUBSET]; ALL_TAC] THEN
+    SIMP_TAC[HOLOMORPHIC_ON_OPEN; OPEN_INTERIOR; IN_DIFF; NOT_IN_EMPTY;
+             complex_differentiable];
+    SIMP_TAC[SET_RULE `s SUBSET (t DELETE x) <=> s SUBSET t /\ ~(x IN s)`] THEN
+    ASM_SIMP_TAC[PATH_IMAGE_CIRCLEPATH; REAL_LT_IMP_LE] THEN
+    REWRITE_TAC[IN_ELIM_THM; VECTOR_SUB_REFL; NORM_0] THEN
+    ASM_MESON_TAC[REAL_LT_IMP_NZ]]);;
+
+let WINDING_NUMBER_CONTINUOUS_CIRCLEPATH = prove
+ (`!z w r. &0 < r /\ ~(norm(w - z) = r)
+         ==> (\w. winding_number(circlepath(z,r),w)) continuous at w`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[winding_number] THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP REAL_LT_IMP_LE) THEN
+  MATCH_MP_TAC CONTINUOUS_COMPLEX_MUL THEN REWRITE_TAC[CONTINUOUS_CONST] THEN
+  REWRITE_TAC[CONTINUOUS_AT] THEN
+  MATCH_MP_TAC(CONJUNCT2
+   (REWRITE_RULE[FORALL_AND_THM; TAUT `a ==> b /\ c <=> (a ==> b) /\ (a ==> c)`]
+                PATH_INTEGRAL_UNIFORM_LIMIT_CIRCLEPATH)) THEN
+  ASM_REWRITE_TAC[TRIVIAL_LIMIT_AT] THEN CONJ_TAC THENL
+   [REWRITE_TAC[EVENTUALLY_AT] THEN
+    EXISTS_TAC `abs(norm(w - z:complex) - r)` THEN
+    ASM_REWRITE_TAC[REAL_ARITH `&0 < abs(x - y) <=> ~(x = y)`] THEN
+    X_GEN_TAC `u:complex` THEN REWRITE_TAC[dist] THEN STRIP_TAC THEN
+    MATCH_MP_TAC PATH_INTEGRABLE_HOLOMORPHIC_SIMPLE THEN
+    EXISTS_TAC `(:complex) DELETE u` THEN
+    ASM_SIMP_TAC[OPEN_DELETE; OPEN_UNIV; VALID_PATH_CIRCLEPATH;
+     HOLOMORPHIC_ON_OPEN; IN_DELETE; IN_UNIV; SUBSET; PATH_IMAGE_CIRCLEPATH] THEN
+    CONJ_TAC THENL
+     [GEN_TAC THEN DISCH_TAC THEN
+      W(fun (asl,w) -> MP_TAC(DISCH_ALL
+        (COMPLEX_DIFF_CONV(snd(dest_exists w))))) THEN
+      ASM_REWRITE_TAC[COMPLEX_SUB_0] THEN MESON_TAC[];
+      REWRITE_TAC[IN_ELIM_THM] THEN ASM_NORM_ARITH_TAC];
+    ALL_TAC] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN REWRITE_TAC[EVENTUALLY_AT] THEN
+  ABBREV_TAC `d = abs(norm(w:complex - z) - r)` THEN
+  EXISTS_TAC `min (d / &2) (e * d pow 2 / &3)` THEN
+  SUBGOAL_THEN `&0 < d` ASSUME_TAC THENL
+   [EXPAND_TAC "d" THEN REWRITE_TAC[GSYM REAL_ABS_NZ] THEN
+    ASM_REWRITE_TAC[REAL_SUB_0];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_LT_MIN; REAL_HALF; REAL_LT_MUL; REAL_LT_DIV; REAL_POW_LT;
+               PI_POS; REAL_ARITH `&0 < &3`] THEN
+  X_GEN_TAC `u:complex` THEN REWRITE_TAC[dist] THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[PATH_IMAGE_CIRCLEPATH; REAL_LT_IMP_LE; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:complex` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `~(x:complex = w)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `~(x:complex = u)` ASSUME_TAC THENL
+   [ASM_NORM_ARITH_TAC; ALL_TAC] THEN
+  ASM_SIMP_TAC[COMPLEX_FIELD
+    `~(x = u) /\ ~(x = w)
+     ==> Cx(&1) / (x - u) - Cx(&1) / (x - w) =
+         (u - w) / ((x - u) * (x - w))`] THEN
+  ASM_SIMP_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_MUL; REAL_LT_LDIV_EQ;
+               REAL_LT_MUL; COMPLEX_NORM_NZ; COMPLEX_SUB_0] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+   `n < e * d / &3 ==> &0 < e * z /\ e * d / &2 <= e * z ==> n < e * z`)) THEN
+  ASM_SIMP_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_NZ; REAL_LE_LMUL_EQ;
+               COMPLEX_SUB_0; REAL_LT_MUL] THEN
+  REWRITE_TAC[REAL_ARITH `d pow 2 / &2 = (d / &2) * d`] THEN
+  MATCH_MP_TAC REAL_LE_MUL2 THEN
+  ASM_SIMP_TAC[REAL_LE_DIV; REAL_POS; REAL_LT_IMP_LE] THEN CONJ_TAC THEN
+  ASM_NORM_ARITH_TAC);;
+
+let INTEGER_WINDING_NUMBER_CIRCLEPATH = prove
+ (`!z r w. ~(w IN path_image (circlepath(z,r)))
+           ==> complex_integer(winding_number(circlepath(z,r),w))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGER_WINDING_NUMBER THEN
+  ASM_REWRITE_TAC[VALID_PATH_CIRCLEPATH; PATHSTART_CIRCLEPATH;
+                  PATHFINISH_CIRCLEPATH]);;
+
+let WINDING_NUMBER_CONSTANT_CIRCLEPATH = prove
+ (`!w1 w2 z r s.
+        connected s /\ (s INTER path_image (circlepath(z,r)) = {}) /\
+        &0 < r /\ w1 IN s /\ w2 IN s
+        ==> winding_number(circlepath(z,r),w1) =
+            winding_number(circlepath(z,r),w2)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `connected (IMAGE (\w. winding_number(circlepath(z,r),w)) s)`
+  MP_TAC THENL
+   [MATCH_MP_TAC CONNECTED_CONTINUOUS_IMAGE THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+    X_GEN_TAC `w:complex` THEN DISCH_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_AT_WITHIN THEN
+    MATCH_MP_TAC WINDING_NUMBER_CONTINUOUS_CIRCLEPATH THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EXTENSION]) THEN
+    DISCH_THEN(MP_TAC o SPEC `w:complex`) THEN
+    ASM_SIMP_TAC[IN_INTER; PATH_IMAGE_CIRCLEPATH; IN_ELIM_THM;
+                 REAL_LT_IMP_LE; NOT_IN_EMPTY];
+    ALL_TAC] THEN
+  REWRITE_TAC[connected; NOT_EXISTS_THM] THEN
+  DISCH_THEN(MP_TAC o SPECL
+   [`ball(winding_number(circlepath(z,r),w1),&1 / &3)`;
+    `UNIV DIFF cball(winding_number(circlepath(z,r),w1),&1 / &2)`]) THEN
+  REWRITE_TAC[OPEN_BALL; GSYM closed; CLOSED_CBALL] THEN
+  MATCH_MP_TAC(TAUT
+   `b /\ a /\ c /\ (~d ==> e) ==> ~(a /\ b /\ c /\ d) ==> e`) THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC(SET_RULE
+     `s SUBSET t ==> s INTER (UNIV DIFF t) INTER u = {}`) THEN
+    REWRITE_TAC[SUBSET; IN_BALL; IN_CBALL] THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_BALL; IN_CBALL; IN_UNIV; IN_DIFF;
+                IN_UNION] THEN
+    X_GEN_TAC `u:complex` THEN DISCH_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH
+     `d = &0 \/ &1 <= abs(d) ==> d < &1 / &3 \/ ~(d <= &1 / &2)`) THEN
+    MP_TAC(SPECL [`z:complex`; `r:real`]
+      INTEGER_WINDING_NUMBER_CIRCLEPATH) THEN
+    DISCH_THEN(fun th ->
+      MP_TAC(SPEC `w1:complex` th) THEN MP_TAC(SPEC `u:complex` th)) THEN
+    REPEAT(ANTS_TAC THENL [ASM SET_TAC[]; DISCH_TAC]) THEN
+    REPEAT(FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I
+     [COMPLEX_INTEGER])) THEN
+    ASM_REWRITE_TAC[dist; GSYM CX_SUB; COMPLEX_NORM_CX; REAL_ABS_ABS] THEN
+    REWRITE_TAC[REAL_ABS_ZERO] THEN
+    ASM_MESON_TAC[REAL_ABS_INTEGER_LEMMA; INTEGER_CLOSED];
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+    EXISTS_TAC `winding_number(circlepath(z,r),w1)` THEN
+    REWRITE_TAC[IN_INTER; IN_IMAGE; CENTRE_IN_BALL] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  REWRITE_TAC[EXTENSION; IN_INTER; NOT_IN_EMPTY; IN_DIFF; IN_UNIV] THEN
+  DISCH_THEN(MP_TAC o SPEC `winding_number(circlepath(z,r),w2)`) THEN
+  REWRITE_TAC[DE_MORGAN_THM] THEN
+  MATCH_MP_TAC(TAUT `b /\ (a ==> c) ==> a \/ ~b ==> c`) THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN SIMP_TAC[IN_CBALL; dist] THEN
+  MP_TAC(SPECL [`z:complex`; `r:real`]
+    INTEGER_WINDING_NUMBER_CIRCLEPATH) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(SPEC `w1:complex` th) THEN MP_TAC(SPEC `w2:complex` th)) THEN
+  REPEAT(ANTS_TAC THENL [ASM SET_TAC[]; DISCH_TAC]) THEN
+  REPEAT(FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I
+     [COMPLEX_INTEGER])) THEN
+  ASM_SIMP_TAC[dist; CX_INJ; GSYM CX_SUB; COMPLEX_NORM_CX; REAL_ABS_ABS] THEN
+  DISCH_THEN(fun th -> MATCH_MP_TAC REAL_EQ_INTEGERS_IMP THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+*******)
+
+(* ------------------------------------------------------------------------- *)
+(* The global homology/winding number form of Cauchy's theorem (Dixon proof) *)
+(* ------------------------------------------------------------------------- *)
+
+(******
+
+let CAUCHY_INTEGRAL_FORMULA_GLOBAL = prove
+ (`f holomorphic_on (interior u) /\
+   valid_path g /\ path_image g SUBSET u /\
+   pathfinish g = pathstart g /\
+   (!w. ~(w IN u) ==> winding_number(g,w) = Cx(&0)) /\
+   z IN interior(u) /\ ~(z IN path_image g)
+   ==> ((\w. f(w) / (w - z)) has_path_integral
+        (Cx(&2) * Cx(pi) * ii * winding_number(g,z) * f(z))) g`,
+  REPEAT STRIP_TAC THEN
+  ABBREV_TAC
+   `d = \z w. if w = z then complex_derivative f z
+              else (f(w) - f(z)) / (w - z)` THEN
+  ABBREV_TAC `v = {w | winding_number(g,w) = Cx(&0)}` THEN
+  SUBGOAL_THEN
+   `?h. (!z. z IN u ==> ((d z) has_path_integral h(z)) g) /\
+        (!z. z IN v ==> ((\w. f(w) / (w - z)) has_path_integral h(z)) g)`
+   (CHOOSE_THEN (CONJUNCTS_THEN2 (LABEL_TAC "u") (LABEL_TAC "v")))
+  THENL
+   [EXISTS_TAC `\z. if z IN u then path_integral g (d z)
+                    else path_integral g (\w. f(w) / (w - z))` THEN
+    ... easy; on the common domain they agree precisely cos W=0 in v.
+    ALL_TAC] THEN
+  SUBGOAL_THEN `?c. !z. (h:complex->complex) z = c` STRIP_ASSUME_TAC THENL
+   [ALL_TAC;
+    UNDISCH_TAC `!z. (h:complex->complex) z = c` THEN
+    DISCH_THEN(fun th -> RULE_ASSUM_TAC(REWRITE_RULE[th])) THEN
+    REMOVE_THEN "u" (MP_TAC o SPEC `z:complex`) THEN ANTS_TAC THENL
+     [ASM_MESON_TAC[SUBSET; INTERIOR_SUBSET]; ALL_TAC] THEN
+    EXPAND_TAC "d" THEN DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE
+     [TAUT `a /\ b ==> c <=> b ==> a ==> c`] HAS_PATH_INTEGRAL_EQ)) THEN
+    DISCH_THEN(MP_TAC o SPEC `\w. (f(w) - f(z)) / (w - z)`) THEN
+    REWRITE_TAC[] THEN ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    MP_TAC(SPECL [`g:real^1->complex`; `z:complex`]
+      HAS_PATH_INTEGRAL_WINDING_NUMBER) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_COMPLEX_RMUL) THEN
+    DISCH_THEN(MP_TAC o SPEC `(f:complex->complex) z`) THEN
+    REWRITE_TAC[IMP_IMP] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_ADD) THEN
+    REWRITE_TAC[complex_div; COMPLEX_RING
+     `(Cx(&1) * i) * fz + (fx - fz) * i = fx * i`] THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+    REWRITE_TAC[GSYM COMPLEX_MUL_ASSOC] THEN
+    REWRITE_TAC[COMPLEX_RING `x + c = x <=> c = Cx(&0)`] THEN
+    SUBGOAL_THEN `bounded (path_image g)` MP_TAC THENL
+     [MATCH_MP_TAC COMPACT_IMP_BOUNDED THEN REWRITE_TAC[path_image] THEN
+      MATCH_MP_TAC COMPACT_CONTINUOUS_IMAGE THEN SIMP_TAC[COMPACT_INTERVAL] THEN
+      ASM_MESON_TAC[valid_path; PIECEWISE_DIFFERENTIABLE_ON_IMP_CONTINUOUS_ON];
+      ALL_TAC] THEN
+    REWRITE_TAC[BOUNDED_POS] THEN
+    DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `?w:complex. norm(w) = B + &1` STRIP_ASSUME_TAC THENL
+     [MATCH_MP_TAC VECTOR_CHOOSE_SIZE THEN
+      UNDISCH_TAC `&0 < B` THEN REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    SUBGOAL_THEN `(w:complex) IN v` ASSUME_TAC THENL
+     [EXPAND_TAC "v" THEN REWRITE_TAC[IN_ELIM_THM] THEN
+      REWRITE_TAC[winding_number] THEN
+      REWRITE_TAC[COMPLEX_ENTIRE] THEN DISJ2_TAC THEN
+      MATCH_MP_TAC PATH_INTEGRAL_UNIQUE THEN
+      MATCH_MP_TAC CAUCHY_THEOREM_CONVEX THEN
+      MAP_EVERY EXISTS_TAC [`cball(Cx(&0),B)`; `{}:complex->bool`] THEN
+      ASM_REWRITE_TAC[CONVEX_CBALL; FINITE_RULES] THEN
+      ASM_SIMP_TAC[SUBSET; IN_CBALL; dist; COMPLEX_SUB_LZERO; NORM_NEG] THEN
+      REWRITE_TAC[DIFF_EMPTY; INTERIOR_CBALL] THEN
+      SUBGOAL_THEN `(\x. Cx(&1) / (x - w)) holomorphic_on cball(Cx(&0),B)`
+      MP_TAC THENL
+       [MATCH_MP_TAC HOLOMORPHIC_ON_DIV THEN
+        SIMP_TAC[HOLOMORPHIC_ON_CONST; HOLOMORPHIC_ON_SUB; HOLOMORPHIC_ON_ID] THEN
+        REWRITE_TAC[COMPLEX_SUB_0; IN_CBALL; dist; COMPLEX_SUB_LZERO] THEN
+        ASM_MESON_TAC[NORM_NEG; REAL_ARITH `~(x + &1 <= x)`];
+        ALL_TAC] THEN
+      SIMP_TAC[HOLOMORPHIC_ON_IMP_CONTINUOUS_ON] THEN
+      SIMP_TAC[GSYM HOLOMORPHIC_ON_OPEN; complex_differentiable; OPEN_BALL] THEN
+      MESON_TAC[HOLOMORPHIC_ON_SUBSET; BALL_SUBSET_CBALL];
+      ALL_TAC] THEN
+    REMOVE_THEN "v" (MP_TAC o SPEC `w:complex`) THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(REWRITE_RULE[TAUT `a /\ b ==> c <=> b ==> a ==> c`]
+                HAS_PATH_INTEGRAL_UNIQUE) THEN
+    MATCH_MP_TAC CAUCHY_THEOREM_CONVEX THEN
+
+**** Maybe I need some more sophisticated argument here. I can't just
+**** use analyticity as I did with the winding number. The trouble is
+**** that we don't have a convex set within which to apply the simple
+**** Cauchy theorem.
+****
+**** Rather, we want to argue that the integrals exist, since the function
+**** is analytic, and then point out that as w -> oo (not just the specific
+**** value here) we must have c -> 0. Now, I think I'm going to have to
+**** assume rectifiability; it's probably a bit pretentious to continue
+**** avoiding it.... Actually I'll probably want to re-use the fact that
+**** it goes to zero (or at least is bounded) for Liouville.
+
+    ALL_TAC] THEN
+  MATCH_MP_TAC LIOUVILLE_THEOREM
+
+*****)
+
+(* ------------------------------------------------------------------------- *)
+(* Bounds on integrals for a general path.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(**** No, this isn't right of course. Want rather integral of |g'| ...
+ **** So leave this for now...
+
+ **** I want to think of the most naturally weak assumption I could add to
+ **** ensure the derivative bounds. It isn't even immediately obvious that
+ **** just differentiability isn't enough, with a little subtlety. Certainly
+ **** boundedness of the derivative would be enough; don't need continuity...
+
+ **** Actually I think if I'm happy to muss round with local primitives
+ **** again I can do it that way. Something like this:
+ *** take a curve g and all points within e of it. We can chop the curve up
+ *** to fit into balls (or other convex set) that fit inside this region.
+ *** Now integrating any analytic function can be reduced to primitive
+ *** differences in each ball. And those in turn are bounded by the derivative
+ *** of the primitive (i.e. the original function) times the length. So we
+ *** just need to sum up the lengths.
+ ***
+ *** OK, this definitely works for winding numbers; in general it would be
+ *** more attractive to avoid the little neighborhood. Think about it a bit
+ *** more. But anyway this is progress of a sort.
+ ****)
+
+
+
