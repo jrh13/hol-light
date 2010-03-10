@@ -6748,6 +6748,35 @@ add_translation_invariants
                `!a x y z. between (a + x) (a + y,a + z) <=> between x (y,z)`];;
 
 (* ------------------------------------------------------------------------- *)
+(* A few for lists.                                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let MEM_TRANSLATION = prove
+ (`!a:real^N x l. MEM (a + x) (MAP (\x. a + x) l) <=> MEM x l`,
+  REWRITE_TAC[MEM_MAP; VECTOR_ARITH `a + x:real^N = a + y <=> x = y`] THEN
+  MESON_TAC[]);;
+
+add_translation_invariants [MEM_TRANSLATION];;
+
+let MEM_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N x l.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> (MEM (f x) (MAP f l) <=> MEM x l)`,
+  REWRITE_TAC[MEM_MAP] THEN MESON_TAC[]);;
+
+add_linear_invariants [MEM_LINEAR_IMAGE];;
+
+let MAP_TRANSLATION = prove
+ (`!a:real^N l. LENGTH(MAP (\x. a + x) l) = LENGTH l`,
+  REWRITE_TAC[LENGTH_MAP]) in
+add_translation_invariants [MAP_TRANSLATION];;
+
+let MAP_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N l. linear f ==> LENGTH(MAP f l) = LENGTH l`,
+  REWRITE_TAC[LENGTH_MAP]) in
+add_linear_invariants [MAP_LINEAR_IMAGE];;
+
+(* ------------------------------------------------------------------------- *)
 (* A few scaling theorems that don't come from invariance theorems. Most are *)
 (* artificially weak with 0 < c hypotheses, so we don't bind them to names.  *)
 (* ------------------------------------------------------------------------- *)
@@ -6801,27 +6830,27 @@ let QUANTIFY_SURJECTION_THM = prove
   SUBGOAL_THEN `!s. IMAGE (f:A->B) (IMAGE g s) = s` ASSUME_TAC THENL
    [ASM SET_TAC[]; CONJ_TAC THENL [ASM MESON_TAC[]; ASM SET_TAC[]]]);;
 
-let QUANTIFY_SURJECTION_HIGHER_THM = prove                                     
- (`!f:A->B.                                                  
-        (!y. ?x. f x = y)                                                      
-        ==> ((!P. (!x. P x) <=> (!x. P (f x))) /\                              
-             (!P. (?x. P x) <=> (?x. P (f x))) /\                              
-             (!Q. (!s. Q s) <=> (!s. Q(IMAGE f s))) /\              
-             (!Q. (?s. Q s) <=> (?s. Q(IMAGE f s))) /\   
-             (!Q. (!s. Q s) <=> (!s. Q(IMAGE (IMAGE f) s))) /\          
+let QUANTIFY_SURJECTION_HIGHER_THM = prove
+ (`!f:A->B.
+        (!y. ?x. f x = y)
+        ==> ((!P. (!x. P x) <=> (!x. P (f x))) /\
+             (!P. (?x. P x) <=> (?x. P (f x))) /\
+             (!Q. (!s. Q s) <=> (!s. Q(IMAGE f s))) /\
+             (!Q. (?s. Q s) <=> (?s. Q(IMAGE f s))) /\
+             (!Q. (!s. Q s) <=> (!s. Q(IMAGE (IMAGE f) s))) /\
              (!Q. (?s. Q s) <=> (?s. Q(IMAGE (IMAGE f) s))) /\
-             (!P. (!g:C->B. P g) <=> (!g. P(f o g))) /\      
-             (!P. (?g:C->B. P g) <=> (?g. P(f o g))) /\                   
-             (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\             
-             (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\             
+             (!P. (!g:real^1->B. P g) <=> (!g. P(f o g))) /\
+             (!P. (?g:real^1->B. P g) <=> (?g. P(f o g))) /\
+             (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\
+             (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\
             ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\
              (!Q. {s | Q s} = IMAGE (IMAGE f) {s | Q(IMAGE f s)}) /\
-             (!R. {l | R l} = IMAGE (MAP f) {l | R(MAP f l)}))`,               
+             (!R. {l | R l} = IMAGE (MAP f) {l | R(MAP f l)}))`,
   GEN_TAC THEN DISCH_TAC THEN CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN
   ASM_REWRITE_TAC[GSYM SURJECTIVE_FORALL_THM; GSYM SURJECTIVE_EXISTS_THM;
             GSYM SURJECTIVE_IMAGE_THM; SURJECTIVE_IMAGE; SURJECTIVE_MAP] THEN
   REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN ASM_MESON_TAC[]);;
-                                                         
+
 (* ------------------------------------------------------------------------- *)
 (* Apply such quantifier and set expansions once per level at depth.         *)
 (* In the PARTIAL version, avoid expanding named variables in list.          *)

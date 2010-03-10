@@ -399,6 +399,14 @@ let SURJECTIVE_MAP = prove
     MATCH_MP_TAC list_INDUCT] THEN
   ASM_MESON_TAC[MAP]);;
 
+let MAP_ID = prove
+ (`!l. MAP (\x. x) l = l`,
+  LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[MAP]);;
+
+let MAP_I = prove
+ (`MAP I = I`,
+  REWRITE_TAC[FUN_EQ_THM; I_DEF; MAP_ID]);;
+ 
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
 (* ------------------------------------------------------------------------- *)

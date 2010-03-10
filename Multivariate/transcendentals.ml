@@ -2142,6 +2142,10 @@ let ROTATION_ROTATE2D_EXISTS_ORTHOGONAL_ORIENTED = prove
   REWRITE_TAC[REAL_ARITH `--x * x - y * y <= &0 <=> &0 <= x * x + y * y`] THEN
   MATCH_MP_TAC REAL_LE_ADD THEN REWRITE_TAC[REAL_LE_SQUARE]);;
 
+let ROTATE2D_EQ = prove
+ (`!t x y. rotate2d t x = rotate2d t y <=> x = y`,
+  MESON_TAC[ORTHOGONAL_TRANSFORMATION_INJECTIVE; 
+            ORTHOGONAL_TRANSFORMATION_ROTATE2D]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex tangent function.                                                 *)

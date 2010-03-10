@@ -2767,41 +2767,41 @@ let FASHODA = prove
 (* Some slightly ad hoc lemmas I use below                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let SEGMENT_VERTICAL = prove                                            
- (`!a:real^2 b:real^2 x:real^2.                                         
-      a$1 = b$1                                          
-      ==> (x IN segment[a,b] <=>                                              
-           x$1 = a$1 /\ x$1 = b$1 /\                                    
+let SEGMENT_VERTICAL = prove
+ (`!a:real^2 b:real^2 x:real^2.
+      a$1 = b$1
+      ==> (x IN segment[a,b] <=>
+           x$1 = a$1 /\ x$1 = b$1 /\
            (a$2 <= x$2 /\ x$2 <= b$2 \/ b$2 <= x$2 /\ x$2 <= a$2))`,
-  GEOM_ORIGIN_TAC `a:real^2` THEN                     
-  REWRITE_TAC[VECTOR_ADD_COMPONENT; VEC_COMPONENT; REAL_LE_LADD; 
-              REAL_EQ_ADD_LCANCEL] THEN                                        
-  REPEAT GEN_TAC THEN DISCH_THEN(ASSUME_TAC o SYM) THEN                        
-  SUBST1_TAC(SYM(ISPEC `b:real^2` BASIS_EXPANSION)) THEN                       
-  ASM_REWRITE_TAC[DIMINDEX_2; VSUM_2; VECTOR_MUL_LZERO; VECTOR_ADD_LID] THEN
-  SUBST1_TAC(VECTOR_ARITH `vec 0:real^2 = &0 % basis 2`) THEN           
-  REWRITE_TAC[SEGMENT_SCALAR_MULTIPLE; IN_ELIM_THM; CART_EQ] THEN       
-  REWRITE_TAC[DIMINDEX_2; FORALL_2; VECTOR_MUL_COMPONENT] THEN
-  SIMP_TAC[BASIS_COMPONENT; DIMINDEX_2; ARITH;                                
-           REAL_MUL_RZERO; REAL_MUL_RID] THEN MESON_TAC[]);;            
-                                                                     
-let SEGMENT_HORIZONTAL = prove                                 
- (`!a:real^2 b:real^2 x:real^2.                             
-      a$2 = b$2                                                               
-      ==> (x IN segment[a,b] <=>                                  
-           x$2 = a$2 /\ x$2 = b$2 /\                                        
-           (a$1 <= x$1 /\ x$1 <= b$1 \/ b$1 <= x$1 /\ x$1 <= a$1))`,
   GEOM_ORIGIN_TAC `a:real^2` THEN
-  REWRITE_TAC[VECTOR_ADD_COMPONENT; VEC_COMPONENT; REAL_LE_LADD;              
-              REAL_EQ_ADD_LCANCEL] THEN                                  
-  REPEAT GEN_TAC THEN DISCH_THEN(ASSUME_TAC o SYM) THEN                  
-  SUBST1_TAC(SYM(ISPEC `b:real^2` BASIS_EXPANSION)) THEN               
-  ASM_REWRITE_TAC[DIMINDEX_2; VSUM_2; VECTOR_MUL_LZERO; VECTOR_ADD_RID] THEN
-  SUBST1_TAC(VECTOR_ARITH `vec 0:real^2 = &0 % basis 1`) THEN            
+  REWRITE_TAC[VECTOR_ADD_COMPONENT; VEC_COMPONENT; REAL_LE_LADD;
+              REAL_EQ_ADD_LCANCEL] THEN
+  REPEAT GEN_TAC THEN DISCH_THEN(ASSUME_TAC o SYM) THEN
+  SUBST1_TAC(SYM(ISPEC `b:real^2` BASIS_EXPANSION)) THEN
+  ASM_REWRITE_TAC[DIMINDEX_2; VSUM_2; VECTOR_MUL_LZERO; VECTOR_ADD_LID] THEN
+  SUBST1_TAC(VECTOR_ARITH `vec 0:real^2 = &0 % basis 2`) THEN
   REWRITE_TAC[SEGMENT_SCALAR_MULTIPLE; IN_ELIM_THM; CART_EQ] THEN
   REWRITE_TAC[DIMINDEX_2; FORALL_2; VECTOR_MUL_COMPONENT] THEN
-  SIMP_TAC[BASIS_COMPONENT; DIMINDEX_2; ARITH;                      
-           REAL_MUL_RZERO; REAL_MUL_RID] THEN MESON_TAC[]);;     
+  SIMP_TAC[BASIS_COMPONENT; DIMINDEX_2; ARITH;
+           REAL_MUL_RZERO; REAL_MUL_RID] THEN MESON_TAC[]);;
+
+let SEGMENT_HORIZONTAL = prove
+ (`!a:real^2 b:real^2 x:real^2.
+      a$2 = b$2
+      ==> (x IN segment[a,b] <=>
+           x$2 = a$2 /\ x$2 = b$2 /\
+           (a$1 <= x$1 /\ x$1 <= b$1 \/ b$1 <= x$1 /\ x$1 <= a$1))`,
+  GEOM_ORIGIN_TAC `a:real^2` THEN
+  REWRITE_TAC[VECTOR_ADD_COMPONENT; VEC_COMPONENT; REAL_LE_LADD;
+              REAL_EQ_ADD_LCANCEL] THEN
+  REPEAT GEN_TAC THEN DISCH_THEN(ASSUME_TAC o SYM) THEN
+  SUBST1_TAC(SYM(ISPEC `b:real^2` BASIS_EXPANSION)) THEN
+  ASM_REWRITE_TAC[DIMINDEX_2; VSUM_2; VECTOR_MUL_LZERO; VECTOR_ADD_RID] THEN
+  SUBST1_TAC(VECTOR_ARITH `vec 0:real^2 = &0 % basis 1`) THEN
+  REWRITE_TAC[SEGMENT_SCALAR_MULTIPLE; IN_ELIM_THM; CART_EQ] THEN
+  REWRITE_TAC[DIMINDEX_2; FORALL_2; VECTOR_MUL_COMPONENT] THEN
+  SIMP_TAC[BASIS_COMPONENT; DIMINDEX_2; ARITH;
+           REAL_MUL_RZERO; REAL_MUL_RID] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Useful Fashoda corollary pointed out to me by Tom Hales.                  *)
@@ -4220,6 +4220,28 @@ let inside = new_definition
 let outside = new_definition
  `outside s = {x | ~(x IN s) /\
                    ~bounded(connected_component ((:real^N) DIFF s) x)}`;;
+
+let INSIDE_TRANSLATION = prove
+ (`!a s. inside(IMAGE (\x. a + x) s) = IMAGE (\x. a + x) (inside s)`,
+  REWRITE_TAC[inside] THEN GEOM_TRANSLATE_TAC[]);;
+
+let OUTSIDE_TRANSLATION = prove
+ (`!a s. outside(IMAGE (\x. a + x) s) = IMAGE (\x. a + x) (outside s)`,
+  REWRITE_TAC[outside] THEN GEOM_TRANSLATE_TAC[]);;
+
+add_translation_invariants [INSIDE_TRANSLATION; OUTSIDE_TRANSLATION];;
+
+let INSIDE_LINEAR_IMAGE = prove
+ (`!f s. linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+         ==> inside(IMAGE f s) = IMAGE f (inside s)`,
+  REWRITE_TAC[inside] THEN GEOM_TRANSFORM_TAC[]);;
+
+let OUTSIDE_LINEAR_IMAGE = prove
+ (`!f s. linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+         ==> outside(IMAGE f s) = IMAGE f (outside s)`,
+  REWRITE_TAC[outside] THEN GEOM_TRANSFORM_TAC[]);;
+
+add_linear_invariants [INSIDE_LINEAR_IMAGE; OUTSIDE_LINEAR_IMAGE];;
 
 let OUTSIDE = prove
  (`!s. outside s = {x | ~bounded(connected_component((:real^N) DIFF s) x)}`,
