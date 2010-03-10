@@ -1460,6 +1460,119 @@ let EXTREME_POINT_OF_SEGMENT = prove
  (`!a b x:real^N. x extreme_point_of segment[a,b] <=> x = a \/ x = b`,
   REWRITE_TAC[SEGMENT_CONVEX_HULL; EXTREME_POINT_OF_CONVEX_HULL_2]);;
 
+let FACE_OF_CONVEX_HULL_SUBSET = prove
+ (`!s t:real^N->bool.
+        compact s /\ t face_of (convex hull s)
+        ==> ?s'. s' SUBSET s /\ t = convex hull s'`,
+  REPEAT STRIP_TAC THEN EXISTS_TAC `{x:real^N | x extreme_point_of t}` THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN CONJ_TAC THENL
+   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    MATCH_MP_TAC EXTREME_POINT_OF_CONVEX_HULL THEN
+    ASM_MESON_TAC[FACE_OF_SING; FACE_OF_TRANS];
+    MATCH_MP_TAC KREIN_MILMAN_MINKOWSKI THEN
+    ASM_MESON_TAC[FACE_OF_IMP_CONVEX; FACE_OF_IMP_COMPACT;
+                  COMPACT_CONVEX_HULL; CONVEX_CONVEX_HULL]]);;
+
+let FACE_OF_CONVEX_HULL_AFFINE_INDEPENDENT = prove
+ (`!s t:real^N->bool.
+        ~affine_dependent s
+        ==> (t face_of (convex hull s) <=>
+             ?c. c SUBSET s /\ t = convex hull c)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[AFFINE_INDEPENDENT_IMP_FINITE; FINITE_IMP_COMPACT;
+                  FACE_OF_CONVEX_HULL_SUBSET];
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC FACE_OF_CONVEX_HULLS THEN
+    ASM_SIMP_TAC[AFFINE_INDEPENDENT_IMP_FINITE] THEN
+    MATCH_MP_TAC(SET_RULE `
+     !t. u SUBSET t /\ DISJOINT s t ==> DISJOINT s u`) THEN
+    EXISTS_TAC `affine hull (s DIFF c:real^N->bool)` THEN
+    REWRITE_TAC[CONVEX_HULL_SUBSET_AFFINE_HULL] THEN
+    MATCH_MP_TAC DISJOINT_AFFINE_HULL THEN
+    EXISTS_TAC `s:real^N->bool` THEN ASM SET_TAC[]]);;
+
+let FACET_OF_CONVEX_HULL_AFFINE_INDEPENDENT = prove
+ (`!s t:real^N->bool.
+        ~affine_dependent s
+        ==> (t facet_of (convex hull s) <=>
+             ~(t = {}) /\ ?u. u IN s /\ t = convex hull (s DELETE u))`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[facet_of; FACE_OF_CONVEX_HULL_AFFINE_INDEPENDENT] THEN
+  REWRITE_TAC[AFF_DIM_CONVEX_HULL] THEN EQ_TAC THENL
+   [DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `c:real^N->bool` MP_TAC) THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC) THEN
+    UNDISCH_TAC
+     `aff_dim(convex hull c:real^N->bool) = aff_dim(s:real^N->bool) - &1` THEN
+    SUBGOAL_THEN `~affine_dependent(c:real^N->bool)` ASSUME_TAC THENL
+     [ASM_MESON_TAC[AFFINE_INDEPENDENT_SUBSET];
+      ASM_SIMP_TAC[AFF_DIM_AFFINE_INDEPENDENT; AFF_DIM_CONVEX_HULL]] THEN
+    REWRITE_TAC[INT_ARITH `x - &1:int = y - &1 - &1 <=> y = x + &1`] THEN
+    REWRITE_TAC[INT_OF_NUM_ADD; INT_OF_NUM_EQ] THEN DISCH_TAC THEN
+    SUBGOAL_THEN `(s DIFF c:real^N->bool) HAS_SIZE 1` MP_TAC THENL
+     [ASM_SIMP_TAC[HAS_SIZE; FINITE_DIFF; CARD_DIFF;
+                   AFFINE_INDEPENDENT_IMP_FINITE] THEN ARITH_TAC;
+      CONV_TAC(LAND_CONV HAS_SIZE_CONV) THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:real^N` THEN
+      DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+       `s DIFF t = {a} ==> t SUBSET s ==> s = a INSERT t`)) THEN
+      ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST_ALL_TAC THEN
+      UNDISCH_TAC `CARD((u:real^N) INSERT c) = CARD c + 1` THEN
+      ASM_SIMP_TAC[CARD_CLAUSES; AFFINE_INDEPENDENT_IMP_FINITE] THEN
+      COND_CASES_TAC THENL [ARITH_TAC; DISCH_THEN(K ALL_TAC)] THEN
+      CONJ_TAC THENL [ALL_TAC; AP_TERM_TAC] THEN ASM SET_TAC[]];
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `u:real^N` MP_TAC) THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC) THEN
+    CONJ_TAC THENL [MESON_TAC[DELETE_SUBSET]; ALL_TAC] THEN
+    ASM_SIMP_TAC[AFF_DIM_CONVEX_HULL] THEN
+    SUBGOAL_THEN `~affine_dependent(s DELETE (u:real^N))` ASSUME_TAC THENL
+     [ASM_MESON_TAC[AFFINE_INDEPENDENT_SUBSET; DELETE_SUBSET];
+      ASM_SIMP_TAC[AFF_DIM_AFFINE_INDEPENDENT]] THEN
+    REWRITE_TAC[INT_ARITH `x - &1:int = y - &1 - &1 <=> y = x + &1`] THEN
+    REWRITE_TAC[INT_OF_NUM_ADD; INT_OF_NUM_EQ] THEN
+    ASM_SIMP_TAC[CARD_DELETE; AFFINE_INDEPENDENT_IMP_FINITE] THEN
+    MATCH_MP_TAC(ARITH_RULE `~(s = 0) ==> s = s - 1 + 1`) THEN
+    ASM_SIMP_TAC[CARD_EQ_0; AFFINE_INDEPENDENT_IMP_FINITE] THEN
+    ASM SET_TAC[]]);;
+
+let FACET_OF_CONVEX_HULL_AFFINE_INDEPENDENT_ALT = prove
+ (`!s t:real^N->bool.
+        ~affine_dependent s
+        ==> (t facet_of (convex hull s) <=>
+             2 <= CARD s /\ ?u. u IN s /\ t = convex hull (s DELETE u))`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[FACET_OF_CONVEX_HULL_AFFINE_INDEPENDENT] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `u:real^N` THEN
+  ASM_CASES_TAC `t = convex hull (s DELETE (u:real^N))` THEN
+  ASM_REWRITE_TAC[CONVEX_HULL_EQ_EMPTY] THEN
+  ASM_CASES_TAC `(u:real^N) IN s` THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `CARD s = 1 + CARD(s DELETE (u:real^N))` SUBST1_TAC THENL
+   [ASM_SIMP_TAC[CARD_DELETE; AFFINE_INDEPENDENT_IMP_FINITE] THEN
+    MATCH_MP_TAC(ARITH_RULE `~(s = 0) ==> s = 1 + s - 1`) THEN
+    ASM_SIMP_TAC[CARD_EQ_0; AFFINE_INDEPENDENT_IMP_FINITE] THEN
+    ASM SET_TAC[];
+    REWRITE_TAC[ARITH_RULE `2 <= 1 + x <=> ~(x = 0)`] THEN
+    ASM_SIMP_TAC[CARD_EQ_0; AFFINE_INDEPENDENT_IMP_FINITE; FINITE_DELETE]]);;
+
+let SEGMENT_FACE_OF = prove
+ (`!s a b:real^N. 
+    segment[a,b] face_of s ==> a extreme_point_of s /\ b extreme_point_of s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM FACE_OF_SING] THEN
+  MATCH_MP_TAC FACE_OF_TRANS THEN EXISTS_TAC `segment[a:real^N,b]` THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[FACE_OF_SING; EXTREME_POINT_OF_SEGMENT]);;
+  
+let SEGMENT_EDGE_OF = prove
+ (`!s a b:real^N. 
+        segment[a,b] edge_of s
+        ==> ~(a = b) /\ a extreme_point_of s /\ b extreme_point_of s`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN CONJ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[edge_of; SEGMENT_FACE_OF]] THEN
+  POP_ASSUM MP_TAC THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  SIMP_TAC[SEGMENT_REFL; edge_of; AFF_DIM_SING] THEN INT_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Polytopes.                                                                *)
 (* ------------------------------------------------------------------------- *)
@@ -1484,19 +1597,6 @@ let POLYTOPE_LINEAR_IMAGE_EQ = prove
   MP_TAC(end_itlist CONJ
    (mapfilter (ISPEC `f:real^M->real^N`) (!invariant_under_linear))) THEN
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ASM_REWRITE_TAC[]);;
-
-let FACE_OF_CONVEX_HULL_SUBSET = prove
- (`!t s:real^N->bool.
-        compact s /\ t face_of (convex hull s)
-        ==> ?s'. s' SUBSET s /\ t = convex hull s'`,
-  REPEAT STRIP_TAC THEN EXISTS_TAC `{x:real^N | x extreme_point_of t}` THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN CONJ_TAC THENL
-   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
-    MATCH_MP_TAC EXTREME_POINT_OF_CONVEX_HULL THEN
-    ASM_MESON_TAC[FACE_OF_SING; FACE_OF_TRANS];
-    MATCH_MP_TAC KREIN_MILMAN_MINKOWSKI THEN
-    ASM_MESON_TAC[FACE_OF_IMP_CONVEX; FACE_OF_IMP_COMPACT;
-                  COMPACT_CONVEX_HULL; CONVEX_CONVEX_HULL]]);;
 
 let FACE_OF_POLYTOPE_POLYTOPE = prove
  (`!f s:real^N->bool. polytope s /\ f face_of s ==> polytope f`,
@@ -2501,7 +2601,7 @@ let RELATIVE_FRONTIER_OF_POLYHEDRON = prove
   MESON_TAC[FACET_OF_IMP_SUBSET; SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A characterization of polytopes as having finitely many faces.            *)
+(* A characterization of polyhedra as having finitely many faces.            *)
 (* ------------------------------------------------------------------------- *)
 
 let POLYHEDRON_EQ_FINITE_EXPOSED_FACES = prove

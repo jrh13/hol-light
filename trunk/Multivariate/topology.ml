@@ -4701,6 +4701,22 @@ let CONNECTED_COMPONENT_IDEMP = prove
   ASM_MESON_TAC[CONNECTED_COMPONENT_MAXIMAL; SUBSET_TRANS;
                 CONNECTED_COMPONENT_SUBSET]);;
 
+let CONNECTED_COMPONENT_TRANSLATION = prove
+ (`!a s x. connected_component (IMAGE (\x. a + x) s) (a + x) =
+                IMAGE (\x. a + x) (connected_component s x)`,
+  REWRITE_TAC[CONNECTED_COMPONENT_SET] THEN GEOM_TRANSLATE_TAC[]);;
+
+add_translation_invariants [CONNECTED_COMPONENT_TRANSLATION];;
+
+let CONNECTED_COMPONENT_LINEAR_IMAGE = prove
+ (`!f s x. linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+           ==> connected_component (IMAGE f s) (f x) =
+               IMAGE f (connected_component s x)`,
+  REWRITE_TAC[CONNECTED_COMPONENT_SET] THEN
+  GEOM_TRANSFORM_TAC[]);;
+
+add_linear_invariants [CONNECTED_COMPONENT_LINEAR_IMAGE];;
+
 (* ------------------------------------------------------------------------- *)
 (* Continuity implies uniform continuity on a compact domain.                *)
 (* ------------------------------------------------------------------------- *)
