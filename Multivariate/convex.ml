@@ -952,6 +952,10 @@ let CONVEX_FINITE = prove
 let conic = new_definition
   `conic s <=> !x c. x IN s /\ &0 <= c ==> (c % x) IN s`;;
 
+let SUBSPACE_IMP_CONIC = prove
+ (`!s. subspace s ==> conic s`,
+  SIMP_TAC[subspace; conic]);;
+
 let CONIC_EMPTY = prove
  (`conic {}`,
   REWRITE_TAC[conic; NOT_IN_EMPTY]);;
@@ -983,6 +987,15 @@ let CONIC_CONIC_HULL = prove
 let CONIC_HULL_EQ = prove
  (`!s. (conic hull s = s) <=> conic s`,
   SIMP_TAC[HULL_EQ; CONIC_INTERS]);;
+
+let CONIC_NEGATIONS = prove
+ (`!s. conic s ==> conic (IMAGE (--) s)`,
+  REWRITE_TAC[conic; RIGHT_FORALL_IMP_THM; IMP_CONJ; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[IN_IMAGE; VECTOR_MUL_RNEG] THEN MESON_TAC[]);;
+
+let CONIC_SPAN = prove
+ (`!s. conic(span s)`,
+  SIMP_TAC[SUBSPACE_IMP_CONIC; SUBSPACE_SPAN]);;
 
 let CONIC_HULL_EXPLICIT = prove
  (`!s:real^N->bool. conic hull s = {c % x | &0 <= c /\ x IN s}`,
@@ -1066,6 +1079,11 @@ let CONIC_HULL_EQ_EMPTY = prove
  (`!s. (conic hull s = {}) <=> (s = {})`,
   GEN_TAC THEN EQ_TAC THEN
   MESON_TAC[SUBSET_EMPTY; HULL_SUBSET; CONIC_HULL_EMPTY]);;
+
+let CONIC_SUMS = prove
+ (`!s t. conic s /\ conic t ==> conic {x + y:real^N | x IN s /\ y IN t}`,
+  REWRITE_TAC[conic; IN_ELIM_THM] THEN
+  MESON_TAC[VECTOR_ADD_LDISTRIB]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Affine dependence and consequential theorems (from Lars Schewe).          *)
@@ -2076,6 +2094,14 @@ let CONVEX_HULL_SUBSET_AFFINE_HULL = prove
   GEN_TAC THEN REWRITE_TAC[span] THEN MATCH_MP_TAC HULL_ANTIMONO THEN
   REWRITE_TAC[SUBSET; IN; AFFINE_IMP_CONVEX]);;
 
+let AFFINE_SPAN = prove
+ (`!s. affine(span s)`,
+  SIMP_TAC[SUBSPACE_IMP_AFFINE; SUBSPACE_SPAN]);;
+
+let CONVEX_SPAN = prove
+ (`!s. convex(span s)`,
+  SIMP_TAC[SUBSPACE_IMP_CONVEX; SUBSPACE_SPAN]);;
+
 let AFFINE_EQ_SUBSPACE = prove
  (`!s:real^N->bool. vec 0 IN s ==> (affine s <=> subspace s)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[subspace; affine] THEN
@@ -2888,8 +2914,8 @@ let AFFINE_INDEPENDENT_IFF_CARD = prove
     ASM_REWRITE_TAC[PSUBSET] THEN ASM_MESON_TAC[]]);;
 
 let AFFINE_HULL_CONVEX_INTER_OPEN = prove
- (`!s t:real^N->bool. 
-        convex s /\ open t /\ ~(s INTER t = {}) 
+ (`!s t:real^N->bool.
+        convex s /\ open t /\ ~(s INTER t = {})
         ==> affine hull (s INTER t) = affine hull s`,
   REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; RIGHT_AND_EXISTS_THM;
               LEFT_IMP_EXISTS_THM] THEN
@@ -2903,7 +2929,7 @@ let AFFINE_HULL_CONVEX_INTER_OPEN = prove
   DISCH_THEN(MP_TAC o SPEC `vec 0:real^N`) THEN
   ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM; SUBSET; IN_CBALL_0] THEN
   X_GEN_TAC `e:real` THEN STRIP_TAC THEN REWRITE_TAC[EXTENSION; IN_UNIV] THEN
-  X_GEN_TAC `x:real^N` THEN ASM_CASES_TAC `x:real^N = vec 0` THEN 
+  X_GEN_TAC `x:real^N` THEN ASM_CASES_TAC `x:real^N = vec 0` THEN
   ASM_SIMP_TAC[SPAN_SUPERSET; IN_INTER] THEN DISCH_TAC THEN
   ABBREV_TAC `k = min (&1 / &2) (e / norm(x:real^N))` THEN
   SUBGOAL_THEN `&0 < k /\ k < &1` STRIP_ASSUME_TAC THENL
@@ -2912,7 +2938,7 @@ let AFFINE_HULL_CONVEX_INTER_OPEN = prove
     CONV_TAC REAL_RAT_REDUCE_CONV;
     ALL_TAC] THEN
   SUBGOAL_THEN `x:real^N = inv k % k % x` SUBST1_TAC THENL
-   [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID; 
+   [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID;
                  REAL_LT_IMP_NZ];
     ALL_TAC] THEN
   MATCH_MP_TAC SPAN_MUL THEN MATCH_MP_TAC SPAN_SUPERSET THEN
@@ -2925,14 +2951,14 @@ let AFFINE_HULL_CONVEX_INTER_OPEN = prove
     ASM_REAL_ARITH_TAC]);;
 
 let CONVEX_AND_AFFINE_INTER_OPEN = prove
- (`!s t u:real^N->bool. 
-        convex s /\ affine t /\ open u /\ 
+ (`!s t u:real^N->bool.
+        convex s /\ affine t /\ open u /\
         s INTER u = t INTER u /\ ~(s INTER u = {})
         ==> affine hull s = t`,
-  REPEAT STRIP_TAC THEN 
+  REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(MESON[] `!u v. x = u /\ u = v /\ v = y ==> x = y`) THEN
   MAP_EVERY EXISTS_TAC
-   [`affine hull (s INTER u:real^N->bool)`; 
+   [`affine hull (s INTER u:real^N->bool)`;
     `affine hull t:real^N->bool`] THEN
   REPEAT CONJ_TAC THENL
    [CONV_TAC SYM_CONV THEN MATCH_MP_TAC AFFINE_HULL_CONVEX_INTER_OPEN THEN
@@ -5180,73 +5206,61 @@ let HOMEOMORPHIC_CLOSED_INTERVALS = prove
 (* ------------------------------------------------------------------------- *)
 
 let convex_cone = new_definition
- `convex_cone s <=> convex s /\ conic s`;;
+ `convex_cone s <=> ~(s = {}) /\ convex s /\ conic s`;;
 
 let CONVEX_CONE = prove
  (`!s:real^N->bool.
      convex_cone s <=>
+        vec 0 IN s /\
         (!x y. x IN s /\ y IN s ==> (x + y) IN s) /\
         (!x c. x IN s /\ &0 <= c ==> (c % x) IN s)`,
-  GEN_TAC THEN REWRITE_TAC[convex_cone; convex; conic] THEN
-  MATCH_MP_TAC(TAUT `(a ==> (b <=> c)) ==> (b /\ a <=> c /\ a)`) THEN
-  DISCH_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[] THEN
-  DISCH_THEN(fun th -> REPEAT STRIP_TAC THEN MP_TAC(SPECL
-   [`&2 % (x:real^N)`; `&2 % (y:real^N)`; `&1 / &2`; `&1 / &2`] th)) THEN
+  GEN_TAC THEN REWRITE_TAC[convex_cone; GSYM conic] THEN
+  ASM_CASES_TAC `conic(s:real^N->bool)` THEN
+  ASM_SIMP_TAC[CONIC_CONTAINS_0] THEN AP_TERM_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[conic]) THEN
+  REWRITE_TAC[convex] THEN EQ_TAC THEN
+  ASM_SIMP_TAC[REAL_SUB_LE] THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`&2 % (x:real^N)`; `&2 % (y:real^N)`; `&1 / &2`; `&1 / &2`]) THEN
   REWRITE_TAC[VECTOR_MUL_ASSOC] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
   ASM_SIMP_TAC[VECTOR_MUL_LID; REAL_POS]);;
 
 let CONVEX_CONE_LINEAR_IMAGE = prove
  (`!f:real^M->real^N s.
         convex_cone s /\ linear f ==> convex_cone(IMAGE f s)`,
-  SIMP_TAC[convex_cone; CONVEX_LINEAR_IMAGE; CONIC_LINEAR_IMAGE]);;
+  SIMP_TAC[convex_cone; CONVEX_LINEAR_IMAGE; IMAGE_EQ_EMPTY;
+           CONIC_LINEAR_IMAGE]);;
 
 let CONVEX_CONE_LINEAR_IMAGE_EQ = prove
  (`!f:real^M->real^N s.
         linear f /\ (!x y. f x = f y ==> x = y)
         ==> (convex_cone(IMAGE f s) <=> convex_cone s)`,
   REWRITE_TAC[convex_cone] THEN
-  MESON_TAC[CONVEX_LINEAR_IMAGE_EQ; CONIC_LINEAR_IMAGE_EQ]);;
+  MESON_TAC[IMAGE_EQ_EMPTY; CONVEX_LINEAR_IMAGE_EQ; CONIC_LINEAR_IMAGE_EQ]);;
 
 add_linear_invariants [CONVEX_CONE_LINEAR_IMAGE_EQ];;
 
-let CONVEX_CONE_HALFSPACE_LE = prove
- (`!a. convex_cone {x | a dot x <= &0}`,
-  REWRITE_TAC[convex_cone; CONIC_HALFSPACE_LE; CONVEX_HALFSPACE_LE]);;
-
-let CONVEX_CONE_EMPTY = prove
- (`convex_cone {}`,
-  REWRITE_TAC[convex_cone; CONVEX_EMPTY; CONIC_EMPTY]);;
-
 let CONVEX_CONE_HALFSPACE_GE = prove
  (`!a. convex_cone {x | a dot x >= &0}`,
-  REWRITE_TAC[convex_cone; CONIC_HALFSPACE_GE; CONVEX_HALFSPACE_GE]);;
+  SIMP_TAC[CONVEX_CONE; real_ge; IN_ELIM_THM; DOT_RZERO; DOT_RADD; DOT_RMUL;
+           REAL_LE_ADD; REAL_LE_MUL; REAL_LE_REFL]);;
 
-let CONVEX_CONE_INTERS = prove
- (`!f. (!s. s IN f ==> convex_cone s) ==> convex_cone(INTERS f)`,
-  SIMP_TAC[convex_cone; CONIC_INTERS; CONVEX_INTERS]);;
+let CONVEX_CONE_HALFSPACE_LE = prove
+ (`!a. convex_cone {x | a dot x <= &0}`,
+  REWRITE_TAC[REAL_ARITH `x <= &0 <=> &0 <= --x`; GSYM DOT_LNEG] THEN
+  REWRITE_TAC[GSYM real_ge; CONVEX_CONE_HALFSPACE_GE]);;
 
 let CONVEX_CONE_CONTAINS_0 = prove
- (`!s:real^N->bool. convex_cone s ==> (vec 0 IN s <=> ~(s = {}))`,
-  MESON_TAC[CONIC_CONTAINS_0; convex_cone]);;
+ (`!s:real^N->bool. convex_cone s ==> vec 0 IN s`,
+  SIMP_TAC[CONVEX_CONE]);;
 
-let CONVEX_CONE_HULL_SEPARATE = prove
- (`!s:real^N->bool. convex_cone hull s = conic hull (convex hull s)`,
-  GEN_TAC THEN REWRITE_TAC[REWRITE_RULE[GSYM FUN_EQ_THM] convex_cone] THEN
-  ONCE_REWRITE_TAC[CONJ_SYM] THEN MATCH_MP_TAC HULL_P_AND_Q THEN
-  REWRITE_TAC[CONIC_INTERS; CONVEX_INTERS; CONVEX_CONIC_HULL]);;
-
-let CONVEX_CONE_HULL_CONVEX_HULL = prove
- (`!s:real^N->bool.
-        convex_cone hull s = {c % x | &0 <= c /\ x IN convex hull s}`,
-  REWRITE_TAC[CONVEX_CONE_HULL_SEPARATE; CONIC_HULL_EXPLICIT]);;
-
-let CONVEX_CONE_HULL_LINEAR_IMAGE = prove
- (`!f s. linear f
-         ==> convex_cone hull (IMAGE f s) = IMAGE f (convex_cone hull s)`,
-  SIMP_TAC[CONVEX_CONE_HULL_SEPARATE; CONVEX_HULL_LINEAR_IMAGE;
-           CONIC_HULL_LINEAR_IMAGE]);;
-
-add_linear_invariants [CONVEX_CONE_HULL_LINEAR_IMAGE];;
+let CONVEX_CONE_INTERS = prove
+ (`!f. (!s:real^N->bool. s IN f ==> convex_cone s) ==> convex_cone(INTERS f)`,
+  SIMP_TAC[convex_cone; CONIC_INTERS; CONVEX_INTERS] THEN
+  REWRITE_TAC[GSYM convex_cone] THEN GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN EXISTS_TAC `vec 0:real^N` THEN
+  ASM_SIMP_TAC[IN_INTERS; CONVEX_CONE_CONTAINS_0]);;
 
 let CONVEX_CONE_CONVEX_CONE_HULL = prove
  (`!s. convex_cone(convex_cone hull s)`,
@@ -5260,15 +5274,50 @@ let CONIC_CONVEX_CONE_HULL = prove
  (`!s. conic(convex_cone hull s)`,
   MESON_TAC[CONVEX_CONE_CONVEX_CONE_HULL; convex_cone]);;
 
-let CONVEX_CONE_HULL_EMPTY = prove
- (`convex_cone hull {} = {}`,
-  MATCH_MP_TAC HULL_UNIQUE THEN
-  REWRITE_TAC[SUBSET_REFL; CONVEX_CONE_EMPTY; EMPTY_SUBSET]);;
+let CONVEX_CONE_HULL_NONEMPTY = prove
+ (`!s. ~(convex_cone hull s = {})`,
+  MESON_TAC[CONVEX_CONE_CONVEX_CONE_HULL; convex_cone]);;
 
-let CONVEX_CONE_HULL_EQ_EMPTY = prove
- (`!s. (convex_cone hull s = {}) <=> (s = {})`,
-  GEN_TAC THEN EQ_TAC THEN
-  MESON_TAC[SUBSET_EMPTY; HULL_SUBSET; CONVEX_CONE_HULL_EMPTY]);;
+let CONVEX_CONE_HULL_CONTAINS_0 = prove
+ (`!s. vec 0 IN convex_cone hull s`,
+  MESON_TAC[CONVEX_CONE_CONVEX_CONE_HULL; CONVEX_CONE]);;
+
+let CONVEX_CONE_HULL_ADD = prove
+ (`!s x y:real^N.
+        x IN convex_cone hull s /\ y IN convex_cone hull s
+        ==> x + y IN convex_cone hull s`,
+  MESON_TAC[CONVEX_CONE; CONVEX_CONE_CONVEX_CONE_HULL]);;
+
+let CONVEX_CONE_HULL_MUL = prove
+ (`!s c x:real^N.
+        &0 <= c /\ x IN convex_cone hull s
+        ==> (c % x) IN convex_cone hull s`,
+  MESON_TAC[CONVEX_CONE; CONVEX_CONE_CONVEX_CONE_HULL]);;
+
+let CONVEX_CONE_SUMS = prove
+ (`!s t. convex_cone s /\ convex_cone t
+         ==> convex_cone {x + y:real^N | x IN s /\ y IN t}`,
+  SIMP_TAC[convex_cone; CONIC_SUMS; CONVEX_SUMS] THEN SET_TAC[]);;
+
+let CONVEX_CONE_HULL_UNION = prove
+ (`!s t. convex_cone hull(s UNION t) =
+         {x + y:real^N | x IN convex_cone hull s /\ y IN convex_cone hull t}`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC HULL_MINIMAL THEN
+    SIMP_TAC[CONVEX_CONE_SUMS; CONVEX_CONE_CONVEX_CONE_HULL] THEN
+    REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN
+    X_GEN_TAC `x:real^N` THEN STRIP_TAC THENL
+     [MAP_EVERY EXISTS_TAC [`x:real^N`; `vec 0:real^N`] THEN
+      ASM_SIMP_TAC[HULL_INC; CONVEX_CONE_HULL_CONTAINS_0; VECTOR_ADD_RID];
+      MAP_EVERY EXISTS_TAC [`vec 0:real^N`; `x:real^N`] THEN
+      ASM_SIMP_TAC[HULL_INC; CONVEX_CONE_HULL_CONTAINS_0; VECTOR_ADD_LID]];
+    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC CONVEX_CONE_HULL_ADD THEN
+    ASM_MESON_TAC[HULL_MONO; SUBSET_UNION; SUBSET]]);;
+
+let CONVEX_CONE_SING = prove
+ (`convex_cone {vec 0}`,
+  SIMP_TAC[CONVEX_CONE; IN_SING; VECTOR_ADD_LID; VECTOR_MUL_RZERO]);;
 
 let CONVEX_HULL_SUBSET_CONVEX_CONE_HULL = prove
  (`!s. convex hull s SUBSET convex_cone hull s`,
@@ -5279,6 +5328,103 @@ let CONIC_HULL_SUBSET_CONVEX_CONE_HULL = prove
  (`!s. conic hull s SUBSET convex_cone hull s`,
   GEN_TAC THEN MATCH_MP_TAC HULL_ANTIMONO THEN
   SIMP_TAC[convex_cone; SUBSET; IN]);;
+
+let CONVEX_CONE_HULL_SEPARATE_NONEMPTY = prove
+ (`!s:real^N->bool.
+    ~(s = {})
+    ==> convex_cone hull s = conic hull (convex hull s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THEN
+  MATCH_MP_TAC HULL_MINIMAL THEN
+  REWRITE_TAC[CONIC_CONVEX_CONE_HULL; CONVEX_HULL_SUBSET_CONVEX_CONE_HULL] THEN
+  ASM_SIMP_TAC[CONVEX_CONIC_HULL; CONVEX_CONVEX_HULL; CONIC_CONIC_HULL;
+               convex_cone; CONIC_HULL_EQ_EMPTY; CONVEX_HULL_EQ_EMPTY] THEN
+  ASM_MESON_TAC[HULL_SUBSET; SUBSET_REFL; SUBSET_TRANS]);;
+
+let CONVEX_CONE_HULL_EMPTY = prove
+ (`convex_cone hull {} = {vec 0}`,
+  MATCH_MP_TAC HULL_UNIQUE THEN
+  REWRITE_TAC[CONVEX_CONE_CONTAINS_0; EMPTY_SUBSET; CONVEX_CONE_SING;
+              SET_RULE `{a} SUBSET s <=> a IN s`; CONVEX_CONE_CONTAINS_0]);;
+
+let CONVEX_CONE_HULL_SEPARATE = prove
+ (`!s:real^N->bool.
+    convex_cone hull s = vec 0 INSERT conic hull (convex hull s)`,
+  GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_SIMP_TAC[CONVEX_CONE_HULL_EMPTY; CONVEX_HULL_EMPTY; CONIC_HULL_EMPTY] THEN
+  ASM_SIMP_TAC[CONVEX_CONE_HULL_SEPARATE_NONEMPTY] THEN
+  MATCH_MP_TAC(SET_RULE `a IN s ==> s = a INSERT s`) THEN
+  ASM_SIMP_TAC[CONIC_CONTAINS_0; CONIC_CONIC_HULL] THEN
+  ASM_REWRITE_TAC[CONIC_HULL_EQ_EMPTY; CONVEX_HULL_EQ_EMPTY]);;
+
+let CONVEX_CONE_HULL_CONVEX_HULL_NONEMPTY = prove
+ (`!s:real^N->bool.
+        ~(s = {})
+        ==> convex_cone hull s = {c % x | &0 <= c /\ x IN convex hull s}`,
+  SIMP_TAC[CONVEX_CONE_HULL_SEPARATE_NONEMPTY; CONIC_HULL_EXPLICIT]);;
+
+let CONVEX_CONE_HULL_CONVEX_HULL = prove
+ (`!s:real^N->bool.
+        convex_cone hull s =
+        vec 0 INSERT {c % x | &0 <= c /\ x IN convex hull s}`,
+  REWRITE_TAC[CONVEX_CONE_HULL_SEPARATE; CONIC_HULL_EXPLICIT]);;
+
+let CONVEX_CONE_HULL_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N s.
+        linear f
+        ==> convex_cone hull (IMAGE f s) = IMAGE f (convex_cone hull s)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `s:real^M-> bool = {}` THEN
+  ASM_SIMP_TAC[CONVEX_CONE_HULL_SEPARATE_NONEMPTY; IMAGE_EQ_EMPTY;
+               CONVEX_HULL_LINEAR_IMAGE; CONIC_HULL_LINEAR_IMAGE] THEN
+  REWRITE_TAC[IMAGE_CLAUSES; CONVEX_CONE_HULL_EMPTY] THEN
+  MATCH_MP_TAC(SET_RULE `f x = y ==> {y} = {f x}`) THEN
+  ASM_MESON_TAC[LINEAR_0]);;
+
+add_linear_invariants [CONVEX_CONE_HULL_LINEAR_IMAGE];;
+
+let SUBSPACE_IMP_CONVEX_CONE = prove
+ (`!s. subspace s ==> convex_cone s`,
+  SIMP_TAC[subspace; CONVEX_CONE]);;
+
+let CONVEX_CONE_SPAN = prove
+ (`!s. convex_cone(span s)`,
+  SIMP_TAC[convex_cone; CONVEX_SPAN; CONIC_SPAN; GSYM MEMBER_NOT_EMPTY] THEN
+  MESON_TAC[SPAN_0]);;
+
+let CONVEX_CONE_NEGATIONS = prove
+ (`!s. convex_cone s ==> convex_cone (IMAGE (--) s)`,
+  SIMP_TAC[convex_cone; IMAGE_EQ_EMPTY; CONIC_NEGATIONS; CONVEX_NEGATIONS]);;
+
+let SUBSPACE_CONVEX_CONE_SYMMETRIC = prove
+ (`!s:real^N->bool.
+        subspace s <=> convex_cone s /\ (!x. x IN s ==> --x IN s)`,
+  GEN_TAC THEN REWRITE_TAC[subspace; CONVEX_CONE] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_SIMP_TAC[] THENL
+   [ASM_MESON_TAC[VECTOR_ARITH `--x:real^N = -- &1 % x`];
+    MAP_EVERY X_GEN_TAC [`c:real`; `x:real^N`] THEN DISCH_TAC THEN
+    DISJ_CASES_TAC(SPEC `c:real` REAL_LE_NEGTOTAL) THEN ASM_SIMP_TAC[] THEN
+    ASM_MESON_TAC[VECTOR_ARITH `c % x:real^N = --(--c % x)`]]);;
+
+let SPAN_CONVEX_CONE_ALLSIGNS = prove
+ (`!s:real^N->bool. span s = convex_cone hull (s UNION IMAGE (--) s)`,
+  GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN CONJ_TAC THENL
+     [MESON_TAC[HULL_SUBSET; SUBSET_UNION; SUBSET_TRANS]; ALL_TAC] THEN
+    REWRITE_TAC[SUBSPACE_CONVEX_CONE_SYMMETRIC;
+                CONVEX_CONE_CONVEX_CONE_HULL] THEN
+    MATCH_MP_TAC HULL_INDUCT THEN CONJ_TAC THENL
+     [X_GEN_TAC `x:real^N` THEN REWRITE_TAC[IN_UNION; IN_IMAGE] THEN
+      DISCH_TAC THEN MATCH_MP_TAC HULL_INC THEN
+      REWRITE_TAC[IN_UNION; IN_IMAGE] THEN ASM_MESON_TAC[VECTOR_NEG_NEG];
+      SUBGOAL_THEN `!s. {x:real^N | (--x) IN s} = IMAGE (--) s`
+       (fun th -> SIMP_TAC[th; CONVEX_CONE_NEGATIONS;
+                           CONVEX_CONE_CONVEX_CONE_HULL]) THEN
+      GEN_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+      REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[VECTOR_NEG_NEG]];
+    MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_CONE_SPAN] THEN
+    REWRITE_TAC[UNION_SUBSET; SPAN_INC] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+    MESON_TAC[SPAN_SUPERSET; SPAN_NEG]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Epigraphs of convex functions.                                            *)

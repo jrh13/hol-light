@@ -1255,7 +1255,6 @@ let AFF_LT_SPECIAL_SCALE = prove
   MATCH_MP_TAC AFFSIGN_SPECIAL_SCALE THEN
   ASM_REWRITE_TAC[sgn_lt] THEN REAL_ARITH_TAC);;
 
-
 let AFFSIGN_0 = prove
  (`!sgn s t.
         FINITE s /\ FINITE t /\ (vec 0) IN (s DIFF t)
@@ -1367,14 +1366,18 @@ let AFF_GE_0_MULTIPLE_AFFINE_CONVEX = prove
 
 let AFF_GE_0_AFFINE_CONVEX_CONE = prove
  (`!s t:real^N->bool.
-        FINITE s /\ FINITE t /\ vec 0 IN (s DIFF t) /\ ~(t = {})
+        FINITE s /\ FINITE t /\ vec 0 IN (s DIFF t)
         ==> aff_ge s t =
                {x + y | x IN affine hull (s DIFF t) /\
                         y IN convex_cone hull t}`,
-  REPEAT STRIP_TAC THEN
-  ASM_SIMP_TAC[CONVEX_CONE_HULL_CONVEX_HULL;
-               AFF_GE_0_AFFINE_MULTIPLE_CONVEX] THEN
-  SET_TAC[]);;
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `t:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[AFF_GE_EQ_AFFINE_HULL; CONVEX_CONE_HULL_EMPTY] THEN
+    REWRITE_TAC[IN_SING; DIFF_EMPTY] THEN
+    REWRITE_TAC[SET_RULE `{x + y:real^N | P x /\ y = a} = {x + a | P x}`] THEN
+    REWRITE_TAC[VECTOR_ADD_RID] THEN SET_TAC[];
+    ASM_SIMP_TAC[CONVEX_CONE_HULL_CONVEX_HULL_NONEMPTY;
+                  AFF_GE_0_AFFINE_MULTIPLE_CONVEX] THEN
+   SET_TAC[]]);;
 
 let AFF_GE_0_N = prove
  (`!s:real^N->bool.
@@ -1419,6 +1422,49 @@ let AFF_GE_0_CONVEX_HULL_ALT = prove
       ASM_REWRITE_TAC[VECTOR_MUL_LZERO; REAL_LT_REFL] THEN
       ASM_REWRITE_TAC[REAL_LT_LE]]]);;
 
+let AFF_GE_0_CONVEX_CONE_NEGATIONS = prove
+ (`!s t:real^N->bool.
+        FINITE s /\ FINITE t /\ vec 0 IN (s DIFF t)
+        ==> aff_ge s t =
+            convex_cone hull (s UNION t UNION IMAGE (--) (s DIFF t))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[AFF_GE_0_AFFINE_CONVEX_CONE] THEN
+  ASM_SIMP_TAC[AFFINE_HULL_EQ_SPAN; HULL_INC] THEN
+  REWRITE_TAC[SPAN_CONVEX_CONE_ALLSIGNS; GSYM CONVEX_CONE_HULL_UNION] THEN
+  AP_TERM_TAC THEN SET_TAC[]);;
+
+let CONVEX_HULL_AFF_GE = prove
+ (`!s. convex hull s = aff_ge {} s`,
+  SIMP_TAC[aff_ge_def; AFFSIGN; CONVEX_HULL_FINITE; sgn_ge; UNION_EMPTY] THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN REPEAT GEN_TAC THEN
+  AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let POLYHEDRON_AFF_GE = prove
+ (`!s t:real^N->bool. FINITE s /\ FINITE t ==> polyhedron(aff_ge s t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[aff_ge_def] THEN
+  ONCE_REWRITE_TAC[AFFSIGN_DISJOINT_DIFF] THEN
+  REWRITE_TAC[GSYM aff_ge_def] THEN
+  SUBGOAL_THEN `FINITE(s DIFF t) /\ FINITE(t:real^N->bool) /\
+                DISJOINT (s DIFF t) t`
+  MP_TAC THENL [ASM_SIMP_TAC[FINITE_DIFF] THEN ASM SET_TAC[]; ALL_TAC] THEN
+  POP_ASSUM_LIST(K ALL_TAC) THEN
+  SPEC_TAC(`s DIFF t:real^N->bool`,`s:real^N->bool`) THEN
+  MATCH_MP_TAC SET_PROVE_CASES THEN CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CONVEX_HULL_AFF_GE] THEN
+    MATCH_MP_TAC POLYTOPE_IMP_POLYHEDRON THEN REWRITE_TAC[polytope] THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `s:real^N->bool`] THEN
+  GEOM_ORIGIN_TAC `a:real^N` THEN REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(vec 0:real^N) IN ((vec 0 INSERT s) DIFF t)` ASSUME_TAC THENL
+   [ASM SET_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[AFF_GE_0_CONVEX_CONE_NEGATIONS; FINITE_INSERT] THEN
+  MATCH_MP_TAC POLYHEDRON_CONVEX_CONE_HULL THEN
+  ASM_SIMP_TAC[FINITE_INSERT; FINITE_UNION; FINITE_DIFF; FINITE_IMAGE]);;
+
+let CLOSED_AFF_GE = prove
+ (`!s t:real^N->bool. FINITE s /\ FINITE t ==> closed(aff_ge s t)`,
+  SIMP_TAC[POLYHEDRON_AFF_GE; POLYHEDRON_IMP_CLOSED]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Definition and properties of conv0.                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -1450,12 +1496,6 @@ let CONV0_SUBSET_CONVEX_HULL = prove
 let CONV0_AFF_GT = prove
  (`!s. conv0 s = aff_gt {} s`,
   REWRITE_TAC[conv0; aff_gt_def]);;
-
-let CONVEX_HULL_AFF_GE = prove
- (`!s. convex hull s = aff_ge {} s`,
-  SIMP_TAC[aff_ge_def; AFFSIGN; CONVEX_HULL_FINITE; sgn_ge; UNION_EMPTY] THEN
-  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN REPEAT GEN_TAC THEN
-  AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
 
 let CONVEX_HULL_CONV0_DECOMP = prove
  (`!s:real^N->bool.

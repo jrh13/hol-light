@@ -3332,6 +3332,21 @@ let SUBSPACE_SUMS = prove
     ASM_MESON_TAC[];
     REWRITE_TAC[VECTOR_ADD_LDISTRIB] THEN ASM_MESON_TAC[]]);;
 
+let SPAN_UNION = prove
+ (`!s t. span(s UNION t) = {x + y:real^N | x IN span s /\ y IN span t}`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN
+    SIMP_TAC[SUBSPACE_SUMS; SUBSPACE_SPAN] THEN
+    REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN
+    X_GEN_TAC `x:real^N` THEN STRIP_TAC THENL
+     [MAP_EVERY EXISTS_TAC [`x:real^N`; `vec 0:real^N`] THEN
+      ASM_SIMP_TAC[SPAN_SUPERSET; SPAN_0; VECTOR_ADD_RID];
+      MAP_EVERY EXISTS_TAC [`vec 0:real^N`; `x:real^N`] THEN
+      ASM_SIMP_TAC[SPAN_SUPERSET; SPAN_0; VECTOR_ADD_LID]];
+    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC SPAN_ADD THEN
+    ASM_MESON_TAC[SPAN_MONO; SUBSET_UNION; SUBSET]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Mapping under linear image.                                               *)
 (* ------------------------------------------------------------------------- *)

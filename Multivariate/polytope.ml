@@ -1558,14 +1558,14 @@ let FACET_OF_CONVEX_HULL_AFFINE_INDEPENDENT_ALT = prove
     ASM_SIMP_TAC[CARD_EQ_0; AFFINE_INDEPENDENT_IMP_FINITE; FINITE_DELETE]]);;
 
 let SEGMENT_FACE_OF = prove
- (`!s a b:real^N. 
+ (`!s a b:real^N.
     segment[a,b] face_of s ==> a extreme_point_of s /\ b extreme_point_of s`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM FACE_OF_SING] THEN
   MATCH_MP_TAC FACE_OF_TRANS THEN EXISTS_TAC `segment[a:real^N,b]` THEN
   ASM_REWRITE_TAC[] THEN REWRITE_TAC[FACE_OF_SING; EXTREME_POINT_OF_SEGMENT]);;
-  
+
 let SEGMENT_EDGE_OF = prove
- (`!s a b:real^N. 
+ (`!s a b:real^N.
         segment[a,b] edge_of s
         ==> ~(a = b) /\ a extreme_point_of s /\ b extreme_point_of s`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN CONJ_TAC THENL
@@ -1683,6 +1683,10 @@ let POLYTOPE_IMP_BOUNDED = prove
 let POLYTOPE_INTERVAL = prove
  (`!a b. polytope(interval[a,b])`,
   REWRITE_TAC[polytope] THEN MESON_TAC[CLOSED_INTERVAL_AS_CONVEX_HULL]);;
+
+let POLYTOPE_SING = prove
+ (`!a. polytope {a}`,
+  MESON_TAC[POLYTOPE_INTERVAL; INTERVAL_SING]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Polyhedra.                                                                *)
@@ -2965,9 +2969,10 @@ let POLYTOPE_UNION_CONVEX_HULL_FACETS = prove
 
 let POLYHEDRON_CONVEX_CONE_HULL = prove
  (`!s:real^N->bool. FINITE s ==> polyhedron(convex_cone hull s)`,
-  GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THENL
-   [ASM_REWRITE_TAC[CONVEX_CONE_HULL_EMPTY; POLYHEDRON_EMPTY];
-    DISCH_TAC] THEN
+  GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN DISCH_TAC THENL
+   [ASM_REWRITE_TAC[CONVEX_CONE_HULL_EMPTY] THEN
+    ASM_SIMP_TAC[POLYTOPE_IMP_POLYHEDRON; POLYTOPE_SING];
+    ALL_TAC] THEN
   SUBGOAL_THEN
     `polyhedron(convex hull ((vec 0:real^N) INSERT s))`
   MP_TAC THENL
@@ -3059,9 +3064,7 @@ let POLYHEDRON_CONVEX_CONE_HULL = prove
   EXISTS_TAC `convex hull ((vec 0:real^N) INSERT s)` THEN CONJ_TAC THENL
    [MATCH_MP_TAC HULL_MINIMAL THEN
     REWRITE_TAC[CONVEX_CONVEX_CONE_HULL] THEN
-    ASM_SIMP_TAC[INSERT_SUBSET; HULL_SUBSET] THEN
-    ASM_SIMP_TAC[CONIC_CONVEX_CONE_HULL; CONIC_CONTAINS_0;
-                 CONVEX_CONE_HULL_EQ_EMPTY];
+    ASM_SIMP_TAC[INSERT_SUBSET; HULL_SUBSET; CONVEX_CONE_HULL_CONTAINS_0];
     ASM_REWRITE_TAC[IN_INTERS] THEN X_GEN_TAC `h:real^N->bool` THEN
     DISCH_TAC THEN
     SUBGOAL_THEN `inf(IMAGE (t:(real^N->bool)->real) f) % x:real^N =
@@ -3095,7 +3098,8 @@ let CLOSED_CONVEX_CONE_HULL = prove
 
 let FINITELY_GENERATED_CONIC_POLYHEDRON = prove
  (`!s:real^N->bool.
-        polyhedron s /\ conic s ==> ?c. FINITE c /\ s = convex_cone hull c`,
+        polyhedron s /\ conic s /\ ~(s = {})
+        ==> ?c. FINITE c /\ s = convex_cone hull c`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `?p:real^N->bool. polytope p /\ vec 0 IN interior p`
   STRIP_ASSUME_TAC THENL
