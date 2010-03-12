@@ -23,11 +23,13 @@ let is_int = new_definition
 (* Type of integers.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
+let int_tybij = new_type_definition "int" ("int_of_real","real_of_int")
+ (prove(`?x. is_int x`,
+       EXISTS_TAC `&0` THEN
+       REWRITE_TAC[is_int; REAL_OF_NUM_EQ; EXISTS_OR_THM; GSYM EXISTS_REFL]));;
+
 let int_abstr,int_rep =
-  (SPEC_ALL F_F SPEC_ALL) (CONJ_PAIR
-   (new_type_definition "int" ("int_of_real","real_of_int")
-    (prove(`?x. is_int x`,EXISTS_TAC `&0` THEN
-     REWRITE_TAC[is_int; REAL_OF_NUM_EQ; EXISTS_OR_THM; GSYM EXISTS_REFL]))));;
+  SPEC_ALL(CONJUNCT1 int_tybij),SPEC_ALL(CONJUNCT2 int_tybij);;
 
 let dest_int_rep = prove
  (`!i. ?n. (real_of_int i = &n) \/ (real_of_int i = --(&n))`,
