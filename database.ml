@@ -1975,6 +1975,7 @@ theorems :=
 "int_sgn_th",int_sgn_th;
 "int_sub",int_sub;
 "int_sub_th",int_sub_th;
+"int_tybij",int_tybij;
 "is_int",is_int;
 "is_nadd",is_nadd;
 "is_nadd_0",is_nadd_0;

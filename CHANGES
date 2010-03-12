@@ -1,3 +1,9 @@
+Thu 11th Mar 2010       ints.ml
+
+Made a further small stylistic change following hol-online to make the integer 
+type bijection at the top level instead of hiding it. This introduces a new 
+theorem int_tybij.
+
 Tue  9th Mar 2010       lists.ml
 
 Added a couple of trivial lemmas about MAP:
