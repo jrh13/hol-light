@@ -25,8 +25,18 @@ respectively.
 
 \EXAMPLE
 {
-  # TRANS (ASSUME `0 = 1`) (ASSUME `1 = 2`);;
-  val it : thm = 0 = 1, 1 = 2 |- 0 = 2
+  # let th1 = ABS `n:num` (ARITH_RULE `SUC n = n + 1`)
+    and th2 = NUM_REDUCE_CONV `2 + 2`;;
+  val th1 : thm = |- (\n. SUC n) = (\n. n + 1)
+  val th2 : thm = |- 2 + 2 = 4
+  # let th3 = MK_COMB(th1,th2);;
+  val th3 : thm = |- (\n. SUC n) (2 + 2) = (\n. n + 1) 4
+
+  # let th1 = NOT_DEF and th2 = TAUT `p /\ p <=> p`;;
+  val th1 : thm = |- (~) = (\p. p ==> F)
+  val th2 : thm = |- p /\ p <=> p
+  # MK_COMB(th1,th2);;
+  val it : thm = |- ~(p /\ p) <=> (\p. p ==> F) p
 }
 
 \COMMENTS
@@ -34,6 +44,6 @@ This is one of HOL Light's 10 primitive inference rules. It underlies, among
 other things, the replacement of subterms in rewriting.
 
 \SEEALSO
-AP_TERM, AP_THM.
+AP_TERM, AP_THM, BETA_CONV, TRANS.
 
 \ENDDOC
