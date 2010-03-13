@@ -282,10 +282,34 @@ let REALLIM_DIV = prove
     ==> ((\x. f(x) / g(x)) ---> l / m) net`,
   SIMP_TAC[real_div; REALLIM_MUL; REALLIM_INV]);;
 
+let REALLIM_ABS = prove
+ (`!net f l. (f ---> l) net ==> ((\x. abs(f x)) ---> abs l) net`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[tendsto_real] THEN
+  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN
+  DISCH_THEN(fun th -> DISCH_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
 let REALLIM_POW = prove
  (`!net f l n. (f ---> l) net ==> ((\x. f x pow n) ---> l pow n) net`,
   REPLICATE_TAC 3 GEN_TAC THEN
   INDUCT_TAC THEN ASM_SIMP_TAC[real_pow; REALLIM_CONST; REALLIM_MUL]);;
+
+let REALLIM_MAX = prove
+ (`!net:(A)net f g l m.
+    (f ---> l) net /\ (g ---> m) net
+    ==> ((\x. max (f x) (g x)) ---> max l m) net`,
+  REWRITE_TAC[REAL_ARITH `max x y = inv(&2) * ((x + y) + abs(x - y))`] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REALLIM_LMUL THEN
+  ASM_SIMP_TAC[REALLIM_ADD; REALLIM_ABS; REALLIM_SUB]);;
+
+let REALLIM_MIN = prove
+ (`!net:(A)net f g l m.
+    (f ---> l) net /\ (g ---> m) net
+    ==> ((\x. min (f x) (g x)) ---> min l m) net`,
+  REWRITE_TAC[REAL_ARITH `min x y = inv(&2) * ((x + y) - abs(x - y))`] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REALLIM_LMUL THEN
+  ASM_SIMP_TAC[REALLIM_ADD; REALLIM_ABS; REALLIM_SUB]);;
 
 let REALLIM_NULL = prove
  (`!net f l. (f ---> l) net <=> ((\x. f(x) - l) ---> &0) net`,
@@ -1542,6 +1566,20 @@ let REAL_CONTINUOUS_DIV = prove
 let REAL_CONTINUOUS_POW = prove
  (`!net f n. f real_continuous net ==> (\x. f(x) pow n) real_continuous net`,
   SIMP_TAC[real_continuous; REALLIM_POW]);;
+
+let REAL_CONTINUOUS_ABS = prove
+ (`!net f. f real_continuous net ==> (\x. abs(f(x))) real_continuous net`,
+  REWRITE_TAC[real_continuous; REALLIM_ABS]);;
+
+let REAL_CONTINUOUS_MAX = prove
+ (`!f g net. f real_continuous net /\ g real_continuous net
+           ==> (\x. max (f x) (g x)) real_continuous net`,
+  REWRITE_TAC[real_continuous; REALLIM_MAX]);;
+
+let REAL_CONTINUOUS_MIN = prove
+ (`!f g net. f real_continuous net /\ g real_continuous net
+           ==> (\x. min (f x) (g x)) real_continuous net`,
+  REWRITE_TAC[real_continuous; REALLIM_MIN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some of these without netlimit, but with many different cases.            *)

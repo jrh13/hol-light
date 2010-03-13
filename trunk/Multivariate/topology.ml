@@ -6240,6 +6240,12 @@ let ENDS_IN_SEGMENT = prove
    [EXISTS_TAC `&0`; EXISTS_TAC `&1`] THEN
   (CONJ_TAC THENL [REAL_ARITH_TAC; VECTOR_ARITH_TAC]));;
 
+let SEGMENT_CLOSED_OPEN = prove
+ (`!a b. segment[a,b] = segment(a,b) UNION {a,b}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[open_segment] THEN MATCH_MP_TAC(SET_RULE
+   `a IN s /\ b IN s ==> s = (s DIFF {a,b}) UNION {a,b}`) THEN
+  REWRITE_TAC[ENDS_IN_SEGMENT]);;
+
 let MIDPOINT_IN_SEGMENT = prove
  (`(!a b:real^N. midpoint(a,b) IN segment[a,b]) /\
    (!a b:real^N. midpoint(a,b) IN segment(a,b) <=> ~(a = b))`,

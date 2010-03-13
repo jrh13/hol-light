@@ -1134,6 +1134,31 @@ let EXPOSED_POINT_OF_FURTHEST_POINT = prove
   MP_TAC(ISPEC `b - x:real^N` DOT_POS_LE) THEN
   REWRITE_TAC[DOT_LSUB; DOT_RSUB; DOT_SYM] THEN REAL_ARITH_TAC);;
 
+let COLLINEAR_EXTREME_POINTS = prove
+ (`!s. collinear s
+       ==> FINITE {x:real^N | x extreme_point_of s} /\
+           CARD {x | x extreme_point_of s} <= 2`,
+  REWRITE_TAC[GSYM NOT_LT; TAUT `a /\ ~b <=> ~(a ==> b)`] THEN
+  REWRITE_TAC[ARITH_RULE `2 < n <=> 3 <= n`] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CHOOSE_SUBSET_STRONG) THEN
+  CONV_TAC(ONCE_DEPTH_CONV HAS_SIZE_CONV) THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN REWRITE_TAC[NOT_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC
+   [`t:real^N->bool`; `a:real^N`; `b:real^N`; `c:real^N`] THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN
+  SUBGOAL_THEN
+   `(a:real^N) extreme_point_of s /\
+    b extreme_point_of s /\ c extreme_point_of s`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `(a:real^N) IN s /\ b IN s /\ c IN s` STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[extreme_point_of]; ALL_TAC] THEN
+  SUBGOAL_THEN `collinear {a:real^N,b,c}` MP_TAC THENL
+   [MATCH_MP_TAC COLLINEAR_SUBSET THEN EXISTS_TAC `s:real^N->bool` THEN
+    ASM SET_TAC[];
+    REWRITE_TAC[COLLINEAR_BETWEEN_CASES; BETWEEN_IN_SEGMENT] THEN
+    ASM_SIMP_TAC[SEGMENT_CLOSED_OPEN; IN_INSERT; NOT_IN_EMPTY; IN_UNION] THEN
+    ASM_MESON_TAC[extreme_point_of]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Facets.                                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -1572,6 +1597,19 @@ let SEGMENT_EDGE_OF = prove
    [ALL_TAC; ASM_MESON_TAC[edge_of; SEGMENT_FACE_OF]] THEN
   POP_ASSUM MP_TAC THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
   SIMP_TAC[SEGMENT_REFL; edge_of; AFF_DIM_SING] THEN INT_ARITH_TAC);;
+
+let COMPACT_CONVEX_COLLINEAR_SEGMENT = prove
+ (`!s:real^N->bool.
+        ~(s = {}) /\ compact s /\ convex s /\ collinear s
+        ==> ?a b. s = segment[a,b]`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `s:real^N->bool` KREIN_MILMAN_MINKOWSKI) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP COLLINEAR_EXTREME_POINTS) THEN
+  REWRITE_TAC[ARITH_RULE `n <= 2 <=> n = 0 \/ n = 1 \/ n = 2`] THEN
+  REWRITE_TAC[LEFT_OR_DISTRIB; GSYM HAS_SIZE] THEN
+  CONV_TAC(ONCE_DEPTH_CONV HAS_SIZE_CONV) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[CONVEX_HULL_EMPTY; SEGMENT_CONVEX_HULL] THEN
+  DISCH_THEN SUBST1_TAC THEN MESON_TAC[SET_RULE `{a} = {a,a}`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Polytopes.                                                                *)
