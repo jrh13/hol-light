@@ -1740,14 +1740,28 @@ let HAS_SIZE_IMAGE_INJ_EQ = prove
 (* Choosing a smaller subset of a given size.                                *)
 (* ------------------------------------------------------------------------- *)
 
+let CHOOSE_SUBSET_STRONG = prove
+ (`!n s:A->bool.                                                                
+        (FINITE s ==> n <= CARD s) ==> ?t. t SUBSET s /\ t HAS_SIZE n`,
+  INDUCT_TAC THEN REWRITE_TAC[HAS_SIZE_0; HAS_SIZE_SUC] THENL
+   [MESON_TAC[EMPTY_SUBSET]; ALL_TAC] THEN
+  MATCH_MP_TAC SET_PROVE_CASES THEN
+  REWRITE_TAC[FINITE_EMPTY; CARD_CLAUSES; ARITH_RULE `~(SUC n <= 0)`] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `s:A->bool`] THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; LE_SUC] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `s:A->bool`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:A->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `(a:A) INSERT t` THEN
+  REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[HAS_SIZE]) THEN
+  ASM_SIMP_TAC[HAS_SIZE; CARD_DELETE; FINITE_INSERT; FINITE_DELETE;
+               CARD_CLAUSES] THEN
+  GEN_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[SUC_SUB1] THEN
+  ASM SET_TAC[]);;
+
 let CHOOSE_SUBSET = prove
  (`!s:A->bool. FINITE s ==> !n. n <= CARD s ==> ?t. t SUBSET s /\ t HAS_SIZE n`,
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[CARD_CLAUSES; SUBSET_EMPTY; FINITE_RULES; LE; HAS_SIZE_0] THEN
-  REWRITE_TAC[EXISTS_REFL] THEN REPEAT STRIP_TAC THENL
-   [EXISTS_TAC `(x:A) INSERT s` THEN
-    ASM_SIMP_TAC[SUBSET_REFL; FINITE_RULES; HAS_SIZE; CARD_CLAUSES];
-    FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN ASM SET_TAC[]]);;
+  MESON_TAC[CHOOSE_SUBSET_STRONG]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of product.                                                   *)

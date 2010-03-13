@@ -1,7 +1,14 @@
+Fri 12th Mar 2010       sets.ml
+
+Added 
+
+  CHOOSE_SUBSET_STRONG = 
+    |- !n s. (FINITE s ==> n <= CARD s) ==> (?t. t SUBSET s /\ t HAS_SIZE n)
+
 Thu 11th Mar 2010       ints.ml
 
-Made a further small stylistic change following hol-online to make the integer 
-type bijection at the top level instead of hiding it. This introduces a new 
+Made a further small stylistic change following hol-online to make the integer
+type bijection at the top level instead of hiding it. This introduces a new
 theorem int_tybij.
 
 Tue  9th Mar 2010       lists.ml
