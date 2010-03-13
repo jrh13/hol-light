@@ -1610,6 +1610,12 @@ let CONVEX_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [CONVEX_LINEAR_IMAGE_EQ];;
 
+let CONVEX_LINEAR_PREIMAGE = prove
+ (`!f:real^M->real^N.
+     linear f /\ convex s ==> convex {x | f(x) IN s}`,
+  REWRITE_TAC[CONVEX_ALT; IN_ELIM_THM] THEN
+  SIMP_TAC[LINEAR_ADD; LINEAR_CMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Balls, being convex, are connected.                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -6443,6 +6449,12 @@ let RELATIVE_INTERIOR_INTERIOR = prove
        ==> relative_interior s = interior s`,
   SIMP_TAC[relative_interior; interior; SUBTOPOLOGY_UNIV; OPEN_IN]);;
 
+let RELATIVE_INTERIOR_OPEN = prove
+ (`!s:real^N->bool. open s ==> relative_interior s = s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[RELATIVE_INTERIOR_EMPTY] THEN
+  ASM_SIMP_TAC[RELATIVE_INTERIOR_INTERIOR; AFFINE_HULL_OPEN; INTERIOR_EQ]);;
+
 let AFFINE_HULL_CONVEX_HULL = prove
  (`!s. affine hull (convex hull s) = affine hull s`,
   GEN_TAC THEN MATCH_MP_TAC HULL_UNIQUE THEN
@@ -6844,6 +6856,65 @@ let CLOSED_RELATIVE_FRONTIER = prove
   MATCH_MP_TAC(SET_RULE
    `s SUBSET closure t /\ closure t = t ==> s SUBSET t`) THEN
   SIMP_TAC[SUBSET_CLOSURE; HULL_SUBSET; CLOSURE_EQ; CLOSED_AFFINE_HULL]);;
+
+let CLOSURE_INTER_CONVEX = prove
+ (`!s t:real^N->bool.
+        convex s /\ convex t /\
+        ~(relative_interior s INTER relative_interior t = {})
+        ==> closure(s INTER t) = closure(s) INTER closure(t)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[CLOSURE_INTER_SUBSET] THEN
+  REWRITE_TAC[SUBSET; IN_INTER] THEN X_GEN_TAC `b:real^N` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  REWRITE_TAC[IN_INTER] THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:real^N` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[CLOSURE_APPROACHABLE] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `b:real^N = a` THENL
+   [EXISTS_TAC `a:real^N` THEN ASM_REWRITE_TAC[DIST_REFL; IN_INTER] THEN
+    ASM_MESON_TAC[SUBSET; RELATIVE_INTERIOR_SUBSET];
+    ALL_TAC] THEN
+  EXISTS_TAC `b - min (&1 / &2) (e / &2 / norm(b - a)) % (b - a):real^N` THEN
+  CONJ_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[NORM_ARITH `dist(b - a:real^N,b) = norm a`; NORM_MUL] THEN
+    ASM_SIMP_TAC[GSYM REAL_LT_RDIV_EQ; NORM_POS_LT; VECTOR_SUB_EQ] THEN
+    MATCH_MP_TAC(REAL_ARITH
+     `&0 < a /\ &0 < x /\ x < y ==> abs(min a x) < y`) THEN
+    ASM_SIMP_TAC[REAL_LT_DIV2_EQ; REAL_HALF; REAL_LT_DIV; NORM_POS_LT;
+                 VECTOR_SUB_EQ] THEN
+    ASM_REAL_ARITH_TAC] THEN
+  REWRITE_TAC[IN_INTER] THEN CONJ_TAC THEN MATCH_MP_TAC
+   (MESON[RELATIVE_INTERIOR_SUBSET; SUBSET]
+         `!x. x IN relative_interior s ==> x IN s`) THEN
+  MATCH_MP_TAC IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SHRINK THEN
+  ASM_SIMP_TAC[REAL_LT_MIN; REAL_HALF; REAL_LT_DIV; NORM_POS_LT;
+               VECTOR_SUB_EQ] THEN
+  REAL_ARITH_TAC);;
+
+let CLOSURE_INTER_CONVEX_OPEN = prove
+ (`!s t. convex s /\ open s /\ convex t /\ open t
+         ==> closure(s INTER t) =
+                if s INTER t = {} then {} else closure(s) INTER closure(t)`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[CLOSURE_EMPTY] THEN
+  MATCH_MP_TAC CLOSURE_INTER_CONVEX THEN
+  ASM_SIMP_TAC[RELATIVE_INTERIOR_OPEN]);;
+
+let CLOSURE_FINITE_INTERS_CONVEX_OPEN = prove
+ (`!f:(real^N->bool)->bool.
+        FINITE f /\ (!s. s IN f ==> convex s /\ open s)
+        ==> closure(INTERS f) =
+                if INTERS f = {} then {}
+                else INTERS(IMAGE closure f)`,
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[INTERS_0; INTERS_INSERT; IMAGE_CLAUSES] THEN
+  REWRITE_TAC[UNIV_NOT_EMPTY; CLOSURE_UNIV; FORALL_IN_INSERT] THEN
+  REPEAT GEN_TAC THEN DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `INTERS f :real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[CLOSURE_EMPTY; INTER_EMPTY] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (SUBST1_TAC o SYM) STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC CLOSURE_INTER_CONVEX_OPEN THEN
+  ASM_SIMP_TAC[CONVEX_INTERS; OPEN_INTERS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Slightly shaper supporting hyperplane results.                            *)
