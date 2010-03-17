@@ -488,13 +488,24 @@ let MEASURABLE_NEGLIGIBLE_SYMDIFF = prove
   REWRITE_TAC[measurable] THEN
   MESON_TAC[HAS_MEASURE_NEGLIGIBLE_SYMDIFF]);;
 
+let MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ = prove
+ (`!s t:real^N->bool.
+        negligible(s DIFF t UNION t DIFF s)
+        ==> (measurable s <=> measurable t)`,
+  MESON_TAC[MEASURABLE_NEGLIGIBLE_SYMDIFF; UNION_COMM]);;
+
 let MEASURE_NEGLIGIBLE_SYMDIFF = prove
  (`!s t:real^N->bool.
-        (measurable s \/ measurable t) /\
-        negligible((s DIFF t) UNION (t DIFF s))
-        ==> measure s = measure t`,
-  MESON_TAC[HAS_MEASURE_NEGLIGIBLE_SYMDIFF; MEASURE_UNIQUE; UNION_COMM;
-                HAS_MEASURE_MEASURE]);;
+        negligible(s DIFF t UNION t DIFF s) ==> measure s = measure t`,
+  REPEAT STRIP_TAC THEN MAP_EVERY ASM_CASES_TAC
+   [`measurable(s:real^N->bool)`; `measurable(t:real^N->bool)`]
+  THENL
+   [ASM_MESON_TAC[HAS_MEASURE_NEGLIGIBLE_SYMDIFF; MEASURE_UNIQUE;
+                  HAS_MEASURE_MEASURE];
+    ASM_MESON_TAC[MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ];
+    ASM_MESON_TAC[MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ];
+    REWRITE_TAC[measure] THEN AP_TERM_TAC THEN ABS_TAC THEN
+    ASM_MESON_TAC[measurable]]);;
 
 let HAS_MEASURE_NEGLIGIBLE_UNIONS = prove
  (`!m f:(real^N->bool)->bool.

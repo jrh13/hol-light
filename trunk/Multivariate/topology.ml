@@ -3207,6 +3207,31 @@ let BOLZANO_WEIERSTRASS_CONTRAPOS = prove
         ==> FINITE t`,
   REWRITE_TAC[COMPACT_EQ_BOLZANO_WEIERSTRASS; INFINITE] THEN MESON_TAC[]);;
 
+let DISCRETE_BOUNDED_IMP_FINITE = prove
+ (`!s:real^N->bool e.
+        &0 < e /\
+        (!x y. x IN s /\ y IN s /\ norm(y - x) < e ==> y = x) /\
+        bounded s
+        ==> FINITE s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `compact(s:real^N->bool)` MP_TAC THENL
+   [ASM_REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED] THEN
+    ASM_MESON_TAC[DISCRETE_IMP_CLOSED];
+    DISCH_THEN(MP_TAC o MATCH_MP COMPACT_IMP_HEINE_BOREL)] THEN
+  DISCH_THEN(MP_TAC o SPEC `IMAGE (\x:real^N. ball(x,e)) s`) THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; OPEN_BALL; UNIONS_IMAGE; IN_ELIM_THM] THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_MESON_TAC[CENTRE_IN_BALL];
+    ONCE_REWRITE_TAC[TAUT `a /\ b /\ c <=> b /\ a /\ c`]] THEN
+  REWRITE_TAC[EXISTS_FINITE_SUBSET_IMAGE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `s:real^N->bool = t` (fun th -> ASM_REWRITE_TAC[th]) THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[SUBSET] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [UNIONS_IMAGE]) THEN
+  DISCH_THEN(MP_TAC o SPEC `x:real^N` o GEN_REWRITE_RULE I [SUBSET]) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; IN_BALL; dist] THEN ASM_MESON_TAC[SUBSET]);;
+
 (* ------------------------------------------------------------------------- *)
 (* In particular, some common special cases.                                 *)
 (* ------------------------------------------------------------------------- *)
