@@ -1,8 +1,20 @@
+Sat 20th Mar 2010       lists.ml, Rqe/work_thms.ml
+
+Moved the definition of BUTLAST from Rqe into the core, and added one trivial 
+theorem about it:
+
+  BUTLAST =
+    |- BUTLAST [] = [] /\
+       BUTLAST (CONS h t) = (if t = [] then [] else CONS h (BUTLAST t))
+
+  APPEND_BUTLAST_LAST =
+    |- !l. ~(l = []) ==> APPEND (BUTLAST l) [LAST l] = l
+
 Fri 12th Mar 2010       sets.ml
 
-Added 
+Added
 
-  CHOOSE_SUBSET_STRONG = 
+  CHOOSE_SUBSET_STRONG =
     |- !n s. (FINITE s ==> n <= CARD s) ==> (?t. t SUBSET s /\ t HAS_SIZE n)
 
 Thu 11th Mar 2010       ints.ml
