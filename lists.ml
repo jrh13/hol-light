@@ -49,6 +49,10 @@ let MAP = new_recursive_definition list_RECURSION
 let LAST = new_recursive_definition list_RECURSION
   `LAST (CONS (h:A) t) = if t = [] then h else LAST t`;;
 
+let BUTLAST = new_recursive_definition list_RECURSION
+ `(BUTLAST [] = []) /\
+  (BUTLAST (CONS h t) = if t = [] then [] else CONS h (BUTLAST t))`;;
+
 let REPLICATE = new_recursive_definition num_RECURSION
   `(REPLICATE 0 x = []) /\
    (REPLICATE (SUC n) x = CONS x (REPLICATE n x))`;;
@@ -406,7 +410,12 @@ let MAP_ID = prove
 let MAP_I = prove
  (`MAP I = I`,
   REWRITE_TAC[FUN_EQ_THM; I_DEF; MAP_ID]);;
- 
+
+let APPEND_BUTLAST_LAST = prove
+ (`!l. ~(l = []) ==> APPEND (BUTLAST l) [LAST l] = l`,
+  LIST_INDUCT_TAC THEN REWRITE_TAC[LAST; BUTLAST; NOT_CONS_NIL] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[APPEND]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
 (* ------------------------------------------------------------------------- *)
