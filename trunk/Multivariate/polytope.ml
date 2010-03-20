@@ -1611,6 +1611,40 @@ let COMPACT_CONVEX_COLLINEAR_SEGMENT = prove
   STRIP_TAC THEN ASM_REWRITE_TAC[CONVEX_HULL_EMPTY; SEGMENT_CONVEX_HULL] THEN
   DISCH_THEN SUBST1_TAC THEN MESON_TAC[SET_RULE `{a} = {a,a}`]);;
 
+let KREIN_MILMAN_RELATIVE_FRONTIER = prove
+ (`!s:real^N->bool.
+        convex s /\ compact s /\ ~(?a. s = {a})
+        ==> s = convex hull (s DIFF relative_interior s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUBSET_TRANS THEN
+    EXISTS_TAC `convex hull {x:real^N | x extreme_point_of s}` THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC[GSYM KREIN_MILMAN_MINKOWSKI; SUBSET_REFL];
+      MATCH_MP_TAC HULL_MONO THEN SIMP_TAC[SUBSET; IN_ELIM_THM; IN_DIFF] THEN
+      ASM_MESON_TAC[EXTREME_POINT_NOT_IN_RELATIVE_INTERIOR; extreme_point_of]];
+    MATCH_MP_TAC SUBSET_TRANS THEN
+    EXISTS_TAC `convex hull s:real^N->bool` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC HULL_MONO THEN SET_TAC[];
+      ASM_SIMP_TAC[HULL_P; SUBSET_REFL]]]);;
+
+let KREIN_MILMAN_FRONTIER = prove
+ (`!s:real^N->bool.
+        convex s /\ compact s
+        ==> s = convex hull (frontier s)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[frontier; COMPACT_IMP_CLOSED; CLOSURE_CLOSED] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUBSET_TRANS THEN
+    EXISTS_TAC `convex hull {x:real^N | x extreme_point_of s}` THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC[GSYM KREIN_MILMAN_MINKOWSKI; SUBSET_REFL];
+      MATCH_MP_TAC HULL_MONO THEN SIMP_TAC[SUBSET; IN_ELIM_THM; IN_DIFF] THEN
+      ASM_MESON_TAC[EXTREME_POINT_NOT_IN_INTERIOR; extreme_point_of]];
+    MATCH_MP_TAC SUBSET_TRANS THEN
+    EXISTS_TAC `convex hull s:real^N->bool` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC HULL_MONO THEN SET_TAC[];
+      ASM_SIMP_TAC[HULL_P; SUBSET_REFL]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Polytopes.                                                                *)
 (* ------------------------------------------------------------------------- *)
@@ -1635,6 +1669,10 @@ let POLYTOPE_LINEAR_IMAGE_EQ = prove
   MP_TAC(end_itlist CONJ
    (mapfilter (ISPEC `f:real^M->real^N`) (!invariant_under_linear))) THEN
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ASM_REWRITE_TAC[]);;
+
+let POLYTOPE_CONVEX_HULL = prove
+ (`!s. FINITE s ==> polytope(convex hull s)`,
+  REWRITE_TAC[polytope] THEN MESON_TAC[]);;
 
 let FACE_OF_POLYTOPE_POLYTOPE = prove
  (`!f s:real^N->bool. polytope s /\ f face_of s ==> polytope f`,
@@ -2868,6 +2906,10 @@ let POLYHEDRON_INTERVAL = prove
  (`!a b. polyhedron(interval[a,b])`,
   MESON_TAC[POLYTOPE_IMP_POLYHEDRON; POLYTOPE_INTERVAL]);;
 
+let POLYHEDRON_CONVEX_HULL = prove
+ (`!s. FINITE s ==> polyhedron(convex hull s)`,
+  SIMP_TAC[POLYTOPE_CONVEX_HULL; POLYTOPE_IMP_POLYHEDRON]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Polytope is union of convex hulls of facets plus any point inside.        *)
 (* ------------------------------------------------------------------------- *)
@@ -3183,6 +3225,154 @@ let FINITELY_GENERATED_CONIC_POLYHEDRON = prove
   FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[IN_INTER] THEN
   FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [conic]) THEN
   ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relative and absolute frontier of a polytope.                             *)
+(* ------------------------------------------------------------------------- *)
+
+let RELATIVE_FRONTIER_OF_CONVEX_HULL = prove
+ (`!s:real^N->bool.
+        ~affine_dependent s
+        ==> (convex hull s) DIFF relative_interior(convex hull s) =
+            UNIONS { convex hull (s DELETE a) | a | a IN s}`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP AFFINE_INDEPENDENT_IMP_FINITE) THEN
+  REPEAT_TCL DISJ_CASES_THEN MP_TAC (ARITH_RULE
+    `CARD(s:real^N->bool) = 0 \/ CARD s = 1 \/ 2 <= CARD s`)
+  THENL
+   [ASM_SIMP_TAC[CARD_EQ_0; CONVEX_HULL_EMPTY] THEN SET_TAC[];
+    DISCH_TAC THEN MP_TAC(HAS_SIZE_CONV `(s:real^N->bool) HAS_SIZE 1`) THEN
+    ASM_SIMP_TAC[HAS_SIZE; LEFT_IMP_EXISTS_THM; CONVEX_HULL_SING] THEN
+    REWRITE_TAC[RELATIVE_INTERIOR_SING; DIFF_EQ_EMPTY] THEN
+    REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN REWRITE_TAC[EMPTY_UNIONS] THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; IN_SING; FORALL_UNWIND_THM2] THEN
+    REWRITE_TAC[CONVEX_HULL_EQ_EMPTY] THEN SET_TAC[];
+    DISCH_TAC THEN
+    ASM_SIMP_TAC[POLYHEDRON_CONVEX_HULL; RELATIVE_FRONTIER_OF_POLYHEDRON] THEN
+    ASM_SIMP_TAC[FACET_OF_CONVEX_HULL_AFFINE_INDEPENDENT_ALT] THEN
+    SET_TAC[]]);;
+
+let FRONTIER_OF_CONVEX_HULL = prove
+ (`!s:real^N->bool.
+        s HAS_SIZE (dimindex(:N) + 1)
+        ==> frontier(convex hull s) =
+               UNIONS { convex hull (s DELETE a) | a | a IN s}`,
+  REWRITE_TAC[HAS_SIZE] THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `affine_dependent(s:real^N->bool)` THENL
+   [REWRITE_TAC[frontier] THEN MATCH_MP_TAC EQ_TRANS THEN
+    EXISTS_TAC `(convex hull s:real^N->bool) DIFF {}` THEN CONJ_TAC THENL
+     [BINOP_TAC THEN
+      ASM_SIMP_TAC[INTERIOR_CONVEX_HULL_EQ_EMPTY; frontier; HAS_SIZE] THEN
+      MATCH_MP_TAC CLOSURE_CLOSED THEN
+      ASM_SIMP_TAC[CLOSURE_CLOSED; COMPACT_IMP_CLOSED; COMPACT_CONVEX_HULL;
+                   FINITE_IMP_COMPACT; FINITE_INSERT; FINITE_EMPTY];
+      REWRITE_TAC[DIFF_EMPTY] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+      CONJ_TAC THENL
+       [GEN_REWRITE_TAC LAND_CONV [CARATHEODORY_AFF_DIM] THEN
+        ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
+        GEN_REWRITE_TAC I [SUBSET] THEN
+        REWRITE_TAC[IN_ELIM_THM; UNIONS_IMAGE] THEN
+        X_GEN_TAC `x:real^N` THEN
+        DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+        MP_TAC(ISPEC `s:real^N->bool` AFFINE_INDEPENDENT_IFF_CARD) THEN
+        ASM_REWRITE_TAC[GSYM INT_OF_NUM_ADD] THEN
+        REWRITE_TAC[INT_ARITH `(x + &1) - &1:int = x`] THEN DISCH_TAC THEN
+        SUBGOAL_THEN `(t:real^N->bool) PSUBSET s` ASSUME_TAC THENL
+         [ASM_REWRITE_TAC[PSUBSET] THEN
+          DISCH_THEN(MP_TAC o AP_TERM `CARD:(real^N->bool)->num`) THEN
+          MATCH_MP_TAC(ARITH_RULE `t:num < s ==> t = s ==> F`) THEN
+          ASM_REWRITE_TAC[ARITH_RULE `x < n + 1 <=> x <= n`] THEN
+          REWRITE_TAC[GSYM INT_OF_NUM_LE] THEN MATCH_MP_TAC INT_LE_TRANS THEN
+          EXISTS_TAC `aff_dim(s:real^N->bool) + &1` THEN
+          ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(INT_ARITH
+           `s:int <= n /\ ~(s = n) ==> s + &1 <= n`) THEN
+          ASM_REWRITE_TAC[AFF_DIM_LE_UNIV];
+          SUBGOAL_THEN `?a:real^N. a IN s /\ ~(a IN t)` MP_TAC THENL
+           [ASM SET_TAC[]; MATCH_MP_TAC MONO_EXISTS] THEN
+          X_GEN_TAC `a:real^N` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+          SUBGOAL_THEN
+           `(convex hull t) SUBSET convex hull (s DELETE (a:real^N))`
+          MP_TAC THENL
+           [MATCH_MP_TAC HULL_MONO THEN ASM SET_TAC[]; ASM SET_TAC[]]];
+        ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN REWRITE_TAC[UNIONS_IMAGE] THEN
+        REWRITE_TAC[SUBSET; IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+        ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+        REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; GSYM SUBSET] THEN
+        REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_MONO THEN SET_TAC[]]];
+    MATCH_MP_TAC EQ_TRANS THEN
+    EXISTS_TAC
+     `(convex hull s) DIFF relative_interior(convex hull s):real^N->bool` THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC[GSYM RELATIVE_FRONTIER_OF_CONVEX_HULL; frontier] THEN
+      BINOP_TAC THENL
+       [MATCH_MP_TAC CLOSURE_CLOSED THEN
+        ASM_SIMP_TAC[CLOSURE_CLOSED; COMPACT_IMP_CLOSED; COMPACT_CONVEX_HULL;
+                     FINITE_IMP_COMPACT; FINITE_INSERT; FINITE_EMPTY];
+        CONV_TAC SYM_CONV THEN MATCH_MP_TAC RELATIVE_INTERIOR_INTERIOR THEN
+        REWRITE_TAC[AFFINE_HULL_CONVEX_HULL] THEN
+        REWRITE_TAC[GSYM AFF_DIM_EQ_FULL] THEN
+        FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I
+          [AFFINE_INDEPENDENT_IFF_CARD]) THEN
+        ASM_REWRITE_TAC[GSYM INT_OF_NUM_ADD] THEN INT_ARITH_TAC];
+      ASM_SIMP_TAC[RELATIVE_FRONTIER_OF_POLYHEDRON;
+                   POLYHEDRON_CONVEX_HULL; FINITE_INSERT; FINITE_EMPTY] THEN
+      ASM_SIMP_TAC[FACET_OF_CONVEX_HULL_AFFINE_INDEPENDENT_ALT] THEN
+      REWRITE_TAC[ARITH_RULE `2 <= n + 1 <=> 1 <= n`; DIMINDEX_GE_1] THEN
+      ASM SET_TAC[]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Special case of a triangle.                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let RELATIVE_FRONTIER_OF_TRIANGLE = prove
+ (`!a b c:real^N.
+        ~collinear {a,b,c}
+        ==> convex hull {a,b,c} DIFF relative_interior(convex hull {a,b,c}) =
+            segment[a,b] UNION segment[b,c] UNION segment[c,a]`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE `s UNION t UNION u = t UNION u UNION s`] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV
+   [COLLINEAR_3_EQ_AFFINE_DEPENDENT]) THEN
+  REWRITE_TAC[DE_MORGAN_THM; SEGMENT_CONVEX_HULL] THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[RELATIVE_FRONTIER_OF_CONVEX_HULL] THEN
+  ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
+  REWRITE_TAC[IMAGE_CLAUSES; UNIONS_INSERT; UNIONS_0; UNION_EMPTY] THEN
+  REPEAT BINOP_TAC THEN REWRITE_TAC[] THEN ASM SET_TAC[]);;
+
+let FRONTIER_OF_TRIANGLE = prove
+ (`!a b c:real^2.
+        frontier(convex hull {a,b,c}) =
+            segment[a,b] UNION segment[b,c] UNION segment[c,a]`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+  ONCE_REWRITE_TAC[SET_RULE `s UNION t UNION u = t UNION u UNION s`] THEN
+  MAP_EVERY (fun t -> ASM_CASES_TAC t THENL
+   [ASM_REWRITE_TAC[INSERT_AC; UNION_ACI] THEN
+    SIMP_TAC[GSYM SEGMENT_CONVEX_HULL; frontier; CLOSURE_SEGMENT;
+             INTERIOR_SEGMENT; DIMINDEX_2; LE_REFL; DIFF_EMPTY] THEN
+    REWRITE_TAC[CONVEX_HULL_SING] THEN
+    REWRITE_TAC[SET_RULE `s = s UNION {a} <=> a IN s`;
+                SET_RULE `s = {a} UNION s <=> a IN s`] THEN
+    REWRITE_TAC[ENDS_IN_SEGMENT];
+    ALL_TAC])
+   [`b:real^2 = a`; `c:real^2 = a`; `c:real^2 = b`] THEN
+  SUBGOAL_THEN `{a:real^2,b,c} HAS_SIZE (dimindex(:2) + 1)` ASSUME_TAC THENL
+   [SIMP_TAC[HAS_SIZE; CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
+    ASM_REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; DIMINDEX_2] THEN
+    CONV_TAC NUM_REDUCE_CONV;
+    ASM_SIMP_TAC[FRONTIER_OF_CONVEX_HULL] THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
+    REWRITE_TAC[IMAGE_CLAUSES; UNIONS_INSERT; UNIONS_0; UNION_EMPTY] THEN
+    REPEAT BINOP_TAC THEN REWRITE_TAC[] THEN ASM SET_TAC[]]);;
+
+let INSIDE_OF_TRIANGLE = prove
+ (`!a b c:real^2.
+        inside(segment[a,b] UNION segment[b,c] UNION segment[c,a]) =
+                interior(convex hull {a,b,c})`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM FRONTIER_OF_TRIANGLE] THEN
+  MATCH_MP_TAC INSIDE_FRONTIER_EQ_INTERIOR THEN
+  REWRITE_TAC[CONVEX_CONVEX_HULL] THEN MATCH_MP_TAC BOUNDED_CONVEX_HULL THEN
+  MATCH_MP_TAC FINITE_IMP_BOUNDED THEN
+  REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The notion of n-simplex where n is an integer >= -1.                      *)
