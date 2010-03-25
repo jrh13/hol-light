@@ -416,6 +416,41 @@ let APPEND_BUTLAST_LAST = prove
   LIST_INDUCT_TAC THEN REWRITE_TAC[LAST; BUTLAST; NOT_CONS_NIL] THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC[APPEND]);;
 
+let LAST_APPEND = prove
+ (`!p q. LAST(APPEND p q) = if q = [] then LAST p else LAST q`,
+  LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[APPEND; LAST; APPEND_EQ_NIL] THEN
+  MESON_TAC[]);;
+
+let LENGTH_TL = prove
+ (`!l. ~(l = []) ==> LENGTH(TL l) = LENGTH l - 1`,
+  LIST_INDUCT_TAC THEN REWRITE_TAC[LENGTH; TL; ARITH; SUC_SUB1]);;
+
+let EL_APPEND = prove
+ (`!k l m. EL k (APPEND l m) = if k < LENGTH l then EL k l
+                               else EL (k - LENGTH l) m`,
+  INDUCT_TAC THEN REWRITE_TAC[EL] THEN
+  LIST_INDUCT_TAC THEN
+  REWRITE_TAC[HD; APPEND; LENGTH; SUB_0; EL; LT_0; CONJUNCT1 LT] THEN
+  ASM_REWRITE_TAC[TL; LT_SUC; SUB_SUC]);;
+
+let EL_TL = prove
+ (`!n. EL n (TL l) = EL (n + 1) l`,
+  REWRITE_TAC[GSYM ADD1; EL]);;
+
+let EL_CONS = prove
+ (`!n h t. EL n (CONS h t) = if n = 0 then h else EL (n - 1) t`,
+  INDUCT_TAC THEN REWRITE_TAC[EL; HD; TL; NOT_SUC; SUC_SUB1]);;
+
+let LAST_EL = prove
+ (`!l. ~(l = []) ==> LAST l = EL (LENGTH l - 1) l`,
+  LIST_INDUCT_TAC THEN REWRITE_TAC[LAST; LENGTH; SUC_SUB1] THEN
+  DISCH_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[LENGTH; EL; HD; EL_CONS; LENGTH_EQ_NIL]);;
+
+let HD_APPEND = prove
+ (`!l m:A list. HD(APPEND l m) = if l = [] then HD m else HD l`,
+  LIST_INDUCT_TAC THEN REWRITE_TAC[HD; APPEND; NOT_CONS_NIL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
 (* ------------------------------------------------------------------------- *)
