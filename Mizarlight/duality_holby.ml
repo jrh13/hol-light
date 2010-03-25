@@ -42,18 +42,83 @@ let fano_clause (i,j) =
 parse_as_infix("ON",(11,"right"));;
 
 let ON = new_definition
- (mk_eq(`((ON):Point->Line->bool) p l`,
-        list_mk_disj(map fano_clause fano_incidence)));;
+ `(p:Point) ON (l:Line) <=>
+        (p = Point_1 /\ l = Line_1) \/
+        (p = Point_1 /\ l = Line_2) \/
+        (p = Point_1 /\ l = Line_3) \/
+        (p = Point_2 /\ l = Line_1) \/
+        (p = Point_2 /\ l = Line_4) \/
+        (p = Point_2 /\ l = Line_5) \/
+        (p = Point_3 /\ l = Line_1) \/
+        (p = Point_3 /\ l = Line_6) \/
+        (p = Point_3 /\ l = Line_7) \/
+        (p = Point_4 /\ l = Line_2) \/
+        (p = Point_4 /\ l = Line_4) \/
+        (p = Point_4 /\ l = Line_6) \/
+        (p = Point_5 /\ l = Line_2) \/
+        (p = Point_5 /\ l = Line_5) \/
+        (p = Point_5 /\ l = Line_7) \/
+        (p = Point_6 /\ l = Line_3) \/
+        (p = Point_6 /\ l = Line_4) \/
+        (p = Point_6 /\ l = Line_7) \/
+        (p = Point_7 /\ l = Line_3) \/
+        (p = Point_7 /\ l = Line_5) \/
+        (p = Point_7 /\ l = Line_6)`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Also produce a more convenient case-by-case rewrite.                      *)
 (* ------------------------------------------------------------------------- *)
 
 let ON_CLAUSES = prove
- (list_mk_conj(allpairs
-    (fun i j -> mk_eq(list_mk_comb(`(ON)`,[fano_point i; fano_line j]),
-                      if mem (i,j) fano_incidence then `T` else `F`))
-    (1--7) (1--7)),
+ (`(Point_1 ON Line_1 <=> T) /\
+   (Point_1 ON Line_2 <=> T) /\
+   (Point_1 ON Line_3 <=> T) /\
+   (Point_1 ON Line_4 <=> F) /\
+   (Point_1 ON Line_5 <=> F) /\
+   (Point_1 ON Line_6 <=> F) /\
+   (Point_1 ON Line_7 <=> F) /\
+   (Point_2 ON Line_1 <=> T) /\
+   (Point_2 ON Line_2 <=> F) /\
+   (Point_2 ON Line_3 <=> F) /\
+   (Point_2 ON Line_4 <=> T) /\
+   (Point_2 ON Line_5 <=> T) /\
+   (Point_2 ON Line_6 <=> F) /\
+   (Point_2 ON Line_7 <=> F) /\
+   (Point_3 ON Line_1 <=> T) /\
+   (Point_3 ON Line_2 <=> F) /\
+   (Point_3 ON Line_3 <=> F) /\
+   (Point_3 ON Line_4 <=> F) /\
+   (Point_3 ON Line_5 <=> F) /\
+   (Point_3 ON Line_6 <=> T) /\
+   (Point_3 ON Line_7 <=> T) /\
+   (Point_4 ON Line_1 <=> F) /\
+   (Point_4 ON Line_2 <=> T) /\
+   (Point_4 ON Line_3 <=> F) /\
+   (Point_4 ON Line_4 <=> T) /\
+   (Point_4 ON Line_5 <=> F) /\
+   (Point_4 ON Line_6 <=> T) /\
+   (Point_4 ON Line_7 <=> F) /\
+   (Point_5 ON Line_1 <=> F) /\
+   (Point_5 ON Line_2 <=> T) /\
+   (Point_5 ON Line_3 <=> F) /\
+   (Point_5 ON Line_4 <=> F) /\
+   (Point_5 ON Line_5 <=> T) /\
+   (Point_5 ON Line_6 <=> F) /\
+   (Point_5 ON Line_7 <=> T) /\
+   (Point_6 ON Line_1 <=> F) /\
+   (Point_6 ON Line_2 <=> F) /\
+   (Point_6 ON Line_3 <=> T) /\
+   (Point_6 ON Line_4 <=> T) /\
+   (Point_6 ON Line_5 <=> F) /\
+   (Point_6 ON Line_6 <=> F) /\
+   (Point_6 ON Line_7 <=> T) /\
+   (Point_7 ON Line_1 <=> F) /\
+   (Point_7 ON Line_2 <=> F) /\
+   (Point_7 ON Line_3 <=> T) /\
+   (Point_7 ON Line_4 <=> F) /\
+   (Point_7 ON Line_5 <=> T) /\
+   (Point_7 ON Line_6 <=> T) /\
+   (Point_7 ON Line_7 <=> F)`,
   REWRITE_TAC[ON; Line_DISTINCT; Point_DISTINCT]);;
 
 (* ------------------------------------------------------------------------- *)

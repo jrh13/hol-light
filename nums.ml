@@ -37,8 +37,9 @@ let IND_SUC_0_EXISTS = prove
   X_CHOOSE_TAC `f:ind->ind` INFINITY_AX THEN EXISTS_TAC `f:ind->ind` THEN
   POP_ASSUM MP_TAC THEN REWRITE_TAC[ONE_ONE; ONTO] THEN MESON_TAC[]);;
 
-let IND_SUC_INJ,IND_SUC_0 = CONJ_PAIR
-  (new_specification ["IND_SUC"; "IND_0"] IND_SUC_0_EXISTS);;
+let IND_SUC_SPEC = new_specification ["IND_SUC"; "IND_0"] IND_SUC_0_EXISTS;;
+
+let IND_SUC_INJ,IND_SUC_0 = CONJ_PAIR IND_SUC_SPEC;;
 
 (* ------------------------------------------------------------------------- *)
 (* Carve out the natural numbers inductively.                                *)

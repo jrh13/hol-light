@@ -45,10 +45,12 @@ let VALMOD_SWAP = prove
 (* A dummy finite type inadequately modelling ":ind".                        *)
 (* ------------------------------------------------------------------------- *)
 
+let ind_model_tybij_th =
+  prove(`?x. x IN @s:num->bool. ~(s = {}) /\ FINITE s`,
+         MESON_TAC[MEMBER_NOT_EMPTY; IN_SING; FINITE_RULES]);;
+
 let ind_model_tybij =
-  let th = prove(`?x. x IN @s:num->bool. ~(s = {}) /\ FINITE s`,
-                 MESON_TAC[MEMBER_NOT_EMPTY; IN_SING; FINITE_RULES]) in
-  new_type_definition "ind_model" ("mk_ind","dest_ind") th;;
+  new_type_definition "ind_model" ("mk_ind","dest_ind") ind_model_tybij_th;;
 
 (* ------------------------------------------------------------------------- *)
 (* Introduce a type whose universe is "inaccessible" starting from           *)
@@ -70,10 +72,11 @@ let ind_model_tybij =
 
  *******)
 
+let inacc_tybij_th = prove
+ (`?x:num. x IN UNIV`,REWRITE_TAC[IN_UNIV]);;
+
 let inacc_tybij =
-  let th = prove
-   (`?x:num. x IN UNIV`,REWRITE_TAC[IN_UNIV]) in
-  new_type_definition "I" ("mk_I","dest_I") th;;
+  new_type_definition "I" ("mk_I","dest_I") inacc_tybij_th;;
 
 let I_AXIOM = prove
  (`UNIV:ind_model->bool <_c UNIV:I->bool /\
@@ -238,15 +241,16 @@ let universe = new_definition
 (* being cumulative.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
+let v_tybij_th = prove
+ (`?a. a IN universe`,
+  EXISTS_TAC `Ur_bool,I_BOOL T` THEN
+  REWRITE_TAC[universe; IN_ELIM_THM; PAIR_EQ; CONJ_ASSOC;
+              ONCE_REWRITE_RULE[CONJ_SYM] UNWIND_THM1;
+              setlevel; IN_IMAGE; IN_UNIV] THEN
+  MESON_TAC[]);;
+
 let v_tybij =
-  let th = prove
-   (`?a. a IN universe`,
-    EXISTS_TAC `Ur_bool,I_BOOL T` THEN
-    REWRITE_TAC[universe; IN_ELIM_THM; PAIR_EQ; CONJ_ASSOC;
-                ONCE_REWRITE_RULE[CONJ_SYM] UNWIND_THM1;
-                setlevel; IN_IMAGE; IN_UNIV] THEN
-    MESON_TAC[]) in
-  new_type_definition "V" ("mk_V","dest_V") th;;
+  new_type_definition "V" ("mk_V","dest_V") v_tybij_th;;
 
 let V_TYBIJ = prove
  (`!l e. e IN setlevel l <=> (dest_V(mk_V(l,e)) = (l,e))`,

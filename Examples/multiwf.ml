@@ -22,6 +22,14 @@ parse_as_infix("mmember",(11,"right"));;
 parse_as_infix("munion",(16,"right"));;
 parse_as_infix("mdiff",(18,"left"));;
 
+let multiset_tybij_th = prove
+ (`?f. FINITE {a:A | ~(f a = 0)}`,
+  EXISTS_TAC `\a:A. 0` THEN
+  SIMP_TAC[EMPTY_IS_FINITE; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY]);;
+
+let multiset_tybij = new_type_definition
+  "multiset" ("multiset","multiplicity") multiset_tybij_th;;
+
 let multiset_tybij =
   let th = prove
    (`?f. FINITE {a:A | ~(f a = 0)}`,

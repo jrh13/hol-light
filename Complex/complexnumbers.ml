@@ -10,10 +10,11 @@ prioritize_real();;
 (* Definition of complex number type.                                        *)
 (* ------------------------------------------------------------------------- *)
 
-let complex_tybij =
-  REWRITE_RULE[]
-   (new_type_definition "complex" ("complex","coords")
-     (prove(`?x:real#real. T`,REWRITE_TAC[])));;
+let complex_tybij_raw =
+  new_type_definition "complex" ("complex","coords")
+   (prove(`?x:real#real. T`,REWRITE_TAC[]));;
+
+let complex_tybij = REWRITE_RULE [] complex_tybij_raw;;
 
 (* ------------------------------------------------------------------------- *)
 (* Real and imaginary parts of a number.                                     *)

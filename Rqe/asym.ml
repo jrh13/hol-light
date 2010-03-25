@@ -527,9 +527,6 @@ let normal = new_definition(
 let nonconstant = new_definition(
  `nonconstant p <=> normal p /\ (!x. ~(p = [x]))`);;
 
-let degree = new_definition
-  `degree p = PRE(LENGTH(normalize p))`;;
-
 let NORMALIZE_SING = prove_by_refinement(
   `!x. (normalize [x] = [x]) <=> ~(x = &0)`,
 (* {{{ Proof *)
