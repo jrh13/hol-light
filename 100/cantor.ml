@@ -22,8 +22,6 @@ let CANTOR_THM_SURJ = prove
 (* Proper version for any set, in terms of cardinality operators.            *)
 (* ------------------------------------------------------------------------- *)
 
-needs "Examples/cantor.ml";;
-
 let CANTOR = prove
  (`!s:A->bool. s <_c {t | t SUBSET s}`,
   GEN_TAC THEN REWRITE_TAC[lt_c] THEN CONJ_TAC THENL
