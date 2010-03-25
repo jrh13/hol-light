@@ -30,13 +30,6 @@ let multiset_tybij_th = prove
 let multiset_tybij = new_type_definition
   "multiset" ("multiset","multiplicity") multiset_tybij_th;;
 
-let multiset_tybij =
-  let th = prove
-   (`?f. FINITE {a:A | ~(f a = 0)}`,
-    EXISTS_TAC `\a:A. 0` THEN
-    SIMP_TAC[EMPTY_IS_FINITE; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY]) in
-  new_type_definition "multiset" ("multiset","multiplicity") th;;
-
 let mempty = new_definition
   `mempty = multiset (\b. 0)`;;
 
