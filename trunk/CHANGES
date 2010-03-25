@@ -1,6 +1,41 @@
+Tue 23rd Mar 2010       lists.ml
+
+Added several miscellaneous lemmas about lists:
+
+  LENGTH_TL =
+   |- !l. ~(l = []) ==> LENGTH (TL l) = LENGTH l - 1
+
+  EL_APPEND =
+   |- !k l m.
+         EL k (APPEND l m) =
+         (if k < LENGTH l then EL k l else EL (k - LENGTH l) m)
+
+  EL_TL =
+   |- !n. EL n (TL l) = EL (n + 1) l
+
+  EL_CONS =
+   |- !n h t. EL n (CONS h t) = (if n = 0 then h else EL (n - 1) t)
+
+  LAST_EL =
+   |- !l. ~(l = []) ==> LAST l = EL (LENGTH l - 1) l
+
+  HD_APPEND =
+   |- !l m. HD (APPEND l m) = (if l = [] then HD m else HD l)
+
+Tue 23rd Mar 2010       sets.ml
+
+Added SET_OF_LIST_EQ_EMPTY = |- !l. set_of_list l = {} <=> l = []
+
+Mon 22nd Mar 2010       lists.ml
+
+Added one more simple list lemma:
+
+  LAST_APPEND =
+    |- !p q. LAST(APPEND p q) = (if q = [] then LAST p else LAST q)
+
 Sat 20th Mar 2010       lists.ml, Rqe/work_thms.ml
 
-Moved the definition of BUTLAST from Rqe into the core, and added one trivial 
+Moved the definition of BUTLAST from Rqe into the core, and added one trivial
 theorem about it:
 
   BUTLAST =

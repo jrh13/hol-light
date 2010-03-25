@@ -1741,7 +1741,7 @@ let HAS_SIZE_IMAGE_INJ_EQ = prove
 (* ------------------------------------------------------------------------- *)
 
 let CHOOSE_SUBSET_STRONG = prove
- (`!n s:A->bool.                                                                
+ (`!n s:A->bool.
         (FINITE s ==> n <= CARD s) ==> ?t. t SUBSET s /\ t HAS_SIZE n`,
   INDUCT_TAC THEN REWRITE_TAC[HAS_SIZE_0; HAS_SIZE_SUC] THENL
    [MESON_TAC[EMPTY_SUBSET]; ALL_TAC] THEN
@@ -2184,6 +2184,11 @@ let SET_OF_LIST_MAP = prove
  (`!f l. set_of_list(MAP f l) = IMAGE f (set_of_list l)`,
   GEN_TAC THEN LIST_INDUCT_TAC THEN
   ASM_REWRITE_TAC[set_of_list; MAP; IMAGE_CLAUSES]);;
+
+let SET_OF_LIST_EQ_EMPTY = prove
+ (`!l. set_of_list l = {} <=> l = []`,
+  LIST_INDUCT_TAC THEN
+  REWRITE_TAC[set_of_list; NOT_CONS_NIL; NOT_INSERT_EMPTY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Mappings from finite set enumerations to lists (no "setification").       *)
