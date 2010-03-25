@@ -1320,7 +1320,7 @@ time real_qelim
  <<forall x y. 2 * x * y <= x^2 + y^2>>;;
 *)
 time REAL_QELIM_CONV
- `!x y. 2 * x * y <= x pow 2 + y pow 2`;;
+ `!x y. &2 * x * y <= x pow 2 + y pow 2`;;
 
 (* ---------------------------------    --------------------------------- *)
 
@@ -1329,7 +1329,7 @@ time real_qelim
  <<forall a b c d. 2 * a * b * c * d <= a^2 * b^2 + c^2 * d^2>>;;
 *)
 time REAL_QELIM_CONV
- `!a b c d. 2 * a * b * c * d <= a pow 2 * b pow 2 + c pow 2 * d pow 2`;;
+ `!a b c d. &2 * a * b * c * d <= a pow 2 * b pow 2 + c pow 2 * d pow 2`;;
 
 (* ---------------------------------    --------------------------------- *)
 

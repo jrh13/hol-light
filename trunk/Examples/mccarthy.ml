@@ -169,16 +169,7 @@ let UPDATE_SAME = prove
  *  the accumulator will contain E e s and every register
  *  with number x less than r will have the same value as
  *  it does in s'.
- *)
-
-let correctness_condition =
-    `!e map s s' r.
-        (!v. map v < r) ==>
-        (!v. s v = s' (Reg (map v))) ==>
-            (S' (C e map r) s' Acc = E e s) /\
-            (!x. (x < r) ==> (S' (C e map r) s' (Reg x) = s' (Reg x)))`;;
-
-(*
+ *
  *  The Proof
  *  ---------
  *
@@ -191,7 +182,11 @@ let correctness_condition =
  *)
 
 let CORRECTNESS_THEOREM = prove
- (correctness_condition,
+ (`!e map s s' r.                                                      
+      (!v. map v < r) ==>                                              
+      (!v. s v = s' (Reg (map v))) ==>                                 
+          (S' (C e map r) s' Acc = E e s) /\                           
+          (!x. (x < r) ==> (S' (C e map r) s' (Reg x) = s' (Reg x)))`,
   MATCH_MP_TAC exp_INDUCT THEN
   REWRITE_TAC[E_DEF; S_DEF; S'_DEF; update_def; C_DEF; S'_APPEND] THEN
   SIMP_TAC[ARITH_RULE `(x < y ==> x < y + 1 /\ ~(x = y)) /\ x < x + 1`; cellth;

@@ -529,7 +529,9 @@ mk_rol k0
 *)
 
 let real_nil = `[]:real list`;;
-let ROL_NIL = prove(mk_comb (`real_ordered_list`,real_nil),REWRITE_TAC[real_ordered_list]);;
+let ROL_NIL = prove
+  (`real_ordered_list ([]:real list)`,
+   REWRITE_TAC[real_ordered_list]);;
 
 let ROL_REMOVE x rol_thm =
   let list = dest_list (snd (dest_comb (concl rol_thm))) in

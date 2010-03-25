@@ -16,11 +16,12 @@ let istopology = new_definition
         (!s t. s IN L /\ t IN L ==> (s INTER t) IN L) /\
         (!k. k SUBSET L ==> (UNIONS k) IN L)`;;
 
+let topology_tybij_th = prove
+ (`?t:(A->bool)->bool. istopology t`,
+  EXISTS_TAC `UNIV:(A->bool)->bool` THEN REWRITE_TAC[istopology; IN_UNIV]);;
+
 let topology_tybij =
-  let th = prove
-   (`?t:(A->bool)->bool. istopology t`,
-    EXISTS_TAC `UNIV:(A->bool)->bool` THEN REWRITE_TAC[istopology; IN_UNIV]) in
-  new_type_definition "topology" ("topology","open_in") th;;
+  new_type_definition "topology" ("topology","open_in") topology_tybij_th;;
 
 let ISTOPOLOGY_OPEN_IN = prove
  (`istopology(open_in top)`,

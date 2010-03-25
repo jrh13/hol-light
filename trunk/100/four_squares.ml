@@ -201,7 +201,7 @@ let ZSET_BOUND = prove
    [MESON_TAC[EXP_2; LE_SQUARE_REFL; ARITH_RULE `(a <= b ==> a <= b + c)`];
     CONJ_TAC THEN MATCH_MP_TAC(ARITH_RULE `y <= z ==> y <= x + z`) THENL
      [GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [MULT_SYM]; ALL_TAC] THEN
-    REWRITE_TAC[ARITH_RULE `y <= 4 * a * y = 1 * y <= (4 * a) * y`] THEN
+    REWRITE_TAC[ARITH_RULE `y <= 4 * a * y <=> 1 * y <= (4 * a) * y`] THEN
     ASM_REWRITE_TAC[LE_MULT_RCANCEL] THEN
     ASM_SIMP_TAC[ARITH_RULE `0 < a ==> 1 <= 4 * a`]]);;
 

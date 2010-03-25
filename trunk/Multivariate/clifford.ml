@@ -56,11 +56,13 @@ let FINITE_CART_SUBSET_LEMMA = prove
 (* Index type for "multivectors" (k-vectors for all k <= N).                 *)
 (* ------------------------------------------------------------------------- *)
 
+let multivector_tybij_th = prove
+ (`?s. s SUBSET (1..dimindex(:N))`,
+  MESON_TAC[EMPTY_SUBSET]);;
+
 let multivector_tybij =
-  let th = prove
-   (`?s. s SUBSET (1..dimindex(:N))`,
-    MESON_TAC[EMPTY_SUBSET]) in
-  new_type_definition "multivector" ("mk_multivector","dest_multivector") th;;
+  new_type_definition "multivector" ("mk_multivector","dest_multivector")
+    multivector_tybij_th;;
 
 let MULTIVECTOR_IMAGE = prove
  (`(:(N)multivector) = IMAGE mk_multivector {s | s SUBSET 1..dimindex(:N)}`,

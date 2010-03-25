@@ -1068,30 +1068,6 @@ let COLOURING_THM = prove(
 (* Simple approach via lemmas then induction over size of coloured sets.    *)
 (* ------------------------------------------------------------------------ *)
 
-let ram(N) =
- `!C s. INFINITE(s:A->bool) /\
-        (!t. t SUBSET s /\ t HAS_SIZE ^N ==> C(t) <= M) ==>
-  ?t c. INFINITE(t) /\ t SUBSET s /\
-        (!u. u SUBSET t /\ u HAS_SIZE ^N ==> (C(u) = c))`;;
-
-let ram1(N) =
- `!C s. INFINITE(s:A->bool) /\
-        (!t. t SUBSET s /\ t HAS_SIZE (SUC ^N) ==> C(t) <= M) ==>
-  ?t c. INFINITE(t) /\ t SUBSET s /\ ~(((@) s) IN t) /\
-        (!u. u SUBSET t /\ u HAS_SIZE ^N ==> (C(((@) s) INSERT u) = c))`;;
-
-let ram2(N) =
- `!C s. INFINITE(s:A->bool) /\
-    (!t. t SUBSET s /\ t HAS_SIZE (SUC ^N) ==> C(t) <= M) ==>
-  ?t x col.
-    (!n. col n <= M) /\
-    (!n. (t n) SUBSET s) /\
-    (!n. t(SUC n) SUBSET (t n)) /\
-    (!n. ~((x n) IN (t n))) /\
-    (!n. x(SUC n) IN (t n)) /\
-    (!n. (x n) IN s) /\
-    (!n u. u SUBSET (t n) /\ u HAS_SIZE ^N ==> (C((x n) INSERT u) = col n))`;;
-
 let RAMSEY_LEMMA1 = prove(
  `(!C s. INFINITE(s:A->bool) /\
          (!t. t SUBSET s /\ t HAS_SIZE N ==> C(t) <= M)
