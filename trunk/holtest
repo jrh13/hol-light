@@ -89,11 +89,13 @@ echo '### Loading 100/bernoulli.ml'; echo 'loadt "100/bernoulli.ml";;' | (time .
 echo '### Loading 100/bertrand.ml,100/primerecip.ml';
 (echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time ./hol)
 echo '### Loading 100/birthday.ml'; echo 'loadt "100/birthday.ml";;' | (time ./hol)
+echo '### Loading 100/cantor.ml'; echo 'loadt "100/cantor.ml";;' | (time ./hol)
 echo '### Loading 100/ceva.ml'; echo 'loadt "100/ceva.ml";;' | (time ./hol)
 echo '### Loading 100/circle.ml'; echo 'loadt "100/circle.ml";;' | (time ./hol)
 echo '### Loading 100/chords.ml'; echo 'loadt "100/chords.ml";;' | (time ./hol)
 echo '### Loading 100/combinations.ml'; echo 'loadt "100/combinations.ml";;' | (time ./hol)
 echo '### Loading 100/constructible.ml'; echo 'loadt "100/constructible.ml";;' | (time ./hol)
+echo '### Loading 100/cosine.ml'; echo 'loadt "100/cosine.ml";;' | (time ./hol)
 echo '### Loading 100/cubic.ml'; echo 'loadt "100/cubic.ml";;' | (time ./hol)
 echo '### Loading 100/derangements.ml'; echo 'loadt "100/derangements.ml";;' | (time ./hol)
 echo '### Loading 100/desargues.ml'; echo 'loadt "100/desargues.ml";;' | (time ./hol)
@@ -101,6 +103,8 @@ echo '### Loading 100/dirichlet.ml'; echo 'loadt "100/dirichlet.ml";;' | (time .
 echo '### Loading 100/div3.ml'; echo 'loadt "100/div3.ml";;' | (time ./hol)
 echo '### Loading 100/divharmonic.ml'; echo 'loadt "100/divharmonic.ml";;' | (time ./hol)
 echo '### Loading 100/euler.ml'; echo 'loadt "100/euler.ml";;' | (time ./hol)
+echo '### Loading 100/four_squares.ml'; echo 'loadt "100/four_squares.ml";;' | (time ./hol)
+echo '### Loading 100/friendship.ml'; echo 'loadt "100/friendship.ml";;' | (time ./hol)
 echo '### Loading 100/fta.ml'; echo 'loadt "100/fta.ml";;' | (time ./hol)
 echo '### Loading 100/gcd.ml'; echo 'loadt "100/gcd.ml";;' | (time ./hol)
 echo '### Loading 100/heron.ml'; echo 'loadt "100/heron.ml";;' | (time ./hol)
@@ -127,6 +131,8 @@ echo '### Loading 100/stirling.ml'; echo 'loadt "100/stirling.ml";;' | (time ./h
 echo '### Loading 100/subsequence.ml'; echo 'loadt "100/subsequence.ml";;' | (time ./hol)
 echo '### Loading 100/thales.ml'; echo 'loadt "100/thales.ml";;' | (time ./hol)
 echo '### Loading 100/triangular.ml'; echo 'loadt "100/triangular.ml";;' | (time ./hol)
+echo '### Loading 100/two_squares.ml'; echo 'loadt "100/two_squares.ml";;' | (time ./hol)
+echo '### Loading 100/wilson.ml'; echo 'loadt "100/wilson.ml";;' | (time ./hol)
 
 # Build the proof-recording version of HOL
 
