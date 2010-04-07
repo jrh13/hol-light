@@ -1691,6 +1691,11 @@ let MEASURABLE_INTER_INTERVAL = prove
  (`!s a b:real^N. measurable s ==> measurable (s INTER interval[a,b])`,
   SIMP_TAC[MEASURABLE_INTER; MEASURABLE_INTERVAL]);;
 
+let MEASURABLE_INSIDE = prove
+ (`!s:real^N->bool. compact s ==> measurable(inside s)`,
+  SIMP_TAC[MEASURABLE_OPEN; BOUNDED_INSIDE; COMPACT_IMP_CLOSED;
+           OPEN_INSIDE; COMPACT_IMP_BOUNDED]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A nice lemma for negligibility proofs.                                    *)
 (* ------------------------------------------------------------------------- *)

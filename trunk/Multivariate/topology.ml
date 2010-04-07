@@ -6277,6 +6277,10 @@ let ENDS_IN_SEGMENT = prove
    [EXISTS_TAC `&0`; EXISTS_TAC `&1`] THEN
   (CONJ_TAC THENL [REAL_ARITH_TAC; VECTOR_ARITH_TAC]));;
 
+let ENDS_NOT_IN_SEGMENT = prove
+ (`!a b. ~(a IN segment(a,b)) /\ ~(b IN segment(a,b))`,
+  REWRITE_TAC[open_segment] THEN SET_TAC[]);;
+
 let SEGMENT_CLOSED_OPEN = prove
  (`!a b. segment[a,b] = segment(a,b) UNION {a,b}`,
   REPEAT GEN_TAC THEN REWRITE_TAC[open_segment] THEN MATCH_MP_TAC(SET_RULE

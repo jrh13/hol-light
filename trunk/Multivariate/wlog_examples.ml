@@ -495,20 +495,6 @@ let NOT_COPLANAR_NOT_COLLINEAR = prove
   EXISTS_TAC `affine hull {x:real^N,y}` THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC HULL_MONO THEN SET_TAC[]);;
 
-let AFFINE_DEPENDENT_IMP_COLLINEAR_3 = prove
- (`!a b c:real^N. affine_dependent {a,b,c} ==> collinear{a,b,c}`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[affine_dependent] THEN
-  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; RIGHT_OR_DISTRIB] THEN
-  REWRITE_TAC[EXISTS_OR_THM; UNWIND_THM2; COLLINEAR_AFFINE_HULL] THEN
-  STRIP_TAC THENL
-   [MAP_EVERY EXISTS_TAC [`b:real^N`; `c:real^N`];
-    MAP_EVERY EXISTS_TAC [`a:real^N`; `c:real^N`];
-    MAP_EVERY EXISTS_TAC [`a:real^N`; `b:real^N`]] THEN
-  SIMP_TAC[INSERT_SUBSET; EMPTY_SUBSET; HULL_INC; IN_INSERT] THEN
-  POP_ASSUM MP_TAC THEN
-  MATCH_MP_TAC(SET_RULE `s SUBSET t ==> a IN s ==> a IN t`) THEN
-  MATCH_MP_TAC HULL_MONO THEN SET_TAC[]);;
-
 let AFFSIGN = prove
  (`affsign sgn s t =
         {y | ?f. y = vsum (s UNION t) (\v. f v % v) /\
