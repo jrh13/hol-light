@@ -118,6 +118,7 @@ echo '### Loading 100/liouville.ml'; echo 'loadt "100/liouville.ml";;' | (time .
 echo '### Loading 100/minkowski.ml'; echo 'loadt "100/minkowski.ml";;' | (time ./hol)
 echo '### Loading 100/pascal.ml'; echo 'loadt "100/pascal.ml";;' | (time ./hol)
 echo '### Loading 100/perfect.ml'; echo 'loadt "100/perfect.ml";;' | (time ./hol)
+echo '### Loading 100/pick.ml'; echo 'loadt "100/pick.ml";;' | (time ./hol)
 echo '### Loading 100/piseries.ml'; echo 'loadt "100/piseries.ml";;' | (time ./hol)
 echo '### Loading 100/pnt.ml'; echo 'loadt "100/pnt.ml";;' | (time ./hol)
 echo '### Loading 100/ptolemy.ml'; echo 'loadt "100/ptolemy.ml";;' | (time ./hol)
