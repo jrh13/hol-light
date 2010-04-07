@@ -1384,6 +1384,20 @@ let COLLINEAR_3_EQ_AFFINE_DEPENDENT = prove
    `x IN s ==> s SUBSET t ==> x IN t`)) THEN
   MATCH_MP_TAC HULL_MONO THEN ASM SET_TAC[]);;
 
+let AFFINE_DEPENDENT_IMP_COLLINEAR_3 = prove
+ (`!a b c:real^N. affine_dependent {a,b,c} ==> collinear{a,b,c}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[affine_dependent] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; RIGHT_OR_DISTRIB] THEN
+  REWRITE_TAC[EXISTS_OR_THM; UNWIND_THM2; COLLINEAR_AFFINE_HULL] THEN
+  STRIP_TAC THENL
+   [MAP_EVERY EXISTS_TAC [`b:real^N`; `c:real^N`];
+    MAP_EVERY EXISTS_TAC [`a:real^N`; `c:real^N`];
+    MAP_EVERY EXISTS_TAC [`a:real^N`; `b:real^N`]] THEN
+  SIMP_TAC[INSERT_SUBSET; EMPTY_SUBSET; HULL_INC; IN_INSERT] THEN
+  POP_ASSUM MP_TAC THEN
+  MATCH_MP_TAC(SET_RULE `s SUBSET t ==> a IN s ==> a IN t`) THEN
+  MATCH_MP_TAC HULL_MONO THEN SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A general lemma.                                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -2099,6 +2113,11 @@ let CONVEX_HULL_SUBSET_AFFINE_HULL = prove
  (`!s. (convex hull s) SUBSET (affine hull s)`,
   GEN_TAC THEN REWRITE_TAC[span] THEN MATCH_MP_TAC HULL_ANTIMONO THEN
   REWRITE_TAC[SUBSET; IN; AFFINE_IMP_CONVEX]);;
+
+let COLLINEAR_CONVEX_HULL_COLLINEAR = prove
+ (`!s:real^N->bool. collinear(convex hull s) <=> collinear s`,
+  MESON_TAC[COLLINEAR_SUBSET; HULL_SUBSET; SUBSET_TRANS;
+            COLLINEAR_AFFINE_HULL_COLLINEAR; CONVEX_HULL_SUBSET_AFFINE_HULL]);;
 
 let AFFINE_SPAN = prove
  (`!s. affine(span s)`,
@@ -3431,6 +3450,37 @@ let IN_CONVEX_HULL_EXCHANGE_UNIQUE = prove
   ASM_REWRITE_TAC[VECTOR_MUL_EQ_0] THEN DISCH_TAC THEN
   REMOVE_THEN "*" (MP_TAC o SPEC `y:real^N`) THEN ASM_REWRITE_TAC[] THEN
   REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN ASM SET_TAC[]);;
+
+let CONVEX_HULL_EXCHANGE_UNION = prove
+ (`!s a:real^N.
+        a IN convex hull s
+        ==> convex hull s =
+            UNIONS {convex hull (a INSERT (s DELETE b)) |b| b IN s}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN REWRITE_TAC[UNIONS_IMAGE] THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+    ASM_MESON_TAC[IN_CONVEX_HULL_EXCHANGE];
+    REWRITE_TAC[SUBSET; FORALL_IN_UNIONS; FORALL_IN_GSPEC;
+                IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[GSYM SUBSET] THEN
+    ASM_SIMP_TAC[SUBSET_HULL; CONVEX_CONVEX_HULL] THEN
+    ASM_REWRITE_TAC[INSERT_SUBSET] THEN
+    MESON_TAC[HULL_INC; SUBSET; IN_DELETE]]);;
+
+let CONVEX_HULL_EXCHANGE_INTER = prove
+ (`!s a:real^N t t'.
+         ~affine_dependent s /\
+         a IN convex hull s /\
+         t SUBSET s /\
+         t' SUBSET s
+         ==> (convex hull (a INSERT t)) INTER (convex hull (a INSERT t')) =
+             convex hull (a INSERT (t INTER t'))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; IN_INTER] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC IN_CONVEX_HULL_EXCHANGE_UNIQUE THEN
+    EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[];
+    REWRITE_TAC[SUBSET_INTER] THEN CONJ_TAC THEN
+    MATCH_MP_TAC HULL_MONO THEN SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Representing affine hull as hyperplane or finite intersection of them.    *)
@@ -10386,6 +10436,57 @@ let BOUNDED_SEGMENT = prove
   REWRITE_TAC[SEGMENT_OPEN_SUBSET_CLOSED] THEN
   MESON_TAC[COMPACT_IMP_BOUNDED; COMPACT_SEGMENT]);;
 
+let COLLINEAR_SEGMENT = prove
+ (`(!a b:real^N. collinear(segment[a,b])) /\
+   (!a b:real^N. collinear(segment(a,b)))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[COLLINEAR_AFFINE_HULL] THEN
+    MAP_EVERY EXISTS_TAC [`a:real^N`; `b:real^N`] THEN
+    REWRITE_TAC[SEGMENT_CONVEX_HULL; CONVEX_HULL_SUBSET_AFFINE_HULL];
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COLLINEAR_SUBSET) THEN
+    REWRITE_TAC[SEGMENT_OPEN_SUBSET_CLOSED]]);;
+
+let UNION_SEGMENT = prove
+ (`!a b c:real^N.
+        b IN segment[a,c]
+        ==> segment[a,b] UNION segment[b,c] = segment[a,c]`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c:real^N = a` THENL
+   [ASM_SIMP_TAC[SEGMENT_REFL; IN_SING; UNION_IDEMPOT];
+    ONCE_REWRITE_TAC[UNION_COMM] THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+    DISCH_THEN(SUBST1_TAC o MATCH_MP CONVEX_HULL_EXCHANGE_UNION) THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
+    REWRITE_TAC[IMAGE_CLAUSES; UNIONS_2] THEN
+    BINOP_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]]);;
+
+let INTER_SEGMENT = prove
+ (`!a b c:real^N.
+        b IN segment[a,c] \/ ~collinear{a,b,c}
+        ==> segment[a,b] INTER segment[b,c] = {b}`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c:real^N = a` THENL
+   [ASM_SIMP_TAC[SEGMENT_REFL; IN_SING; INTER_IDEMPOT; INSERT_AC; COLLINEAR_2];
+    ALL_TAC] THEN
+  DISCH_THEN(DISJ_CASES_THEN MP_TAC) THENL
+   [REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`{a:real^N,c}`; `b:real^N`; `{a:real^N}`; `{c:real^N}`]
+        CONVEX_HULL_EXCHANGE_INTER) THEN
+    ASM_REWRITE_TAC[AFFINE_INDEPENDENT_2] THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[INSERT_AC]] THEN
+    DISCH_THEN SUBST1_TAC THEN
+    ASM_SIMP_TAC[SET_RULE `~(a = c) ==> {a} INTER {c} = {}`] THEN
+    REWRITE_TAC[CONVEX_HULL_SING];
+    ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `~(s INTER t = {b})
+      ==> b IN s /\ b IN t
+          ==> ?a. ~(a = b) /\ a IN s /\ b IN s /\ a IN t /\ b IN t`)) THEN
+    ANTS_TAC THENL [REWRITE_TAC[ENDS_IN_SEGMENT]; ALL_TAC] THEN
+    REWRITE_TAC[GSYM BETWEEN_IN_SEGMENT; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `d:real^N` THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP BETWEEN_IMP_COLLINEAR)) THEN
+    MATCH_MP_TAC COLLINEAR_3_TRANS THEN EXISTS_TAC `d:real^N` THEN
+    REPEAT(POP_ASSUM MP_TAC) THEN SIMP_TAC[INSERT_AC]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations between components and path components.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -11289,3 +11390,24 @@ let INSIDE_FRONTIER_EQ_INTERIOR = prove
   MAP_EVERY (MP_TAC o ISPEC `s:real^N->bool`)
    [CLOSURE_SUBSET; INTERIOR_SUBSET] THEN
   ASM SET_TAC[]);;
+
+let OPEN_INSIDE = prove
+ (`!s:real^N->bool. closed s ==> open(inside s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[OPEN_CONTAINS_BALL] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `open(connected_component ((:real^N) DIFF s) x)` MP_TAC THENL
+   [MATCH_MP_TAC OPEN_CONNECTED_COMPONENT THEN ASM_REWRITE_TAC[GSYM closed];
+    REWRITE_TAC[open_def] THEN DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[IN; CONNECTED_COMPONENT_REFL_EQ] THEN
+      GEN_REWRITE_TAC I [GSYM IN] THEN
+      ASM_REWRITE_TAC[IN_DIFF; IN_UNIV] THEN
+      MP_TAC(ISPEC `s:real^N->bool` INSIDE_NO_OVERLAP) THEN
+      ASM SET_TAC[];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[SUBSET; IN_BALL] THEN
+      X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+      MATCH_MP_TAC INSIDE_SAME_COMPONENT THEN
+      EXISTS_TAC `x:real^N` THEN ASM_REWRITE_TAC[] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[IN]) THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[DIST_SYM]]]);;

@@ -3374,6 +3374,16 @@ let INSIDE_OF_TRIANGLE = prove
   MATCH_MP_TAC FINITE_IMP_BOUNDED THEN
   REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY]);;
 
+let INTERIOR_OF_TRIANGLE = prove
+ (`!a b c:real^2.
+        interior(convex hull {a,b,c}) =
+        (convex hull {a,b,c}) DIFF
+        (segment[a,b] UNION segment[b,c] UNION segment[c,a])`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM FRONTIER_OF_TRIANGLE; frontier] THEN
+  MATCH_MP_TAC(SET_RULE `i SUBSET s /\ c = s ==> i = s DIFF (c DIFF i)`) THEN
+  REWRITE_TAC[INTERIOR_SUBSET] THEN MATCH_MP_TAC CLOSURE_CONVEX_HULL THEN
+  SIMP_TAC[FINITE_IMP_COMPACT; FINITE_INSERT; FINITE_EMPTY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The notion of n-simplex where n is an integer >= -1.                      *)
 (* ------------------------------------------------------------------------- *)
