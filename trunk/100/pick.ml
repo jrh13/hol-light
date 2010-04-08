@@ -2,6 +2,8 @@
 (* Pick's theorem.                                                           *)
 (* ========================================================================= *)
 
+needs "Multivariate/polytope.ml";;
+needs "Multivariate/measure.ml";;
 needs "Multivariate/transcendentals.ml";;
 
 prioritize_real();;

@@ -55,9 +55,9 @@ echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.
  echo 'loadt "Examples/polylog.ml";;'; echo 'loadt "Library/poly.ml";;') | (time ./hol)
 echo '### Loading Library/prime.ml,pratt.ml';
 (echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pratt.ml";;') | (time ./hol)
-echo '### Loading Library/prime.ml,pocklington.ml.ml';
+echo '### Loading Library/prime.ml,pocklington.ml';
 (echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pocklington.ml";;') | (time ./hol)
-echo '### Loading Library/rstc.ml,reduct.ml.ml';
+echo '### Loading Library/rstc.ml,reduct.ml';
 (echo 'loadt "Library/rstc.ml";;'; echo 'loadt "Examples/reduct.ml";;') | (time ./hol)
 
 # Extended examples
