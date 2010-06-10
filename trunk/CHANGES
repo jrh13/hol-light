@@ -1,30 +1,38 @@
+Wed  9th Jun 2010       nums.ml, arith.ml
+
+Made some changes suggested by Joe Hurd to allow cleaner separation into 
+theories by avoiding the use of addition when defining the numeral constants
+BIT0 and BIT1. Now those are defined directly using primitive recursion
+(BIT0_DEF and BIT1_DEF) and the former definitions BIT0 and BIT1 are derived
+from those later.
+
 Wed 24th Mar 2010       nums.ml, 100/four_squares.ml, 100/ramsey.ml, Complex/complexnumbers.ml, Examples/mccarthy.ml, Examples/multiwf.ml, Mizarlight/duality_holby.ml, Model/modelset.ml, Multivariate/clifford.ml, Multivariate/topology.ml, Rqe/asym.ml, Rqe/examples.ml, Rqe/rol.ml
 
-Made changes essentially corresponding to the steps of hol-online's  
+Made changes essentially corresponding to the steps of hol-online's
 "hol-preparse-patch", fixing some bugs, removing redundant material
 and regularizing some syntax:
-                                                                     
-      * Replaced a = by <=> in "100/four_squares.ml" (I'd left this  
+
+      * Replaced a = by <=> in "100/four_squares.ml" (I'd left this
         out of my test suite, which is why it hadn't been spotted
         before).
-                                                        
+
       * Added a couple of missing real numeral coercions "&" in
         "Rqe/examples.ml".
-                                                                       
-      * Removed duplicate definition for degree in "Rqe/asym.ml"       
+
+      * Removed duplicate definition for degree in "Rqe/asym.ml"
         (it's already defined in "Library/poly.ml").
-                                                                
+
       * Removed terms with antiquotation, an unused relic from HOL88
         in "100/ramsey.ml".
-                                                                  
-      * Avoided programmatically created terms in                 
+
+      * Avoided programmatically created terms in
         "Examples/mccarthy.ml", "Mizarlight/duality_holby.ml" and
-        "Rqe/rol.ml".                                                 
-                                                                      
-      * Added IND_SUC_SPEC to regularize new_specification syntax in  
-        "nums.ml"                                                  
-                                                                   
-      * Stylistic change to type definition in                     
+        "Rqe/rol.ml".
+
+      * Added IND_SUC_SPEC to regularize new_specification syntax in
+        "nums.ml"
+
+      * Stylistic change to type definition in
         "Complex/complexnumbers.ml", "Examples/multiwf.ml",
         "Mizarlight/duality_holby.ml", "Model/modelset.ml",
         "Multivariate/clifford.ml", "Multivariate/topology.ml".
