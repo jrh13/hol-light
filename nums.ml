@@ -178,3 +178,14 @@ let num_RECURSION_STD = prove
 
 inductive_type_store :=
  ("num",(2,num_INDUCTION,num_RECURSION_STD))::(!inductive_type_store);;
+
+(* ------------------------------------------------------------------------- *)
+(* "Bitwise" binary representation of numerals.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let BIT0_DEF = new_recursive_definition num_RECURSION
+ `(BIT0 0 = 0) /\
+  (!n. BIT0 (SUC n) = SUC(SUC(BIT0 n)))`;;
+
+let BIT1_DEF = new_definition
+ `BIT1 n = SUC (BIT0 n)`;;

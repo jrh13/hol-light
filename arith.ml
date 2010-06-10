@@ -99,11 +99,13 @@ let EQ_ADD_RCANCEL_0 = prove
 (* Now define "bitwise" binary representation of numerals.                   *)
 (* ------------------------------------------------------------------------- *)
 
-let BIT0 = new_definition
- `BIT0 n = n + n`;;
+let BIT0 = prove
+ (`!n. BIT0 n = n + n`,
+  INDUCT_TAC THEN ASM_REWRITE_TAC[BIT0_DEF; ADD_CLAUSES]);;
 
-let BIT1 = new_definition
- `BIT1 n = SUC(n + n)`;;
+let BIT1 = prove
+ (`!n. BIT1 n = SUC(n + n)`,
+  REWRITE_TAC[BIT1_DEF; BIT0]);;
 
 let BIT0_THM = prove
  (`!n. NUMERAL (BIT0 n) = NUMERAL n + NUMERAL n`,
