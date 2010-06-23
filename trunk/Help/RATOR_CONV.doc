@@ -15,7 +15,7 @@ theorems of the form:
 {
    |- (t1 t2) = (t1' t2)
 }
-\noindent That is, {RATOR_CONV c `t1 t2`} applies {c} to the operand of the
+\noindent That is, {RATOR_CONV c `t1 t2`} applies {c} to the operator of the
 application {`t1 t2`}.
 
 \FAILURE
