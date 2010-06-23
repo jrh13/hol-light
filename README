@@ -38,9 +38,20 @@ The instructions below assume a Unix-like environment such as Linux
 automated by the Makefile are easy enough to invoke manually. There's
 more detail on doing that in the Tutorial.
 
-(0) Unpack the file to give a directory 'hol_light' and enter it, e.g. by
+(0) You can download the HOL Light sources from the Google Code site.
+    For example, the following will copy the code from the trunk of the
+    Google Code repository into a new directory 'hol_light':
+
+        svn checkout http://hol-light.googlecode.com/svn/trunk/ hol_light
+
+    Alternatively, if you download one of the gzipped tar files
+    directly from the HOL Light Web page, you can unpack it as usual:
 
         tar xvfz hol_light.tar.gz
+
+    In either case, you should next enter the 'hol_light' directory
+    that has been created:
+
         cd ./hol_light
 
 There are now two alternatives: launch the OCaml toplevel and directly
@@ -119,13 +130,18 @@ distribution somewhere permanent before doing "make hol".
 If you later develop a large body of proofs or tools, you can save the
 augmented system using the command "self_destruct" (this is the same
 approach as in the Makefile) rather than re-load each time.
-
 If you don't have 'ckpt' installed it can be obtained here:
 
         http://www.cs.wisc.edu/~zandy/ckpt/
 
+I've had trouble getting ckpt (or CryoPID) to work with recent kernels.
+Another checkpointer that seems to be easier to get working is
+described briefly here:
+
+  http://www.mail-archive.com/hol-info@lists.sourceforge.net/msg00688.html
+
 For operating systems other than Linux, you may find a suitable
-alternative to 'ckpt' on the following page; you can then simply change
+alternative on the following page; you can then simply change
 the "ckpt" command name in the HOL Light Makefile as appropriate.
 Unfortunately I don't know of any such checkpointing program for
 Windows; I would be glad to hear of one.
