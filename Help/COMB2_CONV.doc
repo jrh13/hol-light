@@ -7,7 +7,7 @@ Applies two conversions to the two sides of an application.
 
 \DESCRIBE
 If {c1} and {c2} are conversions such that {c1 `f`} returns {|- f = f'} and
-{c2 `x`} returns {|- x = x'}, then {COMB_CONV c1 c2 `f x`} returns
+{c2 `x`} returns {|- x = x'}, then {COMB2_CONV c1 c2 `f x`} returns
 {|- f x = f' x'}. That is, the conversions {c1} and {c2} are applied
 respectively to the two immediate subterms.
 
