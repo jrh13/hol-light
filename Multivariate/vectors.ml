@@ -100,6 +100,9 @@ let DOT_3 = prove
 (* ------------------------------------------------------------------------- *)
 
 let VECTOR_ARITH_TAC =
+  let RENAMED_LAMBDA_BETA th =
+    if fst(dest_fun_ty(type_of(funpow 3 rand (concl th)))) = aty
+    then INST_TYPE [aty,bty; bty,aty] LAMBDA_BETA else LAMBDA_BETA in
   POP_ASSUM_LIST(K ALL_TAC) THEN
   REPEAT(GEN_TAC ORELSE CONJ_TAC ORELSE DISCH_TAC ORELSE EQ_TAC) THEN
   REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[IMP_IMP; GSYM CONJ_ASSOC] THEN
@@ -113,7 +116,7 @@ let VECTOR_ARITH_TAC =
               TAUT `(a ==> b) \/ (a ==> c) <=> a ==> b \/ c`] THEN
   TRY(MATCH_MP_TAC(TAUT `(a ==> b ==> c) ==> (a ==> b) ==> (a ==> c)`)) THEN
   REWRITE_TAC[vector_add; vector_sub; vector_neg; vector_mul; vec] THEN
-  DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP LAMBDA_BETA th]) THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP(RENAMED_LAMBDA_BETA th) th]) THEN
   REAL_ARITH_TAC;;
 
 let VECTOR_ARITH tm = prove(tm,VECTOR_ARITH_TAC);;
