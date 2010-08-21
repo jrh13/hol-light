@@ -63,8 +63,8 @@ assumption is included:
 \noindent You can prove the condition by supplying an appropriate ordering, e.g.
 {
   # let wfth = prove(hd(hyp eth),
-                       EXISTS_TAC `measure (\(m:num,n:num). n - m)` THEN
-                       REWRITE_TAC[WF_MEASURE; measure] THEN ARITH_TAC);;
+                       EXISTS_TAC `MEASURE (\(m:num,n:num). n - m)` THEN
+                       REWRITE_TAC[WF_MEASURE; MEASURE] THEN ARITH_TAC);;
   val wfth : thm =
     |- ?(<<). WF (<<) /\ (!m n. (T /\ ~(n < m)) /\ ~(m = n) ==> m + 1,n << m,n)
 }
