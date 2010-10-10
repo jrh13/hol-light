@@ -1,6 +1,24 @@
+Fri  8th Oct 2010       README
+
+Updated the README file with a few modernizations, in particular a more careful
+discussion of checkpointing options in the light of the fact that it seems hard
+to get ckpt working on recent Linuxes.
+
+Fri  8th Oct 2010       theorems.ml
+
+Joe Hurd pointed out that EQ_REFL_T is a duplicate of REFL_CLAUSE, so I removed
+EQ_REFL_T.
+
+Fri  8th Oct 2010       Makefile, hol.ml
+
+There was a problem pointed out by Anthony V. Pulido with OCaml 3.12 because
+a couple of tests had equality tests for 3.10 or 3.11. Replaced this with a
+simple test of the first digit after the decimal point of the OCaml version in
+the Makefile and a string inequality comparison in "hol.ml".
+
 Wed  9th Jun 2010       nums.ml, arith.ml
 
-Made some changes suggested by Joe Hurd to allow cleaner separation into 
+Made some changes suggested by Joe Hurd to allow cleaner separation into
 theories by avoiding the use of addition when defining the numeral constants
 BIT0 and BIT1. Now those are defined directly using primitive recursion
 (BIT0_DEF and BIT1_DEF) and the former definitions BIT0 and BIT1 are derived
