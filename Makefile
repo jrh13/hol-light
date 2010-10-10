@@ -30,9 +30,9 @@ HOLSRC=system.ml lib.ml type.ml term.ml thm.ml basics.ml nets.ml        \
 
 # Build the camlp4 syntax extension file (camlp5 for OCaml >= 3.10)
 
-pa_j.cmo: pa_j.ml; if test `ocamlc -version | cut -c1-4` = "3.10" -o `ocamlc -version | cut -c1-4` = "3.11" ; \
-                   then ocamlc -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I +camlp5 pa_j.ml; \
-                   else ocamlc -c -pp "camlp4r pa_extend.cmo q_MLast.cmo" -I +camlp4 pa_j.ml; \
+pa_j.cmo: pa_j.ml; if test `ocamlc -version | cut -c3` = "0" ; \
+                   then ocamlc -c -pp "camlp4r pa_extend.cmo q_MLast.cmo" -I +camlp4 pa_j.ml; \
+                   else ocamlc -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I +camlp5 pa_j.ml; \
                    fi
 
 # Choose the source for the camlp4 syntax extension based on OCaml version
