@@ -17,7 +17,7 @@ let EQ_REFL = prove
  (`!x:A. x = x`,
   GEN_TAC THEN REFL_TAC);;
 
-let EQ_REFL_T = prove
+let REFL_CLAUSE = prove
  (`!x:A. (x = x) <=> T`,
   GEN_TAC THEN MATCH_ACCEPT_TAC(EQT_INTRO(SPEC_ALL EQ_REFL)));;
 
@@ -33,15 +33,11 @@ let EQ_TRANS = prove
  (`!(x:A) y z. (x = y) /\ (y = z) ==> (x = z)`,
   REPEAT STRIP_TAC THEN PURE_ASM_REWRITE_TAC[] THEN REFL_TAC);;
 
-let REFL_CLAUSE = prove
- (`!x:A. (x = x) = T`,
-  GEN_TAC THEN ACCEPT_TAC(EQT_INTRO(SPEC `x:A` EQ_REFL)));;
-
 (* ------------------------------------------------------------------------- *)
 (* The following is a common special case of ordered rewriting.              *)
 (* ------------------------------------------------------------------------- *)
 
-let AC acsuite = EQT_ELIM o PURE_REWRITE_CONV[acsuite; EQ_REFL_T];;
+let AC acsuite = EQT_ELIM o PURE_REWRITE_CONV[acsuite; REFL_CLAUSE];;
 
 (* ------------------------------------------------------------------------- *)
 (* A couple of theorems about beta reduction.                                *)
