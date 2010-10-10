@@ -6,13 +6,12 @@ its front end. This is the HOL Light homepage:
 
         http://www.cl.cam.ac.uk/~jrh13/hol-light/index.html
 
-For more detailed information on installation and usage than the brief
-notes below, see the Tutorial:
+Basic installation instructions are below. For more detailed information
+on usage, see the Tutorial:
 
         http://www.cl.cam.ac.uk/~jrh13/hol-light/tutorial.pdf
 
-and refer to the reference manual for more details of individual
-functions:
+Refer to the reference manual for more details of individual functions:
 
         http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.html (HTML files)
         http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.pdf (one PDF file)
@@ -21,15 +20,23 @@ functions:
 
                              INSTALLATION
 
-HOL Light should work with any recent version of OCaml, which can be
-downloaded here:
+The Objective CAML (OCaml) implementation is a prerequisite for
+running HOL Light. HOL Light should work with any recent version of
+OCaml; I've tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3,
+3.10.0 and 3.11.2. However, for versions >= 3.10 (in 3.10 there was an
+incompatible change in the camlp4 preprocessor) you will also need to
+get camlp5 (version >= 4.07). Installing both items of software should
+not be too difficult, depending on the platform. For example, in
+Ubuntu Linux, the following line is all you need (followed by your
+password if prompted):
+
+        sudo apt-get install ocaml camlp5
+
+However, if your platform has no convenient package manager or you
+prefer to build from sources, you can download OCaml and camlp5
+directly from their respective Web pages:
 
         http://caml.inria.fr/ocaml/index.en.html
-
-I've tried it on 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3 and 3.10.0. For
-versions < 3.10, the camlp4 preprocessor bundled with OCaml is used
-to provide syntax extensions. For versions of OCaml >= 3.10, camlp5
-(>= 4.07) is used instead which you need to install separately:
 
         http://pauillac.inria.fr/~ddr/camlp5/
 
@@ -109,42 +116,85 @@ be available for some platforms. First the basic approach:
 
         let hol_dir = "/usr/share/hol";;
 
-Now for the alternative approach of building a standalone image. The
-Makefile will conveniently automate this process if you are running
-under Linux and have the 'ckpt' checkpointing program on your path.
-Simply type
+Now for the alternative approach of building a standalone image.
+The level of convenience depends on the checkpointing problem you
+have installed. The earlier checkpointing programs in this list
+are more convenient to use but seem less easy to get going on
+recent Linux kernel/libc combinations.
 
-        make hol
-
-in the 'hol_light' directory, and a standalone HOL Light image called
-'hol' should be created. If desired you can move or copy this to some
-other place such as '~/bin' or '/usr/local/bin'. You then simply type
-'hol' (or './hol') to start the system up and start proving theorems.
-
-Note that although the HOL binary will work on its own, it does not
-pre-load all the source files. You will probably want to keep the
-sources available to be loaded later as needed (if you need additional
-mathematical theories or tools), so it's better to unpack the HOL
-distribution somewhere permanent before doing "make hol".
-
-If you later develop a large body of proofs or tools, you can save the
-augmented system using the command "self_destruct" (this is the same
-approach as in the Makefile) rather than re-load each time.
-If you don't have 'ckpt' installed it can be obtained here:
+(1) If you have the 'ckpt' program installed, then Makefile will
+    conveniently create a HOL Light binary. You can get 'ckpt' here:
 
         http://www.cs.wisc.edu/~zandy/ckpt/
 
-I've had trouble getting ckpt (or CryoPID) to work with recent kernels.
-Another checkpointer that seems to be easier to get working is
-described briefly here:
+    Once 'ckpt' is installed, simply type
 
-  http://www.mail-archive.com/hol-info@lists.sourceforge.net/msg00688.html
+        make hol
 
-For operating systems other than Linux, you may find a suitable
-alternative on the following page; you can then simply change
-the "ckpt" command name in the HOL Light Makefile as appropriate.
-Unfortunately I don't know of any such checkpointing program for
-Windows; I would be glad to hear of one.
+    in the 'hol_light' directory, and a standalone HOL Light image
+    called 'hol' should be created. If desired you can move or copy
+    this to some other place such as '~/bin' or '/usr/local/bin'. You
+    then simply type 'hol' (or './hol') to start the system up and
+    start proving theorems.
+
+    Note that although the HOL binary will work on its own, it
+    does not pre-load all the source files. You will probably want
+    to keep the sources available to be loaded later as needed (if
+    you need additional mathematical theories or tools), so it's
+    better to unpack the HOL distribution somewhere permanent
+    before doing 'make hol'.
+
+    If you later develop a large body of proofs or tools, you can
+    save the augmented system using the command "self_destruct"
+    (this is the same approach as in the Makefile) rather than
+    re-load each time. For example, the following will create a
+    HOL Light binary (always called 'hol.snapshot'):
+
+        self_destruct "My version of HOL Light";;
+
+(2) Another checkpointing option is CryoPID, which you can get
+    here:
+
+        http://cryopid.berlios.de/
+
+    In this case, the Makefile doesn't have a convenient way of
+    making HOL binaries, but you can make one yourself once HOL
+    Light is loaded and you are sitting in its toplevel loop.
+    (This also works if you have your own extensions loaded, and
+    indeed this is when it's most useful.) Instead of the
+    'self_destruct' command, use 'checkpoint', which is similar
+    except that the current process is not terminated once the
+    binary (again called hol.snapshot) is created:
+
+        checkpoint "My version of HOL Light";;
+
+(3) A third option which seems to work with recent Linuxes is
+    DMTCP, which you can download from here:
+
+      http://dmtcp.sourceforge.net/
+
+    You may try installing from the packages (e.g.
+    'sudo dpkg -i dmtcp.deb'), but I found it was better to
+    compile from source. HOL Light does not have convenient
+    commands or scripts to exploit DMTCP, but you can proceed
+    as follows:
+
+        1. dmtcp_checkpoint -n ocaml
+
+        2. <use ocaml to load HOL Light as usual>
+
+        3. (from another terminal) dmtcp_command --checkpoint
+
+        4. (don't forget this!) kill the original ocaml process
+
+        5. Step 3 created a shell script in the current directory.
+           Running that will restore the OCaml process with all
+           your state and bindings.
+
+(4) If none of these options work, you may find some others on the
+    following Web page. Unfortunately I don't know of any such
+    checkpointing program for either Windows or Mac OS X; I would
+    be glad to hear of one.
 
         http://www.checkpointing.org
 
