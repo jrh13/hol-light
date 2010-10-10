@@ -117,12 +117,12 @@ be available for some platforms. First the basic approach:
         let hol_dir = "/usr/share/hol";;
 
 Now for the alternative approach of building a standalone image.
-The level of convenience depends on the checkpointing problem you
+The level of convenience depends on the checkpointing program you
 have installed. The earlier checkpointing programs in this list
 are more convenient to use but seem less easy to get going on
 recent Linux kernel/libc combinations.
 
-(1) If you have the 'ckpt' program installed, then Makefile will
+(1) If you have the 'ckpt' program installed, then the Makefile will
     conveniently create a HOL Light binary. You can get 'ckpt' here:
 
         http://www.cs.wisc.edu/~zandy/ckpt/
