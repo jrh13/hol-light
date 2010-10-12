@@ -7,8 +7,8 @@ Tests a term to see if it is an equation.
 
 \DESCRIBE
 {is_eq `t1 = t2`} returns {true}. If the term is not an equation the result
-is {false}. Note that logical equivalenceis just equality on type {:bool}, even 
-though it is printed as {<=>}.
+is {false}. Note that logical equivalence is just equality on type {:bool},
+even though it is printed as {<=>}.
 
 \FAILURE
 Never fails.

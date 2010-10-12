@@ -7,23 +7,24 @@ Exits HOL Light but saves current state ready to restart.
 
 \DESCRIBE
 This is only available in Linux. A call {checkpoint s} calls the {freeze}
-function from CryoPID to create a checkpoint of the current state of HOL Light, 
-named {hol.snapshot}. When this image is restarted, the string {s} is printed 
-as well as the usual starup banner.
+function from CryoPID to create a checkpoint of the current state of HOL Light,
+named {hol.snapshot}. When this image is restarted, the string {s} is printed
+as well as the usual startup banner.
 
 \FAILURE
 Never fails, except in the face of OS-level problems such as running out of
 disc space.
 
 \USES
-To quickly save the state of HOL Light when it would take a long time to 
+To quickly save the state of HOL Light when it would take a long time to
 regenerate.
 
 \COMMENTS
 Unfortunately I do not know of any checkpointing tool that can give this
-behaviour under Windows or Mac OS X. However, it works very nicely in Linux.
+behaviour under Windows or Mac OS X. See the README file and tutorial for
+additional information on Linux checkpointing options.
 
 \SEEALSO
-checkpoint, startup_banner.
+self_destruct, startup_banner.
 
 \ENDDOC

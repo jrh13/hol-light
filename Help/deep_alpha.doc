@@ -6,13 +6,13 @@
 Modify bound variable according to renaming scheme.
 
 \DESCRIBE
-When applied to a list of string-string pairs 
+When applied to a list of string-string pairs
 {
   deep_alpha ["x1'","x1"; ...; "xn'","xn"]
 }
-\noindent a conversion results that will attempt to traverse a term and 
-systematically replace any bound variable called {xi} with one called {xi'}. It 
-will quietly do nothing in cases where that is impossible because of variable 
+\noindent a conversion results that will attempt to traverse a term and
+systematically replace any bound variable called {xi} with one called {xi'}. It
+will quietly do nothing in cases where that is impossible because of variable
 capture.
 
 \EXAMPLE
@@ -23,8 +23,8 @@ capture.
 }
 
 \COMMENTS
-This is used inside {PART_MATCH} to try to achieve a resonable correspondence 
-in bound variable names, e.g. so that the bound variable is still called `{n}' 
+This is used inside {PART_MATCH} to try to achieve a reasonable correspondence
+in bound variable names, e.g. so that the bound variable is still called `{n}'
 rather than `{x}' here:
 {
   # REWR_CONV NOT_FORALL_THM `~(!n. n < m)`;;

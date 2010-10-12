@@ -9,7 +9,7 @@ integers.
 \DESCRIBE
 The tactic {ASM_INT_ARITH_TAC} is the tactic form of {INT_ARITH}. Roughly
 speaking, it will automatically prove any formulas over the reals that are
-efectively universally quantified and can be proved valid by algebraic
+effectively universally quantified and can be proved valid by algebraic
 normalization and linear equational and inequality reasoning. See {REAL_ARITH}
 for more information about the algorithm used and its scope. Unlike plain
 {INT_ARITH_TAC}, {ASM_INT_ARITH_TAC} uses any assumptions that are not
@@ -26,17 +26,17 @@ This example illustrates how {ASM_INT_ARITH_TAC} uses assumptions while
 {
   # g `!x y:int. x <= y /\ &2 * y <= &2 * x + &1 ==> x = y`;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `!x y. x <= y /\ &2 * y <= &2 * x + &1 ==> x = y`
-  
+
   # e(REPEAT STRIP_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
     0 [`x <= y`]
     1 [`&2 * y <= &2 * x + &1`]
-  
+
   `x = y`
-  
+
   # e INT_ARITH_TAC;;
   Exception: Failure "linear_ineqs: no contradiction".
   # e ASM_INT_ARITH_TAC;;

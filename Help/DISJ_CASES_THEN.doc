@@ -40,21 +40,21 @@ applying the tactic
    DISJ_CASES_THEN MP_TAC th
 }
 \noindent produces two subgoals, each with one disjunct as an added
-antecedant
+antecedent
 {
   # let th = SPEC `m:num` num_CASES;;
   val th : thm = |- m = 0 \/ (?n. m = SUC n)
   # g `PRE m = m <=> m = 0`;;
   Warning: Free variables in goal: m
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `PRE m = m <=> m = 0`
-  
-  # e(DISJ_CASES_THEN MP_TAC th);; 
+
+  # e(DISJ_CASES_THEN MP_TAC th);;
   val it : goalstack = 2 subgoals (2 total)
-  
+
   `(?n. m = SUC n) ==> (PRE m = m <=> m = 0)`
-  
+
   `m = 0 ==> (PRE m = m <=> m = 0)`
 }
 

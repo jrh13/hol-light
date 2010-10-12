@@ -6,8 +6,8 @@
 Stops the quotation parser from treating a name as a binder.
 
 \DESCRIBE
-Certain identifiers {c} have binder status, meaning that {`c x. y`} is parsed 
-as a shirthand for {`(c) (\x. y)'}. The call {unparse_as_binder "c"} will 
+Certain identifiers {c} have binder status, meaning that {`c x. y`} is parsed
+as a shorthand for {`(c) (\x. y)'}. The call {unparse_as_binder "c"} will
 remove {c} from the list of binders if it is there.
 
 \FAILURE
@@ -25,8 +25,8 @@ Never fails, even if the string was not a binder.
 }
 
 \COMMENTS
-Removing binder status for the pre-existing binders like the quantifiers should 
-only be done with great care, since it can cause other parser invocations to 
+Removing binder status for the pre-existing binders like the quantifiers should
+only be done with great care, since it can cause other parser invocations to
 break.
 
 \SEEALSO

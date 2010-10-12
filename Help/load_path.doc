@@ -9,14 +9,14 @@ Path where HOL Light tries to find files to load.
 The reference variable {load_path} gives a list of directories. When HOL loads
 files with {loadt}, it will try these places in order on all non-absolute
 filenames. An initial dollar sign {$} in each path is interpreted as a
-reference to the current setting of {hol_dir}. To get an actual {$} at the
-start of the filename, actually use two dollar signs {$$}.
+reference to the current setting of {hol_dir}. To get an actual {$} character
+at the start of the filename, use two dollar signs {$$}.
 
 \FAILURE
 Not applicable.
 
 \SEEALSO
-file_on_path, help_path, hol_dir, hol_expand_directory, load_on_path, loads, 
-loadt.
+file_on_path, help_path, hol_dir, hol_expand_directory, load_on_path, loads,
+loadt, needs.
 
 \ENDDOC

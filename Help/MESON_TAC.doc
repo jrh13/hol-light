@@ -7,14 +7,14 @@ Automated first-order proof search tactic.
 
 \DESCRIBE
 A call to {MESON_TAC[theorems]} will attempt to establish the current goal
-using pure first-order reasining, taking {theorems} as the starting-point. (It 
-does not take the assumptions of the goal into account, but the similar 
+using pure first-order reasoning, taking {theorems} as the starting-point. (It
+does not take the assumptions of the goal into account, but the similar
 function {ASM_MESON_TAC} does.) It will usually either solve the goal
 completely or run for an infeasible length of time before terminating, but it
 may sometimes fail quickly.
 
 Although {MESON_TAC} is capable of some fairly non-obvious pieces of
-first-orderreasoning, and will handle equality adequately, it does purely
+first-order reasoning, and will handle equality adequately, it does purely
 logical reasoning. It will exploit no special properties of the constants in
 the goal, other than equality and logical primitives. Any properties that are
 needed must be supplied explicitly in the theorem list, e.g. {LE_REFL} to tell
@@ -26,12 +26,12 @@ Fails if the goal is unprovable within the search bounds, though not
 necessarily in a feasible amount of time.
 
 \EXAMPLE
-Here is a simple logical property taken from Dijstra's EWD 1062-1, which we set 
+Here is a simple logical property taken from Dijstra's EWD 1062-1, which we set
 as our goal:
 {
-  # g `(!x. x <= x) /\                                                       
-       (!x y z. x <= y /\ y <= z ==> x <= z) /\                              
-       (!x y. f(x) <= y <=> x <= g(y))                                       
+  # g `(!x. x <= x) /\
+       (!x y z. x <= y /\ y <= z ==> x <= z) /\
+       (!x y. f(x) <= y <=> x <= g(y))
        ==> (!x y. x <= y ==> f(x) <= f(y))`;;
 }
 It is solved quickly by:
@@ -41,16 +41,16 @@ It is solved quickly by:
   CPU time (user): 0.
   val it : goalstack = No subgoals
 }
-Note however that the proof did not rely on any special features of `{<=}'; any 
-binary relation symbol would have worked. Even simple proofs that rely on 
-special properties of the constants need to have those properties supplied in 
-the list. Note also that {MESON} is limited to essentially first-order 
-reasoning, meaning that it cannot invent higher-order quantifier 
-instantiations. Thus, it cannot prove the following, which involves a 
+Note however that the proof did not rely on any special features of `{<=}'; any
+binary relation symbol would have worked. Even simple proofs that rely on
+special properties of the constants need to have those properties supplied in
+the list. Note also that {MESON} is limited to essentially first-order
+reasoning, meaning that it cannot invent higher-order quantifier
+instantiations. Thus, it cannot prove the following, which involves a
 quantification over a function {g}:
 {
- # g `!f:A->B s. 
-        (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) <=>            
+ # g `!f:A->B s.
+        (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) <=>
         (?g. !x. x IN s ==> (g(f(x)) = x))`;;
 }
 \noindent However, we can manually reduce it to two subgoals:
@@ -60,13 +60,13 @@ quantification over a function {g}:
       CONJ_TAC THENL
        [REWRITE_TAC[GSYM SKOLEM_THM]; AP_TERM_TAC THEN ABS_TAC]);;
   val it : goalstack = 2 subgoals (2 total)
-  
+
   `(!y x. x IN s /\ y = f x ==> g y = x) <=> (!x. x IN s ==> g (f x) = x)`
-  
+
   `(!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) <=>
    (!y. ?g. !x. x IN s /\ y = f x ==> g = x)`
 }
-\noindent and both of those are solvable directly by {MESON_TAC[]}.  
+\noindent and both of those are solvable directly by {MESON_TAC[]}.
 
 \SEEALSO
 ASM_MESON_TAC, GEN_MESON_TAC, MESON.

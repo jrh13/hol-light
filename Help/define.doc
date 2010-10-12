@@ -20,7 +20,7 @@ nonempty list:
   (!n. f(2 * n) = a[f,n]) /\ (!n. f(2 * n + 1) = b[f,n])
 }
 The {define} function attempts to prove that there is indeed a function
-satisfying all these properties, and if it succceeds it defines a new function
+satisfying all these properties, and if it succeeds it defines a new function
 {f} and returns the input term with the variable {f} replaced by the newly
 defined constant.
 

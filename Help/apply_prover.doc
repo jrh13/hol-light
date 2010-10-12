@@ -10,7 +10,7 @@ The HOL Light simplifier (e.g. as invoked by {SIMP_TAC}) allows provers of type
 {prover} to be installed into simpsets, to automatically dispose of
 side-conditions. These may maintain a state dynamically and augment it as more
 theorems become available (e.g. a theorem {p |- p} becomes available when
-simplifying the consequenct of an implication {`p ==> q`}). In order to allow
+simplifying the consequent of an implication {`p ==> q`}). In order to allow
 maximal flexibility in the data structure used to maintain state, provers are
 set up in an `object-oriented' style, where the context is part of the prover
 function itself. A call {apply_prover p `tm`} applies the prover with its

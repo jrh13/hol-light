@@ -8,7 +8,7 @@ Attempt to prove goal using basic algebra and linear arithmetic over the reals.
 \DESCRIBE
 The tactic {REAL_ARITH_TAC} is the tactic form of {REAL_ARITH}. Roughly
 speaking, it will automatically prove any formulas over the reals that are
-efectively universally quantified and can be proved valid by algebraic
+effectively universally quantified and can be proved valid by algebraic
 normalization and linear equational and inequality reasoning. See {REAL_ARITH}
 for more information about the algorithm used and its scope.
 

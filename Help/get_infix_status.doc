@@ -6,10 +6,10 @@
 Get the precedence and associativity of an infix operator.
 
 \DESCRIBE
-Certain identifiers are treated as infix operators with a given precedence and 
-associativity (left or right). The call {get_infix_status "op"} looks up {op} 
-in this list and returns a pair consisting of its precedence and its 
-associativity; the latteris one of the strings {"left"} or {"right"}.
+Certain identifiers are treated as infix operators with a given precedence and
+associativity (left or right). The call {get_infix_status "op"} looks up {op}
+in this list and returns a pair consisting of its precedence and its
+associativity; the latter is one of the strings {"left"} or {"right"}.
 
 \FAILURE
 Fails if the given string does not have infix status.

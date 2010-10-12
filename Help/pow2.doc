@@ -3,10 +3,10 @@
 \TYPE {pow2 : int -> num}
 
 \SYNOPSIS
-Returns power of 2 as umlimited-size integer.
+Returns power of 2 as unlimited-size integer.
 
 \DESCRIBE
-When applied to an integer {n} (type {int}), {pow2} returns $2^n$ as an 
+When applied to an integer {n} (type {int}), {pow2} returns $2^n$ as an
 unlimited-precision integer (type {num}). The argument may be negative.
 
 \FAILURE
@@ -16,7 +16,7 @@ Never fails.
 {
   # pow2(-2);;
   val it : num = 1/4
-  # pow2(64);; 
+  # pow2(64);;
   val it : num = 18446744073709551616
 }
 

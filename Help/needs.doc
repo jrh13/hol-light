@@ -29,6 +29,6 @@ practice to start every file with a {needs} declaration for any library that it
 depends on.
 
 \SEEALSO
-loads, loadt.
+load_path, loads, loadt.
 
 \ENDDOC

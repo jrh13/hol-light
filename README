@@ -179,27 +179,37 @@ recent Linux kernel/libc combinations.
     commands or scripts to exploit DMTCP, but you can proceed
     as follows:
 
-        1. dmtcp_checkpoint -n ocaml
+        1. Start ocaml running under the DMTCP coordinator:
 
-        2. <use ocaml to load HOL Light as usual>
+              dmtcp_checkpoint -n ocaml
 
-        3. (from another terminal) dmtcp_command --checkpoint
+        2. Use ocaml to load HOL Light as usual, for example:
 
-        4. (don't forget this!) kill the original ocaml process
+              #use "hol.ml";;
 
-        5. Step 3 created a shell script in the current directory.
-           Running that will restore the OCaml process with all
-           your state and bindings.
+        3. From another terminal, issue the checkpoint command:
+
+             dmtcp_command --checkpoint
+
+        4. (Don't forget this!) Kill the original ocaml process,
+           e.g. by just typing control-d to the Ocaml prompt.
+
+        5. Step 3 created a checkpoint of the OCaml process and
+           a shell script to invoke it, both in the directory in
+           which ocaml was started. Running that should restore
+           the OCaml process with all your state and bindings:
+
+             ./dmtcp_restart_script.sh
 
 (4) If none of these options work, you may find some others on the
     following Web page. Unfortunately I don't know of any such
     checkpointing program for either Windows or Mac OS X; I would
     be glad to hear of one.
 
-        http://www.checkpointing.org
+        http://checkpointing.org
 
-The directory "Examples" may give an idea of the kind of thing that
-might be done, or may be useful in further work.
+The directories "Library" and "Examples" may give an idea of the
+kind of thing that might be done, or may be useful in further work.
 
 Thanks to Carl Witty for help with Camlp4 porting and advice on
 checkpointing programs.

@@ -9,7 +9,7 @@ integers.
 \DESCRIBE
 The tactic {INT_ARITH_TAC} is the tactic form of {INT_ARITH}. Roughly
 speaking, it will automatically prove any formulas over the reals that are
-efectively universally quantified and can be proved valid by algebraic
+effectively universally quantified and can be proved valid by algebraic
 normalization and linear equational and inequality reasoning. See {REAL_ARITH}
 for more information about the algorithm used and its scope.
 

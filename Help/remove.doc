@@ -7,8 +7,8 @@ Separates the first element of a list to satisfy a predicate from the rest of
 the list.
 
 \FAILURE
-Fails if no element satisfes the predicate. This will always be the case for an
-empty list.
+Fails if no element satisfies the predicate. This will always be the case for
+an empty list.
 
 \EXAMPLE
 {
