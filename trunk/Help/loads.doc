@@ -29,6 +29,6 @@ Loading HOL Light standard libraries without accidentally picking up other
 files of the same name in the current directory or on {load_path}
 
 \SEEALSO
-loadt, needs.
+load_path, loadt, needs.
 
 \ENDDOC

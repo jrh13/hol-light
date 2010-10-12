@@ -50,8 +50,8 @@ logic:
 Normally, first-order reasoning should be performed by {MESON_TAC[]}, which is
 much more powerful, complete for all classical logic, and handles equality. The
 function {ITAUT_TAC} is mainly for ``bootstrapping'' purposes. Nevertheless it
-may sometimes be intellectually interesting to see that certain logial formulas
-are provable intuitionistically.
+may sometimes be intellectually interesting to see that certain logical
+formulas are provable intuitionistically.
 
 \SEEALSO
 ITAUT, MESON_TAC.

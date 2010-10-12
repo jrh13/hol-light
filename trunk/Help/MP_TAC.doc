@@ -3,7 +3,7 @@
 \TYPE {MP_TAC : thm_tactic}
 
 \SYNOPSIS
-Adds a theorem as an entecedent to the conclusion of the goal.
+Adds a theorem as an antecedent to the conclusion of the goal.
 
 \KEYWORDS
 tactic, modus, ponens, implication, antecedent.

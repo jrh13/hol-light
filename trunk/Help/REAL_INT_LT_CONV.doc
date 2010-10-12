@@ -8,7 +8,7 @@ another.
 
 \DESCRIBE
 The call {REAL_INT_LT_CONV `c1 < c2`} where {c1} and {c2} are integer
-litersls of type {:real}, returns whichever of {|- c1 < c2 <=> T} or
+literals of type {:real}, returns whichever of {|- c1 < c2 <=> T} or
 {|- c1 < c2 <=> F} is true. By an integer literal we mean either {&n} or
 {-- &n} where {n} is a numeral.
 
@@ -30,4 +30,4 @@ a tiny efficiency difference matters, it should be used in preference.
 \SEEALSO
 INT_LT_CONV, REAL_RAT_LT_CONV, REAL_RAT_REDUCE_CONV.
 
-\ENDDOC    
+\ENDDOC

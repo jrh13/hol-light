@@ -17,7 +17,7 @@ The application of {CHANGED_TAC} to a tactic never fails. The resulting
 tactic fails if the basic tactic either fails or has no effect.
 
 \USES
-Occasionally useful in controlling complicated tctic compositions. Also 
+Occasionally useful in controlling complicated tactic compositions. Also
 sometimes convenient just to check that a step did indeed modify a goal.
 
 \SEEALSO

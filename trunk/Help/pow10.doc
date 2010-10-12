@@ -3,7 +3,7 @@
 \TYPE {pow10 : int -> num}
 
 \SYNOPSIS
-Returns power of 10 as umlimited-size integer.
+Returns power of 10 as unlimited-size integer.
 
 \DESCRIBE
 When applied to an integer {n} (type {int}), {pow10} returns $10^n$ as an
@@ -14,7 +14,7 @@ Never fails.
 
 \EXAMPLE
 {
-  # pow10(-1);; 
+  # pow10(-1);;
   val it : num = 1/10
   # pow10(16);;
   val it : num = 10000000000000000

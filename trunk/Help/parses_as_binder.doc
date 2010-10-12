@@ -6,8 +6,8 @@
 Tests if a string has binder status in the parser.
 
 \DESCRIBE
-Certain identifiers {c} have binder status, meaning that {`c x. y`} is parsed 
-as a shirthand for {`(c) (\x. y)'}. The call {parses_as_binder "c"} tests if
+Certain identifiers {c} have binder status, meaning that {`c x. y`} is parsed
+as a shorthand for {`(c) (\x. y)'}. The call {parses_as_binder "c"} tests if
 {c} is one of the identifiers with binder status.
 
 \FAILURE

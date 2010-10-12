@@ -24,7 +24,8 @@ loaded, rather than needing to rebuild them from sources.
 
 \COMMENTS
 Unfortunately I do not know of any checkpointing tool that can give this
-behaviour under Windows or Mac OS X. However, it works very nicely in Linux.
+behaviour under Windows or Mac OS X. See the README file and tutorial for
+additional information on Linux checkpointing options.
 
 \EXAMPLE
 Suppose that all the proofs you are doing at the moment need more theorems

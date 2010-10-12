@@ -6,9 +6,9 @@
 Substitute terms for other terms inside a term.
 
 \DESCRIBE
-The call {subst [t1',t1; ...; tn',tn] t} systmatically replaces free instances
+The call {subst [t1',t1; ...; tn',tn] t} systematically replaces free instances
 of each term {ti} inside {t} with the corresponding {ti'} from the
-instantiation list. (A subterm is considered free if none of its free variables 
+instantiation list. (A subterm is considered free if none of its free variables
 are bound by its context.) Bound variables will be renamed if necessary to
 avoid capture.
 
@@ -31,7 +31,7 @@ is needed:
 }
 
 \COMMENTS
-This is the most general term substitution function, but if all the {ti} are 
+This is the most general term substitution function, but if all the {ti} are
 variables, the {vsubst} function is more efficient.
 
 \SEEALSO

@@ -7,7 +7,7 @@ Finds a file on the load path and loads it.
 
 \DESCRIBE
 The function {loadt} takes a string indicating an OCaml file name as
-argument and loads it. If the filename is relative, it is found on the load 
+argument and loads it. If the filename is relative, it is found on the load
 path {load_path}, and it is then loaded, updating the list of loaded files.
 
 \FAILURE
@@ -16,7 +16,7 @@ the search path. It will of course fail if the file is not a valid OCaml
 file. Failure in the OCaml file will also terminate loading.
 
 \EXAMPLE
-If we have an ML file called {foo.ml} on the load path, e.g. in the current 
+If we have an ML file called {foo.ml} on the load path, e.g. in the current
 directory, which contains the line
 {
    let x=2+2;;
@@ -33,6 +33,6 @@ directory, which contains the line
 }
 
 \SEEALSO
-loads, needs.
+load_path, loads, needs.
 
 \ENDDOC

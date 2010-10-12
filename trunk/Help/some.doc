@@ -6,8 +6,8 @@
 Parses any single item satisfying a predicate.
 
 \DESCRIBE
-If {p} is a predicate on input tokens of some kind, {some p} is a parser that 
-parses and returns any first token satisying the predicate {p}, and raises 
+If {p} is a predicate on input tokens of some kind, {some p} is a parser that
+parses and returns any first token satisfying the predicate {p}, and raises
 {Noparse} on a first token not satisfying {p}.
 
 \FAILURE

@@ -8,7 +8,7 @@ Encloses the sub-proof of a named lemma.
 \DESCRIBE
 The call {SUBGOAL_TAC "name" `t` [tac]} introduces a new subgoal {t} with the
 current assumptions, runs on that subgoal the tactic {tac}, and attaches the
-resuly as a new hypothesis called {name} in the current subgoal. The {[tac]}
+result as a new hypothesis called {name} in the current subgoal. The {[tac]}
 argument is always a one-element list, for stylistic reasons. If {tac} does not
 prove the goal, any resulting subgoals from it will appear first.
 

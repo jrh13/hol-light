@@ -9,7 +9,7 @@ List of monotonicity theorems for inductive definitions package.
 The various tools for making inductive definitions, such as
 {new_inductive_definition}, need to prove certain `monotonicity'
 side-conditions. They attempt to do so automatically by using various
-pre-proved theorems asserting the monotonicity of certain opertators. Normally,
+pre-proved theorems asserting the monotonicity of certain operators. Normally,
 all this happens smoothly without user intervention, but if the inductive
 definition involves new operators, you may need to augment this list with
 corresponding monotonicity theorems.

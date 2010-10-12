@@ -6,7 +6,7 @@
 Substitute terms for variables inside a term.
 
 \DESCRIBE
-The call {vsubst [t1,x1; ...; tn,xn] t} systmatically replaces free instances
+The call {vsubst [t1,x1; ...; tn,xn] t} systematically replaces free instances
 of each variable {xi} inside {t} with the corresponding {ti} from the
 instantiation list. Bound variables will be renamed if necessary to avoid
 capture.

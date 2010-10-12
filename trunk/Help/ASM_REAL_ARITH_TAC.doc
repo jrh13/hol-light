@@ -8,7 +8,7 @@ Attempt to prove goal using basic algebra and linear arithmetic over the reals.
 \DESCRIBE
 The tactic {ASM_REAL_ARITH_TAC} is the tactic form of {REAL_ARITH}. Roughly
 speaking, it will automatically prove any formulas over the reals that are
-efectively universally quantified and can be proved valid by algebraic
+effectively universally quantified and can be proved valid by algebraic
 normalization and linear equational and inequality reasoning. See {REAL_ARITH}
 for more information about the algorithm used and its scope. Unlike plain
 {REAL_ARITH_TAC}, {ASM_REAL_ARITH_TAC} uses any assumptions that are not
@@ -25,16 +25,16 @@ This example illustrates how {ASM_REAL_ARITH_TAC} uses assumptions while
 {
   # g `!x y z:real. abs(x) <= y ==> abs(x - z) <= abs(y + abs(z))`;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `!x y z. abs x <= y ==> abs (x - z) <= abs (y + abs z)`
-  
+
   # e(REPEAT STRIP_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
     0 [`abs x <= y`]
-  
+
   `abs (x - z) <= abs (y + abs z)`
-  
+
   # e REAL_ARITH_TAC;;
   Exception: Failure "linear_ineqs: no contradiction".
   # e ASM_REAL_ARITH_TAC;;

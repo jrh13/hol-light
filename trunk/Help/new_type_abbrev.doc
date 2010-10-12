@@ -8,7 +8,7 @@ Sets up a new type abbreviation.
 \DESCRIBE
 A call {new_type_abbrev("ab",`:ty`} creates a new type abbreviation {ab} for
 the type {ty}. In future, {`:ab`} may be used rather than the perhaps
-complicated expresion {`:ty`}. Note that the association is purely an
+complicated expression {`:ty`}. Note that the association is purely an
 abbreviation for parsing. Type abbreviations have no logical significance;
 types are internally represented after the abbreviations have been fully
 expanded. At present, type abbreviations are not reversed when printing types,

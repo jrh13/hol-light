@@ -8,14 +8,14 @@ overloading.
 
 \DESCRIBE
 In general, overloaded operators in the concrete syntax, such as `{+}', are
-ambigous, referring to one of several underlying constants. The choice is
+ambiguous, referring to one of several underlying constants. The choice is
 normally made based on some known types, or the presence of operators that are
 not overloaded for the number systems. (For example, numerals like {42} are
 always assumed to be of type {num}, while the division operator `{/}' is only
 defined for {real}.) In the absence of any such indication, a default choice
-will be made. The effect of {prioritize_overload `:ty`} is to run through the 
-overloaded symbols making the first instance of each where the generic type 
-variables in the type skeleton are replaced by type {`:ty`} the first priority 
+will be made. The effect of {prioritize_overload `:ty`} is to run through the
+overloaded symbols making the first instance of each where the generic type
+variables in the type skeleton are replaced by type {`:ty`} the first priority
 when no other indication is made.
 
 \FAILURE
