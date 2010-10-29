@@ -976,7 +976,7 @@ let LESS_ADD_SUC = ARITH_RULE `!m n. m < m + SUC n`;;
 
 let LESS_REFL = LT_REFL;;
 
-let INV_SUC_EQ = EQ_SUC;;
+let INV_SUC_EQ = SUC_INJ;;
 
 let LESS_EQ_CASES = LE_CASES;;
 

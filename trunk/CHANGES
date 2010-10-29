@@ -1,3 +1,9 @@
+Thu 28th Oct 2010       arith.ml, passim
+
+Joe Hurd pointed out that EQ_SUC proved in arith.ml was just a duplicate of the
+theorem SUC_INJ from nums.ml, so I removed its proof and replaced EQ_SUC by
+SUC_INJ everywhere it was used.
+
 Fri  8th Oct 2010       README
 
 Updated the README file with a few modernizations, in particular a more careful
