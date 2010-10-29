@@ -615,10 +615,6 @@ let LT_MULT_RCANCEL = prove
   ONCE_REWRITE_TAC[MULT_SYM; CONJ_SYM] THEN
   MATCH_ACCEPT_TAC LT_MULT_LCANCEL);;
 
-let EQ_SUC = prove
- (`!m n. (SUC m = SUC n) <=> (m = n)`,
-  MESON_TAC[LE_SUC; LE_ANTISYM]);;
-
 let LT_MULT2 = prove
  (`!m n p q. m < n /\ p < q ==> m * p < n * q`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LET_TRANS THEN
