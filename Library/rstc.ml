@@ -325,7 +325,6 @@ let RTC_INDUCT = prove
 
 let RTC_INDUCT_L = prove
  (`!(R:A->A->bool) P.
-        (!x y. R x y ==> P x y) /\
         (!x. P x x) /\
         (!x y z. P x y /\ R y z ==> P x z)
         ==> !x y. RTC R x y ==> P x y`,
@@ -335,7 +334,6 @@ let RTC_INDUCT_L = prove
 
 let RTC_INDUCT_R = prove
  (`!(R:A->A->bool) P.
-        (!x y. R x y ==> P x y) /\
         (!x. P x x) /\
         (!x y z. R x y /\ P y z ==> P x z)
         ==> !x y. RTC R x y ==> P x y`,
