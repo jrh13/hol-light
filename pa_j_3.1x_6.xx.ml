@@ -1,21 +1,757 @@
-(* camlp5r pa_extend.cmo q_MLast.cmo *)
-(* $Id: pa_o.ml 1271 2007-10-01 08:22:47Z deraugla $ *)
-(* Copyright (c) INRIA 2007 *)
+(* ------------------------------------------------------------------------- *)
+(* New version.                                                              *)
+(* ------------------------------------------------------------------------- *)
+
+(* camlp5r *)
+(* $Id: pa_o.ml,v 6.33 2010-11-16 16:48:21 deraugla Exp $ *)
+(* Copyright (c) INRIA 2007-2010 *)
+
+#load "pa_extend.cmo";
+#load "q_MLast.cmo";
+#load "pa_reloc.cmo";
 
 open Pcaml;
 
 Pcaml.syntax_name.val := "OCaml";
 Pcaml.no_constructors_arity.val := True;
 
-(* camlp5r pa_lexer.cmo *)
-(* $Id: plexer.ml 1402 2007-10-14 02:50:31Z deraugla $ *)
-(* Copyright (c) INRIA 2007 *)
+(* ------------------------------------------------------------------------- *)
+(* The main/reloc.ml file.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* camlp5r *)
+(* $Id: reloc.ml,v 6.15 2010-11-14 11:20:26 deraugla Exp $ *)
+(* Copyright (c) INRIA 2007-2010 *)
+
+#load "pa_macro.cmo";
+
+open MLast;
+
+value option_map f =
+  fun
+  [ Some x -> Some (f x)
+  | None -> None ]
+;
+
+value vala_map f =
+  IFNDEF STRICT THEN
+    fun x -> f x
+  ELSE
+    fun
+    [ Ploc.VaAnt s -> Ploc.VaAnt s
+    | Ploc.VaVal x -> Ploc.VaVal (f x) ]
+  END
+;
+
+value class_infos_map floc f x =
+  {ciLoc = floc x.ciLoc; ciVir = x.ciVir;
+   ciPrm =
+     let (x1, x2) = x.ciPrm in
+     (floc x1, x2);
+   ciNam = x.ciNam; ciExp = f x.ciExp}
+;
+
+value anti_loc qloc sh loc loc1 =
+  (*
+    ...<:expr<.....$lid:...xxxxxxxx...$...>>...
+    |..|-----------------------------------|    qloc
+       <----->                                  sh
+              |.........|------------|          loc
+                        |..|------|             loc1
+  *)
+  let sh1 = Ploc.first_pos qloc + sh in
+  let sh2 = sh1 + Ploc.first_pos loc in
+  let line_nb_qloc = Ploc.line_nb qloc in
+  let line_nb_loc = Ploc.line_nb loc in
+  let line_nb_loc1 = Ploc.line_nb loc1 in
+  if line_nb_qloc < 0 || line_nb_loc < 0 || line_nb_loc1 < 0 then
+    Ploc.make_unlined
+      (sh2 + Ploc.first_pos loc1, sh2 + Ploc.last_pos loc1)
+  else
+    Ploc.make_loc (Ploc.file_name loc)
+      (line_nb_qloc + line_nb_loc + line_nb_loc1 - 2)
+      (if line_nb_loc1 = 1 then
+         if line_nb_loc = 1 then Ploc.bol_pos qloc
+         else sh1 + Ploc.bol_pos loc
+       else sh2 + Ploc.bol_pos loc1)
+      (sh2 + Ploc.first_pos loc1, sh2 + Ploc.last_pos loc1) ""
+;
+
+value rec reloc_ctyp floc sh =
+  self where rec self =
+    fun
+    [ TyAcc loc x1 x2 ->
+        let loc = floc loc in
+        TyAcc loc (self x1) (self x2)
+    | TyAli loc x1 x2 ->
+        let loc = floc loc in
+        TyAli loc (self x1) (self x2)
+    | TyAny loc ->
+        let loc = floc loc in
+        TyAny loc
+    | TyApp loc x1 x2 ->
+        let loc = floc loc in
+        TyApp loc (self x1) (self x2)
+    | TyArr loc x1 x2 ->
+        let loc = floc loc in
+        TyArr loc (self x1) (self x2)
+    | TyCls loc x1 ->
+        let loc = floc loc in
+        TyCls loc x1
+    | TyLab loc x1 x2 ->
+        let loc = floc loc in
+        TyLab loc x1 (self x2)
+    | TyLid loc x1 ->
+        let loc = floc loc in
+        TyLid loc x1
+    | TyMan loc x1 x2 x3 ->
+        let loc = floc loc in
+        TyMan loc (self x1) x2 (self x3)
+    | TyObj loc x1 x2 ->
+        let loc = floc loc in
+        TyObj loc (vala_map (List.map (fun (x1, x2) -> (x1, self x2))) x1) x2
+    | TyOlb loc x1 x2 ->
+        let loc = floc loc in
+        TyOlb loc x1 (self x2)
+    | TyPck loc x1 ->
+        let loc = floc loc in
+        TyPck loc (reloc_module_type floc sh x1)
+    | TyPol loc x1 x2 ->
+        let loc = floc loc in
+        TyPol loc x1 (self x2)
+    | TyPot loc x1 x2 ->
+        let loc = floc loc in
+        TyPot loc x1 (self x2)
+    | TyQuo loc x1 ->
+        let loc = floc loc in
+        TyQuo loc x1
+    | TyRec loc x1 ->
+        let loc = floc loc in
+        TyRec loc
+          (vala_map
+             (List.map (fun (loc, x1, x2, x3) -> (floc loc, x1, x2, self x3)))
+             x1)
+    | TySum loc x1 ->
+        let loc = floc loc in
+        TySum loc
+          (vala_map
+             (List.map
+                (fun (loc, x1, x2, x3) ->
+                   (floc loc, x1, vala_map (List.map self) x2,
+                    option_map self x3)))
+             x1)
+    | TyTup loc x1 ->
+        let loc = floc loc in
+        TyTup loc (vala_map (List.map self) x1)
+    | TyUid loc x1 ->
+        let loc = floc loc in
+        TyUid loc x1
+    | TyVrn loc x1 x2 ->
+        let loc = floc loc in
+        TyVrn loc (vala_map (List.map (reloc_poly_variant floc sh)) x1) x2
+    | IFDEF STRICT THEN
+        TyXtr loc x1 x2 ->
+          let loc = floc loc in
+          TyXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_poly_variant floc sh =
+  fun
+  [ PvTag loc x1 x2 x3 ->
+      let loc = floc loc in
+      PvTag loc x1 x2 (vala_map (List.map (reloc_ctyp floc sh)) x3)
+  | PvInh loc x1 ->
+      let loc = floc loc in
+      PvInh loc (reloc_ctyp floc sh x1) ]
+and reloc_patt floc sh =
+  self where rec self =
+    fun
+    [ PaAcc loc x1 x2 ->
+        let loc = floc loc in
+        PaAcc loc (self x1) (self x2)
+    | PaAli loc x1 x2 ->
+        let loc = floc loc in
+        PaAli loc (self x1) (self x2)
+    | PaAnt loc x1 ->
+        let new_floc loc1 = anti_loc (floc loc) sh loc loc1 in
+        reloc_patt new_floc sh x1
+    | PaAny loc ->
+        let loc = floc loc in
+        PaAny loc
+    | PaApp loc x1 x2 ->
+        let loc = floc loc in
+        PaApp loc (self x1) (self x2)
+    | PaArr loc x1 ->
+        let loc = floc loc in
+        PaArr loc (vala_map (List.map self) x1)
+    | PaChr loc x1 ->
+        let loc = floc loc in
+        PaChr loc x1
+    | PaFlo loc x1 ->
+        let loc = floc loc in
+        PaFlo loc x1
+    | PaInt loc x1 x2 ->
+        let loc = floc loc in
+        PaInt loc x1 x2
+    | PaLab loc x1 x2 ->
+        let loc = floc loc in
+        PaLab loc (self x1) (vala_map (option_map self) x2)
+    | PaLaz loc x1 ->
+        let loc = floc loc in
+        PaLaz loc (self x1)
+    | PaLid loc x1 ->
+        let loc = floc loc in
+        PaLid loc x1
+    | PaNty loc x1 ->
+        let loc = floc loc in
+        PaNty loc x1
+    | PaOlb loc x1 x2 ->
+        let loc = floc loc in
+        PaOlb loc (self x1) (vala_map (option_map (reloc_expr floc sh)) x2)
+    | PaOrp loc x1 x2 ->
+        let loc = floc loc in
+        PaOrp loc (self x1) (self x2)
+    | PaRec loc x1 ->
+        let loc = floc loc in
+        PaRec loc
+          (vala_map (List.map (fun (x1, x2) -> (self x1, self x2))) x1)
+    | PaRng loc x1 x2 ->
+        let loc = floc loc in
+        PaRng loc (self x1) (self x2)
+    | PaStr loc x1 ->
+        let loc = floc loc in
+        PaStr loc x1
+    | PaTup loc x1 ->
+        let loc = floc loc in
+        PaTup loc (vala_map (List.map self) x1)
+    | PaTyc loc x1 x2 ->
+        let loc = floc loc in
+        PaTyc loc (self x1) (reloc_ctyp floc sh x2)
+    | PaTyp loc x1 ->
+        let loc = floc loc in
+        PaTyp loc x1
+    | PaUid loc x1 ->
+        let loc = floc loc in
+        PaUid loc x1
+    | PaUnp loc x1 x2 ->
+        let loc = floc loc in
+        PaUnp loc x1 (option_map (reloc_module_type floc sh) x2)
+    | PaVrn loc x1 ->
+        let loc = floc loc in
+        PaVrn loc x1
+    | IFDEF STRICT THEN
+        PaXtr loc x1 x2 ->
+          let loc = floc loc in
+          PaXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_expr floc sh =
+  self where rec self =
+    fun
+    [ ExAcc loc x1 x2 ->
+        let loc = floc loc in
+        ExAcc loc (self x1) (self x2)
+    | ExAnt loc x1 ->
+        let new_floc loc1 = anti_loc (floc loc) sh loc loc1 in
+        reloc_expr new_floc sh x1
+    | ExApp loc x1 x2 ->
+        let loc = floc loc in
+        ExApp loc (self x1) (self x2)
+    | ExAre loc x1 x2 ->
+        let loc = floc loc in
+        ExAre loc (self x1) (self x2)
+    | ExArr loc x1 ->
+        let loc = floc loc in
+        ExArr loc (vala_map (List.map self) x1)
+    | ExAsr loc x1 ->
+        let loc = floc loc in
+        ExAsr loc (self x1)
+    | ExAss loc x1 x2 ->
+        let loc = floc loc in
+        ExAss loc (self x1) (self x2)
+    | ExBae loc x1 x2 ->
+        let loc = floc loc in
+        ExBae loc (self x1) (vala_map (List.map self) x2)
+    | ExChr loc x1 ->
+        let loc = floc loc in
+        ExChr loc x1
+    | ExCoe loc x1 x2 x3 ->
+        let loc = floc loc in
+        ExCoe loc (self x1) (option_map (reloc_ctyp floc sh) x2) (reloc_ctyp floc sh x3)
+    | ExFlo loc x1 ->
+        let loc = floc loc in
+        ExFlo loc x1
+    | ExFor loc x1 x2 x3 x4 x5 ->
+        let loc = floc loc in
+        ExFor loc x1 (self x2) (self x3) x4 (vala_map (List.map self) x5)
+    | ExFun loc x1 ->
+        let loc = floc loc in
+        ExFun loc
+          (vala_map
+             (List.map
+                (fun (x1, x2, x3) ->
+                   (reloc_patt floc sh x1, vala_map (option_map self) x2, self x3)))
+             x1)
+    | ExIfe loc x1 x2 x3 ->
+        let loc = floc loc in
+        ExIfe loc (self x1) (self x2) (self x3)
+    | ExInt loc x1 x2 ->
+        let loc = floc loc in
+        ExInt loc x1 x2
+    | ExLab loc x1 x2 ->
+        let loc = floc loc in
+        ExLab loc (reloc_patt floc sh x1) (vala_map (option_map self) x2)
+    | ExLaz loc x1 ->
+        let loc = floc loc in
+        ExLaz loc (self x1)
+    | ExLet loc x1 x2 x3 ->
+        let loc = floc loc in
+        ExLet loc x1
+          (vala_map (List.map (fun (x1, x2) -> (reloc_patt floc sh x1, self x2)))
+             x2)
+          (self x3)
+    | ExLid loc x1 ->
+        let loc = floc loc in
+        ExLid loc x1
+    | ExLmd loc x1 x2 x3 ->
+        let loc = floc loc in
+        ExLmd loc x1 (reloc_module_expr floc sh x2) (self x3)
+    | ExMat loc x1 x2 ->
+        let loc = floc loc in
+        ExMat loc (self x1)
+          (vala_map
+             (List.map
+                (fun (x1, x2, x3) ->
+                   (reloc_patt floc sh x1, vala_map (option_map self) x2, self x3)))
+             x2)
+    | ExNew loc x1 ->
+        let loc = floc loc in
+        ExNew loc x1
+    | ExObj loc x1 x2 ->
+        let loc = floc loc in
+        ExObj loc (vala_map (option_map (reloc_patt floc sh)) x1)
+          (vala_map (List.map (reloc_class_str_item floc sh)) x2)
+    | ExOlb loc x1 x2 ->
+        let loc = floc loc in
+        ExOlb loc (reloc_patt floc sh x1) (vala_map (option_map self) x2)
+    | ExOvr loc x1 ->
+        let loc = floc loc in
+        ExOvr loc (vala_map (List.map (fun (x1, x2) -> (x1, self x2))) x1)
+    | ExPck loc x1 x2 ->
+        let loc = floc loc in
+        ExPck loc (reloc_module_expr floc sh x1)
+          (option_map (reloc_module_type floc sh) x2)
+    | ExRec loc x1 x2 ->
+        let loc = floc loc in
+        ExRec loc
+          (vala_map (List.map (fun (x1, x2) -> (reloc_patt floc sh x1, self x2)))
+             x1)
+          (option_map self x2)
+    | ExSeq loc x1 ->
+        let loc = floc loc in
+        ExSeq loc (vala_map (List.map self) x1)
+    | ExSnd loc x1 x2 ->
+        let loc = floc loc in
+        ExSnd loc (self x1) x2
+    | ExSte loc x1 x2 ->
+        let loc = floc loc in
+        ExSte loc (self x1) (self x2)
+    | ExStr loc x1 ->
+        let loc = floc loc in
+        ExStr loc x1
+    | ExTry loc x1 x2 ->
+        let loc = floc loc in
+        ExTry loc (self x1)
+          (vala_map
+             (List.map
+                (fun (x1, x2, x3) ->
+                   (reloc_patt floc sh x1, vala_map (option_map self) x2, self x3)))
+             x2)
+    | ExTup loc x1 ->
+        let loc = floc loc in
+        ExTup loc (vala_map (List.map self) x1)
+    | ExTyc loc x1 x2 ->
+        let loc = floc loc in
+        ExTyc loc (self x1) (reloc_ctyp floc sh x2)
+    | ExUid loc x1 ->
+        let loc = floc loc in
+        ExUid loc x1
+    | ExVrn loc x1 ->
+        let loc = floc loc in
+        ExVrn loc x1
+    | ExWhi loc x1 x2 ->
+        let loc = floc loc in
+        ExWhi loc (self x1) (vala_map (List.map self) x2)
+    | IFDEF STRICT THEN
+        ExXtr loc x1 x2 ->
+          let loc = floc loc in
+          ExXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_module_type floc sh =
+  self where rec self =
+    fun
+    [ MtAcc loc x1 x2 ->
+        let loc = floc loc in
+        MtAcc loc (self x1) (self x2)
+    | MtApp loc x1 x2 ->
+        let loc = floc loc in
+        MtApp loc (self x1) (self x2)
+    | MtFun loc x1 x2 x3 ->
+        let loc = floc loc in
+        MtFun loc x1 (self x2) (self x3)
+    | MtLid loc x1 ->
+        let loc = floc loc in
+        MtLid loc x1
+    | MtQuo loc x1 ->
+        let loc = floc loc in
+        MtQuo loc x1
+    | MtSig loc x1 ->
+        let loc = floc loc in
+        MtSig loc (vala_map (List.map (reloc_sig_item floc sh)) x1)
+    | MtTyo loc x1 ->
+        let loc = floc loc in
+        MtTyo loc (reloc_module_expr floc sh x1)
+    | MtUid loc x1 ->
+        let loc = floc loc in
+        MtUid loc x1
+    | MtWit loc x1 x2 ->
+        let loc = floc loc in
+        MtWit loc (self x1) (vala_map (List.map (reloc_with_constr floc sh)) x2)
+    | IFDEF STRICT THEN
+        MtXtr loc x1 x2 ->
+          let loc = floc loc in
+          MtXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_sig_item floc sh =
+  self where rec self =
+    fun
+    [ SgCls loc x1 ->
+        let loc = floc loc in
+        SgCls loc
+          (vala_map (List.map (class_infos_map floc (reloc_class_type floc sh))) x1)
+    | SgClt loc x1 ->
+        let loc = floc loc in
+        SgClt loc
+          (vala_map (List.map (class_infos_map floc (reloc_class_type floc sh))) x1)
+    | SgDcl loc x1 ->
+        let loc = floc loc in
+        SgDcl loc (vala_map (List.map self) x1)
+    | SgDir loc x1 x2 ->
+        let loc = floc loc in
+        SgDir loc x1 (vala_map (option_map (reloc_expr floc sh)) x2)
+    | SgExc loc x1 x2 ->
+        let loc = floc loc in
+        SgExc loc x1 (vala_map (List.map (reloc_ctyp floc sh)) x2)
+    | SgExt loc x1 x2 x3 ->
+        let loc = floc loc in
+        SgExt loc x1 (reloc_ctyp floc sh x2) x3
+    | SgInc loc x1 ->
+        let loc = floc loc in
+        SgInc loc (reloc_module_type floc sh x1)
+    | SgMod loc x1 x2 ->
+        let loc = floc loc in
+        SgMod loc x1
+          (vala_map (List.map (fun (x1, x2) -> (x1, reloc_module_type floc sh x2)))
+             x2)
+    | SgMty loc x1 x2 ->
+        let loc = floc loc in
+        SgMty loc x1 (reloc_module_type floc sh x2)
+    | SgOpn loc x1 ->
+        let loc = floc loc in
+        SgOpn loc x1
+    | SgTyp loc x1 ->
+        let loc = floc loc in
+        SgTyp loc (vala_map (List.map (reloc_type_decl floc sh)) x1)
+    | SgUse loc x1 x2 ->
+        let loc = floc loc in
+        SgUse loc x1
+          (vala_map (List.map (fun (x1, loc) -> (self x1, floc loc))) x2)
+    | SgVal loc x1 x2 ->
+        let loc = floc loc in
+        SgVal loc x1 (reloc_ctyp floc sh x2)
+    | IFDEF STRICT THEN
+        SgXtr loc x1 x2 ->
+          let loc = floc loc in
+          SgXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_with_constr floc sh =
+  fun
+  [ WcMod loc x1 x2 ->
+      let loc = floc loc in
+      WcMod loc x1 (reloc_module_expr floc sh x2)
+  | WcMos loc x1 x2 ->
+      let loc = floc loc in
+      WcMos loc x1 (reloc_module_expr floc sh x2)
+  | WcTyp loc x1 x2 x3 x4 ->
+      let loc = floc loc in
+      WcTyp loc x1 x2 x3 (reloc_ctyp floc sh x4)
+  | WcTys loc x1 x2 x3 ->
+      let loc = floc loc in
+      WcTys loc x1 x2 (reloc_ctyp floc sh x3) ]
+and reloc_module_expr floc sh =
+  self where rec self =
+    fun
+    [ MeAcc loc x1 x2 ->
+        let loc = floc loc in
+        MeAcc loc (self x1) (self x2)
+    | MeApp loc x1 x2 ->
+        let loc = floc loc in
+        MeApp loc (self x1) (self x2)
+    | MeFun loc x1 x2 x3 ->
+        let loc = floc loc in
+        MeFun loc x1 (reloc_module_type floc sh x2) (self x3)
+    | MeStr loc x1 ->
+        let loc = floc loc in
+        MeStr loc (vala_map (List.map (reloc_str_item floc sh)) x1)
+    | MeTyc loc x1 x2 ->
+        let loc = floc loc in
+        MeTyc loc (self x1) (reloc_module_type floc sh x2)
+    | MeUid loc x1 ->
+        let loc = floc loc in
+        MeUid loc x1
+    | MeUnp loc x1 x2 ->
+        let loc = floc loc in
+        MeUnp loc (reloc_expr floc sh x1) (option_map (reloc_module_type floc sh) x2)
+    | IFDEF STRICT THEN
+        MeXtr loc x1 x2 ->
+          let loc = floc loc in
+          MeXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_str_item floc sh =
+  self where rec self =
+    fun
+    [ StCls loc x1 ->
+        let loc = floc loc in
+        StCls loc
+          (vala_map (List.map (class_infos_map floc (reloc_class_expr floc sh))) x1)
+    | StClt loc x1 ->
+        let loc = floc loc in
+        StClt loc
+          (vala_map (List.map (class_infos_map floc (reloc_class_type floc sh))) x1)
+    | StDcl loc x1 ->
+        let loc = floc loc in
+        StDcl loc (vala_map (List.map self) x1)
+    | StDir loc x1 x2 ->
+        let loc = floc loc in
+        StDir loc x1 (vala_map (option_map (reloc_expr floc sh)) x2)
+    | StExc loc x1 x2 x3 ->
+        let loc = floc loc in
+        StExc loc x1 (vala_map (List.map (reloc_ctyp floc sh)) x2) x3
+    | StExp loc x1 ->
+        let loc = floc loc in
+        StExp loc (reloc_expr floc sh x1)
+    | StExt loc x1 x2 x3 ->
+        let loc = floc loc in
+        StExt loc x1 (reloc_ctyp floc sh x2) x3
+    | StInc loc x1 ->
+        let loc = floc loc in
+        StInc loc (reloc_module_expr floc sh x1)
+    | StMod loc x1 x2 ->
+        let loc = floc loc in
+        StMod loc x1
+          (vala_map (List.map (fun (x1, x2) -> (x1, reloc_module_expr floc sh x2)))
+             x2)
+    | StMty loc x1 x2 ->
+        let loc = floc loc in
+        StMty loc x1 (reloc_module_type floc sh x2)
+    | StOpn loc x1 ->
+        let loc = floc loc in
+        StOpn loc x1
+    | StTyp loc x1 ->
+        let loc = floc loc in
+        StTyp loc (vala_map (List.map (reloc_type_decl floc sh)) x1)
+    | StUse loc x1 x2 ->
+        let loc = floc loc in
+        StUse loc x1
+          (vala_map (List.map (fun (x1, loc) -> (self x1, floc loc))) x2)
+    | StVal loc x1 x2 ->
+        let loc = floc loc in
+        StVal loc x1
+          (vala_map
+             (List.map (fun (x1, x2) -> (reloc_patt floc sh x1, reloc_expr floc sh x2)))
+             x2)
+    | IFDEF STRICT THEN
+        StXtr loc x1 x2 ->
+          let loc = floc loc in
+          StXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_type_decl floc sh x =
+  {tdNam = vala_map (fun (loc, x1) -> (floc loc, x1)) x.tdNam;
+   tdPrm = x.tdPrm; tdPrv = x.tdPrv; tdDef = reloc_ctyp floc sh x.tdDef;
+   tdCon =
+     vala_map (List.map (fun (x1, x2) -> (reloc_ctyp floc sh x1, reloc_ctyp floc sh x2)))
+       x.tdCon}
+and reloc_class_type floc sh =
+  self where rec self =
+    fun
+    [ CtAcc loc x1 x2 ->
+        let loc = floc loc in
+        CtAcc loc (self x1) (self x2)
+    | CtApp loc x1 x2 ->
+        let loc = floc loc in
+        CtApp loc (self x1) (self x2)
+    | CtCon loc x1 x2 ->
+        let loc = floc loc in
+        CtCon loc (self x1) (vala_map (List.map (reloc_ctyp floc sh)) x2)
+    | CtFun loc x1 x2 ->
+        let loc = floc loc in
+        CtFun loc (reloc_ctyp floc sh x1) (self x2)
+    | CtIde loc x1 ->
+        let loc = floc loc in
+        CtIde loc x1
+    | CtSig loc x1 x2 ->
+        let loc = floc loc in
+        CtSig loc (vala_map (option_map (reloc_ctyp floc sh)) x1)
+          (vala_map (List.map (reloc_class_sig_item floc sh)) x2)
+    | IFDEF STRICT THEN
+        CtXtr loc x1 x2 ->
+          let loc = floc loc in
+          CtXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_class_sig_item floc sh =
+  self where rec self =
+    fun
+    [ CgCtr loc x1 x2 ->
+        let loc = floc loc in
+        CgCtr loc (reloc_ctyp floc sh x1) (reloc_ctyp floc sh x2)
+    | CgDcl loc x1 ->
+        let loc = floc loc in
+        CgDcl loc (vala_map (List.map self) x1)
+    | CgInh loc x1 ->
+        let loc = floc loc in
+        CgInh loc (reloc_class_type floc sh x1)
+    | CgMth loc x1 x2 x3 ->
+        let loc = floc loc in
+        CgMth loc x1 x2 (reloc_ctyp floc sh x3)
+    | CgVal loc x1 x2 x3 ->
+        let loc = floc loc in
+        CgVal loc x1 x2 (reloc_ctyp floc sh x3)
+    | CgVir loc x1 x2 x3 ->
+        let loc = floc loc in
+        CgVir loc x1 x2 (reloc_ctyp floc sh x3) ]
+and reloc_class_expr floc sh =
+  self where rec self =
+    fun
+    [ CeApp loc x1 x2 ->
+        let loc = floc loc in
+        CeApp loc (self x1) (reloc_expr floc sh x2)
+    | CeCon loc x1 x2 ->
+        let loc = floc loc in
+        CeCon loc x1 (vala_map (List.map (reloc_ctyp floc sh)) x2)
+    | CeFun loc x1 x2 ->
+        let loc = floc loc in
+        CeFun loc (reloc_patt floc sh x1) (self x2)
+    | CeLet loc x1 x2 x3 ->
+        let loc = floc loc in
+        CeLet loc x1
+          (vala_map
+             (List.map (fun (x1, x2) -> (reloc_patt floc sh x1, reloc_expr floc sh x2)))
+             x2)
+          (self x3)
+    | CeStr loc x1 x2 ->
+        let loc = floc loc in
+        CeStr loc (vala_map (option_map (reloc_patt floc sh)) x1)
+          (vala_map (List.map (reloc_class_str_item floc sh)) x2)
+    | CeTyc loc x1 x2 ->
+        let loc = floc loc in
+        CeTyc loc (self x1) (reloc_class_type floc sh x2)
+    | IFDEF STRICT THEN
+        CeXtr loc x1 x2 ->
+          let loc = floc loc in
+          CeXtr loc x1 (option_map (vala_map self) x2)
+      END ]
+and reloc_class_str_item floc sh =
+  self where rec self =
+    fun
+    [ CrCtr loc x1 x2 ->
+        let loc = floc loc in
+        CrCtr loc (reloc_ctyp floc sh x1) (reloc_ctyp floc sh x2)
+    | CrDcl loc x1 ->
+        let loc = floc loc in
+        CrDcl loc (vala_map (List.map self) x1)
+    | CrInh loc x1 x2 ->
+        let loc = floc loc in
+        CrInh loc (reloc_class_expr floc sh x1) x2
+    | CrIni loc x1 ->
+        let loc = floc loc in
+        CrIni loc (reloc_expr floc sh x1)
+    | CrMth loc x1 x2 x3 x4 x5 ->
+        let loc = floc loc in
+        CrMth loc x1 x2 x3 (vala_map (option_map (reloc_ctyp floc sh)) x4)
+          (reloc_expr floc sh x5)
+    | CrVal loc x1 x2 x3 x4 ->
+        let loc = floc loc in
+        CrVal loc x1 x2 x3 (reloc_expr floc sh x4)
+    | CrVav loc x1 x2 x3 ->
+        let loc = floc loc in
+        CrVav loc x1 x2 (reloc_ctyp floc sh x3)
+    | CrVir loc x1 x2 x3 ->
+        let loc = floc loc in
+        CrVir loc x1 x2 (reloc_ctyp floc sh x3) ]
+;
+
+(* Equality over syntax trees *)
+
+value eq_expr x y =
+  reloc_expr (fun _ -> Ploc.dummy) 0 x =
+  reloc_expr (fun _ -> Ploc.dummy) 0 y
+;
+value eq_patt x y =
+  reloc_patt (fun _ -> Ploc.dummy) 0 x =
+  reloc_patt (fun _ -> Ploc.dummy) 0 y
+;
+value eq_ctyp x y =
+  reloc_ctyp (fun _ -> Ploc.dummy) 0 x =
+  reloc_ctyp (fun _ -> Ploc.dummy) 0 y
+;
+value eq_str_item x y =
+  reloc_str_item (fun _ -> Ploc.dummy) 0 x =
+  reloc_str_item (fun _ -> Ploc.dummy) 0 y
+;
+value eq_sig_item x y =
+  reloc_sig_item (fun _ -> Ploc.dummy) 0 x =
+  reloc_sig_item (fun _ -> Ploc.dummy) 0 y
+;
+value eq_module_expr x y =
+  reloc_module_expr (fun _ -> Ploc.dummy) 0 x =
+  reloc_module_expr (fun _ -> Ploc.dummy) 0 y
+;
+value eq_module_type x y =
+  reloc_module_type (fun _ -> Ploc.dummy) 0 x =
+  reloc_module_type (fun _ -> Ploc.dummy) 0 y
+;
+value eq_class_sig_item x y =
+  reloc_class_sig_item (fun _ -> Ploc.dummy) 0 x =
+  reloc_class_sig_item (fun _ -> Ploc.dummy) 0 y
+;
+value eq_class_str_item x y =
+  reloc_class_str_item (fun _ -> Ploc.dummy) 0 x =
+  reloc_class_str_item (fun _ -> Ploc.dummy) 0 y
+;
+value eq_class_type x y =
+  reloc_class_type (fun _ -> Ploc.dummy) 0 x =
+  reloc_class_type (fun _ -> Ploc.dummy) 0 y
+;
+value eq_class_expr x y =
+  reloc_class_expr (fun _ -> Ploc.dummy) 0 x =
+  reloc_class_expr (fun _ -> Ploc.dummy) 0 y
+;
+
+(* ------------------------------------------------------------------------- *)
+(* Now the lexer.                                                            *)
+(* ------------------------------------------------------------------------- *)
+
+(* camlp5r *)
+(* $Id: plexer.ml,v 6.11 2010-10-04 20:14:58 deraugla Exp $ *)
+(* Copyright (c) INRIA 2007-2010 *)
+
+#load "pa_lexer.cmo";
 
 (* ------------------------------------------------------------------------- *)
 (* Added by JRH as a backdoor to change lexical conventions.                 *)
 (* ------------------------------------------------------------------------- *)
 
 value jrh_lexer = ref False;
+
+open Versdep;
 
 value no_quotations = ref False;
 value error_on_unknown_keywords = ref False;
@@ -24,18 +760,6 @@ value dollar_for_antiquotation = ref True;
 value specific_space_dot = ref False;
 
 value force_antiquot_loc = ref False;
-
-(* The string buffering machinery *)
-
-value rev_implode l =
-  let s = String.create (List.length l) in
-  loop (String.length s - 1) l where rec loop i =
-    fun
-    [ [c :: l] -> do { String.unsafe_set s i c; loop (i - 1) l }
-    | [] -> s ]
-;
-
-(* The lexer *)
 
 type context =
   { after_space : mutable bool;
@@ -99,14 +823,31 @@ value stream_peek_nth n strm =
     | [_ :: l] -> loop (n - 1) l ]
 ;
 
+value utf8_lexing = ref False;
+
+value misc_letter buf strm =
+  if utf8_lexing.val then
+    match strm with lexer [ '\128'-'\225' | '\227'-'\255' ]
+  else
+    match strm with lexer [ '\128'-'\255' ]
+;
+
+value misc_punct buf strm =
+  if utf8_lexing.val then
+    match strm with lexer [ '\226' _ _ ]
+  else
+    match strm with parser []
+;
+
 value rec ident =
   lexer
-  [ [ 'A'-'Z' | 'a'-'z' | '0'-'9' | '_' | ''' | '\128'-'\255' ] ident! | ]
+  [ [ 'A'-'Z' | 'a'-'z' | '0'-'9' | '_' | ''' | misc_letter ] ident! | ]
 ;
+
 value rec ident2 =
   lexer
   [ [ '!' | '?' | '~' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' |
-      '%' | '.' | ':' | '<' | '>' | '|' | '$' ]
+      '%' | '.' | ':' | '<' | '>' | '|' | '$' | misc_punct ]
       ident2!
   | ]
 ;
@@ -165,16 +906,15 @@ value number =
   | decimal_digits_under end_integer! ]
 ;
 
-value rec char_aux ctx bp =
+value char_after_bslash =
   lexer
   [ "'"/
-  | _ (char_aux ctx bp)!
-  | -> err ctx (bp, $pos) "char not terminated" ]
+  | _ [ "'"/ | _ [ "'"/ | ] ] ]
 ;
 
 value char ctx bp =
   lexer
-  [ "\\" _ (char_aux ctx bp)!
+  [ "\\" _ char_after_bslash!
   | "\\" -> err ctx (bp, $pos) "char not terminated"
   | ?= [ _ '''] _! "'"/ ]
 ;
@@ -206,8 +946,9 @@ value comment ctx bp =
     | "(*" comment! comment!
     | "(" comment!
     | "\"" (string ctx bp)! [ -> $add "\"" ] comment!
-    | "'" (char ctx bp) comment!
-    | "'" comment!
+    | "'*)"
+    | "'*" comment!
+    | "'" (any ctx) comment!
     | (any ctx) comment!
     | -> err ctx (bp, $pos) "comment not terminated" ]
 ;
@@ -226,6 +967,8 @@ value rec quotation ctx bp =
   | -> err ctx (bp, $pos) "quotation not terminated" ]
 ;
 
+value less_expected = "character '<' expected";
+
 value less ctx bp buf strm =
   if no_quotations.val then
     match strm with lexer
@@ -233,8 +976,9 @@ value less ctx bp buf strm =
   else
     match strm with lexer
     [ "<"/ (quotation ctx bp) -> ("QUOTATION", ":" ^ $buf)
-    | ":"/ ident! [ -> $add ":" ]! "<"/ ? "character '<' expected"
-      (quotation ctx bp) ->
+    | ":"/ ident! "<"/ ? less_expected [ -> $add ":" ]! (quotation ctx bp) ->
+        ("QUOTATION", $buf)
+    | ":"/ ident! ":<"/ ? less_expected [ -> $add "@" ]! (quotation ctx bp) ->
         ("QUOTATION", $buf)
     | [ -> $add "<" ] ident2! -> keyword_or_error ctx (bp, $pos) $buf ]
 ;
@@ -250,7 +994,7 @@ value rec antiquot_rest ctx bp =
 value rec antiquot ctx bp =
   lexer
   [ "$"/ -> ":" ^ $buf
-  | [ 'a'-'z' | 'A'-'Z' | '0'-'9' | '_' ] (antiquot ctx bp)!
+  | [ 'a'-'z' | 'A'-'Z' | '0'-'9' | '!' | '_' ] (antiquot ctx bp)!
   | ":" (antiquot_rest ctx bp)! -> $buf
   | "\\"/ (any ctx) (antiquot_rest ctx bp)! -> ":" ^ $buf
   | (any ctx) (antiquot_rest ctx bp)! -> ":" ^ $buf
@@ -262,7 +1006,7 @@ value antiloc bp ep s = Printf.sprintf "%d,%d:%s" bp ep s;
 value rec antiquot_loc ctx bp =
   lexer
   [ "$"/ -> antiloc bp $pos (":" ^ $buf)
-  | [ 'a'-'z' | 'A'-'Z' | '0'-'9' | '_' ] (antiquot_loc ctx bp)!
+  | [ 'a'-'z' | 'A'-'Z' | '0'-'9' | '!' | '_' ] (antiquot_loc ctx bp)!
   | ":" (antiquot_rest ctx bp)! -> antiloc bp $pos $buf
   | "\\"/ (any ctx) (antiquot_rest ctx bp)! -> antiloc bp $pos (":" ^ $buf)
   | (any ctx) (antiquot_rest ctx bp)! -> antiloc bp $pos (":" ^ $buf)
@@ -270,7 +1014,7 @@ value rec antiquot_loc ctx bp =
 ;
 
 value dollar ctx bp buf strm =
-  if ctx.dollar_for_antiquotation then
+  if not no_quotations.val && ctx.dollar_for_antiquotation then
     ("ANTIQUOT", antiquot ctx bp buf strm)
   else if force_antiquot_loc.val then
     ("ANTIQUOT_LOC", antiquot_loc ctx bp buf strm)
@@ -384,21 +1128,22 @@ value next_token_after_spaces ctx bp =
   lexer
   [ 'A'-'Z' ident! ->
       let id = $buf in
-      jrh_identifier ctx.find_kwd id
+     jrh_identifier ctx.find_kwd id
 (********** JRH: original was
       try ("", ctx.find_kwd id) with [ Not_found -> ("UIDENT", id) ]
  *********)
-  | [ 'a'-'z' | '_' | '\128'-'\255' ] ident! ->
+  | [ 'a'-'z' | '_' | misc_letter ] ident! ->
       let id = $buf in
       jrh_identifier ctx.find_kwd id
 (********** JRH: original was
       try ("", ctx.find_kwd id) with [ Not_found -> ("LIDENT", id) ]
- *********)
+ *********)               
   | '1'-'9' number!
   | "0" [ 'o' | 'O' ] (digits octal)!
   | "0" [ 'x' | 'X' ] (digits hexa)!
   | "0" [ 'b' | 'B' ] (digits binary)!
   | "0" number!
+  | "'"/ ?= [ '\\' 'a'-'z' 'a'-'z' ] -> keyword_or_error ctx (bp, $pos) "'"
   | "'"/ (char ctx bp) -> ("CHAR", $buf)
   | "'" -> keyword_or_error ctx (bp, $pos) "'"
   | "\""/ (string ctx bp)! -> ("STRING", $buf)
@@ -408,6 +1153,7 @@ value next_token_after_spaces ctx bp =
   | [ '!' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' | '%' ] ident2! ->
       keyword_or_error ctx (bp, $pos) $buf
   | "~"/ 'a'-'z' ident! tildeident!
+  | "~"/ '_' ident! tildeident!
   | "~" (tilde ctx bp)
   | "?"/ 'a'-'z' ident! questionident!
   | "?" (question ctx bp)!
@@ -441,14 +1187,17 @@ value next_token_after_spaces ctx bp =
       keyword_or_error ctx (bp, $pos) id
   | ";;" -> keyword_or_error ctx (bp, $pos) ";;"
   | ";" -> keyword_or_error ctx (bp, $pos) ";"
+  | misc_punct ident2! -> keyword_or_error ctx (bp, $pos) $buf
   | "\\"/ ident3! -> ("LIDENT", $buf)
   | (any ctx) -> keyword_or_error ctx (bp, $pos) $buf ]
 ;
 
+value get_comment buf strm = $buf;
+
 value rec next_token ctx buf =
   parser bp
   [ [: `('\n' | '\r' as c); s :] ep -> do {
-      incr Plexing.line_nb.val;
+      if c = '\n' then incr Plexing.line_nb.val else ();
       Plexing.bol_pos.val.val := ep;
       ctx.set_line_nb ();
       ctx.after_space := True;
@@ -459,6 +1208,7 @@ value rec next_token ctx buf =
       next_token ctx ($add c) s
     }
   | [: `'#' when bp = Plexing.bol_pos.val.val; s :] ->
+      let comm = get_comment buf () in
       if linedir 1 s then do {
         let buf = any_to_nl ($add '#') s in
         incr Plexing.line_nb.val;
@@ -468,7 +1218,7 @@ value rec next_token ctx buf =
         next_token ctx buf s
       }
       else
-        let loc = ctx.make_lined_loc (bp, bp + 1) $buf in
+        let loc = ctx.make_lined_loc (bp, bp + 1) comm in
         (keyword_or_error ctx (bp, bp + 1) "#", loc)
   | [: `'(';
        a =
@@ -481,11 +1231,12 @@ value rec next_token ctx buf =
          | [: :] ep ->
              let loc = ctx.make_lined_loc (bp, ep) $buf in
              (keyword_or_error ctx (bp, ep) "(", loc) ] ! :] -> a
-  | [: tok = next_token_after_spaces ctx bp $empty :] ep ->
-      let loc = ctx.make_lined_loc (bp, max (bp + 1) ep) $buf in
+  | [: comm = get_comment buf;
+       tok = next_token_after_spaces ctx bp $empty :] ep ->
+      let loc = ctx.make_lined_loc (bp, max (bp + 1) ep) comm in
       (tok, loc)
-  | [: _ = Stream.empty :] ->
-      let loc = ctx.make_lined_loc (bp, bp + 1) $buf in
+  | [: comm = get_comment buf; _ = Stream.empty :] ->
+      let loc = ctx.make_lined_loc (bp, bp + 1) comm in
       (("EOI", ""), loc) ]
 ;
 
@@ -495,7 +1246,7 @@ value next_token_fun ctx glexr (cstrm, s_line_nb, s_bol_pos) =
     [ Some (line_nb, bol_pos) -> do {
         s_line_nb.val := line_nb;
         s_bol_pos.val := bol_pos;
-        Plexing.restore_lexing_info.val := None
+        Plexing.restore_lexing_info.val := None;
       }
     | None -> () ];
     Plexing.line_nb.val := s_line_nb;
@@ -529,7 +1280,7 @@ value func kwd_table glexr =
      line_cnt bp1 c =
        match c with
        [ '\n' | '\r' -> do {
-           incr Plexing.line_nb.val;
+           if c = '\n' then incr Plexing.line_nb.val else ();
            Plexing.bol_pos.val.val := bp1 + 1;
          }
        | c -> () ];
@@ -538,7 +1289,7 @@ value func kwd_table glexr =
        bol_pos.val := Plexing.bol_pos.val.val;
      };
      make_lined_loc loc comm =
-       Ploc.make line_nb.val bol_pos.val loc}
+       Ploc.make_loc Plexing.input_file.val line_nb.val bol_pos.val loc comm}
   in
   Plexing.lexer_func_of_parser (next_token_fun ctx glexr)
 ;
@@ -547,7 +1298,7 @@ value rec check_keyword_stream =
   parser [: _ = check $empty; _ = Stream.empty :] -> True
 and check =
   lexer
-  [ [ 'A'-'Z' | 'a'-'z' | '\128'-'\255' ] check_ident!
+  [ [ 'A'-'Z' | 'a'-'z' | misc_letter ] check_ident!
   | [ '!' | '?' | '~' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' | '%' |
       '.' ]
       check_ident2!
@@ -577,15 +1328,16 @@ and check =
   | "{"
   | ";;"
   | ";"
+  | misc_punct check_ident2!
   | _ ]
 and check_ident =
   lexer
-  [ [ 'A'-'Z' | 'a'-'z' | '0'-'9' | '_' | ''' | '\128'-'\255' ]
+  [ [ 'A'-'Z' | 'a'-'z' | '0'-'9' | '_' | ''' | misc_letter ]
     check_ident! | ]
 and check_ident2 =
   lexer
   [ [ '!' | '?' | '~' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' | '%' |
-      '.' | ':' | '<' | '>' | '|' ]
+      '.' | ':' | '<' | '>' | '|' | misc_punct ]
     check_ident2! | ]
 ;
 
@@ -613,9 +1365,9 @@ value error_ident_and_keyword p_con p_prm =
 value using_token kwd_table ident_table (p_con, p_prm) =
   match p_con with
   [ "" ->
-      if not (Hashtbl.mem kwd_table p_prm) then
+      if not (hashtbl_mem kwd_table p_prm) then
         if check_keyword p_prm then
-          if Hashtbl.mem ident_table p_prm then
+          if hashtbl_mem ident_table p_prm then
             error_ident_and_keyword (Hashtbl.find ident_table p_prm) p_prm
           else Hashtbl.add kwd_table p_prm p_prm
         else error_no_respect_rules p_con p_prm
@@ -626,7 +1378,7 @@ value using_token kwd_table ident_table (p_con, p_prm) =
         match p_prm.[0] with
         [ 'A'..'Z' -> error_no_respect_rules p_con p_prm
         | _ ->
-            if Hashtbl.mem kwd_table p_prm then
+            if hashtbl_mem kwd_table p_prm then
               error_ident_and_keyword p_con p_prm
             else Hashtbl.add ident_table p_prm p_con ]
   | "UIDENT" ->
@@ -635,7 +1387,7 @@ value using_token kwd_table ident_table (p_con, p_prm) =
         match p_prm.[0] with
         [ 'a'..'z' -> error_no_respect_rules p_con p_prm
         | _ ->
-            if Hashtbl.mem kwd_table p_prm then
+            if hashtbl_mem kwd_table p_prm then
               error_ident_and_keyword p_con p_prm
             else Hashtbl.add ident_table p_prm p_con ]
   | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
@@ -747,6 +1499,10 @@ value gmake () =
   do { glexr.val := glex; glex }
 ;
 
+(* ------------------------------------------------------------------------- *)
+(* Back to etc/pa_o.ml                                                       *)
+(* ------------------------------------------------------------------------- *)
+
 do {
   let odfa = dollar_for_antiquotation.val in
   dollar_for_antiquotation.val := False;
@@ -760,12 +1516,15 @@ do {
   Grammar.Unsafe.clear_entry module_expr;
   Grammar.Unsafe.clear_entry sig_item;
   Grammar.Unsafe.clear_entry str_item;
+  Grammar.Unsafe.clear_entry signature;
+  Grammar.Unsafe.clear_entry structure;
   Grammar.Unsafe.clear_entry expr;
   Grammar.Unsafe.clear_entry patt;
   Grammar.Unsafe.clear_entry ctyp;
   Grammar.Unsafe.clear_entry let_binding;
-  Grammar.Unsafe.clear_entry type_declaration;
+  Grammar.Unsafe.clear_entry type_decl;
   Grammar.Unsafe.clear_entry constructor_declaration;
+  Grammar.Unsafe.clear_entry label_declaration;
   Grammar.Unsafe.clear_entry match_case;
   Grammar.Unsafe.clear_entry with_constr;
   Grammar.Unsafe.clear_entry poly_variant;
@@ -777,20 +1536,6 @@ do {
 
 Pcaml.parse_interf.val := Grammar.Entry.parse interf;
 Pcaml.parse_implem.val := Grammar.Entry.parse implem;
-
-value neg_string n =
-  let len = String.length n in
-  if len > 0 && n.[0] = '-' then String.sub n 1 (len - 1) else "-" ^ n
-;
-
-value mkumin loc f arg =
-  match arg with
-  [ <:expr< $int:n$ >> -> <:expr< $int:neg_string n$ >>
-  | <:expr< $flo:n$ >> -> <:expr< $flo:neg_string n$ >>
-  | _ ->
-      let f = "~" ^ f in
-      <:expr< $lid:f$ $arg$ >> ]
-;
 
 value mklistexp loc last =
   loop True where rec loop top =
@@ -855,8 +1600,6 @@ value translate_operator =
     | "F_F" -> "f_f_"
     | _ -> s];
 
-(*** And JRH inserted it in here ***)
-
 value operator_rparen =
   Grammar.Entry.of_parser gram "operator_rparen"
     (fun strm ->
@@ -913,7 +1656,7 @@ value infixop0 =
     (parser
        [: `("", x)
            when
-             not (List.mem x excl) && String.length x >= 2 &&
+             not (List.mem x excl) && (x = "$" || String.length x >= 2) &&
              List.mem x.[0] list && symbolchar x 1 :] ->
          x)
 ;
@@ -1043,6 +1786,15 @@ value test_typevar_list_dot =
      test 1)
 ;
 
+value e_phony =
+  Grammar.Entry.of_parser gram "e_phony"
+    (parser [])
+;
+value p_phony =
+  Grammar.Entry.of_parser gram "p_phony"
+    (parser [])
+;
+
 value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
 
 value rec is_expr_constr_call =
@@ -1075,7 +1827,9 @@ value get_seq =
   | e -> [e] ]
 ;
 
-value mem_tvar s tpl = List.exists (fun (t, _) -> Pcaml.unvala t = s) tpl;
+value mem_tvar s tpl =
+  List.exists (fun (t, _) -> Pcaml.unvala t = Some s) tpl
+;
 
 value choose_tvar tpl =
   let rec find_alpha v =
@@ -1093,21 +1847,53 @@ value choose_tvar tpl =
   | None -> make_n 1 ]
 ;
 
+value quotation_content s = do {
+  loop 0 where rec loop i =
+    if i = String.length s then ("", s)
+    else if s.[i] = ':' || s.[i] = '@' then
+      let i = i + 1 in
+      (String.sub s 0 i, String.sub s i (String.length s - i))
+    else loop (i + 1)
+};
+
+value concat_comm loc e =
+  let loc =
+    Ploc.with_comment loc
+      (Ploc.comment loc ^ Ploc.comment (MLast.loc_of_expr e))
+  in
+  let floc =
+    let first = ref True in
+    fun loc1 ->
+      if first.val then do {first.val := False; loc}
+      else loc1
+  in
+  reloc_expr floc 0 e
+;
+
 EXTEND
-  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
-    class_expr class_sig_item class_str_item let_binding type_declaration
-    constructor_declaration match_case with_constr poly_variant;
+  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr
+    signature structure class_type class_expr class_sig_item class_str_item
+    let_binding type_decl constructor_declaration label_declaration
+    match_case with_constr poly_variant;
   module_expr:
     [ [ "functor"; "("; i = V UIDENT "uid" ""; ":"; t = module_type; ")";
         "->"; me = SELF ->
           <:module_expr< functor ( $_uid:i$ : $t$ ) -> $me$ >>
-      | "struct"; st = V (LIST0 [ s = str_item; OPT ";;" -> s ]); "end" ->
+      | "struct"; st = structure; "end" ->
           <:module_expr< struct $_list:st$ end >> ]
-    | [ me1 = SELF; me2 = SELF -> <:module_expr< $me1$ $me2$ >> ]
+    | [ me1 = SELF; "."; me2 = SELF -> <:module_expr< $me1$ . $me2$ >> ]
+    | [ me1 = SELF; "("; me2 = SELF; ")" -> <:module_expr< $me1$ $me2$ >> ]
     | [ i = mod_expr_ident -> i
+      | "("; "val"; e = expr; ":"; mt = module_type; ")" ->
+         <:module_expr< (value $e$ : $mt$) >>
+      | "("; "val"; e = expr; ")" ->
+         <:module_expr< (value $e$) >>
       | "("; me = SELF; ":"; mt = module_type; ")" ->
           <:module_expr< ( $me$ : $mt$ ) >>
       | "("; me = SELF; ")" -> <:module_expr< $me$ >> ] ]
+  ;
+  structure:
+    [ [ st = V (LIST0 [ s = str_item; OPT ";;" -> s ]) -> st ] ]
   ;
   mod_expr_ident:
     [ LEFTA
@@ -1116,7 +1902,8 @@ EXTEND
   ;
   str_item:
     [ "top"
-      [ "exception"; (_, c, tl) = constructor_declaration; b = rebind_exn ->
+      [ "exception"; (_, c, tl, _) = constructor_declaration;
+        b = rebind_exn ->
           <:str_item< exception $_uid:c$ of $_list:tl$ = $_list:b$ >>
       | "external"; i = V LIDENT "lid" ""; ":"; t = ctyp; "=";
         pd = V (LIST1 STRING) ->
@@ -1131,7 +1918,7 @@ EXTEND
           <:str_item< module type $_uid:i$ = $mt$ >>
       | "open"; i = V mod_ident "list" "" ->
           <:str_item< open $_:i$ >>
-      | "type"; tdl = V (LIST1 type_declaration SEP "and") ->
+      | "type"; tdl = V (LIST1 type_decl SEP "and") ->
           <:str_item< type $_list:tdl$ >>
       | "let"; r = V (FLAG "rec"); l = V (LIST1 let_binding SEP "and"); "in";
         x = expr ->
@@ -1170,10 +1957,15 @@ EXTEND
           <:module_type< functor ( $_uid:i$ : $t$ ) -> $mt$ >> ]
     | [ mt = SELF; "with"; wcl = V (LIST1 with_constr SEP "and") ->
           <:module_type< $mt$ with $_list:wcl$ >> ]
-    | [ "sig"; sg = V (LIST0 [ s = sig_item; OPT ";;" -> s ]); "end" ->
+    | [ "sig"; sg = signature; "end" ->
           <:module_type< sig $_list:sg$ end >>
+      | "module"; "type"; "of"; me = module_expr ->
+          <:module_type< module type of $me$ >>
       | i = mod_type_ident -> i
       | "("; mt = SELF; ")" -> <:module_type< $mt$ >> ] ]
+  ;
+  signature:
+    [ [ sg = V (LIST0 [ s = sig_item; OPT ";;" -> s ]) -> sg ] ]
   ;
   mod_type_ident:
     [ LEFTA
@@ -1184,7 +1976,7 @@ EXTEND
   ;
   sig_item:
     [ "top"
-      [ "exception"; (_, c, tl) = constructor_declaration ->
+      [ "exception"; (_, c, tl, _) = constructor_declaration ->
           <:sig_item< exception $_uid:c$ of $_list:tl$ >>
       | "external"; i = V LIDENT "lid" ""; ":"; t = ctyp; "=";
         pd = V (LIST1 STRING) ->
@@ -1203,7 +1995,7 @@ EXTEND
           <:sig_item< module type $_uid:i$ = 'abstract >>
       | "open"; i = V mod_ident "list" "" ->
           <:sig_item< open $_:i$ >>
-      | "type"; tdl = V (LIST1 type_declaration SEP "and") ->
+      | "type"; tdl = V (LIST1 type_decl SEP "and") ->
           <:sig_item< type $_list:tdl$ >>
       | "val"; i = V LIDENT "lid" ""; ":"; t = ctyp ->
           <:sig_item< value $_lid:i$ : $t$ >>
@@ -1225,8 +2017,13 @@ EXTEND
     [ [ "type"; tpl = V type_parameters "list"; i = V mod_ident ""; "=";
         pf = V (FLAG "private"); t = ctyp ->
           <:with_constr< type $_:i$ $_list:tpl$ = $_flag:pf$ $t$ >>
+      | "type"; tpl = V type_parameters "list"; i = V mod_ident ""; ":=";
+        t = ctyp ->
+          <:with_constr< type $_:i$ $_list:tpl$ := $t$ >>
       | "module"; i = V mod_ident ""; "="; me = module_expr ->
-          <:with_constr< module $_:i$ = $me$ >> ] ]
+          <:with_constr< module $_:i$ = $me$ >>
+      | "module"; i = V mod_ident ""; ":="; me = module_expr ->
+          <:with_constr< module $_:i$ := $me$ >> ] ]
   ;
   (* Core expressions *)
   expr:
@@ -1244,8 +2041,8 @@ EXTEND
           <:expr< let module $_uid:m$ = $mb$ in $e$ >>
       | "function"; OPT "|"; l = V (LIST1 match_case SEP "|") ->
           <:expr< fun [ $_list:l$ ] >>
-      | "fun"; p = patt LEVEL "simple"; e = fun_def ->
-          <:expr< fun [$p$ -> $e$] >>
+      | "fun"; p = patt LEVEL "simple"; (eo, e) = fun_def ->
+          <:expr< fun [$p$ $opt:eo$ -> $e$] >>
       | "match"; e = SELF; "with"; OPT "|";
         l = V (LIST1 match_case SEP "|") ->
           <:expr< match $e$ with [ $_list:l$ ] >>
@@ -1311,8 +2108,8 @@ EXTEND
       | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >>
       | e1 = SELF; op = infixop4; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "unary minus" NONA
-      [ "-"; e = SELF -> <:expr< $mkumin loc "-" e$ >>
-      | "-."; e = SELF -> <:expr< $mkumin loc "-." e$ >> ]
+      [ "-"; e = SELF -> <:expr< - $e$ >>
+      | "-."; e = SELF -> <:expr< -. $e$ >> ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF ->
           let (e1, e2) =
@@ -1332,13 +2129,22 @@ EXTEND
       | "assert"; e = SELF -> <:expr< assert $e$ >>
       | "lazy"; e = SELF -> <:expr< lazy ($e$) >> ]
     | "." LEFTA
-      [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
+      [ e1 = SELF; "."; "("; op = operator_rparen ->
+          <:expr< $e1$ .( $lid:op$ ) >>
+      | e1 = SELF; "."; "("; e2 = SELF; ")" ->
+          <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
-      | e = SELF; "."; "{"; el = V (LIST1 expr SEP ","); "}" ->
+      | e = SELF; "."; "{"; el = V (LIST1 expr LEVEL "+" SEP ","); "}" ->
           <:expr< $e$ .{ $_list:el$ } >>
-      | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >> ]
+      | e1 = SELF; "."; e2 = SELF ->
+          let rec loop m =
+            fun
+            [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
+            | e -> <:expr< $m$ . $e$ >> ]
+          in
+          loop e1 e2 ]
     | "~-" NONA
-      [ "!"; e = SELF -> <:expr< $e$ . val>>
+      [ "!"; e = SELF -> <:expr< $e$ . val >>
       | "~-"; e = SELF -> <:expr< ~- $e$ >>
       | "~-."; e = SELF -> <:expr< ~-. $e$ >>
       | f = prefixop; e = SELF -> <:expr< $lid:f$ $e$ >> ]
@@ -1350,8 +2156,8 @@ EXTEND
       | s = V FLOAT -> <:expr< $_flo:s$ >>
       | s = V STRING -> <:expr< $_str:s$ >>
       | c = V CHAR -> <:expr< $_chr:c$ >>
-      | UIDENT "True" -> <:expr< $uid:" True"$ >>
-      | UIDENT "False" -> <:expr< $uid:" False"$ >>
+      | UIDENT "True" -> <:expr< True_ >>
+      | UIDENT "False" -> <:expr< False_ >>
       | i = expr_ident -> i
       | "false" -> <:expr< False >>
       | "true" -> <:expr< True >>
@@ -1365,42 +2171,37 @@ EXTEND
       | "{"; e = expr LEVEL "."; "with"; lel = V lbl_expr_list "list"; "}" ->
           <:expr< { ($e$) with $_list:lel$ } >>
       | "("; ")" -> <:expr< () >>
+      | "("; "module"; me = module_expr; ":"; mt = module_type; ")" ->
+          <:expr< (module $me$ : $mt$) >>
+      | "("; "module"; me = module_expr; ")" ->
+          <:expr< (module $me$) >>
       | "("; op = operator_rparen -> <:expr< $lid:op$ >>
       | "("; el = V e_phony "list"; ")" -> <:expr< ($_list:el$) >>
       | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
-      | "("; e = SELF; ")" -> <:expr< $e$ >>
-      | "begin"; e = SELF; "end" -> <:expr< $e$ >>
+      | "("; e = SELF; ")" -> concat_comm loc <:expr< $e$ >>
+      | "begin"; e = SELF; "end" -> concat_comm loc <:expr< $e$ >>
       | "begin"; "end" -> <:expr< () >>
       | x = QUOTATION ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found -> ("", x) ]
-          in
-          Pcaml.handle_expr_quotation loc x ] ]
-  ;
-  e_phony:
-    [ [ -> raise Stream.Failure ] ]
+          let con = quotation_content x in
+          Pcaml.handle_expr_quotation loc con ] ]
   ;
   let_binding:
     [ [ p = val_ident; e = fun_binding -> (p, e)
-      | p = patt; "="; e = expr -> (p, e) ] ]
+      | p = patt; "="; e = expr -> (p, e)
+      | p = patt; ":"; t = poly_type; "="; e = expr ->
+          (<:patt< ($p$ : $t$) >>, e) ] ]
   ;
 (*** JRH added the "translate_operator" here ***)
-
   val_ident:
     [ [ check_not_part_of_patt; s = LIDENT -> <:patt< $lid:s$ >>
       | check_not_part_of_patt; "("; s = ANY; ")" ->
-               let s' = translate_operator s in <:patt< $lid:s'$ >> ] ]
+           let s' = translate_operator s in <:patt< $lid:s'$ >> ] ]
   ;
   fun_binding:
     [ RIGHTA
       [ p = patt LEVEL "simple"; e = SELF -> <:expr< fun $p$ -> $e$ >>
       | "="; e = expr -> <:expr< $e$ >>
-      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> ] ]
+      | ":"; t = poly_type; "="; e = expr -> <:expr< ($e$ : $t$) >> ] ]
   ;
   match_case:
     [ [ x1 = patt; w = V (OPT [ "when"; e = expr -> e ]); "->"; x2 = expr ->
@@ -1415,14 +2216,14 @@ EXTEND
     [ [ i = patt_label_ident; "="; e = expr LEVEL "expr1" -> (i, e) ] ]
   ;
   expr1_semi_list:
-    [ [ e = expr LEVEL "expr1"; ";"; el = SELF -> [e :: el]
-      | e = expr LEVEL "expr1"; ";" -> [e]
-      | e = expr LEVEL "expr1" -> [e] ] ]
+    [ [ el = LIST1 (expr LEVEL "expr1") SEP ";" OPT_SEP -> el ] ]
   ;
   fun_def:
     [ RIGHTA
-      [ p = patt LEVEL "simple"; e = SELF -> <:expr< fun $p$ -> $e$ >>
-      | "->"; e = expr -> <:expr< $e$ >> ] ]
+      [ p = patt LEVEL "simple"; (eo, e) = SELF ->
+          (None, <:expr< fun [ $p$ $opt:eo$ -> $e$ ] >>)
+      | eo = OPT [ "when"; e = expr -> e ]; "->"; e = expr ->
+          (eo, <:expr< $e$ >>) ] ]
   ;
   expr_ident:
     [ RIGHTA
@@ -1473,7 +2274,8 @@ EXTEND
               match p2 with
               [ <:patt< ( $list:pl$ ) >> ->
                   List.fold_left (fun p1 p2 -> <:patt< $p1$ $p2$ >>) p1 pl
-              | _ -> <:patt< $p1$ $p2$ >> ] ] ]
+              | _ -> <:patt< $p1$ $p2$ >> ] ]
+      | "lazy"; p = SELF -> <:patt< lazy $p$ >> ]
     | LEFTA
       [ p1 = SELF; "."; p2 = SELF -> <:patt< $p1$ . $p2$ >> ]
     | "simple"
@@ -1488,8 +2290,8 @@ EXTEND
       | s = V FLOAT -> <:patt< $_flo:s$ >>
       | s = V STRING -> <:patt< $_str:s$ >>
       | s = V CHAR -> <:patt< $_chr:s$ >>
-      | UIDENT "True" -> <:patt< $uid:" True"$ >>
-      | UIDENT "False" -> <:patt< $uid:" False"$ >>
+      | UIDENT "True" -> <:patt< True_ >>
+      | UIDENT "False" -> <:patt< False_ >>
       | "false" -> <:patt< False >>
       | "true" -> <:patt< True >>
       | "["; "]" -> <:patt< [] >>
@@ -1504,20 +2306,15 @@ EXTEND
       | "("; pl = V p_phony "list"; ")" -> <:patt< ($_list:pl$) >>
       | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
       | "("; p = SELF; ")" -> <:patt< $p$ >>
+      | "("; "type"; s = V LIDENT; ")" -> <:patt< (type $_lid:s$) >>
+      | "("; "module"; s = V UIDENT; ":"; mt = module_type; ")" ->
+          <:patt< (module $_uid:s$ : $mt$) >>
+      | "("; "module"; s = V UIDENT; ")" ->
+          <:patt< (module $_uid:s$) >>
       | "_" -> <:patt< _ >>
       | x = QUOTATION ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found -> ("", x) ]
-          in
-          Pcaml.handle_patt_quotation loc x ] ]
-  ;
-  p_phony:
-    [ [ -> raise Stream.Failure ] ]
+          let con = quotation_content x in
+          Pcaml.handle_patt_quotation loc con ] ]
   ;
   patt_semi_list:
     [ [ p = patt; ";"; pl = SELF -> [p :: pl]
@@ -1540,15 +2337,13 @@ EXTEND
       | i = LIDENT -> <:patt< $lid:i$ >> ] ]
   ;
   (* Type declaration *)
-  type_declaration:
-    [ [ tpl = type_parameters; n = type_patt; "="; pf = V (FLAG "private");
+  type_decl:
+    [ [ tpl = type_parameters; n = V type_patt; "="; pf = V (FLAG "private");
         tk = type_kind; cl = V (LIST0 constrain) ->
-          {MLast.tdNam = n; MLast.tdPrm = <:vala< tpl >>;
-           MLast.tdPrv = pf; MLast.tdDef = tk; MLast.tdCon = cl}
-      | tpl = type_parameters; n = type_patt; cl = V (LIST0 constrain) ->
-          {MLast.tdNam = n; MLast.tdPrm = <:vala< tpl >>;
-           MLast.tdPrv = <:vala< False >>;
-           MLast.tdDef = <:ctyp< '$choose_tvar tpl$ >>; MLast.tdCon = cl} ] ]
+          <:type_decl< $_tp:n$ $list:tpl$ = $_priv:pf$ $tk$ $_list:cl$ >>
+      | tpl = type_parameters; n = V type_patt; cl = V (LIST0 constrain) ->
+          let tk = <:ctyp< '$choose_tvar tpl$ >> in
+          <:type_decl< $_tp:n$ $list:tpl$ = $tk$ $_list:cl$ >> ] ]
   ;
   type_patt:
     [ [ n = V LIDENT -> (loc, n) ] ]
@@ -1562,10 +2357,12 @@ EXTEND
           <:ctyp< [ $list:cdl$ ] >>
       | t = ctyp ->
           <:ctyp< $t$ >>
-      | t = ctyp; "="; "{"; ldl = V label_declarations "list"; "}" ->
-          <:ctyp< $t$ == { $_list:ldl$ } >>
-      | t = ctyp; "="; OPT "|"; cdl = LIST1 constructor_declaration SEP "|" ->
-          <:ctyp< $t$ == [ $list:cdl$ ] >>
+      | t = ctyp; "="; pf = FLAG "private"; "{";
+        ldl = V label_declarations "list"; "}" ->
+          <:ctyp< $t$ == $priv:pf$ { $_list:ldl$ } >>
+      | t = ctyp; "="; pf = FLAG "private"; OPT "|";
+        cdl = LIST1 constructor_declaration SEP "|" ->
+          <:ctyp< $t$ == $priv:pf$ [ $list:cdl$ ] >>
       | "{"; ldl = V label_declarations "list"; "}" ->
           <:ctyp< { $_list:ldl$ } >> ] ]
   ;
@@ -1575,19 +2372,34 @@ EXTEND
       | "("; tpl = LIST1 type_parameter SEP ","; ")" -> tpl ] ]
   ;
   type_parameter:
-    [ [ "'"; i = V ident "" -> (i, (False, False))
-      | "+"; "'"; i = V ident "" -> (i, (True, False))
-      | "-"; "'"; i = V ident "" -> (i, (False, True)) ] ]
+    [ [ "+"; p = V simple_type_parameter -> (p, Some True)
+      | "-"; p = V simple_type_parameter -> (p, Some False)
+      | p = V simple_type_parameter -> (p, None) ] ]
+  ;
+  simple_type_parameter:
+    [ [ "'"; i = ident -> Some i
+      | "_" -> None ] ]
   ;
   constructor_declaration:
     [ [ ci = cons_ident; "of"; cal = V (LIST1 (ctyp LEVEL "apply") SEP "*") ->
-          (loc, ci, cal)
-      | ci = cons_ident -> (loc, ci, <:vala< [] >>) ] ]
+          (loc, ci, cal, None)
+      | ci = cons_ident; ":"; cal = V (LIST1 (ctyp LEVEL "apply") SEP "*");
+        "->"; t = ctyp ->
+          (loc, ci, cal, Some t)
+      | ci = cons_ident; ":"; cal = V (LIST1 (ctyp LEVEL "apply") SEP "*") ->
+          let t =
+            match cal with
+            [ <:vala< [t] >> -> t
+            | <:vala< [t :: tl] >> -> <:ctyp< ($list:[t :: tl]$) >>
+            | _ -> assert False ]
+          in
+          (loc, ci, <:vala< [] >>, Some t)
+      | ci = cons_ident -> (loc, ci, <:vala< [] >>, None) ] ]
   ;
   cons_ident:
     [ [ i = V UIDENT "uid" "" -> i
-      | UIDENT "True" -> <:vala< " True" >>
-      | UIDENT "False" -> <:vala< " False" >> ] ]
+      | UIDENT "True" -> <:vala< "True_" >>
+      | UIDENT "False" -> <:vala< "False_" >> ] ]
   ;
   label_declarations:
     [ [ ld = label_declaration; ";"; ldl = SELF -> [ld :: ldl]
@@ -1616,6 +2428,7 @@ EXTEND
       | "_" -> <:ctyp< _ >>
       | i = V LIDENT -> <:ctyp< $_lid:i$ >>
       | i = V UIDENT -> <:ctyp< $_uid:i$ >>
+      | "("; "module"; mt = module_type; ")" -> <:ctyp< module $mt$ >>
       | "("; t = SELF; ","; tl = LIST1 ctyp SEP ","; ")";
         i = ctyp LEVEL "ctyp2" ->
           List.fold_left (fun c a -> <:ctyp< $c$ $a$ >>) i [t :: tl]
@@ -1686,9 +2499,9 @@ EXTEND
     | "simple"
       [ "["; ct = ctyp; ","; ctcl = LIST1 ctyp SEP ","; "]";
         ci = class_longident ->
-          <:class_expr< $list:ci$ [ $list:[ct :: ctcl]$ ] >>
+          <:class_expr< [ $list:[ct :: ctcl]$ ] $list:ci$ >>
       | "["; ct = ctyp; "]"; ci = class_longident ->
-          <:class_expr< $list:ci$ [ $ct$ ] >>
+          <:class_expr< [ $ct$ ] $list:ci$ >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
       | "object"; cspo = V (OPT class_self_patt);
         cf = V class_structure "list"; "end" ->
@@ -1707,26 +2520,38 @@ EXTEND
   class_str_item:
     [ [ "inherit"; ce = class_expr; pb = V (OPT [ "as"; i = LIDENT -> i ]) ->
           <:class_str_item< inherit $ce$ $_opt:pb$ >>
-      | "val"; mf = V (FLAG "mutable"); lab = V label "lid" "";
-        e = cvalue_binding ->
-          <:class_str_item< value $_flag:mf$ $_lid:lab$ = $e$ >>
-      | "method"; "private"; "virtual"; l = V label "lid" ""; ":";
+      | "val"; ov = V (FLAG "!") "!"; mf = V (FLAG "mutable");
+        lab = V LIDENT "lid" ""; e = cvalue_binding ->
+          <:class_str_item< value $_!:ov$ $_flag:mf$ $_lid:lab$ = $e$ >>
+      | "val"; ov = V (FLAG "!") "!"; mf = V (FLAG "mutable");
+        "virtual"; lab = V LIDENT "lid" ""; ":"; t = ctyp ->
+          if Pcaml.unvala ov then
+            Ploc.raise loc (Stream.Error "virtual value cannot override")
+          else
+            <:class_str_item< value virtual $_flag:mf$ $_lid:lab$ : $t$ >>
+      | "val"; "virtual"; mf = V (FLAG "mutable"); lab = V LIDENT "lid" "";
+        ":"; t = ctyp ->
+          <:class_str_item< value virtual $_flag:mf$ $_lid:lab$ : $t$ >>
+      | "method"; "private"; "virtual"; l = V LIDENT "lid" ""; ":";
         t = poly_type ->
           <:class_str_item< method virtual private $_lid:l$ : $t$ >>
-      | "method"; "virtual"; "private"; l = V label "lid" ""; ":";
+      | "method"; "virtual"; "private"; l = V LIDENT "lid" ""; ":";
         t = poly_type ->
           <:class_str_item< method virtual private $_lid:l$ : $t$ >>
-      | "method"; "virtual"; l = V label "lid" ""; ":"; t = poly_type ->
+      | "method"; "virtual"; l = V LIDENT "lid" ""; ":"; t = poly_type ->
           <:class_str_item< method virtual $_lid:l$ : $t$ >>
-      | "method"; "private"; l = V label "lid" ""; ":"; t = poly_type; "=";
-        e = expr ->
-          <:class_str_item< method private $_lid:l$ : $t$ = $e$ >>
-      | "method"; "private"; l = V label "lid" ""; sb = fun_binding ->
-          <:class_str_item< method private $_lid:l$ = $sb$ >>
-      | "method"; l = V label "lid" ""; ":"; t = poly_type; "="; e = expr ->
-          <:class_str_item< method $_lid:l$ : $t$ = $e$ >>
-      | "method"; l = V label "lid" ""; sb = fun_binding ->
-          <:class_str_item< method $_lid:l$ = $sb$ >>
+      | "method"; ov = V (FLAG "!") "!"; "private"; l = V LIDENT "lid" "";
+        ":"; t = poly_type; "="; e = expr ->
+          <:class_str_item< method $_!:ov$ private $_lid:l$ : $t$ = $e$ >>
+      | "method"; ov = V (FLAG "!") "!"; "private"; l = V LIDENT "lid" "";
+        sb = fun_binding ->
+          <:class_str_item< method $_!:ov$ private $_lid:l$ = $sb$ >>
+      | "method"; ov = V (FLAG "!") "!"; l = V LIDENT "lid" ""; ":";
+        t = poly_type; "="; e = expr ->
+          <:class_str_item< method $_!:ov$ $_lid:l$ : $t$ = $e$ >>
+      | "method"; ov = V (FLAG "!") "!"; l = V LIDENT "lid" "";
+        sb = fun_binding ->
+          <:class_str_item< method $_!:ov$ $_lid:l$ = $sb$ >>
       | "constraint"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_str_item< type $t1$ = $t2$ >>
       | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
@@ -1749,12 +2574,15 @@ EXTEND
       | cs = class_signature -> cs ] ]
   ;
   class_signature:
-    [ [ "["; tl = LIST1 ctyp SEP ","; "]"; id = clty_longident ->
-          <:class_type< $list:id$ [ $list:tl$ ] >>
-      | id = clty_longident -> <:class_type< $list:id$ >>
+    [ [ "["; tl = LIST1 ctyp SEP ","; "]"; id = SELF ->
+          <:class_type< $id$ [ $list:tl$ ] >>
       | "object"; cst = V (OPT class_self_type);
         csf = V (LIST0 class_sig_item); "end" ->
-          <:class_type< object $_opt:cst$ $_list:csf$ end >> ] ]
+          <:class_type< object $_opt:cst$ $_list:csf$ end >> ]
+    | [ ct1 = SELF; "."; ct2 = SELF -> <:class_type< $ct1$ . $ct2$ >>
+      | ct1 = SELF; "("; ct2 = SELF; ")" -> <:class_type< $ct1$ $ct2$ >> ]
+    | [ i = V LIDENT -> <:class_type< $_id: i$ >>
+      | i = V UIDENT -> <:class_type< $_id: i$ >> ] ]
   ;
   class_self_type:
     [ [ "("; t = ctyp; ")" -> t ] ]
@@ -1762,19 +2590,19 @@ EXTEND
   class_sig_item:
     [ [ "inherit"; cs = class_signature ->
           <:class_sig_item< inherit $cs$ >>
-      | "val"; mf = V (FLAG "mutable"); l = V label "lid" ""; ":"; t = ctyp ->
+      | "val"; mf = V (FLAG "mutable"); l = V LIDENT "lid" ""; ":"; t = ctyp ->
           <:class_sig_item< value $_flag:mf$ $_lid:l$ : $t$ >>
-      | "method"; "private"; "virtual"; l = V label "lid" ""; ":";
+      | "method"; "private"; "virtual"; l = V LIDENT "lid" ""; ":";
         t = poly_type ->
           <:class_sig_item< method virtual private $_lid:l$ : $t$ >>
-      | "method"; "virtual"; "private"; l = V label "lid" ""; ":";
+      | "method"; "virtual"; "private"; l = V LIDENT "lid" ""; ":";
         t = poly_type ->
           <:class_sig_item< method virtual private $_lid:l$ : $t$ >>
-      | "method"; "virtual"; l = V label "lid" ""; ":"; t = poly_type ->
+      | "method"; "virtual"; l = V LIDENT "lid" ""; ":"; t = poly_type ->
           <:class_sig_item< method virtual $_lid:l$ : $t$ >>
-      | "method"; "private"; l = V label "lid" ""; ":"; t = poly_type ->
+      | "method"; "private"; l = V LIDENT "lid" ""; ":"; t = poly_type ->
           <:class_sig_item< method private $_lid:l$ : $t$ >>
-      | "method"; l = V label "lid" ""; ":"; t = poly_type ->
+      | "method"; l = V LIDENT "lid" ""; ":"; t = poly_type ->
           <:class_sig_item< method $_lid:l$ : $t$ >>
       | "constraint"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_sig_item< type $t1$ = $t2$ >> ] ]
@@ -1800,7 +2628,7 @@ EXTEND
           <:expr< object $_opt:cspo$ $_list:cf$ end >> ] ]
   ;
   expr: LEVEL "."
-    [ [ e = SELF; "#"; lab = V label "lid" -> <:expr< $e$ # $_lid:lab$ >> ] ]
+    [ [ e = SELF; "#"; lab = V LIDENT "lid" -> <:expr< $e$ # $_lid:lab$ >> ] ]
   ;
   expr: LEVEL "simple"
     [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
@@ -1840,15 +2668,13 @@ EXTEND
     [ [ "'"; i = ident -> i ] ]
   ;
   poly_type:
-    [ [ test_typevar_list_dot; tpl = LIST1 typevar; "."; t2 = ctyp ->
+    [ [ "type"; nt = LIST1 LIDENT; "."; ct = ctyp ->
+          <:ctyp< type $list:nt$ . $ct$ >>
+      | test_typevar_list_dot; tpl = LIST1 typevar; "."; t2 = ctyp ->
           <:ctyp< ! $list:tpl$ . $t2$ >>
       | t = ctyp -> t ] ]
   ;
   (* Identifiers *)
-  clty_longident:
-    [ [ m = UIDENT; "."; l = SELF -> [m :: l]
-      | i = LIDENT -> [i] ] ]
-  ;
   class_longident:
     [ [ m = UIDENT; "."; l = SELF -> [m :: l]
       | i = LIDENT -> [i] ] ]
@@ -1877,26 +2703,28 @@ EXTEND
       | "`"; i = V ident ""; "of"; ao = V (FLAG "&");
         l = V (LIST1 ctyp SEP "&") ->
           <:poly_variant< `$_:i$ of $_flag:ao$ $_list:l$ >>
-      | t = ctyp -> MLast.PvInh t ] ]
+      | t = ctyp -> <:poly_variant< $t$ >> ] ]
   ;
   name_tag:
     [ [ "`"; i = ident -> i ] ]
   ;
   expr: LEVEL "expr1"
-    [ [ "fun"; p = labeled_patt; e = fun_def -> <:expr< fun $p$ -> $e$ >> ] ]
+    [ [ "fun"; p = labeled_patt; (eo, e) = fun_def ->
+          <:expr< fun [ $p$ $opt:eo$ -> $e$ ] >> ] ]
   ;
   expr: AFTER "apply"
     [ "label"
-      [ i = V TILDEIDENTCOLON; e = SELF -> <:expr< ~$_:i$: $e$ >>
-      | i = V TILDEIDENT -> <:expr< ~$_:i$ >>
-      | i = V QUESTIONIDENTCOLON; e = SELF -> <:expr< ?$_:i$: $e$ >>
-      | i = V QUESTIONIDENT -> <:expr< ?$_:i$ >> ] ]
+      [ i = V TILDEIDENTCOLON; e = SELF -> <:expr< ~{$_:i$ = $e$} >>
+      | i = V TILDEIDENT -> <:expr< ~{$_:i$} >>
+      | i = V QUESTIONIDENTCOLON; e = SELF -> <:expr< ?{$_:i$ = $e$} >>
+      | i = V QUESTIONIDENT -> <:expr< ?{$_:i$} >> ] ]
   ;
   expr: LEVEL "simple"
     [ [ "`"; s = V ident "" -> <:expr< ` $_:s$ >> ] ]
   ;
   fun_def:
-    [ [ p = labeled_patt; e = SELF -> <:expr< fun $p$ -> $e$ >> ] ]
+    [ [ p = labeled_patt; (eo, e) = SELF ->
+          (None, <:expr< fun [ $p$ $opt:eo$ -> $e$ ] >>) ] ]
   ;
   fun_binding:
     [ [ p = labeled_patt; e = SELF -> <:expr< fun $p$ -> $e$ >> ] ]
@@ -1908,33 +2736,35 @@ EXTEND
   ;
   labeled_patt:
     [ [ i = V TILDEIDENTCOLON; p = patt LEVEL "simple" ->
-           <:patt< ~$_:i$: $p$ >>
+           <:patt< ~{$_:i$ = $p$} >>
       | i = V TILDEIDENT ->
-           <:patt< ~$_:i$ >>
+           <:patt< ~{$_:i$} >>
       | "~"; "("; i = LIDENT; ")" ->
-           <:patt< ~$i$ >>
+           <:patt< ~{$lid:i$} >>
       | "~"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
-           <:patt< ~$i$: ($lid:i$ : $t$) >>
+           <:patt< ~{$lid:i$ : $t$} >>
       | i = V QUESTIONIDENTCOLON; j = LIDENT ->
-           <:patt< ?$_:i$: ($lid:j$) >>
+           <:patt< ?{$_:i$ = ?{$lid:j$}} >>
+      | i = V QUESTIONIDENTCOLON; "_" ->
+           <:patt< ?{$_:i$} >>
       | i = V QUESTIONIDENTCOLON; "("; p = patt; "="; e = expr; ")" ->
-          <:patt< ?$_:i$: ( $p$ = $e$ ) >>
+          <:patt< ?{$_:i$ = ?{$p$ = $e$}} >>
       | i = V QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; ")" ->
-          <:patt< ?$_:i$: ( $p$ : $t$ ) >>
+          <:patt< ?{$_:i$ = ?{$p$ : $t$}} >>
       | i = V QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; "=";
         e = expr; ")" ->
-          <:patt< ?$_:i$: ( $p$ : $t$ = $e$ ) >>
+          <:patt< ?{$_:i$ = ?{$p$ : $t$ = $e$}} >>
       | i = V QUESTIONIDENTCOLON; "("; p = patt; ")" ->
-          <:patt< ?$_:i$: ( $p$ ) >>
-      | i = V QUESTIONIDENT -> <:patt< ?$_:i$ >>
+          <:patt< ?{$_:i$ = ?{$p$}} >>
+      | i = V QUESTIONIDENT -> <:patt< ?{$_:i$} >>
       | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? ( $lid:i$ = $e$ ) >>
+          <:patt< ?{$lid:i$ = $e$} >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          <:patt< ? ( $lid:i$ : $t$ = $e$ ) >>
+          <:patt< ?{$lid:i$ : $t$ = $e$} >>
       | "?"; "("; i = LIDENT; ")" ->
-          <:patt< ?$i$ >>
+          <:patt< ?{$lid:i$} >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
-          <:patt< ? ( $lid:i$ : $t$ ) >> ] ]
+          <:patt< ?{$lid:i$ : $t$} >> ] ]
   ;
   class_type:
     [ [ i = LIDENT; ":"; t = ctyp LEVEL "apply"; "->"; ct = SELF ->
@@ -1962,8 +2792,8 @@ EXTEND
   interf:
     [ [ si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([(<:sig_item< # $lid:n$ $opt:dp$ >>, loc)], True)
-      | EOI -> ([], False) ] ]
+          ([(<:sig_item< # $lid:n$ $opt:dp$ >>, loc)], None)
+      | EOI -> ([], Some loc) ] ]
   ;
   sig_item_semi:
     [ [ si = sig_item; OPT ";;" -> (si, loc) ] ]
@@ -1971,8 +2801,8 @@ EXTEND
   implem:
     [ [ si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([(<:str_item< # $lid:n$ $opt:dp$ >>, loc)], True)
-      | EOI -> ([], False) ] ]
+          ([(<:str_item< # $lid:n$ $opt:dp$ >>, loc)], None)
+      | EOI -> ([], Some loc) ] ]
   ;
   str_item_semi:
     [ [ si = str_item; OPT ";;" -> (si, loc) ] ]

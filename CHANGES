@@ -1,3 +1,12 @@
+Thu  2nd Dec 2010       Makefile, Proofrecording/hol_light/Makefile, pa_j_3.1x_5.xx.ml [new file], pa_j_3.1x_6.xx.ml [new file], pa_j_3.10.ml [deleted], pa_j_3.11.ml [deleted]
+
+Ondrej Kuncar pointed out that the system doesn't build with the new camlp5
+6.0. So now for OCaml >= 3.10 I need to start distinguishing only based on
+the camlp5 version. Modified the Makefile accordingly, making the two current
+versions for < 6.0 and >= 6.0 of camlp5 called pa_j_3.1x_5.xx.ml (what used
+to be pa_j_3.10.ml and pa_j_3.11.ml) and pa_j_3.1x_6.xx.ml (a new one derived
+by modifying the source to camlp5 6.02.0).
+
 Thu 18th Nov 2010       real.ml
 
 Finally added the theorem REAL_LE_POW_2 = |- !x. &0 <= x pow 2.
