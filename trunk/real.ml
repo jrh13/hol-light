@@ -1201,6 +1201,10 @@ let REAL_EQ_SQUARE_ABS = prove
  (`!x y. abs x = abs y <=> x pow 2 = y pow 2`,
   REWRITE_TAC[GSYM REAL_LE_ANTISYM; REAL_LE_SQUARE_ABS]);;
 
+let REAL_LE_POW_2 = prove
+ (`!x. &0 <= x pow 2`,
+  REWRITE_TAC[REAL_POW_2; REAL_LE_SQUARE]);;
+
 let REAL_SOS_EQ_0 = prove
  (`!x y. x pow 2 + y pow 2 = &0 <=> x = &0 /\ y = &0`,
   REPEAT GEN_TAC THEN EQ_TAC THEN
