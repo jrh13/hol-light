@@ -488,6 +488,18 @@ let REALLIM_GE = prove
   EXISTS_TAC `\a:A. --(f a:real)` THEN
   ASM_REWRITE_TAC[REALLIM_NEG_EQ]);;
 
+let REALLIM_CONST_EQ = prove
+ (`!net:(A net) c d. ((\x. c) ---> d) net <=> trivial_limit net \/ c = d`,
+  REWRITE_TAC[TENDSTO_REAL; LIM_CONST_EQ; o_DEF; LIFT_EQ]);;
+
+let REALLIM_SUM = prove
+ (`!f:A->B->real s.
+        FINITE s /\ (!i. i IN s ==> ((f i) ---> (l i)) net)
+        ==> ((\x. sum s (\i. f i x)) ---> sum s l) net`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; REALLIM_CONST; REALLIM_ADD; IN_INSERT; ETA_AX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Real series.                                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -1289,6 +1301,14 @@ let LIM_WITHINREAL_SUBSET = prove
                ==> (f --> l) (atreal a within t)`,
   REWRITE_TAC[LIM_WITHINREAL; SUBSET] THEN MESON_TAC[]);;
 
+let REALLIM_ATREAL_ID = prove
+ (`((\x. x) ---> a) (atreal a)`,
+  REWRITE_TAC[REALLIM_ATREAL] THEN MESON_TAC[]);;
+
+let REALLIM_WITHINREAL_ID = prove
+ (`!a. ((\x. x) ---> a) (atreal a within s)`,
+  REWRITE_TAC[REALLIM_WITHINREAL] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations between limits at real and complex limit points.                *)
 (* ------------------------------------------------------------------------- *)
@@ -1901,6 +1921,27 @@ let REAL_CONTINUOUS_ON_SUM = prove
   REPEAT GEN_TAC THEN SIMP_TAC[REAL_CONTINUOUS_ON; o_DEF; LIFT_SUM] THEN
   DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_ON_VSUM) THEN
   REWRITE_TAC[]);;
+
+let REALLIM_CONTINUOUS_FUNCTION = prove
+ (`!f net g l.
+        f continuous (atreal l) /\ (g ---> l) net
+        ==> ((\x. f(g x)) --> f l) net`,
+  REWRITE_TAC[tendsto_real; tendsto; continuous_atreal; eventually] THEN
+  MESON_TAC[]);;
+
+let LIM_REAL_CONTINUOUS_FUNCTION = prove
+ (`!f net g l.
+        f real_continuous (at l) /\ (g --> l) net
+        ==> ((\x. f(g x)) ---> f l) net`,
+  REWRITE_TAC[tendsto_real; tendsto; real_continuous_at; eventually] THEN
+  MESON_TAC[]);;
+
+let REALLIM_REAL_CONTINUOUS_FUNCTION = prove
+ (`!f net g l.
+        f real_continuous (atreal l) /\ (g ---> l) net
+        ==> ((\x. f(g x)) ---> f l) net`,
+  REWRITE_TAC[tendsto_real; real_continuous_atreal; eventually] THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Real version of uniform continuity.                                       *)

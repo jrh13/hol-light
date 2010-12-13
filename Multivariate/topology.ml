@@ -1749,6 +1749,14 @@ let LIM_NULL_VMUL_BOUNDED = prove
    `e * B <= e * abs B /\ &0 < e ==> e * B < e * (abs B + &1)`) THEN
   ASM_SIMP_TAC[REAL_LE_LMUL_EQ] THEN REAL_ARITH_TAC);;
 
+let LIM_VSUM = prove
+ (`!f:A->B->real^N s.
+        FINITE s /\ (!i. i IN s ==> ((f i) --> (l i)) net)
+        ==> ((\x. vsum s (\i. f i x)) --> vsum s l) net`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[VSUM_CLAUSES; LIM_CONST; LIM_ADD; IN_INSERT; ETA_AX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Deducing things about the limit from the elements.                        *)
 (* ------------------------------------------------------------------------- *)
@@ -1863,6 +1871,16 @@ let LIM_UNIQUE = prove
 let TENDSTO_LIM = prove
  (`!net f l. ~(trivial_limit net) /\ (f --> l) net ==> lim net f = l`,
   REWRITE_TAC[lim] THEN MESON_TAC[LIM_UNIQUE]);;
+
+let LIM_CONST_EQ = prove
+ (`!net:(A net) c d:real^N.
+        ((\x. c) --> d) net <=> trivial_limit net \/ c = d`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `trivial_limit (net:A net)` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_REWRITE_TAC[LIM]; ALL_TAC] THEN
+  EQ_TAC THEN SIMP_TAC[LIM_CONST] THEN DISCH_TAC THEN
+  MATCH_MP_TAC(SPEC `net:A net` LIM_UNIQUE) THEN
+  EXISTS_TAC `(\x. c):A->real^N` THEN ASM_REWRITE_TAC[LIM_CONST]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limit under bilinear function (surprisingly tedious, but important).      *)
@@ -3778,6 +3796,11 @@ let UNIFORMLY_CONTINUOUS_ON_SEQUENTIALLY = prove
                  REAL_POS; REAL_MUL_LID; REAL_LE_RADD; REAL_OF_NUM_LE];
     EXISTS_TAC `e:real` THEN ASM_REWRITE_TAC[] THEN
     EXISTS_TAC `\x:num. x` THEN ASM_REWRITE_TAC[LE_REFL]]);;
+
+let LIM_CONTINUOUS_FUNCTION = prove
+ (`!f net g l.
+        f continuous (at l) /\ (g --> l) net ==> ((\x. f(g x)) --> f l) net`,
+  REWRITE_TAC[tendsto; continuous_at; eventually] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The usual transformation theorems.                                        *)
