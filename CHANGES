@@ -1,3 +1,7 @@
+Mon 13th Dec 2010       sets.ml
+
+Added SET_PAIR_THM = |- !P. {p | P p} = {a,b | P (a,b)}
+
 Thu  2nd Dec 2010       Makefile, Proofrecording/hol_light/Makefile, pa_j_3.1x_5.xx.ml [new file], pa_j_3.1x_6.xx.ml [new file], pa_j_3.10.ml [deleted], pa_j_3.11.ml [deleted]
 
 Ondrej Kuncar pointed out that the system doesn't build with the new camlp5

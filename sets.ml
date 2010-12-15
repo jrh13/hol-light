@@ -856,6 +856,10 @@ let IN_ELIM_PAIR_THM = prove
  (`!P a b. (a,b) IN {(x,y) | P x y} <=> P a b`,
   REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[PAIR_EQ]);;
 
+let SET_PAIR_THM = prove
+ (`!P. {p | P p} = {(a,b) | P(a,b)}`,
+  REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_ELIM_THM; IN_ELIM_PAIR_THM]);;
+
 let FORALL_IN_GSPEC = prove
  (`(!P f. (!z. z IN {f x | P x} ==> Q z) <=> (!x. P x ==> Q(f x))) /\
    (!P f. (!z. z IN {f x y | P x y} ==> Q z) <=>
