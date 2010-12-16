@@ -1,3 +1,17 @@
+Wed 15th Dec 2010       system.ml
+
+At the suggestion of Ondrej Kuncar, switched from
+
+  fun set_jrh_lexer -> set_jrh_lexer;;
+
+to just
+
+  set_jrh_lexer;;
+
+This magic variable gets mapped to a constant anyway, so there is no need for
+this elaborate expression, which moreover generates a warning about
+a non-exhaustive match.
+
 Mon 13th Dec 2010       sets.ml
 
 Added SET_PAIR_THM = |- !P. {p | P p} = {a,b | P (a,b)}
