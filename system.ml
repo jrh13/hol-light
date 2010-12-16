@@ -28,7 +28,7 @@ Quotation.add "tot" (Quotation.ExStr (fun x -> quotexpander));;
 (* Modify the lexical analysis of uppercase identifiers.                     *)
 (* ------------------------------------------------------------------------- *)
 
-fun set_jrh_lexer -> set_jrh_lexer;;
+set_jrh_lexer;;
 
 (* ------------------------------------------------------------------------- *)
 (* Load in the bignum library and set up printing in the toplevel.           *)
