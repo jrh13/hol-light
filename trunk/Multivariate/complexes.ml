@@ -2,6 +2,7 @@
 (* The type "real^2" regarded as the complex numbers.                        *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
+(*              (c) Copyright, Valentina Bruno 2010                          *)
 (* ========================================================================= *)
 
 needs "Multivariate/integration.ml";;
@@ -880,6 +881,17 @@ let COMPLEX_INV_II = prove
  (`inv ii = --ii`,
   CONV_TAC COMPLEX_FIELD);;
 
+let COMPLEX_DIV_POW = prove
+ (`!x:complex n k:num.
+      ~(x= Cx(&0)) /\ k <= n /\ ~(k = 0)
+      ==> x pow (n-k) = x pow n / x pow k`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN `x:complex pow (n - k) * x pow k =
+  x pow n / x pow k * x pow k` (fun th-> ASM_MESON_TAC
+  [th;COMPLEX_POW_EQ_0;COMPLEX_EQ_MUL_RCANCEL])
+  THEN ASM_SIMP_TAC[GSYM COMPLEX_POW_ADD;SUB_ADD] THEN
+  MP_TAC (MESON [COMPLEX_POW_EQ_0;ASSUME `~(k = 0)`; ASSUME `~(x = Cx(&0))`]
+  `~(x pow k = Cx(&0))`) THEN ASM_SIMP_TAC[COMPLEX_DIV_RMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Norms (aka "moduli").                                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -1396,9 +1408,9 @@ let REAL_INV = prove
  (`!z. real z ==> real(inv z)`,
   SIMP_TAC[REAL_CNJ; CNJ_INV]);;
 
-let REAL_INV_EQ = prove                                       
- (`!z. real(inv z) = real z`,                                 
-  MESON_TAC[REAL_INV; COMPLEX_INV_INV]);;                     
+let REAL_INV_EQ = prove
+ (`!z. real(inv z) = real z`,
+  MESON_TAC[REAL_INV; COMPLEX_INV_INV]);;
 
 let REAL_DIV = prove
  (`!w z. real w /\ real z ==> real(w / z)`,

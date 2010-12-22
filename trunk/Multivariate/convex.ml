@@ -3,6 +3,7 @@
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (*                 (c) Copyright, Lars Schewe 2007                           *)
+(*              (c) Copyright, Valentina Bruno 2010                          *)
 (* ========================================================================= *)
 
 needs "Multivariate/topology.ml";;
@@ -1462,6 +1463,12 @@ let EMPTY_INTERIOR_FINITE = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] FINITE_IMP_NOT_OPEN) THEN
   MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `s:real^N->bool` THEN
   ASM_REWRITE_TAC[INTERIOR_SUBSET]);;
+
+let FRONTIER_NOT_EMPTY = prove
+ (`!s. ~(s = {}) /\ ~(s = (:real^N)) ==> ~(frontier s = {})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(:real^N)`; `s:real^N->bool`] CONNECTED_INTER_FRONTIER) THEN
+  REWRITE_TAC[CONNECTED_UNIV] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convex functions into the reals.                                          *)
@@ -10547,6 +10554,12 @@ let OPEN_PATH_CONNECTED_COMPONENT = prove
                   CONNECTED_COMPONENT_REFL_EQ] THEN
   MATCH_MP_TAC CONNECTED_OPEN_PATH_CONNECTED THEN
   ASM_SIMP_TAC[OPEN_CONNECTED_COMPONENT; CONNECTED_CONNECTED_COMPONENT]);;
+
+let OPEN_COMPONENTS = prove
+ (`!u:real^N->bool s. open u /\ s IN components u ==> open s`,
+  REPEAT STRIP_TAC THEN STRIP_ASSUME_TAC (MESON[IN_COMPONENTS;
+  ASSUME `s:real^N->bool IN components u`] `?x. s:real^N->bool =
+  connected_component u x`) THEN ASM_SIMP_TAC [OPEN_CONNECTED_COMPONENT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lower bound on norms within segment between vectors.                      *)

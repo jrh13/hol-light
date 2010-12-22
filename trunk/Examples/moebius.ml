@@ -195,7 +195,7 @@ let BALL_BIHOLOMORPHISM_MOEBIUS_FUNCTION = prove
     EXISTS_TAC `t:real` THEN EXISTS_TAC `-- (cexp(-- (ii * Cx t)) * w)` THEN
     ASM_REWRITE_TAC [NORM_NEG; COMPLEX_NORM_MUL; COMPLEX_NEG_RMUL;
                      GSYM CX_NEG; NORM_CEXP_II; REAL_MUL_LID] THEN
-    GEN_TAC THEN DISCH_TAC THEN TRANS_TAC
+    GEN_TAC THEN DISCH_TAC THEN EQ_TRANS_TAC
       `moebius_function (&0) (--w)
          (moebius_function (&0) w (f (z:complex)))` THENL
     [MATCH_MP_TAC EQ_SYM THEN MATCH_MP_TAC LEMMA_2 THEN
