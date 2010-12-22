@@ -1,3 +1,13 @@
+Tue 21st Dec 2010       real.ml, database.ml
+
+Added a lemma from Valentina Bruno used in the Multivariate complex analysis
+theories, plus other variants.
+
+  REAL_LT_LINV  = |- !x y. &0 < y /\ inv y < x ==> inv x < y
+  REAL_LT_RINV  = |- !x y. &0 < x /\ x < inv y ==> y < inv x
+  REAL_LE_LINV  = |- !x y. &0 < y /\ inv y <= x ==> inv x <= y
+  REAL_LE_RINV  = |- !x y. &0 < x /\ x <= inv y ==> y <= inv x
+
 Wed 15th Dec 2010       system.ml
 
 At the suggestion of Ondrej Kuncar, switched from

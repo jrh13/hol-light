@@ -3,6 +3,7 @@
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (* (c) Copyright, Marco Maggesi, Graziano Gentili and Gianni Ciolli, 2008.   *)
+(*              (c) Copyright, Valentina Bruno 2010                          *)
 (* ========================================================================= *)
 
 needs "Library/floor.ml";;
@@ -290,6 +291,10 @@ let LIM_NULL_COMPLEX_BOUND = prove
  (`!f g. eventually (\n. norm (f n) <= norm (g n)) net /\ (g --> Cx(&0)) net
          ==> (f --> Cx(&0)) net`,
   REWRITE_TAC[GSYM COMPLEX_VEC_0; LIM_TRANSFORM_BOUND]);;
+
+let SUMS_COMPLEX_0 = prove
+ (`!f s. (!n. n IN s ==> f n = Cx(&0)) ==> (f sums Cx(&0)) s`,
+  REWRITE_TAC[GSYM COMPLEX_VEC_0; SUMS_0]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bound results for real and imaginary components of limits.                *)

@@ -2,6 +2,7 @@
 (* Elementary topology in Euclidean space.                                   *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
+(*              (c) Copyright, Valentina Bruno 2010                          *)
 (* ========================================================================= *)
 
 needs "Multivariate/determinants.ml";;
@@ -4778,6 +4779,46 @@ let CONNECTED_COMPONENT_LINEAR_IMAGE = prove
 add_linear_invariants [CONNECTED_COMPONENT_LINEAR_IMAGE];;
 
 (* ------------------------------------------------------------------------- *)
+(* The set of connected components of a set.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let components = new_definition
+  `components s = {connected_component s x | x | x:real^N IN s}`;;
+
+let IN_COMPONENTS = prove
+ (`!u:real^N->bool s. s IN components u
+    <=> ?x. x IN u /\ s = connected_component u x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[components] THEN EQ_TAC
+  THENL [SET_TAC[];STRIP_TAC THEN ASM_SIMP_TAC[] THEN
+  UNDISCH_TAC `x:real^N IN u` THEN SET_TAC[]]);;
+
+let UNIONS_COMPONENTS = prove
+ (`!u:real^N->bool. u = UNIONS (components u)`,
+  REWRITE_TAC[EXTENSION] THEN REPEAT GEN_TAC THEN EQ_TAC
+  THENL[DISCH_TAC THEN REWRITE_TAC[IN_UNIONS] THEN
+  EXISTS_TAC `connected_component (u:real^N->bool) x` THEN CONJ_TAC THENL
+  [REWRITE_TAC[components] THEN SET_TAC[ASSUME `x:real^N IN u`];
+  REWRITE_TAC[CONNECTED_COMPONENT_SET] THEN SUBGOAL_THEN
+  `?s:real^N->bool. connected s /\ s SUBSET u /\ x IN s` MP_TAC
+  THENL[EXISTS_TAC `{x:real^N}` THEN ASM_REWRITE_TAC[CONNECTED_SING] THEN
+  POP_ASSUM MP_TAC THEN SET_TAC[]; SET_TAC[]]];
+  REWRITE_TAC[IN_UNIONS] THEN STRIP_TAC THEN
+  MATCH_MP_TAC (SET_RULE `!x:real^N s u. x IN s /\ s SUBSET u ==> x IN u`) THEN
+  EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[] THEN STRIP_ASSUME_TAC
+  (MESON[IN_COMPONENTS;ASSUME `t:real^N->bool IN components u`]
+  `?y. t:real^N->bool = connected_component u y`) THEN
+   ASM_REWRITE_TAC[CONNECTED_COMPONENT_SUBSET]]);;
+
+let PAIRWISE_DISJOINT_COMPONENTS = prove
+ (`!u:real^N->bool. pairwise DISJOINT (components u)`,
+  GEN_TAC THEN REWRITE_TAC[pairwise;DISJOINT] THEN
+  MAP_EVERY X_GEN_TAC [`s:real^N->bool`; `t:real^N->bool`] THEN STRIP_TAC THEN
+  ASSERT_TAC `(?a. s:real^N->bool = connected_component u a) /\
+  ?b. t:real^N->bool = connected_component u b`
+  THENL [ASM_MESON_TAC[IN_COMPONENTS];
+  ASM_MESON_TAC[CONNECTED_COMPONENT_NONOVERLAP]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Continuity implies uniform continuity on a compact domain.                *)
 (* ------------------------------------------------------------------------- *)
 
@@ -8194,6 +8235,14 @@ let SUMS_INFSUM = prove
  (`!f s. (f sums (infsum s f)) s <=> summable s f`,
   REWRITE_TAC[infsum; summable] THEN MESON_TAC[]);;
 
+let SUMS_LIM = prove
+ (`!f:num->real^N s.
+      (f sums lim sequentially (\n. vsum (s INTER (0..n)) f)) s
+      <=> summable s f`,
+  GEN_TAC THEN GEN_TAC THEN EQ_TAC THENL [MESON_TAC[summable];
+  REWRITE_TAC[summable; sums] THEN STRIP_TAC THEN REWRITE_TAC[lim] THEN
+  ASM_MESON_TAC[]]);;
+
 let from = new_definition
   `from n = {m:num | n <= m}`;;
 
@@ -8282,6 +8331,11 @@ let SUMS_IFF = prove
 let SUMS_EQ = prove
  (`!f g k. (!x. x IN k ==> f x = g x) /\ (f sums l) k ==> (g sums l) k`,
   MESON_TAC[SUMS_IFF]);;
+
+let SUMS_0 = prove
+ (`!f:num->real^N s. (!n. n IN s ==> f n = vec 0) ==> (f sums vec 0) s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUMS_EQ THEN
+  EXISTS_TAC `\n:num. vec 0:real^N` THEN ASM_SIMP_TAC[SERIES_0]);;
 
 let SERIES_FINITE_SUPPORT = prove
  (`!f:num->real^N s k.

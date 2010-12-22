@@ -7,6 +7,16 @@
 prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
+(* A couple of extra tactics used in some proofs below.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let ASSERT_TAC tm =
+  SUBGOAL_THEN tm STRIP_ASSUME_TAC;;
+
+let EQ_TRANS_TAC tm =
+  MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC tm THEN CONJ_TAC;;
+
+(* ------------------------------------------------------------------------- *)
 (* Miscellaneous lemmas.                                                     *)
 (* ------------------------------------------------------------------------- *)
 

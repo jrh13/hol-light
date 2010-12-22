@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*              (c) Copyright, Valentina Bruno 2010                          *)
 (* ========================================================================= *)
 
 needs "realarith.ml";;
@@ -1006,6 +1007,34 @@ let REAL_LE_INV2 = prove
   ASM_CASES_TAC `x:real = y` THEN ASM_REWRITE_TAC[] THEN
   STRIP_TAC THEN DISJ1_TAC THEN MATCH_MP_TAC REAL_LT_INV2 THEN
   ASM_REWRITE_TAC[]);;
+
+let REAL_LT_LINV = prove                                     
+ (`!x y. &0 < y /\ inv y < x ==> inv x < y`,
+  REPEAT STRIP_TAC THEN MP_TAC (SPEC `y:real` REAL_LT_INV) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN     
+  MP_TAC (SPECL [`(inv y:real)`; `x:real`] REAL_LT_INV2) THEN  
+  ASM_REWRITE_TAC[REAL_INV_INV]);;                             
+                                                             
+let REAL_LT_RINV = prove                                   
+ (`!x y. &0 < x /\ x < inv y ==> y < inv x`,
+  REPEAT STRIP_TAC THEN MP_TAC (SPEC `x:real` REAL_LT_INV) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN                   
+  MP_TAC (SPECL [`x:real`; `inv y:real`] REAL_LT_INV2) THEN
+  ASM_REWRITE_TAC[REAL_INV_INV]);;
+                                                          
+let REAL_LE_LINV = prove
+ (`!x y. &0 < y /\ inv y <= x ==> inv x <= y`,
+  REPEAT STRIP_TAC THEN MP_TAC (SPEC `y:real` REAL_LT_INV) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC (SPECL [`(inv y:real)`; `x:real`] REAL_LE_INV2) THEN                  
+  ASM_REWRITE_TAC[REAL_INV_INV]);;                                             
+                                                                               
+let REAL_LE_RINV = prove
+ (`!x y. &0 < x /\ x <= inv y ==> y <= inv x`,
+  REPEAT STRIP_TAC THEN MP_TAC (SPEC `x:real` REAL_LT_INV) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN                        
+  MP_TAC (SPECL [`x:real`; `inv y:real`] REAL_LE_INV2) THEN
+  ASM_REWRITE_TAC[REAL_INV_INV]);;                           
 
 let REAL_INV_LE_1 = prove
  (`!x. &1 <= x ==> inv(x) <= &1`,
