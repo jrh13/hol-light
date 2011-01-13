@@ -10,20 +10,20 @@ rule, type.
 
 \DESCRIBE
 This rule specializes a quantified variable as does {SPEC}; it differs
-from it in also instantiating the type if needed:
+from it in also instantiating the type if needed, both in the conclusion and 
+hypotheses:
 {
      A |- !x:ty.tm
   -----------------------  ISPEC `t:ty'`
-      A |- tm[t/x]
+   A[ty'/ty] |- tm[t/x]
 }
 \noindent (where {t} is free for {x} in {tm}, and {ty'} is an instance
 of {ty}).
 
 \FAILURE
-{ISPEC} fails if the input theorem is not universally quantified, if
+{ISPEC} fails if the input theorem is not universally quantified, or if
 the type of the given term is not an instance of the type of the
-quantified variable, or if the type variable is free in the
-assumptions.
+quantified variable.
 
 \EXAMPLE
 {
