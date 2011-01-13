@@ -29,12 +29,13 @@ val it : bool = true
 }
 
 \COMMENTS
-The code for alpha-conversion first checks for simple equality with pointer 
-equality shortcutting, and can therefore often returns {true} without a full 
+The code for alpha-conversion first checks for simple equality with pointer
+equality shortcutting, and can therefore often returns {true} without a full
 traversal.
 
-In principle, most of the HOL Light deductive apparatus should work modulo 
-alpha-conversion. At least, all the primitive inference rules do.
+In principle, most of the HOL Light deductive apparatus should work modulo
+alpha-conversion. With the exception of {BETA}, all the primitive inference 
+rules do, as does {BETA_CONV}, which properly generalizes {BETA}.
 
 \SEEALSO
 ALPHA, ALPHA_CONV.

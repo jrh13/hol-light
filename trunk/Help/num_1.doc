@@ -3,7 +3,7 @@
 \TYPE {num_1 : num}
 
 \SYNOPSIS
-Constant zero in unlimited-size integers.
+Constant one in unlimited-size integers.
 
 \DESCRIBE
 The constant {num_1} is bound to the integer constant 1 in the
