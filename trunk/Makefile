@@ -42,16 +42,22 @@ pa_j.cmo: pa_j.ml; if test `ocamlc -version | cut -c3` = "0" ; \
 #
 # For OCaml >= 3.10 (OCAML_BINARY_VERSION = "1"), this uses the separate
 # program camlp5. Now the appropriate syntax extensions is determined based
-# on the camlp5 version, currently just versions < 6.00 and >= 6.00
+# on the camlp5 version. The main distinction is < 6.00 and >= 6.00, but
+# unfortunately there is another incompatibility between 6.02.0 and the very
+# latest 6.02.1...
 
 OCAML_VERSION=`ocamlc -version | cut -c1-4`
 OCAML_BINARY_VERSION=`ocamlc -version | cut -c3`
 CAMLP5_BINARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1`
+CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -c1-6`
 
 pa_j.ml: pa_j_3.04.ml pa_j_3.06.ml pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx.ml; \
         if test ${OCAML_BINARY_VERSION} = "0" ; \
         then cp pa_j_${OCAML_VERSION}.ml pa_j.ml ; \
-        else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
+        else if test ${CAMLP5_VERSION} = "6.02.1" ; \
+             then cp pa_j_3.1x_6.02.1.ml pa_j.ml; \
+             else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
+             fi \
         fi
 
 # Build a standalone hol image called "hol" (needs Linux and ckpt program)
