@@ -47749,7 +47749,7 @@ let simple_arc_finite_lemma3 = prove_by_refinement(
   REWRITE_TAC[pointI];
   TYPE_THEN `(-- &:j, -- &: j')` EXISTS_TAC;
   REWRITE_TAC[int_neg;int_abstr;int_of_num_th;];
-  TYPE_THEN `!j. (is_int (-- &j))` SUBAGOAL_TAC;
+  TYPE_THEN `!j. (integer (-- &j))` SUBAGOAL_TAC;
   REWRITE_TAC[is_int];
   MESON_TAC[];
   USE 24 (REWRITE_RULE[int_rep]);

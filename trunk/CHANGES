@@ -1,3 +1,16 @@
+Mon 14th Feb 2011       int.ml, Library/floor.ml
+
+Removed the constant "is_int" and replaced it with "integer", moving the
+definition of that back from the "Library/floor.ml" file to the "int.ml"
+file. Kept the theorem "is_int" for compatibility, with just the different 
+constant, and removed the now redundant/meaningless INTEGER_IS_INT.
+
+Tue  8th Feb 2011       Makefile, pa_j_3.1x_6.02.1.ml [new file]
+
+Added (directly from Ondrej Kuncar) an updated version of pa_j for the latest
+sub-version of camlp5, and modified the Makefile to use it as needed (though
+this selection logic is starting to get ugly).
+
 Tue 21st Dec 2010       real.ml, database.ml
 
 Added a lemma from Valentina Bruno used in the Multivariate complex analysis

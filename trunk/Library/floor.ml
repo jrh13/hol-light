@@ -5,16 +5,12 @@
 prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
-(* Basic definitions for integer-valued reals.                               *)
+(* Closure theorems and other lemmas for the integer-valued reals.           *)
 (* ------------------------------------------------------------------------- *)
-
-let integer = new_definition
-  `integer x <=> ?n. abs(x) = &n`;;
 
 let INTEGER_CASES = prove
  (`integer x <=> (?n. x = &n) \/ (?n. x = -- &n)`,
-  REWRITE_TAC[integer; REAL_ARITH `abs(x) = &a <=> x = &a \/ x = -- &a`] THEN
-  MESON_TAC[]);;
+  REWRITE_TAC[is_int; OR_EXISTS_THM]);;
 
 let REAL_ABS_INTEGER_LEMMA = prove
  (`!x. integer(x) /\ ~(x = &0) ==> &1 <= abs(x)`,
@@ -402,13 +398,8 @@ let FLOOR_POS_LE = prove
   SIMP_TAC[REAL_LE_FLOOR; INTEGER_CLOSED]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Correspondence with the notion "is_int".                                  *)
+(* A couple more theorems about real_of_int.                                 *)
 (* ------------------------------------------------------------------------- *)
-
-let INTEGER_IS_INT = prove
- (`integer x <=> is_int x`,
-  REWRITE_TAC[integer; is_int] THEN AP_TERM_TAC THEN ABS_TAC THEN
-  REAL_ARITH_TAC);;
 
 let INT_OF_REAL_OF_INT = prove
  (`!i. int_of_real(real_of_int i) = i`,
@@ -416,7 +407,7 @@ let INT_OF_REAL_OF_INT = prove
 
 let REAL_OF_INT_OF_REAL = prove
  (`!x. integer(x) ==> real_of_int(int_of_real x) = x`,
-  SIMP_TAC[INTEGER_IS_INT; int_rep]);;
+  SIMP_TAC[int_rep]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Finiteness of bounded set of integers.                                    *)
