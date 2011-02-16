@@ -2144,7 +2144,7 @@ let ROTATION_ROTATE2D_EXISTS_ORTHOGONAL_ORIENTED = prove
 
 let ROTATE2D_EQ = prove
  (`!t x y. rotate2d t x = rotate2d t y <=> x = y`,
-  MESON_TAC[ORTHOGONAL_TRANSFORMATION_INJECTIVE; 
+  MESON_TAC[ORTHOGONAL_TRANSFORMATION_INJECTIVE;
             ORTHOGONAL_TRANSFORMATION_ROTATE2D]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -4729,7 +4729,7 @@ let COMPLEX_ROOT_UNITY_EQ = prove
    `~(n = &0) ==> (j / n - k / n = m <=> j - k = n * m)`] THEN
   REWRITE_TAC[int_congruent] THEN
   REWRITE_TAC[int_eq; int_sub_th; int_mul_th; int_of_num_th] THEN
-  MESON_TAC[int_abstr; int_rep; INTEGER_IS_INT]);;
+  MESON_TAC[int_abstr; int_rep]);;
 
 let COMPLEX_ROOT_UNITY_EQ_1 = prove
  (`!n j k. ~(n = 0)
