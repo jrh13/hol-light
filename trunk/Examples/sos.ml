@@ -75,37 +75,37 @@ let is_zero (d,v) = is_undefined v;;
 (* Vectors. Conventionally indexed 1..n.                                     *)
 (* ------------------------------------------------------------------------- *)
 
-let vector_0 n = (n,undefined:vector);;
+let vec_0 n = (n,undefined:vector);;
 
-let dim (v:vector) = fst v;;
+let vec_dim (v:vector) = fst v;;
 
-let vector_const c n =
-  if c =/ Int 0 then vector_0 n
+let vec_const c n =
+  if c =/ Int 0 then vec_0 n
   else (n,itlist (fun k -> k |-> c) (1--n) undefined :vector);;
 
-let vector_1 = vector_const (Int 1);;
+let vec_1 = vec_const (Int 1);;
 
-let vector_cmul c (v:vector) =
-  let n = dim v in
-  if c =/ Int 0 then vector_0 n
+let vec_cmul c (v:vector) =
+  let n = vec_dim v in
+  if c =/ Int 0 then vec_0 n
   else n,mapf (fun x -> c */ x) (snd v)
 
-let vector_neg (v:vector) = (fst v,mapf minus_num (snd v) :vector);;
+let vec_neg (v:vector) = (fst v,mapf minus_num (snd v) :vector);;
 
-let vector_add (v1:vector) (v2:vector) =
-  let m = dim v1 and n = dim v2 in
-  if m <> n then failwith "vector_add: incompatible dimensions" else
+let vec_add (v1:vector) (v2:vector) =
+  let m = vec_dim v1 and n = vec_dim v2 in
+  if m <> n then failwith "vec_add: incompatible dimensions" else
   (n,combine (+/) (fun x -> x =/ Int 0) (snd v1) (snd v2) :vector);;
 
-let vector_sub v1 v2 = vector_add v1 (vector_neg v2);;
+let vec_sub v1 v2 = vec_add v1 (vec_neg v2);;
 
-let vector_dot (v1:vector) (v2:vector) =
-  let m = dim v1 and n = dim v2 in
-  if m <> n then failwith "vector_add: incompatible dimensions" else
+let vec_dot (v1:vector) (v2:vector) =
+  let m = vec_dim v1 and n = vec_dim v2 in
+  if m <> n then failwith "vec_add: incompatible dimensions" else
   foldl (fun a i x -> x +/ a) (Int 0)
         (combine ( */ ) (fun x -> x =/ Int 0) (snd v1) (snd v2));;
 
-let vector_of_list l =
+let vec_of_list l =
   let n = length l in
   (n,itlist2 (|->) (1--n) l undefined :vector);;
 
@@ -155,7 +155,7 @@ let transp (m:matrix) =
   ((j,i),foldl (fun a (i,j) c -> ((j,i) |-> c) a) undefined (snd m) :matrix);;
 
 let diagonal (v:vector) =
-  let n = dim v in
+  let n = vec_dim v in
   ((n,n),foldl (fun a i c -> ((i,i) |-> c) a) undefined (snd v) : matrix);;
 
 let matrix_of_list l =
@@ -282,7 +282,7 @@ let humanorder_monomial =
 (* ------------------------------------------------------------------------- *)
 
 let string_of_vector min_size max_size (v:vector) =
-  let n_raw = dim v in
+  let n_raw = vec_dim v in
   if n_raw = 0 then "[]" else
   let n = max min_size (min n_raw max_size) in
   let xs = map (string_of_num o element v) (1--n) in
@@ -396,7 +396,7 @@ let poly_of_term =
 (* ------------------------------------------------------------------------- *)
 
 let sdpa_of_vector (v:vector) =
-  let n = dim v in
+  let n = vec_dim v in
   let strs = map (decimalize 20 o element v) (1--n) in
   end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
 
@@ -484,7 +484,7 @@ let parse_decimal = mkparser decimal;;
 let parse_sdpaoutput,parse_csdpoutput =
   let vector =
     token "{" ++ listof decimal (token ",") "decimal" ++ token "}"
-               >> (fun ((_,v),_) -> vector_of_list v) in
+               >> (fun ((_,v),_) -> vec_of_list v) in
   let parse_vector = mkparser vector in
   let rec skipupto dscr prs inp =
       (dscr ++ prs >> snd
@@ -495,7 +495,7 @@ let parse_sdpaoutput,parse_csdpoutput =
              (vector ++ ignore >> fst) in
   let csdpoutput =
     (decimal ++ many(a " " ++ decimal >> snd) >> (fun (h,t) -> h::t)) ++
-    (a " " ++ a "\n" ++ ignore) >> (vector_of_list o fst) in
+    (a " " ++ a "\n" ++ ignore) >> (vec_of_list o fst) in
   mkparser sdpaoutput,mkparser csdpoutput;;
 
 (* ------------------------------------------------------------------------- *)
@@ -640,13 +640,13 @@ let scale_then =
     let cd1 = itlist common_denominator mats (Int 1)
     and cd2 = common_denominator (snd obj)  (Int 1) in
     let mats' = map (mapf (fun x -> cd1 */ x)) mats
-    and obj' = vector_cmul cd2 obj in
+    and obj' = vec_cmul cd2 obj in
     let max1 = itlist maximal_element mats' (Int 0)
     and max2 = maximal_element (snd obj') (Int 0) in
     let scal1 = pow2 (20-int_of_float(log(float_of_num max1) /. log 2.0))
     and scal2 = pow2 (20-int_of_float(log(float_of_num max2) /. log 2.0)) in
     let mats'' = map (mapf (fun x -> x */ scal1)) mats'
-    and obj'' = vector_cmul scal2 obj' in
+    and obj'' = vec_cmul scal2 obj' in
     solver obj'' mats'';;
 
 (* ------------------------------------------------------------------------- *)
@@ -665,7 +665,7 @@ let nice_vector n = mapa (nice_rational n);;
 let linear_program_basic a =
   let m,n = dimensions a in
   let mats =  map (fun j -> diagonal (column j a)) (1--n)
-  and obj = vector_const (Int 1) m in
+  and obj = vec_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
   if rv = 1 or rv = 2 then false
   else if rv = 0 then true
@@ -677,9 +677,9 @@ let linear_program_basic a =
 
 let linear_program a b =
   let m,n = dimensions a in
-  if dim b <> m then failwith "linear_program: incompatible dimensions" else
+  if vec_dim b <> m then failwith "linear_program: incompatible dimensions" else
   let mats = diagonal b :: map (fun j -> diagonal (column j a)) (1--n)
-  and obj = vector_const (Int 1) m in
+  and obj = vec_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
   if rv = 1 or rv = 2 then false
   else if rv = 0 then true
@@ -1067,7 +1067,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   and obj = length pvs,
             itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (Int 0)))
                         undefined in
-  let raw_vec = if pvs = [] then vector_0 0
+  let raw_vec = if pvs = [] then vec_0 0
                 else scale_then (csdp nblocks blocksizes) obj mats in
   let find_rounding d =
    (if !debugging then
@@ -1075,7 +1075,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
       Format.print_newline())
     else ());
     let vec = nice_vector d raw_vec in
-    let blockmat = iter (1,dim vec)
+    let blockmat = iter (1,vec_dim vec)
      (fun i a -> bmatrix_add (bmatrix_cmul (element vec i) (el i mats)) a)
      (bmatrix_neg (el 0 mats)) in
     let allmats = blocks blocksizes blockmat in
@@ -1086,7 +1086,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
                                 map pow2 (5--66)) in
   let newassigs =
     itlist (fun k -> el (k - 1) pvs |-> element vec k)
-           (1--dim vec) ((0,0,0) |=> Int(-1)) in
+           (1--vec_dim vec) ((0,0,0) |=> Int(-1)) in
   let finalassigs =
     foldl (fun a v e -> (v |-> equation_eval newassigs e) a) newassigs
           allassig in
@@ -1403,7 +1403,7 @@ let changevariables zoln pol =
 (* ------------------------------------------------------------------------- *)
 
 let sdpa_of_vector (v:vector) =
-  let n = dim v in
+  let n = vec_dim v in
   let strs = map (decimalize 20 o element v) (1--n) in
   end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
 
@@ -1545,14 +1545,14 @@ let sumofsquares_general_symmetry tool pol =
   and obj = length pvs,
             itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (Int 0)))
                 undefined in
-  let raw_vec = if pvs = [] then vector_0 0 else tool obj mats in
+  let raw_vec = if pvs = [] then vec_0 0 else tool obj mats in
   let find_rounding d =
    (if !debugging then
      (Format.print_string("Trying rounding with limit "^string_of_num d);
       Format.print_newline())
     else ());
     let vec = nice_vector d raw_vec in
-    let mat = iter (1,dim vec)
+    let mat = iter (1,vec_dim vec)
      (fun i a -> matrix_add (matrix_cmul (element vec i) (el i mats)) a)
      (matrix_neg (el 0 mats)) in
     deration(diag mat) in

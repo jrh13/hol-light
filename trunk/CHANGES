@@ -1,8 +1,29 @@
+Thu 17th Feb 2011       Examples/sos.ml
+
+Renamed a few of the ML operations on vectors since the existing names
+can lead to annoying name clashes with the names of theorems in the
+Multivariate/vectors.ml theories.
+
+ vector_0       -> vec_0       
+ dim            -> vec_dim            
+ vector_const   -> vec_const   
+ vector_1       -> vec_1       
+ vector_cmul    -> vec_cmul    
+ vector_neg     -> vec_neg     
+ vector_add     -> vec_add     
+ vector_sub     -> vec_sub     
+ vector_dot     -> vec_dot     
+ vector_of_list -> vec_of_list 
+
+Of course, it is arguable that all this should be hidden anyway, but
+since this file is still somewhat experimental I don't want to tidy up
+and modularize the namespace just yet.
+
 Mon 14th Feb 2011       int.ml, Library/floor.ml
 
 Removed the constant "is_int" and replaced it with "integer", moving the
 definition of that back from the "Library/floor.ml" file to the "int.ml"
-file. Kept the theorem "is_int" for compatibility, with just the different 
+file. Kept the theorem "is_int" for compatibility, with just the different
 constant, and removed the now redundant/meaningless INTEGER_IS_INT.
 
 Tue  8th Feb 2011       Makefile, pa_j_3.1x_6.02.1.ml [new file]
