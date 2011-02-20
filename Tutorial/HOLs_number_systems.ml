@@ -121,6 +121,6 @@ COOPER_RULE `ODD n ==> 2 * n DIV 2 < n`;;
 
 COOPER_RULE `!n. n >= 8 ==> ?a b. n = 3 * a + 5 * b`;;
 
-needs "Examples/rqe.ml";;
+needs "Rqe/make.ml";;
 
 REAL_QELIM_CONV `!x. &0 <= x ==> ?y. y pow 2 = x`;;
