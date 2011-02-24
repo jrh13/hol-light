@@ -356,6 +356,10 @@ let MEM_EXISTS_EL = prove
    [MESON[num_CASES] `(?i. P i) <=> P 0 \/ (?i. P(SUC i))`] THEN
   REWRITE_TAC[LT_SUC; LT_0; EL; HD; TL]);;
 
+let ALL_EL = prove
+ (`!P l. (!i. i < LENGTH l ==> P (EL i l)) <=> ALL P l`,
+  REWRITE_TAC[GSYM ALL_MEM; MEM_EXISTS_EL] THEN MESON_TAC[]);;
+
 let ALL2_MAP2 = prove
  (`!l m. ALL2 P (MAP f l) (MAP g m) = ALL2 (\x y. P (f x) (g y)) l m`,
   LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL2; MAP]);;
@@ -450,6 +454,10 @@ let LAST_EL = prove
 let HD_APPEND = prove
  (`!l m:A list. HD(APPEND l m) = if l = [] then HD m else HD l`,
   LIST_INDUCT_TAC THEN REWRITE_TAC[HD; APPEND; NOT_CONS_NIL]);;
+
+let CONS_HD_TL = prove
+ (`!l. ~(l = []) ==> l = CONS (HD l) (TL l)`,
+  LIST_INDUCT_TAC THEN REWRITE_TAC[NOT_CONS_NIL;HD;TL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)

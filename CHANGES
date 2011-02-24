@@ -1,19 +1,28 @@
+Tue 22nd Feb 2011       lists.ml
+
+Added two additional list lemmas taken from Jesse Bingham's e-transcendence 
+proof, which seem to be quite generally useful.
+
+  ALL_EL = |- !P l. (!i. i < LENGTH l ==> P (EL i l)) <=> ALL P l
+ 
+  CONS_HD_TL = |- !l. ~(l = []) ==> l = CONS (HD l) (TL l)
+
 Thu 17th Feb 2011       Examples/sos.ml
 
 Renamed a few of the ML operations on vectors since the existing names
 can lead to annoying name clashes with the names of theorems in the
 Multivariate/vectors.ml theories.
 
- vector_0       -> vec_0       
- dim            -> vec_dim            
- vector_const   -> vec_const   
- vector_1       -> vec_1       
- vector_cmul    -> vec_cmul    
- vector_neg     -> vec_neg     
- vector_add     -> vec_add     
- vector_sub     -> vec_sub     
- vector_dot     -> vec_dot     
- vector_of_list -> vec_of_list 
+ vector_0       -> vec_0
+ dim            -> vec_dim
+ vector_const   -> vec_const
+ vector_1       -> vec_1
+ vector_cmul    -> vec_cmul
+ vector_neg     -> vec_neg
+ vector_add     -> vec_add
+ vector_sub     -> vec_sub
+ vector_dot     -> vec_dot
+ vector_of_list -> vec_of_list
 
 Of course, it is arguable that all this should be hidden anyway, but
 since this file is still somewhat experimental I don't want to tidy up
