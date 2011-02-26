@@ -17,9 +17,10 @@ do_list override_interface
    "**",`poly_mul:real list->real list->real list`;
    "##",`poly_cmul:real->real list->real list`;
    "neg",`poly_neg:real list->real list`;
-   "divides",`poly_divides:real list->real list->bool`;
    "exp",`poly_exp:real list -> num -> real list`;
    "diff",`poly_diff:real list->real list`];;
+
+overload_interface ("divides",`poly_divides:real list->real list->bool`);;
 
 (* ------------------------------------------------------------------------- *)
 (* Application of polynomial as a real function.                             *)
@@ -85,7 +86,7 @@ let LENGTH_POLY_DIFF_AUX = prove
 
 let LENGTH_POLY_DIFF = prove
  (`!l. LENGTH(poly_diff l) = PRE(LENGTH l)`,
-  LIST_INDUCT_TAC THEN 
+  LIST_INDUCT_TAC THEN
   SIMP_TAC[poly_diff; LENGTH; LENGTH_POLY_DIFF_AUX; NOT_CONS_NIL; TL; PRE]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -616,7 +617,6 @@ let POLY_DIFF_AUX_ISZERO = prove
          ALL (\c. c = &0) p`,
   LIST_INDUCT_TAC THEN ASM_REWRITE_TAC
    [ALL; poly_diff_aux; REAL_ENTIRE; REAL_OF_NUM_EQ; NOT_SUC]);;
-
 
 let POLY_DIFF_ISZERO = prove
  (`!p. (poly (diff p) = poly []) ==> ?h. poly p = poly [h]`,
@@ -1285,6 +1285,398 @@ let POLY_NORMALIZE_CONV =
      RATOR_CONV(RAND_CONV(RATOR_CONV(LAND_CONV REAL_RAT_EQ_CONV))) THENC
      norm_conv2)) tm in
   POLY_NORMALIZE_CONV;;
+
+(* ------------------------------------------------------------------------- *)
+(* Some theorems asserting that operations give non-nil results.             *)
+(* ------------------------------------------------------------------------- *)
+
+let NOT_POLY_CMUL_NIL = prove
+ (`!h p. ~(p = []) ==> ~((h ## p) = [])`,
+  STRIP_TAC THEN LIST_INDUCT_TAC THENL
+   [SIMP_TAC[]; SIMP_TAC[poly_cmul; NOT_CONS_NIL]]);;
+
+let NOT_POLY_MUL_NIL = prove
+ (`!p1 p2. ~(p1 = []) /\ ~(p2 = []) ==> ~((p1 ** p2) = [])`,
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[];
+    LIST_INDUCT_TAC THENL
+     [SIMP_TAC[];
+      SIMP_TAC[poly_mul;NOT_CONS_NIL] THEN
+      SPEC_TAC (`t:(real)list`,`t:(real)list`) THEN LIST_INDUCT_TAC THENL
+       [SIMP_TAC[poly_cmul;NOT_CONS_NIL];
+        SIMP_TAC[poly_cmul;poly_add;NOT_CONS_NIL]]
+     ]
+   ]);;
+
+let NOT_POLY_EXP_NIL =  prove
+ (`!n p . ~(p = []) ==> ~((poly_exp p n) = [])`,
+  let lem001 = ASSUME `!p . ~(p = []) ==> ~(poly_exp p n = [])` in
+  let lem002 = SIMP_RULE[NOT_CONS_NIL] (SPEC `CONS (h:real) t` lem001) in
+  INDUCT_TAC THENL
+   [SIMP_TAC[poly_exp;NOT_CONS_NIL];
+    LIST_INDUCT_TAC THENL
+     [SIMP_TAC[];
+      SIMP_TAC[lem002;NOT_POLY_MUL_NIL;poly_exp;NOT_CONS_NIL]
+     ]
+   ]);;
+
+let NOT_POLY_EXP_X_NIL = prove
+ (`!n. ~((poly_exp [&0;&1] n) = [])`,
+  let lem01 = prove(`~([&0;&1] = [])`,SIMP_TAC[NOT_CONS_NIL]) in
+  INDUCT_TAC THENL
+   [SIMP_TAC[poly_exp;NOT_CONS_NIL];
+    ASM_SIMP_TAC[poly_exp;NOT_POLY_MUL_NIL;lem01]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some general lemmas.                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let POLY_CMUL_LID = prove
+ (`!p. &1 ## p = p`,
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[poly_cmul];
+    ASM_SIMP_TAC[poly_cmul] THEN SIMP_TAC[REAL_ARITH `&1 * h = h`]]);;
+
+let POLY_MUL_LID = prove
+ (`!p. [&1] ** p = p`,
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[poly_mul;poly_cmul];
+    ONCE_REWRITE_TAC[poly_mul] THEN SIMP_TAC[POLY_CMUL_LID]]);;
+
+let POLY_MUL_RID = prove
+ (`!p. p ** [&1] = p`,
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[poly_mul];
+    ASM_CASES_TAC `t:(real)list = []` THEN
+    ASM_SIMP_TAC[poly_mul;poly_cmul;poly_add;NOT_CONS_NIL;HD;TL;
+     REAL_ARITH `h + (real_of_num 0) = h`;REAL_ARITH `h * (real_of_num 1) = h`]
+   ]);;
+
+let POLY_ADD_SYM = prove
+ (`!x y . x ++ y = y ++ x`,
+  let lem1 = ASSUME `!y . t ++ y = y ++ t` in
+  let lem2 = SPEC `t':(real)list` lem1 in
+  LIST_INDUCT_TAC THENL
+   [LIST_INDUCT_TAC THENL [SIMP_TAC[poly_add]; SIMP_TAC[poly_add]];
+    LIST_INDUCT_TAC THENL
+      [SIMP_TAC[poly_add];
+       SIMP_TAC[POLY_ADD_CLAUSES] THEN
+       ONCE_REWRITE_TAC[lem2] THEN
+       SIMP_TAC[SPECL [`h:real`;`h':real`] REAL_ADD_SYM]
+      ]
+   ]);;
+
+let POLY_ADD_ASSOC = prove
+ (`!x y z . x ++ (y ++ z) = (x ++ y) ++ z`,
+  let lem1 = ASSUME `!y z. t ++ y ++ z = (t ++ y) ++ z` in
+  let lem2 = SPECL [`t':(real)list`;`t'':(real)list`] lem1 in
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[POLY_ADD_CLAUSES];
+    LIST_INDUCT_TAC THENL
+     [SIMP_TAC[POLY_ADD_CLAUSES];
+      LIST_INDUCT_TAC THENL
+      [SIMP_TAC[POLY_ADD_CLAUSES];
+       SIMP_TAC[POLY_ADD_CLAUSES] THEN
+       SIMP_TAC[REAL_ADD_ASSOC] THEN
+       SIMP_TAC[lem2]
+      ]
+     ]
+   ]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Heads and tails resulting from operations.                                *)
+(* ------------------------------------------------------------------------- *)
+
+let TL_POLY_MUL_X = prove
+ (`!p. TL ([&0;&1] ** p) = p`,
+  LIST_INDUCT_TAC THENL
+   [ONCE_REWRITE_TAC[poly_mul] THEN
+    SIMP_TAC[NOT_CONS_NIL;poly_cmul;poly_add;TL;poly_mul];
+    ONCE_REWRITE_TAC[poly_mul] THEN SIMP_TAC[NOT_CONS_NIL] THEN
+    ONCE_REWRITE_TAC[poly_cmul] THEN ONCE_REWRITE_TAC[poly_add] THEN
+    SIMP_TAC[NOT_CONS_NIL] THEN SIMP_TAC[TL;POLY_MUL_LID] THEN
+    SPEC_TAC (`h:real`,`h:real`) THEN
+    SPEC_TAC (`t:(real)list`,`t:(real)list`) THEN
+    LIST_INDUCT_TAC THENL
+     [SIMP_TAC[poly_cmul;poly_add];
+      ASM_SIMP_TAC[poly_cmul;poly_add;NOT_CONS_NIL;HD;TL;
+                   REAL_ARITH `(&0) * h + h' = h'`]
+     ]
+   ]);;
+
+let HD_POLY_MUL_X = prove
+ (`!p. HD ([&0;&1] ** p) = &0`,
+  LIST_INDUCT_TAC THEN
+  SIMP_TAC[poly_mul;NOT_CONS_NIL;poly_cmul;poly_add;HD;
+           REAL_ARITH `&0 * h + &0 = &0`]);;
+
+let TL_POLY_EXP_X_SUC = prove
+ (`!n . TL (poly_exp [&0;&1] (SUC n)) = poly_exp [&0;&1] n`,
+   SIMP_TAC[poly_exp;TL_POLY_MUL_X]);;
+
+let HD_POLY_EXP_X_SUC = prove
+ (`!n . HD (poly_exp [&0;&1] (SUC n)) = &0`,
+  INDUCT_TAC THENL
+   [SIMP_TAC[poly_exp;poly_add;HD;TL;poly_cmul;poly_mul;NOT_CONS_NIL;
+             REAL_ARITH `&0 * &1 + &0 = &0`];
+    SIMP_TAC[poly_exp;HD_POLY_MUL_X]]);;
+
+let HD_POLY_ADD = prove
+ (`!p1 p2. ~(p1 = []) /\ ~(p2 = []) ==> HD (p1 ++ p2) = (HD p1) + (HD p2)`,
+   LIST_INDUCT_TAC THENL
+    [SIMP_TAC[];
+      LIST_INDUCT_TAC THENL
+       [SIMP_TAC[];
+        SIMP_TAC[NOT_CONS_NIL;poly_add] THEN
+        ONCE_REWRITE_TAC[ISPECL [`h':real`;`t':(real)list`] NOT_CONS_NIL] THEN
+        SIMP_TAC[HD]
+       ]
+    ]);;
+
+let HD_POLY_CMUL = prove
+ (`!x p . ~(p = []) ==> HD (x ## p) = x * (HD p)`,
+  STRIP_TAC THEN LIST_INDUCT_TAC THENL
+   [SIMP_TAC[]; SIMP_TAC[NOT_CONS_NIL;poly_cmul;HD]]);;
+
+let TL_POLY_CMUL = prove
+ (`!x p . ~(p = []) ==> TL (x ## p) = x ## (TL p)`,
+  STRIP_TAC THEN LIST_INDUCT_TAC THENL
+   [SIMP_TAC[]; SIMP_TAC[NOT_CONS_NIL;poly_cmul;TL]]);;
+
+let HD_POLY_MUL = prove
+ (`!p1 p2 . ~(p1 = []) /\ ~(p2 = [])  ==> HD (p1 ** p2) = (HD p1) * (HD p2)`,
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[];
+    LIST_INDUCT_TAC THENL
+     [SIMP_TAC[];
+      SIMP_TAC[NOT_CONS_NIL;poly_mul] THEN
+      ASM_CASES_TAC `(t:(real)list) = []` THENL
+       [ASM_SIMP_TAC[poly_cmul;HD];
+        ASM_SIMP_TAC[poly_cmul;poly_add;NOT_CONS_NIL;HD] THEN REAL_ARITH_TAC
+       ]
+     ]
+   ]);;
+
+let HD_POLY_EXP = prove
+ (`!n p . ~(p = []) ==> HD (poly_exp p n) = (HD p) pow n`,
+  INDUCT_TAC THENL
+   [SIMP_TAC[poly_exp] THEN LIST_INDUCT_TAC THENL
+     [SIMP_TAC[]; SIMP_TAC[HD;pow]];
+    SIMP_TAC[poly_exp] THEN LIST_INDUCT_TAC THENL
+     [SIMP_TAC[];
+      SIMP_TAC[HD;GSYM pow;NOT_CONS_NIL;poly_mul] THEN
+      ASM_CASES_TAC `(t:(real)list) = []` THENL
+       [ASM_SIMP_TAC[HD_POLY_CMUL;NOT_POLY_CMUL_NIL;NOT_POLY_EXP_NIL;
+                     NOT_CONS_NIL;HD;GSYM pow];
+        ASM_SIMP_TAC[NOT_POLY_CMUL_NIL;NOT_POLY_EXP_NIL;NOT_CONS_NIL;
+                     HD_POLY_ADD;HD;HD_POLY_CMUL;GSYM pow] THEN
+        REAL_ARITH_TAC]
+     ]
+   ]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Additional general lemmas.                                                *)
+(* ------------------------------------------------------------------------- *)
+
+let POLY_ADD_IDENT = prove
+ (`neutral (++) = []`,
+  let l1 = ASSUME `!x. (!y. x ++ y = y /\ y ++ x = y)
+                     ==> (!y. (CONS h t) ++ y = y /\ y ++ (CONS h t) = y)` in
+  let l2 = SPEC `[]:(real)list` l1 in
+  let l3 = SIMP_RULE[POLY_ADD_CLAUSES] l2 in
+  let l4 = SPEC `[]:(real)list` l3 in
+  let l5 = CONJUNCT1 l4 in
+  let l6 = SIMP_RULE[POLY_ADD_CLAUSES;NOT_CONS_NIL] l5 in
+  let l7 = NOT_INTRO (DISCH_ALL l6) in
+  ONCE_REWRITE_TAC[neutral] THEN SELECT_ELIM_TAC THEN LIST_INDUCT_TAC THENL
+  [SIMP_TAC[];SIMP_TAC[l7]]);;
+
+let POLY_ADD_NEUTRAL = prove
+ (`!x. neutral (++) ++ x = x`,
+  SIMP_TAC[POLY_ADD_IDENT;POLY_ADD_CLAUSES]);;
+
+let MONOIDAL_POLY_ADD = prove
+ (`monoidal poly_add`,
+  let lem1 = CONJ POLY_ADD_SYM (CONJ POLY_ADD_ASSOC  POLY_ADD_NEUTRAL) in
+  ONCE_REWRITE_TAC[monoidal] THEN ACCEPT_TAC lem1);;
+
+let POLY_DIFF_AUX_ADD_LEMMA = prove
+ (`!t1 t2 n. poly_diff_aux n (t1 ++ t2) =
+             (poly_diff_aux n t1) ++ (poly_diff_aux n t2)`,
+  let lem = REAL_ARITH `!n h h'. (&n * h) + (&n * h') = &n * (h + h')` in
+  LIST_INDUCT_TAC THEN SIMP_TAC[POLY_ADD_CLAUSES;poly_diff_aux] THEN
+  LIST_INDUCT_TAC THEN SIMP_TAC[POLY_ADD_CLAUSES;poly_diff_aux] THEN
+  STRIP_TAC THEN
+  ONCE_REWRITE_TAC[POLY_ADD_CLAUSES] THEN
+  ONCE_REWRITE_TAC[poly_diff_aux] THEN
+  ONCE_REWRITE_TAC[POLY_ADD_CLAUSES] THEN
+  ONCE_REWRITE_TAC[lem] THEN
+  ASM_SIMP_TAC[]);;
+
+let POLYDIFF_ADD = prove
+ (`!p1 p2. (poly_diff (p1 ++ p2)) = (poly_diff p1  ++ poly_diff p2)`,
+  let lem1 = prove
+   (`!h0 t0 h1 t1. ~(((CONS h0 t0) ++ (CONS h1 t1)) = [])`,
+     SIMP_TAC[POLY_ADD_CLAUSES;NOT_CONS_NIL]) in
+  let lem2 = prove
+   (`!h0 t0 h1 t1.
+          (TL ((CONS h0 t0) ++ (CONS h1 t1))
+        = (TL (CONS h0 t0)) ++ (TL (CONS h1 t1)))`,
+    REPEAT STRIP_TAC THEN REWRITE_TAC[poly_add] THEN
+    ONCE_REWRITE_TAC[NOT_CONS_NIL] THEN REWRITE_TAC[TL]
+    THEN SIMP_TAC[]) in
+  REPEAT LIST_INDUCT_TAC THENL
+   [SIMP_TAC[poly_add;poly_diff];
+    SIMP_TAC[poly_add;poly_diff];
+    SIMP_TAC[poly_add;poly_diff;POLY_ADD_CLAUSES];
+    SIMP_TAC[poly_diff] THEN
+    ONCE_REWRITE_TAC[lem1;NOT_CONS_NIL] THEN
+    SIMP_TAC[lem2;POLY_DIFF_AUX_ADD_LEMMA]
+   ]);;
+
+let POLY_DIFF_AUX_POLY_CMUL =  prove
+ (`!p c n. poly_diff_aux n (c ## p) = c ## (poly_diff_aux n p)`,
+  let lem01 = ASSUME
+   `!c n. poly_diff_aux n (c ## t) = c ## poly_diff_aux n t` in
+  let lem02 = SPECL [`c:real`;`SUC n`] lem01 in
+  LIST_INDUCT_TAC THEN STRIP_TAC THEN STRIP_TAC THEN
+  SIMP_TAC[poly_cmul;poly_diff_aux;lem02;
+           REAL_ARITH `(a:real) * b * c = b * a * c`]);;
+
+let POLY_CMUL_POLY_DIFF = prove
+ (`!p c. poly_diff (c ## p) = c ## (poly_diff p)`,
+  LIST_INDUCT_TAC THEN
+  SIMP_TAC[poly_diff;POLY_DIFF_AUX_POLY_CMUL;TL_POLY_CMUL;
+           poly_cmul;NOT_CONS_NIL]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Theorems about the lengths of lists from the polynomial operations.       *)
+(* ------------------------------------------------------------------------- *)
+
+let POLY_CMUL_LENGTH = prove
+ (`!c p. LENGTH (c ## p) =  LENGTH p`,
+  STRIP_TAC THEN LIST_INDUCT_TAC THENL
+   [SIMP_TAC[poly_cmul];
+    SIMP_TAC[poly_cmul] THEN ASM_SIMP_TAC[LENGTH]
+   ]);;
+
+let POLY_ADD_LENGTH = prove
+ (`!p q. LENGTH (p ++ q) =  MAX (LENGTH p) (LENGTH q)`,
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[poly_add;LENGTH] THEN ARITH_TAC;
+    LIST_INDUCT_TAC THENL
+     [SIMP_TAC[poly_add;LENGTH] THEN ARITH_TAC;
+      SIMP_TAC[poly_add;LENGTH] THEN
+      ONCE_REWRITE_TAC[NOT_CONS_NIL] THEN SIMP_TAC[HD;TL;LENGTH] THEN
+      ASM_SIMP_TAC[] THEN
+      ONCE_REWRITE_TAC[ARITH_RULE `MAX x y = if (x > y) then x else y`] THEN
+      ASM_CASES_TAC `LENGTH (t:(real)list) > LENGTH (t':(real)list)` THENL
+       [ASM_SIMP_TAC[ARITH_RULE `x > y ==> (SUC x) > (SUC y)`];
+        ASM_SIMP_TAC[ARITH_RULE `~(x > y) ==> ~((SUC x) > (SUC y))`]]
+     ]
+   ]);;
+
+let POLY_MUL_LENGTH = prove
+ (`!p h t. LENGTH (p ** (CONS h t)) >= LENGTH p`,
+  let lemma01 = ASSUME `!h t'. LENGTH (t ** CONS h t') >= LENGTH t` in
+  let lemma02 = SPECL [`h':real`;`t':(real)list`] lemma01 in
+  let lemma03 = ONCE_REWRITE_RULE[ARITH_RULE `(x:num) >= y <=> SUC x >= SUC y`]
+     lemma02 in
+  let lemma05 = ARITH_RULE `(y:num) >= z ==> (x + (y - x) >= z) ` in
+  let lemma06 = SPECL [`SUC (LENGTH (t ** (CONS (h':real) t')))`;
+                       `LENGTH (h ## (CONS h' t'))`;
+                       `SUC (LENGTH (t:(real)list))`] (GEN_ALL lemma05) in
+  let lemma07 = MATCH_MP (lemma06) (lemma03) in
+  LIST_INDUCT_TAC THENL
+   [SIMP_TAC[POLY_MUL_CLAUSES] THEN ARITH_TAC;
+    SIMP_TAC[poly_mul] THEN ASM_CASES_TAC `(t:(real)list) = []` THENL
+     [ASM_SIMP_TAC[POLY_CMUL_LENGTH;LENGTH] THEN ARITH_TAC;
+      ASM_SIMP_TAC[POLY_ADD_LENGTH;LENGTH;lemma07;
+                   ARITH_RULE `!x y. (MAX x y) = x + (y - x)`]
+     ]
+   ]);;
+
+let POLY_EXP_X_REC = prove
+ (`!n. poly_exp [&0;&1] (SUC n) = CONS (&0) (poly_exp [&0;&1] n)`,
+  let lem01 = MATCH_MP CONS_HD_TL  (SPEC `(SUC n)` NOT_POLY_EXP_X_NIL)  in
+  let lem02 = ONCE_REWRITE_RULE[HD_POLY_EXP_X_SUC; TL_POLY_EXP_X_SUC] lem01 in
+  ACCEPT_TAC (GEN_ALL lem02));;
+
+let POLY_MUL_LENGTH2 = prove
+ (`!q p. ~(q = []) ==> LENGTH (p ** q) >= LENGTH p`,
+   LIST_INDUCT_TAC THEN SIMP_TAC[NOT_CONS_NIL; POLY_MUL_LENGTH]);;
+
+let POLY_EXP_X_LENGTH = prove
+ (`!n. LENGTH (poly_exp [&0;&1] n) = SUC n`,
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[poly_exp;LENGTH; POLY_EXP_X_REC;
+               ARITH_RULE `(SUC x) = (SUC y) <=> x = y`]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Expansion of a polynomial as a power sum.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let POLY_SUM_EQUIV = prove
+ (`!p x.
+     ~(p = []) ==>
+     poly p x = sum (0..(PRE (LENGTH p))) (\i. (EL i p)*(x pow i))`,
+  let lem000 = ARITH_RULE `0 <= 0 + 1 /\ 0 <= (LENGTH (t:(real)list))` in
+  let lem001 = SPECL
+                 [`f:num->real`;`0`;`0`;`LENGTH (t:(real)list)`]
+                 SUM_COMBINE_R in
+  let lem002 = MP lem001 lem000 in
+  let lem003 = SPECL
+                 [`f:num->real`;`1`;`LENGTH (t:(real)list)`]
+                 SUM_OFFSET_0 in
+  let lem004 = ASSUME `~((t:(real)list) = [])` in
+  let lem005 = ONCE_REWRITE_RULE[GSYM LENGTH_EQ_NIL] lem004 in
+  let lem006 = ONCE_REWRITE_RULE[ARITH_RULE `~(x = 0) <=> (1 <= x)`] lem005 in
+  let lem007 = MP lem003 lem006 in
+  let lem017 = ARITH_RULE `1 <= (LENGTH (t:(real)list))
+                       ==> ((LENGTH t) - 1 = PRE (LENGTH t))` in
+  let lem018 = MP lem017 lem006 in
+  LIST_INDUCT_TAC THENL
+    [     SIMP_TAC[NOT_CONS_NIL]
+          ;
+          ASM_CASES_TAC `(t:(real)list) = []` THENL
+     [
+          ASM_SIMP_TAC[POLY_CONST;LENGTH;PRE]
+     THEN ONCE_REWRITE_TAC[NUMSEG_CONV `0..0`]
+     THEN ONCE_REWRITE_TAC[SUM_SING]
+     THEN BETA_TAC
+     THEN ONCE_REWRITE_TAC[EL]
+     THEN ONCE_REWRITE_TAC[HD]
+     THEN REAL_ARITH_TAC
+     ;
+          ASM_SIMP_TAC[POLY_CONST;LENGTH;PRE]
+     THEN ONCE_REWRITE_TAC[poly]
+     THEN ONCE_REWRITE_TAC[GSYM lem002]
+     THEN ONCE_REWRITE_TAC[ARITH_RULE `0 + 1 = 1`]
+     THEN ONCE_REWRITE_TAC[NUMSEG_CONV `0..0`]
+     THEN ONCE_REWRITE_TAC[SUM_SING]
+     THEN BETA_TAC
+     THEN SIMP_TAC[EL;HD]
+     THEN ONCE_REWRITE_TAC[lem007]
+     THEN BETA_TAC
+     THEN ONCE_REWRITE_TAC[GSYM ADD1]
+     THEN SIMP_TAC[EL;TL]
+     THEN ONCE_REWRITE_TAC[real_pow]
+     THEN ONCE_REWRITE_TAC[REAL_MUL_RID]
+     THEN ONCE_REWRITE_TAC[REAL_ARITH `(A:real) * B * C = B * (A * C)`]
+     THEN ONCE_REWRITE_TAC[NSUM_LMUL]
+     THEN ONCE_REWRITE_TAC[SUM_LMUL]
+     THEN ASM_SIMP_TAC[]
+     THEN SIMP_TAC[NOT_CONS_NIL]
+     THEN ONCE_REWRITE_TAC[lem018]
+     THEN SIMP_TAC[]
+    ]]);;
+
+let ITERATE_RADD_POLYADD = prove
+ (`!n x f. iterate (+) (0..n) (\i.poly (f i) x) =
+           poly (iterate (++) (0..n) f) x`,
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES_NUMSEG; MONOIDAL_REAL_ADD; MONOIDAL_POLY_ADD;
+               LE_0; POLY_ADD]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Now we're finished with polynomials...                                    *)

@@ -2652,7 +2652,6 @@ let DORDER_LEMMA = prove(
 (*----------------------------------------------------------------------------*)
 
 let DORDER_THEN tac th =
-  let findpr = snd o dest_imp o body o rand o rand o body o rand in
   let [t1;t2] = map (rand o rand o body o rand) (conjuncts(concl th)) in
   let dog = (rator o rator o rand o rator o body) t1 in
   let thl = map ((uncurry X_BETA_CONV) o (I F_F rand) o dest_abs) [t1;t2] in

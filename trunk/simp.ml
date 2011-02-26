@@ -326,7 +326,6 @@ let ONCE_DEPTH_SQCONV,DEPTH_SQCONV,REDEPTH_SQCONV,
           let l' = alpha v' l and r' = alpha v' r in
           EQ_MP (ALPHA gtm (mk_eq(l',r'))) gth
         else failwith "GEN_SUB_CONV" in
-  let trivial_prover strat ss lev tm = ASSUME tm in
   let rec ONCE_DEPTH_SQCONV
        (Simpset(net,prover,provers,rewmaker) as ss) lev tm =
     let pconvs = lookup tm net in

@@ -1,10 +1,55 @@
+Fri 25th Feb 2011       Library/poly.ml
+
+Fixed an error where override_interface was used for "divides", hiding
+all the other desired overloadings. Also added many new polynomial
+theorems from Jesse Bingham's e-transcendence proof:
+
+  HD_POLY_ADD
+  HD_POLY_CMUL
+  HD_POLY_EXP
+  HD_POLY_EXP_X_SUC
+  HD_POLY_MUL
+  HD_POLY_MUL_X
+  ITERATE_RADD_POLYADD
+  MONOIDAL_POLY_ADD
+  NOT_POLY_CMUL_NIL
+  NOT_POLY_EXP_NIL
+  NOT_POLY_EXP_X_NIL
+  NOT_POLY_MUL_NIL
+  POLYDIFF_ADD
+  POLY_ADD_ASSOC
+  POLY_ADD_IDENT
+  POLY_ADD_LENGTH
+  POLY_ADD_NEUTRAL
+  POLY_ADD_SYM
+  POLY_CMUL_LENGTH
+  POLY_CMUL_LID
+  POLY_CMUL_POLY_DIFF
+  POLY_DIFF_AUX_ADD_LEMMA
+  POLY_DIFF_AUX_POLY_CMUL
+  POLY_EXP_X_LENGTH
+  POLY_EXP_X_REC
+  POLY_MUL_LENGTH
+  POLY_MUL_LENGTH2
+  POLY_MUL_LID
+  POLY_MUL_RID
+  POLY_SUM_EQUIV
+  TL_POLY_CMUL
+  TL_POLY_EXP_X_SUC
+  TL_POLY_MUL_X
+
+Fri 25th Feb 2011       fusion.ml, ind_defs.ml, simp.ml, define.ml, Library/analysis.ml, Library/transc.ml
+
+Removed a few unused variables in these files, after noticing OCaml warnings
+about them. It makes things minutely smaller and faster, I suppose.
+
 Tue 22nd Feb 2011       lists.ml
 
-Added two additional list lemmas taken from Jesse Bingham's e-transcendence 
+Added two additional list lemmas taken from Jesse Bingham's e-transcendence
 proof, which seem to be quite generally useful.
 
   ALL_EL = |- !P l. (!i. i < LENGTH l ==> P (EL i l)) <=> ALL P l
- 
+
   CONS_HD_TL = |- !l. ~(l = []) ==> l = CONS (HD l) (TL l)
 
 Thu 17th Feb 2011       Examples/sos.ml
