@@ -1244,7 +1244,6 @@ let DIFFERENTIABLE_RULE =
   fun tm ->
     let tb,y = dest_comb tm in
     let tm' = rand tb in
-    let x,bod = dest_abs tm' in
     match_pth (SPEC y (DIFF_CONV tm'));;
 
 let DIFFERENTIABLE_CONV = EQT_INTRO o DIFFERENTIABLE_RULE;;

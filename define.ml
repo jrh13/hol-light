@@ -931,8 +931,7 @@ let instantiate_casewise_recursion,
        (TRY_CONV SIMPLIFY_WELLDEFINEDNESS_CONV THENC
         TRY_CONV FORALL_UNWIND_CONV))) in
     let GUESS_ORDERING_TAC =
-      let false_tm = `\x:A y:A. F`
-      and and_tm = `(/\)` in
+      let false_tm = `\x:A y:A. F` in
       W(fun (asl,w) ->
             let ty = fst(dest_fun_ty(type_of(fst(dest_exists w)))) in
             EXISTS_TAC(inst [ty,aty] false_tm) THEN
