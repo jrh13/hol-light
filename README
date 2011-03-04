@@ -40,6 +40,10 @@ directly from their respective Web pages:
 
         http://pauillac.inria.fr/~ddr/camlp5/
 
+If you do build camlp5 from source, it is recommended that you build
+it in "strict" mode, i.e. begin with "./configure --strict" before
+doing "make".
+
 The instructions below assume a Unix-like environment such as Linux
 [or Cygwin (see www.cygwin.com) under Windows], but the steps
 automated by the Makefile are easy enough to invoke manually. There's
