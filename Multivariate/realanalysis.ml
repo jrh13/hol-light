@@ -4744,6 +4744,13 @@ let REAL_INTEGRAL_UNIQUE = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[real_integral] THEN
   MATCH_MP_TAC SELECT_UNIQUE THEN ASM_MESON_TAC[HAS_REAL_INTEGRAL_UNIQUE]);;
 
+let HAS_REAL_INTEGRAL_INTEGRABLE_INTEGRAL = prove
+ (`!f i s.
+        (f has_real_integral i) s <=>
+        f real_integrable_on s /\ real_integral s f = i`,
+  MESON_TAC[REAL_INTEGRABLE_INTEGRAL; REAL_INTEGRAL_UNIQUE;
+            real_integrable_on]);;
+
 let REAL_INTEGRABLE_ON = prove
  (`f real_integrable_on s <=>
         (lift o f o drop) integrable_on (IMAGE lift s)`,
@@ -5817,6 +5824,26 @@ let REAL_INTEGRABLE_STRADDLE = prove
   STRIP_TAC THEN MAP_EVERY EXISTS_TAC
    [`lift o g o drop`; `lift o h o drop`; `i:real^1`; `j:real^1`] THEN
   ASM_REWRITE_TAC[o_THM; LIFT_DROP]);;
+
+let HAS_REAL_INTEGRAL_STRADDLE_NULL = prove
+ (`!f g s. (!x. x IN s ==> &0 <= f x /\ f x <= g x) /\
+           (g has_real_integral &0) s
+           ==> (f has_real_integral &0) s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[HAS_REAL_INTEGRAL_INTEGRABLE_INTEGRAL] THEN
+  MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRABLE_STRADDLE THEN
+    GEN_TAC THEN DISCH_TAC THEN
+    MAP_EVERY EXISTS_TAC
+     [`(\x. &0):real->real`; `g:real->real`;
+      `&0:real`; `&0:real`] THEN
+    ASM_REWRITE_TAC[HAS_REAL_INTEGRAL_0; REAL_SUB_REFL; REAL_ABS_NUM];
+    DISCH_TAC THEN REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC(ISPECL [`f:real->real`; `g:real->real`]
+        HAS_REAL_INTEGRAL_LE);
+      MATCH_MP_TAC(ISPECL [`(\x. &0):real->real`; `f:real->real`]
+        HAS_REAL_INTEGRAL_LE)] THEN
+    EXISTS_TAC `s:real->bool` THEN
+    ASM_SIMP_TAC[GSYM HAS_REAL_INTEGRAL_INTEGRAL; HAS_REAL_INTEGRAL_0]]);;
 
 let HAS_REAL_INTEGRAL_UNION = prove
  (`!f i j s t.
@@ -7009,6 +7036,46 @@ let REAL_MEASURABLE_OPEN = prove
  (`!s. real_bounded s /\ real_open s ==> real_measurable s`,
   REWRITE_TAC[REAL_MEASURABLE_MEASURABLE; REAL_OPEN; REAL_BOUNDED;
               MEASURABLE_OPEN]);;
+
+let HAS_REAL_INTEGRAL_NEGLIGIBLE_EQ = prove
+ (`!f s. (!x. x IN s ==> &0 <= f(x))
+         ==> ((f has_real_integral &0) s <=>
+              real_negligible {x | x IN s /\ ~(f x = &0)})`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC HAS_REAL_INTEGRAL_NEGLIGIBLE THEN
+    EXISTS_TAC `{x | x IN s /\ ~((f:real->real) x = &0)}` THEN
+    ASM_REWRITE_TAC[IN_DIFF; IN_ELIM_THM] THEN MESON_TAC[]] THEN
+  MATCH_MP_TAC REAL_NEGLIGIBLE_SUBSET THEN EXISTS_TAC
+   `UNIONS {{x:real | x IN s /\ abs(f x) >= &1 / (&n + &1)} |
+            n IN (:num)}` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_NEGLIGIBLE_COUNTABLE_UNIONS THEN
+    X_GEN_TAC `n:num` THEN REWRITE_TAC[GSYM HAS_REAL_MEASURE_0] THEN
+    REWRITE_TAC[HAS_REAL_MEASURE] THEN
+    MATCH_MP_TAC HAS_REAL_INTEGRAL_STRADDLE_NULL THEN
+    EXISTS_TAC `\x:real. if x IN s then (&n + &1) * f(x) else &0` THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[IN_UNIV; IN_ELIM_THM; real_ge] THEN
+      X_GEN_TAC `x:real` THEN COND_CASES_TAC THEN
+      ASM_SIMP_TAC[REAL_POS] THENL
+       [ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+        ASM_SIMP_TAC[GSYM REAL_LE_LDIV_EQ; REAL_ARITH `&0 < &n + &1`] THEN
+        MATCH_MP_TAC(REAL_ARITH `&0 <= x /\ a <= abs x ==> a <= x`) THEN
+        ASM_SIMP_TAC[];
+        COND_CASES_TAC THEN REWRITE_TAC[REAL_POS] THEN
+        ASM_SIMP_TAC[REAL_POS; REAL_LE_MUL; REAL_LE_ADD]];
+      REWRITE_TAC[HAS_REAL_INTEGRAL_RESTRICT_UNIV] THEN
+      SUBST1_TAC(REAL_ARITH `&0 = (&n + &1) * &0`) THEN
+      MATCH_MP_TAC HAS_REAL_INTEGRAL_LMUL THEN ASM_REWRITE_TAC[]];
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:real` THEN
+    REWRITE_TAC[REAL_ABS_NZ] THEN ONCE_REWRITE_TAC[REAL_ARCH_INV] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN `n:num`
+      STRIP_ASSUME_TAC)) THEN
+    REWRITE_TAC[IN_UNIONS; EXISTS_IN_GSPEC] THEN
+    EXISTS_TAC `n - 1` THEN ASM_SIMP_TAC[IN_UNIV; IN_ELIM_THM; real_ge] THEN
+    ASM_SIMP_TAC[REAL_OF_NUM_ADD; SUB_ADD; LE_1] THEN
+    ASM_SIMP_TAC[real_div; REAL_MUL_LID; REAL_LT_IMP_LE]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Drop the k'th coordinate, or insert t at the k'th coordinate.             *)
