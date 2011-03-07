@@ -1697,6 +1697,72 @@ let MEASURABLE_INSIDE = prove
            OPEN_INSIDE; COMPACT_IMP_BOUNDED]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A nonnegative function with zero integral is zero almost everywhere.      *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_INTEGRAL_NEGLIGIBLE_EQ = prove
+ (`!f:real^M->real^N s.
+        (!x i. x IN s /\ 1 <= i /\ i <= dimindex(:N) ==> &0 <= f(x)$i)
+        ==> ((f has_integral vec 0) s <=>
+             negligible {x | x IN s /\ ~(f x = vec 0)})`,
+  let lemma = prove
+   (`!f:real^N->real^1 s.
+          (!x. x IN s ==> &0 <= drop(f x)) /\ (f has_integral vec 0) s
+          ==> negligible {x | x IN s /\ ~(f x = vec 0)}`,
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN EXISTS_TAC
+     `UNIONS {{x | x IN s /\ norm((f:real^N->real^1) x) >= &1 / (&n + &1)} |
+              n IN (:num)}` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_UNIONS THEN
+      X_GEN_TAC `n:num` THEN REWRITE_TAC[GSYM HAS_MEASURE_0] THEN
+      REWRITE_TAC[HAS_MEASURE] THEN REWRITE_TAC[LIFT_NUM] THEN
+      MATCH_MP_TAC HAS_INTEGRAL_STRADDLE_NULL THEN
+      EXISTS_TAC `(\x. if x IN s then (&n + &1) % f(x) else vec 0):
+                  real^N->real^1` THEN
+      CONJ_TAC THENL
+       [REWRITE_TAC[IN_UNIV; IN_ELIM_THM; real_ge] THEN
+        X_GEN_TAC `x:real^N` THEN COND_CASES_TAC THEN
+        ASM_SIMP_TAC[DROP_VEC; DROP_CMUL; REAL_POS] THENL
+         [ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+          ASM_SIMP_TAC[GSYM REAL_LE_LDIV_EQ; REAL_ARITH `&0 < &n + &1`] THEN
+          MATCH_MP_TAC(REAL_ARITH `&0 <= x /\ a <= abs x ==> a <= x`) THEN
+          ASM_SIMP_TAC[GSYM ABS_DROP];
+          COND_CASES_TAC THEN REWRITE_TAC[DROP_VEC; REAL_POS; DROP_CMUL] THEN
+          ASM_SIMP_TAC[REAL_POS; REAL_LE_MUL; REAL_LE_ADD]];
+        REWRITE_TAC[HAS_INTEGRAL_RESTRICT_UNIV] THEN
+        SUBST1_TAC(VECTOR_ARITH `vec 0:real^1 = (&n + &1) % vec 0`) THEN
+        MATCH_MP_TAC HAS_INTEGRAL_CMUL THEN ASM_REWRITE_TAC[]];
+      REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:real^N` THEN
+      REWRITE_TAC[GSYM NORM_POS_LT] THEN ONCE_REWRITE_TAC[REAL_ARCH_INV] THEN
+      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN `n:num`
+        STRIP_ASSUME_TAC)) THEN
+      REWRITE_TAC[IN_UNIONS; EXISTS_IN_GSPEC] THEN
+      EXISTS_TAC `n - 1` THEN ASM_SIMP_TAC[IN_UNIV; IN_ELIM_THM; real_ge] THEN
+      ASM_SIMP_TAC[REAL_OF_NUM_ADD; SUB_ADD; LE_1] THEN
+      ASM_SIMP_TAC[real_div; REAL_MUL_LID; REAL_LT_IMP_LE]]) in
+  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC HAS_INTEGRAL_NEGLIGIBLE THEN
+    EXISTS_TAC `{x | x IN s /\ ~((f:real^M->real^N) x = vec 0)}` THEN
+    ASM_REWRITE_TAC[IN_DIFF; IN_ELIM_THM] THEN MESON_TAC[]] THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `UNIONS {{x | x IN s /\ ~(((f:real^M->real^N) x)$k = &0)} |
+                      k IN 1..dimindex(:N)}` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC NEGLIGIBLE_UNIONS THEN
+    SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FINITE_NUMSEG; FORALL_IN_IMAGE] THEN
+    X_GEN_TAC `k:num` THEN REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN
+    REWRITE_TAC[GSYM LIFT_EQ; LIFT_NUM] THEN MATCH_MP_TAC lemma THEN
+    ASM_SIMP_TAC[LIFT_DROP] THEN
+    FIRST_X_ASSUM(MP_TAC o ISPEC `\y:real^N. lift(y$k)` o
+      MATCH_MP(REWRITE_RULE[IMP_CONJ] HAS_INTEGRAL_LINEAR)) THEN
+    REWRITE_TAC[o_DEF; VEC_COMPONENT; LIFT_NUM] THEN
+    DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[linear] THEN
+    SIMP_TAC[LIFT_ADD; VECTOR_ADD_COMPONENT; LIFT_CMUL; VECTOR_MUL_COMPONENT];
+    REWRITE_TAC[SUBSET; IN_UNIONS; EXISTS_IN_GSPEC; CART_EQ; IN_NUMSEG] THEN
+    REWRITE_TAC[VEC_COMPONENT; IN_ELIM_THM] THEN MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A nice lemma for negligibility proofs.                                    *)
 (* ------------------------------------------------------------------------- *)
 

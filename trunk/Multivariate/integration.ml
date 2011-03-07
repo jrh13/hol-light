@@ -1670,6 +1670,11 @@ let INTEGRAL_UNIQUE = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[integral] THEN
   MATCH_MP_TAC SELECT_UNIQUE THEN ASM_MESON_TAC[HAS_INTEGRAL_UNIQUE]);;
 
+let HAS_INTEGRAL_INTEGRABLE_INTEGRAL = prove
+ (`!f:real^M->real^N i s.
+        (f has_integral i) s <=> f integrable_on s /\ integral s f = i`,
+  MESON_TAC[INTEGRABLE_INTEGRAL; INTEGRAL_UNIQUE; integrable_on]);;
+
 let HAS_INTEGRAL_IS_0 = prove
  (`!f:real^M->real^N s.
         (!x. x IN s ==> (f(x) = vec 0)) ==> (f has_integral vec 0) s`,
@@ -6668,6 +6673,28 @@ let INTEGRABLE_STRADDLE = prove
   REPEAT CONJ_TAC THEN MATCH_MP_TAC INTEGRAL_DROP_LE THEN
   ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_LE_REFL]);;
+
+let HAS_INTEGRAL_STRADDLE_NULL = prove
+ (`!f g:real^N->real^1 s.
+        (!x. x IN s ==> &0 <= drop(f x) /\ drop(f x) <= drop(g x)) /\
+        (g has_integral (vec 0)) s
+        ==> (f has_integral (vec 0)) s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[HAS_INTEGRAL_INTEGRABLE_INTEGRAL] THEN
+  MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_STRADDLE THEN
+    GEN_TAC THEN DISCH_TAC THEN
+    MAP_EVERY EXISTS_TAC
+     [`(\x. vec 0):real^N->real^1`; `g:real^N->real^1`;
+      `vec 0:real^1`; `vec 0:real^1`] THEN
+    ASM_REWRITE_TAC[DROP_VEC; HAS_INTEGRAL_0; VECTOR_SUB_REFL; NORM_0];
+    DISCH_TAC THEN ONCE_REWRITE_TAC[GSYM DROP_EQ] THEN
+    REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC(ISPECL [`f:real^N->real^1`; `g:real^N->real^1`]
+        HAS_INTEGRAL_DROP_LE);
+      MATCH_MP_TAC(ISPECL [`(\x. vec 0):real^N->real^1`; `f:real^N->real^1`]
+        HAS_INTEGRAL_DROP_LE)] THEN
+    EXISTS_TAC `s:real^N->bool` THEN
+    ASM_SIMP_TAC[GSYM HAS_INTEGRAL_INTEGRAL; DROP_VEC; HAS_INTEGRAL_0]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Adding integrals over several sets.                                       *)
