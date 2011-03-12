@@ -120,6 +120,58 @@ let is_clausal tm =
   let djs = disjuncts tm in
   forall is_literal djs & list_mk_disj djs = tm;;
 
+(* ------------------------------------------------------------------------- *)
+(* Now do the definitional arrangement but not wastefully at the top.        *)
+(* ------------------------------------------------------------------------- *)
+
+let definitionalize =
+  let transform_imp =
+    let pth = TAUT `(p ==> q) <=> ~p \/ q` in
+    let ptm = rand(concl pth) in
+    let p_tm = rand(lhand ptm) and q_tm = rand ptm in
+    fun th -> let ip,q = dest_comb(concl th) in
+              let p = rand ip in
+              EQ_MP (INST [p,p_tm; q,q_tm] pth) th
+  and transform_iff_1 =
+    let pth = UNDISCH(TAUT `(p <=> q) ==> (p \/ ~q)`) in
+    let ptm = concl pth in
+    let p_tm = lhand ptm and q_tm = rand(rand ptm) in
+    fun th -> let ip,q = dest_comb(concl th) in
+              let p = rand ip in
+              PROVE_HYP th (INST [p,p_tm; q,q_tm] pth)
+  and transform_iff_2 =
+    let pth = UNDISCH(TAUT `(p <=> q) ==> (~p \/ q)`) in
+    let ptm = concl pth in
+    let p_tm = rand(lhand ptm) and q_tm = rand ptm in
+    fun th -> let ip,q = dest_comb(concl th) in
+              let p = rand ip in
+              PROVE_HYP th (INST [p,p_tm; q,q_tm] pth) in
+  let definitionalize th (n,tops,defs,lfn) =
+    let t = concl th in
+    if is_clausal t then
+      let n',v,defs',lfn' = transvar (n,t,defs,lfn) in
+      (n',(v,th)::tops,defs',lfn')
+    else if is_neg t then
+       let n1,v1,defs1,lfn1 = localdefs (rand t) (n,defs,lfn) in
+       (n1,(mk_neg v1,th)::tops,defs1,lfn1)
+    else if is_disj t then
+      let n1,v1,defs1,lfn1 = localdefs (lhand t) (n,defs,lfn) in
+      let n2,v2,defs2,lfn2 = localdefs (rand t) (n1,defs1,lfn1) in
+      (n2,(mk_disj(v1,v2),th)::tops,defs2,lfn2)
+    else if is_imp t then
+      let n1,v1,defs1,lfn1 = localdefs (lhand t) (n,defs,lfn) in
+      let n2,v2,defs2,lfn2 = localdefs (rand t) (n1,defs1,lfn1) in
+      (n2,(mk_disj(v1,v2),transform_imp th)::tops,defs2,lfn2)
+    else if is_iff t then
+      let n1,v1,defs1,lfn1 = localdefs (lhand t) (n,defs,lfn) in
+      let n2,v2,defs2,lfn2 = localdefs (rand t) (n1,defs1,lfn1) in
+      (n2,(mk_disj(v1,mk_neg v2),transform_iff_1 th)::
+          (mk_disj(mk_neg v1,v2),transform_iff_2 th)::tops,defs2,lfn2)
+    else
+      let n',v,defs',lfn' = localdefs t (n,defs,lfn) in
+      (n',(v,th)::tops,defs',lfn') in
+  definitionalize;;
+
 (* SAT_PROVE is the main interface function.
    Takes in a term t and returns thm or exception if not a taut *)
 (* invokes minisatp, returns |- t  or |- model ==> ~t *)
@@ -182,13 +234,7 @@ let GEN_SAT_PROVE solver solvername =
     let ths = if !exploit_conjunctive_structure then GCONJUNCTS th
               else [th] in
     let n,tops,defs,lfn =
-      itlist (fun th (m,tops,defs,lfn) ->
-                  let t = concl th in
-                  let n,v,defs',lfn' =
-                    if is_clausal t then transvar (m,t,defs,lfn)
-                    else localdefs t (m,defs,lfn) in
-                  (n,(v,th)::tops,defs',lfn')) ths
-             (-1,[],undefined,undefined) in
+      itlist definitionalize ths (-1,[],undefined,undefined) in
     let defg = foldl (fun a t nv -> (t,nv)::a) [] defs in
     let mdefs = filter (fun (r,_) -> not (is_var r)) defg in
     let eqs = map (fun (r,l) -> mk_iff(l,r)) mdefs in
