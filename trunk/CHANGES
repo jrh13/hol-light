@@ -1,3 +1,20 @@
+Tue 15th Mar 2011       fusion.ml
+
+Made a small but significant change to the kernel, based on an observation by
+Ondrej Kuncar, optimizing the pointer-EQ shortcut in "orda" so that it does not 
+require an empty environment but merely one full of identical pairs. This can 
+substantially speed up many derived rules by allowing efficient use of 
+proformas even inside bound variables.
+
+Sat  5th Mar 2011       bool.ml
+
+Noticed that GEN is not constant-time, which is bad. On closer inspection the
+problem was that the abstraction that's used to instantiate the proforma is
+created separately from the abstracted input theorem, so the pointer-EQ
+subterms are hidden under an abstraction. As well as fixing that, made it more
+efficient in two other ways: used EQ_MP instead of PROVE_HYP, and added partial
+evaluation based on the first argument.
+
 Fri 25th Feb 2011       Library/poly.ml
 
 Fixed an error where override_interface was used for "divides", hiding

@@ -267,14 +267,16 @@ let ISPECL tms th =
   with Failure _ -> failwith "ISPECL";;
 
 let GEN =
-  let P = `P:A->bool`
-  and pth =
-    let th1 = ASSUME `P = \x:A. T` in
-    let th2 = AP_THM FORALL_DEF `P:A->bool` in
-    EQ_MP (SYM(CONV_RULE(RAND_CONV BETA_CONV) th2)) th1 in
-  fun x th ->
-   PROVE_HYP (ABS x (EQT_INTRO th))
-             (PINST [snd(dest_var x),aty] [mk_abs(x,concl th),P] pth);;
+  let pth = SYM(CONV_RULE (RAND_CONV BETA_CONV) 
+                          (AP_THM FORALL_DEF `P:A->bool`)) in
+  fun x ->
+    let qth = INST_TYPE[snd(dest_var x),aty] pth in
+    let ptm = rand(rand(concl qth)) in
+    fun th ->
+        let th' = ABS x (EQT_INTRO th) in
+        let phi = lhand(concl th') in
+        let rth = INST[phi,ptm] qth in
+        EQ_MP rth th';;
 
 let GENL = itlist GEN;;
 
