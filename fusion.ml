@@ -438,7 +438,7 @@ module Hol : Hol_kernel = struct
                        else ordav oenv x1 x2
 
   let rec orda env tm1 tm2 =
-    if tm1 == tm2 & env = [] then 0 else
+    if tm1 == tm2 & forall (fun (x,y) -> x = y) env then 0 else
     match (tm1,tm2) with
       Var(x1,ty1),Var(x2,ty2) -> ordav env tm1 tm2
     | Const(x1,ty1),Const(x2,ty2) -> Pervasives.compare tm1 tm2

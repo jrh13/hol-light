@@ -1,0 +1,44 @@
+\DOC alphaorder
+
+\TYPE {alphaorder : term -> term -> int}
+
+\SYNOPSIS
+Total ordering on terms respecting alpha-equivalence.
+
+\KEYWORDS
+alpha.
+
+\DESCRIBE
+The function {alphaorder} implements a total order on terms, using {-1}, {0} or
+{+1} to indicate that the first term argument is respectively `less than',
+`equal to' or `greater than' the second term argument. The ordering is largely
+arbitrary, but it is transitive and (in contrast to the inbuilt OCaml
+polymorphic ordering) respects alpha-equivalence, i.e. returns {0} if and only
+if the two terms are alpha-convertible.
+
+\FAILURE
+Never fails.
+
+\EXAMPLE
+Any two terms can be compared, and swapping the arguments negates the result:
+{
+  # alphaorder `x + 1` `p ==> q`;;
+  val it : int = -1
+
+  # alphaorder `p ==> q` `x + 1`;;
+  val it : int = 1
+}
+\noindent while alpha-equivalent terms, and only alpha-convertible terms, are
+`equal':
+{
+  # alphaorder `!x. ?y. x + 1 < y` `!y. ?z. y + 1 < z`;;
+  val it : int = 0
+
+  # alphaorder `!x. ?y. x + 1 < y` `!x. ?y. x + 1 < y + 1`;;
+  val it : int = -1
+}
+
+\SEEALSO
+aconv.
+
+\ENDDOC
