@@ -4,9 +4,9 @@
 
 loadt "Library/card.ml";;               (* For countable set theorems.      *)
 loadt "Library/permutations.ml";;       (* For determinants                 *)
-loadt "Multivariate/misc.ml";;          (* Background stuff                 *)
 loadt "Library/products.ml";;           (* For determinants and integrals   *)
 loadt "Library/floor.ml";;              (* Useful here and there            *)
+loadt "Multivariate/misc.ml";;          (* Background stuff                 *)
 loadt "Library/binomial.ml";;           (* For Leibniz deriv formula etc.   *)
 loadt "Library/iter.ml";;               (* n-fold iteration of function     *)
 

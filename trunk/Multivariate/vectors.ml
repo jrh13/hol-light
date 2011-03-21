@@ -2925,6 +2925,19 @@ let SUM_VSUM = prove
  (`!f s. FINITE s ==> sum s f = drop(vsum s (lift o f))`,
   SIMP_TAC[VSUM_REAL; o_DEF; LIFT_DROP; ETA_AX]);;
 
+let LINEAR_LIFT_DOT = prove
+ (`!a. linear(\x. lift(a dot x))`,
+  REWRITE_TAC[linear; DOT_RMUL; DOT_RADD; LIFT_ADD; LIFT_CMUL]);;
+
+let LINEAR_LIFT_COMPONENT = prove
+ (`!k. linear(\x:real^N. lift(x$k))`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?j. 1 <= j /\ j <= dimindex(:N) /\ !z:real^N. z$k = z$j`
+  CHOOSE_TAC THENL
+   [REWRITE_TAC[FINITE_INDEX_INRANGE];
+    MP_TAC(ISPEC `basis j:real^N` LINEAR_LIFT_DOT) THEN
+    ASM_SIMP_TAC[DOT_BASIS]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -3072,7 +3085,13 @@ let DOT_PASTECART = prove
   SIMP_TAC[SUM_IMAGE; FINITE_NUMSEG; EQ_ADD_RCANCEL; o_DEF; ADD_SUB] THEN
   SIMP_TAC[ARITH_RULE `1 <= x ==> ~(x + a <= a)`; REAL_LE_REFL]);;
 
-let NORM_PASTECART = prove
+let NORM_PASTECART = prove                                                     
+ (`!x y. norm(pastecart x y) = sqrt(norm(x) pow 2 + norm(y) pow 2)`,           
+  REWRITE_TAC[NORM_EQ_SQUARE] THEN                                             
+  SIMP_TAC[SQRT_POS_LE; SQRT_POW_2; REAL_LE_ADD; REAL_LE_POW_2] THEN           
+  REWRITE_TAC[DOT_PASTECART; NORM_POW_2]);;                               
+
+let NORM_PASTECART_LE = prove
  (`!x y. norm(pastecart x y) <= norm(x) + norm(y)`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC TRIANGLE_LEMMA THEN
   REWRITE_TAC[NORM_POS_LE; NORM_POW_2; DOT_PASTECART; REAL_LE_REFL]);;

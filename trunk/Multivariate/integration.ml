@@ -2987,6 +2987,12 @@ let HAS_INTEGRAL_CONST = prove
   REWRITE_TAC[LAMBDA_PAIR_THM; VECTOR_SUB_REFL] THEN
   ASM_REWRITE_TAC[GSYM LAMBDA_PAIR_THM; VSUM_0; NORM_0]);;
 
+let INTEGRABLE_CONST = prove
+ (`!a b:real^M c:real^N. (\x. c) integrable_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[integrable_on] THEN
+  EXISTS_TAC `content(interval[a:real^M,b]) % c:real^N` THEN
+  REWRITE_TAC[HAS_INTEGRAL_CONST]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Bounds on the norm of Riemann sums and the integral itself.               *)
 (* ------------------------------------------------------------------------- *)
@@ -6469,6 +6475,40 @@ let INTEGRABLE_ALT = prove
   REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[GSYM REAL_OF_NUM_GE] THEN
   REAL_ARITH_TAC);;
 
+let INTEGRABLE_ALT_SUBSET = prove
+ (`!f:real^M->real^N s.
+        f integrable_on s <=>
+          (!a b. (\x. if x IN s then f x else vec 0) integrable_on
+                 interval[a,b]) /\
+          (!e. &0 < e
+               ==> ?B. &0 < B /\
+                       !a b c d.
+                          ball(vec 0,B) SUBSET interval[a,b] /\
+                          interval[a,b] SUBSET interval[c,d]
+                          ==> norm(integral (interval[a,b])
+                                    (\x. if x IN s then f x else vec 0) -
+                                   integral (interval[c,d])
+                                    (\x. if x IN s then f x else vec 0)) < e)`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [INTEGRABLE_ALT] THEN
+  ABBREV_TAC `g:real^M->real^N = \x. if x IN s then f x else vec 0` THEN
+  POP_ASSUM(K ALL_TAC) THEN
+  MATCH_MP_TAC(TAUT `(a ==> (b <=> c)) ==> (a /\ b <=> a /\ c)`) THEN
+  DISCH_TAC THEN EQ_TAC THENL [MESON_TAC[SUBSET_TRANS]; ALL_TAC] THEN
+  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B:real` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^M`; `b:real^M`; `c:real^M`; `d:real^M`] THEN
+  STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`(lambda i. max ((a:real^M)$i) ((c:real^M)$i)):real^M`;
+    `(lambda i. min ((b:real^M)$i) ((d:real^M)$i)):real^M`]) THEN
+  ASM_REWRITE_TAC[GSYM INTER_INTERVAL; SUBSET_INTER] THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(ISPECL [`a:real^M`; `b:real^M`] th) THEN
+    MP_TAC(ISPECL [`c:real^M`; `d:real^M`] th)) THEN
+  ASM_REWRITE_TAC[INTER_SUBSET] THEN NORM_ARITH_TAC);;
+
 let INTEGRABLE_ON_SUBINTERVAL = prove
  (`!f:real^M->real^N s a b.
         f integrable_on s /\ interval[a,b] SUBSET s
@@ -6719,6 +6759,15 @@ let HAS_INTEGRAL_UNION = prove
   MAP_EVERY ASM_CASES_TAC [`(x:real^M) IN s`; `(x:real^M) IN t`] THEN
   ASM_REWRITE_TAC[] THEN VECTOR_ARITH_TAC);;
 
+let INTEGRAL_UNION = prove
+ (`!f:real^M->real^N s t.
+        f integrable_on s /\ f integrable_on t /\ negligible(s INTER t)
+        ==> integral (s UNION t) f = integral s f + integral t f`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC INTEGRAL_UNIQUE THEN
+  MATCH_MP_TAC HAS_INTEGRAL_UNION THEN
+  ASM_REWRITE_TAC[GSYM HAS_INTEGRAL_INTEGRAL]);;
+
 let HAS_INTEGRAL_UNIONS = prove
  (`!f:real^M->real^N i t.
         FINITE t /\
@@ -6756,6 +6805,36 @@ let HAS_INTEGRAL_UNIONS = prove
       ==> ((!b. ~((b IN t /\ ~(a = b)) /\ x IN b)) <=>
            (!b. b IN t ==> (x IN b <=> b = a)))`] THEN
     ASM_REWRITE_TAC[VSUM_DELTA]]);;
+
+let HAS_INTEGRAL_DIFF = prove
+ (`!f:real^M->real^N i j s t.
+    (f has_integral i) s /\
+    (f has_integral j) t /\
+    negligible (t DIFF s)
+    ==> (f has_integral (i - j)) (s DIFF t)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM HAS_INTEGRAL_RESTRICT_UNIV] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
+  MATCH_MP_TAC HAS_INTEGRAL_SPIKE THEN
+  EXISTS_TAC `(\x. if x IN (t DIFF s) then --(f x)
+                   else if x IN (s DIFF t) then f x
+                   else vec 0):real^M->real^N` THEN
+  EXISTS_TAC `t DIFF s:real^M->bool` THEN
+  ASM_REWRITE_TAC[IN_DIFF; IN_UNION; IN_INTER; IN_UNIV] THEN
+  CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP HAS_INTEGRAL_SUB) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [`(x:real^M) IN s`; `(x:real^M) IN t`] THEN
+  ASM_REWRITE_TAC[] THEN VECTOR_ARITH_TAC);;
+
+let INTEGRAL_DIFF = prove
+ (`!f:real^M->real^N s t.
+        f integrable_on s /\ f integrable_on t /\ negligible(t DIFF s)
+        ==> integral (s DIFF t) f = integral s f - integral t f`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC INTEGRAL_UNIQUE THEN
+  MATCH_MP_TAC HAS_INTEGRAL_DIFF THEN
+  ASM_REWRITE_TAC[GSYM HAS_INTEGRAL_INTEGRAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* In particular adding integrals over a division, maybe not of an interval. *)
@@ -7654,14 +7733,8 @@ let MONOTONE_CONVERGENCE_DECREASING = prove
   MATCH_MP_TAC INTEGRAL_NEG THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Absolute integrability (this is the same as Lebesgue integrability).      *)
+(* More lemmas about existence and bounds between integrals.                 *)
 (* ------------------------------------------------------------------------- *)
-
-parse_as_infix("absolutely_integrable_on",(12,"right"));;
-
-let absolutely_integrable_on = new_definition
- `f absolutely_integrable_on s <=>
-        f integrable_on s /\ (\x. lift(norm(f x))) integrable_on s`;;
 
 let INTEGRAL_NORM_BOUND_INTEGRAL = prove
  (`!f:real^M->real^N g s.
@@ -7780,6 +7853,57 @@ let HAS_INTEGRAL_NORM_BOUND_INTEGRAL_COMPONENT = prove
    ASSUME_TAC(MATCH_MP HAS_INTEGRAL_INTEGRABLE th))) THEN
   MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL_COMPONENT THEN
   ASM_REWRITE_TAC[]);;
+
+let INTEGRABLE_ON_ALL_INTERVALS_INTEGRABLE_BOUND = prove
+ (`!f:real^M->real^N g s.
+        (!a b. (\x. if x IN s then f x else vec 0)                
+               integrable_on interval[a,b]) /\
+        (!x. x IN s ==> norm(f x) <= drop(g x)) /\
+        g integrable_on s
+        ==> f integrable_on s`,
+  let lemma = prove
+   (`!f:real^M->real^N g.
+          (!a b. f integrable_on interval[a,b]) /\
+          (!x. norm(f x) <= drop(g x)) /\
+          g integrable_on (:real^M)
+          ==> f integrable_on (:real^M)`,                                     
+    REPEAT GEN_TAC THEN                                         
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ONCE_REWRITE_TAC[INTEGRABLE_ALT_SUBSET] THEN                         
+    ASM_REWRITE_TAC[IN_UNIV; ETA_AX] THEN                        
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN
+    ASM_CASES_TAC `&0 < e` THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B:real` THEN
+    MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN          
+    REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+    DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(REAL_ARITH `a <= b ==> b < c ==> a < c`) THEN
+    ONCE_REWRITE_TAC[NORM_SUB] THEN
+    ASM_SIMP_TAC[GSYM INTEGRAL_DIFF; NEGLIGIBLE_EMPTY;
+                 SET_RULE `s SUBSET t ==> s DIFF t = {}`] THEN
+    REWRITE_TAC[ABS_DROP] THEN
+    MATCH_MP_TAC(REAL_ARITH `x <= y ==> x <= abs y`) THEN
+    MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
+    ASM_MESON_TAC[integrable_on; HAS_INTEGRAL_DIFF; NEGLIGIBLE_EMPTY;
+                 SET_RULE `s SUBSET t ==> s DIFF t = {}`]) in
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ONCE_REWRITE_TAC[GSYM INTEGRABLE_RESTRICT_UNIV] THEN
+  DISCH_TAC THEN MATCH_MP_TAC lemma THEN
+  EXISTS_TAC `(\x. if x IN s then g x else vec 0):real^M->real^1` THEN
+  ASM_REWRITE_TAC[] THEN
+  GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC[NORM_0; DROP_VEC; REAL_POS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Absolute integrability (this is the same as Lebesgue integrability).      *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("absolutely_integrable_on",(12,"right"));;
+
+let absolutely_integrable_on = new_definition
+ `f absolutely_integrable_on s <=>
+        f integrable_on s /\ (\x. lift(norm(f x))) integrable_on s`;;
 
 let ABSOLUTELY_INTEGRABLE_LE = prove
  (`!f:real^M->real^N s.
@@ -8920,22 +9044,125 @@ let ABSOLUTELY_INTEGRABLE_SUP_1 = prove
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_REWRITE_TAC[IN_INSERT]);;
 
+let ABSOLUTELY_INTEGRABLE_CONTINUOUS = prove
+ (`!f:real^M->real^N a b.
+        f continuous_on interval[a,b]
+        ==> f absolutely_integrable_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
+  SUBGOAL_THEN `compact(IMAGE (f:real^M->real^N) (interval[a,b]))` MP_TAC THENL
+   [ASM_SIMP_TAC[COMPACT_CONTINUOUS_IMAGE; COMPACT_INTERVAL]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP COMPACT_IMP_BOUNDED) THEN
+  REWRITE_TAC[BOUNDED_POS; FORALL_IN_IMAGE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\x:real^M. lift(B)` THEN
+  ASM_SIMP_TAC[INTEGRABLE_CONST; LIFT_DROP; INTEGRABLE_CONTINUOUS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relating vector integrals to integrals of components.                     *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_INTEGRAL_COMPONENTWISE = prove
+ (`!f:real^M->real^N s y.
+        (f has_integral y) s <=>
+        !i. 1 <= i /\ i <= dimindex(:N)
+            ==> ((\x. lift((f x)$i)) has_integral (lift(y$i))) s`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o ISPEC `\u:real^N. lift(u$i)` o
+        MATCH_MP (REWRITE_RULE[IMP_CONJ] HAS_INTEGRAL_LINEAR)) THEN
+    REWRITE_TAC[o_DEF] THEN DISCH_THEN MATCH_MP_TAC THEN
+    REWRITE_TAC[LINEAR_LIFT_COMPONENT];
+    GEN_REWRITE_TAC (RATOR_CONV o LAND_CONV) [GSYM ETA_AX] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM BASIS_EXPANSION] THEN
+    GEN_REWRITE_TAC (RATOR_CONV o LAND_CONV o BINDER_CONV)
+     [GSYM BASIS_EXPANSION] THEN
+    MATCH_MP_TAC HAS_INTEGRAL_VSUM THEN
+    REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+    X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o ISPEC `\v. drop(v) % (basis i:real^N)` o
+        MATCH_MP (REWRITE_RULE[IMP_CONJ] HAS_INTEGRAL_LINEAR)) THEN
+    SIMP_TAC[o_DEF; LIFT_DROP; LINEAR_VMUL_DROP; LINEAR_ID]]);;
+
+let INTEGRABLE_COMPONENTWISE = prove
+ (`!f:real^M->real^N s.
+        f integrable_on s <=>
+        !i. 1 <= i /\ i <= dimindex(:N)
+            ==> (\x. lift((f x)$i)) integrable_on s`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[integrable_on] THEN
+   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+    [HAS_INTEGRAL_COMPONENTWISE] THEN
+   REWRITE_TAC[GSYM LAMBDA_SKOLEM; GSYM EXISTS_LIFT]);;
+
+let LIFT_INTEGRAL_COMPONENT = prove
+ (`!f:real^M->real^N.
+        f integrable_on s
+        ==> lift((integral s f)$k) = integral s (\x. lift((f x)$k))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?j. 1 <= j /\ j <= dimindex(:N) /\ !z:real^N. z$k = z$j`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC INTEGRAL_UNIQUE THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP INTEGRABLE_INTEGRAL) THEN
+  GEN_REWRITE_TAC LAND_CONV [HAS_INTEGRAL_COMPONENTWISE] THEN
+  ASM_SIMP_TAC[]);;
+
+let INTEGRAL_COMPONENT = prove
+ (`!f:real^M->real^N.
+        f integrable_on s
+        ==> (integral s f)$k = drop(integral s (\x. lift((f x)$k)))`,
+  SIMP_TAC[GSYM LIFT_INTEGRAL_COMPONENT; LIFT_DROP]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Dominated convergence.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
 let DOMINATED_CONVERGENCE = prove
- (`!f:num->real^N->real^1 g h s.
+ (`!f:num->real^M->real^N g h s.
         (!k. (f k) integrable_on s) /\ h integrable_on s /\
         (!k x. x IN s ==> norm(f k x) <= drop(h x)) /\
         (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
         ==> g integrable_on s /\
             ((\k. integral s (f k)) --> integral s g) sequentially`,
+  SUBGOAL_THEN
+    `!f:num->real^M->real^1 g h s.
+        (!k. (f k) integrable_on s) /\ h integrable_on s /\
+        (!k x. x IN s ==> norm(f k x) <= drop(h x)) /\
+        (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
+        ==> g integrable_on s /\
+            ((\k. integral s (f k)) --> integral s g) sequentially`
+  ASSUME_TAC THENL
+   [ALL_TAC;
+    REPEAT GEN_TAC THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     `!j. 1 <= j /\ j <= dimindex(:N)
+          ==> (\x. lift((g x)$j)) integrable_on s /\
+              ((\k. integral s (\x. lift (((f:num->real^M->real^N) k x)$j)))
+               --> integral s (\x. lift ((g x:real^N)$j))) sequentially`
+    STRIP_ASSUME_TAC THENL
+     [REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      EXISTS_TAC `h:real^M->real^1` THEN ASM_REWRITE_TAC[] THEN
+      REPEAT CONJ_TAC THENL
+       [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE BINDER_CONV
+          [INTEGRABLE_COMPONENTWISE]) THEN
+        ASM_SIMP_TAC[];
+        MAP_EVERY X_GEN_TAC [`i:num`; `x:real^M`] THEN DISCH_TAC THEN
+        MATCH_MP_TAC REAL_LE_TRANS THEN
+        EXISTS_TAC `norm((f:num->real^M->real^N) i x)` THEN
+        ASM_SIMP_TAC[NORM_LIFT; COMPONENT_LE_NORM];
+        X_GEN_TAC `x:real^M` THEN STRIP_TAC THEN
+        FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
+        GEN_REWRITE_TAC LAND_CONV [LIM_COMPONENTWISE_LIFT] THEN
+        ASM_SIMP_TAC[]];
+      MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
+       [GEN_REWRITE_TAC I [INTEGRABLE_COMPONENTWISE] THEN ASM_SIMP_TAC[];
+        DISCH_TAC THEN  ONCE_REWRITE_TAC[LIM_COMPONENTWISE_LIFT] THEN
+        ASM_SIMP_TAC[LIFT_INTEGRAL_COMPONENT]]]] THEN
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MP_TAC(MATCH_MP MONO_FORALL (GEN `m:num`
-   (ISPECL [`\k:num x:real^N. lift(inf {drop(f j x) | j IN m..(m+k)})`;
-            `\x:real^N. lift(inf {drop(f j x) | m:num <= j})`;
-            `s:real^N->bool`]
+   (ISPECL [`\k:num x:real^M. lift(inf {drop(f j x) | j IN m..(m+k)})`;
+            `\x:real^M. lift(inf {drop(f j x) | m:num <= j})`;
+            `s:real^M->bool`]
            MONOTONE_CONVERGENCE_DECREASING))) THEN
   REWRITE_TAC[LIFT_DROP] THEN ANTS_TAC THENL
    [X_GEN_TAC `m:num` THEN REPEAT CONJ_TAC THENL
@@ -8946,7 +9173,7 @@ let DOMINATED_CONVERGENCE = prove
       ASM_REWRITE_TAC[LIFT_DROP; ETA_AX] THEN
       REPEAT STRIP_TAC THEN
       MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
-      EXISTS_TAC `h:real^N->real^1` THEN ASM_REWRITE_TAC[];
+      EXISTS_TAC `h:real^M->real^1` THEN ASM_REWRITE_TAC[];
 
       REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
       MATCH_MP_TAC REAL_LE_INF_SUBSET THEN
@@ -8959,23 +9186,23 @@ let DOMINATED_CONVERGENCE = prove
       MATCH_MP_TAC LOWER_BOUND_FINITE_SET_REAL THEN
       REWRITE_TAC[FINITE_NUMSEG];
 
-      X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+      X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
       REWRITE_TAC[LIM_SEQUENTIALLY] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
       REWRITE_TAC[dist; ABS_DROP; LIFT_DROP; DROP_SUB] THEN
-      MP_TAC(SPEC `{drop((f:num->real^N->real^1) j x) | m <= j}` INF) THEN
-      ABBREV_TAC `i = inf {drop((f:num->real^N->real^1) j x) | m <= j}` THEN
+      MP_TAC(SPEC `{drop((f:num->real^M->real^1) j x) | m <= j}` INF) THEN
+      ABBREV_TAC `i = inf {drop((f:num->real^M->real^1) j x) | m <= j}` THEN
       ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; EXISTS_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
       REWRITE_TAC[IN_ELIM_THM; EXTENSION; NOT_IN_EMPTY] THEN ANTS_TAC THENL
        [CONJ_TAC THENL [MESON_TAC[LE_REFL]; ALL_TAC] THEN
-        EXISTS_TAC `--drop(h(x:real^N))` THEN X_GEN_TAC `j:num` THEN
-        FIRST_X_ASSUM(MP_TAC o SPECL [`j:num`; `x:real^N`]) THEN
+        EXISTS_TAC `--drop(h(x:real^M))` THEN X_GEN_TAC `j:num` THEN
+        FIRST_X_ASSUM(MP_TAC o SPECL [`j:num`; `x:real^M`]) THEN
         ASM_REWRITE_TAC[ABS_DROP] THEN REAL_ARITH_TAC;
         ALL_TAC] THEN
       DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC `i + e:real`)) THEN
       ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> ~(i + e <= i)`] THEN
       REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; REAL_NOT_LE] THEN
-      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN STRIP_TAC THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `M:num` THEN STRIP_TAC THEN
       X_GEN_TAC `n:num` THEN DISCH_TAC THEN
       FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
        `y < i + e ==> i <= ix /\ ix <= y ==> abs(ix - i) < e`)) THEN
@@ -9002,7 +9229,7 @@ let DOMINATED_CONVERGENCE = prove
       ASM_ARITH_TAC;
 
       REWRITE_TAC[bounded] THEN
-      EXISTS_TAC `drop(integral s (h:real^N->real^1))` THEN
+      EXISTS_TAC `drop(integral s (h:real^M->real^1))` THEN
       ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; IN_UNIV] THEN
       X_GEN_TAC `p:num` THEN MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
@@ -9013,18 +9240,18 @@ let DOMINATED_CONVERGENCE = prove
         REWRITE_TAC[FINITE_NUMSEG; NUMSEG_EMPTY; NOT_LT; LE_ADD] THEN
         ASM_REWRITE_TAC[LIFT_DROP; ETA_AX] THEN REPEAT STRIP_TAC THEN
         MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
-        EXISTS_TAC `h:real^N->real^1` THEN ASM_REWRITE_TAC[];
+        EXISTS_TAC `h:real^M->real^1` THEN ASM_REWRITE_TAC[];
         ALL_TAC] THEN
-      X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+      X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
       REWRITE_TAC[ABS_DROP; LIFT_DROP] THEN
       MATCH_MP_TAC REAL_ABS_INF_LE THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
       ASM_SIMP_TAC[NUMSEG_EMPTY; NOT_LT; LE_ADD; GSYM ABS_DROP]];
     REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC] THEN
   MP_TAC(MATCH_MP MONO_FORALL (GEN `m:num`
-   (ISPECL [`\k:num x:real^N. lift(sup {drop(f j x) | j IN m..(m+k)})`;
-            `\x:real^N. lift(sup {drop(f j x) | m:num <= j})`;
-            `s:real^N->bool`]
+   (ISPECL [`\k:num x:real^M. lift(sup {drop(f j x) | j IN m..(m+k)})`;
+            `\x:real^M. lift(sup {drop(f j x) | m:num <= j})`;
+            `s:real^M->bool`]
            MONOTONE_CONVERGENCE_INCREASING))) THEN
   REWRITE_TAC[LIFT_DROP] THEN ANTS_TAC THENL
    [X_GEN_TAC `m:num` THEN REPEAT CONJ_TAC THENL
@@ -9035,7 +9262,7 @@ let DOMINATED_CONVERGENCE = prove
       ASM_REWRITE_TAC[LIFT_DROP; ETA_AX] THEN
       REPEAT STRIP_TAC THEN
       MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
-      EXISTS_TAC `h:real^N->real^1` THEN ASM_REWRITE_TAC[];
+      EXISTS_TAC `h:real^M->real^1` THEN ASM_REWRITE_TAC[];
 
       REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
       MATCH_MP_TAC REAL_SUP_LE_SUBSET THEN
@@ -9048,23 +9275,23 @@ let DOMINATED_CONVERGENCE = prove
       MATCH_MP_TAC UPPER_BOUND_FINITE_SET_REAL THEN
       REWRITE_TAC[FINITE_NUMSEG];
 
-      X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+      X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
       REWRITE_TAC[LIM_SEQUENTIALLY] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
       REWRITE_TAC[dist; ABS_DROP; LIFT_DROP; DROP_SUB] THEN
-      MP_TAC(SPEC `{drop((f:num->real^N->real^1) j x) | m <= j}` SUP) THEN
-      ABBREV_TAC `i = sup {drop((f:num->real^N->real^1) j x) | m <= j}` THEN
+      MP_TAC(SPEC `{drop((f:num->real^M->real^1) j x) | m <= j}` SUP) THEN
+      ABBREV_TAC `i = sup {drop((f:num->real^M->real^1) j x) | m <= j}` THEN
       ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; EXISTS_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
       REWRITE_TAC[IN_ELIM_THM; EXTENSION; NOT_IN_EMPTY] THEN ANTS_TAC THENL
        [CONJ_TAC THENL [MESON_TAC[LE_REFL]; ALL_TAC] THEN
-        EXISTS_TAC `drop(h(x:real^N))` THEN X_GEN_TAC `j:num` THEN
-        FIRST_X_ASSUM(MP_TAC o SPECL [`j:num`; `x:real^N`]) THEN
+        EXISTS_TAC `drop(h(x:real^M))` THEN X_GEN_TAC `j:num` THEN
+        FIRST_X_ASSUM(MP_TAC o SPECL [`j:num`; `x:real^M`]) THEN
         ASM_REWRITE_TAC[ABS_DROP] THEN REAL_ARITH_TAC;
         ALL_TAC] THEN
       DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC `i - e:real`)) THEN
       ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> ~(i <= i - e)`] THEN
       REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; REAL_NOT_LE] THEN
-      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN STRIP_TAC THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `M:num` THEN STRIP_TAC THEN
       X_GEN_TAC `n:num` THEN DISCH_TAC THEN
       FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
        `i - e < y ==> ix <= i /\ y <= ix ==> abs(ix - i) < e`)) THEN
@@ -9091,7 +9318,7 @@ let DOMINATED_CONVERGENCE = prove
       ASM_ARITH_TAC;
 
       REWRITE_TAC[bounded] THEN
-      EXISTS_TAC `drop(integral s (h:real^N->real^1))` THEN
+      EXISTS_TAC `drop(integral s (h:real^M->real^1))` THEN
       ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; IN_UNIV] THEN
       X_GEN_TAC `p:num` THEN MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
@@ -9102,18 +9329,18 @@ let DOMINATED_CONVERGENCE = prove
         REWRITE_TAC[FINITE_NUMSEG; NUMSEG_EMPTY; NOT_LT; LE_ADD] THEN
         ASM_REWRITE_TAC[LIFT_DROP; ETA_AX] THEN REPEAT STRIP_TAC THEN
         MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
-        EXISTS_TAC `h:real^N->real^1` THEN ASM_REWRITE_TAC[];
+        EXISTS_TAC `h:real^M->real^1` THEN ASM_REWRITE_TAC[];
         ALL_TAC] THEN
-      X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+      X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
       REWRITE_TAC[ABS_DROP; LIFT_DROP] THEN
       MATCH_MP_TAC REAL_ABS_SUP_LE THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
       ASM_SIMP_TAC[NUMSEG_EMPTY; NOT_LT; LE_ADD; GSYM ABS_DROP]];
     REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC] THEN
   MP_TAC(ISPECL
-   [`\k:num x:real^N. lift(inf {drop(f j x) | k <= j})`;
-    `g:real^N->real^1`;
-    `s:real^N->bool`]
+   [`\k:num x:real^M. lift(inf {drop(f j x) | k <= j})`;
+    `g:real^M->real^1`;
+    `s:real^M->bool`]
            MONOTONE_CONVERGENCE_INCREASING) THEN
   ASM_REWRITE_TAC[LIFT_DROP] THEN ANTS_TAC THENL
    [ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN CONJ_TAC THENL
@@ -9125,18 +9352,18 @@ let DOMINATED_CONVERGENCE = prove
         REWRITE_TAC[SUBSET; IN_NUMSEG; IN_ELIM_THM] THEN ARITH_TAC;
         ALL_TAC] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; IN_ELIM_THM] THEN
-      EXISTS_TAC `--drop(h(x:real^N))` THEN REPEAT STRIP_TAC THEN
+      EXISTS_TAC `--drop(h(x:real^M))` THEN REPEAT STRIP_TAC THEN
       MATCH_MP_TAC(REAL_ARITH `abs(x) <= a ==> --a <= x`) THEN
       ASM_SIMP_TAC[GSYM ABS_DROP];
       ALL_TAC] THEN
     CONJ_TAC THENL
-     [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
-      FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+     [X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
       REWRITE_TAC[LIM_SEQUENTIALLY] THEN
       DISCH_THEN(fun th -> X_GEN_TAC `e:real` THEN DISCH_TAC THEN
                  MP_TAC(SPEC `e / &2` th)) THEN
       ASM_REWRITE_TAC[REAL_HALF] THEN
-      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `M:num` THEN
       REWRITE_TAC[dist; ABS_DROP; DROP_SUB; LIFT_DROP] THEN
       STRIP_TAC THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
       MATCH_MP_TAC(REAL_ARITH `&0 < e /\ x <= e / &2 ==> x < e`) THEN
@@ -9147,9 +9374,9 @@ let DOMINATED_CONVERGENCE = prove
       MESON_TAC[LE_REFL];
       ALL_TAC] THEN
     REWRITE_TAC[bounded; FORALL_IN_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
-    EXISTS_TAC `drop(integral s (h:real^N->real^1))` THEN
+    EXISTS_TAC `drop(integral s (h:real^M->real^1))` THEN
     X_GEN_TAC `p:num` THEN MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
-    ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
     REWRITE_TAC[ABS_DROP; LIFT_DROP] THEN
     MATCH_MP_TAC REAL_ABS_INF_LE THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
     REWRITE_TAC[FORALL_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
@@ -9158,9 +9385,9 @@ let DOMINATED_CONVERGENCE = prove
     MESON_TAC[LE_REFL];
     DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "A"))] THEN
   MP_TAC(ISPECL
-   [`\k:num x:real^N. lift(sup {drop(f j x) | k <= j})`;
-    `g:real^N->real^1`;
-    `s:real^N->bool`]
+   [`\k:num x:real^M. lift(sup {drop(f j x) | k <= j})`;
+    `g:real^M->real^1`;
+    `s:real^M->bool`]
            MONOTONE_CONVERGENCE_DECREASING) THEN
   ASM_REWRITE_TAC[LIFT_DROP] THEN ANTS_TAC THENL
    [ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN CONJ_TAC THENL
@@ -9172,18 +9399,18 @@ let DOMINATED_CONVERGENCE = prove
         REWRITE_TAC[SUBSET; IN_NUMSEG; IN_ELIM_THM] THEN ARITH_TAC;
         ALL_TAC] THEN
       REWRITE_TAC[FORALL_IN_IMAGE; IN_ELIM_THM] THEN
-      EXISTS_TAC `drop(h(x:real^N))` THEN REPEAT STRIP_TAC THEN
+      EXISTS_TAC `drop(h(x:real^M))` THEN REPEAT STRIP_TAC THEN
       MATCH_MP_TAC(REAL_ARITH `abs(x) <= a ==> x <= a`) THEN
       ASM_SIMP_TAC[GSYM ABS_DROP];
       ALL_TAC] THEN
     CONJ_TAC THENL
-     [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
-      FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+     [X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
       REWRITE_TAC[LIM_SEQUENTIALLY] THEN
       DISCH_THEN(fun th -> X_GEN_TAC `e:real` THEN DISCH_TAC THEN
                  MP_TAC(SPEC `e / &2` th)) THEN
       ASM_REWRITE_TAC[REAL_HALF] THEN
-      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `M:num` THEN
       REWRITE_TAC[dist; ABS_DROP; DROP_SUB; LIFT_DROP] THEN
       STRIP_TAC THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
       MATCH_MP_TAC(REAL_ARITH `&0 < e /\ x <= e / &2 ==> x < e`) THEN
@@ -9194,9 +9421,9 @@ let DOMINATED_CONVERGENCE = prove
       MESON_TAC[LE_REFL];
       ALL_TAC] THEN
     REWRITE_TAC[bounded; FORALL_IN_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
-    EXISTS_TAC `drop(integral s (h:real^N->real^1))` THEN
+    EXISTS_TAC `drop(integral s (h:real^M->real^1))` THEN
     X_GEN_TAC `p:num` THEN MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
-    ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
     REWRITE_TAC[ABS_DROP; LIFT_DROP] THEN
     MATCH_MP_TAC REAL_ABS_SUP_LE THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
     REWRITE_TAC[FORALL_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
@@ -9224,14 +9451,14 @@ let DOMINATED_CONVERGENCE = prove
    `i0 <= i /\ i <= i1
     ==> abs(i1 - g) < e ==> abs(i0 - g) < e ==> abs(i - g) < e`) THEN
   CONJ_TAC THEN MATCH_MP_TAC INTEGRAL_DROP_LE THEN
-  ASM_REWRITE_TAC[LIFT_DROP] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THENL
+  ASM_REWRITE_TAC[LIFT_DROP] THEN X_GEN_TAC `x:real^M` THEN DISCH_TAC THENL
    [W(MP_TAC o C SPEC INF o rand o lhand o snd) THEN
     REWRITE_TAC[] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
     REWRITE_TAC[IMAGE_EQ_EMPTY; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
     ANTS_TAC THENL
      [REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM; NOT_FORALL_THM] THEN
       CONJ_TAC THENL [MESON_TAC[LE_REFL]; ALL_TAC] THEN
-      EXISTS_TAC `--drop(h(x:real^N))` THEN GEN_TAC THEN DISCH_TAC THEN
+      EXISTS_TAC `--drop(h(x:real^M))` THEN GEN_TAC THEN DISCH_TAC THEN
       MATCH_MP_TAC(REAL_ARITH `abs(x) <= a ==> --a <= x`) THEN
       REWRITE_TAC[GSYM ABS_DROP] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_REWRITE_TAC[];
@@ -9242,7 +9469,7 @@ let DOMINATED_CONVERGENCE = prove
     ANTS_TAC THENL
      [REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM; NOT_FORALL_THM] THEN
       CONJ_TAC THENL [MESON_TAC[LE_REFL]; ALL_TAC] THEN
-      EXISTS_TAC `drop(h(x:real^N))` THEN GEN_TAC THEN DISCH_TAC THEN
+      EXISTS_TAC `drop(h(x:real^M))` THEN GEN_TAC THEN DISCH_TAC THEN
       MATCH_MP_TAC(REAL_ARITH `abs(x) <= a ==> x <= a`) THEN
       REWRITE_TAC[GSYM ABS_DROP] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_REWRITE_TAC[];
