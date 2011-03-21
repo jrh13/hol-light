@@ -8479,27 +8479,6 @@ let REAL_CONTINUOUS_ADDITIVE_IMP_LINEAR_INTERVAL = prove
 (* Also, deduce that a discrete set is countable etc.                        *)
 (* ------------------------------------------------------------------------- *)
 
-let COUNTABLE_INTEGER = prove
- (`COUNTABLE integer`,
-  MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC
-   `IMAGE (\n. (&n:real)) (:num) UNION IMAGE (\n. --(&n)) (:num)` THEN
-  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_UNION; NUM_COUNTABLE] THEN
-  REWRITE_TAC[SUBSET; IN_UNION; IN_IMAGE; IN_UNIV] THEN
-  REWRITE_TAC[IN; INTEGER_CASES]);;
-
-let COUNTABLE_RATIONAL = prove
- (`COUNTABLE rational`,
-  MATCH_MP_TAC COUNTABLE_SUBSET THEN
-  EXISTS_TAC `IMAGE (\(x,y). x / y) (integer CROSS integer)` THEN
-  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_CROSS; COUNTABLE_INTEGER] THEN
-  REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
-  REWRITE_TAC[rational; IN] THEN MESON_TAC[]);;
-
-let COUNTABLE_RATIONAL_COORDINATES = prove
- (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> rational(x$i) }`,
-  MATCH_MP_TAC COUNTABLE_CART THEN
-  REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_RATIONAL]);;
-
 let DISCRETE_IMP_COUNTABLE = prove
  (`!s:real^N->bool.
         (!x. x IN s ==> ?e. &0 < e /\

@@ -5158,7 +5158,7 @@ let BOUNDED_PASTECART = prove
  (`!s:real^M->bool t:real^N->bool.
      bounded s /\ bounded t ==> bounded {pastecart x y | x IN s /\ y IN t}`,
   REPEAT GEN_TAC THEN REWRITE_TAC[bounded; IN_ELIM_THM] THEN
-  ASM_MESON_TAC[NORM_PASTECART; REAL_LE_ADD2; REAL_LE_TRANS]);;
+  ASM_MESON_TAC[NORM_PASTECART_LE; REAL_LE_ADD2; REAL_LE_TRANS]);;
 
 let CLOSED_PASTECART = prove
  (`!s:real^M->bool t:real^N->bool.
@@ -5189,6 +5189,36 @@ let COMPACT_PASTECART = prove
  (`!s:real^M->bool t:real^N->bool.
      compact s /\ compact t ==> compact {pastecart x y | x IN s /\ y IN t}`,
   SIMP_TAC[COMPACT_EQ_BOUNDED_CLOSED; BOUNDED_PASTECART; CLOSED_PASTECART]);;
+
+let LIM_PASTECART = prove
+ (`!net f:A->real^M g:A->real^N.
+        (f --> a) net /\ (g --> b) net
+        ==> ((\x. pastecart (f x) (g x)) --> pastecart a b) net`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIM] THEN
+  ASM_CASES_TAC `trivial_limit(net:(A)net)` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[AND_FORALL_THM] THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN
+  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN
+  ASM_REWRITE_TAC[REAL_HALF] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP NET_DILEMMA) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN MATCH_MP_TAC MONO_AND THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+  REWRITE_TAC[dist; PASTECART_SUB] THEN
+  MATCH_MP_TAC(REAL_ARITH
+    `z <= x + y ==> x < e / &2 /\ y < e / &2 ==> z < e`) THEN
+  REWRITE_TAC[NORM_PASTECART_LE]);;
+
+let CONTINUOUS_PASTECART = prove
+ (`!net f:A->real^M g:A->real^N.
+        f continuous net /\ g continuous net
+        ==> (\x. pastecart (f x) (g x)) continuous net`,
+  REWRITE_TAC[continuous; LIM_PASTECART]);;
+
+let CONTINUOUS_ON_PASTECART = prove
+ (`!f:real^M->real^N g:real^M->real^P s.
+        f continuous_on s /\ g continuous_on s
+        ==> (\x. pastecart (f x) (g x)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON; LIM_PASTECART]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence some useful properties follow quite easily.                         *)

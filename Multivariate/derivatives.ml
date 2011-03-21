@@ -202,10 +202,6 @@ let HAS_DERIVATIVE_VMUL_DROP = prove
         ==> ((\x. drop(c(x)) % v) has_derivative (\x. drop(c'(x)) % v)) net`,
   SIMP_TAC[drop; LE_REFL; DIMINDEX_1; HAS_DERIVATIVE_VMUL_COMPONENT]);;
 
-let LINEAR_LIFT_DOT = prove
- (`!a. linear(\x. lift(a dot x))`,
-  REWRITE_TAC[linear; DOT_RMUL; DOT_RADD; LIFT_ADD; LIFT_CMUL]);;
-
 let HAS_DERIVATIVE_LIFT_DOT = prove
  (`!f:real^M->real^N f'.
      (f has_derivative f') net

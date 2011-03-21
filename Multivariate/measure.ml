@@ -11,6 +11,36 @@ needs "Multivariate/determinants.ml";;
 prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
+(* Countability of some relevant sets.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let COUNTABLE_INTEGER = prove
+ (`COUNTABLE integer`,
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC
+   `IMAGE (\n. (&n:real)) (:num) UNION IMAGE (\n. --(&n)) (:num)` THEN
+  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_UNION; NUM_COUNTABLE] THEN
+  REWRITE_TAC[SUBSET; IN_UNION; IN_IMAGE; IN_UNIV] THEN
+  REWRITE_TAC[IN; INTEGER_CASES]);;
+
+let COUNTABLE_RATIONAL = prove
+ (`COUNTABLE rational`,
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC `IMAGE (\(x,y). x / y) (integer CROSS integer)` THEN
+  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_CROSS; COUNTABLE_INTEGER] THEN
+  REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
+  REWRITE_TAC[rational; IN] THEN MESON_TAC[]);;
+
+let COUNTABLE_INTEGER_COORDINATES = prove
+ (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> integer(x$i) }`,
+  MATCH_MP_TAC COUNTABLE_CART THEN
+  REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_INTEGER]);;
+
+let COUNTABLE_RATIONAL_COORDINATES = prove
+ (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> rational(x$i) }`,
+  MATCH_MP_TAC COUNTABLE_CART THEN
+  REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_RATIONAL]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Lebesgue measure (in the case where the measure is finite).               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1207,6 +1237,17 @@ let NEGLIGIBLE_COUNTABLE_UNIONS = prove
   MATCH_MP_TAC SERIES_UNIQUE THEN REWRITE_TAC[LIFT_NUM] THEN
   MAP_EVERY EXISTS_TAC [`(\k. vec 0):num->real^1`; `from 0`] THEN
   ASM_REWRITE_TAC[SERIES_0]);;
+
+let NEGLIGIBLE_COUNTABLE_UNIONS_GEN = prove
+ (`!f. COUNTABLE f /\ (!s:real^N->bool. s IN f ==> negligible s)
+       ==> negligible(UNIONS f)`,
+  GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_CASES_TAC `f:(real^N->bool)->bool = {}` THEN
+  ASM_REWRITE_TAC[UNIONS_0; NEGLIGIBLE_EMPTY] THEN
+  MP_TAC(ISPEC `f:(real^N->bool)->bool` COUNTABLE_AS_IMAGE) THEN
+  ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM; FORALL_IN_IMAGE; IN_UNIV] THEN
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM SIMPLE_IMAGE] THEN
+  MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_UNIONS THEN ASM_REWRITE_TAC[]);;
 
 let HAS_MEASURE_COUNTABLE_NEGLIGIBLE_UNIONS_BOUNDED = prove
  (`!s:num->real^N->bool.
