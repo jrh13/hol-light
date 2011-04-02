@@ -56,7 +56,10 @@ pa_j.ml: pa_j_3.04.ml pa_j_3.06.ml pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3
         then cp pa_j_${OCAML_VERSION}.ml pa_j.ml ; \
         else if test ${CAMLP5_VERSION} = "6.02.1" ; \
              then cp pa_j_3.1x_6.02.1.ml pa_j.ml; \
-             else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
+             else if test ${CAMLP5_VERSION} = "6.02.2" ; \
+                  then cp pa_j_3.1x_6.02.2.ml pa_j.ml; \
+                  else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
+                  fi \
              fi \
         fi
 
