@@ -814,6 +814,24 @@ let HAS_MEASURE_INNER_OUTER_LE = prove
             REAL_ARITH `&0 < e /\ u <= m + e / &2 ==> u < m + e`;
             REAL_ARITH `&0 < e <=> &0 < e / &2`; REAL_LT_IMP_LE]);;
 
+let NEGLIGIBLE_OUTER = prove
+ (`!s:real^N->bool.
+      negligible s <=>
+      !e. &0 < e ==> ?t. s SUBSET t /\ measurable t /\ measure t < e`,
+  GEN_TAC THEN REWRITE_TAC[GSYM HAS_MEASURE_0; HAS_MEASURE_INNER_OUTER] THEN
+  REWRITE_TAC[REAL_ADD_LID] THEN MATCH_MP_TAC(TAUT `a ==> (a /\ b <=> b)`) THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN EXISTS_TAC `{}:real^N->bool` THEN
+  REWRITE_TAC[EMPTY_SUBSET; MEASURABLE_EMPTY; MEASURE_EMPTY] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let NEGLIGIBLE_OUTER_LE = prove
+ (`!s:real^N->bool.
+      negligible s <=>
+      !e. &0 < e ==> ?t. s SUBSET t /\ measurable t /\ measure t <= e`,
+  REWRITE_TAC[NEGLIGIBLE_OUTER] THEN
+  MESON_TAC[REAL_LT_IMP_LE; REAL_ARITH
+    `&0 < e ==> &0 < e / &2 /\ (x <= e / &2 ==> x < e)`]);;
+
 let HAS_MEASURE_LIMIT = prove
  (`!s. s has_measure m <=>
         !e. &0 < e
@@ -1334,7 +1352,7 @@ let MEASURE_COUNTABLE_UNIONS_LE_STRONG = prove
       REWRITE_TAC[SUBSET_NUMSEG] THEN ARITH_TAC];
     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
     GEN_REWRITE_TAC LAND_CONV [GSYM(CONJUNCT2 LIFT_DROP)] THEN
-    MATCH_MP_TAC(ISPEC `sequentially` LIM_DROP_LE) THEN
+    MATCH_MP_TAC(ISPEC `sequentially` LIM_DROP_UBOUND) THEN
     EXISTS_TAC `\n. lift(measure(UNIONS {d k | k IN 0..n} :real^N->bool))` THEN
     ASM_REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY; EVENTUALLY_SEQUENTIALLY] THEN
     EXISTS_TAC `0` THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
@@ -1368,6 +1386,42 @@ let MEASURABLE_COUNTABLE_UNIONS = prove
         (!n. sum (0..n) (\k. measure(s k)) <= B)
         ==> measurable(UNIONS { s(n) | n IN (:num) })`,
   MESON_TAC[MEASURE_COUNTABLE_UNIONS_LE; REAL_LE_REFL]);;
+
+let MEASURE_COUNTABLE_UNIONS_LE_STRONG_GEN = prove
+ (`!D B. COUNTABLE D /\
+         (!d:real^N->bool. d IN D ==> measurable d) /\
+         (!D'. D' SUBSET D /\ FINITE D' ==> measure(UNIONS D') <= B)
+         ==> measurable(UNIONS D) /\ measure(UNIONS D) <= B`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `D:(real^N->bool)->bool = {}` THENL
+   [ASM_SIMP_TAC[UNIONS_0; MEASURABLE_EMPTY; SUBSET_EMPTY] THEN
+    MESON_TAC[FINITE_EMPTY];
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    MP_TAC(ISPEC `D:(real^N->bool)->bool` COUNTABLE_AS_IMAGE) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:num->real^N->bool` SUBST1_TAC) THEN
+    REWRITE_TAC[IMP_CONJ; FORALL_IN_IMAGE; FORALL_SUBSET_IMAGE] THEN
+    REWRITE_TAC[IN_UNIV; SUBSET_UNIV] THEN REPEAT DISCH_TAC THEN
+    ONCE_REWRITE_TAC[GSYM SIMPLE_IMAGE] THEN
+    MATCH_MP_TAC MEASURE_COUNTABLE_UNIONS_LE_STRONG THEN
+    ASM_REWRITE_TAC[] THEN X_GEN_TAC `n:num` THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `{k:num | k <= n}`) THEN
+    SIMP_TAC[FINITE_NUMSEG_LE; FINITE_IMAGE] THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN
+    REPLICATE_TAC 3 AP_TERM_TAC THEN SET_TAC[]]);;
+
+let MEASURE_COUNTABLE_UNIONS_LE_GEN = prove
+ (`!D B. COUNTABLE D /\
+         (!d:real^N->bool. d IN D ==> measurable d) /\
+         (!D'. D' SUBSET D /\ FINITE D' ==> sum D' (\d. measure d) <= B)
+         ==> measurable(UNIONS D) /\ measure(UNIONS D) <= B`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MATCH_MP_TAC MEASURE_COUNTABLE_UNIONS_LE_STRONG_GEN THEN
+  ASM_REWRITE_TAC[] THEN X_GEN_TAC `D':(real^N->bool)->bool` THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `D':(real^N->bool)->bool`) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LE_TRANS) THEN
+  MATCH_MP_TAC MEASURE_UNIONS_LE THEN ASM SET_TAC[]);;
 
 let MEASURABLE_COUNTABLE_INTERS = prove
  (`!s:num->real^N->bool.
@@ -1409,6 +1463,53 @@ let NEGLIGIBLE_COUNTABLE = prove
     MATCH_MP COUNTABLE_AS_IMAGE) THEN
   ONCE_REWRITE_TAC[lemma] THEN MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_UNIONS THEN
   REWRITE_TAC[NEGLIGIBLE_SING]);;
+
+let MEASURE_COUNTABLE_UNIONS_APPROACHABLE = prove
+ (`!D B e.
+        COUNTABLE D /\
+        (!d. d IN D ==> measurable d) /\
+        (!D'. D' SUBSET D /\ FINITE D' ==> measure(UNIONS D') <= B) /\
+        &0 < e
+        ==> ?D'. D' SUBSET D /\ FINITE D' /\
+                 measure(UNIONS D) - e < measure(UNIONS D':real^N->bool)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `D:(real^N->bool)->bool = {}` THENL
+   [DISCH_TAC THEN EXISTS_TAC `{}:(real^N->bool)->bool` THEN
+    ASM_REWRITE_TAC[EMPTY_SUBSET; FINITE_EMPTY; UNIONS_0; MEASURE_EMPTY] THEN
+    ASM_REAL_ARITH_TAC;
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    MP_TAC(ISPEC `D:(real^N->bool)->bool` COUNTABLE_AS_IMAGE) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:num->real^N->bool` SUBST1_TAC) THEN
+    REWRITE_TAC[IMP_CONJ; FORALL_IN_IMAGE; EXISTS_SUBSET_IMAGE;
+                FORALL_SUBSET_IMAGE] THEN
+    REWRITE_TAC[IN_UNIV; SUBSET_UNIV] THEN REPEAT DISCH_TAC THEN
+    MP_TAC(ISPECL
+     [`\n. UNIONS(IMAGE (d:num->real^N->bool) {k | k <= n})`;
+                   `B:real`] HAS_MEASURE_NESTED_UNIONS) THEN
+    REWRITE_TAC[] THEN ANTS_TAC THENL
+     [ASM_SIMP_TAC[MEASURABLE_UNIONS; FORALL_IN_IMAGE; FINITE_IMAGE;
+                   FINITE_NUMSEG_LE; IN_ELIM_THM] THEN
+      GEN_TAC THEN MATCH_MP_TAC SUBSET_UNIONS THEN
+      MATCH_MP_TAC IMAGE_SUBSET THEN
+      REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ARITH_TAC;
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `UNIONS {UNIONS (IMAGE d {k | k <= n}) | n IN (:num)}:real^N->bool =
+      UNIONS (IMAGE d (:num))`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[UNIONS_IMAGE] THEN REWRITE_TAC[UNIONS_GSPEC] THEN
+      REWRITE_TAC[IN_UNIV; IN_ELIM_THM; EXTENSION] THEN
+      MESON_TAC[LE_REFL];
+      ALL_TAC] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    REWRITE_TAC[LIM_SEQUENTIALLY; DIST_REAL; GSYM drop; LIFT_DROP] THEN
+    DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
+    REWRITE_TAC[LE_REFL] THEN DISCH_TAC THEN
+    EXISTS_TAC `{k:num | k <= n}` THEN
+    SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG_LE] THEN
+    ASM_SIMP_TAC[REAL_ARITH `abs(x - u) < e /\ &0 < e ==> u - e < x`]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A sledgehammer to crack a nut, but we get uncountability of R trivially.  *)

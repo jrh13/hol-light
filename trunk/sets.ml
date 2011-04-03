@@ -802,6 +802,11 @@ let SUBSET_IMAGE = prove
   REWRITE_TAC[EXTENSION; SUBSET; IN_IMAGE; IN_ELIM_THM] THEN
   MESON_TAC[]);;
 
+let FORALL_SUBSET_IMAGE = prove
+ (`!P f s. (!t. t SUBSET IMAGE f s ==> P t) <=>
+           (!t. t SUBSET s ==> P(IMAGE f t))`,
+  REWRITE_TAC[SUBSET_IMAGE] THEN MESON_TAC[]);;
+
 let EXISTS_SUBSET_IMAGE = prove
  (`!P f s.
     (?t. t SUBSET IMAGE f s /\ P t) <=> (?t. t SUBSET s /\ P (IMAGE f t))`,
@@ -2416,6 +2421,18 @@ let SURJECTIVE_IMAGE_THM = prove
   GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN
   EQ_TAC THENL [ALL_TAC; DISCH_THEN(MP_TAC o SPEC `\y:B. T`)] THEN
   MESON_TAC[]);;
+
+let IMAGE_INJECTIVE_IMAGE_OF_SUBSET = prove
+ (`!f:A->B s.
+     ?t. t SUBSET s /\
+         IMAGE f s = IMAGE f t /\
+         (!x y. x IN t /\ y IN t /\ f x = f y ==> x = y)`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN
+   `?g. !y. y IN IMAGE (f:A->B) s ==> g(y) IN s /\ f(g(y)) = y`
+  STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[GSYM SURJECTIVE_ON_RIGHT_INVERSE] THEN SET_TAC[];
+    EXISTS_TAC `IMAGE (g:B->A) (IMAGE (f:A->B) s)` THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Injectivity and surjectivity of image under a function.                   *)

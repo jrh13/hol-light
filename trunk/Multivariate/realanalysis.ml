@@ -464,7 +464,7 @@ let LIM_COMPONENTWISE = prove
   ONCE_REWRITE_TAC[LIM_COMPONENTWISE_LIFT] THEN
   REWRITE_TAC[TENDSTO_REAL; o_DEF]);;
 
-let REALLIM_LE = prove
+let REALLIM_UBOUND = prove
  (`!(net:A net) f l b.
         (f ---> l) net /\
         ~trivial_limit net /\
@@ -472,11 +472,11 @@ let REALLIM_LE = prove
         ==> l <= b`,
   REWRITE_TAC[FORALL_DROP; TENDSTO_REAL; LIFT_DROP] THEN
   REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC(ISPEC `net:A net` LIM_DROP_LE) THEN
+  MATCH_MP_TAC(ISPEC `net:A net` LIM_DROP_UBOUND) THEN
   EXISTS_TAC `lift o (f:A->real)` THEN
   ASM_REWRITE_TAC[o_THM; LIFT_DROP]);;
 
-let REALLIM_GE = prove
+let REALLIM_LBOUND = prove
  (`!(net:A net) f l b.
         (f ---> l) net /\
         ~trivial_limit net /\
@@ -484,9 +484,22 @@ let REALLIM_GE = prove
         ==> b <= l`,
   ONCE_REWRITE_TAC[GSYM REAL_LE_NEG2] THEN
   REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC(ISPEC `net:A net` REALLIM_LE) THEN
+  MATCH_MP_TAC(ISPEC `net:A net` REALLIM_UBOUND) THEN
   EXISTS_TAC `\a:A. --(f a:real)` THEN
   ASM_REWRITE_TAC[REALLIM_NEG_EQ]);;
+
+let REALLIM_LE = prove
+ (`!net f g l m.
+           (f ---> l) net /\ (g ---> m) net /\
+           ~trivial_limit net /\
+           eventually (\x. f x <= g x) net
+           ==> l <= m`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (MP_TAC o MATCH_MP REALLIM_SUB o ONCE_REWRITE_RULE[CONJ_SYM]) MP_TAC) THEN
+  ONCE_REWRITE_TAC[GSYM REAL_SUB_LE] THEN
+  REWRITE_TAC[GSYM IMP_CONJ_ALT; GSYM CONJ_ASSOC] THEN
+  DISCH_THEN(ACCEPT_TAC o MATCH_MP REALLIM_LBOUND));;
 
 let REALLIM_CONST_EQ = prove
  (`!net:(A net) c d. ((\x. c) ---> d) net <=> trivial_limit net \/ c = d`,
@@ -751,6 +764,31 @@ let REAL_SERIES_SUM = prove
   SUBGOAL_THEN `s INTER k = s:num->bool` ASSUME_TAC THENL
    [ASM SET_TAC[]; ASM_MESON_TAC [REAL_SERIES_FINITE_SUPPORT]]);;
 
+let REAL_SUMS_LE2 = prove
+ (`!f g s y z.
+        (f real_sums y) s /\ (g real_sums z) s /\
+        (!i. i IN s ==> f(i) <= g(i))
+        ==> y <= z`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[real_sums] THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (MATCH_MP_TAC o MATCH_MP
+     (ONCE_REWRITE_RULE[IMP_CONJ]
+       (ONCE_REWRITE_RULE[CONJ_ASSOC] REALLIM_LE)))
+   ASSUME_TAC) THEN
+  ASM_SIMP_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+  ASM_SIMP_TAC[SUM_LE; FINITE_INTER; IN_INTER; FINITE_NUMSEG] THEN
+  REWRITE_TAC[EVENTUALLY_TRUE]);;
+
+let REAL_SUMS_REINDEX = prove
+ (`!k a l n.
+     ((\x. a(x + k)) real_sums l) (from n) <=> (a real_sums l) (from(n + k))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[real_sums; FROM_INTER_NUMSEG] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM SUM_OFFSET] THEN
+  REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
+  ASM_MESON_TAC[ARITH_RULE `N + k:num <= n ==> n = (n - k) + k /\ N <= n - k`;
+                ARITH_RULE `N + k:num <= n ==> N <= n + k`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Similar combining theorems just for summability.                          *)
 (* ------------------------------------------------------------------------- *)
@@ -854,7 +892,7 @@ let REAL_SUMS_FINITE_UNION = prove
   ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
 
 let REAL_SUMS_OFFSET = prove
- (`!f t s l.
+ (`!f t s l m n.
         (f real_sums l) (from m) /\ m < n
         ==> (f real_sums (l - sum(m..(n-1)) f)) (from n)`,
   REPEAT STRIP_TAC THEN
@@ -864,7 +902,7 @@ let REAL_SUMS_OFFSET = prove
     SIMP_TAC[SUBSET; IN_FROM; IN_NUMSEG]]);;
 
 let REAL_SUMS_OFFSET_REV = prove
- (`!f t s l.
+ (`!f t s l m n.
         (f real_sums l) (from m) /\ n < m
         ==> (f real_sums (l + sum(n..m-1) f)) (from n)`,
   REPEAT STRIP_TAC THEN
@@ -4645,7 +4683,7 @@ let HAS_REAL_DERIVATIVE_INCREASING = prove
   REWRITE_TAC[NOT_EXISTS_THM] THEN REPEAT STRIP_TAC THEN EQ_TAC THENL
    [ASM_MESON_TAC[HAS_REAL_DERIVATIVE_INCREASING_IMP]; ALL_TAC] THEN
   DISCH_TAC THEN X_GEN_TAC `x:real` THEN DISCH_TAC THEN
-  MATCH_MP_TAC(ISPEC `atreal x within s` REALLIM_GE) THEN
+  MATCH_MP_TAC(ISPEC `atreal x within s` REALLIM_LBOUND) THEN
   EXISTS_TAC `\y:real. (f y - f x) / (y - x)` THEN
   ASM_SIMP_TAC[GSYM HAS_REAL_DERIVATIVE_WITHINREAL] THEN
   ASM_SIMP_TAC[TRIVIAL_LIMIT_WITHIN_REALINTERVAL] THEN
