@@ -1816,40 +1816,6 @@ let LIM_NORM_LBOUND = prove
   REWRITE_TAC[REAL_NOT_LT; REAL_LE_SUB_RADD; DE_MORGAN_THM; dist] THEN
   NORM_ARITH_TAC);;
 
-let LIM_COMPONENT_UBOUND = prove
- (`!net:(A)net f (l:real^N) b k.
-        ~(trivial_limit net) /\ (f --> l) net /\
-        eventually (\x. (f x)$k <= b) net /\
-        1 <= k /\ k <= dimindex(:N)
-        ==> l$k <= b`,
-  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[LIM] THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[eventually] THEN
-  STRIP_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN
-  ONCE_REWRITE_TAC[GSYM REAL_SUB_LT] THEN DISCH_TAC THEN
-  SUBGOAL_THEN
-   `?z:A. dist(f(z):real^N,l) < (l:real^N)$k - b /\ (f z)$k <= b`
-  (CHOOSE_THEN MP_TAC) THENL [ASM_MESON_TAC[NET]; ALL_TAC] THEN
-  MP_TAC(ISPECL [`(f:A->real^N) z - l`; `k:num`] COMPONENT_LE_NORM) THEN
-  ASM_SIMP_TAC[VECTOR_SUB_COMPONENT; dist] THEN REAL_ARITH_TAC);;
-
-let LIM_COMPONENT_LBOUND = prove
- (`!net:(A)net f (l:real^N) b k.
-        ~(trivial_limit net) /\ (f --> l) net /\
-        eventually (\x. b <= (f x)$k) net /\
-        1 <= k /\ k <= dimindex(:N)
-        ==> b <= l$k`,
-  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[LIM] THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[eventually] THEN
-  STRIP_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN
-  ONCE_REWRITE_TAC[GSYM REAL_SUB_LT] THEN DISCH_TAC THEN
-  SUBGOAL_THEN
-   `?z:A. dist(f(z):real^N,l) < b - (l:real^N)$k /\ b <= (f z)$k`
-  (CHOOSE_THEN MP_TAC) THENL [ASM_MESON_TAC[NET]; ALL_TAC] THEN
-  MP_TAC(ISPECL [`(f:A->real^N) z - l`; `k:num`] COMPONENT_LE_NORM) THEN
-  ASM_SIMP_TAC[VECTOR_SUB_COMPONENT; dist] THEN REAL_ARITH_TAC);;
-
 (* ------------------------------------------------------------------------- *)
 (* Uniqueness of the limit, when nontrivial.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -6911,32 +6877,28 @@ let BOUNDED_HALFSPACE_GT = prove
 (* Limit component bounds.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let LIM_COMPONENT_LE = prove
- (`!net f:A->real^N i l b.
-        (f --> l) net /\ 1 <= i /\ i <= dimindex(:N) /\
-        ~(trivial_limit net) /\ eventually (\x. f(x)$i <= b) net
-        ==> l$i <= b`,
-  let lemma = prove
-   (`1 <= i /\ i <= dimindex(:N)
-     ==> (x$i <= b <=> x IN {x:real^N | (basis i) dot x <= b})`,
-    SIMP_TAC[IN_ELIM_THM; DOT_BASIS]) in
-  REPEAT GEN_TAC THEN
-  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  ASM_SIMP_TAC[lemma] THEN STRIP_TAC THEN
-  MATCH_MP_TAC LIM_IN_CLOSED_SET THEN
-  REWRITE_TAC[CLOSED_HALFSPACE_LE] THEN ASM_MESON_TAC[]);;
+let LIM_COMPONENT_UBOUND = prove
+ (`!net:(A)net f (l:real^N) b k.
+        ~(trivial_limit net) /\ (f --> l) net /\
+        eventually (\x. (f x)$k <= b) net /\
+        1 <= k /\ k <= dimindex(:N)
+        ==> l$k <= b`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`net:(A)net`; `f:A->real^N`; `{y:real^N | basis k dot y <= b}`; `l:real^N`]
+   LIM_IN_CLOSED_SET) THEN
+  ASM_SIMP_TAC[CLOSED_HALFSPACE_LE; IN_ELIM_THM; DOT_BASIS]);;
 
-let LIM_COMPONENT_GE = prove
- (`!net f:A->real^N i l b.
-        (f --> l) net /\ 1 <= i /\ i <= dimindex(:N) /\
-        ~(trivial_limit net) /\ eventually (\x. b <= f(x)$i) net
-        ==> b <= l$i`,
-  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[REAL_ARITH `a <= b <=> --b <= --a`] THEN
-  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  ASM_SIMP_TAC[GSYM VECTOR_NEG_COMPONENT] THEN DISCH_TAC THEN
-  MATCH_MP_TAC LIM_COMPONENT_LE THEN
-  MAP_EVERY EXISTS_TAC [`net:A net`; `\x:A. --(f x):real^N`] THEN
-  ASM_SIMP_TAC[LIM_NEG]);;
+let LIM_COMPONENT_LBOUND = prove
+ (`!net:(A)net f (l:real^N) b k.
+        ~(trivial_limit net) /\ (f --> l) net /\
+        eventually (\x. b <= (f x)$k) net /\
+        1 <= k /\ k <= dimindex(:N)
+        ==> b <= l$k`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`net:(A)net`; `f:A->real^N`; `{y:real^N | b <= basis k dot y}`; `l:real^N`]
+   LIM_IN_CLOSED_SET) THEN
+  ASM_SIMP_TAC[REWRITE_RULE[real_ge] CLOSED_HALFSPACE_GE;
+               IN_ELIM_THM; DOT_BASIS]);;
 
 let LIM_COMPONENT_EQ = prove
  (`!net f:A->real^N i l b.
@@ -6944,22 +6906,47 @@ let LIM_COMPONENT_EQ = prove
         ~(trivial_limit net) /\ eventually (\x. f(x)$i = b) net
         ==> l$i = b`,
   REWRITE_TAC[GSYM REAL_LE_ANTISYM; EVENTUALLY_AND] THEN
-  MESON_TAC[LIM_COMPONENT_LE; LIM_COMPONENT_GE]);;
+  MESON_TAC[LIM_COMPONENT_UBOUND; LIM_COMPONENT_LBOUND]);;
+
+let LIM_COMPONENT_LE = prove
+ (`!net:(A)net f:A->real^N g:A->real^N k l m.
+         ~(trivial_limit net) /\ (f --> l) net /\ (g --> m) net /\
+        eventually (\x. (f x)$k <= (g x)$k) net /\
+        1 <= k /\ k <= dimindex(:N)
+        ==> l$k <= m$k`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_SUB_LE] THEN
+  REWRITE_TAC[GSYM VECTOR_SUB_COMPONENT; LIM_COMPONENT_LBOUND] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ONCE_REWRITE_TAC[TAUT `a /\ b /\ c ==> d <=> b /\ a ==> c ==> d`] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_SUB) THEN POP_ASSUM MP_TAC THEN
+  REWRITE_TAC[IMP_IMP; GSYM CONJ_ASSOC; LIM_COMPONENT_LBOUND]);;
 
 let LIM_DROP_LE = prove
+ (`!net:(A)net f g k l m.
+         ~(trivial_limit net) /\ (f --> l) net /\ (g --> m) net /\
+        eventually (\x. drop(f x) <= drop(g x)) net
+        ==> drop l <= drop m`,
+  REWRITE_TAC[drop] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(ISPEC `net:(A)net` LIM_COMPONENT_LE) THEN
+  MAP_EVERY EXISTS_TAC [`f:A->real^1`; `g:A->real^1`] THEN
+  ASM_REWRITE_TAC[DIMINDEX_1; LE_REFL]);;
+
+let LIM_DROP_UBOUND = prove
  (`!net f:A->real^1 l b.
         (f --> l) net /\
         ~(trivial_limit net) /\ eventually (\x. drop(f x) <= b) net
         ==> drop l <= b`,
-  SIMP_TAC[drop] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_COMPONENT_LE THEN
+  SIMP_TAC[drop] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC LIM_COMPONENT_UBOUND THEN
   REWRITE_TAC[LE_REFL; DIMINDEX_1] THEN ASM_MESON_TAC[]);;
 
-let LIM_DROP_GE = prove
+let LIM_DROP_LBOUND = prove
  (`!net f:A->real^1 l b.
         (f --> l) net /\
         ~(trivial_limit net) /\ eventually (\x. b <= drop(f x)) net
         ==> b <= drop l`,
-  SIMP_TAC[drop] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_COMPONENT_GE THEN
+  SIMP_TAC[drop] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC LIM_COMPONENT_LBOUND THEN
   REWRITE_TAC[LE_REFL; DIMINDEX_1] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -8440,6 +8427,14 @@ let SERIES_VSUM = prove
   SUBGOAL_THEN `s INTER k = s:num->bool` ASSUME_TAC THENL
    [ASM SET_TAC []; ASM_MESON_TAC [SERIES_FINITE_SUPPORT]]);;
 
+let SUMS_REINDEX = prove
+ (`!k a l n. ((\x. a(x + k)) sums l) (from n) <=> (a sums l) (from(n + k))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sums; FROM_INTER_NUMSEG] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM VSUM_OFFSET] THEN
+  REWRITE_TAC[LIM_SEQUENTIALLY] THEN
+  ASM_MESON_TAC[ARITH_RULE `N + k:num <= n ==> n = (n - k) + k /\ N <= n - k`;
+                ARITH_RULE `N + k:num <= n ==> N <= n + k`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Similar combining theorems just for summability.                          *)
 (* ------------------------------------------------------------------------- *)
@@ -8548,7 +8543,7 @@ let SUMS_FINITE_UNION = prove
   ASM_REWRITE_TAC[] THEN VECTOR_ARITH_TAC);;
 
 let SUMS_OFFSET = prove
- (`!f:num->real^N t s l.
+ (`!f:num->real^N t s l m n.
         (f sums l) (from m) /\ m < n
         ==> (f sums (l - vsum(m..(n-1)) f)) (from n)`,
   REPEAT STRIP_TAC THEN
@@ -8558,7 +8553,7 @@ let SUMS_OFFSET = prove
     SIMP_TAC[SUBSET; IN_FROM; IN_NUMSEG]]);;
 
 let SUMS_OFFSET_REV = prove
- (`!f:num->real^N t s l.
+ (`!f:num->real^N t s l m n.
         (f sums l) (from m) /\ n < m
         ==> (f sums (l + vsum(n..m-1) f)) (from n)`,
   REPEAT STRIP_TAC THEN

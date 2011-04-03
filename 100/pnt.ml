@@ -776,7 +776,7 @@ let ZETA_1_NZ = prove
   SUBGOAL_THEN `&1 - log(&2) <= Re(complex_derivative (nearzeta 1) (Cx(&1)))`
   MP_TAC THENL
    [REWRITE_TAC[RE_DEF] THEN
-    MATCH_MP_TAC(ISPEC `sequentially` LIM_COMPONENT_GE) THEN
+    MATCH_MP_TAC(ISPEC `sequentially` LIM_COMPONENT_LBOUND) THEN
     EXISTS_TAC `\n. Cx(sum(1..n) (\i. &1 / &i - (log(&(i + 1)) - log(&i))))` THEN
     REWRITE_TAC[SUMS_GAMMA; TRIVIAL_LIMIT_SEQUENTIALLY; DIMINDEX_2; ARITH] THEN
     REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN

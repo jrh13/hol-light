@@ -1,9 +1,40 @@
+Fri  1st Apr 2011       Makefile, pa_j_3.1x_6.02.2.ml [new file]
+
+Once again there is an incompatibility with the latest version of camlp5, this
+time 6.02.2, as was reported by Kevin S. Van Horn. Made yet another appropriate
+version of pa_j.ml, and put another case split in the Makefile.
+
+Fri  1st Apr 2011       Minisat/minisat_parse.ml
+
+Rewrote readTrace_aux in a slightly different style, avoiding wrapping
+an exception handler round the recursive calls, since this had the effect of
+making it not be tail-recursive.
+
+Thu 31st Mar 2011       sets.ml
+
+Added the following
+
+  IMAGE_INJECTIVE_IMAGE_OF_SUBSET =
+   |- !f s.
+         ?t. t SUBSET s /\
+             IMAGE f s = IMAGE f t /\
+             (!x y. x IN t /\ y IN t /\ f x = f y ==> x = y)
+
+Tue 22nd Mar 2011       sets.ml
+
+Added the following, a natural dual of EXISTS_SUBSET_IMAGE:
+
+  FORALL_SUBSET_IMAGE =
+   |- !P f s.
+          (!t. t SUBSET IMAGE f s ==> P t) <=>
+          (!t. t SUBSET s ==> P (IMAGE f t))
+
 Tue 15th Mar 2011       fusion.ml
 
 Made a small but significant change to the kernel, based on an observation by
-Ondrej Kuncar, optimizing the pointer-EQ shortcut in "orda" so that it does not 
-require an empty environment but merely one full of identical pairs. This can 
-substantially speed up many derived rules by allowing efficient use of 
+Ondrej Kuncar, optimizing the pointer-EQ shortcut in "orda" so that it does not
+require an empty environment but merely one full of identical pairs. This can
+substantially speed up many derived rules by allowing efficient use of
 proformas even inside bound variables.
 
 Sat  5th Mar 2011       bool.ml
