@@ -1664,10 +1664,58 @@ let LIM_ADD = prove
   DISCH_THEN(MP_TAC o MATCH_MP NET_DILEMMA) THEN MATCH_MP_TAC MONO_EXISTS THEN
   MESON_TAC[REAL_HALF; DIST_TRIANGLE_ADD; REAL_LT_ADD2; REAL_LET_TRANS]);;
 
+let LIM_ABS = prove
+ (`!net:(A)net f:A->real^N l.
+     (f --> l) net
+     ==> ((\x. lambda i. (abs(f(x)$i))) --> (lambda i. abs(l$i)):real^N) net`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIM] THEN
+  ASM_CASES_TAC `trivial_limit (net:(A)net)` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC(NORM_ARITH
+   `norm(x - y) <= norm(a - b) ==> dist(a,b) < e ==> dist(x,y) < e`) THEN
+  MATCH_MP_TAC NORM_LE_COMPONENTWISE THEN
+  SIMP_TAC[LAMBDA_BETA; VECTOR_SUB_COMPONENT] THEN
+  REAL_ARITH_TAC);;
+
 let LIM_SUB = prove
  (`!net:(A)net f g l m.
     (f --> l) net /\ (g --> m) net ==> ((\x. f(x) - g(x)) --> l - m) net`,
   REWRITE_TAC[real_sub; VECTOR_SUB] THEN ASM_SIMP_TAC[LIM_ADD; LIM_NEG]);;
+
+let LIM_MAX = prove
+ (`!net:(A)net f g l:real^N m:real^N.
+    (f --> l) net /\ (g --> m) net
+    ==> ((\x. lambda i. max (f(x)$i) (g(x)$i))
+         --> (lambda i. max (l$i) (m$i)):real^N) net`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP LIM_ADD) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP LIM_SUB) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_ABS) THEN
+  REWRITE_TAC[IMP_IMP] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_ADD) THEN
+  DISCH_THEN(MP_TAC o SPEC `inv(&2)` o MATCH_MP LIM_CMUL) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN BINOP_TAC THEN
+  SIMP_TAC[FUN_EQ_THM; CART_EQ; VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT;
+           VECTOR_SUB_COMPONENT; LAMBDA_BETA] THEN
+  REAL_ARITH_TAC);;
+
+let LIM_MIN = prove
+ (`!net:(A)net f g l:real^N m:real^N.
+    (f --> l) net /\ (g --> m) net
+    ==> ((\x. lambda i. min (f(x)$i) (g(x)$i))
+         --> (lambda i. min (l$i) (m$i)):real^N) net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN(MP_TAC o MATCH_MP LIM_NEG)) THEN
+  REWRITE_TAC[IMP_IMP] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_NEG o MATCH_MP LIM_MAX) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN BINOP_TAC THEN
+  SIMP_TAC[FUN_EQ_THM; CART_EQ; LAMBDA_BETA; VECTOR_NEG_COMPONENT] THEN
+  REAL_ARITH_TAC);;
 
 let LIM_NULL = prove
  (`!net f l. (f --> l) net <=> ((\x. f(x) - l) --> vec 0) net`,
@@ -3821,6 +3869,24 @@ let CONTINUOUS_SUB = prove
            ==> (\x. f(x) - g(x)) continuous net`,
   REWRITE_TAC[continuous; LIM_SUB]);;
 
+let CONTINUOUS_ABS = prove
+ (`!(f:A->real^N) net.
+        f continuous net
+        ==> (\x. (lambda i. abs(f(x)$i)):real^N) continuous net`,
+  REWRITE_TAC[continuous; LIM_ABS]);;
+
+let CONTINUOUS_MAX = prove
+ (`!(f:A->real^N) (g:A->real^N) net.
+        f continuous net /\ g continuous net
+        ==> (\x. (lambda i. max (f(x)$i) (g(x)$i)):real^N) continuous net`,
+  REWRITE_TAC[continuous; LIM_MAX]);;
+
+let CONTINUOUS_MIN = prove
+ (`!(f:A->real^N) (g:A->real^N) net.
+        f continuous net /\ g continuous net
+        ==> (\x. (lambda i. min (f(x)$i) (g(x)$i)):real^N) continuous net`,
+  REWRITE_TAC[continuous; LIM_MIN]);;
+
 let CONTINUOUS_VSUM = prove
  (`!net f s. FINITE s /\ (!a. a IN s ==> (f a) continuous net)
              ==> (\x. vsum s (\a. f a x)) continuous net`,
@@ -3855,6 +3921,26 @@ let CONTINUOUS_ON_SUB = prove
  (`!f g s. f continuous_on s /\ g continuous_on s
            ==> (\x. f(x) - g(x)) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_SUB]);;
+
+let CONTINUOUS_ON_ABS = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s
+        ==> (\x. (lambda i. abs(f(x)$i)):real^N) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_ABS]);;
+
+let CONTINUOUS_ON_MAX = prove
+ (`!f:real^M->real^N g:real^M->real^N s.
+        f continuous_on s /\ g continuous_on s
+        ==> (\x. (lambda i. max (f(x)$i) (g(x)$i)):real^N)
+            continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_MAX]);;
+
+let CONTINUOUS_ON_MIN = prove
+ (`!f:real^M->real^N g:real^M->real^N s.
+        f continuous_on s /\ g continuous_on s
+        ==> (\x. (lambda i. min (f(x)$i) (g(x)$i)):real^N)
+            continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_MIN]);;
 
 let CONTINUOUS_ON_VSUM = prove
  (`!t f s. FINITE s /\ (!a. a IN s ==> (f a) continuous_on t)
@@ -5644,6 +5730,12 @@ let IN_INTERVAL = prove
                 !i. 1 <= i /\ i <= dimindex(:N)
                     ==> a$i <= x$i /\ x$i <= b$i)`,
   REWRITE_TAC[interval; IN_ELIM_THM]);;
+
+let IN_INTERVAL_REFLECT = prove
+ (`(!a b x. (--x) IN interval[--b,--a] <=> x IN interval[a,b]) /\
+   (!a b x. (--x) IN interval(--b,--a) <=> x IN interval(a,b))`,
+  SIMP_TAC[IN_INTERVAL; REAL_LT_NEG2; REAL_LE_NEG2; VECTOR_NEG_COMPONENT] THEN
+  MESON_TAC[]);;
 
 let INTERVAL_EQ_EMPTY = prove
  (`((interval [a:real^N,b] = {}) <=>

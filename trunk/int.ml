@@ -20,7 +20,7 @@ needs "calc_rat.ml";;
 let integer = new_definition
   `integer(x) <=> ?n. abs(x) = &n`;;
 
-let is_int = prove              
+let is_int = prove
  (`integer(x) <=> ?n. x = &n \/ x = -- &n`,
   REWRITE_TAC[integer] THEN AP_TERM_TAC THEN ABS_TAC THEN REAL_ARITH_TAC);;
 

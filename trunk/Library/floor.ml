@@ -333,6 +333,15 @@ let REAL_LE_FLOOR = prove
   REWRITE_TAC[GSYM REAL_NOT_LT] THEN ASM_SIMP_TAC[REAL_LT_INTEGERS; FLOOR] THEN
   MP_TAC(SPEC `x:real` FLOOR) THEN REAL_ARITH_TAC);;
 
+let REAL_FLOOR_LE = prove
+ (`!x n. integer n ==> (floor x <= n <=> x - &1 < n)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `x <= y <=> x + &1 <= y + &1`] THEN
+  ASM_SIMP_TAC[GSYM REAL_LT_INTEGERS; FLOOR; INTEGER_CLOSED] THEN
+  ONCE_REWRITE_TAC[TAUT `(p <=> q) <=> (~p <=> ~q)`] THEN
+  ASM_SIMP_TAC[REAL_NOT_LT; REAL_LE_FLOOR; INTEGER_CLOSED] THEN
+  REAL_ARITH_TAC);;
+
 let FLOOR_POS = prove
  (`!x. &0 <= x ==> ?n. floor(x) = &n`,
   REPEAT STRIP_TAC THEN MP_TAC(CONJUNCT1(SPEC `x:real` FLOOR)) THEN
@@ -446,6 +455,55 @@ let FINITE_INTSEG = prove
   REWRITE_TAC[UNWIND_THM1; IN_NUMSEG] THEN
   REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN
   ASM_REAL_ARITH_TAC);;
+
+let HAS_SIZE_INTSEG_INT = prove
+ (`!a b. integer a /\ integer b
+         ==> {x | integer(x) /\ a <= x /\ x <= b} HAS_SIZE
+             if b < a then 0 else num_of_int(int_of_real(b - a + &1))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `{x | integer(x) /\ a <= x /\ x <= b} =
+    IMAGE (\n. a + &n) {n | &n <= b - a}`
+  SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    ASM_SIMP_TAC[IN_ELIM_THM; INTEGER_CLOSED] THEN
+    CONJ_TAC THENL [ALL_TAC; REAL_ARITH_TAC] THEN
+    X_GEN_TAC `c:real` THEN STRIP_TAC THEN
+    ONCE_REWRITE_TAC[REAL_ARITH `a + x:real = y <=> y - a = x`] THEN
+    ASM_SIMP_TAC[GSYM INTEGER_POS; REAL_SUB_LE; INTEGER_CLOSED];
+    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+
+    SIMP_TAC[REAL_EQ_ADD_LCANCEL; REAL_OF_NUM_EQ] THEN
+    COND_CASES_TAC THENL
+     [ASM_SIMP_TAC[REAL_ARITH `b < a ==> ~(&n <= b - a)`] THEN
+      REWRITE_TAC[HAS_SIZE_0; EMPTY_GSPEC];
+      SUBGOAL_THEN `?m. b - a = &m` (CHOOSE_THEN SUBST1_TAC) THENL
+       [ASM_MESON_TAC[INTEGER_POS; INTEGER_CLOSED; REAL_NOT_LT; REAL_SUB_LE];
+        REWRITE_TAC[REAL_OF_NUM_ADD; REAL_OF_NUM_LE; GSYM int_of_num;
+                    NUM_OF_INT_OF_NUM; HAS_SIZE_NUMSEG_LE]]]]);;
+
+let CARD_INTSEG_INT = prove
+ (`!a b. integer a /\ integer b
+         ==> CARD {x | integer(x) /\ a <= x /\ x <= b} =
+             if b < a then 0 else num_of_int(int_of_real(b - a + &1))`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP HAS_SIZE_INTSEG_INT) THEN
+  SIMP_TAC[HAS_SIZE]);;
+
+let REAL_CARD_INTSEG_INT = prove
+ (`!a b. integer a /\ integer b
+         ==> &(CARD {x | integer(x) /\ a <= x /\ x <= b}) =
+             if b < a then &0 else b - a + &1`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[CARD_INTSEG_INT] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_OF_INT_OF_REAL] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [GSYM int_of_num_th] THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) INT_OF_NUM_OF_INT o
+    rand o lhand o snd) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[int_le; int_of_num_th; REAL_OF_INT_OF_REAL;
+                 INTEGER_CLOSED] THEN ASM_REAL_ARITH_TAC;
+    DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC REAL_OF_INT_OF_REAL THEN
+    ASM_SIMP_TAC[INTEGER_CLOSED]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Arbitrarily good rational approximations.                                 *)

@@ -1,3 +1,36 @@
+Tue  5th Apr 2011       Library/floor.ml
+
+  REAL_FLOOR_LE =
+    |- !x n. integer n ==> (floor x <= n <=> x - &1 < n)
+
+  HAS_SIZE_INTSEG_INT =
+    |- !a b.
+           integer a /\ integer b
+           ==> {x | integer x /\ a <= x /\ x <= b} HAS_SIZE
+               (if b < a then 0 else num_of_int(int_of_real(b - a + &1)))
+
+  CARD_INTSEG_INT =
+    |- !a b.
+           integer a /\ integer b
+           ==> CARD {x | integer x /\ a <= x /\ x <= b} =
+               (if b < a then 0 else num_of_int(int_of_real(b - a + &1)))
+
+  REAL_CARD_INTSEG_INT =
+    |- !a b.
+           integer a /\ integer b
+           ==> &(CARD {x | integer x /\ a <= x /\ x <= b}) =
+               (if b < a then &0 else b - a + &1)
+
+Tue  5th Apr 2011       sets.ml
+
+Added
+
+  POWERSET_CLAUSES =
+   |- {s | s SUBSET {}} = {{}} /\
+      (!a t.
+           {s | s SUBSET a INSERT t} =
+           {s | s SUBSET t} UNION IMAGE (\s. a INSERT s) {s | s SUBSET t})
+
 Fri  1st Apr 2011       Makefile, pa_j_3.1x_6.02.2.ml [new file]
 
 Once again there is an incompatibility with the latest version of camlp5, this
