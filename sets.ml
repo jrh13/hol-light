@@ -1972,6 +1972,22 @@ let FINITE_UNIONS = prove
   POP_ASSUM MP_TAC THEN REWRITE_TAC[CONTRAPOS_THM] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN SET_TAC[]);;
 
+let POWERSET_CLAUSES = prove
+ (`{s | s SUBSET {}} = {{}} /\
+   (!a:A t. {s | s SUBSET (a INSERT t)} =
+            {s | s SUBSET t} UNION IMAGE (\s. a INSERT s) {s | s SUBSET t})`,
+  REWRITE_TAC[SUBSET_INSERT_DELETE; SUBSET_EMPTY; SING_GSPEC] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `t:A->bool`] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[UNION_SUBSET] THEN
+  ONCE_REWRITE_TAC[SUBSET] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[IN_ELIM_THM; IN_UNION; IN_IMAGE] THEN
+  CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+  X_GEN_TAC `s:A->bool` THEN
+  ASM_CASES_TAC `(a:A) IN s` THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  STRIP_TAC THEN DISJ2_TAC THEN EXISTS_TAC `s DELETE (a:A)` THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Set of numbers is infinite.                                               *)
 (* ------------------------------------------------------------------------- *)

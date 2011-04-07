@@ -316,6 +316,36 @@ let REAL_INF_ASCLOSE = prove
   REWRITE_TAC[REAL_ARITH `abs(x - l) <= e <=> l - e <= x /\ x <= l + e`] THEN
   REWRITE_TAC[REAL_INF_BOUNDS]);;
 
+let EPSILON_DELTA_MINIMAL = prove
+ (`!P:real->A->bool Q.
+        FINITE {x | Q x} /\
+        (!d e x. Q x /\ &0 < e /\ e < d ==> P d x ==> P e x) /\
+        (!x. Q x ==> ?d. &0 < d /\ P d x)
+        ==> ?d. &0 < d /\ !x. Q x ==> P d x`,
+  REWRITE_TAC[IMP_IMP] THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `{x:A | Q x} = {}` THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EXTENSION]) THEN
+    REWRITE_TAC[NOT_IN_EMPTY; IN_ELIM_THM] THEN
+    DISCH_TAC THEN EXISTS_TAC `&1` THEN ASM_REWRITE_TAC[REAL_LT_01];
+    FIRST_X_ASSUM(MP_TAC o
+     GEN_REWRITE_RULE BINDER_CONV [RIGHT_IMP_EXISTS_THM]) THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `d:A->real` THEN DISCH_TAC THEN
+    EXISTS_TAC `inf(IMAGE d {x:A | Q x})` THEN
+    ASM_SIMP_TAC[REAL_LT_INF_FINITE; FINITE_IMAGE; IMAGE_EQ_EMPTY] THEN
+    ASM_SIMP_TAC[FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
+    X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+    SUBGOAL_THEN
+     `&0 < inf(IMAGE d {x:A | Q x}) /\ inf(IMAGE d {x | Q x}) <= d a`
+    MP_TAC THENL
+     [ASM_SIMP_TAC[REAL_LT_INF_FINITE; REAL_INF_LE_FINITE;
+                   FINITE_IMAGE; IMAGE_EQ_EMPTY] THEN
+      REWRITE_TAC[EXISTS_IN_IMAGE; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
+      ASM_MESON_TAC[REAL_LE_REFL];
+      REWRITE_TAC[REAL_LE_LT] THEN STRIP_TAC THEN ASM_SIMP_TAC[] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      EXISTS_TAC `(d:A->real) a` THEN ASM_SIMP_TAC[]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A generic notion of "hull" (convex, affine, conic hull and closure).      *)
 (* ------------------------------------------------------------------------- *)
