@@ -849,6 +849,29 @@ let HAS_MEASURE_LIMIT = prove
          (if x IN s then if x IN k then a else b else b)`] THEN
   REWRITE_TAC[EXISTS_LIFT; GSYM LIFT_SUB; NORM_LIFT]);;
 
+let INTEGRABLE_ON_CONST = prove
+ (`!c:real^N. (\x:real^M. c) integrable_on s <=> c = vec 0 \/ measurable s`,
+  GEN_TAC THEN ASM_CASES_TAC `c:real^N = vec 0` THEN
+  ASM_REWRITE_TAC[INTEGRABLE_0; MEASURABLE] THEN EQ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [CART_EQ]) THEN
+    REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; VEC_COMPONENT] THEN
+    DISCH_THEN(X_CHOOSE_THEN `k:num` STRIP_ASSUME_TAC) THEN
+    DISCH_THEN(MP_TAC o
+      ISPEC `(\y. lambda i. y$k / (c:real^N)$k):real^N->real^1` o
+      MATCH_MP(REWRITE_RULE[IMP_CONJ] INTEGRABLE_LINEAR)) THEN
+    ASM_SIMP_TAC[vec; o_DEF; REAL_DIV_REFL] THEN DISCH_THEN MATCH_MP_TAC THEN
+    SIMP_TAC[linear; CART_EQ; VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT;
+             LAMBDA_BETA] THEN REAL_ARITH_TAC;
+    DISCH_THEN(MP_TAC o
+      ISPEC `(\y. lambda i. (c:real^N)$i * y$i):real^1->real^N` o
+      MATCH_MP(REWRITE_RULE[IMP_CONJ] INTEGRABLE_LINEAR)) THEN
+    ANTS_TAC THENL
+     [SIMP_TAC[linear; CART_EQ; VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT;
+               LAMBDA_BETA] THEN REAL_ARITH_TAC;
+      MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+      SIMP_TAC[FUN_EQ_THM; CART_EQ; o_THM; LAMBDA_BETA; VEC_COMPONENT] THEN
+      REWRITE_TAC[REAL_MUL_RID]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Properties of measure under simple affine transformations.                *)
 (* ------------------------------------------------------------------------- *)
@@ -5505,6 +5528,39 @@ let MEASURABLE_ON_COMPOSE_CONTINUOUS_OPEN_INTERVAL = prove
     SIMP_TAC[CART_EQ; LAMBDA_BETA; FUN_EQ_THM] THEN
     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL]) THEN
     ASM_MESON_TAC[REAL_ARITH `a < x /\ x < b ==> max a (min x b) = x`]]);;
+
+let MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET = prove                        
+ (`!f:real^M->real^N g:real^N->real^P s.                                       
+        closed s /\                                                            
+        f measurable_on (:real^M) /\                                           
+        (!x. f(x) IN s) /\                                                     
+        g continuous_on s                                            
+        ==> (g o f) measurable_on (:real^M)`,                             
+  REPEAT STRIP_TAC THEN                                      
+  MP_TAC(ISPECL [`g:real^N->real^P`; `s:real^N->bool`] TIETZE_UNBOUNDED) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `h:real^N->real^P` THEN
+  DISCH_TAC THEN SUBGOAL_THEN                                          
+   `(g:real^N->real^P) o (f:real^M->real^N) = h o f` SUBST1_TAC   
+  THENL [ASM_SIMP_TAC[FUN_EQ_THM; o_THM]; ALL_TAC] THEN                
+  MATCH_MP_TAC MEASURABLE_ON_COMPOSE_CONTINUOUS THEN ASM_REWRITE_TAC[]);;      
+                                                                               
+let MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET_0 = prove                      
+ (`!f:real^M->real^N g:real^N->real^P s t.                                     
+        closed s /\                                                            
+        f measurable_on t /\                                               
+        (!x. f(x) IN s) /\                                                   
+        g continuous_on s /\                                                 
+        vec 0 IN s /\ g(vec 0) = vec 0                                    
+        ==> (g o f) measurable_on t`,                          
+  REPEAT STRIP_TAC THEN                                                  
+  ONCE_REWRITE_TAC[GSYM MEASURABLE_ON_UNIV] THEN                              
+  MP_TAC(ISPECL [`(\x. if x IN t then f x else vec 0):real^M->real^N`;       
+                 `g:real^N->real^P`; `s:real^N->bool`]                    
+        MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET) THEN                      
+  ANTS_TAC THENL                                                               
+   [ASM_REWRITE_TAC[MEASURABLE_ON_UNIV] THEN ASM_MESON_TAC[];          
+    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN            
+    REWRITE_TAC[FUN_EQ_THM; o_THM] THEN ASM_MESON_TAC[]]);;    
 
 (* ------------------------------------------------------------------------- *)
 (* Basic closure properties of measurable functions.                         *)
