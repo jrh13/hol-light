@@ -500,7 +500,7 @@ let REAL_EXP_POS_LT = prove
 let REAL_EXP_LE_X = prove
  (`!x. &0 <= x ==> &1 + x <= exp(x)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[exp; RE_DEF] THEN
-  MATCH_MP_TAC(MATCH_MP 
+  MATCH_MP_TAC(MATCH_MP
    (ONCE_REWRITE_RULE[TAUT `a /\ b /\ c ==> d <=> b ==> a /\ c ==> d`]
         LIM_COMPONENT_LBOUND)
    (REWRITE_RULE[sums] (SPEC `Cx x` CEXP_CONVERGES))) THEN
@@ -5103,3 +5103,184 @@ let ROOT_EXP_LOG = prove
   FIRST_ASSUM(MP_TAC o MATCH_MP ROOT_POS_LT) THEN
   REWRITE_TAC[GSYM REAL_EXP_LOG] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
   AP_TERM_TAC THEN ASM_SIMP_TAC[LOG_ROOT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Real power function. This involves a few arbitrary choices.               *)
+(*                                                                           *)
+(* The value of x^y is unarguable when x > 0.                                *)
+(*                                                                           *)
+(* We make 0^0 = 1 to agree with "pow", but otherwise 0^y = 0.               *)
+(*                                                                           *)
+(* There is a sensible real value for (-x)^(p/q) where q is odd and either   *)
+(* p is even [(-x)^y = x^y] or odd [(-x)^y = -x^y].                          *)
+(*                                                                           *)
+(* In all other cases, we return (-x)^y = -x^y. This is meaningless but at   *)
+(* least it covers half the cases above without another case split.          *)
+(*                                                                           *)
+(* As for laws of indices, we do have x^-y = 1/x^y. Of course we can't  have *)
+(* x^(yz) = x^y^z or x^(y+z) = x^y x^z since then (-1)^(1/2)^2 = -1.         *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("rpow",(24,"left"));;
+
+let rpow = new_definition
+  `x rpow y = if &0 < x then exp(y * log x)
+               else if x = &0 then if y = &0 then &1 else &0
+               else if ?m n. ODD(m) /\ ODD(n) /\ (abs y = &m / &n)
+                    then --(exp(y * log(--x)))
+                    else exp(y * log(--x))`;;
+
+let RPOW_POW = prove
+ (`!x n. x rpow &n = x pow n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[rpow] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_EXP_N; EXP_LOG] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_POW_ZERO; REAL_OF_NUM_EQ] THEN
+  ASM_SIMP_TAC[EXP_LOG; REAL_ARITH `~(&0 < x) /\ ~(x = &0) ==> &0 < --x`] THEN
+  REWRITE_TAC[REAL_POW_NEG; REAL_ABS_NUM] THEN
+  SUBGOAL_THEN `(?p q. ODD(p) /\ ODD(q) /\ &n = &p / &q) <=> ODD n`
+   (fun th -> SIMP_TAC[th; GSYM NOT_ODD; REAL_NEG_NEG; COND_ID]) THEN
+  EQ_TAC THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
+   [REPEAT GEN_TAC THEN ASM_CASES_TAC `q = 0` THEN
+    ASM_REWRITE_TAC[ARITH_ODD] THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ASM_SIMP_TAC[REAL_OF_NUM_EQ; REAL_FIELD
+     `~(q = &0) ==> (n = p / q <=> q * n = p)`] THEN
+    REWRITE_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_EQ] THEN
+    ASM_MESON_TAC[ODD_MULT];
+    DISCH_TAC THEN MAP_EVERY EXISTS_TAC [`n:num`; `1`] THEN
+    ASM_REWRITE_TAC[REAL_DIV_1; ARITH_ODD]]);;
+
+let RPOW_NEG = prove
+ (`!x y. x rpow (--y) = inv(x rpow y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[rpow] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_MUL_LNEG; REAL_EXP_NEG] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_NEG_EQ_0] THENL
+   [COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_INV_0; REAL_INV_1];
+    REWRITE_TAC[REAL_ABS_NEG] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_INV_NEG]]);;
+
+let RPOW_ZERO = prove
+ (`!y. &0 rpow y = if y = &0 then &1 else &0`,
+  REWRITE_TAC[rpow; REAL_LT_REFL]);;
+
+let RPOW_POS_LT = prove
+ (`!x y. &0 < x ==> &0 < x rpow y`,
+  SIMP_TAC[rpow; REAL_EXP_POS_LT]);;
+
+let RPOW_POS_LE = prove
+ (`!x y. &0 <= x ==> &0 <= x rpow y`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `x = &0` THENL
+   [ASM_REWRITE_TAC[RPOW_ZERO] THEN MESON_TAC[REAL_POS];
+    ASM_SIMP_TAC[RPOW_POS_LT; REAL_LE_LT]]);;
+
+let RPOW_LT2 = prove
+ (`!x y z. &0 <= x /\ x < y /\ &0 < z ==> x rpow z < y rpow z`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `x = &0` THEN
+  ASM_SIMP_TAC[RPOW_ZERO; REAL_LT_IMP_NZ; RPOW_POS_LT] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[rpow] THEN
+  ASM_CASES_TAC `&0 < x /\ &0 < y` THENL
+   [ALL_TAC; MATCH_MP_TAC(TAUT `F ==> p`) THEN ASM_REAL_ARITH_TAC] THEN
+  ASM_SIMP_TAC[REAL_EXP_MONO_LT; REAL_LT_LMUL_EQ] THEN
+  MATCH_MP_TAC LOG_MONO_LT_IMP THEN ASM_REAL_ARITH_TAC);;
+
+let RPOW_LE2 = prove
+ (`!x y z. &0 <= x /\ x <= y /\ &0 <= z ==> x rpow z <= y rpow z`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `z = &0` THEN
+  ASM_REWRITE_TAC[RPOW_POW; real_pow; REAL_LE_REFL] THEN
+  ASM_CASES_TAC `x:real = y` THEN ASM_REWRITE_TAC[REAL_LE_REFL] THEN
+  ASM_MESON_TAC[RPOW_LT2; REAL_LE_LT]);;
+
+let REAL_ABS_RPOW = prove
+ (`!x y. abs(x rpow y) = abs(x) rpow y`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[rpow] THEN
+  ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[REAL_ABS_NUM; REAL_LT_REFL] THENL
+   [REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_REWRITE_TAC[GSYM REAL_ABS_NZ; REAL_ABS_ZERO] THEN
+  COND_CASES_TAC THEN
+  ASM_SIMP_TAC[REAL_ABS_EXP; REAL_ARITH `&0 < x ==> abs x = x`] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[REAL_ABS_NEG; REAL_ABS_EXP] THEN
+  AP_TERM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN ASM_REAL_ARITH_TAC);;
+
+let RPOW_ONE = prove
+ (`!z. &1 rpow z = &1`,
+  REWRITE_TAC[rpow; REAL_LT_01; LOG_1; REAL_MUL_RZERO; REAL_EXP_0]);;
+
+let RPOW_RPOW = prove
+ (`!x y z. &0 <= x ==> x rpow y rpow z = x rpow (y * z)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_LE_LT] THEN
+  ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_REWRITE_TAC[RPOW_ZERO; REAL_ENTIRE] THEN
+    ASM_CASES_TAC `y = &0` THEN ASM_REWRITE_TAC[RPOW_ZERO; RPOW_ONE];
+    SIMP_TAC[rpow; REAL_EXP_POS_LT; LOG_EXP] THEN
+    REWRITE_TAC[REAL_MUL_AC]]);;
+
+let RPOW_LNEG = prove
+ (`!x y. --x rpow y =
+         if ?m n. ODD m /\ ODD n /\ abs y = &m / &n
+         then --(x rpow y) else x rpow y`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[rpow] THEN
+  ASM_CASES_TAC `x = &0` THEN
+  ASM_REWRITE_TAC[REAL_NEG_0; REAL_ABS_NUM; REAL_LT_REFL] THENL
+   [ASM_CASES_TAC `y = &0` THEN ASM_REWRITE_TAC[REAL_NEG_0; COND_ID] THEN
+    REWRITE_TAC[REAL_ARITH `abs(&0) = m / n <=> m * inv n = &0`] THEN
+    SIMP_TAC[REAL_ENTIRE; REAL_INV_EQ_0; REAL_OF_NUM_EQ] THEN MESON_TAC[ODD];
+    ASM_SIMP_TAC[REAL_ARITH `~(x = &0) ==> (&0 < --x <=> ~(&0 < x))`] THEN
+    ASM_REWRITE_TAC[REAL_NEG_EQ_0] THEN
+    ASM_CASES_TAC `&0 < x` THEN ASM_REWRITE_TAC[REAL_NEG_NEG; COND_ID]]);;
+
+let RPOW_EQ_0 = prove
+ (`!x y. x rpow y = &0 <=> x = &0 /\ ~(y = &0)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[rpow] THEN
+  ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_NEG_EQ_0; REAL_EXP_NZ]) THEN
+  REAL_ARITH_TAC);;
+
+let RPOW_MUL = prove
+ (`!x y z. (x * y) rpow z = x rpow z * y rpow z`,
+  SUBGOAL_THEN
+    `!x y z. &0 <= x /\ &0 <= y ==> (x * y) rpow z = x rpow z * y rpow z`
+  ASSUME_TAC THENL
+   [REPEAT GEN_TAC THEN REWRITE_TAC[REAL_LE_LT] THEN
+    ASM_CASES_TAC `z = &0` THEN
+    ASM_REWRITE_TAC[RPOW_POW; real_pow; REAL_MUL_LID] THEN
+    ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[REAL_MUL_LZERO; RPOW_ZERO] THEN
+    ASM_CASES_TAC `y = &0` THEN ASM_REWRITE_TAC[REAL_MUL_RZERO; RPOW_ZERO] THEN
+    SIMP_TAC[rpow; REAL_LT_MUL; LOG_MUL; REAL_ADD_LDISTRIB; REAL_EXP_ADD];
+    REPEAT GEN_TAC THEN
+    REPEAT_TCL DISJ_CASES_THEN (ANTE_RES_THEN (MP_TAC o SPEC `z:real`))
+     (REAL_ARITH `&0 <= x /\ &0 <= y \/ &0 <= x /\ &0 <= --y \/
+                  &0 <= --x /\ &0 <= y \/ &0 <= --x /\ &0 <= --y`) THEN
+    REWRITE_TAC[RPOW_LNEG; REAL_MUL_RNEG; REAL_MUL_LNEG] THEN
+    COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[REAL_MUL_RNEG; REAL_MUL_LNEG; REAL_EQ_NEG2]]);;
+
+let RPOW_INV = prove
+ (`!x y. inv(x) rpow y = inv(x rpow y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[rpow; REAL_LT_INV_EQ] THEN
+  SIMP_TAC[LOG_INV; REAL_MUL_RNEG; REAL_EXP_NEG] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[] THEN
+  REWRITE_TAC[REAL_INV_EQ_0] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_INV_1; REAL_INV_0]) THEN
+  ASM_SIMP_TAC[GSYM REAL_INV_NEG; LOG_INV;
+               REAL_ARITH `~(&0 < x) /\ ~(x = &0) ==> &0 < --x`] THEN
+  REWRITE_TAC[REAL_MUL_RNEG; REAL_EXP_NEG; REAL_INV_NEG]);;
+
+let REAL_INV_RPOW = prove
+ (`!x y. inv(x rpow y) = inv(x) rpow y`,
+  REWRITE_TAC[RPOW_INV]);;
+
+let RPOW_ADD = prove
+ (`!x y z. &0 < x ==> x rpow (y + z) = x rpow y * x rpow z`,
+  REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[rpow; REAL_ADD_RDISTRIB; REAL_EXP_ADD]);;
+
+let RPOW_ADD_ALT = prove
+ (`!x y z. &0 <= x /\ (x = &0 /\ y + z = &0 ==> y = &0 \/ z = &0)
+           ==> x rpow (y + z) = x rpow y * x rpow z`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `x = &0` THEN ASM_SIMP_TAC[REAL_LE_LT; RPOW_ADD] THEN
+  REWRITE_TAC[RPOW_ZERO] THEN
+  ASM_CASES_TAC `y = &0` THEN
+  ASM_REWRITE_TAC[REAL_MUL_LID; REAL_ADD_LID] THEN
+  ASM_CASES_TAC `y + z = &0` THEN ASM_REWRITE_TAC[] THEN
+  ASM_REAL_ARITH_TAC);;

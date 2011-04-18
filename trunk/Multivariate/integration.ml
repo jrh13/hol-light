@@ -1852,6 +1852,10 @@ let HAS_INTEGRAL_INTEGRABLE_INTEGRAL = prove
         (f has_integral i) s <=> f integrable_on s /\ integral s f = i`,
   MESON_TAC[INTEGRABLE_INTEGRAL; INTEGRAL_UNIQUE; integrable_on]);;
 
+let INTEGRAL_EQ_HAS_INTEGRAL = prove                            
+ (`!s f y. f integrable_on s ==> (integral s f = y <=> (f has_integral y) s)`,
+  MESON_TAC[INTEGRABLE_INTEGRAL; INTEGRAL_UNIQUE]);;             
+
 let HAS_INTEGRAL_IS_0 = prove
  (`!f:real^M->real^N s.
         (!x. x IN s ==> (f(x) = vec 0)) ==> (f has_integral vec 0) s`,
