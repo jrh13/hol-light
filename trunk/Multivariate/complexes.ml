@@ -1054,6 +1054,17 @@ let CNJ_II = prove
  (`cnj ii = --ii`,
   REWRITE_TAC[cnj; ii; RE; IM; complex_neg; REAL_NEG_0]);;
 
+let CX_RE_CNJ = prove
+ (`!z. Cx(Re z) = (z + cnj z) / Cx(&2)`,
+  REWRITE_TAC[COMPLEX_EQ; RE_DIV_CX; IM_DIV_CX; RE_CX; IM_CX] THEN
+  REWRITE_TAC[RE_ADD; IM_ADD; RE_CNJ; IM_CNJ] THEN REAL_ARITH_TAC);;
+
+let CX_IM_CNJ = prove
+ (`!z. Cx(Im z) = --ii * (z - cnj z) / Cx(&2)`,
+  REWRITE_TAC[COMPLEX_EQ; RE_DIV_CX; IM_DIV_CX; RE_CX; IM_CX;
+              COMPLEX_MUL_LNEG; RE_NEG; IM_NEG; RE_MUL_II; IM_MUL_II] THEN
+  REWRITE_TAC[RE_SUB; IM_SUB; RE_CNJ; IM_CNJ] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Slightly ad hoc theorems relating multiplication, inverse and conjugation *)
 (* ------------------------------------------------------------------------- *)
