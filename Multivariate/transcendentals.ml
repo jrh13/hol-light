@@ -5284,3 +5284,18 @@ let RPOW_ADD_ALT = prove
   ASM_REWRITE_TAC[REAL_MUL_LID; REAL_ADD_LID] THEN
   ASM_CASES_TAC `y + z = &0` THEN ASM_REWRITE_TAC[] THEN
   ASM_REAL_ARITH_TAC);;
+
+let RPOW_SQRT = prove
+ (`!x. &0 <= x ==> x rpow (&1 / &2) = sqrt x`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(REAL_RING
+   `x pow 2 = y pow 2 /\ (x + y = &0 ==> x = &0 /\ y = &0)
+    ==> x = y`) THEN
+  CONJ_TAC THENL
+   [ASM_SIMP_TAC[SQRT_POW_2] THEN
+    ASM_SIMP_TAC[GSYM RPOW_POW; RPOW_RPOW] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    REWRITE_TAC[RPOW_POW; REAL_POW_1];
+    MATCH_MP_TAC(REAL_ARITH
+     `&0 <= x /\ &0 <= y ==> x + y = &0 ==> x = &0 /\ y = &0`) THEN
+    ASM_SIMP_TAC[SQRT_POS_LE; RPOW_POS_LE]]);;

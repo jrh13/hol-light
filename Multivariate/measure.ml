@@ -1264,21 +1264,6 @@ let HAS_MEASURE_COUNTABLE_NEGLIGIBLE_UNIONS = prove
   REWRITE_TAC[IN_UNIONS; EXISTS_IN_IMAGE] THEN
   REWRITE_TAC[IN_NUMSEG; LE_0] THEN MESON_TAC[LE_REFL]);;
 
-let NEGLIGIBLE_COUNTABLE_UNIONS = prove
- (`!s:num->real^N->bool.
-        (!n. negligible(s n)) ==> negligible(UNIONS {s(n) | n IN (:num)})`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`s:num->real^N->bool`; `&0`]
-    HAS_MEASURE_COUNTABLE_NEGLIGIBLE_UNIONS) THEN
-  ASM_SIMP_TAC[MEASURE_EQ_0; SUM_0; REAL_LE_REFL; LIFT_NUM] THEN ANTS_TAC THENL
-   [ASM_MESON_TAC[HAS_MEASURE_0; measurable; INTER_SUBSET; NEGLIGIBLE_SUBSET];
-    ALL_TAC] THEN
-  SIMP_TAC[GSYM MEASURABLE_MEASURE_EQ_0] THEN
-  STRIP_TAC THEN REWRITE_TAC[GSYM LIFT_EQ] THEN
-  MATCH_MP_TAC SERIES_UNIQUE THEN REWRITE_TAC[LIFT_NUM] THEN
-  MAP_EVERY EXISTS_TAC [`(\k. vec 0):num->real^1`; `from 0`] THEN
-  ASM_REWRITE_TAC[SERIES_0]);;
-
 let NEGLIGIBLE_COUNTABLE_UNIONS_GEN = prove
  (`!f. COUNTABLE f /\ (!s:real^N->bool. s IN f ==> negligible s)
        ==> negligible(UNIONS f)`,
@@ -1860,72 +1845,6 @@ let MEASURABLE_INSIDE = prove
  (`!s:real^N->bool. compact s ==> measurable(inside s)`,
   SIMP_TAC[MEASURABLE_OPEN; BOUNDED_INSIDE; COMPACT_IMP_CLOSED;
            OPEN_INSIDE; COMPACT_IMP_BOUNDED]);;
-
-(* ------------------------------------------------------------------------- *)
-(* A nonnegative function with zero integral is zero almost everywhere.      *)
-(* ------------------------------------------------------------------------- *)
-
-let HAS_INTEGRAL_NEGLIGIBLE_EQ = prove
- (`!f:real^M->real^N s.
-        (!x i. x IN s /\ 1 <= i /\ i <= dimindex(:N) ==> &0 <= f(x)$i)
-        ==> ((f has_integral vec 0) s <=>
-             negligible {x | x IN s /\ ~(f x = vec 0)})`,
-  let lemma = prove
-   (`!f:real^N->real^1 s.
-          (!x. x IN s ==> &0 <= drop(f x)) /\ (f has_integral vec 0) s
-          ==> negligible {x | x IN s /\ ~(f x = vec 0)}`,
-    REPEAT STRIP_TAC THEN MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN EXISTS_TAC
-     `UNIONS {{x | x IN s /\ norm((f:real^N->real^1) x) >= &1 / (&n + &1)} |
-              n IN (:num)}` THEN
-    CONJ_TAC THENL
-     [MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_UNIONS THEN
-      X_GEN_TAC `n:num` THEN REWRITE_TAC[GSYM HAS_MEASURE_0] THEN
-      REWRITE_TAC[HAS_MEASURE] THEN REWRITE_TAC[LIFT_NUM] THEN
-      MATCH_MP_TAC HAS_INTEGRAL_STRADDLE_NULL THEN
-      EXISTS_TAC `(\x. if x IN s then (&n + &1) % f(x) else vec 0):
-                  real^N->real^1` THEN
-      CONJ_TAC THENL
-       [REWRITE_TAC[IN_UNIV; IN_ELIM_THM; real_ge] THEN
-        X_GEN_TAC `x:real^N` THEN COND_CASES_TAC THEN
-        ASM_SIMP_TAC[DROP_VEC; DROP_CMUL; REAL_POS] THENL
-         [ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-          ASM_SIMP_TAC[GSYM REAL_LE_LDIV_EQ; REAL_ARITH `&0 < &n + &1`] THEN
-          MATCH_MP_TAC(REAL_ARITH `&0 <= x /\ a <= abs x ==> a <= x`) THEN
-          ASM_SIMP_TAC[GSYM ABS_DROP];
-          COND_CASES_TAC THEN REWRITE_TAC[DROP_VEC; REAL_POS; DROP_CMUL] THEN
-          ASM_SIMP_TAC[REAL_POS; REAL_LE_MUL; REAL_LE_ADD]];
-        REWRITE_TAC[HAS_INTEGRAL_RESTRICT_UNIV] THEN
-        SUBST1_TAC(VECTOR_ARITH `vec 0:real^1 = (&n + &1) % vec 0`) THEN
-        MATCH_MP_TAC HAS_INTEGRAL_CMUL THEN ASM_REWRITE_TAC[]];
-      REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:real^N` THEN
-      REWRITE_TAC[GSYM NORM_POS_LT] THEN ONCE_REWRITE_TAC[REAL_ARCH_INV] THEN
-      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN `n:num`
-        STRIP_ASSUME_TAC)) THEN
-      REWRITE_TAC[IN_UNIONS; EXISTS_IN_GSPEC] THEN
-      EXISTS_TAC `n - 1` THEN ASM_SIMP_TAC[IN_UNIV; IN_ELIM_THM; real_ge] THEN
-      ASM_SIMP_TAC[REAL_OF_NUM_ADD; SUB_ADD; LE_1] THEN
-      ASM_SIMP_TAC[real_div; REAL_MUL_LID; REAL_LT_IMP_LE]]) in
-  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
-   [ALL_TAC;
-    MATCH_MP_TAC HAS_INTEGRAL_NEGLIGIBLE THEN
-    EXISTS_TAC `{x | x IN s /\ ~((f:real^M->real^N) x = vec 0)}` THEN
-    ASM_REWRITE_TAC[IN_DIFF; IN_ELIM_THM] THEN MESON_TAC[]] THEN
-  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
-  EXISTS_TAC `UNIONS {{x | x IN s /\ ~(((f:real^M->real^N) x)$k = &0)} |
-                      k IN 1..dimindex(:N)}` THEN
-  CONJ_TAC THENL
-   [MATCH_MP_TAC NEGLIGIBLE_UNIONS THEN
-    SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FINITE_NUMSEG; FORALL_IN_IMAGE] THEN
-    X_GEN_TAC `k:num` THEN REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN
-    REWRITE_TAC[GSYM LIFT_EQ; LIFT_NUM] THEN MATCH_MP_TAC lemma THEN
-    ASM_SIMP_TAC[LIFT_DROP] THEN
-    FIRST_X_ASSUM(MP_TAC o ISPEC `\y:real^N. lift(y$k)` o
-      MATCH_MP(REWRITE_RULE[IMP_CONJ] HAS_INTEGRAL_LINEAR)) THEN
-    REWRITE_TAC[o_DEF; VEC_COMPONENT; LIFT_NUM] THEN
-    DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[linear] THEN
-    SIMP_TAC[LIFT_ADD; VECTOR_ADD_COMPONENT; LIFT_CMUL; VECTOR_MUL_COMPONENT];
-    REWRITE_TAC[SUBSET; IN_UNIONS; EXISTS_IN_GSPEC; CART_EQ; IN_NUMSEG] THEN
-    REWRITE_TAC[VEC_COMPONENT; IN_ELIM_THM] THEN MESON_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A nice lemma for negligibility proofs.                                    *)
@@ -4997,6 +4916,17 @@ let MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_ABSOLUTELY_INTEGRABLE = prove
     ASM_REWRITE_TAC[IMP_IMP; DIMINDEX_1; FORALL_1; GSYM drop] THEN
     ASM_MESON_TAC[NORM_ARITH `norm(x) <= a ==> &0 <= a`]]);;
 
+let INTEGRAL_DROP_LE_MEASURABLE = prove
+ (`!f g s:real^N->bool.
+        f measurable_on s /\
+        g integrable_on s /\
+        (!x. x IN s ==> &0 <= drop(f x) /\ drop(f x) <= drop(g x))
+        ==> drop(integral s f) <= drop(integral s g)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_DROP_LE THEN ASM_SIMP_TAC[] THEN
+  MATCH_MP_TAC MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_INTEGRABLE THEN
+  EXISTS_TAC `g:real^N->real^1` THEN
+  ASM_SIMP_TAC[NORM_REAL; GSYM drop; real_abs]);;
+
 let INTEGRABLE_SUBINTERVALS_IMP_MEASURABLE = prove
  (`!f:real^M->real^N.
         (!a b. f integrable_on interval[a,b]) ==> f measurable_on (:real^M)`,
@@ -5399,6 +5329,17 @@ let INTEGRABLE_IMP_MEASURABLE = prove
   REPEAT GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
   EXISTS_TAC `(:real^M)` THEN ASM_REWRITE_TAC[SUBSET_UNIV]);;
 
+let ABSOLUTELY_INTEGRABLE_MEASURABLE = prove
+ (`!f:real^M->real^N s.
+        f absolutely_integrable_on s <=>
+        f measurable_on s /\ (\x. lift(norm(f x))) integrable_on s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[absolutely_integrable_on] THEN
+  MATCH_MP_TAC(TAUT `(a ==> b) /\ (b /\ c ==> a) ==> (a /\ c <=> b /\ c)`) THEN
+  REWRITE_TAC[INTEGRABLE_IMP_MEASURABLE] THEN STRIP_TAC THEN
+  MATCH_MP_TAC MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_INTEGRABLE THEN
+  EXISTS_TAC `\x. lift(norm((f:real^M->real^N) x))` THEN
+  ASM_REWRITE_TAC[LIFT_DROP; REAL_LE_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Composing continuous and measurable functions; a few variants.            *)
 (* ------------------------------------------------------------------------- *)
@@ -5529,38 +5470,38 @@ let MEASURABLE_ON_COMPOSE_CONTINUOUS_OPEN_INTERVAL = prove
     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL]) THEN
     ASM_MESON_TAC[REAL_ARITH `a < x /\ x < b ==> max a (min x b) = x`]]);;
 
-let MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET = prove                        
- (`!f:real^M->real^N g:real^N->real^P s.                                       
-        closed s /\                                                            
-        f measurable_on (:real^M) /\                                           
-        (!x. f(x) IN s) /\                                                     
-        g continuous_on s                                            
-        ==> (g o f) measurable_on (:real^M)`,                             
-  REPEAT STRIP_TAC THEN                                      
+let MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET = prove
+ (`!f:real^M->real^N g:real^N->real^P s.
+        closed s /\
+        f measurable_on (:real^M) /\
+        (!x. f(x) IN s) /\
+        g continuous_on s
+        ==> (g o f) measurable_on (:real^M)`,
+  REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`g:real^N->real^P`; `s:real^N->bool`] TIETZE_UNBOUNDED) THEN
   ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `h:real^N->real^P` THEN
-  DISCH_TAC THEN SUBGOAL_THEN                                          
-   `(g:real^N->real^P) o (f:real^M->real^N) = h o f` SUBST1_TAC   
-  THENL [ASM_SIMP_TAC[FUN_EQ_THM; o_THM]; ALL_TAC] THEN                
-  MATCH_MP_TAC MEASURABLE_ON_COMPOSE_CONTINUOUS THEN ASM_REWRITE_TAC[]);;      
-                                                                               
-let MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET_0 = prove                      
- (`!f:real^M->real^N g:real^N->real^P s t.                                     
-        closed s /\                                                            
-        f measurable_on t /\                                               
-        (!x. f(x) IN s) /\                                                   
-        g continuous_on s /\                                                 
-        vec 0 IN s /\ g(vec 0) = vec 0                                    
-        ==> (g o f) measurable_on t`,                          
-  REPEAT STRIP_TAC THEN                                                  
-  ONCE_REWRITE_TAC[GSYM MEASURABLE_ON_UNIV] THEN                              
-  MP_TAC(ISPECL [`(\x. if x IN t then f x else vec 0):real^M->real^N`;       
-                 `g:real^N->real^P`; `s:real^N->bool`]                    
-        MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET) THEN                      
-  ANTS_TAC THENL                                                               
-   [ASM_REWRITE_TAC[MEASURABLE_ON_UNIV] THEN ASM_MESON_TAC[];          
-    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN            
-    REWRITE_TAC[FUN_EQ_THM; o_THM] THEN ASM_MESON_TAC[]]);;    
+  DISCH_TAC THEN SUBGOAL_THEN
+   `(g:real^N->real^P) o (f:real^M->real^N) = h o f` SUBST1_TAC
+  THENL [ASM_SIMP_TAC[FUN_EQ_THM; o_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC MEASURABLE_ON_COMPOSE_CONTINUOUS THEN ASM_REWRITE_TAC[]);;
+
+let MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET_0 = prove
+ (`!f:real^M->real^N g:real^N->real^P s t.
+        closed s /\
+        f measurable_on t /\
+        (!x. f(x) IN s) /\
+        g continuous_on s /\
+        vec 0 IN s /\ g(vec 0) = vec 0
+        ==> (g o f) measurable_on t`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM MEASURABLE_ON_UNIV] THEN
+  MP_TAC(ISPECL [`(\x. if x IN t then f x else vec 0):real^M->real^N`;
+                 `g:real^N->real^P`; `s:real^N->bool`]
+        MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET) THEN
+  ANTS_TAC THENL
+   [ASM_REWRITE_TAC[MEASURABLE_ON_UNIV] THEN ASM_MESON_TAC[];
+    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+    REWRITE_TAC[FUN_EQ_THM; o_THM] THEN ASM_MESON_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic closure properties of measurable functions.                         *)
@@ -5577,6 +5518,11 @@ let MEASURABLE_ON_CONST = prove
  (`!k:real^N. (\x. k) measurable_on (:real^M)`,
   SIMP_TAC[CONTINUOUS_IMP_MEASURABLE_ON; CONTINUOUS_ON_CONST]);;
 
+let MEASURABLE_ON_0 = prove
+ (`!s. (\x. vec 0) measurable_on s`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[GSYM MEASURABLE_ON_UNIV] THEN
+  REWRITE_TAC[MEASURABLE_ON_CONST; COND_ID]);;
+
 let MEASURABLE_ON_CMUL = prove
  (`!c f:real^M->real^N s.
         f measurable_on s ==> (\x. c % f x) measurable_on s`,
@@ -5591,6 +5537,12 @@ let MEASURABLE_ON_NEG = prove
      f measurable_on s ==> (\x. --(f x)) measurable_on s`,
   REWRITE_TAC[VECTOR_ARITH `--x:real^N = --(&1) % x`;
               MEASURABLE_ON_CMUL]);;
+
+let MEASURABLE_ON_NEG_EQ = prove
+ (`!f:real^M->real^N s. (\x. --(f x)) measurable_on s <=> f measurable_on s`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP MEASURABLE_ON_NEG) THEN
+  REWRITE_TAC[VECTOR_NEG_NEG; ETA_AX]);;
 
 let MEASURABLE_ON_NORM = prove
  (`!f:real^M->real^N s.
@@ -5706,6 +5658,23 @@ let MEASURABLE_ON_DROP_MUL = prove
   REWRITE_TAC[o_DEF; ETA_AX; LIFT_DROP] THEN
   CONJ_TAC THEN MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN
   REWRITE_TAC[LINEAR_FSTCART; LINEAR_SNDCART]);;
+
+let MEASURABLE_ON_LIFT_MUL = prove
+ (`!f g s. (\x. lift(f x)) measurable_on s /\
+           (\x. lift(g x)) measurable_on s
+           ==> (\x. lift(f x * g x)) measurable_on s`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP MEASURABLE_ON_DROP_MUL) THEN
+  REWRITE_TAC[LIFT_CMUL; LIFT_DROP]);;
+
+let MEASURABLE_ON_VSUM = prove
+ (`!f:A->real^M->real^N t.
+        FINITE t /\ (!i. i IN t ==> (f i) measurable_on s)
+        ==> (\x. vsum t (\i. f i x)) measurable_on s`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[VSUM_CLAUSES; MEASURABLE_ON_0; MEASURABLE_ON_ADD; IN_INSERT;
+           ETA_AX]);;
 
 let MEASURABLE_ON_COMPONENTWISE = prove
  (`!f:real^M->real^N.

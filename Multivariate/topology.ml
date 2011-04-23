@@ -8656,6 +8656,45 @@ let SUMS_OFFSET_REV = prove
   REWRITE_TAC[EXTENSION; IN_DIFF; IN_UNION; IN_FROM; IN_NUMSEG] THEN
   ASM_ARITH_TAC);;
 
+let PARTIAL_SUMS_COMPONENT_LE_INFSUM = prove
+ (`!f:num->real^N s k n.
+        1 <= k /\ k <= dimindex(:N) /\
+        (!i. i IN s ==> &0 <= (f i)$k) /\
+        summable s f
+        ==> (vsum (s INTER (0..n)) f)$k <= (infsum s f)$k`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM SUMS_INFSUM] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  REWRITE_TAC[sums; LIM_SEQUENTIALLY] THEN DISCH_TAC THEN
+  REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+   `vsum (s INTER (0..n)) (f:num->real^N)$k - (infsum s f)$k`) THEN
+  ASM_REWRITE_TAC[REAL_SUB_LT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `N:num` (MP_TAC o SPEC `N + n:num`)) THEN
+  REWRITE_TAC[LE_ADD; REAL_NOT_LT; dist] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `abs((vsum (s INTER (0..N + n)) f - infsum s f:real^N)$k)` THEN
+  ASM_SIMP_TAC[COMPONENT_LE_NORM] THEN REWRITE_TAC[VECTOR_SUB_COMPONENT] THEN
+  MATCH_MP_TAC(REAL_ARITH `s < a /\ a <= b ==> a - s <= abs(b - s)`) THEN
+  ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[ADD_SYM] THEN
+  SIMP_TAC[NUMSEG_ADD_SPLIT; LE_0; UNION_OVER_INTER] THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) VSUM_UNION o lhand o rand o snd) THEN
+  ANTS_TAC THENL
+   [SIMP_TAC[FINITE_INTER; FINITE_NUMSEG; DISJOINT; EXTENSION] THEN
+    REWRITE_TAC[IN_INTER; NOT_IN_EMPTY; IN_NUMSEG] THEN ARITH_TAC;
+    DISCH_THEN SUBST1_TAC THEN
+    REWRITE_TAC[REAL_LE_ADDR; VECTOR_ADD_COMPONENT] THEN
+    ASM_SIMP_TAC[VSUM_COMPONENT] THEN MATCH_MP_TAC SUM_POS_LE THEN
+    ASM_SIMP_TAC[FINITE_INTER; IN_INTER; FINITE_NUMSEG]]);;
+
+let PARTIAL_SUMS_DROP_LE_INFSUM = prove
+ (`!f s n.
+        (!i. i IN s ==> &0 <= drop(f i)) /\
+        summable s f
+        ==> drop(vsum (s INTER (0..n)) f) <= drop(infsum s f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[drop] THEN
+  MATCH_MP_TAC PARTIAL_SUMS_COMPONENT_LE_INFSUM THEN
+  ASM_REWRITE_TAC[DIMINDEX_1; LE_REFL; GSYM drop]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cauchy criterion for series.                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -8876,6 +8915,13 @@ let SUMMABLE_COMPARISON = prove
            (?N. !n. n >= N /\ n IN s ==> norm(f n) <= g n)
            ==> summable s f`,
   REWRITE_TAC[summable; SERIES_COMPARISON]);;
+
+let SERIES_LIFT_ABSCONV_IMP_CONV = prove
+ (`!x:num->real^N k. summable k (\n. lift(norm(x n))) ==> summable k x`,
+  REWRITE_TAC[summable] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SERIES_COMPARISON THEN
+  EXISTS_TAC `\n:num. norm(x n:real^N)` THEN
+  ASM_REWRITE_TAC[o_DEF; REAL_LE_REFL] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Uniform version of comparison test.                                       *)
