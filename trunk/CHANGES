@@ -1,3 +1,30 @@
+Mon 23rd May 2011       Library/floor.ml, Library/sets.ml
+
+Added
+
+  COUNTABLE_RESTRICT = |- !s P. COUNTABLE s ==> COUNTABLE {x | x IN s /\ P x}
+  
+  RATIONAL_APPROXIMATION_STRADDLE =
+    |- !x e. &0 < e
+             ==> ?a b. rational a /\ rational b /\ 
+                       a < x /\ x < b /\ abs(b - a) < e
+
+Sun 22nd May 2011       sets.ml
+
+Added the following duality for unions and intersections:
+
+  DIFF_INTERS = |- !u s. u DIFF INTERS s = UNIONS {u DIFF t | t IN s}
+
+  INTERS_UNIONS = |- !s. INTERS s = UNIV DIFF (UNIONS {UNIV DIFF t | t IN s})
+
+  UNIONS_INTERS = |- !s. UNIONS s = UNIV DIFF (INTERS {UNIV DIFF t | t IN s})
+
+Thu 12th May 2011       Library/floor.ml
+
+  FRAC_UNIQUE = |- !x a. integer(x - a) /\ &0 <= a /\ a < &1 <=> frac x = a
+
+  REAL_FRAC_EQ = |- !x. frac x = x <=> &0 <= x /\ x < &1
+
 Tue  5th Apr 2011       Library/floor.ml
 
   REAL_FLOOR_LE =

@@ -913,6 +913,20 @@ let INTERS_GSPEC = prove
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
   REWRITE_TAC[IN_INTERS; IN_ELIM_THM] THEN MESON_TAC[]);;
 
+let DIFF_INTERS = prove
+ (`!u s. u DIFF INTERS s = UNIONS {u DIFF t | t IN s}`,
+  REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]);;
+
+let INTERS_UNIONS = prove
+ (`!s. INTERS s = UNIV DIFF (UNIONS {UNIV DIFF t | t IN s})`,
+  REWRITE_TAC[GSYM DIFF_INTERS] THEN SET_TAC[]);;
+
+let UNIONS_INTERS = prove
+ (`!s. UNIONS s = UNIV DIFF (INTERS {UNIV DIFF t | t IN s})`,
+  GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[IN_UNIONS; IN_UNIV; IN_DIFF; INTERS_GSPEC; IN_ELIM_THM] THEN
+  MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Stronger form of induction is sometimes handy.                            *)
 (* ------------------------------------------------------------------------- *)
