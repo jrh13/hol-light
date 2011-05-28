@@ -1029,6 +1029,12 @@ let COUNTABLE_SUBSET = prove
   TRANS_TAC CARD_LE_TRANS `t:A->bool` THEN
   ASM_SIMP_TAC[CARD_LE_SUBSET]);;
 
+let COUNTABLE_RESTRICT = prove
+ (`!s P. COUNTABLE s ==> COUNTABLE {x | x IN s /\ P x}`,
+  REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
+  SET_TAC[]);;
+
 let FINITE_IMP_COUNTABLE = prove
  (`!s. FINITE s ==> COUNTABLE s`,
   SIMP_TAC[FINITE_CARD_LT; lt_c; COUNTABLE; ge_c]);;
@@ -1109,10 +1115,10 @@ let COUNTABLE_AS_IMAGE = prove
   EXISTS_TAC `\n. if (f:num->A) n IN s then f n else a` THEN
   ASM SET_TAC[]);;
 
-let FORALL_COUNTABLE_AS_IMAGE = prove                                          
- (`(!d. COUNTABLE d ==> P d) <=> P {} /\ (!f. P(IMAGE f (:num)))`,     
-  MESON_TAC[COUNTABLE_AS_IMAGE; COUNTABLE_IMAGE; NUM_COUNTABLE;         
-            COUNTABLE_EMPTY]);;                                                
+let FORALL_COUNTABLE_AS_IMAGE = prove
+ (`(!d. COUNTABLE d ==> P d) <=> P {} /\ (!f. P(IMAGE f (:num)))`,
+  MESON_TAC[COUNTABLE_AS_IMAGE; COUNTABLE_IMAGE; NUM_COUNTABLE;
+            COUNTABLE_EMPTY]);;
 
 let COUNTABLE_AS_INJECTIVE_IMAGE = prove
  (`!s. COUNTABLE s /\ INFINITE s

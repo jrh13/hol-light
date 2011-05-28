@@ -4147,7 +4147,7 @@ let HAS_INTEGRAL_SPIKE_EQ = prove
   ASM_MESON_TAC[NORM_SUB]);;
 
 let INTEGRABLE_SPIKE = prove
- (`!f:real^M->real^N g s t y.
+ (`!f:real^M->real^N g s t.
         negligible s /\ (!x. x IN (t DIFF s) ==> g x = f x)
         ==> f integrable_on t ==> g integrable_on  t`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[integrable_on] THEN
@@ -4264,7 +4264,7 @@ let HAS_INTEGRAL_SPIKE_FINITE_EQ = prove
   MESON_TAC[HAS_INTEGRAL_SPIKE_FINITE]);;
 
 let INTEGRABLE_SPIKE_FINITE = prove
- (`!f:real^M->real^N g s a b y.
+ (`!f:real^M->real^N g s a b.
         FINITE s /\ (!x. x IN (t DIFF s) ==> g x = f x)
         ==> f integrable_on t
             ==> g integrable_on  t`,
@@ -4309,7 +4309,7 @@ let HAS_INTEGRAL_SPIKE_INTERIOR_EQ = prove
   MESON_TAC[HAS_INTEGRAL_SPIKE_INTERIOR]);;
 
 let INTEGRABLE_SPIKE_INTERIOR = prove
- (`!f:real^M->real^N g a b y.
+ (`!f:real^M->real^N g a b.
         (!x. x IN interval(a,b) ==> g x = f x)
         ==> f integrable_on (interval[a,b])
             ==> g integrable_on  (interval[a,b])`,
@@ -4746,7 +4746,7 @@ let HAS_INTEGRAL_COMBINE = prove
                 INTEGRAL_UNIQUE]);;
 
 let INTEGRAL_COMBINE = prove
- (`!f i:real^N j a b c.
+ (`!f:real^1->real^N a b c.
         drop a <= drop c /\ drop c <= drop b /\ f integrable_on (interval[a,b])
         ==> integral(interval[a,c]) f + integral(interval[c,b]) f =
             integral(interval[a,b]) f`,
@@ -6030,11 +6030,24 @@ let HAS_INTEGRAL_RESTRICT = prove
                             (if q then if p then x else y else y)`] THEN
   ASM_SIMP_TAC[]);;
 
+let INTEGRAL_RESTRICT = prove
+ (`!f:real^M->real^N s t.
+        s SUBSET t
+        ==> integral t (\x. if x IN s then f x else vec 0) =
+            integral s f`,
+  SIMP_TAC[integral; HAS_INTEGRAL_RESTRICT]);;
+
 let HAS_INTEGRAL_RESTRICT_UNIV = prove
  (`!f:real^M->real^N s i.
         ((\x. if x IN s then f x else vec 0) has_integral i) (:real^M) <=>
          (f has_integral i) s`,
   SIMP_TAC[HAS_INTEGRAL_RESTRICT; SUBSET_UNIV]);;
+
+let INTEGRAL_RESTRICT_UNIV = prove
+ (`!f:real^M->real^N s.
+        integral (:real^M) (\x. if x IN s then f x else vec 0) =
+        integral s f`,
+  REWRITE_TAC[integral; HAS_INTEGRAL_RESTRICT_UNIV]);;
 
 let HAS_INTEGRAL_ON_SUPERSET = prove
  (`!f s t.
@@ -6051,14 +6064,6 @@ let INTEGRABLE_ON_SUPERSET = prove
         (!x. ~(x IN s) ==> f x = vec 0) /\ s SUBSET t /\ f integrable_on s
         ==> f integrable_on t`,
   REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_ON_SUPERSET]);;
-
-let INTEGRAL_RESTRICT_UNIV = prove
- (`!f s. f integrable_on s
-         ==> integral UNIV (\x. if x IN s then f x else vec 0) = integral s f`,
-  REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC INTEGRAL_UNIQUE THEN
-  ASM_SIMP_TAC[HAS_INTEGRAL_RESTRICT_UNIV] THEN
-  ASM_REWRITE_TAC[GSYM HAS_INTEGRAL_INTEGRAL]);;
 
 let INTEGRABLE_RESTRICT_UNIV = prove
  (`!f s. (\x. if x IN s then f x else vec 0) integrable_on (:real^M) <=>
@@ -7776,9 +7781,7 @@ let MONOTONE_CONVERGENCE_INCREASING = prove
       REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
       ASM_SIMP_TAC[REAL_LE_REFL; DROP_VEC];
       ALL_TAC] THEN
-    W(MP_TAC o PART_MATCH (rhs o rand) INTEGRAL_RESTRICT_UNIV o
-      rand o rand o snd) THEN
-    ANTS_TAC THENL [ASM_REWRITE_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM INTEGRAL_RESTRICT_UNIV] THEN
     MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE THEN
     ASM_REWRITE_TAC[SUBSET_UNIV; IN_UNIV] THEN
     ASM_REWRITE_TAC[INTEGRABLE_RESTRICT_UNIV; ETA_AX] THEN
@@ -7831,9 +7834,7 @@ let MONOTONE_CONVERGENCE_INCREASING = prove
   MATCH_MP_TAC REAL_LE_TRANS THEN
   EXISTS_TAC `drop(integral s ((f:num->real^N->real^1) (M + N)))` THEN
   ASM_REWRITE_TAC[] THEN
-  W(MP_TAC o PART_MATCH (rhs o rand) INTEGRAL_RESTRICT_UNIV o
-    rand o rand o snd) THEN
-  ANTS_TAC THENL [ASM_REWRITE_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM INTEGRAL_RESTRICT_UNIV] THEN
   MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE THEN
   ASM_REWRITE_TAC[SUBSET_UNIV; IN_UNIV] THEN
   ASM_REWRITE_TAC[INTEGRABLE_RESTRICT_UNIV; ETA_AX] THEN
@@ -9241,6 +9242,58 @@ let INTEGRABLE_MIN_CONST_1 = prove
     FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
     ASM_REWRITE_TAC[NORM_REAL; GSYM drop; LIFT_DROP] THEN
     ASM_REAL_ARITH_TAC]);;
+
+let ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_UBOUND = prove
+ (`!f:real^M->real^N g:real^M->real^N s.
+        (!x i. x IN s /\ 1 <= i /\ i <= dimindex(:N) ==> f(x)$i <= g(x)$i) /\
+        f integrable_on s /\ g absolutely_integrable_on s
+        ==> f absolutely_integrable_on s`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. (g:real^M->real^N)(x) - (g(x) - f(x))) absolutely_integrable_on s`
+  MP_TAC THENL
+   [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SUB THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC NONNEGATIVE_ABSOLUTELY_INTEGRABLE THEN
+    ASM_REWRITE_TAC[REAL_SUB_LE; VECTOR_SUB_COMPONENT] THEN
+    MATCH_MP_TAC INTEGRABLE_SUB THEN
+    ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE];
+    REWRITE_TAC[VECTOR_ARITH `x - (x - y):real^N = y`; ETA_AX]]);;
+
+let ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_LBOUND = prove
+ (`!f:real^M->real^N g:real^M->real^N s.
+        (!x i. x IN s /\ 1 <= i /\ i <= dimindex(:N) ==> f(x)$i <= g(x)$i) /\
+        f absolutely_integrable_on s /\ g integrable_on s
+        ==> g absolutely_integrable_on s`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. (f:real^M->real^N)(x) + (g(x) - f(x))) absolutely_integrable_on s`
+  MP_TAC THENL
+   [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ADD THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC NONNEGATIVE_ABSOLUTELY_INTEGRABLE THEN
+    ASM_REWRITE_TAC[REAL_SUB_LE; VECTOR_SUB_COMPONENT] THEN
+    MATCH_MP_TAC INTEGRABLE_SUB THEN
+    ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE];
+    REWRITE_TAC[VECTOR_ARITH `y + (x - y):real^N = x`; ETA_AX]]);;
+
+let ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_DROP_UBOUND = prove
+ (`!f:real^M->real^1 g:real^M->real^1 s.
+        (!x. x IN s ==> drop(f(x)) <= drop(g(x))) /\
+        f integrable_on s /\ g absolutely_integrable_on s
+        ==> f absolutely_integrable_on s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC
+    ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_UBOUND THEN
+  EXISTS_TAC `g:real^M->real^1` THEN
+  ASM_REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  ASM_REWRITE_TAC[IMP_IMP; FORALL_1; DIMINDEX_1; GSYM drop]);;
+
+let ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_DROP_LBOUND = prove
+ (`!f:real^M->real^1 g:real^M->real^1 s.
+        (!x. x IN s ==> drop(f(x)) <= drop(g(x))) /\
+        f absolutely_integrable_on s /\ g integrable_on s
+        ==> g absolutely_integrable_on s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC
+    ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_LBOUND THEN
+  EXISTS_TAC `f:real^M->real^1` THEN
+  ASM_REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  ASM_REWRITE_TAC[IMP_IMP; FORALL_1; DIMINDEX_1; GSYM drop]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relating vector integrals to integrals of components.                     *)

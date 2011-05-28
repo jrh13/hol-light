@@ -4688,6 +4688,16 @@ let LIM_N_OVER_POWN = prove
   ASM_SIMP_TAC[complex_div; GSYM COMPLEX_POW_INV; COMPLEX_NORM_INV;
                REAL_INV_LT_1; LIM_N_TIMES_POWN]);;
 
+let LIM_POWN = prove
+ (`!z. norm(z) < &1 ==> ((\n. z pow n) --> Cx(&0)) sequentially`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_NULL_COMPARISON_COMPLEX THEN
+  EXISTS_TAC `\n. Cx(&n) * z pow n` THEN ASM_SIMP_TAC[LIM_N_TIMES_POWN] THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `1` THEN
+  REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_CX; REAL_ABS_NUM] THEN
+  REWRITE_TAC[REAL_ARITH `a <= n * a <=> &0 <= (n - &1) * a`] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_MUL THEN
+  ASM_REWRITE_TAC[NORM_POS_LE; REAL_SUB_LE; REAL_OF_NUM_LE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Roots of unity.                                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -5299,3 +5309,24 @@ let RPOW_SQRT = prove
     MATCH_MP_TAC(REAL_ARITH
      `&0 <= x /\ &0 <= y ==> x + y = &0 ==> x = &0 /\ y = &0`) THEN
     ASM_SIMP_TAC[SQRT_POS_LE; RPOW_POS_LE]]);;
+
+let RPOW_MONO = prove
+ (`!a b x. &1 <= x /\ a <= b ==> x rpow a <= x rpow b`,
+  SIMP_TAC[rpow; REAL_ARITH `&1 <= x ==> &0 < x`] THEN
+  SIMP_TAC[REAL_EXP_MONO_LE; LOG_POS; REAL_LE_RMUL]);;
+
+let RPOW_MONO_INV = prove
+ (`!a b x. &0 < x /\ x <= &1 /\ b <= a ==> x rpow a <= x rpow b`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC BINOP_CONV [GSYM REAL_INV_INV] THEN
+  MATCH_MP_TAC REAL_LE_INV2 THEN
+  ASM_SIMP_TAC[REAL_LT_INV_EQ; RPOW_POS_LT; GSYM RPOW_INV] THEN
+  MATCH_MP_TAC RPOW_MONO THEN
+  ASM_SIMP_TAC[REAL_INV_1_LE]);;
+
+let RPOW_1_LE = prove
+ (`!a x. &0 <= x /\ x <= &1 /\ &0 <= a ==> x rpow a <= &1`,
+  REPEAT STRIP_TAC THEN  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `&1 rpow a` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC RPOW_LE2 THEN ASM_REAL_ARITH_TAC;
+    REWRITE_TAC[RPOW_ONE; REAL_LE_REFL]]);;

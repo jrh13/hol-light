@@ -406,6 +406,16 @@ let FLOOR_POS_LE = prove
  (`!x. &0 <= floor x <=> &0 <= x`,
   SIMP_TAC[REAL_LE_FLOOR; INTEGER_CLOSED]);;
 
+let FRAC_UNIQUE = prove
+ (`!x a. integer(x - a) /\ &0 <= a /\ a < &1 <=> frac x = a`,
+  REWRITE_TAC[FRAC_FLOOR; REAL_ARITH `x - f:real = a <=> f = x - a`] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM FLOOR_UNIQUE] THEN
+  AP_TERM_TAC THEN REAL_ARITH_TAC);;
+
+let REAL_FRAC_EQ = prove
+ (`!x. frac x = x <=> &0 <= x /\ x < &1`,
+  REWRITE_TAC[GSYM FRAC_UNIQUE; REAL_SUB_REFL; INTEGER_CLOSED]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A couple more theorems about real_of_int.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -526,3 +536,18 @@ let RATIONAL_APPROXIMATION = prove
       ASM_SIMP_TAC[GSYM REAL_LT_LDIV_EQ] THEN
       MATCH_MP_TAC(REAL_ARITH `inv e < n ==> &1 / e < abs n`) THEN
       EXPAND_TAC "n" THEN MP_TAC(SPEC `inv e` FLOOR) THEN REAL_ARITH_TAC]]);;
+
+let RATIONAL_APPROXIMATION_STRADDLE = prove
+ (`!x e. &0 < e
+         ==> ?a b. rational a /\ rational b /\
+                   a < x /\ x < b /\ abs(b - a) < e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`x - e / &4`; `e / &4`] RATIONAL_APPROXIMATION) THEN
+  ANTS_TAC THENL
+   [ASM_REAL_ARITH_TAC;
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC] THEN
+  MP_TAC(ISPECL [`x + e / &4`; `e / &4`] RATIONAL_APPROXIMATION) THEN
+  ANTS_TAC THENL
+   [ASM_REAL_ARITH_TAC;
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC] THEN
+  ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;

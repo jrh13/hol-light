@@ -2171,8 +2171,8 @@ let SERIES_ABSCONV_IMP_CONV = prove
 (* ------------------------------------------------------------------------- *)
 
 let SUMS_GP = prove
- (`!z. norm(z) < &1
-       ==> ((\k. z pow k) sums (z pow n / (Cx(&1) - z))) (from n)`,
+ (`!n z. norm(z) < &1
+         ==> ((\k. z pow k) sums (z pow n / (Cx(&1) - z))) (from n)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[SERIES_FROM; VSUM_GP] THEN
   ASM_CASES_TAC `z = Cx(&1)` THENL
    [ASM_MESON_TAC[COMPLEX_NORM_NUM; REAL_LT_REFL]; ALL_TAC] THEN
@@ -2617,3 +2617,273 @@ let LIM_COMPLEX_REAL_0 = prove
   REPLICATE_TAC 2 (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
   DISCH_THEN(MP_TAC o SPECL [`&0`; `Cx(&0)`]) THEN
   REWRITE_TAC[RE_CX; REAL_SUB_RZERO]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Uniform convergence of power series in a "Stolz angle".                   *)
+(* ------------------------------------------------------------------------- *)
+
+let POWER_SERIES_UNIFORM_CONVERGENCE_STOLZ_1 = prove
+ (`!M a s e.
+        summable s a /\ &0 < M /\ &0 < e
+        ==> eventually
+             (\n. !z. norm(Cx(&1) - z) <= M * (&1 - norm z)
+                      ==> norm(vsum (s INTER (0..n)) (\i. a i * z pow i) -
+                               infsum s (\i. a i * z pow i)) < e)
+             sequentially`,
+  let lemma = prove
+   (`!M w z. &0 < M /\ norm(w - z) <= M * (norm w - norm z) /\ ~(z = w)
+             ==> norm(z) < norm(w)`,
+    REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_LT_LE] THEN CONJ_TAC THENL
+     [ASM_MESON_TAC[REAL_LE_MUL_EQ; REAL_SUB_LE; NORM_POS_LE; REAL_LE_TRANS];
+      DISCH_THEN SUBST_ALL_TAC THEN
+      ASM_MESON_TAC[REAL_SUB_REFL; REAL_MUL_RZERO;NORM_LE_0; VECTOR_SUB_EQ]])
+  and lemma1 = prove
+   (`!m n. m < n
+           ==> vsum (m..n) (\i. a i * z pow i) =
+               (Cx(&1) - z) * vsum(m..n-1) (\i. vsum (m..i) a * z pow i) +
+               vsum(m..n) a * z pow n`,
+    GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC[NOT_SUC; SUC_SUB1] THEN
+    SIMP_TAC[VSUM_CLAUSES_NUMSEG; LT; LT_IMP_LE] THEN STRIP_TAC THENL
+     [ASM_REWRITE_TAC[VSUM_SING_NUMSEG; complex_pow] THEN CONV_TAC COMPLEX_RING;
+      ASM_SIMP_TAC[] THEN UNDISCH_TAC `m:num < n` THEN
+      POP_ASSUM(K ALL_TAC)] THEN
+    SPEC_TAC(`n:num`,`n:num`) THEN
+    INDUCT_TAC THEN REWRITE_TAC[CONJUNCT1 LT] THEN POP_ASSUM(K ALL_TAC) THEN
+    SIMP_TAC[SUC_SUB1; VSUM_CLAUSES_NUMSEG; LT_IMP_LE] THEN
+    ASM_REWRITE_TAC[VSUM_SING_NUMSEG; complex_pow] THEN
+    CONV_TAC COMPLEX_RING) in
+  SUBGOAL_THEN
+   `!M a e.
+        summable (:num) a /\ &0 < M /\ &0 < e
+        ==> eventually
+             (\n. !z. norm(Cx(&1) - z) <= M * (&1 - norm z)
+                      ==> norm(vsum (0..n) (\i. a i * z pow i) -
+                               infsum (:num) (\i. a i * z pow i)) < e)
+             sequentially`
+  ASSUME_TAC THENL
+   [ALL_TAC;
+    REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o ISPECL
+     [`M:real`; `\i:num. if i IN s then a i else Cx(&0)`; `e:real`]) THEN
+    REWRITE_TAC[COND_RAND; COND_RATOR; COMPLEX_MUL_LZERO] THEN
+    ASM_REWRITE_TAC[GSYM COMPLEX_VEC_0; GSYM VSUM_RESTRICT_SET;
+                    INFSUM_RESTRICT; SUMMABLE_RESTRICT] THEN
+    REWRITE_TAC[SET_RULE `{i | i IN t /\ i IN s} = s INTER t`]] THEN
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[MESON[]
+   `(!z. P z) <=> P (Cx(&1)) /\ (!z. ~(z = Cx(&1)) ==> P z)`] THEN
+  REWRITE_TAC[EVENTUALLY_AND] THEN CONJ_TAC THENL
+   [REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NUM; COMPLEX_SUB_REFL;
+                REAL_SUB_REFL; REAL_MUL_RZERO; REAL_LE_REFL] THEN
+    UNDISCH_TAC `&0 < e` THEN SPEC_TAC(`e:real`,`e:real`) THEN
+    REWRITE_TAC[GSYM tendsto; COMPLEX_POW_ONE; COMPLEX_MUL_RID; GSYM dist;
+                ETA_AX] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM SUMS_INFSUM]) THEN
+    REWRITE_TAC[sums; INTER_UNIV];
+    ALL_TAC] THEN
+  REWRITE_TAC[IMP_IMP; EVENTUALLY_SEQUENTIALLY] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM dist] THEN
+  UNDISCH_TAC `&0 < e` THEN SPEC_TAC(`e:real`,`e:real`) THEN
+  MATCH_MP_TAC UNIFORMLY_CAUCHY_IMP_UNIFORMLY_CONVERGENT THEN
+  REWRITE_TAC[GSYM LIM_SEQUENTIALLY] THEN CONJ_TAC THENL
+   [X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    REWRITE_TAC[MESON[] `(!m n z. P m /\ P n /\ Q z ==> R m n z) <=>
+                         (!z. Q z ==> !m n. P m /\ P n ==> R m n z)`] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM SUMS_INFSUM]) THEN
+    REWRITE_TAC[sums] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CONVERGENT_IMP_CAUCHY) THEN
+    REWRITE_TAC[cauchy; GSYM dist] THEN
+    DISCH_THEN(MP_TAC o SPEC `min (e / &2) (e / &2 / M)`) THEN
+    ASM_SIMP_TAC[REAL_LT_MIN; REAL_LT_DIV; REAL_HALF; GE; INTER_UNIV] THEN
+    REWRITE_TAC[GSYM REAL_LT_MIN] THEN
+    ONCE_REWRITE_TAC[SEQUENCE_CAUCHY_WLOG] THEN
+    SUBGOAL_THEN
+     `!f:num->complex m n. m <= n
+              ==> dist(vsum (0..m) f,vsum (0..n) f) = norm(vsum (m+1..n) f)`
+     (fun th -> SIMP_TAC[th])
+    THENL
+     [REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC(NORM_ARITH `a + c = b ==> dist(a,b) = norm c`) THEN
+      MATCH_MP_TAC VSUM_COMBINE_R THEN ASM_ARITH_TAC;
+      ALL_TAC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN
+    REWRITE_TAC[REAL_LT_MIN] THEN STRIP_TAC THEN
+    X_GEN_TAC `z:complex` THEN REWRITE_TAC[dist] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `norm(z:complex) < &1` ASSUME_TAC THENL
+     [UNDISCH_TAC `~(z = Cx(&1))` THEN
+      ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+      REWRITE_TAC[NORM_POS_LT; VECTOR_SUB_EQ] THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (NORM_ARITH
+       `norm(a - b) <= M ==> &0 <= --M ==> b = a`)) THEN
+      REWRITE_TAC[GSYM REAL_MUL_RNEG; REAL_NEG_SUB] THEN
+      MATCH_MP_TAC REAL_LE_MUL THEN ASM_REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN STRIP_TAC THEN
+    ASM_CASES_TAC `m + 1 < n` THENL
+     [ASM_SIMP_TAC[lemma1] THEN
+      MATCH_MP_TAC(NORM_ARITH
+       `norm(a) < e / &2 /\ norm(b) < e / &2 ==> norm(a + b) < e`) THEN
+      REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_POW] THEN CONJ_TAC THENL
+       [MATCH_MP_TAC REAL_LET_TRANS THEN
+        EXISTS_TAC `(M * (&1 - norm(z:complex))) *
+                    sum (m+1..n-1) (\i. e / &2 / M * norm(z) pow i)` THEN
+        CONJ_TAC THENL
+         [MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[NORM_POS_LE] THEN
+          MATCH_MP_TAC VSUM_NORM_LE THEN
+          REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+          X_GEN_TAC `p:num` THEN STRIP_TAC THEN
+          ASM_SIMP_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_POW] THEN
+          MATCH_MP_TAC REAL_LE_RMUL THEN
+          SIMP_TAC[REAL_POW_LE; NORM_POS_LE] THEN
+          MATCH_MP_TAC(REAL_ARITH
+            `x < e / &2 /\ x < e / &2 / M ==> x <= e / &2 / M`) THEN
+          FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+          REWRITE_TAC[SUM_LMUL] THEN
+          REWRITE_TAC[REAL_ARITH
+           `(M * z1) * e / &2 / M * s < e / &2 <=>
+            e * (M / M) * s * z1 < e * &1`] THEN
+          ASM_SIMP_TAC[REAL_LT_LMUL_EQ] THEN
+          ASM_SIMP_TAC[REAL_DIV_REFL; REAL_LT_IMP_NZ; REAL_MUL_LID] THEN
+          ASM_SIMP_TAC[GSYM REAL_LT_RDIV_EQ; REAL_SUB_LT] THEN
+          REWRITE_TAC[SUM_GP] THEN
+          COND_CASES_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+          COND_CASES_TAC THENL
+           [UNDISCH_TAC `norm(Cx(&1) - z) <= M * (&1 - norm z)` THEN
+            ASM_REWRITE_TAC[REAL_SUB_REFL; REAL_MUL_RZERO] THEN
+            ASM_REWRITE_TAC[NORM_ARITH `norm(x - y:complex) <= &0 <=> x = y`];
+            ALL_TAC] THEN
+          ASM_SIMP_TAC[REAL_LT_DIV2_EQ; REAL_SUB_LT] THEN
+          MATCH_MP_TAC(REAL_ARITH
+           `&0 <= y /\ x < &1 ==> x - y < &1`) THEN
+          ASM_SIMP_TAC[REAL_POW_LE; NORM_POS_LE] THEN
+          MATCH_MP_TAC REAL_POW_1_LT THEN
+          ASM_REWRITE_TAC[NORM_POS_LE] THEN ARITH_TAC];
+        GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_RID] THEN
+        MATCH_MP_TAC REAL_LT_MUL2 THEN SIMP_TAC[NORM_POS_LE; REAL_POW_LE] THEN
+        CONJ_TAC THENL
+         [MATCH_MP_TAC(REAL_ARITH
+            `x < e / &2 /\ x < e / &2 / M ==> x < e / &2`) THEN
+          FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+          MATCH_MP_TAC REAL_POW_1_LT THEN
+          ASM_REWRITE_TAC[NORM_POS_LE] THEN ASM_ARITH_TAC]];
+      ASM_CASES_TAC `(m+1)..n = {}` THENL
+       [ASM_REWRITE_TAC[VSUM_CLAUSES; NORM_0]; ALL_TAC] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[NUMSEG_EMPTY]) THEN
+      SUBGOAL_THEN `m + 1 = n` SUBST1_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      REWRITE_TAC[VSUM_SING_NUMSEG] THEN
+      REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_POW] THEN
+      GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_RID] THEN
+      MATCH_MP_TAC REAL_LT_MUL2 THEN SIMP_TAC[NORM_POS_LE; REAL_POW_LE] THEN
+      CONJ_TAC THENL
+       [FIRST_X_ASSUM(MP_TAC o SPECL [`m:num`; `n:num`]) THEN
+        SUBGOAL_THEN `m + 1 = n` SUBST1_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+        ANTS_TAC THENL [ASM_ARITH_TAC; REWRITE_TAC[VSUM_SING_NUMSEG]] THEN
+        ASM_REAL_ARITH_TAC;
+        MATCH_MP_TAC REAL_POW_1_LT THEN
+        ASM_REWRITE_TAC[NORM_POS_LE] THEN ASM_ARITH_TAC]];
+    X_GEN_TAC `z:complex` THEN REWRITE_TAC[dist] THEN STRIP_TAC THEN
+    MP_TAC(ISPECL [`M:real`; `Cx(&1)`; `z:complex`] lemma) THEN
+    ASM_REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NUM] THEN DISCH_TAC THEN
+    SUBGOAL_THEN `summable (:num) (\i. a i * z pow i)` MP_TAC THENL
+     [MATCH_MP_TAC SERIES_ABSCONV_IMP_CONV THEN
+      REWRITE_TAC[] THEN MATCH_MP_TAC POWER_SERIES_CONV_IMP_ABSCONV THEN
+      EXISTS_TAC `Cx(&1)` THEN
+      REWRITE_TAC[COMPLEX_POW_ONE; COMPLEX_NORM_CX] THEN
+      ASM_REWRITE_TAC[REAL_ABS_NUM; COMPLEX_MUL_RID; ETA_AX];
+      REWRITE_TAC[GSYM SUMS_INFSUM] THEN
+      REWRITE_TAC[sums; INTER_UNIV]]]);;
+
+let POWER_SERIES_UNIFORM_CONVERGENCE_STOLZ = prove
+ (`!M a w s e.
+        summable s (\i. a i * w pow i) /\ &0 < M /\ &0 < e
+        ==> eventually
+             (\n. !z. norm(w - z) <= M * (norm w - norm z)
+                      ==> norm(vsum (s INTER (0..n)) (\i. a i * z pow i) -
+                               infsum s (\i. a i * z pow i)) < e)
+             sequentially`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN ASM_CASES_TAC `w = Cx(&0)` THENL
+   [ASM_REWRITE_TAC[COMPLEX_SUB_LZERO; REAL_SUB_LZERO; COMPLEX_NORM_0] THEN
+    REWRITE_TAC[NORM_NEG; REAL_ARITH
+      `n <= M * --n <=> &0 <= --n * (&1 + M)`] THEN
+    ASM_SIMP_TAC[REAL_LE_MUL_EQ; REAL_ARITH `&0 < M ==> &0 < &1 + M`] THEN
+    REWRITE_TAC[NORM_ARITH `&0 <= --norm z <=> z = vec 0`] THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; FORALL_UNWIND_THM2] THEN
+    EXISTS_TAC `1` THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+    REWRITE_TAC[COMPLEX_VEC_0; COMPLEX_POW_ZERO] THEN
+    REWRITE_TAC[COND_RATOR; COND_RAND; COMPLEX_MUL_RZERO; COMPLEX_MUL_RID] THEN
+    MATCH_MP_TAC(NORM_ARITH `x = y /\ &0 < e ==> norm(y - x) < e`) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC INFSUM_UNIQUE THEN
+    REWRITE_TAC[sums] THEN MATCH_MP_TAC LIM_EVENTUALLY THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `1` THEN
+    X_GEN_TAC `m:num` THEN DISCH_TAC THEN
+    SIMP_TAC[GSYM COMPLEX_VEC_0; VSUM_DELTA] THEN
+    REWRITE_TAC[IN_INTER; LE_0; IN_NUMSEG];
+    FIRST_ASSUM(MP_TAC o MATCH_MP POWER_SERIES_UNIFORM_CONVERGENCE_STOLZ_1) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+    X_GEN_TAC `n:num` THEN REWRITE_TAC[] THEN DISCH_TAC THEN
+    X_GEN_TAC `z:complex` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `z / w:complex`) THEN
+    ASM_SIMP_TAC[GSYM COMPLEX_MUL_ASSOC; GSYM COMPLEX_POW_MUL] THEN
+    ASM_SIMP_TAC[COMPLEX_DIV_LMUL] THEN DISCH_THEN MATCH_MP_TAC THEN
+    MATCH_MP_TAC REAL_LE_RCANCEL_IMP THEN EXISTS_TAC `norm(w:complex)` THEN
+    ASM_REWRITE_TAC[COMPLEX_NORM_NZ; GSYM COMPLEX_NORM_MUL] THEN
+    ASM_SIMP_TAC[COMPLEX_FIELD
+     `~(w = Cx(&0)) ==> (Cx(&1) - z / w) * w = w - z`] THEN
+    REWRITE_TAC[GSYM REAL_MUL_ASSOC; REAL_SUB_RDISTRIB] THEN
+    REWRITE_TAC[GSYM COMPLEX_NORM_MUL; REAL_MUL_LID] THEN
+    ASM_SIMP_TAC[COMPLEX_DIV_RMUL]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Hence continuity and the Abel limit theorem.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let ABEL_POWER_SERIES_CONTINUOUS = prove
+ (`!M s a.
+        summable s a /\ &0 < M
+        ==> (\z. infsum s (\i. a i * z pow i)) continuous_on
+            {z | norm(Cx(&1) - z) <= M * (&1 - norm z)}`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(ISPEC `sequentially` CONTINUOUS_UNIFORM_LIMIT) THEN
+  EXISTS_TAC `\n z. vsum (s INTER (0..n)) (\i. a i * z pow i)` THEN
+  ASM_SIMP_TAC[POWER_SERIES_UNIFORM_CONVERGENCE_STOLZ_1; IN_ELIM_THM;
+               TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+  MATCH_MP_TAC ALWAYS_EVENTUALLY THEN X_GEN_TAC `n:num` THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_ON_VSUM THEN
+  SIMP_TAC[CONTINUOUS_ON_COMPLEX_MUL; CONTINUOUS_ON_COMPLEX_POW;
+           CONTINUOUS_ON_ID; CONTINUOUS_ON_CONST; FINITE_INTER;
+           FINITE_NUMSEG]);;
+
+let ABEL_LIMIT_THEOREM = prove
+ (`!M s a.
+        summable s a /\ &0 < M
+        ==> (!z. norm(z) < &1 ==> summable s (\i. a i * z pow i)) /\
+            ((\z. infsum s (\i. a i * z pow i)) --> infsum s a)
+            (at (Cx(&1)) within {z | norm(Cx(&1) - z) <= M * (&1 - norm z)})`,
+  GEN_TAC THEN ASM_CASES_TAC `&0 < M` THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+   `!a. summable (:num) a
+        ==> (!z. norm(z) < &1 ==> summable (:num) (\i. a i * z pow i)) /\
+            ((\z. infsum (:num) (\i. a i * z pow i))
+              --> infsum (:num) a)
+            (at (Cx(&1)) within {z | norm(Cx(&1) - z) <= M * (&1 - norm z)})`
+  ASSUME_TAC THENL
+   [ALL_TAC;
+    REPEAT GEN_TAC THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC
+     `(\n. if n IN s then a n else vec 0):num->complex`) THEN
+    REWRITE_TAC[COND_RAND; COND_RATOR; COMPLEX_VEC_0; COMPLEX_MUL_LZERO] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
+    ASM_REWRITE_TAC[SUMMABLE_RESTRICT; INFSUM_RESTRICT]] THEN
+  GEN_TAC THEN STRIP_TAC THEN CONJ_TAC THENL
+   [X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+    MATCH_MP_TAC SERIES_ABSCONV_IMP_CONV THEN
+    REWRITE_TAC[] THEN MATCH_MP_TAC POWER_SERIES_CONV_IMP_ABSCONV THEN
+    EXISTS_TAC `Cx(&1)` THEN REWRITE_TAC[COMPLEX_POW_ONE; COMPLEX_NORM_CX] THEN
+    ASM_REWRITE_TAC[REAL_ABS_NUM; COMPLEX_MUL_RID; ETA_AX];
+    MP_TAC(ISPECL [`M:real`; `(:num)`; `a:num->complex`]
+       ABEL_POWER_SERIES_CONTINUOUS) THEN
+    ASM_REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+    DISCH_THEN(MP_TAC o SPEC `Cx(&1)`) THEN
+    REWRITE_TAC[IN_ELIM_THM; CONTINUOUS_WITHIN] THEN
+    REWRITE_TAC[COMPLEX_SUB_REFL; COMPLEX_NORM_CX; COMPLEX_POW_ONE;
+                COMPLEX_MUL_RID; ETA_AX; REAL_ABS_NUM; REAL_SUB_REFL;
+                REAL_LE_REFL; REAL_MUL_RZERO]]);;
