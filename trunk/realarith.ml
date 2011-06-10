@@ -382,7 +382,6 @@ let REAL_LINEAR_PROVER =
     if vars = [] then failwith "linear_ineqs: no contradiction" else
     let ineqs = les @ lts in
     let blowup v =
-      length(filter (fun (e,_) -> tryapplyd e v num_0 =/ num_0) ineqs) +
       length(filter (fun (e,_) -> tryapplyd e v num_0 >/ num_0) ineqs) *
       length(filter (fun (e,_) -> tryapplyd e v num_0 </ num_0) ineqs) in
     let v =

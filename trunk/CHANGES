@@ -1,12 +1,37 @@
+Thu  9th Jun 2011       realarith.ml
+
+Made a change in the variable-choosing heuristic in Fourier-Motzkin, motivated
+by the disastrous slowness of this trivial example:
+
+  time REAL_ARITH 
+  `c < e / &3 /\ i1 < e / &12 /\ i3 < e / &12 /\ i2 < e / &12 /\ i4 < e / &12
+     ==> (i1 + i2) + (c + i3 + i4) <= &2 * e / &3`;;
+
+The previous heuristic chose a variable that minimized the number of
+inequalities after elimination, which is p * n + z where p, n and z are the
+number of current inequalities where that variable occurs positively,
+negatively and not at all respectively. The downside is that it doesn't take
+any account of the complexity of the resulting inequalities, so in a
+prototypical example like the above
+
+ x1 < e /\ .... /\ xn < e ==> x1 + ... + xn < n * e
+
+all variables give equal blowup of n, and so e may get chosen from among the
+available alternatives. That's something of a disaster since from that point on
+you get doubly exponential blowup per stage. The new heuristic is simply p * n,
+counting the number of new inequalities created by the elimination step. It
+makes this sort of example, which is probably pretty common, dramatically
+better. It also seems to lead to a small but notable average speedup.
+
 Mon 23rd May 2011       Library/floor.ml, Library/sets.ml
 
 Added
 
   COUNTABLE_RESTRICT = |- !s P. COUNTABLE s ==> COUNTABLE {x | x IN s /\ P x}
-  
+
   RATIONAL_APPROXIMATION_STRADDLE =
     |- !x e. &0 < e
-             ==> ?a b. rational a /\ rational b /\ 
+             ==> ?a b. rational a /\ rational b /\
                        a < x /\ x < b /\ abs(b - a) < e
 
 Sun 22nd May 2011       sets.ml
