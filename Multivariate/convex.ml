@@ -4861,22 +4861,6 @@ let IS_INTERVAL_CONNECTED = prove
  (`!s:real^N->bool. is_interval s ==> connected s`,
   MESON_TAC[IS_INTERVAL_CONVEX; CONVEX_CONNECTED]);;
 
-let CONVEX_INTERVAL = prove
- (`!a b:real^N. convex(interval [a,b]) /\ convex(interval (a,b))`,
-  SIMP_TAC[IS_INTERVAL_CONVEX; IS_INTERVAL_INTERVAL]);;
-
-(* ------------------------------------------------------------------------- *)
-(* On real^1, is_interval, convex and connected are all equivalent.          *)
-(* ------------------------------------------------------------------------- *)
-
-let IS_INTERVAL_1 = prove
- (`!s:real^1->bool.
-        is_interval s <=>
-          !a b x. a IN s /\ b IN s /\ drop a <= drop x /\ drop x <= drop b
-                  ==> x IN s`,
-  REWRITE_TAC[is_interval; DIMINDEX_1; FORALL_1; GSYM drop] THEN
-  REWRITE_TAC[FORALL_LIFT; LIFT_DROP] THEN MESON_TAC[]);;
-
 let IS_INTERVAL_CONNECTED_1 = prove
  (`!s:real^1->bool. is_interval s <=> connected s`,
   GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[IS_INTERVAL_CONNECTED] THEN
@@ -4896,6 +4880,14 @@ let IS_INTERVAL_CONNECTED_1 = prove
     EXISTS_TAC `lift b`] THEN
   ASM_REWRITE_TAC[REAL_LT_LE; LIFT_DROP] THEN ASM_MESON_TAC[]);;
 
+let CONVEX_INTERVAL = prove
+ (`!a b:real^N. convex(interval [a,b]) /\ convex(interval (a,b))`,
+  SIMP_TAC[IS_INTERVAL_CONVEX; IS_INTERVAL_INTERVAL]);;
+
+(* ------------------------------------------------------------------------- *)
+(* On real^1, is_interval, convex and connected are all equivalent.          *)
+(* ------------------------------------------------------------------------- *)
+
 let IS_INTERVAL_CONVEX_1 = prove
  (`!s:real^1->bool. is_interval s <=> convex s`,
   MESON_TAC[IS_INTERVAL_CONVEX; CONVEX_CONNECTED; IS_INTERVAL_CONNECTED_1]);;
@@ -4907,6 +4899,10 @@ let CONVEX_CONNECTED_1 = prove
 let CONNECTED_CONVEX_1 = prove
  (`!s:real^1->bool. connected s <=> convex s`,
   REWRITE_TAC[GSYM IS_INTERVAL_CONVEX_1; GSYM IS_INTERVAL_CONNECTED_1]);;
+
+let CONNECTED_COMPACT_INTERVAL_1 = prove
+ (`!s:real^1->bool. connected s /\ compact s <=> ?a b. s = interval[a,b]`,
+  REWRITE_TAC[GSYM IS_INTERVAL_CONNECTED_1; IS_INTERVAL_COMPACT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Homeomorphism of all convex compact sets with nonempty interior.          *)

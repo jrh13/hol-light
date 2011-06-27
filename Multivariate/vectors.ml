@@ -6682,6 +6682,17 @@ let COLLINEAR_DIST_BETWEEN = prove
            ==> between x (a,b)`,
   SIMP_TAC[COLLINEAR_BETWEEN_CASES; between; DIST_SYM] THEN NORM_ARITH_TAC);;
 
+let COLLINEAR_1 = prove
+ (`!s:real^1->bool. collinear s`,
+  GEN_TAC THEN MATCH_MP_TAC COLLINEAR_SUBSET THEN
+  EXISTS_TAC `(vec 0:real^1) INSERT (vec 1) INSERT s` THEN
+  CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) COLLINEAR_TRIPLES o snd) THEN
+  REWRITE_TAC[VEC_EQ; ARITH_EQ] THEN DISCH_THEN SUBST1_TAC THEN
+  REWRITE_TAC[COLLINEAR_BETWEEN_CASES] THEN
+  REWRITE_TAC[between; DIST_REAL; GSYM drop; DROP_VEC; REAL_ABS_NUM] THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Midpoint between two points.                                              *)
 (* ------------------------------------------------------------------------- *)
