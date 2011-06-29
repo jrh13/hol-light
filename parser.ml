@@ -310,6 +310,10 @@ let install_parser,delete_parser,installed_parsers,try_user_parser =
 (* ------------------------------------------------------------------------- *)
 
 let parse_preterm =
+  let rec pairwise r l = 
+    match l with
+      [] -> true
+    | h::t -> forall (r h) t & pairwise r t in
   let rec pfrees ptm acc =
     match ptm with
       Varp(v,pty) ->
@@ -324,6 +328,9 @@ let parse_preterm =
   let pdest_eq (Combp(Combp(Varp(("="|"<=>"),_),l),r)) = l,r in
   let pmk_let (letbindings,body) =
     let vars,tms = unzip (map pdest_eq letbindings) in
+    let _ = warn(not
+     (pairwise (fun s t -> intersect(pfrees s []) (pfrees t []) = []) vars))
+     "duplicate names on left of let-binding: latest is used" in
     let lend = Combp(Varp("LET_END",dpty),body) in
     let abs = itlist (fun v t -> Absp(v,t)) vars lend in
     let labs = Combp(Varp("LET",dpty),abs) in
