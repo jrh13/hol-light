@@ -1,9 +1,28 @@
+Tue 28th Jun 2011       pair.ml, parser.ml
+
+Fixed a LET_TAC bug pointed out by Vu Khac Ky: failures were occurring if the
+same variable was used on the left and right of a pattern (except if they are a
+trivial let, i.e. corresponding lefts and rights exactly equal), e.g.
+
+  g `v IN V DIFF (let k,ul = (P:num#(real^3)list->num#(real^3)list) (k,ul) in
+     (Q:num#(real^3)list->real^3->bool) (k,ul)) ==> F`;;
+  e LET_TAC;;
+
+Now the abbreviating variables are renamed as necessary to avoid clashes with
+free variables of the goal or each other (some of this would previously happen
+later in the ABBREV_TAC step anyway in some cases, but not this one).
+
+Looking at such corner cases made me add a parsing warning if there are
+multiple uses of the same variable in different arms of a simultaneous let
+binding, e.g. `let x = 1 and x = 2 in x = 42`, in which case the first one is
+hidden.
+
 Thu  9th Jun 2011       realarith.ml
 
 Made a change in the variable-choosing heuristic in Fourier-Motzkin, motivated
 by the disastrous slowness of this trivial example:
 
-  time REAL_ARITH 
+  time REAL_ARITH
   `c < e / &3 /\ i1 < e / &12 /\ i3 < e / &12 /\ i2 < e / &12 /\ i4 < e / &12
      ==> (i1 + i2) + (c + i3 + i4) <= &2 * e / &3`;;
 
