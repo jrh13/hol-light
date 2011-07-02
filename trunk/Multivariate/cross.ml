@@ -169,6 +169,15 @@ let CROSS_EQ_SELF = prove
    (!x y. x cross y = y <=> y = vec 0)`,
   MESON_TAC[ORTHOGONAL_CROSS; CROSS_0; ORTHOGONAL_REFL]);;
 
+let NORM_AND_CROSS_EQ_0 = prove
+ (`!x y. x dot y = &0 /\ x cross y = vec 0 <=> x = vec 0 \/ y = vec 0`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `x:real^3 = vec 0` THEN
+  ASM_REWRITE_TAC[CROSS_0; DOT_LZERO] THEN ASM_CASES_TAC `y:real^3 = vec 0` THEN
+  ASM_REWRITE_TAC[CROSS_0; DOT_RZERO] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_REWRITE_TAC[GSYM DOT_EQ_0; DOT_CROSS; REAL_MUL_LZERO] THEN
+  ASM_REWRITE_TAC[REAL_SUB_RZERO; REAL_ENTIRE; DOT_EQ_0]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Preservation by rotation, or other orthogonal transformation up to sign.  *)
 (* ------------------------------------------------------------------------- *)
