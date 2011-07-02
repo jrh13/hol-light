@@ -18,17 +18,17 @@ larger set of representative examples.
 Fails if the goal is not accessible to the methods used.
 
 \EXAMPLE
-A typical elementary divisibility property is that if {a * x} and {a * y} are
-congruent modulo {n} and the two numbers {a} and {n} are coprime (share no
-common factor besides {1}), then in fact {x} and {y} are congruent:
+A typical elementary divisibility property is that if two linear congruences
+have a common solution modulo {n}, then {n} divides the resultant of the two
+equations. If we set this as our goal
 {
-  # g `!a n x y:int. (a * x == a * y) (mod n) /\ coprime(a,n)
-                     ==> (x == y) (mod n)`;;
-  ...
+  # g `!c2 c1 c0 n x:int.
+        (c0 * x == c1) (mod n) /\ (c1 * x == c2) (mod n)
+        ==> n divides (c1 * c1 - c0 * c2)`;;
 }
-\noindent It can be solved automatically using {NUMBER_TAC}:
+\noindent It can be solved automatically using {INTEGER_TAC}:
 {
-  # e NUMBER_TAC;;
+  # e INTEGER_TAC;;
   ...
   val it : goalstack = No subgoals
 }
