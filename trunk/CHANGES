@@ -1,3 +1,7 @@
+Sun 10th Jul 2011       100/fourier.ml [new file]
+
+Added a file with some material on L_p spaces and Fourier series.
+
 Tue 28th Jun 2011       pair.ml, parser.ml
 
 Fixed a LET_TAC bug pointed out by Vu Khac Ky: failures were occurring if the

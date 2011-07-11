@@ -6067,6 +6067,21 @@ let REAL_INTEGRABLE_SPIKE_INTERIOR = prove
   MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
   MP_TAC(SPEC_ALL HAS_REAL_INTEGRAL_SPIKE_INTERIOR) THEN ASM_REWRITE_TAC[]);;
 
+let REAL_INTEGRAL_EQ = prove
+ (`!f g s.
+        (!x. x IN s ==> f x = g x) ==> real_integral s f = real_integral s g`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_INTEGRAL_SPIKE THEN
+  EXISTS_TAC `{}:real->bool` THEN
+  ASM_SIMP_TAC[REAL_NEGLIGIBLE_EMPTY; IN_DIFF]);;
+
+let REAL_INTEGRAL_EQ_0 = prove
+ (`!f s. (!x. x IN s ==> f x = &0) ==> real_integral s f = &0`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `real_integral s (\x. &0)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_INTEGRAL_EQ THEN ASM_REWRITE_TAC[];
+    REWRITE_TAC[REAL_INTEGRAL_0]]);;
+
 let REAL_INTEGRABLE_CONTINUOUS = prove
  (`!f a b.
         f real_continuous_on real_interval[a,b]
@@ -7052,6 +7067,15 @@ let ABSOLUTELY_REAL_INTEGRABLE_MIN = prove
 let ABSOLUTELY_REAL_INTEGRABLE_IMP_INTEGRABLE = prove
  (`!f s. f absolutely_real_integrable_on s ==> f real_integrable_on s`,
   SIMP_TAC[absolutely_real_integrable_on]);;
+
+let ABSOLUTELY_REAL_INTEGRABLE_CONTINUOUS = prove
+ (`!f a b.
+        f real_continuous_on real_interval[a,b]
+        ==> f absolutely_real_integrable_on real_interval[a,b]`,
+  REWRITE_TAC[REAL_CONTINUOUS_ON; ABSOLUTELY_REAL_INTEGRABLE_ON;
+              has_real_integral;
+              GSYM integrable_on; GSYM EXISTS_LIFT] THEN
+  REWRITE_TAC[IMAGE_LIFT_REAL_INTERVAL; ABSOLUTELY_INTEGRABLE_CONTINUOUS]);;
 
 let NONNEGATIVE_ABSOLUTELY_REAL_INTEGRABLE = prove
  (`!f s.
@@ -11822,14 +11846,14 @@ let INCREASING_REAL_VARIATION = prove
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
   REWRITE_TAC[LIFT_DROP] THEN ASM_MESON_TAC[]);;
 
-let HAS_BOUNDED_REAL_VARIATION_TRANSLATION = prove                              
- (`!f s a.                                       
+let HAS_BOUNDED_REAL_VARIATION_TRANSLATION = prove
+ (`!f s a.
         f has_bounded_real_variation_on s
-        ==> (\x. f(a + x)) has_bounded_real_variation_on 
+        ==> (\x. f(a + x)) has_bounded_real_variation_on
             (IMAGE (\x. --a + x) s)`,
   REWRITE_TAC[has_bounded_real_variation_on; o_DEF; GSYM IMAGE_o] THEN
   REPEAT GEN_TAC THEN
-  DISCH_THEN(MP_TAC o SPEC `lift a` o MATCH_MP 
+  DISCH_THEN(MP_TAC o SPEC `lift a` o MATCH_MP
     HAS_BOUNDED_VARIATION_TRANSLATION) THEN
   REWRITE_TAC[o_DEF; GSYM IMAGE_o; LIFT_ADD; LIFT_NEG; DROP_ADD; LIFT_DROP]);;
 
