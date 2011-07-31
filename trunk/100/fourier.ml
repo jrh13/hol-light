@@ -5665,7 +5665,7 @@ let FOURIER_FEJER_CESARO_SUMMABLE = prove
         (!x. f(x + &2 * pi) = f x) /\
         (f ---> l) (atreal x within {x' | x' <= x}) /\
         (f ---> r) (atreal x within {x' | x' >= x})
-        ==> ((\n. sum(0..n-1) (\r. sum (0..2*r)
+        ==> ((\n. sum(0..n-1) (\m. sum (0..2*m)
                                        (\k. fourier_coefficient f k *
                                             trigonometric_set k x)) / &n)
              ---> (l + r) / &2)
@@ -5907,7 +5907,7 @@ let FOURIER_FEJER_CESARO_SUMMABLE = prove
 let FOURIER_FEJER_CESARO_SUMMABLE_SIMPLE = prove
  (`!f x l r.
         f real_continuous_on (:real) /\ (!x. f(x + &2 * pi) = f x)
-        ==> ((\n. sum(0..n-1) (\r. sum (0..2*r)
+        ==> ((\n. sum(0..n-1) (\m. sum (0..2*m)
                                        (\k. fourier_coefficient f k *
                                             trigonometric_set k x)) / &n)
              ---> f(x))
