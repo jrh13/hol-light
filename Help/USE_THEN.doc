@@ -3,16 +3,16 @@
 \TYPE {USE_THEN : string -> thm_tactic -> tactic}
 
 \SYNOPSIS
-Apply a theorem tactic to named assumption, removing the assumption.            
+Apply a theorem tactic to named assumption.
 
 \DESCRIBE
-The tactic {USE_THEN "name" ttac} applies the theorem-tactic {ttac} to the 
+The tactic {USE_THEN "name" ttac} applies the theorem-tactic {ttac} to the
 assumption labelled {name} (or the first in the list if there is more than
 one).
 
 \FAILURE
-Fails if there is no assumption of that name or if the theorem-tactic fails 
-when applied to it.                                                             
+Fails if there is no assumption of that name or if the theorem-tactic fails
+when applied to it.
 
 \EXAMPLE
 See {LABEL_TAC} for an extended example.
