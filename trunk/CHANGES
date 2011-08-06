@@ -1,3 +1,9 @@
+Sun 31st Jul 2011       IsabelleLight/* [new files]
+
+Installed "Isabelle Light" from Petros Papapanagiotou and Jacques Fleuriot,
+which consists of implementations of Isabelle-style tactics and other
+user-friendly shortcuts.
+
 Sun 10th Jul 2011       100/fourier.ml [new file]
 
 Added a file with some material on L_p spaces and Fourier series.
