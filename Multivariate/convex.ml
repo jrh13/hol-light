@@ -1470,6 +1470,38 @@ let FRONTIER_NOT_EMPTY = prove
   MP_TAC(ISPECL [`(:real^N)`; `s:real^N->bool`] CONNECTED_INTER_FRONTIER) THEN
   REWRITE_TAC[CONNECTED_UNIV] THEN ASM SET_TAC[]);;
 
+let EQ_INTERVAL = prove
+ (`(!a b c d:real^N.
+        interval[a,b] = interval[c,d] <=>
+        interval[a,b] = {} /\ interval[c,d] = {} \/ a = c /\ b = d) /\
+   (!a b c d:real^N.
+        interval[a,b] = interval(c,d) <=>
+        interval[a,b] = {} /\ interval(c,d) = {}) /\
+   (!a b c d:real^N.
+        interval(a,b) = interval[c,d] <=>
+        interval(a,b) = {} /\ interval[c,d] = {}) /\
+   (!a b c d:real^N.
+        interval(a,b) = interval(c,d) <=>
+        interval(a,b) = {} /\ interval(c,d) = {} \/ a = c /\ b = d)`,
+  REPEAT CONJ_TAC THEN REPEAT GEN_TAC THEN
+  (EQ_TAC THENL [ALL_TAC; STRIP_TAC THEN ASM_REWRITE_TAC[]]) THEN
+  MATCH_MP_TAC(MESON[]
+   `(p = {} /\ q = {} ==> r) /\ (~(p = {}) /\ ~(q = {}) ==> p = q ==> r)
+    ==> p = q ==> r`) THEN
+  SIMP_TAC[] THENL
+   [REWRITE_TAC[INTERVAL_NE_EMPTY; CART_EQ] THEN
+    REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+    SIMP_TAC[SUBSET_INTERVAL; GSYM REAL_LE_ANTISYM];
+    STRIP_TAC THEN MATCH_MP_TAC(MESON[CLOPEN]
+     `closed s /\ open t /\ ~(s = {}) /\ ~(s = UNIV) ==> ~(s = t)`) THEN
+    ASM_REWRITE_TAC[CLOSED_INTERVAL; OPEN_INTERVAL; NOT_INTERVAL_UNIV];
+    STRIP_TAC THEN MATCH_MP_TAC(MESON[CLOPEN]
+     `closed s /\ open t /\ ~(s = {}) /\ ~(s = UNIV) ==> ~(t = s)`) THEN
+    ASM_REWRITE_TAC[CLOSED_INTERVAL; OPEN_INTERVAL; NOT_INTERVAL_UNIV];
+    REWRITE_TAC[INTERVAL_NE_EMPTY; CART_EQ] THEN
+    REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+    SIMP_TAC[SUBSET_INTERVAL; GSYM REAL_LE_ANTISYM]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Convex functions into the reals.                                          *)
 (* ------------------------------------------------------------------------- *)
