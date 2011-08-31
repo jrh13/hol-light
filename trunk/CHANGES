@@ -1,3 +1,45 @@
+Mon 29th Aug 2011       calc_rat.ml
+
+Changed REAL_RAT_DIV_CONV not to fail if it is given a canonical rational;
+instead used CHANGED_CONV in the depth conversion in REAL_RAT_REDUCE_CONV. This
+is consistent with the use of REAL_RAT_NEG_CONV, makes REAL_RAT_DIV_CONV a more
+convenient building block, and agrees with the current documentation.
+
+Wed 24th Aug 2011       real.ml, int.ml
+
+Added theorems about the real and integer sign function:
+
+  REAL_SGN_CASES =
+    |- !x. real_sgn x = &0 \/ real_sgn x = &1 \/ real_sgn x = -- &1
+
+  REAL_SGN_EQ =
+    |- (!x. real_sgn x = &0 <=> x = &0) /\
+       (!x. real_sgn x = &1 <=> x > &0) /\
+       (!x. real_sgn x = -- &1 <=> x < &0)
+
+with INT_SGN_CASES and INT_SGN_EQ being the same for integers.
+
+Wed 24th Aug 2011       sets.ml
+
+Added two natural theorems about intersections of unions
+
+  INTERS_UNION =
+   |- !s t. INTERS (s UNION t) = INTERS s INTER INTERS t
+
+  INTERS_OVER_UNIONS;;
+   |- !f s.
+        INTERS {UNIONS (f x) | x IN s} =
+        UNIONS {INTERS {g x | x IN s} | g | !x. x IN s ==> g x IN f x}
+
+Thu 18th Aug 2011       100/inclusion_exclusion.ml
+
+Added versions of inclusion-exclusion for additive real functions
+(INCLUSION_EXCLUSION_REAL_RESTRICTED_INDEXED,
+INCLUSION_EXCLUSION_REAL_RESTRICTED, INCLUSION_EXCLUSION_REAL_INDEXED and
+INCLUSION_EXCLUSION_REAL), deriving the cardinality version from those. Renamed
+the old INCLUSION_EXCLUSION_REAL as INCLUSION_EXCLUSION_REAL_FUNCTION and
+commented it out together with its dependency on Library/products.ml
+
 Sun 31st Jul 2011       IsabelleLight/* [new files]
 
 Installed "Isabelle Light" from Petros Papapanagiotou and Jacques Fleuriot,

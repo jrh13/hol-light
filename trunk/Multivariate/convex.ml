@@ -2601,6 +2601,69 @@ let AFFINE_TRANSLATION_SUBSPACE_EXPLICIT = prove
   REWRITE_TAC[o_DEF; VECTOR_SUB_ADD2; IMAGE_ID]);;
 
 (* ------------------------------------------------------------------------- *)
+(* If we take a slice out of a set, we can do it perpendicularly,            *)
+(* with the normal vector to the slice parallel to the affine hull.          *)
+(* ------------------------------------------------------------------------- *)
+
+let AFFINE_PARALLEL_SLICE = prove
+  (`!s a:real^N b.
+       affine s
+       ==> s INTER {x | a dot x <= b} = {} \/ s SUBSET {x | a dot x <= b} \/
+           ?a' b'. ~(a' = vec 0) /\
+
+                   s INTER {x | a' dot x <= b'} = s INTER {x | a dot x <= b} /\
+                   s INTER {x | a' dot x = b'} = s INTER {x | a dot x = b} /\
+                   !w. w IN s ==> (w + a') IN s`,
+   REPEAT STRIP_TAC THEN
+   ASM_CASES_TAC `s INTER {x:real^N | a dot x = b} = {}` THENL
+    [MATCH_MP_TAC(TAUT `~(~p /\ ~q) ==> p \/ q \/ r`) THEN
+     REPEAT STRIP_TAC THEN SUBGOAL_THEN
+      `?u v:real^N. u IN s /\ v IN s /\
+                    a dot u <= b /\ ~(a dot v <= b)`
+     STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+     SUBGOAL_THEN `(a:real^N) dot u < b` ASSUME_TAC THENL
+      [ASM_REWRITE_TAC[REAL_LT_LE] THEN ASM SET_TAC[]; ALL_TAC] THEN
+     RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LE]) THEN
+     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EXTENSION]) THEN
+     REWRITE_TAC[NOT_IN_EMPTY; IN_INTER; NOT_FORALL_THM; IN_ELIM_THM] THEN
+     EXISTS_TAC
+      `u + (b - a dot u) / (a dot v - a dot u) % (v - u):real^N` THEN
+     ASM_SIMP_TAC[IN_AFFINE_ADD_MUL_DIFF] THEN
+     REWRITE_TAC[DOT_RADD; DOT_RMUL; DOT_RSUB] THEN
+     REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD;
+     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+     DISCH_THEN(X_CHOOSE_THEN `z:real^N` MP_TAC) THEN
+     REWRITE_TAC[IN_INTER; IN_ELIM_THM] THEN POP_ASSUM MP_TAC THEN
+     GEN_GEOM_ORIGIN_TAC `z:real^N` ["a"; "a'"; "b'"; "w"] THEN
+     REPEAT STRIP_TAC THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+     REWRITE_TAC[VECTOR_ADD_RID; FORALL_IN_IMAGE] THEN
+     REWRITE_TAC[DOT_RADD; REAL_ARITH `a + x <= a <=> x <= &0`] THEN
+     SUBGOAL_THEN `subspace(s:real^N->bool) /\ span s = s`
+     STRIP_ASSUME_TAC THENL
+      [ASM_MESON_TAC[AFFINE_IMP_SUBSPACE; SPAN_EQ_SELF]; ALL_TAC] THEN
+     MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N`]
+           ORTHOGONAL_SUBSPACE_DECOMP_EXISTS) THEN
+     ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM; orthogonal] THEN
+     MAP_EVERY X_GEN_TAC [`a':real^N`; `a'':real^N`] THEN
+     ASM_CASES_TAC `a':real^N = vec 0` THENL
+      [ASM_REWRITE_TAC[VECTOR_ADD_LID] THEN
+       ASM_CASES_TAC `a'':real^N = a` THEN ASM_REWRITE_TAC[] THEN
+       SIMP_TAC[SUBSET; IN_ELIM_THM; REAL_LE_REFL];
+       ALL_TAC] THEN
+     STRIP_TAC THEN REPEAT DISJ2_TAC THEN
+     EXISTS_TAC `a':real^N` THEN ASM_REWRITE_TAC[] THEN
+     EXISTS_TAC `(a':real^N) dot z` THEN
+     REPEAT(CONJ_TAC THENL
+      [MATCH_MP_TAC(SET_RULE
+        `(!x. x IN s ==> (p x <=> q x))
+         ==> s INTER {x | p x} = s INTER {x | q x}`) THEN
+       ASM_SIMP_TAC[DOT_LADD] THEN REAL_ARITH_TAC;
+       ALL_TAC]) THEN
+     X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN REWRITE_TAC[IN_IMAGE] THEN
+     EXISTS_TAC `x + a':real^N` THEN
+     ASM_SIMP_TAC[SUBSPACE_ADD; VECTOR_ADD_ASSOC]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Affine dimension.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -3711,6 +3774,56 @@ let AFF_LOWDIM_SUBSET_HYPERPLANE = prove
     STRIP_TAC THEN EXISTS_TAC `(u:real^N) dot c` THEN
     ASM_REWRITE_TAC[DOT_RADD; REAL_EQ_ADD_LCANCEL_0] THEN
     ASM_MESON_TAC[SPAN_INC; SUBSET_TRANS]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some additional lemmas about hyperplanes.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let HYPERPLANE_EQ_EMPTY = prove
+ (`!a:real^N b. {x | a dot x = b} = {} <=> a = vec 0 /\ ~(b = &0)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+  ASM_CASES_TAC `a:real^N = vec 0` THEN ASM_REWRITE_TAC[DOT_LZERO] THENL
+   [MESON_TAC[];
+    DISCH_THEN(MP_TAC o SPEC `b / (a dot a) % a:real^N`) THEN
+    ASM_SIMP_TAC[DOT_RMUL; REAL_DIV_RMUL; DOT_EQ_0]]);;
+
+let HYPERPLANE_EQ_UNIV = prove
+ (`!a b. {x | a dot x = b} = (:real^N) <=> a = vec 0 /\ b = &0`,
+  REPEAT GEN_TAC THEN  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_UNIV] THEN
+  ASM_CASES_TAC `a:real^N = vec 0` THEN ASM_REWRITE_TAC[DOT_LZERO] THENL
+   [MESON_TAC[];
+    DISCH_THEN(MP_TAC o SPEC `(b + &1) / (a dot a) % a:real^N`) THEN
+    ASM_SIMP_TAC[DOT_RMUL; REAL_DIV_RMUL; DOT_EQ_0] THEN REAL_ARITH_TAC]);;
+
+let SUBSET_HYPERPLANES = prove
+ (`!a b a' b'.
+        {x | a dot x = b} SUBSET {x | a' dot x = b'} <=>
+        {x | a dot x = b} = {} \/ {x | a' dot x = b'} = (:real^N) \/
+        {x | a dot x = b} = {x | a' dot x = b'}`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `{x:real^N | a dot x = b} = {}` THEN
+  ASM_REWRITE_TAC[EMPTY_SUBSET] THEN
+  ASM_CASES_TAC `{x | a' dot x = b'} = (:real^N)` THEN
+  ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [HYPERPLANE_EQ_EMPTY; HYPERPLANE_EQ_UNIV]) THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  ASM_CASES_TAC `{x:real^N | a dot x = b} SUBSET {x | a' dot x = b'}` THEN
+  ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPECL [`{x:real^N | a dot x = b}`; `{x:real^N | a' dot x = b'}`]
+        AFF_DIM_PSUBSET) THEN
+  ASM_SIMP_TAC[PSUBSET;
+               REWRITE_RULE[GSYM AFFINE_HULL_EQ] AFFINE_HYPERPLANE] THEN
+  ASM_CASES_TAC `{x:real^N | a dot x = b} = {x | a' dot x = b'}` THEN
+  ASM_REWRITE_TAC[SUBSET_REFL] THEN ASM_CASES_TAC `a':real^N = vec 0` THENL
+   [ASM_CASES_TAC `b' = &0` THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    ASM_REWRITE_TAC[DOT_LZERO] THEN SET_TAC[];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `a:real^N = vec 0` THENL
+   [ASM_CASES_TAC `b = &0` THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+    ASM_REWRITE_TAC[DOT_LZERO] THEN SET_TAC[];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[AFF_DIM_HYPERPLANE; INT_LT_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Openness and compactness are preserved by convex hull operation.          *)

@@ -1008,33 +1008,33 @@ let REAL_LE_INV2 = prove
   STRIP_TAC THEN DISJ1_TAC THEN MATCH_MP_TAC REAL_LT_INV2 THEN
   ASM_REWRITE_TAC[]);;
 
-let REAL_LT_LINV = prove                                     
+let REAL_LT_LINV = prove
  (`!x y. &0 < y /\ inv y < x ==> inv x < y`,
   REPEAT STRIP_TAC THEN MP_TAC (SPEC `y:real` REAL_LT_INV) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN     
-  MP_TAC (SPECL [`(inv y:real)`; `x:real`] REAL_LT_INV2) THEN  
-  ASM_REWRITE_TAC[REAL_INV_INV]);;                             
-                                                             
-let REAL_LT_RINV = prove                                   
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC (SPECL [`(inv y:real)`; `x:real`] REAL_LT_INV2) THEN
+  ASM_REWRITE_TAC[REAL_INV_INV]);;
+
+let REAL_LT_RINV = prove
  (`!x y. &0 < x /\ x < inv y ==> y < inv x`,
   REPEAT STRIP_TAC THEN MP_TAC (SPEC `x:real` REAL_LT_INV) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN                   
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
   MP_TAC (SPECL [`x:real`; `inv y:real`] REAL_LT_INV2) THEN
   ASM_REWRITE_TAC[REAL_INV_INV]);;
-                                                          
+
 let REAL_LE_LINV = prove
  (`!x y. &0 < y /\ inv y <= x ==> inv x <= y`,
   REPEAT STRIP_TAC THEN MP_TAC (SPEC `y:real` REAL_LT_INV) THEN
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
-  MP_TAC (SPECL [`(inv y:real)`; `x:real`] REAL_LE_INV2) THEN                  
-  ASM_REWRITE_TAC[REAL_INV_INV]);;                                             
-                                                                               
+  MP_TAC (SPECL [`(inv y:real)`; `x:real`] REAL_LE_INV2) THEN
+  ASM_REWRITE_TAC[REAL_INV_INV]);;
+
 let REAL_LE_RINV = prove
  (`!x y. &0 < x /\ x <= inv y ==> y <= inv x`,
   REPEAT STRIP_TAC THEN MP_TAC (SPEC `x:real` REAL_LT_INV) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN                        
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
   MP_TAC (SPECL [`x:real`; `inv y:real`] REAL_LE_INV2) THEN
-  ASM_REWRITE_TAC[REAL_INV_INV]);;                           
+  ASM_REWRITE_TAC[REAL_INV_INV]);;
 
 let REAL_INV_LE_1 = prove
  (`!x. &1 <= x ==> inv(x) <= &1`,
@@ -1389,6 +1389,16 @@ let REAL_SGN_DIV = prove
   REWRITE_TAC[REAL_SGN; REAL_ABS_DIV] THEN
   REWRITE_TAC[real_div; REAL_INV_MUL; REAL_INV_INV] THEN
   REAL_ARITH_TAC);;
+
+let REAL_SGN_EQ = prove
+ (`(!x. real_sgn x = &0 <=> x = &0) /\
+   (!x. real_sgn x = &1 <=> x > &0) /\
+   (!x. real_sgn x = -- &1 <=> x < &0)`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let REAL_SGN_CASES = prove
+ (`!x. real_sgn x = &0 \/ real_sgn x = &1 \/ real_sgn x = -- &1`,
+  REWRITE_TAC[real_sgn] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Useful "without loss of generality" lemmas.                               *)

@@ -344,17 +344,8 @@ let REAL_RAT_DIV_CONV =
   let pth = prove
    (`x / y = x * inv(y)`,
     REWRITE_TAC[real_div]) in
-  let rawconv = GEN_REWRITE_CONV I [pth] THENC
-                RAND_CONV REAL_RAT_INV_CONV THENC REAL_RAT_MUL_CONV in
-  let div_tm = `(/)` in
-  fun tm ->
-    let lop,r = dest_comb tm in
-    let op,l = dest_comb lop in
-    if op = div_tm & is_realintconst l & is_realintconst r &
-            let l' = dest_realintconst l and r' = dest_realintconst r in
-            r' >/ num_1 & gcd_num l' r' =/ num_1
-    then failwith "REAL_RAT_DIV_CONV: No change"
-    else rawconv tm;;
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV REAL_RAT_INV_CONV THENC REAL_RAT_MUL_CONV;;
 
 (* ------------------------------------------------------------------------- *)
 (* Powers.                                                                   *)
@@ -400,7 +391,7 @@ let REAL_RAT_RED_CONV =
      `x + y`,REAL_RAT_ADD_CONV;
      `x - y`,REAL_RAT_SUB_CONV;
      `x * y`,REAL_RAT_MUL_CONV;
-     `x / y`,REAL_RAT_DIV_CONV;
+     `x / y`,CHANGED_CONV REAL_RAT_DIV_CONV;
      `x pow n`,REAL_RAT_POW_CONV;
      `max x y`,REAL_RAT_MAX_CONV;
      `min x y`,REAL_RAT_MIN_CONV]
