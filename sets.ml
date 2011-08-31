@@ -717,6 +717,10 @@ let UNIONS_UNION = prove
  (`!s t. UNIONS(s UNION t) = (UNIONS s) UNION (UNIONS t)`,
   SET_TAC[]);;
 
+let INTERS_UNION = prove
+ (`!s t. INTERS (s UNION t) = INTERS s INTER INTERS t`,
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Multiple intersection.                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -925,6 +929,16 @@ let UNIONS_INTERS = prove
  (`!s. UNIONS s = UNIV DIFF (INTERS {UNIV DIFF t | t IN s})`,
   GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
   REWRITE_TAC[IN_UNIONS; IN_UNIV; IN_DIFF; INTERS_GSPEC; IN_ELIM_THM] THEN
+  MESON_TAC[]);;
+
+let INTERS_OVER_UNIONS = prove
+ (`!f:A->(B->bool)->bool s.
+        INTERS { UNIONS(f x) | x IN s} =
+        UNIONS { INTERS {g x | x IN s} |g| !x. x IN s ==> g x IN f x}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[SIMPLE_IMAGE; INTERS_IMAGE; UNIONS_IMAGE; UNIONS_GSPEC] THEN
+  REWRITE_TAC[IN_UNIONS; IN_ELIM_THM] THEN
+  X_GEN_TAC `b:B` THEN REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN
   MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -1404,7 +1418,7 @@ let CARD_DELETE = prove
    [SUBGOAL_THEN `s = x:A INSERT (s DELETE x)`
      (fun th -> GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [th])
     THENL [UNDISCH_TAC `x:A IN s` THEN SET_TAC[]; ALL_TAC] THEN
-    ASM_SIMP_TAC[CARD_CLAUSES; FINITE_DELETE; IN_DELETE] THEN ARITH_TAC;
+    ASM_SIMP_TAC[CARD_CLAUSES; FINITE_DELETE; IN_DELETE; SUC_SUB1];
     AP_TERM_TAC THEN UNDISCH_TAC `~(x:A IN s)` THEN SET_TAC[]]);;
 
 let CARD_UNION_EQ = prove
