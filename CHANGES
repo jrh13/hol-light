@@ -1,3 +1,9 @@
+Fri  7th Oct 2011       Makefile
+
+Made a fix to the Makefile from Ramana Kumar on the hol-light page (see issue 
+2). This uses the file  pa_j_3.1x_6.02.2.ml for version 6.03 of OCaml as well.
+I just tried it with Ocaml 3.12.1 and camlp5 6.02.3, and it seems to work fine.
+
 Mon 29th Aug 2011       calc_rat.ml
 
 Changed REAL_RAT_DIV_CONV not to fail if it is given a canonical rational;
