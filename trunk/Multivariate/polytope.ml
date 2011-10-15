@@ -1804,6 +1804,10 @@ let POLYTOPE_LINEAR_IMAGE_EQ = prove
    (mapfilter (ISPEC `f:real^M->real^N`) (!invariant_under_linear))) THEN
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ASM_REWRITE_TAC[]);;
 
+let POLYTOPE_NEGATIONS = prove
+ (`!s. polytope s ==> polytope(IMAGE (--) s)`,
+  SIMP_TAC[POLYTOPE_LINEAR_IMAGE; LINEAR_NEGATION]);;
+
 let POLYTOPE_CONVEX_HULL = prove
  (`!s. FINITE s ==> polytope(convex hull s)`,
   REWRITE_TAC[polytope] THEN MESON_TAC[]);;
@@ -1852,32 +1856,7 @@ let POLYTOPE_SUMS = prove
    (X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC)
    (X_CHOOSE_THEN `v:real^N->bool` STRIP_ASSUME_TAC)) THEN
   EXISTS_TAC `{x + y:real^N | x IN u /\ y IN v}` THEN
-  ASM_SIMP_TAC[FINITE_PRODUCT_DEPENDENT] THEN
-  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
-   [REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
-    MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
-    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [CONVEX_HULL_INDEXED] THEN
-    REWRITE_TAC[IN_ELIM_THM; LEFT_AND_EXISTS_THM] THEN
-    REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
-    MAP_EVERY X_GEN_TAC
-     [`k1:num`; `u1:num->real`; `x1:num->real^N`;
-      `k2:num`; `u2:num->real`; `x2:num->real^N`] THEN
-    STRIP_TAC THEN
-    SUBGOAL_THEN
-     `x + y:real^N =
-      vsum(1..k1) (\i. vsum(1..k2) (\j. u1 i % u2 j % (x1 i + x2 j)))`
-    SUBST1_TAC THENL
-     [REWRITE_TAC[VECTOR_ADD_LDISTRIB; VSUM_ADD_NUMSEG] THEN
-      ASM_SIMP_TAC[VSUM_LMUL; VSUM_RMUL; VECTOR_MUL_LID];
-      REWRITE_TAC[VSUM_LMUL] THEN MATCH_MP_TAC CONVEX_VSUM THEN
-      ASM_SIMP_TAC[FINITE_NUMSEG; CONVEX_CONVEX_HULL; IN_NUMSEG] THEN
-      REPEAT STRIP_TAC THEN MATCH_MP_TAC CONVEX_VSUM THEN
-      ASM_SIMP_TAC[FINITE_NUMSEG; CONVEX_CONVEX_HULL; IN_NUMSEG] THEN
-      REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[]];
-    MATCH_MP_TAC HULL_MINIMAL THEN
-    SIMP_TAC[CONVEX_SUMS; CONVEX_CONVEX_HULL] THEN
-    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
-    REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[HULL_INC]]);;
+  ASM_SIMP_TAC[FINITE_PRODUCT_DEPENDENT; CONVEX_HULL_SUMS]);;
 
 let POLYTOPE_IMP_COMPACT = prove
  (`!s. polytope s ==> compact s`,
@@ -1930,6 +1909,18 @@ let POLYHEDRON_UNIV = prove
  (`polyhedron(:real^N)`,
   REWRITE_TAC[polyhedron] THEN EXISTS_TAC `{}:(real^N->bool)->bool` THEN
   REWRITE_TAC[INTERS_0; NOT_IN_EMPTY; FINITE_RULES]);;
+
+let POLYHEDRON_POSITIVE_ORTHANT = prove
+ (`polyhedron {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i}`,
+  REWRITE_TAC[polyhedron] THEN
+  EXISTS_TAC `IMAGE (\i. {x:real^N | &0 <= x$i}) (1..dimindex(:N))` THEN
+  SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG; FORALL_IN_IMAGE] THEN CONJ_TAC THENL
+   [GEN_REWRITE_TAC I [EXTENSION] THEN REWRITE_TAC[INTERS_IMAGE] THEN
+    REWRITE_TAC[IN_ELIM_THM; IN_NUMSEG];
+    X_GEN_TAC `k:num` THEN REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`--basis k:real^N`; `&0`] THEN
+    ASM_SIMP_TAC[VECTOR_NEG_EQ_0; DOT_LNEG; DOT_BASIS; BASIS_NONZERO] THEN
+    REWRITE_TAC[REAL_ARITH `--x <= &0 <=> &0 <= x`]]);;
 
 let POLYHEDRON_INTERS = prove
  (`!f:(real^N->bool)->bool.
@@ -3187,6 +3178,13 @@ let POLYHEDRON_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [POLYHEDRON_LINEAR_IMAGE_EQ];;
 
+let POLYHEDRON_NEGATIONS = prove
+ (`!s. polyhedron s ==> polyhedron(IMAGE (--) s)`,
+  GEN_TAC THEN MATCH_MP_TAC EQ_IMP THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC POLYHEDRON_LINEAR_IMAGE_EQ THEN
+  REWRITE_TAC[VECTOR_ARITH `--x:real^N = y <=> x = --y`; EXISTS_REFL] THEN
+  REWRITE_TAC[LINEAR_NEGATION] THEN VECTOR_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relation between polytopes and polyhedra.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -3548,6 +3546,420 @@ let FINITELY_GENERATED_CONIC_POLYHEDRON = prove
   FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[IN_INTER] THEN
   FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [conic]) THEN
   ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Decomposition of polyhedron into cone plus polytope and more corollaries. *)
+(* ------------------------------------------------------------------------- *)
+
+let POLYHEDRON_POLYTOPE_SUMS = prove
+ (`!s t:real^N->bool.
+    polyhedron s /\ polytope t ==> polyhedron {x + y | x IN s /\ y IN t}`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[POLYHEDRON_EQ_FINITE_EXPOSED_FACES] THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC CLOSED_COMPACT_SUMS THEN
+    ASM_SIMP_TAC[POLYHEDRON_IMP_CLOSED; POLYTOPE_IMP_COMPACT];
+    MATCH_MP_TAC CONVEX_SUMS THEN
+    ASM_SIMP_TAC[POLYHEDRON_IMP_CONVEX; POLYTOPE_IMP_CONVEX];
+    MATCH_MP_TAC FINITE_SUBSET THEN
+    EXISTS_TAC `{ {x + y:real^N | x IN k /\ y IN l} |
+                  k exposed_face_of s /\ l exposed_face_of t}` THEN
+    CONJ_TAC THENL
+     [ONCE_REWRITE_TAC[SET_RULE `k exposed_face_of s <=>
+                                 k IN {f | f exposed_face_of s}`] THEN
+      MATCH_MP_TAC FINITE_PRODUCT_DEPENDENT THEN
+      ASM_SIMP_TAC[FINITE_POLYHEDRON_EXPOSED_FACES;
+                   POLYTOPE_IMP_POLYHEDRON];
+      REWRITE_TAC[SUBSET; IN_ELIM_THM; GSYM CONJ_ASSOC] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC EXPOSED_FACE_OF_SUMS THEN
+      ASM_SIMP_TAC[POLYHEDRON_IMP_CONVEX; POLYTOPE_IMP_CONVEX]]]);;
+
+let POLYHEDRON_AS_CONE_PLUS_CONV = prove
+ (`!s:real^N->bool.
+        polyhedron s <=> ?t u. FINITE t /\ FINITE u /\
+                               s = {x + y | x IN convex_cone hull t /\
+                                            y IN convex hull u}`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[polyhedron; LEFT_IMP_EXISTS_THM];
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC POLYHEDRON_POLYTOPE_SUMS THEN
+    ASM_SIMP_TAC[POLYTOPE_CONVEX_HULL; POLYHEDRON_CONVEX_CONE_HULL]] THEN
+  REWRITE_TAC[polyhedron; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `f:(real^N->bool)->bool` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (ASSUME_TAC o SYM) MP_TAC) THEN
+  GEN_REWRITE_TAC (LAND_CONV o REDEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC
+   [`a:(real^N->bool)->real^N`; `b:(real^N->bool)->real`] THEN
+  ONCE_REWRITE_TAC[MESON[] `h = {x | P x} <=> {x | P x} = h`] THEN
+  DISCH_TAC THEN
+  ABBREV_TAC
+   `s':real^(N,1)finite_sum->bool =
+        {x | &0 <= drop(sndcart x) /\
+             !h:real^N->bool.
+                h IN f ==> a h dot (fstcart x) <= b h * drop(sndcart x)}` THEN
+  SUBGOAL_THEN
+   `?t u. FINITE t /\ FINITE u /\
+          (!y:real^(N,1)finite_sum. y IN t ==> drop(sndcart y) = &0) /\
+          (!y. y IN u ==> drop(sndcart y) = &1) /\
+          s' = convex_cone hull (t UNION u)`
+  STRIP_ASSUME_TAC THENL
+   [MP_TAC(ISPEC `s':real^(N,1)finite_sum->bool`
+        FINITELY_GENERATED_CONIC_POLYHEDRON) THEN
+    ANTS_TAC THENL
+     [EXPAND_TAC "s'" THEN REPEAT CONJ_TAC THENL
+       [REWRITE_TAC[polyhedron] THEN
+        EXISTS_TAC
+         `{ x:real^(N,1)finite_sum |
+            pastecart (vec 0) (--vec 1) dot x <= &0} INSERT
+          { {x | pastecart (a h) (--lift(b h)) dot x <= &0} |
+            (h:real^N->bool) IN f}` THEN
+        REWRITE_TAC[FINITE_INSERT; INTERS_INSERT; SIMPLE_IMAGE] THEN
+        ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_INSERT; FORALL_IN_IMAGE] THEN
+        REPEAT CONJ_TAC THENL
+         [EXPAND_TAC "s'" THEN
+          REWRITE_TAC[EXTENSION; IN_ELIM_THM; FORALL_PASTECART; IN_INTER;
+           DOT_PASTECART; INTERS_IMAGE; FSTCART_PASTECART;
+           SNDCART_PASTECART; DOT_1; GSYM drop; DROP_NEG; LIFT_DROP] THEN
+          REWRITE_TAC[DROP_VEC; DOT_LZERO; REAL_MUL_LNEG; GSYM real_sub] THEN
+          REWRITE_TAC[REAL_MUL_LID; REAL_ARITH `x - y <= &0 <=> x <= y`];
+          EXISTS_TAC `pastecart (vec 0) (--vec 1):real^(N,1)finite_sum` THEN
+          EXISTS_TAC `&0` THEN
+          REWRITE_TAC[PASTECART_EQ_VEC; VECTOR_NEG_EQ_0; VEC_EQ] THEN
+          ARITH_TAC;
+          X_GEN_TAC `h:real^N->bool` THEN DISCH_TAC THEN MAP_EVERY EXISTS_TAC
+           [`pastecart (a(h:real^N->bool)) (--lift(b h)):real^(N,1)finite_sum`;
+            `&0`] THEN
+          ASM_SIMP_TAC[PASTECART_EQ_VEC]];
+        REWRITE_TAC[conic; IN_ELIM_THM; FSTCART_CMUL; SNDCART_CMUL] THEN
+        SIMP_TAC[DROP_CMUL; DOT_RMUL; REAL_LE_MUL] THEN
+        MESON_TAC[REAL_LE_LMUL; REAL_MUL_AC];
+        REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+        EXISTS_TAC `vec 0:real^(N,1)finite_sum` THEN
+        REWRITE_TAC[IN_ELIM_THM; FSTCART_VEC; SNDCART_VEC] THEN
+        REWRITE_TAC[DROP_VEC; DOT_RZERO; REAL_LE_REFL; REAL_MUL_RZERO]];
+      DISCH_THEN(X_CHOOSE_THEN `c:real^(N,1)finite_sum->bool`
+        STRIP_ASSUME_TAC) THEN
+      MAP_EVERY EXISTS_TAC
+       [`{x:real^(N,1)finite_sum | x IN c /\ drop(sndcart x) = &0}`;
+        `IMAGE (\x. inv(drop(sndcart x)) % x)
+           {x:real^(N,1)finite_sum | x IN c /\ ~(drop(sndcart x) = &0)}`] THEN
+      ASM_SIMP_TAC[FINITE_IMAGE; FINITE_RESTRICT; FORALL_IN_IMAGE] THEN
+      SIMP_TAC[IN_ELIM_THM; SNDCART_CMUL; DROP_CMUL; REAL_MUL_LINV] THEN
+      SUBGOAL_THEN
+       `!x:real^(N,1)finite_sum. x IN c ==> &0 <= drop(sndcart x)`
+      ASSUME_TAC THENL
+       [GEN_TAC THEN DISCH_TAC THEN
+        SUBGOAL_THEN `(x:real^(N,1)finite_sum) IN s'` MP_TAC THENL
+         [ASM_MESON_TAC[HULL_INC]; EXPAND_TAC "s'"] THEN
+        SIMP_TAC[IN_ELIM_THM];
+        ALL_TAC] THEN
+      MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THEN
+      MATCH_MP_TAC HULL_MINIMAL THEN
+      REWRITE_TAC[CONVEX_CONE_CONVEX_CONE_HULL; UNION_SUBSET] THEN
+      SIMP_TAC[SUBSET; IN_ELIM_THM; HULL_INC; FORALL_IN_IMAGE] THEN
+      X_GEN_TAC `x:real^(N,1)finite_sum` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `x:real^(N,1)finite_sum`) THEN
+      ASM_SIMP_TAC[CONVEX_CONE_HULL_MUL; HULL_INC; REAL_LE_INV_EQ] THEN
+      ASM_REWRITE_TAC[REAL_ARITH `&0 <= x <=> x = &0 \/ &0 < x`] THEN
+      STRIP_TAC THENL
+       [MATCH_MP_TAC HULL_INC THEN ASM_REWRITE_TAC[IN_UNION; IN_ELIM_THM];
+        SUBGOAL_THEN
+         `x:real^(N,1)finite_sum =
+                drop(sndcart x) % inv(drop(sndcart x)) % x`
+        SUBST1_TAC THENL
+         [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV; REAL_LT_IMP_NZ] THEN
+          REWRITE_TAC[VECTOR_MUL_LID];
+          MATCH_MP_TAC CONVEX_CONE_HULL_MUL THEN
+          ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN MATCH_MP_TAC HULL_INC THEN
+          REWRITE_TAC[IN_UNION] THEN DISJ2_TAC THEN
+          REWRITE_TAC[IN_IMAGE] THEN EXISTS_TAC `x:real^(N,1)finite_sum` THEN
+          ASM_SIMP_TAC[IN_ELIM_THM; REAL_LT_IMP_NZ]]]];
+    EXISTS_TAC `IMAGE fstcart (t:real^(N,1)finite_sum->bool)` THEN
+    EXISTS_TAC `IMAGE fstcart (u:real^(N,1)finite_sum->bool)` THEN
+    ASM_SIMP_TAC[FINITE_IMAGE] THEN
+    SUBGOAL_THEN `s = {x:real^N | pastecart x (vec 1:real^1) IN s'}`
+    SUBST1_TAC THENL
+     [MAP_EVERY EXPAND_TAC ["s"; "s'"] THEN
+      REWRITE_TAC[IN_ELIM_THM; SNDCART_PASTECART; DROP_VEC; REAL_POS] THEN
+      GEN_REWRITE_TAC I [EXTENSION] THEN
+      REWRITE_TAC[FSTCART_PASTECART; IN_ELIM_THM; IN_INTERS; REAL_MUL_RID] THEN
+      ASM SET_TAC[];
+      ASM_REWRITE_TAC[CONVEX_CONE_HULL_UNION]] THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN X_GEN_TAC `z:real^N` THEN
+    SIMP_TAC[CONVEX_CONE_HULL_LINEAR_IMAGE; CONVEX_HULL_LINEAR_IMAGE;
+             LINEAR_FSTCART] THEN
+    REWRITE_TAC[GSYM CONJ_ASSOC; RIGHT_EXISTS_AND_THM] THEN
+    REWRITE_TAC[EXISTS_IN_IMAGE] THEN
+    AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+    X_GEN_TAC `a:real^(N,1)finite_sum` THEN REWRITE_TAC[] THEN
+    MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+    DISCH_TAC THEN AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+    X_GEN_TAC `b:real^(N,1)finite_sum` THEN REWRITE_TAC[PASTECART_EQ] THEN
+    REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; FSTCART_ADD;
+                SNDCART_ADD] THEN
+    ASM_CASES_TAC `fstcart(a:real^(N,1)finite_sum) +
+                   fstcart(b:real^(N,1)finite_sum) = z` THEN
+    ASM_REWRITE_TAC[] THEN
+    SUBGOAL_THEN `sndcart(a:real^(N,1)finite_sum) = vec 0` SUBST1_TAC THENL
+     [UNDISCH_TAC `(a:real^(N,1)finite_sum) IN convex_cone hull t` THEN
+      SPEC_TAC(`a:real^(N,1)finite_sum`,`a:real^(N,1)finite_sum`) THEN
+      MATCH_MP_TAC HULL_INDUCT THEN ASM_SIMP_TAC[GSYM DROP_EQ; DROP_VEC] THEN
+      REWRITE_TAC[convex_cone; convex; conic; IN_ELIM_THM] THEN
+      SIMP_TAC[SNDCART_ADD; SNDCART_CMUL; DROP_ADD; DROP_CMUL] THEN
+      REWRITE_TAC[REAL_MUL_RZERO; REAL_ADD_RID; GSYM MEMBER_NOT_EMPTY] THEN
+      EXISTS_TAC `vec 0:real^(N,1)finite_sum` THEN
+      REWRITE_TAC[IN_ELIM_THM; SNDCART_VEC; DROP_VEC];
+      REWRITE_TAC[VECTOR_ADD_LID]] THEN
+    ASM_CASES_TAC `u:real^(N,1)finite_sum->bool = {}` THENL
+     [ASM_REWRITE_TAC[CONVEX_CONE_HULL_EMPTY; CONVEX_HULL_EMPTY] THEN
+      REWRITE_TAC[IN_SING; NOT_IN_EMPTY] THEN
+      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+      ASM_REWRITE_TAC[SNDCART_VEC; VEC_EQ] THEN ARITH_TAC;
+      ALL_TAC] THEN
+    ASM_SIMP_TAC[CONVEX_CONE_HULL_CONVEX_HULL_NONEMPTY; IN_ELIM_THM] THEN
+    SUBGOAL_THEN
+     `!y:real^(N,1)finite_sum. y IN convex hull u ==> sndcart y = vec 1`
+     (LABEL_TAC "*")
+    THENL
+     [MATCH_MP_TAC HULL_INDUCT THEN ASM_SIMP_TAC[GSYM DROP_EQ; DROP_VEC] THEN
+      REWRITE_TAC[convex; IN_ELIM_THM] THEN
+      SIMP_TAC[SNDCART_ADD; SNDCART_CMUL; DROP_ADD; DROP_CMUL] THEN
+      SIMP_TAC[REAL_MUL_RID];
+      ALL_TAC] THEN
+    EQ_TAC THEN REWRITE_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THENL
+     [MAP_EVERY X_GEN_TAC [`c:real`; `d:real^(N,1)finite_sum`] THEN
+      DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+      ASM_SIMP_TAC[SNDCART_CMUL; VECTOR_MUL_EQ_0; VECTOR_ARITH
+       `x:real^N = c % x <=> (c - &1) % x = vec 0`] THEN
+      ASM_SIMP_TAC[REAL_SUB_0; VEC_EQ; ARITH_EQ; VECTOR_MUL_LID];
+      DISCH_TAC THEN ASM_SIMP_TAC[] THEN EXISTS_TAC `&1` THEN
+      ASM_REWRITE_TAC[REAL_POS; VECTOR_MUL_LID] THEN ASM_MESON_TAC[]]]);;
+
+let POLYHEDRON_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N s.
+        linear f /\ polyhedron s ==> polyhedron(IMAGE f s)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  REWRITE_TAC[POLYHEDRON_AS_CONE_PLUS_CONV; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`t:real^M->bool`; `u:real^M->bool`] THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) t` THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) u` THEN
+  ASM_SIMP_TAC[FINITE_IMAGE] THEN
+  ASM_SIMP_TAC[CONVEX_CONE_HULL_LINEAR_IMAGE; CONVEX_HULL_LINEAR_IMAGE] THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP LINEAR_ADD) THEN MESON_TAC[]);;
+
+let POLYHEDRON_SUMS = prove
+ (`!s t:real^N->bool.
+    polyhedron s /\ polyhedron t ==> polyhedron {x + y | x IN s /\ y IN t}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[POLYHEDRON_AS_CONE_PLUS_CONV] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC
+   [`t1:real^N->bool`; `u1:real^N->bool`;
+    `t2:real^N->bool`; `u2:real^N->bool`] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  EXISTS_TAC `t1 UNION t2:real^N->bool` THEN
+  EXISTS_TAC `{u + v:real^N | u IN u1 /\ v IN u2}` THEN
+  REWRITE_TAC[CONVEX_CONE_HULL_UNION; CONVEX_HULL_SUMS] THEN
+  ASM_SIMP_TAC[FINITE_PRODUCT_DEPENDENT; FINITE_UNION] THEN
+  REWRITE_TAC[SET_RULE
+   `{h x y | x IN {f a b | P a /\ Q b} /\
+             y IN {g a b | R a /\ S b}} =
+    {h (f a b) (g c d) | P a /\ Q b /\ R c /\ S d}`] THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN MESON_TAC[VECTOR_ADD_AC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Farkas's lemma (2 variants) and stronger separation for polyhedra.        *)
+(* ------------------------------------------------------------------------- *)
+
+let FARKAS_LEMMA = prove
+ (`!A:real^N^M b.
+        (?x:real^N.
+            A ** x = b /\
+            (!i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i)) <=>
+        ~(?y:real^M.
+            b dot y < &0 /\
+            (!i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= (transp A ** y)$i))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(TAUT
+   `(q ==> ~p) /\ (~p ==> q) ==> (p <=> ~q)`) THEN
+  CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN `y dot ((A:real^N^M) ** x - b) = &0` MP_TAC THENL
+     [ASM_REWRITE_TAC[VECTOR_SUB_REFL; DOT_RZERO]; ALL_TAC] THEN
+    RULE_ASSUM_TAC(ONCE_REWRITE_RULE[DOT_SYM]) THEN
+    REWRITE_TAC[DOT_RSUB; REAL_SUB_0] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+     `y < &0 ==> &0 <= x ==> ~(x = y)`)) THEN
+    ONCE_REWRITE_TAC[GSYM DOT_LMUL_MATRIX] THEN
+    REWRITE_TAC[VECTOR_MATRIX_MUL_TRANSP; dot] THEN
+    MATCH_MP_TAC SUM_POS_LE THEN
+    ASM_SIMP_TAC[REAL_LE_MUL; IN_NUMSEG; FINITE_NUMSEG];
+    DISCH_TAC THEN MP_TAC(ISPECL
+     [`{(A:real^N^M) ** (x:real^N) |
+        !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i}`;
+      `b:real^M`] SEPARATING_HYPERPLANE_CLOSED_POINT) THEN
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN ANTS_TAC THENL
+     [REWRITE_TAC[IN_ELIM_THM; CONJ_ASSOC] THEN
+      CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+      ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+      SIMP_TAC[CONVEX_POSITIVE_ORTHANT; CONVEX_LINEAR_IMAGE;
+               MATRIX_VECTOR_MUL_LINEAR] THEN
+      MATCH_MP_TAC POLYHEDRON_IMP_CLOSED THEN
+      MATCH_MP_TAC POLYHEDRON_LINEAR_IMAGE THEN
+      REWRITE_TAC[MATRIX_VECTOR_MUL_LINEAR; POLYHEDRON_POSITIVE_ORTHANT];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `y:real^M` THEN
+      DISCH_THEN(X_CHOOSE_THEN `c:real` STRIP_ASSUME_TAC) THEN
+      ONCE_REWRITE_TAC[DOT_SYM] THEN
+      FIRST_ASSUM(MP_TAC o SPEC `vec 0:real^N`) THEN
+      REWRITE_TAC[MATRIX_VECTOR_MUL_RZERO; DOT_RZERO] THEN
+      REWRITE_TAC[real_gt; VEC_COMPONENT; REAL_LE_REFL] THEN
+      DISCH_TAC THEN CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+      X_GEN_TAC `k:num` THEN STRIP_TAC THEN
+      ONCE_REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC
+       `c / (transp(A:real^N^M) ** (y:real^M))$k % basis k:real^N`) THEN
+      ASM_SIMP_TAC[VECTOR_MUL_COMPONENT; BASIS_COMPONENT] THEN
+      ONCE_REWRITE_TAC[GSYM DOT_LMUL_MATRIX] THEN
+      ASM_SIMP_TAC[DOT_RMUL; DOT_BASIS; VECTOR_MATRIX_MUL_TRANSP] THEN
+      ASM_SIMP_TAC[REAL_FIELD `y < &0 ==> x / y * y = x`] THEN
+      REWRITE_TAC[REAL_LT_REFL; real_gt] THEN
+      GEN_TAC THEN COND_CASES_TAC THEN
+      ASM_REWRITE_TAC[REAL_MUL_RZERO; REAL_LE_REFL; REAL_MUL_RID] THEN
+      ONCE_REWRITE_TAC[REAL_ARITH `x / y:real = --x * -- inv y`] THEN
+      MATCH_MP_TAC REAL_LE_MUL THEN
+      REWRITE_TAC[REAL_ARITH `&0 <= --x <=> ~(&0 < x)`; REAL_LT_INV_EQ] THEN
+      ASM_REAL_ARITH_TAC]]);;
+
+let FARKAS_LEMMA_ALT = prove
+ (`!A:real^N^M b.
+        (?x:real^N.
+            (!i. 1 <= i /\ i <= dimindex(:M) ==> (A ** x)$i <= b$i)) <=>
+        ~(?y:real^M.
+            (!i. 1 <= i /\ i <= dimindex(:M) ==> &0 <= y$i) /\
+            y ** A = vec 0 /\ b dot y < &0)`,
+  REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(TAUT `~(p /\ q) /\ (~p ==> q) ==> (p <=> ~q)`) THEN
+  REPEAT STRIP_TAC THENL
+   [SUBGOAL_THEN `&0 <= (b - (A:real^N^M) ** x) dot y` MP_TAC THENL
+     [REWRITE_TAC[dot] THEN MATCH_MP_TAC SUM_POS_LE THEN
+      REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_MUL THEN
+      ASM_SIMP_TAC[VECTOR_SUB_COMPONENT; REAL_SUB_LE];
+      REWRITE_TAC[DOT_LSUB; REAL_SUB_LE] THEN REWRITE_TAC[REAL_NOT_LE] THEN
+      GEN_REWRITE_TAC RAND_CONV [DOT_SYM] THEN
+      REWRITE_TAC[GSYM DOT_LMUL_MATRIX] THEN
+      ASM_REWRITE_TAC[DOT_LZERO]];
+    MP_TAC(ISPECL
+     [`{(A:real^N^M) ** (x:real^N) + s |x,s|
+        !i. 1 <= i /\ i <= dimindex(:M) ==> &0 <= s$i}`;
+      `b:real^M`] SEPARATING_HYPERPLANE_CLOSED_POINT) THEN
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN ANTS_TAC THENL
+     [REWRITE_TAC[IN_ELIM_THM; CONJ_ASSOC] THEN CONJ_TAC THENL
+       [ONCE_REWRITE_TAC[SET_RULE
+         `{f x + y | x,y | P y} =
+          {z + y | z,y | z IN IMAGE (f:real^M->real^N) (:real^M) /\
+                         y IN {w | P w}}`] THEN
+        SIMP_TAC[CONVEX_SUMS; CONVEX_POSITIVE_ORTHANT; CONVEX_LINEAR_IMAGE;
+                 MATRIX_VECTOR_MUL_LINEAR; CONVEX_UNIV] THEN
+        MATCH_MP_TAC POLYHEDRON_IMP_CLOSED THEN
+        MATCH_MP_TAC POLYHEDRON_SUMS THEN
+        ASM_SIMP_TAC[POLYHEDRON_LINEAR_IMAGE; POLYHEDRON_UNIV;
+          MATRIX_VECTOR_MUL_LINEAR; POLYHEDRON_POSITIVE_ORTHANT];
+        POP_ASSUM MP_TAC THEN REWRITE_TAC[CONTRAPOS_THM] THEN
+        MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN
+        ASM_SIMP_TAC[VECTOR_ADD_COMPONENT; REAL_LE_ADDR]];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `y:real^M` THEN
+      DISCH_THEN(X_CHOOSE_THEN `c:real` STRIP_ASSUME_TAC) THEN
+      ONCE_REWRITE_TAC[DOT_SYM] THEN
+      FIRST_ASSUM(MP_TAC o SPECL [`vec 0:real^N`; `vec 0:real^M`]) THEN
+      REWRITE_TAC[MATRIX_VECTOR_MUL_RZERO; VECTOR_ADD_RID; DOT_RZERO] THEN
+      REWRITE_TAC[real_gt; VEC_COMPONENT; REAL_LE_REFL] THEN
+      DISCH_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+      CONJ_TAC THENL [ALL_TAC; ASM_REAL_ARITH_TAC] THEN CONJ_TAC THENL
+       [X_GEN_TAC `k:num` THEN STRIP_TAC THEN
+        ONCE_REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+        FIRST_X_ASSUM(MP_TAC o SPECL
+         [`vec 0:real^N`; `--c / --((y:real^M)$k) % basis k:real^M`]) THEN
+        ASM_SIMP_TAC[MATRIX_VECTOR_MUL_RZERO; VECTOR_ADD_LID;
+                     DOT_RMUL; DOT_BASIS; REAL_FIELD
+                      `y < &0 ==> c / --y * y = --c`] THEN
+        SIMP_TAC[REAL_NEG_NEG; REAL_LT_REFL; VECTOR_MUL_COMPONENT; real_gt] THEN
+        ASM_SIMP_TAC[BASIS_COMPONENT] THEN REPEAT STRIP_TAC THEN
+        COND_CASES_TAC THEN
+        ASM_REWRITE_TAC[REAL_MUL_RZERO; REAL_MUL_RID; REAL_LE_REFL] THEN
+        MATCH_MP_TAC REAL_LE_DIV THEN ASM_REAL_ARITH_TAC;
+        FIRST_X_ASSUM(MP_TAC o SPECL
+         [`c / norm((y:real^M) ** (A:real^N^M)) pow 2 %
+           (transp A ** y)`; `vec 0:real^M`]) THEN
+        SIMP_TAC[VEC_COMPONENT; REAL_LE_REFL; VECTOR_ADD_RID] THEN
+        ONCE_REWRITE_TAC[GSYM DOT_LMUL_MATRIX] THEN
+        REWRITE_TAC[GSYM VECTOR_MATRIX_MUL_TRANSP; DOT_RMUL] THEN
+        ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
+        ASM_SIMP_TAC[REAL_DIV_RMUL; NORM_POW_2; DOT_EQ_0] THEN
+        REAL_ARITH_TAC]]]);;
+
+let SEPARATING_HYPERPLANE_POLYHEDRA = prove
+ (`!s t:real^N->bool.
+        polyhedron s /\ polyhedron t /\ ~(s = {}) /\ ~(t = {}) /\ DISJOINT s t
+        ==> ?a b. ~(a = vec 0) /\
+                  (!x. x IN s ==> a dot x < b) /\
+                  (!x. x IN t ==> a dot x > b)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `{x + y:real^N | x IN s /\ y IN IMAGE (--) t}`
+        SEPARATING_HYPERPLANE_CLOSED_0) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[CONVEX_SUMS; CONVEX_NEGATIONS; POLYHEDRON_IMP_CONVEX] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC POLYHEDRON_IMP_CLOSED THEN
+      MATCH_MP_TAC POLYHEDRON_SUMS THEN ASM_SIMP_TAC[POLYHEDRON_NEGATIONS];
+      REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+      REWRITE_TAC[VECTOR_ARITH `y = --x:real^N <=> --y = x`] THEN
+      REWRITE_TAC[UNWIND_THM1] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+      REWRITE_TAC[VECTOR_ARITH `vec 0:real^N = x + y <=> y = --x`] THEN
+      REWRITE_TAC[UNWIND_THM2; VECTOR_NEG_NEG] THEN ASM SET_TAC[]];
+    REWRITE_TAC[FORALL_IN_GSPEC; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; GSYM VECTOR_SUB; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`a:real^N`; `k:real`] THEN
+    REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; DOT_RSUB] THEN STRIP_TAC THEN
+    EXISTS_TAC `--a:real^N` THEN ASM_REWRITE_TAC[VECTOR_NEG_EQ_0] THEN
+    MP_TAC(ISPEC `IMAGE (\x:real^N. a dot x) s` INF) THEN
+    MP_TAC(ISPEC `IMAGE (\x:real^N. a dot x) t` SUP) THEN
+    ASM_REWRITE_TAC[FORALL_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
+    MAP_EVERY ABBREV_TAC
+     [`u = inf(IMAGE (\x:real^N. a dot x) s)`;
+      `v = sup(IMAGE (\x:real^N. a dot x) t)`] THEN
+    ANTS_TAC THENL
+     [MP_TAC(GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]
+        (ASSUME `~(s:real^N->bool = {})`)) THEN
+      DISCH_THEN(X_CHOOSE_TAC `z:real^N`) THEN
+      EXISTS_TAC `a dot (z:real^N) - k` THEN
+      X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL [`z:real^N`; `x:real^N`]) THEN
+      ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+      STRIP_TAC] THEN
+    ANTS_TAC THENL
+     [MP_TAC(GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]
+        (ASSUME `~(t:real^N->bool = {})`)) THEN
+      DISCH_THEN(X_CHOOSE_TAC `z:real^N`) THEN
+      EXISTS_TAC `a dot (z:real^N) + k` THEN
+      X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^N`; `z:real^N`]) THEN
+      ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+      STRIP_TAC] THEN
+    SUBGOAL_THEN `k <= u - v` ASSUME_TAC THENL
+     [REWRITE_TAC[REAL_LE_SUB_LADD] THEN EXPAND_TAC "u" THEN
+      MATCH_MP_TAC REAL_LE_INF THEN
+      ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; FORALL_IN_IMAGE] THEN
+      GEN_TAC THEN DISCH_TAC THEN
+      ONCE_REWRITE_TAC[REAL_ARITH `k + v <= u <=> v <= u - k`] THEN
+      EXPAND_TAC "v" THEN MATCH_MP_TAC REAL_SUP_LE THEN
+      ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; FORALL_IN_IMAGE] THEN
+      ASM_MESON_TAC[REAL_ARITH `x - y > k ==> y <= x - k`];
+      EXISTS_TAC `--((u + v) / &2)` THEN REWRITE_TAC[real_gt] THEN
+      REWRITE_TAC[DOT_LNEG; REAL_LT_NEG2] THEN REPEAT STRIP_TAC THENL
+       [MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `u:real`;
+        MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `v:real`] THEN
+      ASM_SIMP_TAC[] THEN ASM_REAL_ARITH_TAC]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relative and absolute frontier of a polytope.                             *)
