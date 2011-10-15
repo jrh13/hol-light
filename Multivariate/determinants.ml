@@ -640,6 +640,13 @@ let DET_EQ_0_RANK = prove
   GEN_TAC THEN MP_TAC(ISPEC `A:real^N^N` RANK_BOUND) THEN
   ARITH_TAC);;
 
+let HOMOGENEOUS_LINEAR_EQUATIONS_DET = prove
+ (`!A:real^N^N. (?x. ~(x = vec 0) /\ A ** x = vec 0) <=> det A = &0`,
+  GEN_TAC THEN
+  REWRITE_TAC[MATRIX_NONFULL_LINEAR_EQUATIONS_EQ; DET_EQ_0_RANK] THEN
+  MATCH_MP_TAC(ARITH_RULE `r <= MIN N N ==> (~(r = N) <=> r < N)`) THEN
+  REWRITE_TAC[RANK_BOUND]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cramer's rule.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -1384,8 +1391,8 @@ let GEOM_ORIGIN_CONV,GEOM_TRANSLATE_CONV =
          (!Q. (?s. Q s) <=> (?s. Q(IMAGE (IMAGE (\x. a + x)) s))) /\
          (!P. (!g:real^1->real^N. P g) <=> (!g. P ((\x. a + x) o g))) /\
          (!P. (?g:real^1->real^N. P g) <=> (?g. P ((\x. a + x) o g))) /\
-         (!Q. (!l. Q l) <=> (!l. Q(MAP (\x. a + x) l))) /\             
-         (!Q. (?l. Q l) <=> (?l. Q(MAP (\x. a + x) l)))) /\           
+         (!Q. (!l. Q l) <=> (!l. Q(MAP (\x. a + x) l))) /\
+         (!Q. (?l. Q l) <=> (?l. Q(MAP (\x. a + x) l)))) /\
         ((!P. {x | P x} = IMAGE (\x. a + x) {x | P(a + x)}) /\
          (!Q. {s | Q s} =
               IMAGE (IMAGE (\x. a + x)) {s | Q(IMAGE (\x. a + x) s)}) /\
@@ -1473,7 +1480,7 @@ let GEOM_BASIS_MULTIPLE_RULE =
               (!Q. (?s. Q s) <=> (?s. Q (IMAGE (IMAGE f) s))) /\
               (!P. (!g:real^1->real^N. P g) <=> (!g. P (f o g))) /\
               (!P. (?g:real^1->real^N. P g) <=> (?g. P (f o g))) /\
-              (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\             
+              (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\
               (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\
              ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\
               (!Q. {s | Q s} = IMAGE (IMAGE f) {s | Q(IMAGE f s)}) /\
@@ -1654,15 +1661,15 @@ let GEOM_NORMALIZE_RULE =
                   (!g. P ((\x. norm(a) % x) o g))) /\
              (!P. (?g:real^1->real^N. P g) <=>
                   (?g. P ((\x. norm(a) % x) o g))) /\
-             (!Q. (!l. Q l) <=> (!l. Q(MAP (\x:real^N. norm(a) % x) l))) /\             
+             (!Q. (!l. Q l) <=> (!l. Q(MAP (\x:real^N. norm(a) % x) l))) /\
              (!Q. (?l. Q l) <=> (?l. Q(MAP (\x:real^N. norm(a) % x) l)))) /\
             ((!P. {x:real^N | P x} =
                   IMAGE (\x. norm(a) % x) {x | P(norm(a) % x)}) /\
              (!Q. {s:real^N->bool | Q s} =
                   IMAGE (IMAGE (\x. norm(a) % x))
                        {s | Q(IMAGE (\x. norm(a) % x) s)}) /\
-             (!R. {l:(real^N)list | R l} = 
-                  IMAGE (MAP (\x:real^N. norm(a) % x)) 
+             (!R. {l:(real^N)list | R l} =
+                  IMAGE (MAP (\x:real^N. norm(a) % x))
                         {l | R(MAP (\x:real^N. norm(a) % x) l)}))`,
     GEN_TAC THEN DISCH_TAC THEN
     MP_TAC(ISPEC `\x:real^N. norm(a:real^N) % x`

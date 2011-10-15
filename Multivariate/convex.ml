@@ -1086,6 +1086,10 @@ let CONIC_SUMS = prove
   REWRITE_TAC[conic; IN_ELIM_THM] THEN
   MESON_TAC[VECTOR_ADD_LDISTRIB]);;
 
+let CONIC_POSITIVE_ORTHANT = prove
+ (`conic {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i}`,
+  SIMP_TAC[conic; IN_ELIM_THM; REAL_LE_MUL; VECTOR_MUL_COMPONENT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Affine dependence and consequential theorems (from Lars Schewe).          *)
 (* ------------------------------------------------------------------------- *)
@@ -2121,6 +2125,36 @@ let CONVEX_HULL_3_ALT = prove
   REWRITE_TAC[REAL_ARITH `x + y = &1 <=> y = &1 - x`; UNWIND_THM2] THEN
   REPEAT GEN_TAC THEN REPEAT(AP_TERM_TAC THEN ABS_TAC) THEN
   BINOP_TAC THENL [REAL_ARITH_TAC; VECTOR_ARITH_TAC]);;
+
+let CONVEX_HULL_SUMS = prove
+ (`!s t:real^N->bool.
+        convex hull {x + y | x IN s /\ y IN t} =
+        {x + y | x IN convex hull s /\ y IN convex hull t}`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC HULL_MINIMAL THEN
+    SIMP_TAC[CONVEX_SUMS; CONVEX_CONVEX_HULL] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[HULL_INC];
+    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [CONVEX_HULL_INDEXED] THEN
+    REWRITE_TAC[IN_ELIM_THM; LEFT_AND_EXISTS_THM] THEN
+    REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC
+     [`k1:num`; `u1:num->real`; `x1:num->real^N`;
+      `k2:num`; `u2:num->real`; `x2:num->real^N`] THEN
+    STRIP_TAC THEN
+    SUBGOAL_THEN
+     `x + y:real^N =
+      vsum(1..k1) (\i. vsum(1..k2) (\j. u1 i % u2 j % (x1 i + x2 j)))`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[VECTOR_ADD_LDISTRIB; VSUM_ADD_NUMSEG] THEN
+      ASM_SIMP_TAC[VSUM_LMUL; VSUM_RMUL; VECTOR_MUL_LID];
+      REWRITE_TAC[VSUM_LMUL] THEN MATCH_MP_TAC CONVEX_VSUM THEN
+      ASM_SIMP_TAC[FINITE_NUMSEG; CONVEX_CONVEX_HULL; IN_NUMSEG] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC CONVEX_VSUM THEN
+      ASM_SIMP_TAC[FINITE_NUMSEG; CONVEX_CONVEX_HULL; IN_NUMSEG] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relations among closure notions and corresponding hulls.                  *)

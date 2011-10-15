@@ -2024,6 +2024,10 @@ let LINEAR_ZERO = prove
  (`linear (\x. vec 0)`,
   REWRITE_TAC[linear] THEN CONJ_TAC THEN VECTOR_ARITH_TAC);;
 
+let LINEAR_NEGATION = prove
+ (`linear(--)`,
+  REWRITE_TAC[linear] THEN VECTOR_ARITH_TAC);;
+
 let LINEAR_COMPOSE_VSUM = prove
  (`!f s. FINITE s /\ (!a. a IN s ==> linear(f a))
          ==> linear(\x. vsum s (\a. f a x))`,
@@ -3062,6 +3066,11 @@ let PASTECART_VSUM = prove
                          vsum k (\i. pastecart (x i) (y i)))`,
   SIMP_TAC[PASTECART_EQ; FSTCART_VSUM; SNDCART_VSUM;
            FSTCART_PASTECART; SNDCART_PASTECART; ETA_AX]);;
+
+let PASTECART_EQ_VEC = prove
+ (`!x y n. pastecart x y = vec n <=> x = vec n /\ y = vec n`,
+  REWRITE_TAC[PASTECART_EQ; FSTCART_VEC; SNDCART_VEC;
+              FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 let NORM_FSTCART = prove
  (`!x. norm(fstcart x) <= norm x`,
@@ -5200,12 +5209,17 @@ let MATRIX_FULL_LINEAR_EQUATIONS = prove
         rank A = dimindex(:N) ==> ?x. A ** x = b`,
   SIMP_TAC[FULL_RANK_SURJECTIVE]);;
 
-let MATRIX_NONFULL_LINEAR_EQUATIONS = prove
+let MATRIX_NONFULL_LINEAR_EQUATIONS_EQ = prove
  (`!A:real^M^N.
-        ~(rank A = dimindex(:M)) ==> ?x. ~(x = vec 0) /\ A ** x = vec 0`,
+        (?x. ~(x = vec 0) /\ A ** x = vec 0) <=> ~(rank A = dimindex(:M))`,
   REPEAT GEN_TAC THEN REWRITE_TAC[FULL_RANK_INJECTIVE] THEN
   SIMP_TAC[LINEAR_INJECTIVE_0; MATRIX_VECTOR_MUL_LINEAR] THEN
   MESON_TAC[]);;
+
+let MATRIX_NONFULL_LINEAR_EQUATIONS = prove
+ (`!A:real^M^N.
+        ~(rank A = dimindex(:M)) ==> ?x. ~(x = vec 0) /\ A ** x = vec 0`,
+  REWRITE_TAC[MATRIX_NONFULL_LINEAR_EQUATIONS_EQ]);;
 
 let MATRIX_TRIVIAL_LINEAR_EQUATIONS = prove
  (`!A:real^M^N.
