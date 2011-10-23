@@ -37,7 +37,15 @@ let IND_SUC_0_EXISTS = prove
   X_CHOOSE_TAC `f:ind->ind` INFINITY_AX THEN EXISTS_TAC `f:ind->ind` THEN
   POP_ASSUM MP_TAC THEN REWRITE_TAC[ONE_ONE; ONTO] THEN MESON_TAC[]);;
 
-let IND_SUC_SPEC = new_specification ["IND_SUC"; "IND_0"] IND_SUC_0_EXISTS;;
+let IND_SUC_SPEC =
+  let th1 = new_definition
+   `IND_SUC = @f:ind->ind. ?z. (!x1 x2. (f x1 = f x2) = (x1 = x2)) /\
+                                (!x. ~(f x = z))` in
+  let th2 = REWRITE_RULE[GSYM th1] (SELECT_RULE IND_SUC_0_EXISTS) in
+  let th3 = new_definition
+   `IND_0 = @z:ind. (!x1 x2. IND_SUC x1 = IND_SUC x2 <=> x1 = x2) /\
+                    (!x. ~(IND_SUC x = z))` in
+  REWRITE_RULE[GSYM th3] (SELECT_RULE th2);;
 
 let IND_SUC_INJ,IND_SUC_0 = CONJ_PAIR IND_SUC_SPEC;;
 
@@ -183,9 +191,90 @@ inductive_type_store :=
 (* "Bitwise" binary representation of numerals.                              *)
 (* ------------------------------------------------------------------------- *)
 
-let BIT0_DEF = new_recursive_definition num_RECURSION
- `(BIT0 0 = 0) /\
-  (!n. BIT0 (SUC n) = SUC(SUC(BIT0 n)))`;;
+let BIT0_DEF =
+  let def = new_definition
+   `BIT0 = @fn. fn 0 = 0 /\ (!n. fn (SUC n) = SUC (SUC(fn n)))`
+  and th = BETA_RULE(ISPECL [`0`; `\m n:num. SUC(SUC m)`] num_RECURSION) in
+  REWRITE_RULE[GSYM def] (SELECT_RULE th);;
 
 let BIT1_DEF = new_definition
  `BIT1 n = SUC (BIT0 n)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Syntax operations on numerals.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let mk_numeral =
+  let Z = mk_const("_0",[])
+  and BIT0 = mk_const("BIT0",[])
+  and BIT1 = mk_const("BIT1",[])
+  and NUMERAL = mk_const("NUMERAL",[])
+  and zero = num_0 in
+  let rec mk_num n =
+    if n =/ num_0 then Z else
+    mk_comb((if mod_num n num_2 =/ num_0 then BIT0 else BIT1),
+            mk_num(quo_num n num_2)) in
+  fun n -> if n </ zero then failwith "mk_numeral: negative argument"
+           else mk_comb(NUMERAL,mk_num n);;
+
+let mk_small_numeral n = mk_numeral(Int n);;
+
+let dest_small_numeral t = Num.int_of_num(dest_numeral t);;
+
+let is_numeral = can dest_numeral;;
+
+(* ------------------------------------------------------------------------- *)
+(* Derived principles of definition based on existence.                      *)
+(*                                                                           *)
+(* This is put here because we use numerals as tags to force different       *)
+(* constants specified with equivalent theorems to have different underlying *)
+(* definitions, ensuring that there are no provable equalities between them  *)
+(* and so in some sense the constants are "underspecified" as the user might *)
+(* want for some applications.                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let the_specifications = ref [];;
+
+let new_specification =
+  let check_distinct l =
+    try itlist (fun t res -> if mem t res then fail() else t::res) l []; true
+    with Failure _ -> false in
+  let specify n name th =
+    let ntm = mk_numeral n in
+    let gv = genvar(type_of ntm) in
+    let th0 = CONV_RULE(REWR_CONV SKOLEM_THM) (GEN gv th) in
+    let th1 = CONV_RULE(RATOR_CONV (REWR_CONV EXISTS_THM) THENC
+                        BETA_CONV) th0 in
+    let l,r = dest_comb(concl th1) in
+    let rn = mk_comb(r,ntm) in
+    let ty = type_of rn in
+    let th2 = new_definition(mk_eq(mk_var(name,ty),rn)) in
+    GEN_REWRITE_RULE ONCE_DEPTH_CONV [GSYM th2]
+     (SPEC ntm (CONV_RULE BETA_CONV th1)) in
+  let rec specifies n names th =
+    match names with
+      [] -> th
+    | name::onames -> let th' = specify n name th in
+                      specifies (n +/ Int 1) onames th' in
+  let specification_counter = ref(Int 0) in
+  fun names th ->
+    let asl,c = dest_thm th in
+    if not (asl = []) then
+      failwith "new_specification: Assumptions not allowed in theorem" else
+    if not (frees c = []) then
+      failwith "new_specification: Free variables in predicate" else
+    let avs = fst(strip_exists c) in
+    if length names = 0 or length names > length avs then
+      failwith "new_specification: Unsuitable number of constant names" else
+    if not (check_distinct names) then
+      failwith "new_specification: Constant names not distinct"
+    else
+      try let sth = snd(find (fun ((names',th'),sth') ->
+                               names' = names & aconv (concl th') (concl th))
+                             (!the_specifications)) in
+          warn true ("Benign respecification"); sth
+      with Failure _ ->
+          let sth = specifies (!specification_counter) names th in
+          the_specifications := ((names,th),sth)::(!the_specifications);
+          specification_counter := !specification_counter +/ Int(length names);
+          sth;;
