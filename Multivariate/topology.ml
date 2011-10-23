@@ -3378,6 +3378,10 @@ let CLOSED_INTERS_COMPACT = prove
   ANTS_TAC THENL [ASM_REAL_ARITH_TAC; MATCH_MP_TAC MONO_EXISTS] THEN
   X_GEN_TAC `y:real^N` THEN SIMP_TAC[IN_INTER; IN_CBALL] THEN NORM_ARITH_TAC);;
 
+let COMPACT_UNIONS = prove                   
+ (`!s. FINITE s /\ (!t. t IN s ==> compact t) ==> compact(UNIONS s)`,
+  SIMP_TAC[COMPACT_EQ_BOUNDED_CLOSED; CLOSED_UNIONS; BOUNDED_UNIONS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Finite intersection property. I could make it an equivalence in fact.     *)
 (* ------------------------------------------------------------------------- *)
@@ -6201,6 +6205,29 @@ let CLOSED_INTERVAL_IMAGE_UNIT_INTERVAL = prove
   POP_ASSUM MP_TAC THEN MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:num` THEN
   ASM_CASES_TAC `1 <= i /\ i <= dimindex(:N)` THEN ASM_REWRITE_TAC[] THEN
   REAL_ARITH_TAC);;
+
+let SUMS_INTERVALS = prove
+ (`!a b c d:real^N.
+    ~(interval[a,b] = {}) /\ ~(interval[c,d] = {})
+    ==> {x + y | x IN interval[a,b] /\ y IN interval[c,d]} =
+        interval[a+c,b+d]`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[INTERVAL_NE_EMPTY] THEN STRIP_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_INTERVAL; IN_ELIM_THM] THEN
+  REWRITE_TAC[TAUT `(a /\ b) /\ c <=> c /\ a /\ b`] THEN
+  REWRITE_TAC[VECTOR_ARITH `x:real^N = y + z <=> z = x - y`] THEN
+  REWRITE_TAC[UNWIND_THM2; VECTOR_ADD_COMPONENT; VECTOR_SUB_COMPONENT] THEN
+  X_GEN_TAC `x:real^N` THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `y:real^N` STRIP_ASSUME_TAC);
+    DISCH_TAC THEN
+    REWRITE_TAC[AND_FORALL_THM; GSYM LAMBDA_SKOLEM;
+                TAUT `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+    REWRITE_TAC[REAL_ARITH
+     `(a <= y /\ y <= b) /\ c <= x - y /\ x - y <= d <=>
+      max a (x - d) <= y /\ y <= min b (x - c)`] THEN
+    REWRITE_TAC[GSYM REAL_LE_BETWEEN]] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+  ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some special cases for intervals in R^1.                                  *)

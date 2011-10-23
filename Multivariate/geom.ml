@@ -333,6 +333,70 @@ let SIN_SQUARED_VECTOR_ANGLE = prove
    [REWRITE_RULE [REAL_ARITH `s + c = &1 <=> s = &1 - c`] SIN_CIRCLE] THEN
   REWRITE_TAC[COS_VECTOR_ANGLE] THEN REAL_ARITH_TAC);;
 
+let VECTOR_ANGLE_COMPLEX_LMUL = prove
+ (`!a. ~(a = Cx(&0))
+       ==> vector_angle (a * x) (a * y) = vector_angle x y`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `x = Cx(&0)` THENL
+   [ASM_REWRITE_TAC[COMPLEX_MUL_RZERO; vector_angle; COMPLEX_VEC_0];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `y = Cx(&0)` THENL
+   [ASM_REWRITE_TAC[COMPLEX_MUL_RZERO; vector_angle; COMPLEX_VEC_0];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`a * x:complex`; `a * y:complex`; `x:complex`; `y:complex`]
+        VECTOR_ANGLE_EQ) THEN
+  ASM_REWRITE_TAC[COMPLEX_VEC_0; COMPLEX_ENTIRE] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  REWRITE_TAC[COMPLEX_NORM_MUL] THEN MATCH_MP_TAC(REAL_RING
+   `a pow 2 * xy:real = d ==> xy * (a * x) * (a * y) = d * x * y`) THEN
+  REWRITE_TAC[NORM_POW_2] THEN
+  REWRITE_TAC[DOT_2; complex_mul; GSYM RE_DEF; GSYM IM_DEF; RE; IM] THEN
+  REAL_ARITH_TAC);;
+
+let VECTOR_ANGLE_1 = prove
+ (`!x. vector_angle x (Cx(&1)) = acs(Re x / norm x)`,
+  GEN_TAC THEN
+  SIMP_TAC[vector_angle; COMPLEX_VEC_0; CX_INJ; REAL_OF_NUM_EQ; ARITH_EQ] THEN
+  COND_CASES_TAC THENL
+   [ASM_REWRITE_TAC[real_div; RE_CX; ACS_0; REAL_MUL_LZERO]; ALL_TAC] THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NUM; REAL_MUL_RID] THEN
+  REWRITE_TAC[DOT_2; GSYM RE_DEF; GSYM IM_DEF; RE_CX; IM_CX] THEN
+  AP_TERM_TAC THEN REAL_ARITH_TAC);;
+
+let ARG_EQ_VECTOR_ANGLE_1 = prove
+ (`!z. ~(z = Cx(&0)) /\ &0 <= Im z ==> Arg z = vector_angle z (Cx(&1))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[VECTOR_ANGLE_1] THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o LAND_CONV o RAND_CONV) [ARG] THEN
+  REWRITE_TAC[RE_MUL_CX; RE_CEXP; RE_II; IM_MUL_II; IM_CX; RE_CX] THEN
+  REWRITE_TAC[REAL_MUL_LZERO; REAL_EXP_0; REAL_MUL_LID] THEN
+  ASM_SIMP_TAC[COMPLEX_NORM_ZERO; REAL_FIELD
+   `~(z = &0) ==> (z * x) / z = x`] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC ACS_COS THEN
+  ASM_REWRITE_TAC[ARG; ARG_LE_PI]);;
+
+let VECTOR_ANGLE_ARG = prove
+ (`!w z. ~(w = Cx(&0)) /\ ~(z = Cx(&0))
+         ==> vector_angle w z = if &0 <= Im(z / w) then Arg(z / w)
+                                else &2 * pi - Arg(z / w)`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THENL
+   [SUBGOAL_THEN `z = w * (z / w) /\ w = w * Cx(&1)` MP_TAC THENL
+     [REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC COMPLEX_FIELD; ALL_TAC];
+    SUBGOAL_THEN `w = z * (w / z) /\ z = z * Cx(&1)` MP_TAC THENL
+     [REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC COMPLEX_FIELD; ALL_TAC]] THEN
+  DISCH_THEN(fun th -> GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [th]) THEN
+  ASM_SIMP_TAC[VECTOR_ANGLE_COMPLEX_LMUL] THENL
+   [ONCE_REWRITE_TAC[VECTOR_ANGLE_SYM] THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC ARG_EQ_VECTOR_ANGLE_1 THEN ASM_REWRITE_TAC[] THEN
+    REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC COMPLEX_FIELD;
+    MP_TAC(ISPEC `z / w:complex` ARG_INV) THEN ANTS_TAC THENL
+     [ASM_MESON_TAC[real; REAL_LE_REFL]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    REWRITE_TAC[COMPLEX_INV_DIV] THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC ARG_EQ_VECTOR_ANGLE_1 THEN CONJ_TAC THENL
+     [REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC COMPLEX_FIELD;
+      ONCE_REWRITE_TAC[GSYM COMPLEX_INV_DIV] THEN
+      REWRITE_TAC[IM_COMPLEX_INV_GE_0] THEN ASM_REAL_ARITH_TAC]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Traditional geometric notion of angle (always 0 <= theta <= pi).          *)
 (* ------------------------------------------------------------------------- *)

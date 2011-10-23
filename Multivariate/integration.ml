@@ -439,6 +439,11 @@ let DIVISION_OF_TRIVIAL = prove
   DISCH_THEN SUBST1_TAC THEN
   REWRITE_TAC[FINITE_RULES; UNIONS_0; NOT_IN_EMPTY]);;
 
+let EMPTY_DIVISION_OF = prove
+ (`!s. {} division_of s <=> s = {}`,
+  REWRITE_TAC[division_of; UNIONS_0; FINITE_EMPTY; NOT_IN_EMPTY] THEN
+  MESON_TAC[]);;
+
 let DIVISION_OF_SING = prove
  (`!s a. s division_of interval[a,a] <=> s = {interval[a,a]}`,
   let lemma = prove
@@ -1152,6 +1157,34 @@ let DIVISION_OF_NONTRIVIAL = prove
      `((if p then x else y) - y) pow 2 = if p then (x - y) pow 2 else &0`] THEN
     ASM_SIMP_TAC[SUM_DELTA; IN_NUMSEG; POW_2_SQRT_ABS] THEN
     ASM_REAL_ARITH_TAC]);;
+
+let DIVISION_OF_TRANSLATION = prove
+ (`!d s. IMAGE (IMAGE (\x. a + x)) d division_of (IMAGE (\x. a + x) s) <=>
+         d division_of (s:real^N->bool)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[division_of] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[IMAGE_EQ_EMPTY; GSYM INTERIOR_INTER] THEN
+  SIMP_TAC[FINITE_IMAGE_INJ_EQ; VECTOR_ARITH `a + x:real^N = a + y <=> x = y`;
+   SET_RULE `(!x y. f x = f y <=> x = y)
+             ==> (IMAGE f s SUBSET IMAGE f t <=> s SUBSET t) /\
+                 (IMAGE f s = IMAGE f t <=> s = t) /\
+                 (IMAGE f s INTER IMAGE f t = IMAGE f (s INTER t))`] THEN
+  ONCE_REWRITE_TAC[CONV_RULE(LAND_CONV SYM_CONV) (SPEC_ALL
+   TRANSLATION_GALOIS)] THEN
+  REWRITE_TAC[GSYM INTERVAL_TRANSLATION] THEN
+  REWRITE_TAC[INTERIOR_TRANSLATION; IMAGE_EQ_EMPTY] THEN
+  AP_TERM_TAC THEN BINOP_TAC THENL
+   [MESON_TAC[VECTOR_ARITH `a + --a + b:real^N = b`];
+    AP_TERM_TAC THEN REWRITE_TAC[GSYM IMAGE_UNIONS] THEN
+    MATCH_MP_TAC(SET_RULE
+     `(!x y. f x = f y <=> x = y)
+      ==> (IMAGE f s = IMAGE f t <=> s = t)`) THEN
+    VECTOR_ARITH_TAC]);;
+
+let ELEMENTARY_COMPACT = prove
+ (`!s. (?d. d division_of s) ==> compact s`,
+  REWRITE_TAC[division_of] THEN
+  MESON_TAC[COMPACT_UNIONS; COMPACT_INTERVAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Tagged (partial) divisions.                                               *)
