@@ -1149,6 +1149,20 @@ let IM_COMPLEX_DIV_GE_0 = prove
   REWRITE_TAC[REAL_ARITH `&0 <= x <=> &0 < x \/ x = &0`] THEN
   REWRITE_TAC[IM_COMPLEX_DIV_GT_0; IM_COMPLEX_DIV_EQ_0]);;
 
+let IM_COMPLEX_INV_GE_0 = prove
+ (`!z. &0 <= Im(inv z) <=> Im(z) <= &0`,
+  GEN_TAC THEN MP_TAC(ISPECL [`Cx(&1)`; `z:complex`] IM_COMPLEX_DIV_GE_0) THEN
+  REWRITE_TAC[complex_div; COMPLEX_MUL_LID; IM_CNJ] THEN REAL_ARITH_TAC);;
+
+let IM_COMPLEX_INV_LE_0 = prove
+ (`!z. Im(inv z) <= &0 <=> &0 <= Im(z)`,
+  MESON_TAC[IM_COMPLEX_INV_GE_0; COMPLEX_INV_INV]);;
+
+let REAL_SGN_IM_COMPLEX_DIV = prove
+ (`!w z. real_sgn(Im(w / z)) = real_sgn(Im(w * cnj z))`,
+  REWRITE_TAC[real_sgn; IM_COMPLEX_DIV_GT_0; IM_COMPLEX_DIV_GE_0;
+              REAL_ARITH `x < &0 <=> ~(&0 <= x)`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Norm versus components for complex numbers.                               *)
 (* ------------------------------------------------------------------------- *)

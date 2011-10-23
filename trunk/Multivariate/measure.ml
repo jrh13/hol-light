@@ -819,6 +819,19 @@ let HAS_MEASURE_LIMIT = prove
          (if x IN s then if x IN k then a else b else b)`] THEN
   REWRITE_TAC[EXISTS_LIFT; GSYM LIFT_SUB; NORM_LIFT]);;
 
+let MEASURE_LIMIT = prove
+ (`!s:real^N->bool e.
+        measurable s /\ &0 < e
+        ==> ?B. &0 < B /\
+                !a b. ball(vec 0,B) SUBSET interval[a,b]
+                      ==> abs(measure(s INTER interval[a,b]) -
+                              measure s) < e`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HAS_MEASURE_MEASURE]) THEN
+  GEN_REWRITE_TAC LAND_CONV [HAS_MEASURE_LIMIT] THEN
+  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  ASM_MESON_TAC[MEASURE_UNIQUE]);;
+
 let INTEGRABLE_ON_CONST = prove
  (`!c:real^N. (\x:real^M. c) integrable_on s <=> c = vec 0 \/ measurable s`,
   GEN_TAC THEN ASM_CASES_TAC `c:real^N = vec 0` THEN
@@ -3224,6 +3237,62 @@ let MEASURABLE_INNER_COMPACT = prove
       CONJ_TAC THEN MATCH_MP_TAC MEASURE_DISJOINT_UNION_EQ THEN
       ASM_SIMP_TAC[MEASURABLE_INTER; MEASURABLE_DIFF; MEASURABLE_INTERVAL] THEN
       SET_TAC[]]]);;
+
+let OPEN_MEASURABLE_INNER_DIVISION = prove
+ (`!s:real^N->bool e.
+        open s /\ measurable s /\ &0 < e
+        ==> ?D. D division_of UNIONS D /\
+                UNIONS D SUBSET s /\
+                measure s < measure(UNIONS D) + e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `e / &2`] MEASURE_LIMIT) THEN
+  ASM_REWRITE_TAC[REAL_HALF; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `B:real` THEN STRIP_TAC THEN
+  MP_TAC(ISPEC `ball(vec 0:real^N,B)` BOUNDED_SUBSET_CLOSED_INTERVAL) THEN
+  ASM_REWRITE_TAC[BOUNDED_BALL; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`a:real^N`; `b:real^N`]) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `s INTER interval(a - vec 1:real^N,b + vec 1)`
+        OPEN_COUNTABLE_UNION_CLOSED_INTERVALS) THEN
+  ASM_SIMP_TAC[OPEN_INTER; OPEN_INTERVAL; SUBSET_INTER] THEN
+  DISCH_THEN(X_CHOOSE_THEN `D:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`D:(real^N->bool)->bool`; `measure(s:real^N->bool)`;
+                 `e / &2`] MEASURE_COUNTABLE_UNIONS_APPROACHABLE) THEN
+  ASM_REWRITE_TAC[REAL_HALF] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ASM_MESON_TAC[MEASURABLE_INTERVAL]; ALL_TAC] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC `measure(UNIONS D :real^N->bool)` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC MEASURE_SUBSET THEN REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC MEASURABLE_UNIONS THEN
+        ASM_MESON_TAC[SUBSET; MEASURABLE_INTERVAL];
+        ASM_SIMP_TAC[MEASURABLE_INTER; MEASURABLE_INTERVAL];
+        ASM_SIMP_TAC[SUBSET_UNIONS]];
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MEASURE_SUBSET THEN
+      ASM_SIMP_TAC[MEASURABLE_INTER; MEASURABLE_INTERVAL; INTER_SUBSET]];
+    DISCH_THEN(X_CHOOSE_THEN `d:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPEC `d:(real^N->bool)->bool` ELEMENTARY_UNIONS_INTERVALS) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[MEASURABLE_INTERVAL; SUBSET]; ALL_TAC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `p:(real^N->bool)->bool` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN `UNIONS p :real^N->bool = UNIONS d` SUBST1_TAC THENL
+     [ASM_MESON_TAC[division_of]; ALL_TAC] THEN
+    ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUBSET_TRANS THEN
+      EXISTS_TAC `UNIONS D :real^N->bool` THEN
+      ASM_SIMP_TAC[SUBSET_UNIONS; INTER_SUBSET];
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+       `ms' - e / &2 < mud ==> ms < ms' + e / &2 ==> ms < mud + e`)) THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+       `abs(sc - s) < e / &2
+        ==> sc <= so /\ sc <= s ==> s < so + e / &2`)) THEN
+      CONJ_TAC THEN MATCH_MP_TAC MEASURE_SUBSET THEN
+      ASM_SIMP_TAC[MEASURABLE_INTER; MEASURABLE_INTERVAL; INTER_SUBSET] THEN
+      MATCH_MP_TAC(SET_RULE `t SUBSET u ==> s INTER t SUBSET s INTER u`) THEN
+      REWRITE_TAC[SUBSET_INTERVAL; VECTOR_SUB_COMPONENT; VEC_COMPONENT;
+                  VECTOR_ADD_COMPONENT] THEN
+      MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+      MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN REAL_ARITH_TAC]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence for linear transformation, suffices to check compact intervals.     *)
@@ -6932,3 +7001,51 @@ let LEBESGUE_MEASURABLE_PREIMAGE_CLOSED = prove
         f measurable_on (:real^M) /\ closed t
         ==> lebesgue_measurable {x | f(x) IN t}`,
   SIMP_TAC[MEASURABLE_ON_PREIMAGE_CLOSED]);;
+
+(* ------------------------------------------------------------------------- *)
+(* More connections with measure where Lebesgue measurability is useful.     *)
+(* ------------------------------------------------------------------------- *)
+
+let MEASURABLE_LEGESGUE_MEASURABLE_SUBSET = prove
+ (`!s t:real^N->bool.
+        lebesgue_measurable s /\ measurable t /\ s SUBSET t
+        ==> measurable s`,
+  REWRITE_TAC[lebesgue_measurable; MEASURABLE_INTEGRABLE] THEN
+  REWRITE_TAC[indicator] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_INTEGRABLE THEN
+  EXISTS_TAC `(\x. if x IN t then vec 1 else vec 0):real^N->real^1` THEN
+  ASM_REWRITE_TAC[IN_UNIV] THEN GEN_TAC THEN
+  REPEAT(COND_CASES_TAC THEN
+         ASM_REWRITE_TAC[DROP_VEC; NORM_REAL; GSYM drop]) THEN
+  REWRITE_TAC[REAL_ABS_NUM; REAL_LE_REFL; REAL_POS] THEN ASM SET_TAC[]);;
+
+let MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE = prove
+ (`!s t:real^N->bool.
+        lebesgue_measurable s /\ measurable t ==> measurable(s INTER t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MEASURABLE_LEGESGUE_MEASURABLE_SUBSET THEN
+  EXISTS_TAC `t:real^N->bool` THEN
+  ASM_SIMP_TAC[LEBESGUE_MEASURABLE_INTER; MEASURABLE_IMP_LEBESGUE_MEASURABLE;
+               INTER_SUBSET]);;
+
+let MEASURABLE_MEASURABLE_INTER_LEGESGUE_MEASURABLE = prove
+ (`!s t:real^N->bool.
+        measurable s /\ lebesgue_measurable t ==> measurable(s INTER t)`,
+  MESON_TAC[INTER_COMM; MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE]);;
+
+let MEASURABLE_INTER_HALFSPACE_LE = prove
+ (`!s a i. measurable s ==> measurable(s INTER {x:real^N | x$i <= a})`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?k. 1 <= k /\ k <= dimindex(:N) /\ !z:real^N. z$i = z$k`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MEASURABLE_MEASURABLE_INTER_LEGESGUE_MEASURABLE THEN
+  ASM_SIMP_TAC[CLOSED_HALFSPACE_COMPONENT_LE; LEBESGUE_MEASURABLE_CLOSED]);;
+
+let MEASURABLE_INTER_HALFSPACE_GE = prove
+ (`!s a i. measurable s ==> measurable(s INTER {x:real^N | x$i >= a})`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?k. 1 <= k /\ k <= dimindex(:N) /\ !z:real^N. z$i = z$k`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MEASURABLE_MEASURABLE_INTER_LEGESGUE_MEASURABLE THEN
+  ASM_SIMP_TAC[CLOSED_HALFSPACE_COMPONENT_GE; LEBESGUE_MEASURABLE_CLOSED]);;

@@ -1557,6 +1557,20 @@ let SIN_COS_INJ = prove
   ASM_REWRITE_TAC[CEXP_EULER; GSYM CX_SIN; GSYM CX_COS] THEN
   ASM_REWRITE_TAC[IM_MUL_II; RE_CX]);;
 
+let CEXP_II_NE_1 = prove
+ (`!x. &0 < x /\ x < &2 * pi ==> ~(cexp(ii * Cx x) = Cx(&1))`,
+  GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[CEXP_EQ_1] THEN
+  REWRITE_TAC[RE_MUL_II; IM_CX; IM_MUL_II; IM_CX; REAL_NEG_0; RE_CX] THEN
+  DISCH_THEN(X_CHOOSE_THEN `n:real`
+   (CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC)) THEN
+  UNDISCH_TAC `&0 < &2 * n * pi` THEN ASM_CASES_TAC `n = &0` THEN
+  ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_RZERO; REAL_LT_REFL] THEN
+  MP_TAC(ISPEC `n:real` REAL_ABS_INTEGER_LEMMA) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP (REAL_ARITH
+   `&2 * n * pi < &2 * pi ==> &0 < (&1 - n) * &2 * pi`)) THEN
+  ASM_SIMP_TAC[REAL_LT_MUL_EQ; PI_POS; REAL_LT_MUL; REAL_OF_NUM_LT; ARITH] THEN
+  ASM_REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Taylor series for complex exponential.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -1905,6 +1919,25 @@ let ARG_LE_DIV_SUM_EQ = prove
          ==> (Arg(w) <= Arg(z) <=> Arg(z) = Arg(w) + Arg(z / w))`,
   MESON_TAC[ARG_LE_DIV_SUM; REAL_LE_ADDR; ARG]);;
 
+let REAL_SUB_ARG = prove
+ (`!w z. ~(w = Cx(&0)) /\ ~(z = Cx(&0))
+         ==> Arg w - Arg z = if Arg(z) <= Arg(w) then Arg(w / z)
+                             else Arg(w / z) - &2 * pi`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THENL
+   [MP_TAC(ISPECL [`z:complex`; `w:complex`] ARG_LE_DIV_SUM) THEN
+    ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+    MP_TAC(ISPECL [`w:complex`; `z:complex`] ARG_LE_DIV_SUM) THEN
+    ASM_REWRITE_TAC[] THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; DISCH_THEN SUBST1_TAC] THEN
+    REWRITE_TAC[REAL_ARITH `a - (a + b):real = --b`] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [GSYM COMPLEX_INV_DIV] THEN
+    MATCH_MP_TAC(REAL_ARITH `x = &2 * pi - y ==> --x = y - &2 * pi`) THEN
+    MATCH_MP_TAC ARG_INV THEN REWRITE_TAC[GSYM ARG_EQ_0] THEN
+    ONCE_REWRITE_TAC[GSYM COMPLEX_INV_DIV] THEN
+    REWRITE_TAC[ARG_INV_EQ_0] THEN
+    MP_TAC(ISPECL [`w:complex`; `z:complex`] ARG_LE_DIV_SUM) THEN
+    ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Properties of 2-D rotations, and their interpretation using cexp.         *)
 (* ------------------------------------------------------------------------- *)
@@ -2148,6 +2181,17 @@ let ROTATE2D_EQ = prove
  (`!t x y. rotate2d t x = rotate2d t y <=> x = y`,
   MESON_TAC[ORTHOGONAL_TRANSFORMATION_INJECTIVE;
             ORTHOGONAL_TRANSFORMATION_ROTATE2D]);;
+
+let ROTATE2D_SUB_ARG = prove
+ (`!w z. ~(w = Cx(&0)) /\ ~(z = Cx(&0))
+         ==> rotate2d(Arg w - Arg z) = rotate2d(Arg(w / z))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[REAL_SUB_ARG] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[real_sub; ROTATE2D_ADD; FUN_EQ_THM] THEN
+  GEN_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[ROTATE2D_COMPLEX] THEN
+  REWRITE_TAC[EULER; RE_MUL_II; IM_MUL_II; RE_CX; IM_CX; COS_NEG; SIN_NEG] THEN
+  REWRITE_TAC[SIN_NPI; COS_NPI; REAL_EXP_NEG; REAL_EXP_0; CX_NEG] THEN
+  REWRITE_TAC[COMPLEX_NEG_0; COMPLEX_MUL_RZERO; COMPLEX_ADD_RID] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN REWRITE_TAC[COMPLEX_MUL_LID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex tangent function.                                                 *)
@@ -5100,6 +5144,16 @@ let ROOT_MONO_LE_EQ = prove
 let ROOT_INJ = prove
  (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y ==> (root n x = root n y <=> x = y)`,
   SIMP_TAC[GSYM REAL_LE_ANTISYM; ROOT_MONO_LE_EQ]);;
+
+let REAL_ROOT_LE = prove
+ (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y
+           ==> (root n x <= y <=> x <= y pow n)`,
+  MESON_TAC[REAL_ROOT_POW; REAL_POW_LE; ROOT_MONO_LE_EQ]);;
+
+let REAL_LE_ROOT = prove
+ (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y
+           ==> (x <= root n y <=> x pow n <= y)`,
+  MESON_TAC[REAL_ROOT_POW; REAL_POW_LE; ROOT_MONO_LE_EQ]);;
 
 let LOG_ROOT = prove
  (`!n x. ~(n = 0) /\ &0 < x ==> log(root n x) = log x / &n`,
