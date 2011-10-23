@@ -1,6 +1,15 @@
+Thu 20th Oct 2011       hol.ml, class.ml, nums.ml, arith.ml, recursion.ml, pair.ml
+
+Based on an idea discussed with Mark Adams, changed "new_specification" to
+exploit dummy quantifiers and numeral tags to avoid provable equalities between
+different constants introduced with new_specification based on the same (or a
+provably equivalent) existence theorem. Since this requires the existence of
+numerals, quite a bit of build order reshuffling was necessary, and two former
+uses of new_specification (IND_SUC/IND_0 and BIT0_DEF) are now done "manually".
+
 Fri  7th Oct 2011       Makefile
 
-Made a fix to the Makefile from Ramana Kumar on the hol-light page (see issue 
+Made a fix to the Makefile from Ramana Kumar on the hol-light page (see issue
 2). This uses the file  pa_j_3.1x_6.02.2.ml for version 6.03 of OCaml as well.
 I just tried it with Ocaml 3.12.1 and camlp5 6.02.3, and it seems to work fine.
 

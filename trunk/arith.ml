@@ -7,7 +7,7 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-needs "nums.ml";;
+needs "recursion.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Note: all the following proofs are intuitionistic and intensional, except *)
@@ -126,29 +126,6 @@ let ONE = prove
 let TWO = prove
  (`2 = SUC 1`,
   REWRITE_TAC[BIT0; BIT1; REWRITE_RULE[NUMERAL] ADD_CLAUSES; NUMERAL]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Syntax operations on numerals.                                            *)
-(* ------------------------------------------------------------------------- *)
-
-let mk_numeral =
-  let Z = mk_const("_0",[])
-  and BIT0 = mk_const("BIT0",[])
-  and BIT1 = mk_const("BIT1",[])
-  and NUMERAL = mk_const("NUMERAL",[])
-  and zero = num_0 in
-  let rec mk_num n =
-    if n =/ num_0 then Z else
-    mk_comb((if mod_num n num_2 =/ num_0 then BIT0 else BIT1),
-            mk_num(quo_num n num_2)) in
-  fun n -> if n </ zero then failwith "mk_numeral: negative argument"
-           else mk_comb(NUMERAL,mk_num n);;
-
-let mk_small_numeral n = mk_numeral(Int n);;
-
-let dest_small_numeral t = Num.int_of_num(dest_numeral t);;
-
-let is_numeral = can dest_numeral;;
 
 (* ------------------------------------------------------------------------- *)
 (* One immediate consequence.                                                *)
