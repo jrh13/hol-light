@@ -6,7 +6,7 @@
 Constructs a type variable of the given name.
 
 \DESCRIBE
-{mk_vartype "A")} returns a type variable {`:A`}.
+{mk_vartype "A"} returns a type variable {`:A`}.
 
 \FAILURE
 Never fails.
