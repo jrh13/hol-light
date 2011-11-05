@@ -1533,6 +1533,52 @@ let MEASURE_COUNTABLE_UNIONS_APPROACHABLE = prove
     SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG_LE] THEN
     ASM_SIMP_TAC[REAL_ARITH `abs(x - u) < e /\ &0 < e ==> u - e < x`]]);;
 
+let HAS_MEASURE_NESTED_INTERS = prove
+ (`!s:num->real^N->bool.
+        (!n. measurable(s n)) /\
+        (!n. s(SUC n) SUBSET s(n))
+        ==> measurable(INTERS {s n | n IN (:num)}) /\
+            ((\n. lift(measure (s n))) -->
+                  lift(measure (INTERS {s n | n IN (:num)}))) sequentially`,
+  GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`\n. (s:num->real^N->bool) 0 DIFF s n`; `measure(s 0:real^N->bool)`]
+        HAS_MEASURE_NESTED_UNIONS) THEN
+  ASM_SIMP_TAC[MEASURABLE_DIFF] THEN ANTS_TAC THENL
+   [CONJ_TAC THEN X_GEN_TAC `n:num` THENL
+     [MATCH_MP_TAC MEASURE_SUBSET THEN
+      ASM_SIMP_TAC[MEASURABLE_DIFF; SUBSET_DIFF] THEN SET_TAC[];
+      REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `n:num`)) THEN SET_TAC[]];
+    SUBGOAL_THEN
+     `UNIONS {s 0 DIFF s n | n IN (:num)} =
+      s 0 DIFF INTERS {s n :real^N->bool | n IN (:num)}`
+     (fun th -> REWRITE_TAC[th])
+    THENL [REWRITE_TAC[DIFF_INTERS] THEN SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC MONO_AND THEN CONJ_TAC THENL
+     [DISCH_TAC THEN
+      SUBGOAL_THEN
+       `measurable(s 0 DIFF (s 0 DIFF INTERS {s n | n IN (:num)})
+                   :real^N->bool)`
+      MP_TAC THENL [ASM_SIMP_TAC[MEASURABLE_DIFF]; ALL_TAC] THEN
+      MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN MATCH_MP_TAC(SET_RULE
+       `t SUBSET s ==> s DIFF (s DIFF t) = t`) THEN
+      REWRITE_TAC[SUBSET; INTERS_GSPEC; IN_ELIM_THM] THEN SET_TAC[];
+
+      MP_TAC(ISPECL [`sequentially`; `lift(measure(s 0:real^N->bool))`]
+        LIM_CONST) THEN REWRITE_TAC[IMP_IMP] THEN
+      DISCH_THEN(MP_TAC o MATCH_MP LIM_SUB) THEN
+      REWRITE_TAC[GSYM LIFT_SUB] THEN MATCH_MP_TAC EQ_IMP THEN
+      AP_THM_TAC THEN BINOP_TAC THEN REWRITE_TAC[LIFT_EQ; FUN_EQ_THM] THEN
+      REPEAT GEN_TAC THEN
+      REWRITE_TAC[REAL_ARITH `s - m:real = n <=> m = s - n`] THEN
+      MATCH_MP_TAC MEASURE_DIFF_SUBSET THEN
+      ASM_SIMP_TAC[MEASURABLE_COUNTABLE_INTERS] THENL
+       [ALL_TAC; SET_TAC[]] THEN
+      MP_TAC(ISPEC `\m n:num. (s n :real^N->bool) SUBSET (s m)`
+          TRANSITIVE_STEPWISE_LE) THEN
+      ASM_REWRITE_TAC[] THEN
+      ANTS_TAC THENL [SET_TAC[]; MESON_TAC[LE_0]]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A sledgehammer to crack a nut, but we get uncountability of R trivially.  *)
 (* ------------------------------------------------------------------------- *)
@@ -1771,6 +1817,10 @@ let MEASURABLE_OPEN = prove
   MATCH_MP_TAC MEASURABLE_COMPACT THEN
   SIMP_TAC[COMPACT_EQ_BOUNDED_CLOSED; BOUNDED_DIFF; BOUNDED_INTERVAL] THEN
   MATCH_MP_TAC CLOSED_DIFF THEN ASM_REWRITE_TAC[CLOSED_INTERVAL]);;
+
+let MEASURE_OPEN_POS_LT = prove
+ (`!s. open s /\ bounded s /\ ~(s = {}) ==> &0 < measure s`,
+  MESON_TAC[OPEN_NOT_NEGLIGIBLE; MEASURABLE_MEASURE_POS_LT; MEASURABLE_OPEN]);;
 
 let MEASURABLE_CLOSURE = prove
  (`!s. bounded s ==> measurable(closure s)`,

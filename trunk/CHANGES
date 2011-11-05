@@ -1,3 +1,16 @@
+Thu  3rd Nov 2011       arith.ml
+
+Added another somewhat intricate DIV/MOD theorem:
+
+ MOD_MOD_EXP_MIN =
+   |- !x p m n. ~(p = 0) ==> x MOD p EXP m MOD p EXP n = x MOD p EXP MIN m n
+
+Tue  1st Nov 2011       arith.ml
+
+Added the following, a natural counterpart to MOD_MULT_ADD:
+
+  DIV_MULT_ADD = |- !a b n. ~(n = 0) ==> (a * n + b) DIV n = a + b DIV n
+
 Thu 20th Oct 2011       hol.ml, class.ml, nums.ml, arith.ml, recursion.ml, pair.ml
 
 Based on an idea discussed with Mark Adams, changed "new_specification" to

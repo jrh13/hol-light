@@ -4124,6 +4124,15 @@ let REAL_CONTINUOUS_ON_RPOW = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_WITHIN_RPOW THEN
   ASM_MESON_TAC[]);;
 
+let REALLIM_RPOW = prove
+ (`!net f l n.
+        (f ---> l) net /\ (l = &0 ==> &0 <= n)
+        ==> ((\x. f x rpow n) ---> l rpow n) net`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC
+  (REWRITE_RULE[] (ISPEC `\x. x rpow n` REALLIM_REAL_CONTINUOUS_FUNCTION)) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_CONTINUOUS_AT_RPOW THEN
+  ASM_REWRITE_TAC[]);;
+
 let REALLIM_NULL_POW_EQ = prove
  (`!net f n.
         ~(n = 0)

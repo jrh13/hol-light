@@ -3378,7 +3378,7 @@ let CLOSED_INTERS_COMPACT = prove
   ANTS_TAC THENL [ASM_REAL_ARITH_TAC; MATCH_MP_TAC MONO_EXISTS] THEN
   X_GEN_TAC `y:real^N` THEN SIMP_TAC[IN_INTER; IN_CBALL] THEN NORM_ARITH_TAC);;
 
-let COMPACT_UNIONS = prove                   
+let COMPACT_UNIONS = prove
  (`!s. FINITE s /\ (!t. t IN s ==> compact t) ==> compact(UNIONS s)`,
   SIMP_TAC[COMPACT_EQ_BOUNDED_CLOSED; CLOSED_UNIONS; BOUNDED_UNIONS]);;
 
@@ -4560,6 +4560,20 @@ let INTERIOR_TRANSLATION = prove
   REWRITE_TAC[interior] THEN GEOM_TRANSLATE_TAC[]);;
 
 add_translation_invariants [INTERIOR_TRANSLATION];;
+
+let OPEN_SUMS = prove
+ (`!s t:real^N->bool.
+        open s \/ open t ==> open {x + y | x IN s /\ y IN t}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[open_def] THEN STRIP_TAC THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`);
+    FIRST_X_ASSUM(MP_TAC o SPEC `y:real^N`)] THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `e:real` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `z:real^N` THEN DISCH_TAC THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  ASM_MESON_TAC[VECTOR_ADD_SYM; VECTOR_ARITH `(z - y) + y:real^N = z`;
+                NORM_ARITH `dist(z:real^N,x + y) < e ==> dist(z - y,x) < e`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Preservation of compactness and connectedness under continuous function.  *)

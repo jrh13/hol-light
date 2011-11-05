@@ -6625,6 +6625,13 @@ let ORTHOGONAL_TO_ORTHOGONAL_2D = prove
   REWRITE_TAC[orthogonal; GSYM DOT_CAUCHY_SCHWARZ_EQUAL; GSYM DOT_EQ_0] THEN
   REWRITE_TAC[DOT_2] THEN CONV_TAC REAL_RING);;
 
+let COLLINEAR_3_2D = prove
+ (`!x y z:real^2. collinear{x,y,z} <=>
+                  (z$1 - x$1) * (y$2 - x$2) = (y$1 - x$1) * (z$2 - x$2)`,
+  ONCE_REWRITE_TAC[COLLINEAR_3] THEN
+  REWRITE_TAC[GSYM DOT_CAUCHY_SCHWARZ_EQUAL] THEN
+  REWRITE_TAC[DOT_2; VECTOR_SUB_COMPONENT] THEN CONV_TAC REAL_RING);;
+
 (* ------------------------------------------------------------------------- *)
 (* Between-ness.                                                             *)
 (* ------------------------------------------------------------------------- *)
