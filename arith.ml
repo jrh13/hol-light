@@ -278,6 +278,16 @@ let GT = new_definition
   `m > n <=> n < m`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Maximum and minimum of natural numbers.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let MAX = new_definition
+  `!m n. MAX m n = if m <= n then n else m`;;
+
+let MIN = new_definition
+  `!m n. MIN m n = if m <= n then m else n`;;
+
+(* ------------------------------------------------------------------------- *)
 (* Step cases.                                                               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1275,6 +1285,13 @@ let MOD_MULT_ADD = prove
   MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC `m + p DIV n` THEN
   ASM_SIMP_TAC[RIGHT_ADD_DISTRIB; GSYM ADD_ASSOC; EQ_ADD_LCANCEL; DIVISION]);;
 
+let DIV_MULT_ADD = prove
+ (`!a b n. ~(n = 0) ==> (a * n + b) DIV n = a + b DIV n`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DIV_UNIQ THEN
+  EXISTS_TAC `b MOD n` THEN
+  REWRITE_TAC[RIGHT_ADD_DISTRIB; GSYM ADD_ASSOC] THEN
+  ASM_MESON_TAC[DIVISION]);;
+
 let MOD_ADD_MOD = prove
  (`!a b n. ~(n = 0) ==> ((a MOD n + b MOD n) MOD n = (a + b) MOD n)`,
   REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN
@@ -1363,6 +1380,19 @@ let DIV_MOD = prove
     ASM_SIMP_TAC[LE_RDIV_EQ; MULT_EQ_0; DIV_DIV; LEFT_ADD_DISTRIB]] THEN
   REWRITE_TAC[MULT_AC] THEN MESON_TAC[ADD_SYM; MULT_SYM; LE_ADD_RCANCEL]);;
 
+let MOD_MOD_EXP_MIN = prove
+ (`!x p m n. ~(p = 0)
+             ==> x MOD (p EXP m) MOD (p EXP n) = x MOD (p EXP (MIN m n))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[MIN] THEN
+  ASM_CASES_TAC `m:num <= n` THEN ASM_REWRITE_TAC[] THENL
+   [FIRST_X_ASSUM(CHOOSE_THEN SUBST1_TAC o GEN_REWRITE_RULE I [LE_EXISTS]) THEN
+    MATCH_MP_TAC MOD_LT THEN MATCH_MP_TAC LTE_TRANS THEN
+    EXISTS_TAC `p EXP m` THEN
+    ASM_SIMP_TAC[DIVISION; EXP_EQ_0; LE_EXP; LE_ADD];
+    SUBGOAL_THEN `?d. m = n + d` (CHOOSE_THEN SUBST1_TAC) THENL
+     [ASM_MESON_TAC[LE_CASES; LE_EXISTS];
+      ASM_SIMP_TAC[EXP_ADD; MOD_MOD; MULT_EQ_0; EXP_EQ_0]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Theorems for eliminating cutoff subtraction, predecessor, DIV and MOD.    *)
 (* We have versions that introduce universal or existential quantifiers.     *)
@@ -1438,16 +1468,6 @@ let NUM_CANCEL_CONV =
 let LE_IMP =
   let pth = PURE_ONCE_REWRITE_RULE[IMP_CONJ] LE_TRANS in
   fun th -> GEN_ALL(MATCH_MP pth (SPEC_ALL th));;
-
-(* ------------------------------------------------------------------------- *)
-(* Maximum and minimum of natural numbers.                                   *)
-(* ------------------------------------------------------------------------- *)
-
-let MAX = new_definition
-  `!m n. MAX m n = if m <= n then n else m`;;
-
-let MIN = new_definition
-  `!m n. MIN m n = if m <= n then m else n`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Binder for "the minimal n such that".                                     *)
