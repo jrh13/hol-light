@@ -1631,13 +1631,14 @@ let GEOM_TRANSFORM_TAC =
 let GEOM_NORMALIZE_RULE =
   let pth = prove
    (`!a:real^N. ~(a = vec 0)
-                ==> a = norm(a) % inv(norm a) % a /\
+                ==> vec 0 = norm(a) % vec 0 /\
+                    a = norm(a) % inv(norm a) % a /\
                     {} = IMAGE (\x. norm(a) % x) {} /\
                     {} = IMAGE (IMAGE (\x. norm(a) % x)) {} /\
                     (:real^N) = IMAGE (\x. norm(a) % x) (:real^N) /\
                     (:real^N->bool) =
                     IMAGE (IMAGE (\x. norm(a) % x)) (:real^N->bool)`,
-    REWRITE_TAC[IMAGE_CLAUSES; VECTOR_MUL_ASSOC] THEN
+    REWRITE_TAC[IMAGE_CLAUSES; VECTOR_MUL_ASSOC; VECTOR_MUL_RZERO] THEN
     SIMP_TAC[NORM_EQ_0; REAL_MUL_RINV; VECTOR_MUL_LID] THEN
     GEN_TAC THEN DISCH_TAC THEN
     REWRITE_TAC[SET_RULE `UNIV = IMAGE f UNIV <=> !y. ?x. f x = y`] THEN
@@ -1647,7 +1648,9 @@ let GEOM_NORMALIZE_RULE =
   and qth = prove
    (`!a:real^N.
         ~(a = vec 0)
-        ==> ((!P. (!x:real^N. P x) <=> (!x. P (norm(a) % x))) /\
+        ==> ((!P. (!r:real. P r) <=> (!r. P(norm a * r))) /\
+             (!P. (?r:real. P r) <=> (?r. P(norm a * r))) /\
+             (!P. (!x:real^N. P x) <=> (!x. P (norm(a) % x))) /\
              (!P. (?x:real^N. P x) <=> (?x. P (norm(a) % x))) /\
              (!Q. (!s:real^N->bool. Q s) <=>
                   (!s. Q(IMAGE (\x. norm(a) % x) s))) /\
@@ -1671,11 +1674,14 @@ let GEOM_NORMALIZE_RULE =
              (!R. {l:(real^N)list | R l} =
                   IMAGE (MAP (\x:real^N. norm(a) % x))
                         {l | R(MAP (\x:real^N. norm(a) % x) l)}))`,
-    GEN_TAC THEN DISCH_TAC THEN
-    MP_TAC(ISPEC `\x:real^N. norm(a:real^N) % x`
-      (INST_TYPE [`:real^1`,`:C`] QUANTIFY_SURJECTION_HIGHER_THM)) THEN
-    ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
-    ASM_SIMP_TAC[SURJECTIVE_SCALING; NORM_EQ_0])
+    GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC(TAUT
+     `(a /\ b) /\ c /\ d ==> (a /\ b /\ c) /\ d`) THEN
+    CONJ_TAC THENL
+     [ASM_MESON_TAC[NORM_EQ_0; REAL_FIELD `~(x = &0) ==> x * inv x * a = a`];
+      MP_TAC(ISPEC `\x:real^N. norm(a:real^N) % x`
+        (INST_TYPE [`:real^1`,`:C`] QUANTIFY_SURJECTION_HIGHER_THM)) THEN
+      ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+      ASM_SIMP_TAC[SURJECTIVE_SCALING; NORM_EQ_0]])
   and lth = prove
    (`(!b:real^N. ~(b = vec 0) ==> (P(b) <=> Q(inv(norm b) % b)))
      ==> P(vec 0) /\ (!b. norm(b) = &1 ==> Q b) ==> (!b. P b)`,
@@ -1692,7 +1698,13 @@ let GEOM_NORMALIZE_RULE =
     let th2 = CONV_RULE (RAND_CONV
      (PARTIAL_EXPAND_QUANTS_CONV avoid vth)) th1 in
     let th3 = SCALING_THEOREMS x in
-    let th4 = GEN_REWRITE_RULE (RAND_CONV o REDEPTH_CONV) [BETA_THM; th3] th2 in
+    let th3' = (end_itlist CONJ (map
+       (fun th -> let avs,_ = strip_forall(concl th) in
+                  let gvs = map (genvar o type_of) avs in
+                  GENL gvs (SPECL gvs th))
+       (CONJUNCTS th3))) in
+    let th4 = GEN_REWRITE_RULE (RAND_CONV o REDEPTH_CONV) 
+               [BETA_THM; th3'] th2 in
     MATCH_MP lth (GEN x (DISCH_ALL th4));;
 
 let GEN_GEOM_NORMALIZE_TAC x avoid (asl,w as gl) =
