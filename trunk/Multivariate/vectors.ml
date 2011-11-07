@@ -7111,7 +7111,24 @@ add_scaling_theorems
    MESON[REAL_LT_LMUL_EQ; real_gt]
      `!c. &0 < c ==> !a b. c * a > c * b <=> a > b`;
    MESON[REAL_LE_LMUL_EQ; real_ge]
-     `!c. &0 < c ==> !a b. c * a >= c * b <=> a >= b`];;
+     `!c. &0 < c ==> !a b. c * a >= c * b <=> a >= b`;
+   MESON[REAL_POW_MUL] 
+    `!c. &0 < c ==> !a n. (c * a) pow n = c pow n * a pow n`;
+   REAL_ARITH `!c. &0 < c ==> !a b n. a * c pow n * b = c pow n * a * b`;
+   REAL_ARITH 
+    `!c. &0 < c ==> !a b n. c pow n * a + c pow n * b = c pow n * (a + b)`;
+   REAL_ARITH 
+    `!c. &0 < c ==> !a b n. c pow n * a - c pow n * b = c pow n * (a - b)`;
+   MESON[REAL_POW_LT; REAL_EQ_LCANCEL_IMP; REAL_LT_IMP_NZ]
+    `!c. &0 < c ==> !a b n. c pow n * a = c pow n * b <=> a = b`;
+   MESON[REAL_LT_LMUL_EQ; REAL_POW_LT]
+     `!c. &0 < c ==> !a b n. c pow n * a < c pow n * b <=> a < b`;
+   MESON[REAL_LE_LMUL_EQ; REAL_POW_LT]
+     `!c. &0 < c ==> !a b n. c pow n * a <= c pow n * b <=> a <= b`;
+   MESON[REAL_LT_LMUL_EQ; real_gt; REAL_POW_LT]
+     `!c. &0 < c ==> !a b n. c pow n * a > c pow n * b <=> a > b`;
+   MESON[REAL_LE_LMUL_EQ; real_ge; REAL_POW_LT]
+     `!c. &0 < c ==> !a b n. c pow n * a >= c pow n * b <=> a >= b`];;
 
 (* ------------------------------------------------------------------------- *)
 (* Theorem deducing quantifier mappings from surjectivity.                   *)
