@@ -1,3 +1,46 @@
+Mon 21st Nov 2011       iterate.ml
+
+Added a few lemmas about the behaviour of real polynomial functions, since
+these are quite often useful:
+
+ REAL_SUB_POLYFUN =
+  |- !a x y n.
+         1 <= n
+         ==> sum(0..n) (\i. a i * x pow i) - sum(0..n) (\i. a i * y pow i) =
+             (x - y) *
+             sum(0..n - 1)
+             (\j. sum(j + 1..n) (\i. a i * y pow (i - j - 1)) * x pow j)
+
+ REAL_SUB_POLYFUN_ALT =
+  |- !a x y n.
+         1 <= n
+         ==> sum(0..n) (\i. a i * x pow i) - sum(0..n) (\i. a i * y pow i) =
+             (x - y) *
+             sum(0..n - 1)
+             (\j. sum(0..n - j - 1) (\k. a (j + k + 1) * y pow k) * x pow j)
+
+ REAL_POLYFUN_ROOTBOUND =
+  |- !n c.
+         ~(!i. i IN 0..n ==> c i = &0)
+         ==> FINITE {x | sum(0..n) (\i. c i * x pow i) = &0} /\
+             CARD {x | sum(0..n) (\i. c i * x pow i) = &0} <= n
+
+ REAL_POLYFUN_FINITE_ROOTS =
+  |- !n c.
+
+         FINITE {x | sum(0..n) (\i. c i * x pow i) = &0} <=>
+         (?i. i IN 0..n /\ ~(c i = &0))
+
+ REAL_POLYFUN_EQ_0 =
+  |- !n c.
+         (!x. sum(0..n) (\i. c i * x pow i) = &0) <=>
+         (!i. i IN 0..n ==> c i = &0)
+
+ REAL_POLYFUN_EQ_CONST =
+  |- !n c k.
+         (!x. sum(0..n) (\i. c i * x pow i) = k) <=>
+         c 0 = k /\ (!i. i IN 1..n ==> c i = &0)
+
 Thu  3rd Nov 2011       arith.ml
 
 Added another somewhat intricate DIV/MOD theorem:

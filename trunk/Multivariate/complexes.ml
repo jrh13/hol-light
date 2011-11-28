@@ -1616,36 +1616,56 @@ let VSUM_GP_OFFSET = prove
 (* Basics about polynomial functions: extremal behaviour and root counts.    *)
 (* ------------------------------------------------------------------------- *)
 
+let COMPLEX_SUB_POLYFUN = prove
+ (`!a x y n.
+   1 <= n
+   ==> vsum(0..n) (\i. a i * x pow i) - vsum(0..n) (\i. a i * y pow i) =
+       (x - y) *
+       vsum(0..n-1) (\j. vsum(j+1..n) (\i. a i * y pow (i - j - 1)) * x pow j)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM VSUM_SUB_NUMSEG; GSYM COMPLEX_SUB_LDISTRIB] THEN
+  GEN_REWRITE_TAC LAND_CONV [MATCH_MP VSUM_CLAUSES_LEFT (SPEC_ALL LE_0)] THEN
+  REWRITE_TAC[COMPLEX_SUB_REFL; complex_pow; COMPLEX_MUL_RZERO;
+      COMPLEX_ADD_LID] THEN
+  SIMP_TAC[COMPLEX_SUB_POW; ADD_CLAUSES] THEN
+  ONCE_REWRITE_TAC[COMPLEX_RING `a * x * s:complex = x * a * s`] THEN
+  SIMP_TAC[VSUM_COMPLEX_LMUL; FINITE_NUMSEG] THEN AP_TERM_TAC THEN
+  SIMP_TAC[GSYM VSUM_COMPLEX_LMUL; GSYM VSUM_COMPLEX_RMUL; FINITE_NUMSEG;
+           VSUM_VSUM_PRODUCT; FINITE_NUMSEG] THEN
+  MATCH_MP_TAC VSUM_EQ_GENERAL_INVERSES THEN
+  REPEAT(EXISTS_TAC `\(x:num,y:num). (y,x)`) THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; IN_ELIM_PAIR_THM; IN_NUMSEG] THEN
+  REWRITE_TAC[ARITH_RULE `a - b - c:num = a - (b + c)`; ADD_SYM] THEN
+  REWRITE_TAC[COMPLEX_MUL_AC] THEN ARITH_TAC);;
+
+let COMPLEX_SUB_POLYFUN_ALT = prove
+ (`!a x y n.
+    1 <= n
+    ==> vsum(0..n) (\i. a i * x pow i) - vsum(0..n) (\i. a i * y pow i) =
+        (x - y) *
+        vsum(0..n-1) (\j. vsum(0..n-j-1) (\k. a(j+k+1) * y pow k) * x pow j)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[COMPLEX_SUB_POLYFUN] THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC VSUM_EQ_NUMSEG THEN X_GEN_TAC `j:num` THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC VSUM_EQ_GENERAL_INVERSES THEN
+  MAP_EVERY EXISTS_TAC
+   [`\i. i - (j + 1)`; `\k. j + k + 1`] THEN
+  REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+  TRY(BINOP_TAC THEN AP_TERM_TAC) THEN ASM_ARITH_TAC);;
+
 let COMPLEX_POLYFUN_LINEAR_FACTOR = prove
  (`!a c n. ?b. !z. vsum(0..n) (\i. c(i) * z pow i) =
                    (z - a) * vsum(0..n-1) (\i. b(i) * z pow i) +
                     vsum(0..n) (\i. c(i) * a pow i)`,
-  GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
-  REWRITE_TAC[VSUM_CLAUSES_NUMSEG; ARITH; LE_0] THENL
-   [EXISTS_TAC `\n:num. Cx(&0)` THEN CONV_TAC COMPLEX_RING; ALL_TAC] THEN
-  FIRST_X_ASSUM(X_CHOOSE_TAC `b:num->complex`) THEN
-  REWRITE_TAC[SUC_SUB1] THEN
-  EXISTS_TAC `\i. (if i = n /\ ~(n = 0) then Cx(&0) else b(i)) +
-                  c(SUC n) * a pow (n - i)` THEN
-  X_GEN_TAC `z:complex` THEN
-  FIRST_X_ASSUM(fun th ->
-   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [th]) THEN
-  REWRITE_TAC[COMPLEX_RING
-  `(a * x + r) + c * y = a * z + r + c * w <=> (y - w) * c = a * (z - x)`] THEN
-  SIMP_TAC[COMPLEX_SUB_POW; NOT_SUC; LE_1; SUC_SUB1;
-           GSYM COMPLEX_MUL_ASSOC] THEN
-  AP_TERM_TAC THEN ASM_CASES_TAC `n = 0` THENL
-   [ASM_REWRITE_TAC[VSUM_CLAUSES_NUMSEG; ARITH] THEN SIMPLE_COMPLEX_ARITH_TAC;
-    ASM_SIMP_TAC[VSUM_CLAUSES_RIGHT; LE_1; LE_0;
-                 ARITH_RULE `~(n = 0) /\ x <= n - 1 ==> ~(x = n)`] THEN
-    REWRITE_TAC[COMPLEX_RING `(s0 + r0) * c = (s1 + r1) - s2 <=>
-                              c * s0 + s2 - s1 = r1 - r0 * c`] THEN
-    SIMP_TAC[GSYM VSUM_COMPLEX_LMUL; FINITE_NUMSEG;
-             GSYM VSUM_SUB; GSYM VSUM_ADD] THEN
-    REWRITE_TAC[COMPLEX_RING
-     `c * z * a + b * z - (b + c * a) * z = Cx(&0)`] THEN
-    SIMP_TAC[VSUM_0; GSYM COMPLEX_VEC_0; VECTOR_ADD_LID] THEN
-    REWRITE_TAC[COMPLEX_VEC_0] THEN SIMPLE_COMPLEX_ARITH_TAC]);;
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM COMPLEX_EQ_SUB_RADD] THEN
+  ASM_CASES_TAC `n = 0` THENL
+   [EXISTS_TAC `\i:num. Cx(&0)` THEN
+    ASM_SIMP_TAC[VSUM_SING; NUMSEG_SING; complex_pow; COMPLEX_MUL_LZERO] THEN
+    REWRITE_TAC[COMPLEX_SUB_REFL; GSYM COMPLEX_VEC_0; VSUM_0] THEN
+    REWRITE_TAC[COMPLEX_VEC_0; COMPLEX_MUL_RZERO];
+    ASM_SIMP_TAC[COMPLEX_SUB_POLYFUN; LE_1] THEN
+    EXISTS_TAC `\j. vsum (j + 1..n) (\i. c i * a pow (i - j - 1))` THEN
+    REWRITE_TAC[]]);;
 
 let COMPLEX_POLYFUN_LINEAR_FACTOR_ROOT = prove
  (`!a c n. vsum(0..n) (\i. c(i) * a pow i) = Cx(&0)
@@ -1748,6 +1768,46 @@ let COMPLEX_POLYFUN_ROOTBOUND = prove
   REWRITE_TAC[NOT_EXISTS_THM; NOT_FORALL_THM] THEN X_GEN_TAC `b:real` THEN
   MP_TAC(SPEC `b:real` (INST_TYPE [`:2`,`:N`] VECTOR_CHOOSE_SIZE)) THEN
   ASM_MESON_TAC[NORM_POS_LE; REAL_LE_TOTAL; REAL_LE_TRANS]);;
+
+let COMPLEX_POLYFUN_FINITE_ROOTS = prove
+ (`!n c. FINITE {x | vsum(0..n) (\i. c i * x pow i) = Cx(&0)} <=>
+         ?i. i IN 0..n /\ ~(c i = Cx(&0))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[TAUT `a /\ ~b <=> ~(a ==> b)`] THEN
+  REWRITE_TAC[GSYM NOT_FORALL_THM] THEN EQ_TAC THEN
+  SIMP_TAC[COMPLEX_POLYFUN_ROOTBOUND] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  SIMP_TAC[COMPLEX_MUL_LZERO] THEN SIMP_TAC[GSYM COMPLEX_VEC_0; VSUM_0] THEN
+  REWRITE_TAC[SET_RULE `{x | T} = (:complex)`; GSYM INFINITE;
+              EUCLIDEAN_SPACE_INFINITE]);;
+
+let COMPLEX_POLYFUN_EQ_0 = prove
+ (`!n c. (!z. vsum(0..n) (\i. c i * z pow i) = Cx(&0)) <=>
+         (!i. i IN 0..n ==> c i = Cx(&0))`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [GEN_REWRITE_TAC I [TAUT `p <=> ~ ~p`] THEN DISCH_THEN(MP_TAC o MATCH_MP
+     COMPLEX_POLYFUN_ROOTBOUND) THEN
+    ASM_REWRITE_TAC[EUCLIDEAN_SPACE_INFINITE; GSYM INFINITE; DE_MORGAN_THM;
+                    SET_RULE `{x | T} = (:complex)`];
+    ASM_SIMP_TAC[IN_NUMSEG; LE_0; COMPLEX_MUL_LZERO] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0; VSUM_0]]);;
+
+let COMPLEX_POLYFUN_EQ_CONST = prove
+ (`!n c k. (!z. vsum(0..n) (\i. c i * z pow i) = k) <=>
+           c 0 = k /\ (!i. i IN 1..n ==> c i = Cx(&0))`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
+   `!x. vsum(0..n) (\i. (if i = 0 then c 0 - k else c i) * x pow i) =
+        Cx(&0)` THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[VSUM_CLAUSES_LEFT; LE_0; complex_pow; COMPLEX_MUL_RID] THEN
+    REWRITE_TAC[COMPLEX_RING `(c - k) + s = Cx(&0) <=> c + s = k`] THEN
+    AP_TERM_TAC THEN ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+    AP_TERM_TAC THEN MATCH_MP_TAC VSUM_EQ THEN GEN_TAC THEN
+    REWRITE_TAC[IN_NUMSEG] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[ARITH];
+    REWRITE_TAC[COMPLEX_POLYFUN_EQ_0; IN_NUMSEG; LE_0] THEN
+    GEN_REWRITE_TAC LAND_CONV [MESON[]
+     `(!n. P n) <=> P 0 /\ (!n. ~(n = 0) ==> P n)`] THEN
+    SIMP_TAC[LE_0; COMPLEX_SUB_0] THEN MESON_TAC[LE_1]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex products.                                                         *)

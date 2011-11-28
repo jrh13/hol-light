@@ -559,6 +559,20 @@ let INT_CONG_SOLVE_POS = prove
     ASM_MESON_TAC[INT_LINEAR_CONG_POS; INT_CONG_SOLVE; INT_CONG_TRANS;
                   INT_CONG_SYM]]);;
 
+let INT_CONG_IMP_EQ = prove
+ (`!x y n:int. abs(x - y) < n /\ (x == y) (mod n) ==> x = y`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ONCE_REWRITE_TAC[int_congruent; GSYM INT_SUB_0] THEN
+  DISCH_THEN(X_CHOOSE_THEN `q:int` SUBST_ALL_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (ARITH_RULE
+   `abs(n * q) < n ==> abs(n * q) < abs n * &1`)) THEN
+  REWRITE_TAC[INT_ABS_MUL; INT_ENTIRE] THEN
+  REWRITE_TAC[INT_ARITH
+   `abs n * (q:int) < abs n * &1 <=> ~(&0 <= abs n * (q - &1))`] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
+  STRIP_TAC THEN MATCH_MP_TAC INT_LE_MUL THEN ASM_INT_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* A stronger form of the CRT.                                               *)
 (* ------------------------------------------------------------------------- *)
