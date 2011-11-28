@@ -548,6 +548,15 @@ let AFFINE_HULL_2 = prove
               VECTOR_ARITH `x - y = z:real^N <=> x = y + z`] THEN
   REWRITE_TAC[VECTOR_ADD_RID; REAL_ADD_RID] THEN SET_TAC[]);;
 
+let AFFINE_HULL_2_ALT = prove
+ (`!a b. affine hull {a,b} = {a + u % (b - a) | u IN (:real)}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[AFFINE_HULL_2] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[IN_ELIM_THM; IN_UNIV; ARITH_RULE `u + v = &1 <=> v = &1 - u`;
+    FORALL_UNWIND_THM2; UNWIND_THM2] THEN
+  CONJ_TAC THEN X_GEN_TAC `u:real` THEN EXISTS_TAC `&1 - u` THEN
+  VECTOR_ARITH_TAC);;
+
 let AFFINE_HULL_3 = prove
  (`affine hull {a,b,c} =
     { u % a + v % b + w % c | u + v + w = &1}`,
@@ -4288,6 +4297,64 @@ let CONTINUOUS_ON_CLOSEST_POINT = prove
  (`!s t. convex s /\ closed s /\ ~(s = {})
          ==> (closest_point s) continuous_on t`,
   MESON_TAC[CONTINUOUS_AT_IMP_CONTINUOUS_ON; CONTINUOUS_AT_CLOSEST_POINT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relating closest points and orthogonality.                                *)
+(* ------------------------------------------------------------------------- *)
+
+let ANY_CLOSEST_POINT_AFFINE_ORTHOGONAL = prove
+ (`!s a b:real^N.
+        affine s /\ b IN s /\ (!x. x IN s ==> dist(a,b) <= dist(a,x))
+        ==> (!x. x IN s ==> orthogonal (x - b) (a - b))`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `b:real^N` THEN
+  REWRITE_TAC[DIST_0; VECTOR_SUB_RZERO; orthogonal; dist; NORM_LE] THEN
+  REWRITE_TAC[DOT_LSUB] THEN REWRITE_TAC[DOT_RSUB] THEN
+  REWRITE_TAC[DOT_SYM; REAL_ARITH `a <= a - y - (y - x) <=> &2 * y <= x`] THEN
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `x:real^N = vec 0` THEN
+  ASM_REWRITE_TAC[DOT_RZERO] THEN FIRST_X_ASSUM(fun th ->
+   MP_TAC(SPEC `vec 0 + --((a dot x) / (x dot x)) % (x - vec 0:real^N)` th) THEN
+   MP_TAC(SPEC `vec 0 + (a dot x) / (x dot x) % (x - vec 0:real^N)` th)) THEN
+  ASM_SIMP_TAC[IN_AFFINE_ADD_MUL_DIFF] THEN
+  REWRITE_TAC[VECTOR_SUB_RZERO; VECTOR_ADD_LID; DOT_RMUL] THEN
+  REWRITE_TAC[DOT_LMUL; IMP_IMP] THEN DISCH_THEN(MP_TAC o MATCH_MP (REAL_ARITH
+   `&2 * x * a <= b * c * z /\ &2 * --x * a <= --b * --c * z
+    ==> &2 * abs(x * a) <= b * c * z`)) THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[REAL_NOT_LE; REAL_DIV_RMUL; DOT_EQ_0] THEN
+  MATCH_MP_TAC(REAL_ARITH `~(x = &0) ==> x < &2 * abs x`) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[GSYM DOT_EQ_0]) THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD);;
+
+let ORTHOGONAL_ANY_CLOSEST_POINT = prove
+ (`!s a b:real^N.
+        b IN s /\ (!x. x IN s ==> orthogonal (x - b) (a - b))
+        ==> (!x. x IN s ==> dist(a,b) <= dist(a,x))`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `b:real^N` THEN
+  REWRITE_TAC[dist; NORM_LE; orthogonal; VECTOR_SUB_RZERO] THEN
+  SIMP_TAC[DOT_LSUB; DOT_RSUB; DOT_SYM] THEN
+  REWRITE_TAC[DOT_POS_LE; REAL_ARITH `a <= a - &0 - (&0 - x) <=> &0 <= x`]);;
+
+let CLOSEST_POINT_AFFINE_ORTHOGONAL = prove
+ (`!s a:real^N x.
+        affine s /\ ~(s = {}) /\ x IN s
+        ==> orthogonal (x - closest_point s a) (a - closest_point s a)`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  DISCH_TAC THEN DISCH_TAC THEN GEN_TAC THEN
+  MATCH_MP_TAC ANY_CLOSEST_POINT_AFFINE_ORTHOGONAL THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CLOSEST_POINT_EXISTS THEN
+  ASM_SIMP_TAC[CLOSED_AFFINE]);;
+
+let CLOSEST_POINT_AFFINE_ORTHOGONAL_EQ = prove
+ (`!s a b:real^N.
+        affine s /\ b IN s
+        ==> (closest_point s a = b <=>
+             !x. x IN s ==> orthogonal (x - b) (a - b))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[CLOSEST_POINT_AFFINE_ORTHOGONAL; MEMBER_NOT_EMPTY];
+    DISCH_TAC THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC CLOSEST_POINT_UNIQUE THEN
+    ASM_SIMP_TAC[CLOSED_AFFINE; AFFINE_IMP_CONVEX] THEN
+    MATCH_MP_TAC ORTHOGONAL_ANY_CLOSEST_POINT THEN ASM_REWRITE_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Various point-to-set separating/supporting hyperplane theorems.           *)
