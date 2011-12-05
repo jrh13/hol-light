@@ -1580,8 +1580,13 @@ let HAS_MEASURE_NESTED_INTERS = prove
       ANTS_TAC THENL [SET_TAC[]; MESON_TAC[LE_0]]]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A sledgehammer to crack a nut, but we get uncountability of R trivially.  *)
+(* Some basic uncountability results. We don't really need measure theory    *)
+(* to prove these, but they do drop out of it pretty easily.                 *)
 (* ------------------------------------------------------------------------- *)
+
+let CARD_EQ_EUCLIDEAN = prove                                               
+ (`(:real^N) =_c (:real)`,                                                 
+  MATCH_MP_TAC CARD_EQ_CART THEN REWRITE_TAC[real_INFINITE]);;                 
 
 let COUNTABLE_OPEN_INTERVAL = prove
  (`!a b. COUNTABLE(interval(a,b)) <=> interval(a,b) = {}`,
@@ -1599,15 +1604,6 @@ let UNCOUNTABLE_EUCLIDEAN = prove
   REWRITE_TAC[INTERVAL_EQ_EMPTY; VEC_COMPONENT] THEN
   REWRITE_TAC[GSYM REAL_NOT_LT; REAL_LT_01; CONTRAPOS_THM] THEN
   MESON_TAC[COUNTABLE_SUBSET; SUBSET_UNIV]);;
-
-let UNCOUNTABLE_REAL = prove
- (`~COUNTABLE(:real)`,
-  DISCH_THEN(MP_TAC o ISPEC `lift` o MATCH_MP COUNTABLE_IMAGE) THEN
-  MP_TAC(ISPECL [`vec 0:real^1`; `vec 1:real^1`] COUNTABLE_OPEN_INTERVAL) THEN
-  REWRITE_TAC[INTERVAL_EQ_EMPTY_1; DROP_VEC; GSYM REAL_NOT_LT; REAL_LT_01] THEN
-  REWRITE_TAC[CONTRAPOS_THM] THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
-  REWRITE_TAC[SUBSET; FORALL_LIFT; LIFT_IN_IMAGE_LIFT; IN_UNIV]);;
 
 let UNCOUNTABLE_SEGMENT = prove
  (`(!a b:real^N. ~(a = b) ==> ~COUNTABLE(segment[a,b])) /\

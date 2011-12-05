@@ -2624,3 +2624,214 @@ let GE_C = prove
 
 let COUNTABLE = new_definition
   `COUNTABLE t <=> (:num) >=_c t`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Supremum and infimum.                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let sup = new_definition
+  `sup s = @a:real. (!x. x IN s ==> x <= a) /\
+                    !b. (!x. x IN s ==> x <= b) ==> a <= b`;;
+
+let SUP = prove
+ (`!s. ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)
+       ==> (!x. x IN s ==> x <= sup s) /\
+           !b. (!x. x IN s ==> x <= b) ==> sup s <= b`,
+  REWRITE_TAC[sup] THEN CONV_TAC(ONCE_DEPTH_CONV SELECT_CONV) THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_COMPLETE THEN
+  ASM_MESON_TAC[MEMBER_NOT_EMPTY]);;
+
+let SUP_FINITE_LEMMA = prove
+ (`!s. FINITE s /\ ~(s = {}) ==> ?b:real. b IN s /\ !x. x IN s ==> x <= b`,
+  REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[NOT_INSERT_EMPTY; IN_INSERT] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+  MESON_TAC[REAL_LE_TOTAL; REAL_LE_TRANS]);;
+
+let SUP_FINITE = prove
+ (`!s. FINITE s /\ ~(s = {}) ==> (sup s) IN s /\ !x. x IN s ==> x <= sup s`,
+  GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP SUP_FINITE_LEMMA) THEN
+  ASM_MESON_TAC[REAL_LE_ANTISYM; REAL_LE_TOTAL; SUP]);;
+
+let REAL_LE_SUP_FINITE = prove
+ (`!s a. FINITE s /\ ~(s = {}) ==> (a <= sup s <=> ?x. x IN s /\ a <= x)`,
+  MESON_TAC[SUP_FINITE; REAL_LE_TRANS]);;
+
+let REAL_SUP_LE_FINITE = prove
+ (`!s a. FINITE s /\ ~(s = {}) ==> (sup s <= a <=> !x. x IN s ==> x <= a)`,
+  MESON_TAC[SUP_FINITE; REAL_LE_TRANS]);;
+
+let REAL_LT_SUP_FINITE = prove
+ (`!s a. FINITE s /\ ~(s = {}) ==> (a < sup s <=> ?x. x IN s /\ a < x)`,
+  MESON_TAC[SUP_FINITE; REAL_LTE_TRANS]);;
+
+let REAL_SUP_LT_FINITE = prove
+ (`!s a. FINITE s /\ ~(s = {}) ==> (sup s < a <=> !x. x IN s ==> x < a)`,
+  MESON_TAC[SUP_FINITE; REAL_LET_TRANS]);;
+
+let REAL_SUP_UNIQUE = prove
+ (`!s b. (!x. x IN s ==> x <= b) /\
+         (!b'. b' < b ==> ?x. x IN s /\ b' < x)
+         ==> sup s = b`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[sup] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  ASM_MESON_TAC[REAL_NOT_LE; REAL_LE_ANTISYM]);;
+
+let REAL_SUP_LE = prove
+ (`!b. ~(s = {}) /\ (!x. x IN s ==> x <= b) ==> sup s <= b`,
+  MESON_TAC[SUP]);;
+
+let REAL_SUP_LE_SUBSET = prove
+ (`!s t. ~(s = {}) /\ s SUBSET t /\ (?b. !x. x IN t ==> x <= b)
+         ==> sup s <= sup t`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_SUP_LE THEN
+  MP_TAC(SPEC `t:real->bool` SUP) THEN ASM SET_TAC[]);;
+
+let REAL_SUP_BOUNDS = prove
+ (`!s a b. ~(s = {}) /\ (!x. x IN s ==> a <= x /\ x <= b)
+           ==> a <= sup s /\ sup s <= b`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(SPEC `s:real->bool` SUP) THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  ASM_MESON_TAC[REAL_LE_TRANS]);;
+
+let REAL_ABS_SUP_LE = prove
+ (`!s a. ~(s = {}) /\ (!x. x IN s ==> abs(x) <= a) ==> abs(sup s) <= a`,
+  REWRITE_TAC[GSYM REAL_BOUNDS_LE; REAL_SUP_BOUNDS]);;
+
+let REAL_SUP_ASCLOSE = prove
+ (`!s l e. ~(s = {}) /\ (!x. x IN s ==> abs(x - l) <= e)
+           ==> abs(sup s - l) <= e`,
+  SIMP_TAC[REAL_ARITH `abs(x - l):real <= e <=> l - e <= x /\ x <= l + e`] THEN
+  REWRITE_TAC[REAL_SUP_BOUNDS]);;
+
+let inf = new_definition
+  `inf s = @a:real. (!x. x IN s ==> a <= x) /\
+                    !b. (!x. x IN s ==> b <= x) ==> b <= a`;;
+
+let INF = prove
+ (`!s. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
+       ==> (!x. x IN s ==> inf s <= x) /\
+           !b. (!x. x IN s ==> b <= x) ==> b <= inf s`,
+  GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[inf] THEN
+  CONV_TAC(ONCE_DEPTH_CONV SELECT_CONV) THEN
+  ONCE_REWRITE_TAC[GSYM REAL_LE_NEG2] THEN
+  EXISTS_TAC `--(sup (IMAGE (--) s))` THEN
+  MP_TAC(SPEC `IMAGE (--) (s:real->bool)` SUP) THEN 
+  REWRITE_TAC[REAL_NEG_NEG] THEN
+  ABBREV_TAC `a = sup (IMAGE (--) s)` THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_IMAGE] THEN
+  ASM_MESON_TAC[REAL_NEG_NEG; MEMBER_NOT_EMPTY; REAL_LE_NEG2]);;
+
+let INF_FINITE_LEMMA = prove
+ (`!s. FINITE s /\ ~(s = {}) ==> ?b:real. b IN s /\ !x. x IN s ==> b <= x`,
+  REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[NOT_INSERT_EMPTY; IN_INSERT] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+  MESON_TAC[REAL_LE_TOTAL; REAL_LE_TRANS]);;
+
+let INF_FINITE = prove
+ (`!s. FINITE s /\ ~(s = {}) ==> (inf s) IN s /\ !x. x IN s ==> inf s <= x`,
+  GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP INF_FINITE_LEMMA) THEN
+  ASM_MESON_TAC[REAL_LE_ANTISYM; REAL_LE_TOTAL; INF]);;
+
+let REAL_LE_INF_FINITE = prove
+(`!s a. FINITE s /\ ~(s = {}) ==> (a <= inf s <=> !x. x IN s ==> a <= x)`,
+  MESON_TAC[INF_FINITE; REAL_LE_TRANS]);;
+
+let REAL_INF_LE_FINITE = prove
+ (`!s a. FINITE s /\ ~(s = {}) ==> (inf s <= a <=> ?x. x IN s /\ x <= a)`,
+  MESON_TAC[INF_FINITE; REAL_LE_TRANS]);;
+
+let REAL_LT_INF_FINITE = prove
+ (`!s a. FINITE s /\ ~(s = {}) ==> (a < inf s <=> !x. x IN s ==> a < x)`,
+  MESON_TAC[INF_FINITE; REAL_LTE_TRANS]);;
+
+let REAL_INF_LT_FINITE = prove
+ (`!s a. FINITE s /\ ~(s = {}) ==> (inf s < a <=> ?x. x IN s /\ x < a)`,
+  MESON_TAC[INF_FINITE; REAL_LET_TRANS]);;
+
+let REAL_INF_UNIQUE = prove
+ (`!s b. (!x. x IN s ==> b <= x) /\
+         (!b'. b < b' ==> ?x. x IN s /\ x < b')
+         ==> inf s = b`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[inf] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  ASM_MESON_TAC[REAL_NOT_LE; REAL_LE_ANTISYM]);;
+
+let REAL_LE_INF = prove
+ (`!b. ~(s = {}) /\ (!x. x IN s ==> b <= x) ==> b <= inf s`,
+  MESON_TAC[INF]);;
+
+let REAL_LE_INF_SUBSET = prove
+ (`!s t. ~(t = {}) /\ t SUBSET s /\ (?b. !x. x IN s ==> b <= x)
+         ==> inf s <= inf t`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_INF THEN
+  MP_TAC(SPEC `s:real->bool` INF) THEN ASM SET_TAC[]);;
+
+let REAL_INF_BOUNDS = prove
+ (`!s a b. ~(s = {}) /\ (!x. x IN s ==> a <= x /\ x <= b)
+           ==> a <= inf s /\ inf s <= b`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(SPEC `s:real->bool` INF) THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  ASM_MESON_TAC[REAL_LE_TRANS]);;
+
+let REAL_ABS_INF_LE = prove
+ (`!s a. ~(s = {}) /\ (!x. x IN s ==> abs(x) <= a) ==> abs(inf s) <= a`,
+  REWRITE_TAC[GSYM REAL_BOUNDS_LE; REAL_INF_BOUNDS]);;
+
+let REAL_INF_ASCLOSE = prove
+ (`!s l e. ~(s = {}) /\ (!x. x IN s ==> abs(x - l) <= e)
+           ==> abs(inf s - l) <= e`,
+  SIMP_TAC[REAL_ARITH `abs(x - l):real <= e <=> l - e <= x /\ x <= l + e`] THEN
+  REWRITE_TAC[REAL_INF_BOUNDS]);;
+
+let SUP_UNIQUE_FINITE = prove
+ (`!s. FINITE s /\ ~(s = {})
+       ==> (sup s = a <=> a IN s /\ !y. y IN s ==> y <= a)`,
+   ASM_SIMP_TAC[GSYM REAL_LE_ANTISYM; REAL_LE_SUP_FINITE; REAL_SUP_LE_FINITE;
+               NOT_INSERT_EMPTY; FINITE_INSERT; FINITE_EMPTY] THEN
+   MESON_TAC[REAL_LE_REFL; REAL_LE_TRANS; REAL_LE_ANTISYM]);;
+
+let INF_UNIQUE_FINITE = prove
+ (`!s. FINITE s /\ ~(s = {})
+       ==> (inf s = a <=> a IN s /\ !y. y IN s ==> a <= y)`,
+   ASM_SIMP_TAC[GSYM REAL_LE_ANTISYM; REAL_LE_INF_FINITE; REAL_INF_LE_FINITE;
+               NOT_INSERT_EMPTY; FINITE_INSERT; FINITE_EMPTY] THEN
+   MESON_TAC[REAL_LE_REFL; REAL_LE_TRANS; REAL_LE_ANTISYM]);;
+
+let SUP_INSERT_FINITE = prove
+ (`!x s. FINITE s ==> sup(x INSERT s) = if s = {} then x else max x (sup s)`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[SUP_UNIQUE_FINITE;  FINITE_INSERT; FINITE_EMPTY;
+               NOT_INSERT_EMPTY; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[IN_SING; REAL_LE_REFL] THEN
+  REWRITE_TAC[real_max] THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[SUP_FINITE; IN_INSERT; REAL_LE_REFL] THEN
+  ASM_MESON_TAC[SUP_FINITE; REAL_LE_TOTAL; REAL_LE_TRANS]);;
+
+let INF_INSERT_FINITE = prove
+ (`!x s. FINITE s ==> inf(x INSERT s) = if s = {} then x else min x (inf s)`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[INF_UNIQUE_FINITE;  FINITE_INSERT; FINITE_EMPTY;
+               NOT_INSERT_EMPTY; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[IN_SING; REAL_LE_REFL] THEN
+  REWRITE_TAC[real_min] THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[INF_FINITE; IN_INSERT; REAL_LE_REFL] THEN
+  ASM_MESON_TAC[INF_FINITE; REAL_LE_TOTAL; REAL_LE_TRANS]);;
+
+let REAL_SUP_EQ_INF = prove
+ (`!s. ~(s = {}) /\ (?B. !x. x IN s ==> abs(x) <= B)
+       ==> (sup s = inf s <=> ?a. s = {a})`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN EXISTS_TAC `sup s` THEN MATCH_MP_TAC
+     (SET_RULE `~(s = {}) /\ (!x. x IN s ==> x = a) ==> s = {a}`) THEN
+    ASM_REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN
+    ASM_MESON_TAC[SUP; REAL_ABS_BOUNDS; INF];
+    STRIP_TAC THEN
+    ASM_SIMP_TAC[SUP_INSERT_FINITE; INF_INSERT_FINITE; FINITE_EMPTY]]);;
