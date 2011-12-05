@@ -3052,7 +3052,7 @@ let POLYHEDRON_EQ_FINITE_EXPOSED_FACES = prove
   SUBGOAL_THEN
    `?x:real^N. x IN segment[c,p] /\ x IN (s DIFF relative_interior s)`
   MP_TAC THENL
-   [MP_TAC(ISPEC `segment[c:real^N,p]` CONNECTED_LOCAL) THEN
+   [MP_TAC(ISPEC `segment[c:real^N,p]` CONNECTED_OPEN_IN) THEN
     REWRITE_TAC[CONNECTED_SEGMENT; NOT_EXISTS_THM] THEN
     DISCH_THEN(MP_TAC o SPECL
      [`segment[c:real^N,p] INTER relative_interior s`;

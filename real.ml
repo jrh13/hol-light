@@ -1343,6 +1343,26 @@ let REAL_POW_EQ_EQ = prove
     REWRITE_RULE[EVEN_EXISTS]) THEN ASM_REWRITE_TAC[GSYM REAL_POW_POW]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Some basic forms of the Archimedian property.                             *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_ARCH_SIMPLE = prove
+ (`!x. ?n. x <= &n`,
+  let lemma = prove(`(!x. (?n. x = &n) ==> P x) <=> !n. P(&n)`,MESON_TAC[]) in
+  MP_TAC(SPEC `\y. ?n. y = &n` REAL_COMPLETE) THEN REWRITE_TAC[lemma] THEN
+  MESON_TAC[REAL_LE_SUB_LADD; REAL_OF_NUM_ADD; REAL_LE_TOTAL;
+            REAL_ARITH `~(M <= M - &1)`]);;
+
+let REAL_ARCH_LT = prove
+ (`!x. ?n. x < &n`,
+  MESON_TAC[REAL_ARCH_SIMPLE; REAL_OF_NUM_ADD;
+            REAL_ARITH `x <= n ==> x < n + &1`]);;
+
+let REAL_ARCH = prove
+ (`!x. &0 < x ==> !y. ?n. y < &n * x`,
+  MESON_TAC[REAL_ARCH_LT; REAL_LT_LDIV_EQ]);;
+
+(* ------------------------------------------------------------------------- *)
 (* The sign of a real number, as a real number.                              *)
 (* ------------------------------------------------------------------------- *)
 

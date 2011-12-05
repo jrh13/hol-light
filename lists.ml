@@ -459,6 +459,11 @@ let CONS_HD_TL = prove
  (`!l. ~(l = []) ==> l = CONS (HD l) (TL l)`,
   LIST_INDUCT_TAC THEN REWRITE_TAC[NOT_CONS_NIL;HD;TL]);;
 
+let EL_MAP = prove
+ (`!f n l. n < LENGTH l ==> EL n (MAP f l) = f(EL n l)`,
+  GEN_TAC THEN INDUCT_TAC THEN LIST_INDUCT_TAC THEN
+  ASM_REWRITE_TAC[LENGTH; CONJUNCT1 LT; LT_0; EL; HD; TL; MAP; LT_SUC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
 (* ------------------------------------------------------------------------- *)

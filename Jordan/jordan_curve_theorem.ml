@@ -19505,8 +19505,16 @@ let graph_edge_end_select = prove_by_refinement(
 
 (* Thu Aug  5 21:17:36 EDT 2004 *)
 
-let inf = jordan_def `inf (X:real->bool) =
-   @s. ((!x. X x ==> s <= x) /\ (!y. (!x. X x ==> y <= x) ==> (y <= s)))`;;
+(* Tweaked slightly now that there is an "inf" constant. JRH, 4 Dec 2011 *)
+
+let inf =
+  let inf_def =
+    `inf (X:real->bool) =
+      @s. ((!x. X x ==> s <= x) /\ (!y. (!x. X x ==> y <= x) ==> (y <= s)))` in
+  let def =
+    subst [mk_var("inf",`:(real->bool)->real`),mk_const("inf",[])] inf_def in
+  jordan_def def;;
+
 let interval_closed = prove_by_refinement(
   `!a b. closed_ (top_of_metric(UNIV,d_real)) {x | a <= x /\ x <= b}`,
   (* {{{ proof *)

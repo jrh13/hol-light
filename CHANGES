@@ -1,3 +1,177 @@
+Thu  1st Dec 2011       Library/card.ml
+
+Added a few more theorems on cardinality of list and cartesian product types 
+and also the cardinality and uncountability of the reals. This last fact is 
+done in a primitive way to avoid depending on the analytical theories. The 
+theorem UNCOUNTABLE_REAL has been taken out of the Multivariate theories now 
+in consequence.
+
+  CARD_EQ_LIST = |- INFINITE (:A) ==> (:(A)list) =_c (:A)
+
+  CARD_EQ_CART = |- INFINITE (:A) ==> (:A^N) =_c (:A)
+
+  CARD_EQ_REAL = |- (:real) =_c (:num->bool)
+
+  UNCOUNTABLE_REAL = |- ~COUNTABLE (:real)
+
+Thu  1st Dec 2011       sets.ml
+
+Moved all the definitions and basic theorems about sup and inf to the end of
+this file from Multivariate/misc.ml:
+
+   inf =
+    |- !s. inf s =
+           (@a. (!x. x IN s ==> a <= x) /\
+                (!b. (!x. x IN s ==> b <= x) ==> b <= a))
+
+   sup =
+    |- !s. sup s =
+           (@a. (!x. x IN s ==> x <= a) /\
+                (!b. (!x. x IN s ==> x <= b) ==> a <= b)))]
+
+   INF =
+    |- !s. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
+           ==> (!x. x IN s ==> inf s <= x) /\
+               (!b. (!x. x IN s ==> b <= x) ==> b <= inf s)
+
+   INF_FINITE =
+    |- !s. FINITE s /\ ~(s = {})
+           ==> inf s IN s /\ (!x. x IN s ==> inf s <= x)
+
+   INF_FINITE_LEMMA =
+    |- !s. FINITE s /\ ~(s = {}) ==> (?b. b IN s /\ (!x. x IN s ==> b <= x))
+
+   INF_INSERT_FINITE =
+    |- !x s.
+           FINITE s
+           ==> inf (x INSERT s) = (if s = {} then x else min x (inf s))
+
+   INF_UNIQUE_FINITE =
+    |- !s. FINITE s /\ ~(s = {})
+           ==> (inf s = a <=> a IN s /\ (!y. y IN s ==> a <= y))
+
+   REAL_ABS_INF_LE =
+    |- !s a. ~(s = {}) /\ (!x. x IN s ==> abs x <= a) ==> abs (inf s) <= a
+
+   REAL_ABS_SUP_LE =
+    |- !s a. ~(s = {}) /\ (!x. x IN s ==> abs x <= a) ==> abs (sup s) <= a
+
+   REAL_INF_ASCLOSE =
+    |- !s l e.
+           ~(s = {}) /\ (!x. x IN s ==> abs (x - l) <= e)
+           ==> abs (inf s - l) <= e
+
+   REAL_INF_BOUNDS =
+    |- !s a b.
+           ~(s = {}) /\ (!x. x IN s ==> a <= x /\ x <= b)
+           ==> a <= inf s /\ inf s <= b
+
+   REAL_INF_LE_FINITE =
+    |- !s a.
+           FINITE s /\ ~(s = {}) ==> (inf s <= a <=> (?x. x IN s /\ x <= a))
+
+   REAL_INF_LT_FINITE =
+    |- !s a. FINITE s /\ ~(s = {}) ==> (inf s < a <=> (?x. x IN s /\ x < a))
+
+   REAL_INF_UNIQUE =
+    |- !s b.
+           (!x. x IN s ==> b <= x) /\
+           (!b'. b < b' ==> (?x. x IN s /\ x < b'))
+           ==> inf s = b
+
+   REAL_LE_INF =
+    |- !b. ~(s = {}) /\ (!x. x IN s ==> b <= x) ==> b <= inf s
+
+   REAL_LE_INF_FINITE =
+    |- !s a.
+           FINITE s /\ ~(s = {}) ==> (a <= inf s <=> (!x. x IN s ==> a <= x))
+
+   REAL_LE_INF_SUBSET =
+    |- !s t.
+           ~(t = {}) /\ t SUBSET s /\ (?b. !x. x IN s ==> b <= x)
+           ==> inf s <= inf t
+
+   REAL_LE_SUP_FINITE =
+    |- !s a.
+           FINITE s /\ ~(s = {}) ==> (a <= sup s <=> (?x. x IN s /\ a <= x))
+
+   REAL_LT_INF_FINITE =
+    |- !s a. FINITE s /\ ~(s = {}) ==> (a < inf s <=> (!x. x IN s ==> a < x))
+
+   REAL_LT_SUP_FINITE =
+    |- !s a. FINITE s /\ ~(s = {}) ==> (a < sup s <=> (?x. x IN s /\ a < x))
+
+   REAL_SUP_ASCLOSE =
+    |- !s l e.
+           ~(s = {}) /\ (!x. x IN s ==> abs (x - l) <= e)
+           ==> abs (sup s - l) <= e
+
+   REAL_SUP_BOUNDS =
+    |- !s a b.
+           ~(s = {}) /\ (!x. x IN s ==> a <= x /\ x <= b)
+           ==> a <= sup s /\ sup s <= b
+
+   REAL_SUP_EQ_INF =
+    |- !s. ~(s = {}) /\ (?B. !x. x IN s ==> abs x <= B)
+           ==> (sup s = inf s <=> (?a. s = {a}))
+
+   REAL_SUP_LE =
+    |- !b. ~(s = {}) /\ (!x. x IN s ==> x <= b) ==> sup s <= b
+
+   REAL_SUP_LE_FINITE =
+    |- !s a.
+           FINITE s /\ ~(s = {}) ==> (sup s <= a <=> (!x. x IN s ==> x <= a))
+
+   REAL_SUP_LE_SUBSET =
+    |- !s t.
+           ~(s = {}) /\ s SUBSET t /\ (?b. !x. x IN t ==> x <= b)
+           ==> sup s <= sup t
+
+   REAL_SUP_LT_FINITE =
+    |- !s a. FINITE s /\ ~(s = {}) ==> (sup s < a <=> (!x. x IN s ==> x < a))
+
+   REAL_SUP_UNIQUE =
+    |- !s b.
+           (!x. x IN s ==> x <= b) /\
+           (!b'. b' < b ==> (?x. x IN s /\ b' < x))
+           ==> sup s = b
+
+   SUP =
+    |- !s. ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)
+           ==> (!x. x IN s ==> x <= sup s) /\
+               (!b. (!x. x IN s ==> x <= b) ==> sup s <= b)
+
+   SUP_FINITE =
+    |- !s. FINITE s /\ ~(s = {})
+           ==> sup s IN s /\ (!x. x IN s ==> x <= sup s)
+
+   SUP_FINITE_LEMMA =
+    |- !s. FINITE s /\ ~(s = {}) ==> (?b. b IN s /\ (!x. x IN s ==> x <= b))
+
+   SUP_INSERT_FINITE =
+    |- !x s.
+           FINITE s
+           ==> sup (x INSERT s) = (if s = {} then x else max x (sup s))
+
+   SUP_UNIQUE_FINITE =
+    |- !s. FINITE s /\ ~(s = {})
+           ==> (sup s = a <=> a IN s /\ (!y. y IN s ==> y <= a))
+
+Thu  1st Dec 2011       real.ml
+
+Moved three basic Archimedian properties back to here from
+Multivariate/misc.ml:
+
+  REAL_ARCH_SIMPLE = |- !x. ?n. x <= &n
+
+  REAL_ARCH_LT = |- !x. ?n. x < &n
+
+  REAL_ARCH = |- !x. &0 < x ==> (!y. ?n. y < &n * x)
+
+Thu  1st Dec 2011       list.ml
+
+Added EL_MAP = |- !f n l. n < LENGTH l ==> EL n (MAP f l) = f (EL n l)
+
 Mon 21st Nov 2011       iterate.ml
 
 Added a few lemmas about the behaviour of real polynomial functions, since

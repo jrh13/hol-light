@@ -1206,3 +1206,191 @@ let COUNTABLE_CART = prove
   SIMP_TAC[CART_EQ; LAMBDA_BETA; ARITH_RULE `i <= n ==> ~(i = SUC n)`] THEN
   ASM_MESON_TAC[LE; ARITH_RULE `1 <= SUC n`;
                 ARITH_RULE `n < i /\ ~(i = SUC n) ==> SUC n < i`]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Cardinality of infinite list and cartesian product types.                 *)
+(* ------------------------------------------------------------------------- *)
+
+let CARD_EQ_LIST = prove
+ (`INFINITE(:A) ==> (:A list) =_c (:A)`,
+  DISCH_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[le_c; IN_UNIV] THEN
+    EXISTS_TAC `\x:A. [x]` THEN REWRITE_TAC[CONS_11]] THEN
+  TRANS_TAC CARD_LE_TRANS `(:num) *_c (:A)` THEN CONJ_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC CARD_MUL2_ABSORB_LE THEN
+    ASM_REWRITE_TAC[GSYM INFINITE_CARD_LE; CARD_LE_REFL]] THEN
+  SUBGOAL_THEN `(:A) *_c (:A) <=_c (:A)` MP_TAC THENL
+   [MATCH_MP_TAC CARD_MUL2_ABSORB_LE THEN ASM_REWRITE_TAC[CARD_LE_REFL];
+    ALL_TAC] THEN
+  REWRITE_TAC[le_c; mul_c; FORALL_PAIR_THM; IN_ELIM_PAIR_THM; PAIR_EQ] THEN
+  REWRITE_TAC[IN_UNIV; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `pair:A#A->A` THEN DISCH_TAC THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  EXISTS_TAC `\l. LENGTH l,ITLIST (\x:A a:A. pair(x,a)) l (@x. T)` THEN
+  REWRITE_TAC[PAIR_EQ; RIGHT_EXISTS_AND_THM; GSYM EXISTS_REFL] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  LIST_INDUCT_TAC THEN SIMP_TAC[LENGTH_EQ_NIL; LENGTH] THEN
+  LIST_INDUCT_TAC THEN REWRITE_TAC[LENGTH; NOT_SUC] THEN
+  REWRITE_TAC[ITLIST; SUC_INJ] THEN
+  ABBREV_TAC `f:A->A->A = \x a. pair (x,a)` THEN
+  ABBREV_TAC `z = @x:A. T` THEN
+  REPEAT(FIRST_X_ASSUM(K ALL_TAC o SYM)) THEN ASM_MESON_TAC[]);;
+
+let CARD_EQ_CART = prove
+ (`INFINITE(:A) ==> (:A^N) =_c (:A)`,
+  DISCH_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[le_c; IN_UNIV] THEN
+    EXISTS_TAC `(\x. lambda i. x):A->A^N` THEN
+    SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN
+    MESON_TAC[LE_REFL; DIMINDEX_GE_1]] THEN
+  TRANS_TAC CARD_LE_TRANS `(:A list)` THEN
+  ASM_SIMP_TAC[CARD_EQ_LIST; CARD_EQ_IMP_LE] THEN REWRITE_TAC[LE_C] THEN
+  EXISTS_TAC `(\l. lambda i. EL i l):(A)list->A^N` THEN
+  ASM_SIMP_TAC[CART_EQ; IN_UNIV; LAMBDA_BETA] THEN X_GEN_TAC `x:A^N` THEN
+  SUBGOAL_THEN `!n f. ?l. !i. i < n ==> EL i l:A = f i` MP_TAC THENL
+   [INDUCT_TAC THEN REWRITE_TAC[CONJUNCT1 LT] THEN X_GEN_TAC `f:num->A` THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `\i. (f:num->A)(SUC i)`) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `l:A list` THEN
+    DISCH_TAC THEN EXISTS_TAC `CONS ((f:num->A) 0) l` THEN
+    INDUCT_TAC THEN ASM_SIMP_TAC[EL; HD; TL; LT_SUC];
+    DISCH_THEN(MP_TAC o SPECL [`dimindex(:N)+1`; `\i. (x:A^N)$i`]) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM; ARITH_RULE `i < n + 1 <=> i <= n`] THEN
+    MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Cardinality of the reals. This is done in a rather laborious way to avoid *)
+(* any dependence on the theories of analysis.                               *)
+(* ------------------------------------------------------------------------- *)
+
+let CARD_EQ_REAL = prove
+ (`(:real) =_c (:num->bool)`,
+  let lemma = prove
+   (`!s m n. sum (s INTER (m..n)) (\i. inv(&3 pow i)) < &3 / &2 / &3 pow m`,
+    REPEAT GEN_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
+    EXISTS_TAC `sum (m..n) (\i. inv(&3 pow i))` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+      SIMP_TAC[FINITE_NUMSEG; INTER_SUBSET; REAL_LE_INV_EQ;
+               REAL_POW_LE; REAL_POS];
+      WF_INDUCT_TAC `n - m:num` THEN
+      ASM_CASES_TAC `m:num <= n` THENL
+       [ASM_SIMP_TAC[SUM_CLAUSES_LEFT] THEN ASM_CASES_TAC `m + 1 <= n` THENL
+         [FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `SUC m`]) THEN
+          ANTS_TAC THENL [ASM_ARITH_TAC; REWRITE_TAC[ADD1; REAL_POW_ADD]] THEN
+          MATCH_MP_TAC(REAL_ARITH
+           `a + j:real <= k ==> x < j ==> a + x < k`) THEN
+          REWRITE_TAC[real_div; REAL_INV_MUL; REAL_POW_1] THEN REAL_ARITH_TAC;
+          ALL_TAC];
+        ALL_TAC] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[NOT_LE; GSYM NUMSEG_EMPTY]) THEN
+      ASM_REWRITE_TAC[SUM_CLAUSES; REAL_ADD_RID] THEN
+      REWRITE_TAC[REAL_ARITH `inv x < &3 / &2 / x <=> &0 < inv x`] THEN
+      SIMP_TAC[REAL_LT_INV_EQ; REAL_LT_DIV; REAL_POW_LT; REAL_OF_NUM_LT;
+               ARITH]]) in
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
+   [TRANS_TAC CARD_LE_TRANS `(:num) *_c (:num->bool)` THEN CONJ_TAC THENL
+     [ALL_TAC;
+      MATCH_MP_TAC CARD_MUL2_ABSORB_LE THEN REWRITE_TAC[INFINITE_CARD_LE] THEN
+      SIMP_TAC[CANTOR_THM_UNIV; CARD_LT_IMP_LE; CARD_LE_REFL]] THEN
+    TRANS_TAC CARD_LE_TRANS `(:num) *_c {x:real | &0 <= x}` THEN CONJ_TAC THENL
+     [REWRITE_TAC[LE_C; mul_c; EXISTS_PAIR_THM; IN_ELIM_PAIR_THM; IN_UNIV] THEN
+      EXISTS_TAC `\(n,x:real). --(&1) pow n * x` THEN X_GEN_TAC `x:real` THEN
+      MATCH_MP_TAC(MESON[] `P 0 \/ P 1 ==> ?n. P n`) THEN
+      REWRITE_TAC[OR_EXISTS_THM] THEN EXISTS_TAC `abs x` THEN
+      REWRITE_TAC[IN_ELIM_THM] THEN REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    MATCH_MP_TAC CARD_LE_MUL THEN REWRITE_TAC[CARD_LE_REFL] THEN
+    MP_TAC(ISPECL [`(:num)`; `(:num)`] CARD_MUL_ABSORB_LE) THEN
+    REWRITE_TAC[CARD_LE_REFL; num_INFINITE] THEN
+    REWRITE_TAC[le_c; mul_c; IN_UNIV; FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN
+    REWRITE_TAC[GSYM FORALL_PAIR_THM; INJECTIVE_LEFT_INVERSE] THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`pair:num#num->num`; `unpair:num->num#num`] THEN
+    DISCH_TAC THEN
+    EXISTS_TAC `\x:real n:num. &(FST(unpair n)) * x <= &(SND(unpair n))` THEN
+    MATCH_MP_TAC REAL_WLOG_LT THEN REWRITE_TAC[IN_ELIM_THM; FUN_EQ_THM] THEN
+    CONJ_TAC THENL [REWRITE_TAC[EQ_SYM_EQ; CONJ_ACI]; ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [`x:real`; `y:real`] THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GENL [`p:num`; `q:num`] o
+      SPEC `(pair:num#num->num) (p,q)`) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(TAUT `~p ==> p ==> q`) THEN
+    MP_TAC(SPEC `y - x:real` REAL_ARCH) THEN
+    ASM_REWRITE_TAC[REAL_SUB_LT; NOT_FORALL_THM] THEN
+    DISCH_THEN(MP_TAC o SPEC `&2`) THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `p:num` THEN DISCH_TAC THEN
+    MP_TAC(ISPEC `&p * x:real` REAL_ARCH_LT) THEN
+    GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    MATCH_MP_TAC num_INDUCTION THEN
+    ASM_SIMP_TAC[REAL_LE_MUL; REAL_POS;
+      REAL_ARITH `x:real < &0 <=> ~(&0 <= x)`] THEN
+    X_GEN_TAC `q:num` THEN REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
+    DISCH_THEN(K ALL_TAC) THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `q:num`) THEN
+    REWRITE_TAC[LT] THEN ASM_REAL_ARITH_TAC;
+    REWRITE_TAC[le_c; IN_UNIV] THEN
+    EXISTS_TAC `\s:num->bool. sup { sum (s INTER (0..n)) (\i. inv(&3 pow i)) |
+                                    n IN (:num) }` THEN
+    MAP_EVERY X_GEN_TAC [`x:num->bool`; `y:num->bool`] THEN
+    ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[EXTENSION; NOT_FORALL_THM] THEN
+    GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN
+    MAP_EVERY (fun w -> SPEC_TAC(w,w)) [`y:num->bool`; `x:num->bool`] THEN
+    MATCH_MP_TAC(MESON[IN]
+     `((!P Q n. R P Q n <=> R Q P n) /\ (!P Q. S P Q <=> S Q P)) /\
+      (!P Q. (?n. n IN P /\ ~(n IN Q) /\ R P Q n) ==> S P Q)
+      ==> !P Q. (?n:num. ~(n IN P <=> n IN Q) /\ R P Q n) ==> S P Q`) THEN
+    CONJ_TAC THENL [REWRITE_TAC[EQ_SYM_EQ]; REWRITE_TAC[]] THEN
+    MAP_EVERY X_GEN_TAC [`x:num->bool`; `y:num->bool`] THEN
+    DISCH_THEN(X_CHOOSE_THEN `n:num` STRIP_ASSUME_TAC) THEN
+    MATCH_MP_TAC(REAL_ARITH `!z:real. y < z /\ z <= x ==> ~(x = y)`) THEN
+    EXISTS_TAC `sum (x INTER (0..n)) (\i. inv(&3 pow i))` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC
+       `sum (y INTER (0..n)) (\i. inv(&3 pow i)) + 
+        &3 / &2 / &3 pow (SUC n)` THEN
+      CONJ_TAC THENL
+       [MATCH_MP_TAC REAL_SUP_LE THEN
+        CONJ_TAC THENL [SET_TAC[]; REWRITE_TAC[FORALL_IN_GSPEC; IN_UNIV]] THEN
+        X_GEN_TAC `p:num` THEN ASM_CASES_TAC `n:num <= p` THENL
+         [MATCH_MP_TAC(REAL_ARITH
+           `!d. s:real = t + d /\ d <= e ==> s <= t + e`) THEN
+          EXISTS_TAC `sum(y INTER (n+1..p)) (\i. inv (&3 pow i))` THEN
+          CONJ_TAC THENL
+           [ONCE_REWRITE_TAC[INTER_COMM] THEN
+            REWRITE_TAC[INTER; SUM_RESTRICT_SET] THEN
+            ASM_SIMP_TAC[SUM_COMBINE_R; LE_0];
+            SIMP_TAC[ADD1; lemma; REAL_LT_IMP_LE]];
+          MATCH_MP_TAC(REAL_ARITH `y:real <= x /\ &0 <= d ==> y <= x + d`) THEN
+          SIMP_TAC[REAL_LE_DIV; REAL_POS; REAL_POW_LE] THEN
+          MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+          SIMP_TAC[REAL_LE_INV_EQ; REAL_POW_LE; REAL_POS] THEN
+          SIMP_TAC[FINITE_INTER; FINITE_NUMSEG] THEN MATCH_MP_TAC
+           (SET_RULE `s SUBSET t ==> u INTER s SUBSET u INTER t`) THEN
+          REWRITE_TAC[SUBSET_NUMSEG] THEN ASM_ARITH_TAC];
+        ONCE_REWRITE_TAC[INTER_COMM] THEN
+        REWRITE_TAC[INTER; SUM_RESTRICT_SET] THEN ASM_CASES_TAC `n = 0` THENL
+         [FIRST_X_ASSUM SUBST_ALL_TAC THEN
+          ASM_REWRITE_TAC[SUM_SING; NUMSEG_SING; real_pow] THEN REAL_ARITH_TAC;
+          ASM_SIMP_TAC[SUM_CLAUSES_RIGHT; LE_1; LE_0; REAL_ADD_RID] THEN
+          MATCH_MP_TAC(REAL_ARITH `s:real = t /\ d < e ==> s + d < t + e`) THEN
+          CONJ_TAC THENL
+           [MATCH_MP_TAC SUM_EQ_NUMSEG THEN
+            ASM_SIMP_TAC[ARITH_RULE `~(n = 0) /\ m <= n - 1 ==> m < n`];
+            REWRITE_TAC[real_pow; real_div; REAL_INV_MUL; REAL_MUL_ASSOC] THEN
+            CONV_TAC REAL_RAT_REDUCE_CONV THEN
+            REWRITE_TAC[REAL_ARITH `&1 / &2 * x < x <=> &0 < x`] THEN
+            SIMP_TAC[REAL_LT_INV_EQ; REAL_POW_LT; REAL_OF_NUM_LT; ARITH]]]];
+      MP_TAC(ISPEC `{ sum (x INTER (0..n)) (\i. inv(&3 pow i)) | n IN (:num) }`
+          SUP) THEN REWRITE_TAC[FORALL_IN_GSPEC; IN_UNIV] THEN
+      ANTS_TAC THENL [ALL_TAC; SIMP_TAC[]] THEN
+      CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+      EXISTS_TAC `&3 / &2 / &3 pow 0` THEN
+      SIMP_TAC[lemma; REAL_LT_IMP_LE]]]);;
+
+let UNCOUNTABLE_REAL = prove
+ (`~COUNTABLE(:real)`,
+  REWRITE_TAC[COUNTABLE; CARD_NOT_LE; ge_c] THEN
+  TRANS_TAC CARD_LTE_TRANS `(:num->bool)` THEN
+  REWRITE_TAC[CANTOR_THM_UNIV] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
+  ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN REWRITE_TAC[CARD_EQ_REAL]);;
