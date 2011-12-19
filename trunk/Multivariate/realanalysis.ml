@@ -10596,6 +10596,70 @@ let CONTINUOUS_VECTOR_POLYNOMIAL_FUNCTION = prove
   MATCH_MP_TAC REAL_CONTINUOUS_REAL_POLYMONIAL_FUNCTION THEN
   ASM_SIMP_TAC[]);;
 
+let HAS_VECTOR_DERIVATIVE_VECTOR_POLYNOMIAL_FUNCTION = prove
+ (`!p:real^1->real^N.
+        vector_polynomial_function p
+        ==> ?p'. vector_polynomial_function p' /\
+                 !x. (p has_vector_derivative p'(x)) (at x)`,
+  let lemma = prove
+   (`!p:real^1->real.
+          real_polynomial_function p
+          ==> ?p'. real_polynomial_function p' /\
+                 !x. ((p o lift) has_real_derivative (p'(lift x))) (atreal x)`,
+    MATCH_MP_TAC
+     (derive_strong_induction(real_polynomial_function_RULES,
+                              real_polynomial_function_INDUCT)) THEN
+    REWRITE_TAC[DIMINDEX_1; FORALL_1; o_DEF; GSYM drop; LIFT_DROP] THEN
+    CONJ_TAC THENL
+     [EXISTS_TAC `\x:real^1. &1` THEN
+      REWRITE_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_ID];
+      ALL_TAC] THEN
+    CONJ_TAC THENL
+     [X_GEN_TAC `c:real` THEN EXISTS_TAC `\x:real^1. &0` THEN
+      REWRITE_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_CONST];
+      ALL_TAC] THEN
+    CONJ_TAC THEN
+    MAP_EVERY X_GEN_TAC [`f:real^1->real`; `g:real^1->real`] THEN
+    DISCH_THEN(CONJUNCTS_THEN2
+     (CONJUNCTS_THEN2 ASSUME_TAC
+       (X_CHOOSE_THEN `f':real^1->real` STRIP_ASSUME_TAC))
+     (CONJUNCTS_THEN2 ASSUME_TAC
+       (X_CHOOSE_THEN `g':real^1->real` STRIP_ASSUME_TAC)))
+    THENL
+     [EXISTS_TAC `\x. (f':real^1->real) x + g' x`;
+      EXISTS_TAC `\x. (f:real^1->real) x * g' x + f' x * g x`] THEN
+    ASM_SIMP_TAC[real_polynomial_function_RULES; HAS_REAL_DERIVATIVE_ADD;
+                 HAS_REAL_DERIVATIVE_MUL_ATREAL]) in
+  GEN_TAC THEN REWRITE_TAC[vector_polynomial_function] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `!i. 1 <= i /\ i <= dimindex(:N)
+        ==> ?q. real_polynomial_function q /\
+                (!x. ((\x. lift(((p x):real^N)$i)) has_vector_derivative
+                      lift(q x)) (at x))`
+  MP_TAC THENL
+   [X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP lemma) THEN
+    REWRITE_TAC[HAS_REAL_VECTOR_DERIVATIVE_AT] THEN
+    REWRITE_TAC[o_DEF; LIFT_DROP; FORALL_DROP];
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `q:num->real^1->real` THEN DISCH_TAC THEN
+    EXISTS_TAC `(\x. lambda i. (q:num->real^1->real) i x):real^1->real^N` THEN
+    ASM_SIMP_TAC[LAMBDA_BETA; ETA_AX] THEN
+    REWRITE_TAC[has_vector_derivative; has_derivative_at] THEN
+    ONCE_REWRITE_TAC[LIM_COMPONENTWISE] THEN X_GEN_TAC `x:real^1` THEN
+    SIMP_TAC[LINEAR_VMUL_DROP; LINEAR_ID] THEN X_GEN_TAC `i:num` THEN
+    STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+    ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^1`) THEN
+    REWRITE_TAC[has_vector_derivative; has_derivative_at] THEN
+    ASM_SIMP_TAC[VECTOR_MUL_COMPONENT; VEC_COMPONENT; VECTOR_SUB_COMPONENT;
+                 VECTOR_ADD_COMPONENT; LAMBDA_BETA; REAL_TENDSTO] THEN
+    SIMP_TAC[DROP_ADD; DROP_VEC; LIFT_DROP; DROP_CMUL; DROP_SUB; o_DEF]]);;
+
 let STONE_WEIERSTRASS_VECTOR_POLYNOMIAL_FUNCTION = prove
  (`!f:real^M->real^N s e.
         compact s /\ f continuous_on s /\ &0 < e
@@ -10628,6 +10692,45 @@ let STONE_WEIERSTRASS_VECTOR_POLYNOMIAL_FUNCTION = prove
     REWRITE_TAC[FINITE_NUMSEG; CARD_NUMSEG_1; NUMSEG_EMPTY; NOT_LT] THEN
     ASM_SIMP_TAC[IN_NUMSEG; DIMINDEX_GE_1; LAMBDA_BETA;
                  VECTOR_SUB_COMPONENT]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* One application is to pick a smooth approximation to a path.              *)
+(* ------------------------------------------------------------------------- *)
+
+let PATH_APPROX_VECTOR_POLYNOMIAL_FUNCTION = prove
+ (`!g:real^1->real^N e.
+        path g /\ &0 < e
+        ==> ?p. vector_polynomial_function p /\
+                pathstart p = pathstart g /\
+                pathfinish p = pathfinish g /\
+                !t. t IN interval[vec 0,vec 1] ==> norm(p t - g t) < e`,
+  REWRITE_TAC[path] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`g:real^1->real^N`; `interval[vec 0:real^1,vec 1]`; `e / &4`]
+        STONE_WEIERSTRASS_VECTOR_POLYNOMIAL_FUNCTION) THEN
+  ASM_REWRITE_TAC[COMPACT_INTERVAL; REAL_ARITH `&0 < x / &4 <=> &0 < x`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `q:real^1->real^N` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\t. (q:real^1->real^N)(t) + (g(vec 0:real^1) - q(vec 0)) +
+                drop t % ((g(vec 1) - q(vec 1)) - (g(vec 0) - q(vec 0)))` THEN
+  REWRITE_TAC[pathstart; pathfinish; DROP_VEC] THEN REPEAT CONJ_TAC THENL
+   [SIMP_TAC[vector_polynomial_function; VECTOR_ADD_COMPONENT;
+             VECTOR_MUL_COMPONENT; VECTOR_SUB_COMPONENT] THEN
+    REPEAT STRIP_TAC THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[vector_polynomial_function]) THEN
+    MATCH_MP_TAC(el 2 (CONJUNCTS real_polynomial_function_RULES)) THEN
+    ASM_SIMP_TAC[real_polynomial_function_RULES; drop; DIMINDEX_1; ARITH];
+    VECTOR_ARITH_TAC;
+    VECTOR_ARITH_TAC;
+    REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[VECTOR_SUB_LDISTRIB] THEN
+    MATCH_MP_TAC(NORM_ARITH
+     `norm(x - a) < e / &4 /\ norm b < e / &4 /\ norm c <= &1 * e / &4 /\
+        norm d <= &1 * e / &4
+      ==> norm((a + b + c - d) - x:real^N) < e`) THEN
+    ASM_SIMP_TAC[NORM_MUL; IN_INTERVAL_1; DROP_VEC; REAL_POS] THEN
+    CONJ_TAC THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE; IN_INTERVAL_1; DROP_VEC; REAL_POS;
+                 REAL_LE_REFL; NORM_POS_LE] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL_1; DROP_VEC]) THEN
+    ASM_REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lipschitz property for real and vector polynomials.                       *)

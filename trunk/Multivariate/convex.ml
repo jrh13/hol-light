@@ -9364,6 +9364,13 @@ let SUBPATH_REVERSEPATH = prove
   REWRITE_TAC[subpath; reversepath; VECTOR_SUB_LZERO; DROP_NEG; DROP_VEC] THEN
   REWRITE_TAC[VECTOR_ARITH `a + -- &1 % b:real^N = a - b`]);;
 
+let REVERSEPATH_SUBPATH = prove
+ (`!g u v. reversepath(subpath u v g) = subpath v u g`,
+  REWRITE_TAC[reversepath; subpath; FUN_EQ_THM] THEN REPEAT GEN_TAC THEN
+  AP_TERM_TAC THEN REWRITE_TAC[DROP_SUB; VECTOR_SUB_LDISTRIB] THEN
+  REWRITE_TAC[GSYM LIFT_EQ_CMUL; LIFT_SUB; LIFT_DROP] THEN
+  VECTOR_ARITH_TAC);;
+
 let SUBPATH_TRANSLATION = prove
  (`!a g u v. subpath u v ((\x. a + x) o g) = (\x. a + x) o subpath u v g`,
   REWRITE_TAC[FUN_EQ_THM; subpath; o_THM]);;

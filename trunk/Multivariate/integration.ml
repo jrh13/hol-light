@@ -3301,6 +3301,11 @@ let INTEGRABLE_CONST = prove
   EXISTS_TAC `content(interval[a:real^M,b]) % c:real^N` THEN
   REWRITE_TAC[HAS_INTEGRAL_CONST]);;
 
+let INTEGRAL_CONST = prove
+ (`!a b c. integral (interval[a,b]) (\x. c) = content(interval[a,b]) % c`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
+  REWRITE_TAC[HAS_INTEGRAL_CONST]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Bounds on the norm of Riemann sums and the integral itself.               *)
 (* ------------------------------------------------------------------------- *)

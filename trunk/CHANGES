@@ -1,9 +1,16 @@
+Sun 18th Dec 2011       cart.ml
+
+Added a convenient set elimination theorem for pasted vectors:
+
+  IN_ELIM_PASTECART_THM =
+    |- !P a b. pastecart a b IN {pastecart x y | P x y} <=> P a b
+
 Thu  1st Dec 2011       Library/card.ml
 
-Added a few more theorems on cardinality of list and cartesian product types 
-and also the cardinality and uncountability of the reals. This last fact is 
-done in a primitive way to avoid depending on the analytical theories. The 
-theorem UNCOUNTABLE_REAL has been taken out of the Multivariate theories now 
+Added a few more theorems on cardinality of list and cartesian product types
+and also the cardinality and uncountability of the reals. This last fact is
+done in a primitive way to avoid depending on the analytical theories. The
+theorem UNCOUNTABLE_REAL has been taken out of the Multivariate theories now
 in consequence.
 
   CARD_EQ_LIST = |- INFINITE (:A) ==> (:(A)list) =_c (:A)
