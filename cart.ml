@@ -317,3 +317,13 @@ let FINITE_CART = prove
 
 let vector = new_definition
   `(vector l):A^N = lambda i. EL (i - 1) l`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Convenient set membership elimination theorem.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let IN_ELIM_PASTECART_THM = prove
+ (`!P a b. pastecart a b IN {pastecart x y | P x y} <=> P a b`,
+  REWRITE_TAC[IN_ELIM_THM; PASTECART_EQ;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  MESON_TAC[]);;

@@ -8,7 +8,7 @@
 
 needs "Library/binomial.ml";;
 needs "Library/iter.ml";;
-needs "Multivariate/transcendentals.ml";;
+needs "Multivariate/realanalysis.ml";;
 
 prioritize_complex();;
 
@@ -335,6 +335,25 @@ let HAS_PATH_INTEGRAL_REVERSEPATH = prove
   CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN REWRITE_TAC[IN_IMAGE] THEN
   MESON_TAC[VECTOR_ARITH `vec 1 - (vec 1 - x):real^1 = x`]);;
 
+let PATH_INTEGRABLE_REVERSEPATH = prove
+ (`!f g. valid_path g /\ f path_integrable_on g
+         ==> f path_integrable_on (reversepath g)`,
+  REWRITE_TAC[path_integrable_on] THEN
+  MESON_TAC[HAS_PATH_INTEGRAL_REVERSEPATH]);;
+
+let PATH_INTEGRABLE_REVERSEPATH_EQ = prove
+ (`!f g. valid_path g
+         ==> (f path_integrable_on (reversepath g) <=>
+              f path_integrable_on g)`,
+  MESON_TAC[PATH_INTEGRABLE_REVERSEPATH; VALID_PATH_REVERSEPATH;
+            REVERSEPATH_REVERSEPATH]);;
+
+let PATH_INTEGRAL_REVERSEPATH = prove
+ (`!f g. valid_path g /\ f path_integrable_on g
+         ==> path_integral (reversepath g) f = --(path_integral g f)`,
+  MESON_TAC[PATH_INTEGRAL_UNIQUE; HAS_PATH_INTEGRAL_REVERSEPATH;
+            HAS_PATH_INTEGRAL_INTEGRAL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Joining two paths together.                                               *)
 (* ------------------------------------------------------------------------- *)
@@ -658,6 +677,15 @@ let PATH_INTEGRABLE_JOIN = prove
                  DROP_VEC] THEN
      REAL_ARITH_TAC]));;
 
+let PATH_INTEGRAL_JOIN = prove
+ (`!f g1 g2:real^1->complex.
+        valid_path g1 /\ valid_path g2 /\
+        f path_integrable_on g1 /\ f path_integrable_on g2
+        ==> path_integral (g1 ++ g2) f =
+            path_integral g1 f + path_integral g2 f`,
+  MESON_TAC[PATH_INTEGRAL_UNIQUE; HAS_PATH_INTEGRAL_INTEGRAL;
+            HAS_PATH_INTEGRAL_JOIN]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Reparametrizing to shift the starting point of a (closed) path.           *)
 (* ------------------------------------------------------------------------- *)
@@ -941,6 +969,244 @@ let IM_LINEPATH_CX = prove
 let LINEPATH_CX = prove
  (`!a b x. linepath(Cx a,Cx b) x = Cx((&1 - drop x) * a + drop x * b)`,
   REWRITE_TAC[COMPLEX_EQ; RE_LINEPATH_CX; IM_LINEPATH_CX; RE_CX; IM_CX]);;
+
+let HAS_PATH_INTEGRAL_TRIVIAL = prove
+ (`!f a. (f has_path_integral (Cx(&0))) (linepath(a,a))`,
+  REWRITE_TAC[HAS_PATH_INTEGRAL_LINEPATH; COMPLEX_SUB_REFL;
+              COMPLEX_MUL_RZERO] THEN
+  REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_INTEGRAL_0]);;
+
+let PATH_INTEGRAL_TRIVIAL = prove
+ (`!f a. path_integral (linepath(a,a)) f = Cx(&0)`,
+  MESON_TAC[HAS_PATH_INTEGRAL_TRIVIAL; PATH_INTEGRAL_UNIQUE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relation to subpath construction.                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let VALID_PATH_SUBPATH = prove
+ (`!g u v. valid_path g /\
+           u IN interval[vec 0,vec 1] /\ v IN interval[vec 0,vec 1]
+           ==> valid_path(subpath u v g)`,
+  SIMP_TAC[valid_path; PATH_SUBPATH] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[subpath] THEN
+  ASM_CASES_TAC `v:real^1 = u` THENL
+   [MATCH_MP_TAC DIFFERENTIABLE_ON_IMP_PIECEWISE_DIFFERENTIABLE THEN
+    ASM_REWRITE_TAC[VECTOR_SUB_REFL; VECTOR_MUL_LZERO; DROP_VEC] THEN
+    REWRITE_TAC[DIFFERENTIABLE_ON_CONST];
+    MATCH_MP_TAC(REWRITE_RULE[o_DEF] PIECEWISE_DIFFERENTIABLE_COMPOSE) THEN
+    REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC DIFFERENTIABLE_ON_IMP_PIECEWISE_DIFFERENTIABLE THEN
+      MATCH_MP_TAC DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_ADD THEN
+      REWRITE_TAC[DIFFERENTIABLE_CONST] THEN
+      MATCH_MP_TAC DIFFERENTIABLE_CMUL THEN REWRITE_TAC[DIFFERENTIABLE_ID];
+      MATCH_MP_TAC PIECEWISE_DIFFERENTIABLE_ON_SUBSET THEN
+      EXISTS_TAC `interval[vec 0:real^1,vec 1]` THEN ASM_REWRITE_TAC[] THEN
+      ONCE_REWRITE_TAC[VECTOR_ADD_SYM] THEN
+      REWRITE_TAC[IMAGE_AFFINITY_INTERVAL] THEN
+      REPEAT(COND_CASES_TAC THEN REWRITE_TAC[EMPTY_SUBSET]) THEN
+      REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERVAL_1])) THEN
+      SIMP_TAC[SUBSET_INTERVAL_1; DROP_ADD; DROP_CMUL; DROP_SUB; DROP_VEC] THEN
+      REAL_ARITH_TAC;
+      REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_ADD; DROP_SUB] THEN
+      ASM_SIMP_TAC[DROP_EQ; REAL_FIELD `~(u:real = v) ==>
+        (u + (v - u) * x = b <=> x = (b - u) / (v - u))`] THEN
+      X_GEN_TAC `b:real^1` THEN MATCH_MP_TAC FINITE_SUBSET THEN
+      EXISTS_TAC `{lift((drop b - drop u) / (drop v - drop u))}` THEN
+      REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY; SUBSET; IN_ELIM_THM] THEN
+      SIMP_TAC[GSYM LIFT_EQ; LIFT_DROP; IN_SING]]]);;
+
+let HAS_PATH_INTEGRAL_SUBPATH_REFL = prove
+ (`!f g u. (f has_path_integral (Cx(&0))) (subpath u u g)`,
+  REWRITE_TAC[HAS_PATH_INTEGRAL; subpath; VECTOR_SUB_REFL] THEN
+  REWRITE_TAC[DROP_VEC; VECTOR_MUL_LZERO; VECTOR_DERIVATIVE_CONST_AT] THEN
+  REWRITE_TAC[COMPLEX_VEC_0; COMPLEX_MUL_RZERO] THEN
+  REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_INTEGRAL_0]);;
+
+let PATH_INTEGRABLE_SUBPATH_REFL = prove
+ (`!f g u. f path_integrable_on (subpath u u g)`,
+  REWRITE_TAC[path_integrable_on] THEN
+  MESON_TAC[HAS_PATH_INTEGRAL_SUBPATH_REFL]);;
+
+let PATH_INTEGRAL_SUBPATH_REFL = prove
+ (`!f g u. path_integral (subpath u u g) f = Cx(&0)`,
+  MESON_TAC[PATH_INTEGRAL_UNIQUE; HAS_PATH_INTEGRAL_SUBPATH_REFL]);;
+
+let HAS_PATH_INTEGRAL_SUBPATH = prove
+ (`!f g u v.
+        valid_path g /\ f path_integrable_on g /\
+        u IN interval[vec 0,vec 1] /\ v IN interval[vec 0,vec 1] /\
+        drop u <= drop v
+        ==> (f has_path_integral
+             integral (interval[u,v])
+                      (\x. f(g x) * vector_derivative g (at x)))
+            (subpath u v g)`,
+  REWRITE_TAC[path_integrable_on; HAS_PATH_INTEGRAL; subpath] THEN
+  REWRITE_TAC[GSYM integrable_on] THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `v:real^1 = u` THENL
+   [ASM_REWRITE_TAC[INTEGRAL_REFL; VECTOR_SUB_REFL; DROP_VEC] THEN
+    REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_DERIVATIVE_CONST_AT] THEN
+    REWRITE_TAC[COMPLEX_VEC_0; COMPLEX_MUL_RZERO] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_INTEGRAL_0];
+    SUBGOAL_THEN `drop u < drop v` ASSUME_TAC THENL
+     [ASM_REWRITE_TAC[REAL_LT_LE; DROP_EQ]; ALL_TAC]] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`u:real^1`; `v:real^1`] o
+   MATCH_MP(REWRITE_RULE[IMP_CONJ] INTEGRABLE_ON_SUBINTERVAL)) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[SUBSET_INTERVAL_1; IN_INTERVAL_1; REAL_LT_IMP_LE];
+    REWRITE_TAC[HAS_INTEGRAL_INTEGRAL]] THEN
+  DISCH_THEN(MP_TAC o SPECL [`drop(v - u)`; `u:real^1`] o
+   MATCH_MP(REWRITE_RULE[IMP_CONJ] HAS_INTEGRAL_AFFINITY)) THEN
+  ASM_SIMP_TAC[DROP_SUB; REAL_ARITH `u < v ==> ~(v - u = &0)`] THEN
+  REWRITE_TAC[IMAGE_AFFINITY_INTERVAL; INTERVAL_EQ_EMPTY_1; DROP_SUB] THEN
+  ASM_SIMP_TAC[REAL_LE_INV_EQ; REAL_ARITH `u < v ==> ~(v < u) /\ &0 <= v - u`;
+               VECTOR_ARITH `a % u + --(a % v):real^N = a % (u - v)`] THEN
+  REWRITE_TAC[VECTOR_SUB_REFL; VECTOR_MUL_RZERO] THEN
+  SUBGOAL_THEN `inv(drop v - drop u) % (v - u) = vec 1` SUBST1_TAC THENL
+   [REWRITE_TAC[GSYM DROP_EQ; DROP_VEC; DROP_CMUL; DROP_SUB] THEN
+    UNDISCH_TAC `drop u < drop v` THEN CONV_TAC REAL_FIELD;
+    ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `drop(v - u)` o MATCH_MP HAS_INTEGRAL_CMUL) THEN
+  ASM_SIMP_TAC[real_abs; REAL_LT_IMP_LE; REAL_SUB_LE] THEN
+  REWRITE_TAC[DIMINDEX_1; REAL_POW_1; VECTOR_MUL_ASSOC; DROP_SUB] THEN
+  ASM_SIMP_TAC[REAL_FIELD `u < v ==> (v - u) * inv(v - u) = &1`] THEN
+  REWRITE_TAC[VECTOR_MUL_LID] THEN
+  MATCH_MP_TAC(REWRITE_RULE[TAUT `a /\ b /\ c ==> d <=> a /\ b ==> c ==> d`]
+    HAS_INTEGRAL_SPIKE_FINITE) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [valid_path]) THEN
+  REWRITE_TAC[piecewise_differentiable_on; IN_DIFF] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real^1->bool` STRIP_ASSUME_TAC o CONJUNCT2) THEN
+  EXISTS_TAC `{t | ((drop v - drop u) % t + u) IN k}` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC FINITE_IMAGE_INJ THEN
+    ASM_REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_SUB; DROP_ADD] THEN
+    UNDISCH_TAC `drop u < drop v` THEN CONV_TAC REAL_FIELD;
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[IN_DIFF; IN_ELIM_THM] THEN
+  X_GEN_TAC `t:real^1` THEN STRIP_TAC THEN REWRITE_TAC[COMPLEX_CMUL] THEN
+  ONCE_REWRITE_TAC[COMPLEX_RING `a * b * c:complex = b * a * c`] THEN
+  REWRITE_TAC[VECTOR_ARITH `x + a % y:real^N = a % y + x`] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[GSYM COMPLEX_CMUL; GSYM DROP_SUB] THEN
+  MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_UNIQUE_AT THEN
+  MATCH_MP_TAC(REWRITE_RULE[o_DEF] VECTOR_DIFF_CHAIN_AT) THEN
+  REWRITE_TAC[DROP_SUB] THEN CONJ_TAC THENL
+   [SUBST1_TAC(VECTOR_ARITH `v - u:real^1 = (v - u) + vec 0`) THEN
+    MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_ADD THEN
+    REWRITE_TAC[HAS_VECTOR_DERIVATIVE_CONST] THEN
+    SUBST1_TAC(MESON[LIFT_DROP; LIFT_EQ_CMUL]
+     `v - u = drop(v - u) % vec 1`) THEN REWRITE_TAC[GSYM DROP_SUB] THEN
+    MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_CMUL THEN
+    REWRITE_TAC[HAS_VECTOR_DERIVATIVE_ID];
+    REWRITE_TAC[GSYM VECTOR_DERIVATIVE_WORKS] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[IN_INTERVAL_1] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERVAL_1])) THEN
+    REWRITE_TAC[DROP_ADD; DROP_SUB; DROP_CMUL; DROP_VEC] THEN
+    REPEAT STRIP_TAC THENL
+     [MATCH_MP_TAC REAL_LE_ADD THEN CONJ_TAC THEN
+      TRY(MATCH_MP_TAC REAL_LE_MUL) THEN ASM_REAL_ARITH_TAC;
+      MATCH_MP_TAC REAL_LE_TRANS THEN
+      EXISTS_TAC `(drop v - drop u) * &1 + drop u` THEN
+      ASM_SIMP_TAC[REAL_LE_RADD; REAL_LE_LMUL;
+                   REAL_SUB_LE; REAL_LT_IMP_LE] THEN
+      ASM_REAL_ARITH_TAC]]);;
+
+let PATH_INTEGRABLE_SUBPATH = prove
+ (`!f g u v.
+        valid_path g /\ f path_integrable_on g /\
+        u IN interval[vec 0,vec 1] /\ v IN interval[vec 0,vec 1]
+        ==> f path_integrable_on (subpath u v g)`,
+  REPEAT STRIP_TAC THEN DISJ_CASES_TAC(REAL_ARITH
+   `drop u <= drop v \/ drop v <= drop u`)
+  THENL
+   [ASM_MESON_TAC[path_integrable_on; HAS_PATH_INTEGRAL_SUBPATH];
+    ONCE_REWRITE_TAC[GSYM REVERSEPATH_SUBPATH] THEN
+    MATCH_MP_TAC PATH_INTEGRABLE_REVERSEPATH THEN
+    ASM_SIMP_TAC[VALID_PATH_SUBPATH] THEN
+    ASM_MESON_TAC[path_integrable_on; HAS_PATH_INTEGRAL_SUBPATH]]);;
+
+let HAS_INTEGRAL_PATH_INTEGRAL_SUBPATH = prove
+ (`!f g u v.
+        valid_path g /\ f path_integrable_on g /\
+        u IN interval[vec 0,vec 1] /\ v IN interval[vec 0,vec 1] /\
+        drop u <= drop v
+        ==> (((\x. f(g x) * vector_derivative g (at x))) has_integral
+             path_integral (subpath u v g) f)
+            (interval[u,v])`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[HAS_INTEGRAL_INTEGRABLE_INTEGRAL] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
+    EXISTS_TAC `interval[vec 0:real^1,vec 1]` THEN
+    ASM_REWRITE_TAC[GSYM PATH_INTEGRABLE_ON; SUBSET_INTERVAL_1] THEN
+    ASM_MESON_TAC[IN_INTERVAL_1];
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC PATH_INTEGRAL_UNIQUE THEN
+    ASM_SIMP_TAC[HAS_PATH_INTEGRAL_SUBPATH]]);;
+
+let PATH_INTEGRAL_SUBPATH_INTEGRAL = prove
+ (`!f g u v.
+        valid_path g /\ f path_integrable_on g /\
+        u IN interval[vec 0,vec 1] /\ v IN interval[vec 0,vec 1] /\
+        drop u <= drop v
+        ==> path_integral (subpath u v g) f =
+            integral (interval[u,v])
+                     (\x. f(g x) * vector_derivative g (at x))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC PATH_INTEGRAL_UNIQUE THEN
+  ASM_SIMP_TAC[HAS_PATH_INTEGRAL_SUBPATH]);;
+
+let PATH_INTEGRAL_SUBPATH_COMBINE = prove
+ (`!f g u v w.
+        valid_path g /\ f path_integrable_on g /\
+        u IN interval[vec 0,vec 1] /\
+        v IN interval[vec 0,vec 1] /\
+        w IN interval[vec 0,vec 1]
+        ==> path_integral (subpath u v g) f + path_integral (subpath v w g) f =
+            path_integral (subpath u w g) f`,
+  REPLICATE_TAC 3 GEN_TAC THEN
+  SUBGOAL_THEN
+   `!u v w.
+        drop u <= drop v /\ drop v <= drop w
+        ==> valid_path g /\ f path_integrable_on g /\
+            u IN interval[vec 0,vec 1] /\
+            v IN interval[vec 0,vec 1] /\
+            w IN interval[vec 0,vec 1]
+            ==> path_integral (subpath u v g) f +
+                path_integral (subpath v w g) f =
+                path_integral (subpath u w g) f`
+  ASSUME_TAC THENL
+   [ALL_TAC;
+    REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+     (REAL_ARITH `drop u <= drop v /\ drop v <= drop w \/
+                  drop u <= drop w /\ drop w <= drop v \/
+                  drop v <= drop u /\ drop u <= drop w \/
+                  drop v <= drop w /\ drop w <= drop u \/
+                  drop w <= drop u /\ drop u <= drop v \/
+                  drop w <= drop v /\ drop v <= drop u`) THEN
+    FIRST_ASSUM(ANTE_RES_THEN MP_TAC) THEN ASM_REWRITE_TAC[] THEN
+    REPEAT_TCL CONJUNCTS_THEN SUBST1_TAC (MESON[REVERSEPATH_SUBPATH]
+     `subpath v u (g:real^1->complex) = reversepath(subpath u v g) /\
+      subpath w u g = reversepath(subpath u w g) /\
+      subpath w v g = reversepath(subpath v w g)`) THEN
+    ASM_SIMP_TAC[PATH_INTEGRAL_REVERSEPATH; PATH_INTEGRABLE_SUBPATH;
+                 VALID_PATH_REVERSEPATH; VALID_PATH_SUBPATH] THEN
+    CONV_TAC COMPLEX_RING] THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `drop u <= drop w` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; STRIP_TAC] THEN
+  ASM_SIMP_TAC[PATH_INTEGRAL_SUBPATH_INTEGRAL] THEN
+  MATCH_MP_TAC INTEGRAL_COMBINE THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
+  EXISTS_TAC `interval[vec 0:real^1,vec 1]` THEN
+  ASM_REWRITE_TAC[GSYM PATH_INTEGRABLE_ON; SUBSET_INTERVAL_1] THEN
+  ASM_MESON_TAC[IN_INTERVAL_1]);;
+
+let PATH_INTEGRAL_INTEGRAL = prove
+ (`!f g. valid_path g /\ f path_integrable_on g
+         ==> path_integral g f =
+             integral (interval[vec 0,vec 1])
+                      (\x. f(g x) * vector_derivative g (at x))`,
+  MP_TAC PATH_INTEGRAL_SUBPATH_INTEGRAL THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  DISCH_THEN(MP_TAC o SPECL [`vec 0:real^1`; `vec 1:real^1`]) THEN
+  REWRITE_TAC[ENDS_IN_UNIT_INTERVAL; DROP_VEC; REAL_POS; SUBPATH_TRIVIAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Easier to reason about segments via convex hulls.                         *)
@@ -1269,6 +1535,11 @@ let PATH_INTEGRAL_VSUM = prove
   MATCH_MP_TAC HAS_PATH_INTEGRAL_VSUM THEN
   ASM_SIMP_TAC[HAS_PATH_INTEGRAL_INTEGRAL]);;
 
+let PATH_INTEGRABLE_EQ = prove
+ (`!f g p. (!x. x IN path_image p ==> f x = g x) /\ f path_integrable_on p
+           ==> g path_integrable_on p`,
+  REWRITE_TAC[path_integrable_on] THEN MESON_TAC[HAS_PATH_INTEGRAL_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic theorems for path integrability.                               *)
 (* ------------------------------------------------------------------------- *)
@@ -1339,12 +1610,6 @@ let PATH_INTEGRAL_SWAP = prove
 (* ------------------------------------------------------------------------- *)
 (* Splitting a path integral in a flat way.                                  *)
 (* ------------------------------------------------------------------------- *)
-
-let HAS_PATH_INTEGRAL_TRIVIAL = prove
- (`!f a. (f has_path_integral (Cx(&0))) (linepath(a,a))`,
-  REWRITE_TAC[HAS_PATH_INTEGRAL_LINEPATH; COMPLEX_SUB_REFL;
-              COMPLEX_MUL_RZERO] THEN
-  REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_INTEGRAL_0]);;
 
 let HAS_PATH_INTEGRAL_SPLIT = prove
  (`!f a b c i j k.
@@ -2337,15 +2602,19 @@ let STARLIKE_CONVEX_SUBSET = prove
     REWRITE_TAC[SEGMENT_CONVEX_HULL; CONVEX_HULL_2; IN_ELIM_THM] THEN
     ASM_MESON_TAC[]]);;
 
-let HOLOMORPHIC_STARLIKE_PRIMITIVE = prove
- (`!f s k. open s /\ starlike s /\ FINITE k /\ f continuous_on s /\
-           (!x. x IN s DIFF k ==> f complex_differentiable at x)
-           ==> ?g. !x. x IN s ==> (g has_complex_derivative f(x)) (at x)`,
+let TRIANGLE_PATH_INTEGRALS_STARLIKE_PRIMITIVE = prove
+ (`!f s a.
+      a IN s /\ open s /\ f continuous_on s /\
+      (!z. z IN s ==> segment[a,z] SUBSET s) /\
+      (!b c. segment[b,c] SUBSET s
+             ==> path_integral (linepath(a,b)) f +
+                 path_integral (linepath(b,c)) f +
+                 path_integral (linepath(c,a)) f = Cx(&0))
+      ==> ?g. !z. z IN s ==> (g has_complex_derivative f(z)) (at z)`,
   REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(X_CHOOSE_THEN `a:complex` STRIP_ASSUME_TAC o
-        GEN_REWRITE_RULE I [starlike]) THEN
   EXISTS_TAC `\x. path_integral (linepath(a,x)) f` THEN
-  REPEAT STRIP_TAC THEN REWRITE_TAC[has_complex_derivative] THEN
+  X_GEN_TAC `x:complex` THEN STRIP_TAC THEN
+  REWRITE_TAC[has_complex_derivative] THEN
   REWRITE_TAC[has_derivative_at; LINEAR_COMPLEX_MUL] THEN
   MATCH_MP_TAC LIM_TRANSFORM THEN
   EXISTS_TAC `\y. inv(norm(y - x)) % (path_integral(linepath(x,y)) f -
@@ -2360,86 +2629,92 @@ let HOLOMORPHIC_STARLIKE_PRIMITIVE = prove
     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
     X_GEN_TAC `y:complex` THEN REWRITE_TAC[dist] THEN STRIP_TAC THEN
     REWRITE_TAC[VECTOR_MUL_EQ_0] THEN DISJ2_TAC THEN
-    SUBGOAL_THEN `convex hull {a:complex,x,y} SUBSET s` ASSUME_TAC THENL
-     [MATCH_MP_TAC STARLIKE_CONVEX_SUBSET THEN ASM_REWRITE_TAC[] THEN
-      MATCH_MP_TAC SUBSET_TRANS THEN EXISTS_TAC `ball(x:complex,e)` THEN
-      ASM_REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
-      MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_BALL] THEN
-      REWRITE_TAC[SUBSET; IN_BALL; IN_INSERT; NOT_IN_EMPTY] THEN
-      REPEAT STRIP_TAC THEN
-      ASM_REWRITE_TAC[dist; NORM_0; VECTOR_SUB_REFL] THEN
-      ASM_MESON_TAC[NORM_SUB];
-      ALL_TAC] THEN
-    MP_TAC(ISPECL [`f:complex->complex`; `k:complex->bool`;
-                   `a:complex`; `x:complex`; `y:complex`]
-                CAUCHY_THEOREM_TRIANGLE_COFINITE) THEN
-    ANTS_TAC THENL
-     [ASM_REWRITE_TAC[] THEN
-      CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ALL_TAC] THEN
-      REWRITE_TAC[IN_DIFF] THEN REPEAT STRIP_TAC THEN
-      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[IN_DIFF] THEN
-      ASM_MESON_TAC[SUBSET; INTERIOR_SUBSET];
-      ALL_TAC] THEN
-    DISCH_THEN(MP_TAC o MATCH_MP HAS_CHAIN_INTEGRAL_CHAIN_INTEGRAL) THEN
-    REWRITE_TAC[] THEN
+
     MP_TAC(SPECL [`f:complex->complex`; `a:complex`; `y:complex`]
-              PATH_INTEGRAL_SWAP) THEN
+         PATH_INTEGRAL_SWAP) THEN
     ANTS_TAC THENL
-       [ALL_TAC; REWRITE_TAC[COMPLEX_VEC_0] THEN CONV_TAC COMPLEX_RING] THEN
-    MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
-    EXISTS_TAC `s:complex->bool` THEN ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC SUBSET_TRANS THEN
-    EXISTS_TAC `convex hull {a:complex,x,y}` THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN MATCH_MP_TAC HULL_MONO THEN
-    SET_TAC[];
-    ALL_TAC] THEN
-  REWRITE_TAC[LIM_AT] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  SUBGOAL_THEN `(f:complex->complex) continuous at x` MP_TAC THENL
-   [MATCH_MP_TAC CONTINUOUS_ON_INTERIOR THEN ASM_MESON_TAC[INTERIOR_OPEN];
-    ALL_TAC] THEN
-  REWRITE_TAC[continuous_at; dist; VECTOR_SUB_RZERO] THEN
-  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
-  DISCH_THEN(X_CHOOSE_THEN `d1:real` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_BALL]) THEN
-  DISCH_THEN(MP_TAC o SPEC `x:complex`) THEN
-  ASM_REWRITE_TAC[SUBSET; IN_BALL; dist] THEN
-  DISCH_THEN(X_CHOOSE_THEN `d2:real` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `min d1 d2` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
-  X_GEN_TAC `y:complex` THEN STRIP_TAC THEN
-  SUBGOAL_THEN `f path_integrable_on linepath(x,y)` MP_TAC THENL
-   [MATCH_MP_TAC PATH_INTEGRABLE_CONTINUOUS_LINEPATH THEN
-    MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `s:complex->bool` THEN
-    ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC SUBSET_TRANS THEN EXISTS_TAC `ball(x:complex,d2)` THEN
-    CONJ_TAC THENL
-     [REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+     [MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+      EXISTS_TAC `s:complex->bool` THEN ASM_REWRITE_TAC[] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
+      ASM_REWRITE_TAC[IN_BALL; ONCE_REWRITE_RULE[NORM_SUB] dist];
+      REWRITE_TAC[COMPLEX_VEC_0] THEN MATCH_MP_TAC(COMPLEX_RING
+        `ax + xy + ya = Cx(&0) ==> ay = --ya ==> xy + ax - ay = Cx(&0)`) THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o
+       MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS)) THEN
+      REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
       MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_BALL] THEN
       REWRITE_TAC[SUBSET; IN_BALL; IN_INSERT; NOT_IN_EMPTY] THEN
       REPEAT STRIP_TAC THEN
       ASM_REWRITE_TAC[dist; NORM_0; VECTOR_SUB_REFL] THEN
-      ASM_MESON_TAC[NORM_SUB];
-      ASM_REWRITE_TAC[SUBSET; IN_BALL; dist]];
-    ALL_TAC] THEN
-  REWRITE_TAC[path_integrable_on; LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `z:complex` THEN
-  MP_TAC(SPECL [`x:complex`; `y:complex`; `(f:complex->complex) x`]
-                HAS_PATH_INTEGRAL_CONST_LINEPATH) THEN
-  REWRITE_TAC[IMP_IMP] THEN
-  DISCH_THEN(fun th -> ASSUME_TAC(CONJUNCT2 th) THEN MP_TAC th) THEN
-  FIRST_ASSUM(SUBST1_TAC o MATCH_MP PATH_INTEGRAL_UNIQUE) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_SUB) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_NEG) THEN
-  REWRITE_TAC[COMPLEX_NEG_SUB] THEN STRIP_TAC THEN
-  MATCH_MP_TAC(REAL_ARITH `x <= e / &2 /\ &0 < e ==> x < e`) THEN
-  ASM_REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
-  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[GSYM real_div] THEN
-  ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN
-  MATCH_MP_TAC HAS_PATH_INTEGRAL_BOUND_LINEPATH THEN
-  EXISTS_TAC `\w. (f:complex->complex) w - f x` THEN
-  ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> &0 <= e / &2`] THEN
-  X_GEN_TAC `w:complex` THEN STRIP_TAC THEN MATCH_MP_TAC REAL_LT_IMP_LE THEN
-  FIRST_X_ASSUM MATCH_MP_TAC THEN
-  ASM_MESON_TAC[REAL_LET_TRANS; SEGMENT_BOUND]);;
+      ASM_MESON_TAC[NORM_SUB]];
+    REWRITE_TAC[LIM_AT] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `(f:complex->complex) continuous at x` MP_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_ON_INTERIOR THEN ASM_MESON_TAC[INTERIOR_OPEN];
+      ALL_TAC] THEN
+    REWRITE_TAC[continuous_at; dist; VECTOR_SUB_RZERO] THEN
+    DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d1:real` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_BALL]) THEN
+    DISCH_THEN(MP_TAC o SPEC `x:complex`) THEN
+    ASM_REWRITE_TAC[SUBSET; IN_BALL; dist] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d2:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `min d1 d2` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+    X_GEN_TAC `y:complex` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `f path_integrable_on linepath(x,y)` MP_TAC THENL
+     [MATCH_MP_TAC PATH_INTEGRABLE_CONTINUOUS_LINEPATH THEN
+      MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `s:complex->bool` THEN
+      ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC SUBSET_TRANS THEN EXISTS_TAC `ball(x:complex,d2)` THEN
+      CONJ_TAC THENL
+       [REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+        MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_BALL] THEN
+        REWRITE_TAC[SUBSET; IN_BALL; IN_INSERT; NOT_IN_EMPTY] THEN
+        REPEAT STRIP_TAC THEN
+        ASM_REWRITE_TAC[dist; NORM_0; VECTOR_SUB_REFL] THEN
+        ASM_MESON_TAC[NORM_SUB];
+        ASM_REWRITE_TAC[SUBSET; IN_BALL; dist]];
+      ALL_TAC] THEN
+    REWRITE_TAC[path_integrable_on; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `z:complex` THEN
+    MP_TAC(SPECL [`x:complex`; `y:complex`; `(f:complex->complex) x`]
+                  HAS_PATH_INTEGRAL_CONST_LINEPATH) THEN
+    REWRITE_TAC[IMP_IMP] THEN
+    DISCH_THEN(fun th -> ASSUME_TAC(CONJUNCT2 th) THEN MP_TAC th) THEN
+    FIRST_ASSUM(SUBST1_TAC o MATCH_MP PATH_INTEGRAL_UNIQUE) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_SUB) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_NEG) THEN
+    REWRITE_TAC[COMPLEX_NEG_SUB] THEN STRIP_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH `x <= e / &2 /\ &0 < e ==> x < e`) THEN
+    ASM_REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[GSYM real_div] THEN
+    ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN
+    MATCH_MP_TAC HAS_PATH_INTEGRAL_BOUND_LINEPATH THEN
+    EXISTS_TAC `\w. (f:complex->complex) w - f x` THEN
+    ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> &0 <= e / &2`] THEN
+    X_GEN_TAC `w:complex` THEN STRIP_TAC THEN MATCH_MP_TAC REAL_LT_IMP_LE THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_MESON_TAC[REAL_LET_TRANS; SEGMENT_BOUND]]);;
+
+let HOLOMORPHIC_STARLIKE_PRIMITIVE = prove
+ (`!f s k. open s /\ starlike s /\ FINITE k /\ f continuous_on s /\
+           (!x. x IN s DIFF k ==> f complex_differentiable at x)
+           ==> ?g. !x. x IN s ==> (g has_complex_derivative f(x)) (at x)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `a:complex` STRIP_ASSUME_TAC o
+        GEN_REWRITE_RULE I [starlike]) THEN
+  MATCH_MP_TAC TRIANGLE_PATH_INTEGRALS_STARLIKE_PRIMITIVE THEN
+  EXISTS_TAC `a:complex` THEN ASM_REWRITE_TAC[] THEN
+  MAP_EVERY X_GEN_TAC [`x:complex`; `y:complex`] THEN STRIP_TAC THEN
+  MATCH_MP_TAC HAS_CHAIN_INTEGRAL_CHAIN_INTEGRAL THEN
+  MATCH_MP_TAC CAUCHY_THEOREM_TRIANGLE_COFINITE THEN
+  EXISTS_TAC `k:complex->bool` THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `convex hull {a:complex,x,y} SUBSET s` ASSUME_TAC THENL
+   [MATCH_MP_TAC STARLIKE_CONVEX_SUBSET THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ALL_TAC] THEN
+  REWRITE_TAC[IN_DIFF] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[IN_DIFF] THEN
+  ASM_MESON_TAC[SUBSET; INTERIOR_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cauchy's theorem for an open starlike set.                                *)
@@ -2467,8 +2742,80 @@ let CAUCHY_THEOREM_STARLIKE_SIMPLE = prove
 
 (* ------------------------------------------------------------------------- *)
 (* For a convex set we can avoid assuming openness and boundary analyticity. *)
-(* Split into two pieces since the first is useful for Morera's theorem etc. *)
 (* ------------------------------------------------------------------------- *)
+
+let TRIANGLE_PATH_INTEGRALS_CONVEX_PRIMITIVE = prove
+ (`!f s a.
+      a IN s /\ convex s /\ f continuous_on s /\
+      (!b c. b IN s /\ c IN s
+             ==> path_integral (linepath(a,b)) f +
+                 path_integral (linepath(b,c)) f +
+                 path_integral (linepath(c,a)) f = Cx(&0))
+      ==> ?g. !z. z IN s ==> (g has_complex_derivative f(z)) (at z within s)`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `\x. path_integral (linepath(a,x)) f` THEN
+  X_GEN_TAC `x:complex` THEN STRIP_TAC THEN
+  REWRITE_TAC[has_complex_derivative] THEN
+  REWRITE_TAC[has_derivative_within; LINEAR_COMPLEX_MUL] THEN
+  MATCH_MP_TAC LIM_TRANSFORM THEN
+  EXISTS_TAC `\y. inv(norm(y - x)) % (path_integral(linepath(x,y)) f -
+                   f x * (y - x))` THEN
+  REWRITE_TAC[VECTOR_ARITH
+   `i % (x - a) - i % (y - (z + a)) = i % (x + z - y)`] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC LIM_EVENTUALLY THEN REWRITE_TAC[EVENTUALLY_WITHIN] THEN
+    EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
+    X_GEN_TAC `y:complex` THEN STRIP_TAC THEN
+    REWRITE_TAC[VECTOR_MUL_EQ_0] THEN DISJ2_TAC THEN
+    MP_TAC(SPECL [`f:complex->complex`; `a:complex`; `y:complex`]
+         PATH_INTEGRAL_SWAP) THEN
+    ANTS_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+      EXISTS_TAC `s:complex->bool` THEN ASM_REWRITE_TAC[] THEN
+      REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+      MATCH_MP_TAC HULL_MINIMAL THEN ASM SET_TAC[];
+      REWRITE_TAC[COMPLEX_VEC_0] THEN MATCH_MP_TAC(COMPLEX_RING
+        `ax + xy + ya = Cx(&0) ==> ay = --ya ==> xy + ax - ay = Cx(&0)`) THEN
+      ASM_SIMP_TAC[]];
+    REWRITE_TAC[LIM_WITHIN] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    SUBGOAL_THEN
+     `(f:complex->complex) continuous (at x within s)` MP_TAC THENL
+     [ASM_MESON_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN]; ALL_TAC] THEN
+    REWRITE_TAC[continuous_within; dist; VECTOR_SUB_RZERO] THEN
+    DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d1:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `d1:real` THEN ASM_REWRITE_TAC[] THEN
+    X_GEN_TAC `y:complex` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `f path_integrable_on linepath(x,y)` MP_TAC THENL
+     [MATCH_MP_TAC PATH_INTEGRABLE_CONTINUOUS_LINEPATH THEN
+      MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `s:complex->bool` THEN
+      ASM_REWRITE_TAC[] THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+      MATCH_MP_TAC HULL_MINIMAL THEN ASM SET_TAC[];
+      ALL_TAC] THEN
+    REWRITE_TAC[path_integrable_on; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `z:complex` THEN
+    MP_TAC(SPECL [`x:complex`; `y:complex`; `(f:complex->complex) x`]
+                  HAS_PATH_INTEGRAL_CONST_LINEPATH) THEN
+    REWRITE_TAC[IMP_IMP] THEN
+    DISCH_THEN(fun th -> ASSUME_TAC(CONJUNCT2 th) THEN MP_TAC th) THEN
+    FIRST_ASSUM(SUBST1_TAC o MATCH_MP PATH_INTEGRAL_UNIQUE) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_SUB) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_NEG) THEN
+    REWRITE_TAC[COMPLEX_NEG_SUB] THEN STRIP_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH `x <= e / &2 /\ &0 < e ==> x < e`) THEN
+    ASM_REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[GSYM real_div] THEN
+    ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN
+    MATCH_MP_TAC HAS_PATH_INTEGRAL_BOUND_LINEPATH THEN
+    EXISTS_TAC `\w. (f:complex->complex) w - f x` THEN
+    ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> &0 <= e / &2`] THEN
+    X_GEN_TAC `w:complex` THEN STRIP_TAC THEN MATCH_MP_TAC REAL_LT_IMP_LE THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN CONJ_TAC THENL
+     [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+       `w IN t ==> t SUBSET s ==> w IN s`)) THEN
+      REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+      MATCH_MP_TAC HULL_MINIMAL THEN ASM SET_TAC[];
+      ASM_MESON_TAC[REAL_LET_TRANS; SEGMENT_BOUND]]]);;
 
 let PATHINTEGRAL_CONVEX_PRIMITIVE = prove
  (`!f s. convex s /\ f continuous_on s /\
@@ -2481,74 +2828,10 @@ let PATHINTEGRAL_CONVEX_PRIMITIVE = prove
   ASM_CASES_TAC `s:complex->bool = {}` THEN ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
   FIRST_X_ASSUM(X_CHOOSE_THEN `a:complex` STRIP_ASSUME_TAC o
         GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
-  EXISTS_TAC `\x. path_integral (linepath(a,x)) f` THEN
-  REPEAT STRIP_TAC THEN REWRITE_TAC[has_complex_derivative] THEN
-  REWRITE_TAC[has_derivative_within; LINEAR_COMPLEX_MUL] THEN
-  MATCH_MP_TAC LIM_TRANSFORM THEN
-  EXISTS_TAC `\y. inv(norm(y - x)) % (path_integral(linepath(x,y)) f -
-                   f x * (y - x))` THEN
-  REWRITE_TAC[VECTOR_ARITH
-   `i % (x - a) - i % (y - (z + a)) = i % (x + z - y)`] THEN
-  CONJ_TAC THENL
-   [MATCH_MP_TAC LIM_EVENTUALLY THEN REWRITE_TAC[EVENTUALLY_WITHIN] THEN
-    EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
-    X_GEN_TAC `y:complex` THEN REWRITE_TAC[dist] THEN STRIP_TAC THEN
-    REWRITE_TAC[VECTOR_MUL_EQ_0] THEN DISJ2_TAC THEN
-    SUBGOAL_THEN `convex hull {a:complex,x,y} SUBSET s` ASSUME_TAC THENL
-     [MATCH_MP_TAC HULL_MINIMAL THEN ASM SET_TAC[]; ALL_TAC] THEN
-    FIRST_X_ASSUM(MP_TAC o SPECL [`a:complex`; `x:complex`; `y:complex`]) THEN
-    ASM_REWRITE_TAC[] THEN
-    DISCH_THEN(MP_TAC o MATCH_MP HAS_CHAIN_INTEGRAL_CHAIN_INTEGRAL) THEN
-    REWRITE_TAC[] THEN
-    MP_TAC(SPECL [`f:complex->complex`; `a:complex`; `y:complex`]
-              PATH_INTEGRAL_SWAP) THEN
-    ANTS_TAC THENL
-       [ALL_TAC; REWRITE_TAC[COMPLEX_VEC_0] THEN CONV_TAC COMPLEX_RING] THEN
-    MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
-    EXISTS_TAC `s:complex->bool` THEN ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC SUBSET_TRANS THEN
-    EXISTS_TAC `convex hull {a:complex,x,y}` THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN MATCH_MP_TAC HULL_MONO THEN
-    SET_TAC[];
-    ALL_TAC] THEN
-  REWRITE_TAC[LIM_WITHIN] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  SUBGOAL_THEN `(f:complex->complex) continuous (at x within s)` MP_TAC THENL
-   [ASM_MESON_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN]; ALL_TAC] THEN
-  REWRITE_TAC[continuous_within; dist; VECTOR_SUB_RZERO] THEN
-  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN STRIP_TAC THEN
-  ASM_REWRITE_TAC[] THEN X_GEN_TAC `y:complex` THEN STRIP_TAC THEN
-  SUBGOAL_THEN `f path_integrable_on linepath(x,y)` MP_TAC THENL
-   [MATCH_MP_TAC PATH_INTEGRABLE_CONTINUOUS_LINEPATH THEN
-    MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `s:complex->bool` THEN
-    ASM_REWRITE_TAC[] THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
-    MATCH_MP_TAC HULL_MINIMAL THEN ASM SET_TAC[];
-    ALL_TAC] THEN
-  REWRITE_TAC[path_integrable_on; LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `z:complex` THEN
-  MP_TAC(SPECL [`x:complex`; `y:complex`; `(f:complex->complex) x`]
-                HAS_PATH_INTEGRAL_CONST_LINEPATH) THEN
-  REWRITE_TAC[IMP_IMP] THEN
-  DISCH_THEN(fun th -> ASSUME_TAC(CONJUNCT2 th) THEN MP_TAC th) THEN
-  FIRST_ASSUM(SUBST1_TAC o MATCH_MP PATH_INTEGRAL_UNIQUE) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_SUB) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP HAS_PATH_INTEGRAL_NEG) THEN
-  REWRITE_TAC[COMPLEX_NEG_SUB] THEN STRIP_TAC THEN
-  MATCH_MP_TAC(REAL_ARITH `x <= e / &2 /\ &0 < e ==> x < e`) THEN
-  ASM_REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
-  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[GSYM real_div] THEN
-  ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN
-  MATCH_MP_TAC HAS_PATH_INTEGRAL_BOUND_LINEPATH THEN
-  EXISTS_TAC `\w. (f:complex->complex) w - f x` THEN
-  ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> &0 <= e / &2`] THEN
-  X_GEN_TAC `w:complex` THEN STRIP_TAC THEN MATCH_MP_TAC REAL_LT_IMP_LE THEN
-  FIRST_X_ASSUM MATCH_MP_TAC THEN CONJ_TAC THENL
-   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
-     `w IN s ==> s SUBSET t ==> w IN t`)) THEN
-    ASM_REWRITE_TAC[] THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
-    MATCH_MP_TAC HULL_MINIMAL THEN ASM SET_TAC[];
-    ALL_TAC] THEN
-   ASM_MESON_TAC[REAL_LET_TRANS; SEGMENT_BOUND]);;
+  MATCH_MP_TAC TRIANGLE_PATH_INTEGRALS_CONVEX_PRIMITIVE THEN
+  EXISTS_TAC `a:complex` THEN ASM_REWRITE_TAC[] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_CHAIN_INTEGRAL_CHAIN_INTEGRAL THEN
+  ASM_SIMP_TAC[]);;
 
 let HOLOMORPHIC_CONVEX_PRIMITIVE = prove
  (`!f s k. convex s /\ FINITE k /\ f continuous_on s /\
@@ -2587,7 +2870,8 @@ let CAUCHY_THEOREM_CONVEX_SIMPLE = prove
   REWRITE_TAC[IN_DIFF; NOT_IN_EMPTY; complex_differentiable] THEN
   SUBGOAL_THEN `f holomorphic_on (interior s)` MP_TAC THENL
    [ASM_MESON_TAC[HOLOMORPHIC_ON_SUBSET; INTERIOR_SUBSET]; ALL_TAC] THEN
-  MESON_TAC[holomorphic_on; HAS_COMPLEX_DERIVATIVE_WITHIN_OPEN; OPEN_INTERIOR]);;
+  MESON_TAC[holomorphic_on; HAS_COMPLEX_DERIVATIVE_WITHIN_OPEN;
+            OPEN_INTERIOR]);;
 
 (* ------------------------------------------------------------------------- *)
 (* In particular for a disc.                                                 *)
@@ -2716,6 +3000,356 @@ let PATH_INTEGRABLE_HOLOMORPHIC_SIMPLE = prove
   MAP_EVERY EXISTS_TAC [`s:complex->bool`; `{}:complex->bool`] THEN
   ASM_SIMP_TAC[HOLOMORPHIC_ON_IMP_CONTINUOUS_ON; FINITE_RULES; DIFF_EMPTY] THEN
   ASM_MESON_TAC[HOLOMORPHIC_ON_OPEN; complex_differentiable]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Key lemma that path integral is the same for a "nearby" path. This is the *)
+(* main lemma for the homotopy form of Cauchy's theorem and is also useful   *)
+(* if we want "without loss of generality" to assume some niceness of our    *)
+(* path (e.g. smoothness). It could also be used to define the integrals of  *)
+(* analytic functions (and so in particular winding numbers) over arbitrary  *)
+(* continuous paths, though I haven't done that yet.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let PATH_INTEGRAL_NEARBY_ENDS,PATH_INTEGRAL_NEARBY_LOOP = (CONJ_PAIR o prove)
+ (`(!s p.
+      open s /\ path p /\ path_image p SUBSET s
+      ==> ?d. &0 < d /\
+              !g h. valid_path g /\ valid_path h /\
+                    (!t. t IN interval[vec 0,vec 1]
+                         ==> norm(g t - p t) < d /\ norm(h t - p t) < d) /\
+                    pathstart h = pathstart g /\ pathfinish h = pathfinish g
+                    ==> path_image g SUBSET s /\
+                        path_image h SUBSET s /\
+                        !f. f holomorphic_on s
+                            ==> path_integral h f = path_integral g f) /\
+   (!s p.
+      open s /\ path p /\ path_image p SUBSET s
+      ==> ?d. &0 < d /\
+              !g h. valid_path g /\ valid_path h /\
+                    (!t. t IN interval[vec 0,vec 1]
+                         ==> norm(g t - p t) < d /\ norm(h t - p t) < d) /\
+                    pathfinish g = pathstart g /\ pathfinish h = pathstart h
+                    ==> path_image g SUBSET s /\
+                        path_image h SUBSET s /\
+                        !f. f holomorphic_on s
+                            ==> path_integral h f = path_integral g f)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MAP_EVERY (fun t -> ASM_CASES_TAC t THEN ASM_REWRITE_TAC[])
+   [`open(s:complex->bool)`;
+    `path(p:real^1->complex)`;
+    `path_image(p:real^1->complex) SUBSET s`] THEN
+  REWRITE_TAC[RIGHT_IMP_EXISTS_THM] THEN
+  MATCH_MP_TAC(MESON[] `(?x. P x /\ Q x) ==> (?x. P x) /\ (?x. Q x)`) THEN
+  SUBGOAL_THEN
+   `!z. z IN path_image p ==> ?e. &0 < e /\ ball(z:complex,e) SUBSET s`
+  MP_TAC THENL
+   [ASM_MESON_TAC[OPEN_CONTAINS_BALL; SUBSET]; ALL_TAC] THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
+   [RIGHT_IMP_EXISTS_THM; RIGHT_AND_EXISTS_THM; SKOLEM_THM] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `ee:complex->real` THEN
+  DISCH_THEN(LABEL_TAC "*") THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP COMPACT_IMP_HEINE_BOREL o
+    MATCH_MP COMPACT_PATH_IMAGE) THEN
+  DISCH_THEN(MP_TAC o SPEC
+   `IMAGE (\z:complex. ball(z,ee z / &3)) (path_image p)`) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[FORALL_IN_IMAGE; OPEN_BALL; SUBSET] THEN
+    X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+    REWRITE_TAC[UNIONS_IMAGE; IN_ELIM_THM] THEN EXISTS_TAC `z:complex` THEN
+    ASM_SIMP_TAC[CENTRE_IN_BALL; REAL_ARITH `&0 < e / &3 <=> &0 < e`];
+    ALL_TAC] THEN
+  REWRITE_TAC[path_image; GSYM IMAGE_o] THEN REWRITE_TAC[GSYM path_image] THEN
+  ONCE_REWRITE_TAC[TAUT `a /\ b /\ c <=> b /\ a /\ c`] THEN
+  REWRITE_TAC[CONJ_ASSOC; FINITE_SUBSET_IMAGE] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM; MESON[]
+   `(?f s. (P s /\ f = g s) /\ Q f) <=> ?s. P s /\ Q(g s)`] THEN
+  REWRITE_TAC[UNIONS_IMAGE; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `k:real^1->bool` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+  GEN_REWRITE_TAC LAND_CONV [SUBSET] THEN REWRITE_TAC[IN_ELIM_THM; o_THM] THEN
+  ASM_CASES_TAC `k:real^1->bool = {}` THENL
+   [ASM_REWRITE_TAC[NOT_IN_EMPTY; GSYM NOT_EXISTS_THM; MEMBER_NOT_EMPTY] THEN
+    REWRITE_TAC[PATH_IMAGE_NONEMPTY];
+    DISCH_THEN(LABEL_TAC "+")] THEN
+  SUBGOAL_THEN
+    `!i:real^1. i IN k ==> &0 < ee((p i):complex)`
+  ASSUME_TAC THENL
+   [ASM_MESON_TAC[SUBSET; path_image; IN_IMAGE]; ALL_TAC] THEN
+  ABBREV_TAC `e = inf(IMAGE ((ee:complex->real) o (p:real^1->complex)) k)` THEN
+  MP_TAC(ISPEC `IMAGE ((ee:complex->real) o (p:real^1->complex)) k`
+    INF_FINITE) THEN
+  MP_TAC(ISPECL [`IMAGE ((ee:complex->real) o (p:real^1->complex)) k`; `&0`]
+    REAL_LT_INF_FINITE) THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; IMAGE_EQ_EMPTY; FORALL_IN_IMAGE] THEN
+  ASM_REWRITE_TAC[o_THM] THEN DISCH_TAC THEN
+  DISCH_THEN(ASSUME_TAC o CONJUNCT2) THEN
+  EXISTS_TAC `e / &3` THEN
+  MP_TAC(ISPECL [`p:real^1->complex`; `interval[vec 0:real^1,vec 1]`]
+        COMPACT_UNIFORMLY_CONTINUOUS) THEN REWRITE_TAC[COMPACT_INTERVAL] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[path]; ALL_TAC] THEN
+  REWRITE_TAC[uniformly_continuous_on] THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &3`) THEN
+  ASM_REWRITE_TAC[REAL_ARITH `&0 < e / &3 <=> &0 < e`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; AND_FORALL_THM] THEN
+  MAP_EVERY X_GEN_TAC [`g:real^1->complex`; `h:real^1->complex`] THEN
+  MAP_EVERY (fun t -> ASM_CASES_TAC t THEN ASM_REWRITE_TAC[])
+   [`!t. t IN interval[vec 0,vec 1]
+         ==> norm((g:real^1->complex) t - p t) < e / &3 /\
+             norm((h:real^1->complex) t - p t) < e / &3`;
+    `valid_path(g:real^1->complex)`; `valid_path(h:real^1->complex)`] THEN
+  MATCH_MP_TAC(TAUT
+   `q /\ (p1 \/ p2 ==> q ==> r) ==> (p1 ==> q /\ r) /\ (p2 ==> q /\ r)`) THEN
+  CONJ_TAC THENL
+   [CONJ_TAC THEN REWRITE_TAC[path_image; SUBSET; FORALL_IN_IMAGE] THEN
+    X_GEN_TAC `t:real^1` THEN DISCH_TAC THEN
+    REMOVE_THEN "+" (MP_TAC o SPEC `(p:real^1->complex) t`) THEN
+    ASM_SIMP_TAC[path_image; FUN_IN_IMAGE; IN_BALL] THEN
+    DISCH_THEN(X_CHOOSE_THEN `u:real^1` STRIP_ASSUME_TAC) THENL
+     [SUBGOAL_THEN `(g:real^1->complex) t IN ball(p(u:real^1),ee(p u))`
+      MP_TAC THENL [ALL_TAC; ASM_MESON_TAC[path_image; IN_IMAGE; SUBSET]];
+      SUBGOAL_THEN `(h:real^1->complex) t IN ball(p(u:real^1),ee(p u))`
+      MP_TAC THENL [ALL_TAC; ASM_MESON_TAC[path_image; IN_IMAGE; SUBSET]]] THEN
+    REWRITE_TAC[IN_BALL] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+     (NORM_ARITH `dist(gu,gt) < eu / &3
+                  ==> norm(ht - gt) < e / &3 /\ e <= eu
+                  ==> dist(gu,ht) < eu`)) THEN
+    ASM_SIMP_TAC[];
+    DISCH_TAC THEN STRIP_TAC THEN
+    X_GEN_TAC `f:complex->complex` THEN DISCH_TAC] THEN
+  SUBGOAL_THEN
+   `?ff. !z. z IN path_image p
+             ==> &0 < ee z /\ ball(z,ee z) SUBSET s /\
+                 !w. w IN ball(z,ee z)
+                     ==> (ff z has_complex_derivative f w) (at w)`
+  MP_TAC THENL
+   [REWRITE_TAC[GSYM SKOLEM_THM; RIGHT_EXISTS_IMP_THM;
+                RIGHT_EXISTS_AND_THM] THEN
+    X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+    REMOVE_THEN "*" (MP_TAC o SPEC `z:complex`) THEN
+    ASM_REWRITE_TAC[] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MP_TAC(ISPECL [`f:complex->complex`; `ball(z:complex,ee z)`;
+                   `{}:complex->bool`] HOLOMORPHIC_CONVEX_PRIMITIVE) THEN
+    SIMP_TAC[HAS_COMPLEX_DERIVATIVE_WITHIN_OPEN; OPEN_BALL] THEN
+    DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[CONVEX_BALL; FINITE_EMPTY] THEN
+    SIMP_TAC[DIFF_EMPTY; INTERIOR_OPEN; OPEN_BALL] THEN
+    SUBGOAL_THEN `f holomorphic_on ball(z,ee z)` MP_TAC THENL
+     [MATCH_MP_TAC HOLOMORPHIC_ON_SUBSET THEN EXISTS_TAC `s:complex->bool` THEN
+      ASM_REWRITE_TAC[];
+      SIMP_TAC[HOLOMORPHIC_ON_IMP_CONTINUOUS_ON] THEN
+      SIMP_TAC[holomorphic_on; HAS_COMPLEX_DERIVATIVE_WITHIN_OPEN; OPEN_BALL;
+               complex_differentiable]];
+    REMOVE_THEN "*" (K ALL_TAC) THEN
+    DISCH_THEN(CHOOSE_THEN (LABEL_TAC "*"))] THEN
+  MP_TAC(ISPEC `d:real` REAL_ARCH_INV) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `N:num` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `!n. n <= N
+        ==> path_integral(subpath (vec 0) (&n / &N % vec 1) h) f -
+            path_integral(subpath (vec 0) (&n / &N % vec 1) g) f =
+            path_integral(linepath (g(&n / &N % vec 1),h(&n / &N % vec 1))) f -
+            path_integral(linepath (g(vec 0),h(vec 0))) f`
+  (MP_TAC o SPEC `N:num`) THENL
+   [ALL_TAC;
+    ASM_SIMP_TAC[LE_REFL; REAL_DIV_REFL; REAL_OF_NUM_EQ; VECTOR_MUL_LID] THEN
+    FIRST_X_ASSUM(DISJ_CASES_THEN MP_TAC) THEN
+    REWRITE_TAC[pathstart; pathfinish] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[SUBPATH_TRIVIAL; PATH_INTEGRAL_TRIVIAL] THEN
+    CONV_TAC COMPLEX_RING] THEN
+  INDUCT_TAC THENL
+   [REWRITE_TAC[real_div; REAL_MUL_LZERO; VECTOR_MUL_LZERO] THEN
+    FIRST_X_ASSUM(DISJ_CASES_THEN MP_TAC) THEN
+    REWRITE_TAC[pathstart; pathfinish] THEN REPEAT STRIP_TAC THEN
+    ASM_REWRITE_TAC[PATH_INTEGRAL_TRIVIAL; PATH_INTEGRAL_SUBPATH_REFL] THEN
+    REWRITE_TAC[COMPLEX_SUB_REFL];
+    DISCH_TAC THEN FIRST_X_ASSUM(K ALL_TAC o check (is_disj o concl))] THEN
+  REMOVE_THEN "+" (MP_TAC o SPEC `(p:real^1->complex)(&n / &N % vec 1)`) THEN
+  REWRITE_TAC[IN_BALL] THEN ANTS_TAC THENL
+   [REWRITE_TAC[path_image] THEN MATCH_MP_TAC FUN_IN_IMAGE THEN
+    REWRITE_TAC[IN_INTERVAL_1; DROP_CMUL; DROP_VEC; REAL_MUL_RID] THEN
+    ASM_SIMP_TAC[REAL_LE_RDIV_EQ; REAL_LE_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
+    REWRITE_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_LE] THEN ASM_ARITH_TAC;
+    DISCH_THEN(X_CHOOSE_THEN `t:real^1` STRIP_ASSUME_TAC)] THEN
+  MP_TAC(ISPECL
+   [`(ff:complex->complex->complex) (p(t:real^1))`; `f:complex->complex`;
+    `subpath (&n / &N % vec 1) (&(SUC n) / &N % vec 1) (g:real^1->complex) ++
+     linepath(g (&(SUC n) / &N % vec 1),h(&(SUC n) / &N % vec 1)) ++
+     subpath (&(SUC n) / &N % vec 1) (&n / &N % vec 1) h ++
+     linepath(h (&n / &N % vec 1),g (&n / &N % vec 1))`;
+    `ball((p:real^1->complex) t,ee(p t))`] CAUCHY_THEOREM_PRIMITIVE) THEN
+  ASM_SIMP_TAC[VALID_PATH_JOIN_EQ; PATHSTART_JOIN; PATHFINISH_JOIN;
+   PATHSTART_SUBPATH; PATHFINISH_SUBPATH; PATH_IMAGE_JOIN; PATHSTART_LINEPATH;
+   PATHFINISH_LINEPATH; VALID_PATH_LINEPATH; UNION_SUBSET] THEN
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN ANTS_TAC THENL
+   [X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+    REMOVE_THEN "*" (MP_TAC o SPEC `(p:real^1->complex) t`) THEN ANTS_TAC THENL
+     [ASM_MESON_TAC[path_image; IN_IMAGE; SUBSET];
+      ASM_SIMP_TAC[HAS_COMPLEX_DERIVATIVE_AT_WITHIN; CENTRE_IN_BALL]];
+    ALL_TAC] THEN
+  MATCH_MP_TAC(TAUT `p /\ q /\ (p ==> r ==> s) ==> (p /\ q ==> r) ==> s`) THEN
+  CONJ_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC VALID_PATH_SUBPATH THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[IN_INTERVAL_1; DROP_CMUL; DROP_VEC; REAL_MUL_RID] THEN
+    ASM_SIMP_TAC[REAL_LE_RDIV_EQ; REAL_LE_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
+    REWRITE_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_LE] THEN ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [SUBGOAL_THEN `drop(&n / &N % vec 1) <= drop(&(SUC n) / &N % vec 1)`
+    ASSUME_TAC THENL
+     [ASM_SIMP_TAC[DROP_CMUL; DROP_VEC; REAL_MUL_RID; REAL_LE_DIV2_EQ;
+                   REAL_OF_NUM_LT; LE_1; REAL_OF_NUM_LE] THEN
+      ARITH_TAC;
+      ASM_SIMP_TAC[PATH_IMAGE_SUBPATH; PATH_IMAGE_LINEPATH] THEN
+      ONCE_REWRITE_TAC[GSYM REVERSEPATH_SUBPATH] THEN
+      ASM_SIMP_TAC[PATH_IMAGE_SUBPATH; PATH_IMAGE_REVERSEPATH]] THEN
+    MATCH_MP_TAC(TAUT
+     `(p /\ r) /\ (p /\ r ==> q /\ s) ==> p /\ q /\ r /\ s`) THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+      REWRITE_TAC[AND_FORALL_THM; TAUT
+        `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+      X_GEN_TAC `u:real^1` THEN REWRITE_TAC[IN_INTERVAL_1] THEN
+      REWRITE_TAC[DROP_CMUL; DROP_VEC; REAL_MUL_RID] THEN STRIP_TAC THEN
+      REWRITE_TAC[IN_BALL] THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (NORM_ARITH
+       `!e pu. dist(pt,pn) < ee / &3
+               ==> dist(pn,pu) < e / &3 /\ e <= ee /\
+                   norm(gu - pu) < e / &3 /\ norm(hu - pu) < e / &3
+                   ==> dist(pt,gu) < ee /\ dist(pt,hu) < ee`)) THEN
+      MAP_EVERY EXISTS_TAC [`e:real`; `(p:real^1->complex) u`] THEN
+      ASM_SIMP_TAC[] THEN
+      SUBGOAL_THEN `(u:real^1) IN interval[vec 0,vec 1]` ASSUME_TAC THENL
+       [REWRITE_TAC[IN_INTERVAL_1; DROP_VEC] THEN CONJ_TAC THENL
+         [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+           REAL_LE_TRANS)) THEN ASM_SIMP_TAC[REAL_LE_DIV; REAL_POS];
+          FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+           REAL_LE_TRANS)) THEN
+          ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
+          ASM_REWRITE_TAC[REAL_MUL_LID; REAL_OF_NUM_LE]];
+        ASM_SIMP_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+        ASM_REWRITE_TAC[] THEN
+        REWRITE_TAC[DIST_REAL; GSYM drop; IN_INTERVAL_1;
+                    DROP_VEC; DROP_CMUL; REAL_MUL_RID] THEN
+        ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_POS; REAL_LE_DIV;
+              REAL_OF_NUM_LT; LE_1; REAL_MUL_LID; REAL_OF_NUM_LE;
+              ARITH_RULE `SUC n <= N ==> n <= N`] THEN
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+         `u <= s ==> n <= u /\ s - n < d ==> abs(n - u) < d`)) THEN
+        ASM_REWRITE_TAC[] THEN
+        REWRITE_TAC[real_div; GSYM REAL_SUB_RDISTRIB] THEN
+        SIMP_TAC[REAL_OF_NUM_SUB; ARITH_RULE `n <= SUC n`] THEN
+        ASM_REWRITE_TAC[ARITH_RULE `SUC n - n = 1`; REAL_MUL_LID]];
+      GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [SUBSET] THEN
+      REWRITE_TAC[FORALL_IN_IMAGE] THEN STRIP_TAC THEN
+      REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN CONJ_TAC THEN
+      MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_BALL] THEN
+      REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET] THEN
+      CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      REWRITE_TAC[ENDS_IN_INTERVAL; INTERVAL_EQ_EMPTY_1; REAL_NOT_LT] THEN
+      REWRITE_TAC[DROP_VEC; DROP_CMUL; REAL_MUL_RID] THEN
+        ASM_SIMP_TAC[REAL_LE_DIV2_EQ; REAL_POS; REAL_LE_DIV;
+              REAL_OF_NUM_LT; LE_1; REAL_MUL_LID; REAL_OF_NUM_LE] THEN
+      ARITH_TAC];
+    STRIP_TAC THEN DISCH_THEN(fun th ->
+        MP_TAC(MATCH_MP PATH_INTEGRAL_UNIQUE th) THEN
+        MP_TAC(MATCH_MP HAS_PATH_INTEGRAL_INTEGRABLE th)) THEN
+    ASM_SIMP_TAC[PATH_INTEGRABLE_JOIN; VALID_PATH_JOIN_EQ; VALID_PATH_LINEPATH;
+      PATHSTART_SUBPATH; PATHFINISH_SUBPATH; PATHSTART_JOIN; PATHFINISH_JOIN;
+      PATHSTART_LINEPATH; PATHFINISH_LINEPATH; VALID_PATH_LINEPATH;
+      PATH_INTEGRAL_JOIN] THEN
+    STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o check(is_imp o concl)) THEN
+    ASM_SIMP_TAC[ARITH_RULE `SUC n <= N ==> n <= N`] THEN
+    MATCH_MP_TAC(COMPLEX_RING
+     `hn - he = hn' /\ gn + gd = gn' /\ hgn = --ghn
+      ==> hn - gn = ghn - gh0
+          ==> gd + ghn' + he + hgn = Cx(&0)
+              ==> hn' - gn' = ghn' - gh0`) THEN
+    REPEAT CONJ_TAC THENL
+     [ASM_SIMP_TAC[complex_sub; GSYM PATH_INTEGRAL_REVERSEPATH] THEN
+      REWRITE_TAC[REVERSEPATH_SUBPATH] THEN
+      MATCH_MP_TAC PATH_INTEGRAL_SUBPATH_COMBINE;
+      MATCH_MP_TAC PATH_INTEGRAL_SUBPATH_COMBINE;
+      GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+       [GSYM REVERSEPATH_LINEPATH] THEN
+      MATCH_MP_TAC PATH_INTEGRAL_REVERSEPATH] THEN
+    ASM_REWRITE_TAC[VALID_PATH_LINEPATH] THEN
+    ASM_REWRITE_TAC[IN_INTERVAL_1; DROP_CMUL; DROP_VEC; REAL_MUL_RID] THEN
+    ASM_SIMP_TAC[REAL_LE_DIV; REAL_POS; REAL_LE_LDIV_EQ; REAL_OF_NUM_LT; LE_1;
+                 REAL_MUL_LID; REAL_OF_NUM_LE] THEN
+    ASM_SIMP_TAC[ARITH_RULE `SUC n <= N ==> n <= N`] THEN
+    TRY(MATCH_MP_TAC PATH_INTEGRABLE_HOLOMORPHIC_SIMPLE THEN
+        EXISTS_TAC `s:complex->bool` THEN ASM_REWRITE_TAC[] THEN NO_TAC) THEN
+    ASM_MESON_TAC[PATH_INTEGRABLE_REVERSEPATH; VALID_PATH_LINEPATH;
+                  REVERSEPATH_LINEPATH]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Hence we can treat even non-rectifiable paths as having a "length"        *)
+(* for bounds on analytic functions in open sets.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let VALID_PATH_VECTOR_POLYNOMIAL_FUNCTION = prove
+ (`!p:real^1->complex.
+     vector_polynomial_function p ==> valid_path p`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[valid_path] THEN
+  MATCH_MP_TAC DIFFERENTIABLE_ON_IMP_PIECEWISE_DIFFERENTIABLE THEN
+  MATCH_MP_TAC DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON THEN
+  REWRITE_TAC[VECTOR_DERIVATIVE_WORKS] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[vector_derivative] THEN
+  CONV_TAC SELECT_CONV THEN
+  ASM_MESON_TAC[HAS_VECTOR_DERIVATIVE_VECTOR_POLYNOMIAL_FUNCTION]);;
+
+let PATH_INTEGRAL_BOUND_EXISTS = prove
+ (`!s g. open s /\ valid_path g /\ path_image g SUBSET s
+         ==> ?L. &0 < L /\
+                 !f B. f holomorphic_on s /\ (!z. z IN s ==> norm(f z) <= B)
+                       ==> norm(path_integral g f) <= L * B`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:complex->bool`; `g:real^1->complex`]
+        PATH_INTEGRAL_NEARBY_ENDS) THEN
+  ASM_SIMP_TAC[VALID_PATH_IMP_PATH] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(MP_TAC o SPEC `g:real^1->complex`) THEN
+  ASM_REWRITE_TAC[VECTOR_SUB_REFL; NORM_0] THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+  MP_TAC(ISPECL [`g:real^1->complex`; `d:real`]
+   PATH_APPROX_VECTOR_POLYNOMIAL_FUNCTION) THEN
+  ASM_SIMP_TAC[VALID_PATH_IMP_PATH] THEN
+  DISCH_THEN(X_CHOOSE_THEN `p:real^1->complex` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `p:real^1->complex`) THEN
+  ASM_SIMP_TAC[VALID_PATH_VECTOR_POLYNOMIAL_FUNCTION] THEN STRIP_TAC THEN
+  FIRST_ASSUM(X_CHOOSE_THEN `p':real^1->complex` STRIP_ASSUME_TAC o
+    MATCH_MP HAS_VECTOR_DERIVATIVE_VECTOR_POLYNOMIAL_FUNCTION) THEN
+  SUBGOAL_THEN `bounded(IMAGE (p':real^1->complex) (interval[vec 0,vec 1]))`
+  MP_TAC THENL
+   [MATCH_MP_TAC COMPACT_IMP_BOUNDED THEN
+    MATCH_MP_TAC COMPACT_CONTINUOUS_IMAGE THEN
+    REWRITE_TAC[COMPACT_INTERVAL] THEN
+    ASM_MESON_TAC[CONTINUOUS_VECTOR_POLYNOMIAL_FUNCTION;
+                  CONTINUOUS_AT_IMP_CONTINUOUS_ON];
+    REWRITE_TAC[BOUNDED_POS; FORALL_IN_IMAGE]] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `L:real` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `f path_integrable_on p /\ valid_path p` STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[PATH_INTEGRABLE_HOLOMORPHIC_SIMPLE;
+                  VALID_PATH_VECTOR_POLYNOMIAL_FUNCTION];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`f:complex->complex`; `p:real^1->complex`]
+        PATH_INTEGRAL_INTEGRAL) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC
+   `drop(integral (interval[vec 0,vec 1]) (\x:real^1. lift(L * B)))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
+    ASM_REWRITE_TAC[INTEGRABLE_CONST; GSYM PATH_INTEGRABLE_ON] THEN
+    X_GEN_TAC `t:real^1` THEN DISCH_TAC THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    REWRITE_TAC[LIFT_DROP; COMPLEX_NORM_MUL] THEN
+    MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[NORM_POS_LE] THEN
+    CONJ_TAC THENL
+     [FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_MESON_TAC[path_image; SUBSET; IN_IMAGE];
+      ASM_MESON_TAC[HAS_VECTOR_DERIVATIVE_UNIQUE_AT]];
+    REWRITE_TAC[INTEGRAL_CONST; CONTENT_UNIT_1; VECTOR_MUL_LID] THEN
+    REWRITE_TAC[LIFT_DROP; REAL_LE_REFL]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Winding number.                                                           *)
@@ -3690,6 +4324,159 @@ let WINDING_NUMBER_EQ_1 = prove
    [ASM_SIMP_TAC[INTEGER_WINDING_NUMBER]; ALL_TAC] THEN
   SIMP_TAC[complex_integer; COMPLEX_EQ; RE_CX; IM_CX] THEN
   SIMP_TAC[REAL_LT_INTEGERS; INTEGER_CLOSED] THEN REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity of winding number and invariance on connected sets.            *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_AT_WINDING_NUMBER = prove
+ (`!g z. valid_path g /\ ~(z IN path_image g)
+         ==> (\w. winding_number(g,w)) continuous (at z)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `(:complex) DIFF path_image g` OPEN_CONTAINS_BALL) THEN
+  ASM_SIMP_TAC[GSYM CLOSED_OPEN; CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
+  DISCH_THEN(MP_TAC o SPEC `z:complex`) THEN
+  ASM_REWRITE_TAC[IN_DIFF; IN_UNIV; SUBSET; IN_BALL] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`(:complex) DIFF cball(z, &3 / &4 * d)`; `g:real^1->complex`]
+        PATH_INTEGRAL_BOUND_EXISTS) THEN
+  ASM_REWRITE_TAC[GSYM CLOSED_OPEN; CLOSED_CBALL; SUBSET; IN_DIFF;
+                  IN_CBALL; IN_UNIV; REAL_NOT_LE] THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[REAL_ARITH `&0 < d /\ ~(&3 / &4 * d < x) ==> x < d`];
+    ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `L:real` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[continuous_at] THEN X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+  EXISTS_TAC `min (d / &4) (e / &2 * d pow 2 / L / &4)` THEN
+  ASM_SIMP_TAC[REAL_LT_MIN; REAL_POW_LT; REAL_LT_DIV; REAL_LT_MUL; REAL_HALF;
+               REAL_ARITH `&0 < x / &4 <=> &0 < x`] THEN
+  X_GEN_TAC `w:complex` THEN STRIP_TAC THEN
+  REWRITE_TAC[dist; winding_number; GSYM COMPLEX_SUB_LDISTRIB] THEN
+  REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_DIV; COMPLEX_NORM_CX] THEN
+  REWRITE_TAC[REAL_ABS_NUM; COMPLEX_NORM_II; REAL_ABS_PI] THEN
+  REWRITE_TAC[real_div; REAL_MUL_LID; REAL_MUL_RID] THEN
+  MATCH_MP_TAC(REAL_ARITH
+    `inv p * x <= &1 * x /\ x < e ==> inv p * x < e`) THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+    MATCH_MP_TAC REAL_INV_LE_1 THEN MP_TAC PI_APPROX_32 THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  MATCH_MP_TAC(REAL_ARITH `!d. &0 < e /\ d = e / &2 /\ x <= d ==> x < e`) THEN
+  EXISTS_TAC `L * (e / &2 * d pow 2 / L / &4) * inv(d / &2) pow 2` THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [MAP_EVERY UNDISCH_TAC [`&0 < d`; `&0 < L`] THEN CONV_TAC REAL_FIELD;
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `path_integral g (\x. Cx(&1) / (x - w)) -
+    path_integral g (\x. Cx(&1) / (x - z)) =
+    path_integral g (\x. Cx(&1) / (x - w) - Cx(&1) / (x - z))`
+  SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC PATH_INTEGRAL_SUB THEN
+    CONJ_TAC THEN MATCH_MP_TAC PATH_INTEGRABLE_INVERSEDIFF THEN
+    ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ONCE_REWRITE_TAC[DIST_SYM] THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  SIMP_TAC[HOLOMORPHIC_ON_OPEN; GSYM closed; CLOSED_CBALL] THEN
+  REWRITE_TAC[IN_UNIV; IN_DIFF; IN_CBALL; REAL_NOT_LE; AND_FORALL_THM] THEN
+  X_GEN_TAC `x:complex` THEN
+  REWRITE_TAC[TAUT `(a ==> b) /\ (a ==> c) <=> a ==> b /\ c`] THEN
+  DISCH_TAC THEN REWRITE_TAC[GSYM complex_differentiable] THEN
+  SUBGOAL_THEN `~(x:complex = w) /\ ~(x = z)` STRIP_ASSUME_TAC THENL
+   [CONJ_TAC THEN DISCH_THEN SUBST_ALL_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_NOT_LE])) THEN
+    CONV_TAC NORM_ARITH;
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC COMPLEX_DIFFERENTIABLE_SUB THEN
+    CONJ_TAC THEN MATCH_MP_TAC COMPLEX_DIFFERENTIABLE_DIV_AT THEN
+    ASM_SIMP_TAC[COMPLEX_SUB_0; COMPLEX_DIFFERENTIABLE_SUB;
+                 COMPLEX_DIFFERENTIABLE_ID; COMPLEX_DIFFERENTIABLE_CONST];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[COMPLEX_FIELD
+   `~(x = w) /\ ~(x = z)
+    ==> Cx(&1) / (x - w) - Cx(&1) / (x - z) =
+        (w - z) * inv((x - w) * (x - z))`] THEN
+  REWRITE_TAC[COMPLEX_NORM_MUL] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
+  ASM_SIMP_TAC[NORM_POS_LE; GSYM dist; REAL_LT_IMP_LE] THEN
+  REWRITE_TAC[COMPLEX_NORM_INV; REAL_POW_INV] THEN
+  MATCH_MP_TAC REAL_LE_INV2 THEN
+  ASM_SIMP_TAC[REAL_POW_2; REAL_LT_MUL; REAL_HALF; COMPLEX_NORM_MUL] THEN
+  MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_SIMP_TAC[REAL_HALF; REAL_LT_IMP_LE] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_NOT_LE])) THEN
+  CONV_TAC NORM_ARITH);;
+
+let CONTINUOUS_ON_WINDING_NUMBER = prove
+ (`!g. valid_path g
+       ==> (\w. winding_number(g,w)) continuous_on
+           ((:complex) DIFF path_image g)`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_AT; GSYM closed;
+           OPEN_UNIV; CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
+  SIMP_TAC[IN_DIFF; IN_UNIV; CONTINUOUS_AT_WINDING_NUMBER]);;
+
+let WINDING_NUMBER_CONSTANT = prove
+ (`!s g. valid_path g /\ pathfinish g = pathstart g /\
+         connected s /\ s INTER path_image g = {}
+         ==> ?k. !z. z IN s ==> winding_number(g,z) = k`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_DISCRETE_RANGE_CONSTANT THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+    EXISTS_TAC `(:complex) DIFF path_image g` THEN
+    ASM_SIMP_TAC[CONTINUOUS_ON_WINDING_NUMBER] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
+  X_GEN_TAC `w:complex` THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  SUBGOAL_THEN
+   `complex_integer(winding_number(g,w)) /\
+    complex_integer(winding_number(g,z))`
+  MP_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC INTEGER_WINDING_NUMBER THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+    REWRITE_TAC[COMPLEX_INTEGER] THEN STRIP_TAC THEN ASM_REWRITE_TAC[]] THEN
+  REWRITE_TAC[GSYM CX_SUB; CX_INJ; COMPLEX_NORM_CX] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_ABS_INTEGER_LEMMA THEN
+  ASM_SIMP_TAC[REAL_SUB_0; INTEGER_CLOSED]);;
+
+let OPEN_WINDING_NUMBER_LEVELSETS = prove
+ (`!g k. valid_path g /\ pathfinish g = pathstart g
+         ==> open {z | ~(z IN path_image g) /\ winding_number(g,z) = k}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[open_def; IN_ELIM_THM] THEN
+  X_GEN_TAC `z:complex` THEN STRIP_TAC THEN
+  MP_TAC(ISPEC `(:complex) DIFF path_image g` OPEN_CONTAINS_BALL) THEN
+  ASM_SIMP_TAC[GSYM CLOSED_OPEN; CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
+  DISCH_THEN(MP_TAC o SPEC `z:complex`) THEN
+  ASM_REWRITE_TAC[IN_DIFF; IN_UNIV; SUBSET; IN_BALL] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `w:complex` THEN
+  REPEAT STRIP_TAC THENL [ASM_MESON_TAC[DIST_SYM]; ALL_TAC] THEN
+  MP_TAC(ISPECL [`ball(z:complex,e)`; `g:real^1->complex`]
+        WINDING_NUMBER_CONSTANT) THEN
+  ASM_SIMP_TAC[CONNECTED_BALL; EXTENSION; IN_INTER; NOT_IN_EMPTY; IN_BALL] THEN
+  ASM_MESON_TAC[DIST_REFL; DIST_SYM]);;
+
+let WINDING_NUMBER_ZERO_IN_OUTSIDE = prove
+ (`!g z. valid_path g /\ pathfinish g = pathstart g /\
+         z IN outside(path_image g)
+         ==> winding_number(g,z) = Cx(&0)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`path_image(g:real^1->complex)`; `Cx(&0)`]
+   BOUNDED_SUBSET_BALL) THEN ASM_SIMP_TAC[BOUNDED_VALID_PATH_IMAGE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `?w. ~(w IN ball(Cx(&0),B))` STRIP_ASSUME_TAC THENL
+   [MATCH_MP_TAC(SET_RULE `~(s = UNIV) ==> ?z. ~(z IN s)`) THEN
+    MESON_TAC[BOUNDED_BALL; NOT_BOUNDED_UNIV];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`path_image(g:real^1->complex)`; `ball(Cx(&0),B)`]
+        OUTSIDE_SUBSET_CONVEX) THEN
+  ASM_REWRITE_TAC[CONVEX_BALL] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`outside(path_image(g:real^1->complex))`; `g:real^1->complex`]
+    WINDING_NUMBER_CONSTANT) THEN
+  ASM_SIMP_TAC[OUTSIDE_NO_OVERLAP; CONNECTED_OUTSIDE; DIMINDEX_2; LE_REFL;
+               BOUNDED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
+  MP_TAC(ISPECL [`g:real^1->complex`; `ball(Cx(&0),B)`; `w:complex`]
+        WINDING_NUMBER_ZERO_OUTSIDE) THEN
+  ASM_REWRITE_TAC[CONVEX_BALL] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cauchy's integral formula, again for a convex enclosing set.              *)
@@ -4808,6 +5595,75 @@ let HAS_COMPLEX_DERIVATIVE_HIGHER_COMPLEX_DERIVATIVE = prove
   ASM_SIMP_TAC[HOLOMORPHIC_HIGHER_COMPLEX_DERIVATIVE]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Morera's theorem.                                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let MORERA_LOCAL_TRIANGLE_GEN = prove
+ (`!f s.
+     (!z. z IN s
+          ==> ?e a. &0 < e /\ z IN ball(a,e) /\ f continuous_on ball(a,e) /\
+                    !b c. segment[b,c] SUBSET ball(a,e)
+                           ==> path_integral (linepath(a,b)) f +
+                               path_integral (linepath(b,c)) f +
+                               path_integral (linepath(c,a)) f = Cx(&0))
+     ==> f analytic_on s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[analytic_on] THEN
+  X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`e:real`; `a:complex`] THEN STRIP_TAC THEN
+  EXISTS_TAC `e - dist(a:complex,z)` THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_BALL]) THEN NORM_ARITH_TAC;
+    ALL_TAC] THEN
+  MATCH_MP_TAC HOLOMORPHIC_ON_SUBSET THEN EXISTS_TAC `ball(a:complex,e)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC HOLOMORPHIC_DERIVATIVE THEN REWRITE_TAC[OPEN_BALL] THEN
+    MATCH_MP_TAC TRIANGLE_PATH_INTEGRALS_STARLIKE_PRIMITIVE THEN
+    EXISTS_TAC `a:complex` THEN ASM_REWRITE_TAC[CENTRE_IN_BALL; OPEN_BALL] THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+    MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_BALL] THEN
+    ASM_REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; CENTRE_IN_BALL];
+    REWRITE_TAC[SUBSET; IN_BALL] THEN NORM_ARITH_TAC]);;
+
+let MORERA_LOCAL_TRIANGLE = prove
+ (`!f s. (!z. z IN s
+              ==> ?t. open t /\ z IN t /\ f continuous_on t /\
+                      !a b c. convex hull {a,b,c} SUBSET t
+                              ==> path_integral (linepath(a,b)) f +
+                                  path_integral (linepath(b,c)) f +
+                                  path_integral (linepath(c,a)) f = Cx(&0))
+         ==> f analytic_on s`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  MATCH_MP_TAC MORERA_LOCAL_TRIANGLE_GEN THEN
+  X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `t:complex->bool` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_BALL]) THEN
+  DISCH_THEN(MP_TAC o SPEC `z:complex`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+  EXISTS_TAC `z:complex` THEN ASM_REWRITE_TAC[CENTRE_IN_BALL] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`x:complex`; `w:complex`] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM
+   (MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS)) THEN
+  MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_BALL] THEN
+  ASM_REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; CENTRE_IN_BALL] THEN
+  MP_TAC(ISPECL [`x:complex`; `w:complex`] ENDS_IN_SEGMENT) THEN
+  ASM SET_TAC[]);;
+
+let MORERA_TRIANGLE = prove
+ (`!f s. open s /\ f continuous_on s /\
+         (!a b c. convex hull {a,b,c} SUBSET s
+                  ==> path_integral (linepath(a,b)) f +
+                      path_integral (linepath(b,c)) f +
+                      path_integral (linepath(c,a)) f = Cx(&0))
+         ==> f analytic_on s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MORERA_LOCAL_TRIANGLE THEN
+  X_GEN_TAC `z:complex` THEN DISCH_TAC THEN EXISTS_TAC `s:complex->bool` THEN
+  ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Combining theorems for higher derivatives including Leibniz rule.         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -5140,8 +5996,8 @@ let CAUCHY_INTEGRAL_FORMULA_CONVEX = prove
   ASM_REWRITE_TAC[OPEN_INTERIOR] THEN CONJ_TAC THENL
    [MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN EXISTS_TAC `s:complex->bool` THEN
     ASM_REWRITE_TAC[INTERIOR_SUBSET];
-    ASM_SIMP_TAC[HOLOMORPHIC_ON_OPEN; OPEN_DIFF; FINITE_IMP_CLOSED; OPEN_INTERIOR;
-                 GSYM complex_differentiable]]);;
+    ASM_SIMP_TAC[HOLOMORPHIC_ON_OPEN; OPEN_DIFF; FINITE_IMP_CLOSED;
+                 OPEN_INTERIOR; GSYM complex_differentiable]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Formula for higher derivatives.                                           *)

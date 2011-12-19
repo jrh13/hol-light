@@ -618,6 +618,15 @@ let DIFFERENTIABLE_CHAIN_WITHIN = prove
   REWRITE_TAC[differentiable] THEN MESON_TAC[DIFF_CHAIN_WITHIN]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Similarly for "differentiable_on" (should expand this eventually).        *)
+(* ------------------------------------------------------------------------- *)
+
+let DIFFERENTIABLE_ON_CONST = prove
+ (`!s c. (\x. c) differentiable_on s`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON THEN
+  REWRITE_TAC[DIFFERENTIABLE_CONST]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Uniqueness of derivative.                                                 *)
 (*                                                                           *)
 (* The general result is a bit messy because we need approachability of the  *)
@@ -681,6 +690,20 @@ let FRECHET_DERIVATIVE_UNIQUE_AT = prove
    [`f:real^M->real^N`; `x:real^M`; `(:real^M)`] THEN
   ASM_REWRITE_TAC[IN_UNIV; WITHIN_UNIV] THEN
   MESON_TAC[REAL_ARITH `&0 < e ==> &0 < abs(e / &2) /\ abs(e / &2) < e`]);;
+
+let HAS_FRECHET_DERIVATIVE_UNIQUE_AT = prove
+ (`!f:real^M->real^N f' x.
+        (f has_derivative f') (at x)
+        ==> frechet_derivative f (at x) = f'`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FRECHET_DERIVATIVE_UNIQUE_AT THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `x:real^M`] THEN
+  ASM_REWRITE_TAC[frechet_derivative] THEN CONV_TAC SELECT_CONV THEN
+  ASM_MESON_TAC[]);;
+
+let FRECHET_DERIVATIVE_CONST_AT = prove
+ (`!c:real^N a:real^M. frechet_derivative (\x. c) (at a) = \h. vec 0`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC HAS_FRECHET_DERIVATIVE_UNIQUE_AT THEN
+  REWRITE_TAC[HAS_DERIVATIVE_CONST]);;
 
 let FRECHET_DERIVATIVE_UNIQUE_WITHIN_CLOSED_INTERVAL = prove
  (`!f:real^M->real^N f' f'' x a b.
@@ -1880,6 +1903,15 @@ let VECTOR_DERIVATIVE_UNIQUE_AT = prove
   REWRITE_TAC[FUN_EQ_THM] THEN DISCH_THEN(MP_TAC o SPEC `vec 1:real^1`) THEN
   SIMP_TAC[VEC_COMPONENT; DIMINDEX_1; ARITH; VECTOR_MUL_LID]);;
 
+let HAS_VECTOR_DERIVATIVE_UNIQUE_AT = prove
+ (`!f:real^1->real^N f' x.
+        (f has_vector_derivative f') (at x)
+        ==> vector_derivative f (at x) = f'`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC VECTOR_DERIVATIVE_UNIQUE_AT THEN
+  MAP_EVERY EXISTS_TAC [`f:real^1->real^N`; `x:real^1`] THEN
+  ASM_REWRITE_TAC[vector_derivative] THEN CONV_TAC SELECT_CONV THEN
+  ASM_MESON_TAC[]);;
+
 let VECTOR_DERIVATIVE_UNIQUE_WITHIN_CLOSED_INTERVAL = prove
  (`!f:real^1->real^N a b x f' f''.
         drop a < drop b /\
@@ -1919,6 +1951,11 @@ let HAS_VECTOR_DERIVATIVE_CONST = prove
  (`!c net. ((\x. c) has_vector_derivative vec 0) net`,
   REWRITE_TAC[has_vector_derivative] THEN
   REWRITE_TAC[VECTOR_MUL_RZERO; HAS_DERIVATIVE_CONST]);;
+
+let VECTOR_DERIVATIVE_CONST_AT = prove
+ (`!c:real^N a. vector_derivative (\x. c) (at a) = vec 0`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_UNIQUE_AT THEN
+  REWRITE_TAC[HAS_VECTOR_DERIVATIVE_CONST]);;
 
 let HAS_VECTOR_DERIVATIVE_ID = prove
  (`!net. ((\x. x) has_vector_derivative (vec 1)) net`,
