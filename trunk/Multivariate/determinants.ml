@@ -475,7 +475,7 @@ let DET_LINEAR_ROWS_VSUM_LEMMA = prove
   ASM_MESON_TAC[LE; ARITH_RULE `~(SUC k <= k)`]);;
 
 let DET_LINEAR_ROWS_VSUM = prove
- (`!s k a.
+ (`!s a.
          FINITE s
          ==> det((lambda i. vsum s (a i)):real^N^N) =
              sum {f | (!i. 1 <= i /\ i <= dimindex(:N) ==> f(i) IN s) /\
@@ -932,27 +932,27 @@ let DET_COFACTOR_EXPANSION = prove
       SIMP_TAC[LAMBDA_BETA; IN_NUMSEG] THEN
       ASM_MESON_TAC[PERMUTES_INVERSES; IN_NUMSEG]]]);;
 
-let MATRIX_MUL_RIGHT_COFACTOR = prove                                    
- (`!A:real^N^N. A ** transp(cofactor A) = det(A) %% mat 1`,                  
-  GEN_TAC THEN                                                           
-  SIMP_TAC[CART_EQ; MATRIX_CMUL_COMPONENT; mat;                             
-           matrix_mul; LAMBDA_BETA; transp] THEN                       
-  X_GEN_TAC `i:num` THEN STRIP_TAC THEN                                    
-  X_GEN_TAC `i':num` THEN STRIP_TAC THEN                                     
-  COND_CASES_TAC THEN                                               
-  ASM_SIMP_TAC[GSYM DET_COFACTOR_EXPANSION; REAL_MUL_RID] THEN         
-  MATCH_MP_TAC EQ_TRANS THEN                                          
-  EXISTS_TAC `det((lambda k l. if k = i' then (A:real^N^N)$i$l                 
-                               else A$k$l):real^N^N)` THEN                     
-  CONJ_TAC THENL                                                               
-   [MP_TAC(GEN `A:real^N^N`                                                    
-     (ISPECL [`A:real^N^N`; `i':num`] DET_COFACTOR_EXPANSION)) THEN            
-    ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN      
-    MATCH_MP_TAC SUM_EQ THEN X_GEN_TAC `j:num` THEN                       
-    REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN                                 
-    ASM_SIMP_TAC[LAMBDA_BETA] THEN AP_TERM_TAC THEN                            
-    ASM_SIMP_TAC[cofactor; LAMBDA_BETA] THEN AP_TERM_TAC THEN                  
-    SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN ASM_MESON_TAC[];                       
+let MATRIX_MUL_RIGHT_COFACTOR = prove
+ (`!A:real^N^N. A ** transp(cofactor A) = det(A) %% mat 1`,
+  GEN_TAC THEN
+  SIMP_TAC[CART_EQ; MATRIX_CMUL_COMPONENT; mat;
+           matrix_mul; LAMBDA_BETA; transp] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  X_GEN_TAC `i':num` THEN STRIP_TAC THEN
+  COND_CASES_TAC THEN
+  ASM_SIMP_TAC[GSYM DET_COFACTOR_EXPANSION; REAL_MUL_RID] THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `det((lambda k l. if k = i' then (A:real^N^N)$i$l
+                               else A$k$l):real^N^N)` THEN
+  CONJ_TAC THENL
+   [MP_TAC(GEN `A:real^N^N`
+     (ISPECL [`A:real^N^N`; `i':num`] DET_COFACTOR_EXPANSION)) THEN
+    ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN
+    MATCH_MP_TAC SUM_EQ THEN X_GEN_TAC `j:num` THEN
+    REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[LAMBDA_BETA] THEN AP_TERM_TAC THEN
+    ASM_SIMP_TAC[cofactor; LAMBDA_BETA] THEN AP_TERM_TAC THEN
+    SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN ASM_MESON_TAC[];
     REWRITE_TAC[REAL_MUL_RZERO] THEN MATCH_MP_TAC DET_IDENTICAL_ROWS THEN
     MAP_EVERY EXISTS_TAC [`i:num`;` i':num`] THEN
     ASM_SIMP_TAC[CART_EQ; LAMBDA_BETA; row]]);;

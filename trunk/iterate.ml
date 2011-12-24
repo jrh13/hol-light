@@ -950,7 +950,7 @@ let NSUM_BOUND = prove
   SIMP_TAC[GSYM NSUM_CONST; NSUM_LE]);;
 
 let NSUM_BOUND_GEN = prove
- (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) <= b DIV (CARD s))
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) <= b DIV (CARD s))
            ==> nsum s f <= b`,
   SIMP_TAC[IMP_CONJ; CARD_EQ_0; LE_RDIV_EQ] THEN REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `nsum s (\x. CARD(s:A->bool) * f x) <= CARD s * b` MP_TAC THENL
@@ -971,7 +971,7 @@ let NSUM_BOUND_LT_ALL = prove
   MESON_TAC[MEMBER_NOT_EMPTY; LT_IMP_LE; NSUM_BOUND_LT]);;
 
 let NSUM_BOUND_LT_GEN = prove
- (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b DIV (CARD s))
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b DIV (CARD s))
            ==> nsum s f < b`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LTE_TRANS THEN
   EXISTS_TAC `nsum (s:A->bool) (\a. f(a) + 1)` THEN CONJ_TAC THENL
@@ -1188,7 +1188,7 @@ let NSUM_CONST_NUMSEG = prove
   SIMP_TAC[NSUM_CONST; FINITE_NUMSEG; CARD_NUMSEG]);;
 
 let NSUM_EQ_0_NUMSEG = prove
- (`!f s. (!i. m <= i /\ i <= n ==> (f(i) = 0)) ==> (nsum(m..n) f = 0)`,
+ (`!f m n. (!i. m <= i /\ i <= n ==> (f(i) = 0)) ==> (nsum(m..n) f = 0)`,
   SIMP_TAC[NSUM_EQ_0; IN_NUMSEG]);;
 
 let NSUM_EQ_0_IFF_NUMSEG = prove
@@ -1529,7 +1529,7 @@ let SUM_BOUND = prove
   SIMP_TAC[GSYM SUM_CONST; SUM_LE]);;
 
 let SUM_BOUND_GEN = prove
- (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) <= b / &(CARD s))
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) <= b / &(CARD s))
            ==> sum s f <= b`,
   MESON_TAC[SUM_BOUND; REAL_DIV_LMUL; REAL_OF_NUM_EQ; HAS_SIZE_0;
             HAS_SIZE]);;
@@ -1555,7 +1555,7 @@ let SUM_BOUND_LT_ALL = prove
   MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE; SUM_BOUND_LT]);;
 
 let SUM_BOUND_LT_GEN = prove
- (`!s t b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b / &(CARD s))
+ (`!s f b. FINITE s /\ ~(s = {}) /\ (!x:A. x IN s ==> f(x) < b / &(CARD s))
            ==> sum s f < b`,
   MESON_TAC[SUM_BOUND_LT_ALL; REAL_DIV_LMUL; REAL_OF_NUM_EQ; HAS_SIZE_0;
             HAS_SIZE]);;
@@ -1839,7 +1839,7 @@ let SUM_CONST_NUMSEG = prove
   SIMP_TAC[SUM_CONST; FINITE_NUMSEG; CARD_NUMSEG]);;
 
 let SUM_EQ_0_NUMSEG = prove
- (`!f s. (!i. m <= i /\ i <= n ==> (f(i) = &0)) ==> (sum(m..n) f = &0)`,
+ (`!f m n. (!i. m <= i /\ i <= n ==> (f(i) = &0)) ==> (sum(m..n) f = &0)`,
   SIMP_TAC[SUM_EQ_0; IN_NUMSEG]);;
 
 let SUM_TRIV_NUMSEG = prove

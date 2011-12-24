@@ -124,9 +124,9 @@ let MEASURE_INTERVAL_1 = prove
 
 let MEASURE_INTERVAL_1_ALT = prove
  (`(!a b:real^1. measure(interval[a,b]) =
-                    if drop a <= drop b then drop b - drop a else &0) /\
+                    if drop a < drop b then drop b - drop a else &0) /\
    (!a b:real^1. measure(interval(a,b)) =
-                    if drop a <= drop b then drop b - drop a else &0)`,
+                    if drop a < drop b then drop b - drop a else &0)`,
   REWRITE_TAC[MEASURE_INTERVAL_1] THEN REAL_ARITH_TAC);;
 
 let MEASURE_INTERVAL_2 = prove
@@ -346,10 +346,10 @@ let NEGLIGIBLE_INTERVAL = prove
             INTERIOR_CLOSED_INTERVAL; HAS_MEASURE_UNIQUE]);;
 
 let MEASURABLE_UNIONS = prove
- (`!m f:(real^N->bool)->bool.
+ (`!f:(real^N->bool)->bool.
         FINITE f /\ (!s. s IN f ==> measurable s)
         ==> measurable (UNIONS f)`,
-  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[UNIONS_0; UNIONS_INSERT; MEASURABLE_EMPTY] THEN
   REWRITE_TAC[IN_INSERT] THEN REPEAT STRIP_TAC THEN
@@ -1584,9 +1584,9 @@ let HAS_MEASURE_NESTED_INTERS = prove
 (* to prove these, but they do drop out of it pretty easily.                 *)
 (* ------------------------------------------------------------------------- *)
 
-let CARD_EQ_EUCLIDEAN = prove                                               
- (`(:real^N) =_c (:real)`,                                                 
-  MATCH_MP_TAC CARD_EQ_CART THEN REWRITE_TAC[real_INFINITE]);;                 
+let CARD_EQ_EUCLIDEAN = prove
+ (`(:real^N) =_c (:real)`,
+  MATCH_MP_TAC CARD_EQ_CART THEN REWRITE_TAC[real_INFINITE]);;
 
 let COUNTABLE_OPEN_INTERVAL = prove
  (`!a b. COUNTABLE(interval(a,b)) <=> interval(a,b) = {}`,

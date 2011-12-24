@@ -1,3 +1,28 @@
+Wed 22nd Dec 2011       sets.ml, iterate.ml, define.ml, Library/permutations.ml, Library/products.ml, Library/iter.ml, Multivariate/ passim
+
+Did a bit of cleaning up of theorems to remove redundant quantifiers (put there
+by accident for variables that aren't free in the body). This includes the
+following and numerous theorems in the Multivariate theories:
+
+========= sets.ml ============
+        SIMPLE_IMAGE_GEN
+        HAS_SIZE_0
+========= iterate.ml ============
+        NSUM_BOUND_GEN
+        NSUM_BOUND_LT_GEN
+        NSUM_EQ_0_NUMSEG
+        SUM_BOUND_GEN
+        SUM_BOUND_LT_GEN
+        SUM_EQ_0_NUMSEG
+========= define.ml ============
+        ADMISSIBLE_MATCH
+========= Library/permutations.ml ============
+        PERMUTES_COMPOSE
+========= Library/products.ml ============
+        PRODUCT_EQ_1_NUMSEG
+========= Library/iter.ml ============
+        ITER_ALT_POINTLESS
+
 Sun 18th Dec 2011       cart.ml
 
 Added a convenient set elimination theorem for pasted vectors:

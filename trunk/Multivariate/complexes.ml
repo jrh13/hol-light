@@ -1244,11 +1244,11 @@ let CSQRT_CX = prove
   SIMP_TAC[CX_SQRT]);;
 
 let CSQRT_0 = prove
- (`!z. csqrt(Cx(&0)) = Cx(&0)`,
+ (`csqrt(Cx(&0)) = Cx(&0)`,
   SIMP_TAC[CSQRT_CX; REAL_POS; SQRT_0]);;
 
 let CSQRT_1 = prove
- (`!z. csqrt(Cx(&1)) = Cx(&1)`,
+ (`csqrt(Cx(&1)) = Cx(&1)`,
   SIMP_TAC[CSQRT_CX; REAL_POS; SQRT_1]);;
 
 let CSQRT_PRINCIPAL = prove

@@ -136,7 +136,7 @@ let PERMUTES_I = prove
   REWRITE_TAC[permutes; I_THM] THEN MESON_TAC[]);;
 
 let PERMUTES_COMPOSE = prove
- (`!p q s x. p permutes s /\ q permutes s ==> (q o p) permutes s`,
+ (`!p q s. p permutes s /\ q permutes s ==> (q o p) permutes s`,
   REWRITE_TAC[permutes; o_THM] THEN MESON_TAC[]);;
 
 let PERMUTES_INVERSE = prove

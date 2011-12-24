@@ -125,7 +125,7 @@ let PRODUCT_EQ_1 = prove
   SIMP_TAC[ITERATE_EQ_NEUTRAL; MONOIDAL_REAL_MUL]);;
 
 let PRODUCT_EQ_1_NUMSEG = prove
- (`!f s. (!i. m <= i /\ i <= n ==> (f(i) = &1)) ==> (product(m..n) f = &1)`,
+ (`!f m n. (!i. m <= i /\ i <= n ==> (f(i) = &1)) ==> (product(m..n) f = &1)`,
   SIMP_TAC[PRODUCT_EQ_1; IN_NUMSEG]);;
 
 let PRODUCT_MUL = prove

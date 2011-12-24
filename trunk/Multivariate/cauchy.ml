@@ -930,9 +930,9 @@ let VALID_PATH_LINEPATH = prove
   MESON_TAC[HAS_VECTOR_DERIVATIVE_LINEPATH_WITHIN; has_vector_derivative]);;
 
 let VECTOR_DERIVATIVE_LINEPATH_WITHIN = prove
- (`!a b x s. x IN interval[vec 0,vec 1]
-             ==> vector_derivative (linepath(a,b))
-                    (at x within interval[vec 0,vec 1]) = b - a`,
+ (`!a b x. x IN interval[vec 0,vec 1]
+           ==> vector_derivative (linepath(a,b))
+                (at x within interval[vec 0,vec 1]) = b - a`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC VECTOR_DERIVATIVE_WITHIN_CLOSED_INTERVAL THEN
   ASM_REWRITE_TAC[HAS_VECTOR_DERIVATIVE_LINEPATH_WITHIN] THEN
@@ -1502,7 +1502,7 @@ let PATH_INTEGRAL_COMPLEX_DIV = prove
    REWRITE_TAC[complex_div; PATH_INTEGRAL_COMPLEX_RMUL]);;
 
 let PATH_INTEGRAL_EQ = prove
- (`!f g p y.
+ (`!f g p.
         (!x. x IN path_image p ==> f x = g x) /\
         f path_integrable_on p
         ==> path_integral p f = path_integral p g`,
@@ -2013,7 +2013,7 @@ let HOLOMORPHIC_POINT_SMALL_TRIANGLE = prove
 (* ------------------------------------------------------------------------- *)
 
 let CAUCHY_THEOREM_TRIANGLE = prove
- (`!f s a b c.
+ (`!f a b c.
         f holomorphic_on (convex hull {a,b,c})
         ==> (f has_path_integral Cx(&0))
             (linepath(a,b) ++ linepath(b,c) ++ linepath(c,a))`,
@@ -3410,9 +3410,9 @@ let WINDING_NUMBER_REVERSEPATH = prove
   ASM_SIMP_TAC[PATH_INTEGRABLE_INVERSEDIFF; HAS_PATH_INTEGRAL_INTEGRAL]);;
 
 let WINDING_NUMBER_SHIFTPATH = prove
- (`!f g a z. valid_path g /\ pathfinish g = pathstart g /\
-             a IN interval[vec 0,vec 1]
-             ==> winding_number(shiftpath a g,z) = winding_number(g,z)`,
+ (`!g a z. valid_path g /\ pathfinish g = pathstart g /\
+           a IN interval[vec 0,vec 1]
+           ==> winding_number(shiftpath a g,z) = winding_number(g,z)`,
   SIMP_TAC[winding_number; PATH_INTEGRAL_SHIFTPATH]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -4334,13 +4334,13 @@ let CONTINUOUS_AT_WINDING_NUMBER = prove
          ==> (\w. winding_number(g,w)) continuous (at z)`,
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPEC `(:complex) DIFF path_image g` OPEN_CONTAINS_BALL) THEN
-  ASM_SIMP_TAC[GSYM CLOSED_OPEN; CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
+  ASM_SIMP_TAC[GSYM closed; CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
   DISCH_THEN(MP_TAC o SPEC `z:complex`) THEN
   ASM_REWRITE_TAC[IN_DIFF; IN_UNIV; SUBSET; IN_BALL] THEN
   DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
   MP_TAC(ISPECL [`(:complex) DIFF cball(z, &3 / &4 * d)`; `g:real^1->complex`]
         PATH_INTEGRAL_BOUND_EXISTS) THEN
-  ASM_REWRITE_TAC[GSYM CLOSED_OPEN; CLOSED_CBALL; SUBSET; IN_DIFF;
+  ASM_REWRITE_TAC[GSYM closed; CLOSED_CBALL; SUBSET; IN_DIFF;
                   IN_CBALL; IN_UNIV; REAL_NOT_LE] THEN
   ANTS_TAC THENL
    [ASM_MESON_TAC[REAL_ARITH `&0 < d /\ ~(&3 / &4 * d < x) ==> x < d`];
@@ -4444,7 +4444,7 @@ let OPEN_WINDING_NUMBER_LEVELSETS = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[open_def; IN_ELIM_THM] THEN
   X_GEN_TAC `z:complex` THEN STRIP_TAC THEN
   MP_TAC(ISPEC `(:complex) DIFF path_image g` OPEN_CONTAINS_BALL) THEN
-  ASM_SIMP_TAC[GSYM CLOSED_OPEN; CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
+  ASM_SIMP_TAC[GSYM closed; CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH] THEN
   DISCH_THEN(MP_TAC o SPEC `z:complex`) THEN
   ASM_REWRITE_TAC[IN_DIFF; IN_UNIV; SUBSET; IN_BALL] THEN
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN
@@ -5667,13 +5667,6 @@ let MORERA_TRIANGLE = prove
 (* Combining theorems for higher derivatives including Leibniz rule.         *)
 (* ------------------------------------------------------------------------- *)
 
-let HIGHER_COMPLEX_DERIVATIVE_HOLOMORPHIC_ON = prove
- (`!f s n. open s /\ f holomorphic_on s
-           ==> higher_complex_derivative n f holomorphic_on s`,
-  REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
-  INDUCT_TAC THEN
-  ASM_SIMP_TAC [higher_complex_derivative; HOLOMORPHIC_COMPLEX_DERIVATIVE]);;
-
 let HIGHER_COMPLEX_DERIVATIVE_EQ_ITER = prove
  (`!n. higher_complex_derivative n = ITER n complex_derivative`,
   INDUCT_TAC THEN
@@ -5685,7 +5678,7 @@ let HIGHER_COMPLEX_DERIVATIVE_HIGHER_COMPLEX_DERIVATIVE = prove
   REWRITE_TAC[HIGHER_COMPLEX_DERIVATIVE_EQ_ITER; ITER_ADD]);;
 
 let higher_complex_derivative_alt = prove
- (`(!f z. higher_complex_derivative 0 f = f) /\
+ (`(!f. higher_complex_derivative 0 f = f) /\
    (!f z n. higher_complex_derivative (SUC n) f =
             higher_complex_derivative n (complex_derivative f))`,
   REWRITE_TAC [HIGHER_COMPLEX_DERIVATIVE_EQ_ITER; ITER_ALT]);;
@@ -5722,7 +5715,7 @@ let HAS_COMPLEX_DERIVATIVE_ITER_1 = prove
    ASM_SIMP_TAC [ITER_FIXPOINT; COMPLEX_DIFF_CHAIN_AT]]);;
 
 let HIGHER_COMPLEX_DERIVATIVE_NEG = prove
- (`!f g s n z.
+ (`!f s n z.
      open s /\ f holomorphic_on s /\ z IN s
      ==> higher_complex_derivative n (\w. --(f w)) z =
                 --(higher_complex_derivative n f z)`,
@@ -5904,13 +5897,12 @@ let HIGHER_COMPLEX_DERIVATIVE_SUB_AT = prove
   MESON_TAC [HIGHER_COMPLEX_DERIVATIVE_SUB]);;
 
 let HIGHER_COMPLEX_DERIVATIVE_NEG_AT = prove
- (`!f g n z.
-     f analytic_on {z} /\ g analytic_on {z}
-     ==> higher_complex_derivative n (\w. f w - g w) z =
-         higher_complex_derivative n f z -
-         higher_complex_derivative n g z`,
-  REWRITE_TAC [ANALYTIC_AT_TWO] THEN
-  MESON_TAC [HIGHER_COMPLEX_DERIVATIVE_SUB]);;
+ (`!f n z.
+     f analytic_on {z}
+     ==> higher_complex_derivative n (\w. --(f w)) z =
+         --(higher_complex_derivative n f z)`,
+  REWRITE_TAC [ANALYTIC_AT] THEN
+  MESON_TAC [HIGHER_COMPLEX_DERIVATIVE_NEG]);;
 
 let HIGHER_COMPLEX_DERIVATIVE_MUL_AT = prove
  (`!f g n z.
@@ -7688,7 +7680,7 @@ let CAUCHY_HIGHER_COMPLEX_DERIVATIVE_BOUND = prove
    ASM_MESON_TAC [REAL_LE_LCANCEL_IMP]]);;
 
 let FIRST_CARTAN_THM_DIM_1 = prove
-  (`!f s z n m w.
+  (`!f s z w.
       open s /\ connected s /\ bounded s /\
       (!w. w IN s ==> f w IN s) /\ f holomorphic_on s /\
       z IN s /\ f z = z /\
@@ -7838,16 +7830,16 @@ let SECOND_CARTAN_THM_DIM_1 = prove
        THENL
        [MATCH_MP_TAC COMPLEX_DERIVATIVE_TRANSFORM_WITHIN_OPEN THEN
         EXISTS_TAC `s:complex->bool` THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-        [MATCH_MP_TAC HIGHER_COMPLEX_DERIVATIVE_HOLOMORPHIC_ON THEN
+        [MATCH_MP_TAC HOLOMORPHIC_HIGHER_COMPLEX_DERIVATIVE THEN
          ASM_REWRITE_TAC[] THEN MATCH_MP_TAC HOLOMORPHIC_ON_MUL THEN
          ASM_REWRITE_TAC [HOLOMORPHIC_ON_CONST];
          MATCH_MP_TAC HOLOMORPHIC_ON_MUL THEN
          ASM_REWRITE_TAC [HOLOMORPHIC_ON_CONST; ETA_AX] THEN
-         MATCH_MP_TAC HIGHER_COMPLEX_DERIVATIVE_HOLOMORPHIC_ON THEN
+         MATCH_MP_TAC HOLOMORPHIC_HIGHER_COMPLEX_DERIVATIVE THEN
          ASM_REWRITE_TAC[]];
         MATCH_MP_TAC COMPLEX_DERIVATIVE_LMUL THEN
         MATCH_MP_TAC HOLOMORPHIC_ON_IMP_DIFFERENTIABLE_AT THEN
-        ASM_MESON_TAC [HIGHER_COMPLEX_DERIVATIVE_HOLOMORPHIC_ON]]];
+        ASM_MESON_TAC [HOLOMORPHIC_HIGHER_COMPLEX_DERIVATIVE]]];
       SUBGOAL_THEN
         `!n. 2 <= n ==> higher_complex_derivative n f (Cx(&0)) = Cx(&0)`
         ASSUME_TAC THENL

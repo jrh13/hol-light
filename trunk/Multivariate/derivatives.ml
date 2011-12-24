@@ -198,8 +198,8 @@ let HAS_DERIVATIVE_VMUL_COMPONENT = prove
                 REAL_LE_LMUL; REAL_ABS_POS]);;
 
 let HAS_DERIVATIVE_VMUL_DROP = prove
- (`!c c' k v. (c has_derivative c') net
-        ==> ((\x. drop(c(x)) % v) has_derivative (\x. drop(c'(x)) % v)) net`,
+ (`!c c' v. (c has_derivative c') net
+            ==> ((\x. drop(c(x)) % v) has_derivative (\x. drop(c'(x)) % v)) net`,
   SIMP_TAC[drop; LE_REFL; DIMINDEX_1; HAS_DERIVATIVE_VMUL_COMPONENT]);;
 
 let HAS_DERIVATIVE_LIFT_DOT = prove
@@ -276,7 +276,7 @@ let DIFFERENTIABLE_AT_WITHIN = prove
   REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_AT_WITHIN]);;
 
 let DIFFERENTIABLE_WITHIN_OPEN = prove
- (`!f f' a s.
+ (`!f a s.
          a IN s /\ open s
          ==> (f differentiable (at a within s) <=> (f differentiable (at a)))`,
   SIMP_TAC[differentiable; HAS_DERIVATIVE_WITHIN_OPEN]);;
