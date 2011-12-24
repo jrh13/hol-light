@@ -567,7 +567,7 @@ let ELEMENTARY_INTERS = prove
     MATCH_MP_TAC ELEMENTARY_INTER THEN ASM_MESON_TAC[]]);;
 
 let DIVISION_DISJOINT_UNION = prove
- (`!s1 s2:real^N->bool p1 p2 c.
+ (`!s1 s2:real^N->bool p1 p2.
         p1 division_of s1 /\
         p2 division_of s2 /\
         interior s1 INTER interior s2 = {}
@@ -1344,7 +1344,7 @@ let TAGGED_DIVISION_OF_SELF = prove
   REWRITE_TAC[UNIONS_1] THEN ASM_MESON_TAC[]);;
 
 let TAGGED_DIVISION_UNION = prove
- (`!s1 s2:real^N->bool p1 p2 c.
+ (`!s1 s2:real^N->bool p1 p2.
         p1 tagged_division_of s1 /\
         p2 tagged_division_of s2 /\
         interior s1 INTER interior s2 = {}
@@ -2072,7 +2072,7 @@ let HAS_INTEGRAL_NEG = prove
   ONCE_REWRITE_TAC[VECTOR_NEG_MINUS1] THEN REWRITE_TAC[HAS_INTEGRAL_CMUL]);;
 
 let HAS_INTEGRAL_ADD = prove
- (`!f:real^M->real^N g k l s.
+ (`!f:real^M->real^N g s.
         (f has_integral k) s /\ (g has_integral l) s
         ==> ((\x. f(x) + g(x)) has_integral (k + l)) s`,
   SUBGOAL_THEN
@@ -2126,7 +2126,7 @@ let HAS_INTEGRAL_ADD = prove
   NORM_ARITH_TAC);;
 
 let HAS_INTEGRAL_SUB = prove
- (`!f:real^M->real^N g k l s.
+ (`!f:real^M->real^N g s.
         (f has_integral k) s /\ (g has_integral l) s
         ==> ((\x. f(x) - g(x)) has_integral (k - l)) s`,
   SIMP_TAC[VECTOR_SUB; HAS_INTEGRAL_NEG; HAS_INTEGRAL_ADD]);;
@@ -3240,7 +3240,7 @@ let OPERATIVE_TAGGED_DIVISION = prove
 (* ------------------------------------------------------------------------- *)
 
 let ADDITIVE_CONTENT_DIVISION = prove
- (`!r d a b:real^N.
+ (`!d a b:real^N.
     d division_of interval[a,b]
     ==> sum d content = content(interval[a,b])`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP
@@ -3251,7 +3251,7 @@ let ADDITIVE_CONTENT_DIVISION = prove
   REWRITE_TAC[sum]);;
 
 let ADDITIVE_CONTENT_TAGGED_DIVISION = prove
- (`!r d a b:real^N.
+ (`!d a b:real^N.
     d tagged_division_of interval[a,b]
     ==> sum d (\(x,l). content l) = content(interval[a,b])`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP
@@ -3549,7 +3549,7 @@ let INTEGRAL_COMPONENT_POS = prove
   ASM_MESON_TAC[INTEGRABLE_INTEGRAL]);;
 
 let HAS_INTEGRAL_DROP_POS = prove
- (`!f:real^M->real^1 g:real^M->real^1 s i.
+ (`!f:real^M->real^1 s i.
         (f has_integral i) s /\
         (!x. x IN s ==> &0 <= drop(f x))
         ==> &0 <= drop i`,
@@ -3578,7 +3578,7 @@ let HAS_INTEGRAL_COMPONENT_NEG = prove
   ASM_SIMP_TAC[VEC_COMPONENT; HAS_INTEGRAL_0]);;
 
 let HAS_INTEGRAL_DROP_NEG = prove
- (`!f:real^M->real^1 g:real^M->real^1 s i.
+ (`!f:real^M->real^1 s i.
         (f has_integral i) s /\
         (!x. x IN s ==> drop(f x) <= &0)
         ==> drop i <= &0`,
@@ -4230,7 +4230,7 @@ let HAS_INTEGRAL_NEGLIGIBLE = prove
   ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
 
 let HAS_INTEGRAL_SPIKE = prove
- (`!f:real^M->real^N g s t y.
+ (`!f:real^M->real^N g s t.
         negligible s /\ (!x. x IN (t DIFF s) ==> g x = f x) /\
         (f has_integral y) t
         ==> (g has_integral y) t`,
@@ -4390,13 +4390,13 @@ let HAS_INTEGRAL_SPIKE_FINITE = prove
   MESON_TAC[HAS_INTEGRAL_SPIKE; NEGLIGIBLE_FINITE]);;
 
 let HAS_INTEGRAL_SPIKE_FINITE_EQ = prove
- (`!f:real^M->real^N g s a b y.
+ (`!f:real^M->real^N g s y.
         FINITE s /\ (!x. x IN (t DIFF s) ==> g x = f x)
         ==> ((f has_integral y) t <=> (g has_integral y) t)`,
   MESON_TAC[HAS_INTEGRAL_SPIKE_FINITE]);;
 
 let INTEGRABLE_SPIKE_FINITE = prove
- (`!f:real^M->real^N g s a b.
+ (`!f:real^M->real^N g s.
         FINITE s /\ (!x. x IN (t DIFF s) ==> g x = f x)
         ==> f integrable_on t
             ==> g integrable_on  t`,
@@ -4488,7 +4488,7 @@ let OPERATIVE_DIVISION_AND = prove
   ASM_MESON_TAC[ITERATE_AND; DIVISION_OF_FINITE]);;
 
 let OPERATIVE_APPROXIMABLE = prove
- (`!f:real^M->real^N e a b.
+ (`!f:real^M->real^N e.
         &0 <= e
         ==> operative(/\)
                (\i. ?g. (!x. x IN i ==> norm (f x - g x) <= e) /\
@@ -5230,7 +5230,7 @@ let INTEGRABLE_AFFINITY = prove
 (* ------------------------------------------------------------------------- *)
 
 let CONTENT_IMAGE_STRETCH_INTERVAL = prove
- (`!a b:real^N m c.
+ (`!a b:real^N m.
         content(IMAGE (\x. lambda k. m k * x$k) (interval[a,b]):real^N->bool) =
         abs(product(1..dimindex(:N)) m) * content(interval[a,b])`,
   REPEAT GEN_TAC THEN REWRITE_TAC[content; IMAGE_EQ_EMPTY] THEN
@@ -7274,7 +7274,7 @@ let HAS_INTEGRAL_COMBINE_TAGGED_DIVISION = prove
     EXISTS_TAC `s:real^M->bool` THEN ASM_SIMP_TAC[INTEGRAL_NULL]]);;
 
 let INTEGRAL_COMBINE_TAGGED_DIVISION_BOTTOMUP = prove
- (`!f:real^M->real^N s p i.
+ (`!f:real^M->real^N p a b.
         p tagged_division_of interval[a,b] /\
         (!x k. (x,k) IN p ==> f integrable_on k)
         ==> integral (interval[a,b]) f = vsum p (\(x,k). integral k f)`,
@@ -8384,7 +8384,7 @@ let HAS_BOUNDED_SETVARIATION_ON_NULL = prove
   ASM_MESON_TAC[division_of; SUBSET_TRANS]);;
 
 let SET_VARIATION_ELEMENTARY_LEMMA = prove
- (`!f:(real^M->bool)->real^N s B.
+ (`!f:(real^M->bool)->real^N s.
         (?d. d division_of s)
         ==> ((!d t. d division_of t /\ t SUBSET s
                     ==> sum d (\k. norm(f k)) <= b) <=>
@@ -11663,7 +11663,7 @@ let EQUIINTEGRABLE_ADD = prove
   REWRITE_TAC[LAMBDA_PAIR_THM; VECTOR_ADD_LDISTRIB]);;
 
 let EQUIINTEGRABLE_NEG = prove
- (`!fs:(real^M->real^N)->bool s k.
+ (`!fs:(real^M->real^N)->bool s.
         fs equiintegrable_on s
         ==> {(\x. --(f x)) | f IN fs} equiintegrable_on s`,
   REPEAT STRIP_TAC THEN

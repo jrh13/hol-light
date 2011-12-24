@@ -828,7 +828,7 @@ let SIMPLE_IMAGE = prove
   REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_IMAGE] THEN MESON_TAC[]);;
 
 let SIMPLE_IMAGE_GEN = prove
- (`!f p. {f x | P x} = IMAGE f {x | P x}`,
+ (`!f P. {f x | P x} = IMAGE f {x | P x}`,
   SET_TAC[]);;
 
 let IMAGE_UNIONS = prove
@@ -1467,7 +1467,7 @@ let HAS_SIZE_CARD = prove
   SIMP_TAC[HAS_SIZE]);;
 
 let HAS_SIZE_0 = prove
- (`!(s:A->bool) n. s HAS_SIZE 0 <=> (s = {})`,
+ (`!(s:A->bool). s HAS_SIZE 0 <=> (s = {})`,
   REPEAT GEN_TAC THEN REWRITE_TAC[HAS_SIZE] THEN
   EQ_TAC THEN DISCH_TAC THEN
   ASM_REWRITE_TAC[FINITE_RULES; CARD_CLAUSES] THEN
@@ -2719,7 +2719,7 @@ let INF = prove
   CONV_TAC(ONCE_DEPTH_CONV SELECT_CONV) THEN
   ONCE_REWRITE_TAC[GSYM REAL_LE_NEG2] THEN
   EXISTS_TAC `--(sup (IMAGE (--) s))` THEN
-  MP_TAC(SPEC `IMAGE (--) (s:real->bool)` SUP) THEN 
+  MP_TAC(SPEC `IMAGE (--) (s:real->bool)` SUP) THEN
   REWRITE_TAC[REAL_NEG_NEG] THEN
   ABBREV_TAC `a = sup (IMAGE (--) s)` THEN
   REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_IMAGE] THEN

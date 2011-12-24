@@ -687,7 +687,7 @@ let CONVEX_ALT = prove
             REAL_ARITH `u <= &1 ==> &0 <= &1 - u /\ ((&1 - u) + u = &1)`]);;
 
 let IN_CONVEX_SET = prove
- (`!s a b u v.
+ (`!s a b u.
         convex s /\ a IN s /\ b IN s /\ &0 <= u /\ u <= &1
         ==> ((&1 - u) % a + u % b) IN s`,
   MESON_TAC[CONVEX_ALT]);;
@@ -1879,7 +1879,7 @@ let CONVEX_HULL_EQ_SING = prove
   REWRITE_TAC[HULL_SUBSET]);;
 
 let CONVEX_HULL_INSERT = prove
- (`!s x. ~(s = {})
+ (`!s a. ~(s = {})
          ==> (convex hull (a INSERT s) =
                 {x:real^N | ?u v b. &0 <= u /\ &0 <= v /\ (u + v = &1) /\
                                     b IN (convex hull s) /\
@@ -2673,11 +2673,6 @@ let AFFINE_INDEPENDENT_INSERT = prove
         ==> ~(affine_dependent(a INSERT s))`,
   SIMP_TAC[AFFINE_DEPENDENT_CHOOSE]);;
 
-let AFFINE_INDEPENDENT_SING = prove
- (`!a. ~(affine_dependent {a})`,
-  GEN_TAC THEN MATCH_MP_TAC AFFINE_INDEPENDENT_INSERT THEN
-  ASM_REWRITE_TAC[AFFINE_HULL_EMPTY; AFFINE_INDEPENDENT_EMPTY; NOT_IN_EMPTY]);;
-
 let AFFINE_HULL_EXPLICIT_UNIQUE = prove
  (`!s:real^N->bool u u'.
       ~(affine_dependent s) /\
@@ -3045,7 +3040,7 @@ let AFF_DIM_SING = prove
   GEN_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC `&(CARD {a:real^N}) - &1:int` THEN CONJ_TAC THENL
    [MATCH_MP_TAC AFF_DIM_AFFINE_INDEPENDENT THEN
-    REWRITE_TAC[AFFINE_INDEPENDENT_SING];
+    REWRITE_TAC[AFFINE_INDEPENDENT_1];
     SIMP_TAC[CARD_CLAUSES; FINITE_RULES; ARITH; NOT_IN_EMPTY; INT_SUB_REFL]]);;
 
 let AFF_DIM_LE_CARD = prove
@@ -7369,7 +7364,7 @@ let CONNECTED_INTER_RELATIVE_FRONTIER = prove
     REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV];
     ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
     MATCH_MP_TAC OPEN_IN_OPEN_INTER THEN
-    REWRITE_TAC[GSYM CLOSED_OPEN; CLOSED_CLOSURE];
+    REWRITE_TAC[GSYM closed; CLOSED_CLOSURE];
     ASM SET_TAC[];
     MATCH_MP_TAC(SET_RULE
      `i SUBSET t /\ t SUBSET c ==> (s INTER i) INTER (s DIFF c) = {}`) THEN
@@ -9165,7 +9160,7 @@ let SHIFTPATH_TRANSLATION = prove
 add_translation_invariants [SHIFTPATH_TRANSLATION];;
 
 let SHIFTPATH_LINEAR_IMAGE = prove
- (`!f t g1 g2. linear f ==> shiftpath t (f o g) = f o shiftpath t g`,
+ (`!f t g. linear f ==> shiftpath t (f o g) = f o shiftpath t g`,
   REWRITE_TAC[FUN_EQ_THM; shiftpath; o_THM] THEN MESON_TAC[]);;
 
 add_linear_invariants [SHIFTPATH_LINEAR_IMAGE];;
@@ -9308,7 +9303,7 @@ let subpath = new_definition
  `subpath u v g = \x. g(u + drop(v - u) % x)`;;
 
 let SUBPATH_SCALING_LEMMA = prove
- (`!u v x.
+ (`!u v.
     IMAGE (\x. u + drop(v - u) % x) (interval[vec 0,vec 1]) = segment[u,v]`,
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[VECTOR_ADD_SYM] THEN
   REWRITE_TAC[IMAGE_AFFINITY_INTERVAL; SEGMENT_1] THEN
@@ -9613,7 +9608,7 @@ let EXISTS_ARC_PSUBSET_SIMPLE_PATH = prove
                         (h x) IN ((:real^N) DIFF s)}`
   MP_TAC THENL
    [MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE THEN
-    ASM_SIMP_TAC[GSYM path; GSYM CLOSED_OPEN; SIMPLE_PATH_IMP_PATH];
+    ASM_SIMP_TAC[GSYM path; GSYM closed; SIMPLE_PATH_IMP_PATH];
     REWRITE_TAC[open_in] THEN DISCH_THEN(MP_TAC o CONJUNCT2)] THEN
   REWRITE_TAC[IN_DIFF; IN_UNIV; IN_ELIM_THM] THEN
   DISCH_THEN(fun th ->
@@ -11414,8 +11409,8 @@ let COBOUNDED_UNIQUE_UNBOUNDED_COMPONENT = prove
 (* ------------------------------------------------------------------------- *)
 
 let PATH_CONNECTED_COMPLEMENT_CARD_LT = prove
- (`!s a b. 2 <= dimindex(:N) /\ s <_c (:real)
-           ==> path_connected((:real^N) DIFF s)`,
+ (`!s. 2 <= dimindex(:N) /\ s <_c (:real)
+       ==> path_connected((:real^N) DIFF s)`,
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[path_connected; IN_DIFF; IN_UNIV] THEN
   MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN STRIP_TAC THEN
@@ -11519,8 +11514,8 @@ let PATH_CONNECTED_COMPLEMENT_CARD_LT = prove
   ASM_MESON_TAC[]);;
 
 let PATH_CONNECTED_COMPLEMENT_COUNTABLE = prove
- (`!s a b. 2 <= dimindex(:N) /\ COUNTABLE s
-           ==> path_connected((:real^N) DIFF s)`,
+ (`!s. 2 <= dimindex(:N) /\ COUNTABLE s
+       ==> path_connected((:real^N) DIFF s)`,
   REWRITE_TAC[COUNTABLE; ge_c] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC PATH_CONNECTED_COMPLEMENT_CARD_LT THEN
   ASM_REWRITE_TAC[GSYM CARD_NOT_LE] THEN DISCH_TAC THEN
@@ -11528,11 +11523,11 @@ let PATH_CONNECTED_COMPLEMENT_COUNTABLE = prove
   TRANS_TAC CARD_LE_TRANS `s:real^N->bool` THEN ASM_REWRITE_TAC[]);;
 
 let CONNECTED_COMPLEMENT_CARD_LT = prove
- (`!s a b. 2 <= dimindex(:N) /\ s <_c (:real) ==> connected((:real^N) DIFF s)`,
+ (`!s. 2 <= dimindex(:N) /\ s <_c (:real) ==> connected((:real^N) DIFF s)`,
   SIMP_TAC[PATH_CONNECTED_COMPLEMENT_CARD_LT; PATH_CONNECTED_IMP_CONNECTED]);;
 
 let CONNECTED_COMPLEMENT_COUNTABLE = prove
- (`!s a b. 2 <= dimindex(:N) /\ COUNTABLE s ==> connected((:real^N) DIFF s)`,
+ (`!s. 2 <= dimindex(:N) /\ COUNTABLE s ==> connected((:real^N) DIFF s)`,
   SIMP_TAC[PATH_CONNECTED_COMPLEMENT_COUNTABLE;
            PATH_CONNECTED_IMP_CONNECTED]);;
 

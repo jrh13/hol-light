@@ -4761,8 +4761,8 @@ let COMPLEX_ROOT_POLYFUN = prove
   REWRITE_TAC[COMPLEX_VEC_0] THEN CONV_TAC COMPLEX_RING);;
 
 let COMPLEX_ROOT_UNITY = prove
- (`!n j k. ~(n = 0)
-           ==> cexp(Cx(&2) * Cx pi * ii * Cx(&j / &n)) pow n = Cx(&1)`,
+ (`!n j. ~(n = 0)
+         ==> cexp(Cx(&2) * Cx pi * ii * Cx(&j / &n)) pow n = Cx(&1)`,
   REWRITE_TAC[GSYM CEXP_N; CX_DIV] THEN
   ASM_SIMP_TAC[CX_INJ; complex_div; REAL_OF_NUM_EQ; COMPLEX_FIELD
     `~(n = Cx(&0)) ==> n * t * p * ii * j * inv(n) = j * (ii * t * p)`] THEN
@@ -4788,9 +4788,9 @@ let COMPLEX_ROOT_UNITY_EQ = prove
   MESON_TAC[int_abstr; int_rep]);;
 
 let COMPLEX_ROOT_UNITY_EQ_1 = prove
- (`!n j k. ~(n = 0)
-           ==> (cexp(Cx(&2) * Cx pi * ii * Cx(&j / &n)) = Cx(&1) <=>
-                        n divides j)`,
+ (`!n j. ~(n = 0)
+         ==> (cexp(Cx(&2) * Cx pi * ii * Cx(&j / &n)) = Cx(&1) <=>
+              n divides j)`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `Cx(&1) = cexp(Cx(&2) * Cx pi * ii * Cx(&n / &n))`
   SUBST1_TAC THENL
@@ -4908,7 +4908,7 @@ let CONTINUOUS_AT_ARG = prove
   MATCH_MP_TAC LIM_TRANSFORM_WITHIN_OPEN THEN
   EXISTS_TAC `\z. Cx(Im(clog(--z)) + pi)` THEN
   EXISTS_TAC `(:complex) DIFF {z | real z /\ &0 <= Re z}` THEN
-  ASM_REWRITE_TAC[IN_DIFF; IN_UNIV; IN_ELIM_THM; GSYM CLOSED_OPEN] THEN
+  ASM_REWRITE_TAC[IN_DIFF; IN_UNIV; IN_ELIM_THM; GSYM closed] THEN
   ASM_SIMP_TAC[o_THM; ARG_CLOG; ARG_LT_NZ; ARG_EQ_0] THEN CONJ_TAC THENL
    [REWRITE_TAC[SET_RULE `{z | P z /\ Q z} = P INTER {z | Q z}`] THEN
     MATCH_MP_TAC CLOSED_INTER THEN
@@ -4974,7 +4974,7 @@ let OPEN_ARG_LTT = prove
    [CONJ_TAC THENL
      [MATCH_MP_TAC CONTINUOUS_AT_IMP_CONTINUOUS_ON THEN
       REWRITE_TAC[IN_DIFF; IN_UNIV; IN_ELIM_THM; CONTINUOUS_AT_ARG];
-      REWRITE_TAC[GSYM CLOSED_OPEN] THEN
+      REWRITE_TAC[GSYM closed] THEN
       REWRITE_TAC[SET_RULE `{z | P z /\ Q z} = P INTER {z | Q z}`] THEN
       MATCH_MP_TAC CLOSED_INTER THEN
       REWRITE_TAC[CLOSED_REAL; GSYM real_ge; CLOSED_HALFSPACE_RE_GE]];
@@ -4995,7 +4995,7 @@ let OPEN_ARG_GT = prove
 
 let CLOSED_ARG_LE = prove
  (`!t. closed {z | Arg z <= t}`,
-  REWRITE_TAC[CLOSED_OPEN; DIFF; IN_UNIV; IN_ELIM_THM] THEN
+  REWRITE_TAC[closed; DIFF; IN_UNIV; IN_ELIM_THM] THEN
   REWRITE_TAC[REAL_NOT_LE; OPEN_ARG_GT]);;
 
 (* ------------------------------------------------------------------------- *)

@@ -698,7 +698,7 @@ let INTERS_FACES_FINITE_ALTBOUND = prove
   REWRITE_TAC[AFF_DIM_GE]);;
 
 let FACES_OF_TRANSLATION = prove
- (`!f s a:real^N.
+ (`!s a:real^N.
         {f | f face_of IMAGE (\x. a + x) s} =
         IMAGE (IMAGE (\x. a + x)) {f | f face_of s}`,
   REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN
@@ -1164,8 +1164,8 @@ let EXTREME_POINT_OF_LINEAR_IMAGE = prove
 add_linear_invariants [EXTREME_POINT_OF_LINEAR_IMAGE];;
 
 let EXTREME_POINTS_OF_TRANSLATION = prove
- (`!a x s. {x | x extreme_point_of (IMAGE (\x. a + x) s)} =
-           IMAGE (\x. a + x) {x | x extreme_point_of s}`,
+ (`!a s. {x | x extreme_point_of (IMAGE (\x. a + x) s)} =
+         IMAGE (\x. a + x) {x | x extreme_point_of s}`,
   REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN
   MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
   REWRITE_TAC[VECTOR_ARITH `a + x:real^N = y <=> x = y - a`; EXISTS_REFL] THEN
@@ -3070,7 +3070,7 @@ let POLYHEDRON_EQ_FINITE_EXPOSED_FACES = prove
       ASM_REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET] THEN
       ASM_MESON_TAC[RELATIVE_INTERIOR_SUBSET; HULL_INC; SUBSET];
       REWRITE_TAC[OPEN_IN_OPEN] THEN EXISTS_TAC `(:real^N) DIFF s` THEN
-      ASM_REWRITE_TAC[GSYM CLOSED_OPEN];
+      ASM_REWRITE_TAC[GSYM closed];
      MP_TAC(ISPEC `s:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN ASM SET_TAC[];
      MP_TAC(ISPEC `s:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN SET_TAC[];
       REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_INTER] THEN

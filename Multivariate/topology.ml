@@ -140,8 +140,8 @@ let OPEN_IN_CLOSED_IN_EQ = prove
   MESON_TAC[OPEN_IN_SUBSET; SET_RULE `s SUBSET t ==> t INTER s = s`]);;
 
 let OPEN_IN_CLOSED_IN = prove
- (`!s u. s SUBSET topspace top
-         ==> (open_in top s <=> closed_in top (topspace top DIFF s))`,
+ (`!s. s SUBSET topspace top
+       ==> (open_in top s <=> closed_in top (topspace top DIFF s))`,
   SIMP_TAC[OPEN_IN_CLOSED_IN_EQ]);;
 
 let OPEN_IN_DIFF = prove
@@ -338,10 +338,6 @@ let OPEN_CLOSED = prove
  (`!s:real^N->bool. open s <=> closed(UNIV DIFF s)`,
   SIMP_TAC[OPEN_IN; CLOSED_IN; TOPSPACE_EUCLIDEAN; SUBSET_UNIV;
            OPEN_IN_CLOSED_IN_EQ]);;
-
-let CLOSED_OPEN = prove
- (`!s:real^N->bool. closed s <=> open(UNIV DIFF s)`,
-  SIMP_TAC[OPEN_IN; CLOSED_IN; TOPSPACE_EUCLIDEAN; SUBSET_UNIV; closed_in]);;
 
 let OPEN_DIFF = prove
  (`!s t. open s /\ closed t ==> open(s DIFF t)`,
@@ -983,10 +979,6 @@ let INTERIOR_MAXIMAL = prove
  (`!s t. t SUBSET s /\ open t ==> t SUBSET (interior s)`,
   REWRITE_TAC[interior; SUBSET; IN_ELIM_THM] THEN MESON_TAC[]);;
 
-let INTERIOR_MAXIMAL_EQ = prove
- (`!s t. open s ==> (s SUBSET interior t <=> s SUBSET t)`,
-  MESON_TAC[SUBSET_TRANS; INTERIOR_SUBSET; INTERIOR_MAXIMAL]);;
-
 let INTERIOR_UNIQUE = prove
  (`!s t. t SUBSET s /\ open t /\ (!t'. t' SUBSET s /\ open t' ==> t' SUBSET t)
          ==> (interior s = t)`,
@@ -1358,8 +1350,8 @@ let AT = prove
   MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS; REAL_LET_TRANS]);;
 
 let AT_INFINITY = prove
- (`!a:real^N x y. netord at_infinity x y <=> norm(x) >= norm(y)`,
-  GEN_TAC THEN NET_PROVE_TAC[at_infinity] THEN
+ (`!x y. netord at_infinity x y <=> norm(x) >= norm(y)`,
+  NET_PROVE_TAC[at_infinity] THEN
   REWRITE_TAC[real_ge; REAL_LE_REFL] THEN
   MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS]);;
 
@@ -1490,7 +1482,7 @@ let EVENTUALLY_SEQUENTIALLY = prove
     TRIVIAL_LIMIT_SEQUENTIALLY] THEN  MESON_TAC[LE_REFL]);;
 
 let EVENTUALLY_AT_INFINITY = prove
- (`!f l. eventually p at_infinity <=> ?b. !x. norm(x) >= b ==> p x`,
+ (`!p. eventually p at_infinity <=> ?b. !x. norm(x) >= b ==> p x`,
   REWRITE_TAC[eventually; AT_INFINITY; TRIVIAL_LIMIT_AT_INFINITY] THEN
   REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[REAL_LE_REFL]; ALL_TAC] THEN
   MESON_TAC[real_ge; REAL_LE_REFL; VECTOR_CHOOSE_SIZE;
@@ -3631,9 +3623,9 @@ let SEPARATION_NORMAL = prove
   SIMP_TAC[OPEN_UNIONS; FORALL_IN_GSPEC; OPEN_BALL] THEN
   REPEAT CONJ_TAC THENL
    [SUBGOAL_THEN `open((:real^N) DIFF t)` MP_TAC THENL
-     [ASM_REWRITE_TAC[GSYM CLOSED_OPEN]; ALL_TAC];
+     [ASM_REWRITE_TAC[GSYM closed]; ALL_TAC];
     SUBGOAL_THEN `open((:real^N) DIFF s)` MP_TAC THENL
-     [ASM_REWRITE_TAC[GSYM CLOSED_OPEN]; ALL_TAC];
+     [ASM_REWRITE_TAC[GSYM closed]; ALL_TAC];
     REWRITE_TAC[SET_RULE `s INTER t = {} <=> !x. x IN s ==> ~(x IN t)`] THEN
     REWRITE_TAC[FORALL_IN_UNIONS; FORALL_IN_GSPEC; IMP_CONJ;
                 RIGHT_FORALL_IMP_THM] THEN
@@ -3977,32 +3969,6 @@ let LIM_CONTINUOUS_FUNCTION = prove
   REWRITE_TAC[tendsto; continuous_at; eventually] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* The usual transformation theorems.                                        *)
-(* ------------------------------------------------------------------------- *)
-
-let CONTINUOUS_TRANSFORM_WITHIN = prove
- (`!f:real^M->real^N g x s d.
-        &0 < d /\ x IN s /\
-        (!x'. x' IN s /\ dist(x',x) < d ==> f(x') = g(x')) /\
-        f continuous (at x within s)
-        ==> g continuous (at x within s)`,
-  REWRITE_TAC[CONTINUOUS_WITHIN] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC LIM_TRANSFORM_WITHIN THEN
-  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `d:real`] THEN
-  ASM_MESON_TAC[DIST_REFL]);;
-
-let CONTINUOUS_TRANSFORM_AT = prove
- (`!f:real^M->real^N g x s d.
-        &0 < d /\
-        (!x'. dist(x',x) < d ==> f(x') = g(x')) /\
-        f continuous at x
-        ==> g continuous at x`,
-  REWRITE_TAC[CONTINUOUS_AT] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC LIM_TRANSFORM_AT THEN
-  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `d:real`] THEN
-  ASM_MESON_TAC[DIST_REFL]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -4162,11 +4128,11 @@ let UNIFORMLY_CONTINUOUS_ON_VSUM = prove
 (* ------------------------------------------------------------------------- *)
 
 let CONTINUOUS_WITHIN_ID = prove
- (`!net a s. (\x. x) continuous (at a within s)`,
+ (`!a s. (\x. x) continuous (at a within s)`,
   REWRITE_TAC[continuous_within] THEN MESON_TAC[]);;
 
 let CONTINUOUS_AT_ID = prove
- (`!net s. (\x. x) continuous (at a)`,
+ (`!a. (\x. x) continuous (at a)`,
   REWRITE_TAC[continuous_at] THEN MESON_TAC[]);;
 
 let CONTINUOUS_ON_ID = prove
@@ -4438,7 +4404,7 @@ let LINEAR_CONTINUOUS_AT = prove
   GEN_REWRITE_TAC RAND_CONV [LIM_AT_ZERO] THEN SIMP_TAC[]);;
 
 let LINEAR_CONTINUOUS_WITHIN = prove
- (`!f:real^M->real^N s a. linear f ==> f continuous (at x within s)`,
+ (`!f:real^M->real^N s x. linear f ==> f continuous (at x within s)`,
   SIMP_TAC[CONTINUOUS_AT_WITHIN; LINEAR_CONTINUOUS_AT]);;
 
 let LINEAR_CONTINUOUS_ON = prove
@@ -4457,10 +4423,10 @@ let BILINEAR_CONTINUOUS_AT_COMPOSE = prove
 
 let BILINEAR_CONTINUOUS_WITHIN_COMPOSE = prove
  (`!f g h a s.
-        f continuous (at x within s) /\
-        g continuous (at x within s) /\
+        f continuous (at a within s) /\
+        g continuous (at a within s) /\
         bilinear h
-        ==> (\x. h (f x) (g x)) continuous (at x within s)`,
+        ==> (\x. h (f x) (g x)) continuous (at a within s)`,
   REWRITE_TAC[CONTINUOUS_WITHIN; LIM_BILINEAR]);;
 
 let BILINEAR_CONTINUOUS_ON_COMPOSE = prove
@@ -4918,21 +4884,6 @@ let CONNECTED_COMPONENT_EQ = prove
   REWRITE_TAC[EXTENSION; IN] THEN
   MESON_TAC[CONNECTED_COMPONENT_SYM; CONNECTED_COMPONENT_TRANS]);;
 
-let CONNECTED_COMPONENT_CONNECTED_COMPONENT = prove
- (`!s x:real^N.
-        connected_component (connected_component s x) x =
-        connected_component s x`,
-  REPEAT GEN_TAC THEN
-  ASM_CASES_TAC `(x:real^N) IN s` THENL
-   [MATCH_MP_TAC SUBSET_ANTISYM THEN
-    SIMP_TAC[CONNECTED_COMPONENT_MONO; CONNECTED_COMPONENT_SUBSET] THEN
-    MATCH_MP_TAC CONNECTED_COMPONENT_MAXIMAL THEN
-    REWRITE_TAC[SUBSET_REFL; CONNECTED_CONNECTED_COMPONENT] THEN
-    ASM_REWRITE_TAC[IN; CONNECTED_COMPONENT_REFL_EQ];
-    MATCH_MP_TAC(SET_RULE `s = {} /\ t = {} ==> s = t`) THEN
-    ASM_REWRITE_TAC[CONNECTED_COMPONENT_EQ_EMPTY] THEN
-    ASM_MESON_TAC[SUBSET; CONNECTED_COMPONENT_SUBSET]]);;
-
 let CLOSED_CONNECTED_COMPONENT = prove
  (`!s x:real^N. closed s ==> closed(connected_component s x)`,
   REPEAT STRIP_TAC THEN
@@ -5333,8 +5284,8 @@ let CONTINUOUS_ON_VMUL = prove
   SIMP_TAC[CONTINUOUS_VMUL]);;
 
 let CONTINUOUS_ON_MUL = prove
- (`!s c f v. (lift o c) continuous_on s /\ f continuous_on s
-             ==> (\x. c(x) % f(x)) continuous_on s`,
+ (`!s c f. (lift o c) continuous_on s /\ f continuous_on s
+           ==> (\x. c(x) % f(x)) continuous_on s`,
   REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   SIMP_TAC[CONTINUOUS_MUL]);;
 
@@ -7037,13 +6988,13 @@ let CONTINUOUS_AT_LIFT_DOT = prove
   MATCH_MP_TAC LIM_LIFT_DOT THEN REWRITE_TAC[LIM_AT] THEN MESON_TAC[]);;
 
 let CONTINUOUS_ON_LIFT_DOT = prove
- (`!s x. (lift o (\y. a dot y)) continuous_on s`,
+ (`!s. (lift o (\y. a dot y)) continuous_on s`,
   SIMP_TAC[CONTINUOUS_AT_IMP_CONTINUOUS_ON; CONTINUOUS_AT_LIFT_DOT]);;
 
 let CLOSED_HALFSPACE_LE = prove
  (`!a:real^N b. closed {x | a dot x <= b}`,
   REPEAT GEN_TAC THEN
-  MP_TAC(ISPECL [`(:real^N)`; `a:real^N`] CONTINUOUS_ON_LIFT_DOT) THEN
+  MP_TAC(ISPEC `(:real^N)` CONTINUOUS_ON_LIFT_DOT) THEN
   REWRITE_TAC[CONTINUOUS_ON_CLOSED; GSYM CLOSED_IN; SUBTOPOLOGY_UNIV] THEN
   DISCH_THEN(MP_TAC o SPEC
    `IMAGE lift {r | ?x:real^N. (a dot x = r) /\ r <= b}`) THEN
@@ -7394,7 +7345,7 @@ let LIM_COMPONENT_LE = prove
   REWRITE_TAC[IMP_IMP; GSYM CONJ_ASSOC; LIM_COMPONENT_LBOUND]);;
 
 let LIM_DROP_LE = prove
- (`!net:(A)net f g k l m.
+ (`!net:(A)net f g l m.
          ~(trivial_limit net) /\ (f --> l) net /\ (g --> m) net /\
         eventually (\x. drop(f x) <= drop(g x)) net
         ==> drop l <= drop m`,
@@ -8362,7 +8313,7 @@ let IN_INTERIOR_LINEAR_IMAGE = prove
   ASM_MESON_TAC[]);;
 
 let LINEAR_OPEN_MAPPING = prove
- (`!f:real^M->real^N g s.
+ (`!f:real^M->real^N g.
         linear f /\ linear g /\ (f o g = I)
         ==> !s. open s ==> open(IMAGE f s)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN DISCH_TAC THEN
@@ -8624,7 +8575,7 @@ let CLOSED_INJECTIVE_IMAGE_SUBSET_SUBSPACE = prove
  (`!f:real^M->real^N s t.
         closed s /\ s SUBSET t /\ subspace t /\
         linear f /\
-        (!x y. x IN t /\ f(x) = vec 0 ==> x = vec 0)
+        (!x. x IN t /\ f(x) = vec 0 ==> x = vec 0)
         ==> closed(IMAGE f s)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOSED_BOUNDEDPREIM_CONTINUOUS_IMAGE THEN
   ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON] THEN
@@ -9054,7 +9005,7 @@ let SERIES_SUBSET = prove
   AP_THM_TAC THEN AP_TERM_TAC THEN POP_ASSUM MP_TAC THEN SET_TAC[]);;
 
 let SUMMABLE_SUBSET = prove
- (`!x s t l.
+ (`!x s t.
         s SUBSET t /\
         summable t (\i. if i IN s then x i else vec 0)
         ==> summable s x`,
@@ -9105,7 +9056,7 @@ let SUMS_FINITE_UNION = prove
   ASM_REWRITE_TAC[] THEN VECTOR_ARITH_TAC);;
 
 let SUMS_OFFSET = prove
- (`!f:num->real^N t s l m n.
+ (`!f:num->real^N l m n.
         (f sums l) (from m) /\ m < n
         ==> (f sums (l - vsum(m..(n-1)) f)) (from n)`,
   REPEAT STRIP_TAC THEN
@@ -9115,7 +9066,7 @@ let SUMS_OFFSET = prove
     SIMP_TAC[SUBSET; IN_FROM; IN_NUMSEG]]);;
 
 let SUMS_OFFSET_REV = prove
- (`!f:num->real^N t s l m n.
+ (`!f:num->real^N l m n.
         (f sums l) (from m) /\ n < m
         ==> (f sums (l + vsum(n..m-1) f)) (from n)`,
   REPEAT STRIP_TAC THEN
@@ -9300,8 +9251,8 @@ let SUMMABLE_EQ_EVENTUALLY = prove
   MESON_TAC[SUMMABLE_IFF_EVENTUALLY]);;
 
 let SUMMABLE_IFF_COFINITE = prove
- (`!f g s t. FINITE((s DIFF t) UNION (t DIFF s))
-             ==> (summable s f <=> summable t f)`,
+ (`!f s t. FINITE((s DIFF t) UNION (t DIFF s))
+           ==> (summable s f <=> summable t f)`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM SUMMABLE_RESTRICT] THEN
   MATCH_MP_TAC SUMMABLE_IFF_EVENTUALLY THEN
   FIRST_ASSUM(MP_TAC o ISPEC `\x:num.x` o MATCH_MP UPPER_BOUND_FINITE_SET) THEN
@@ -9310,8 +9261,8 @@ let SUMMABLE_IFF_COFINITE = prove
   REWRITE_TAC[ARITH_RULE `N + 1 <= n <=> ~(n <= N)`] THEN ASM SET_TAC[]);;
 
 let SUMMABLE_EQ_COFINITE = prove
- (`!f g s t. FINITE((s DIFF t) UNION (t DIFF s)) /\ summable s f
-             ==> summable t f`,
+ (`!f s t. FINITE((s DIFF t) UNION (t DIFF s)) /\ summable s f
+           ==> summable t f`,
   MESON_TAC[SUMMABLE_IFF_COFINITE]);;
 
 let SUMMABLE_FROM_ELSEWHERE = prove

@@ -127,7 +127,7 @@ let ADMISSIBLE_COND = prove
   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]);;
 
 let ADMISSIBLE_MATCH = prove
- (`!(<<) p s e f c.
+ (`!(<<) p s e c.
         admissible(<<) p s e /\ admissible(<<) p s (\f x. c f x (e f x))
         ==> admissible(<<) p s (\f x:P. _MATCH (e f x) (c f x))`,
   REWRITE_TAC[admissible; _MATCH] THEN

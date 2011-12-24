@@ -1825,10 +1825,10 @@ let BASIS_EXPANSION = prove
   ASM_SIMP_TAC[SUM_DELTA; IN_NUMSEG; REAL_MUL_RID]);;
 
 let BASIS_EXPANSION_UNIQUE = prove
- (`!u x:real^N. (vsum(1..dimindex(:N)) (\i. f(i) % basis i) = x) <=>
+ (`!f x:real^N. (vsum(1..dimindex(:N)) (\i. f(i) % basis i) = x) <=>
                 (!i. 1 <= i /\ i <= dimindex(:N) ==> f(i) = x$i)`,
   SIMP_TAC[CART_EQ; VSUM_COMPONENT; VECTOR_MUL_COMPONENT; BASIS_COMPONENT] THEN
-  GEN_TAC THEN REWRITE_TAC[COND_RAND; REAL_MUL_RZERO; REAL_MUL_RID] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[COND_RAND; REAL_MUL_RZERO; REAL_MUL_RID] THEN
   GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV o RAND_CONV o LAND_CONV o
                    ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
   SIMP_TAC[SUM_DELTA; IN_NUMSEG]);;
@@ -2068,7 +2068,7 @@ let LINEAR_SUB = prove
   SIMP_TAC[VECTOR_SUB; LINEAR_ADD; LINEAR_NEG]);;
 
 let LINEAR_VSUM = prove
- (`!f g s u. linear f /\ FINITE s ==> (f(vsum s g) = vsum s (f o g))`,
+ (`!f g s. linear f /\ FINITE s ==> (f(vsum s g) = vsum s (f o g))`,
   GEN_TAC THEN GEN_TAC THEN SIMP_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   DISCH_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[VSUM_CLAUSES] THEN FIRST_ASSUM(fun th ->
@@ -2907,7 +2907,7 @@ let ONORM_CONST = prove
     MATCH_MP_TAC REAL_SUP_UNIQUE THEN SET_TAC[REAL_LE_REFL]]);;
 
 let ONORM_POS_LT = prove
- (`!x. linear f ==> (&0 < onorm f <=> ~(!x. f x = vec 0))`,
+ (`!f. linear f ==> (&0 < onorm f <=> ~(!x. f x = vec 0))`,
   SIMP_TAC[GSYM ONORM_EQ_0; ONORM_POS_LE;
            REAL_ARITH `(&0 < x <=> ~(x = &0)) <=> &0 <= x`]);;
 
@@ -3236,13 +3236,13 @@ let PASTECART_VEC = prove
               FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 let PASTECART_ADD = prove
- (`!x1 y2 x2:real^M y2:real^N.
+ (`!x1 y1 x2:real^M y2:real^N.
      pastecart x1 y1 + pastecart x2 y2 = pastecart (x1 + x2) (y1 + y2)`,
   REWRITE_TAC[PASTECART_EQ; FSTCART_ADD; SNDCART_ADD;
               FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 let PASTECART_CMUL = prove
- (`!x1 x2 c. pastecart (c % x1) (c % y1) = c % pastecart x1 y1`,
+ (`!x1 y1 c. pastecart (c % x1) (c % y1) = c % pastecart x1 y1`,
   REWRITE_TAC[PASTECART_EQ; FSTCART_CMUL; SNDCART_CMUL;
               FSTCART_PASTECART; SNDCART_PASTECART]);;
 
@@ -3252,7 +3252,7 @@ let PASTECART_NEG = prove
   REWRITE_TAC[PASTECART_CMUL]);;
 
 let PASTECART_SUB = prove
- (`!x1 y2 x2:real^M y2:real^N.
+ (`!x1 y1 x2:real^M y2:real^N.
      pastecart x1 y1 - pastecart x2 y2 = pastecart (x1 - x2) (y1 - y2)`,
   REWRITE_TAC[VECTOR_SUB; GSYM PASTECART_NEG; PASTECART_ADD]);;
 
@@ -3363,7 +3363,7 @@ let SUBSPACE_MUL = prove
   SIMP_TAC[subspace]);;
 
 let SUBSPACE_NEG = prove
- (`!x c s. subspace s /\ x IN s ==> (--x) IN s`,
+ (`!x s. subspace s /\ x IN s ==> (--x) IN s`,
   SIMP_TAC[VECTOR_ARITH `--x = --(&1) % x`; SUBSPACE_MUL]);;
 
 let SUBSPACE_SUB = prove
@@ -3676,7 +3676,7 @@ let SPAN_BREAKDOWN_EQ = prove
     ASM_MESON_TAC[SPAN_MONO; SUBSET; IN_INSERT; SPAN_CLAUSES]]);;
 
 let SPAN_INSERT_0 = prove
- (`!x. span(vec 0 INSERT s) = span s`,
+ (`!s. span(vec 0 INSERT s) = span s`,
   SIMP_TAC[EXTENSION; SPAN_BREAKDOWN_EQ; VECTOR_MUL_RZERO; VECTOR_SUB_RZERO]);;
 
 let SPAN_SING = prove
@@ -4234,7 +4234,7 @@ let DIM_SUBSET_UNIV = prove
   MATCH_MP_TAC DIM_SUBSET THEN REWRITE_TAC[SUBSET_UNIV]);;
 
 let BASIS_HAS_SIZE_UNIV = prove
- (`!v b. independent b /\ span b = (:real^N) ==> b HAS_SIZE (dimindex(:N))`,
+ (`!b. independent b /\ span b = (:real^N) ==> b HAS_SIZE (dimindex(:N))`,
   REWRITE_TAC[GSYM DIM_UNIV; BASIS_HAS_SIZE_DIM]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -4707,7 +4707,7 @@ let LINEAR_EQ = prove
   ASM_MESON_TAC[LINEAR_COMPOSE_SUB]);;
 
 let LINEAR_EQ_STDBASIS = prove
- (`!f:real^M->real^N g b s.
+ (`!f:real^M->real^N g.
         linear f /\ linear g /\
         (!i. 1 <= i /\ i <= dimindex(:M)
              ==> f(basis i) = g(basis i))
@@ -4744,7 +4744,7 @@ let BILINEAR_EQ = prove
   ASM_MESON_TAC[BILINEAR_RZERO]);;
 
 let BILINEAR_EQ_STDBASIS = prove
- (`!f:real^M->real^N->real^P g b s.
+ (`!f:real^M->real^N->real^P g.
         bilinear f /\ bilinear g /\
         (!i j. 1 <= i /\ i <= dimindex(:M) /\ 1 <= j /\ j <= dimindex(:N)
              ==> f (basis i) (basis j) = g (basis i) (basis j))
@@ -6851,7 +6851,7 @@ let BETWEEN_ANTISYM = prove
   REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
 
 let BETWEEN_TRANS = prove
- (`!a b c c. between a (b,c) /\ between d (a,c) ==> between d (b,c)`,
+ (`!a b c d. between a (b,c) /\ between d (a,c) ==> between d (b,c)`,
   REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
 
 let BETWEEN_TRANS_2 = prove
