@@ -6361,6 +6361,25 @@ let SUMS_INTERVALS = prove
   REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
   ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
 
+let PASTECART_INTERVAL = prove                                      
+ (`!a b:real^M c d:real^N.                                                   
+        {pastecart x y | x IN interval[a,b] /\ y IN interval[c,d]} =         
+        interval[pastecart a c,pastecart b d]`,                                
+  REPEAT GEN_TAC THEN                                                   
+  REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_ELIM_PASTECART_THM] THEN       
+  SIMP_TAC[IN_INTERVAL; pastecart; LAMBDA_BETA; DIMINDEX_FINITE_SUM] THEN  
+  MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^N`] THEN EQ_TAC THEN STRIP_TAC THENL
+   [X_GEN_TAC `i:num` THEN STRIP_TAC THEN                                    
+    COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN                               
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;                        
+    CONJ_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THENL                      
+     [FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN         
+      DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;                           
+      FIRST_X_ASSUM(MP_TAC o SPEC `i + dimindex(:M)`) THEN                   
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[ADD_SUB] THENL    
+       [ASM_ARITH_TAC;                                                 
+        DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC]]]);;                    
+
 (* ------------------------------------------------------------------------- *)
 (* Some special cases for intervals in R^1.                                  *)
 (* ------------------------------------------------------------------------- *)
@@ -7687,6 +7706,11 @@ let HOMEOMORPHIC_TRANS = prove
   EXISTS_TAC `(g1:real^N->real^M) o (g2:real^P->real^N)` THEN
   ASM_SIMP_TAC[o_THM; IMAGE_o; CONTINUOUS_ON_COMPOSE] THEN
   ASM_MESON_TAC[IN_IMAGE]);;
+
+let HOMEOMORPHIC_IMP_CARD_EQ = prove
+ (`!s:real^M->bool t:real^N->bool. s homeomorphic t ==> s =_c t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homeomorphic; homeomorphism; eq_c] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
 
 let HOMEOMORPHIC_EMPTY = prove
  (`(!s. (s:real^N->bool) homeomorphic ({}:real^M->bool) <=> s = {}) /\

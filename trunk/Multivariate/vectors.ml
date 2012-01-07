@@ -3319,6 +3319,14 @@ let NORM_PASTECART_LE = prove
   REPEAT GEN_TAC THEN MATCH_MP_TAC TRIANGLE_LEMMA THEN
   REWRITE_TAC[NORM_POS_LE; NORM_POW_2; DOT_PASTECART; REAL_LE_REFL]);;
 
+let NORM_LE_PASTECART = prove
+ (`!x:real^M y:real^M.
+    norm(x) <= norm(pastecart x y) /\
+    norm(y) <= norm(pastecart x y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[NORM_PASTECART] THEN CONJ_TAC THEN
+  MATCH_MP_TAC REAL_LE_RSQRT THEN
+  REWRITE_TAC[REAL_LE_ADDL; REAL_LE_ADDR; REAL_LE_POW_2]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A bit of linear algebra.                                                  *)
 (* ------------------------------------------------------------------------- *)
