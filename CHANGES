@@ -1,3 +1,7 @@
+Thu 23rd Dec 2011       Library/card.ml
+
+Added CARD_LE_UNIV = |- !s:A->bool. s <=_c (:A)
+
 Wed 22nd Dec 2011       sets.ml, iterate.ml, define.ml, Library/permutations.ml, Library/products.ml, Library/iter.ml, Multivariate/ passim
 
 Did a bit of cleaning up of theorems to remove redundant quantifiers (put there

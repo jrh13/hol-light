@@ -422,6 +422,10 @@ let CARD_LE_SUBSET = prove
  (`!s:A->bool t. s SUBSET t ==> s <=_c t`,
   REWRITE_TAC[SUBSET; le_c] THEN MESON_TAC[I_THM]);;
 
+let CARD_LE_UNIV = prove
+ (`!s:A->bool. s <=_c (:A)`,
+  GEN_TAC THEN MATCH_MP_TAC CARD_LE_SUBSET THEN REWRITE_TAC[SUBSET_UNIV]);;
+
 let CARD_LE_EQ_SUBSET = prove
  (`!s:A->bool t:B->bool. s <=_c t <=> ?u. u SUBSET t /\ (s =_c u)`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
@@ -1347,7 +1351,7 @@ let CARD_EQ_REAL = prove
     MATCH_MP_TAC(REAL_ARITH `!z:real. y < z /\ z <= x ==> ~(x = y)`) THEN
     EXISTS_TAC `sum (x INTER (0..n)) (\i. inv(&3 pow i))` THEN CONJ_TAC THENL
      [MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC
-       `sum (y INTER (0..n)) (\i. inv(&3 pow i)) + 
+       `sum (y INTER (0..n)) (\i. inv(&3 pow i)) +
         &3 / &2 / &3 pow (SUC n)` THEN
       CONJ_TAC THENL
        [MATCH_MP_TAC REAL_SUP_LE THEN

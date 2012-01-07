@@ -4842,6 +4842,62 @@ let STEINHAUS = prove
     ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A measurable set with cardinality less than c is negligible.              *)
+(* ------------------------------------------------------------------------- *)
+
+let MEASURABLE_NONNEGLIGIBLE_IMP_LARGE = prove
+ (`!s:real^N->bool. measurable s /\ &0 < measure s ==> s =_c (:real)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `FINITE(s:real^N->bool)` THENL
+   [ASM_MESON_TAC[NEGLIGIBLE_FINITE; MEASURABLE_MEASURE_POS_LT];
+    ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP STEINHAUS) THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
+   [TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
+    REWRITE_TAC[CARD_LE_UNIV] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
+    REWRITE_TAC[CARD_EQ_EUCLIDEAN];
+    ALL_TAC] THEN
+  TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN CONJ_TAC THENL
+   [MESON_TAC[CARD_EQ_EUCLIDEAN; CARD_EQ_SYM; CARD_EQ_IMP_LE]; ALL_TAC] THEN
+  TRANS_TAC CARD_LE_TRANS `interval(vec 0:real^N,vec 1)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
+    MATCH_MP_TAC HOMEOMORPHIC_IMP_CARD_EQ THEN
+    MATCH_MP_TAC HOMEOMORPHIC_OPEN_INTERVAL_UNIV THEN
+    REWRITE_TAC[UNIT_INTERVAL_NONEMPTY];
+    ALL_TAC] THEN
+  TRANS_TAC CARD_LE_TRANS `interval[vec 0:real^N,vec 1]` THEN
+  SIMP_TAC[INTERVAL_OPEN_SUBSET_CLOSED; CARD_LE_SUBSET] THEN
+  TRANS_TAC CARD_LE_TRANS `cball(vec 0:real^N,d / &2)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CARD_EQ_IMP_LE THEN
+    MATCH_MP_TAC HOMEOMORPHIC_IMP_CARD_EQ THEN
+    MATCH_MP_TAC HOMEOMORPHIC_CONVEX_COMPACT THEN
+    REWRITE_TAC[CONVEX_INTERVAL; COMPACT_INTERVAL; INTERIOR_CLOSED_INTERVAL;
+                CONVEX_CBALL; COMPACT_CBALL; UNIT_INTERVAL_NONEMPTY;
+                INTERIOR_CBALL; BALL_EQ_EMPTY] THEN
+    ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  TRANS_TAC CARD_LE_TRANS `ball(vec 0:real^N,d)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CARD_LE_SUBSET THEN
+    REWRITE_TAC[SUBSET; IN_BALL; IN_CBALL] THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  TRANS_TAC CARD_LE_TRANS `IMAGE (\(x:real^N,y). x - y) (s *_c s)` THEN
+  CONJ_TAC THENL
+   [ASM_SIMP_TAC[mul_c; CARD_LE_SUBSET; SET_RULE
+     `IMAGE f {g x y | P x /\ Q y} = {f(g x y) | P x /\ Q y}`];
+    ALL_TAC] THEN
+  TRANS_TAC CARD_LE_TRANS `((s:real^N->bool) *_c s)` THEN
+  REWRITE_TAC[CARD_LE_IMAGE] THEN
+  MATCH_MP_TAC CARD_EQ_IMP_LE THEN MATCH_MP_TAC CARD_SQUARE_INFINITE THEN
+  ASM_REWRITE_TAC[INFINITE]);;
+
+let MEASURABLE_SMALL_IMP_NEGLIGIBLE = prove
+ (`!s:real^N->bool. measurable s /\ s <_c (:real) ==> negligible s`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[TAUT `a /\ b ==> c <=> a ==> ~c ==> ~b`] THEN
+  SIMP_TAC[GSYM MEASURABLE_MEASURE_POS_LT] THEN REWRITE_TAC[IMP_IMP] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP MEASURABLE_NONNEGLIGIBLE_IMP_LARGE) THEN
+  REWRITE_TAC[lt_c] THEN MESON_TAC[CARD_EQ_IMP_LE; CARD_EQ_SYM]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Austin's Lemma.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
