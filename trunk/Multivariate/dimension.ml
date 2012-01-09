@@ -3042,6 +3042,23 @@ let CONNECTED_ARC_COMPLEMENT = prove
        ==> connected((:real^N) DIFF path_image p)`,
   SIMP_TAC[PATH_CONNECTED_ARC_COMPLEMENT; PATH_CONNECTED_IMP_CONNECTED]);;
 
+let INSIDE_ARC_EMPTY = prove
+ (`!p:real^1->real^N. arc p ==> inside(path_image p) = {}`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `dimindex(:N) = 1` THENL
+   [MATCH_MP_TAC INSIDE_CONVEX THEN
+    ASM_SIMP_TAC[CONVEX_CONNECTED_1_GEN; CONNECTED_PATH_IMAGE; ARC_IMP_PATH];
+    MATCH_MP_TAC INSIDE_BOUNDED_COMPLEMENT_CONNECTED_EMPTY THEN
+    ASM_SIMP_TAC[BOUNDED_PATH_IMAGE; ARC_IMP_PATH] THEN
+    MATCH_MP_TAC CONNECTED_ARC_COMPLEMENT THEN
+    ASM_REWRITE_TAC[ARITH_RULE `2 <= n <=> 1 <= n /\ ~(n = 1)`] THEN
+    REWRITE_TAC[DIMINDEX_GE_1]]);;
+
+let INSIDE_SIMPLE_CURVE_IMP_CLOSED = prove
+ (`!g x:real^N.
+        simple_path g /\ x IN inside(path_image g)
+        ==> pathfinish g = pathstart g`,
+  MESON_TAC[ARC_SIMPLE_PATH; INSIDE_ARC_EMPTY; NOT_IN_EMPTY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The Jordan curve theorem, again approximately following Maehara.          *)
 (* ------------------------------------------------------------------------- *)

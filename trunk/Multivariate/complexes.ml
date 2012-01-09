@@ -1149,6 +1149,22 @@ let IM_COMPLEX_DIV_GE_0 = prove
   REWRITE_TAC[REAL_ARITH `&0 <= x <=> &0 < x \/ x = &0`] THEN
   REWRITE_TAC[IM_COMPLEX_DIV_GT_0; IM_COMPLEX_DIV_EQ_0]);;
 
+let RE_COMPLEX_DIV_LE_0 = prove
+ (`!a b. Re(a / b) <= &0 <=> Re(a * cnj b) <= &0`,
+  REWRITE_TAC[GSYM REAL_NOT_LT; RE_COMPLEX_DIV_GT_0]);;
+
+let IM_COMPLEX_DIV_LE_0 = prove
+ (`!a b. Im(a / b) <= &0 <=> Im(a * cnj b) <= &0`,
+  REWRITE_TAC[GSYM REAL_NOT_LT; IM_COMPLEX_DIV_GT_0]);;
+
+let RE_COMPLEX_DIV_LT_0 = prove
+ (`!a b. Re(a / b) < &0 <=> Re(a * cnj b) < &0`,
+  REWRITE_TAC[GSYM REAL_NOT_LE; RE_COMPLEX_DIV_GE_0]);;
+
+let IM_COMPLEX_DIV_LT_0 = prove
+ (`!a b. Im(a / b) < &0 <=> Im(a * cnj b) < &0`,
+  REWRITE_TAC[GSYM REAL_NOT_LE; IM_COMPLEX_DIV_GE_0]);;
+
 let IM_COMPLEX_INV_GE_0 = prove
  (`!z. &0 <= Im(inv z) <=> Im(z) <= &0`,
   GEN_TAC THEN MP_TAC(ISPECL [`Cx(&1)`; `z:complex`] IM_COMPLEX_DIV_GE_0) THEN
@@ -1157,6 +1173,21 @@ let IM_COMPLEX_INV_GE_0 = prove
 let IM_COMPLEX_INV_LE_0 = prove
  (`!z. Im(inv z) <= &0 <=> &0 <= Im(z)`,
   MESON_TAC[IM_COMPLEX_INV_GE_0; COMPLEX_INV_INV]);;
+
+let IM_COMPLEX_INV_GT_0 = prove
+ (`!z. &0 < Im(inv z) <=> Im(z) < &0`,
+  REWRITE_TAC[REAL_ARITH `&0 < a <=> ~(a <= &0)`; IM_COMPLEX_INV_LE_0] THEN
+  REAL_ARITH_TAC);;
+
+let IM_COMPLEX_INV_LT_0 = prove
+ (`!z. Im(inv z) < &0 <=> &0 < Im(z)`,
+  REWRITE_TAC[REAL_ARITH `a < &0 <=> ~(&0 <= a)`; IM_COMPLEX_INV_GE_0] THEN
+  REAL_ARITH_TAC);;
+
+let IM_COMPLEX_INV_EQ_0 = prove
+ (`!z. Im(inv z) = &0 <=> Im(z) = &0`,
+  SIMP_TAC[GSYM REAL_LE_ANTISYM; IM_COMPLEX_INV_LE_0; IM_COMPLEX_INV_GE_0] THEN
+  REAL_ARITH_TAC);;
 
 let REAL_SGN_IM_COMPLEX_DIV = prove
  (`!w z. real_sgn(Im(w / z)) = real_sgn(Im(w * cnj z))`,
