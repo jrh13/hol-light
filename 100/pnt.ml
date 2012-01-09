@@ -2,7 +2,6 @@
 (* "Second proof" of Prime Number Theorem from Newman's book.                *)
 (* ========================================================================= *)
 
-needs "Multivariate/realanalysis.ml";;
 needs "Multivariate/cauchy.ml";;
 needs "Library/pocklington.ml";;
 needs "Examples/mangoldt.ml";;
@@ -1299,8 +1298,11 @@ let HAS_PATH_INTEGRAL_NEGATEPATH = prove
 let WINDING_NUMBER_NEGATEPATH = prove
  (`!g z. valid_path g /\ ~(Cx(&0) IN path_image g)
          ==> winding_number((--) o g,Cx(&0)) = winding_number(g,Cx(&0))`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[winding_number] THEN AP_TERM_TAC THEN
-  MATCH_MP_TAC PATH_INTEGRAL_UNIQUE THEN
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[WINDING_NUMBER_VALID_PATH; VALID_PATH_NEGATEPATH;
+               PATH_IMAGE_NEGATEPATH; IN_IMAGE; UNWIND_THM2;
+               COMPLEX_RING `Cx(&0) = --x <=> x = Cx(&0)`] THEN
+  AP_TERM_TAC THEN MATCH_MP_TAC PATH_INTEGRAL_UNIQUE THEN
   MATCH_MP_TAC HAS_PATH_INTEGRAL_NEGATEPATH THEN
   ASM_REWRITE_TAC[COMPLEX_RING `--z - Cx(&0) = --(z - Cx(&0))`] THEN
   REWRITE_TAC[complex_div; COMPLEX_INV_NEG; COMPLEX_MUL_RNEG] THEN
@@ -2519,7 +2521,8 @@ let NEWMAN_INGHAM_THEOREM = prove
   REWRITE_TAC[REAL_ARITH `&1 - (&1 + d) = --d`] THEN
   ABBREV_TAC
    `integral_bound =
-    inv(log(&N) pow 2) * (&1 - (&1 + d * log(&N)) * inv(exp(d * log (&N))))` THEN
+    inv(log(&N) pow 2) *
+    (&1 - (&1 + d * log(&N)) * inv(exp(d * log (&N))))` THEN
   SUBGOAL_THEN
    `&0 <= integral_bound /\ integral_bound <= inv(log(&N) pow 2)`
   STRIP_ASSUME_TAC THENL

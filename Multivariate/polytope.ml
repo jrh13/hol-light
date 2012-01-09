@@ -17,7 +17,7 @@ let face_of = new_definition
                 ==> a IN t /\ b IN t`;;
 
 let FACE_OF_TRANSLATION_EQ = prove
- (`!a f s.
+ (`!a f s:real^N->bool.
         (IMAGE (\x. a + x) f) face_of (IMAGE (\x. a + x) s) <=> f face_of s`,
   REWRITE_TAC[face_of] THEN GEOM_TRANSLATE_TAC[]);;
 
@@ -258,7 +258,7 @@ let SUBSET_OF_FACE_OF = prove
   ABBREV_TAC `d:real^N = b + e / norm(b - c) % (b - c)` THEN
   DISCH_THEN(MP_TAC o SPEC `d:real^N`) THEN ANTS_TAC THENL
    [EXPAND_TAC "d" THEN CONJ_TAC THENL
-     [REWRITE_TAC[NORM_ARITH `dist(b,b + e) = norm e`] THEN
+     [REWRITE_TAC[NORM_ARITH `dist(b:real^N,b + e) = norm e`] THEN
       REWRITE_TAC[NORM_MUL; REAL_ABS_DIV; REAL_ABS_NORM] THEN
       ASM_SIMP_TAC[REAL_DIV_RMUL; NORM_EQ_0; VECTOR_SUB_EQ] THEN
       ASM_REAL_ARITH_TAC;
@@ -287,7 +287,7 @@ let SUBSET_OF_FACE_OF = prove
                    NORM_POS_LT; VECTOR_SUB_EQ; REAL_LE_ADDL] THEN
       ASM_SIMP_TAC[NORM_POS_LT; REAL_LT_IMP_LE; VECTOR_SUB_EQ] THEN
       EXPAND_TAC "d" THEN REWRITE_TAC[VECTOR_ARITH
-       `b = (&1 - u) % (b + e % (b - c)) + u % c <=>
+       `b:real^N = (&1 - u) % (b + e % (b - c)) + u % c <=>
         (u - e * (&1 - u)) % (b - c) = vec 0`] THEN
       ASM_REWRITE_TAC[VECTOR_MUL_EQ_0; VECTOR_SUB_EQ] THEN
       MATCH_MP_TAC(REAL_FIELD
@@ -1112,12 +1112,12 @@ let EXTREME_POINT_OF_MIDPOINT = prove
   REWRITE_TAC[NOT_IMP] THEN REPEAT CONJ_TAC THENL
    [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONVEX_ALT]) THEN
     ASM_REWRITE_TAC[VECTOR_ARITH
-     `((&1 - u) % a + u % b) - d / &2 % (b - a) =
+     `((&1 - u) % a + u % b) - d / &2 % (b - a):real^N =
       (&1 - (u - d / &2)) % a + (u - d / &2) % b`] THEN
     DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONVEX_ALT]) THEN
     ASM_REWRITE_TAC[VECTOR_ARITH
-     `((&1 - u) % a + u % b) + d / &2 % (b - a) =
+     `((&1 - u) % a + u % b) + d / &2 % (b - a):real^N =
       (&1 - (u + d / &2)) % a + (u + d / &2) % b`] THEN
     DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
     REWRITE_TAC[midpoint] THEN VECTOR_ARITH_TAC;
@@ -1149,7 +1149,8 @@ let EXTREME_POINT_OF_SING = prove
   MESON_TAC[SEGMENT_REFL; NOT_IN_EMPTY]);;
 
 let EXTREME_POINT_OF_TRANSLATION_EQ = prove
- (`!a x s. (a + x) extreme_point_of (IMAGE (\x. a + x) s) <=>
+ (`!a:real^N x s.
+           (a + x) extreme_point_of (IMAGE (\x. a + x) s) <=>
            x extreme_point_of s`,
   REWRITE_TAC[extreme_point_of] THEN GEOM_TRANSLATE_TAC[]);;
 
@@ -1164,7 +1165,7 @@ let EXTREME_POINT_OF_LINEAR_IMAGE = prove
 add_linear_invariants [EXTREME_POINT_OF_LINEAR_IMAGE];;
 
 let EXTREME_POINTS_OF_TRANSLATION = prove
- (`!a s. {x | x extreme_point_of (IMAGE (\x. a + x) s)} =
+ (`!a s. {x:real^N | x extreme_point_of (IMAGE (\x. a + x) s)} =
          IMAGE (\x. a + x) {x | x extreme_point_of s}`,
   REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN
   MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
@@ -1310,7 +1311,7 @@ let FACET_OF_IMP_SUBSET = prove
   SIMP_TAC[FACET_OF_IMP_FACE_OF; FACE_OF_IMP_SUBSET]);;
 
 let FACET_OF_TRANSLATION_EQ = prove
- (`!a f s.
+ (`!a:real^N f s.
         (IMAGE (\x. a + x) f) facet_of (IMAGE (\x. a + x) s) <=> f facet_of s`,
   REWRITE_TAC[facet_of] THEN GEOM_TRANSLATE_TAC[]);;
 
@@ -1334,7 +1335,7 @@ let edge_of = new_definition
  `e edge_of s <=> e face_of s /\ aff_dim e = &1`;;
 
 let EDGE_OF_TRANSLATION_EQ = prove
- (`!a f s.
+ (`!a:real^N f s.
         (IMAGE (\x. a + x) f) edge_of (IMAGE (\x. a + x) s) <=> f edge_of s`,
   REWRITE_TAC[edge_of] THEN GEOM_TRANSLATE_TAC[]);;
 
@@ -1364,13 +1365,13 @@ let DIFFERENT_NORM_3_COLLINEAR_POINTS = prove
   REWRITE_TAC[IN_ELIM_THM] THEN DISCH_THEN
    (CONJUNCTS_THEN2 (X_CHOOSE_THEN `u:real` STRIP_ASSUME_TAC) MP_TAC) THEN
   ASM_REWRITE_TAC[NORM_EQ] THEN REWRITE_TAC[VECTOR_ARITH
-   `(x + y) dot (x + y) = x dot x + &2 * x dot y + y dot y`] THEN
+   `(x + y:real^N) dot (x + y) = x dot x + &2 * x dot y + y dot y`] THEN
   REWRITE_TAC[DOT_LMUL; DOT_RMUL] THEN
   DISCH_THEN(CONJUNCTS_THEN2 (ASSUME_TAC o SYM) MP_TAC) THEN
   UNDISCH_TAC `~(a:real^N = b)` THEN
   GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM VECTOR_SUB_EQ] THEN
   REWRITE_TAC[GSYM DOT_EQ_0; VECTOR_ARITH
-   `(a - b) dot (a - b) = a dot a + b dot b - &2 * a dot b`] THEN
+   `(a - b:real^N) dot (a - b) = a dot a + b dot b - &2 * a dot b`] THEN
   ASM_REWRITE_TAC[REAL_RING `a + a - &2 * ab = &0 <=> ab = a`] THEN
   SIMP_TAC[REAL_RING
    `(&1 - u) * (&1 - u) * a + &2 * (&1 - u) * u * x + u * u * a = a <=>
@@ -1805,7 +1806,7 @@ let POLYTOPE_LINEAR_IMAGE_EQ = prove
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ASM_REWRITE_TAC[]);;
 
 let POLYTOPE_NEGATIONS = prove
- (`!s. polytope s ==> polytope(IMAGE (--) s)`,
+ (`!s:real^N->bool. polytope s ==> polytope(IMAGE (--) s)`,
   SIMP_TAC[POLYTOPE_LINEAR_IMAGE; LINEAR_NEGATION]);;
 
 let POLYTOPE_CONVEX_HULL = prove
@@ -1845,7 +1846,7 @@ let POLYTOPE_SCALING_EQ = prove
  (`!c s:real^N->bool.
      ~(c = &0) ==> (polytope (IMAGE (\x. c % x) s) <=> polytope s)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[POLYTOPE_SCALING] THEN
-  DISCH_THEN(MP_TAC o SPEC `inv c` o MATCH_MP POLYTOPE_SCALING) THEN
+  DISCH_THEN(MP_TAC o SPEC `inv c:real` o MATCH_MP POLYTOPE_SCALING) THEN
   ASM_SIMP_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC;
                REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]);;
 
@@ -3179,7 +3180,7 @@ let POLYHEDRON_LINEAR_IMAGE_EQ = prove
 add_linear_invariants [POLYHEDRON_LINEAR_IMAGE_EQ];;
 
 let POLYHEDRON_NEGATIONS = prove
- (`!s. polyhedron s ==> polyhedron(IMAGE (--) s)`,
+ (`!s:real^N->bool. polyhedron s ==> polyhedron(IMAGE (--) s)`,
   GEN_TAC THEN MATCH_MP_TAC EQ_IMP THEN CONV_TAC SYM_CONV THEN
   MATCH_MP_TAC POLYHEDRON_LINEAR_IMAGE_EQ THEN
   REWRITE_TAC[VECTOR_ARITH `--x:real^N = y <=> x = --y`; EXISTS_REFL] THEN
@@ -3315,7 +3316,7 @@ let POLYTOPE_UNION_CONVEX_HULL_FACETS = prove
    [ALL_TAC;
     REWRITE_TAC[CONVEX_HULL_2; VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
     REWRITE_TAC[IN_ELIM_THM] THEN
-    MAP_EVERY EXISTS_TAC [`&1 - inv(u * t)`; `inv(u * t)`] THEN
+    MAP_EVERY EXISTS_TAC [`&1 - inv(u * t)`; `inv(u * t):real`] THEN
     REWRITE_TAC[REAL_ARITH `&1 - x + x = &1`; REAL_SUB_LE; REAL_LE_INV_EQ] THEN
     ASM_SIMP_TAC[REAL_LE_MUL; REAL_LT_IMP_LE; VECTOR_MUL_ASSOC] THEN
     ASM_SIMP_TAC[GSYM REAL_MUL_ASSOC; REAL_ENTIRE; REAL_MUL_LINV;
