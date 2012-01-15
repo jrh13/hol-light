@@ -464,6 +464,17 @@ let EL_MAP = prove
   GEN_TAC THEN INDUCT_TAC THEN LIST_INDUCT_TAC THEN
   ASM_REWRITE_TAC[LENGTH; CONJUNCT1 LT; LT_0; EL; HD; TL; MAP; LT_SUC]);;
 
+let MAP_REVERSE = prove
+ (`!f l. REVERSE(MAP f l) = MAP f (REVERSE l)`,
+  GEN_TAC THEN LIST_INDUCT_TAC THEN
+  ASM_REWRITE_TAC[MAP; REVERSE; MAP_APPEND]);;
+
+let ALL_FILTER = prove
+ (`!P Q l:A list. ALL P (FILTER Q l) <=> ALL (\x. Q x ==> P x) l`,
+  GEN_TAC THEN GEN_TAC THEN
+  LIST_INDUCT_TAC THEN REWRITE_TAC[ALL; FILTER] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[ALL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
 (* ------------------------------------------------------------------------- *)

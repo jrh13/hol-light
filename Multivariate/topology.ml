@@ -3890,6 +3890,12 @@ let CONTINUOUS_ON_EQ = prove
            ==> g continuous_on s`,
   SIMP_TAC[continuous_on; IMP_CONJ]);;
 
+let UNIFORMLY_CONTINUOUS_ON_EQ = prove
+ (`!f g s.
+        (!x. x IN s ==> f x = g x) /\ f uniformly_continuous_on s
+        ==> g uniformly_continuous_on s`,
+  SIMP_TAC[uniformly_continuous_on; IMP_CONJ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Characterization of various kinds of continuity in terms of sequences.    *)
 (* ------------------------------------------------------------------------- *)
@@ -4378,6 +4384,220 @@ let CONTINUOUS_CONSTANT_ON_CLOSURE = prove
    [ASM_SIMP_TAC[SUBSET; IN_ELIM_THM] THEN MESON_TAC[CLOSURE_SUBSET; SUBSET];
     MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE_CONSTANT THEN
     ASM_REWRITE_TAC[CLOSED_CLOSURE]]);;
+
+let CONTINUOUS_AGREE_ON_CLOSURE = prove
+ (`!g h:real^M->real^N.
+        g continuous_on closure s /\ h continuous_on closure s /\
+        (!x. x IN s ==> g x = h x)
+        ==> !x. x IN closure s ==> g x = h x`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM VECTOR_SUB_EQ] THEN STRIP_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_CONSTANT_ON_CLOSURE THEN
+  ASM_SIMP_TAC[CONTINUOUS_ON_SUB]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Theorems relating continuity and uniform continuity to closures.          *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_ON_CLOSURE = prove
+ (`!f:real^M->real^N s.
+        f continuous_on closure s <=>
+        !x e. x IN closure s /\ &0 < e
+              ==> ?d. &0 < d /\
+                      !y. y IN s /\ dist(y,x) < d ==> dist(f y,f x) < e`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[continuous_on] THEN
+  EQ_TAC THENL [MESON_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET]; ALL_TAC] THEN
+  DISCH_TAC THEN X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPECL [`x:real^M`; `e / &2`]) THEN
+  ANTS_TAC THENL [ASM_REWRITE_TAC[REAL_HALF]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `d / &2` THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+  X_GEN_TAC `y:real^M` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`y:real^M`; `e / &2`]) THEN
+  ASM_REWRITE_TAC[REAL_HALF] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`y:real^M`; `s:real^M->bool`] CLOSURE_APPROACHABLE) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `min k (d / &2)`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_LT_MIN] THEN
+  ASM_MESON_TAC[DIST_SYM; NORM_ARITH
+    `dist(a,b) < e / &2 /\ dist(b,c) < e / &2 ==> dist(a,c) < e`]);;
+
+let CONTINUOUS_ON_CLOSURE_SEQUENTIALLY = prove
+ (`!f:real^M->real^N s.
+        f continuous_on closure s <=>
+        !x a. a IN closure s /\ (!n. x n IN s) /\ (x --> a) sequentially
+              ==> ((f o x) --> f a) sequentially`,
+  REWRITE_TAC[CONTINUOUS_ON_CLOSURE] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[IMP_IMP; GSYM continuous_within] THEN
+  REWRITE_TAC[CONTINUOUS_WITHIN_SEQUENTIALLY] THEN MESON_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_ON_CLOSURE = prove
+ (`!f:real^M->real^N s.
+        f uniformly_continuous_on s /\ f continuous_on closure s
+        ==> f uniformly_continuous_on closure s`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[uniformly_continuous_on] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &3`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `d / &3` THEN CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [continuous_on]) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(SPEC `y:real^M` th) THEN MP_TAC(SPEC `x:real^M` th)) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &3`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d1:real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MP_TAC(ISPECL [`x:real^M`; `s:real^M->bool`] CLOSURE_APPROACHABLE) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `min d1 (d / &3)`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; REWRITE_TAC[REAL_LT_MIN]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `x':real^M` STRIP_ASSUME_TAC) THEN
+  DISCH_THEN(MP_TAC o SPEC `x':real^M`) THEN
+  ASM_SIMP_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET] THEN DISCH_TAC THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &3`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d2:real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MP_TAC(ISPECL [`y:real^M`; `s:real^M->bool`] CLOSURE_APPROACHABLE) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `min d2 (d / &3)`) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; REWRITE_TAC[REAL_LT_MIN]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `y':real^M` STRIP_ASSUME_TAC) THEN
+  DISCH_THEN(MP_TAC o SPEC `y':real^M`) THEN
+  ASM_SIMP_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`x':real^M`; `y':real^M`]) THEN
+  ASM_MESON_TAC[DIST_SYM; NORM_ARITH
+   `dist(y,x) < d / &3 /\ dist(x',x) < d / &3 /\ dist(y',y) < d / &3
+    ==> dist(y',x') < d`]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Cauchy continuity, and the extension of functions to closures.            *)
+(* ------------------------------------------------------------------------- *)
+
+let UNIFORMLY_CONTINUOUS_IMP_CAUCHY_CONTINUOUS = prove
+ (`!f:real^M->real^N s.
+        f uniformly_continuous_on s
+        ==> (!x. cauchy x /\ (!n. (x n) IN s) ==> cauchy(f o x))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[uniformly_continuous_on; cauchy; o_DEF] THEN
+  MESON_TAC[]);;
+
+let CONTINUOUS_CLOSED_IMP_CAUCHY_CONTINUOUS = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s /\ closed s
+        ==> (!x. cauchy x /\ (!n. (x n) IN s) ==> cauchy(f o x))`,
+  REWRITE_TAC[GSYM COMPLETE_EQ_CLOSED; CONTINUOUS_ON_SEQUENTIALLY] THEN
+  REWRITE_TAC[complete] THEN MESON_TAC[CONVERGENT_IMP_CAUCHY]);;
+
+let CAUCHY_CONTINUOUS_UNIQUENESS_LEMMA = prove
+ (`!f:real^M->real^N s.
+        (!x. cauchy x /\ (!n. (x n) IN s) ==> cauchy(f o x))
+        ==> !a x. (!n. (x n) IN s) /\ (x --> a) sequentially
+                  ==> ?l. ((f o x) --> l) sequentially /\
+                          !y. (!n. (y n) IN s) /\ (y --> a) sequentially
+                              ==> ((f o y) --> l) sequentially`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `x:num->real^M`) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[CONVERGENT_IMP_CAUCHY]; ALL_TAC] THEN
+  REWRITE_TAC[GSYM CONVERGENT_EQ_CAUCHY] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `l:real^N` THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `y:num->real^M` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `y:num->real^M`) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[CONVERGENT_IMP_CAUCHY]; ALL_TAC] THEN
+  REWRITE_TAC[GSYM CONVERGENT_EQ_CAUCHY] THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:real^N` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `l:real^N = m` (fun th -> ASM_REWRITE_TAC[th]) THEN
+  ONCE_REWRITE_TAC[GSYM VECTOR_SUB_EQ] THEN
+  MATCH_MP_TAC(ISPEC `sequentially` LIM_UNIQUE) THEN
+  EXISTS_TAC `\n:num. (f:real^M->real^N)(x n) - f(y n)` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[o_DEF]) THEN
+  ASM_SIMP_TAC[LIM_SUB; TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+   `\n. if EVEN n then x(n DIV 2):real^M else y(n DIV 2)`) THEN
+  REWRITE_TAC[cauchy; o_THM; LIM_SEQUENTIALLY] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+    X_GEN_TAC `e:real` THEN DISCH_TAC THEN MAP_EVERY UNDISCH_TAC
+     [`((y:num->real^M) --> a) sequentially`;
+      `((x:num->real^M) --> a) sequentially`] THEN
+    REPEAT(FIRST_X_ASSUM(K ALL_TAC o check (is_forall o concl))) THEN
+    REWRITE_TAC[LIM_SEQUENTIALLY] THEN
+    DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_TAC `N1:num`) THEN
+    DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_TAC `N2:num`) THEN
+    EXISTS_TAC `2 * (N1 + N2)` THEN
+    MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(fun th ->
+      MP_TAC(SPEC `m DIV 2` th) THEN MP_TAC(SPEC `n DIV 2` th))) THEN
+    REPEAT(ANTS_TAC THENL [ASM_ARITH_TAC; DISCH_TAC]) THEN
+    REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_NOT_LE])) THEN
+    CONV_TAC NORM_ARITH;
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN
+    ASM_CASES_TAC `&0 < e` THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN DISCH_TAC THEN
+    X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`2 * n`; `2 * n + 1`]) THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    REWRITE_TAC[EVEN_ADD; EVEN_MULT; ARITH_EVEN] THEN
+    REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n /\ (2 * n + 1) DIV 2 = n`] THEN
+    REWRITE_TAC[dist; VECTOR_SUB_RZERO]]);;
+
+let CAUCHY_CONTINUOUS_EXTENDS_TO_CLOSURE = prove
+ (`!f:real^M->real^N s.
+        (!x. cauchy x /\ (!n. (x n) IN s) ==> cauchy(f o x))
+        ==> ?g. g continuous_on closure s /\ (!x. x IN s ==> g x = f x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!a:real^M. ?x.
+       a IN closure s ==> (!n. x n IN s) /\ (x --> a) sequentially`
+  MP_TAC THENL [MESON_TAC[CLOSURE_SEQUENTIAL]; ALL_TAC] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `X:real^M->num->real^M` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CAUCHY_CONTINUOUS_UNIQUENESS_LEMMA) THEN
+  DISCH_THEN(MP_TAC o GEN `a:real^M` o
+   SPECL [`a:real^M`; `(X:real^M->num->real^M) a`]) THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (MESON[]
+   `(!a. P a ==> Q a) ==> ((!a. P a ==> R a) ==> p)
+    ==> ((!a. Q a ==> R a) ==> p)`)) THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^M->real^N` THEN
+  STRIP_TAC THEN
+  MATCH_MP_TAC(TAUT `b /\ (b ==> a) ==> a /\ b`) THEN CONJ_TAC THENL
+   [X_GEN_TAC `a:real^M` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `a:real^M`) THEN
+    ASM_SIMP_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET] THEN
+    DISCH_THEN(MP_TAC o SPEC `(\n. a):num->real^M` o CONJUNCT2) THEN
+    ASM_SIMP_TAC[LIM_CONST_EQ; o_DEF; TRIVIAL_LIMIT_SEQUENTIALLY];
+    STRIP_TAC] THEN
+  ASM_SIMP_TAC[CONTINUOUS_ON_CLOSURE_SEQUENTIALLY] THEN
+  MAP_EVERY X_GEN_TAC [`x:num->real^M`; `a:real^M`] THEN STRIP_TAC THEN
+  MATCH_MP_TAC LIM_TRANSFORM_EVENTUALLY THEN
+  EXISTS_TAC `(f:real^M->real^N) o (x:num->real^M)` THEN ASM_SIMP_TAC[] THEN
+  MATCH_MP_TAC ALWAYS_EVENTUALLY THEN ASM_SIMP_TAC[o_THM]);;
+
+let UNIFORMLY_CONTINUOUS_EXTENDS_TO_CLOSURE = prove
+ (`!f:real^M->real^N s.
+   f uniformly_continuous_on s
+   ==> ?g. g uniformly_continuous_on closure s /\ (!x. x IN s ==> g x = f x) /\
+           !h. h continuous_on closure s /\ (!x. x IN s ==> h x = f x)
+               ==> !x. x IN closure s ==> h x = g x`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CAUCHY_CONTINUOUS_EXTENDS_TO_CLOSURE o
+   MATCH_MP UNIFORMLY_CONTINUOUS_IMP_CAUCHY_CONTINUOUS) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^M->real^N` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[UNIFORMLY_CONTINUOUS_ON_CLOSURE; UNIFORMLY_CONTINUOUS_ON_EQ];
+    ASM_MESON_TAC[CONTINUOUS_AGREE_ON_CLOSURE]]);;
+
+let CAUCHY_CONTINUOUS_IMP_CONTINUOUS = prove
+ (`!f:real^M->real^N s.
+        (!x. cauchy x /\ (!n. (x n) IN s) ==> cauchy(f o x))
+        ==> f continuous_on s`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(CHOOSE_TAC o MATCH_MP CAUCHY_CONTINUOUS_EXTENDS_TO_CLOSURE) THEN
+  ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; CLOSURE_SUBSET; CONTINUOUS_ON_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Topological properties of linear functions.                               *)
@@ -6361,24 +6581,24 @@ let SUMS_INTERVALS = prove
   REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
   ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
 
-let PASTECART_INTERVAL = prove                                      
- (`!a b:real^M c d:real^N.                                                   
-        {pastecart x y | x IN interval[a,b] /\ y IN interval[c,d]} =         
-        interval[pastecart a c,pastecart b d]`,                                
-  REPEAT GEN_TAC THEN                                                   
-  REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_ELIM_PASTECART_THM] THEN       
-  SIMP_TAC[IN_INTERVAL; pastecart; LAMBDA_BETA; DIMINDEX_FINITE_SUM] THEN  
+let PASTECART_INTERVAL = prove
+ (`!a b:real^M c d:real^N.
+        {pastecart x y | x IN interval[a,b] /\ y IN interval[c,d]} =
+        interval[pastecart a c,pastecart b d]`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_ELIM_PASTECART_THM] THEN
+  SIMP_TAC[IN_INTERVAL; pastecart; LAMBDA_BETA; DIMINDEX_FINITE_SUM] THEN
   MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^N`] THEN EQ_TAC THEN STRIP_TAC THENL
-   [X_GEN_TAC `i:num` THEN STRIP_TAC THEN                                    
-    COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN                               
-    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;                        
-    CONJ_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THENL                      
-     [FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN         
-      DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;                           
-      FIRST_X_ASSUM(MP_TAC o SPEC `i + dimindex(:M)`) THEN                   
-      COND_CASES_TAC THEN ASM_REWRITE_TAC[ADD_SUB] THENL    
-       [ASM_ARITH_TAC;                                                 
-        DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC]]]);;                    
+   [X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+    CONJ_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+      DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;
+      FIRST_X_ASSUM(MP_TAC o SPEC `i + dimindex(:M)`) THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[ADD_SUB] THENL
+       [ASM_ARITH_TAC;
+        DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some special cases for intervals in R^1.                                  *)
@@ -6401,6 +6621,11 @@ let INTERVAL_EQ_EMPTY_1 = prove
         (interval(a,b) = {} <=> drop b <= drop a)`,
   REWRITE_TAC[INTERVAL_EQ_EMPTY; drop; CONJ_ASSOC; DIMINDEX_1; LE_ANTISYM] THEN
   MESON_TAC[]);;
+
+let INTERVAL_NE_EMPTY_1 = prove
+ (`(!a b:real^1. ~(interval[a,b] = {}) <=> drop a <= drop b) /\
+   (!a b:real^1. ~(interval(a,b) = {}) <=> drop a < drop b)`,
+  REWRITE_TAC[INTERVAL_EQ_EMPTY_1] THEN REAL_ARITH_TAC);;
 
 let SUBSET_INTERVAL_1 = prove
  (`!a b c d.
@@ -6493,6 +6718,15 @@ let CBALL_INTERVAL_0 = prove
  (`!e. cball(vec 0:real^1,e) = interval[--lift e,lift e]`,
   GEN_TAC THEN REWRITE_TAC[CBALL_INTERVAL] THEN AP_TERM_TAC THEN
   AP_THM_TAC THEN AP_TERM_TAC THEN BINOP_TAC THEN VECTOR_ARITH_TAC);;
+
+let INTER_INTERVAL_1 = prove
+ (`!a b c d:real^1.
+        interval[a,b] INTER interval[c,d] =
+        interval[lift(max (drop a) (drop c)),lift(min (drop b) (drop d))]`,
+  REWRITE_TAC[EXTENSION; IN_INTER; IN_INTERVAL_1; real_max; real_min] THEN
+  REPEAT GEN_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[LIFT_DROP]) THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some stuff for half-infinite intervals too; maybe I need a notation?      *)

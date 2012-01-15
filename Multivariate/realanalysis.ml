@@ -211,6 +211,14 @@ let REAL_COMPACT_UNION = prove
  (`!s t. real_compact s /\ real_compact t ==> real_compact(s UNION t)`,
   REWRITE_TAC[real_compact; IMAGE_UNION; COMPACT_UNION]);;
 
+let REAL_COMPACT_ATTAINS_INF = prove
+ (`!s. real_compact s /\ ~(s = {}) ==> ?x. x IN s /\ !y. y IN s ==> x <= y`,
+  REWRITE_TAC[real_compact; COMPACT_ATTAINS_INF]);;
+
+let REAL_COMPACT_ATTAINS_SUP = prove
+ (`!s. real_compact s /\ ~(s = {}) ==> ?x. x IN s /\ !y. y IN s ==> y <= x`,
+  REWRITE_TAC[real_compact; COMPACT_ATTAINS_SUP]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Limits of functions with real range.                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -2250,6 +2258,26 @@ let REAL_CONTINUOUS_ON_EQ_REAL_CONTINUOUS_AT = prove
   SIMP_TAC[REAL_CONTINUOUS_ATREAL; REAL_CONTINUOUS_WITHINREAL;
         REAL_CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; REALLIM_WITHIN_REAL_OPEN]);;
 
+let REAL_CONTINUOUS_ATTAINS_SUP = prove
+ (`!f s. real_compact s /\ ~(s = {}) /\ f real_continuous_on s
+         ==> ?x. x IN s /\ (!y. y IN s ==> f y <= f x)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(f:real->real) o drop`; `IMAGE lift s`]
+        CONTINUOUS_ATTAINS_SUP) THEN
+  ASM_REWRITE_TAC[GSYM REAL_CONTINUOUS_ON; GSYM real_compact] THEN
+  ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; EXISTS_IN_IMAGE; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[o_THM; LIFT_DROP]);;
+
+let REAL_CONTINUOUS_ATTAINS_INF = prove
+ (`!f s. real_compact s /\ ~(s = {}) /\ f real_continuous_on s
+         ==> ?x. x IN s /\ (!y. y IN s ==> f x <= f y)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(f:real->real) o drop`; `IMAGE lift s`]
+        CONTINUOUS_ATTAINS_INF) THEN
+  ASM_REWRITE_TAC[GSYM REAL_CONTINUOUS_ON; GSYM real_compact] THEN
+  ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; EXISTS_IN_IMAGE; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[o_THM; LIFT_DROP]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Real version of uniform continuity.                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -2755,6 +2783,21 @@ let REAL_INTERVAL_EQ_EMPTY = prove
    (!a b. real_interval(a,b) = {} <=> b <= a)`,
   REWRITE_TAC[REAL_INTERVAL_INTERVAL; IMAGE_EQ_EMPTY] THEN
   REWRITE_TAC[INTERVAL_EQ_EMPTY_1; LIFT_DROP]);;
+
+let REAL_INTERVAL_NE_EMPTY = prove
+ (`(!a b. ~(real_interval[a,b] = {}) <=> a <= b) /\
+   (!a b. ~(real_interval(a,b) = {}) <=> a < b)`,
+  REWRITE_TAC[REAL_INTERVAL_EQ_EMPTY; REAL_NOT_LE; REAL_NOT_LT]);;
+
+let REAL_OPEN_CLOSED_INTERVAL = prove
+ (`!a b. real_interval(a,b) = real_interval[a,b] DIFF {a,b}`,
+  SIMP_TAC[EXTENSION; IN_DIFF; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_CLOSED_OPEN_INTERVAL = prove
+ (`!a b. a <= b ==> real_interval[a,b] = real_interval(a,b) UNION {a,b}`,
+  SIMP_TAC[EXTENSION; IN_UNION; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
+  REAL_ARITH_TAC);;
 
 let REAL_CLOSED_REAL_INTERVAL = prove
  (`!a b. real_closed(real_interval[a,b])`,
@@ -4164,6 +4207,116 @@ let IS_REALINTERVAL_CONTINUOUS_IMAGE = prove
   REWRITE_TAC[IMAGE_o; REWRITE_RULE[IMAGE_o] IMAGE_LIFT_DROP]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Zeroness (or sign at boundary) of derivative at local extremum.           *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_DERIVATIVE_POS_LEFT_MINIMUM = prove
+ (`!f f' a b e.
+        a < b /\ &0 < e /\
+        (f has_real_derivative f') (atreal a within real_interval[a,b]) /\
+        (!x. x IN real_interval[a,b] /\ abs(x - a) < e ==> f a <= f x)
+        ==> &0 <= f'`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `\x:real^1. f' % x`;
+                 `lift a`; `interval[lift a,lift b]`; `e:real`]
+        DROP_DIFFERENTIAL_POS_AT_MINIMUM) THEN
+  ASM_REWRITE_TAC[ENDS_IN_INTERVAL; CONVEX_INTERVAL; IN_INTER; IMP_CONJ] THEN
+  ASM_REWRITE_TAC[GSYM IMAGE_LIFT_REAL_INTERVAL; IMAGE_EQ_EMPTY;
+                  GSYM HAS_REAL_FRECHET_DERIVATIVE_WITHIN] THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP; IN_BALL; DIST_LIFT;
+               REAL_INTERVAL_NE_EMPTY; REAL_LT_IMP_LE] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[REAL_ABS_SUB]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `b:real`) THEN
+  ASM_SIMP_TAC[ENDS_IN_REAL_INTERVAL; REAL_INTERVAL_NE_EMPTY;
+               REAL_LT_IMP_LE] THEN
+  ASM_SIMP_TAC[DROP_CMUL; DROP_SUB; LIFT_DROP; REAL_LE_MUL_EQ;
+               REAL_SUB_LT]);;
+
+let REAL_DERIVATIVE_NEG_LEFT_MAXIMUM = prove
+ (`!f f' a b e.
+        a < b /\ &0 < e /\
+        (f has_real_derivative f') (atreal a within real_interval[a,b]) /\
+        (!x. x IN real_interval[a,b] /\ abs(x - a) < e ==> f x <= f a)
+        ==> f' <= &0`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `\x:real^1. f' % x`;
+                 `lift a`; `interval[lift a,lift b]`; `e:real`]
+        DROP_DIFFERENTIAL_NEG_AT_MAXIMUM) THEN
+  ASM_REWRITE_TAC[ENDS_IN_INTERVAL; CONVEX_INTERVAL; IN_INTER; IMP_CONJ] THEN
+  ASM_REWRITE_TAC[GSYM IMAGE_LIFT_REAL_INTERVAL; IMAGE_EQ_EMPTY;
+                  GSYM HAS_REAL_FRECHET_DERIVATIVE_WITHIN] THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP; IN_BALL; DIST_LIFT;
+               REAL_INTERVAL_NE_EMPTY; REAL_LT_IMP_LE] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[REAL_ABS_SUB]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `b:real`) THEN
+  ASM_SIMP_TAC[ENDS_IN_REAL_INTERVAL; REAL_INTERVAL_NE_EMPTY;
+               REAL_LT_IMP_LE] THEN
+  ASM_SIMP_TAC[DROP_CMUL; DROP_SUB; LIFT_DROP; REAL_LE_MUL_EQ;
+               REAL_SUB_LT; REAL_ARITH `f * ba <= &0 <=> &0 <= --f * ba`] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_DERIVATIVE_POS_RIGHT_MAXIMUM = prove
+ (`!f f' a b e.
+        a < b /\ &0 < e /\
+        (f has_real_derivative f') (atreal b within real_interval[a,b]) /\
+        (!x. x IN real_interval[a,b] /\ abs(x - b) < e ==> f x <= f b)
+        ==> &0 <= f'`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `\x:real^1. f' % x`;
+                 `lift b`; `interval[lift a,lift b]`; `e:real`]
+        DROP_DIFFERENTIAL_NEG_AT_MAXIMUM) THEN
+  ASM_REWRITE_TAC[ENDS_IN_INTERVAL; CONVEX_INTERVAL; IN_INTER; IMP_CONJ] THEN
+  ASM_REWRITE_TAC[GSYM IMAGE_LIFT_REAL_INTERVAL; IMAGE_EQ_EMPTY;
+                  GSYM HAS_REAL_FRECHET_DERIVATIVE_WITHIN] THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP; IN_BALL; DIST_LIFT;
+               REAL_INTERVAL_NE_EMPTY; REAL_LT_IMP_LE] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[REAL_ABS_SUB]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `a:real`) THEN
+  ASM_SIMP_TAC[ENDS_IN_REAL_INTERVAL; REAL_INTERVAL_NE_EMPTY;
+               REAL_LT_IMP_LE] THEN
+  ASM_SIMP_TAC[DROP_CMUL; DROP_SUB; LIFT_DROP; REAL_LE_MUL_EQ; REAL_SUB_LT;
+               REAL_ARITH `f * (a - b) <= &0 <=> &0 <= f * (b - a)`]);;
+
+let REAL_DERIVATIVE_NEG_RIGHT_MINIMUM = prove
+ (`!f f' a b e.
+        a < b /\ &0 < e /\
+        (f has_real_derivative f') (atreal b within real_interval[a,b]) /\
+        (!x. x IN real_interval[a,b] /\ abs(x - b) < e ==> f b <= f x)
+        ==> f' <= &0`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `\x:real^1. f' % x`;
+                 `lift b`; `interval[lift a,lift b]`; `e:real`]
+        DROP_DIFFERENTIAL_POS_AT_MINIMUM) THEN
+  ASM_REWRITE_TAC[ENDS_IN_INTERVAL; CONVEX_INTERVAL; IN_INTER; IMP_CONJ] THEN
+  ASM_REWRITE_TAC[GSYM IMAGE_LIFT_REAL_INTERVAL; IMAGE_EQ_EMPTY;
+                  GSYM HAS_REAL_FRECHET_DERIVATIVE_WITHIN] THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP; IN_BALL; DIST_LIFT;
+               REAL_INTERVAL_NE_EMPTY; REAL_LT_IMP_LE] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[REAL_ABS_SUB]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `a:real`) THEN
+  ASM_SIMP_TAC[ENDS_IN_REAL_INTERVAL; REAL_INTERVAL_NE_EMPTY;
+               REAL_LT_IMP_LE] THEN
+  ASM_SIMP_TAC[DROP_CMUL; DROP_SUB; LIFT_DROP] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `&0 <= f * (a - b) <=> &0 <= --f * (b - a)`] THEN
+  ASM_SIMP_TAC[REAL_LE_MUL_EQ; REAL_SUB_LT] THEN REAL_ARITH_TAC);;
+
+let REAL_DERIVATIVE_ZERO_MAXMIN = prove
+ (`!f f' x s.
+        x IN s /\ real_open s /\
+        (f has_real_derivative f') (atreal x) /\
+        ((!y. y IN s ==> f y <= f x) \/ (!y. y IN s ==> f x <= f y))
+        ==> f' = &0`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `\x:real^1. f' % x`;
+                 `lift x`; `IMAGE lift s`]
+        DIFFERENTIAL_ZERO_MAXMIN) THEN
+  ASM_REWRITE_TAC[GSYM HAS_REAL_FRECHET_DERIVATIVE_AT; GSYM REAL_OPEN] THEN
+  ASM_SIMP_TAC[FUN_IN_IMAGE; FORALL_IN_IMAGE] THEN
+  ASM_REWRITE_TAC[o_DEF; LIFT_DROP] THEN
+  DISCH_THEN(MP_TAC o C AP_THM `vec 1:real^1`) THEN
+  REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_VEC; REAL_MUL_RID]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Rolle and Mean Value Theorem.                                             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -4389,6 +4542,100 @@ let LHOSPITAL = prove
     MATCH_MP_TAC(REWRITE_RULE[TAUT `a /\ b /\ c ==> d <=> a /\ b ==> c ==> d`]
           HAS_REAL_DERIVATIVE_TRANSFORM_ATREAL) THEN
     EXISTS_TAC `abs(x - c)` THEN ASM_REAL_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Darboux's theorem (intermediate value property for derivatives).          *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_DERIVATIVE_IVT_INCREASING = prove
+ (`!f f' a b.
+   a <= b /\
+   (!x. x IN real_interval[a,b]
+        ==> (f has_real_derivative f'(x)) (atreal x within real_interval[a,b]))
+   ==> !t. f'(a) <= t /\ t <= f'(b)
+           ==> ?x. x IN real_interval[a,b] /\ f' x = t`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN GEN_TAC THEN
+  ASM_CASES_TAC `(f':real->real) a = t` THENL
+   [ASM_MESON_TAC[ENDS_IN_REAL_INTERVAL; REAL_INTERVAL_NE_EMPTY];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `(f':real->real) b = t` THENL
+   [ASM_MESON_TAC[ENDS_IN_REAL_INTERVAL; REAL_INTERVAL_NE_EMPTY];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `b:real = a` THEN ASM_REWRITE_TAC[REAL_LE_ANTISYM] THEN
+  SUBGOAL_THEN `a < b` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_REWRITE_TAC[REAL_LE_LT] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`\x:real. f x - t * x`; `real_interval[a,b]`]
+        REAL_CONTINUOUS_ATTAINS_INF) THEN
+  ASM_REWRITE_TAC[REAL_INTERVAL_NE_EMPTY; REAL_COMPACT_INTERVAL] THEN
+  ANTS_TAC THENL
+   [MATCH_MP_TAC REAL_DIFFERENTIABLE_ON_IMP_REAL_CONTINUOUS_ON THEN
+    MATCH_MP_TAC REAL_DIFFERENTIABLE_ON_SUB THEN
+    SIMP_TAC[REAL_DIFFERENTIABLE_ON_MUL; REAL_DIFFERENTIABLE_ON_ID;
+             REAL_DIFFERENTIABLE_ON_CONST] THEN
+    ASM_MESON_TAC[real_differentiable_on];
+    ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:real` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MP_TAC(SPECL
+   [`\x:real. f x - t * x`; `(f':real->real) x - t:real`;
+    `x:real`; `real_interval(a,b)`]
+        REAL_DERIVATIVE_ZERO_MAXMIN) THEN
+  ASM_REWRITE_TAC[REAL_SUB_0] THEN DISCH_THEN MATCH_MP_TAC THEN
+  REWRITE_TAC[REAL_OPEN_REAL_INTERVAL] THEN
+  ASM_SIMP_TAC[REAL_OPEN_CLOSED_INTERVAL; IN_DIFF] THEN
+  ASM_CASES_TAC `x:real = a` THENL
+   [FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    MP_TAC(ISPECL[`\x:real. f x - t * x`; `(f':real->real) a - t:real`;
+                  `a:real`; `b:real`; `&1`]
+        REAL_DERIVATIVE_POS_LEFT_MINIMUM) THEN
+    ASM_SIMP_TAC[REAL_LT_01; REAL_SUB_LE] THEN
+    MATCH_MP_TAC(TAUT `~q /\ p ==> (p ==> q) ==> r`) THEN
+    ASM_REWRITE_TAC[REAL_NOT_LE] THEN
+    MATCH_MP_TAC HAS_REAL_DERIVATIVE_SUB THEN
+    CONJ_TAC THENL [ALL_TAC; REAL_DIFF_TAC THEN REWRITE_TAC[REAL_MUL_RID]] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[ENDS_IN_INTERVAL; INTERVAL_NE_EMPTY];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `x:real = b` THENL
+   [FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    MP_TAC(ISPECL[`\x:real. f x - t * x`; `(f':real->real) b - t:real`;
+                  `a:real`; `b:real`; `&1`]
+        REAL_DERIVATIVE_NEG_RIGHT_MINIMUM) THEN
+    ASM_SIMP_TAC[REAL_LT_01; REAL_SUB_LE] THEN
+    MATCH_MP_TAC(TAUT `~q /\ p ==> (p ==> q) ==> r`) THEN
+    ASM_REWRITE_TAC[REAL_NOT_LE; REAL_SUB_LT] THEN
+    MATCH_MP_TAC HAS_REAL_DERIVATIVE_SUB THEN
+    CONJ_TAC THENL [ALL_TAC; REAL_DIFF_TAC THEN REWRITE_TAC[REAL_MUL_RID]] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[ENDS_IN_INTERVAL; INTERVAL_NE_EMPTY];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+  MATCH_MP_TAC HAS_REAL_DERIVATIVE_SUB THEN
+  CONJ_TAC THENL [ALL_TAC; REAL_DIFF_TAC THEN REWRITE_TAC[REAL_MUL_RID]] THEN
+  SUBGOAL_THEN
+   `(f has_real_derivative f' x) (atreal x within real_interval(a,b))`
+  MP_TAC THENL
+   [MATCH_MP_TAC HAS_REAL_DERIVATIVE_WITHIN_SUBSET THEN
+    EXISTS_TAC `real_interval[a,b]` THEN
+    ASM_SIMP_TAC[REAL_INTERVAL_OPEN_SUBSET_CLOSED];
+    MATCH_MP_TAC EQ_IMP THEN
+    MATCH_MP_TAC HAS_REAL_DERIVATIVE_WITHIN_REAL_OPEN THEN
+    REWRITE_TAC[REAL_OPEN_REAL_INTERVAL] THEN
+    ASM_REWRITE_TAC[REAL_OPEN_CLOSED_INTERVAL] THEN ASM SET_TAC[]]);;
+
+let REAL_DERIVATIVE_IVT_DECREASING = prove
+ (`!f f' a b t.
+   a <= b /\
+   (!x. x IN real_interval[a,b]
+        ==> (f has_real_derivative f'(x)) (atreal x within real_interval[a,b]))
+   ==> !t. f'(b) <= t /\ t <= f'(a)
+           ==> ?x. x IN real_interval[a,b] /\ f' x = t`,
+  REPEAT STRIP_TAC THEN MP_TAC(SPECL
+   [`\x. --((f:real->real) x)`; `\x. --((f':real->real) x)`;
+    `a:real`; `b:real`] REAL_DERIVATIVE_IVT_INCREASING) THEN
+  ASM_SIMP_TAC[HAS_REAL_DERIVATIVE_NEG] THEN
+  DISCH_THEN(MP_TAC o SPEC `--t:real`) THEN
+  ASM_REWRITE_TAC[REAL_LE_NEG2; REAL_EQ_NEG2]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Continuity and differentiability of inverse functions.                    *)

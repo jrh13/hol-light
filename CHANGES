@@ -1,3 +1,24 @@
+Sat 14th Jan 2011       sets.ml
+
+Added "localized" forms of the theorems about factoring functions through
+each other:
+
+  FUNCTION_FACTORS_LEFT_GEN =
+    |- !P f g. (!x y. P x /\ P y /\ g x = g y ==> f x = f y) <=>
+               (?h. !x. P x ==> f(x) = h(g x))
+
+  FUNCTION_FACTORS_RIGHT_GEN =
+    |- !P f g. (!x. P x ==> ?y. g(y) = f(x)) <=>
+               (?h. !x. P x ==> f(x) = g(h x))
+
+Mon  9th Jan 2011       list.ml
+
+Added two new list theorems
+
+ MAP_REVERSE = |- !f l. REVERSE(MAP f l) = MAP f (REVERSE l)
+
+ ALL_FILTER = |- !P Q l. ALL P (FILTER Q l) <=> ALL (\x. Q x ==> P x) l
+
 Thu 23rd Dec 2011       Library/card.ml
 
 Added CARD_LE_UNIV = |- !s:A->bool. s <=_c (:A)
