@@ -2439,16 +2439,26 @@ let BIJECTIVE_LEFT_RIGHT_INVERSE = prove
   MP_TAC(ISPECL [`f:A->B`; `(:A)`; `(:B)`] BIJECTIVE_ON_LEFT_RIGHT_INVERSE) THEN
   REWRITE_TAC[IN_UNIV]);;
 
-let FUNCTION_FACTORS_RIGHT = prove
- (`!f g. (!x. ?y. g(y) = f(x)) <=> ?h. f = g o h`,
-  REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+let FUNCTION_FACTORS_LEFT_GEN = prove
+ (`!P f g. (!x y. P x /\ P y /\ g x = g y ==> f x = f y) <=>
+           (?h. !x. P x ==> f(x) = h(g x))`,
+  ONCE_REWRITE_TAC[MESON[]
+   `(!x. P x ==> f(x) = g(k x)) <=> (!y x. P x /\ y = k x ==> f x = g y)`] THEN
+  REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]);;
 
 let FUNCTION_FACTORS_LEFT = prove
  (`!f g. (!x y. (g x = g y) ==> (f x = f y)) <=> ?h. f = h o g`,
-  let lemma = prove
-   (`(f = h o g) <=> !y x. (y = g x) ==> (h y = f x)`,
-    REWRITE_TAC[FUN_EQ_THM; o_THM] THEN MESON_TAC[]) in
-  REWRITE_TAC[lemma; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+  REWRITE_TAC[FUN_EQ_THM; o_THM;
+   GSYM(REWRITE_RULE[] (ISPEC `\x. T` FUNCTION_FACTORS_LEFT_GEN))]);;
+
+let FUNCTION_FACTORS_RIGHT_GEN = prove
+ (`!P f g. (!x. P x ==> ?y. g(y) = f(x)) <=>
+           (?h. !x. P x ==> f(x) = g(h x))`,
+  REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
+let FUNCTION_FACTORS_RIGHT = prove
+ (`!f g. (!x. ?y. g(y) = f(x)) <=> ?h. f = g o h`,
+  REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
 
 let SURJECTIVE_FORALL_THM = prove
  (`!f:A->B. (!y. ?x. f x = y) <=> (!P. (!x. P(f x)) <=> (!y. P y))`,

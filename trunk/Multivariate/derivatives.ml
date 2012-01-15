@@ -789,8 +789,147 @@ let FRECHET_DERIVATIVE_WITHIN_CLOSED_INTERVAL = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Component of the differential must be zero if it exists at a local        *)
-(* maximum or minimum for that corresponding component.                      *)
+(* maximum or minimum for that corresponding component. Start with slightly  *)
+(* sharper forms that fix the sign of the derivative on the boundary.        *)
 (* ------------------------------------------------------------------------- *)
+
+let DIFFERENTIAL_COMPONENT_POS_AT_MINIMUM = prove
+ (`!f:real^M->real^N f' x s k e.
+        1 <= k /\ k <= dimindex(:N) /\
+        x IN s /\ convex s /\ (f has_derivative f') (at x within s) /\
+        &0 < e /\ (!w. w IN s INTER ball(x,e) ==> (f x)$k <= (f w)$k)
+        ==> !y. y IN s ==> &0 <= (f'(y - x))$k`,
+  REWRITE_TAC[has_derivative_within] THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `y:real^M = x` THENL
+   [ASM_MESON_TAC[VECTOR_SUB_REFL; LINEAR_0; VEC_COMPONENT; REAL_LE_REFL];
+    ALL_TAC] THEN
+  ONCE_REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_WITHIN]) THEN
+  DISCH_THEN(MP_TAC o SPEC
+    `--((f':real^M->real^N)(y - x)$k) / norm(y - x)`) THEN
+  ASM_SIMP_TAC[REAL_LT_DIV; NORM_POS_LT; VECTOR_SUB_EQ;
+               NOT_EXISTS_THM; REAL_ARITH `&0 < --x <=> x < &0`] THEN
+  X_GEN_TAC `d:real` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ABBREV_TAC `de = min (&1) ((min d e) / &2 / norm(y - x:real^M))` THEN
+  DISCH_THEN(MP_TAC o SPEC `x + de % (y - x):real^M`) THEN
+  REWRITE_TAC[dist; VECTOR_ADD_SUB; NOT_IMP; GSYM CONJ_ASSOC] THEN
+  SUBGOAL_THEN `norm(de % (y - x):real^M) < min d e` MP_TAC THENL
+   [ASM_SIMP_TAC[NORM_MUL; GSYM REAL_LT_RDIV_EQ;
+                 NORM_POS_LT; VECTOR_SUB_EQ] THEN
+    EXPAND_TAC "de" THEN MATCH_MP_TAC(REAL_ARITH
+     `&0 < de / x ==> abs(min (&1) (de / &2 / x)) < de / x`) THEN
+    ASM_SIMP_TAC[REAL_LT_DIV; REAL_LT_MIN; NORM_POS_LT; VECTOR_SUB_EQ];
+    REWRITE_TAC[REAL_LT_MIN] THEN STRIP_TAC] THEN
+  SUBGOAL_THEN `&0 < de /\ de <= &1` STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "de" THEN CONJ_TAC THENL [ALL_TAC; REAL_ARITH_TAC] THEN
+    ASM_SIMP_TAC[REAL_LT_MIN; REAL_LT_01; REAL_HALF; REAL_LT_DIV;
+                 NORM_POS_LT; VECTOR_SUB_EQ];
+    ALL_TAC] THEN
+  MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[VECTOR_ARITH
+     `x + a % (y - x):real^N = (&1 - a) % x + a % y`] THEN
+    MATCH_MP_TAC IN_CONVEX_SET THEN ASM_SIMP_TAC[REAL_LT_IMP_LE];
+    DISCH_TAC] THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[NORM_MUL] THEN
+  ASM_SIMP_TAC[REAL_LT_MUL; REAL_ARITH `&0 < x ==> &0 < abs x`;
+               NORM_POS_LT; VECTOR_SUB_EQ; VECTOR_SUB_RZERO] THEN
+  MATCH_MP_TAC(NORM_ARITH
+   `abs(y$k) <= norm(y) /\ ~(abs(y$k) < e) ==> ~(norm y < e)`) THEN
+  ASM_SIMP_TAC[COMPONENT_LE_NORM] THEN REWRITE_TAC[VECTOR_MUL_COMPONENT] THEN
+  REWRITE_TAC[REAL_ABS_INV; REAL_ABS_MUL; REAL_ABS_NORM; REAL_ABS_ABS] THEN
+  REWRITE_TAC[REAL_NOT_LT; REAL_INV_MUL; REAL_ARITH
+   `d <= (a * inv b) * c <=> d <= (c * a) / b`] THEN
+  ASM_SIMP_TAC[REAL_LE_DIV2_EQ; NORM_POS_LT; VECTOR_SUB_EQ] THEN
+  ASM_SIMP_TAC[GSYM real_div; REAL_LE_RDIV_EQ; VECTOR_SUB_COMPONENT;
+    VECTOR_ADD_COMPONENT; REAL_ARITH `&0 < x ==> &0 < abs x`] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `fx <= fy /\ a = --b /\ b < &0 ==> a <= abs(fy - (fx + b))`) THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP LINEAR_CMUL th]) THEN
+  ASM_SIMP_TAC[real_abs; VECTOR_MUL_COMPONENT; REAL_LT_IMP_LE] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `x * y < &0 <=> &0 < x * --y`] THEN
+  ASM_SIMP_TAC[REAL_LT_MUL_EQ] THEN
+  CONJ_TAC THENL [FIRST_X_ASSUM MATCH_MP_TAC; ASM_REAL_ARITH_TAC] THEN
+  ASM_REWRITE_TAC[IN_INTER; IN_BALL; NORM_ARITH
+   `dist(x:real^M,x + e) = norm e`]);;
+
+let DIFFERENTIAL_COMPONENT_NEG_AT_MAXIMUM = prove
+ (`!f:real^M->real^N f' x s k e.
+        1 <= k /\ k <= dimindex(:N) /\
+        x IN s /\ convex s /\ (f has_derivative f') (at x within s) /\
+        &0 < e /\ (!w. w IN s INTER ball(x,e) ==> (f w)$k <= (f x)$k)
+        ==> !y. y IN s ==> (f'(y - x))$k <= &0`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`\x. --((f:real^M->real^N) x)`;  `\x. --((f':real^M->real^N) x)`;
+    `x:real^M`; `s:real^M->bool`; `k:num`; `e:real`]
+        DIFFERENTIAL_COMPONENT_POS_AT_MINIMUM) THEN
+  ASM_SIMP_TAC[HAS_DERIVATIVE_NEG] THEN
+  ASM_SIMP_TAC[REAL_LE_NEG2; VECTOR_NEG_COMPONENT; REAL_NEG_GE0]);;
+
+let DROP_DIFFERENTIAL_POS_AT_MINIMUM = prove
+ (`!f:real^N->real^1 f' x s e.
+        x IN s /\ convex s /\ (f has_derivative f') (at x within s) /\
+        &0 < e /\ (!w. w IN s INTER ball(x,e) ==> drop(f x) <= drop(f w))
+        ==> !y. y IN s ==> &0 <= drop(f'(y - x))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[drop] THEN STRIP_TAC THEN
+  MATCH_MP_TAC DIFFERENTIAL_COMPONENT_POS_AT_MINIMUM THEN
+  MAP_EVERY EXISTS_TAC [`f:real^N->real^1`; `e:real`] THEN
+  ASM_REWRITE_TAC[DIMINDEX_1; LE_REFL]);;
+
+let DROP_DIFFERENTIAL_NEG_AT_MAXIMUM = prove
+ (`!f:real^N->real^1 f' x s e.
+        x IN s /\ convex s /\ (f has_derivative f') (at x within s) /\
+        &0 < e /\ (!w. w IN s INTER ball(x,e) ==> drop(f w) <= drop(f x))
+        ==> !y. y IN s ==> drop(f'(y - x)) <= &0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[drop] THEN STRIP_TAC THEN
+  MATCH_MP_TAC DIFFERENTIAL_COMPONENT_NEG_AT_MAXIMUM THEN
+  MAP_EVERY EXISTS_TAC [`f:real^N->real^1`; `e:real`] THEN
+  ASM_REWRITE_TAC[DIMINDEX_1; LE_REFL]);;
+
+let DIFFERENTIAL_COMPONENT_ZERO_AT_MAXMIN = prove
+ (`!f:real^M->real^N f' x s k.
+        1 <= k /\ k <= dimindex(:N) /\
+        x IN s /\ open s /\ (f has_derivative f') (at x) /\
+        ((!w. w IN s ==> (f w)$k <= (f x)$k) \/
+         (!w. w IN s ==> (f x)$k <= (f w)$k))
+        ==> !h. (f' h)$k = &0`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_CBALL]) THEN
+  DISCH_THEN(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[SUBSET] THEN
+  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM DISJ_CASES_TAC THENL
+   [MP_TAC(ISPECL [`f:real^M->real^N`; `f':real^M->real^N`;
+                   `x:real^M`; `cball(x:real^M,e)`; `k:num`; `e:real`]
+        DIFFERENTIAL_COMPONENT_NEG_AT_MAXIMUM);
+    MP_TAC(ISPECL [`f:real^M->real^N`; `f':real^M->real^N`;
+                   `x:real^M`; `cball(x:real^M,e)`; `k:num`; `e:real`]
+        DIFFERENTIAL_COMPONENT_POS_AT_MINIMUM)] THEN
+  ASM_SIMP_TAC[HAS_DERIVATIVE_AT_WITHIN; CENTRE_IN_CBALL;
+               CONVEX_CBALL; REAL_LT_IMP_LE; IN_INTER] THEN
+  DISCH_THEN(LABEL_TAC "*") THEN X_GEN_TAC `h:real^M` THEN
+  FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [has_derivative_at]) THEN
+  (ASM_CASES_TAC `h:real^M = vec 0` THENL
+    [ASM_MESON_TAC[LINEAR_0; VEC_COMPONENT]; ALL_TAC]) THEN
+  REMOVE_THEN "*" (fun th ->
+    MP_TAC(SPEC `x + e / norm h % h:real^M` th) THEN
+    MP_TAC(SPEC `x - e / norm h % h:real^M` th)) THEN
+  REWRITE_TAC[IN_CBALL; NORM_ARITH
+   `dist(x:real^N,x - e) = norm e /\ dist(x:real^N,x + e) = norm e`] THEN
+  REWRITE_TAC[NORM_MUL; REAL_ABS_DIV; REAL_ABS_NORM] THEN
+  ASM_SIMP_TAC[real_abs; REAL_DIV_RMUL; NORM_EQ_0; REAL_LT_IMP_LE;
+               REAL_LE_REFL] THEN
+  REWRITE_TAC[VECTOR_ARITH `x - e - x:real^N = --e /\ (x + e) - x = e`] THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP LINEAR_NEG th]) THEN
+  REWRITE_TAC[IMP_IMP; REAL_ARITH `&0 <= --x /\ &0 <= x <=> x = &0`;
+    VECTOR_NEG_COMPONENT; REAL_ARITH `--x <= &0 /\ x <= &0 <=> x = &0`] THEN
+  DISCH_THEN(MP_TAC o AP_TERM `(*) (norm(h:real^M) / e)`) THEN
+  REWRITE_TAC[GSYM VECTOR_MUL_COMPONENT] THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[GSYM(MATCH_MP LINEAR_CMUL th)]) THEN
+  REWRITE_TAC[REAL_MUL_RZERO; VECTOR_MUL_ASSOC] THEN
+  ASM_SIMP_TAC[REAL_FIELD `~(x = &0) /\ ~(y = &0) ==> x / y * y / x = &1`;
+               NORM_EQ_0; REAL_LT_IMP_NZ; VECTOR_MUL_LID]);;
 
 let DIFFERENTIAL_ZERO_MAXMIN_COMPONENT = prove
  (`!f:real^M->real^N x e k.
@@ -799,57 +938,13 @@ let DIFFERENTIAL_ZERO_MAXMIN_COMPONENT = prove
          (!y. y IN ball(x,e) ==> (f x)$k <= (f y)$k)) /\
         f differentiable (at x)
         ==> (jacobian f (at x) $ k = vec 0)`,
-  REPEAT GEN_TAC THEN
-  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  REWRITE_TAC[JACOBIAN_WORKS; HAS_DERIVATIVE_AT_ALT] THEN
-  ABBREV_TAC `D:real^M^N = jacobian f (at x)` THEN STRIP_TAC THEN
-  REWRITE_TAC[CART_EQ] THEN X_GEN_TAC `j:num` THEN
-  SIMP_TAC[VEC_COMPONENT] THEN STRIP_TAC THEN
-  MATCH_MP_TAC(REAL_ARITH `~(&0 < abs(x)) ==> (x = &0)`) THEN
-  DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `abs((D:real^M^N)$k$j) / &2`) THEN
-  ASM_REWRITE_TAC[REAL_HALF] THEN
-  DISCH_THEN(X_CHOOSE_THEN `e':real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  MP_TAC(SPECL [`e:real`; `e':real`] REAL_DOWN2) THEN
-  ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
-  DISCH_TAC THEN
-  SUBGOAL_THEN
-   `!c. abs(c) <= d
-        ==> abs(((f:real^M->real^N)(x + c % basis j) -
-                f(x) - D ** (c % basis j))$k)
-             <= abs((D:real^M^N $ k) $ j) / &2 * abs(c)`
-  MP_TAC THENL
-   [GEN_TAC THEN DISCH_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `(x:real^M) + c % basis j`) THEN
-    ASM_SIMP_TAC[VECTOR_ADD_SUB; NORM_MUL; NORM_BASIS; REAL_MUL_RID] THEN
-    ASM_MESON_TAC[REAL_LE_TRANS; COMPONENT_LE_NORM; REAL_LET_TRANS];
-    ALL_TAC] THEN
-  ASM_SIMP_TAC[MATRIX_VECTOR_MUL_COMPONENT; VECTOR_SUB_COMPONENT] THEN
-  ASM_SIMP_TAC[DOT_RMUL; DOT_BASIS; REAL_MUL_LNEG] THEN
-  DISCH_THEN(fun th ->
-    MP_TAC(SPEC `d:real` th) THEN MP_TAC(SPEC `--d:real` th)) THEN
-  ASM_SIMP_TAC[REAL_ABS_NEG; REAL_ARITH `&0 < d ==> abs(d) <= d`] THEN
-  REWRITE_TAC[REAL_MUL_LNEG] THEN
-  MATCH_MP_TAC(REAL_ARITH
-   `((y1 <= y /\ y2 <= y) \/ (y <= y1 /\ y <= y2)) /\ d < abs(dx)
-    ==> abs(y1 - y - --dx) <= d ==> ~(abs(y2 - y - dx) <= d)`) THEN
-  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [REAL_MUL_SYM] THEN
-  REWRITE_TAC[real_div; REAL_MUL_ASSOC; GSYM REAL_ABS_MUL] THEN
-  ASM_SIMP_TAC[GSYM real_div; REAL_LT_LDIV_EQ; REAL_OF_NUM_LT; ARITH] THEN
-  REWRITE_TAC[REAL_ARITH `d < d * &2 <=> &0 < d`] THEN
-  ASM_SIMP_TAC[REAL_ABS_MUL; REAL_LT_MUL; REAL_ARITH
-      `&0 < d ==> &0 < abs d`] THEN
-  FIRST_X_ASSUM(MP_TAC o check (is_disj o concl)) THEN
-  MATCH_MP_TAC MONO_OR THEN CONJ_TAC THEN
-  DISCH_THEN(fun th -> CONJ_TAC THEN MATCH_MP_TAC th) THEN
-  REWRITE_TAC[IN_BALL; dist; VECTOR_ARITH `x - (x + d) = --d:real^N`] THEN
-  ASM_SIMP_TAC[NORM_NEG; NORM_MUL; REAL_ABS_NEG; NORM_BASIS] THEN
-  ASM_SIMP_TAC[REAL_ARITH `&0 < d /\ d < e ==> abs(d) * &1 < e`]);;
-
-(* ------------------------------------------------------------------------- *)
-(* In particular if we have a mapping into R^1.                              *)
-(* ------------------------------------------------------------------------- *)
+  REWRITE_TAC[JACOBIAN_WORKS] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`f:real^M->real^N`; `\h. jacobian (f:real^M->real^N) (at x) ** h`;
+    `x:real^M`; `ball(x:real^M,e)`; `k:num`]
+      DIFFERENTIAL_COMPONENT_ZERO_AT_MAXMIN) THEN
+  ASM_REWRITE_TAC[CENTRE_IN_BALL; OPEN_BALL] THEN
+  ASM_SIMP_TAC[MATRIX_VECTOR_MUL_COMPONENT; FORALL_DOT_EQ_0]);;
 
 let DIFFERENTIAL_ZERO_MAXMIN = prove
  (`!f:real^N->real^1 f' x s.
@@ -857,22 +952,12 @@ let DIFFERENTIAL_ZERO_MAXMIN = prove
         ((!y. y IN s ==> drop(f y) <= drop(f x)) \/
          (!y. y IN s ==> drop(f x) <= drop(f y)))
         ==> (f' = \v. vec 0)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[drop] THEN
-  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
-  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_BALL]) THEN
-  DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
-  MP_TAC(ISPECL [`f:real^N->real^1`; `x:real^N`; `e:real`; `1`]
-                DIFFERENTIAL_ZERO_MAXMIN_COMPONENT) THEN
-  ASM_REWRITE_TAC[DIMINDEX_1; LE_REFL; differentiable] THEN ANTS_TAC THENL
-   [ASM_MESON_TAC[SUBSET]; ALL_TAC] THEN
-  SUBGOAL_THEN `jacobian(f:real^N->real^1) (at x) = matrix f'` SUBST1_TAC THENL
-   [ASM_MESON_TAC[FRECHET_DERIVATIVE_AT; jacobian]; DISCH_TAC] THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[has_derivative]) THEN
-  ASM_SIMP_TAC[FUN_EQ_THM; GSYM MATRIX_WORKS; matrix_vector_mul] THEN
-  REWRITE_TAC[CART_EQ; FORALL_DIMINDEX_1] THEN
-  ASM_SIMP_TAC[LAMBDA_BETA; DIMINDEX_1; LE_REFL; VEC_COMPONENT] THEN
-  REWRITE_TAC[REAL_MUL_LZERO; SUM_0]);;
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^N->real^1`; `f':real^N->real^1`;
+                 `x:real^N`; `s:real^N->bool`; `1:num`]
+        DIFFERENTIAL_COMPONENT_ZERO_AT_MAXMIN) THEN
+  ASM_REWRITE_TAC[GSYM drop; DIMINDEX_1; LE_REFL] THEN
+  REWRITE_TAC[GSYM LIFT_EQ; LIFT_NUM; FUN_EQ_THM; LIFT_DROP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The traditional Rolle theorem in one dimension.                           *)

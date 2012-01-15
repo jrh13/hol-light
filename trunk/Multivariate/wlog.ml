@@ -387,35 +387,3 @@ let GEOM_HORIZONTAL_LINE_TAC l (asl,w as gl) =
    MAP_EVERY (fun t -> SPEC_TAC(t,t)) (rev(subtract (avs@avs') [l])) THEN
    SPEC_TAC(l,l) THEN
    W(MATCH_MP_TAC o GEOM_HORIZONTAL_LINE_RULE o snd)) gl;;
-
-(* ------------------------------------------------------------------------- *)
-(* Drop the dimension of an (outer) universally quantified theorem.          *)
-(* ------------------------------------------------------------------------- *)
-
-let GEOM_DROP_DIMENSION_RULE =
-  let oth = prove
-   (`!f:real^M->real^N.
-          linear f /\ (!x. norm(f x) = norm x)
-          ==> linear f /\
-              (!x y. f x = f y ==> x = y) /\
-              (!x. norm(f x) = norm x)`,
-    MESON_TAC[PRESERVES_NORM_INJECTIVE])
-  and real_ty = `:real` in
-  fun dth th ->
-    let ath = GEN_ALL th
-    and eth = MATCH_MP ISOMETRY_UNIV_UNIV dth
-    and avoid = variables(concl th) in
-    let f,bod = dest_exists(concl eth) in
-    let lin,iso = CONJ_PAIR(ASSUME bod) in
-    let newty = mk_type
-     ("cart",[real_ty; fst(dest_fun_ty(type_of(rand(lhand(concl dth)))))]) in
-    let modvar v = variant avoid (mk_var(fst(dest_var v),newty)) in
-    let specrule th =
-      let v = fst(dest_forall(concl th)) in
-      try SPEC (mk_comb(f,modvar v)) th with Failure _ -> SPEC v th in
-    let fth = SUBS[SYM(MATCH_MP LINEAR_0 lin)] (repeat specrule ath) in
-    let thps = CONJUNCTS(MATCH_MP oth (ASSUME bod)) in
-    let th5 = LINEAR_INVARIANTS f thps in
-    let th6 = GEN_REWRITE_RULE REDEPTH_CONV [th5] fth in
-    let th7 = PROVE_HYP eth (SIMPLE_CHOOSE f th6) in
-    GENL (map modvar (fst(strip_forall(concl th)))) th7;;
