@@ -1285,6 +1285,19 @@ let EXTREME_POINT_OF_CONIC = prove
     `c % x:real^N = x <=> (c - &1) % x = vec 0`] THEN
   MESON_TAC[REAL_ARITH `&0 <= &0 /\ ~(&1 = &0)`]);;
 
+let EXTREME_POINT_OF_CONVEX_HULL_INSERT = prove
+ (`!s a:real^N.
+        FINITE s /\ ~(a IN convex hull s)
+        ==> a extreme_point_of (convex hull (a INSERT s))`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `(a:real^N) IN s` THEN ASM_SIMP_TAC[HULL_INC] THEN
+  STRIP_TAC THEN MP_TAC(ISPECL [`{a:real^N}`; `(a:real^N) INSERT s`]
+    FACE_OF_CONVEX_HULLS) THEN
+  ASM_REWRITE_TAC[FINITE_INSERT; AFFINE_HULL_SING; CONVEX_HULL_SING] THEN
+  REWRITE_TAC[FACE_OF_SING] THEN DISCH_THEN MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[SET_RULE `~(a IN s) ==> a INSERT s DIFF {a} = s`] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Facets.                                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -1770,6 +1783,44 @@ let KREIN_MILMAN_FRONTIER = prove
     EXISTS_TAC `convex hull s:real^N->bool` THEN CONJ_TAC THENL
      [MATCH_MP_TAC HULL_MONO THEN SET_TAC[];
       ASM_SIMP_TAC[HULL_P; SUBSET_REFL]]]);;
+
+let EXTREME_POINT_OF_CONVEX_HULL_INSERT_EQ = prove
+ (`!s a x:real^N.
+        FINITE s /\ ~(a IN affine hull s)
+        ==> (x extreme_point_of (convex hull (a INSERT s)) <=>
+             x = a \/ x extreme_point_of (convex hull s))`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM AFFINE_HULL_CONVEX_HULL] THEN
+  STRIP_TAC THEN ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  ONCE_REWRITE_TAC[HULL_UNION_RIGHT] THEN
+  MP_TAC(ISPEC `convex hull s:real^N->bool` KREIN_MILMAN_MINKOWSKI) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[CONVEX_CONVEX_HULL; COMPACT_CONVEX_HULL; FINITE_IMP_COMPACT];
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] FINITE_SUBSET)) THEN
+  DISCH_THEN(MP_TAC o SPEC
+   `{x:real^N | x extreme_point_of convex hull s}`) THEN
+  REWRITE_TAC[EXTREME_POINTS_OF_CONVEX_HULL] THEN
+  ABBREV_TAC `v = {x:real^N | x extreme_point_of (convex hull s)}` THEN
+  DISCH_TAC THEN DISCH_THEN SUBST_ALL_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE (RAND_CONV o RAND_CONV)
+   [AFFINE_HULL_CONVEX_HULL]) THEN
+  ASM_CASES_TAC `(a:real^N) IN v` THEN ASM_SIMP_TAC[HULL_INC] THEN
+  STRIP_TAC THEN REWRITE_TAC[GSYM HULL_UNION_RIGHT] THEN
+  REWRITE_TAC[SET_RULE `{a} UNION s = a INSERT s`] THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o MATCH_MP EXTREME_POINT_OF_CONVEX_HULL) THEN
+    ASM SET_TAC[];
+    STRIP_TAC THENL
+     [ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC EXTREME_POINT_OF_CONVEX_HULL_INSERT THEN
+      ASM_MESON_TAC[CONVEX_HULL_SUBSET_AFFINE_HULL; SUBSET];
+      REWRITE_TAC[GSYM FACE_OF_SING] THEN
+      MATCH_MP_TAC FACE_OF_TRANS THEN
+      EXISTS_TAC `convex hull v:real^N->bool` THEN
+      ASM_REWRITE_TAC[FACE_OF_SING] THEN
+      MATCH_MP_TAC FACE_OF_CONVEX_HULLS THEN
+      ASM_SIMP_TAC[FINITE_INSERT; AFFINE_HULL_SING; CONVEX_HULL_SING;
+               SET_RULE `~(a IN s) ==> a INSERT s DIFF s = {a}`] THEN
+      ASM SET_TAC[]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Polytopes.                                                                *)

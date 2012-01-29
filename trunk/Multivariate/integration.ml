@@ -9663,6 +9663,9 @@ let ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV = prove
   REWRITE_TAC[absolutely_integrable_on; INTEGRABLE_RESTRICT_UNIV;
               COND_RAND; NORM_0; LIFT_NUM]);;
 
+let ABSOLUTELY_INTEGRABLE_CONST = prove
+ (`!a b c. (\x. c) absolutely_integrable_on interval[a,b]`,
+  REWRITE_TAC[absolutely_integrable_on; INTEGRABLE_CONST]);;
 
 let ABSOLUTELY_INTEGRABLE_ADD = prove
  (`!f:real^M->real^N g s.
@@ -13415,6 +13418,49 @@ let INDEFINITE_INTEGRAL_CONTINUOUS_LEFT = prove
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_SIMP_TAC[ENDS_IN_INTERVAL; VECTOR_SUB_REFL; NORM_0; REAL_LT_IMP_LE] THEN
   ASM SET_TAC[]);;
+
+let INDEFINITE_INTEGRAL_UNIFORMLY_CONTINUOUS = prove
+ (`!f:real^M->real^N a b.
+        f integrable_on interval[a,b]
+        ==> (\y. integral (interval[fstcart y,sndcart y]) f)
+            uniformly_continuous_on interval[pastecart a a,pastecart b b]`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC COMPACT_UNIFORMLY_CONTINUOUS THEN
+  REWRITE_TAC[COMPACT_INTERVAL; continuous_on] THEN
+  REWRITE_TAC[FORALL_PASTECART; GSYM PASTECART_INTERVAL] THEN
+  REWRITE_TAC[IN_ELIM_PASTECART_THM; FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  MAP_EVERY X_GEN_TAC [`c:real^M`; `d:real^M`] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN MP_TAC(ISPECL
+   [`f:real^M->real^N`; `a:real^M`; `b:real^M`; `c:real^M`; `d:real^M`;
+    `e:real`] INDEFINITE_INTEGRAL_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[dist] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `k:real` THEN STRIP_TAC THEN ASM_REWRITE_TAC[PASTECART_SUB] THEN
+  ASM_MESON_TAC[NORM_LE_PASTECART; REAL_LT_IMP_LE; REAL_LE_TRANS]);;
+
+let INDEFINITE_INTEGRAL_UNIFORMLY_CONTINUOUS_EXPLICIT = prove
+ (`!f:real^M->real^N a b e.
+        f integrable_on interval[a,b] /\ &0 < e
+        ==> ?k. &0 < k /\
+                !c d c' d'. c IN interval[a,b] /\ d IN interval[a,b] /\
+                            c' IN interval[a,b] /\ d' IN interval[a,b] /\
+                            norm (c' - c) <= k /\ norm (d' - d) <= k
+                            ==> norm(integral(interval[c',d']) f -
+                                     integral(interval[c,d]) f) < e`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`f:real^M->real^N`; `a:real^M`; `b:real^M`]
+    INDEFINITE_INTEGRAL_UNIFORMLY_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[uniformly_continuous_on] THEN
+  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `k / &3` THEN CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`c:real^M`; `c':real^M`; `d:real^M`; `d':real^M`] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
+   [`pastecart (c:real^M) (c':real^M)`;
+    `pastecart (d:real^M) (d':real^M)`]) THEN
+  REWRITE_TAC[GSYM PASTECART_INTERVAL] THEN
+  REWRITE_TAC[IN_ELIM_PASTECART_THM; FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM_REWRITE_TAC[dist; PASTECART_SUB] THEN DISCH_THEN MATCH_MP_TAC THEN
+  ASM_MESON_TAC[NORM_PASTECART_LE; REAL_LET_TRANS;
+    REAL_ARITH `&0 < k /\ x <= k / &3 /\ y <= k / &3 ==> x + y < k`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Second mean value theorem and corollaries.                                *)
