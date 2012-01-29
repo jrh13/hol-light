@@ -1152,9 +1152,16 @@ let COUNTABLE_UNIONS = prove
   ASM SET_TAC[]);;
 
 let COUNTABLE_PRODUCT_DEPENDENT = prove
- (`!s t. COUNTABLE s /\ (!x. x IN s ==> COUNTABLE(t x))
-         ==> COUNTABLE {(x:A,y:B) | x IN s /\ y IN (t x)}`,
-  REPEAT GEN_TAC THEN
+ (`!f:A->B->C s t. 
+        COUNTABLE s /\ (!x. x IN s ==> COUNTABLE(t x))
+        ==> COUNTABLE {f x y | x IN s /\ y IN (t x)}`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  SUBGOAL_THEN `{(f:A->B->C) x y | x IN s /\ y IN (t x)} =
+                IMAGE (\(x,y). f x y) {(x,y) | x IN s /\ y IN (t x)}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PAIR_THM; IN_ELIM_PAIR_THM] THEN
+    SET_TAC[];
+    MATCH_MP_TAC COUNTABLE_IMAGE THEN POP_ASSUM MP_TAC] THEN
   GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
    [COUNTABLE_AS_IMAGE_SUBSET_EQ] THEN
   DISCH_THEN(CONJUNCTS_THEN2 (X_CHOOSE_TAC `f:num->A`) MP_TAC) THEN

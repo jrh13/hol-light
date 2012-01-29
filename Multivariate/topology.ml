@@ -7218,6 +7218,24 @@ let FINITE_INTER_COLLINEAR_OPEN_SEGMENTS = prove
         GEN_REWRITE_RULE I [GSYM BETWEEN_IN_SEGMENT])) THEN
     REPEAT(POP_ASSUM MP_TAC) THEN SIMP_TAC[INSERT_AC]]);;
 
+let DIST_IN_CLOSED_SEGMENT,DIST_IN_OPEN_SEGMENT = (CONJ_PAIR o prove)
+ (`(!a b x:real^N.
+    x IN segment[a,b] ==> dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b)) /\
+   (!a b x:real^N.
+    x IN segment(a,b) ==> dist(x,a) < dist(a,b) /\ dist(x,b) < dist(a,b))`,
+  SIMP_TAC[IN_SEGMENT; RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM; dist;
+           VECTOR_ARITH
+    `((&1 - u) % a + u % b) - a:real^N = u % (b - a) /\
+     ((&1 - u) % a + u % b) - b = --(&1 - u) % (b - a)`] THEN
+  REWRITE_TAC[NORM_MUL; REAL_ABS_NEG; NORM_SUB] THEN CONJ_TAC THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THENL
+   [REWRITE_TAC[REAL_ARITH `x * y <= y <=> x * y <= &1 * y`] THEN
+    CONJ_TAC THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+    REWRITE_TAC[NORM_POS_LE] THEN ASM_REAL_ARITH_TAC;
+    REWRITE_TAC[REAL_ARITH `x * y < y <=> x * y < &1 * y`] THEN
+    ASM_SIMP_TAC[REAL_LT_RMUL_EQ; NORM_POS_LT; VECTOR_SUB_EQ] THEN
+    ASM_REAL_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Closure of halfspaces and hyperplanes.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -10216,6 +10234,26 @@ let CONTINUOUS_ON_DIST_CLOSEST_POINT = prove
   MESON_TAC[CONTINUOUS_AT_IMP_CONTINUOUS_ON;
             CONTINUOUS_AT_DIST_CLOSEST_POINT]);;
 
+let SEGMENT_TO_CLOSEST_POINT = prove
+ (`!s a:real^N.
+        closed s /\ ~(s = {})
+        ==> segment(a,closest_point s a) INTER s = {}`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[SET_RULE `s INTER t = {} <=> !x. x IN s ==> ~(x IN t)`] THEN
+  GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP DIST_IN_OPEN_SEGMENT) THEN
+  MATCH_MP_TAC(TAUT `(r ==> ~p) ==> p /\ q ==> ~r`) THEN
+  ASM_MESON_TAC[CLOSEST_POINT_EXISTS; REAL_NOT_LT; DIST_SYM]);;
+
+let SEGMENT_TO_POINT_EXISTS = prove
+ (`!s a:real^N.
+        closed s /\ ~(s = {}) ==> ?b. b IN s /\ segment(a,b) INTER s = {}`,
+  MESON_TAC[SEGMENT_TO_CLOSEST_POINT; CLOSEST_POINT_EXISTS]);;
+
+let OPEN_SEGMENT_1 = prove
+ (`!a b:real^1. open(segment(a,b))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[SEGMENT_1] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[OPEN_INTERVAL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Urysohn's lemma (for real^N, where the proof is easy using distances).    *)
 (* ------------------------------------------------------------------------- *)
@@ -11005,6 +11043,32 @@ let OPEN_COUNTABLE_UNION_OPEN_INTERVALS,
    X_GEN_TAC `k:num` THEN STRIP_TAC THEN
    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `k:num`)) THEN ASM_REWRITE_TAC[] THEN
    ASM_REAL_ARITH_TAC));;
+
+let LINDELOF = prove
+ (`!f:(real^N->bool)->bool.
+        (!s. s IN f ==> open s)
+        ==> ?f'. f' SUBSET f /\ COUNTABLE f' /\ UNIONS f' = UNIONS f`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?b. COUNTABLE b /\
+        (!c:real^N->bool. c IN b ==> open c) /\
+        (!s. open s ==> ?u. u SUBSET b /\ s = UNIONS u)`
+  STRIP_ASSUME_TAC THENL [ASM_REWRITE_TAC[UNIV_SECOND_COUNTABLE]; ALL_TAC] THEN
+  ABBREV_TAC
+   `d = {s:real^N->bool | s IN b /\ ?u. u IN f /\ s SUBSET u}` THEN
+  SUBGOAL_THEN
+   `COUNTABLE d /\ UNIONS f :real^N->bool = UNIONS d`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "d" THEN ASM_SIMP_TAC[COUNTABLE_RESTRICT] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!s:real^N->bool. ?u. s IN d ==> u IN f /\ s SUBSET u`
+  MP_TAC THENL [EXPAND_TAC "d" THEN SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:(real^N->bool)->(real^N->bool)` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (g:(real^N->bool)->(real^N->bool)) d` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; UNIONS_IMAGE] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The Brouwer reduction theorem.                                            *)
