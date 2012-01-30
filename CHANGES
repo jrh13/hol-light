@@ -1,3 +1,18 @@
+Thu 26th Jan 2011       cart.ml
+
+Added a somewhat technical lemma, a generalization of FINITE_INDEX_INRANGE
+that is useful for obscure situations to get rid of range conditions in
+doubly indexed cartesian products:
+
+  FINITE_INDEX_INRANGE_2 =
+   |- !i. ?k. 1 <= k /\ k <= dimindex(:N) /\
+             (!x:A^N. x$i = x$k) /\ (!y:B^N. y$i = y$k)
+
+Thu 19th Jan 2011       Library/card.ml
+
+Generalized COUNTABLE_PRODUCT_DEPENDENT to have the same form as
+FINITE_PRODUCT_DEPENDENT instead of being tied specifically to pairs.
+
 Sat 14th Jan 2011       sets.ml
 
 Added "localized" forms of the theorems about factoring functions through

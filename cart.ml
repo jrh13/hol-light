@@ -141,6 +141,11 @@ let FINITE_INDEX_INRANGE = prove
  (`!i. ?k. 1 <= k /\ k <= dimindex(:N) /\ !x:A^N. x$i = x$k`,
   REWRITE_TAC[finite_index] THEN MESON_TAC[FINITE_INDEX_WORKS]);;
 
+let FINITE_INDEX_INRANGE_2 = prove
+ (`!i. ?k. 1 <= k /\ k <= dimindex(:N) /\
+           (!x:A^N. x$i = x$k) /\ (!y:B^N. y$i = y$k)`,
+  REWRITE_TAC[finite_index] THEN MESON_TAC[FINITE_INDEX_WORKS]);;
+
 let CART_EQ_FULL = prove
  (`!x y:A^N. x = y <=> !i. x$i = y$i`,
   REPEAT GEN_TAC THEN EQ_TAC THEN SIMP_TAC[] THEN SIMP_TAC[CART_EQ]);;

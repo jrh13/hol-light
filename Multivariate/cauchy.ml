@@ -6396,6 +6396,51 @@ let SIMPLE_CLOSED_PATH_WINDING_NUMBER_POS = prove
   STRIP_TAC THEN UNDISCH_TAC `&0 < Re(winding_number(g,z))` THEN
   ASM_REWRITE_TAC[RE_NEG; RE_CX] THEN REAL_ARITH_TAC);;
 
+let SIMPLY_CONNECTED_IMP_WINDING_NUMBER_ZERO = prove
+ (`!s g z. simply_connected s /\
+           path g /\ path_image g SUBSET s /\
+           pathfinish g = pathstart g /\ ~(z IN s)
+           ==> winding_number(g,z) = Cx(&0)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `winding_number(linepath(pathstart g,pathstart g),z)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC WINDING_NUMBER_HOMOTOPIC_PATHS THEN
+    MATCH_MP_TAC HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_PATHS_NULL THEN
+    EXISTS_TAC `pathstart(g:real^1->complex)` THEN
+    MATCH_MP_TAC HOMOTOPIC_LOOPS_SUBSET THEN
+    EXISTS_TAC `s:complex->bool` THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [simply_connected]) THEN
+    ASM_REWRITE_TAC[PATH_LINEPATH; PATHSTART_LINEPATH;
+                    PATHFINISH_LINEPATH; PATH_IMAGE_LINEPATH; SEGMENT_REFL;
+                    INSERT_SUBSET; EMPTY_SUBSET];
+    MATCH_MP_TAC WINDING_NUMBER_TRIVIAL] THEN
+  MP_TAC(ISPEC `g:real^1->complex` PATHSTART_IN_PATH_IMAGE) THEN
+  ASM SET_TAC[]);;
+
+let NO_BOUNDED_CONNECTED_COMPONENT_IMP_WINDING_NUMBER_ZERO = prove
+ (`!s. ~(?z. ~(z IN s) /\ bounded(connected_component ((:complex) DIFF s) z))
+       ==> !g z. path g /\ path_image g SUBSET s /\
+                 pathfinish g = pathstart g /\ ~(z IN s)
+                 ==> winding_number(g,z) = Cx(&0)`,
+  REWRITE_TAC[NOT_EXISTS_THM] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC WINDING_NUMBER_ZERO_IN_OUTSIDE THEN
+  ASM_REWRITE_TAC[outside; IN_ELIM_THM] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`) THEN
+  ASM_REWRITE_TAC[CONTRAPOS_THM] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] BOUNDED_SUBSET) THEN
+  MATCH_MP_TAC CONNECTED_COMPONENT_MONO THEN ASM SET_TAC[]);;
+
+let NO_BOUNDED_PATH_COMPONENT_IMP_WINDING_NUMBER_ZERO = prove
+ (`!s. ~(?z. ~(z IN s) /\ bounded(path_component ((:complex) DIFF s) z))
+       ==> !g z. path g /\ path_image g SUBSET s /\
+                 pathfinish g = pathstart g /\ ~(z IN s)
+                 ==> winding_number(g,z) = Cx(&0)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  MATCH_MP_TAC NO_BOUNDED_CONNECTED_COMPONENT_IMP_WINDING_NUMBER_ZERO THEN
+  ASM_MESON_TAC[PATH_COMPONENT_SUBSET_CONNECTED_COMPONENT; BOUNDED_SUBSET]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Partial circle path.                                                      *)
 (* ------------------------------------------------------------------------- *)

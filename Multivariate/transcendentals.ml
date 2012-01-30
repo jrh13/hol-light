@@ -1938,6 +1938,30 @@ let REAL_SUB_ARG = prove
     MP_TAC(ISPECL [`w:complex`; `z:complex`] ARG_LE_DIV_SUM) THEN
     ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC]);;
 
+let REAL_ADD_ARG = prove
+ (`!w z. ~(w = Cx(&0)) /\ ~(z = Cx(&0))
+         ==> Arg(w) + Arg(z) =
+             if Arg w + Arg z < &2 * pi
+             then Arg(w * z)
+             else Arg(w * z) + &2 * pi`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`w * z:complex`; `z:complex`] REAL_SUB_ARG) THEN
+  MP_TAC(SPECL [`z:complex`; `w * z:complex`] ARG_LE_DIV_SUM_EQ) THEN
+  ASM_SIMP_TAC[COMPLEX_ENTIRE; COMPLEX_FIELD
+   `~(z = Cx(&0)) ==> (w * z) / z = w`] THEN
+  ASM_CASES_TAC `Arg (w * z) = Arg z + Arg w` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_MESON_TAC[ARG; REAL_ADD_SYM];
+    SIMP_TAC[REAL_ARITH `wz - z = w - &2 * pi <=> w + z = wz + &2 * pi`] THEN
+    REWRITE_TAC[REAL_ARITH `w + p < p <=> ~(&0 <= w)`; ARG]]);;
+
+let ARG_MUL = prove
+ (`!w z. ~(w = Cx(&0)) /\ ~(z = Cx(&0))
+         ==> Arg(w * z) = if Arg w + Arg z < &2 * pi
+                          then Arg w + Arg z
+                          else (Arg w + Arg z) - &2 * pi`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP REAL_ADD_ARG) THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Properties of 2-D rotations, and their interpretation using cexp.         *)
 (* ------------------------------------------------------------------------- *)
@@ -2192,6 +2216,21 @@ let ROTATE2D_SUB_ARG = prove
   REWRITE_TAC[SIN_NPI; COS_NPI; REAL_EXP_NEG; REAL_EXP_0; CX_NEG] THEN
   REWRITE_TAC[COMPLEX_NEG_0; COMPLEX_MUL_RZERO; COMPLEX_ADD_RID] THEN
   CONV_TAC REAL_RAT_REDUCE_CONV THEN REWRITE_TAC[COMPLEX_MUL_LID]);;
+
+let ROTATION_MATRIX_ROTATE2D = prove
+ (`!t. rotation_matrix(matrix(rotate2d t))`,
+  SIMP_TAC[ROTATION_MATRIX_2; MATRIX_ROTATE2D; VECTOR_2] THEN
+  MESON_TAC[SIN_CIRCLE; REAL_ADD_SYM]);;
+
+let ROTATION_MATRIX_ROTATE2D_EQ = prove
+ (`!A:real^2^2. rotation_matrix A <=> ?t. A = matrix(rotate2d t)`,
+  GEN_TAC THEN EQ_TAC THEN
+  SIMP_TAC[LEFT_IMP_EXISTS_THM; ROTATION_MATRIX_ROTATE2D] THEN
+  REWRITE_TAC[ROTATION_MATRIX_2; MATRIX_ROTATE2D] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP SINCOS_TOTAL_2PI) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[CART_EQ; DIMINDEX_2; FORALL_2; VECTOR_2] THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex tangent function.                                                 *)
