@@ -103,6 +103,7 @@ echo '### Loading 100/desargues.ml'; echo 'loadt "100/desargues.ml";;' | (time .
 echo '### Loading 100/dirichlet.ml'; echo 'loadt "100/dirichlet.ml";;' | (time ./hol)
 echo '### Loading 100/div3.ml'; echo 'loadt "100/div3.ml";;' | (time ./hol)
 echo '### Loading 100/divharmonic.ml'; echo 'loadt "100/divharmonic.ml";;' | (time ./hol)
+echo '### Loading 100/e_is_transcendental.ml'; echo 'loadt "100/e_is_transcendental.ml";;' | (time ./hol)
 echo '### Loading 100/euler.ml'; echo 'loadt "100/euler.ml";;' | (time ./hol)
 echo '### Loading 100/fourier.ml'; echo 'loadt "100/fourier.ml";;' | (time ./hol)
 echo '### Loading 100/four_squares.ml'; echo 'loadt "100/four_squares.ml";;' | (time ./hol)
