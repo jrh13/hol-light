@@ -1710,7 +1710,7 @@ let HAS_COMPLEX_DERIVATIVE_INVERSE_STRONG_X = prove
   UNDISCH_TAC `~(f' = Cx(&0))` THEN CONV_TAC COMPLEX_FIELD);;
 
 (* ------------------------------------------------------------------------- *)
-(* Cauchy-Riemann condition.                                                 *)
+(* Cauchy-Riemann condition and relation to conformal.                       *)
 (* ------------------------------------------------------------------------- *)
 
 let COMPLEX_BASIS = prove
@@ -1718,6 +1718,11 @@ let COMPLEX_BASIS = prove
   SIMP_TAC[CART_EQ; FORALL_2; BASIS_COMPONENT; DIMINDEX_2; ARITH] THEN
   REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; RE_CX; IM_CX] THEN
   REWRITE_TAC[ii] THEN SIMPLE_COMPLEX_ARITH_TAC);;
+
+let COMPLEX_DIFFERENTIABLE_IMP_DIFFERENTIABLE = prove
+ (`!net f. f complex_differentiable net ==> f differentiable net`,
+  SIMP_TAC[complex_differentiable; differentiable; has_complex_derivative] THEN
+  MESON_TAC[]);;
 
 let CAUCHY_RIEMANN = prove
  (`!f z. f complex_differentiable at z <=>
@@ -1743,6 +1748,60 @@ let CAUCHY_RIEMANN = prove
                  FORALL_2; FUN_EQ_THM; LAMBDA_BETA] THEN
     REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; IM; RE; complex_mul] THEN
     REAL_ARITH_TAC]);;
+
+let COMPLEX_DERIVATIVE_JACOBIAN = prove
+ (`!f z.
+        f complex_differentiable (at z)
+        ==> complex_derivative f z =
+            complex(jacobian f (at z)$1$1,jacobian f (at z)$2$1)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC COMPLEX_DERIVATIVE_UNIQUE_AT THEN
+  MAP_EVERY EXISTS_TAC [`f:complex->complex`; `z:complex`] THEN
+  ASM_REWRITE_TAC[HAS_COMPLEX_DERIVATIVE_DIFFERENTIABLE] THEN
+  REWRITE_TAC[has_complex_derivative] THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [CAUCHY_RIEMANN]) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [JACOBIAN_WORKS]) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  ASM_SIMP_TAC[CART_EQ; matrix_vector_mul; DIMINDEX_2; SUM_2; ARITH;
+               FORALL_2; FUN_EQ_THM; LAMBDA_BETA] THEN
+  REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; IM; RE; complex_mul] THEN
+  REAL_ARITH_TAC);;
+
+let COMPLEX_DIFFERENTIABLE_EQ_CONFORMAL = prove
+ (`!f z.
+      f complex_differentiable at z /\ ~(complex_derivative f z = Cx(&0)) <=>
+      f differentiable at z  /\
+      ?a. ~(a = &0) /\ rotation_matrix (a %% jacobian f (at z))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    ASM_SIMP_TAC[COMPLEX_DIFFERENTIABLE_IMP_DIFFERENTIABLE;
+                 COMPLEX_DERIVATIVE_JACOBIAN] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0; GSYM DOT_EQ_0] THEN
+    REWRITE_TAC[DOT_2; GSYM RE_DEF; GSYM IM_DEF; RE; IM; GSYM REAL_POW_2] THEN
+    REWRITE_TAC[RE_DEF; IM_DEF; ROTATION_MATRIX_2] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[CAUCHY_RIEMANN]) THEN
+    ASM_REWRITE_TAC[MATRIX_CMUL_COMPONENT] THEN DISCH_TAC THEN
+    REWRITE_TAC[REAL_MUL_RNEG; GSYM REAL_ADD_LDISTRIB;
+                REAL_ARITH `(a * x:real) pow 2 = a pow 2 * x pow 2`] THEN
+    EXISTS_TAC
+     `inv(sqrt(jacobian (f:complex->complex) (at z)$2$2 pow 2 +
+               jacobian f (at z)$2$1 pow 2))` THEN
+    MATCH_MP_TAC(REAL_FIELD
+     `x pow 2 = y /\ ~(y = &0)
+      ==> ~(inv x = &0) /\ inv(x) pow 2 * y = &1`) THEN
+    ASM_SIMP_TAC[SQRT_POW_2; REAL_LE_ADD; REAL_LE_POW_2];
+    REWRITE_TAC[ROTATION_MATRIX_2; MATRIX_CMUL_COMPONENT] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `a:real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ASM_REWRITE_TAC[GSYM REAL_MUL_RNEG; REAL_EQ_MUL_LCANCEL] THEN
+    STRIP_TAC THEN MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN
+    CONJ_TAC THENL [ASM_REWRITE_TAC[CAUCHY_RIEMANN]; DISCH_TAC] THEN
+    ASM_SIMP_TAC[COMPLEX_DERIVATIVE_JACOBIAN] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0; GSYM DOT_EQ_0] THEN
+    REWRITE_TAC[DOT_2; GSYM RE_DEF; GSYM IM_DEF; RE; IM; GSYM REAL_POW_2] THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP
+     (REAL_RING `(a * x) pow 2 + (a * y) pow 2 = &1
+                 ==> ~(x pow 2 + y pow 2 = &0)`)) THEN
+    ASM_REWRITE_TAC[RE_DEF; IM_DEF]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Differentiation conversion.                                               *)

@@ -2381,6 +2381,17 @@ let MATRIX_NEG_COMPONENT = prove
   CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
   ASM_SIMP_TAC[matrix_neg; LAMBDA_BETA]);;
 
+let TRANSP_COMPONENT = prove
+ (`!A:real^N^M i j. (transp A)$i$j = A$j$i`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?k. 1 <= k /\ k <= dimindex(:N) /\
+                    (!A:real^M^N. A$i = A$k) /\ (!z:real^N. z$i = z$k)`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE_2]; ALL_TAC] THEN
+  SUBGOAL_THEN `?l. 1 <= l /\ l <= dimindex(:M) /\
+                    (!A:real^N^M. A$j = A$l) /\ (!z:real^M. z$j = z$l)`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE_2]; ALL_TAC] THEN
+  ASM_SIMP_TAC[transp; LAMBDA_BETA]);;
+
 let MAT_COMPONENT = prove
  (`!n i j.
         1 <= i /\ i <= dimindex(:M) /\
@@ -3405,6 +3416,10 @@ let SUBSPACE_INTER = prove
  (`!s t. subspace s /\ subspace t ==> subspace (s INTER t)`,
   REWRITE_TAC[subspace; IN_INTER] THEN MESON_TAC[]);;
 
+let SUBSPACE_INTERS = prove
+ (`!f. (!s. s IN f ==> subspace s) ==> subspace(INTERS f)`,
+  SIMP_TAC[subspace; IMP_CONJ; RIGHT_FORALL_IMP_THM; IN_INTERS]);;
+
 let LINEAR_INJECTIVE_0_SUBSPACE = prove
  (`!f:real^M->real^N s.
         linear f /\ subspace s
@@ -3414,6 +3429,19 @@ let LINEAR_INJECTIVE_0_SUBSPACE = prove
   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [GSYM VECTOR_SUB_EQ] THEN
   ASM_SIMP_TAC[GSYM LINEAR_SUB] THEN
   ASM_MESON_TAC[VECTOR_SUB_RZERO; SUBSPACE_SUB; SUBSPACE_0]);;
+
+let SUBSPACE_UNION_CHAIN = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t /\ subspace(s UNION t)
+         ==> s SUBSET t \/ t SUBSET s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[SET_RULE
+   `s SUBSET t \/ t SUBSET s <=>
+    ~(?x y. x IN s /\ ~(x IN t) /\ y IN t /\ ~(y IN s))`] THEN
+  STRIP_TAC THEN SUBGOAL_THEN `(x + y:real^N) IN s UNION t` MP_TAC THENL
+   [MATCH_MP_TAC SUBSPACE_ADD THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+    REWRITE_TAC[IN_UNION; DE_MORGAN_THM] THEN
+    ASM_MESON_TAC[SUBSPACE_SUB; VECTOR_ARITH
+     `(x + y) - x:real^N = y /\ (x + y) - y = x`]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lemmas.                                                                   *)
@@ -7269,15 +7297,50 @@ let MEM_LINEAR_IMAGE = prove
 
 add_linear_invariants [MEM_LINEAR_IMAGE];;
 
-let MAP_TRANSLATION = prove
+let LENGTH_TRANSLATION = prove
  (`!a:real^N l. LENGTH(MAP (\x. a + x) l) = LENGTH l`,
   REWRITE_TAC[LENGTH_MAP]) in
-add_translation_invariants [MAP_TRANSLATION];;
+add_translation_invariants [LENGTH_TRANSLATION];;
 
-let MAP_LINEAR_IMAGE = prove
+let LENGTH_LINEAR_IMAGE = prove
  (`!f:real^M->real^N l. linear f ==> LENGTH(MAP f l) = LENGTH l`,
   REWRITE_TAC[LENGTH_MAP]) in
-add_linear_invariants [MAP_LINEAR_IMAGE];;
+add_linear_invariants [LENGTH_LINEAR_IMAGE];;
+
+let CONS_TRANSLATION = prove
+ (`!a:real^N h t.
+     CONS ((\x. a + x) h) (MAP (\x. a + x) t) = MAP (\x. a + x) (CONS h t)`,
+  REWRITE_TAC[MAP]) in
+add_translation_invariants [CONS_TRANSLATION];;
+
+let CONS_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N h t.
+     linear f ==> CONS (f h) (MAP f t) = MAP f (CONS h t)`,
+  REWRITE_TAC[MAP]) in
+add_linear_invariants [CONS_LINEAR_IMAGE];;
+
+let APPEND_TRANSLATION = prove
+ (`!a:real^N l1 l2.
+     APPEND (MAP (\x. a + x) l1) (MAP (\x. a + x) l2) =
+     MAP (\x. a + x) (APPEND l1 l2)`,
+  REWRITE_TAC[MAP_APPEND]) in
+add_translation_invariants [APPEND_TRANSLATION];;
+
+let APPEND_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N l1 l2.
+     linear f ==> APPEND (MAP f l1) (MAP f l2) = MAP f (APPEND l1 l2)`,
+  REWRITE_TAC[MAP_APPEND]) in
+add_linear_invariants [APPEND_LINEAR_IMAGE];;
+
+let REVERSE_TRANSLATION = prove
+ (`!a:real^N l. REVERSE(MAP (\x. a + x) l) = MAP (\x. a + x) (REVERSE l)`,
+  REWRITE_TAC[MAP_REVERSE]) in
+add_translation_invariants [REVERSE_TRANSLATION];;
+
+let REVERSE_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N l. linear f ==> REVERSE(MAP f l) = MAP f (REVERSE l)`,
+  REWRITE_TAC[MAP_REVERSE]) in
+add_linear_invariants [REVERSE_LINEAR_IMAGE];;
 
 (* ------------------------------------------------------------------------- *)
 (* A few scaling theorems that don't come from invariance theorems. Most are *)

@@ -1168,6 +1168,23 @@ let ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS = prove
   ONCE_REWRITE_TAC[GSYM ORTHOGONAL_MATRIX_TRANSP] THEN
   SIMP_TAC[ORTHOGONAL_MATRIX_ORTHONORMAL_COLUMNS; COLUMN_TRANSP]);;
 
+let ORTHOGONAL_MATRIX_2 = prove
+ (`!A:real^2^2. orthogonal_matrix A <=>
+                A$1$1 pow 2 + A$2$1 pow 2 = &1 /\
+                A$1$2 pow 2 + A$2$2 pow 2 = &1 /\
+                A$1$1 * A$1$2 + A$2$1 * A$2$2 = &0`,
+  SIMP_TAC[orthogonal_matrix; CART_EQ; matrix_mul; LAMBDA_BETA;
+           TRANSP_COMPONENT; MAT_COMPONENT] THEN
+  REWRITE_TAC[DIMINDEX_2; FORALL_2; SUM_2] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC REAL_RING);;
+
+let ORTHOGONAL_MATRIX_2_ALT = prove
+ (`!A:real^2^2. orthogonal_matrix A <=>
+                A$1$1 pow 2 + A$2$1 pow 2 = &1 /\
+                (A$1$1 = A$2$2 /\ A$1$2 = --(A$2$1) \/
+                 A$1$1 = --(A$2$2) /\ A$1$2 = A$2$1)`,
+  REWRITE_TAC[ORTHOGONAL_MATRIX_2] THEN CONV_TAC REAL_RING);;
+
 (* ------------------------------------------------------------------------- *)
 (* Linearity of scaling, and hence isometry, that preserves origin.          *)
 (* ------------------------------------------------------------------------- *)
@@ -1426,6 +1443,13 @@ let rotoinversion_matrix = new_definition
 let ORTHOGONAL_ROTATION_OR_ROTOINVERSION = prove
  (`!Q. orthogonal_matrix Q <=> rotation_matrix Q \/ rotoinversion_matrix Q`,
   MESON_TAC[rotation_matrix; rotoinversion_matrix; DET_ORTHOGONAL_MATRIX]);;
+
+let ROTATION_MATRIX_2 = prove
+ (`!A:real^2^2. rotation_matrix A <=>
+                A$1$1 pow 2 + A$2$1 pow 2 = &1 /\
+                A$1$1 = A$2$2 /\ A$1$2 = --(A$2$1)`,
+  REWRITE_TAC[rotation_matrix; ORTHOGONAL_MATRIX_2; DET_2] THEN
+  CONV_TAC REAL_RING);;
 
 (* ------------------------------------------------------------------------- *)
 (* Slightly stronger results giving rotation, but only in >= 2 dimensions.   *)
@@ -2068,46 +2092,46 @@ let GEOM_EQUAL_DIMENSION_RULE =
   let bth = prove
    (`dimindex(:M) = dimindex(:N)
      ==> ?f:real^M->real^N.
-             (linear f /\ (!y. ?x. f x = y)) /\     
-             (!x. norm(f x) = norm x)`,            
+             (linear f /\ (!y. ?x. f x = y)) /\
+             (!x. norm(f x) = norm x)`,
     REWRITE_TAC[SET_RULE `(!y. ?x. f x = y) <=> IMAGE f UNIV = UNIV`] THEN
-    DISCH_TAC THEN REWRITE_TAC[GSYM CONJ_ASSOC] THEN    
-    MATCH_MP_TAC ISOMETRY_UNIV_SUBSPACE THEN               
+    DISCH_TAC THEN REWRITE_TAC[GSYM CONJ_ASSOC] THEN
+    MATCH_MP_TAC ISOMETRY_UNIV_SUBSPACE THEN
     REWRITE_TAC[SUBSPACE_UNIV; DIM_UNIV] THEN FIRST_ASSUM ACCEPT_TAC)
-  and pth = prove                           
-   (`!f:real^M->real^N.                        
-        linear f /\ (!y. ?x. f x = y)   
-         ==> (vec 0 = f(vec 0) /\             
-              {} = IMAGE f {} /\                                  
-              {} = IMAGE (IMAGE f) {} /\                  
-              (:real^N) = IMAGE f (:real^M) /\                                 
+  and pth = prove
+   (`!f:real^M->real^N.
+        linear f /\ (!y. ?x. f x = y)
+         ==> (vec 0 = f(vec 0) /\
+              {} = IMAGE f {} /\
+              {} = IMAGE (IMAGE f) {} /\
+              (:real^N) = IMAGE f (:real^M) /\
               (:real^N->bool) = IMAGE (IMAGE f) (:real^M->bool) /\
-              [] = MAP f []) /\                              
-             ((!P. (!x. P x) <=> (!x. P (f x))) /\      
-              (!P. (?x. P x) <=> (?x. P (f x))) /\              
-              (!Q. (!s. Q s) <=> (!s. Q (IMAGE f s))) /\                 
-              (!Q. (?s. Q s) <=> (?s. Q (IMAGE f s))) /\           
-              (!Q. (!s. Q s) <=> (!s. Q (IMAGE (IMAGE f) s))) /\   
+              [] = MAP f []) /\
+             ((!P. (!x. P x) <=> (!x. P (f x))) /\
+              (!P. (?x. P x) <=> (?x. P (f x))) /\
+              (!Q. (!s. Q s) <=> (!s. Q (IMAGE f s))) /\
+              (!Q. (?s. Q s) <=> (?s. Q (IMAGE f s))) /\
+              (!Q. (!s. Q s) <=> (!s. Q (IMAGE (IMAGE f) s))) /\
               (!Q. (?s. Q s) <=> (?s. Q (IMAGE (IMAGE f) s))) /\
               (!P. (!g:real^1->real^N. P g) <=> (!g. P (f o g))) /\
               (!P. (?g:real^1->real^N. P g) <=> (?g. P (f o g))) /\
-              (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\                
-              (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\           
+              (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\
+              (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\
              ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\
               (!Q. {s | Q s} = IMAGE (IMAGE f) {s | Q(IMAGE f s)}) /\
               (!R. {l | R l} = IMAGE (MAP f) {l | R(MAP f l)}))`,
-    GEN_TAC THEN              
+    GEN_TAC THEN
     SIMP_TAC[SET_RULE `UNIV = IMAGE f UNIV <=> (!y. ?x. f x = y)`;
-             SURJECTIVE_IMAGE] THEN                             
-    MATCH_MP_TAC MONO_AND THEN                 
-    REWRITE_TAC[QUANTIFY_SURJECTION_HIGHER_THM] THEN  
-    REWRITE_TAC[IMAGE_CLAUSES; MAP] THEN MESON_TAC[LINEAR_0]) in               
-  fun dth th ->                                                                
-    let eth = EXISTS_GENVAR_RULE (MATCH_MP bth dth) in                         
-    let f,bod = dest_exists(concl eth) in             
-    let lsth,neth = CONJ_PAIR(ASSUME bod) in                    
-    let cth,qth = CONJ_PAIR(MATCH_MP pth lsth) in                              
-    let th1 = CONV_RULE (EXPAND_QUANTS_CONV qth) th in                
+             SURJECTIVE_IMAGE] THEN
+    MATCH_MP_TAC MONO_AND THEN
+    REWRITE_TAC[QUANTIFY_SURJECTION_HIGHER_THM] THEN
+    REWRITE_TAC[IMAGE_CLAUSES; MAP] THEN MESON_TAC[LINEAR_0]) in
+  fun dth th ->
+    let eth = EXISTS_GENVAR_RULE (MATCH_MP bth dth) in
+    let f,bod = dest_exists(concl eth) in
+    let lsth,neth = CONJ_PAIR(ASSUME bod) in
+    let cth,qth = CONJ_PAIR(MATCH_MP pth lsth) in
+    let th1 = CONV_RULE (EXPAND_QUANTS_CONV qth) th in
     let ith = LINEAR_INVARIANTS f (neth::CONJUNCTS lsth) in
     let th2 = GEN_REWRITE_RULE (RAND_CONV o REDEPTH_CONV) [BETA_THM;ith] th1 in
     PROVE_HYP eth (SIMPLE_CHOOSE f th2);;
