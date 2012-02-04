@@ -1,3 +1,8 @@
 HOL interface to cddlib to provide a faster linear prover.
 
+   http://www.ifor.math.ethz.ch/~fukuda/cdd_home/
+
+Once cddlib is installed, just do "make" in this directory,
+and then load "LP_arith/lp_arith.ml" into HOL Light.
+
 (c) Lars Schewe (schewe@mathematik.tu-darmstadt.de), 2007

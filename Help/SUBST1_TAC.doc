@@ -22,9 +22,9 @@ to the assumptions of the goal but are recorded in the proof.  If {A'} is not a
 subset of the assumptions {A} of the goal (up to alpha-conversion), then
 {SUBST1_TAC (A' |- u = v)} results in an invalid tactic. {SUBST1_TAC}
 automatically renames bound variables to prevent free variables in {v} becoming
-bound after substitution. However, by contrast with rewriting tactics such as 
-{REWRITE_TAC}, it does not instantiate free or universally quantified variables 
-in the theorem to make them match the target term. This makes it less powerful 
+bound after substitution. However, by contrast with rewriting tactics such as
+{REWRITE_TAC}, it does not instantiate free or universally quantified variables
+in the theorem to make them match the target term. This makes it less powerful
 but also more precisely controlled.
 
 \FAILURE
@@ -64,6 +64,6 @@ more ``manual'' proof, we might do:
 such as {REWRITE_TAC} is too expensive or would diverge.
 
 \SEEALSO
-ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBST_ALL_TAC.
+ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBS_CONV, SUBST_ALL_TAC.
 
 \ENDDOC
