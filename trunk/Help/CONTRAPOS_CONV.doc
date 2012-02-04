@@ -22,6 +22,6 @@ Fails if applied to a term that is not an implication.
 The same effect can be had by {GEN_REWRITE_CONV I [GSYM CONTRAPOS_THM]}
 
 \SEEALSO
-CONTRAPOS.
+CCONTR, CONTR_TAC.
 
 \ENDDOC

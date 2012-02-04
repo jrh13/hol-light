@@ -26,6 +26,6 @@ One quite common pattern is to use a contradictory hypothesis via
 Fails unless the theorem is contradictory, i.e. has {F} as its conclusion.
 
 \SEEALSO
-CHECK_ASSUME_TAC, CONTR, CCONTR, CONTRAPOS, NOT_ELIM.
+CCONTR, CONTR, NOT_ELIM.
 
 \ENDDOC

@@ -43,7 +43,7 @@ Suppose we start with the goal:
 {
   # e(REPEAT STRIP_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
    0 [`1 = x`]
    1 [`p (x - 1)`]
 
@@ -65,6 +65,6 @@ One can finish things off in various ways, e.g.
 }
 
 \SEEALSO
-ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBST1_TAC, SUBST_TAC.
+ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBS_CONV, SUBST1_TAC.
 
 \ENDDOC
