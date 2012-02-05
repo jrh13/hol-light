@@ -1673,6 +1673,8 @@ let GEOM_ORIGIN_CONV,GEOM_TRANSLATE_CONV =
          (!Q. (?s. Q s) <=> (?s. Q(IMAGE (IMAGE (\x. a + x)) s))) /\
          (!P. (!g:real^1->real^N. P g) <=> (!g. P ((\x. a + x) o g))) /\
          (!P. (?g:real^1->real^N. P g) <=> (?g. P ((\x. a + x) o g))) /\
+         (!P. (!g:num->real^N. P g) <=> (!g. P ((\x. a + x) o g))) /\
+         (!P. (?g:num->real^N. P g) <=> (?g. P ((\x. a + x) o g))) /\
          (!Q. (!l. Q l) <=> (!l. Q(MAP (\x. a + x) l))) /\
          (!Q. (?l. Q l) <=> (?l. Q(MAP (\x. a + x) l)))) /\
         ((!P. {x | P x} = IMAGE (\x. a + x) {x | P(a + x)}) /\
@@ -1763,6 +1765,8 @@ let GEOM_BASIS_MULTIPLE_RULE =
               (!Q. (?s. Q s) <=> (?s. Q (IMAGE (IMAGE f) s))) /\
               (!P. (!g:real^1->real^N. P g) <=> (!g. P (f o g))) /\
               (!P. (?g:real^1->real^N. P g) <=> (?g. P (f o g))) /\
+              (!P. (!g:num->real^N. P g) <=> (!g. P (f o g))) /\
+              (!P. (?g:num->real^N. P g) <=> (?g. P (f o g))) /\
               (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\
               (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\
              ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\
@@ -1948,6 +1952,10 @@ let GEOM_NORMALIZE_RULE =
                   (!g. P ((\x. norm(a) % x) o g))) /\
              (!P. (?g:real^1->real^N. P g) <=>
                   (?g. P ((\x. norm(a) % x) o g))) /\
+             (!P. (!g:num->real^N. P g) <=>
+                  (!g. P ((\x. norm(a) % x) o g))) /\
+             (!P. (?g:num->real^N. P g) <=>
+                  (?g. P ((\x. norm(a) % x) o g))) /\
              (!Q. (!l. Q l) <=> (!l. Q(MAP (\x:real^N. norm(a) % x) l))) /\
              (!Q. (?l. Q l) <=> (?l. Q(MAP (\x:real^N. norm(a) % x) l)))) /\
             ((!P. {x:real^N | P x} =
@@ -2115,6 +2123,8 @@ let GEOM_EQUAL_DIMENSION_RULE =
               (!Q. (?s. Q s) <=> (?s. Q (IMAGE (IMAGE f) s))) /\
               (!P. (!g:real^1->real^N. P g) <=> (!g. P (f o g))) /\
               (!P. (?g:real^1->real^N. P g) <=> (?g. P (f o g))) /\
+              (!P. (!g:num->real^N. P g) <=> (!g. P (f o g))) /\
+              (!P. (?g:num->real^N. P g) <=> (?g. P (f o g))) /\
               (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\
               (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\
              ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\

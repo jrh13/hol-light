@@ -506,7 +506,7 @@ let SUBSET_DIFF = prove
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Insertsion and deletion.                                                  *)
+(* Insertion and deletion.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
 let COMPONENT = prove
@@ -930,6 +930,10 @@ let UNIONS_INTERS = prove
   GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
   REWRITE_TAC[IN_UNIONS; IN_UNIV; IN_DIFF; INTERS_GSPEC; IN_ELIM_THM] THEN
   MESON_TAC[]);;
+
+let DIFF_UNIONS = prove
+ (`!s t. UNIONS s DIFF t = UNIONS {x DIFF t | x IN s}`,
+  REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]);;
 
 let INTERS_OVER_UNIONS = prove
  (`!f:A->(B->bool)->bool s.

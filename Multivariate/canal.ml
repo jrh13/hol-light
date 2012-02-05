@@ -697,6 +697,22 @@ let HAS_COMPLEX_DERIVATIVE_ZERO_UNIQUE = prove
   REWRITE_TAC[has_complex_derivative; COMPLEX_MUL_LZERO] THEN
   REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_DERIVATIVE_ZERO_UNIQUE]);;
 
+let HAS_COMPLEX_DERIVATIVE_ZERO_CONNECTED_CONSTANT = prove
+ (`!f s.
+        open s /\ connected s /\
+        (!x. x IN s ==> (f has_complex_derivative Cx(&0)) (at x))
+        ==> ?c. !x. x IN s ==> f(x) = c`,
+  REWRITE_TAC[has_complex_derivative; COMPLEX_MUL_LZERO] THEN
+  REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_DERIVATIVE_ZERO_CONNECTED_CONSTANT]);;
+
+let HAS_COMPLEX_DERIVATIVE_ZERO_CONNECTED_UNIQUE = prove
+ (`!f s c a.
+        open s /\ connected s /\ a IN s /\ f a = c /\
+        (!x. x IN s ==> (f has_complex_derivative Cx(&0)) (at x))
+        ==> !x. x IN s ==> f(x) = c`,
+  REWRITE_TAC[has_complex_derivative; COMPLEX_MUL_LZERO] THEN
+  REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_DERIVATIVE_ZERO_CONNECTED_UNIQUE]);;
+
 let COMPLEX_DIFF_CHAIN_WITHIN = prove
  (`!f g f' g' x s.
         (f has_complex_derivative f') (at x within s) /\

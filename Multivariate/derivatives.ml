@@ -1172,6 +1172,39 @@ let HAS_DERIVATIVE_ZERO_UNIQUE = prove
              ==> !x. x IN s ==> f x = c`,
   MESON_TAC[HAS_DERIVATIVE_ZERO_CONSTANT]);;
 
+let HAS_DERIVATIVE_ZERO_CONNECTED_CONSTANT = prove
+ (`!f:real^M->real^N s.
+        open s /\ connected s /\
+        (!x. x IN s ==> (f has_derivative (\h. vec 0)) (at x))
+        ==> ?c. !x. x IN s ==> f(x) = c`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `a:real^M`) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_CLOPEN]) THEN
+  DISCH_THEN(MP_TAC o SPEC `{x | x IN s /\ (f:real^M->real^N) x = f a}`) THEN
+  ANTS_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN CONJ_TAC THENL
+   [SIMP_TAC[open_in; SUBSET; IN_ELIM_THM] THEN
+    X_GEN_TAC `x:real^M` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_BALL]) THEN
+    DISCH_THEN(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN
+    REWRITE_TAC[SUBSET; IN_BALL] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MP_TAC(ISPECL [`f:real^M->real^N`; `ball(x:real^M,e)`]
+        HAS_DERIVATIVE_ZERO_CONSTANT) THEN
+    REWRITE_TAC[IN_BALL; CONVEX_BALL] THEN
+    ASM_MESON_TAC[HAS_DERIVATIVE_AT_WITHIN; DIST_SYM; DIST_REFL];
+    MATCH_MP_TAC CONTINUOUS_CLOSED_IN_PREIMAGE_CONSTANT THEN
+    MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
+    ASM_SIMP_TAC[DIFFERENTIABLE_ON_EQ_DIFFERENTIABLE_AT] THEN
+    ASM_MESON_TAC[differentiable]]);;
+
+let HAS_DERIVATIVE_ZERO_CONNECTED_UNIQUE = prove
+ (`!f s a c. open s /\ connected s /\ a IN s /\ f a = c /\
+             (!x. x IN s ==> (f has_derivative (\h. vec 0)) (at x))
+             ==> !x. x IN s ==> f x = c`,
+  MESON_TAC[HAS_DERIVATIVE_ZERO_CONNECTED_CONSTANT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Differentiability of inverse function (most basic form).                  *)
 (* ------------------------------------------------------------------------- *)
