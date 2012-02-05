@@ -6071,6 +6071,21 @@ let SUBSPACE_ISOMORPHISM = prove
   MATCH_MP_TAC MONO_EXISTS THEN
   ASM_SIMP_TAC[LINEAR_INJECTIVE_0_SUBSPACE] THEN MESON_TAC[NORM_EQ_0]);;
 
+let ISOMORPHISMS_UNIV_UNIV = prove
+ (`dimindex(:M) = dimindex(:N)
+   ==> ?f:real^M->real^N g.
+            linear f /\ linear g /\
+            (!x. norm(f x) = norm x) /\ (!y. norm(g y) = norm y) /\
+            (!x. g(f x) = x) /\ (!y. f(g y) = y)`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `(\x. lambda i. x$i):real^M->real^N` THEN
+  EXISTS_TAC `(\x. lambda i. x$i):real^N->real^M` THEN
+  SIMP_TAC[vector_norm; dot; LAMBDA_BETA] THEN
+  SIMP_TAC[linear; CART_EQ; VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT;
+           LAMBDA_BETA] THEN
+  FIRST_ASSUM SUBST1_TAC THEN SIMP_TAC[LAMBDA_BETA] THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN SIMP_TAC[LAMBDA_BETA]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Properties of special hyperplanes.                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -7178,6 +7193,8 @@ let th_sets = prove
            UNIONS(IMAGE (IMAGE f) u) = IMAGE f (UNIONS u) /\
            (IMAGE f s) DIFF (IMAGE f t) = IMAGE f (s DIFF t) /\
            ((f x) IN (IMAGE f s) <=> x IN s) /\
+           ((f o xs) (n:num) = f(xs n)) /\
+           ((f o pt) (tt:real^1) = f(pt tt)) /\
            (DISJOINT (IMAGE f s) (IMAGE f t) <=> DISJOINT s t) /\
            ((IMAGE f s) SUBSET (IMAGE f t) <=> s SUBSET t) /\
            ((IMAGE f s) PSUBSET (IMAGE f t) <=> s PSUBSET t) /\
@@ -7186,6 +7203,7 @@ let th_sets = prove
            (FINITE(IMAGE f s) <=> FINITE s) /\
            (INFINITE(IMAGE f s) <=> INFINITE s)`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[IMAGE_UNIONS] THEN
+  REWRITE_TAC[o_THM] THEN
   REPLICATE_TAC 2 (CONJ_TAC THENL [MESON_TAC[]; ALL_TAC]) THEN
   REWRITE_TAC[INFINITE; TAUT `(~p <=> ~q) <=> (p <=> q)`] THEN
   REPLICATE_TAC 10 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
@@ -7424,6 +7442,8 @@ let QUANTIFY_SURJECTION_HIGHER_THM = prove
              (!Q. (?s. Q s) <=> (?s. Q(IMAGE (IMAGE f) s))) /\
              (!P. (!g:real^1->B. P g) <=> (!g. P(f o g))) /\
              (!P. (?g:real^1->B. P g) <=> (?g. P(f o g))) /\
+             (!P. (!g:num->B. P g) <=> (!g. P(f o g))) /\
+             (!P. (?g:num->B. P g) <=> (?g. P(f o g))) /\
              (!Q. (!l. Q l) <=> (!l. Q(MAP f l))) /\
              (!Q. (?l. Q l) <=> (?l. Q(MAP f l)))) /\
             ((!P. {x | P x} = IMAGE f {x | P(f x)}) /\

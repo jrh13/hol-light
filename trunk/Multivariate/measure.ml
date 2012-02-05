@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(* Lebsegue measure (defined via the gauge integral).                        *)
+(* Lebsegue measure, measurable functions (defined via the gauge integral).  *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (* ========================================================================= *)
@@ -11,7 +11,9 @@ needs "Multivariate/determinants.ml";;
 prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
-(* Lebesgue measure (in the case where the measure is finite).               *)
+(* Lebesgue measure in the case where the measure is finite. This is our     *)
+(* default notion of "measurable", but we also define "lebesgue_measurable"  *)
+(* further down. Note that in neither case do we assume the set is bounded.  *)
 (* ------------------------------------------------------------------------- *)
 
 parse_as_infix("has_measure",(12,"right"));;
@@ -6605,6 +6607,17 @@ let MEASURABLE_ON_COMPONENTWISE = prove
     ONCE_REWRITE_TAC[LIM_COMPONENTWISE_LIFT] THEN
     ASM_SIMP_TAC[LAMBDA_BETA; LIFT_DROP; ETA_AX]]);;
 
+let MEASURABLE_ON_SPIKE = prove
+ (`!f:real^M->real^N g s t.
+        negligible s /\ (!x. x IN t DIFF s ==> g x = f x)
+        ==> f measurable_on t ==> g measurable_on t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IN_DIFF] THEN STRIP_TAC THEN
+  REWRITE_TAC[measurable_on] THEN ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real^M->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `s UNION k:real^M->bool` THEN
+  ASM_SIMP_TAC[DE_MORGAN_THM; IN_UNION; NEGLIGIBLE_UNION]);;
+
 let MEASURABLE_ON_SPIKE_SET = prove
  (`!f:real^M->real^N s t.
         negligible (s DIFF t UNION t DIFF s)
@@ -7778,3 +7791,96 @@ let MEASURABLE_INTER_HALFSPACE_GE = prove
   DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC MEASURABLE_MEASURABLE_INTER_LEGESGUE_MEASURABLE THEN
   ASM_SIMP_TAC[CLOSED_HALFSPACE_COMPONENT_GE; LEBESGUE_MEASURABLE_CLOSED]);;
+
+let MEASURABLE_MEASURABLE_DIFF_LEGESGUE_MEASURABLE = prove
+ (`!s t. measurable s /\ lebesgue_measurable t ==> measurable(s DIFF t)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
+  ASM_SIMP_TAC[MEASURABLE_MEASURABLE_INTER_LEGESGUE_MEASURABLE;
+                LEBESGUE_MEASURABLE_COMPL]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Regularity properties and Steinhaus, this time for Lebesgue measure.      *)
+(* ------------------------------------------------------------------------- *)
+
+let LEBESGUE_MEASURABLE_OUTER_OPEN = prove
+ (`!s:real^N->bool e.
+        lebesgue_measurable s /\ &0 < e
+        ==> ?t. open t /\
+                s SUBSET t /\
+                measurable(t DIFF s) /\
+                measure(t DIFF s) < e`,
+  REPEAT STRIP_TAC THEN MP_TAC(GEN `n:num`
+   (ISPECL [`s INTER ball(vec 0:real^N,&2 pow n)`;
+            `e / &4 / &2 pow n`]
+        MEASURABLE_OUTER_OPEN)) THEN
+  ASM_SIMP_TAC[MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE; REAL_LT_DIV;
+               MEASURABLE_BALL; REAL_LT_INV_EQ; REAL_LT_POW2;
+               REAL_ARITH `&0 < e / &4 <=> &0 < e`] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; FORALL_AND_THM] THEN
+  X_GEN_TAC `t:num->real^N->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `UNIONS(IMAGE t (:num)):real^N->bool` THEN
+  ASM_SIMP_TAC[OPEN_UNIONS; FORALL_IN_IMAGE] THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; UNIONS_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    MP_TAC(ISPEC `norm(x:real^N)` REAL_ARCH_POW2) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `n:num` THEN
+    DISCH_TAC THEN RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC[IN_BALL_0; IN_INTER];
+    REWRITE_TAC[DIFF_UNIONS; SET_RULE
+     `{f x | x IN IMAGE g s} = {f(g(x)) | x IN s}`] THEN
+    MATCH_MP_TAC(MESON[REAL_ARITH `&0 < e /\ x <= e / &2 ==> x < e`]
+        `&0 < e /\ P /\ x <= e / &2 ==> P /\ x < e`) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MEASURE_COUNTABLE_UNIONS_LE THEN
+    ASM_SIMP_TAC[MEASURABLE_MEASURABLE_DIFF_LEGESGUE_MEASURABLE] THEN
+    X_GEN_TAC `n:num` THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC `sum(0..n) (\i. e / &4 / &2 pow i)` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUM_LE_NUMSEG THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+      MATCH_MP_TAC REAL_LE_TRANS THEN
+      EXISTS_TAC `measure(t i DIFF (s INTER ball(vec 0:real^N,&2 pow i)))` THEN
+      REWRITE_TAC[] THEN CONJ_TAC THENL
+       [MATCH_MP_TAC MEASURE_SUBSET THEN
+        ASM_SIMP_TAC[MEASURABLE_MEASURABLE_DIFF_LEGESGUE_MEASURABLE;
+          MEASURABLE_INTER; MEASURABLE_BALL; LEBESGUE_MEASURABLE_INTER;
+          MEASURABLE_IMP_LEBESGUE_MEASURABLE] THEN
+        SET_TAC[];
+        ASM_SIMP_TAC[MEASURE_DIFF_SUBSET; MEASURABLE_DIFF; MEASURABLE_BALL;
+                     MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE] THEN
+        ASM_SIMP_TAC[REAL_ARITH `t < s + e ==> t - s <= e`]];
+      REWRITE_TAC[real_div; SUM_LMUL; REAL_INV_POW; SUM_GP] THEN
+      CONV_TAC REAL_RAT_REDUCE_CONV THEN REWRITE_TAC[CONJUNCT1 LT] THEN
+      ASM_SIMP_TAC[GSYM REAL_MUL_ASSOC; REAL_LE_LMUL_EQ] THEN
+      REWRITE_TAC[REAL_ARITH
+        `&1 / &4 * (&1 - x) * &2 <= &1 / &2 <=> &0 <= x`] THEN
+      MATCH_MP_TAC REAL_POW_LE THEN CONV_TAC REAL_RAT_REDUCE_CONV]]);;
+
+let LEBESGUE_MEASURABLE_INNER_CLOSED = prove
+ (`!s:real^N->bool e.
+        lebesgue_measurable s /\ &0 < e
+        ==> ?t. closed t /\
+                t SUBSET s /\
+                measurable(s DIFF t) /\
+                measure(s DIFF t) < e`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM LEBESGUE_MEASURABLE_COMPL] THEN
+  DISCH_THEN(X_CHOOSE_TAC `t:real^N->bool` o MATCH_MP
+    LEBESGUE_MEASURABLE_OUTER_OPEN) THEN
+  EXISTS_TAC `(:real^N) DIFF t` THEN POP_ASSUM MP_TAC THEN
+  REPEAT(MATCH_MP_TAC MONO_AND THEN CONJ_TAC) THEN
+  REWRITE_TAC[GSYM OPEN_CLOSED] THENL
+   [SET_TAC[];
+    MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC;
+    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC] THEN
+  SET_TAC[]);;
+
+let STEINHAUS_LEBESGUE = prove
+ (`!s:real^N->bool.
+        lebesgue_measurable s /\ ~negligible s
+        ==> ?d. &0 < d /\ ball(vec 0,d) SUBSET {x - y | x IN s /\ y IN s}`,
+  GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ONCE_REWRITE_TAC[NEGLIGIBLE_ON_INTERVALS] THEN
+  REWRITE_TAC[NOT_FORALL_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN
+  MP_TAC(ISPEC `s INTER interval[a:real^N,b]` STEINHAUS) THEN
+  ASM_SIMP_TAC[GSYM MEASURABLE_MEASURE_POS_LT; MEASURABLE_INTERVAL;
+               MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE] THEN
+  SET_TAC[]);;

@@ -1045,6 +1045,11 @@ let DIVISION = prove
  (`!m n. ~(n = 0) ==> (m = m DIV n * n + m MOD n) /\ m MOD n < n`,
   MESON_TAC[DIVISION_0]);;
 
+let DIVISION_SIMP = prove
+ (`(!m n. ~(n = 0) ==> m DIV n * n + m MOD n = m) /\
+   (!m n. ~(n = 0) ==> n * m DIV n + m MOD n = m)`,
+  MESON_TAC[DIVISION; MULT_SYM]);;
+
 let DIVMOD_UNIQ_LEMMA = prove
  (`!m n q1 r1 q2 r2. ((m = q1 * n + r1) /\ r1 < n) /\
                      ((m = q2 * n + r2) /\ r2 < n)
