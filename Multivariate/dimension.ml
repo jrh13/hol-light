@@ -2407,6 +2407,27 @@ let NO_RETRACTION_FRONTIER_BOUNDED = prove
   MP_TAC(ISPEC `s:real^N->bool` INTERIOR_SUBSET) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Similarly we get concontractibility of a non-trivial sphere.              *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTRACTIBLE_SPHERE = prove
+ (`!a:real^N r. contractible {x | norm(x - a) = r} <=> r <= &0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[contractible; GSYM REAL_NOT_LT] THEN
+  REWRITE_TAC[NULLHOMOTOPIC_SPHERE_EXTENSION] THEN
+  ASM_CASES_TAC `&0 < r` THEN ASM_REWRITE_TAC[] THENL
+   [FIRST_ASSUM(MP_TAC o ISPEC `a:real^N` o MATCH_MP NO_RETRACTION_CBALL) THEN
+    REWRITE_TAC[FRONTIER_CBALL; retract_of; retraction;
+                ONCE_REWRITE_RULE[DIST_SYM] dist] THEN
+    MATCH_MP_TAC(MESON[]
+     `(!x. P x) ==> ~(?x. P x /\ Q x) ==> ~(?x. Q x)`) THEN
+    SIMP_TAC[SUBSET; IN_CBALL; ONCE_REWRITE_RULE[DIST_SYM] dist] THEN
+    SIMP_TAC[IN_ELIM_THM; REAL_LE_REFL];
+    RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LT]) THEN
+    EXISTS_TAC `\x:real^N. x` THEN REWRITE_TAC[CONTINUOUS_ON_ID; IMAGE_ID] THEN
+    REWRITE_TAC[SUBSET; IN_CBALL; IN_ELIM_THM] THEN
+    POP_ASSUM MP_TAC THEN NORM_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Bijections between intervals.                                             *)
 (* ------------------------------------------------------------------------- *)
 

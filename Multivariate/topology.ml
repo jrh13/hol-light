@@ -3502,6 +3502,13 @@ let COMPACT_DIFF = prove
   ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
   SIMP_TAC[COMPACT_INTER_CLOSED; GSYM OPEN_CLOSED]);;
 
+let COMPACT_SPHERE = prove
+ (`!a:real^N r. compact {x | norm(x - a) = r}`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[NORM_SUB] THEN
+  REWRITE_TAC[GSYM dist] THEN
+  REWRITE_TAC[GSYM FRONTIER_CBALL] THEN MATCH_MP_TAC COMPACT_FRONTIER THEN
+  REWRITE_TAC[COMPACT_CBALL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Finite intersection property. I could make it an equivalence in fact.     *)
 (* ------------------------------------------------------------------------- *)
@@ -3936,6 +3943,15 @@ let UNIFORMLY_CONTINUOUS_ON_EQ = prove
         (!x. x IN s ==> f x = g x) /\ f uniformly_continuous_on s
         ==> g uniformly_continuous_on s`,
   SIMP_TAC[uniformly_continuous_on; IMP_CONJ]);;
+
+let CONTINUOUS_ON_SING = prove
+ (`!f:real^M->real^N a. f continuous_on {a}`,
+  SIMP_TAC[continuous_on; IN_SING; FORALL_UNWIND_THM2; DIST_REFL] THEN
+  MESON_TAC[]);;
+
+let CONTINUOUS_ON_EMPTY = prove
+ (`!f:real^M->real^N. f continuous_on {}`,
+  MESON_TAC[CONTINUOUS_ON_SING; EMPTY_SUBSET; CONTINUOUS_ON_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Characterization of various kinds of continuity in terms of sequences.    *)
@@ -9671,6 +9687,10 @@ let SUMS_OFFSET_REV = prove
   REWRITE_TAC[EXTENSION; IN_DIFF; IN_UNION; IN_FROM; IN_NUMSEG] THEN
   ASM_ARITH_TAC);;
 
+let SUMMABLE_REINDEX = prove
+ (`!k a n. summable (from n) (\x. a (x + k)) <=> summable (from(n + k)) a`,
+  REWRITE_TAC[summable; GSYM SUMS_REINDEX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Similar combining theorems for infsum.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -9820,6 +9840,12 @@ let SERIES_CAUCHY = prove
   SUBGOAL_THEN `m - 1 + 1 = m` SUBST_ALL_TAC THENL
    [ALL_TAC; ANTS_TAC THEN SIMP_TAC[]] THEN
   ASM_ARITH_TAC);;
+
+let SUMMABLE_CAUCHY = prove
+ (`!f s. summable s f <=>
+         !e. &0 < e
+             ==> ?N. !m n. m >= N ==> norm(vsum(s INTER (m..n)) f) < e`,
+  REWRITE_TAC[summable; GSYM SERIES_CAUCHY]);;
 
 let SUMMABLE_IFF_EVENTUALLY = prove
  (`!f g k. (?N. !n. N <= n /\ n IN k ==> f n = g n)
@@ -9991,6 +10017,18 @@ let SERIES_LIFT_ABSCONV_IMP_CONV = prove
   MATCH_MP_TAC SERIES_COMPARISON THEN
   EXISTS_TAC `\n:num. norm(x n:real^N)` THEN
   ASM_REWRITE_TAC[o_DEF; REAL_LE_REFL] THEN ASM_MESON_TAC[]);;
+
+let SUMMABLE_SUBSET_ABSCONV = prove
+ (`!x:num->real^N s t.
+        summable s (\n. lift(norm(x n))) /\ t SUBSET s
+        ==> summable t (\n. lift(norm(x n)))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUMMABLE_SUBSET THEN
+  EXISTS_TAC `s:num->bool` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[summable] THEN MATCH_MP_TAC SERIES_COMPARISON THEN
+  EXISTS_TAC `\n:num. norm(x n:real^N)` THEN
+  ASM_REWRITE_TAC[o_DEF; GSYM summable] THEN
+  EXISTS_TAC `0` THEN REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  REWRITE_TAC[REAL_LE_REFL; NORM_LIFT; REAL_ABS_NORM; NORM_0; NORM_POS_LE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Uniform version of comparison test.                                       *)
@@ -10258,6 +10296,115 @@ let SERIES_DIRICHLET = prove
     FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP BOUNDED_PARTIAL_SUMS) THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BOUNDED_POS]) THEN
     SIMP_TAC[IN_ELIM_THM; IN_UNIV] THEN MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Rearranging absolutely convergent series.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let SERIES_INJECTIVE_IMAGE_STRONG = prove
+ (`!x:num->real^N s f.
+        summable (IMAGE f s) (\n. lift(norm(x n))) /\
+        (!m n. m IN s /\ n IN s /\ f m = f n ==> m = n)
+        ==> ((\n. vsum (IMAGE f s INTER (0..n)) x -
+                  vsum (s INTER (0..n)) (x o f)) --> vec 0)
+            sequentially`,
+  let lemma = prove
+   (`!f:A->real^N s t.
+          FINITE s /\ FINITE t
+          ==> vsum s f - vsum t f = vsum (s DIFF t) f - vsum (t DIFF s) f`,
+    REPEAT STRIP_TAC THEN
+    ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s DIFF (s INTER t)`] THEN
+    ASM_SIMP_TAC[VSUM_DIFF; INTER_SUBSET] THEN
+    REWRITE_TAC[INTER_COMM] THEN VECTOR_ARITH_TAC) in
+  REPEAT STRIP_TAC THEN REWRITE_TAC[LIM_SEQUENTIALLY] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SUMMABLE_CAUCHY]) THEN
+  SIMP_TAC[VSUM_REAL; FINITE_INTER; FINITE_NUMSEG] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [o_DEF] THEN
+  REWRITE_TAC[NORM_LIFT; LIFT_DROP] THEN
+  SIMP_TAC[real_abs; SUM_POS_LE; NORM_POS_LE; FINITE_INTER; FINITE_NUMSEG] THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN
+  ASM_REWRITE_TAC[dist; GE; VECTOR_SUB_RZERO; REAL_HALF] THEN
+  DISCH_THEN(X_CHOOSE_THEN `N:num` STRIP_ASSUME_TAC) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [INJECTIVE_ON_LEFT_INVERSE]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `g:num->num`) THEN
+  MP_TAC(ISPECL [`g:num->num`; `0..N`] UPPER_BOUND_FINITE_SET) THEN
+  REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG; LE_0] THEN
+  DISCH_THEN(X_CHOOSE_TAC `P:num`) THEN
+  EXISTS_TAC `MAX N P` THEN X_GEN_TAC `n:num` THEN
+  SIMP_TAC[ARITH_RULE `MAX a b <= c <=> a <= c /\ b <= c`] THEN DISCH_TAC THEN
+  W(MP_TAC o PART_MATCH (rand o rand) VSUM_IMAGE o rand o
+    rand o lhand o snd) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[FINITE_INTER; FINITE_NUMSEG; IN_INTER];
+    DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) lemma o rand o lhand o snd) THEN
+  SIMP_TAC[FINITE_INTER; FINITE_IMAGE; FINITE_NUMSEG] THEN
+  DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC(NORM_ARITH
+   `norm a < e / &2 /\ norm b < e / &2 ==> norm(a - b:real^N) < e`) THEN
+  CONJ_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) VSUM_NORM o lhand o snd) THEN
+  SIMP_TAC[FINITE_DIFF; FINITE_IMAGE; FINITE_INTER; FINITE_NUMSEG] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LET_TRANS) THEN
+  MATCH_MP_TAC REAL_LET_TRANS THENL
+   [EXISTS_TAC
+     `sum(IMAGE (f:num->num) s INTER (N..n)) (\i. norm(x i :real^N))` THEN
+    ASM_SIMP_TAC[LE_REFL] THEN MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+    SIMP_TAC[NORM_POS_LE; FINITE_INTER; FINITE_NUMSEG] THEN
+    MATCH_MP_TAC(SET_RULE
+     `(!x. x IN s /\ f(x) IN n /\ ~(x IN m) ==> f x IN t)
+      ==> (IMAGE f s INTER n) DIFF (IMAGE f (s INTER m)) SUBSET
+          IMAGE f s INTER t`) THEN
+    ASM_SIMP_TAC[IN_NUMSEG; LE_0; NOT_LE] THEN
+    X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    MATCH_MP_TAC LT_IMP_LE THEN ONCE_REWRITE_TAC[GSYM NOT_LE] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE BINDER_CONV
+     [GSYM CONTRAPOS_THM]) THEN
+    ASM_SIMP_TAC[] THEN ASM_ARITH_TAC;
+    MP_TAC(ISPECL [`f:num->num`; `0..n`] UPPER_BOUND_FINITE_SET) THEN
+    REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG; LE_0] THEN
+    DISCH_THEN(X_CHOOSE_TAC `p:num`) THEN
+    EXISTS_TAC
+     `sum(IMAGE (f:num->num) s INTER (N..p)) (\i. norm(x i :real^N))` THEN
+    ASM_SIMP_TAC[LE_REFL] THEN MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+    SIMP_TAC[NORM_POS_LE; FINITE_INTER; FINITE_NUMSEG] THEN
+    MATCH_MP_TAC(SET_RULE
+     `(!x. x IN s /\ x IN n /\ ~(f x IN m) ==> f x IN t)
+      ==> (IMAGE f (s INTER n) DIFF (IMAGE f s) INTER m) SUBSET
+          (IMAGE f s INTER t)`) THEN
+    ASM_SIMP_TAC[IN_NUMSEG; LE_0] THEN ASM_ARITH_TAC]);;
+
+let SERIES_INJECTIVE_IMAGE = prove
+ (`!x:num->real^N s f l.
+        summable (IMAGE f s) (\n. lift(norm(x n))) /\
+        (!m n. m IN s /\ n IN s /\ f m = f n ==> m = n)
+        ==> (((x o f) sums l) s <=> (x sums l) (IMAGE f s))`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN REWRITE_TAC[sums] THEN
+  MATCH_MP_TAC LIM_TRANSFORM_EQ THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC SERIES_INJECTIVE_IMAGE_STRONG THEN
+  ASM_REWRITE_TAC[]);;
+
+let SERIES_REARRANGE_EQ = prove
+ (`!x:num->real^N s p l.
+        summable s (\n. lift(norm(x n))) /\ p permutes s
+        ==> (((x o p) sums l) s <=> (x sums l) s)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`x:num->real^N`; `s:num->bool`; `p:num->num`; `l:real^N`]
+        SERIES_INJECTIVE_IMAGE) THEN
+  ASM_SIMP_TAC[PERMUTES_IMAGE] THEN
+  ASM_MESON_TAC[PERMUTES_INJECTIVE]);;
+
+let SERIES_REARRANGE = prove
+ (`!x:num->real^N s p l.
+        summable s (\n. lift(norm(x n))) /\ p permutes s /\ (x sums l) s
+        ==> ((x o p) sums l) s`,
+  MESON_TAC[SERIES_REARRANGE_EQ]);;
+
+let SUMMABLE_REARRANGE = prove
+ (`!x s p.
+        summable s (\n. lift(norm(x n))) /\ p permutes s
+        ==> summable s (x o p)`,
+  MESON_TAC[SERIES_LIFT_ABSCONV_IMP_CONV; summable; SERIES_REARRANGE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Banach fixed point theorem (not really topological...)                    *)

@@ -516,6 +516,26 @@ let REAL_CARD_INTSEG_INT = prove
     ASM_SIMP_TAC[INTEGER_CLOSED]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Yet set of all integers or rationals is infinite.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let INFINITE_INTEGER = prove
+ (`INFINITE integer`,
+  SUBGOAL_THEN `INFINITE(IMAGE real_of_num (:num))` MP_TAC THENL
+   [SIMP_TAC[INFINITE_IMAGE_INJ; REAL_OF_NUM_EQ; num_INFINITE]; ALL_TAC] THEN
+  REWRITE_TAC[INFINITE; CONTRAPOS_THM] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV] THEN
+  REWRITE_TAC[IN; INTEGER_CLOSED]);;
+
+let INFINITE_RATIONAL = prove
+ (`INFINITE rational`,
+  MP_TAC INFINITE_INTEGER THEN
+  REWRITE_TAC[INFINITE; CONTRAPOS_THM] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+  REWRITE_TAC[SUBSET; IN; RATIONAL_INTEGER]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Arbitrarily good rational approximations.                                 *)
 (* ------------------------------------------------------------------------- *)
 

@@ -1,3 +1,12 @@
+Sat 11th Feb 2012       Library/floor.ml
+
+Added the obvious facts that the integer and rational valued reals are
+both infinite:
+
+ INFINITE_INTEGER  = |- INFINITE integer
+
+ INFINITE_RATIONAL = |- INFINITE rational
+
 Thu  2nd Feb 2012       iterate.ml
 
 Added two theorems about pushing MODs through sums of natural numbers:
