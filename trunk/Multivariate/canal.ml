@@ -765,6 +765,10 @@ let COMPLEX_DERIVATIVE_UNIQUE_AT = prove
   DISCH_THEN(MP_TAC o C AP_THM `Cx(&1)`) THEN
   REWRITE_TAC[COMPLEX_MUL_RID]);;
 
+let HIGHER_COMPLEX_DERIVATIVE_1 = prove
+ (`!f z. higher_complex_derivative 1 f z = complex_derivative f z`,
+  REWRITE_TAC[num_CONV `1`; higher_complex_derivative]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A more direct characterization.                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -1240,7 +1244,7 @@ let HOLOMORPHIC_ON_COMPOSE_GEN = prove
 (* ------------------------------------------------------------------------- *)
 
 let HAS_COMPLEX_DERIVATIVE_DERIVATIVE = prove
- (`!net f f' x. (f has_complex_derivative f') (at x)
+ (`!f f' x. (f has_complex_derivative f') (at x)
                 ==> complex_derivative f x = f'`,
   REWRITE_TAC[complex_derivative] THEN
   MESON_TAC[COMPLEX_DERIVATIVE_UNIQUE_AT]);;
@@ -1698,7 +1702,7 @@ let HAS_COMPLEX_DERIVATIVE_INVERSE_BASIC = prove
   UNDISCH_TAC `~(f' = Cx(&0))` THEN CONV_TAC COMPLEX_FIELD);;
 
 let HAS_COMPLEX_DERIVATIVE_INVERSE_STRONG = prove
- (`!f g f' g' s x.
+ (`!f g f' s x.
          open s /\
          x IN s /\
          f continuous_on s /\
@@ -1713,7 +1717,7 @@ let HAS_COMPLEX_DERIVATIVE_INVERSE_STRONG = prove
   UNDISCH_TAC `~(f' = Cx(&0))` THEN CONV_TAC COMPLEX_FIELD);;
 
 let HAS_COMPLEX_DERIVATIVE_INVERSE_STRONG_X = prove
- (`!f g f' g' s y.
+ (`!f g f' s y.
         open s /\ (g y) IN s /\ f continuous_on s /\
         (!x. x IN s ==> (g(f(x)) = x)) /\
         (f has_complex_derivative f') (at (g y)) /\ ~(f' = Cx(&0)) /\
