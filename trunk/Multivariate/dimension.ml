@@ -2186,6 +2186,62 @@ let RETRACT_OF_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [RETRACT_OF_LINEAR_IMAGE_EQ];;
 
+let RETRACTION_o = prove
+ (`!f g s t u:real^N->bool.
+        retraction (s,t) f /\ retraction (t,u) g
+        ==> retraction (s,u) (g o f)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[retraction] THEN REPEAT STRIP_TAC THENL
+   [ASM SET_TAC[];
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
+    ASM_MESON_TAC[CONTINUOUS_ON_SUBSET];
+    REWRITE_TAC[IMAGE_o] THEN ASM SET_TAC[];
+    REWRITE_TAC[o_THM] THEN ASM SET_TAC[]]);;
+
+let RETRACT_OF_TRANS = prove
+ (`!s t u:real^N->bool.
+        s retract_of t /\ t retract_of u ==> s retract_of u`,
+  REWRITE_TAC[retract_of] THEN MESON_TAC[RETRACTION_o]);;
+
+let ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL = prove
+ (`!s:real^N->bool t a b:real^M.
+        s homeomorphic interval[a,b] /\ ~(s = {}) /\ s SUBSET t
+        ==> s retract_of t`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `interval[a:real^M,b] = {}` THENL
+   [ASM_MESON_TAC[HOMEOMORPHIC_EMPTY]; ALL_TAC] THEN
+  SUBGOAL_THEN `compact(s:real^N->bool)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[HOMEOMORPHIC_COMPACTNESS; COMPACT_INTERVAL]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+  REWRITE_TAC[homeomorphism; retract_of; retraction; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:real^N->real^M`; `g:real^M->real^N`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^N->real^M`; `s:real^N->bool`; `a:real^M`; `b:real^M`]
+        TIETZE_CLOSED_INTERVAL) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ASM_MESON_TAC[COMPACT_IMP_CLOSED]; ASM SET_TAC[]];
+    DISCH_THEN(X_CHOOSE_THEN `h:real^N->real^M` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(g:real^M->real^N) o (h:real^N->real^M)` THEN
+    ASM_SIMP_TAC[o_THM; IMAGE_o] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+       [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; SUBSET_UNIV];
+        MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+        EXISTS_TAC `interval[a:real^M,b]` THEN ASM SET_TAC[]];
+      ASM SET_TAC[]]]);;
+
+let ABSOLUTE_RETRACT_PATH_IMAGE_ARC = prove
+ (`!g s:real^N->bool.
+        arc g /\ path_image g SUBSET s ==> (path_image g) retract_of s`,
+  REPEAT STRIP_TAC THEN MP_TAC
+   (ISPECL [`path_image g:real^N->bool`; `s:real^N->bool`;
+            `vec 0:real^1`; `vec 1:real^1`]
+        ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL) THEN
+  DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[PATH_IMAGE_NONEMPTY] THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
+  MATCH_MP_TAC HOMEOMORPHIC_COMPACT THEN
+  EXISTS_TAC `g:real^1->real^N` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[arc; path; path_image]) THEN
+  ASM_REWRITE_TAC[COMPACT_INTERVAL; path_image]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Preservation of fixpoints under (more general notion of) retraction.      *)
 (* ------------------------------------------------------------------------- *)
