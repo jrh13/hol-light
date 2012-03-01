@@ -1,3 +1,61 @@
+Sun 26th Feb 2012       sets.ml
+
+Added
+
+    CARD_IMAGE_EQ_INJ =
+     |- !f:A->B s.
+        FINITE s
+        ==> (CARD(IMAGE f s) = CARD s <=>
+             !x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+
+    PAIRWISE_IMAGE =
+     |- !r f. pairwise r (IMAGE f s) <=>
+              pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s
+
+Thu 23rd Feb 2012       sets.ml
+
+Added
+
+    PAIRWISE_INSERT =
+     |- !r x s.
+          pairwise r (x INSERT s) <=>
+          (!y. y IN s /\ ~(y = x) ==> r x y /\ r y x) /\
+          pairwise r s
+
+Tue 21st Feb 2012       sets.ml, Library/card.ml
+
+Added two direct equality results for sups and infs:
+
+SUP_EQ =
+ |- !s t. (!b. (!x. x IN s ==> x <= b) <=> (!x. x IN t ==> x <= b))
+          ==> sup s = sup t
+
+INF_EQ =
+ |- !s t. (!a. (!x. x IN s ==> a <= x) <=> (!x. x IN t ==> a <= x))
+           ==> inf s = inf t
+
+and a few basic lemmas about cardinality:
+
+  CARD_LE_COUNTABLE =
+    |- !s t. COUNTABLE t /\ s <=_c t ==> COUNTABLE s
+
+  CARD_COUNTABLE_CONG =
+    |- !s t. s =_c t ==> (COUNTABLE s <=> COUNTABLE t)
+
+  CARD_EQ_FINITE =
+    |- !s t. FINITE t /\ s =_c t ==> FINITE s
+
+  CARD_EQ_COUNTABLE =
+   |- !s t. COUNTABLE t /\ s =_c t ==> COUNTABLE s
+
+  CARD_EQ_IMAGE =
+   |- !f s.
+          (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+          ==> IMAGE f s =_c s
+
+  CARD_EQ_REAL_IMP_UNCOUNTABLE =
+   |- !s. s =_c (:real) ==> ~COUNTABLE s
+
 Sat 11th Feb 2012       Library/floor.ml
 
 Added the obvious facts that the integer and rational valued reals are

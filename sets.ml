@@ -1777,6 +1777,25 @@ let HAS_SIZE_IMAGE_INJ_EQ = prove
     MATCH_MP_TAC CARD_IMAGE_INJ] THEN
   ASM_REWRITE_TAC[]);;
 
+let CARD_IMAGE_EQ_INJ = prove
+ (`!f:A->B s.
+        FINITE s
+        ==> (CARD(IMAGE f s) = CARD s <=>
+             !x y. x IN s /\ y IN s /\ f x = f y ==> x = y)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_TAC; ASM_MESON_TAC[CARD_IMAGE_INJ]] THEN
+  MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
+  ASM_CASES_TAC `x:A = y` THEN ASM_REWRITE_TAC[] THEN
+  UNDISCH_TAC `CARD(IMAGE (f:A->B) s) = CARD s` THEN
+  SUBGOAL_THEN `IMAGE  (f:A->B) s = IMAGE f (s DELETE y)` SUBST1_TAC THENL
+   [ASM SET_TAC[]; REWRITE_TAC[]] THEN
+  MATCH_MP_TAC(ARITH_RULE `!n. m <= n /\ n < p ==> ~(m:num = p)`) THEN
+  EXISTS_TAC `CARD(s DELETE (y:A))` THEN
+  ASM_SIMP_TAC[CARD_IMAGE_LE; FINITE_DELETE] THEN
+  ASM_SIMP_TAC[CARD_DELETE; CARD_EQ_0;
+               ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Choosing a smaller subset of a given size.                                *)
 (* ------------------------------------------------------------------------- *)
@@ -2292,6 +2311,18 @@ let PAIRWISE_MONO = prove
  (`!r s t. pairwise r s /\ t SUBSET s ==> pairwise r t`,
   REWRITE_TAC[pairwise] THEN SET_TAC[]);;
 
+let PAIRWISE_INSERT = prove
+ (`!r x s.
+        pairwise r (x INSERT s) <=>
+        (!y. y IN s /\ ~(y = x) ==> r x y /\ r y x) /\
+        pairwise r s`,
+  REWRITE_TAC[pairwise; IN_INSERT] THEN MESON_TAC[]);;
+
+let PAIRWISE_IMAGE = prove
+ (`!r f. pairwise r (IMAGE f s) <=>
+         pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s`,
+  REWRITE_TAC[pairwise; IN_IMAGE] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some additional properties of "set_of_list".                              *)
 (* ------------------------------------------------------------------------- *)
@@ -2647,6 +2678,11 @@ let sup = new_definition
   `sup s = @a:real. (!x. x IN s ==> x <= a) /\
                     !b. (!x. x IN s ==> x <= b) ==> a <= b`;;
 
+let SUP_EQ = prove
+ (`!s t. (!b. (!x. x IN s ==> x <= b) <=> (!x. x IN t ==> x <= b))
+         ==> sup s = sup t`,
+  SIMP_TAC[sup]);;
+
 let SUP = prove
  (`!s. ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)
        ==> (!x. x IN s ==> x <= sup s) /\
@@ -2724,6 +2760,11 @@ let REAL_SUP_ASCLOSE = prove
 let inf = new_definition
   `inf s = @a:real. (!x. x IN s ==> a <= x) /\
                     !b. (!x. x IN s ==> b <= x) ==> b <= a`;;
+
+let INF_EQ = prove
+ (`!s t. (!a. (!x. x IN s ==> a <= x) <=> (!x. x IN t ==> a <= x))
+         ==> inf s = inf t`,
+  SIMP_TAC[inf]);;
 
 let INF = prove
  (`!s. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)

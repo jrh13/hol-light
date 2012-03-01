@@ -1582,62 +1582,6 @@ let HAS_MEASURE_NESTED_INTERS = prove
       ANTS_TAC THENL [SET_TAC[]; MESON_TAC[LE_0]]]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Some basic uncountability results. We don't really need measure theory    *)
-(* to prove these, but they do drop out of it pretty easily.                 *)
-(* ------------------------------------------------------------------------- *)
-
-let CARD_EQ_EUCLIDEAN = prove
- (`(:real^N) =_c (:real)`,
-  MATCH_MP_TAC CARD_EQ_CART THEN REWRITE_TAC[real_INFINITE]);;
-
-let COUNTABLE_OPEN_INTERVAL = prove
- (`!a b. COUNTABLE(interval(a,b)) <=> interval(a,b) = {}`,
-  MESON_TAC[COUNTABLE_EMPTY; NEGLIGIBLE_INTERVAL; NEGLIGIBLE_COUNTABLE]);;
-
-let UNCOUNTABLE_INTERVAL = prove
- (`(!a b. ~(interval(a,b) = {}) ==> ~COUNTABLE(interval[a,b])) /\
-   (!a b. ~(interval(a,b) = {}) ==> ~COUNTABLE(interval(a,b)))`,
-  REWRITE_TAC[GSYM COUNTABLE_OPEN_INTERVAL] THEN
-  MESON_TAC[INTERVAL_OPEN_SUBSET_CLOSED; COUNTABLE_SUBSET]);;
-
-let UNCOUNTABLE_EUCLIDEAN = prove
- (`~COUNTABLE(:real^N)`,
-  MP_TAC(ISPECL [`vec 0:real^N`; `vec 1:real^N`] COUNTABLE_OPEN_INTERVAL) THEN
-  REWRITE_TAC[INTERVAL_EQ_EMPTY; VEC_COMPONENT] THEN
-  REWRITE_TAC[GSYM REAL_NOT_LT; REAL_LT_01; CONTRAPOS_THM] THEN
-  MESON_TAC[COUNTABLE_SUBSET; SUBSET_UNIV]);;
-
-let UNCOUNTABLE_SEGMENT = prove
- (`(!a b:real^N. ~(a = b) ==> ~COUNTABLE(segment[a,b])) /\
-   (!a b:real^N. ~(a = b) ==> ~COUNTABLE(segment(a,b)))`,
-  REWRITE_TAC[open_segment] THEN
-  SIMP_TAC[FINITE_INSERT; FINITE_EMPTY; COUNTABLE_DIFF_FINITE] THEN
-  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN DISCH_TAC THEN
-  REWRITE_TAC[segment; SIMPLE_IMAGE] THEN
-  MP_TAC(ISPECL [`vec 0:real^1`; `vec 1:real^1`] (CONJUNCT1
-   UNCOUNTABLE_INTERVAL)) THEN
-  REWRITE_TAC[INTERVAL_EQ_EMPTY_1; VEC_COMPONENT; DROP_VEC] THEN
-  REWRITE_TAC[GSYM REAL_NOT_LT; REAL_LT_01; COUNTABLE; ge_c] THEN
-  REWRITE_TAC[CARD_NOT_LE] THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LTE_TRANS) THEN
-  REWRITE_TAC[le_c; REAL_NOT_LT; IN_INTERVAL_1] THEN
-  EXISTS_TAC `\u. (&1 - drop u) % (a:real^N) + drop u % b` THEN
-  REWRITE_TAC[IN_ELIM_THM; LIFT_DROP; FORALL_LIFT; DROP_VEC] THEN
-  CONJ_TAC THENL [MESON_TAC[]; REWRITE_TAC[LIFT_EQ]] THEN
-  ASM_SIMP_TAC[VECTOR_MUL_EQ_0; VECTOR_SUB_EQ; REAL_SUB_0; VECTOR_ARITH
-   `(&1 - x) % a + x % b:real^N = (&1 - y) % a + y % b <=>
-    (x - y) % (a - b) = vec 0`]);;
-
-let UNCOUNTABLE_CONVEX = prove
- (`!s a b:real^N.
-        convex s /\ a IN s /\ b IN s /\ ~(a = b) ==> ~COUNTABLE s`,
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
-  SUBGOAL_THEN `~COUNTABLE(segment[a:real^N,b])` MP_TAC THENL
-   [ASM_SIMP_TAC[UNCOUNTABLE_SEGMENT]; REWRITE_TAC[CONTRAPOS_THM]] THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
-  ASM_MESON_TAC[CONVEX_CONTAINS_SEGMENT]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Measurability of compact and bounded open sets.                           *)
 (* ------------------------------------------------------------------------- *)
 

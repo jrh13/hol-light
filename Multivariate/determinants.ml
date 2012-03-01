@@ -1094,6 +1094,10 @@ let ORTHOGONAL_MATRIX = prove
  (`orthogonal_matrix(Q:real^N^N) <=> transp(Q) ** Q = mat 1`,
   MESON_TAC[MATRIX_LEFT_RIGHT_INVERSE; orthogonal_matrix]);;
 
+let ORTHOGONAL_MATRIX_ALT = prove
+ (`!A:real^N^N. orthogonal_matrix A <=> A ** transp A = mat 1`,
+  MESON_TAC[MATRIX_LEFT_RIGHT_INVERSE; orthogonal_matrix]);;
+
 let ORTHOGONAL_MATRIX_ID = prove
  (`orthogonal_matrix(mat 1)`,
   REWRITE_TAC[orthogonal_matrix; TRANSP_MAT; MATRIX_MUL_LID]);;
@@ -1167,6 +1171,81 @@ let ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS = prove
                ==> orthogonal (row i A) (row j A))`,
   ONCE_REWRITE_TAC[GSYM ORTHOGONAL_MATRIX_TRANSP] THEN
   SIMP_TAC[ORTHOGONAL_MATRIX_ORTHONORMAL_COLUMNS; COLUMN_TRANSP]);;
+
+let ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_INDEXED = prove
+ (`!A:real^N^N.
+        orthogonal_matrix A <=>
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> norm(row i A) = &1) /\
+        pairwise (\i j. orthogonal (row i A) (row j A)) (1..dimindex(:N))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ORTHOGONAL_MATRIX_ALT] THEN
+  SIMP_TAC[CART_EQ; LAMBDA_BETA; pairwise; MAT_COMPONENT] THEN
+  SIMP_TAC[MATRIX_MUL_RTRANSP_DOT_ROW; IN_NUMSEG; LAMBDA_BETA] THEN
+  REWRITE_TAC[NORM_EQ_SQUARE; REAL_POS] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN REWRITE_TAC[orthogonal] THEN
+  MESON_TAC[]);;
+
+let ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_PAIRWISE = prove
+ (`!A:real^N^N.
+        orthogonal_matrix A <=>
+        CARD(rows A) = dimindex(:N) /\
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> norm(row i A) = &1) /\
+        pairwise orthogonal (rows A)`,
+  REWRITE_TAC[rows; ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_INDEXED] THEN
+  GEN_TAC THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  REWRITE_TAC[PAIRWISE_IMAGE; GSYM numseg] THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r /\ s)) ==> (p /\ q <=> r /\ p /\ s)`) THEN
+  DISCH_TAC THEN GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o RAND_CONV)
+    [GSYM CARD_NUMSEG_1] THEN
+  SIMP_TAC[CARD_IMAGE_EQ_INJ; FINITE_NUMSEG] THEN
+  REWRITE_TAC[pairwise; IN_NUMSEG] THEN
+  ASM_MESON_TAC[ORTHOGONAL_REFL; NORM_ARITH `~(norm(vec 0:real^N) = &1)`]);;
+
+let ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_SPAN = prove
+ (`!A:real^N^N.
+        orthogonal_matrix A <=>
+        span(rows A) = (:real^N) /\
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> norm(row i A) = &1) /\
+        pairwise orthogonal (rows A)`,
+  GEN_TAC THEN REWRITE_TAC[ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_PAIRWISE] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [MATCH_MP_TAC(SET_RULE `UNIV SUBSET s ==> s = UNIV`) THEN
+    MATCH_MP_TAC CARD_GE_DIM_INDEPENDENT THEN
+    ASM_REWRITE_TAC[DIM_UNIV; SUBSET_UNIV; LE_REFL];
+    CONV_TAC SYM_CONV THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
+    FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[DIM_SPAN] THEN
+    MATCH_MP_TAC DIM_EQ_CARD] THEN
+  MATCH_MP_TAC PAIRWISE_ORTHOGONAL_INDEPENDENT THEN
+  ASM_REWRITE_TAC[rows; IN_ELIM_THM] THEN
+  ASM_MESON_TAC[NORM_ARITH `~(norm(vec 0:real^N) = &1)`]);;
+
+let ORTHOGONAL_MATRIX_ORTHONORMAL_COLUMNS_INDEXED = prove
+ (`!A:real^N^N.
+      orthogonal_matrix A <=>
+      (!i. 1 <= i /\ i <= dimindex(:N) ==> norm(column i A) = &1) /\
+      pairwise (\i j. orthogonal (column i A) (column j A)) (1..dimindex(:N))`,
+  ONCE_REWRITE_TAC[GSYM ORTHOGONAL_MATRIX_TRANSP] THEN
+  REWRITE_TAC[ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_INDEXED] THEN
+  SIMP_TAC[ROW_TRANSP; ROWS_TRANSP; pairwise; IN_NUMSEG]);;
+
+let ORTHOGONAL_MATRIX_ORTHONORMAL_COLUMNS_PAIRWISE = prove
+ (`!A:real^N^N.
+        orthogonal_matrix A <=>
+        CARD(columns A) = dimindex(:N) /\
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> norm(column i A) = &1) /\
+        pairwise orthogonal (columns A)`,
+  ONCE_REWRITE_TAC[GSYM ORTHOGONAL_MATRIX_TRANSP] THEN
+  REWRITE_TAC[ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_PAIRWISE] THEN
+  SIMP_TAC[ROW_TRANSP; ROWS_TRANSP]);;
+
+let ORTHOGONAL_MATRIX_ORTHONORMAL_COLUMNS_SPAN = prove
+ (`!A:real^N^N.
+        orthogonal_matrix A <=>
+        span(columns A) = (:real^N) /\
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> norm(column i A) = &1) /\
+        pairwise orthogonal (columns A)`,
+  ONCE_REWRITE_TAC[GSYM ORTHOGONAL_MATRIX_TRANSP] THEN
+  REWRITE_TAC[ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_SPAN] THEN
+  SIMP_TAC[ROW_TRANSP; ROWS_TRANSP]);;
 
 let ORTHOGONAL_MATRIX_2 = prove
  (`!A:real^2^2. orthogonal_matrix A <=>

@@ -2202,6 +2202,20 @@ let RETRACT_OF_TRANS = prove
         s retract_of t /\ t retract_of u ==> s retract_of u`,
   REWRITE_TAC[retract_of] THEN MESON_TAC[RETRACTION_o]);;
 
+let CLOSED_IN_RETRACT = prove
+ (`!s t:real^N->bool.
+        s retract_of t ==> closed_in (subtopology euclidean t) s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[retract_of; retraction] THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:real^N->real^N` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `s = {x:real^N | x IN t /\ lift(norm(r x - x)) = vec 0}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[GSYM DROP_EQ; DROP_VEC; LIFT_DROP; NORM_EQ_0] THEN
+    REWRITE_TAC[VECTOR_SUB_EQ] THEN ASM SET_TAC[];
+    MATCH_MP_TAC CONTINUOUS_CLOSED_IN_PREIMAGE_CONSTANT THEN
+    MATCH_MP_TAC CONTINUOUS_ON_LIFT_NORM_COMPOSE THEN
+    MATCH_MP_TAC CONTINUOUS_ON_SUB THEN ASM_SIMP_TAC[CONTINUOUS_ON_ID]]);;
+
 let ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL = prove
  (`!s:real^N->bool t a b:real^M.
         s homeomorphic interval[a,b] /\ ~(s = {}) /\ s SUBSET t
