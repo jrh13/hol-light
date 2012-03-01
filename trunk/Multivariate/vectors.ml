@@ -2703,6 +2703,16 @@ let MATRIX_VECTOR_MUL_TRANSP = prove
  (`!A:real^M^N x:real^M. A ** x = x ** transp A`,
   REWRITE_TAC[VECTOR_MATRIX_MUL_TRANSP; TRANSP_TRANSP]);;
 
+let FINITE_ROWS = prove
+ (`!A:real^N^M. FINITE(rows A)`,
+  REWRITE_TAC[rows] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  SIMP_TAC[GSYM numseg; FINITE_IMAGE; FINITE_NUMSEG]);;
+
+let FINITE_COLUMNS = prove
+ (`!A:real^N^M. FINITE(columns A)`,
+  REWRITE_TAC[columns] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  SIMP_TAC[GSYM numseg; FINITE_IMAGE; FINITE_NUMSEG]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Two sometimes fruitful ways of looking at matrix-vector multiplication.   *)
 (* ------------------------------------------------------------------------- *)
@@ -2854,6 +2864,11 @@ let LINEAR_EQ_MATRIX = prove
   REPEAT STRIP_TAC THEN
   REPEAT(FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP MATRIX_VECTOR_MUL)) THEN
   ASM_REWRITE_TAC[]);;
+
+let MATRIX_SELF_ADJOINT = prove
+ (`!f. linear f ==> (adjoint f = f <=> transp(matrix f) = matrix f)`,
+  SIMP_TAC[GSYM MATRIX_ADJOINT] THEN
+  MESON_TAC[LINEAR_EQ_MATRIX; ADJOINT_LINEAR]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Operator norm.                                                            *)
@@ -6443,6 +6458,34 @@ let DIM_ORTHOGONAL_SUM = prove
       SIMP_TAC[subspace; IN_ELIM_THM; DOT_LMUL; DOT_LADD; DOT_LZERO] THEN
       REAL_ARITH_TAC];
     REWRITE_TAC[IN_SING] THEN MESON_TAC[DOT_EQ_0]]);;
+
+let DIM_SUBSPACE_ORTHOGONAL_TO_VECTORS = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t /\ s SUBSET t
+        ==> dim {y | y IN t /\ !x. x IN s ==> orthogonal x y} + dim s = dim t`,
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (rand o rand) DIM_ORTHOGONAL_SUM o lhand o snd) THEN
+  ANTS_TAC THENL
+   [SIMP_TAC[IN_ELIM_THM; orthogonal] THEN MESON_TAC[DOT_SYM];
+    DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SPAN_MONO THEN ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN REWRITE_TAC[SUBSPACE_SPAN] THEN
+  REWRITE_TAC[SPAN_UNION; SUBSET; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `x:real^N`]
+        ORTHOGONAL_SUBSPACE_DECOMP_EXISTS) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `y:real^N` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `z:real^N` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[VECTOR_ADD_SYM] THEN
+  MATCH_MP_TAC SPAN_SUPERSET THEN REWRITE_TAC[IN_ELIM_THM] THEN CONJ_TAC THENL
+   [FIRST_ASSUM(SUBST1_TAC o MATCH_MP (VECTOR_ARITH
+     `x:real^N = y + z ==> z = x - y`)) THEN
+    MATCH_MP_TAC SUBSPACE_SUB THEN
+    ASM_MESON_TAC[SUBSET; SPAN_EQ_SELF];
+    ASM_MESON_TAC[SPAN_SUPERSET; ORTHOGONAL_SYM]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More about rank from the rank/nullspace formula.                          *)

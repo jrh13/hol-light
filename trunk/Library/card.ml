@@ -455,6 +455,10 @@ let CARD_LE_FINITE = prove
  (`!s:A->bool t:B->bool. FINITE t /\ s <=_c t ==> FINITE s`,
   ASM_MESON_TAC[CARD_LE_EQ_SUBSET; FINITE_SUBSET; CARD_FINITE_CONG]);;
 
+let CARD_EQ_FINITE = prove
+ (`!s t:A->bool. FINITE t /\ s =_c t ==> FINITE s`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN MESON_TAC[CARD_LE_FINITE]);;
+
 let CARD_LE_INFINITE = prove
  (`!s:A->bool t:B->bool. INFINITE s /\ s <=_c t ==> INFINITE t`,
   MESON_TAC[CARD_LE_FINITE; INFINITE]);;
@@ -515,6 +519,13 @@ let CARD_LE_IMAGE_GEN = prove
  (`!f:A->B s t. t SUBSET IMAGE f s ==> t <=_c s`,
   REPEAT STRIP_TAC THEN TRANS_TAC CARD_LE_TRANS `IMAGE (f:A->B) s` THEN
   ASM_SIMP_TAC[CARD_LE_IMAGE; CARD_LE_SUBSET]);;
+
+let CARD_EQ_IMAGE = prove
+ (`!f:A->B s.
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> IMAGE f s =_c s`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
+  REWRITE_TAC[eq_c] THEN EXISTS_TAC `f:A->B` THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinal arithmetic operations.                                           *)
@@ -1027,6 +1038,19 @@ let NUM_COUNTABLE = prove
  (`COUNTABLE(:num)`,
   REWRITE_TAC[COUNTABLE; ge_c; CARD_LE_REFL]);;
 
+let CARD_LE_COUNTABLE = prove
+ (`!s t:A->bool. COUNTABLE t /\ s <=_c t ==> COUNTABLE s`,
+  REWRITE_TAC[COUNTABLE; ge_c] THEN REPEAT STRIP_TAC THEN
+  TRANS_TAC CARD_LE_TRANS `t:A->bool` THEN ASM_REWRITE_TAC[]);;
+
+let CARD_EQ_COUNTABLE = prove
+ (`!s t:A->bool. COUNTABLE t /\ s =_c t ==> COUNTABLE s`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN MESON_TAC[CARD_LE_COUNTABLE]);;
+
+let CARD_COUNTABLE_CONG = prove
+ (`!s t. s =_c t ==> (COUNTABLE s <=> COUNTABLE t)`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN MESON_TAC[CARD_LE_COUNTABLE]);;
+
 let COUNTABLE_SUBSET = prove
  (`!s t:A->bool. COUNTABLE t /\ s SUBSET t ==> COUNTABLE s`,
   REWRITE_TAC[COUNTABLE; ge_c] THEN REPEAT STRIP_TAC THEN
@@ -1152,7 +1176,7 @@ let COUNTABLE_UNIONS = prove
   ASM SET_TAC[]);;
 
 let COUNTABLE_PRODUCT_DEPENDENT = prove
- (`!f:A->B->C s t. 
+ (`!f:A->B->C s t.
         COUNTABLE s /\ (!x. x IN s ==> COUNTABLE(t x))
         ==> COUNTABLE {f x y | x IN s /\ y IN (t x)}`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN
@@ -1405,3 +1429,10 @@ let UNCOUNTABLE_REAL = prove
   TRANS_TAC CARD_LTE_TRANS `(:num->bool)` THEN
   REWRITE_TAC[CANTOR_THM_UNIV] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
   ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN REWRITE_TAC[CARD_EQ_REAL]);;
+
+let CARD_EQ_REAL_IMP_UNCOUNTABLE = prove
+ (`!s. s =_c (:real) ==> ~COUNTABLE s`,
+  GEN_TAC THEN STRIP_TAC THEN
+  DISCH_THEN(MP_TAC o ISPEC `(:real)` o MATCH_MP
+    (REWRITE_RULE[IMP_CONJ] CARD_EQ_COUNTABLE)) THEN
+  REWRITE_TAC[UNCOUNTABLE_REAL] THEN ASM_MESON_TAC[CARD_EQ_SYM]);;
