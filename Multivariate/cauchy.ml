@@ -5648,6 +5648,97 @@ let WINDING_NUMBER_HOMOTOPIC_PATHS = prove
       ASM_MESON_TAC[NORM_SUB; VALID_PATH_IMP_PATH]];
     ASM_REWRITE_TAC[] THEN MP_TAC CX_2PII_NZ THEN CONV_TAC COMPLEX_RING]);;
 
+let WINDING_NUMBER_HOMOTOPIC_LOOPS = prove
+ (`!g h z. homotopic_loops ((:complex) DELETE z) g h
+           ==> winding_number(g,z) = winding_number(h,z)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_PATH) THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_LOOP) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_SUBSET) THEN
+  REWRITE_TAC[SET_RULE `s SUBSET UNIV DELETE z <=> ~(z IN s)`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`g:real^1->complex`; `(:complex) DELETE z`]
+     HOMOTOPIC_NEARBY_LOOPS) THEN
+  ASM_SIMP_TAC[OPEN_DELETE; OPEN_UNIV; SET_RULE
+   `s SUBSET UNIV DELETE z <=> ~(z IN s)`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`g:real^1->complex`; `z:complex`; `d:real`]
+    WINDING_NUMBER) THEN ASM_SIMP_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `p:real^1->complex` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`h:real^1->complex`; `(:complex) DELETE z`]
+     HOMOTOPIC_NEARBY_LOOPS) THEN
+  ASM_SIMP_TAC[OPEN_DELETE; OPEN_UNIV; SET_RULE
+   `s SUBSET UNIV DELETE z <=> ~(z IN s)`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`h:real^1->complex`; `z:complex`; `e:real`]
+    WINDING_NUMBER) THEN ASM_SIMP_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `q:real^1->complex` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `path_integral p (\w. Cx(&1) / (w - z)) =
+    path_integral q (\w. Cx(&1) / (w - z))`
+  MP_TAC THENL
+   [MATCH_MP_TAC CAUCHY_THEOREM_HOMOTOPIC_LOOPS THEN
+    EXISTS_TAC `(:complex) DELETE z` THEN
+    ASM_SIMP_TAC[OPEN_DELETE; OPEN_UNIV] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC HOLOMORPHIC_ON_DIV THEN
+      SIMP_TAC[HOLOMORPHIC_ON_CONST; HOLOMORPHIC_ON_ID;
+               HOLOMORPHIC_ON_SUB; IN_DELETE; COMPLEX_SUB_0];
+      ALL_TAC] THEN
+    MATCH_MP_TAC HOMOTOPIC_LOOPS_TRANS THEN
+    EXISTS_TAC `g:real^1->complex` THEN CONJ_TAC THENL
+     [ONCE_REWRITE_TAC[HOMOTOPIC_LOOPS_SYM] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_MESON_TAC[NORM_SUB; VALID_PATH_IMP_PATH];
+      MATCH_MP_TAC HOMOTOPIC_LOOPS_TRANS THEN
+      EXISTS_TAC `h:real^1->complex` THEN ASM_REWRITE_TAC[] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_MESON_TAC[NORM_SUB; VALID_PATH_IMP_PATH]];
+    ASM_REWRITE_TAC[] THEN MP_TAC CX_2PII_NZ THEN CONV_TAC COMPLEX_RING]);;
+
+let WINDING_NUMBER_PATHS_LINEAR_EQ = prove
+ (`!g h z.
+        path g /\ path h /\
+        pathstart h = pathstart g /\
+        pathfinish h = pathfinish g /\
+        (!t. t IN interval[vec 0,vec 1] ==> ~(z IN segment[g t,h t]))
+        ==> winding_number(h,z) = winding_number(g,z)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC WINDING_NUMBER_HOMOTOPIC_PATHS THEN
+  MATCH_MP_TAC HOMOTOPIC_PATHS_LINEAR THEN ASM SET_TAC[]);;
+
+let WINDING_NUMBER_LOOPS_LINEAR_EQ = prove
+ (`!g h z.
+        path g /\ path h /\
+        pathfinish g = pathstart g /\
+        pathfinish h = pathstart h /\
+        (!t. t IN interval[vec 0,vec 1] ==> ~(z IN segment[g t,h t]))
+        ==> winding_number(h,z) = winding_number(g,z)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC WINDING_NUMBER_HOMOTOPIC_LOOPS THEN
+  MATCH_MP_TAC HOMOTOPIC_LOOPS_LINEAR THEN ASM SET_TAC[]);;
+
+let WINDING_NUMBER_NEARBY_PATHS_EQ = prove
+ (`!g h z.
+        path g /\ path h /\
+        pathstart h = pathstart g /\
+        pathfinish h = pathfinish g /\
+        (!t. t IN interval[vec 0,vec 1] ==> norm(h t - g t) < norm(g t - z))
+        ==> winding_number(h,z) = winding_number(g,z)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC WINDING_NUMBER_HOMOTOPIC_PATHS THEN
+  MATCH_MP_TAC HOMOTOPIC_PATHS_NEARBY_EXPLICIT THEN ASM SET_TAC[]);;
+
+let WINDING_NUMBER_NEARBY_LOOPS_EQ = prove
+ (`!g h z.
+        path g /\ path h /\
+        pathfinish g = pathstart g /\
+        pathfinish h = pathstart h /\
+        (!t. t IN interval[vec 0,vec 1] ==> norm(h t - g t) < norm(g t - z))
+        ==> winding_number(h,z) = winding_number(g,z)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC WINDING_NUMBER_HOMOTOPIC_LOOPS THEN
+  MATCH_MP_TAC HOMOTOPIC_LOOPS_NEARBY_EXPLICIT THEN ASM SET_TAC[]);;
+
 let WINDING_NUMBER_SUBPATH_COMBINE = prove
  (`path g /\ ~(z IN path_image g) /\
    u IN interval [vec 0,vec 1] /\
@@ -13600,7 +13691,8 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
     SIMP_TAC[CONVEX_IMP_SIMPLY_CONNECTED; CONVEX_BALL]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A further chain of equivalents (following 1.35 in Burckel's book).        *)
+(* A further chain of equivalents about components of the complement of a    *)
+(* simply connected set (following 1.35 in Burckel's book).                  *)
 (* ------------------------------------------------------------------------- *)
 
 let [SIMPLY_CONNECTED_EQ_FRONTIER_PROPERTIES;
@@ -13986,6 +14078,106 @@ let [SIMPLY_CONNECTED_EQ_FRONTIER_PROPERTIES;
     EXISTS_TAC `closure v:complex->bool` THEN
     ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN SET_TAC[]]);;
 
+(* ------------------------------------------------------------------------- *)
+(* Yet another set of equivalences based on *continuous* logs and sqrts.     *)
+(* ------------------------------------------------------------------------- *)
+
+let SIMPLY_CONNECTED_EQ_CONTINUOUS_LOG,SIMPLY_CONNECTED_EQ_CONTINUOUS_SQRT =
+  (CONJ_PAIR o prove)
+ (`(!s. open s
+        ==> (simply_connected s <=>                       
+             connected s /\
+             !f. f continuous_on s /\ (!z:complex. z IN s ==> ~(f z = Cx(&0)))
+                 ==> ?g. g continuous_on s /\
+                         !z. z IN s ==> f z = cexp(g z))) /\
+   (!s. open s
+        ==> (simply_connected s <=>
+             connected s /\
+             !f. f continuous_on s /\ (!z:complex. z IN s ==> ~(f z = Cx(&0)))
+                 ==> ?g. g continuous_on s /\
+                         !z. z IN s ==> f z = g z pow 2))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN X_GEN_TAC `s:complex->bool` THEN
+  ASM_CASES_TAC `open(s:complex->bool)` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `connected(s:complex->bool)` THEN ASM_REWRITE_TAC[] THENL
+   [ALL_TAC; ASM_MESON_TAC[SIMPLY_CONNECTED_IMP_CONNECTED]] THEN
+  MATCH_MP_TAC(TAUT
+   `(p ==> q) /\ (q ==> r) /\ (r ==> p) ==> (p <=> q) /\ (p <=> r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_SIMP_TAC[SIMPLY_CONNECTED_EQ_HOMEOMORPHIC_TO_DISC] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[CONTINUOUS_ON_EMPTY; NOT_IN_EMPTY] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+    REWRITE_TAC[homeomorphism; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`k:complex->complex`; `h:complex->complex`] THEN
+    STRIP_TAC THEN X_GEN_TAC `f:complex->complex` THEN STRIP_TAC THEN
+    MP_TAC(ISPECL
+     [`(f:complex->complex) o (h:complex->complex)`; `Cx(&0)`; `&1`]
+        CONTINUOUS_LOGARITHM_ON_BALL) THEN
+    ASM_REWRITE_TAC[o_THM] THEN ANTS_TAC THENL
+     [CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+      ASM_MESON_TAC[CONTINUOUS_ON_SUBSET];
+      DISCH_THEN(X_CHOOSE_THEN `g:complex->complex` STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC `(g:complex->complex) o (k:complex->complex)` THEN
+      REWRITE_TAC[o_THM] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN   
+      ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]];
+    DISCH_TAC THEN X_GEN_TAC `f:complex->complex` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `f:complex->complex`) THEN ASM_SIMP_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `g:complex->complex` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `\z:complex. cexp(g z / Cx(&2))` THEN
+    ASM_SIMP_TAC[GSYM CEXP_N; COMPLEX_RING `Cx(&2) * z / Cx(&2) = z`] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    REWRITE_TAC[CONTINUOUS_ON_CEXP] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPLEX_DIV THEN
+    ASM_SIMP_TAC[CONTINUOUS_ON_CONST] THEN
+    CONV_TAC COMPLEX_RING;
+    DISCH_TAC THEN ASM_SIMP_TAC[SIMPLY_CONNECTED_EQ_HOLOMORPHIC_SQRT] THEN
+    X_GEN_TAC `f:complex->complex` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `f:complex->complex`) THEN
+    ASM_SIMP_TAC[HOLOMORPHIC_ON_IMP_CONTINUOUS_ON] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:complex->complex` THEN
+    STRIP_TAC THEN ASM_SIMP_TAC[HOLOMORPHIC_ON_OPEN] THEN
+    X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `~((g:complex->complex) z = Cx(&0))` ASSUME_TAC THENL
+     [ASM_MESON_TAC[COMPLEX_RING `Cx(&0) pow 2 = Cx(&0)`]; ALL_TAC] THEN
+    EXISTS_TAC `complex_derivative f z / (Cx(&2) * g z)` THEN
+    REWRITE_TAC[HAS_COMPLEX_DERIVATIVE_AT] THEN
+    MATCH_MP_TAC LIM_TRANSFORM_WITHIN_OPEN THEN
+    EXISTS_TAC `\x:complex. (f(x) - f(z)) / (x - z) / (g(x) + g(z))` THEN
+    SUBGOAL_THEN 
+      `?d. &0 < d /\ 
+           !w:complex. w IN s /\ w IN ball(z,d) ==> ~(g w + g z = Cx(&0))`
+    STRIP_ASSUME_TAC THENL
+     [FIRST_ASSUM(MP_TAC o SPEC `z:complex` o                        
+      GEN_REWRITE_RULE I [continuous_on]) THEN ASM_REWRITE_TAC[] THEN 
+      DISCH_THEN(MP_TAC o SPEC `norm((g:complex->complex) z)`) THEN
+      ASM_REWRITE_TAC[COMPLEX_NORM_NZ] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      ONCE_REWRITE_TAC[DIST_SYM] THEN
+      REWRITE_TAC[IN_BALL; GSYM COMPLEX_VEC_0] THEN
+      MESON_TAC[NORM_ARITH `dist(z,x) < norm z ==> ~(x + z = vec 0)`];
+      ALL_TAC] THEN
+    EXISTS_TAC `ball(z:complex,d) INTER s` THEN
+    ASM_REWRITE_TAC[IN_INTER; CENTRE_IN_BALL] THEN REPEAT CONJ_TAC THENL
+     [ASM_SIMP_TAC[OPEN_INTER; OPEN_BALL];
+      ASM_SIMP_TAC[] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC(COMPLEX_FIELD
+       `~(x = z) /\ ~(gx + gz = Cx(&0))
+        ==> (gx pow 2 - gz pow 2) / (x - z) / (gx + gz) = 
+             (gx - gz) / (x - z)`) THEN
+      ASM_SIMP_TAC[];
+      MATCH_MP_TAC LIM_COMPLEX_DIV THEN
+      ASM_REWRITE_TAC[COMPLEX_ENTIRE; GSYM HAS_COMPLEX_DERIVATIVE_AT] THEN
+      REWRITE_TAC[HAS_COMPLEX_DERIVATIVE_DIFFERENTIABLE; CX_INJ] THEN
+      REWRITE_TAC[COMPLEX_MUL_2; REAL_OF_NUM_EQ; ARITH_EQ] THEN CONJ_TAC THENL 
+       [ASM_MESON_TAC[HOLOMORPHIC_ON_IMP_DIFFERENTIABLE_AT]; ALL_TAC] THEN
+      MATCH_MP_TAC LIM_ADD THEN REWRITE_TAC[LIM_CONST; GSYM CONTINUOUS_AT] THEN
+      ASM_MESON_TAC[HOLOMORPHIC_ON_IMP_CONTINUOUS_ON;
+                    CONTINUOUS_ON_INTERIOR; INTERIOR_OPEN]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A few simple corollaries from the various equivalences.                   *)
+(* ------------------------------------------------------------------------- *)
+
 let SIMPLY_CONNECTED_INSIDE_SIMPLE_PATH = prove
  (`!p:real^1->real^2.
      simple_path p ==> simply_connected(inside(path_image p))`,
@@ -13997,6 +14189,15 @@ let SIMPLY_CONNECTED_INSIDE_SIMPLE_PATH = prove
   ASM_CASES_TAC `pathstart(p):real^2 = pathfinish p` THEN
   ASM_SIMP_TAC[JORDAN_INSIDE_OUTSIDE; INSIDE_ARC_EMPTY; ARC_SIMPLE_PATH] THEN
   REWRITE_TAC[CONNECTED_EMPTY]);;
+
+let SIMPLY_CONNECTED_INTER = prove
+ (`!s t:real^2->bool.
+        open s /\ open t /\ simply_connected s /\ simply_connected t /\
+        connected (s INTER t)
+        ==> simply_connected (s INTER t)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  SIMP_TAC[SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO; OPEN_INTER] THEN
+  REWRITE_TAC[SUBSET; IN_INTER] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Pick out the Riemann Mapping Theorem from the earlier chain.              *)

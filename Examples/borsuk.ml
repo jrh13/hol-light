@@ -6,136 +6,6 @@
 needs "Multivariate/realanalysis.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Lemmas about choosing a continuous logarithm.                             *)
-(* ------------------------------------------------------------------------- *)
-
-let LEMMA_1 = prove
- (`!f g:real^N->complex s.
-        f continuous_on s /\ g continuous_on s /\
-        (!x. x IN s ==> norm(g x) < norm(f x))
-        ==> ?h. h continuous_on s /\
-                (!x. x IN s ==> f(x) + g(x) = f(x) * cexp(h x))`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `!x:real^N. x IN s ==> ~(f x = Cx(&0))` ASSUME_TAC THENL
-   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
-    ASM_REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN NORM_ARITH_TAC;
-    ALL_TAC] THEN
-  EXISTS_TAC `\x:real^N. clog(Cx(&1) + g(x) / f(x))` THEN
-  REWRITE_TAC[] THEN CONJ_TAC THENL
-   [MATCH_MP_TAC(REWRITE_RULE[o_DEF] CONTINUOUS_ON_COMPOSE) THEN
-    ASM_SIMP_TAC[CONTINUOUS_ON_ADD; CONTINUOUS_ON_CONST;
-                 CONTINUOUS_ON_COMPLEX_DIV] THEN
-    MATCH_MP_TAC CONTINUOUS_ON_CLOG THEN
-    REWRITE_TAC[IMP_CONJ; FORALL_IN_IMAGE; RE_ADD; IM_ADD;
-                IM_CX; RE_CX; REAL_ADD_LID] THEN
-    REWRITE_TAC[GSYM real] THEN REPEAT STRIP_TAC THEN
-    MATCH_MP_TAC(REAL_ARITH `abs(x) < &1 ==> &0 < &1 + x`) THEN
-    ASM_SIMP_TAC[GSYM REAL_NORM; COMPLEX_NORM_DIV; REAL_LT_LDIV_EQ;
-                 COMPLEX_NORM_NZ; REAL_MUL_LID];
-    REPEAT STRIP_TAC THEN ASM_SIMP_TAC[COMPLEX_FIELD
-     `~(z = Cx(&0)) ==> (z + w = z * u <=> u = Cx(&1) + w / z)`] THEN
-    MATCH_MP_TAC CEXP_CLOG THEN REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
-    MATCH_MP_TAC(NORM_ARITH `norm(a) < norm(b) ==> ~(b + a = vec 0)`) THEN
-    ASM_SIMP_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_CX; REAL_MUL_LID;
-                 REAL_LT_LDIV_EQ; COMPLEX_NORM_NZ; REAL_ABS_NUM]]);;
-
-let PROPOSITION_1 = prove
- (`!f. f continuous_on cball(Cx(&0),&1) /\
-       (!z. z IN cball(Cx(&0),&1) ==> ~(f z = Cx(&0)))
-       ==> ?h. h continuous_on cball(Cx(&0),&1) /\
-               !z. z IN cball(Cx(&0),&1) ==> f z = cexp(h z)`,
-  REPEAT STRIP_TAC THEN SUBGOAL_THEN
-   `?e. &0 < e /\ !z. z IN cball(Cx(&0),&1) ==> e <= norm(f z:complex)`
-  STRIP_ASSUME_TAC THENL
-   [MP_TAC(ISPECL [`IMAGE (f:complex->complex) (cball(Cx(&0),&1))`;
-                   `Cx(&0)`] DISTANCE_ATTAINS_INF) THEN
-    REWRITE_TAC[IMAGE_EQ_EMPTY; CBALL_EQ_EMPTY; REAL_OF_NUM_LT; ARITH] THEN
-    REWRITE_TAC[FORALL_IN_IMAGE; EXISTS_IN_IMAGE] THEN ANTS_TAC THENL
-     [ASM_MESON_TAC[COMPACT_IMP_CLOSED; COMPACT_CBALL;
-                    COMPACT_CONTINUOUS_IMAGE];
-      REWRITE_TAC[dist; COMPLEX_SUB_LZERO; NORM_NEG] THEN
-      ASM_MESON_TAC[COMPLEX_NORM_NZ]];
-    ALL_TAC] THEN
-  SUBGOAL_THEN `(f:complex->complex) uniformly_continuous_on cball(Cx(&0),&1)`
-  MP_TAC THENL
-   [ASM_SIMP_TAC[COMPACT_UNIFORMLY_CONTINUOUS; COMPACT_CBALL]; ALL_TAC] THEN
-  REWRITE_TAC[uniformly_continuous_on] THEN
-  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
-  MP_TAC(SPEC `d:real` REAL_ARCH_INV) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `n:num` STRIP_ASSUME_TAC) THEN
-  ABBREV_TAC `g = \k z. (f:complex->complex)(Cx(&k / &n) * z)` THEN
-  SUBGOAL_THEN
-   `!k:num. k <= n ==> ?h. h continuous_on cball(Cx(&0),&1) /\
-                           !z. z IN cball(Cx(&0),&1) ==> g k z = cexp(h z)`
-  (MP_TAC o SPEC `n:num`) THENL
-   [ALL_TAC;
-    EXPAND_TAC "g" THEN REWRITE_TAC[LE_REFL] THEN
-    ASM_SIMP_TAC[REAL_DIV_REFL; REAL_OF_NUM_EQ; COMPLEX_MUL_LID]] THEN
-  INDUCT_TAC THENL
-   [DISCH_TAC THEN EXPAND_TAC "g" THEN
-    REWRITE_TAC[real_div; REAL_MUL_LZERO; COMPLEX_MUL_LZERO] THEN
-    EXISTS_TAC `\z:complex. clog(f(Cx(&0)))` THEN
-    ASM_SIMP_TAC[CONTINUOUS_ON_CONST; CEXP_CLOG; CENTRE_IN_CBALL; REAL_POS];
-    ALL_TAC] THEN
-  DISCH_TAC THEN
-  MP_TAC(ISPECL [`(g:num->complex->complex) k`;
-                 `\z. (g:num->complex->complex) (SUC k) z - g k z`;
-                 `cball(Cx(&0),&1)`] LEMMA_1) THEN
-  SUBGOAL_THEN
-   `!j z. j <= n /\ z IN cball(Cx(&0),&1)
-          ==> (Cx(&j / &n) * z) IN cball(Cx(&0),&1)`
-  ASSUME_TAC THENL
-   [REWRITE_TAC[IN_CBALL; GSYM COMPLEX_VEC_0; COMPLEX_NORM_MUL;
-                NORM_ARITH `dist(vec 0,x) = norm x`] THEN
-    REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_LID] THEN
-    MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[NORM_POS_LE] THEN
-    REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_DIV; REAL_ABS_NUM] THEN
-    ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
-    ASM_REWRITE_TAC[REAL_MUL_LID; REAL_OF_NUM_LE];
-    ALL_TAC] THEN
-  SUBGOAL_THEN
-   `!j. j <= n ==> (g:num->complex->complex) j continuous_on cball(Cx(&0),&1)`
-  ASSUME_TAC THENL
-   [GEN_TAC THEN DISCH_TAC THEN EXPAND_TAC "g" THEN REWRITE_TAC[] THEN
-    MATCH_MP_TAC(REWRITE_RULE[o_DEF] CONTINUOUS_ON_COMPOSE) THEN
-    SIMP_TAC[CONTINUOUS_ON_COMPLEX_MUL; CONTINUOUS_ON_ID;
-             CONTINUOUS_ON_CONST] THEN
-    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
-     (REWRITE_RULE[IMP_CONJ] CONTINUOUS_ON_SUBSET)) THEN
-    ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE];
-    ALL_TAC] THEN
-  ASM_SIMP_TAC[CONTINUOUS_ON_SUB; ARITH_RULE `SUC k <= n ==> k <= n`;
-               ETA_AX] THEN
-  ANTS_TAC THENL
-   [REPEAT STRIP_TAC THEN
-    MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `e:real` THEN
-    EXPAND_TAC "g" THEN REWRITE_TAC[] THEN
-    ASM_SIMP_TAC[ARITH_RULE `SUC k <= n ==> k <= n`] THEN
-    REWRITE_TAC[GSYM dist] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-    ASM_SIMP_TAC[ARITH_RULE `SUC k <= n ==> k <= n`] THEN
-    REWRITE_TAC[dist; GSYM CX_SUB; COMPLEX_NORM_CX; COMPLEX_NORM_MUL;
-                GSYM COMPLEX_SUB_RDISTRIB; GSYM REAL_OF_NUM_SUC] THEN
-    REWRITE_TAC[REAL_ARITH `(x + &1) / n - x / n = inv(n)`] THEN
-    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-    REWRITE_TAC[REAL_ABS_INV; REAL_ABS_NUM; GSYM real_div] THEN
-    ASM_SIMP_TAC[REAL_LT_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
-    MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `&1` THEN CONJ_TAC THENL
-     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_CBALL]) THEN
-      REWRITE_TAC[dist; COMPLEX_SUB_LZERO; NORM_NEG];
-      ASM_SIMP_TAC[GSYM REAL_LT_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
-      ASM_REWRITE_TAC[real_div; REAL_MUL_LID]];
-    ALL_TAC] THEN
-  REWRITE_TAC[COMPLEX_RING `x + y - x:complex = y`] THEN
-  FIRST_X_ASSUM(MP_TAC o check (is_imp o concl)) THEN
-  ASM_SIMP_TAC[ARITH_RULE `SUC k <= n ==> k <= n`] THEN
-  DISCH_THEN(X_CHOOSE_THEN `h1:complex->complex` STRIP_ASSUME_TAC) THEN
-  DISCH_THEN(X_CHOOSE_THEN `h2:complex->complex` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `\z. (h1:complex->complex) z + h2 z` THEN
-  ASM_SIMP_TAC[CEXP_ADD; CONTINUOUS_ON_ADD; ETA_AX]);;
-
-(* ------------------------------------------------------------------------- *)
 (* The Borsuk-Ulam theorem for the unit sphere.                              *)
 (* ------------------------------------------------------------------------- *)
 
@@ -149,7 +19,8 @@ let THEOREM_1 = prove
   ABBREV_TAC `(g:real^3->real^2) = \x. f(x) - f(--x)` THEN
   ABBREV_TAC `k = \z. (g:real^3->real^2)
                       (vector[Re z; Im z; sqrt(&1 - norm z pow 2)])` THEN
-  MP_TAC(SPEC `k:complex->complex` PROPOSITION_1) THEN
+  MP_TAC(ISPECL [`k:complex->complex`; `Cx(&0)`; `&1`]
+        CONTINUOUS_LOGARITHM_ON_CBALL) THEN
   MATCH_MP_TAC(TAUT `a /\ (a /\ b ==> c) ==> (a ==> b) ==> c`) THEN
   CONJ_TAC THENL
    [CONJ_TAC THENL

@@ -2216,6 +2216,23 @@ let CLOSED_IN_RETRACT = prove
     MATCH_MP_TAC CONTINUOUS_ON_LIFT_NORM_COMPOSE THEN
     MATCH_MP_TAC CONTINUOUS_ON_SUB THEN ASM_SIMP_TAC[CONTINUOUS_ON_ID]]);;
 
+let RETRACT_OF_CONTRACTIBLE = prove
+ (`!s t:real^N->bool. contractible t /\ s retract_of t ==> contractible s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[contractible; retract_of] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC (X_CHOOSE_TAC `r:real^N->real^N`)) THEN
+  SIMP_TAC[HOMOTOPIC_WITH; LEFT_IMP_EXISTS_THM] THEN
+  FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [retraction]) THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `h:real^(1,N)finite_sum->real^N`] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; FORALL_IN_IMAGE]) THEN
+  STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+   [`(r:real^N->real^N) a`;
+    `(r:real^N->real^N) o (h:real^(1,N)finite_sum->real^N)`] THEN
+  ASM_SIMP_TAC[o_THM; IMAGE_o; SUBSET] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP(REWRITE_RULE[IMP_CONJ]
+           CONTINUOUS_ON_SUBSET)) THEN ASM SET_TAC[];
+    ASM SET_TAC[]]);;
+
 let ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL = prove
  (`!s:real^N->bool t a b:real^M.
         s homeomorphic interval[a,b] /\ ~(s = {}) /\ s SUBSET t

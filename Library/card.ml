@@ -348,6 +348,16 @@ let CARD_NOT_LT = prove
  (`!s:A->bool t:B->bool. ~(s <_c t) <=> t <=_c s`,
   REWRITE_TAC[lt_c] THEN MESON_TAC[CARD_LE_TOTAL]);;
 
+let CARD_LT_LE = prove
+ (`!s t. s <_c t <=> s <=_c t /\ ~(s =_c t)`,
+  REWRITE_TAC[lt_c; GSYM CARD_LE_ANTISYM] THEN CONV_TAC TAUT);;
+
+let CARD_LE_LT = prove
+ (`!s t. s <=_c t <=> s <_c t \/ s =_c t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM CARD_NOT_LT] THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [CARD_LT_LE] THEN
+  REWRITE_TAC[DE_MORGAN_THM; CARD_NOT_LE; CARD_EQ_SYM]);;
+
 let CARD_LE_CONG = prove
  (`!s:A->bool s':B->bool t:C->bool t':D->bool.
       s =_c s' /\ t =_c t' ==> (s <=_c t <=> s' <=_c t')`,
@@ -1037,6 +1047,14 @@ let CANTOR_THM_UNIV = prove
 let NUM_COUNTABLE = prove
  (`COUNTABLE(:num)`,
   REWRITE_TAC[COUNTABLE; ge_c; CARD_LE_REFL]);;
+
+let COUNTABLE_ALT = prove
+ (`!s. COUNTABLE s <=> s <=_c (:num)`,
+  REWRITE_TAC[COUNTABLE; ge_c]);;
+
+let COUNTABLE_CASES = prove
+ (`!s. COUNTABLE s <=> FINITE s \/ s =_c (:num)`,
+  REWRITE_TAC[COUNTABLE_ALT; FINITE_CARD_LT; CARD_LE_LT]);;
 
 let CARD_LE_COUNTABLE = prove
  (`!s t:A->bool. COUNTABLE t /\ s <=_c t ==> COUNTABLE s`,

@@ -2650,6 +2650,13 @@ let CLOG_UNIQUE = prove
  (`!w z. --pi < Im(z) /\ Im(z) <= pi /\ cexp(z) = w ==> clog w = z`,
   MESON_TAC[CLOG_CEXP]);;
 
+let RE_CLOG = prove
+ (`!z. ~(z = Cx(&0)) ==> Re(clog z) = log(norm z)`,
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM
+   (MP_TAC o AP_TERM `norm:complex->real` o MATCH_MP CEXP_CLOG) THEN
+  REWRITE_TAC[NORM_CEXP] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[LOG_EXP]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Derivative of clog away from the branch cut.                              *)
 (* ------------------------------------------------------------------------- *)
@@ -5442,3 +5449,372 @@ let REAL_ROOT_RPOW = prove
       `~(n = &0) ==> n * &1 / n * x = x`] THEN
     ONCE_REWRITE_TAC[REAL_ARITH `--x:real = y <=> x = --y`] THEN
     MATCH_MP_TAC EXP_LOG THEN ASM_REAL_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A mapping out of a compact set has a continuous log iff it's inessential. *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_LOGARITHM_IMP_INESSENTIAL = prove
+ (`!f:real^N->complex s.
+        (?g. g continuous_on s /\ !x. x IN s ==> f x = cexp(g x))
+        ==> (?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)})
+                                f (\t. a))`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:real^N->complex` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)})
+            (cexp o g) (\x:real^N. a)`
+  MP_TAC THENL
+   [MATCH_MP_TAC NULLHOMOTOPIC_THROUGH_CONTRACTIBLE THEN
+    EXISTS_TAC `(:complex)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+    ASM_SIMP_TAC[STARLIKE_IMP_CONTRACTIBLE; STARLIKE_UNIV] THEN
+    REWRITE_TAC[CONTINUOUS_ON_CEXP; SUBSET; FORALL_IN_IMAGE] THEN
+    REWRITE_TAC[IN_UNIV; IN_DIFF; IN_SING; CEXP_NZ];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:complex` THEN
+    MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] HOMOTOPIC_WITH_EQ) THEN
+    ASM_SIMP_TAC[o_THM]]);;
+
+let INESSENTIAL_IMP_CONTINUOUS_LOGARITHM = prove
+ (`!f:real^N->complex s.
+        compact s /\
+        (?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)}) f (\t. a))
+        ==> ?g. g continuous_on s /\ !x. x IN s ==> f x = cexp(g x)`,
+  let lemma = prove
+   (`!f g. f continuous_on s /\ g continuous_on s /\
+           (!x:real^N. x IN s ==> norm(g x - f x) < norm(f x))
+           ==> (?l. l continuous_on s /\ !x. x IN s ==> f x = cexp(l x))
+               ==> (?l. l continuous_on s /\ !x. x IN s ==> g x = cexp(l x))`,
+    CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN REPEAT STRIP_TAC THEN
+    EXISTS_TAC `\x:real^N. l(x) + clog(g x / f x)` THEN
+    ASM_SIMP_TAC[CEXP_ADD] THEN
+    SUBGOAL_THEN `!x:real^N. x IN s ==> ~(f x = Cx(&0))` ASSUME_TAC THENL
+     [ASM_MESON_TAC[CEXP_NZ]; ALL_TAC] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_ON_ADD THEN ASM_REWRITE_TAC[] THEN
+      GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+       [MATCH_MP_TAC CONTINUOUS_ON_COMPLEX_DIV THEN ASM_SIMP_TAC[];
+        MATCH_MP_TAC CONTINUOUS_ON_CLOG THEN
+        REWRITE_TAC[FORALL_IN_IMAGE; IMP_CONJ] THEN X_GEN_TAC `x:real^N` THEN
+        REPEAT STRIP_TAC THEN
+        SUBGOAL_THEN `g (x:real^N) / f x = Cx(&1) + (g x - f x) / f x`
+        SUBST1_TAC THENL
+         [ASM_SIMP_TAC[COMPLEX_FIELD
+           `~(y = Cx(&0)) ==> Cx(&1) + (x - y) / y = x / y`];
+          REWRITE_TAC[RE_ADD; RE_CX]] THEN
+        MATCH_MP_TAC(REAL_ARITH
+         `norm(x) < &1 /\ abs(Re x) <= norm x ==> &0 < &1 + Re x`) THEN
+        REWRITE_TAC[COMPLEX_NORM_GE_RE_IM] THEN
+        ASM_SIMP_TAC[COMPLEX_NORM_DIV; REAL_LT_LDIV_EQ; COMPLEX_NORM_NZ;
+                     REAL_MUL_LID]];
+      REPEAT STRIP_TAC THEN ASM_SIMP_TAC[COMPLEX_FIELD
+       `~(f = Cx(&0)) ==> (f * y = g <=> y = g / f)`] THEN
+      MATCH_MP_TAC CEXP_CLOG THEN MATCH_MP_TAC(COMPLEX_FIELD
+       `~(x = Cx(&0)) /\ ~(y = Cx(&0)) ==> ~(x / y = Cx(&0))`) THEN
+      ASM_SIMP_TAC[] THEN REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
+      ASM_MESON_TAC[NORM_ARITH `norm(g - f) < norm f ==> ~(g = vec 0)`]]) in
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  X_GEN_TAC `s:real^N->bool` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_ON_EMPTY; NOT_IN_EMPTY] THEN
+  X_GEN_TAC `f:real^N->complex` THEN ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN
+  DISCH_THEN(X_CHOOSE_THEN `z0:complex`
+    (fun th -> ASSUME_TAC th THEN MP_TAC th)) THEN
+  REWRITE_TAC[homotopic_with; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `k:real^(1,N)finite_sum->complex` THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?e. &0 < e /\
+        !t:real^1 x:real^N. t IN interval[vec 0,vec 1] /\ x IN s
+                            ==> e <= norm(k(pastecart t x):complex)`
+  STRIP_ASSUME_TAC THENL
+   [MP_TAC(ISPECL
+     [`norm o (k:real^(1,N)finite_sum->complex)`;
+      `{ pastecart (t:real^1) (x:real^N) |
+         t IN interval[vec 0,vec 1] /\ x IN s}`] CONTINUOUS_ATTAINS_INF) THEN
+    ASM_SIMP_TAC[COMPACT_PASTECART; COMPACT_INTERVAL] THEN ANTS_TAC THENL
+     [ASM_REWRITE_TAC[o_ASSOC; UNIT_INTERVAL_NONEMPTY; SET_RULE
+       `{f x y | x IN s /\ y IN t} = {} <=> s = {} \/ t = {}`] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+      ASM_REWRITE_TAC[CONTINUOUS_ON_LIFT_NORM];
+      REWRITE_TAC[EXISTS_IN_GSPEC; FORALL_IN_GSPEC] THEN
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [`t:real^1`; `x:real^N`] THEN
+      REWRITE_TAC[o_THM] THEN STRIP_TAC THEN
+      EXISTS_TAC `norm((k:real^(1,N)finite_sum->complex)(pastecart t x))` THEN
+      ASM_REWRITE_TAC[COMPLEX_NORM_NZ] THEN ASM SET_TAC[]];
+    ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+    COMPACT_UNIFORMLY_CONTINUOUS)) THEN
+  ASM_SIMP_TAC[COMPACT_PASTECART; COMPACT_INTERVAL] THEN
+  REWRITE_TAC[uniformly_continuous_on; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN DISCH_THEN(MP_TAC o SPEC `e:real`) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(X_CHOOSE_THEN `d:real`
+   (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  DISCH_THEN(MP_TAC o GENL [`s:real^1`; `t:real^1`; `x:real^N`] o
+   SPECL [`s:real^1`; `x:real^N`; `t:real^1`; `x:real^N`]) THEN
+  REWRITE_TAC[dist; TAUT `a /\ b /\ c /\ b /\ d <=> a /\ c /\ b /\ d`] THEN
+  REWRITE_TAC[PASTECART_SUB; NORM_PASTECART; VECTOR_SUB_REFL; NORM_0] THEN
+  SIMP_TAC[REAL_ARITH `x + &0 pow 2 = x`; POW_2_SQRT_ABS; REAL_ABS_NORM] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN
+   `!n t. t IN interval[vec 0,vec 1] /\ drop t <= &n * d / &2
+          ==> ?g. g continuous_on s /\
+                    !x:real^N. x IN s ==> k(pastecart t x) = cexp(g x)`
+  MP_TAC THENL
+   [MATCH_MP_TAC num_INDUCTION THEN CONJ_TAC THENL
+     [REWRITE_TAC[IN_INTERVAL_1; REAL_MUL_LZERO; DROP_VEC] THEN
+      REWRITE_TAC[REAL_ARITH `(&0 <= t /\ t <= &1) /\ t <= &0 <=> t = &0`] THEN
+      REWRITE_TAC[FORALL_LIFT; LIFT_DROP; FORALL_UNWIND_THM2] THEN
+      ASM_REWRITE_TAC[LIFT_NUM] THEN EXISTS_TAC `\x:real^N. clog z0` THEN
+      REWRITE_TAC[o_DEF; CONTINUOUS_ON_CONST] THEN GEN_TAC THEN DISCH_TAC THEN
+      CONV_TAC SYM_CONV THEN MATCH_MP_TAC CEXP_CLOG THEN
+      FIRST_X_ASSUM(fun th ->
+       GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [GSYM th]) THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+       `IMAGE k s SUBSET UNIV DIFF {a} ==> z IN s ==> ~(k z = a)`)) THEN
+      ASM_REWRITE_TAC[IN_ELIM_PASTECART_THM; ENDS_IN_UNIT_INTERVAL];
+      X_GEN_TAC `n:num` THEN DISCH_THEN(LABEL_TAC "hyp") THEN
+      X_GEN_TAC `t:real^1` THEN REWRITE_TAC[IN_INTERVAL_1; DROP_VEC] THEN
+      REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN STRIP_TAC THEN
+      ASM_CASES_TAC `drop t <= &n * d / &2` THENL
+       [REMOVE_THEN "hyp" MATCH_MP_TAC THEN
+        ASM_REWRITE_TAC[IN_INTERVAL_1; DROP_VEC];
+        ALL_TAC] THEN
+      REMOVE_THEN "hyp" (MP_TAC o SPEC `lift(&n * d / &2)`) THEN
+      REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; LIFT_DROP] THEN ANTS_TAC THENL
+       [REWRITE_TAC[REAL_LE_REFL] THEN CONJ_TAC THENL
+         [MATCH_MP_TAC REAL_LE_MUL; ALL_TAC] THEN ASM_REAL_ARITH_TAC;
+        ALL_TAC] THEN
+      MATCH_MP_TAC lemma THEN REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+       [CONJ_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+        MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+        SIMP_TAC[CONTINUOUS_ON_PASTECART; CONTINUOUS_ON_ID;
+                 CONTINUOUS_ON_CONST] THEN
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP(REWRITE_RULE[IMP_CONJ]
+         CONTINUOUS_ON_SUBSET)) THEN
+        SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_PASTECART_THM] THEN
+        ASM_REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; LIFT_DROP] THEN
+        REPEAT STRIP_TAC  THENL [MATCH_MP_TAC REAL_LE_MUL; ALL_TAC] THEN
+        ASM_REAL_ARITH_TAC;
+        REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+        EXISTS_TAC `e:real` THEN CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+        ASM_REWRITE_TAC[NORM_REAL; GSYM drop; IN_INTERVAL_1; DROP_VEC;
+                        DROP_SUB; LIFT_DROP; GSYM CONJ_ASSOC] THEN
+        (STRIP_TAC THENL [MATCH_MP_TAC REAL_LE_MUL; ALL_TAC]) THEN
+        ASM_REAL_ARITH_TAC]];
+    MP_TAC(ISPEC `d / &2` REAL_ARCH) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_TAC `n:num` o SPEC `&1`) THEN
+    DISCH_THEN(MP_TAC o SPECL [`n:num`; `vec 1:real^1`]) THEN
+    ASM_REWRITE_TAC[ENDS_IN_UNIT_INTERVAL; DROP_VEC] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* In particular, complex logs exist on various "well-behaved" sets.         *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_LOGARITHM_ON_CONTRACTIBLE = prove
+ (`!f:real^N->complex s.
+        f continuous_on s /\ compact s /\ contractible s /\
+        (!x. x IN s ==> ~(f x = Cx(&0)))
+        ==> ?g. g continuous_on s /\ !x. x IN s ==> f x = cexp(g x)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INESSENTIAL_IMP_CONTINUOUS_LOGARITHM THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC NULLHOMOTOPIC_FROM_CONTRACTIBLE THEN
+  ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
+
+let CONTINUOUS_LOGARITHM_ON_CBALL = prove
+ (`!f:real^N->complex a r.
+        f continuous_on cball(a,r) /\
+        (!z. z IN cball(a,r) ==> ~(f z = Cx(&0)))
+        ==> ?h. h continuous_on cball(a,r) /\
+                !z. z IN cball(a,r) ==> f z = cexp(h z)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `cball(a:real^N,r) = {}` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_ON_EMPTY; NOT_IN_EMPTY] THEN
+  MATCH_MP_TAC CONTINUOUS_LOGARITHM_ON_CONTRACTIBLE THEN
+  ASM_REWRITE_TAC[COMPACT_CBALL] THEN
+  MATCH_MP_TAC STARLIKE_IMP_CONTRACTIBLE THEN
+  MATCH_MP_TAC CONVEX_IMP_STARLIKE THEN
+  ASM_REWRITE_TAC[CONVEX_CBALL]);;
+
+let CONTINUOUS_LOGARITHM_ON_BALL = prove
+ (`!f:real^N->complex a r.
+        f continuous_on ball(a,r) /\
+        (!x. x IN ball(a,r) ==> ~(f x = Cx(&0)))
+        ==> ?h. h continuous_on ball(a,r) /\
+                !x. x IN ball(a,r) ==> f x = cexp(h x)`,
+  let lemma = prove
+   (`!P:num->(A->B)->bool R.
+      (?g. P 0 g) /\ (!f n. P n f ==> ?g. P (SUC n) g /\ R n f g)
+      ==> ?h. (!n. P n (h n)) /\ (!n. R n (h n) (h(SUC n)))`,
+    REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
+    (MP_TAC o prove_recursive_functions_exist num_RECURSION)
+     `(h 0 = @g. P 0 (g:A->B)) /\
+      (!n. h(SUC n) = @g. P (SUC n) g /\ R n (h n) g)` THEN
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
+    MATCH_MP_TAC(MESON[num_CASES]
+     `P 0 /\ (!n. P(SUC n) /\ Q n) ==> (!n. P n) /\ (!n. Q n)`) THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    INDUCT_TAC THENL
+     [FIRST_ASSUM(SUBST1_TAC o SPEC `0`);
+     FIRST_ASSUM(SUBST1_TAC o SPEC `SUC n`)] THEN
+    CONV_TAC SELECT_CONV THEN ASM_MESON_TAC[]) in
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `ball(a:real^N,r) = {}` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_ON_EMPTY; NOT_IN_EMPTY] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[BALL_EQ_EMPTY; REAL_NOT_LE]) THEN
+  SUBGOAL_THEN
+   `!m n. m <= n
+          ==> cball(a:real^N,r * (&1 - inv(&m + &2))) SUBSET
+              cball(a,r * (&1 - inv(&n + &2)))`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_CBALL THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL_EQ; REAL_ARITH
+     `&1 - x <= &1 - y <=> y <= x`] THEN
+    MATCH_MP_TAC REAL_LE_INV2 THEN
+    REWRITE_TAC[REAL_OF_NUM_ADD; REAL_OF_NUM_LE; REAL_OF_NUM_LT] THEN
+    ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!n. cball(a:real^N,r * (&1 - inv (&n + &2))) SUBSET
+        cball(a,r * (&1 - inv (&(SUC n) + &2)))`
+  ASSUME_TAC THENL [ASM_MESON_TAC[ARITH_RULE `n <= SUC n`]; ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?h. (!n. h n continuous_on cball(a,r * (&1 - inv(&n + &2))) /\
+             !x:real^N. x IN cball(a,r * (&1 - inv(&n + &2)))
+                        ==> f x = cexp(h n x)) /\
+        (!n x. x IN cball(a,r * (&1 - inv(&n + &2)))
+               ==> h (SUC n) x = h n x)`
+  MP_TAC THENL
+   [MATCH_MP_TAC lemma THEN CONJ_TAC THENL
+     [ALL_TAC;
+      MAP_EVERY X_GEN_TAC [`g:real^N->complex`; `n:num`] THEN
+      STRIP_TAC THEN MATCH_MP_TAC(MESON[]
+       `(!x. P x ==> ?y. P y /\ Q y) /\ (?x. P x)
+        ==> ?y. P y /\ Q y`) THEN
+      CONJ_TAC THENL
+       [X_GEN_TAC `h:real^N->complex` THEN STRIP_TAC THEN
+        SUBGOAL_THEN
+          `!x:real^N. x IN cball(a,r * (&1 - inv(&n + &2)))
+                      ==> cexp(h x - g x) = Cx(&1)`
+        ASSUME_TAC THENL
+         [REPEAT STRIP_TAC THEN SIMP_TAC[CEXP_SUB; CEXP_NZ; COMPLEX_FIELD
+           `~(y = Cx(&0)) ==> (x / y = Cx(&1) <=> x = y)`] THEN
+          MATCH_MP_TAC(MESON[] `!f. f x = cexp(g x) /\ f x = cexp(h x)
+                                    ==> cexp(h x) = cexp(g x)`) THEN
+          EXISTS_TAC `f:real^N->complex` THEN CONJ_TAC THEN
+          FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+          ALL_TAC] THEN
+        MP_TAC(ISPECL
+           [`\x. (h:real^N->complex) x - g x`;
+            `cball(a:real^N,r * (&1 - inv(&n + &2)))`]
+          CONTINUOUS_DISCRETE_RANGE_CONSTANT) THEN
+        REWRITE_TAC[CONNECTED_CBALL] THEN ANTS_TAC THENL
+         [CONJ_TAC THENL
+           [MATCH_MP_TAC CONTINUOUS_ON_SUB THEN ASM_REWRITE_TAC[] THEN
+            ASM_MESON_TAC[CONTINUOUS_ON_SUBSET];
+            ALL_TAC] THEN
+          X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN EXISTS_TAC `&2 * pi` THEN
+          REWRITE_TAC[REAL_ARITH `&0 < &2 * pi <=> &0 < pi`; PI_POS] THEN
+          X_GEN_TAC `y:real^N` THEN STRIP_TAC THEN
+          SUBGOAL_THEN `cexp(h(x:real^N) - g x) = cexp(h y - g y)` MP_TAC THENL
+           [ASM_MESON_TAC[]; REWRITE_TAC[CEXP_EQ]] THEN
+          DISCH_THEN(X_CHOOSE_THEN `n:real` STRIP_ASSUME_TAC) THEN
+          ASM_REWRITE_TAC[COMPLEX_RING `z - (z + a * ii) = --(a * ii)`] THEN
+          REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_II; NORM_NEG;
+            COMPLEX_NORM_CX; REAL_ABS_MUL; REAL_ABS_NUM; REAL_ABS_PI;
+            REAL_MUL_RID; REAL_ARITH `&2 * x <= &2 * y <=> &1 * x <= y`] THEN
+          SIMP_TAC[REAL_LE_RMUL_EQ; PI_POS] THEN
+          MATCH_MP_TAC REAL_ABS_INTEGER_LEMMA THEN
+          ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST_ALL_TAC THEN
+          RULE_ASSUM_TAC(REWRITE_RULE
+           [REAL_MUL_LZERO; REAL_MUL_RZERO;
+            COMPLEX_MUL_LZERO; COMPLEX_ADD_RID]) THEN
+          ASM_MESON_TAC[];
+          DISCH_THEN(X_CHOOSE_TAC `a:complex`) THEN
+          EXISTS_TAC `\x. (h:real^N->complex) x - a` THEN
+          ASM_SIMP_TAC[CONTINUOUS_ON_SUB; CONTINUOUS_ON_CONST] THEN
+          ONCE_REWRITE_TAC[COMPLEX_RING `h - a:complex = g <=> h - g = a`] THEN
+          ASM_REWRITE_TAC[CEXP_SUB] THEN
+          SUBGOAL_THEN `cexp a = Cx(&1)`
+           (fun th -> SIMP_TAC[COMPLEX_DIV_1; th]) THEN
+          SUBGOAL_THEN `a IN cball(a:real^N,r * (&1 - inv (&n + &2)))`
+           (fun th -> ASM_MESON_TAC[th]) THEN
+          REWRITE_TAC[CENTRE_IN_CBALL] THEN MATCH_MP_TAC REAL_LE_MUL THEN
+          ASM_SIMP_TAC[REAL_LT_IMP_LE; REAL_SUB_LE] THEN
+          MATCH_MP_TAC REAL_INV_LE_1 THEN REAL_ARITH_TAC];
+        ALL_TAC]] THEN
+    (MATCH_MP_TAC CONTINUOUS_LOGARITHM_ON_CBALL THEN CONJ_TAC THENL
+      [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP(REWRITE_RULE[IMP_CONJ]
+         CONTINUOUS_ON_SUBSET));
+       GEN_TAC THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+       FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+        `x IN s ==> s SUBSET t ==> x IN t`))] THEN
+     REWRITE_TAC[SUBSET; IN_BALL; IN_CBALL] THEN GEN_TAC THEN
+     MATCH_MP_TAC(REAL_ARITH `r * x < r * &1 ==> a <= r * x ==> a < r`) THEN
+     ASM_SIMP_TAC[REAL_LT_LMUL_EQ; REAL_ARITH `&1 - x < &1 <=> &0 < x`] THEN
+     REWRITE_TAC[REAL_LT_INV_EQ] THEN REAL_ARITH_TAC);
+    ALL_TAC] THEN
+  REWRITE_TAC[FORALL_AND_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `k:num->real^N->complex` THEN STRIP_TAC THEN
+  ABBREV_TAC
+   `h:real^N->complex =
+    \x. k (@n. x IN cball(a,r * (&1 - inv(&n + &2)))) x` THEN
+  SUBGOAL_THEN
+   `!m n x. x IN cball(a,r * (&1 - inv(&m + &2))) /\
+            x IN cball(a,r * (&1 - inv(&n + &2)))
+            ==> (k:num->real^N->complex) m x = k n x`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC WLOG_LE THEN CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC(MESON[]
+     `(!m n x. m <= n /\ P m x ==> P n x) /\
+      (!m n. m <= n ==> m <= n /\ !x. P m x ==> f m x = f n x)
+      ==> !m n:num. m <= n ==> !x. P m x /\ P n x ==> f m x = f n x`) THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[SUBSET]; ALL_TAC] THEN
+    MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
+    CONJ_TAC THENL [MESON_TAC[LE_REFL]; ALL_TAC] THEN
+    ASM_SIMP_TAC[ARITH_RULE `n <= SUC n`] THEN
+    ASM_MESON_TAC[LE_TRANS; SUBSET];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!n x. x IN cball(a,r * (&1 - inv(&n + &2)))
+          ==> k n x = (h:real^N->complex) x`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN EXPAND_TAC "h" THEN REWRITE_TAC[] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+    CONV_TAC SELECT_CONV THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  EXISTS_TAC `h:real^N->complex` THEN
+  SUBGOAL_THEN
+    `!x. x IN ball(a,r) ==> ?n. x IN ball(a:real^N,r * (&1 - inv(&n + &2)))`
+    (LABEL_TAC "*")
+  THENL
+   [X_GEN_TAC `x:real^N` THEN REWRITE_TAC[IN_BALL] THEN DISCH_TAC THEN
+    ASM_SIMP_TAC[ONCE_REWRITE_RULE[REAL_MUL_SYM] (GSYM REAL_LT_LDIV_EQ)] THEN
+    ONCE_REWRITE_TAC[REAL_ARITH `a < &1 - b <=> b < &1 - a`] THEN
+    MP_TAC(ISPEC `&1 - dist(a:real^N,x) / r` REAL_ARCH_INV) THEN
+    ASM_SIMP_TAC[REAL_SUB_LT; REAL_LT_LDIV_EQ; REAL_MUL_LID] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `n:num` THEN STRIP_TAC THEN
+    MATCH_MP_TAC REAL_LT_TRANS THEN EXISTS_TAC `inv(&n)` THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LT_INV2 THEN
+    REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_ADD] THEN ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_AT; OPEN_BALL] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    REMOVE_THEN "*" (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_TAC `n:num`) THEN REWRITE_TAC[CONTINUOUS_AT] THEN
+    MATCH_MP_TAC LIM_TRANSFORM_WITHIN_OPEN THEN
+    EXISTS_TAC `(k:num->real^N->complex) n` THEN
+    EXISTS_TAC `ball(a:real^N,r * (&1 - inv(&n + &2)))` THEN
+    ASM_SIMP_TAC[OPEN_BALL; REWRITE_RULE[SUBSET] BALL_SUBSET_CBALL] THEN
+    SUBGOAL_THEN `(k:num->real^N->complex) n continuous at x` MP_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_ON_INTERIOR THEN
+      EXISTS_TAC `cball(a:real^N,r * (&1 - inv(&n + &2)))` THEN
+      ASM_SIMP_TAC[INTERIOR_CBALL];
+      ASM_SIMP_TAC[CONTINUOUS_AT;REWRITE_RULE[SUBSET] BALL_SUBSET_CBALL]];
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    REMOVE_THEN "*" (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_TAC `n:num`) THEN
+    ASM_SIMP_TAC[REWRITE_RULE[SUBSET] BALL_SUBSET_CBALL]]);;
