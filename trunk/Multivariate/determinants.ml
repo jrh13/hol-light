@@ -1074,6 +1074,23 @@ let INTEGER_DET = prove
   ASM_MESON_TAC[IN_NUMSEG; permutes]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Diagonal matrices.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let diagonal_matrix = new_definition
+ `diagonal_matrix(A:real^N^N) <=>
+        !i j. 1 <= i /\ i <= dimindex(:N) /\
+              1 <= j /\ j <= dimindex(:N) /\
+              ~(i = j)
+              ==> A$i$j = &0`;;
+
+let TRANSP_DIAGONAL_MATRIX = prove
+ (`!A:real^N^N. diagonal_matrix A ==> transp A = A`,
+  GEN_TAC THEN REWRITE_TAC[diagonal_matrix; CART_EQ; TRANSP_COMPONENT] THEN
+  STRIP_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN X_GEN_TAC `j:num` THEN
+  STRIP_TAC THEN ASM_CASES_TAC `i:num = j` THEN ASM_SIMP_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Orthogonality of a transformation and matrix.                             *)
 (* ------------------------------------------------------------------------- *)
 

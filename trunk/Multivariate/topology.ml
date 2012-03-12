@@ -3607,9 +3607,19 @@ let COMPACT_SING = prove
  (`!a. compact {a}`,
   SIMP_TAC[FINITE_IMP_COMPACT; FINITE_RULES]);;
 
+let COMPACT_INSERT = prove
+ (`!a s. compact s ==> compact(a INSERT s)`,
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  SIMP_TAC[COMPACT_UNION; COMPACT_SING]);;
+
 let CLOSED_SING = prove
  (`!a. closed {a}`,
   MESON_TAC[COMPACT_EQ_BOUNDED_CLOSED; COMPACT_SING]);;
+
+let CLOSED_INSERT = prove
+ (`!a s. closed s ==> closed(a INSERT s)`,
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  SIMP_TAC[CLOSED_UNION; CLOSED_SING]);;
 
 let COMPACT_CBALL = prove
  (`!x e. compact(cball(x,e))`,
@@ -5011,6 +5021,80 @@ let UNIFORMLY_CONTINUOUS_ON_CLOSURE = prove
     ==> dist(y',x') < d`]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Continuity properties for square roots. We get other forms of this        *)
+(* later (transcendentals.ml and realanalysis.ml) but it's nice to have      *)
+(* them around earlier.                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_AT_SQRT = prove
+ (`!a s. &0 < drop a ==>  (lift o sqrt o drop) continuous (at a)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[continuous_at; o_THM; DIST_LIFT] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `min (drop a) (e * sqrt(drop a))` THEN
+  ASM_SIMP_TAC[REAL_LT_MIN; SQRT_POS_LT; REAL_LT_MUL; DIST_REAL] THEN
+  X_GEN_TAC `b:real^1` THEN REWRITE_TAC[GSYM drop] THEN STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP (REAL_ARITH
+   `abs(b - a) < a ==> &0 < b`)) THEN
+  SUBGOAL_THEN
+   `sqrt(drop b) - sqrt(drop a) =
+    (drop b - drop a) / (sqrt(drop a) + sqrt(drop b))`
+  SUBST1_TAC THENL
+   [MATCH_MP_TAC(REAL_FIELD
+     `sa pow 2 = a /\ sb pow 2 = b /\ &0 < sa /\ &0 < sb
+      ==> sb - sa = (b - a) / (sa + sb)`) THEN
+    ASM_SIMP_TAC[SQRT_POS_LT; SQRT_POW_2; REAL_LT_IMP_LE];
+    ASM_SIMP_TAC[REAL_ABS_DIV; SQRT_POS_LT; REAL_LT_ADD; REAL_LT_LDIV_EQ;
+                 REAL_ARITH `&0 < x ==> abs x = x`] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        REAL_LTE_TRANS)) THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL_EQ; REAL_LE_ADDR; SQRT_POS_LE;
+                 REAL_LT_IMP_LE]]);;
+
+let CONTINUOUS_WITHIN_LIFT_SQRT = prove
+ (`!a s. (!x. x IN s ==> &0 <= drop x)
+         ==> (lift o sqrt o drop) continuous (at a within s)`,
+  REPEAT STRIP_TAC THEN
+  REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (REAL_ARITH `drop a < &0 \/ drop a = &0 \/ &0 < drop a`)
+  THENL
+   [MATCH_MP_TAC CONTINUOUS_WITHIN_SUBSET THEN
+    EXISTS_TAC `{x | &0 <= drop x}` THEN
+    ASM_SIMP_TAC[SUBSET; IN_ELIM_THM] THEN
+    MATCH_MP_TAC CONTINUOUS_WITHIN_CLOSED_NONTRIVIAL THEN
+    ASM_REWRITE_TAC[IN_ELIM_THM; REAL_NOT_LE] THEN
+    REWRITE_TAC[drop; REWRITE_RULE[real_ge] CLOSED_HALFSPACE_COMPONENT_GE];
+    RULE_ASSUM_TAC(REWRITE_RULE[GSYM LIFT_EQ; LIFT_DROP; LIFT_NUM]) THEN
+    ASM_REWRITE_TAC[continuous_within; o_THM; DROP_VEC; SQRT_0; LIFT_NUM] THEN
+    REWRITE_TAC[DIST_0; NORM_LIFT; NORM_REAL; GSYM drop] THEN
+    X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    EXISTS_TAC `(e:real) pow 2` THEN ASM_SIMP_TAC[REAL_POW_LT] THEN
+    X_GEN_TAC `x:real^1` THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[real_abs; SQRT_POS_LE] THEN
+    SUBGOAL_THEN `e = sqrt(e pow 2)` SUBST1_TAC THENL
+     [ASM_SIMP_TAC[POW_2_SQRT; REAL_LT_IMP_LE];
+      MATCH_MP_TAC SQRT_MONO_LT THEN ASM_SIMP_TAC[] THEN ASM_REAL_ARITH_TAC];
+    MATCH_MP_TAC CONTINUOUS_AT_WITHIN THEN
+    MATCH_MP_TAC CONTINUOUS_AT_SQRT THEN ASM_REWRITE_TAC[]]);;
+
+let CONTINUOUS_ON_LIFT_SQRT = prove
+ (`!s. (!x. x IN s ==> &0 <= drop x)
+       ==> (lift o sqrt o drop) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_WITHIN_LIFT_SQRT]);;
+
+let CONTINUOUS_ON_LIFT_SQRT_COMPOSE = prove
+ (`!f:real^N->real s.
+        (lift o f) continuous_on s /\ (!x. x IN s ==> &0 <= f x)
+        ==> (\x. lift(sqrt(f x))) continuous_on s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(\x:real^N. lift(sqrt(f x))) = (lift o sqrt o drop) o (lift o f)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[o_DEF; LIFT_DROP];
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_LIFT_SQRT THEN
+    ASM_REWRITE_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Cauchy continuity, and the extension of functions to closures.            *)
 (* ------------------------------------------------------------------------- *)
 
@@ -6398,6 +6482,34 @@ let OPEN_PASTECART = prove
     MATCH_MP_TAC CLOSED_UNION THEN CONJ_TAC THEN
     MATCH_MP_TAC CLOSED_PASTECART THEN REWRITE_TAC[CLOSED_UNIV] THEN
     ASM_REWRITE_TAC[GSYM OPEN_CLOSED]]);;
+
+let CONNECTED_PASTECART = prove
+ (`!s:real^M->bool t:real^N->bool.
+        connected s /\ connected t
+        ==> connected {pastecart x y | x IN s /\ y IN t}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONNECTED_IFF_CONNECTED_COMPONENT] THEN
+  DISCH_TAC THEN REWRITE_TAC[FORALL_PASTECART; IN_ELIM_PASTECART_THM] THEN
+  MAP_EVERY X_GEN_TAC [`x1:real^M`; `y1:real^N`; `x2:real^M`; `y2:real^N`] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(CONJUNCTS_THEN2
+   (MP_TAC o SPECL [`x1:real^M`; `x2:real^M`])
+   (MP_TAC o SPECL [`y1:real^N`; `y2:real^N`])) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM; connected_component] THEN
+  X_GEN_TAC `c2:real^N->bool` THEN STRIP_TAC THEN
+  X_GEN_TAC `c1:real^M->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC
+   `IMAGE (\x:real^M. pastecart x y1) c1 UNION
+    IMAGE (\y:real^N. pastecart x2 y) c2` THEN
+  REWRITE_TAC[IN_UNION] THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC CONNECTED_UNION THEN
+    ASM_SIMP_TAC[CONNECTED_CONTINUOUS_IMAGE; CONTINUOUS_ON_PASTECART;
+                 CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID] THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_INTER; EXISTS_IN_IMAGE] THEN
+    EXISTS_TAC `x2:real^M` THEN ASM SET_TAC[];
+    REWRITE_TAC[SUBSET; IN_UNION; FORALL_AND_THM; FORALL_IN_IMAGE;
+                TAUT `a \/ b ==> c <=> (a ==> c) /\ (b ==> c)`] THEN
+    ASM SET_TAC[];
+    ASM SET_TAC[];
+    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence some useful properties follow quite easily.                         *)
@@ -9808,6 +9920,83 @@ let SELF_ADJOINT_HAS_EIGENVECTOR_BASIS = prove
   ASM_REWRITE_TAC[SUBSPACE_UNIV; IN_UNIV; DIM_UNIV; SUBSET_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Diagonalization of symmetric matrix.                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let SYMMETRIC_MATRIX_DIAGONALIZABLE_EXPLICIT = prove
+ (`!A:real^N^N.
+    transp A = A
+    ==> ?P d. orthogonal_matrix P /\
+              transp P ** A ** P = (lambda i j. if i = j then d i else &0)`,
+  let lemma1 = prove
+   (`!A:real^N^N P:real^N^N d.
+       A ** P = P ** (lambda i j. if i = j then d i else &0) <=>
+       !i. 1 <= i /\ i <= dimindex(:N)
+           ==> A ** column i P = d i % column i P`,
+    SIMP_TAC[CART_EQ; matrix_mul; matrix_vector_mul; LAMBDA_BETA;
+             column; VECTOR_MUL_COMPONENT] THEN
+    REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[COND_RAND] THEN
+    SIMP_TAC[REAL_MUL_RZERO; SUM_DELTA; IN_NUMSEG] THEN
+    EQ_TAC THEN STRIP_TAC THEN ASM_SIMP_TAC[] THEN
+    REWRITE_TAC[REAL_MUL_SYM]) in
+  let lemma2 = prove
+   (`!A:real^N^N P:real^N^N d.
+          orthogonal_matrix P /\
+          transp P ** A ** P = (lambda i j. if i = j then d i else &0) <=>
+          orthogonal_matrix P /\
+          !i. 1 <= i /\ i <= dimindex(:N)
+              ==> A ** column i P = d i % column i P`,
+    REPEAT GEN_TAC THEN REWRITE_TAC[GSYM lemma1; orthogonal_matrix] THEN
+    ABBREV_TAC `D:real^N^N = lambda i j. if i = j then d i else &0` THEN
+    MESON_TAC[MATRIX_MUL_ASSOC; MATRIX_MUL_LID]) in
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[lemma2] THEN REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN
+  REWRITE_TAC[GSYM SKOLEM_THM] THEN
+  MP_TAC(ISPEC `\x:real^N. (A:real^N^N) ** x`
+    SELF_ADJOINT_HAS_EIGENVECTOR_BASIS) THEN
+  ASM_SIMP_TAC[MATRIX_SELF_ADJOINT; MATRIX_VECTOR_MUL_LINEAR;
+               MATRIX_OF_MATRIX_VECTOR_MUL] THEN
+  DISCH_THEN(X_CHOOSE_THEN `b:real^N->bool` MP_TAC) THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN ONCE_REWRITE_TAC[IMP_CONJ_ALT] THEN
+  REWRITE_TAC[HAS_SIZE] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [FINITE_INDEX_NUMSEG]) THEN
+  ASM_REWRITE_TAC[IN_NUMSEG; TAUT
+   `p /\ q /\ x = y ==> a = b <=> p /\ q /\ ~(a = b) ==> ~(x = y)`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `f:num->real^N` STRIP_ASSUME_TAC) THEN
+  ASM_REWRITE_TAC[PAIRWISE_IMAGE; FORALL_IN_IMAGE] THEN
+  ASM_SIMP_TAC[pairwise; IN_NUMSEG] THEN STRIP_TAC THEN
+  EXISTS_TAC `transp(lambda i. f i):real^N^N` THEN
+  SIMP_TAC[COLUMN_TRANSP; ORTHOGONAL_MATRIX_TRANSP] THEN
+  SIMP_TAC[ORTHOGONAL_MATRIX_ORTHONORMAL_ROWS_INDEXED; row] THEN
+  SIMP_TAC[LAMBDA_ETA; LAMBDA_BETA; pairwise; IN_NUMSEG] THEN
+  ASM_MESON_TAC[]);;
+
+let SYMMETRIC_MATRIX_IMP_DIAGONALIZABLE = prove
+ (`!A:real^N^N.
+     transp A = A
+     ==> ?P. orthogonal_matrix P /\ diagonal_matrix(transp P ** A ** P)`,
+  GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP SYMMETRIC_MATRIX_DIAGONALIZABLE_EXPLICIT) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  SIMP_TAC[diagonal_matrix; LAMBDA_BETA]);;
+
+let SYMMETRIC_MATRIX_EQ_DIAGONALIZABLE = prove
+ (`!A:real^N^N.
+     transp A = A <=>
+     ?P. orthogonal_matrix P /\ diagonal_matrix(transp P ** A ** P)`,
+  GEN_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[SYMMETRIC_MATRIX_IMP_DIAGONALIZABLE] THEN
+  REWRITE_TAC[orthogonal_matrix] THEN
+  DISCH_THEN(X_CHOOSE_THEN `P:real^N^N` STRIP_ASSUME_TAC) THEN
+  ABBREV_TAC `D:real^N^N = transp P ** (A:real^N^N) ** P` THEN
+  SUBGOAL_THEN `A:real^N^N = P ** (D:real^N^N) ** transp P` SUBST1_TAC THENL
+   [EXPAND_TAC "D" THEN REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
+    ASM_REWRITE_TAC[MATRIX_MUL_LID] THEN
+    ASM_REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_MUL_RID];
+    REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP; MATRIX_MUL_ASSOC] THEN
+    ASM_MESON_TAC[TRANSP_DIAGONAL_MATRIX]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Infinite sums of vectors. Allow general starting point (and more).        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -12118,6 +12307,13 @@ let COUNTABLE_INTEGER = prove
   REWRITE_TAC[SUBSET; IN_UNION; IN_IMAGE; IN_UNIV] THEN
   REWRITE_TAC[IN; INTEGER_CASES]);;
 
+let CARD_EQ_INTEGER = prove
+ (`integer =_c (:num)`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM; GSYM COUNTABLE_ALT; COUNTABLE_INTEGER] THEN
+  REWRITE_TAC[le_c] THEN EXISTS_TAC `real_of_num` THEN
+  REWRITE_TAC[IN_UNIV; REAL_OF_NUM_EQ] THEN
+  REWRITE_TAC[IN; INTEGER_CLOSED]);;
+
 let COUNTABLE_RATIONAL = prove
  (`COUNTABLE rational`,
   MATCH_MP_TAC COUNTABLE_SUBSET THEN
@@ -12125,6 +12321,13 @@ let COUNTABLE_RATIONAL = prove
   SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_CROSS; COUNTABLE_INTEGER] THEN
   REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
   REWRITE_TAC[rational; IN] THEN MESON_TAC[]);;
+
+let CARD_EQ_RATIONAL = prove
+ (`rational =_c (:num)`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM; GSYM COUNTABLE_ALT; COUNTABLE_RATIONAL] THEN
+  REWRITE_TAC[le_c] THEN EXISTS_TAC `real_of_num` THEN
+  REWRITE_TAC[IN_UNIV; REAL_OF_NUM_EQ] THEN
+  REWRITE_TAC[IN; RATIONAL_CLOSED]);;
 
 let COUNTABLE_INTEGER_COORDINATES = prove
  (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> integer(x$i) }`,

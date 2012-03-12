@@ -1,3 +1,15 @@
+Fri  9th Mar 2012       Library/card.ml
+
+Added a few more trivial lemmas about cardinality:
+
+  CARD_LT_LE = |- !s t. s <_c t <=> s <=_c t /\ ~(s =_c t)
+
+  CARD_LE_LT = |- !s t. s <=_c t <=> s <_c t \/ s =_c t
+
+  COUNTABLE_ALT = |- !s. COUNTABLE s <=> s <=_c (:num)
+
+  COUNTABLE_CASES = |- !s. COUNTABLE s <=> FINITE s \/ s =_c (:num)
+
 Sun 26th Feb 2012       sets.ml
 
 Added
