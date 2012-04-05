@@ -618,13 +618,38 @@ let DIFFERENTIABLE_CHAIN_WITHIN = prove
   REWRITE_TAC[differentiable] THEN MESON_TAC[DIFF_CHAIN_WITHIN]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Similarly for "differentiable_on" (should expand this eventually).        *)
+(* Similarly for "differentiable_on".                                        *)
 (* ------------------------------------------------------------------------- *)
 
 let DIFFERENTIABLE_ON_CONST = prove
- (`!s c. (\x. c) differentiable_on s`,
-  REPEAT GEN_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON THEN
-  REWRITE_TAC[DIFFERENTIABLE_CONST]);;
+ (`!s c. (\z. c) differentiable_on s`,
+  REWRITE_TAC[differentiable_on; DIFFERENTIABLE_CONST]);;
+
+let DIFFERENTIABLE_ON_ID = prove
+ (`!s. (\z. z) differentiable_on s`,
+  REWRITE_TAC[differentiable_on; DIFFERENTIABLE_ID]);;
+
+let DIFFERENTIABLE_ON_COMPOSE = prove
+ (`!f g s. f differentiable_on s /\ g differentiable_on (IMAGE f s)
+           ==> (g o f) differentiable_on s`,
+  SIMP_TAC[differentiable_on; FORALL_IN_IMAGE] THEN
+  MESON_TAC[DIFFERENTIABLE_CHAIN_WITHIN]);;
+
+let DIFFERENTIABLE_ON_NEG = prove
+ (`!f s. f differentiable_on s ==> (\z. --(f z)) differentiable_on s`,
+  SIMP_TAC[differentiable_on; DIFFERENTIABLE_NEG]);;
+
+let DIFFERENTIABLE_ON_ADD = prove
+ (`!f g s.
+        f differentiable_on s /\ g differentiable_on s
+        ==> (\z. f z + g z) differentiable_on s`,
+  SIMP_TAC[differentiable_on; DIFFERENTIABLE_ADD]);;
+
+let DIFFERENTIABLE_ON_SUB = prove
+ (`!f g s.
+        f differentiable_on s /\ g differentiable_on s
+        ==> (\z. f z - g z) differentiable_on s`,
+  SIMP_TAC[differentiable_on; DIFFERENTIABLE_SUB]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Uniqueness of derivative.                                                 *)

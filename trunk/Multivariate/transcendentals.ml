@@ -5610,6 +5610,15 @@ let INESSENTIAL_IMP_CONTINUOUS_LOGARITHM = prove
     ASM_REWRITE_TAC[ENDS_IN_UNIT_INTERVAL; DROP_VEC] THEN
     DISCH_THEN MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC]);;
 
+let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM = prove
+ (`!f:real^N->complex s.
+   compact s
+   ==> ((?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)}) f (\t. a)) <=>
+        (?g. g continuous_on s /\ (!x. x IN s ==> f x = cexp(g x))))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[CONTINUOUS_LOGARITHM_IMP_INESSENTIAL] THEN
+  ASM_SIMP_TAC[INESSENTIAL_IMP_CONTINUOUS_LOGARITHM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* In particular, complex logs exist on various "well-behaved" sets.         *)
 (* ------------------------------------------------------------------------- *)
@@ -5818,3 +5827,43 @@ let CONTINUOUS_LOGARITHM_ON_BALL = prove
     REMOVE_THEN "*" (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
     DISCH_THEN(X_CHOOSE_TAC `n:num`) THEN
     ASM_SIMP_TAC[REWRITE_RULE[SUBSET] BALL_SUBSET_CBALL]]);;
+
+let INESSENTIAL_EQ_EXTENSIBLE = prove
+ (`!f s.
+   closed s
+   ==> ((?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)}) f (\t. a)) <=>
+        (?g. g continuous_on (:real^N) /\
+             (!x. x IN s ==> g x = f x) /\ (!x. ~(g x = Cx(&0)))))`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_TAC `a:complex`) THEN
+    ASM_CASES_TAC `s:real^N->bool = {}` THENL
+     [EXISTS_TAC `\x:real^N. Cx(&1)` THEN
+      ASM_REWRITE_TAC[CONTINUOUS_ON_CONST; NOT_IN_EMPTY] THEN
+      CONV_TAC COMPLEX_RING;
+      ALL_TAC] THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_CONTINUOUS) THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_SUBSET) THEN
+    FIRST_ASSUM(MP_TAC o
+      SPECL [`(:real^N)`; `(:complex) DIFF {Cx(&0)}`] o
+      MATCH_MP(ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+        (REWRITE_RULE[CONJ_ASSOC] BORSUK_HOMOTOPY_EXTENSION)) o
+      GEN_REWRITE_RULE I [HOMOTOPIC_WITH_SYM]) THEN
+    ASM_SIMP_TAC[CLOSED_UNIV; CONTINUOUS_ON_CONST; OPEN_DIFF; CLOSED_SING;
+                 OPEN_UNIV; RETRACT_OF_REFL] THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; MATCH_MP_TAC MONO_EXISTS] THEN
+    ASM SET_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `g:real^N->complex` STRIP_ASSUME_TAC) THEN
+    MATCH_MP_TAC CONTINUOUS_LOGARITHM_IMP_INESSENTIAL THEN
+    MP_TAC(ISPECL [`vec 0:real^N`; `&1`] HOMEOMORPHIC_BALL_UNIV) THEN
+    REWRITE_TAC[REAL_LT_01; homeomorphic; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`h:real^N->real^N`; `k:real^N->real^N`] THEN
+    REWRITE_TAC[homeomorphism; IN_UNIV] THEN STRIP_TAC THEN
+    MP_TAC(ISPECL [`(g:real^N->complex) o (h:real^N->real^N)`;
+                   `vec 0:real^N`; `&1`] CONTINUOUS_LOGARITHM_ON_BALL) THEN
+    ASM_SIMP_TAC[CONTINUOUS_ON_COMPOSE; o_THM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `j:real^N->complex` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(j:real^N->complex) o (k:real^N->real^N)` THEN
+    ASM_SIMP_TAC[o_THM] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+      CONTINUOUS_ON_SUBSET)) THEN ASM SET_TAC[]]);;

@@ -23,6 +23,9 @@ let PERMUTED_RULES, PERMUTED_INDUCT, PERMUTED_CASES =
    (!l1 l2 l3. l1 PERMUTED l2 /\ l2 PERMUTED l3 ==> l1 PERMUTED l3) /\
    (!x y t. x :: y :: t PERMUTED y :: x :: t)`;;
 
+let PERMUTED_INDUCT_STRONG =
+  derive_strong_induction(PERMUTED_RULES,PERMUTED_INDUCT);;
+
 let PERMUTED_RFL = prove
   (`!l. l PERMUTED l`,
    LIST_INDUCT_TAC THEN ASM_SIMP_TAC [PERMUTED_RULES]);;
@@ -129,3 +132,17 @@ let PERMUTED_DELETE1_R = prove
 let PERMUTED_LIST_UNIQ = prove
   (`!xs ys. xs PERMUTED ys ==> (LIST_UNIQ xs <=> LIST_UNIQ ys)`,
    SIMP_TAC [PERMUTED_COUNT; LIST_UNIQ_COUNT; MEM_COUNT]);;
+
+let PERMUTED_IMP_PAIRWISE = prove
+ (`!(P:A->A->bool) l l'.
+        (!x y. P x y ==> P y x) /\ l PERMUTED l' /\ PAIRWISE P l
+        ==> PAIRWISE P l'`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC PERMUTED_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[PAIRWISE; ALL] THEN MESON_TAC[PERMUTED_ALL]);;
+
+let PERMUTED_PAIRWISE = prove
+ (`!(P:A->A->bool) l l.
+        (!x y. P x y ==> P y x) /\ l PERMUTED l'
+        ==> (PAIRWISE P l <=> PAIRWISE P l')`,
+  MESON_TAC[PERMUTED_IMP_PAIRWISE; PERMUTED_SYM]);;

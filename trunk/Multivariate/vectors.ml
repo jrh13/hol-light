@@ -3353,6 +3353,17 @@ let NORM_LE_PASTECART = prove
   MATCH_MP_TAC REAL_LE_RSQRT THEN
   REWRITE_TAC[REAL_LE_ADDL; REAL_LE_ADDR; REAL_LE_POW_2]);;
 
+let NORM_PASTECART_0 = prove
+ (`(!x. norm(pastecart x (vec 0)) = norm x) /\
+   (!y. norm(pastecart (vec 0) y) = norm y)`,
+  REWRITE_TAC[NORM_EQ_SQUARE; NORM_POW_2; NORM_POS_LE] THEN
+  REWRITE_TAC[DOT_PASTECART; DOT_LZERO; REAL_ADD_LID; REAL_ADD_RID]);;
+
+let DIST_PASTECART_CANCEL = prove
+ (`(!x x' y. dist(pastecart x y,pastecart x' y) = dist(x,x')) /\
+   (!x y y'. dist(pastecart x y,pastecart x y') = dist(y,y'))`,
+  REWRITE_TAC[dist; PASTECART_SUB; VECTOR_SUB_REFL; NORM_PASTECART_0]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A bit of linear algebra.                                                  *)
 (* ------------------------------------------------------------------------- *)

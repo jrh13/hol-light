@@ -1,3 +1,39 @@
+Fri 30th Mar 2012       Permutation/permuted.ml
+
+Added a couple of lemmas about list permutations preserving "PAIRWISE" for a
+symmetric relation, plus strong induction PERMUTED_INDUCT_STRONG:
+
+  PERMUTED_IMP_PAIRWISE =
+   |- !P l l'. (!x y. P x y ==> P y x) /\ l PERMUTED l' /\ PAIRWISE P l
+               ==> PAIRWISE P l'
+
+  PERMUTED_PAIRWISE =
+   |- !P l l'. (!x y. P x y ==> P y x) /\ l PERMUTED l'
+               ==> (PAIRWISE P l <=> PAIRWISE P l')
+
+Thu 29th Mar 2012       Library/card.ml
+
+Added a few new theorems about cardinal arithmetic:
+
+  CARD_LE_RELATIONAL =
+    |- !R. (!x y y'. x IN s /\ R x y /\ R x y' ==> y = y')
+           ==> {y | ?x. x IN s /\ R x y} <=_c s
+
+  CARD_LT_FINITE_INFINITE =
+    |- !s t. FINITE s /\ INFINITE t ==> s <_c t
+
+  CARD_ADD2_ABSORB_LT =
+    |- !s t u. INFINITE u /\ s <_c u /\ t <_c u ==> s +_c t <_c u
+
+  CARD_ADD_FINITE_EQ =
+    |- !s t. FINITE (s +_c t) <=> FINITE s /\ FINITE t
+
+  CARD_ADD_C =
+    |- !s t. FINITE s /\ FINITE t ==> CARD (s +_c t) = CARD s + CARD t
+
+  CARD_LT_ADD =
+    |- !s s' t t'. s <_c s' /\ t <_c t' ==> s +_c t <_c s' +_c t'
+
 Fri  9th Mar 2012       Library/card.ml
 
 Added a few more trivial lemmas about cardinality:

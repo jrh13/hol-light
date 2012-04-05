@@ -6024,6 +6024,23 @@ let CLOSED_COMPONENTS = prove
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; components; FORALL_IN_GSPEC] THEN
   SIMP_TAC[CLOSED_CONNECTED_COMPONENT]);;
 
+let CONTINUOUS_ON_COMPONENTS_GEN = prove
+ (`!f:real^M->real^N s.
+        (!c. c IN components s
+             ==> open_in (subtopology euclidean s) c /\ f continuous_on c)
+        ==> f continuous_on s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_OPEN_IN_PREIMAGE_EQ] THEN
+  DISCH_TAC THEN X_GEN_TAC `t:real^N->bool` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `{x | x IN s /\ (f:real^M->real^N) x IN t} =
+    UNIONS {{x | x IN c /\ f x IN t} | c IN components s}`
+  SUBST1_TAC THENL
+   [CONV_TAC(LAND_CONV(SUBS_CONV
+     [ISPEC `s:real^M->bool` UNIONS_COMPONENTS])) THEN
+    REWRITE_TAC[UNIONS_GSPEC; IN_UNIONS] THEN SET_TAC[];
+    MATCH_MP_TAC OPEN_IN_UNIONS THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ASM_MESON_TAC[OPEN_IN_TRANS]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Continuity implies uniform continuity on a compact domain.                *)
 (* ------------------------------------------------------------------------- *)
@@ -8582,6 +8599,92 @@ let BOUNDED_DECREASING_CONVERGENT = prove
   ASM_SIMP_TAC[bounded; FORALL_IN_GSPEC; NORM_NEG; DROP_NEG; REAL_LE_NEG2] THEN
   GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [GSYM LIM_NEG_EQ] THEN
   REWRITE_TAC[VECTOR_NEG_NEG; ETA_AX] THEN MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Since we'll use some cardinality reasoning, add invariance theorems.      *)
+(* ------------------------------------------------------------------------- *)
+
+let card_translation_invariants = (CONJUNCTS o prove)
+ (`(!a (s:real^N->bool) (t:A->bool).
+     IMAGE (\x. a + x) s =_c t <=> s =_c t) /\
+   (!a (s:A->bool) (t:real^N->bool).                 
+     s =_c IMAGE (\x. a + x) t <=> s =_c t) /\
+   (!a (s:real^N->bool) (t:A->bool).
+     IMAGE (\x. a + x) s <_c t <=> s <_c t) /\
+   (!a (s:A->bool) (t:real^N->bool).                 
+     s <_c IMAGE (\x. a + x) t <=> s <_c t) /\
+   (!a (s:real^N->bool) (t:A->bool).
+     IMAGE (\x. a + x) s <=_c t <=> s <=_c t) /\
+   (!a (s:A->bool) (t:real^N->bool).                 
+     s <=_c IMAGE (\x. a + x) t <=> s <=_c t) /\ 
+   (!a (s:real^N->bool) (t:A->bool).
+     IMAGE (\x. a + x) s >_c t <=> s >_c t) /\
+   (!a (s:A->bool) (t:real^N->bool).                 
+     s >_c IMAGE (\x. a + x) t <=> s >_c t) /\
+   (!a (s:real^N->bool) (t:A->bool).
+     IMAGE (\x. a + x) s >=_c t <=> s >=_c t) /\
+   (!a (s:A->bool) (t:real^N->bool).                 
+     s >=_c IMAGE (\x. a + x) t <=> s >=_c t)`,
+  REWRITE_TAC[gt_c; ge_c] THEN REPEAT STRIP_TAC THENL
+   [MATCH_MP_TAC CARD_EQ_CONG;
+    MATCH_MP_TAC CARD_EQ_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LE_CONG;
+    MATCH_MP_TAC CARD_LE_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LE_CONG;
+    MATCH_MP_TAC CARD_LE_CONG] THEN
+  REWRITE_TAC[CARD_EQ_REFL] THEN MATCH_MP_TAC CARD_EQ_IMAGE THEN
+  SIMP_TAC[VECTOR_ARITH `a + x:real^N = a + y <=> x = y`]) in
+add_translation_invariants card_translation_invariants;;
+
+let card_linear_invariants = (CONJUNCTS o prove)
+ (`(!(f:real^M->real^N) s (t:A->bool).
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (IMAGE f s =_c t <=> s =_c t)) /\
+   (!(f:real^M->real^N) (s:A->bool) t.
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (s =_c IMAGE f t <=> s =_c t)) /\
+   (!(f:real^M->real^N) s (t:A->bool).
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (IMAGE f s <_c t <=> s <_c t)) /\
+   (!(f:real^M->real^N) (s:A->bool) t.
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (s <_c IMAGE f t <=> s <_c t)) /\
+   (!(f:real^M->real^N) s (t:A->bool).
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (IMAGE f s <=_c t <=> s <=_c t)) /\
+   (!(f:real^M->real^N) (s:A->bool) t.
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (s <=_c IMAGE f t <=> s <=_c t)) /\
+   (!(f:real^M->real^N) s (t:A->bool).
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (IMAGE f s >_c t <=> s >_c t)) /\
+   (!(f:real^M->real^N) (s:A->bool) t.
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (s >_c IMAGE f t <=> s >_c t)) /\
+   (!(f:real^M->real^N) s (t:A->bool).
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (IMAGE f s >=_c t <=> s >=_c t)) /\
+   (!(f:real^M->real^N) (s:A->bool) t.
+     linear f /\ (!x y. f x = f y ==> x = y)
+     ==> (s >=_c IMAGE f t <=> s >=_c t))`,
+  REWRITE_TAC[gt_c; ge_c] THEN REPEAT STRIP_TAC THENL
+   [MATCH_MP_TAC CARD_EQ_CONG;
+    MATCH_MP_TAC CARD_EQ_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LE_CONG;
+    MATCH_MP_TAC CARD_LE_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LT_CONG;
+    MATCH_MP_TAC CARD_LE_CONG;
+    MATCH_MP_TAC CARD_LE_CONG] THEN
+  REWRITE_TAC[CARD_EQ_REFL] THEN MATCH_MP_TAC CARD_EQ_IMAGE THEN
+  ASM_MESON_TAC[]) in
+add_linear_invariants card_linear_invariants;;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic homeomorphism definitions.                                          *)
@@ -11769,6 +11872,36 @@ let SEPARATION_T1 = prove
 let SEPARATION_T0 = prove
  (`!x:real^N y. ~(x = y) <=> ?u. open u /\ ~(x IN u <=> y IN u)`,
   MESON_TAC[SEPARATION_T1]);;
+
+let CLOSED_COMPACT_PROJECTION = prove
+ (`!s:real^M->bool t:real^(M,N)finite_sum->bool.
+        compact s /\ closed t
+        ==> closed {y | ?x. x IN s /\ (pastecart x y) IN t}`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_CASES_TAC `t:real^(M,N)finite_sum->bool = {}` THEN
+  ASM_REWRITE_TAC[NOT_IN_EMPTY; EMPTY_GSPEC; CLOSED_EMPTY] THEN
+  REWRITE_TAC[closed; open_def; IN_DIFF; IN_UNIV; IN_ELIM_THM] THEN
+  X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+  EXISTS_TAC `setdist({pastecart (x:real^M) (y:real^N) | x IN s},t)` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[REAL_LT_LE; SETDIST_POS_LE] THEN
+    ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN
+    W(MP_TAC o PART_MATCH (lhs o rand) SETDIST_EQ_0_COMPACT_CLOSED o
+      rand o snd) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[SET_RULE
+       `{pastecart x y | P x} = {pastecart x z | P x /\ z IN {y}}`] THEN
+      ASM_SIMP_TAC[COMPACT_PASTECART; COMPACT_SING];
+      DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[]];
+    X_GEN_TAC `z:real^N` THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[REAL_NOT_LT] THEN
+    DISCH_THEN(X_CHOOSE_THEN `w:real^M` STRIP_ASSUME_TAC) THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC `dist(pastecart (w:real^M) (y:real^N),pastecart w z)` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC SETDIST_LE_DIST THEN ASM SET_TAC[];
+      REWRITE_TAC[DIST_PASTECART_CANCEL; REAL_LE_REFL; DIST_SYM]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Urysohn's lemma (for real^N, where the proof is easy using distances).    *)
