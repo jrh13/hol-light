@@ -3493,7 +3493,7 @@ let REAL_DIFFERENTIABLE_COMPOSE_ATREAL = prove
   MESON_TAC[REAL_DIFF_CHAIN_ATREAL]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Same again for being holomorphic on a set.                                *)
+(* Same again for being differentiable on a set.                             *)
 (* ------------------------------------------------------------------------- *)
 
 let REAL_DIFFERENTIABLE_ON_CONST = prove
@@ -9906,6 +9906,13 @@ let DISCRETE_IMP_COUNTABLE = prove
     SIMP_TAC[REWRITE_RULE[COUNTABLE; ge_c] COUNTABLE_RATIONAL_COORDINATES] THEN
     REWRITE_TAC[le_c] THEN EXISTS_TAC `q:real^N->real^N` THEN
     ASM_SIMP_TAC[IN_ELIM_THM] THEN ASM_MESON_TAC[REAL_LT_ANTISYM]]);;
+
+let UNCOUNTABLE_CONTAINS_LIMIT_POINT = prove
+ (`!s. ~(COUNTABLE s) ==> ?x. x IN s /\ x limit_point_of s`,
+  GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP
+   (ONCE_REWRITE_RULE[GSYM CONTRAPOS_THM] DISCRETE_IMP_COUNTABLE)) THEN
+  REWRITE_TAC[LIMPT_APPROACHABLE; GSYM REAL_NOT_LT; dist] THEN
+  MESON_TAC[]);;
 
 let STEINHAUS_TRIVIAL = prove
  (`!s e. ~(negligible s) /\ &0 < e

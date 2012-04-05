@@ -216,6 +216,14 @@ let CARD_LT_IMP_LE = prove
  (`!s t. s <_c t ==> s <=_c t`,
   SIMP_TAC[lt_c]);;
 
+let CARD_LE_RELATIONAL = prove
+ (`!R:A->B->bool.
+        (!x y y'. x IN s /\ R x y /\ R x y' ==> y = y')
+        ==> {y | ?x. x IN s /\ R x y} <=_c s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[le_c] THEN
+  EXISTS_TAC `\y:B. @x:A. x IN s /\ R x y` THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Two trivial lemmas.                                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -473,6 +481,10 @@ let CARD_LE_INFINITE = prove
  (`!s:A->bool t:B->bool. INFINITE s /\ s <=_c t ==> INFINITE t`,
   MESON_TAC[CARD_LE_FINITE; INFINITE]);;
 
+let CARD_LT_FINITE_INFINITE = prove
+ (`!s:A->bool t:B->bool. FINITE s /\ INFINITE t ==> s <_c t`,
+  REWRITE_TAC[GSYM CARD_NOT_LE; INFINITE] THEN MESON_TAC[CARD_LE_FINITE]);;
+
 let CARD_LE_CARD_IMP = prove
  (`!s:A->bool t:B->bool. FINITE t /\ s <=_c t ==> CARD s <= CARD t`,
   REPEAT STRIP_TAC THEN
@@ -628,6 +640,17 @@ let UNION_LE_ADD_C = prove
   EXISTS_TAC `function INL x -> (x:A) | INR x -> x` THEN
   REWRITE_TAC[add_c; IMAGE_UNION] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
   REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN SET_TAC[]);;
+
+let CARD_ADD_C = prove
+ (`!s t. FINITE s /\ FINITE t ==> CARD(s +_c t) = CARD s + CARD t`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[add_c] THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) CARD_UNION o lhand o snd) THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE] THEN
+  REWRITE_TAC[SET_RULE `IMAGE f s INTER IMAGE g t = {} <=>
+                        !x y. x IN s /\ y IN t ==> ~(f x = g y)`] THEN
+  REWRITE_TAC[sum_DISTINCT] THEN DISCH_THEN SUBST1_TAC THEN
+  BINOP_TAC THEN MATCH_MP_TAC CARD_IMAGE_INJ THEN
+  ASM_SIMP_TAC[sum_INJECTIVE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Various "arithmetical" lemmas.                                            *)
@@ -940,6 +963,25 @@ let CARD_SQUARE_INFINITE = prove
   MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Preservation of finiteness.                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let CARD_ADD_FINITE = prove
+ (`!s t. FINITE s /\ FINITE t ==> FINITE(s +_c t)`,
+  SIMP_TAC[add_c; FINITE_UNION; SIMPLE_IMAGE; FINITE_IMAGE]);;
+
+let CARD_ADD_FINITE_EQ = prove
+ (`!s:A->bool t:B->bool. FINITE(s +_c t) <=> FINITE s /\ FINITE t`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[CARD_ADD_FINITE] THEN
+  DISCH_THEN(fun th -> CONJ_TAC THEN MP_TAC th) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_FINITE) THEN
+  REWRITE_TAC[CARD_LE_ADDL; CARD_LE_ADDR]);;
+
+let CARD_MUL_FINITE = prove
+ (`!s t. FINITE s /\ FINITE t ==> FINITE(s *_c t)`,
+  SIMP_TAC[mul_c; FINITE_PRODUCT]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Hence the "absorption laws" for arithmetic with an infinite cardinal.     *)
 (* ------------------------------------------------------------------------- *)
 
@@ -987,17 +1029,47 @@ let CARD_ADD_ABSORB = prove
  (`!s:A->bool t:B->bool. INFINITE(t) /\ s <=_c t ==> s +_c t =_c t`,
   SIMP_TAC[GSYM CARD_LE_ANTISYM; CARD_LE_ADDL; CARD_ADD_ABSORB_LE]);;
 
-(* ------------------------------------------------------------------------- *)
-(* Preservation of finiteness.                                               *)
-(* ------------------------------------------------------------------------- *)
+let CARD_ADD2_ABSORB_LT = prove
+ (`!s:A->bool t:B->bool u:C->bool.
+        INFINITE u /\ s <_c u /\ t <_c u ==> s +_c t <_c u`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `FINITE((s:A->bool) +_c (t:B->bool))` THEN
+  ASM_SIMP_TAC[CARD_LT_FINITE_INFINITE] THEN
+  DISJ_CASES_TAC(ISPECL [`s:A->bool`; `t:B->bool`] CARD_LE_TOTAL) THENL
+   [ASM_CASES_TAC `FINITE(t:B->bool)` THENL
+     [ASM_MESON_TAC[CARD_LE_FINITE; CARD_ADD_FINITE];
+      TRANS_TAC CARD_LET_TRANS `t:B->bool`];
+    ASM_CASES_TAC `FINITE(s:A->bool)` THENL
+     [ASM_MESON_TAC[CARD_LE_FINITE; CARD_ADD_FINITE];
+      TRANS_TAC CARD_LET_TRANS `s:A->bool`]] THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CARD_ADD2_ABSORB_LE THEN
+  ASM_REWRITE_TAC[INFINITE; CARD_LE_REFL]);;
 
-let CARD_ADD_FINITE = prove
- (`!s t. FINITE s /\ FINITE t ==> FINITE(s +_c t)`,
-  SIMP_TAC[add_c; FINITE_UNION; SIMPLE_IMAGE; FINITE_IMAGE]);;
-
-let CARD_MUL_FINITE = prove
- (`!s t. FINITE s /\ FINITE t ==> FINITE(s *_c t)`,
-  SIMP_TAC[mul_c; FINITE_PRODUCT]);;
+let CARD_LT_ADD = prove
+ (`!s:A->bool s':B->bool t:C->bool t':D->bool.
+        s <_c s' /\ t <_c t' ==> s +_c t <_c s' +_c t'`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `FINITE((s':B->bool) +_c (t':D->bool))` THENL
+   [FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I
+      [CARD_ADD_FINITE_EQ]) THEN
+    SUBGOAL_THEN `FINITE(s:A->bool) /\ FINITE(t:C->bool)`
+    STRIP_ASSUME_TAC THENL
+     [CONJ_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+        (REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_FINITE) o
+        MATCH_MP CARD_LT_IMP_LE) THEN
+      ASM_REWRITE_TAC[];
+      MAP_EVERY UNDISCH_TAC
+       [`(s:A->bool) <_c (s':B->bool)`;
+        `(t:C->bool) <_c (t':D->bool)`] THEN
+      ASM_SIMP_TAC[CARD_LT_CARD; CARD_ADD_FINITE; CARD_ADD_C] THEN
+      ARITH_TAC];
+    MATCH_MP_TAC CARD_ADD2_ABSORB_LT THEN ASM_REWRITE_TAC[INFINITE] THEN
+    CONJ_TAC THENL
+     [TRANS_TAC CARD_LTE_TRANS `s':B->bool` THEN
+      ASM_REWRITE_TAC[CARD_LE_ADDR];
+      TRANS_TAC CARD_LTE_TRANS `t':D->bool` THEN
+      ASM_REWRITE_TAC[CARD_LE_ADDL]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some more ad-hoc but useful theorems.                                     *)
