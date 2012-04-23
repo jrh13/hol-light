@@ -479,6 +479,21 @@ let CBALL_SCALING = prove
 
 add_scaling_theorems [BALL_SCALING; CBALL_SCALING];;
 
+let CBALL_DIFF_BALL = prove
+ (`!a r. cball(a,r) DIFF ball(a,r) = {x | dist(a,x) = r}`,
+  REWRITE_TAC[ball; cball; EXTENSION; IN_DIFF; IN_ELIM_THM] THEN
+  REAL_ARITH_TAC);;
+
+let BALL_UNION_SPHERE = prove
+ (`!a r. ball(a,r) UNION {x | dist(a,x) = r} = cball(a,r)`,
+  REWRITE_TAC[ball; cball; EXTENSION; IN_UNION; IN_ELIM_THM] THEN
+  REAL_ARITH_TAC);;
+
+let SPHERE_UNION_BALL = prove
+ (`!a r. {x | dist(a,x) = r} UNION ball(a,r)  = cball(a,r)`,
+  REWRITE_TAC[ball; cball; EXTENSION; IN_UNION; IN_ELIM_THM] THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Topological properties of open balls.                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -871,6 +886,28 @@ let CONNECTED_UNION = prove
   REWRITE_TAC[GSYM UNIONS_2; GSYM INTERS_2] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CONNECTED_UNIONS THEN
   ASM SET_TAC[]);;
+
+let CONNECTED_DIFF_OPEN_FROM_CLOSED = prove
+ (`!s t u:real^N->bool.
+        s SUBSET t /\ t SUBSET u /\
+        open s /\ closed t /\ connected u /\ connected(t DIFF s)
+        ==> connected(u DIFF s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[connected; NOT_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`v:real^N->bool`; `w:real^N->bool`] THEN STRIP_TAC THEN
+  UNDISCH_TAC `connected(t DIFF s:real^N->bool)` THEN SIMP_TAC[connected] THEN
+  MAP_EVERY EXISTS_TAC [`v:real^N->bool`; `w:real^N->bool`] THEN
+  ASM_REWRITE_TAC[] THEN
+  REPLICATE_TAC 2 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN
+  MAP_EVERY (fun t -> SPEC_TAC(t,t)) [`v:real^N->bool`; `w:real^N->bool`] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!v w. P v w ==> P w v) /\ (!w v. P v w /\ Q w ==> F)
+    ==> !w v. P v w ==> ~(Q v) /\ ~(Q w)`) THEN
+  CONJ_TAC THENL [SIMP_TAC[CONJ_ACI; INTER_ACI; UNION_ACI]; ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [connected]) THEN SIMP_TAC[] THEN
+  MAP_EVERY EXISTS_TAC [`v UNION s:real^N->bool`; `w DIFF t:real^N->bool`] THEN
+  ASM_SIMP_TAC[OPEN_UNION; OPEN_DIFF] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limit points.                                                             *)
@@ -8607,23 +8644,23 @@ let BOUNDED_DECREASING_CONVERGENT = prove
 let card_translation_invariants = (CONJUNCTS o prove)
  (`(!a (s:real^N->bool) (t:A->bool).
      IMAGE (\x. a + x) s =_c t <=> s =_c t) /\
-   (!a (s:A->bool) (t:real^N->bool).                 
+   (!a (s:A->bool) (t:real^N->bool).
      s =_c IMAGE (\x. a + x) t <=> s =_c t) /\
    (!a (s:real^N->bool) (t:A->bool).
      IMAGE (\x. a + x) s <_c t <=> s <_c t) /\
-   (!a (s:A->bool) (t:real^N->bool).                 
+   (!a (s:A->bool) (t:real^N->bool).
      s <_c IMAGE (\x. a + x) t <=> s <_c t) /\
    (!a (s:real^N->bool) (t:A->bool).
      IMAGE (\x. a + x) s <=_c t <=> s <=_c t) /\
-   (!a (s:A->bool) (t:real^N->bool).                 
-     s <=_c IMAGE (\x. a + x) t <=> s <=_c t) /\ 
+   (!a (s:A->bool) (t:real^N->bool).
+     s <=_c IMAGE (\x. a + x) t <=> s <=_c t) /\
    (!a (s:real^N->bool) (t:A->bool).
      IMAGE (\x. a + x) s >_c t <=> s >_c t) /\
-   (!a (s:A->bool) (t:real^N->bool).                 
+   (!a (s:A->bool) (t:real^N->bool).
      s >_c IMAGE (\x. a + x) t <=> s >_c t) /\
    (!a (s:real^N->bool) (t:A->bool).
      IMAGE (\x. a + x) s >=_c t <=> s >=_c t) /\
-   (!a (s:A->bool) (t:real^N->bool).                 
+   (!a (s:A->bool) (t:real^N->bool).
      s >=_c IMAGE (\x. a + x) t <=> s >=_c t)`,
   REWRITE_TAC[gt_c; ge_c] THEN REPEAT STRIP_TAC THENL
    [MATCH_MP_TAC CARD_EQ_CONG;

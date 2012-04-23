@@ -14163,6 +14163,17 @@ let CONNECTED_COMPLEMENT_BOUNDED_CONVEX = prove
   SIMP_TAC[PATH_CONNECTED_IMP_CONNECTED;
            PATH_CONNECTED_COMPLEMENT_BOUNDED_CONVEX]);;
 
+let CONNECTED_DIFF_BALL = prove
+ (`!s a:real^N r.
+        2 <= dimindex(:N) /\ connected s /\ cball(a,r) SUBSET s
+        ==> connected(s DIFF ball(a,r))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONNECTED_DIFF_OPEN_FROM_CLOSED THEN
+  EXISTS_TAC `cball(a:real^N,r)` THEN
+  ASM_REWRITE_TAC[OPEN_BALL; CLOSED_CBALL; BALL_SUBSET_CBALL] THEN
+  REWRITE_TAC[CBALL_DIFF_BALL] THEN
+  REWRITE_TAC[ONCE_REWRITE_RULE[DIST_SYM] dist] THEN
+  ASM_SIMP_TAC[CONNECTED_SPHERE]);;
+
 let PATH_CONNECTED_DIFF_BALL = prove
  (`!s a:real^N r.
         2 <= dimindex(:N) /\ path_connected s /\ cball(a,r) SUBSET s

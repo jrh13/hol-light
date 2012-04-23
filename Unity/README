@@ -3,6 +3,7 @@
    Author:       (c) Copyright 1989-2008 by Flemming Andersen
    Date:         November 17, 2003
    Last update:  January 27, 2008
+   Distributed with HOL Light under same license terms
 
 (*-------------------------------------------------------------------------*)
 
@@ -27,7 +28,7 @@ in HOL.
 The UNITY theory defined in this directory was the first
 implementation of UNITY the way it was originally defined in [CM88]:
 
-   Parallel Program Design - A Foundation 
+   Parallel Program Design - A Foundation
    K. Mani Chandy
    Jayadev Misra
    Addison Wesley, 1988.
