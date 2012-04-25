@@ -6,7 +6,7 @@
 Sets up a new axiom.
 
 \DESCRIBE
-If {tm} is a term of type {bool}, a call {new_axiom tm)} creates a
+If {tm} is a term of type {bool}, a call {new_axiom tm} creates a
 theorem
 {
    |- tm
@@ -20,15 +20,15 @@ Fails if the given term does not have type {bool}.
   # let ax = new_axiom `x = 1`;;
   val ax : thm = |- x = 1
 }
-Note that as with all theorems, variables are implicitly universally 
-quantified, so this axiom asserts that all numbers are equal to 1. Of course, 
+Note that as with all theorems, variables are implicitly universally
+quantified, so this axiom asserts that all numbers are equal to 1. Of course,
 we can then derive a contradiction:
 {
   CONV_RULE NUM_REDUCE_CONV (INST [`0`,`x:num`] ax);;
   val it : thm = |- F
 }
-Normal use of HOL Light should avoid asserting axioms. They can lead to 
-inconsistency, albeit not in such an obvious way. Provided theories are 
+Normal use of HOL Light should avoid asserting axioms. They can lead to
+inconsistency, albeit not in such an obvious way. Provided theories are
 extended by definitions, consistency is preserved.
 
 \COMMENTS
@@ -40,6 +40,6 @@ in simple type theory without further axioms, such as higher transfinite
 ordinals.
 
 \SEEALSO
-mk_thm, new_definition.
+axioms, mk_thm, new_definition.
 
 \ENDDOC
