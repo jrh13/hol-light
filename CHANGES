@@ -1,3 +1,8 @@
+Tue 24th Apr 2012       Help/new_axiom.doc
+
+Made a couple of small fixes to the "new_axiom" documentation, removing a stray 
+paren and adding a cross-reference to "axioms".
+
 Fri 30th Mar 2012       Permutation/permuted.ml
 
 Added a couple of lemmas about list permutations preserving "PAIRWISE" for a
