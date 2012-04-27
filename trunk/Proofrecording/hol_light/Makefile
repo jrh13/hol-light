@@ -55,7 +55,7 @@ OCAML_VERSION=`ocamlc -version | cut -c1-4`
 OCAML_BINARY_VERSION=`ocamlc -version | cut -c3`
 CAMLP5_BINARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1`
 
-pa_j.ml: pa_j_3.04.ml pa_j_3.06.ml pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx.ml; \
+pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx.ml; \
         if test ${OCAML_BINARY_VERSION} = "0" ; \
         then cp pa_j_${OCAML_VERSION}.ml pa_j.ml ; \
         else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \

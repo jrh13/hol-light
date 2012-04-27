@@ -1,141 +1,158 @@
+#!/bin/bash
 #######################################################################
 # Load in a bunch of examples to test HOL Light is working properly
 # Try examining the output using something like
 #
-#     egrep -i '###|error in|Not_found' nohup.out
+#     egrep -i '###|error|not.found' nohup.out
 #
 # to see progress and whether anything has gone wrong.
+#
+# You might first want to install the necessary external tools,
+# for instance with
+#
+#   aptitude install prover9 coinor-csdp pari-gp
+#
 #######################################################################
 
-# Make sure we have an up-to-date hol, and Mizar Light extensions
+set -e
 
-make hol
-(cd Mizarlight; make clean; make)
+if which hol-light > /dev/null ; then
+    hollight=hol-light
+else
+    # Make sure we have an up-to-date hol, and Mizar Light extensions
+    make hol
+    (cd Mizarlight; make clean; make)
+    hollight=./hol
+fi
 
 # Standalone examples
 
-echo '### Loading Library/agm.ml'; echo 'loadt "Library/agm.ml";;' | (time ./hol)
-echo '### Loading Library/binary.ml'; echo 'loadt "Library/binary.ml";;' | (time ./hol)
-echo '### Loading Library/binomial.ml'; echo 'loadt "Library/binomial.ml";;' | (time ./hol)
-echo '### Loading Examples/borsuk.ml'; echo 'loadt "Examples/borsuk.ml";;' | (time ./hol)
-echo '### Loading Library/card.ml'; echo 'loadt "Library/card.ml";;' | (time ./hol)
-echo '### Loading Examples/combin.ml'; echo 'loadt "Examples/combin.ml";;' | (time ./hol)
-echo '### Loading Examples/cong.ml'; echo 'loadt "Examples/cong.ml";;' | (time ./hol)
-echo '### Loading Examples/cooper.ml'; echo 'loadt "Examples/cooper.ml";;' | (time ./hol)
-echo '### Loading Examples/dlo.ml'; echo 'loadt "Examples/dlo.ml";;' | (time ./hol)
-echo '### Loading Library/floor.ml'; echo 'loadt "Library/floor.ml";;' | (time ./hol)
-echo '### Loading Examples/forster.ml'; echo 'loadt "Examples/forster.ml";;' | (time ./hol)
-echo '### Loading Examples/hol88.ml'; echo 'loadt "Examples/hol88.ml";;' | (time ./hol)
-echo '### Loading Examples/holby.ml'; echo 'loadt "Examples/holby.ml";;' | (time ./hol)
-echo '### Loading Library/integer.ml'; echo 'loadt "Library/integer.ml";;' | (time ./hol)
-echo '### Loading Library/isum.ml'; echo 'loadt "Library/isum.ml";;' | (time ./hol)
-echo '### Loading Examples/kb.ml'; echo 'loadt "Examples/kb.ml";;' | (time ./hol)
-echo '### Loading Examples/lagrange_lemma.ml'; echo 'loadt "Examples/lagrange_lemma.ml";;' | (time ./hol)
-echo '### Loading Examples/mangoldt.ml'; echo 'loadt "Examples/mangoldt.ml";;' | (time ./hol)
-echo '### Loading Examples/mccarthy.ml'; echo 'loadt "Examples/mccarthy.ml";;' | (time ./hol)
-echo '### Loading Examples/mizar.ml'; echo 'loadt "Examples/mizar.ml";;' | (time ./hol)
-echo '### Loading Library/multiplicative.ml'; echo 'loadt "Library/multiplicative.ml";;' | (time ./hol)
-echo '### Loading Examples/multiwf.ml'; echo 'loadt "Examples/multiwf.ml";;' | (time ./hol)
-echo '### Loading Examples/pell.ml'; echo 'loadt "Examples/pell.ml";;' | (time ./hol)
-echo '### Loading Library/permutations.ml'; echo 'loadt "Library/permutations.ml";;' | (time ./hol)
-echo '### Loading Library/primitive.ml'; echo 'loadt "Library/primitive.ml";;' | (time ./hol)
-echo '### Loading Library/products.ml'; echo 'loadt "Library/products.ml";;' | (time ./hol)
-echo '### Loading Examples/prog.ml'; echo 'loadt "Examples/prog.ml";;' | (time ./hol)
-echo '### Loading Examples/prover9.ml'; echo 'loadt "Examples/prover9.ml";;' | (time ./hol)
-echo '### Loading Examples/rectypes.ml'; echo 'loadt "Examples/rectypes.ml";;' | (time ./hol)
-echo '### Loading Examples/schnirelmann.ml'; echo 'loadt "Examples/schnirelmann.ml";;' | (time ./hol)
-echo '### Loading Examples/solovay.ml'; echo 'loadt "Examples/solovay.ml";;' | (time ./hol)
-echo '### Loading Examples/sos.ml'; echo 'loadt "Examples/sos.ml";;' | (time ./hol)
-echo '### Loading Examples/ste.ml'; echo 'loadt "Examples/ste.ml";;' | (time ./hol)
-echo '### Loading Library/wo.ml'; echo 'loadt "Library/wo.ml";;' | (time ./hol)
+echo '### Loading Library/agm.ml'; echo 'loadt "Library/agm.ml";;' | (time $hollight)
+echo '### Loading Library/binary.ml'; echo 'loadt "Library/binary.ml";;' | (time $hollight)
+echo '### Loading Library/binomial.ml'; echo 'loadt "Library/binomial.ml";;' | (time $hollight)
+echo '### Loading Examples/borsuk.ml'; echo 'loadt "Examples/borsuk.ml";;' | (time $hollight)
+echo '### Loading Library/card.ml'; echo 'loadt "Library/card.ml";;' | (time $hollight)
+echo '### Loading Examples/combin.ml'; echo 'loadt "Examples/combin.ml";;' | (time $hollight)
+echo '### Loading Examples/cong.ml'; echo 'loadt "Examples/cong.ml";;' | (time $hollight)
+echo '### Loading Examples/cooper.ml'; echo 'loadt "Examples/cooper.ml";;' | (time $hollight)
+echo '### Loading Examples/dlo.ml'; echo 'loadt "Examples/dlo.ml";;' | (time $hollight)
+echo '### Loading Library/floor.ml'; echo 'loadt "Library/floor.ml";;' | (time $hollight)
+echo '### Loading Examples/forster.ml'; echo 'loadt "Examples/forster.ml";;' | (time $hollight)
+echo '### Loading Examples/hol88.ml'; echo 'loadt "Examples/hol88.ml";;' | (time $hollight)
+echo '### Loading Examples/holby.ml'; echo 'loadt "Examples/holby.ml";;' | (time $hollight)
+echo '### Loading Library/integer.ml'; echo 'loadt "Library/integer.ml";;' | (time $hollight)
+echo '### Loading Library/isum.ml'; echo 'loadt "Library/isum.ml";;' | (time $hollight)
+echo '### Loading Examples/kb.ml'; echo 'loadt "Examples/kb.ml";;' | (time $hollight)
+echo '### Loading Examples/lagrange_lemma.ml'; echo 'loadt "Examples/lagrange_lemma.ml";;' | (time $hollight)
+echo '### Loading Examples/mangoldt.ml'; echo 'loadt "Examples/mangoldt.ml";;' | (time $hollight)
+echo '### Loading Examples/mccarthy.ml'; echo 'loadt "Examples/mccarthy.ml";;' | (time $hollight)
+echo '### Loading Examples/mizar.ml'; echo 'loadt "Examples/mizar.ml";;' | (time $hollight)
+echo '### Loading Library/multiplicative.ml'; echo 'loadt "Library/multiplicative.ml";;' | (time $hollight)
+echo '### Loading Examples/multiwf.ml'; echo 'loadt "Examples/multiwf.ml";;' | (time $hollight)
+echo '### Loading Examples/pell.ml'; echo 'loadt "Examples/pell.ml";;' | (time $hollight)
+echo '### Loading Library/permutations.ml'; echo 'loadt "Library/permutations.ml";;' | (time $hollight)
+echo '### Loading Library/primitive.ml'; echo 'loadt "Library/primitive.ml";;' | (time $hollight)
+echo '### Loading Library/products.ml'; echo 'loadt "Library/products.ml";;' | (time $hollight)
+echo '### Loading Examples/prog.ml'; echo 'loadt "Examples/prog.ml";;' | (time $hollight)
+echo '### Loading Examples/prover9.ml'; echo 'loadt "Examples/prover9.ml";;' | (time $hollight)
+echo '### Loading Examples/rectypes.ml'; echo 'loadt "Examples/rectypes.ml";;' | (time $hollight)
+echo '### Loading Examples/schnirelmann.ml'; echo 'loadt "Examples/schnirelmann.ml";;' | (time $hollight)
+echo '### Loading Examples/solovay.ml'; echo 'loadt "Examples/solovay.ml";;' | (time $hollight)
+echo '### Loading Examples/sos.ml'; echo 'loadt "Examples/sos.ml";;' | (time $hollight)
+echo '### Loading Examples/ste.ml'; echo 'loadt "Examples/ste.ml";;' | (time $hollight)
+echo '### Loading Library/wo.ml'; echo 'loadt "Library/wo.ml";;' | (time $hollight)
 echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml';
 (echo 'loadt "Library/analysis.ml";;'; echo 'loadt "Library/transc.ml";;';
  echo 'loadt "Library/calc_real.ml";;'; echo 'loadt "Examples/machin.ml";;';
- echo 'loadt "Examples/polylog.ml";;'; echo 'loadt "Library/poly.ml";;') | (time ./hol)
+ echo 'loadt "Examples/polylog.ml";;'; echo 'loadt "Library/poly.ml";;') | (time $hollight)
 echo '### Loading Library/prime.ml,pratt.ml';
-(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pratt.ml";;') | (time ./hol)
+(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pratt.ml";;') | (time $hollight)
 echo '### Loading Library/prime.ml,pocklington.ml';
-(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pocklington.ml";;') | (time ./hol)
+(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pocklington.ml";;') | (time $hollight)
 echo '### Loading Library/rstc.ml,reduct.ml';
-(echo 'loadt "Library/rstc.ml";;'; echo 'loadt "Examples/reduct.ml";;') | (time ./hol)
+(echo 'loadt "Library/rstc.ml";;'; echo 'loadt "Examples/reduct.ml";;') | (time $hollight)
 
 # Extended examples
 
-echo '### Loading Arithmetic/make.ml'; echo 'loadt "Arithmetic/make.ml";;' | (time ./hol)
-echo '### Loading Boyer_Moore/make.ml'; echo 'loadt "Boyer_Moore/make.ml";;' | (time ./hol)
-echo '### Loading Complex/make.ml'; echo 'loadt "Complex/make.ml";;' | (time ./hol)
-echo '### Loading IsabelleLight/make.ml'; echo 'loadt "IsabelleLight/make.ml";;' | (time ./hol)
-echo '### Loading Jordan/make.ml'; echo 'loadt "Jordan/make.ml";;' | (time ./hol)
-echo '### Loading Mizarlight/make.ml'; echo 'loadt "Mizarlight/make.ml";;' | (time ./hol)
-echo '### Loading Minisat/make.ml,Minisat/taut.ml';
-(echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;') | (time ./hol)
-echo '### Loading Model/make.ml'; echo 'loadt "Model/make.ml";;' | (time ./hol)
-echo '### Loading Multivariate/make.ml'; echo 'loadt "Multivariate/make.ml";;' | (time ./hol)
-echo '### Loading Multivariate/make_complex.ml'; echo 'loadt "Multivariate/make_complex.ml";;' | (time ./hol)
-echo '### Loading Ntrie/ntrie.ml'; echo 'loadt "Ntrie/ntrie.ml";;' | (time ./hol)
-echo '### Loading Permutation/make.ml'; echo 'loadt "Permutation/make.ml";;' | (time ./hol)
-echo '### Loading Rqe/make.ml'; echo 'loadt "Rqe/make.ml";;' | (time ./hol)
-echo '### Loading Unity/make.ml'; echo 'loadt "Unity/make.ml";;' | (time ./hol)
-echo '### Loading Multivariate/geom.ml'; echo 'loadt "Multivariate/geom.ml";;' | (time ./hol)
-echo '### Loading Multivariate/cross.ml'; echo 'loadt "Multivariate/cross.ml";;' | (time ./hol)
-echo '### Loading Multivariate/flyspeck.ml'; echo 'loadt "Multivariate/flyspeck.ml";;' | (time ./hol)
+echo '### Loading Arithmetic/make.ml'; echo 'loadt "Arithmetic/make.ml";;' | (time $hollight)
+echo '### Loading Boyer_Moore/make.ml'; echo 'loadt "Boyer_Moore/make.ml";;' | (time $hollight)
+echo '### Loading Complex/make.ml'; echo 'loadt "Complex/make.ml";;' | (time $hollight)
+echo '### Loading IsabelleLight/make.ml'; echo 'loadt "IsabelleLight/make.ml";;' | (time $hollight)
+echo '### Loading Jordan/make.ml'; echo 'loadt "Jordan/make.ml";;' | (time $hollight)
+echo '### Loading Mizarlight/make.ml'; echo 'loadt "Mizarlight/make.ml";;' | (time $hollight)
+if which zchaff > /dev/null ; then
+    echo '### Loading Minisat/make.ml,Minisat/taut.ml';
+    (echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;') | (time $hollight)
+else
+    echo '### Error: skip Minisat/make.ml, Minisat/taut.ml because zchaff is not available'
+fi
+echo '### Loading Model/make.ml'; echo 'loadt "Model/make.ml";;' | (time $hollight)
+echo '### Loading Multivariate/make.ml'; echo 'loadt "Multivariate/make.ml";;' | (time $hollight)
+echo '### Loading Multivariate/make_complex.ml'; echo 'loadt "Multivariate/make_complex.ml";;' | (time $hollight)
+echo '### Loading Ntrie/ntrie.ml'; echo 'loadt "Ntrie/ntrie.ml";;' | (time $hollight)
+echo '### Loading Permutation/make.ml'; echo 'loadt "Permutation/make.ml";;' | (time $hollight)
+echo '### Loading Rqe/make.ml'; echo 'loadt "Rqe/make.ml";;' | (time $hollight)
+echo '### Loading Unity/make.ml'; echo 'loadt "Unity/make.ml";;' | (time $hollight)
+echo '### Loading Multivariate/geom.ml'; echo 'loadt "Multivariate/geom.ml";;' | (time $hollight)
+echo '### Loading Multivariate/cross.ml'; echo 'loadt "Multivariate/cross.ml";;' | (time $hollight)
+echo '### Loading Multivariate/flyspeck.ml'; echo 'loadt "Multivariate/flyspeck.ml";;' | (time $hollight)
 
 # Some of the "Great 100 theorems"
 
-echo '### Loading 100/arithmetic_geometric_mean.ml'; echo 'loadt "100/arithmetic_geometric_mean.ml";;' | (time ./hol)
-echo '### Loading 100/arithmetic.ml'; echo 'loadt "100/arithmetic.ml";;' | (time ./hol)
-echo '### Loading 100/ballot.ml'; echo 'loadt "100/ballot.ml";;' | (time ./hol)
-echo '### Loading 100/bernoulli.ml'; echo 'loadt "100/bernoulli.ml";;' | (time ./hol)
+echo '### Loading 100/arithmetic_geometric_mean.ml'; echo 'loadt "100/arithmetic_geometric_mean.ml";;' | (time $hollight)
+echo '### Loading 100/arithmetic.ml'; echo 'loadt "100/arithmetic.ml";;' | (time $hollight)
+echo '### Loading 100/ballot.ml'; echo 'loadt "100/ballot.ml";;' | (time $hollight)
+echo '### Loading 100/bernoulli.ml'; echo 'loadt "100/bernoulli.ml";;' | (time $hollight)
 echo '### Loading 100/bertrand.ml,100/primerecip.ml';
-(echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time ./hol)
-echo '### Loading 100/birthday.ml'; echo 'loadt "100/birthday.ml";;' | (time ./hol)
-echo '### Loading 100/cantor.ml'; echo 'loadt "100/cantor.ml";;' | (time ./hol)
-echo '### Loading 100/ceva.ml'; echo 'loadt "100/ceva.ml";;' | (time ./hol)
-echo '### Loading 100/circle.ml'; echo 'loadt "100/circle.ml";;' | (time ./hol)
-echo '### Loading 100/chords.ml'; echo 'loadt "100/chords.ml";;' | (time ./hol)
-echo '### Loading 100/combinations.ml'; echo 'loadt "100/combinations.ml";;' | (time ./hol)
-echo '### Loading 100/constructible.ml'; echo 'loadt "100/constructible.ml";;' | (time ./hol)
-echo '### Loading 100/cosine.ml'; echo 'loadt "100/cosine.ml";;' | (time ./hol)
-echo '### Loading 100/cubic.ml'; echo 'loadt "100/cubic.ml";;' | (time ./hol)
-echo '### Loading 100/derangements.ml'; echo 'loadt "100/derangements.ml";;' | (time ./hol)
-echo '### Loading 100/desargues.ml'; echo 'loadt "100/desargues.ml";;' | (time ./hol)
-echo '### Loading 100/dirichlet.ml'; echo 'loadt "100/dirichlet.ml";;' | (time ./hol)
-echo '### Loading 100/div3.ml'; echo 'loadt "100/div3.ml";;' | (time ./hol)
-echo '### Loading 100/divharmonic.ml'; echo 'loadt "100/divharmonic.ml";;' | (time ./hol)
-echo '### Loading 100/e_is_transcendental.ml'; echo 'loadt "100/e_is_transcendental.ml";;' | (time ./hol)
-echo '### Loading 100/euler.ml'; echo 'loadt "100/euler.ml";;' | (time ./hol)
-echo '### Loading 100/fourier.ml'; echo 'loadt "100/fourier.ml";;' | (time ./hol)
-echo '### Loading 100/four_squares.ml'; echo 'loadt "100/four_squares.ml";;' | (time ./hol)
-echo '### Loading 100/friendship.ml'; echo 'loadt "100/friendship.ml";;' | (time ./hol)
-echo '### Loading 100/fta.ml'; echo 'loadt "100/fta.ml";;' | (time ./hol)
-echo '### Loading 100/gcd.ml'; echo 'loadt "100/gcd.ml";;' | (time ./hol)
-echo '### Loading 100/heron.ml'; echo 'loadt "100/heron.ml";;' | (time ./hol)
-echo '### Loading 100/inclusion_exclusion.ml'; echo 'loadt "100/inclusion_exclusion.ml";;' | (time ./hol)
-echo '### Loading 100/isosceles.ml'; echo 'loadt "100/isosceles.ml";;' | (time ./hol)
-echo '### Loading 100/konigsberg.ml'; echo 'loadt "100/konigsberg.ml";;' | (time ./hol)
-echo '### Loading 100/lagrange.ml'; echo 'loadt "100/lagrange.ml";;' | (time ./hol)
-echo '### Loading 100/leibniz.ml'; echo 'loadt "100/leibniz.ml";;' | (time ./hol)
-echo '### Loading 100/lhopital.ml'; echo 'loadt "100/lhopital.ml";;' | (time ./hol)
-echo '### Loading 100/liouville.ml'; echo 'loadt "100/liouville.ml";;' | (time ./hol)
-echo '### Loading 100/minkowski.ml'; echo 'loadt "100/minkowski.ml";;' | (time ./hol)
-echo '### Loading 100/pascal.ml'; echo 'loadt "100/pascal.ml";;' | (time ./hol)
-echo '### Loading 100/perfect.ml'; echo 'loadt "100/perfect.ml";;' | (time ./hol)
-echo '### Loading 100/pick.ml'; echo 'loadt "100/pick.ml";;' | (time ./hol)
-echo '### Loading 100/piseries.ml'; echo 'loadt "100/piseries.ml";;' | (time ./hol)
-echo '### Loading 100/pnt.ml'; echo 'loadt "100/pnt.ml";;' | (time ./hol)
-echo '### Loading 100/ptolemy.ml'; echo 'loadt "100/ptolemy.ml";;' | (time ./hol)
-echo '### Loading 100/pythagoras.ml'; echo 'loadt "100/pythagoras.ml";;' | (time ./hol)
-echo '### Loading 100/quartic.ml'; echo 'loadt "100/quartic.ml";;' | (time ./hol)
-echo '### Loading 100/ramsey.ml'; echo 'loadt "100/ramsey.ml";;' | (time ./hol)
-echo '### Loading 100/ratcountable.ml'; echo 'loadt "100/ratcountable.ml";;' | (time ./hol)
-echo '### Loading 100/realsuncountable.ml'; echo 'loadt "100/realsuncountable.ml";;' | (time ./hol)
-echo '### Loading 100/reciprocity.ml'; echo 'loadt "100/reciprocity.ml";;' | (time ./hol)
-echo '### Loading 100/stirling.ml'; echo 'loadt "100/stirling.ml";;' | (time ./hol)
-echo '### Loading 100/subsequence.ml'; echo 'loadt "100/subsequence.ml";;' | (time ./hol)
-echo '### Loading 100/thales.ml'; echo 'loadt "100/thales.ml";;' | (time ./hol)
-echo '### Loading 100/triangular.ml'; echo 'loadt "100/triangular.ml";;' | (time ./hol)
-echo '### Loading 100/two_squares.ml'; echo 'loadt "100/two_squares.ml";;' | (time ./hol)
-echo '### Loading 100/wilson.ml'; echo 'loadt "100/wilson.ml";;' | (time ./hol)
+(echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time $hollight)
+echo '### Loading 100/birthday.ml'; echo 'loadt "100/birthday.ml";;' | (time $hollight)
+echo '### Loading 100/cantor.ml'; echo 'loadt "100/cantor.ml";;' | (time $hollight)
+echo '### Loading 100/ceva.ml'; echo 'loadt "100/ceva.ml";;' | (time $hollight)
+echo '### Loading 100/circle.ml'; echo 'loadt "100/circle.ml";;' | (time $hollight)
+echo '### Loading 100/chords.ml'; echo 'loadt "100/chords.ml";;' | (time $hollight)
+echo '### Loading 100/combinations.ml'; echo 'loadt "100/combinations.ml";;' | (time $hollight)
+echo '### Loading 100/constructible.ml'; echo 'loadt "100/constructible.ml";;' | (time $hollight)
+echo '### Loading 100/cosine.ml'; echo 'loadt "100/cosine.ml";;' | (time $hollight)
+echo '### Loading 100/cubic.ml'; echo 'loadt "100/cubic.ml";;' | (time $hollight)
+echo '### Loading 100/derangements.ml'; echo 'loadt "100/derangements.ml";;' | (time $hollight)
+echo '### Loading 100/desargues.ml'; echo 'loadt "100/desargues.ml";;' | (time $hollight)
+echo '### Loading 100/dirichlet.ml'; echo 'loadt "100/dirichlet.ml";;' | (time $hollight)
+echo '### Loading 100/div3.ml'; echo 'loadt "100/div3.ml";;' | (time $hollight)
+echo '### Loading 100/divharmonic.ml'; echo 'loadt "100/divharmonic.ml";;' | (time $hollight)
+echo '### Loading 100/e_is_transcendental.ml'; echo 'loadt "100/e_is_transcendental.ml";;' | (time $hollight)
+echo '### Loading 100/euler.ml'; echo 'loadt "100/euler.ml";;' | (time $hollight)
+echo '### Loading 100/fourier.ml'; echo 'loadt "100/fourier.ml";;' | (time $hollight)
+echo '### Loading 100/four_squares.ml'; echo 'loadt "100/four_squares.ml";;' | (time $hollight)
+echo '### Loading 100/friendship.ml'; echo 'loadt "100/friendship.ml";;' | (time $hollight)
+echo '### Loading 100/fta.ml'; echo 'loadt "100/fta.ml";;' | (time $hollight)
+echo '### Loading 100/gcd.ml'; echo 'loadt "100/gcd.ml";;' | (time $hollight)
+echo '### Loading 100/heron.ml'; echo 'loadt "100/heron.ml";;' | (time $hollight)
+echo '### Loading 100/inclusion_exclusion.ml'; echo 'loadt "100/inclusion_exclusion.ml";;' | (time $hollight)
+echo '### Loading 100/isosceles.ml'; echo 'loadt "100/isosceles.ml";;' | (time $hollight)
+echo '### Loading 100/konigsberg.ml'; echo 'loadt "100/konigsberg.ml";;' | (time $hollight)
+echo '### Loading 100/lagrange.ml'; echo 'loadt "100/lagrange.ml";;' | (time $hollight)
+echo '### Loading 100/leibniz.ml'; echo 'loadt "100/leibniz.ml";;' | (time $hollight)
+echo '### Loading 100/lhopital.ml'; echo 'loadt "100/lhopital.ml";;' | (time $hollight)
+echo '### Loading 100/liouville.ml'; echo 'loadt "100/liouville.ml";;' | (time $hollight)
+echo '### Loading 100/minkowski.ml'; echo 'loadt "100/minkowski.ml";;' | (time $hollight)
+echo '### Loading 100/pascal.ml'; echo 'loadt "100/pascal.ml";;' | (time $hollight)
+echo '### Loading 100/perfect.ml'; echo 'loadt "100/perfect.ml";;' | (time $hollight)
+echo '### Loading 100/pick.ml'; echo 'loadt "100/pick.ml";;' | (time $hollight)
+echo '### Loading 100/piseries.ml'; echo 'loadt "100/piseries.ml";;' | (time $hollight)
+echo '### Loading 100/pnt.ml'; echo 'loadt "100/pnt.ml";;' | (time $hollight)
+echo '### Loading 100/ptolemy.ml'; echo 'loadt "100/ptolemy.ml";;' | (time $hollight)
+echo '### Loading 100/pythagoras.ml'; echo 'loadt "100/pythagoras.ml";;' | (time $hollight)
+echo '### Loading 100/quartic.ml'; echo 'loadt "100/quartic.ml";;' | (time $hollight)
+echo '### Loading 100/ramsey.ml'; echo 'loadt "100/ramsey.ml";;' | (time $hollight)
+echo '### Loading 100/ratcountable.ml'; echo 'loadt "100/ratcountable.ml";;' | (time $hollight)
+echo '### Loading 100/realsuncountable.ml'; echo 'loadt "100/realsuncountable.ml";;' | (time $hollight)
+echo '### Loading 100/reciprocity.ml'; echo 'loadt "100/reciprocity.ml";;' | (time $hollight)
+echo '### Loading 100/stirling.ml'; echo 'loadt "100/stirling.ml";;' | (time $hollight)
+echo '### Loading 100/subsequence.ml'; echo 'loadt "100/subsequence.ml";;' | (time $hollight)
+echo '### Loading 100/thales.ml'; echo 'loadt "100/thales.ml";;' | (time $hollight)
+echo '### Loading 100/triangular.ml'; echo 'loadt "100/triangular.ml";;' | (time $hollight)
+echo '### Loading 100/two_squares.ml'; echo 'loadt "100/two_squares.ml";;' | (time $hollight)
+echo '### Loading 100/wilson.ml'; echo 'loadt "100/wilson.ml";;' | (time $hollight)
 
 # Build the proof-recording version of HOL
 

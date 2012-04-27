@@ -11,8 +11,9 @@ it will invent its own type variables to use in the most general type. The flag
 {type_invention_warning} determines whether the user is warned in such
 situations. The default is {true}, since this can often indicate a user error
 (e.g. the user forgot to define a constant before using it in a term or
-overlooked more general types than expected). But to disable the warnings, set
-it to {false}.
+overlooked more general types than expected). To disable the warnings, set it
+to {false}, while to make the checking even more rigorous and treat it as an 
+error, set {type_invention_error} to {true}.
 
 \FAILURE
 Not applicable.
@@ -50,6 +51,6 @@ you are rewriting with ad-hoc set theory lemmas generated like this:
 }
 
 \SEEALSO
-retypecheck, term_of_preterm.
+retypecheck, term_of_preterm, type_invention_error.
 
 \ENDDOC
