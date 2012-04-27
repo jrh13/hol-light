@@ -1,6 +1,18 @@
+Thu 26th Apr 2012       preterm.ml, Help/type_invention_error.doc [new file], type_invention_warning.doc
+
+Added code from Marco Maggesi to incorporate an additional option
+"type_invention_error" that forces type variables to be an error, not merely be
+warned about. Added a corresponding documentation file and some
+cross-referencing w.r.t the existing file "type_invention_warning.doc".
+
+Thu 26th Apr 2012       holtest
+
+Incorporated some changes from Hendrik Tews to make "holtest" a bit more
+robust and keep it consistent with the HOL Light debian package.
+
 Tue 24th Apr 2012       Help/new_axiom.doc
 
-Made a couple of small fixes to the "new_axiom" documentation, removing a stray 
+Made a couple of small fixes to the "new_axiom" documentation, removing a stray
 paren and adding a cross-reference to "axioms".
 
 Fri 30th Mar 2012       Permutation/permuted.ml

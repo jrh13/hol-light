@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*              (c) Copyright, Marco Maggesi 2012                            *)
 (* ========================================================================= *)
 
 needs "nets.ml";;
@@ -172,6 +173,12 @@ let rec preterm_of_term tm =
   with Failure _ ->
       let l,r = dest_comb tm in
       Combp(preterm_of_term l,preterm_of_term r);;
+
+(* ------------------------------------------------------------------------- *)
+(* Flag indicating whether inventing type variable is allowed.               *)
+(* ------------------------------------------------------------------------- *)
+
+let type_invention_error = ref false;;
 
 (* ------------------------------------------------------------------------- *)
 (* Main pretype->type, preterm->term and retypechecking functions.           *)
@@ -366,10 +373,14 @@ let type_of_pretype,term_of_preterm,retypecheck =
       | Combp(l,r) -> mk_comb(term_of_preterm l,term_of_preterm r)
       | Absp(v,bod) -> mk_gabs(term_of_preterm v,term_of_preterm bod)
       | Typing(ptm,pty) -> term_of_preterm ptm in
+    let report_type_invention () =
+      if !stvs_translated then
+        if !type_invention_error
+        then failwith "typechecking error (cannot infer type of variables)"
+        else warn !type_invention_warning "inventing type variables" in
     fun ptm -> stvs_translated := false;
                let tm = term_of_preterm ptm in
-               warn (!stvs_translated & !type_invention_warning)
-                    "inventing type variables"; tm in
+               report_type_invention (); tm in
 
   (* ----------------------------------------------------------------------- *)
   (* Overall typechecker: initial typecheck plus overload resolution pass.   *)
