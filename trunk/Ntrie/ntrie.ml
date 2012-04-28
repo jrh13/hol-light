@@ -2,6 +2,7 @@
 (* Computations with finite sets of nums.                                    *)
 (*                                                                           *)
 (*        (c) Copyright, Clelia Lomuto, Marco Maggesi, 2009.                 *)
+(*          Distributed with HOL Light under same license terms              *)
 (* ========================================================================= *)
 
 (* ------------------------------------------------------------------------- *)
