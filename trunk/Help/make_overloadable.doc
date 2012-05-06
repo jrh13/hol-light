@@ -9,19 +9,19 @@ Makes a symbol overloadable within the specified type skeleton.
 HOL Light allows the same identifier to denote several different underlying
 constants, with the choice being determined by types and/or an order of
 priority (see {prioritize_overload}). However, any identifier {ident} to be
-overloaded must first be declared overloadable using 
+overloaded must first be declared overloadable using
 {make_overloadable "ident" `:ty`}. The ``type skeleton'' argument {`:ty`} is
-the most general type that the various instances may have. 
+the most general type that the various instances may have.
 
 The type skeleton can simply be a type variable, in which case any type is
 acceptable, but it is good practice to constrain it where possible to allow
 more information to be inferred during typechecking. For example, the symbol
 `{+}' has the type skeleton {`:A->A->A`} (as you can find out by examining the
-list {the_overload_skeletons}) indicating that it is always overloaded to a 
+list {the_overload_skeletons}) indicating that it is always overloaded to a
 binary operator that returns and element of the same type as its two arguments.
 
 \FAILURE
-Fails if the symbol has previously been made overloadable but with a different 
+Fails if the symbol has previously been made overloadable but with a different
 type skeleton.
 
 \EXAMPLE
@@ -32,6 +32,6 @@ type skeleton.
 
 \SEEALSO
 overload_interface, override_interface, prioritize_overload, reduce_interface,
-remove_interface, the_interface, the_overload_skeletons.
+remove_interface, the_implicit_types, the_interface, the_overload_skeletons.
 
 \ENDDOC

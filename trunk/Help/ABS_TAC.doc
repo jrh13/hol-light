@@ -10,10 +10,9 @@ tactic.
 
 \DESCRIBE
 {ABS_TAC} reduces a goal of the form {A ?- (\x. s[x]) = (\y. t[y])}
-by stripping away the abstractions to give a new goal {A ?- s[x'] = t[x']} 
-where {x'} is a variant of {x}, the bound variable on the left-hand side, 
+by stripping away the abstractions to give a new goal {A ?- s[x'] = t[x']}
+where {x'} is a variant of {x}, the bound variable on the left-hand side,
 chosen not to be free in the current goal's assumptions or conclusion.
-the function applications, giving the new goal {A ?- x = y}.
 {
     A ?- (\x. s[x]) = (\y. t[y])
    ================================  ABS_TAC

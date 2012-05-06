@@ -1074,12 +1074,12 @@ let INTEGER_DET = prove
   ASM_MESON_TAC[IN_NUMSEG; permutes]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Diagonal matrices.                                                        *)
+(* Diagonal matrices (for arbitrary rectangular matrix, not just square).    *)
 (* ------------------------------------------------------------------------- *)
 
 let diagonal_matrix = new_definition
- `diagonal_matrix(A:real^N^N) <=>
-        !i j. 1 <= i /\ i <= dimindex(:N) /\
+ `diagonal_matrix(A:real^N^M) <=>
+        !i j. 1 <= i /\ i <= dimindex(:M) /\
               1 <= j /\ j <= dimindex(:N) /\
               ~(i = j)
               ==> A$i$j = &0`;;
@@ -1102,6 +1102,11 @@ let ORTHOGONAL_TRANSFORMATION = prove
  (`!f. orthogonal_transformation f <=> linear f /\ !v. norm(f v) = norm(v)`,
   GEN_TAC THEN REWRITE_TAC[orthogonal_transformation] THEN EQ_TAC THENL
    [MESON_TAC[vector_norm]; SIMP_TAC[DOT_NORM] THEN MESON_TAC[LINEAR_ADD]]);;
+
+let ORTHOGONAL_TRANSFORMATION_COMPOSE = prove
+ (`!f g. orthogonal_transformation f /\ orthogonal_transformation g
+         ==> orthogonal_transformation(f o g)`,
+  SIMP_TAC[orthogonal_transformation; LINEAR_COMPOSE; o_THM]);;
 
 let orthogonal_matrix = new_definition
  `orthogonal_matrix(Q:real^N^N) <=>
@@ -1161,11 +1166,11 @@ let ORTHOGONAL_MATRIX_TRANSP = prove
   REWRITE_TAC[orthogonal_matrix; TRANSP_TRANSP; CONJ_ACI]);;
 
 let MATRIX_MUL_LTRANSP_DOT_COLUMN = prove
- (`!A:real^N^N. transp A ** A = (lambda i j. (column i A) dot (column j A))`,
+ (`!A:real^N^M. transp A ** A = (lambda i j. (column i A) dot (column j A))`,
   SIMP_TAC[matrix_mul; CART_EQ; LAMBDA_BETA; transp; dot; column]);;
 
 let MATRIX_MUL_RTRANSP_DOT_ROW = prove
- (`!A:real^N^N. A ** transp A = (lambda i j. (row i A) dot (row j A))`,
+ (`!A:real^N^M. A ** transp A = (lambda i j. (row i A) dot (row j A))`,
   SIMP_TAC[matrix_mul; CART_EQ; LAMBDA_BETA; transp; dot; row]);;
 
 let ORTHOGONAL_MATRIX_ORTHONORMAL_COLUMNS = prove
@@ -1695,6 +1700,201 @@ let ORTHOGONAL_TRANSFORMATION_LOWDIM_HORIZONTAL = prove
                (IMAGE f s) SUBSET {z | z$(dimindex(:N)) = &0}`,
   GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP ROTATION_LOWDIM_HORIZONTAL) THEN
   MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[]);;
+
+let ORTHOGONAL_TRANSFORMATION_BETWEEN_ORTHOGONAL_SETS = prove
+ (`!v:num->real^N w k.
+        pairwise (\i j. orthogonal (v i) (v j)) k /\
+        pairwise (\i j. orthogonal (w i) (w j)) k /\
+        (!i. i IN k ==> norm(v i) = norm(w i))
+        ==> ?f. orthogonal_transformation f /\
+                (!i. i IN k ==> f(v i) = w i)`,
+  let lemma1 = prove
+   (`!v:num->real^N n.
+          pairwise (\i j. orthogonal (v i) (v j)) (1..n) /\
+          (!i. 1 <= i /\ i <= n ==> norm(v i) = &1)
+          ==> ?f. orthogonal_transformation f /\
+                  (!i. 1 <= i /\ i <= n ==> f(basis i) = v i)`,
+    REWRITE_TAC[pairwise; IN_NUMSEG; GSYM CONJ_ASSOC] THEN
+    REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN `pairwise orthogonal (IMAGE (v:num->real^N) (1..n))`
+    ASSUME_TAC THENL
+     [REWRITE_TAC[PAIRWISE_IMAGE] THEN ASM_SIMP_TAC[pairwise; IN_NUMSEG];
+      ALL_TAC] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          PAIRWISE_ORTHOGONAL_INDEPENDENT)) THEN
+    REWRITE_TAC[SET_RULE
+     `~(a IN IMAGE f s) <=> !x. x IN s ==> ~(f x = a)`] THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[IN_NUMSEG] THEN
+      ASM_MESON_TAC[NORM_0; REAL_ARITH `~(&1 = &0)`];
+      DISCH_THEN(MP_TAC o CONJUNCT2 o MATCH_MP INDEPENDENT_BOUND)] THEN
+    SUBGOAL_THEN
+     `!i j. 1 <= i /\ i <= n /\ 1 <= j /\ j <= n /\ ~(i = j)
+            ==> ~(v i:real^N = v j)`
+    ASSUME_TAC THENL
+     [ASM_MESON_TAC[ORTHOGONAL_REFL; NORM_0; REAL_ARITH `~(&1 = &0)`];
+      ALL_TAC] THEN
+    SUBGOAL_THEN `CARD(IMAGE (v:num->real^N) (1..n)) = n` ASSUME_TAC THENL
+     [W(MP_TAC o PART_MATCH (lhs o rand) CARD_IMAGE_INJ o lhs o snd) THEN
+      ASM_REWRITE_TAC[CARD_NUMSEG_1; IN_NUMSEG; FINITE_NUMSEG] THEN
+      ASM_MESON_TAC[];
+      ASM_REWRITE_TAC[] THEN DISCH_TAC] THEN
+    SUBGOAL_THEN
+     `?w:num->real^N.
+          pairwise (\i j. orthogonal (w i) (w j)) (1..dimindex(:N)) /\
+          (!i. 1 <= i /\ i <= dimindex(:N) ==> norm(w i) = &1) /\
+          (!i. 1 <= i /\ i <= n ==> w i = v i)`
+    STRIP_ASSUME_TAC THENL
+     [ALL_TAC;
+      EXISTS_TAC
+       `(\x. vsum(1..dimindex(:N)) (\i. x$i % w i)):real^N->real^N` THEN
+      SIMP_TAC[BASIS_COMPONENT; IN_NUMSEG; COND_RATOR; COND_RAND] THEN
+      REWRITE_TAC[VECTOR_MUL_LID; VECTOR_MUL_LZERO; VSUM_DELTA] THEN
+      ASM_SIMP_TAC[IN_NUMSEG] THEN CONJ_TAC THENL
+       [ALL_TAC; ASM_MESON_TAC[LE_TRANS]] THEN
+      REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX] THEN
+      CONJ_TAC THENL
+       [MATCH_MP_TAC LINEAR_COMPOSE_VSUM THEN
+        REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+        REWRITE_TAC[linear; VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT] THEN
+        REPEAT STRIP_TAC THEN VECTOR_ARITH_TAC;
+        ALL_TAC] THEN
+      REWRITE_TAC[matrix; column; ORTHOGONAL_MATRIX_ORTHONORMAL_COLUMNS] THEN
+      SIMP_TAC[LAMBDA_BETA; LAMBDA_ETA; BASIS_COMPONENT; IN_NUMSEG] THEN
+      SIMP_TAC[COND_RATOR; COND_RAND; VECTOR_MUL_LZERO; VSUM_DELTA] THEN
+      SIMP_TAC[IN_NUMSEG; orthogonal; dot; LAMBDA_BETA; NORM_EQ_SQUARE] THEN
+      REWRITE_TAC[VECTOR_MUL_LID; GSYM dot; GSYM NORM_EQ_SQUARE] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[pairwise; IN_NUMSEG; orthogonal]) THEN
+      ASM_SIMP_TAC[]] THEN
+    FIRST_ASSUM(MP_TAC o SPEC `(:real^N)` o MATCH_MP
+     (REWRITE_RULE[IMP_CONJ] ORTHONORMAL_EXTENSION)) THEN
+    ASM_REWRITE_TAC[FORALL_IN_IMAGE; IN_NUMSEG; UNION_UNIV; SPAN_UNIV] THEN
+    DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPECL [`n+1..dimindex(:N)`; `t:real^N->bool`]
+          CARD_EQ_BIJECTION) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[FINITE_NUMSEG] THEN
+      MP_TAC(ISPECL [`(:real^N)`; `IMAGE v (1..n) UNION t:real^N->bool`]
+          BASIS_CARD_EQ_DIM) THEN
+      ASM_REWRITE_TAC[SUBSET_UNIV] THEN ANTS_TAC THENL
+       [MATCH_MP_TAC PAIRWISE_ORTHOGONAL_INDEPENDENT THEN
+        ASM_REWRITE_TAC[IN_UNION; DE_MORGAN_THM; IN_NUMSEG] THEN
+        ASM_REWRITE_TAC[FORALL_IN_IMAGE; IN_NUMSEG; SET_RULE
+         `~(x IN s) <=> !y. y IN s ==> ~(y = x)`] THEN
+        ASM_MESON_TAC[NORM_0; REAL_ARITH `~(&1 = &0)`];
+        ALL_TAC] THEN
+      ASM_SIMP_TAC[FINITE_UNION; IMP_CONJ; FINITE_IMAGE; CARD_UNION;
+                   SET_RULE `t INTER s = {} <=> DISJOINT s t`] THEN
+      DISCH_TAC THEN DISCH_TAC THEN REWRITE_TAC[CARD_NUMSEG; DIM_UNIV] THEN
+      ARITH_TAC;
+      ALL_TAC] THEN
+    REWRITE_TAC[CONJ_ASSOC; SET_RULE
+     `(!x. x IN s ==> f x IN t) /\ (!y. y IN t ==> ?x. x IN s /\ f x = y) <=>
+      t = IMAGE f s`] THEN
+    REWRITE_TAC[GSYM CONJ_ASSOC; LEFT_IMP_EXISTS_THM; IN_NUMSEG] THEN
+    X_GEN_TAC `w:num->real^N` THEN
+    DISCH_THEN(CONJUNCTS_THEN2 SUBST_ALL_TAC MP_TAC) THEN
+    REWRITE_TAC[ARITH_RULE `n + 1 <= x <=> n < x`; CONJ_ASSOC] THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ q ==> r <=> p /\ ~r ==> ~q`] THEN
+    REWRITE_TAC[GSYM CONJ_ASSOC] THEN STRIP_TAC THEN
+    REWRITE_TAC[TAUT `p /\ ~r ==> ~q <=> p /\ q ==> r`] THEN
+    EXISTS_TAC `\i. if i <= n then (v:num->real^N) i else w i` THEN
+    SIMP_TAC[] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[FORALL_IN_IMAGE; IN_NUMSEG]) THEN
+    CONJ_TAC THENL
+     [ALL_TAC; ASM_MESON_TAC[ARITH_RULE `~(i <= n) ==> n + 1 <= i`]] THEN
+    REWRITE_TAC[pairwise] THEN MATCH_MP_TAC WLOG_LT THEN REWRITE_TAC[] THEN
+    CONJ_TAC THENL [MESON_TAC[ORTHOGONAL_SYM]; ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [`i:num`; `j:num`] THEN DISCH_TAC THEN
+    ASM_CASES_TAC `j:num <= n` THEN ASM_REWRITE_TAC[IN_NUMSEG] THENL
+     [COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+    ASM_CASES_TAC `i:num <= n` THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+    UNDISCH_TAC
+     `pairwise orthogonal
+        (IMAGE (v:num->real^N) (1..n) UNION IMAGE w (n+1..dimindex (:N)))` THEN
+    REWRITE_TAC[pairwise] THEN ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+    DISCH_THEN(MP_TAC o SPEC `(w:num->real^N) j`) THENL
+     [DISCH_THEN(MP_TAC o SPEC `(v:num->real^N) i`);
+      DISCH_THEN(MP_TAC o SPEC `(w:num->real^N) i`)] THEN
+    ASM_REWRITE_TAC[IN_UNION; IN_IMAGE; IN_NUMSEG] THEN
+    DISCH_THEN MATCH_MP_TAC THENL
+     [CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+      CONJ_TAC THENL
+       [ASM_MESON_TAC[ARITH_RULE `~(x <= n) ==> n + 1 <= x`]; ALL_TAC];
+      ASM_MESON_TAC[ARITH_RULE `~(x <= n) ==> n + 1 <= x /\ n < x`]] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [DISJOINT]) THEN
+    REWRITE_TAC[SET_RULE `IMAGE w t INTER IMAGE v s = {} <=>
+      !i j. i IN s /\ j IN t ==> ~(v i = w j)`] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[IN_NUMSEG] THEN
+    ASM_ARITH_TAC) in
+  let lemma2 = prove
+   (`!v:num->real^N w k.
+          pairwise (\i j. orthogonal (v i) (v j)) k /\
+          pairwise (\i j. orthogonal (w i) (w j)) k /\
+          (!i. i IN k ==> norm(v i) = norm(w i)) /\
+          (!i. i IN k ==> ~(v i = vec 0) /\ ~(w i = vec 0))
+          ==> ?f. orthogonal_transformation f /\
+                  (!i. i IN k ==> f(v i) = w i)`,
+    REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN `FINITE(k:num->bool)` MP_TAC THENL
+     [SUBGOAL_THEN `pairwise orthogonal (IMAGE (v:num->real^N) k)`
+      ASSUME_TAC THENL
+       [REWRITE_TAC[PAIRWISE_IMAGE] THEN
+        RULE_ASSUM_TAC(REWRITE_RULE[pairwise]) THEN ASM_SIMP_TAC[pairwise];
+        ALL_TAC] THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        PAIRWISE_ORTHOGONAL_INDEPENDENT)) THEN
+      ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+      DISCH_THEN(MP_TAC o MATCH_MP INDEPENDENT_IMP_FINITE) THEN
+      MATCH_MP_TAC EQ_IMP THEN MATCH_MP_TAC FINITE_IMAGE_INJ_EQ THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[pairwise]) THEN
+      ASM_MESON_TAC[ORTHOGONAL_REFL];
+      ALL_TAC] THEN
+    DISCH_THEN(MP_TAC o GEN_REWRITE_RULE I [FINITE_INDEX_NUMSEG]) THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r ==> s <=> p /\ q /\ ~s ==> ~r`] THEN
+    DISCH_THEN(X_CHOOSE_THEN `n:num->num` MP_TAC) THEN
+    REWRITE_TAC[IN_NUMSEG] THEN GEN_REWRITE_TAC I [IMP_CONJ] THEN
+    DISCH_THEN(fun th -> DISCH_THEN SUBST_ALL_TAC THEN ASSUME_TAC th) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE
+     [PAIRWISE_IMAGE; FORALL_IN_IMAGE; IN_NUMSEG]) THEN
+    MP_TAC(ISPECL
+     [`\i. inv(norm(w(n i))) % (w:num->real^N) ((n:num->num) i)`;
+      `CARD(k:num->bool)`] lemma1) THEN
+    MP_TAC(ISPECL
+     [`\i. inv(norm(v(n i))) % (v:num->real^N) ((n:num->num) i)`;
+      `CARD(k:num->bool)`] lemma1) THEN
+    ASM_SIMP_TAC[NORM_MUL; REAL_MUL_LINV; NORM_EQ_0; REAL_ABS_INV;
+                 REAL_ABS_NORM; pairwise; orthogonal; IN_NUMSEG] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[pairwise; orthogonal; IN_NUMSEG]) THEN
+    ASM_SIMP_TAC[DOT_LMUL; DOT_RMUL; REAL_ENTIRE; FORALL_IN_IMAGE] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:real^N->real^N` STRIP_ASSUME_TAC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `g:real^N->real^N` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPEC `f:real^N->real^N` ORTHOGONAL_TRANSFORMATION_INVERSE) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f':real^N->real^N` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(g:real^N->real^N) o (f':real^N->real^N)` THEN
+    ASM_SIMP_TAC[ORTHOGONAL_TRANSFORMATION_COMPOSE; IN_NUMSEG] THEN
+    X_GEN_TAC `i:num` THEN DISCH_TAC THEN REWRITE_TAC[o_THM] THEN
+    MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
+     `(g:real^N->real^N) (norm((w:num->real^N)(n(i:num))) % basis i)` THEN
+    CONJ_TAC THENL
+     [AP_TERM_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (MESON[]
+       `(!x. f'(f x) = x) ==> f x = y ==> f' y = x`));
+      ALL_TAC] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[orthogonal_transformation]) THEN
+    ASM_SIMP_TAC[LINEAR_CMUL; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_RINV; NORM_EQ_0; VECTOR_MUL_LID]) in
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`v:num->real^N`; `w:num->real^N`;
+    `{i | i IN k /\ ~((v:num->real^N) i = vec 0)}`] lemma2) THEN
+  ASM_SIMP_TAC[IN_ELIM_THM; CONJ_ASSOC] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[NORM_EQ_0]] THEN
+    CONJ_TAC THEN MATCH_MP_TAC PAIRWISE_MONO THEN EXISTS_TAC `k:num->bool` THEN
+    ASM_REWRITE_TAC[] THEN SET_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[orthogonal_transformation] THEN
+    GEN_TAC THEN STRIP_TAC THEN X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    ASM_CASES_TAC `(v:num->real^N) i = vec 0` THEN ASM_SIMP_TAC[] THEN
+    ASM_MESON_TAC[LINEAR_0; NORM_EQ_0]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extract scaling, translation and linear invariance theorems.              *)

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+pidfile=/tmp/miz3_pid
+namefile=/tmp/miz3_filename
+
+name=$1
+lemma=$2
+if test "$name" = ""
+  then echo "usage: miz3 filename [lemmaname]" 1>&2; exit 2
+elif ! test -f "$name"
+  then echo "$name: no such file" 1>&2; exit 2; fi
+if ! test -f "$pidfile"
+  then echo "no server found" 1>&2; exit 1; fi
+pid=`cat $pidfile | head -1`
+echo "waiting for server to be free" 1>&2
+while test -f $namefile; do sleep .1; done
+trap 'rm -f $namefile; exit' 2
+echo "checking $name" 1>&2
+echo `realpath $name` > $namefile
+if test "$lemma" != ""
+  then echo $lemma >> $namefile; fi
+kill -USR2 $pid >/dev/null 2>&1
+if test "$?" -ne "0"
+  then echo "server not running (pid = $pid)" 1>&2; rm -f $namefile; exit 1; fi
+while test -f $namefile; do sleep .1; done
+if grep 'MIZ3 EXCEPTION' $name >/dev/null
+  then echo "exception" 1>&2; exit 0; fi
+echo "done" 1>&2

@@ -7,13 +7,13 @@ let maximas e =
     ";' | maxima | grep '^(%o3)' | sed -e 's/^(%o3) //' >" ^
     filename in
   if Sys.command s <> 0 then failwith "maxima" else
-  let fd = open_in filename in
+  let fd = Pervasives.open_in filename in
   let data = input_line fd in
   close_in fd; Sys.remove filename; data;;
 
 prioritize_real();;
 let maxima_ops = ["+",`(+)`; "-",`(-)`; "*",`( * )`;  "/",`(/)`; "^",`(pow)`];;
-let maxima_funs = ["SIN",`sin`; "COS",`cos`];;
+let maxima_funs = ["sin",`sin`; "cos",`cos`];;
 
 let mk_uneg = curry mk_comb `(--)`;;
 
@@ -76,7 +76,7 @@ and parse_expression inp =
 
 let hol_of_string = fst o parse_expression o lexe;;
 
-hol_of_string "SIN(x) - COS(-(- - 1 + x))";;
+hol_of_string "sin(x) - cos(-(- - 1 + x))";;
 
 let FACTOR_CONV tm =
   let s = "factor("^string_of_hol tm^")" in

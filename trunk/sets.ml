@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                 (c) Copyright, Marco Maggesi 2012                         *)
 (* ========================================================================= *)
 
 needs "int.ml";;
@@ -2890,3 +2891,40 @@ let REAL_SUP_EQ_INF = prove
     ASM_MESON_TAC[SUP; REAL_ABS_BOUNDS; INF];
     STRIP_TAC THEN
     ASM_SIMP_TAC[SUP_INSERT_FINITE; INF_INSERT_FINITE; FINITE_EMPTY]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Inductive definition of sets, by reducing them to inductive relations.    *)
+(* ------------------------------------------------------------------------- *)
+
+let new_inductive_set =
+  let const_of_var v = mk_mconst(name_of v,type_of v) in
+  let comb_all =
+    let rec f (n:int) (tm:term) : hol_type list -> term = function
+      | [] -> tm
+      | ty::tys ->
+          let v = variant (variables tm) (mk_var("x"^string_of_int n,ty)) in
+          f (n+1) (mk_comb(tm,v)) tys in
+    fun tm -> let tys = fst (splitlist dest_fun_ty (type_of tm)) in
+              f 0 tm tys in
+  let mk_eqin = REWR_CONV (GSYM IN) o comb_all in
+  let transf conv = rhs o concl o conv in
+  let remove_in_conv ptm : conv =
+    let rconv = REWR_CONV(SYM(mk_eqin ptm)) in
+    fun tm -> let htm = fst(strip_comb(snd(dest_binary "IN" tm))) in
+              if htm = ptm then rconv tm else fail() in
+  let remove_in_transf =
+    transf o ONCE_DEPTH_CONV o FIRST_CONV o map remove_in_conv in
+  let rule_head tm =
+    let tm = snd(strip_forall tm) in
+    let tm = snd(splitlist(dest_binop `(==>)`) tm) in
+    let tm = snd(dest_binary "IN" tm) in
+    fst(strip_comb tm) in
+  let find_pvars = setify o map rule_head o binops `(/\)` in
+  fun tm ->
+    let pvars = find_pvars tm in
+    let dtm = remove_in_transf pvars tm in
+    let th_rules, th_induct, th_cases = new_inductive_definition dtm in
+    let insert_in_rule = REWRITE_RULE(map (mk_eqin o const_of_var) pvars) in
+    insert_in_rule th_rules,
+    insert_in_rule th_induct,
+    insert_in_rule th_cases;;

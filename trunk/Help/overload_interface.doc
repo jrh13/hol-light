@@ -50,6 +50,6 @@ to list append:
 
 \SEEALSO
 make_overloadable, override_interface, prioritize_overload, reduce_interface,
-remove_interface, the_interface, the_overload_skeletons.
+remove_interface, the_implicit_types, the_interface, the_overload_skeletons.
 
 \ENDDOC

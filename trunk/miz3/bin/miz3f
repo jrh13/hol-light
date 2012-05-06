@@ -1,0 +1,40 @@
+#!/usr/bin/perl -w
+use strict "subs";
+$file = "/tmp/miz3_$$";
+$x = "----------------------------------------------------------------\n";
+undef $/; $_ = <>;
+if ($_ =~ /^(\n*[^\n]*thm\s+\`\;\s*\n)([^`]*)(\`\;\;[^`]*)$/s)
+{
+  $a = $1; $b = $2; $c = $3;
+  $b =~ s/^::.*\n//mg;
+  $a =~ /^let ([^ ]+) / || $a =~ /^()/;
+  $name = $1;
+  $name =~ s/'/'"'"'/g;
+  $s = ($b =~ /\;\s*$/s);
+  $file = "$file.mz3";
+  open(FILE, "> $file"); print FILE $b; close FILE;
+  system 'miz3 '.$file.' \''.$name.'\' > /dev/null 2>&1';
+  $e = $? >> 8;
+  (print 'MIZ3 SERVER NOT RUNNING'."\n$x".$_.$x), (system "rm -f $file"), exit
+    if $e == 1;
+  (print 'MIZ3 FAILED'."\n$x".$_.$x), (system "rm -f $file"), exit
+    if $e != 0 && $e != 1;
+  $x = `cat $file`;
+  $x =~ s/\s*;+\s*$//s if !$s;
+  print "$a$x$c";
+  system "rm -f $file";
+}
+else
+{
+  $a = $_;
+  $file = "$file.ml";
+  open(FILE, "> $file"); print FILE $a; close FILE;
+  system 'miz3 '.$file.' > /dev/null 2>&1';
+  $e = $? >> 8;
+  (print 'MIZ3 SERVER NOT RUNNING'."\n$x".$_.$x), (system "rm -f $file"), exit
+    if $e == 1;
+  (print 'MIZ3 FAILED'."\n$x".$_.$x), (system "rm -f $file"), exit
+    if $e != 0 && $e != 1;
+  print $a;
+  system "rm -f $file";
+}

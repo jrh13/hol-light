@@ -1,0 +1,40 @@
+#!/usr/bin/perl -w
+use strict "subs";
+$f = ($#ARGV >= 0 && $ARGV[0] eq "-e") ? (shift, 0) : 1;;
+$_ = << '--';
+:: 1: inference error
+:: 2: inference time-out
+:: 3: skeleton error
+:: 4: unknown label
+:: 5: underspecified types hol
+:: 6: unbound free variables hol
+:: 7: syntax error justification or ocaml
+:: 8: syntax or type error hol
+:: 9: syntax error mizar
+--
+s/(\D*(\d).*\n)/$m[$2] = $1/ge;
+while (<>)
+{
+  @d = @e;
+  print $_ if $f;
+  s/\#([0-9])/$e[$1]++;/ge;
+  if ($f)
+  {
+    $x = 0;
+    foreach $i (1..9)
+    {
+      if (!$d[$i] && $e[$i])
+      {
+        $x = 1, print "\n" if !$x && !/\n$/s;
+        print $m[$i]
+      }
+    }
+  }
+}
+if (!$f)
+{
+  foreach $i (1..9)
+  {
+    print $m[$i] if $e[$i];
+  }
+}
