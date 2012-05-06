@@ -1,0 +1,52 @@
+\DOC the_implicit_types
+
+\TYPE {the_implicit_types :  (string * hol_type) list ref}
+
+\SYNOPSIS
+Restrict variables to a particular type or type scheme.
+
+\DESCRIBE
+Normally, the types of variables in term quotations are restricted only by the
+context in which they appear and will otherwise have maximally general types
+inferred. By associating variable names with type schemes in the list of pairs
+{the_implicit_types}, the types of variables will be suitably restricted. This
+can be a convenience in reducing the amount of manual type annotation in terms.
+The facility is somewhat analogous to the schemas specified for constants in
+{the_overload_skeletons}.
+
+\FAILURE
+Not applicable.
+
+\EXAMPLE
+If we parse the following term, in which all names denote variables (assume
+neither {mul} nor {x} has been declared a constant), then the type of {x} is
+completely unrestricted if {the_implicit_types} is empty as in HOL Light's
+initial state:
+{
+  # the_implicit_types := [];;
+  val it : unit = ()
+  # `mul 1 x`;;
+  Warning: inventing type variables
+  val it : term = `mul 1 x`
+  # map dest_var (frees it);;
+  val it : (string * hol_type) list =
+    [("mul", `:num->?83058->?83057`); ("x", `:?83058`)]
+}
+However, if we use the implicit types to require that the variable {mul} has an
+instance of a generic type scheme each time it is parsed, all types follow
+implicitly:
+{
+  # the_implicit_types := ["mul",`:A->A->A`; "iv",`:A->A`];;
+  val it : unit = ()
+  # `mul 1 x`;;
+  val it : term = `mul 1 x`
+  # map dest_var (frees it);;
+  val it : (string * hol_type) list =
+    [("mul", `:num->num->num`); ("x", `:num`)]
+}
+
+\SEEALSO
+make_overloadable, overload_interface, override_interface, prioritize_overload,
+reduce_interface, remove_interface, the_interface, the_overload_skeletons.
+
+\ENDDOC

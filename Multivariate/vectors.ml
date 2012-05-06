@@ -1092,6 +1092,10 @@ let DOT_NORM_NEG = prove
   REWRITE_TAC[NORM_POW_2; DOT_LADD; DOT_RADD; DOT_LSUB; DOT_RSUB; DOT_SYM] THEN
   REAL_ARITH_TAC);;
 
+let DOT_NORM_SUB = prove
+ (`!x y. x dot y = ((norm(x) pow 2 + norm(y) pow 2) - norm(x - y) pow 2) / &2`,
+  REWRITE_TAC[NORM_POW_2; DOT_LSUB; DOT_RSUB; DOT_SYM] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Equality of vectors in terms of dot products.                             *)
 (* ------------------------------------------------------------------------- *)
@@ -2712,6 +2716,16 @@ let FINITE_COLUMNS = prove
  (`!A:real^N^M. FINITE(columns A)`,
   REWRITE_TAC[columns] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
   SIMP_TAC[GSYM numseg; FINITE_IMAGE; FINITE_NUMSEG]);;
+
+let MATRIX_EQUAL_ROWS = prove
+ (`!A B:real^N^M.
+        A = B <=> !i. 1 <= i /\ i <= dimindex(:M) ==> row i A = row i B`,
+  SIMP_TAC[row; CART_EQ; LAMBDA_BETA]);;
+
+let MATRIX_EQUAL_COLUMNS = prove
+ (`!A B:real^N^M.
+        A = B <=> !i. 1 <= i /\ i <= dimindex(:N) ==> column i A = column i B`,
+  SIMP_TAC[column; CART_EQ; LAMBDA_BETA] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Two sometimes fruitful ways of looking at matrix-vector multiplication.   *)
@@ -5684,42 +5698,117 @@ let GRAM_SCHMIDT_STEP = prove
   ASM_SIMP_TAC[REAL_DIV_RMUL; DOT_EQ_0; DOT_LZERO; REAL_MUL_RZERO]);;
 
 let ORTHOGONAL_EXTENSION = prove
- (`!t s:real^N->bool.
+ (`!s t:real^N->bool.
+        pairwise orthogonal s
+        ==> ?u. pairwise orthogonal (s UNION u) /\
+                span (s UNION u) = span (s UNION t)`,
+  let lemma = prove
+   (`!t s:real^N->bool.
         FINITE t /\ FINITE s /\ pairwise orthogonal s
         ==> ?u. pairwise orthogonal (s UNION u) /\
                 span (s UNION u) = span (s UNION t)`,
-  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN CONJ_TAC THENL
-   [REPEAT STRIP_TAC THEN EXISTS_TAC `{}:real^N->bool` THEN
-    ASM_REWRITE_TAC[UNION_EMPTY];
-    ALL_TAC] THEN
-  MAP_EVERY X_GEN_TAC [`a:real^N`; `t:real^N->bool`] THEN
-  REWRITE_TAC[pairwise; orthogonal] THEN REPEAT STRIP_TAC THEN
-  ABBREV_TAC `a' = a - vsum s (\b:real^N. (b dot a) / (b dot b) % b)` THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `(a':real^N) INSERT s`) THEN
-  ASM_REWRITE_TAC[FINITE_INSERT] THEN ANTS_TAC THENL
-   [SUBGOAL_THEN `!x:real^N. x IN s ==> a' dot x = &0`
-     (fun th -> REWRITE_TAC[IN_INSERT] THEN ASM_MESON_TAC[DOT_SYM; th]) THEN
-    REPEAT STRIP_TAC THEN EXPAND_TAC "a'" THEN
-    REWRITE_TAC[GSYM orthogonal] THEN ONCE_REWRITE_TAC[ORTHOGONAL_SYM] THEN
-    MATCH_MP_TAC GRAM_SCHMIDT_STEP THEN
-    ASM_SIMP_TAC[pairwise; orthogonal; SPAN_CLAUSES];
-    DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `(a':real^N) INSERT u` THEN
-    ASM_REWRITE_TAC[SET_RULE `s UNION a INSERT u = a INSERT s UNION u`] THEN
-    REWRITE_TAC[SET_RULE `(x INSERT s) UNION t = x INSERT (s UNION t)`] THEN
-    MATCH_MP_TAC EQ_SPAN_INSERT_EQ THEN EXPAND_TAC "a'" THEN
-    REWRITE_TAC[VECTOR_ARITH `a - x - a:real^N = --x`] THEN
-    MATCH_MP_TAC SPAN_NEG THEN MATCH_MP_TAC SPAN_VSUM THEN
-    ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
-    MATCH_MP_TAC SPAN_MUL THEN ASM_SIMP_TAC[SPAN_SUPERSET; IN_UNION]]);;
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN CONJ_TAC THENL
+     [REPEAT STRIP_TAC THEN EXISTS_TAC `{}:real^N->bool` THEN
+      ASM_REWRITE_TAC[UNION_EMPTY];
+      ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [`a:real^N`; `t:real^N->bool`] THEN
+    REWRITE_TAC[pairwise; orthogonal] THEN REPEAT STRIP_TAC THEN
+    ABBREV_TAC `a' = a - vsum s (\b:real^N. (b dot a) / (b dot b) % b)` THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(a':real^N) INSERT s`) THEN
+    ASM_REWRITE_TAC[FINITE_INSERT] THEN ANTS_TAC THENL
+     [SUBGOAL_THEN `!x:real^N. x IN s ==> a' dot x = &0`
+       (fun th -> REWRITE_TAC[IN_INSERT] THEN ASM_MESON_TAC[DOT_SYM; th]) THEN
+      REPEAT STRIP_TAC THEN EXPAND_TAC "a'" THEN
+      REWRITE_TAC[GSYM orthogonal] THEN ONCE_REWRITE_TAC[ORTHOGONAL_SYM] THEN
+      MATCH_MP_TAC GRAM_SCHMIDT_STEP THEN
+      ASM_SIMP_TAC[pairwise; orthogonal; SPAN_CLAUSES];
+      DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC `(a':real^N) INSERT u` THEN
+      ASM_REWRITE_TAC[SET_RULE `s UNION a INSERT u = a INSERT s UNION u`] THEN
+      REWRITE_TAC[SET_RULE `(x INSERT s) UNION t = x INSERT (s UNION t)`] THEN
+      MATCH_MP_TAC EQ_SPAN_INSERT_EQ THEN EXPAND_TAC "a'" THEN
+      REWRITE_TAC[VECTOR_ARITH `a - x - a:real^N = --x`] THEN
+      MATCH_MP_TAC SPAN_NEG THEN MATCH_MP_TAC SPAN_VSUM THEN
+      ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC SPAN_MUL THEN ASM_SIMP_TAC[SPAN_SUPERSET; IN_UNION]]) in
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `span t:real^N->bool` BASIS_SUBSPACE_EXISTS) THEN
+  REWRITE_TAC[SUBSPACE_SPAN; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:real^N->bool` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`b:real^N->bool`; `s:real^N->bool`] lemma) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[HAS_SIZE; PAIRWISE_ORTHOGONAL_IMP_FINITE];
+    MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    ASM_REWRITE_TAC[SPAN_UNION]]);;
+
+let ORTHOGONAL_EXTENSION_STRONG = prove
+ (`!s t:real^N->bool.
+        pairwise orthogonal s
+        ==> ?u. DISJOINT u (vec 0 INSERT s) /\
+                pairwise orthogonal (s UNION u) /\
+                span (s UNION u) = span (s UNION t)`,
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o
+    SPEC `t:real^N->bool` o MATCH_MP ORTHOGONAL_EXTENSION) THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `u DIFF ((vec 0:real^N) INSERT s)` THEN REPEAT CONJ_TAC THENL
+   [SET_TAC[];
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        PAIRWISE_MONO)) THEN SET_TAC[];
+    FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+    GEN_REWRITE_TAC BINOP_CONV [GSYM SPAN_DELETE_0] THEN
+    AP_TERM_TAC THEN SET_TAC[]]);;
+
+let ORTHONORMAL_EXTENSION = prove
+ (`!s t:real^N->bool.
+        pairwise orthogonal s /\ (!x. x IN s ==> norm x = &1)
+        ==> ?u. DISJOINT u s /\
+                pairwise orthogonal (s UNION u) /\
+                (!x. x IN u ==> norm x = &1) /\
+                span(s UNION u) = span(s UNION t)`,
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o
+    SPEC `t:real^N->bool` o MATCH_MP ORTHOGONAL_EXTENSION_STRONG) THEN
+  REWRITE_TAC[SET_RULE `DISJOINT u s <=> !x. x IN u ==> ~(x IN s)`] THEN
+  REWRITE_TAC[IN_INSERT; DE_MORGAN_THM; pairwise] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `IMAGE (\x:real^N. inv(norm x) % x) u` THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REPEAT CONJ_TAC THENL
+   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    ASM_CASES_TAC `norm(x:real^N) = &1` THEN
+    ASM_SIMP_TAC[REAL_INV_1; VECTOR_MUL_LID] THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^N`; `inv(norm x) % x:real^N`]) THEN
+    ASM_REWRITE_TAC[IN_UNION; VECTOR_MUL_EQ_0; REAL_SUB_0; REAL_INV_EQ_1;
+      VECTOR_ARITH `x:real^N = a % x <=> (a - &1) % x = vec 0`] THEN
+    ASM_CASES_TAC `x:real^N = vec 0` THENL
+     [ASM_MESON_TAC[VECTOR_MUL_RZERO];
+      ASM_REWRITE_TAC[orthogonal; DOT_RMUL; REAL_ENTIRE; DOT_EQ_0] THEN
+      ASM_REWRITE_TAC[REAL_INV_EQ_0; NORM_EQ_0]];
+    REWRITE_TAC[IN_UNION; IN_IMAGE] THEN REPEAT STRIP_TAC THEN
+    ASM_SIMP_TAC[orthogonal; DOT_LMUL; DOT_RMUL; REAL_ENTIRE; DOT_EQ_0;
+                 REAL_INV_EQ_0; NORM_EQ_0] THEN
+    REWRITE_TAC[GSYM orthogonal] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[IN_UNION] THEN DISCH_THEN(SUBST_ALL_TAC o SYM) THEN
+    ASM SET_TAC[];
+    ASM_SIMP_TAC[NORM_MUL; REAL_MUL_LINV; NORM_EQ_0; REAL_ABS_INV;
+                 REAL_ABS_NORM];
+    FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+    REWRITE_TAC[SPAN_EQ; UNION_SUBSET] THEN
+    SIMP_TAC[SUBSET; FORALL_IN_IMAGE; SPAN_SUPERSET; SPAN_MUL; IN_UNION] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `x:real^N = norm(x) % inv(norm x) % x`
+     (fun th -> GEN_REWRITE_TAC LAND_CONV [th])
+    THENL
+     [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV; NORM_EQ_0; VECTOR_MUL_LID];
+      MATCH_MP_TAC SPAN_MUL THEN MATCH_MP_TAC SPAN_SUPERSET THEN
+      REWRITE_TAC[IN_UNION; IN_IMAGE] THEN ASM_MESON_TAC[]]]);;
 
 let VECTOR_IN_ORTHOGONAL_SPANNINGSET = prove
  (`!a. ?s. a IN s /\ pairwise orthogonal s /\ span s = (:real^N)`,
   GEN_TAC THEN
-  MP_TAC(ISPECL [`(IMAGE basis (1..dimindex(:N))):real^N->bool`;
-                 `{a:real^N}`] ORTHOGONAL_EXTENSION) THEN
-  SIMP_TAC[FINITE_SING; PAIRWISE_SING; FINITE_IMAGE; FINITE_NUMSEG] THEN
+  MP_TAC(ISPECL [`{a:real^N}`; `(IMAGE basis (1..dimindex(:N))):real^N->bool`]
+                 ORTHOGONAL_EXTENSION) THEN
+  REWRITE_TAC[PAIRWISE_SING] THEN
   DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `{a:real^N} UNION u` THEN ASM_REWRITE_TAC[IN_UNION; IN_SING] THEN
   MATCH_MP_TAC(SET_RULE `!s. s = UNIV /\ s SUBSET t ==> t = UNIV`) THEN
@@ -5797,9 +5886,8 @@ let ORTHOGONAL_SPANNINGSET_SUBSPACE = prove
         ==> ?b. b SUBSET s /\ pairwise orthogonal b /\ span b = s`,
   REPEAT STRIP_TAC THEN MP_TAC(ISPEC `s:real^N->bool` BASIS_EXISTS) THEN
   DISCH_THEN(X_CHOOSE_THEN `b:real^N->bool` STRIP_ASSUME_TAC) THEN
-  MP_TAC(ISPECL[`b:real^N->bool`; `{}:real^N->bool`] ORTHOGONAL_EXTENSION) THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[HAS_SIZE]) THEN
-  ASM_REWRITE_TAC[FINITE_EMPTY; PAIRWISE_EMPTY; UNION_EMPTY] THEN
+  MP_TAC(ISPECL[`{}:real^N->bool`; `b:real^N->bool`] ORTHOGONAL_EXTENSION) THEN
+  REWRITE_TAC[PAIRWISE_EMPTY; UNION_EMPTY] THEN
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c:real^N->bool` THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC(TAUT `b /\ (b ==> a) ==> a /\ b`) THEN CONJ_TAC THENL
@@ -5882,8 +5970,8 @@ let ORTHOGONAL_TO_SUBSPACE_EXISTS_GEN = prove
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [PSUBSET_ALT]) THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
    (X_CHOOSE_THEN `u:real^N` STRIP_ASSUME_TAC)) THEN
-  MP_TAC(ISPECL [`{u:real^N}`; `b:real^N->bool`] ORTHOGONAL_EXTENSION) THEN
-  ANTS_TAC THENL [ASM_MESON_TAC[FINITE_SING; HAS_SIZE]; ALL_TAC] THEN
+  MP_TAC(ISPECL [`b:real^N->bool`; `{u:real^N}`] ORTHOGONAL_EXTENSION) THEN
+  ASM_REWRITE_TAC[] THEN
   DISCH_THEN(X_CHOOSE_THEN `ns:real^N->bool` MP_TAC) THEN
   ASM_CASES_TAC `ns SUBSET (vec 0:real^N) INSERT b` THENL
    [DISCH_THEN(MP_TAC o AP_TERM `(IN) (u:real^N)` o CONJUNCT2) THEN

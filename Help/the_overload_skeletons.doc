@@ -8,12 +8,13 @@ List of overload skeletons for all overloadable identifiers.
 \DESCRIBE
 HOL Light allows the same identifier to denote several different underlying
 constants, with the choice being determined by types and/or an order of
-priority (see {prioritize_overload}). The reference variable 
-{the_overload_skeletons} contains a list of all the overloadable symbols (you 
-can add more using {make_overloadable}) and their type skeletons. All constants 
-to which an identifier is overloaded must have a type that is an instance of 
-this skeleton, although you can make it a type variable in which case any type 
-would be allowed.
+priority (see {prioritize_overload}). The reference variable
+{the_overload_skeletons} contains a list of all the overloadable symbols (you
+can add more using {make_overloadable}) and their type skeletons. All constants
+to which an identifier is overloaded must have a type that is an instance of
+this skeleton, although you can make it a type variable in which case any type
+would be allowed. The variable {the_implicit_types} offers somewhat analogous 
+features for variables.
 
 \FAILURE
 Not applicable.
@@ -33,7 +34,7 @@ val it : (string * hol_type) list =
 }
 
 \SEEALSO
-make_overloadable, overload_interface, override_interface, prioritize_overload, 
-reduce_interface, remove_interface, the_interface.
+make_overloadable, overload_interface, override_interface, prioritize_overload,
+reduce_interface, remove_interface, the_implicit_types, the_interface.
 
 \ENDDOC

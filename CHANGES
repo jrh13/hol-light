@@ -1,3 +1,19 @@
+Fri  4th May 2012       miz3/* [new files], passim
+
+Added Freek Wiedijk's miz3 mode, and since there I first made a tweak of
+open_in -> Pervasives.open_in (to avoid possible namespace conflicts with
+Multivariate/topology.ml) made a similar change in a few other places too.
+
+Fri 27th Apr 2012       sets.ml, Help/new_inductive_set.doc [new file]
+
+Added a function from Marco Maggesi for defining sets inductively by analogy
+with new_inductive_definition for relations.
+
+Fri 27th Apr 2012       preterm.ml, Help/the_implicit_types.doc [new file], Help/passim
+
+Added another extra feature to term parsing from Marco Maggesi, a list of
+implicit type schemes for variables in quotations, "the_implicit_types".
+
 Thu 26th Apr 2012       preterm.ml, Help/type_invention_error.doc [new file], type_invention_warning.doc
 
 Added code from Marco Maggesi to incorporate an additional option

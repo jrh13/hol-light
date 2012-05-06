@@ -1,0 +1,4 @@
+needs "Examples/transc.ml";;
+needs "Examples/sos.ml";;
+needs "Examples/prime.ml";;
+needs "Multivariate/misc.ml";;

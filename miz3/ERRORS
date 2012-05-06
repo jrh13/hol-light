@@ -1,0 +1,9 @@
+1: inference error
+2: inference time-out
+3: skeleton error
+4: unknown label
+5: underspecified types hol
+6: unbound free variables hol
+7: syntax error justification or ocaml
+8: syntax or type error hol
+9: syntax error mizar

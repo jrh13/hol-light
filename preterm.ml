@@ -5,7 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
-(*              (c) Copyright, Marco Maggesi 2012                            *)
+(*                 (c) Copyright, Marco Maggesi 2012                         *)
 (* ========================================================================= *)
 
 needs "nets.ml";;
@@ -47,10 +47,19 @@ let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
 let ignore_constant_varstruct = ref true;;
 
 (* ------------------------------------------------------------------------- *)
-(* Flag indicating that user should be warned if type variables invented.    *)
+(* Flags controlling the treatment of invented type variables in quotations. *)
+(* It can be treated as an error, result in a warning, or neither of those.  *)
 (* ------------------------------------------------------------------------- *)
 
 let type_invention_warning = ref true;;
+
+let type_invention_error = ref false;;
+
+(* ------------------------------------------------------------------------- *)
+(* Implicit types or type schemes for non-constants.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let the_implicit_types = ref ([]:(string*hol_type)list);;
 
 (* ------------------------------------------------------------------------- *)
 (* Overloading and interface mapping.                                        *)
@@ -175,12 +184,6 @@ let rec preterm_of_term tm =
       Combp(preterm_of_term l,preterm_of_term r);;
 
 (* ------------------------------------------------------------------------- *)
-(* Flag indicating whether inventing type variable is allowed.               *)
-(* ------------------------------------------------------------------------- *)
-
-let type_invention_error = ref false;;
-
-(* ------------------------------------------------------------------------- *)
 (* Main pretype->type, preterm->term and retypechecking functions.           *)
 (* ------------------------------------------------------------------------- *)
 
@@ -236,6 +239,13 @@ let type_of_pretype,term_of_preterm,retypecheck =
     | [] -> get_const_type cname in
 
   (* ----------------------------------------------------------------------- *)
+  (* Get the implicit generic type of a variable.                            *)
+  (* ----------------------------------------------------------------------- *)
+
+  let get_var_type vname =
+    assoc vname !the_implicit_types in
+
+  (* ----------------------------------------------------------------------- *)
   (* Unification of types                                                    *)
   (* ----------------------------------------------------------------------- *)
 
@@ -277,8 +287,9 @@ let type_of_pretype,term_of_preterm,retypecheck =
           if not(is_hidden s) & can get_generic_type s then
             let pty = pretype_instance(get_generic_type s) in
             Constp(s,pty),[],unify uenv [pty,ty]
-          else
-            let t = Varp(s,ty) in t,[s,ty],uenv))
+          else if not(can get_var_type s) then Varp(s,ty),[s,ty],uenv
+          else let pty = pretype_instance(get_var_type s) in
+               Varp(s,pty),[s,ty],unify uenv [pty,ty]))
     | Combp(f,x) -> let ty'' = new_type_var() in
                    let ty' = Ptycon("fun",[ty'';ty]) in
                    let f',venv1,uenv1 = typify ty' (f,venv,uenv) in

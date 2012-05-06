@@ -1,0 +1,9 @@
+" put "source .../miz3/exrc" in your .exrc
+" in which ".../miz3" is the path of your miz3 directory
+:map <CR> :w!:!miz3 %:e
+:map <CR> A     {/.!}miz3f/     $D^
+:map <CR> {/.!}miz3f/#l
+:map  :g/^::/d
+:map  /#
+:map  ?#
+:map  ^f`s(parse_term "/`s")

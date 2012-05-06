@@ -1,0 +1,13 @@
+loadt "/home/freek/math/miz3/Samples/samples.ml";;
+loadt "/home/freek/math/miz3/Samples/sample.ml";;
+loadt "/home/freek/math/miz3/Samples/talk.ml";;
+loadt "/home/freek/math/miz3/Samples/drinker.ml";;
+loadt "/home/freek/math/miz3/Samples/irrat2.ml";;
+loadt "/home/freek/math/miz3/Samples/lagrange.ml";;
+loadt "/home/freek/math/miz3/Samples/lagrange1.ml";;
+loadt "/home/freek/math/miz3/Samples/icms.ml";;
+loadt "/home/freek/math/miz3/Samples/other_mizs.ml";;
+loadt "/home/freek/math/miz3/Samples/robbins.ml";;
+loadt "/home/freek/math/miz3/Samples/forster.ml";;
+loadt "/home/freek/math/miz3/Samples/luxury.ml";;
+loadt "/home/freek/math/miz3/Samples/tobias.ml";;

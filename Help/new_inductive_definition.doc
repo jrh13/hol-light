@@ -123,7 +123,7 @@ Note that {A} is not universally quantified in the clauses, and is therefore
 treated as a parameter.
 
 \SEEALSO
-derive_strong_induction, prove_inductive_relations_exist, 
+derive_strong_induction, new_inductive_set, prove_inductive_relations_exist,
 prove_monotonicity_hyps.
 
 \ENDDOC
