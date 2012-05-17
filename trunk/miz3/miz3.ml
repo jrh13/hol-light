@@ -514,7 +514,7 @@ let parse_step env toks =
                   if n <> 0 then n,src,Error(string_of_toks toks,just) else
                   let x = (fst o fst o many ident' ++ finished) rst1 in
                   let vars = map (fun s -> mk_var(s,t)) x in
-                  let n,tm' = term_of_hol true env hol_part in
+                  let n,tm' = term_of_hol true (vars@env) hol_part in
                   if n <> 0 then n,src,Error(string_of_toks toks,just) else
                   -1,src,Consider(vars,tm',labs,just)
                 with Not_found ->
@@ -1899,5 +1899,3 @@ let reset_miz3 h =
   by_item_cache := undefined;
   current_goalstack := [];
   server_up();;
-
-try loadt "Samples/samples.ml" with Not_found -> ();;
