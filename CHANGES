@@ -1,3 +1,24 @@
+Wed 16th May 2012       Makefile
+
+Added a test to the Makefile to catch camlp5 6.05 and use the pa_j.ml designed
+for 6.02.2, which according to a test by Bill Richter works fine. I could
+probably also add the intermediate versions 6.03 and 6.04, but I didn't do so
+for now.
+
+Wed 16th May 2012       miz3/miz3.ml, miz3/test.ml, holtest
+
+Made a small tweak to miz3.ml from Freek, and removed the test run in the final
+line. Also replaced the former test.ml file with the former Samples/ALL (which
+is no longer there now), and made "holtest" run it twice in case cacheing
+changes things.
+
+Mon  7th May 2012       sets.ml
+
+Added the trivial but sometimes useful lemma
+
+ INFINITE_SUPERSET =
+   |- !s t. INFINITE s /\ s SUBSET t ==> INFINITE t
+
 Fri  4th May 2012       miz3/* [new files], passim
 
 Added Freek Wiedijk's miz3 mode, and since there I first made a tweak of
@@ -220,7 +241,7 @@ Thu 23rd Dec 2011       Library/card.ml
 
 Added CARD_LE_UNIV = |- !s:A->bool. s <=_c (:A)
 
-Wed 22nd Dec 2012       sets.ml, iterate.ml, define.ml, Library/permutations.ml, Library/products.ml, Library/iter.ml, Multivariate/ passim
+Wed 22nd Dec 2011       sets.ml, iterate.ml, define.ml, Library/permutations.ml, Library/products.ml, Library/iter.ml, Multivariate/ passim
 
 Did a bit of cleaning up of theorems to remove redundant quantifiers (put there
 by accident for variables that aren't free in the body). This includes the
@@ -245,14 +266,14 @@ following and numerous theorems in the Multivariate theories:
 ========= Library/iter.ml ============
         ITER_ALT_POINTLESS
 
-Sun 18th Dec 2012       cart.ml
+Sun 18th Dec 2011       cart.ml
 
 Added a convenient set elimination theorem for pasted vectors:
 
   IN_ELIM_PASTECART_THM =
     |- !P a b. pastecart a b IN {pastecart x y | P x y} <=> P a b
 
-Thu  1st Dec 2012       Library/card.ml
+Thu  1st Dec 2011       Library/card.ml
 
 Added a few more theorems on cardinality of list and cartesian product types
 and also the cardinality and uncountability of the reals. This last fact is
@@ -268,7 +289,7 @@ in consequence.
 
   UNCOUNTABLE_REAL = |- ~COUNTABLE (:real)
 
-Thu  1st Dec 2012       sets.ml
+Thu  1st Dec 2011       sets.ml
 
 Moved all the definitions and basic theorems about sup and inf to the end of
 this file from Multivariate/misc.ml:
@@ -411,7 +432,7 @@ this file from Multivariate/misc.ml:
     |- !s. FINITE s /\ ~(s = {})
            ==> (sup s = a <=> a IN s /\ (!y. y IN s ==> y <= a))
 
-Thu  1st Dec 2012       real.ml
+Thu  1st Dec 2011       real.ml
 
 Moved three basic Archimedian properties back to here from
 Multivariate/misc.ml:
@@ -422,11 +443,11 @@ Multivariate/misc.ml:
 
   REAL_ARCH = |- !x. &0 < x ==> (!y. ?n. y < &n * x)
 
-Thu  1st Dec 2012       list.ml
+Thu  1st Dec 2011       list.ml
 
 Added EL_MAP = |- !f n l. n < LENGTH l ==> EL n (MAP f l) = f (EL n l)
 
-Mon 21st Nov 2012       iterate.ml
+Mon 21st Nov 2011       iterate.ml
 
 Added a few lemmas about the behaviour of real polynomial functions, since
 these are quite often useful:
@@ -469,20 +490,20 @@ these are quite often useful:
          (!x. sum(0..n) (\i. c i * x pow i) = k) <=>
          c 0 = k /\ (!i. i IN 1..n ==> c i = &0)
 
-Thu  3rd Nov 2012       arith.ml
+Thu  3rd Nov 2011       arith.ml
 
 Added another somewhat intricate DIV/MOD theorem:
 
  MOD_MOD_EXP_MIN =
    |- !x p m n. ~(p = 0) ==> x MOD p EXP m MOD p EXP n = x MOD p EXP MIN m n
 
-Tue  1st Nov 2012       arith.ml
+Tue  1st Nov 2011       arith.ml
 
 Added the following, a natural counterpart to MOD_MULT_ADD:
 
   DIV_MULT_ADD = |- !a b n. ~(n = 0) ==> (a * n + b) DIV n = a + b DIV n
 
-Thu 20th Oct 2012       hol.ml, class.ml, nums.ml, arith.ml, recursion.ml, pair.ml
+Thu 20th Oct 2011       hol.ml, class.ml, nums.ml, arith.ml, recursion.ml, pair.ml
 
 Based on an idea discussed with Mark Adams, changed "new_specification" to
 exploit dummy quantifiers and numeral tags to avoid provable equalities between
@@ -491,20 +512,20 @@ provably equivalent) existence theorem. Since this requires the existence of
 numerals, quite a bit of build order reshuffling was necessary, and two former
 uses of new_specification (IND_SUC/IND_0 and BIT0_DEF) are now done "manually".
 
-Fri  7th Oct 2012       Makefile
+Fri  7th Oct 2011       Makefile
 
 Made a fix to the Makefile from Ramana Kumar on the hol-light page (see issue
 2). This uses the file  pa_j_3.1x_6.02.2.ml for version 6.03 of OCaml as well.
 I just tried it with Ocaml 3.12.1 and camlp5 6.02.3, and it seems to work fine.
 
-Mon 29th Aug 2012       calc_rat.ml
+Mon 29th Aug 2011       calc_rat.ml
 
 Changed REAL_RAT_DIV_CONV not to fail if it is given a canonical rational;
 instead used CHANGED_CONV in the depth conversion in REAL_RAT_REDUCE_CONV. This
 is consistent with the use of REAL_RAT_NEG_CONV, makes REAL_RAT_DIV_CONV a more
 convenient building block, and agrees with the current documentation.
 
-Wed 24th Aug 2012       real.ml, int.ml
+Wed 24th Aug 2011       real.ml, int.ml
 
 Added theorems about the real and integer sign function:
 
@@ -518,7 +539,7 @@ Added theorems about the real and integer sign function:
 
 with INT_SGN_CASES and INT_SGN_EQ being the same for integers.
 
-Wed 24th Aug 2012       sets.ml
+Wed 24th Aug 2011       sets.ml
 
 Added two natural theorems about intersections of unions
 
@@ -530,7 +551,7 @@ Added two natural theorems about intersections of unions
         INTERS {UNIONS (f x) | x IN s} =
         UNIONS {INTERS {g x | x IN s} | g | !x. x IN s ==> g x IN f x}
 
-Thu 18th Aug 2012       100/inclusion_exclusion.ml
+Thu 18th Aug 2011       100/inclusion_exclusion.ml
 
 Added versions of inclusion-exclusion for additive real functions
 (INCLUSION_EXCLUSION_REAL_RESTRICTED_INDEXED,
@@ -539,17 +560,17 @@ INCLUSION_EXCLUSION_REAL), deriving the cardinality version from those. Renamed
 the old INCLUSION_EXCLUSION_REAL as INCLUSION_EXCLUSION_REAL_FUNCTION and
 commented it out together with its dependency on Library/products.ml
 
-Sun 31st Jul 2012       IsabelleLight/* [new files]
+Sun 31st Jul 2011       IsabelleLight/* [new files]
 
 Installed "Isabelle Light" from Petros Papapanagiotou and Jacques Fleuriot,
 which consists of implementations of Isabelle-style tactics and other
 user-friendly shortcuts.
 
-Sun 10th Jul 2012       100/fourier.ml [new file]
+Sun 10th Jul 2011       100/fourier.ml [new file]
 
 Added a file with some material on L_p spaces and Fourier series.
 
-Tue 28th Jun 2012       pair.ml, parser.ml
+Tue 28th Jun 2011       pair.ml, parser.ml
 
 Fixed a LET_TAC bug pointed out by Vu Khac Ky: failures were occurring if the
 same variable was used on the left and right of a pattern (except if they are a
@@ -568,7 +589,7 @@ multiple uses of the same variable in different arms of a simultaneous let
 binding, e.g. `let x = 1 and x = 2 in x = 42`, in which case the first one is
 hidden.
 
-Thu  9th Jun 2012       realarith.ml
+Thu  9th Jun 2011       realarith.ml
 
 Made a change in the variable-choosing heuristic in Fourier-Motzkin, motivated
 by the disastrous slowness of this trivial example:
@@ -593,7 +614,7 @@ counting the number of new inequalities created by the elimination step. It
 makes this sort of example, which is probably pretty common, dramatically
 better. It also seems to lead to a small but notable average speedup.
 
-Mon 23rd May 2012       Library/floor.ml, Library/sets.ml
+Mon 23rd May 2011       Library/floor.ml, Library/sets.ml
 
 Added
 
@@ -604,7 +625,7 @@ Added
              ==> ?a b. rational a /\ rational b /\
                        a < x /\ x < b /\ abs(b - a) < e
 
-Sun 22nd May 2012       sets.ml
+Sun 22nd May 2011       sets.ml
 
 Added the following duality for unions and intersections:
 
@@ -614,13 +635,13 @@ Added the following duality for unions and intersections:
 
   UNIONS_INTERS = |- !s. UNIONS s = UNIV DIFF (INTERS {UNIV DIFF t | t IN s})
 
-Thu 12th May 2012       Library/floor.ml
+Thu 12th May 2011       Library/floor.ml
 
   FRAC_UNIQUE = |- !x a. integer(x - a) /\ &0 <= a /\ a < &1 <=> frac x = a
 
   REAL_FRAC_EQ = |- !x. frac x = x <=> &0 <= x /\ x < &1
 
-Tue  5th Apr 2012       Library/floor.ml
+Tue  5th Apr 2011       Library/floor.ml
 
   REAL_FLOOR_LE =
     |- !x n. integer n ==> (floor x <= n <=> x - &1 < n)
@@ -643,7 +664,7 @@ Tue  5th Apr 2012       Library/floor.ml
            ==> &(CARD {x | integer x /\ a <= x /\ x <= b}) =
                (if b < a then &0 else b - a + &1)
 
-Tue  5th Apr 2012       sets.ml
+Tue  5th Apr 2011       sets.ml
 
 Added
 
@@ -653,19 +674,19 @@ Added
            {s | s SUBSET a INSERT t} =
            {s | s SUBSET t} UNION IMAGE (\s. a INSERT s) {s | s SUBSET t})
 
-Fri  1st Apr 2012       Makefile, pa_j_3.1x_6.02.2.ml [new file]
+Fri  1st Apr 2011       Makefile, pa_j_3.1x_6.02.2.ml [new file]
 
 Once again there is an incompatibility with the latest version of camlp5, this
 time 6.02.2, as was reported by Kevin S. Van Horn. Made yet another appropriate
 version of pa_j.ml, and put another case split in the Makefile.
 
-Fri  1st Apr 2012       Minisat/minisat_parse.ml
+Fri  1st Apr 2011       Minisat/minisat_parse.ml
 
 Rewrote readTrace_aux in a slightly different style, avoiding wrapping
 an exception handler round the recursive calls, since this had the effect of
 making it not be tail-recursive.
 
-Thu 31st Mar 2012       sets.ml
+Thu 31st Mar 2011       sets.ml
 
 Added the following
 
@@ -675,7 +696,7 @@ Added the following
              IMAGE f s = IMAGE f t /\
              (!x y. x IN t /\ y IN t /\ f x = f y ==> x = y)
 
-Tue 22nd Mar 2012       sets.ml
+Tue 22nd Mar 2011       sets.ml
 
 Added the following, a natural dual of EXISTS_SUBSET_IMAGE:
 
@@ -684,7 +705,7 @@ Added the following, a natural dual of EXISTS_SUBSET_IMAGE:
           (!t. t SUBSET IMAGE f s ==> P t) <=>
           (!t. t SUBSET s ==> P (IMAGE f t))
 
-Tue 15th Mar 2012       fusion.ml
+Tue 15th Mar 2011       fusion.ml
 
 Made a small but significant change to the kernel, based on an observation by
 Ondrej Kuncar, optimizing the pointer-EQ shortcut in "orda" so that it does not
@@ -692,7 +713,7 @@ require an empty environment but merely one full of identical pairs. This can
 substantially speed up many derived rules by allowing efficient use of
 proformas even inside bound variables.
 
-Sat  5th Mar 2012       bool.ml
+Sat  5th Mar 2011       bool.ml
 
 Noticed that GEN is not constant-time, which is bad. On closer inspection the
 problem was that the abstraction that's used to instantiate the proforma is
@@ -701,7 +722,7 @@ subterms are hidden under an abstraction. As well as fixing that, made it more
 efficient in two other ways: used EQ_MP instead of PROVE_HYP, and added partial
 evaluation based on the first argument.
 
-Fri 25th Feb 2012       Library/poly.ml
+Fri 25th Feb 2011       Library/poly.ml
 
 Fixed an error where override_interface was used for "divides", hiding
 all the other desired overloadings. Also added many new polynomial
@@ -741,12 +762,12 @@ theorems from Jesse Bingham's e-transcendence proof:
   TL_POLY_EXP_X_SUC
   TL_POLY_MUL_X
 
-Fri 25th Feb 2012       fusion.ml, ind_defs.ml, simp.ml, define.ml, Library/analysis.ml, Library/transc.ml
+Fri 25th Feb 2011       fusion.ml, ind_defs.ml, simp.ml, define.ml, Library/analysis.ml, Library/transc.ml
 
 Removed a few unused variables in these files, after noticing OCaml warnings
 about them. It makes things minutely smaller and faster, I suppose.
 
-Tue 22nd Feb 2012       lists.ml
+Tue 22nd Feb 2011       lists.ml
 
 Added two additional list lemmas taken from Jesse Bingham's e-transcendence
 proof, which seem to be quite generally useful.
@@ -755,7 +776,7 @@ proof, which seem to be quite generally useful.
 
   CONS_HD_TL = |- !l. ~(l = []) ==> l = CONS (HD l) (TL l)
 
-Thu 17th Feb 2012       Examples/sos.ml
+Thu 17th Feb 2011       Examples/sos.ml
 
 Renamed a few of the ML operations on vectors since the existing names
 can lead to annoying name clashes with the names of theorems in the
@@ -776,14 +797,14 @@ Of course, it is arguable that all this should be hidden anyway, but
 since this file is still somewhat experimental I don't want to tidy up
 and modularize the namespace just yet.
 
-Mon 14th Feb 2012       int.ml, Library/floor.ml
+Mon 14th Feb 2011       int.ml, Library/floor.ml
 
 Removed the constant "is_int" and replaced it with "integer", moving the
 definition of that back from the "Library/floor.ml" file to the "int.ml"
 file. Kept the theorem "is_int" for compatibility, with just the different
 constant, and removed the now redundant/meaningless INTEGER_IS_INT.
 
-Tue  8th Feb 2012       Makefile, pa_j_3.1x_6.02.1.ml [new file]
+Tue  8th Feb 2011       Makefile, pa_j_3.1x_6.02.1.ml [new file]
 
 Added (directly from Ondrej Kuncar) an updated version of pa_j for the latest
 sub-version of camlp5, and modified the Makefile to use it as needed (though

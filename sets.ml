@@ -1176,6 +1176,10 @@ let FINITE_DIFF = prove
  (`!s t. FINITE s ==> FINITE(s DIFF t)`,
   MESON_TAC[FINITE_SUBSET; SUBSET_DIFF]);;
 
+let INFINITE_SUPERSET = prove
+ (`!s t. INFINITE s /\ s SUBSET t ==> INFINITE t`,
+  REWRITE_TAC[INFINITE] THEN MESON_TAC[FINITE_SUBSET]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Recursion over finite sets; based on Ching-Tsun's code (archive 713).     *)
 (* ------------------------------------------------------------------------- *)
