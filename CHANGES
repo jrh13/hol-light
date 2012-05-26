@@ -1,3 +1,11 @@
+Fri 25th May 2012       100/polyhedron.ml [new file]
+
+Added a proof of Euler's polyhedron formula for convex polytopes, and indeed 
+the general Euler-Poincare relation. This follows Jim Lawrence's "A short proof 
+of Euler's relation for convex polytopes" (Canadian Math Bulletin, 1997). This
+proof was mostly quite easy and natural to formalize, except for some slightly
+tedious switching between open and closed cells at one point.
+
 Wed 16th May 2012       Makefile
 
 Added a test to the Makefile to catch camlp5 6.05 and use the pa_j.ml designed

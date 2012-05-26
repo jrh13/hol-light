@@ -141,6 +141,7 @@ echo '### Loading 100/perfect.ml'; echo 'loadt "100/perfect.ml";;' | (time $holl
 echo '### Loading 100/pick.ml'; echo 'loadt "100/pick.ml";;' | (time $hollight)
 echo '### Loading 100/piseries.ml'; echo 'loadt "100/piseries.ml";;' | (time $hollight)
 echo '### Loading 100/pnt.ml'; echo 'loadt "100/pnt.ml";;' | (time $hollight)
+echo '### Loading 100/polyhedron.ml'; echo 'loadt "100/polyhedron.ml";;' | (time $hollight)
 echo '### Loading 100/ptolemy.ml'; echo 'loadt "100/ptolemy.ml";;' | (time $hollight)
 echo '### Loading 100/pythagoras.ml'; echo 'loadt "100/pythagoras.ml";;' | (time $hollight)
 echo '### Loading 100/quartic.ml'; echo 'loadt "100/quartic.ml";;' | (time $hollight)
