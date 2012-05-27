@@ -1,0 +1,106 @@
+HOL Light reconstruction for Squolem proofs of quantified boolean formulas.
+
+              (c) Copyright, Ondřej Kunčar 2010-11
+          Distributed under the same license as HOL Light
+
+                       Version 0.2
+
+This version is still an experimental version thus the code contains
+many lines used for debugging and experimenting. In order to retain the
+files in the temporary directory used for text communication with Squolem
+(namely input file and certificate file), set the following variable:
+delete_qbf_tempfiles := false;;
+
+Prerequisites
+=============
+a) You need working integration of a SAT solver in HOL Light. See
+<hol-light-dir>/Minisat/README for other instruction. We use zChaff
+instead of Minisat because Minisat is buggy. Therefore see also
+<hol-light-dir>/Minisat/zc2mso/README.
+b) You need install the ocamlgraph library - http://ocamlgraph.lri.fr/.
+We suppose that you install it in <ocaml-lib-dir>/ocamlgraph. We use the
+ocamlgraph library for topological sorting. Dependency on this library will
+be probably eliminated in some future release.
+c) You need Squolem - http://www.cprover.org/qbv/download.html, please
+download the latest version. We suppose that a name of Squolem's binary
+is squolem2 and is on your PATH.
+
+
+Installation
+============
+Just copy QBF directory into HOL Light's directory.
+
+
+Using
+=====
+After you load HOL Light, write the following command:
+#use "QBF/make.ml";;
+
+Then you can use prove_qbf function for proving valid QBF instances:
+# let xor = `!x y. ?w. w <=> ((x /\ ~y) \/ (~x /\ y))`;;
+val xor : term = `!x y. ?w. w <=> x /\ ~y \/ ~x /\ y`
+# prove_qbf xor;;
+TRUE
+Number of extensions: 4
+val it : thm = |- !x y. ?w. w <=> x /\ ~y \/ ~x /\ y
+
+Or you can load QBF from QDimacs input file.
+# let qbf = readQDimacs "<some-path>/impl02.qdimacs";;
+val qbf : term =
+  `?v_1 v_2 v_3.
+       !v_4. ?v_5 v_6 v_7.
+                 !v_8. ?v_9 v_10.
+                           (~v_9 \/ v_10) /\
+                           (v_8 \/ ~v_10 \/ v_6) /\
+                           (v_8 \/ ~v_6 \/ v_10) /\
+                           (v_8 \/ ~v_9 \/ v_7) /\
+                           (v_8 \/ ~v_7 \/ v_9) /\
+                           (~v_8 \/ ~v_10 \/ v_7) /\
+                           (~v_8 \/ ~v_7 \/ v_10) /\
+                           (~v_8 \/ ~v_9 \/ v_5) /\
+                           (~v_8 \/ ~v_5 \/ v_9) /\
+                           (~v_4 \/ ~v_6 \/ v_2) /\
+                           (~v_4 \/ ~v_2 \/ v_6) /\
+                           (~v_4 \/ ~v_5 \/ v_3) /\
+                           (~v_4 \/ ~v_3 \/ v_5) /\
+                           (v_4 \/ ~v_6 \/ v_3) /\
+                           (v_4 \/ ~v_3 \/ v_6) /\
+                           (v_4 \/ ~v_5 \/ v_1) /\
+                           (v_4 \/ ~v_1 \/ v_5) /\
+                           v_1`
+# prove_qbf qbf;;
+TRUE
+Number of extensions: 22
+val it : thm =
+  |- ?v_1 v_2 v_3.
+         !v_4. ?v_5 v_6 v_7.
+                   !v_8. ?v_9 v_10.
+                             (~v_9 \/ v_10) /\
+                             (v_8 \/ ~v_10 \/ v_6) /\
+                             (v_8 \/ ~v_6 \/ v_10) /\
+                             (v_8 \/ ~v_9 \/ v_7) /\
+                             (v_8 \/ ~v_7 \/ v_9) /\
+                             (~v_8 \/ ~v_10 \/ v_7) /\
+                             (~v_8 \/ ~v_7 \/ v_10) /\
+                             (~v_8 \/ ~v_9 \/ v_5) /\
+                             (~v_8 \/ ~v_5 \/ v_9) /\
+                             (~v_4 \/ ~v_6 \/ v_2) /\
+                             (~v_4 \/ ~v_2 \/ v_6) /\
+                             (~v_4 \/ ~v_5 \/ v_3) /\
+                             (~v_4 \/ ~v_3 \/ v_5) /\
+                             (v_4 \/ ~v_6 \/ v_3) /\
+                             (v_4 \/ ~v_3 \/ v_6) /\
+                             (v_4 \/ ~v_5 \/ v_1) /\
+                             (v_4 \/ ~v_1 \/ v_5) /\
+                             v_1
+
+Or you can use prove_all_qbf function. It reads all QDimacs files in the
+given directory and try to prove them and returns an array of theorems.
+# prove_all_qbf "<some-dir>";;
+
+There are two Boolean flags that can affect verbosity of the output:
+a) show_progress - default false, if set true (show_progress := true),
+progress of proving the model term is shown (in %). It is useful for
+long proofs. One can see how much work is already done.
+b) show_timing - default false, if set true, many timings of several
+parts of the code are shown. For meaning see the code.
