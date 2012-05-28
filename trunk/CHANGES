@@ -1,8 +1,12 @@
-Sat 26th May 2012       100/platonic.ml
+Sun 27th May 2012       Examples/brunn_minkowski.ml [new file]
+
+Added a proof of the Brunn-Minkowski theorem. 
+
+Sat 26th May 2012       100/platonic.ml [new file]
 
 Added a proof that the Platonic solids are limited to the classic five, and
 that those all do exist and are regular. Because of the rather crude way in
-which the computations of facial structure are done, this proof takes quite a 
+which the computations of facial structure are done, this proof takes quite a
 long time to load.
 
 Sat 26th May 2012       QBF/* [new files]
