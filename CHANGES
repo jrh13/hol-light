@@ -1,6 +1,11 @@
+Mon 28th May 2012       100/morley.ml [new file]
+
+Added a proof of Morley's theorem, following Alain Connes's paper "A new proof 
+of Morley's theorem".
+
 Sun 27th May 2012       Examples/brunn_minkowski.ml [new file]
 
-Added a proof of the Brunn-Minkowski theorem. 
+Added a proof of the Brunn-Minkowski theorem.
 
 Sat 26th May 2012       100/platonic.ml [new file]
 
