@@ -61,6 +61,7 @@ echo '### Loading Examples/schnirelmann.ml'; echo 'loadt "Examples/schnirelmann.
 echo '### Loading Examples/solovay.ml'; echo 'loadt "Examples/solovay.ml";;' | (time $hollight)
 echo '### Loading Examples/sos.ml'; echo 'loadt "Examples/sos.ml";;' | (time $hollight)
 echo '### Loading Examples/ste.ml'; echo 'loadt "Examples/ste.ml";;' | (time $hollight)
+echo '### Loading Examples/sylvester_gallai.ml'; echo 'loadt "Examples/sylvester_gallai.ml";;' | (time $hollight)
 echo '### Loading Library/wo.ml'; echo 'loadt "Library/wo.ml";;' | (time $hollight)
 echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml';
 (echo 'loadt "Library/analysis.ml";;'; echo 'loadt "Library/transc.ml";;';

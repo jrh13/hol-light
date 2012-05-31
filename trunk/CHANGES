@@ -1,6 +1,10 @@
+Tue 29th May 2012       Examples/sylvester_gallai.ml
+
+Added a proof of the Sylvester-Gallai theorem.
+
 Mon 28th May 2012       100/morley.ml [new file]
 
-Added a proof of Morley's theorem, following Alain Connes's paper "A new proof 
+Added a proof of Morley's theorem, following Alain Connes's paper "A new proof
 of Morley's theorem".
 
 Sun 27th May 2012       Examples/brunn_minkowski.ml [new file]
