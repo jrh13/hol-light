@@ -1,4 +1,8 @@
-Tue 29th May 2012       Examples/sylvester_gallai.ml
+Wed 30th May 2012       100/feuerbach.ml [new file]
+
+Added a proof of Feuerbach's theorem.
+
+Tue 29th May 2012       Examples/sylvester_gallai.ml [new file]
 
 Added a proof of the Sylvester-Gallai theorem.
 
