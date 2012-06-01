@@ -1,3 +1,7 @@
+Wed 30th May 2012       100/cayley_hamilton.ml [new file]
+
+Added a proof of the Cayley-Hamilton theorem for real matrices.
+
 Wed 30th May 2012       100/feuerbach.ml [new file]
 
 Added a proof of Feuerbach's theorem.
