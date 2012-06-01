@@ -111,6 +111,7 @@ echo '### Loading 100/bertrand.ml,100/primerecip.ml';
 (echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time $hollight)
 echo '### Loading 100/birthday.ml'; echo 'loadt "100/birthday.ml";;' | (time $hollight)
 echo '### Loading 100/cantor.ml'; echo 'loadt "100/cantor.ml";;' | (time $hollight)
+echo '### Loading 100/cayley_hamilton.ml'; echo 'loadt "100/cayley_hamilton.ml";;' | (time $hollight)
 echo '### Loading 100/ceva.ml'; echo 'loadt "100/ceva.ml";;' | (time $hollight)
 echo '### Loading 100/circle.ml'; echo 'loadt "100/circle.ml";;' | (time $hollight)
 echo '### Loading 100/chords.ml'; echo 'loadt "100/chords.ml";;' | (time $hollight)
