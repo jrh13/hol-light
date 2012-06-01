@@ -10,7 +10,7 @@
 # You might first want to install the necessary external tools,
 # for instance with
 #
-#   aptitude install prover9 coinor-csdp pari-gp
+#   aptitude install prover9 coinor-csdp pari-gp libocamlgraph-ocaml-dev
 #
 #######################################################################
 
