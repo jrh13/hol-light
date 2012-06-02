@@ -1,3 +1,8 @@
+Fri  1st Jun 2012       100/descartes.ml [new file]
+
+Added a proof of Descartes's rule of signs, based on Rob Arthan's paper
+"Descartes's Rule of Signs by an Easy Induction".
+
 Wed 30th May 2012       100/cayley_hamilton.ml [new file]
 
 Added a proof of the Cayley-Hamilton theorem for real matrices.
