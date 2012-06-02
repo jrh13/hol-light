@@ -121,6 +121,7 @@ echo '### Loading 100/cosine.ml'; echo 'loadt "100/cosine.ml";;' | (time $hollig
 echo '### Loading 100/cubic.ml'; echo 'loadt "100/cubic.ml";;' | (time $hollight)
 echo '### Loading 100/derangements.ml'; echo 'loadt "100/derangements.ml";;' | (time $hollight)
 echo '### Loading 100/desargues.ml'; echo 'loadt "100/desargues.ml";;' | (time $hollight)
+echo '### Loading 100/descartes.ml'; echo 'loadt "100/descartes.ml";;' | (time $hollight)
 echo '### Loading 100/dirichlet.ml'; echo 'loadt "100/dirichlet.ml";;' | (time $hollight)
 echo '### Loading 100/div3.ml'; echo 'loadt "100/div3.ml";;' | (time $hollight)
 echo '### Loading 100/divharmonic.ml'; echo 'loadt "100/divharmonic.ml";;' | (time $hollight)
