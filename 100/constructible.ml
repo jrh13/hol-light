@@ -1,5 +1,11 @@
 (* ========================================================================= *)
 (* Non-constructibility of irrational cubic equation solutions.              *)
+(*                                                                           *)
+(* This gives the two classic impossibility results: trisecting an angle or  *)
+(* constructing the cube using traditional geometric constructions.          *)
+(*                                                                           *)
+(* This elementary proof (not using field extensions etc.) is taken from     *)
+(* Dickson's "First Course in the Theory of Equations", chapter III.         *)
 (* ========================================================================= *)
 
 needs "Library/prime.ml";;
