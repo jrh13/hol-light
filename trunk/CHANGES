@@ -1,3 +1,9 @@
+Fri 31st Aug 2012       Makefile, README
+
+Fixed up the Makefile both for recent camlp5s (not exhaustively tested, but I 
+think it is right) and also for OCaml 4.00, as well as making the instructions 
+in the README file a bit more up-to-date.
+
 Fri  1st Jun 2012       100/descartes.ml [new file]
 
 Added a proof of Descartes's rule of signs, based on Rob Arthan's paper

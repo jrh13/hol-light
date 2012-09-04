@@ -3716,6 +3716,11 @@ let COMPACT_SPHERE = prove
   REWRITE_TAC[GSYM FRONTIER_CBALL] THEN MATCH_MP_TAC COMPACT_FRONTIER THEN
   REWRITE_TAC[COMPACT_CBALL]);;
 
+let COMPACT_SPHERE_0 = prove
+ (`!a. compact {x | norm x = a}`,
+  ONCE_REWRITE_TAC[NORM_ARITH `norm x = norm(x - vec 0)`] THEN
+  REWRITE_TAC[COMPACT_SPHERE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Finite intersection property. I could make it an equivalence in fact.     *)
 (* ------------------------------------------------------------------------- *)
@@ -9910,8 +9915,7 @@ let SELF_ADJOINT_HAS_EIGENVECTOR_IN_SUBSPACE = prove
   REWRITE_TAC[EXISTS_IN_GSPEC; FORALL_IN_GSPEC; o_DEF] THEN ANTS_TAC THENL
    [ASM_SIMP_TAC[CONTINUOUS_ON_LIFT_DOT2; LINEAR_CONTINUOUS_ON;
                    CONTINUOUS_ON_ID] THEN
-    ONCE_REWRITE_TAC[NORM_ARITH `norm x = norm(x - vec 0:real^N)`] THEN
-    ASM_SIMP_TAC[COMPACT_SPHERE; CLOSED_INTER_COMPACT; CLOSED_SUBSPACE] THEN
+    ASM_SIMP_TAC[COMPACT_SPHERE_0; CLOSED_INTER_COMPACT; CLOSED_SUBSPACE] THEN
     FIRST_X_ASSUM(MP_TAC o MATCH_MP (SET_RULE
       `~(s = {a}) ==> a IN s ==> ?b. ~(b = a) /\ b IN s`)) THEN
     ASM_SIMP_TAC[SUBSPACE_0; GSYM MEMBER_NOT_EMPTY; IN_INTER] THEN
@@ -10140,110 +10144,110 @@ let SYMMETRIC_MATRIX_EQ_DIAGONALIZABLE = prove
 (* Hence we can choose a rigid transformation between two congruent sets.    *)
 (* ------------------------------------------------------------------------- *)
 
-let RIGID_TRANSFORMATION_BETWEEN_CONGRUENT_SETS = prove                     
- (`!x:(real^N)^M y:(real^N)^M.                        
-        (!i j. 1 <= i /\ i <= dimindex(:M) /\                      
-               1 <= j /\ j <= dimindex(:M)                                   
-               ==> dist(x$i,x$j) = dist(y$i,y$j))                        
-        ==> ?a f. orthogonal_transformation f /\                               
-                  !i. 1 <= i /\ i <= dimindex(:M)                            
-                      ==> y$i = a + f(x$i)`,                            
-  REPEAT STRIP_TAC THEN                                                 
+let RIGID_TRANSFORMATION_BETWEEN_CONGRUENT_SETS = prove
+ (`!x:(real^N)^M y:(real^N)^M.
+        (!i j. 1 <= i /\ i <= dimindex(:M) /\
+               1 <= j /\ j <= dimindex(:M)
+               ==> dist(x$i,x$j) = dist(y$i,y$j))
+        ==> ?a f. orthogonal_transformation f /\
+                  !i. 1 <= i /\ i <= dimindex(:M)
+                      ==> y$i = a + f(x$i)`,
+  REPEAT STRIP_TAC THEN
   ABBREV_TAC `(X:real^M^N) = lambda i j. (x:real^N^M)$j$i - x$1$i` THEN
   ABBREV_TAC `(Y:real^M^N) = lambda i j. (y:real^N^M)$j$i - y$1$i` THEN
-  SUBGOAL_THEN `transp(X:real^M^N) ** X = transp(Y:real^M^N) ** Y`             
-  ASSUME_TAC THENL                                                         
-   [REWRITE_TAC[MATRIX_MUL_LTRANSP_DOT_COLUMN] THEN                       
-    MAP_EVERY EXPAND_TAC ["X"; "Y"] THEN                             
-    SIMP_TAC[CART_EQ; column; LAMBDA_BETA; dot] THEN                  
+  SUBGOAL_THEN `transp(X:real^M^N) ** X = transp(Y:real^M^N) ** Y`
+  ASSUME_TAC THENL
+   [REWRITE_TAC[MATRIX_MUL_LTRANSP_DOT_COLUMN] THEN
+    MAP_EVERY EXPAND_TAC ["X"; "Y"] THEN
+    SIMP_TAC[CART_EQ; column; LAMBDA_BETA; dot] THEN
     REWRITE_TAC[GSYM VECTOR_SUB_COMPONENT; GSYM dot] THEN
-    REWRITE_TAC[DOT_NORM_SUB; VECTOR_ARITH       
-     `(x - a) - (y - a):real^N = x - y`] THEN                           
-    ASM_SIMP_TAC[GSYM dist; DIMINDEX_GE_1; LE_REFL];      
-    ALL_TAC] THEN                                                 
-  SUBGOAL_THEN                                                       
+    REWRITE_TAC[DOT_NORM_SUB; VECTOR_ARITH
+     `(x - a) - (y - a):real^N = x - y`] THEN
+    ASM_SIMP_TAC[GSYM dist; DIMINDEX_GE_1; LE_REFL];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
    `?M:real^N^N. orthogonal_matrix M /\ (Y:real^M^N) = M ** (X:real^M^N)`
-  (CHOOSE_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THENL                   
-   [ALL_TAC;                                             
+  (CHOOSE_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THENL
+   [ALL_TAC;
     GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [CART_EQ] THEN
-    MAP_EVERY EXPAND_TAC ["X"; "Y"] THEN                      
-    SIMP_TAC[LAMBDA_BETA; matrix_mul] THEN                          
+    MAP_EVERY EXPAND_TAC ["X"; "Y"] THEN
+    SIMP_TAC[LAMBDA_BETA; matrix_mul] THEN
     REWRITE_TAC[REAL_ARITH `x - y:real = z <=> x = y + z`] THEN STRIP_TAC THEN
-    EXISTS_TAC `(y:real^N^M)$1 - (M:real^N^N) ** (x:real^N^M)$1` THEN      
-    EXISTS_TAC `\x:real^N. (M:real^N^N) ** x` THEN                     
-    ASM_SIMP_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX;                
+    EXISTS_TAC `(y:real^N^M)$1 - (M:real^N^N) ** (x:real^N^M)$1` THEN
+    EXISTS_TAC `\x:real^N. (M:real^N^N) ** x` THEN
+    ASM_SIMP_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX;
                  MATRIX_OF_MATRIX_VECTOR_MUL; MATRIX_VECTOR_MUL_LINEAR] THEN
-    SIMP_TAC[CART_EQ; matrix_vector_mul; LAMBDA_BETA;                        
-             VECTOR_ADD_COMPONENT] THEN                                    
-    ASM_SIMP_TAC[REAL_SUB_LDISTRIB; SUM_SUB_NUMSEG] THEN             
-    REWRITE_TAC[VECTOR_SUB_COMPONENT; REAL_ARITH                 
-     `a + y - b:real = a - z + y <=> z = b`] THEN                         
-    SIMP_TAC[LAMBDA_BETA]] THEN                                    
-  MP_TAC(ISPEC `transp(X:real^M^N) ** X`                                  
-    SYMMETRIC_MATRIX_DIAGONALIZABLE_EXPLICIT) THEN                       
-  REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP; LEFT_IMP_EXISTS_THM] THEN      
-  MAP_EVERY X_GEN_TAC [`P:real^M^M`; `d:num->real`] THEN                       
-  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN                           
+    SIMP_TAC[CART_EQ; matrix_vector_mul; LAMBDA_BETA;
+             VECTOR_ADD_COMPONENT] THEN
+    ASM_SIMP_TAC[REAL_SUB_LDISTRIB; SUM_SUB_NUMSEG] THEN
+    REWRITE_TAC[VECTOR_SUB_COMPONENT; REAL_ARITH
+     `a + y - b:real = a - z + y <=> z = b`] THEN
+    SIMP_TAC[LAMBDA_BETA]] THEN
+  MP_TAC(ISPEC `transp(X:real^M^N) ** X`
+    SYMMETRIC_MATRIX_DIAGONALIZABLE_EXPLICIT) THEN
+  REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`P:real^M^M`; `d:num->real`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN(fun th -> MP_TAC th THEN ASM_REWRITE_TAC[] THEN MP_TAC th) THEN
-  REWRITE_TAC[MATRIX_MUL_ASSOC; GSYM MATRIX_TRANSP_MUL] THEN   
-  REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; LEFT_IMP_EXISTS_THM] THEN           
-  REWRITE_TAC[IMP_IMP] THEN                                                
-  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [CART_EQ] THEN                 
+  REWRITE_TAC[MATRIX_MUL_ASSOC; GSYM MATRIX_TRANSP_MUL] THEN
+  REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[IMP_IMP] THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [CART_EQ] THEN
   SIMP_TAC[MATRIX_MUL_LTRANSP_DOT_COLUMN; LAMBDA_BETA] THEN STRIP_TAC THEN
-  MP_TAC(ISPECL [`\i. column i ((X:real^M^N) ** (P:real^M^M))`;                
-                 `\i. column i ((Y:real^M^N) ** (P:real^M^M))`;       
-                 `1..dimindex(:M)`]                                            
-                ORTHOGONAL_TRANSFORMATION_BETWEEN_ORTHOGONAL_SETS) THEN        
-  REWRITE_TAC[IN_NUMSEG] THEN ANTS_TAC THENL                                   
-   [ASM_SIMP_TAC[pairwise; IN_NUMSEG; NORM_EQ; orthogonal]; ALL_TAC] THEN      
+  MP_TAC(ISPECL [`\i. column i ((X:real^M^N) ** (P:real^M^M))`;
+                 `\i. column i ((Y:real^M^N) ** (P:real^M^M))`;
+                 `1..dimindex(:M)`]
+                ORTHOGONAL_TRANSFORMATION_BETWEEN_ORTHOGONAL_SETS) THEN
+  REWRITE_TAC[IN_NUMSEG] THEN ANTS_TAC THENL
+   [ASM_SIMP_TAC[pairwise; IN_NUMSEG; NORM_EQ; orthogonal]; ALL_TAC] THEN
   DISCH_THEN(X_CHOOSE_THEN `f:real^N->real^N` (STRIP_ASSUME_TAC o GSYM)) THEN
-  EXISTS_TAC `matrix(f:real^N->real^N)` THEN CONJ_TAC THENL      
-   [ASM_MESON_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX]; ALL_TAC] THEN             
-  SUBGOAL_THEN                                                                 
-   `!M:real^M^N. M = M ** (P:real^M^M) ** transp P`                            
-   (fun th -> GEN_REWRITE_TAC BINOP_CONV [th])                              
-  THENL                                               
-   [ASM_MESON_TAC[orthogonal_matrix; MATRIX_MUL_RID];              
-    REWRITE_TAC[MATRIX_MUL_ASSOC] THEN AP_THM_TAC THEN AP_TERM_TAC] THEN     
-  REWRITE_TAC[GSYM MATRIX_MUL_ASSOC] THEN                                
+  EXISTS_TAC `matrix(f:real^N->real^N)` THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX]; ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!M:real^M^N. M = M ** (P:real^M^M) ** transp P`
+   (fun th -> GEN_REWRITE_TAC BINOP_CONV [th])
+  THENL
+   [ASM_MESON_TAC[orthogonal_matrix; MATRIX_MUL_RID];
+    REWRITE_TAC[MATRIX_MUL_ASSOC] THEN AP_THM_TAC THEN AP_TERM_TAC] THEN
+  REWRITE_TAC[GSYM MATRIX_MUL_ASSOC] THEN
   ASM_SIMP_TAC[MATRIX_EQUAL_COLUMNS] THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [orthogonal_transformation]) THEN
   DISCH_THEN(ASSUME_TAC o GSYM o MATCH_MP MATRIX_WORKS o CONJUNCT1) THEN
-  ASM_REWRITE_TAC[] THEN                                                
-  SIMP_TAC[CART_EQ; matrix_vector_mul; column; LAMBDA_BETA] THEN       
-  X_GEN_TAC `j:num` THEN STRIP_TAC THEN                                
-  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [matrix_mul] THEN              
-  ASM_SIMP_TAC[LAMBDA_BETA]);;                                             
+  ASM_REWRITE_TAC[] THEN
+  SIMP_TAC[CART_EQ; matrix_vector_mul; column; LAMBDA_BETA] THEN
+  X_GEN_TAC `j:num` THEN STRIP_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [matrix_mul] THEN
+  ASM_SIMP_TAC[LAMBDA_BETA]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The special case of congruent triangles and even more of segments.        *)
 (* ------------------------------------------------------------------------- *)
-                                                                          
-let RIGID_TRANSFORMATION_BETWEEN_3 = prove                           
- (`!a b c a' b' c':real^N.                                            
-        dist(a,b) = dist(a',b') /\                       
-        dist(b,c) = dist(b',c') /\               
-        dist(c,a) = dist(c',a')                                         
-        ==> ?k f. orthogonal_transformation f /\          
-                  a' = k + f a /\ b' = k + f b /\ c' = k + f c`,  
-  REPEAT STRIP_TAC THEN                                              
-  MP_TAC(ISPECL                                                          
-   [`vector[a;b;c]:real^N^3`; `vector[a';b';c']:real^N^3`]                 
+
+let RIGID_TRANSFORMATION_BETWEEN_3 = prove
+ (`!a b c a' b' c':real^N.
+        dist(a,b) = dist(a',b') /\
+        dist(b,c) = dist(b',c') /\
+        dist(c,a) = dist(c',a')
+        ==> ?k f. orthogonal_transformation f /\
+                  a' = k + f a /\ b' = k + f b /\ c' = k + f c`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`vector[a;b;c]:real^N^3`; `vector[a';b';c']:real^N^3`]
         RIGID_TRANSFORMATION_BETWEEN_CONGRUENT_SETS) THEN
-  REWRITE_TAC[DIMINDEX_3; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN 
+  REWRITE_TAC[DIMINDEX_3; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   REWRITE_TAC[IMP_IMP; FORALL_3; VECTOR_3] THEN ANTS_TAC THENL
-   [ASM_MESON_TAC[DIST_EQ_0; DIST_SYM]; ALL_TAC] THEN               
-  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN SIMP_TAC[]);;            
-                                                                           
-let RIGID_TRANSFORMATION_BETWEEN_2 = prove                             
- (`!a b a' b':real^N.                                             
-        dist(a,b) = dist(a',b')                                             
-        ==> ?k f. orthogonal_transformation f /\                             
-                  a' = k + f a /\ b' = k + f b`,                           
-  REPEAT STRIP_TAC THEN                                              
-  MP_TAC(ISPECL [`a:real^N`; `b:real^N`; `a:real^N`;             
-                 `a':real^N`; `b':real^N`; `a':real^N`]                   
-        RIGID_TRANSFORMATION_BETWEEN_3) THEN                       
+   [ASM_MESON_TAC[DIST_EQ_0; DIST_SYM]; ALL_TAC] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN SIMP_TAC[]);;
+
+let RIGID_TRANSFORMATION_BETWEEN_2 = prove
+ (`!a b a' b':real^N.
+        dist(a,b) = dist(a',b')
+        ==> ?k f. orthogonal_transformation f /\
+                  a' = k + f a /\ b' = k + f b`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`a:real^N`; `b:real^N`; `a:real^N`;
+                 `a':real^N`; `b':real^N`; `a':real^N`]
+        RIGID_TRANSFORMATION_BETWEEN_3) THEN
   ASM_MESON_TAC[DIST_EQ_0; DIST_SYM]);;
 
 (* ------------------------------------------------------------------------- *)

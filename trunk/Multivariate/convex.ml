@@ -1099,6 +1099,58 @@ let CONIC_POSITIVE_ORTHANT = prove
  (`conic {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i}`,
   SIMP_TAC[conic; IN_ELIM_THM; REAL_LE_MUL; VECTOR_MUL_COMPONENT]);;
 
+let SEPARATE_CLOSED_CONES = prove
+ (`!c d:real^N->bool.
+        conic c /\ closed c /\ conic d /\ closed d /\ c INTER d SUBSET {vec 0}
+        ==> ?e. &0 < e /\
+                !x y. x IN c /\ y IN d
+                      ==> dist(x,y) >= e * max (norm x) (norm y)`,
+  SUBGOAL_THEN
+   `!c d:real^N->bool.
+        conic c /\ closed c /\ conic d /\ closed d /\ c INTER d SUBSET {vec 0}
+        ==> ?e. &0 < e /\
+                !x y. x IN c /\ y IN d ==> dist(x,y)
+                      >= e * norm x`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN REWRITE_TAC[real_ge] THEN
+    MP_TAC(ISPECL [`c INTER {x:real^N | norm x = &1}`; `d:real^N->bool`]
+      SEPARATE_COMPACT_CLOSED) THEN
+    ASM_SIMP_TAC[CLOSED_INTER_COMPACT; COMPACT_SPHERE_0] THEN ANTS_TAC THENL
+     [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+       `c INTER d SUBSET {a} ==> ~(a IN s) ==> (c INTER s) INTER d = {}`)) THEN
+      REWRITE_TAC[IN_ELIM_THM; NORM_0] THEN REAL_ARITH_TAC;
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN
+      REWRITE_TAC[IN_INTER; IN_ELIM_THM] THEN STRIP_TAC THEN
+      ASM_REWRITE_TAC[] THEN
+      MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
+      ASM_CASES_TAC `x:real^N = vec 0` THEN
+      ASM_REWRITE_TAC[DIST_POS_LE; REAL_MUL_RZERO; NORM_0] THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL
+       [`inv(norm x) % x:real^N`; `inv(norm(x:real^N)) % y:real^N`]) THEN
+      REWRITE_TAC[dist; NORM_MUL; GSYM VECTOR_SUB_LDISTRIB] THEN
+      REWRITE_TAC[REAL_ARITH `abs x * a = a * abs x`] THEN
+      REWRITE_TAC[REAL_ABS_INV; GSYM real_div; REAL_ABS_NORM] THEN
+      ASM_SIMP_TAC[REAL_LE_RDIV_EQ; NORM_POS_LT] THEN
+      DISCH_THEN MATCH_MP_TAC THEN
+      ASM_SIMP_TAC[REAL_DIV_REFL; NORM_EQ_0] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[conic]) THEN
+      CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_SIMP_TAC[REAL_LE_INV_EQ; NORM_POS_LE]];
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM(fun th ->
+      MP_TAC(SPECL [`c:real^N->bool`; `d:real^N->bool`] th) THEN
+      MP_TAC(SPECL [`d:real^N->bool`; `c:real^N->bool`] th)) THEN
+    ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[INTER_COMM] THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM; real_ge] THEN
+    X_GEN_TAC `d:real` THEN STRIP_TAC THEN
+    X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+    EXISTS_TAC `min d e:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+    MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
+    REWRITE_TAC[real_max] THEN COND_CASES_TAC THEN
+    MATCH_MP_TAC REAL_LE_TRANS THENL
+     [EXISTS_TAC `d * norm(y:real^N)` THEN ONCE_REWRITE_TAC[DIST_SYM];
+      EXISTS_TAC `e * norm(x:real^N)`] THEN
+    ASM_SIMP_TAC[] THEN MATCH_MP_TAC REAL_LE_RMUL THEN NORM_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Affine dependence and consequential theorems (from Lars Schewe).          *)
 (* ------------------------------------------------------------------------- *)
@@ -1411,6 +1463,18 @@ let AFFINE_DEPENDENT_IMP_COLLINEAR_3 = prove
   POP_ASSUM MP_TAC THEN
   MATCH_MP_TAC(SET_RULE `s SUBSET t ==> a IN s ==> a IN t`) THEN
   MATCH_MP_TAC HULL_MONO THEN SET_TAC[]);;
+
+let COLLINEAR_3_IN_AFFINE_HULL = prove
+ (`!v0 v1 x:real^N.
+        ~(v1 = v0)
+        ==> (collinear {v0,v1,x} <=> x IN affine hull {v0,v1})`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `v0:real^N` THEN
+  REWRITE_TAC[COLLINEAR_LEMMA; AFFINE_HULL_2] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_LID; IN_ELIM_THM] THEN
+  ASM_CASES_TAC `x:real^N = vec 0` THEN ASM_REWRITE_TAC[] THENL
+   [MAP_EVERY EXISTS_TAC [`&1`; `&0`] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    VECTOR_ARITH_TAC;
+    MESON_TAC[REAL_ARITH `u + v = &1 <=> u = &1 - v`]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A general lemma.                                                          *)

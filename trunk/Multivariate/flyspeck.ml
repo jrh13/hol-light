@@ -914,6 +914,58 @@ let AFF_TAC =
   ONCE_REWRITE_TAC[REAL_ARITH `&1 = x <=> x = &1`] THEN
   REWRITE_TAC[] THEN SET_TAC[];;
 
+let AFF_GE_1_1 = prove
+ (`!x v w.
+        DISJOINT {x} {v}
+        ==> aff_ge {x} {v} =
+             {y | ?t1 t2.
+                     &0 <= t2 /\
+                     t1 + t2 = &1 /\
+                     y = t1 % x + t2 % v }`,
+  AFF_TAC);;
+
+let AFF_GE_1_2 = prove
+ (`!x v w.
+        DISJOINT {x} {v,w}
+        ==> aff_ge {x} {v,w} =
+             {y | ?t1 t2 t3.
+
+                     &0 <= t2 /\ &0 <= t3 /\
+
+                     t1 + t2 + t3 = &1 /\
+                     y = t1 % x + t2 % v + t3 % w}`,
+  AFF_TAC);;
+
+let AFF_GE_2_1 = prove
+ (`!x v w.
+        DISJOINT {x,v} {w}
+        ==> aff_ge {x,v} {w} =
+             {y | ?t1 t2 t3.
+                     &0 <= t3 /\
+                     t1 + t2 + t3 = &1 /\
+                     y = t1 % x + t2 % v + t3 % w}`,
+  AFF_TAC);;
+
+let AFF_GT_1_1 = prove
+ (`!x v w.
+        DISJOINT {x} {v}
+        ==> aff_gt {x} {v} =
+             {y | ?t1 t2.
+                     &0 < t2 /\
+                     t1 + t2 = &1 /\
+                     y = t1 % x + t2 % v}`,
+  AFF_TAC);;
+
+let AFF_GT_1_2 = prove
+ (`!x v w.
+        DISJOINT {x} {v,w}
+        ==> aff_gt {x} {v,w} =
+             {y | ?t1 t2 t3.
+                     &0 < t2 /\ &0 < t3 /\
+                     t1 + t2 + t3 = &1 /\
+                     y = t1 % x + t2 % v + t3 % w}`,
+  AFF_TAC);;
+
 let AFF_GT_2_1 = prove
  (`!x v w.
         DISJOINT {x,v} {w}
@@ -953,6 +1005,28 @@ let AFF_LT_2_1 = prove
                      t1 + t2 + t3 = &1 /\
                      y = t1 % x + t2 % v + t3 % w}`,
   AFF_TAC);;
+
+let AFF_GE_1_2_0 = prove
+ (`!v w.
+        ~(v = vec 0) /\ ~(w = vec 0)
+        ==> aff_ge {vec 0} {v,w} = {a % v + b % w | &0 <= a /\ &0 <= b}`,
+  SIMP_TAC[AFF_GE_1_2;
+           SET_RULE `DISJOINT {a} {b,c} <=> ~(b = a) /\ ~(c = a)`] THEN
+  REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  ONCE_REWRITE_TAC[MESON[]
+   `(?a b c. P b c /\ Q b c /\ R a b c /\ S b c) <=>
+    (?b c. P b c /\ Q b c /\ S b c /\ ?a. R a b c)`] THEN
+  REWRITE_TAC[REAL_ARITH `t + s:real = &1 <=> t = &1 - s`; EXISTS_REFL] THEN
+  SET_TAC[]);;
+
+let AFF_GE_1_1_0 = prove
+ (`!v. ~(v = vec 0) ==> aff_ge {vec 0} {v} = {a % v | &0 <= a}`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [SET_RULE `{a} = {a,a}`] THEN
+  ASM_SIMP_TAC[AFF_GE_1_2_0; GSYM VECTOR_ADD_RDISTRIB] THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+  MESON_TAC[REAL_LE_ADD; REAL_ARITH
+   `&0 <= a ==> &0 <= a / &2 /\ a / &2 + a / &2 = a`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Properties of affsign variants.                                           *)
@@ -1093,6 +1167,14 @@ let AFFSIGN_MONO_LEFT = prove
   ASM_SIMP_TAC[SET_RULE
    `s SUBSET s' ==> {x | x IN s' UNION t /\ x IN s UNION t} = s UNION t`] THEN
   ASM SET_TAC[]);;
+
+let AFFSIGN_MONO_SHUFFLE = prove
+ (`!sgn s t s' t'.
+        s' UNION t' = s UNION t /\ t' SUBSET t
+        ==> affsign sgn s t SUBSET affsign sgn s' t'`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[AFFSIGN; SUBSET; IN_ELIM_THM] THEN
+  GEN_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
 
 let AFF_GT_MONO_LEFT = prove
  (`!s s' t. s SUBSET s' ==> aff_gt s t SUBSET aff_gt s' t`,
@@ -1454,6 +1536,16 @@ let POLYHEDRON_AFF_GE = prove
 let CLOSED_AFF_GE = prove
  (`!s t:real^N->bool. FINITE s /\ FINITE t ==> closed(aff_ge s t)`,
   SIMP_TAC[POLYHEDRON_AFF_GE; POLYHEDRON_IMP_CLOSED]);;
+
+let CONIC_AFF_GE_0 = prove
+ (`!s:real^N->bool. FINITE s /\ ~(vec 0 IN s) ==> conic(aff_ge {vec 0} s)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[AFF_GE_0_N; conic] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN GEN_TAC THEN X_GEN_TAC `c:real` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:real^N->real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\v. c * (u:real^N->real) v` THEN
+  REWRITE_TAC[GSYM VECTOR_MUL_ASSOC; VSUM_LMUL] THEN
+  ASM_MESON_TAC[REAL_LE_MUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Special case of aff_ge {x} {y}, i.e. rays or half-lines.                  *)
@@ -2550,6 +2642,51 @@ let AZIM_EQ_0_PI_IMP_COPLANAR = prove
     REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD;
     EXISTS_TAC `(w2:real^3)$1 / (w1:real^3)$1` THEN
     REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD]);;
+
+let AZIM_EQ_IMP = prove
+ (`!v0 v1 w x y.
+     ~collinear {v0, v1, w} /\
+     ~collinear {v0, v1, y} /\
+     x IN aff_gt {v0, v1} {y}
+     ==> azim v0 v1 w x = azim v0 v1 w y`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `v1:real^3 = v0` THENL
+   [ASM_REWRITE_TAC[INSERT_AC; COLLINEAR_2]; ALL_TAC] THEN
+  ASM_CASES_TAC `collinear {v0:real^3,v1,x}` THENL
+   [ALL_TAC; ASM_SIMP_TAC[AZIM_EQ_ALT]] THEN
+  UNDISCH_TAC `collinear {v0:real^3,v1,x}` THEN
+  MATCH_MP_TAC(TAUT
+   `(s /\ p ==> r) ==> p ==> ~q /\ ~r /\ s ==> t`) THEN
+  ASM_SIMP_TAC[COLLINEAR_3_IN_AFFINE_HULL] THEN
+  ASM_CASES_TAC `y:real^3 = v0` THEN
+  ASM_SIMP_TAC[HULL_INC; IN_INSERT] THEN
+  ASM_CASES_TAC `y:real^3 = v1` THEN
+  ASM_SIMP_TAC[HULL_INC; IN_INSERT] THEN
+  ASM_SIMP_TAC[AFF_GT_2_1; SET_RULE
+   `DISJOINT {a,b} {c} <=> ~(c = a) /\ ~(c = b)`] THEN
+  REWRITE_TAC[AFFINE_HULL_2; IN_ELIM_THM; LEFT_AND_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC
+   [`t1:real`; `t2:real`; `t3:real`; `s1:real`; `s2:real`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o AP_TERM `(%) (inv t3) :real^3->real^3`) THEN
+  ASM_SIMP_TAC[VECTOR_ADD_LDISTRIB; VECTOR_MUL_ASSOC; REAL_MUL_LINV;
+               REAL_LT_IMP_NZ; VECTOR_ARITH
+                `x:real^N = y + z + &1 % w <=> w = x - (y + z)`] THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  EXISTS_TAC `inv t3 * s1 - inv t3 * t1:real` THEN
+  EXISTS_TAC `inv t3 * s2 - inv t3 * t2:real` THEN CONJ_TAC THENL
+   [ASM_SIMP_TAC[REAL_FIELD
+     `&0 < t ==> (inv t * a - inv t * b + inv t * c - inv t * d = &1 <=>
+                  (a + c) - (b + d) = t)`] THEN
+    ASM_REAL_ARITH_TAC;
+    VECTOR_ARITH_TAC]);;
+
+let AZIM_EQ_0_GE_IMP = prove
+ (`!v0 v1 w x. x IN aff_ge {v0, v1} {w} ==> azim v0 v1 w x = &0`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `collinear {v0:real^3,v1,w}` THEN
+  ASM_SIMP_TAC[AZIM_DEGENERATE] THEN
+  ASM_CASES_TAC `collinear {v0:real^3,v1,x}` THEN
+  ASM_SIMP_TAC[AZIM_DEGENERATE] THEN ASM_MESON_TAC[AZIM_EQ_0_GE_ALT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Dihedral angle and relation to azimuth angle.                             *)

@@ -1348,6 +1348,20 @@ let SIN_PI6 = prove
   MATCH_MP_TAC(REAL_ARITH `&0 < x ==> ~(x + &1 / &2 = &0)`) THEN
   MATCH_MP_TAC SIN_POS_PI THEN MP_TAC PI_POS THEN REAL_ARITH_TAC);;
 
+let SIN_POS_PI_REV = prove
+ (`!x. &0 <= x /\ x <= &2 * pi /\ &0 < sin x ==> &0 < x /\ x < pi`,
+  GEN_TAC THEN ASM_CASES_TAC `x = &0` THEN
+  ASM_REWRITE_TAC[SIN_0; REAL_LT_REFL] THEN
+  ASM_CASES_TAC `x = pi` THEN
+  ASM_REWRITE_TAC[SIN_PI; REAL_LT_REFL] THEN
+  ASM_CASES_TAC `x = &2 * pi` THEN
+  ASM_REWRITE_TAC[SIN_NPI; REAL_LT_REFL] THEN
+  REPEAT STRIP_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[GSYM REAL_NOT_LE] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `&0 < sin(&2 * pi - x)` MP_TAC THENL
+   [MATCH_MP_TAC SIN_POS_PI THEN ASM_REAL_ARITH_TAC;
+    REWRITE_TAC[SIN_SUB; SIN_NPI; COS_NPI] THEN ASM_REAL_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Prove totality of trigs.                                                  *)
 (* ------------------------------------------------------------------------- *)
