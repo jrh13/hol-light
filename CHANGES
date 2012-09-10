@@ -1,7 +1,18 @@
+Thu  6th Sep 2012       update_database.ml
+
+Fixed the update_database code for OCaml 4.00. This entails making a couple
+more things conditional on the version number (using the exec "code" method
+already used in Roland Zumkeller's original code). First, the "Tvar" 
+constructor now takes an argument (and because of the way OCaml's internal
+representation works with different sequences for nullary and non-nullary, this
+changes some of the constructor numbers). Second, the tbl type has changed to
+the use of EnvTbl that effectively wraps up the core type 'a into 'a * bool 
+ref.
+
 Fri 31st Aug 2012       Makefile, README
 
-Fixed up the Makefile both for recent camlp5s (not exhaustively tested, but I 
-think it is right) and also for OCaml 4.00, as well as making the instructions 
+Fixed up the Makefile both for recent camlp5s (not exhaustively tested, but I
+think it is right) and also for OCaml 4.00, as well as making the instructions
 in the README file a bit more up-to-date.
 
 Fri  1st Jun 2012       100/descartes.ml [new file]

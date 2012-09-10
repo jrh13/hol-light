@@ -2443,6 +2443,16 @@ let REAL_CONTINUOUS_NORM_WITHIN = prove
  (`!s z. norm real_continuous (at z within s)`,
   MESON_TAC[REAL_CONTINUOUS_NORM_AT; REAL_CONTINUOUS_AT_WITHIN]);;
 
+let REAL_CONTINUOUS_DIST_AT = prove
+ (`!a z. (\x. dist(a,x)) real_continuous (at z)`,                           
+  REWRITE_TAC[real_continuous_at; dist] THEN
+  GEN_TAC THEN GEN_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `e:real` THEN ASM_REWRITE_TAC[] THEN NORM_ARITH_TAC);;
+                                                                           
+let REAL_CONTINUOUS_DIST_WITHIN = prove     
+ (`!a s z. (\x. dist(a,x)) real_continuous (at z within s)`,      
+  MESON_TAC[REAL_CONTINUOUS_DIST_AT; REAL_CONTINUOUS_AT_WITHIN]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Derivative of real->real function.                                        *)
 (* ------------------------------------------------------------------------- *)

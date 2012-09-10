@@ -1877,6 +1877,14 @@ let FRONTIER_OF_COMPONENTS_SUBSET = prove
   SIMP_TAC[components; FORALL_IN_GSPEC;
            FRONTIER_OF_CONNECTED_COMPONENT_SUBSET]);;
 
+let FRONTIER_OF_COMPONENTS_CLOSED_COMPLEMENT = prove
+ (`!s c. closed s /\ c IN components ((:real^N) DIFF s)
+         ==> frontier c SUBSET s`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP FRONTIER_OF_COMPONENTS_SUBSET) THEN
+  REWRITE_TAC[FRONTIER_COMPLEMENT] THEN
+  ASM_MESON_TAC[FRONTIER_SUBSET_EQ; SUBSET_TRANS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Sura-Bura's result about components of closed sets.                       *)
 (* ------------------------------------------------------------------------- *)
@@ -13604,6 +13612,50 @@ let CONTINUOUS_ON_COMPONENTS_EQ = prove
    [MESON_TAC[CONTINUOUS_ON_SUBSET; IN_COMPONENTS_SUBSET];
     ASM_MESON_TAC[CONTINUOUS_ON_COMPONENTS]]);;
 
+let FRONTIER_MINIMAL_SEPARATING_CLOSED = prove
+ (`!s c. closed s /\ ~connected((:real^N) DIFF s) /\
+         (!t. closed t /\ t PSUBSET s ==> connected((:real^N) DIFF t)) /\
+         c IN components ((:real^N) DIFF s)
+         ==> frontier c = s`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE RAND_CONV [CONNECTED_EQ_CONNECTED_COMPONENTS_EQ]) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (MESON[]
+   `~(!x x'. x IN s /\ x' IN s ==> x = x')
+    ==> !x. x IN s ==> ?y. y IN s /\ ~(y = x)`)) THEN
+  DISCH_THEN(MP_TAC o SPEC `c:real^N->bool`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real^N->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `frontier c:real^N->bool`) THEN
+  REWRITE_TAC[SET_RULE `s PSUBSET t <=> s SUBSET t /\ ~(t SUBSET s)`;
+              GSYM SUBSET_ANTISYM_EQ] THEN
+  ASM_SIMP_TAC[FRONTIER_OF_COMPONENTS_CLOSED_COMPLEMENT; FRONTIER_CLOSED] THEN
+  MATCH_MP_TAC(TAUT `~r ==> (~p ==> r) ==> p`) THEN
+  REWRITE_TAC[connected] THEN
+  MAP_EVERY EXISTS_TAC [`c:real^N->bool`; `(:real^N) DIFF closure c`] THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[OPEN_COMPONENTS; closed];
+    REWRITE_TAC[GSYM closed; CLOSED_CLOSURE];
+    MP_TAC(ISPEC `c:real^N->bool` INTERIOR_SUBSET) THEN
+    REWRITE_TAC[frontier] THEN SET_TAC[];
+    MATCH_MP_TAC(SET_RULE
+     `c SUBSET c' ==> c INTER (UNIV DIFF c') INTER s = {}`) THEN
+    REWRITE_TAC[GSYM INTERIOR_COMPLEMENT; CLOSURE_SUBSET];
+    REWRITE_TAC[frontier] THEN MATCH_MP_TAC(SET_RULE
+     `ci = c /\ ~(c = {})
+      ==> ~(c INTER (UNIV DIFF (cc DIFF ci)) = {})`) THEN
+    ASM_MESON_TAC[IN_COMPONENTS_NONEMPTY; INTERIOR_OPEN; closed;
+                  OPEN_COMPONENTS];
+    REWRITE_TAC[frontier] THEN MATCH_MP_TAC(SET_RULE
+     `~(UNIV DIFF c = {})
+      ==> ~((UNIV DIFF c) INTER (UNIV DIFF (c DIFF i)) = {})`) THEN
+    REWRITE_TAC[GSYM INTERIOR_COMPLEMENT] THEN
+    MATCH_MP_TAC(SET_RULE `!t. t SUBSET s /\ ~(t = {}) ==> ~(s = {})`) THEN
+    EXISTS_TAC `d:real^N->bool` THEN CONJ_TAC THENL
+     [ALL_TAC; ASM_MESON_TAC[IN_COMPONENTS_NONEMPTY]] THEN
+    MATCH_MP_TAC INTERIOR_MAXIMAL THEN
+    REWRITE_TAC[SET_RULE `s SUBSET UNIV DIFF t <=> s INTER t = {}`] THEN
+    ASM_MESON_TAC[COMPONENTS_NONOVERLAP; OPEN_COMPONENTS; GSYM closed]]);;
+
+
 (* ------------------------------------------------------------------------- *)
 (* Lower bound on norms within segment between vectors.                      *)
 (* Could have used these for connectedness results below, in fact.           *)
@@ -14413,6 +14465,16 @@ let COBOUNDED_UNIQUE_UNBOUNDED_COMPONENT = prove
     CONJ_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[IN_DIFF; IN_UNIV]] THEN
     REWRITE_TAC[IN_BALL_0] THEN ASM_MESON_TAC[REAL_LT_IMP_LE];
     ASM_MESON_TAC[CONNECTED_COMPONENT_SYM; CONNECTED_COMPONENT_TRANS]]);;
+
+let COBOUNDED_UNIQUE_UNBOUNDED_COMPONENTS = prove
+ (`!s c c'.
+        2 <= dimindex(:N) /\
+        bounded ((:real^N) DIFF s) /\
+        c IN components s /\ ~bounded c /\
+        c' IN components s /\ ~bounded c'
+        ==> c' = c`,
+  REWRITE_TAC[components; IN_ELIM_THM] THEN
+  MESON_TAC[COBOUNDED_UNIQUE_UNBOUNDED_COMPONENT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The "inside" and "outside" of a set, i.e. the points respectively in a    *)
@@ -15240,6 +15302,55 @@ let INSIDE_INSIDE_EQ_EMPTY = prove
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   ASM_SIMP_TAC[CONNECTED_COMPONENT_EQ_SELF; CONNECTED_WITH_OUTSIDE] THEN
   REWRITE_TAC[BOUNDED_UNION] THEN MESON_TAC[UNBOUNDED_OUTSIDE]);;
+
+let INSIDE_IN_COMPONENTS = prove
+ (`!s. (inside s) IN components((:real^N) DIFF s) <=>
+       connected(inside s) /\ ~(inside s = {})`,
+  X_GEN_TAC `s:real^N->bool` THEN REWRITE_TAC[IN_COMPONENTS_MAXIMAL] THEN
+  ASM_CASES_TAC `inside s:real^N->bool = {}` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `connected(inside s:real^N->bool)` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[SET_RULE `s SUBSET UNIV DIFF t <=> s INTER t = {}`] THEN
+  REWRITE_TAC[INSIDE_NO_OVERLAP] THEN
+  X_GEN_TAC `d:real^N->bool` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[SUBSET] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  MATCH_MP_TAC INSIDE_SAME_COMPONENT THEN
+  UNDISCH_TAC `~(inside s:real^N->bool = {})` THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `a:real^N` THEN DISCH_TAC THEN
+  ASM_REWRITE_TAC[connected_component] THEN
+  EXISTS_TAC `d:real^N->bool` THEN ASM SET_TAC[]);;
+
+let OUTSIDE_IN_COMPONENTS = prove
+ (`!s. (outside s) IN components((:real^N) DIFF s) <=>
+       connected(outside s) /\ ~(outside s = {})`,
+  X_GEN_TAC `s:real^N->bool` THEN REWRITE_TAC[IN_COMPONENTS_MAXIMAL] THEN
+  ASM_CASES_TAC `outside s:real^N->bool = {}` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `connected(outside s:real^N->bool)` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[SET_RULE `s SUBSET UNIV DIFF t <=> s INTER t = {}`] THEN
+  REWRITE_TAC[OUTSIDE_NO_OVERLAP] THEN
+  X_GEN_TAC `d:real^N->bool` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[SUBSET] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  MATCH_MP_TAC OUTSIDE_SAME_COMPONENT THEN
+  UNDISCH_TAC `~(outside s:real^N->bool = {})` THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `a:real^N` THEN DISCH_TAC THEN
+  ASM_REWRITE_TAC[connected_component] THEN
+  EXISTS_TAC `d:real^N->bool` THEN ASM SET_TAC[]);;
+
+let BOUNDED_UNIQUE_OUTSIDE = prove
+ (`!c s. 2 <= dimindex(:N) /\ bounded s
+         ==> (c IN components ((:real^N) DIFF s) /\ ~bounded c <=>
+              c = outside s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [MATCH_MP_TAC COBOUNDED_UNIQUE_UNBOUNDED_COMPONENTS THEN
+    EXISTS_TAC `(:real^N) DIFF s` THEN
+    ASM_REWRITE_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`] THEN
+    ASM_REWRITE_TAC[OUTSIDE_IN_COMPONENTS];
+    ASM_REWRITE_TAC[OUTSIDE_IN_COMPONENTS]] THEN
+  ASM_SIMP_TAC[UNBOUNDED_OUTSIDE; OUTSIDE_BOUNDED_NONEMPTY;
+               CONNECTED_OUTSIDE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Homotopy of maps p,q : X->Y with property P of all intermediate maps.     *)
