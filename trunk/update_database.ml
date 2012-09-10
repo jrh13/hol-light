@@ -45,14 +45,18 @@ type path_t =
 
 (*** from typing/types.ml: ***)
 
-type type_expr =
+exec (
+"type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
     mutable id: int }
 
 and type_desc =
-    Tvar
-  | Tarrow of label * type_expr * type_expr * commutable
+" ^
+(if String.sub Sys.ocaml_version 0 1 = "4"
+ then "Tvar of string option\n"
+ else "Tvar\n") ^
+" | Tarrow of label * type_expr * type_expr * commutable
   | Ttuple of type_expr list
   | Tconstr of path_t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (path_t * type_expr list) option ref
@@ -91,6 +95,7 @@ and commutable =
     Cok
   | Cunknown
   | Clink of commutable ref;;
+");;
 
 type value_description =
   { val_type: type_expr;
@@ -112,30 +117,40 @@ and signature_item =
   | Tsig_class of ident_t * dummy * dummy
   | Tsig_cltype of ident_t * dummy * dummy;;
 
-
 (*** from ./typing/env.ml: ***)
 
 exec (
-"type env_t = {
-  values: (path_t * value_description) tbl;
-" ^ (if (let v = String.sub Sys.ocaml_version 0 4 in v = "3.09" or v = "3.10") then "" else
-"  annotations: dummy;
-") ^
-"  constrs: dummy;
-  labels: dummy;
-  types: dummy;
-  modules: (path_t * module_type) tbl;
-  modtypes: dummy;
+"type env_t = {\n" ^
+ (if String.sub Sys.ocaml_version 0 1 = "4"
+  then "values: ((path_t * value_description) * bool ref) tbl;\n"
+  else "values: (path_t * value_description) tbl;\n") ^
+ (if (let v = String.sub Sys.ocaml_version 0 4 in v = "3.09" or v = "3.10")
+  then ""
+  else "annotations: dummy;\n") ^
+" constrs: dummy;
+  labels: dummy;\n" ^
+(if String.sub Sys.ocaml_version 0 1 = "4"
+ then "constrs_by_path: dummy;\n"
+ else "") ^
+" types: dummy;\n" ^
+(if String.sub Sys.ocaml_version 0 1 = "4"
+  then "modules: ((path_t * module_type) * bool ref) tbl;\n"
+  else "modules: (path_t * module_type) tbl;\n") ^
+" modtypes: dummy;
   components: dummy;
   classes: dummy;
   cltypes: dummy;
-  summary: dummy
-};;");;
+  summary: dummy;\n" ^
+(if String.sub Sys.ocaml_version 0 1 = "4"
+ then "local_constraints: dummy;
+       gadt_instances: dummy;
+       in_signature: dummy;
+       };;\n"
+ else "};;\n"));;
 
 (* ------------------------------------------------------------------------- *)
 (* End of basic data structures copied from OCaml.                           *)
 (* ------------------------------------------------------------------------- *)
-
 
 (* Iterate over the entries of a table. *)
 
@@ -161,7 +176,8 @@ let eval n =
 
 (* Register all theorems added since the last update. *)
 
-let update_database =
+exec (
+"let update_database =
   let lastStamp = ref 0
   and currentStamp = ref 0
   and thms = Hashtbl.create 5000 in
@@ -173,15 +189,15 @@ let update_database =
 
   let rec regVal pfx = ifNew (fun i vd ->
     let n = pfx ^ i.name in
-      if n <> "buf__" then
-        (if get_simple_type vd.val_type.desc = Some "thm"
+      if n <> \"buf__\" then
+        (if get_simple_type vd.val_type.desc = Some \"thm\"
          then Hashtbl.replace thms n (eval n)
          else Hashtbl.remove thms n))
 
   and regMod pfx = ifNew (fun i mt ->
        match mt with
          | Tmty_signature sg ->
-             let pfx' = pfx ^ i.name ^ "." in
+             let pfx' = pfx ^ i.name ^ \".\" in
              List.iter (function
                | Tsig_value (i',vd) -> regVal pfx' i' vd
                | Tsig_module (i',mt',_) -> regMod pfx' i' mt'
@@ -190,10 +206,18 @@ let update_database =
 
   in fun () ->
     let env = Obj.magic !Toploop.toplevel_env in
-    iterTbl (fun i (_,vd) -> regVal "" i vd) env.values;
-    iterTbl (fun i (_,mt) -> regMod "" i mt) env.modules;
-    lastStamp := !currentStamp;
+" ^
+(if String.sub Sys.ocaml_version 0 1 = "4"
+ then "iterTbl (fun i ((_,vd),_) -> regVal \"\" i vd) env.values;
+       iterTbl (fun i ((_,mt),_) -> regMod \"\" i mt) env.modules;
+      "
+ else
+      "iterTbl (fun i (_,vd) -> regVal \"\" i vd) env.values;
+       iterTbl (fun i (_,mt) -> regMod \"\" i mt) env.modules;
+      ") ^
+"   lastStamp := !currentStamp;
     theorems := Hashtbl.fold (fun s t l -> (s,t)::l) thms [];;
+");;
 
 (* ------------------------------------------------------------------------- *)
 (* Put an assignment of a theorem database in the named file.                *)

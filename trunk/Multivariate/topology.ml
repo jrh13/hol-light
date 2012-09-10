@@ -5265,7 +5265,7 @@ let CAUCHY_CONTINUOUS_IMP_CONTINUOUS = prove
   ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; CLOSURE_SUBSET; CONTINUOUS_ON_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Topological properties of linear functions.                               *)
+(* Linear functions are (uniformly) continuous on any set.                   *)
 (* ------------------------------------------------------------------------- *)
 
 let LINEAR_LIM_0 = prove
@@ -5295,6 +5295,19 @@ let LINEAR_CONTINUOUS_WITHIN = prove
 let LINEAR_CONTINUOUS_ON = prove
  (`!f:real^M->real^N s. linear f ==> f continuous_on s`,
   MESON_TAC[LINEAR_CONTINUOUS_AT; CONTINUOUS_AT_IMP_CONTINUOUS_ON]);;
+
+let LINEAR_UNIFORMLY_CONTINUOUS_ON = prove
+ (`!f:real^M->real^N s. linear f ==> f uniformly_continuous_on s`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[uniformly_continuous_on; dist; GSYM LINEAR_SUB] THEN
+  FIRST_ASSUM(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC o
+        MATCH_MP LINEAR_BOUNDED_POS) THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN EXISTS_TAC `e / B:real` THEN
+  ASM_SIMP_TAC[REAL_LT_DIV] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
+  MATCH_MP_TAC REAL_LET_TRANS THEN
+  EXISTS_TAC `B * norm(y - x:real^M)` THEN ASM_REWRITE_TAC[] THEN
+  ASM_MESON_TAC[REAL_LT_RDIV_EQ; REAL_MUL_SYM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Also bilinear functions, in composition form.                             *)
@@ -5671,6 +5684,18 @@ let CONNECTED_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [CONNECTED_LINEAR_IMAGE_EQ];;
 
+let BOUNDED_UNIFORMLY_CONTINUOUS_IMAGE = prove
+ (`!f:real^M->real^N s.
+        f uniformly_continuous_on s /\ bounded s ==> bounded(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM
+   (MP_TAC o MATCH_MP UNIFORMLY_CONTINUOUS_EXTENDS_TO_CLOSURE) THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:real^M->real^N` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC BOUNDED_SUBSET THEN
+  EXISTS_TAC `IMAGE (g:real^M->real^N) (closure s)` THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[COMPACT_CLOSURE; UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS;
+                  COMPACT_IMP_BOUNDED; COMPACT_CONTINUOUS_IMAGE];
+    MP_TAC(ISPEC `s:real^M->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Connected components, considered as a "connectedness" relation or a set.  *)
 (* ------------------------------------------------------------------------- *)
@@ -5853,6 +5878,13 @@ let CONNECTED_COMPONENT_EQ_EQ = prove
     ASM_REWRITE_TAC[CONNECTED_COMPONENT_EQ_EMPTY] THEN
     ONCE_REWRITE_TAC[CONNECTED_COMPONENT_SYM_EQ] THEN
     ASM_REWRITE_TAC[EMPTY] THEN ASM_MESON_TAC[CONNECTED_COMPONENT_EQ_EMPTY]]);;
+
+let CONNECTED_EQ_CONNECTED_COMPONENT_EQ = prove
+ (`!s. connected s <=>
+       !x y. x IN s /\ y IN s
+             ==> connected_component s x = connected_component s y`,
+  SIMP_TAC[CONNECTED_COMPONENT_EQ_EQ] THEN
+  REWRITE_TAC[CONNECTED_IFF_CONNECTED_COMPONENT]);;
 
 let CONNECTED_COMPONENT_IDEMP = prove
  (`!s x:real^N. connected_component (connected_component s x) x =
@@ -6083,6 +6115,44 @@ let CONTINUOUS_ON_COMPONENTS_GEN = prove
     MATCH_MP_TAC OPEN_IN_UNIONS THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
     ASM_MESON_TAC[OPEN_IN_TRANS]]);;
 
+let COMPONENTS_NONOVERLAP = prove
+ (`!s c c'. c IN components s /\ c' IN components s
+            ==> (c INTER c' = {} <=> ~(c = c'))`,
+  REWRITE_TAC[components; IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[CONNECTED_COMPONENT_NONOVERLAP]);;
+
+let COMPONENTS_EQ = prove
+ (`!s c c'. c IN components s /\ c' IN components s
+            ==> (c = c' <=> ~(c INTER c' = {}))`,
+  MESON_TAC[COMPONENTS_NONOVERLAP]);;
+
+let COMPONENTS_EQ_EMPTY = prove
+ (`!s. components s = {} <=> s = {}`,
+  GEN_TAC THEN REWRITE_TAC[EXTENSION] THEN
+  REWRITE_TAC[components; connected_component; IN_ELIM_THM] THEN
+  SET_TAC[]);;
+
+let CONNECTED_EQ_CONNECTED_COMPONENTS_EQ = prove
+ (`!s. connected s <=>
+       !c c'. c IN components s /\ c' IN components s ==> c = c'`,
+  REWRITE_TAC[components; IN_ELIM_THM] THEN
+  MESON_TAC[CONNECTED_EQ_CONNECTED_COMPONENT_EQ]);;
+
+let COMPONENTS_EQ_SING,COMPONENTS_EQ_SING_EXISTS = (CONJ_PAIR o prove)
+ (`(!s:real^N->bool. components s = {s} <=> connected s /\ ~(s = {})) /\
+   (!s:real^N->bool. (?a. components s = {a}) <=> connected s /\ ~(s = {}))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN X_GEN_TAC `s:real^N->bool` THEN
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ (q ==> r) /\ (r ==> p)
+                     ==> (p <=> r) /\ (q <=> r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [MESON_TAC[];
+    STRIP_TAC THEN ASM_REWRITE_TAC[CONNECTED_EQ_CONNECTED_COMPONENTS_EQ] THEN
+    ASM_MESON_TAC[IN_SING; COMPONENTS_EQ_EMPTY; NOT_INSERT_EMPTY];
+    STRIP_TAC THEN ONCE_REWRITE_TAC[EXTENSION] THEN
+    REWRITE_TAC[IN_SING] THEN
+    REWRITE_TAC[components; IN_ELIM_THM] THEN
+    ASM_MESON_TAC[CONNECTED_CONNECTED_COMPONENT_SET; MEMBER_NOT_EMPTY]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Continuity implies uniform continuity on a compact domain.                *)
 (* ------------------------------------------------------------------------- *)
@@ -6283,6 +6353,18 @@ let CONTINUOUS_AT_LIFT_INFNORM = prove
  (`!x:real^N. (lift o infnorm) continuous (at x)`,
   REWRITE_TAC[CONTINUOUS_AT; LIM_AT; o_THM; DIST_LIFT] THEN
   MESON_TAC[REAL_LET_TRANS; dist; REAL_ABS_SUB_INFNORM; INFNORM_LE_NORM]);;
+
+let CONTINUOUS_AT_LIFT_DIST = prove
+ (`!a:real^N x. (lift o (\x. dist(a,x))) continuous (at x)`,
+  REWRITE_TAC[CONTINUOUS_AT_LIFT_RANGE] THEN
+  MESON_TAC[NORM_ARITH `abs(dist(a:real^N,x) - dist(a,y)) <= norm(x - y)`;
+            REAL_LET_TRANS]);;
+
+let CONTINUOUS_ON_LIFT_DIST = prove
+ (`!a s. (lift o (\x. dist(a,x))) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON_LIFT_RANGE] THEN
+  MESON_TAC[NORM_ARITH `abs(dist(a:real^N,x) - dist(a,y)) <= norm(x - y)`;
+            REAL_LET_TRANS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence some handy theorems on distance, diameter etc. of/from a set.       *)
