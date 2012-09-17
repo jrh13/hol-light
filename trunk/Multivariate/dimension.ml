@@ -2245,6 +2245,15 @@ let RETRACT_OF_CONTRACTIBLE = prove
            CONTINUOUS_ON_SUBSET)) THEN ASM SET_TAC[];
     ASM SET_TAC[]]);;
 
+let ABSOLUTE_RETRACT_CONVEX_CLOSED = prove
+ (`!s:real^N->bool t.
+        convex s /\ closed s /\ ~(s = {}) /\ s SUBSET t
+        ==> s retract_of t`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[retract_of; retraction] THEN
+  EXISTS_TAC `closest_point(s:real^N->bool)` THEN
+  ASM_SIMP_TAC[CONTINUOUS_ON_CLOSEST_POINT; CLOSEST_POINT_SELF] THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; CLOSEST_POINT_IN_SET]);;
+
 let ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL = prove
  (`!s:real^N->bool t a b:real^M.
         s homeomorphic interval[a,b] /\ ~(s = {}) /\ s SUBSET t
@@ -2284,6 +2293,25 @@ let ABSOLUTE_RETRACT_PATH_IMAGE_ARC = prove
   EXISTS_TAC `g:real^1->real^N` THEN
   RULE_ASSUM_TAC(REWRITE_RULE[arc; path; path_image]) THEN
   ASM_REWRITE_TAC[COMPACT_INTERVAL; path_image]);;
+
+let SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE = prove
+ (`!a r. &0 < r ==> {x | norm (x - a) = r} retract_of ((:real^N) DELETE a)`,
+  GEOM_ORIGIN_TAC `a:real^N` THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[retract_of; retraction; VECTOR_SUB_RZERO] THEN
+  EXISTS_TAC `\x:real^N. r / norm(x) % x` THEN REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_UNIV; IN_DELETE] THEN
+    ASM_MESON_TAC[NORM_0; REAL_LT_REFL];
+    MATCH_MP_TAC CONTINUOUS_ON_MUL THEN REWRITE_TAC[CONTINUOUS_ON_ID] THEN
+    REWRITE_TAC[real_div; o_DEF; LIFT_CMUL] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_CMUL THEN
+    MATCH_MP_TAC(REWRITE_RULE[o_DEF] CONTINUOUS_ON_INV) THEN
+    REWRITE_TAC[REWRITE_RULE[o_DEF] CONTINUOUS_ON_LIFT_NORM] THEN
+    SIMP_TAC[IN_DELETE; NORM_EQ_0];
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV; IN_DELETE] THEN
+    SIMP_TAC[NORM_MUL; IN_ELIM_THM; REAL_ABS_DIV; REAL_ABS_NORM] THEN
+    SIMP_TAC[REAL_DIV_RMUL; NORM_EQ_0] THEN ASM_REAL_ARITH_TAC;
+    ASM_SIMP_TAC[IN_ELIM_THM; REAL_DIV_REFL; REAL_LT_IMP_NZ] THEN
+    REPEAT STRIP_TAC THEN VECTOR_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Borsuk homotopy extension thorem. It's only this late so we can use the   *)
@@ -2391,6 +2419,48 @@ let BORSUK_HOMOTOPY_EXTENSION = prove
     FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         CONTINUOUS_ON_SUBSET)) THEN
     ASM SET_TAC[]]);;
+
+let NULLHOMOTOPIC_INTO_SPHERE_EXTENSION = prove
+ (`!f:real^M->real^N s a r.
+    closed s /\ f continuous_on s /\ ~(s = {}) /\
+    IMAGE f s SUBSET {x | norm(x - a) = r}
+    ==> ((?c. homotopic_with (\x. T) (s,{x | norm(x - a) = r}) f (\x. c)) <=>
+         (?g. g continuous_on (:real^M) /\
+              IMAGE g (:real^M) SUBSET {x | norm(x - a) = r} /\
+              !x. x IN s ==> g x = f x))`,
+  REPEAT GEN_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (REAL_ARITH `r < &0 \/ r = &0 \/ &0 < r`)
+  THENL
+   [ASM_SIMP_TAC[NORM_ARITH `r < &0 ==> ~(norm x = r)`] THEN
+    ASM_SIMP_TAC[EMPTY_GSPEC; SUBSET_EMPTY; IMAGE_EQ_EMPTY] THEN
+    CONV_TAC TAUT;
+    ASM_SIMP_TAC[NORM_EQ_0; VECTOR_SUB_EQ; SING_GSPEC] THEN STRIP_TAC THEN
+    MATCH_MP_TAC(TAUT `p /\ q ==> (p <=> q)`) THEN CONJ_TAC THENL
+     [EXISTS_TAC `a:real^N` THEN SIMP_TAC[HOMOTOPIC_WITH] THEN
+      EXISTS_TAC `\y:real^(1,M)finite_sum. (a:real^N)`;
+      EXISTS_TAC `(\x. a):real^M->real^N`] THEN
+    REWRITE_TAC[CONTINUOUS_ON_CONST] THEN ASM SET_TAC[];
+    STRIP_TAC THEN EQ_TAC THENL
+     [ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN
+      DISCH_THEN(X_CHOOSE_TAC `c:real^N`) THEN
+      MATCH_MP_TAC BORSUK_HOMOTOPY_EXTENSION THEN MAP_EVERY EXISTS_TAC
+       [`(\x. c):real^M->real^N`; `(:real^N) DELETE a`] THEN
+      ASM_SIMP_TAC[OPEN_UNIV; OPEN_DELETE; CLOSED_UNIV;
+                   CONTINUOUS_ON_CONST] THEN
+      ASM_SIMP_TAC[SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE] THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_SUBSET) THEN
+      ASM SET_TAC[];
+      DISCH_THEN(X_CHOOSE_THEN `g:real^M->real^N` STRIP_ASSUME_TAC) THEN
+      MP_TAC(ISPECL [`g:real^M->real^N`; `(:real^M)`;
+                     `{x:real^N | norm(x - a) = r}`]
+         NULLHOMOTOPIC_FROM_CONTRACTIBLE) THEN
+      ASM_REWRITE_TAC[CONTRACTIBLE_UNIV] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c:real^N` THEN
+      DISCH_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_EQ THEN
+      MAP_EVERY EXISTS_TAC [`g:real^M->real^N`; `(\x. c):real^M->real^N`] THEN
+      ASM_SIMP_TAC[] THEN
+      MATCH_MP_TAC HOMOTOPIC_WITH_SUBSET_LEFT THEN
+      EXISTS_TAC `(:real^M)` THEN ASM_REWRITE_TAC[SUBSET_UNIV]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Preservation of fixpoints under (more general notion of) retraction.      *)
@@ -2613,13 +2683,13 @@ let NO_RETRACTION_FRONTIER_BOUNDED = prove
   MP_TAC(ISPEC `s:real^N->bool` INTERIOR_SUBSET) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Similarly we get concontractibility of a non-trivial sphere.              *)
+(* Similarly we get noncontractibility of a non-trivial sphere.              *)
 (* ------------------------------------------------------------------------- *)
 
 let CONTRACTIBLE_SPHERE = prove
  (`!a:real^N r. contractible {x | norm(x - a) = r} <=> r <= &0`,
   REPEAT GEN_TAC THEN REWRITE_TAC[contractible; GSYM REAL_NOT_LT] THEN
-  REWRITE_TAC[NULLHOMOTOPIC_SPHERE_EXTENSION] THEN
+  REWRITE_TAC[NULLHOMOTOPIC_FROM_SPHERE_EXTENSION] THEN
   ASM_CASES_TAC `&0 < r` THEN ASM_REWRITE_TAC[] THENL
    [FIRST_ASSUM(MP_TAC o ISPEC `a:real^N` o MATCH_MP NO_RETRACTION_CBALL) THEN
     REWRITE_TAC[FRONTIER_CBALL; retract_of; retraction;

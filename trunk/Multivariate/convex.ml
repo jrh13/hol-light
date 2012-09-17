@@ -15497,7 +15497,19 @@ let HOMOTOPIC_WITH_MONO = prove
     ASM SET_TAC[];
     ASM SET_TAC[]]);;
 
-let HOMOTOPIC_WITH_SUBSET = prove
+let HOMOTOPIC_WITH_SUBSET_LEFT = prove
+ (`!P X Y Z f g.
+        homotopic_with P (X,Y) f g /\ Z SUBSET X
+        ==> homotopic_with P (Z,Y) f g`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  REWRITE_TAC[homotopic_with] THEN MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET)) THEN
+    ASM SET_TAC[];
+    ASM SET_TAC[]]);;
+
+let HOMOTOPIC_WITH_SUBSET_RIGHT = prove
  (`!P X Y Z (f:real^M->real^N) g h.
         homotopic_with P (X,Y) f g /\ Y SUBSET Z
         ==> homotopic_with P (X,Z) f g`,
@@ -15865,7 +15877,7 @@ let HOMOTOPIC_PATHS_SUBSET = prove
  (`!s p q.
         homotopic_paths s p q /\ s SUBSET t
         ==> homotopic_paths t p q`,
-  REWRITE_TAC[homotopic_paths; HOMOTOPIC_WITH_SUBSET]);;
+  REWRITE_TAC[homotopic_paths; HOMOTOPIC_WITH_SUBSET_RIGHT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A slightly ad-hoc but useful lemma in constructing homotopies.            *)
@@ -16241,7 +16253,7 @@ let HOMOTOPIC_LOOPS_SUBSET = prove
  (`!s p q.
         homotopic_loops s p q /\ s SUBSET t
         ==> homotopic_loops t p q`,
-  REWRITE_TAC[homotopic_loops; HOMOTOPIC_WITH_SUBSET]);;
+  REWRITE_TAC[homotopic_loops; HOMOTOPIC_WITH_SUBSET_RIGHT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relations between the two variants of homotopy.                           *)
@@ -17160,7 +17172,7 @@ add_linear_invariants [SIMPLY_CONNECTED_INJECTIVE_LINEAR_IMAGE];;
 (* implicit in both sides of the equivalence.                                *)
 (* ------------------------------------------------------------------------- *)
 
-let NULLHOMOTOPIC_SPHERE_EXTENSION = prove
+let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
  (`!f:real^M->real^N s a r.
         (?c. homotopic_with (\x. T) ({x | norm(x - a) = r},s) f (\x. c)) <=>
         (?g. g continuous_on cball(a,r) /\ IMAGE g (cball(a,r)) SUBSET s /\
@@ -17496,6 +17508,10 @@ let STARLIKE_IMP_CONTRACTIBLE_GEN = prove
 let STARLIKE_IMP_CONTRACTIBLE = prove
  (`!s:real^N->bool. starlike s ==> contractible s`,
   SIMP_TAC[contractible; STARLIKE_IMP_CONTRACTIBLE_GEN]);;
+
+let CONTRACTIBLE_UNIV = prove
+ (`contractible(:real^N)`,
+  SIMP_TAC[STARLIKE_IMP_CONTRACTIBLE; STARLIKE_UNIV]);;
 
 let STARLIKE_IMP_SIMPLY_CONNECTED = prove
  (`!s:real^N->bool. starlike s ==> simply_connected s`,
