@@ -1,0 +1,23 @@
+HilbertAxiom.ml is an in-progress formalization of the Hilbert
+axiomatic geometry paper (basically up through sec 5)
+http://www.math.northwestern.edu/~richter/hilbert.pdf 
+in the proof assistant HOL Light running in ocaml and using miz3 for
+Mizar-like mathematically readable proofs.
+
+Miz3Tips explains how to run HilbertAxiom.ml, and is an in-progress
+description of how to use miz3.
+
+FontHilbertAxiom.ml is a version of HilbertAxiom.ml written with
+mathematical characters
+⇒, ⇔, ¬, ∨, ∧, ∀, ∃, ⊂, ∈, ∪, ∩ and ∅
+which the proof assistant Isabelle uses.  FontHilbertAxiom.ml requires 
+
+hol-light-fonts.el, an Emacs Lisp file that when loaded defines the
+function File-remove-math-fonts-for-HOL-Light which replaces the
+mathematical characters symbols above with the HOL Light versions 
+==>, <=>, ~, \/, /\, !, ?, SUBSET, IN, UNION, INTER and {} 
+so that the revised file, now the X-selection, can be pasted into an
+ocaml/HOL Light/miz3 process.  More details are in hol-light-fonts.el.
+
+thmFontHilbertAxiom.ml is a list, with mathematical characters, of the
+theorems and definitions of HilbertAxiom.ml.

@@ -95,6 +95,7 @@ echo '### Loading Multivariate/make_complex.ml'; echo 'loadt "Multivariate/make_
 echo '### Loading Ntrie/ntrie.ml'; echo 'loadt "Ntrie/ntrie.ml";;' | (time $hollight)
 echo '### Loading Permutation/make.ml'; echo 'loadt "Permutation/make.ml";;' | (time $hollight)
 echo '### Loading QBF/make.ml'; echo 'loadt "QBF/make.ml";;' | (time $hollight)
+echo '### Loading RichterHilbertAxiomGeometry/make.ml'; echo 'loadt "RichterHilbertAxiomGeometry/make.ml";;' | (time $hollight)
 echo '### Loading Rqe/make.ml'; echo 'loadt "Rqe/make.ml";;' | (time $hollight)
 echo '### Loading Unity/make.ml'; echo 'loadt "Unity/make.ml";;' | (time $hollight)
 echo '### Loading Multivariate/geom.ml'; echo 'loadt "Multivariate/geom.ml";;' | (time $hollight)
