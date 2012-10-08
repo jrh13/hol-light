@@ -303,6 +303,31 @@ let LAMBDA_PAIR_THM = prove
  (`!t. (\p. t p) = (\(x,y). t(x,y))`,
   REWRITE_TAC[FORALL_PAIR_THM; FUN_EQ_THM]);;
 
+let PAIRED_ETA_THM = prove
+ (`(!f. (\(x,y). f (x,y)) = f) /\
+   (!f. (\(x,y,z). f (x,y,z)) = f) /\
+   (!f. (\(w,x,y,z). f (w,x,y,z)) = f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM]);;
+
+let FORALL_UNCURRY = prove
+ (`!P. (!f:A->B->C. P f) <=> (!f. P (\a b. f(a,b)))`,
+  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[] THEN DISCH_TAC THEN
+  X_GEN_TAC `f:A->B->C` THEN
+  FIRST_ASSUM(MP_TAC o SPEC `\(a,b). (f:A->B->C) a b`) THEN SIMP_TAC[ETA_AX]);;
+
+let EXISTS_UNCURRY = prove
+ (`!P. (?f:A->B->C. P f) <=> (?f. P (\a b. f(a,b)))`,
+  ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[FORALL_UNCURRY]);;
+
+let EXISTS_CURRY = prove
+ (`!P. (?f. P f) <=> (?f. P (\(a,b). f a b))`,
+  REWRITE_TAC[EXISTS_UNCURRY; PAIRED_ETA_THM]);;
+
+let FORALL_CURRY = prove
+ (`!P. (!f. P f) <=> (!f. P (\(a,b). f a b))`,
+  REWRITE_TAC[FORALL_UNCURRY; PAIRED_ETA_THM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Related theorems for explicitly paired quantifiers.                       *)
 (* ------------------------------------------------------------------------- *)

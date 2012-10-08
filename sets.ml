@@ -1166,6 +1166,13 @@ let EXISTS_FINITE_SUBSET_IMAGE = prove
     (?t. FINITE t /\ t SUBSET s /\ P (IMAGE f t))`,
   REWRITE_TAC[FINITE_SUBSET_IMAGE; CONJ_ASSOC] THEN MESON_TAC[]);;
 
+let FORALL_FINITE_SUBSET_IMAGE = prove
+ (`!P f s. (!t. FINITE t /\ t SUBSET IMAGE f s ==> P t) <=>
+           (!t. FINITE t /\ t SUBSET s ==> P(IMAGE f t))`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!x. P x) <=> ~(?x. ~P x)`] THEN
+  REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC; EXISTS_FINITE_SUBSET_IMAGE]);;
+
 let FINITE_SUBSET_IMAGE_IMP = prove
  (`!f:A->B s t.
         FINITE(t) /\ t SUBSET (IMAGE f s)
@@ -1827,6 +1834,27 @@ let CHOOSE_SUBSET_STRONG = prove
 let CHOOSE_SUBSET = prove
  (`!s:A->bool. FINITE s ==> !n. n <= CARD s ==> ?t. t SUBSET s /\ t HAS_SIZE n`,
   MESON_TAC[CHOOSE_SUBSET_STRONG]);;
+
+let CHOOSE_SUBSET_BETWEEN = prove
+ (`!n s u:A->bool.
+        s SUBSET u /\ FINITE s /\ CARD s <= n /\ (FINITE u ==> n <= CARD u)
+        ==> ?t. s SUBSET t /\ t SUBSET u /\ t HAS_SIZE n`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`n - CARD(s:A->bool)`; `u DIFF s:A->bool`]
+        CHOOSE_SUBSET_STRONG) THEN
+  ANTS_TAC THENL
+   [ASM_CASES_TAC `FINITE(u:A->bool)` THEN
+    ASM_SIMP_TAC[CARD_DIFF; ARITH_RULE `n:num <= m ==> n - x <= m - x`] THEN
+    MATCH_MP_TAC(TAUT `~p ==> p ==> q`) THEN
+    ASM_MESON_TAC[FINITE_UNION; FINITE_SUBSET; SET_RULE
+     `u SUBSET (u DIFF s) UNION s`];
+    DISCH_THEN(X_CHOOSE_THEN `t:A->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `s UNION t:A->bool` THEN
+    REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+    SUBGOAL_THEN `n:num = CARD(s) + (n - CARD(s:A->bool))` SUBST1_TAC THENL
+     [ASM_ARITH_TAC;
+      MATCH_MP_TAC HAS_SIZE_UNION] THEN
+      ASM_REWRITE_TAC[] THEN ASM_REWRITE_TAC[HAS_SIZE] THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of product.                                                   *)
@@ -2875,6 +2903,10 @@ let SUP_INSERT_FINITE = prove
   ASM_SIMP_TAC[SUP_FINITE; IN_INSERT; REAL_LE_REFL] THEN
   ASM_MESON_TAC[SUP_FINITE; REAL_LE_TOTAL; REAL_LE_TRANS]);;
 
+let SUP_SING = prove
+ (`!a. sup {a} = a`,
+  SIMP_TAC[SUP_INSERT_FINITE; FINITE_EMPTY]);;
+
 let INF_INSERT_FINITE = prove
  (`!x s. FINITE s ==> inf(x INSERT s) = if s = {} then x else min x (inf s)`,
   REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
@@ -2884,6 +2916,10 @@ let INF_INSERT_FINITE = prove
   REWRITE_TAC[real_min] THEN COND_CASES_TAC THEN
   ASM_SIMP_TAC[INF_FINITE; IN_INSERT; REAL_LE_REFL] THEN
   ASM_MESON_TAC[INF_FINITE; REAL_LE_TOTAL; REAL_LE_TRANS]);;
+
+let INF_SING = prove
+ (`!a. inf {a} = a`,
+  SIMP_TAC[INF_INSERT_FINITE; FINITE_EMPTY]);;
 
 let REAL_SUP_EQ_INF = prove
  (`!s. ~(s = {}) /\ (?B. !x. x IN s ==> abs(x) <= B)

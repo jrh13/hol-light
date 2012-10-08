@@ -1,12 +1,49 @@
+Fri 28th Sep 2012       pair.ml, int.ml, sets.ml, database.ml, Library/card.ml
+
+Added a few miscellaneous little theorems:
+
+  CHOOSE_SUBSET_BETWEEN =
+    |- !n s u.
+           s SUBSET u /\ FINITE s /\ CARD s <= n /\ (FINITE u ==> n <= CARD u)
+           ==> (?t. s SUBSET t /\ t SUBSET u /\ t HAS_SIZE n)
+  
+  EXISTS_CURRY =
+    |- !P. (?f. P f) <=> (?f. P (\(a,b). f a b))
+  
+  FORALL_CURRY =
+    |- !P. (!f. P f) <=> (!f. P (\(a,b). f a b))
+  
+  FORALL_FINITE_SUBSET_IMAGE =
+    |- !P f s.
+           (!t. FINITE t /\ t SUBSET IMAGE f s ==> P t) <=>
+           (!t. FINITE t /\ t SUBSET s ==> P (IMAGE f t))
+  
+  INFINITE_SUPERSET =
+    |- !s t. INFINITE s /\ s SUBSET t ==> INFINITE t
+  
+  INF_SING =
+    |- !a. inf {a} = a
+  
+  PAIRED_ETA_THM =
+    |- (!f. (\(x,y). f (x,y)) = f) /\
+       (!f. (\(x,y,z). f (x,y,z)) = f) /\
+       (!f. (\(w,x,y,z). f (w,x,y,z)) = f)
+  
+  SUP_SING =
+    |- !a. sup {a} = a
+
+as well as slightly reshuffling some existing theorems and adding new 
+cardinality theorems.
+  
 Thu  6th Sep 2012       update_database.ml
 
 Fixed the update_database code for OCaml 4.00. This entails making a couple
 more things conditional on the version number (using the exec "code" method
-already used in Roland Zumkeller's original code). First, the "Tvar" 
+already used in Roland Zumkeller's original code). First, the "Tvar"
 constructor now takes an argument (and because of the way OCaml's internal
 representation works with different sequences for nullary and non-nullary, this
 changes some of the constructor numbers). Second, the tbl type has changed to
-the use of EnvTbl that effectively wraps up the core type 'a into 'a * bool 
+the use of EnvTbl that effectively wraps up the core type 'a into 'a * bool
 ref.
 
 Fri 31st Aug 2012       Makefile, README

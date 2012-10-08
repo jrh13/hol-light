@@ -499,7 +499,7 @@ let INT_RNEG_UNIQ = INT_OF_REAL_THM REAL_RNEG_UNIQ;;
 let INT_SGN = INT_OF_REAL_THM real_sgn;;
 let INT_SGN_0 = INT_OF_REAL_THM REAL_SGN_0;;
 let INT_SGN_ABS = INT_OF_REAL_THM REAL_SGN_ABS;;
-let INT_SGN_CASES = INT_OF_REAL_THM REAL_SGN_CASES;;                               
+let INT_SGN_CASES = INT_OF_REAL_THM REAL_SGN_CASES;;
 let INT_SGN_EQ = INT_OF_REAL_THM REAL_SGN_EQ;;
 let INT_SGN_MUL = INT_OF_REAL_THM REAL_SGN_MUL;;
 let INT_SGN_NEG = INT_OF_REAL_THM REAL_SGN_NEG;;
@@ -1216,17 +1216,6 @@ let INTEGER_RULE tm = prove(tm,INTEGER_TAC);;
 (* ------------------------------------------------------------------------- *)
 (* Existence of integer gcd, and the Bezout identity.                        *)
 (* ------------------------------------------------------------------------- *)
-
-let FORALL_UNCURRY = prove
- (`!P. (!f:A->B->C. P f) <=> (!f. P (\a b. f(a,b)))`,
-  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[] THEN DISCH_TAC THEN
-  X_GEN_TAC `f:A->B->C` THEN
-  FIRST_ASSUM(MP_TAC o SPEC `\(a,b). (f:A->B->C) a b`) THEN SIMP_TAC[ETA_AX]);;
-
-let EXISTS_UNCURRY = prove
- (`!P. (?f:A->B->C. P f) <=> (?f. P (\a b. f(a,b)))`,
-  ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
-  REWRITE_TAC[FORALL_UNCURRY]);;
 
 let WF_INT_MEASURE = prove
  (`!P m. (!x. &0 <= m(x)) /\ (!x. (!y. m(y) < m(x) ==> P(y)) ==> P(x))
