@@ -1,11 +1,24 @@
-HilbertAxiom.ml is an in-progress formalization of the Hilbert
-axiomatic geometry paper (basically up through sec 5)
-http://www.math.northwestern.edu/~richter/hilbert.pdf 
-in the proof assistant HOL Light running in ocaml and using miz3 for
-Mizar-like mathematically readable proofs.
+     HOL Light formalization of Hilbert's axiomatic geometry
 
-Miz3Tips explains how to run HilbertAxiom.ml, and is an in-progress
-description of how to use miz3.
+              (c) Copyright, Bill Richter 2012
+          Distributed under the same license as HOL Light
+
+HilbertAxiom.ml is a formalization of the plane geometry part of the
+Hilbert axiomatic geometry paper (i.e. up through sec 7)
+http://www.math.northwestern.edu/~richter/hilbert.pdf in the proof
+assistant HOL Light running in ocaml and using miz3 for Mizar-like
+mathematically readable proofs.  The simplest way to run
+HilbertAxiom.ml is this.  
+
+`In a terminal window (or Emacs shell), move to your hol_light directory and paste in
+these 3 commands, followed by a RETURN:
+ocaml
+#use "hol.ml";;
+#use "RichterHilbertAxiomGeometry/make.ml";;
+
+You will see 190 or so definitions and proved theorems, in perhaps 15
+minutes.  Miz3Tips gives more details on running HilbertAxiom.ml, and
+is an in-progress description of how to use miz3.
 
 FontHilbertAxiom.ml is a version of HilbertAxiom.ml written with
 mathematical characters

@@ -142,21 +142,20 @@ manual.  I found browsing the file sets.ml to be quite helpful.
 SET_RULE, explained on p 92 of the tutorial simplified my coding.
 
 
-I'll assume you set the environment variable HOLLIGHT_DIR to point to
-the directory containing the HOL source files, as explained in the HOL
-Light documentation, and that you can copy and paste with the mouse.
-Open a terminal window.  Paste in these 3 commands and type RET:
+The file README already explains how to run HilbertAxiom.ml.  For a
+longer journey, comment the top t two lines of HilbertAxiom.ml and
+FontHilbertAxiom.ml
 
-cd $HOLLIGHT_DIR
+verbose := false;;
+report_timing := false;;
+
+Change into the directory containing your HOL source files (named hol_light), as
+explained in the HOL Light documentation.  I'll assume that you can
+copy and paste with the mouse.  Open a terminal window.  Paste in
+these 4 commands and type RET:
+
 ocaml
 #use "hol.ml";; 
-
-After a few minutes you will see 
-        Camlp5 parsing version 6.05
-
-#
-Paste in these 2 commands (no RET needed) 
-
 #load "unix.cma";;
 loadt "miz3/miz3.ml";;
 
@@ -164,9 +163,9 @@ After a short while you will see
 val it : unit = ()
 #
 Now select the entire file HilbertAxiom.ml and paste it in.  This will
-take perhaps 30 seconds and you'll see various numbers and so forth to
+take perhaps 15 minutes and you'll see various numbers and so forth to
 indicate how hard miz3 is working.   Paste the file in again, and in
-perhaps 5 seconds you will see the miz3 output, with no numbers.  The
+perhaps 15 seconds you will see the miz3 output, with no numbers.  The
 faster speed is due to the fact that miz3 caches information.
 
 The miz3 cache causes trouble if you change the statement of a
@@ -177,7 +176,8 @@ reset_miz3 0;;
 Theorems are created by thm, and definitions are created by
 new_definition.  This command will not clear definitions or axioms, so
 to change a definition or axioms, end the session and start a new
-session.  This seems to be an HOL Light issue.
+session.  Sometimes even when only changing theorems it's good to
+start a new session.
 
 To end your ocam/HOL-Light/miz3 session, type
 C-d 
@@ -400,7 +400,8 @@ there's a bad backquote when miz3 gives you the error message
 containing "Parse error".
 
 
-
+          Exception: Failure "term_of_now".
+This error occurs when ???
 
 
 

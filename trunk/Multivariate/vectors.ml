@@ -2884,6 +2884,20 @@ let MATRIX_SELF_ADJOINT = prove
   SIMP_TAC[GSYM MATRIX_ADJOINT] THEN
   MESON_TAC[LINEAR_EQ_MATRIX; ADJOINT_LINEAR]);;
 
+let LINEAR_MATRIX_EXISTS = prove
+ (`!f:real^M->real^N. linear f <=> ?A:real^M^N. f = \x. A ** x`,
+  GEN_TAC THEN EQ_TAC THEN
+  SIMP_TAC[MATRIX_VECTOR_MUL_LINEAR; LEFT_IMP_EXISTS_THM] THEN
+  DISCH_TAC THEN EXISTS_TAC `matrix(f:real^M->real^N)` THEN
+  ASM_SIMP_TAC[GSYM MATRIX_VECTOR_MUL]);;
+
+let LINEAR_1 = prove
+ (`!f:real^1->real^1. linear f <=> ?c. f = \x. c % x`,
+  SIMP_TAC[LINEAR_MATRIX_EXISTS; EXISTS_VECTOR_1] THEN
+  SIMP_TAC[FUN_EQ_THM; CART_EQ; FORALL_1; DIMINDEX_1; VECTOR_1;
+           matrix_vector_mul; SUM_1; CART_EQ; LAMBDA_BETA;
+           VECTOR_MUL_COMPONENT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Operator norm.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -3126,6 +3140,14 @@ let DROP_VSUM = prove
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; VSUM_CLAUSES; o_THM; DROP_ADD; DROP_VEC]);;
+
+let NORM_1 = prove
+ (`!x. norm x = abs(drop x)`,
+  REWRITE_TAC[drop; NORM_REAL]);;
+
+let NORM_1_POS = prove
+ (`!x. &0 <= drop x ==> norm x = drop x`,
+  SIMP_TAC[NORM_1; real_abs]);;
 
 let NORM_LIFT = prove
  (`!x. norm(lift x) = abs(x)`,
