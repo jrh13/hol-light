@@ -1,11 +1,12 @@
-cd $HOLLIGHT_DIR
 ocaml
 #use "hol.ml";;
-
 #load "unix.cma";;
 loadt "miz3/miz3.ml";;
 
 reset_miz3 0;;
+
+verbose := true;;
+report_timing := true;;
 
 Theorem/Proof template:
 
@@ -52,8 +53,8 @@ InteriorAngle_DEF     |- ∀ A O B.
 InteriorTriangle_DEF
   |- ∀ A B C.
         int_triangle A B C =
-         {P | P ∈ int_angle A B C ∧
-              P ∈ int_angle B C A ∧
+         {P | P ∈ int_angle A B C  ∧
+              P ∈ int_angle B C A  ∧
               P ∈ int_angle C A B}
 
 Tetralateral_DEF
@@ -143,6 +144,10 @@ Parallelogram_DEF
               Line c ∧ C ∈ c ∧ D ∈ d ∧ Line d ∧ D ∈ d ∧ A ∈ d ∧
               a ∥ c  ∧  b ∥ d
 
+InteriorCircle_DEF
+  |- ∀ O R. int_circle O R = {P | ¬(O = R) ∧ (P = O ∨ seg O P <__ seg O R)}
+
+
 I1     |- ∀ A B. ¬(A = B) ⇒ (∃! l. Line l ∧ A ∈ l ∧ B ∈ l)
 
 I2     |- ∀ l. Line l ⇒ (∃ A B. A ∈ l ∧ B ∈ l ∧ ¬(A = B))
@@ -225,6 +230,10 @@ IN_InteriorTriangle
 
 IN_PlaneComplement
   |- ∀α P. P ∈ complement α ⇔ P ∉ α
+
+IN_InteriorCircle
+  |- ∀ O R P.
+         P ∈ int_circle O R ⇔ ¬(O = R) ∧ (P = O ∨ seg O P <__ seg O R)
 
 B1'     |- ∀ A B C.
          B ∈ open (A,C)
@@ -380,26 +389,26 @@ Crossbar_THM
          D ∈ int_angle A O B
          ⇒ ∃ G. G ∈ open (A,B) ∧ G ∈ ray O D ━ O
 
+AlternateConverseCrossbar
+  |- ∀ O A B G. Collinear A G B  ∧  G ∈ int_angle A O B  ⇒  G ∈ open (A,B)
+
 InteriorOpposite
   |- ∀ A O B P p.
          P ∈ int_angle A O B  ∧  Line p ∧ O ∈ p ∧ P ∈ p
          ⇒ ¬(A,B same_side p)
 
-AlternateConverseCrossbar
-  |- ∀ O A B G. Collinear A G B  ∧  G ∈ int_angle A O B  ⇒  G ∈ open (A,B)
-
 IntervalTransitivity
   |- ∀ O P Q R m.
          Line m  ∧ O ∈ m  ∧ 
-         P ∈ m ━ O ∧ Q ∈ m ━ O ∧ R ∈ m ━ O  ∧ 
-         O ∉ open (P,Q) ∧ O ∉ open (Q,R)
+         P ∈ m ━ O  ∧  Q ∈ m ━ O  ∧  R ∈ m ━ O  ∧ 
+         O ∉ open (P,Q)  ∧  O ∉ open (Q,R)
          ⇒ O ∉ open (P,R)
 
 RayWellDefinedHalfway
-  |- ∀ O P Q. ¬(Q = O) ∧ P ∈ ray O Q ━ O  ⇒  ray O P ⊂ ray O Q
+  |- ∀ O P Q. ¬(Q = O)  ∧  P ∈ ray O Q ━ O  ⇒  ray O P ⊂ ray O Q
 
 RayWellDefined
-  |- ∀ O P Q. ¬(Q = O) ∧ P ∈ ray O Q ━ O  ⇒  ray O P = ray O Q
+  |- ∀ O P Q. ¬(Q = O)  ∧  P ∈ ray O Q ━ O  ⇒  ray O P = ray O Q
 
 OppositeRaysIntersect1pointHelp
   |- ∀ A O B X.
@@ -542,7 +551,7 @@ FourChoicesTetralateral
   |- ∀ A B C D a.
          Tetralateral A B C D  ∧  Line a ∧ A ∈ a ∧ B ∈ a  ∧ 
          C,D same_side a
-         ⇒ ConvexQuadrilateral A B C D  ∨  ConvexQuadrilateral A B D C ∨
+         ⇒ ConvexQuadrilateral A B C D  ∨  ConvexQuadrilateral A B D C  ∨
             D ∈ int_triangle A B C  ∨  C ∈ int_triangle D A B
 
 QuadrilateralSymmetry
@@ -580,9 +589,6 @@ SegmentSubtraction
          B ∈ open (A,C) ∧ B' ∈ open (A',C')  ∧ 
          seg A B ≡ seg A' B'  ∧  seg A C ≡ seg A' C'
          ⇒ seg B C ≡ seg B' C'
-
-SegmentOrderingTransitive
-  |- ∀ s t u. s <__ t  ∧  t <__ u  ⇒  s <__ u
 
 SegmentOrderingUse
   |- ∀A B s.
@@ -762,11 +768,11 @@ EuclidPropositionI_7short
          C,D same_side a  ∧  seg A C ≡ seg A D
          ⇒ ¬(seg B C ≡ seg B D)
 
-EuclidPropositionI_7Help
+EuclidPropI_7Help
   |- ∀ A B C D a.
-         ¬(A = B) ∧ Line a ∧ A ∈ a ∧ B ∈ a ∧ ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧ 
-         C,D same_side a  ∧  seg A C ≡ seg A D  ∧
-         C ∈ int_angle D A B
+         ¬(A = B) ∧ Line a ∧ A ∈ a ∧ B ∈ a ∧ ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧
+	 C,D same_side a  ∧  seg A C ≡ seg A D  ∧
+	 (C ∈ int_triangle D A B  ∨  ConvexQuadrilateral A B C D)
          ⇒ ¬(seg B C ≡ seg B D)
 
 EuclidPropositionI_7
@@ -816,8 +822,8 @@ EuclidPropositionI_18
 
 EuclidPropositionI_19
   |- ∀ A B C.
-         ¬Collinear A B C  ∧  ∡ B C A <_ang ∡ A B C
-         ⇒ seg A B <__ seg A C
+         ¬Collinear A B C  ∧  ∡ A B C <_ang ∡ B C A
+         ⇒ seg A C <__ seg A B
 
 EuclidPropositionI_20
   |- ∀ A B C D.
@@ -834,11 +840,17 @@ AngleTrichotomy3
          α <_ang β  ∧  Angle γ  ∧  γ ≡ α
          ⇒ γ <_ang β
 
-CircleConvex
+InteriorCircleConvexHelp
   |- ∀ O A B C.
          ¬Collinear A O C  ∧  B ∈ open (A,C)  ∧  
          seg O A <__ seg O C  ∨  seg O A ≡ seg O C
          ⇒ seg O B <__ seg O C
+
+InteriorCircleConvex
+  |- ∀ O R A B C.
+         ¬(O = R)  ∧  B ∈ open (A,C)  ∧ 
+         A ∈ int_circle O R  ∧  C ∈ int_circle O R
+         ⇒ B ∈ int_circle O R
 
 SegmentTrichotomy3
   |- ∀ s t u. s <__ t  ∧  Segment u  ∧  u ≡ s  ⇒  u <__ t
@@ -899,7 +911,22 @@ OppositeSidesCongImpliesParallelogram
          seg A B ≡ seg C D  ∧  seg B C ≡ seg D A
          ⇒ Parallelogram A B C D
 
+OppositeAnglesCongImpliesParallelogramHelp
+  |- ∀ A B C D a c.
+         Quadrilateral A B C D                                ∧ 
+         ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D             ∧ 
+         Line a ∧ A ∈ a ∧ B ∈ a  ∧  Line c ∧ C ∈ c ∧ D ∈ c
+         ⇒ a ∥ c
+
+OppositeAnglesCongImpliesParallelogram
+  |- ∀ A B C D.
+         Quadrilateral A B C D  ∧  
+         ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D
+         ⇒ Parallelogram A B C D
+
+
 P     |- ∀ P l. Line l ∧ P ∉ l ⇒ ∃! m. Line m ∧ P ∈ m ∧ m ∥ l
+
 
 ConverseAlternateInteriorAngles
   |- ∀ A B C E l m t.
@@ -916,17 +943,4 @@ HilbertTriangleSum
          ⇒ ∃ E F.
                   B ∈ open (E,F)  ∧  C ∈ int_angle A B F ∧
                   ∡ E B A ≡ ∡ C A B  ∧  ∡ C B F ≡ ∡ B C A
-
-OppositeAnglesCongImpliesParallelogramHelp
-  |- ∀ A B C D a c.
-         Quadrilateral A B C D                                ∧ 
-         ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D             ∧ 
-         Line a ∧ A ∈ a ∧ B ∈ a  ∧  Line c ∧ C ∈ c ∧ D ∈ c
-         ⇒ a ∥ c
-
-OppositeAnglesCongImpliesParallelogram
-  |- ∀ A B C D.
-         Quadrilateral A B C D  ∧  
-         ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D
-         ⇒ Parallelogram A B C D
 

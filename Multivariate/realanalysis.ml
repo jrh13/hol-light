@@ -2444,13 +2444,13 @@ let REAL_CONTINUOUS_NORM_WITHIN = prove
   MESON_TAC[REAL_CONTINUOUS_NORM_AT; REAL_CONTINUOUS_AT_WITHIN]);;
 
 let REAL_CONTINUOUS_DIST_AT = prove
- (`!a z. (\x. dist(a,x)) real_continuous (at z)`,                           
+ (`!a z. (\x. dist(a,x)) real_continuous (at z)`,
   REWRITE_TAC[real_continuous_at; dist] THEN
   GEN_TAC THEN GEN_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
   EXISTS_TAC `e:real` THEN ASM_REWRITE_TAC[] THEN NORM_ARITH_TAC);;
-                                                                           
-let REAL_CONTINUOUS_DIST_WITHIN = prove     
- (`!a s z. (\x. dist(a,x)) real_continuous (at z within s)`,      
+
+let REAL_CONTINUOUS_DIST_WITHIN = prove
+ (`!a s z. (\x. dist(a,x)) real_continuous (at z within s)`,
   MESON_TAC[REAL_CONTINUOUS_DIST_AT; REAL_CONTINUOUS_AT_WITHIN]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -2894,6 +2894,18 @@ let REAL_INTERVAL_TRANSLATION = prove
   MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
   REWRITE_TAC[REAL_ARITH `c + x:real = y <=> x = y - c`; EXISTS_REFL] THEN
   REWRITE_TAC[IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
+
+let IN_REAL_INTERVAL_REFLECT = prove
+ (`(!a b x. --x IN real_interval[--b,--a] <=> x IN real_interval[a,b]) /\
+   (!a b x. --x IN real_interval(--b,--a) <=> x IN real_interval(a,b))`,
+  REWRITE_TAC[IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
+
+let REFLECT_REAL_INTERVAL = prove
+ (`(!a b. IMAGE (--) (real_interval[a,b]) = real_interval[--b,--a]) /\
+   (!a b. IMAGE (--) (real_interval(a,b)) = real_interval(--b,--a))`,
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_IMAGE; IN_REAL_INTERVAL] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `x:real = --y <=> --x = y`] THEN
+  REWRITE_TAC[UNWIND_THM1] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Real continuity and differentiability.                                    *)
@@ -12255,6 +12267,17 @@ let has_bounded_real_variation_on = new_definition
 let real_variation = new_definition
  `real_variation s f = vector_variation (IMAGE lift s) (lift o f o drop)`;;
 
+let HAS_BOUNDED_REAL_VARIATION_ON_EQ = prove
+ (`!f g s.
+        (!x. x IN s ==> f x = g x) /\ f has_bounded_real_variation_on s
+
+
+        ==> g has_bounded_real_variation_on s`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  REWRITE_TAC[IMP_CONJ; has_bounded_real_variation_on] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] HAS_BOUNDED_VARIATION_ON_EQ) THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP]);;
+
 let HAS_BOUNDED_REAL_VARIATION_ON_SUBSET = prove
  (`!f s t. f has_bounded_real_variation_on s /\ t SUBSET s
            ==> f has_bounded_real_variation_on t`,
@@ -12464,16 +12487,153 @@ let INCREASING_REAL_VARIATION = prove
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
   REWRITE_TAC[LIFT_DROP] THEN ASM_MESON_TAC[]);;
 
-let HAS_BOUNDED_REAL_VARIATION_TRANSLATION = prove
- (`!f s a.
-        f has_bounded_real_variation_on s
-        ==> (\x. f(a + x)) has_bounded_real_variation_on
-            (IMAGE (\x. --a + x) s)`,
-  REWRITE_TAC[has_bounded_real_variation_on; o_DEF; GSYM IMAGE_o] THEN
+let HAS_BOUNDED_REAL_VARIATION_AFFINITY2_EQ = prove
+ (`!m c f s.
+        (\x. f (m * x + c)) has_bounded_real_variation_on
+
+
+        IMAGE (\x. inv m * x + --(inv m * c)) s <=>
+        m = &0 \/ f has_bounded_real_variation_on s`,
   REPEAT GEN_TAC THEN
-  DISCH_THEN(MP_TAC o SPEC `lift a` o MATCH_MP
-    HAS_BOUNDED_VARIATION_TRANSLATION) THEN
-  REWRITE_TAC[o_DEF; GSYM IMAGE_o; LIFT_ADD; LIFT_NEG; DROP_ADD; LIFT_DROP]);;
+  MP_TAC(ISPECL [`m:real`; `lift c`; `lift o f o drop`; `IMAGE lift s`]
+        HAS_BOUNDED_VARIATION_AFFINITY2_EQ) THEN
+  REWRITE_TAC[o_DEF; has_bounded_real_variation_on; GSYM IMAGE_o;
+   DROP_ADD; DROP_CMUL; LIFT_ADD; LIFT_CMUL; LIFT_NEG; LIFT_DROP]);;
+
+let REAL_VARIATION_AFFINITY2 = prove
+ (`!m c f s.
+        real_variation (IMAGE (\x. inv m * x + --(inv m * c)) s)
+                       (\x. f (m * x + c)) =
+        if m = &0 then &0 else real_variation s f`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`m:real`; `lift c`; `lift o f o drop`; `IMAGE lift s`]
+         VECTOR_VARIATION_AFFINITY2) THEN
+  REWRITE_TAC[o_DEF; real_variation; GSYM IMAGE_o;
+   DROP_ADD; DROP_CMUL; LIFT_ADD; LIFT_CMUL; LIFT_NEG; LIFT_DROP]);;
+
+let HAS_BOUNDED_REAL_VARIATION_AFFINITY_EQ = prove
+ (`!m c f s.
+        (\x. f (m * x + c)) has_bounded_real_variation_on s <=>
+        m = &0 \/ f has_bounded_real_variation_on IMAGE (\x. m * x + c) s`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`m:real`; `lift c`; `lift o f o drop`; `IMAGE lift s`]
+        HAS_BOUNDED_VARIATION_AFFINITY_EQ) THEN
+  REWRITE_TAC[o_DEF; has_bounded_real_variation_on; GSYM IMAGE_o;
+   DROP_ADD; DROP_CMUL; LIFT_ADD; LIFT_CMUL; LIFT_NEG; LIFT_DROP]);;
+
+let REAL_VARIATION_AFFINITY = prove
+ (`!m c f s.
+        real_variation s (\x. f (m * x + c)) =
+        if m = &0 then &0 else real_variation (IMAGE (\x. m * x + c) s) f`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`m:real`; `lift c`; `lift o f o drop`; `IMAGE lift s`]
+         VECTOR_VARIATION_AFFINITY) THEN
+  REWRITE_TAC[o_DEF; real_variation; GSYM IMAGE_o;
+   DROP_ADD; DROP_CMUL; LIFT_ADD; LIFT_CMUL; LIFT_NEG; LIFT_DROP]);;
+
+let HAS_BOUNDED_REAL_VARIATION_TRANSLATION2_EQ = prove
+ (`!a f s.
+      (\x. f(a + x)) has_bounded_real_variation_on (IMAGE (\x. --a + x) s) <=>
+      f has_bounded_real_variation_on s`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift a`; `lift o f o drop`; `IMAGE lift s`]
+        HAS_BOUNDED_VARIATION_TRANSLATION2_EQ) THEN
+  REWRITE_TAC[o_DEF; has_bounded_real_variation_on; GSYM IMAGE_o;
+              DROP_ADD; LIFT_DROP; LIFT_ADD; LIFT_NEG]);;
+
+let REAL_VARIATION_TRANSLATION2 = prove
+ (`!a f s. real_variation (IMAGE (\x. --a + x) s) (\x. f(a + x)) =
+           real_variation s f`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift a`; `lift o f o drop`; `IMAGE lift s`]
+        VECTOR_VARIATION_TRANSLATION2) THEN
+  REWRITE_TAC[o_DEF; real_variation; GSYM IMAGE_o;
+              DROP_ADD; LIFT_DROP; LIFT_ADD; LIFT_NEG]);;
+
+let HAS_BOUNDED_REAL_VARIATION_TRANSLATION_EQ = prove
+ (`!a f s. (\x. f(a + x)) has_bounded_real_variation_on s <=>
+           f has_bounded_real_variation_on (IMAGE (\x. a + x) s)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift a`; `lift o f o drop`; `IMAGE lift s`]
+        HAS_BOUNDED_VARIATION_TRANSLATION_EQ) THEN
+  REWRITE_TAC[o_DEF; has_bounded_real_variation_on; GSYM IMAGE_o;
+              DROP_ADD; LIFT_DROP; LIFT_ADD; LIFT_NEG]);;
+
+let REAL_VARIATION_TRANSLATION = prove
+ (`!a f s. real_variation s (\x. f(a + x)) =
+           real_variation (IMAGE (\x. a + x) s) f`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift a`; `lift o f o drop`; `IMAGE lift s`]
+        VECTOR_VARIATION_TRANSLATION) THEN
+  REWRITE_TAC[o_DEF; real_variation; GSYM IMAGE_o;
+              DROP_ADD; LIFT_DROP; LIFT_ADD; LIFT_NEG]);;
+
+let HAS_BOUNDED_REAL_VARIATION_TRANSLATION_EQ_INTERVAL = prove
+ (`!a f u v.
+        (\x. f(a + x)) has_bounded_real_variation_on real_interval[u,v] <=>
+        f has_bounded_real_variation_on real_interval[a+u,a+v]`,
+  REWRITE_TAC[REAL_INTERVAL_TRANSLATION;
+              HAS_BOUNDED_REAL_VARIATION_TRANSLATION_EQ]);;
+
+let REAL_VARIATION_TRANSLATION_INTERVAL = prove
+ (`!a f u v.
+        real_variation (real_interval[u,v]) (\x. f(a + x)) =
+        real_variation (real_interval[a+u,a+v]) f`,
+  REWRITE_TAC[REAL_INTERVAL_TRANSLATION;
+                REAL_VARIATION_TRANSLATION]);;
+
+let HAS_BOUNDED_REAL_VARIATION_TRANSLATION = prove
+ (`!f s a. f has_bounded_real_variation_on s
+           ==> (\x. f(a + x)) has_bounded_real_variation_on
+               (IMAGE (\x. --a + x) s)`,
+  REWRITE_TAC[HAS_BOUNDED_REAL_VARIATION_TRANSLATION2_EQ]);;
+
+let HAS_BOUNDED_REAL_VARIATION_REFLECT2_EQ = prove
+ (`!f s. (\x. f(--x)) has_bounded_real_variation_on (IMAGE (--) s) <=>
+         f has_bounded_real_variation_on s`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `IMAGE lift s`]
+        HAS_BOUNDED_VARIATION_REFLECT2_EQ) THEN
+  REWRITE_TAC[o_DEF; has_bounded_real_variation_on; GSYM IMAGE_o;
+              DROP_NEG; LIFT_DROP; LIFT_NEG]);;
+
+let REAL_VARIATION_REFLECT2 = prove
+ (`!f s. real_variation (IMAGE (--) s) (\x. f(--x)) =
+         real_variation s f`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `IMAGE lift s`]
+        VECTOR_VARIATION_REFLECT2) THEN
+  REWRITE_TAC[o_DEF; real_variation; GSYM IMAGE_o;
+              DROP_NEG; LIFT_DROP; LIFT_NEG]);;
+
+let HAS_BOUNDED_REAL_VARIATION_REFLECT_EQ = prove
+ (`!f s. (\x. f(--x)) has_bounded_real_variation_on s <=>
+         f has_bounded_real_variation_on (IMAGE (--) s)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `IMAGE lift s`]
+        HAS_BOUNDED_VARIATION_REFLECT_EQ) THEN
+  REWRITE_TAC[o_DEF; has_bounded_real_variation_on; GSYM IMAGE_o;
+              DROP_NEG; LIFT_DROP; LIFT_NEG]);;
+
+let REAL_VARIATION_REFLECT = prove
+ (`!f s. real_variation s (\x. f(--x)) =
+         real_variation (IMAGE (--) s) f`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `IMAGE lift s`]
+        VECTOR_VARIATION_REFLECT) THEN
+  REWRITE_TAC[o_DEF; real_variation; GSYM IMAGE_o;
+              DROP_NEG; LIFT_DROP; LIFT_NEG]);;
+
+let HAS_BOUNDED_REAL_VARIATION_REFLECT_EQ_INTERVAL = prove
+ (`!f u v. (\x. f(--x)) has_bounded_real_variation_on real_interval[u,v] <=>
+           f has_bounded_real_variation_on real_interval[--v,--u]`,
+  REWRITE_TAC[GSYM REFLECT_REAL_INTERVAL;
+              HAS_BOUNDED_REAL_VARIATION_REFLECT_EQ]);;
+
+let REAL_VARIATION_REFLECT_INTERVAL = prove
+ (`!f u v. real_variation (real_interval[u,v]) (\x. f(--x)) =
+           real_variation (real_interval[--v,--u]) f`,
+  REWRITE_TAC[GSYM REFLECT_REAL_INTERVAL; REAL_VARIATION_REFLECT]);;
 
 let HAS_BOUNDED_REAL_VARIATION_DARBOUX = prove
  (`!f a b.
