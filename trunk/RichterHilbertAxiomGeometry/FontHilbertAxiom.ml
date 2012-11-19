@@ -2153,6 +2153,23 @@ let OppositeRightAnglesLinear = thm `;
   qed     by AOE, -, OppositeRaysIntersect1pointHelp, B1';
 `;;
 
+let RightImpliesSupplRight = thm `;
+  let A O B A' be point;
+  assume ¬Collinear A O B			[H1];
+  assume O ∈ open (A,A')			[H2];
+  assume Right (∡ A O B)			[H3];
+  thus Right (∡ B O A')
+
+  proof
+    ∡ A O B suppl ∡ B O A'  ∧  Angle (∡ A O B)  ∧  Angle (∡ B O A')     [AOBsuppl] by H1, H2, SupplementaryAngles_DEF, SupplementImpliesAngle;
+    consider β such that
+    ∡ A O B suppl β ∧ ∡ A O B ≡ β     [βsuppl] by H3, RightAngle_DEF;
+    Angle β  ∧  β ≡ ∡ A O B     [angβ] by -, SupplementImpliesAngle, C5Symmetric;
+    ∡ B O A' ≡ β     by AOBsuppl, βsuppl, SupplementUnique;
+    ∡ B O A' ≡ ∡ A O B     by AOBsuppl, angβ, -, βsuppl, C5Transitive;
+  qed     by AOBsuppl, H3, -, CongRightImpliesRight;
+`;;
+
 let IsoscelesCongBaseAngles = thm `;
   let A B C be point;
   assume ¬Collinear A B C       [H1];
@@ -3205,7 +3222,7 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
       C ∈ open (D,G)     [DCG] by GnotABCD, ABGcol, -, IN_Ray, ∉;
       consider M such that
       D ∈ open (C,M)     [CDM] by TetraABCD, B2';
-      D ∈ open (G,M)     [GDM] by CDM, B1', DCG, TransitivityBetweennessHelp;
+      D ∈ open (G,M)     [GDM] by -, B1', DCG, TransitivityBetweennessHelp;
       ∡ C D A suppl ∡ A D M  ∧  ∡ A B C suppl ∡ C B G     by TetraABCD, CDM, ABG, SupplementaryAngles_DEF;
       ∡ M D A ≡ ∡ G B C     [MDAeqGBC] by -, H2', SupplementsCongAnglesCong, AngleSymmetry; 
       ∡ G A D <_ang ∡ M D A  ∧  ∡ G B C <_ang ∡ D C B     by BCGncol, BGCncol, GDM, DCG, B1', EuclidPropositionI_16;
@@ -3257,6 +3274,20 @@ let OppositeAnglesCongImpliesParallelogram = thm `;
 
 let P = new_axiom
   `∀ P l. Line l ∧ P ∉ l  ⇒ ∃! m. Line m ∧ P ∈ m ∧ m ∥ l`;;
+
+new_constant("μ",`:point_set->real`);;
+
+let AMa = new_axiom
+ `∀ α. Angle α  ⇒  &0 < μ α ∧ μ α < &180`;;
+
+let AMb = new_axiom
+ `∀ α. Right α  ⇒  μ α  = &90`;;
+
+let AMc = new_axiom
+ `∀ α β. Angle α ∧ Angle β ∧ α ≡ β  ⇒  μ α = μ β`;;
+    
+let AMd = new_axiom
+ `∀ A O B P. P ∈ int_angle A O B  ⇒  μ (∡ A O B) = μ (∡ A O P) + μ (∡ P O B)`;;
 
 
 let ConverseAlternateInteriorAngles = thm `;
@@ -3324,5 +3355,67 @@ let HilbertTriangleSum = thm `;
     ¬(A,F same_side y)     [Ansim_yF] by y_line, notEFy, Asim_yE, -, Ensim_yF, SameSideTransitive;
     ∡ F B C ≡ ∡ A C B     by m_line, EBF', l_line, y_line, EBF', Distinct, notEFy, Asim_yE, Ansim_yF, para_lm, ConverseAlternateInteriorAngles;
   qed     by EBF, CintABF, EBAeqCAB, -, AngleSymmetry;
+`;;
+
+let EuclidPropositionI_13 = thm `;
+  let A O B A' be point;
+  assume ¬Collinear A O B			[H1];
+  assume O ∈ open (A,A')			[H2];
+  thus μ (∡ A O B) + μ (∡ B O A') = &180
+
+  proof
+    cases;
+    suppose Right (∡ A O B);
+      Right (∡ B O A')  ∧  μ (∡ A O B) = &90  ∧  μ (∡ B O A') = &90     by H1, H2, -, RightImpliesSupplRight, AMb;
+    qed by -, REAL_ARITH;
+    suppose ¬Right (∡ A O B)     [notRightAOB];
+      ¬(A = O) ∧ ¬(O = B)     [Distinct] by H1, NonCollinearImpliesDistinct;
+      consider l such that 
+      Line l ∧ O ∈ l ∧ A ∈ l ∧ A' ∈ l     [l_line] by -, I1, H2, BetweenLinear;
+      B ∉ l     [notBl] by -, Distinct, I1, Collinear_DEF, H1, ∉;
+      consider F such that 
+      Right (∡ O A F)  ∧  Angle (∡ O A F)     [RightOAF] by Distinct, EuclidPropositionI_11, RightImpliesAngle;
+      ∃! r. Ray r ∧ ∃ E. ¬(O = E) ∧ r = ray O E ∧ E ∉ l ∧ E,B same_side l ∧ ∡ A O E ≡ ∡ O A F     by -, Distinct, l_line, notBl, C4;
+      consider E such that
+      ¬(O = E)  ∧  E ∉ l  ∧  E,B same_side l  ∧  ∡ A O E ≡ ∡ O A F     [Eexists] by -;
+      ¬Collinear A O E     [AOEncol] by l_line, Distinct, I1, Collinear_DEF, -, ∉;
+      Right (∡ A O E)     [RightAOE] by -, ANGLE, RightOAF, Eexists, CongRightImpliesRight;
+      Right (∡ E O A')  ∧  μ (∡ A O E) = &90  ∧  μ (∡ E O A') = &90     [RightEOA'] by AOEncol, H2, -,  RightImpliesSupplRight, AMb;
+      ¬(∡ A O B ≡ ∡ A O E)     by notRightAOB, H1, ANGLE, RightAOE, CongRightImpliesRight;
+      ¬(∡ A O B = ∡ A O E)     by H1, AOEncol, ANGLE, -, C5Reflexive;
+      ¬(ray O B = ray O E)     by -, Angle_DEF;
+      B ∉ ray O E  ∧  O ∉ open (B,E)     by Distinct, -, Eexists, RayWellDefined, IN_DELETE, ∉, l_line, B1', SameSide_DEF;
+      ¬Collinear O E B     by -, Eexists, IN_Ray, ∉;
+      E ∈ int_angle A O B  ∨  B ∈ int_angle A O E     by Distinct, l_line, Eexists, notBl, AngleOrdering, -, CollinearSymmetry, InteriorAngleSymmetry; 
+      cases by -;
+      suppose E ∈ int_angle A O B     [EintAOB];
+        B ∈ int_angle E O A'     by H2, -, InteriorReflectionInterior;
+        μ (∡ A O B) = μ (∡ A O E) + μ (∡ E O B)  ∧  
+	μ (∡ E O A') = μ (∡ E O B) + μ (∡ B O A')     by EintAOB, -, AMd;
+      qed     by -, RightEOA', REAL_ARITH;
+      suppose B ∈ int_angle A O E     [BintAOE];
+        E ∈ int_angle B O A'     by H2, -, InteriorReflectionInterior;
+        μ (∡ A O E) = μ (∡ A O B) + μ (∡ B O E)  ∧  
+	μ (∡ B O A') = μ (∡ B O E) + μ (∡ E O A')     by BintAOE, -, AMd;
+      qed     by -, RightEOA', REAL_ARITH;
+    end;
+  end;
+`;;
+
+let TriangleSum = thm `;
+  let A B C be point;
+  assume ¬Collinear A B C				[ABCncol];
+  thus μ (∡ A B C) + μ (∡ B C A) + μ (∡ C A B) = &180
+
+  proof
+    ¬Collinear C A B  ∧  ¬Collinear B C A     [CABncol] by ABCncol, CollinearSymmetry;
+    consider E F such that
+    B ∈ open (E,F)  ∧  C ∈ int_angle A B F  ∧  ∡ E B A ≡ ∡ C A B  ∧  ∡ C B F ≡ ∡ B C A     [EBF] by ABCncol, HilbertTriangleSum;
+    ¬Collinear C B F  ∧  ¬Collinear A B F  ∧  Collinear E B F  ∧  ¬(B = E)     [CBFncol] by -, InteriorAngleSymmetry, InteriorEZHelp, IN_InteriorAngle, B1', CollinearSymmetry;
+    ¬Collinear E B A     [EBAncol] by CollinearSymmetry, -, NoncollinearityExtendsToLine;
+    μ (∡ A B F) = μ (∡ A B C) + μ (∡ C B F)     [μCintABF] by EBF, AMd;
+    μ (∡ E B A) + μ (∡ A B F) = &180     [suppl180] by EBAncol, EBF, EuclidPropositionI_13;
+    μ (∡ C A B) = μ (∡ E B A)  ∧  μ (∡ B C A) = μ (∡ C B F)     by CABncol, EBAncol, CBFncol, ANGLE, EBF, AMc;
+  qed     by suppl180, μCintABF, -, REAL_ARITH;
 `;;
 

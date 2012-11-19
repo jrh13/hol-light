@@ -317,6 +317,32 @@ let FINITE_CART = prove
                 ARITH_RULE `n < i /\ ~(i = SUC n) ==> SUC n < i`]);;
 
 (* ------------------------------------------------------------------------- *)
+(* More cardinality results for whole universe.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_SIZE_CART_UNIV = prove
+ (`!m. (:A) HAS_SIZE m ==> (:A^N) HAS_SIZE m EXP (dimindex(:N))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(:(N)finite_image->A) HAS_SIZE m EXP (dimindex(:N))`
+  MP_TAC THENL
+   [ASM_SIMP_TAC[HAS_SIZE_FUNSPACE_UNIV; HAS_SIZE_FINITE_IMAGE];
+    DISCH_THEN(MP_TAC o ISPEC `mk_cart:((N)finite_image->A)->A^N` o
+      MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] HAS_SIZE_IMAGE_INJ)) THEN
+    REWRITE_TAC[IN_UNIV] THEN
+    ANTS_TAC THENL [MESON_TAC[cart_tybij]; MATCH_MP_TAC EQ_IMP] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    REWRITE_TAC[IN_UNIV] THEN MESON_TAC[cart_tybij]]);;
+
+let CARD_CART_UNIV = prove
+ (`FINITE(:A) ==> CARD(:A^N) = CARD(:A) EXP dimindex(:N)`,
+  MESON_TAC[HAS_SIZE_CART_UNIV; HAS_SIZE]);;
+
+let FINITE_CART_UNIV = prove
+ (`FINITE(:A) ==> FINITE(:A^N)`,
+  MESON_TAC[HAS_SIZE_CART_UNIV; HAS_SIZE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Explicit construction of a vector from a list of components.              *)
 (* ------------------------------------------------------------------------- *)
 

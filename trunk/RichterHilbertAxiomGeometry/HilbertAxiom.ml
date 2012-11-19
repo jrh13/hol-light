@@ -2153,6 +2153,23 @@ let OppositeRightAnglesLinear = thm `;
   qed     by AOE, -, OppositeRaysIntersect1pointHelp, B1';
 `;;
 
+let RightImpliesSupplRight = thm `;
+  let A O B A' be point;
+  assume ~Collinear A O B                       [H1];
+  assume O IN open (A,A')                        [H2];
+  assume Right (angle A O B)                        [H3];
+  thus Right (angle B O A')
+
+  proof
+    angle A O B suppl angle B O A'  /\  Angle (angle A O B)  /\  Angle (angle B O A')     [AOBsuppl] by H1, H2, SupplementaryAngles_DEF, SupplementImpliesAngle;
+    consider beta such that
+    angle A O B suppl beta /\ angle A O B === beta     [betasuppl] by H3, RightAngle_DEF;
+    Angle beta  /\  beta === angle A O B     [angbeta] by -, SupplementImpliesAngle, C5Symmetric;
+    angle B O A' === beta     by AOBsuppl, betasuppl, SupplementUnique;
+    angle B O A' === angle A O B     by AOBsuppl, angbeta, -, betasuppl, C5Transitive;
+  qed     by AOBsuppl, H3, -, CongRightImpliesRight;
+`;;
+
 let IsoscelesCongBaseAngles = thm `;
   let A B C be point;
   assume ~Collinear A B C       [H1];
@@ -3205,7 +3222,7 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
       C IN open (D,G)     [DCG] by GnotABCD, ABGcol, -, IN_Ray, NOTIN;
       consider M such that
       D IN open (C,M)     [CDM] by TetraABCD, B2';
-      D IN open (G,M)     [GDM] by CDM, B1', DCG, TransitivityBetweennessHelp;
+      D IN open (G,M)     [GDM] by -, B1', DCG, TransitivityBetweennessHelp;
       angle C D A suppl angle A D M  /\  angle A B C suppl angle C B G     by TetraABCD, CDM, ABG, SupplementaryAngles_DEF;
       angle M D A === angle G B C     [MDAeqGBC] by -, H2', SupplementsCongAnglesCong, AngleSymmetry; 
       angle G A D <_ang angle M D A  /\  angle G B C <_ang angle D C B     by BCGncol, BGCncol, GDM, DCG, B1', EuclidPropositionI_16;
@@ -3257,6 +3274,20 @@ let OppositeAnglesCongImpliesParallelogram = thm `;
 
 let P = new_axiom
   `! P l. Line l /\ P NOTIN l  ==> ?! m. Line m /\ P IN m /\ m parallel l`;;
+
+new_constant("mu",`:point_set->real`);;
+
+let AMa = new_axiom
+ `! alpha. Angle alpha  ==>  &0 < mu alpha /\ mu alpha < &180`;;
+
+let AMb = new_axiom
+ `! alpha. Right alpha  ==>  mu alpha  = &90`;;
+
+let AMc = new_axiom
+ `! alpha beta. Angle alpha /\ Angle beta /\ alpha === beta  ==>  mu alpha = mu beta`;;
+    
+let AMd = new_axiom
+ `! A O B P. P IN int_angle A O B  ==>  mu (angle A O B) = mu (angle A O P) + mu (angle P O B)`;;
 
 
 let ConverseAlternateInteriorAngles = thm `;
@@ -3324,5 +3355,67 @@ let HilbertTriangleSum = thm `;
     ~(A,F same_side y)     [Ansim_yF] by y_line, notEFy, Asim_yE, -, Ensim_yF, SameSideTransitive;
     angle F B C === angle A C B     by m_line, EBF', l_line, y_line, EBF', Distinct, notEFy, Asim_yE, Ansim_yF, para_lm, ConverseAlternateInteriorAngles;
   qed     by EBF, CintABF, EBAeqCAB, -, AngleSymmetry;
+`;;
+
+let EuclidPropositionI_13 = thm `;
+  let A O B A' be point;
+  assume ~Collinear A O B                       [H1];
+  assume O IN open (A,A')                        [H2];
+  thus mu (angle A O B) + mu (angle B O A') = &180
+
+  proof
+    cases;
+    suppose Right (angle A O B);
+      Right (angle B O A')  /\  mu (angle A O B) = &90  /\  mu (angle B O A') = &90     by H1, H2, -, RightImpliesSupplRight, AMb;
+    qed by -, REAL_ARITH;
+    suppose ~Right (angle A O B)     [notRightAOB];
+      ~(A = O) /\ ~(O = B)     [Distinct] by H1, NonCollinearImpliesDistinct;
+      consider l such that 
+      Line l /\ O IN l /\ A IN l /\ A' IN l     [l_line] by -, I1, H2, BetweenLinear;
+      B NOTIN l     [notBl] by -, Distinct, I1, Collinear_DEF, H1, NOTIN;
+      consider F such that 
+      Right (angle O A F)  /\  Angle (angle O A F)     [RightOAF] by Distinct, EuclidPropositionI_11, RightImpliesAngle;
+      ?! r. Ray r /\ ? E. ~(O = E) /\ r = ray O E /\ E NOTIN l /\ E,B same_side l /\ angle A O E === angle O A F     by -, Distinct, l_line, notBl, C4;
+      consider E such that
+      ~(O = E)  /\  E NOTIN l  /\  E,B same_side l  /\  angle A O E === angle O A F     [Eexists] by -;
+      ~Collinear A O E     [AOEncol] by l_line, Distinct, I1, Collinear_DEF, -, NOTIN;
+      Right (angle A O E)     [RightAOE] by -, ANGLE, RightOAF, Eexists, CongRightImpliesRight;
+      Right (angle E O A')  /\  mu (angle A O E) = &90  /\  mu (angle E O A') = &90     [RightEOA'] by AOEncol, H2, -,  RightImpliesSupplRight, AMb;
+      ~(angle A O B === angle A O E)     by notRightAOB, H1, ANGLE, RightAOE, CongRightImpliesRight;
+      ~(angle A O B = angle A O E)     by H1, AOEncol, ANGLE, -, C5Reflexive;
+      ~(ray O B = ray O E)     by -, Angle_DEF;
+      B NOTIN ray O E  /\  O NOTIN open (B,E)     by Distinct, -, Eexists, RayWellDefined, IN_DELETE, NOTIN, l_line, B1', SameSide_DEF;
+      ~Collinear O E B     by -, Eexists, IN_Ray, NOTIN;
+      E IN int_angle A O B  \/  B IN int_angle A O E     by Distinct, l_line, Eexists, notBl, AngleOrdering, -, CollinearSymmetry, InteriorAngleSymmetry; 
+      cases by -;
+      suppose E IN int_angle A O B     [EintAOB];
+        B IN int_angle E O A'     by H2, -, InteriorReflectionInterior;
+        mu (angle A O B) = mu (angle A O E) + mu (angle E O B)  /\  
+        mu (angle E O A') = mu (angle E O B) + mu (angle B O A')     by EintAOB, -, AMd;
+      qed     by -, RightEOA', REAL_ARITH;
+      suppose B IN int_angle A O E     [BintAOE];
+        E IN int_angle B O A'     by H2, -, InteriorReflectionInterior;
+        mu (angle A O E) = mu (angle A O B) + mu (angle B O E)  /\  
+        mu (angle B O A') = mu (angle B O E) + mu (angle E O A')     by BintAOE, -, AMd;
+      qed     by -, RightEOA', REAL_ARITH;
+    end;
+  end;
+`;;
+
+let TriangleSum = thm `;
+  let A B C be point;
+  assume ~Collinear A B C                               [ABCncol];
+  thus mu (angle A B C) + mu (angle B C A) + mu (angle C A B) = &180
+
+  proof
+    ~Collinear C A B  /\  ~Collinear B C A     [CABncol] by ABCncol, CollinearSymmetry;
+    consider E F such that
+    B IN open (E,F)  /\  C IN int_angle A B F  /\  angle E B A === angle C A B  /\  angle C B F === angle B C A     [EBF] by ABCncol, HilbertTriangleSum;
+    ~Collinear C B F  /\  ~Collinear A B F  /\  Collinear E B F  /\  ~(B = E)     [CBFncol] by -, InteriorAngleSymmetry, InteriorEZHelp, IN_InteriorAngle, B1', CollinearSymmetry;
+    ~Collinear E B A     [EBAncol] by CollinearSymmetry, -, NoncollinearityExtendsToLine;
+    mu (angle A B F) = mu (angle A B C) + mu (angle C B F)     [muCintABF] by EBF, AMd;
+    mu (angle E B A) + mu (angle A B F) = &180     [suppl180] by EBAncol, EBF, EuclidPropositionI_13;
+    mu (angle C A B) = mu (angle E B A)  /\  mu (angle B C A) = mu (angle C B F)     by CABncol, EBAncol, CBFncol, ANGLE, EBF, AMc;
+  qed     by suppl180, muCintABF, -, REAL_ARITH;
 `;;
 

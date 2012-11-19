@@ -1,3 +1,75 @@
+Fri 16th Nov 2012       tactics.ml, Help/STRUCT_CASES_THEN.doc [new file]
+
+At the suggestion of Petros Papapanagiotou, made a theorem-tactic form
+STRUCT_CASES_THEN of STRUCT_CASES_TAC, to allow for more flexibility in how the
+resulting theorems get used.
+
+Fri 16th Nov 2012       IsabelleLight/*, RichterHilbertAxiomGeometry/*
+
+Brought these up to date with recent changes by their respective authors.
+
+Fri 16th Nov 2012       hol.ml, preterm.ml, parser.ml, printer.ml
+
+Reshuffled a few preliminaries between these files so that "printer.ml"
+could be loaded before the other two. This is a prelude to putting in code from
+Vincent Aravantinos for better error messages from typechecking, where it's
+useful to have functions from "printer.ml" for the error reporting.
+
+Fri 16th Nov 2012       sets.ml, cart.ml
+
+Added a few simple theorems about cardinalities of finite universe sets,
+and also a natural counterpart UNIV_GSPEC to EMPTY_GSPEC. New theorems:
+
+CARD_BOOL =
+  |- CARD (:bool) = 2
+
+CARD_CART_UNIV =
+  |- FINITE (:A) ==> CARD (:A^N) = CARD (:A) EXP dimindex (:N)
+
+CARD_FUNSPACE_UNIV =
+  |- FINITE (:A) /\ FINITE (:B) ==> CARD (:A->B) = CARD (:B) EXP CARD (:A)
+
+FINITE_BOOL =
+  |- FINITE (:bool)
+
+FINITE_CART_UNIV =
+  |- FINITE (:A) ==> FINITE (:A^N)
+
+FINITE_FUNSPACE_UNIV =
+  |- FINITE (:A) /\ FINITE (:B) ==> FINITE (:A->B)
+
+HAS_SIZE_BOOL =
+  |- (:bool) HAS_SIZE 2
+
+HAS_SIZE_CART_UNIV =
+  |- !m. (:A) HAS_SIZE m ==> (:A^N) HAS_SIZE m EXP dimindex (:N)
+
+HAS_SIZE_FUNSPACE_UNIV =
+  |- !m n. (:A) HAS_SIZE m /\ (:B) HAS_SIZE n ==> (:A->B) HAS_SIZE n EXP m
+
+UNIV_GSPEC =
+  |- {x | T} = UNIV
+
+Tue 13th Nov 2012       sets.ml, Library/card.ml
+
+Added three new theorems about COUNTABLE in exact analogy with FINITE, and also
+cleaned up the FINITE proof of one of them based on the pattern.
+
+COUNTABLE_IMAGE_INJ =
+  |- !f A.
+         (!x y. f x = f y ==> x = y) /\ COUNTABLE A
+         ==> COUNTABLE {x | f x IN A}
+
+COUNTABLE_IMAGE_INJ_EQ =
+  |- !f s.
+         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+         ==> (COUNTABLE (IMAGE f s) <=> COUNTABLE s)
+
+COUNTABLE_IMAGE_INJ_GENERAL =
+  |- !f A s.
+         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\ COUNTABLE A
+         ==> COUNTABLE {x | x IN s /\ f x IN A}
+
 Fri 28th Sep 2012       pair.ml, int.ml, sets.ml, database.ml, Library/card.ml
 
 Added a few miscellaneous little theorems:
@@ -6,35 +78,35 @@ Added a few miscellaneous little theorems:
     |- !n s u.
            s SUBSET u /\ FINITE s /\ CARD s <= n /\ (FINITE u ==> n <= CARD u)
            ==> (?t. s SUBSET t /\ t SUBSET u /\ t HAS_SIZE n)
-  
+
   EXISTS_CURRY =
     |- !P. (?f. P f) <=> (?f. P (\(a,b). f a b))
-  
+
   FORALL_CURRY =
     |- !P. (!f. P f) <=> (!f. P (\(a,b). f a b))
-  
+
   FORALL_FINITE_SUBSET_IMAGE =
     |- !P f s.
            (!t. FINITE t /\ t SUBSET IMAGE f s ==> P t) <=>
            (!t. FINITE t /\ t SUBSET s ==> P (IMAGE f t))
-  
+
   INFINITE_SUPERSET =
     |- !s t. INFINITE s /\ s SUBSET t ==> INFINITE t
-  
+
   INF_SING =
     |- !a. inf {a} = a
-  
+
   PAIRED_ETA_THM =
     |- (!f. (\(x,y). f (x,y)) = f) /\
        (!f. (\(x,y,z). f (x,y,z)) = f) /\
        (!f. (\(w,x,y,z). f (w,x,y,z)) = f)
-  
+
   SUP_SING =
     |- !a. sup {a} = a
 
-as well as slightly reshuffling some existing theorems and adding new 
+as well as slightly reshuffling some existing theorems and adding new
 cardinality theorems.
-  
+
 Thu  6th Sep 2012       update_database.ml
 
 Fixed the update_database code for OCaml 4.00. This entails making a couple

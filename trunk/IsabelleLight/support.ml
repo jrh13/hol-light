@@ -3,13 +3,13 @@
 (*   Isabelle/Procedural style additions and other user-friendly shortcuts.  *)
 (*                                                                           *)
 (*                   Petros Papapanagiotou, Jacques Fleuriot                 *)
-(*              Centre of Intelligent Systems and their Applications         *)
+(*              Center of Intelligent Systems and their Applications         *)
 (*                          University of Edinburgh                          *)
-(*                                 2009-2010                                 *)
+(*                                 2009-2012                                 *)
 (* ========================================================================= *)
 (* FILE         : support.ml                                                 *)
 (* DESCRIPTION  : Support functions and various shortcuts.                   *)
-(* LAST MODIFIED: October 2010                                               *)
+(* LAST MODIFIED: October 2012                                               *)
 (* ========================================================================= *)
 
 (* ------------------------------------------------------------------------- *)
@@ -166,6 +166,22 @@ let count_goals () =
 (* ------------------------------------------------------------------------- *)
 
 let top_asms (gs:goalstack) = (fst o hd o snd3 o hd) gs;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* top_metas : goalstack -> term list                                        *) 
+(* Returns the list of metavariables in the current goalstate.               *)
+(* ------------------------------------------------------------------------- *)
+
+let top_metas (gs:goalstack) = (fst o fst3 o hd) gs;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* top_inst : goalstack -> instantiation                                     *) 
+(* Returns the metavariable instantiations in the current goalstate.         *)
+(* ------------------------------------------------------------------------- *)
+
+let top_inst (gs:goalstack) = (snd o fst3 o hd) gs;;
 
 
 (* ------------------------------------------------------------------------- *)

@@ -12,7 +12,7 @@ tactic, cases.
 When it is applied to a theorem of the form:
 {
    th = A' |- ?y11...y1m. x = t1 /\ (B11 /\ ... /\ B1k) \/ ... \/
-                ?yn1...ynp. x = tn /\ (Bn1 /\ ... /\ Bnp)
+              ?yn1...ynp. x = tn /\ (Bn1 /\ ... /\ Bnp)
 }
 \noindent in which there may be no existential quantifiers where a `vector' of
 them is shown above, {STRUCT_CASES_TAC th} splits a goal {A ?- s} into {n}
@@ -47,9 +47,9 @@ following tactic:
 {
   # e(STRUCT_CASES_TAC (SPEC_ALL list_CASES));;
   val it : goalstack = 2 subgoals (2 total)
-  
+
   `~(CONS h t = []) ==> LENGTH (CONS h t) > 0`
-  
+
   `~([] = []) ==> LENGTH [] > 0`
 }
 \noindent and both of these are solvable by {REWRITE_TAC[GT; LENGTH; LT_0]}.
@@ -58,6 +58,7 @@ following tactic:
 Generating a case split from the axioms specifying a structure.
 
 \SEEALSO
-ASM_CASES_TAC, BOOL_CASES_TAC, COND_CASES_TAC, DISJ_CASES_TAC.
+ASM_CASES_TAC, BOOL_CASES_TAC, COND_CASES_TAC, DISJ_CASES_TAC, 
+STRUCT_CASES_THEN.
 
 \ENDDOC

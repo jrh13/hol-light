@@ -3,9 +3,9 @@
    Isabelle/Procedural style additions and other user-friendly shortcuts.  
                                                                            
                    Petros Papapanagiotou, Jacques Fleuriot                 
-              Centre of Intelligent Systems and their Applications         
+              Center of Intelligent Systems and their Applications         
                           University of Edinburgh                          
-                                 2009-2010                                 
+                                 2009-2012                                 
  ========================================================================= 
 
 This README contains some brief information on the usage of this system.
@@ -54,6 +54,8 @@ FULL_SIMP_TAC thl     : SIMP_TAC then FULL_REWRITE_TAC.
 
 X_MATCH_CHOOSE_TAC tm : X_CHOOSE_TAC with type matching.
 
+gen_case_tac          : Applies case_tac to leading universally quantified 
+                        variable in the goal.
 
 
 

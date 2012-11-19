@@ -6579,7 +6579,7 @@ let REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR = prove
 
 let REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG = prove
  (`!f f' s a b.
-        FINITE s /\
+        COUNTABLE s /\
         a <= b /\ f real_continuous_on real_interval[a,b] /\
         (!x. x IN real_interval(a,b) DIFF s
              ==> (f has_real_derivative f'(x)) (atreal x))
@@ -6589,9 +6589,9 @@ let REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG = prove
   REWRITE_TAC[REAL_INTERVAL_INTERVAL; FORALL_IN_IMAGE; IMP_CONJ; IN_DIFF] THEN
   SUBGOAL_THEN `!x. drop x IN s <=> x IN IMAGE lift s`
     (fun th -> REWRITE_TAC[th]) THENL [SET_TAC[LIFT_DROP]; ALL_TAC] THEN
-  SUBGOAL_THEN `FINITE s <=> FINITE(IMAGE lift s)` SUBST1_TAC THENL
-   [EQ_TAC THEN SIMP_TAC[FINITE_IMAGE] THEN
-    DISCH_THEN(MP_TAC o ISPEC `drop` o MATCH_MP FINITE_IMAGE) THEN
+  SUBGOAL_THEN `COUNTABLE s <=> COUNTABLE(IMAGE lift s)` SUBST1_TAC THENL
+   [EQ_TAC THEN SIMP_TAC[COUNTABLE_IMAGE] THEN
+    DISCH_THEN(MP_TAC o ISPEC `drop` o MATCH_MP COUNTABLE_IMAGE) THEN
     REWRITE_TAC[GSYM IMAGE_o; IMAGE_LIFT_DROP];
     ALL_TAC] THEN
   REWRITE_TAC[IMP_IMP; GSYM IN_DIFF; GSYM CONJ_ASSOC] THEN
@@ -6605,7 +6605,7 @@ let REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG = prove
 
 let REAL_FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG = prove
  (`!f f' s a b.
-        FINITE s /\
+        COUNTABLE s /\
         a <= b /\ f real_continuous_on real_interval[a,b] /\
         (!x. x IN real_interval[a,b] DIFF s
              ==> (f has_real_derivative f'(x)) (atreal x))
@@ -6658,7 +6658,7 @@ let REAL_INDEFINITE_INTEGRAL_CONTINUOUS_LEFT = prove
 
 let HAS_REAL_DERIVATIVE_ZERO_UNIQUE_STRONG_INTERVAL = prove
  (`!f:real->real a b k y.
-        FINITE k /\ f real_continuous_on real_interval[a,b] /\ f a = y /\
+        COUNTABLE k /\ f real_continuous_on real_interval[a,b] /\ f a = y /\
         (!x. x IN (real_interval[a,b] DIFF k)
              ==> (f has_real_derivative &0)
                  (atreal x within real_interval[a,b]))
@@ -6672,13 +6672,13 @@ let HAS_REAL_DERIVATIVE_ZERO_UNIQUE_STRONG_INTERVAL = prove
   MP_TAC(ISPECL
    [`lift o f o drop`; `lift a`; `lift b`; `IMAGE lift k`; `lift y`]
    HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_INTERVAL) THEN
-  ASM_SIMP_TAC[FINITE_IMAGE; o_THM; LIFT_DROP; LIFT_EQ; IN_DIFF] THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; o_THM; LIFT_DROP; LIFT_EQ; IN_DIFF] THEN
   DISCH_THEN MATCH_MP_TAC THEN REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[LIFT_DROP]);;
 
 let HAS_REAL_DERIVATIVE_ZERO_UNIQUE_STRONG_CONVEX = prove
  (`!f:real->real s k c y.
-      is_realinterval s /\ FINITE k /\ f real_continuous_on s /\
+      is_realinterval s /\ COUNTABLE k /\ f real_continuous_on s /\
       c IN s /\ f c = y /\
       (!x. x IN (s DIFF k) ==> (f has_real_derivative &0) (atreal x within s))
       ==> !x. x IN s ==> f x = y`,
@@ -6692,7 +6692,7 @@ let HAS_REAL_DERIVATIVE_ZERO_UNIQUE_STRONG_CONVEX = prove
   MP_TAC(ISPECL
    [`lift o f o drop`; `IMAGE lift s`; `IMAGE lift k`; `lift c`; `lift y`]
    HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_CONVEX) THEN
-  ASM_SIMP_TAC[FINITE_IMAGE; o_THM; LIFT_DROP; LIFT_EQ; IN_DIFF] THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; o_THM; LIFT_DROP; LIFT_EQ; IN_DIFF] THEN
   ASM_REWRITE_TAC[LIFT_IN_IMAGE_LIFT; FORALL_IN_IMAGE; LIFT_DROP] THEN
   ASM_SIMP_TAC[IMP_CONJ; FORALL_IN_IMAGE; LIFT_IN_IMAGE_LIFT]);;
 

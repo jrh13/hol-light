@@ -7,7 +7,100 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (* ========================================================================= *)
 
-needs "parser.ml";;
+needs "nets.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Character discrimination.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
+  let charcode s = Char.code(String.get s 0) in
+  let spaces = " \t\n\r"
+  and separators = ",;"
+  and brackets = "()[]{}"
+  and symbs = "\\!@#$%^&*-+|\\<=>/?~.:"
+  and alphas = "'abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  and nums = "0123456789" in
+  let allchars = spaces^separators^brackets^symbs^alphas^nums in
+  let csetsize = itlist (max o charcode) (explode allchars) 256 in
+  let ctable = Array.make csetsize 0 in
+  do_list (fun c -> Array.set ctable (charcode c) 1) (explode spaces);
+  do_list (fun c -> Array.set ctable (charcode c) 2) (explode separators);
+  do_list (fun c -> Array.set ctable (charcode c) 4) (explode brackets);
+  do_list (fun c -> Array.set ctable (charcode c) 8) (explode symbs);
+  do_list (fun c -> Array.set ctable (charcode c) 16) (explode alphas);
+  do_list (fun c -> Array.set ctable (charcode c) 32) (explode nums);
+  let isspace c = Array.get ctable (charcode c) = 1
+  and issep c  = Array.get ctable (charcode c) = 2
+  and isbra c  = Array.get ctable (charcode c) = 4
+  and issymb c = Array.get ctable (charcode c) = 8
+  and isalpha c = Array.get ctable (charcode c) = 16
+  and isnum c = Array.get ctable (charcode c) = 32
+  and isalnum c = Array.get ctable (charcode c) >= 16 in
+  isspace,issep,isbra,issymb,isalpha,isnum,isalnum;;
+
+(* ------------------------------------------------------------------------- *)
+(* Reserved words.                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let reserve_words,unreserve_words,is_reserved_word,reserved_words =
+  let reswords = ref ["(";  ")"; "[";   "]";  "{";   "}";
+                      ":";  ";";  ".";  "|";
+                      "let"; "in"; "and"; "if"; "then"; "else";
+                      "match"; "with"; "function"; "->"; "when"] in
+  (fun ns  -> reswords := union (!reswords) ns),
+  (fun ns  -> reswords := subtract (!reswords) ns),
+  (fun n  -> mem n (!reswords)),
+  (fun () -> !reswords);;
+
+(* ------------------------------------------------------------------------- *)
+(* Functions to access the global tables controlling special parse status.   *)
+(*                                                                           *)
+(*  o List of binders;                                                       *)
+(*                                                                           *)
+(*  o List of prefixes (right-associated unary functions like negation).     *)
+(*                                                                           *)
+(*  o List of infixes with their precedences and associations.               *)
+(*                                                                           *)
+(* Note that these tables are independent of constant/variable status or     *)
+(* whether an identifier is symbolic.                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let unparse_as_binder,parse_as_binder,parses_as_binder,binders =
+  let binder_list = ref ([]:string list) in
+  (fun n  -> binder_list := subtract (!binder_list) [n]),
+  (fun n  -> binder_list := union (!binder_list) [n]),
+  (fun n  -> mem n (!binder_list)),
+  (fun () -> !binder_list);;
+
+let unparse_as_prefix,parse_as_prefix,is_prefix,prefixes =
+  let prefix_list = ref ([]:string list) in
+  (fun n  -> prefix_list := subtract (!prefix_list) [n]),
+  (fun n  -> prefix_list := union (!prefix_list) [n]),
+  (fun n  -> mem n (!prefix_list)),
+  (fun () -> !prefix_list);;
+
+let unparse_as_infix,parse_as_infix,get_infix_status,infixes =
+  let cmp (s,(x,a)) (t,(y,b)) =
+     x < y or x = y & a > b or x = y & a = b & s < t in
+  let infix_list = ref ([]:(string * (int * string)) list) in
+  (fun n     -> infix_list := filter (((<>) n) o fst) (!infix_list)),
+  (fun (n,d) -> infix_list := sort cmp
+     ((n,d)::(filter (((<>) n) o fst) (!infix_list)))),
+  (fun n     -> assoc n (!infix_list)),
+  (fun ()    -> !infix_list);;
+
+(* ------------------------------------------------------------------------- *)
+(* Interface mapping.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let the_interface = ref ([] :(string * (string * hol_type)) list);;
+
+let the_overload_skeletons = ref ([] : (string * hol_type) list);;
+
+(* ------------------------------------------------------------------------- *)
+(* Now the printer.                                                          *)
+(* ------------------------------------------------------------------------- *)
 
 include Format;;
 
