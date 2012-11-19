@@ -104,9 +104,9 @@ loads "nets.ml";;       (* Term nets for fast matchability-based lookup      *)
 (* The interface.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
+loads "printer.ml";;    (* Crude prettyprinter                               *)
 loads "preterm.ml";;    (* Preterms and their interconversion with terms     *)
 loads "parser.ml";;     (* Lexer and parser                                  *)
-loads "printer.ml";;    (* Crude prettyprinter                               *)
 
 (* ------------------------------------------------------------------------- *)
 (* Higher level deductive system.                                            *)

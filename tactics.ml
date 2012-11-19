@@ -621,9 +621,10 @@ let STRIP_ASSUME_TAC =
   (fun gth -> FIRST [CONTR_TAC gth; ACCEPT_TAC gth;
                      DISCARD_TAC gth; ASSUME_TAC gth]);;
 
-let STRUCT_CASES_TAC =
-    REPEAT_TCL STRIP_THM_THEN
-     (fun th -> SUBST1_TAC th ORELSE ASSUME_TAC th);;
+let STRUCT_CASES_THEN ttac = REPEAT_TCL STRIP_THM_THEN ttac;;
+
+let STRUCT_CASES_TAC = STRUCT_CASES_THEN
+     (fun th -> SUBST1_TAC th ORELSE ASSUME_TAC th);;                          
 
 let STRIP_GOAL_THEN ttac =  FIRST [GEN_TAC; CONJ_TAC; DISCH_THEN ttac];;
 

@@ -857,6 +857,10 @@ let EMPTY_GSPEC = prove
  (`{x | F} = {}`,
   SET_TAC[]);;
 
+let UNIV_GSPEC = prove
+ (`{x | T} = UNIV`,
+  SET_TAC[]);;
+
 let SING_GSPEC = prove
  (`(!a. {x | x = a} = {a}) /\
    (!a. {x | a = x} = {a})`,
@@ -964,6 +968,103 @@ let FINITE_INDUCT_STRONG = prove
     FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Useful general properties of functions.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let SURJECTIVE_ON_RIGHT_INVERSE = prove
+ (`!f t. (!y. y IN t ==> ?x. x IN s /\ (f(x) = y)) <=>
+         (?g. !y. y IN t ==> g(y) IN s /\ (f(g(y)) = y))`,
+  REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM]);;
+
+let INJECTIVE_ON_LEFT_INVERSE = prove
+ (`!f s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) <=>
+         (?g. !x. x IN s ==> (g(f(x)) = x))`,
+  let lemma = MESON[]
+   `(!x. x IN s ==> (g(f(x)) = x)) <=>
+    (!y x. x IN s /\ (y = f x) ==> (g y = x))` in
+  REWRITE_TAC[lemma; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
+let BIJECTIVE_ON_LEFT_RIGHT_INVERSE = prove
+ (`!f s t.
+        (!x. x IN s ==> f(x) IN t)
+        ==> ((!x y. x IN s /\ y IN s /\ f(x) = f(y) ==> x = y) /\
+             (!y. y IN t ==> ?x. x IN s /\ f x = y) <=>
+            ?g. (!y. y IN t ==> g(y) IN s) /\
+                (!y. y IN t ==> (f(g(y)) = y)) /\
+                (!x. x IN s ==> (g(f(x)) = x)))`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[INJECTIVE_ON_LEFT_INVERSE; SURJECTIVE_ON_RIGHT_INVERSE] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN AP_TERM_TAC THEN ABS_TAC THEN
+  EQ_TAC THEN ASM_MESON_TAC[]);;
+
+let SURJECTIVE_RIGHT_INVERSE = prove
+ (`(!y. ?x. f(x) = y) <=> (?g. !y. f(g(y)) = y)`,
+  MESON_TAC[SURJECTIVE_ON_RIGHT_INVERSE; IN_UNIV]);;
+
+let INJECTIVE_LEFT_INVERSE = prove
+ (`(!x y. (f x = f y) ==> (x = y)) <=> (?g. !x. g(f(x)) = x)`,
+  let th = REWRITE_RULE[IN_UNIV]
+   (ISPECL [`f:A->B`; `UNIV:A->bool`] INJECTIVE_ON_LEFT_INVERSE) in
+  REWRITE_TAC[th]);;
+
+let BIJECTIVE_LEFT_RIGHT_INVERSE = prove
+ (`!f:A->B.
+       (!x y. f(x) = f(y) ==> x = y) /\ (!y. ?x. f x = y) <=>
+       ?g. (!y. f(g(y)) = y) /\ (!x. g(f(x)) = x)`,
+  GEN_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `(:A)`; `(:B)`] BIJECTIVE_ON_LEFT_RIGHT_INVERSE) THEN
+  REWRITE_TAC[IN_UNIV]);;
+
+let FUNCTION_FACTORS_LEFT_GEN = prove
+ (`!P f g. (!x y. P x /\ P y /\ g x = g y ==> f x = f y) <=>
+           (?h. !x. P x ==> f(x) = h(g x))`,
+  ONCE_REWRITE_TAC[MESON[]
+   `(!x. P x ==> f(x) = g(k x)) <=> (!y x. P x /\ y = k x ==> f x = g y)`] THEN
+  REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
+let FUNCTION_FACTORS_LEFT = prove
+ (`!f g. (!x y. (g x = g y) ==> (f x = f y)) <=> ?h. f = h o g`,
+  REWRITE_TAC[FUN_EQ_THM; o_THM;
+   GSYM(REWRITE_RULE[] (ISPEC `\x. T` FUNCTION_FACTORS_LEFT_GEN))]);;
+
+let FUNCTION_FACTORS_RIGHT_GEN = prove
+ (`!P f g. (!x. P x ==> ?y. g(y) = f(x)) <=>
+           (?h. !x. P x ==> f(x) = g(h x))`,
+  REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
+let FUNCTION_FACTORS_RIGHT = prove
+ (`!f g. (!x. ?y. g(y) = f(x)) <=> ?h. f = g o h`,
+  REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
+let SURJECTIVE_FORALL_THM = prove
+ (`!f:A->B. (!y. ?x. f x = y) <=> (!P. (!x. P(f x)) <=> (!y. P y))`,
+  GEN_TAC THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN MESON_TAC[]);;
+
+let SURJECTIVE_EXISTS_THM = prove
+ (`!f:A->B. (!y. ?x. f x = y) <=> (!P. (?x. P(f x)) <=> (?y. P y))`,
+  GEN_TAC THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `\y:B. !x:A. ~(f x = y)`) THEN MESON_TAC[]);;
+
+let SURJECTIVE_IMAGE_THM = prove
+ (`!f:A->B. (!y. ?x. f x = y) <=> (!P. IMAGE f {x | P(f x)} = {x | P x})`,
+  GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN
+  EQ_TAC THENL [ALL_TAC; DISCH_THEN(MP_TAC o SPEC `\y:B. T`)] THEN
+  MESON_TAC[]);;
+
+let IMAGE_INJECTIVE_IMAGE_OF_SUBSET = prove
+ (`!f:A->B s.
+     ?t. t SUBSET s /\
+         IMAGE f s = IMAGE f t /\
+         (!x y. x IN t /\ y IN t /\ f x = f y ==> x = y)`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN
+   `?g. !y. y IN IMAGE (f:A->B) s ==> g(y) IN s /\ f(g(y)) = y`
+  STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[GSYM SURJECTIVE_ON_RIGHT_INVERSE] THEN SET_TAC[];
+    EXISTS_TAC `IMAGE (g:B->A) (IMAGE (f:A->B) s)` THEN ASM SET_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Basic combining theorems for finite sets.                                 *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1060,27 +1161,15 @@ let FINITE_IMAGE = prove
   REWRITE_TAC[IMAGE; FINITE_IMAGE_EXPAND]);;
 
 let FINITE_IMAGE_INJ_GENERAL = prove
- (`!(f:A->B) A s. (!x y. x IN s /\ y IN s /\ (f(x) = f(y)) ==> (x = y)) /\
-                  FINITE A ==> FINITE {x | x IN s /\ f(x) IN A}`,
-  GEN_TAC THEN ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN GEN_TAC THEN
-  REWRITE_TAC[IMP_CONJ] THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
-  DISCH_TAC THEN MATCH_MP_TAC FINITE_INDUCT THEN CONJ_TAC THENL
-   [SUBGOAL_THEN `{x | x IN s /\ (f:A->B) x IN EMPTY} = EMPTY`
-    SUBST1_TAC THEN REWRITE_TAC[FINITE_RULES] THEN
-    REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY]; ALL_TAC] THEN
-  X_GEN_TAC `y:B` THEN X_GEN_TAC `t:B->bool` THEN
-  DISCH_TAC THEN
-  SUBGOAL_THEN `{x | x IN s /\ (f:A->B) x IN (y INSERT t)} =
-                if (?x. x IN s /\ (f x = y))
-                then (@x. x IN s /\ (f x = y)) INSERT {x | x IN s /\ f x IN t}
-                else {x | x IN s /\ f x IN t}`
-  SUBST1_TAC THENL
-   [ALL_TAC; COND_CASES_TAC THEN ASM_REWRITE_TAC[FINITE_INSERT]] THEN
-  COND_CASES_TAC THEN ASM_REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_INSERT] THENL
-   [ALL_TAC; ASM_MESON_TAC[]] THEN
-  FIRST_ASSUM(MP_TAC o SELECT_RULE) THEN
-  ABBREV_TAC `z = @x. x IN s /\ ((f:A->B) x = y)` THEN
-  ASM_MESON_TAC[]);;
+ (`!(f:A->B) A s.
+        (!x y. x IN s /\ y IN s /\ f(x) = f(y) ==> x = y) /\
+        FINITE A
+        ==> FINITE {x | x IN s /\ f(x) IN A}`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [INJECTIVE_ON_LEFT_INVERSE]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `g:B->A`) THEN
+  MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `IMAGE (g:B->A) A` THEN
+  ASM_SIMP_TAC[FINITE_IMAGE] THEN ASM SET_TAC[]);;
 
 let FINITE_FINITE_PREIMAGE_GENERAL = prove
  (`!f:A->B s t.
@@ -2023,6 +2112,39 @@ let FINITE_FUNSPACE = prove
                          (!x. ~(x IN s) ==> (f x = d))}`,
   MESON_TAC[HAS_SIZE_FUNSPACE; HAS_SIZE]);;
 
+let HAS_SIZE_FUNSPACE_UNIV = prove
+ (`!m n. (:A) HAS_SIZE m /\ (:B) HAS_SIZE n ==> (:A->B) HAS_SIZE (n EXP m)`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP HAS_SIZE_FUNSPACE) THEN
+  REWRITE_TAC[IN_UNIV; UNIV_GSPEC]);;
+
+let CARD_FUNSPACE_UNIV = prove
+ (`FINITE(:A) /\ FINITE(:B) ==> CARD(:A->B) = CARD(:B) EXP CARD(:A)`,
+  MESON_TAC[HAS_SIZE_FUNSPACE_UNIV; HAS_SIZE]);;
+
+let FINITE_FUNSPACE_UNIV = prove
+ (`FINITE(:A) /\ FINITE(:B) ==> FINITE(:A->B)`,
+  MESON_TAC[HAS_SIZE_FUNSPACE_UNIV; HAS_SIZE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Cardinality of type bool.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_SIZE_BOOL = prove
+ (`(:bool) HAS_SIZE 2`,
+  SUBGOAL_THEN `(:bool) = {F,T}` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_UNIV; IN_INSERT] THEN CONV_TAC TAUT;
+    SIMP_TAC[HAS_SIZE; CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY; ARITH;
+             IN_SING; NOT_IN_EMPTY]]);;
+
+let CARD_BOOL = prove
+ (`CARD(:bool) = 2`,
+  MESON_TAC[HAS_SIZE_BOOL; HAS_SIZE]);;
+
+let FINITE_BOOL = prove
+ (`FINITE(:bool)`,
+  MESON_TAC[HAS_SIZE_BOOL; HAS_SIZE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Hence cardinality of powerset.                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -2458,103 +2580,6 @@ let EXISTS_IN_CLAUSES = prove
  (`(!P. (?x. x IN {} /\ P x) <=> F) /\
    (!P a s. (?x. x IN (a INSERT s) /\ P x) <=> P a \/ (?x. x IN s /\ P x))`,
   REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Useful general properties of functions.                                   *)
-(* ------------------------------------------------------------------------- *)
-
-let SURJECTIVE_ON_RIGHT_INVERSE = prove
- (`!f t. (!y. y IN t ==> ?x. x IN s /\ (f(x) = y)) <=>
-         (?g. !y. y IN t ==> g(y) IN s /\ (f(g(y)) = y))`,
-  REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM]);;
-
-let INJECTIVE_ON_LEFT_INVERSE = prove
- (`!f s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) <=>
-         (?g. !x. x IN s ==> (g(f(x)) = x))`,
-  let lemma = MESON[]
-   `(!x. x IN s ==> (g(f(x)) = x)) <=>
-    (!y x. x IN s /\ (y = f x) ==> (g y = x))` in
-  REWRITE_TAC[lemma; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
-
-let BIJECTIVE_ON_LEFT_RIGHT_INVERSE = prove
- (`!f s t.
-        (!x. x IN s ==> f(x) IN t)
-        ==> ((!x y. x IN s /\ y IN s /\ f(x) = f(y) ==> x = y) /\
-             (!y. y IN t ==> ?x. x IN s /\ f x = y) <=>
-            ?g. (!y. y IN t ==> g(y) IN s) /\
-                (!y. y IN t ==> (f(g(y)) = y)) /\
-                (!x. x IN s ==> (g(f(x)) = x)))`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN
-  REWRITE_TAC[INJECTIVE_ON_LEFT_INVERSE; SURJECTIVE_ON_RIGHT_INVERSE] THEN
-  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN AP_TERM_TAC THEN ABS_TAC THEN
-  EQ_TAC THEN ASM_MESON_TAC[]);;
-
-let SURJECTIVE_RIGHT_INVERSE = prove
- (`(!y. ?x. f(x) = y) <=> (?g. !y. f(g(y)) = y)`,
-  MESON_TAC[SURJECTIVE_ON_RIGHT_INVERSE; IN_UNIV]);;
-
-let INJECTIVE_LEFT_INVERSE = prove
- (`(!x y. (f x = f y) ==> (x = y)) <=> (?g. !x. g(f(x)) = x)`,
-  let th = REWRITE_RULE[IN_UNIV]
-   (ISPECL [`f:A->B`; `UNIV:A->bool`] INJECTIVE_ON_LEFT_INVERSE) in
-  REWRITE_TAC[th]);;
-
-let BIJECTIVE_LEFT_RIGHT_INVERSE = prove
- (`!f:A->B.
-       (!x y. f(x) = f(y) ==> x = y) /\ (!y. ?x. f x = y) <=>
-       ?g. (!y. f(g(y)) = y) /\ (!x. g(f(x)) = x)`,
-  GEN_TAC THEN
-  MP_TAC(ISPECL [`f:A->B`; `(:A)`; `(:B)`] BIJECTIVE_ON_LEFT_RIGHT_INVERSE) THEN
-  REWRITE_TAC[IN_UNIV]);;
-
-let FUNCTION_FACTORS_LEFT_GEN = prove
- (`!P f g. (!x y. P x /\ P y /\ g x = g y ==> f x = f y) <=>
-           (?h. !x. P x ==> f(x) = h(g x))`,
-  ONCE_REWRITE_TAC[MESON[]
-   `(!x. P x ==> f(x) = g(k x)) <=> (!y x. P x /\ y = k x ==> f x = g y)`] THEN
-  REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]);;
-
-let FUNCTION_FACTORS_LEFT = prove
- (`!f g. (!x y. (g x = g y) ==> (f x = f y)) <=> ?h. f = h o g`,
-  REWRITE_TAC[FUN_EQ_THM; o_THM;
-   GSYM(REWRITE_RULE[] (ISPEC `\x. T` FUNCTION_FACTORS_LEFT_GEN))]);;
-
-let FUNCTION_FACTORS_RIGHT_GEN = prove
- (`!P f g. (!x. P x ==> ?y. g(y) = f(x)) <=>
-           (?h. !x. P x ==> f(x) = g(h x))`,
-  REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]);;
-
-let FUNCTION_FACTORS_RIGHT = prove
- (`!f g. (!x. ?y. g(y) = f(x)) <=> ?h. f = g o h`,
-  REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
-
-let SURJECTIVE_FORALL_THM = prove
- (`!f:A->B. (!y. ?x. f x = y) <=> (!P. (!x. P(f x)) <=> (!y. P y))`,
-  GEN_TAC THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
-  DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN MESON_TAC[]);;
-
-let SURJECTIVE_EXISTS_THM = prove
- (`!f:A->B. (!y. ?x. f x = y) <=> (!P. (?x. P(f x)) <=> (?y. P y))`,
-  GEN_TAC THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
-  DISCH_THEN(MP_TAC o SPEC `\y:B. !x:A. ~(f x = y)`) THEN MESON_TAC[]);;
-
-let SURJECTIVE_IMAGE_THM = prove
- (`!f:A->B. (!y. ?x. f x = y) <=> (!P. IMAGE f {x | P(f x)} = {x | P x})`,
-  GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN
-  EQ_TAC THENL [ALL_TAC; DISCH_THEN(MP_TAC o SPEC `\y:B. T`)] THEN
-  MESON_TAC[]);;
-
-let IMAGE_INJECTIVE_IMAGE_OF_SUBSET = prove
- (`!f:A->B s.
-     ?t. t SUBSET s /\
-         IMAGE f s = IMAGE f t /\
-         (!x y. x IN t /\ y IN t /\ f x = f y ==> x = y)`,
-  REPEAT GEN_TAC THEN
-  SUBGOAL_THEN
-   `?g. !y. y IN IMAGE (f:A->B) s ==> g(y) IN s /\ f(g(y)) = y`
-  STRIP_ASSUME_TAC THENL
-   [REWRITE_TAC[GSYM SURJECTIVE_ON_RIGHT_INVERSE] THEN SET_TAC[];
-    EXISTS_TAC `IMAGE (g:B->A) (IMAGE (f:A->B) s)` THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Injectivity and surjectivity of image under a function.                   *)

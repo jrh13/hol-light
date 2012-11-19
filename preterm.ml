@@ -8,37 +8,7 @@
 (*                 (c) Copyright, Marco Maggesi 2012                         *)
 (* ========================================================================= *)
 
-needs "nets.ml";;
-
-(* ------------------------------------------------------------------------- *)
-(* Character discrimination.                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
-  let charcode s = Char.code(String.get s 0) in
-  let spaces = " \t\n\r"
-  and separators = ",;"
-  and brackets = "()[]{}"
-  and symbs = "\\!@#$%^&*-+|\\<=>/?~.:"
-  and alphas = "'abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  and nums = "0123456789" in
-  let allchars = spaces^separators^brackets^symbs^alphas^nums in
-  let csetsize = itlist (max o charcode) (explode allchars) 256 in
-  let ctable = Array.make csetsize 0 in
-  do_list (fun c -> Array.set ctable (charcode c) 1) (explode spaces);
-  do_list (fun c -> Array.set ctable (charcode c) 2) (explode separators);
-  do_list (fun c -> Array.set ctable (charcode c) 4) (explode brackets);
-  do_list (fun c -> Array.set ctable (charcode c) 8) (explode symbs);
-  do_list (fun c -> Array.set ctable (charcode c) 16) (explode alphas);
-  do_list (fun c -> Array.set ctable (charcode c) 32) (explode nums);
-  let isspace c = Array.get ctable (charcode c) = 1
-  and issep c  = Array.get ctable (charcode c) = 2
-  and isbra c  = Array.get ctable (charcode c) = 4
-  and issymb c = Array.get ctable (charcode c) = 8
-  and isalpha c = Array.get ctable (charcode c) = 16
-  and isnum c = Array.get ctable (charcode c) = 32
-  and isalnum c = Array.get ctable (charcode c) >= 16 in
-  isspace,issep,isbra,issymb,isalpha,isnum,isalnum;;
+needs "printer.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Flag to say whether to treat varstruct "\const. bod" as variable.         *)
@@ -64,10 +34,6 @@ let the_implicit_types = ref ([]:(string*hol_type)list);;
 (* ------------------------------------------------------------------------- *)
 (* Overloading and interface mapping.                                        *)
 (* ------------------------------------------------------------------------- *)
-
-let the_interface = ref ([] :(string * (string * hol_type)) list);;
-
-let the_overload_skeletons = ref ([] : (string * hol_type) list);;
 
 let make_overloadable s gty =
   if can (assoc s) (!the_overload_skeletons)

@@ -99,6 +99,9 @@
     (goto-char (point-min))
     (while (search-forward "theta" nil t)
       (replace-match "θ" nil t))
+    (goto-char (point-min))
+    (while (search-forward "mu" nil t)
+      (replace-match "μ" nil t))
     (goto-char start)))
 
 (defun Remove-math-fonts-for-HOL-Light ()
@@ -187,6 +190,9 @@
   (goto-char (point-min))
   (while (search-forward "θ" nil t)
     (replace-match "theta" nil t))
+    (goto-char (point-min))
+    (while (search-forward "μ" nil t)
+      (replace-match "mu" nil t))
   (goto-char (point-min)))
 
 
@@ -235,6 +241,7 @@
 (global-set-key '[f2 100]  '(lambda () (interactive) (insert " ━ ")))       ;; F2 d
 (global-set-key '[f2 112]  '(lambda () (interactive) (insert " ╪ ")))       ;; F2 p
 (global-set-key '[f2 108]  '(lambda () (interactive) (insert "λ")))       ;; F2 l
+(global-set-key '[f2 109]  '(lambda () (interactive) (insert "μ")))       ;; F2 m
 (global-set-key '[f2 49]  '(lambda () (interactive) (insert "α")))       ;; F2 1
 (global-set-key '[f2 50]  '(lambda () (interactive) (insert "β")))       ;; F2 2
 (global-set-key '[f2 51]  '(lambda () (interactive) (insert "γ")))       ;; F2 3
@@ -247,6 +254,9 @@
 (global-set-key '[f2 56]  '(lambda () (interactive) (insert " ≇ ")))       ;; F2 8
 (global-set-key '[f2 55]  '(lambda () (interactive) (insert " ∥ ")))       ;; F2 7
 (global-set-key '[f2 54]  '(lambda () (interactive) (insert " ∦ ")))       ;; F2 6
+
+
+
 
 ;; Two Emacs functions are useful in this context: 
 ;; (string-to-char "⇒") => 8658

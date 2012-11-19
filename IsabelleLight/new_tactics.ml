@@ -3,14 +3,14 @@
 (*   Isabelle/Procedural style additions and other user-friendly shortcuts.  *)
 (*                                                                           *)
 (*                   Petros Papapanagiotou, Jacques Fleuriot                 *)
-(*              Centre of Intelligent Systems and their Applications         *)
+(*              Center of Intelligent Systems and their Applications         *)
 (*                          University of Edinburgh                          *)
 (*                                 2009-2010                                 *)
 (* ========================================================================= *)
 (* FILE         : new_tactics.ml                                             *)
 (* DESCRIPTION  : Various tactics to facilitate procedural-style users.      *)
 (*                Mostly inspired by Isabelle's similar tactics.             *)
-(* LAST MODIFIED: October 2010                                               *)
+(* LAST MODIFIED: October 2012                                               *)
 (* ========================================================================= *)
 
 (* ------------------------------------------------------------------------- *)
@@ -131,7 +131,6 @@ let GENERAL_ASM_TAC = fun rule thl (asl,w) ->
 	 (rule ((filter (fun x -> not (th = x)) asm) @ thl) th)
 	       ) (rev asl)) (asl,w);;
 
-
 (* ------------------------------------------------------------------------- *)
 (* Using the above GENERAL_ASSUM_TAC, we define 4 tactics to rewrite         *)
 (* assumptions based on the 4 rewrite rules available in HOL Light.          *)
@@ -144,6 +143,14 @@ let REWRITE_ASM_TAC,ONCE_REWRITE_ASM_TAC,PURE_REWRITE_ASM_TAC,
   GENERAL_ASM_TAC PURE_REWRITE_RULE,
   GENERAL_ASM_TAC PURE_ONCE_REWRITE_RULE;;
 
+(* ------------------------------------------------------------------------- *)
+(* And for simplification.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let SIMP_ASM_TAC,ONCE_SIMP_ASM_TAC,PURE_SIMP_ASM_TAC =  
+  GENERAL_ASM_TAC SIMP_RULE,
+  GENERAL_ASM_TAC ONCE_SIMP_RULE,
+  GENERAL_ASM_TAC PURE_SIMP_RULE;;
 
 (* ------------------------------------------------------------------------- *)
 (* FULL_REWRITE_TAC : thm list -> tactic                                     *)
@@ -156,7 +163,6 @@ let FULL_REWRITE_TAC thl =
   REWRITE_ASM_TAC thl THEN ASM_SIMP_TAC thl;;
 
 let simp = FULL_REWRITE_TAC;;
-
 
 (* ------------------------------------------------------------------------- *)
 (* FULL_SIMP_TAC : thm list -> tactic                                        *)
@@ -212,6 +218,12 @@ let meta_assumption mvs = (FIRST_ASSUM MATCH_ACCEPT_TAC) ORELSE
                       (FIRST_ASSUM (ALL_UNIFY_ACCEPT_TAC mvs));;
 
 
+(* ------------------------------------------------------------------------- *)
+(* Shortcut for interactive proofs so that you don't have to enumerate       *)
+(* metavariables.                                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let ema () = (e o meta_assumption o top_metas o p) ()  ;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -282,11 +294,45 @@ let qed = top_thm;;
 
 
 (* ------------------------------------------------------------------------- *)
+(* ASM_STRUCT_CASES_TAC : (thm_tactic)                                       *)
+(* Replacement/fix of STRUCT_CASES_TAC where each case is added as an        *)
+(* assumption like ASM_CASES_TAC does for booleans.                          *)
+(* ------------------------------------------------------------------------- *)
+
+let ASM_STRUCT_CASES_TAC =
+    REPEAT_TCL STRIP_THM_THEN ASSUME_TAC;;
+
+(* ------------------------------------------------------------------------- *)
 (* case_tac : (term -> tactic)                                               *)
 (* Isabelle's case_tac for splitting cases.                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let case_tac = ASM_CASES_TAC;;
+let (case_tac:term->tactic) =
+  fun tm ((_,w) as g) ->
+    let trymatch = fun tm1 tm2 ->
+      try ( let inst = term_match (gl_frees g) tm1 tm2 in
+	    if (is_var tm1) 
+	    then match inst with
+		[],[],_ -> true
+	      | _  -> false
+	    else true )
+      with Failure _ -> false in		
+    let tm' = try (find_term (trymatch tm) w)
+      with Failure _ -> tm in
+    let ty = (fst o dest_type o type_of) tm' in
+    let thm = try (cases ty) 
+      with Failure _ -> failwith ("case_tac: Failed to find cases theorem for type \"" ^ ty ^ "\".") in
+    ASM_STRUCT_CASES_TAC (ISPEC tm' thm) g;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* gen_case_tac : tactic                                                     *)
+(* Case split on the leading universal quantifier of the goal.               *)
+(* ------------------------------------------------------------------------- *)
+
+let (gen_case_tac:tactic) =
+  fun ((_,w) as g) ->
+    case_tac ((fst o dest_forall) w) g;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -304,3 +350,4 @@ let subgoal_tac = fun tm -> SUBGOAL_THEN tm ASSUME_TAC;;
 (* ------------------------------------------------------------------------- *)
 
 let meson = ASM_MESON_TAC;;
+
