@@ -655,6 +655,11 @@ let HOMOGENEOUS_LINEAR_EQUATIONS_DET = prove
   MATCH_MP_TAC(ARITH_RULE `r <= MIN N N ==> (~(r = N) <=> r < N)`) THEN
   REWRITE_TAC[RANK_BOUND]);;
 
+let INVERTIBLE_MATRIX_MUL = prove
+ (`!A:real^N^N B:real^N^N.
+        invertible(A ** B) <=> invertible A /\ invertible B`,
+  REWRITE_TAC[INVERTIBLE_DET_NZ; DET_MUL; DE_MORGAN_THM; REAL_ENTIRE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cramer's rule.                                                            *)
 (* ------------------------------------------------------------------------- *)

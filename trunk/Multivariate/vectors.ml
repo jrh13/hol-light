@@ -517,6 +517,10 @@ let REAL_LE_RSQRT = prove
   MESON_TAC[REAL_LE_TOTAL; SQRT_MONO_LE; SQRT_POS_LE; REAL_POW_2;
             REAL_LE_SQUARE; REAL_LE_TRANS; POW_2_SQRT]);;
 
+let REAL_LT_LSQRT = prove
+ (`!x y. &0 <= x /\ &0 <= y /\ x < y pow 2 ==> sqrt x < y`,
+  MESON_TAC[SQRT_MONO_LT; REAL_POW_LE; POW_2_SQRT]);;
+
 let REAL_LT_RSQRT = prove
  (`!x y. x pow 2 < y ==> x < sqrt(y)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC(REAL_ARITH `abs x < a ==> x < a`) THEN
@@ -1932,6 +1936,24 @@ let ORTHOGONAL_CLAUSES = prove
   REWRITE_TAC[orthogonal; DOT_RNEG; DOT_RMUL; DOT_RADD; DOT_RSUB;
     DOT_LZERO; DOT_RZERO; DOT_LNEG; DOT_LMUL; DOT_LADD; DOT_LSUB] THEN
   SIMP_TAC[] THEN REAL_ARITH_TAC);;
+
+let ORTHOGONAL_RVSUM = prove
+ (`!f:A->real^N s x.
+        FINITE s /\
+        (!y. y IN s ==> orthogonal x (f y))
+        ==> orthogonal x (vsum s f)`,
+  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NOT_IN_EMPTY; FORALL_IN_INSERT; ORTHOGONAL_CLAUSES; VSUM_CLAUSES]);;
+
+let ORTHOGONAL_LVSUM = prove
+ (`!f:A->real^N s y.
+        FINITE s /\
+        (!x. x IN s ==> orthogonal (f x) y)
+        ==> orthogonal (vsum s f) y`,
+  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NOT_IN_EMPTY; FORALL_IN_INSERT; ORTHOGONAL_CLAUSES; VSUM_CLAUSES]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Explicit vector construction from lists.                                  *)
@@ -4180,33 +4202,62 @@ let INDEPENDENT_EXPLICIT = prove
    [ALL_TAC; ASM_MESON_TAC[INDEPENDENT_BOUND]] THEN
   ASM_SIMP_TAC[independent; DEPENDENT_FINITE] THEN MESON_TAC[]);;
 
+let INDEPENDENT_SING = prove
+ (`!x. independent {x} <=> ~(x = vec 0)`,
+  REWRITE_TAC[INDEPENDENT_INSERT; NOT_IN_EMPTY; SPAN_EMPTY] THEN
+  REWRITE_TAC[INDEPENDENT_EMPTY] THEN SET_TAC[]);;
+
+let DEPENDENT_SING = prove
+ (`!x. dependent {x} <=> x = vec 0`,
+  MESON_TAC[independent; INDEPENDENT_SING]);;
+
+let DEPENDENT_2 = prove
+ (`!a b:real^N.
+        dependent {a,b} <=>
+                if a = b then a = vec 0
+                else ?x y. x % a + y % b = vec 0 /\ ~(x = &0 /\ y = &0)`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[DEPENDENT_SING; SET_RULE `{x,x} = {x}`] THEN
+  SIMP_TAC[DEPENDENT_FINITE; VSUM_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
+  ASM_REWRITE_TAC[IN_SING; NOT_IN_EMPTY; VECTOR_ADD_RID; EXISTS_IN_INSERT] THEN
+  EQ_TAC THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
+   [X_GEN_TAC `u:real^N->real` THEN STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`(u:real^N->real) a`; `(u:real^N->real) b`] THEN
+    ASM_REWRITE_TAC[];
+    MAP_EVERY X_GEN_TAC [`x:real`; `y:real`] THEN DISCH_TAC THEN EXISTS_TAC
+     `\v:real^N. if v = a then x else if v = b then y else z:real` THEN
+    ASM_MESON_TAC[]]);;
+
+let DEPENDENT_3 = prove
+ (`!a b c:real^N.
+        ~(a = b) /\ ~(a = c) /\ ~(b = c)
+        ==> (dependent {a,b,c} <=>
+             ?x y z. x % a + y % b + z % c = vec 0 /\
+                     ~(x = &0 /\ y = &0 /\ z = &0))`,
+  REPEAT STRIP_TAC THEN
+  SIMP_TAC[DEPENDENT_FINITE; VSUM_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
+  ASM_REWRITE_TAC[IN_SING; NOT_IN_EMPTY; VECTOR_ADD_RID; IN_INSERT] THEN
+  EQ_TAC THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
+   [X_GEN_TAC `u:real^N->real` THEN STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+     [`(u:real^N->real) a`; `(u:real^N->real) b`; `(u:real^N->real) c`];
+    MAP_EVERY X_GEN_TAC [`x:real`; `y:real`; `z:real`] THEN DISCH_TAC THEN
+    EXISTS_TAC
+     `\v:real^N. if v = a then x else if v = b then y else z:real`] THEN
+  ASM_MESON_TAC[]);;
+
 let INDEPENDENT_2 = prove
  (`!a b:real^N x y.
         independent{a,b} /\ ~(a = b)
         ==> (x % a + y % b = vec 0 <=> x = &0 /\ y = &0)`,
-  REWRITE_TAC[INDEPENDENT_EXPLICIT] THEN REPEAT STRIP_TAC THEN EQ_TAC THEN
-  SIMP_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID] THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `\c:real^N. if c = a then x else y:real`) THEN
-  SIMP_TAC[VSUM_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
-  ASM_REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; VECTOR_ADD_RID] THEN
-  DISCH_THEN(fun th ->
-    MP_TAC(SPEC `a:real^N` th) THEN MP_TAC(SPEC `b:real^N` th)) THEN
-  ASM_SIMP_TAC[]);;
+  SIMP_TAC[IMP_CONJ_ALT; independent; DEPENDENT_2] THEN
+  MESON_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID]);;
 
 let INDEPENDENT_3 = prove
  (`!a b c:real^N x y z.
         independent{a,b,c} /\ ~(a = b) /\ ~(a = c) /\ ~(b = c)
         ==> (x % a + y % b + z % c = vec 0 <=> x = &0 /\ y = &0 /\ z = &0)`,
-  REWRITE_TAC[INDEPENDENT_EXPLICIT] THEN REPEAT STRIP_TAC THEN EQ_TAC THEN
-  SIMP_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID] THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC
-   `\v:real^N. if v = a then x else if v = b then y else z:real`) THEN
-  SIMP_TAC[VSUM_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
-  ASM_REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY; VECTOR_ADD_RID] THEN
-  DISCH_THEN(fun th ->
-    MP_TAC(SPEC `a:real^N` th) THEN MP_TAC(SPEC `b:real^N` th) THEN
-    MP_TAC(SPEC `c:real^N` th)) THEN
-  ASM_SIMP_TAC[]);;
+  SIMP_TAC[IMP_CONJ_ALT; independent; DEPENDENT_3] THEN
+  MESON_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence we can create a maximal independent subset.                         *)
@@ -4618,6 +4669,11 @@ let SPAN_EQ = prove
  (`!s t. span s = span t <=> s SUBSET span t /\ t SUBSET span s`,
   REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
   MESON_TAC[SUBSET_TRANS; SPAN_SPAN; SPAN_MONO; SPAN_INC]);;
+
+let SPAN_EQ_INSERT = prove
+ (`!s x. span(x INSERT s) = span s <=> x IN span s`,
+  REWRITE_TAC[SPAN_EQ; INSERT_SUBSET] THEN
+  MESON_TAC[SPAN_INC; SUBSET; SET_RULE `s SUBSET (x INSERT s)`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* We can extend a linear basis-basis injection to the whole set.            *)
@@ -7084,6 +7140,16 @@ let BETWEEN_DOT = prove
      between x (a,b) <=> (x - a) dot (b - x) = norm(x - a) * norm(b - x)`,
   REWRITE_TAC[BETWEEN_NORM; NORM_CAUCHY_SCHWARZ_EQ]);;
 
+let BETWEEN_EXISTS_EXTENSION = prove
+ (`!a b x:real^N.
+        between b (a,x) /\ ~(b = a) ==> ?d. &0 <= d /\ x = b + d % (b - a)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[BETWEEN_NORM] THEN STRIP_TAC THEN
+  EXISTS_TAC `norm(x - b:real^N) / norm(b - a)` THEN
+  SIMP_TAC[REAL_LE_DIV; NORM_POS_LE] THEN FIRST_X_ASSUM
+   (MP_TAC o AP_TERM `(%) (inv(norm(b - a:real^N))):real^N->real^N`) THEN
+  ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; NORM_EQ_0; VECTOR_SUB_EQ] THEN
+  VECTOR_ARITH_TAC);;
+
 let BETWEEN_IMP_COLLINEAR = prove
  (`!a b x:real^N. between x (a,b) ==> collinear {a,x,b}`,
   REPEAT GEN_TAC THEN MAP_EVERY
@@ -7126,6 +7192,16 @@ let COLLINEAR_DIST_BETWEEN = prove
            dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b)
            ==> between x (a,b)`,
   SIMP_TAC[COLLINEAR_BETWEEN_CASES; between; DIST_SYM] THEN NORM_ARITH_TAC);;
+
+let BETWEEN_COLLINEAR_DIST_EQ = prove
+ (`!a b x:real^N.
+        between x (a,b) <=>
+        collinear {a, x, b} /\
+        dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [SIMP_TAC[BETWEEN_IMP_COLLINEAR] THEN REWRITE_TAC[between] THEN
+    NORM_ARITH_TAC;
+    MESON_TAC[COLLINEAR_DIST_BETWEEN; INSERT_AC]]);;
 
 let COLLINEAR_1 = prove
  (`!s:real^1->bool. collinear s`,
@@ -7196,6 +7272,14 @@ let MIDPOINT_COLLINEAR = prove
   ASM_SIMP_TAC[NORM_MUL; REAL_EQ_MUL_RCANCEL; NORM_EQ_0; VECTOR_SUB_EQ;
                VECTOR_MUL_EQ_0] THEN
   REAL_ARITH_TAC);;
+
+let MIDPOINT_BETWEEN = prove
+ (`!a b c:real^N.
+        b = midpoint (a,c) <=> between b (a,c) /\ dist (a,b) = dist (b,c)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = c` THENL
+   [ASM_SIMP_TAC[BETWEEN_REFL_EQ; MIDPOINT_REFL; DIST_SYM]; ALL_TAC] THEN
+  EQ_TAC THEN SIMP_TAC[BETWEEN_MIDPOINT; DIST_MIDPOINT] THEN
+  ASM_MESON_TAC[MIDPOINT_COLLINEAR; BETWEEN_IMP_COLLINEAR]);;
 
 (* ------------------------------------------------------------------------- *)
 (* General "one way" lemma for properties preserved by injective map.        *)

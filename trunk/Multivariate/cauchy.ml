@@ -250,6 +250,29 @@ let CLOSED_VALID_PATH_IMAGE = prove
   MESON_TAC[CLOSED_PATH_IMAGE; VALID_PATH_IMP_PATH]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Theorems about rectifiable valid paths.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let RECTIFIABLE_VALID_PATH = prove
+ (`!g. valid_path g
+       ==> (rectifiable_path g <=>
+              (\t. vector_derivative g (at t)) absolutely_integrable_on
+              interval [vec 0,vec 1])`,
+  REWRITE_TAC[valid_path; piecewise_differentiable_on; GSYM path] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC RECTIFIABLE_PATH_DIFFERENTIABLE THEN
+  ASM_MESON_TAC[FINITE_IMP_COUNTABLE]);;
+
+let PATH_LENGTH_VALID_PATH = prove
+ (`!g. valid_path g /\ rectifiable_path g
+       ==> path_length g =
+                 drop(integral (interval[vec 0,vec 1])
+                               (\t. lift(norm(vector_derivative g (at t)))))`,
+  REWRITE_TAC[valid_path; piecewise_differentiable_on; GSYM path] THEN
+
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC PATH_LENGTH_DIFFERENTIABLE THEN
+  ASM_MESON_TAC[FINITE_IMP_COUNTABLE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Integrals along a path (= piecewise differentiable function on [0,1]).    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -12477,6 +12500,10 @@ let MONTEL = prove
 let moebius_function = new_definition
   `!t w z. moebius_function t w z =
            cexp (ii * Cx t) * (z - w) / (Cx(&1) - cnj w * z)`;;
+
+let MOEBIUS_FUNCTION_SIMPLE = prove
+ (`!w z. moebius_function (&0) w z = (z - w) / (Cx(&1) - cnj w * z)`,
+  REWRITE_TAC[moebius_function; COMPLEX_MUL_RZERO; CEXP_0; COMPLEX_MUL_LID]);;
 
 let MOEBIUS_FUNCTION_EQ_ZERO = prove
   (`!t w. moebius_function t w w = Cx(&0)`,

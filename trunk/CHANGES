@@ -1,3 +1,16 @@
+Wed  5th Dec 2012       sets.ml
+
+Added a couple of reformulations of injectivity. This is useful since the
+left-hand characterization can make the simplifier get very slow.
+
+INJECTIVE_ON_ALT =
+  |- !P f.
+         (!x y. P x /\ P y /\ f x = f y ==> x = y) <=>
+         (!x y. P x /\ P y ==> (f x = f y <=> x = y))
+
+INJECTIVE_ALT =
+  |- !f. (!x y. f x = f y ==> x = y) <=> (!x y. f x = f y <=> x = y)
+
 Fri 16th Nov 2012       tactics.ml, Help/STRUCT_CASES_THEN.doc [new file]
 
 At the suggestion of Petros Papapanagiotou, made a theorem-tactic form
