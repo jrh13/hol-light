@@ -5257,6 +5257,17 @@ let REAL_SEGMENT_INTERVAL = prove
   REWRITE_TAC[REAL_INTERVAL_INTERVAL] THEN
   CONJ_TAC THEN REPEAT GEN_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[]);;
 
+let REAL_CONTINUOUS_INJECTIVE_IFF_MONOTONIC = prove
+ (`!f s.
+        f real_continuous_on s /\ is_realinterval s
+        ==> ((!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) <=>
+             (!x y. x IN s /\ y IN s /\ x < y ==> f x < f y) \/
+             (!x y. x IN s /\ y IN s /\ x < y ==> f y < f x))`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_CONTINUOUS_ON; IS_REALINTERVAL_IS_INTERVAL] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_INJECTIVE_IFF_MONOTONIC) THEN
+  REWRITE_TAC[FORALL_LIFT; LIFT_IN_IMAGE_LIFT; o_THM; LIFT_DROP; LIFT_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Convex real->real functions.                                              *)
 (* ------------------------------------------------------------------------- *)

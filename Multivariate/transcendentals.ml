@@ -3658,6 +3658,11 @@ let ABS_SQUARE_LE_1 = prove
   ONCE_REWRITE_TAC[GSYM REAL_ABS_NUM] THEN
   REWRITE_TAC[REAL_LT_SQUARE_ABS; GSYM REAL_NOT_LT] THEN REAL_ARITH_TAC);;
 
+let ABS_SQUARE_EQ_1 = prove
+ (`!x. x pow 2 = &1 <=> abs(x) = &1`,
+  REWRITE_TAC[REAL_RING `x pow 2 = &1 <=> x = &1 \/ x = -- &1`] THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Inverse sine.                                                             *)
 (* ------------------------------------------------------------------------- *)

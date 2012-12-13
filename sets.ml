@@ -971,6 +971,15 @@ let FINITE_INDUCT_STRONG = prove
 (* Useful general properties of functions.                                   *)
 (* ------------------------------------------------------------------------- *)
 
+let INJECTIVE_ON_ALT = prove
+ (`!P f. (!x y. P x /\ P y /\ f x = f y ==> x = y) <=>
+         (!x y. P x /\ P y ==> (f x = f y <=> x = y))`,
+  MESON_TAC[]);;
+
+let INJECTIVE_ALT = prove
+ (`!f. (!x y. f x = f y ==> x = y) <=> (!x y. f x = f y <=> x = y)`,
+  MESON_TAC[]);;
+
 let SURJECTIVE_ON_RIGHT_INVERSE = prove
  (`!f t. (!y. y IN t ==> ?x. x IN s /\ (f(x) = y)) <=>
          (?g. !y. y IN t ==> g(y) IN s /\ (f(g(y)) = y))`,

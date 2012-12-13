@@ -5441,17 +5441,34 @@ let BILINEAR_CONTINUOUS_ON_COMPOSE = prove
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
            BILINEAR_CONTINUOUS_WITHIN_COMPOSE]);;
 
+let BILINEAR_DOT = prove
+ (`bilinear (\x y:real^N. lift(x dot y))`,
+  REWRITE_TAC[bilinear; linear; DOT_LADD; DOT_RADD; DOT_LMUL; DOT_RMUL] THEN
+  REWRITE_TAC[LIFT_ADD; LIFT_CMUL]);;
+
+let CONTINUOUS_AT_LIFT_DOT2 = prove
+ (`!f:real^M->real^N g x.     
+        f continuous at x /\ g continuous at x
+        ==> (\x. lift(f x dot g x)) continuous at x`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`] 
+  BILINEAR_CONTINUOUS_AT_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
+                     
+let CONTINUOUS_WITHIN_LIFT_DOT2 = prove
+ (`!f:real^M->real^N g x s.                           
+        f continuous (at x within s) /\ g continuous (at x within s)       
+        ==> (\x. lift(f x dot g x)) continuous (at x within s)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE      
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`] 
+  BILINEAR_CONTINUOUS_WITHIN_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
+
 let CONTINUOUS_ON_LIFT_DOT2 = prove
  (`!f:real^M->real^N g s.
         f continuous_on s /\ g continuous_on s
         ==> (\x. lift(f x dot g x)) continuous_on s`,
-  REPEAT GEN_TAC THEN
-  SUBGOAL_THEN `bilinear (\x y:real^N. lift(x dot y))` MP_TAC THENL
-   [REWRITE_TAC[bilinear; linear; DOT_LADD; DOT_RADD; DOT_LMUL; DOT_RMUL] THEN
-    REWRITE_TAC[LIFT_ADD; LIFT_CMUL];
-    REWRITE_TAC[GSYM IMP_CONJ_ALT; GSYM CONJ_ASSOC] THEN
-    DISCH_THEN(MP_TAC o MATCH_MP BILINEAR_CONTINUOUS_ON_COMPOSE) THEN
-    REWRITE_TAC[]]);;
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE      
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`] 
+  BILINEAR_CONTINUOUS_ON_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Occasionally useful invariance properties.                                *)
