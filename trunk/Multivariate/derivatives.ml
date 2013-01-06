@@ -549,41 +549,39 @@ let DIFF_CHAIN_AT = prove
 (* Composition rules stated just for differentiability.                      *)
 (* ------------------------------------------------------------------------- *)
 
+let DIFFERENTIABLE_LINEAR = prove
+ (`!net f:real^M->real^N. linear f ==> f differentiable net`,
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_LINEAR]);;
+
 let DIFFERENTIABLE_CONST = prove
  (`!c net. (\z. c) differentiable net`,
-  REWRITE_TAC[differentiable] THEN
-  MESON_TAC[HAS_DERIVATIVE_CONST]);;
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_CONST]);;
 
 let DIFFERENTIABLE_ID = prove
  (`!net. (\z. z) differentiable net`,
-  REWRITE_TAC[differentiable] THEN
-  MESON_TAC[HAS_DERIVATIVE_ID]);;
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_ID]);;
 
 let DIFFERENTIABLE_CMUL = prove
  (`!net f c. f differentiable net ==> (\x. c % f(x)) differentiable net`,
-  REWRITE_TAC[differentiable] THEN
-  MESON_TAC[HAS_DERIVATIVE_CMUL]);;
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_CMUL]);;
 
 let DIFFERENTIABLE_NEG = prove
  (`!f net. f differentiable net ==> (\z. --(f z)) differentiable net`,
-  REWRITE_TAC[differentiable] THEN
-  MESON_TAC[HAS_DERIVATIVE_NEG]);;
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_NEG]);;
 
 let DIFFERENTIABLE_ADD = prove
  (`!f g net.
         f differentiable net /\
         g differentiable net
         ==> (\z. f z + g z) differentiable net`,
-  REWRITE_TAC[differentiable] THEN
-  MESON_TAC[HAS_DERIVATIVE_ADD]);;
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_ADD]);;
 
 let DIFFERENTIABLE_SUB = prove
  (`!f g net.
         f differentiable net /\
         g differentiable net
         ==> (\z. f z - g z) differentiable net`,
-  REWRITE_TAC[differentiable] THEN
-  MESON_TAC[HAS_DERIVATIVE_SUB]);;
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_SUB]);;
 
 let DIFFERENTIABLE_VSUM = prove
  (`!f net s.
@@ -2004,6 +2002,56 @@ let HAS_DERIVATIVE_BILINEAR_AT = prove
   REWRITE_TAC[has_derivative_at] THEN
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[GSYM has_derivative_within; HAS_DERIVATIVE_BILINEAR_WITHIN]);;
+
+let BILINEAR_DIFFERENTIABLE_AT_COMPOSE = prove
+ (`!f:real^M->real^N g:real^M->real^P g:real^N->real^P->real^Q g h a.
+        f differentiable at a /\ g differentiable at a /\ bilinear h
+        ==> (\x. h (f x) (g x)) differentiable at a`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[FRECHET_DERIVATIVE_WORKS] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP HAS_DERIVATIVE_BILINEAR_AT) THEN
+  REWRITE_TAC[GSYM FRECHET_DERIVATIVE_WORKS; differentiable] THEN
+  MESON_TAC[]);;
+
+let BILINEAR_DIFFERENTIABLE_WITHIN_COMPOSE = prove
+ (`!f:real^M->real^N g:real^M->real^P g:real^N->real^P->real^Q g h a s.
+        f differentiable at x within s /\ g differentiable at x within s /\
+        bilinear h
+        ==> (\x. h (f x) (g x)) differentiable at x within s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[FRECHET_DERIVATIVE_WORKS] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP HAS_DERIVATIVE_BILINEAR_WITHIN) THEN
+  REWRITE_TAC[GSYM FRECHET_DERIVATIVE_WORKS; differentiable] THEN
+  MESON_TAC[]);;
+
+let BILINEAR_DIFFERENTIABLE_ON_COMPOSE = prove
+ (`!f:real^M->real^N g:real^M->real^P g:real^N->real^P->real^Q g h s.
+        f differentiable_on s /\ g differentiable_on s /\ bilinear h
+        ==> (\x. h (f x) (g x)) differentiable_on s`,
+  REWRITE_TAC[differentiable_on] THEN
+  MESON_TAC[BILINEAR_DIFFERENTIABLE_WITHIN_COMPOSE]);;
+
+let DIFFERENTIABLE_AT_LIFT_DOT2 = prove
+ (`!f:real^M->real^N g x.
+        f differentiable at x /\ g differentiable at x
+        ==> (\x. lift(f x dot g x)) differentiable at x`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+  BILINEAR_DIFFERENTIABLE_AT_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
+
+let DIFFERENTIABLE_WITHIN_LIFT_DOT2 = prove
+ (`!f:real^M->real^N g x s.
+        f differentiable (at x within s) /\ g differentiable (at x within s)
+        ==> (\x. lift(f x dot g x)) differentiable (at x within s)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+  BILINEAR_DIFFERENTIABLE_WITHIN_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
+
+let DIFFERENTIABLE_ON_LIFT_DOT2 = prove
+ (`!f:real^M->real^N g s.
+        f differentiable_on s /\ g differentiable_on s
+        ==> (\x. lift(f x dot g x)) differentiable_on s`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+  BILINEAR_DIFFERENTIABLE_ON_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Considering derivative R(^1)->R^n as a vector.                            *)

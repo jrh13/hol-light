@@ -13,7 +13,7 @@
 (* ========================================================================= *)
 
 needs "Multivariate/topology.ml";;
-needs "Multivariate/convex.ml";;
+needs "Multivariate/paths.ml";;
 
 let BROUWER_COMPACTNESS_LEMMA = prove
  (`!f:real^M->real^N s.

@@ -722,6 +722,10 @@ let INTERS_UNION = prove
  (`!s t. INTERS (s UNION t) = INTERS s INTER INTERS t`,
   SET_TAC[]);;
 
+let SUBSET_INTERS = prove
+ (`!s f. s SUBSET INTERS f <=> (!t. t IN f ==> s SUBSET t)`,
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Multiple intersection.                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -936,9 +940,17 @@ let UNIONS_INTERS = prove
   REWRITE_TAC[IN_UNIONS; IN_UNIV; IN_DIFF; INTERS_GSPEC; IN_ELIM_THM] THEN
   MESON_TAC[]);;
 
-let DIFF_UNIONS = prove
+let UNIONS_DIFF = prove
  (`!s t. UNIONS s DIFF t = UNIONS {x DIFF t | x IN s}`,
   REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]);;
+
+let DIFF_UNIONS = prove
+ (`!u s. u DIFF UNIONS s = u INTER INTERS {u DIFF t | t IN s}`,
+  REWRITE_TAC[INTERS_GSPEC] THEN SET_TAC[]);;
+
+let DIFF_UNIONS_NONEMPTY = prove
+ (`!u s. ~(s = {}) ==> u DIFF UNIONS s = INTERS {u DIFF t | t IN s}`,
+  REWRITE_TAC[INTERS_GSPEC] THEN SET_TAC[]);;
 
 let INTERS_OVER_UNIONS = prove
  (`!f:A->(B->bool)->bool s.

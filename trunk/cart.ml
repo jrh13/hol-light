@@ -228,6 +228,10 @@ let EXISTS_PASTECART = prove
  (`(?p. P p) <=> ?x y. P (pastecart x y)`,
   MESON_TAC[PASTECART_FST_SND; FSTCART_PASTECART; SNDCART_PASTECART]);;
 
+let PASTECART_INJ = prove                                                       
+ (`!x:real^M y:real^N w z. pastecart x y = pastecart w z <=> x = w /\ y = z`,
+  REWRITE_TAC[PASTECART_EQ; FSTCART_PASTECART; SNDCART_PASTECART]);;        
+
 (* ------------------------------------------------------------------------- *)
 (* Automatically define a type of size n.                                    *)
 (* ------------------------------------------------------------------------- *)

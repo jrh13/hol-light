@@ -557,6 +557,13 @@ let RATIONAL_APPROXIMATION = prove
       MATCH_MP_TAC(REAL_ARITH `inv e < n ==> &1 / e < abs n`) THEN
       EXPAND_TAC "n" THEN MP_TAC(SPEC `inv e` FLOOR) THEN REAL_ARITH_TAC]]);;
 
+let RATIONAL_BETWEEN = prove
+ (`!a b. a < b ==> ?q. rational q /\ a < q /\ q < b`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`(a + b) / &2`; `(b - a) / &4`] RATIONAL_APPROXIMATION) THEN
+  ANTS_TAC THENL [ALL_TAC; MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[]] THEN
+  ASM_REAL_ARITH_TAC);;
+
 let RATIONAL_APPROXIMATION_STRADDLE = prove
  (`!x e. &0 < e
          ==> ?a b. rational a /\ rational b /\

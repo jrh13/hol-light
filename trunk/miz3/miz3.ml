@@ -82,7 +82,6 @@ and just =
 
 unset_jrh_lexer;;
 
-let tot_expander f = Quotation.add "tot" (Quotation.ExStr (fun _ -> f));;
 let system_ok = Unix.WEXITED 0;;
 let wronly = Unix.O_WRONLY;;
 let usr2_handler = ref (fun () -> print_string "usr2_handler\n");;
@@ -1397,16 +1396,6 @@ and tactic_of_just fake just g =
   | _ -> failwith "tactic_of_just";;
 
 let parse_qproof s = steps_of_toks (fix_semi (tl (lex2 s)));;
-
-let quotexpander s =
-  let c = String.sub s 0 1 in
-  if c = ":" then
-    "parse_type \""^
-    (String.escaped (String.sub s 1 (String.length s - 1)))^"\""
-  else if c = ";" then "parse_qproof \""^(String.escaped s)^"\""
-  else "parse_term \""^(String.escaped s)^"\"";;
-
-tot_expander quotexpander;;
 
 let rec src_of_step (e,src,substep) =
   [e,strings_of_toks (flat src)]@

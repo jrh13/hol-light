@@ -1,0 +1,50 @@
+\DOC FIX_TAC
+
+\TYPE {FIX_TAC : string -> tactic}
+
+\SYNOPSIS
+Fixes universally quantified variables in goal.
+
+\DESCRIBE
+Given a string {s} indicating a sequence of variable names, {FIX_TAC s}
+performs the introduction of the indicated variables. It is not required to
+specify the variables in any particular order. The syntax for the string
+argument s allows the following patterns:
+
+\begin{{itemize}}
+
+\item a variable name {varname} (meaning intruduce the variable varname)
+
+\item a pattern {[newname/varname]} (meaning introduce {varname} and call it
+   {newname})
+
+\item a final {*} (meaning introduce the remaining variables)
+
+\end{{itemize}}
+
+\FAILURE
+Fails if the string specifying the variables is ill-formed or if some of the
+indicated variables are not present as outer universal quantifiers in the goal.
+
+\EXAMPLE
+Here we fix just the variable {a}:
+{
+  # g `!x a. a + x = x + a`;;
+  # e (FIX_TAC "a");;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!x. a + x = x + a`
+}
+\noindent while here we rename one of the variables and fix all the others:
+{
+  # g `!a b x. a + b + x = (a + b) + x`;;
+  #  e (FIX_TAC "[d/x] *");;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `a + b + d = (a + b) + d`
+}
+
+\SEEALSO
+GEN, GEN_TAC, INTRO_TAC, STRIP_TAC, X_GEN_TAC.
+
+\ENDDOC

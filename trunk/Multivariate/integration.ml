@@ -16719,7 +16719,7 @@ let RECTIFIABLE_PATH_DIFFERENTIABLE = prove
         (!t. t IN interval[vec 0,vec 1] DIFF s ==> g differentiable at t)
         ==> (rectifiable_path g <=>
                 (\t. vector_derivative g (at t))
-                absolutely_integrable_on  interval[vec 0,vec 1])`,
+                absolutely_integrable_on interval[vec 0,vec 1])`,
   SIMP_TAC[rectifiable_path] THEN REWRITE_TAC[path] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC
     HAS_BOUNDED_VARIATION_ABSOLUTELY_INTEGRABLE_DERIVATIVE THEN

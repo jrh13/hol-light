@@ -2,7 +2,7 @@
 (* Faces, extreme points, polytopes, polyhedra etc.                          *)
 (* ========================================================================= *)
 
-needs "Multivariate/convex.ml";;
+needs "Multivariate/paths.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Faces of a (usually convex) set.                                          *)
