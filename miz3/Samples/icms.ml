@@ -1,11 +1,39 @@
-needs "Multivariate/misc.ml";;
+(* ------------------------------------------------------------------------- *)
+(* From Multivariate/misc.ml                                                 *)
+(* ------------------------------------------------------------------------- *)
 
 prioritize_real();;
+
+let REAL_POW_LBOUND = prove                   
+ (`!x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n`,
+  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
+  INDUCT_TAC THEN         
+  REWRITE_TAC[real_pow; REAL_MUL_LZERO; REAL_ADD_RID; REAL_LE_REFL] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN     
+  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(&1 + x) * (&1 + &n * x)` THEN
+  ASM_SIMP_TAC[REAL_LE_LMUL; REAL_ARITH `&0 <= x ==> &0 <= &1 + x`] THEN
+  ASM_SIMP_TAC[REAL_LE_MUL; REAL_POS; REAL_ARITH
+   `&1 + (n + &1) * x <= (&1 + x) * (&1 + n * x) <=> &0 <= n * x * x`]);;
+                               
+let REAL_ARCH_POW = prove   
+ (`!x y. &1 < x ==> ?n. y < x pow n`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC `x - &1` REAL_ARCH) THEN ASM_REWRITE_TAC[REAL_SUB_LT] THEN
+  DISCH_THEN(MP_TAC o SPEC `y:real`) THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `n:num` THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+  EXISTS_TAC `&1 + &n * (x - &1)` THEN
+  ASM_SIMP_TAC[REAL_ARITH `x < y ==> x < &1 + y`] THEN
+  ASM_MESON_TAC[REAL_POW_LBOUND; REAL_SUB_ADD2; REAL_ARITH
+    `&1 < x ==> &0 <= x - &1`]);;
 
 let ABS_CASES = thm `;
   !x. x = &0 \/ &0 < abs(x)`;;
 
 let LL =  REAL_ARITH `&1 < k ==> &0 < k`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Miz3 solutions to IMO problem from ICMS 2006.                             *)
+(* ------------------------------------------------------------------------- *)
 
 horizon := 0;;
 
@@ -127,4 +155,3 @@ let IMO_3 = thm `;
       by SIMP_TAC,REAL_ABS_MUL,REAL_ABS_POW,GSYM REAL_LT_LDIV_EQ,
         GSYM REAL_ABS_NZ,REAL_ARCH_POW;
   qed by 2,4,REAL_NOT_LE,REAL_MUL_SYM`;;
-

@@ -3027,6 +3027,18 @@ let ONORM_TRIANGLE_LT = prove
          ==> onorm(\x. f x + g x) < e`,
   MESON_TAC[REAL_LET_TRANS; ONORM_TRIANGLE]);;
 
+let ONORM_ID = prove
+ (`onorm(\x:real^N. x) = &1`,
+  REWRITE_TAC[onorm] THEN
+  SUBGOAL_THEN `{norm(x:real^N) | norm x = &1} = {&1}`
+   (fun th -> REWRITE_TAC[th; SUP_SING]) THEN
+  SUBGOAL_THEN `norm(basis 1:real^N) = &1` MP_TAC THENL
+   [SIMP_TAC[NORM_BASIS; DIMINDEX_GE_1; LE_REFL]; SET_TAC[]]);;
+
+let ONORM_I = prove
+ (`onorm(I:real^N->real^N) = &1`,
+  REWRITE_TAC[I_DEF; ONORM_ID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* It's handy to "lift" from R to R^1 and "drop" from R^1 to R.              *)
 (* ------------------------------------------------------------------------- *)
@@ -3404,7 +3416,7 @@ let NORM_PASTECART_LE = prove
   REWRITE_TAC[NORM_POS_LE; NORM_POW_2; DOT_PASTECART; REAL_LE_REFL]);;
 
 let NORM_LE_PASTECART = prove
- (`!x:real^M y:real^M.
+ (`!x:real^M y:real^N.
     norm(x) <= norm(pastecart x y) /\
     norm(y) <= norm(pastecart x y)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[NORM_PASTECART] THEN CONJ_TAC THEN
@@ -4290,6 +4302,19 @@ let MAXIMAL_INDEPENDENT_SUBSET = prove
  (`!v:real^N->bool. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b)`,
   MP_TAC(SPEC `EMPTY:real^N->bool` MAXIMAL_INDEPENDENT_SUBSET_EXTEND) THEN
   REWRITE_TAC[EMPTY_SUBSET; INDEPENDENT_EMPTY]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A kind of closed graph property for linearity.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let LINEAR_SUBSPACE_GRAPH = prove
+ (`!f:real^M->real^N.
+        linear f <=> subspace {pastecart x (f x) | x IN (:real^M)}`,
+  REWRITE_TAC[linear; subspace; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; GSYM(SPEC `0` PASTECART_VEC); IN_UNIV] THEN
+  REWRITE_TAC[IN_ELIM_THM; PASTECART_INJ; UNWIND_THM1; PASTECART_ADD;
+              GSYM PASTECART_CMUL] THEN
+  MESON_TAC[VECTOR_MUL_LZERO]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Notion of dimension.                                                      *)

@@ -1,0 +1,64 @@
+\DOC INTRO_TAC
+
+\TYPE {INTRO_TAC : string -> tactic}
+
+\SYNOPSIS
+Breaks down outer quantifiers in goal, introducing variables and named
+hypotheses.
+
+\DESCRIBE
+Given a string {s}, {INTRO_TAC s} breaks down outer universal quantifiers and 
+implications in the goal, fixing variables and introducing assumptions with 
+names. It combines several forms of introduction of logical connectives. The 
+introduction pattern uses the following syntax:
+
+\begin{{itemize}}
+
+\item {! fix_pattern} introduces universally quantified variables as with 
+   {FIX_TAC}
+      
+\item a destruct pattern introduces and destructs an implication
+
+\item juxtaposition introduces a conjunction in the hypothesis
+
+\item { ... | ... | ....} introduces a branch in a disjunction in the 
+   hypothesis
+
+\item {#n} selects disjunct {n} in the goal
+
+\end{{itemize}}
+
+\FAILURE
+Fails if the pattern is ill-formed or does not match the form of the goal.
+
+\EXAMPLE
+Here we introduce the universally quantified outer variables, assume the 
+antecedent, splitting apart conjunctions and disjunctions:
+{
+  # g `!p q r. p \/ (q /\ r) ==> p /\ q \/ p /\ r`;;
+  # e (INTRO_TAC "!p q r; p | q r");;
+  val it : goalstack = 2 subgoals (2 total)
+  
+    0 [`q`] (q)
+    1 [`r`] (r)
+  
+  `p /\ q \/ p /\ r`
+  
+    0 [`p`] (p)
+  
+  `p /\ q \/ p /\ r`
+}
+Now a further step will select the first disjunct to prove in the top goal:
+{ 
+  # e (INTRO_TAC "#1");;
+  val it : goalstack = 1 subgoal (2 total)
+
+    0 [`p`] (p)
+
+  `p /\ q`
+}
+
+\SEEALSO
+DISCH_TAC, FIX_TAC, GEN_TAC, LABEL_TAC, REMOVE_THEN, STRIP_TAC, USE_THEN.
+
+\ENDDOC

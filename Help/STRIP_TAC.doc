@@ -52,14 +52,14 @@ Starting with the goal:
 }
 \noindent the repeated application of {STRIP_TAC} strips off the universal
 quantifiers, breaks apart the antecedent and adds the conjuncts to the
-hypotheses: 
+hypotheses:
 {
   # e(REPEAT STRIP_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
    0 [`m <= n`]
    1 [`n <= m`]
-  
+
   `m = n`
 }
 
@@ -68,6 +68,7 @@ When trying to solve a goal, often the best thing to do first
 is {REPEAT STRIP_TAC} to split the goal up into manageable pieces.
 
 \SEEALSO
-CONJ_TAC, DISCH_TAC, DISCH_THEN, GEN_TAC, STRIP_ASSUME_TAC, STRIP_GOAL_THEN.
+CONJ_TAC, DISCH_TAC, DESTRUCT_TAC, DISCH_THEN, GEN_TAC, INTRO_TAC,
+STRIP_ASSUME_TAC, STRIP_GOAL_THEN.
 
 \ENDDOC

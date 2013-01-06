@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                 (c) Copyright, Marco Maggesi 2012                         *)
 (* ========================================================================= *)
 
 needs "drule.ml";;
@@ -295,11 +296,24 @@ let (REMOVE_THEN:string->thm_tactic->tactic) =
     ttac th (asl',w);;
 
 (* ------------------------------------------------------------------------- *)
-(* General tool to augment a required set of theorems with assumptions.      *)
+(* General tools to augment a required set of theorems with assumptions.     *)
+(* Here ASM uses all current hypotheses of the goal, while HYP uses only     *)
+(* those whose labels are given in the string argument.                      *)
 (* ------------------------------------------------------------------------- *)
 
 let (ASM :(thm list -> tactic)->(thm list -> tactic)) =
   fun tltac ths (asl,w as g) -> tltac (map snd asl @ ths) g;;
+
+let HYP =
+  let ident = function
+      Ident s::rest when isalnum s -> s,rest
+    | _ -> raise Noparse in
+  let parse_using = many ident in
+  let HYP_LIST tac l =
+    rev_itlist (fun s k l -> USE_THEN s (fun th -> k (th::l))) l tac in
+  fun tac s ->
+    let l,rest = (fix "Using pattern" parse_using o lex o explode) s in
+    if rest=[] then HYP_LIST tac l else failwith "Invalid using pattern";;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic tactic to use a theorem equal to the goal. Does *no* matching.      *)
@@ -624,7 +638,7 @@ let STRIP_ASSUME_TAC =
 let STRUCT_CASES_THEN ttac = REPEAT_TCL STRIP_THM_THEN ttac;;
 
 let STRUCT_CASES_TAC = STRUCT_CASES_THEN
-     (fun th -> SUBST1_TAC th ORELSE ASSUME_TAC th);;                          
+     (fun th -> SUBST1_TAC th ORELSE ASSUME_TAC th);;
 
 let STRIP_GOAL_THEN ttac =  FIRST [GEN_TAC; CONJ_TAC; DISCH_THEN ttac];;
 

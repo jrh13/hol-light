@@ -22,6 +22,6 @@ Using an assumption identified by name that will not be needed again in the
 proof.
 
 \SEEALSO
-ASSUME, FIND_ASSUM, LABEL_TAC, USE_THEN.
+ASSUME, FIND_ASSUM, HYP, LABEL_TAC, USE_THEN.
 
 \ENDDOC

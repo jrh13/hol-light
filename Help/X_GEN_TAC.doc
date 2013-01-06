@@ -28,6 +28,7 @@ there is no dependency on the bound variable name in the goal, which can
 sometimes arise somewhat arbitrarily, e.g. in higher-order matching.
 
 \SEEALSO
-GEN, GENL, GEN_ALL, GEN_TAC, SPEC, SPECL, SPEC_ALL, SPEC_TAC, STRIP_TAC.
+FIX_TAC, GEN, GENL, GEN_ALL, GEN_TAC, INTRO_TAC, SPEC, SPECL, SPEC_ALL,
+SPEC_TAC, STRIP_TAC.
 
 \ENDDOC

@@ -25,6 +25,7 @@ The tactic {REPEAT GEN_TAC} strips away any universal quantifiers, and
 is commonly used before tactics relying on the  underlying term structure.
 
 \SEEALSO
-GEN, GENL, GEN_ALL, SPEC, SPECL, SPEC_ALL, SPEC_TAC, STRIP_TAC, X_GEN_TAC.
+FIX_TAC, GEN, GENL, GEN_ALL, INTRO_TAC, SPEC, SPECL, SPEC_ALL, SPEC_TAC,
+STRIP_TAC, X_GEN_TAC.
 
 \ENDDOC

@@ -1,10 +1,11 @@
 (* ========================================================================= *)
-(* Additional theorems, mainly about quantifiers.                            *)
+(* Additional theorems, mainly about quantifiers, and additional tactics.    *)
 (*                                                                           *)
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                 (c) Copyright, Marco Maggesi 2012                         *)
 (* ========================================================================= *)
 
 needs "simp.ml";;
@@ -370,3 +371,107 @@ let EXISTS_UNIQUE = prove
   REWRITE_TAC[FORALL_AND_THM] THEN SIMP_TAC[] THEN
   REWRITE_TAC[LEFT_FORALL_IMP_THM; EXISTS_REFL] THEN
   REWRITE_TAC[CONJ_ACI]);;
+
+(* ------------------------------------------------------------------------- *)
+(* DESTRUCT_TAC, FIX_TAC and INTRO_TAC, giving more brief and elegant ways   *)
+(* of naming introduced variables and assumptions (from Marco Maggesi).      *)
+(* ------------------------------------------------------------------------- *)
+
+let DESTRUCT_TAC,FIX_TAC,INTRO_TAC =
+  let NAME_GEN_TAC s gl =
+    let ty = (snd o dest_var o fst o dest_forall o snd) gl  in
+    X_GEN_TAC (mk_var(s,ty)) gl
+  and OBTAIN_THEN v ttac th =
+    let ty = (snd o dest_var o fst o dest_exists o concl) th in
+    X_CHOOSE_THEN (mk_var(v,ty)) ttac th
+  and CONJ_LIST_TAC = end_itlist (fun t1 t2 -> CONJ_TAC THENL [t1; t2])
+  and NUM_DISJ_TAC n =
+    if n <= 0 then failwith "NUM_DISJ_TAC" else
+    REPLICATE_TAC (n-1) DISJ2_TAC THEN REPEAT DISJ1_TAC
+  and NAME_PULL_FORALL_CONV =
+    let SWAP_FORALL_CONV = REWR_CONV SWAP_FORALL_THM
+    and AND_FORALL_CONV = GEN_REWRITE_CONV I [AND_FORALL_THM]
+    and RIGHT_IMP_FORALL_CONV = GEN_REWRITE_CONV I [RIGHT_IMP_FORALL_THM] in
+    fun s ->
+      let rec PULL_FORALL tm =
+          if is_forall tm then
+            if name_of(fst(dest_forall tm)) = s then REFL tm else
+              (BINDER_CONV PULL_FORALL THENC SWAP_FORALL_CONV) tm
+          else if is_imp tm then
+            (RAND_CONV PULL_FORALL THENC RIGHT_IMP_FORALL_CONV) tm
+          else if is_conj tm then
+            (BINOP_CONV PULL_FORALL THENC AND_FORALL_CONV) tm
+          else
+            fail () in
+      PULL_FORALL in
+  let parse_fix =
+    let ident = function
+        Ident s::rest when isalpha s -> s,rest
+      | _ -> raise Noparse in
+    let rename =
+      let old_name = possibly (a(Ident "/") ++ ident >> snd) in
+      (a(Resword "[") ++ ident >> snd) ++ old_name ++ a(Resword "]") >> fst in
+    let mk_var v = CONV_TAC (NAME_PULL_FORALL_CONV v) THEN GEN_TAC
+    and mk_rename =
+      function u,[v] -> CONV_TAC (NAME_PULL_FORALL_CONV v) THEN NAME_GEN_TAC u
+             | u,_   -> NAME_GEN_TAC u in
+    let vars = many (rename >> mk_rename || ident >> mk_var) >> EVERY
+    and star = possibly (a (Ident "*") >> K (REPEAT GEN_TAC)) in
+    vars ++ star >> function tac,[] -> tac | tac,_ -> tac THEN REPEAT GEN_TAC
+  and parse_destruct =
+    let OBTAINL_THEN : string list -> thm_tactical =
+      EVERY_TCL o map OBTAIN_THEN in
+    let ident p = function
+        Ident s::rest when p s -> s,rest
+      | _ -> raise Noparse in
+    let rec destruct inp = disj inp
+    and disj inp =
+      let DISJ_CASES_LIST = end_itlist DISJ_CASES_THEN2 in
+      (listof conj (a(Resword "|")) "Disjunction" >> DISJ_CASES_LIST) inp
+    and conj inp = (atleast 1 atom >> end_itlist CONJUNCTS_THEN2) inp
+    and obtain inp =
+      let obtain_prfx =
+        let var_list = atleast 1 (ident isalpha) in
+        (a(Ident "@") ++ var_list >> snd) ++ a(Resword ".") >> fst in
+      (obtain_prfx ++ destruct >> uncurry OBTAINL_THEN) inp
+    and atom inp =
+      let label = ident isalnum >> LABEL_TAC in
+      let paren =
+       (a(Resword "(") ++ destruct >> snd) ++ a(Resword ")") >> fst in
+      (label || obtain || paren) inp in
+    destruct in
+  let parse_intro =
+    let number = function
+        Ident s::rest ->
+          (try
+             let n = int_of_string s in
+             if n < 1 then raise Noparse else n,rest
+           with Failure _ -> raise Noparse)
+      | _ -> raise Noparse
+    and pa_fix = a(Ident "!") ++ parse_fix >> snd
+    and pa_dest = parse_destruct >> DISCH_THEN in
+    let pa_prefix =
+      elistof (pa_fix || pa_dest) (a(Resword ";")) "Prefix intro pattern" in
+    let rec pa_intro toks =
+      (pa_prefix ++ possibly pa_postfix >> uncurry (@) >> EVERY) toks
+    and pa_postfix toks = (pa_conj || pa_disj) toks
+    and pa_conj toks =
+      let conjs =
+        listof pa_intro (a(Ident "&")) "Intro pattern" >> CONJ_LIST_TAC in
+      ((a(Resword "{") ++ conjs >> snd) ++ a(Resword "}") >> fst) toks
+    and pa_disj toks =
+      let disj = number >> NUM_DISJ_TAC in
+      ((a(Ident "#") ++ disj >> snd) ++ pa_intro >> uncurry (THEN)) toks in
+    pa_intro in
+  let DESTRUCT_TAC s =
+    let tac,rest =
+      (fix "Destruct pattern" parse_destruct o lex o explode) s in
+    if rest=[] then tac else failwith "Garbage after destruct pattern"
+  and INTRO_TAC s =
+    let tac,rest =
+      (fix "Introduction pattern" parse_intro o lex o explode) s in
+    if rest=[] then tac else failwith "Garbage after intro pattern"
+  and FIX_TAC s =
+    let tac,rest = (parse_fix o lex o explode) s in
+    if rest=[] then tac else failwith "FIX_TAC: invalid pattern" in
+  DESTRUCT_TAC,FIX_TAC,INTRO_TAC;;

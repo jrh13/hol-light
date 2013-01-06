@@ -1,0 +1,49 @@
+\DOC HYP
+
+\TYPE {HYP : (thm list -> tactic) -> string -> thm list -> tactic}
+
+\SYNOPSIS
+Augments a tactic's theorem list with named assumptions.
+
+\DESCRIBE
+If {tac} is a tactic that expects a list of theorems as its arguments, e.g.
+{MESON_TAC}, {REWRITE_TAC} or {SET_TAC}, then {HYP s tac} converts it to a
+tactic where that list is augmented by the goal's assumptions specified in the 
+string argument s, which is a list of alphanumeric identifiers separated by 
+whitespace, e.g. {"lab1 lab2"}.
+
+\FAILURE
+When fully applied to a goal, it will fail if the string specifying the labels
+is ill-formed, if any of the specified assumption labels are not found in
+the goal, or if the tactic itself fails on the combined list of theorems.
+
+\EXAMPLE
+With the following trivial goal 
+{
+  # g `p /\ q /\ r ==> r /\ q`;;
+}
+We may start by assuming and labelling the hypotheses, which may conveniently 
+be done using {INTRO_TAC}:
+{ 
+  # e(INTRO_TAC "asm_p asm_q asm_r");;
+  val it : goalstack = 1 subgoal (1 total)
+  
+    0 [`p`] (asm_p)
+    1 [`q`] (asm_q)
+    2 [`r`] (asm_r)
+  
+  `r /\ q`
+}
+The resulting goal can trivially be solved in any number of ways, but if we 
+want to ensure that {MESON_TAC} uses exactly the assumptions relating to {q} 
+and {r} and no extraneous ones, we could do:
+{
+  #  e(HYP MESON_TAC "asm_r asm_q" []);;
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+ASM, ASSUM_LIST, FREEZE_THEN, LABEL_TAC, MESON_TAC, REMOVE_THEN, REWRITE_TAC, 
+SET_TAC, USE_THEN.
+
+\ENDDOC

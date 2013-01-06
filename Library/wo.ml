@@ -54,6 +54,14 @@ let poset = new_definition
 let chain = new_definition
   `chain(l:A#A->bool) P <=> (!x y. P x /\ P y ==> l(x,y) \/ l(y,x))`;;
 
+(* ------------------------------------------------------------------------- *)
+(* Total order.                                                              *)
+(* ------------------------------------------------------------------------- *)
+
+let toset = new_definition
+ `toset (l:A#A->bool) <=>
+        poset l /\ !x y. x IN fl(l) /\ y IN fl(l) ==> l(x,y) \/ l(y,x)`;;
+
 (* ------------------------------------------------------------------------ *)
 (* Wellorder                                                                *)
 (* ------------------------------------------------------------------------ *)
@@ -75,7 +83,6 @@ parse_as_infix("inseg",(12,"right"));;
 
 let inseg = new_definition
   `(l:A#A->bool) inseg m <=> !x y. l(x,y) <=> m(x,y) /\ fl(l) y`;;
-
 
 (* ------------------------------------------------------------------------ *)
 (* Specific form of initial segment: `all elements in fl(l) less than a`.   *)
@@ -743,3 +750,85 @@ let KL = prove
     EXISTS_TAC `D:A->bool` THEN ASM_REWRITE_TAC[] THEN
     REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
     FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Also the order extension theorem, using Abian's proof.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let OEP = prove
+ (`!p:A#A->bool. poset p ==> ?t. toset t /\ fl(t) = fl(p) /\ p SUBSET t`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `fl(p:A#A->bool)` WO) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `w:A#A->bool` STRIP_ASSUME_TAC) THEN
+  ABBREV_TAC
+   `t = \(x:A,y:A). fl p x /\ fl p y /\
+                    (x = y \/
+                     ?i. fl p i /\
+                         (!j. w(j,i) /\ ~(j = i) ==> (p(j,x) <=> p(j,y))) /\
+                         ~p(i,x) /\ p(i,y))` THEN
+  EXISTS_TAC `t:A#A->bool` THEN
+  SUBGOAL_THEN
+   `!x:A y:A. fl p x /\ fl p y /\ ~(x = y)
+              ==> ?i. fl p i /\
+                      (!j:A. w(j,i) /\ ~(j = i) ==> (p(j,x) <=> p(j,y))) /\
+                      ~(p(i,x) <=> p(i,y))`
+  (LABEL_TAC "*") THENL
+   [REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [woset]) THEN ASM_SIMP_TAC[] THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    DISCH_THEN(MP_TAC o SPEC `\i:A. fl p i /\ ~(p(i,x) <=> p(i,y))`) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [poset]) THEN ASM_MESON_TAC[];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `i:A` THEN
+       ASM_MESON_TAC[fl]];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `!x:A y:A. p(x,y) ==> t(x,y)` ASSUME_TAC THENL
+   [EXPAND_TAC "t" THEN REWRITE_TAC[] THEN
+    REPEAT GEN_TAC THEN STRIP_TAC THEN
+    REPEAT(CONJ_TAC THENL [ASM_MESON_TAC[fl]; ALL_TAC]) THEN
+    ASM_CASES_TAC `x:A = y` THENL [ASM_MESON_TAC[fl]; ALL_TAC] THEN
+    REMOVE_THEN "*" (MP_TAC o SPECL [`x:A`; `y:A`]) THEN ASM_SIMP_TAC[] THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[fl]; MATCH_MP_TAC MONO_EXISTS] THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [poset]) THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN] THEN
+  MATCH_MP_TAC(TAUT `q /\ (q ==> p) ==> p /\ q`) THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUBSET_ANTISYM THEN
+    ASM_REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN] THEN
+    EXPAND_TAC "t" THEN REWRITE_TAC[fl] THEN ASM_MESON_TAC[];
+    DISCH_TAC THEN ASM_REWRITE_TAC[toset; poset]] THEN
+  EXPAND_TAC "t" THEN REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [poset]) THEN
+  REPEAT CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`x:A`; `y:A`; `z:A`] THEN
+    ASM_CASES_TAC `x:A = z` THEN ASM_REWRITE_TAC[] THEN SIMP_TAC[] THEN
+    ASM_CASES_TAC `y:A = z` THEN ASM_REWRITE_TAC[] THEN SIMP_TAC[] THEN
+    ASM_CASES_TAC `y:A = x` THEN ASM_REWRITE_TAC[] THEN SIMP_TAC[] THEN
+    ASM_CASES_TAC `fl p (x:A)` THEN ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `fl p (y:A)` THEN ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `fl p (z:A)` THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(CONJUNCTS_THEN2
+     (X_CHOOSE_THEN `m:A` STRIP_ASSUME_TAC)
+     (X_CHOOSE_THEN `n:A` STRIP_ASSUME_TAC)) THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [woset]) THEN
+    REPLICATE_TAC 3 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    DISCH_THEN(MP_TAC o SPECL [`m:A`; `n:A`] o CONJUNCT1) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[fl]; ALL_TAC] THEN STRIP_TAC THENL
+     [EXISTS_TAC `m:A`; EXISTS_TAC `n:A`] THEN ASM_MESON_TAC[];
+    MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN
+    ASM_CASES_TAC `y:A = x` THEN ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `fl p (x:A)` THEN ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `fl p (y:A)` THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(CONJUNCTS_THEN2
+     (X_CHOOSE_THEN `m:A` STRIP_ASSUME_TAC)
+     (X_CHOOSE_THEN `n:A` STRIP_ASSUME_TAC)) THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [woset]) THEN
+    REPLICATE_TAC 3 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    DISCH_THEN(MP_TAC o SPECL [`m:A`; `n:A`] o CONJUNCT1) THEN
+    ASM_MESON_TAC[];
+    MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN
+    ASM_CASES_TAC `y:A = x` THEN ASM_REWRITE_TAC[IN] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    REMOVE_THEN "*" (MP_TAC o SPECL [`x:A`; `y:A`]) THEN
+    ASM_REWRITE_TAC[OR_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    MESON_TAC[]]);;

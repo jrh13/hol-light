@@ -21,6 +21,6 @@ See {LABEL_TAC} for an extended example.
 Using an assumption identified by name.
 
 \SEEALSO
-ASSUME, FIND_ASSUM, LABEL_TAC, REMOVE_THEN.
+ASSUME, FIND_ASSUM, HYP, LABEL_TAC, REMOVE_THEN.
 
 \ENDDOC

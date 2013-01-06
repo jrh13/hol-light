@@ -490,3 +490,37 @@ let SUM_GP_OFFSET = prove
   COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
    [REWRITE_TAC[REAL_OF_NUM_ADD] THEN AP_TERM_TAC THEN ARITH_TAC;
     REWRITE_TAC[real_div; real_pow; REAL_POW_ADD] THEN REAL_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Segment of natural numbers starting at a specific number.                 *)
+(* ------------------------------------------------------------------------- *)
+
+let from = new_definition                                                      
+  `from n = {m:num | n <= m}`;;                                                
+                                                                               
+let FROM_0 = prove                                               
+ (`from 0 = (:num)`,                                                           
+  REWRITE_TAC[from; LE_0] THEN SET_TAC[]);;                                 
+                                                               
+let FROM_INTER_NUMSEG_GEN = prove                              
+ (`!k m n. (from k) INTER (m..n) = (if m < k then k..n else m..n)`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN POP_ASSUM MP_TAC THEN         
+  REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN   
+  ARITH_TAC);;                                           
+                                                                               
+let FROM_INTER_NUMSEG = prove                                                  
+ (`!k n. (from k) INTER (0..n) = k..n`,                                        
+  REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN      
+  ARITH_TAC);;                           
+                                                              
+let IN_FROM = prove                                                    
+ (`!m n. m IN from n <=> n <= m`,                                     
+  REWRITE_TAC[from; IN_ELIM_THM]);;                                         
+
+let INFINITE_FROM = prove                                                      
+ (`!n. INFINITE(from n)`,                                                      
+  GEN_TAC THEN                                                                 
+  SUBGOAL_THEN `from n = (:num) DIFF {i | i < n}`                              
+   (fun th -> SIMP_TAC[th; INFINITE_DIFF_FINITE; FINITE_NUMSEG_LT;
+   num_INFINITE]) THEN                                               
+  REWRITE_TAC[EXTENSION; from; IN_DIFF; IN_UNIV; IN_ELIM_THM] THEN ARITH_TAC);;

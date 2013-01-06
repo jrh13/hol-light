@@ -1,3 +1,73 @@
+Sun  6th Jan 2013       miz3/Samples/icms.ml
+
+Removed the load of Multivariate/misc.ml from this example, putting the proof 
+of the Archimedian lemma directly in this file. There is now an incompatibility 
+with the Multivariate use of "from" as a constant with the use as a miz3 
+reserved word. This should probably be dealt with more systematically, perhaps 
+by renaming the constant to FROM.
+
+Fri  4th Jan 2013       tactics.ml, theorems.ml, help.ml, Help/DESTRUCT_TAC.doc [new file], Help/FIX_TAC.doc [new file], Help/HYP.doc [new file], Help/INTRO_TAC.doc [new file]
+
+Added four new tactic constructs from Marco Maggesi. HYP is analogous to ASM
+but restricting to named (labelled) assumptions. DESTRUCT_TAC, FIX_TAC and
+INTRO_TAC give more concise and elegant ways of fixing variables, performing
+introduction on a goal or elimination on a theorem, labelling assumptions in
+the process.
+
+Fri  4th Jan 2013       Multivariate/tarski.ml, 100/independence.ml
+
+Added two files showing Tarski's 11 axioms for geometry hold in the Euclidean
+plane but all except axiom 10 hold in the Klein model of the hyperbolic plane.
+This effectively proves the independence of the parallel postulate.
+
+Fri  4th Jan 2013       Library/floor.ml
+
+Added RATIONAL_BETWEEN = |- !a b. a < b ==> ?q. rational q /\ a < q /\ q < b
+
+Fri  4th Jan 2013       cart.ml
+
+Added PASTECART_INJ =
+  |- !x y w z.  pastecart x y = pastecart w z <=> x = w /\ y = z
+
+Wed  2nd Jan 2013       system.ml, miz3/miz3.ml
+
+Extended the regular quotation parser to pass quotations of the form
+`;....` to miz3's "parse_qproof". This makes it more convenient to load
+files with miz3 proofs in without first setting up the new parser before
+the file is loaded.
+
+Thu 20th Dec 2012       sets.ml
+
+Added SUBSET_INTERS =
+  |- !s f. s SUBSET INTERS f <=> (!t. t IN f ==> s SUBSET t)
+
+Wed 19th Dec 2012       sets.ml
+
+Renamed the existing DIFF_UNIONS to UNIONS_DIFF and added the following:
+
+DIFF_UNIONS =
+  |- !u s. u DIFF UNIONS s = u INTER INTERS {u DIFF t | t IN s}
+
+DIFF_UNIONS_NONEMPTY =
+  |- !u s. ~(s = {}) ==> u DIFF UNIONS s = INTERS {u DIFF t | t IN s}
+
+This seems more consistent with the naming of DIFF_INTERS.
+
+Mon 17th Dec 2012       Library/wo.ml
+
+Added the definition of total order and a proof of the order extension theorem:
+
+toset =
+ |- toset l <=>
+    poset l /\ !x y. x IN fl(l) /\ y IN fl(l) ==> l(x,y) \/ l(y,x)
+
+OEP = |- !p. poset p ==> ?t. toset t /\ fl(t) = fl(p) /\ p SUBSET t
+
+Fri 14th Dec 2012       preterm.ml
+
+Updated the typechecker with a new version from Vincent Aravantinos that gives
+more useful error messages when typechecking fails.
+
 Wed  5th Dec 2012       sets.ml
 
 Added a couple of reformulations of injectivity. This is useful since the

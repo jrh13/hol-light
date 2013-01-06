@@ -16,30 +16,30 @@ adds {u} to the assumptions of the goal.
     ==============  ASSUME_TAC (A' |- u)
      A u {{u}} ?- t
 }
-\noindent Note that unless {A'} is a subset of {A}, this tactic is invalid. The 
+\noindent Note that unless {A'} is a subset of {A}, this tactic is invalid. The
 new assumption is unlabelled; for a named assumption use {LABEL_TAC}.
 
 \FAILURE
 Never fails.
 
 \EXAMPLE
-One can add an external theorem as an assumption if desired, for example so 
+One can add an external theorem as an assumption if desired, for example so
 that {ASM_REWRITE_TAC[]} will automatically apply it. But usually the theorem
 is derived from some theorem-tactical, e.g. by discharging the antecedent of an
-implication or doing forward inference on another assumption. For example iff 
+implication or doing forward inference on another assumption. For example iff
 faced with the goal:
 {
   # g `0 = x ==> f(2 * x) = f(x * f(x))`;;
 }
-\noindent one might not want to just do {DISCH_TAC} or {STRIP_TAC} because the 
-assumption will be {`0 = x`}. One can swap it first then put it on the 
+\noindent one might not want to just do {DISCH_TAC} or {STRIP_TAC} because the
+assumption will be {`0 = x`}. One can swap it first then put it on the
 assumptions by:
 {
   # e(DISCH_THEN(ASSUME_TAC o SYM));;
   val it : goalstack = 1 subgoal (1 total)
-  
+
    0 [`x = 0`]
-  
+
   `f (2 * x) = f (x * f x)`
 }
 \noindent after which the goal can very easily be solved:
@@ -54,6 +54,6 @@ Useful as a parameter to various theorem-tacticals such as {X_CHOOSE_THEN},
 deduced to the assumptions rather than used further at once.
 
 \SEEALSO
-ACCEPT_TAC, LABEL_TAC, STRIP_ASSUME_TAC.
+ACCEPT_TAC, DESTRUCT_TAC, LABEL_TAC, STRIP_ASSUME_TAC.
 
 \ENDDOC

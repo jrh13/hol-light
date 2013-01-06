@@ -273,6 +273,25 @@ let PATH_LENGTH_VALID_PATH = prove
   ASM_MESON_TAC[FINITE_IMP_COUNTABLE]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Negligibility of valid_path image                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let NEGLIGIBLE_VALID_PATH_IMAGE = prove
+ (`!g. valid_path g ==> negligible(path_image g)`,
+  REWRITE_TAC[piecewise_differentiable_on; piecewise_differentiable_on;
+              valid_path; path_image] THEN
+  GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real^1->bool` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `IMAGE (g:real^1->real^2)
+                    (k UNION (interval [vec 0,vec 1] DIFF k))` THEN
+  CONJ_TAC THENL [REWRITE_TAC[IMAGE_UNION]; SET_TAC[]] THEN
+  ASM_SIMP_TAC[NEGLIGIBLE_UNION_EQ; NEGLIGIBLE_FINITE; FINITE_IMAGE] THEN
+  MATCH_MP_TAC NEGLIGIBLE_DIFFERENTIABLE_IMAGE_LOWDIM THEN
+  REWRITE_TAC[DIMINDEX_1; DIMINDEX_2; ARITH] THEN
+  ASM_SIMP_TAC[DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Integrals along a path (= piecewise differentiable function on [0,1]).    *)
 (* ------------------------------------------------------------------------- *)
 

@@ -17,7 +17,7 @@ a subset of those in the goal, up to alpha-equivalence.
 
 \EXAMPLE
 Suppose we want to prove that a binary relation {<<=} that is antisymmetric and
-has a strong wellfoundedness property is also antisymmetric and transitive, and
+has a strong wellfoundedness property is also total and transitive, and
 hence a wellorder:
 {
   # g `(!x y. x <<= y /\ y <<= x ==> x = y) /\
@@ -57,7 +57,7 @@ Now we break down the goal a bit
 set for each case, and we can identify it using the label {wo}; the problem is
 then simple set-theoretic reasoning:
 {
-  # e(USE_THEN "wo" (MP_TAC o SPEC `{x:A,y:A}`) THEN SET_TAC[]);;
+  # e(USE_THEN "wo" (MP_TAC o SPEC `{{x:A,y:A}}`) THEN SET_TAC[]);;
   ...
   val it : goalstack = 1 subgoal (1 total)
 
@@ -70,7 +70,7 @@ then simple set-theoretic reasoning:
 }
 \noindent Similarly for the other one:
 {
-  # e(USE_THEN "wo" (MP_TAC o SPEC `{x:A,y:A,z:A}`) THEN SET_TAC[]);;
+  # e(USE_THEN "wo" (MP_TAC o SPEC `{{x:A,y:A,z:A}}`) THEN ASM SET_TAC[]);;
   ...
   val it : goalstack = No subgoals
 }
@@ -87,6 +87,6 @@ if {asm} is large, and using its number in the assumption list can make proofs
 very brittle under later changes.
 
 \SEEALSO
-ASSUME_TAC, REMOVE_THEN, USE_THEN.
+ASSUME_TAC, DESTRUCT_TAC, HYP, INTRO_TAC, REMOVE_THEN, USE_THEN.
 
 \ENDDOC

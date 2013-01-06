@@ -1,0 +1,50 @@
+\DOC DESTRUCT_TAC
+
+\TYPE {DESTRUCT_TAC : string -> thm_tactic}
+
+\SYNOPSIS
+Performs elimination on a theorem within a tactic proof.
+
+\DESCRIBE
+Given a string {s} and a theorem {th}, {DESTRUCT_TAC s th} performs the      
+elimination of {th} according with the pattern given in {s}. The
+syntax of the pattern {s} is the following:
+
+\begin{{itemize}}
+
+\item An identifier {l} assumes a hypothesis with label {l}
+
+\item A sequence of patterns (separated by spaces) destructs a conjunction
+
+\item A sequence of pattern separated by {|} destructs a disjunction
+
+\item A prefix {@x.} introduces an existential
+
+\end{{itemize}}
+
+\FAILURE
+Fails if the pattern is ill-formed or does not match the form of the theorem.
+
+\EXAMPLE
+Here we use the cases theorem for numerals, performing a disjunctive split and 
+introducing names for the resulting hypotheses:
+{
+  # let th = SPEC `n:num` (cases "num");;
+  # g `n = 0 \/ (1 <= n /\ ?m. n = m + 1)`;;
+  # e (DESTRUCT_TAC "neq0 | @m. neqsuc" th);; 
+  val it : goalstack = 2 subgoals (2 total)
+  
+    0 [`n = SUC m`] (neqsuc)
+  
+  `n = 0 \/ 1 <= n /\ (?m. n = m + 1)`
+  
+    0 [`n = 0`] (neq0)
+  
+  `n = 0 \/ 1 <= n /\ (?m. n = m + 1)`
+}
+
+\SEEALSO
+ASSUME_TAC, FIX_TAC, GEN_TAC, INTRO_TAC, LABEL_TAC, REMOVE_THEN, STRIP_TAC,
+USE_THEN.
+
+\ENDDOC

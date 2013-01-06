@@ -99,10 +99,10 @@ AngleOrdering_DEF
          α <_ang β ⇔
          Angle α ∧
          ∃ A O B G.
-              ¬Collinear A O B ∧ β = ∡ A O B ∧
-              G ∈ int_angle A O B ∧ α ≡ ∡ A O G
+              ¬Collinear A O B  ∧  β = ∡ A O B ∧
+              G ∈ int_angle A O B  ∧  α ≡ ∡ A O G
 
-RAY     |- ∀ r. Ray r ⇔ (∃O A. ¬(O = A) ∧ r = ray O A)
+RAY     |- ∀ r. Ray r ⇔ ∃ O A. ¬(O = A)  ∧  r = ray O A
 
 TriangleCong_DEF
   |- ∀ A B C A' B' C'.
@@ -371,9 +371,9 @@ WholeRayInterior
 
 AngleOrdering
   |- ∀ O A P Q a.
-         ¬(O = A)  ∧  Line a ∧ O ∈ a ∧ A ∈ a  ∧ 
-         P ∉ a ∧ Q ∉ a ∧ P,Q same_side a ∧ ¬Collinear P O Q
-         ⇒ P ∈ int_angle Q O A ∨ Q ∈ int_angle P O A
+         ¬(O = A) ∧ Line a ∧ O ∈ a ∧ A ∈ a ∧ P ∉ a ∧ Q ∉ a ∧ 
+	 P,Q same_side a  ∧  ¬Collinear P O Q
+         ⇒ P ∈ int_angle Q O A  ∨  Q ∈ int_angle P O A
 
 InteriorsDisjointSupplement
   |- ∀A O B A'.
@@ -721,6 +721,11 @@ OppositeRightAnglesLinear
          Line h ∧ O ∈ h ∧ H ∈ h  ∧ ¬(A,B same_side h)
          ⇒ O ∈ open (A,B)
 
+RightImpliesSupplRight
+  |- ∀ A O B A'.
+         ¬Collinear A O B  ∧  O ∈ open (A,A')  ∧  Right (∡ A O B)
+         ⇒ Right (∡ B O A')
+
 IsoscelesCongBaseAngles
   |- ∀ A B C.
          ¬Collinear A B C  ∧  seg B A ≡ seg B C
@@ -781,7 +786,8 @@ EuclidPropositionI_7
          C,D same_side a  ∧  seg A C ≡ seg A D
          ⇒ ¬(seg B C ≡ seg B D)
 
-EuclidPropositionI_11     |- ∀ A B. ¬(A = B)  ⇒  ∃ F. Right (∡ A B F)
+EuclidPropositionI_11
+  |- ∀A B. ¬(A = B) ⇒  ∃ F. Right (∡ A B F)
 
 DropPerpendicularToLine
   |- ∀ P l.
@@ -927,6 +933,15 @@ OppositeAnglesCongImpliesParallelogram
 
 P     |- ∀ P l. Line l ∧ P ∉ l ⇒ ∃! m. Line m ∧ P ∈ m ∧ m ∥ l
 
+AMa     |- ∀ α. Angle α ⇒ &0 < μ α ∧ μ α < &180
+
+AMb	|- ∀ α. Right α ⇒ μ α = &90
+
+AMc	|- ∀ α β. Angle α ∧ Angle β ∧ α ≡ β ⇒ μ α = μ β
+
+AMd	|- ∀ A O B P. P ∈ int_angle A O B
+         ⇒ μ (∡ A O B) = μ (∡ A O P) + μ (∡ P O B)
+
 
 ConverseAlternateInteriorAngles
   |- ∀ A B C E l m t.
@@ -944,3 +959,12 @@ HilbertTriangleSum
                   B ∈ open (E,F)  ∧  C ∈ int_angle A B F ∧
                   ∡ E B A ≡ ∡ C A B  ∧  ∡ C B F ≡ ∡ B C A
 
+EuclidPropositionI_13
+  |- ∀A O B A'.
+         ¬Collinear A O B  ∧  O ∈ open (A,A')
+         ⇒ μ (∡ A O B) + μ (∡ B O A') = &180
+
+TriangleSum
+  |- ∀ A B C.
+         ¬Collinear A B C
+         ⇒ μ (∡ A B C) + μ (∡ B C A) + μ (∡ C A B) = &180
