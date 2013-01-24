@@ -2877,6 +2877,341 @@ let UNCOUNTABLE_CONVEX = prove
   MATCH_MP_TAC CARD_EQ_CONVEX THEN
   ASM_MESON_TAC[]);;
 
+let UNCOUNTABLE_OPEN = prove
+ (`!s:real^N->bool. open s /\ ~(s = {}) ==> ~(COUNTABLE s)`,
+  SIMP_TAC[CARD_EQ_OPEN; CARD_EQ_REAL_IMP_UNCOUNTABLE]);;
+
+let CARD_EQ_NONEMPTY_INTERIOR = prove
+ (`!s:real^N->bool. ~(interior s = {}) ==> s =_c (:real)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
+   [TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
+    SIMP_TAC[CARD_LE_UNIV; CARD_EQ_IMP_LE; CARD_EQ_EUCLIDEAN];
+    TRANS_TAC CARD_LE_TRANS `interior(s:real^N->bool)` THEN
+    SIMP_TAC[CARD_LE_SUBSET; INTERIOR_SUBSET] THEN
+    MATCH_MP_TAC(ONCE_REWRITE_RULE[CARD_EQ_SYM] CARD_EQ_IMP_LE) THEN
+    MATCH_MP_TAC CARD_EQ_OPEN THEN ASM_REWRITE_TAC[OPEN_INTERIOR]]);;
+
+let UNCOUNTABLE_NONEMPTY_INTERIOR = prove
+ (`!s:real^N->bool. ~(interior s = {}) ==> ~(COUNTABLE s)`,
+  SIMP_TAC[CARD_EQ_NONEMPTY_INTERIOR; CARD_EQ_REAL_IMP_UNCOUNTABLE]);;
+
+let CLOSED_AS_FRONTIER_OF_SUBSET = prove
+ (`!s:real^N->bool. closed s <=> ?t. t SUBSET s /\ s = frontier t`,
+  GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[FRONTIER_CLOSED]] THEN
+  DISCH_TAC THEN MP_TAC(ISPEC `s:real^N->bool` SEPARABLE) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `t:real^N->bool` THEN
+  SIMP_TAC[frontier] THEN STRIP_TAC THEN MATCH_MP_TAC(SET_RULE
+   `s SUBSET c /\ c SUBSET s /\ i = {} ==> s = c DIFF i`) THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[SUBSET_CLOSURE; CLOSURE_CLOSED];
+    ASM_MESON_TAC[UNCOUNTABLE_NONEMPTY_INTERIOR]]);;
+
+let CLOSED_AS_FRONTIER = prove
+ (`!s:real^N->bool. closed s <=> ?t. s = frontier t`,
+  GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[CLOSED_AS_FRONTIER_OF_SUBSET]; MESON_TAC[FRONTIER_CLOSED]]);;
+
+let CARD_EQ_CLOSED = prove
+ (`!s:real^N->bool. closed s ==> s <=_c (:num) \/ s =_c (:real)`,
+  let slemma = prove
+   (`!s:real^N->bool.
+          ~COUNTABLE s
+          ==> ?x y. ~(x = y) /\ x IN s /\ y IN s /\
+                    x condensation_point_of s /\
+                    y condensation_point_of s`,
+    REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP CARD_EQ_CONDENSATION_POINTS_IN_SET) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CARD_INFINITE_CONG) THEN
+    REWRITE_TAC[INFINITE] THEN
+    MATCH_MP_TAC(TAUT `q /\ (p ==> s) ==> (p <=> q) ==> s`) THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[FINITE_IMP_COUNTABLE]; ALL_TAC] THEN
+    DISCH_TAC THEN
+    MP_TAC(ISPECL [`2`; `{x:real^N | x IN s /\ x condensation_point_of s}`]
+          CHOOSE_SUBSET_STRONG) THEN
+    ASM_REWRITE_TAC[HAS_SIZE_CONV `s HAS_SIZE 2`; RIGHT_AND_EXISTS_THM] THEN
+    DISCH_THEN(CHOOSE_THEN MP_TAC) THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+    REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+    STRIP_TAC THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[FORALL_IN_INSERT; NOT_IN_EMPTY]) THEN
+    ASM_REWRITE_TAC[]) in
+  GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[GSYM COUNTABLE_ALT] THEN
+  ASM_CASES_TAC `COUNTABLE(s:real^N->bool)` THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+   `!n t:real^N->bool.
+        closed t /\ ~COUNTABLE t
+        ==> ?l r. (compact l /\ ~COUNTABLE l) /\ (compact r /\ ~COUNTABLE r) /\
+                  l INTER r = {} /\ l SUBSET t /\ r SUBSET t /\
+                  diameter l <= inv(&2 pow n) /\
+                  diameter r <= inv(&2 pow n)`
+  MP_TAC THENL
+   [REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+     (MP_TAC o MATCH_MP slemma)) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC
+     [`t INTER cball(a:real^N,min (inv(&2 pow (SUC n))) (dist(a,b) / &3))`;
+     `t INTER cball(b:real^N,min (inv(&2 pow (SUC n))) (dist(a,b) / &3))`] THEN
+    ASM_SIMP_TAC[CLOSED_INTER_COMPACT; COMPACT_CBALL] THEN
+    REPEAT CONJ_TAC THENL
+     [FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I
+       [CONDENSATION_POINT_INFINITE_CBALL]) THEN
+      REWRITE_TAC[REAL_LT_MIN; REAL_LT_INV_EQ; REAL_LT_POW2] THEN
+      UNDISCH_TAC `~(a:real^N = b)` THEN CONV_TAC NORM_ARITH;
+      FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I
+       [CONDENSATION_POINT_INFINITE_CBALL]) THEN
+      REWRITE_TAC[REAL_LT_MIN; REAL_LT_INV_EQ; REAL_LT_POW2] THEN
+      UNDISCH_TAC `~(a:real^N = b)` THEN CONV_TAC NORM_ARITH;
+      MATCH_MP_TAC(SET_RULE
+       `(!x. ~(x IN t /\ x IN u)) ==> (s INTER t) INTER (s INTER u) = {}`) THEN
+      REWRITE_TAC[IN_CBALL; REAL_LE_MIN] THEN
+      UNDISCH_TAC `~(a:real^N = b)` THEN CONV_TAC NORM_ARITH;
+      SET_TAC[];
+      SET_TAC[];
+      MATCH_MP_TAC DIAMETER_LE THEN
+      SIMP_TAC[REAL_LE_INV_EQ; REAL_LT_IMP_LE; REAL_LT_POW2] THEN
+      REWRITE_TAC[IN_INTER; IN_CBALL; REAL_LE_MIN; real_pow; REAL_INV_MUL] THEN
+      CONV_TAC NORM_ARITH;
+      MATCH_MP_TAC DIAMETER_LE THEN
+      SIMP_TAC[REAL_LE_INV_EQ; REAL_LT_IMP_LE; REAL_LT_POW2] THEN
+      REWRITE_TAC[IN_INTER; IN_CBALL; REAL_LE_MIN; real_pow; REAL_INV_MUL] THEN
+      CONV_TAC NORM_ARITH];
+    REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC
+     [`l:num->(real^N->bool)->(real^N->bool)`;
+      `r:num->(real^N->bool)->(real^N->bool)`] THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     `!b. ?x:num->real^N->bool.
+          (x 0 = s) /\ (!n. x(SUC n) = if b(n) then r n (x n) else l n (x n))`
+    MP_TAC THENL
+     [GEN_TAC THEN
+      W(ACCEPT_TAC o prove_recursive_functions_exist num_RECURSION o
+        snd o dest_exists o snd);
+      REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; FORALL_AND_THM]] THEN
+    X_GEN_TAC `x:(num->bool)->num->real^N->bool` THEN STRIP_TAC THEN
+    REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
+     [TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
+      SIMP_TAC[CARD_LE_UNIV; CARD_EQ_EUCLIDEAN; CARD_EQ_IMP_LE];
+      TRANS_TAC CARD_LE_TRANS `(:num->bool)` THEN
+      SIMP_TAC[CARD_EQ_REAL; CARD_EQ_IMP_LE]] THEN
+    REWRITE_TAC[le_c; IN_UNIV] THEN
+    SUBGOAL_THEN
+     `!b n. closed((x:(num->bool)->num->real^N->bool) b n) /\
+            ~COUNTABLE(x b n)`
+    MP_TAC THENL
+     [GEN_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC[] THEN
+      COND_CASES_TAC THEN ASM_SIMP_TAC[COMPACT_IMP_CLOSED];
+      REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC] THEN
+    MP_TAC(GEN `b:num->bool` (ISPEC `(x:(num->bool)->num->real^N->bool) b`
+          DECREASING_CLOSED_NEST_SING)) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP MONO_FORALL) THEN ANTS_TAC THENL
+     [ASM_SIMP_TAC[FORALL_AND_THM] THEN REPEAT CONJ_TAC THENL
+       [ASM_MESON_TAC[COUNTABLE_EMPTY];
+        GEN_TAC THEN MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
+        REWRITE_TAC[SUBSET_REFL] THEN ASM SET_TAC[];
+        MAP_EVERY X_GEN_TAC [`b:num->bool`; `e:real`] THEN DISCH_TAC THEN
+        MP_TAC(ISPECL [`inv(&2)`; `e:real`] REAL_ARCH_POW_INV) THEN
+        ASM_REWRITE_TAC[REAL_POW_INV] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+        DISCH_THEN(X_CHOOSE_TAC `m:num`) THEN
+        EXISTS_TAC `SUC m` THEN ASM_SIMP_TAC[] THEN
+        REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+        DISCH_THEN(MP_TAC o MATCH_MP
+         (REWRITE_RULE[TAUT `p /\ q /\ r ==> s <=> q /\ r ==> p ==> s`]
+          DIAMETER_BOUNDED_BOUND)) THEN
+        ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN
+        UNDISCH_TAC `inv(&2 pow m) < e` THEN MATCH_MP_TAC(NORM_ARITH
+         `d <= i ==> i < e ==> norm(x - y) <= d ==> dist(x:real^N,y) < e`) THEN
+        ASM_SIMP_TAC[]];
+      ALL_TAC] THEN
+    REWRITE_TAC[SKOLEM_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `f:(num->bool)->real^N` THEN STRIP_TAC THEN CONJ_TAC THENL
+     [X_GEN_TAC `b:num->bool` THEN
+      REWRITE_TAC[SET_RULE `x IN s <=> {x} SUBSET s`] THEN
+      FIRST_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [GSYM th]) THEN
+      REWRITE_TAC[SUBSET; INTERS_GSPEC; IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+      ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+      SIMP_TAC[FORALL_UNWIND_THM2] THEN GEN_TAC THEN ASM SET_TAC[];
+      MAP_EVERY X_GEN_TAC [`b:num->bool`; `c:num->bool`] THEN
+      ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [FUN_EQ_THM] THEN
+      REWRITE_TAC[NOT_FORALL_THM] THEN ONCE_REWRITE_TAC[num_WOP] THEN
+      SIMP_TAC[] THEN DISCH_THEN(X_CHOOSE_THEN `k:num` STRIP_ASSUME_TAC) THEN
+      MATCH_MP_TAC(SET_RULE
+       `!f g. INTERS f = {a} /\ INTERS g = {b} /\
+              (?s t. s IN f /\ t IN g /\ s INTER t = {})
+              ==> ~(a = b)`) THEN
+      EXISTS_TAC `{t | ?n. t = (x:(num->bool)->num->real^N->bool) b n}` THEN
+      EXISTS_TAC `{t | ?n. t = (x:(num->bool)->num->real^N->bool) c n}` THEN
+      ASM_REWRITE_TAC[IN_ELIM_THM] THEN
+      EXISTS_TAC `(x:(num->bool)->num->real^N->bool) b (SUC k)` THEN
+      EXISTS_TAC `(x:(num->bool)->num->real^N->bool) c (SUC k)` THEN
+      REPEAT(CONJ_TAC THENL [MESON_TAC[]; ALL_TAC]) THEN ASM_SIMP_TAC[] THEN
+      SUBGOAL_THEN
+       `!i. i <= k ==> (x:(num->bool)->num->real^N->bool) b i = x c i`
+      MP_TAC THENL
+       [INDUCT_TAC THEN ASM_SIMP_TAC[LE_SUC_LT; LT_IMP_LE];
+        DISCH_THEN(MP_TAC o SPEC `k:num`)] THEN
+      REWRITE_TAC[LE_REFL] THEN DISCH_THEN SUBST1_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I
+       [TAUT `~(p <=> q) <=> (q <=> ~p)`]) THEN
+      REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+      ASM_MESON_TAC[INTER_COMM]]]);;
+
+let CONDENSATION_POINTS_EQ_EMPTY,CARD_EQ_CONDENSATION_POINTS =
+ (CONJ_PAIR o prove)
+ (`(!s:real^N->bool.
+        {x | x condensation_point_of s} = {} <=> COUNTABLE s) /\
+   (!s:real^N->bool.
+        {x | x condensation_point_of s} =_c (:real) <=> ~(COUNTABLE s))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN MATCH_MP_TAC(TAUT
+   `(r ==> p) /\ (~r ==> q) /\ (p ==> ~q)
+    ==> (p <=> r) /\ (q <=> ~r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [DISCH_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+    REWRITE_TAC[condensation_point_of] THEN
+    ASM_MESON_TAC[COUNTABLE_SUBSET; INTER_SUBSET; IN_UNIV; OPEN_UNIV];
+    DISCH_TAC THEN MATCH_MP_TAC(REWRITE_RULE
+     [TAUT `p ==> q \/ r <=> p /\ ~q ==> r`] CARD_EQ_CLOSED) THEN
+    REWRITE_TAC[CLOSED_CONDENSATION_POINTS; GSYM COUNTABLE_ALT] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP CARD_EQ_CONDENSATION_POINTS_IN_SET) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CARD_COUNTABLE_CONG) THEN
+    ASM_REWRITE_TAC[CONTRAPOS_THM] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN SET_TAC[];
+    DISCH_THEN SUBST1_TAC THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CARD_FINITE_CONG) THEN
+    REWRITE_TAC[FINITE_EMPTY; GSYM INFINITE; real_INFINITE]]);;
+
+let UNCOUNTABLE_HAS_CONDENSATION_POINT = prove
+ (`!s:real^N->bool. ~COUNTABLE s ==> ?x. x condensation_point_of s`,
+  REWRITE_TAC[GSYM CONDENSATION_POINTS_EQ_EMPTY] THEN SET_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Density of sets with small complement, including irrationals.             *)
+(* ------------------------------------------------------------------------- *)
+
+let COSMALL_APPROXIMATION = prove
+ (`!s. ((:real) DIFF s) <_c (:real)
+       ==> !x e. &0 < e ==> ?y. y IN s /\ abs(y - x) < e`,
+  let lemma = prove
+   (`!s. ((:real^1) DIFF s) <_c (:real)
+         ==> !x e. &0 < e ==> ?y. y IN s /\ norm(y - x) < e`,
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC(SET_RULE
+      `~({x | P x} SUBSET UNIV DIFF s) ==> ?x. x IN s /\ P x`) THEN
+    MP_TAC(ISPEC `ball(x:real^1,e)` CARD_EQ_OPEN) THEN
+    ASM_REWRITE_TAC[OPEN_BALL; BALL_EQ_EMPTY; REAL_NOT_LE] THEN DISCH_TAC THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CARD_LE_SUBSET) THEN
+    REWRITE_TAC[CARD_NOT_LE] THEN
+    REWRITE_TAC[GSYM(ONCE_REWRITE_RULE[DIST_SYM] dist); GSYM ball] THEN
+    TRANS_TAC CARD_LTE_TRANS `(:real)` THEN
+    ASM_SIMP_TAC[ONCE_REWRITE_RULE[CARD_EQ_SYM] CARD_EQ_IMP_LE]) in
+  REWRITE_TAC[FORALL_DROP_IMAGE; FORALL_DROP; EXISTS_DROP] THEN
+  REWRITE_TAC[GSYM IMAGE_DROP_UNIV; GSYM DROP_SUB; GSYM ABS_DROP] THEN
+  REWRITE_TAC[DROP_IN_IMAGE_DROP] THEN REWRITE_TAC[GSYM FORALL_DROP] THEN
+  SIMP_TAC[GSYM IMAGE_DIFF_INJ; DROP_EQ] THEN GEN_TAC THEN
+  DISCH_TAC THEN MATCH_MP_TAC lemma THEN POP_ASSUM MP_TAC THEN
+  MATCH_MP_TAC EQ_IMP THEN MATCH_MP_TAC CARD_LT_CONG THEN
+  REWRITE_TAC[IMAGE_DROP_UNIV; CARD_EQ_REFL] THEN
+  MATCH_MP_TAC CARD_EQ_IMAGE THEN SIMP_TAC[DROP_EQ]);;
+
+let COCOUNTABLE_APPROXIMATION = prove
+ (`!s. COUNTABLE((:real) DIFF s)
+       ==> !x e. &0 < e ==> ?y. y IN s /\ abs(y - x) < e`,
+  GEN_TAC THEN REWRITE_TAC[COUNTABLE; ge_c] THEN DISCH_TAC THEN
+  MATCH_MP_TAC COSMALL_APPROXIMATION THEN
+  TRANS_TAC CARD_LET_TRANS `(:num)` THEN ASM_REWRITE_TAC[] THEN
+  TRANS_TAC CARD_LTE_TRANS `(:num->bool)` THEN SIMP_TAC[CANTOR_THM_UNIV] THEN
+  MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
+  REWRITE_TAC[CARD_EQ_REAL]);;
+
+let IRRATIONAL_APPROXIMATION = prove
+ (`!x e. &0 < e ==> ?y. ~(rational y) /\ abs(y - x) < e`,
+  REWRITE_TAC[SET_RULE `~rational y <=> y IN UNIV DIFF rational`] THEN
+  MATCH_MP_TAC COCOUNTABLE_APPROXIMATION THEN
+  REWRITE_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`; COUNTABLE_RATIONAL]);;
+
+let OPEN_SET_COSMALL_COORDINATES = prove
+ (`!P. (!i. 1 <= i /\ i <= dimindex(:N)
+            ==> (:real) DIFF {x | P i x} <_c (:real))
+       ==> !s:real^N->bool.
+              open s /\ ~(s = {})
+              ==> ?x. x IN s /\ !i. 1 <= i /\ i <= dimindex(:N) ==> P i (x$i)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:real^N` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_CBALL]) THEN
+  DISCH_THEN(MP_TAC o SPEC `a:real^N`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `!i. 1 <= i /\ i <= dimindex(:N)
+        ==> ?y:real. P i y /\ abs(y - (a:real^N)$i) < d / &(dimindex(:N))`
+  MP_TAC THENL
+   [X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP COSMALL_APPROXIMATION) THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; LE_1; DIMINDEX_GE_1];
+    REWRITE_TAC[LAMBDA_SKOLEM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    REPEAT STRIP_TAC THEN ASM_SIMP_TAC[] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
+    REWRITE_TAC[IN_CBALL; dist] THEN
+    W(MP_TAC o PART_MATCH lhand NORM_LE_L1 o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+    MATCH_MP_TAC SUM_BOUND_GEN THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+    REWRITE_TAC[VECTOR_SUB_COMPONENT; NUMSEG_EMPTY; NOT_LT; DIMINDEX_GE_1] THEN
+    ONCE_REWRITE_TAC[REAL_ABS_SUB] THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE; CARD_NUMSEG_1]]);;
+
+let OPEN_SET_COCOUNTABLE_COORDINATES = prove
+ (`!P. (!i. 1 <= i /\ i <= dimindex(:N)
+            ==> COUNTABLE((:real) DIFF {x | P i x}))
+       ==> !s:real^N->bool.
+              open s /\ ~(s = {})
+              ==> ?x. x IN s /\ !i. 1 <= i /\ i <= dimindex(:N) ==> P i (x$i)`,
+  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC OPEN_SET_COSMALL_COORDINATES THEN
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC CARD_LET_TRANS `(:num)` THEN ASM_SIMP_TAC[GSYM COUNTABLE_ALT] THEN
+  TRANS_TAC CARD_LTE_TRANS `(:num->bool)` THEN SIMP_TAC[CANTOR_THM_UNIV] THEN
+  MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
+  REWRITE_TAC[CARD_EQ_REAL]);;
+
+let OPEN_SET_IRRATIONAL_COORDINATES = prove
+ (`!s:real^N->bool.
+        open s /\ ~(s = {})
+        ==> ?x. x IN s /\ !i. 1 <= i /\ i <= dimindex(:N) ==> ~rational(x$i)`,
+  MATCH_MP_TAC OPEN_SET_COCOUNTABLE_COORDINATES THEN
+  REWRITE_TAC[SET_RULE `UNIV DIFF {x | ~P x} = P`; COUNTABLE_RATIONAL]);;
+
+let CLOSURE_COSMALL_COORDINATES = prove
+ (`!P. (!i. 1 <= i /\ i <= dimindex(:N)
+            ==> (:real) DIFF {x | P i x} <_c (:real))
+       ==> closure {x | !i. 1 <= i /\ i <= dimindex (:N) ==> P i (x$i)} =
+           (:real^N)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[CLOSURE_APPROACHABLE; IN_UNIV; EXTENSION; IN_ELIM_THM] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `e:real`] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_SET_COSMALL_COORDINATES) THEN
+  DISCH_THEN(MP_TAC o SPEC `ball(x:real^N,e)`) THEN
+  ASM_REWRITE_TAC[OPEN_BALL; BALL_EQ_EMPTY; REAL_NOT_LE; IN_BALL] THEN
+  MESON_TAC[DIST_SYM]);;
+
+let CLOSURE_COCOUNTABLE_COORDINATES = prove
+ (`!P. (!i. 1 <= i /\ i <= dimindex(:N)
+            ==> COUNTABLE((:real) DIFF {x | P i x}))
+       ==> closure {x | !i. 1 <= i /\ i <= dimindex (:N) ==> P i (x$i)} =
+           (:real^N)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOSURE_COSMALL_COORDINATES THEN
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC CARD_LET_TRANS `(:num)` THEN ASM_SIMP_TAC[GSYM COUNTABLE_ALT] THEN
+  TRANS_TAC CARD_LTE_TRANS `(:num->bool)` THEN SIMP_TAC[CANTOR_THM_UNIV] THEN
+  MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
+  REWRITE_TAC[CARD_EQ_REAL]);;
+
+let CLOSURE_IRRATIONAL_COORDINATES = prove
+ (`closure {x | !i. 1 <= i /\ i <= dimindex (:N) ==> ~rational(x$i)} =
+   (:real^N)`,
+  MATCH_MP_TAC CLOSURE_COCOUNTABLE_COORDINATES THEN
+  REWRITE_TAC[SET_RULE `UNIV DIFF {x | ~P x} = P`; COUNTABLE_RATIONAL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Every path between distinct points contains an arc, and hence             *)
 (* that path connection is equivalent to arcwise connection, for distinct    *)

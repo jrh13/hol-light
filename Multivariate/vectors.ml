@@ -3115,6 +3115,38 @@ let LIFT_IN_IMAGE_LIFT = prove
  (`!x s. (lift x) IN (IMAGE lift s) <=> x IN s`,
   REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[LIFT_DROP]);;
 
+let FORALL_LIFT_IMAGE = prove
+ (`!P. (!s. P s) <=> (!s. P(IMAGE lift s))`,
+  MESON_TAC[IMAGE_LIFT_DROP; IMAGE_o]);;
+
+let EXISTS_LIFT_IMAGE = prove
+ (`!P. (?s. P s) <=> (?s. P(IMAGE lift s))`,
+  MESON_TAC[IMAGE_LIFT_DROP; IMAGE_o]);;
+
+let SUBSET_LIFT_IMAGE = prove
+ (`!s t. IMAGE lift s SUBSET IMAGE lift t <=> s SUBSET t`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[IMAGE_SUBSET] THEN
+  DISCH_THEN(MP_TAC o ISPEC `drop` o MATCH_MP IMAGE_SUBSET) THEN
+  REWRITE_TAC[GSYM IMAGE_o; IMAGE_LIFT_DROP]);;
+
+let FORALL_DROP_IMAGE = prove
+ (`!P. (!s. P s) <=> (!s. P(IMAGE drop s))`,
+  MESON_TAC[IMAGE_LIFT_DROP; IMAGE_o]);;
+
+let EXISTS_DROP_IMAGE = prove
+ (`!P. (?s. P s) <=> (?s. P(IMAGE drop s))`,
+  MESON_TAC[IMAGE_LIFT_DROP; IMAGE_o]);;
+
+let SUBSET_DROP_IMAGE = prove
+ (`!s t. IMAGE drop s SUBSET IMAGE drop t <=> s SUBSET t`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[IMAGE_SUBSET] THEN
+  DISCH_THEN(MP_TAC o ISPEC `lift` o MATCH_MP IMAGE_SUBSET) THEN
+  REWRITE_TAC[GSYM IMAGE_o; IMAGE_LIFT_DROP]);;
+
+let DROP_IN_IMAGE_DROP = prove
+ (`!x s. (drop x) IN (IMAGE drop s) <=> x IN s`,
+  REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[LIFT_DROP]);;
+
 let LIFT_NUM = prove
  (`!n. lift(&n) = vec n`,
   SIMP_TAC[CART_EQ; lift; vec; LAMBDA_BETA]);;

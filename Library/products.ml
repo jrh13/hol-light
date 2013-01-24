@@ -191,6 +191,16 @@ let PRODUCT_CLOSED = prove
   DISCH_THEN(MP_TAC o SPEC `P:real->bool`) THEN
   ASM_SIMP_TAC[NEUTRAL_REAL_MUL; GSYM product]);;
 
+let PRODUCT_CLAUSES_LEFT = prove
+ (`!f m n. m <= n ==> product(m..n) f = f(m) * product(m+1..n) f`,
+  SIMP_TAC[GSYM NUMSEG_LREC; PRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
+  ARITH_TAC);;
+
+let PRODUCT_CLAUSES_RIGHT = prove
+ (`!f m n. 0 < n /\ m <= n ==> product(m..n) f = product(m..n-1) f * f(n)`,
+  GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
+  SIMP_TAC[LT_REFL; PRODUCT_CLAUSES_NUMSEG; SUC_SUB1]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Extend congruences.                                                       *)
 (* ------------------------------------------------------------------------- *)

@@ -475,6 +475,24 @@ let ALL_FILTER = prove
   LIST_INDUCT_TAC THEN REWRITE_TAC[ALL; FILTER] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[ALL]);;
 
+let APPEND_SING = prove
+ (`!h t. APPEND [h] t = CONS h t`,
+  REWRITE_TAC[APPEND]);;
+
+let MEM_APPEND_DECOMPOSE_LEFT = prove
+ (`!x:A l. MEM x l <=> ?l1 l2. ~(MEM x l1) /\ l = APPEND l1 (CONS x l2)`,
+  REWRITE_TAC[TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+  SIMP_TAC[LEFT_IMP_EXISTS_THM; MEM_APPEND; MEM] THEN X_GEN_TAC `x:A` THEN
+  MATCH_MP_TAC list_INDUCT THEN REWRITE_TAC[MEM] THEN
+  MAP_EVERY X_GEN_TAC [`y:A`; `l:A list`] THEN
+  ASM_CASES_TAC `x:A = y` THEN ASM_MESON_TAC[MEM; APPEND]);;
+
+let MEM_APPEND_DECOMPOSE = prove
+ (`!x:A l. MEM x l <=> ?l1 l2. l = APPEND l1 (CONS x l2)`,
+  REWRITE_TAC[TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+  SIMP_TAC[LEFT_IMP_EXISTS_THM; MEM_APPEND; MEM] THEN
+  ONCE_REWRITE_TAC[MEM_APPEND_DECOMPOSE_LEFT] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)
 (* ------------------------------------------------------------------------- *)

@@ -1,9 +1,60 @@
+Fri 18th Jan 2013       lists.ml, Library/prime.ml, Library/pocklington.ml, Permutation/permuted.ml
+
+Added a miscellany of theorems:
+
+APPEND_SING = 
+  |- !h t. APPEND [h] t = CONS h t
+
+MEM_APPEND_DECOMPOSE_LEFT =
+  |- !x l. MEM x l <=> (?l1 l2. ~MEM x l1 /\ l = APPEND l1 (CONS x l2))
+
+MEM_APPEND_DECOMPOSE =
+  |- !x l. MEM x l <=> (?l1 l2. l = APPEND l1 (CONS x l2))
+
+PERMUTED_APPEND_SWAP = 
+  |- !l1 l2. (APPEND l1 l2) PERMUTED (APPEND l2 l1)
+
+DIVIDES_EXP_MINUS1 = 
+  |- !k n. n - 1 divides n EXP k - 1
+
+DIVIDES_EXP_PLUS1 = 
+  |- !n k. ODD k ==> n + 1 divides n EXP k + 1
+
+PRIME_DIVEXP_EQ =
+  |- !n p x. prime p ==> (p divides x EXP n <=> p divides x /\ ~(n = 0))
+
+PRIME_POWER_EXISTS =
+  |- !q. prime q
+         ==> ((?i. n = q EXP i) <=> (!p. prime p /\ p divides n ==> p = q))
+
+Thu 17th Jan 2013       Library/products.ml
+
+Added
+
+  PRODUCT_CLAUSES_LEFT =
+    |- !f m n. m <= n ==> product (m..n) f = f m * product (m + 1..n) f
+
+  PRODUCT_CLAUSES_RIGHT =
+    |- !f m n.
+           0 < n /\ m <= n ==> product (m..n) f = product (m..n - 1) f * f n
+
+Wed 16th Jan 2013       sets.ml
+
+Added
+
+UNIONS_MONO =
+  |- (!x. x IN s ==> (?y. y IN t /\ x SUBSET y)) ==> UNIONS s SUBSET UNIONS t
+
+UNIONS_MONO_IMAGE =
+  |- (!x. x IN s ==> f x SUBSET g x)
+     ==> UNIONS (IMAGE f s) SUBSET UNIONS (IMAGE g s)
+
 Sun  6th Jan 2013       miz3/Samples/icms.ml
 
-Removed the load of Multivariate/misc.ml from this example, putting the proof 
-of the Archimedian lemma directly in this file. There is now an incompatibility 
-with the Multivariate use of "from" as a constant with the use as a miz3 
-reserved word. This should probably be dealt with more systematically, perhaps 
+Removed the load of Multivariate/misc.ml from this example, putting the proof
+of the Archimedian lemma directly in this file. There is now an incompatibility
+with the Multivariate use of "from" as a constant with the use as a miz3
+reserved word. This should probably be dealt with more systematically, perhaps
 by renaming the constant to FROM.
 
 Fri  4th Jan 2013       tactics.ml, theorems.ml, help.ml, Help/DESTRUCT_TAC.doc [new file], Help/FIX_TAC.doc [new file], Help/HYP.doc [new file], Help/INTRO_TAC.doc [new file]

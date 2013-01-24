@@ -265,8 +265,8 @@ let type_of_pretype,term_of_preterm,retypecheck =
         let sty1 = string_of_pretype (free_stvs ty2) ty1 in
         let sty2 = string_of_pretype (free_stvs ty1) ty2 in
         let default_msg s =
-            " " ^ s ^ " cannot have type " ^ sty1 ^ " and " ^ sty2
-            ^ " simultaneously"
+          " " ^ s ^ " cannot have type " ^ sty1 ^ " and " ^ sty2
+          ^ " simultaneously"
         in
         match t with
         |Constp(s,_) ->
@@ -281,11 +281,11 @@ let type_of_pretype,term_of_preterm,retypecheck =
   (* ----------------------------------------------------------------------- *)
 
   let rec istrivial ptm env x = function
-    |Stv y ->
-        y = x or defined env y & istrivial None env x (apply env y)
-    |Ptycon(f,args) when exists (istrivial ptm env x) args ->
+    |Stv y as t ->
+        y = x or defined env y & istrivial ptm env x (apply env y)
+    |Ptycon(f,args) as t when exists (istrivial None env x) args ->
         failwith (string_of_ty_error env ptm)
-    |Ptycon _ | Utv _ -> false
+    |(Ptycon _ | Utv _) -> false
   in
 
   let unify ptm env ty1 ty2 =
