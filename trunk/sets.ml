@@ -722,8 +722,13 @@ let INTERS_UNION = prove
  (`!s t. INTERS (s UNION t) = INTERS s INTER INTERS t`,
   SET_TAC[]);;
 
-let SUBSET_INTERS = prove
- (`!s f. s SUBSET INTERS f <=> (!t. t IN f ==> s SUBSET t)`,
+let UNIONS_MONO = prove                                                 
+ (`(!x. x IN s ==> ?y. y IN t /\ x SUBSET y) ==> UNIONS s SUBSET UNIONS t`,
+  SET_TAC[]);;
+
+let UNIONS_MONO_IMAGE = prove
+ (`(!x. x IN s ==> f x SUBSET g x)
+   ==> UNIONS(IMAGE f s) SUBSET UNIONS(IMAGE g s)`,
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -744,6 +749,10 @@ let INTERS_2 = prove
 
 let INTERS_INSERT = prove
  (`INTERS (s INSERT u) = s INTER (INTERS u)`,
+  SET_TAC[]);;
+
+let SUBSET_INTERS = prove
+ (`!s f. s SUBSET INTERS f <=> (!t. t IN f ==> s SUBSET t)`,
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)

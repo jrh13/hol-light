@@ -1695,6 +1695,44 @@ let PRIME_CONV =
     else PRIME_TEST tm;;
 
 (* ------------------------------------------------------------------------- *)
+(* Another lemma.                                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let PRIME_POWER_EXISTS = prove
+ (`!q. prime q
+       ==> ((?i. n = q EXP i) <=>
+            (!p. prime p /\ p divides n ==> p = q))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[IMP_CONJ; PRIME_DIVEXP_EQ; DIVIDES_PRIME_PRIME] THEN
+  ASM_CASES_TAC `n = 0` THENL
+   [FIRST_X_ASSUM(fun th -> MP_TAC(SPEC `2` th) THEN MP_TAC(SPEC `3` th)) THEN
+    ASM_REWRITE_TAC[PRIME_2; PRIME_CONV `prime 3`; DIVIDES_0] THEN ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_CASES_TAC `n = 1` THENL
+   [EXISTS_TAC `0` THEN ASM_REWRITE_TAC[EXP]; ALL_TAC] THEN
+  MP_TAC(ISPEC `n:num` PRIMEPOW_FACTOR) THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `p:num` MP_TAC) THEN
+  ASM_CASES_TAC `p:num = q` THENL
+   [FIRST_X_ASSUM(SUBST_ALL_TAC o SYM);
+    ASM_MESON_TAC[DIVIDES_REXP; LE_1; DIVIDES_RMUL; DIVIDES_REFL]] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `i:num` THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:num` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM SUBST_ALL_TAC THEN
+  MATCH_MP_TAC(NUM_RING `m = 1 ==> x * m = x`) THEN
+  MATCH_MP_TAC(ARITH_RULE `~(m = 0) /\ ~(2 <= m) ==> m = 1`) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[COPRIME_0; PRIME_1]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP PRIMEPOW_FACTOR) THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:num` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `r:num`) THEN
+  REWRITE_TAC[NOT_IMP] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[DIVIDES_LMUL; DIVIDES_RMUL; DIVIDES_REXP; LE_1; DIVIDES_REFL];
+    DISCH_THEN SUBST_ALL_TAC THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [COPRIME_RMUL]) THEN
+    ASM_SIMP_TAC[COPRIME_REXP; LE_1; COPRIME_REFL] THEN
+    ASM_MESON_TAC[PRIME_1]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Example.                                                                  *)
 (* ------------------------------------------------------------------------- *)
 
