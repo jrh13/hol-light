@@ -14715,6 +14715,24 @@ let VECTOR_VARIATION_GE_DROP_FUNCTION = prove
   ASM_SIMP_TAC[VECTOR_VARIATION_GE_NORM_FUNCTION] THEN
   REWRITE_TAC[NORM_REAL; DROP_SUB; GSYM drop] THEN REAL_ARITH_TAC);;
 
+let VECTOR_VARIATION_CONST_EQ = prove
+ (`!f:real^1->real^N s.
+        is_interval s /\ f has_bounded_variation_on s
+        ==> (vector_variation s f = &0 <=> ?c. !x. x IN s ==> f x = c)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN REWRITE_TAC[MESON[]
+     `(?c. !x. P x ==> f x = c) <=> !a b. P a /\ P b ==> f a = f b`] THEN
+    MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`] THEN STRIP_TAC THEN
+    MP_TAC(ISPECL [`f:real^1->real^N`; `s:real^1->bool`;
+        `a:real^1`; `b:real^1`] VECTOR_VARIATION_GE_NORM_FUNCTION) THEN
+    ANTS_TAC THENL
+     [ASM_MESON_TAC[IS_INTERVAL_CONVEX_1; CONVEX_CONTAINS_SEGMENT];
+      ASM_REWRITE_TAC[] THEN CONV_TAC NORM_ARITH];
+    DISCH_THEN(X_CHOOSE_TAC `c:real^N`) THEN
+    MP_TAC(ISPECL [`f:real^1->real^N`; `(\x. c):real^1->real^N`;
+                   `s:real^1->bool`] VECTOR_VARIATION_EQ) THEN
+    ASM_SIMP_TAC[VECTOR_VARIATION_CONST]]);;
+
 let VECTOR_VARIATION_MONOTONE = prove
  (`!f s t. f has_bounded_variation_on s /\ t SUBSET s
            ==> vector_variation t f <= vector_variation s f`,

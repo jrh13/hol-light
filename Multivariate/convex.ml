@@ -1930,6 +1930,26 @@ let CONVEX_NORM = prove
   MP_TAC(ISPECL [`s:real^N->bool`; `vec 0:real^N`] CONVEX_DISTANCE) THEN
   REWRITE_TAC[DIST_0; ETA_AX]);;
 
+let CONVEX_ON_COMPOSE_LINEAR = prove
+ (`!f g:real^M->real^N s.
+        f convex_on (IMAGE g s) /\ linear g ==> (f o g) convex_on s`,
+  REWRITE_TAC[convex_on; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; o_THM] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP LINEAR_ADD th]) THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP LINEAR_CMUL th]) THEN
+  ASM_SIMP_TAC[]);;
+
+let CONVEX_ON_TRANSLATION = prove
+ (`!f a:real^N.
+        f convex_on (IMAGE (\x. a + x) s) <=> (\x. f(a + x)) convex_on s`,
+  REWRITE_TAC[convex_on; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; o_THM] THEN
+  REWRITE_TAC[VECTOR_ARITH
+   `u % (a + x) + v % (a + y):real^N = (u + v) % a + u % x + v % y`] THEN
+  SIMP_TAC[VECTOR_MUL_LID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Open and closed balls are convex and hence connected.                     *)
 (* ------------------------------------------------------------------------- *)
@@ -2272,6 +2292,86 @@ let SURA_BURA_CLOSED = prove
       ASM_REWRITE_TAC[] THEN
       EXISTS_TAC `(v:real^N->bool) INTER t` THEN ASM_SIMP_TAC[OPEN_INTER] THEN
       MP_TAC(ISPEC `v:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Condition for an open map's image to contain a ball.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let BALL_SUBSET_OPEN_MAP_IMAGE = prove
+ (`!f:real^M->real^N s a r.
+        bounded s /\ f continuous_on closure s /\ open(IMAGE f (interior s)) /\
+        a IN s /\ &0 < r /\ (!z. z IN frontier s ==> r <= norm(f z - f a))
+        ==> ball(f(a),r) SUBSET IMAGE f s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`ball((f:real^M->real^N) a,r)`;
+                 `(:real^N) DIFF IMAGE (f:real^M->real^N) s`]
+    CONNECTED_INTER_FRONTIER) THEN
+  REWRITE_TAC[CONNECTED_BALL] THEN MATCH_MP_TAC(SET_RULE
+   `~(b INTER s = {}) /\ b INTER f = {} ==>
+    (~(b INTER (UNIV DIFF s) = {}) /\ ~(b DIFF (UNIV DIFF s) = {})
+     ==> ~(b INTER f = {}))
+    ==> b SUBSET s`) THEN
+  REWRITE_TAC[FRONTIER_COMPLEMENT] THEN CONJ_TAC THENL
+   [REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_INTER] THEN
+    EXISTS_TAC `(f:real^M->real^N) a` THEN
+    ASM_REWRITE_TAC[CENTRE_IN_BALL] THEN ASM SET_TAC[];
+    REWRITE_TAC[SET_RULE `s INTER t = {} <=> !x. x IN t ==> ~(x IN s)`] THEN
+    REWRITE_TAC[IN_BALL; REAL_NOT_LT]] THEN
+  MP_TAC(ISPECL[`frontier(IMAGE (f:real^M->real^N) s)`; `(f:real^M->real^N) a`]
+    DISTANCE_ATTAINS_INF) THEN
+  REWRITE_TAC[FRONTIER_CLOSED; FRONTIER_EQ_EMPTY] THEN ANTS_TAC THENL
+   [SIMP_TAC[DE_MORGAN_THM] THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC(MESON[NOT_BOUNDED_UNIV] `bounded s ==> ~(s = UNIV)`) THEN
+    MATCH_MP_TAC BOUNDED_SUBSET THEN
+    EXISTS_TAC `IMAGE (f:real^M->real^N) (closure s)` THEN
+    SIMP_TAC[IMAGE_SUBSET; CLOSURE_SUBSET] THEN
+    MATCH_MP_TAC COMPACT_IMP_BOUNDED THEN
+    MATCH_MP_TAC COMPACT_CONTINUOUS_IMAGE THEN
+    ASM_REWRITE_TAC[COMPACT_CLOSURE];
+    DISCH_THEN(X_CHOOSE_THEN `w:real^N` STRIP_ASSUME_TAC)] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [frontier]) THEN
+  REWRITE_TAC[IN_DIFF] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  REWRITE_TAC[CLOSURE_SEQUENTIAL] THEN
+  DISCH_THEN(X_CHOOSE_THEN `y:num->real^N`
+   (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)) THEN
+  REWRITE_TAC[IN_IMAGE; SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `z:num->real^M` THEN REWRITE_TAC[FORALL_AND_THM] THEN
+  ONCE_REWRITE_TAC[GSYM FUN_EQ_THM] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 SUBST_ALL_TAC ASSUME_TAC) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM COMPACT_CLOSURE]) THEN
+  REWRITE_TAC[compact] THEN
+  DISCH_THEN(MP_TAC o SPEC `z:num->real^M`) THEN
+  ASM_SIMP_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`y:real^M`; `r:num->num`] THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(((\n. (f:real^M->real^N)(z n)) o (r:num->num)) --> w) sequentially`
+  MP_TAC THENL
+   [MATCH_MP_TAC LIM_SUBSEQUENCE THEN ASM_REWRITE_TAC[];
+    ONCE_REWRITE_TAC[GSYM o_DEF] THEN REWRITE_TAC[GSYM o_ASSOC]] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `!n. ((z:num->real^M) o (r:num->num)) n IN s` MP_TAC THENL
+   [ASM_REWRITE_TAC[o_THM];
+    UNDISCH_THEN `((\n. (f:real^M->real^N) ((z:num->real^M) n)) --> w)
+                  sequentially` (K ALL_TAC) THEN
+    UNDISCH_THEN `!n. (z:num->real^M) n IN s` (K ALL_TAC)] THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ o rev) THEN
+  SPEC_TAC(`(z:num->real^M) o (r:num->num)`, `z:num->real^M`) THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `w = (f:real^M->real^N) y` SUBST_ALL_TAC THENL
+   [MATCH_MP_TAC(ISPEC `sequentially` LIM_UNIQUE) THEN
+    EXISTS_TAC `(f:real^M->real^N) o (z:num->real^M)` THEN
+    ASM_REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+    ASM_MESON_TAC[CONTINUOUS_ON_CLOSURE_SEQUENTIALLY];
+    ALL_TAC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `norm(f y - (f:real^M->real^N) a)` THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM MATCH_MP_TAC; ASM_MESON_TAC[dist; NORM_SUB]] THEN
+  ASM_REWRITE_TAC[frontier; IN_DIFF] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o check (is_neg o concl)) THEN
+  REWRITE_TAC[interior; IN_ELIM_THM] THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) (interior s)` THEN
+  ASM_SIMP_TAC[IMAGE_SUBSET; INTERIOR_SUBSET] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic operations on sets preserve convexity.                         *)
@@ -6164,6 +6264,11 @@ let IS_INTERVAL_CONNECTED_1 = prove
 let CONVEX_INTERVAL = prove
  (`!a b:real^N. convex(interval [a,b]) /\ convex(interval (a,b))`,
   SIMP_TAC[IS_INTERVAL_CONVEX; IS_INTERVAL_INTERVAL]);;
+
+let CONNECTED_INTERVAL = prove
+ (`(!a b:real^N. connected(interval[a,b])) /\                                  
+   (!a b:real^N. connected(interval(a,b)))`,                                   
+  SIMP_TAC[CONVEX_CONNECTED; CONVEX_INTERVAL]);;                               
 
 (* ------------------------------------------------------------------------- *)
 (* On real^1, is_interval, convex and connected are all equivalent.          *)

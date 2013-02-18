@@ -454,17 +454,45 @@ let (SPEC_TAC: term * term -> tactic) =
         fun i [th] -> SPEC (instantiate i t) th
     with Failure _ -> failwith "SPEC_TAC";;
 
-let (X_GEN_TAC: term -> tactic) =
-  fun x' ->
-    if not(is_var x') then failwith "X_GEN_TAC" else
+let (X_GEN_TAC: term -> tactic),
+    (X_CHOOSE_TAC: term -> thm_tactic),
+    (EXISTS_TAC: term -> tactic) =
+  let tactic_type_compatibility_check pfx e g =
+    let et = type_of e and gt = type_of g in
+    if et = gt then ()
+    else failwith(pfx ^ ": expected type :"^string_of_type et^" but got :"^
+                  string_of_type gt) in
+  let X_GEN_TAC x' =
+    if not(is_var x') then failwith "X_GEN_TAC: not a variable" else
     fun (asl,w) ->
-      try let x,bod = dest_forall w in
-          let avoids = itlist (union o thm_frees o snd) asl (frees w) in
-          if mem x' avoids then failwith "X_GEN_TAC" else
-          let afn = CONV_RULE(GEN_ALPHA_CONV x) in
-          null_meta,[asl,vsubst[x',x] bod],
-          fun i [th] -> afn (GEN x' th)
-      with Failure _ -> failwith "X_GEN_TAC";;
+        let x,bod = try dest_forall w
+          with Failure _ -> failwith "X_GEN_TAC: Not universally quantified" in
+        let _ = tactic_type_compatibility_check "X_GEN_TAC" x x' in
+        let avoids = itlist (union o thm_frees o snd) asl (frees w) in
+        if mem x' avoids then failwith "X_GEN_TAC: invalid variable" else
+        let afn = CONV_RULE(GEN_ALPHA_CONV x) in
+        null_meta,[asl,vsubst[x',x] bod],
+        fun i [th] -> afn (GEN x' th)
+  and X_CHOOSE_TAC x' xth =
+        let xtm = concl xth in
+        let x,bod = try dest_exists xtm 
+         with Failure _ -> failwith "X_CHOOSE_TAC: not existential" in
+        let _ = tactic_type_compatibility_check "X_CHOOSE_TAC" x x' in
+        let pat = vsubst[x',x] bod in
+        let xth' = ASSUME pat in
+        fun (asl,w) ->
+          let avoids = itlist (union o frees o concl o snd) asl
+                              (union (frees w) (thm_frees xth)) in
+          if mem x' avoids then failwith "X_CHOOSE_TAC: invalid variable" else
+          null_meta,[("",xth')::asl,w],
+          fun i [th] -> CHOOSE(x',INSTANTIATE_ALL i xth) th
+  and EXISTS_TAC t (asl,w) =
+    let v,bod = try dest_exists w with Failure _ -> 
+                failwith "EXISTS_TAC: Goal not existentially quantified" in
+    let _ = tactic_type_compatibility_check "EXISTS_TAC" v t in
+    null_meta,[asl,vsubst[t,v] bod],
+    fun i [th] -> EXISTS (instantiate i w,instantiate i t) th in
+  X_GEN_TAC,X_CHOOSE_TAC,EXISTS_TAC;;
 
 let (GEN_TAC: tactic) =
   fun (asl,w) ->
@@ -473,27 +501,6 @@ let (GEN_TAC: tactic) =
         let x' = mk_primed_var avoids x in
         X_GEN_TAC x' (asl,w)
     with Failure _ -> failwith "GEN_TAC";;
-
-let (EXISTS_TAC: term -> tactic) =
-  fun t (asl,w) ->
-    try let v,bod = dest_exists w in
-        null_meta,[asl,vsubst[t,v] bod],
-        fun i [th] -> EXISTS (instantiate i w,instantiate i t) th
-    with Failure _ -> failwith "EXISTS_TAC";;
-
-let (X_CHOOSE_TAC: term -> thm_tactic) =
-  fun x' xth ->
-    try let xtm = concl xth in
-        let x,bod = dest_exists xtm in
-        let pat = vsubst[x',x] bod in
-        let xth' = ASSUME pat in
-        fun (asl,w) ->
-          let avoids = itlist (union o frees o concl o snd) asl
-                              (union (frees w) (thm_frees xth)) in
-          if mem x' avoids then failwith "X_CHOOSE_TAC" else
-          null_meta,[("",xth')::asl,w],
-          fun i [th] -> CHOOSE(x',INSTANTIATE_ALL i xth) th
-    with Failure _ -> failwith "X_CHOOSE_TAC";;
 
 let (CHOOSE_TAC: thm_tactic) =
   fun xth ->

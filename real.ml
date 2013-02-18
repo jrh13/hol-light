@@ -805,6 +805,10 @@ let REAL_POW_DIV = prove
  (`!x y n. (x / y) pow n = (x pow n) / (y pow n)`,
   REWRITE_TAC[real_div; REAL_POW_MUL; REAL_POW_INV]);;
 
+let REAL_DIV_EQ_0 = prove
+ (`!x y. x / y = &0 <=> x = &0 \/ y = &0`,
+  REWRITE_TAC[real_div; REAL_INV_EQ_0; REAL_ENTIRE]);;
+
 let REAL_POW_ADD = prove
  (`!x m n. x pow (m + n) = x pow m * x pow n`,
   GEN_TAC THEN INDUCT_TAC THEN
