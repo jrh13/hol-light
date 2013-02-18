@@ -2211,6 +2211,14 @@ let REAL_CONTINUOUS_ON_UNION = prove
   REWRITE_TAC[REAL_CLOSED; REAL_CONTINUOUS_ON; IMAGE_UNION;
               CONTINUOUS_ON_UNION]);;
 
+let REAL_CONTINUOUS_ON_UNION_OPEN = prove
+ (`!f s t.
+         real_open s /\ real_open t /\
+         f real_continuous_on s /\ f real_continuous_on t
+         ==> f real_continuous_on (s UNION t)`,
+  REWRITE_TAC[REAL_OPEN; REAL_CONTINUOUS_ON; IMAGE_UNION;
+              CONTINUOUS_ON_UNION_OPEN]);;
+
 let REAL_CONTINUOUS_ON_CASES = prove
  (`!P f g s t.
         real_closed s /\ real_closed t /\
@@ -2218,6 +2226,17 @@ let REAL_CONTINUOUS_ON_CASES = prove
         (!x. x IN s /\ ~P x \/ x IN t /\ P x ==> f x = g x)
         ==> (\x. if P x then f x else g x) real_continuous_on (s UNION t)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_ON_UNION THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_ON_EQ THENL
+   [EXISTS_TAC `f:real->real`; EXISTS_TAC `g:real->real`] THEN
+  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]);;
+
+let REAL_CONTINUOUS_ON_CASES_OPEN = prove
+ (`!P f g s t.
+        real_open s /\ real_open t /\
+        f real_continuous_on s /\ g real_continuous_on t /\
+        (!x. x IN s /\ ~P x \/ x IN t /\ P x ==> f x = g x)
+        ==> (\x. if P x then f x else g x) real_continuous_on (s UNION t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_ON_UNION_OPEN THEN
   ASM_REWRITE_TAC[] THEN CONJ_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_ON_EQ THENL
    [EXISTS_TAC `f:real->real`; EXISTS_TAC `g:real->real`] THEN
   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]);;

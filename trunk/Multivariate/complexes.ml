@@ -819,6 +819,10 @@ let COMPLEX_INV_EQ_1 = prove
   ASM_REWRITE_TAC[COMPLEX_INV_0] THEN POP_ASSUM MP_TAC THEN
   CONV_TAC COMPLEX_FIELD);;
 
+let COMPLEX_DIV_EQ_0 = prove
+ (`!w z. w / z = Cx(&0) <=> w = Cx(&0) \/ z = Cx(&0)`,
+  REWRITE_TAC[complex_div; COMPLEX_INV_EQ_0; COMPLEX_ENTIRE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Powers.                                                                   *)
 (* ------------------------------------------------------------------------- *)

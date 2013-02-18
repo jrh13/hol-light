@@ -7874,7 +7874,7 @@ let NEGLIGIBLE_IMAGE_BOUNDED_VARIATION_INTERVAL = prove
       MATCH_MP_TAC VECTOR_VARIATION_ON_DIVISION THEN
       ASM_SIMP_TAC[DIVISION_OF_TAGGED_DIVISION]]]);;
 
-let NEGLIGIBLE_RECTIBIABLE_PATH_IMAGE = prove
+let NEGLIGIBLE_RECTIFIABLE_PATH_IMAGE = prove
  (`!g:real^1->real^N.
         2 <= dimindex(:N) /\ rectifiable_path g ==> negligible(path_image g)`,
   REWRITE_TAC[rectifiable_path; path_image] THEN

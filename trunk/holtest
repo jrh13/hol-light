@@ -42,6 +42,7 @@ echo '### Loading Examples/forster.ml'; echo 'loadt "Examples/forster.ml";;' | (
 echo '### Loading Examples/hol88.ml'; echo 'loadt "Examples/hol88.ml";;' | (time $hollight)
 echo '### Loading Examples/holby.ml'; echo 'loadt "Examples/holby.ml";;' | (time $hollight)
 echo '### Loading Library/integer.ml'; echo 'loadt "Library/integer.ml";;' | (time $hollight)
+echo '### Loading Examples/inverse_bug_puzzle.ml'; echo 'loadt "Examples/inverse_bug_puzzle.ml";;' | (time $hollight)
 echo '### Loading Library/isum.ml'; echo 'loadt "Library/isum.ml";;' | (time $hollight)
 echo '### Loading Examples/kb.ml'; echo 'loadt "Examples/kb.ml";;' | (time $hollight)
 echo '### Loading Examples/lagrange_lemma.ml'; echo 'loadt "Examples/lagrange_lemma.ml";;' | (time $hollight)

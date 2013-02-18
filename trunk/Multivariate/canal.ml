@@ -140,8 +140,8 @@ let COMPLEX_IN_BALL_0 = prove
  (`!v r. v IN ball(Cx(&0),r) <=> norm v < r`,
   REWRITE_TAC [GSYM COMPLEX_VEC_0; IN_BALL_0]);;
 
-let COMPLEX_IN_CBALL_0 = prove               
- (`!v r. v IN cball(Cx(&0),r) <=> norm v <= r`,                              
+let COMPLEX_IN_CBALL_0 = prove
+ (`!v r. v IN cball(Cx(&0),r) <=> norm v <= r`,
   REWRITE_TAC [GSYM COMPLEX_VEC_0; IN_CBALL_0]);;
 
 let IN_BALL_RE = prove
@@ -368,6 +368,21 @@ let SUMS_COMPLEX_0 = prove
  (`!f s. (!n. n IN s ==> f n = Cx(&0)) ==> (f sums Cx(&0)) s`,
   REWRITE_TAC[GSYM COMPLEX_VEC_0; SUMS_0]);;
 
+let LIM_NULL_COMPLEX_RMUL_BOUNDED = prove
+ (`!f g. (f --> Cx(&0)) net /\ eventually (\a. norm(g a) <= B) net
+         ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
+  REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
+  ONCE_REWRITE_TAC[LIM_NULL_NORM] THEN
+  REWRITE_TAC[LIFT_CMUL; COMPLEX_NORM_MUL] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_NULL_VMUL_BOUNDED THEN
+  EXISTS_TAC `B:real` THEN ASM_REWRITE_TAC[o_DEF; NORM_LIFT; REAL_ABS_NORM]);;
+
+let LIM_NULL_COMPLEX_LMUL_BOUNDED = prove
+ (`!f g. eventually (\a. norm(f a) <= B) net /\ (g --> Cx(&0)) net
+         ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  MATCH_MP_TAC LIM_NULL_COMPLEX_RMUL_BOUNDED THEN ASM_REWRITE_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Bound results for real and imaginary components of limits.                *)
 (* ------------------------------------------------------------------------- *)
@@ -508,6 +523,22 @@ let CONTINUOUS_ON_COMPLEX_MUL = prove
   REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   SIMP_TAC[CONTINUOUS_COMPLEX_MUL]);;
 
+let CONTINUOUS_ON_COMPLEX_LMUL = prove
+ (`!f:real^N->complex s. f continuous_on s ==> (\x. c * f(x)) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON] THEN SIMP_TAC[LIM_COMPLEX_MUL; LIM_CONST]);;
+
+let CONTINUOUS_ON_COMPLEX_RMUL = prove
+ (`!f:real^N->complex s. f continuous_on s ==> (\x. f(x) * c) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON] THEN SIMP_TAC[LIM_COMPLEX_MUL; LIM_CONST]);;
+
+let CONTINUOUS_ON_COMPLEX_INV = prove
+ (`!f:real^N->complex.
+        f continuous_on s /\
+        (!x. x IN s ==> ~(f x = Cx(&0)))
+        ==> (\x. inv(f x)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
+           CONTINUOUS_COMPLEX_INV_WITHIN]);;
+
 let CONTINUOUS_ON_COMPLEX_DIV = prove
  (`!f g s. f continuous_on s /\ g continuous_on s /\
            (!x. x IN s ==> ~(g x = Cx(&0)))
@@ -596,6 +627,29 @@ let CONTINUOUS_WITHIN_CX_DOT = prove
 let CONTINUOUS_ON_CX_DOT = prove
  (`!s c:real^N. (\z. Cx(c dot z)) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_WITHIN_CX_DOT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity switching range between complex and real^1                     *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_CX_DROP = prove
+ (`!net f. f continuous net ==> (\x. Cx(drop(f x))) continuous net`,
+  REWRITE_TAC[continuous; tendsto] THEN
+  REWRITE_TAC[dist; GSYM CX_SUB; COMPLEX_NORM_CX; GSYM DROP_SUB] THEN
+  REWRITE_TAC[GSYM ABS_DROP]);;
+
+let CONTINUOUS_ON_CX_DROP = prove
+ (`!f s. f continuous_on s ==> (\x. Cx(drop(f x))) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_CX_DROP]);;
+
+let CONTINUOUS_CX_LIFT = prove
+ (`!f. (\x. Cx(f x)) continuous net <=> (\x. lift(f x)) continuous net`,
+  REWRITE_TAC[continuous; LIM; dist; GSYM CX_SUB; GSYM LIFT_SUB] THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; NORM_LIFT]);;
+
+let CONTINUOUS_ON_CX_LIFT = prove
+ (`!f s. (\x. Cx(f x)) continuous_on s <=> (\x. lift(f x)) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_CX_LIFT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Linearity and continuity of the components.                               *)
@@ -1232,6 +1286,13 @@ let COMPLEX_DIFFERENTIABLE_COMPOSE_AT = prove
   REWRITE_TAC[complex_differentiable] THEN
   MESON_TAC[COMPLEX_DIFF_CHAIN_AT]);;
 
+let COMPLEX_DIFFERENTIABLE_WITHIN_OPEN = prove
+ (`!f a s.
+        a IN s /\ open s
+        ==> (f complex_differentiable at a within s <=>
+             f complex_differentiable at a)`,
+  SIMP_TAC[complex_differentiable; HAS_COMPLEX_DERIVATIVE_WITHIN_OPEN]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Same again for being holomorphic on a set.                                *)
 (* ------------------------------------------------------------------------- *)
@@ -1397,9 +1458,9 @@ let COMPLEX_DERIVATIVE_RMUL = prove
                 HAS_COMPLEX_DERIVATIVE_DIFFERENTIABLE]);;
 
 let COMPLEX_DERIVATIVE_TRANSFORM_WITHIN_OPEN = prove
- (`!f g s. open s /\ f holomorphic_on s /\ g holomorphic_on s /\ z IN s /\
-           (!w. w IN s ==> f w = g w)
-           ==> complex_derivative f z = complex_derivative g z`,
+ (`!f g s z. open s /\ f holomorphic_on s /\ g holomorphic_on s /\ z IN s /\
+             (!w. w IN s ==> f w = g w)
+             ==> complex_derivative f z = complex_derivative g z`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC COMPLEX_DERIVATIVE_UNIQUE_AT THEN
   ASM_MESON_TAC[HAS_COMPLEX_DERIVATIVE_TRANSFORM_WITHIN_OPEN;
                 HOLOMORPHIC_ON_IMP_DIFFERENTIABLE_AT;

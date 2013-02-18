@@ -1,8 +1,26 @@
+Fri 15th Feb 2013       Examples/inverse_bug_puzzle.ml [new file]
+
+Added a new file due to Bill Richter giving a solution to the inverse
+bug puzzle in the tutorial, using miz3 and the vector theories.
+
+Fri 15th Feb 2013       tactics.ml
+
+Improved the error reporting in EXISTS_TAC, X_CHOOSE_TAC and X_GEN_TAC, which
+now in particular specify the expected and received types of the terms when
+they don't agree.
+
+Wed 13th Feb 2013       real.ml
+
+Added the following obvious theorem (which does depend on the choice of
+1/0):
+
+REAL_DIV_EQ_0 = |- !x y. x / y = &0 <=> x = &0 \/ y = &0
+
 Fri 18th Jan 2013       lists.ml, Library/prime.ml, Library/pocklington.ml, Permutation/permuted.ml
 
 Added a miscellany of theorems:
 
-APPEND_SING = 
+APPEND_SING =
   |- !h t. APPEND [h] t = CONS h t
 
 MEM_APPEND_DECOMPOSE_LEFT =
@@ -11,13 +29,13 @@ MEM_APPEND_DECOMPOSE_LEFT =
 MEM_APPEND_DECOMPOSE =
   |- !x l. MEM x l <=> (?l1 l2. l = APPEND l1 (CONS x l2))
 
-PERMUTED_APPEND_SWAP = 
+PERMUTED_APPEND_SWAP =
   |- !l1 l2. (APPEND l1 l2) PERMUTED (APPEND l2 l1)
 
-DIVIDES_EXP_MINUS1 = 
+DIVIDES_EXP_MINUS1 =
   |- !k n. n - 1 divides n EXP k - 1
 
-DIVIDES_EXP_PLUS1 = 
+DIVIDES_EXP_PLUS1 =
   |- !n k. ODD k ==> n + 1 divides n EXP k + 1
 
 PRIME_DIVEXP_EQ =
