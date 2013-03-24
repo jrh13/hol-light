@@ -1356,6 +1356,48 @@ let COUNTABLE_PRODUCT_DEPENDENT = prove
               EXISTS_PAIR_THM; IN_CROSS; IN_UNIV] THEN
   ASM SET_TAC[]);;
 
+let COUNTABLE_CARD_MUL = prove
+ (`!s:A->bool t:B->bool. COUNTABLE s /\ COUNTABLE t ==> COUNTABLE(s *_c t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[mul_c] THEN
+  ASM_SIMP_TAC[COUNTABLE_PRODUCT_DEPENDENT]);;
+
+let COUNTABLE_CARD_MUL_EQ = prove
+ (`!s:A->bool t:B->bool.
+        COUNTABLE(s *_c t) <=> s = {} \/ t = {} \/ COUNTABLE s /\ COUNTABLE t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[mul_c] THEN
+  MAP_EVERY ASM_CASES_TAC [`s:A->bool = {}`; `t:B->bool = {}`] THEN
+  ASM_REWRITE_TAC[COUNTABLE_EMPTY; EMPTY_GSPEC; NOT_IN_EMPTY;
+                  SET_RULE `{x,y | F} = {}`] THEN
+  EQ_TAC THEN SIMP_TAC[REWRITE_RULE[mul_c] COUNTABLE_CARD_MUL] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC COUNTABLE_SUBSET THENL
+   [EXISTS_TAC `IMAGE FST ((s:A->bool) *_c (t:B->bool))`;
+    EXISTS_TAC `IMAGE SND ((s:A->bool) *_c (t:B->bool))`] THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; mul_c; SUBSET; IN_IMAGE; EXISTS_PAIR_THM] THEN
+  REWRITE_TAC[IN_ELIM_PAIR_THM] THEN ASM SET_TAC[]);;
+
+let CARD_EQ_PCROSS = prove
+ (`!s:A^M->bool t:A^N->bool. s PCROSS t =_c s *_c t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[EQ_C_BIJECTIONS; mul_c] THEN
+  EXISTS_TAC `\z:A^(M,N)finite_sum. fstcart z,sndcart z` THEN
+  EXISTS_TAC `\(x:A^M,y:A^N). pastecart x y` THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; PASTECART_IN_PCROSS] THEN
+  REWRITE_TAC[IN_ELIM_PAIR_THM; PASTECART_FST_SND] THEN
+  REWRITE_TAC[FORALL_IN_PCROSS; FSTCART_PASTECART; SNDCART_PASTECART]);;
+
+let COUNTABLE_PCROSS_EQ = prove
+ (`!s:A^M->bool t:A^N->bool.
+        COUNTABLE(s PCROSS t) <=>
+        s = {} \/ t = {} \/ COUNTABLE s /\ COUNTABLE t`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `COUNTABLE((s:A^M->bool) *_c (t:A^N->bool))` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CARD_COUNTABLE_CONG THEN REWRITE_TAC[CARD_EQ_PCROSS];
+    REWRITE_TAC[COUNTABLE_CARD_MUL_EQ]]);;
+
+let COUNTABLE_PCROSS = prove
+ (`!s:A^M->bool t:A^N->bool.
+        COUNTABLE s /\ COUNTABLE t ==> COUNTABLE(s PCROSS t)`,
+  SIMP_TAC[COUNTABLE_PCROSS_EQ]);;
+
 let COUNTABLE_CART = prove
  (`!P. (!i. 1 <= i /\ i <= dimindex(:N) ==> COUNTABLE {x | P i x})
        ==> COUNTABLE {v:A^N | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)}`,

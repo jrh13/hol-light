@@ -893,6 +893,12 @@ let NSUM_EQ_0_IFF = prove
   REPEAT STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[NSUM_EQ_0] THEN
   ASM_MESON_TAC[ARITH_RULE `n = 0 <=> n <= 0`; NSUM_POS_BOUND]);;
 
+let NSUM_POS_LT = prove
+ (`!f s:A->bool.
+        FINITE s /\ (?x. x IN s /\ 0 < f x)
+        ==> 0 < nsum s f`,
+  SIMP_TAC[ARITH_RULE `0 < n <=> ~(n = 0)`; NSUM_EQ_0_IFF] THEN MESON_TAC[]);;
+
 let NSUM_DELETE = prove
  (`!f s a. FINITE s /\ a IN s ==> f(a) + nsum(s DELETE a) f = nsum s f`,
   SIMP_TAC[nsum; ITERATE_DELETE; MONOIDAL_ADD]);;
@@ -1423,6 +1429,18 @@ let SUM_LT_ALL = prove
  (`!f g s. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
            ==> sum s f < sum s g`,
   MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE; SUM_LT]);;
+
+let SUM_POS_LT = prove
+ (`!f s:A->bool.
+        FINITE s /\
+        (!x. x IN s ==> &0 <= f x) /\
+        (?x. x IN s /\ &0 < f x)
+        ==> &0 < sum s f`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC REAL_LET_TRANS THEN
+  EXISTS_TAC `sum (s:A->bool) (\i. &0)` THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUM_0; REAL_LE_REFL]; MATCH_MP_TAC SUM_LT] THEN
+  ASM_MESON_TAC[]);;
 
 let SUM_EQ = prove
  (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (sum s f = sum s g)`,

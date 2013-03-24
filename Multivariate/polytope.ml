@@ -2064,6 +2064,12 @@ let POLYTOPE_CONVEX_HULL = prove
  (`!s. FINITE s ==> polytope(convex hull s)`,
   REWRITE_TAC[polytope] THEN MESON_TAC[]);;
 
+let POLYTOPE_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        polytope s /\ polytope t ==> polytope(s PCROSS t)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[polytope] THEN
+  MESON_TAC[CONVEX_HULL_PCROSS; FINITE_PCROSS]);;
+
 let FACE_OF_POLYTOPE_POLYTOPE = prove
  (`!f s:real^N->bool. polytope s /\ f face_of s ==> polytope f`,
   REWRITE_TAC[polytope] THEN

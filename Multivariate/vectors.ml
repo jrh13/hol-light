@@ -3571,6 +3571,13 @@ let SUBSPACE_UNION_CHAIN = prove
     ASM_MESON_TAC[SUBSPACE_SUB; VECTOR_ARITH
      `(x + y) - x:real^N = y /\ (x + y) - y = x`]]);;
 
+let SUBSPACE_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        subspace s /\ subspace t ==> subspace(s PCROSS t)`,
+  REWRITE_TAC[subspace; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
+  REWRITE_TAC[GSYM PASTECART_VEC; PASTECART_IN_PCROSS] THEN SIMP_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Lemmas.                                                                   *)
 (* ------------------------------------------------------------------------- *)

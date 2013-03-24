@@ -904,6 +904,26 @@ let CONVEX_VSUM = prove
     CONJ_TAC THENL [FIRST_X_ASSUM MATCH_MP_TAC; REAL_ARITH_TAC] THEN
     ASM_MESON_TAC[REAL_ADD_SYM]]);;
 
+let CONVEX_VSUM_STRONG = prove
+ (`!s k u x:A->real^N.
+        FINITE k /\
+        convex s /\
+        sum k u = &1 /\
+        (!i. i IN k ==> &0 <= u i /\ (u i = &0 \/ x i IN s))
+        ==> vsum k (\i. u i % x i) IN s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `vsum k (\i. u i % (x:A->real^N) i) =
+    vsum {i | i IN k /\ ~(u i = &0)} (\i. u i % x i)`
+  SUBST1_TAC THENL
+   [MATCH_MP_TAC VSUM_SUPERSET THEN REWRITE_TAC[VECTOR_MUL_EQ_0] THEN
+    SET_TAC[];
+    MATCH_MP_TAC CONVEX_VSUM THEN
+    ASM_SIMP_TAC[FINITE_RESTRICT; IN_ELIM_THM] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+    FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC SUM_SUPERSET THEN ASM SET_TAC[]]);;
+
 let CONVEX_INDEXED = prove
  (`!s:real^N->bool.
         convex s <=>
@@ -972,6 +992,20 @@ let CONVEX_FINITE = prove
   ONCE_REWRITE_TAC[COND_RAND] THEN ONCE_REWRITE_TAC[COND_RATOR] THEN
   ASM_SIMP_TAC[VECTOR_MUL_LZERO; REAL_LE_REFL; GSYM VSUM_RESTRICT_SET] THEN
   ASM_SIMP_TAC[COND_ID; SET_RULE `t SUBSET s ==> {x | x IN s /\ x IN t} = t`]);;
+
+let AFFINE_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        affine s /\ affine t ==> affine(s PCROSS t)`,
+  REWRITE_TAC[affine; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  SIMP_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
+  SIMP_TAC[PASTECART_IN_PCROSS]);;
+
+let CONVEX_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        convex s /\ convex t ==> convex(s PCROSS t)`,
+  REWRITE_TAC[convex; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  SIMP_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
+  SIMP_TAC[PASTECART_IN_PCROSS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Conic sets and conic hull.                                                *)
@@ -1112,6 +1146,13 @@ let CONIC_SUMS = prove
  (`!s t. conic s /\ conic t ==> conic {x + y:real^N | x IN s /\ y IN t}`,
   REWRITE_TAC[conic; IN_ELIM_THM] THEN
   MESON_TAC[VECTOR_ADD_LDISTRIB]);;
+
+let CONIC_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        conic s /\ conic t ==> conic(s PCROSS t)`,
+  REWRITE_TAC[conic; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  SIMP_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
+  SIMP_TAC[PASTECART_IN_PCROSS]);;
 
 let CONIC_POSITIVE_ORTHANT = prove
  (`conic {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i}`,
@@ -2924,6 +2965,62 @@ let CONVEX_HULL_SUMS = prove
       ASM_SIMP_TAC[FINITE_NUMSEG; CONVEX_CONVEX_HULL; IN_NUMSEG] THEN
       REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[]]]);;
 
+let AFFINE_HULL_PCROSS,CONVEX_HULL_PCROSS = (CONJ_PAIR o prove)
+ (`(!s:real^M->bool t:real^N->bool.
+        affine hull (s PCROSS t) =
+        (affine hull s) PCROSS (affine hull t)) /\
+   (!s:real^M->bool t:real^N->bool.
+        convex hull (s PCROSS t) =
+        (convex hull s) PCROSS (convex hull t))`,
+  let lemma1 = prove
+   (`!u v x y:real^M z:real^N.
+       u + v = &1
+          ==> pastecart z (u % x + v % y) =
+              u % pastecart z x + v % pastecart z y /\
+              pastecart (u % x + v % y) z =
+              u % pastecart x z + v % pastecart y z`,
+    REWRITE_TAC[PASTECART_ADD; GSYM PASTECART_CMUL] THEN
+    SIMP_TAC[GSYM VECTOR_ADD_RDISTRIB; VECTOR_MUL_LID])
+  and lemma2 = prove
+   (`INTERS {{x | pastecart x y IN u} | y IN t} =
+     {x | !y. y IN t ==> pastecart x y IN u}`,
+    REWRITE_TAC[INTERS_GSPEC; EXTENSION; IN_ELIM_THM] THEN SET_TAC[]) in
+  CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+     [MATCH_MP_TAC HULL_MINIMAL THEN
+      SIMP_TAC[AFFINE_PCROSS; AFFINE_AFFINE_HULL; HULL_SUBSET; PCROSS_MONO];
+      REWRITE_TAC[SUBSET; FORALL_IN_PCROSS] THEN
+      REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+      MATCH_MP_TAC HULL_INDUCT THEN CONJ_TAC THENL
+       [X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+        MATCH_MP_TAC HULL_INDUCT THEN CONJ_TAC THENL
+         [X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+          SUBGOAL_THEN `pastecart (x:real^M) (y:real^N) IN s PCROSS t` MP_TAC
+          THENL [ASM_REWRITE_TAC[PASTECART_IN_PCROSS]; ALL_TAC] THEN
+          REWRITE_TAC[HULL_INC];
+          ALL_TAC];
+        REWRITE_TAC[GSYM lemma2] THEN MATCH_MP_TAC AFFINE_INTERS THEN
+        REWRITE_TAC[FORALL_IN_GSPEC]] THEN
+      SIMP_TAC[affine; IN_ELIM_THM; lemma1;
+               ONCE_REWRITE_RULE[affine] AFFINE_AFFINE_HULL]];
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+     [MATCH_MP_TAC HULL_MINIMAL THEN
+      SIMP_TAC[CONVEX_PCROSS; CONVEX_CONVEX_HULL; HULL_SUBSET; PCROSS_MONO];
+      REWRITE_TAC[SUBSET; FORALL_IN_PCROSS] THEN
+      REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+      MATCH_MP_TAC HULL_INDUCT THEN CONJ_TAC THENL
+       [X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+        MATCH_MP_TAC HULL_INDUCT THEN CONJ_TAC THENL
+         [X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+          SUBGOAL_THEN `pastecart (x:real^M) (y:real^N) IN s PCROSS t` MP_TAC
+          THENL [ASM_REWRITE_TAC[PASTECART_IN_PCROSS]; ALL_TAC] THEN
+          REWRITE_TAC[HULL_INC];
+          ALL_TAC];
+        REWRITE_TAC[GSYM lemma2] THEN MATCH_MP_TAC CONVEX_INTERS THEN
+        REWRITE_TAC[FORALL_IN_GSPEC]] THEN
+      SIMP_TAC[convex; IN_ELIM_THM; lemma1;
+               ONCE_REWRITE_RULE[convex] CONVEX_CONVEX_HULL]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations among closure notions and corresponding hulls.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -3346,7 +3443,6 @@ let AFFINE_INDEPENDENT_STDBASIS = prove
  (`~(affine_dependent
       ((vec 0:real^N) INSERT {basis i | 1 <= i /\ i <= dimindex (:N)}))`,
   SIMP_TAC[INDEPENDENT_IMP_AFFINE_DEPENDENT_0; INDEPENDENT_STDBASIS]);;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Nonempty affine sets are translates of (unique) subspaces.                *)
@@ -4962,10 +5058,10 @@ let COMPACT_CONVEX_COMBINATIONS = prove
     REWRITE_TAC[IN_INTERVAL_1; GSYM EXISTS_DROP; DROP_VEC] THEN MESON_TAC[];
     ALL_TAC] THEN
   MATCH_MP_TAC COMPACT_CONTINUOUS_IMAGE THEN
-  ASM_SIMP_TAC[COMPACT_PASTECART; COMPACT_INTERVAL] THEN
+  ASM_SIMP_TAC[COMPACT_PCROSS; GSYM PCROSS; COMPACT_INTERVAL] THEN
   MATCH_MP_TAC CONTINUOUS_AT_IMP_CONTINUOUS_ON THEN
   X_GEN_TAC `z:real^(1,(N,N)finite_sum)finite_sum` THEN
-  DISCH_THEN(K ALL_TAC) THEN
+  DISCH_THEN(K ALL_TAC) THEN REWRITE_TAC[PCROSS] THEN
   MATCH_MP_TAC CONTINUOUS_ADD THEN CONJ_TAC THEN
   MATCH_MP_TAC CONTINUOUS_MUL THEN REWRITE_TAC[o_DEF; LIFT_SUB; LIFT_DROP] THEN
   CONJ_TAC THEN TRY(MATCH_MP_TAC CONTINUOUS_SUB) THEN
@@ -6266,9 +6362,9 @@ let CONVEX_INTERVAL = prove
   SIMP_TAC[IS_INTERVAL_CONVEX; IS_INTERVAL_INTERVAL]);;
 
 let CONNECTED_INTERVAL = prove
- (`(!a b:real^N. connected(interval[a,b])) /\                                  
-   (!a b:real^N. connected(interval(a,b)))`,                                   
-  SIMP_TAC[CONVEX_CONNECTED; CONVEX_INTERVAL]);;                               
+ (`(!a b:real^N. connected(interval[a,b])) /\
+   (!a b:real^N. connected(interval(a,b)))`,
+  SIMP_TAC[CONVEX_CONNECTED; CONVEX_INTERVAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* On real^1, is_interval, convex and connected are all equivalent.          *)
@@ -7109,6 +7205,11 @@ let CONVEX_CONE_SUMS = prove
  (`!s t. convex_cone s /\ convex_cone t
          ==> convex_cone {x + y:real^N | x IN s /\ y IN t}`,
   SIMP_TAC[convex_cone; CONIC_SUMS; CONVEX_SUMS] THEN SET_TAC[]);;
+
+let CONVEX_CONE_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        convex_cone s /\ convex_cone t ==> convex_cone(s PCROSS t)`,
+  SIMP_TAC[convex_cone; CONVEX_PCROSS; CONIC_PCROSS; PCROSS_EQ_EMPTY]);;
 
 let CONVEX_CONE_HULL_UNION = prove
  (`!s t. convex_cone hull(s UNION t) =
@@ -8008,6 +8109,17 @@ let STARLIKE_UNIV = prove
  (`starlike(:real^N)`,
   MESON_TAC[CONVEX_IMP_STARLIKE; CONVEX_UNIV;
             BOUNDED_EMPTY; NOT_BOUNDED_UNIV]);;
+
+let STARLIKE_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        starlike s /\ starlike t ==> starlike(s PCROSS t)`,
+  SIMP_TAC[starlike; EXISTS_IN_PCROSS; SUBSET; IN_SEGMENT] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  REWRITE_TAC[FORALL_IN_PCROSS; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_UNWIND_THM2; IMP_IMP] THEN
+  REWRITE_TAC[GSYM PASTECART_CMUL; PASTECART_ADD] THEN
+  REWRITE_TAC[PASTECART_IN_PCROSS] THEN MESON_TAC[]);;
 
 let BETWEEN_DIST_LT = prove
  (`!r a b c:real^N.

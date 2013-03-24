@@ -283,7 +283,7 @@ let type_of_pretype,term_of_preterm,retypecheck =
   let rec istrivial ptm env x = function
     |Stv y as t ->
         y = x or defined env y & istrivial ptm env x (apply env y)
-    |Ptycon(f,args) as t when exists (istrivial None env x) args ->
+    |Ptycon(f,args) as t when exists (istrivial ptm env x) args ->
         failwith (string_of_ty_error env ptm)
     |(Ptycon _ | Utv _) -> false
   in
