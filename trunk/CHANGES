@@ -1,3 +1,109 @@
+Sat 23rd Mar 2013       Examples/inverse_bug_puzzle_tac.ml, Examples/inverse_bug_puzzle_miz3.ml
+
+Added a tactic version Examples/inverse_bug_puzzle_tac.ml of Bill Richter's 
+inverse bug puzzle solution, and renamed the earlier one as
+Examples/inverse_bug_puzzle_miz3.ml.
+
+Sat 23rd Mar 2013       Makefile
+
+Incorporated a change from Jack Pappas to ensure that the Makefile handles
+non-standard locations for camlp4, using "`camlp[45] -where`" instead of
+"+camlp[45]".
+
+Fri 22nd Mar 2013       cart.ml, Library/card.ml
+
+Added
+
+EXISTS_IN_PCROSS =
+  |- (?z. z IN s PCROSS t /\ P z) <=>
+     (?x y. x IN s /\ y IN t /\ P (pastecart x y))
+
+PCROSS_MONO =
+  |- !s t s' t'.
+         s SUBSET s' /\ t SUBSET t' ==> s PCROSS t SUBSET s' PCROSS t'
+
+SUBSET_PCROSS;;
+  |- !s t s' t'.
+         s PCROSS t SUBSET s' PCROSS t' <=>
+         s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'
+
+UNIV_PCROSS_UNIV =
+  |- (:A^M) PCROSS (:A^N) = (:A^(M,N)finite_sum)
+
+FINITE_PCROSS_EQ =
+  |- !s t. FINITE (s PCROSS t) <=> s = {} \/ t = {} \/ FINITE s /\ FINITE t
+
+COUNTABLE_CARD_MUL =
+ |- !s t. COUNTABLE s /\ COUNTABLE t ==> COUNTABLE (s *_c t);
+
+COUNTABLE_CARD_MUL_EQ =
+  |- !s t.
+         COUNTABLE (s *_c t) <=>
+         s = {} \/ t = {} \/ COUNTABLE s /\ COUNTABLE t
+
+CARD_EQ_PCROSS =
+  |- !s t. s PCROSS t =_c s *_c t
+
+COUNTABLE_PCROSS_EQ =
+  |- !s t.
+         COUNTABLE (s PCROSS t) <=>
+         s = {} \/ t = {} \/ COUNTABLE s /\ COUNTABLE t
+
+COUNTABLE_PCROSS =
+  |- !s t. COUNTABLE s /\ COUNTABLE t ==> COUNTABLE (s PCROSS t)
+
+Thu 21st Mar 2013       cart.ml
+
+Added more theorems about PCROSS:
+
+PCROSS_EQ_EMPTY =
+  |- !s t. s PCROSS t = {} <=> s = {} \/ t = {}
+
+HAS_SIZE_PCROSS =
+  |- !s t m n. s HAS_SIZE m /\ t HAS_SIZE n ==> s PCROSS t HAS_SIZE m * n
+
+FINITE_PCROSS =
+  |- !s t. FINITE s /\ FINITE t ==> FINITE (s PCROSS t)
+
+PCROSS_EMPTY =
+  |- (!s. s PCROSS {} = {}) /\ (!t. {} PCROSS t = {})
+
+Wed 20th Mar 2013       cart.ml
+
+Added a definition of a variant notion of product using pasting of vectors,
+called PCROSS, plus two elementary theorems:
+
+PCROSS =
+ |- s PCROSS t = {pastecart (x:A^M) (y:A^N) | x IN s /\ y IN t}
+
+FORALL_IN_PCROSS =
+ |- (!z. z IN s PCROSS t ==> P z) <=>
+    (!x y. x IN s /\ y IN t ==> P(pastecart x y))
+
+PASTECART_IN_PCROSS =
+ |- !s t x y. (pastecart x y) IN (s PCROSS t) <=> x IN s /\ y IN t
+
+Mon 18th Mar 2013       preterm.ml
+
+Added a slight update from Vincent Aravantinos to the typechecking error
+messages, to handle additional cases.
+
+Fri 15th Mar 2013       iterate.ml
+
+Added a couple of strict positivity theorems for sums:
+
+NSUM_POS_LT =
+  |- !f s.
+        FINITE s /\ (?x. x IN s /\ 0 < f x)
+        ==> 0 < nsum s f
+
+SUM_POS_LT =
+  |- !f s.
+        FINITE s /\
+        (!x. x IN s ==> &0 <= f x) /\
+        (?x. x IN s /\ &0 < f x)
+        ==> &0 < sum s f
+
 Fri 15th Feb 2013       Examples/inverse_bug_puzzle.ml [new file]
 
 Added a new file due to Bill Richter giving a solution to the inverse
