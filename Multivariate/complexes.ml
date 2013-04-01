@@ -1069,6 +1069,14 @@ let CX_IM_CNJ = prove
               COMPLEX_MUL_LNEG; RE_NEG; IM_NEG; RE_MUL_II; IM_MUL_II] THEN
   REWRITE_TAC[RE_SUB; IM_SUB; RE_CNJ; IM_CNJ] THEN REAL_ARITH_TAC);;
 
+let FORALL_CNJ = prove
+ (`(!z. P(cnj z)) <=> (!z. P z)`,
+  MESON_TAC[CNJ_CNJ]);;
+
+let EXISTS_CNJ = prove
+ (`(?z. P(cnj z)) <=> (?z. P z)`,
+  MESON_TAC[CNJ_CNJ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Slightly ad hoc theorems relating multiplication, inverse and conjugation *)
 (* ------------------------------------------------------------------------- *)
@@ -1344,6 +1352,10 @@ let LINEAR_COMPLEX_MUL = prove
 let BILINEAR_COMPLEX_MUL = prove
  (`bilinear( * )`,
   REWRITE_TAC[bilinear; linear; COMPLEX_CMUL] THEN  CONV_TAC COMPLEX_RING);;
+
+let LINEAR_CNJ = prove
+ (`linear cnj`,
+  REWRITE_TAC[linear; COMPLEX_CMUL; CNJ_ADD; CNJ_MUL; CNJ_CX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex-specific theorems about sums.                                     *)
