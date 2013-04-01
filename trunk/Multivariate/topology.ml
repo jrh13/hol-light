@@ -267,6 +267,28 @@ let SUBTOPOLOGY_UNIV = prove
  (`!top. subtopology top UNIV = top`,
   SIMP_TAC[SUBTOPOLOGY_SUPERSET; SUBSET_UNIV]);;
 
+let OPEN_IN_SUBTOPOLOGY_UNION = prove
+ (`!top s t u:A->bool.
+        open_in (subtopology top t) s /\ open_in (subtopology top u) s
+        ==> open_in (subtopology top (t UNION u)) s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_SUBTOPOLOGY] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (X_CHOOSE_THEN `s':A->bool` STRIP_ASSUME_TAC)
+   (X_CHOOSE_THEN `t':A->bool` STRIP_ASSUME_TAC)) THEN
+  EXISTS_TAC `s' INTER t':A->bool` THEN ASM_SIMP_TAC[OPEN_IN_INTER] THEN
+  ASM SET_TAC[]);;
+
+let CLOSED_IN_SUBTOPOLOGY_UNION = prove
+ (`!top s t u:A->bool.
+        closed_in (subtopology top t) s /\ closed_in (subtopology top u) s
+        ==> closed_in (subtopology top (t UNION u)) s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_SUBTOPOLOGY] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (X_CHOOSE_THEN `s':A->bool` STRIP_ASSUME_TAC)
+   (X_CHOOSE_THEN `t':A->bool` STRIP_ASSUME_TAC)) THEN
+  EXISTS_TAC `s' INTER t':A->bool` THEN ASM_SIMP_TAC[CLOSED_IN_INTER] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The universal Euclidean versions are what we use most of the time.        *)
 (* ------------------------------------------------------------------------- *)
@@ -7438,6 +7460,19 @@ let LIM_PASTECART = prove
     `z <= x + y ==> x < e / &2 /\ y < e / &2 ==> z < e`) THEN
   REWRITE_TAC[NORM_PASTECART_LE]);;
 
+let LIM_PASTECART_EQ = prove
+ (`!net f:A->real^M g:A->real^N.
+        ((\x. pastecart (f x) (g x)) --> pastecart a b) net <=>
+        (f --> a) net /\ (g --> b) net`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[LIM_PASTECART] THEN
+  REPEAT STRIP_TAC THENL
+   [FIRST_ASSUM(MP_TAC o ISPEC `fstcart:real^(M,N)finite_sum->real^M` o
+        MATCH_MP (REWRITE_RULE[IMP_CONJ] LIM_LINEAR)) THEN
+    REWRITE_TAC[LINEAR_FSTCART; FSTCART_PASTECART; ETA_AX];
+    FIRST_ASSUM(MP_TAC o ISPEC `sndcart:real^(M,N)finite_sum->real^N` o
+        MATCH_MP (REWRITE_RULE[IMP_CONJ] LIM_LINEAR)) THEN
+    REWRITE_TAC[LINEAR_SNDCART; SNDCART_PASTECART; ETA_AX]]);;
+
 let CONTINUOUS_PASTECART = prove
  (`!net f:A->real^M g:A->real^N.
         f continuous net /\ g continuous net
@@ -10446,6 +10481,55 @@ let HOMEOMORPHIC_BALL_UNIV = prove
     REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
     MATCH_MP_TAC CONTINUOUS_ON_LIFT_NORM_COMPOSE THEN
     REWRITE_TAC[CONTINUOUS_ON_ID]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Homeomorphism of hyperplanes.                                             *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMEOMORPHIC_HYPERPLANES = prove
+ (`!a:real^N b c:real^N d.
+        ~(a = vec 0) /\ ~(c = vec 0)
+        ==> {x | a dot x = b} homeomorphic {x | c dot x = d}`,
+  let lemma = prove
+   (`~(a = vec 0)
+     ==> {x:real^N | a dot x = b} homeomorphic {x:real^N | x$1 = &0}`,
+    REPEAT STRIP_TAC THEN SUBGOAL_THEN `?c:real^N. a dot c = b`
+    STRIP_ASSUME_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [CART_EQ]) THEN
+      REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; VEC_COMPONENT] THEN
+      DISCH_THEN(X_CHOOSE_THEN `k:num` STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC `b / (a:real^N)$k % basis k:real^N` THEN
+      ASM_SIMP_TAC[DOT_RMUL; DOT_BASIS; REAL_DIV_RMUL];
+      FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+      ABBREV_TAC `p = {x:real^N | x$1 = &0}` THEN
+      GEOM_ORIGIN_TAC `c:real^N` THEN
+      REWRITE_TAC[VECTOR_ADD_RID; DOT_RADD; DOT_RZERO; REAL_EQ_ADD_LCANCEL_0;
+                  REAL_ADD_RID] THEN
+      REPEAT STRIP_TAC THEN UNDISCH_TAC `~(a:real^N = vec 0)` THEN
+      GEOM_BASIS_MULTIPLE_TAC 1 `a:real^N` THEN
+      SIMP_TAC[VECTOR_MUL_EQ_0; DE_MORGAN_THM; DOT_LMUL; REAL_ENTIRE] THEN
+      SIMP_TAC[DOT_BASIS; LE_REFL; DIMINDEX_GE_1] THEN
+      EXPAND_TAC "p" THEN REWRITE_TAC[HOMEOMORPHIC_REFL]]) in
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC HOMEOMORPHIC_TRANS `{x:real^N | x$1 = &0}` THEN
+  ASM_SIMP_TAC[lemma] THEN ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
+  ASM_SIMP_TAC[lemma]);;
+
+let HOMEOMORPHIC_HYPERPLANE_STANDARD_HYPERPLANE = prove
+ (`!a:real^N b k c.
+        ~(a = vec 0) /\ 1 <= k /\ k <= dimindex(:N)
+        ==> {x | a dot x = b} homeomorphic {x:real^N | x$k = c}`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `{x:real^N | x$k = c} = {x | basis k dot x = c}` SUBST1_TAC
+  THENL [ASM_SIMP_TAC[DOT_BASIS]; MATCH_MP_TAC HOMEOMORPHIC_HYPERPLANES] THEN
+  ASM_SIMP_TAC[BASIS_NONZERO]);;
+
+let HOMEOMORPHIC_STANDARD_HYPERPLANE_HYPERPLANE = prove
+ (`!a:real^N b k c.
+        ~(a = vec 0) /\ 1 <= k /\ k <= dimindex(:N)
+        ==> {x:real^N | x$k = c} homeomorphic {x | a dot x = b}`,
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
+  REWRITE_TAC[HOMEOMORPHIC_HYPERPLANE_STANDARD_HYPERPLANE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* "Isometry" (up to constant bounds) of injective linear map etc.           *)

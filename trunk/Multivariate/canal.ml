@@ -2270,6 +2270,18 @@ let SUMS_CNJ = prove
  (`!net f l. ((\x. cnj(f x)) sums cnj l) net <=> (f sums l) net`,
   SIMP_TAC[sums; LIM_CNJ; GSYM CNJ_VSUM; FINITE_INTER_NUMSEG]);;
 
+let CONTINUOUS_WITHIN_CNJ = prove
+ (`!s z. cnj continuous (at z within s)`,
+  SIMP_TAC[LINEAR_CONTINUOUS_WITHIN; LINEAR_CNJ]);;
+
+let CONTINUOUS_AT_CNJ = prove
+ (`!z. cnj continuous (at z)`,
+  SIMP_TAC[LINEAR_CONTINUOUS_AT; LINEAR_CNJ]);;
+
+let CONTINUOUS_ON_CNJ = prove
+ (`!s. cnj continuous_on s`,
+  SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_CNJ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some limit theorems about real part of real series etc.                   *)
 (* ------------------------------------------------------------------------- *)

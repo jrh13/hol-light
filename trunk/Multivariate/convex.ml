@@ -2064,6 +2064,130 @@ let FRONTIER_OF_COMPONENTS_CLOSED_COMPLEMENT = prove
   ASM_MESON_TAC[FRONTIER_SUBSET_EQ; SUBSET_TRANS]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A couple of lemmas about components (see Newman IV, 3.3 and 3.4).         *)
+(* ------------------------------------------------------------------------- *)
+
+let CONNECTED_UNION_CLOPEN_IN_COMPLEMENT = prove
+ (`!s t u:real^N->bool.
+        connected s /\ connected u /\ s SUBSET u /\
+        open_in (subtopology euclidean (u DIFF s)) t /\
+        closed_in (subtopology euclidean (u DIFF s)) t
+        ==> connected (s UNION t)`,
+  MAP_EVERY X_GEN_TAC
+   [`c:real^N->bool`; `h:real^N->bool`; `s:real^N->bool`] THEN
+  STRIP_TAC THEN
+  REWRITE_TAC[CONNECTED_CLOSED_IN_EQ; NOT_EXISTS_THM] THEN
+  MATCH_MP_TAC(MESON[]
+   `!Q. (!x y. P x y <=> P y x) /\
+        (!x y. P x y ==> Q x \/ Q y) /\
+        (!x y. P x y /\ Q x ==> F)
+        ==> (!x y. ~(P x y))`) THEN
+  EXISTS_TAC `\x:real^N->bool. c SUBSET x` THEN
+  CONJ_TAC THENL [MESON_TAC[INTER_COMM; UNION_COMM]; ALL_TAC] THEN
+  REWRITE_TAC[] THEN CONJ_TAC THEN
+  MAP_EVERY X_GEN_TAC [`h1:real^N->bool`; `h2:real^N->bool`] THENL
+   [STRIP_TAC THEN UNDISCH_TAC `connected(c:real^N->bool)` THEN
+    REWRITE_TAC[CONNECTED_CLOSED_IN; NOT_EXISTS_THM] THEN
+    DISCH_THEN(MP_TAC o
+      SPECL [`c INTER h1:real^N->bool`; `c INTER h2:real^N->bool`]) THEN
+    MATCH_MP_TAC(TAUT
+     `(p /\ q) /\ (~r ==> s) ==> ~(p /\ q /\ r) ==> s`) THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN CONJ_TAC THENL
+     [UNDISCH_TAC
+        `closed_in(subtopology euclidean (c UNION h)) (h1:real^N->bool)`;
+      UNDISCH_TAC
+        `closed_in(subtopology euclidean (c UNION h)) (h2:real^N->bool)`] THEN
+    REWRITE_TAC[CLOSED_IN_CLOSED] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    ASM SET_TAC[];
+    STRIP_TAC THEN
+    FIRST_ASSUM(ASSUME_TAC o CONJUNCT1 o GEN_REWRITE_RULE I [open_in]) THEN
+    SUBGOAL_THEN `(h2:real^N->bool) SUBSET h` ASSUME_TAC THENL
+     [ASM SET_TAC[]; ALL_TAC] THEN
+    UNDISCH_TAC `connected(s:real^N->bool)` THEN
+    REWRITE_TAC[CONNECTED_CLOPEN] THEN
+    DISCH_THEN(MP_TAC o SPEC `h2:real^N->bool`) THEN REWRITE_TAC[NOT_IMP] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    SUBGOAL_THEN `s:real^N->bool = (s DIFF c) UNION (c UNION h)`
+    SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC OPEN_IN_SUBTOPOLOGY_UNION THEN
+      MATCH_MP_TAC(TAUT `q /\ (q ==> p) ==> p /\ q`) THEN CONJ_TAC THENL
+       [REWRITE_TAC[OPEN_IN_CLOSED_IN_EQ; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+        CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+        SUBGOAL_THEN `(c UNION h) DIFF h2:real^N->bool = h1`
+         (fun th -> ASM_REWRITE_TAC[th]) THEN ASM SET_TAC[];
+        DISCH_TAC THEN MATCH_MP_TAC OPEN_IN_TRANS THEN
+        EXISTS_TAC `h:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+        UNDISCH_TAC
+         `open_in(subtopology euclidean (c UNION h)) (h2:real^N->bool)` THEN
+        REWRITE_TAC[OPEN_IN_OPEN] THEN MATCH_MP_TAC MONO_EXISTS THEN
+        ASM SET_TAC[]];
+      MATCH_MP_TAC CLOSED_IN_SUBTOPOLOGY_UNION THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC CLOSED_IN_TRANS THEN EXISTS_TAC `h:real^N->bool` THEN
+      ASM_REWRITE_TAC[] THEN
+      UNDISCH_TAC
+       `closed_in(subtopology euclidean (c UNION h)) (h2:real^N->bool)` THEN
+      REWRITE_TAC[CLOSED_IN_CLOSED] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      ASM SET_TAC[]]]);;
+
+let COMPONENT_COMPLEMENT_CONNECTED = prove
+ (`!s u c:real^N->bool.
+        connected s /\ connected u /\ s SUBSET u /\ c IN components (u DIFF s)
+        ==> connected(u DIFF c)`,
+  MAP_EVERY X_GEN_TAC
+   [`a:real^N->bool`; `s:real^N->bool`; `c:real^N->bool`] THEN
+  STRIP_TAC THEN UNDISCH_TAC `connected(a:real^N->bool)` THEN
+  REWRITE_TAC[CONNECTED_CLOSED_IN_EQ; NOT_EXISTS_THM] THEN
+  DISCH_TAC THEN MAP_EVERY X_GEN_TAC
+   [`h3:real^N->bool`; `h4:real^N->bool`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`a INTER h3:real^N->bool`; `a INTER h4:real^N->bool`]) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN
+  EVERY_ASSUM(fun th -> try
+        MP_TAC(CONJUNCT1(GEN_REWRITE_RULE I [closed_in] th))
+        with Failure _ -> ALL_TAC) THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN REPEAT DISCH_TAC THEN
+  REPEAT CONJ_TAC THENL
+   [UNDISCH_TAC `closed_in (subtopology euclidean (s DIFF c))
+                           (h3:real^N->bool)` THEN
+    REWRITE_TAC[CLOSED_IN_CLOSED] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    ASM SET_TAC[];
+    UNDISCH_TAC `closed_in (subtopology euclidean (s DIFF c))
+                           (h4:real^N->bool)` THEN
+    REWRITE_TAC[CLOSED_IN_CLOSED] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    ASM SET_TAC[];
+    ASM SET_TAC[];
+    ASM SET_TAC[];
+    DISCH_TAC THEN
+    MP_TAC(ISPECL [`s DIFF a:real^N->bool`; `c UNION h3:real^N->bool`;
+               `c:real^N->bool`] COMPONENTS_MAXIMAL) THEN
+    ASM_REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC CONNECTED_UNION_CLOPEN_IN_COMPLEMENT THEN
+    EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+    REPEAT CONJ_TAC THENL
+     [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED];
+      ASM SET_TAC[];
+      REWRITE_TAC[OPEN_IN_CLOSED_IN_EQ; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+      CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+      SUBGOAL_THEN `s DIFF c DIFF h3:real^N->bool = h4` SUBST1_TAC THEN
+      ASM SET_TAC[]];
+    DISCH_TAC THEN
+    MP_TAC(ISPECL [`s DIFF a:real^N->bool`; `c UNION h4:real^N->bool`;
+               `c:real^N->bool`] COMPONENTS_MAXIMAL) THEN
+    ASM_REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC CONNECTED_UNION_CLOPEN_IN_COMPLEMENT THEN
+    EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+    REPEAT CONJ_TAC THENL
+     [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED];
+      ASM SET_TAC[];
+      REWRITE_TAC[OPEN_IN_CLOSED_IN_EQ; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+      CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+      SUBGOAL_THEN `s DIFF c DIFF h4:real^N->bool = h3` SUBST1_TAC THEN
+      ASM SET_TAC[]]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Sura-Bura's result about components of closed sets.                       *)
 (* ------------------------------------------------------------------------- *)
 

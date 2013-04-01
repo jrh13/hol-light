@@ -13596,8 +13596,71 @@ let HOMEOMORPHIC_INTERIORS = prove
   ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; INTERIOR_SUBSET; SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
-(* The exponential function as a covering map.                               *)
+(* The squaring and exponential functions as covering maps.                  *)
 (* ------------------------------------------------------------------------- *)
+
+let COVERING_SPACE_SQUARE_PUNCTURED_PLANE = prove
+ (`covering_space ((:complex) DIFF {Cx(&0)},(\z. z pow 2))
+                  ((:complex) DIFF {Cx (&0)})`,
+  SIMP_TAC[covering_space; CONTINUOUS_ON_COMPLEX_POW; CONTINUOUS_ON_ID] THEN
+  SIMP_TAC[OPEN_IN_OPEN_EQ; OPEN_DIFF; OPEN_UNIV; CLOSED_SING] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_DIFF; IN_UNIV; IN_SING] THEN
+    MESON_TAC[COMPLEX_RING `x pow 2 = Cx(&0) <=> x = Cx(&0)`; CSQRT];
+    DISCH_THEN(fun th -> GEN_REWRITE_TAC
+        (BINDER_CONV o LAND_CONV o RAND_CONV) [GSYM th])] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; IN_UNIV; IN_DIFF; IN_SING] THEN
+  SIMP_TAC[SUBSET_UNIV; SET_RULE `s SUBSET UNIV DIFF {a} <=> ~(a IN s)`] THEN
+  X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+  EXISTS_TAC `IMAGE (\w. w pow 2) (ball(z,norm z))` THEN
+  REWRITE_TAC[SET_RULE `~(z IN IMAGE f s) <=> !x. f x = z ==> ~(x IN s)`] THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[IN_IMAGE] THEN
+    ASM_MESON_TAC[CENTRE_IN_BALL; COMPLEX_NORM_NZ];
+    MATCH_MP_TAC INVARIANCE_OF_DOMAIN THEN
+    SIMP_TAC[CONTINUOUS_ON_COMPLEX_POW; CONTINUOUS_ON_ID; OPEN_BALL] THEN
+    REWRITE_TAC[IN_BALL; COMPLEX_RING
+     `x pow 2 = y pow 2 <=> x:complex = y \/ x = --y`] THEN
+    CONV_TAC NORM_ARITH;
+    SIMP_TAC[COMPLEX_POW_2; COMPLEX_ENTIRE; IN_BALL] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN CONV_TAC NORM_ARITH;
+    ALL_TAC] THEN
+  EXISTS_TAC `{ball(z:complex,norm z),IMAGE (--) (ball(z,norm z))}` THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[UNIONS_2; EXTENSION; IN_UNION; IN_ELIM_THM; IN_IMAGE;
+                COMPLEX_RING `x pow 2 = y pow 2 <=> x:complex = y \/ --x = y`;
+                COMPLEX_RING `x:complex = --y <=> --x = y`;
+                RIGHT_OR_DISTRIB; EXISTS_OR_THM; UNWIND_THM1] THEN
+    GEN_TAC THEN REWRITE_TAC[IN_BALL; GSYM COMPLEX_VEC_0] THEN
+    CONV_TAC NORM_ARITH;
+    SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; OPEN_NEGATIONS; OPEN_BALL] THEN
+    REWRITE_TAC[IN_BALL; IN_IMAGE; COMPLEX_RING `Cx(&0) = --z <=> z = Cx(&0)`;
+                UNWIND_THM2] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN CONV_TAC NORM_ARITH;
+    ONCE_REWRITE_TAC[PAIRWISE_INSERT] THEN REWRITE_TAC[PAIRWISE_SING] THEN
+    REWRITE_TAC[FORALL_IN_INSERT; IMP_CONJ; NOT_IN_EMPTY] THEN
+    REWRITE_TAC[SET_RULE `DISJOINT s t /\ DISJOINT t s <=> DISJOINT s t`] THEN
+    DISCH_TAC THEN
+    REWRITE_TAC[SET_RULE `DISJOINT s (IMAGE f s) <=>
+                          !x y. x IN s /\ y IN s ==> ~(f x = y)`] THEN
+    REWRITE_TAC[IN_BALL] THEN CONV_TAC NORM_ARITH;
+    REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [MATCH_MP_TAC INVARIANCE_OF_DOMAIN_HOMEOMORPHISM THEN
+      SIMP_TAC[OPEN_BALL; CONTINUOUS_ON_COMPLEX_POW; CONTINUOUS_ON_ID] THEN
+      REWRITE_TAC[LE_REFL; IN_BALL; COMPLEX_RING
+        `x pow 2 = y pow 2 <=> x:complex = y \/ x = --y`] THEN
+      CONV_TAC NORM_ARITH;
+      REWRITE_TAC[homeomorphism; FORALL_IN_IMAGE] THEN
+      DISCH_THEN(X_CHOOSE_THEN `f:complex->complex` STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC `(--) o (f:complex->complex)` THEN
+      ASM_SIMP_TAC[IMAGE_o; o_THM; COMPLEX_EQ_NEG2; COMPLEX_POW_NEG;
+                   CONTINUOUS_ON_COMPLEX_POW; CONTINUOUS_ON_ID; ARITH] THEN
+      REWRITE_TAC[GSYM IMAGE_o; o_DEF; COMPLEX_POW_NEG; ARITH] THEN
+      MATCH_MP_TAC(REWRITE_RULE[o_DEF] CONTINUOUS_ON_COMPOSE) THEN
+      ASM_REWRITE_TAC[] THEN
+      GEN_REWRITE_TAC LAND_CONV [GSYM ETA_AX] THEN
+      SIMP_TAC[CONTINUOUS_ON_NEG; CONTINUOUS_ON_ID]]]);;
 
 let COVERING_SPACE_CEXP_PUNCTURED_PLANE = prove
  (`covering_space((:complex),cexp) ((:complex) DIFF {Cx(&0)})`,
@@ -13862,7 +13925,7 @@ let CONTRACTIBLE_IMP_HOLOMORPHIC_LOG,SIMPLY_CONNECTED_IMP_HOLOMORPHIC_LOG =
               ==> ?g. g holomorphic_on s /\ !z. z IN s ==> f z = cexp(g z)) /\
    (!s:complex->bool.
       simply_connected s /\ locally path_connected s
-      ==> !f. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx(&0))) 
+      ==> !f. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx(&0)))
               ==> ?g. g holomorphic_on s /\ !z. z IN s ==> f z = cexp(g z))`,
   REPEAT STRIP_TAC THENL
    [MP_TAC(ISPECL [`f:complex->complex`; `s:complex->bool`]
@@ -13930,19 +13993,19 @@ let CONTRACTIBLE_IMP_HOLOMORPHIC_LOG,SIMPLY_CONNECTED_IMP_HOLOMORPHIC_LOG =
         REPEAT(FIRST_X_ASSUM(MP_TAC o check(is_neg o concl))) THEN
         CONV_TAC COMPLEX_FIELD]]]));;
 
-let CONTRACTIBLE_IMP_HOLOMORPHIC_SQRT,SIMPLY_CONNECTED_IMP_HOLOMORPHIC_SQRT = 
+let CONTRACTIBLE_IMP_HOLOMORPHIC_SQRT,SIMPLY_CONNECTED_IMP_HOLOMORPHIC_SQRT =
  (CONJ_PAIR o prove)
  (`(!s:complex->bool.
       contractible s
       ==> !f. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx(&0)))
               ==> ?g. g holomorphic_on s /\  !z. z IN s ==> f z = g z pow 2) /\
-   (!s:complex->bool.                                                   
-      simply_connected s /\ locally path_connected s                                                     
-      ==> !f. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx(&0)))      
+   (!s:complex->bool.
+      simply_connected s /\ locally path_connected s
+      ==> !f. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx(&0)))
               ==> ?g. g holomorphic_on s /\  !z. z IN s ==> f z = g z pow 2)`,
   CONJ_TAC THEN GEN_TAC THENL
    [DISCH_THEN(ASSUME_TAC o MATCH_MP CONTRACTIBLE_IMP_HOLOMORPHIC_LOG);
-    DISCH_THEN(ASSUME_TAC o 
+    DISCH_THEN(ASSUME_TAC o
       MATCH_MP SIMPLY_CONNECTED_IMP_HOLOMORPHIC_LOG)] THEN
   REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `f:complex->complex`) THEN ASM_SIMP_TAC[] THEN

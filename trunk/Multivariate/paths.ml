@@ -11891,3 +11891,57 @@ let COVERING_SPACE_LIFT = prove
   MATCH_MP_TAC(TAUT `q /\ (p ==> r) ==> (p <=> q) ==> r`) THEN
   CONJ_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[IN_IMAGE]] THEN
   ASM_MESON_TAC[]);;
+
+let CARD_EQ_COVERING_MAP_FIBRES = prove
+ (`!p:real^M->real^N c s a b.
+        covering_space (c,p) s /\ path_connected s /\ a IN s /\ b IN s
+        ==> {x | x IN c /\ p(x) = a} =_c {x | x IN c /\ p(x) = b}`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; FORALL_AND_THM;
+              TAUT `p ==> q /\ r <=> (p ==> q) /\ (p ==> r)`] THEN
+  GEN_REWRITE_TAC (LAND_CONV o funpow 2 BINDER_CONV o LAND_CONV)
+   [CONJ_SYM] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!a b. P a b) ==> (!a b. P a b) /\ (!a b. P b a)`) THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`a:real^N`; `b:real^N`] o
+    GEN_REWRITE_RULE I [path_connected]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:real^1->real^N` THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!z. ?h. z IN c /\ p z = a
+            ==> path h /\ path_image h SUBSET c /\ pathstart h = z /\
+                !t. t IN interval[vec 0,vec 1]
+                    ==> (p:real^M->real^N)(h t) = g t`
+  MP_TAC THENL
+   [REWRITE_TAC[RIGHT_EXISTS_IMP_THM] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC COVERING_SPACE_LIFT_PATH_STRONG THEN
+    REWRITE_TAC[ETA_AX] THEN ASM_MESON_TAC[];
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `h:real^M->real^1->real^M` THEN DISCH_TAC] THEN
+  REWRITE_TAC[le_c; IN_ELIM_THM] THEN
+  EXISTS_TAC `\z. pathfinish((h:real^M->real^1->real^M) z)` THEN
+  ASM_REWRITE_TAC[pathfinish] THEN CONJ_TAC THENL
+   [X_GEN_TAC `x:real^M` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN
+    ASM_REWRITE_TAC[SUBSET; path_image; pathstart; FORALL_IN_IMAGE] THEN
+    ASM_MESON_TAC[pathfinish; ENDS_IN_UNIT_INTERVAL];
+    MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
+    MP_TAC(ISPECL
+     [`p:real^M->real^N`; `c:real^M->bool`; `s:real^N->bool`;
+      `reversepath(g:real^1->real^N)`; `reversepath(g:real^1->real^N)`;
+      `reversepath((h:real^M->real^1->real^M) x)`;
+      `reversepath((h:real^M->real^1->real^M) y)`]
+    COVERING_SPACE_MONODROMY) THEN
+    ASM_SIMP_TAC[PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH] THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[PATH_REVERSEPATH; PATH_IMAGE_REVERSEPATH;
+                 HOMOTOPIC_PATHS_REFL] THEN
+    ASM_REWRITE_TAC[pathfinish; reversepath; IN_INTERVAL_1; DROP_VEC] THEN
+    REPEAT STRIP_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`);
+      FIRST_X_ASSUM(MP_TAC o SPEC `y:real^M`)] THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN(MATCH_MP_TAC o last o CONJUNCTS) THEN
+    REWRITE_TAC[IN_INTERVAL_1; DROP_SUB; DROP_VEC] THEN ASM_REAL_ARITH_TAC]);;
