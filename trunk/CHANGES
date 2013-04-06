@@ -1,3 +1,15 @@
+Fri  5th Apr 2013       Examples/inverse_bug_puzzle_tac.ml
+
+Updated this file to a new version from Bill Richter using some slightly
+different constructs.
+
+Fri  5th Apr 2013       Examples/prover9.ml
+
+Fixed a bug in the prover9 interface pointed out by Keiichi Tsujimoto, where 
+the initial preprocessing could cause the initial goal to collapse to `T` or 
+`F`, which is then not handled properly by the main prover9 step. The fix is 
+to treat this specially in the preprocessing phase.
+
 Sun 31st Mar 2013       Examples/inverse_bug_puzzle_miz3.ml
 
 Made an update to Bill Richter's miz3 version of the inverse bug puzzle.

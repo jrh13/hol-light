@@ -454,7 +454,8 @@ let PROVER9_REFUTE ths =
 (* ------------------------------------------------------------------------- *)
 
 let PROVER9 =
-  let prule = MATCH_MP(TAUT `(~p ==> F) ==> p`) in
+  let prule = MATCH_MP(TAUT `(~p ==> F) ==> p`)
+  and false_tm = `F` and true_tm = `T` in
   let init_conv =
     TOP_DEPTH_CONV BETA_CONV THENC
     PRESIMP_CONV THENC
@@ -468,7 +469,10 @@ let PROVER9 =
   fun tm ->
     let tm' = mk_neg tm in
     let ith = init_conv tm' in
-    let evs,bod = strip_exists(rand(concl ith)) in
+    let itm = rand(concl ith) in
+    if itm = true_tm then failwith "PROVER9: formula is trivially false" else
+    if itm = false_tm then prule(fst(EQ_IMP_RULE ith)) else
+    let evs,bod = strip_exists itm in
     let ths = map SPEC_ALL (CONJUNCTS(ASSUME bod)) in
     let ths' = end_itlist (@) (map (CONJUNCTS o CONV_RULE CNF_CONV) ths) in
     let rth = PROVER9_REFUTE ths' in

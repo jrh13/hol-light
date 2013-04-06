@@ -2036,7 +2036,7 @@ let POLYTOPE_TRANSLATION_EQ = prove
 add_translation_invariants [POLYTOPE_TRANSLATION_EQ];;
 
 let POLYTOPE_LINEAR_IMAGE = prove
- (`!f:real^M->real^N.
+ (`!f:real^M->real^N p.
         linear f /\ polytope p ==> polytope(IMAGE f p)`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   REWRITE_TAC[polytope] THEN
@@ -2056,6 +2056,10 @@ let POLYTOPE_LINEAR_IMAGE_EQ = prove
    (mapfilter (ISPEC `f:real^M->real^N`) (!invariant_under_linear))) THEN
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN ASM_REWRITE_TAC[]);;
 
+let POLYTOPE_EMPTY = prove
+ (`polytope {}`,
+  REWRITE_TAC[polytope] THEN MESON_TAC[FINITE_EMPTY; CONVEX_HULL_EMPTY]);;
+
 let POLYTOPE_NEGATIONS = prove
  (`!s:real^N->bool. polytope s ==> polytope(IMAGE (--) s)`,
   SIMP_TAC[POLYTOPE_LINEAR_IMAGE; LINEAR_NEGATION]);;
@@ -2069,6 +2073,29 @@ let POLYTOPE_PCROSS = prove
         polytope s /\ polytope t ==> polytope(s PCROSS t)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[polytope] THEN
   MESON_TAC[CONVEX_HULL_PCROSS; FINITE_PCROSS]);;
+
+let POLYTOPE_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        polytope(s PCROSS t) <=>
+        s = {} \/ t = {} \/ polytope s /\ polytope t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; POLYTOPE_EMPTY] THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; POLYTOPE_EMPTY] THEN
+  EQ_TAC THEN REWRITE_TAC[POLYTOPE_PCROSS] THEN REPEAT STRIP_TAC THENL
+   [MP_TAC(ISPECL [`fstcart:real^(M,N)finite_sum->real^M`;
+                    `(s:real^M->bool) PCROSS (t:real^N->bool)`]
+       POLYTOPE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_FSTCART];
+    MP_TAC(ISPECL [`sndcart:real^(M,N)finite_sum->real^N`;
+                   `(s:real^M->bool) PCROSS (t:real^N->bool)`]
+       POLYTOPE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_SNDCART]] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM SET_TAC[]);;
 
 let FACE_OF_POLYTOPE_POLYTOPE = prove
  (`!f s:real^N->bool. polytope s /\ f face_of s ==> polytope f`,

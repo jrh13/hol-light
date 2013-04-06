@@ -3578,6 +3578,26 @@ let SUBSPACE_PCROSS = prove
   REWRITE_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
   REWRITE_TAC[GSYM PASTECART_VEC; PASTECART_IN_PCROSS] THEN SIMP_TAC[]);;
 
+let SUBSPACE_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        subspace(s PCROSS t) <=> subspace s /\ subspace t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THENL
+   [ASM_MESON_TAC[PCROSS_EMPTY; SUBSPACE_IMP_NONEMPTY]; ALL_TAC] THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THENL
+   [ASM_MESON_TAC[PCROSS_EMPTY; SUBSPACE_IMP_NONEMPTY]; ALL_TAC] THEN
+  EQ_TAC THEN REWRITE_TAC[SUBSPACE_PCROSS] THEN REPEAT STRIP_TAC THENL
+   [MP_TAC(ISPECL [`fstcart:real^(M,N)finite_sum->real^M`;
+     `(s:real^M->bool) PCROSS (t:real^N->bool)`] SUBSPACE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_FSTCART];
+    MP_TAC(ISPECL [`sndcart:real^(M,N)finite_sum->real^N`;
+     `(s:real^M->bool) PCROSS (t:real^N->bool)`] SUBSPACE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_SNDCART]] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Lemmas.                                                                   *)
 (* ------------------------------------------------------------------------- *)
