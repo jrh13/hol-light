@@ -2286,6 +2286,10 @@ let RETRACT_OF_COMPACT = prove
   REWRITE_TAC[retract_of; RETRACTION] THEN
   MESON_TAC[COMPACT_CONTINUOUS_IMAGE]);;
 
+let RETRACT_OF_CLOSED = prove
+ (`!s t. closed t /\ s retract_of t ==> closed t`,
+  MESON_TAC[CLOSED_IN_CLOSED_EQ; CLOSED_IN_RETRACT]);;
+
 let RETRACT_OF_CONNECTED = prove
  (`!s t:real^N->bool. connected t /\ s retract_of t ==> connected s`,
   REWRITE_TAC[retract_of; RETRACTION] THEN
@@ -2306,7 +2310,7 @@ let RETRACT_OF_SIMPLY_CONNECTED = prove
   X_GEN_TAC `r:real^N->real^N` THEN STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPECL [`p:real^1->real^N`; `q:real^1->real^N`]) THEN
   ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
-  DISCH_THEN(MP_TAC o ISPEC `r:real^N->real^N` o MATCH_MP
+  DISCH_THEN(MP_TAC o ISPECL [`r:real^N->real^N`; `t:real^N->bool`] o MATCH_MP
    (REWRITE_RULE[IMP_CONJ] HOMOTOPIC_LOOPS_CONTINUOUS_IMAGE)) THEN
   ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
   REWRITE_TAC[homotopic_loops; o_THM] THEN
@@ -2598,7 +2602,7 @@ let BORSUK_HOMOTOPY_EXTENSION = prove
    [EXPAND_TAC "B" THEN MATCH_MP_TAC CLOSED_UNION THEN
     REWRITE_TAC[SET_RULE `{pastecart (vec 0) (x:real^M) | x IN t} =
                           {pastecart u x | u IN {vec 0} /\ x IN t}`] THEN
-    ASM_SIMP_TAC[REWRITE_RULE[PCROSS] CLOSED_PCROSS; 
+    ASM_SIMP_TAC[REWRITE_RULE[PCROSS] CLOSED_PCROSS;
                  CLOSED_SING; CLOSED_INTERVAL];
     ALL_TAC] THEN
   SUBGOAL_THEN
@@ -2622,7 +2626,7 @@ let BORSUK_HOMOTOPY_EXTENSION = prove
       EXPAND_TAC "B" THEN MATCH_MP_TAC CONTINUOUS_ON_CASES THEN
       REWRITE_TAC[SET_RULE `{pastecart (vec 0) (x:real^M) | x IN t} =
                             {pastecart u x | u IN {vec 0} /\ x IN t}`] THEN
-      ASM_SIMP_TAC[REWRITE_RULE[PCROSS] CLOSED_PCROSS; 
+      ASM_SIMP_TAC[REWRITE_RULE[PCROSS] CLOSED_PCROSS;
                    CLOSED_SING; CLOSED_INTERVAL] THEN
       REWRITE_TAC[TAUT `(a \/ b /\ c ==> d) <=> (a ==> d) /\ (b ==> c ==> d)`;
         IMP_CONJ; FORALL_AND_THM; FORALL_IN_GSPEC; IN_ELIM_PASTECART_THM] THEN

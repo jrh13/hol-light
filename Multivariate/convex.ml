@@ -855,6 +855,34 @@ let TRIVIAL_LIMIT_WITHIN_CONVEX = prove
   SIMP_TAC[TRIVIAL_LIMIT_WITHIN; LIMPT_OF_CONVEX]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Some invariance theorems for convex sets.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let CONVEX_TRANSLATION_EQ = prove
+ (`!a:real^N s. convex (IMAGE (\x. a + x) s) <=> convex s`,
+  REWRITE_TAC[CONVEX_ALT; IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[IN_IMAGE; UNWIND_THM1; VECTOR_ARITH
+   `(&1 - u) % (a + x) + u % (a + y) = a + z <=> (&1 - u) % x + u % y = z`]);;
+
+add_translation_invariants [CONVEX_TRANSLATION_EQ];;
+
+let CONVEX_TRANSLATION = prove
+ (`!s a:real^N. convex s ==> convex (IMAGE (\x. a + x) s)`,
+  REWRITE_TAC[CONVEX_TRANSLATION_EQ]);;
+
+let CONVEX_LINEAR_IMAGE = prove
+ (`!f s. convex s /\ linear f ==> convex(IMAGE f s)`,
+  REWRITE_TAC[convex; FORALL_IN_IMAGE; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[IN_IMAGE; linear] THEN MESON_TAC[]);;
+
+let CONVEX_LINEAR_IMAGE_EQ = prove
+ (`!f s. linear f /\ (!x y. f x = f y ==> x = y)
+         ==> (convex (IMAGE f s) <=> convex s)`,
+  MATCH_ACCEPT_TAC(LINEAR_INVARIANT_RULE CONVEX_LINEAR_IMAGE));;
+
+add_linear_invariants [CONVEX_LINEAR_IMAGE_EQ];;
+
+(* ------------------------------------------------------------------------- *)
 (* Explicit expressions for convexity in terms of arbitrary sums.            *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1000,12 +1028,52 @@ let AFFINE_PCROSS = prove
   SIMP_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
   SIMP_TAC[PASTECART_IN_PCROSS]);;
 
+let AFFINE_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        affine(s PCROSS t) <=> s = {} \/ t = {} \/ affine s /\ affine t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; AFFINE_EMPTY] THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; AFFINE_EMPTY] THEN
+  EQ_TAC THEN REWRITE_TAC[AFFINE_PCROSS] THEN REPEAT STRIP_TAC THENL
+   [MP_TAC(ISPECL [`fstcart:real^(M,N)finite_sum->real^M`;
+      `(s:real^M->bool) PCROSS (t:real^N->bool)`] AFFINE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_FSTCART];
+    MP_TAC(ISPECL [`sndcart:real^(M,N)finite_sum->real^N`;
+      `(s:real^M->bool) PCROSS (t:real^N->bool)`] AFFINE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_SNDCART]] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM SET_TAC[]);;
+
 let CONVEX_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.
         convex s /\ convex t ==> convex(s PCROSS t)`,
   REWRITE_TAC[convex; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   SIMP_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
   SIMP_TAC[PASTECART_IN_PCROSS]);;
+
+let CONVEX_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        convex(s PCROSS t) <=> s = {} \/ t = {} \/ convex s /\ convex t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; CONVEX_EMPTY] THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; CONVEX_EMPTY] THEN
+  EQ_TAC THEN REWRITE_TAC[CONVEX_PCROSS] THEN REPEAT STRIP_TAC THENL
+   [MP_TAC(ISPECL [`fstcart:real^(M,N)finite_sum->real^M`;
+      `(s:real^M->bool) PCROSS (t:real^N->bool)`] CONVEX_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_FSTCART];
+    MP_TAC(ISPECL [`sndcart:real^(M,N)finite_sum->real^N`;
+      `(s:real^M->bool) PCROSS (t:real^N->bool)`] CONVEX_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_SNDCART]] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Conic sets and conic hull.                                                *)
@@ -1153,6 +1221,26 @@ let CONIC_PCROSS = prove
   REWRITE_TAC[conic; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   SIMP_TAC[FORALL_IN_PCROSS; GSYM PASTECART_CMUL; PASTECART_ADD] THEN
   SIMP_TAC[PASTECART_IN_PCROSS]);;
+
+let CONIC_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        conic(s PCROSS t) <=> s = {} \/ t = {} \/ conic s /\ conic t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; CONIC_EMPTY] THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; CONIC_EMPTY] THEN
+  EQ_TAC THEN REWRITE_TAC[CONIC_PCROSS] THEN REPEAT STRIP_TAC THENL
+   [MP_TAC(ISPECL [`fstcart:real^(M,N)finite_sum->real^M`;
+      `(s:real^M->bool) PCROSS (t:real^N->bool)`] CONIC_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_FSTCART];
+    MP_TAC(ISPECL [`sndcart:real^(M,N)finite_sum->real^N`;
+      `(s:real^M->bool) PCROSS (t:real^N->bool)`] CONIC_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_SNDCART]] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM SET_TAC[]);;
 
 let CONIC_POSITIVE_ORTHANT = prove
  (`conic {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i}`,
@@ -2577,18 +2665,6 @@ let CONVEX_DIFFERENCES = prove
     `u % (a - b) + v % (c - d) = (u % a + v % c) - (u % b + v % d)`] THEN
   ASM_MESON_TAC[]);;
 
-let CONVEX_TRANSLATION_EQ = prove
- (`!a:real^N s. convex (IMAGE (\x. a + x) s) <=> convex s`,
-  REWRITE_TAC[CONVEX_ALT; IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
-  REWRITE_TAC[IN_IMAGE; UNWIND_THM1; VECTOR_ARITH
-   `(&1 - u) % (a + x) + u % (a + y) = a + z <=> (&1 - u) % x + u % y = z`]);;
-
-add_translation_invariants [CONVEX_TRANSLATION_EQ];;
-
-let CONVEX_TRANSLATION = prove
- (`!s a:real^N. convex s ==> convex (IMAGE (\x. a + x) s)`,
-  REWRITE_TAC[CONVEX_TRANSLATION_EQ]);;
-
 let CONVEX_AFFINITY = prove
  (`!s a:real^N c.
         convex s ==> convex (IMAGE (\x. a + c % x) s)`,
@@ -2596,18 +2672,6 @@ let CONVEX_AFFINITY = prove
   SUBGOAL_THEN `(\x:real^N. a + c % x) = (\x. a + x) o (\x. c % x)`
   SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
   ASM_SIMP_TAC[IMAGE_o; CONVEX_TRANSLATION; CONVEX_SCALING]);;
-
-let CONVEX_LINEAR_IMAGE = prove
- (`!f s. convex s /\ linear f ==> convex(IMAGE f s)`,
-  REWRITE_TAC[convex; FORALL_IN_IMAGE; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
-  REWRITE_TAC[IN_IMAGE; linear] THEN MESON_TAC[]);;
-
-let CONVEX_LINEAR_IMAGE_EQ = prove
- (`!f s. linear f /\ (!x y. f x = f y ==> x = y)
-         ==> (convex (IMAGE f s) <=> convex s)`,
-  MATCH_ACCEPT_TAC(LINEAR_INVARIANT_RULE CONVEX_LINEAR_IMAGE));;
-
-add_linear_invariants [CONVEX_LINEAR_IMAGE_EQ];;
 
 let CONVEX_LINEAR_PREIMAGE = prove
  (`!f:real^M->real^N.
@@ -7335,6 +7399,26 @@ let CONVEX_CONE_PCROSS = prove
         convex_cone s /\ convex_cone t ==> convex_cone(s PCROSS t)`,
   SIMP_TAC[convex_cone; CONVEX_PCROSS; CONIC_PCROSS; PCROSS_EQ_EMPTY]);;
 
+let CONVEX_CONE_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        convex_cone(s PCROSS t) <=> convex_cone s /\ convex_cone t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THENL
+   [ASM_REWRITE_TAC[PCROSS_EMPTY; convex_cone]; ALL_TAC] THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[PCROSS_EMPTY; convex_cone]; ALL_TAC] THEN
+  EQ_TAC THEN REWRITE_TAC[CONVEX_CONE_PCROSS] THEN REPEAT STRIP_TAC THENL
+   [MP_TAC(ISPECL [`fstcart:real^(M,N)finite_sum->real^M`;
+     `(s:real^M->bool) PCROSS (t:real^N->bool)`] CONVEX_CONE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_FSTCART];
+    MP_TAC(ISPECL [`sndcart:real^(M,N)finite_sum->real^N`;
+     `(s:real^M->bool) PCROSS (t:real^N->bool)`] CONVEX_CONE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_SNDCART]] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM SET_TAC[]);;
+
 let CONVEX_CONE_HULL_UNION = prove
  (`!s t. convex_cone hull(s UNION t) =
          {x + y:real^N | x IN convex_cone hull s /\ y IN convex_cone hull t}`,
@@ -8244,6 +8328,28 @@ let STARLIKE_PCROSS = prove
   REWRITE_TAC[FORALL_UNWIND_THM2; IMP_IMP] THEN
   REWRITE_TAC[GSYM PASTECART_CMUL; PASTECART_ADD] THEN
   REWRITE_TAC[PASTECART_IN_PCROSS] THEN MESON_TAC[]);;
+
+let STARLIKE_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        starlike(s PCROSS t) <=> starlike s /\ starlike t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THENL
+   [ASM_REWRITE_TAC[PCROSS_EMPTY] THEN MESON_TAC[starlike; NOT_IN_EMPTY];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[PCROSS_EMPTY] THEN MESON_TAC[starlike; NOT_IN_EMPTY];
+    ALL_TAC] THEN
+  EQ_TAC THEN REWRITE_TAC[STARLIKE_PCROSS] THEN REPEAT STRIP_TAC THENL
+   [MP_TAC(ISPECL [`fstcart:real^(M,N)finite_sum->real^M`;
+     `(s:real^M->bool) PCROSS (t:real^N->bool)`] STARLIKE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_FSTCART];
+    MP_TAC(ISPECL [`sndcart:real^(M,N)finite_sum->real^N`;
+     `(s:real^M->bool) PCROSS (t:real^N->bool)`] STARLIKE_LINEAR_IMAGE) THEN
+    ASM_REWRITE_TAC[LINEAR_SNDCART]] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+              FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  ASM SET_TAC[]);;
 
 let BETWEEN_DIST_LT = prove
  (`!r a b c:real^N.
