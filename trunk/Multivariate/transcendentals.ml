@@ -1692,6 +1692,17 @@ let COS_EQ_MINUS1 = prove
        ?n. integer n /\ x = (&2 * n + &1) * pi`,
   REWRITE_TAC[GSYM CX_INJ; CX_NEG; CX_COS; CCOS_EQ_MINUS1]);;
 
+let DIST_CEXP_II_1 = prove
+ (`!z. norm(cexp(ii * Cx t) - Cx(&1)) = &2 * abs(sin(t / &2))`,
+  GEN_TAC THEN REWRITE_TAC[NORM_EQ_SQUARE] THEN
+  CONJ_TAC THENL [REAL_ARITH_TAC; REWRITE_TAC[GSYM NORM_POW_2]] THEN
+  REWRITE_TAC[CEXP_EULER; COMPLEX_SQNORM; GSYM CX_COS; GSYM CX_SIN] THEN
+  REWRITE_TAC[IM_ADD; RE_ADD; IM_SUB; RE_SUB; IM_MUL_II; RE_MUL_II] THEN
+  REWRITE_TAC[RE_CX; IM_CX; REAL_POW2_ABS; REAL_POW_MUL] THEN
+  MP_TAC(ISPEC `t / &2` COS_DOUBLE_SIN) THEN
+  REWRITE_TAC[REAL_ARITH `&2 * t / &2 = t`] THEN
+  MP_TAC(SPEC `t:real` SIN_CIRCLE) THEN CONV_TAC REAL_RING);;
+
 (* ------------------------------------------------------------------------- *)
 (* Taylor series for complex exponential.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -2082,6 +2093,28 @@ let ARG_MUL = prove
                           else (Arg w + Arg z) - &2 * pi`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP REAL_ADD_ARG) THEN
   REAL_ARITH_TAC);;
+
+let ARG_CNJ = prove
+ (`!z. Arg(cnj z) = if real z /\ &0 <= Re z then Arg z else &2 * pi - Arg z`,
+  GEN_TAC THEN ASM_CASES_TAC `z = Cx(&0)` THEN
+  ASM_REWRITE_TAC[CNJ_CX; ARG_0; REAL_CX; RE_CX; REAL_LE_REFL] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_IMP_CNJ] THEN
+  MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC `Arg(inv z)` THEN CONJ_TAC THENL
+   [REWRITE_TAC[COMPLEX_INV_CNJ] THEN
+    ASM_SIMP_TAC[GSYM CX_POW; ARG_DIV_CX; REAL_POW_LT; COMPLEX_NORM_NZ];
+    ASM_SIMP_TAC[ARG_INV]]);;
+
+let ARG_REAL = prove
+ (`!z. real z ==> Arg z = if &0 <= Re z then &0 else pi`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[ARG_EQ_PI; ARG_EQ_0] THEN ASM_REAL_ARITH_TAC);;
+
+let ARG_CEXP = prove
+ (`!z. &0 <= Im z /\ Im z < &2 * pi ==> Arg(cexp(z)) = Im z`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ARG_UNIQUE THEN
+  EXISTS_TAC `exp(Re z)` THEN
+  ASM_REWRITE_TAC[CX_EXP; GSYM CEXP_ADD; REAL_EXP_POS_LT] THEN
+  REWRITE_TAC[GSYM COMPLEX_EXPAND]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Properties of 2-D rotations, and their interpretation using cexp.         *)
@@ -2777,6 +2810,13 @@ let RE_CLOG = prove
    (MP_TAC o AP_TERM `norm:complex->real` o MATCH_MP CEXP_CLOG) THEN
   REWRITE_TAC[NORM_CEXP] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
   REWRITE_TAC[LOG_EXP]);;
+
+let EXISTS_COMPLEX_ROOT = prove
+ (`!a n. ~(n = 0) ==> ?z. z pow n = a`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `a = Cx(&0)` THENL
+   [EXISTS_TAC `Cx(&0)` THEN ASM_REWRITE_TAC[COMPLEX_POW_ZERO];
+    EXISTS_TAC `cexp(clog(a) / Cx(&n))` THEN REWRITE_TAC[GSYM CEXP_N] THEN
+    ASM_SIMP_TAC[COMPLEX_DIV_LMUL; CX_INJ; REAL_OF_NUM_EQ; CEXP_CLOG]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Derivative of clog away from the branch cut.                              *)
@@ -5134,6 +5174,15 @@ let CONTINUOUS_WITHIN_UPPERHALF_ARG = prove
     ASM_REWRITE_TAC[Arg_DEF; REAL_LT_REFL];
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM ARG_LE_PI]) THEN
     MP_TAC(SPEC `w:complex` ARG) THEN REAL_ARITH_TAC]);;
+
+let CONTINUOUS_ON_UPPERHALF_ARG = prove
+ (`(Cx o Arg) continuous_on ({z | &0 <= Im z} DIFF {Cx(&0)})`,
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+  X_GEN_TAC `z:complex` THEN REWRITE_TAC[IN_DIFF; IN_SING; IN_ELIM_THM] THEN
+  STRIP_TAC THEN FIRST_ASSUM(MP_TAC o
+    MATCH_MP CONTINUOUS_WITHIN_UPPERHALF_ARG) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CONTINUOUS_WITHIN_SUBSET) THEN
+  SET_TAC[]);;
 
 let OPEN_ARG_LTT = prove
  (`!s t. &0 <= s /\ t <= &2 * pi ==> open {z | s < Arg z /\ Arg z < t}`,

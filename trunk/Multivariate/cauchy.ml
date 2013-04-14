@@ -8624,12 +8624,6 @@ let FTA = prove
                HOLOMORPHIC_ON_CONST; HOLOMORPHIC_ON_ID];
       ASM_MESON_TAC[COMPLEX_POLYFUN_EXTREMAL]]]);;
 
-let EXISTS_COMPLEX_ROOT = prove
- (`!a n. ~(n = 0) ==> ?z. z pow n = a`,
-  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[COMPLEX_ROOT_POLYFUN; LE_1] THEN
-  MATCH_MP_TAC FTA THEN DISJ2_TAC THEN DISCH_THEN(MP_TAC o SPEC `n:num`) THEN
-  ASM_SIMP_TAC[IN_NUMSEG; LE_REFL; LE_1] THEN CONV_TAC COMPLEX_RING);;
-
 (* ------------------------------------------------------------------------- *)
 (* Weierstrass convergence theorem.                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -16212,17 +16206,16 @@ let WINDING_NUMBER_AS_CONTINUOUS_LOGARITHM = prove
     REWRITE_TAC[COMPLEX_SUB_0] THEN
     ASM_MESON_TAC[pathstart; PATHSTART_IN_PATH_IMAGE]]);;
 
-let WINDING_NUMBER_HOMOTOPIC_LOOPS_EQ = prove
- (`!p q z.
-        path p /\ pathfinish p = pathstart p /\ ~(z IN path_image p) /\
-        path q /\ pathfinish q = pathstart q /\ ~(z IN path_image q)
-        ==> (winding_number(p,z) = winding_number(q,z) <=>
-             homotopic_loops ((:complex) DELETE z) p q)`,
-  let lemma = prove
-   (`!p z. path p /\ ~(z IN path_image p) /\
-           winding_number(p,z) = Cx(&0)
-           ==> ?a. homotopic_loops ((:complex) DELETE z) p (\t. a)`,
-    REPEAT STRIP_TAC THEN
+(* ------------------------------------------------------------------------- *)
+(* Winding number equality is the same as path/loop homotopy in C - {0}.     *)
+(* ------------------------------------------------------------------------- *)
+
+let WINDING_NUMBER_HOMOTOPIC_LOOPS_NULL_EQ = prove
+ (`!p z. path p /\ ~(z IN path_image p)
+         ==> (winding_number(p,z) = Cx(&0) <=>
+              ?a. homotopic_loops ((:complex) DELETE z) p (\t. a))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [REPEAT STRIP_TAC THEN
     MP_TAC(SPECL [`p:real^1->complex`; `z:complex`]
           WINDING_NUMBER_AS_CONTINUOUS_LOGARITHM) THEN
     ASM_REWRITE_TAC[COMPLEX_MUL_RZERO; COMPLEX_ADD_LID; COMPLEX_SUB_0] THEN
@@ -16248,14 +16241,77 @@ let WINDING_NUMBER_HOMOTOPIC_LOOPS_EQ = prove
         REWRITE_TAC[path; pathstart; pathfinish; CONTINUOUS_ON_CONST];
         SIMP_TAC[pathstart; pathfinish]];
       MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] HOMOTOPIC_WITH_EQ) THEN
-     ASM_SIMP_TAC[o_THM; pathstart; pathfinish; ENDS_IN_UNIT_INTERVAL]])
-  and tac =
-    ASM_SIMP_TAC[PATH_REVERSEPATH; PATHSTART_REVERSEPATH; PATHSTART_JOIN;
-                 PATH_LINEPATH; PATHFINISH_REVERSEPATH; PATHSTART_LINEPATH;
-                 PATHFINISH_LINEPATH; WINDING_NUMBER_JOIN;
-                 PATH_IMAGE_REVERSEPATH; PATH_IMAGE_JOIN; IN_UNION;
-                 PATHFINISH_JOIN; PATH_JOIN; WINDING_NUMBER_REVERSEPATH;
-                 SET_RULE `s SUBSET UNIV DELETE z <=> ~(z IN s)`] in
+     ASM_SIMP_TAC[o_THM; pathstart; pathfinish; ENDS_IN_UNIT_INTERVAL]];
+   FIRST_ASSUM(MP_TAC o MATCH_MP WINDING_NUMBER_HOMOTOPIC_LOOPS) THEN
+   ASM_REWRITE_TAC[GSYM LINEPATH_REFL] THEN
+   DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC WINDING_NUMBER_TRIVIAL THEN
+   FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_SUBSET) THEN
+   REWRITE_TAC[GSYM LINEPATH_REFL; PATH_IMAGE_LINEPATH; SEGMENT_REFL] THEN
+   SET_TAC[]]);;
+
+let WINDING_NUMBER_HOMOTOPIC_PATHS_NULL_EXPLICIT_EQ = prove
+ (`!p z. path p /\ ~(z IN path_image p)
+         ==> (winding_number(p,z) = Cx(&0) <=>
+              homotopic_paths ((:complex) DELETE z)
+                              p (linepath(pathstart p,pathstart p)))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_SIMP_TAC[WINDING_NUMBER_HOMOTOPIC_LOOPS_NULL_EQ] THEN
+    REWRITE_TAC[GSYM LINEPATH_REFL; HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_PATHS_NULL;
+                LEFT_IMP_EXISTS_THM];
+    STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP WINDING_NUMBER_HOMOTOPIC_PATHS) THEN
+    ASM_REWRITE_TAC[GSYM LINEPATH_REFL] THEN
+    DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC WINDING_NUMBER_TRIVIAL THEN
+    ASM_MESON_TAC[PATHSTART_IN_PATH_IMAGE]]);;
+
+let WINDING_NUMBER_HOMOTOPIC_PATHS_NULL_EQ = prove
+ (`!p z. path p /\ ~(z IN path_image p)
+         ==> (winding_number(p,z) = Cx(&0) <=>
+              ?a. homotopic_paths ((:complex) DELETE z) p (\t. a))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_SIMP_TAC[WINDING_NUMBER_HOMOTOPIC_PATHS_NULL_EXPLICIT_EQ] THEN
+    REWRITE_TAC[GSYM LINEPATH_REFL] THEN MESON_TAC[];
+    STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP WINDING_NUMBER_HOMOTOPIC_PATHS) THEN
+    ASM_REWRITE_TAC[GSYM LINEPATH_REFL] THEN
+    DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC WINDING_NUMBER_TRIVIAL THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_PATHS_IMP_SUBSET) THEN
+    REWRITE_TAC[GSYM LINEPATH_REFL; PATH_IMAGE_LINEPATH; SEGMENT_REFL] THEN
+    SET_TAC[]]);;
+
+let WINDING_NUMBER_HOMOTOPIC_PATHS_EQ = prove
+ (`!p q z.
+        path p /\ ~(z IN path_image p) /\
+        path q /\ ~(z IN path_image q) /\
+        pathstart q = pathstart p /\ pathfinish q = pathfinish p
+        ==> (winding_number(p,z) = winding_number(q,z) <=>
+             homotopic_paths ((:complex) DELETE z) p q)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[WINDING_NUMBER_HOMOTOPIC_PATHS] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`p ++ reversepath q:real^1->complex`; `z:complex`]
+        WINDING_NUMBER_HOMOTOPIC_PATHS_NULL_EQ) THEN
+  ASM_SIMP_TAC[PATH_JOIN; PATH_REVERSEPATH; PATH_IMAGE_JOIN; IN_UNION;
+               PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH;
+                PATH_IMAGE_REVERSEPATH; WINDING_NUMBER_JOIN;
+               WINDING_NUMBER_REVERSEPATH; COMPLEX_ADD_RINV] THEN
+  REWRITE_TAC[GSYM LINEPATH_REFL] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] HOMOTOPIC_PATHS_IMP_HOMOTOPIC_LOOPS)) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_PATHS_IMP_PATHSTART) THEN
+  ASM_REWRITE_TAC[PATHSTART_JOIN; PATHFINISH_JOIN;
+                  PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH;
+                  PATHSTART_LINEPATH; PATHFINISH_LINEPATH] THEN
+  DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP
+    (REWRITE_RULE[IMP_CONJ] HOMOTOPIC_PATHS_LOOP_PARTS)) THEN
+  ASM_REWRITE_TAC[]);;
+
+let WINDING_NUMBER_HOMOTOPIC_LOOPS_EQ = prove
+ (`!p q z.
+        path p /\ pathfinish p = pathstart p /\ ~(z IN path_image p) /\
+        path q /\ pathfinish q = pathstart q /\ ~(z IN path_image q)
+        ==> (winding_number(p,z) = winding_number(q,z) <=>
+             homotopic_loops ((:complex) DELETE z) p q)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN
   REWRITE_TAC[WINDING_NUMBER_HOMOTOPIC_LOOPS] THEN DISCH_TAC THEN
   SUBGOAL_THEN `~(pathstart p:complex = z) /\ ~(pathstart q = z)`
@@ -16274,64 +16330,19 @@ let WINDING_NUMBER_HOMOTOPIC_LOOPS_EQ = prove
   STRIP_ASSUME_TAC THENL
    [ASM_MESON_TAC[PATHSTART_IN_PATH_IMAGE; PATHFINISH_IN_PATH_IMAGE];
     ALL_TAC] THEN
-  MATCH_MP_TAC HOMOTOPIC_LOOPS_TRANS THEN EXISTS_TAC
-   `reversepath(r ++ reversepath q ++ reversepath r):real^1->complex` THEN
-  CONJ_TAC THENL
-   [ALL_TAC;
-    ASM_SIMP_TAC[REVERSEPATH_JOINPATHS; REVERSEPATH_REVERSEPATH;
-                 PATHSTART_JOIN; PATHFINISH_JOIN;
-                 PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH] THEN
-    MATCH_MP_TAC HOMOTOPIC_LOOPS_TRANS THEN
-    EXISTS_TAC `r ++ q ++ reversepath r:real^1->complex` THEN CONJ_TAC THENL
-     [MATCH_MP_TAC HOMOTOPIC_PATHS_IMP_HOMOTOPIC_LOOPS THEN tac THEN
-      ONCE_REWRITE_TAC[HOMOTOPIC_PATHS_SYM] THEN
-      MATCH_MP_TAC HOMOTOPIC_PATHS_ASSOC THEN tac;
-      MATCH_MP_TAC HOMOTOPIC_LOOPS_CONJUGATE THEN tac]] THEN
-  MATCH_MP_TAC HOMOTOPIC_PATHS_IMP_HOMOTOPIC_LOOPS THEN tac THEN
-  MATCH_MP_TAC HOMOTOPIC_PATHS_TRANS THEN
-  EXISTS_TAC
-   `linepath(pathstart(reversepath(r ++ reversepath q ++ reversepath r)),
-             pathstart(reversepath(r ++ reversepath q ++ reversepath r))) ++
-    reversepath(r ++ reversepath q ++ reversepath r)
-    :real^1->complex` THEN
-  CONJ_TAC THENL [tac; MATCH_MP_TAC HOMOTOPIC_PATHS_LID THEN tac] THEN
-  MATCH_MP_TAC HOMOTOPIC_PATHS_TRANS THEN
-  EXISTS_TAC
-   `p ++ linepath(pathstart(r ++ reversepath q ++ reversepath r),
-                  pathstart(r ++ reversepath q ++ reversepath r))
-    :real^1->complex` THEN
-  CONJ_TAC THENL
-   [ONCE_REWRITE_TAC[HOMOTOPIC_PATHS_SYM] THEN
-    tac THEN SUBST1_TAC(SYM(ASSUME `pathfinish p:complex = pathstart p`)) THEN
-    MATCH_MP_TAC HOMOTOPIC_PATHS_RID THEN tac;
-    ALL_TAC] THEN
-  MATCH_MP_TAC HOMOTOPIC_PATHS_TRANS THEN
-  EXISTS_TAC
-   `p ++ (r ++ reversepath q ++ reversepath r) ++
-         reversepath(r ++ reversepath q ++ reversepath r):real^1->complex` THEN
-  CONJ_TAC THENL
-   [MATCH_MP_TAC HOMOTOPIC_PATHS_JOIN THEN
-    REWRITE_TAC[HOMOTOPIC_PATHS_REFL] THEN
-    CONJ_TAC THENL [tac; ALL_TAC] THEN
-    CONJ_TAC THENL [ALL_TAC; tac] THEN
-    ONCE_REWRITE_TAC[HOMOTOPIC_PATHS_SYM] THEN
-    MATCH_MP_TAC HOMOTOPIC_PATHS_RINV THEN tac;
-    ALL_TAC] THEN
-  MATCH_MP_TAC HOMOTOPIC_PATHS_TRANS THEN
-  EXISTS_TAC
-   `(p ++ (r ++ reversepath q ++ reversepath r)) ++
-         reversepath(r ++ reversepath q ++ reversepath r):real^1->complex` THEN
-  CONJ_TAC THENL [MATCH_MP_TAC HOMOTOPIC_PATHS_ASSOC THEN tac; ALL_TAC] THEN
-  MATCH_MP_TAC HOMOTOPIC_PATHS_JOIN THEN CONJ_TAC THENL
-   [ALL_TAC; REWRITE_TAC[HOMOTOPIC_PATHS_REFL] THEN tac] THEN
-  MP_TAC(SPECL
-   [`(p ++ r ++ reversepath q ++ reversepath r):real^1->complex`;
-    `z:complex`] lemma) THEN
-  tac THEN REWRITE_TAC[COMPLEX_RING `q + r + --q + --r = Cx(&0)`] THEN
-  DISCH_THEN(X_CHOOSE_THEN `aa:complex` MP_TAC) THEN
-  REWRITE_TAC[GSYM LINEPATH_REFL] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_PATHS_NULL) THEN
-  tac);;
+  MATCH_MP_TAC HOMOTOPIC_LOOPS_TRANS THEN
+  EXISTS_TAC `r ++ q ++ reversepath r:real^1->complex` THEN
+  ASM_SIMP_TAC[HOMOTOPIC_LOOPS_CONJUGATE; SET_RULE
+    `s SUBSET UNIV DELETE z <=> ~(z IN s)`] THEN
+  MATCH_MP_TAC HOMOTOPIC_PATHS_IMP_HOMOTOPIC_LOOPS THEN
+  ASM_REWRITE_TAC[PATHFINISH_JOIN; PATHFINISH_REVERSEPATH] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) WINDING_NUMBER_HOMOTOPIC_PATHS_EQ o
+    snd) THEN
+  ASM_SIMP_TAC[PATH_JOIN; PATH_REVERSEPATH; PATHSTART_JOIN; PATHFINISH_JOIN;
+               PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH;
+               PATH_IMAGE_JOIN; IN_UNION; PATH_IMAGE_REVERSEPATH;
+               WINDING_NUMBER_JOIN; WINDING_NUMBER_REVERSEPATH] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN SIMPLE_COMPLEX_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* A few simple corollaries from the various equivalences.                   *)

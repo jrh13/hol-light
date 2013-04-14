@@ -1223,6 +1223,14 @@ let COMPLEX_NORM_LE_RE_IM = prove
   GEN_TAC THEN MP_TAC(ISPEC `z:complex` NORM_LE_L1) THEN
   REWRITE_TAC[DIMINDEX_2; SUM_2; RE_DEF; IM_DEF]);;
 
+let COMPLEX_L1_LE_NORM = prove
+ (`!z. sqrt(&2) / &2 * (abs(Re z) + abs(Im z)) <= norm z`,
+  GEN_TAC THEN MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC `sqrt(&2)` THEN
+  SIMP_TAC[REAL_ARITH `x * x / &2 * y = (x pow 2) / &2 * y`;
+           SQRT_POW_2; REAL_POS; SQRT_POS_LT; REAL_OF_NUM_LT; ARITH] THEN
+  MP_TAC(ISPEC `z:complex` L1_LE_NORM) THEN
+  REWRITE_TAC[DIMINDEX_2; SUM_2; RE_DEF; IM_DEF] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Complex square roots.                                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -1435,6 +1443,10 @@ let REAL = prove
 let REAL_CNJ = prove
  (`!z. real z <=> cnj z = z`,
   REWRITE_TAC[real; cnj; COMPLEX_EQ; RE; IM] THEN REAL_ARITH_TAC);;
+
+let REAL_IMP_CNJ = prove
+ (`!z. real z ==> cnj z = z`,
+  REWRITE_TAC[REAL_CNJ]);;
 
 let REAL_EXISTS = prove
  (`!z. real z <=> ?x. z = Cx x`,

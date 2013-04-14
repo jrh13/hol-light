@@ -743,6 +743,33 @@ let NORM_LE_COMPONENTWISE = prove
   MATCH_MP_TAC SUM_LE_NUMSEG THEN
   ASM_SIMP_TAC[GSYM REAL_POW_2; GSYM REAL_LE_SQUARE_ABS]);;
 
+let L1_LE_NORM = prove
+ (`!x:real^N.
+    sum(1..dimindex(:N)) (\i. abs(x$i)) <= sqrt(&(dimindex(:N))) * norm x`,
+  let lemma = prove
+   (`!x n. &n * sum(1..n) (\i. x i pow 2) - (sum(1..n) x) pow 2 =
+           sum(1..n) (\i. sum(i+1..n) (\j. (x i - x j) pow 2))`,
+    GEN_TAC THEN CONV_TAC(BINDER_CONV SYM_CONV) THEN INDUCT_TAC THEN
+    REWRITE_TAC[SUM_CLAUSES_NUMSEG; ARITH; ARITH_RULE `1 <= SUC n`] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    SIMP_TAC[ARITH_RULE `i <= n ==> i + 1 <= SUC n`; SUM_TRIV_NUMSEG;
+             ARITH_RULE `~(n + 1 <= n)`; ARITH_RULE `n < SUC n + 1`] THEN
+    ASM_REWRITE_TAC[SUM_ADD_NUMSEG; REAL_ADD_RID] THEN
+    REWRITE_TAC[REAL_ARITH
+     `(x - y) pow 2 = (x pow 2 + y pow 2) - &2 * x * y`] THEN
+    REWRITE_TAC[SUM_ADD_NUMSEG; SUM_SUB_NUMSEG; SUM_LMUL; SUM_RMUL;
+                GSYM REAL_OF_NUM_SUC; SUM_CONST_NUMSEG; ADD_SUB] THEN
+    REAL_ARITH_TAC) in
+  GEN_TAC THEN
+  MATCH_MP_TAC(REAL_ARITH `&0 <= y /\ abs x <= abs y ==> x <= y`) THEN
+  SIMP_TAC[REAL_LE_MUL; NORM_POS_LE; SQRT_POS_LE; REAL_POS] THEN
+  REWRITE_TAC[REAL_LE_SQUARE_ABS; REAL_POW_MUL] THEN
+  SIMP_TAC[SQRT_POW_2; REAL_POS; NORM_POW_2; dot] THEN
+  REWRITE_TAC[GSYM REAL_POW_2] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [GSYM REAL_POW2_ABS] THEN
+  ONCE_REWRITE_TAC[GSYM REAL_SUB_LE] THEN REWRITE_TAC[lemma] THEN
+  SIMP_TAC[SUM_POS_LE_NUMSEG; REAL_LE_POW_2]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Squaring equations and inequalities involving norms.                      *)
 (* ------------------------------------------------------------------------- *)
@@ -6037,6 +6064,30 @@ let VECTOR_IN_ORTHONORMAL_BASIS = prove
   MATCH_MP_TAC SPAN_IMAGE_SCALE THEN
   REWRITE_TAC[REAL_INV_EQ_0; NORM_EQ_0] THEN
   ASM_MESON_TAC[HAS_SIZE]);;
+
+let BESSEL_INEQUALITY = prove
+ (`!s x:real^N.
+        pairwise orthogonal s /\ (!x. x IN s ==> norm x = &1)
+        ==> sum s (\e. (e dot x) pow 2) <= norm(x) pow 2`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP PAIRWISE_ORTHOGONAL_IMP_FINITE) THEN
+  MP_TAC(ISPEC `x - vsum s (\e. (e dot x) % e):real^N` DOT_POS_LE) THEN
+  REWRITE_TAC[NORM_POW_2; VECTOR_ARITH
+   `(a - b:real^N) dot (a - b) = a dot a + b dot b - &2 * b dot a`] THEN
+  ASM_SIMP_TAC[DOT_LSUM; REAL_POW_2; DOT_LMUL] THEN
+  MATCH_MP_TAC(REAL_ARITH `t = s ==> &0 <= x + t - &2 * s ==> s <= x`) THEN
+  MATCH_MP_TAC SUM_EQ THEN X_GEN_TAC `e:real^N` THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[DOT_RSUM] THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `sum s (\k:real^N. if k = e then e dot x else &0)` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM_SIMP_TAC[SUM_DELTA]] THEN
+  MATCH_MP_TAC SUM_EQ THEN X_GEN_TAC `k:real^N` THEN DISCH_TAC THEN
+  REWRITE_TAC[DOT_RMUL] THEN COND_CASES_TAC THENL
+   [ASM_REWRITE_TAC[REAL_RING `a * x = a <=> a = &0 \/ x = &1`] THEN
+    DISJ2_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `e:real^N`) THEN
+    ASM_REWRITE_TAC[NORM_EQ_SQUARE] THEN REAL_ARITH_TAC;
+    RULE_ASSUM_TAC(REWRITE_RULE[pairwise; orthogonal]) THEN
+    ASM_SIMP_TAC[REAL_ENTIRE]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Analogous theorems for existence of orthonormal basis for a subspace.     *)
