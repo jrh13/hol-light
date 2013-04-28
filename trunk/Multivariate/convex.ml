@@ -4009,6 +4009,18 @@ let AFF_DIM_CONVEX_HULL = prove
   SIMP_TAC[AFF_DIM_AFFINE_HULL; AFF_DIM_SUBSET; HULL_SUBSET;
            CONVEX_HULL_SUBSET_AFFINE_HULL]);;
 
+let AFF_DIM_CLOSURE = prove
+ (`!s:real^N->bool. aff_dim(closure s) = aff_dim s`,
+  GEN_TAC THEN MATCH_MP_TAC(INT_ARITH
+   `!h. h = s /\ s <= c /\ c <= h ==> c:int = s`) THEN
+  EXISTS_TAC `aff_dim(affine hull s:real^N->bool)` THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[AFF_DIM_AFFINE_HULL];
+    MATCH_MP_TAC AFF_DIM_SUBSET THEN REWRITE_TAC[CLOSURE_SUBSET];
+    MATCH_MP_TAC AFF_DIM_SUBSET THEN
+    MATCH_MP_TAC CLOSURE_MINIMAL THEN
+    REWRITE_TAC[CLOSED_AFFINE_HULL; HULL_SUBSET]]);;
+
 let AFF_DIM_2 = prove
  (`!a b:real^N. aff_dim {a,b} = if a = b then &0 else &1`,
   REPEAT GEN_TAC THEN COND_CASES_TAC THENL
@@ -4267,6 +4279,23 @@ let COLLINEAR_AFF_DIM = prove
                     AFF_DIM_AFFINE_HULL] THEN
     REWRITE_TAC[INT_ARITH `x - &1:int <= &1 <=> x <= &2`; INT_OF_NUM_LE] THEN
     ASM_SIMP_TAC[COLLINEAR_SMALL]]);;
+
+let HOMEOMORPHIC_AFFINE_SETS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        affine s /\ affine t /\ aff_dim s = aff_dim t ==> s homeomorphic t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THEN
+  ASM_SIMP_TAC[AFF_DIM_EMPTY; AFF_DIM_EQ_MINUS1; HOMEOMORPHIC_EMPTY] THEN
+  POP_ASSUM MP_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_SIMP_TAC[AFF_DIM_EMPTY; AFF_DIM_EQ_MINUS1; HOMEOMORPHIC_EMPTY] THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC
+   [GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM; RIGHT_IMP_FORALL_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^M`; `b:real^N`] THEN
+  GEOM_ORIGIN_TAC `a:real^M` THEN GEOM_ORIGIN_TAC `b:real^N` THEN
+  SIMP_TAC[AFFINE_EQ_SUBSPACE; AFF_DIM_DIM_0; HULL_INC; INT_OF_NUM_EQ] THEN
+  MESON_TAC[HOMEOMORPHIC_SUBSPACES]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of a rigid transform between congruent sets.                    *)
@@ -9468,6 +9497,94 @@ let CLOSURE_RATIONALS_IN_CONVEX_SET = prove
           closure s`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOSURE_CONVEX_INTER_SUPERSET THEN
   ASM_REWRITE_TAC[CLOSURE_RATIONAL_COORDINATES; SUBSET_UNIV]);;
+
+(* ------------------------------------------------------------------------- *)
+(* More about affine dimension of special sets.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let AFF_DIM_NONEMPTY_INTERIOR_EQ = prove
+ (`!s:real^N->bool.
+        convex s ==> (aff_dim s = &(dimindex (:N)) <=> ~(interior s = {}))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  ASM_SIMP_TAC[AFF_DIM_NONEMPTY_INTERIOR] THEN
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `s:real^N->bool` EMPTY_INTERIOR_SUBSET_HYPERPLANE) THEN
+  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP AFF_DIM_SUBSET) THEN
+  ASM_SIMP_TAC[AFF_DIM_HYPERPLANE] THEN INT_ARITH_TAC);;
+
+let AFF_DIM_BALL = prove
+ (`!a:real^N r.
+        aff_dim(ball(a,r)) = if &0 < r then &(dimindex(:N)) else --(&1)`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THENL
+   [MATCH_MP_TAC AFF_DIM_OPEN THEN
+    ASM_REWRITE_TAC[OPEN_BALL; BALL_EQ_EMPTY; REAL_NOT_LE];
+    RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LT; GSYM BALL_EQ_EMPTY]) THEN
+    ASM_REWRITE_TAC[AFF_DIM_EMPTY]]);;
+
+let AFF_DIM_CBALL = prove
+ (`!a:real^N r.
+        aff_dim(cball(a,r)) =
+            if &0 < r then &(dimindex(:N))
+            else if r = &0 then &0 else --(&1)`,
+  REPEAT GEN_TAC THEN REPEAT COND_CASES_TAC THENL
+   [MATCH_MP_TAC AFF_DIM_NONEMPTY_INTERIOR THEN
+    ASM_REWRITE_TAC[INTERIOR_CBALL; BALL_EQ_EMPTY] THEN ASM_REAL_ARITH_TAC;
+    ASM_SIMP_TAC[CBALL_SING; AFF_DIM_SING];
+    MATCH_MP_TAC(MESON[AFF_DIM_EMPTY] `s = {} ==> aff_dim s = --(&1)`) THEN
+    REWRITE_TAC[CBALL_EQ_EMPTY] THEN ASM_REAL_ARITH_TAC]);;
+
+let AFF_DIM_INTERVAL = prove
+ (`(!a b:real^N.
+        aff_dim(interval[a,b]) =
+                if interval[a,b] = {} then --(&1)
+                else &(CARD {i | 1 <= i /\ i <= dimindex(:N) /\ a$i < b$i})) /\
+   (!a b:real^N.
+         aff_dim(interval(a,b)) =
+                if interval(a,b) = {} then --(&1)
+                else &(dimindex(:N)))`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[AFF_DIM_EMPTY; AFF_DIM_OPEN; OPEN_INTERVAL] THEN
+  POP_ASSUM MP_TAC THEN GEOM_ORIGIN_TAC `a:real^N` THEN
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[VECTOR_ADD_COMPONENT; VEC_COMPONENT; REAL_LT_LADD] THEN
+  ASM_SIMP_TAC[AFF_DIM_DIM_0; HULL_INC; ENDS_IN_INTERVAL] THEN AP_TERM_TAC THEN
+  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN MATCH_MP_TAC DIM_UNIQUE THEN EXISTS_TAC
+   `{basis i:real^N | 1 <= i /\ i <= dimindex(:N) /\ &0 < (b:real^N)$i}` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[INTERVAL_NE_EMPTY; VEC_COMPONENT]) THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `basis i:real^N = inv(b$i) % (b:real^N)$i % basis i`
+    SUBST1_TAC THENL
+     [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; REAL_LT_IMP_NZ] THEN
+      REWRITE_TAC[VECTOR_MUL_LID];
+      MATCH_MP_TAC SPAN_MUL THEN MATCH_MP_TAC SPAN_SUPERSET THEN
+      SIMP_TAC[IN_INTERVAL; VECTOR_MUL_COMPONENT; BASIS_COMPONENT] THEN
+      X_GEN_TAC `j:num` THEN REWRITE_TAC[VEC_COMPONENT] THEN
+      COND_CASES_TAC THEN
+      ASM_SIMP_TAC[REAL_MUL_RZERO; REAL_MUL_RID; REAL_LE_REFL]];
+    MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN
+    REWRITE_TAC[SUBSPACE_SPAN; SUBSET; IN_INTERVAL; VEC_COMPONENT] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM BASIS_EXPANSION] THEN
+    MATCH_MP_TAC SPAN_VSUM THEN REWRITE_TAC[FINITE_NUMSEG] THEN
+    X_GEN_TAC `i:num` THEN REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN
+    ASM_CASES_TAC `&0 < (b:real^N)$i` THENL
+     [MATCH_MP_TAC SPAN_MUL THEN MATCH_MP_TAC SPAN_SUPERSET THEN ASM SET_TAC[];
+      SUBGOAL_THEN `(x:real^N)$i = &0`
+        (fun th -> REWRITE_TAC[th; VECTOR_MUL_LZERO; SPAN_0]) THEN
+      REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+      ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC];
+    MATCH_MP_TAC PAIRWISE_ORTHOGONAL_INDEPENDENT THEN
+    REWRITE_TAC[SET_RULE `~(a IN {f x | P x}) <=> !x. P x ==> ~(f x = a)`] THEN
+    SIMP_TAC[BASIS_NONZERO; pairwise; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    SIMP_TAC[FORALL_IN_GSPEC; BASIS_INJ_EQ; ORTHOGONAL_BASIS_BASIS];
+    GEN_REWRITE_TAC LAND_CONV [SIMPLE_IMAGE_GEN] THEN
+    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+    SIMP_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC; BASIS_INJ_EQ;
+             HAS_SIZE] THEN
+    SIMP_TAC[CONJ_ASSOC; GSYM IN_NUMSEG; FINITE_RESTRICT; FINITE_NUMSEG]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Deducing convexity from midpoint convexity in common cases.               *)
