@@ -551,6 +551,36 @@ let CONTINUOUS_ON_COMPLEX_POW = prove
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_COMPLEX_POW]);;
 
 (* ------------------------------------------------------------------------- *)
+(* And also uniform versions.                                                *)
+(* ------------------------------------------------------------------------- *)
+
+let UNIFORMLY_CONTINUOUS_ON_COMPLEX_MUL = prove
+ (`!f g s:real^N->bool.
+        f uniformly_continuous_on s /\ g uniformly_continuous_on s /\
+        bounded(IMAGE f s) /\ bounded(IMAGE g s)
+        ==> (\x. f(x) * g(x)) uniformly_continuous_on s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`f:real^N->complex`; `g:real^N->complex`;
+    `( * ):complex->complex->complex`; `s:real^N->bool`]
+    BILINEAR_UNIFORMLY_CONTINUOUS_ON_COMPOSE) THEN
+  ASM_REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;
+
+let UNIFORMLY_CONTINUOUS_ON_COMPLEX_LMUL = prove
+ (`!f c s:real^N->bool.
+      f uniformly_continuous_on s ==> (\x. c * f x) uniformly_continuous_on s`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o ISPEC `\x:complex. c * x` o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] UNIFORMLY_CONTINUOUS_ON_COMPOSE)) THEN
+  ASM_SIMP_TAC[o_DEF; LINEAR_COMPLEX_MUL; LINEAR_UNIFORMLY_CONTINUOUS_ON]);;
+
+let UNIFORMLY_CONTINUOUS_ON_COMPLEX_RMUL = prove
+ (`!f c s:real^N->bool.
+      f uniformly_continuous_on s ==> (\x. f x * c) uniformly_continuous_on s`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_ON_COMPLEX_LMUL]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Continuity prover (not just for complex numbers but with more for them).  *)
 (* ------------------------------------------------------------------------- *)
 

@@ -1839,6 +1839,11 @@ let BASIS_INJ = prove
   ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
   ASM_SIMP_TAC[REAL_OF_NUM_EQ; ARITH_EQ]);;
 
+let BASIS_INJ_EQ = prove
+ (`!i j. 1 <= i /\ i <= dimindex(:N) /\ 1 <= j /\ j <= dimindex(:N)
+         ==> (basis i:real^N = basis j <=> i = j)`,
+  MESON_TAC[BASIS_INJ]);;
+
 let BASIS_NE = prove
  (`!i j. 1 <= i /\ i <= dimindex(:N) /\
          1 <= j /\ j <= dimindex(:N) /\
@@ -6798,6 +6803,36 @@ let DIM_SUBSPACE_ORTHOGONAL_TO_VECTORS = prove
     MATCH_MP_TAC SUBSPACE_SUB THEN
     ASM_MESON_TAC[SUBSET; SPAN_EQ_SELF];
     ASM_MESON_TAC[SPAN_SUPERSET; ORTHOGONAL_SYM]]);;
+
+let DIM_SPECIAL_SUBSPACE = prove
+ (`!k. dim {x:real^N |
+            !i. 1 <= i /\ i <= dimindex(:N) /\ i IN k ==> x$i = &0} =
+       CARD((1..dimindex(:N)) DIFF k)`,
+  GEN_TAC THEN MATCH_MP_TAC DIM_UNIQUE THEN
+  EXISTS_TAC `IMAGE (basis:num->real^N) ((1..dimindex(:N)) DIFF k)` THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
+    SIMP_TAC[BASIS_COMPONENT; IN_DIFF; IN_NUMSEG] THEN MESON_TAC[];
+    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN X_GEN_TAC `x:real^N` THEN
+    DISCH_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM BASIS_EXPANSION] THEN
+    MATCH_MP_TAC SPAN_VSUM THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+    X_GEN_TAC `j:num` THEN STRIP_TAC THEN
+    ASM_CASES_TAC `(x:real^N)$j = &0` THEN
+    ASM_REWRITE_TAC[SPAN_0; VECTOR_MUL_LZERO] THEN
+    MATCH_MP_TAC SPAN_MUL THEN MATCH_MP_TAC SPAN_SUPERSET THEN
+    REWRITE_TAC[IN_IMAGE] THEN EXISTS_TAC `j:num` THEN
+    REWRITE_TAC[IN_NUMSEG; IN_DIFF] THEN ASM_MESON_TAC[];
+    MATCH_MP_TAC PAIRWISE_ORTHOGONAL_INDEPENDENT THEN
+    REWRITE_TAC[pairwise; IMP_CONJ; RIGHT_FORALL_IMP_THM;
+      SET_RULE `~(a IN IMAGE f s) <=> (!x. x IN s ==> ~(f x = a))`] THEN
+    SIMP_TAC[FORALL_IN_IMAGE; ORTHOGONAL_BASIS_BASIS; BASIS_INJ_EQ;
+             IN_DIFF; IN_NUMSEG; BASIS_NONZERO];
+    SIMP_TAC[HAS_SIZE; FINITE_IMAGE; FINITE_DIFF; FINITE_NUMSEG] THEN
+    MATCH_MP_TAC CARD_IMAGE_INJ THEN
+    SIMP_TAC[FINITE_DIFF; FINITE_NUMSEG; IMP_CONJ; RIGHT_FORALL_IMP_THM;
+      SET_RULE `~(a IN IMAGE f s) <=> (!x. x IN s ==> ~(f x = a))`] THEN
+    SIMP_TAC[FORALL_IN_IMAGE; ORTHOGONAL_BASIS_BASIS; BASIS_INJ_EQ;
+             IN_DIFF; IN_NUMSEG; BASIS_NONZERO]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More about rank from the rank/nullspace formula.                          *)

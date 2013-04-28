@@ -2361,6 +2361,11 @@ let RETRACT_OF_LOCALLY_PATH_CONNECTED = prove
   MATCH_MP_TAC RETRACTION_IMP_QUOTIENT_MAP THEN
   ASM_MESON_TAC[RETRACTION]);;
 
+let RETRACT_OF_LOCALLY_COMPACT = prove
+ (`!s t:real^N->bool.
+        locally compact s /\ t retract_of s ==> locally compact t`,
+  MESON_TAC[CLOSED_IN_RETRACT; LOCALLY_COMPACT_CLOSED_IN]);;
+
 let ABSOLUTE_RETRACTION_CONVEX_CLOSED = prove
  (`!s:real^N->bool t.
         convex s /\ closed s /\ ~(s = {}) /\ s SUBSET t
