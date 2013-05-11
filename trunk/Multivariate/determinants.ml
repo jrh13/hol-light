@@ -2445,4 +2445,5 @@ let GEOM_EQUAL_DIMENSION_RULE =
     let th1 = CONV_RULE (EXPAND_QUANTS_CONV qth) th in
     let ith = LINEAR_INVARIANTS f (neth::CONJUNCTS lsth) in
     let th2 = GEN_REWRITE_RULE (RAND_CONV o REDEPTH_CONV) [BETA_THM;ith] th1 in
-    PROVE_HYP eth (SIMPLE_CHOOSE f th2);;
+    let th3 = GEN f (DISCH bod th2) in
+    MP (CONV_RULE (REWR_CONV LEFT_FORALL_IMP_THM) th3) eth;;

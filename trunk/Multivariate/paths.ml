@@ -3217,6 +3217,22 @@ let UNCOUNTABLE_NONEMPTY_INTERIOR = prove
  (`!s:real^N->bool. ~(interior s = {}) ==> ~(COUNTABLE s)`,
   SIMP_TAC[CARD_EQ_NONEMPTY_INTERIOR; CARD_EQ_REAL_IMP_UNCOUNTABLE]);;
 
+let [CONNECTED_FINITE_IFF_SING;
+     CONNECTED_FINITE_IFF_COUNTABLE;
+     CONNECTED_INFINITE_IFF_CARD_EQ] = (CONJUNCTS o prove)
+ (`(!s:real^N->bool. connected s ==> (FINITE s <=> s = {} \/ ?a. s = {a})) /\
+   (!s:real^N->bool. connected s ==> (FINITE s <=> COUNTABLE s)) /\
+   (!s:real^N->bool. connected s ==> (INFINITE s <=> s =_c (:real)))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN
+  ASM_CASES_TAC `connected(s:real^N->bool)` THEN
+  ASM_REWRITE_TAC[INFINITE] THEN MATCH_MP_TAC(TAUT
+   `(f ==> c) /\ (r ==> ~c) /\ (s ==> f) /\ (~s ==> r)
+    ==> (f <=> s) /\ (f <=> c) /\ (~f <=> r)`) THEN
+  REWRITE_TAC[FINITE_IMP_COUNTABLE] THEN
+  REPEAT CONJ_TAC THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[CARD_EQ_REAL_IMP_UNCOUNTABLE; FINITE_INSERT; FINITE_EMPTY] THEN
+  MATCH_MP_TAC CARD_EQ_CONNECTED THEN ASM SET_TAC[]);;
+
 let CLOSED_AS_FRONTIER_OF_SUBSET = prove
  (`!s:real^N->bool. closed s <=> ?t. t SUBSET s /\ s = frontier t`,
   GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[FRONTIER_CLOSED]] THEN
@@ -7012,6 +7028,80 @@ let PATH_CONNECTED_SPHERE = prove
 let CONNECTED_SPHERE = prove
  (`!a r. 2 <= dimindex(:N) ==> connected {x:real^N | norm(x - a) = r}`,
   SIMP_TAC[PATH_CONNECTED_SPHERE; PATH_CONNECTED_IMP_CONNECTED]);;
+
+let CONNECTED_SPHERE_EQ = prove
+ (`!a:real^N r.
+        connected {x | dist(a,x) = r} <=> 2 <= dimindex(:N) \/ r <= &0`,
+  let lemma = prove
+   (`!a:real^1 r. &0 < r
+         ==> ?x y. ~(x = y) /\ dist(a,x) = r /\ dist(a,y) = r`,
+    MP_TAC SPHERE_1 THEN REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+    COND_CASES_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_INSERT; NOT_IN_EMPTY] THEN
+    REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[]
+    `~(a = b) ==> ?x y. ~(x = y) /\ (x = a \/ x = b) /\ (y = a \/ y = b)`) THEN
+    REWRITE_TAC[VECTOR_ARITH `a - r:real^1 = a + r <=> r = vec 0`] THEN
+    REWRITE_TAC[GSYM DROP_EQ; DROP_VEC; LIFT_DROP] THEN ASM_REAL_ARITH_TAC) in
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `r < &0` THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE; EMPTY_GSPEC; CONNECTED_EMPTY;
+               NORM_ARITH `r < &0 ==> ~(dist(a:real^N,x) = r)`] THEN
+  ASM_CASES_TAC `r = &0` THEN
+  ASM_REWRITE_TAC[DIST_EQ_0; SING_GSPEC; CONNECTED_SING; REAL_LE_REFL] THEN
+  SUBGOAL_THEN `&0 < r` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; ASM_REWRITE_TAC[GSYM REAL_NOT_LT]] THEN
+  EQ_TAC THEN
+  REWRITE_TAC[REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
+                          CONNECTED_SPHERE] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CONNECTED_FINITE_IFF_SING) THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  SIMP_TAC[DIMINDEX_GE_1; ARITH_RULE `1 <= n ==> (2 <= n <=> ~(n = 1))`] THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM DIMINDEX_1] THEN
+  DISCH_TAC THEN FIRST_ASSUM (fun th ->
+    REWRITE_TAC[GEOM_EQUAL_DIMENSION_RULE th FINITE_SPHERE_1]) THEN
+  REWRITE_TAC[SET_RULE
+   `~(s = {} \/ ?a. s = {a}) <=> ?x y. ~(x = y) /\ x IN s /\ y IN s`] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o C GEOM_EQUAL_DIMENSION_RULE lemma) THEN
+  ASM_REWRITE_TAC[]);;
+
+let PATH_CONNECTED_SPHERE_EQ = prove
+ (`!a:real^N r.
+        path_connected {x | dist(a,x) = r} <=> 2 <= dimindex(:N) \/ r <= &0`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[GSYM CONNECTED_SPHERE_EQ; PATH_CONNECTED_IMP_CONNECTED];
+    STRIP_TAC THEN
+    ASM_SIMP_TAC[REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
+                 PATH_CONNECTED_SPHERE]] THEN
+  ASM_CASES_TAC `r < &0` THEN
+  ASM_SIMP_TAC[EMPTY_GSPEC; PATH_CONNECTED_EMPTY;
+               NORM_ARITH `r < &0 ==> ~(dist(a:real^N,x) = r)`] THEN
+  ASM_CASES_TAC `r = &0` THEN
+  ASM_REWRITE_TAC[DIST_EQ_0; SING_GSPEC; PATH_CONNECTED_SING] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let FINITE_SPHERE = prove
+ (`!a:real^N r.
+        FINITE {x | dist(a,x) = r} <=> r <= &0 \/ dimindex(:N) = 1`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `dimindex(:N) = 1` THEN
+  ASM_REWRITE_TAC[] THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[GSYM DIMINDEX_1]) THEN
+    FIRST_ASSUM(MATCH_ACCEPT_TAC o C PROVE_HYP
+      (GEOM_EQUAL_DIMENSION_RULE(ASSUME `dimindex(:N) = dimindex(:1)`)
+      FINITE_SPHERE_1));
+    ASM_SIMP_TAC[REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
+                 CONNECTED_SPHERE; ARITH_RULE `2 <= n <=> 1 <= n /\ ~(n = 1)`;
+                 DIMINDEX_GE_1; CONNECTED_FINITE_IFF_SING] THEN
+    REWRITE_TAC[SET_RULE `(s = {} \/ ?a. s = {a}) <=>
+                          (!a b. a IN s /\ b IN s ==> a = b)`] THEN
+    SIMP_TAC[IN_ELIM_THM] THEN EQ_TAC THENL [ALL_TAC; CONV_TAC NORM_ARITH] THEN
+    ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[REAL_NOT_LE] THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`a:real^N`; `r:real`] VECTOR_CHOOSE_DIST) THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    DISCH_THEN(MP_TAC o SPECL [`x:real^N`; `a - (x - a):real^N`]) THEN
+    FIRST_X_ASSUM(K ALL_TAC o check (is_neg o concl)) THEN
+    REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NORM_ARITH]);;
 
 let PATH_CONNECTED_ANNULUS = prove
  (`(!a:real^N r1 r2.

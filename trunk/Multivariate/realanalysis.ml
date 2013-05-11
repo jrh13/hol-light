@@ -4698,17 +4698,6 @@ let REAL_DERIVATIVE_IVT_DECREASING = prove
 (* Continuity and differentiability of inverse functions.                    *)
 (* ------------------------------------------------------------------------- *)
 
-let REAL_CONTINUOUS_ON_INVERSE = prove
- (`!f g s. f real_continuous_on s /\ real_compact s /\
-           (!x. x IN s ==> g (f x) = x)
-           ==> g real_continuous_on (IMAGE f s)`,
-  REWRITE_TAC[REAL_CONTINUOUS_ON; real_compact] THEN
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`lift o f o drop`; `lift o g o drop`; `IMAGE lift s`]
-          CONTINUOUS_ON_INVERSE) THEN
-  ASM_SIMP_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP] THEN
-  REWRITE_TAC[IMAGE_o; REWRITE_RULE[IMAGE_o] IMAGE_LIFT_DROP]);;
-
 let HAS_REAL_DERIVATIVE_INVERSE_BASIC = prove
  (`!f g f' t y.
         (f has_real_derivative f') (atreal (g y)) /\
@@ -13392,50 +13381,273 @@ let INVARIANCE_OF_DOMAIN = prove
     DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     REWRITE_TAC[o_THM] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]]);;
 
+let INVARIANCE_OF_DOMAIN_SUBSPACES = prove
+ (`!f:real^M->real^N u v s.
+        subspace u /\ subspace v /\ dim v <= dim u /\
+        f continuous_on s /\ IMAGE f s SUBSET v /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+        open_in (subtopology euclidean u) s
+        ==> open_in (subtopology euclidean v) (IMAGE f s)`,
+  let lemma0 = prove
+   (`!f:real^M->real^M s u.
+          subspace s /\ dim s = dimindex(:N) /\
+          f continuous_on u /\ IMAGE f u SUBSET s /\
+          (!x y. x IN u /\ y IN u /\ f x = f y ==> x = y) /\
+          open_in (subtopology euclidean s) u
+          ==> open_in (subtopology euclidean s) (IMAGE f u)`,
+    REPEAT STRIP_TAC THEN MP_TAC(ISPECL [`(:real^N)`; `s:real^M->bool`]
+      HOMEOMORPHIC_SUBSPACES) THEN
+    ASM_REWRITE_TAC[DIM_UNIV; SUBSPACE_UNIV] THEN
+    REWRITE_TAC[homeomorphic; homeomorphism; LEFT_IMP_EXISTS_THM; IN_UNIV] THEN
+    MAP_EVERY X_GEN_TAC [`h:real^N->real^M`; `k:real^M->real^N`] THEN
+    STRIP_TAC THEN MP_TAC(ISPECL
+     [`(k:real^M->real^N) o f o (h:real^N->real^M)`;
+      `IMAGE (k:real^M->real^N) u`] INVARIANCE_OF_DOMAIN) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_THM] THEN
+    SUBGOAL_THEN
+     `!t. open t <=>
+          open_in (subtopology euclidean (IMAGE (k:real^M->real^N) s)) t`
+     (fun th -> REWRITE_TAC[th])
+    THENL [ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM OPEN_IN]; ALL_TAC] THEN
+    ANTS_TAC THENL
+     [REPEAT CONJ_TAC THENL
+       [REPEAT(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC) THEN
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+            CONTINUOUS_ON_SUBSET)) THEN
+        FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+        REWRITE_TAC[IMAGE_o] THEN ASM SET_TAC[];
+        MATCH_MP_TAC HOMEOMORPHISM_IMP_OPEN_MAP THEN
+        MAP_EVERY EXISTS_TAC [`h:real^N->real^M`; `s:real^M->bool`] THEN
+        ASM_REWRITE_TAC[homeomorphism];
+        REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+        FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+        ASM_SIMP_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
+        FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]];
+      ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+      SUBGOAL_THEN
+       `IMAGE f u =
+        IMAGE (h:real^N->real^M) (IMAGE ((k o f o h) o (k:real^M->real^N)) u)`
+      SUBST1_TAC THENL
+       [REWRITE_TAC[GSYM IMAGE_o] THEN MATCH_MP_TAC(SET_RULE
+         `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+        REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
+        ASM_SIMP_TAC[SUBSET; o_THM] THEN ASM SET_TAC[];
+        MATCH_MP_TAC HOMEOMORPHISM_IMP_OPEN_MAP THEN
+        MAP_EVERY EXISTS_TAC [`k:real^M->real^N`; `(:real^N)`] THEN
+        ASM_REWRITE_TAC[homeomorphism]]]) in
+  let lemma1 = prove
+   (`!f:real^N->real^N s u.
+          subspace s /\ f continuous_on u /\ IMAGE f u SUBSET s /\
+          (!x y. x IN u /\ y IN u /\ f x = f y ==> x = y) /\
+          open_in (subtopology euclidean s) u
+          ==> open_in (subtopology euclidean s) (IMAGE f u)`,
+    REWRITE_TAC[INJECTIVE_ON_ALT] THEN REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+    ABBREV_TAC `s' = {y:real^N | !x. x IN s ==> orthogonal x y}` THEN
+    SUBGOAL_THEN `subspace(s':real^N->bool)` ASSUME_TAC THENL
+      [EXPAND_TAC "s'" THEN REWRITE_TAC[SUBSPACE_ORTHOGONAL_TO_VECTORS];
+       FIRST_ASSUM(ASSUME_TAC o MATCH_MP SUBSPACE_IMP_NONEMPTY)] THEN
+    ABBREV_TAC `g:real^(N,N)finite_sum->real^(N,N)finite_sum =
+                  \z. pastecart (f(fstcart z)) (sndcart z)` THEN
+    SUBGOAL_THEN
+     `g continuous_on ((u:real^N->bool) PCROSS s') /\
+      IMAGE g (u PCROSS s') SUBSET (s:real^N->bool) PCROSS (s':real^N->bool) /\
+      (!w z. w IN u PCROSS s' /\ z IN u PCROSS s' ==> (g w = g z <=> w = z))`
+    STRIP_ASSUME_TAC THENL
+     [EXPAND_TAC "g" THEN REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC CONTINUOUS_ON_PASTECART THEN
+        SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_SNDCART] THEN
+        GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+        MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+        SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART;
+                 IMAGE_FSTCART_PCROSS] THEN
+        COND_CASES_TAC THEN ASM_REWRITE_TAC[CONTINUOUS_ON_EMPTY];
+        REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_PCROSS] THEN
+        SIMP_TAC[PASTECART_IN_PCROSS; SNDCART_PASTECART;
+                 FSTCART_PASTECART] THEN
+        ASM SET_TAC[];
+        EXPAND_TAC "g" THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+        REWRITE_TAC[FORALL_IN_PCROSS; FSTCART_PASTECART;
+                    SNDCART_PASTECART] THEN
+        ASM_SIMP_TAC[PASTECART_INJ]];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `open_in (subtopology euclidean (s PCROSS s'))
+              (IMAGE (g:real^(N,N)finite_sum->real^(N,N)finite_sum)
+                     (u PCROSS s'))`
+    MP_TAC THENL
+     [MATCH_MP_TAC lemma0 THEN
+      ASM_SIMP_TAC[SUBSPACE_PCROSS; OPEN_IN_PCROSS_EQ; OPEN_IN_REFL] THEN
+      CONJ_TAC THENL [ASM_SIMP_TAC[DIM_PCROSS]; ASM_MESON_TAC[]] THEN
+      MP_TAC(ISPECL [`s:real^N->bool`; `(:real^N)`]
+        DIM_SUBSPACE_ORTHOGONAL_TO_VECTORS) THEN
+      ASM_REWRITE_TAC[SUBSET_UNIV; SUBSPACE_UNIV; IN_UNIV; DIM_UNIV] THEN
+      ARITH_TAC;
+      SUBGOAL_THEN
+       `IMAGE (g:real^(N,N)finite_sum->real^(N,N)finite_sum) (u PCROSS s') =
+        IMAGE f u PCROSS s'`
+      SUBST1_TAC THENL
+       [EXPAND_TAC "g" THEN
+        REWRITE_TAC[EXTENSION; EXISTS_PASTECART; PASTECART_IN_PCROSS;
+                    IN_IMAGE; FORALL_PASTECART; PASTECART_IN_PCROSS;
+                    FSTCART_PASTECART; SNDCART_PASTECART; PASTECART_INJ] THEN
+        ASM SET_TAC[];
+        ASM_SIMP_TAC[OPEN_IN_PCROSS_EQ; IMAGE_EQ_EMPTY] THEN
+        STRIP_TAC THEN ASM_SIMP_TAC[IMAGE_CLAUSES; OPEN_IN_EMPTY]]]) in
+  REWRITE_TAC[INJECTIVE_ON_ALT] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+  MP_TAC(ISPECL [`u:real^M->bool`; `dim(v:real^N->bool)`]
+    CHOOSE_SUBSPACE_OF_SUBSPACE) THEN ASM_SIMP_TAC[SPAN_OF_SUBSPACE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `v:real^M->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`v:real^N->bool`; `v:real^M->bool`]
+        HOMEOMORPHIC_SUBSPACES) THEN
+  ASM_REWRITE_TAC[homeomorphic; homeomorphism; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`h:real^N->real^M`; `k:real^M->real^N`] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN
+   `IMAGE (f:real^M->real^N) s =
+    IMAGE (k:real^M->real^N) (IMAGE ((h:real^N->real^M) o f) s)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[GSYM IMAGE_o] THEN MATCH_MP_TAC(SET_RULE
+     `(!x. x IN u ==> f x = g x) ==> IMAGE f u = IMAGE g u`) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+    ASM_SIMP_TAC[SUBSET; o_THM] THEN ASM SET_TAC[];
+    MATCH_MP_TAC HOMEOMORPHISM_IMP_OPEN_MAP THEN
+    MAP_EVERY EXISTS_TAC [`h:real^N->real^M`; `v:real^M->bool`] THEN
+    ASM_REWRITE_TAC[homeomorphism] THEN
+    MATCH_MP_TAC OPEN_IN_SUBSET_TRANS THEN EXISTS_TAC `u:real^M->bool` THEN
+    ASM_REWRITE_TAC[IMAGE_o] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    REWRITE_TAC[GSYM IMAGE_o] THEN MATCH_MP_TAC lemma1 THEN
+    ASM_REWRITE_TAC[IMAGE_o; o_THM] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CONTINUOUS_ON_SUBSET)) THEN
+    ASM SET_TAC[]]);;
+
+let INVARIANCE_OF_DIMENSION_SUBSPACES = prove
+ (`!f:real^M->real^N u v s.
+      subspace u /\ subspace v /\
+      ~(s = {}) /\ open_in (subtopology euclidean u) s /\
+      f continuous_on s /\ IMAGE f s SUBSET v /\
+      (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+      ==> dim u <= dim v`,
+  REWRITE_TAC[GSYM NOT_LT] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`u:real^M->bool`; `dim(v:real^N->bool)`]
+    CHOOSE_SUBSPACE_OF_SUBSPACE) THEN
+  ASM_SIMP_TAC[SPAN_OF_SUBSPACE; LE_LT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:real^M->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`v:real^N->bool`; `t:real^M->bool`]
+        HOMEOMORPHIC_SUBSPACES) THEN
+  FIRST_X_ASSUM(SUBST_ALL_TAC o SYM) THEN
+  ASM_REWRITE_TAC[homeomorphic; homeomorphism; NOT_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`h:real^N->real^M`; `k:real^M->real^N`] THEN
+  STRIP_TAC THEN MP_TAC(ISPECL
+   [`(h:real^N->real^M) o (f:real^M->real^N)`; `u:real^M->bool`;
+    `u:real^M->bool`; `s:real^M->bool`]
+        INVARIANCE_OF_DOMAIN_SUBSPACES) THEN
+  ASM_REWRITE_TAC[LE_LT; NOT_IMP] THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
+    ASM_MESON_TAC[CONTINUOUS_ON_SUBSET];
+    REWRITE_TAC[IMAGE_o] THEN ASM SET_TAC[];
+    REWRITE_TAC[o_THM] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `IMAGE ((h:real^N->real^M) o (f:real^M->real^N)) s SUBSET t`
+  ASSUME_TAC THENL [REWRITE_TAC[IMAGE_o] THEN ASM SET_TAC[]; ALL_TAC] THEN
+  ABBREV_TAC `w = IMAGE ((h:real^N->real^M) o (f:real^M->real^N)) s` THEN
+  DISCH_TAC THEN UNDISCH_TAC `dim(t:real^M->bool) < dim(u:real^M->bool)` THEN
+  REWRITE_TAC[NOT_LT] THEN MP_TAC(ISPECL
+   [`w:real^M->bool`; `u:real^M->bool`] DIM_OPEN_IN) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[IMAGE_EQ_EMPTY]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  ASM_SIMP_TAC[DIM_SUBSET]);;
+
+let INVARIANCE_OF_DOMAIN_AFFINE_SETS = prove
+ (`!f:real^M->real^N u v s.
+        affine u /\ affine v /\ aff_dim v <= aff_dim u /\
+        f continuous_on s /\ IMAGE f s SUBSET v /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+        open_in (subtopology euclidean u) s
+        ==> open_in (subtopology euclidean v) (IMAGE f s)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES; OPEN_IN_EMPTY; INJECTIVE_ON_ALT] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?a:real^M b:real^N. a IN s /\ a IN u /\ b IN v`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`(\x. --b + x) o (f:real^M->real^N) o (\x. a + x)`;
+    `IMAGE (\x:real^M. --a + x) u`; `IMAGE (\x:real^N. --b + x) v`;
+    `IMAGE (\x:real^M. --a + x) s`] INVARIANCE_OF_DOMAIN_SUBSPACES) THEN
+  REWRITE_TAC[IMAGE_o; INJECTIVE_ON_ALT; OPEN_IN_TRANSLATION_EQ] THEN
+  SIMP_TAC[IMP_CONJ; GSYM INT_OF_NUM_LE; GSYM AFF_DIM_DIM_SUBSPACE] THEN
+  ASM_REWRITE_TAC[AFF_DIM_TRANSLATION_EQ; RIGHT_FORALL_IMP_THM] THEN
+  SIMP_TAC[FORALL_IN_IMAGE; o_THM; GSYM IMAGE_o; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  ANTS_TAC THENL
+   [ONCE_REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+     [CONJ_TAC THEN MATCH_MP_TAC AFFINE_IMP_SUBSPACE THEN
+      ASM_REWRITE_TAC[AFFINE_TRANSLATION_EQ] THEN REWRITE_TAC[IN_IMAGE;
+        VECTOR_ARITH `vec 0:real^N = --a + x <=> x = a`] THEN
+      ASM_MESON_TAC[];
+      REPEAT CONJ_TAC THENL
+       [REPEAT(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+           SIMP_TAC[CONTINUOUS_ON_ADD; CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID]);
+        REWRITE_TAC[GSYM o_ASSOC] THEN REWRITE_TAC[IMAGE_o] THEN
+        MATCH_MP_TAC IMAGE_SUBSET;
+        REWRITE_TAC[VECTOR_ARITH `a + x:real^N = a + y <=> x = y`]]];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[VECTOR_ARITH `a + --a + x:real^N = x`; GSYM IMAGE_o; o_DEF;
+               IMAGE_ID; ETA_AX]);;
+
+let INVARIANCE_OF_DIMENSION_AFFINE_SETS = prove
+ (`!f:real^M->real^N u v s.
+      affine u /\ affine v /\
+      ~(s = {}) /\ open_in (subtopology euclidean u) s /\
+      f continuous_on s /\ IMAGE f s SUBSET v /\
+      (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+      ==> aff_dim u <= aff_dim v`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES; OPEN_IN_EMPTY; INJECTIVE_ON_ALT] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?a:real^M b:real^N. a IN s /\ a IN u /\ b IN v`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`(\x. --b + x) o (f:real^M->real^N) o (\x. a + x)`;
+    `IMAGE (\x:real^M. --a + x) u`; `IMAGE (\x:real^N. --b + x) v`;
+    `IMAGE (\x:real^M. --a + x) s`] INVARIANCE_OF_DIMENSION_SUBSPACES) THEN
+  REWRITE_TAC[IMAGE_o; INJECTIVE_ON_ALT; OPEN_IN_TRANSLATION_EQ] THEN
+  SIMP_TAC[IMP_CONJ; GSYM INT_OF_NUM_LE; GSYM AFF_DIM_DIM_SUBSPACE] THEN
+  ASM_REWRITE_TAC[AFF_DIM_TRANSLATION_EQ; RIGHT_FORALL_IMP_THM] THEN
+  SIMP_TAC[FORALL_IN_IMAGE; o_THM; GSYM IMAGE_o; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  DISCH_THEN MATCH_MP_TAC THEN ONCE_REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC AFFINE_IMP_SUBSPACE THEN
+    ASM_REWRITE_TAC[AFFINE_TRANSLATION_EQ] THEN REWRITE_TAC[IN_IMAGE;
+      VECTOR_ARITH `vec 0:real^N = --a + x <=> x = a`] THEN
+    ASM_MESON_TAC[];
+    ASM_REWRITE_TAC[IMAGE_EQ_EMPTY] THEN REPEAT CONJ_TAC THENL
+     [REPEAT(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+         SIMP_TAC[CONTINUOUS_ON_ADD; CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID]);
+      REWRITE_TAC[GSYM o_ASSOC] THEN REWRITE_TAC[IMAGE_o] THEN
+      MATCH_MP_TAC IMAGE_SUBSET;
+      REWRITE_TAC[VECTOR_ARITH `a + x:real^N = a + y <=> x = y`]]] THEN
+  ASM_SIMP_TAC[VECTOR_ARITH `a + --a + x:real^N = x`; GSYM IMAGE_o; o_DEF;
+               IMAGE_ID; ETA_AX]);;
+
 let INVARIANCE_OF_DIMENSION = prove
  (`!f:real^M->real^N s.
         f continuous_on s /\ open s /\ ~(s = {}) /\
         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
         ==> dimindex(:M) <= dimindex(:N)`,
-  REWRITE_TAC[GSYM NOT_LT] THEN REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL
-   [`((\x. lambda i. if i <= dimindex(:N) then x$i else &0):real^N->real^M) o
-     (f:real^M->real^N)`; `s:real^M->bool`] INVARIANCE_OF_DOMAIN) THEN
-  ASM_REWRITE_TAC[NOT_IMP] THEN REPEAT CONJ_TAC THENL
-   [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN
-    SIMP_TAC[linear; CART_EQ; VECTOR_MUL_COMPONENT; VECTOR_ADD_COMPONENT;
-             LAMBDA_BETA] THEN REAL_ARITH_TAC;
-    MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
-    FIRST_X_ASSUM MATCH_MP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CART_EQ]) THEN
-    ASM_SIMP_TAC[o_THM; LAMBDA_BETA; CART_EQ] THEN
-    ASM_MESON_TAC[LT_IMP_LE; LE_TRANS];
-    REWRITE_TAC[GSYM INTERIOR_EQ] THEN MATCH_MP_TAC(SET_RULE
-     `~(s = {}) /\ t = {} ==> ~(t = IMAGE f s)`) THEN
-    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(SET_RULE
-     `!s. s = {} /\ t SUBSET s ==> t = {}`) THEN
-    EXISTS_TAC `interior {x:real^M | x$(dimindex(:M)) = &0}` THEN
-    CONJ_TAC THENL [REWRITE_TAC[INTERIOR_STANDARD_HYPERPLANE]; ALL_TAC] THEN
-    MATCH_MP_TAC SUBSET_INTERIOR THEN REWRITE_TAC[SUBSET; IMAGE_o] THEN
-    ONCE_REWRITE_TAC[FORALL_IN_IMAGE] THEN
-    SIMP_TAC[IN_ELIM_THM; LAMBDA_BETA; DIMINDEX_GE_1; LE_REFL] THEN
-    ASM_REWRITE_TAC[GSYM NOT_LT]]);;
-
-let HOMEOMORPHIC_UNIV_UNIV = prove
- (`(:real^M) homeomorphic (:real^N) <=> dimindex(:M) = dimindex(:N)`,
-  REWRITE_TAC[HOMEOMORPHIC_MINIMAL; IN_UNIV] THEN EQ_TAC THEN STRIP_TAC THENL
-   [REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THEN
-    MATCH_MP_TAC INVARIANCE_OF_DIMENSION THEN
-    ASM_MESON_TAC[OPEN_UNIV; UNIV_NOT_EMPTY];
-    EXISTS_TAC `(\x. lambda i. x$i):real^M->real^N` THEN
-    EXISTS_TAC `(\x. lambda i. x$i):real^N->real^M` THEN
-    REWRITE_TAC[CART_EQ] THEN SIMP_TAC[LAMBDA_BETA] THEN
-    FIRST_ASSUM SUBST1_TAC THEN SIMP_TAC[LAMBDA_BETA] THEN
-    FIRST_ASSUM(SUBST1_TAC o SYM) THEN SIMP_TAC[LAMBDA_BETA] THEN
-    CONJ_TAC THEN MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN
-    SIMP_TAC[linear; CART_EQ; VECTOR_MUL_COMPONENT; VECTOR_ADD_COMPONENT;
-             LAMBDA_BETA]]);;
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
+  MATCH_MP_TAC INVARIANCE_OF_DIMENSION_SUBSPACES THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `s:real^M->bool`] THEN
+  ASM_REWRITE_TAC[SUBSPACE_UNIV; SUBSET_UNIV; SUBTOPOLOGY_UNIV;
+                  GSYM OPEN_IN]);;
 
 let CONTINUOUS_INJECTIVE_IMAGE_SUBSPACE_DIM_LE = prove
  (`!f:real^M->real^N s t.
@@ -13443,195 +13655,57 @@ let CONTINUOUS_INJECTIVE_IMAGE_SUBSPACE_DIM_LE = prove
         f continuous_on s /\ IMAGE f s SUBSET t /\
         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
         ==> dim(s) <= dim(t)`,
-  let lemma1 = prove
-   (`!f:real^N->real^N k.
-        ~(f continuous_on (:real^N) /\ (!x y. f x = f y ==> x = y) /\
-          1 <= k /\ k <= dimindex(:N) /\ (!x. (f x)$k = &0))`,
-    REPEAT STRIP_TAC THEN
-    MP_TAC(ISPECL [`f:real^N->real^N`; `(:real^N)`] INVARIANCE_OF_DOMAIN) THEN
-    ASM_REWRITE_TAC[IN_UNIV; OPEN_UNIV] THEN DISCH_TAC THEN
-    MP_TAC(ISPECL [`k:num`; `&0`] INTERIOR_STANDARD_HYPERPLANE) THEN
-    REWRITE_TAC[INTERIOR_EQ_EMPTY] THEN
-    DISCH_THEN(MP_TAC o SPEC `IMAGE (f:real^N->real^N) (:real^N)`) THEN
-    ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN SET_TAC[]) in
-  let lemma2 = prove
-   (`!f:real^N->real^N j k.
-       j <= dimindex(:N) /\ k <= dimindex(:N) /\
-       f continuous_on
-       {x | !i. 1 <= i /\ i <= dimindex(:N) /\ k < i ==> x$i = &0} /\
-       (!x. (!i. 1 <= i /\ i <= dimindex(:N) /\ k < i ==> x$i = &0)
-            ==> (!i. 1 <= i /\ i <= dimindex(:N) /\ j < i ==> f(x)$i = &0)) /\
-       (!x y. (!i. 1 <= i /\ i <= dimindex(:N) /\ k < i ==> x$i = &0) /\
-              (!i. 1 <= i /\ i <= dimindex(:N) /\ k < i ==> y$i = &0)
-              ==> (f x = f y <=> x = y))
-       ==> k <= j`,
-    REPEAT STRIP_TAC THEN
-    ASM_CASES_TAC `1 <= k` THENL [ALL_TAC; ASM_ARITH_TAC] THEN
-    REWRITE_TAC[GSYM NOT_LT] THEN DISCH_TAC THEN
-    FIRST_ASSUM(ASSUME_TAC o GEN_REWRITE_RULE I [GSYM NOT_LE]) THEN
-    MP_TAC(ISPECL
-     [`(\x. lambda i. if i <= j
-                      then (f:real^N->real^N)
-                           (lambda l. if l <= k then x$l else &0)$i
-                      else if k < i then x$i
-                      else &0):real^N->real^N`;
-      `k:num`] lemma1) THEN
-    ASM_SIMP_TAC[LAMBDA_BETA; LT_REFL] THEN CONJ_TAC THENL
-     [SUBGOAL_THEN
-       `((\x. (f:real^N->real^N)
-              (lambda l. if l <= k then x$l else &0)):real^N->real^N)
-        continuous_on (:real^N)`
-      MP_TAC THENL
-       [GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
-        MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
-         [MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN
-          SIMP_TAC[linear; CART_EQ; LAMBDA_BETA; VECTOR_ADD_COMPONENT;
-                   VECTOR_MUL_COMPONENT] THEN
-          REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
-          REAL_ARITH_TAC;
-          FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-            CONTINUOUS_ON_SUBSET)) THEN
-          REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV; IN_ELIM_THM] THEN
-          SIMP_TAC[LAMBDA_BETA; GSYM NOT_LE]];
-        ONCE_REWRITE_TAC[CONTINUOUS_ON_COMPONENTWISE_LIFT] THEN
-        MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:num` THEN
-        DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
-        ASM_SIMP_TAC[LAMBDA_BETA] THEN ASM_CASES_TAC `i:num <= j` THEN
-        ASM_REWRITE_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN
-        ASM_CASES_TAC `k:num < i` THEN
-        ASM_REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
-        ASM_SIMP_TAC[CONTINUOUS_ON_LIFT_COMPONENT]];
-      MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
-      SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN DISCH_THEN(LABEL_TAC "*") THEN
-      X_GEN_TAC `i:num` THEN STRIP_TAC THEN ASM_CASES_TAC `k:num < i` THENL
-       [REMOVE_THEN "*" (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
-        ASM_CASES_TAC `i:num <= j` THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC;
-        FIRST_X_ASSUM(MP_TAC o SPECL
-         [`(lambda l. if l <= k then (x:real^N)$l else &0):real^N`;
-          `(lambda l. if l <= k then (y:real^N)$l else &0):real^N`]) THEN
-        SIMP_TAC[LAMBDA_BETA; GSYM NOT_LE] THEN MATCH_MP_TAC(TAUT
-         `(q ==> r) /\ p ==> (p <=> q) ==> r`) THEN
-        RULE_ASSUM_TAC(REWRITE_RULE[NOT_LT]) THEN
-        SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN CONJ_TAC THENL
-         [DISCH_THEN(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[];
-          ALL_TAC] THEN
-        X_GEN_TAC `l:num` THEN STRIP_TAC THEN ASM_CASES_TAC `l:num <= j` THENL
-         [REMOVE_THEN "*" (MP_TAC o SPEC `l:num`) THEN ASM_REWRITE_TAC[];
-          ALL_TAC] THEN
-        MATCH_MP_TAC(REAL_ARITH `x = &0 /\ y = &0 ==> x = y`) THEN
-        RULE_ASSUM_TAC(REWRITE_RULE
-         [NOT_LE; RIGHT_IMP_FORALL_THM; IMP_IMP]) THEN
-        CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-        ASM_SIMP_TAC[LAMBDA_BETA; GSYM NOT_LE]]]) in
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INVARIANCE_OF_DIMENSION_SUBSPACES THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `s:real^M->bool`] THEN
+  ASM_REWRITE_TAC[OPEN_IN_REFL] THEN ASM_SIMP_TAC[SUBSPACE_IMP_NONEMPTY]);;
+
+let INVARIANCE_OF_DIMENSION_CONVEX_DOMAIN = prove
+ (`!f:real^M->real^N s t.
+
+        convex s /\ f continuous_on s /\ IMAGE f s SUBSET affine hull t /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> aff_dim(s) <= aff_dim(t)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[AFF_DIM_EMPTY; AFF_DIM_GE] THEN
+  MP_TAC(ISPECL
+   [`f:real^M->real^N`; `affine hull s:real^M->bool`;
+    `affine hull t:real^N->bool`; `relative_interior s:real^M->bool`]
+        INVARIANCE_OF_DIMENSION_AFFINE_SETS) THEN
+  ASM_REWRITE_TAC[AFFINE_AFFINE_HULL; AFF_DIM_AFFINE_HULL;
+                  OPEN_IN_RELATIVE_INTERIOR] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[RELATIVE_INTERIOR_EQ_EMPTY]; ALL_TAC] THEN
+  ASSUME_TAC(ISPEC `s:real^M->bool` RELATIVE_INTERIOR_SUBSET) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ASM SET_TAC[]]);;
+
+let HOMEOMORPHIC_CONVEX_SETS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        convex s /\ convex t /\ s homeomorphic t ==> aff_dim s = aff_dim t`,
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL
-   [`{x:real^(M,N)finite_sum |
-      !i. 1 <= i /\ i <= dimindex(:(M,N)finite_sum) /\
-          i IN {i | dim(s:real^M->bool) < i} ==> x$i = &0}`;
-    `s:real^M->bool`] HOMEOMORPHIC_SUBSPACES) THEN
-  MP_TAC(ISPECL
-   [`{x:real^(M,N)finite_sum |
-      !i. 1 <= i /\ i <= dimindex(:(M,N)finite_sum) /\
-          i IN {i | dim(t:real^N->bool) < i} ==> x$i = &0}`;
-    `t:real^N->bool`] HOMEOMORPHIC_SUBSPACES) THEN
-  ASM_REWRITE_TAC[DIM_SPECIAL_SUBSPACE] THEN
-  REWRITE_TAC[numseg; DIFF; IN_ELIM_THM] THEN
-  SUBGOAL_THEN
-   `dim(s:real^M->bool) <= dimindex(:(M,N)finite_sum) /\
-    dim(t:real^N->bool) <= dimindex(:(M,N)finite_sum)`
-  STRIP_ASSUME_TAC THENL
-   [REWRITE_TAC[DIMINDEX_FINITE_SUM] THEN
-    MESON_TAC[LE_ADD; ADD_SYM; DIM_SUBSET_UNIV; LE_TRANS];
-    ASM_SIMP_TAC[ARITH_RULE
-     `m <= n
-      ==> (!i. (1 <= i /\ i <= n) /\ ~(m < i) <=> 1 <= i /\ i <= m)`] THEN
-    REWRITE_TAC[GSYM numseg; CARD_NUMSEG_1]] THEN
-  SIMP_TAC[subspace; IN_ELIM_THM; VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT;
-           VEC_COMPONENT; REAL_MUL_RZERO; REAL_ADD_LID] THEN
-  REWRITE_TAC[homeomorphic; HOMEOMORPHISM; LEFT_IMP_EXISTS_THM] THEN
-  REWRITE_TAC[IN_ELIM_THM; SUBSET; FORALL_IN_IMAGE] THEN
-  MAP_EVERY X_GEN_TAC
-   [`h2:real^(M,N)finite_sum->real^N`; `k2:real^N->real^(M,N)finite_sum`] THEN
-  STRIP_TAC THEN
-  MAP_EVERY X_GEN_TAC
-   [`h1:real^(M,N)finite_sum->real^M`; `k1:real^M->real^(M,N)finite_sum`] THEN
-  STRIP_TAC THEN MP_TAC(ISPEC
-   `(k2:real^N->real^(M,N)finite_sum) o f o (h1:real^(M,N)finite_sum->real^M)`
-    lemma2) THEN
-  DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
-   [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
-     [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC; ALL_TAC] THEN
-    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-          CONTINUOUS_ON_SUBSET)) THEN
-    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; o_THM] THEN
-    ASM SET_TAC[];
-    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; o_THM] THEN
-    ASM SET_TAC[];
-    MAP_EVERY X_GEN_TAC
-     [`x:real^(M,N)finite_sum`; `y:real^(M,N)finite_sum`] THEN
-    STRIP_TAC THEN EQ_TAC THEN SIMP_TAC[o_THM] THEN
-    MATCH_MP_TAC(MESON[]
-     `h2(k2(f(h1 x))) = f(h1 x) /\ h2(k2(f(h1 y))) = f(h1 y) /\
-      k1(h1 x) = x /\ k1(h1 y) = y /\
-      (f(h1 x) = f(h1 y) ==> h1 x = h1 y)
-      ==> k2(f(h1 x)) = k2(f(h1 y)) ==> x = y`) THEN
-    REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-    ASM SET_TAC[]]);;
-
-let HOMEOMORPHIC_SUBSPACES_EQ = prove
- (`!s:real^M->bool t:real^N->bool.
-        subspace s /\ subspace t ==> (s homeomorphic t <=> dim s = dim t)`,
-  REPEAT STRIP_TAC THEN EQ_TAC THENL
-   [ALL_TAC; ASM_MESON_TAC[HOMEOMORPHIC_SUBSPACES]] THEN
-  REWRITE_TAC[homeomorphic; HOMEOMORPHISM; LEFT_IMP_EXISTS_THM] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; GSYM INT_LE_ANTISYM; homeomorphism] THEN
   MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
-  STRIP_TAC THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THEN
-  MATCH_MP_TAC CONTINUOUS_INJECTIVE_IMAGE_SUBSPACE_DIM_LE THEN
-  ASM_MESON_TAC[]);;
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC INVARIANCE_OF_DIMENSION_CONVEX_DOMAIN THENL
+   [EXISTS_TAC `f:real^M->real^N`; EXISTS_TAC `g:real^N->real^M`] THEN
+  ASM_REWRITE_TAC[HULL_SUBSET] THEN ASM SET_TAC[]);;
 
-let HOMEOMORPHIC_AFFINE_SETS_EQ = prove
+let HOMEOMORPHIC_CONVEX_COMPACT_SETS_EQ = prove
  (`!s:real^M->bool t:real^N->bool.
-        affine s /\ affine t ==> (s homeomorphic t <=> aff_dim s = aff_dim t)`,
-  REPEAT GEN_TAC THEN
-  ASM_CASES_TAC `t:real^N->bool = {}` THEN
-  ASM_REWRITE_TAC[AFF_DIM_EMPTY; AFF_DIM_EQ_MINUS1; HOMEOMORPHIC_EMPTY] THEN
-  POP_ASSUM MP_TAC THEN
-  GEN_REWRITE_TAC (funpow 3 RAND_CONV) [EQ_SYM_EQ] THEN
-  ASM_CASES_TAC `s:real^M->bool = {}` THEN
-  ASM_SIMP_TAC[AFF_DIM_EMPTY; AFF_DIM_EQ_MINUS1; HOMEOMORPHIC_EMPTY] THEN
-  POP_ASSUM MP_TAC THEN REWRITE_TAC
-   [GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM; RIGHT_IMP_FORALL_THM] THEN
-  MAP_EVERY X_GEN_TAC [`a:real^M`; `b:real^N`] THEN
-  GEOM_ORIGIN_TAC `a:real^M` THEN GEOM_ORIGIN_TAC `b:real^N` THEN
-  SIMP_TAC[AFFINE_EQ_SUBSPACE; HOMEOMORPHIC_SUBSPACES_EQ; AFF_DIM_DIM_0;
-           HULL_INC; INT_OF_NUM_EQ] THEN
-  MESON_TAC[]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Hence preservation of interiors w.r.t. the whole space.                   *)
-(* ------------------------------------------------------------------------- *)
+        convex s /\ compact s /\ convex t /\ compact t
+        ==> (s homeomorphic t <=> aff_dim s = aff_dim t)`,
+  MESON_TAC[HOMEOMORPHIC_CONVEX_SETS; HOMEOMORPHIC_CONVEX_COMPACT_SETS]);;
 
 let INVARIANCE_OF_DOMAIN_GEN = prove
  (`!f:real^M->real^N s.
         dimindex(:N) <= dimindex(:M) /\ f continuous_on s /\ open s /\
         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
         ==> open(IMAGE f s)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THEN
-  ASM_REWRITE_TAC[OPEN_EMPTY; IMAGE_CLAUSES] THEN
-  REWRITE_TAC[LE_LT] THEN STRIP_TAC THENL
-   [ASM_MESON_TAC[INVARIANCE_OF_DIMENSION; NOT_LE]; ALL_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP ISOMORPHISMS_UNIV_UNIV o SYM) THEN
-  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`g:real^M->real^N`; `h:real^N->real^M`] THEN
-  STRIP_TAC THEN
-  SUBGOAL_THEN `(f:real^M->real^N) = (f o h) o (g:real^M->real^N)`
-  SUBST1_TAC THENL [ASM_REWRITE_TAC[FUN_EQ_THM; o_THM]; ALL_TAC] THEN
-  ONCE_REWRITE_TAC[IMAGE_o] THEN MATCH_MP_TAC INVARIANCE_OF_DOMAIN THEN
-  REPEAT CONJ_TAC THENL
-   [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
-    ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON; GSYM IMAGE_o; o_DEF; IMAGE_ID];
-    ASM_MESON_TAC[OPEN_BIJECTIVE_LINEAR_IMAGE_EQ];
-    REWRITE_TAC[o_DEF; IN_IMAGE] THEN ASM_MESON_TAC[]]);;
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`f:real^M->real^N`; `(:real^M)`; `(:real^N)`; `s:real^M->bool`]
+   INVARIANCE_OF_DOMAIN_SUBSPACES) THEN
+  ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM OPEN_IN; SUBSPACE_UNIV;
+                  DIM_UNIV; SUBSET_UNIV]);;
 
 let CONTINUOUS_ON_INVERSE_OPEN = prove
  (`!f:real^M->real^N g s.
@@ -13649,6 +13723,43 @@ let CONTINUOUS_ON_INVERSE_OPEN = prove
   CONJ_TAC THEN MATCH_MP_TAC INVARIANCE_OF_DOMAIN_GEN THEN
   ASM_SIMP_TAC[OPEN_INTER; IN_INTER] THEN
   ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; INTER_SUBSET]);;
+
+let CONTINUOUS_ON_INVERSE_INTO_1D = prove
+ (`!f:real^N->real^1 g s t.
+        f continuous_on s /\
+        (path_connected s \/ compact s \/ open s) /\
+        IMAGE f s = t /\ (!x. x IN s ==> g(f x) = x)
+        ==> g continuous_on t`,
+  REPEAT STRIP_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_INVERSE_OPEN_MAP THEN
+    MAP_EVERY EXISTS_TAC [`f:real^N->real^1`; `s:real^N->bool`] THEN
+    ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(SUBST1_TAC o SYM) THEN
+    MATCH_MP_TAC INJECTIVE_INTO_1D_IMP_OPEN_MAP THEN ASM SET_TAC[];
+    ASM_MESON_TAC[CONTINUOUS_ON_INVERSE];
+    FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+    MATCH_MP_TAC CONTINUOUS_ON_INVERSE_OPEN THEN
+    ASM_REWRITE_TAC[DIMINDEX_1; DIMINDEX_GE_1]]);;
+
+let REAL_CONTINUOUS_ON_INVERSE = prove
+ (`!f g s. f real_continuous_on s /\
+           (is_realinterval s \/ real_compact s \/ real_open s) /\
+           (!x. x IN s ==> g(f x) = x)
+           ==> g real_continuous_on (IMAGE f s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_CONTINUOUS_ON; real_compact; REAL_OPEN;
+              IS_REALINTERVAL_IS_INTERVAL] THEN
+  DISCH_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_INVERSE_INTO_1D THEN
+  MAP_EVERY EXISTS_TAC [`lift o f o drop`; `IMAGE lift s`] THEN
+  ASM_REWRITE_TAC[GSYM IS_INTERVAL_PATH_CONNECTED_1] THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; o_DEF; LIFT_DROP; GSYM IMAGE_o]);;
+
+let REAL_CONTINUOUS_ON_INVERSE_ALT = prove
+ (`!f g s t. f real_continuous_on s /\
+             (is_realinterval s \/ real_compact s \/ real_open s) /\
+             IMAGE f s = t /\ (!x. x IN s ==> g(f x) = x)
+           ==> g real_continuous_on t`,
+  MESON_TAC[REAL_CONTINUOUS_ON_INVERSE]);;
 
 let INVARIANCE_OF_DOMAIN_HOMEOMORPHISM = prove
  (`!f:real^M->real^N s.
@@ -13723,6 +13834,181 @@ let HOMEOMORPHIC_INTERIORS = prove
   ASM_REWRITE_TAC[OPEN_INTERIOR] THEN
   ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; INTERIOR_SUBSET; SUBSET]);;
 
+let HOMEOMORPHIC_FRONTIERS_SAME_DIMENSION = prove
+ (`!s:real^M->bool t:real^N->bool.
+        dimindex(:M) = dimindex(:N) /\
+        s homeomorphic t /\ closed s /\ closed t
+        ==> (frontier s) homeomorphic (frontier t)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MINIMAL]) THEN
+  REWRITE_TAC[HOMEOMORPHIC_MINIMAL] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:real^M->real^N` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^N->real^M` THEN
+  ASM_SIMP_TAC[REWRITE_RULE[SUBSET] FRONTIER_SUBSET_CLOSED] THEN
+  STRIP_TAC THEN ONCE_REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[FRONTIER_SUBSET_CLOSED; CONTINUOUS_ON_SUBSET]] THEN
+  ASM_SIMP_TAC[frontier; CLOSURE_CLOSED] THEN
+  SUBGOAL_THEN
+   `(!x:real^M. x IN interior s ==> f x IN interior t) /\
+    (!y:real^N. y IN interior t ==> g y IN interior s)`
+  MP_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  REWRITE_TAC[SET_RULE `(!x. x IN s ==> f x IN t) <=> IMAGE f s SUBSET t`] THEN
+  CONJ_TAC THENL
+   [SUBGOAL_THEN `t = IMAGE (f:real^M->real^N) s` SUBST1_TAC THENL
+     [ASM SET_TAC[];
+      MATCH_MP_TAC CONTINUOUS_IMAGE_SUBSET_INTERIOR THEN
+      ASM_MESON_TAC[LE_REFL]];
+    SUBGOAL_THEN `s = IMAGE (g:real^N->real^M) t` SUBST1_TAC THENL
+     [ASM SET_TAC[];
+      MATCH_MP_TAC CONTINUOUS_IMAGE_SUBSET_INTERIOR THEN
+      ASM_MESON_TAC[LE_REFL]]]);;
+
+let HOMEOMORPHIC_FRONTIERS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t /\ closed s /\ closed t /\
+        (interior s = {} <=> interior t = {})
+        ==> (frontier s) homeomorphic (frontier t)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `interior t:real^N->bool = {}` THENL
+   [ASM_SIMP_TAC[frontier; CLOSURE_CLOSED; DIFF_EMPTY]; STRIP_TAC] THEN
+  MATCH_MP_TAC HOMEOMORPHIC_FRONTIERS_SAME_DIMENSION THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM
+   (STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MINIMAL]) THEN
+  REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THEN
+  MATCH_MP_TAC INVARIANCE_OF_DIMENSION THENL
+   [MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `interior s:real^M->bool`];
+    MAP_EVERY EXISTS_TAC [`g:real^N->real^M`; `interior t:real^N->bool`]] THEN
+  ASM_REWRITE_TAC[OPEN_INTERIOR] THEN
+  ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; INTERIOR_SUBSET; SUBSET]);;
+
+let CONTINUOUS_IMAGE_SUBSET_RELATIVE_INTERIOR = prove
+ (`!f:real^M->real^N s t.
+        f continuous_on s /\ IMAGE f s SUBSET t /\ aff_dim t <= aff_dim s /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> IMAGE f (relative_interior s) SUBSET relative_interior(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC RELATIVE_INTERIOR_MAXIMAL THEN
+  SIMP_TAC[IMAGE_SUBSET; RELATIVE_INTERIOR_SUBSET] THEN
+  MATCH_MP_TAC INVARIANCE_OF_DOMAIN_AFFINE_SETS THEN
+  EXISTS_TAC `affine hull s:real^M->bool` THEN
+  ASM_REWRITE_TAC[AFFINE_AFFINE_HULL; AFF_DIM_AFFINE_HULL] THEN
+  REWRITE_TAC[OPEN_IN_RELATIVE_INTERIOR] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[AFF_DIM_SUBSET; INT_LE_TRANS]; ALL_TAC] THEN
+  ASSUME_TAC(ISPEC `s:real^M->bool` RELATIVE_INTERIOR_SUBSET) THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC SUBSET_TRANS THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) s` THEN
+  SIMP_TAC[IMAGE_SUBSET; RELATIVE_INTERIOR_SUBSET; HULL_SUBSET]);;
+
+let HOMEOMORPHIC_RELATIVE_INTERIORS_SAME_DIMENSION = prove
+ (`!s:real^M->bool t:real^N->bool.
+        aff_dim s = aff_dim t /\ s homeomorphic t
+        ==> (relative_interior s) homeomorphic (relative_interior t)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MINIMAL]) THEN
+  REWRITE_TAC[HOMEOMORPHIC_MINIMAL] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:real^M->real^N` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^N->real^M` THEN
+  STRIP_TAC THEN
+  ASM_SIMP_TAC[REWRITE_RULE[SUBSET] RELATIVE_INTERIOR_SUBSET] THEN
+  REWRITE_TAC[SET_RULE `(!x. x IN s ==> f x IN t) <=> IMAGE f s SUBSET t`] THEN
+  REPEAT CONJ_TAC THENL
+   [SUBGOAL_THEN `t = IMAGE (f:real^M->real^N) s` SUBST1_TAC THENL
+     [ASM SET_TAC[];
+      MATCH_MP_TAC CONTINUOUS_IMAGE_SUBSET_RELATIVE_INTERIOR THEN
+      EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[INT_LE_REFL] THEN
+      ASM SET_TAC[]];
+    SUBGOAL_THEN `s = IMAGE (g:real^N->real^M) t` SUBST1_TAC THENL
+     [ASM SET_TAC[];
+      MATCH_MP_TAC CONTINUOUS_IMAGE_SUBSET_RELATIVE_INTERIOR THEN
+      EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[INT_LE_REFL] THEN
+      ASM SET_TAC[]];
+    ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; RELATIVE_INTERIOR_SUBSET];
+    ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; RELATIVE_INTERIOR_SUBSET]]);;
+
+let HOMEOMORPHIC_RELATIVE_INTERIORS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t /\
+        (relative_interior s = {} <=> relative_interior t = {})
+        ==> (relative_interior s) homeomorphic (relative_interior t)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `relative_interior t:real^N->bool = {}` THEN
+  ASM_SIMP_TAC[HOMEOMORPHIC_EMPTY] THEN STRIP_TAC THEN
+  MATCH_MP_TAC HOMEOMORPHIC_RELATIVE_INTERIORS_SAME_DIMENSION THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM
+   (STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MINIMAL]) THEN
+  ONCE_REWRITE_TAC[GSYM AFF_DIM_AFFINE_HULL] THEN
+  REWRITE_TAC[GSYM INT_LE_ANTISYM] THEN CONJ_TAC THEN
+  MATCH_MP_TAC INVARIANCE_OF_DIMENSION_AFFINE_SETS THENL
+   [MAP_EVERY EXISTS_TAC
+     [`f:real^M->real^N`; `relative_interior s:real^M->bool`];
+    MAP_EVERY EXISTS_TAC
+     [`g:real^N->real^M`; `relative_interior t:real^N->bool`]] THEN
+  ASM_REWRITE_TAC[OPEN_IN_RELATIVE_INTERIOR; AFFINE_AFFINE_HULL] THEN
+  (REPEAT CONJ_TAC THENL
+    [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; RELATIVE_INTERIOR_SUBSET];
+     ASM_MESON_TAC[RELATIVE_INTERIOR_SUBSET; HULL_SUBSET; SET_RULE
+      `(!x. x IN s ==> f x IN t) /\ s' SUBSET s /\ t SUBSET t'
+       ==> IMAGE f s' SUBSET t'`];
+     ASM_MESON_TAC[RELATIVE_INTERIOR_SUBSET; SUBSET]]));;
+
+let HOMEOMORPHIC_RELATIVE_BOUNDARIES_SAME_DIMENSION = prove
+ (`!s:real^M->bool t:real^N->bool.
+        aff_dim s = aff_dim t /\ s homeomorphic t
+        ==> (s DIFF relative_interior s) homeomorphic
+            (t DIFF relative_interior t)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MINIMAL]) THEN
+  REWRITE_TAC[HOMEOMORPHIC_MINIMAL] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:real^M->real^N` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^N->real^M` THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[IN_DIFF] THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[SUBSET_DIFF; CONTINUOUS_ON_SUBSET]] THEN
+  SUBGOAL_THEN
+   `(!x:real^M. x IN relative_interior s ==> f x IN relative_interior t) /\
+    (!y:real^N. y IN relative_interior t ==> g y IN relative_interior s)`
+  MP_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  REWRITE_TAC[SET_RULE `(!x. x IN s ==> f x IN t) <=> IMAGE f s SUBSET t`] THEN
+  CONJ_TAC THENL
+   [SUBGOAL_THEN `t = IMAGE (f:real^M->real^N) s` SUBST1_TAC THENL
+     [ASM SET_TAC[];
+      MATCH_MP_TAC CONTINUOUS_IMAGE_SUBSET_RELATIVE_INTERIOR THEN
+      EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[INT_LE_REFL] THEN
+      ASM SET_TAC[]];
+    SUBGOAL_THEN `s = IMAGE (g:real^N->real^M) t` SUBST1_TAC THENL
+     [ASM SET_TAC[];
+      MATCH_MP_TAC CONTINUOUS_IMAGE_SUBSET_RELATIVE_INTERIOR THEN
+      EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[INT_LE_REFL] THEN
+      ASM SET_TAC[]]]);;
+
+let HOMEOMORPHIC_RELATIVE_BOUNDARIES = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t /\
+        (relative_interior s = {} <=> relative_interior t = {})
+        ==> (s DIFF relative_interior s) homeomorphic
+            (t DIFF relative_interior t)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `relative_interior t:real^N->bool = {}` THEN
+  ASM_SIMP_TAC[DIFF_EMPTY] THEN STRIP_TAC THEN
+  MATCH_MP_TAC HOMEOMORPHIC_RELATIVE_BOUNDARIES_SAME_DIMENSION THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM
+   (STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MINIMAL]) THEN
+  ONCE_REWRITE_TAC[GSYM AFF_DIM_AFFINE_HULL] THEN
+  REWRITE_TAC[GSYM INT_LE_ANTISYM] THEN CONJ_TAC THEN
+  MATCH_MP_TAC INVARIANCE_OF_DIMENSION_AFFINE_SETS THENL
+   [MAP_EVERY EXISTS_TAC
+     [`f:real^M->real^N`; `relative_interior s:real^M->bool`];
+    MAP_EVERY EXISTS_TAC
+     [`g:real^N->real^M`; `relative_interior t:real^N->bool`]] THEN
+  ASM_REWRITE_TAC[OPEN_IN_RELATIVE_INTERIOR; AFFINE_AFFINE_HULL] THEN
+  (REPEAT CONJ_TAC THENL
+    [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; RELATIVE_INTERIOR_SUBSET];
+     ASM_MESON_TAC[RELATIVE_INTERIOR_SUBSET; HULL_SUBSET; SET_RULE
+      `(!x. x IN s ==> f x IN t) /\ s' SUBSET s /\ t SUBSET t'
+       ==> IMAGE f s' SUBSET t'`];
+     ASM_MESON_TAC[RELATIVE_INTERIOR_SUBSET; SUBSET]]));;
+
 let UNIFORMLY_CONTINUOUS_HOMEOMORPHISM_UNIV_TRIVIAL = prove
  (`!f g s:real^N->bool.
         homeomorphism (s,(:real^N)) (f,g) /\ f uniformly_continuous_on s
@@ -13749,6 +14035,203 @@ let UNIFORMLY_CONTINUOUS_HOMEOMORPHISM_UNIV_TRIVIAL = prove
     FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [SYM th]) THEN
     MATCH_MP_TAC INVARIANCE_OF_DOMAIN THEN
     ASM_REWRITE_TAC[OPEN_UNIV] THEN ASM SET_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Dimension-based conditions for various homeomorphisms.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMEOMORPHIC_SUBSPACES_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        subspace s /\ subspace t ==> (s homeomorphic t <=> dim s = dim t)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[HOMEOMORPHIC_SUBSPACES]] THEN
+  REWRITE_TAC[homeomorphic; HOMEOMORPHISM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  STRIP_TAC THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_INJECTIVE_IMAGE_SUBSPACE_DIM_LE THEN
+  ASM_MESON_TAC[]);;
+
+let HOMEOMORPHIC_AFFINE_SETS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        affine s /\ affine t ==> (s homeomorphic t <=> aff_dim s = aff_dim t)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[AFF_DIM_EMPTY; AFF_DIM_EQ_MINUS1; HOMEOMORPHIC_EMPTY] THEN
+  POP_ASSUM MP_TAC THEN
+  GEN_REWRITE_TAC (funpow 3 RAND_CONV) [EQ_SYM_EQ] THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN
+  ASM_SIMP_TAC[AFF_DIM_EMPTY; AFF_DIM_EQ_MINUS1; HOMEOMORPHIC_EMPTY] THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC
+   [GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM; RIGHT_IMP_FORALL_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^M`; `b:real^N`] THEN
+  GEOM_ORIGIN_TAC `a:real^M` THEN GEOM_ORIGIN_TAC `b:real^N` THEN
+  SIMP_TAC[AFFINE_EQ_SUBSPACE; HOMEOMORPHIC_SUBSPACES_EQ; AFF_DIM_DIM_0;
+           HULL_INC; INT_OF_NUM_EQ] THEN
+  MESON_TAC[]);;
+
+let HOMEOMORPHIC_HYPERPLANES_EQ = prove
+ (`!a:real^M b c:real^N d.
+        ~(a = vec 0) /\ ~(c = vec 0)
+        ==> ({x | a dot x = b} homeomorphic {x | c dot x = d} <=>
+             dimindex(:M) = dimindex(:N))`,
+  SIMP_TAC[HOMEOMORPHIC_AFFINE_SETS_EQ; AFFINE_HYPERPLANE] THEN
+  SIMP_TAC[AFF_DIM_HYPERPLANE; INT_OF_NUM_EQ;
+          INT_ARITH `x - &1:int = y - &1 <=> x = y`]);;
+
+let HOMEOMORPHIC_UNIV_UNIV = prove
+ (`(:real^M) homeomorphic (:real^N) <=> dimindex(:M) = dimindex(:N)`,
+  SIMP_TAC[HOMEOMORPHIC_SUBSPACES_EQ; DIM_UNIV; SUBSPACE_UNIV]);;
+
+let HOMEOMORPHIC_CBALLS_EQ = prove
+ (`!a:real^M b:real^N r s.
+        cball(a,r) homeomorphic cball(b,s) <=>
+        r < &0 /\ s < &0 \/ r = &0 /\ s = &0 \/
+        &0 < r /\ &0 < s /\ dimindex(:M) = dimindex(:N)`,
+  let lemma =
+    let d = `dimindex(:M) = dimindex(:N)`
+    and t = `?a:real^M b:real^N. ~(cball(a,r) homeomorphic cball(b,s))` in
+    DISCH d (DISCH t (GEOM_EQUAL_DIMENSION_RULE (ASSUME d) (ASSUME t))) in
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `r < &0` THENL
+   [ASM_SIMP_TAC[CBALL_EMPTY; HOMEOMORPHIC_EMPTY; CBALL_EQ_EMPTY] THEN
+    EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_CASES_TAC `r = &0` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THENL
+   [ASM_SIMP_TAC[CBALL_TRIVIAL; FINITE_SING; HOMEOMORPHIC_FINITE_STRONG] THEN
+    REWRITE_TAC[FINITE_CBALL] THEN
+    ASM_CASES_TAC `s < &0` THEN
+    ASM_SIMP_TAC[CBALL_EMPTY; CARD_CLAUSES; FINITE_EMPTY;
+                 NOT_IN_EMPTY; ARITH; REAL_LT_IMP_NE] THEN
+    ASM_CASES_TAC `s = &0` THENL [ALL_TAC; ASM_REAL_ARITH_TAC] THEN
+    ASM_SIMP_TAC[CBALL_TRIVIAL; CARD_CLAUSES; FINITE_EMPTY; NOT_IN_EMPTY;
+                 REAL_LE_REFL; ARITH];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < r` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_CASES_TAC `s <= &0` THEN
+  ASM_SIMP_TAC[HOMEOMORPHIC_FINITE_STRONG; FINITE_CBALL] THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < s` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN EQ_TAC THENL
+   [REWRITE_TAC[homeomorphic; HOMEOMORPHISM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+    STRIP_TAC THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THEN
+    MATCH_MP_TAC INVARIANCE_OF_DIMENSION THENL
+     [MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `ball(a:real^M,r)`] THEN
+      MP_TAC(ISPECL [`a:real^M`; `r:real`] BALL_SUBSET_CBALL);
+      MAP_EVERY EXISTS_TAC [`g:real^N->real^M`; `ball(b:real^N,s)`] THEN
+      MP_TAC(ISPECL [`b:real^N`; `s:real`] BALL_SUBSET_CBALL)] THEN
+    ASM_REWRITE_TAC[BALL_EQ_EMPTY; OPEN_BALL; REAL_NOT_LE] THEN
+    ASM_MESON_TAC[SUBSET; CONTINUOUS_ON_SUBSET];
+    DISCH_THEN(MP_TAC o MATCH_MP lemma) THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[NOT_EXISTS_THM] THEN ASM_SIMP_TAC[HOMEOMORPHIC_CBALLS]]);;
+
+let HOMEOMORPHIC_BALLS_EQ = prove
+ (`!a:real^M b:real^N r s.
+        ball(a,r) homeomorphic ball(b,s) <=>
+        r <= &0 /\ s <= &0 \/
+        &0 < r /\ &0 < s /\ dimindex(:M) = dimindex(:N)`,
+  let lemma =
+    let d = `dimindex(:M) = dimindex(:N)`
+    and t = `?a:real^M b:real^N. ~(ball(a,r) homeomorphic ball(b,s))` in
+    DISCH d (DISCH t (GEOM_EQUAL_DIMENSION_RULE (ASSUME d) (ASSUME t))) in
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `r <= &0` THENL
+   [ASM_SIMP_TAC[BALL_EMPTY; HOMEOMORPHIC_EMPTY; BALL_EQ_EMPTY] THEN
+    EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_CASES_TAC `s <= &0` THENL
+   [ASM_SIMP_TAC[BALL_EMPTY; HOMEOMORPHIC_EMPTY; BALL_EQ_EMPTY] THEN
+    ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LE]) THEN
+  ASM_REWRITE_TAC[] THEN EQ_TAC THENL
+   [REWRITE_TAC[homeomorphic; HOMEOMORPHISM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+    STRIP_TAC THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THEN
+    MATCH_MP_TAC INVARIANCE_OF_DIMENSION THENL
+     [MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `ball(a:real^M,r)`];
+      MAP_EVERY EXISTS_TAC [`g:real^N->real^M`; `ball(b:real^N,s)`]] THEN
+    ASM_REWRITE_TAC[BALL_EQ_EMPTY; OPEN_BALL; REAL_NOT_LE] THEN
+    ASM SET_TAC[];
+    DISCH_THEN(MP_TAC o MATCH_MP lemma) THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[NOT_EXISTS_THM] THEN ASM_SIMP_TAC[HOMEOMORPHIC_BALLS]]);;
+
+let HOMEOMORPHIC_SPHERES_EQ = prove
+ (`!a:real^M b:real^N r s.
+        {x | dist(a,x) = r} homeomorphic {y | dist(b,y) = s} <=>
+        r < &0 /\ s < &0 \/ r = &0 /\ s = &0 \/
+        &0 < r /\ &0 < s /\ dimindex(:M) = dimindex(:N)`,
+  REPEAT GEN_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [`r < &0`; `s < &0`] THEN
+  ASM_SIMP_TAC[SPHERE_EMPTY; HOMEOMORPHIC_EMPTY; SPHERE_EQ_EMPTY] THEN
+  TRY ASM_REAL_ARITH_TAC THEN
+  ASM_CASES_TAC `s = &0 <=> r = &0` THENL
+   [ASM_REWRITE_TAC[];
+    FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP (TAUT
+     `~(p <=> q) ==> p /\ ~q \/ ~p /\ q`)) THEN
+    (EQ_TAC THENL [ALL_TAC; ASM_REAL_ARITH_TAC]) THEN
+    DISCH_THEN(fun th ->
+      MP_TAC(MATCH_MP HOMEOMORPHIC_CONNECTEDNESS th) THEN
+      MP_TAC(MATCH_MP CARD_FINITE_CONG
+       (MATCH_MP HOMEOMORPHIC_IMP_CARD_EQ th))) THEN
+    REWRITE_TAC[FINITE_SPHERE; CONNECTED_SPHERE_EQ] THEN
+    SIMP_TAC[DIMINDEX_GE_1; ARITH_RULE `1 <= n ==> (2 <= n <=> ~(n = 1))`] THEN
+    ASM_CASES_TAC `dimindex(:M) = 1` THEN
+    ASM_CASES_TAC `dimindex(:N) = 1` THEN
+    ASM_REWRITE_TAC[ARITH] THEN ASM_REAL_ARITH_TAC] THEN
+  FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP (TAUT
+   `(p <=> q) ==> ~p /\ ~q \/ p /\ q`)) THEN
+  ASM_REWRITE_TAC[REAL_LT_REFL] THEN
+  ASM_SIMP_TAC[DIST_EQ_0; SING_GSPEC; HOMEOMORPHIC_FINITE; FINITE_SING;
+               CARD_SING] THEN
+  SUBGOAL_THEN `&0 < r /\ &0 < s` STRIP_ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; ASM_REWRITE_TAC[]] THEN
+  EQ_TAC THENL
+   [DISCH_TAC THEN
+    SUBGOAL_THEN
+     `?u:real^M v:real^N.
+        dist(a,u) = r /\ dist(b,v) = s /\
+        ({x | dist(a,x) = r} DELETE u) homeomorphic
+        ({y | dist (b,y) = s} DELETE v)`
+    STRIP_ASSUME_TAC THENL
+     [MP_TAC(ISPECL [`a:real^M`; `r:real`] VECTOR_CHOOSE_DIST) THEN
+      ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      X_GEN_TAC `u:real^M` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+      REWRITE_TAC[homeomorphic; HOMEOMORPHISM] THEN
+      STRIP_TAC THEN EXISTS_TAC `(f:real^M->real^N) u` THEN
+      REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+      MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+      REPEAT CONJ_TAC THEN TRY(FIRST_X_ASSUM(MATCH_MP_TAC o
+       MATCH_MP (REWRITE_RULE[IMP_CONJ] CONTINUOUS_ON_SUBSET))) THEN
+      ASM SET_TAC[];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `{x:real^M | basis 1 dot x = &0} homeomorphic
+      {x:real^N | basis 1 dot x = &0}`
+    MP_TAC THENL
+     [ALL_TAC;
+      SIMP_TAC[HOMEOMORPHIC_HYPERPLANES_EQ; BASIS_NONZERO;
+               DIMINDEX_GE_1; LE_REFL]] THEN
+    TRANS_TAC HOMEOMORPHIC_TRANS `{x:real^M | dist (a,x) = r} DELETE u` THEN
+    CONJ_TAC THENL
+     [ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM];
+      TRANS_TAC HOMEOMORPHIC_TRANS `{y:real^N | dist (b,y) = s} DELETE v` THEN
+      ASM_REWRITE_TAC[]] THEN
+    MATCH_MP_TAC(REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
+                 HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE) THEN
+    ASM_SIMP_TAC[BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL];
+    DISCH_TAC THEN
+    MP_TAC(ISPECL [`a:real^M`; `b:real^N`; `r:real`; `s:real`]
+        HOMEOMORPHIC_CBALLS_EQ) THEN
+    ASM_REWRITE_TAC[] THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (TAUT
+     `q ==> (p ==> r) ==> (p <=> q) ==> r`)) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        HOMEOMORPHIC_FRONTIERS)) THEN
+    ASM_REWRITE_TAC[CLOSED_CBALL; INTERIOR_CBALL; BALL_EQ_EMPTY] THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; REWRITE_TAC[FRONTIER_CBALL]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Injective map into R is also an open map w.r.t. the universe, and this    *)
