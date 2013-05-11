@@ -722,7 +722,7 @@ let INTERS_UNION = prove
  (`!s t. INTERS (s UNION t) = INTERS s INTER INTERS t`,
   SET_TAC[]);;
 
-let UNIONS_MONO = prove                                                 
+let UNIONS_MONO = prove
  (`(!x. x IN s ==> ?y. y IN t /\ x SUBSET y) ==> UNIONS s SUBSET UNIONS t`,
   SET_TAC[]);;
 
@@ -1571,6 +1571,10 @@ let CARD_EQ_0 = prove
  (`!s. FINITE s ==> ((CARD s = 0) <=> (s = {}))`,
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[CARD_CLAUSES; NOT_INSERT_EMPTY; NOT_SUC]);;
+
+let CARD_SING = prove
+ (`!a:A. CARD {a} = 1`,
+  SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY; NOT_IN_EMPTY; ARITH]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A stronger still form of induction where we get to choose the element.    *)

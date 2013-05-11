@@ -1,3 +1,26 @@
+Thu  2nd May 2013       sets.ml
+
+Added CARD_SING = |- !a. CARD {a} = 1
+
+Wed  1st May 2013       cart.ml
+
+Added:
+
+  PCROSS_EQ =
+   |- !s s' t t'.
+        s PCROSS t = s' PCROSS t' <=>
+        (s = {} \/ t = {}) /\ (s' = {} \/ t' = {}) \/ s = s' /\ t = t'
+
+Tue 30th Apr 2013       cart.ml
+
+Added:
+
+  IMAGE_FSTCART_PCROSS =
+    |- !s t. IMAGE fstcart (s PCROSS t) = if t = {} then {} else s
+
+  IMAGE_SNDCART_PCROSS =
+    |- !s t. IMAGE sndcart (s PCROSS t) = if s = {} then {} else t
+
 Fri  5th Apr 2013       Examples/inverse_bug_puzzle_tac.ml
 
 Updated this file to a new version from Bill Richter using some slightly
@@ -5,9 +28,9 @@ different constructs.
 
 Fri  5th Apr 2013       Examples/prover9.ml
 
-Fixed a bug in the prover9 interface pointed out by Keiichi Tsujimoto, where 
-the initial preprocessing could cause the initial goal to collapse to `T` or 
-`F`, which is then not handled properly by the main prover9 step. The fix is 
+Fixed a bug in the prover9 interface pointed out by Keiichi Tsujimoto, where
+the initial preprocessing could cause the initial goal to collapse to `T` or
+`F`, which is then not handled properly by the main prover9 step. The fix is
 to treat this specially in the preprocessing phase.
 
 Sun 31st Mar 2013       Examples/inverse_bug_puzzle_miz3.ml
