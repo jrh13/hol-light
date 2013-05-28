@@ -1927,12 +1927,6 @@ let PATH_COMPONENT_MONO = prove
  (`!s t x. s SUBSET t ==> (path_component s x) SUBSET (path_component t x)`,
   REWRITE_TAC[PATH_COMPONENT_SET] THEN SET_TAC[]);;
 
-let PATH_COMPONENT_OF_SUBSET = prove
- (`!s t x y. s SUBSET t /\ path_component s x y ==> path_component t x y`,
-  REPEAT GEN_TAC THEN DISCH_THEN
-   (CONJUNCTS_THEN2 (MP_TAC o MATCH_MP PATH_COMPONENT_MONO) MP_TAC) THEN
-  REWRITE_TAC[SUBSET; IN] THEN MESON_TAC[]);;
-
 let PATH_COMPONENT_MAXIMAL = prove
  (`!s t x. x IN t /\ path_connected t /\ t SUBSET s
            ==> t SUBSET (path_component s x)`,
@@ -3047,83 +3041,6 @@ let CONTINUOUS_INJECTIVE_IFF_MONOTONIC = prove
 (* Some uncountability results for relevant sets.                            *)
 (* ------------------------------------------------------------------------- *)
 
-let CARD_EQ_EUCLIDEAN = prove
- (`(:real^N) =_c (:real)`,
-  MATCH_MP_TAC CARD_EQ_CART THEN REWRITE_TAC[real_INFINITE]);;
-
-let UNCOUNTABLE_EUCLIDEAN = prove
- (`~COUNTABLE(:real^N)`,
-  MATCH_MP_TAC CARD_EQ_REAL_IMP_UNCOUNTABLE THEN
-  REWRITE_TAC[CARD_EQ_EUCLIDEAN]);;
-
-let CARD_EQ_INTERVAL = prove
- (`(!a b:real^N. ~(interval(a,b) = {}) ==> interval[a,b] =_c (:real)) /\
-   (!a b:real^N. ~(interval(a,b) = {}) ==> interval(a,b) =_c (:real))`,
-  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
-  ASM_CASES_TAC `interval(a:real^N,b) = {}` THEN ASM_REWRITE_TAC[] THEN
-  CONJ_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
-   [TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
-    REWRITE_TAC[CARD_LE_UNIV] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-    REWRITE_TAC[CARD_EQ_EUCLIDEAN];
-    TRANS_TAC CARD_LE_TRANS `interval(a:real^N,b)` THEN
-    SIMP_TAC[CARD_LE_SUBSET; INTERVAL_OPEN_SUBSET_CLOSED];
-    TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
-    REWRITE_TAC[CARD_LE_UNIV] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-    REWRITE_TAC[CARD_EQ_EUCLIDEAN];
-    ALL_TAC] THEN
-  TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
-  SIMP_TAC[ONCE_REWRITE_RULE[CARD_EQ_SYM] CARD_EQ_IMP_LE;
-           CARD_EQ_EUCLIDEAN] THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHIC_OPEN_INTERVAL_UNIV) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP HOMEOMORPHIC_IMP_CARD_EQ) THEN
-  MESON_TAC[CARD_EQ_IMP_LE; CARD_EQ_SYM]);;
-
-let UNCOUNTABLE_INTERVAL = prove
- (`(!a b. ~(interval(a,b) = {}) ==> ~COUNTABLE(interval[a,b])) /\
-   (!a b. ~(interval(a,b) = {}) ==> ~COUNTABLE(interval(a,b)))`,
-  SIMP_TAC[CARD_EQ_REAL_IMP_UNCOUNTABLE; CARD_EQ_INTERVAL]);;
-
-let COUNTABLE_OPEN_INTERVAL = prove
- (`!a b. COUNTABLE(interval(a,b)) <=> interval(a,b) = {}`,
-  MESON_TAC[COUNTABLE_EMPTY; UNCOUNTABLE_INTERVAL]);;
-
-let CARD_EQ_OPEN = prove
- (`!s:real^N->bool. open s /\ ~(s = {}) ==> s =_c (:real)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
-   [TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
-    REWRITE_TAC[CARD_LE_UNIV] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-    REWRITE_TAC[CARD_EQ_EUCLIDEAN];
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_INTERVAL]) THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
-    DISCH_THEN(X_CHOOSE_TAC `c:real^N`) THEN
-    DISCH_THEN(MP_TAC o SPEC `c:real^N`) THEN
-    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-    MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN
-    ASM_CASES_TAC `interval(a:real^N,b) = {}` THEN
-    ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN STRIP_TAC THEN
-    TRANS_TAC CARD_LE_TRANS `interval[a:real^N,b]` THEN
-    ASM_SIMP_TAC[CARD_LE_SUBSET] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-    ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN ASM_SIMP_TAC[CARD_EQ_INTERVAL]]);;
-
-let UNCOUNTABLE_OPEN = prove
- (`!s:real^N->bool. open s /\ ~(s = {}) ==> ~(COUNTABLE s)`,
-  SIMP_TAC[CARD_EQ_OPEN; CARD_EQ_REAL_IMP_UNCOUNTABLE]);;
-
-let CARD_EQ_BALL = prove
- (`!a:real^N r. &0 < r ==> ball(a,r) =_c (:real)`,
-  SIMP_TAC[CARD_EQ_OPEN; OPEN_BALL; BALL_EQ_EMPTY; GSYM REAL_NOT_LT]);;
-
-let CARD_EQ_CBALL = prove
- (`!a:real^N r. &0 < r ==> cball(a,r) =_c (:real)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
-   [TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
-    REWRITE_TAC[CARD_LE_UNIV] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-    REWRITE_TAC[CARD_EQ_EUCLIDEAN];
-    TRANS_TAC CARD_LE_TRANS `ball(a:real^N,r)` THEN
-    SIMP_TAC[CARD_LE_SUBSET; BALL_SUBSET_CBALL] THEN
-    MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-    ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN ASM_SIMP_TAC[CARD_EQ_BALL]]);;
-
 let CARD_EQ_SEGMENT = prove
  (`(!a b:real^N. ~(a = b) ==> segment[a,b] =_c (:real)) /\
    (!a b:real^N. ~(a = b) ==> segment(a,b) =_c (:real))`,
@@ -3141,41 +3058,6 @@ let UNCOUNTABLE_SEGMENT = prove
  (`(!a b:real^N. ~(a = b) ==> ~COUNTABLE(segment[a,b])) /\
    (!a b:real^N. ~(a = b) ==> ~COUNTABLE(segment(a,b)))`,
   SIMP_TAC[CARD_EQ_REAL_IMP_UNCOUNTABLE; CARD_EQ_SEGMENT]);;
-
-let CARD_EQ_CONNECTED = prove
- (`!s a b:real^N.
-        connected s /\ a IN s /\ b IN s /\ ~(a = b) ==> s =_c (:real)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
-   [TRANS_TAC CARD_LE_TRANS `(:real^N)` THEN
-    SIMP_TAC[CARD_LE_UNIV; CARD_EQ_EUCLIDEAN; CARD_EQ_IMP_LE];
-    MP_TAC(ISPECL [`{a:real^N}`; `{b:real^N}`; `vec 0:real^1`; `vec 1:real^1`]
-           URYSOHN) THEN
-    REWRITE_TAC[CLOSED_SING; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
-    ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
-    X_GEN_TAC `f:real^N->real^1` THEN STRIP_TAC THEN
-    TRANS_TAC CARD_LE_TRANS `IMAGE (f:real^N->real^1) s` THEN
-    REWRITE_TAC[CARD_LE_IMAGE] THEN
-    TRANS_TAC CARD_LE_TRANS `segment[vec 0:real^1,vec 1]` THEN CONJ_TAC THENL
-     [MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
-      SIMP_TAC[CARD_EQ_SEGMENT; VEC_EQ; ARITH_EQ];
-      MATCH_MP_TAC CARD_LE_SUBSET THEN
-      SUBGOAL_THEN `connected(IMAGE (f:real^N->real^1) s)` MP_TAC THENL
-       [ASM_MESON_TAC[CONNECTED_CONTINUOUS_IMAGE; CONTINUOUS_ON_SUBSET;
-                      SUBSET_UNIV];
-        REWRITE_TAC[GSYM IS_INTERVAL_CONNECTED_1; IS_INTERVAL_1] THEN
-        REWRITE_TAC[SUBSET; SEGMENT_1; DROP_VEC; REAL_POS] THEN
-        REPEAT STRIP_TAC THEN
-        FIRST_X_ASSUM MATCH_MP_TAC THEN
-        MAP_EVERY EXISTS_TAC [`vec 0:real^1`; `vec 1:real^1`] THEN
-        ASM SET_TAC[IN_INTERVAL_1]]]]);;
-
-let UNCOUNTABLE_CONNECTED = prove
- (`!s a b:real^N.
-        connected s /\ a IN s /\ b IN s /\ ~(a = b) ==> ~COUNTABLE s`,
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
-  MATCH_MP_TAC CARD_EQ_REAL_IMP_UNCOUNTABLE THEN
-  MATCH_MP_TAC CARD_EQ_CONNECTED THEN
-  ASM_MESON_TAC[]);;
 
 let CARD_EQ_PATH_CONNECTED = prove
  (`!s a b:real^N.
@@ -10251,22 +10133,20 @@ let SIMPLY_CONNECTED_EQ_HOMOTOPIC_PATHS = prove
     REWRITE_TAC[PATH_IMAGE_LINEPATH; SEGMENT_REFL; SING_SUBSET] THEN
     ASM_MESON_TAC[PATHSTART_IN_PATH_IMAGE; SUBSET]]);;
 
-let HOMEOMORPHIC_SIMPLY_CONNECTED = prove
- (`!s:real^M->bool t:real^N->bool.
-        s homeomorphic t /\ simply_connected s
+let SIMPLY_CONNECTED_RETRACTION_GEN = prove
+ (`!s:real^M->bool t:real^N->bool h k.
+        h continuous_on s /\ IMAGE h s = t /\
+        k continuous_on t /\ IMAGE k t SUBSET s /\
+        (!y. y IN t ==> h(k y) = y) /\
+        simply_connected s
         ==> simply_connected t`,
-  REPEAT GEN_TAC THEN
-  REWRITE_TAC[IMP_CONJ; homeomorphic; LEFT_IMP_EXISTS_THM; homeomorphism] THEN
-  MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
-  REWRITE_TAC[IMP_IMP] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
-  REWRITE_TAC[SIMPLY_CONNECTED_EQ_HOMOTOPIC_PATHS] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[SIMPLY_CONNECTED_EQ_HOMOTOPIC_PATHS] THEN
   STRIP_TAC THEN CONJ_TAC THENL
    [ASM_MESON_TAC[PATH_CONNECTED_CONTINUOUS_IMAGE]; ALL_TAC] THEN
   MAP_EVERY X_GEN_TAC [`p:real^1->real^N`; `q:real^1->real^N`] THEN
   STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
-   [`(g:real^N->real^M) o (p:real^1->real^N)`;
-    `(g:real^N->real^M) o (q:real^1->real^N)`]) THEN
+   [`(k:real^N->real^M) o (p:real^1->real^N)`;
+    `(k:real^N->real^M) o (q:real^1->real^N)`]) THEN
   ANTS_TAC THENL
    [RULE_ASSUM_TAC(REWRITE_RULE[pathstart; path; pathfinish; path_image]) THEN
     ASM_REWRITE_TAC[pathstart; path; pathfinish; o_THM; path_image] THEN
@@ -10275,7 +10155,7 @@ let HOMEOMORPHIC_SIMPLY_CONNECTED = prove
     TRY(FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         CONTINUOUS_ON_SUBSET))) THEN
     ASM SET_TAC[];
-    DISCH_THEN(MP_TAC o SPECL [`f:real^M->real^N`; `t:real^N->bool`] o
+    DISCH_THEN(MP_TAC o SPECL [`h:real^M->real^N`; `t:real^N->bool`] o
      MATCH_MP (REWRITE_RULE[IMP_CONJ] HOMOTOPIC_PATHS_CONTINUOUS_IMAGE)) THEN
     ASM_REWRITE_TAC[SUBSET_REFL] THEN MATCH_MP_TAC
      (MESON[HOMOTOPIC_PATHS_SYM; HOMOTOPIC_PATHS_TRANS]
@@ -10289,6 +10169,17 @@ let HOMEOMORPHIC_SIMPLY_CONNECTED = prove
     RULE_ASSUM_TAC(REWRITE_RULE[path_image; FORALL_IN_IMAGE; SUBSET]) THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
     REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; REAL_POS; REAL_LE_REFL]]);;
+
+let HOMEOMORPHIC_SIMPLY_CONNECTED = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t /\ simply_connected s
+        ==> simply_connected t`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+   (REWRITE_RULE[CONJ_ASSOC] SIMPLY_CONNECTED_RETRACTION_GEN)) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  SIMP_TAC[homeomorphism; SUBSET_REFL]);;
 
 let HOMEOMORPHIC_SIMPLY_CONNECTED_EQ = prove
  (`!s:real^M->bool t:real^N->bool.

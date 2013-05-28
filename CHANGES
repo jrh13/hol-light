@@ -1,3 +1,24 @@
+Sun 26th May 2013       hol.ml
+
+Added an extra line from Hendrik Tews to make things work more smoothly
+with OCaml 4.xx:
+
+#directory "+compiler-libs";;
+
+
+Fri 24th May 2013       Library/iter.ml
+
+Addded
+
+  ITER_1 = |- !f x. ITER 1 f x = f x
+
+Mon 20th May 2013       Library/card.ml
+
+Added
+
+  COUNTABLE_IMP_CARD_LT_REAL =
+    |- !s. COUNTABLE s ==> s <_c (:real)
+
 Thu  2nd May 2013       sets.ml
 
 Added CARD_SING = |- !a. CARD {a} = 1

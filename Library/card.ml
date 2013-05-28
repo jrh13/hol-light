@@ -1646,6 +1646,11 @@ let CARD_EQ_REAL_IMP_UNCOUNTABLE = prove
     (REWRITE_RULE[IMP_CONJ] CARD_EQ_COUNTABLE)) THEN
   REWRITE_TAC[UNCOUNTABLE_REAL] THEN ASM_MESON_TAC[CARD_EQ_SYM]);;
 
+let COUNTABLE_IMP_CARD_LT_REAL = prove                           
+ (`!s:A->bool. COUNTABLE s ==> s <_c (:real)`,               
+  REWRITE_TAC[GSYM CARD_NOT_LE] THEN                               
+  ASM_MESON_TAC[CARD_LE_COUNTABLE; UNCOUNTABLE_REAL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* More about cardinality of lists and restricted powersets etc.             *)
 (* ------------------------------------------------------------------------- *)

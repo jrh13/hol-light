@@ -2131,7 +2131,7 @@ let LINEAR_ROTATE2D = prove
            VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT; rotate2d] THEN
   REAL_ARITH_TAC);;
 
-let ROTATE2D_ADD = prove
+let ROTATE2D_ADD_VECTORS = prove
  (`!t w z. rotate2d t (w + z) = rotate2d t w + rotate2d t z`,
   SIMP_TAC[LINEAR_ADD; LINEAR_ROTATE2D]);;
 

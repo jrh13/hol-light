@@ -576,6 +576,27 @@ let COPLANAR_DET_EQ_0 = prove
       REWRITE_TAC[UNWIND_THM2] THEN REPEAT CONJ_TAC THEN
       MATCH_MP_TAC SPAN_SUPERSET THEN REWRITE_TAC[IN_INSERT]]]);;
 
+let PLANE_AFFINE_HULL_3 = prove
+ (`!a b c:real^N. plane(affine hull {a,b,c}) <=> ~collinear{a,b,c}`,
+  REWRITE_TAC[plane] THEN MESON_TAC[COLLINEAR_AFFINE_HULL_COLLINEAR]);;
+
+let AFFINE_HULL_3_GENERATED = prove
+ (`!s u v w:real^N.
+        s SUBSET affine hull {u,v,w} /\ ~collinear s
+        ==> affine hull {u,v,w} = affine hull s`,
+  REWRITE_TAC[COLLINEAR_AFF_DIM; INT_NOT_LE] THEN REPEAT STRIP_TAC THEN
+  CONV_TAC SYM_CONV THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM HULL_HULL] THEN
+  MATCH_MP_TAC AFF_DIM_EQ_AFFINE_HULL THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC INT_LE_TRANS THEN EXISTS_TAC `&2:int` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM_INT_ARITH_TAC] THEN
+  REWRITE_TAC[AFF_DIM_AFFINE_HULL] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) AFF_DIM_LE_CARD o lhand o snd) THEN
+  REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INT_LE_TRANS) THEN
+  REWRITE_TAC[INT_LE_SUB_RADD; INT_OF_NUM_ADD; INT_OF_NUM_LE] THEN
+  SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Additional WLOG tactic to rotate any plane p to {z | z$3 = &0}.           *)
 (* ------------------------------------------------------------------------- *)
@@ -1327,6 +1348,24 @@ let AFF_LT_SPECIAL_SCALE = prove
   MATCH_MP_TAC AFFSIGN_SPECIAL_SCALE THEN
   ASM_REWRITE_TAC[sgn_lt] THEN REAL_ARITH_TAC);;
 
+let AFF_GE_SCALE_LEMMA = prove
+ (`!a u v:real^N.
+        &0 < a /\ ~(v = vec 0)
+        ==> aff_ge {vec 0} {a % u,v} = aff_ge {vec 0} {u,v}`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `u:real^N = vec 0` THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_RZERO] THEN
+  ASM_SIMP_TAC[AFF_GE_1_2_0; VECTOR_MUL_EQ_0; REAL_LT_IMP_NZ;
+   SET_RULE `DISJOINT {a} {b,c} <=> ~(b = a) /\ ~(c = a)`] THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET; FORALL_IN_GSPEC] THEN
+  CONJ_TAC THEN MAP_EVERY X_GEN_TAC [`b:real`; `c:real`] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN STRIP_TAC THENL
+   [EXISTS_TAC `a * b:real`; EXISTS_TAC `b / a:real`] THEN
+  EXISTS_TAC `c:real` THEN
+  ASM_SIMP_TAC[REAL_LE_DIV; REAL_LE_MUL; REAL_LT_IMP_LE] THEN
+  REWRITE_TAC[VECTOR_MUL_ASSOC] THEN
+  REPLICATE_TAC 2 (AP_THM_TAC THEN AP_TERM_TAC) THEN
+  UNDISCH_TAC `&0 < a` THEN CONV_TAC REAL_FIELD);;
+
 let AFFSIGN_0 = prove
  (`!sgn s t.
         FINITE s /\ FINITE t /\ (vec 0) IN (s DIFF t)
@@ -1546,6 +1585,34 @@ let CONIC_AFF_GE_0 = prove
   EXISTS_TAC `\v. c * (u:real^N->real) v` THEN
   REWRITE_TAC[GSYM VECTOR_MUL_ASSOC; VSUM_LMUL] THEN
   ASM_MESON_TAC[REAL_LE_MUL]);;
+
+let ANGLES_ADD_AFF_GE = prove
+ (`!u v w x:real^N.
+        ~(v = u) /\ ~(w = u) /\ ~(x = u) /\ x IN aff_ge {u} {v,w}
+        ==> angle(v,u,x) + angle(x,u,w) = angle(v,u,w)`,
+  GEOM_ORIGIN_TAC `u:real^N` THEN REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ASM_SIMP_TAC[AFF_GE_1_2_0] THEN
+  REWRITE_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real`; `b:real`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+  SUBGOAL_THEN `a = &0 /\ b = &0 \/ &0 < a + b` STRIP_ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID];
+    ALL_TAC] THEN
+  DISCH_TAC THEN MP_TAC(ISPECL
+   [`v:real^N`; `w:real^N`; `inv(a + b) % x:real^N`; `vec 0:real^N`]
+   ANGLES_ADD_BETWEEN) THEN
+  ASM_REWRITE_TAC[angle; VECTOR_SUB_RZERO] THEN
+  ASM_SIMP_TAC[VECTOR_ANGLE_RMUL; VECTOR_ANGLE_LMUL;
+    REAL_INV_EQ_0; REAL_LE_INV_EQ; REAL_LT_IMP_NZ; REAL_LT_IMP_LE] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  REWRITE_TAC[BETWEEN_IN_SEGMENT; CONVEX_HULL_2; SEGMENT_CONVEX_HULL] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  MAP_EVERY EXISTS_TAC [`a / (a + b):real`; `b / (a + b):real`] THEN
+  ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; VECTOR_ADD_LDISTRIB] THEN
+  REWRITE_TAC[VECTOR_MUL_ASSOC; real_div; REAL_MUL_AC] THEN
+  UNDISCH_TAC `&0 < a + b` THEN CONV_TAC REAL_FIELD);;
 
 (* ------------------------------------------------------------------------- *)
 (* Special case of aff_ge {x} {y}, i.e. rays or half-lines.                  *)
@@ -2643,6 +2710,70 @@ let AZIM_EQ_0_PI_IMP_COPLANAR = prove
     EXISTS_TAC `(w2:real^3)$1 / (w1:real^3)$1` THEN
     REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD]);;
 
+let AZIM_SAME_WITHIN_AFF_GE = prove
+ (`!a u v w z.
+        v IN aff_ge {a} {u,w} /\ ~collinear{a,u,v} /\ ~collinear{a,u,w}
+        ==> azim a u v z = azim a u w z`,
+  GEOM_ORIGIN_TAC `a:real^3` THEN
+  GEOM_BASIS_MULTIPLE_TAC 3 `u:real^3` THEN
+  X_GEN_TAC `u:real` THEN ASM_CASES_TAC `u = &0` THEN
+  ASM_SIMP_TAC[AZIM_DEGENERATE; VECTOR_MUL_LZERO; REAL_LE_LT] THEN
+  ASM_SIMP_TAC[AZIM_SPECIAL_SCALE; COLLINEAR_SPECIAL_SCALE] THEN
+  DISCH_TAC THEN REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `w:real^3 = vec 0` THENL
+   [ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC]; ALL_TAC] THEN
+  ASM_SIMP_TAC[AFF_GE_SCALE_LEMMA] THEN
+  REWRITE_TAC[COLLINEAR_BASIS_3; AZIM_ARG] THEN
+  ASM_SIMP_TAC[AFF_GE_1_2_0; BASIS_NONZERO; ARITH; DIMINDEX_3;
+   SET_RULE `DISJOINT {a} {b,c} <=> ~(b = a) /\ ~(c = a)`] THEN
+  REWRITE_TAC[IMP_CONJ; LEFT_IMP_EXISTS_THM; IN_ELIM_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real`; `b:real`] THEN DISCH_TAC THEN DISCH_TAC THEN
+  DISCH_THEN(MP_TAC o AP_TERM `dropout 3:real^3->real^2`) THEN
+  REWRITE_TAC[DROPOUT_ADD; DROPOUT_MUL; DROPOUT_BASIS_3] THEN
+  REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  DISCH_THEN SUBST1_TAC THEN REPEAT DISCH_TAC THEN
+  REWRITE_TAC[COMPLEX_CMUL] THEN
+  REWRITE_TAC[complex_div; COMPLEX_INV_MUL; GSYM CX_INV] THEN
+  ONCE_REWRITE_TAC[COMPLEX_RING `a * b * c:complex = b * a * c`] THEN
+  MATCH_MP_TAC ARG_MUL_CX THEN REWRITE_TAC[REAL_LT_INV_EQ] THEN
+  ASM_REWRITE_TAC[REAL_LT_LE] THEN ASM_MESON_TAC[VECTOR_MUL_LZERO]);;
+
+let AZIM_SAME_WITHIN_AFF_GE_ALT = prove
+ (`!a u v w z.
+        v IN aff_ge {a} {u,w} /\ ~collinear{a,u,v} /\ ~collinear{a,u,w}
+        ==> azim a u z v = azim a u z w`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP AZIM_SAME_WITHIN_AFF_GE) THEN
+  ASM_CASES_TAC `collinear {a:real^3,u,z}` THEN
+  ASM_SIMP_TAC[AZIM_DEGENERATE] THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) AZIM_COMPL o lhand o snd) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) AZIM_COMPL o rand o snd) THEN
+  ASM_SIMP_TAC[]);;
+
+let COLLINEAR_WITHIN_AFF_GE_COLLINEAR = prove
+ (`!a u v w:real^N.
+        v IN aff_ge {a} {u,w} /\ collinear{a,u,w} ==> collinear{a,v,w}`,
+  GEOM_ORIGIN_TAC `a:real^N` THEN REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `w:real^N = vec 0` THENL
+   [ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC]; ALL_TAC] THEN
+  ASM_CASES_TAC `u:real^N = vec 0` THENL
+   [ONCE_REWRITE_TAC[AFF_GE_DISJOINT_DIFF] THEN
+    ASM_REWRITE_TAC[SET_RULE `{a} DIFF {a,b} = {}`] THEN
+    REWRITE_TAC[GSYM CONVEX_HULL_AFF_GE] THEN
+    ONCE_REWRITE_TAC[SET_RULE `{z,v,w} = {z,w,v}`] THEN
+    ASM_SIMP_TAC[COLLINEAR_3_AFFINE_HULL] THEN
+    MESON_TAC[CONVEX_HULL_SUBSET_AFFINE_HULL; SUBSET];
+    ONCE_REWRITE_TAC[SET_RULE `{z,v,w} = {z,w,v}`] THEN
+    ASM_REWRITE_TAC[COLLINEAR_LEMMA_ALT] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 MP_TAC (X_CHOOSE_TAC `a:real`)) THEN
+    ASM_SIMP_TAC[AFF_GE_1_2_0; SET_RULE
+     `DISJOINT {a} {b,c} <=> ~(b = a) /\ ~(c = a)`] THEN
+    REWRITE_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`b:real`; `c:real`] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[GSYM VECTOR_ADD_RDISTRIB; VECTOR_MUL_ASSOC] THEN
+    MESON_TAC[]]);;
+
 let AZIM_EQ_IMP = prove
  (`!v0 v1 w x y.
      ~collinear {v0, v1, w} /\
@@ -2916,6 +3047,48 @@ let DIHV_NEG_0 = prove
   REPEAT GEN_TAC THEN
   GEN_REWRITE_TAC RAND_CONV [GSYM DIHV_NEG] THEN
   REWRITE_TAC[VECTOR_NEG_0]);;
+
+let DIHV_ARCV = prove
+ (`!e u v w:real^N.
+      orthogonal (e - u) (v - u) /\ orthogonal (e - u) (w - u) /\ ~(e = u)
+      ==> dihV u e v w = arcV u v w`,
+  GEOM_ORIGIN_TAC `u:real^N` THEN
+  REWRITE_TAC[dihV; orthogonal; VECTOR_SUB_RZERO] THEN
+  CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN
+  SIMP_TAC[DOT_SYM; VECTOR_MUL_LZERO; VECTOR_SUB_RZERO] THEN
+  REWRITE_TAC[ARCV_ANGLE; angle; VECTOR_SUB_RZERO] THEN
+  REWRITE_TAC[VECTOR_ANGLE_LMUL; VECTOR_ANGLE_RMUL] THEN
+  SIMP_TAC[DOT_POS_LE; DOT_EQ_0]);;
+
+let AZIM_DIHV_SAME_STRONG = prove
+ (`!v w v1 v2:real^3.
+        ~collinear {v,w,v1} /\ ~collinear {v,w,v2} /\
+        azim v w v1 v2 <= pi
+        ==> azim v w v1 v2 = dihV v w v1 v2`,
+  REWRITE_TAC[REAL_LE_LT] THEN
+  MESON_TAC[AZIM_DIHV_SAME; AZIM_DIHV_EQ_PI]);;
+
+let AZIM_ARCV = prove
+ (`!e u v w:real^3.
+        orthogonal (e - u) (v - u) /\ orthogonal (e - u) (w - u) /\
+        ~collinear{u,e,v} /\ ~collinear{u,e,w} /\
+        azim u e v w <= pi
+        ==> azim u e v w = arcV u v w`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `u:real^3 = e` THENL
+   [ASM_REWRITE_TAC[INSERT_AC; COLLINEAR_2]; ALL_TAC] THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[GSYM DIHV_ARCV] THEN
+  MATCH_MP_TAC AZIM_DIHV_SAME_STRONG THEN ASM_REWRITE_TAC[]);;
+
+let COLLINEAR_AZIM_0_OR_PI = prove
+ (`!u e v w. collinear {u,v,w} ==> azim u e v w = &0 \/ azim u e v w = pi`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `collinear{u:real^3,e,v}` THEN
+  ASM_SIMP_TAC[AZIM_DEGENERATE] THEN
+  ASM_CASES_TAC `collinear{u:real^3,e,w}` THEN
+  ASM_SIMP_TAC[AZIM_DEGENERATE] THEN
+  ASM_SIMP_TAC[AZIM_EQ_0_PI_EQ_COPLANAR] THEN
+  ONCE_REWRITE_TAC[SET_RULE `{u,e,v,w} = {u,v,w,e}`] THEN
+  ASM_MESON_TAC[NOT_COPLANAR_NOT_COLLINEAR]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Can consider angle as defined by arcV a zenith angle.                     *)

@@ -1729,25 +1729,6 @@ let CLOPEN = prove
   MATCH_MP_TAC(REWRITE_RULE[CONNECTED_CLOPEN] CONNECTED_UNIV) THEN
   ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM OPEN_IN; GSYM CLOSED_IN]);;
 
-let FINITE_IMP_NOT_OPEN = prove
- (`!s:real^N->bool. FINITE s /\ ~(s = {}) ==> ~(open s)`,
-  GEN_TAC THEN STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP FINITE_IMP_CLOSED) THEN
-  ASM_REWRITE_TAC[TAUT `(p ==> ~q) <=> ~(p /\ q)`; CLOPEN] THEN
-  ASM_MESON_TAC[INFINITE; EUCLIDEAN_SPACE_INFINITE]);;
-
-let OPEN_IMP_INFINITE = prove
- (`!s. open s ==> s = {} \/ INFINITE s`,
-  MESON_TAC[FINITE_IMP_NOT_OPEN; INFINITE]);;
-
-let EMPTY_INTERIOR_FINITE = prove
- (`!s:real^N->bool. FINITE s ==> interior s = {}`,
-  REPEAT STRIP_TAC THEN MP_TAC(ISPEC `s:real^N->bool` OPEN_INTERIOR) THEN
-  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] FINITE_IMP_NOT_OPEN) THEN
-  MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `s:real^N->bool` THEN
-  ASM_REWRITE_TAC[INTERIOR_SUBSET]);;
-
 let FRONTIER_NOT_EMPTY = prove
  (`!s. ~(s = {}) /\ ~(s = (:real^N)) ==> ~(frontier s = {})`,
   REPEAT STRIP_TAC THEN
@@ -1789,6 +1770,32 @@ let EQ_INTERVAL = prove
     REWRITE_TAC[INTERVAL_NE_EMPTY; CART_EQ] THEN
     REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
     SIMP_TAC[SUBSET_INTERVAL; GSYM REAL_LE_ANTISYM]]);;
+
+let CLOSED_INTERVAL_EQ = prove
+ (`(!a b:real^N. closed(interval[a,b])) /\
+   (!a b:real^N. closed(interval(a,b)) <=> interval(a,b) = {})`,
+  REWRITE_TAC[CLOSED_INTERVAL] THEN
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[CLOSED_EMPTY] THEN
+  MP_TAC(ISPEC `interval(a:real^N,b)` CLOPEN) THEN
+  ASM_REWRITE_TAC[OPEN_INTERVAL] THEN
+  MESON_TAC[BOUNDED_INTERVAL; NOT_BOUNDED_UNIV]);;
+
+let OPEN_INTERVAL_EQ = prove
+ (`(!a b:real^N. open(interval[a,b]) <=> interval[a,b] = {}) /\
+   (!a b:real^N. open(interval(a,b)))`,
+  REWRITE_TAC[OPEN_INTERVAL] THEN
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[CLOSED_EMPTY] THEN
+  MP_TAC(ISPEC `interval[a:real^N,b]` CLOPEN) THEN
+  ASM_REWRITE_TAC[CLOSED_INTERVAL] THEN
+  MESON_TAC[BOUNDED_INTERVAL; NOT_BOUNDED_UNIV]);;
+
+let COMPACT_INTERVAL_EQ = prove
+ (`(!a b:real^N. compact(interval[a,b])) /\
+   (!a b:real^N. compact(interval(a,b)) <=> interval(a,b) = {})`,
+  REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED; BOUNDED_INTERVAL] THEN
+  REWRITE_TAC[CLOSED_INTERVAL_EQ]);;
 
 let CONNECTED_CHAIN = prove
  (`!f:(real^N->bool)->bool.
@@ -5605,36 +5612,6 @@ let DIAMETER_SIMPLEX = prove
         ~(s = {})
         ==> diameter(convex hull s) = sup { dist(x,y) | x IN s /\ y IN s}`,
   REWRITE_TAC[DIAMETER_CONVEX_HULL] THEN SIMP_TAC[diameter; dist]);;
-
-let DIAMETER_SIMPLEX = prove
- (`!s:real^N->bool.
-        FINITE s /\ ~(s = {})
-        ==> diameter(convex hull s) = sup { dist(x,y) | x IN s /\ y IN s}`,
-  GEN_TAC THEN DISCH_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP SIMPLEX_EXTREMAL_LE) THEN
-  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`u:real^N`; `v:real^N`] THEN STRIP_TAC THEN
-  SUBGOAL_THEN `sup {dist(x:real^N,y) | x IN s /\ y IN s} = dist(u:real^N,v)`
-  SUBST1_TAC THENL
-   [REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
-     [MATCH_MP_TAC REAL_SUP_LE THEN
-      ASM_SIMP_TAC[FORALL_IN_GSPEC; dist; HULL_INC] THEN ASM SET_TAC[];
-      SUBGOAL_THEN
-       `{dist(x:real^N,y) | x IN s /\ y IN s} =
-        IMAGE (\(x,y). dist(x,y)) (s CROSS s)`
-      SUBST1_TAC THENL
-       [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM; EXISTS_PAIR_THM;
-                    IN_CROSS] THEN MESON_TAC[];
-        ASM_SIMP_TAC[REAL_LE_SUP_FINITE; IMAGE_EQ_EMPTY; CROSS_EQ_EMPTY;
-         FINITE_CROSS; FINITE_IMAGE; EXISTS_IN_IMAGE; EXISTS_PAIR_THM] THEN
-        REWRITE_TAC[IN_CROSS] THEN ASM_MESON_TAC[REAL_LE_REFL]]];
-    REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
-     [MP_TAC(ISPEC `convex hull s:real^N->bool` DIAMETER_COMPACT_ATTAINED) THEN
-      ASM_SIMP_TAC[CONVEX_HULL_EQ_EMPTY; COMPACT_CONVEX_HULL;
-                   FINITE_IMP_COMPACT; dist] THEN ASM_MESON_TAC[];
-      REWRITE_TAC[dist] THEN MATCH_MP_TAC DIAMETER_BOUNDED_BOUND THEN
-      ASM_SIMP_TAC[BOUNDED_CONVEX_HULL; FINITE_IMP_BOUNDED] THEN
-      ASM_MESON_TAC[HULL_INC]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Closest point of a convex set is unique, with a continuous projection.    *)
