@@ -11,6 +11,8 @@
 
 let hol_version = "2.20++";;
 
+#directory "+compiler-libs";;
+
 let hol_dir = ref
   (try Sys.getenv "HOLLIGHT_DIR" with Not_found -> Sys.getcwd());;
 

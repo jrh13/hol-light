@@ -1028,22 +1028,6 @@ let EXPOSED_FACE_OF_INTERS = prove
     ASM_CASES_TAC `P:(real^N->bool)->bool = {}` THEN
     ASM_SIMP_TAC[INTERS_0; INTER_UNIV; EXPOSED_FACE_OF_INTER]]);;
 
-let EXPOSED_FACE_OF_INTER_SUPPORTING_HYPERPLANE_LE = prove
- (`!s a:real^N b.
-        convex s /\ (!x. x IN s ==> a dot x <= b)
-        ==> (s INTER {x | a dot x = b}) exposed_face_of s`,
-  SIMP_TAC[exposed_face_of; FACE_OF_INTER_SUPPORTING_HYPERPLANE_LE] THEN
-  SET_TAC[]);;
-
-let EXPOSED_FACE_OF_INTER_SUPPORTING_HYPERPLANE_GE = prove
- (`!s a:real^N b.
-        convex s /\ (!x. x IN s ==> a dot x >= b)
-        ==> (s INTER {x | a dot x = b}) exposed_face_of s`,
-  REWRITE_TAC[real_ge] THEN REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`s:real^N->bool`; `--a:real^N`; `--b:real`]
-    EXPOSED_FACE_OF_INTER_SUPPORTING_HYPERPLANE_LE) THEN
-  ASM_REWRITE_TAC[DOT_LNEG; REAL_EQ_NEG2; REAL_LE_NEG2]);;
-
 let EXPOSED_FACE_OF_SUMS = prove
  (`!s t f:real^N->bool.
         convex s /\ convex t /\
@@ -5049,14 +5033,6 @@ let COMPACT_SIMPLEX = prove
  (`!n s. n simplex s ==> compact s`,
   REWRITE_TAC[SIMPLEX] THEN
   MESON_TAC[FINITE_IMP_COMPACT; COMPACT_CONVEX_HULL]);;
-
-let AFF_DIM_SIMPLEX = prove
- (`!n s. n simplex s ==> aff_dim s = n`,
-  REWRITE_TAC[simplex] THEN REPEAT STRIP_TAC THEN
-  ASM_REWRITE_TAC[AFF_DIM_CONVEX_HULL] THEN
-  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP (INT_ARITH
-   `c:int = n + &1 ==> n = c - &1`)) THEN
-  MATCH_MP_TAC AFF_DIM_UNIQUE THEN ASM_REWRITE_TAC[]);;
 
 let SIMPLEX_IMP_POLYTOPE = prove
  (`!n s. n simplex s ==> polytope s`,

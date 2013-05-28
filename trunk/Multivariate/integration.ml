@@ -9221,7 +9221,7 @@ let BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE = prove
   MATCH_MP_TAC PARTIAL_DIVISION_OF_TAGGED_DIVISION THEN
   EXISTS_TAC `interval[a:real^M,b]` THEN ASM_MESON_TAC[tagged_division_of]);;
 
-let ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_EQ = prove
+let ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_UNIV_EQ = prove
  (`!f:real^M->real^N.
         f absolutely_integrable_on (:real^M) <=>
         f integrable_on (:real^M) /\

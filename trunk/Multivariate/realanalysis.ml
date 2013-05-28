@@ -625,14 +625,6 @@ let REAL_SERIES_CAUCHY = prove
   SIMP_TAC[NORM_REAL; GSYM drop; DROP_VSUM; FINITE_INTER_NUMSEG] THEN
   REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
 
-let REAL_SUMS_EQ = prove
- (`!f g k. (!x. x IN k ==> f x = g x) /\ (f real_sums l) k
-           ==> (g real_sums l) k`,
-  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  REWRITE_TAC[REAL_SUMS] THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUMS_EQ) THEN
-  ASM_SIMP_TAC[o_THM]);;
-
 let REAL_SUMS_SUMMABLE = prove
  (`!f l s. (f real_sums l) s ==> real_summable s f`,
   REWRITE_TAC[real_summable] THEN MESON_TAC[]);;
@@ -11426,13 +11418,6 @@ let REAL_MEASURABLE_ON_INV = prove
   MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
   REWRITE_TAC[IN_ELIM_THM; LIFT_DROP] THEN MESON_TAC[LIFT_DROP]);;
 
-let REAL_MEASURABLE_ON_MUL = prove
- (`!f g. f real_measurable_on s /\ g real_measurable_on s
-         ==> (\x. f x * g x) real_measurable_on s`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_COMPLEX_MEASURABLE_ON] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP MEASURABLE_ON_COMPLEX_MUL) THEN
-  REWRITE_TAC[o_DEF; CX_MUL]);;
-
 let REAL_MEASURABLE_ON_DIV = prove
  (`!f g. f real_measurable_on s /\ g real_measurable_on (:real) /\
          real_negligible {x | g(x) = &0}
@@ -13780,6 +13765,73 @@ let INVARIANCE_OF_DOMAIN_HOMEOMORPHIC = prove
   REPEAT GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP INVARIANCE_OF_DOMAIN_HOMEOMORPHISM) THEN
   REWRITE_TAC[homeomorphic] THEN MESON_TAC[]);;
+
+let HOMEOMORPHIC_INTERVALS_EQ = prove
+ (`(!a b:real^M c d:real^N.
+        interval[a,b] homeomorphic interval[c,d] <=>
+        aff_dim(interval[a,b]) = aff_dim(interval[c,d])) /\
+   (!a b:real^M c d:real^N.
+        interval[a,b] homeomorphic interval(c,d) <=>
+        interval[a,b] = {} /\ interval(c,d) = {}) /\
+   (!a b:real^M c d:real^N.
+        interval(a,b) homeomorphic interval[c,d] <=>
+        interval(a,b) = {} /\ interval[c,d] = {}) /\
+   (!a b:real^M c d:real^N.
+        interval(a,b) homeomorphic interval(c,d) <=>
+        interval(a,b) = {} /\ interval(c,d) = {} \/
+        ~(interval(a,b) = {}) /\ ~(interval(c,d) = {}) /\
+        dimindex(:M) = dimindex(:N))`,
+  SIMP_TAC[HOMEOMORPHIC_CONVEX_COMPACT_SETS_EQ; CONVEX_INTERVAL;
+           COMPACT_INTERVAL] THEN
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[HOMEOMORPHIC_EMPTY] THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHIC_COMPACTNESS) THEN
+    REWRITE_TAC[COMPACT_INTERVAL_EQ] THEN ASM_MESON_TAC[HOMEOMORPHIC_EMPTY];
+    FIRST_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHIC_COMPACTNESS) THEN
+    REWRITE_TAC[COMPACT_INTERVAL_EQ] THEN ASM_MESON_TAC[HOMEOMORPHIC_EMPTY];
+    MATCH_MP_TAC(TAUT
+     `(p <=> q) /\ (~p /\ ~q ==> r) ==> p /\ q \/ ~p /\ ~q /\ r`) THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[HOMEOMORPHIC_EMPTY]; STRIP_TAC] THEN
+    REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THEN
+    MATCH_MP_TAC INVARIANCE_OF_DIMENSION THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THENL
+     [ALL_TAC; GEN_REWRITE_TAC LAND_CONV [SWAP_EXISTS_THM]] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+    REWRITE_TAC[homeomorphism] THEN STRIP_TAC THENL
+     [EXISTS_TAC `interval(a:real^M,b)`;
+      EXISTS_TAC `interval(c:real^N,d)`] THEN
+    ASM_REWRITE_TAC[OPEN_INTERVAL] THEN ASM SET_TAC[];
+    TRANS_TAC HOMEOMORPHIC_TRANS
+     `IMAGE ((\x. lambda i. x$i):real^M->real^N)
+            (interval(a,b))` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC INVARIANCE_OF_DOMAIN_HOMEOMORPHIC THEN
+      REPEAT CONJ_TAC THENL
+       [ASM_MESON_TAC[LE_REFL];
+        MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN
+        SIMP_TAC[linear; VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT;
+                 LAMBDA_BETA; CART_EQ];
+        REWRITE_TAC[OPEN_INTERVAL];
+        SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN ASM_MESON_TAC[]];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `IMAGE ((\x. lambda i. x$i):real^M->real^N)
+            (interval(a,b)) =
+            interval((lambda i. a$i),(lambda i. b$i))`
+    SUBST1_TAC THENL
+     [MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+      SIMP_TAC[IN_INTERVAL; LAMBDA_BETA] THEN
+      CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+      X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+      EXISTS_TAC `(lambda i. (y:real^N)$i):real^M` THEN
+      SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN
+      FIRST_ASSUM(SUBST1_TAC o SYM) THEN   SIMP_TAC[CART_EQ; LAMBDA_BETA];
+      MATCH_MP_TAC HOMEOMORPHIC_OPEN_INTERVALS THEN
+      GEN_REWRITE_TAC I [TAUT `(p <=> q) <=> (~p <=> ~q)`] THEN
+      SIMP_TAC[INTERVAL_NE_EMPTY; LAMBDA_BETA] THEN
+      REPEAT(FIRST_X_ASSUM(MP_TAC o
+        GEN_REWRITE_RULE I [INTERVAL_NE_EMPTY])) THEN
+      ASM_MESON_TAC[]]]);;
 
 let CONTINUOUS_IMAGE_SUBSET_INTERIOR = prove
  (`!f:real^M->real^N s.
