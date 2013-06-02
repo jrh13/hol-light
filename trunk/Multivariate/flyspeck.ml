@@ -4982,7 +4982,8 @@ let HAS_MEASURE_OPEN_SECTOR_LT = prove
   MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
   EXISTS_TAC `{x | dist(vec 0,x) = r} UNION
               {z | Arg z = &0} UNION {z | Arg z = t}` THEN
-  REWRITE_TAC[NEGLIGIBLE_ARG_EQ; NEGLIGIBLE_SPHERE; NEGLIGIBLE_UNION_EQ] THEN
+  REWRITE_TAC[NEGLIGIBLE_ARG_EQ; REWRITE_RULE[sphere] NEGLIGIBLE_SPHERE;
+              NEGLIGIBLE_UNION_EQ] THEN
   REWRITE_TAC[DIST_0; SUBSET; IN_DIFF; IN_UNION; IN_ELIM_THM] THEN
       MP_TAC ARG THEN MATCH_MP_TAC MONO_FORALL THEN REAL_ARITH_TAC);;
 
@@ -6167,8 +6168,8 @@ let RCONE_GT_GE = prove
 override_interface("NULLSET",`negligible:(real^3->bool)->bool`);;
 override_interface("vol",`measure:(real^3->bool)->real`);;
 
-let sphere= new_definition
-  `sphere x=(?(v:real^3)(r:real). (r> &0)/\ (x={w:real^3 | norm (w-v)= r}))`;;
+let is_sphere= new_definition
+  `is_sphere x=(?(v:real^3)(r:real). (r> &0)/\ (x={w:real^3 | norm (w-v)= r}))`;;
 
 let c_cone = new_definition
   `c_cone (v,w:real^3, r:real)=
@@ -6181,15 +6182,16 @@ let circular_cone =new_definition
    (? (v,w:real^3)(r:real). ~(w = vec 0) /\ V = c_cone (v,w,r))`;;
 
 let NULLSET_RULES = prove
- (`(!P. ((plane P)\/ (sphere P) \/ (circular_cone P)) ==> NULLSET P) /\
+ (`(!P. ((plane P)\/ (is_sphere P) \/ (circular_cone P)) ==> NULLSET P) /\
    (!(s:real^3->bool) t. (NULLSET s /\ NULLSET t) ==> NULLSET (s UNION t))`,
   SIMP_TAC[NEGLIGIBLE_UNION] THEN
   X_GEN_TAC `s:real^3->bool` THEN STRIP_TAC THENL
    [MATCH_MP_TAC COPLANAR_IMP_NEGLIGIBLE THEN
     SIMP_TAC[COPLANAR; DIMINDEX_3; ARITH] THEN ASM_MESON_TAC[SUBSET_REFL];
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [sphere]) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [is_sphere]) THEN
     STRIP_TAC THEN ASM_REWRITE_TAC[GSYM dist] THEN
-    ONCE_REWRITE_TAC[DIST_SYM] THEN REWRITE_TAC[NEGLIGIBLE_SPHERE];
+    ONCE_REWRITE_TAC[DIST_SYM] THEN
+    REWRITE_TAC[REWRITE_RULE[sphere] NEGLIGIBLE_SPHERE];
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [circular_cone]) THEN
     REWRITE_TAC[EXISTS_PAIRED_THM; c_cone] THEN STRIP_TAC THEN
     ASM_REWRITE_TAC[] THEN
@@ -6538,3 +6540,52 @@ Def 4.9:          vertices
                   edges
 
 ****)
+
+(* ------------------------------------------------------------------------- *)
+(* Temporary backwards-compatible fix for introduction of "sphere".          *)
+(* ------------------------------------------------------------------------- *)
+
+let COMPACT_SPHERE =
+  REWRITE_RULE[sphere; NORM_ARITH `dist(a:real^N,b) = norm(b - a)`]
+  COMPACT_SPHERE;;
+
+let FRONTIER_CBALL = REWRITE_RULE[sphere] FRONTIER_CBALL;;
+
+let NEGLIGIBLE_SPHERE = REWRITE_RULE[sphere] NEGLIGIBLE_SPHERE;;
+
+(* ------------------------------------------------------------------------- *)
+(* Fix the congruence rules as expected in Flyspeck.                         *)
+(* Should exclude 6 recent mixed real/vector limit results.                  *)
+(* ------------------------------------------------------------------------- *)
+
+let bcs =
+  [`(p <=> p') ==> (p' ==> (q <=> q')) ==> (p ==> q <=> p' ==> q')`;
+   `(g <=> g')
+    ==> (g' ==> t = t')
+    ==> (~g' ==> e = e')
+    ==> (if g then t else e) = (if g' then t' else e')`;
+   `(!x. p x ==> f x = g x) ==> nsum {y | p y} (\i. f i) = nsum {y | p y} g`;
+   `(!i. a <= i /\ i <= b ==> f i = g i)
+    ==> nsum (a..b) (\i. f i) = nsum (a..b) g`;
+   `(!x. x IN s ==> f x = g x) ==> nsum s (\i. f i) = nsum s g`;
+   `(!x. p x ==> f x = g x) ==> sum {y | p y} (\i. f i) = sum {y | p y} g`;
+   `(!i. a <= i /\ i <= b ==> f i = g i)
+    ==> sum (a..b) (\i. f i) = sum (a..b) g`;
+   `(!x. x IN s ==> f x = g x) ==> sum s (\i. f i) = sum s g`;
+   `(!x. p x ==> f x = g x) ==> vsum {y | p y} (\i. f i) = vsum {y | p y} g`;
+   `(!i. a <= i /\ i <= b ==> f i = g i)
+    ==> vsum (a..b) (\i. f i) = vsum (a..b) g`;
+   `(!x. x IN s ==> f x = g x) ==> vsum s (\i. f i) = vsum s g`;
+   `(!x. p x ==> f x = g x)
+    ==> product {y | p y} (\i. f i) = product {y | p y} g`;
+   `(!i. a <= i /\ i <= b ==> f i = g i)
+    ==> product (a..b) (\i. f i) = product (a..b) g`;
+   `(!x. x IN s ==> f x = g x) ==> product s (\i. f i) = product s g`;
+   `(!x. ~(x = a) ==> f x = g x)
+    ==> (((\x. f x) --> l) (at a) <=> (g --> l) (at a))`;
+   `(!x. ~(x = a) ==> f x = g x)
+    ==> (((\x. f x) --> l) (at a within s) <=> (g --> l) (at a within s))`]
+and equiv t1 t2 = can (term_match [] t1) t2 & can (term_match [] t2) t1 in
+let congs' =
+  filter (fun th -> exists (equiv (concl th)) bcs) (basic_congs()) in
+set_basic_congs congs';;

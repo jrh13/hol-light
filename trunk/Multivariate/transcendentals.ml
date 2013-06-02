@@ -5691,10 +5691,10 @@ let REAL_ROOT_RPOW = prove
 
 let HOMOTOPIC_CIRCLEMAPS_IMP_HOMOTOPIC_LOOPS = prove
  (`!f:complex->real^N g s.
-        homotopic_with (\h. T) ({z | norm z = &1},s) f g
+        homotopic_with (\h. T) (sphere(vec 0,&1),s) f g
         ==> homotopic_loops s (f o cexp o (\t. Cx(&2 * pi * drop t) * ii))
                               (g o cexp o (\t. Cx(&2 * pi * drop t) * ii))`,
-  REWRITE_TAC[homotopic_loops] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[homotopic_loops; sphere; DIST_0] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
   EXISTS_TAC `{z:complex | norm z = &1}` THEN
   REWRITE_TAC[pathstart; pathfinish; o_THM; DROP_VEC] THEN
@@ -5711,7 +5711,7 @@ let HOMOTOPIC_CIRCLEMAPS_IMP_HOMOTOPIC_LOOPS = prove
 let HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS = prove
  (`!p q s:real^N->bool.
         homotopic_loops s p q
-        ==> homotopic_with (\h. T) ({z | norm z = &1},s)
+        ==> homotopic_with (\h. T) (sphere(vec 0,&1),s)
                                    (p o (\z. lift(Arg z / (&2 * pi))))
                                    (q o (\z. lift(Arg z / (&2 * pi))))`,
  let ulemma = prove
@@ -5720,7 +5720,7 @@ let HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS = prove
     REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_INTER; IN_UNION;
                  PASTECART_IN_PCROSS] THEN
     SET_TAC[REAL_LE_TOTAL]) in
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_loops] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_loops; sphere; DIST_0] THEN
   GEN_REWRITE_TAC LAND_CONV [homotopic_with] THEN
   SIMP_TAC[pathstart; pathfinish; LEFT_IMP_EXISTS_THM; HOMOTOPIC_WITH] THEN
   X_GEN_TAC `h:real^(1,1)finite_sum->real^N` THEN STRIP_TAC THEN
@@ -5837,18 +5837,18 @@ let SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS,
  (`(!s:real^N->bool.
         simply_connected s <=>
         !f g:complex->real^N.
-              f continuous_on {z | norm z = &1} /\
-              IMAGE f {z | norm z = &1} SUBSET s /\
-              g continuous_on {z | norm z = &1} /\
-              IMAGE g {z | norm z = &1} SUBSET s
-              ==> homotopic_with (\h. T) ({z | norm z = &1},s) f g) /\
+              f continuous_on sphere(vec 0,&1) /\
+              IMAGE f (sphere(vec 0,&1)) SUBSET s /\
+              g continuous_on sphere(vec 0,&1) /\
+              IMAGE g (sphere(vec 0,&1)) SUBSET s
+              ==> homotopic_with (\h. T) (sphere(vec 0,&1),s) f g) /\
    (!s:real^N->bool.
       simply_connected s <=>
       path_connected s /\
       !f:real^2->real^N.
-              f continuous_on {z | norm z = &1} /\
-              IMAGE f {z | norm z = &1} SUBSET s
-              ==> ?a. homotopic_with (\h. T) ({z | norm z = &1},s) f (\x. a))`,
+              f continuous_on sphere(vec 0,&1) /\
+              IMAGE f (sphere(vec 0,&1)) SUBSET s
+              ==> ?a. homotopic_with (\h. T) (sphere(vec 0,&1),s) f (\x. a))`,
   REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN MATCH_MP_TAC(TAUT
    `(p ==> q) /\ (q ==> r) /\ (r ==> p) ==> (p <=> q) /\ (p <=> r)`) THEN
   REPEAT CONJ_TAC THENL
@@ -5864,7 +5864,7 @@ let SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS,
                  HOMOTOPIC_WITH_REFL] THEN
     DISCH_THEN(MP_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS) THEN
     MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] HOMOTOPIC_WITH_EQ) THEN
-    REWRITE_TAC[IN_ELIM_THM; LIFT_DROP; o_DEF] THEN X_GEN_TAC `z:complex` THEN
+    REWRITE_TAC[IN_SPHERE_0; LIFT_DROP; o_DEF] THEN X_GEN_TAC `z:complex` THEN
     REPEAT STRIP_TAC THEN AP_TERM_TAC THEN MP_TAC(SPEC `z:complex` ARG) THEN
     ASM_REWRITE_TAC[COMPLEX_MUL_LID] THEN
     DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN SIMP_TAC[PI_POS;
@@ -5882,8 +5882,8 @@ let SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS,
       X_GEN_TAC `f:complex->real^N` THEN STRIP_TAC THEN
       EXISTS_TAC `f(Cx(&1)):real^N` THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
-      RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM]) THEN
-      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; FORALL_IN_IMAGE; IN_SPHERE_0]) THEN
+      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_SPHERE_0] THEN
       REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       REWRITE_TAC[COMPLEX_NORM_CX] THEN REAL_ARITH_TAC];
     STRIP_TAC THEN
@@ -5901,7 +5901,7 @@ let SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS,
       STRIP_TAC THEN FIRST_ASSUM
        (MP_TAC o MATCH_MP HOMOTOPIC_CIRCLEMAPS_IMP_HOMOTOPIC_LOOPS) THEN
       FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_SUBSET) THEN
-      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; o_DEF] THEN
+      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_SPHERE_0; o_DEF] THEN
       DISCH_THEN(MP_TAC o SPEC `Cx(&1)` o CONJUNCT2) THEN
       REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NUM] THEN
       STRIP_TAC THEN ASM_REWRITE_TAC[LINEPATH_REFL] THEN

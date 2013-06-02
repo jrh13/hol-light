@@ -1597,6 +1597,48 @@ let REALLIM_WITHIN_REAL_OPEN = prove
   REWRITE_TAC[TENDSTO_REAL; LIM_WITHIN_REAL_OPEN]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Additional congruence rules for simplifying limits.                       *)
+(* ------------------------------------------------------------------------- *)
+
+let LIM_CONG_WITHINREAL = prove
+ (`(!x. ~(x = a) ==> f x = g x)
+   ==> (((\x. f x) --> l) (atreal a within s) <=>
+        ((g --> l) (atreal a within s)))`,
+  SIMP_TAC[LIM_WITHINREAL; GSYM REAL_ABS_NZ; REAL_SUB_0]);;
+
+let LIM_CONG_ATREAL = prove
+ (`(!x. ~(x = a) ==> f x = g x)
+   ==> (((\x. f x) --> l) (atreal a) <=> ((g --> l) (atreal a)))`,
+  SIMP_TAC[LIM_ATREAL; GSYM REAL_ABS_NZ; REAL_SUB_0]);;
+
+extend_basic_congs [LIM_CONG_WITHINREAL; LIM_CONG_ATREAL];;
+
+let REALLIM_CONG_WITHIN = prove
+ (`(!x. ~(x = a) ==> f x = g x)
+   ==> (((\x. f x) ---> l) (at a within s) <=> ((g ---> l) (at a within s)))`,
+  REWRITE_TAC[REALLIM_WITHIN; GSYM DIST_NZ] THEN SIMP_TAC[]);;
+
+let REALLIM_CONG_AT = prove
+ (`(!x. ~(x = a) ==> f x = g x)
+   ==> (((\x. f x) ---> l) (at a) <=> ((g ---> l) (at a)))`,
+  REWRITE_TAC[REALLIM_AT; GSYM DIST_NZ] THEN SIMP_TAC[]);;
+
+extend_basic_congs [REALLIM_CONG_WITHIN; REALLIM_CONG_AT];;
+
+let REALLIM_CONG_WITHINREAL = prove
+ (`(!x. ~(x = a) ==> f x = g x)
+   ==> (((\x. f x) ---> l) (atreal a within s) <=>
+        ((g ---> l) (atreal a within s)))`,
+  SIMP_TAC[REALLIM_WITHINREAL; GSYM REAL_ABS_NZ; REAL_SUB_0]);;
+
+let REALLIM_CONG_ATREAL = prove
+ (`(!x. ~(x = a) ==> f x = g x)
+   ==> (((\x. f x) ---> l) (atreal a) <=> ((g ---> l) (atreal a)))`,
+  SIMP_TAC[REALLIM_ATREAL; GSYM REAL_ABS_NZ; REAL_SUB_0]);;
+
+extend_basic_congs [REALLIM_CONG_WITHINREAL; REALLIM_CONG_ATREAL];;
+
+(* ------------------------------------------------------------------------- *)
 (* Real version of Abel limit theorem.                                       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -2653,6 +2695,65 @@ let HAS_COMPLEX_REAL_DERIVATIVE_AT = prove
   MATCH_MP_TAC HAS_COMPLEX_REAL_DERIVATIVE_WITHIN THEN
   EXISTS_TAC `h:complex->complex` THEN
   ASM_REWRITE_TAC[IN_UNIV; ETA_AX; SET_RULE `{x | r x} = r`]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Caratheodory characterization.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_REAL_DERIVATIVE_CARATHEODORY_ATREAL = prove
+ (`!f f' z.
+        (f has_real_derivative f') (atreal z) <=>
+        ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\
+            g real_continuous atreal z /\ g(z) = f'`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_RING `w' - z':real = a <=> w' = z' + a`] THEN
+  SIMP_TAC[GSYM FUN_EQ_THM; HAS_REAL_DERIVATIVE_ATREAL;
+           REAL_CONTINUOUS_ATREAL] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [EXISTS_TAC `\w. if w = z then f':real else (f(w) - f(z)) / (w - z)` THEN
+    ASM_SIMP_TAC[FUN_EQ_THM; COND_RAND; COND_RATOR; REAL_SUB_REFL] THEN
+    CONV_TAC REAL_FIELD;
+    FIRST_X_ASSUM SUBST_ALL_TAC THEN FIRST_X_ASSUM SUBST1_TAC THEN
+    ASM_SIMP_TAC[REAL_RING `(z + a) - (z + b * (w - w)):real = a`] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+      REALLIM_TRANSFORM)) THEN
+    SIMP_TAC[REALLIM_CONST; REAL_FIELD
+     `~(w = z) ==> x - (x * (w - z)) / (w - z) = &0`]]);;
+
+let HAS_REAL_DERIVATIVE_CARATHEODORY_WITHINREAL = prove
+ (`!f f' z s.
+        (f has_real_derivative f') (atreal z within s) <=>
+        ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\
+            g real_continuous (atreal z within s) /\ g(z) = f'`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_RING `w' - z':real = a <=> w' = z' + a`] THEN
+  SIMP_TAC[GSYM FUN_EQ_THM; HAS_REAL_DERIVATIVE_WITHINREAL;
+           REAL_CONTINUOUS_WITHINREAL] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [EXISTS_TAC `\w. if w = z then f':real else (f(w) - f(z)) / (w - z)` THEN
+    ASM_SIMP_TAC[FUN_EQ_THM; COND_RAND; COND_RATOR; REAL_SUB_REFL] THEN
+    CONV_TAC REAL_FIELD;
+    FIRST_X_ASSUM SUBST_ALL_TAC THEN FIRST_X_ASSUM SUBST1_TAC THEN
+    ASM_SIMP_TAC[REAL_RING `(z + a) - (z + b * (w - w)):real = a`] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+      REALLIM_TRANSFORM)) THEN
+    SIMP_TAC[REALLIM_CONST; REAL_FIELD
+     `~(w = z) ==> x - (x * (w - z)) / (w - z) = &0`]]);;
+
+let REAL_DIFFERENTIABLE_CARATHEODORY_ATREAL = prove
+ (`!f z. f real_differentiable atreal z <=>
+         ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\ g real_continuous atreal z`,
+  SIMP_TAC[real_differentiable; HAS_REAL_DERIVATIVE_CARATHEODORY_ATREAL] THEN
+  MESON_TAC[]);;
+
+let REAL_DIFFERENTIABLE_CARATHEODORY_WITHINREAL = prove
+ (`!f z s.
+      f real_differentiable (atreal z within s) <=>
+      ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\
+          g real_continuous (atreal z within s)`,
+  SIMP_TAC[real_differentiable;
+           HAS_REAL_DERIVATIVE_CARATHEODORY_WITHINREAL] THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Property of being an interval (equivalent to convex or connected).        *)
@@ -13203,7 +13304,7 @@ let INVARIANCE_OF_DOMAIN = prove
   SUBGOAL_THEN `compact(s2:real^N->bool)` ASSUME_TAC THENL
    [EXPAND_TAC "s2" THEN
     REWRITE_TAC[NORM_ARITH `norm(x:real^N) = dist(vec 0,x)`] THEN
-    REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
+    REWRITE_TAC[GSYM sphere; GSYM FRONTIER_CBALL] THEN
     SIMP_TAC[COMPACT_FRONTIER; COMPACT_CBALL];
     ALL_TAC] THEN
   SUBGOAL_THEN `compact(s:real^N->bool)` ASSUME_TAC THENL
@@ -13293,7 +13394,7 @@ let INVARIANCE_OF_DOMAIN = prove
       REWRITE_TAC[LE_REFL] THEN CONJ_TAC THENL
        [EXPAND_TAC "s2" THEN
         REWRITE_TAC[NORM_ARITH `norm(x:real^N) = dist(vec 0,x)`] THEN
-        REWRITE_TAC[NEGLIGIBLE_SPHERE];
+        REWRITE_TAC[REWRITE_RULE[sphere] NEGLIGIBLE_SPHERE];
         ALL_TAC] THEN
       X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
       EXISTS_TAC `ball(x:real^N,&1)` THEN
@@ -14210,7 +14311,7 @@ let HOMEOMORPHIC_BALLS_EQ = prove
 
 let HOMEOMORPHIC_SPHERES_EQ = prove
  (`!a:real^M b:real^N r s.
-        {x | dist(a,x) = r} homeomorphic {y | dist(b,y) = s} <=>
+        sphere(a,r) homeomorphic sphere(b,s) <=>
         r < &0 /\ s < &0 \/ r = &0 /\ s = &0 \/
         &0 < r /\ &0 < s /\ dimindex(:M) = dimindex(:N)`,
   REPEAT GEN_TAC THEN
@@ -14234,8 +14335,7 @@ let HOMEOMORPHIC_SPHERES_EQ = prove
   FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP (TAUT
    `(p <=> q) ==> ~p /\ ~q \/ p /\ q`)) THEN
   ASM_REWRITE_TAC[REAL_LT_REFL] THEN
-  ASM_SIMP_TAC[DIST_EQ_0; SING_GSPEC; HOMEOMORPHIC_FINITE; FINITE_SING;
-               CARD_SING] THEN
+  ASM_SIMP_TAC[SPHERE_SING; HOMEOMORPHIC_FINITE; FINITE_SING; CARD_SING] THEN
   SUBGOAL_THEN `&0 < r /\ &0 < s` STRIP_ASSUME_TAC THENL
    [ASM_REAL_ARITH_TAC; ASM_REWRITE_TAC[]] THEN
   EQ_TAC THENL
@@ -14250,7 +14350,7 @@ let HOMEOMORPHIC_SPHERES_EQ = prove
       ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN MATCH_MP_TAC MONO_EXISTS THEN
       X_GEN_TAC `u:real^M` THEN DISCH_TAC THEN
       FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
-      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM; sphere] THEN
       MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
       REWRITE_TAC[homeomorphic; HOMEOMORPHISM] THEN
       STRIP_TAC THEN EXISTS_TAC `(f:real^M->real^N) u` THEN
@@ -14260,6 +14360,7 @@ let HOMEOMORPHIC_SPHERES_EQ = prove
        MATCH_MP (REWRITE_RULE[IMP_CONJ] CONTINUOUS_ON_SUBSET))) THEN
       ASM SET_TAC[];
       ALL_TAC] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[sphere]) THEN
     SUBGOAL_THEN
      `{x:real^M | basis 1 dot x = &0} homeomorphic
       {x:real^N | basis 1 dot x = &0}`
@@ -14272,9 +14373,10 @@ let HOMEOMORPHIC_SPHERES_EQ = prove
      [ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM];
       TRANS_TAC HOMEOMORPHIC_TRANS `{y:real^N | dist (b,y) = s} DELETE v` THEN
       ASM_REWRITE_TAC[]] THEN
-    MATCH_MP_TAC(REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
-                 HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE) THEN
-    ASM_SIMP_TAC[BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL];
+    REWRITE_TAC[GSYM sphere] THEN
+    MATCH_MP_TAC HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE THEN
+    ASM_SIMP_TAC[BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL] THEN
+    ASM_REWRITE_TAC[NORM_ARITH `norm(u - a:real^N) = dist(a,u)`];
     DISCH_TAC THEN
     MP_TAC(ISPECL [`a:real^M`; `b:real^N`; `r:real`; `s:real`]
         HOMEOMORPHIC_CBALLS_EQ) THEN
@@ -14723,21 +14825,22 @@ let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM = prove
 
 let INESSENTIAL_IMP_CONTINUOUS_LOGARITHM_CIRCLE = prove
  (`!f:real^N->complex s.
-        (?a. homotopic_with (\h. T) (s,{z | norm z = &1}) f (\t. a))
+        (?a. homotopic_with (\h. T) (s,sphere(vec 0,&1)) f (\t. a))
         ==> ?g. g continuous_on s /\ !x. x IN s ==> f x = cexp(g x)`,
-  REPEAT GEN_TAC THEN SIMP_TAC[GSYM INESSENTIAL_EQ_CONTINUOUS_LOGARITHM] THEN
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[sphere; GSYM INESSENTIAL_EQ_CONTINUOUS_LOGARITHM] THEN
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:complex` THEN
   REWRITE_TAC[homotopic_with] THEN MATCH_MP_TAC MONO_EXISTS THEN
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
     (REWRITE_RULE[IMP_CONJ] SUBSET_TRANS)) THEN
-  SIMP_TAC[SUBSET; FORALL_IN_GSPEC; IN_UNIV; IN_DIFF; IN_SING] THEN
+  SIMP_TAC[SUBSET; DIST_0; FORALL_IN_GSPEC; IN_UNIV; IN_DIFF; IN_SING] THEN
   ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
   SIMP_TAC[COMPLEX_NORM_CX] THEN REAL_ARITH_TAC);;
 
 let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE = prove
  (`!f:real^N->complex s.
-        (?a. homotopic_with (\h. T) (s,{z | norm z = &1}) f (\t. a)) <=>
+        (?a. homotopic_with (\h. T) (s,sphere(vec 0,&1)) f (\t. a)) <=>
         (?g. (Cx o g) continuous_on s /\
              !x. x IN s ==> f x = cexp(ii * Cx(g x)))`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
@@ -14748,13 +14851,13 @@ let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE = prove
      [REWRITE_TAC[o_ASSOC] THEN MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
       ASM_REWRITE_TAC[CONTINUOUS_ON_CX_IM];
       FIRST_X_ASSUM(CHOOSE_THEN (MP_TAC o CONJUNCT1 o
-      MATCH_MP HOMOTOPIC_WITH_IMP_SUBSET)) THEN
-      ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; NORM_CEXP] THEN
+        MATCH_MP HOMOTOPIC_WITH_IMP_SUBSET)) THEN
+      ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_SPHERE_0; NORM_CEXP] THEN
       REWRITE_TAC[EULER; o_THM; RE_MUL_II; IM_MUL_II] THEN
       SIMP_TAC[RE_CX; IM_CX; REAL_NEG_0; REAL_EXP_0]];
     DISCH_THEN(X_CHOOSE_THEN `g:real^N->real` STRIP_ASSUME_TAC) THEN
     SUBGOAL_THEN
-     `?a. homotopic_with (\h. T) (s,{z | norm z = &1})
+     `?a. homotopic_with (\h. T) (s,sphere(vec 0,&1))
               ((cexp o (\z. ii * z)) o (Cx o g)) (\x:real^N. a)`
     MP_TAC THENL
      [MATCH_MP_TAC NULLHOMOTOPIC_THROUGH_CONTRACTIBLE THEN
@@ -14762,7 +14865,8 @@ let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE = prove
       ASM_SIMP_TAC[CONTINUOUS_ON_COMPOSE; CONTINUOUS_ON_CEXP; CONJ_ASSOC;
                    CONTINUOUS_ON_COMPLEX_LMUL; CONTINUOUS_ON_ID] THEN
       CONJ_TAC THENL
-       [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; o_THM; IM_CX] THEN
+       [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; IN_SPHERE_0;
+                    o_THM; IM_CX] THEN
         SIMP_TAC[NORM_CEXP; RE_MUL_II; REAL_EXP_0; REAL_NEG_0];
         MATCH_MP_TAC STARLIKE_IMP_CONTRACTIBLE THEN
         MATCH_MP_TAC CONVEX_IMP_STARLIKE THEN CONJ_TAC THENL
@@ -15018,14 +15122,14 @@ let INESSENTIAL_EQ_EXTENSIBLE = prove
 
 let INESSENTIAL_IMP_UNICOHERENT = prove
  (`!u:real^N->bool.
-        (!f. f continuous_on u /\ IMAGE f u SUBSET {x | norm x = &1}
+        (!f. f continuous_on u /\ IMAGE f u SUBSET sphere(vec 0,&1)
              ==> ?a. homotopic_with (\h. T)
                        (u,(:complex) DIFF {Cx (&0)}) f (\t. a))
         ==> !s t. connected s /\ connected t /\ s UNION t = u /\
                   closed_in (subtopology euclidean u) s /\
                   closed_in (subtopology euclidean u) t
                   ==> connected (s INTER t)`,
-  REWRITE_TAC[INESSENTIAL_EQ_CONTINUOUS_LOGARITHM] THEN
+  REWRITE_TAC[sphere; DIST_0; INESSENTIAL_EQ_CONTINUOUS_LOGARITHM] THEN
   REPEAT STRIP_TAC THEN SIMP_TAC[CONNECTED_CLOSED_IN_EQ; NOT_EXISTS_THM] THEN
   MAP_EVERY X_GEN_TAC [`v:real^N->bool`; `w:real^N->bool`] THEN STRIP_TAC THEN
   SUBGOAL_THEN
@@ -15169,7 +15273,7 @@ let CONTRACTIBLE_IMP_UNICOHERENT = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NULLHOMOTOPIC_FROM_CONTRACTIBLE THEN
   ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
    (REWRITE_RULE[IMP_CONJ] SUBSET_TRANS)) THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_DIFF; IN_UNIV; IN_SING] THEN
+  REWRITE_TAC[SUBSET; IN_SPHERE_0; IN_DIFF; IN_UNIV; IN_SING] THEN
   ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
   SIMP_TAC[COMPLEX_NORM_0] THEN REAL_ARITH_TAC);;
 

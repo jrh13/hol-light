@@ -1439,6 +1439,36 @@ let COUNTABLE_CART = prove
   ASM_MESON_TAC[LE; ARITH_RULE `1 <= SUC n`;
                 ARITH_RULE `n < i /\ ~(i = SUC n) ==> SUC n < i`]);;
 
+let COUNTABLE_SUBSET_IMAGE = prove
+ (`!f:A->B s t.
+        COUNTABLE(t) /\ t SUBSET (IMAGE f s) <=>
+        ?s'. COUNTABLE s' /\ s' SUBSET s /\ (t = IMAGE f s')`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[COUNTABLE_IMAGE; IMAGE_SUBSET]] THEN
+  STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (\y. @x. x IN s /\ ((f:A->B)(x) = y)) t` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE] THEN
+  REWRITE_TAC[EXTENSION; SUBSET; FORALL_IN_IMAGE] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[SUBSET; IN_IMAGE]; ALL_TAC] THEN
+  REWRITE_TAC[IN_IMAGE] THEN X_GEN_TAC `y:B` THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+  REWRITE_TAC[UNWIND_THM2; GSYM CONJ_ASSOC] THEN
+  ASM_MESON_TAC[SUBSET; IN_IMAGE]);;
+
+let EXISTS_COUNTABLE_SUBSET_IMAGE = prove
+ (`!P f s.
+    (?t. COUNTABLE t /\ t SUBSET IMAGE f s /\ P t) <=>
+    (?t. COUNTABLE t /\ t SUBSET s /\ P (IMAGE f t))`,
+  REWRITE_TAC[COUNTABLE_SUBSET_IMAGE; CONJ_ASSOC] THEN MESON_TAC[]);;
+
+let FORALL_COUNTABLE_SUBSET_IMAGE = prove
+ (`!P f s. (!t. COUNTABLE t /\ t SUBSET IMAGE f s ==> P t) <=>
+           (!t. COUNTABLE t /\ t SUBSET s ==> P(IMAGE f t))`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!x. P x) <=> ~(?x. ~P x)`] THEN
+  REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC; EXISTS_COUNTABLE_SUBSET_IMAGE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of infinite list and cartesian product types.                 *)
 (* ------------------------------------------------------------------------- *)
@@ -1646,9 +1676,9 @@ let CARD_EQ_REAL_IMP_UNCOUNTABLE = prove
     (REWRITE_RULE[IMP_CONJ] CARD_EQ_COUNTABLE)) THEN
   REWRITE_TAC[UNCOUNTABLE_REAL] THEN ASM_MESON_TAC[CARD_EQ_SYM]);;
 
-let COUNTABLE_IMP_CARD_LT_REAL = prove                           
- (`!s:A->bool. COUNTABLE s ==> s <_c (:real)`,               
-  REWRITE_TAC[GSYM CARD_NOT_LE] THEN                               
+let COUNTABLE_IMP_CARD_LT_REAL = prove
+ (`!s:A->bool. COUNTABLE s ==> s <_c (:real)`,
+  REWRITE_TAC[GSYM CARD_NOT_LE] THEN
   ASM_MESON_TAC[CARD_LE_COUNTABLE; UNCOUNTABLE_REAL]);;
 
 (* ------------------------------------------------------------------------- *)
