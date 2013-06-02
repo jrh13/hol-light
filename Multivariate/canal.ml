@@ -144,6 +144,10 @@ let COMPLEX_IN_CBALL_0 = prove
  (`!v r. v IN cball(Cx(&0),r) <=> norm v <= r`,
   REWRITE_TAC [GSYM COMPLEX_VEC_0; IN_CBALL_0]);;
 
+let COMPLEX_IN_SPHERE_0 = prove
+ (`!v r. v IN sphere(Cx(&0),r) <=> norm v = r`,
+  REWRITE_TAC [GSYM COMPLEX_VEC_0; IN_SPHERE_0]);;
+
 let IN_BALL_RE = prove
  (`!x z e. x IN ball(z,e) ==> abs(Re(x) - Re(z)) < e`,
   REPEAT GEN_TAC THEN REWRITE_TAC[IN_BALL; dist] THEN
@@ -1505,6 +1509,63 @@ let COMPLEX_DERIVATIVE_COMPOSE_LINEAR = prove
                    COMPLEX_DIFFERENTIABLE_LINEAR;
                    COMPLEX_DERIVATIVE_LINEAR]
      (SPECL [`\w:complex. c * w`] COMPLEX_DERIVATIVE_CHAIN)]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Caratheodory characterization.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_COMPLEX_DERIVATIVE_CARATHEODORY_AT = prove
+ (`!f f' z.
+        (f has_complex_derivative f') (at z) <=>
+        ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\
+            g continuous at z /\ g(z) = f'`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[COMPLEX_RING `w' - z':complex = a <=> w' = z' + a`] THEN
+  SIMP_TAC[GSYM FUN_EQ_THM; HAS_COMPLEX_DERIVATIVE_AT; CONTINUOUS_AT] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [EXISTS_TAC `\w. if w = z then f':complex else (f(w) - f(z)) / (w - z)` THEN
+    ASM_SIMP_TAC[FUN_EQ_THM; COND_RAND; COND_RATOR; COMPLEX_SUB_REFL] THEN
+    CONV_TAC COMPLEX_FIELD;
+    FIRST_X_ASSUM SUBST_ALL_TAC THEN FIRST_X_ASSUM SUBST1_TAC THEN
+    ASM_SIMP_TAC[COMPLEX_RING `(z + a) - (z + b * (w - w)):complex = a`] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+      LIM_TRANSFORM)) THEN
+    SIMP_TAC[LIM_CONST; COMPLEX_VEC_0; COMPLEX_FIELD
+     `~(w = z) ==> x - (x * (w - z)) / (w - z) = Cx(&0)`]]);;
+
+let HAS_COMPLEX_DERIVATIVE_CARATHEODORY_WITHIN = prove
+ (`!f f' z s.
+        (f has_complex_derivative f') (at z within s) <=>
+        ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\
+            g continuous (at z within s) /\ g(z) = f'`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[COMPLEX_RING `w' - z':complex = a <=> w' = z' + a`] THEN
+  SIMP_TAC[GSYM FUN_EQ_THM; HAS_COMPLEX_DERIVATIVE_WITHIN;
+           CONTINUOUS_WITHIN] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [EXISTS_TAC `\w. if w = z then f':complex else (f(w) - f(z)) / (w - z)` THEN
+    ASM_SIMP_TAC[FUN_EQ_THM; COND_RAND; COND_RATOR; COMPLEX_SUB_REFL] THEN
+    CONV_TAC COMPLEX_FIELD;
+    FIRST_X_ASSUM SUBST_ALL_TAC THEN FIRST_X_ASSUM SUBST1_TAC THEN
+    ASM_SIMP_TAC[COMPLEX_RING `(z + a) - (z + b * (w - w)):complex = a`] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+      LIM_TRANSFORM)) THEN
+    SIMP_TAC[LIM_CONST; COMPLEX_VEC_0; COMPLEX_FIELD
+     `~(w = z) ==> x - (x * (w - z)) / (w - z) = Cx(&0)`]]);;
+
+let COMPLEX_DIFFERENTIABLE_CARATHEODORY_AT = prove
+ (`!f z. f complex_differentiable at z <=>
+         ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\ g continuous at z`,
+  SIMP_TAC[complex_differentiable; HAS_COMPLEX_DERIVATIVE_CARATHEODORY_AT] THEN
+  MESON_TAC[]);;
+
+let COMPLEX_DIFFERENTIABLE_CARATHEODORY_WITHIN = prove
+ (`!f z s.
+      f complex_differentiable (at z within s) <=>
+      ?g. (!w. f(w) - f(z) = g(w) * (w - z)) /\ g continuous (at z within s)`,
+  SIMP_TAC[complex_differentiable;
+           HAS_COMPLEX_DERIVATIVE_CARATHEODORY_WITHIN] THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A slightly stronger, more traditional notion of analyticity on a set.     *)

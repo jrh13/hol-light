@@ -1,3 +1,56 @@
+Fri 31st May 2013       cart.ml
+
+Added:
+
+  PCROSS_INTER =
+   |- (!s t u. s PCROSS (t INTER u) = (s PCROSS t) INTER (s PCROSS u)) /\
+      (!s t u. (s INTER t) PCROSS u = (s PCROSS u) INTER (t PCROSS u))
+
+  PCROSS_UNION =
+   |- (!s t u. s PCROSS (t UNION u) = (s PCROSS t) UNION (s PCROSS u)) /\
+      (!s t u. (s UNION t) PCROSS u = (s PCROSS u) UNION (t PCROSS u))
+
+  PCROSS_UNIONS_UNIONS =
+   |- !f g. (UNIONS f) PCROSS (UNIONS g) =
+            UNIONS {s PCROSS t | s IN f /\ t IN g}
+
+  PCROSS_UNIONS =
+   |- (!s f. s PCROSS (UNIONS f) = UNIONS {s PCROSS t | t IN f}) /\
+      (!f t. (UNIONS f) PCROSS t = UNIONS {s PCROSS t | s IN f})
+
+Thu 30th May 2013       Library/card.ml
+
+Added some analogs of theorems already there for FINITE
+
+  COUNTABLE_SUBSET_IMAGE =
+    |- !f s t.
+         COUNTABLE t /\ t SUBSET IMAGE f s <=>
+         (?s'. COUNTABLE s' /\ s' SUBSET s /\ t = IMAGE f s')
+
+  EXISTS_COUNTABLE_SUBSET_IMAGE =
+    |- !P f s.
+         (?t. COUNTABLE t /\ t SUBSET IMAGE f s /\ P t) <=>
+         (?t. COUNTABLE t /\ t SUBSET s /\ P (IMAGE f t))
+
+  FORALL_COUNTABLE_SUBSET_IMAGE =
+    |- !P f s.
+         (!t. COUNTABLE t /\ t SUBSET IMAGE f s ==> P t) <=>
+         (!t. COUNTABLE t /\ t SUBSET s ==> P (IMAGE f t))
+
+Thu 30th May 2013       sets.ml
+
+Added the following
+
+  FORALL_SUBSET_UNION =
+   |- !t u:A->bool.
+        (!s. s SUBSET t UNION u ==> P s) <=>
+        (!t' u'. t' SUBSET t /\ u' SUBSET u ==> P(t' UNION u'))
+
+  EXISTS_SUBSET_UNION =
+   |- !t u:A->bool.
+        (?s. s SUBSET t UNION u /\ P s) <=>
+        (?t' u'. t' SUBSET t /\ u' SUBSET u /\ P(t' UNION u'))
+
 Sun 26th May 2013       hol.ml
 
 Added an extra line from Hendrik Tews to make things work more smoothly

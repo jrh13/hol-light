@@ -2513,15 +2513,14 @@ let FRONTIER_RETRACT_OF_PUNCTURED_UNIVERSE = prove
 
 let SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE_GEN = prove
  (`!a r b:real^N.
-      b IN ball(a,r) ==> {x | dist(a,x) = r} retract_of ((:real^N) DELETE b)`,
+      b IN ball(a,r) ==> sphere(a,r) retract_of ((:real^N) DELETE b)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
   MATCH_MP_TAC FRONTIER_RETRACT_OF_PUNCTURED_UNIVERSE THEN
   ASM_REWRITE_TAC[CONVEX_CBALL; COMPACT_CBALL; INTERIOR_CBALL]);;
 
 let SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE = prove
- (`!a r. &0 < r ==> {x | norm (x - a) = r} retract_of ((:real^N) DELETE a)`,
+ (`!a r. &0 < r ==> sphere(a,r) retract_of ((:real^N) DELETE a)`,
   REPEAT STRIP_TAC THEN
-  REWRITE_TAC[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`] THEN
   MATCH_MP_TAC SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE_GEN THEN
   ASM_REWRITE_TAC[CENTRE_IN_BALL]);;
 
@@ -2548,23 +2547,20 @@ let RETRACT_OF_PCROSS = prove
   SIMP_TAC[FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 let LOCALLY_PATH_CONNECTED_SPHERE = prove
- (`!a:real^N r. locally path_connected {x | dist(a,x) = r}`,
+ (`!a:real^N r. locally path_connected (sphere(a,r))`,
   REPEAT GEN_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
    (REAL_ARITH `r < &0 \/ r = &0 \/ &0 < r`)
   THENL
-   [ASM_SIMP_TAC[NORM_ARITH `r < &0 ==> ~(dist(a:real^N,x) = r)`] THEN
-    REWRITE_TAC[EMPTY_GSPEC; LOCALLY_EMPTY];
-    ASM_SIMP_TAC[NORM_ARITH `r = &0 ==> (dist(a:real^N,x) = r <=> x = a)`] THEN
-    REWRITE_TAC[SING_GSPEC; LOCALLY_SING; PATH_CONNECTED_SING];
+   [ASM_SIMP_TAC[SPHERE_EMPTY; LOCALLY_EMPTY];
+    ASM_SIMP_TAC[SPHERE_SING; LOCALLY_SING; PATH_CONNECTED_SING];
     MATCH_MP_TAC RETRACT_OF_LOCALLY_PATH_CONNECTED THEN
     EXISTS_TAC `(:real^N) DELETE a` THEN
-    ASM_SIMP_TAC[ONCE_REWRITE_RULE[DIST_SYM] dist;
-                 SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE] THEN
+    ASM_SIMP_TAC[SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE] THEN
     MATCH_MP_TAC OPEN_IMP_LOCALLY_PATH_CONNECTED THEN
     SIMP_TAC[OPEN_DELETE; OPEN_UNIV]]);;
 
 let LOCALLY_CONNECTED_SPHERE = prove
- (`!a:real^N r. locally connected {x | dist(a,x) = r}`,
+ (`!a:real^N r. locally connected(sphere(a,r))`,
   SIMP_TAC[LOCALLY_PATH_CONNECTED_SPHERE;
            LOCALLY_PATH_CONNECTED_IMP_LOCALLY_CONNECTED]);;
 
@@ -2681,18 +2677,17 @@ let BORSUK_HOMOTOPY_EXTENSION = prove
 let NULLHOMOTOPIC_INTO_SPHERE_EXTENSION = prove
  (`!f:real^M->real^N s a r.
     closed s /\ f continuous_on s /\ ~(s = {}) /\
-    IMAGE f s SUBSET {x | norm(x - a) = r}
-    ==> ((?c. homotopic_with (\x. T) (s,{x | norm(x - a) = r}) f (\x. c)) <=>
+    IMAGE f s SUBSET sphere(a,r)
+    ==> ((?c. homotopic_with (\x. T) (s,sphere(a,r)) f (\x. c)) <=>
          (?g. g continuous_on (:real^M) /\
-              IMAGE g (:real^M) SUBSET {x | norm(x - a) = r} /\
+              IMAGE g (:real^M) SUBSET sphere(a,r) /\
               !x. x IN s ==> g x = f x))`,
   REPEAT GEN_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
    (REAL_ARITH `r < &0 \/ r = &0 \/ &0 < r`)
   THENL
-   [ASM_SIMP_TAC[NORM_ARITH `r < &0 ==> ~(norm x = r)`] THEN
-    ASM_SIMP_TAC[EMPTY_GSPEC; SUBSET_EMPTY; IMAGE_EQ_EMPTY] THEN
+   [ASM_SIMP_TAC[SPHERE_EMPTY; SUBSET_EMPTY; IMAGE_EQ_EMPTY] THEN
     CONV_TAC TAUT;
-    ASM_SIMP_TAC[NORM_EQ_0; VECTOR_SUB_EQ; SING_GSPEC] THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[SPHERE_SING] THEN STRIP_TAC THEN
     MATCH_MP_TAC(TAUT `p /\ q ==> (p <=> q)`) THEN CONJ_TAC THENL
      [EXISTS_TAC `a:real^N` THEN SIMP_TAC[HOMOTOPIC_WITH; PCROSS] THEN
       EXISTS_TAC `\y:real^(1,M)finite_sum. (a:real^N)`;
@@ -2710,7 +2705,7 @@ let NULLHOMOTOPIC_INTO_SPHERE_EXTENSION = prove
       ASM SET_TAC[];
       DISCH_THEN(X_CHOOSE_THEN `g:real^M->real^N` STRIP_ASSUME_TAC) THEN
       MP_TAC(ISPECL [`g:real^M->real^N`; `(:real^M)`;
-                     `{x:real^N | norm(x - a) = r}`]
+                     `sphere(a:real^N,r)`]
          NULLHOMOTOPIC_FROM_CONTRACTIBLE) THEN
       ASM_REWRITE_TAC[CONTRACTIBLE_UNIV] THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c:real^N` THEN
@@ -2864,7 +2859,7 @@ let NO_RETRACTION_CBALL = prove
   ASM_SIMP_TAC[BROUWER_BALL] THEN REWRITE_TAC[NOT_FORALL_THM] THEN
   EXISTS_TAC `\x:real^N. &2 % a - x` THEN REWRITE_TAC[NOT_IMP] THEN
   SIMP_TAC[CONTINUOUS_ON_SUB; CONTINUOUS_ON_ID; CONTINUOUS_ON_CONST] THEN
-  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; FRONTIER_CBALL; IN_ELIM_THM] THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; FRONTIER_CBALL; IN_SPHERE] THEN
   SIMP_TAC[dist; VECTOR_ARITH `a - (&2 % a - x) = --(a - x)`; NORM_NEG] THEN
   REWRITE_TAC[VECTOR_ARITH `(&2 % a - y = y) <=> (a - y = vec 0)`] THEN
   ASM_MESON_TAC[NORM_0; REAL_LT_REFL]);;
@@ -2917,7 +2912,7 @@ let FRONTIER_SUBSET_RETRACTION = prove
   EXISTS_TAC `(\y. a + B / norm(y - a) % (y - a)) o (q:real^N->real^N)` THEN
   REWRITE_TAC[retraction; FRONTIER_SUBSET_EQ; CLOSED_CBALL] THEN
   REWRITE_TAC[FRONTIER_CBALL; SUBSET; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
-  REWRITE_TAC[IN_ELIM_THM; DIST_0] THEN REPEAT CONJ_TAC THENL
+  REWRITE_TAC[IN_SPHERE; DIST_0] THEN REPEAT CONJ_TAC THENL
    [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
      [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; SUBSET_UNIV]; ALL_TAC] THEN
     MATCH_MP_TAC CONTINUOUS_ON_ADD THEN REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
@@ -2982,7 +2977,7 @@ let COMPACT_SUBSET_FRONTIER_RETRACTION = prove
   REWRITE_TAC[SUBSET] THEN X_GEN_TAC `p:real^N` THEN DISCH_TAC THEN
   SUBGOAL_THEN
    `?h:real^N->real^N.
-        retraction (UNIV DELETE p,{x | dist(vec 0,x) = r}) h`
+        retraction (UNIV DELETE p,sphere(vec 0,r)) h`
   STRIP_ASSUME_TAC THENL
    [REWRITE_TAC[GSYM retract_of] THEN
     MATCH_MP_TAC SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE_GEN THEN
@@ -2994,7 +2989,7 @@ let COMPACT_SUBSET_FRONTIER_RETRACTION = prove
   ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN REWRITE_TAC[] THEN
   REWRITE_TAC[retraction] THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [retraction]) THEN
-  SIMP_TAC[SUBSET; IN_ELIM_THM; IN_CBALL; REAL_EQ_IMP_LE] THEN
+  SIMP_TAC[SUBSET; IN_SPHERE; IN_CBALL; REAL_EQ_IMP_LE] THEN
   REWRITE_TAC[FORALL_IN_IMAGE; IN_DELETE; IN_UNIV; o_THM] THEN STRIP_TAC THEN
   SUBGOAL_THEN
    `!x. x IN cball (vec 0,r) ==> ~((g:real^N->real^N) x = p)`
@@ -3016,20 +3011,15 @@ let COMPACT_SUBSET_FRONTIER_RETRACTION = prove
 (* ------------------------------------------------------------------------- *)
 
 let CONTRACTIBLE_SPHERE = prove
- (`!a:real^N r. contractible {x | norm(x - a) = r} <=> r <= &0`,
+ (`!a:real^N r. contractible(sphere(a,r)) <=> r <= &0`,
   REPEAT GEN_TAC THEN REWRITE_TAC[contractible; GSYM REAL_NOT_LT] THEN
   REWRITE_TAC[NULLHOMOTOPIC_FROM_SPHERE_EXTENSION] THEN
   ASM_CASES_TAC `&0 < r` THEN ASM_REWRITE_TAC[] THENL
    [FIRST_ASSUM(MP_TAC o ISPEC `a:real^N` o MATCH_MP NO_RETRACTION_CBALL) THEN
-    REWRITE_TAC[FRONTIER_CBALL; retract_of; retraction;
-                ONCE_REWRITE_RULE[DIST_SYM] dist] THEN
-    MATCH_MP_TAC(MESON[]
-     `(!x. P x) ==> ~(?x. P x /\ Q x) ==> ~(?x. Q x)`) THEN
-    SIMP_TAC[SUBSET; IN_CBALL; ONCE_REWRITE_RULE[DIST_SYM] dist] THEN
-    SIMP_TAC[IN_ELIM_THM; REAL_LE_REFL];
+    SIMP_TAC[FRONTIER_CBALL; retract_of; retraction; SPHERE_SUBSET_CBALL];
     RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LT]) THEN
     EXISTS_TAC `\x:real^N. x` THEN REWRITE_TAC[CONTINUOUS_ON_ID; IMAGE_ID] THEN
-    REWRITE_TAC[SUBSET; IN_CBALL; IN_ELIM_THM] THEN
+    REWRITE_TAC[SUBSET; IN_CBALL; IN_SPHERE; IN_ELIM_THM] THEN
     POP_ASSUM MP_TAC THEN NORM_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)

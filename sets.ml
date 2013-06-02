@@ -403,6 +403,24 @@ let UNION_SUBSET = prove
  (`!s t u. (s UNION t) SUBSET u <=> s SUBSET u /\ t SUBSET u`,
   SET_TAC[]);;
 
+let FORALL_SUBSET_UNION = prove
+ (`!t u:A->bool.                                                               
+        (!s. s SUBSET t UNION u ==> P s) <=>
+        (!t' u'. t' SUBSET t /\ u' SUBSET u ==> P(t' UNION u'))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL              
+   [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[];
+    DISCH_TAC THEN X_GEN_TAC `s:A->bool` THEN DISCH_TAC THEN
+    FIRST_ASSUM(MP_TAC o SPECL [`s INTER t:A->bool`; `s INTER u:A->bool`]) THEN
+    ANTS_TAC THENL [ALL_TAC; MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC] THEN
+    ASM SET_TAC[]]);;        
+                        
+let EXISTS_SUBSET_UNION = prove
+ (`!t u:A->bool.                
+        (?s. s SUBSET t UNION u /\ P s) <=>
+        (?t' u'. t' SUBSET t /\ u' SUBSET u /\ P(t' UNION u'))`,
+  REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  REWRITE_TAC[FORALL_SUBSET_UNION] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Intersection.                                                             *)
 (* ------------------------------------------------------------------------- *)

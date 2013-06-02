@@ -2217,7 +2217,7 @@ let MEASURABLE_CONVEX = prove
 (* ------------------------------------------------------------------------- *)
 
 let NEGLIGIBLE_SPHERE = prove
- (`!a r. negligible {x:real^N | dist(a,x) = r}`,
+ (`!a:real^N r. negligible (sphere(a,e))`,
   REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
   SIMP_TAC[NEGLIGIBLE_CONVEX_FRONTIER; CONVEX_CBALL]);;
 

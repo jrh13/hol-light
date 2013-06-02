@@ -6254,6 +6254,25 @@ let LOCALLY_COMPACT_CLOSED_IN = prove
   REWRITE_TAC[CLOSED_IN_CLOSED] THEN REPEAT STRIP_TAC THEN
   ASM_SIMP_TAC[LOCALLY_COMPACT_INTER; CLOSED_IMP_LOCALLY_COMPACT]);;
 
+let SIGMA_COMPACT = prove
+ (`!s:real^N->bool.
+        locally compact s
+        ==> ?f. COUNTABLE f /\ (!t. t IN f ==> compact t) /\ UNIONS f = s`,
+  GEN_TAC THEN REWRITE_TAC[LOCALLY_COMPACT] THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^N->real^N->bool`; `c:real^N->real^N->bool`] THEN
+  DISCH_TAC THEN
+  MP_TAC(ISPECL [`IMAGE (u:real^N->real^N->bool) s`; `s:real^N->bool`]
+   LINDELOF_OPEN_IN) THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+  REWRITE_TAC[EXISTS_COUNTABLE_SUBSET_IMAGE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `IMAGE (c:real^N->real^N->bool) t` THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; FORALL_IN_IMAGE; FORALL_IN_UNIONS] THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE] THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations between components and path components.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -6875,8 +6894,10 @@ let CONNECTED_PUNCTURED_BALL = prove
   SIMP_TAC[CONNECTED_OPEN_DELETE; OPEN_BALL; CONNECTED_BALL]);;
 
 let PATH_CONNECTED_SPHERE = prove
- (`!a r. 2 <= dimindex(:N) ==> path_connected {x:real^N | norm(x - a) = r}`,
-  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `a:real^N` THEN GEN_TAC THEN
+ (`!a:real^N r. 2 <= dimindex(:N) ==> path_connected(sphere(a,r))`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[sphere; dist] THEN ONCE_REWRITE_TAC[NORM_SUB] THEN
+  GEOM_ORIGIN_TAC `a:real^N` THEN GEN_TAC THEN
   REWRITE_TAC[VECTOR_SUB_RZERO] THEN DISCH_TAC THEN
   REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
    (REAL_ARITH `r < &0 \/ r = &0 \/ &0 < r`)
@@ -6908,32 +6929,28 @@ let PATH_CONNECTED_SPHERE = prove
     REWRITE_TAC[REWRITE_RULE[o_DEF] CONTINUOUS_AT_LIFT_NORM]]]);;
 
 let CONNECTED_SPHERE = prove
- (`!a r. 2 <= dimindex(:N) ==> connected {x:real^N | norm(x - a) = r}`,
+ (`!a:real^N r. 2 <= dimindex(:N) ==> connected(sphere(a,r))`,
   SIMP_TAC[PATH_CONNECTED_SPHERE; PATH_CONNECTED_IMP_CONNECTED]);;
 
 let CONNECTED_SPHERE_EQ = prove
- (`!a:real^N r.
-        connected {x | dist(a,x) = r} <=> 2 <= dimindex(:N) \/ r <= &0`,
+ (`!a:real^N r. connected(sphere(a,r)) <=> 2 <= dimindex(:N) \/ r <= &0`,
   let lemma = prove
    (`!a:real^1 r. &0 < r
          ==> ?x y. ~(x = y) /\ dist(a,x) = r /\ dist(a,y) = r`,
     MP_TAC SPHERE_1 THEN REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
     COND_CASES_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
-    REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_INSERT; NOT_IN_EMPTY] THEN
+    REWRITE_TAC[EXTENSION; IN_SPHERE; IN_INSERT; NOT_IN_EMPTY] THEN
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[]
     `~(a = b) ==> ?x y. ~(x = y) /\ (x = a \/ x = b) /\ (y = a \/ y = b)`) THEN
     REWRITE_TAC[VECTOR_ARITH `a - r:real^1 = a + r <=> r = vec 0`] THEN
     REWRITE_TAC[GSYM DROP_EQ; DROP_VEC; LIFT_DROP] THEN ASM_REAL_ARITH_TAC) in
   REPEAT GEN_TAC THEN ASM_CASES_TAC `r < &0` THEN
-  ASM_SIMP_TAC[REAL_LT_IMP_LE; EMPTY_GSPEC; CONNECTED_EMPTY;
-               NORM_ARITH `r < &0 ==> ~(dist(a:real^N,x) = r)`] THEN
+  ASM_SIMP_TAC[SPHERE_EMPTY; CONNECTED_EMPTY; REAL_LT_IMP_LE] THEN
   ASM_CASES_TAC `r = &0` THEN
-  ASM_REWRITE_TAC[DIST_EQ_0; SING_GSPEC; CONNECTED_SING; REAL_LE_REFL] THEN
+  ASM_SIMP_TAC[SPHERE_SING; REAL_LE_REFL; CONNECTED_SING] THEN
   SUBGOAL_THEN `&0 < r` ASSUME_TAC THENL
    [ASM_REAL_ARITH_TAC; ASM_REWRITE_TAC[GSYM REAL_NOT_LT]] THEN
-  EQ_TAC THEN
-  REWRITE_TAC[REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
-                          CONNECTED_SPHERE] THEN
+  EQ_TAC THEN SIMP_TAC[CONNECTED_SPHERE] THEN
   DISCH_THEN(MP_TAC o MATCH_MP CONNECTED_FINITE_IFF_SING) THEN
   ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
   SIMP_TAC[DIMINDEX_GE_1; ARITH_RULE `1 <= n ==> (2 <= n <=> ~(n = 1))`] THEN
@@ -6942,40 +6959,34 @@ let CONNECTED_SPHERE_EQ = prove
     REWRITE_TAC[GEOM_EQUAL_DIMENSION_RULE th FINITE_SPHERE_1]) THEN
   REWRITE_TAC[SET_RULE
    `~(s = {} \/ ?a. s = {a}) <=> ?x y. ~(x = y) /\ x IN s /\ y IN s`] THEN
-  REWRITE_TAC[IN_ELIM_THM] THEN
+  REWRITE_TAC[IN_SPHERE] THEN
   FIRST_X_ASSUM(MATCH_MP_TAC o C GEOM_EQUAL_DIMENSION_RULE lemma) THEN
   ASM_REWRITE_TAC[]);;
 
 let PATH_CONNECTED_SPHERE_EQ = prove
- (`!a:real^N r.
-        path_connected {x | dist(a,x) = r} <=> 2 <= dimindex(:N) \/ r <= &0`,
+ (`!a:real^N r. path_connected(sphere(a,r)) <=> 2 <= dimindex(:N) \/ r <= &0`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
    [REWRITE_TAC[GSYM CONNECTED_SPHERE_EQ; PATH_CONNECTED_IMP_CONNECTED];
-    STRIP_TAC THEN
-    ASM_SIMP_TAC[REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
-                 PATH_CONNECTED_SPHERE]] THEN
+    STRIP_TAC THEN ASM_SIMP_TAC[PATH_CONNECTED_SPHERE]] THEN
   ASM_CASES_TAC `r < &0` THEN
-  ASM_SIMP_TAC[EMPTY_GSPEC; PATH_CONNECTED_EMPTY;
-               NORM_ARITH `r < &0 ==> ~(dist(a:real^N,x) = r)`] THEN
+  ASM_SIMP_TAC[SPHERE_EMPTY; PATH_CONNECTED_EMPTY] THEN
   ASM_CASES_TAC `r = &0` THEN
-  ASM_REWRITE_TAC[DIST_EQ_0; SING_GSPEC; PATH_CONNECTED_SING] THEN
+  ASM_SIMP_TAC[SPHERE_SING; PATH_CONNECTED_SING] THEN
   ASM_REAL_ARITH_TAC);;
 
 let FINITE_SPHERE = prove
- (`!a:real^N r.
-        FINITE {x | dist(a,x) = r} <=> r <= &0 \/ dimindex(:N) = 1`,
+ (`!a:real^N r. FINITE(sphere(a,r)) <=> r <= &0 \/ dimindex(:N) = 1`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `dimindex(:N) = 1` THEN
   ASM_REWRITE_TAC[] THENL
    [RULE_ASSUM_TAC(REWRITE_RULE[GSYM DIMINDEX_1]) THEN
     FIRST_ASSUM(MATCH_ACCEPT_TAC o C PROVE_HYP
       (GEOM_EQUAL_DIMENSION_RULE(ASSUME `dimindex(:N) = dimindex(:1)`)
       FINITE_SPHERE_1));
-    ASM_SIMP_TAC[REWRITE_RULE[NORM_ARITH `norm(x - a:real^N) = dist(a,x)`]
-                 CONNECTED_SPHERE; ARITH_RULE `2 <= n <=> 1 <= n /\ ~(n = 1)`;
+    ASM_SIMP_TAC[CONNECTED_SPHERE; ARITH_RULE `2 <= n <=> 1 <= n /\ ~(n = 1)`;
                  DIMINDEX_GE_1; CONNECTED_FINITE_IFF_SING] THEN
     REWRITE_TAC[SET_RULE `(s = {} \/ ?a. s = {a}) <=>
                           (!a b. a IN s /\ b IN s ==> a = b)`] THEN
-    SIMP_TAC[IN_ELIM_THM] THEN EQ_TAC THENL [ALL_TAC; CONV_TAC NORM_ARITH] THEN
+    SIMP_TAC[IN_SPHERE] THEN EQ_TAC THENL [ALL_TAC; CONV_TAC NORM_ARITH] THEN
     ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
     REWRITE_TAC[REAL_NOT_LE] THEN DISCH_TAC THEN
     MP_TAC(ISPECL [`a:real^N`; `r:real`] VECTOR_CHOOSE_DIST) THEN
@@ -7031,6 +7042,8 @@ let PATH_CONNECTED_ANNULUS = prove
         REWRITE_TAC[GSYM PCROSS] THEN
         MATCH_MP_TAC PATH_CONNECTED_PCROSS THEN ASM_REWRITE_TAC[] THEN
         ONCE_REWRITE_TAC[NORM_ARITH `norm y = norm(y - vec 0:real^N)`] THEN
+        ONCE_REWRITE_TAC[NORM_SUB] THEN
+        REWRITE_TAC[REWRITE_RULE[dist] (GSYM sphere)] THEN
         ASM_SIMP_TAC[PATH_CONNECTED_SPHERE]]]) in
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPEC `a:real^N` lemma) THEN
@@ -7145,6 +7158,7 @@ let PATH_CONNECTED_COMPLEMENT_BOUNDED_CONVEX = prove
     REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_DIFF; IN_UNIV; IN_BALL; dist] THEN
     MESON_TAC[NORM_SUB; REAL_LT_REFL];
     MP_TAC(ISPECL [`a:real^N`; `B:real`] PATH_CONNECTED_SPHERE) THEN
+    REWRITE_TAC[REWRITE_RULE[ONCE_REWRITE_RULE[DIST_SYM] dist] sphere] THEN
     ASM_REWRITE_TAC[PATH_CONNECTED_IFF_PATH_COMPONENT] THEN
     DISCH_THEN MATCH_MP_TAC THEN
     REWRITE_TAC[IN_ELIM_THM; VECTOR_ADD_SUB; NORM_MUL] THEN
@@ -7195,14 +7209,14 @@ let PATH_CONNECTED_DIFF_BALL = prove
         EXISTS_PATH_SUBPATH_TO_FRONTIER) THEN
   ASM_SIMP_TAC[CENTRE_IN_BALL; IN_DIFF; IN_UNIV; LEFT_IMP_EXISTS_THM] THEN
   ASM_SIMP_TAC[FRONTIER_COMPLEMENT; INTERIOR_COMPLEMENT; CLOSURE_BALL] THEN
-  ASM_SIMP_TAC[FRONTIER_BALL; IN_ELIM_THM] THEN
+  ASM_SIMP_TAC[FRONTIER_BALL; IN_SPHERE] THEN
   X_GEN_TAC `h1:real^1->real^N` THEN STRIP_TAC THEN
   X_GEN_TAC `h2:real^1->real^N` THEN STRIP_TAC THEN
   MP_TAC(ISPECL [`a:real^N`; `r:real`] PATH_CONNECTED_SPHERE) THEN
   ASM_REWRITE_TAC[path_connected] THEN
   DISCH_THEN(MP_TAC o SPECL
    [`pathfinish h1:real^N`; `pathfinish h2:real^N`]) THEN
-  ASM_SIMP_TAC[IN_ELIM_THM; NORM_ARITH `norm(x - a:real^N) = dist(a,x)`] THEN
+  ASM_SIMP_TAC[IN_SPHERE] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^1->real^N` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `h1 ++ h ++ reversepath h2:real^1->real^N` THEN
   ASM_SIMP_TAC[PATHSTART_JOIN; PATHFINISH_JOIN; PATHSTART_REVERSEPATH;
@@ -7213,7 +7227,7 @@ let PATH_CONNECTED_DIFF_BALL = prove
     FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
           SUBSET_TRANS)) THEN
     UNDISCH_TAC `cball(a:real^N,r) SUBSET s` THEN
-    SIMP_TAC[SUBSET; IN_CBALL; IN_ELIM_THM; IN_BALL; IN_DIFF] THEN
+    SIMP_TAC[SUBSET; IN_CBALL; IN_SPHERE; IN_BALL; IN_DIFF] THEN
     MESON_TAC[REAL_LE_REFL; REAL_LT_REFL];
     ALL_TAC] THEN
   MATCH_MP_TAC(SET_RULE
@@ -10315,9 +10329,9 @@ let SIMPLY_CONNECTED_PCROSS_EQ = prove
 
 let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
  (`!f:real^M->real^N s a r.
-        (?c. homotopic_with (\x. T) ({x | norm(x - a) = r},s) f (\x. c)) <=>
+        (?c. homotopic_with (\x. T) (sphere(a,r),s) f (\x. c)) <=>
         (?g. g continuous_on cball(a,r) /\ IMAGE g (cball(a,r)) SUBSET s /\
-             !x. x IN {x | norm(x - a) = r} ==> g x = f x)`,
+             !x. x IN sphere(a,r) ==> g x = f x)`,
   let lemma = prove
    (`!f:real^M->real^N g a r.
         (!e. &0 < e
@@ -10354,6 +10368,7 @@ let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
         ASM_REWRITE_TAC[REAL_LT_MIN; NORM_POS_LT; VECTOR_SUB_EQ]] THEN
        ASM_MESON_TAC[NORM_SUB; NORM_ARITH
         `norm(y - x:real^N) < norm(x - a) ==> ~(y = a)`]]) in
+  REWRITE_TAC[sphere; ONCE_REWRITE_RULE[DIST_SYM] dist] THEN
   REPEAT GEN_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
    (REAL_ARITH `r < &0 \/ r = &0 \/ &0 < r`)
   THENL
@@ -10424,6 +10439,7 @@ let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
         FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
           COMPACT_UNIFORMLY_CONTINUOUS)) THEN
         SIMP_TAC[REWRITE_RULE[PCROSS] COMPACT_PCROSS;
+            REWRITE_RULE[REWRITE_RULE[ONCE_REWRITE_RULE[DIST_SYM] dist] sphere]
                  COMPACT_SPHERE; COMPACT_INTERVAL] THEN
         REWRITE_TAC[uniformly_continuous_on] THEN
         DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
@@ -10828,8 +10844,7 @@ let NULLHOMOTOPIC_FROM_CONTRACTIBLE = prove
 
 let CONTRACTIBLE_PUNCTURED_SPHERE = prove
  (`!a r b:real^N.
-        &0 < r /\ norm(b - a) = r
-        ==> contractible({x | norm(x - a) = r} DELETE b)`,
+        &0 < r /\ norm(b - a) = r ==> contractible(sphere(a,r) DELETE b)`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `contractible {x:real^N | basis 1 dot x = &0}` MP_TAC THENL
    [SIMP_TAC[CONVEX_IMP_CONTRACTIBLE; CONVEX_HYPERPLANE];
@@ -11112,9 +11127,9 @@ let SIMPLY_CONNECTED_UNION = prove
        EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[SUBSET_UNION]]]);;
 
 let SIMPLY_CONNECTED_SPHERE = prove
- (`!a:real^N r. 3 <= dimindex(:N) ==> simply_connected {x | norm(x - a) = r}`,
-  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `a:real^N` THEN
-  REPEAT STRIP_TAC THEN REWRITE_TAC[VECTOR_SUB_RZERO] THEN
+ (`!a:real^N r. 3 <= dimindex(:N) ==> simply_connected(sphere(a,r))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sphere] THEN GEOM_ORIGIN_TAC `a:real^N` THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[DIST_0] THEN
   ASM_CASES_TAC `r < &0` THENL
    [ASM_SIMP_TAC[NORM_ARITH `r < &0 ==> ~(norm(x:real^N) = r)`] THEN
     REWRITE_TAC[EMPTY_GSPEC; SIMPLY_CONNECTED_EMPTY];
@@ -11148,7 +11163,8 @@ let SIMPLY_CONNECTED_SPHERE = prove
     ALL_TAC] THEN
   CONJ_TAC THENL
    [CONJ_TAC THEN MATCH_MP_TAC CONTRACTIBLE_IMP_SIMPLY_CONNECTED THEN
-    ONCE_REWRITE_TAC[NORM_ARITH `norm(x:real^N) = norm(x - vec 0)`] THEN
+    ONCE_REWRITE_TAC[NORM_ARITH `norm(x:real^N) = dist(vec 0,x)`] THEN
+    REWRITE_TAC[GSYM sphere] THEN
     MATCH_MP_TAC CONTRACTIBLE_PUNCTURED_SPHERE THEN
     ASM_REWRITE_TAC[VECTOR_SUB_RZERO; NORM_NEG; NORM_MUL] THEN
     SIMP_TAC[NORM_BASIS; DIMINDEX_GE_1; LE_REFL] THEN

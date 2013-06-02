@@ -437,6 +437,9 @@ let ball = new_definition
 let cball = new_definition
   `cball(x,e) = { y | dist(x,y) <= e}`;;
 
+let sphere = new_definition
+  `sphere(x,e) = { y | dist(x,y) = e}`;;
+
 let IN_BALL = prove
  (`!x y e. y IN ball(x,e) <=> dist(x,y) < e`,
   REWRITE_TAC[ball; IN_ELIM_THM]);;
@@ -445,6 +448,10 @@ let IN_CBALL = prove
  (`!x y e. y IN cball(x,e) <=> dist(x,y) <= e`,
   REWRITE_TAC[cball; IN_ELIM_THM]);;
 
+let IN_SPHERE = prove
+ (`!x y e. y IN sphere(x,e) <=> dist(x,y) = e`,
+  REWRITE_TAC[sphere; IN_ELIM_THM]);;
+
 let IN_BALL_0 = prove
  (`!x e. x IN ball(vec 0,e) <=> norm(x) < e`,
   REWRITE_TAC[IN_BALL; dist; VECTOR_SUB_LZERO; NORM_NEG]);;
@@ -452,6 +459,10 @@ let IN_BALL_0 = prove
 let IN_CBALL_0 = prove
  (`!x e. x IN cball(vec 0,e) <=> norm(x) <= e`,
   REWRITE_TAC[IN_CBALL; dist; VECTOR_SUB_LZERO; NORM_NEG]);;
+
+let IN_SPHERE_0 = prove
+ (`!x e. x IN sphere(vec 0,e) <=> norm(x) = e`,
+  REWRITE_TAC[IN_SPHERE; dist; VECTOR_SUB_LZERO; NORM_NEG]);;
 
 let BALL_TRIVIAL = prove
  (`!x. ball(x,&0) = {}`,
@@ -468,6 +479,10 @@ let CENTRE_IN_CBALL = prove
 let BALL_SUBSET_CBALL = prove
  (`!x e. ball(x,e) SUBSET cball(x,e)`,
   REWRITE_TAC[IN_BALL; IN_CBALL; SUBSET] THEN REAL_ARITH_TAC);;
+
+let SPHERE_SUBSET_CBALL = prove
+ (`!x e. sphere(x,e) SUBSET cball(x,e)`,
+  REWRITE_TAC[IN_SPHERE; IN_CBALL; SUBSET] THEN REAL_ARITH_TAC);;
 
 let SUBSET_BALL = prove
  (`!x d e. d <= e ==> ball(x,d) SUBSET ball(x,e)`,
@@ -493,7 +508,12 @@ let CBALL_TRANSLATION = prove
  (`!a x r. cball(a + x,r) = IMAGE (\y. a + y) (cball(x,r))`,
   REWRITE_TAC[cball] THEN GEOM_TRANSLATE_TAC[]);;
 
-add_translation_invariants [BALL_TRANSLATION; CBALL_TRANSLATION];;
+let SPHERE_TRANSLATION = prove
+ (`!a x r. sphere(a + x,r) = IMAGE (\y. a + y) (sphere(x,r))`,
+  REWRITE_TAC[sphere] THEN GEOM_TRANSLATE_TAC[]);;
+
+add_translation_invariants
+  [BALL_TRANSLATION; CBALL_TRANSLATION; SPHERE_TRANSLATION];;
 
 let BALL_LINEAR_IMAGE = prove
  (`!f:real^M->real^N x r.
@@ -507,7 +527,14 @@ let CBALL_LINEAR_IMAGE = prove
         ==> cball(f x,r) = IMAGE f (cball(x,r))`,
   REWRITE_TAC[cball] THEN GEOM_TRANSFORM_TAC[]);;
 
-add_linear_invariants [BALL_LINEAR_IMAGE; CBALL_LINEAR_IMAGE];;
+let SPHERE_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N x r.
+        linear f /\ (!y. ?x. f x = y) /\ (!x. norm(f x) = norm x)
+        ==> sphere(f x,r) = IMAGE f (sphere(x,r))`,
+  REWRITE_TAC[sphere] THEN GEOM_TRANSFORM_TAC[]);;
+
+add_linear_invariants
+  [BALL_LINEAR_IMAGE; CBALL_LINEAR_IMAGE; SPHERE_LINEAR_IMAGE];;
 
 let BALL_SCALING = prove
  (`!c. &0 < c ==> !x r. ball(c % x,c * r) = IMAGE (\x. c % x) (ball(x,r))`,
@@ -528,18 +555,18 @@ let CBALL_SCALING = prove
 add_scaling_theorems [BALL_SCALING; CBALL_SCALING];;
 
 let CBALL_DIFF_BALL = prove
- (`!a r. cball(a,r) DIFF ball(a,r) = {x | dist(a,x) = r}`,
-  REWRITE_TAC[ball; cball; EXTENSION; IN_DIFF; IN_ELIM_THM] THEN
+ (`!a r. cball(a,r) DIFF ball(a,r) = sphere(a,r)`,
+  REWRITE_TAC[ball; cball; sphere; EXTENSION; IN_DIFF; IN_ELIM_THM] THEN
   REAL_ARITH_TAC);;
 
 let BALL_UNION_SPHERE = prove
- (`!a r. ball(a,r) UNION {x | dist(a,x) = r} = cball(a,r)`,
-  REWRITE_TAC[ball; cball; EXTENSION; IN_UNION; IN_ELIM_THM] THEN
+ (`!a r. ball(a,r) UNION sphere(a,r) = cball(a,r)`,
+  REWRITE_TAC[ball; cball; sphere; EXTENSION; IN_UNION; IN_ELIM_THM] THEN
   REAL_ARITH_TAC);;
 
 let SPHERE_UNION_BALL = prove
- (`!a r. {x | dist(a,x) = r} UNION ball(a,r)  = cball(a,r)`,
-  REWRITE_TAC[ball; cball; EXTENSION; IN_UNION; IN_ELIM_THM] THEN
+ (`!a r. sphere(a,r) UNION ball(a,r)  = cball(a,r)`,
+  REWRITE_TAC[ball; cball; sphere; EXTENSION; IN_UNION; IN_ELIM_THM] THEN
   REAL_ARITH_TAC);;
 
 let OPEN_BALL = prove
@@ -586,13 +613,13 @@ let OPEN_CONTAINS_CBALL_EQ = prove
   MESON_TAC[OPEN_CONTAINS_CBALL; SUBSET; REAL_LT_IMP_LE; CENTRE_IN_CBALL]);;
 
 let SPHERE_EQ_EMPTY = prove
- (`!a:real^N r. {x | dist(a,x) = r} = {} <=> r < &0`,
-  REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+ (`!a:real^N r. sphere(a,r) = {} <=> r < &0`,
+  REWRITE_TAC[sphere; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
   REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; CONV_TAC NORM_ARITH] THEN
   MESON_TAC[VECTOR_CHOOSE_DIST; REAL_NOT_LE]);;
 
 let SPHERE_EMPTY = prove
- (`!a:real^N r. r < &0 ==> {x | dist(a,x) = r} = {}`,
+ (`!a:real^N r. r < &0 ==> sphere(a,r) = {}`,
   REWRITE_TAC[SPHERE_EQ_EMPTY]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -1397,6 +1424,11 @@ let INTERIOR_UNION_EQ_EMPTY = prove
   REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL
    [ASM_MESON_TAC[SUBSET_UNION; SUBSET_INTERIOR; SUBSET_EMPTY];
     ASM_MESON_TAC[UNION_COMM; INTERIOR_CLOSED_UNION_EMPTY_INTERIOR]]);;
+
+let INTERIOR_UNIONS_OPEN_SUBSETS = prove          
+ (`!s:real^N->bool. UNIONS {t | open t /\ t SUBSET s} = interior s`,
+  GEN_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC INTERIOR_UNIQUE THEN
+  SIMP_TAC[OPEN_UNIONS; IN_ELIM_THM] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Closure of a set.                                                         *)
@@ -3139,16 +3171,15 @@ let INTERIOR_CBALL = prove
     ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; ARITH]]);;
 
 let FRONTIER_BALL = prove
- (`!a e. &0 < e
-         ==> (frontier(ball(a,e)) = {x | dist(a,x) = e})`,
-  SIMP_TAC[frontier; CLOSURE_BALL; INTERIOR_OPEN; OPEN_BALL;
+ (`!a e. &0 < e ==> frontier(ball(a,e)) = sphere(a,e)`,
+  SIMP_TAC[frontier; sphere; CLOSURE_BALL; INTERIOR_OPEN; OPEN_BALL;
            REAL_LT_IMP_LE] THEN
   REWRITE_TAC[EXTENSION; IN_DIFF; IN_ELIM_THM; IN_BALL; IN_CBALL] THEN
   REAL_ARITH_TAC);;
 
 let FRONTIER_CBALL = prove
- (`!a e. frontier(cball(a,e)) = {x | dist(a,x) = e}`,
-  SIMP_TAC[frontier; INTERIOR_CBALL; CLOSED_CBALL; CLOSURE_CLOSED;
+ (`!a e. frontier(cball(a,e)) = sphere(a,e)`,
+  SIMP_TAC[frontier; sphere; INTERIOR_CBALL; CLOSED_CBALL; CLOSURE_CLOSED;
            REAL_LT_IMP_LE] THEN
   REWRITE_TAC[EXTENSION; IN_DIFF; IN_ELIM_THM; IN_BALL; IN_CBALL] THEN
   REAL_ARITH_TAC);;
@@ -3177,6 +3208,10 @@ let CBALL_EQ_SING = prove
 let CBALL_SING = prove
  (`!x e. e = &0 ==> cball(x,e) = {x}`,
   REWRITE_TAC[CBALL_EQ_SING]);;
+
+let SPHERE_SING = prove
+ (`!x e. e = &0 ==> sphere(x,e) = {x}`,
+  SIMP_TAC[sphere; DIST_EQ_0; SING_GSPEC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* For points in the interior, localization of limits makes no difference.   *)
@@ -4348,16 +4383,10 @@ let COMPACT_DIFF = prove
   SIMP_TAC[COMPACT_INTER_CLOSED; GSYM OPEN_CLOSED]);;
 
 let COMPACT_SPHERE = prove
- (`!a:real^N r. compact {x | norm(x - a) = r}`,
-  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[NORM_SUB] THEN
-  REWRITE_TAC[GSYM dist] THEN
+ (`!a:real^N r. compact(sphere(a,r))`,
+  REPEAT GEN_TAC THEN
   REWRITE_TAC[GSYM FRONTIER_CBALL] THEN MATCH_MP_TAC COMPACT_FRONTIER THEN
   REWRITE_TAC[COMPACT_CBALL]);;
-
-let COMPACT_SPHERE_0 = prove
- (`!a. compact {x | norm x = a}`,
-  ONCE_REWRITE_TAC[NORM_ARITH `norm x = norm(x - vec 0)`] THEN
-  REWRITE_TAC[COMPACT_SPHERE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite intersection property. I could make it an equivalence in fact.     *)
@@ -9496,16 +9525,15 @@ let BALL_1 = prove
   REAL_ARITH_TAC);;
 
 let SPHERE_1 = prove
- (`!a:real^1 r. {x | dist(a,x) = r} =
-                if r < &0 then {} else {a - lift r,a + lift r}`,
-  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+ (`!a:real^1 r. sphere(a,r) = if r < &0 then {} else {a - lift r,a + lift r}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sphere] THEN COND_CASES_TAC THEN
   REWRITE_TAC[DIST_REAL; GSYM drop; FORALL_DROP] THEN
   REWRITE_TAC[EXTENSION; IN_INSERT; NOT_IN_EMPTY; IN_ELIM_THM] THEN
   REWRITE_TAC[GSYM DROP_EQ; DROP_ADD; DROP_SUB; LIFT_DROP] THEN
   ASM_REAL_ARITH_TAC);;
 
 let FINITE_SPHERE_1 = prove
- (`!a:real^1 r. FINITE {x | dist(a,x) = r}`,
+ (`!a:real^1 r. FINITE(sphere(a,r))`,
   REPEAT GEN_TAC THEN REWRITE_TAC[SPHERE_1] THEN
   MESON_TAC[FINITE_INSERT; FINITE_EMPTY]);;
 
@@ -11802,8 +11830,10 @@ let HOMEOMORPHIC_HYPERPLANE_UNIV = prove
 let HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE = prove
  (`!a r b c d.
         &0 < r /\ norm(b - a) = r /\ ~(c = vec 0)
-        ==> ({x:real^N | norm(x - a) = r} DELETE b) homeomorphic
+        ==> (sphere(a:real^N,r) DELETE b) homeomorphic
              {x:real^N | c dot x = d}`,
+  REWRITE_TAC[sphere] THEN ONCE_REWRITE_TAC[DIST_SYM] THEN
+  REWRITE_TAC[dist] THEN
   REPEAT GEN_TAC THEN ASM_CASES_TAC `c:real^N = vec 0` THEN ASM_SIMP_TAC[] THEN
   ABBREV_TAC `p = {x:real^N | c dot x = d}` THEN
   GEOM_ORIGIN_TAC `a:real^N` THEN REWRITE_TAC[VECTOR_SUB_RZERO] THEN
@@ -11939,7 +11969,7 @@ let HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE = prove
 let HOMEOMORPHIC_PUNCTURED_SPHERE_UNIV = prove
  (`!a r b.
         &0 < r /\ norm(b - a) = r /\ dimindex(:N) = dimindex(:M) + 1
-        ==> ({x:real^N | norm(x - a) = r} DELETE b) homeomorphic (:real^M)`,
+        ==> (sphere(a:real^N,r) DELETE b) homeomorphic (:real^M)`,
   REPEAT STRIP_TAC THEN
   TRANS_TAC HOMEOMORPHIC_TRANS `{x:real^N | basis 1 dot x = &0}` THEN
   ASM_SIMP_TAC[HOMEOMORPHIC_HYPERPLANE_UNIV; BASIS_NONZERO; LE_REFL;
@@ -12012,7 +12042,7 @@ let INJECTIVE_IMP_ISOMETRIC = prove
      `{x:real^M | norm x = norm(a:real^M)} = frontier(cball(vec 0,norm a))`
     SUBST1_TAC THENL
      [ASM_SIMP_TAC[FRONTIER_CBALL; NORM_POS_LT; dist; VECTOR_SUB_LZERO;
-                   NORM_NEG];
+                   NORM_NEG; sphere];
       ASM_SIMP_TAC[COMPACT_FRONTIER; COMPACT_CBALL]];
     ALL_TAC] THEN
   ONCE_REWRITE_TAC[SET_RULE `{f x | P x} = IMAGE f {x | P x}`] THEN
@@ -12717,22 +12747,22 @@ let SELF_ADJOINT_HAS_EIGENVECTOR_IN_SUBSPACE = prove
         `(a * a) / &2 <= (a / &2) pow 2 <=> ~(&0 < a * a)`]]) in
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`\x:real^N. (f x) dot x`;
-                 `s INTER {x:real^N | norm x = &1}`]
+                 `s INTER sphere(vec 0:real^N,&1)`]
         CONTINUOUS_ATTAINS_SUP) THEN
   REWRITE_TAC[EXISTS_IN_GSPEC; FORALL_IN_GSPEC; o_DEF] THEN ANTS_TAC THENL
    [ASM_SIMP_TAC[CONTINUOUS_ON_LIFT_DOT2; LINEAR_CONTINUOUS_ON;
                    CONTINUOUS_ON_ID] THEN
-    ASM_SIMP_TAC[COMPACT_SPHERE_0; CLOSED_INTER_COMPACT; CLOSED_SUBSPACE] THEN
+    ASM_SIMP_TAC[COMPACT_SPHERE; CLOSED_INTER_COMPACT; CLOSED_SUBSPACE] THEN
     FIRST_X_ASSUM(MP_TAC o MATCH_MP (SET_RULE
       `~(s = {a}) ==> a IN s ==> ?b. ~(b = a) /\ b IN s`)) THEN
-    ASM_SIMP_TAC[SUBSPACE_0; GSYM MEMBER_NOT_EMPTY; IN_INTER] THEN
+    ASM_SIMP_TAC[SUBSPACE_0; IN_SPHERE_0; GSYM MEMBER_NOT_EMPTY; IN_INTER] THEN
     DISCH_THEN(X_CHOOSE_THEN `x:real^N` STRIP_ASSUME_TAC) THEN
     EXISTS_TAC `inv(norm x) % x:real^N` THEN
     ASM_REWRITE_TAC[IN_ELIM_THM; VECTOR_SUB_RZERO; NORM_MUL] THEN
     ASM_SIMP_TAC[SUBSPACE_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
     ASM_SIMP_TAC[REAL_MUL_LINV; NORM_EQ_0];
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `v:real^N` THEN
-    REWRITE_TAC[IN_INTER; IN_ELIM_THM] THEN STRIP_TAC THEN
+    REWRITE_TAC[IN_INTER; IN_SPHERE_0] THEN STRIP_TAC THEN
     ABBREV_TAC `c = (f:real^N->real^N) v dot v` THEN
     EXISTS_TAC `c:real` THEN ASM_REWRITE_TAC[]] THEN
   ABBREV_TAC `p = \x y:real^N. c * (x dot y) - (f x) dot y` THEN
@@ -15790,6 +15820,24 @@ let LINDELOF = prove
   EXISTS_TAC `IMAGE (g:(real^N->bool)->(real^N->bool)) d` THEN
   ASM_SIMP_TAC[COUNTABLE_IMAGE; UNIONS_IMAGE] THEN
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
+
+let LINDELOF_OPEN_IN = prove
+ (`!f u:real^N->bool.
+        (!s. s IN f ==> open_in (subtopology euclidean u) s)
+        ==> ?f'. f' SUBSET f /\ COUNTABLE f' /\ UNIONS f' = UNIONS f`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_OPEN] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `v:(real^N->bool)->real^N->bool` THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `IMAGE (v:(real^N->bool)->real^N->bool) f` LINDELOF) THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+  REWRITE_TAC[EXISTS_COUNTABLE_SUBSET_IMAGE] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f':(real^N->bool)->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+  `!f'. f' SUBSET f ==> UNIONS f' = (u:real^N->bool) INTER UNIONS (IMAGE v f')`
+  MP_TAC THENL [ASM SET_TAC[]; ASM_SIMP_TAC[SUBSET_REFL]]);;
 
 let COUNTABLE_DISJOINT_OPEN_SUBSETS = prove
  (`!f. (!s:real^N->bool. s IN f ==> open s) /\ pairwise DISJOINT f
