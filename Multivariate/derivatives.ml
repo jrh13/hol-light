@@ -105,6 +105,12 @@ let HAS_DERIVATIVE_CONST = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[has_derivative; linear] THEN
   REWRITE_TAC[VECTOR_ADD_RID; VECTOR_SUB_REFL; VECTOR_MUL_RZERO; LIM_CONST]);;
 
+let HAS_DERIVATIVE_LIFT_COMPONENT = prove
+ (`!net:(real^N)net. ((\x. lift(x$i)) has_derivative (\x. lift(x$i))) net`,
+  GEN_TAC THEN MATCH_MP_TAC HAS_DERIVATIVE_LINEAR THEN
+  REWRITE_TAC[linear; VECTOR_MUL_COMPONENT; VECTOR_ADD_COMPONENT] THEN
+  REWRITE_TAC[LIFT_ADD; LIFT_CMUL]);;
+
 let HAS_DERIVATIVE_CMUL = prove
  (`!f f' net c. (f has_derivative f') net
                 ==> ((\x. c % f(x)) has_derivative (\h. c % f'(h))) net`,
@@ -175,6 +181,28 @@ let HAS_DERIVATIVE_VSUM_NUMSEG = prove
           (\h. vsum (m..n) (\i. f' i h))) net`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_DERIVATIVE_VSUM THEN
   ASM_REWRITE_TAC[IN_NUMSEG; FINITE_NUMSEG]);;
+
+let HAS_DERIVATIVE_COMPONENTWISE_WITHIN = prove
+ (`!f:real^M->real^N f' a s.
+        (f has_derivative f') (at a within s) <=>
+        !i. 1 <= i /\ i <= dimindex(:N)
+            ==> ((\x. lift(f(x)$i)) has_derivative (\x. lift(f'(x)$i)))
+                (at a within s)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[has_derivative_within] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+   [LINEAR_COMPONENTWISE; LIM_COMPONENTWISE_LIFT] THEN
+  SIMP_TAC[AND_FORALL_THM; TAUT `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+  REWRITE_TAC[GSYM LIFT_ADD; GSYM LIFT_CMUL; GSYM LIFT_SUB] THEN
+  REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT; VEC_COMPONENT;
+              VECTOR_SUB_COMPONENT; LIFT_NUM]);;
+
+let HAS_DERIVATIVE_COMPONENTWISE_AT = prove
+ (`!f:real^M->real^N f' a.
+        (f has_derivative f') (at a) <=>
+        !i. 1 <= i /\ i <= dimindex(:N)
+            ==> ((\x. lift(f(x)$i)) has_derivative (\x. lift(f'(x)$i))) (at a)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  MATCH_ACCEPT_TAC HAS_DERIVATIVE_COMPONENTWISE_WITHIN);;
 
 (* ------------------------------------------------------------------------- *)
 (* Somewhat different results for derivative of scalar multiplier.           *)
@@ -561,6 +589,10 @@ let DIFFERENTIABLE_ID = prove
  (`!net. (\z. z) differentiable net`,
   REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_ID]);;
 
+let DIFFERENTIABLE_LIFT_COMPONENT = prove
+ (`!net:(real^N)net. (\x. lift(x$i)) differentiable net`,
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_LIFT_COMPONENT]);;
+
 let DIFFERENTIABLE_CMUL = prove
  (`!net f c. f differentiable net ==> (\x. c % f(x)) differentiable net`,
   REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_CMUL]);;
@@ -614,6 +646,30 @@ let DIFFERENTIABLE_CHAIN_WITHIN = prove
     g differentiable (at(f x) within IMAGE f s)
     ==> (g o f) differentiable (at x within s)`,
   REWRITE_TAC[differentiable] THEN MESON_TAC[DIFF_CHAIN_WITHIN]);;
+
+let DIFFERENTIABLE_COMPONENTWISE_WITHIN = prove
+ (`!f:real^M->real^N a s.
+        f differentiable (at a within s) <=>
+        !i. 1 <= i /\ i <= dimindex(:N)
+            ==> (\x. lift(f(x)$i)) differentiable (at a within s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[differentiable] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+   [HAS_DERIVATIVE_COMPONENTWISE_WITHIN] THEN
+  REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_TAC `g':real^M->real^N`) THEN
+    EXISTS_TAC `\i x. lift((g':real^M->real^N) x$i)` THEN ASM_REWRITE_TAC[];
+    DISCH_THEN(X_CHOOSE_TAC `g':num->real^M->real^1`) THEN
+    EXISTS_TAC `(\x. lambda i. drop((g':num->real^M->real^1) i x))
+                :real^M->real^N` THEN
+    ASM_SIMP_TAC[LAMBDA_BETA; LIFT_DROP; ETA_AX]]);;
+
+let DIFFERENTIABLE_COMPONENTWISE_AT = prove
+ (`!f:real^M->real^N a.
+        f differentiable (at a) <=>
+        !i. 1 <= i /\ i <= dimindex(:N)
+            ==> (\x. lift(f(x)$i)) differentiable (at a)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  MATCH_ACCEPT_TAC DIFFERENTIABLE_COMPONENTWISE_WITHIN);;
 
 (* ------------------------------------------------------------------------- *)
 (* Similarly for "differentiable_on".                                        *)
@@ -1984,7 +2040,7 @@ let HAS_DERIVATIVE_BILINEAR_AT = prove
   REWRITE_TAC[GSYM has_derivative_within; HAS_DERIVATIVE_BILINEAR_WITHIN]);;
 
 let BILINEAR_DIFFERENTIABLE_AT_COMPOSE = prove
- (`!f:real^M->real^N g:real^M->real^P g:real^N->real^P->real^Q g h a.
+ (`!f:real^M->real^N g:real^M->real^P h:real^N->real^P->real^Q a.
         f differentiable at a /\ g differentiable at a /\ bilinear h
         ==> (\x. h (f x) (g x)) differentiable at a`,
   REPEAT GEN_TAC THEN REWRITE_TAC[FRECHET_DERIVATIVE_WORKS] THEN
@@ -1993,7 +2049,7 @@ let BILINEAR_DIFFERENTIABLE_AT_COMPOSE = prove
   MESON_TAC[]);;
 
 let BILINEAR_DIFFERENTIABLE_WITHIN_COMPOSE = prove
- (`!f:real^M->real^N g:real^M->real^P g:real^N->real^P->real^Q g h a s.
+ (`!f:real^M->real^N g:real^M->real^P h:real^N->real^P->real^Q x s.
         f differentiable at x within s /\ g differentiable at x within s /\
         bilinear h
         ==> (\x. h (f x) (g x)) differentiable at x within s`,
@@ -2003,7 +2059,7 @@ let BILINEAR_DIFFERENTIABLE_WITHIN_COMPOSE = prove
   MESON_TAC[]);;
 
 let BILINEAR_DIFFERENTIABLE_ON_COMPOSE = prove
- (`!f:real^M->real^N g:real^M->real^P g:real^N->real^P->real^Q g h s.
+ (`!f:real^M->real^N g:real^M->real^P h:real^N->real^P->real^Q s.
         f differentiable_on s /\ g differentiable_on s /\ bilinear h
         ==> (\x. h (f x) (g x)) differentiable_on s`,
   REWRITE_TAC[differentiable_on] THEN
@@ -2032,6 +2088,72 @@ let DIFFERENTIABLE_ON_LIFT_DOT2 = prove
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
    [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
   BILINEAR_DIFFERENTIABLE_ON_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
+
+let HAS_DERIVATIVE_MUL_WITHIN = prove
+ (`!f f' g:real^M->real^N g' a s.
+        ((lift o f) has_derivative (lift o f')) (at a within s) /\
+        (g has_derivative g') (at a within s)
+        ==> ((\x. f x % g x) has_derivative
+             (\h. f a % g' h + f' h % g a)) (at a within s)`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[BILINEAR_DROP_MUL]
+   (ISPEC `\x y:real^M. drop x % y` HAS_DERIVATIVE_BILINEAR_WITHIN))) THEN
+  REWRITE_TAC[o_DEF; DROP_CMUL; LIFT_DROP]);;
+
+let HAS_DERIVATIVE_MUL_AT = prove
+ (`!f f' g:real^M->real^N g' a.
+        ((lift o f) has_derivative (lift o f')) (at a) /\
+        (g has_derivative g') (at a)
+        ==> ((\x. f x % g x) has_derivative
+             (\h. f a % g' h + f' h % g a)) (at a)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[HAS_DERIVATIVE_MUL_WITHIN]);;
+
+let HAS_DERIVATIVE_SQNORM_AT = prove
+ (`!a:real^N.
+    ((\x. lift(norm x pow 2)) has_derivative (\x. &2 % lift(a dot x))) (at a)`,
+  GEN_TAC THEN MP_TAC(ISPECL
+   [`\x y:real^N. lift(x dot y)`;
+    `\x:real^N. x`; `\x:real^N. x`; `\x:real^N. x`; `\x:real^N. x`;
+    `a:real^N`] HAS_DERIVATIVE_BILINEAR_AT) THEN
+  REWRITE_TAC[HAS_DERIVATIVE_ID; BILINEAR_DOT; NORM_POW_2] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[FUN_EQ_THM; DOT_SYM] THEN VECTOR_ARITH_TAC);;
+
+let DIFFERENTIABLE_MUL_WITHIN = prove
+ (`!f g:real^M->real^N a s.
+        (lift o f) differentiable (at a within s) /\
+        g differentiable (at a within s)
+        ==> (\x. f x % g x) differentiable (at a within s)`,
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+   [`lift o (f:real^M->real)`; `g:real^M->real^N`; `\x y:real^N. drop x % y`;
+    `a:real^M`; `s:real^M->bool`] BILINEAR_DIFFERENTIABLE_WITHIN_COMPOSE) THEN
+  REWRITE_TAC[o_DEF; LIFT_DROP; BILINEAR_DROP_MUL]);;
+
+let DIFFERENTIABLE_MUL_AT = prove
+ (`!f g:real^M->real^N a.
+        (lift o f) differentiable (at a) /\ g differentiable (at a)
+        ==> (\x. f x % g x) differentiable (at a)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[DIFFERENTIABLE_MUL_WITHIN]);;
+
+let DIFFERENTIABLE_SQNORM_AT = prove
+ (`!a:real^N. (\x. lift(norm x pow 2)) differentiable (at a)`,
+  REWRITE_TAC[differentiable] THEN MESON_TAC[HAS_DERIVATIVE_SQNORM_AT]);;
+
+let DIFFERENTIABLE_ON_MUL = prove
+ (`!f g:real^M->real^N s.
+        (lift o f) differentiable_on s /\ g differentiable_on s
+        ==> (\x. f x % g x) differentiable_on s`,
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+   [`lift o (f:real^M->real)`; `g:real^M->real^N`; `\x y:real^N. drop x % y`;
+    `s:real^M->bool`] BILINEAR_DIFFERENTIABLE_ON_COMPOSE) THEN
+  REWRITE_TAC[o_DEF; LIFT_DROP; BILINEAR_DROP_MUL]);;
+
+let DIFFERENTIABLE_ON_SQNORM = prove
+ (`!s:real^N->bool. (\x. lift(norm x pow 2)) differentiable_on s`,
+  SIMP_TAC[DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON;
+            DIFFERENTIABLE_SQNORM_AT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Considering derivative R(^1)->R^n as a vector.                            *)

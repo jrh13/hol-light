@@ -1,3 +1,20 @@
+Fri 14th Jun 2013       RichterHilbertAxiomGeometry/HilbertAxiom_read.ml, RichterHilbertAxiomGeometry/inverse_bug_puzzle_read.ml, RichterHilbertAxiomGeometry/readable.ml [new files], holtest
+
+Added three new files from Bill Richter, the first supporting a new stype of readable
+proofs, and two extended examples using it, both proofs previously done in miz3 or
+as tactic scripts:
+
+  RichterHilbertAxiomGeometry/HilbertAxiom_read.ml - Hilbert axioms for geometry
+
+  RichterHilbertAxiomGeometry/inverse_bug_puzzle_read.ml - the inverse bug puzzle
+
+Tue  4th Jun 2013       cart.ml
+
+Added a 4-element type and corresponding theorems
+
+        HAS_SIZE_4 = |- (:4) HAS_SIZE 4
+        DIMINDEX_4 = |- dimindex (:4) = 4
+
 Fri 31st May 2013       cart.ml
 
 Added:

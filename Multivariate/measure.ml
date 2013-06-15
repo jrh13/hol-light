@@ -189,6 +189,37 @@ let MEASURE_INTERVAL_3_ALT = prove
                   REAL_SUB_REFL; REAL_LE_REFL; REAL_ABS_NUM; COND_ID] THEN
   ASM_REWRITE_TAC[REAL_LT_LE]);;
 
+let MEASURE_INTERVAL_4 = prove
+ (`(!a b:real^4. measure(interval[a,b]) =
+                 if a$1 <= b$1 /\ a$2 <= b$2 /\ a$3 <= b$3 /\ a$4 <= b$4
+                 then (b$1 - a$1) * (b$2 - a$2) * (b$3 - a$3) * (b$4 - a$4)
+                 else &0) /\
+   (!a b:real^4. measure(interval(a,b)) =
+                 if a$1 <= b$1 /\ a$2 <= b$2 /\ a$3 <= b$3 /\ a$4 <= b$4
+                 then (b$1 - a$1) * (b$2 - a$2) * (b$3 - a$3) * (b$4 - a$4)
+                 else &0)`,
+  REWRITE_TAC[MEASURE_INTERVAL; CONTENT_CLOSED_INTERVAL_CASES] THEN
+  REWRITE_TAC[DIMINDEX_4; FORALL_4; PRODUCT_4]);;
+
+let MEASURE_INTERVAL_4_ALT = prove
+ (`(!a b:real^4. measure(interval[a,b]) =
+                 if a$1 < b$1 /\ a$2 < b$2 /\ a$3 < b$3 /\ a$4 < b$4
+                 then (b$1 - a$1) * (b$2 - a$2) * (b$3 - a$3) * (b$4 - a$4)
+                 else &0) /\
+   (!a b:real^4. measure(interval(a,b)) =
+                 if a$1 < b$1 /\ a$2 < b$2 /\ a$3 < b$3 /\ a$4 < b$4
+                 then (b$1 - a$1) * (b$2 - a$2) * (b$3 - a$3) * (b$4 - a$4)
+                 else &0)`,
+  REWRITE_TAC[MEASURE_INTERVAL_4] THEN REPEAT GEN_TAC THEN
+  MAP_EVERY ASM_CASES_TAC
+   [`(a:real^4)$1 = (b:real^4)$1`;
+    `(a:real^4)$2 = (b:real^4)$2`;
+    `(a:real^4)$3 = (b:real^4)$3`;
+    `(a:real^4)$4 = (b:real^4)$4`] THEN
+  ASM_REWRITE_TAC[REAL_LT_REFL; REAL_MUL_LZERO; REAL_MUL_RZERO;
+                  REAL_SUB_REFL; REAL_LE_REFL; REAL_ABS_NUM; COND_ID] THEN
+  ASM_REWRITE_TAC[REAL_LT_LE]);;
+
 let MEASURABLE_INTER = prove
  (`!s t:real^N->bool. measurable s /\ measurable t ==> measurable (s INTER t)`,
   REWRITE_TAC[MEASURABLE_INTEGRABLE] THEN REPEAT STRIP_TAC THEN
@@ -338,6 +369,11 @@ let MEASURABLE_MEASURE_EQ_0 = prove
  (`!s. measurable s ==> (measure s = &0 <=> negligible s)`,
   REWRITE_TAC[HAS_MEASURE_MEASURE; GSYM HAS_MEASURE_0] THEN
   MESON_TAC[MEASURE_UNIQUE]);;
+
+let NEGLIGIBLE_EQ_MEASURE_0 = prove
+ (`!s:real^N->bool.
+        negligible s <=> measurable s /\ measure s = &0`,
+  MESON_TAC[NEGLIGIBLE_IMP_MEASURABLE; MEASURABLE_MEASURE_EQ_0]);;
 
 let MEASURABLE_MEASURE_POS_LT = prove
  (`!s. measurable s ==> (&0 < measure s <=> ~negligible s)`,
@@ -512,6 +548,21 @@ let MEASURE_NEGLIGIBLE_SYMDIFF = prove
     ASM_MESON_TAC[MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ];
     REWRITE_TAC[measure] THEN AP_TERM_TAC THEN ABS_TAC THEN
     ASM_MESON_TAC[measurable]]);;
+
+let NEGLIGIBLE_SYMDIFF_EQ = prove
+ (`!s t:real^N->bool.
+        negligible (s DIFF t UNION t DIFF s)
+        ==> (negligible s <=> negligible t)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN POP_ASSUM MP_TAC THEN
+  REWRITE_TAC[IMP_IMP; GSYM NEGLIGIBLE_UNION_EQ] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+  SET_TAC[]);;
+
+let NEGLIGIBLE_DELETE = prove
+ (`!a:real^N. negligible(s DELETE a) <=> negligible s`,
+  GEN_TAC THEN MATCH_MP_TAC NEGLIGIBLE_SYMDIFF_EQ THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `{a:real^N}` THEN REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
 
 let HAS_MEASURE_NEGLIGIBLE_UNIONS = prove
  (`!m f:(real^N->bool)->bool.
@@ -908,6 +959,10 @@ let OPEN_NOT_NEGLIGIBLE = prove
     REPEAT STRIP_TAC THEN
     REWRITE_TAC[REAL_ARITH `a - e < a + e <=> &0 < e`] THEN
     ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; LE_1; DIMINDEX_GE_1]]);;
+
+let NOT_NEGLIGIBLE_UNIV = prove
+ (`~negligible(:real^N)`,
+  SIMP_TAC[OPEN_NOT_NEGLIGIBLE; OPEN_UNIV; UNIV_NOT_EMPTY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Properties of measure under simple affine transformations.                *)
@@ -6376,7 +6431,9 @@ let MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET = prove
         g continuous_on s
         ==> (g o f) measurable_on (:real^M)`,
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`g:real^N->real^P`; `s:real^N->bool`] TIETZE_UNBOUNDED) THEN
+  MP_TAC(ISPECL [`g:real^N->real^P`; `(:real^N)`; `s:real^N->bool`]
+    TIETZE_UNBOUNDED) THEN
+  ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM CLOSED_IN] THEN
   ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `h:real^N->real^P` THEN
   DISCH_TAC THEN SUBGOAL_THEN
    `(g:real^N->real^P) o (f:real^M->real^N) = h o f` SUBST1_TAC
@@ -9111,7 +9168,7 @@ let CONTINUOUS_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET = prove
                  ==> g x = if x IN s then (f:real^M->real^N)(x) else vec 0)`
   MP_TAC THENL
    [X_GEN_TAC `n:num` THEN MATCH_MP_TAC TIETZE_UNBOUNDED THEN
-    ASM_SIMP_TAC[CLOSED_UNION] THEN
+    ASM_SIMP_TAC[SUBTOPOLOGY_UNIV; GSYM CLOSED_IN; CLOSED_UNION] THEN
     MATCH_MP_TAC CONTINUOUS_ON_CASES THEN
     ASM_SIMP_TAC[CONTINUOUS_ON_CONST] THEN
     CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ASM SET_TAC[]];
@@ -9580,7 +9637,7 @@ let LUZIN_EQ,LUZIN_EQ_ALT = (CONJ_PAIR o prove)
     ASM_CASES_TAC `&0 < e` THEN ASM_REWRITE_TAC[] THEN
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real^M->bool` THEN
     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC TIETZE_UNBOUNDED THEN
-    ASM_SIMP_TAC[COMPACT_IMP_CLOSED];
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED; SUBTOPOLOGY_UNIV; GSYM CLOSED_IN];
     DISCH_THEN(MP_TAC o GEN `n:num` o SPEC `inv(&2 pow n)`) THEN
     REWRITE_TAC[REAL_LT_INV_EQ; REAL_LT_POW2] THEN
     REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; FORALL_AND_THM] THEN

@@ -40,6 +40,16 @@ let TRACE_MUL_SYM = prove
   REPEAT GEN_TAC THEN SIMP_TAC[trace; matrix_mul; LAMBDA_BETA] THEN
   GEN_REWRITE_TAC RAND_CONV [SUM_SWAP_NUMSEG] THEN REWRITE_TAC[REAL_MUL_SYM]);;
 
+let TRACE_TRANSP = prove
+ (`!A:real^N^N. trace(transp A) = trace A`,
+  SIMP_TAC[trace; transp; LAMBDA_BETA]);;
+
+let TRACE_CONJUGATE = prove
+ (`!A:real^N^N U:real^N^N.
+        invertible U ==> trace(matrix_inv U ** A ** U) = trace A`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[TRACE_MUL_SYM] THEN
+  ASM_SIMP_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_INV; MATRIX_MUL_RID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Definition of determinant.                                                *)
 (* ------------------------------------------------------------------------- *)
@@ -988,6 +998,12 @@ let PRODUCT_3 = prove
   REWRITE_TAC[num_CONV `3`; num_CONV `2`; PRODUCT_CLAUSES_NUMSEG] THEN
   REWRITE_TAC[PRODUCT_SING_NUMSEG; ARITH; REAL_MUL_ASSOC]);;
 
+let PRODUCT_4 = prove
+ (`!t. product(1..4) t = t(1) * t(2) * t(3) * t(4)`,
+  REWRITE_TAC[num_CONV `4`; num_CONV `3`; num_CONV `2`;
+              PRODUCT_CLAUSES_NUMSEG] THEN
+  REWRITE_TAC[PRODUCT_SING_NUMSEG; ARITH; REAL_MUL_ASSOC]);;
+
 let DET_1 = prove
  (`!A:real^1^1. det A = A$1$1`,
   REWRITE_TAC[det; DIMINDEX_1; PERMUTES_SING; NUMSEG_SING] THEN
@@ -1030,8 +1046,50 @@ let DET_3 = prove
   REWRITE_TAC[SIGN_SWAP; ARITH] THEN REWRITE_TAC[PRODUCT_3] THEN
   REWRITE_TAC[o_THM; swap; ARITH] THEN REAL_ARITH_TAC);;
 
+let DET_4 = prove
+ (`!A:real^4^4.
+        det(A) = A$1$1 * A$2$2 * A$3$3 * A$4$4 +
+                 A$1$1 * A$2$3 * A$3$4 * A$4$2 +
+                 A$1$1 * A$2$4 * A$3$2 * A$4$3 +
+                 A$1$2 * A$2$1 * A$3$4 * A$4$3 +
+                 A$1$2 * A$2$3 * A$3$1 * A$4$4 +
+                 A$1$2 * A$2$4 * A$3$3 * A$4$1 +
+                 A$1$3 * A$2$1 * A$3$2 * A$4$4 +
+                 A$1$3 * A$2$2 * A$3$4 * A$4$1 +
+                 A$1$3 * A$2$4 * A$3$1 * A$4$2 +
+                 A$1$4 * A$2$1 * A$3$3 * A$4$2 +
+                 A$1$4 * A$2$2 * A$3$1 * A$4$3 +
+                 A$1$4 * A$2$3 * A$3$2 * A$4$1 -
+                 A$1$1 * A$2$2 * A$3$4 * A$4$3 -
+                 A$1$1 * A$2$3 * A$3$2 * A$4$4 -
+                 A$1$1 * A$2$4 * A$3$3 * A$4$2 -
+                 A$1$2 * A$2$1 * A$3$3 * A$4$4 -
+                 A$1$2 * A$2$3 * A$3$4 * A$4$1 -
+                 A$1$2 * A$2$4 * A$3$1 * A$4$3 -
+                 A$1$3 * A$2$1 * A$3$4 * A$4$2 -
+                 A$1$3 * A$2$2 * A$3$1 * A$4$4 -
+                 A$1$3 * A$2$4 * A$3$2 * A$4$1 -
+                 A$1$4 * A$2$1 * A$3$2 * A$4$3 -
+                 A$1$4 * A$2$2 * A$3$3 * A$4$1 -
+                 A$1$4 * A$2$3 * A$3$1 * A$4$2`,
+  let lemma = prove
+   (`(sum {3,4} f = f 3 + f 4) /\
+     (sum {2,3,4} f = f 2 + f 3 + f 4)`,
+    SIMP_TAC[SUM_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
+    REWRITE_TAC[ARITH_EQ; IN_INSERT; NOT_IN_EMPTY] THEN REAL_ARITH_TAC) in
+  GEN_TAC THEN REWRITE_TAC[det; DIMINDEX_4] THEN
+  CONV_TAC(LAND_CONV(RATOR_CONV(ONCE_DEPTH_CONV NUMSEG_CONV))) THEN
+  SIMP_TAC[SUM_OVER_PERMUTATIONS_INSERT; FINITE_INSERT; FINITE_EMPTY;
+           ARITH_EQ; IN_INSERT; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[PERMUTES_EMPTY; SUM_SING; SET_RULE `{x | x = a} = {a}`] THEN
+  REWRITE_TAC[SWAP_REFL; I_O_ID] THEN
+  REWRITE_TAC[GSYM(NUMSEG_CONV `1..4`); SUM_4; lemma] THEN
+  SIMP_TAC[SIGN_COMPOSE; PERMUTATION_SWAP; PERMUTATION_COMPOSE] THEN
+  REWRITE_TAC[SIGN_SWAP; ARITH] THEN REWRITE_TAC[PRODUCT_4] THEN
+  REWRITE_TAC[o_THM; swap; ARITH] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
-(* Grassmann-Plucker relations for n = 2 and n = 3.                          *)
+(* Grassmann-Plucker relations for n = 2, n = 3 and n = 4.                   *)
 (* I have a proof of the general n case but the proof is a bit long and the  *)
 (* result doesn't seem generally useful enough to go in the main theories.   *)
 (* ------------------------------------------------------------------------- *)
@@ -1050,6 +1108,15 @@ let GRASSMANN_PLUCKER_3 = prove
           det(vector[y2;x2;x3]) * det(vector[y1;x1;y3]) +
           det(vector[y3;x2;x3]) * det(vector[y1;y2;x1])`,
   REWRITE_TAC[DET_3; VECTOR_3] THEN REAL_ARITH_TAC);;
+
+let GRASSMANN_PLUCKER_4 = prove
+ (`!x1 x2 x3 x4:real^4 y1 y2 y3 y4:real^4.
+        det(vector[x1;x2;x3;x4]) * det(vector[y1;y2;y3;y4]) =
+          det(vector[y1;x2;x3;x4]) * det(vector[x1;y2;y3;y4]) +
+          det(vector[y2;x2;x3;x4]) * det(vector[y1;x1;y3;y4]) +
+          det(vector[y3;x2;x3;x4]) * det(vector[y1;y2;x1;y4]) +
+          det(vector[y4;x2;x3;x4]) * det(vector[y1;y2;y3;x1])`,
+  REWRITE_TAC[DET_4; VECTOR_4] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Determinants of integer matrices.                                         *)
@@ -1291,6 +1358,10 @@ let ORTHOGONAL_MATRIX_2_ALT = prove
                  A$1$1 = --(A$2$2) /\ A$1$2 = A$2$1)`,
   REWRITE_TAC[ORTHOGONAL_MATRIX_2] THEN CONV_TAC REAL_RING);;
 
+let ORTHOGONAL_MATRIX_INV = prove
+ (`!A:real^N^N. orthogonal_matrix A ==> matrix_inv A = transp A`,
+  MESON_TAC[orthogonal_matrix; MATRIX_INV_UNIQUE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Linearity of scaling, and hence isometry, that preserves origin.          *)
 (* ------------------------------------------------------------------------- *)
@@ -1317,6 +1388,16 @@ let ISOMETRY_LINEAR = prove
         (f(vec 0) = vec 0) /\ (!x y. dist(f x,f y) = dist(x,y))
         ==> linear(f)`,
   MESON_TAC[SCALING_LINEAR; REAL_MUL_LID]);;
+
+let ISOMETRY_IMP_AFFINITY = prove
+ (`!f:real^M->real^N.
+        (!x y. dist(f x,f y) = dist(x,y))
+        ==> ?h. linear h /\ !x. f(x) = f(vec 0) + h(x)`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `\x. (f:real^M->real^N) x - f(vec 0)` THEN
+  REWRITE_TAC[VECTOR_ARITH `a + (x - a):real^N = x`] THEN
+  MATCH_MP_TAC ISOMETRY_LINEAR THEN REWRITE_TAC[VECTOR_SUB_REFL] THEN
+  ASM_REWRITE_TAC[NORM_ARITH `dist(x - a:real^N,y - a) = dist(x,y)`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence another formulation of orthogonal transformation.                   *)
@@ -1661,6 +1742,37 @@ let ROTATION_RIGHTWARD_LINE = prove
    REWRITE_TAC[REAL_ABS_NORM; REAL_MUL_RID] THEN
    MATCH_MP_TAC(ARITH_RULE `~(n = 1) /\ 1 <= n ==> 2 <= n`) THEN
    ASM_REWRITE_TAC[DIMINDEX_GE_1]);;
+
+(* ------------------------------------------------------------------------- *)
+(* In 3 dimensions, a rotation is indeed about an "axis".                    *)
+(* ------------------------------------------------------------------------- *)
+
+let EULER_ROTATION_THEOREM = prove
+ (`!A:real^3^3. rotation_matrix A ==> ?v:real^3. ~(v = vec 0) /\ A ** v = v`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `A - mat 1:real^3^3` HOMOGENEOUS_LINEAR_EQUATIONS_DET) THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_SUB_RDISTRIB;
+              VECTOR_SUB_EQ; MATRIX_VECTOR_MUL_LID] THEN
+  DISCH_THEN SUBST1_TAC THEN POP_ASSUM MP_TAC THEN
+  REWRITE_TAC[rotation_matrix; orthogonal_matrix; DET_3] THEN
+  SIMP_TAC[CART_EQ; FORALL_3; MAT_COMPONENT; DIMINDEX_3; LAMBDA_BETA; ARITH;
+           MATRIX_SUB_COMPONENT; MAT_COMPONENT; SUM_3;
+           matrix_mul; transp; matrix_vector_mul] THEN
+  CONV_TAC REAL_RING);;
+
+let EULER_ROTOINVERSION_THEOREM = prove
+ (`!A:real^3^3.
+     rotoinversion_matrix A ==> ?v:real^3. ~(v = vec 0) /\ A ** v = --v`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[VECTOR_ARITH `a:real^N = --v <=> a + v = vec 0`] THEN
+  MP_TAC(ISPEC `A + mat 1:real^3^3` HOMOGENEOUS_LINEAR_EQUATIONS_DET) THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_ADD_RDISTRIB; MATRIX_VECTOR_MUL_LID] THEN
+  DISCH_THEN SUBST1_TAC THEN POP_ASSUM MP_TAC THEN
+  REWRITE_TAC[rotoinversion_matrix; orthogonal_matrix; DET_3] THEN
+  SIMP_TAC[CART_EQ; FORALL_3; MAT_COMPONENT; DIMINDEX_3; LAMBDA_BETA; ARITH;
+           MATRIX_ADD_COMPONENT; MAT_COMPONENT; SUM_3;
+           matrix_mul; transp; matrix_vector_mul] THEN
+  CONV_TAC REAL_RING);;
 
 (* ------------------------------------------------------------------------- *)
 (* We can always rotate so that a hyperplane is "horizontal".                *)
@@ -2442,7 +2554,7 @@ let GEOM_EQUAL_DIMENSION_RULE =
     let f,bod = dest_exists(concl eth) in
     let lsth,neth = CONJ_PAIR(ASSUME bod) in
     let cth,qth = CONJ_PAIR(MATCH_MP pth lsth) in
-    let th1 = CONV_RULE 
+    let th1 = CONV_RULE
      (EXPAND_QUANTS_CONV qth THENC SUBS_CONV(CONJUNCTS cth)) th in
     let ith = LINEAR_INVARIANTS f (neth::CONJUNCTS lsth) in
     let th2 = GEN_REWRITE_RULE (RAND_CONV o REDEPTH_CONV) [BETA_THM;ith] th1 in

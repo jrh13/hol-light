@@ -13256,52 +13256,22 @@ let LITTLE_PICARD = prove
       f holomorphic_on (:complex) /\
       ~(a = b) /\ IMAGE f (:complex) INTER {a,b} = {}
       ==> ?c. f = \x. c`,
-  let lemma0 = prove
+  let lemma1 = prove
    (`!n. 0 < n ==> &0 < &n + sqrt(&n pow 2 - &1)`,
     MESON_TAC[REAL_LTE_ADD; REAL_OF_NUM_LT;
       SQRT_POS_LE; REAL_POW_LE_1; REAL_SUB_LE; REAL_OF_NUM_LE; LE_1]) in
-  let lemma1 = prove
-   (`!f s.
-          contractible s /\ f holomorphic_on s /\
-          (!z. z IN s ==> ~(f z = Cx(&1)) /\ ~(f z = --Cx(&1)))
-          ==> ?g. g holomorphic_on s /\ !z. z IN s ==> f z = ccos(g z)`,
-    REPEAT STRIP_TAC THEN
-    FIRST_ASSUM(MP_TAC o SPEC `\z:complex. Cx(&1) - f(z) pow 2` o
-      MATCH_MP CONTRACTIBLE_IMP_HOLOMORPHIC_SQRT) THEN
-    ASM_SIMP_TAC[HOLOMORPHIC_ON_SUB; HOLOMORPHIC_ON_CONST; HOLOMORPHIC_ON_POW;
-                 COMPLEX_RING `~(Cx(&1) - z pow 2 = Cx(&0)) <=>
-                               ~(z = Cx(&1)) /\ ~(z = --Cx(&1))`] THEN
-    REWRITE_TAC[COMPLEX_RING
-     `Cx(&1) - w pow 2 = z pow 2 <=>
-      (w + ii * z) * (w - ii * z) = Cx(&1)`] THEN
-    DISCH_THEN(X_CHOOSE_THEN `g:complex->complex` STRIP_ASSUME_TAC) THEN
-    FIRST_ASSUM(MP_TAC o SPEC `\z:complex. f(z) + ii * g(z)` o
-        MATCH_MP CONTRACTIBLE_IMP_HOLOMORPHIC_LOG) THEN
-    ASM_SIMP_TAC[HOLOMORPHIC_ON_ADD; HOLOMORPHIC_ON_MUL; HOLOMORPHIC_ON_CONST;
-      COMPLEX_RING `(a + b) * (a - b) = Cx(&1) ==> ~(a + b = Cx(&0))`] THEN
-    DISCH_THEN(X_CHOOSE_THEN `h:complex->complex` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `\z:complex. --ii * h(z)` THEN
-    ASM_SIMP_TAC[HOLOMORPHIC_ON_MUL; HOLOMORPHIC_ON_CONST; ccos] THEN
-    X_GEN_TAC `z:complex` THEN
-    DISCH_TAC THEN REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`)) THEN
-    ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o MATCH_MP (COMPLEX_FIELD
-     `a * b = Cx(&1) ==> b = inv a`)) THEN
-    ASM_SIMP_TAC[GSYM CEXP_NEG] THEN
-    FIRST_X_ASSUM(ASSUME_TAC o SYM) THEN DISCH_THEN(ASSUME_TAC o SYM) THEN
-    ASM_REWRITE_TAC[COMPLEX_RING `ii * --ii * z = z`;
-                    COMPLEX_RING `--ii * --ii * z = --z`] THEN
-    CONV_TAC COMPLEX_RING) in
   let lemma2 = prove
    (`!f s. contractible s /\ f holomorphic_on s /\
           (!z. z IN s ==> ~(f z = Cx(&1)) /\ ~(f z = --Cx(&1)))
           ==> ?g. g holomorphic_on s /\
                   !z. z IN s ==> f z = ccos(Cx(pi) * ccos(g z))`,
     REPEAT STRIP_TAC THEN
-    MP_TAC(SPECL [`f:complex->complex`; `s:complex->bool`] lemma1) THEN
+    MP_TAC(SPECL [`f:complex->complex`; `s:complex->bool`]
+      CONTRACTIBLE_IMP_HOLOMORPHIC_ACS) THEN
     ASM_REWRITE_TAC[] THEN
     DISCH_THEN(X_CHOOSE_THEN `g:complex->complex` STRIP_ASSUME_TAC) THEN
-    MP_TAC(SPECL [`\z:complex. g z / Cx pi`; `s:complex->bool`] lemma1) THEN
+    MP_TAC(SPECL [`\z:complex. g z / Cx pi`; `s:complex->bool`]
+      CONTRACTIBLE_IMP_HOLOMORPHIC_ACS) THEN
     ASM_SIMP_TAC[HOLOMORPHIC_ON_DIV; HOLOMORPHIC_ON_CONST; CX_INJ; PI_NZ;
       COMPLEX_FIELD `~(z = Cx(&0)) ==> (w / z = a <=> w = z * a)`] THEN
     ANTS_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
@@ -13347,7 +13317,7 @@ let LITTLE_PICARD = prove
     SIMP_TAC[COMPLEX_TRAD; COMPLEX_RING
       `ii * (a + ii * b) = --b + ii * a`] THEN
     REWRITE_TAC[GSYM COMPLEX_TRAD; GSYM CX_NEG; CEXP_COMPLEX] THEN
-    SIMP_TAC[REAL_EXP_NEG; EXP_LOG; lemma0] THEN
+    SIMP_TAC[REAL_EXP_NEG; EXP_LOG; lemma1] THEN
     SIMP_TAC[SIN_INTEGER_PI; REAL_INV_INV] THEN
     REWRITE_TAC[COMPLEX_TRAD; COMPLEX_MUL_RZERO; COMPLEX_ADD_RID] THEN
     REWRITE_TAC[GSYM CX_POW; GSYM CX_MUL; GSYM CX_ADD; GSYM CX_ADD;
@@ -13382,7 +13352,7 @@ let LITTLE_PICARD = prove
       X_GEN_TAC `n:num` THEN DISCH_TAC THEN X_GEN_TAC `m:num` THEN
       DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
       GEN_REWRITE_TAC LAND_CONV [GSYM REAL_EXP_MONO_LE] THEN
-      ASM_SIMP_TAC[lemma0; EXP_LOG] THEN
+      ASM_SIMP_TAC[lemma1; EXP_LOG] THEN
       REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN MATCH_MP_TAC(REAL_ARITH
        `e <= n /\ &0 <= x ==> m + x <= e ==> m <= n`) THEN
       ASM_SIMP_TAC[SQRT_POS_LE; REAL_POW_LE_1; REAL_SUB_LE;
@@ -13392,7 +13362,7 @@ let LITTLE_PICARD = prove
       ASM_REWRITE_TAC[ARITH_RULE `0 < n + 1 /\ ~(n + 1 <= n)`] THEN
       FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
        `l <= x ==> r - l <= e ==> ~(r <= x) ==> abs(l - x) < e`)) THEN
-      ASM_SIMP_TAC[lemma0; GSYM LOG_DIV; ARITH_RULE `0 < n + 1`] THEN
+      ASM_SIMP_TAC[lemma1; GSYM LOG_DIV; ARITH_RULE `0 < n + 1`] THEN
       FIRST_ASSUM(DISJ_CASES_TAC o MATCH_MP (ARITH_RULE
        `0 < n ==> n = 1 \/ 2 <= n`))
       THENL
@@ -13409,7 +13379,7 @@ let LITTLE_PICARD = prove
         MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `log(&2)` THEN
         CONJ_TAC THENL
          [MATCH_MP_TAC LOG_MONO_LE_IMP THEN
-          ASM_SIMP_TAC[lemma0; ARITH_RULE `0 < n + 1`; REAL_LT_DIV;
+          ASM_SIMP_TAC[lemma1; ARITH_RULE `0 < n + 1`; REAL_LT_DIV;
                        REAL_LE_LDIV_EQ] THEN
           REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN MATCH_MP_TAC(REAL_ARITH
            `&1 <= n /\ s <= &2 * t ==> (n + &1) + s <= &2 * (n + t)`) THEN

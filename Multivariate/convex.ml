@@ -8726,6 +8726,23 @@ let RELATIVE_INTERIOR_SING = prove
            CONVEX_SING] THEN
   SET_TAC[]);;
 
+let STARLIKE_CONVEX_TWEAK_BOUNDARY_POINTS = prove
+ (`!s t:real^N->bool.
+        convex s /\ ~(s = {}) /\
+        relative_interior s SUBSET t /\ t SUBSET closure s
+        ==> starlike t`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `~(relative_interior s:real^N->bool = {})` MP_TAC THENL
+   [ASM_SIMP_TAC[RELATIVE_INTERIOR_EQ_EMPTY]; REWRITE_TAC[starlike]] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `a:real^N` THEN
+  REPEAT STRIP_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC(SET_RULE
+   `a IN s /\ b IN s /\ segment[a,b] DIFF {a,b} SUBSET s
+    ==> segment[a:real^N,b] SUBSET s`) THEN
+  ASM_REWRITE_TAC[GSYM open_segment] THEN
+  ASM_MESON_TAC[IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT; SUBSET]);;
+
 let RELATIVE_INTERIOR_PROLONG = prove
  (`!s x y:real^N.
         x IN relative_interior s /\ y IN s
@@ -8944,6 +8961,121 @@ let RELATIVE_INTERIOR_PCROSS = prove
      (X_CHOOSE_THEN `w:real^N->bool` STRIP_ASSUME_TAC)) THEN
     EXISTS_TAC `(v:real^M->bool) PCROSS (w:real^N->bool)` THEN
     ASM_SIMP_TAC[PASTECART_IN_PCROSS; SUBSET_PCROSS; OPEN_IN_PCROSS]]);;
+
+let RELATIVE_FRONTIER_EQ_EMPTY = prove
+ (`!s:real^N->bool. closure s DIFF relative_interior s = {} <=> affine s`,
+  GEN_TAC THEN REWRITE_TAC[GSYM RELATIVE_INTERIOR_EQ_CLOSURE] THEN
+  MP_TAC(ISPEC `s:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
+  MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[]);;
+
+let DIAMETER_BOUNDED_BOUND_LT = prove
+ (`!s x y:real^N.
+        bounded s /\ x IN relative_interior s /\ y IN closure s /\
+        ~(diameter s = &0)
+        ==> norm(x - y) < diameter s`,
+  let lemma = prove
+   (`!s x y:real^N.
+          bounded s /\ x IN relative_interior s /\ y IN s /\
+          ~(diameter s = &0)
+          ==> norm(x - y) < diameter s`,
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM
+     (MP_TAC o GEN_REWRITE_RULE I [IN_RELATIVE_INTERIOR_CBALL]) THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN `e:real`
+     STRIP_ASSUME_TAC)) THEN
+    ASM_SIMP_TAC[REAL_LT_LE; DIAMETER_BOUNDED_BOUND] THEN
+    ASM_CASES_TAC `y:real^N = x` THEN
+    ASM_SIMP_TAC[VECTOR_SUB_REFL; NORM_0] THEN
+    DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
+    DISCH_THEN(MP_TAC o SPEC `x + e / norm(x - y) % (x - y):real^N`) THEN
+    REWRITE_TAC[NOT_IMP; IN_INTER] THEN REPEAT CONJ_TAC THENL
+     [REWRITE_TAC[IN_CBALL; NORM_ARITH `dist(x:real^M,x + y) = norm y`] THEN
+      ASM_SIMP_TAC[NORM_MUL; REAL_ABS_DIV; REAL_ABS_NORM; REAL_DIV_RMUL;
+                   NORM_EQ_0; VECTOR_SUB_EQ] THEN ASM_REAL_ARITH_TAC;
+      MATCH_MP_TAC IN_AFFINE_ADD_MUL_DIFF THEN
+      ASM_SIMP_TAC[HULL_INC; AFFINE_AFFINE_HULL];
+      DISCH_TAC THEN MP_TAC(ISPECL
+       [`s:real^N->bool`; `x + e / norm(x - y) % (x - y):real^N`; `y:real^N`]
+          DIAMETER_BOUNDED_BOUND) THEN
+      ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[VECTOR_ARITH
+       `(x + e % (x - y)) - y:real^N = (&1 + e) % (x - y)`] THEN
+      SIMP_TAC[NORM_MUL; REAL_ARITH `~(a * n <= n) <=> &0 < n * (a - &1)`] THEN
+      MATCH_MP_TAC REAL_LT_MUL THEN
+      ASM_REWRITE_TAC[NORM_POS_LT; VECTOR_SUB_EQ] THEN
+      MATCH_MP_TAC(REAL_ARITH `&0 < e ==> &0 < abs(&1 + e) - &1`) THEN
+      MATCH_MP_TAC REAL_LT_DIV THEN
+      ASM_REWRITE_TAC[NORM_POS_LT; VECTOR_SUB_EQ]]) in
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`closure s:real^N->bool`; `x:real^N`; `y:real^N`]
+        lemma) THEN
+  ASM_SIMP_TAC[DIAMETER_CLOSURE; BOUNDED_CLOSURE] THEN
+  DISCH_THEN MATCH_MP_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (SET_RULE `x IN s ==> s SUBSET t ==> x IN t`)) THEN
+  MATCH_MP_TAC SUBSET_RELATIVE_INTERIOR THEN
+  REWRITE_TAC[CLOSURE_SUBSET; AFFINE_HULL_CLOSURE]);;
+
+let DIAMETER_ATTAINED_RELATIVE_FRONTIER = prove
+ (`!s:real^N->bool.
+        bounded s /\ ~(diameter s = &0)
+        ==> ?x y. x IN (closure s DIFF relative_interior s) /\
+                  y IN (closure s DIFF relative_interior s) /\
+                  norm(x - y) = diameter s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[DIAMETER_EMPTY] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `closure s:real^N->bool` DIAMETER_COMPACT_ATTAINED) THEN
+  ASM_SIMP_TAC[COMPACT_CLOSURE; CLOSURE_EQ_EMPTY; DIAMETER_CLOSURE] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[IN_DIFF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `s:real^N->bool` DIAMETER_BOUNDED_BOUND_LT) THENL
+   [DISCH_THEN(MP_TAC o SPECL [`x:real^N`; `y:real^N`]);
+    DISCH_THEN(MP_TAC o SPECL [`y:real^N`; `x:real^N`])] THEN
+  ASM_MESON_TAC[REAL_LT_REFL; NORM_SUB]);;
+
+let DIAMETER_RELATIVE_FRONTIER = prove
+ (`!s:real^N->bool.
+        bounded s /\ ~(?a. s = {a})
+        ==> diameter(closure s DIFF relative_interior s) = diameter s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[CLOSURE_EMPTY; EMPTY_DIFF] THEN
+  ASM_SIMP_TAC[GSYM DIAMETER_CLOSURE; GSYM REAL_LE_ANTISYM] THEN
+  ASM_SIMP_TAC[SUBSET_DIFF; DIAMETER_SUBSET; BOUNDED_CLOSURE] THEN
+  ASM_SIMP_TAC[DIAMETER_CLOSURE] THEN
+  MP_TAC(ISPEC `s:real^N->bool` DIAMETER_ATTAINED_RELATIVE_FRONTIER) THEN
+  ASM_SIMP_TAC[DIAMETER_EQ_0] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN MATCH_MP_TAC DIAMETER_BOUNDED_BOUND THEN
+  ASM_SIMP_TAC[BOUNDED_CLOSURE; BOUNDED_DIFF]);;
+
+let DIAMETER_ATTAINED_FRONTIER = prove
+ (`!s:real^N->bool.
+        bounded s /\ ~(diameter s = &0)
+        ==> ?x y. x IN frontier s /\ y IN frontier s /\
+                  norm(x - y) = diameter s`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP DIAMETER_ATTAINED_RELATIVE_FRONTIER) THEN
+  REWRITE_TAC[frontier; IN_DIFF] THEN
+  MESON_TAC[REWRITE_RULE[SUBSET] INTERIOR_SUBSET_RELATIVE_INTERIOR]);;
+
+let DIAMETER_FRONTIER = prove
+ (`!s:real^N->bool. bounded s ==> diameter(frontier s) = diameter s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `?a:real^N. s = {a}` THENL
+   [ASM_MESON_TAC[FRONTIER_SING]; ALL_TAC] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `!r. r <= f /\ f <= s /\ r = s ==> f = s`) THEN
+  EXISTS_TAC `diameter(closure s DIFF relative_interior s:real^N->bool)` THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_SIMP_TAC[GSYM DIAMETER_CLOSURE] THEN MATCH_MP_TAC DIAMETER_SUBSET THEN
+    ASM_SIMP_TAC[BOUNDED_FRONTIER] THEN REWRITE_TAC[frontier] THEN
+    MP_TAC(ISPEC `s:real^N->bool` INTERIOR_SUBSET_RELATIVE_INTERIOR) THEN
+    SET_TAC[];
+    ASM_SIMP_TAC[GSYM DIAMETER_CLOSURE] THEN MATCH_MP_TAC DIAMETER_SUBSET THEN
+    ASM_SIMP_TAC[BOUNDED_CLOSURE; frontier; SUBSET_DIFF];
+    ASM_SIMP_TAC[DIAMETER_RELATIVE_FRONTIER]]);;
+
+let DIAMETER_SPHERE = prove
+ (`!a:real^N r. diameter(sphere(a,r)) = if r < &0 then &0 else &2 * r`,
+  REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
+  ASM_SIMP_TAC[DIAMETER_FRONTIER; BOUNDED_CBALL; DIAMETER_CBALL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Interior, relative interior and closure interrelations.                   *)
