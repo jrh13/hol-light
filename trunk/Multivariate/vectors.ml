@@ -22,6 +22,11 @@ let FORALL_3 = prove
  (`!P. (!i. 1 <= i /\ i <= 3 ==> P i) <=> P 1 /\ P 2 /\ P 3`,
   MESON_TAC[ARITH_RULE `1 <= i /\ i <= 3 <=> i = 1 \/ i = 2 \/ i = 3`]);;
 
+let FORALL_4 = prove
+ (`!P. (!i. 1 <= i /\ i <= 4 ==> P i) <=> P 1 /\ P 2 /\ P 3 /\ P 4`,
+  MESON_TAC[ARITH_RULE `1 <= i /\ i <= 4 <=>
+    i = 1 \/ i = 2 \/ i = 3 \/ i = 4`]);;
+
 let SUM_1 = prove
  (`sum(1..1) f = f(1)`,
   REWRITE_TAC[SUM_SING_NUMSEG]);;
@@ -34,6 +39,11 @@ let SUM_2 = prove
 let SUM_3 = prove
  (`!t. sum(1..3) t = t(1) + t(2) + t(3)`,
   REWRITE_TAC[num_CONV `3`; num_CONV `2`; SUM_CLAUSES_NUMSEG] THEN
+  REWRITE_TAC[SUM_SING_NUMSEG; ARITH; REAL_ADD_ASSOC]);;
+
+let SUM_4 = prove
+ (`!t. sum(1..4) t = t(1) + t(2) + t(3) + t(4)`,
+  SIMP_TAC[num_CONV `4`; num_CONV `3`; num_CONV `2`; SUM_CLAUSES_NUMSEG] THEN
   REWRITE_TAC[SUM_SING_NUMSEG; ARITH; REAL_ADD_ASSOC]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -94,6 +104,10 @@ let DOT_2 = prove
 let DOT_3 = prove
  (`(x:real^3) dot (y:real^3) = x$1 * y$1 + x$2 * y$2 + x$3 * y$3`,
   REWRITE_TAC[dot; DIMINDEX_3; SUM_3]);;
+
+let DOT_4 = prove
+ (`(x:real^4) dot (y:real^4) = x$1 * y$1 + x$2 * y$2 + x$3 * y$3 + x$4 * y$4`,
+  REWRITE_TAC[dot; DIMINDEX_4; SUM_4]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A naive proof procedure to lift really trivial arithmetic stuff from R.   *)
@@ -234,6 +248,8 @@ let VECTOR_MUL_RNEG = VECTOR_ARITH `c % --x = --(c % x)`;;
 let VECTOR_NEG_0 = VECTOR_ARITH `--(vec 0) = vec 0`;;
 
 let VECTOR_NEG_EQ_0 = VECTOR_ARITH `--x = vec 0 <=> x = vec 0`;;
+
+let VECTOR_EQ_NEG2 = VECTOR_ARITH `!x y:real^N. --x = --y <=> x = y`;;
 
 let VECTOR_ADD_AC = VECTOR_ARITH
   `(m + n = n + m:real^N) /\
@@ -1747,6 +1763,11 @@ let VSUM_3 = prove
   REWRITE_TAC[num_CONV `3`; num_CONV `2`; VSUM_CLAUSES_NUMSEG] THEN
   REWRITE_TAC[VSUM_SING_NUMSEG; ARITH; VECTOR_ADD_ASSOC]);;
 
+let VSUM_4 = prove
+ (`!t. vsum(1..4) t = t(1) + t(2) + t(3) + t(4)`,
+  SIMP_TAC[num_CONV `4`; num_CONV `3`; num_CONV `2`; VSUM_CLAUSES_NUMSEG] THEN
+  REWRITE_TAC[VSUM_SING_NUMSEG; ARITH; VECTOR_ADD_ASSOC]);;
+
 let VSUM_PAIR = prove
  (`!f:num->real^N m n.
         vsum(2*m..2*n+1) f = vsum(m..n) (\i. f(2*i) + f(2*i+1))`,
@@ -2034,6 +2055,14 @@ let VECTOR_3 = prove
   SIMP_TAC[vector; LAMBDA_BETA; DIMINDEX_3; ARITH; LENGTH; EL] THEN
   REWRITE_TAC[num_CONV `2`; num_CONV `1`; HD; TL; EL]);;
 
+let VECTOR_4 = prove
+ (`(vector[w;x;y;z]:A^4)$1 = w /\
+   (vector[w;x;y;z]:A^4)$2 = x /\
+   (vector[w;x;y;z]:A^4)$3 = y /\
+   (vector[w;x;y;z]:A^4)$4 = z`,
+  SIMP_TAC[vector; LAMBDA_BETA; DIMINDEX_4; ARITH; LENGTH; EL] THEN
+  REWRITE_TAC[num_CONV `3`; num_CONV `2`; num_CONV `1`; HD; TL; EL]);;
+
 let FORALL_VECTOR_1 = prove
  (`(!v:A^1. P v) <=> !x. P(vector[x])`,
   EQ_TAC THEN SIMP_TAC[] THEN REPEAT STRIP_TAC THEN
@@ -2056,6 +2085,14 @@ let FORALL_VECTOR_3 = prove
   MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
   REWRITE_TAC[CART_EQ; FORALL_3; VECTOR_3; DIMINDEX_3]);;
 
+let FORALL_VECTOR_4 = prove
+ (`(!v:A^4. P v) <=> !w x y z. P(vector[w;x;y;z])`,
+  EQ_TAC THEN SIMP_TAC[] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+    [`(v:A^4)$1`; `(v:A^4)$2`; `(v:A^4)$3`; `(v:A^4)$4`]) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[CART_EQ; FORALL_4; VECTOR_4; DIMINDEX_4]);;
+
 let EXISTS_VECTOR_1 = prove
  (`(?v:A^1. P v) <=> ?x. P(vector[x])`,
   REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
@@ -2070,6 +2107,11 @@ let EXISTS_VECTOR_3 = prove
  (`(?v:A^3. P v) <=> ?x y z. P(vector[x;y;z])`,
   REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
   REWRITE_TAC[FORALL_VECTOR_3]);;
+
+let EXISTS_VECTOR_4 = prove
+ (`(?v:A^4. P v) <=> ?w x y z. P(vector[w;x;y;z])`,
+  REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[FORALL_VECTOR_4]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Linear functions.                                                         *)
@@ -2833,7 +2875,7 @@ let VECTOR_COMPONENTWISE = prove
   SIMP_TAC[COND_RAND; REAL_MUL_RZERO; SUM_DELTA; IN_NUMSEG] THEN
   REWRITE_TAC[REAL_MUL_RID; COND_ID]);;
 
-let LINEAR_COMPONENTWISE = prove
+let LINEAR_COMPONENTWISE_EXPANSION = prove
  (`!f:real^M->real^N.
       linear(f)
       ==> !x j. 1 <= j /\ j <= dimindex(:N)
@@ -2879,6 +2921,14 @@ let MATRIX_INV = prove
   GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[matrix_inv; invertible] THEN
   CONV_TAC SELECT_CONV THEN ASM_REWRITE_TAC[GSYM invertible]);;
 
+let MATRIX_INV_UNIQUE = prove
+ (`!A:real^N^M B. A ** B = mat 1 /\ B ** A = mat 1 ==> matrix_inv A = B`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPEC `A:real^N^M` MATRIX_INV) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[invertible]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o
+    AP_TERM `(( ** ):real^M^N->real^M^M->real^M^N) B` o CONJUNCT1) THEN
+  ASM_REWRITE_TAC[MATRIX_MUL_ASSOC; MATRIX_MUL_LID; MATRIX_MUL_RID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Correspondence between matrices and linear operators.                     *)
 (* ------------------------------------------------------------------------- *)
@@ -2900,7 +2950,7 @@ let MATRIX_WORKS = prove
   SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN GEN_TAC THEN DISCH_TAC THEN
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-  ASM_SIMP_TAC[GSYM LINEAR_COMPONENTWISE]);;
+  ASM_SIMP_TAC[GSYM LINEAR_COMPONENTWISE_EXPANSION]);;
 
 let MATRIX_VECTOR_MUL = prove
  (`!f:real^M->real^N. linear f ==> f = \x. matrix f ** x`,
@@ -3341,6 +3391,21 @@ let LINEAR_LIFT_COMPONENT = prove
    [REWRITE_TAC[FINITE_INDEX_INRANGE];
     MP_TAC(ISPEC `basis j:real^N` LINEAR_LIFT_DOT) THEN
     ASM_SIMP_TAC[DOT_BASIS]]);;
+
+let BILINEAR_DROP_MUL = prove
+ (`bilinear (\x y:real^N. drop x % y)`,
+  REWRITE_TAC[bilinear; linear] THEN
+  REWRITE_TAC[DROP_ADD; DROP_CMUL] THEN VECTOR_ARITH_TAC);;
+
+let LINEAR_COMPONENTWISE = prove
+ (`!f:real^M->real^N.
+        linear f <=>
+        !i. 1 <= i /\ i <= dimindex(:N) ==> linear(\x. lift(f(x)$i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[linear] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [CART_EQ] THEN
+  SIMP_TAC[GSYM LIFT_CMUL; GSYM LIFT_ADD; LIFT_EQ] THEN
+  REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT] THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
@@ -5459,6 +5524,16 @@ let MATRIX_INVERTIBLE = prove
              ?g. linear g /\ f o g = I /\ g o f = I)`,
   SIMP_TAC[INVERTIBLE_LEFT_INVERSE; MATRIX_LEFT_INVERTIBLE] THEN
   MESON_TAC[LINEAR_INVERSE_LEFT]);;
+
+let MATRIX_INV_UNIQUE_LEFT = prove
+ (`!A:real^N^N B. A ** B = mat 1 ==> matrix_inv B = A`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE THEN
+  ASM_MESON_TAC[MATRIX_LEFT_RIGHT_INVERSE]);;
+
+let MATRIX_INV_UNIQUE_RIGHT = prove
+ (`!A:real^N^N B. A ** B = mat 1 ==> matrix_inv A = B`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE THEN
+  ASM_MESON_TAC[MATRIX_LEFT_RIGHT_INVERSE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Left-invertible linear transformation has a lower bound.                  *)

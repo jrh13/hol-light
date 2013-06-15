@@ -258,7 +258,7 @@ let define_finite_type =
     POST_RULE(new_type_definition ns ("mk_"^ns',"dest_"^ns') th1);;
 
 (* ------------------------------------------------------------------------- *)
-(* Predefine the cases 2 and 3, which are useful for real^2 and real^3.      *)
+(* Predefine the cases 2, 3 and 4, which are especially useful for real^N.   *)
 (* ------------------------------------------------------------------------- *)
 
 let HAS_SIZE_1 = prove
@@ -271,9 +271,12 @@ let HAS_SIZE_2 = define_finite_type 2;;
 
 let HAS_SIZE_3 = define_finite_type 3;;
 
+let HAS_SIZE_4 = define_finite_type 4;;
+
 let DIMINDEX_1 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_1;;
 let DIMINDEX_2 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_2;;
 let DIMINDEX_3 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_3;;
+let DIMINDEX_4 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_4;;
 
 (* ------------------------------------------------------------------------- *)
 (* Finiteness lemma.                                                         *)

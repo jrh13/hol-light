@@ -1703,6 +1703,92 @@ let DIST_CEXP_II_1 = prove
   REWRITE_TAC[REAL_ARITH `&2 * t / &2 = t`] THEN
   MP_TAC(SPEC `t:real` SIN_CIRCLE) THEN CONV_TAC REAL_RING);;
 
+let CX_SINH = prove
+ (`Cx((exp x - inv(exp x)) / &2) = --ii * csin(ii * Cx x)`,
+  REWRITE_TAC[csin; COMPLEX_RING `--ii * ii * z = z /\ ii * ii * z = --z`] THEN
+  REWRITE_TAC[CEXP_NEG; GSYM CX_EXP; GSYM CX_INV; CX_SUB; CX_DIV] THEN
+  CONV_TAC COMPLEX_FIELD);;
+
+let CX_COSH = prove
+ (`Cx((exp x + inv(exp x)) / &2) = ccos(ii * Cx x)`,
+  REWRITE_TAC[ccos; COMPLEX_RING `--ii * ii * z = z /\ ii * ii * z = --z`] THEN
+  REWRITE_TAC[CEXP_NEG; GSYM CX_EXP; GSYM CX_INV; CX_ADD; CX_DIV] THEN
+  CONV_TAC COMPLEX_FIELD);;
+
+let NORM_CCOS_POW_2 = prove
+ (`!z. norm(ccos z) pow 2 =
+       cos(Re z) pow 2 + (exp(Im z) - inv(exp(Im z))) pow 2 / &4`,
+  REWRITE_TAC[FORALL_COMPLEX; RE; IM] THEN
+  REWRITE_TAC[COMPLEX_TRAD; CCOS_ADD; COMPLEX_SQNORM] THEN
+  SIMP_TAC[RE_SUB; IM_SUB; GSYM CX_COS; GSYM CX_SIN; IM_MUL_CX; RE_MUL_CX] THEN
+  REWRITE_TAC[ccos; csin; CEXP_NEG; COMPLEX_FIELD
+   `--ii * ii * z = z /\ ii * ii * z = --z /\
+    z / (Cx(&2) * ii) = --(ii * z / Cx(&2))`] THEN
+  REWRITE_TAC[RE_ADD; RE_SUB; IM_ADD; IM_SUB; RE_MUL_II; IM_MUL_II;
+              RE_DIV_CX; IM_DIV_CX; RE_NEG; IM_NEG] THEN
+  REWRITE_TAC[GSYM CX_EXP; GSYM CX_INV; IM_CX; RE_CX] THEN
+  MAP_EVERY X_GEN_TAC [`x:real`; `y:real`] THEN
+  MP_TAC(SPEC `x:real` SIN_CIRCLE) THEN MP_TAC(SPEC `y:real` REAL_EXP_NZ) THEN
+  CONV_TAC REAL_FIELD);;
+
+let NORM_CSIN_POW_2 = prove
+ (`!z. norm(csin z) pow 2 =
+       (exp(&2 * Im z) + inv(exp(&2 * Im z)) - &2 * cos(&2 * Re z)) / &4`,
+  REWRITE_TAC[FORALL_COMPLEX; RE; IM] THEN
+  REWRITE_TAC[COMPLEX_TRAD; CSIN_ADD; COMPLEX_SQNORM] THEN
+  SIMP_TAC[RE_ADD; IM_ADD; GSYM CX_SIN; GSYM CX_SIN; IM_MUL_CX; RE_MUL_CX;
+           GSYM CX_COS] THEN
+  REWRITE_TAC[ccos; csin; CEXP_NEG; COMPLEX_FIELD
+   `--ii * ii * z = z /\ ii * ii * z = --z /\
+    z / (Cx(&2) * ii) = --(ii * z / Cx(&2))`] THEN
+  REWRITE_TAC[RE_ADD; RE_SUB; IM_ADD; IM_SUB; RE_MUL_II; IM_MUL_II;
+              RE_DIV_CX; IM_DIV_CX; RE_NEG; IM_NEG] THEN
+  REWRITE_TAC[GSYM CX_EXP; GSYM CX_INV; IM_CX; RE_CX] THEN
+  REWRITE_TAC[REAL_EXP_N; COS_DOUBLE] THEN
+  MAP_EVERY X_GEN_TAC [`x:real`; `y:real`] THEN
+  MP_TAC(SPEC `x:real` SIN_CIRCLE) THEN MP_TAC(SPEC `y:real` REAL_EXP_NZ) THEN
+  CONV_TAC REAL_FIELD);;
+
+let CSIN_EQ = prove
+ (`!w z. csin w = csin z <=>
+         ?n. integer n /\
+             (w = z + Cx(&2 * n * pi) \/ w = --z + Cx((&2 * n + &1) * pi))`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM COMPLEX_SUB_0] THEN
+  REWRITE_TAC[COMPLEX_SUB_CSIN; COMPLEX_ENTIRE; CSIN_EQ_0; CCOS_EQ_0] THEN
+  REWRITE_TAC[CX_INJ; REAL_OF_NUM_EQ; ARITH_EQ; OR_EXISTS_THM] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `n:real` THEN
+  ASM_CASES_TAC `integer(n)` THEN
+  ASM_REWRITE_TAC[COMPLEX_FIELD `a / Cx(&2) = b <=> a = Cx(&2) * b`] THEN
+  REWRITE_TAC[GSYM CX_MUL; REAL_ARITH
+    `&2 * (n + &1 / &2) * pi = (&2 * n + &1) * pi`] THEN
+  CONV_TAC COMPLEX_RING);;
+
+let CCOS_EQ = prove
+ (`!w z. ccos(w) = ccos(z) <=>
+         ?n. integer n /\
+             (w = z + Cx(&2 * n * pi) \/ w = --z + Cx(&2 * n * pi))`,
+  REPEAT GEN_TAC THEN CONV_TAC(LAND_CONV SYM_CONV) THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM COMPLEX_SUB_0] THEN
+  REWRITE_TAC[COMPLEX_SUB_CCOS; COMPLEX_ENTIRE; CSIN_EQ_0] THEN
+  REWRITE_TAC[CX_INJ; REAL_OF_NUM_EQ; ARITH_EQ; OR_EXISTS_THM] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `n:real` THEN
+  ASM_CASES_TAC `integer(n)` THEN ASM_REWRITE_TAC[CX_MUL] THEN
+  CONV_TAC COMPLEX_RING);;
+
+let SIN_EQ = prove
+ (`!x y. sin x = sin y <=>
+         ?n. integer n /\
+             (x = y + &2 * n * pi \/ x = --y + (&2 * n + &1) * pi)`,
+  REWRITE_TAC[GSYM CX_INJ; CX_SIN; CSIN_EQ] THEN
+  REWRITE_TAC[GSYM CX_ADD; GSYM CX_NEG; CX_INJ]);;
+
+let COS_EQ = prove
+ (`!x y. cos x = cos y <=>
+         ?n. integer n /\
+             (x = y + &2 * n * pi \/ x = --y + &2 * n * pi)`,
+  REWRITE_TAC[GSYM CX_INJ; CX_COS; CCOS_EQ] THEN
+  REWRITE_TAC[GSYM CX_ADD; GSYM CX_NEG; CX_INJ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Taylor series for complex exponential.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -4287,6 +4373,22 @@ let CACS_BOUNDS = prove
   GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[RE_CACS] THEN
   MATCH_MP_TAC IM_CLOG_POS_LT_IMP THEN ASM_SIMP_TAC[CACS_RANGE_LEMMA]);;
 
+let RE_CACS_BOUNDS = prove
+ (`!z. --pi < Re(cacs z) /\ Re(cacs z) <= pi`,
+  REWRITE_TAC[RE_CACS] THEN SIMP_TAC[CLOG_WORKS; CACS_BODY_LEMMA]);;
+
+let RE_CACS_BOUND = prove
+ (`!z. abs(Re(cacs z)) <= pi`,
+  MP_TAC RE_CACS_BOUNDS THEN MATCH_MP_TAC MONO_FORALL THEN REAL_ARITH_TAC);;
+
+let RE_CASN_BOUNDS = prove
+ (`!z. --pi < Re(casn z) /\ Re(casn z) <= pi`,
+  REWRITE_TAC[RE_CASN] THEN SIMP_TAC[CLOG_WORKS; CASN_BODY_LEMMA]);;
+
+let RE_CASN_BOUND = prove
+ (`!z. abs(Re(casn z)) <= pi`,
+  MP_TAC RE_CASN_BOUNDS THEN MATCH_MP_TAC MONO_FORALL THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Interrelations between the two functions.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -5922,3 +6024,91 @@ let SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS,
         ASM_SIMP_TAC[REAL_LE_MUL; REAL_LT_LMUL_EQ; REAL_OF_NUM_LT; ARITH;
                      PI_POS; REAL_LT_IMP_LE; REAL_POS; REAL_LE_MUL] THEN
         ASM_REWRITE_TAC[REAL_LT_LE]]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Homeomorphism of simple closed curves to circles.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMEOMORPHIC_SIMPLE_PATH_IMAGE_CIRCLE = prove
+ (`!g:real^1->real^N a:real^2 r.
+        simple_path g /\ pathfinish g = pathstart g /\ &0 < r
+        ==> (path_image g) homeomorphic sphere(a,r)`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC HOMEOMORPHIC_TRANS `sphere(vec 0:real^2,&1)` THEN
+  ASM_SIMP_TAC[HOMEOMORPHIC_SPHERES; REAL_LT_01] THEN MP_TAC(ISPECL
+   [`g:real^1->real^N`; `g:real^1->real^N`; `path_image(g:real^1->real^N)`]
+   HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS) THEN
+  REWRITE_TAC[HOMOTOPIC_LOOPS_REFL; HOMOTOPIC_WITH_REFL; SUBSET_REFL] THEN
+  ASM_SIMP_TAC[SIMPLE_PATH_IMP_PATH] THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  EXISTS_TAC `(g:real^1->real^N) o (\z. lift(Arg z / (&2 * pi)))` THEN
+  MATCH_MP_TAC HOMEOMORPHISM_COMPACT THEN
+  ASM_REWRITE_TAC[COMPACT_SPHERE] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUBSET_ANTISYM THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[SUBSET; path_image; FORALL_IN_IMAGE; IN_INTERVAL_1] THEN
+    X_GEN_TAC `t:real^1` THEN REWRITE_TAC[DROP_VEC] THEN STRIP_TAC THEN
+    REWRITE_TAC[IN_IMAGE; o_THM; IN_SPHERE_0] THEN
+    ASM_CASES_TAC `t:real^1 = vec 1` THENL
+     [EXISTS_TAC `Cx(&1)` THEN
+      ASM_REWRITE_TAC[ARG_NUM; COMPLEX_NORM_CX; real_div; REAL_MUL_LZERO] THEN
+      REWRITE_TAC[LIFT_NUM; REAL_ABS_NUM] THEN
+      ASM_MESON_TAC[pathstart; pathfinish];
+      EXISTS_TAC `cexp(ii * Cx(&2 * pi * drop t))` THEN
+      REWRITE_TAC[NORM_CEXP_II] THEN AP_TERM_TAC THEN
+      W(MP_TAC o PART_MATCH (lhand o rand) ARG_CEXP o
+        lhand o rand o rand o snd) THEN
+      REWRITE_TAC[IM_MUL_II; RE_CX] THEN ANTS_TAC THENL
+       [ASM_SIMP_TAC[REAL_LE_MUL; PI_POS_LE; REAL_POS] THEN
+        SIMP_TAC[REAL_ARITH `&2 * pi * x < &2 * pi <=> pi * x < pi * &1`;
+                 REAL_LT_LMUL_EQ; PI_POS] THEN
+        ASM_REWRITE_TAC[REAL_LT_LE] THEN
+        ASM_REWRITE_TAC[GSYM LIFT_EQ; LIFT_DROP; LIFT_NUM];
+        DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[GSYM DROP_EQ; LIFT_DROP] THEN
+        MP_TAC PI_POS THEN CONV_TAC REAL_FIELD]];
+    MAP_EVERY X_GEN_TAC [`w:complex`; `z:complex`] THEN
+    REWRITE_TAC[IN_SPHERE_0] THEN STRIP_TAC THEN
+    MAP_EVERY (SUBST1_TAC o last o CONJUNCTS o C SPEC ARG)
+     [`w:complex`; `z:complex`] THEN
+    FIRST_X_ASSUM(MP_TAC o SYM o SYM) THEN
+    ASM_REWRITE_TAC[o_DEF; COMPLEX_MUL_LID] THEN DISCH_TAC THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+    MATCH_MP_TAC(REAL_FIELD
+     `&0 < pi /\ x / (&2 * pi) = y / (&2 * pi) ==> x = y`) THEN
+    REWRITE_TAC[PI_POS; GSYM LIFT_EQ] THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [simple_path]) THEN
+    DISCH_THEN(MP_TAC  o SPECL
+     [`lift(Arg w / (&2 * pi))`; `lift(Arg z / (&2 * pi))`] o CONJUNCT2) THEN
+    ASM_REWRITE_TAC[GSYM LIFT_NUM; IN_INTERVAL_1; LIFT_DROP; LIFT_EQ] THEN
+    ASM_SIMP_TAC[REAL_LE_RDIV_EQ; REAL_LE_LDIV_EQ; PI_POS;
+                 REAL_ARITH `&0 < &2 * x <=> &0 < x`;
+                 REAL_FIELD `&0 < y ==> (x / y = &1 <=> x = y)`] THEN
+    SIMP_TAC[REAL_MUL_LZERO; REAL_MUL_LID; ARG; REAL_LT_IMP_LE;
+             REAL_LT_IMP_NE]]);;
+
+let HOMEOMORPHIC_SIMPLE_PATH_IMAGES = prove
+ (`!g:real^1->real^M h:real^1->real^N.
+        simple_path g /\ pathfinish g = pathstart g /\
+        simple_path h /\ pathfinish h = pathstart h
+        ==> (path_image g) homeomorphic (path_image h)`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC HOMEOMORPHIC_TRANS `sphere(vec 0:real^2,&1)` THEN
+  CONJ_TAC THENL [ALL_TAC; ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM]] THEN
+  MATCH_MP_TAC HOMEOMORPHIC_SIMPLE_PATH_IMAGE_CIRCLE THEN
+  ASM_REWRITE_TAC[REAL_LT_01]);;
+
+let ANR_PATH_IMAGE_SIMPLE_PATH = prove
+ (`!g:real^1->real^N.
+        simple_path g ==> ?t. open t /\ (path_image g) retract_of t`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `pathfinish g:real^N = pathstart g` THENL
+   [MP_TAC(ISPECL [`g:real^1->real^N`; `vec 0:real^2`; `&1`]
+        HOMEOMORPHIC_SIMPLE_PATH_IMAGE_CIRCLE) THEN
+    ASM_REWRITE_TAC[REAL_LT_01] THEN
+    DISCH_THEN(SUBST1_TAC o MATCH_MP HOMEOMORPHIC_ANRNESS) THEN
+    EXISTS_TAC `(:real^2) DELETE (vec 0)` THEN
+    SIMP_TAC[OPEN_DELETE; OPEN_UNIV] THEN
+    MATCH_MP_TAC SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE THEN
+    REWRITE_TAC[REAL_LT_01];
+    EXISTS_TAC `(:real^N)` THEN REWRITE_TAC[OPEN_UNIV] THEN
+    MATCH_MP_TAC ABSOLUTE_RETRACT_PATH_IMAGE_ARC THEN
+    ASM_REWRITE_TAC[ARC_SIMPLE_PATH; SUBSET_UNIV]]);;
