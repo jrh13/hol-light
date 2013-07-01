@@ -3090,6 +3090,30 @@ let COLLINEAR_AZIM_0_OR_PI = prove
   ONCE_REWRITE_TAC[SET_RULE `{u,e,v,w} = {u,v,w,e}`] THEN
   ASM_MESON_TAC[NOT_COPLANAR_NOT_COLLINEAR]);;
 
+let REAL_CONTINUOUS_AT_DIHV = prove
+ (`!v w w1 w2:real^N.
+        ~collinear {v, w, w2} ==> dihV v w w1 real_continuous at w2`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM ETA_AX] THEN
+  REWRITE_TAC[dihV] THEN CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_CONTINUOUS_AT_COMPOSE THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_SUB THEN CONJ_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_MUL THEN
+    SIMP_TAC[CONTINUOUS_CONST; o_DEF; CONTINUOUS_SUB; CONTINUOUS_AT_ID;
+             CONTINUOUS_AT_LIFT_DOT2];
+    GEN_REWRITE_TAC LAND_CONV [GSYM ETA_AX] THEN
+    REWRITE_TAC[ARCV_ANGLE; angle] THEN
+    REWRITE_TAC[VECTOR_SUB_RZERO; ETA_AX] THEN
+    MATCH_MP_TAC REAL_CONTINUOUS_WITHIN_VECTOR_ANGLE THEN
+    POP_ASSUM MP_TAC THEN GEOM_ORIGIN_TAC `v:real^N` THEN
+    REWRITE_TAC[VECTOR_SUB_RZERO; CONTRAPOS_THM; VECTOR_SUB_EQ] THEN
+    MAP_EVERY X_GEN_TAC [`z:real^N`; `w:real^N`] THEN
+    ASM_CASES_TAC `w:real^N = vec 0` THEN
+    ASM_REWRITE_TAC[COLLINEAR_LEMMA_ALT] THEN DISCH_THEN(MP_TAC o AP_TERM
+     `(%) (inv((w:real^N) dot w)):real^N->real^N`) THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; DOT_EQ_0] THEN
+    MESON_TAC[VECTOR_MUL_LID]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Can consider angle as defined by arcV a zenith angle.                     *)
 (* ------------------------------------------------------------------------- *)

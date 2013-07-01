@@ -1,3 +1,17 @@
+The simplest way to run HilbertAxiom.ml is this.
+In a terminal window (or Emacs shell), move to your hol_light directory and paste in
+these 3 commands, followed by a RETURN:
+ocaml
+#use "hol.ml";;
+#use "RichterHilbertAxiomGeometry/make.ml";;
+
+This will not work if you have already evaluated HilbertAxiom_read.ml,
+because you will get an error
+Exception: Failure "new_type: type point has already been declared".
+
+You will see 190 or so definitions and proved theorems, in perhaps 15
+minutes.  
+
 How to check the Hilbert axiomatic geometry proofs HilbertAxiom.ml,
 which are a formalization in the proof assistant HOL Light of
 http://www.math.northwestern.edu/~richter/hilbert.pdf using Freek
@@ -142,8 +156,8 @@ manual.  I found browsing the file sets.ml to be quite helpful.
 SET_RULE, explained on p 92 of the tutorial simplified my coding.
 
 
-The file README already explains how to run HilbertAxiom.ml.  For a
-longer journey, comment the top t two lines of HilbertAxiom.ml and
+At the top I explained how to run HilbertAxiom.ml.  For a longer
+journey, comment the top t two lines of HilbertAxiom.ml and
 FontHilbertAxiom.ml
 
 verbose := false;;

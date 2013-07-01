@@ -475,7 +475,7 @@ let (X_GEN_TAC: term -> tactic),
         fun i [th] -> afn (GEN x' th)
   and X_CHOOSE_TAC x' xth =
         let xtm = concl xth in
-        let x,bod = try dest_exists xtm 
+        let x,bod = try dest_exists xtm
          with Failure _ -> failwith "X_CHOOSE_TAC: not existential" in
         let _ = tactic_type_compatibility_check "X_CHOOSE_TAC" x x' in
         let pat = vsubst[x',x] bod in
@@ -487,7 +487,7 @@ let (X_GEN_TAC: term -> tactic),
           null_meta,[("",xth')::asl,w],
           fun i [th] -> CHOOSE(x',INSTANTIATE_ALL i xth) th
   and EXISTS_TAC t (asl,w) =
-    let v,bod = try dest_exists w with Failure _ -> 
+    let v,bod = try dest_exists w with Failure _ ->
                 failwith "EXISTS_TAC: Goal not existentially quantified" in
     let _ = tactic_type_compatibility_check "EXISTS_TAC" v t in
     null_meta,[asl,vsubst[t,v] bod],
@@ -576,6 +576,19 @@ let (MATCH_MP_TAC :thm_tactic) =
                        null_meta,[asl,lant],
                        fun i [th] -> MP (INSTANTIATE_ALL i xth) th
                    with Failure _ -> failwith "MATCH_MP_TAC: No match";;
+
+let (TRANS_TAC:thm->term->tactic) =
+  fun th ->
+    let ctm = snd(strip_forall(concl th)) in
+    let cl,cr = dest_conj(lhand ctm) in
+    let x = lhand cl and y = rand cl and z = rand cr in
+    fun tm (asl,w as gl) ->
+      let lop,r = dest_comb w in
+      let op,l = dest_comb lop in
+      let ilist =
+        itlist2 type_match (map type_of [x;y;z])(map type_of [l;tm;r]) [] in
+      let th' = INST_TYPE ilist th in
+      (MATCH_MP_TAC th' THEN EXISTS_TAC tm) gl;;
 
 (* ------------------------------------------------------------------------- *)
 (* Theorem continuations.                                                    *)

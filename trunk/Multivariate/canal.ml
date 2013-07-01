@@ -373,18 +373,21 @@ let SUMS_COMPLEX_0 = prove
   REWRITE_TAC[GSYM COMPLEX_VEC_0; SUMS_0]);;
 
 let LIM_NULL_COMPLEX_RMUL_BOUNDED = prove
- (`!f g. (f --> Cx(&0)) net /\ eventually (\a. norm(g a) <= B) net
+ (`!f g. (f --> Cx(&0)) net /\
+         eventually (\a. f a = Cx(&0) \/ norm(g a) <= B) net
          ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
   REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
   ONCE_REWRITE_TAC[LIM_NULL_NORM] THEN
   REWRITE_TAC[LIFT_CMUL; COMPLEX_NORM_MUL] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_NULL_VMUL_BOUNDED THEN
-  EXISTS_TAC `B:real` THEN ASM_REWRITE_TAC[o_DEF; NORM_LIFT; REAL_ABS_NORM]);;
+  EXISTS_TAC `B:real` THEN
+  ASM_REWRITE_TAC[o_DEF; NORM_LIFT; REAL_ABS_NORM; NORM_EQ_0]);;
 
 let LIM_NULL_COMPLEX_LMUL_BOUNDED = prove
- (`!f g. eventually (\a. norm(f a) <= B) net /\ (g --> Cx(&0)) net
+ (`!f g. eventually (\a. norm(f a) <= B \/ g a = Cx(&0)) net /\
+         (g --> Cx(&0)) net
          ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
-  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  ONCE_REWRITE_TAC[DISJ_SYM; COMPLEX_MUL_SYM] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC LIM_NULL_COMPLEX_RMUL_BOUNDED THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)

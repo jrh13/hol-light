@@ -4,6 +4,9 @@
 
 needs "Library/wo.ml";;
 
+let TRANS_CHAIN_TAC th =
+  MAP_EVERY (fun t -> TRANS_TAC th t THEN ASM_REWRITE_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* We need these a few times, so give them names.                            *)
 (* ------------------------------------------------------------------------- *)
@@ -323,25 +326,6 @@ let CARD_LE_TOTAL = prove
     REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN; EXTENSION] THEN
     CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN
     RULE_ASSUM_TAC(REWRITE_RULE[IN]) THEN ASM_MESON_TAC[]]);;
-
-(* ------------------------------------------------------------------------- *)
-(* MATCH_MP_TAC th THEN EXISTS_TAC tm for polymorphic transitivity theorem.  *)
-(* ------------------------------------------------------------------------- *)
-
-let TRANS_TAC th =
-  let ctm = snd(strip_forall(concl th)) in
-  let cl,cr = dest_conj(lhand ctm) in
-  let x = lhand cl and y = rand cl and z = rand cr in
-  fun tm (asl,w as gl) ->
-    let lop,r = dest_comb w in
-    let op,l = dest_comb lop in
-    let ilist =
-      itlist2 type_match (map type_of [x;y;z])(map type_of [l;tm;r]) [] in
-    let th' = INST_TYPE ilist th in
-    (MATCH_MP_TAC th' THEN EXISTS_TAC tm) gl;;
-
-let TRANS_CHAIN_TAC th =
-  MAP_EVERY (fun t -> TRANS_TAC th t THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Other variants like "trichotomy of cardinals" now follow easily.          *)

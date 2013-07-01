@@ -675,6 +675,10 @@ let DIFFERENTIABLE_COMPONENTWISE_AT = prove
 (* Similarly for "differentiable_on".                                        *)
 (* ------------------------------------------------------------------------- *)
 
+let DIFFERENTIABLE_ON_LINEAR = prove
+ (`!f:real^M->real^N s. linear f ==> f differentiable_on s`,
+  SIMP_TAC[differentiable_on; DIFFERENTIABLE_LINEAR]);;
+
 let DIFFERENTIABLE_ON_CONST = prove
  (`!s c. (\z. c) differentiable_on s`,
   REWRITE_TAC[differentiable_on; DIFFERENTIABLE_CONST]);;

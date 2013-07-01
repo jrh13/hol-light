@@ -16,7 +16,7 @@ echo "waiting for server to be free" 1>&2
 while test -f $namefile; do sleep .1; done
 trap 'rm -f $namefile; exit' 2
 echo "checking $name" 1>&2
-echo `realpath $name` > $namefile
+perl -e 'use Cwd "realpath"; print realpath("'"$name"'")."\n";' > $namefile
 if test "$lemma" != ""
   then echo $lemma >> $namefile; fi
 kill -USR2 $pid >/dev/null 2>&1

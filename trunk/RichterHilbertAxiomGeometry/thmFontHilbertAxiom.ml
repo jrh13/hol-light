@@ -8,20 +8,29 @@ reset_miz3 0;;
 verbose := true;;
 report_timing := true;;
 
-Theorem/Proof template:
+Theorem/Proof templates:
 
-let _THM = thm `;
-  let
-  let
-  assume
-  assume
-  thus
+let _THM = theorem `;
+  ∀   
+     ⇒ 
 
   proof
 
-  qed     by -;
+  qed;
 `;;
 
+interactive_goal `;
+`;;
+interactive_proof `;
+`;;
+interactive_proof `;
+`;;
+interactive_proof `;
+`;;
+interactive_proof `;
+`;;
+interactive_proof `;
+`;;
 
 ∉     |- ∀ a l. a ∉ l ⇔ ¬(a ∈ l)
 
@@ -293,8 +302,14 @@ CollinearLinear
 NonCollinearImpliesDistinct
   |- ∀ A B C. ¬Collinear A B C ⇒ ¬(A = B) ∧ ¬(A = C) ∧ ¬(B = C)
 
-Reverse4Order
-  |- ∀ A B C D. ordered A B C D ⇒ ordered D C B A
+NonCollinearRaa
+  |- ∀A B C l.
+         ¬(A = C)  ∧  Line l ∧ A ∈ l ∧ C ∈ l  ∧  B ∉ l
+         ⇒ ¬Collinear A B C
+
+TwoSidesTriangle1Intersection
+  |- ∀A B C Y.
+         ¬Collinear A B C ∧ Collinear B C Y ∧ Collinear A C Y  ⇒  Y = C
 
 OriginInRay     |- ∀ O Q. ¬(Q = O) ⇒ O ∈ ray O Q
 
@@ -420,6 +435,9 @@ OppositeRaysIntersect1point
 
 IntervalRay
   |- ∀ A B C. B ∈ open (A,C)  ⇒  ray A B = ray A C
+
+Reverse4Order
+  |- ∀ A B C D. ordered A B C D ⇒ ordered D C B A
 
 TransitivityBetweennessHelp
   |- ∀ A B C D. B ∈ open (A,C) ∧ C ∈ open (B,D)  ⇒  B ∈ open (A,D)
