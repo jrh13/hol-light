@@ -167,9 +167,13 @@ let reachableN_CLAUSES = theorem `;
 
 let reachableInvariant = theorem `;
   ∀p p'. reachable p p'  ⇒  oriented_area p = oriented_area p'
+
   proof
-  SIMP_TAC ReachLemma LEFT_IMP_EXISTS_THM SWAP_FORALL_THM;
-  INDUCT_TAC; ASM_MESON_TAC reachableN_CLAUSES moveInvariant;
+    SIMP_TAC ReachLemma LEFT_IMP_EXISTS_THM SWAP_FORALL_THM;
+    MATCH_MP_TAC num_INDUCTION;
+    SIMP_TAC reachableN_CLAUSES;
+    intro_TAC ∀n, nStep;
+    fol nStep moveInvariant;
   qed;
 `;;
 
@@ -220,8 +224,14 @@ let moveSymmetry = theorem `;
 
   proof
     ∀X Y Z X':real^2. collinear {vec 0, Z - Y, X' - X}
-    ⇒ collinear {vec 0, Y - Z, X' - X}     [] by REWRITE_TAC COLLINEAR_3_2Dzero THEN VEC2_TAC;
+    ⇒ collinear {vec 0, Y - Z, X' - X}     []
+    proof     REWRITE_TAC COLLINEAR_3_2Dzero;     VEC2_TAC;     qed;
     REWRITE_TAC -- move;
+
+    ∀X Y Z X':real^2. collinear {vec 0, Z - Y, X' - X}
+    ⇒ collinear {vec 0, Y - Z, X' - X}     []
+    proof     REWRITE_TAC COLLINEAR_3_2Dzero;     VEC2_TAC;     qed;
+      REWRITE_TAC -- move;
     fol;
   qed;
 `;;
@@ -271,7 +281,8 @@ let Basic2move_THM = theorem `;
     ¬(t = &0)     [tNonzero] by fol - add0vector_mul H2';
     consider s X such that s = r / t  ∧  X = C + s % (A - B)     [Xexists] by fol rExists;
     A' - A = (t * s) % (A - B) + t % (C - B)     [] by fol - rExists tNonzero REAL_DIV_LMUL;
-    A' - A = t % (X - B) ∧ X - C = (-- s) % (B - A)     [] by REWRITE_TAC - Xexists THEN VEC2_TAC;
+    A' - A = t % (X - B) ∧ X - C = (-- s) % (B - A)     []
+    proof     REWRITE_TAC - Xexists;     VEC2_TAC;     qed;
     collinear {vec 0,B - A,X - C}  ∧  collinear {vec 0,X - B,A' - A}     [] by fol - COLLINEAR_LEMMA;
     fol - move;
   qed;
@@ -475,8 +486,13 @@ let NOTENOUGH_4 = theorem `;
     p0:triple = vector [&0;&0],vector [&0;&1],vector [&1;&0]  ∧
     p4:triple = vector [&1;&1],vector [&1;&2],vector [&2;&1]     [p04Def] by
     fol;
-    oriented_area p0 = oriented_area p4     [equal_areas] by ASM_REWRITE_TAC - oriented_area THEN VEC2_TAC;
-    ¬reachableN p0 p4 4     [] by ASM_REWRITE_TAC p04Def reachableN_Four NOT_EXISTS_THM FORALL_PAIR_THM move COLLINEAR_3_2Dzero FORALL_VECTOR_2 THEN VEC2_TAC;
+    oriented_area p0 = oriented_area p4     [equal_areas]
+    proof     REWRITE_TAC - oriented_area;     VEC2_TAC;     qed;
+    ¬reachableN p0 p4 4     []
+    proof
+      REWRITE_TAC p04Def reachableN_Four NOT_EXISTS_THM FORALL_PAIR_THM move COLLINEAR_3_2Dzero FORALL_VECTOR_2;
+      VEC2_TAC;
+    qed;
     fol - equal_areas;
   qed;
 `;;
@@ -491,7 +507,8 @@ let FiveMovesOrLess_STRONG = theorem `;
     (∀X Y:real^2. collinear {X,Y,Y}) ∧
     (∀A B A'. move (A,B,B) (A',B,B))  ∧
     ∀A B C B'. (collinear {A,B,C} ∧ collinear {A,B',C}  ⇒
-    move (A,B,C) (A,B',C))     [EZcollinear] by REWRITE_TAC move COLLINEAR_3_2D THEN VEC2_TAC;
+    move (A,B,C) (A,B',C))     [EZcollinear]
+    proof     REWRITE_TAC move COLLINEAR_3_2D;     VEC2_TAC;     qed;
     case_split ABCncol | ABCcol     by fol ;
     suppose ¬collinear {A,B,C};
       fol - H1 FiveMovesOrLess;

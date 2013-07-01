@@ -446,9 +446,9 @@ let EndpointInRay = thm `;
 let I1Uniqueness = thm `;
   let X be point;
   let l m be point_set;
-  assume Line l ∧ Line m	[H0];
-  assume ¬(l = m)		[H1];
-  assume X ∈ l ∧ X ∈ m     	[H2];
+  assume Line l ∧ Line m        [H0];
+  assume ¬(l = m)               [H1];
+  assume X ∈ l ∧ X ∈ m          [H2];
   thus l ∩ m = {X}
 
   proof
@@ -489,9 +489,9 @@ let RayLine = thm `;
 let RaySameSide = thm `;
   let l be point_set;
   let O A P be point;
-  assume Line l ∧ O ∈ l		[l_line];
-  assume A ∉ l 	      		[notAl];
-  assume P ∈ ray O A ━ O		[PrOA];
+  assume Line l ∧ O ∈ l         [l_line];
+  assume A ∉ l                  [notAl];
+  assume P ∈ ray O A ━ O                [PrOA];
   thus P ∉ l  ∧  P,A same_side l
 
   proof
@@ -511,7 +511,7 @@ let RaySameSide = thm `;
 
 let IntervalRayEZ = thm `;
   let A B C be point;
-  assume B ∈ open (A,C)				[H1];
+  assume B ∈ open (A,C)                         [H1];
   thus B ∈ ray A C ━ A  ∧  C ∈ ray A B ━ A
 
   proof
@@ -522,8 +522,8 @@ let IntervalRayEZ = thm `;
 
 let NoncollinearityExtendsToLine = thm `;
   let A O B X be point;
-  assume ¬Collinear A O B			[H1];
-  assume Collinear O B X  ∧ ¬(X = O)  		[H2];
+  assume ¬Collinear A O B                       [H1];
+  assume Collinear O B X  ∧ ¬(X = O)            [H2];
   thus ¬Collinear A O X
 
   proof
@@ -579,7 +579,7 @@ let SameSideTransitive = thm `;
         ¬Collinear A B B'  ∧  ¬Collinear B' B A  ∧  ¬Collinear B' A B     [ABB'ncol] by EAXncol, ABXcol, Distinct, NoncollinearityExtendsToLine, CollinearSymmetry, -;
         ¬Collinear B' B C ∧  ¬Collinear B' A C ∧  ¬Collinear A B' C     [AB'Cncol] by ABB'ncol, ABXcol, Distinct, NoncollinearityExtendsToLine, CollinearSymmetry;
         B' ∈ ray E B ━ E  ∧  B ∈ ray E B' ━ E     by EBB', IntervalRayEZ;
-	B' ∉ l  ∧  B',B same_side l  ∧  B,B' same_side l     [notB'l] by l_line, El_X, notABCl, -, RaySameSide;
+        B' ∉ l  ∧  B',B same_side l  ∧  B,B' same_side l     [notB'l] by l_line, El_X, notABCl, -, RaySameSide;
         A,B' same_side l ∧  B',C same_side l     by l_line, ABB'ncol, notABCl, notB'l, Asim_lB, -, B4'', AB'Cncol, Bsim_lC;
       qed     by l_line, AB'Cncol, notABCl, notB'l, -, B4'';
     end;
@@ -654,8 +654,8 @@ let InteriorAngleSymmetry = thm `;
 
 let InteriorWellDefined = thm `;
   let A O B X P be point;
-  assume P ∈ int_angle A O B		[H1];
-  assume X ∈ ray O B ━ O     		[H2];
+  assume P ∈ int_angle A O B            [H1];
+  assume X ∈ ray O B ━ O                [H2];
   thus P ∈ int_angle A O X
 
   proof
@@ -674,8 +674,8 @@ let InteriorWellDefined = thm `;
 
 let WholeRayInterior = thm `;
   let A O B X P be point;
-  assume X ∈ int_angle A O B		[XintAOB];
-  assume P ∈ ray O X ━ O     		[PrOX];
+  assume X ∈ int_angle A O B            [XintAOB];
+  assume P ∈ ray O X ━ O                [PrOX];
   thus P ∈ int_angle A O B
 
   proof
@@ -692,10 +692,10 @@ let AngleOrdering = thm `;
   let O A P Q be point;
   let a be point_set;
   assume ¬(O = A)     [H1];
-  assume Line a ∧ O ∈ a ∧ A ∈ a			[H2];
-  assume P ∉ a ∧ Q ∉ a					[H3];
-  assume P, Q same_side a     				[H4];
-  assume ¬Collinear P O Q     				[H5];
+  assume Line a ∧ O ∈ a ∧ A ∈ a                 [H2];
+  assume P ∉ a ∧ Q ∉ a                                  [H3];
+  assume P, Q same_side a                               [H4];
+  assume ¬Collinear P O Q                               [H5];
   thus P ∈ int_angle Q O A  ∨  Q ∈ int_angle P O A
 
   proof
@@ -719,8 +719,8 @@ let AngleOrdering = thm `;
 
 let InteriorsDisjointSupplement = thm `;
   let A O B A' be point;
-  assume ¬Collinear A O B				[H1];
-  assume O ∈ open (A,A')     				[H2];
+  assume ¬Collinear A O B                               [H1];
+  assume O ∈ open (A,A')                                [H2];
   thus  int_angle B O A'  ∩  int_angle A O B = ∅
 
   proof
@@ -742,8 +742,8 @@ let InteriorsDisjointSupplement = thm `;
 
 let InteriorReflectionInterior = thm `;
   let A O B D A' be point;
-  assume O ∈ open (A,A')		[H1];
-  assume D ∈ int_angle A O B     	[H2];
+  assume O ∈ open (A,A')                [H1];
+  assume D ∈ int_angle A O B            [H2];
   thus B  ∈ int_angle D O A'
 
   proof
@@ -796,7 +796,7 @@ let Crossbar_THM = thm `;
 
 let AlternateConverseCrossbar = thm `;
   let O A B G be point;
-  assume Collinear A G B  ∧  G ∈ int_angle A O B 		[H1];
+  assume Collinear A G B  ∧  G ∈ int_angle A O B                [H1];
   thus G ∈ open (A,B)
 
   proof
@@ -810,8 +810,8 @@ let AlternateConverseCrossbar = thm `;
 let InteriorOpposite = thm `;
   let A O B P be point;
   let p be point_set;
-  assume P ∈ int_angle A O B		[PintAOB];
-  assume Line p ∧ O ∈ p ∧ P ∈ p     	[p_line];
+  assume P ∈ int_angle A O B            [PintAOB];
+  assume Line p ∧ O ∈ p ∧ P ∈ p         [p_line];
   thus ¬(A,B same_side p)
 
   proof
@@ -824,9 +824,9 @@ let InteriorOpposite = thm `;
 let IntervalTransitivity = thm `;
   let O P Q R be point;
   let m be point_set;
-  assume Line m  ∧ O ∈ m 				[H0];
-  assume P ∈ m ━ O ∧ Q ∈ m ━ O ∧ R ∈ m ━ O     	[H2];
-  assume O ∉ open (P,Q) ∧ O ∉ open (Q,R)		[H3];
+  assume Line m  ∧ O ∈ m                                [H0];
+  assume P ∈ m ━ O ∧ Q ∈ m ━ O ∧ R ∈ m ━ O      [H2];
+  assume O ∉ open (P,Q) ∧ O ∉ open (Q,R)                [H3];
   thus O ∉ open (P,R)
 
   proof
@@ -844,8 +844,8 @@ let IntervalTransitivity = thm `;
 
 let RayWellDefinedHalfway = thm `;
   let O P Q be point;
-  assume ¬(Q = O)		[H1];
-  assume P ∈ ray O Q ━ O     	[H2];
+  assume ¬(Q = O)               [H1];
+  assume P ∈ ray O Q ━ O        [H2];
   thus ray O P ⊂ ray O Q
 
   proof
@@ -873,8 +873,8 @@ let RayWellDefinedHalfway = thm `;
 
 let RayWellDefined = thm `;
   let O P Q be point;
-  assume ¬(Q = O)			[H1];
-  assume P ∈ ray O Q ━ O     		[H2];
+  assume ¬(Q = O)                       [H1];
+  assume P ∈ ray O Q ━ O                [H2];
   thus ray O P = ray O Q
 
   proof
@@ -887,8 +887,8 @@ let RayWellDefined = thm `;
 
 let OppositeRaysIntersect1pointHelp = thm `;
   let A O B X be point;
-  assume O ∈ open (A,B)			[H1];
-  assume X ∈ ray O B ━ O			[H2];
+  assume O ∈ open (A,B)                 [H1];
+  assume X ∈ ray O B ━ O                        [H2];
   thus X ∉ ray O A  ∧  O ∈ open (X,A)
 
   proof
@@ -904,7 +904,7 @@ let OppositeRaysIntersect1pointHelp = thm `;
 
 let OppositeRaysIntersect1point = thm `;
   let A O B be point;
-  assume O ∈ open (A,B)			[H1];
+  assume O ∈ open (A,B)                 [H1];
   thus ray O A ∩ ray O B  =  {O}
 
   proof
@@ -945,7 +945,7 @@ let TransitivityBetweenness = thm `;
 
 let IntervalsAreConvex = thm `;
  let A B C be point;
-  assume B ∈ open (A,C)		[H1];
+  assume B ∈ open (A,C)         [H1];
   thus open (A,B)  ⊂  open (A,C)
 
   proof
@@ -972,7 +972,7 @@ let TransitivityBetweennessVariant = thm `;
 
 let Interval2sides2aLineHelp = thm `;
   let A B C X be point;
-  assume B ∈ open (A,C)			[H1];
+  assume B ∈ open (A,C)                 [H1];
   thus X ∉ open (A,B) ∨ X ∉ open (B,C)
 
   proof
@@ -1003,8 +1003,8 @@ let TwosidesTriangle2aLine = thm `;
   let l m be point_set;
   assume Line l ∧ ¬Collinear A B C                              [H1];
   assume A ∉ l ∧ B ∉ l ∧ C ∉ l                                 [off_l];
-  assume Line m ∧ A ∈ m ∧ C ∈ m     				[m_line];
-  assume Y ∈ l ∧ Y ∈ m        					[Ylm];
+  assume Line m ∧ A ∈ m ∧ C ∈ m                                 [m_line];
+  assume Y ∈ l ∧ Y ∈ m                                          [Ylm];
   assume ¬(A,B same_side l) ∧ ¬(B,C same_side l)                [H2];
   thus A,C same_side l
 
@@ -1044,8 +1044,8 @@ let TwosidesTriangle2aLine = thm `;
 let LineUnionOf2Rays = thm `;
   let A O B be point;
   let l be point_set;
-  assume Line l ∧ A ∈ l ∧ B ∈ l		[H1];
-  assume O ∈ open (A,B)			[H2];
+  assume Line l ∧ A ∈ l ∧ B ∈ l         [H1];
+  assume O ∈ open (A,B)                 [H2];
   thus l = ray O A ∪ ray O B
 
   proof
@@ -1067,8 +1067,8 @@ let LineUnionOf2Rays = thm `;
 let AtMost2Sides = thm `;
   let A B C be point;
   let l be point_set;
-  assume Line l								[H1];
-  assume A ∉ l ∧ B ∉ l ∧ C ∉ l                                  	[H2];
+  assume Line l                                                         [H1];
+  assume A ∉ l ∧ B ∉ l ∧ C ∉ l                                          [H2];
   thus A,B same_side l  ∨  A,C same_side l  ∨  B,C same_side l
 
   proof
@@ -1085,15 +1085,15 @@ let AtMost2Sides = thm `;
       suppose ¬(m ∩ l = ∅);
         consider Y such that
         Y ∈ l ∧ Y ∈ m     [Ylm] by -, IN_INTER, MEMBER_NOT_EMPTY;
-	cases;
-	suppose ¬Collinear A B C;
-    	qed     by H1, -, H2, m_line, Ylm, TwosidesTriangle2aLine;
-    	suppose Collinear A B C     [ABCcol];
-	  B ∈ m     [Bm] by -, m_line, notAC, I1, Collinear_DEF;
- 	  ¬(Y = A) ∧ ¬(Y = B) ∧ ¬(Y = C)     [YnotABC] by Ylm, H2, ∉;
+        cases;
+        suppose ¬Collinear A B C;
+        qed     by H1, -, H2, m_line, Ylm, TwosidesTriangle2aLine;
+        suppose Collinear A B C     [ABCcol];
+          B ∈ m     [Bm] by -, m_line, notAC, I1, Collinear_DEF;
+          ¬(Y = A) ∧ ¬(Y = B) ∧ ¬(Y = C)     [YnotABC] by Ylm, H2, ∉;
           Y ∉ open (A,B)  ∨  Y ∉ open (A,C)  ∨  Y ∉ open (B,C)     by ABCcol, Interval2sides2aLine;
           A ∈ ray Y B ━ Y  ∨  A ∈ ray Y C ━ Y  ∨  B ∈ ray Y C ━ Y     by YnotABC, m_line, Bm, Ylm, Collinear_DEF, -, IN_Ray, IN_DELETE;
-      	qed     by H1, Ylm, H2, -, RaySameSide;
+        qed     by H1, Ylm, H2, -, RaySameSide;
       end;
     end;
   end;
@@ -1102,9 +1102,9 @@ let AtMost2Sides = thm `;
 let FourPointsOrder = thm `;
   let A B C X be point;
   let l be point_set;
-  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ X ∈ l		[H1];
-  assume ¬(X = A) ∧ ¬(X = B) ∧ ¬(X = C)			[H2];
-  assume B ∈ open (A,C)        	     			[H3];
+  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ X ∈ l         [H1];
+  assume ¬(X = A) ∧ ¬(X = B) ∧ ¬(X = C)                 [H2];
+  assume B ∈ open (A,C)                                 [H3];
   thus ordered X A B C  ∨  ordered A X B C  ∨
        ordered A B X C  ∨  ordered A B C X
 
@@ -1127,8 +1127,8 @@ let FourPointsOrder = thm `;
 let HilbertAxiomRedundantByMoore = thm `;
   let A B C D be point;
   let l be point_set;
-  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ D ∈ l				[H1];
-  assume ¬(A = B) ∧ ¬(A = C) ∧ ¬(A = D) ∧ ¬(B = C) ∧ ¬(B = D) ∧ ¬(C = D)	[H2];
+  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ D ∈ l                         [H1];
+  assume ¬(A = B) ∧ ¬(A = C) ∧ ¬(A = D) ∧ ¬(B = C) ∧ ¬(B = D) ∧ ¬(C = D)        [H2];
   thus ordered D A B C ∨ ordered A D B C ∨ ordered A B D C ∨ ordered A B C D ∨
        ordered D A C B ∨ ordered A D C B ∨ ordered A C D B ∨ ordered A C B D ∨
        ordered D C A B ∨ ordered C D A B ∨ ordered C A D B ∨ ordered C A B D
@@ -1162,8 +1162,8 @@ let InteriorTransitivity = thm `;
 let HalfPlaneConvexNonempty = thm `;
   let l H be point_set;
   let A be point;
-  assume Line l ∧ A ∉ l				[l_line];
-  assume H = {X | X ∉ l  ∧  X,A same_side l}		[HalfPlane];
+  assume Line l ∧ A ∉ l                         [l_line];
+  assume H = {X | X ∉ l  ∧  X,A same_side l}            [HalfPlane];
   thus ¬(H = ∅)  ∧  H ⊂ complement l  ∧  Convex H
 
   proof
@@ -1248,7 +1248,7 @@ let TetralateralSymmetry = thm `;
 
 let EasyEmptyIntersectionsTetralateralHelp = thm `;
   let A B C D be point;
-  assume Tetralateral A B C D			[H1];
+  assume Tetralateral A B C D                   [H1];
   thus open (A,B) ∩ open (B,C) = ∅
 
   proof
@@ -1264,7 +1264,7 @@ let EasyEmptyIntersectionsTetralateralHelp = thm `;
 
 let EasyEmptyIntersectionsTetralateral = thm `;
   let A B C D be point;
-  assume Tetralateral A B C D						[H1];
+  assume Tetralateral A B C D                                           [H1];
   thus open (A,B) ∩ open (B,C) = ∅  ∧  open (B,C) ∩ open (C,D) = ∅  ∧
        open (C,D) ∩ open (D,A) = ∅  ∧  open (D,A) ∩ open (A,B) = ∅
 
@@ -1276,9 +1276,9 @@ let EasyEmptyIntersectionsTetralateral = thm `;
 let SegmentSameSideOppositeLine = thm `;
   let A B C D be point;
   let a c be point_set;
-  assume Quadrilateral A B C D		[H1];
-  assume Line a ∧ A ∈ a ∧ B ∈ a     	[a_line];
-  assume Line c ∧ C ∈ c ∧ D ∈ c     	[c_line];
+  assume Quadrilateral A B C D          [H1];
+  assume Line a ∧ A ∈ a ∧ B ∈ a         [a_line];
+  assume Line c ∧ C ∈ c ∧ D ∈ c         [c_line];
   thus A,B same_side c  ∨  C,D same_side a
 
   proof
@@ -1295,8 +1295,8 @@ let SegmentSameSideOppositeLine = thm `;
 
 let ConvexImpliesQuad = thm `;
   let A B C D be point;
-  assume Tetralateral A B C D					[H1];
-  assume C ∈ int_angle D A B  ∧  D ∈ int_angle A B C     	[H2];
+  assume Tetralateral A B C D                                   [H1];
+  assume C ∈ int_angle D A B  ∧  D ∈ int_angle A B C            [H2];
   thus Quadrilateral A B C D
 
   proof
@@ -1316,8 +1316,8 @@ let ConvexImpliesQuad = thm `;
 
 let DiagonalsIntersectImpliesConvexQuad = thm `;
   let A B C D G be point;
-  assume ¬Collinear B C D		[BCDncol];
-  assume G ∈ open (A,C)  ∧  G ∈ open (B,D) 		[DiagInt];
+  assume ¬Collinear B C D               [BCDncol];
+  assume G ∈ open (A,C)  ∧  G ∈ open (B,D)              [DiagInt];
   thus ConvexQuadrilateral A B C D
 
   proof
@@ -1337,11 +1337,11 @@ let DiagonalsIntersectImpliesConvexQuad = thm `;
 let DoubleNotSimImpliesDiagonalsIntersect = thm `;
   let A B C D be point;
   let l m be point_set;
-  assume Line l ∧ A ∈ l ∧ C ∈ l		[l_line];
-  assume Line m ∧ B ∈ m ∧ D ∈ m		[m_line];
-  assume Tetralateral A B C D			[H1];
-  assume ¬(B,D same_side l)     		[H2];
-  assume ¬(A,C same_side m)     		[H3];
+  assume Line l ∧ A ∈ l ∧ C ∈ l         [l_line];
+  assume Line m ∧ B ∈ m ∧ D ∈ m         [m_line];
+  assume Tetralateral A B C D                   [H1];
+  assume ¬(B,D same_side l)                     [H2];
+  assume ¬(A,C same_side m)                     [H3];
   thus (∃ G. G ∈ open (A,C) ∩ open (B,D)) ∧ ConvexQuadrilateral A B C D
 
   proof
@@ -1359,9 +1359,9 @@ let DoubleNotSimImpliesDiagonalsIntersect = thm `;
 let ConvexQuadImpliesDiagonalsIntersect = thm `;
   let A B C D be point;
   let l m be point_set;
-  assume Line l ∧ A ∈ l ∧ C ∈ l					[l_line];
-  assume Line m ∧ B ∈ m ∧ D ∈ m					[m_line];
-  assume ConvexQuadrilateral A B C D					[ConvQuadABCD];
+  assume Line l ∧ A ∈ l ∧ C ∈ l                                 [l_line];
+  assume Line m ∧ B ∈ m ∧ D ∈ m                                 [m_line];
+  assume ConvexQuadrilateral A B C D                                    [ConvQuadABCD];
   thus ¬(B,D same_side l) ∧ ¬(A,C same_side m) ∧
        (∃ G. G ∈ open (A,C) ∩ open (B,D)) ∧ ¬Quadrilateral A B D C
 
@@ -1377,8 +1377,8 @@ let ConvexQuadImpliesDiagonalsIntersect = thm `;
 
 let FourChoicesTetralateralHelp = thm `;
   let A B C D be point;
-  assume Tetralateral A B C D					[H1];
-  assume C ∈ int_angle D A B     				[CintDAB];
+  assume Tetralateral A B C D                                   [H1];
+  assume C ∈ int_angle D A B                                    [CintDAB];
   thus ConvexQuadrilateral A B C D ∨ C ∈ int_triangle D A B
 
   proof
@@ -1411,9 +1411,9 @@ let InteriorTriangleSymmetry = thm `;
 let FourChoicesTetralateral = thm `;
   let A B C D be point;
   let a be point_set;
-  assume Tetralateral A B C D			[H1];
-  assume Line a ∧ A ∈ a ∧ B ∈ a     		[a_line];
-  assume C,D same_side a      			[Csim_aD];
+  assume Tetralateral A B C D                   [H1];
+  assume Line a ∧ A ∈ a ∧ B ∈ a                 [a_line];
+  assume C,D same_side a                        [Csim_aD];
   thus ConvexQuadrilateral A B C D  ∨  ConvexQuadrilateral A B D C  ∨
        D ∈ int_triangle A B C  ∨  C ∈ int_triangle D A B
 
@@ -1440,8 +1440,8 @@ let QuadrilateralSymmetry = thm `;
 let FiveChoicesQuadrilateral = thm `;
   let A B C D be point;
   let l m be point_set;
-  assume Quadrilateral A B C D							[H1];
-  assume Line l ∧ A ∈ l ∧ C ∈ l  ∧  Line m ∧ B ∈ m ∧ D ∈ m     						[lm_line];
+  assume Quadrilateral A B C D                                                  [H1];
+  assume Line l ∧ A ∈ l ∧ C ∈ l  ∧  Line m ∧ B ∈ m ∧ D ∈ m                                              [lm_line];
   thus (ConvexQuadrilateral A B C D  ∨  A ∈ int_triangle B C D  ∨
   B ∈ int_triangle C D A  ∨  C ∈ int_triangle D A B  ∨  D ∈ int_triangle A B C)  ∧
   (¬(B,D same_side l) ∨ ¬(A,C same_side m))
@@ -1482,7 +1482,7 @@ let SegmentSymmetry = thm `;
 let C1OppositeRay = thm `;
   let O P be point;
   let s be point_set;
-  assume Segment s ∧ ¬(O = P)			[H1];
+  assume Segment s ∧ ¬(O = P)                   [H1];
   thus ∃ Q. P ∈ open (O,Q)  ∧  seg P Q ≡ s
 
   proof
@@ -1496,9 +1496,9 @@ let C1OppositeRay = thm `;
 
 let OrderedCongruentSegments = thm `;
   let A B C D F be point;
-  assume ¬(A = C) ∧ ¬(D = F)				[H1];
-  assume seg A C ≡ seg D F     				[H2];
-  assume B ∈ open (A,C)     				[H3];
+  assume ¬(A = C) ∧ ¬(D = F)                            [H1];
+  assume seg A C ≡ seg D F                              [H2];
+  assume B ∈ open (A,C)                                 [H3];
   thus ∃ E. E ∈ open (D,F)  ∧  seg A B ≡ seg D E
 
   proof
@@ -1519,9 +1519,9 @@ let OrderedCongruentSegments = thm `;
 
 let SegmentSubtraction = thm `;
   let A B C A' B' C' be point;
-  assume B ∈ open (A,C)  ∧  B' ∈ open (A',C')		[H1];
-  assume seg A B ≡ seg A' B'        		      	[H2];
-  assume seg A C ≡ seg A' C'     			[H3];
+  assume B ∈ open (A,C)  ∧  B' ∈ open (A',C')           [H1];
+  assume seg A B ≡ seg A' B'                            [H2];
+  assume seg A C ≡ seg A' C'                            [H3];
   thus seg B C ≡ seg B' C'
 
   proof
@@ -1569,8 +1569,8 @@ let SegmentTrichotomy1 = thm `;
 
 let SegmentTrichotomy2 = thm `;
   let s t u be point_set;
-  assume s <__ t				[H1];
-  assume Segment u  ∧  t ≡ u             	[H2];
+  assume s <__ t                                [H1];
+  assume Segment u  ∧  t ≡ u                    [H2];
   thus s <__ u
 
   proof
@@ -1587,7 +1587,7 @@ let SegmentTrichotomy2 = thm `;
 
 let SegmentOrderTransitivity = thm `;
   let s t u be point_set;
-  assume s <__ t  ∧  t <__ u		[H1];
+  assume s <__ t  ∧  t <__ u            [H1];
   thus s <__ u
 
   proof
@@ -1645,7 +1645,7 @@ let C4Uniqueness = thm `;
   let l be point_set;
   assume Line l ∧ O ∈ l ∧ A ∈ l ∧ ¬(O = A)     [H1];
   assume B ∉ l ∧ P ∉ l ∧ P,B same_side l       [H2];
-  assume ∡ A O P ≡ ∡ A O B     	       [H3];
+  assume ∡ A O P ≡ ∡ A O B             [H3];
   thus ray O B = ray O P
 
   proof
@@ -1662,7 +1662,7 @@ let AngleSymmetry = thm `;
 
 let TriangleCongSymmetry = thm `;
   let A B C A' B' C' be point;
-  assume A,B,C ≅ A',B',C'					[H1];
+  assume A,B,C ≅ A',B',C'                                       [H1];
   thus A,C,B ≅ A',C',B' ∧ B,A,C ≅ B',A',C' ∧
        B,C,A ≅ B',C',A' ∧ C,A,B ≅ C',A',B' ∧ C,B,A ≅ C',B',A'
 
@@ -1677,9 +1677,9 @@ let TriangleCongSymmetry = thm `;
 
 let SAS = thm `;
   let A B C A' B' C' be point;
-  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'		[H1];
-  assume seg B A ≡ seg B' A'  ∧  seg B C ≡ seg B' C'		[H2];
-  assume ∡ A B C ≡ ∡ A' B' C'          	       	  	[H3];
+  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'         [H1];
+  assume seg B A ≡ seg B' A'  ∧  seg B C ≡ seg B' C'            [H2];
+  assume ∡ A B C ≡ ∡ A' B' C'                           [H3];
   thus A,B,C ≅ A',B',C'
 
   proof
@@ -1707,9 +1707,9 @@ let SAS = thm `;
 
 let ASA = thm `;
   let A B C A' B' C' be point;
-  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'		[H1];
-  assume seg A C ≡ seg A' C'					[H2];
-  assume ∡ C A B ≡ ∡ C' A' B'  ∧  ∡ B C A ≡ ∡ B' C' A'     	[H3];
+  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'         [H1];
+  assume seg A C ≡ seg A' C'                                    [H2];
+  assume ∡ C A B ≡ ∡ C' A' B'  ∧  ∡ B C A ≡ ∡ B' C' A'          [H3];
   thus A,B,C ≅ A',B',C'
 
   proof
@@ -1737,8 +1737,8 @@ let ASA = thm `;
 
 let AngleSubtraction = thm `;
   let A O B A' O' B' G G' be point;
-  assume G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'	[H1];
-  assume ∡ A O B ≡ ∡ A' O' B'  ∧  ∡ A O G ≡ ∡ A' O' G'	[H2];
+  assume G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'        [H1];
+  assume ∡ A O B ≡ ∡ A' O' B'  ∧  ∡ A O G ≡ ∡ A' O' G'  [H2];
   thus ∡ G O B ≡ ∡ G' O' B'
 
   proof
@@ -1771,9 +1771,9 @@ let AngleSubtraction = thm `;
 
 let OrderedCongruentAngles = thm `;
   let A O B A' O' B' G be point;
-  assume ¬Collinear A' O' B'					[H1];
-  assume ∡ A O B ≡ ∡ A' O' B'          	     		[H2];
-  assume G ∈ int_angle A O B					[H3];
+  assume ¬Collinear A' O' B'                                    [H1];
+  assume ∡ A O B ≡ ∡ A' O' B'                           [H2];
+  assume G ∈ int_angle A O B                                    [H3];
   thus ∃ G'. G' ∈ int_angle A' O' B'  ∧  ∡ A O G ≡ ∡ A' O' G'
 
   proof
@@ -1804,8 +1804,8 @@ let OrderedCongruentAngles = thm `;
 
 let AngleAddition = thm `;
   let A O B A' O' B' G G' be point;
-  assume G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'		[H1];
-  assume ∡ A O G ≡ ∡ A' O' G'  ∧  ∡ G O B ≡ ∡ G' O' B'         	[H2];
+  assume G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'                [H1];
+  assume ∡ A O G ≡ ∡ A' O' G'  ∧  ∡ G O B ≡ ∡ G' O' B'          [H2];
   thus ∡ A O B ≡ ∡ A' O' B'
 
   proof
@@ -1850,7 +1850,7 @@ let AngleOrderingUse = thm `;
   let A O B be point;
   let α be point_set;
   assume Angle α  ∧  ¬Collinear A O B                   [H1];
-  assume α <_ang ∡ A O B                        	[H3];
+  assume α <_ang ∡ A O B                                [H3];
   thus ∃ G. G ∈ int_angle A O B ∧ α ≡ ∡ A O G
 
   proof
@@ -1866,7 +1866,7 @@ let AngleOrderingUse = thm `;
 
 let AngleTrichotomy1 = thm `;
   let α β be point_set;
-  assume α <_ang β		[H1];
+  assume α <_ang β              [H1];
   thus ¬(α ≡ β)
 
   proof
@@ -1983,7 +1983,7 @@ let SupplementExists = thm `;
 
 let SupplementImpliesAngle = thm `;
   let α β be point_set;
-  assume α suppl β		[H1];
+  assume α suppl β              [H1];
   thus Angle α ∧ Angle β
 
   proof
@@ -2015,8 +2015,8 @@ let SupplementSymmetry = thm `;
 
 let SupplementsCongAnglesCong = thm `;
   let α β α' β' be point_set;
-  assume α suppl α'  ∧  β suppl β'	[H1];
-  assume α ≡ β 	     	  	[H2];
+  assume α suppl α'  ∧  β suppl β'      [H1];
+  assume α ≡ β                  [H2];
   thus α' ≡ β'
 
   proof
@@ -2060,8 +2060,8 @@ let SupplementUnique = thm `;
 
 let CongRightImpliesRight = thm `;
   let α β be point_set;
-  assume Angle α  ∧  Right β		[H1];
-  assume α ≡ β                        	[H2];
+  assume Angle α  ∧  Right β            [H1];
+  assume α ≡ β                          [H2];
   thus Right α
 
   proof
@@ -2077,7 +2077,7 @@ let RightAnglesCongruentHelp = thm `;
   let A O B A' P be point;
   let a be point_set;
   assume ¬Collinear A O B  ∧  O ∈ open (A,A')                   [H1];
-  assume Right (∡ A O B)  ∧  Right (∡ A O P)            	[H2];
+  assume Right (∡ A O B)  ∧  Right (∡ A O P)                    [H2];
   thus P ∉ int_angle A O B
 
   proof
@@ -2155,9 +2155,9 @@ let OppositeRightAnglesLinear = thm `;
 
 let RightImpliesSupplRight = thm `;
   let A O B A' be point;
-  assume ¬Collinear A O B			[H1];
-  assume O ∈ open (A,A')			[H2];
-  assume Right (∡ A O B)			[H3];
+  assume ¬Collinear A O B                       [H1];
+  assume O ∈ open (A,A')                        [H2];
+  assume Right (∡ A O B)                        [H3];
   thus Right (∡ B O A')
 
   proof
@@ -2206,8 +2206,8 @@ let C4withC1 = thm `;
 let C4OppositeSide = thm `;
   let α l be point_set;
   let O A Z P Q be point;
-  assume Angle α ∧ ¬(O = A) ∧ ¬(P = Q)			[H1];
-  assume Line l ∧ O ∈ l ∧ A ∈ l ∧ Z ∉ l         	[l_line];
+  assume Angle α ∧ ¬(O = A) ∧ ¬(P = Q)                  [H1];
+  assume Line l ∧ O ∈ l ∧ A ∈ l ∧ Z ∉ l                 [l_line];
   thus ∃ N. ¬(O = N) ∧ N ∉ l ∧ ¬(Z,N same_side l) ∧ seg O N ≡ seg P Q ∧ ∡ A O N ≡ α
 
   proof
@@ -2225,8 +2225,8 @@ let C4OppositeSide = thm `;
 
 let SSS = thm `;
   let A B C A' B' C' be point;
-  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'					[H1];
-  assume seg A B ≡ seg A' B'  ∧  seg A C ≡ seg A' C'  ∧  seg B C ≡ seg B' C'		[H2];
+  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'                                 [H1];
+  assume seg A B ≡ seg A' B'  ∧  seg A C ≡ seg A' C'  ∧  seg B C ≡ seg B' C'            [H2];
   thus A,B,C ≅ A',B',C'
 
   proof
@@ -2589,7 +2589,7 @@ let EuclidPropositionI_11 = thm `;
 let DropPerpendicularToLine = thm `;
   let P be point;
   let l be point_set;
-  assume Line l  ∧  P ∉ l			[l_line];
+  assume Line l  ∧  P ∉ l                       [l_line];
   thus ∃ E Q. E ∈ l ∧ Q ∈ l ∧ Right (∡ P Q E)
 
   proof
@@ -2633,9 +2633,9 @@ let DropPerpendicularToLine = thm `;
 let EuclidPropositionI_14 = thm `;
   let A B C D be point;
   let l be point_set;
-  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ ¬(A = B)		[l_line];
-  assume C ∉ l ∧ D ∉ l ∧ ¬(C,D same_side l) 		[Cnsim_lD];
-  assume ∡ C B A suppl ∡ A B D 		 	[CBAsupplABD];
+  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ ¬(A = B)              [l_line];
+  assume C ∉ l ∧ D ∉ l ∧ ¬(C,D same_side l)             [Cnsim_lD];
+  assume ∡ C B A suppl ∡ A B D                  [CBAsupplABD];
   thus B ∈ open (C,D)
 
   proof
@@ -2654,7 +2654,7 @@ let EuclidPropositionI_14 = thm `;
 let VerticalAnglesCong = thm `;     :: Euclid's Proposition I.15
   let A B O A' B' be point;
   assume ¬Collinear A O B                               [H1];
-  assume O ∈ open (A,A')  ∧  O ∈ open (B,B')       	[H2];
+  assume O ∈ open (A,A')  ∧  O ∈ open (B,B')            [H2];
   thus ∡ B O A' ≡ ∡ B' O A
 
   proof
@@ -2725,8 +2725,8 @@ let ExteriorAngle = thm `;
 let EuclidPropositionI_17 = thm `;
   let A B C be point;
   let α β γ be point_set;
-  assume ¬Collinear A B C  ∧  α = ∡ A B C  ∧  β = ∡ B C A		[H1];
-  assume β suppl γ							[H2];
+  assume ¬Collinear A B C  ∧  α = ∡ A B C  ∧  β = ∡ B C A               [H1];
+  assume β suppl γ                                                      [H2];
   thus α <_ang γ
 
   proof
@@ -2765,7 +2765,7 @@ let EuclidPropositionI_18 = thm `;
 
 let EuclidPropositionI_19 = thm `;
   let A B C be point;
-  assume ¬Collinear A B C			[H1];
+  assume ¬Collinear A B C                       [H1];
   assume ∡ A B C <_ang ∡ B C A                 [H2];
   thus seg A C  <__ seg A B
 
@@ -2805,7 +2805,7 @@ let EuclidPropositionI_20 = thm `;
 let EuclidPropositionI_21 = thm `;
   let A B C D be point;
   assume ¬Collinear A B C                       [H1];
-  assume D ∈ int_triangle A B C         	[H2];
+  assume D ∈ int_triangle A B C                 [H2];
   thus ∡ A B C <_ang ∡ C D A
 
   proof
@@ -2841,9 +2841,9 @@ let AngleTrichotomy3 = thm `;
 
 let InteriorCircleConvexHelp = thm `;
   let O A B C be point;
-  assume ¬Collinear A O C				[H1];
-  assume B ∈ open (A,C)                      		[H2];
-  assume seg O A <__ seg O C  ∨  seg O A ≡ seg O C   	[H3];
+  assume ¬Collinear A O C                               [H1];
+  assume B ∈ open (A,C)                                 [H2];
+  assume seg O A <__ seg O C  ∨  seg O A ≡ seg O C      [H3];
   thus seg O B <__ seg O C
 
   proof
@@ -2868,7 +2868,7 @@ let InteriorCircleConvexHelp = thm `;
 
 let InteriorCircleConvex = thm `;
   let O R A B C be point;
-  assume  ¬(O = R)					[H1];
+  assume  ¬(O = R)                                      [H1];
   assume B ∈ open (A,C)                                 [H2];
   assume A ∈ int_circle O R  ∧  C ∈ int_circle O R      [H3];
   thus B ∈ int_circle O R
@@ -2882,21 +2882,21 @@ let InteriorCircleConvex = thm `;
       seg O B <__ seg O A ∧ ¬(O = A)  ∨  seg O B <__ seg O C ∧ ¬(O = C)     by -, B1', SEGMENT, C2Reflexive,  SegmentOrdering_DEF;
       seg O B <__ seg O R     by -, ACintOR, SegmentOrderTransitivity;
     qed by -, H1, IN_InteriorCircle;
-    suppose ¬(O = A) ∧ ¬(O = C)     [OnotAC]; 
+    suppose ¬(O = A) ∧ ¬(O = C)     [OnotAC];
       cases;
       suppose ¬Collinear A O C     [AOCncol];
         seg O A <__ seg O C  ∨  seg O A ≡ seg O C  ∨  seg O C <__ seg O A     by OnotAC, SEGMENT,  SegmentTrichotomy;
- 	seg O B <__ seg O C  ∨  seg O B <__ seg O A     by AOCncol, H2, -, InteriorCircleConvexHelp, CollinearSymmetry, B1';
+        seg O B <__ seg O C  ∨  seg O B <__ seg O A     by AOCncol, H2, -, InteriorCircleConvexHelp, CollinearSymmetry, B1';
       qed     by OnotAC, ACintOR, -, SegmentOrderTransitivity, H1, IN_InteriorCircle;
       suppose Collinear A O C                           [AOCcol];
-        consider l such that 
+        consider l such that
         Line l ∧ A ∈ l ∧ C ∈ l     by H2', I1;
         Collinear B A O ∧ Collinear B C O     [OABCcol] by -, H2, BetweenLinear, H2', AOCcol, CollinearLinear, Collinear_DEF;
         B ∉ open (O,A) ∧ B ∉ open (O,C)  ⇒  B = O
         proof
           assume B ∉ open (O,A) ∧ B ∉ open (O,C);
           O ∈ ray B A ∩ ray B C     by H2', OABCcol, -, IN_Ray, IN_INTER;
-        qed     by -, H2, OppositeRaysIntersect1point, IN_SING;     
+        qed     by -, H2, OppositeRaysIntersect1point, IN_SING;
         B ∈ open (O,A)  ∨  B ∈ open (O,C)  ∨  B = O     by -, ∉;
         seg O B <__ seg O A  ∨  seg O B <__ seg O C  ∨  B = O     by -, B1', SEGMENT, C2Reflexive,  SegmentOrdering_DEF;
         seg O B <__ seg O R  ∨  B = O     by -, ACintOR, OnotAC, SegmentOrderTransitivity;
@@ -2907,7 +2907,7 @@ let InteriorCircleConvex = thm `;
 
 let SegmentTrichotomy3 = thm `;
   let s t u be point_set;
-  assume s <__ t  ∧  Segment u  ∧  u ≡ s		[H1];
+  assume s <__ t  ∧  Segment u  ∧  u ≡ s                [H1];
   thus u <__ t
 
   proof
@@ -2919,7 +2919,7 @@ let SegmentTrichotomy3 = thm `;
 
 let EuclidPropositionI_24Help = thm `;
   let O A C O' D F be point;
-  assume ¬Collinear A O C ∧ ¬Collinear D O' F			[H1];
+  assume ¬Collinear A O C ∧ ¬Collinear D O' F                   [H1];
   assume seg O' D ≡ seg O A  ∧  seg O' F ≡ seg O C              [H2];
   assume  ∡ D O' F <_ang ∡ A O C                                [H3];
   assume seg O A <__ seg O C  ∨  seg O A ≡ seg O C              [H4];
@@ -2967,7 +2967,7 @@ let EuclidPropositionI_24Help = thm `;
 
 let EuclidPropositionI_24 = thm `;
   let O A C O' D F be point;
-  assume ¬Collinear A O C ∧ ¬Collinear D O' F			[H1];
+  assume ¬Collinear A O C ∧ ¬Collinear D O' F                   [H1];
   assume seg O' D ≡ seg O A ∧ seg O' F ≡ seg O C                [H2];
   assume  ∡ D O' F <_ang ∡ A O C                                [H3];
   thus seg D F <__ seg A C
@@ -2986,9 +2986,9 @@ let EuclidPropositionI_24 = thm `;
 
 let EuclidPropositionI_25 = thm `;
   let O A C O' D F be point;
-  assume ¬Collinear A O C ∧ ¬Collinear D O' F			[H1];
+  assume ¬Collinear A O C ∧ ¬Collinear D O' F                   [H1];
   assume seg O' D ≡ seg O A ∧ seg O' F ≡ seg O C                [H2];
-  assume  seg D F <__ seg A C                               	[H3];
+  assume  seg D F <__ seg A C                                   [H3];
   thus ∡ D O' F <_ang ∡ A O C
 
   proof
@@ -3009,9 +3009,9 @@ let EuclidPropositionI_25 = thm `;
 
 let AAS = thm `;
   let A B C A' B' C' be point;
-  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'			[H1];
-  assume ∡ A B C ≡ ∡ A' B' C'  ∧  ∡ B C A ≡ ∡ B' C' A'		[H2];
-  assume seg A B ≡ seg A' B'						[H3];
+  assume ¬Collinear A B C ∧ ¬Collinear A' B' C'                 [H1];
+  assume ∡ A B C ≡ ∡ A' B' C'  ∧  ∡ B C A ≡ ∡ B' C' A'          [H2];
+  assume seg A B ≡ seg A' B'                                            [H3];
   thus A,B,C ≅ A',B',C'
 
   proof
@@ -3036,12 +3036,12 @@ let AAS = thm `;
       cases     by -;
       suppose C ∈ open (B,G) ;
         C ∈ open (G,B)  ∧ ray G C = ray G B     [rGCrBG] by -, B1', IntervalRay;
-	∡ A G C <_ang ∡ A C B     by ACGncol, -, ExteriorAngle;
-	∡ B G A <_ang ∡ B C A     by -, rGCrBG, Angle_DEF, AngleSymmetry, AngleSymmetry;
+        ∡ A G C <_ang ∡ A C B     by ACGncol, -, ExteriorAngle;
+        ∡ B G A <_ang ∡ B C A     by -, rGCrBG, Angle_DEF, AngleSymmetry, AngleSymmetry;
       qed     by ABGncol, BCAncol, ANGLE, -, AngleSymmetry, BGAeqBCA, AngleTrichotomy;
       suppose G ∈ open (C,B)     [CGB];
         ray C G = ray C B  ∧  ∡ A C G <_ang ∡ A G B     by -, IntervalRay, ACGncol, ExteriorAngle;
-	∡ A C B <_ang ∡ B G A     by -, Angle_DEF, AngleSymmetry;
+        ∡ A C B <_ang ∡ B G A     by -, Angle_DEF, AngleSymmetry;
         ∡ B C A <_ang ∡ B C A     by -, BCAncol, ANGLE, BGAeqBCA, AngleTrichotomy2, AngleSymmetry;
       qed     by -, BCArefl, AngleTrichotomy1;
     end;
@@ -3103,14 +3103,14 @@ let AlternateInteriorAngles = thm `;
 let EuclidPropositionI_28 = thm `;
   let A B C D E F G H be point;
   let l m t be point_set;
-  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ G ∈ l			[l_line];
-  assume Line m ∧ C ∈ m ∧ D ∈ m ∧ H ∈ m			[m_line];
-  assume Line t ∧ G ∈ t ∧ H ∈ t       			[t_line];
-  assume  G ∉ m ∧ H ∉ l					[notGmHl];
-  assume G ∈ open (A,B)  ∧ H ∈ open (C,D) 			[H1];
-  assume G ∈ open (E,H)  ∧  H ∈ open (F,G) 			[H2];
-  assume ¬(D,A same_side t)   	     				[H3];
-  assume ∡ E G B ≡ ∡ G H D  ∨  ∡ B G H suppl ∡ G H D 		[H4];
+  assume Line l ∧ A ∈ l ∧ B ∈ l ∧ G ∈ l                 [l_line];
+  assume Line m ∧ C ∈ m ∧ D ∈ m ∧ H ∈ m                 [m_line];
+  assume Line t ∧ G ∈ t ∧ H ∈ t                         [t_line];
+  assume  G ∉ m ∧ H ∉ l                                 [notGmHl];
+  assume G ∈ open (A,B)  ∧ H ∈ open (C,D)                       [H1];
+  assume G ∈ open (E,H)  ∧  H ∈ open (F,G)                      [H2];
+  assume ¬(D,A same_side t)                                     [H3];
+  assume ∡ E G B ≡ ∡ G H D  ∨  ∡ B G H suppl ∡ G H D            [H4];
   thus l ∥ m
 
   proof
@@ -3134,8 +3134,8 @@ let EuclidPropositionI_28 = thm `;
 
 let OppositeSidesCongImpliesParallelogram = thm `;
   let A B C D be point;
-  assume Quadrilateral A B C D				[H1];
-  assume seg A B ≡ seg C D  ∧  seg B C ≡ seg D A 	[H2];
+  assume Quadrilateral A B C D                          [H1];
+  assume seg A B ≡ seg C D  ∧  seg B C ≡ seg D A        [H2];
   thus Parallelogram A B C D
 
   proof
@@ -3173,10 +3173,10 @@ let OppositeSidesCongImpliesParallelogram = thm `;
 let OppositeAnglesCongImpliesParallelogramHelp = thm `;
   let A B C D be point;
   let a c be point_set;
-  assume Quadrilateral A B C D				[H1];
-  assume ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D 	[H2];
-  assume Line a ∧ A ∈ a ∧ B ∈ a        	       	[a_line];
-  assume Line c  ∧ C ∈ c ∧ D ∈ c			[c_line];
+  assume Quadrilateral A B C D                          [H1];
+  assume ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D        [H2];
+  assume Line a ∧ A ∈ a ∧ B ∈ a                 [a_line];
+  assume Line c  ∧ C ∈ c ∧ D ∈ c                        [c_line];
   thus a ∥ c
 
   proof
@@ -3184,12 +3184,12 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
     ¬Collinear A B C ∧ ¬Collinear B C D ∧ ¬Collinear C D A ∧ ¬Collinear D A B     [TetraABCD] by H1, Quadrilateral_DEF, Tetralateral_DEF;
     ∡ C D A ≡ ∡ A B C  ∧  ∡ B C D ≡ ∡ D A B     [H2'] by TetraABCD, ANGLE, H2, C5Symmetric;
     consider l m such that
-    Line l ∧ A ∈ l ∧ C ∈ l  ∧ 
+    Line l ∧ A ∈ l ∧ C ∈ l  ∧
     Line m ∧ B ∈ m ∧ D ∈ m     [lm_line] by TetraABCD, I1;
     consider b d such that
     Line b ∧ B ∈ b ∧ C ∈ b   ∧  Line d ∧ D ∈ d ∧ A ∈ d     [bd_line] by TetraABCD, I1;
     A ∉ c ∧ B ∉ c ∧ A ∉ b ∧ D ∉ b ∧ B ∉ d ∧ C ∉ d     [point_off_line] by c_line, bd_line, Collinear_DEF, TetraABCD, ∉;
-    ¬(A ∈ int_triangle B C D  ∨  B ∈ int_triangle C D A  ∨  
+    ¬(A ∈ int_triangle B C D  ∨  B ∈ int_triangle C D A  ∨
     C ∈ int_triangle D A B  ∨  D ∈ int_triangle A B C)
     proof
       assume A ∈ int_triangle B C D  ∨  B ∈ int_triangle C D A  ∨
@@ -3224,9 +3224,9 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
       D ∈ open (C,M)     [CDM] by TetraABCD, B2';
       D ∈ open (G,M)     [GDM] by -, B1', DCG, TransitivityBetweennessHelp;
       ∡ C D A suppl ∡ A D M  ∧  ∡ A B C suppl ∡ C B G     by TetraABCD, CDM, ABG, SupplementaryAngles_DEF;
-      ∡ M D A ≡ ∡ G B C     [MDAeqGBC] by -, H2', SupplementsCongAnglesCong, AngleSymmetry; 
+      ∡ M D A ≡ ∡ G B C     [MDAeqGBC] by -, H2', SupplementsCongAnglesCong, AngleSymmetry;
       ∡ G A D <_ang ∡ M D A  ∧  ∡ G B C <_ang ∡ D C B     by BCGncol, BGCncol, GDM, DCG, B1', EuclidPropositionI_16;
-      ∡ G A D <_ang ∡ D C B     by  -, BCGncol, ANGLE, MDAeqGBC, AngleTrichotomy2, AngleOrderTransitivity;   
+      ∡ G A D <_ang ∡ D C B     by  -, BCGncol, ANGLE, MDAeqGBC, AngleTrichotomy2, AngleOrderTransitivity;
       ∡ D A B <_ang ∡ B C D     by -, rABrAG, Angle_DEF, AngleSymmetry;
     qed     by -, H2, AngleTrichotomy1;
     A ∉ open (G,B)
@@ -3238,11 +3238,11 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
       ¬(C,G same_side d)     by bd_line, point_off_line, notGb, Bsim_cA, -,  SameSideTransitive;
       C ∉ ray D G     by bd_line, notGb, -, RaySameSide, TetraABCD, IN_DELETE, ∉;
       D ∈ open (C,G)     [CDG] by GnotABCD, ABGcol, -, IN_Ray, ∉;
-      consider M such that 
+      consider M such that
       C ∈ open (D,M)     [DCM] by B2', TetraABCD;
       C ∈ open (G,M)     [GCM] by -, B1', CDG, TransitivityBetweennessHelp;
       ∡ B C D suppl ∡ M C B  ∧  ∡ D A B suppl ∡ G A D     by TetraABCD, CollinearSymmetry, DCM, BAG, SupplementaryAngles_DEF, AngleSymmetry;
-      ∡ M C B ≡ ∡ G A D     [GADeqMCB] by -, H2', SupplementsCongAnglesCong; 
+      ∡ M C B ≡ ∡ G A D     [GADeqMCB] by -, H2', SupplementsCongAnglesCong;
       ∡ G B C <_ang ∡ M C B  ∧  ∡ G A D <_ang ∡ C D A     by BGCncol, GCM, BCGncol, CDG, B1', EuclidPropositionI_16;
       ∡ G B C <_ang ∡ C D A     by -, BCGncol, ANGLE, GADeqMCB, AngleTrichotomy2, AngleOrderTransitivity;
       ∡ A B C <_ang ∡ C D A     by -, rBArBG, Angle_DEF;
@@ -3252,8 +3252,8 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
 
 let OppositeAnglesCongImpliesParallelogram = thm `;
   let A B C D be point;
-  assume Quadrilateral A B C D				[H1];
-  assume ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D 	[H2];
+  assume Quadrilateral A B C D                          [H1];
+  assume ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D        [H2];
   thus Parallelogram A B C D
 
   proof
@@ -3285,7 +3285,7 @@ let AMb = new_axiom
 
 let AMc = new_axiom
  `∀ α β. Angle α ∧ Angle β ∧ α ≡ β  ⇒  μ α = μ β`;;
-    
+
 let AMd = new_axiom
  `∀ A O B P. P ∈ int_angle A O B  ⇒  μ (∡ A O B) = μ (∡ A O P) + μ (∡ P O B)`;;
 
@@ -3317,9 +3317,9 @@ let ConverseAlternateInteriorAngles = thm `;
 
 let HilbertTriangleSum = thm `;
   let A B C be point;
-  assume ¬Collinear A B C				[ABCncol];
+  assume ¬Collinear A B C                               [ABCncol];
   thus ∃ E F. B ∈ open (E,F)  ∧  C ∈ int_angle A B F  ∧
-       	   ∡ E B A ≡ ∡ C A B  ∧  ∡ C B F ≡ ∡ B C A
+           ∡ E B A ≡ ∡ C A B  ∧  ∡ C B F ≡ ∡ B C A
 
   proof
     ¬(A = B) ∧ ¬(A = C) ∧ ¬(B = C) ∧ ¬Collinear C A B     [Distinct] by ABCncol, NonCollinearImpliesDistinct, CollinearSymmetry;
@@ -3359,8 +3359,8 @@ let HilbertTriangleSum = thm `;
 
 let EuclidPropositionI_13 = thm `;
   let A O B A' be point;
-  assume ¬Collinear A O B			[H1];
-  assume O ∈ open (A,A')			[H2];
+  assume ¬Collinear A O B                       [H1];
+  assume O ∈ open (A,A')                        [H2];
   thus μ (∡ A O B) + μ (∡ B O A') = &180
 
   proof
@@ -3370,10 +3370,10 @@ let EuclidPropositionI_13 = thm `;
     qed by -, REAL_ARITH;
     suppose ¬Right (∡ A O B)     [notRightAOB];
       ¬(A = O) ∧ ¬(O = B)     [Distinct] by H1, NonCollinearImpliesDistinct;
-      consider l such that 
+      consider l such that
       Line l ∧ O ∈ l ∧ A ∈ l ∧ A' ∈ l     [l_line] by -, I1, H2, BetweenLinear;
       B ∉ l     [notBl] by -, Distinct, I1, Collinear_DEF, H1, ∉;
-      consider F such that 
+      consider F such that
       Right (∡ O A F)  ∧  Angle (∡ O A F)     [RightOAF] by Distinct, EuclidPropositionI_11, RightImpliesAngle;
       ∃! r. Ray r ∧ ∃ E. ¬(O = E) ∧ r = ray O E ∧ E ∉ l ∧ E,B same_side l ∧ ∡ A O E ≡ ∡ O A F     by -, Distinct, l_line, notBl, C4;
       consider E such that
@@ -3386,17 +3386,17 @@ let EuclidPropositionI_13 = thm `;
       ¬(ray O B = ray O E)     by -, Angle_DEF;
       B ∉ ray O E  ∧  O ∉ open (B,E)     by Distinct, -, Eexists, RayWellDefined, IN_DELETE, ∉, l_line, B1', SameSide_DEF;
       ¬Collinear O E B     by -, Eexists, IN_Ray, ∉;
-      E ∈ int_angle A O B  ∨  B ∈ int_angle A O E     by Distinct, l_line, Eexists, notBl, AngleOrdering, -, CollinearSymmetry, InteriorAngleSymmetry; 
+      E ∈ int_angle A O B  ∨  B ∈ int_angle A O E     by Distinct, l_line, Eexists, notBl, AngleOrdering, -, CollinearSymmetry, InteriorAngleSymmetry;
       cases by -;
       suppose E ∈ int_angle A O B     [EintAOB];
         B ∈ int_angle E O A'     by H2, -, InteriorReflectionInterior;
-        μ (∡ A O B) = μ (∡ A O E) + μ (∡ E O B)  ∧  
-	μ (∡ E O A') = μ (∡ E O B) + μ (∡ B O A')     by EintAOB, -, AMd;
+        μ (∡ A O B) = μ (∡ A O E) + μ (∡ E O B)  ∧
+        μ (∡ E O A') = μ (∡ E O B) + μ (∡ B O A')     by EintAOB, -, AMd;
       qed     by -, RightEOA', REAL_ARITH;
       suppose B ∈ int_angle A O E     [BintAOE];
         E ∈ int_angle B O A'     by H2, -, InteriorReflectionInterior;
-        μ (∡ A O E) = μ (∡ A O B) + μ (∡ B O E)  ∧  
-	μ (∡ B O A') = μ (∡ B O E) + μ (∡ E O A')     by BintAOE, -, AMd;
+        μ (∡ A O E) = μ (∡ A O B) + μ (∡ B O E)  ∧
+        μ (∡ B O A') = μ (∡ B O E) + μ (∡ E O A')     by BintAOE, -, AMd;
       qed     by -, RightEOA', REAL_ARITH;
     end;
   end;
@@ -3404,7 +3404,7 @@ let EuclidPropositionI_13 = thm `;
 
 let TriangleSum = thm `;
   let A B C be point;
-  assume ¬Collinear A B C				[ABCncol];
+  assume ¬Collinear A B C                               [ABCncol];
   thus μ (∡ A B C) + μ (∡ B C A) + μ (∡ C A B) = &180
 
   proof

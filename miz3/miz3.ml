@@ -85,7 +85,7 @@ unset_jrh_lexer;;
 let system_ok = Unix.WEXITED 0;;
 let wronly = Unix.O_WRONLY;;
 let usr2_handler = ref (fun () -> print_string "usr2_handler\n");;
-Sys.signal 12 (Sys.Signal_handle (fun _ -> !usr2_handler ()));;
+Sys.signal Sys.sigusr2 (Sys.Signal_handle (fun _ -> !usr2_handler ()));;
 
 set_jrh_lexer;;
 

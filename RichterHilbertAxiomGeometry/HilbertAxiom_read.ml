@@ -1,34 +1,34 @@
-(* ----------------------------------------------------------------- *)
-(* HOL Light Hilbert geometry axiomatic proofs.                      *)
-(* ----------------------------------------------------------------- *)
+(* ========================================================================= *)
+(*            HOL Light Hilbert geometry axiomatic proofs                    *)
+(*                                                                           *)
+(*                (c) Copyright, Bill Richter 2013                           *)
+(*          Distributed under the same license as HOL Light                  *)
+(*                                                                           *)
+(* ========================================================================= *)
 
-(* High school students can learn rigorous axiomatic Geometry proofs,
-   as in http://www.math.northwestern.edu/~richter/hilbert.pdf, using
-   Hilbert's axioms, and code up their proofs in miz3 and HOL Light.
-   Thanks to Bjørn Jahren, Miguel Lerma,Takuo Matsuoka, Stephen
-   Wilson for advice on Hilbert's axioms, and especially Benjamin
-   Kordesh, who carefully read much of the paper and the code.
-
-   Formal proofs are given for the first 7 sections of the paper, the
-   results cited there from Greenberg's book, and most of Euclid's
-   book I propositions up to Proposition I.29, following Hartshorne,
-   whose book seems the most exciting axiomatic geometry text.  A
-   proof assistant is an valuable tool to help read it, as
-   Hartshorne's proofs are often sketchy and even have gaps.
-
-   M. Greenberg, Euclidean and non-Euclidean geometries, W. H. Freeman and Co., 1974.
-   R. Hartshorne, Geometry, Euclid and Beyond, Undergraduate Texts in Math., Springer, 2000.
-
-   Thanks to Mizar folks for their influential language, Freek
-   Wiedijk, who wrote the miz3 port of Mizar to HOL Light, and
-   especially John Harrison, who was extremely helpful and developed
-   the framework for porting my axiomatic proofs to HOL Light.  The proofs here 
-   are written in a miz3-type interface readable.ml for tactics proofs.  *)
+(* High school students can learn rigorous axiomatic Geometry proofs, as in  *)
+(* http://www.math.northwestern.edu/~richter/hilbert.pdf, using Hilbert's    *)
+(* axioms, and code up their proofs in miz3 and HOL Light.  Thanks to Bjørn  *)
+(* Jahren, Miguel Lerma,Takuo Matsuoka, Stephen Wilson for advice on         *)
+(* Hilbert's axioms, and especially Benjamin Kordesh, who carefully read     *)
+(* much of the paper and the code.                                           *)
+(*                                                                           *)
+(* Formal proofs are given for the first 7 sections of the paper, the        *)
+(* results cited there from Greenberg's book, and most of Euclid's book I    *)
+(* propositions up to Proposition I.29, following Hartshorne, whose book     *)
+(* seems the most exciting axiomatic geometry text.  A proof assistant is an *)
+(* valuable tool to help read it, as Hartshorne's proofs are often sketchy   *)
+(* and even have gaps.                                                       *)
+(*                                                                           *)
+(* M. Greenberg, Euclidean and non-Euclidean geometries, Freeman, 1974.      *)
+(* R. Hartshorne, Geometry, Euclid and Beyond, UTM series, Springer, 2000.   *)
+(*                                                                           *)
+(* Thanks to Mizar folks for their influential language, Freek Wiedijk for   *)
+(* the miz3 port of Mizar to HOL Light, and especially John Harrison, for    *)
+(* vigorously promoting readable formal proofs, and the first 100 lines of   *)
+(* the code.  The proofs use the miz3 tactics proof interface readable.ml.   *)
 
 needs "RichterHilbertAxiomGeometry/readable.ml";;
-
-(* verbose := false;;
-report_timing := false;; *)
 
 new_type("point",0);;
 new_type_abbrev("point_set",`:point->bool`);;
@@ -349,14 +349,14 @@ let EquivIntersectionHelp = theorem `;
 `;;
 
 let CollinearSymmetry = theorem `;
-  ∀ A B C. Collinear A B C  ⇒  
+  ∀ A B C. Collinear A B C  ⇒
     Collinear A C B ∧ Collinear B A C ∧ Collinear B C A ∧
     Collinear C A B ∧ Collinear C B A
 
   proof
     intro_TAC ∀A B C, H1;
     consider l such that
-    Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l     by fol H1 Collinear_DEF;
+    Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l     [l_line] by fol H1 Collinear_DEF;
     fol - Collinear_DEF;
   qed;
 `;;
@@ -397,7 +397,7 @@ let ExistsPointOffLine = theorem `;
 `;;
 
 let BetweenLinear = theorem `;
-  ∀ A B C m. Line m ∧ A ∈ m ∧ C ∈ m  ∧  
+  ∀ A B C m. Line m ∧ A ∈ m ∧ C ∈ m  ∧
     (B ∈ open (A,C) ∨ C ∈ open (B,A)  ∨ A ∈ open (C,B))  ⇒  B ∈ m
 
   proof
@@ -412,8 +412,8 @@ let BetweenLinear = theorem `;
 `;;
 
 let CollinearLinear = theorem `;
-  ∀A B C m. Line m ∧ A ∈ m ∧ C ∈ m  ∧ 
-    (Collinear A B C ∨ Collinear B C A ∨ Collinear C A B)  ∧ 
+  ∀A B C m. Line m ∧ A ∈ m ∧ C ∈ m  ∧
+    (Collinear A B C ∨ Collinear B C A ∨ Collinear C A B)  ∧
     ¬(A = C)  ⇒  B ∈ m
 
   proof
@@ -445,11 +445,31 @@ let NonCollinearImpliesDistinct = theorem `;
   qed;
 `;;
 
-let Reverse4Order = theorem `;
-  ∀ A B C D. ordered A B C D  ⇒  ordered D C B A
+let NonCollinearRaa = theorem `;
+  ∀ A B C l.  ¬(A = C)  ⇒  Line l ∧ A ∈ l ∧ C ∈ l  ⇒  B ∉ l
+    ⇒  ¬Collinear A B C
+
   proof
-    REWRITE_TAC Ordered_DEF;
-    fol B1';
+    intro_TAC ∀ A B C l, Distinct, l_line, notBl;
+    raa Collinear A B C     [ANCcol] by fol -;
+    consider m such that Line m ∧ A ∈ m ∧ B ∈ m ∧ C ∈ m     [m_line] by fol - Collinear_DEF;
+    m = l     [] by fol - l_line Distinct I1;
+    B ∈ l     [] by fol m_line -;
+    fol - notBl ∉;
+  qed;
+`;;
+
+let TwoSidesTriangle1Intersection = theorem `;
+  ∀A B C Y. ¬Collinear A B C  ∧  Collinear B C Y  ∧  Collinear A C Y
+     ⇒ Y = C
+
+  proof
+    intro_TAC ∀A B C Y, ABCcol BCYcol ACYcol;
+    raa ¬(C = Y)     [notCY] by fol -;
+    consider l such that
+    Line l ∧ C ∈ l ∧ Y ∈ l     [l_line] by fol - I1;
+    B ∈ l ∧ A ∈ l     [BAl] by fol - BCYcol ACYcol Collinear_DEF notCY I1;
+    fol - l_line Collinear_DEF ABCcol;
   qed;
 `;;
 
@@ -571,13 +591,13 @@ let SameSideReflexive = theorem `;
 let SameSideSymmetric = theorem `;
   ∀ l A B. Line l ∧  A ∉ l ∧ B ∉ l ⇒
   A,B same_side l ⇒ B,A same_side l
-  proof 
+  proof
     fol SameSide_DEF B1';
   qed;
 `;;
 
 let SameSideTransitive = theorem `;
-  ∀ l A B C. Line l  ⇒  A ∉ l ∧ B ∉ l ∧ C ∉ l  ⇒  A,B same_side l  
+  ∀ l A B C. Line l  ⇒  A ∉ l ∧ B ∉ l ∧ C ∉ l  ⇒  A,B same_side l
     ⇒  B,C same_side l  ⇒  A,C same_side l
 
   proof
@@ -641,13 +661,13 @@ let ConverseCrossbar = theorem `;
 `;;
 
 let InteriorUse = theorem `;
-  ∀ A O B P a b. 
-    Line a ∧ O ∈ a ∧ A ∈ a ∧ Line b ∧ O ∈ b ∧ B ∈ b  ⇒ 
-    P  ∈ int_angle A O B  ⇒ 
+  ∀ A O B P a b.
+    Line a ∧ O ∈ a ∧ A ∈ a ∧ Line b ∧ O ∈ b ∧ B ∈ b  ⇒
+    P  ∈ int_angle A O B  ⇒
     P ∉ a ∧ P ∉ b ∧ P,B same_side a ∧ P,A same_side b
 
   proof
-    intro_TAC ∀ A O B P a b, aOAbOB, P_AOB; 
+    intro_TAC ∀ A O B P a b, aOAbOB, P_AOB;
     consider α β such that ¬Collinear A O B ∧
     Line α ∧ O ∈ α ∧ A ∈ α ∧
     Line β ∧ O ∈ β ∧B ∈ β ∧
@@ -660,7 +680,7 @@ let InteriorUse = theorem `;
 `;;
 
 let InteriorEZHelp = theorem `;
-  ∀ A O B P. P ∈ int_angle A O B  ⇒ 
+  ∀ A O B P. P ∈ int_angle A O B  ⇒
   ¬(P = A) ∧ ¬(P = O) ∧ ¬(P = B) ∧ ¬Collinear A O P
 
   proof
@@ -672,7 +692,7 @@ let InteriorEZHelp = theorem `;
     P ∉ a ∧ P ∉ b     [def_int] by fol P_AOB IN_InteriorAngle;
     ¬(P = A) ∧ ¬(P = O) ∧ ¬(P = B)     [PnotAOB] by fol - ∉;
     ¬(A = O)     [notAO] by fol def_int NonCollinearImpliesDistinct;
-    ¬Collinear A O P     [] by fol def_int notAO - I1 Collinear_DEF ∉;
+    ¬Collinear A O P     [] by fol def_int notAO - NonCollinearRaa CollinearSymmetry;
     fol PnotAOB -;
   qed;
 `;;
@@ -680,7 +700,7 @@ let InteriorEZHelp = theorem `;
 let InteriorAngleSymmetry = theorem `;
   ∀ A O B P: point. P ∈ int_angle A O B  ⇒  P ∈ int_angle B O A
   proof
-    fol IN_InteriorAngle CollinearSymmetry; 
+    fol IN_InteriorAngle CollinearSymmetry;
   qed;
 `;;
 
@@ -719,12 +739,12 @@ let WholeRayInterior = theorem `;
 `;;
 
 let AngleOrdering = theorem `;
-  ∀ O A P Q a. ¬(O = A)  ⇒  Line a ∧ O ∈ a ∧ A ∈ a  ⇒ 
-    P ∉ a ∧ Q ∉ a  ⇒  P,Q same_side a  ⇒  ¬Collinear P O Q  ⇒ 
+  ∀ O A P Q a. ¬(O = A)  ⇒  Line a ∧ O ∈ a ∧ A ∈ a  ⇒
+    P ∉ a ∧ Q ∉ a  ⇒  P,Q same_side a  ⇒  ¬Collinear P O Q  ⇒
     P ∈ int_angle Q O A  ∨  Q ∈ int_angle P O A
 
   proof
-    intro_TAC ∀ O A P Q a, H1, H2, H3, H4, H5; 
+    intro_TAC ∀ O A P Q a, H1, H2, H3, H4, H5;
     ¬(P = O) ∧ ¬(P = Q) ∧ ¬(O = Q)     [Distinct] by fol H5 NonCollinearImpliesDistinct;
     consider q such that
     Line q ∧ O ∈ q ∧ Q ∈ q     [q_line] by fol Distinct I1;
@@ -745,7 +765,7 @@ let AngleOrdering = theorem `;
 `;;
 
 let InteriorsDisjointSupplement = theorem `;
-  ∀ A O B A'. ¬Collinear A O B  ∧  O ∈ open (A,A')  ⇒  
+  ∀ A O B A'. ¬Collinear A O B  ∧  O ∈ open (A,A')  ⇒
     int_angle B O A'  ∩  int_angle A O B = ∅
 
   proof
@@ -768,7 +788,7 @@ let InteriorsDisjointSupplement = theorem `;
 `;;
 
 let InteriorReflectionInterior = theorem `;
-  ∀ A O B D A'. O ∈ open (A,A')  ∧  D ∈ int_angle A O B  ⇒ 
+  ∀ A O B D A'. O ∈ open (A,A')  ∧  D ∈ int_angle A O B  ⇒
     B  ∈ int_angle D O A'
 
   proof
@@ -777,7 +797,7 @@ let InteriorReflectionInterior = theorem `;
     ¬Collinear A O B ∧ Line a ∧ O ∈ a ∧ A ∈ a ∧ D ∉ a ∧
     Line b ∧ O ∈ b ∧ B ∈ b ∧ D ∉ b ∧ D,B same_side a     [DintAOB] by fol H2 IN_InteriorAngle;
     ¬(O = B) ∧ ¬(O = A') ∧ B ∉ a     [Distinct] by fol - H1 NonCollinearImpliesDistinct B1' Collinear_DEF ∉;
-    ¬Collinear D O B     [DOB_ncol] by fol DintAOB - I1 Collinear_DEF ∉;
+    ¬Collinear D O B     [DOB_ncol] by fol DintAOB - NonCollinearRaa CollinearSymmetry;
     A' ∈ a     [A'a] by fol H1 DintAOB BetweenLinear;
     D ∉ int_angle B O A'     [] by fol DintAOB H1 H2 InteriorsDisjointSupplement DisjointOneNotOther;
     fol Distinct DintAOB A'a DOB_ncol - AngleOrdering ∉;
@@ -835,7 +855,7 @@ let AlternateConverseCrossbar = theorem `;
 `;;
 
 let InteriorOpposite = theorem `;
-  ∀ A O B P p. P ∈ int_angle A O B  ⇒  Line p ∧ O ∈ p ∧ P ∈ p  
+  ∀ A O B P p. P ∈ int_angle A O B  ⇒  Line p ∧ O ∈ p ∧ P ∈ p
     ⇒  ¬(A,B same_side p)
 
   proof
@@ -848,7 +868,7 @@ let InteriorOpposite = theorem `;
 `;;
 
 let IntervalTransitivity = theorem `;
-  ∀ O P Q R m. Line m  ∧ O ∈ m  ⇒  P ∈ m ━ O ∧ Q ∈ m ━ O ∧ R ∈ m ━ O  ⇒ 
+  ∀ O P Q R m. Line m  ∧ O ∈ m  ⇒  P ∈ m ━ O ∧ Q ∈ m ━ O ∧ R ∈ m ━ O  ⇒
     O ∉ open (P,Q) ∧ O ∉ open (Q,R)  ⇒  O ∉ open (P,R)
 
   proof
@@ -909,11 +929,11 @@ let RayWellDefined = theorem `;
 `;;
 
 let OppositeRaysIntersect1pointHelp = theorem `;
-  ∀ A O B X. O ∈ open (A,B)  ∧  X ∈ ray O B ━ O  
+  ∀ A O B X. O ∈ open (A,B)  ∧  X ∈ ray O B ━ O
     ⇒  X ∉ ray O A  ∧  O ∈ open (X,A)
 
   proof
-    intro_TAC ∀ A O B X, H1 H2; 
+    intro_TAC ∀ A O B X, H1 H2;
     ¬(A = O) ∧ ¬(A = B) ∧ ¬(O = B) ∧ Collinear A O B     [AOB] by fol H1 B1';
     ¬(X = O) ∧ Collinear O B X ∧ O ∉ open (X,B)     [H2'] by fol H2 IN_DELETE IN_Ray;
     consider m such that
@@ -929,7 +949,7 @@ let OppositeRaysIntersect1point = theorem `;
   ∀ A O B. O ∈ open (A,B)  ⇒  ray O A ∩ ray O B  =  {O}
 
   proof
-    intro_TAC ∀ A O B, H1; 
+    intro_TAC ∀ A O B, H1;
     ¬(A = O) ∧ ¬(O = B)     [] by fol H1 B1';
     {O}  ⊂  ray O A ∩ ray O B     [Osubset_rOA] by fol - OriginInRay IN_INTER SING_SUBSET;
     ∀ X. ¬(X = O)  ∧  X ∈ ray O B  ⇒  X ∉ ray O A     [] by fol IN_DELETE H1 OppositeRaysIntersect1pointHelp;
@@ -945,6 +965,14 @@ let IntervalRay = theorem `;
   qed;
 `;;
 
+let Reverse4Order = theorem `;
+  ∀ A B C D. ordered A B C D  ⇒  ordered D C B A
+  proof
+    REWRITE_TAC Ordered_DEF;
+    fol B1';
+  qed;
+`;;
+
 let TransitivityBetweennessHelp = theorem `;
   ∀ A B C D. B ∈ open (A,C)  ∧  C ∈ open (B,D)
    ⇒  B ∈ open (A,D)
@@ -953,7 +981,7 @@ let TransitivityBetweennessHelp = theorem `;
     intro_TAC ∀ A B C D, H1;
     D ∈ ray B C ━ B     [] by fol H1 IntervalRayEZ;
     fol H1 - OppositeRaysIntersect1pointHelp B1';
-  qed; 
+  qed;
 `;;
 
 let TransitivityBetweenness = theorem `;
@@ -1009,7 +1037,7 @@ let Interval2sides2aLineHelp = theorem `;
 `;;
 
 let Interval2sides2aLine = theorem `;
-  ∀ A B C X. Collinear A B C  
+  ∀ A B C X. Collinear A B C
     ⇒  X ∉ open (A,B)  ∨  X ∉ open (A,C)  ∨  X ∉ open (B,C)
 
   proof
@@ -1026,8 +1054,8 @@ let Interval2sides2aLine = theorem `;
 `;;
 
 let TwosidesTriangle2aLine = theorem `;
-  ∀ A B C Y l m. Line l ∧ ¬Collinear A B C  ⇒  A ∉ l ∧ B ∉ l ∧ C ∉ l  ⇒ 
-    Line m ∧ A ∈ m ∧ C ∈ m  ⇒  Y ∈ l ∧ Y ∈ m  ⇒  
+  ∀ A B C Y l m. Line l ∧ ¬Collinear A B C  ⇒  A ∉ l ∧ B ∉ l ∧ C ∉ l  ⇒
+    Line m ∧ A ∈ m ∧ C ∈ m  ⇒  Y ∈ l ∧ Y ∈ m  ⇒
     ¬(A,B same_side l) ∧ ¬(B,C same_side l)  ⇒  A,C same_side l
 
   proof
@@ -1104,21 +1132,21 @@ let AtMost2Sides = theorem `;
       case_split Empty | nonEmpty by fol -;
       suppose m ∩ l = ∅;
         A,C same_side l     [] by set m_line H1 - BetweenLinear SameSide_DEF;
-  	fol -;
+        fol -;
       end;
       suppose ¬(m ∩ l = ∅);
         consider Y such that
         Y ∈ l ∧ Y ∈ m     [Ylm] by fol - IN_INTER MEMBER_NOT_EMPTY;
         case_split nonCol | ABCcol by fol -;
         suppose ¬Collinear A B C;
-	  fol H1 - H2 m_line Ylm TwosidesTriangle2aLine;
+          fol H1 - H2 m_line Ylm TwosidesTriangle2aLine;
         end;
         suppose Collinear A B C;
           B ∈ m     [Bm] by fol - m_line notAC I1 Collinear_DEF;
           ¬(Y = A) ∧ ¬(Y = B) ∧ ¬(Y = C)     [YnotABC] by fol Ylm H2 ∉;
           Y ∉ open (A,B)  ∨  Y ∉ open (A,C)  ∨  Y ∉ open (B,C)     [] by fol ABCcol Interval2sides2aLine;
           A ∈ ray Y B ━ Y  ∨  A ∈ ray Y C ━ Y  ∨  B ∈ ray Y C ━ Y     [] by fol YnotABC m_line Bm Ylm Collinear_DEF - IN_Ray IN_DELETE;
-	  fol H1 Ylm H2 - RaySameSide;
+          fol H1 Ylm H2 - RaySameSide;
         end;
       end;
     end;
@@ -1126,7 +1154,7 @@ let AtMost2Sides = theorem `;
 `;;
 
 let FourPointsOrder = theorem `;
-  ∀ A B C X l.  Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ X ∈ l  ⇒  
+  ∀ A B C X l.  Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ X ∈ l  ⇒
     ¬(X = A) ∧ ¬(X = B) ∧ ¬(X = C)  ⇒  B ∈ open (A,C)
    ⇒  ordered X A B C  ∨  ordered A X B C  ∨
        ordered A B X C  ∨  ordered A B C X
@@ -1144,7 +1172,7 @@ let FourPointsOrder = theorem `;
       end;
       suppose B ∈ open (A,X);
         B ∉ open (C,X)     [] by fol ACXcol H3 - Interval2sides2aLine ∉;
-	fol H2 ABCdistinct ACXcol - B3' B1' ∉;
+        fol H2 ABCdistinct ACXcol - B3' B1' ∉;
       end;
     qed;
     fol - H3 B1' TransitivityBetweenness TransitivityBetweennessVariant Reverse4Order;
@@ -1152,7 +1180,7 @@ let FourPointsOrder = theorem `;
 `;;
 
 let HilbertAxiomRedundantByMoore = theorem `;
-  ∀ A B C D l.  Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ D ∈ l  ⇒  
+  ∀ A B C D l.  Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ D ∈ l  ⇒
     ¬(A = B) ∧ ¬(A = C) ∧ ¬(A = D) ∧ ¬(B = C) ∧ ¬(B = D) ∧ ¬(C = D)
    ⇒  ordered D A B C ∨ ordered A D B C ∨ ordered A B D C ∨ ordered A B C D ∨
        ordered D A C B ∨ ordered A D C B ∨ ordered A C D B ∨ ordered A C B D ∨
@@ -1187,7 +1215,7 @@ let InteriorTransitivity = theorem `;
 `;;
 
 let HalfPlaneConvexNonempty = theorem `;
-  ∀ l H A.  Line l ∧ A ∉ l  ⇒  H = {X | X ∉ l  ∧  X,A same_side l} 
+  ∀ l H A.  Line l ∧ A ∉ l  ⇒  H = {X | X ∉ l  ∧  X,A same_side l}
     ⇒  ¬(H = ∅)  ∧  H ⊂ complement l  ∧  Convex H
 
   proof
@@ -1226,13 +1254,13 @@ let PlaneSeparation = theorem `;
     E ∈ l  ∧  ¬(A = E)     [El] by fol l_line I2 - ∉;
     consider B such that
     E ∈ open (A,B)  ∧  ¬(E = B)  ∧  Collinear A E B     [AEB] by fol - B2' B1';
-    B ∉ l     [notBl] by fol l_line El - I1 Collinear_DEF notAl ∉;
+    B ∉ l     [notBl] by fol - l_line El ∉ notAl NonCollinearRaa CollinearSymmetry;
     ¬(A,B same_side l)     [Ansim_lB] by fol l_line El AEB SameSide_DEF;
     consider H1 H2 such that
-    H1 = {X | X ∉ l  ∧  X,A same_side l}  ∧  
+    H1 = {X | X ∉ l  ∧  X,A same_side l}  ∧
     H2 = {X | X ∉ l  ∧  X,B same_side l}     [H12sets] by fol;
-    ∀ X. (X ∈ H1  ⇔  X ∉ l ∧ X,A same_side l) ∧ 
-      	 (X ∈ H2  ⇔  X ∉ l ∧ X,B same_side l)     [H12def] by set -;
+    ∀ X. (X ∈ H1  ⇔  X ∉ l ∧ X,A same_side l) ∧
+         (X ∈ H2  ⇔  X ∉ l ∧ X,B same_side l)     [H12def] by set -;
     ∀ X. X ∈ H1  ⇔  X ∉ l  ∧  X,A same_side l     [H1def] by set H12sets;
     ∀ X. X ∈ H2  ⇔  X ∉ l  ∧  X,B same_side l     [H2def] by set H12sets;
     H1 ∩ H2 = ∅     [H12disjoint]
@@ -1243,7 +1271,7 @@ let PlaneSeparation = theorem `;
       V ∉ l  ∧  V,A same_side l  ∧  V ∉ l  ∧  V,B same_side l     [] by fol - H12def;
       A,B same_side l     [] by fol l_line - notAl notBl SameSideSymmetric SameSideTransitive;
       fol - Ansim_lB;
-    qed; 
+    qed;
     ¬(H1 = ∅) ∧ ¬(H2 = ∅) ∧ H1 ⊂ complement l ∧ H2 ⊂ complement l ∧ Convex H1 ∧ Convex H2     [H12convex_nonempty] by fol l_line notAl notBl H12sets HalfPlaneConvexNonempty;
     H1 ∪ H2  ⊂  complement l     [H12sub] by fol H12convex_nonempty UNION_SUBSET;
     ∀ C. C ∈ complement l  ⇒  C ∈ H1 ∪ H2     []
@@ -1253,7 +1281,7 @@ let PlaneSeparation = theorem `;
       C,A same_side l  ∨  C,B same_side l     [] by fol l_line notAl notBl - Ansim_lB AtMost2Sides;
       C ∈ H1  ∨  C ∈ H2     [] by fol notCl - H12def;
       fol - IN_UNION;
-    qed; 
+    qed;
     complement l  ⊂  H1 ∪ H2     [] by fol - SUBSET;
     complement l  =  H1 ∪ H2     [compl_H1unionH2] by fol H12sub - SUBSET_ANTISYM;
     ∀ P Q. P ∈ H1 ∧ Q ∈ H2  ⇒  ¬(P,Q same_side l)     [opp_sides]
@@ -1307,7 +1335,7 @@ let EasyEmptyIntersectionsTetralateral = theorem `;
 `;;
 
 let SegmentSameSideOppositeLine = theorem `;
-  ∀ A B C D a c.  Quadrilateral A B C D  ⇒  
+  ∀ A B C D a c.  Quadrilateral A B C D  ⇒
     Line a ∧ A ∈ a ∧ B ∈ a  ⇒  Line c ∧ C ∈ c ∧ D ∈ c
     ⇒  A,B same_side c  ∨  C,D same_side a
 
@@ -1326,7 +1354,7 @@ let SegmentSameSideOppositeLine = theorem `;
 `;;
 
 let ConvexImpliesQuad = theorem `;
-  ∀ A B C D. Tetralateral A B C D  ⇒  
+  ∀ A B C D. Tetralateral A B C D  ⇒
     C ∈ int_angle D A B  ∧  D ∈ int_angle A B C
     ⇒  Quadrilateral A B C D
 
@@ -1348,17 +1376,18 @@ let ConvexImpliesQuad = theorem `;
 `;;
 
 let DiagonalsIntersectImpliesConvexQuad = theorem `;
-  ∀ A B C D G. ¬Collinear B C D  ⇒  
+  ∀ A B C D G. ¬Collinear B C D  ⇒
     G ∈ open (A,C)  ∧  G ∈ open (B,D)
     ⇒  ConvexQuadrilateral A B C D
 
   proof
     intro_TAC ∀ A B C D G, BCDncol, DiagInt;
     ¬(B = C) ∧ ¬(B = D) ∧ ¬(C = D) ∧ ¬(C = A) ∧ ¬(A = G) ∧ ¬(D = G) ∧ ¬(B = G)     [Distinct] by fol BCDncol NonCollinearImpliesDistinct DiagInt B1';
-    Collinear A G C ∧ Collinear B G D     [AGCcol] by fol DiagInt B1';
-    ¬Collinear C D A     [CDAncol] by fol BCDncol CollinearSymmetry Distinct AGCcol  NoncollinearityExtendsToLine;
-    ¬Collinear D A B     [DABncol] by fol - CollinearSymmetry Distinct AGCcol NoncollinearityExtendsToLine;
-    ¬Collinear A B C     [ABCncol] by fol - CollinearSymmetry Distinct AGCcol NoncollinearityExtendsToLine;
+    Collinear A G C ∧ Collinear B G D     [Gcols] by fol DiagInt B1';
+    ¬Collinear C D G ∧ ¬Collinear B C G     [Gncols] by fol BCDncol CollinearSymmetry Distinct Gcols  NoncollinearityExtendsToLine;
+    ¬Collinear C D A     [CDAncol] by fol - CollinearSymmetry Distinct Gcols  NoncollinearityExtendsToLine;
+    ¬Collinear A B C ∧ ¬Collinear D A G     [ABCncol] by fol Gncols - CollinearSymmetry Distinct Gcols NoncollinearityExtendsToLine;
+    ¬Collinear D A B     [DABncol] by fol - CollinearSymmetry Distinct Gcols NoncollinearityExtendsToLine;
     ¬(A = B) ∧ ¬(A = D)     [] by fol DABncol NonCollinearImpliesDistinct;
     Tetralateral A B C D     [TetraABCD] by fol Distinct - BCDncol CDAncol DABncol ABCncol Tetralateral_DEF;
     A ∈ ray C G ━ C  ∧  B ∈ ray D G ━ D  ∧  C ∈ ray A G ━ A  ∧  D ∈ ray B G ━ B     [ArCG] by fol DiagInt B1' IntervalRayEZ;
@@ -1369,7 +1398,7 @@ let DiagonalsIntersectImpliesConvexQuad = theorem `;
 `;;
 
 let DoubleNotSimImpliesDiagonalsIntersect = theorem `;
-  ∀ A B C D l m.  Line l ∧ A ∈ l ∧ C ∈ l  ⇒  Line m ∧ B ∈ m ∧ D ∈ m  ⇒ 
+  ∀ A B C D l m.  Line l ∧ A ∈ l ∧ C ∈ l  ⇒  Line m ∧ B ∈ m ∧ D ∈ m  ⇒
     Tetralateral A B C D  ⇒  ¬(B,D same_side l)  ⇒  ¬(A,C same_side m)
     ⇒  (∃ G. G ∈ open (A,C) ∩ open (B,D)) ∧ ConvexQuadrilateral A B C D
 
@@ -1388,8 +1417,8 @@ let DoubleNotSimImpliesDiagonalsIntersect = theorem `;
 `;;
 
 let ConvexQuadImpliesDiagonalsIntersect = theorem `;
-  ∀ A B C D l m.  Line l ∧ A ∈ l ∧ C ∈ l  ⇒  Line m ∧ B ∈ m ∧ D ∈ m  ⇒ 
-    ConvexQuadrilateral A B C D 
+  ∀ A B C D l m.  Line l ∧ A ∈ l ∧ C ∈ l  ⇒  Line m ∧ B ∈ m ∧ D ∈ m  ⇒
+    ConvexQuadrilateral A B C D
     ⇒  ¬(B,D same_side l) ∧ ¬(A,C same_side m) ∧
        (∃ G. G ∈ open (A,C) ∩ open (B,D)) ∧ ¬Quadrilateral A B D C
 
@@ -1441,7 +1470,7 @@ let InteriorTriangleSymmetry = theorem `;
 `;;
 
 let FourChoicesTetralateral = theorem `;
-  ∀ A B C D a. Tetralateral A B C D  ⇒  
+  ∀ A B C D a. Tetralateral A B C D  ⇒
     Line a ∧ A ∈ a ∧ B ∈ a  ⇒  C,D same_side a
     ⇒  ConvexQuadrilateral A B C D  ∨  ConvexQuadrilateral A B D C  ∨
        D ∈ int_triangle A B C  ∨  C ∈ int_triangle D A B
@@ -1466,17 +1495,17 @@ let FourChoicesTetralateral = theorem `;
 let QuadrilateralSymmetry = theorem `;
   ∀ A B C D. Quadrilateral A B C D  ⇒
     Quadrilateral B C D A  ∧  Quadrilateral C D A B  ∧  Quadrilateral D A B C
-  proof 
+  proof
     fol Quadrilateral_DEF INTER_COMM TetralateralSymmetry Quadrilateral_DEF;
   qed;
 `;;
 
 let FiveChoicesQuadrilateral = theorem `;
-  ∀ A B C D l m.  Quadrilateral A B C D  ⇒ 
+  ∀ A B C D l m.  Quadrilateral A B C D  ⇒
     Line l ∧ A ∈ l ∧ C ∈ l  ∧  Line m ∧ B ∈ m ∧ D ∈ m
     ⇒  (ConvexQuadrilateral A B C D  ∨  A ∈ int_triangle B C D  ∨
-       B ∈ int_triangle C D A  ∨  C ∈ int_triangle D A B  ∨  
-       D ∈ int_triangle A B C)  ∧  
+       B ∈ int_triangle C D A  ∨  C ∈ int_triangle D A B  ∨
+       D ∈ int_triangle A B C)  ∧
        (¬(B,D same_side l) ∨ ¬(A,C same_side m))
 
   proof
@@ -1489,7 +1518,7 @@ let FiveChoicesQuadrilateral = theorem `;
     Quadrilateral C D A B  ∧  Tetralateral C D A B     [tetraCDAB] by fol H1 QuadrilateralSymmetry Quadrilateral_DEF;
     ¬ConvexQuadrilateral A B D C  ∧  ¬ConvexQuadrilateral C D B A     [notconvquad] by fol Distinct I1 H1 - ConvexQuadImpliesDiagonalsIntersect;
     ConvexQuadrilateral A B C D  ∨  A ∈ int_triangle B C D  ∨
-    B ∈ int_triangle C D A  ∨  C ∈ int_triangle D A B  ∨  
+    B ∈ int_triangle C D A  ∨  C ∈ int_triangle D A B  ∨
     D ∈ int_triangle A B C     [5choices]
     proof
       A,B same_side c  ∨  C,D same_side a     [] by fol H1 ac_line SegmentSameSideOppositeLine;
@@ -1498,9 +1527,9 @@ let FiveChoicesQuadrilateral = theorem `;
         fol H1Tetra ac_line - notconvquad FourChoicesTetralateral;
       end;
       suppose A,B same_side c;
-        ConvexQuadrilateral C D A B  ∨  B ∈ int_triangle C D A  ∨  
-	A ∈ int_triangle B C D     [X1] by fol tetraCDAB ac_line - notconvquad FourChoicesTetralateral;
-	fol - QuadrilateralSymmetry ConvexQuad_DEF;
+        ConvexQuadrilateral C D A B  ∨  B ∈ int_triangle C D A  ∨
+        A ∈ int_triangle B C D     [X1] by fol tetraCDAB ac_line - notconvquad FourChoicesTetralateral;
+        fol - QuadrilateralSymmetry ConvexQuad_DEF;
       end;
     qed;
     ¬(B,D same_side l) ∨ ¬(A,C same_side m)     [] by fol - lm_line ConvexQuadImpliesDiagonalsIntersect IN_InteriorTriangle InteriorAngleSymmetry InteriorOpposite;
@@ -1510,7 +1539,7 @@ let FiveChoicesQuadrilateral = theorem `;
 
 let IntervalSymmetry = theorem `;
   ∀ A B. open (A,B) = open (B,A)
-  proof 
+  proof
     fol B1' EXTENSION;
   qed;
 `;;
@@ -1559,7 +1588,7 @@ let OrderedCongruentSegments = theorem `;
 `;;
 
 let SegmentSubtraction = theorem `;
-  ∀ A B C A' B' C'. B ∈ open (A,C)  ∧  B' ∈ open (A',C')  ⇒  
+  ∀ A B C A' B' C'. B ∈ open (A,C)  ∧  B' ∈ open (A',C')  ⇒
     seg A B ≡ seg A' B'  ⇒  seg A C ≡ seg A' C'
     ⇒  seg B C ≡ seg B' C'
 
@@ -1569,7 +1598,8 @@ let SegmentSubtraction = theorem `;
     consider Q such that
     B ∈ open (A,Q)  ∧  seg B Q ≡ seg B' C'     [defQ] by fol - C1OppositeRay;
     seg A Q ≡ seg A' C'     [AQ_A'C'] by fol H1 H2 - C3;
-    ¬(A = Q)  ∧  Collinear A B Q  ∧  A ∉ open (C,B)  ∧  A ∉ open (Q,B)     [] by SIMP_TAC defQ B1' ∉ THEN fol defQ B1' H1 B3';
+    ¬(A = Q)  ∧  Collinear A B Q  ∧  A ∉ open (C,B)  ∧  A ∉ open (Q,B)     []
+    proof SIMP_TAC defQ B1' ∉; fol defQ B1' H1 B3'; qed;
     C ∈ ray A B ━ A  ∧  Q ∈ ray A B ━ A     [] by fol Distinct - IN_Ray IN_DELETE;
     C = Q     [] by fol Distinct - AQ_A'C' H3 C1;
     fol defQ -;
@@ -1700,7 +1730,7 @@ let C4Uniqueness = theorem `;
 
 let AngleSymmetry = theorem `;
   ∀ A O B. ∡ A O B = ∡ B O A
-  proof 
+  proof
     fol Angle_DEF UNION_COMM; qed;
 `;;
 
@@ -1721,7 +1751,7 @@ let TriangleCongSymmetry = theorem `;
 `;;
 
 let SAS = theorem `;
-  ∀ A B C A' B' C'. ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒ 
+  ∀ A B C A' B' C'. ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒
     seg B A ≡ seg B' A'  ∧  seg B C ≡ seg B' C'  ⇒ ∡ A B C ≡ ∡ A' B' C'
     ⇒  A,B,C ≅ A',B',C'
 
@@ -1736,7 +1766,7 @@ let SAS = theorem `;
     consider Y such that
     Y ∈ ray A C ━ A  ∧  seg A Y ≡ seg A' C'     [YrAC] by fol Distinct SEGMENT C1;
     Y ∉ c  ∧  Y,C same_side c     [Ysim_cC] by fol c_line notCc - RaySameSide;
-    ¬Collinear Y A B     [YABncol] by fol c_line - Distinct I1 Collinear_DEF ∉;
+    ¬Collinear Y A B     [YABncol] by fol Distinct c_line - NonCollinearRaa CollinearSymmetry;
     ray A Y = ray A C  ∧  ∡ Y A B = ∡ C A B     [] by fol Distinct YrAC RayWellDefined Angle_DEF;
     ∡ Y A B ≡ ∡ C' A' B'     [] by fol BACeq - AngleSymmetry;
     ∡ A B Y ≡ ∡ A' B' C'     [ABYeq] by fol YABncol H1 CollinearSymmetry H2 SegmentSymmetry YrAC - C6;
@@ -1744,30 +1774,20 @@ let SAS = theorem `;
     ∡ A B Y ≡ ∡ A B C     [ABYeqABC] by fol - ABYeq - H3 C5Symmetric C5Transitive;
     ray B C = ray B Y  ∧  ¬(Y = B)  ∧  Y ∈ ray B C     [] by fol c_line Distinct notCc Ysim_cC ABYeqABC C4Uniqueness ∉ - EndpointInRay;
     Collinear B C Y  ∧  Collinear A C Y     [ABCYcol] by fol - YrAC IN_DELETE IN_Ray;
-    C = Y     [] 
-    proof
-      raa ¬(C = Y)     [notCY] by fol -;
-      consider l such that
-      Line l ∧ C ∈ l ∧ Y ∈ l     [l_line] by fol - I1;
-      B ∈ l ∧ A ∈ l     [BAl] by fol - ABCYcol Collinear_DEF notCY I1;
-      fol - l_line Collinear_DEF H1;
-    qed;
+    C = Y     [] by fol H1 ABCYcol TwoSidesTriangle1Intersection;
     seg A C ≡ seg A' C'     [] by fol - YrAC;
     fol H1 H2 SegmentSymmetry - H3 BCAeq BACeq AngleSymmetry TriangleCong_DEF;
   qed;
 `;;
-(* 290723 on C = Y near the bottom when it read 
-    C = Y     [] by fol - I1 Collinear_DEF H1;
-*)
 
 let ASA = theorem `;
-  ∀ A B C A' B' C'. ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒ 
+  ∀ A B C A' B' C'. ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒
     seg A C ≡ seg A' C'  ⇒  ∡ C A B ≡ ∡ C' A' B'  ∧  ∡ B C A ≡ ∡ B' C' A'
     ⇒  A,B,C ≅ A',B',C'
 
   proof
     intro_TAC ∀ A B C A' B' C', H1, H2, H3;
-    ¬(A = B) ∧ ¬(A = C) ∧ ¬(B = C) ∧ ¬(A' = B') ∧ ¬(A' = C') ∧ ¬(B' = C') ∧ 
+    ¬(A = B) ∧ ¬(A = C) ∧ ¬(B = C) ∧ ¬(A' = B') ∧ ¬(A' = C') ∧ ¬(B' = C') ∧
     Segment (seg C' B')     [Distinct] by fol H1 NonCollinearImpliesDistinct SEGMENT;
     consider D such that
     D ∈ ray C B ━ C  ∧  seg C D ≡ seg C' B'  ∧  ¬(D = C)     [DrCB] by fol - C1 IN_DELETE;
@@ -1784,24 +1804,15 @@ let ASA = theorem `;
     ∡ C A D ≡ ∡ C A B     [] by fol DCAncol - H3 C5Symmetric C5Transitive;
     ray A B = ray A D  ∧  D ∈ ray A B     [] by fol b_line Distinct notBb Dsim_bB - C4Uniqueness notBb EndpointInRay;
     Collinear A B D     [ABDcol] by fol - IN_Ray;
-    D = B     [] 
-    proof
-      raa ¬(D = B)     [notDB] by fol -;
-      consider l such that
-      Line l ∧ D ∈ l ∧ B ∈ l     [l_line] by fol - I1;
-      C ∈ l ∧ A ∈ l     [BAl] by fol - CBDcol ABDcol Collinear_DEF notDB I1;
-      fol - l_line Collinear_DEF H1;
-    qed;
+    D = B     [] by fol H1 CBDcol ABDcol CollinearSymmetry TwoSidesTriangle1Intersection;
     seg C B ≡ seg C' B'     [] by fol - DrCB;
     B,C,A ≅ B',C',A'     [] by fol H1 CollinearSymmetry - H2 SegmentSymmetry H3 SAS;
     fol - TriangleCongSymmetry;
   qed;
 `;;
-(* 366353 with instead, near end, 
-    D = B     [] by fol I1 - Collinear_DEF CBDcol H1; *)
 
 let AngleSubtraction = theorem `;
-  ∀ A O B A' O' B' G G'. G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'  ⇒ 
+  ∀ A O B A' O' B' G G'. G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'  ⇒
     ∡ A O B ≡ ∡ A' O' B'  ∧  ∡ A O G ≡ ∡ A' O' G'
     ⇒  ∡ G O B ≡ ∡ G' O' B'
 
@@ -1868,7 +1879,7 @@ let OrderedCongruentAngles = theorem `;
 `;;
 
 let AngleAddition = theorem `;
-  ∀ A O B A' O' B' G G'.  G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'  ⇒ 
+  ∀ A O B A' O' B' G G'.  G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'  ⇒
     ∡ A O G ≡ ∡ A' O' G'  ∧  ∡ G O B ≡ ∡ G' O' B'
    ⇒  ∡ A O B ≡ ∡ A' O' B'
 
@@ -1887,7 +1898,7 @@ let AngleAddition = theorem `;
     ∃! r. Ray r ∧ ∃ X. ¬(O = X) ∧ r = ray O X ∧ X ∉ a ∧ X,G same_side a ∧ ∡ A O X ≡ ∡ A' O' B'     [] by hol_by - Distinct a_line H1' C4;
     consider X such that
     X ∉ a ∧ X,G same_side a ∧ ∡ A O X ≡ ∡ A' O' B'     [Xexists] by fol -;
-    ¬Collinear A O X     [AOXncol] by fol - a_line Distinct I1 Collinear_DEF ∉;
+    ¬Collinear A O X     [AOXncol] by fol Distinct a_line Xexists NonCollinearRaa CollinearSymmetry;
     ∡ A' O' B' ≡ ∡ A O X     [] by fol - AOBncol ANGLE Xexists C5Symmetric;
     consider Y such that
     Y ∈ int_angle A O X  ∧  ∡ A' O' G' ≡ ∡ A O Y     [YintAOX] by fol AOXncol - H1 OrderedCongruentAngles;
@@ -1911,10 +1922,6 @@ let AngleAddition = theorem `;
     fol - Xexists Angle_DEF;
   qed;
 `;;
-
-(* 232956 for 
-    ¬Collinear A O X     [AOXncol] by fol - a_line Distinct I1 Collinear_DEF ∉;
-*)
 
 let AngleOrderingUse = theorem `;
   ∀ A O B α.  Angle α  ∧  ¬Collinear A O B  ⇒  α <_ang ∡ A O B
@@ -2123,7 +2130,7 @@ let SupplementsCongAnglesCong = theorem `;
 
 let SupplementUnique = theorem `;
   ∀ α β β'.  α suppl β  ∧   α suppl β'  ⇒  β ≡ β'
-  proof 
+  proof
     fol SupplementaryAngles_DEF ANGLE C5Reflexive SupplementsCongAnglesCong;
   qed;
 `;;
@@ -2143,7 +2150,7 @@ let CongRightImpliesRight = theorem `;
 `;;
 
 let RightAnglesCongruentHelp = theorem `;
-  ∀ A O B A' P a.  ¬Collinear A O B  ∧  O ∈ open (A,A')  ⇒  
+  ∀ A O B A' P a.  ¬Collinear A O B  ∧  O ∈ open (A,A')  ⇒
     Right (∡ A O B)  ∧  Right (∡ A O P)
     ⇒  P ∉ int_angle A O B
 
@@ -2185,7 +2192,7 @@ let RightAnglesCongruent = theorem `;
     consider P such that
     ¬(O = P) ∧ P ∉ a ∧ P,B same_side a ∧ ∡ A O P ≡ β     [defP] by fol -;
     O ∉ open (P,B)     [notPOB] by fol a_line - SameSide_DEF ∉;
-    ¬Collinear A O P     [AOPncol] by fol a_line Distinct I1 defP Collinear_DEF ∉;
+    ¬Collinear A O P     [AOPncol] by fol a_line Distinct defP NonCollinearRaa CollinearSymmetry;
     Right (∡ A O P)     [AOPright] by fol - ANGLE H1 defP CongRightImpliesRight;
     P ∉ int_angle A O B  ∧  B ∉ int_angle A O P     [] by fol def_α H1 - AOPncol AOPright RightAnglesCongruentHelp;
     Collinear P O B     [] by fol Distinct a_line defP notBa - AngleOrdering InteriorAngleSymmetry ∉;
@@ -2196,8 +2203,8 @@ let RightAnglesCongruent = theorem `;
 `;;
 
 let OppositeRightAnglesLinear = theorem `;
-  ∀ A B O H h.  ¬Collinear A O H ∧ ¬Collinear H O B  ⇒  
-    Right (∡ A O H) ∧ Right (∡ H O B)  ⇒  
+  ∀ A B O H h.  ¬Collinear A O H ∧ ¬Collinear H O B  ⇒
+    Right (∡ A O H) ∧ Right (∡ H O B)  ⇒
     Line h ∧ O ∈ h ∧ H ∈ h  ∧  ¬(A,B same_side h)
     ⇒  O ∈ open (A,B)
 
@@ -2223,7 +2230,7 @@ let OppositeRightAnglesLinear = theorem `;
 `;;
 
 let RightImpliesSupplRight = theorem `;
-  ∀ A O B A'.  ¬Collinear A O B  ∧  O ∈ open (A,A')  ∧  Right (∡ A O B) 
+  ∀ A O B A'.  ¬Collinear A O B  ∧  O ∈ open (A,A')  ∧  Right (∡ A O B)
     ⇒  Right (∡ B O A')
 
   proof
@@ -2251,7 +2258,7 @@ let IsoscelesCongBaseAngles = theorem `;
 `;;
 
 let C4withC1 = theorem `;
-  ∀ α l O A Y P Q.  Angle α ∧ ¬(O = A) ∧ ¬(P = Q)  ⇒  
+  ∀ α l O A Y P Q.  Angle α ∧ ¬(O = A) ∧ ¬(P = Q)  ⇒
     Line l ∧ O ∈ l ∧ A ∈ l ∧ Y ∉ l
     ⇒  ∃ N. ¬(O = N) ∧ N ∉ l ∧ N,Y same_side l ∧ seg O N ≡ seg P Q ∧ ∡ A O N ≡ α
 
@@ -2265,18 +2272,16 @@ let C4withC1 = theorem `;
     ¬(O = N)     [notON] by fol - IN_DELETE;
     N ∉ l ∧ N,B same_side l     [notNl] by fol l_line Bexists Nexists RaySameSide;
     N,Y same_side l     [Nsim_lY] by fol l_line - Bexists SameSideTransitive;
-    ray O N = ray O B  ∧  ∡ A O N ≡ α     [] by fol Bexists Nexists RayWellDefined Angle_DEF;
+    ray O N = ray O B     [] by fol Bexists Nexists RayWellDefined;
+    ∡ A O N ≡ α     [] by fol - Bexists Angle_DEF;
     fol notON notNl Nsim_lY Nexists -;
   qed;
 `;;
-(* 156282 for 
-    ray O N = ray O B  ∧  ∡ A O N ≡ α     [] by fol Bexists Nexists RayWellDefined Angle_DEF;
-*)
 
 let C4OppositeSide = theorem `;
-  ∀ α l O A Z P Q.  Angle α ∧ ¬(O = A) ∧ ¬(P = Q)  ⇒ 
+  ∀ α l O A Z P Q.  Angle α ∧ ¬(O = A) ∧ ¬(P = Q)  ⇒
     Line l ∧ O ∈ l ∧ A ∈ l ∧ Z ∉ l
-    ⇒  ∃ N. ¬(O = N) ∧ N ∉ l ∧ ¬(Z,N same_side l) ∧ 
+    ⇒  ∃ N. ¬(O = N) ∧ N ∉ l ∧ ¬(Z,N same_side l) ∧
     seg O N ≡ seg P Q ∧ ∡ A O N ≡ α
 
   proof
@@ -2284,8 +2289,8 @@ let C4OppositeSide = theorem `;
     ¬(Z = O)     [] by fol l_line ∉;
     consider Y such that
     O ∈ open (Z,Y)     [ZOY] by fol - B2';
-    ¬(O = Y) ∧ Collinear Z O Y     [] by fol - B1';
-    Y ∉ l     [notYl] by fol l_line I1 - Collinear_DEF ∉;
+    ¬(O = Y) ∧ Collinear O Z Y     [notOY] by fol - B1' CollinearSymmetry;
+    Y ∉ l     [notYl] by fol notOY l_line NonCollinearRaa ∉;
     consider N such that
     ¬(O = N) ∧ N ∉ l  ∧  N,Y same_side l  ∧ seg O N ≡ seg P Q  ∧  ∡ A O N ≡ α     [Nexists] by hol_by H1 l_line notYl C4withC1;
     ¬(Z,Y same_side l)     [] by fol l_line ZOY SameSide_DEF;
@@ -2293,12 +2298,9 @@ let C4OppositeSide = theorem `;
     fol - Nexists;
   qed;
 `;;
-(* 146107 for 
-    Y ∉ l     [notYl] by fol l_line I1 - Collinear_DEF ∉;
-*)
 
 let SSS = theorem `;
-  ∀ A B C A' B' C'.  ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒ 
+  ∀ A B C A' B' C'.  ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒
     seg A B ≡ seg A' B'  ∧  seg A C ≡ seg A' C'  ∧  seg B C ≡ seg B' C'
     ⇒  A,B,C ≅ A',B',C'
 
@@ -2314,7 +2316,7 @@ let SSS = theorem `;
     ¬(A = N) ∧ N ∉ h ∧ ¬(B,N same_side h) ∧ seg A N ≡ seg A' B'  ∧  ∡ C A N ≡ ∡ C' A' B'     [Nexists] by hol_by - Distinct h_line notBh C4OppositeSide;
     ¬(C = N)     [] by fol h_line Nexists ∉;
     Segment (seg A N) ∧ Segment (seg C N)     [segN] by fol Nexists - SEGMENT;
-    ¬Collinear A N C     [ANCncol] by fol h_line Distinct I1 Collinear_DEF Nexists ∉;
+    ¬Collinear A N C     [ANCncol] by fol Distinct h_line Nexists NonCollinearRaa;
     Angle (∡ A B C) ∧ Angle (∡ A' B' C') ∧ Angle (∡ A N C)     [angles] by fol H1 - ANGLE;
     seg A B ≡ seg A N     [ABeqAN] by fol segments segN Nexists H2 C2Symmetric C2Transitive;
     C,A,N ≅ C',A',B'     [] by fol ANCncol H1 CollinearSymmetry H2 Nexists SAS;
@@ -2350,29 +2352,29 @@ let SSS = theorem `;
       case_split GA | GC | AGCdistinct     by fol -;
       suppose G = A;
         ¬(G = C)     [] by fol - Distinct;
-	fol - GBCeqGNC GA;
+        fol - GBCeqGNC GA;
       end;
       suppose G = C;
         ¬(G = A)     [] by fol - Distinct;
-	fol - ABGeqANG GC;
+        fol - ABGeqANG GC;
       end;
       suppose ¬(G = A) ∧ ¬(G = C);
         ∡ A B G ≡ ∡ A N G  ∧  ∡ G B C ≡ ∡ G N C     [Gequivs] by fol - ABGeqANG GBCeqGNC;
-        ¬Collinear G B C ∧ ¬Collinear G N C ∧ ¬Collinear G B A ∧ ¬Collinear G N A     [Gncols] by fol h_line BGN AGCdistinct I1 Collinear_DEF notBh Nexists ∉;
+        ¬Collinear G B C ∧ ¬Collinear G N C ∧ ¬Collinear G B A ∧ ¬Collinear G N A     [Gncols] by fol AGCdistinct h_line BGN notBh Nexists NonCollinearRaa;
         Collinear A G C     [] by fol h_line BGN Collinear_DEF;
         G ∈ open (A,C) ∨ C ∈ open (G,A) ∨ A ∈ open (C,G)     [] by fol Distinct AGCdistinct - B3';
         case_split AGC | GAC | CAG     by fol -;
         suppose G ∈ open (A,C);
           G ∈ int_angle A B C  ∧  G ∈ int_angle A N C     [] by fol H1 ANCncol - ConverseCrossbar;
-	  fol - Gequivs AngleAddition;
+          fol - Gequivs AngleAddition;
         end;
         suppose C ∈ open (G,A);
           C ∈ int_angle G B A  ∧  C ∈ int_angle G N A     [] by fol Gncols - B1' ConverseCrossbar;
-	  fol - Gequivs AngleSubtraction AngleSymmetry;
+          fol - Gequivs AngleSubtraction AngleSymmetry;
         end;
         suppose A ∈ open (C,G);
           A ∈ int_angle G B C  ∧  A ∈ int_angle G N C     [] by fol Gncols - B1' ConverseCrossbar;
-	  fol - Gequivs AngleSymmetry AngleSubtraction;
+          fol - Gequivs AngleSymmetry AngleSubtraction;
         end;
       end;
     qed;
@@ -2380,15 +2382,9 @@ let SSS = theorem `;
     fol H1 H2 SegmentSymmetry - SAS;
   qed;
 `;;
-(* 156736 on
-    ¬Collinear A N C     [ANCncol] by fol h_line Distinct I1 Collinear_DEF Nexists ∉;
-
-170283 etc on 
-        ¬Collinear G B C ∧ ¬Collinear G N C ∧ ¬Collinear G B A ∧ ¬Collinear G N A     [Gncols] by fol h_line BGN AGCdistinct I1 Collinear_DEF notBh Nexists ∉;
-*)
 
 let AngleBisector = theorem `;
-  ∀ A B C. ¬Collinear B A C  ⇒  ∃ F. F ∈ int_angle B A C  ∧  ∡ B A F ≡ ∡ F A C
+  ∀ A B C. ¬Collinear B A C  ⇒  ∃ M. M ∈ int_angle B A C  ∧  ∡ B A M ≡ ∡ M A C
 
   proof
     intro_TAC ∀ A B C, H1;
@@ -2407,30 +2403,30 @@ let AngleBisector = theorem `;
     consider h such that
     Line h ∧ D ∈ h ∧ E ∈ h     [h_line] by fol - I1;
     A ∉ h     [notAh] by fol - Collinear_DEF EADncol ∉;
-    consider F such that
-    ¬(D = F)  ∧  F ∉ h  ∧  ¬(A,F same_side h)  ∧  seg D F ≡ seg D A  ∧  ∡ E D F ≡ ∡ E D A     [Fexists] by hol_by angEDA notDE ABD' h_line - C4OppositeSide;
-    ¬(A = F)     [notAF] by fol h_line - SameSideReflexive;
-    ¬Collinear E D F ∧ ¬Collinear D E F ∧ ¬Collinear F E D     [EDFncol] by fol h_line notDE I1 Collinear_DEF Fexists ∉;
-    seg D E ≡ seg D E  ∧  seg F A ≡ seg F A     [FArefl] by fol notDE notAF SEGMENT C2Reflexive;
-    E,D,F ≅ E,D,A     [] by fol EDFncol angEDA - Fexists SAS;
-    seg F E ≡ seg A E ∧ ∡ F E D ≡ ∡ A E D     [FED≅] by fol - TriangleCong_DEF SegmentSymmetry;
-    ∡ E D A ≡ ∡ D E A  ∧  ∡ E D A ≡ ∡ E D F  ∧  ∡ D E A ≡ ∡ D E F    [EDAeqEDF] by fol EDFncol ANGLE angEDA Fexists FED≅ DEAeq C5Symmetric AngleSymmetry;
+    consider M such that
+    ¬(D = M)  ∧  M ∉ h  ∧  ¬(A,M same_side h)  ∧  seg D M ≡ seg D A  ∧  ∡ E D M ≡ ∡ E D A     [Mexists] by hol_by angEDA notDE ABD' h_line - C4OppositeSide;
+    ¬(A = M)     [notAM] by fol h_line - SameSideReflexive;
+    ¬Collinear E D M ∧ ¬Collinear D E M ∧ ¬Collinear M E D     [EDMncol] by fol  notDE h_line Mexists NonCollinearRaa CollinearSymmetry;
+    seg D E ≡ seg D E  ∧  seg M A ≡ seg M A     [MArefl] by fol notDE notAM SEGMENT C2Reflexive;
+    E,D,M ≅ E,D,A     [] by fol EDMncol angEDA - Mexists SAS;
+    seg M E ≡ seg A E ∧ ∡ M E D ≡ ∡ A E D ∧ ∡ D E M ≡ ∡ D E A     [MED≅] by fol - TriangleCong_DEF SegmentSymmetry AngleSymmetry;
+    ∡ E D A ≡ ∡ D E A  ∧  ∡ E D A ≡ ∡ E D M  ∧  ∡ D E A ≡ ∡ D E M    [EDAeqEDM] by fol EDMncol ANGLE angEDA Mexists MED≅ DEAeq C5Symmetric;
     consider G such that
-    G ∈ h ∧ G ∈ open (A,F)     [AGF] by fol Fexists h_line SameSide_DEF;
-    F ∈ ray A G ━ A     [FrAG] by fol - IntervalRayEZ;
+    G ∈ h ∧ G ∈ open (A,M)     [AGM] by fol Mexists h_line SameSide_DEF;
+    M ∈ ray A G ━ A     [MrAG] by fol - IntervalRayEZ;
     consider v such that
-    Line v ∧ A ∈ v ∧ F ∈ v ∧ G ∈ v     [v_line] by fol notAF I1 AGF BetweenLinear;
-    ¬(v = h)  ∧  v ∩ h = {G}     [vhG] by fol - notAh ∉ h_line AGF I1Uniqueness;
+    Line v ∧ A ∈ v ∧ M ∈ v ∧ G ∈ v     [v_line] by fol notAM I1 AGM BetweenLinear;
+    ¬(v = h)  ∧  v ∩ h = {G}     [vhG] by fol - notAh ∉ h_line AGM I1Uniqueness;
     D ∉ v     [notDv]
     proof
       raa ¬(D ∉ v)     [Con] by fol -;
       D ∈ v  ∧  D = G     [DG] by fol h_line - ∉ vhG IN_INTER IN_SING;
-      D ∈ open (A,F)     [] by fol DG AGF;
-      ∡ E D A suppl ∡ E D F     [EDAsuppl] by fol angEDA - SupplementaryAngles_DEF AngleSymmetry;
-      Right (∡ E D A)     [] by fol EDAsuppl EDAeqEDF RightAngle_DEF;
+      D ∈ open (A,M)     [] by fol DG AGM;
+      ∡ E D A suppl ∡ E D M     [EDAsuppl] by fol angEDA - SupplementaryAngles_DEF AngleSymmetry;
+      Right (∡ E D A)     [] by fol EDAsuppl EDAeqEDM RightAngle_DEF;
       Right (∡ A E D)     [RightAED] by fol angEDA ANGLE - DEAeq CongRightImpliesRight AngleSymmetry;
-      Right (∡ D E F)     [] by fol EDFncol ANGLE - FED≅ CongRightImpliesRight AngleSymmetry;
-      E ∈ open (A,F)     [] by fol EADncol EDFncol RightAED - h_line Fexists  OppositeRightAnglesLinear;
+      Right (∡ D E M)     [] by fol EDMncol ANGLE - MED≅ CongRightImpliesRight AngleSymmetry;
+      E ∈ open (A,M)     [] by fol EADncol EDMncol RightAED - h_line Mexists  OppositeRightAnglesLinear;
       E ∈ v  ∧  E = G     [] by fol v_line - BetweenLinear h_line vhG IN_INTER IN_SING;
       fol - DG notDE;
     qed;
@@ -2438,45 +2434,39 @@ let AngleBisector = theorem `;
     proof
       raa ¬(E ∉ v)     [Con] by fol -;
       E ∈ v  ∧  E = G     [EG] by fol h_line - ∉ vhG IN_INTER IN_SING;
-      E ∈ open (A,F)     [] by fol - AGF;
-      ∡ D E A suppl ∡ D E F     [DEAsuppl] by fol EADncol - SupplementaryAngles_DEF AngleSymmetry;
-      Right (∡ D E A)     [RightDEA] by fol DEAsuppl EDAeqEDF RightAngle_DEF;
-      Right (∡ E D A)     [RightEDA] by fol angEDA RightDEA EDAeqEDF CongRightImpliesRight;
-      Right (∡ E D F)     [] by fol EDFncol ANGLE RightEDA Fexists CongRightImpliesRight;
-      D ∈ open (A,F)     [] by fol angEDA EDFncol RightEDA AngleSymmetry - h_line Fexists  OppositeRightAnglesLinear;
+      E ∈ open (A,M)     [] by fol - AGM;
+      ∡ D E A suppl ∡ D E M     [DEAsuppl] by fol EADncol - SupplementaryAngles_DEF AngleSymmetry;
+      Right (∡ D E A)     [RightDEA] by fol DEAsuppl EDAeqEDM RightAngle_DEF;
+      Right (∡ E D A)     [RightEDA] by fol angEDA RightDEA EDAeqEDM CongRightImpliesRight;
+      Right (∡ E D M)     [] by fol EDMncol ANGLE RightEDA Mexists CongRightImpliesRight;
+      D ∈ open (A,M)     [] by fol angEDA EDMncol RightEDA AngleSymmetry - h_line Mexists  OppositeRightAnglesLinear;
       D ∈ v ∧ D = G     [] by fol v_line - BetweenLinear h_line vhG IN_INTER IN_SING;
       fol - EG notDE;
     qed;
-    ¬Collinear F A E ∧ ¬Collinear F A D  ∧  ¬(F = E)     [FAEncol] by fol v_line notAF I1 Collinear_DEF notEv notDv ∉ NonCollinearImpliesDistinct;
-    seg F E ≡ seg A D     [FEeqAD] by fol - ErAC ABD' SEGMENT FED≅ ErAC C2Transitive;
-    seg A D ≡ seg F D     [] by fol SegmentSymmetry ABD' Fexists SEGMENT C2Symmetric;
-    seg F E ≡ seg F D     [] by fol FAEncol ABD' Fexists SEGMENT FEeqAD - C2Transitive;
-    F,A,E ≅ F,A,D     [] by fol FAEncol FArefl - ErAC SSS;
-    ∡ F A E ≡ ∡ F A D     [FAEeq] by fol - TriangleCong_DEF;
-    ∡ D A F ≡ ∡ F A E     [] by fol FAEncol ANGLE FAEeq C5Symmetric AngleSymmetry;
-    ∡ B A F ≡ ∡ F A C     [BAFeqFAC] by fol - equalrays Angle_DEF;
+    ¬Collinear M A E ∧ ¬Collinear M A D  ∧  ¬(M = E)     [MAEncol] by fol notAM v_line notEv notDv NonCollinearRaa CollinearSymmetry NonCollinearImpliesDistinct;
+    seg M E ≡ seg A D     [MEeqAD] by fol - ErAC ABD' SEGMENT MED≅ ErAC C2Transitive;
+    seg A D ≡ seg M D     [] by fol SegmentSymmetry ABD' Mexists SEGMENT C2Symmetric;
+    seg M E ≡ seg M D     [] by fol MAEncol ABD' Mexists SEGMENT MEeqAD - C2Transitive;
+    M,A,E ≅ M,A,D     [] by fol MAEncol MArefl - ErAC SSS;
+    ∡ M A E ≡ ∡ M A D     [MAEeq] by fol - TriangleCong_DEF;
+    ∡ D A M ≡ ∡ M A E     [] by fol MAEncol ANGLE MAEeq C5Symmetric AngleSymmetry;
+    ∡ B A M ≡ ∡ M A C     [BAMeqMAC] by fol - equalrays Angle_DEF;
     ¬(E,D same_side v)     []
     proof
       raa E,D same_side v     [Con] by fol -;
-      ray A D = ray A E     [] by fol v_line notAF notDv notEv - FAEeq C4Uniqueness;
+      ray A D = ray A E     [] by fol v_line notAM notDv notEv - MAEeq C4Uniqueness;
       fol ABD' EndpointInRay - IN_Ray EADncol;
     qed;
     consider H such that
     H ∈ v ∧ H ∈ open (E,D)     [EHD] by fol v_line - SameSide_DEF;
     H = G     [] by fol - h_line BetweenLinear IN_INTER vhG IN_SING;
     G ∈ int_angle E A D     [GintEAD] by fol EADncol  - EHD ConverseCrossbar;
-    F ∈ int_angle E A D     [FintEAD] by fol GintEAD FrAG WholeRayInterior;
+    M ∈ int_angle E A D     [MintEAD] by fol GintEAD MrAG WholeRayInterior;
     B ∈ ray A D ━ A   ∧   C ∈ ray A E ━ A     [] by fol equalrays Distinct EndpointInRay IN_DELETE;
-    F ∈ int_angle B A C     [] by fol FintEAD - InteriorWellDefined InteriorAngleSymmetry;
-    fol - BAFeqFAC;
+    M ∈ int_angle B A C     [] by fol MintEAD - InteriorWellDefined InteriorAngleSymmetry;
+    fol - BAMeqMAC;
   qed;
 `;;
-(* 77761 3 times in 
-    ¬Collinear E D F ∧ ¬Collinear D E F ∧ ¬Collinear F E D     [EDFncol] by fol h_line notDE I1 Collinear_DEF Fexists ∉;
-
-128568 2 times in 
-    ¬Collinear F A E ∧ ¬Collinear F A D  ∧  ¬(F = E)     [FAEncol] by fol v_line notAF I1 Collinear_DEF notEv notDv ∉ NonCollinearImpliesDistinct;
-*)
 
 let EuclidPropositionI_6 = theorem `;
   ∀ A B C. ¬Collinear A B C  ∧  ∡ B A C ≡ ∡ B C A  ⇒  seg B A ≡ seg B C
@@ -2560,7 +2550,7 @@ let MidpointExists = theorem `;
 `;;
 
 let EuclidPropositionI_7short = theorem `;
-  ∀ A B C D a.  ¬(A = B) ∧ Line a ∧ A ∈ a ∧ B ∈ a  ⇒  
+  ∀ A B C D a.  ¬(A = B) ∧ Line a ∧ A ∈ a ∧ B ∈ a  ⇒
     ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧ C,D same_side a  ⇒  seg A C ≡ seg A D
     ⇒  ¬(seg B C ≡ seg B D)
 
@@ -2580,8 +2570,8 @@ let EuclidPropositionI_7short = theorem `;
 `;;
 
 let EuclidPropositionI_7Help = theorem `;
-  ∀ A B C D a.  ¬(A = B)  ⇒  Line a ∧ A ∈ a ∧ B ∈ a  ⇒  
-    ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧ C,D same_side a  ⇒  seg A C ≡ seg A D  ⇒  
+  ∀ A B C D a.  ¬(A = B)  ⇒  Line a ∧ A ∈ a ∧ B ∈ a  ⇒
+    ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧ C,D same_side a  ⇒  seg A C ≡ seg A D  ⇒
     C ∈ int_triangle D A B  ∨  ConvexQuadrilateral A B C D
     ⇒  ¬(seg B C ≡ seg B D)
 
@@ -2628,19 +2618,20 @@ let EuclidPropositionI_7Help = theorem `;
 `;;
 
 let EuclidPropositionI_7 = theorem `;
-  ∀ A B C D a.  ¬(A = B)  ⇒  Line a ∧ A ∈ a ∧ B ∈ a  ⇒  
-    ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧ C,D same_side a  ⇒ seg A C ≡ seg A D
+  ∀ A B C D a.  ¬(A = B)  ⇒  Line a ∧ A ∈ a ∧ B ∈ a  ⇒
+    ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧ C,D same_side a  ⇒
+    seg A C ≡ seg A D
    ⇒  ¬(seg B C ≡ seg B D)
 
   proof
     intro_TAC ∀ A B C D a, notAB, a_line, Csim_aD, ACeqAD;
-    ¬Collinear A B C ∧ ¬Collinear D A B     [ABCncol] by fol a_line notAB I1 Collinear_DEF Csim_aD ∉;
+    ¬Collinear A B C ∧ ¬Collinear D A B     [ABCncol] by fol a_line notAB Csim_aD NonCollinearRaa CollinearSymmetry;
     ¬(A = C) ∧ ¬(A = D) ∧ ¬(B = C) ∧ ¬(B = D) ∧ A ∉ open (C,D)     [Distinct] by fol a_line Csim_aD ∉ SameSide_DEF;
     ¬Collinear A D C      [ADCncol]
     proof
       raa Collinear A D C     [Con] by fol -;
-      C ∈ ray A D ━ A  ∧  D ∈ ray A D ━ A     [] by fol Distinct - IN_Ray EndpointInRay IN_DELETE;
-      fol Distinct SEGMENT - ACeqAD C2Reflexive C1 Csim_aD;
+      C ∈ ray A D ━ A  ∧  D ∈ ray A D ━ A  ∧  seg A D ≡ seg A D     [] by fol Distinct - IN_Ray EndpointInRay IN_DELETE SEGMENT C2Reflexive;
+      fol Distinct SEGMENT - ACeqAD C1 Csim_aD;
     qed;
     D,C same_side a     [Dsim_aC] by fol a_line Csim_aD SameSideSymmetric;
     seg A D ≡ seg A C  ∧  seg B D ≡ seg B D     [ADeqAC] by fol Distinct SEGMENT ACeqAD C2Symmetric C2Reflexive;
@@ -2688,7 +2679,7 @@ let DropPerpendicularToLine = theorem `;
     intro_TAC ∀ P l, l_line;
     consider A B such that
     A ∈ l ∧ B ∈ l ∧ ¬(A = B)     [ABl] by fol l_line I2;
-    ¬Collinear B A P ∧ ¬Collinear P A B ∧ ¬(A = P)     [BAPncol] by fol l_line ABl I1 Collinear_DEF ∉ CollinearSymmetry ABl ∉;
+    ¬Collinear B A P ∧ ¬Collinear P A B ∧ ¬(A = P)     [BAPncol] by fol ABl l_line NonCollinearRaa CollinearSymmetry ∉;
     Angle (∡ B A P) ∧ Angle (∡ P A B)     [angBAP] by fol - ANGLE AngleSymmetry;
     consider P' such that
     ¬(A = P') ∧ P' ∉ l ∧ ¬(P,P' same_side l) ∧ seg A P' ≡ seg A P  ∧  ∡ B A P' ≡ ∡ B A P     [P'exists] by hol_by angBAP ABl BAPncol l_line C4OppositeSide;
@@ -2704,21 +2695,21 @@ let DropPerpendicularToLine = theorem `;
       end;
       suppose ¬(A = Q);
         seg A Q  ≡ seg A Q  ∧  seg A P ≡ seg A P'     [APeqAP'] by fol - SEGMENT C2Reflexive BAPncol P'exists C2Symmetric;
-        ¬Collinear Q A P' ∧ ¬Collinear Q A P     [QAP'ncol] by fol l_line ABl Qexists notAQ I1 Collinear_DEF P'exists ∉;
+        ¬Collinear Q A P' ∧ ¬Collinear Q A P     [QAP'ncol] by fol notAQ l_line ABl Qexists P'exists NonCollinearRaa CollinearSymmetry;
         ∡ Q A P ≡ ∡ Q A P'     []
         proof
           case_split QAB | notQAB     by fol -;
           suppose A ∈ open (Q,B);
             ∡ B A P suppl ∡ P A Q   ∧  ∡ B A P' suppl ∡ P' A Q     [] by fol BAPncol BAP'ncol - B1'  SupplementaryAngles_DEF;
-	    fol - BAPeqBAP' SupplementsCongAnglesCong AngleSymmetry;
+            fol - BAPeqBAP' SupplementsCongAnglesCong AngleSymmetry;
           end;
           suppose ¬(A ∈ open (Q,B));
             A ∉ open (Q,B)  ∧  Q ∈ ray A B ━ A  ∧  ray A Q = ray A B     [] by fol - ∉ ABl Qexists IN_Ray notAQ IN_DELETE ABl RayWellDefined;
-	    fol - BAPeqBAP' Angle_DEF;
-	  end;
-	qed;
+            fol - BAPeqBAP' Angle_DEF;
+          end;
+        qed;
         Q,A,P ≅ Q,A,P'     [] by fol QAP'ncol APeqAP' - SAS;
-	fol - TriangleCong_DEF AngleSymmetry ABl QAP'ncol CollinearSymmetry;
+        fol - TriangleCong_DEF AngleSymmetry ABl QAP'ncol CollinearSymmetry;
       end;
     qed;
     consider E such that
@@ -2728,13 +2719,8 @@ let DropPerpendicularToLine = theorem `;
   qed;
 `;;
 
-(* 190864 for 
-
-    ¬Collinear B A P ∧ ¬Collinear P A B ∧ ¬(A = P)     [BAPncol] by fol l_line ABl I1 Collinear_DEF ∉ CollinearSymmetry ABl ∉;
-*)
-
 let EuclidPropositionI_14 = theorem `;
-  ∀ A B C D l.  Line l ∧ A ∈ l ∧ B ∈ l ∧ ¬(A = B)  ⇒ 
+  ∀ A B C D l.  Line l ∧ A ∈ l ∧ B ∈ l ∧ ¬(A = B)  ⇒
     C ∉ l ∧ D ∉ l ∧ ¬(C,D same_side l)  ⇒ ∡ C B A suppl ∡ A B D
     ⇒  B ∈ open (C,D)
 
@@ -2787,7 +2773,7 @@ let EuclidPropositionI_16 = theorem `;
     E ∈ open (B,F) ∧ seg E F ≡ seg E B     [BEF] by fol AECcol SEGMENT C1OppositeRay;
     ¬(B = E) ∧ ¬(B = F) ∧ ¬(E = F) ∧ Collinear B E F     [BEF'] by fol BEF B1';
     B ∉ l     [notBl] by fol l_line Distinct I1 Collinear_DEF H1 ∉;
-    ¬Collinear A E B ∧ ¬Collinear C E B     [AEBncol] by fol l_line El AECcol I1 Collinear_DEF notBl ∉;
+    ¬Collinear A E B ∧ ¬Collinear C E B     [AEBncol] by fol AECcol l_line El notBl NonCollinearRaa CollinearSymmetry;
     Angle (∡ B A E)     [angBAE] by fol - CollinearSymmetry ANGLE;
     ¬Collinear C E F     [CEFncol] by fol AEBncol BEF' CollinearSymmetry NoncollinearityExtendsToLine;
     ∡ B E A ≡ ∡ F E C     [BEAeqFEC] by fol AEBncol AEC B1' BEF VerticalAnglesCong;
@@ -2807,7 +2793,6 @@ let EuclidPropositionI_16 = theorem `;
     fol - AngleSymmetry;
   qed;
 `;;
-(* 156868 and 144332, maybe for I1 *)
 
 let ExteriorAngle = theorem `;
   ∀ A B C D.  ¬Collinear A B C  ∧  C ∈ open (B,D)
@@ -2828,7 +2813,7 @@ let ExteriorAngle = theorem `;
 `;;
 
 let EuclidPropositionI_17 = theorem `;
-  ∀ A B C α β γ.  ¬Collinear A B C  ∧  α = ∡ A B C  ∧  β = ∡ B C A  ⇒ 
+  ∀ A B C α β γ.  ¬Collinear A B C  ∧  α = ∡ A B C  ∧  β = ∡ B C A  ⇒
     β suppl γ
     ⇒  α <_ang γ
 
@@ -2856,11 +2841,11 @@ let EuclidPropositionI_18 = theorem `;
     consider D such that
     D ∈ open (A,B) ∧ seg A C ≡ seg A D     [ADB] by fol Distinct SEGMENT H2 SegmentOrderingUse;
     ¬(D = A) ∧ ¬(D = B) ∧ D ∈ open (B,A) ∧ Collinear A D B ∧ ray B D = ray B A     [ADB'] by fol - B1' IntervalRay;
-    D ∈ int_angle A C B     [DintACB] by fol H1 CollinearSymmetry ADB ConverseCrossbar;
-    ¬Collinear D A C ∧ ¬Collinear C B D     [DACncol] by fol H1 CollinearSymmetry ADB' NoncollinearityExtendsToLine;
+    D ∈ int_angle A C B  ∧ ¬Collinear A C B      [DintACB] by fol H1 CollinearSymmetry ADB ConverseCrossbar;
+    ¬Collinear D A C ∧ ¬Collinear C B D ∧ ¬Collinear C D A     [DACncol] by fol H1 CollinearSymmetry ADB' NoncollinearityExtendsToLine;
     seg A D ≡ seg A C     [] by fol ADB' Distinct SEGMENT ADB C2Symmetric;
     ∡ C D A ≡ ∡ A C D     [] by fol DACncol - IsoscelesCongBaseAngles AngleSymmetry;
-    ∡ C D A <_ang ∡ A C B     [CDAlessACB] by fol DACncol CollinearSymmetry ANGLE H1 CollinearSymmetry DintACB - AngleOrdering_DEF;
+    ∡ C D A <_ang ∡ A C B     [CDAlessACB] by fol DACncol ANGLE H1 DintACB - AngleOrdering_DEF;
     ∡ B D C suppl ∡ C D A     [] by fol DACncol CollinearSymmetry ADB' SupplementaryAngles_DEF;
     ∡ C B D <_ang ∡ C D A     [] by fol DACncol - EuclidPropositionI_17;
     ∡ C B D <_ang ∡ A C B     [] by fol - CDAlessACB AngleOrderTransitivity;
@@ -2925,13 +2910,12 @@ let EuclidPropositionI_21 = theorem `;
     ray E D = ray E A     [rEDrEA] by fol - B1' IntervalRay;
     ¬Collinear A B E ∧ ¬Collinear B E A  ∧ ¬Collinear C B D ∧ ¬(A = D)     [ABEncol] by fol DintABE IN_InteriorAngle CollinearSymmetry DintTri InteriorEZHelp;
     ¬Collinear E D C ∧ ¬Collinear C E D     [EDCncol] by fol - CollinearSymmetry BEC'  NoncollinearityExtendsToLine;
-    ∡ A B E <_ang ∡ A E C     [] by fol ABEncol BEC ExteriorAngle;
-    ∡ A B C <_ang ∡ C E D     [ABClessAEC] by fol - rBErBC rEDrEA Angle_DEF AngleSymmetry;
+    ∡ A B E <_ang ∡ A E C  ∧  ∡ C E D = ∡ D E C     [] by fol ABEncol BEC ExteriorAngle AngleSymmetry;
+    ∡ A B C <_ang ∡ C E D     [ABClessAEC] by fol - rBErBC rEDrEA Angle_DEF;
     ∡ C E D  <_ang  ∡ C D A     [] by fol EDCncol ADE B1' ExteriorAngle;
     fol ABClessAEC - AngleOrderTransitivity;
   qed;
 `;;
-(* 215071 *)
 
 let AngleTrichotomy3 = theorem `;
   ∀ α β γ.  α <_ang β  ∧  Angle γ  ∧  γ ≡ α  ⇒  γ <_ang β
@@ -2947,7 +2931,7 @@ let AngleTrichotomy3 = theorem `;
 `;;
 
 let InteriorCircleConvexHelp = theorem `;
-  ∀ O A B C. ¬Collinear A O C  ⇒  B ∈ open (A,C)  ⇒  
+  ∀ O A B C. ¬Collinear A O C  ⇒  B ∈ open (A,C)  ⇒
     seg O A <__ seg O C  ∨  seg O A ≡ seg O C
     ⇒  seg O B <__ seg O C
 
@@ -2963,7 +2947,7 @@ let InteriorCircleConvexHelp = theorem `;
       end;
       suppose seg O A ≡ seg O C;
         seg O C ≡ seg O A     [] by fol H1' SEGMENT - C2Symmetric;
-	  fol H1' - IsoscelesCongBaseAngles AngleSymmetry;
+          fol H1' - IsoscelesCongBaseAngles AngleSymmetry;
       end;
     qed;
     ∡ O C B <_ang ∡ B A O  ∨  ∡ O C B ≡ ∡ B A O     [] by fol - equal_rays Angle_DEF;
@@ -2976,7 +2960,7 @@ let InteriorCircleConvexHelp = theorem `;
 `;;
 
 let InteriorCircleConvex = theorem `;
-  ∀ O R A B C.  ¬(O = R)  ⇒  B ∈ open (A,C)  ⇒  
+  ∀ O R A B C.  ¬(O = R)  ⇒  B ∈ open (A,C)  ⇒
     A ∈ int_circle O R  ∧  C ∈ int_circle O R
     ⇒  B ∈ int_circle O R
 
@@ -2991,27 +2975,27 @@ let InteriorCircleConvex = theorem `;
       seg O B <__ seg O R     [] by fol - ACintOR SegmentOrderTransitivity;
       fol - H1 IN_InteriorCircle;
     end;
-    suppose ¬(O = A) ∧ ¬(O = C); 
+    suppose ¬(O = A) ∧ ¬(O = C);
       case_split AOCncol | AOCcol     by fol -;
       suppose ¬Collinear A O C;
         seg O A <__ seg O C  ∨  seg O A ≡ seg O C  ∨  seg O C <__ seg O A     [] by fol OnotAC SEGMENT  SegmentTrichotomy;
         seg O B <__ seg O C  ∨  seg O B <__ seg O A     [] by fol AOCncol H2 - InteriorCircleConvexHelp CollinearSymmetry B1';
-	fol OnotAC ACintOR - SegmentOrderTransitivity H1 IN_InteriorCircle;
+        fol OnotAC ACintOR - SegmentOrderTransitivity H1 IN_InteriorCircle;
       end;
       suppose Collinear A O C;
-        consider l such that 
+        consider l such that
         Line l ∧ A ∈ l ∧ C ∈ l     [l_line] by fol H2' I1;
         Collinear B A O ∧ Collinear B C O     [OABCcol] by fol - H2 BetweenLinear H2' AOCcol CollinearLinear Collinear_DEF;
         B ∉ open (O,A) ∧ B ∉ open (O,C)  ⇒  B = O     []
         proof
           intro_TAC Assumption;
           O ∈ ray B A ∩ ray B C     [] by fol H2' OABCcol - IN_Ray IN_INTER;
-	  fol - H2 OppositeRaysIntersect1point IN_SING;     
+          fol - H2 OppositeRaysIntersect1point IN_SING;
         qed;
         B ∈ open (O,A)  ∨  B ∈ open (O,C)  ∨  B = O     [] by fol - ∉;
         seg O B <__ seg O A  ∨  seg O B <__ seg O C  ∨  B = O     [] by fol - B1' SEGMENT C2Reflexive  SegmentOrdering_DEF;
         seg O B <__ seg O R  ∨  B = O     [] by fol - ACintOR OnotAC SegmentOrderTransitivity;
-	fol - H1 IN_InteriorCircle;
+        fol - H1 IN_InteriorCircle;
       end;
     end;
   qed;
@@ -3030,9 +3014,9 @@ let SegmentTrichotomy3 = theorem `;
 `;;
 
 let EuclidPropositionI_24Help = theorem `;
-  ∀ O A C O' D M.  ¬Collinear A O C ∧ ¬Collinear D O' M  ⇒  
-    seg O' D ≡ seg O A  ∧  seg O' M ≡ seg O C  ⇒  ∡ D O' M <_ang ∡ A O C  ⇒ 
-    seg O A <__ seg O C  ∨  seg O A ≡ seg O C  
+  ∀ O A C O' D M.  ¬Collinear A O C ∧ ¬Collinear D O' M  ⇒
+    seg O' D ≡ seg O A  ∧  seg O' M ≡ seg O C  ⇒  ∡ D O' M <_ang ∡ A O C  ⇒
+    seg O A <__ seg O C  ∨  seg O A ≡ seg O C
     ⇒  seg D M <__ seg A C
 
   proof
@@ -3078,8 +3062,8 @@ let EuclidPropositionI_24Help = theorem `;
 `;;
 
 let EuclidPropositionI_24 = theorem `;
-  ∀ O A C O' D M. ¬Collinear A O C ∧ ¬Collinear D O' M  ⇒  
-    seg O' D ≡ seg O A ∧ seg O' M ≡ seg O C  ⇒  ∡ D O' M <_ang ∡ A O C  
+  ∀ O A C O' D M. ¬Collinear A O C ∧ ¬Collinear D O' M  ⇒
+    seg O' D ≡ seg O A ∧ seg O' M ≡ seg O C  ⇒  ∡ D O' M <_ang ∡ A O C
     ⇒  seg D M <__ seg A C
 
   proof
@@ -3092,14 +3076,14 @@ let EuclidPropositionI_24 = theorem `;
       end;
       suppose seg O C <__ seg O A;
         ∡ M O' D <_ang ∡ C O A     [] by fol H3 AngleSymmetry;
-	fol Distinct H3 AngleSymmetry H2 H4 EuclidPropositionI_24Help SegmentSymmetry;
+        fol Distinct H3 AngleSymmetry H2 H4 EuclidPropositionI_24Help SegmentSymmetry;
      end;
   qed;
 `;;
 
 let EuclidPropositionI_25 = theorem `;
-  ∀ O A C O' D M.  ¬Collinear A O C ∧ ¬Collinear D O' M  ⇒  
-    seg O' D ≡ seg O A ∧ seg O' M ≡ seg O C  ⇒  seg D M <__ seg A C  
+  ∀ O A C O' D M.  ¬Collinear A O C ∧ ¬Collinear D O' M  ⇒
+    seg O' D ≡ seg O A ∧ seg O' M ≡ seg O C  ⇒  seg D M <__ seg A C
     ⇒  ∡ D O' M <_ang ∡ A O C
 
   proof
@@ -3122,7 +3106,7 @@ let EuclidPropositionI_25 = theorem `;
 `;;
 
 let AAS = theorem `;
-  ∀ A B C A' B' C'. ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒  
+  ∀ A B C A' B' C'. ¬Collinear A B C ∧ ¬Collinear A' B' C'  ⇒
     ∡ A B C ≡ ∡ A' B' C'  ∧  ∡ B C A ≡ ∡ B' C' A'  ⇒  seg A B ≡ seg A' B'
     ⇒  A,B,C ≅ A',B',C'
 
@@ -3152,13 +3136,13 @@ let AAS = theorem `;
         C ∈ open (G,B)  ∧ ray G C = ray G B     [rGCrBG] by fol - B1' IntervalRay;
         ∡ A G C <_ang ∡ A C B     [] by fol ACGncol - ExteriorAngle;
         ∡ B G A <_ang ∡ B C A     [] by fol - rGCrBG Angle_DEF AngleSymmetry AngleSymmetry;
-	fol ABGncol BCAncol ANGLE - AngleSymmetry BGAeqBCA AngleTrichotomy;
+        fol ABGncol BCAncol ANGLE - AngleSymmetry BGAeqBCA AngleTrichotomy;
       end;
       suppose G ∈ open (C,B);
         ray C G = ray C B  ∧  ∡ A C G <_ang ∡ A G B     [] by fol - IntervalRay ACGncol ExteriorAngle;
         ∡ A C B <_ang ∡ B G A     [] by fol - Angle_DEF AngleSymmetry;
         ∡ B C A <_ang ∡ B C A     [] by fol - BCAncol ANGLE BGAeqBCA AngleTrichotomy2 AngleSymmetry;
-	fol - BCArefl AngleTrichotomy1;
+        fol - BCArefl AngleTrichotomy1;
       end;
     end;
   qed;
@@ -3171,14 +3155,14 @@ let ParallelSymmetry = theorem `;
 
 let AlternateInteriorAngles = theorem `;
   ∀ A B C E l m t.  Line l ∧ A ∈ l ∧ E ∈ l  ⇒
-    Line m ∧ B ∈ m ∧ C ∈ m  ⇒  Line t ∧ A ∈ t ∧ B ∈ t  ⇒  
-    ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t  ⇒  
+    Line m ∧ B ∈ m ∧ C ∈ m  ⇒  Line t ∧ A ∈ t ∧ B ∈ t  ⇒
+    ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t  ⇒
     ¬(C,E same_side t)  ⇒  ∡ E A B ≡ ∡ C B A
     ⇒  l ∥ m
 
   proof
     intro_TAC ∀ A B C E l m t, l_line, m_line, t_line, Distinct, Cnsim_tE, AltIntAngCong;
-    ¬Collinear E A B ∧ ¬Collinear C B A     [EABncol] by fol t_line Distinct I1 Collinear_DEF ∉;
+    ¬Collinear E A B ∧ ¬Collinear C B A     [EABncol] by fol t_line Distinct NonCollinearRaa CollinearSymmetry;
     B ∉ l ∧ A ∉ m     [notAmBl] by fol l_line m_line Collinear_DEF - ∉;
     raa ¬(l ∥ m)   [Con] by fol -;
     ¬(l ∩ m = ∅)     [] by fol - l_line m_line PARALLEL;
@@ -3195,9 +3179,14 @@ let AlternateInteriorAngles = theorem `;
       A ∉ open (G,E)     [notGAE] by fol t_line - SameSide_DEF ∉;
       G ∈ ray A E ━ A     [] by fol Distinct GnotAB notGAE IN_Ray GnotAB IN_DELETE;
       ray A G = ray A E     [rAGrAE] by fol Distinct - RayWellDefined;
-      ¬(C,G same_side t)     [] by fol t_line AGBncol Distinct Gsim_tE Cnsim_tE SameSideTransitive;
-      C ∉ ray B G  ∧  B ∈ open (C,G)     [] by fol t_line AGBncol Distinct - RaySameSide ∉ GnotAB IN_DELETE IN_Ray;
-      ∡ G A B <_ang ∡ C B A     [] by fol AGBncol - B1' EuclidPropositionI_16;
+      ¬(C,G same_side t)     [Cnsim_tG] by fol t_line AGBncol Distinct Gsim_tE Cnsim_tE SameSideTransitive;
+      C ∉ ray B G     [notCrBG]
+      proof
+        raa C ∈ ray B G     [CrBG] by fol - ∉;
+        fol - IN_Ray Distinct IN_DELETE t_line AGBncol RaySameSide Cnsim_tG;
+      qed;
+      B ∈ open (C,G)     [] by fol - GnotAB ∉ IN_Ray;
+      ∡ G A B <_ang ∡ C B A     [] by fol AGBncol notCrBG - B1' EuclidPropositionI_16;
       ∡ E A B <_ang ∡ C B A     [] by fol - rAGrAE Angle_DEF;
       fol EABncol ANGLE AltIntAngCong - AngleTrichotomy1;
     qed;
@@ -3206,51 +3195,56 @@ let AlternateInteriorAngles = theorem `;
     G ∈ ray B C ━ B     [] by fol Distinct GnotAB notGBC IN_Ray GnotAB IN_DELETE;
     ray B G = ray B C     [rBGrBC] by fol Distinct - RayWellDefined;
     ∡ C B A ≡ ∡ E A B     [flipAltIntAngCong] by fol EABncol ANGLE AltIntAngCong C5Symmetric;
-    ¬(E,G same_side t)     [] by fol t_line AGBncol Distinct Gsim_tC Ensim_tC SameSideTransitive;
-    E ∉ ray A G   ∧  A ∈ open (E,G)     [] by fol t_line AGBncol Distinct - RaySameSide ∉ GnotAB IN_Ray IN_DELETE;
-    ∡ G B A <_ang ∡ E A B     [] by fol AGBncol - B1' EuclidPropositionI_16;
+    ¬(E,G same_side t)     [Ensim_tG] by fol t_line AGBncol Distinct Gsim_tC Ensim_tC SameSideTransitive;
+    E ∉ ray A G     [notErAG]
+    proof
+      raa E ∈ ray A G     [ErAG] by fol - ∉;
+      fol - IN_Ray Distinct IN_DELETE t_line AGBncol RaySameSide Ensim_tG;
+    qed;
+    A ∈ open (E,G)     [] by fol - GnotAB ∉ IN_Ray;
+    ∡ G B A <_ang ∡ E A B     [] by fol AGBncol notErAG - B1' EuclidPropositionI_16;
     ∡ C B A <_ang ∡ E A B     [] by fol - rBGrBC Angle_DEF;
     fol EABncol ANGLE flipAltIntAngCong - AngleTrichotomy1;
   qed;
 `;;
 
 let EuclidPropositionI_28 = theorem `;
-  ∀ A B C D E F G H l m t.  Line l ∧ A ∈ l ∧ B ∈ l ∧ G ∈ l  ⇒ 
-    Line m ∧ C ∈ m ∧ D ∈ m ∧ H ∈ m  ⇒  
-    Line t ∧ G ∈ t ∧ H ∈ t  ⇒ 
-    G ∉ m ∧ H ∉ l  ⇒  
+  ∀ A B C D E F G H l m t.  Line l ∧ A ∈ l ∧ B ∈ l ∧ G ∈ l  ⇒
+    Line m ∧ C ∈ m ∧ D ∈ m ∧ H ∈ m  ⇒
+    Line t ∧ G ∈ t ∧ H ∈ t  ⇒
+    G ∉ m ∧ H ∉ l  ⇒
     G ∈ open (A,B)  ∧ H ∈ open (C,D)  ⇒
-    G ∈ open (E,H)  ∧  H ∈ open (F,G)  ⇒  
-    ¬(D,A same_side t)  ⇒  
+    G ∈ open (E,H)  ∧  H ∈ open (F,G)  ⇒
+    ¬(D,A same_side t)  ⇒
     ∡ E G B ≡ ∡ G H D  ∨  ∡ B G H suppl ∡ G H D
     ⇒  l ∥ m
 
   proof
     intro_TAC ∀ A B C D E F G H l m t, l_line, m_line, t_line, notGmHl, H1, H2, H3, H4;
     ¬(A = G) ∧ ¬(G = B) ∧ ¬(H = D) ∧ ¬(E = G) ∧ ¬(G = H) ∧ Collinear A G B ∧ Collinear E G H     [Distinct] by fol H1 H2 B1';
-    ¬Collinear H G A ∧ ¬Collinear G H D ∧ A ∉ t ∧ D ∉ t     [HGAncol] by fol l_line m_line Distinct I1 Collinear_DEF notGmHl ∉ t_line Collinear_DEF;
+    ¬Collinear H G A ∧ ¬Collinear G H D ∧ A ∉ t ∧ D ∉ t     [HGAncol] by fol Distinct l_line m_line notGmHl NonCollinearRaa CollinearSymmetry Collinear_DEF t_line ∉;
     ¬Collinear B G H ∧ ¬Collinear A G E ∧ ¬Collinear E G B     [BGHncol] by fol - Distinct CollinearSymmetry NoncollinearityExtendsToLine;
     ∡ A G H ≡ ∡ D H G     []
     proof
       case_split EGBeqGHD | BGHeqGHD     by fol H4;
       suppose ∡ E G B ≡ ∡ G H D;
-        ∡ E G B ≡ ∡ H G A     [] by fol BGHncol H1 H2 VerticalAnglesCong;
-        ∡ H G A ≡ ∡ E G B     [] by fol BGHncol HGAncol ANGLE - C5Symmetric;
-        ∡ H G A ≡ ∡ G H D     [] by fol BGHncol HGAncol ANGLE - EGBeqGHD C5Transitive;
-	fol - AngleSymmetry;
+        ∡ E G B ≡ ∡ H G A  ∧
+        Angle (∡ E G B)  ∧  Angle (∡ H G A)  ∧  Angle (∡ G H D)      [boo] by fol BGHncol H1 H2 VerticalAnglesCong HGAncol ANGLE;
+        ∡ H G A ≡ ∡ E G B     [] by fol - C5Symmetric;
+        ∡ H G A ≡ ∡ G H D     [] by fol boo - EGBeqGHD C5Transitive;
+        fol - AngleSymmetry;
       end;
       suppose ∡ B G H suppl ∡ G H D;
         ∡ B G H suppl ∡ H G A     [] by fol BGHncol H1 B1' SupplementaryAngles_DEF;
-	fol - BGHeqGHD AngleSymmetry SupplementUnique AngleSymmetry;
+        fol - BGHeqGHD AngleSymmetry SupplementUnique AngleSymmetry;
       end;
     qed;
     fol l_line m_line t_line Distinct HGAncol H3 -  AlternateInteriorAngles;
   qed;
 `;;
-(* HGAncol high MESON # *)
 
 let OppositeSidesCongImpliesParallelogram = theorem `;
-  ∀ A B C D.  Quadrilateral A B C D  ⇒  
+  ∀ A B C D.  Quadrilateral A B C D  ⇒
     seg A B ≡ seg C D  ∧  seg B C ≡ seg D A
     ⇒  Parallelogram A B C D
 
@@ -3274,25 +3268,25 @@ let OppositeSidesCongImpliesParallelogram = theorem `;
     ∡ B C A ≡ ∡ D A C  ∧  ∡ C A B ≡ ∡ A C D     [BCAeqDAC] by fol - TriangleCong_DEF;
     seg C D ≡ seg A B     [CDeqAB] by fol TetraABCD SEGMENT H2 C2Symmetric;
     B,C,D ≅ D,A,B     [] by fol TetraABCD H2 - seg_refl SSS;
-    ∡ C D B ≡ ∡ A B D  ∧  ∡ D B C ≡ ∡ B D A     [CDBeqABD] by fol - TriangleCong_DEF;
+    ∡ C D B ≡ ∡ A B D  ∧  ∡ D B C ≡ ∡ B D A  ∧  ∡ C B D ≡ ∡ A D B     [CDBeqABD] by fol - TriangleCong_DEF AngleSymmetry;
     ¬(B,D same_side l)  ∨  ¬(A,C same_side m)     [] by fol H1 l_line m_line FiveChoicesQuadrilateral;
-    case_split Case1 | Case2     by fol -;
+    case_split Case1 | Ansim_mC     by fol -;
     suppose ¬(B,D same_side l);
       ¬(D,B same_side l)     [] by fol l_line notBDlACm - SameSideSymmetric;
       a ∥ c  ∧  b ∥ d     [] by fol ac_line l_line TetraABCD notBDlACm - BCAeqDAC AngleSymmetry AlternateInteriorAngles bd_line BCAeqDAC;
       fol H1 ac_line bd_line - Parallelogram_DEF;
     end;
     suppose ¬(A,C same_side m);
-      b ∥ d  ∧  c ∥ a     [] by fol bd_line m_line TetraABCD notBDlACm - CDBeqABD AngleSymmetry AlternateInteriorAngles ac_line CDBeqABD;
-      fol H1 ac_line bd_line - ParallelSymmetry Parallelogram_DEF;
+      b ∥ d     [b∥d] by fol bd_line m_line TetraABCD notBDlACm - CDBeqABD  AlternateInteriorAngles;
+      c ∥ a     [] by fol ac_line m_line TetraABCD notBDlACm Ansim_mC CDBeqABD AlternateInteriorAngles;
+      fol H1 ac_line bd_line b∥d - ParallelSymmetry Parallelogram_DEF;
     end;
   qed;
 `;;
-(* some high MESON #s *)
 
 let OppositeAnglesCongImpliesParallelogramHelp = theorem `;
-  ∀ A B C D a c.  Quadrilateral A B C D  ⇒  
-    ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D  ⇒  
+  ∀ A B C D a c.  Quadrilateral A B C D  ⇒
+    ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D  ⇒
     Line a ∧ A ∈ a ∧ B ∈ a  ⇒  Line c  ∧ C ∈ c ∧ D ∈ c
     ⇒  a ∥ c
 
@@ -3302,12 +3296,12 @@ let OppositeAnglesCongImpliesParallelogramHelp = theorem `;
     ¬Collinear A B C ∧ ¬Collinear B C D ∧ ¬Collinear C D A ∧ ¬Collinear D A B     [TetraABCD] by fol H1 Quadrilateral_DEF Tetralateral_DEF;
     ∡ C D A ≡ ∡ A B C  ∧  ∡ B C D ≡ ∡ D A B     [H2'] by fol TetraABCD ANGLE H2 C5Symmetric;
     consider l m such that
-    Line l ∧ A ∈ l ∧ C ∈ l  ∧ 
+    Line l ∧ A ∈ l ∧ C ∈ l  ∧
     Line m ∧ B ∈ m ∧ D ∈ m     [lm_line] by fol TetraABCD I1;
     consider b d such that
     Line b ∧ B ∈ b ∧ C ∈ b   ∧  Line d ∧ D ∈ d ∧ A ∈ d     [bd_line] by fol TetraABCD I1;
     A ∉ c ∧ B ∉ c ∧ A ∉ b ∧ D ∉ b ∧ B ∉ d ∧ C ∉ d     [point_off_line] by fol c_line bd_line Collinear_DEF TetraABCD ∉;
-    ¬(A ∈ int_triangle B C D  ∨  B ∈ int_triangle C D A  ∨  
+    ¬(A ∈ int_triangle B C D  ∨  B ∈ int_triangle C D A  ∨
     C ∈ int_triangle D A B  ∨  D ∈ int_triangle A B C)     []
     proof
       raa A ∈ int_triangle B C D  ∨  B ∈ int_triangle C D A  ∨
@@ -3326,7 +3320,7 @@ let OppositeAnglesCongImpliesParallelogramHelp = theorem `;
     G ∈ a ∧ G ∈ c     [Gac] by fol - a_line c_line PARALLEL MEMBER_NOT_EMPTY IN_INTER;
     Collinear A B G ∧ Collinear D G C ∧ Collinear C G D     [ABGcol] by fol a_line - Collinear_DEF c_line;
     ¬(G = A) ∧ ¬(G = B) ∧ ¬(G = C) ∧ ¬(G = D)     [GnotABCD] by fol Gac ABGcol TetraABCD CollinearSymmetry Collinear_DEF;
-    ¬Collinear B G C ∧ ¬Collinear A D G     [BGCncol] by fol c_line Gac GnotABCD I1 Collinear_DEF point_off_line ∉;
+    ¬Collinear B G C ∧ ¬Collinear A D G     [BGCncol] by fol c_line Gac GnotABCD point_off_line NonCollinearRaa CollinearSymmetry;
     ¬Collinear B C G ∧ ¬Collinear G B C ∧ ¬Collinear G A D ∧ ¬Collinear A G D     [BCGncol] by fol - CollinearSymmetry;
     G ∉ b ∧ G ∉ d     [notGb] by fol bd_line Collinear_DEF BGCncol ∉;
     G ∉ open (B,A)     [notBGA] by fol Bsim_cA Gac SameSide_DEF ∉;
@@ -3343,9 +3337,9 @@ let OppositeAnglesCongImpliesParallelogramHelp = theorem `;
       D ∈ open (C,M)     [CDM] by fol TetraABCD B2';
       D ∈ open (G,M)     [GDM] by fol - B1' DCG TransitivityBetweennessHelp;
       ∡ C D A suppl ∡ A D M  ∧  ∡ A B C suppl ∡ C B G     [] by fol TetraABCD CDM ABG SupplementaryAngles_DEF;
-      ∡ M D A ≡ ∡ G B C     [MDAeqGBC] by fol - H2' SupplementsCongAnglesCong AngleSymmetry; 
+      ∡ M D A ≡ ∡ G B C     [MDAeqGBC] by fol - H2' SupplementsCongAnglesCong AngleSymmetry;
       ∡ G A D <_ang ∡ M D A  ∧  ∡ G B C <_ang ∡ D C B     [] by fol BCGncol BGCncol GDM DCG B1' EuclidPropositionI_16;
-      ∡ G A D <_ang ∡ D C B     [] by fol  - BCGncol ANGLE MDAeqGBC AngleTrichotomy2 AngleOrderTransitivity;   
+      ∡ G A D <_ang ∡ D C B     [] by fol  - BCGncol ANGLE MDAeqGBC AngleTrichotomy2 AngleOrderTransitivity;
       ∡ D A B <_ang ∡ B C D     [] by fol - rABrAG Angle_DEF AngleSymmetry;
       fol - H2 AngleTrichotomy1;
     qed;
@@ -3358,11 +3352,11 @@ let OppositeAnglesCongImpliesParallelogramHelp = theorem `;
       ¬(C,G same_side d)     [] by fol bd_line point_off_line notGb Bsim_cA -  SameSideTransitive;
       C ∉ ray D G     [] by fol bd_line notGb - RaySameSide TetraABCD IN_DELETE ∉;
       D ∈ open (C,G)     [CDG] by fol GnotABCD ABGcol - IN_Ray ∉;
-      consider M such that 
+      consider M such that
       C ∈ open (D,M)     [DCM] by fol B2' TetraABCD;
       C ∈ open (G,M)     [GCM] by fol - B1' CDG TransitivityBetweennessHelp;
       ∡ B C D suppl ∡ M C B  ∧  ∡ D A B suppl ∡ G A D     [] by fol TetraABCD CollinearSymmetry DCM BAG SupplementaryAngles_DEF AngleSymmetry;
-      ∡ M C B ≡ ∡ G A D     [GADeqMCB] by fol - H2' SupplementsCongAnglesCong; 
+      ∡ M C B ≡ ∡ G A D     [GADeqMCB] by fol - H2' SupplementsCongAnglesCong;
       ∡ G B C <_ang ∡ M C B  ∧  ∡ G A D <_ang ∡ C D A     [] by fol BGCncol GCM BCGncol CDG B1' EuclidPropositionI_16;
       ∡ G B C <_ang ∡ C D A     [] by fol - BCGncol ANGLE GADeqMCB AngleTrichotomy2 AngleOrderTransitivity;
       ∡ A B C <_ang ∡ C D A     [] by fol - rBArBG Angle_DEF;
@@ -3371,11 +3365,10 @@ let OppositeAnglesCongImpliesParallelogramHelp = theorem `;
     fol TetraABCD GnotABCD ABGcol notABG notBGA - B3' ∉;
   qed;
 `;;
-(* some high MESON #s *)
 
 let OppositeAnglesCongImpliesParallelogram = theorem `;
-  ∀ A B C D. Quadrilateral A B C D  ⇒  
-    ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D  
+  ∀ A B C D. Quadrilateral A B C D  ⇒
+    ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D
     ⇒  Parallelogram A B C D
 
   proof
@@ -3408,20 +3401,20 @@ let AMb = new_axiom
 
 let AMc = new_axiom
  `! alpha beta. Angle alpha /\ Angle beta /\ alpha === beta  ==>  mu alpha = mu beta`;;
-    
+
 let AMd = new_axiom
  `! A O B P. P IN int_angle A O B  ==>  mu (angle A O B) = mu (angle A O P) + mu (angle P O B)`;;
 
 let ConverseAlternateInteriorAngles = theorem `;
-  ∀ A B C E l m.  Line l ∧ A ∈ l ∧ E ∈ l  ⇒  
-    Line m ∧ B ∈ m ∧ C ∈ m  ⇒ Line t ∧ A ∈ t ∧ B ∈ t  ⇒  
-    ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t  ⇒    
-    ¬(C,E same_side t)  ⇒  l ∥ m 
+  ∀ A B C E l m.  Line l ∧ A ∈ l ∧ E ∈ l  ⇒
+    Line m ∧ B ∈ m ∧ C ∈ m  ⇒ Line t ∧ A ∈ t ∧ B ∈ t  ⇒
+    ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t  ⇒
+    ¬(C,E same_side t)  ⇒  l ∥ m
     ⇒  ∡ E A B ≡ ∡ C B A
 
   proof
     intro_TAC ∀ A B C E l m, l_line, m_line, t_line, Distinct, Cnsim_tE, para_lm;
-    ¬Collinear C B A     [] by fol t_line Distinct I1 Collinear_DEF ∉ ANGLE;
+    ¬Collinear C B A     [] by fol Distinct t_line NonCollinearRaa CollinearSymmetry;
     A ∉ m ∧ Angle (∡ C B A)     [notAm] by fol m_line - Collinear_DEF ∉ ANGLE;
     consider D such that
     ¬(A = D) ∧ D ∉ t ∧ ¬(C,D same_side t) ∧ seg A D ≡ seg A E  ∧  ∡ B A D ≡ ∡ C B A     [Dexists] by hol_by -  Distinct t_line C4OppositeSide;
@@ -3434,7 +3427,6 @@ let ConverseAlternateInteriorAngles = theorem `;
     fol - Dexists AngleSymmetry Angle_DEF;
   qed;
 `;;
-(* some high MESON #s *)
 
 let HilbertTriangleSum = theorem `;
   ∀ A B C.  ¬Collinear A B C
@@ -3463,7 +3455,7 @@ let HilbertTriangleSum = theorem `;
     consider F such that
     B ∈ open (E,F)     [EBF] by fol Eexists B2';
     ¬(B = F) ∧ F ∈ m     [EBF'] by fol - B1' m_line BetweenLinear;
-    ¬Collinear A B F ∧ F ∉ x      [ABFncol] by fol m_line - I1 Collinear_DEF notACm ∉ x_line;
+    ¬Collinear A B F ∧ F ∉ x      [ABFncol] by fol EBF' m_line notACm NonCollinearRaa CollinearSymmetry Collinear_DEF x_line ∉;
     ¬(E,F same_side x) ∧ ¬(E,F same_side y)     [Ensim_yF] by fol EBF x_line y_line SameSide_DEF;
     C,F same_side x     [Csim_xF] by fol x_line notCx Eexists ABFncol Eexists - AtMost2Sides;
     m ∩ open(C,A)  =  ∅     [] by set l_line BetweenLinear SUBSET lm0 SUBSET_EMPTY;
@@ -3478,7 +3470,6 @@ let HilbertTriangleSum = theorem `;
     fol EBF CintABF EBAeqCAB - AngleSymmetry;
   qed;
 `;;
-(* some high MESON #s *)
 
 let EuclidPropositionI_13 = theorem `;
   ∀ A O B A'.  ¬Collinear A O B  ∧  O ∈ open (A,A')
@@ -3493,15 +3484,15 @@ let EuclidPropositionI_13 = theorem `;
     end;
     suppose ¬Right (∡ A O B);
       ¬(A = O) ∧ ¬(O = B)     [Distinct] by fol H1 NonCollinearImpliesDistinct;
-      consider l such that 
+      consider l such that
       Line l ∧ O ∈ l ∧ A ∈ l ∧ A' ∈ l     [l_line] by fol - I1 H2 BetweenLinear;
       B ∉ l     [notBl] by fol - Distinct I1 Collinear_DEF H1 ∉;
-      consider F such that 
+      consider F such that
       Right (∡ O A F)  ∧  Angle (∡ O A F)     [RightOAF] by fol Distinct EuclidPropositionI_11 RightImpliesAngle;
       ∃! r. Ray r ∧ ∃ E. ¬(O = E) ∧ r = ray O E ∧ E ∉ l ∧ E,B same_side l ∧ ∡ A O E ≡ ∡ O A F     [] by hol_by - Distinct l_line notBl C4;
       consider E such that
       ¬(O = E)  ∧  E ∉ l  ∧  E,B same_side l  ∧  ∡ A O E ≡ ∡ O A F     [Eexists] by fol -;
-      ¬Collinear A O E     [AOEncol] by fol l_line Distinct I1 Collinear_DEF - ∉;
+      ¬Collinear A O E     [AOEncol] by fol Distinct l_line - NonCollinearRaa CollinearSymmetry;
       Right (∡ A O E)     [RightAOE] by fol - ANGLE RightOAF Eexists CongRightImpliesRight;
       Right (∡ E O A')  ∧  μ (∡ A O E) = &90  ∧  μ (∡ E O A') = &90     [RightEOA'] by fol AOEncol H2 -  RightImpliesSupplRight AMb;
       ¬(∡ A O B ≡ ∡ A O E)     [] by fol notRightAOB H1 ANGLE RightAOE CongRightImpliesRight;
@@ -3509,19 +3500,19 @@ let EuclidPropositionI_13 = theorem `;
       ¬(ray O B = ray O E)     [] by fol - Angle_DEF;
       B ∉ ray O E  ∧  O ∉ open (B,E)     [] by fol Distinct - Eexists RayWellDefined IN_DELETE ∉ l_line B1' SameSide_DEF;
       ¬Collinear O E B     [] by fol - Eexists IN_Ray ∉;
-      E ∈ int_angle A O B  ∨  B ∈ int_angle A O E     [] by fol Distinct l_line Eexists notBl AngleOrdering - CollinearSymmetry InteriorAngleSymmetry; 
+      E ∈ int_angle A O B  ∨  B ∈ int_angle A O E     [] by fol Distinct l_line Eexists notBl AngleOrdering - CollinearSymmetry InteriorAngleSymmetry;
       case_split EintAOB | BintAOE     by fol -;
       suppose E ∈ int_angle A O B;
         B ∈ int_angle E O A'     [] by fol H2 - InteriorReflectionInterior;
-        μ (∡ A O B) = μ (∡ A O E) + μ (∡ E O B)  ∧  
+        μ (∡ A O B) = μ (∡ A O E) + μ (∡ E O B)  ∧
         μ (∡ E O A') = μ (∡ E O B) + μ (∡ B O A')     [] by fol EintAOB - AMd;
-	REAL_ARITH_thmTAC - RightEOA';
+        REAL_ARITH_thmTAC - RightEOA';
       end;
       suppose B ∈ int_angle A O E;
         E ∈ int_angle B O A'     [] by fol H2 - InteriorReflectionInterior;
-        μ (∡ A O E) = μ (∡ A O B) + μ (∡ B O E)  ∧  
+        μ (∡ A O E) = μ (∡ A O B) + μ (∡ B O E)  ∧
         μ (∡ B O A') = μ (∡ B O E) + μ (∡ E O A')     [] by fol BintAOE - AMd;
-	REAL_ARITH_thmTAC - RightEOA';
+        REAL_ARITH_thmTAC - RightEOA';
       end;
     end;
   qed;
@@ -3545,22 +3536,8 @@ let TriangleSum = theorem `;
   qed;
 `;;
 
-(*
-Lemma 2: 
-In a Hilbert plane take noncollinear points A O and B with 
-OA = OB or OA < OB.  If A * B * C then OB < OC.  
-
-Proof:
-Suppose that OA < OB.  Then OBA < OAB by fol Euclid's Proposition I.18.  By Euclid's Proposition I.16 
-OCB < OBA and OAB < OBC.  Then 
-
-OCB < OBA < OAB < OBC.
-
-Thus OB < OA by fol Euclid's Proposition I.19.  The case OA = OB is similar and easier. 
-*)
-
 let CircleConvex2_THM = theorem `;
-  ∀ O A B C. ¬Collinear A O B  ⇒  B ∈ open (A,C)  ⇒  
+  ∀ O A B C. ¬Collinear A O B  ⇒  B ∈ open (A,C)  ⇒
     seg O A <__ seg O B  ∨  seg O A ≡ seg O B
     ⇒  seg O B <__ seg O C
 
@@ -3580,7 +3557,7 @@ let CircleConvex2_THM = theorem `;
       end;
       suppose seg O A ≡ seg O B;
         seg O B ≡ seg O A     [] by fol H1' SEGMENT - C2Symmetric;
-	fol H1' - IsoscelesCongBaseAngles AngleSymmetry;
+        fol H1' - IsoscelesCongBaseAngles AngleSymmetry;
       end;
     qed;
     ∡ O B A <_ang ∡ O A B  ∨  ∡ O B A ≡ ∡ O A B     [OBAlessOAB] by fol - AngleSymmetry;

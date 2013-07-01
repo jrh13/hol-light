@@ -151,6 +151,21 @@ let PRODUCT_CONST_NUMSEG_1 = prove
  (`!c n. product(1..n) (\x. c) = c pow n`,
   SIMP_TAC[PRODUCT_CONST; CARD_NUMSEG_1; FINITE_NUMSEG]);;
 
+let PRODUCT_NEG = prove
+ (`!f s:A->bool.
+     FINITE s ==> product s (\i. --(f i)) = --(&1) pow (CARD s) * product s f`,
+  SIMP_TAC[GSYM PRODUCT_CONST; GSYM PRODUCT_MUL] THEN
+  REWRITE_TAC[REAL_MUL_LNEG; REAL_MUL_LID]);;
+
+let PRODUCT_NEG_NUMSEG = prove
+ (`!f m n. product(m..n) (\i. --(f i)) =
+           --(&1) pow ((n + 1) - m) * product(m..n) f`,
+  SIMP_TAC[PRODUCT_NEG; CARD_NUMSEG; FINITE_NUMSEG]);;
+
+let PRODUCT_NEG_NUMSEG_1 = prove
+ (`!f n. product(1..n) (\i. --(f i)) = --(&1) pow n * product(1..n) f`,
+  REWRITE_TAC[PRODUCT_NEG_NUMSEG; ADD_SUB]);;
+
 let PRODUCT_INV = prove
  (`!f s. FINITE s ==> product s (\x. inv(f x)) = inv(product s f)`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN

@@ -1,12 +1,29 @@
-Fri 14th Jun 2013       RichterHilbertAxiomGeometry/HilbertAxiom_read.ml, RichterHilbertAxiomGeometry/inverse_bug_puzzle_read.ml, RichterHilbertAxiomGeometry/readable.ml [new files], holtest
+Sat 29th Jun 2013       miz3/miz3.ml, miz3/bin/miz3
 
-Added three new files from Bill Richter, the first supporting a new stype of readable
-proofs, and two extended examples using it, both proofs previously done in miz3 or
-as tactic scripts:
+Made a couple of improvements to the portability of miz3 to Mac OS X, based on
+suggestions from Josh Jordan. Replaced the explicit signal number 12 by
+Sys.sigusr2, and replace realpath (which doesn't exist by default in OS X) by a
+line of Perl from Freek Wiedijk.
 
-  RichterHilbertAxiomGeometry/HilbertAxiom_read.ml - Hilbert axioms for geometry
+Fri 28th Jun 2013       tactics.ml, Library/card.ml
 
-  RichterHilbertAxiomGeometry/inverse_bug_puzzle_read.ml - the inverse bug puzzle
+Moved TRANS_TAC from the cardinality theories to the main core.
+
+Fri 21st Jun 2013       Library/products.ml
+
+Added the obvious theorems about products of negations:
+
+  PRODUCT_NEG =
+  |- !f s.
+         FINITE s ==> product s (\i. --f i) = -- &1 pow CARD s * product s f
+
+  PRODUCT_NEG_NUMSEG =
+  |- !f m n.
+         product (m..n) (\i. --f i) =
+         -- &1 pow ((n + 1) - m) * product (m..n) f
+
+  PRODUCT_NEG_NUMSEG_1 =
+  |- !f n. product (1..n) (\i. --f i) = -- &1 pow n * product (1..n) f
 
 Tue  4th Jun 2013       cart.ml
 

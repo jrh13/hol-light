@@ -41,6 +41,6 @@ as {<=>}) and one on numerical equations.
 This is one of HOL Light's 10 primitive inference rules.
 
 \SEEALSO
-EQ_MP, IMP_TRANS, REFL, SYM.
+EQ_MP, IMP_TRANS, REFL, SYM, TRANS_TAC.
 
 \ENDDOC

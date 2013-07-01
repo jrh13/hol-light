@@ -28,7 +28,7 @@ verbose := false;;
 report_timing := false;;
 
 horizon := 0;;
-timeout := 50;;
+timeout := 150;;
 
 new_type("point",0);;
 new_type_abbrev("point_set",`:point->bool`);;
@@ -2882,21 +2882,21 @@ let InteriorCircleConvex = thm `;
       seg O B <__ seg O A /\ ~(O = A)  \/  seg O B <__ seg O C /\ ~(O = C)     by -, B1', SEGMENT, C2Reflexive,  SegmentOrdering_DEF;
       seg O B <__ seg O R     by -, ACintOR, SegmentOrderTransitivity;
     qed by -, H1, IN_InteriorCircle;
-    suppose ~(O = A) /\ ~(O = C)     [OnotAC]; 
+    suppose ~(O = A) /\ ~(O = C)     [OnotAC];
       cases;
       suppose ~Collinear A O C     [AOCncol];
         seg O A <__ seg O C  \/  seg O A === seg O C  \/  seg O C <__ seg O A     by OnotAC, SEGMENT,  SegmentTrichotomy;
         seg O B <__ seg O C  \/  seg O B <__ seg O A     by AOCncol, H2, -, InteriorCircleConvexHelp, CollinearSymmetry, B1';
       qed     by OnotAC, ACintOR, -, SegmentOrderTransitivity, H1, IN_InteriorCircle;
       suppose Collinear A O C                           [AOCcol];
-        consider l such that 
+        consider l such that
         Line l /\ A IN l /\ C IN l     by H2', I1;
         Collinear B A O /\ Collinear B C O     [OABCcol] by -, H2, BetweenLinear, H2', AOCcol, CollinearLinear, Collinear_DEF;
         B NOTIN open (O,A) /\ B NOTIN open (O,C)  ==>  B = O
         proof
           assume B NOTIN open (O,A) /\ B NOTIN open (O,C);
           O IN ray B A INTER ray B C     by H2', OABCcol, -, IN_Ray, IN_INTER;
-        qed     by -, H2, OppositeRaysIntersect1point, IN_SING;     
+        qed     by -, H2, OppositeRaysIntersect1point, IN_SING;
         B IN open (O,A)  \/  B IN open (O,C)  \/  B = O     by -, NOTIN;
         seg O B <__ seg O A  \/  seg O B <__ seg O C  \/  B = O     by -, B1', SEGMENT, C2Reflexive,  SegmentOrdering_DEF;
         seg O B <__ seg O R  \/  B = O     by -, ACintOR, OnotAC, SegmentOrderTransitivity;
@@ -3184,12 +3184,12 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
     ~Collinear A B C /\ ~Collinear B C D /\ ~Collinear C D A /\ ~Collinear D A B     [TetraABCD] by H1, Quadrilateral_DEF, Tetralateral_DEF;
     angle C D A === angle A B C  /\  angle B C D === angle D A B     [H2'] by TetraABCD, ANGLE, H2, C5Symmetric;
     consider l m such that
-    Line l /\ A IN l /\ C IN l  /\ 
+    Line l /\ A IN l /\ C IN l  /\
     Line m /\ B IN m /\ D IN m     [lm_line] by TetraABCD, I1;
     consider b d such that
     Line b /\ B IN b /\ C IN b   /\  Line d /\ D IN d /\ A IN d     [bd_line] by TetraABCD, I1;
     A NOTIN c /\ B NOTIN c /\ A NOTIN b /\ D NOTIN b /\ B NOTIN d /\ C NOTIN d     [point_off_line] by c_line, bd_line, Collinear_DEF, TetraABCD, NOTIN;
-    ~(A IN int_triangle B C D  \/  B IN int_triangle C D A  \/  
+    ~(A IN int_triangle B C D  \/  B IN int_triangle C D A  \/
     C IN int_triangle D A B  \/  D IN int_triangle A B C)
     proof
       assume A IN int_triangle B C D  \/  B IN int_triangle C D A  \/
@@ -3224,9 +3224,9 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
       D IN open (C,M)     [CDM] by TetraABCD, B2';
       D IN open (G,M)     [GDM] by -, B1', DCG, TransitivityBetweennessHelp;
       angle C D A suppl angle A D M  /\  angle A B C suppl angle C B G     by TetraABCD, CDM, ABG, SupplementaryAngles_DEF;
-      angle M D A === angle G B C     [MDAeqGBC] by -, H2', SupplementsCongAnglesCong, AngleSymmetry; 
+      angle M D A === angle G B C     [MDAeqGBC] by -, H2', SupplementsCongAnglesCong, AngleSymmetry;
       angle G A D <_ang angle M D A  /\  angle G B C <_ang angle D C B     by BCGncol, BGCncol, GDM, DCG, B1', EuclidPropositionI_16;
-      angle G A D <_ang angle D C B     by  -, BCGncol, ANGLE, MDAeqGBC, AngleTrichotomy2, AngleOrderTransitivity;   
+      angle G A D <_ang angle D C B     by  -, BCGncol, ANGLE, MDAeqGBC, AngleTrichotomy2, AngleOrderTransitivity;
       angle D A B <_ang angle B C D     by -, rABrAG, Angle_DEF, AngleSymmetry;
     qed     by -, H2, AngleTrichotomy1;
     A NOTIN open (G,B)
@@ -3238,11 +3238,11 @@ let OppositeAnglesCongImpliesParallelogramHelp = thm `;
       ~(C,G same_side d)     by bd_line, point_off_line, notGb, Bsim_cA, -,  SameSideTransitive;
       C NOTIN ray D G     by bd_line, notGb, -, RaySameSide, TetraABCD, IN_DELETE, NOTIN;
       D IN open (C,G)     [CDG] by GnotABCD, ABGcol, -, IN_Ray, NOTIN;
-      consider M such that 
+      consider M such that
       C IN open (D,M)     [DCM] by B2', TetraABCD;
       C IN open (G,M)     [GCM] by -, B1', CDG, TransitivityBetweennessHelp;
       angle B C D suppl angle M C B  /\  angle D A B suppl angle G A D     by TetraABCD, CollinearSymmetry, DCM, BAG, SupplementaryAngles_DEF, AngleSymmetry;
-      angle M C B === angle G A D     [GADeqMCB] by -, H2', SupplementsCongAnglesCong; 
+      angle M C B === angle G A D     [GADeqMCB] by -, H2', SupplementsCongAnglesCong;
       angle G B C <_ang angle M C B  /\  angle G A D <_ang angle C D A     by BGCncol, GCM, BCGncol, CDG, B1', EuclidPropositionI_16;
       angle G B C <_ang angle C D A     by -, BCGncol, ANGLE, GADeqMCB, AngleTrichotomy2, AngleOrderTransitivity;
       angle A B C <_ang angle C D A     by -, rBArBG, Angle_DEF;
@@ -3285,7 +3285,7 @@ let AMb = new_axiom
 
 let AMc = new_axiom
  `! alpha beta. Angle alpha /\ Angle beta /\ alpha === beta  ==>  mu alpha = mu beta`;;
-    
+
 let AMd = new_axiom
  `! A O B P. P IN int_angle A O B  ==>  mu (angle A O B) = mu (angle A O P) + mu (angle P O B)`;;
 
@@ -3370,10 +3370,10 @@ let EuclidPropositionI_13 = thm `;
     qed by -, REAL_ARITH;
     suppose ~Right (angle A O B)     [notRightAOB];
       ~(A = O) /\ ~(O = B)     [Distinct] by H1, NonCollinearImpliesDistinct;
-      consider l such that 
+      consider l such that
       Line l /\ O IN l /\ A IN l /\ A' IN l     [l_line] by -, I1, H2, BetweenLinear;
       B NOTIN l     [notBl] by -, Distinct, I1, Collinear_DEF, H1, NOTIN;
-      consider F such that 
+      consider F such that
       Right (angle O A F)  /\  Angle (angle O A F)     [RightOAF] by Distinct, EuclidPropositionI_11, RightImpliesAngle;
       ?! r. Ray r /\ ? E. ~(O = E) /\ r = ray O E /\ E NOTIN l /\ E,B same_side l /\ angle A O E === angle O A F     by -, Distinct, l_line, notBl, C4;
       consider E such that
@@ -3386,16 +3386,16 @@ let EuclidPropositionI_13 = thm `;
       ~(ray O B = ray O E)     by -, Angle_DEF;
       B NOTIN ray O E  /\  O NOTIN open (B,E)     by Distinct, -, Eexists, RayWellDefined, IN_DELETE, NOTIN, l_line, B1', SameSide_DEF;
       ~Collinear O E B     by -, Eexists, IN_Ray, NOTIN;
-      E IN int_angle A O B  \/  B IN int_angle A O E     by Distinct, l_line, Eexists, notBl, AngleOrdering, -, CollinearSymmetry, InteriorAngleSymmetry; 
+      E IN int_angle A O B  \/  B IN int_angle A O E     by Distinct, l_line, Eexists, notBl, AngleOrdering, -, CollinearSymmetry, InteriorAngleSymmetry;
       cases by -;
       suppose E IN int_angle A O B     [EintAOB];
         B IN int_angle E O A'     by H2, -, InteriorReflectionInterior;
-        mu (angle A O B) = mu (angle A O E) + mu (angle E O B)  /\  
+        mu (angle A O B) = mu (angle A O E) + mu (angle E O B)  /\
         mu (angle E O A') = mu (angle E O B) + mu (angle B O A')     by EintAOB, -, AMd;
       qed     by -, RightEOA', REAL_ARITH;
       suppose B IN int_angle A O E     [BintAOE];
         E IN int_angle B O A'     by H2, -, InteriorReflectionInterior;
-        mu (angle A O E) = mu (angle A O B) + mu (angle B O E)  /\  
+        mu (angle A O E) = mu (angle A O B) + mu (angle B O E)  /\
         mu (angle B O A') = mu (angle B O E) + mu (angle E O A')     by BintAOE, -, AMd;
       qed     by -, RightEOA', REAL_ARITH;
     end;

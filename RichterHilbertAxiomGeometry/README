@@ -1,36 +1,33 @@
-     HOL Light formalization of Hilbert's axiomatic geometry
+      HOL Light formalization of Hilbert's axiomatic geometry
 
-              (c) Copyright, Bill Richter 2012
+              (c) Copyright, Bill Richter 2012-2013
           Distributed under the same license as HOL Light
 
-HilbertAxiom.ml is a formalization of the plane geometry part of the
-Hilbert axiomatic geometry paper (i.e. up through sec 7)
-http://www.math.northwestern.edu/~richter/hilbert.pdf in the proof
-assistant HOL Light running in ocaml and using miz3 for Mizar-like
-mathematically readable proofs.  The simplest way to run
-HilbertAxiom.ml is this.  
+readable.ml is a miz3-type interface for HOL Light tactics proofs.
 
-`In a terminal window (or Emacs shell), move to your hol_light directory and paste in
-these 3 commands, followed by a RETURN:
-ocaml
-#use "hol.ml";;
-#use "RichterHilbertAxiomGeometry/make.ml";;
+HilbertAxiom_read.ml, which uses readable.ml, is a formalization of
+the plane geometry part of the Hilbert axiomatic geometry paper
+http://www.math.northwestern.edu/~richter/hilbert.pdf
 
-You will see 190 or so definitions and proved theorems, in perhaps 15
-minutes.  Miz3Tips gives more details on running HilbertAxiom.ml, and
-is an in-progress description of how to use miz3.
+inverse_bug_puzzle_read.ml, which uses readable.ml, is a formalization
+partly due to John Harrison of a theorem due to Tom Hales explained at
+the end of sec 10.1 "The bug puzzle" of the HOL Light tutorial.
+
+thmFontHilbertAxiom.ml is a list, with mathematical characters, of the
+theorems and definitions of HilbertAxiom_read.ml
+
+HilbertAxiom.ml is an earlier formalization of hilbert.pdf using miz3.
+
+Miz3Tips gives details on running HilbertAxiom.ml, and some
+information on how to use miz3.
 
 FontHilbertAxiom.ml is a version of HilbertAxiom.ml written with
 mathematical characters
 ⇒, ⇔, ¬, ∨, ∧, ∀, ∃, ⊂, ∈, ∪, ∩ and ∅
-which the proof assistant Isabelle uses.  FontHilbertAxiom.ml requires 
+which HOL4, Isabelle and readable.ml allow.  It requires 
 
-hol-light-fonts.el, an Emacs Lisp file that when loaded defines the
-function File-remove-math-fonts-for-HOL-Light which replaces the
-mathematical characters symbols above with the HOL Light versions 
-==>, <=>, ~, \/, /\, !, ?, SUBSET, IN, UNION, INTER and {} 
-so that the revised file, now the X-selection, can be pasted into an
-ocaml/HOL Light/miz3 process.  More details are in hol-light-fonts.el.
+hol-light-fonts.el is needed to run the miz3 code FontHilbertAxiom.ml.
+hol-light-fonts.elc is the byte-compiled version of the Emacs code.
 
-thmFontHilbertAxiom.ml is a list, with mathematical characters, of the
-theorems and definitions of HilbertAxiom.ml.
+make.ml is an easy way to run the miz3 code HilbertAxiom.ml:
+#use "RichterHilbertAxiomGeometry/make.ml";;

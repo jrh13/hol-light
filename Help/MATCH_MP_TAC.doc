@@ -50,6 +50,6 @@ Fails unless the theorem is an (optionally universally quantified) implication
 whose consequent can be instantiated to match the goal.
 
 \SEEALSO
-EQ_MP, MATCH_MP, MP, MP_TAC, PART_MATCH.
+EQ_MP, MATCH_MP, MP, MP_TAC, PART_MATCH, TRANS_TAC.
 
 \ENDDOC
