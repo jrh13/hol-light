@@ -1,3 +1,81 @@
+Fri 12th Jul 2013       Library/floor.ml
+
+Added a few theorems asserting that there are integers between well-spaced
+pairs of reals:
+
+  INTEGER_EXISTS_BETWEEN =
+    |- !x y. x + &1 <= y ==> ?n. integer n /\ x <= n /\ n < y
+
+  INTEGER_EXISTS_BETWEEN_ABS =
+    |- !x y. &1 <= abs(x - y)
+         ==> ?n. integer n /\ (x <= n /\ n < y \/ y <= n /\ n < x)
+
+  INTEGER_EXISTS_BETWEEN_ABS_LT =
+    |- !x y. &1 < abs(x - y)
+         ==> ?n. integer n /\ (x < n /\ n < y \/ y < n /\ n < x)
+
+  INTEGER_EXISTS_BETWEEN_ALT =
+    |- !x y. x + &1 <= y ==> ?n. integer n /\ x < n /\ n <= y
+
+  INTEGER_EXISTS_BETWEEN_LT =
+    |- !x y. x + &1 < y ==> ?n. integer n /\ x < n /\ n < y
+
+Thu 11th Jul 2013       sets.ml
+
+Added a couple of slightly technical set lemmas:
+
+  FINITE_TRANSITIVITY_CHAIN =
+   |- !R s.
+          FINITE s /\
+          (!x. ~(R x x)) /\
+          (!x y z. R x y /\ R y z ==> R x z) /\
+          (!x. x IN s ==> ?y. y IN s /\ R x y)
+          ==> s = {}
+
+  UNIONS_MAXIMAL_SETS =
+   |- !f. FINITE f
+         ==> UNIONS {t | t IN f /\ !u. u IN f ==> ~(t PSUBSET u)} =
+             UNIONS f
+
+Mon  8th Jul 2013       int.ml
+
+Added a trivial but useful theorem:
+
+  INT_OF_NUM_EXISTS = |- !x. (?n. x = &n) <=> &0 <= x
+
+Wed  3rd Jul 2013       real.ml, int.ml
+
+Added two simple clausal theorems for "signs of signs"
+
+  REAL_SGN_INEQS =
+   |- (!x. &0 <= real_sgn x <=> &0 <= x) /\
+      (!x. &0 < real_sgn x <=> &0 < x) /\
+      (!x. &0 >= real_sgn x <=> &0 >= x) /\
+      (!x. &0 > real_sgn x <=> &0 > x) /\
+      (!x. &0 = real_sgn x <=> &0 = x) /\
+      (!x. real_sgn x <= &0 <=> x <= &0) /\
+      (!x. real_sgn x < &0 <=> x < &0) /\
+      (!x. real_sgn x >= &0 <=> x >= &0) /\
+      (!x. real_sgn x > &0 <=> x > &0) /\
+      (!x. real_sgn x = &0 <=> x = &0)
+
+  INT_SGN_INEQS =
+   |- (!x. &0 <= int_sgn x <=> &0 <= x) /\
+      (!x. &0 < int_sgn x <=> &0 < x) /\
+      (!x. &0 >= int_sgn x <=> &0 >= x) /\
+      (!x. &0 > int_sgn x <=> &0 > x) /\
+      (!x. &0 = int_sgn x <=> &0 = x) /\
+      (!x. int_sgn x <= &0 <=> x <= &0) /\
+      (!x. int_sgn x < &0 <=> x < &0) /\
+      (!x. int_sgn x >= &0 <=> x >= &0) /\
+      (!x. int_sgn x > &0 <=> x > &0) /\
+      (!x. int_sgn x = &0 <=> x = &0)
+
+Wed  3rd Jul 2013       int.ml
+
+Fixed a bug in INT_OF_REAL_THM where theorems with more than 2 conjuncts
+were not being transformed correctly.
+
 Sat 29th Jun 2013       miz3/miz3.ml, miz3/bin/miz3
 
 Made a couple of improvements to the portability of miz3 to Mac OS X, based on

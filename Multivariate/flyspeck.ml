@@ -576,6 +576,11 @@ let COPLANAR_DET_EQ_0 = prove
       REWRITE_TAC[UNWIND_THM2] THEN REPEAT CONJ_TAC THEN
       MATCH_MP_TAC SPAN_SUPERSET THEN REWRITE_TAC[IN_INSERT]]]);;
 
+let COPLANAR_CROSS_DOT = prove
+ (`!v w x y. coplanar {v,w,x,y} <=> ((w - v) cross (x - v)) dot (y - v) = &0`,
+  REWRITE_TAC[COPLANAR_DET_EQ_0; GSYM DOT_CROSS_DET] THEN
+  MESON_TAC[CROSS_TRIPLE; DOT_SYM]);;
+
 let PLANE_AFFINE_HULL_3 = prove
  (`!a b c:real^N. plane(affine hull {a,b,c}) <=> ~collinear{a,b,c}`,
   REWRITE_TAC[plane] THEN MESON_TAC[COLLINEAR_AFFINE_HULL_COLLINEAR]);;
@@ -1048,6 +1053,16 @@ let AFF_GE_1_1_0 = prove
   REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
   MESON_TAC[REAL_LE_ADD; REAL_ARITH
    `&0 <= a ==> &0 <= a / &2 /\ a / &2 + a / &2 = a`]);;
+
+let AFF_GE_2_1_0 = prove
+ (`!v w. DISJOINT {vec 0, v} {w}
+         ==> aff_ge {vec 0, v} {w} = {s % v + t % w |s,t| &0 <= t}`,
+  SIMP_TAC[AFF_GE_2_1; VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+  ONCE_REWRITE_TAC[MESON[] `(?a b c. P a b c) <=> (?c b a. P a b c)`] THEN
+  REWRITE_TAC[REAL_ARITH `t + u = &1 <=> t = &1 - u`; UNWIND_THM2] THEN
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Properties of affsign variants.                                           *)
@@ -1613,6 +1628,65 @@ let ANGLES_ADD_AFF_GE = prove
   ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; VECTOR_ADD_LDISTRIB] THEN
   REWRITE_TAC[VECTOR_MUL_ASSOC; real_div; REAL_MUL_AC] THEN
   UNDISCH_TAC `&0 < a + b` THEN CONV_TAC REAL_FIELD);;
+
+let AFF_GE_2_1_0_DROPOUT_3 = prove
+ (`!w z:real^3.
+        ~collinear{vec 0,basis 3,z}
+        ==> (w IN aff_ge {vec 0,basis 3} {z} <=>
+             (dropout 3 w) IN aff_ge {vec 0:real^2} {dropout 3 z})`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `z:real^3 = vec 0` THENL
+   [ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC]; ALL_TAC] THEN
+  ASM_CASES_TAC `z:real^3 = basis 3` THENL
+   [ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC]; ALL_TAC] THEN
+  REWRITE_TAC[COLLINEAR_BASIS_3] THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[AFF_GE_2_1_0; SET_RULE `DISJOINT s {a} <=> ~(a IN s)`;
+               IN_INSERT; NOT_IN_EMPTY; AFF_GE_1_1_0] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!t. ((?s. P s t) <=> Q t)) ==> ((?s t. P s t) <=> (?t. Q t))`) THEN
+  X_GEN_TAC `t:real` THEN EQ_TAC THENL
+   [STRIP_TAC THEN
+    ASM_REWRITE_TAC[DROPOUT_ADD; DROPOUT_MUL; DROPOUT_BASIS_3] THEN
+    VECTOR_ARITH_TAC;
+    STRIP_TAC THEN EXISTS_TAC `(w:real^3)$3 - t * (z:real^3)$3` THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CART_EQ]) THEN
+    ASM_REWRITE_TAC[CART_EQ; FORALL_2; FORALL_3; DIMINDEX_2; DIMINDEX_3] THEN
+    REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT] THEN
+    SIMP_TAC[dropout; LAMBDA_BETA; DIMINDEX_2; ARITH; BASIS_COMPONENT;
+             DIMINDEX_3] THEN
+    CONV_TAC REAL_RING]);;
+
+let AFF_GE_2_1_0_SEMIALGEBRAIC = prove
+ (`!x y z:real^3.
+        ~collinear {vec 0,x,y} /\ ~collinear {vec 0,x,z}
+        ==> (z IN aff_ge {vec 0,x} {y} <=>
+             (x cross y) cross x cross z = vec 0 /\
+             &0 <= (x cross z) dot (x cross y))`,
+  let lemma0 = prove
+   (`~(y = vec 0) ==> ((?s. x = s % y) <=> y cross x = vec 0)`,
+    REWRITE_TAC[CROSS_EQ_0] THEN SIMP_TAC[COLLINEAR_LEMMA_ALT])
+  and lemma1 = prove
+   (`!x y:real^N.
+          ~(y = vec 0)
+          ==> ((?t. &0 <= t /\ x = t % y) <=>
+               (?t. x = t % y) /\ &0 <= x dot y)`,
+    REPEAT STRIP_TAC THEN REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+    AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `t:real` THEN
+    ASM_CASES_TAC `x:real^N = t % y` THEN
+    ASM_SIMP_TAC[DOT_LMUL; REAL_LE_MUL_EQ; DOT_POS_LT]) in
+  REPEAT GEN_TAC THEN
+  MAP_EVERY (fun t -> ASM_CASES_TAC t THENL
+   [ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC]; ALL_TAC])
+   [`x:real^3 = vec 0`; `y:real^3 = vec 0`; `y:real^3 = x`] THEN
+  STRIP_TAC THEN
+  ASM_SIMP_TAC[AFF_GE_2_1_0; IN_ELIM_THM; SET_RULE
+    `DISJOINT {a,b} {c} <=> ~(a = c) /\ ~(b = c)`] THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_EXISTS_AND_THM; VECTOR_ARITH
+    `a:real^N = b + c <=> a - c = b`] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[GSYM CROSS_EQ_0]) THEN
+  ASM_SIMP_TAC[lemma0; lemma1; CROSS_RMUL; CROSS_RSUB; VECTOR_SUB_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Special case of aff_ge {x} {y}, i.e. rays or half-lines.                  *)
@@ -2271,6 +2345,11 @@ let AZIM_DEGENERATE = prove
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[azim_def] THEN
   ASM_REWRITE_TAC[] THEN REWRITE_TAC[INSERT_AC; COLLINEAR_2]);;
 
+let AZIM_REFL_ALT = prove
+ (`!v x y. azim v v x y = &0`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC(last(CONJUNCTS AZIM_DEGENERATE)) THEN
+  REWRITE_TAC[COLLINEAR_2; INSERT_AC]);;
+
 let AZIM_SPECIAL_SCALE = prove
  (`!a v w1 w2.
         &0 < a
@@ -2356,13 +2435,28 @@ let AZIM_ARG = prove
   AP_TERM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[CX_ADD] THEN
   CONV_TAC COMPLEX_RING);;
 
-let REAL_CONTINUOUS_AT_AZIM = prove
- (`!v w w1 w2. ~coplanar{v,w,w1,w2} ==> (azim v w w1) real_continuous at w2`,
+let REAL_CONTINUOUS_AT_AZIM_SHARP = prove
+ (`!v w w1 w2.
+        ~collinear{v,w,w1} /\ ~(w2 IN aff_ge {v,w} {w1})
+        ==> (azim v w w1) real_continuous at w2`,
   GEOM_ORIGIN_TAC `v:real^3` THEN
   GEOM_BASIS_MULTIPLE_TAC 3 `w:real^3` THEN
   X_GEN_TAC `w:real` THEN ASM_CASES_TAC `w = &0` THENL
-   [ASM_REWRITE_TAC[VECTOR_MUL_LZERO; INSERT_AC; COPLANAR_3]; ALL_TAC] THEN
-  ASM_SIMP_TAC[REAL_LE_LT; COPLANAR_SPECIAL_SCALE] THEN REPEAT STRIP_TAC THEN
+   [ASM_REWRITE_TAC[VECTOR_MUL_LZERO; INSERT_AC; COLLINEAR_2]; ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_LE_LT; COLLINEAR_SPECIAL_SCALE] THEN
+  DISCH_TAC THEN REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) AFF_GE_SPECIAL_SCALE o
+    rand o rand o lhand o snd) THEN
+  ASM_REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY; IN_SING] THEN ANTS_TAC THENL
+   [POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN
+    ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
+    DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THENL
+     [ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC];
+      ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC];
+      ASM_SIMP_TAC[COLLINEAR_LEMMA_ALT; BASIS_NONZERO; DIMINDEX_3; ARITH] THEN
+      MESON_TAC[]];
+    DISCH_THEN SUBST1_TAC THEN DISCH_TAC] THEN
   ASM_SIMP_TAC[AZIM_SPECIAL_SCALE; AZIM_ARG] THEN
   MATCH_MP_TAC(REWRITE_RULE[o_DEF]
     REAL_CONTINUOUS_CONTINUOUS_AT_COMPOSE) THEN
@@ -2374,24 +2468,43 @@ let REAL_CONTINUOUS_AT_AZIM = prove
     ALL_TAC] THEN
   MATCH_MP_TAC REAL_CONTINUOUS_AT_WITHIN THEN
   MATCH_MP_TAC REAL_CONTINUOUS_AT_ARG THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP NOT_COPLANAR_IMP_NOT_COLLINEAR_DROPOUT_3) THEN
+  MP_TAC(ISPECL [`w2:real^3`; `w1:real^3`] AFF_GE_2_1_0_DROPOUT_3) THEN
+  ASM_REWRITE_TAC[] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE RAND_CONV [COLLINEAR_BASIS_3])) THEN
   SPEC_TAC(`(dropout 3:real^3->real^2) w2`,`v2:real^2`) THEN
   SPEC_TAC(`(dropout 3:real^3->real^2) w1`,`v1:real^2`) THEN
   POP_ASSUM_LIST(K ALL_TAC) THEN
   GEOM_BASIS_MULTIPLE_TAC 1 `v1:complex` THEN
-  X_GEN_TAC `w:real` THEN ASM_CASES_TAC `w = &0` THENL
-   [ASM_REWRITE_TAC[VECTOR_MUL_LZERO; INSERT_AC; COLLINEAR_2]; ALL_TAC] THEN
-  ASM_REWRITE_TAC[REAL_LE_LT] THEN
-  REWRITE_TAC[COMPLEX_CMUL; COMPLEX_BASIS; COMPLEX_VEC_0] THEN
-  SIMP_TAC[ARG_DIV_CX; COMPLEX_MUL_RID] THEN
-  REWRITE_TAC[real; RE_DIV_CX; IM_DIV_CX; CX_INJ] THEN
-  ASM_SIMP_TAC[REAL_LT_LDIV_EQ; REAL_EQ_LDIV_EQ; REAL_MUL_LZERO] THEN
+  X_GEN_TAC `w:real` THEN ASM_CASES_TAC `w = &0` THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_LZERO] THEN
+  GEN_REWRITE_TAC LAND_CONV [REAL_LE_LT] THEN ASM_REWRITE_TAC[] THEN
   DISCH_TAC THEN X_GEN_TAC `z:complex` THEN
-  MATCH_MP_TAC(TAUT `(b ==> a) ==> (~a ==> ~(b /\ c))`) THEN
-  DISCH_TAC THEN REWRITE_TAC[COLLINEAR_LEMMA; GSYM COMPLEX_VEC_0] THEN
-  REPEAT DISJ2_TAC THEN EXISTS_TAC `Re z / w` THEN
+  DISCH_THEN(K ALL_TAC) THEN
+  REWRITE_TAC[CONTRAPOS_THM; COMPLEX_BASIS; COMPLEX_CMUL] THEN
+  REWRITE_TAC[COMPLEX_MUL_RID; RE_DIV_CX; IM_DIV_CX; real] THEN
+  ASM_SIMP_TAC[REAL_DIV_EQ_0; REAL_LE_RDIV_EQ; REAL_MUL_LZERO] THEN
+  STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) AFF_GE_1_1_0 o rand o snd) THEN
+  ASM_REWRITE_TAC[COMPLEX_VEC_0; CX_INJ] THEN DISCH_THEN SUBST1_TAC THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN EXISTS_TAC `Re z / w` THEN
+  ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; COMPLEX_EQ] THEN
   ASM_SIMP_TAC[COMPLEX_CMUL; CX_DIV; COMPLEX_DIV_RMUL; CX_INJ] THEN
-  ASM_MESON_TAC[real; REAL]);;
+  REWRITE_TAC[RE_CX; IM_CX]);;
+
+let REAL_CONTINUOUS_AT_AZIM = prove
+ (`!v w w1 w2. ~coplanar{v,w,w1,w2} ==> (azim v w w1) real_continuous at w2`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_AT_AZIM_SHARP THEN
+  CONJ_TAC THENL
+   [ASM_MESON_TAC[NOT_COPLANAR_NOT_COLLINEAR; INSERT_AC];
+    DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[SUBSET]
+       AFF_GE_SUBSET_AFFINE_HULL)) THEN
+    POP_ASSUM MP_TAC THEN REWRITE_TAC[coplanar; CONTRAPOS_THM] THEN
+    REWRITE_TAC[SET_RULE `{a,b} UNION {c} = {a,b,c}`] THEN
+    DISCH_TAC THEN MAP_EVERY EXISTS_TAC
+     [`v:real^3`; `w:real^3`; `w1:real^3`] THEN
+    SIMP_TAC[SET_RULE `{a,b,c,d} SUBSET s <=> {a,b,c} SUBSET s /\ d IN s`] THEN
+    ASM_REWRITE_TAC[HULL_SUBSET]]);;
 
 let AZIM_REFL = prove
  (`!v0 v1 w. azim v0 v1 w w = &0`,
@@ -2819,6 +2932,62 @@ let AZIM_EQ_0_GE_IMP = prove
   ASM_CASES_TAC `collinear {v0:real^3,v1,x}` THEN
   ASM_SIMP_TAC[AZIM_DEGENERATE] THEN ASM_MESON_TAC[AZIM_EQ_0_GE_ALT]);;
 
+let REAL_SGN_SIN_AZIM = prove
+ (`!v w x y. real_sgn(sin(azim v w x y)) =
+             real_sgn(((w - v) cross (x - v)) dot (y - v))`,
+  GEOM_ORIGIN_TAC `v:real^3` THEN REWRITE_TAC[VECTOR_SUB_RZERO] THEN
+  GEOM_BASIS_MULTIPLE_TAC 3 `w:real^3` THEN
+  X_GEN_TAC `w:real` THEN ASM_CASES_TAC `w = &0` THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_LZERO; CROSS_LZERO; DOT_LZERO; REAL_SGN_0;
+                  AZIM_REFL_ALT; SIN_0] THEN
+  ASM_REWRITE_TAC[REAL_LE_LT] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[AZIM_SPECIAL_SCALE; CROSS_LMUL; DOT_LMUL] THEN
+  REWRITE_TAC[REAL_SGN_MUL] THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [real_sgn] THEN
+  ASM_REWRITE_TAC[REAL_MUL_LID; AZIM_ARG] THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `real_sgn(Im(dropout 3 (y:real^3) / dropout 3 (x:real^3)))` THEN
+  CONJ_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[REAL_SGN_IM_COMPLEX_DIV] THEN AP_TERM_TAC THEN
+    SIMP_TAC[CART_EQ; DIMINDEX_3; FORALL_3; cross; VECTOR_3; DOT_3; dropout;
+             LAMBDA_BETA; ARITH; cnj; complex_mul; RE_DEF; IM_DEF; DIMINDEX_2;
+             complex; VECTOR_2; BASIS_COMPONENT] THEN REAL_ARITH_TAC] THEN
+
+  SPEC_TAC(`(dropout 3:real^3->real^2) x`,`z:complex`) THEN
+  SPEC_TAC(`(dropout 3:real^3->real^2) y`,`w:complex`) THEN
+  POP_ASSUM_LIST(K ALL_TAC) THEN GEOM_BASIS_MULTIPLE_TAC 1 `z:complex` THEN
+  REWRITE_TAC[COMPLEX_CMUL; COMPLEX_BASIS; COMPLEX_MUL_RID] THEN
+  X_GEN_TAC `x:real` THEN DISCH_TAC THEN X_GEN_TAC `z:complex` THEN
+  ASM_CASES_TAC `x = &0` THENL
+   [ASM_REWRITE_TAC[complex_div; COMPLEX_INV_0; COMPLEX_MUL_RZERO] THEN
+    REWRITE_TAC[ARG_0; SIN_0; IM_CX; REAL_SGN_0];
+    SUBGOAL_THEN `&0 < x` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC]] THEN
+  ASM_SIMP_TAC[ARG_DIV_CX; IM_DIV_CX; REAL_SGN_DIV] THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [real_sgn] THEN
+  ASM_REWRITE_TAC[REAL_DIV_1] THEN ASM_CASES_TAC `z = Cx(&0)` THEN
+  ASM_REWRITE_TAC[IM_CX; ARG_0; SIN_0] THEN
+  GEN_REWRITE_TAC (funpow 3 RAND_CONV) [ARG] THEN
+  REWRITE_TAC[IM_MUL_CX; REAL_SGN_MUL] THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [real_sgn] THEN
+  ASM_REWRITE_TAC[COMPLEX_NORM_NZ; REAL_MUL_LID] THEN
+  REWRITE_TAC[IM_CEXP; RE_MUL_II; IM_MUL_II; RE_CX; REAL_SGN_MUL] THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [real_sgn] THEN
+  REWRITE_TAC[REAL_EXP_POS_LT; REAL_MUL_LID]);;
+
+let AZIM_IN_UPPER_HALFSPACE = prove
+ (`!v w x y. azim v w x y <= pi <=>
+             &0 <= ((w - v) cross (x - v)) dot (y - v)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `&0 <= sin(azim v w x y)` THEN CONJ_TAC THENL
+   [EQ_TAC THEN SIMP_TAC[SIN_POS_PI_LE; azim] THEN
+    MP_TAC(ISPEC `azim v w x y - pi` SIN_POS_PI) THEN
+    REWRITE_TAC[SIN_SUB; SIN_PI; COS_PI; azim;
+                REAL_ARITH `x - pi < pi <=> x < &2 * pi`] THEN
+    REAL_ARITH_TAC;
+    ONCE_REWRITE_TAC[GSYM REAL_SGN_INEQS] THEN
+    REWRITE_TAC[REAL_SGN_SIN_AZIM]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Dihedral angle and relation to azimuth angle.                             *)
 (* ------------------------------------------------------------------------- *)
@@ -3090,6 +3259,51 @@ let COLLINEAR_AZIM_0_OR_PI = prove
   ONCE_REWRITE_TAC[SET_RULE `{u,e,v,w} = {u,v,w,e}`] THEN
   ASM_MESON_TAC[NOT_COPLANAR_NOT_COLLINEAR]);;
 
+let REAL_CONTINUOUS_WITHIN_DIHV_COMPOSE = prove
+ (`!f:real^M->real^N g h k x s.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      f continuous (at x within s) /\ g continuous (at x within s) /\
+      h continuous (at x within s) /\ k continuous (at x within s)
+      ==> (\x. dihV (f x) (g x) (h x) (k x)) real_continuous (at x within s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[dihV] THEN
+  CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN
+  REWRITE_TAC[ARCV_ANGLE; angle; REAL_CONTINUOUS_CONTINUOUS; o_DEF] THEN
+  REWRITE_TAC[VECTOR_SUB_RZERO] THEN
+  MATCH_MP_TAC CONTINUOUS_WITHIN_CX_VECTOR_ANGLE_COMPOSE THEN
+  ASM_REWRITE_TAC[VECTOR_SUB_EQ; GSYM COLLINEAR_3_DOT_MULTIPLES] THEN
+  CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_SUB THEN CONJ_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_MUL THEN REWRITE_TAC[o_DEF] THEN
+  ASM_SIMP_TAC[CONTINUOUS_LIFT_DOT2; o_DEF; CONTINUOUS_SUB]);;
+
+let REAL_CONTINUOUS_AT_DIHV_COMPOSE = prove
+ (`!f:real^M->real^N g h k x.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      f continuous (at x) /\ g continuous (at x) /\
+      h continuous (at x) /\ k continuous (at x)
+      ==> (\x. dihV (f x) (g x) (h x) (k x)) real_continuous (at x)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[REAL_CONTINUOUS_WITHIN_DIHV_COMPOSE]);;
+
+let REAL_CONTINUOUS_WITHINREAL_DIHV_COMPOSE = prove
+ (`!f:real->real^N g h k x s.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      f continuous (atreal x within s) /\ g continuous (atreal x within s) /\
+      h continuous (atreal x within s) /\ k continuous (atreal x within s)
+      ==> (\x. dihV (f x) (g x) (h x) (k x)) real_continuous
+          (atreal x within s)`,
+  REWRITE_TAC[CONTINUOUS_CONTINUOUS_WITHINREAL;
+              REAL_CONTINUOUS_REAL_CONTINUOUS_WITHINREAL] THEN
+  SIMP_TAC[o_DEF; REAL_CONTINUOUS_WITHIN_DIHV_COMPOSE; LIFT_DROP]);;
+
+let REAL_CONTINUOUS_ATREAL_DIHV_COMPOSE = prove
+ (`!f:real->real^N g h k x.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      f continuous (atreal x) /\ g continuous (atreal x) /\
+      h continuous (atreal x) /\ k continuous (atreal x)
+      ==> (\x. dihV (f x) (g x) (h x) (k x)) real_continuous (atreal x)`,
+  ONCE_REWRITE_TAC[GSYM WITHINREAL_UNIV] THEN
+  REWRITE_TAC[REAL_CONTINUOUS_WITHINREAL_DIHV_COMPOSE]);;
+
 let REAL_CONTINUOUS_AT_DIHV = prove
  (`!v w w1 w2:real^N.
         ~collinear {v, w, w2} ==> dihV v w w1 real_continuous at w2`,
@@ -3100,7 +3314,7 @@ let REAL_CONTINUOUS_AT_DIHV = prove
    [MATCH_MP_TAC CONTINUOUS_SUB THEN CONJ_TAC THEN
     MATCH_MP_TAC CONTINUOUS_MUL THEN
     SIMP_TAC[CONTINUOUS_CONST; o_DEF; CONTINUOUS_SUB; CONTINUOUS_AT_ID;
-             CONTINUOUS_AT_LIFT_DOT2];
+             CONTINUOUS_LIFT_DOT2];
     GEN_REWRITE_TAC LAND_CONV [GSYM ETA_AX] THEN
     REWRITE_TAC[ARCV_ANGLE; angle] THEN
     REWRITE_TAC[VECTOR_SUB_RZERO; ETA_AX] THEN
@@ -3113,6 +3327,203 @@ let REAL_CONTINUOUS_AT_DIHV = prove
      `(%) (inv((w:real^N) dot w)):real^N->real^N`) THEN
     ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; DOT_EQ_0] THEN
     MESON_TAC[VECTOR_MUL_LID]]);;
+
+let REAL_CONTINUOUS_WITHIN_AZIM_COMPOSE = prove
+ (`!f:real^M->real^3 g h k x s.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      ~(k x IN aff_ge {f x,g x} {h x}) /\
+      f continuous (at x within s) /\ g continuous (at x within s) /\
+      h continuous (at x within s) /\ k continuous (at x within s)
+      ==> (\x. azim (f x) (g x) (h x) (k x)) real_continuous (at x within s)`,
+  let lemma = prove
+   (`!s t u f:real^M->real^N g h.
+          (closed s /\ closed t) /\ s UNION t = UNIV /\
+          (g continuous_on (u INTER s) /\ h continuous_on (u INTER t)) /\
+          (!x. x IN u INTER s ==> g x = f x) /\
+          (!x. x IN u INTER t ==> h x = f x)
+          ==> f continuous_on u`,
+    REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN `u:real^M->bool = (u INTER s) UNION (u INTER t)`
+    SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_UNION_LOCAL THEN
+    REWRITE_TAC[CLOSED_IN_CLOSED] THEN REPEAT CONJ_TAC THENL
+     [EXISTS_TAC `s:real^M->bool` THEN ASM SET_TAC[];
+      EXISTS_TAC `t:real^M->bool` THEN ASM SET_TAC[];
+      ASM_MESON_TAC[CONTINUOUS_ON_EQ];
+      ASM_MESON_TAC[CONTINUOUS_ON_EQ]]) in
+  REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS; o_DEF] THEN
+  SUBGOAL_THEN
+   `(\x:real^M. Cx(azim (f x) (g x) (h x) (k x))) =
+    (\z. Cx(azim (vec 0) (fstcart z)
+                 (fstcart(sndcart z)) (sndcart(sndcart z)))) o
+    (\x. pastecart (g x - f x) (pastecart (h x - f x) (k x - f x)))`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_THM; FSTCART_PASTECART; SNDCART_PASTECART] THEN
+    X_GEN_TAC `y:real^M` THEN
+    SUBST1_TAC(VECTOR_ARITH `vec 0 = (f:real^M->real^3) y - f y`) THEN
+    SIMP_TAC[ONCE_REWRITE_RULE[VECTOR_ADD_SYM] AZIM_TRANSLATION; VECTOR_SUB];
+    MATCH_MP_TAC CONTINUOUS_WITHIN_COMPOSE THEN
+    ASM_SIMP_TAC[CONTINUOUS_PASTECART; CONTINUOUS_SUB]] THEN
+  MATCH_MP_TAC CONTINUOUS_AT_WITHIN THEN
+  SUBGOAL_THEN
+   `!z. ~collinear {vec 0,fstcart z,fstcart(sndcart z)} /\
+        ~collinear {vec 0,fstcart z,sndcart(sndcart z)} /\
+        ~(sndcart(sndcart z) IN aff_ge {vec 0,fstcart z} {fstcart(sndcart z)})
+        ==> (\z. Cx(azim (vec 0) (fstcart z) (fstcart(sndcart z))
+                                             (sndcart(sndcart z))))
+            continuous (at z)`
+  MATCH_MP_TAC THENL
+   [ALL_TAC;
+    ASM_SIMP_TAC[FSTCART_PASTECART; SNDCART_PASTECART; GSYM COLLINEAR_3] THEN
+    REPEAT(CONJ_TAC THENL [ASM_MESON_TAC[INSERT_AC]; ALL_TAC]) THEN
+    SUBST1_TAC(VECTOR_ARITH `vec 0 = (f:real^M->real^3) x - f x`) THEN
+    ONCE_REWRITE_TAC[SET_RULE `{a,b} = {a} UNION {b}`] THEN
+    REWRITE_TAC[GSYM IMAGE_UNION; SET_RULE
+     `{a - b:real^3} = IMAGE (\x. x - b) {a}`] THEN
+    REWRITE_TAC[ONCE_REWRITE_RULE[VECTOR_ADD_SYM] AFF_GE_TRANSLATION;
+                VECTOR_SUB] THEN
+    ASM_REWRITE_TAC[IN_IMAGE; VECTOR_ARITH `a + x:real^3 = b + x <=> a = b`;
+                    UNWIND_THM1; SET_RULE `{a} UNION {b} = {a,b}`]] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `(!x. ~P x /\ ~Q x /\ ~R x ==> J x) <=>
+    (!x. x IN UNIV DIFF (({x | P x} UNION {x | Q x}) UNION {x | R x})
+         ==> J x)`] THEN
+  MATCH_MP_TAC(MESON[CONTINUOUS_ON_EQ_CONTINUOUS_AT]
+   `open s /\ f continuous_on s ==> !z. z IN s ==> f continuous at z`) THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[GSYM closed] THEN
+    MATCH_MP_TAC(MESON[]
+     `!t'. s UNION t = s UNION t' /\ closed(s UNION t')
+           ==> closed(s UNION t)`) THEN
+    EXISTS_TAC
+      `{z | (fstcart z cross fstcart(sndcart z)) cross
+             fstcart z cross sndcart(sndcart z) = vec 0 /\
+            &0 <= (fstcart z cross sndcart(sndcart z)) dot
+                  (fstcart z cross fstcart(sndcart z))}` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC(SET_RULE
+       `(!x. ~(x IN s) ==> (x IN t <=> x IN t'))
+        ==> s UNION t = s UNION t'`) THEN
+      REWRITE_TAC[AFF_GE_2_1_0_SEMIALGEBRAIC; IN_UNION; IN_ELIM_THM;
+                  DE_MORGAN_THM];
+      ALL_TAC] THEN
+    MATCH_MP_TAC CLOSED_UNION THEN CONJ_TAC THENL
+     [MATCH_MP_TAC CLOSED_UNION THEN CONJ_TAC THEN
+      REWRITE_TAC[GSYM DOT_CAUCHY_SCHWARZ_EQUAL] THEN
+      ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
+      REWRITE_TAC[GSYM LIFT_EQ; LIFT_NUM] THEN
+      SIMP_TAC[SET_RULE `{x | f x = a} = {x | x IN UNIV /\ f x IN {a}}`] THEN
+      MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE THEN
+      SIMP_TAC[CLOSED_UNIV; CLOSED_SING; LIFT_SUB; REAL_POW_2; LIFT_CMUL] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_SUB THEN
+      CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_MUL THEN
+      REWRITE_TAC[o_DEF] THEN REPEAT CONJ_TAC THEN
+      MATCH_MP_TAC CONTINUOUS_ON_LIFT_DOT2 THEN CONJ_TAC;
+      ONCE_REWRITE_TAC[MESON[LIFT_DROP; real_ge]
+       `&0 <= x <=> drop(lift x) >= &0`] THEN
+      REWRITE_TAC[SET_RULE
+       `{z | f z = vec 0 /\ drop(g z) >= &0} =
+        {z | z IN UNIV /\ f z IN {vec 0}} INTER
+        {z | z IN UNIV /\ g z IN {k | drop(k) >= &0}}`] THEN
+      MATCH_MP_TAC CLOSED_INTER THEN
+      CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE THEN
+      REWRITE_TAC[CLOSED_SING; drop; CLOSED_UNIV;
+                  CLOSED_HALFSPACE_COMPONENT_GE] THEN
+      REPEAT((MATCH_MP_TAC CONTINUOUS_ON_CROSS ORELSE
+              MATCH_MP_TAC CONTINUOUS_ON_LIFT_DOT2) THEN CONJ_TAC)] THEN
+    TRY(GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF]) THEN
+    SIMP_TAC[CONTINUOUS_ON_COMPOSE; LINEAR_CONTINUOUS_ON;
+             LINEAR_FSTCART; LINEAR_SNDCART];
+    MATCH_MP_TAC lemma THEN
+    MAP_EVERY EXISTS_TAC
+     [`{z | z IN UNIV /\ lift((fstcart z cross (fstcart(sndcart z))) dot
+                              (sndcart(sndcart z))) IN {x | x$1 >= &0}}`;
+      `{z | z IN UNIV /\ lift((fstcart z cross (fstcart(sndcart z))) dot
+                              (sndcart(sndcart z))) IN {x | x$1 <= &0}}`;
+      `\z. Cx(dihV (vec 0:real^3) (fstcart z)
+                   (fstcart(sndcart z)) (sndcart(sndcart z)))`;
+      `\z. Cx(&2 * pi - dihV (vec 0:real^3) (fstcart z)
+                             (fstcart(sndcart z)) (sndcart(sndcart z)))`] THEN
+    CONJ_TAC THENL
+     [CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE THEN
+      REWRITE_TAC[CLOSED_UNIV; CLOSED_HALFSPACE_COMPONENT_GE;
+                  CLOSED_HALFSPACE_COMPONENT_LE] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_LIFT_DOT2 THEN
+      (CONJ_TAC THENL [MATCH_MP_TAC CONTINUOUS_ON_CROSS; ALL_TAC]) THEN
+      ONCE_REWRITE_TAC[GSYM o_DEF] THEN
+      SIMP_TAC[CONTINUOUS_ON_COMPOSE; LINEAR_CONTINUOUS_ON;
+               LINEAR_FSTCART; LINEAR_SNDCART];
+      ALL_TAC] THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[EXTENSION; IN_UNION; IN_UNIV; IN_ELIM_THM] THEN
+      REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    CONJ_TAC THENL
+     [CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_AT_IMP_CONTINUOUS_ON THEN
+      REWRITE_TAC[FORALL_PASTECART; IN_DIFF; IN_UNIV; IN_UNION; IN_INTER;
+        FSTCART_PASTECART; SNDCART_PASTECART; IN_ELIM_THM; DE_MORGAN_THM] THEN
+      MAP_EVERY X_GEN_TAC [`x:real^3`; `y:real^3`; `z:real^3`] THEN
+      REPEAT STRIP_TAC THEN REWRITE_TAC[CX_SUB] THEN
+      TRY(MATCH_MP_TAC CONTINUOUS_SUB THEN REWRITE_TAC[CONTINUOUS_CONST]) THEN
+      GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+      REWRITE_TAC[GSYM REAL_CONTINUOUS_CONTINUOUS] THEN
+      MATCH_MP_TAC REAL_CONTINUOUS_AT_DIHV_COMPOSE THEN
+      ASM_REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART;
+                      CONTINUOUS_CONST] THEN
+      ONCE_REWRITE_TAC[GSYM o_DEF] THEN
+      SIMP_TAC[CONTINUOUS_AT_COMPOSE; LINEAR_CONTINUOUS_AT;
+               LINEAR_FSTCART; LINEAR_SNDCART];
+      ALL_TAC] THEN
+    REWRITE_TAC[FORALL_PASTECART; IN_DIFF; IN_UNIV; IN_UNION; IN_INTER; CX_INJ;
+        FSTCART_PASTECART; SNDCART_PASTECART; IN_ELIM_THM; DE_MORGAN_THM] THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[GSYM drop; LIFT_DROP; real_ge] THEN
+      MAP_EVERY X_GEN_TAC [`x:real^3`; `y:real^3`; `z:real^3`] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC(GSYM AZIM_DIHV_SAME_STRONG) THEN
+      ASM_REWRITE_TAC[AZIM_IN_UPPER_HALFSPACE; VECTOR_SUB_RZERO];
+      REWRITE_TAC[GSYM drop; LIFT_DROP] THEN
+      MAP_EVERY X_GEN_TAC [`x:real^3`; `y:real^3`; `z:real^3`] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC(GSYM AZIM_DIHV_COMPL) THEN
+      ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC(REAL_ARITH
+       `(x <= pi ==> x = pi) ==> pi <= x`) THEN
+      ASM_REWRITE_TAC[AZIM_IN_UPPER_HALFSPACE; VECTOR_SUB_RZERO] THEN
+      ASM_SIMP_TAC[REAL_ARITH `x <= &0 ==> (&0 <= x <=> x = &0)`] THEN
+      REWRITE_TAC[REWRITE_RULE[VECTOR_SUB_RZERO]
+         (SPEC `vec 0:real^3` (GSYM COPLANAR_CROSS_DOT))] THEN
+      ASM_SIMP_TAC[GSYM AZIM_EQ_0_PI_EQ_COPLANAR; AZIM_EQ_0_GE_ALT]]]);;
+
+let REAL_CONTINUOUS_AT_AZIM_COMPOSE = prove
+ (`!f:real^M->real^3 g h k x.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      ~(k x IN aff_ge {f x,g x} {h x}) /\
+      f continuous (at x) /\ g continuous (at x) /\
+      h continuous (at x) /\ k continuous (at x)
+      ==> (\x. azim (f x) (g x) (h x) (k x)) real_continuous (at x)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[REAL_CONTINUOUS_WITHIN_AZIM_COMPOSE]);;
+
+let REAL_CONTINUOUS_WITHINREAL_AZIM_COMPOSE = prove
+ (`!f:real->real^3 g h k x s.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      ~(k x IN aff_ge {f x,g x} {h x}) /\
+      f continuous (atreal x within s) /\ g continuous (atreal x within s) /\
+      h continuous (atreal x within s) /\ k continuous (atreal x within s)
+      ==> (\x. azim (f x) (g x) (h x) (k x)) real_continuous
+          (atreal x within s)`,
+  REWRITE_TAC[CONTINUOUS_CONTINUOUS_WITHINREAL;
+              REAL_CONTINUOUS_REAL_CONTINUOUS_WITHINREAL] THEN
+  SIMP_TAC[o_DEF; REAL_CONTINUOUS_WITHIN_AZIM_COMPOSE; LIFT_DROP]);;
+
+let REAL_CONTINUOUS_ATREAL_AZIM_COMPOSE = prove
+ (`!f:real->real^3 g h k x.
+      ~collinear {f x,g x,h x} /\ ~collinear {f x,g x,k x} /\
+      ~(k x IN aff_ge {f x,g x} {h x}) /\
+      f continuous (atreal x) /\ g continuous (atreal x) /\
+      h continuous (atreal x) /\ k continuous (atreal x)
+      ==> (\x. azim (f x) (g x) (h x) (k x)) real_continuous (atreal x)`,
+  ONCE_REWRITE_TAC[GSYM WITHINREAL_UNIV] THEN
+  REWRITE_TAC[REAL_CONTINUOUS_WITHINREAL_AZIM_COMPOSE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Can consider angle as defined by arcV a zenith angle.                     *)
@@ -3174,7 +3585,7 @@ let SPHERICAL_COORDINATES = prove
   ONCE_REWRITE_TAC[VECTOR_ARITH
    `u':real^3 = u + v + w <=> u' - u = v + w`] THEN
   GEN_GEOM_ORIGIN_TAC `v:real^3` ["e1"; "e2"; "e3"] THEN
-  REWRITE_TAC[VECTOR_ADD_RID] THEN
+  REWRITE_TAC[VECTOR_ADD_RID; VECTOR_ADD_LID] THEN
   REWRITE_TAC[TRANSLATION_INVARIANTS `v:real^3`] THEN
   GEOM_BASIS_MULTIPLE_TAC 3 `w:real^3` THEN
   REWRITE_TAC[VECTOR_SUB_RZERO; DIST_0] THEN
@@ -6566,7 +6977,8 @@ Def 4.9:          vertices
 ****)
 
 (* ------------------------------------------------------------------------- *)
-(* Temporary backwards-compatible fix for introduction of "sphere".          *)
+(* Temporary backwards-compatible fix for introduction of "sphere" and       *)
+(* "relative_frontier".                                                      *)
 (* ------------------------------------------------------------------------- *)
 
 let COMPACT_SPHERE =
@@ -6576,6 +6988,8 @@ let COMPACT_SPHERE =
 let FRONTIER_CBALL = REWRITE_RULE[sphere] FRONTIER_CBALL;;
 
 let NEGLIGIBLE_SPHERE = REWRITE_RULE[sphere] NEGLIGIBLE_SPHERE;;
+
+let RELATIVE_FRONTIER_OF_POLYHEDRON = RELATIVE_BOUNDARY_OF_POLYHEDRON;;
 
 (* ------------------------------------------------------------------------- *)
 (* Fix the congruence rules as expected in Flyspeck.                         *)

@@ -2030,6 +2030,17 @@ let PATH_CONNECTED_PATH_COMPONENT = prove
   FIRST_ASSUM(MP_TAC o MATCH_MP PATH_COMPONENT_MONO) THEN
   REWRITE_TAC[SUBSET; IN] THEN MESON_TAC[]);;
 
+let PATH_COMPONENT = prove
+ (`!s x y:real^N.
+        path_component s x y <=>
+        ?t. path_connected t /\ t SUBSET s /\ x IN t /\ y IN t`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [EXISTS_TAC `path_component s (x:real^N)` THEN
+    REWRITE_TAC[PATH_CONNECTED_PATH_COMPONENT; PATH_COMPONENT_SUBSET] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP PATH_COMPONENT_IN) THEN
+    ASM_SIMP_TAC[IN; PATH_COMPONENT_REFL_EQ];
+    REWRITE_TAC[path_component] THEN ASM_MESON_TAC[path_connected; SUBSET]]);;
+
 let PATH_COMPONENT_PATH_COMPONENT = prove
  (`!s x:real^N.
         path_component (path_component s x) x = path_component s x`,
@@ -2187,6 +2198,15 @@ let CONVEX_IMP_PATH_CONNECTED = prove
 let PATH_CONNECTED_UNIV = prove
  (`path_connected(:real^N)`,
   SIMP_TAC[CONVEX_IMP_PATH_CONNECTED; CONVEX_UNIV]);;
+
+let IS_INTERVAL_PATH_CONNECTED = prove
+ (`!s. is_interval s ==> path_connected s`,
+  SIMP_TAC[CONVEX_IMP_PATH_CONNECTED; IS_INTERVAL_CONVEX]);;
+
+let PATH_CONNECTED_INTERVAL = prove
+ (`(!a b:real^N. path_connected(interval[a,b])) /\
+   (!a b:real^N. path_connected(interval(a,b)))`,
+  SIMP_TAC[IS_INTERVAL_PATH_CONNECTED; IS_INTERVAL_INTERVAL]);;
 
 let PATH_COMPONENT_UNIV = prove
  (`!x. path_component(:real^N) x = (:real^N)`,
@@ -10230,6 +10250,147 @@ let HOMOTOPIC_NON_ANTIPODAL_SPHEREMAPS = prove
    `inv(&2) % (a + b):real^N = vec 0 <=> a = --b`]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Retracts, in a general sense, preserve (co)homotopic triviality.          *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMOTOPICALLY_TRIVIAL_RETRACTION_GEN = prove
+ (`!P Q s:real^M->bool t:real^N->bool u:real^P->bool h k.
+        (h continuous_on s /\ IMAGE h s = t /\
+         k continuous_on t /\ IMAGE k t SUBSET s /\
+         (!y. y IN t ==> h(k y) = y) /\
+         (!f. f continuous_on u /\ IMAGE f u SUBSET t /\ Q f ==> P(k o f)) /\
+         (!f. f continuous_on u /\ IMAGE f u SUBSET s /\ P f ==> Q(h o f)) /\
+         (!h k. (!x. x IN u ==> h x = k x) ==> (Q h <=> Q k))) /\
+        (!f g. f continuous_on u /\ IMAGE f u SUBSET s /\ P f /\
+               g continuous_on u /\ IMAGE g u SUBSET s /\ P g
+               ==> homotopic_with P (u,s)  f g)
+        ==> (!f g. f continuous_on u /\ IMAGE f u SUBSET t /\ Q f /\
+                   g continuous_on u /\ IMAGE g u SUBSET t /\ Q g
+                   ==> homotopic_with Q (u,t) f g)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`p:real^P->real^N`; `q:real^P->real^N`] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
+   [`(k:real^N->real^M) o (p:real^P->real^N)`;
+    `(k:real^N->real^M) o (q:real^P->real^N)`]) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[IMAGE_o] THEN REPEAT CONJ_TAC THEN
+    TRY(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE) THEN ASM_REWRITE_TAC[] THEN
+    TRY(FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET))) THEN
+    ASM SET_TAC[];
+    DISCH_TAC] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_EQ THEN MAP_EVERY EXISTS_TAC
+   [`(h:real^M->real^N) o (k:real^N->real^M) o (p:real^P->real^N)`;
+    `(h:real^M->real^N) o (k:real^N->real^M) o (q:real^P->real^N)`] THEN
+  ASM_REWRITE_TAC[o_THM] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        HOMOTOPIC_WITH_MONO)) THEN
+  ASM_SIMP_TAC[]);;
+
+let HOMOTOPICALLY_TRIVIAL_RETRACTION_NULL_GEN = prove
+ (`!P Q s:real^M->bool t:real^N->bool u:real^P->bool h k.
+        (h continuous_on s /\ IMAGE h s = t /\
+         k continuous_on t /\ IMAGE k t SUBSET s /\
+         (!y. y IN t ==> h(k y) = y) /\
+         (!f. f continuous_on u /\ IMAGE f u SUBSET t /\ Q f ==> P(k o f)) /\
+         (!f. f continuous_on u /\ IMAGE f u SUBSET s /\ P f ==> Q(h o f)) /\
+         (!h k. (!x. x IN u ==> h x = k x) ==> (Q h <=> Q k))) /\
+        (!f. f continuous_on u /\ IMAGE f u SUBSET s /\ P f
+             ==> ?c. homotopic_with P (u,s) f (\x. c))
+        ==> (!f. f continuous_on u /\ IMAGE f u SUBSET t /\ Q f
+                 ==> ?c. homotopic_with Q (u,t) f (\x. c))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN X_GEN_TAC `p:real^P->real^N` THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC
+    `(k:real^N->real^M) o (p:real^P->real^N)`) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[IMAGE_o] THEN CONJ_TAC THEN
+    TRY(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE) THEN ASM_REWRITE_TAC[] THEN
+    TRY(FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET))) THEN
+    ASM SET_TAC[];
+    DISCH_THEN(X_CHOOSE_TAC `c:real^M`)] THEN
+  EXISTS_TAC `(h:real^M->real^N) c` THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_EQ THEN MAP_EVERY EXISTS_TAC
+   [`(h:real^M->real^N) o (k:real^N->real^M) o (p:real^P->real^N)`;
+    `(h:real^M->real^N) o ((\x. c):real^P->real^M)`] THEN
+  ASM_REWRITE_TAC[o_THM] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        HOMOTOPIC_WITH_MONO)) THEN
+  ASM_SIMP_TAC[]);;
+
+let COHOMOTOPICALLY_TRIVIAL_RETRACTION_GEN = prove
+ (`!P Q s:real^M->bool t:real^N->bool u:real^P->bool h k.
+        (h continuous_on s /\ IMAGE h s = t /\
+         k continuous_on t /\ IMAGE k t SUBSET s /\
+         (!y. y IN t ==> h(k y) = y) /\
+         (!f. f continuous_on t /\ IMAGE f t SUBSET u /\ Q f ==> P(f o h)) /\
+         (!f. f continuous_on s /\ IMAGE f s SUBSET u /\ P f ==> Q(f o k)) /\
+         (!h k. (!x. x IN t ==> h x = k x) ==> (Q h <=> Q k))) /\
+        (!f g. f continuous_on s /\ IMAGE f s SUBSET u /\ P f /\
+               g continuous_on s /\ IMAGE g s SUBSET u /\ P g
+               ==> homotopic_with P (s,u) f g)
+        ==> (!f g. f continuous_on t /\ IMAGE f t SUBSET u /\ Q f /\
+                   g continuous_on t /\ IMAGE g t SUBSET u /\ Q g
+                   ==> homotopic_with Q (t,u) f g)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`p:real^N->real^P`; `q:real^N->real^P`] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
+   [`(p:real^N->real^P) o (h:real^M->real^N)`;
+    `(q:real^N->real^P) o (h:real^M->real^N)`]) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[IMAGE_o] THEN REPEAT CONJ_TAC THEN
+    TRY(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE) THEN ASM_REWRITE_TAC[] THEN
+    TRY(FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET))) THEN
+    ASM SET_TAC[];
+    DISCH_TAC] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_EQ THEN MAP_EVERY EXISTS_TAC
+   [`((p:real^N->real^P) o (h:real^M->real^N)) o (k:real^N->real^M)`;
+    `((q:real^N->real^P) o (h:real^M->real^N)) o (k:real^N->real^M)`] THEN
+  ASM_REWRITE_TAC[o_THM] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        HOMOTOPIC_WITH_MONO)) THEN
+  ASM_SIMP_TAC[]);;
+
+let COHOMOTOPICALLY_TRIVIAL_RETRACTION_NULL_GEN = prove
+ (`!P Q s:real^M->bool t:real^N->bool u:real^P->bool h k.
+        (h continuous_on s /\ IMAGE h s = t /\
+         k continuous_on t /\ IMAGE k t SUBSET s /\
+         (!y. y IN t ==> h(k y) = y) /\
+         (!f. f continuous_on t /\ IMAGE f t SUBSET u /\ Q f ==> P(f o h)) /\
+         (!f. f continuous_on s /\ IMAGE f s SUBSET u /\ P f ==> Q(f o k)) /\
+         (!h k. (!x. x IN t ==> h x = k x) ==> (Q h <=> Q k))) /\
+        (!f. f continuous_on s /\ IMAGE f s SUBSET u /\ P f
+             ==> ?c. homotopic_with P (s,u) f (\x. c))
+        ==> (!f. f continuous_on t /\ IMAGE f t SUBSET u /\ Q f
+                 ==> ?c. homotopic_with Q (t,u) f (\x. c))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN X_GEN_TAC `p:real^N->real^P` THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC
+    `(p:real^N->real^P) o (h:real^M->real^N)`) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[IMAGE_o] THEN
+    TRY(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE) THEN ASM_REWRITE_TAC[] THEN
+    TRY(FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET))) THEN
+    ASM SET_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c:real^P` THEN DISCH_TAC] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_EQ THEN MAP_EVERY EXISTS_TAC
+   [`((p:real^N->real^P) o (h:real^M->real^N)) o (k:real^N->real^M)`;
+    `((\x. c):real^M->real^P) o (k:real^N->real^M)`] THEN
+  ASM_REWRITE_TAC[o_THM] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        HOMOTOPIC_WITH_MONO)) THEN
+  ASM_SIMP_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Another useful lemma.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
@@ -10703,35 +10864,16 @@ let SIMPLY_CONNECTED_RETRACTION_GEN = prove
         (!y. y IN t ==> h(k y) = y) /\
         simply_connected s
         ==> simply_connected t`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[SIMPLY_CONNECTED_EQ_HOMOTOPIC_PATHS] THEN
-  STRIP_TAC THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[PATH_CONNECTED_CONTINUOUS_IMAGE]; ALL_TAC] THEN
-  MAP_EVERY X_GEN_TAC [`p:real^1->real^N`; `q:real^1->real^N`] THEN
-  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
-   [`(k:real^N->real^M) o (p:real^1->real^N)`;
-    `(k:real^N->real^M) o (q:real^1->real^N)`]) THEN
-  ANTS_TAC THENL
-   [RULE_ASSUM_TAC(REWRITE_RULE[pathstart; path; pathfinish; path_image]) THEN
-    ASM_REWRITE_TAC[pathstart; path; pathfinish; o_THM; path_image] THEN
-    REPEAT STRIP_TAC THEN TRY(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE) THEN
-    ASM_REWRITE_TAC[IMAGE_o] THEN
-    TRY(FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-        CONTINUOUS_ON_SUBSET))) THEN
-    ASM SET_TAC[];
-    DISCH_THEN(MP_TAC o SPECL [`h:real^M->real^N`; `t:real^N->bool`] o
-     MATCH_MP (REWRITE_RULE[IMP_CONJ] HOMOTOPIC_PATHS_CONTINUOUS_IMAGE)) THEN
-    ASM_REWRITE_TAC[SUBSET_REFL] THEN MATCH_MP_TAC
-     (MESON[HOMOTOPIC_PATHS_SYM; HOMOTOPIC_PATHS_TRANS]
-       `homotopic_paths s p p' /\ homotopic_paths s q q'
-        ==> homotopic_paths s p' q' ==> homotopic_paths s p q`) THEN
-    CONJ_TAC THEN MATCH_MP_TAC HOMOTOPIC_PATHS_EQ THEN
-    ASM_REWRITE_TAC[path; path_image; pathstart; pathfinish; o_THM] THEN
-    RULE_ASSUM_TAC(REWRITE_RULE[pathstart; pathfinish]) THEN
-    ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
-    FIRST_X_ASSUM MATCH_MP_TAC THEN
-    RULE_ASSUM_TAC(REWRITE_RULE[path_image; FORALL_IN_IMAGE; SUBSET]) THEN
-    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; REAL_POS; REAL_LE_REFL]]);;
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  REWRITE_TAC[simply_connected; path; path_image; homotopic_loops] THEN
+  ONCE_REWRITE_TAC[TAUT
+   `a /\ b /\ c /\ a' /\ b' /\ c' <=> a /\ c /\ b /\ a' /\ c' /\ b'`] THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+    HOMOTOPICALLY_TRIVIAL_RETRACTION_GEN) THEN
+  MAP_EVERY EXISTS_TAC [`h:real^M->real^N`; `k:real^N->real^M`] THEN
+  ASM_SIMP_TAC[PATHSTART_COMPOSE; PATHFINISH_COMPOSE] THEN
+  REWRITE_TAC[pathfinish; pathstart] THEN MESON_TAC[ENDS_IN_UNIT_INTERVAL]);;
 
 let HOMEOMORPHIC_SIMPLY_CONNECTED = prove
  (`!s:real^M->bool t:real^N->bool.
@@ -11421,31 +11563,149 @@ let HOMOTOPY_EQUIVALENT_COHOMOTOPIC_TRIVIALITY_NULL = prove
   MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ] lemma) THEN
   ASM_MESON_TAC[HOMOTOPY_EQUIVALENT_SYM]);;
 
+let HOMOTOPY_INVARIANT_CONNECTEDNESS = prove
+ (`!f:real^M->real^N g s t.
+        f continuous_on s /\ IMAGE f s SUBSET t /\
+        g continuous_on t /\ IMAGE g t SUBSET s /\
+        homotopic_with (\x. T) (t,t) (f o g) I /\
+        connected s
+        ==> connected t`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopic_with]) THEN
+  REWRITE_TAC[o_THM; I_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN `h:real^(1,N)finite_sum->real^N`
+        STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+  `t = IMAGE (h:real^(1,N)finite_sum->real^N) (interval[vec 0,vec 1] PCROSS t)`
+  SUBST1_TAC THENL
+   [MATCH_MP_TAC SUBSET_ANTISYM THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[SUBSET; IN_IMAGE] THEN X_GEN_TAC `x:real^N` THEN
+    DISCH_TAC THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+    REWRITE_TAC[EXISTS_IN_PCROSS] THEN
+    ASM_MESON_TAC[ENDS_IN_UNIT_INTERVAL];
+    ALL_TAC] THEN
+  REWRITE_TAC[CONNECTED_IFF_CONNECTED_COMPONENT; IMP_CONJ] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE; FORALL_IN_PCROSS] THEN
+  MAP_EVERY X_GEN_TAC [`t1:real^1`; `x1:real^N`] THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`t2:real^1`; `x2:real^N`] THEN STRIP_TAC THEN
+  MATCH_MP_TAC(MESON[CONNECTED_COMPONENT_TRANS; CONNECTED_COMPONENT_SYM]
+    `!a b. (connected_component t a a' /\ connected_component t b b') /\
+           connected_component t a b
+           ==> connected_component t a' b'`) THEN
+  MAP_EVERY EXISTS_TAC
+   [`(h:real^(1,N)finite_sum->real^N) (pastecart (vec 0) x1)`;
+    `(h:real^(1,N)finite_sum->real^N) (pastecart (vec 0) x2)`] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[connected_component] THEN CONJ_TAC THENL
+     [EXISTS_TAC
+       `IMAGE ((h:real^(1,N)finite_sum->real^N) o (\s. pastecart s x1))
+              (interval[vec 0,vec 1])`;
+      EXISTS_TAC
+       `IMAGE ((h:real^(1,N)finite_sum->real^N) o (\s. pastecart s x2))
+              (interval[vec 0,vec 1])`] THEN
+    (CONJ_TAC THENL
+     [MATCH_MP_TAC CONNECTED_CONTINUOUS_IMAGE THEN
+      REWRITE_TAC[CONNECTED_INTERVAL] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+      SIMP_TAC[CONTINUOUS_ON_PASTECART; CONTINUOUS_ON_ID;
+               CONTINUOUS_ON_CONST] THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET)) THEN
+      ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; PASTECART_IN_PCROSS];
+      REWRITE_TAC[IMAGE_o] THEN CONJ_TAC THENL
+       [MATCH_MP_TAC IMAGE_SUBSET THEN
+        ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; PASTECART_IN_PCROSS];
+        CONJ_TAC THEN MATCH_MP_TAC FUN_IN_IMAGE] THEN
+      REWRITE_TAC[IN_IMAGE] THEN ASM_MESON_TAC[ENDS_IN_UNIT_INTERVAL]]);
+    ASM_REWRITE_TAC[connected_component] THEN
+    EXISTS_TAC `IMAGE (f:real^M->real^N) s` THEN
+    ASM_SIMP_TAC[CONNECTED_CONTINUOUS_IMAGE] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_IMAGE] THEN
+    REWRITE_TAC[EXISTS_PASTECART; PASTECART_IN_PCROSS] THEN
+    X_GEN_TAC `y:real^M` THEN STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`vec 1:real^1`; `(f:real^M->real^N) y`] THEN
+    ASM_REWRITE_TAC[ENDS_IN_UNIT_INTERVAL] THEN ASM SET_TAC[]]);;
+
+let HOMOTOPY_INVARIANT_PATH_CONNECTEDNESS = prove
+ (`!f:real^M->real^N g s t.
+        f continuous_on s /\ IMAGE f s SUBSET t /\
+        g continuous_on t /\ IMAGE g t SUBSET s /\
+        homotopic_with (\x. T) (t,t) (f o g) I /\
+        path_connected s
+        ==> path_connected t`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopic_with]) THEN
+  REWRITE_TAC[o_THM; I_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN `h:real^(1,N)finite_sum->real^N`
+        STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+  `t = IMAGE (h:real^(1,N)finite_sum->real^N) (interval[vec 0,vec 1] PCROSS t)`
+  SUBST1_TAC THENL
+   [MATCH_MP_TAC SUBSET_ANTISYM THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[SUBSET; IN_IMAGE] THEN X_GEN_TAC `x:real^N` THEN
+    DISCH_TAC THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+    REWRITE_TAC[EXISTS_IN_PCROSS] THEN
+    ASM_MESON_TAC[ENDS_IN_UNIT_INTERVAL];
+    ALL_TAC] THEN
+  REWRITE_TAC[PATH_CONNECTED_IFF_PATH_COMPONENT; IMP_CONJ] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE; FORALL_IN_PCROSS] THEN
+  MAP_EVERY X_GEN_TAC [`t1:real^1`; `x1:real^N`] THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`t2:real^1`; `x2:real^N`] THEN STRIP_TAC THEN
+  MATCH_MP_TAC(MESON[PATH_COMPONENT_TRANS; PATH_COMPONENT_SYM]
+    `!a b. (path_component t a a' /\ path_component t b b') /\
+           path_component t a b
+           ==> path_component t a' b'`) THEN
+  MAP_EVERY EXISTS_TAC
+   [`(h:real^(1,N)finite_sum->real^N) (pastecart (vec 0) x1)`;
+    `(h:real^(1,N)finite_sum->real^N) (pastecart (vec 0) x2)`] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[PATH_COMPONENT] THEN CONJ_TAC THENL
+     [EXISTS_TAC
+       `IMAGE ((h:real^(1,N)finite_sum->real^N) o (\s. pastecart s x1))
+              (interval[vec 0,vec 1])`;
+      EXISTS_TAC
+       `IMAGE ((h:real^(1,N)finite_sum->real^N) o (\s. pastecart s x2))
+              (interval[vec 0,vec 1])`] THEN
+    (CONJ_TAC THENL
+     [MATCH_MP_TAC PATH_CONNECTED_CONTINUOUS_IMAGE THEN
+      REWRITE_TAC[PATH_CONNECTED_INTERVAL] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+      SIMP_TAC[CONTINUOUS_ON_PASTECART; CONTINUOUS_ON_ID;
+               CONTINUOUS_ON_CONST] THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET)) THEN
+      ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; PASTECART_IN_PCROSS];
+      REWRITE_TAC[IMAGE_o] THEN CONJ_TAC THENL
+       [MATCH_MP_TAC IMAGE_SUBSET THEN
+        ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; PASTECART_IN_PCROSS];
+        CONJ_TAC THEN MATCH_MP_TAC FUN_IN_IMAGE] THEN
+      REWRITE_TAC[IN_IMAGE] THEN ASM_MESON_TAC[ENDS_IN_UNIT_INTERVAL]]);
+    ASM_REWRITE_TAC[PATH_COMPONENT] THEN
+    EXISTS_TAC `IMAGE (f:real^M->real^N) s` THEN
+    ASM_SIMP_TAC[PATH_CONNECTED_CONTINUOUS_IMAGE] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_IMAGE] THEN
+    REWRITE_TAC[EXISTS_PASTECART; PASTECART_IN_PCROSS] THEN
+    X_GEN_TAC `y:real^M` THEN STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`vec 1:real^1`; `(f:real^M->real^N) y`] THEN
+    ASM_REWRITE_TAC[ENDS_IN_UNIT_INTERVAL] THEN ASM SET_TAC[]]);;
+
+let HOMOTOPY_EQUIVALENT_CONNECTEDNESS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homotopy_equivalent t ==> (connected s <=> connected t)`,
+  REWRITE_TAC[homotopy_equivalent] THEN REPEAT STRIP_TAC THEN
+  EQ_TAC THEN MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+   (REWRITE_RULE[CONJ_ASSOC] HOMOTOPY_INVARIANT_CONNECTEDNESS)) THEN
+  ASM_MESON_TAC[]);;
+
 let HOMOTOPY_EQUIVALENT_PATH_CONNECTEDNESS = prove
  (`!s:real^M->bool t:real^N->bool.
         s homotopy_equivalent t ==> (path_connected s <=> path_connected t)`,
-  let lemma = prove
-   (`(!f g:real^M->real^N.
-         f c IN s /\ g c IN s ==> homotopic_with (\x. T) ({c},s) f g) <=>
-     path_connected s`,
-    MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
-     `!a b. a IN s /\ b IN s
-            ==> homotopic_with (\x. T) ({c:real^M},s)
-                  (\x. (a:real^N)) (\x. b)` THEN
-    CONJ_TAC THENL
-     [EQ_TAC THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[] THEN
-      FIRST_X_ASSUM(MP_TAC o SPECL
-       [`(f:real^M->real^N) c`; `(g:real^M->real^N) c`]) THEN
-      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT]
-          HOMOTOPIC_WITH_EQ) THEN
-      SET_TAC[];
-      REWRITE_TAC[HOMOTOPIC_CONSTANT_MAPS; NOT_INSERT_EMPTY] THEN
-      REWRITE_TAC[PATH_CONNECTED_IFF_PATH_COMPONENT]]) in
-  REPEAT GEN_TAC THEN
-  DISCH_THEN(MP_TAC o ISPEC `{vec 0:real^1}` o MATCH_MP
-    HOMOTOPY_EQUIVALENT_HOMOTOPIC_TRIVIALITY) THEN
-  REWRITE_TAC[CONTINUOUS_ON_SING; IMAGE_CLAUSES; SING_SUBSET] THEN
-  REWRITE_TAC[lemma]);;
+  REWRITE_TAC[homotopy_equivalent] THEN REPEAT STRIP_TAC THEN
+  EQ_TAC THEN MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+   (REWRITE_RULE[CONJ_ASSOC] HOMOTOPY_INVARIANT_PATH_CONNECTEDNESS)) THEN
+  ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Contractible sets.                                                        *)
