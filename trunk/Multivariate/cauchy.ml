@@ -8,7 +8,6 @@
 
 needs "Library/binomial.ml";;
 needs "Library/iter.ml";;
-needs "Multivariate/polytope.ml";;
 needs "Multivariate/realanalysis.ml";;
 
 prioritize_complex();;
@@ -13248,6 +13247,38 @@ let BLOCH = prove
     REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_CX] THEN
     ASM_SIMP_TAC[REAL_ARITH `&0 < r ==> (abs r * z < r <=> &0 < r * (&1 - z))`;
                  REAL_LT_MUL; REAL_SUB_LT]]);;
+
+let BLOCH_COROLLARY = prove
+ (`!f s a t r.
+      f holomorphic_on s /\ a IN s /\
+      (!z. z IN frontier s ==> t <= dist(a,z)) /\
+      r <= t * norm(complex_derivative f a) / &12
+      ==> ?b. ball(b,r) SUBSET IMAGE f s`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(DISJ_CASES_THEN MP_TAC o
+    MATCH_MP (REAL_ARITH `r <= t ==> r <= &0 \/ &0 < t`)) THEN
+  SIMP_TAC[BALL_EMPTY; EMPTY_SUBSET] THEN
+  ASM_CASES_TAC `complex_derivative f a = Cx(&0)` THEN
+  ASM_REWRITE_TAC[COMPLEX_NORM_0] THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_LT_MUL_EQ; REAL_ARITH `&0 < x / &12 <=> &0 < x`;
+               COMPLEX_NORM_NZ] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `ball(a:complex,t) SUBSET s` ASSUME_TAC THENL
+   [MP_TAC(ISPECL [`ball(a:complex,t)`; `s:complex->bool`]
+          CONNECTED_INTER_FRONTIER) THEN
+    REWRITE_TAC[CONNECTED_BALL; SET_RULE `s DIFF t = {} <=> s SUBSET t`] THEN
+    MATCH_MP_TAC(TAUT `~p /\ r ==> (~p /\ ~q ==> ~r) ==> q`) THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN EXISTS_TAC `a:complex` THEN
+
+      ASM_REWRITE_TAC[IN_INTER; CENTRE_IN_BALL];
+      REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_INTER; IN_BALL] THEN
+      ASM_MESON_TAC[REAL_NOT_LE]];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`f:complex->complex`; `a:complex`; `t:real`; `r:real`] BLOCH) THEN
+  ASM_REWRITE_TAC[] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[HOLOMORPHIC_ON_SUBSET]; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The Little Picard Theorem.                                                *)

@@ -417,6 +417,54 @@ let REAL_FRAC_EQ = prove
   REWRITE_TAC[GSYM FRAC_UNIQUE; REAL_SUB_REFL; INTEGER_CLOSED]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Assertions that there are integers between well-spaced reals.             *)
+(* ------------------------------------------------------------------------- *)
+
+let INTEGER_EXISTS_BETWEEN_ALT = prove
+ (`!x y. x + &1 <= y ==> ?n. integer n /\ x < n /\ n <= y`,
+  REPEAT STRIP_TAC THEN EXISTS_TAC `floor y` THEN
+  MP_TAC(SPEC `y:real` FLOOR) THEN SIMP_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let INTEGER_EXISTS_BETWEEN_LT = prove
+ (`!x y. x + &1 < y ==> ?n. integer n /\ x < n /\ n < y`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `integer y` THENL
+   [EXISTS_TAC `y - &1:real` THEN
+    ASM_SIMP_TAC[INTEGER_CLOSED] THEN ASM_REAL_ARITH_TAC;
+    FIRST_ASSUM(MP_TAC o MATCH_MP INTEGER_EXISTS_BETWEEN_ALT o
+      MATCH_MP REAL_LT_IMP_LE) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN
+    ASM_REWRITE_TAC[REAL_LT_LE] THEN ASM_MESON_TAC[]]);;
+
+let INTEGER_EXISTS_BETWEEN = prove
+ (`!x y. x + &1 <= y ==> ?n. integer n /\ x <= n /\ n < y`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `integer y` THENL
+   [EXISTS_TAC `y - &1:real` THEN
+    ASM_SIMP_TAC[INTEGER_CLOSED] THEN ASM_REAL_ARITH_TAC;
+    FIRST_ASSUM(MP_TAC o MATCH_MP INTEGER_EXISTS_BETWEEN_ALT) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN
+    ASM_REWRITE_TAC[REAL_LT_LE] THENL [ASM_REAL_ARITH_TAC; ASM_MESON_TAC[]]]);;
+
+let INTEGER_EXISTS_BETWEEN_ABS = prove
+ (`!x y. &1 <= abs(x - y)
+         ==> ?n. integer n /\ (x <= n /\ n < y \/ y <= n /\ n < x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[real_abs] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THENL
+   [MP_TAC(ISPECL [`y:real`; `x:real`] INTEGER_EXISTS_BETWEEN);
+    MP_TAC(ISPECL [`x:real`; `y:real`] INTEGER_EXISTS_BETWEEN)] THEN
+  (ANTS_TAC THENL [ASM_REAL_ARITH_TAC; MATCH_MP_TAC MONO_EXISTS]) THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[]);;
+
+let INTEGER_EXISTS_BETWEEN_ABS_LT = prove
+ (`!x y. &1 < abs(x - y)
+         ==> ?n. integer n /\ (x < n /\ n < y \/ y < n /\ n < x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[real_abs] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THENL
+   [MP_TAC(ISPECL [`y:real`; `x:real`] INTEGER_EXISTS_BETWEEN_LT);
+    MP_TAC(ISPECL [`x:real`; `y:real`] INTEGER_EXISTS_BETWEEN_LT)] THEN
+  (ANTS_TAC THENL [ASM_REAL_ARITH_TAC; MATCH_MP_TAC MONO_EXISTS]) THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A couple more theorems about real_of_int.                                 *)
 (* ------------------------------------------------------------------------- *)
 

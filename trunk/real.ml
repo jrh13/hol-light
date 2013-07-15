@@ -1424,6 +1424,19 @@ let REAL_SGN_CASES = prove
  (`!x. real_sgn x = &0 \/ real_sgn x = &1 \/ real_sgn x = -- &1`,
   REWRITE_TAC[real_sgn] THEN MESON_TAC[]);;
 
+let REAL_SGN_INEQS = prove
+ (`(!x. &0 <= real_sgn x <=> &0 <= x) /\
+   (!x. &0 < real_sgn x <=> &0 < x) /\
+   (!x. &0 >= real_sgn x <=> &0 >= x) /\
+   (!x. &0 > real_sgn x <=> &0 > x) /\
+   (!x. &0 = real_sgn x <=> &0 = x) /\
+   (!x. real_sgn x <= &0 <=> x <= &0) /\
+   (!x. real_sgn x < &0 <=> x < &0) /\
+   (!x. real_sgn x >= &0 <=> x >= &0) /\
+   (!x. real_sgn x > &0 <=> x > &0) /\
+   (!x. real_sgn x = &0 <=> x = &0)`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Useful "without loss of generality" lemmas.                               *)
 (* ------------------------------------------------------------------------- *)

@@ -191,6 +191,52 @@ let SIN_VECTOR_ANGLE_EQ = prove
   FIRST_X_ASSUM(MP_TAC o AP_TERM `asn`) THEN
   REWRITE_TAC[ASN_SIN_VECTOR_ANGLE] THEN REAL_ARITH_TAC);;
 
+let CONTINUOUS_WITHIN_CX_VECTOR_ANGLE_COMPOSE = prove
+ (`!f:real^M->real^N g x s.
+     ~(f x = vec 0) /\ ~(g x = vec 0) /\
+     f continuous (at x within s) /\
+     g continuous (at x within s)
+     ==> (\x. Cx(vector_angle (f x) (g x))) continuous (at x within s)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `trivial_limit(at (x:real^M) within s)` THEN
+  ASM_SIMP_TAC[CONTINUOUS_TRIVIAL_LIMIT; vector_angle] THEN
+  SUBGOAL_THEN
+   `(cacs o (\x. Cx(((f x:real^N) dot g x) / (norm(f x) * norm(g x)))))
+    continuous (at (x:real^M) within s)`
+  MP_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_WITHIN_COMPOSE THEN CONJ_TAC THENL
+     [REWRITE_TAC[CX_DIV; CX_MUL] THEN REWRITE_TAC[WITHIN_UNIV] THEN
+      MATCH_MP_TAC CONTINUOUS_COMPLEX_DIV THEN
+      ASM_SIMP_TAC[NETLIMIT_WITHIN; COMPLEX_ENTIRE; CX_INJ; NORM_EQ_0] THEN
+      REWRITE_TAC[CONTINUOUS_CX_LIFT; GSYM CX_MUL; LIFT_CMUL] THEN
+      ASM_SIMP_TAC[CONTINUOUS_LIFT_DOT2] THEN
+      MATCH_MP_TAC CONTINUOUS_MUL THEN
+      ASM_SIMP_TAC[CONTINUOUS_LIFT_NORM_COMPOSE; o_DEF];
+      MATCH_MP_TAC CONTINUOUS_WITHIN_SUBSET THEN
+      EXISTS_TAC `{z | real z /\ abs(Re z) <= &1}` THEN
+      REWRITE_TAC[CONTINUOUS_WITHIN_CACS_REAL] THEN
+      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV; IN_ELIM_THM] THEN
+      REWRITE_TAC[REAL_CX; RE_CX; NORM_CAUCHY_SCHWARZ_DIV]];
+    ASM_SIMP_TAC[CONTINUOUS_WITHIN; CX_ACS; o_DEF;
+                 NORM_CAUCHY_SCHWARZ_DIV] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_TRANSFORM_EVENTUALLY) THEN
+    SUBGOAL_THEN
+      `eventually (\y. ~((f:real^M->real^N) y = vec 0) /\
+                       ~((g:real^M->real^N) y = vec 0))
+                  (at x within s)`
+    MP_TAC THENL
+     [REWRITE_TAC[EVENTUALLY_AND] THEN CONJ_TAC THENL
+       [UNDISCH_TAC `(f:real^M->real^N) continuous (at x within s)`;
+        UNDISCH_TAC `(g:real^M->real^N) continuous (at x within s)`] THEN
+      REWRITE_TAC[CONTINUOUS_WITHIN; tendsto] THENL
+       [DISCH_THEN(MP_TAC o SPEC `norm((f:real^M->real^N) x)`);
+        DISCH_THEN(MP_TAC o SPEC `norm((g:real^M->real^N) x)`)] THEN
+      ASM_REWRITE_TAC[NORM_POS_LT] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+      REWRITE_TAC[] THEN CONV_TAC NORM_ARITH;
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+      SIMP_TAC[CX_ACS; NORM_CAUCHY_SCHWARZ_DIV]]]);;
+
 let CONTINUOUS_AT_CX_VECTOR_ANGLE = prove
  (`!c x:real^N. ~(x = vec 0) ==> (Cx o vector_angle c) continuous (at x)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[o_DEF; vector_angle] THEN

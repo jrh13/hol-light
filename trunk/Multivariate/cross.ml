@@ -2,7 +2,7 @@
 (* Cross products in real^3.                                                 *)
 (* ========================================================================= *)
 
-needs "Multivariate/determinants.ml";;
+needs "Multivariate/topology.ml";;
 
 prioritize_vector();;
 
@@ -77,6 +77,14 @@ let CROSS_LNEG = prove
 
 let CROSS_RNEG = prove
  (`!x y. x cross (--y) = --(x cross y)`,
+  VEC3_TAC);;
+
+let CROSS_LSUB = prove
+ (`!x y z. (x - y) cross z = x cross z - y cross z`,
+  VEC3_TAC);;
+
+let CROSS_RSUB = prove
+ (`!x y z. x cross (y - z) = x cross y - x cross z`,
   VEC3_TAC);;
 
 let CROSS_JACOBI = prove
@@ -178,6 +186,11 @@ let NORM_AND_CROSS_EQ_0 = prove
   ASM_REWRITE_TAC[GSYM DOT_EQ_0; DOT_CROSS; REAL_MUL_LZERO] THEN
   ASM_REWRITE_TAC[REAL_SUB_RZERO; REAL_ENTIRE; DOT_EQ_0]);;
 
+let BILINEAR_CROSS = prove
+ (`bilinear(cross)`,
+  REWRITE_TAC[linear; bilinear; CROSS_LADD; CROSS_RADD;
+              CROSS_LMUL; CROSS_RMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Preservation by rotation, or other orthogonal transformation up to sign.  *)
 (* ------------------------------------------------------------------------- *)
@@ -229,6 +242,26 @@ let CROSS_LINEAR_IMAGE = prove
            ==> (f x) cross (f y) = f(x cross y)`,
   SIMP_TAC[ORTHOGONAL_TRANSFORMATION; CONJ_ASSOC; VECTOR_MUL_LID;
            CROSS_ORTHOGONAL_TRANSFORMATION]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity.                                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_CROSS = prove
+ (`!net:(A)net f g.
+        f continuous net /\ g continuous net
+        ==> (\x. (f x) cross (g x)) continuous net`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[CONTINUOUS_COMPONENTWISE_LIFT] THEN
+  REWRITE_TAC[cross; VECTOR_3; DIMINDEX_3; FORALL_3; LIFT_SUB] THEN
+  REPEAT CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_SUB THEN
+  REWRITE_TAC[LIFT_CMUL] THEN CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_MUL THEN
+  ASM_SIMP_TAC[o_DEF; CONTINUOUS_LIFT_COMPONENT_COMPOSE]);;
+
+let CONTINUOUS_ON_CROSS = prove
+ (`!f:real^N->real^3 g s.
+        f continuous_on s /\ g continuous_on s
+        ==> (\x. (f x) cross (g x)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_CROSS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Prove a weaker variant for more convenient interface with functions       *)

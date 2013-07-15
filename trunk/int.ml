@@ -276,8 +276,8 @@ let INT_OF_REAL_THM =
     let avs'' = map int_of_real_var avs in
     GENL avs'' (REW_RULE(SPECL avs' (GENL newavs th))) in
   let rec INT_OF_REAL_THM th =
-    if is_conj(concl th) then CONJ (INT_OF_REAL_THM1 (CONJUNCT1 th))
-                                   (INT_OF_REAL_THM1 (CONJUNCT2 th))
+    if is_conj(concl th) then CONJ (INT_OF_REAL_THM (CONJUNCT1 th))
+                                   (INT_OF_REAL_THM (CONJUNCT2 th))
     else INT_OF_REAL_THM1 th in
   INT_OF_REAL_THM;;
 
@@ -501,6 +501,7 @@ let INT_SGN_0 = INT_OF_REAL_THM REAL_SGN_0;;
 let INT_SGN_ABS = INT_OF_REAL_THM REAL_SGN_ABS;;
 let INT_SGN_CASES = INT_OF_REAL_THM REAL_SGN_CASES;;
 let INT_SGN_EQ = INT_OF_REAL_THM REAL_SGN_EQ;;
+let INT_SGN_INEQS = INT_OF_REAL_THM REAL_SGN_INEQS;;
 let INT_SGN_MUL = INT_OF_REAL_THM REAL_SGN_MUL;;
 let INT_SGN_NEG = INT_OF_REAL_THM REAL_SGN_NEG;;
 let INT_SOS_EQ_0 = INT_OF_REAL_THM REAL_SOS_EQ_0;;
@@ -643,6 +644,17 @@ let INT_SUB = INT_ARITH `!x y. x - y = x + --y`;;
 let INT_MAX = INT_ARITH `!x y. max x y = if x <= y then y else x`;;
 
 let INT_MIN = INT_ARITH `!x y. min x y = if x <= y then x else y`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Another useful lemma.                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let INT_OF_NUM_EXISTS = prove
+ (`!x:int. (?n. x = &n) <=> &0 <= x`,
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_SIMP_TAC[INT_POS] THEN
+  MP_TAC(ISPEC `x:int` INT_IMAGE) THEN
+  REWRITE_TAC[OR_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_INT_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Archimedian property for the integers.                                    *)

@@ -3047,6 +3047,11 @@ let CLOSURE_SEQUENTIAL = prove
   EXISTS_TAC `\n:num. l:real^N` THEN
   ASM_REWRITE_TAC[LIM_CONST]);;
 
+let CLOSED_CONTAINS_SEQUENTIAL_LIMIT = prove
+ (`!s x l:real^N.
+        closed s /\ (!n. x n IN s) /\ (x --> l) sequentially ==> l IN s`,
+  MESON_TAC[CLOSURE_SEQUENTIAL; CLOSURE_CLOSED]);;
+
 let CLOSED_SEQUENTIAL_LIMITS = prove
  (`!s. closed s <=>
        !x l. (!n. x(n) IN s) /\ (x --> l) sequentially ==> l IN s`,
@@ -4389,6 +4394,16 @@ let OPEN_DELETE = prove
  (`!s x. open s ==> open(s DELETE x)`,
   let lemma = prove(`s DELETE x = s DIFF {x}`,SET_TAC[]) in
   SIMP_TAC[lemma; OPEN_DIFF; CLOSED_SING]);;
+
+let OPEN_IN_DELETE = prove
+ (`!u s a:real^N.
+        open_in (subtopology euclidean u) s
+        ==> open_in (subtopology euclidean u) (s DELETE a)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `(a:real^N) IN s` THENL
+   [ONCE_REWRITE_TAC[SET_RULE `s DELETE a = s DIFF {a}`] THEN
+    MATCH_MP_TAC OPEN_IN_DIFF THEN ASM_REWRITE_TAC[CLOSED_IN_SING] THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN ASM SET_TAC[];
+    ASM_SIMP_TAC[SET_RULE `~(a IN s) ==> s DELETE a = s`]]);;
 
 let CLOSED_INTERS_COMPACT = prove
  (`!s:real^N->bool.
@@ -6161,6 +6176,44 @@ let INTERIOR_HYPERPLANE = prove
   REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM; NOT_IN_EMPTY] THEN
   REAL_ARITH_TAC);;
 
+let FRONTIER_HALFSPACE_LE = prove
+ (`!a:real^N b. ~(a = vec 0 /\ b = &0)
+                ==> frontier {x | a dot x <= b} = {x | a dot x = b}`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = vec 0` THEN
+  ASM_SIMP_TAC[DOT_LZERO] THENL
+   [ASM_CASES_TAC `&0 <= b` THEN
+    ASM_REWRITE_TAC[UNIV_GSPEC; FRONTIER_UNIV; EMPTY_GSPEC; FRONTIER_EMPTY];
+    ASM_SIMP_TAC[frontier; INTERIOR_HALFSPACE_LE; CLOSURE_CLOSED;
+                 CLOSED_HALFSPACE_LE] THEN
+    REWRITE_TAC[EXTENSION; IN_DIFF; IN_ELIM_THM] THEN REAL_ARITH_TAC]);;
+
+let FRONTIER_HALFSPACE_GE = prove
+ (`!a:real^N b. ~(a = vec 0 /\ b = &0)
+                ==> frontier {x | a dot x >= b} = {x | a dot x = b}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`--a:real^N`; `--b:real`] FRONTIER_HALFSPACE_LE) THEN
+  ASM_REWRITE_TAC[VECTOR_NEG_EQ_0; REAL_NEG_EQ_0; DOT_LNEG] THEN
+  REWRITE_TAC[REAL_LE_NEG2; REAL_EQ_NEG2; real_ge]);;
+
+let FRONTIER_HALFSPACE_LT = prove
+ (`!a:real^N b. ~(a = vec 0 /\ b = &0)
+                ==> frontier {x | a dot x < b} = {x | a dot x = b}`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = vec 0` THEN
+  ASM_SIMP_TAC[DOT_LZERO] THENL
+   [ASM_CASES_TAC `&0 < b` THEN
+    ASM_REWRITE_TAC[UNIV_GSPEC; FRONTIER_UNIV; EMPTY_GSPEC; FRONTIER_EMPTY];
+    ASM_SIMP_TAC[frontier; CLOSURE_HALFSPACE_LT; INTERIOR_OPEN;
+                 OPEN_HALFSPACE_LT] THEN
+    REWRITE_TAC[EXTENSION; IN_DIFF; IN_ELIM_THM] THEN REAL_ARITH_TAC]);;
+
+let FRONTIER_HALFSPACE_GT = prove
+ (`!a:real^N b. ~(a = vec 0 /\ b = &0)
+                ==> frontier {x | a dot x > b} = {x | a dot x = b}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`--a:real^N`; `--b:real`] FRONTIER_HALFSPACE_LT) THEN
+  ASM_REWRITE_TAC[VECTOR_NEG_EQ_0; REAL_NEG_EQ_0; DOT_LNEG] THEN
+  REWRITE_TAC[REAL_LT_NEG2; REAL_EQ_NEG2; real_gt]);;
+
 let INTERIOR_STANDARD_HYPERPLANE = prove
  (`!k a. interior {x:real^N | x$k = a} = {}`,
   REPEAT GEN_TAC THEN
@@ -6466,6 +6519,33 @@ let CONTINUOUS_WITHIN_LIFT_SQRT = prove
     MATCH_MP_TAC CONTINUOUS_AT_WITHIN THEN
     MATCH_MP_TAC CONTINUOUS_AT_SQRT THEN ASM_REWRITE_TAC[]]);;
 
+let CONTINUOUS_WITHIN_SQRT_COMPOSE = prove
+ (`!f s a:real^N.
+        (\x. lift(f x)) continuous (at a within s) /\
+        (&0 < f a \/ !x. x IN s ==> &0 <= f x)
+        ==> (\x. lift(sqrt(f x))) continuous (at a within s)`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN
+   `(\x:real^N. lift(sqrt(f x))) = (lift o sqrt o drop) o (lift o f)`
+  SUBST1_TAC THENL [REWRITE_TAC[o_DEF; LIFT_DROP]; ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN
+  (MATCH_MP_TAC CONTINUOUS_WITHIN_COMPOSE THEN
+   CONJ_TAC THENL [ASM_REWRITE_TAC[o_DEF]; ALL_TAC])
+  THENL
+   [MATCH_MP_TAC CONTINUOUS_AT_WITHIN THEN
+    MATCH_MP_TAC CONTINUOUS_AT_SQRT THEN ASM_REWRITE_TAC[o_DEF; LIFT_DROP];
+    MATCH_MP_TAC CONTINUOUS_WITHIN_LIFT_SQRT THEN
+    ASM_REWRITE_TAC[FORALL_IN_IMAGE; o_DEF; LIFT_DROP]]);;
+
+let CONTINUOUS_AT_SQRT_COMPOSE = prove
+ (`!f a:real^N.
+        (\x. lift(f x)) continuous (at a) /\ (&0 < f a \/ !x. &0 <= f x)
+        ==> (\x. lift(sqrt(f x))) continuous (at a)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`f:real^N->real`; `(:real^N)`; `a:real^N`]
+        CONTINUOUS_WITHIN_SQRT_COMPOSE) THEN
+  REWRITE_TAC[WITHIN_UNIV; IN_UNIV]);;
+
 let CONTINUOUS_ON_LIFT_SQRT = prove
  (`!s. (!x. x IN s ==> &0 <= drop x)
        ==> (lift o sqrt o drop) continuous_on s`,
@@ -6644,50 +6724,59 @@ let LINEAR_CONTINUOUS_ON = prove
  (`!f:real^M->real^N s. linear f ==> f continuous_on s`,
   MESON_TAC[LINEAR_CONTINUOUS_AT; CONTINUOUS_AT_IMP_CONTINUOUS_ON]);;
 
+let LINEAR_CONTINUOUS_COMPOSE = prove
+ (`!net f:A->real^N g:real^N->real^P.
+        f continuous net /\ linear g ==> (\x. g(f x)) continuous net`,
+  REWRITE_TAC[continuous; LIM_LINEAR]);;
+
+let LINEAR_CONTINUOUS_ON_COMPOSE = prove
+ (`!f:real^M->real^N g:real^N->real^P s.
+        f continuous_on s /\ linear g ==> (\x. g(f x)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
+           LINEAR_CONTINUOUS_COMPOSE]);;
+
+let CONTINUOUS_LIFT_COMPONENT_COMPOSE = prove
+ (`!net f:A->real^N i. f continuous net ==> (\x. lift(f x$i)) continuous net`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `linear(\x:real^N. lift (x$i))` MP_TAC THENL
+   [REWRITE_TAC[LINEAR_LIFT_COMPONENT]; REWRITE_TAC[GSYM IMP_CONJ_ALT]] THEN
+  REWRITE_TAC[LINEAR_CONTINUOUS_COMPOSE]);;
+
+let CONTINUOUS_ON_LIFT_COMPONENT_COMPOSE = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s
+        ==> (\x. lift (f x$i)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
+           CONTINUOUS_LIFT_COMPONENT_COMPOSE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Also bilinear functions, in composition form.                             *)
 (* ------------------------------------------------------------------------- *)
 
-let BILINEAR_CONTINUOUS_AT_COMPOSE = prove
- (`!f g h x.
-        f continuous (at x) /\ g continuous (at x) /\ bilinear h
-        ==> (\x. h (f x) (g x)) continuous (at x)`,
-  REWRITE_TAC[CONTINUOUS_AT; LIM_BILINEAR]);;
-
-let BILINEAR_CONTINUOUS_WITHIN_COMPOSE = prove
- (`!f g h a s.
-        f continuous (at a within s) /\
-        g continuous (at a within s) /\
-        bilinear h
-        ==> (\x. h (f x) (g x)) continuous (at a within s)`,
-  REWRITE_TAC[CONTINUOUS_WITHIN; LIM_BILINEAR]);;
+let BILINEAR_CONTINUOUS_COMPOSE = prove
+ (`!net f:A->real^M g:A->real^N h:real^M->real^N->real^P.
+        f continuous net /\ g continuous net /\ bilinear h
+        ==> (\x. h (f x) (g x)) continuous net`,
+  REWRITE_TAC[continuous; LIM_BILINEAR]);;
 
 let BILINEAR_CONTINUOUS_ON_COMPOSE = prove
  (`!f g h s. f continuous_on s /\ g continuous_on s /\ bilinear h
              ==> (\x. h (f x) (g x)) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
-           BILINEAR_CONTINUOUS_WITHIN_COMPOSE]);;
+           BILINEAR_CONTINUOUS_COMPOSE]);;
 
 let BILINEAR_DOT = prove
  (`bilinear (\x y:real^N. lift(x dot y))`,
   REWRITE_TAC[bilinear; linear; DOT_LADD; DOT_RADD; DOT_LMUL; DOT_RMUL] THEN
   REWRITE_TAC[LIFT_ADD; LIFT_CMUL]);;
 
-let CONTINUOUS_AT_LIFT_DOT2 = prove
- (`!f:real^M->real^N g x.
-        f continuous at x /\ g continuous at x
-        ==> (\x. lift(f x dot g x)) continuous at x`,
+let CONTINUOUS_LIFT_DOT2 = prove
+ (`!net f:A->real^N i.
+        f continuous net /\ g continuous net
+        ==> (\x. lift(f x dot g x)) continuous net`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
    [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
-  BILINEAR_CONTINUOUS_AT_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
-
-let CONTINUOUS_WITHIN_LIFT_DOT2 = prove
- (`!f:real^M->real^N g x s.
-        f continuous (at x within s) /\ g continuous (at x within s)
-        ==> (\x. lift(f x dot g x)) continuous (at x within s)`,
-  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
-   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
-  BILINEAR_CONTINUOUS_WITHIN_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
+  BILINEAR_CONTINUOUS_COMPOSE) BILINEAR_DOT)) THEN REWRITE_TAC[]);;
 
 let CONTINUOUS_ON_LIFT_DOT2 = prove
  (`!f:real^M->real^N g s.
@@ -10720,19 +10809,6 @@ let CONTINUOUS_ON_COMPONENTWISE_LIFT = prove
   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
    [CONTINUOUS_COMPONENTWISE_LIFT] THEN
   MESON_TAC[]);;
-
-let CONTINUOUS_LIFT_COMPONENT_COMPOSE = prove
- (`!net f:A->real^N.
-        f continuous net /\ 1 <= i /\ i <= dimindex(:N)
-        ==> (\x. lift (f x$i)) continuous net`,
-  MESON_TAC[CONTINUOUS_COMPONENTWISE_LIFT]);;
-
-let CONTINUOUS_ON_LIFT_COMPONENT_COMPOSE = prove
- (`!f:real^M->real^N s.
-        f continuous_on s /\ 1 <= i /\ i <= dimindex(:N)
-
-        ==> (\x. lift (f x$i)) continuous_on s`,
-  MESON_TAC[CONTINUOUS_ON_COMPONENTWISE_LIFT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some more convenient intermediate-value theorem formulations.             *)

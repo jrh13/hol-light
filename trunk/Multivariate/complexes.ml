@@ -1201,6 +1201,11 @@ let IM_COMPLEX_INV_EQ_0 = prove
   SIMP_TAC[GSYM REAL_LE_ANTISYM; IM_COMPLEX_INV_LE_0; IM_COMPLEX_INV_GE_0] THEN
   REAL_ARITH_TAC);;
 
+let REAL_SGN_RE_COMPLEX_DIV = prove
+ (`!w z. real_sgn(Re(w / z)) = real_sgn(Re(w * cnj z))`,
+  REWRITE_TAC[real_sgn; RE_COMPLEX_DIV_GT_0; RE_COMPLEX_DIV_GE_0;
+              REAL_ARITH `x < &0 <=> ~(&0 <= x)`]);;
+
 let REAL_SGN_IM_COMPLEX_DIV = prove
  (`!w z. real_sgn(Im(w / z)) = real_sgn(Im(w * cnj z))`,
   REWRITE_TAC[real_sgn; IM_COMPLEX_DIV_GT_0; IM_COMPLEX_DIV_GE_0;

@@ -324,6 +324,10 @@ let SING_SUBSET = prove
  (`!s x. {x} SUBSET s <=> x IN s`,
   SET_TAC[]);;
 
+let SUBSET_RESTRICT = prove
+ (`!s P. {x | x IN s /\ P x} SUBSET s`,
+  SIMP_TAC[SUBSET; IN_ELIM_THM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Proper subset.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -404,18 +408,18 @@ let UNION_SUBSET = prove
   SET_TAC[]);;
 
 let FORALL_SUBSET_UNION = prove
- (`!t u:A->bool.                                                               
+ (`!t u:A->bool.
         (!s. s SUBSET t UNION u ==> P s) <=>
         (!t' u'. t' SUBSET t /\ u' SUBSET u ==> P(t' UNION u'))`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL              
+  REPEAT GEN_TAC THEN EQ_TAC THENL
    [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[];
     DISCH_TAC THEN X_GEN_TAC `s:A->bool` THEN DISCH_TAC THEN
     FIRST_ASSUM(MP_TAC o SPECL [`s INTER t:A->bool`; `s INTER u:A->bool`]) THEN
     ANTS_TAC THENL [ALL_TAC; MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC] THEN
-    ASM SET_TAC[]]);;        
-                        
+    ASM SET_TAC[]]);;
+
 let EXISTS_SUBSET_UNION = prove
- (`!t u:A->bool.                
+ (`!t u:A->bool.
         (?s. s SUBSET t UNION u /\ P s) <=>
         (?t' u'. t' SUBSET t /\ u' SUBSET u /\ P(t' UNION u'))`,
   REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
@@ -1139,6 +1143,10 @@ let FINITE_SUBSET = prove
       UNDISCH_TAC `t SUBSET x:A INSERT u` THEN
       UNDISCH_TAC `~(x:A IN t)` THEN SET_TAC[]]]);;
 
+let FINITE_RESTRICT = prove
+ (`!s:A->bool P. FINITE s ==> FINITE {x | x IN s /\ P x}`,
+  MESON_TAC[SUBSET_RESTRICT; FINITE_SUBSET]);;
+
 let FINITE_UNION_IMP = prove
  (`!(s:A->bool) t. FINITE s /\ FINITE t ==> FINITE (s UNION t)`,
   REWRITE_TAC[IMP_CONJ] THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
@@ -1323,6 +1331,31 @@ let FINITE_DIFF = prove
 let INFINITE_SUPERSET = prove
  (`!s t. INFINITE s /\ s SUBSET t ==> INFINITE t`,
   REWRITE_TAC[INFINITE] THEN MESON_TAC[FINITE_SUBSET]);;
+
+let FINITE_TRANSITIVITY_CHAIN = prove
+ (`!R s:A->bool.
+        FINITE s /\
+        (!x. ~(R x x)) /\
+        (!x y z. R x y /\ R y z ==> R x z) /\
+        (!x. x IN s ==> ?y. y IN s /\ R x y)
+        ==> s = {}`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN REWRITE_TAC[NOT_IN_EMPTY] THEN
+  SET_TAC[]);;
+
+let UNIONS_MAXIMAL_SETS = prove
+ (`!f. FINITE f
+       ==> UNIONS {t:A->bool | t IN f /\ !u. u IN f ==> ~(t PSUBSET u)} =
+           UNIONS f`,
+  SIMP_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_UNIONS; SUBSET_RESTRICT] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC UNIONS_MONO THEN
+  X_GEN_TAC `s:A->bool` THEN DISCH_TAC THEN REWRITE_TAC[EXISTS_IN_GSPEC] THEN
+  GEN_REWRITE_TAC I [TAUT `p <=> ~ ~ p`] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`\t u:A->bool. s SUBSET t /\ t PSUBSET u`;
+    `{t:A->bool | t IN f /\ s SUBSET t}`]FINITE_TRANSITIVITY_CHAIN) THEN
+  ASM_SIMP_TAC[NOT_IMP; FINITE_RESTRICT; FORALL_IN_GSPEC; EXISTS_IN_GSPEC] THEN
+  REPEAT CONJ_TAC THENL [SET_TAC[]; SET_TAC[]; ALL_TAC; ASM SET_TAC[]] THEN
+  ASM_MESON_TAC[PSUBSET_TRANS; SUBSET_PSUBSET_TRANS; PSUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Recursion over finite sets; based on Ching-Tsun's code (archive 713).     *)
@@ -1514,14 +1547,6 @@ let ITSET_EQ = prove
   REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
   FIRST_ASSUM(MATCH_MP_TAC o REWRITE_RULE[RIGHT_IMP_FORALL_THM]) THEN
   ASM_MESON_TAC[]);;
-
-let SUBSET_RESTRICT = prove
- (`!s P. {x | x IN s /\ P x} SUBSET s`,
-  SIMP_TAC[SUBSET; IN_ELIM_THM]);;
-
-let FINITE_RESTRICT = prove
- (`!s:A->bool P. FINITE s ==> FINITE {x | x IN s /\ P x}`,
-  MESON_TAC[SUBSET_RESTRICT; FINITE_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality.                                                              *)

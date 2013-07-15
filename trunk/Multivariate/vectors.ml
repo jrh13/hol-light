@@ -5975,6 +5975,60 @@ let RANK_MUL_LE_LEFT = prove
   REWRITE_TAC[RANK_MUL_LE_RIGHT]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Basic lemmas about hyperplanes and halfspaces.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let HYPERPLANE_EQ_EMPTY = prove
+ (`!a:real^N b. {x | a dot x = b} = {} <=> a = vec 0 /\ ~(b = &0)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+  ASM_CASES_TAC `a:real^N = vec 0` THEN ASM_REWRITE_TAC[DOT_LZERO] THENL
+   [MESON_TAC[];
+    DISCH_THEN(MP_TAC o SPEC `b / (a dot a) % a:real^N`) THEN
+    ASM_SIMP_TAC[DOT_RMUL; REAL_DIV_RMUL; DOT_EQ_0]]);;
+
+let HYPERPLANE_EQ_UNIV = prove
+ (`!a b. {x | a dot x = b} = (:real^N) <=> a = vec 0 /\ b = &0`,
+  REPEAT GEN_TAC THEN  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_UNIV] THEN
+  ASM_CASES_TAC `a:real^N = vec 0` THEN ASM_REWRITE_TAC[DOT_LZERO] THENL
+   [MESON_TAC[];
+    DISCH_THEN(MP_TAC o SPEC `(b + &1) / (a dot a) % a:real^N`) THEN
+    ASM_SIMP_TAC[DOT_RMUL; REAL_DIV_RMUL; DOT_EQ_0] THEN REAL_ARITH_TAC]);;
+
+let HALFSPACE_EQ_EMPTY_LT = prove
+ (`!a:real^N b. {x | a dot x < b} = {} <=> a = vec 0 /\ b <= &0`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = vec 0` THENL
+   [ASM_SIMP_TAC[DOT_LZERO; SET_RULE `{x | p} = if p then UNIV else {}`] THEN
+    COND_CASES_TAC THEN REWRITE_TAC[UNIV_NOT_EMPTY] THEN ASM_REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_ELIM_THM] THEN
+    EXISTS_TAC `(b - &1) / (a dot a) % a:real^N` THEN
+    ASM_SIMP_TAC[DOT_RMUL; REAL_DIV_RMUL; DOT_EQ_0] THEN
+    REAL_ARITH_TAC]);;
+
+let HALFSPACE_EQ_EMPTY_GT = prove
+ (`!a:real^N b. {x | a dot x > b} = {} <=> a = vec 0 /\ b >= &0`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`--a:real^N`; `--b:real`] HALFSPACE_EQ_EMPTY_LT) THEN
+  SIMP_TAC[real_gt; DOT_LNEG; REAL_LT_NEG2; VECTOR_NEG_EQ_0] THEN
+  DISCH_TAC THEN AP_TERM_TAC THEN REAL_ARITH_TAC);;
+
+let HALFSPACE_EQ_EMPTY_LE = prove
+ (`!a:real^N b. {x | a dot x <= b} = {} <=> a = vec 0 /\ b < &0`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = vec 0` THENL
+   [ASM_SIMP_TAC[DOT_LZERO; SET_RULE `{x | p} = if p then UNIV else {}`] THEN
+    COND_CASES_TAC THEN REWRITE_TAC[UNIV_NOT_EMPTY] THEN ASM_REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_ELIM_THM] THEN
+    EXISTS_TAC `(b - &1) / (a dot a) % a:real^N` THEN
+    ASM_SIMP_TAC[DOT_RMUL; REAL_DIV_RMUL; DOT_EQ_0] THEN
+    REAL_ARITH_TAC]);;
+
+let HALFSPACE_EQ_EMPTY_GE = prove
+ (`!a:real^N b. {x | a dot x >= b} = {} <=> a = vec 0 /\ b > &0`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`--a:real^N`; `--b:real`] HALFSPACE_EQ_EMPTY_LE) THEN
+  SIMP_TAC[real_ge; DOT_LNEG; REAL_LE_NEG2; VECTOR_NEG_EQ_0] THEN
+  DISCH_TAC THEN AP_TERM_TAC THEN REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* A non-injective linear function maps into a hyperplane.                   *)
 (* ------------------------------------------------------------------------- *)
 
@@ -7754,7 +7808,7 @@ let COLLINEAR_3_DOT_MULTIPLES = prove
    [ASM_REWRITE_TAC[COLLINEAR_2; INSERT_AC; DOT_RZERO; VECTOR_MUL_LZERO;
                     VECTOR_SUB_REFL];
     ONCE_REWRITE_TAC[COLLINEAR_3] THEN
-    POP_ASSUM MP_TAC THEN ONCE_REWRITE_TAC[GSYM VECTOR_SUB_EQ] THEN 
+    POP_ASSUM MP_TAC THEN ONCE_REWRITE_TAC[GSYM VECTOR_SUB_EQ] THEN
     REWRITE_TAC[GSYM DOT_CAUCHY_SCHWARZ_EQUAL; GSYM DOT_EQ_0] THEN
     REWRITE_TAC[GSYM DOT_EQ_0; DOT_RSUB; DOT_LSUB; DOT_RMUL; DOT_LMUL] THEN
     REWRITE_TAC[DOT_SYM] THEN CONV_TAC REAL_RING]);;
@@ -8204,6 +8258,13 @@ add_translation_invariants
                `!a x y. midpoint(a + x,a + y) = a + midpoint(x,y)`;
   (EQT_ELIM o (REWRITE_CONV[between] THENC(EQT_INTRO o NORM_ARITH)))
                `!a x y z. between (a + x) (a + y,a + z) <=> between x (y,z)`];;
+
+let th = prove
+ (`!a s b c:real^N. (a + b) + c IN IMAGE (\x. a + x) s <=> (b + c) IN s`,
+  REWRITE_TAC[IN_IMAGE; VECTOR_ARITH
+    `(a + b) + c:real^N = a + x <=> x = b + c`] THEN
+  MESON_TAC[]) in
+add_translation_invariants [th];;
 
 (* ------------------------------------------------------------------------- *)
 (* A few for lists.                                                          *)
