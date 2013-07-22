@@ -416,6 +416,12 @@ let REAL_FRAC_EQ = prove
  (`!x. frac x = x <=> &0 <= x /\ x < &1`,
   REWRITE_TAC[GSYM FRAC_UNIQUE; REAL_SUB_REFL; INTEGER_CLOSED]);;
 
+let INTEGER_ROUND = prove
+ (`!x. ?n. integer n /\ abs(x - n) <= &1 / &2`,
+  GEN_TAC THEN MATCH_MP_TAC(MESON[] `!a. P a \/ P(a + &1) ==> ?x. P x`) THEN
+  EXISTS_TAC `floor x` THEN MP_TAC(ISPEC `x:real` FLOOR) THEN
+  SIMP_TAC[INTEGER_CLOSED] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Assertions that there are integers between well-spaced reals.             *)
 (* ------------------------------------------------------------------------- *)

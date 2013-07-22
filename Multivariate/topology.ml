@@ -569,6 +569,11 @@ let SPHERE_UNION_BALL = prove
   REWRITE_TAC[ball; cball; sphere; EXTENSION; IN_UNION; IN_ELIM_THM] THEN
   REAL_ARITH_TAC);;
 
+let CBALL_DIFF_SPHERE = prove
+ (`!a r. cball(a,r) DIFF sphere(a,r) = ball(a,r)`,
+  REWRITE_TAC[EXTENSION; IN_DIFF; IN_SPHERE; IN_BALL; IN_CBALL] THEN
+  REAL_ARITH_TAC);;
+
 let OPEN_BALL = prove
  (`!x e. open(ball(x,e))`,
   REWRITE_TAC[open_def; ball; IN_ELIM_THM] THEN ONCE_REWRITE_TAC[DIST_SYM] THEN
@@ -5907,6 +5912,54 @@ let CONTINUOUS_ON_CASES_OPEN = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_CASES_LOCAL_OPEN THEN
   ASM_REWRITE_TAC[] THEN CONJ_TAC THEN MATCH_MP_TAC OPEN_OPEN_IN_TRANS THEN
   ASM_SIMP_TAC[OPEN_UNION] THEN SET_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Likewise on closed sets, with a finiteness assumption.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let PASTING_LEMMA_CLOSED = prove
+ (`!f:A->real^M->real^N g t s k.
+        FINITE k /\
+        (!i. i IN k
+             ==> closed_in (subtopology euclidean s) (t i) /\
+                 (f i) continuous_on (t i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN s INTER t i INTER t j
+                 ==> f i x = f j x) /\
+        (!x. x IN s ==> ?j. j IN k /\ x IN t j /\ g x = f j x)
+        ==> g continuous_on s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_CLOSED_IN_PREIMAGE_EQ] THEN
+  STRIP_TAC THEN X_GEN_TAC `u:real^N->bool` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `{x | x IN s /\ g x IN u} =
+    UNIONS {{x | x IN (t i) /\ ((f:A->real^M->real^N) i x) IN u} |
+            i IN k}`
+  SUBST1_TAC THENL
+   [SUBGOAL_THEN `!i. i IN k ==> ((t:A->real^M->bool) i) SUBSET s`
+    ASSUME_TAC THENL
+     [ASM_MESON_TAC[CLOSED_IN_SUBSET; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY];
+      REWRITE_TAC[UNIONS_GSPEC] THEN ASM SET_TAC[]];
+    MATCH_MP_TAC CLOSED_IN_UNIONS THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+    ASM_MESON_TAC[CLOSED_IN_TRANS]]);;
+
+let PASTING_LEMMA_EXISTS_CLOSED = prove
+ (`!f:A->real^M->real^N t s k.
+        FINITE k /\
+        s SUBSET UNIONS {t i | i IN k} /\
+        (!i. i IN k
+             ==> closed_in (subtopology euclidean s) (t i) /\
+                 (f i) continuous_on (t i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN s INTER t i INTER t j
+                 ==> f i x = f j x)
+        ==> ?g. g continuous_on s /\
+                (!x i. i IN k /\ x IN s INTER t i ==> g x = f i x)`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `\x. (f:A->real^M->real^N)(@i. i IN k /\ x IN t i) x` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC PASTING_LEMMA_CLOSED THEN
+  MAP_EVERY EXISTS_TAC
+   [`f:A->real^M->real^N`; `t:A->real^M->bool`; `k:A->bool`] THEN
+  ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Closure of halflines, halfspaces and hyperplanes.                         *)

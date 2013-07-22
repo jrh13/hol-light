@@ -1,3 +1,7 @@
+Wed 17th Jul 2013       Library/floor.ml
+
+  Added INTEGER_ROUND = |- !x. ?n. integer n /\ abs(x - n) <= &1 / &2
+
 Fri 12th Jul 2013       Library/floor.ml
 
 Added a few theorems asserting that there are integers between well-spaced

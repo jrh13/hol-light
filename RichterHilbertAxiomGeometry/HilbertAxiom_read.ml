@@ -4,29 +4,23 @@
 (*                (c) Copyright, Bill Richter 2013                           *)
 (*          Distributed under the same license as HOL Light                  *)
 (*                                                                           *)
-(* ========================================================================= *)
-
-(* High school students can learn rigorous axiomatic Geometry proofs, as in  *)
+(* High school students can learn rigorous axiomatic geometry proofs, as in  *)
 (* http://www.math.northwestern.edu/~richter/hilbert.pdf, using Hilbert's    *)
-(* axioms, and code up their proofs in miz3 and HOL Light.  Thanks to Bjørn  *)
-(* Jahren, Miguel Lerma,Takuo Matsuoka, Stephen Wilson for advice on         *)
-(* Hilbert's axioms, and especially Benjamin Kordesh, who carefully read     *)
-(* much of the paper and the code.                                           *)
-(*                                                                           *)
-(* Formal proofs are given for the first 7 sections of the paper, the        *)
-(* results cited there from Greenberg's book, and most of Euclid's book I    *)
-(* propositions up to Proposition I.29, following Hartshorne, whose book     *)
-(* seems the most exciting axiomatic geometry text.  A proof assistant is an *)
-(* valuable tool to help read it, as Hartshorne's proofs are often sketchy   *)
-(* and even have gaps.                                                       *)
+(* axioms, and code up readable formal proofs like these here. Thanks to the *)
+(* Mizar folks for their influential language, Freek Wiedijk for his dialect *)
+(* miz3 of HOL Light, John Harrison for explaining how to port Mizar code to *)
+(* miz3 and writing the first 100+ lines of code here, the hol-info list for *)
+(* explaining features of HOL, and Benjamin Kordesh for carefully reading    *)
+(* much of the paper and the code.  Formal proofs are given for the first 7  *)
+(* sections of the paper, the results cited there from Greenberg's book, and *)
+(* most of Euclid's book I propositions up to Proposition I.29, following    *)
+(* Hartshorne, whose book seems the most exciting axiomatic geometry text.   *)
+(* A proof assistant is an valuable tool to help read it, as Hartshorne's    *)
+(* proofs are often sketchy and even have gaps.	 			     *)
 (*                                                                           *)
 (* M. Greenberg, Euclidean and non-Euclidean geometries, Freeman, 1974.      *)
 (* R. Hartshorne, Geometry, Euclid and Beyond, UTM series, Springer, 2000.   *)
-(*                                                                           *)
-(* Thanks to Mizar folks for their influential language, Freek Wiedijk for   *)
-(* the miz3 port of Mizar to HOL Light, and especially John Harrison, for    *)
-(* vigorously promoting readable formal proofs, and the first 100 lines of   *)
-(* the code.  The proofs use the miz3 tactics proof interface readable.ml.   *)
+(* ========================================================================= *)
 
 needs "RichterHilbertAxiomGeometry/readable.ml";;
 
@@ -1895,7 +1889,11 @@ let AngleAddition = theorem `;
     G ∉ a ∧ G,B same_side a     [H1'] by fol a_line H1 InteriorUse;
     ¬Collinear A O G ∧ ¬Collinear A' O' G'     [AOGncol] by fol H1 InteriorEZHelp IN_InteriorAngle;
     Angle (∡ A O B) ∧ Angle (∡ A' O' B') ∧ Angle (∡ A O G) ∧ Angle (∡ A' O' G')     [angles] by fol AOBncol - ANGLE;
-    ∃! r. Ray r ∧ ∃ X. ¬(O = X) ∧ r = ray O X ∧ X ∉ a ∧ X,G same_side a ∧ ∡ A O X ≡ ∡ A' O' B'     [] by hol_by - Distinct a_line H1' C4;
+    ∃! r. Ray r ∧ ∃ X. ¬(O = X) ∧ r = ray O X ∧ X ∉ a ∧ X,G same_side a ∧ ∡ A O X ≡ ∡ A' O' B'     []
+    proof
+      mp_TAC_specl [∡ A' O' B'; O; A; a; G] C4;
+      fol - angles Distinct a_line H1';
+    qed;
     consider X such that
     X ∉ a ∧ X,G same_side a ∧ ∡ A O X ≡ ∡ A' O' B'     [Xexists] by fol -;
     ¬Collinear A O X     [AOXncol] by fol Distinct a_line Xexists NonCollinearRaa CollinearSymmetry;
@@ -2015,7 +2013,11 @@ let AngleTrichotomy = theorem `;
     consider a such that
     Line a ∧ O ∈ a ∧ A ∈ a     [a_line] by fol - I1;
     P ∉ a     [notPa] by fol - Distinct I1 POA Collinear_DEF ∉;
-    ∃! r. Ray r ∧ ∃ Q. ¬(O = Q) ∧ r = ray O Q ∧ Q ∉ a ∧ Q,P same_side a ∧ ∡ A O Q ≡ β     [] by hol_by H1 Distinct a_line - C4;
+    ∃! r. Ray r ∧ ∃ Q. ¬(O = Q) ∧ r = ray O Q ∧ Q ∉ a ∧ Q,P same_side a ∧ ∡ A O Q ≡ β     []
+    proof
+      mp_TAC_specl [β; O; A; a; P] C4;
+      fol H1 Distinct a_line -;
+    qed;
     consider Q such that
     ¬(O = Q) ∧ Q ∉ a ∧ Q,P same_side a ∧ ∡ A O Q ≡ β     [Qexists] by fol -;
     O ∉ open (Q,P)     [notQOP] by fol a_line Qexists SameSide_DEF ∉;
@@ -2188,7 +2190,11 @@ let RightAnglesCongruent = theorem `;
     Line a ∧ O ∈ a ∧ A ∈ a     [a_line] by fol Distinct I1;
     B ∉ a     [notBa] by fol - def_α Collinear_DEF ∉;
     Angle β     [] by fol H1 RightImpliesAngle;
-    ∃! r. Ray r ∧ ∃ P. ¬(O = P) ∧ r = ray O P ∧ P ∉ a ∧ P,B same_side a ∧ ∡ A O P ≡ β     [] by hol_by - Distinct a_line notBa C4;
+    ∃! r. Ray r ∧ ∃ P. ¬(O = P) ∧ r = ray O P ∧ P ∉ a ∧ P,B same_side a ∧ ∡ A O P ≡ β     []
+    proof
+      mp_TAC_specl [β; O; A; a; B] C4;
+      fol - Distinct a_line notBa;
+    qed;
     consider P such that
     ¬(O = P) ∧ P ∉ a ∧ P,B same_side a ∧ ∡ A O P ≡ β     [defP] by fol -;
     O ∉ open (P,B)     [notPOB] by fol a_line - SameSide_DEF ∉;
@@ -2264,7 +2270,11 @@ let C4withC1 = theorem `;
 
   proof
     intro_TAC ∀ α l O A Y P Q, H1, l_line;
-    ∃! r. Ray r ∧ ∃ B. ¬(O = B) ∧ r = ray O B ∧ B ∉ l ∧ B,Y same_side l ∧ ∡ A O B ≡ α     [] by hol_by H1 l_line C4;
+    ∃! r. Ray r ∧ ∃ B. ¬(O = B) ∧ r = ray O B ∧ B ∉ l ∧ B,Y same_side l ∧ ∡ A O B ≡ α     []
+    proof
+      mp_TAC_specl [α; O; A; l; Y] C4;
+      fol H1 l_line;
+    qed;
     consider B such that
     ¬(O = B) ∧ B ∉ l ∧ B,Y same_side l ∧ ∡ A O B ≡ α     [Bexists] by fol -;
     consider N such that
@@ -2292,7 +2302,11 @@ let C4OppositeSide = theorem `;
     ¬(O = Y) ∧ Collinear O Z Y     [notOY] by fol - B1' CollinearSymmetry;
     Y ∉ l     [notYl] by fol notOY l_line NonCollinearRaa ∉;
     consider N such that
-    ¬(O = N) ∧ N ∉ l  ∧  N,Y same_side l  ∧ seg O N ≡ seg P Q  ∧  ∡ A O N ≡ α     [Nexists] by hol_by H1 l_line notYl C4withC1;
+    ¬(O = N) ∧ N ∉ l  ∧  N,Y same_side l  ∧ seg O N ≡ seg P Q  ∧  ∡ A O N ≡ α     [Nexists]
+    proof
+      mp_TAC_specl [α; l; O; A; Y; P; Q] C4withC1;
+      fol H1 l_line -;
+    qed;
     ¬(Z,Y same_side l)     [] by fol l_line ZOY SameSide_DEF;
     ¬(Z,N same_side l)     [] by fol l_line Nexists notYl - SameSideTransitive;
     fol - Nexists;
@@ -2313,7 +2327,11 @@ let SSS = theorem `;
     Segment (seg A B) ∧ Segment (seg C B) ∧ Segment (seg A' B') ∧ Segment (seg C' B')     [segments] by fol Distinct - SEGMENT;
     Angle (∡ C' A' B')     [] by fol H1 CollinearSymmetry ANGLE;
     consider N such that
-    ¬(A = N) ∧ N ∉ h ∧ ¬(B,N same_side h) ∧ seg A N ≡ seg A' B'  ∧  ∡ C A N ≡ ∡ C' A' B'     [Nexists] by hol_by - Distinct h_line notBh C4OppositeSide;
+    ¬(A = N) ∧ N ∉ h ∧ ¬(B,N same_side h) ∧ seg A N ≡ seg A' B'  ∧  ∡ C A N ≡ ∡ C' A' B'     [Nexists]
+    proof
+      mp_TAC_specl [∡ C' A' B'; h; A; C; B; A'; B'] C4OppositeSide;
+      fol - Distinct h_line notBh;
+    qed;
     ¬(C = N)     [] by fol h_line Nexists ∉;
     Segment (seg A N) ∧ Segment (seg C N)     [segN] by fol Nexists - SEGMENT;
     ¬Collinear A N C     [ANCncol] by fol Distinct h_line Nexists NonCollinearRaa;
@@ -2404,7 +2422,11 @@ let AngleBisector = theorem `;
     Line h ∧ D ∈ h ∧ E ∈ h     [h_line] by fol - I1;
     A ∉ h     [notAh] by fol - Collinear_DEF EADncol ∉;
     consider M such that
-    ¬(D = M)  ∧  M ∉ h  ∧  ¬(A,M same_side h)  ∧  seg D M ≡ seg D A  ∧  ∡ E D M ≡ ∡ E D A     [Mexists] by hol_by angEDA notDE ABD' h_line - C4OppositeSide;
+    ¬(D = M)  ∧  M ∉ h  ∧  ¬(A,M same_side h)  ∧  seg D M ≡ seg D A  ∧  ∡ E D M ≡ ∡ E D A     [Mexists]
+    proof
+      mp_TAC_specl [∡ E D A; h; D; E; A; D; A] C4OppositeSide;
+      fol angEDA notDE ABD' h_line -;
+    qed;
     ¬(A = M)     [notAM] by fol h_line - SameSideReflexive;
     ¬Collinear E D M ∧ ¬Collinear D E M ∧ ¬Collinear M E D     [EDMncol] by fol  notDE h_line Mexists NonCollinearRaa CollinearSymmetry;
     seg D E ≡ seg D E  ∧  seg M A ≡ seg M A     [MArefl] by fol notDE notAM SEGMENT C2Reflexive;
@@ -2682,7 +2704,11 @@ let DropPerpendicularToLine = theorem `;
     ¬Collinear B A P ∧ ¬Collinear P A B ∧ ¬(A = P)     [BAPncol] by fol ABl l_line NonCollinearRaa CollinearSymmetry ∉;
     Angle (∡ B A P) ∧ Angle (∡ P A B)     [angBAP] by fol - ANGLE AngleSymmetry;
     consider P' such that
-    ¬(A = P') ∧ P' ∉ l ∧ ¬(P,P' same_side l) ∧ seg A P' ≡ seg A P  ∧  ∡ B A P' ≡ ∡ B A P     [P'exists] by hol_by angBAP ABl BAPncol l_line C4OppositeSide;
+    ¬(A = P') ∧ P' ∉ l ∧ ¬(P,P' same_side l) ∧ seg A P' ≡ seg A P  ∧  ∡ B A P' ≡ ∡ B A P     [P'exists]
+    proof
+      mp_TAC_specl [∡ B A P; l; A; B; P; A; P] C4OppositeSide;
+      fol - ABl BAPncol l_line;
+    qed;
     consider Q such that
     Q ∈ l ∧ Q ∈ open (P,P') ∧ Collinear A B Q     [Qexists] by fol l_line - SameSide_DEF ABl Collinear_DEF;
     ¬Collinear B A P'     [BAP'ncol] by fol l_line ABl I1 Collinear_DEF P'exists ∉;
@@ -3417,7 +3443,11 @@ let ConverseAlternateInteriorAngles = theorem `;
     ¬Collinear C B A     [] by fol Distinct t_line NonCollinearRaa CollinearSymmetry;
     A ∉ m ∧ Angle (∡ C B A)     [notAm] by fol m_line - Collinear_DEF ∉ ANGLE;
     consider D such that
-    ¬(A = D) ∧ D ∉ t ∧ ¬(C,D same_side t) ∧ seg A D ≡ seg A E  ∧  ∡ B A D ≡ ∡ C B A     [Dexists] by hol_by -  Distinct t_line C4OppositeSide;
+    ¬(A = D) ∧ D ∉ t ∧ ¬(C,D same_side t) ∧ seg A D ≡ seg A E  ∧  ∡ B A D ≡ ∡ C B A     [Dexists]
+    proof
+      mp_TAC_specl [∡ C B A; t; A; B; C; A; E] C4OppositeSide;
+      fol -  Distinct t_line;
+    qed;
     consider k such that
     Line k ∧ A ∈ k ∧ D ∈ k     [k_line] by fol Distinct I1;
     k ∥ m     [] by fol - m_line t_line Dexists Distinct AngleSymmetry AlternateInteriorAngles;
@@ -3445,7 +3475,11 @@ let HilbertTriangleSum = theorem `;
     C ∉ x     [notCx] by fol x_line ABCncol Collinear_DEF ∉;
     Angle (∡ C A B)     [] by fol ABCncol CollinearSymmetry ANGLE;
     consider E such that
-    ¬(B = E) ∧ E ∉ x ∧ ¬(C,E same_side x) ∧ seg B E ≡ seg A B ∧ ∡ A B E ≡ ∡ C A B     [Eexists] by hol_by - Distinct x_line notCx C4OppositeSide;
+    ¬(B = E) ∧ E ∉ x ∧ ¬(C,E same_side x) ∧ seg B E ≡ seg A B ∧ ∡ A B E ≡ ∡ C A B     [Eexists]
+    proof
+      mp_TAC_specl [∡ C A B; x; B; A; C; A; B] C4OppositeSide;
+      fol - Distinct x_line notCx;
+    qed;
     consider m such that
     Line m ∧ B ∈ m ∧ E ∈ m     [m_line] by fol - I1 IN_DELETE;
     ∡ E B A ≡ ∡ C A B     [EBAeqCAB] by fol Eexists AngleSymmetry;
@@ -3489,7 +3523,11 @@ let EuclidPropositionI_13 = theorem `;
       B ∉ l     [notBl] by fol - Distinct I1 Collinear_DEF H1 ∉;
       consider F such that
       Right (∡ O A F)  ∧  Angle (∡ O A F)     [RightOAF] by fol Distinct EuclidPropositionI_11 RightImpliesAngle;
-      ∃! r. Ray r ∧ ∃ E. ¬(O = E) ∧ r = ray O E ∧ E ∉ l ∧ E,B same_side l ∧ ∡ A O E ≡ ∡ O A F     [] by hol_by - Distinct l_line notBl C4;
+      ∃! r. Ray r ∧ ∃ E. ¬(O = E) ∧ r = ray O E ∧ E ∉ l ∧ E,B same_side l ∧ ∡ A O E ≡ ∡ O A F     []
+      proof
+        mp_TAC_specl [∡ O A F; O; A; l; B] C4;
+        fol - Distinct l_line notBl;
+      qed;
       consider E such that
       ¬(O = E)  ∧  E ∉ l  ∧  E,B same_side l  ∧  ∡ A O E ≡ ∡ O A F     [Eexists] by fol -;
       ¬Collinear A O E     [AOEncol] by fol Distinct l_line - NonCollinearRaa CollinearSymmetry;

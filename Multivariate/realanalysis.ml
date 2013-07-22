@@ -16294,7 +16294,7 @@ let EXTEND_MAP_CELL_COMPLEX_TO_SPHERE,
                  ==> c1 INTER c2 face_of c1 /\ c1 INTER c2 face_of c2) /\
         s SUBSET UNIONS m /\ closed s /\ convex t /\ bounded t /\
         f continuous_on s /\ IMAGE f s SUBSET relative_frontier t
-        ==> ?k g. FINITE k /\
+        ==> ?k g. FINITE k /\ DISJOINT k s /\
                   g continuous_on (UNIONS m DIFF k) /\
                   IMAGE g (UNIONS m DIFF k) SUBSET relative_frontier t /\
                   !x. x IN s ==> g x = f x)`,
@@ -16897,20 +16897,24 @@ let EXTEND_MAP_CELL_COMPLEX_TO_SPHERE,
         ASM SET_TAC[]];
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real^M->bool` THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `h:real^M->real^N` THEN
-      STRIP_TAC THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real^M` THEN
-      DISCH_TAC THEN TRANS_TAC EQ_TRANS `(g:real^M->real^N) x` THEN
-      CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
-      SUBGOAL_THEN `(x:real^M) IN UNIONS n` MP_TAC THENL
-       [ASM SET_TAC[]; ALL_TAC] THEN
-      REWRITE_TAC[IN_UNIONS] THEN MATCH_MP_TAC MONO_EXISTS THEN
-      X_GEN_TAC `c:real^M->bool` THEN STRIP_TAC THEN
-      ASM_REWRITE_TAC[IN_ELIM_THM] THEN REWRITE_TAC[SUBSET] THEN
-      X_GEN_TAC `y:real^M` THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-      EXISTS_TAC `x:real^M` THEN ASM_REWRITE_TAC[] THEN
-      MATCH_MP_TAC REAL_LET_TRANS THEN
-      EXISTS_TAC `diameter(c:real^M->bool)` THEN
-      ASM_SIMP_TAC[dist] THEN MATCH_MP_TAC DIAMETER_BOUNDED_BOUND THEN
-      ASM_SIMP_TAC[POLYTOPE_IMP_BOUNDED]]]);;
+      STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+       [FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+         `DISJOINT k u ==> s SUBSET u ==> DISJOINT k s`)) THEN
+        REWRITE_TAC[SUBSET] THEN X_GEN_TAC `x:real^M` THEN DISCH_TAC;
+        X_GEN_TAC `x:real^M` THEN
+        DISCH_TAC THEN TRANS_TAC EQ_TRANS `(g:real^M->real^N) x` THEN
+        CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]] THEN
+      (SUBGOAL_THEN `(x:real^M) IN UNIONS n` MP_TAC THENL
+        [ASM SET_TAC[]; ALL_TAC] THEN
+       REWRITE_TAC[IN_UNIONS] THEN MATCH_MP_TAC MONO_EXISTS THEN
+       X_GEN_TAC `c:real^M->bool` THEN STRIP_TAC THEN
+       ASM_REWRITE_TAC[IN_ELIM_THM] THEN REWRITE_TAC[SUBSET] THEN
+       X_GEN_TAC `y:real^M` THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+       EXISTS_TAC `x:real^M` THEN ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC REAL_LET_TRANS THEN
+        EXISTS_TAC `diameter(c:real^M->bool)` THEN
+       ASM_SIMP_TAC[dist] THEN MATCH_MP_TAC DIAMETER_BOUNDED_BOUND THEN
+       ASM_SIMP_TAC[POLYTOPE_IMP_BOUNDED])]]);;
 
 let EXTEND_MAP_SPHERE_TO_SPHERE_GEN = prove
  (`!f:real^M->real^N c s t.
