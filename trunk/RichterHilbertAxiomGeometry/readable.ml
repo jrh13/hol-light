@@ -1,7 +1,6 @@
 (* ========================================================================= *)
-(* ========================================================================= *)
 (* Miz3 interface for tactics proof, allowing readable formal proofs,        *)
-(* improving on miz3 mainly by allowing intelligent use of REWRITE_TAC.      *)
+(* improving on miz3 mainly by allowing full use of REWRITE_TAC.             *)
 (*                                                                           *)
 (*                (c) Copyright, Bill Richter 2013                           *)
 (*          Distributed under the same license as HOL Light                  *)
@@ -13,10 +12,13 @@
 (* Theorem Proving"), Marco Maggesi (author of tactic constructs             *)
 (* INTRO_TAC, DESTRUCT_TAC & HYP), Petros Papapanagiotou (coauthor of        *)
 (* Isabelle Light) and Vincent Aravantinos (author of the Q-module           *)
-(* https://github.com/aravantv/HOL-Light-Q).  An interactive mode is         *)
-(* useful in debugging proofs.  The semantics is obvious, as there is a      *)
-(* simple translation to HOL Light tactics proofs.  Many math characters     *)
-(* (e.g. ⇒, ⇔, ∧, ∨, ¬, ∀, ∃, and ∅) are allowed as in HOL4 and Isabelle. *)
+(* https://github.com/aravantv/HOL-Light-Q).  These readability ideas yield  *)
+(* miz3-type "declarative" constructs like consider and case_split, and also *)
+(* a miz3-type uncluttered interface, with few type annotations, backquotes  *)
+(* or double quotes. Many math characters can be used, as in Isabelle and    *)
+(* HOL4: ⇒, ⇔, ∧, ∨, ¬, ∀, ∃, ∈, ∉, α, β, γ, λ, θ, μ, ⊂,  ∩, ∪, ∅, ━, ≡, *)
+(* ≅, ∡ and ∥.  An interactive mode is useful in debugging proofs.  The      *)
+(* semantics is clear from a simple translation to HOL Light tactics proofs. *)
 (*                                                                           *)
 (* The construct "case_split" reducing the goal to various cases, each given *)
 (* by a "suppose" clause.  The construct "proof" [...] "qed" allows          *)
@@ -25,28 +27,24 @@
 (* implicitly in case_split, to encourage readable proof, but it would be    *)
 (* easy to implement.  The lack of THENL requires adjustments, such as using *)
 (* MATCH_MP_TAC num_INDUCTION instead of INDUCT_TAC.                         *)
-(*                                                                           *)
-(* The Str library defines regexp functions used here to process strings.    *)
-(* John Harrison's HOL_BY improves on MESON_TAC for instantiation.           *)
+(* ========================================================================= *)
+
+(* The Str library defines regexp functions needed to process strings.       *)
 
 #load "str.cma";;
 
-needs "Examples/holby.ml";;
-let hol_by = CONV_TAC o HOL_BY;;
-
 (* parse_qproof uses system.ml quotexpander feature designed for miz3.ml to  *)
 (* turn backquoted expression `;[...]` into a string with no newline or      *)
-(* backslash problems.  This miz3 emulation readable.ml can not be used      *)
-(* simultaneously with miz3, which defines parse_qproof differently.         *)
+(* backslash problems.  Note that miz3.ml defines parse_qproof differently.  *)
 
 let parse_qproof s = (String.sub s 1 (String.length s - 1));;
 
 (* exec_thm, taken from miz3.ml, maps a string to its theorem, and defines   *)
 (* the predicate is_thm which tests if a string represents a theorem.        *)
 
-let exec_phrase b s =
+let exec_phrase s =
   let lexbuf = Lexing.from_string s in
-  let ok = Toploop.execute_phrase b Format.std_formatter
+  let ok = Toploop.execute_phrase false Format.std_formatter
     (!Toploop.parse_toplevel_phrase lexbuf) in
   Format.pp_print_flush Format.std_formatter ();
   (ok,
@@ -56,59 +54,46 @@ let exec_phrase b s =
 
 let exec_thm_out = ref TRUTH;;
 
-let exec_thm s =
+let is_thm s =
   try
-    let ok,rst = exec_phrase false
-      ("exec_thm_out := (("^s^") : thm);;") in
-    if not ok or rst <> "" then raise Noparse;
-    !exec_thm_out
+    let ok,rst = exec_phrase ("exec_thm_out := (("^s^") : thm);;") in
+    if not ok or rst <> "" then raise Noparse
+    else true
+  with _ -> false;;
+
+let exec_thm s =
+  try if not (is_thm s) then raise Noparse else !exec_thm_out
   with _ -> raise Noparse;;
 
 let exec_thmlist_tactic_out = ref REWRITE_TAC;;
 
 let exec_thmlist_tactic s =
   try
-    let ok,rst = exec_phrase false
+    let ok,rst = exec_phrase
       ("exec_thmlist_tactic_out := (("^s^") : thm list -> tactic);;") in
-    if not ok or rst <> "" then raise Noparse;
-    !exec_thmlist_tactic_out
+    if not ok or rst <> "" then raise Noparse
+    else !exec_thmlist_tactic_out
   with _ -> raise Noparse;;
 
 let exec_thmtactic_out = ref MATCH_MP_TAC;;
 
 let exec_thmtactic s =
   try
-    let ok,rst = exec_phrase false
+    let ok,rst = exec_phrase
       ("exec_thmtactic_out := (("^s^") : thm -> tactic);;") in
-    if not ok or rst <> "" then raise Noparse;
-    !exec_thmtactic_out
+    if not ok or rst <> "" then raise Noparse
+    else !exec_thmtactic_out
   with _ -> raise Noparse;;
 
 let exec_tactic_out = ref ALL_TAC;;
 
 let exec_tactic s =
   try
-    let ok,rst = exec_phrase false
+    let ok,rst = exec_phrase
       ("exec_tactic_out := (("^s^") : tactic);;") in
-    if not ok or rst <> "" then raise Noparse;
-    !exec_tactic_out
+    if not ok or rst <> "" then raise Noparse
+    else !exec_tactic_out
   with _ -> raise Noparse;;
-
-let is_thm s =
-  try let thm = exec_thm s in true
-  with _ -> false;;
-
-let is_tactic s =
-  try let tactic = exec_tactic s in true
-  with _ -> false;;
-
-let is_thmtactic s =
-  try let ttac = exec_thmtactic s in true
-  with _ -> false;;
-
-let is_thmlist_tactic s =
-  try let thmlist_tactic = exec_thmlist_tactic s in true
-  with _ -> false;;
 
 (* make_env and parse_env_string, following Mizarlight/miz2a.ml and Vince    *)
 (* Aravantinos's https://github.com/aravantv/HOL-Light-Q, turn a string to a *)
@@ -121,23 +106,31 @@ let (make_env: goal -> (string * pretype) list) =
 let parse_env_string env s = (term_of_preterm o retypecheck env)
   ((fst o parse_preterm o lex o explode) s);;
 
-let (subgoal_THEN: string -> thm_tactic -> tactic) =
-  fun stm ttac gl ->
-    let t = parse_env_string (make_env gl) stm in
-    SUBGOAL_THEN t ttac gl;;
+(* String versions without type annotations of SUBGOAL_THEN, SUBGOAL_TAC,    *)
+(* EXISTS_TAC, X_GEN_TAC, EXISTS_TAC and MP_TAC o SPECL.                     *)
+
+let subgoal_THEN stm ttac gl =
+  SUBGOAL_THEN (parse_env_string (make_env gl) stm) ttac gl;;
 
 let subgoal_TAC s stm prf gl =
-  let t = parse_env_string (make_env gl) stm in
-  SUBGOAL_TAC s t [prf] gl;;
+  SUBGOAL_TAC s (parse_env_string (make_env gl) stm) [prf] gl;;
 
-let (exists_TAC: string -> tactic) =
-  fun stm gl -> let env = make_env gl in
-    EXISTS_TAC (parse_env_string env stm) gl;;
+let exists_TAC stm gl =
+  EXISTS_TAC (parse_env_string (make_env gl) stm) gl;;
 
-let (X_gen_TAC: string -> tactic) =
-  fun svar (asl,w as gl) ->
-    let vartype = (snd o dest_var o fst o dest_forall) w in
-    X_GEN_TAC (mk_var (svar,vartype)) gl;;
+let X_gen_TAC svar (asl,w as gl) =
+  let vartype = (snd o dest_var o fst o dest_forall) w in
+  X_GEN_TAC (mk_var (svar,vartype)) gl;;
+
+let mp_TAC_specl stermlist sthm gl =
+  try
+    let termlist = map (fun s -> parse_env_string (make_env gl) s) stermlist in
+    (MP_TAC o SPECL termlist) (exec_thm sthm) gl
+  with _ -> failwith("not mp_TAC_specl expression:
+    ["^ String.concat "; " stermlist ^"] "^ sthm);;
+
+(* assume transforms a disjunct goal α ∨ β into an implication ¬α ⇒ β and    *)
+(* discharges ¬α.  raa allows proofs by contradiction (reductio ad absurdum). *)
 
 let assume lab notalpha tac (asl,w as gl) =
   let t = parse_env_string (make_env gl) notalpha in
@@ -189,13 +182,13 @@ let CleanMathFontsForHOL_Light s =
 (* Regexp functions using the Str library.                                   *)
 (*                                                                           *)
 (* FindMatch sleft sright s                                                  *)
-(* makes regexps of strings sleft sright,searches recursively in string      *)
-(* s for matched pairs of substrings matching sleft and sright, and          *)
-(* returns the position after the first substring matched by sright          *)
-(* which is not matched by an sleft-matching substring.                      *)
+(* turns strings sleft and sright into regexps, recursively searches in      *)
+(* string s for matched pairs of substrings matching sleft and sright, and   *)
+(* returns the position after the first substring matched by sright which is *)
+(* not matched by an sleft-matching substring.                               *)
 (*                                                                           *)
-(* FindMatch is used by FindSemicolon to find the position after the next    *)
-(* "miz3" semicolon, skipping list semicolons which can occur in terms.      *)
+(* FindMatch is used by FindSemicolon to find the position before the next   *)
+(* semicolon which is not captured in a list.                                *)
 (* FindMatch is used by processByProof, which finds substrings of the sort   *)
 (* "proof" body "qed;"                                                       *)
 (* in a substring s that begins after the "proof", skipping over             *)
@@ -203,6 +196,8 @@ let CleanMathFontsForHOL_Light s =
 (* FindMatch is used by FindCases to take a string                           *)
 (* "suppose" proof_1 "end;" ... "suppose" proof_n "end;"                     *)
 (* and return the list [proof_1; proof_2; ... ; proof_n].                    *)
+(* StringToList uses FindSemicolon to turns a string into the list of        *)
+(* substrings delimited by the semicolons which are not captured in lists.   *)
 
 let ws = "[ \t\n]+";;
 let ws0 = "[ \t\n]*";;
@@ -216,13 +211,14 @@ let rec FindMatch sleft sright s =
   let rec FindMatchPosition s count =
     if count = 1 then 0 else
       try
-        let start = Str.search_forward test s 0 in
+        ignore(Str.search_forward test s 0);
         let endpos = Str.match_end() in
         let rest = Str.string_after s endpos and
         increment =
           if StringRegexpEqual left (Str.matched_group 1 s) then -1 else 1 in
         endpos + (FindMatchPosition rest (count + increment))
-      with Not_found -> failwith("no matching right bracket operator "^ sright ^" to left bracket operator "^ sleft ^" in "^ s) in
+      with Not_found -> failwith("no matching right bracket operator "^
+        sright ^" to left bracket operator "^ sleft ^" in "^ s) in
   FindMatchPosition s 0;;
 
 let rec FindSemicolon s =
@@ -274,6 +270,14 @@ let rec FindCases s =
       case :: (FindCases rest)
   else [];;
 
+let rec StringToList s =
+  if Str.string_match (Str.regexp "[^;]*;") s 0
+  then
+    let pos = FindSemicolon s in
+    let head = Str.string_before s pos in
+    head :: (StringToList (Str.string_after s (pos + 1)))
+  else [s];;
+
 (* StringToTactic uses regexp functions from the Str library to transform a  *)
 (* string into a tactic.  The allowable tactics can be written in BNF form   *)
 (* as                                                                        *)
@@ -282,6 +286,7 @@ let rec FindCases s =
 (*   one-word-thm_tactic one-word-thm (e.g. MATCH_MP_TAC num_WF) |           *)
 (*   one-word-thmlist_tactic listof(thm | label | - | --) |                  *)
 (*   intro_TAC string | exists_TAC string | X_gen_TAC term |                 *)
+(*   mp_TAC_specl listof(term) theorem |                                     *)
 (*   case_split string listof(statement) Tactic THENL listof(Tactic) |       *)
 (*   consider listof(variable) such that statement [label] Tactic |          *)
 (*   raa label statement Tactic | assume label statement Tactic |            *)
@@ -294,6 +299,7 @@ let rec FindCases s =
 (*   one-word-thm_tactic one-word-thm ";" (e.g. "MATCH_MP_TAC num_WF;") |    *)
 (*   one-word-thmlist_tactic concatenationof(thm | label | - | --) ";" |     *)
 (*   "intro_TAC" string ";" | "exists_TAC" term ";" | "X_gen_TAC" var ";"    *)
+(*   "mp_TAC_specl" listof(term) one-word-thm";"                             *)
 (*                                                                           *)
 (* ByProofQed := "by" OneStepProof | "proof" Proof Proof ...  Proof "qed;"   *)
 (*                                                                           *)
@@ -343,6 +349,7 @@ let rec FindCases s =
 (* ws^ "suppose" ^ws must be matched by ws^ "end;".                          *)
 (* 4) Each step in a proof must end with ";".                                *)
 (* 5) A proof must match the BNF for Proof.                                  *)
+(* 6) mp_TAC_specl expression must work; e.g. the theorem must be a theorem. *)
 
 let rec StringToTactic s =
   if StringRegexpEqual (Str.regexp ws0) s
@@ -365,41 +372,41 @@ let rec StringToTactic s =
     let step = Str.string_before s pos and
     rest = Str.string_after s (Str.match_end()) in
     let tactic,rest =
-      if StringRegexpEqual (Str.regexp (ws0^ "\([^ \t\n]+\)" ^ws0)) step &&
-        is_tactic (Str.matched_group 1 step)
-      then
-        exec_tactic (Str.matched_group 1 step), rest
-      else
-      if StringRegexpEqual (Str.regexp
-        (ws0^ "\([^][ \t\n]+\)" ^ws0^ "\([^][ \t\n]+\)" ^ws0)) step &&
-        is_thmtactic (Str.matched_group 1 step) &&
-        is_thm (Str.matched_group 2 step)
-      then
-        let ttac = (Str.matched_group 1 step) and
-        thm = (Str.matched_group 2 step) in
-        (exec_thmtactic ttac) (exec_thm thm), rest
-      else
-      if StringRegexpEqual (Str.regexp (ws0^ "\([^ \t\n]+\)\(" ^ws0^ "[^[]*"
-        ^ws0^ "\)" ^ws0)) step &&
-        is_thmlist_tactic (Str.matched_group 1 step)
-      then
-        let ttac = exec_thmlist_tactic (Str.matched_group 1 step) and
-        LabThmList = Str.split (Str.regexp ws) (Str.matched_group 2 step) in
-        let thms = filter is_thm LabThmList and
-        labs0 = String.concat " " (filter (not o is_thm) LabThmList) in
-        let labs = " "^ labs0 ^" " and
-        listofThms = map exec_thm thms in
-        if Str.string_match (Str.regexp ("[^-]*" ^ws^ "-" ^ws)) labs 0
-        then
-          let labs = Str.global_replace (Str.regexp (ws^ "-")) "" labs in
-          (fun (asl,w as gl) ->
-             (HYP ttac labs ((snd (hd asl)) :: listofThms)) gl), rest
-        else if Str.string_match (Str.regexp ("[^-]*" ^ws^ "--" ^ws)) labs 0
-        then
-          let labs = Str.global_replace (Str.regexp (ws^ "--")) "" labs in
-          so (HYP ttac labs listofThms), rest
-        else HYP ttac labs listofThms, rest
-      else
+      try
+        if not (StringRegexpEqual (Str.regexp (ws0^ "\([^ \t\n]+\)" ^ws0)) step)
+        then raise Not_found
+        else exec_tactic (Str.matched_group 1 step), rest
+      with _ ->
+      try
+        if not (StringRegexpEqual (Str.regexp
+          (ws0^ "\([^][ \t\n]+\)" ^ws0^ "\([^][ \t\n]+\)" ^ws0)) step)
+        then raise Not_found
+        else
+          (exec_thmtactic (Str.matched_group 1 step))
+          (exec_thm (Str.matched_group 2 step)), rest
+      with _ ->
+      try
+        if not (StringRegexpEqual (Str.regexp (ws0^ "\([^ \t\n]+\)\(" ^ws0^
+          "[^[]*" ^ws0^ "\)" ^ws0)) step)
+        then raise Not_found
+        else
+          let ttac = exec_thmlist_tactic (Str.matched_group 1 step) and
+          LabThmList = Str.split (Str.regexp ws) (Str.matched_group 2 step) in
+          let thms = filter is_thm LabThmList and
+          labs0 = String.concat " " (filter (not o is_thm) LabThmList) in
+          let labs = " "^ labs0 ^" " and
+          listofThms = map exec_thm thms in
+          if Str.string_match (Str.regexp ("[^-]*" ^ws^ "-" ^ws)) labs 0
+          then
+            let labs = Str.global_replace (Str.regexp (ws^ "-")) "" labs in
+            (fun (asl,w as gl) ->
+               (HYP ttac labs ((snd (hd asl)) :: listofThms)) gl), rest
+          else if Str.string_match (Str.regexp ("[^-]*" ^ws^ "--" ^ws)) labs 0
+          then
+            let labs = Str.global_replace (Str.regexp (ws^ "--")) "" labs in
+            so (HYP ttac labs listofThms), rest
+          else HYP ttac labs listofThms, rest
+      with _ ->
       if Str.string_match (Str.regexp (ws0^ "intro_TAC" ^ws)) step 0
       then
         let intro_string = (Str.global_replace (Str.regexp ",") ";"
@@ -416,6 +423,20 @@ let rec StringToTactic s =
         let gen_string = Str.string_after step (Str.match_end()) in
         X_gen_TAC gen_string, rest
       else
+      if Str.string_match (Str.regexp (ws0^ "mp_TAC_specl" ^ws^ "\[")) step 0
+      then
+        let ListWsThm = Str.string_after step (Str.match_end()) in
+        let MatchingSquareBrace = FindMatch "\[" "\]" ListWsThm in
+        let WsThm = Str.string_after ListWsThm MatchingSquareBrace and
+        list = Str.string_before ListWsThm (MatchingSquareBrace - 1) in
+        if StringRegexpEqual (Str.regexp (ws^ "\([^ \t\n]+\)")) WsThm
+        then
+          let thm = Str.matched_group 1 WsThm and
+          termlist = StringToList list in
+          mp_TAC_specl termlist thm, rest
+        else failwith(step ^ " is not an mp_TAC_specl expression")
+      else
+
       if Str.string_match (Str.regexp (ws0^ "consider" ^ws^ "\(\(.\|\n\)+\)"
         ^ws^"such" ^ws^ "that" ^ws^ "\(\(.\|\n\)+\)" ^ws^ "\[\(\(.\|\n\)*\)\]"
         ^ws^ "\(by\|proof\)" ^ws)) step 0
@@ -457,7 +478,8 @@ let theorem s =
     let thm = Str.string_before s start and
     proof = Str.matched_group 1 s in
     prove (parse_env_string [] thm,   StringToTactic proof)
-  with Not_found -> failwith("missing initial \"proof\" or final \"qed;\" in "^ s);;
+  with Not_found -> failwith("missing initial \"proof\" or final \"qed;\" in "
+    ^ s);;
 
 let interactive_proof s =
   let proof = CleanMathFontsForHOL_Light s in
@@ -467,6 +489,9 @@ let interactive_goal s =
   let thm = CleanMathFontsForHOL_Light s in
   g (parse_env_string [] thm);;
 
+(* The uncluttered interface is shown by a proof from the HOL Light tutorial *)
+(* section 14.1 "Choice and the select operator" and a proof from arith.ml.  *)
+
 let AXIOM_OF_CHOICE = theorem `;
   ∀P. (∀x. ∃y. P x y) ⇒ ∃f. ∀x. P x (f x)
 
@@ -474,6 +499,16 @@ let AXIOM_OF_CHOICE = theorem `;
     intro_TAC ∀P, H1;
     exists_TAC λx. @y. P x y;
     fol H1;
+  qed;
+`;;
+
+let MOD_MOD_REFL = theorem `;
+  ∀m n. ¬(n = 0)  ⇒  ((m MOD n) MOD n = m MOD n)
+
+  proof
+    intro_TAC !m n, H1;
+    mp_TAC_specl [m; n; 1] MOD_MOD;
+    fol H1 MULT_CLAUSES MULT_EQ_0 ONE NOT_SUC;
   qed;
 `;;
 
