@@ -2425,6 +2425,18 @@ let ADJOINT_UNIQUE = prove
           ==> f' = adjoint f`,
   SIMP_TAC[FUN_EQ_THM; GSYM VECTOR_EQ_RDOT; ADJOINT_CLAUSES]);;
 
+let ADJOINT_COMPOSE = prove
+ (`!f g:real^N->real^N.
+        linear f /\ linear g ==> adjoint(f o g) = adjoint g o adjoint f`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC ADJOINT_UNIQUE THEN
+  ASM_SIMP_TAC[LINEAR_COMPOSE; o_THM; ADJOINT_CLAUSES]);;
+
+let SELF_ADJOINT_COMPOSE = prove
+ (`!f g:real^N->real^N.
+        linear f /\ linear g /\ adjoint f = f /\ adjoint g = g
+        ==> (adjoint(f o g) = f o g <=> f o g = g o f)`,
+  SIMP_TAC[ADJOINT_COMPOSE] THEN MESON_TAC[]);;
+
 let SELF_ADJOINT_ORTHOGONAL_EIGENVECTORS = prove
  (`!f:real^N->real^N v w a b.
         linear f /\ adjoint f = f /\ f v = a % v /\ f w = b % w /\ ~(a = b)
@@ -2548,6 +2560,15 @@ let MAT_COMPONENT = prove
         1 <= j /\ j <= dimindex(:N)
         ==> (mat n:real^N^M)$i$j = if i = j then &n else &0`,
   SIMP_TAC[mat; LAMBDA_BETA]);;
+
+let MAT_0_COMPONENT = prove
+ (`!i j. (mat 0:real^N^M)$i$j = &0`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?k. 1 <= k /\ k <= dimindex(:M) /\ !A:real^N^M. A$i = A$k`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  SUBGOAL_THEN `?l. 1 <= l /\ l <= dimindex(:N) /\ !z:real^N. z$j = z$l`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  ASM_SIMP_TAC[mat; COND_ID; LAMBDA_BETA]);;
 
 let MATRIX_CMUL_ASSOC = prove
  (`!a b X:real^M^N. a %% (b %% X) = (a * b) %% X`,
@@ -2788,6 +2809,12 @@ let MATRIX_TRANSP_MUL = prove
   SIMP_TAC[matrix_mul; transp; CART_EQ; LAMBDA_BETA] THEN
   REWRITE_TAC[REAL_MUL_AC]);;
 
+let SYMMETRIC_MATRIX_MUL = prove
+ (`!A B:real^N^N.
+        transp(A) = A /\ transp(B) = B
+        ==> (transp(A ** B) = A ** B <=> A ** B = B ** A)`,
+  SIMP_TAC[MATRIX_TRANSP_MUL] THEN MESON_TAC[]);;
+
 let MATRIX_EQ = prove
  (`!A:real^N^M B. (A = B) = !x:real^N. A ** x = B ** x`,
   REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
@@ -2832,6 +2859,11 @@ let TRANSP_MAT = prove
 let TRANSP_TRANSP = prove
  (`!A:real^N^M. transp(transp A) = A`,
   SIMP_TAC[CART_EQ; transp; LAMBDA_BETA]);;
+
+let SYMMETRIX_MATRIX_CONJUGATE = prove
+ (`!A B:real^N^N. transp B = B
+                  ==> transp(transp A ** B ** A) = transp A ** B ** A`,
+  SIMP_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP; MATRIX_MUL_ASSOC]);;
 
 let TRANSP_EQ = prove
  (`!A B:real^M^N. transp A = transp B <=> A = B`,
@@ -2969,6 +3001,11 @@ let INVERTIBLE_NEG = prove
  (`!A:real^N^M. invertible(--A) <=> invertible A`,
   REWRITE_TAC[invertible] THEN
   MESON_TAC[MATRIX_MUL_LNEG; MATRIX_MUL_RNEG; MATRIX_NEG_NEG]);;
+
+let MATRIX_INV_I = prove
+ (`matrix_inv(mat 1:real^N^N) = mat 1`,
+  MATCH_MP_TAC MATRIX_INV_UNIQUE THEN
+  REWRITE_TAC[MATRIX_MUL_LID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Correspondence between matrices and linear operators.                     *)
@@ -5917,6 +5954,10 @@ let FULL_RANK_SURJECTIVE = prove
   REWRITE_TAC[GSYM LEFT_INVERTIBLE_TRANSP] THEN
   REWRITE_TAC[MATRIX_LEFT_INVERTIBLE_INJECTIVE] THEN
   REWRITE_TAC[GSYM FULL_RANK_INJECTIVE; RANK_TRANSP]);;
+
+let RANK_I = prove
+ (`rank(mat 1:real^N^N) = dimindex(:N)`,
+  REWRITE_TAC[FULL_RANK_INJECTIVE; MATRIX_VECTOR_MUL_LID]);;
 
 let MATRIX_FULL_LINEAR_EQUATIONS = prove
  (`!A:real^M^N b:real^N.

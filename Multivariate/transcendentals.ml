@@ -1789,6 +1789,41 @@ let COS_EQ = prove
   REWRITE_TAC[GSYM CX_INJ; CX_COS; CCOS_EQ] THEN
   REWRITE_TAC[GSYM CX_ADD; GSYM CX_NEG; CX_INJ]);;
 
+let NORM_CCOS_LE = prove
+ (`!z. norm(ccos z) <= exp(norm z)`,
+  GEN_TAC THEN REWRITE_TAC[ccos] THEN
+  REWRITE_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_CX; REAL_ABS_NUM] THEN
+  REWRITE_TAC[REAL_ARITH `x / &2 <= y <=> x <= &2 * y`] THEN
+  MATCH_MP_TAC(NORM_ARITH
+   `norm(a) + norm(b) <= d ==> norm(a + b) <= d`) THEN
+  REWRITE_TAC[NORM_CEXP; COMPLEX_MUL_LNEG; RE_NEG; REAL_EXP_NEG] THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; RE_MUL_II; REAL_ABS_NUM] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `exp(&0) = &1 /\ (exp(&0) <= w \/ exp(&0) <= z) /\ (w <= u /\ z <= u)
+    ==> w + z <= &2 * u`) THEN
+  REWRITE_TAC[GSYM REAL_EXP_NEG; REAL_EXP_MONO_LE] THEN
+  REWRITE_TAC[REAL_EXP_0] THEN
+  MP_TAC(SPEC `z:complex` COMPLEX_NORM_GE_RE_IM) THEN
+  REAL_ARITH_TAC);;
+
+let NORM_CCOS_PLUS1_LE = prove
+ (`!z. norm(Cx(&1) + ccos z) <= &2 * exp(norm z)`,
+  GEN_TAC THEN REWRITE_TAC[ccos] THEN
+  REWRITE_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_CX; REAL_ABS_NUM; COMPLEX_RING
+   `Cx(&1) + (z + z') / Cx(&2) = (Cx(&2) + z + z') / Cx(&2)`] THEN
+  REWRITE_TAC[REAL_ARITH `x / &2 <= &2 * y <=> x <= &4 * y`] THEN
+  MATCH_MP_TAC(NORM_ARITH
+   `norm(a) + norm(b) + norm(c) <= d ==> norm(a + b + c) <= d`) THEN
+  REWRITE_TAC[NORM_CEXP; COMPLEX_MUL_LNEG; RE_NEG; REAL_EXP_NEG] THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; RE_MUL_II; REAL_ABS_NUM] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `exp(&0) = &1 /\ (exp(&0) <= w \/ exp(&0) <= z) /\ (w <= u /\ z <= u)
+    ==> &2 + w + z <= &4 * u`) THEN
+  REWRITE_TAC[GSYM REAL_EXP_NEG; REAL_EXP_MONO_LE] THEN
+  REWRITE_TAC[REAL_EXP_0] THEN
+  MP_TAC(SPEC `z:complex` COMPLEX_NORM_GE_RE_IM) THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Taylor series for complex exponential.                                    *)
 (* ------------------------------------------------------------------------- *)

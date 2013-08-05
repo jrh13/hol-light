@@ -2428,6 +2428,19 @@ let RETRACT_OF_LOCALLY_COMPACT = prove
         locally compact s /\ t retract_of s ==> locally compact t`,
   MESON_TAC[CLOSED_IN_RETRACT; LOCALLY_COMPACT_CLOSED_IN]);;
 
+let ABSOLUTE_RETRACTION_CONVEX_CLOSED_RELATIVE = prove
+ (`!s:real^N->bool t.
+        convex s /\ closed s /\ ~(s = {}) /\ s SUBSET t
+        ==> ?r. retraction (t,s) r /\
+                !x. x IN (affine hull s) DIFF (relative_interior s)
+                    ==> r(x) IN relative_frontier s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[retraction] THEN
+  EXISTS_TAC `closest_point(s:real^N->bool)` THEN
+  ASM_SIMP_TAC[CONTINUOUS_ON_CLOSEST_POINT; CLOSEST_POINT_SELF] THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; CLOSEST_POINT_IN_SET] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOSEST_POINT_IN_RELATIVE_FRONTIER THEN
+  ASM_MESON_TAC[SUBSET; RELATIVE_INTERIOR_SUBSET]);;
+
 let ABSOLUTE_RETRACTION_CONVEX_CLOSED = prove
  (`!s:real^N->bool t.
         convex s /\ closed s /\ ~(s = {}) /\ s SUBSET t
@@ -2446,56 +2459,163 @@ let ABSOLUTE_RETRACT_CONVEX_CLOSED = prove
         ==> s retract_of t`,
   REWRITE_TAC[retract_of] THEN MESON_TAC[ABSOLUTE_RETRACTION_CONVEX_CLOSED]);;
 
-let ABSOLUTE_RETRACT_INJECTIVE_IMAGE_INTERVAL = prove
- (`!p:real^M->real^N a b t.
-        ~(interval[a,b] = {}) /\
-        p continuous_on interval[a,b] /\ IMAGE p (interval[a,b]) SUBSET t /\
-        (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ p x = p y ==> x = y)
-        ==> (IMAGE p (interval[a,b])) retract_of t`,
+(* ------------------------------------------------------------------------- *)
+(* A neighbourhood retract is an ANR for Euclidean space.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let NEIGHBOURHOOD_RETRACT_IMP_ANR = prove
+ (`!s:real^M->bool s':real^N->bool t u.
+        s retract_of t /\ open t /\ s homeomorphic s' /\ s' SUBSET u
+        ==> ?t'. open_in (subtopology euclidean u) t' /\ s' retract_of t'`,
+  MAP_EVERY X_GEN_TAC
+   [`X:real^M->bool`; `Y:real^N->bool`; `U:real^M->bool`;
+    `K:real^N->bool`] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN `locally compact (Y:real^N->bool)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[RETRACT_OF_LOCALLY_COMPACT;
+                  OPEN_IMP_LOCALLY_COMPACT; HOMEOMORPHIC_LOCAL_COMPACTNESS];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?W:real^N->bool.
+        open_in (subtopology euclidean K) W /\
+        closed_in (subtopology euclidean W) Y`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_ASSUM(X_CHOOSE_THEN `W:real^N->bool` STRIP_ASSUME_TAC o
+        MATCH_MP LOCALLY_COMPACT_CLOSED_IN_OPEN) THEN
+    EXISTS_TAC `K INTER W:real^N->bool` THEN
+    ASM_SIMP_TAC[OPEN_IN_OPEN_INTER; CLOSED_IN_CLOSED] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CLOSED_IN_CLOSED]) THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC
+   [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  REWRITE_TAC[homeomorphism] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`g:real^N->real^M`; `W:real^N->bool`; `Y:real^N->bool`]
+        TIETZE_UNBOUNDED) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `h:real^N->real^M` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `{x | x IN W /\ (h:real^N->real^M) x IN U}` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC OPEN_IN_TRANS THEN EXISTS_TAC `W:real^N->bool` THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN THEN
+    EXISTS_TAC `(:real^M)` THEN
+    ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM OPEN_IN; SUBSET_UNIV];
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [retract_of]) THEN
+  REWRITE_TAC[retraction; retract_of; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `r:real^M->real^M` THEN STRIP_TAC THEN
+  EXISTS_TAC `(f:real^M->real^N) o r o (h:real^N->real^M)` THEN
+  SUBGOAL_THEN
+   `(W:real^N->bool) SUBSET K /\ Y SUBSET W`
+  STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; CLOSED_IN_IMP_SUBSET]; ALL_TAC] THEN
+  REWRITE_TAC[IMAGE_o; o_THM] THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  REPEAT(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC) THEN
+  REWRITE_TAC[IMAGE_o] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET)) THEN
+  ASM SET_TAC[]);;
+
+let NEIGHBOURHOOD_RETRACT_IMP_ANR_UNIV = prove
+ (`!s:real^M->bool s':real^N->bool t.
+        s retract_of t /\ open t /\ s homeomorphic s'
+        ==> ?t'. open t' /\ s' retract_of t'`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[OPEN_IN] THEN
+  ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
+  MATCH_MP_TAC NEIGHBOURHOOD_RETRACT_IMP_ANR THEN
+  ASM_MESON_TAC[SUBSET_UNIV]);;
+
+let HOMEOMORPHIC_ANRNESS = prove
+ (`!s:real^M->bool t:real^N->bool.
+      s homeomorphic t
+      ==> ((?u. open u /\ s retract_of u) <=> (?u. open u /\ t retract_of u))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [MP_TAC(ISPECL [`s:real^M->bool`; `t:real^N->bool`]
+        NEIGHBOURHOOD_RETRACT_IMP_ANR_UNIV);
+    MP_TAC(ISPECL [`t:real^N->bool`; `s:real^M->bool`]
+        NEIGHBOURHOOD_RETRACT_IMP_ANR_UNIV)] THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+  ASM_MESON_TAC[HOMEOMORPHIC_SYM]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Likewise for ARs, at least given closedness.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let ABSOLUTE_RETRACT_IMP_AR_GEN = prove
+ (`!s:real^M->bool s':real^N->bool t u.
+      s retract_of t /\ convex t /\ closed t /\ ~(t = {}) /\
+      s homeomorphic s' /\ closed_in (subtopology euclidean u) s'
+      ==> s' retract_of u`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+  REWRITE_TAC[homeomorphism; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`g:real^N->real^M`; `u:real^N->bool`; `s':real^N->bool`]
+        TIETZE_UNBOUNDED) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `h:real^N->real^M` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `s retract_of (:real^M)` MP_TAC THENL
+   [MATCH_MP_TAC RETRACT_OF_TRANS THEN EXISTS_TAC `t:real^M->bool` THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC ABSOLUTE_RETRACT_CONVEX_CLOSED THEN
+    ASM_REWRITE_TAC[SUBSET_UNIV];
+    REWRITE_TAC[retract_of; retraction; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `r:real^M->real^M` THEN STRIP_TAC THEN
+    EXISTS_TAC `(f:real^M->real^N) o r o (h:real^N->real^M)` THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP CLOSED_IN_IMP_SUBSET) THEN
+    ASM_REWRITE_TAC[IMAGE_o; o_THM] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    REPEAT(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC) THEN
+    REWRITE_TAC[IMAGE_o] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+      CONTINUOUS_ON_SUBSET)) THEN
+    ASM SET_TAC[]]);;
+
+let ABSOLUTE_RETRACT_IMP_AR = prove
+ (`!s s'. s retract_of (:real^M) /\ s homeomorphic s' /\ closed s'
+          ==> s' retract_of (:real^N)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ABSOLUTE_RETRACT_IMP_AR_GEN THEN
+  MAP_EVERY EXISTS_TAC [`s:real^M->bool`; `(:real^M)`] THEN
+  ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM CLOSED_IN] THEN
+  REWRITE_TAC[CONVEX_UNIV; CLOSED_UNIV; UNIV_NOT_EMPTY]);;
+
+let HOMEOMORPHIC_COMPACT_ARNESS = prove
+ (`!s s'. s homeomorphic s'
+          ==> (compact s /\ s retract_of (:real^M) <=>
+               compact s' /\ s' retract_of (:real^N))`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `compact(s:real^M->bool) /\ compact(s':real^N->bool)` THENL
+   [ALL_TAC; ASM_MESON_TAC[HOMEOMORPHIC_COMPACTNESS]] THEN
+  ASM_REWRITE_TAC[] THEN EQ_TAC THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] ABSOLUTE_RETRACT_IMP_AR) THEN
+  ASM_MESON_TAC[HOMEOMORPHIC_SYM; COMPACT_IMP_CLOSED]);;
+
+(* ------------------------------------------------------------------------- *)
+(* More retract properties including connection of complements.              *)
+(* ------------------------------------------------------------------------- *)
+
+let ABSOLUTE_RETRACT_HOMEOMORPHIC_CONVEX_COMPACT = prove
+ (`!s:real^N->bool t u:real^M->bool.
+        s homeomorphic u /\ ~(s = {}) /\ s SUBSET t /\ convex u /\ compact u
+        ==> s retract_of t`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC RETRACT_OF_SUBSET THEN
   EXISTS_TAC `(:real^N)` THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
-  REWRITE_TAC[retract_of] THEN
-  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [INJECTIVE_ON_LEFT_INVERSE]) THEN
-  DISCH_THEN(X_CHOOSE_TAC `q:real^N->real^M`) THEN
-  SUBGOAL_THEN `(q:real^N->real^M) continuous_on
-                (IMAGE p (interval[a:real^M,b]))`
-  ASSUME_TAC THENL
-   [MATCH_MP_TAC CONTINUOUS_ON_INVERSE THEN ASM_REWRITE_TAC[COMPACT_INTERVAL];
-    ALL_TAC] THEN
-  MP_TAC(ISPECL [`q:real^N->real^M`; `(:real^N)`;
-                 `IMAGE (p:real^M->real^N)
-                 (interval[a,b])`;
-                 `a:real^M`; `b:real^M`]
-        TIETZE_CLOSED_INTERVAL) THEN
-  REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM CLOSED_IN] THEN
-  ASM_SIMP_TAC[COMPACT_INTERVAL; COMPACT_CONTINUOUS_IMAGE;
-               COMPACT_IMP_CLOSED] THEN
-  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[retraction]] THEN
-  DISCH_THEN(X_CHOOSE_THEN `r:real^N->real^M` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `(p:real^M->real^N) o (r:real^N->real^M)` THEN
-  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; o_THM; IN_UNIV] THEN
-  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
-  MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
-  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP(REWRITE_RULE[IMP_CONJ]
-        CONTINUOUS_ON_SUBSET)) THEN ASM SET_TAC[]);;
-
-let ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL = prove
- (`!s:real^N->bool t a b:real^M.
-        s homeomorphic interval[a,b] /\ ~(s = {}) /\ s SUBSET t
-        ==> s retract_of t`,
-  REWRITE_TAC[homeomorphic; homeomorphism] THEN REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (LAND_CONV) [SYM th]) THEN
-  MATCH_MP_TAC ABSOLUTE_RETRACT_INJECTIVE_IMAGE_INTERVAL THEN
-  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[IMAGE_EQ_EMPTY]);;
+  FIRST_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHIC_COMPACT_ARNESS) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHIC_COMPACTNESS) THEN
+  ASM_SIMP_TAC[] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC ABSOLUTE_RETRACT_CONVEX_CLOSED THEN
+  ASM_MESON_TAC[COMPACT_IMP_CLOSED; HOMEOMORPHIC_EMPTY; SUBSET_UNIV]);;
 
 let ABSOLUTE_RETRACT_PATH_IMAGE_ARC = prove
  (`!g s:real^N->bool.
         arc g /\ path_image g SUBSET s ==> (path_image g) retract_of s`,
   REPEAT STRIP_TAC THEN MP_TAC
    (ISPECL [`path_image g:real^N->bool`; `s:real^N->bool`;
-            `vec 0:real^1`; `vec 1:real^1`]
-        ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL) THEN
+            `interval[vec 0:real^1,vec 1:real^1]`]
+        ABSOLUTE_RETRACT_HOMEOMORPHIC_CONVEX_COMPACT) THEN
   DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[PATH_IMAGE_NONEMPTY] THEN
+  REWRITE_TAC[COMPACT_INTERVAL; CONVEX_INTERVAL] THEN
   ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
   MATCH_MP_TAC HOMEOMORPHIC_COMPACT THEN
   EXISTS_TAC `g:real^1->real^N` THEN
@@ -2667,155 +2787,44 @@ let RETRACT_OF_PCROSS = prove
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
   SIMP_TAC[FSTCART_PASTECART; SNDCART_PASTECART]);;
 
+let LOCALLY_PATH_CONNECTED_SPHERE_GEN = prove
+ (`!s:real^N->bool.
+       bounded s /\ convex s ==> locally path_connected (relative_frontier s)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `relative_interior(s:real^N->bool) = {}` THENL
+   [UNDISCH_TAC `relative_interior(s:real^N->bool) = {}` THEN
+    ASM_SIMP_TAC[RELATIVE_INTERIOR_EQ_EMPTY] THEN
+    REWRITE_TAC[LOCALLY_EMPTY; RELATIVE_FRONTIER_EMPTY];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `a:real^N`) THEN
+    MATCH_MP_TAC RETRACT_OF_LOCALLY_PATH_CONNECTED THEN
+    EXISTS_TAC `(affine hull s) DELETE (a:real^N)` THEN
+    ASM_SIMP_TAC[RELATIVE_FRONTIER_RETRACT_OF_PUNCTURED_AFFINE_HULL] THEN
+    MATCH_MP_TAC LOCALLY_OPEN_SUBSET THEN
+    EXISTS_TAC `affine hull s:real^N->bool` THEN
+    SIMP_TAC[OPEN_IN_DELETE; OPEN_IN_REFL] THEN
+    SIMP_TAC[CONVEX_IMP_LOCALLY_PATH_CONNECTED; AFFINE_IMP_CONVEX;
+             AFFINE_AFFINE_HULL]]);;
+
+let LOCALLY_CONNECTED_SPHERE_GEN = prove
+ (`!s:real^N->bool.
+       bounded s /\ convex s ==> locally connected (relative_frontier s)`,
+  SIMP_TAC[LOCALLY_PATH_CONNECTED_SPHERE_GEN;
+           LOCALLY_PATH_CONNECTED_IMP_LOCALLY_CONNECTED]);;
+
 let LOCALLY_PATH_CONNECTED_SPHERE = prove
  (`!a:real^N r. locally path_connected (sphere(a,r))`,
-  REPEAT GEN_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
-   (REAL_ARITH `r < &0 \/ r = &0 \/ &0 < r`)
-  THENL
-   [ASM_SIMP_TAC[SPHERE_EMPTY; LOCALLY_EMPTY];
-    ASM_SIMP_TAC[SPHERE_SING; LOCALLY_SING; PATH_CONNECTED_SING];
-    MATCH_MP_TAC RETRACT_OF_LOCALLY_PATH_CONNECTED THEN
-    EXISTS_TAC `(:real^N) DELETE a` THEN
-    ASM_SIMP_TAC[SPHERE_RETRACT_OF_PUNCTURED_UNIVERSE] THEN
-    MATCH_MP_TAC OPEN_IMP_LOCALLY_PATH_CONNECTED THEN
-    SIMP_TAC[OPEN_DELETE; OPEN_UNIV]]);;
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPEC `cball(a:real^N,r)` LOCALLY_PATH_CONNECTED_SPHERE_GEN) THEN
+  MP_TAC(ISPECL [`a:real^N`; `r:real`] RELATIVE_FRONTIER_CBALL) THEN
+  COND_CASES_TAC THEN
+  ASM_SIMP_TAC[SPHERE_SING; LOCALLY_SING; PATH_CONNECTED_SING;
+               BOUNDED_CBALL; CONVEX_CBALL]);;
 
 let LOCALLY_CONNECTED_SPHERE = prove
  (`!a:real^N r. locally connected(sphere(a,r))`,
   SIMP_TAC[LOCALLY_PATH_CONNECTED_SPHERE;
            LOCALLY_PATH_CONNECTED_IMP_LOCALLY_CONNECTED]);;
-
-(* ------------------------------------------------------------------------- *)
-(* A neighbourhood retract is an ANR for Euclidean space.                    *)
-(* ------------------------------------------------------------------------- *)
-
-let NEIGHBOURHOOD_RETRACT_IMP_ANR = prove
- (`!s:real^M->bool s':real^N->bool t u.
-        s retract_of t /\ open t /\ s homeomorphic s' /\ s' SUBSET u
-        ==> ?t'. open_in (subtopology euclidean u) t' /\ s' retract_of t'`,
-  MAP_EVERY X_GEN_TAC
-   [`X:real^M->bool`; `Y:real^N->bool`; `U:real^M->bool`;
-    `K:real^N->bool`] THEN
-  STRIP_TAC THEN
-  SUBGOAL_THEN `locally compact (Y:real^N->bool)` ASSUME_TAC THENL
-   [ASM_MESON_TAC[RETRACT_OF_LOCALLY_COMPACT;
-                  OPEN_IMP_LOCALLY_COMPACT; HOMEOMORPHIC_LOCAL_COMPACTNESS];
-    ALL_TAC] THEN
-  SUBGOAL_THEN
-   `?W:real^N->bool.
-        open_in (subtopology euclidean K) W /\
-        closed_in (subtopology euclidean W) Y`
-  STRIP_ASSUME_TAC THENL
-   [FIRST_ASSUM(X_CHOOSE_THEN `W:real^N->bool` STRIP_ASSUME_TAC o
-        MATCH_MP LOCALLY_COMPACT_CLOSED_IN_OPEN) THEN
-    EXISTS_TAC `K INTER W:real^N->bool` THEN
-    ASM_SIMP_TAC[OPEN_IN_OPEN_INTER; CLOSED_IN_CLOSED] THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CLOSED_IN_CLOSED]) THEN
-    ASM SET_TAC[];
-    ALL_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
-  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC
-   [`f:real^M->real^N`; `g:real^N->real^M`] THEN
-  REWRITE_TAC[homeomorphism] THEN STRIP_TAC THEN
-  MP_TAC(ISPECL [`g:real^N->real^M`; `W:real^N->bool`; `Y:real^N->bool`]
-        TIETZE_UNBOUNDED) THEN
-  ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `h:real^N->real^M` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `{x | x IN W /\ (h:real^N->real^M) x IN U}` THEN CONJ_TAC THENL
-   [MATCH_MP_TAC OPEN_IN_TRANS THEN EXISTS_TAC `W:real^N->bool` THEN
-    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN THEN
-    EXISTS_TAC `(:real^M)` THEN
-    ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM OPEN_IN; SUBSET_UNIV];
-    ALL_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [retract_of]) THEN
-  REWRITE_TAC[retraction; retract_of; LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `r:real^M->real^M` THEN STRIP_TAC THEN
-  EXISTS_TAC `(f:real^M->real^N) o r o (h:real^N->real^M)` THEN
-  SUBGOAL_THEN
-   `(W:real^N->bool) SUBSET K /\ Y SUBSET W`
-  STRIP_ASSUME_TAC THENL
-   [ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; CLOSED_IN_IMP_SUBSET]; ALL_TAC] THEN
-  REWRITE_TAC[IMAGE_o; o_THM] THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
-  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
-  REPEAT(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC) THEN
-  REWRITE_TAC[IMAGE_o] THEN
-  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-        CONTINUOUS_ON_SUBSET)) THEN
-  ASM SET_TAC[]);;
-
-let NEIGHBOURHOOD_RETRACT_IMP_ANR_UNIV = prove
- (`!s:real^M->bool s':real^N->bool t.
-        s retract_of t /\ open t /\ s homeomorphic s'
-        ==> ?t'. open t' /\ s' retract_of t'`,
-  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[OPEN_IN] THEN
-  ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
-  MATCH_MP_TAC NEIGHBOURHOOD_RETRACT_IMP_ANR THEN
-  ASM_MESON_TAC[SUBSET_UNIV]);;
-
-let HOMEOMORPHIC_ANRNESS = prove
- (`!s:real^M->bool t:real^N->bool.
-      s homeomorphic t
-      ==> ((?u. open u /\ s retract_of u) <=> (?u. open u /\ t retract_of u))`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
-   [MP_TAC(ISPECL [`s:real^M->bool`; `t:real^N->bool`]
-        NEIGHBOURHOOD_RETRACT_IMP_ANR_UNIV);
-    MP_TAC(ISPECL [`t:real^N->bool`; `s:real^M->bool`]
-        NEIGHBOURHOOD_RETRACT_IMP_ANR_UNIV)] THEN
-  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
-  ASM_MESON_TAC[HOMEOMORPHIC_SYM]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Likewise for ARs, at least given closedness.                              *)
-(* ------------------------------------------------------------------------- *)
-
-let ABSOLUTE_RETRACT_IMP_AR_GEN = prove
- (`!s:real^M->bool s':real^N->bool t u.
-      s retract_of t /\ convex t /\ closed t /\ ~(t = {}) /\
-      s homeomorphic s' /\ closed_in (subtopology euclidean u) s'
-      ==> s' retract_of u`,
-  REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
-  REWRITE_TAC[homeomorphism; LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
-  STRIP_TAC THEN
-  MP_TAC(ISPECL [`g:real^N->real^M`; `u:real^N->bool`; `s':real^N->bool`]
-        TIETZE_UNBOUNDED) THEN
-  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `h:real^N->real^M` THEN STRIP_TAC THEN
-  SUBGOAL_THEN `s retract_of (:real^M)` MP_TAC THENL
-   [MATCH_MP_TAC RETRACT_OF_TRANS THEN EXISTS_TAC `t:real^M->bool` THEN
-    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC ABSOLUTE_RETRACT_CONVEX_CLOSED THEN
-    ASM_REWRITE_TAC[SUBSET_UNIV];
-    REWRITE_TAC[retract_of; retraction; LEFT_IMP_EXISTS_THM] THEN
-    X_GEN_TAC `r:real^M->real^M` THEN STRIP_TAC THEN
-    EXISTS_TAC `(f:real^M->real^N) o r o (h:real^N->real^M)` THEN
-    FIRST_ASSUM(ASSUME_TAC o MATCH_MP CLOSED_IN_IMP_SUBSET) THEN
-    ASM_REWRITE_TAC[IMAGE_o; o_THM] THEN
-    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
-    REPEAT(MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC) THEN
-    REWRITE_TAC[IMAGE_o] THEN
-    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-      CONTINUOUS_ON_SUBSET)) THEN
-    ASM SET_TAC[]]);;
-
-let ABSOLUTE_RETRACT_IMP_AR = prove
- (`!s s'. s retract_of (:real^M) /\ s homeomorphic s' /\ closed s'
-          ==> s' retract_of (:real^N)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC ABSOLUTE_RETRACT_IMP_AR_GEN THEN
-  MAP_EVERY EXISTS_TAC [`s:real^M->bool`; `(:real^M)`] THEN
-  ASM_REWRITE_TAC[SUBTOPOLOGY_UNIV; GSYM CLOSED_IN] THEN
-  REWRITE_TAC[CONVEX_UNIV; CLOSED_UNIV; UNIV_NOT_EMPTY]);;
-
-let HOMEOMORPHIC_COMPACT_ARNESS = prove
- (`!s s'. s homeomorphic s'
-          ==> (compact s /\ s retract_of (:real^M) <=>
-               compact s' /\ s' retract_of (:real^N))`,
-  REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC `compact(s:real^M->bool) /\ compact(s':real^N->bool)` THENL
-   [ALL_TAC; ASM_MESON_TAC[HOMEOMORPHIC_COMPACTNESS]] THEN
-  ASM_REWRITE_TAC[] THEN EQ_TAC THEN
-  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] ABSOLUTE_RETRACT_IMP_AR) THEN
-  ASM_MESON_TAC[HOMEOMORPHIC_SYM; COMPACT_IMP_CLOSED]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extending a function into an ANR.                                         *)
@@ -4107,25 +4116,25 @@ let PATH_CONNECTED_COMPLEMENT_ABSOLUTE_RETRACT = prove
   ASM_MESON_TAC[HOMEOMORPHIC_COMPACTNESS; COMPACT_INTERVAL;
                 COMPACT_IMP_CLOSED]);;
 
-let CONNECTED_COMPLEMENT_HOMEOMORPHIC_INTERVAL = prove
- (`!s:real^N->bool a b:real^M.
-        2 <= dimindex(:N) /\ s homeomorphic interval[a,b]
+let CONNECTED_COMPLEMENT_HOMEOMORPHIC_CONVEX_COMPACT = prove
+ (`!s:real^N->bool t:real^M->bool.
+        2 <= dimindex(:N) /\ s homeomorphic t /\ convex t /\ compact t
         ==> connected((:real^N) DIFF s)`,
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC `s:real^N->bool = {}` THEN
   ASM_REWRITE_TAC[DIFF_EMPTY; CONNECTED_UNIV] THEN
   MATCH_MP_TAC CONNECTED_COMPLEMENT_ABSOLUTE_RETRACT THEN
   ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[HOMEOMORPHIC_COMPACTNESS; COMPACT_INTERVAL]; ALL_TAC] THEN
-  MATCH_MP_TAC ABSOLUTE_RETRACT_HOMEOMORPHIC_IMAGE_INTERVAL THEN
-  ASM_MESON_TAC[SUBSET_UNIV]);;
+   [ASM_MESON_TAC[HOMEOMORPHIC_COMPACTNESS]; ALL_TAC] THEN
+  MATCH_MP_TAC ABSOLUTE_RETRACT_HOMEOMORPHIC_CONVEX_COMPACT THEN
+  EXISTS_TAC `t:real^M->bool` THEN ASM_REWRITE_TAC[SUBSET_UNIV]);;
 
-let PATH_CONNECTED_COMPLEMENT_HOMEOMORPHIC_INTERVAL = prove
- (`!s:real^N->bool a b:real^M.
-        2 <= dimindex(:N) /\ s homeomorphic interval[a,b]
+let PATH_CONNECTED_COMPLEMENT_HOMEOMORPHIC_CONVEX_COMPACT = prove
+ (`!s:real^N->bool t:real^M->bool.
+        2 <= dimindex(:N) /\ s homeomorphic t /\ convex t /\ compact t
         ==> path_connected((:real^N) DIFF s)`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN FIRST_ASSUM
-   (MP_TAC o MATCH_MP CONNECTED_COMPLEMENT_HOMEOMORPHIC_INTERVAL) THEN
+   (MP_TAC o MATCH_MP CONNECTED_COMPLEMENT_HOMEOMORPHIC_CONVEX_COMPACT) THEN
   MATCH_MP_TAC EQ_IMP THEN CONV_TAC SYM_CONV THEN
   MATCH_MP_TAC PATH_CONNECTED_EQ_CONNECTED THEN
   REWRITE_TAC[GSYM closed] THEN
@@ -4150,10 +4159,10 @@ let PATH_CONNECTED_ARC_COMPLEMENT = prove
  (`!p. 2 <= dimindex(:N) /\ arc p
        ==> path_connected((:real^N) DIFF path_image p)`,
   REWRITE_TAC[arc; path] THEN REPEAT STRIP_TAC THEN SIMP_TAC[path_image] THEN
-  MP_TAC(ISPECL [`path_image p:real^N->bool`; `vec 0:real^1`; `vec 1:real^1`]
-    PATH_CONNECTED_COMPLEMENT_HOMEOMORPHIC_INTERVAL) THEN
-  ASM_REWRITE_TAC[path_image] THEN DISCH_THEN MATCH_MP_TAC THEN
-  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
+  MP_TAC(ISPECL [`path_image p:real^N->bool`; `interval[vec 0:real^1,vec 1]`]
+        PATH_CONNECTED_COMPLEMENT_HOMEOMORPHIC_CONVEX_COMPACT) THEN
+  ASM_REWRITE_TAC[CONVEX_INTERVAL; COMPACT_INTERVAL; path_image] THEN
+  DISCH_THEN MATCH_MP_TAC THEN ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
   MATCH_MP_TAC HOMEOMORPHIC_COMPACT THEN
   EXISTS_TAC `p:real^1->real^N` THEN ASM_REWRITE_TAC[COMPACT_INTERVAL]);;
 
