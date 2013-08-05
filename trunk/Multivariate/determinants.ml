@@ -681,6 +681,16 @@ let INVERTIBLE_MATRIX_MUL = prove
         invertible(A ** B) <=> invertible A /\ invertible B`,
   REWRITE_TAC[INVERTIBLE_DET_NZ; DET_MUL; DE_MORGAN_THM; REAL_ENTIRE]);;
 
+let MATRIX_INV_MUL = prove
+ (`!A:real^N^N B:real^N^N.
+        invertible A /\ invertible B
+        ==> matrix_inv(A ** B) = matrix_inv B ** matrix_inv A`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE THEN
+  ONCE_REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
+  GEN_REWRITE_TAC (BINOP_CONV o LAND_CONV o LAND_CONV)
+   [GSYM MATRIX_MUL_ASSOC] THEN
+  ASM_SIMP_TAC[MATRIX_MUL_LINV; DET_EQ_0; MATRIX_MUL_RID; MATRIX_MUL_RINV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cramer's rule.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -906,6 +916,11 @@ let COFACTOR_MATRIX_INV = prove
   SIMP_TAC[MATRIX_INV_COFACTOR; TRANSP_MATRIX_CMUL; TRANSP_TRANSP] THEN
   SIMP_TAC[MATRIX_CMUL_ASSOC; REAL_MUL_RINV; MATRIX_CMUL_LID]);;
 
+let COFACTOR_I = prove
+ (`cofactor(mat 1:real^N^N) = mat 1`,
+  SIMP_TAC[COFACTOR_MATRIX_INV; DET_I; REAL_OF_NUM_EQ; ARITH_EQ] THEN
+  REWRITE_TAC[MATRIX_INV_I; MATRIX_CMUL_LID; TRANSP_MAT]);;
+
 let DET_COFACTOR_EXPANSION = prove
  (`!A:real^N^N i.
         1 <= i /\ i <= dimindex(:N)
@@ -990,6 +1005,52 @@ let MATRIX_MUL_LEFT_COFACTOR = prove
   ONCE_REWRITE_TAC[GSYM COFACTOR_TRANSP] THEN
   REWRITE_TAC[MATRIX_MUL_RIGHT_COFACTOR; TRANSP_MATRIX_CMUL] THEN
   REWRITE_TAC[DET_TRANSP; TRANSP_MAT]);;
+
+let COFACTOR_CMUL = prove
+ (`!A:real^N^N c. cofactor(c %% A) = c pow (dimindex(:N) - 1) %% cofactor A`,
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[CART_EQ; cofactor; LAMBDA_BETA; MATRIX_CMUL_COMPONENT] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  X_GEN_TAC `j:num` THEN STRIP_TAC THEN
+  REWRITE_TAC[det; GSYM SUM_LMUL] THEN
+  MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `p:num->num` THEN DISCH_TAC THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `a * b * c:real = b * a * c`] THEN
+  AP_TERM_TAC THEN
+  SUBGOAL_THEN
+   `1..dimindex (:N) = i INSERT ((1..dimindex (:N)) DELETE i)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_INSERT; IN_NUMSEG; IN_DELETE] THEN ASM_ARITH_TAC;
+    SIMP_TAC[PRODUCT_CLAUSES; FINITE_DELETE; FINITE_NUMSEG; IN_DELETE]] THEN
+  SUBGOAL_THEN
+   `1 <= (p:num->num) i /\ p i <= dimindex(:N)`
+  ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP PERMUTES_IMAGE) THEN
+    REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG] THEN ASM SET_TAC[];
+    ASM_SIMP_TAC[LAMBDA_BETA]] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_RZERO] THEN
+  SUBGOAL_THEN
+   `dimindex(:N) - 1 = CARD((1..dimindex(:N)) DELETE i)`
+  SUBST1_TAC THENL
+   [ASM_SIMP_TAC[CARD_DELETE; FINITE_NUMSEG; IN_NUMSEG; CARD_NUMSEG_1];
+    ASM_SIMP_TAC[REAL_MUL_LID; GSYM PRODUCT_CONST; FINITE_NUMSEG;
+                 FINITE_DELETE; GSYM PRODUCT_MUL]] THEN
+  MATCH_MP_TAC PRODUCT_EQ THEN
+  X_GEN_TAC `k:num` THEN REWRITE_TAC[IN_DELETE; IN_NUMSEG] THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `1 <= (p:num->num) k /\ p k <= dimindex(:N)`
+  ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP PERMUTES_IMAGE) THEN
+    REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG] THEN ASM SET_TAC[];
+    ASM_SIMP_TAC[LAMBDA_BETA] THEN REAL_ARITH_TAC]);;
+
+let COFACTOR_0 = prove
+ (`cofactor(mat 0:real^N^N) = if dimindex(:N) = 1 then mat 1 else mat 0`,
+  MP_TAC(ISPECL [`mat 1:real^N^N`; `&0`] COFACTOR_CMUL) THEN
+  REWRITE_TAC[MATRIX_CMUL_LZERO; COFACTOR_I; REAL_POW_ZERO] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  SIMP_TAC[DIMINDEX_GE_1; ARITH_RULE `1 <= n ==> (n - 1 = 0 <=> n = 1)`] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[MATRIX_CMUL_LZERO; MATRIX_CMUL_LID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Explicit formulas for low dimensions.                                     *)
