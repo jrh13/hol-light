@@ -1413,6 +1413,12 @@ let LIMPT_OF_OPEN = prove
   REWRITE_TAC[OPEN_IN] THEN ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
   MESON_TAC[LIMPT_OF_OPEN_IN; LIMPT_OF_UNIV]);;
 
+let OPEN_IN_SING = prove
+ (`!s a. open_in (subtopology euclidean s) {a} <=>
+         a IN s /\ ~(a limit_point_of s)`,
+  REWRITE_TAC[open_in; LIMPT_APPROACHABLE; SING_SUBSET; IN_SING] THEN
+  REWRITE_TAC[FORALL_UNWIND_THM2] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Interior of a set.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -1979,6 +1985,13 @@ let FRONTIER_UNION = prove
   MATCH_MP_TAC(SET_RULE
     `ti SUBSET si ==> (c DIFF si) INTER ti = {}`) THEN
   SIMP_TAC[SUBSET_INTERIOR; SUBSET_DIFF]);;
+
+let CLOSURE_UNION_FRONTIER = prove
+ (`!s:real^N->bool. closure s = s UNION frontier s`,
+  GEN_TAC THEN REWRITE_TAC[frontier] THEN
+  MP_TAC(ISPEC `s:real^N->bool` INTERIOR_SUBSET) THEN
+  MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A variant of nets (slightly non-standard but good for our purposes).      *)
@@ -7685,6 +7698,20 @@ let CONNECTED_COMPONENT_EQUIVALENCE_RELATION = prove
 let components = new_definition
   `components s = {connected_component s x | x | x:real^N IN s}`;;
 
+let COMPONENTS_TRANSLATION = prove
+ (`!a s. components(IMAGE (\x. a + x) s) =
+   IMAGE (IMAGE (\x. a + x)) (components s)`,
+  REWRITE_TAC[components] THEN GEOM_TRANSLATE_TAC[] THEN SET_TAC[]);;
+
+add_translation_invariants [COMPONENTS_TRANSLATION];;
+
+let COMPONENTS_LINEAR_IMAGE = prove
+ (`!f s. linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+           ==> components(IMAGE f s) = IMAGE (IMAGE f) (components s)`,
+  REWRITE_TAC[components] THEN GEOM_TRANSFORM_TAC[] THEN SET_TAC[]);;
+
+add_linear_invariants [COMPONENTS_LINEAR_IMAGE];;
+
 let IN_COMPONENTS = prove
  (`!u:real^N->bool s. s IN components u
     <=> ?x. x IN u /\ s = connected_component u x`,
@@ -12234,6 +12261,15 @@ let CARD_LT_IMP_DISCONNECTED = prove
 let COUNTABLE_IMP_DISCONNECTED = prove
  (`!s x:real^N. COUNTABLE s /\ x IN s ==> connected_component s x = {x}`,
   SIMP_TAC[CARD_LT_IMP_DISCONNECTED; COUNTABLE_IMP_CARD_LT_REAL]);;
+
+let CONNECTED_CARD_EQ_IFF_NONTRIVIAL = prove
+ (`!s:real^N->bool.
+        connected s ==> (s =_c (:real) <=> ~(?a. s SUBSET {a}))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL
+   [ALL_TAC; MATCH_MP_TAC CARD_EQ_CONNECTED THEN ASM SET_TAC[]] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET)) THEN
+  REWRITE_TAC[FINITE_SING] THEN
+  ASM_MESON_TAC[CARD_EQ_REAL_IMP_UNCOUNTABLE; FINITE_IMP_COUNTABLE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* "Iff" forms of constancy of function from connected set into a set that   *)

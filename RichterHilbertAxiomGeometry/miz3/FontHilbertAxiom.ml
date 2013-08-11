@@ -1,5 +1,5 @@
 (* ----------------------------------------------------------------- *)
-(* HOL Light Hilbert geometry axiomatic proofs.                      *)
+(* HOL Light Hilbert geometry axiomatic proofs using miz3.           *)
 (* ----------------------------------------------------------------- *)
 
 (* High school students can learn rigorous axiomatic Geometry proofs,

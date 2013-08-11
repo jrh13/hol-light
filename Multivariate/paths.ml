@@ -333,6 +333,31 @@ let JOIN_PATHS_EQ = prove
   REWRITE_TAC[IN_INTERVAL_1; DROP_CMUL; DROP_SUB; DROP_VEC] THEN
   ASM_REAL_ARITH_TAC);;
 
+let CARD_EQ_SIMPLE_PATH_IMAGE = prove
+ (`!g. simple_path g ==> path_image g =_c (:real)`,
+  SIMP_TAC[CONNECTED_CARD_EQ_IFF_NONTRIVIAL; CONNECTED_SIMPLE_PATH_IMAGE] THEN
+  GEN_TAC THEN REWRITE_TAC[simple_path; path_image] THEN MATCH_MP_TAC(SET_RULE
+   `(?u v. u IN s /\ v IN s /\ ~(u = a) /\ ~(v = a) /\ ~(u = v))
+    ==> P /\ (!x y. x IN s /\ y IN s /\ f x = f y
+                    ==> x = y \/ x = a /\ y = b \/ x = b /\ y = a)
+        ==> ~(?c. IMAGE f s SUBSET {c})`) THEN
+  MAP_EVERY EXISTS_TAC [`lift(&1 / &3)`; `lift(&1 / &2)`] THEN
+  REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; GSYM LIFT_NUM; LIFT_EQ] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+let INFINITE_SIMPLE_PATH_IMAGE = prove
+ (`!g. simple_path g ==> INFINITE(path_image g)`,
+  MESON_TAC[CARD_EQ_SIMPLE_PATH_IMAGE; INFINITE; FINITE_IMP_COUNTABLE;
+            UNCOUNTABLE_REAL; CARD_COUNTABLE_CONG]);;
+
+let CARD_EQ_ARC_IMAGE = prove
+ (`!g. arc g ==> path_image g =_c (:real)`,
+  MESON_TAC[ARC_IMP_SIMPLE_PATH; CARD_EQ_SIMPLE_PATH_IMAGE]);;
+
+let INFINITE_ARC_IMAGE = prove
+ (`!g. arc g ==> INFINITE(path_image g)`,
+  MESON_TAC[ARC_IMP_SIMPLE_PATH; INFINITE_SIMPLE_PATH_IMAGE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Simple paths with the endpoints removed.                                  *)
 (* ------------------------------------------------------------------------- *)
@@ -2992,6 +3017,18 @@ let RELATIVE_FRONTIER_CONVEX_INTER_AFFINE = prove
    [MP_TAC(ISPEC `s:real^N->bool` INTERIOR_SUBSET_RELATIVE_INTERIOR) THEN
     ASM SET_TAC[];
     ASM_SIMP_TAC[CLOSURE_CONVEX_INTER_AFFINE] THEN SET_TAC[]]);;
+
+let CONNECTED_COMPONENT_1_GEN = prove
+ (`!s a b:real^N.
+        dimindex(:N) = 1
+        ==> (connected_component s a b <=> segment[a,b] SUBSET s)`,
+  SIMP_TAC[connected_component; GSYM CONNECTED_CONVEX_1_GEN] THEN
+ MESON_TAC[CONVEX_CONTAINS_SEGMENT; SUBSET; CONVEX_SEGMENT;
+            ENDS_IN_SEGMENT]);;
+
+let CONNECTED_COMPONENT_1 = prove
+ (`!s a b:real^1. connected_component s a b <=> segment[a,b] SUBSET s`,
+  SIMP_TAC[CONNECTED_COMPONENT_1_GEN; DIMINDEX_1]);;
 
 (* ------------------------------------------------------------------------- *)
 (* An injective function into R is a homeomorphism and so an open map.       *)
@@ -7119,6 +7156,73 @@ let DENSE_ACCESSIBLE_FRONTIER_POINTS_CONNECTED = prove
   RULE_ASSUM_TAC(REWRITE_RULE[path_image; pathstart; pathfinish]) THEN
   REWRITE_TAC[path_image] THEN ASM SET_TAC[]);;
 
+let DENSE_ACCESSIBLE_FRONTIER_POINT_PAIRS = prove
+ (`!s u v:real^N->bool.
+         open s /\ connected s /\
+         open_in (subtopology euclidean (frontier s)) u /\
+         open_in (subtopology euclidean (frontier s)) v /\
+         ~(u = {}) /\ ~(v = {}) /\ ~(u = v)
+         ==> ?g. arc g /\
+                 pathstart g IN u /\ pathfinish g IN v /\
+                 IMAGE g (interval(vec 0,vec 1)) SUBSET s`,
+  GEN_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  ONCE_REWRITE_TAC[IMP_CONJ_ALT] THEN
+  GEN_REWRITE_TAC (funpow 2 BINDER_CONV o LAND_CONV o RAND_CONV)
+    [GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[DE_MORGAN_THM; GSYM CONJ_ASSOC] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!u v. R u v ==> R v u) /\ (!u v. P u v ==> R u v)
+    ==> !u v. P u v \/ P v u ==> R u v`) THEN
+  CONJ_TAC THENL
+   [REPEAT GEN_TAC THEN DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `g:real^1->real^N` THEN
+    STRIP_TAC THEN EXISTS_TAC `reversepath g:real^1->real^N` THEN
+    ASM_SIMP_TAC[ARC_REVERSEPATH; PATHSTART_REVERSEPATH;
+                 PATHFINISH_REVERSEPATH] THEN
+    REWRITE_TAC[reversepath] THEN ONCE_REWRITE_TAC[GSYM o_DEF] THEN
+    REWRITE_TAC[IMAGE_o] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+     (SET_RULE `IMAGE f i SUBSET t
+                ==> IMAGE r i SUBSET i ==> IMAGE f (IMAGE r i) SUBSET t`)) THEN
+    SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_INTERVAL_1; DROP_SUB; DROP_VEC] THEN
+    REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  REPEAT GEN_TAC THEN DISCH_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[FRONTIER_EMPTY; OPEN_IN_SUBTOPOLOGY_EMPTY] THENL
+   [CONV_TAC TAUT; STRIP_TAC THEN UNDISCH_TAC `~(s:real^N->bool = {})`] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  MP_TAC(ISPECL
+   [`s:real^N->bool`; `v:real^N->bool`; `x:real^N`]
+   DENSE_ACCESSIBLE_FRONTIER_POINTS_CONNECTED) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:real^1->real^N` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`s:real^N->bool`; `(u DELETE pathfinish g):real^N->bool`; `x:real^N`]
+   DENSE_ACCESSIBLE_FRONTIER_POINTS_CONNECTED) THEN
+  ASM_SIMP_TAC[OPEN_IN_DELETE; IN_DELETE; LEFT_IMP_EXISTS_THM] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `h:real^1->real^N` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`(reversepath h ++ g):real^1->real^N`;
+                 `pathfinish h:real^N`; `pathfinish g:real^N`]
+        PATH_CONTAINS_ARC) THEN
+  ASM_SIMP_TAC[PATH_JOIN; PATHSTART_JOIN; PATHFINISH_JOIN;
+               PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH;
+               PATH_REVERSEPATH; ARC_IMP_PATH; PATH_IMAGE_JOIN;
+               PATH_IMAGE_REVERSEPATH] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `q:real^1->real^N` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[OPEN_CLOSED_INTERVAL_1] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+    t SUBSET s /\ IMAGE f s SUBSET u UNION IMAGE f t
+    ==> IMAGE f (s DIFF t) SUBSET u`) THEN
+  REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; ENDS_IN_UNIT_INTERVAL] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[arc]; REWRITE_TAC[GSYM path_image]] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        SUBSET_TRANS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[pathstart; pathfinish; path_image]) THEN
+  REWRITE_TAC[path_image] THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some simple positive connection theorems.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -7516,6 +7620,14 @@ let LIMIT_POINT_OF_SPHERE = prove
   ASM_SIMP_TAC[CONNECTED_SPHERE_EQ; DIMINDEX_GE_1;
                ARITH_RULE `1 <= n ==> (2 <= n <=> ~(n = 1))`] THEN
   ASM_MESON_TAC[FINITE_SING]);;
+
+let CARD_EQ_SPHERE = prove
+ (`!a:real^N r. 2 <= dimindex(:N) /\ &0 < r ==> sphere(a,r) =_c (:real)`,
+  SIMP_TAC[CONNECTED_CARD_EQ_IFF_NONTRIVIAL; CONNECTED_SPHERE] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET)) THEN
+  ASM_REWRITE_TAC[FINITE_SING; FINITE_SPHERE; REAL_NOT_LE; DE_MORGAN_THM] THEN
+  ASM_ARITH_TAC);;
 
 let PATH_CONNECTED_ANNULUS = prove
  (`(!a:real^N r1 r2.
