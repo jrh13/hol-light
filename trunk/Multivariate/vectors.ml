@@ -8196,6 +8196,7 @@ let th_sets = prove
            (IMAGE f s) UNION (IMAGE f t) = IMAGE f (s UNION t) /\
            UNIONS(IMAGE (IMAGE f) u) = IMAGE f (UNIONS u) /\
            (IMAGE f s) DIFF (IMAGE f t) = IMAGE f (s DIFF t) /\
+           (IMAGE f s (f x) <=> s x) /\
            ((f x) IN (IMAGE f s) <=> x IN s) /\
            ((f o xs) (n:num) = f(xs n)) /\
            ((f o pt) (tt:real^1) = f(pt tt)) /\
@@ -8207,10 +8208,10 @@ let th_sets = prove
            (FINITE(IMAGE f s) <=> FINITE s) /\
            (INFINITE(IMAGE f s) <=> INFINITE s)`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[IMAGE_UNIONS] THEN
-  REWRITE_TAC[o_THM] THEN
+  REWRITE_TAC[o_THM; MESON[IN] `IMAGE f s y <=> y IN IMAGE f s`] THEN
   REPLICATE_TAC 2 (CONJ_TAC THENL [MESON_TAC[]; ALL_TAC]) THEN
   REWRITE_TAC[INFINITE; TAUT `(~p <=> ~q) <=> (p <=> q)`] THEN
-  REPLICATE_TAC 10 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+  REPLICATE_TAC 11 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
   REWRITE_TAC[HAS_SIZE] THEN
   ASM_MESON_TAC[FINITE_IMAGE_INJ_EQ; CARD_IMAGE_INJ]) in
 let f = `f:real^M->real^N`

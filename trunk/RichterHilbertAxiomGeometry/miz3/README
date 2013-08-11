@@ -1,0 +1,22 @@
+      HOL Light formalization of Hilbert's axiomatic geometry
+
+              (c) Copyright, Bill Richter 2012
+          Distributed under the same license as HOL Light
+
+HilbertAxiom.ml is a formalization using miz3 of the plane geometry
+part of the Hilbert axiomatic geometry paper
+http://www.math.northwestern.edu/~richter/hilbert.pdf
+
+Miz3Tips gives details on running HilbertAxiom.ml, and some
+information on how to use miz3.
+
+FontHilbertAxiom.ml is a version of HilbertAxiom.ml written with
+mathematical characters
+⇒, ⇔, ¬, ∨, ∧, ∀, ∃, ⊂, ∈, ∪, ∩ and ∅
+which HOL4, Isabelle and readable.ml allow.  It requires 
+
+hol-light-fonts.el is needed to run the miz3 code FontHilbertAxiom.ml.
+hol-light-fonts.elc is the byte-compiled version of the Emacs code.
+
+make.ml is an easy way to run the miz3 code HilbertAxiom.ml:
+#use "RichterHilbertAxiomGeometry/miz3/make.ml";;

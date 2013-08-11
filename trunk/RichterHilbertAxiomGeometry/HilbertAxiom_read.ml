@@ -16,7 +16,7 @@
 (* most of Euclid's book I propositions up to Proposition I.29, following    *)
 (* Hartshorne, whose book seems the most exciting axiomatic geometry text.   *)
 (* A proof assistant is an valuable tool to help read it, as Hartshorne's    *)
-(* proofs are often sketchy and even have gaps.	 			     *)
+(* proofs are often sketchy and even have gaps.                              *)
 (*                                                                           *)
 (* M. Greenberg, Euclidean and non-Euclidean geometries, Freeman, 1974.      *)
 (* R. Hartshorne, Geometry, Euclid and Beyond, UTM series, Springer, 2000.   *)
@@ -26,206 +26,205 @@ needs "RichterHilbertAxiomGeometry/readable.ml";;
 
 new_type("point",0);;
 new_type_abbrev("point_set",`:point->bool`);;
-new_constant("Between",`:point->point->point->bool`);;
-new_constant("Line",`:point_set->bool`);;
-new_constant("===",`:point_set->point_set->bool`);;
+NewConstant("Between",`:point->point->point->bool`);;
+NewConstant("Line",`:point_set->bool`);;
+NewConstant("≡",`:point_set->point_set->bool`);;
 
-parse_as_infix("cong",(12, "right"));;
-parse_as_infix("same_side",(12, "right"));;
-parse_as_infix("===",(12, "right"));;
-parse_as_infix("<__",(12, "right"));;
-parse_as_infix("<_ang",(12, "right"));;
-parse_as_infix("suppl",(12, "right"));;
-parse_as_infix("NOTIN",(11, "right"));;
-parse_as_infix("parallel",(12, "right"));;
+ParseAsInfix("≅",(12, "right"));;
+ParseAsInfix("same_side",(12, "right"));;
+ParseAsInfix("≡",(12, "right"));;
+ParseAsInfix("<__",(12, "right"));;
+ParseAsInfix("<_ang",(12, "right"));;
+ParseAsInfix("suppl",(12, "right"));;
+ParseAsInfix("∉",(11, "right"));;
+ParseAsInfix("∥",(12, "right"));;
 
-let NOTIN = new_definition
-  `!a:A l:A->bool. a NOTIN l <=> ~(a IN l)`;;
+let NOTIN = NewDefinition
+  `;∀a l. a ∉ l ⇔ ¬(a ∈ l)`;;
 
-let Interval_DEF = new_definition
-  `! A B. open (A,B) = {X | Between A X B}`;;
+let Interval_DEF = NewDefinition
+  `;∀ A B. open (A,B) = {X | Between A X B}`;;
 
-let Collinear_DEF = new_definition
-  `Collinear A B C  <=>
-  ? l. Line l /\ A IN l /\ B IN l /\ C IN l`;;
+let Collinear_DEF = NewDefinition
+  `;Collinear A B C  ⇔
+  ∃ l. Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l`;;
 
-let SameSide_DEF = new_definition
-  `A,B same_side l  <=>
-  Line l /\ ~ ? X. (X IN l) /\  X IN open (A,B)`;;
+let SameSide_DEF = NewDefinition
+  `;A,B same_side l  ⇔
+  Line l ∧ ¬ ∃ X. (X ∈ l) ∧  X ∈ open (A,B)`;;
 
-let Ray_DEF = new_definition
-  `! A B. ray A B = {X | ~(A = B) /\ Collinear A B X /\ A NOTIN open (X,B)}`;;
+let Ray_DEF = NewDefinition
+  `;∀ A B. ray A B = {X | ¬(A = B) ∧ Collinear A B X ∧ A ∉ open (X,B)}`;;
 
-let Ordered_DEF = new_definition
- `ordered A B C D  <=>
-  B IN open (A,C) /\ B IN open (A,D) /\ C IN open (A,D) /\ C IN open (B,D)`;;
+let Ordered_DEF = NewDefinition
+ `;ordered A B C D  ⇔
+  B ∈ open (A,C) ∧ B ∈ open (A,D) ∧ C ∈ open (A,D) ∧ C ∈ open (B,D)`;;
 
-let InteriorAngle_DEF = new_definition
- `! A O B.  int_angle A O B =
-    {P | ~Collinear A O B /\ ? a b.
-               Line a /\ O IN a /\ A IN a /\ Line b /\ O IN b /\ B IN b /\
-               P NOTIN a /\ P NOTIN b /\ P,B same_side a /\ P,A same_side b}`;;
+let InteriorAngle_DEF = NewDefinition
+ `;∀ A O B.  int_angle A O B =
+    {P | ¬Collinear A O B ∧ ∃ a b.
+               Line a ∧ O ∈ a ∧ A ∈ a ∧ Line b ∧ O ∈ b ∧ B ∈ b ∧
+               P ∉ a ∧ P ∉ b ∧ P,B same_side a ∧ P,A same_side b}`;;
 
-let InteriorTriangle_DEF = new_definition
- `! A B C.  int_triangle A B C =
-    {P | P IN int_angle A B C  /\
-         P IN int_angle B C A  /\
-         P IN int_angle C A B}`;;
+let InteriorTriangle_DEF = NewDefinition
+ `;∀ A B C.  int_triangle A B C =
+    {P | P ∈ int_angle A B C  ∧
+         P ∈ int_angle B C A  ∧
+         P ∈ int_angle C A B}`;;
 
-let Tetralateral_DEF = new_definition
-  `Tetralateral A B C D  <=>
-  ~(A = B) /\ ~(A = C) /\ ~(A = D) /\ ~(B = C) /\ ~(B = D) /\ ~(C = D) /\
-  ~Collinear A B C /\ ~Collinear B C D /\ ~Collinear C D A /\ ~Collinear D A B`;;
+let Tetralateral_DEF = NewDefinition
+  `;Tetralateral A B C D  ⇔
+  ¬(A = B) ∧ ¬(A = C) ∧ ¬(A = D) ∧ ¬(B = C) ∧ ¬(B = D) ∧ ¬(C = D) ∧
+  ¬Collinear A B C ∧ ¬Collinear B C D ∧ ¬Collinear C D A ∧ ¬Collinear D A B`;;
 
-let Quadrilateral_DEF = new_definition
-  `Quadrilateral A B C D  <=>
-  Tetralateral A B C D /\
-  open (A,B) INTER open (C,D) = {} /\
-  open (B,C) INTER open (D,A) = {} `;;
+let Quadrilateral_DEF = NewDefinition
+  `;Quadrilateral A B C D  ⇔
+  Tetralateral A B C D ∧
+  open (A,B) ∩ open (C,D) = ∅ ∧
+  open (B,C) ∩ open (D,A) = ∅`;;
 
-let ConvexQuad_DEF = new_definition
-  `ConvexQuadrilateral A B C D  <=>
-  Quadrilateral A B C D /\
-  A IN int_angle B C D /\ B IN int_angle C D A /\ C IN int_angle D A B /\ D IN int_angle A B C `;;
+let ConvexQuad_DEF = NewDefinition
+  `;ConvexQuadrilateral A B C D  ⇔
+  Quadrilateral A B C D ∧
+  A ∈ int_angle B C D ∧ B ∈ int_angle C D A ∧ C ∈ int_angle D A B ∧ D ∈ int_angle A B C`;;
 
-let Segment_DEF = new_definition
-  `seg A B = {A, B} UNION open (A,B)`;;
+let Segment_DEF = NewDefinition
+  `;seg A B = {A, B} ∪ open (A,B)`;;
 
-let SEGMENT = new_definition
-  `Segment s  <=>  ? A B. s = seg A B /\ ~(A = B)`;;
+let SEGMENT = NewDefinition
+  `;Segment s  ⇔  ∃ A B. s = seg A B ∧ ¬(A = B)`;;
 
-let SegmentOrdering_DEF = new_definition
- `s <__ t   <=>
-  Segment s /\
-  ? C D X. t = seg C D /\ X IN open (C,D) /\ s === seg C X`;;
+let SegmentOrdering_DEF = NewDefinition
+ `;s <__ t   ⇔
+  Segment s ∧
+  ∃ C D X. t = seg C D ∧ X ∈ open (C,D) ∧ s ≡ seg C X`;;
 
-let Angle_DEF = new_definition
- ` angle A O B = ray O A UNION ray O B `;;
+let Angle_DEF = NewDefinition
+ `;∡ A O B = ray O A ∪ ray O B`;;
 
-let ANGLE = new_definition
- `Angle alpha  <=>  ? A O B. alpha = angle A O B /\ ~Collinear A O B`;;
+let ANGLE = NewDefinition
+ `;Angle α  ⇔  ∃ A O B. α = ∡ A O B ∧ ¬Collinear A O B`;;
 
-let AngleOrdering_DEF = new_definition
- `alpha <_ang beta  <=>
-  Angle alpha /\
-  ? A O B G. ~Collinear A O B  /\  beta = angle A O B /\
-             G IN int_angle A O B  /\  alpha === angle A O G`;;
+let AngleOrdering_DEF = NewDefinition
+ `;α <_ang β  ⇔
+  Angle α ∧
+  ∃ A O B G. ¬Collinear A O B  ∧  β = ∡ A O B ∧
+             G ∈ int_angle A O B  ∧  α ≡ ∡ A O G`;;
 
-let RAY = new_definition
- `Ray r  <=>  ? O A. ~(O = A) /\ r = ray O A`;;
+let RAY = NewDefinition
+ `;Ray r  ⇔  ∃ O A. ¬(O = A) ∧ r = ray O A`;;
 
-let TriangleCong_DEF = new_definition
- `! A B C A' B' C'. (A, B, C) cong (A', B', C')  <=>
-  ~Collinear A B C /\ ~Collinear A' B' C' /\
-  seg A B === seg A' B' /\ seg A C === seg A' C' /\ seg B C === seg B' C' /\
-  angle A B C === angle A' B' C' /\
-  angle B C A === angle B' C' A' /\
-  angle C A B === angle C' A' B'`;;
+let TriangleCong_DEF = NewDefinition
+ `;∀ A B C A' B' C'. (A, B, C) ≅ (A', B', C')  ⇔
+  ¬Collinear A B C ∧ ¬Collinear A' B' C' ∧
+  seg A B ≡ seg A' B' ∧ seg A C ≡ seg A' C' ∧ seg B C ≡ seg B' C' ∧
+  ∡ A B C ≡ ∡ A' B' C' ∧
+  ∡ B C A ≡ ∡ B' C' A' ∧
+  ∡ C A B ≡ ∡ C' A' B'`;;
 
-let SupplementaryAngles_DEF = new_definition
- `! alpha beta. alpha suppl beta   <=>
-  ? A O B A'. ~Collinear A O B  /\  O IN open (A,A')  /\  alpha = angle A O B  /\  beta = angle B O A'`;;
+let SupplementaryAngles_DEF = NewDefinition
+ `;∀ α β. α suppl β   ⇔
+  ∃ A O B A'. ¬Collinear A O B  ∧  O ∈ open (A,A')  ∧  α = ∡ A O B  ∧  β = ∡ B O A'`;;
 
-let RightAngle_DEF = new_definition
- `! alpha. Right alpha  <=>  ? beta. alpha suppl beta /\ alpha === beta`;;
+let RightAngle_DEF = NewDefinition
+ `;∀ α. Right α  ⇔  ∃ β. α suppl β ∧ α ≡ β`;;
 
-let PlaneComplement_DEF = new_definition
- `! alpha:point_set. complement alpha = {P | P NOTIN alpha}`;;
+let PlaneComplement_DEF = NewDefinition
+ `;∀ α:point_set. complement α = {P | P ∉ α}`;;
 
-let CONVEX = new_definition
- `Convex alpha  <=>  ! A B. A IN alpha /\ B IN alpha  ==> open (A,B) SUBSET alpha`;;
+let CONVEX = NewDefinition
+ `;Convex α  ⇔  ∀ A B. A ∈ α ∧ B ∈ α  ⇒ open (A,B) ⊂ α`;;
 
-let PARALLEL = new_definition
- `! l k. l parallel k   <=>
-  Line l /\ Line k /\ l INTER k = {}`;;
+let PARALLEL = NewDefinition
+ `;∀ l k. l ∥ k   ⇔
+  Line l ∧ Line k ∧ l ∩ k = ∅`;;
 
-let Parallelogram_DEF = new_definition
-  `! A B C D. Parallelogram A B C D  <=>
-  Quadrilateral A B C D /\ ? a b c d.
-  Line a /\ A IN a /\ B IN a /\
-  Line b /\ B IN b /\ C IN b /\
-  Line c  /\ C IN c /\ D IN d /\
-  Line d /\ D IN d /\ A IN d /\
-  a parallel c  /\  b parallel d`;;
+let Parallelogram_DEF = NewDefinition
+  `;∀ A B C D. Parallelogram A B C D  ⇔
+  Quadrilateral A B C D ∧ ∃ a b c d.
+  Line a ∧ A ∈ a ∧ B ∈ a ∧
+  Line b ∧ B ∈ b ∧ C ∈ b ∧
+  Line c  ∧ C ∈ c ∧ D ∈ d ∧
+  Line d ∧ D ∈ d ∧ A ∈ d ∧
+  a ∥ c  ∧  b ∥ d`;;
 
-let InteriorCircle_DEF = new_definition
- `! O R.  int_circle O R = {P | ~(O = R) /\ (P = O  \/  seg O P <__ seg O R)}
+let InteriorCircle_DEF = NewDefinition
+ `;∀ O R.  int_circle O R = {P | ¬(O = R) ∧ (P = O  ∨  seg O P <__ seg O R)}
 `;;
 
 
-(* ----------------------------------------------------------------------------  *)
-(* Hilbert's geometry axioms, except the parallel axiom P, defined near the end. *)
-(* ----------------------------------------------------------------------------  *)
+(* ------------------------------------------------------------------------- *)
+(* Hilbert's geometry axioms, except the parallel axiom P, defined later.    *)
+(* ------------------------------------------------------------------------- *)
 
+let I1 = NewAxiom
+  `;∀ A B.  ¬(A = B) ⇒ ∃! l. Line l ∧  A ∈ l ∧ B ∈ l`;;
 
-let I1 = new_axiom
-  `! A B.  ~(A = B) ==> ?! l. Line l /\  A IN l /\ B IN l`;;
+let I2 = NewAxiom
+  `;∀ l. Line l  ⇒  ∃ A B. A ∈ l ∧ B ∈ l ∧ ¬(A = B)`;;
 
-let I2 = new_axiom
-  `! l. Line l  ==>  ? A B. A IN l /\ B IN l /\ ~(A = B)`;;
+let I3 = NewAxiom
+  `;∃ A B C. ¬(A = B) ∧ ¬(A = C) ∧ ¬(B = C) ∧
+                             ¬Collinear A B C`;;
 
-let I3 = new_axiom
-  `? A B C. ~(A = B) /\ ~(A = C) /\ ~(B = C) /\
-                             ~Collinear A B C`;;
+let B1 = NewAxiom
+  `;∀ A B C. Between A B C ⇒ ¬(A = B) ∧ ¬(A = C) ∧ ¬(B = C) ∧
+            Between C B A ∧ Collinear A B C`;;
 
-let B1 = new_axiom
-  `! A B C. Between A B C ==> ~(A = B) /\ ~(A = C) /\ ~(B = C) /\
-            Between C B A /\ Collinear A B C`;;
+let B2 = NewAxiom
+  `;∀ A B. ¬(A = B) ⇒ ∃ C. Between A B C`;;
 
-let B2 = new_axiom
-  `! A B. ~(A = B) ==> ? C. Between A B C`;;
+let B3 = NewAxiom
+  `;∀ A B C. ¬(A = B) ∧ ¬(A = C) ∧ ¬(B = C) ∧ Collinear A B C
+    ⇒ (Between A B C ∨ Between B C A ∨ Between C A B) ∧
+        ¬(Between A B C ∧ Between B C A) ∧
+        ¬(Between A B C ∧ Between C A B) ∧
+        ¬(Between B C A ∧ Between C A B)`;;
 
-let B3 = new_axiom
-  `! A B C. ~(A = B) /\ ~(A = C) /\ ~(B = C) /\ Collinear A B C
-    ==> (Between A B C \/ Between B C A \/ Between C A B) /\
-        ~(Between A B C /\ Between B C A) /\
-        ~(Between A B C /\ Between C A B) /\
-        ~(Between B C A /\ Between C A B)`;;
+let B4 = NewAxiom
+  `;∀ l A B C. Line l ∧ ¬Collinear A B C ∧
+   A ∉ l ∧ B ∉ l ∧ C ∉ l ∧
+   (∃ X. X ∈ l ∧ Between A X C) ⇒
+   (∃ Y. Y ∈ l ∧ Between A Y B) ∨ (∃ Y. Y ∈ l ∧ Between B Y C)`;;
 
-let B4 = new_axiom
-  `! l A B C. Line l /\ ~Collinear A B C /\
-   A NOTIN l /\ B NOTIN l /\ C NOTIN l /\
-   (? X. X IN l /\ Between A X C) ==>
-   (? Y. Y IN l /\ Between A Y B) \/ (? Y. Y IN l /\ Between B Y C)`;;
+let C1 = NewAxiom
+  `;∀ s O Z. Segment s ∧ ¬(O = Z)  ⇒
+   ∃! P. P ∈ ray O Z ━ O  ∧  seg O P ≡ s`;;
 
-let C1 = new_axiom
-  `! s O Z. Segment s /\ ~(O = Z)  ==>
-   ?! P. P IN ray O Z DELETE O  /\  seg O P === s`;;
+let C2Reflexive = NewAxiom
+  `;Segment s  ⇒  s ≡ s`;;
 
-let C2Reflexive = new_axiom
-  `Segment s  ==>  s === s`;;
+let C2Symmetric = NewAxiom
+  `;Segment s ∧ Segment t ∧ s ≡ t  ⇒  t ≡ s`;;
 
-let C2Symmetric = new_axiom
-  `Segment s /\ Segment t /\ s === t  ==>  t === s`;;
+let C2Transitive = NewAxiom
+  `;Segment s ∧ Segment t ∧ Segment u ∧
+   s ≡ t ∧ t ≡ u ⇒  s ≡ u`;;
 
-let C2Transitive = new_axiom
-  `Segment s /\ Segment t /\ Segment u /\
-   s === t /\ t === u ==>  s === u`;;
+let C3 = NewAxiom
+  `;∀ A B C A' B' C'.  B ∈ open (A,C) ∧ B' ∈ open (A',C') ∧
+  seg A B ≡ seg A' B' ∧ seg B C ≡ seg B' C'  ⇒
+  seg A C ≡ seg A' C'`;;
 
-let C3 = new_axiom
-  `! A B C A' B' C'.  B IN open (A,C) /\ B' IN open (A',C') /\
-  seg A B === seg A' B' /\ seg B C === seg B' C'  ==>
-  seg A C === seg A' C'`;;
+let C4 = NewAxiom
+ `;∀ α O A l Y. Angle α ∧ ¬(O = A) ∧ Line l ∧ O ∈ l ∧ A ∈ l ∧ Y ∉ l
+    ⇒ ∃! r. Ray r  ∧  ∃ B. ¬(O = B)  ∧  r = ray O B  ∧
+          B ∉ l  ∧  B,Y same_side l  ∧  ∡ A O B ≡ α`;;
 
-let C4 = new_axiom
- `! alpha O A l Y. Angle alpha /\ ~(O = A) /\ Line l /\ O IN l /\ A IN l /\ Y NOTIN l
-    ==> ?! r. Ray r  /\  ? B. ~(O = B)  /\  r = ray O B  /\
-          B NOTIN l  /\  B,Y same_side l  /\  angle A O B === alpha`;;
+let C5Reflexive = NewAxiom
+  `;Angle α  ⇒  α ≡ α`;;
 
-let C5Reflexive = new_axiom
-  `Angle alpha  ==>  alpha === alpha`;;
+let C5Symmetric = NewAxiom
+  `;Angle α ∧ Angle β ∧ α ≡ β  ⇒  β ≡ α`;;
 
-let C5Symmetric = new_axiom
-  `Angle alpha /\ Angle beta /\ alpha === beta  ==>  beta === alpha`;;
+let C5Transitive = NewAxiom
+  `;Angle α ∧ Angle β ∧ Angle γ ∧
+   α ≡ β ∧ β ≡ γ ⇒  α ≡ γ`;;
 
-let C5Transitive = new_axiom
-  `Angle alpha /\ Angle beta /\ Angle gamma /\
-   alpha === beta /\ beta === gamma ==>  alpha === gamma`;;
-
-let C6 = new_axiom
-  `! A B C A' B' C'. ~Collinear A B C /\ ~Collinear A' B' C' /\
-   seg B A === seg B' A' /\ seg B C === seg B' C' /\ angle A B C === angle A' B' C'
-   ==> angle B C A === angle B' C' A'`;;
+let C6 = NewAxiom
+  `;∀ A B C A' B' C'. ¬Collinear A B C ∧ ¬Collinear A' B' C' ∧
+   seg B A ≡ seg B' A' ∧ seg B C ≡ seg B' C' ∧ ∡ A B C ≡ ∡ A' B' C'
+   ⇒ ∡ B C A ≡ ∡ B' C' A'`;;
 
 
 (* ----------------------------------------------------------------- *)
@@ -3197,8 +3196,7 @@ let AlternateInteriorAngles = theorem `;
     ¬(G = A) ∧ ¬(G = B) ∧ Collinear B G C ∧ Collinear B C G ∧ Collinear A E G ∧ Collinear A G E     [GnotAB] by fol - notAmBl ∉ m_line l_line Collinear_DEF;
     ¬Collinear A G B ∧ ¬Collinear B G A ∧ G ∉ t      [AGBncol]  by fol EABncol CollinearSymmetry - NoncollinearityExtendsToLine t_line Collinear_DEF ∉;
     ¬(E,C same_side t)     [Ensim_tC] by fol t_line - Distinct Cnsim_tE SameSideSymmetric;
-    C ∈ m ━ B  ∧  G ∈ m ━ B     [CGm_B] by fol m_line Glm Distinct GnotAB IN_DELETE;
-    E ∈ l ━ A  ∧  G ∈ l ━ A     [EGm_A] by fol l_line Glm Distinct GnotAB IN_DELETE;
+    E ∈ l ━ A  ∧  G ∈ l ━ A     [] by fol l_line Glm Distinct GnotAB IN_DELETE;
     ¬(G,E same_side t)     []
     proof
       raa G,E same_side t     [Gsim_tE] by fol -;
@@ -3414,22 +3412,22 @@ let OppositeAnglesCongImpliesParallelogram = theorem `;
   qed;
 `;;
 
-let P = new_axiom
-  `! P l. Line l /\ P NOTIN l  ==> ?! m. Line m /\ P IN m /\ m parallel l`;;
+let P = NewAxiom
+  `;∀ P l. Line l ∧ P ∉ l  ⇒ ∃! m. Line m ∧ P ∈ m ∧ m ∥ l`;;
 
-new_constant("mu",`:point_set->real`);;
+NewConstant("μ",`:point_set->real`);;
 
-let AMa = new_axiom
- `! alpha. Angle alpha  ==>  &0 < mu alpha /\ mu alpha < &180`;;
+let AMa = NewAxiom
+ `;∀ α. Angle α  ⇒  &0 < μ α ∧ μ α < &180`;;
 
-let AMb = new_axiom
- `! alpha. Right alpha  ==>  mu alpha  = &90`;;
+let AMb = NewAxiom
+ `;∀ α. Right α  ⇒  μ α  = &90`;;
 
-let AMc = new_axiom
- `! alpha beta. Angle alpha /\ Angle beta /\ alpha === beta  ==>  mu alpha = mu beta`;;
+let AMc = NewAxiom
+ `;∀ α β. Angle α ∧ Angle β ∧ α ≡ β  ⇒  μ α = μ β`;;
 
-let AMd = new_axiom
- `! A O B P. P IN int_angle A O B  ==>  mu (angle A O B) = mu (angle A O P) + mu (angle P O B)`;;
+let AMd = NewAxiom
+ `;∀ A O B P. P ∈ int_angle A O B  ⇒  μ (∡ A O B) = μ (∡ A O P) + μ (∡ P O B)`;;
 
 let ConverseAlternateInteriorAngles = theorem `;
   ∀ A B C E l m.  Line l ∧ A ∈ l ∧ E ∈ l  ⇒

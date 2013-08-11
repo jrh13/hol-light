@@ -13,14 +13,7 @@
 (* which handles the degenerate case (collinear or non-distinct triples),    *)
 (* giving a satisfying answer using this "closed" definition of move.        *)
 (*                                                                           *)
-(* The mathematical proofs are essentially due to Tom Hales.  The aim was    *)
-(* write readable formal proofs, using ideas of John Harrison ("Towards more *)
-(* readable proofs" of the tutorial and hol_light/Examples/mizar.ml),        *)
-(* Freek Wiedijk (hol_light/Mizarlight/miz2a.ml and arxiv.org/pdf/1201.3601  *)
-(* "A Synthesis of Procedural and Declarative Styles of Interactive Theorem  *)
-(* Proving"), Marco Maggesi (author of tactic constructs INTRO_TAC & HYP),   *)
-(* Petros Papapanagiotou and Vincent Aravantinos.  The code uses a miz3-type *)
-(* interface to HOL Light tactics proof readable.ml.                         *)
+(* The mathematical proofs are essentially due to Tom Hales.                 *)
 (* ========================================================================= *)
 
 needs "Multivariate/determinants.ml";;
@@ -227,9 +220,8 @@ let moveSymmetry = theorem `;
     ⇒ collinear {vec 0, Y - Z, X' - X}     []
     proof     REWRITE_TAC COLLINEAR_3_2Dzero;     VEC2_TAC;     qed;
     REWRITE_TAC -- move;
-
     ∀X Y Z X':real^2. collinear {vec 0, Z - Y, X' - X}
-    ⇒ collinear {vec 0, Y - Z, X' - X}     []
+      ⇒ collinear {vec 0, Y - Z, X' - X}     []
     proof     REWRITE_TAC COLLINEAR_3_2Dzero;     VEC2_TAC;     qed;
       REWRITE_TAC -- move;
     fol;

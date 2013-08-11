@@ -1,9 +1,10 @@
-      HOL Light formalization of Hilbert's axiomatic geometry
+      HOL Light readable proof style with several applications
 
-              (c) Copyright, Bill Richter 2012-2013
+              (c) Copyright, Bill Richter 2012
           Distributed under the same license as HOL Light
 
-readable.ml is a miz3-type interface for HOL Light tactics proofs.
+readable.ml is a miz3-type interface for HOL Light tactics proofs
+allowing full use of REWRITE_TAC and other thm list -> tactics.
 
 HilbertAxiom_read.ml, which uses readable.ml, is a formalization of
 the plane geometry part of the Hilbert axiomatic geometry paper
@@ -14,20 +15,12 @@ partly due to John Harrison of a theorem due to Tom Hales explained at
 the end of sec 10.1 "The bug puzzle" of the HOL Light tutorial.
 
 thmFontHilbertAxiom.ml is a list, with mathematical characters, of the
-theorems and definitions of HilbertAxiom_read.ml
+theorems and definitions of HilbertAxiom_read.ml.
 
-HilbertAxiom.ml is an earlier formalization of hilbert.pdf using miz3.
+error-checking.ml shows the error messages displayed by readable.ml.
 
-Miz3Tips gives details on running HilbertAxiom.ml, and some
-information on how to use miz3.
+UniversalPropCartProd.ml defines FunctionSpace and FunctionComposition
+so that Cartesian product satisfies the usual universal property.
 
-FontHilbertAxiom.ml is a version of HilbertAxiom.ml written with
-mathematical characters
-⇒, ⇔, ¬, ∨, ∧, ∀, ∃, ⊂, ∈, ∪, ∩ and ∅
-which HOL4, Isabelle and readable.ml allow.  It requires 
-
-hol-light-fonts.el is needed to run the miz3 code FontHilbertAxiom.ml.
-hol-light-fonts.elc is the byte-compiled version of the Emacs code.
-
-make.ml is an easy way to run the miz3 code HilbertAxiom.ml:
-#use "RichterHilbertAxiomGeometry/make.ml";;
+miz3 contains the original miz3 version of HilbertAxiom_read.ml,
+together with some emacs support files and miz3 documentation.
