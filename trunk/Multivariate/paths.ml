@@ -2430,6 +2430,57 @@ let IS_INTERVAL_PATH_CONNECTED_1 = prove
             IS_INTERVAL_CONNECTED_1; IS_INTERVAL_CONVEX_1]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Bounds on components of a continuous image.                               *)
+(* ------------------------------------------------------------------------- *)
+
+let CARD_LE_PATH_COMPONENTS = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s
+        ==> {path_component (IMAGE f s) y | y | y IN IMAGE f s}
+            <=_c {path_component s x | x | x IN s}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[LE_C] THEN
+  SIMP_TAC[FORALL_IN_GSPEC; EXISTS_IN_GSPEC; FORALL_IN_IMAGE] THEN EXISTS_TAC
+   `\c. path_component (IMAGE (f:real^M->real^N) s) (f(@x. x IN c))` THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN EXISTS_TAC `x:real^M` THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC PATH_COMPONENT_EQ THEN
+  REWRITE_TAC[IN] THEN ONCE_REWRITE_TAC[PATH_COMPONENT] THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) (path_component s x)` THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC PATH_CONNECTED_CONTINUOUS_IMAGE THEN
+    ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; PATH_COMPONENT_SUBSET;
+                  PATH_CONNECTED_PATH_COMPONENT];
+    MATCH_MP_TAC IMAGE_SUBSET THEN REWRITE_TAC[PATH_COMPONENT_SUBSET];
+    ALL_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC FUN_IN_IMAGE THEN REWRITE_TAC[IN] THEN
+  ASM_MESON_TAC[PATH_COMPONENT_REFL_EQ]);;
+
+let CARD_LE_CONNECTED_COMPONENTS = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s
+        ==> {connected_component (IMAGE f s) y | y | y IN IMAGE f s}
+            <=_c {connected_component s x | x | x IN s}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[LE_C] THEN
+  SIMP_TAC[FORALL_IN_GSPEC; EXISTS_IN_GSPEC; FORALL_IN_IMAGE] THEN EXISTS_TAC
+   `\c. connected_component (IMAGE (f:real^M->real^N) s) (f(@x. x IN c))` THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN EXISTS_TAC `x:real^M` THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONNECTED_COMPONENT_EQ THEN
+  REWRITE_TAC[IN] THEN ONCE_REWRITE_TAC[connected_component] THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) (connected_component s x)` THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC CONNECTED_CONTINUOUS_IMAGE THEN
+    ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; CONNECTED_COMPONENT_SUBSET;
+                  CONNECTED_CONNECTED_COMPONENT];
+    MATCH_MP_TAC IMAGE_SUBSET THEN REWRITE_TAC[CONNECTED_COMPONENT_SUBSET];
+    ALL_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC FUN_IN_IMAGE THEN REWRITE_TAC[IN] THEN
+  ASM_MESON_TAC[CONNECTED_COMPONENT_REFL_EQ]);;
+
+let CARD_LE_COMPONENTS = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s ==> components(IMAGE f s) <=_c components s`,
+  REWRITE_TAC[components; CARD_LE_CONNECTED_COMPONENTS]);;
+
+(* ------------------------------------------------------------------------- *)
 (* More stuff about segments.                                                *)
 (* ------------------------------------------------------------------------- *)
 
@@ -6682,6 +6733,13 @@ let LOCALLY_COMPACT_HOMEOMORPHIC_CLOSED = prove
   REWRITE_TAC[homeomorphic; HOMEOMORPHISM] THEN MAP_EVERY EXISTS_TAC
    [`f:real^(M,1)finite_sum->real^N`; `g:real^N->real^(M,1)finite_sum`] THEN
   ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON] THEN ASM SET_TAC[]);;
+
+let LOCALLY_COMPACT_CLOSED_INTER_OPEN = prove
+ (`!s:real^N->bool.
+        locally compact s <=> ?t u. closed t /\ open u /\ s = t INTER u`,
+  MESON_TAC[CLOSED_IMP_LOCALLY_COMPACT; OPEN_IMP_LOCALLY_COMPACT;
+            LOCALLY_COMPACT_INTER; INTER_COMM; CLOSED_CLOSURE;
+            LOCALLY_COMPACT_OPEN_INTER_CLOSURE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relations between components and path components.                         *)

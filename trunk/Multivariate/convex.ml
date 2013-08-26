@@ -8563,6 +8563,13 @@ let RELATIVE_INTERIOR_SUBSET = prove
  (`!s. (relative_interior s) SUBSET s`,
   REWRITE_TAC[SUBSET; relative_interior; IN_ELIM_THM] THEN MESON_TAC[]);;
 
+let OPEN_IN_SET_RELATIVE_INTERIOR = prove
+ (`!s:real^N->bool. open_in (subtopology euclidean s) (relative_interior s)`,
+  GEN_TAC THEN MATCH_MP_TAC OPEN_IN_SUBSET_TRANS THEN
+  EXISTS_TAC `affine hull s:real^N->bool` THEN
+  REWRITE_TAC[OPEN_IN_RELATIVE_INTERIOR; RELATIVE_INTERIOR_SUBSET;
+              HULL_SUBSET]);;
+
 let SUBSET_RELATIVE_INTERIOR = prove
  (`!s t. s SUBSET t /\ affine hull s = affine hull t
          ==> (relative_interior s) SUBSET (relative_interior t)`,

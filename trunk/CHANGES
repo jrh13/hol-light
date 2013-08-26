@@ -1,3 +1,13 @@
+Thu 15th Aug 2013       Library/card.ml
+
+Added
+
+  CARD_LE_RELATIONAL_FULL =
+   |- !R:A->B->bool s t.
+        (!y. y IN t ==> ?x. x IN s /\ R x y) /\
+        (!x y y'. x IN s /\ y IN t /\ y' IN t /\ R x y /\ R x y' ==> y = y')
+        ==> t <=_c s
+
 Wed 17th Jul 2013       Library/floor.ml
 
   Added INTEGER_ROUND = |- !x. ?n. integer n /\ abs(x - n) <= &1 / &2

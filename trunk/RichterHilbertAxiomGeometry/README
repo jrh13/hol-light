@@ -1,6 +1,6 @@
       HOL Light readable proof style with several applications
 
-              (c) Copyright, Bill Richter 2012
+              (c) Copyright, Bill Richter 2013
           Distributed under the same license as HOL Light
 
 readable.ml is a miz3-type interface for HOL Light tactics proofs

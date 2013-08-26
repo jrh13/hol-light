@@ -1993,6 +1993,18 @@ let CLOSURE_UNION_FRONTIER = prove
   MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN
   SET_TAC[]);;
 
+let FRONTIER_INTERIOR_SUBSET = prove
+ (`!s:real^N->bool. frontier(interior s) SUBSET frontier s`,
+  GEN_TAC THEN REWRITE_TAC[frontier; INTERIOR_INTERIOR] THEN
+  MATCH_MP_TAC(SET_RULE `s SUBSET t ==> s DIFF u SUBSET t DIFF u`) THEN
+  SIMP_TAC[SUBSET_CLOSURE; INTERIOR_SUBSET]);;
+
+let FRONTIER_CLOSURE_SUBSET = prove
+ (`!s:real^N->bool. frontier(closure s) SUBSET frontier s`,
+  GEN_TAC THEN REWRITE_TAC[frontier; CLOSURE_CLOSURE] THEN
+  MATCH_MP_TAC(SET_RULE `s SUBSET t ==> u DIFF t SUBSET u DIFF s`) THEN
+  SIMP_TAC[SUBSET_INTERIOR; CLOSURE_SUBSET]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A variant of nets (slightly non-standard but good for our purposes).      *)
 (* ------------------------------------------------------------------------- *)
@@ -2296,6 +2308,15 @@ let LIM_WITHIN = prove
                     ==> dist(f(x),l) < e`,
   REWRITE_TAC[tendsto; EVENTUALLY_WITHIN] THEN MESON_TAC[]);;
 
+let LIM_AT_LE = prove
+ (`!f l a. (f --> l) (at a) <=>
+           !e. &0 < e
+               ==> ?d. &0 < d /\
+                       !x. &0 < dist(x,a) /\ dist(x,a) <= d
+                           ==> dist (f x,l) < e`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[LIM_WITHIN_LE; IN_UNIV]);;
+
 let LIM_AT = prove
  (`!f l:real^N a:real^M.
       (f --> l) (at a) <=>
@@ -2308,6 +2329,12 @@ let LIM_AT_INFINITY = prove
  (`!f l. (f --> l) at_infinity <=>
                !e. &0 < e ==> ?b. !x. norm(x) >= b ==> dist(f(x),l) < e`,
   REWRITE_TAC[tendsto; EVENTUALLY_AT_INFINITY] THEN MESON_TAC[]);;
+
+let LIM_AT_INFINITY_POS = prove
+ (`!f l. (f --> l) at_infinity <=>
+         !e. &0 < e ==> ?b. &0 < b /\ !x. norm x >= b ==> dist(f x,l) < e`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_AT_INFINITY] THEN
+  MESON_TAC[REAL_ARITH `&0 < abs b + &1 /\ (x >= abs b + &1 ==> x >= b)`]);;
 
 let LIM_SEQUENTIALLY = prove
  (`!s l. (s --> l) sequentially <=>
@@ -7860,6 +7887,10 @@ let COMPONENTS_EQ_EMPTY = prove
   REWRITE_TAC[components; connected_component; IN_ELIM_THM] THEN
   SET_TAC[]);;
 
+let COMPONENTS_EMPTY = prove
+ (`components {} = {}`,
+  REWRITE_TAC[COMPONENTS_EQ_EMPTY]);;
+
 let CONNECTED_EQ_CONNECTED_COMPONENTS_EQ = prove
  (`!s. connected s <=>
        !c c'. c IN components s /\ c' IN components s ==> c = c'`,
@@ -7880,6 +7911,20 @@ let COMPONENTS_EQ_SING,COMPONENTS_EQ_SING_EXISTS = (CONJ_PAIR o prove)
     REWRITE_TAC[IN_SING] THEN
     REWRITE_TAC[components; IN_ELIM_THM] THEN
     ASM_MESON_TAC[CONNECTED_CONNECTED_COMPONENT_SET; MEMBER_NOT_EMPTY]]);;
+
+let CONNECTED_EQ_COMPONENTS_SUBSET_SING = prove
+ (`!s:real^N->bool. connected s <=> components s SUBSET {s}`,
+  GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[COMPONENTS_EMPTY; CONNECTED_EMPTY; EMPTY_SUBSET] THEN
+  REWRITE_TAC[SET_RULE `s SUBSET {a} <=> s = {} \/ s = {a}`] THEN
+  ASM_REWRITE_TAC[COMPONENTS_EQ_EMPTY; COMPONENTS_EQ_SING]);;
+
+let CONNECTED_EQ_COMPONENTS_SUBSET_SING_EXISTS = prove
+ (`!s:real^N->bool. connected s <=> ?a. components s SUBSET {a}`,
+  GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[COMPONENTS_EMPTY; CONNECTED_EMPTY; EMPTY_SUBSET] THEN
+  REWRITE_TAC[SET_RULE `s SUBSET {a} <=> s = {} \/ s = {a}`] THEN
+  ASM_REWRITE_TAC[COMPONENTS_EQ_EMPTY; COMPONENTS_EQ_SING_EXISTS]);;
 
 let IN_COMPONENTS_SELF = prove
  (`!s:real^N->bool. s IN components s <=> connected s /\ ~(s = {})`,
@@ -15624,6 +15669,10 @@ let SETDIST_EQ_0_SING = prove
  (`(!s x:real^N. setdist({x},s) = &0 <=> s = {} \/ x IN closure s) /\
    (!s x:real^N. setdist(s,{x}) = &0 <=> s = {} \/ x IN closure s)`,
   SIMP_TAC[SETDIST_EQ_0_BOUNDED; BOUNDED_SING; CLOSURE_SING] THEN SET_TAC[]);;
+
+let SETDIST_SING_IN_SET = prove
+ (`!x s. x IN s ==> setdist({x},s) = &0`,
+  SIMP_TAC[SETDIST_EQ_0_SING; REWRITE_RULE[SUBSET] CLOSURE_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Use set distance for an easy proof of separation properties.              *)
