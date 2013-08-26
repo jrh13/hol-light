@@ -5219,6 +5219,10 @@ let COMPACT_SIMPLEX = prove
   REWRITE_TAC[SIMPLEX] THEN
   MESON_TAC[FINITE_IMP_COMPACT; COMPACT_CONVEX_HULL]);;
 
+let CLOSED_SIMPLEX = prove
+ (`!s n. n simplex s ==> closed s`,
+  MESON_TAC[COMPACT_SIMPLEX; COMPACT_IMP_CLOSED]);;
+
 let SIMPLEX_IMP_POLYTOPE = prove
  (`!n s. n simplex s ==> polytope s`,
   REWRITE_TAC[simplex; polytope] THEN
