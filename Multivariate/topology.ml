@@ -1801,6 +1801,11 @@ let CLOSED_IN_LIMPT = prove
     REWRITE_TAC[CLOSED_CLOSURE] THEN REWRITE_TAC[closure] THEN
     ASM SET_TAC[]]);;
 
+let CLOSED_IN_INTER_CLOSURE = prove
+ (`!s t:real^N->bool.
+        closed_in (subtopology euclidean s) t <=> s INTER closure t = t`,
+  REWRITE_TAC[closure; CLOSED_IN_LIMPT] THEN SET_TAC[]);;
+
 let INTERIOR_CLOSURE_IDEMP = prove
  (`!s:real^N->bool.
         interior(closure(interior(closure s))) = interior(closure s)`,
@@ -7996,6 +8001,19 @@ let COMPONENTS_UNIQUE_EQ = prove
     RULE_ASSUM_TAC(REWRITE_RULE[IN_COMPONENTS_MAXIMAL]) THEN
     ASM_MESON_TAC[SUBSET_EMPTY]]);;
 
+let EXISTS_COMPONENT_SUPERSET = prove
+ (`!s t:real^N->bool.
+        t SUBSET s /\ ~(s = {}) /\ connected t
+        ==> ?c. c IN components s /\ t SUBSET c`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `t:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[EMPTY_SUBSET] THEN
+    ASM_MESON_TAC[COMPONENTS_EQ_EMPTY; MEMBER_NOT_EMPTY];
+    FIRST_X_ASSUM(X_CHOOSE_TAC `a:real^N` o
+      GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    EXISTS_TAC `connected_component s (a:real^N)` THEN
+    REWRITE_TAC[IN_COMPONENTS] THEN CONJ_TAC THENL
+     [ASM SET_TAC[]; ASM_MESON_TAC[CONNECTED_COMPONENT_MAXIMAL]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Continuity implies uniform continuity on a compact domain.                *)
 (* ------------------------------------------------------------------------- *)
@@ -8701,6 +8719,34 @@ let LIMPT_PCROSS = prove
   FIRST_X_ASSUM(CONJUNCTS_THEN (MP_TAC o SPEC `e / &2`)) THEN
   ASM_MESON_TAC[REAL_HALF; NORM_PASTECART_LE; REAL_ARITH
     `z <= x + y /\ x < e / &2 /\ y < e / &2 ==> z < e`]);;
+
+let CLOSED_IN_PCROSS = prove
+ (`!s:real^M->bool s' t:real^N->bool t'.
+        closed_in (subtopology euclidean s) s' /\
+        closed_in (subtopology euclidean t) t'
+        ==> closed_in (subtopology euclidean (s PCROSS t)) (s' PCROSS t')`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_CLOSED] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (X_CHOOSE_THEN `s'':real^M->bool` STRIP_ASSUME_TAC)
+   (X_CHOOSE_THEN `t'':real^N->bool` STRIP_ASSUME_TAC)) THEN
+  EXISTS_TAC `(s'':real^M->bool) PCROSS (t'':real^N->bool)` THEN
+  ASM_SIMP_TAC[CLOSED_PCROSS; EXTENSION; FORALL_PASTECART] THEN
+  REWRITE_TAC[IN_INTER; PASTECART_IN_PCROSS] THEN ASM SET_TAC[]);;
+
+let CLOSED_IN_PCROSS_EQ = prove
+ (`!s s':real^M->bool t t':real^N->bool.
+        closed_in (subtopology euclidean (s PCROSS t)) (s' PCROSS t') <=>
+        s' = {} \/ t' = {} \/
+        closed_in (subtopology euclidean s) s' /\
+        closed_in (subtopology euclidean t) t'`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s':real^M->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; CLOSED_IN_EMPTY] THEN
+  ASM_CASES_TAC `t':real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[PCROSS_EMPTY; CLOSED_IN_EMPTY] THEN
+  EQ_TAC THEN REWRITE_TAC[CLOSED_IN_PCROSS] THEN
+  ASM_REWRITE_TAC[CLOSED_IN_INTER_CLOSURE; CLOSURE_PCROSS; INTER_PCROSS;
+                  PCROSS_EQ; PCROSS_EQ_EMPTY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence some useful properties follow quite easily.                         *)
@@ -10839,6 +10885,34 @@ let DIST_IN_CLOSED_SEGMENT,DIST_IN_OPEN_SEGMENT = (CONJ_PAIR o prove)
     REWRITE_TAC[REAL_ARITH `x * y < y <=> x * y < &1 * y`] THEN
     ASM_SIMP_TAC[REAL_LT_RMUL_EQ; NORM_POS_LT; VECTOR_SUB_EQ] THEN
     ASM_REAL_ARITH_TAC]);;
+
+let DIST_DECREASES_OPEN_SEGMENT = prove
+ (`!a b c x:real^N.
+      x IN segment(a,b) ==> dist(c,x) < dist(c,a) \/ dist(c,x) < dist(c,b)`,
+  GEOM_ORIGIN_TAC `a:real^N` THEN GEOM_NORMALIZE_TAC `b:real^N` THEN
+  REWRITE_TAC[SEGMENT_REFL; NOT_IN_EMPTY] THEN X_GEN_TAC `b:real^N` THEN
+  GEOM_BASIS_MULTIPLE_TAC 1 `b:real^N` THEN X_GEN_TAC `b:real` THEN
+  SIMP_TAC[NORM_MUL; NORM_BASIS; real_abs; DIMINDEX_GE_1; LE_REFL;
+           REAL_MUL_RID; VECTOR_MUL_LID] THEN
+  REPEAT(DISCH_THEN(K ALL_TAC)) THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[IN_SEGMENT; dist] THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  SUBGOAL_THEN
+   `norm((c$1 - u) % basis 1:real^N) < norm((c:real^N)$1 % basis 1:real^N) \/
+    norm((c$1 - u) % basis 1:real^N) < norm((c$1 - &1) % basis 1:real^N)`
+  MP_TAC THENL
+   [SIMP_TAC[NORM_MUL; NORM_BASIS; DIMINDEX_GE_1; LE_REFL] THEN
+    ASM_REAL_ARITH_TAC;
+    ASM_SIMP_TAC[NORM_LT; DOT_LMUL; DOT_RMUL; DOT_BASIS; DIMINDEX_GE_1;
+              DOT_LSUB; DOT_RSUB; LE_REFL; VECTOR_MUL_COMPONENT; VEC_COMPONENT;
+              BASIS_COMPONENT; DOT_LZERO; DOT_RZERO; VECTOR_SUB_COMPONENT] THEN
+    ASM_REAL_ARITH_TAC]);;
+
+let DIST_DECREASES_CLOSED_SEGMENT = prove
+ (`!a b c x:real^N.
+      x IN segment[a,b] ==> dist(c,x) <= dist(c,a) \/ dist(c,x) <= dist(c,b)`,
+  REWRITE_TAC[SEGMENT_CLOSED_OPEN; IN_UNION; IN_INSERT; NOT_IN_EMPTY] THEN
+  ASM_MESON_TAC[DIST_DECREASES_OPEN_SEGMENT; REAL_LE_REFL; REAL_LT_IMP_LE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limit component bounds.                                                   *)

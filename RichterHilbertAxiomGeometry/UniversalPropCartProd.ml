@@ -48,14 +48,14 @@ let NOTIN = NewDefinition
   `;∀a l. a ∉ l ⇔ ¬(a ∈ l)`;;
 
 let CartesianProduct = NewDefinition
-   `;∀ X Y. X ∏ Y = {x,y | x ∈ X ∧ y ∈ Y}`;;
+  `;∀ X Y. X ∏ Y = {x,y | x ∈ X ∧ y ∈ Y}`;;
 
 let FunctionSpace = NewDefinition
   `;∀ s t. s → t = {f | (∀x. x IN s ⇒ f x  IN t) ∧ 
                           ∀x. x ∉ s ⇒ f x  = @y. T}`;;
 
 let FunctionComposition = NewDefinition
-  `;∀ f:A->B s:A->bool g:B->C x.
+  `;∀ f s g x.
   (g ∘ (f,s)) x = if x ∈ s then g (f x) else @y:C. T`;;
 
 let IN_CartesianProduct = theorem `;
@@ -83,10 +83,10 @@ let UniversalPropertyProduct = theorem `;
     intro_TAC ∀ M A B f g, H1;
     (∀ x. x ∈ M ⇒ f x ∈ A)  ∧  ∀x. x ∉ M ⇒ f x = @y. T     [fProp] 
     proof
-      mp_TAC_specl [M; A; f] IN_FunctionSpace;     fol H1;     qed;
+      MP_TAC ISPECL [M; A; f] IN_FunctionSpace;     fol H1;     qed;
     (∀ x. x ∈ M ⇒ g x ∈ B)  ∧  (∀x. x ∉ M ⇒ g x = @y. T)     [gProp] 
     proof
-      mp_TAC_specl [M; B; g] IN_FunctionSpace;     fol H1;     qed;
+      MP_TAC ISPECL [M; B; g] IN_FunctionSpace;     fol H1;     qed;
     consider h such that
     h = λx. if x ∈ M then f x,g x else @y. T     [hExists] by fol;
     ∀ x. (x ∈ M  ⇒  h x = f x,g x) ∧ (x ∉ M  ⇒  h x = @y. T)     [hDef] by fol - ∉;
@@ -104,7 +104,7 @@ let UniversalPropertyProduct = theorem `;
     proof
       intro_TAC ∀ k, kWorks;
       (∀ x. x ∈ M ⇒ k x ∈ A ∏ B)  ∧  ∀ x. x ∉ M  ⇒  k x = @y. T     [kOffM] 
-      proof     mp_TAC_specl [M; A ∏ B; k] IN_FunctionSpace;     fol kWorks;     qed;
+      proof     MP_TAC ISPECL [M; A ∏ B; k] IN_FunctionSpace;     fol kWorks;     qed;
       ∀ x. x ∈ M  ⇒  k x = (FST ∘ (k,M)) x,(SND ∘ (k,M)) x    [] by SIMP_TAC - PAIR FunctionComposition;
       ∀ x. x ∈ M ⇒ k x = f x,g x     [] by SIMP_TAC - kWorks FST_DEF SND_DEF PAIR_EQ;
       SIMP_TAC FUN_EQ_THM;

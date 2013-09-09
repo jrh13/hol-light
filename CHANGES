@@ -1,3 +1,21 @@
+Fri  6th Sep 2013       cart.ml
+
+Added 
+
+  INTER_PCROSS =
+    |- !s s' t t'.
+          (s PCROSS t) INTER (s' PCROSS t') = (s INTER s') PCROSS (t INTER t')
+
+Mon 26th Aug 2013       sets.ml
+
+Added
+
+  INFINITE_ENUMERATE =
+    |- !s:num->bool.
+         INFINITE s
+         ==> ?r:num->num. (!m n. m < n ==> r(m) < r(n)) /\
+                          IMAGE r (:num) = s
+
 Thu 15th Aug 2013       Library/card.ml
 
 Added

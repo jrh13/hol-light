@@ -2407,7 +2407,7 @@ let real_INFINITE = prove
   REWRITE_TAC[FINITE_REAL_INTERVAL; SUBSET_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Indexing of finite sets.                                                  *)
+(* Indexing of finite sets and enumeration of subsets of N in order.         *)
 (* ------------------------------------------------------------------------- *)
 
 let HAS_SIZE_INDEX = prove
@@ -2431,6 +2431,42 @@ let HAS_SIZE_INDEX = prove
   CONV_TAC(ONCE_DEPTH_CONV COND_ELIM_CONV) THEN
   ASM_CASES_TAC `a:A = x` THEN ASM_SIMP_TAC[] THEN
   ASM_MESON_TAC[LT_REFL; IN_DELETE]);;
+
+let INFINITE_ENUMERATE = prove
+ (`!s:num->bool.
+       INFINITE s
+       ==> ?r:num->num. (!m n. m < n ==> r(m) < r(n)) /\
+                        IMAGE r (:num) = s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `!n:num. ?x. n <= x /\ x IN s` MP_TAC THENL
+   [ASM_MESON_TAC[INFINITE; num_FINITE; LT_IMP_LE; NOT_LE];
+    GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [num_WOP]] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; FORALL_AND_THM] THEN
+  REWRITE_TAC[TAUT `p ==> ~(q /\ r) <=> q /\ p ==> ~r`] THEN
+  X_GEN_TAC `next:num->num` THEN STRIP_TAC THEN
+  (MP_TAC o prove_recursive_functions_exist num_RECURSION)
+   `(f(0) = next 0) /\ (!n. f(SUC n) = next(f n + 1))` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r:num->num` THEN STRIP_TAC THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[LT] THEN
+    ASM_MESON_TAC[ARITH_RULE `m <= n /\ n + 1 <= p ==> m < p`; LE_LT];
+    DISCH_TAC] THEN
+  ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; FORALL_IN_IMAGE; SUBSET] THEN
+  REWRITE_TAC[IN_IMAGE; IN_UNIV] THEN CONJ_TAC THENL
+   [INDUCT_TAC THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC num_WF THEN X_GEN_TAC `n:num` THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `?m:num. m < n /\ m IN s` THENL
+   [MP_TAC(SPEC `\m:num. m < n /\ m IN s` num_MAX) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(TAUT
+     `p /\ (q ==> r) ==> (p <=> q) ==> r`) THEN
+    CONJ_TAC THENL [MESON_TAC[LT_IMP_LE]; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_THEN `p:num` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `?q. p = (r:num->num) q` (CHOOSE_THEN SUBST_ALL_TAC) THENL
+     [ASM_MESON_TAC[]; EXISTS_TAC `SUC q`] THEN
+    ASM_REWRITE_TAC[GSYM LE_ANTISYM; GSYM NOT_LT] THEN
+    ASM_MESON_TAC[NOT_LE; ARITH_RULE `r < p <=> r + 1 <= p`];
+    EXISTS_TAC `0` THEN ASM_REWRITE_TAC[GSYM LE_ANTISYM; GSYM NOT_LT] THEN
+    ASM_MESON_TAC[LE_0]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Mapping between finite sets and lists.                                    *)
