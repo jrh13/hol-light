@@ -719,6 +719,25 @@ let IN_CONVEX_SET = prove
         ==> ((&1 - u) % a + u % b) IN s`,
   MESON_TAC[CONVEX_ALT]);;
 
+let CONVEX_CONTAINS_SEGMENT = prove
+ (`!s. convex s <=> !a b. a IN s /\ b IN s ==> segment[a,b] SUBSET s`,
+  REWRITE_TAC[CONVEX_ALT; segment; SUBSET; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let CONVEX_CONTAINS_OPEN_SEGMENT = prove
+ (`!s. convex s <=> !a b. a IN s /\ b IN s ==> segment(a,b) SUBSET s`,
+  ONCE_REWRITE_TAC[segment] THEN REWRITE_TAC[CONVEX_CONTAINS_SEGMENT] THEN
+  SET_TAC[]);;
+
+let CONVEX_CONTAINS_SEGMENT_EQ = prove
+ (`!s:real^N->bool.
+        convex s <=> !a b. segment[a,b] SUBSET s <=> a IN s /\ b IN s`,
+  REWRITE_TAC[CONVEX_CONTAINS_SEGMENT; SUBSET] THEN
+  MESON_TAC[ENDS_IN_SEGMENT]);;
+
+let CONVEX_CONTAINS_SEGMENT_IMP = prove
+ (`!s a b. convex s ==> (segment[a,b] SUBSET s <=> a IN s /\ b IN s)`,
+  SIMP_TAC[CONVEX_CONTAINS_SEGMENT_EQ]);;
+
 let CONVEX_EMPTY = prove
  (`convex {}`,
   REWRITE_TAC[convex; NOT_IN_EMPTY]);;
@@ -2152,6 +2171,17 @@ let CONVEX_CBALL = prove
 let CONNECTED_CBALL = prove
  (`!x:real^N e. connected(cball(x,e))`,
   SIMP_TAC[CONVEX_CONNECTED; CONVEX_CBALL]);;
+
+let CONVEX_INTERMEDIATE_BALL = prove
+ (`!a:real^N r t. ball(a,r) SUBSET t /\ t SUBSET cball(a,r) ==> convex t`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CONVEX_CONTAINS_OPEN_SEGMENT] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+    SUBSET_TRANS)) THEN
+  REWRITE_TAC[SUBSET; IN_BALL; IN_CBALL] THEN GEN_TAC THEN DISCH_THEN
+   (MP_TAC o SPEC `a:real^N` o MATCH_MP DIST_DECREASES_OPEN_SEGMENT) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
+  REWRITE_TAC[IN_CBALL] THEN ASM_MESON_TAC[REAL_LTE_TRANS]);;
 
 let FRONTIER_OF_CONNECTED_COMPONENT_SUBSET = prove
  (`!s c x:real^N. frontier(connected_component s x) SUBSET frontier s`,
@@ -8235,20 +8265,6 @@ let CONVEX_ON_LEFT_SECANT,CONVEX_ON_RIGHT_SECANT = (CONJ_PAIR o prove)
 let starlike = new_definition
  `starlike s <=> ?a. a IN s /\ !x. x IN s ==> segment[a,x] SUBSET s`;;
 
-let CONVEX_CONTAINS_SEGMENT = prove
- (`!s. convex s <=> !a b. a IN s /\ b IN s ==> segment[a,b] SUBSET s`,
-  REWRITE_TAC[CONVEX_ALT; segment; SUBSET; IN_ELIM_THM] THEN MESON_TAC[]);;
-
-let CONVEX_CONTAINS_SEGMENT_EQ = prove
- (`!s:real^N->bool.
-        convex s <=> !a b. segment[a,b] SUBSET s <=> a IN s /\ b IN s`,
-  REWRITE_TAC[CONVEX_CONTAINS_SEGMENT; SUBSET] THEN
-  MESON_TAC[ENDS_IN_SEGMENT]);;
-
-let CONVEX_CONTAINS_SEGMENT_IMP = prove
- (`!s a b. convex s ==> (segment[a,b] SUBSET s <=> a IN s /\ b IN s)`,
-  SIMP_TAC[CONVEX_CONTAINS_SEGMENT_EQ]);;
-
 let CONVEX_IMP_STARLIKE = prove
  (`!s. convex s /\ ~(s = {}) ==> starlike s`,
   REWRITE_TAC[CONVEX_CONTAINS_SEGMENT; starlike; GSYM MEMBER_NOT_EMPTY] THEN
@@ -8408,6 +8424,18 @@ let BETWEEN_NORM_LE = prove
  (`!r a b x:real^N.
         norm a <= r /\ norm b <= r /\ between x (a,b) ==> norm x <= r`,
   REWRITE_TAC[GSYM(CONJUNCT2(SPEC_ALL DIST_0)); BETWEEN_DIST_LE]);;
+
+let UNION_SEGMENT = prove
+ (`!a b c:real^N.
+        b IN segment[a,c]
+        ==> segment[a,b] UNION segment[b,c] = segment[a,c]`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c:real^N = a` THENL
+   [ASM_SIMP_TAC[SEGMENT_REFL; IN_SING; UNION_IDEMPOT];
+    ONCE_REWRITE_TAC[UNION_COMM] THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
+    DISCH_THEN(SUBST1_TAC o MATCH_MP CONVEX_HULL_EXCHANGE_UNION) THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
+    REWRITE_TAC[IMAGE_CLAUSES; UNIONS_2] THEN
+    BINOP_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Shrinking towards the interior of a convex set.                           *)
@@ -8940,6 +8968,26 @@ let IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT = prove
    `(&1 - u) % a + u % b:real^N = b - (&1 - u) % (b - a)`] THEN
   MATCH_MP_TAC IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SHRINK THEN
   ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let CONVEX_OPEN_SEGMENT_CASES = prove
+ (`!s a b:real^N.
+        convex s /\ a IN closure s /\ b IN closure s
+        ==> segment(a,b) SUBSET relative_frontier s \/
+            segment(a,b) SUBSET relative_interior s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[relative_frontier] THEN
+  MATCH_MP_TAC(SET_RULE
+   `s SUBSET c /\ (!a. a IN i /\ a IN s ==> s SUBSET i)
+    ==> s SUBSET c DIFF i \/ s SUBSET i`) THEN
+  CONJ_TAC THENL
+   [ASM_MESON_TAC[CONVEX_CONTAINS_OPEN_SEGMENT; CONVEX_CLOSURE];
+    X_GEN_TAC `c:real^N` THEN ONCE_REWRITE_TAC[segment]] THEN
+  REWRITE_TAC[IN_DIFF; IN_INSERT; DE_MORGAN_THM; NOT_IN_EMPTY] THEN
+  STRIP_TAC THEN FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP UNION_SEGMENT) THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `c:real^N`]
+        IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(SPEC `b:real^N` th) THEN MP_TAC(SPEC `a:real^N` th)) THEN
+  ASM_REWRITE_TAC[SEGMENT_SYM; CONJUNCT2 segment] THEN ASM SET_TAC[]);;
 
 let RELATIVE_INTERIOR_SING = prove
  (`!a. relative_interior {a} = {a}`,

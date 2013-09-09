@@ -93,18 +93,12 @@ let REAL_CONVEX_BOUND_LE = prove
   CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[REAL_LE_REFL; REAL_MUL_LID]] THEN
   ASM_SIMP_TAC[REAL_ADD_RDISTRIB; REAL_LE_ADD2; REAL_LE_LMUL]);;
 
-let INFINITE_ENUMERATE = prove
+let INFINITE_ENUMERATE_WEAK = prove
  (`!s:num->bool.
        INFINITE s
        ==> ?r:num->num. (!m n. m < n ==> r(m) < r(n)) /\ (!n. r n IN s)`,
-  GEN_TAC THEN REWRITE_TAC[INFINITE; num_FINITE; NOT_EXISTS_THM] THEN
-  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; NOT_LE; SKOLEM_THM] THEN
-  DISCH_THEN(X_CHOOSE_TAC `next:num->num`) THEN
-  (MP_TAC o prove_recursive_functions_exist num_RECURSION)
-   `(f(0) = next 0) /\ (!n. f(SUC n) = next(f n))` THEN
-  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN CONJ_TAC THENL
-   [GEN_TAC; ALL_TAC] THEN
-  INDUCT_TAC THEN ASM_REWRITE_TAC[LT] THEN ASM_MESON_TAC[LT_TRANS]);;
+  GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP INFINITE_ENUMERATE) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
 
 let APPROACHABLE_LT_LE = prove
  (`!P f. (?d. &0 < d /\ !x. f(x) < d ==> P x) =
@@ -495,32 +489,32 @@ let SUM_GP_OFFSET = prove
 (* Segment of natural numbers starting at a specific number.                 *)
 (* ------------------------------------------------------------------------- *)
 
-let from = new_definition                                                      
-  `from n = {m:num | n <= m}`;;                                                
-                                                                               
-let FROM_0 = prove                                               
- (`from 0 = (:num)`,                                                           
-  REWRITE_TAC[from; LE_0] THEN SET_TAC[]);;                                 
-                                                               
-let FROM_INTER_NUMSEG_GEN = prove                              
- (`!k m n. (from k) INTER (m..n) = (if m < k then k..n else m..n)`,
-  REPEAT GEN_TAC THEN COND_CASES_TAC THEN POP_ASSUM MP_TAC THEN         
-  REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN   
-  ARITH_TAC);;                                           
-                                                                               
-let FROM_INTER_NUMSEG = prove                                                  
- (`!k n. (from k) INTER (0..n) = k..n`,                                        
-  REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN      
-  ARITH_TAC);;                           
-                                                              
-let IN_FROM = prove                                                    
- (`!m n. m IN from n <=> n <= m`,                                     
-  REWRITE_TAC[from; IN_ELIM_THM]);;                                         
+let from = new_definition
+  `from n = {m:num | n <= m}`;;
 
-let INFINITE_FROM = prove                                                      
- (`!n. INFINITE(from n)`,                                                      
-  GEN_TAC THEN                                                                 
-  SUBGOAL_THEN `from n = (:num) DIFF {i | i < n}`                              
+let FROM_0 = prove
+ (`from 0 = (:num)`,
+  REWRITE_TAC[from; LE_0] THEN SET_TAC[]);;
+
+let FROM_INTER_NUMSEG_GEN = prove
+ (`!k m n. (from k) INTER (m..n) = (if m < k then k..n else m..n)`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN POP_ASSUM MP_TAC THEN
+  REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN
+  ARITH_TAC);;
+
+let FROM_INTER_NUMSEG = prove
+ (`!k n. (from k) INTER (0..n) = k..n`,
+  REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN
+  ARITH_TAC);;
+
+let IN_FROM = prove
+ (`!m n. m IN from n <=> n <= m`,
+  REWRITE_TAC[from; IN_ELIM_THM]);;
+
+let INFINITE_FROM = prove
+ (`!n. INFINITE(from n)`,
+  GEN_TAC THEN
+  SUBGOAL_THEN `from n = (:num) DIFF {i | i < n}`
    (fun th -> SIMP_TAC[th; INFINITE_DIFF_FINITE; FINITE_NUMSEG_LT;
-   num_INFINITE]) THEN                                               
+   num_INFINITE]) THEN
   REWRITE_TAC[EXTENSION; from; IN_DIFF; IN_UNIV; IN_ELIM_THM] THEN ARITH_TAC);;

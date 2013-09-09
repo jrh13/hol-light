@@ -31,26 +31,26 @@ let oriented_area = new_definition
   `oriented_area (a:real^2,b:real^2,c:real^2) =
   ((b$1 - a$1) * (c$2 - a$2) - (c$1 - a$1) * (b$2 - a$2)) / &2`;;
 
-let move = new_definition
-  `!A B C A' B' C':real^2. move (A,B,C) (A',B',C') <=>
-  (B = B' /\ C = C' /\ collinear {vec 0,C - B,A' - A} \/
-  A = A' /\ C = C' /\ collinear {vec 0,C - A,B' - B} \/
-  A = A' /\ B = B' /\ collinear {vec 0,B - A,C' - C})`;;
+let move = NewDefinition
+  `;∀A B C A' B' C':real^2. move (A,B,C) (A',B',C') ⇔
+  (B = B' ∧ C = C' ∧ collinear {vec 0,C - B,A' - A} ∨
+  A = A' ∧ C = C' ∧ collinear {vec 0,C - A,B' - B} ∨
+  A = A' ∧ B = B' ∧ collinear {vec 0,B - A,C' - C})`;;
 
-let reachable = new_definition
-  `!p p'.
-  reachable p p'  <=>  ?n. ?s. s 0 = p /\ s n = p' /\
-  (!m. 0 <= m /\ m < n ==> move (s m) (s (SUC m)))`;;
+let reachable = NewDefinition
+  `;∀p p'.
+  reachable p p'  ⇔  ∃n. ∃s. s 0 = p ∧ s n = p' ∧
+  (∀m. 0 <= m ∧ m < n ⇒ move (s m) (s (SUC m)))`;;
 
-let reachableN = new_definition
-  `!p p'. !n.
-  reachableN p p' n  <=>  ?s. s 0 = p /\ s n = p' /\
-  (!m. 0 <= m /\ m < n ==> move (s m) (s (SUC m)))`;;
+let reachableN = NewDefinition
+  `;∀p p'. ∀n.
+  reachableN p p' n  ⇔  ∃s. s 0 = p ∧ s n = p' ∧
+  (∀m. 0 <= m ∧ m < n ⇒ move (s m) (s (SUC m)))`;;
 
-let move2Cond = new_definition
-  `! A B A' B':real^2. move2Cond A B A' B'  <=>
-  ~collinear {B,A,A'} /\ ~collinear {A',B,B'}   \/
-  ~collinear {A,B,B'} /\ ~collinear {B',A,A'}`;;
+let move2Cond = NewDefinition
+  `;∀ A B A' B':real^2. move2Cond A B A' B'  ⇔
+  ¬collinear {B,A,A'} ∧ ¬collinear {A',B,B'}   ∨
+  ¬collinear {A,B,B'} ∧ ¬collinear {B',A,A'}`;;
 
 
 let oriented_areaSymmetry = theorem `;
@@ -219,11 +219,13 @@ let moveSymmetry = theorem `;
     ∀X Y Z X':real^2. collinear {vec 0, Z - Y, X' - X}
     ⇒ collinear {vec 0, Y - Z, X' - X}     []
     proof     REWRITE_TAC COLLINEAR_3_2Dzero;     VEC2_TAC;     qed;
-    REWRITE_TAC -- move;
+    MP_TAC -;
+    REWRITE_TAC move;
     ∀X Y Z X':real^2. collinear {vec 0, Z - Y, X' - X}
       ⇒ collinear {vec 0, Y - Z, X' - X}     []
     proof     REWRITE_TAC COLLINEAR_3_2Dzero;     VEC2_TAC;     qed;
-      REWRITE_TAC -- move;
+    MP_TAC -;
+    REWRITE_TAC move;
     fol;
   qed;
 `;;
