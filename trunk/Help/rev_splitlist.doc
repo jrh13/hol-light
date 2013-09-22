@@ -6,7 +6,7 @@
 Applies a binary destructor repeatedly in right-associative mode.
 
 \DESCRIBE
-If a destructor function {d} inverts a binary constructor {f}, for example 
+If a destructor function {d} inverts a binary constructor {f}, for example
 {dest_comb} for {mk_comb}, and fails when applied to {y}, then:
 {
   rev_splitlist d f(...(f(f(w,x1),x2),...xn)
@@ -20,14 +20,14 @@ If a destructor function {d} inverts a binary constructor {f}, for example
 Never fails.
 
 \EXAMPLE
-The function {strip_comb} is actually just defined as 
+The function {strip_comb} is actually just defined as
 {rev_splitlist dest_comb}, which acts as follows:
 {
-  # rev_splitlist dest_comb `x + 1 + 2`;;         
+  # rev_splitlist dest_comb `x + 1 + 2`;;
   val it : term * term list = (`(+)`, [`x`; `1 + 2`])
 }
 
 \SEEALSO
-itlist, splitlist, striplist.
+itlist, nsplit, splitlist, striplist.
 
 \ENDDOC

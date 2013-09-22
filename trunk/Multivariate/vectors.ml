@@ -2917,6 +2917,17 @@ let MATRIX_EQUAL_COLUMNS = prove
         A = B <=> !i. 1 <= i /\ i <= dimindex(:N) ==> column i A = column i B`,
   SIMP_TAC[column; CART_EQ; LAMBDA_BETA] THEN MESON_TAC[]);;
 
+let MATRIX_CMUL_EQ_0 = prove
+ (`!A:real^M^N c. c %% A = mat 0 <=> c = &0 \/ A = mat 0`,
+  SIMP_TAC[CART_EQ; MATRIX_CMUL_COMPONENT; MAT_COMPONENT; COND_ID] THEN
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN
+  ASM_REWRITE_TAC[REAL_ENTIRE]);;
+
+let MAT_EQ = prove
+ (`!m n. mat m = mat n <=> m = n`,
+  SIMP_TAC[CART_EQ; MAT_COMPONENT] THEN REPEAT STRIP_TAC THEN
+  MESON_TAC[REAL_OF_NUM_EQ; DIMINDEX_GE_1; LE_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Two sometimes fruitful ways of looking at matrix-vector multiplication.   *)
 (* ------------------------------------------------------------------------- *)

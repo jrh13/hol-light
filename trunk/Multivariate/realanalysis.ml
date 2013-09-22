@@ -18933,6 +18933,183 @@ let SEPARATION_BY_UNION_OPEN = prove
   MATCH_MP_TAC UNICOHERENT_UNIV THEN
   ASM_REWRITE_TAC[GSYM OPEN_CLOSED] THEN ASM SET_TAC[]);;
 
+let CONNECTED_INTER_DISJOINT_OPEN_FRONTIERS = prove
+ (`!s t:real^N->bool.
+        open s /\ connected s /\ open t /\ connected t /\
+        DISJOINT (frontier s) (frontier t)
+        ==> connected(s INTER t)`,
+  let lemma = prove
+   (`~(f = {}) ==> s UNION UNIONS f = UNIONS {s UNION c | c IN f}`,
+    REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]) in
+  REPEAT STRIP_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [`s:real^N->bool = {}`; `t:real^N->bool = {}`] THEN
+  ASM_REWRITE_TAC[INTER_EMPTY; CONNECTED_EMPTY] THEN
+  MAP_EVERY ASM_CASES_TAC [`s = (:real^N)`; `t = (:real^N)`] THEN
+  ASM_REWRITE_TAC[INTER_UNIV; CONNECTED_UNIV] THEN
+  ASM_CASES_TAC `s INTER t:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[CONNECTED_EMPTY] THEN
+  MP_TAC(ISPECL
+   [`s UNION UNIONS {c | c IN components((:real^N) DIFF closure t) /\
+                         ~(c INTER s = {})}`;
+    `t UNION UNIONS {c | c IN components((:real^N) DIFF closure s) /\
+                         ~(c INTER t = {})}`]
+   OPEN_UNICOHERENT_UNIV) THEN
+  ANTS_TAC THENL
+   [REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC OPEN_UNION THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC OPEN_UNIONS THEN REWRITE_TAC[IN_ELIM_THM] THEN
+      MESON_TAC[OPEN_COMPONENTS; closed; CLOSED_CLOSURE];
+      MATCH_MP_TAC OPEN_UNION THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC OPEN_UNIONS THEN REWRITE_TAC[IN_ELIM_THM] THEN
+      MESON_TAC[OPEN_COMPONENTS; closed; CLOSED_CLOSURE];
+      MATCH_MP_TAC(MESON[]
+       `(s = {} \/ ~(s = {}) ==> connected(u UNION UNIONS s))
+        ==> connected(u UNION UNIONS s)`) THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[UNION_EMPTY; UNIONS_0] THEN
+      ASM_SIMP_TAC[lemma] THEN MATCH_MP_TAC CONNECTED_UNIONS THEN
+      REWRITE_TAC[FORALL_IN_GSPEC] THEN
+      CONJ_TAC THENL
+       [ASM_MESON_TAC[CONNECTED_UNION; IN_COMPONENTS_CONNECTED; UNION_COMM];
+        ALL_TAC] THEN
+      MATCH_MP_TAC(SET_RULE `!s. s SUBSET t /\ ~(s = {}) ==> ~(t = {})`) THEN
+      EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[SUBSET_INTERS] THEN
+      REWRITE_TAC[FORALL_IN_GSPEC; SUBSET_UNION];
+      MATCH_MP_TAC(MESON[]
+       `(s = {} \/ ~(s = {}) ==> connected(u UNION UNIONS s))
+        ==> connected(u UNION UNIONS s)`) THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[UNION_EMPTY; UNIONS_0] THEN
+      ASM_SIMP_TAC[lemma] THEN MATCH_MP_TAC CONNECTED_UNIONS THEN
+      REWRITE_TAC[FORALL_IN_GSPEC] THEN
+      CONJ_TAC THENL
+       [ASM_MESON_TAC[CONNECTED_UNION; IN_COMPONENTS_CONNECTED; UNION_COMM];
+        ALL_TAC] THEN
+      MATCH_MP_TAC(SET_RULE `!s. s SUBSET t /\ ~(s = {}) ==> ~(t = {})`) THEN
+      EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[SUBSET_INTERS] THEN
+      REWRITE_TAC[FORALL_IN_GSPEC; SUBSET_UNION];
+      GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `x:real^N` THEN
+      REWRITE_TAC[IN_UNION; UNIONS_GSPEC; IN_UNIV; IN_ELIM_THM] THEN
+      ASM_CASES_TAC `(x:real^N) IN s` THEN ASM_REWRITE_TAC[] THEN
+      ASM_CASES_TAC `(x:real^N) IN t` THEN ASM_REWRITE_TAC[] THEN
+      FIRST_ASSUM(MP_TAC o SPEC `x:real^N` o MATCH_MP (SET_RULE
+       `DISJOINT s t ==> !x. ~(x IN s) \/ ~(x IN t)`)) THEN
+      ASM_SIMP_TAC[frontier; INTERIOR_OPEN; IN_DIFF] THEN STRIP_TAC THENL
+       [SUBGOAL_THEN `x IN UNIONS(components((:real^N) DIFF closure s))`
+        MP_TAC THENL
+         [ASM_REWRITE_TAC[GSYM UNIONS_COMPONENTS; IN_DIFF; IN_UNIV];
+          ALL_TAC] THEN
+        REWRITE_TAC[IN_UNIONS] THEN
+        DISCH_THEN(X_CHOOSE_THEN `c:real^N->bool` STRIP_ASSUME_TAC) THEN
+        ASM_CASES_TAC `c INTER t:real^N->bool = {}` THENL
+         [ALL_TAC; ASM_MESON_TAC[]] THEN
+        SUBGOAL_THEN `c INTER closure(t:real^N->bool) = {}` ASSUME_TAC THENL
+         [ASM_MESON_TAC[OPEN_INTER_CLOSURE_EQ_EMPTY; OPEN_COMPONENTS;
+                        closed; CLOSED_CLOSURE];
+          ALL_TAC] THEN
+        SUBGOAL_THEN `x IN UNIONS(components((:real^N) DIFF closure t))`
+        MP_TAC THENL
+         [ASM_REWRITE_TAC[GSYM UNIONS_COMPONENTS; IN_DIFF; IN_UNIV] THEN
+          ASM SET_TAC[];
+          ALL_TAC] THEN
+        REWRITE_TAC[IN_UNIONS] THEN
+        DISCH_THEN(X_CHOOSE_THEN `d:real^N->bool` STRIP_ASSUME_TAC) THEN
+        ASM_CASES_TAC `d INTER s:real^N->bool = {}` THENL
+         [ALL_TAC; ASM_MESON_TAC[]] THEN
+        SUBGOAL_THEN `d INTER closure(s:real^N->bool) = {}` ASSUME_TAC THENL
+         [ASM_MESON_TAC[OPEN_INTER_CLOSURE_EQ_EMPTY; OPEN_COMPONENTS;
+                        closed; CLOSED_CLOSURE];
+          ALL_TAC];
+        SUBGOAL_THEN `x IN UNIONS(components((:real^N) DIFF closure t))`
+        MP_TAC THENL
+         [ASM_REWRITE_TAC[GSYM UNIONS_COMPONENTS; IN_DIFF; IN_UNIV];
+          ALL_TAC] THEN
+        REWRITE_TAC[IN_UNIONS] THEN
+        DISCH_THEN(X_CHOOSE_THEN `d:real^N->bool` STRIP_ASSUME_TAC) THEN
+        ASM_CASES_TAC `d INTER s:real^N->bool = {}` THENL
+         [ALL_TAC; ASM_MESON_TAC[]] THEN
+        SUBGOAL_THEN `d INTER closure(s:real^N->bool) = {}` ASSUME_TAC THENL
+         [ASM_MESON_TAC[OPEN_INTER_CLOSURE_EQ_EMPTY; OPEN_COMPONENTS;
+                        closed; CLOSED_CLOSURE];
+          ALL_TAC] THEN
+        SUBGOAL_THEN `x IN UNIONS(components((:real^N) DIFF closure s))`
+        MP_TAC THENL
+         [ASM_REWRITE_TAC[GSYM UNIONS_COMPONENTS; IN_DIFF; IN_UNIV] THEN
+          ASM SET_TAC[];
+          ALL_TAC] THEN
+        REWRITE_TAC[IN_UNIONS] THEN
+        DISCH_THEN(X_CHOOSE_THEN `c:real^N->bool` STRIP_ASSUME_TAC) THEN
+        ASM_CASES_TAC `c INTER t:real^N->bool = {}` THENL
+         [ALL_TAC; ASM_MESON_TAC[]] THEN
+        SUBGOAL_THEN `c INTER closure(t:real^N->bool) = {}` ASSUME_TAC THENL
+         [ASM_MESON_TAC[OPEN_INTER_CLOSURE_EQ_EMPTY; OPEN_COMPONENTS;
+                        closed; CLOSED_CLOSURE];
+          ALL_TAC]] THEN
+     (FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+       `DISJOINT s t ==> !c d. ~(c = {}) /\ c SUBSET s /\ d SUBSET t /\ c = d
+                               ==> p`)) THEN
+      MAP_EVERY EXISTS_TAC
+       [`frontier c:real^N->bool`; `frontier d:real^N->bool`] THEN
+      REPEAT CONJ_TAC THENL
+       [REWRITE_TAC[FRONTIER_EQ_EMPTY; DE_MORGAN_THM] THEN
+        ASM_MESON_TAC[IN_COMPONENTS_NONEMPTY; IN_COMPONENTS_SUBSET;
+                      SET_RULE `s SUBSET UNIV DIFF t /\ s = UNIV ==> t = {}`;
+                      CLOSURE_EQ_EMPTY];
+        ASM_MESON_TAC[FRONTIER_OF_COMPONENTS_SUBSET;FRONTIER_COMPLEMENT;
+                      FRONTIER_CLOSURE_SUBSET; SUBSET_TRANS];
+        ASM_MESON_TAC[FRONTIER_OF_COMPONENTS_SUBSET;FRONTIER_COMPLEMENT;
+                      FRONTIER_CLOSURE_SUBSET; SUBSET_TRANS];
+        AP_TERM_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THEN
+        MATCH_MP_TAC COMPONENTS_MAXIMAL THENL
+         [EXISTS_TAC `(:real^N) DIFF closure t`;
+          EXISTS_TAC `(:real^N) DIFF closure s`] THEN
+        ASM_REWRITE_TAC[] THEN
+        (CONJ_TAC THENL [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED];
+         ASM SET_TAC[]])])];
+      ALL_TAC] THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+    MATCH_MP_TAC(SET_RULE
+     `s INTER t' = {} /\ t INTER s' = {} /\ s' INTER t' = {}
+      ==> (s UNION s') INTER (t UNION t') = s INTER t`) THEN
+    REWRITE_TAC[INTER_UNIONS; EMPTY_UNIONS; FORALL_IN_GSPEC;
+                UNIONS_SUBSET] THEN
+    REPEAT CONJ_TAC THEN X_GEN_TAC `d:real^N->bool` THENL
+     [MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN
+      MP_TAC(ISPECL [`(:real^N) DIFF closure s`; `d:real^N->bool`]
+        IN_COMPONENTS_SUBSET) THEN
+      SET_TAC[];
+      MP_TAC(ISPEC `t:real^N->bool` CLOSURE_SUBSET) THEN
+      MP_TAC(ISPECL [`(:real^N) DIFF closure t`; `d:real^N->bool`]
+        IN_COMPONENTS_SUBSET) THEN
+      SET_TAC[];
+      STRIP_TAC THEN X_GEN_TAC `c:real^N->bool` THEN STRIP_TAC] THEN
+    MATCH_MP_TAC(TAUT `(~p ==> F) ==> p`) THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `DISJOINT s t
+      ==> !c d. c SUBSET s /\ d SUBSET t /\ ~(c INTER d = {}) ==> F`)) THEN
+    MAP_EVERY EXISTS_TAC
+     [`frontier c:real^N->bool`; `frontier d:real^N->bool`] THEN
+    REPEAT(CONJ_TAC THENL
+     [ASM_MESON_TAC[FRONTIER_OF_COMPONENTS_SUBSET;FRONTIER_COMPLEMENT;
+                      FRONTIER_CLOSURE_SUBSET; SUBSET_TRANS]; ALL_TAC]) THEN
+    MATCH_MP_TAC CONNECTED_INTER_FRONTIER THEN CONJ_TAC THENL
+     [MATCH_MP_TAC CONNECTED_FRONTIER_COMPONENT_COMPLEMENT THEN
+      EXISTS_TAC `closure s:real^N->bool` THEN
+      ASM_MESON_TAC[CONNECTED_CLOSURE];
+      ALL_TAC] THEN
+    ONCE_REWRITE_TAC[SET_RULE `c DIFF d = c INTER (UNIV DIFF d)`] THEN
+    ONCE_REWRITE_TAC[INTER_COMM] THEN CONJ_TAC THEN
+    MATCH_MP_TAC CONNECTED_INTER_FRONTIER THEN
+    ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+     [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED];
+      ALL_TAC;
+      MATCH_MP_TAC COMPONENT_COMPLEMENT_CONNECTED THEN
+      EXISTS_TAC `closure t:real^N->bool` THEN
+      ASM_SIMP_TAC[CONNECTED_UNIV; SUBSET_UNIV; CONNECTED_CLOSURE];
+      ALL_TAC;
+      ALL_TAC] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET)) THEN
+    MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN
+    MP_TAC(ISPEC `t:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Another simple case where sphere maps are nullhomotopic.                  *)
 (* ------------------------------------------------------------------------- *)
