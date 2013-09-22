@@ -28,6 +28,6 @@ The function {strip_forall} is actually just defined as
 }
 
 \SEEALSO
-itlist, rev_splitlist, striplist.
+itlist, nsplit, rev_splitlist, striplist.
 
 \ENDDOC
