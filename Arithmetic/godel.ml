@@ -120,8 +120,8 @@ let SIGMAPI_CLAUSES_CODE = prove
   REWRITE_TAC[GSYM CONJ_ASSOC; RIGHT_EXISTS_AND_THM; UNWIND_THM1] THEN
   ONCE_REWRITE_TAC[TAUT `a \/ b \/ c \/ d <=> (b \/ c) \/ (a \/ d)`] THEN
   REWRITE_TAC[CONJ_ASSOC; OR_EXISTS_THM; GSYM RIGHT_OR_DISTRIB] THEN
-  REWRITE_TAC[TAUT 
-   `(if b /\ c \/ d then e else c /\ f) <=>                
+  REWRITE_TAC[TAUT
+   `(if b /\ c \/ d then e else c /\ f) <=>
     d /\ e \/ c /\ ~d /\ (if b then e else f)`] THEN
   MATCH_MP_TAC(TAUT `(a <=> a') /\ (~a' ==> (b <=> b'))
                      ==> (a \/ b <=> a' \/ b')`) THEN
@@ -141,7 +141,7 @@ let SIGMAPI_CLAUSES_CODE = prove
     FIRST_X_ASSUM(CHOOSE_THEN(MP_TAC o MATCH_MP SIGMAPI_REV_EXISTS)) THEN
     DISCH_THEN(MP_TAC o MATCH_MP(last(CONJUNCTS sigmapi_RULES))) THEN
     ASM_SIMP_TAC[SUB_ADD; ARITH_RULE `~(n = 0) ==> 1 <= n`];
-    ASM_CASES_TAC `b:bool` THEN 
+    ASM_CASES_TAC `b:bool` THEN
     ASM_REWRITE_TAC[TAUT `(a \/ b <=> a) <=> (b ==> a)`] THENL
      [DISCH_THEN(CHOOSE_THEN(MP_TAC o MATCH_MP SIGMAPI_REV_EXISTS)) THEN
       DISCH_THEN(MP_TAC o MATCH_MP(last(CONJUNCTS sigmapi_RULES))) THEN
@@ -154,7 +154,7 @@ let SIGMAPI_CLAUSES_CODE = prove
     FIRST_X_ASSUM(CHOOSE_THEN(MP_TAC o MATCH_MP SIGMAPI_REV_FORALL)) THEN
     DISCH_THEN(MP_TAC o MATCH_MP(last(CONJUNCTS sigmapi_RULES))) THEN
     ASM_SIMP_TAC[SUB_ADD; ARITH_RULE `~(n = 0) ==> 1 <= n`];
-    ASM_CASES_TAC `b:bool` THEN 
+    ASM_CASES_TAC `b:bool` THEN
     ASM_REWRITE_TAC[TAUT `(a \/ b <=> a) <=> (b ==> a)`] THENL
      [REWRITE_TAC[EXISTS_BOOL_THM] THEN
       REWRITE_TAC[TAUT `(a \/ b <=> a) <=> (b ==> a)`] THEN
@@ -213,9 +213,9 @@ let SIGMAPI_FORMSUBST = prove
   REWRITE_TAC[FV] THEN LET_TAC THEN
   CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN
   REWRITE_TAC[SIGMAPI_CLAUSES] THEN
-  ONCE_REWRITE_TAC[TAUT 
+  ONCE_REWRITE_TAC[TAUT
    `((if p \/ q then x else y) ==> (if p \/ q' then x' else y')) <=>
-    (p /\ x ==> x') /\ 
+    (p /\ x ==> x') /\
     (~p ==> (if q then x else y) ==> (if q' then x' else y'))`] THEN
   ASM_SIMP_TAC[] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
   CONJ_TAC THEN DISCH_THEN(K ALL_TAC) THEN MATCH_MP_TAC(TAUT
@@ -225,7 +225,7 @@ let SIGMAPI_FORMSUBST = prove
   STRIP_TAC THEN ASM_REWRITE_TAC[formsubst; form_INJ; termsubst] THEN
   REWRITE_TAC[form_DISTINCT] THEN
   ONCE_REWRITE_TAC[TAUT `((a /\ b) /\ c) /\ d <=> b /\ c /\ a /\ d`] THEN
-  REWRITE_TAC[UNWIND_THM1; termsubst; VALMOD_BASIC] THEN 
+  REWRITE_TAC[UNWIND_THM1; termsubst; VALMOD_BASIC] THEN
   REWRITE_TAC[TERMSUBST_FVT; IN_ELIM_THM; NOT_EXISTS_THM] THEN
   X_GEN_TAC `y:num` THEN REWRITE_TAC[valmod] THEN
   (COND_CASES_TAC THENL [ASM_MESON_TAC[]; ALL_TAC]) THEN
@@ -441,6 +441,10 @@ let sound_for = new_definition
 let consistent = new_definition
   `consistent A <=> ~(?p. A |-- p /\ A |-- Not p)`;;
 
+let CONSISTENT_ALT = prove
+ (`!A p. A |-- p /\ A |-- Not p <=> A |-- False`,
+  MESON_TAC[proves_RULES; axiom_RULES]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The purest and most symmetric and beautiful form of G1.                   *)
 (* ------------------------------------------------------------------------- *)
@@ -462,10 +466,6 @@ let CLOSED_NOT_TRUE = prove
  (`!p. closed p ==> (true(Not p) <=> ~(true p))`,
   REWRITE_TAC[closed; true_def; holds] THEN
   MESON_TAC[HOLDS_VALUATION; NOT_IN_EMPTY]);;
-
-let CONSISTENT_ALT = prove
- (`!A p. A |-- p /\ A |-- Not p <=> A |-- False`,
-  MESON_TAC[proves_RULES; ex_falso; axiom_not; iff_imp1]);;
 
 let G1 = prove
  (`!A. definable_by (SIGMA 1) (IMAGE gform A)
@@ -529,100 +529,3 @@ let G1_TRAD = prove
   REWRITE_TAC[SIGMA] THEN REPEAT STRIP_TAC THEN
   MP_TAC(SPEC `A:form->bool` G1) THEN ASM_REWRITE_TAC[SIGMA; PI] THEN
   MATCH_MP_TAC MONO_EXISTS THEN ASM_SIMP_TAC[COMPLETE_SOUND_SENTENCE]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Closures and invariance of truth and provability.                         *)
-(* ------------------------------------------------------------------------- *)
-
-let generalize = new_definition
-  `generalize vs p = ITLIST (!!) vs p`;;
-
-let TRUE_GENERALIZE = prove
- (`!vs p. true(generalize vs p) <=> true p`,
-  REWRITE_TAC[generalize; true_def] THEN
-  LIST_INDUCT_TAC THEN REWRITE_TAC[ITLIST; holds] THEN GEN_TAC THEN
-  FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [GSYM th]) THEN
-  MESON_TAC[VALMOD_REPEAT]);;
-
-let PROVABLE_GENERALIZE = prove
- (`!A p vs. A |-- generalize vs p <=> A |-- p`,
-  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[generalize] THEN LIST_INDUCT_TAC THEN
-  REWRITE_TAC[ITLIST] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
-  MESON_TAC[spec; gen; FORMSUBST_TRIV; ASSIGN_TRIV]);;
-
-let FV_GENERALIZE = prove
- (`!p vs. FV(generalize vs p) = FV(p) DIFF (set_of_list vs)`,
-  GEN_TAC THEN REWRITE_TAC[generalize] THEN
-   LIST_INDUCT_TAC THEN REWRITE_TAC[set_of_list; DIFF_EMPTY; ITLIST] THEN
-   ASM_REWRITE_TAC[FV] THEN SET_TAC[]);;
-
-let closure = new_definition
-  `closure p = generalize (list_of_set(FV p)) p`;;
-
-let CLOSED_CLOSURE = prove
- (`!p. closed(closure p)`,
-  REWRITE_TAC[closed; closure; FV_GENERALIZE] THEN
-  SIMP_TAC[SET_OF_LIST_OF_SET; FV_FINITE; DIFF_EQ_EMPTY]);;
-
-let TRUE_CLOSURE = prove
- (`!p. true(closure p) <=> true p`,
-  REWRITE_TAC[closure; TRUE_GENERALIZE]);;
-
-let PROVABLE_CLOSURE = prove
- (`!A p. A |-- closure p <=> A |-- p`,
-  REWRITE_TAC[closure; PROVABLE_GENERALIZE]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Other stuff.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-let complete = new_definition
-  `complete A <=> !p. closed p ==> A |-- p \/ A |-- Not p`;;
-
-let sound = new_definition
-  `sound A <=> !p. A |-- p ==> true p`;;
-
-let semcomplete = new_definition
-  `semcomplete A <=> !p. true p ==> A |-- p`;;
-
-let DEFINABLE_DEFINABLE_BY = prove
- (`definable = definable_by (\x. T)`,
-  REWRITE_TAC[FUN_EQ_THM; definable; definable_by]);;
-
-let DEFINABLE_ONEVAR = prove
- (`definable s <=> ?p x. (FV p = {x}) /\ !v. holds v p <=> (v x) IN s`,
-  REWRITE_TAC[definable] THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
-  DISCH_THEN(X_CHOOSE_THEN `p:form` (X_CHOOSE_TAC `x:num`)) THEN
-  EXISTS_TAC `(V x === V x) && formsubst (\y. if y = x then V x else Z) p` THEN
-  EXISTS_TAC `x:num` THEN
-  ASM_REWRITE_TAC[HOLDS_FORMSUBST; FORMSUBST_FV; FV; holds] THEN
-  REWRITE_TAC[COND_RAND; EXTENSION; IN_ELIM_THM; IN_SING; FVT; IN_UNION;
-              COND_EXPAND; NOT_IN_EMPTY; o_THM; termval] THEN
-  MESON_TAC[]);;
-
-let CLOSED_TRUE_OR_FALSE = prove
- (`!p. closed p ==> true p \/ true(Not p)`,
-  REWRITE_TAC[closed; true_def; holds] THEN REPEAT STRIP_TAC THEN
-  ASM_MESON_TAC[HOLDS_VALUATION; NOT_IN_EMPTY]);;
-
-let SEMCOMPLETE_IMP_COMPLETE = prove
- (`!A. semcomplete A ==> complete A`,
-  REWRITE_TAC[semcomplete; complete] THEN MESON_TAC[CLOSED_TRUE_OR_FALSE]);;
-
-let SOUND_CLOSED = prove
- (`sound A = !p. closed p /\ A |-- p ==> true p`,
-  REWRITE_TAC[sound] THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
-  MESON_TAC[TRUE_CLOSURE; PROVABLE_CLOSURE; CLOSED_CLOSURE]);;
-
-let SOUND_IMP_CONSISTENT = prove
- (`!A. sound A ==> consistent A`,
-  REWRITE_TAC[sound; consistent; CONSISTENT_ALT] THEN
-  SUBGOAL_THEN `~(true False)` (fun th -> MESON_TAC[th]) THEN
-  REWRITE_TAC[true_def; holds]);;
-
-let SEMCOMPLETE_SOUND_EQ_CONSISTENT = prove
- (`!A. semcomplete A ==> (sound A <=> consistent A)`,
-  REWRITE_TAC[semcomplete] THEN REPEAT STRIP_TAC THEN EQ_TAC THEN
-  REWRITE_TAC[SOUND_IMP_CONSISTENT] THEN
-  REWRITE_TAC[consistent; SOUND_CLOSED] THEN
-  ASM_MESON_TAC[CLOSED_TRUE_OR_FALSE]);;

@@ -116,6 +116,10 @@ let VALMOD_SWAP = prove
      ~(x = y) ==> ((x |-> a) ((y |-> b) v) = (y |-> b) ((x |-> a) v))`,
   REWRITE_TAC[valmod; FUN_EQ_THM] THEN MESON_TAC[]);;
 
+let VALMOD_TRIVIAL = prove
+ (`!v x. v x = t ==> (x |-> t) v = v`,
+  REWRITE_TAC[valmod; FUN_EQ_THM] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Assignment.                                                               *)
 (* ------------------------------------------------------------------------- *)
@@ -391,6 +395,16 @@ let TERMSUBST_FVT = prove
   MATCH_MP_TAC term_INDUCT THEN REWRITE_TAC[FVT; termsubst] THEN
   REWRITE_TAC[IN_UNION; IN_SING; NOT_IN_EMPTY] THEN MESON_TAC[]);;
 
+let TERMSUBST_ASSIGN = prove
+ (`!x s t. ~(x IN FVT t) ==> (termsubst (x |=> s) t = t)`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM TERMSUBST_TRIV] THEN
+  MATCH_MP_TAC TERMSUBST_EQ THEN
+  REWRITE_TAC[ASSIGN] THEN ASM_MESON_TAC[]);;
+
+let TERMSUBST_TRIVIAL = prove
+ (`!v t. (!x. x IN FVT t ==> v x = V x) ==> termsubst v t = t`,
+  MESON_TAC[TERMSUBST_EQ; TERMSUBST_TRIV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Formula substitution --- somewhat less trivial.                           *)
 (* ------------------------------------------------------------------------- *)
@@ -479,6 +493,38 @@ let FORMSUBST_TRIV = prove
   REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
   ASM_REWRITE_TAC[LET_DEF; LET_END_DEF; VALMOD_REPEAT] THEN
   ASM_MESON_TAC[]);;
+
+let FORMSUBST_TRIVIAL = prove
+ (`!v p. (!x. x IN FV(p) ==> v x = V x) ==> formsubst v p = p`,
+  MESON_TAC[FORMSUBST_EQ; FORMSUBST_TRIV]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Predicate ensuring that a substitution will not cause variable renaming.  *)
+(* ------------------------------------------------------------------------- *)
+
+let safe_for = new_definition
+ `safe_for x v <=> !y. x IN FVT(v y) ==> y = x`;;
+
+let SAFE_FOR_V = prove
+ (`!x. safe_for x V`,
+  SIMP_TAC[safe_for; FVT; IN_SING]);;
+
+let SAFE_FOR_VALMOD = prove
+ (`!v x y t. safe_for x v /\ (x IN FVT t ==> y = x)
+             ==> safe_for x ((y |-> t) v)`,
+  REWRITE_TAC[safe_for; VALMOD] THEN MESON_TAC[]);;
+
+let SAFE_FOR_ASSIGN = prove
+ (`!x y t. safe_for x (y |=> t) <=> x IN FVT t ==> y = x`,
+  REWRITE_TAC[safe_for; ASSIGN] THEN MESON_TAC[FVT; IN_SING]);;
+
+let FORMSUBST_SAFE_FOR = prove
+ (`(!v x p. safe_for x v
+            ==> formsubst v (!! x p) = !!x (formsubst ((x |-> V x) v) p)) /\
+   (!v x p. safe_for x v
+            ==> formsubst v (?? x p) = ??x (formsubst ((x |-> V x) v) p))`,
+  REWRITE_TAC[safe_for; formsubst; LET_DEF; LET_END_DEF; FV] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Quasi-substitution.                                                       *)

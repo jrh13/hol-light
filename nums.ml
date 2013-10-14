@@ -236,11 +236,14 @@ let is_numeral = can dest_numeral;;
 let the_specifications = ref [];;
 
 let new_specification =
+  let code c = mk_small_numeral (Char.code (c.[0])) in
+  let mk_code name =
+      end_itlist (curry mk_pair) (map code (explode name)) in
   let check_distinct l =
     try itlist (fun t res -> if mem t res then fail() else t::res) l []; true
     with Failure _ -> false in
-  let specify n name th =
-    let ntm = mk_numeral n in
+  let specify name th =
+    let ntm = mk_code name in
     let gv = genvar(type_of ntm) in
     let th0 = CONV_RULE(REWR_CONV SKOLEM_THM) (GEN gv th) in
     let th1 = CONV_RULE(RATOR_CONV (REWR_CONV EXISTS_THM) THENC
@@ -251,12 +254,11 @@ let new_specification =
     let th2 = new_definition(mk_eq(mk_var(name,ty),rn)) in
     GEN_REWRITE_RULE ONCE_DEPTH_CONV [GSYM th2]
      (SPEC ntm (CONV_RULE BETA_CONV th1)) in
-  let rec specifies n names th =
+  let rec specifies names th =
     match names with
       [] -> th
-    | name::onames -> let th' = specify n name th in
-                      specifies (n +/ Int 1) onames th' in
-  let specification_counter = ref(Int 0) in
+    | name::onames -> let th' = specify name th in
+                      specifies onames th' in
   fun names th ->
     let asl,c = dest_thm th in
     if not (asl = []) then
@@ -274,7 +276,6 @@ let new_specification =
                              (!the_specifications)) in
           warn true ("Benign respecification"); sth
       with Failure _ ->
-          let sth = specifies (!specification_counter) names th in
+          let sth = specifies names th in
           the_specifications := ((names,th),sth)::(!the_specifications);
-          specification_counter := !specification_counter +/ Int(length names);
           sth;;

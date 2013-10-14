@@ -8,7 +8,7 @@
 
 needs "Library/binomial.ml";;
 needs "Library/iter.ml";;
-needs "Multivariate/realanalysis.ml";;
+needs "Multivariate/moretop.ml";;
 
 prioritize_complex();;
 
@@ -16874,6 +16874,30 @@ let [SIMPLY_CONNECTED_EQ_FRONTIER_PROPERTIES;
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC BOUNDED_SUBSET THEN
     EXISTS_TAC `closure v:complex->bool` THEN
     ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN SET_TAC[]]);;
+
+let SIMPLY_CONNECTED_IFF_SIMPLE = prove
+ (`!s:real^2->bool.
+        open s /\ bounded s
+        ==> (simply_connected s <=>
+             connected s /\ connected((:real^2) DIFF s))`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[SIMPLY_CONNECTED_EQ_UNBOUNDED_COMPLEMENT_COMPONENTS] THEN
+  ASM_CASES_TAC `connected(s:real^2->bool)` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THENL
+   [REWRITE_TAC[CONNECTED_EQ_CONNECTED_COMPONENTS_EQ] THEN
+    REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC COBOUNDED_UNIQUE_UNBOUNDED_COMPONENTS THEN
+    EXISTS_TAC `(:real^2) DIFF s` THEN
+    ASM_SIMP_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`] THEN
+    REWRITE_TAC[LE_REFL; DIMINDEX_2];
+    DISCH_TAC THEN
+    ASM_CASES_TAC `(:real^2) DIFF s = {}` THEN
+    ASM_REWRITE_TAC[COMPONENTS_EMPTY; NOT_IN_EMPTY] THEN
+    SUBGOAL_THEN `components((:real^2) DIFF s) = {(:real^2) DIFF s}`
+    SUBST1_TAC THENL [ASM_REWRITE_TAC[COMPONENTS_EQ_SING]; ALL_TAC] THEN
+    GEN_TAC THEN SIMP_TAC[IN_SING] THEN DISCH_TAC THEN
+    MATCH_MP_TAC COBOUNDED_IMP_UNBOUNDED THEN
+    ASM_REWRITE_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Yet another set of equivalences based on *continuous* logs and sqrts.     *)

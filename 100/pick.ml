@@ -4,7 +4,7 @@
 
 needs "Multivariate/polytope.ml";;
 needs "Multivariate/measure.ml";;
-needs "Multivariate/realanalysis.ml";;
+needs "Multivariate/moretop.ml";;
 
 prioritize_real();;
 

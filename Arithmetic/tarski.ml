@@ -342,23 +342,3 @@ let TARSKI_THEOREM = prove
   SIMP_TAC[true_def; holds; HOLDS_QSUBST; FVT_NUMERAL; NOT_IN_EMPTY] THEN
   ONCE_ASM_REWRITE_TAC[] THEN REWRITE_TAC[VALMOD_BASIC; TERMVAL_NUMERAL] THEN
   REWRITE_TAC[true_def; GFORM_INJ] THEN MESON_TAC[]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Misc. stuff to sanity-check the book.                                     *)
-(* ------------------------------------------------------------------------- *)
-
-(*****
-let pairpair = new_definition
- `pair(x,y) = NPAIR x y`;;
-
-let BREAK =
-  rand o concl o (ONCE_REWRITE_CONV[gform; gterm] THENC
-                  REWRITE_CONV[GSYM pairpair]);;
-
-let tm0 = `gform(?? x (V x === k && p))`;;
-let tm1 = BREAK tm0;;
-let tm2 = BREAK tm1;;
-let tm3 = BREAK tm2;;
-let tm4 = BREAK tm3;;
-
-******)

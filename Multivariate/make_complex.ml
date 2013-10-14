@@ -39,6 +39,7 @@ loadt "Multivariate/complexes.ml";;       (* Complex numbers                *)
 loadt "Multivariate/canal.ml";;           (* Complex analysis               *)
 loadt "Multivariate/transcendentals.ml";; (* Real & complex transcendentals *)
 loadt "Multivariate/realanalysis.ml";;    (* Some analytical stuff on R     *)
+loadt "Multivariate/moretop.ml";;         (* Further topological results    *)
 loadt "Multivariate/cauchy.ml";;          (* Complex line integrals         *)
 
 (* ------------------------------------------------------------------------- *)
