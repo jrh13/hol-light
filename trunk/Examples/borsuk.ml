@@ -3,7 +3,7 @@
 (* From Andrew Browder's article, AMM vol. 113 (2006), pp. 935-6             *)
 (* ========================================================================= *)
 
-needs "Multivariate/realanalysis.ml";;
+needs "Multivariate/moretop.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* The Borsuk-Ulam theorem for the unit sphere.                              *)

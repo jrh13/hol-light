@@ -97,7 +97,7 @@ let gen = prove
   MESON_TAC[proves_RULES]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Now some theorems corresponding to derived rules.                         *)
+(* Some purely propositional schemas and derived rules.                      *)
 (* ------------------------------------------------------------------------- *)
 
 let iff_imp1 = prove
@@ -141,29 +141,6 @@ let imp_trans_chain_2 = prove
                  ==> A |-- p --> r`,
   ASM_MESON_TAC[imp_trans; imp_swap; imp_unduplicate]);;
 
-
-
-(*****
-
-let imp_trans_chain = prove
- (`!A p qs r. ALL (\q. A |-- p --> q) qs /\
-              A |-- ITLIST (-->) qs r
-              ==> A |-- p --> r`,
-  GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN
-  REWRITE_TAC[ALL; ITLIST] THENL
-   [ASM_MESON_TAC[add_assum]; ALL_TAC] THEN
-  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC
-
-
-ASM_MESON_TAC[imp_trans; imp_swap; imp_unduplicate; axiom_distribimp;
-              modusponens; add_assum]
-
-add_assum] THEN
-  ... needs more thought. Maybe the REV
-
- *****)
-
-
 let imp_trans_th = prove
  (`!A p q r. A |-- (q --> r) --> (p --> q) --> (p --> r)`,
   MESON_TAC[imp_trans; axiom_addimp; axiom_distribimp]);;
@@ -192,6 +169,10 @@ let imp_insert = prove
  (`!A p q r. A |-- p --> r ==> A |-- p --> q --> r`,
   MESON_TAC[imp_trans; axiom_addimp]);;
 
+let imp_mono_th = prove
+ (`A |-- (p' --> p) --> (q --> q') --> (p --> q) --> (p' --> q')`,
+  MESON_TAC[imp_trans; imp_swap; imp_trans_th]);;
+
 let ex_falso = prove
  (`!A p. A |-- False --> p`,
   MESON_TAC[imp_trans; axiom_addimp; axiom_doubleneg]);;
@@ -215,15 +196,6 @@ let bool_cases = prove
  (`!p q. A |-- p --> q /\ A |-- (p --> False) --> q ==> A |-- q`,
   MESON_TAC[contrad; imp_trans; imp_add_concl]);;
 
-(****
-
-let imp_front = prove
- (`...` a bi more structure);;
-
-****)
-
-(*** This takes about a minute, but it does work ***)
-
 let imp_false_rule = prove
  (`!p q r. A |-- (q --> False) --> p --> r
            ==> A |-- ((p --> q) --> False) --> r`,
@@ -235,25 +207,81 @@ let imp_true_rule = prove
              ==> A |-- (p --> q) --> r`,
   MESON_TAC[imp_insert; imp_swap; modusponens; imp_trans_th; bool_cases]);;
 
+let truth = prove
+ (`!A. A |-- True`,
+  MESON_TAC[modusponens; axiom_true; imp_refl; iff_imp2]);;
+
+let and_left = prove
+ (`!A p q. A |-- p && q --> p`,
+  MESON_TAC[imp_add_assum; axiom_addimp; imp_trans; imp_add_concl;
+            axiom_doubleneg; imp_trans; iff_imp1; axiom_and]);;
+
+let and_right = prove
+ (`!A p q. A |-- p && q --> q`,
+  MESON_TAC[axiom_addimp; imp_trans; imp_add_concl; axiom_doubleneg;
+            iff_imp1; axiom_and]);;
+
+let and_pair = prove
+ (`!A p q. A |-- p --> q --> p && q`,
+  MESON_TAC[iff_imp2; axiom_and; imp_swap_th; imp_add_assum; imp_trans2;
+            modusponens; imp_swap; imp_refl]);;
+
+let META_AND = prove
+ (`!A p q. A |-- p && q <=> A |-- p /\ A |-- q`,
+  MESON_TAC[and_left; and_right; and_pair; modusponens]);;
+
+let shunt = prove
+ (`!A p q r. A |-- p && q --> r ==> A |-- p --> q --> r`,
+  MESON_TAC[modusponens; imp_add_assum; and_pair]);;
+
+let ante_conj = prove
+ (`!A p q r. A |-- p --> q --> r ==> A |-- p && q --> r`,
+  MESON_TAC[imp_trans_chain_2; and_left; and_right]);;
+
+let not_not_false = prove
+ (`!A p. A |-- (p --> False) --> False <-> p`,
+  MESON_TAC[imp_antisym; axiom_doubleneg; imp_swap; imp_refl]);;
+
+let iff_sym = prove
+ (`!A p q. A |-- p <-> q <=> A |-- q <-> p`,
+  MESON_TAC[iff_imp1; iff_imp2; imp_antisym]);;
+
+let iff_trans = prove
+ (`!A p q r. A |-- p <-> q /\ A |-- q <-> r ==> A |-- p <-> r`,
+  MESON_TAC[iff_imp1; iff_imp2; imp_trans; imp_antisym]);;
+
+let not_not = prove
+ (`!A p. A |-- Not(Not p) <-> p`,
+  MESON_TAC[iff_trans; not_not_false; axiom_not; imp_antisym; imp_add_concl;
+            iff_imp1; iff_imp2]);;
+
+let contrapos_eq = prove
+ (`!A p q. A |-- Not p --> Not q <=> A |-- q --> p`,
+  MESON_TAC[contrapos; not_not; iff_imp1; iff_imp2; imp_trans]);;
+
+let or_left = prove
+ (`!A p q. A |-- q --> p || q`,
+  MESON_TAC[imp_trans; not_not; iff_imp2; and_right; contrapos; axiom_or]);;
+
+let or_right = prove
+ (`!A p q. A |-- p --> p || q`,
+  MESON_TAC[imp_trans; not_not; iff_imp2; and_left; contrapos; axiom_or]);;
+
+let ante_disj = prove
+ (`!A p q r. A |-- p --> r /\ A |-- q --> r
+             ==> A |-- p || q --> r`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM contrapos_eq] THEN
+  MESON_TAC[imp_trans; imp_trans_chain_2; and_pair; contrapos_eq; not_not;
+            axiom_or; iff_imp1; iff_imp2; imp_trans]);;
+
 let iff_def = prove
  (`!A p q. A |-- (p <-> q) <-> (p --> q) && (q --> p)`,
-  REPEAT GEN_TAC THEN MATCH_MP_TAC imp_antisym THEN CONJ_TAC THENL
-   [SUBGOAL_THEN
-     `A |-- ((p --> q) --> (q --> p) --> False) --> (p <-> q) --> False`
-    ASSUME_TAC THENL
-     [ASM_MESON_TAC[imp_add_concl; imp_trans; axiom_distribimp; modusponens;
-                    imp_swap; axiom_iffimp1; axiom_iffimp2];
-      ALL_TAC] THEN
-    ASM_MESON_TAC[imp_add_concl; imp_trans; imp_swap; imp_refl;
-                   iff_imp2; axiom_and];
-    SUBGOAL_THEN
-     `A |-- (((p --> q) --> (q --> p) --> False) --> False)
-            --> ((p <-> q) --> False) --> False`
-    ASSUME_TAC THENL
-     [ASM_MESON_TAC[imp_swap; imp_trans_th; modusponens; imp_add_assum;
-                    axiom_impiff; imp_add_concl];
-      ALL_TAC] THEN
-    ASM_MESON_TAC[imp_trans; iff_imp1; axiom_and; axiom_doubleneg]]);;
+  MESON_TAC[imp_antisym; imp_trans_chain_2; axiom_iffimp1; axiom_iffimp2;
+            and_pair; axiom_impiff; imp_trans_chain_2; and_left; and_right]);;
+
+let iff_refl = prove
+ (`!A p. A |-- p <-> p`,
+  MESON_TAC[imp_antisym; imp_refl]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Equality rules.                                                           *)
@@ -342,10 +370,6 @@ let subalpha = prove
   MATCH_MP_TAC gen_right THEN ASM_REWRITE_TAC[FV; IN_DELETE] THEN
   MATCH_MP_TAC subspec THEN EXISTS_TAC `V y` THEN
   ASM_REWRITE_TAC[FVT; IN_SING]);;
-
-let imp_mono_th = prove
- (`A |-- (p' --> p) --> (q --> q') --> (p --> q) --> (p' --> q')`,
-  MESON_TAC[imp_trans; imp_swap; imp_trans_th]);;
 
 (* ------------------------------------------------------------------------- *)
 (* We'll perform induction on this measure.                                  *)
@@ -552,64 +576,82 @@ let TERMSUBST_TWICE = prove
   MESON_TAC[assign; TERMSUBST_TWICE_GENERAL]);;
 
 let FORMSUBST_TWICE_GENERAL = prove
- (`!z p x t v. ~(z IN VARS p)
-               ==> (formsubst ((z |-> t) v) (formsubst (x |=> V z) p) =
-                    formsubst ((x |-> t) v) p)`,
-  GEN_TAC THEN MATCH_MP_TAC form_INDUCT THEN REWRITE_TAC[CONJ_ASSOC] THEN
-  GEN_REWRITE_TAC I [GSYM CONJ_ASSOC] THEN CONJ_TAC THENL
-   [REWRITE_TAC[formsubst; ASSIGN; VARS; IN_UNION; DE_MORGAN_THM] THEN
-    MESON_TAC[TERMSUBST_TWICE_GENERAL];
+ (`!p i j.
+        (!x. x IN VARS p ==> safe_for x i)
+        ==> formsubst j (formsubst i p) = formsubst (termsubst j o i) p`,
+  MATCH_MP_TAC form_INDUCT THEN
+  REWRITE_TAC[VARS; FORALL_IN_INSERT; IN_UNION; NOT_IN_EMPTY; FORALL_AND_THM;
+              TAUT `p \/ q ==> r <=> (p ==> r) /\ (q ==> r)`] THEN
+  SIMP_TAC[FORMSUBST_SAFE_FOR] THEN
+  REWRITE_TAC[formsubst; TERMSUBST_TERMSUBST] THEN SIMP_TAC[] THEN
+  CONJ_TAC THEN MAP_EVERY X_GEN_TAC [`x:num`; `p:form`] THEN
+  STRIP_TAC THEN MAP_EVERY X_GEN_TAC [`i:num->term`; `j:num->term`] THEN
+  STRIP_TAC THEN
+  REWRITE_TAC[FV; FORMSUBST_FV; TERMSUBST_FVT; o_THM;
+              IN_ELIM_THM; IN_DELETE] THEN
+ (SUBGOAL_THEN
+   `(?y. ((?y'. y' IN FV p /\ y IN FVT ((x |-> V x) i y')) /\ ~(y = x)) /\
+          x IN FVT (j y)) <=>
+    (?y. (y IN FV p /\ ~(y = x)) /\
+         (?y'. y' IN FVT (i y) /\ x IN FVT (j y')))`
+   (fun th -> REWRITE_TAC[th])
+  THENL
+   [REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+    ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+    AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+    X_GEN_TAC `y:num` THEN
+    ASM_CASES_TAC `y IN FV p` THEN ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `y:num = x` THEN ASM_REWRITE_TAC[] THENL
+     [ASM_REWRITE_TAC[VALMOD; FVT; IN_SING] THEN MESON_TAC[]; ALL_TAC] THEN
+    AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+    X_GEN_TAC `z:num` THEN
+    ASM_CASES_TAC `x IN FVT(j(z:num))` THEN ASM_REWRITE_TAC[] THEN
+    ASM_REWRITE_TAC[VALMOD] THEN ASM_MESON_TAC[safe_for];
     ALL_TAC] THEN
-  CONJ_TAC THEN MAP_EVERY X_GEN_TAC [`y:num`; `p:form`] THEN
-  (REWRITE_TAC[VARS; IN_INSERT; DE_MORGAN_THM] THEN
-   DISCH_THEN(fun th -> REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC th) THEN
-   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
-   GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [formsubst] THEN
-   COND_CASES_TAC THENL
-    [FIRST_X_ASSUM(CHOOSE_THEN MP_TAC) THEN
-     REWRITE_TAC[ASSIGN; FV; IN_DELETE] THEN
-     ASM_MESON_TAC[FVT; IN_SING];
-     ALL_TAC] THEN
-   REWRITE_TAC[LET_DEF; LET_END_DEF] THEN
-   ASM_CASES_TAC `x:num = y` THENL
-    [ASM_REWRITE_TAC[assign; VALMOD_VALMOD_BASIC; VALMOD_REPEAT;
-                     FORMSUBST_TRIV] THEN
-     MATCH_MP_TAC FORMSUBST_EQ THEN
-     ASM_REWRITE_TAC[valmod; FV; IN_DELETE] THEN
-     ASM_MESON_TAC[FV_SUBSET_VARS; SUBSET];
-     ALL_TAC] THEN
-   SUBGOAL_THEN
-    `(!t. (y |-> V y) (x |=> t) = x |=> t) /\
-     (!t. (y |-> V y) (z |=> t) = z |=> t)`
-   STRIP_ASSUME_TAC THENL
-    [REWRITE_TAC[assign] THEN ASM_MESON_TAC[VALMOD_SWAP; VALMOD_REPEAT];
-     ALL_TAC] THEN
-   ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC BINOP_CONV [formsubst] THEN
-   ASM_REWRITE_TAC[FV] THEN
-   SUBGOAL_THEN
-    `(?u. u IN (FV(formsubst (x |=> V z) p) DELETE y) /\
-          y IN FVT ((z |-> t) v u)) =
-     (?u. u IN (FV p DELETE y) /\ y IN FVT ((x |-> t) v u))`
-   SUBST1_TAC THENL
-    [REWRITE_TAC[FV; FORMSUBST_FV; IN_ELIM_THM; IN_DELETE; valmod; ASSIGN] THEN
-     ONCE_REWRITE_TAC[COND_RAND] THEN ONCE_REWRITE_TAC[COND_RAND] THEN
-     REWRITE_TAC[FVT; IN_SING] THEN
-     ASM_MESON_TAC[SUBSET; FV_SUBSET_VARS; FVT; IN_SING];
-     ALL_TAC] THEN
-   COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
-    [ALL_TAC;
-     REWRITE_TAC[LET_DEF; LET_END_DEF; form_INJ] THEN
-     ASM_MESON_TAC[VALMOD_SWAP]] THEN
-   REWRITE_TAC[LET_DEF; LET_END_DEF; form_INJ] THEN
-   MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
-    [ALL_TAC; DISCH_THEN SUBST1_TAC] THEN
-   REPEAT AP_TERM_TAC THEN ASM_MESON_TAC[VALMOD_SWAP]));;
+  CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+   [SUBGOAL_THEN
+     `{x' | ?y. (?y'. y' IN FV p /\ y IN FVT ((x |-> V x) i y')) /\
+                x' IN FVT ((x |-> V x) j y)} =
+      {x' | ?y. y IN FV p /\ x' IN FVT ((x |-> V x) (termsubst j o i) y)}`
+     (fun th -> REWRITE_TAC[th])
+    THENL
+     [REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN X_GEN_TAC `z:num` THEN
+      REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+      ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+      AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+      X_GEN_TAC `y:num` THEN
+      ASM_CASES_TAC `y IN FV p` THEN ASM_REWRITE_TAC[] THEN
+      ASM_CASES_TAC `y:num = x` THEN ASM_REWRITE_TAC[] THEN
+      ASM_REWRITE_TAC[VALMOD; FVT; IN_SING; UNWIND_THM2] THEN
+      REWRITE_TAC[o_THM; TERMSUBST_FVT; IN_ELIM_THM] THEN
+      ASM_MESON_TAC[safe_for];
+      ABBREV_TAC `z = VARIANT
+       {x' | ?y. y IN FV p /\ x' IN FVT ((x |-> V x) (termsubst j o i) y)}`];
+      ALL_TAC]) THEN
+  AP_TERM_TAC THEN FIRST_X_ASSUM(fun th ->
+   W(MP_TAC o PART_MATCH (lhs o rand) th o lhs o snd)) THEN
+  ASM_SIMP_TAC[SAFE_FOR_VALMOD; FVT; IN_SING] THEN
+  DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC FORMSUBST_EQ THEN
+  X_GEN_TAC `y:num` THEN DISCH_TAC THEN
+  REWRITE_TAC[VALMOD; o_THM] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[termsubst; VALMOD] THEN
+  MATCH_MP_TAC TERMSUBST_EQ THEN
+  X_GEN_TAC `w:num` THEN REWRITE_TAC[VALMOD] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[safe_for]);;
 
 let FORMSUBST_TWICE = prove
  (`!z p x t. ~(z IN VARS p)
              ==> (formsubst (z |=> t) (formsubst (x |=> V z) p) =
                   formsubst (x |=> t) p)`,
-  MESON_TAC[assign; FORMSUBST_TWICE_GENERAL]);;
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) FORMSUBST_TWICE_GENERAL o lhs o snd) THEN
+  REWRITE_TAC[SAFE_FOR_ASSIGN; FVT; IN_SING] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  MATCH_MP_TAC FORMSUBST_EQ THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[o_THM; VALMOD; ASSIGN] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[termsubst; ASSIGN] THEN
+  ASM_MESON_TAC[FV_SUBSET_VARS; SUBSET]);;
 
 let ispec_lemma = prove
  (`!A x p t. ~(x IN FVT(t)) ==> A |-- !!x p --> formsubst (x |=> t) p`,
@@ -642,6 +684,81 @@ let spec = prove
  (`!A x p t. A |-- !!x p ==> A |-- formsubst (x |=> t) p`,
   MESON_TAC[ispec; modusponens]);;
 
+let spec_var = prove
+ (`!A x p. A |-- !!x p ==> A |-- p`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o SPEC `V x` o MATCH_MP spec) THEN
+  SIMP_TAC[ASSIGN_TRIV; FORMSUBST_TRIVIAL]);;
+
+let instantiation = prove
+ (`!A v p. A |-- p ==> A |-- formsubst v p`,
+  let lemma = prove
+   (`!A p v. (!x y. x IN FV p /\ y IN FV p /\ x IN FVT(v y)
+                    ==> x = y /\ v x = V x) /\
+             A |-- p
+             ==> A |-- formsubst v p`,
+    REPEAT GEN_TAC THEN
+    WF_INDUCT_TAC `CARD {x | x IN FV(p) /\ ~(v x = V x)}` THEN
+    ASM_CASES_TAC `!x. x IN FV p ==> v x = V x` THEN
+    ASM_SIMP_TAC[FORMSUBST_TRIVIAL] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
+    REWRITE_TAC[NOT_IMP; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `x:num` THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`p:form`; `(x |-> V x) v`]) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [MATCH_MP_TAC CARD_PSUBSET THEN SIMP_TAC[FINITE_RESTRICT; FV_FINITE] THEN
+      REWRITE_TAC[PSUBSET_ALT] THEN CONJ_TAC THENL
+       [REWRITE_TAC[SUBSET; VALMOD; IN_ELIM_THM] THEN ASM_MESON_TAC[];
+        EXISTS_TAC `x:num` THEN ASM_REWRITE_TAC[VALMOD; IN_ELIM_THM] THEN
+        ASM_MESON_TAC[]];
+      ALL_TAC] THEN
+    ANTS_TAC THENL
+     [REPEAT GEN_TAC THEN REWRITE_TAC[VALMOD] THEN
+      COND_CASES_TAC THEN ASM_SIMP_TAC[FVT; IN_SING] THEN ASM_MESON_TAC[];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `formsubst v p = formsubst ((x |-> v x) v) p`
+    SUBST1_TAC THENL [SIMP_TAC[VALMOD_TRIVIAL]; ALL_TAC] THEN
+    DISCH_THEN(MP_TAC o SPEC `x:num` o MATCH_MP gen) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] modusponens) THEN
+    MATCH_MP_TAC exists_imp THEN CONJ_TAC THENL
+     [ALL_TAC;
+      REWRITE_TAC[FORMSUBST_FV; IN_ELIM_THM; NOT_EXISTS_THM; VALMOD] THEN
+      ASM SET_TAC[]] THEN
+    MATCH_MP_TAC modusponens THEN EXISTS_TAC `??x (V x === v x)` THEN
+    SIMP_TAC[eximp; isubst_general] THEN ASM_MESON_TAC[axiom_existseq]) in
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?n. !x. x IN VARS p \/ x IN FV(formsubst v p) ==> x < n`
+  STRIP_ASSUME_TAC THENL
+   [EXISTS_TAC `SUC(SETMAX(VARS p UNION FV(formsubst v p)))` THEN
+    REWRITE_TAC[GSYM IN_UNION; LT_SUC_LE] THEN MATCH_MP_TAC SETMAX_MEMBER THEN
+    REWRITE_TAC[FINITE_UNION; VARS_FINITE; FV_FINITE];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `formsubst v p =
+    formsubst (\i. v(i - n)) (formsubst (\i. V(i + n)) p)`
+  SUBST1_TAC THENL
+   [W(MP_TAC o PART_MATCH (lhs o rand) FORMSUBST_TWICE_GENERAL o
+      rand o snd) THEN
+    REWRITE_TAC[safe_for; FVT; IN_SING] THEN ANTS_TAC THENL
+     [ASM_MESON_TAC[ARITH_RULE `~(x + n:num < n)`];
+      DISCH_THEN SUBST1_TAC THEN
+      REWRITE_TAC[o_DEF; termsubst; ADD_SUB; ETA_AX]];
+    MATCH_MP_TAC lemma THEN REWRITE_TAC[FVT] THEN CONJ_TAC THENL
+     [REWRITE_TAC[FORMSUBST_FV; FVT; IN_SING] THEN
+      REWRITE_TAC[SET_RULE `{x | ?y. y IN s /\ x = f y} = IMAGE f s`] THEN
+      REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+      X_GEN_TAC `x:num` THEN DISCH_TAC THEN REWRITE_TAC[ADD_SUB; FVT] THEN
+      X_GEN_TAC `y:num` THEN REPEAT DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `x + n:num`) THEN
+      MATCH_MP_TAC(TAUT `~p /\ q ==> (r \/ q ==> p) ==> s`) THEN
+      CONJ_TAC THENL [ARITH_TAC; REWRITE_TAC[FORMSUBST_FV; IN_ELIM_THM]] THEN
+      ASM_MESON_TAC[];
+      MATCH_MP_TAC lemma THEN REWRITE_TAC[FVT; IN_SING] THEN
+      ASM_MESON_TAC[ARITH_RULE `x < n /\ y < n ==> ~(x = y + n)`;
+                    FV_SUBSET_VARS; SUBSET]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Monotonicity and the deduction theorem.                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -666,3 +783,198 @@ let DEDUCTION = prove
  (`!A p q. closed p ==> (A |-- p --> q <=> p INSERT A |-- q)`,
   MESON_TAC[DEDUCTION_LEMMA; modusponens; IN_INSERT; proves_RULES;
             PROVES_MONO; SUBSET]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A few more derived rules.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let eq_trans = prove
+ (`!A s t u. A |-- s === t --> t === u --> s === u`,
+  MESON_TAC[axiom_predcong; modusponens; imp_swap; axiom_eqrefl; imp_trans;
+            eq_sym]);;
+
+let spec_right = prove
+ (`!A p q x. A |-- p --> !!x q ==> A |-- p --> formsubst (x |=> t) q`,
+  MESON_TAC[imp_trans; ispec]);;
+
+let eq_trans_rule = prove
+ (`!A s t u. A |-- s === t /\ A |-- t === u ==> A |-- s === u`,
+  MESON_TAC[modusponens; eq_trans]);;
+
+let eq_sym_rule = prove
+ (`!A s t. A |-- s === t <=> A |-- t === s`,
+  MESON_TAC[modusponens; eq_sym]);;
+
+let allimp = prove
+ (`!A x p q. A |-- p --> q ==> A |-- !!x p --> !!x q`,
+  MESON_TAC[axiom_allimp; modusponens; gen]);;
+
+let alliff = prove
+ (`!A x p q. A |-- p <-> q ==> A |-- !!x p <-> !!x q`,
+  MESON_TAC[allimp; iff_imp1; iff_imp2; imp_antisym]);;
+
+let exiff = prove
+ (`!A x p q. A |-- p <-> q ==> A |-- ??x p <-> ??x q`,
+  MESON_TAC[eximp; iff_imp1; iff_imp2; imp_antisym]);;
+
+let cong_suc = prove
+ (`!A s t. A |-- s === t ==> A |-- Suc s === Suc t`,
+  MESON_TAC[modusponens; axiom_funcong]);;
+
+let cong_add = prove
+ (`!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s ++ u === t ++ v`,
+  MESON_TAC[modusponens; axiom_funcong]);;
+
+let cong_mul = prove
+ (`!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s ** u === t ** v`,
+  MESON_TAC[modusponens; axiom_funcong]);;
+
+let cong_eq = prove
+ (`!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s === u <-> t === v`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC imp_antisym THEN
+  ASM_MESON_TAC[modusponens; axiom_predcong; eq_sym]);;
+
+let cong_le = prove
+ (`!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s <<= u <-> t <<= v`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC imp_antisym THEN
+  ASM_MESON_TAC[modusponens; axiom_predcong; eq_sym]);;
+
+let cong_lt = prove
+ (`!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s << u <-> t << v`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC imp_antisym THEN
+  ASM_MESON_TAC[modusponens; axiom_predcong; eq_sym]);;
+
+let iexists = prove
+ (`!A x t p. A |-- formsubst (x |=> t) p --> ??x p`,
+  REPEAT GEN_TAC THEN TRANS_TAC imp_trans `Not(!!x (Not p))` THEN
+  CONJ_TAC THENL [ALL_TAC; MESON_TAC[axiom_exists; iff_imp2]] THEN
+  TRANS_TAC imp_trans `Not(formsubst (x |=> t) (Not p))` THEN
+  REWRITE_TAC[contrapos_eq; ispec] THEN REWRITE_TAC[formsubst] THEN
+  MESON_TAC[not_not; iff_imp2]);;
+
+let exists_intro = prove
+ (`!A x t p. A |-- formsubst (x |=> t) p ==> A |-- ??x p`,
+  MESON_TAC[iexists; modusponens]);;
+
+let impex = prove
+ (`!A x p. ~(x IN FV p) ==> A |-- (??x p) --> p`,
+  REPEAT STRIP_TAC THEN TRANS_TAC imp_trans `Not(Not p)` THEN
+  CONJ_TAC THENL [ALL_TAC; MESON_TAC[not_not; iff_imp1]] THEN
+  TRANS_TAC imp_trans `Not(!!x (Not p))` THEN
+  ASM_SIMP_TAC[contrapos_eq; axiom_impall; FV] THEN
+  MESON_TAC[axiom_exists; iff_imp1]);;
+
+let ichoose = prove
+ (`!A x p q. A |-- !!x (p --> q) /\ ~(x IN FV q) ==> A |-- (??x p) --> q`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP spec_var) THEN
+  DISCH_THEN(MP_TAC o SPEC `x:num` o MATCH_MP eximp) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] imp_trans) THEN
+  ASM_SIMP_TAC[impex]);;
+
+let eq_trans_imp = prove
+ (`A |-- s === s' /\ A |-- t === t' ==> A |-- s === t --> s' === t'`,
+  MESON_TAC[axiom_predcong; modusponens]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some conversions for performing explicit substitution operations in what  *)
+(* we hope is the common case where no variable renaming occurs.             *)
+(* ------------------------------------------------------------------------- *)
+
+let fv_theorems = ref
+ [FV; FV_AXIOM; FV_DIAGONALIZE; FV_DIVIDES; FV_FINITE; FV_FIXPOINT; FV_FORM;
+  FV_FORM1; FV_FREEFORM; FV_FREEFORM1; FV_FREETERM; FV_FREETERM1;
+  FV_GNUMERAL; FV_GNUMERAL1; FV_GNUMERAL1'; FV_GSENTENCE;
+  FV_HSENTENCE; FV_PRIME; FV_PRIMEPOW; FV_PRIMREC; FV_PRIMRECSTEP; FV_PROV;
+  FV_PROV1; FV_QDIAG; FV_QSUBST; FV_RTC; FV_RTCP; FV_SUBSET_VARS; FV_TERM;
+  FV_TERM1; FVT; FVT_NUMERAL];;
+
+let IN_FV_RULE ths tm =
+  try EQT_ELIM
+       ((GEN_REWRITE_CONV TOP_DEPTH_CONV
+             ([IN_UNION; IN_DELETE; NOT_IN_EMPTY; IN_INSERT] @
+              ths @ !fv_theorems) THENC
+         NUM_REDUCE_CONV) tm)
+  with Failure _ -> ASSUME tm;;
+
+let rec SAFE_FOR_RULE tm =
+  try PART_MATCH I SAFE_FOR_V tm
+  with Failure _ ->
+  try let th1 = PART_MATCH lhand SAFE_FOR_ASSIGN tm in
+      let th2 = IN_FV_RULE [] (rand(concl th1)) in
+      EQ_MP (SYM th1) th2
+  with Failure _ ->
+      let th1 = PART_MATCH rand SAFE_FOR_VALMOD tm in
+      let l,r = dest_conj(lhand(concl th1)) in
+      let th2 = CONJ (SAFE_FOR_RULE l) (IN_FV_RULE [] r) in
+      MP th1 th2;;
+
+let VALMOD_CONV =
+  GEN_REWRITE_CONV TOP_DEPTH_CONV [ASSIGN; VALMOD] THENC NUM_REDUCE_CONV;;
+
+let TERMSUBST_NUMERAL = prove
+ (`!v n. termsubst v (numeral n) = numeral n`,
+  SIMP_TAC[TERMSUBST_TRIVIAL; FVT_NUMERAL; NOT_IN_EMPTY]);;
+
+let rec TERMSUBST_CONV tm =
+  (GEN_REWRITE_CONV I [CONJ TERMSUBST_NUMERAL (CONJUNCT1 termsubst)] ORELSEC
+   (GEN_REWRITE_CONV I [el 1 (CONJUNCTS termsubst)] THENC
+    VALMOD_CONV) ORELSEC
+   (GEN_REWRITE_CONV I [el 2 (CONJUNCTS termsubst)] THENC
+    RAND_CONV TERMSUBST_CONV) ORELSEC
+   (GEN_REWRITE_CONV I [funpow 3 CONJUNCT2 termsubst] THENC
+    BINOP_CONV TERMSUBST_CONV)) tm;;
+
+let rec FORMSUBST_CONV tm =
+  (GEN_REWRITE_CONV I
+    [el 0 (CONJUNCTS formsubst); el 1 (CONJUNCTS formsubst)] ORELSEC
+   (GEN_REWRITE_CONV I
+    [el 2 (CONJUNCTS formsubst); el 3 (CONJUNCTS formsubst);
+     el 4 (CONJUNCTS formsubst)] THENC BINOP_CONV TERMSUBST_CONV) ORELSEC
+   (GEN_REWRITE_CONV I [el 5 (CONJUNCTS formsubst)] THENC
+    RAND_CONV FORMSUBST_CONV) ORELSEC
+   (GEN_REWRITE_CONV I
+     [el 6 (CONJUNCTS formsubst); el 7 (CONJUNCTS formsubst);
+      el 8 (CONJUNCTS formsubst); el 9 (CONJUNCTS formsubst)] THENC
+    BINOP_CONV FORMSUBST_CONV) ORELSEC
+   ((fun tm ->
+     let th =
+       try PART_MATCH (lhand o rand) (CONJUNCT1 FORMSUBST_SAFE_FOR) tm
+       with Failure _ ->
+           PART_MATCH (lhand o rand) (CONJUNCT2 FORMSUBST_SAFE_FOR) tm in
+     MP th (SAFE_FOR_RULE (lhand(concl th)))) THENC
+    RAND_CONV FORMSUBST_CONV)) tm;;
+
+(* ------------------------------------------------------------------------- *)
+(* Hence a more convenient specialization rule.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let spec_var_rule th = MATCH_MP spec_var th;;
+
+let spec_all_rule = repeat spec_var_rule;;
+
+let instantiate_rule ilist th =
+  let v_tm = `(|->):num->term->(num->term)->(num->term)` in
+  let v = itlist (fun (t,x) v ->
+        mk_comb(mk_comb(mk_comb(v_tm,mk_small_numeral x),t),v)) ilist `V` in
+  CONV_RULE (RAND_CONV FORMSUBST_CONV)
+            (SPEC v (MATCH_MP instantiation th));;
+
+let specl_rule tms th =
+  let avs = striplist (dest_binop `!!`) (rand(concl th)) in
+  let vs = fst(chop_list(length tms) avs) in
+  let ilist = map2 (fun t v -> (t,dest_small_numeral v)) tms vs in
+  instantiate_rule ilist (funpow (length vs) spec_var_rule th);;
+
+let spec_rule t th = specl_rule [t] th;;
+
+let gen_rule t th = SPEC (mk_small_numeral t) (MATCH_MP gen th);;
+
+let gens_tac ns (asl,w) =
+  let avs,bod = nsplit dest_forall ns w in
+  let nvs = map (curry mk_comb `V` o mk_small_numeral) ns in
+  let bod' = subst (zip nvs avs) bod in
+  let th = GENL avs (instantiate_rule (zip avs ns) (ASSUME bod')) in
+  MATCH_MP_TAC (DISCH_ALL th) (asl,w);;
+
+let gen_tac n = gens_tac [n];;

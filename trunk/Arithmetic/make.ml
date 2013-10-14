@@ -12,7 +12,6 @@ loadt "Library/prime.ml";;
 (* ------------------------------------------------------------------------- *)
 
 loadt "Arithmetic/fol.ml";;
-loadt "Arithmetic/derived.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* The incompleteness results.                                               *)
@@ -22,3 +21,10 @@ loadt "Arithmetic/definability.ml";;
 loadt "Arithmetic/tarski.ml";;
 loadt "Arithmetic/arithprov.ml";;
 loadt "Arithmetic/godel.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* Sigma-1 completeness of Robinson arithmetic.                              *)
+(* ------------------------------------------------------------------------- *)
+
+loadt "Arithmetic/derived.ml";;
+loadt "Arithmetic/sigmacomplete.ml";;

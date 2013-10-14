@@ -5438,6 +5438,12 @@ let SIMPLICIAL_COMPLEX_IMP_TRIANGULATION = prove
  (`!tr. simplicial_complex tr ==> triangulation tr`,
   REWRITE_TAC[triangulation; simplicial_complex] THEN MESON_TAC[]);;
 
+let TRIANGULATION_SUBSET = prove
+ (`!tr:(real^N->bool)->bool tr'.
+        triangulation tr /\ tr' SUBSET tr ==> triangulation tr'`,
+  REWRITE_TAC[triangulation] THEN
+  MESON_TAC[SUBSET; FINITE_SUBSET]);;
+
 let TRIANGULATION_UNION = prove
  (`!tr1 tr2.
         triangulation(tr1 UNION tr2) <=>

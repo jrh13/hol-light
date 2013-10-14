@@ -1,6 +1,12 @@
+Mon 23rd Sep 2013       nums.ml
+
+Made a modification from Tom Hales to "new_specification", simply using the 
+names of the constants instead of some hidden counter to make the definitions
+unique.
+
 Fri  6th Sep 2013       cart.ml
 
-Added 
+Added
 
   INTER_PCROSS =
     |- !s s' t t'.
