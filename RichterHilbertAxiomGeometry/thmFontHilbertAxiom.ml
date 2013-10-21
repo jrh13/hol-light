@@ -10,9 +10,7 @@ report_timing := true;;
 
 Theorem/Proof templates:
 
-let _THM = theorem `;
-  ∀   
-     ⇒ 
+let  = theorem `;
 
   proof
 
@@ -42,7 +40,7 @@ Collinear_DEF
 SameSide_DEF
   |- ∀ l A B. A,B same_side l  ⇔  Line l ∧ ¬ ∃ X. X ∈ l ∧ X ∈ open (A,B)
 
-Ray_DEF     |- ∀ A B. ray A B = 
+Ray_DEF     |- ∀ A B. ray A B =
                  {X | ¬(A = B) ∧ Collinear A B X ∧ A ∉ open (X,B)}
 
 Ordered_DEF
@@ -117,7 +115,7 @@ TriangleCong_DEF
   |- ∀ A B C A' B' C'.
          A,B,C ≅ A',B',C' ⇔
          ¬Collinear A B C ∧ ¬Collinear A' B' C' ∧
-         seg A B ≡ seg A' B' ∧ 
+         seg A B ≡ seg A' B' ∧
          seg A C ≡ seg A' C' ∧
          seg B C ≡ seg B' C' ∧
          ∡ A B C ≡ ∡ A' B' C' ∧
@@ -265,7 +263,7 @@ B4'     |- ∀ l A B C.
            (∃ Y. Y ∈ l ∧ Y ∈ open (B,C))
 
 B4''     |- ∀ l A B C.
-         Line l  ∧  ¬Collinear A B C  ∧  A ∉ l  ∧  B ∉ l  ∧  C ∉ l  ∧ 
+         Line l  ∧  ¬Collinear A B C  ∧  A ∉ l  ∧  B ∉ l  ∧  C ∉ l  ∧
          A,B same_side l  ∧  B,C same_side l
          ⇒ A,C same_side l
 
@@ -289,13 +287,13 @@ ExistsPointOffLine     |- ∀ l. Line l ⇒ ∃ Q. Q ∉ l
 
 BetweenLinear
   |- ∀ A B C m.
-         Line m ∧ A ∈ m ∧ C ∈ m ∧ 
+         Line m ∧ A ∈ m ∧ C ∈ m ∧
          B ∈ open (A,C) ∨ C ∈ open (B,A) ∨ A ∈ open (C,B)
          ⇒ B ∈ m
 
 CollinearLinear
   |- ∀ A B C m.
-         Line m ∧ A ∈ m ∧ C ∈ m ∧ ¬(A = C) ∧ 
+         Line m ∧ A ∈ m ∧ C ∈ m ∧ ¬(A = C) ∧
          Collinear A B C ∨ Collinear B C A ∨ Collinear C A B
          ⇒ B ∈ m
 
@@ -322,7 +320,7 @@ I1Uniqueness
 
 EquivIntersection
   |- ∀ A B X l m.
-         Line l  ∧  Line m  ∧  l ∩ m = {X}  ∧  
+         Line l  ∧  Line m  ∧  l ∩ m = {X}  ∧
          A ∈ m ━ X  ∧  B ∈ m ━ X  ∧  X ∉ open (A,B)
          ⇒ A,B same_side l
 
@@ -353,7 +351,7 @@ SameSideSymmetric
 
 SameSideTransitive
   |- ∀l A B C.
-         Line l ∧ A ∉ l ∧ B ∉ l ∧ C ∉ l  ∧ 
+         Line l ∧ A ∉ l ∧ B ∉ l ∧ C ∉ l  ∧
          A,B same_side l ∧ B,C same_side l
          ⇒ A,C same_side l
 
@@ -362,8 +360,8 @@ ConverseCrossbar
 
 InteriorUse
   |- ∀ A O B P a b.
-         Line a ∧ O ∈ a ∧ A ∈ a  ∧  
-         Line b ∧ O ∈ b ∧ B ∈ b  ∧ 
+         Line a ∧ O ∈ a ∧ A ∈ a  ∧
+         Line b ∧ O ∈ b ∧ B ∈ b  ∧
          P ∈ int_angle A O B
          ⇒ P ∉ a ∧ P ∉ b ∧ P,B same_side a ∧ P,A same_side b
 
@@ -386,8 +384,8 @@ WholeRayInterior
 
 AngleOrdering
   |- ∀ O A P Q a.
-         ¬(O = A) ∧ Line a ∧ O ∈ a ∧ A ∈ a ∧ P ∉ a ∧ Q ∉ a ∧ 
-	 P,Q same_side a  ∧  ¬Collinear P O Q
+         ¬(O = A) ∧ Line a ∧ O ∈ a ∧ A ∈ a ∧ P ∉ a ∧ Q ∉ a ∧
+         P,Q same_side a  ∧  ¬Collinear P O Q
          ⇒ P ∈ int_angle Q O A  ∨  Q ∈ int_angle P O A
 
 InteriorsDisjointSupplement
@@ -414,8 +412,8 @@ InteriorOpposite
 
 IntervalTransitivity
   |- ∀ O P Q R m.
-         Line m  ∧ O ∈ m  ∧ 
-         P ∈ m ━ O  ∧  Q ∈ m ━ O  ∧  R ∈ m ━ O  ∧ 
+         Line m  ∧ O ∈ m  ∧
+         P ∈ m ━ O  ∧  Q ∈ m ━ O  ∧  R ∈ m ━ O  ∧
          O ∉ open (P,Q)  ∧  O ∉ open (Q,R)
          ⇒ O ∉ open (P,R)
 
@@ -455,14 +453,14 @@ Interval2sides2aLineHelp
   |- ∀ A B C X. B ∈ open (A,C)  ⇒  X ∉ open (A,B) ∨ X ∉ open (B,C)
 
 Interval2sides2aLine
-  |- ∀ A B C X. 
-         Collinear A B C 
+  |- ∀ A B C X.
+         Collinear A B C
          ⇒ X ∉ open (A,B) ∨ X ∉ open (A,C) ∨ X ∉ open (B,C)
 
 TwosidesTriangle2aLine
   |- ∀A B C Y l m.
-         Line l ∧ ¬Collinear A B C ∧ A ∉ l ∧ B ∉ l ∧ C ∉ l  ∧ 
-         Line m ∧ A ∈ m ∧ C ∈ m  ∧ 
+         Line l ∧ ¬Collinear A B C ∧ A ∉ l ∧ B ∉ l ∧ C ∉ l  ∧
+         Line m ∧ A ∈ m ∧ C ∈ m  ∧
          Y ∈ l ∧ Y ∈ m  ∧ ¬(A,B same_side l) ∧ ¬(B,C same_side l)
          ⇒ A,C same_side l
 
@@ -478,13 +476,13 @@ AtMost2Sides
 
 FourPointsOrder
   |- ∀ A B C X l.
-     Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ X ∈ l  ∧  B ∈ open (A,C)  ∧ 
+     Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ X ∈ l  ∧  B ∈ open (A,C)  ∧
      ¬(X = A) ∧ ¬(X = B) ∧ ¬(X = C)
      ⇒ ordered X A B C ∨ ordered A X B C ∨ ordered A B X C ∨ ordered A B C X
 
 HilbertAxiomRedundantByMoore
   |- ∀ A B C D l.
-         Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ D ∈ l  ∧ 
+         Line l ∧ A ∈ l ∧ B ∈ l ∧ C ∈ l ∧ D ∈ l  ∧
          ¬(A = B) ∧ ¬(A = C) ∧ ¬(A = D) ∧ ¬(B = C) ∧ ¬(B = D) ∧ ¬(C = D)
          ⇒ ordered D A B C ∨ ordered A D B C ∨ ordered A B D C ∨
             ordered A B C D ∨ ordered D A C B ∨ ordered A D C B ∨
@@ -504,9 +502,9 @@ HalfPlaneConvexNonempty
 PlaneSeparation
   |- ∀ l. Line l
          ⇒ ∃ H1 H2.
-	       H1 ∩ H2 = ∅  ∧  ¬(H1 = ∅)  ∧  ¬(H2 = ∅) ∧
-	       Convex H1  ∧  Convex H2  ∧  complement l = H1 ∪ H2 ∧
-	       ∀ P Q. P ∈ H1 ∧ Q ∈ H2  ⇒  ¬(P,Q same_side l)
+               H1 ∩ H2 = ∅  ∧  ¬(H1 = ∅)  ∧  ¬(H2 = ∅) ∧
+               Convex H1  ∧  Convex H2  ∧  complement l = H1 ∪ H2 ∧
+               ∀ P Q. P ∈ H1 ∧ Q ∈ H2  ⇒  ¬(P,Q same_side l)
 
 TetralateralSymmetry
   |- ∀ A B C D.
@@ -524,13 +522,13 @@ EasyEmptyIntersectionsTetralateral
 
 SegmentSameSideOppositeLine
   |- ∀ A B C D a c.
-         Quadrilateral A B C D  ∧ 
+         Quadrilateral A B C D  ∧
          Line a ∧ A ∈ a ∧ B ∈ a  ∧  Line c ∧ C ∈ c ∧ D ∈ c
          ⇒ A,B same_side c  ∨  C,D same_side a
 
 ConvexImpliesQuad
   |- ∀ A B C D.
-         Tetralateral A B C D  ∧   
+         Tetralateral A B C D  ∧
          C ∈ int_angle D A B  ∧  D ∈ int_angle A B C
          ⇒ Quadrilateral A B C D
 
@@ -541,17 +539,17 @@ DiagonalsIntersectImpliesConvexQuad
 
 DoubleNotSimImpliesDiagonalsIntersect
   |- ∀ A B C D l m.
-         Line l ∧ A ∈ l ∧ C ∈ l  ∧ 
-         Line m ∧ B ∈ m ∧ D ∈ m  ∧ 
-         Tetralateral A B C D  ∧ 
+         Line l ∧ A ∈ l ∧ C ∈ l  ∧
+         Line m ∧ B ∈ m ∧ D ∈ m  ∧
+         Tetralateral A B C D  ∧
          ¬(B,D same_side l)  ∧  ¬(A,C same_side m)
-         ⇒ (∃ G. G ∈ open (A,C) ∩ open (B,D)) ∧ 
+         ⇒ (∃ G. G ∈ open (A,C) ∩ open (B,D)) ∧
              ConvexQuadrilateral A B C D
 
 ConvexQuadImpliesDiagonalsIntersect
   |- ∀ A B C D l m.
-         Line l ∧ A ∈ l ∧ C ∈ l  ∧ 
-         Line m ∧ B ∈ m ∧ D ∈ m  ∧ 
+         Line l ∧ A ∈ l ∧ C ∈ l  ∧
+         Line m ∧ B ∈ m ∧ D ∈ m  ∧
          ConvexQuadrilateral A B C D
          ⇒ ¬(B,D same_side l) ∧ ¬(A,C same_side m) ∧
              (∃ G. G ∈ open (A,C) ∩ open (B,D)) ∧
@@ -567,7 +565,7 @@ InteriorTriangleSymmetry
 
 FourChoicesTetralateral
   |- ∀ A B C D a.
-         Tetralateral A B C D  ∧  Line a ∧ A ∈ a ∧ B ∈ a  ∧ 
+         Tetralateral A B C D  ∧  Line a ∧ A ∈ a ∧ B ∈ a  ∧
          C,D same_side a
          ⇒ ConvexQuadrilateral A B C D  ∨  ConvexQuadrilateral A B D C  ∨
             D ∈ int_triangle A B C  ∨  C ∈ int_triangle D A B
@@ -575,14 +573,14 @@ FourChoicesTetralateral
 QuadrilateralSymmetry
   |- ∀ A B C D.
          Quadrilateral A B C D
-         ⇒ Quadrilateral B C D A ∧ 
+         ⇒ Quadrilateral B C D A ∧
              Quadrilateral C D A B ∧
              Quadrilateral D A B C
 
 FiveChoicesQuadrilateral
   |- ∀ A B C D l m.
-         Quadrilateral A B C D  ∧ 
-         Line l ∧ A ∈ l ∧ C ∈ l  ∧ 
+         Quadrilateral A B C D  ∧
+         Line l ∧ A ∈ l ∧ C ∈ l  ∧
          Line m ∧ B ∈ m ∧ D ∈ m
          ⇒ (ConvexQuadrilateral A B C D  ∨
               A ∈ int_triangle B C D  ∨  B ∈ int_triangle C D A   ∨
@@ -604,7 +602,7 @@ OrderedCongruentSegments
 
 SegmentSubtraction
   |- ∀ A B C A' B' C'.
-         B ∈ open (A,C) ∧ B' ∈ open (A',C')  ∧ 
+         B ∈ open (A,C) ∧ B' ∈ open (A',C')  ∧
          seg A B ≡ seg A' B'  ∧  seg A C ≡ seg A' C'
          ⇒ seg B C ≡ seg B' C'
 
@@ -629,7 +627,7 @@ SegmentTrichotomy
 
 C4Uniqueness
   |- ∀ O A B P l.
-         Line l ∧ O ∈ l ∧ A ∈ l ∧ ¬(O = A)  ∧ 
+         Line l ∧ O ∈ l ∧ A ∈ l ∧ ¬(O = A)  ∧
          B ∉ l ∧ P ∉ l ∧ P,B same_side l  ∧  ∡ A O P ≡ ∡ A O B
          ⇒ ray O B = ray O P
 
@@ -643,28 +641,28 @@ TriangleCongSymmetry
 
 SAS
   |- ∀ A B C A' B' C'.
-         ¬Collinear A B C ∧ ¬Collinear A' B' C'    ∧ 
-         seg B A ≡ seg B' A'  ∧  seg B C ≡ seg B' C'  ∧ 
+         ¬Collinear A B C ∧ ¬Collinear A' B' C'    ∧
+         seg B A ≡ seg B' A'  ∧  seg B C ≡ seg B' C'  ∧
          ∡ A B C ≡ ∡ A' B' C'
          ⇒ A,B,C ≅ A',B',C'
 
 ASA
   |- ∀ A B C A' B' C'.
-         ¬Collinear A B C  ∧  ¬Collinear A' B' C'  ∧  
-         seg A C ≡ seg A' C'  ∧ 
+         ¬Collinear A B C  ∧  ¬Collinear A' B' C'  ∧
+         seg A C ≡ seg A' C'  ∧
          ∡ C A B ≡ ∡ C' A' B'  ∧  ∡ B C A ≡ ∡ B' C' A'
          ⇒ A,B,C ≅ A',B',C'
 
 AngleSubtraction
   |- ∀ A O B A' O' B' G G'.
-         G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'  ∧  
+         G ∈ int_angle A O B  ∧  G' ∈ int_angle A' O' B'  ∧
          ∡ A O B ≡ ∡ A' O' B'  ∧  ∡ A O G ≡ ∡ A' O' G'
          ⇒ ∡ G O B ≡ ∡ G' O' B'
 
 OrderedCongruentAngles
   |- ∀ A O B A' O' B' G.
-         ¬Collinear A' O' B'  ∧ ∡ A O B ≡ ∡ A' O' B'  ∧  
-	 G ∈ int_angle A O B
+         ¬Collinear A' O' B'  ∧ ∡ A O B ≡ ∡ A' O' B'  ∧
+         G ∈ int_angle A O B
          ⇒ ∃ G'. G' ∈ int_angle A' O' B'  ∧  ∡ A O G ≡ ∡ A' O' G'
 
 AngleAddition
@@ -734,8 +732,8 @@ RightAnglesCongruent
 
 OppositeRightAnglesLinear
   |- ∀ A B O H h.
-         ¬Collinear A O H ∧ ¬Collinear H O B  ∧ 
-         Right (∡ A O H) ∧ Right (∡ H O B)  ∧ 
+         ¬Collinear A O H ∧ ¬Collinear H O B  ∧
+         Right (∡ A O H) ∧ Right (∡ H O B)  ∧
          Line h ∧ O ∈ h ∧ H ∈ h  ∧ ¬(A,B same_side h)
          ⇒ O ∈ open (A,B)
 
@@ -758,7 +756,7 @@ C4withC1
 
 C4OppositeSide
   |- ∀ α l O A Z P Q.
-         Angle α ∧ ¬(O = A) ∧ ¬(P = Q)  ∧ 
+         Angle α ∧ ¬(O = A) ∧ ¬(P = Q)  ∧
          Line l ∧ O ∈ l ∧ A ∈ l ∧ Z ∉ l
          ⇒ ∃ N. ¬(O = N) ∧ N ∉ l ∧ ¬(Z,N same_side l) ∧
                  seg O N ≡ seg P Q  ∧  ∡ A O N ≡ α
@@ -794,13 +792,13 @@ EuclidPropositionI_7short
 EuclidPropI_7Help
   |- ∀ A B C D a.
          ¬(A = B) ∧ Line a ∧ A ∈ a ∧ B ∈ a ∧ ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧
-	 C,D same_side a  ∧  seg A C ≡ seg A D  ∧
-	 (C ∈ int_triangle D A B  ∨  ConvexQuadrilateral A B C D)
+         C,D same_side a  ∧  seg A C ≡ seg A D  ∧
+         (C ∈ int_triangle D A B  ∨  ConvexQuadrilateral A B C D)
          ⇒ ¬(seg B C ≡ seg B D)
 
 EuclidPropositionI_7
   |- ∀ A B C D a.
-         ¬(A = B) ∧ Line a ∧ A ∈ a ∧ B ∈ a ∧ ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧ 
+         ¬(A = B) ∧ Line a ∧ A ∈ a ∧ B ∈ a ∧ ¬(C = D) ∧ C ∉ a ∧ D ∉ a ∧
          C,D same_side a  ∧  seg A C ≡ seg A D
          ⇒ ¬(seg B C ≡ seg B D)
 
@@ -814,8 +812,8 @@ DropPerpendicularToLine
 
 EuclidPropositionI_14
   |- ∀ A B C D l.
-         Line l ∧ A ∈ l ∧ B ∈ l ∧ ¬(A = B) ∧ 
-         C ∉ l ∧ D ∉ l  ∧  ¬(C,D same_side l) ∧ 
+         Line l ∧ A ∈ l ∧ B ∈ l ∧ ¬(A = B) ∧
+         C ∉ l ∧ D ∉ l  ∧  ¬(C,D same_side l) ∧
          ∡ C B A suppl ∡ A B D
          ⇒ B ∈ open (C,D)
 
@@ -866,13 +864,13 @@ AngleTrichotomy3
 
 InteriorCircleConvexHelp
   |- ∀ O A B C.
-         ¬Collinear A O C  ∧  B ∈ open (A,C)  ∧  
+         ¬Collinear A O C  ∧  B ∈ open (A,C)  ∧
          seg O A <__ seg O C  ∨  seg O A ≡ seg O C
          ⇒ seg O B <__ seg O C
 
 InteriorCircleConvex
   |- ∀ O R A B C.
-         ¬(O = R)  ∧  B ∈ open (A,C)  ∧ 
+         ¬(O = R)  ∧  B ∈ open (A,C)  ∧
          A ∈ int_circle O R  ∧  C ∈ int_circle O R
          ⇒ B ∈ int_circle O R
 
@@ -881,30 +879,30 @@ SegmentTrichotomy3
 
 EuclidPropositionI_24Help
   |- ∀ O A C O' D F.
-         ¬Collinear A O C ∧ ¬Collinear D O' F  ∧ 
-         seg O' D ≡ seg O A  ∧  seg O' F ≡ seg O C  ∧ 
-         ∡ D O' F <_ang ∡ A O C  ∧ 
+         ¬Collinear A O C ∧ ¬Collinear D O' F  ∧
+         seg O' D ≡ seg O A  ∧  seg O' F ≡ seg O C  ∧
+         ∡ D O' F <_ang ∡ A O C  ∧
          seg O A <__ seg O C  ∨  seg O A ≡ seg O C
          ⇒ seg D F <__ seg A C
 
 EuclidPropositionI_24
   |- ∀ O A C O' D F.
-         ¬Collinear A O C ∧ ¬Collinear D O' F  ∧ 
-         seg O' D ≡ seg O A  ∧  seg O' F ≡ seg O C  ∧ 
+         ¬Collinear A O C ∧ ¬Collinear D O' F  ∧
+         seg O' D ≡ seg O A  ∧  seg O' F ≡ seg O C  ∧
          ∡ D O' F <_ang ∡ A O C
          ⇒ seg D F <__ seg A C
 
 EuclidPropositionI_25
   |- ∀ O A C O' D F.
-         ¬Collinear A O C ∧ ¬Collinear D O' F  ∧ 
-         seg O' D ≡ seg O A  ∧  seg O' F ≡ seg O C  ∧ 
+         ¬Collinear A O C ∧ ¬Collinear D O' F  ∧
+         seg O' D ≡ seg O A  ∧  seg O' F ≡ seg O C  ∧
          seg D F <__ seg A C
          ⇒ ∡ D O' F <_ang ∡ A O C
 
 AAS
   |- ∀ A B C A' B' C'.
-         ¬Collinear A B C ∧ ¬Collinear A' B' C'  ∧ 
-         ∡ A B C ≡ ∡ A' B' C'  ∧  ∡ B C A ≡ ∡ B' C' A'  ∧ 
+         ¬Collinear A B C ∧ ¬Collinear A' B' C'  ∧
+         ∡ A B C ≡ ∡ A' B' C'  ∧  ∡ B C A ≡ ∡ B' C' A'  ∧
          seg A B ≡ seg A' B'
          ⇒ A,B,C ≅ A',B',C'
 
@@ -912,39 +910,39 @@ ParallelSymmetry     |- ∀ l k. l ∥ k  ⇒  k ∥ l
 
 AlternateInteriorAngles
   |- ∀ A B C E l m t.
-         Line l ∧ A ∈ l ∧ E ∈ l ∧ 
-         Line m ∧ B ∈ m ∧ C ∈ m ∧ 
-         Line t ∧ A ∈ t ∧ B ∈ t ∧ 
-         ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t ∧ 
+         Line l ∧ A ∈ l ∧ E ∈ l ∧
+         Line m ∧ B ∈ m ∧ C ∈ m ∧
+         Line t ∧ A ∈ t ∧ B ∈ t ∧
+         ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t ∧
          ¬(C,E same_side t)  ∧  ∡ E A B ≡ ∡ C B A
          ⇒ l ∥ m
 
 EuclidPropositionI_28
   |- ∀ A B C D E F G H l m t.
-         Line l ∧ A ∈ l ∧ B ∈ l ∧ G ∈ l ∧ 
-         Line m ∧ C ∈ m ∧ D ∈ m ∧ H ∈ m ∧ 
-         Line t ∧ G ∈ t ∧ H ∈ t ∧ G ∉ m ∧ H ∉ l ∧ 
-         G ∈ open (A,B)  ∧  H ∈ open (C,D)  ∧ 
-         G ∈ open (E,H)  ∧  H ∈ open (F,G)  ∧  ¬(D,A same_side t)  ∧ 
+         Line l ∧ A ∈ l ∧ B ∈ l ∧ G ∈ l ∧
+         Line m ∧ C ∈ m ∧ D ∈ m ∧ H ∈ m ∧
+         Line t ∧ G ∈ t ∧ H ∈ t ∧ G ∉ m ∧ H ∉ l ∧
+         G ∈ open (A,B)  ∧  H ∈ open (C,D)  ∧
+         G ∈ open (E,H)  ∧  H ∈ open (F,G)  ∧  ¬(D,A same_side t)  ∧
          ∡ E G B ≡ ∡ G H D  ∨  ∡ B G H suppl ∡ G H D
          ⇒ l ∥ m
 
 OppositeSidesCongImpliesParallelogram
   |- ∀ A B C D.
-         Quadrilateral A B C D  ∧ 
+         Quadrilateral A B C D  ∧
          seg A B ≡ seg C D  ∧  seg B C ≡ seg D A
          ⇒ Parallelogram A B C D
 
 OppositeAnglesCongImpliesParallelogramHelp
   |- ∀ A B C D a c.
-         Quadrilateral A B C D                                ∧ 
-         ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D             ∧ 
+         Quadrilateral A B C D                                ∧
+         ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D             ∧
          Line a ∧ A ∈ a ∧ B ∈ a  ∧  Line c ∧ C ∈ c ∧ D ∈ c
          ⇒ a ∥ c
 
 OppositeAnglesCongImpliesParallelogram
   |- ∀ A B C D.
-         Quadrilateral A B C D  ∧  
+         Quadrilateral A B C D  ∧
          ∡ A B C ≡ ∡ C D A  ∧  ∡ D A B ≡ ∡ B C D
          ⇒ Parallelogram A B C D
 
@@ -953,20 +951,20 @@ P     |- ∀ P l. Line l ∧ P ∉ l ⇒ ∃! m. Line m ∧ P ∈ m ∧ m ∥ l
 
 AMa     |- ∀ α. Angle α ⇒ &0 < μ α ∧ μ α < &180
 
-AMb	|- ∀ α. Right α ⇒ μ α = &90
+AMb     |- ∀ α. Right α ⇒ μ α = &90
 
-AMc	|- ∀ α β. Angle α ∧ Angle β ∧ α ≡ β ⇒ μ α = μ β
+AMc     |- ∀ α β. Angle α ∧ Angle β ∧ α ≡ β ⇒ μ α = μ β
 
-AMd	|- ∀ A O B P. P ∈ int_angle A O B
+AMd     |- ∀ A O B P. P ∈ int_angle A O B
          ⇒ μ (∡ A O B) = μ (∡ A O P) + μ (∡ P O B)
 
 
 ConverseAlternateInteriorAngles
   |- ∀ A B C E l m t.
-         Line l ∧ A ∈ l ∧ E ∈ l				∧ 
-         Line m ∧ B ∈ m ∧ C ∈ m				∧ 
-         Line t ∧ A ∈ t ∧ B ∈ t			    	∧ 
-         ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t	∧ 
+         Line l ∧ A ∈ l ∧ E ∈ l                         ∧
+         Line m ∧ B ∈ m ∧ C ∈ m                         ∧
+         Line t ∧ A ∈ t ∧ B ∈ t                         ∧
+         ¬(A = E) ∧ ¬(B = C) ∧ ¬(A = B) ∧ E ∉ t ∧ C ∉ t ∧
          ¬(C,E same_side t)  ∧  l ∥ m
          ⇒ ∡ E A B ≡ ∡ C B A
 

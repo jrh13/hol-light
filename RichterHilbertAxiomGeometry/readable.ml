@@ -70,13 +70,16 @@ let printReadExn e =
 
 #install_printer printReadExn;;
 
-(* From update_database.ml: Execute any OCaml expression given as a string. *)
+(* From update_database.ml: Execute any OCaml expression given as a string.  *)
 
 let exec = ignore o Toploop.execute_phrase false Format.std_formatter
   o !Toploop.parse_toplevel_phrase o Lexing.from_string;;
 
-(* exec and a reference idea from miz3.ml yield is_thm, a predicate asking   *)
-(* if a string represents a theorem, and exec_thm, which returns the thm.    *)
+(* Following miz3.ml, exec_thm returns the theorem representing a string, so *)
+(* exec_thm "FORALL_PAIR_THM";; returns                                      *)
+(* val it : thm = |- !P. (!p. P p) <=> (!p1 p2. P (p1,p2))                   *)
+(* Extra error-checking is done to rule out the possibility of the theorem   *)
+(* string ending with a semicolon.                                           *)
 
 let thm_ref = ref TRUTH;;
 let tactic_ref = ref ALL_TAC;;
@@ -87,15 +90,12 @@ let thm_thm_ref = ref GSYM;;
 let term_thm_ref = ref ARITH_RULE;;
 let thmlist_term_thm_ref = ref MESON;;
 
-let exec_term_thm s =
-  try exec ("term_thm_ref := (("^ s ^"): (term -> thm));;");
-    !term_thm_ref
-  with _ -> raise Noparse;;
-
 let exec_thm s =
-  try exec ("thm_ref := (("^ s ^"): thm);;");
-    !thm_ref
-  with _ -> raise Noparse;;
+  if Str.string_match (Str.regexp "[^;]*;") s 0 then raise Noparse
+  else
+    try exec ("thm_ref := (("^ s ^"): thm);;");
+      !thm_ref
+    with _ -> raise Noparse;;
 
 let exec_tactic s =
   try exec ("tactic_ref := (("^ s ^"): tactic);;"); !tactic_ref
@@ -121,21 +121,29 @@ let exec_thm_thm s =
     !thm_thm_ref
   with _ -> raise Noparse;;
 
+let exec_term_thm s =
+  try exec ("term_thm_ref := (("^ s ^"): (term -> thm));;");
+    !term_thm_ref
+  with _ -> raise Noparse;;
+
 let exec_thmlist_term_thm s =
   try exec ("thmlist_term_thm_ref := (("^ s ^"): (thm list ->term -> thm));;");
     !thmlist_term_thm_ref
   with _ -> raise Noparse;;
 
-(* make_env and parse_env_string, following Mizarlight/miz2a.ml and Vince    *)
-(* Aravantinos's https://github.com/aravantv/HOL-Light-Q, turn a string to a *)
-(* term with types inferred by the goal and assumption list.                 *)
+(* make_env and parse_env_string (following parse_term from parser.ml,       *)
+(* Mizarlight/miz2a.ml and https://github.com/aravantv/HOL-Light-Q) turn a   *)
+(* string into a term with types inferred by the goal and assumption list.   *)
 
 let (make_env: goal -> (string * pretype) list) =
   fun (asl, w) -> map ((fun (s, ty) -> (s, pretype_of_type ty)) o dest_var)
                    (freesl (w::(map (concl o snd) asl)));;
 
-let parse_env_string env s = (term_of_preterm o retypecheck env)
-  ((fst o parse_preterm o lex o explode) s);;
+let parse_env_string env s =
+  let (ptm, l) = (parse_preterm o lex o explode) s in
+  if l = [] then (term_of_preterm o retypecheck env) ptm
+  else raise (Readable_fail
+    ("Unparsed input  at the end of the term\n" ^ s));;
 
 (* versions of new_constant, parse_as_infix, new_definition and new_axiom    *)
 
@@ -167,6 +175,9 @@ let subgoal_THEN stm ttac gl =
 (* stm is a string statement which is turned into a statement t by make_env, *)
 (* parse_env_string and the goal gl. Similarly string svar is turned into a  *)
 (* variable v.                                                               *)
+(* X_genl_TAC combines X_gen_TAC and GENL.  Since below in StepToTactic the  *)
+(* string-term list uses whitespace as the delimiter and no braces, there is *)
+(* no reason in readable.ml proofs to use X_gen_TAC instead X_genl_TAC.      *)
 (* intro_TAC is INTRO_TAC with the delimiter ";" replaced with",".           *)
 (* assume notalpha lab tac                                                   *)
 (* is the tactic which, when applied to goal gl = (asl, w), with tac a proof *)
@@ -200,6 +211,8 @@ let exists_TAC stm gl =
 let X_gen_TAC svar (asl, w as gl) =
   let vartype = (snd o dest_var o fst o dest_forall) w in
   X_GEN_TAC (mk_var (svar, vartype)) gl;;
+
+let X_genl_TAC svarlist = MAP_EVERY X_gen_TAC svarlist;;
 
 let intro_TAC s = INTRO_TAC (Str.global_replace (Str.regexp ",") ";" s);;
 
@@ -303,7 +316,7 @@ let rec FindCases s =
   if Str.string_match (Str.regexp sleftCase) s 0 then
     let CaseEndRest = Str.string_after s (Str.match_end()) in
     let PosAfterEnd = FindMatch sleftCase srightCase CaseEndRest in
-    let pos = Str.search_backward (Str.regexp srightCase) 
+    let pos = Str.search_backward (Str.regexp srightCase)
       CaseEndRest PosAfterEnd in
     let case = Str.string_before CaseEndRest pos
     and rest = Str.string_after CaseEndRest PosAfterEnd in
@@ -314,11 +327,24 @@ let rec FindCases s =
 (* substrings delimited by the semicolons which are not captured in lists.   *)
 
 let rec StringToList s =
+  if StringRegexpEqual (Str.regexp ws0) s then [] else
   if Str.string_match (Str.regexp "[^;]*;") s 0 then
     let pos = FindSemicolon s in
     let head = Str.string_before s pos in
     head :: (StringToList (Str.string_after s (pos + 1)))
   else [s];;
+
+(* ExtractWsStringList string = (["l1"; "l2"; ...; "ln"], rest),             *)
+(* if string = ws ^ "[l1; l2; ...; ln]" ^ rest.  Raises Not_found otherwise. *)
+
+let ExtractWsStringList string =
+  if Str.string_match (Str.regexp (ws^ "\[")) string 0 then
+    let listRest = Str.string_after string (Str.match_end()) in
+    let RightBrace = FindMatch "\[" "\]" listRest in
+    let rest = Str.string_after listRest RightBrace
+    and list = Str.string_before listRest (RightBrace - 1) in
+    (StringToList list, rest)
+  else raise Not_found;;
 
 (* theoremify string goal returns a pair  (thm, rest),                       *)
 (* where thm is the first theorem found on string, using goal if needed, and *)
@@ -334,28 +360,22 @@ let rec StringToList s =
 
 let CombTermThm_Term word rest gl =
   let TermThm = exec_term_thm word in
-  if Str.string_match (Str.regexp (ws^ "\[")) rest 0 then
-    let listWsRest = Str.string_after rest (Str.match_end()) in
-    let RightBrace = FindMatch "\[" "\]" listWsRest in
-    let wsRest = Str.string_after listWsRest RightBrace
-    and list = Str.string_before listWsRest (RightBrace - 1) in
-    let stermlist = StringToList list in
+  try
+    let (stermlist, wsRest) = ExtractWsStringList rest in
     if length stermlist = 1 then
       let term = (parse_env_string (make_env gl)) (hd stermlist) in
       (TermThm term,  wsRest)
     else raise (Readable_fail ("term->thm "^ word
-    ^"not followed by length 1 term list, but instead \n"^ list))
-  else raise (Readable_fail ("term->thm "^ word
-  ^"not followed by term list, but instead \n"^ rest));;
+    ^" not followed by length 1 term list, but instead the list \n["^
+    String.concat ";" stermlist ^"]"))
+  with Not_found -> raise (Readable_fail ("term->thm "^ word
+  ^" not followed by term list, but instead \n"^ rest));;
 
 let CombThmlistTermThm_Thmlist_Term word rest gl =
   let ThmlistTermThm = exec_thmlist_term_thm word in
-  if Str.string_match (Str.regexp (ws^ "\[")) rest 0 then
-    let listWsTermRest = Str.string_after rest (Str.match_end()) in
-    let RightBrace = FindMatch "\[" "\]" listWsTermRest in
-    let wsTermRest = Str.string_after listWsTermRest RightBrace
-    and list = Str.string_before listWsTermRest (RightBrace - 1) in
-    let thmlist = map exec_thm (StringToList list) in
+  try
+    let (stermlist, wsTermRest) = ExtractWsStringList rest in
+    let thmlist = map exec_thm stermlist in
     if Str.string_match (Str.regexp (ws^ "\[")) wsTermRest 0 then
       let termRest = Str.string_after wsTermRest (Str.match_end()) in
       let RightBrace = FindMatch "\[" "\]" termRest in
@@ -364,10 +384,10 @@ let CombThmlistTermThm_Thmlist_Term word rest gl =
       let term = parse_env_string (make_env gl) sterm in
       (ThmlistTermThm thmlist term, rest)
     else raise (Readable_fail ("thmlist->term->thm "^ word
-      ^"followed by list of theorems ["^ list ^"] "
-      ^"not followed by term in\n"^ wsTermRest))
-  else raise (Readable_fail ("thmlist->term->thm "^ word
-  ^"not followed by thm list in\n"^ rest));;
+      ^" followed by list of theorems ["^ String.concat ";" stermlist ^"]
+      not followed by term in\n"^ wsTermRest))
+  with Not_found -> raise (Readable_fail ("thmlist->term->thm "^ word
+  ^" not followed by thm list in\n"^ rest));;
 
 let rec theoremify string gl =
   if Str.string_match (Str.regexp (ws^ "\([^][ \t\n]+\)")) string 0 then
@@ -381,27 +401,23 @@ let rec theoremify string gl =
     try firstPairMult (exec_thm_thm word) (theoremify rest gl)
     with _ ->
     try CombTermThm_Term word rest gl
-    with _ ->
+    with Noparse ->
     try CombThmlistTermThm_Thmlist_Term word rest gl
-    with _ ->
+    with Noparse ->
     try CombTermlistThmThm_Termlist word rest gl
-    with _ -> raise (Readable_fail ("Not a theorem:\n"^ string))
+    with Noparse -> raise (Readable_fail ("Not a theorem:\n"^ string))
   else raise (Readable_fail ("Empty theorem:\n"^ string))
 and
 firstPairMult f (a, b) = (f a, b)
 and
 CombTermlistThmThm_Termlist word rest gl =
   let TermlistThmThm = exec_termlist_thm_thm word in
-  if Str.string_match (Str.regexp (ws^ "\[")) rest 0 then
-    let listWsThm = Str.string_after rest (Str.match_end()) in
-    let RightBrace = FindMatch "\[" "\]" listWsThm in
-    let WsThm = Str.string_after listWsThm RightBrace
-    and list = Str.string_before listWsThm (RightBrace - 1) in
-    let stermlist = StringToList list in
+  try
+    let (stermlist, WsThm) = ExtractWsStringList rest in
     let termlist = map (parse_env_string (make_env gl)) stermlist in
     firstPairMult (TermlistThmThm termlist) (theoremify WsThm gl)
-  else raise (Readable_fail ("termlist->thm->thm "^ word
-  ^"not followed by term list in\n"^ rest));;
+  with Not_found -> raise (Readable_fail ("termlist->thm->thm "^ word
+  ^"\n not followed by term list in\n"^ rest));;
 
 let CombThmtactic_Thm step =
   if Str.string_match (Str.regexp (ws^ "\([a-zA-Z0-9_]+\)")) step 0 then
@@ -412,7 +428,7 @@ let CombThmtactic_Thm step =
       let (thm, rest) = theoremify sthm gl in
       if rest = "" then thm_tactic thm gl
       else raise (Readable_fail ("thm_tactic "^ sthm_tactic
-      ^"not followed by a theorem, but instead\n"^ sthm))
+      ^" not followed by a theorem, but instead\n"^ sthm))
   else raise Not_found;;
 
 let CombThmlisttactic_Thmlist step =
@@ -431,9 +447,9 @@ let CombThmlisttactic_Thmlist step =
 (* StringToTactic uses regexp functions from the Str library to transform a  *)
 (* string into a tactic.  The allowable tactics are written in BNF form as   *)
 (*                                                                           *)
-(* Tactic := ALL_TAC | Tactic THEN Tactic |                                  *)
+(* Tactic := ALL_TAC | Tactic THEN Tactic | thm->tactic Thm |                *)
 (*   one-word-tactic (e.g. ARITH_TAC) | thmlist->tactic listof(Thm) |        *)
-(*   intro_TAC string | exists_TAC term | X_gen_TAC term | thm->tactic Thm | *)
+(*   intro_TAC string | exists_TAC term | X_genl_TAC listof(term) |          *)
 (*   case_split string Tactic listof(statement) listof(Tactic) |             *)
 (*   consider listof(variable) statement label Tactic |                      *)
 (*   (raa | assume | subgoal_TAC) statement label Tactic                     *)
@@ -444,17 +460,20 @@ let CombThmlisttactic_Thmlist step =
 (*                                                                           *)
 (* The string proofs allowed by StringToTactic are written in BNF form as    *)
 (*                                                                           *)
-(* Proof := case_split destruct_string ByProofQed                            *)
+(* Proof := Proof THEN Proof | case_split destruct_string ByProofQed         *)
 (*   suppose statement; Proof end; ... suppose statement; Proof end; |       *)
-(*   OneStepProof | consider listof(variable) statement [label] ByProofQed | *)
+(*   OneStepProof; | consider listof(variable) statement [label] ByProofQed |*)
 (*   statement [label] ByProofQed | raa statement [label] ByProofQed |       *)
 (*   assume statement [label] ByProofQed                                     *)
-
-(* OneStepProof := one-word-tactic; | thm->tactic Thm; | intro_TAC string; | *)
-(*   exists_TAC term-string; | X_gen_TAC variable-string; |                  *)
-(*   thmlist->tactic listof(Thm);                                            *)
 (*                                                                           *)
-(* ByProofQed := by OneStepProof | proof Proof Proof ...  Proof qed;         *)
+(* OneStepProof := one-word-tactic | thm->tactic Thm | intro_TAC string |    *)
+(*   exists_TAC term-string | X_genl_TAC listof(variable-string) |           *)
+(*   thmlist->tactic listof(Thm)                                             *)
+(*                                                                           *)
+(* ByProofQed := by OneStepProof; | proof Proof Proof ...  Proof qed;        *)
+(*                                                                           *)
+(* theorem is a version of prove based on the miz3.ml thm, with argument     *)
+(* statement ByProofQed                                                      *)
 
 let rec StringToTactic s =
   if StringRegexpEqual (Str.regexp ws0) s then ALL_TAC
@@ -462,8 +481,7 @@ let rec StringToTactic s =
     try makeCaseSplit s
     with _ ->
     let pos = FindSemicolon s in
-    let step = Str.string_before s pos
-    and rest = Str.string_after s (Str.match_end()) in
+    let step, rest = Str.string_before s pos, Str.string_after s (pos + 1) in
     try
       let tactic = StepToTactic step in
       tactic THEN StringToTactic rest
@@ -474,8 +492,7 @@ and
 GetProof ByProof s =
   if ByProof = "by" then
     let pos = FindSemicolon s in
-    let step, rest = Str.string_before s pos,
-      Str.string_after s (Str.match_end()) in
+    let step, rest = Str.string_before s pos, Str.string_after s (pos + 1) in
     (StepToTactic step, rest)
   else
     let pos_after_qed = FindMatch (ws^"proof"^ws) (ws^"qed"^ws0^";") s in
@@ -491,7 +508,7 @@ makeCaseSplit s =
       (Str.string_after s (Str.group_end 2))
     and SplitAtSemicolon case =
       let pos = FindSemicolon case in
-      [Str.string_before case pos; Str.string_after case (Str.match_end())] in
+      [Str.string_before case pos; Str.string_after case (pos + 1)] in
     let list2Case = map SplitAtSemicolon (FindCases rest) in
     let listofDisj = map hd list2Case
     and listofTac = map (StringToTactic o hd o tl) list2Case in
@@ -514,9 +531,10 @@ StepToTactic step =
   else if Str.string_match (Str.regexp (ws^ "exists_TAC" ^ws)) step 0 then
     let exists_string = Str.string_after step (Str.match_end()) in
     exists_TAC exists_string
-  else if Str.string_match (Str.regexp (ws^ "X_gen_TAC" ^ws)) step 0 then
-    let gen_string = Str.string_after step (Str.match_end()) in
-    X_gen_TAC gen_string
+  else if Str.string_match (Str.regexp (ws^ "X_genl_TAC" ^ws)) step 0 then
+    let genl_string = Str.string_after step (Str.match_end()) in
+    let svarlist = Str.split (Str.regexp ws) genl_string in
+    X_genl_TAC svarlist
   else raise Not_found
 and
 BigStepToTactic s step =
@@ -544,40 +562,53 @@ BigStepToTactic s step =
           (raa statement lab proof, rest)
         else (assume statement lab proof, rest)
       else (subgoal_TAC statement lab proof, rest)
-    with Not_found -> raise (Readable_fail ("can't parse "^ step));;
+    with Not_found -> raise (Readable_fail
+    ("Can't parse as a Proof:\n"^ step));;
 
 let theorem s =
   let s = CleanMathFontsForHOL_Light s in
   try
     let start = Str.search_forward (Str.regexp
       (ws^ "proof\(" ^ws^ "\(.\|\n\)*\)" ^ws ^ "qed" ^ws0^ ";" ^ws0)) s 0 in
-    let thm, proof = Str.string_before s start, Str.matched_group 1 s in
-    prove (parse_env_string [] thm, StringToTactic proof)
+    let thm = Str.string_before s start
+    and proof = Str.matched_group 1 s
+    and rest = Str.string_after s (Str.match_end()) in
+    if rest = "" then prove (parse_env_string [] thm, StringToTactic proof)
+    else raise (Readable_fail
+      ("Trailing garbage after the proof...qed:\n" ^ rest))
+  with Not_found ->
+  try
+    let start = Str.search_forward (Str.regexp (ws^ "by")) s 0 in
+    let thm = Str.string_before s start
+    and proof = Str.string_after s (Str.match_end()) in
+    try
+      prove (parse_env_string [] thm, StepToTactic proof)
+    with Not_found -> raise (Readable_fail ("Not a proof:\n" ^ proof))
   with Not_found -> raise (Readable_fail
-    ("Missing initial \"proof\" or final \"qed;\" in\n" ^ s));;
-
-let interactive_proof s =
-  let proof = CleanMathFontsForHOL_Light s in
-  e (StringToTactic proof);;
+    ("Missing initial \"proof\", \"by\", or final \"qed;\" in\n" ^ s));;
 
 let interactive_goal s =
   let thm = CleanMathFontsForHOL_Light s in
   g (parse_env_string [] thm);;
 
+let interactive_proof s =
+  let proof = CleanMathFontsForHOL_Light s in
+  e (StringToTactic proof);;
+
 (* The uncluttered interface is shown by a proof from the HOL Light tutorial *)
 (* section 14.1 "Choice and the select operator" and a proof from arith.ml.  *)
 
-let AXIOM_OF_CHOICE = theorem `;
-  ∀P. (∀x. ∃y. P x y) ⇒ ∃f. ∀x. P x (f x)
+let AXIOM_OF_CHOICE_read = theorem `;
+  ∀P s. (∀x. x ∈ s ⇒ ∃y. P x y) ⇒ ∃f. ∀x. x ∈ s ⇒ P x (f x)
 
   proof
-    intro_TAC ∀P, H1;
+    intro_TAC ∀P s, H1;
     exists_TAC λx. @y. P x y;
     fol H1;
   qed;
 `;;
 
-let MOD_MOD_REFL = theorem `;
+let MOD_MOD_REFL_read = theorem `;
   ∀m n. ¬(n = 0)  ⇒  ((m MOD n) MOD n = m MOD n)
 
   proof
@@ -587,7 +618,7 @@ let MOD_MOD_REFL = theorem `;
   qed;
 `;;
 
-let NSQRT_2 = theorem `;
+let NSQRT_2_read = theorem `;
   ∀p q. p * p = 2 * q * q  ⇒  q = 0
 
   proof
@@ -646,7 +677,13 @@ interactive_proof `;
       q * q = 0     [] by ARITH_thmTAC - B;
       NUM_RING_thmTAC -;
 `;;
-let NSQRT_2 = top_thm();;
+let NSQRT_2_read = top_thm();;
+
+(* An port from arith.ml uses by instead of proof...qed; in a short proof:   *)
+
+let EXP_2_read = theorem `;
+  ∀n:num. n EXP 2 = n * n
+  by rewrite BIT0_THM BIT1_THM EXP EXP_ADD MULT_CLAUSES ADD_CLAUSES`;;
 
 (* An example using GSYM, ARITH_RULE, MESON and GEN_REWRITE_TAC, reproving   *)
 (* the binomial theorem from sec 13.1--2 of the HOL Light tutorial.          *)
@@ -656,14 +693,15 @@ let binom = define
   (!k. binom(0,SUC(k)) = 0) /\
   (!n k. binom(SUC(n),SUC(k)) = binom(n,SUC(k)) + binom(n,k))`;;
 
-  let BINOM_LT = prove
-   (`!n k. n < k ==> (binom(n,k) = 0)`,
-    INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC[binom; ARITH; LT_SUC; LT] THEN
-    ASM_SIMP_TAC[ARITH_RULE `n < k ==> n < SUC(k)`; ARITH]);;
+let BINOM_LT_read = theorem `;
+  ∀n k. n < k  ⇒  binom(n,k) = 0
 
-let BINOM_REFL = prove
-   (`!n. binom(n,n) = 1`,
-    INDUCT_TAC THEN ASM_SIMP_TAC[binom; BINOM_LT; LT; ARITH]);;
+  proof
+    INDUCT_TAC; INDUCT_TAC;
+    rewrite binom ARITH LT_SUC LT;
+    ASM_SIMP_TAC ARITH_RULE [n < k ==> n < SUC(k)] ARITH;
+  qed;
+`;;
 
 let BINOMIAL_THEOREM_read = theorem `;
   ∀n. (x + y) EXP n = nsum(0..n) (\k. binom(n,k) * x EXP k * y EXP (n - k))
@@ -677,7 +715,7 @@ let BINOMIAL_THEOREM_read = theorem `;
     rewriteR ADD_SYM;
     rewriteRLDepth SUB_SUC EXP;
     rewrite MULT_AC EQ_ADD_LCANCEL MESON [binom] [1 = binom(n, 0)] GSYM Nsum0SUC;
-    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
+    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT_read MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
     simplify ARITH_RULE [k <= n  ⇒  SUC n - k = SUC(n - k)] EXP MULT_AC;
   qed;
 `;;

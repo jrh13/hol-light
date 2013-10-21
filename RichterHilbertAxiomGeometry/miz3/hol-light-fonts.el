@@ -102,7 +102,18 @@
     (goto-char (point-min))
     (while (search-forward "mu" nil t)
       (replace-match "μ" nil t))
+    (goto-char (point-min))
+    (while (search-forward "--->" nil t)
+      (replace-match "→" nil t))
+    (goto-char (point-min))
+    (while (search-forward " prod " nil t)
+      (replace-match " ∏ " nil t))
+    (goto-char (point-min))
+    (while (search-forward " _o_ " nil t)
+      (replace-match " ∘ " nil t))
     (goto-char start)))
+
+
 
 (defun Remove-math-fonts-for-HOL-Light ()
   "replace mathematical characters (∀, ∃, ∩,...) with HOL Light expressions (!, ?, INTER,...)."
@@ -190,9 +201,18 @@
   (goto-char (point-min))
   (while (search-forward "θ" nil t)
     (replace-match "theta" nil t))
+  (goto-char (point-min))
+  (while (search-forward "μ" nil t)
+    (replace-match "mu" nil t))
+  (goto-char (point-min))
+  (while (search-forward "→" nil t)
+    (replace-match "--->" nil t))
+  (goto-char (point-min))
+  (while (search-forward " ∏ " nil t)
+    (replace-match " prod " nil t))
     (goto-char (point-min))
-    (while (search-forward "μ" nil t)
-      (replace-match "mu" nil t))
+    (while (search-forward " ∘ " nil t)
+      (replace-match " _o_ " nil t))
   (goto-char (point-min)))
 
 
@@ -254,9 +274,10 @@
 (global-set-key '[f2 56]  '(lambda () (interactive) (insert " ≇ ")))       ;; F2 8
 (global-set-key '[f2 55]  '(lambda () (interactive) (insert " ∥ ")))       ;; F2 7
 (global-set-key '[f2 54]  '(lambda () (interactive) (insert " ∦ ")))       ;; F2 6
-
-
-
+(global-set-key '[f2 70]  '(lambda () (interactive) (insert " → ")))       ;; F2 F
+(global-set-key '[f2 80]  '(lambda () (interactive) (insert " ∏ ")))       ;; F2 P
+(global-set-key '[f2 79]  '(lambda () (interactive) (insert " ∘ ")))       ;; F2 O
+  
 
 ;; Two Emacs functions are useful in this context: 
 ;; (string-to-char "⇒") => 8658
