@@ -4,20 +4,26 @@
           Distributed under the same license as HOL Light
 
 readable.ml is a miz3-type interface for HOL Light tactics proofs
-allowing REWRITE_TAC (and other thmlist->tactics), MP_TAC, SPECL,
-GSYM, ARITH_RULE and MESON.  Four examples illustrate usage.
+allowing full use of REWRITE_TAC and other thm list -> tactics.
 
-HilbertAxiom_read.ml formalizes the Hilbert axiomatic geometry paper
+HilbertAxiom_read.ml, which uses readable.ml, is a formalization of
+the plane geometry part of the Hilbert axiomatic geometry paper
 http://www.math.northwestern.edu/~richter/hilbert.pdf
 
-inverse_bug_puzzle_read.ml, joint with John Harrison, formalizes Tom
-Hales's theorem of sec 10.1 The bug puzzle of the HOL Light tutorial.
+inverse_bug_puzzle_read.ml, which uses readable.ml, is a formalization
+partly due to John Harrison of a theorem due to Tom Hales explained at
+the end of sec 10.1 "The bug puzzle" of the HOL Light tutorial.
 
 thmFontHilbertAxiom.ml is a list, with mathematical characters, of the
 theorems and definitions of HilbertAxiom_read.ml.
 
+error-checking.ml shows the error messages displayed by readable.ml.
+
 UniversalPropCartProd.ml defines FunctionSpace and FunctionComposition
 so that Cartesian product satisfies the usual universal property.
 
-miz3 contains the original miz3 version of HilbertAxiom_read.ml,
-together with some emacs support files and miz3 documentation.
+Topology.ml is an in-progress readable.ml port of the point-set topology in
+Multivariate/topology.ml.
+
+miz3 contains the original miz3 version of HilbertAxiom_read.ml, an
+emacs file for handling math characters and some miz3 documentation.
