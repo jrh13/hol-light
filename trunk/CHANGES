@@ -1,6 +1,12 @@
+Wed 23rd Oct 2013       Makefile,  pa_j_3.1x_6.11.ml [new file]
+
+Added yet another pa_j file, created by Freek Wiedijk, that appears to work 
+correctly for all camlp5 versions 6.07 - 6.11 (current one), and modified the 
+Makefile to select appropriately.
+
 Mon 23rd Sep 2013       nums.ml
 
-Made a modification from Tom Hales to "new_specification", simply using the 
+Made a modification from Tom Hales to "new_specification", simply using the
 names of the constants instead of some hidden counter to make the definitions
 unique.
 
