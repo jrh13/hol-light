@@ -3678,8 +3678,8 @@ let WINDING_NUMBER = prove
     PATH_APPROX_VECTOR_POLYNOMIAL_FUNCTION) THEN
   ASM_REWRITE_TAC[REAL_HALF] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^1->complex` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `Cx (&1) / (Cx (&2) * Cx pi * ii) *
-              path_integral h (\w. Cx (&1) / (w - z))` THEN
+  EXISTS_TAC `Cx(&1) / (Cx(&2) * Cx pi * ii) *
+              path_integral h (\w. Cx(&1) / (w - z))` THEN
   X_GEN_TAC `e:real` THEN DISCH_TAC THEN
   MP_TAC(ISPECL [`g:real^1->complex`; `min d e / &2`]
     PATH_APPROX_VECTOR_POLYNOMIAL_FUNCTION) THEN
@@ -4410,8 +4410,8 @@ let INTEGER_WINDING_NUMBER_EQ = prove
     pathfinish p = pathstart p`
   MP_TAC THENL
    [UNDISCH_THEN
-     `path_integral p (\w. Cx (&1) / (w - z)) =
-      Cx (&2) * Cx pi * ii * winding_number (g,z)` (K ALL_TAC) THEN
+     `path_integral p (\w. Cx(&1) / (w - z)) =
+      Cx(&2) * Cx pi * ii * winding_number (g,z)` (K ALL_TAC) THEN
     ASM_SIMP_TAC[WINDING_NUMBER_VALID_PATH];
     ASM_SIMP_TAC[WINDING_NUMBER_VALID_PATH; CX_2PII_NZ; COMPLEX_FIELD
      `~(a * b * c = Cx(&0))
@@ -4828,7 +4828,7 @@ let WINDING_NUMBER_ZERO_IN_OUTSIDE = prove
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `p:real^1->complex` THEN
     STRIP_TAC THEN ONCE_REWRITE_TAC[NORM_SUB] THEN
     ASM_SIMP_TAC[VALID_PATH_VECTOR_POLYNOMIAL_FUNCTION] THEN CONJ_TAC THENL
-     [UNDISCH_TAC `~(w IN ball (Cx (&0),B + &1))` THEN
+     [UNDISCH_TAC `~(w IN ball (Cx(&0),B + &1))` THEN
       REWRITE_TAC[CONTRAPOS_THM; path_image; IN_BALL] THEN
       SPEC_TAC(`w:complex`,`x:complex`) THEN REWRITE_TAC[FORALL_IN_IMAGE];
       REWRITE_TAC[COMPLEX_MUL_RZERO] THEN
@@ -4848,7 +4848,7 @@ let WINDING_NUMBER_ZERO_IN_OUTSIDE = prove
        `!g:real^1->complex. norm(p t - g t) < &1 /\ norm(g t) <= B
                             ==> norm(p t) < B + &1`) THEN
       EXISTS_TAC `g:real^1->complex` THEN
-      UNDISCH_TAC `path_image g SUBSET ball (Cx (&0),B)` THEN
+      UNDISCH_TAC `path_image g SUBSET ball (Cx(&0),B)` THEN
       ASM_SIMP_TAC[SUBSET; IN_BALL; path_image; FORALL_IN_IMAGE] THEN
       ASM_SIMP_TAC[dist; COMPLEX_SUB_LZERO; NORM_NEG; REAL_LT_IMP_LE]]);;
 
@@ -4937,7 +4937,7 @@ let WINDING_NUMBER_SUBPATH_CONTINUOUS = prove
    [X_GEN_TAC `a:real^1` THEN DISCH_TAC THEN REWRITE_TAC[] THEN
     MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
      `Cx(&1) / (Cx(&2) * Cx pi * ii) *
-      path_integral (subpath (vec 0) a g) (\w. Cx (&1) / (w - z))` THEN
+      path_integral (subpath (vec 0) a g) (\w. Cx(&1) / (w - z))` THEN
     CONJ_TAC THENL
      [AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN
       MATCH_MP_TAC PATH_INTEGRAL_SUBPATH_INTEGRAL THEN
@@ -6928,7 +6928,7 @@ let HAS_PATH_INTEGRAL_BOUND_PARTCIRCLEPATH_STRONG = prove
     MATCH_MP_TAC FINITE_IMAGE THEN
     MATCH_MP_TAC FINITE_SUBSET THEN
     EXISTS_TAC `{n | integer n /\
-                     norm(Cx (&2 * n * pi) * ii) <= b + norm(clog w)}` THEN
+                     norm(Cx(&2 * n * pi) * ii) <= b + norm(clog w)}` THEN
     CONJ_TAC THENL
      [ALL_TAC; SIMP_TAC[SUBSET; IN_ELIM_THM] THEN NORM_ARITH_TAC] THEN
     REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_CX; COMPLEX_NORM_II] THEN
@@ -8015,14 +8015,14 @@ let HIGHER_COMPLEX_DERIVATIVE_MUL = prove
   MATCH_MP_TAC HAS_COMPLEX_DERIVATIVE_DERIVATIVE THEN
   MATCH_MP_TAC HAS_COMPLEX_DERIVATIVE_TRANSFORM_WITHIN_OPEN THEN
   EXISTS_TAC `\w. vsum (0..n)
-                    (\i. Cx (&(binom (n,i))) *
+                    (\i. Cx(&(binom (n,i))) *
                          higher_complex_derivative i f w *
                          higher_complex_derivative (n-i) g w)` THEN
   EXISTS_TAC `s:complex->bool` THEN ASM_SIMP_TAC [] THEN
-  SUBGOAL_THEN `vsum (0..SUC n) (\i. Cx (&(binom (SUC n,i))) *
+  SUBGOAL_THEN `vsum (0..SUC n) (\i. Cx(&(binom (SUC n,i))) *
                                      higher_complex_derivative i f z *
                                      higher_complex_derivative (SUC n-i) g z) =
-                vsum (0..n) (\i. Cx (&(binom (n,i))) *
+                vsum (0..n) (\i. Cx(&(binom (n,i))) *
                                  (higher_complex_derivative i f z *
                                   higher_complex_derivative (SUC n-i) g z +
                                   higher_complex_derivative (SUC i) f z *
@@ -9157,7 +9157,7 @@ let HOLOMORPHIC_FUN_EQ_ON_BALL = prove
      ==> f w = g w`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SERIES_UNIQUE THEN
   EXISTS_TAC `(\n. higher_complex_derivative n f z /
-                   Cx (&(FACT n)) * (w - z) pow n)` THEN
+                   Cx(&(FACT n)) * (w - z) pow n)` THEN
   EXISTS_TAC `(from 0)` THEN CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC []] THEN
   ASM_MESON_TAC [HOLOMORPHIC_POWER_SERIES]);;
 
@@ -9237,7 +9237,7 @@ let HOLOMORPHIC_FUN_EQ_CONST_ON_CONNECTED = prove
         connected s /\
         f holomorphic_on s /\
         z IN s /\
-        (!n. 0 < n ==> higher_complex_derivative n f z = Cx (&0))
+        (!n. 0 < n ==> higher_complex_derivative n f z = Cx(&0))
         ==> !w. w IN s ==> f w = f z`,
   REPEAT STRIP_TAC THEN MP_TAC(ISPECL
    [`\w. (f:complex->complex) w - f z`; `s:complex->bool`; `z:complex`]
@@ -10345,7 +10345,7 @@ let HIGHER_COMPLEX_DERIVATIVE_COMP_LEMMA = prove
       ASM_MESON_TAC [HOLOMORPHIC_ON_IMP_DIFFERENTIABLE_AT]];
     EQ_TRANS_TAC
      `vsum (0..i)
-        (\j. Cx (&(binom (i,j))) *
+        (\j. Cx(&(binom (i,j))) *
              higher_complex_derivative j (\w. complex_derivative g (f w)) z *
              higher_complex_derivative (i - j) (complex_derivative f) z)` THENL
      [MATCH_MP_TAC HIGHER_COMPLEX_DERIVATIVE_MUL  THEN
@@ -10360,7 +10360,7 @@ let HIGHER_COMPLEX_DERIVATIVE_COMP_LEMMA = prove
       REWRITE_TAC [GSYM higher_complex_derivative_alt]  THEN
       EQ_TRANS_TAC
         `vsum (i..i)
-           (\j. Cx (&(binom (i,j))) *
+           (\j. Cx(&(binom (i,j))) *
                 higher_complex_derivative j
                   (\w. complex_derivative g (f w)) z *
                 higher_complex_derivative (SUC (i - j)) f z)` THENL
@@ -10390,8 +10390,8 @@ let HIGHER_COMPLEX_DERIVATIVE_COMP_LEMMA = prove
 let HIGHER_COMPLEX_DERIVATIVE_COMP_ITER_LEMMA = prove
  (`!f s z n m i.
      open s /\ f holomorphic_on s /\ (!w. w IN s ==> f w IN s) /\
-     z IN s /\ f z = z /\ complex_derivative f z = Cx (&1) /\
-     (!i. 1 < i /\ i <= n ==> higher_complex_derivative i f z = Cx (&0)) /\
+     z IN s /\ f z = z /\ complex_derivative f z = Cx(&1) /\
+     (!i. 1 < i /\ i <= n ==> higher_complex_derivative i f z = Cx(&0)) /\
      i <= n
      ==> higher_complex_derivative i (ITER m f) z =
          higher_complex_derivative i f z`,
@@ -10434,8 +10434,8 @@ let HIGHER_COMPLEX_DERIVATIVE_COMP_ITER_LEMMA = prove
 let HIGHER_COMPLEX_DERIVATIVE_ITER_TOP_LEMMA = prove
  (`!f s z n m.
      open s /\ f holomorphic_on s /\ (!w. w IN s ==> f w IN s) /\
-     z IN s /\ f z = z /\ complex_derivative f z = Cx (&1) /\
-     (!i. 1 < i /\ i < n ==> higher_complex_derivative i f z = Cx (&0)) /\
+     z IN s /\ f z = z /\ complex_derivative f z = Cx(&1) /\
+     (!i. 1 < i /\ i < n ==> higher_complex_derivative i f z = Cx(&0)) /\
      1 < n
      ==> higher_complex_derivative n (ITER m f) z =
          Cx(&m) * higher_complex_derivative n f z`,
@@ -10509,7 +10509,7 @@ let HIGHER_COMPLEX_DERIVATIVE_ITER_TOP_LEMMA = prove
     ALL_TAC] THEN
   EQ_TRANS_TAC
    `vsum (0..n)
-      (\i. Cx (&(binom (n,i))) *
+      (\i. Cx(&(binom (n,i))) *
            higher_complex_derivative i
              (\w. complex_derivative f (ITER m f w)) z *
            higher_complex_derivative (n - i)
@@ -10528,7 +10528,7 @@ let HIGHER_COMPLEX_DERIVATIVE_ITER_TOP_LEMMA = prove
     ALL_TAC] THEN
   EQ_TRANS_TAC
    `vsum {0,n}
-      (\i. Cx (&(binom (n,i))) *
+      (\i. Cx(&(binom (n,i))) *
            higher_complex_derivative i
              (\w. complex_derivative f (ITER m f w)) z *
            higher_complex_derivative (n - i)
@@ -10593,7 +10593,7 @@ let HIGHER_COMPLEX_DERIVATIVE_ITER_TOP_LEMMA = prove
       ASM_REWRITE_TAC[];
       ASM_SIMP_TAC[]];
     ALL_TAC] THEN
-  ASSERT_TAC `Cx (&(SUC m)) = Cx (&m) +  Cx (&1)`  THENL
+  ASSERT_TAC `Cx(&(SUC m)) = Cx(&m) +  Cx(&1)`  THENL
    [REWRITE_TAC [GSYM CX_ADD; REAL_OF_NUM_ADD; ONE; ADD_SUC; ADD_0];
     ASM_REWRITE_TAC[COMPLEX_POLY_CLAUSES;
                     GSYM higher_complex_derivative_alt]]);;
@@ -10621,7 +10621,7 @@ let CAUCHY_HIGHER_COMPLEX_DERIVATIVE_BOUND = prove
       ASM_SIMP_TAC [OPEN_BALL; HOLOMORPHIC_ON_CONST; CENTRE_IN_BALL]];
     ALL_TAC] THEN
   SUBGOAL_THEN
-   `norm ((Cx (&2) * Cx pi * ii) / Cx (&(FACT n))
+   `norm ((Cx(&2) * Cx pi * ii) / Cx(&(FACT n))
           * higher_complex_derivative n (\w. f w - y) z)
     <= (B0 / r pow (n + 1)) * &2 * pi * r`
   MP_TAC THENL
@@ -10694,7 +10694,7 @@ let FIRST_CARTAN_THM_DIM_1 = prove
       open s /\ connected s /\ bounded s /\
       (!w. w IN s ==> f w IN s) /\ f holomorphic_on s /\
       z IN s /\ f z = z /\
-      complex_derivative f z = Cx (&1) /\ w IN s
+      complex_derivative f z = Cx(&1) /\ w IN s
       ==> f w = w`,
    REWRITE_TAC [RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN REPEAT GEN_TAC THEN
    REPEAT DISCH_TAC THEN REPEAT STRIP_TAC THEN EQ_TRANS_TAC `I w:complex` THENL
@@ -10774,7 +10774,7 @@ let SECOND_CARTAN_THM_DIM_1 = prove
      f (Cx(&0)) = Cx(&0) /\
      (!z. z IN ball(Cx(&0),r) ==> g (f z) = z) /\
      (!z. z IN ball(Cx(&0),r) ==> f (g z) = z)
-     ==> ?t. !z. z IN ball(Cx(&0),r) ==> g z = cexp (ii * Cx t) * z`,
+     ==> ?t. !z. z IN ball(Cx(&0),r) ==> g z = cexp(ii * Cx t) * z`,
   let COMPLEX_DERIVATIVE_LEFT_INVERSE = prove
     (`!s t f g w.
        open s /\ open t /\
@@ -10960,7 +10960,7 @@ let SECOND_CARTAN_THM_DIM_1 = prove
     `((\w. f (u * g w)) has_complex_derivative
       complex_derivative f (u * g(Cx(&0))) *
       (u * complex_derivative g (Cx(&0))))
-     (at (Cx (&0)))` MP_TAC THENL
+     (at (Cx(&0)))` MP_TAC THENL
     [MATCH_MP_TAC (REWRITE_RULE [o_DEF]
       (SPECL [`\w:complex. u * g(w):complex`; `f:complex->complex`]
       COMPLEX_DIFF_CHAIN_AT)) THEN CONJ_TAC THENL
@@ -10974,8 +10974,8 @@ let SECOND_CARTAN_THM_DIM_1 = prove
       EXISTS_TAC `ball(Cx(&0),r)` THEN
       ASM_REWRITE_TAC[OPEN_BALL; CENTRE_IN_BALL; COMPLEX_MUL_RZERO]];
      SUBGOAL_THEN
-       `complex_derivative f (u * g (Cx (&0))) *
-        (u * complex_derivative g (Cx (&0))) = u`
+       `complex_derivative f (u * g (Cx(&0))) *
+        (u * complex_derivative g (Cx(&0))) = u`
        SUBST1_TAC THENL
      [ALL_TAC; REWRITE_TAC[o_DEF]] THEN
      ABBREV_TAC `g' = complex_derivative g (Cx(&0))` THEN
@@ -12036,8 +12036,8 @@ let HOLOMORPHIC_FACTOR_ORDER_OF_ZERO_STRONG = prove
   REWRITE_TAC[OPEN_BALL; CONNECTED_BALL] THEN ANTS_TAC THENL
    [X_GEN_TAC `w:complex` THEN DISCH_TAC THEN
     SUBGOAL_THEN
-     `Cx(&0) = ((complex_derivative g w / g w * cexp (h w)) * g w -
-                cexp (h w) * complex_derivative g w) / g w pow 2`
+     `Cx(&0) = ((complex_derivative g w / g w * cexp(h w)) * g w -
+                cexp(h w) * complex_derivative g w) / g w pow 2`
     SUBST1_TAC THENL
      [ASM_SIMP_TAC[COMPLEX_FIELD
        `~(z = Cx(&0)) ==> (d / z * e) * z = e * d`] THEN
@@ -12080,7 +12080,7 @@ let HOLOMORPHIC_FACTOR_ZERO_NONCONSTANT = prove
                 0 < n /\ &0 < r /\ ball(z,r) SUBSET s /\
                 g holomorphic_on ball(z,r) /\
                 (!w. w IN ball(z,r) ==> f w = (w - z) pow n * g w) /\
-                (!w. w IN ball(z,r) ==> ~(g w = Cx (&0)))`,
+                (!w. w IN ball(z,r) ==> ~(g w = Cx(&0)))`,
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC `!n. 0 < n ==> higher_complex_derivative n f z = Cx(&0)` THENL
    [MP_TAC(ISPECL
@@ -13219,7 +13219,7 @@ let BLOCH_LEMMA = prove
       DISCH_TAC THEN MP_TAC(ISPECL
        [`\x. lift(norm(z:complex) / (drop x - norm z) * C)`;
         `interval(lift((norm(z:complex) + r) / &2),lift r)`; `lift r`;
-        `norm(complex_derivative f z - complex_derivative f (Cx (&0)))`;
+        `norm(complex_derivative f z - complex_derivative f (Cx(&0)))`;
         `1`] CONTINUOUS_ON_CLOSURE_COMPONENT_GE) THEN
       REWRITE_TAC[GSYM drop; LIFT_DROP; CLOSURE_INTERVAL] THEN
       DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[INTERVAL_EQ_EMPTY_1] THEN
@@ -13623,7 +13623,7 @@ let SCHOTTKY = prove
           f holomorphic_on s /\
           contractible s /\
           a IN s /\
-          (!z. z IN s ==> ~(f z = Cx (&1)) /\ ~(f z = --Cx (&1)))
+          (!z. z IN s ==> ~(f z = Cx(&1)) /\ ~(f z = --Cx(&1)))
           ==> (?g. g holomorphic_on s /\
                    norm(g a) <= &1 + norm(f a) / &3 /\
                    (!z. z IN s ==> f z = ccos(Cx pi * g z)))`,
@@ -13791,7 +13791,7 @@ let SCHOTTKY = prove
     CONV_TAC COMPLEX_RING;
     DISCH_THEN(X_CHOOSE_THEN `g:complex->complex` STRIP_ASSUME_TAC)] THEN
   MAP_EVERY UNDISCH_TAC
-   [`!z. z IN cball (Cx (&0),&1)
+   [`!z. z IN cball (Cx(&0),&1)
           ==> Cx(&2) * f z - Cx(&1) = ccos(Cx pi * h z)`;
     `!z. z IN cball(Cx(&0),&1) ==> h z = ccos(Cx pi * g z)`] THEN
   SIMP_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN DISCH_TAC THEN
@@ -13805,7 +13805,7 @@ let SCHOTTKY = prove
     MP_TAC(ISPEC `&1` COMPLEX_NORM_CX) THEN
     REWRITE_TAC[GSYM COMPLEX_CMUL] THEN CONV_TAC NORM_ARITH;
     MAP_EVERY (C UNDISCH_THEN (K ALL_TAC))
-     [`h holomorphic_on cball(Cx (&0),&1)`;
+     [`h holomorphic_on cball(Cx(&0),&1)`;
       `norm(g(Cx(&0)):complex) <= &1 + norm(h(Cx(&0)):complex) / &3`;
       `norm(h(Cx(&0)):complex) <=
        &1 + norm(Cx(&2) * f(Cx(&0)) - Cx(&1)) / &3`]] THEN
@@ -13903,7 +13903,7 @@ let SCHOTTKY = prove
       ASM_SIMP_TAC[REAL_LE_DIV; REAL_POS; REAL_SUB_LT; REAL_LT_IMP_LE] THEN
       ASM_REWRITE_TAC[COMPLEX_SUB_RZERO]];
     GEN_REWRITE_TAC (LAND_CONV o RAND_CONV)
-     [COMPLEX_RING `y = (Cx(&1) + (Cx(&2) * y - Cx (&1))) / Cx(&2)`] THEN
+     [COMPLEX_RING `y = (Cx(&1) + (Cx(&2) * y - Cx(&1))) / Cx(&2)`] THEN
     ASM_SIMP_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_CX; REAL_ABS_NUM] THEN
     ONCE_REWRITE_TAC[REAL_ARITH `x / &2 <= y <=> x <= &2 * y`] THEN
     W(MP_TAC o PART_MATCH lhand NORM_CCOS_PLUS1_LE o lhand o snd) THEN
@@ -14408,7 +14408,7 @@ let MONTEL = prove
 
 let moebius_function = new_definition
   `!t w z. moebius_function t w z =
-           cexp (ii * Cx t) * (z - w) / (Cx(&1) - cnj w * z)`;;
+           cexp(ii * Cx t) * (z - w) / (Cx(&1) - cnj w * z)`;;
 
 let MOEBIUS_FUNCTION_SIMPLE = prove
  (`!w z. moebius_function (&0) w z = (z - w) / (Cx(&1) - cnj w * z)`,
@@ -14419,7 +14419,7 @@ let MOEBIUS_FUNCTION_EQ_ZERO = prove
    REWRITE_TAC [moebius_function] THEN CONV_TAC COMPLEX_FIELD);;
 
 let MOEBIUS_FUNCTION_OF_ZERO = prove
-  (`!t w. moebius_function t w (Cx(&0)) = -- cexp (ii * Cx t) * w`,
+  (`!t w. moebius_function t w (Cx(&0)) = -- cexp(ii * Cx t) * w`,
    REWRITE_TAC [moebius_function] THEN CONV_TAC COMPLEX_FIELD);;
 
 let MOEBIUS_FUNCTION_NORM_LT_1 = prove
@@ -14433,7 +14433,7 @@ let MOEBIUS_FUNCTION_NORM_LT_1 = prove
     REAL_ARITH_TAC;
     ALL_TAC] THEN
    REWRITE_TAC [NORM_POS_LE] THEN
-   SUBGOAL_THEN `~(Cx (&1) - cnj w * z = Cx (&0))` ASSUME_TAC THENL
+   SUBGOAL_THEN `~(Cx(&1) - cnj w * z = Cx(&0))` ASSUME_TAC THENL
    [REWRITE_TAC [COMPLEX_SUB_0] THEN
     SUBGOAL_THEN `~(norm (Cx(&1)) = norm (cnj w * z))`
      (fun th -> MESON_TAC [th]) THEN
@@ -14453,12 +14453,12 @@ let MOEBIUS_FUNCTION_NORM_LT_1 = prove
                  GSYM CX_INJ; CX_SUB; CX_MUL; CX_DIV; CX_POW; CNJ_SUB; CNJ_CX;
                  CNJ_MUL; CNJ_DIV; CNJ_CNJ; COMPLEX_NORM_POW_2] THEN
     SUBGOAL_THEN
-      `cnj (cexp (ii * Cx t)) * (cexp (ii * Cx t)) = Cx(&1) /\
+      `cnj (cexp(ii * Cx t)) * (cexp(ii * Cx t)) = Cx(&1) /\
        ~(Cx(&1) - cnj w * z = Cx(&0)) /\ ~(Cx(&1) - w * cnj z = Cx(&0))`
      MP_TAC THENL [ALL_TAC; CONV_TAC COMPLEX_FIELD] THEN
     REWRITE_TAC [CNJ_CEXP; CNJ_MUL; CNJ_II; CNJ_CX;
                   COMPLEX_MUL_LNEG; CEXP_NEG_LMUL] THEN ASM_REWRITE_TAC [] THEN
-    SUBGOAL_THEN `~(cnj (Cx (&1) - cnj w * z) = Cx (&0))` MP_TAC THENL
+    SUBGOAL_THEN `~(cnj (Cx(&1) - cnj w * z) = Cx(&0))` MP_TAC THENL
     [ASM_REWRITE_TAC [CNJ_EQ_0];
      REWRITE_TAC [CNJ_SUB; CNJ_CX; CNJ_MUL; CNJ_CNJ]];
     SUBGOAL_THEN `!u:complex. norm u < &1 ==> &0 < &1 - norm u pow 2`
@@ -14466,7 +14466,7 @@ let MOEBIUS_FUNCTION_NORM_LT_1 = prove
     [REWRITE_TAC [REAL_FIELD `!a. &1 - a pow 2 = (&1 - a) * (&1 + a)`] THEN
      ASM_SIMP_TAC [REAL_LT_MUL; REAL_SUB_LT; REAL_LTE_ADD; REAL_LT_01;
                    NORM_POS_LE];
-     SUBGOAL_THEN `&0 < norm (Cx (&1) - cnj w * z) pow 2`
+     SUBGOAL_THEN `&0 < norm (Cx(&1) - cnj w * z) pow 2`
       (fun th -> ASM_MESON_TAC [th; REAL_LT_MUL; REAL_LT_DIV]) THEN
      ASM_REWRITE_TAC [REAL_RING `!a:real. a pow 2 =  a * a`;
                       REAL_LT_SQUARE; COMPLEX_NORM_ZERO]]]);;
@@ -14590,8 +14590,8 @@ let BALL_BIHOLOMORPHISM_MOEBIUS_FUNCTION = prove
        ASM_REWRITE_TAC [REAL_MUL_LID]]) in
    let LEMMA_2 = prove
      (`!t w s z. norm w < &1 /\ norm z < &1
-                 ==> moebius_function t w (cexp (ii * Cx s) * z) =
-                     moebius_function (t + s) (cexp (-- (ii * Cx s)) * w) z`,
+                 ==> moebius_function t w (cexp(ii * Cx s) * z) =
+                     moebius_function (t + s) (cexp(-- (ii * Cx s)) * w) z`,
       REPEAT STRIP_TAC THEN
       REWRITE_TAC[moebius_function; CX_ADD; COMPLEX_ADD_LDISTRIB; CEXP_ADD;
                   GSYM COMPLEX_MUL_ASSOC; COMPLEX_EQ_MUL_LCANCEL; CEXP_NZ;
@@ -14609,7 +14609,7 @@ let BALL_BIHOLOMORPHISM_MOEBIUS_FUNCTION = prove
                         GSYM CX_NEG; NORM_CEXP_II; REAL_MUL_LID];
        REWRITE_TAC [CNJ_CEXP; CNJ_NEG; CNJ_MUL; CNJ_II; CNJ_CX;
                     COMPLEX_MUL_LNEG; COMPLEX_NEG_NEG; CEXP_NEG] THEN
-       ABBREV_TAC `a = cexp (ii * Cx s)` THEN
+       ABBREV_TAC `a = cexp(ii * Cx s)` THEN
        SUBGOAL_THEN `inv a * a = Cx(&1)` MP_TAC THENL
        [ALL_TAC; CONV_TAC COMPLEX_RING] THEN
        MATCH_MP_TAC COMPLEX_MUL_LINV THEN EXPAND_TAC "a" THEN
@@ -14620,7 +14620,7 @@ let BALL_BIHOLOMORPHISM_MOEBIUS_FUNCTION = prove
    [ASM_MESON_TAC [COMPLEX_NORM_NUM; REAL_LT_01]; ALL_TAC] THEN
    SUBGOAL_THEN
     `?t. !z. z IN ball (Cx(&0),&1)
-             ==> moebius_function (&0) w (f z) = cexp (ii * Cx t) * z`
+             ==> moebius_function (&0) w (f z) = cexp(ii * Cx t) * z`
     STRIP_ASSUME_TAC THENL
    [ALL_TAC;
     EXISTS_TAC `t:real` THEN EXISTS_TAC `-- (cexp(-- (ii * Cx t)) * w)` THEN
@@ -15278,7 +15278,7 @@ let GREAT_PICARD = prove
     ABBREV_TAC `h = \n z. (f:complex->complex) (z / Cx(&n + &1))` THEN
     SUBGOAL_THEN
      `(!n:num. (h n) holomorphic_on ball(Cx(&0),&1) DELETE Cx(&0)) /\
-      (!n z. z IN ball(Cx (&0),&1) DELETE Cx(&0)
+      (!n z. z IN ball(Cx(&0),&1) DELETE Cx(&0)
              ==> ~(h n z = Cx(&0)) /\ ~(h n z = Cx(&1)))`
     STRIP_ASSUME_TAC THENL
      [CONJ_TAC THEN X_GEN_TAC `n:num` THEN EXPAND_TAC "h" THEN SIMP_TAC[] THENL
@@ -15290,8 +15290,8 @@ let GREAT_PICARD = prove
           FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
             HOLOMORPHIC_ON_SUBSET))];
         SUBGOAL_THEN
-         `!z. z IN ball (Cx (&0),&1) DELETE Cx (&0)
-              ==> z / Cx (&n + &1) IN ball (Cx (&0),&1) DELETE Cx (&0)`
+         `!z. z IN ball (Cx(&0),&1) DELETE Cx(&0)
+              ==> z / Cx(&n + &1) IN ball (Cx(&0),&1) DELETE Cx(&0)`
          (fun th -> ASM_MESON_TAC[th])] THEN
       REWRITE_TAC[IN_DELETE; FORALL_IN_IMAGE; SUBSET; COMPLEX_IN_BALL_0] THEN
       SIMP_TAC[COMPLEX_DIV_EQ_0; CX_INJ; REAL_ARITH `~(&n + &1 = &0)`] THEN
@@ -15307,7 +15307,7 @@ let GREAT_PICARD = prove
       ALL_TAC] THEN
     MP_TAC(ISPECL
      [`{g | g holomorphic_on ball(Cx(&0),&1) DELETE Cx(&0) /\
-            !z. z IN ball(Cx (&0),&1) DELETE Cx(&0)
+            !z. z IN ball(Cx(&0),&1) DELETE Cx(&0)
                 ==> ~(g z = Cx(&0)) /\ ~(g z = Cx(&1))}`;
       `ball(Cx(&0),&1) DELETE Cx(&0)`; `w:complex`] lemma3) THEN
     ASM_REWRITE_TAC[FORALL_IN_GSPEC] THEN
@@ -15847,8 +15847,8 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
      [X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
       SUBGOAL_THEN
-       `Cx(&0) = ((complex_derivative f z / f z * cexp (g z)) * f z -
-                  cexp (g z) * complex_derivative f z) / f z pow 2`
+       `Cx(&0) = ((complex_derivative f z / f z * cexp(g z)) * f z -
+                  cexp(g z) * complex_derivative f z) / f z pow 2`
       SUBST1_TAC THENL
        [ASM_SIMP_TAC[COMPLEX_FIELD
          `~(z = Cx(&0)) ==> (d / z * e) * z = e * d`] THEN
@@ -16111,7 +16111,7 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
       STRIP_ASSUME_TAC THENL
        [SUBGOAL_THEN
          `!n. ?f. f IN ff /\
-                  abs(norm(complex_derivative f (Cx (&0))) - l) < inv(&n + &1)`
+                  abs(norm(complex_derivative f (Cx(&0))) - l) < inv(&n + &1)`
         MP_TAC THENL
          [X_GEN_TAC `n:num` THEN
           FIRST_ASSUM(MP_TAC o SPEC `l - inv(&n + &1)` o CONJUNCT2) THEN
@@ -16181,9 +16181,9 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
           FIRST_ASSUM(SUBST1_TAC o
             MATCH_MP HAS_COMPLEX_DERIVATIVE_DERIVATIVE) THEN
           MATCH_MP_TAC(ISPEC `sequentially` LIM_UNIQUE) THEN EXISTS_TAC
-           `\n. Cx(norm(complex_derivative(f((r:num->num) n)) (Cx (&0))))` THEN
+           `\n. Cx(norm(complex_derivative(f((r:num->num) n)) (Cx(&0))))` THEN
           ASM_REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN MP_TAC(ISPECL
-           [`\n:num. Cx(norm(complex_derivative (f n) (Cx (&0))))`;
+           [`\n:num. Cx(norm(complex_derivative (f n) (Cx(&0))))`;
             `r:num->num`; `Cx l`] LIM_SUBSEQUENCE) THEN
           ASM_REWRITE_TAC[o_DEF]];
         ALL_TAC] THEN
@@ -16284,7 +16284,7 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
                    t(f z)`
     STRIP_ASSUME_TAC THENL
      [UNDISCH_TAC
-       `!f. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx (&0))) /\
+       `!f. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx(&0))) /\
             (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
             ==> ?g. g holomorphic_on s /\
                     (!z. z IN s ==> f z = g z pow 2)` THEN
@@ -16347,8 +16347,8 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
     MAP_EVERY X_GEN_TAC [`r:complex->complex`; `r':complex->complex`] THEN
     STRIP_TAC THEN UNDISCH_TAC
      `!h. h IN ff
-          ==> norm(complex_derivative h (Cx (&0))) <=
-              norm(complex_derivative f (Cx (&0)))` THEN
+          ==> norm(complex_derivative h (Cx(&0))) <=
+              norm(complex_derivative f (Cx(&0)))` THEN
     DISCH_THEN(fun th -> MP_TAC(SPEC
      `(r:complex->complex) o (sq:complex->complex) o
       (t:complex->complex) o (f:complex->complex)` th) THEN
@@ -16388,7 +16388,7 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
         ASM_SIMP_TAC[COMPLEX_NORM_POW; ABS_SQUARE_LT_1; REAL_ABS_NORM];
         ASM_SIMP_TAC[COMPLEX_NORM_POW; ABS_SQUARE_LT_1; REAL_ABS_NORM; o_THM];
         UNDISCH_THEN `(r:complex->complex) ((sq:complex->complex)
-                      ((t:complex->complex) (f(Cx(&0))))) = Cx (&0)`
+                      ((t:complex->complex) (f(Cx(&0))))) = Cx(&0)`
          (fun th -> GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [SYM th]) THEN
         ASM_SIMP_TAC[o_THM] THEN
         UNDISCH_TAC `(f:complex->complex) IN ff` THEN EXPAND_TAC "ff" THEN
@@ -16433,9 +16433,9 @@ let [SIMPLY_CONNECTED_EQ_WINDING_NUMBER_ZERO;
           REWRITE_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_CX; NORM_NEG] THEN
           CONV_TAC REAL_RAT_REDUCE_CONV];
         REWRITE_TAC[GSYM REAL_LT_LE] THEN DISCH_TAC THEN
-        UNDISCH_TAC `&1 <= norm (complex_derivative f (Cx (&0)))` THEN
+        UNDISCH_TAC `&1 <= norm (complex_derivative f (Cx(&0)))` THEN
         SUBGOAL_THEN
-         `complex_derivative f (Cx (&0)) =
+         `complex_derivative f (Cx(&0)) =
           complex_derivative (t' o (\z:complex. z pow 2) o r') (Cx(&0)) *
           complex_derivative
             (r o (sq:complex->complex) o (t:complex->complex) o f) (Cx(&0))`
@@ -16781,8 +16781,9 @@ let [SIMPLY_CONNECTED_EQ_FRONTIER_PROPERTIES;
         closed(INTERS {X n | n IN (:num)} DIFF k)`
   STRIP_ASSUME_TAC THENL
    [MP_TAC(ISPECL[`INTERS {X n:complex->bool | n IN (:num)}`;`c:complex->bool`]
-        SURA_BURA_CLOSED) THEN
-    ASM_REWRITE_TAC[OPEN_IN_CLOSED_IN_EQ; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+        SURA_BURA) THEN
+    ASM_SIMP_TAC[OPEN_IN_CLOSED_IN_EQ; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+                 CLOSED_IMP_LOCALLY_COMPACT] THEN
     MATCH_MP_TAC(MESON[]
      `~(c = i {}) /\ (~(f = {}) ==> P)
       ==> c = i f ==> P`) THEN
@@ -16899,6 +16900,17 @@ let SIMPLY_CONNECTED_IFF_SIMPLE = prove
     MATCH_MP_TAC COBOUNDED_IMP_UNBOUNDED THEN
     ASM_REWRITE_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`]]);;
 
+let CONNECTED_COMPLEMENT_IFF_SIMPLY_CONNECTED_COMPONENTS = prove
+ (`!s:real^2->bool.
+        open s /\ bounded s
+        ==> (connected((:real^2) DIFF s) <=>
+             !c. c IN components s ==> simply_connected c)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `!c. c IN components s ==> connected((:real^2) DIFF c)` THEN
+  CONJ_TAC THENL [ASM_SIMP_TAC[NONSEPARATION_BY_COMPONENT_EQ]; ALL_TAC] THEN
+  ASM_MESON_TAC[SIMPLY_CONNECTED_IFF_SIMPLE; OPEN_COMPONENTS;
+            IN_COMPONENTS_SUBSET; BOUNDED_SUBSET; IN_COMPONENTS_CONNECTED]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Yet another set of equivalences based on *continuous* logs and sqrts.     *)
 (* ------------------------------------------------------------------------- *)
@@ -16994,6 +17006,36 @@ let SIMPLY_CONNECTED_EQ_CONTINUOUS_LOG,SIMPLY_CONNECTED_EQ_CONTINUOUS_SQRT =
       MATCH_MP_TAC LIM_ADD THEN REWRITE_TAC[LIM_CONST; GSYM CONTINUOUS_AT] THEN
       ASM_MESON_TAC[HOLOMORPHIC_ON_IMP_CONTINUOUS_ON;
                     CONTINUOUS_ON_INTERIOR; INTERIOR_OPEN]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relations to the borsukian property.                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let SIMPLY_CONNECTED_EQ_BORSUKIAN = prove
+ (`!s:real^2->bool.
+        open s ==> (simply_connected s <=> connected s /\ borsukian s)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SIMPLY_CONNECTED_EQ_CONTINUOUS_LOG] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[BORSUKIAN_CONTINUOUS_LOGARITHM] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN SET_TAC[]);;
+
+let BORSUKIAN_EQ_SIMPLY_CONNECTED = prove
+ (`!s:real^2->bool.
+        open s
+        ==> (borsukian s <=> !c. c IN components s ==> simply_connected c)`,
+  ASM_SIMP_TAC[BORSUKIAN_COMPONENTWISE_EQ; OPEN_IMP_LOCALLY_CONNECTED] THEN
+  REPEAT STRIP_TAC THEN FIRST_ASSUM
+   (ASSUME_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] OPEN_COMPONENTS)) THEN
+  ASM_SIMP_TAC[SIMPLY_CONNECTED_EQ_BORSUKIAN] THEN
+  ASM_MESON_TAC[IN_COMPONENTS_CONNECTED]);;
+
+let BORSUKIAN_SEPARATION_OPEN_CLOSED = prove
+ (`!s:real^2->bool.
+        (open s \/ closed s) /\ bounded s
+        ==> (borsukian s <=> connected((:real^2) DIFF s))`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[BORSUKIAN_SEPARATION_COMPACT; COMPACT_EQ_BOUNDED_CLOSED] THEN
+  ASM_SIMP_TAC[BORSUKIAN_EQ_SIMPLY_CONNECTED;
+               CONNECTED_COMPLEMENT_IFF_SIMPLY_CONNECTED_COMPONENTS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A per-function version for continuous logs, a kind of monodromy.          *)
@@ -17199,7 +17241,7 @@ let MONODROMY_CONTINUOUS_LOG = prove
       REWRITE_TAC[COMPLEX_SUB_RZERO] THEN DISCH_THEN SUBST1_TAC THEN
       AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC CEXP_CLOG THEN
       ASM SET_TAC[]]] THEN
-  MATCH_MP_TAC CONTINUOUS_ON_COMPONENTS THEN
+  MATCH_MP_TAC CONTINUOUS_ON_COMPONENTS_OPEN THEN
   ASM_REWRITE_TAC[] THEN X_GEN_TAC `c:complex->bool` THEN DISCH_TAC THEN
   ABBREV_TAC `z0:complex = (@) c` THEN
   MATCH_MP_TAC CONTINUOUS_ON_EQ THEN
@@ -17260,7 +17302,7 @@ let MONODROMY_CONTINUOUS_LOG = prove
   REWRITE_TAC[CONTINUOUS_AT] THEN ONCE_REWRITE_TAC[LIM_NULL] THEN
   MATCH_MP_TAC LIM_TRANSFORM_AT THEN
   ONCE_REWRITE_TAC[DIST_SYM] THEN EXISTS_TAC
-   `\w. Cx (&2) * Cx pi * ii *
+   `\w. Cx(&2) * Cx pi * ii *
         winding_number((f:complex->complex) o linepath(z,w),Cx(&0))` THEN
   EXISTS_TAC `e:real` THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
    [X_GEN_TAC `w:complex` THEN STRIP_TAC THEN REMOVE_THEN "*"
