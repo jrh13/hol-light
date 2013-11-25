@@ -277,7 +277,9 @@
 (global-set-key '[f2 70]  '(lambda () (interactive) (insert " → ")))       ;; F2 F
 (global-set-key '[f2 80]  '(lambda () (interactive) (insert " ∏ ")))       ;; F2 P
 (global-set-key '[f2 79]  '(lambda () (interactive) (insert " ∘ ")))       ;; F2 O
-  
+(global-set-key '[f2 79]  '(lambda () (interactive) (insert " ∘ ")))       ;; F2 O
+(global-set-key '[f2 68]  '(lambda () (interactive) (insert " ◼ ")))       ;; F2 D
+
 
 ;; Two Emacs functions are useful in this context: 
 ;; (string-to-char "⇒") => 8658
@@ -308,4 +310,41 @@
 (setq mouse-drag-copy-region t)
 (setq x-select-enable-primary t)
 (setq x-select-enable-clipboard nil)
+
+
+(defun Region-interactive-goal (bottom top)
+  "writes to the file joe.ml the region encased in interactive_goal `; [...] `;; ."
+  (interactive "r")
+  (let ((rebuff (current-buffer)))
+    (save-window-excursion
+      (find-file "joe.ml")
+      (goto-char (point-min))
+      (delete-region (point-min) (point-max))
+      (insert-buffer-substring rebuff bottom top)
+      (goto-char (point-max))
+      (insert " `;;")
+      (goto-char (point-min))      
+      (insert "interactive_goal `; ")
+      (untabify (point-min) (point-max))
+      (copy-region-as-kill (point-min) (point-max))
+      (save-buffer)
+      (kill-buffer "joe.ml"))))
+
+(defun Region-interactive-proof (bottom top)
+  "writes to the file joe.ml the region encased in interactive_proof `; [...] `;; ."
+  (interactive "r")
+  (let ((rebuff (current-buffer)))
+    (save-window-excursion
+      (find-file "joe.ml")
+      (goto-char (point-min))
+      (delete-region (point-min) (point-max))
+      (insert-buffer-substring rebuff bottom top)
+      (goto-char (point-max))
+      (insert " `;;")
+      (goto-char (point-min))      
+      (insert "interactive_proof `; ")
+      (untabify (point-min) (point-max))
+      (copy-region-as-kill (point-min) (point-max))
+      (save-buffer)
+      (kill-buffer "joe.ml"))))
 

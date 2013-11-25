@@ -690,14 +690,16 @@ let NORM_TRIANGLE_LT = prove
   MESON_TAC[REAL_LET_TRANS; NORM_TRIANGLE]);;
 
 let COMPONENT_LE_NORM = prove
- (`!x:real^N i. 1 <= i /\  i <= dimindex(:N)
-                 ==> abs(x$i) <= norm x`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[vector_norm] THEN
+ (`!x:real^N i. abs(x$i) <= norm x`,
+  REPEAT GEN_TAC THEN SUBGOAL_THEN
+  `?k. 1 <= k /\ k <= dimindex(:N) /\ !x:real^N. x$i = x$k`
+  STRIP_ASSUME_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[vector_norm] THEN
   MATCH_MP_TAC REAL_LE_RSQRT THEN REWRITE_TAC[GSYM REAL_ABS_POW] THEN
   REWRITE_TAC[real_abs; REAL_POW_2; REAL_LE_SQUARE] THEN
   SUBGOAL_THEN
-   `x$i * (x:real^N)$i =
-     sum(1..dimindex(:N)) (\k. if k = i then x$i * x$i else &0)`
+   `x$k * (x:real^N)$k =
+     sum(1..dimindex(:N)) (\i. if i = k then x$k * x$k else &0)`
   SUBST1_TAC THENL
    [REWRITE_TAC[SUM_DELTA] THEN ASM_REWRITE_TAC[IN_NUMSEG]; ALL_TAC] THEN
   REWRITE_TAC[dot] THEN MATCH_MP_TAC SUM_LE THEN
@@ -6025,6 +6027,43 @@ let RANK_MUL_LE_LEFT = prove
   ONCE_REWRITE_TAC[GSYM RANK_TRANSP] THEN
   REWRITE_TAC[MATRIX_TRANSP_MUL] THEN
   REWRITE_TAC[RANK_MUL_LE_RIGHT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some bounds on components etc. relative to operator norm.                 *)
+(* ------------------------------------------------------------------------- *)
+
+let NORM_COLUMN_LE_ONORM = prove
+ (`!A:real^N^M i. norm(column i A) <= onorm(\x. A ** x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[column] THEN
+  SUBGOAL_THEN `?l. 1 <= l /\ l <= dimindex(:N) /\ !z:real^N. z$i = z$l`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  MP_TAC(ISPEC `\x:real^N. (A:real^N^M) ** x` ONORM) THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_LINEAR] THEN
+  DISCH_THEN(MP_TAC o SPEC `basis l:real^N` o CONJUNCT1) THEN
+  ASM_SIMP_TAC[MATRIX_VECTOR_MUL_BASIS; NORM_BASIS; column; REAL_MUL_RID]);;
+
+let MATRIX_COMPONENT_LE_ONORM = prove
+ (`!A:real^N^M i j. abs(A$i$j) <= onorm(\x. A ** x)`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?k. 1 <= k /\ k <= dimindex(:M) /\ !A:real^N^M. A$i = A$k`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  SUBGOAL_THEN `?l. 1 <= l /\ l <= dimindex(:N) /\ !z:real^N. z$j = z$l`
+  CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC `norm(column l (A:real^N^M))` THEN
+  REWRITE_TAC[NORM_COLUMN_LE_ONORM] THEN
+  MP_TAC(ISPECL [`column l (A:real^N^M)`; `k:num`]
+        COMPONENT_LE_NORM) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LE_TRANS) THEN
+  ASM_SIMP_TAC[column; LAMBDA_BETA; REAL_LE_REFL]);;
+
+let COMPONENT_LE_ONORM = prove
+ (`!f:real^M->real^N i j. linear f ==> abs(matrix f$i$j) <= onorm f`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV)
+        [MATCH_MP MATRIX_VECTOR_MUL th]) THEN
+  REWRITE_TAC[MATRIX_COMPONENT_LE_ONORM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic lemmas about hyperplanes and halfspaces.                            *)

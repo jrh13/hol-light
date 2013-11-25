@@ -123,7 +123,7 @@ interactive_proof `;
 thm_tactic MATCH_MP_TAC not followed by a theorem, but instead
  num_WF num_WF .                                                             *)
 
-let EXP_2_read = theorem `;
+let EXP_2 = theorem `;
   ∀n:num. n EXP 2 = n * n
   by REWRITE BIT0_THM BIT1_THM EXP EXP_ADD MULT_CLAUSES ADD_CLAUSES`;;
 
@@ -217,7 +217,7 @@ let binom = define
   (!k. binom(0,SUC(k)) = 0) /\
   (!n k. binom(SUC(n),SUC(k)) = binom(n,SUC(k)) + binom(n,k))`;;
 
-let BINOM_LT_read = theorem `;
+let BINOM_LT = theorem `;
   ∀n k. n < k  ⇒  binom(n,k) = 0
 
   proof
@@ -227,16 +227,16 @@ let BINOM_LT_read = theorem `;
   qed;
 `;;
 
-let BINOM_REFL_read = theorem `;
+let BINOM_REFL = theorem `;
   ∀n. binom(n,n) = 1
 
   proof
     INDUCT_TAC;
-    ASM_SIMP_TAC binom BINOM_LT_read LT ARITH;
+    ASM_SIMP_TAC binom BINOM_LT LT ARITH;
   qed;
 `;;
 
-let BINOMIAL_THEOREM_read = theorem `;
+let BINOMIAL_THEOREM = theorem `;
   ∀n. (x + y) EXP n = nsum(0..n) (\k. binom(n,k) * x EXP k * y EXP (n - k))
 
   proof
@@ -248,7 +248,7 @@ let BINOMIAL_THEOREM_read = theorem `;
     rewriteR ADD_SYM;
     rewriteRLDepth SUB_SUC EXP;
     rewrite MULT_AC EQ_ADD_LCANCEL MESON [binom] [1 = binom(n, 0)] GSYM Nsum0SUC;
-    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT_read MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
+    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
     simplify ARITH_RULE [k <= n  ⇒  SUC n - k = SUC(n - k)] EXP MULT_AC;
   qed;
 `;;
@@ -257,15 +257,15 @@ let BINOMIAL_THEOREM_read = theorem `;
   |- (!n. binom (n,0) = 1) /\
      (!k. binom (0,SUC k) = 0) /\
      (!n k. binom (SUC n,SUC k) = binom (n,SUC k) + binom (n,k))
-                val BINOM_LT_read : thm = |- !n k. n < k ==> binom (n,k) = 0
-                val BINOM_REFL_read : thm = |- !n. binom (n,n) = 1
+                val BINOM_LT : thm = |- !n k. n < k ==> binom (n,k) = 0
+                val BINOM_REFL : thm = |- !n. binom (n,n) = 1
                               0..0..1..2..solved at 6
-val BINOMIAL_THEOREM_read : thm =
+val BINOMIAL_THEOREM : thm =
   |- !n. (x + y) EXP n =
          nsum (0..n) (\k. binom (n,k) * x EXP k * y EXP (n - k))             *)
 
 
-let BINOM_LT_read = theorem `;
+let BINOM_LT = theorem `;
   ∀n k. n < k  ⇒  binom(n,k) = 0
 
   proof
@@ -280,7 +280,7 @@ term->thm ARITH_RULE not followed by term list, but instead
 n < k ==> n < SUC(k)] ARITH.                                                 *)
 
 
-let BINOM_LT_read = theorem `;
+let BINOM_LT = theorem `;
   ∀n k. n < k  ⇒  binom(n,k) = 0
 
   proof
@@ -295,7 +295,7 @@ term->thm ARITH_RULE not followed by length 1 term list, but instead the list
 [n < k; n < SUC(k)].                                                         *)
 
 
-let BINOM_LT_read = theorem `;
+let BINOM_LT = theorem `;
   ∀n k. n < k  ⇒  binom(n,k) = 0
 
   proof
@@ -310,7 +310,7 @@ term->thm ARITH_RULE not followed by length 1 term list, but instead
  [].                                                                         *)
 
 
-let BINOMIAL_THEOREM_read = theorem `;
+let BINOMIAL_THEOREM = theorem `;
   ∀n. (x + y) EXP n = nsum(0..n) (\k. binom(n,k) * x EXP k * y EXP (n - k))
 
   proof
@@ -322,7 +322,7 @@ let BINOMIAL_THEOREM_read = theorem `;
     rewriteR ADD_SYM;
     rewriteRLDepth SUB_SUC EXP;
     rewrite MULT_AC EQ_ADD_LCANCEL MESON binom] [1 = binom(n, 0)] GSYM Nsum0SUC;
-    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT_read MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
+    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
     simplify ARITH_RULE [k <= n  ⇒  SUC n - k = SUC(n - k)] EXP MULT_AC;
   qed;
 `;;
@@ -332,7 +332,7 @@ thmlist->term->thm MESON not followed by thm list in
  binom] [1 = binom(n, 0)] GSYM Nsum0SUC.                                     *)
 
 
-let BINOMIAL_THEOREM_read = theorem `;
+let BINOMIAL_THEOREM = theorem `;
   ∀n. (x + y) EXP n = nsum(0..n) (\k. binom(n,k) * x EXP k * y EXP (n - k))
 
   proof
@@ -344,7 +344,7 @@ let BINOMIAL_THEOREM_read = theorem `;
     rewriteR ADD_SYM;
     rewriteRLDepth SUB_SUC EXP;
     rewrite MULT_AC EQ_ADD_LCANCEL MESON [binom] 1 = binom(n, 0)] GSYM Nsum0SUC;
-    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT_read MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
+    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
     simplify ARITH_RULE [k <= n  ⇒  SUC n - k = SUC(n - k)] EXP MULT_AC;
   qed;
 `;;
