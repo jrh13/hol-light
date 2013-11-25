@@ -14,7 +14,7 @@ inverse_bug_puzzle_read.ml, which uses readable.ml, is a formalization
 partly due to John Harrison of a theorem due to Tom Hales explained at
 the end of sec 10.1 "The bug puzzle" of the HOL Light tutorial.
 
-thmFontHilbertAxiom.ml is a list, with mathematical characters, of the
+thmFontHilbertAxiom is a list, with mathematical characters, of the
 theorems and definitions of HilbertAxiom_read.ml.
 
 error-checking.ml shows the error messages displayed by readable.ml.

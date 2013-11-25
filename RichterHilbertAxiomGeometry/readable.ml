@@ -1,10 +1,20 @@
 (* ========================================================================= *)
-(* Miz3 interface for tactics proof, allowing readable formal proofs,        *)
-(* improving on miz3 mainly by allowing full use of REWRITE_TAC.             *)
+(*        Miz3 interface for readable HOL Light tactics formal proofs        *)
 (*                                                                           *)
 (*                (c) Copyright, Bill Richter 2013                           *)
 (*          Distributed under the same license as HOL Light                  *)
 (*                                                                           *)
+(* The primary meaning of readability is explained in the HOL Light tutorial *)
+(* on page 81 after the proof of NSQRT_2 (ported below),                     *)
+(* "We would like to claim that this proof can be read in isolation, without *)
+(* running it in HOL.  For each step, every fact we used is clearly labelled *)
+(* somewhere else in the proof, and every assumption is given explicitly."   *)
+(* However readability is often improved by using tactics constructs like    *)
+(* SIMP_TAC and MATCH_MP_TAC, which allow facts and assumptions to not be    *)
+(* given explicitly, so as to not lose sight of the proof.  Readability is   *)
+(* improved by a miz3 interface with few type annotations, back-quotes or    *)
+(* double-quotes, and allowing HOL4/Isabelle math characters, e.g.           *)
+(* ⇒ ⇔ ∧ ∨ ¬ ∀ ∃ ∈ ∉ α β γ λ θ μ ⊂ ∩ ∪ ∅ ━ ≡ ≅ ∡ ∥ ∏ ∘ → ◼.                  *)
 (* We use ideas for readable formal proofs due to John Harrison ("Towards    *)
 (* more readable proofs" of the tutorial and Examples/mizar.ml), Freek       *)
 (* Wiedijk (Mizarlight/miz2a.ml, miz3/miz3.ml and arxiv.org/pdf/1201.3601    *)
@@ -14,20 +24,15 @@
 (* Isabelle Light), Vincent Aravantinos (author of the Q-module              *)
 (* https://github.com/aravantv/HOL-Light-Q) and Mark Adams (author of HOL    *)
 (* Zero and Tactician).  These readability ideas yield miz3-type             *)
-(* "declarative" constructs like consider and case_split, and also a         *)
-(* miz3-type uncluttered interface, with few type annotations, backquotes or *)
-(* double quotes. Many math characters can be used, as in Isabelle and HOL4: *)
-(* ⇒ ⇔ ∧ ∨ ¬ ∀ ∃ ∈ ∉ α β γ λ θ μ ⊂ ∩ ∪ ∅ ━ ≡ ≅ ∡ ∥ ∏ ∘ →.               *)
-(* The semantics of readable.ml is clear from the obvious translation to HOL *)
-(* Light tactics proofs.  As in HOL Light, there is an interactive mode      *)
-(* which is similarly useful in writing and debugging proofs.                *)
+(* "declarative" constructs like consider and case_split.  The semantics of  *)
+(* readable.ml is clear from an obvious translation to HOL Light proofs.  An *)
+(* interactive mode is useful in writing, debugging and displaying proofs.   *)
 (*                                                                           *)
-(* The construct "case_split" reducing the goal to various cases, each given *)
-(* by a "suppose" clause.  The construct "proof" [...] "qed" allows          *)
-(* arbitrarily long proofs, which can be arbitrarily nested with other       *)
-(* case_split and proof/qed constructs.  THENL is not implemented, except    *)
-(* implicitly in case_split, to encourage readable proof, but it would be    *)
-(* easy to implement.  The lack of THENL requires adjustments, such as using *)
+(* The construct "case_split" reducing the goal to various cases given by    *)
+(* "suppose" clauses.  The construct "proof" [...] "qed" allows arbitrarily  *)
+(* long proofs, which can be arbitrarily nested with other case_split and    *)
+(* proof/qed constructs.  THENL is only implemented implicitly in case_split *)
+(* (also eq_tac and conj_tac), and this requires adjustments, such as using  *)
 (* MATCH_MP_TAC num_INDUCTION instead of INDUCT_TAC.                         *)
 (* ========================================================================= *)
 
@@ -55,7 +60,7 @@ let CleanMathFontsForHOL_Light s =
       "α","alpha"; "β","beta"; "γ","gamma"; "λ","\\ "; "θ","theta"; "μ","mu";
       "⊂","SUBSET"; "∩","INTER"; "∪","UNION"; "∅","{}"; "━","DELETE";
       "≡","==="; "≅","cong"; "∡","angle"; "∥","parallel";
-      "∏","prod"; "∘","_o_";"→","--->"];;
+      "∏","prod"; "∘","_o_";"→","--->"; "◼","DIFF"];;
 
 (* printReadExn prints uncluttered error messages via Readable_fail.  This   *)
 (* is due to Mark Adams, who also explained Roland Zumkeller's exec below.   *)
@@ -181,9 +186,18 @@ let subgoal_THEN stm ttac gl =
 (* intro_TAC is INTRO_TAC with the delimiter ";" replaced with",".           *)
 (* assume notalpha lab tac                                                   *)
 (* is the tactic which, when applied to goal gl = (asl, w), with tac a proof *)
-(* that w <=> x \/ y,  makes the goal y, with the string statement notalpha  *)
+(* that w <=> x ∨ y,  makes the goal y, with the string statement notalpha   *)
 (* turning into the statement ~x, using the goal gl, which is referred to by *)
 (* the nonempty label lab, both in the proof tac and in the new goal y.      *)
+(* eq_tac string tac                                                         *)
+(* requires the goal to be an iff statement of the form x ⇔ y and then       *)
+(* performs an EQ_TAC.  If string = "Right", then the tactic tac proves the  *)
+(* implication y ⇒ x, and the goal becomes the other implication x ⇒ y.      *)
+(* If string = "Left", then tac proves x ⇒ y and the goal becomes y ⇒ x.     *)
+(* conj_tac string tac                                                       *)
+(* requires the goal to be a conjunction statement x ∧ y and then performs a *)
+(* CONJ_TAC.  If string = "Left" then the tactic tac proves x, and the goal  *)
+(* becomes y.  If string = "Right", tac proves y and the new goal is x.      *)
 (* raa stm lab tac                                                           *)
 (* begins a proof by contradiction (reductio ad absurdum).  The string       *)
 (* statement stm is transformed into a statement x by subgoal_THEN, and tac  *)
@@ -226,6 +240,18 @@ let assume notalpha lab tac (asl, w as gl) =
 let raa stm lab tac = subgoal_THEN (stm ^ " ==> F") (LABEL_TAC lab) THENL
   [INTRO_TAC lab; tac];;
 
+let eq_tac string tac =
+  if string = "Right" then EQ_TAC THENL [ALL_TAC; tac]
+  else if string = "Left" then EQ_TAC THENL [tac; ALL_TAC]
+  else raise (Readable_fail
+    ("eq_tac requires " ^  string ^" to be either Left or Right"));;
+
+let conj_tac string tac =
+  if string = "Right" then CONJ_TAC THENL [ALL_TAC; tac]
+  else if string = "Left" then CONJ_TAC THENL [tac; ALL_TAC]
+  else raise (Readable_fail
+    ("conj_tac requires " ^  string ^" to be either Left or Right"));;
+
 let consider svars stm lab tac =
   subgoal_THEN ("?"^ svars ^ ". "^ stm)
     (DESTRUCT_TAC ("@"^ svars ^ "."^ lab)) THENL [tac; ALL_TAC];;
@@ -239,19 +265,17 @@ let case_split sDestruct tac listofDisj listofTac =
 
 (* Following the HOL Light tutorial section "Towards more readable proofs."  *)
 
-let arithmetic = ARITH_TAC;;
-let set_RULE = CONV_TAC SET_RULE;;
-let real_RING = CONV_TAC REAL_RING;;
 let fol = MESON_TAC;;
-let TACtoThmTactic tac = fun  ths -> MAP_EVERY MP_TAC ths THEN tac;;
-let NUM_RING_thmTAC = TACtoThmTactic (CONV_TAC NUM_RING);;
-let ARITH_thmTAC = TACtoThmTactic ARITH_TAC;;
-let REAL_ARITH_thmTAC = TACtoThmTactic REAL_ARITH_TAC;;
-let set = TACtoThmTactic set_RULE;;
 let rewrite = REWRITE_TAC;;
 let simplify = SIMP_TAC;;
+let set = SET_TAC;;
 let rewriteR = GEN_REWRITE_TAC (RAND_CONV);;
 let rewriteRLDepth = GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o DEPTH_CONV);;
+let TACtoThmTactic tac = fun  ths -> MAP_EVERY MP_TAC ths THEN tac;;
+let arithmetic = TACtoThmTactic ARITH_TAC;;
+let real_arithmetic = TACtoThmTactic REAL_ARITH_TAC;;
+let num_ring = TACtoThmTactic (CONV_TAC NUM_RING);;
+let real_ring = TACtoThmTactic (CONV_TAC REAL_RING);;
 
 let ws = "[ \t\n]+";;
 let ws0 = "[ \t\n]*";;
@@ -448,27 +472,28 @@ let CombThmlisttactic_Thmlist step =
 (* string into a tactic.  The allowable tactics are written in BNF form as   *)
 (*                                                                           *)
 (* Tactic := ALL_TAC | Tactic THEN Tactic | thm->tactic Thm |                *)
-(*   one-word-tactic (e.g. ARITH_TAC) | thmlist->tactic listof(Thm) |        *)
-(*   intro_TAC string | exists_TAC term | X_genl_TAC listof(term) |          *)
-(*   case_split string Tactic listof(statement) listof(Tactic) |             *)
-(*   consider listof(variable) statement label Tactic |                      *)
+(*   one-word-tactic (e.g. ARITH_TAC) | thmlist->tactic Thm-list |           *)
+(*   intro_TAC string | exists_TAC term | X_genl_TAC term-list |             *)
+(*   case_split string Tactic statement-list Tactic-list |                   *)
+(*   consider variable-list statement label Tactic |                         *)
+(*   eq_tac (Right | Left) Tactic | conj_tac (Right | Left) Tactic |         *)
 (*   (raa | assume | subgoal_TAC) statement label Tactic                     *)
 (*                                                                           *)
 (* Thm := theorem-name | label | - [i.e. last assumption] | thm->thm Thm |   *)
-(*   term->thm term | thmlist->term->thm listof(Thm) term |                  *)
-(*   term_list->thm->thm listof(term) Thm                                    *)
+(*   term->thm term | thmlist->term->thm Thm-list term |                     *)
+(*   term_list->thm->thm term-list Thm                                       *)
 (*                                                                           *)
 (* The string proofs allowed by StringToTactic are written in BNF form as    *)
 (*                                                                           *)
 (* Proof := Proof THEN Proof | case_split destruct_string ByProofQed         *)
 (*   suppose statement; Proof end; ... suppose statement; Proof end; |       *)
-(*   OneStepProof; | consider listof(variable) statement [label] ByProofQed |*)
-(*   statement [label] ByProofQed | raa statement [label] ByProofQed |       *)
-(*   assume statement [label] ByProofQed                                     *)
+(*   OneStepProof; | consider variable-list statement [label] ByProofQed |   *)
+(*   eq_tac [Right|Left] ByProofQed | conj_tac [Right|Left] ByProofQed |     *)
+(*   (raa | assume | ) statement [label] ByProofQed                          *)
 (*                                                                           *)
 (* OneStepProof := one-word-tactic | thm->tactic Thm | intro_TAC string |    *)
-(*   exists_TAC term-string | X_genl_TAC listof(variable-string) |           *)
-(*   thmlist->tactic listof(Thm)                                             *)
+(*   exists_TAC term-string | X_genl_TAC variable-string-list |              *)
+(*   thmlist->tactic Thm-list                                                *)
 (*                                                                           *)
 (* ByProofQed := by OneStepProof; | proof Proof Proof ...  Proof qed;        *)
 (*                                                                           *)
@@ -555,7 +580,12 @@ BigStepToTactic s step =
       and KeyWord = Str.matched_group 2 step
       and AfterWord = Str.string_after s (Str.group_end 2) in
       let (proof, rest) = GetProof KeyWord AfterWord in
-      if Str.string_match (Str.regexp (ws^ "\(raa\|assume\)" ^ws)) statement 0
+      if StringRegexpEqual (Str.regexp (ws^ "eq_tac")) statement
+      then (eq_tac lab proof, rest)
+      else if StringRegexpEqual (Str.regexp (ws^ "conj_tac")) statement
+      then (conj_tac lab proof, rest)
+      else if
+        Str.string_match (Str.regexp (ws^ "\(raa\|assume\)" ^ws)) statement 0
       then
         let statement = Str.string_after statement (Str.match_end()) in
         if Str.matched_group 1 step = "raa" then
@@ -595,20 +625,22 @@ let interactive_proof s =
   let proof = CleanMathFontsForHOL_Light s in
   e (StringToTactic proof);;
 
-(* The uncluttered interface is shown by a proof from the HOL Light tutorial *)
-(* section 14.1 "Choice and the select operator" and a proof from arith.ml.  *)
+(* Two examples illustrating intro_TAC, eq_tac, exists_TAC MP_TAC and SPECL, *)
+(* then a port of the HOL Light tutorial proof that sqrt 2 is irrational.    *)
 
-let AXIOM_OF_CHOICE_read = theorem `;
-  ∀P s. (∀x. x ∈ s ⇒ ∃y. P x y) ⇒ ∃f. ∀x. x ∈ s ⇒ P x (f x)
+let SKOLEM_THM_GEN = theorem `;
+  ∀P R. (∀x. P x ⇒ ∃y. R x y)  ⇔  ∃f. ∀x. P x ⇒ R x (f x)
 
   proof
-    intro_TAC ∀P s, H1;
-    exists_TAC λx. @y. P x y;
+    intro_TAC ∀P R;
+    eq_tac [Right]     by fol;
+    intro_TAC H1;
+    exists_TAC λx. @y. R x y;
     fol H1;
   qed;
 `;;
 
-let MOD_MOD_REFL_read = theorem `;
+let MOD_MOD_REFL = theorem `;
   ∀m n. ¬(n = 0)  ⇒  ((m MOD n) MOD n = m MOD n)
 
   proof
@@ -618,24 +650,24 @@ let MOD_MOD_REFL_read = theorem `;
   qed;
 `;;
 
-let NSQRT_2_read = theorem `;
+let NSQRT_2 = theorem `;
   ∀p q. p * p = 2 * q * q  ⇒  q = 0
 
   proof
     MATCH_MP_TAC num_WF;
     intro_TAC ∀p, A, ∀q, B;
     EVEN(p * p) ⇔ EVEN(2 * q * q)     [] by fol B;
-    EVEN(p)     [] by fol - ARITH EVEN_MULT;
+    EVEN(p)     [] by fol - EVEN_DOUBLE EVEN_MULT;
     consider m such that p = 2 * m     [C] by fol - EVEN_EXISTS;
     case_split qp | pq by arithmetic;
     suppose q < p;
       q * q = 2 * m * m ⇒ m = 0     [] by fol qp A;
-      NUM_RING_thmTAC - B C;
+      num_ring - B C;
     end;
     suppose      p <= q;
       p * p <= q * q     [] by fol - LE_MULT2;
-      q * q = 0     [] by ARITH_thmTAC - B;
-    NUM_RING_thmTAC -;
+      q * q = 0     [] by arithmetic - B;
+    num_ring -;
     end;
   qed;
 `;;
@@ -658,7 +690,7 @@ interactive_proof `;
       fol B;
 `;;
 interactive_proof `;
-    EVEN(p)     [] by fol - ARITH EVEN_MULT;
+    EVEN(p)     [] by fol - EVEN_DOUBLE EVEN_MULT;
     consider m such that p = 2 * m     [C] proof fol - EVEN_EXISTS; qed;
 `;;
 interactive_proof `;
@@ -670,18 +702,18 @@ interactive_proof `;
 `;;
 interactive_proof `;
       q * q = 2 * m * m ⇒ m = 0     [] by fol qp A;
-      NUM_RING_thmTAC - B C;
+      num_ring - B C;
 `;;
 interactive_proof `;
       p * p <= q * q     [] by fol - LE_MULT2;
-      q * q = 0     [] by ARITH_thmTAC - B;
-      NUM_RING_thmTAC -;
+      q * q = 0     [] by arithmetic - B;
+      num_ring -;
 `;;
-let NSQRT_2_read = top_thm();;
+let NSQRT_2 = top_thm();;
 
 (* An port from arith.ml uses by instead of proof...qed; in a short proof:   *)
 
-let EXP_2_read = theorem `;
+let EXP_2 = theorem `;
   ∀n:num. n EXP 2 = n * n
   by rewrite BIT0_THM BIT1_THM EXP EXP_ADD MULT_CLAUSES ADD_CLAUSES`;;
 
@@ -693,7 +725,7 @@ let binom = define
   (!k. binom(0,SUC(k)) = 0) /\
   (!n k. binom(SUC(n),SUC(k)) = binom(n,SUC(k)) + binom(n,k))`;;
 
-let BINOM_LT_read = theorem `;
+let BINOM_LT = theorem `;
   ∀n k. n < k  ⇒  binom(n,k) = 0
 
   proof
@@ -703,7 +735,7 @@ let BINOM_LT_read = theorem `;
   qed;
 `;;
 
-let BINOMIAL_THEOREM_read = theorem `;
+let BINOMIAL_THEOREM = theorem `;
   ∀n. (x + y) EXP n = nsum(0..n) (\k. binom(n,k) * x EXP k * y EXP (n - k))
 
   proof
@@ -715,7 +747,7 @@ let BINOMIAL_THEOREM_read = theorem `;
     rewriteR ADD_SYM;
     rewriteRLDepth SUB_SUC EXP;
     rewrite MULT_AC EQ_ADD_LCANCEL MESON [binom] [1 = binom(n, 0)] GSYM Nsum0SUC;
-    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT_read MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
+    simplify NSUM_CLAUSES_RIGHT ARITH_RULE [0 < SUC n  ∧  0 <= SUC n] LT BINOM_LT MULT_CLAUSES ADD_CLAUSES SUC_SUB1;
     simplify ARITH_RULE [k <= n  ⇒  SUC n - k = SUC(n - k)] EXP MULT_AC;
   qed;
 `;;

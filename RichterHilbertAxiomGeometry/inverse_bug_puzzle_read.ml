@@ -82,7 +82,7 @@ let collinearSymmetry = theorem `;
              collinear {B,C,A} ∧ collinear {C,A,B} ∧ collinear {C,B,A}
   proof
     {A,C,B} ⊂ {A,B,C} ∧  {B,A,C} ⊂ {A,B,C} ∧
-    {B,C,A} ⊂ {A,B,C} ∧  {C,A,B} ⊂ {A,B,C} ∧  {C,B,A} ⊂ {A,B,C}     [] by set_RULE;
+    {B,C,A} ⊂ {A,B,C} ∧  {C,A,B} ⊂ {A,B,C} ∧  {C,B,A} ⊂ {A,B,C}     [] by set;
     fol - COLLINEAR_SUBSET;
   qed;
 `;;
@@ -240,7 +240,7 @@ let ORIENTED_AREA_COLLINEAR_CONG = theorem `;
     oriented_area (A,B,C) = oriented_area (A',B',C')
     ⇒ (collinear {A,B,C} ⇔ collinear {A',B',C'})
   proof
-    rewrite COLLINEAR_3_2D oriented_area; real_RING;
+    rewrite COLLINEAR_3_2D oriented_area; real_ring;
   qed;
 `;;
 

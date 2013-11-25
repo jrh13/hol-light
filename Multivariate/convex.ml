@@ -2015,6 +2015,38 @@ let FINITE_BALL = prove
   REWRITE_TAC[OPEN_BALL; BALL_EQ_EMPTY] THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Minimal continua.                                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let MINIMAL_CONTINUUM = prove
+ (`!t s:real^N->bool.
+        t SUBSET s /\ compact s /\ connected s
+        ==> ?u. t SUBSET u /\ u SUBSET s /\ compact u /\ connected u /\
+                !v. v SUBSET u /\ t SUBSET v /\ compact v /\ connected v
+                    ==> v = u`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THENL
+   [EXISTS_TAC `{}:real^N->bool` THEN
+    ASM_MESON_TAC[COMPACT_EMPTY; CONNECTED_EMPTY; SUBSET_EMPTY; EMPTY_SUBSET];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`\u:real^N->bool. t SUBSET u /\ connected u`;
+                 `s:real^N->bool`]
+        BROUWER_REDUCTION_THEOREM) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN GEN_TAC THEN STRIP_TAC THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[SUBSET_INTERS] THEN ASM SET_TAC[];
+      MATCH_MP_TAC CONNECTED_NEST THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
+      ASM_REWRITE_TAC[] THEN SET_TAC[]];
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[SET_RULE `(v SUBSET u /\ p ==> v = u) <=>
+                          (v SUBSET u /\ p ==> ~(v PSUBSET u))`] THEN
+    GEN_TAC THEN STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED] THEN ASM SET_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Convex functions into the reals.                                          *)
 (* ------------------------------------------------------------------------- *)
 
@@ -11196,5 +11228,4 @@ let INTERIOR_STD_SIMPLEX = prove
       REWRITE_TAC[GSYM SUM_ADD_NUMSEG] THEN
       MATCH_MP_TAC SUM_LE_NUMSEG THEN REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
       MATCH_MP_TAC(REAL_ARITH `abs(y - x) <= z ==> x <= z + y`)] THEN
-    ASM_SIMP_TAC[GSYM VECTOR_SUB_COMPONENT; dist] THEN
-    MATCH_MP_TAC COMPONENT_LE_NORM THEN ASM_REWRITE_TAC[]]);;
+    ASM_SIMP_TAC[GSYM VECTOR_SUB_COMPONENT; dist; COMPONENT_LE_NORM]]);;

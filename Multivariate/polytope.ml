@@ -5643,7 +5643,7 @@ let CELL_COMPLEX_SUBDIVISION_EXISTS = prove
    (REAL_ARITH `a < x /\ x < b
                 ==> abs a <= c /\ abs b <= c ==> abs x <= c`)) THEN
   CONJ_TAC THEN
-  W(MP_TAC o PART_MATCH (lhand o rand) COMPONENT_LE_NORM o lhand o snd) THEN
+  W(MP_TAC o PART_MATCH lhand COMPONENT_LE_NORM o lhand o snd) THEN
   ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
   MATCH_MP_TAC REAL_LT_IMP_LE THEN FIRST_X_ASSUM MATCH_MP_TAC THEN

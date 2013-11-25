@@ -298,7 +298,7 @@ let DisjointOneNotOther = theorem `;
   ∀ l m. (∀ x:A. x ∈ m  ⇒ x ∉ l)  ⇔  l ∩ m = ∅
   proof
     rewrite ∉;
-    set_RULE;
+    SET_TAC;
   qed;
 `;;
 
@@ -307,7 +307,7 @@ let EquivIntersectionHelp = theorem `;
   (l ∩ m = {x}  ∨  m ∩ l = {x})  ∧  e ∈ m ━ x   ⇒  e ∉ l
   proof
     rewrite ∉;
-    set_RULE;
+    SET_TAC;
   qed;
 `;;
 
@@ -3412,7 +3412,7 @@ let EuclidPropositionI_13 = theorem `;
     case_split RightAOB | notRightAOB     by fol -;
     suppose Right (∡ A O B);
       Right (∡ B O A')  ∧  μ (∡ A O B) = &90  ∧  μ (∡ B O A') = &90     [] by fol H1 H2 - RightImpliesSupplRight AMb;
-      REAL_ARITH_thmTAC -;
+      real_arithmetic -;
     end;
     suppose ¬Right (∡ A O B);
       ¬(A = O) ∧ ¬(O = B)     [Distinct] by fol H1 NonCollinearImpliesDistinct;
@@ -3438,13 +3438,13 @@ let EuclidPropositionI_13 = theorem `;
         B ∈ int_angle E O A'     [] by fol H2 - InteriorReflectionInterior;
         μ (∡ A O B) = μ (∡ A O E) + μ (∡ E O B)  ∧
         μ (∡ E O A') = μ (∡ E O B) + μ (∡ B O A')     [] by fol EintAOB - AMd;
-        REAL_ARITH_thmTAC - RightEOA';
+        real_arithmetic - RightEOA';
       end;
       suppose B ∈ int_angle A O E;
         E ∈ int_angle B O A'     [] by fol H2 - InteriorReflectionInterior;
         μ (∡ A O E) = μ (∡ A O B) + μ (∡ B O E)  ∧
         μ (∡ B O A') = μ (∡ B O E) + μ (∡ E O A')     [] by fol BintAOE - AMd;
-        REAL_ARITH_thmTAC - RightEOA';
+        real_arithmetic - RightEOA';
       end;
     end;
   qed;
@@ -3464,7 +3464,7 @@ let TriangleSum = theorem `;
     μ (∡ A B F) = μ (∡ A B C) + μ (∡ C B F)     [μCintABF] by fol EBF AMd;
     μ (∡ E B A) + μ (∡ A B F) = &180     [suppl180] by fol EBAncol EBF EuclidPropositionI_13;
     μ (∡ C A B) = μ (∡ E B A)  ∧  μ (∡ B C A) = μ (∡ C B F)     [] by fol CABncol EBAncol CBFncol ANGLE EBF AMc;
-    REAL_ARITH_thmTAC suppl180 μCintABF -;
+    real_arithmetic suppl180 μCintABF -;
   qed;
 `;;
 
