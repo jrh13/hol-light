@@ -22,7 +22,7 @@ needs "RichterHilbertAxiomGeometry/readable.ml";;
 new_type_abbrev("triple",`:real^2#real^2#real^2`);;
 
 let VEC2_TAC =
-  simplify[CART_EQ; LAMBDA_BETA; FORALL_2; SUM_2; DIMINDEX_2; VECTOR_2;
+  SIMP_TAC[CART_EQ; LAMBDA_BETA; FORALL_2; SUM_2; DIMINDEX_2; VECTOR_2;
            vector_add; vec; dot; orthogonal; basis;
            vector_neg; vector_sub; vector_mul; ARITH] THEN
   CONV_TAC REAL_RING;;

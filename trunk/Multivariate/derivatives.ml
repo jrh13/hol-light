@@ -1699,6 +1699,118 @@ let HAS_DERIVATIVE_LOCALLY_INJECTIVE = prove
   ASM_SIMP_TAC[LINEAR_COMPOSE_NEG]);;
 
 (* ------------------------------------------------------------------------- *)
+(* More conventional "C1" version of inverse function theorem.               *)
+(* ------------------------------------------------------------------------- *)
+
+let INVERSE_FUNCTION_C1 = prove
+ (`!f:real^N->real^N f' a s.
+        a IN s /\ open s /\
+        (!x. x IN s ==> (f has_derivative f'(x)) (at x)) /\
+        (!e. &0 < e
+             ==> ?d. &0 < d /\
+                     !x. dist(a,x) < d ==> onorm(\v. f'(x) v - f'(a) v) < e) /\
+        ~(det(matrix(f' a)) = &0)
+        ==> ?t u g. open t /\ a IN t /\ open u /\ f(a) IN u /\
+                    (!x. x IN t ==> g(f(x)) = x) /\
+                    (!y. y IN u ==> f(g(y)) = y) /\
+                    g differentiable_on u`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(\x:real^N. lift(det(matrix(f' x:real^N->real^N)))) continuous at a`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_LIFT_DET THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC[continuous_at; DIST_LIFT] THEN
+    X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [open_def]) THEN
+    DISCH_THEN(MP_TAC o SPEC `a:real^N`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `k:real` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `min d k:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+    X_GEN_TAC `x:real^N` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[DIST_SYM]; ALL_TAC] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LET_TRANS) THEN
+    REWRITE_TAC[GSYM MATRIX_SUB_COMPONENT] THEN
+    W(MP_TAC o PART_MATCH lhand MATRIX_COMPONENT_LE_ONORM o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+    MATCH_MP_TAC REAL_EQ_IMP_LE THEN AP_TERM_TAC THEN ABS_TAC THEN
+    REWRITE_TAC[MATRIX_VECTOR_MUL_SUB_RDISTRIB] THEN BINOP_TAC THEN
+    MATCH_MP_TAC(REWRITE_RULE[RIGHT_IMP_FORALL_THM] MATRIX_WORKS) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[has_derivative]) THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?u. a IN u /\ open u /\
+        !x:real^N. x IN u ==> ~(det(matrix(f' x:real^N->real^N)) = &0)`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [continuous_at]) THEN
+    DISCH_THEN(MP_TAC o SPEC
+     `abs(det(matrix((f':real^N->real^N->real^N) a)))`) THEN
+    ASM_REWRITE_TAC[REAL_ARITH `&0 < abs x <=> ~(x = &0)`] THEN
+    REWRITE_TAC[DIST_LIFT; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `d:real` THEN STRIP_TAC THEN
+    EXISTS_TAC `ball(a:real^N,d)` THEN
+    ASM_REWRITE_TAC[DIST_REFL; OPEN_BALL; IN_BALL] THEN
+    ASM_MESON_TAC[DIST_SYM; REAL_ARITH `abs(x - y) < abs y ==> ~(x = &0)`];
+    ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM INVERTIBLE_DET_NZ]) THEN
+  SUBGOAL_THEN `!x. x IN s ==> linear((f':real^N->real^N->real^N) x)`
+  ASSUME_TAC THENL [ASM_MESON_TAC[has_derivative]; ALL_TAC] THEN
+  ASM_SIMP_TAC[MATRIX_INVERTIBLE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `g'a:real^N->real^N` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`f:real^N->real^N`; `f':real^N->real^N->real^N`;
+                 `g'a:real^N->real^N`; `s:real^N->bool`; `a:real^N`]
+        HAS_DERIVATIVE_LOCALLY_INJECTIVE) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `t:real^N->bool` THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  MP_TAC(ISPECL [`f:real^N->real^N`; `t:real^N->bool`]
+    INJECTIVE_ON_LEFT_INVERSE) THEN
+  MATCH_MP_TAC(TAUT `p /\ (q ==> r) ==> (p <=> q) ==> r`) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; MATCH_MP_TAC MONO_EXISTS] THEN
+  X_GEN_TAC `g:real^N->real^N` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+ SUBGOAL_THEN
+   `!x. x IN s INTER u
+        ==> ?g. linear g /\ (f':real^N->real^N->real^N) x o g = I /\
+                             g o f' x = I`
+  MP_TAC THENL
+   [ASM_SIMP_TAC[IN_INTER; GSYM MATRIX_INVERTIBLE; INVERTIBLE_DET_NZ];
+    GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `g':real^N->real^N->real^N` THEN STRIP_TAC THEN
+  EXISTS_TAC `interior (IMAGE (f:real^N->real^N) (s INTER t INTER u))` THEN
+  SIMP_TAC[OPEN_INTERIOR; DIFFERENTIABLE_ON_EQ_DIFFERENTIABLE_AT] THEN
+  CONJ_TAC THENL
+   [MP_TAC(ISPECL [`f:real^N->real^N`; `(f':real^N->real^N->real^N) a`;
+                   `g'a:real^N->real^N`; `s INTER t INTER u:real^N->bool`;
+                   `a:real^N`]
+        SUSSMANN_OPEN_MAPPING) THEN
+    ASM_SIMP_TAC[OPEN_INTER; IN_INTER] THEN ANTS_TAC THENL
+     [ASM_MESON_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_AT;
+                    CONTINUOUS_ON_EQ_CONTINUOUS_AT; OPEN_INTER;
+                    differentiable; SUBSET; IN_INTER];
+      DISCH_THEN MATCH_MP_TAC THEN CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+      ASM_SIMP_TAC[INTERIOR_OPEN; OPEN_INTER; IN_INTER]];
+    ALL_TAC] THEN
+  ONCE_REWRITE_TAC[MESON[SUBSET; INTERIOR_SUBSET]
+   `(!x. x IN interior s ==> P x) <=>
+    (!x. x IN s ==> x IN interior s ==> P x)`] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[IN_INTER]; ALL_TAC] THEN
+  X_GEN_TAC `x:real^N` THEN REWRITE_TAC[IN_INTER] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[differentiable] THEN
+  EXISTS_TAC `(g':real^N->real^N->real^N) x` THEN
+  MATCH_MP_TAC HAS_DERIVATIVE_INVERSE_STRONG THEN
+  EXISTS_TAC `(f':real^N->real^N->real^N) x` THEN
+  EXISTS_TAC `s INTER t INTER u:real^N->bool` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[IN_INTER]) THEN
+  ASM_SIMP_TAC[IN_INTER; OPEN_INTER] THEN
+  ASM_MESON_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_AT;
+                CONTINUOUS_ON_EQ_CONTINUOUS_AT; OPEN_INTER;
+                differentiable; SUBSET; IN_INTER]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Uniformly convergent sequence of derivatives.                             *)
 (* ------------------------------------------------------------------------- *)
 

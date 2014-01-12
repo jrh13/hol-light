@@ -157,7 +157,7 @@ let FUNCTION_EQ = theorem `;
   ∀α β. FUNCTION α  ∧  FUNCTION β  ∧  SOURCE α = SOURCE β  ∧
     FUN α = FUN β  ∧  TARGET α = TARGET β
     ⇒ α = β
-  by simplify FORALL_PAIR_THM FUNCTION SOURCE TARGET FUN PAIR FST SND`;;
+  by simplify FORALL_PAIR_THM FUNCTION SOURCE TARGET FUN PAIR_EQ`;;
 
 let IN_FunctionSpace = theorem `;
   ∀s t α. α ∈ s → t
@@ -184,7 +184,7 @@ let FunctionSpaceOnSource = theorem `;
     ⇒  ∀x. x ∈ s ⇒ f x ∈ t
 
   proof
-    rewrite FORALL_PAIR_THM IN_FunctionSpace FUNCTION SOURCE TARGET PAIR_EQ FUN FST SND;
+    rewrite FORALL_PAIR_THM IN_FunctionSpace FUNCTION SOURCE TARGET PAIR_EQ FUN;
     fol;     qed;
 `;;
 
@@ -193,7 +193,7 @@ let FunctionSpaceOnOffSource = theorem `;
     ⇒  (∀x. x ∈ s ⇒ f x ∈ t) ∧ ∀x. x ∉ s ⇒ f x = @y. T
 
   proof
-    rewrite FORALL_PAIR_THM IN_FunctionSpace FUNCTION SOURCE TARGET PAIR_EQ FUN FST SND;
+    rewrite FORALL_PAIR_THM IN_FunctionSpace FUNCTION SOURCE TARGET PAIR_EQ FUN;
     fol;     qed;
 `;;
 
@@ -202,15 +202,16 @@ let ImpliesTruncatedFunctionSpace = theorem `;
     ⇒ α ∈ s → t
 
   proof
-    rewrite FORALL_PAIR_THM IN_FunctionSpace makeFunction FUNCTION SOURCE TARGET NOTIN PAIR_EQ FST SND;
-    fol;     qed;
+    rewrite FORALL_PAIR_THM IN_FunctionSpace makeFunction FUNCTION SOURCE TARGET NOTIN PAIR_EQ;
+    fol;
+  qed;
 `;;
 
 let FunFunctionSpaceImplyFunction = theorem `;
   ∀α s t f.  α ∈ s → t  ∧  f = FUN α  ⇒  α = makeFunction t f s
 
   proof
-    rewrite FORALL_PAIR_THM IN_FunctionSpace makeFunction FUNCTION SOURCE TARGET FUN NOTIN PAIR_EQ FST SND;
+    rewrite FORALL_PAIR_THM IN_FunctionSpace makeFunction FUNCTION SOURCE TARGET FUN NOTIN PAIR_EQ;
     fol FUN_EQ_THM;
   qed;
 `;;
@@ -250,7 +251,7 @@ let UniversalPropertyProduct = theorem `;
     ∀x. x ∈ M  ⇒  h x ∈ A ∏ B     [hProd] by fol hExists IN_CartesianProduct H1 fgExist FunctionSpaceOnSource;
     consider γ such that γ = makeFunction (A ∏ B) h  M     [γExists] by fol;
     γ ∈ M → A ∏ B     [γFunSpace] by fol - hProd ImpliesTruncatedFunctionSpace;
-    ∀x. x ∈ M  ⇒  (FST o h) x = f x  ∧  (SND o h) x = g x     [h_fg] by simplify hExists FST SND PAIR_EQ o_THM;
+    ∀x. x ∈ M  ⇒  (FST o h) x = f x  ∧  (SND o h) x = g x     [h_fg] by simplify hExists PAIR o_THM;
     Pi1 A B ∘ γ = makeFunction A (FST o h) M  ∧
     Pi2 A B ∘ γ = makeFunction B (SND o h) M     [] by fol Projection1Function Projection2Function γExists  γFunSpace UseFunctionComposition;
     Pi1 A B ∘ γ = α  ∧  Pi2 A B ∘ γ = β     [γWorks] by fol - h_fg makeFunction_EQ H1 fgExist FunFunctionSpaceImplyFunction;

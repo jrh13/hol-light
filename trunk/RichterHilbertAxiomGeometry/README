@@ -14,16 +14,20 @@ inverse_bug_puzzle_read.ml, which uses readable.ml, is a formalization
 partly due to John Harrison of a theorem due to Tom Hales explained at
 the end of sec 10.1 "The bug puzzle" of the HOL Light tutorial.
 
-thmFontHilbertAxiom is a list, with mathematical characters, of the
-theorems and definitions of HilbertAxiom_read.ml.
+thmFontHilbertAxiom is a list of the theorems of HilbertAxiom_read.ml.
 
 error-checking.ml shows the error messages displayed by readable.ml.
 
 UniversalPropCartProd.ml defines FunctionSpace and FunctionComposition
 so that Cartesian product satisfies the usual universal property.
 
-Topology.ml is an in-progress readable.ml port of the point-set topology in
-Multivariate/topology.ml.
+Topology.ml is an in-progress readable.ml port of the point-set
+topology in Multivariate/topology.ml.
+
+thmTopology is a list of the theorems of Topology.ml.
+
+from_topology.ml is the subset of Multivariate/topology.ml not
+ported/modified in Topology.ml, which runs after loading Topology.ml.
 
 miz3 contains the original miz3 version of HilbertAxiom_read.ml, an
 emacs file for handling math characters and some miz3 documentation.

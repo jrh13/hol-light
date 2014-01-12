@@ -435,6 +435,105 @@ let LIM_IM_LBOUND = prove
   ASM_REWRITE_TAC[DIMINDEX_2; ARITH]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Case analysis for limit of reciprocal of a function. This can be true     *)
+(* degenerately, and it's a bit tiresome to show otherwise that it means     *)
+(* what you expect.                                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let LIM_COMPLEX_INV_NONDEGENERATE = prove
+ (`!f:real^N->complex s a l.
+        2 <= dimindex(:N) /\
+        a IN s /\ open s /\
+        f continuous_on (s DELETE a) /\
+        ((inv o f) --> l) (at a)
+        ==> ?t. open t /\ t SUBSET s /\
+                ((!x. x IN t DELETE a ==> f x = Cx(&0)) /\ l = Cx(&0) \/
+                 (!x. x IN t DELETE a ==> ~(f x = Cx(&0))))`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC
+   `!e. &0 < e ==> ?z:real^N. norm(z - a) < e /\ ~(z = a) /\ f(z) = Cx(&0)`
+  THENL
+   [ALL_TAC;
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
+    REWRITE_TAC[NOT_IMP; NOT_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[TAUT `~(a /\ b) <=> a ==> ~b`] THEN
+    X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+    EXISTS_TAC `s INTER ball(a:real^N,e)` THEN
+    ASM_SIMP_TAC[INTER_SUBSET; OPEN_INTER; OPEN_BALL] THEN DISJ2_TAC THEN
+    REWRITE_TAC[IN_DELETE; IN_INTER; IN_BALL; dist] THEN
+    ASM_MESON_TAC[NORM_SUB]] THEN
+  SUBGOAL_THEN `l = Cx(&0)` SUBST_ALL_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_AT]) THEN
+    ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
+    DISCH_THEN(MP_TAC o SPEC `norm(l:complex)`) THEN
+    ASM_SIMP_TAC[COMPLEX_NORM_NZ; dist] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `d:real`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `z:real^N` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `z:real^N`) THEN
+    ASM_REWRITE_TAC[NORM_POS_LT; o_THM; VECTOR_SUB_EQ; COMPLEX_INV_0] THEN
+    REWRITE_TAC[COMPLEX_SUB_LZERO; NORM_NEG; REAL_LT_REFL];
+    REWRITE_TAC[]] THEN
+  SUBGOAL_THEN
+   `?e. &0 < e /\
+        !z:real^N. norm(z - a) < e /\ ~(z = a)
+                   ==> z IN s /\ (f z = Cx(&0) \/ norm(f z) >= &1)`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_AT]) THEN
+    DISCH_THEN(MP_TAC o SPEC `&1`) THEN REWRITE_TAC[REAL_LT_01] THEN
+    REWRITE_TAC[o_THM; VECTOR_SUB_EQ; dist; COMPLEX_SUB_RZERO] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [open_def]) THEN
+    DISCH_THEN(MP_TAC o SPEC `a:real^N`) THEN ASM_REWRITE_TAC[dist] THEN
+    DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `min d e:real` THEN ASM_SIMP_TAC[REAL_LT_MIN] THEN
+    X_GEN_TAC `z:real^N` THEN DISCH_TAC THEN
+    REWRITE_TAC[TAUT `p \/ q <=> ~p ==> q`] THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `z:real^N`)) THEN
+    ASM_REWRITE_TAC[NORM_POS_LT; VECTOR_SUB_EQ] THEN REPEAT DISCH_TAC THEN
+    SUBST1_TAC(REAL_ARITH `&1 = inv(&1)`) THEN REWRITE_TAC[real_ge] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM REAL_INV_INV] THEN
+    MATCH_MP_TAC REAL_LE_INV2 THEN
+    ASM_SIMP_TAC[GSYM COMPLEX_NORM_INV; REAL_LT_IMP_LE] THEN
+    ASM_REWRITE_TAC[NORM_POS_LT; COMPLEX_INV_EQ_0; COMPLEX_VEC_0];
+    ALL_TAC] THEN
+  EXISTS_TAC `ball(a:real^N,e)` THEN
+  ASM_REWRITE_TAC[OPEN_BALL; SUBSET; IN_DELETE; IN_BALL; dist] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[NORM_SUB]; DISJ1_TAC] THEN
+  X_GEN_TAC `z:real^N` THEN STRIP_TAC THEN
+  ASM_CASES_TAC `f(z:real^N) = Cx(&0)` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `w:real^N` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `connected (IMAGE (lift o norm o (f:real^N->complex)) (ball(a,e) DELETE a))`
+  MP_TAC THENL
+   [MATCH_MP_TAC CONNECTED_CONTINUOUS_IMAGE THEN
+    ASM_SIMP_TAC[CONNECTED_PUNCTURED_BALL; o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_LIFT_NORM_COMPOSE THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+      CONTINUOUS_ON_SUBSET)) THEN
+    REWRITE_TAC[SUBSET; IN_DELETE; IN_BALL; dist] THEN
+    ASM_MESON_TAC[NORM_SUB];
+    REWRITE_TAC[GSYM IS_INTERVAL_CONNECTED_1]] THEN
+  REWRITE_TAC[IS_INTERVAL_1; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; IN_DELETE; IN_BALL; dist] THEN
+  DISCH_THEN(MP_TAC o SPEC `w:real^N`) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[NORM_SUB]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `z:real^N`) THEN
+  ASM_REWRITE_TAC[o_THM; LIFT_DROP; COMPLEX_NORM_0] THEN
+  DISCH_THEN(MP_TAC o SPEC `lift(&1 / &2)`) THEN
+  ASM_REWRITE_TAC[LIFT_DROP; NOT_IMP] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN CONJ_TAC THENL
+   [MATCH_MP_TAC(REAL_ARITH `x >= &1 ==> &1 / &2 <= x`) THEN
+    ASM_MESON_TAC[NORM_SUB];
+    REWRITE_TAC[IN_IMAGE; o_THM; LIFT_EQ; IN_BALL; IN_DELETE; dist] THEN
+    DISCH_THEN(X_CHOOSE_THEN `x:real^N` (STRIP_ASSUME_TAC o GSYM)) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+    ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[NORM_SUB] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(SUBST_ALL_TAC o CONJUNCT2) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[COMPLEX_NORM_0]) THEN ASM_REAL_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Left and right multiplication of series.                                  *)
 (* ------------------------------------------------------------------------- *)
 

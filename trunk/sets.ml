@@ -226,6 +226,18 @@ let EXISTS_IN_INSERT = prove
  (`!P a s. (?x. x IN (a INSERT s) /\ P x) <=> P a \/ ?x. x IN s /\ P x`,
   REWRITE_TAC[IN_INSERT] THEN MESON_TAC[]);;
 
+let FORALL_IN_UNION = prove
+ (`!P s t:A->bool.
+        (!x. x IN s UNION t ==> P x) <=>
+        (!x. x IN s ==> P x) /\ (!x. x IN t ==> P x)`,
+  REWRITE_TAC[IN_UNION] THEN MESON_TAC[]);;
+
+let EXISTS_IN_UNION = prove
+ (`!P s t:A->bool.
+        (?x. x IN s UNION t /\ P x) <=>
+        (?x. x IN s /\ P x) \/ (?x. x IN t /\ P x)`,
+  REWRITE_TAC[IN_UNION] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Basic property of the choice function.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -2533,6 +2545,21 @@ let SET_OF_LIST_EQ_EMPTY = prove
  (`!l. set_of_list l = {} <=> l = []`,
   LIST_INDUCT_TAC THEN
   REWRITE_TAC[set_of_list; NOT_CONS_NIL; NOT_INSERT_EMPTY]);;
+
+let LIST_OF_SET_EMPTY = prove
+ (`list_of_set {} = []`,
+  REWRITE_TAC[GSYM LENGTH_EQ_NIL] THEN
+  SIMP_TAC[LENGTH_LIST_OF_SET; FINITE_EMPTY; CARD_CLAUSES]);;
+
+let LIST_OF_SET_SING = prove
+ (`!x:A. list_of_set {a} = [a]`,
+  GEN_TAC THEN REWRITE_TAC[list_of_set] THEN
+  MATCH_MP_TAC SELECT_UNIQUE THEN
+  MATCH_MP_TAC list_INDUCT THEN REWRITE_TAC[NOT_CONS_NIL] THEN
+  SIMP_TAC[LENGTH; CARD_CLAUSES; FINITE_EMPTY; NOT_IN_EMPTY; NOT_SUC] THEN
+  GEN_TAC THEN LIST_INDUCT_TAC THEN DISCH_THEN(K ALL_TAC) THEN
+  SIMP_TAC[LENGTH; set_of_list; CONS_11; SUC_INJ; NOT_CONS_NIL; NOT_SUC] THEN
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Mappings from finite set enumerations to lists (no "setification").       *)

@@ -26,7 +26,9 @@ let s = "123456[abc]lmn[op[a; b; c]pq]rs[];xyz" in
 let s = "123456[abc]lmn[op[a; b; c]pq]rs![]xyz" in
   Str.string_before s (FindSemicolon s);;
 
-(*   Exception: No final semicolon in 123456[abc]lmn[op[a; b; c]pq]rs![]xyz. *)
+(* val it : string = "123456[abc]lmn[op[a; b; c]pq]rs[]"
+
+  Exception: No final semicolon in 123456[abc]lmn[op[a; b; c]pq]rs![]xyz. *)
 
 let MOD_MOD_REFL = theorem `;
   ∀m n. ¬(n = 0)  ⇒  ((m MOD n) MOD n = m MOD n)
@@ -67,7 +69,7 @@ let MOD_MOD_REFL = theorem `;
 `;;
 
 (*                Exception: Not a theorem:
- ISPECL [m; n; 1] mod_mod.                                      *)
+ mod_mod.								     *)
 
 
 let MOD_MOD_REFL = theorem `;
@@ -306,7 +308,7 @@ let BINOM_LT = theorem `;
 `;;
 
 (*                   Exception:
-term->thm ARITH_RULE not followed by length 1 term list, but instead
+term->thm ARITH_RULE not followed by length 1 term list, but instead the list
  [].                                                                         *)
 
 

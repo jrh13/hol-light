@@ -18,11 +18,14 @@ set -e
 
 if which hol-light > /dev/null ; then
     hollight=hol-light
-else
-    # Make sure we have an up-to-date hol, and Mizar Light extensions
-    make hol
+elif type ckpt > /dev/null; then
+    make clean; make hol
     (cd Mizarlight; make clean; make)
     hollight=./hol
+else
+    make clean; make
+    (cd Mizarlight; make clean; make)
+    hollight="ocaml -init hol.ml"
 fi
 
 # Standalone examples

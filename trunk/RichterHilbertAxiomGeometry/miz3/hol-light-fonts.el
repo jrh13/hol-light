@@ -64,7 +64,7 @@
     (while (search-forward " IN " nil t)
       (replace-match " ∈ " nil t))
     (goto-char (point-min))
-    (while (search-forward " DELETE " nil t)
+    (while (search-forward " DIFF " nil t)
       (replace-match " ━ " nil t))
     (goto-char (point-min))
     (while (search-forward "alpha" nil t)
@@ -112,8 +112,6 @@
     (while (search-forward " _o_ " nil t)
       (replace-match " ∘ " nil t))
     (goto-char start)))
-
-
 
 (defun Remove-math-fonts-for-HOL-Light ()
   "replace mathematical characters (∀, ∃, ∩,...) with HOL Light expressions (!, ?, INTER,...)."
@@ -164,7 +162,7 @@
     (replace-match " IN " nil t))
   (goto-char (point-min))
   (while (search-forward " ━ " nil t)
-    (replace-match " DELETE " nil t))
+    (replace-match " DIFF " nil t))
   (goto-char (point-min))
   (while (search-forward " ╪ " nil t)
     (replace-match " INSERT " nil t))
@@ -214,8 +212,6 @@
     (while (search-forward " ∘ " nil t)
       (replace-match " _o_ " nil t))
   (goto-char (point-min)))
-
-
 
 (defun Region-math-fonts-removed-for-HOL-Light (bottom top)
   "writes the file joe.ml in which the mathematical characters (∀, ∃, ∩,...) of the region of this file are replaced by HOL Light expressions (!, ?, INTER,...), and makes joe.ml the X-selection."
@@ -280,7 +276,6 @@
 (global-set-key '[f2 79]  '(lambda () (interactive) (insert " ∘ ")))       ;; F2 O
 (global-set-key '[f2 68]  '(lambda () (interactive) (insert " ◼ ")))       ;; F2 D
 
-
 ;; Two Emacs functions are useful in this context: 
 ;; (string-to-char "⇒") => 8658
 ;; (char-to-string 8660) => "⇔"
@@ -310,41 +305,3 @@
 (setq mouse-drag-copy-region t)
 (setq x-select-enable-primary t)
 (setq x-select-enable-clipboard nil)
-
-
-(defun Region-interactive-goal (bottom top)
-  "writes to the file joe.ml the region encased in interactive_goal `; [...] `;; ."
-  (interactive "r")
-  (let ((rebuff (current-buffer)))
-    (save-window-excursion
-      (find-file "joe.ml")
-      (goto-char (point-min))
-      (delete-region (point-min) (point-max))
-      (insert-buffer-substring rebuff bottom top)
-      (goto-char (point-max))
-      (insert " `;;")
-      (goto-char (point-min))      
-      (insert "interactive_goal `; ")
-      (untabify (point-min) (point-max))
-      (copy-region-as-kill (point-min) (point-max))
-      (save-buffer)
-      (kill-buffer "joe.ml"))))
-
-(defun Region-interactive-proof (bottom top)
-  "writes to the file joe.ml the region encased in interactive_proof `; [...] `;; ."
-  (interactive "r")
-  (let ((rebuff (current-buffer)))
-    (save-window-excursion
-      (find-file "joe.ml")
-      (goto-char (point-min))
-      (delete-region (point-min) (point-max))
-      (insert-buffer-substring rebuff bottom top)
-      (goto-char (point-max))
-      (insert " `;;")
-      (goto-char (point-min))      
-      (insert "interactive_proof `; ")
-      (untabify (point-min) (point-max))
-      (copy-region-as-kill (point-min) (point-max))
-      (save-buffer)
-      (kill-buffer "joe.ml"))))
-

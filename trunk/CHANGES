@@ -1,3 +1,57 @@
+Thu  9th Jan 2014       class.ml, sets.ml
+
+Added a few theorems, two trivial but useful decomposition theorems for
+quantifiers over set unions, and two forms of the Axiom of Dependent Choice.
+These are a bit gratuitously overparameterized by "n", but this gives wider
+applicability and still works in the standard unparameterized case.
+
+FORALL_IN_UNION =
+  |- !P s t.
+         (!x. x IN s UNION t ==> P x) <=>
+         (!x. x IN s ==> P x) /\ (!x. x IN t ==> P x)
+
+EXISTS_IN_UNION =
+  |- !P s t.
+         (?x. x IN s UNION t /\ P x) <=>
+         (?x. x IN s /\ P x) \/ (?x. x IN t /\ P x)
+
+DEPENDENT_CHOICE_FIXED =
+  |- !P R a.
+         P 0 a /\ (!n x. P n x ==> (?y. P (SUC n) y /\ R n x y))
+         ==> ?f. f 0 = a /\ (!n. P n (f n)) /\ (!n. R n (f n) (f (SUC n)))
+
+DEPENDENT_CHOICE =
+  |- !P R.
+         (?a. P 0 a) /\ (!n x. P n x ==> (?y. P (SUC n) y /\ R n x y))
+         ==> ?f. (!n. P n (f n)) /\ (!n. R n (f n) (f (SUC n)))
+
+Mon  6th Jan 2014       holtest, holtest.mk [new file], holtest_parallel [new file]
+
+Added a new parallel version of holtest from Hendrik Tews, which is able to
+distribute tests over available processors/threads and is in general quite a
+bit faster. Also unified this and the old serial "holtest" over what to use as
+the HOL image: just use "hol-light" if it exists; make a "hol" executable if
+ckpt is available, otherwise just use ocaml directly.
+
+Fri  3rd Jan 2014       sets.ml, Permutation/morelist.ml
+
+Added a couple of simple lemmas about "list_of_set", for the simple case where
+there is no question about ordering:
+
+        LIST_OF_SET_EMPTY = |- list_of_set {} = []
+
+        LIST_OF_SET_SING = |- !x. list_of_set {a} = [a]
+
+and a couple more related theorems in the Permutations library:
+
+        LIST_UNIQ_APPEND =
+          |- !l m.
+                 LIST_UNIQ (APPEND l m) <=>
+                 LIST_UNIQ l /\ LIST_UNIQ m /\ (!x. ~(MEM x l /\ MEM x m))
+
+        LIST_UNIQ_LIST_OF_SET =
+           |- !s. FINITE s ==> LIST_UNIQ (list_of_set s)
+
 Sun 27th Oct 2013       class.ml
 
 Added a slightly more refined variant of SKOLEM_THM:
