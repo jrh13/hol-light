@@ -14,7 +14,7 @@
 (* given explicitly, so as to not lose sight of the proof.  Readability is   *)
 (* improved by a miz3 interface with few type annotations, back-quotes or    *)
 (* double-quotes, and allowing HOL4/Isabelle math characters, e.g.           *)
-(* ⇒ ⇔ ∧ ∨ ¬ ∀ ∃ ∈ ∉ α β γ λ θ μ ⊂ ∩ ∪ ∅ ━ ≡ ≅ ∡ ∥ ∏ ∘ → ◼.                  *)
+(* ⇒ ⇔ ∧ ∨ ¬ ∀ ∃ ∈ ∉ α β γ λ θ μ ⊂ ∩ ∪ ∅ ━ ≡ ≅ ∡ ∥ ∏ ∘ →.                    *)
 (* We use ideas for readable formal proofs due to John Harrison ("Towards    *)
 (* more readable proofs" of the tutorial and Examples/mizar.ml), Freek       *)
 (* Wiedijk (Mizarlight/miz2a.ml, miz3/miz3.ml and arxiv.org/pdf/1201.3601    *)
@@ -58,9 +58,9 @@ let CleanMathFontsForHOL_Light s =
       clean s ["⇒","==>"; "⇔","<=>"; "∧","/\\ "; "∨","\\/"; "¬","~";
       "∀","!"; "∃","?"; "∈","IN"; "∉","NOTIN";
       "α","alpha"; "β","beta"; "γ","gamma"; "λ","\\ "; "θ","theta"; "μ","mu";
-      "⊂","SUBSET"; "∩","INTER"; "∪","UNION"; "∅","{}"; "━","DELETE";
+      "⊂","SUBSET"; "∩","INTER"; "∪","UNION"; "∅","{}"; "━","DIFF";
       "≡","==="; "≅","cong"; "∡","angle"; "∥","parallel";
-      "∏","prod"; "∘","_o_";"→","--->"; "◼","DIFF"];;
+      "∏","prod"; "∘","_o_";"→","--->"];;
 
 (* printReadExn prints uncluttered error messages via Readable_fail.  This   *)
 (* is due to Mark Adams, who also explained Roland Zumkeller's exec below.   *)
@@ -270,6 +270,8 @@ let rewrite = REWRITE_TAC;;
 let simplify = SIMP_TAC;;
 let set = SET_TAC;;
 let rewriteR = GEN_REWRITE_TAC (RAND_CONV);;
+let rewriteL = GEN_REWRITE_TAC (LAND_CONV);;
+let rewriteI = GEN_REWRITE_TAC I;;
 let rewriteRLDepth = GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o DEPTH_CONV);;
 let TACtoThmTactic tac = fun  ths -> MAP_EVERY MP_TAC ths THEN tac;;
 let arithmetic = TACtoThmTactic ARITH_TAC;;
@@ -633,7 +635,7 @@ let SKOLEM_THM_GEN = theorem `;
 
   proof
     intro_TAC ∀P R;
-    eq_tac [Right]     by fol;
+    eq_tac     [Right] by fol;
     intro_TAC H1;
     exists_TAC λx. @y. R x y;
     fol H1;
@@ -664,7 +666,7 @@ let NSQRT_2 = theorem `;
       q * q = 2 * m * m ⇒ m = 0     [] by fol qp A;
       num_ring - B C;
     end;
-    suppose      p <= q;
+    suppose p <= q;
       p * p <= q * q     [] by fol - LE_MULT2;
       q * q = 0     [] by arithmetic - B;
     num_ring -;
@@ -697,7 +699,7 @@ interactive_proof `;
     case_split qp | pq by arithmetic;
     suppose q < p;
     end;
-    suppose      p <= q;
+    suppose p <= q;
     end;
 `;;
 interactive_proof `;

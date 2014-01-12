@@ -1525,3 +1525,25 @@ let TRANSITIVE_STEPWISE_LE = prove
   REPEAT GEN_TAC THEN MATCH_MP_TAC(TAUT
    `(a /\ a' ==> (c <=> b)) ==> a /\ a' /\ b ==> c`) THEN
   MATCH_ACCEPT_TAC TRANSITIVE_STEPWISE_LE_EQ);;
+
+(* ------------------------------------------------------------------------- *)
+(* A couple of forms of Dependent Choice.                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let DEPENDENT_CHOICE_FIXED = prove
+ (`!P R a:A.
+        P 0 a /\ (!n x. P n x ==> ?y. P (SUC n) y /\ R n x y)
+        ==> ?f. f 0 = a /\ (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))`,
+  REPEAT STRIP_TAC THEN
+  (MP_TAC o prove_recursive_functions_exist num_RECURSION)
+    `f 0 = (a:A) /\ (!n. f(SUC n) = @y. P (SUC n) y /\ R n (f n) y)` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC LAND_CONV
+   [MESON[num_CASES] `(!n. P n) <=> P 0 /\ !n. P(SUC n)`] THEN
+  ASM_REWRITE_TAC[AND_FORALL_THM] THEN INDUCT_TAC THEN ASM_MESON_TAC[]);;
+
+let DEPENDENT_CHOICE = prove
+ (`!P R:num->A->A->bool.
+        (?a. P 0 a) /\ (!n x. P n x ==> ?y. P (SUC n) y /\ R n x y)
+        ==> ?f. (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))`,
+  MESON_TAC[DEPENDENT_CHOICE_FIXED]);;

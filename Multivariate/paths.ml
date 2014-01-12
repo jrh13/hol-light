@@ -3551,6 +3551,29 @@ let UNCOUNTABLE_HAS_CONDENSATION_POINT = prove
  (`!s:real^N->bool. ~COUNTABLE s ==> ?x. x condensation_point_of s`,
   REWRITE_TAC[GSYM CONDENSATION_POINTS_EQ_EMPTY] THEN SET_TAC[]);;
 
+let CARD_EQ_PERFECT_SET = prove
+ (`!s:real^N->bool.
+        closed s /\ (!x. x IN s ==> x limit_point_of s) /\ ~(s = {})
+        ==> s =_c (:real)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(DISJ_CASES_TAC o MATCH_MP CARD_EQ_CLOSED) THEN
+  ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[GSYM COUNTABLE; GSYM ge_c]) THEN
+  MP_TAC(ISPECL [`IMAGE (\x:real^N. s DELETE x) s`; `s:real^N->bool`]
+    BAIRE) THEN ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+  SIMP_TAC[OPEN_IN_DELETE; OPEN_IN_REFL] THEN
+  MATCH_MP_TAC(TAUT `p /\ ~q ==> (p ==> q) ==> r`) THEN CONJ_TAC THENL
+   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    GEN_REWRITE_TAC I [SUBSET] THEN X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+    ASM_CASES_TAC `x:real^N = y` THEN
+    ASM_SIMP_TAC[IN_CLOSURE_DELETE] THEN
+    MATCH_MP_TAC(REWRITE_RULE[SUBSET] CLOSURE_SUBSET) THEN
+    ASM_REWRITE_TAC[IN_DELETE];
+    REWRITE_TAC[INTERS_IMAGE; IN_DELETE] THEN
+    SUBGOAL_THEN `{y:real^N | !x. x IN s ==> y IN s /\ ~(y = x)} = {}`
+    SUBST1_TAC THENL
+     [ASM SET_TAC[]; ASM_REWRITE_TAC[CLOSURE_EMPTY; SUBSET_EMPTY]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Density of sets with small complement, including irrationals.             *)
 (* ------------------------------------------------------------------------- *)

@@ -216,6 +216,13 @@ let DELETE1_LIST_UNIQ = prove
     FIRST_X_ASSUM MATCH_MP_TAC THEN EXISTS_TAC `x:A` THEN
     ASM_REWRITE_TAC []]);;
 
+let LIST_UNIQ_APPEND = prove
+ (`!l m. LIST_UNIQ (APPEND l m) <=>
+         LIST_UNIQ l /\ LIST_UNIQ m /\
+         !x. ~(MEM x l /\ MEM x m)`,
+  LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[APPEND; LIST_UNIQ; MEM; MEM_APPEND] THEN
+  MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (*  Lists and finite sets.                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -237,3 +244,7 @@ let LIST_UNIQ_CARD_LENGTH = prove
    FIRST_X_ASSUM SUBST1_TAC THEN COND_CASES_TAC THEN
    ASM_REWRITE_TAC[SUC_INJ] THEN MP_TAC (SPEC `t:A list` CARD_LENGTH) THEN
    ARITH_TAC);;
+
+let LIST_UNIQ_LIST_OF_SET = prove
+ (`!s. FINITE s ==> LIST_UNIQ(list_of_set s)`,
+  SIMP_TAC[LIST_UNIQ_CARD_LENGTH; SET_OF_LIST_OF_SET; LENGTH_LIST_OF_SET]);;

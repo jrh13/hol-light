@@ -1,0 +1,42 @@
+#!/bin/bash
+#######################################################################
+# Load in a bunch of examples to test HOL Light is working properly
+#
+# This script attempts to distribute the tests over available cores
+# and should be faster in many cases than the sequential "holtest".
+#
+# Try examining the output using something like
+#
+#     egrep -i '###|error in|not.found' /tmp/hollog_*/holtest.log
+#
+# to see progress and whether anything has gone wrong.
+#
+# You might first want to install the necessary external tools,
+# for instance with
+#
+#   aptitude install prover9 coinor-csdp pari-gp libocamlgraph-ocaml-dev
+#
+#######################################################################
+
+set -e
+
+if which hol-light > /dev/null ; then
+    hollight=hol-light
+elif type ckpt > /dev/null; then
+    make clean; make hol
+    (cd Mizarlight; make clean; make)
+    hollight=./hol
+else
+    make clean; make
+    (cd Mizarlight; make clean; make)
+    hollight="ocaml -init hol.ml"
+fi
+
+make -j $(getconf _NPROCESSORS_ONLN) "HOLLIGHT=$hollight" SHELL=bash \
+    -f holtest.mk all
+
+# Remove "#"s in the follwing lines to build the proof-recording version
+#
+# echo '### Building proof-recording version';
+# cd Proofrecording/hol_light
+# make clean; make hol
