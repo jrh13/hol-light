@@ -241,13 +241,14 @@ let raa stm lab tac = subgoal_THEN (stm ^ " ==> F") (LABEL_TAC lab) THENL
   [INTRO_TAC lab; tac];;
 
 let eq_tac string tac =
-  if string = "Right" then EQ_TAC THENL [ALL_TAC; tac]
+  if string = "Right" then CONV_TAC SYM_CONV THEN EQ_TAC THENL [tac; ALL_TAC]
   else if string = "Left" then EQ_TAC THENL [tac; ALL_TAC]
   else raise (Readable_fail
     ("eq_tac requires " ^  string ^" to be either Left or Right"));;
 
 let conj_tac string tac =
-  if string = "Right" then CONJ_TAC THENL [ALL_TAC; tac]
+  if string = "Right" then ONCE_REWRITE_TAC [CONJ_SYM] THEN
+    CONJ_TAC THENL [tac; ALL_TAC]
   else if string = "Left" then CONJ_TAC THENL [tac; ALL_TAC]
   else raise (Readable_fail
     ("conj_tac requires " ^  string ^" to be either Left or Right"));;

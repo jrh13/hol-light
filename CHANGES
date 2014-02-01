@@ -1,3 +1,57 @@
+Thu 23rd Jan 2014       iterate.ml
+
+Made the incompatible "improvement" of removing the finiteness hypothesis from
+SUM_POS_LE, as well as adding two theorems about how sums of natural numbers
+and integers collapse in the degenerate case of infinite support:
+
+  NSUM_DEGENERATE =
+    |- !f s. ~FINITE {x | x IN s /\ ~(f x = 0)} ==> nsum s f = 0
+
+  SUM_DEGENERATE =
+    |- !f s. ~FINITE {x | x IN s /\ ~(f x = &0)} ==> sum s f = &0
+
+Thu 16th Jan 2014       sets.ml
+
+Added a few more basic properties of sup and inf:
+
+  REAL_LE_SUP =
+    |- !s a b y. y IN s /\ a <= y /\ (!x. x IN s ==> x <= b) ==> a <= sup s
+
+  REAL_INF_LE =
+    |- !s a b y. y IN s /\ y <= b /\ (!x. x IN s ==> a <= x) ==> inf s <= b
+
+  REAL_SUP_LE_EQ =
+    |- !s y.
+           ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)
+           ==> (sup s <= y <=> (!x. x IN s ==> x <= y))
+
+  REAL_LE_INF_EQ =
+    |- !s t.
+           ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
+           ==> (y <= inf s <=> (!x. x IN s ==> y <= x))
+
+  SUP_UNIQUE =
+    |- !s b. (!c. (!x. x IN s ==> x <= c) <=> b <= c) ==> sup s = b
+
+  INF_UNIQUE =
+    |- !s b. (!c. (!x. x IN s ==> c <= x) <=> c <= b) ==> inf s = b
+
+  SUP_UNION =
+    |- !s t.
+           ~(s = {}) /\
+           ~(t = {}) /\
+           (?b. !x. x IN s ==> x <= b) /\
+           (?c. !x. x IN t ==> x <= c)
+           ==> sup (s UNION t) = max (sup s) (sup t)
+
+  INF_UNION =
+    |- !s t.
+           ~(s = {}) /\
+           ~(t = {}) /\
+           (?b. !x. x IN s ==> b <= x) /\
+           (?c. !x. x IN t ==> c <= x)
+           ==> inf (s UNION t) = min (inf s) (inf t)
+
 Thu  9th Jan 2014       class.ml, sets.ml
 
 Added a few theorems, two trivial but useful decomposition theorems for

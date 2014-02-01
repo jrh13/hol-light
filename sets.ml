@@ -3097,6 +3097,50 @@ let REAL_SUP_EQ_INF = prove
     STRIP_TAC THEN
     ASM_SIMP_TAC[SUP_INSERT_FINITE; INF_INSERT_FINITE; FINITE_EMPTY]]);;
 
+let REAL_LE_SUP = prove
+ (`!s a b y. y IN s /\ a <= y /\ (!x. x IN s ==> x <= b) ==> a <= sup s`,
+  MESON_TAC[SUP; MEMBER_NOT_EMPTY; REAL_LE_TRANS]);;
+
+let REAL_INF_LE = prove
+ (`!s a b y. y IN s /\ y <= b /\ (!x. x IN s ==> a <= x) ==> inf s <= b`,
+  MESON_TAC[INF; MEMBER_NOT_EMPTY; REAL_LE_TRANS]);;
+
+let REAL_SUP_LE_EQ = prove
+ (`!s y. ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)
+         ==> (sup s <= y <=> !x. x IN s ==> x <= y)`,
+  MESON_TAC[SUP; REAL_LE_TRANS]);;
+
+let REAL_LE_INF_EQ = prove
+ (`!s t. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
+         ==> (y <= inf s <=> !x. x IN s ==> y <= x)`,
+  MESON_TAC[INF; REAL_LE_TRANS]);;
+
+let SUP_UNIQUE = prove
+ (`!s b. (!c. (!x. x IN s ==> x <= c) <=> b <= c) ==> sup s = b`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM SUP_SING] THEN
+  MATCH_MP_TAC SUP_EQ THEN ASM SET_TAC[]);;
+
+let INF_UNIQUE = prove
+ (`!s b. (!c. (!x. x IN s ==> c <= x) <=> c <= b) ==> inf s = b`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM INF_SING] THEN
+  MATCH_MP_TAC INF_EQ THEN ASM SET_TAC[]);;
+
+let SUP_UNION = prove
+ (`!s t. ~(s = {}) /\ ~(t = {}) /\
+         (?b. !x. x IN s ==> x <= b) /\ (?c. !x. x IN t ==> x <= c)
+         ==> sup(s UNION t) = max (sup s) (sup t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUP_UNIQUE THEN
+  REWRITE_TAC[FORALL_IN_UNION; REAL_MAX_LE] THEN
+  ASM_MESON_TAC[SUP; REAL_LE_TRANS]);;
+
+let INF_UNION = prove
+ (`!s t. ~(s = {}) /\ ~(t = {}) /\
+         (?b. !x. x IN s ==> b <= x) /\ (?c. !x. x IN t ==> c <= x)
+         ==> inf(s UNION t) = min (inf s) (inf t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INF_UNIQUE THEN
+  REWRITE_TAC[FORALL_IN_UNION; REAL_LE_MIN] THEN
+  ASM_MESON_TAC[INF; REAL_LE_TRANS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Inductive definition of sets, by reducing them to inductive relations.    *)
 (* ------------------------------------------------------------------------- *)

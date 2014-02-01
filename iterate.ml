@@ -775,6 +775,11 @@ let MONOIDAL_MUL = prove
  (`monoidal(( * ):num->num->num)`,
   REWRITE_TAC[monoidal; NEUTRAL_MUL] THEN ARITH_TAC);;
 
+let NSUM_DEGENERATE = prove
+ (`!f s. ~(FINITE {x | x IN s /\ ~(f x = 0)}) ==> nsum s f = 0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[nsum] THEN
+  SIMP_TAC[iterate; support; NEUTRAL_ADD]);;
+
 let NSUM_CLAUSES = prove
  (`(!f. nsum {} f = 0) /\
    (!x f s. FINITE(s)
@@ -1330,6 +1335,11 @@ let MONOIDAL_REAL_MUL = prove
  (`monoidal(( * ):real->real->real)`,
   REWRITE_TAC[monoidal; NEUTRAL_REAL_MUL] THEN REAL_ARITH_TAC);;
 
+let SUM_DEGENERATE = prove
+ (`!f s. ~(FINITE {x | x IN s /\ ~(f x = &0)}) ==> sum s f = &0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sum] THEN
+  SIMP_TAC[iterate; support; NEUTRAL_REAL_ADD]);;
+
 let SUM_CLAUSES = prove
  (`(!f. sum {} f = &0) /\
    (!x f s. FINITE(s)
@@ -1469,8 +1479,15 @@ let SUM_CONST = prove
   REPEAT STRIP_TAC THEN REAL_ARITH_TAC);;
 
 let SUM_POS_LE = prove
- (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x)) ==> &0 <= sum s f`,
-  REWRITE_TAC[REWRITE_RULE[SUM_0] (ISPEC `\x. &0` SUM_LE)]);;
+ (`!s:A->bool. (!x. x IN s ==> &0 <= f x) ==> &0 <= sum s f`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `FINITE {x:A | x IN s /\ ~(f x = &0)}` THEN
+  ASM_SIMP_TAC[SUM_DEGENERATE; REAL_LE_REFL] THEN
+  ONCE_REWRITE_TAC[GSYM SUM_SUPPORT] THEN
+  REWRITE_TAC[support; NEUTRAL_REAL_ADD] THEN
+  MP_TAC(ISPECL [`\x:A. &0`; `f:A->real`; `{x:A | x IN s /\ ~(f x = &0)}`]
+        SUM_LE) THEN
+  ASM_SIMP_TAC[SUM_0; IN_ELIM_THM]);;
 
 let SUM_POS_BOUND = prove
  (`!f b s. FINITE s /\ (!x. x IN s ==> &0 <= f x) /\ sum s f <= b

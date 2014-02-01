@@ -439,6 +439,10 @@ let COMPLEX_NORM_CX = prove
  (`!x. norm(Cx(x)) = abs(x)`,
   REWRITE_TAC[GSYM CX_INJ; CX_ABS]);;
 
+let DIST_CX = prove
+ (`!x y. dist(Cx x,Cx y) = abs(x - y)`,
+  REWRITE_TAC[dist; GSYM CX_SUB; COMPLEX_NORM_CX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some "linear" things hold for Re and Im too.                              *)
 (* ------------------------------------------------------------------------- *)
@@ -1391,6 +1395,12 @@ let VSUM_COMPLEX_LMUL = prove
 let VSUM_COMPLEX_RMUL = prove
  (`!c f s. FINITE(s) ==> vsum s (\x. f x * c) = vsum s f * c`,
   ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN REWRITE_TAC[VSUM_COMPLEX_LMUL]);;
+
+let VSUM_CX = prove
+ (`!f:A->real s. vsum s (\a. Cx(f a)) = Cx(sum s f)`,
+  SIMP_TAC[CART_EQ; VSUM_COMPONENT] THEN
+  REWRITE_TAC[DIMINDEX_2; FORALL_2; GSYM RE_DEF; GSYM IM_DEF] THEN
+  REWRITE_TAC[IM_CX; SUM_0; RE_CX; ETA_AX]);;
 
 let VSUM_CX = prove
  (`!f:A->real s. FINITE s ==> vsum s (\a. Cx(f a)) = Cx(sum s f)`,

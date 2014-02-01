@@ -112,6 +112,14 @@ let REAL_LE_BETWEEN = prove
  (`!a b. a <= b <=> ?x. a <= x /\ x <= b`,
   MESON_TAC[REAL_LE_TRANS; REAL_LE_REFL]);;
 
+let REAL_LET_BETWEEN = prove
+ (`!a b. a < b <=> (?x. a <= x /\ x < b)`,
+  MESON_TAC[REAL_LE_REFL; REAL_LET_TRANS]);;
+
+let REAL_LTE_BETWEEN = prove
+ (`!a b. a < b <=> (?x. a < x /\ x <= b)`,
+  MESON_TAC[REAL_LE_REFL; REAL_LTE_TRANS]);;
+
 let REAL_LT_BETWEEN = prove
  (`!a b. a < b <=> ?x. a < x /\ x < b`,
   REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[REAL_LT_TRANS]] THEN

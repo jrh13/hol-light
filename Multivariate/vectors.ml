@@ -262,6 +262,21 @@ let VEC_EQ = prove
   MESON_TAC[LE_REFL; DIMINDEX_GE_1]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Analogous theorems for set-sums.                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let SUMS_SYM = prove
+ (`!s t:real^N->bool.
+        {x + y | x IN s /\ y IN t} = {y + x | y IN t /\ x IN s}`,
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN MESON_TAC[VECTOR_ADD_SYM]);;
+
+let SUMS_ASSOC = prove
+ (`!s t u:real^N->bool.
+        {w + z | w IN {x + y | x IN s /\ y IN t} /\ z IN u} =
+        {x + v | x IN s /\ v IN {y + z | y IN t /\ z IN u}}`,
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN MESON_TAC[VECTOR_ADD_ASSOC]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Infinitude of Euclidean space.                                            *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1343,6 +1358,11 @@ let VSUM_SUPERSET = prove
         ==> (vsum v f = vsum u f)`,
   SIMP_TAC[vsum; CART_EQ; LAMBDA_BETA; VEC_COMPONENT; SUM_SUPERSET]);;
 
+let VSUM_SUPPORT = prove
+ (`!f:A->real^N s. vsum {x | x IN s /\ ~(f x = vec 0)} f = vsum s f`,
+  REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC VSUM_SUPERSET THEN
+  SET_TAC[]);;
+
 let VSUM_EQ_SUPERSET = prove
  (`!f s t:A->bool.
         FINITE t /\ t SUBSET s /\
@@ -1353,20 +1373,19 @@ let VSUM_EQ_SUPERSET = prove
 
 let VSUM_UNION_RZERO = prove
  (`!f:A->real^N u v.
-        FINITE u /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = vec 0))
+        (!x. x IN v /\ ~(x IN u) ==> (f(x) = vec 0))
         ==> (vsum (u UNION v) f = vsum u f)`,
-  SIMP_TAC[vsum; CART_EQ; LAMBDA_BETA; VEC_COMPONENT; SUM_UNION_RZERO]);;
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC VSUM_SUPERSET THEN ASM SET_TAC[]);;
 
 let VSUM_UNION_LZERO = prove
  (`!f:A->real^N u v.
-        FINITE v /\ (!x. x IN u /\ ~(x IN v) ==> (f(x) = vec 0))
+        (!x. x IN u /\ ~(x IN v) ==> (f(x) = vec 0))
         ==> (vsum (u UNION v) f = vsum v f)`,
-  MESON_TAC[VSUM_UNION_RZERO; UNION_COMM]);;
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC VSUM_SUPERSET THEN ASM SET_TAC[]);;
 
 let VSUM_RESTRICT = prove
- (`!f s. FINITE s
-         ==> (vsum s (\x. if x IN s then f(x) else vec 0) = vsum s f)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC VSUM_EQ THEN ASM_SIMP_TAC[]);;
+ (`!f s. vsum s (\x. if x IN s then f(x) else vec 0) = vsum s f`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC VSUM_EQ THEN SIMP_TAC[]);;
 
 let VSUM_RESTRICT_SET = prove
  (`!P s f. vsum {x | x IN s /\ P x} f =
@@ -1400,8 +1419,7 @@ let VSUM_NORM_LE = prove
   ASM_SIMP_TAC[VSUM_NORM; SUM_LE]);;
 
 let VSUM_NORM_TRIANGLE = prove
- (`!s f b. FINITE s /\ sum s (\a. norm(f a)) <= b
-           ==> norm(vsum s f) <= b`,
+ (`!s f b. FINITE s /\ sum s (\a. norm(f a)) <= b ==> norm(vsum s f) <= b`,
   MESON_TAC[VSUM_NORM; REAL_LE_TRANS]);;
 
 let VSUM_NORM_BOUND = prove
@@ -1448,11 +1466,8 @@ let VSUM_GROUP = prove
   SIMP_TAC[vsum; CART_EQ; LAMBDA_BETA; SUM_GROUP]);;
 
 let VSUM_VMUL = prove
- (`!f v s. FINITE s ==> ((sum s f) % v = vsum s (\x. f(x) % v))`,
-  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  ASM_SIMP_TAC[SUM_CLAUSES; VSUM_CLAUSES] THEN
-  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[VECTOR_ADD_RDISTRIB] THEN
-  VECTOR_ARITH_TAC);;
+ (`!f v s. (sum s f) % v = vsum s (\x. f(x) % v)`,
+  REWRITE_TAC[VSUM_RMUL]);;
 
 let VSUM_DELTA = prove
  (`!s a. vsum s (\x. if x = a then b else vec 0) =
@@ -3384,11 +3399,22 @@ let LIFT_EQ_CMUL = prove
  (`!x. lift x = x % vec 1`,
   REWRITE_TAC[GSYM LIFT_NUM; GSYM LIFT_CMUL; REAL_MUL_RID]);;
 
+let SUM_VSUM = prove
+ (`!f s. sum s f = drop(vsum s(lift o f))`,
+  SIMP_TAC[vsum; drop; LAMBDA_BETA; DIMINDEX_1; ARITH] THEN
+  REWRITE_TAC[o_THM; GSYM drop; LIFT_DROP; ETA_AX]);;
+
+let VSUM_REAL = prove
+ (`!f s. vsum s f = lift(sum s (drop o f))`,
+  REWRITE_TAC[o_DEF; SUM_VSUM; LIFT_DROP; ETA_AX]);;
+
 let LIFT_SUM = prove
- (`!k x. FINITE k ==> (lift(sum k x) = vsum k (lift o x))`,
-  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[SUM_CLAUSES; VSUM_CLAUSES; o_THM; LIFT_ADD; LIFT_NUM]);;
+ (`!k x. lift(sum k x) = vsum k (lift o x)`,
+  REWRITE_TAC[SUM_VSUM; LIFT_DROP]);;
+
+let DROP_VSUM = prove
+ (`!k x. drop(vsum k x) = sum k (drop o x)`,
+  REWRITE_TAC[VSUM_REAL; LIFT_DROP]);;
 
 let DROP_LAMBDA = prove
  (`!x. drop(lambda i. x i) = x 1`,
@@ -3413,12 +3439,6 @@ let DROP_CMUL = prove
 let DROP_NEG = prove
  (`!x. drop(--x) = --(drop x)`,
   MESON_TAC[LIFT_DROP; LIFT_NEG]);;
-
-let DROP_VSUM = prove
- (`!k x. FINITE k ==> (drop(vsum k x) = sum k (drop o x))`,
-  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[SUM_CLAUSES; VSUM_CLAUSES; o_THM; DROP_ADD; DROP_VEC]);;
 
 let NORM_1 = prove
  (`!x. norm x = abs(drop x)`,
@@ -3463,10 +3483,6 @@ let DROP_EQ_0 = prove
  (`!x. drop x = &0 <=> x = vec 0`,
   REWRITE_TAC[GSYM DROP_EQ; DROP_VEC]);;
 
-let VSUM_REAL = prove
- (`!f s. FINITE s ==> vsum s f = lift(sum s (drop o f))`,
-  SIMP_TAC[LIFT_SUM; o_DEF; LIFT_DROP; ETA_AX]);;
-
 let DROP_WLOG_LE = prove
  (`(!x y. P x y <=> P y x) /\ (!x y. drop x <= drop y ==> P x y)
    ==> (!x y. P x y)`,
@@ -3479,10 +3495,6 @@ let IMAGE_LIFT_UNIV = prove
 let IMAGE_DROP_UNIV = prove
  (`IMAGE drop (:real^1) = (:real)`,
   REWRITE_TAC[EXTENSION; IN_IMAGE; IN_UNIV] THEN MESON_TAC[LIFT_DROP]);;
-
-let SUM_VSUM = prove
- (`!f s. FINITE s ==> sum s f = drop(vsum s (lift o f))`,
-  SIMP_TAC[VSUM_REAL; o_DEF; LIFT_DROP; ETA_AX]);;
 
 let LINEAR_LIFT_DOT = prove
  (`!a. linear(\x. lift(a dot x))`,
