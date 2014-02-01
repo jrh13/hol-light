@@ -460,16 +460,6 @@ let CONNECTED_EQUIVALENCE_RELATION = prove
 (* Limit points.                                                             *)
 (* ------------------------------------------------------------------------- *)
 
-parse_as_infix ("limit_point_of",(12,"right"));;
-
-let limit_point_of = new_definition
- `x limit_point_of s <=>
-        !t. x IN t /\ open t ==> ?y. ~(y = x) /\ y IN s /\ y IN t`;;
-
-let LIMPT_SUBSET = prove
- (`!x s t. x limit_point_of s /\ s SUBSET t ==> x limit_point_of t`,
-  REWRITE_TAC[limit_point_of; SUBSET] THEN MESON_TAC[]);;
-
 let LIMPT_APPROACHABLE = prove
  (`!x s. x limit_point_of s <=>
                 !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) < e`,
@@ -497,19 +487,6 @@ let LIMPT_UNIV = prove
    (fun th -> ASM_MESON_TAC[th; NORM_0; REAL_LT_REFL]) THEN
   SIMP_TAC[REAL_LT_LDIV_EQ; REAL_LT_RDIV_EQ; REAL_OF_NUM_LT; ARITH] THEN
   UNDISCH_TAC `&0 < e` THEN REAL_ARITH_TAC);;
-
-let CLOSED_LIMPT = prove
- (`!s. closed s <=> !x. x limit_point_of s ==> x IN s`,
-  REWRITE_TAC[closed] THEN ONCE_REWRITE_TAC[OPEN_SUBOPEN] THEN
-  REWRITE_TAC[limit_point_of; IN_DIFF; IN_UNIV; SUBSET] THEN MESON_TAC[]);;
-
-let LIMPT_EMPTY = prove
- (`!x. ~(x limit_point_of {})`,
-  REWRITE_TAC[LIMPT_APPROACHABLE; NOT_IN_EMPTY] THEN MESON_TAC[REAL_LT_01]);;
-
-let NO_LIMIT_POINT_IMP_CLOSED = prove
- (`!s. ~(?x. x limit_point_of s) ==> closed s`,
-  MESON_TAC[CLOSED_LIMPT]);;
 
 let CLOSED_POSITIVE_ORTHANT = prove
  (`closed {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
@@ -552,18 +529,6 @@ let LIMIT_POINT_FINITE = prove
 let LIMPT_SING = prove
  (`!x y:real^N. ~(x limit_point_of {y})`,
   SIMP_TAC[LIMIT_POINT_FINITE; FINITE_SING]);;
-
-let LIMIT_POINT_UNION = prove
- (`!s t x:real^N. x limit_point_of (s UNION t) <=>
-                  x limit_point_of s \/ x limit_point_of t`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL
-   [ALL_TAC; MESON_TAC[LIMPT_SUBSET; SUBSET_UNION]] THEN
-  REWRITE_TAC[LIMPT_APPROACHABLE; IN_UNION] THEN DISCH_TAC THEN
-  MATCH_MP_TAC(TAUT `(~a ==> b) ==> a \/ b`) THEN
-  REWRITE_TAC[NOT_FORALL_THM; LEFT_IMP_EXISTS_THM; NOT_IMP] THEN
-  X_GEN_TAC `e:real` THEN STRIP_TAC THEN X_GEN_TAC `d:real` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `min d e`) THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
-  ASM_MESON_TAC[]);;
 
 let LIMPT_INSERT = prove
  (`!s x y:real^N. x limit_point_of (y INSERT s) <=> x limit_point_of s`,
@@ -642,25 +607,6 @@ let OPEN_IN_SING = prove
 (* Interior of a set.                                                        *)
 (* ------------------------------------------------------------------------- *)
 
-let UNION_INTERIOR_SUBSET = prove
- (`!s t:real^N->bool.
-        interior s UNION interior t SUBSET interior(s UNION t)`,
-  SIMP_TAC[INTERIOR_MAXIMAL_EQ; OPEN_UNION; OPEN_INTERIOR] THEN
-  REPEAT GEN_TAC THEN MATCH_MP_TAC(SET_RULE
-   `s SUBSET s' /\ t SUBSET t' ==> (s UNION t) SUBSET (s' UNION t')`) THEN
-  REWRITE_TAC[INTERIOR_SUBSET]);;
-
-let INTERIOR_EQ_EMPTY = prove
- (`!s:real^N->bool. interior s = {} <=> !t. open t /\ t SUBSET s ==> t = {}`,
-  MESON_TAC[INTERIOR_MAXIMAL_EQ; SUBSET_EMPTY;
-            OPEN_INTERIOR; INTERIOR_SUBSET]);;
-
-let INTERIOR_EQ_EMPTY_ALT = prove
- (`!s:real^N->bool.
-        interior s = {} <=>
-        !t. open t /\ ~(t = {}) ==> ~(t DIFF s = {})`,
-  GEN_TAC THEN REWRITE_TAC[INTERIOR_EQ_EMPTY] THEN SET_TAC[]);;
-
 let INTERIOR_LIMIT_POINT = prove
  (`!s x:real^N. x IN interior s ==> x limit_point_of s`,
   REPEAT GEN_TAC THEN
@@ -723,93 +669,9 @@ let INTERIOR_UNION_EQ_EMPTY = prove
    [ASM_MESON_TAC[SUBSET_UNION; SUBSET_INTERIOR; SUBSET_EMPTY];
     ASM_MESON_TAC[UNION_COMM; INTERIOR_CLOSED_UNION_EMPTY_INTERIOR]]);;
 
-let INTERIOR_UNIONS_OPEN_SUBSETS = prove
- (`!s:real^N->bool. UNIONS {t | open t /\ t SUBSET s} = interior s`,
-  GEN_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC INTERIOR_UNIQUE THEN
-  SIMP_TAC[OPEN_UNIONS; IN_ELIM_THM] THEN SET_TAC[]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Closure of a set.                                                         *)
 (* ------------------------------------------------------------------------- *)
-
-let closure = new_definition
-  `closure s = s UNION {x | x limit_point_of s}`;;
-
-let CLOSURE_INTERIOR = prove
- (`!s:real^N->bool. closure s = UNIV DIFF (interior (UNIV DIFF s))`,
-  REWRITE_TAC[EXTENSION; closure; IN_UNION; IN_DIFF; IN_UNIV; interior;
-              IN_ELIM_THM; limit_point_of; SUBSET] THEN
-  MESON_TAC[]);;
-
-let INTERIOR_CLOSURE = prove
- (`!s:real^N->bool. interior s = UNIV DIFF (closure (UNIV DIFF s))`,
-  let lemma = prove(`!s t. UNIV DIFF (UNIV DIFF t) = t`,SET_TAC[]) in
-  REWRITE_TAC[CLOSURE_INTERIOR; lemma]);;
-
-let CLOSED_CLOSURE = prove
- (`!s. closed(closure s)`,
-  let lemma = prove(`UNIV DIFF (UNIV DIFF s) = s`,SET_TAC[]) in
-  REWRITE_TAC[closed; CLOSURE_INTERIOR; lemma; OPEN_INTERIOR]);;
-
-let CLOSURE_HULL = prove
- (`!s. closure s = closed hull s`,
-  GEN_TAC THEN MATCH_MP_TAC(GSYM HULL_UNIQUE) THEN
-  REWRITE_TAC[CLOSED_CLOSURE; SUBSET] THEN
-  REWRITE_TAC[closure; IN_UNION; IN_ELIM_THM; CLOSED_LIMPT] THEN
-  MESON_TAC[limit_point_of]);;
-
-let CLOSURE_EQ = prove
- (`!s. (closure s = s) <=> closed s`,
-  SIMP_TAC[CLOSURE_HULL; HULL_EQ; CLOSED_INTERS]);;
-
-let CLOSURE_CLOSED = prove
- (`!s. closed s ==> (closure s = s)`,
-  MESON_TAC[CLOSURE_EQ]);;
-
-let CLOSURE_CLOSURE = prove
- (`!s. closure(closure s) = closure s`,
-  REWRITE_TAC[CLOSURE_HULL; HULL_HULL]);;
-
-let CLOSURE_SUBSET = prove
- (`!s. s SUBSET (closure s)`,
-  REWRITE_TAC[CLOSURE_HULL; HULL_SUBSET]);;
-
-let SUBSET_CLOSURE = prove
- (`!s t. s SUBSET t ==> (closure s) SUBSET (closure t)`,
-  REWRITE_TAC[CLOSURE_HULL; HULL_MONO]);;
-
-let CLOSURE_UNION = prove
- (`!s t:real^N->bool. closure(s UNION t) = closure s UNION closure t`,
-  REWRITE_TAC[LIMIT_POINT_UNION; closure] THEN SET_TAC[]);;
-
-let CLOSURE_INTER_SUBSET = prove
- (`!s t. closure(s INTER t) SUBSET closure(s) INTER closure(t)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[SUBSET_INTER] THEN
-  CONJ_TAC THEN MATCH_MP_TAC SUBSET_CLOSURE THEN SET_TAC[]);;
-
-let CLOSURE_INTERS_SUBSET = prove
- (`!f. closure(INTERS f) SUBSET INTERS(IMAGE closure f)`,
-  REWRITE_TAC[SET_RULE `s SUBSET INTERS f <=> !t. t IN f ==> s SUBSET t`] THEN
-  REWRITE_TAC[FORALL_IN_IMAGE] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC SUBSET_CLOSURE THEN ASM SET_TAC[]);;
-
-let CLOSURE_MINIMAL = prove
- (`!s t. s SUBSET t /\ closed t ==> (closure s) SUBSET t`,
-  REWRITE_TAC[HULL_MINIMAL; CLOSURE_HULL]);;
-
-let CLOSURE_MINIMAL_EQ = prove
- (`!s t:real^N->bool. closed t ==> (closure s SUBSET t <=> s SUBSET t)`,
-  MESON_TAC[SUBSET_TRANS; CLOSURE_SUBSET; CLOSURE_MINIMAL]);;
-
-let CLOSURE_UNIQUE = prove
- (`!s t. s SUBSET t /\ closed t /\
-         (!t'. s SUBSET t' /\ closed t' ==> t SUBSET t')
-         ==> (closure s = t)`,
-  REWRITE_TAC[CLOSURE_HULL; HULL_UNIQUE]);;
-
-let CLOSURE_EMPTY = prove
- (`closure {} = {}`,
-  SIMP_TAC[CLOSURE_CLOSED; CLOSED_EMPTY]);;
 
 let CLOSURE_UNIV = prove
  (`closure(:real^N) = (:real^N)`,

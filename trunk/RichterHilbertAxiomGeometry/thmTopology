@@ -1,3 +1,5 @@
+∉ |- ∀a l. a ∉ l ⇔ ¬(a ∈ l)
+
 DIFF_UNION
   |- ∀u s t. u ━ (s ∪ t) = (u ━ s) ∩ (u ━ t)
 
@@ -10,16 +12,16 @@ IN_SET_FUNCTION_PREDICATE
   |- ∀x f P. x ∈ {f y | P y} ⇔ (∃y. x = f y ∧ P y)
 
 INTER_TENSOR
-  |- ∀s s' t t'.
-         (s = s' ∨ s ⊂ s') ∧ (t = t' ∨ t ⊂ t')
-         ⇒ s ∩ t ⊂ s' ∩ t'
+  |- ∀s s' t t'. s ⊂ s' ∧ t ⊂ t' ⇒ s ∩ t ⊂ s' ∩ t'
 
-UNION_TENSOR : thm =
-  |- ∀s s' t t'.
-         (s = s' ∨ s ⊂ s') ∧ (t = t' ∨ t ⊂ t')
-         ⇒ s ∪ t ⊂ s' ∪ t'
+UNION_TENSOR
+  |- ∀s s' t t'. s ⊂ s' ∧ t ⊂ t' ⇒ s ∪ t ⊂ s' ∪ t'
 
-∉ |- ∀a l. a ∉ l ⇔ ¬(a ∈ l)
+ExistsTensorInter
+  |- ∀F G H.
+         (∀x y. F x ∧ G y ⇒ H (x ∩ y))
+         ⇒ (∃x. F x) ∧ (∃y. G y)
+         ⇒ (∃z. H z)
 
 istopology
   |- ∀X L.
@@ -102,92 +104,6 @@ OPEN_IN_SUBOPEN
   |- ∀α s.
          open_in α s ⇔
          (∀x. x ∈ s ⇒ (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s))
-
-interior_in
-  |- ∀α s.
-         interior_in α s =
-         {x | s ⊂ topspace α ∧
-              (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s)}
-
-IN_interior_in
-  |- ∀α s x.
-         s ⊂ topspace α
-         ⇒ (x ∈ interior_in α s ⇔
-              (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s))
-
-InteriorEq
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (open_in α s ⇔ s = interior_in α s)
-
-InteriorOpen
-  |- ∀α s. open_in α s ⇒ interior_in α s = s
-
-InteriorEmpty     |- ∀α. interior_in α ∅ = ∅
-
-OpenInterior
-  |- ∀α s.
-         s ⊂ topspace α ⇒ open_in α (interior_in α s)
-
-InteriorInterior
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ interior_in α (interior_in α s) = interior_in α s
-
-InteriorSubset
-  |- ∀α s. s ⊂ topspace α ⇒ interior_in α s ⊂ s
-
-SubsetInterior
-  |- ∀α s t.
-         s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ s ⊂ t
-         ⇒ interior_in α s ⊂ interior_in α t
-
-InteriorMaximal
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ t ⊂ s ∧ open_in α t
-         ⇒ t ⊂ interior_in α s
-
-InteriorMaximalEq
-  |- ∀s t.
-         t ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ (s ⊂ interior_in α t ⇔ s ⊂ t)
-
-InteriorUnique
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ t ⊂ s ∧
-             open_in α t ∧
-             (∀t'. t' ⊂ s ∧ open_in α t' ⇒ t' ⊂ t)
-         ⇒ interior_in α s = t
-
-OpenSubsetInterior
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ (s ⊂ interior_in α t ⇔ s ⊂ t)
-
-InteriorInter
-  |- ∀α s t.
-         s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ interior_in α (s ∩ t) =
-             interior_in α s ∩ interior_in α t
-
-InteriorFiniteInters
-  |- ∀α s.
-         FINITE s
-         ⇒ ¬(s = ∅)
-         ⇒ (∀t. t ∈ s ⇒ t ⊂ topspace α)
-         ⇒ interior_in α (INTERS s) =
-             INTERS (IMAGE (interior_in α) s)
-
-InteriorIntersSubset : thm =
-  |- ∀α f.
-         ¬(f = ∅) ∧ (∀t. t ∈ f ⇒ t ⊂ topspace α)
-         ⇒ interior_in α (INTERS f) ⊂
-             INTERS (IMAGE (interior_in α) f)
 
 closed_in
   |- ∀α s.
@@ -567,6 +483,271 @@ ConnectedDiffOpenFromClosed
              Connected (subtopology α (t ━ s))
          ⇒ Connected (subtopology α (u ━ s))
 
+LimitPointOf
+  |- ∀α s.
+         LimitPointOf α s =
+         {x | s ⊂ topspace α ∧
+              x ∈ topspace α ∧
+              (∀t. x ∈ t ∧ open_in α t
+                   ⇒ (∃y. ¬(y = x) ∧ y ∈ s ∧ y ∈ t))}
+
+IN_LimitPointOf
+  |- ∀α s x.
+         s ⊂ topspace α
+         ⇒ (x ∈ LimitPointOf α s ⇔
+              x ∈ topspace α ∧
+              (∀t. x ∈ t ∧ open_in α t
+                   ⇒ (∃y. ¬(y = x) ∧ y ∈ s ∧ y ∈ t)))
+
+NotLimitPointOf
+  |- ∀α s x.
+         s ⊂ topspace α ∧ x ∈ topspace α
+         ⇒ (x ∉ LimitPointOf α s ⇔
+              (∃t. x ∈ t ∧ open_in α t ∧ s ∩ (t ━ {x}) = ∅))
+
+LimptSubset
+  |- ∀α x s t.
+         t ⊂ topspace α
+         ⇒ x ∈ LimitPointOf α s ∧ s ⊂ t
+         ⇒ x ∈ LimitPointOf α t
+
+LimptSubset_ALT
+  |- ∀α s t.
+         t ⊂ topspace α
+         ⇒ s ⊂ t
+         ⇒ LimitPointOf α s ⊂ LimitPointOf α t
+
+ClosedLimpt
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ (closed_in α s ⇔ LimitPointOf α s ⊂ s)
+
+LimptEmpty
+  |- ∀α x. x ∈ topspace α ⇒ x ∉ LimitPointOf α ∅
+
+NoLimitPointImpClosed
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ (∀x. x ∉ LimitPointOf α s)
+         ⇒ closed_in α s
+
+LimitPointUnion
+  |- ∀α s t.
+         s ∪ t ⊂ topspace α
+         ⇒ LimitPointOf α (s ∪ t) =
+             LimitPointOf α s ∪ LimitPointOf α t
+
+interior_in
+  |- ∀α s.
+         interior_in α s =
+         {x | s ⊂ topspace α ∧
+              (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s)}
+
+IN_interior_in
+  |- ∀α s x.
+         s ⊂ topspace α
+         ⇒ (x ∈ interior_in α s ⇔
+              (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s))
+
+InteriorEq
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ (open_in α s ⇔ s = interior_in α s)
+
+InteriorOpen
+  |- ∀α s. open_in α s ⇒ interior_in α s = s
+
+InteriorEmpty     |- ∀α. interior_in α ∅ = ∅
+
+OpenInterior
+  |- ∀α s.
+         s ⊂ topspace α ⇒ open_in α (interior_in α s)
+
+InteriorInterior
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ interior_in α (interior_in α s) = interior_in α s
+
+InteriorSubset
+  |- ∀α s. s ⊂ topspace α ⇒ interior_in α s ⊂ s
+
+SubsetInterior
+  |- ∀α s t.
+         s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ s ⊂ t
+         ⇒ interior_in α s ⊂ interior_in α t
+
+InteriorMaximal
+  |- ∀α s t.
+         s ⊂ topspace α
+         ⇒ t ⊂ s ∧ open_in α t
+         ⇒ t ⊂ interior_in α s
+
+InteriorMaximalEq
+  |- ∀s t.
+         t ⊂ topspace α
+         ⇒ open_in α s
+         ⇒ (s ⊂ interior_in α t ⇔ s ⊂ t)
+
+InteriorUnique
+  |- ∀α s t.
+         s ⊂ topspace α
+         ⇒ t ⊂ s ∧
+             open_in α t ∧
+             (∀t'. t' ⊂ s ∧ open_in α t' ⇒ t' ⊂ t)
+         ⇒ interior_in α s = t
+
+OpenSubsetInterior
+  |- ∀α s t.
+         t ⊂ topspace α
+         ⇒ open_in α s
+         ⇒ (s ⊂ interior_in α t ⇔ s ⊂ t)
+
+InteriorInter
+  |- ∀α s t.
+         s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ interior_in α (s ∩ t) =
+             interior_in α s ∩ interior_in α t
+
+InteriorFiniteInters
+  |- ∀α s.
+         FINITE s
+         ⇒ ¬(s = ∅)
+         ⇒ (∀t. t ∈ s ⇒ t ⊂ topspace α)
+         ⇒ interior_in α (INTERS s) =
+             INTERS (IMAGE (interior_in α) s)
+
+InteriorIntersSubset
+  |- ∀α f.
+         ¬(f = ∅) ∧ (∀t. t ∈ f ⇒ t ⊂ topspace α)
+         ⇒ interior_in α (INTERS f) ⊂
+             INTERS (IMAGE (interior_in α) f)
+
+UnionInteriorSubset
+  |- ∀α s t.
+         s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ interior_in α s ∪ interior_in α t SUBSET
+             interior_in α (s ∪ t)
+
+InteriorEqEmpty
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ (interior_in α s = ∅ ⇔
+              (∀t. open_in α t ∧ t ⊂ s ⇒ t = ∅))
+
+InteriorEqEmptyAlt
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ (interior_in α s = ∅ ⇔
+              (∀t. open_in α t ∧ ¬(t = ∅) ⇒ ¬(t ━ s = ∅)))
+
+InteriorUnionsOpenSubsets
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ UNIONS {t | open_in α t ∧ t ⊂ s} = interior_in α s
+
+Closure_DEF
+  |- ∀α s. Closure α s = s ∪ LimitPointOf α s
+
+Closure_THM
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ Closure α s = s ∪ LimitPointOf α s
+
+IN_Closure
+  |- ∀α s x.
+         s ⊂ topspace α
+         ⇒ (x ∈ Closure α s ⇔
+              x ∈ topspace α ∧
+              (∀t. x ∈ t ∧ open_in α t ⇒ (∃y. y ∈ s ∧ y ∈ t)))
+
+ClosureSubset
+  |- ∀α s. s ⊂ topspace α ⇒ s ⊂ Closure α s
+
+ClosureTopspace
+  |- ∀α s.
+         s ⊂ topspace α ⇒ Closure α s ⊂ topspace α
+
+ClosureInterior
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ Closure α s =
+             topspace α ━ interior_in α (topspace α ━ s)
+
+InteriorClosure
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ interior_in α s =
+             topspace α ━ Closure α (topspace α ━ s)
+
+ClosedClosure
+  |- ∀α s. s ⊂ topspace α ⇒ closed_in α (Closure α s)
+
+SubsetClosure
+  |- ∀α s t.
+         t ⊂ topspace α
+         ⇒ s ⊂ t
+         ⇒ Closure α s ⊂ Closure α t
+
+ClosureHull
+  |- ∀α s.
+         s ⊂ topspace α ⇒ Closure α s = closed_in α hull s
+
+ClosureEq
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ (Closure α s = s ⇔ closed_in α s)
+
+ClosureClosed
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ closed_in α s
+         ⇒ Closure α s = s
+
+ClosureClosure
+  |- ∀α s.
+         s ⊂ topspace α
+         ⇒ Closure α (Closure α s) = Closure α s
+
+ClosureUnion
+  |- ∀α s t.
+         s ∪ t ⊂ topspace α
+         ⇒ Closure α (s ∪ t) =
+             Closure α s ∪ Closure α t
+
+ClosureInterSubset
+  |- ∀α s t.
+         s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Closure α (s ∩ t) SUBSET
+             Closure α s ∩ Closure α t
+
+ClosureIntersSubset
+  |- ∀α f.
+         (∀s. s ∈ f ⇒ s ⊂ topspace α)
+         ⇒ Closure α (INTERS f) ⊂ INTERS (IMAGE (Closure α) f)
+
+ClosureMinimal
+  |- ∀α s t.
+         t ⊂ topspace α
+         ⇒ s ⊂ t ∧ closed_in α t
+         ⇒ Closure α s ⊂ t
+
+ClosureMinimalEq
+  |- ∀α s t.
+         s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ closed_in α t
+         ⇒ (Closure α s ⊂ t ⇔ s ⊂ t)
+
+ClosureUnique
+  |- ∀α s t.
+         t ⊂ topspace α
+         ⇒ s ⊂ t ∧
+             closed_in α t ∧
+             (∀u. s ⊂ u ∧ closed_in α u ⇒ t ⊂ u)
+         ⇒ Closure α s = t
+
+ClosureEmpty     |- Closure α ∅ = ∅
+
 open_def
   |- ∀s. open s ⇔
          (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ (∀x'. dist (x',x) < e ⇒ x' ∈ s)))
@@ -594,9 +775,11 @@ TOPSPACE_EUCLIDEAN_SUBTOPOLOGY
 
 OPEN_IN_REFL |- ∀s. open_in (subtopology euclidean s) s
 
-CLOSED_IN_REFL |- ∀s. closed_in (subtopology euclidean s) s
+CLOSED_IN_REFL     |- ∀s. closed_in (subtopology euclidean s) s
 
-CLOSED_IN |- ∀s. closed s ⇔ closed_in euclidean s
+CLOSED_IN     |- ∀s. closed s ⇔ closed_in euclidean s
+
+CLOSED_IN_ALT |- ∀s. closed = closed_in euclidean
 
 OPEN_UNION     |- ∀s t. open s ∧ open t ⇒ open (s ∪ t)
 
@@ -1651,6 +1834,32 @@ CONNECTED_DIFF_OPEN_FROM_CLOSED
          connected (t ━ s)
          ⇒ connected (u ━ s)
 
+limit_point_of_DEF
+  |- ∀x s. x limit_point_of s ⇔ LimitPointOf euclidean x s
+
+limit_point_of
+  |- x limit_point_of s ⇔
+     (∀t. x ∈ t ∧ open t ⇒ (∃y. ¬(y = x) ∧ y ∈ s ∧ y ∈ t))
+
+LIMPT_SUBSET
+  |- ∀x s t. x limit_point_of s ∧ s ⊂ t ⇒ x limit_point_of t
+
+CLOSED_LIMPT
+  |- ∀s. closed s ⇔ (∀x. x limit_point_of s ⇒ x ∈ s)
+
+LIMPT_EMPTY |- ∀x. ¬(x limit_point_of ∅)
+
+NO_LIMIT_POINT_IMP_CLOSED
+  |- ∀s. ¬(∃x. x limit_point_of s) ⇒ closed s
+
+LIMIT_POINT_UNION
+  |- ∀s t x.
+         x limit_point_of s ∪ t ⇔
+         x limit_point_of s ∨ x limit_point_of t
+
+LimitPointOf_euclidean
+  |- ∀s. LimitPointOf euclidean s = {x | x limit_point_of s}
+
 interior_DEF     |- ∀s. interior s = interior_in euclidean s
 
 interior
@@ -1705,5 +1914,66 @@ INTERIOR_INTER
 INTERIOR_FINITE_INTERS
   |- ∀s. FINITE s ⇒ interior (INTERS s) = INTERS (IMAGE interior s)
 
-INTERIOR_INTERS_SUBSET : thm =
+INTERIOR_INTERS_SUBSET
   |- ∀f. interior (INTERS f) ⊂ INTERS (IMAGE interior f)
+
+UNION_INTERIOR_SUBSET
+  |- ∀s t. interior s ∪ interior t ⊂ interior (s ∪ t)
+
+INTERIOR_EQ_EMPTY
+  |- ∀s. interior s = ∅ ⇔ (∀t. open t ∧ t ⊂ s ⇒ t = ∅)
+
+INTERIOR_EQ_EMPTY_ALT
+  |- ∀s. interior s = ∅ ⇔ (∀t. open t ∧ ¬(t = ∅) ⇒ ¬(t ━ s = ∅))
+
+INTERIOR_UNIONS_OPEN_SUBSETS
+  |- ∀s. UNIONS {t | open t ∧ t ⊂ s} = interior s
+
+closure_DEF     |- closure = Closure euclidean
+
+closure |- ∀s. closure s = s ∪ {x | x limit_point_of s}
+
+CLOSURE_INTERIOR
+  |- ∀s. closure s = (:real^∃186277) ━ interior ((:real^∃186277) ━ s)
+
+INTERIOR_CLOSURE
+  |- ∀s. interior s = (:real^∃304511) ━ closure ((:real^∃304511) ━ s)
+
+CLOSED_CLOSURE     |- ∀s. closed (closure s)
+
+CLOSURE_SUBSET     |- ∀s. s ⊂ closure s
+
+SUBSET_CLOSURE     |- ∀s t. s ⊂ t ⇒ closure s ⊂ closure t
+
+CLOSURE_HULL     |- ∀s. closure s = closed hull s
+
+CLOSURE_EQ     |- ∀s. closure s = s ⇔ closed s
+
+CLOSURE_CLOSED     |- ∀s. closed s ⇒ closure s = s
+
+CLOSURE_CLOSURE     |- ∀s. closure (closure s) = closure s
+
+CLOSURE_UNION
+  |- ∀s t. closure (s ∪ t) = closure s ∪ closure t
+
+CLOSURE_INTER_SUBSET
+  |- ∀s t. closure (s ∩ t) ⊂ closure s ∩ closure t
+
+CLOSURE_INTERS_SUBSET
+  |- ∀f. closure (INTERS f) ⊂ INTERS (IMAGE closure f)
+
+CLOSURE_MINIMAL
+  |- ∀s t. s ⊂ t ∧ closed t ⇒ closure s ⊂ t
+
+CLOSURE_MINIMAL_EQ
+  |- ∀s t. closed t ⇒ (closure s ⊂ t ⇔ s ⊂ t)
+
+CLOSURE_UNIQUE
+  |- ∀s t.
+         s ⊂ t ∧
+         closed t ∧
+         (∀t'. s ⊂ t' ∧ closed t' ⇒ t ⊂ t')
+         ⇒ closure s = t
+
+CLOSURE_EMPTY     |- closure ∅ = ∅
+

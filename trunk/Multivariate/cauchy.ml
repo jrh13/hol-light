@@ -12307,6 +12307,90 @@ let POLE_AT_INFINITY = prove
       ASM_SIMP_TAC[REAL_LT_IMP_LE; COMPLEX_NORM_NZ]]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Entire proper functions C->C are precisely the non-trivial polynomials.   *)
+(* ------------------------------------------------------------------------- *)
+
+let PROPER_MAP_COMPLEX_POLYFUN = prove
+ (`!s k c n. closed s /\ compact k /\ (?i. i IN 1..n /\ ~(c i = Cx(&0)))
+             ==> compact {z | z IN s /\ vsum(0..n) (\i. c i * z pow i) IN k}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`c:num->complex`; `n:num`] COMPLEX_POLYFUN_EXTREMAL) THEN
+  DISCH_THEN DISJ_CASES_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[SET_RULE `{x | x IN s /\ P x} = s INTER {x | P x}`] THEN
+  MATCH_MP_TAC CLOSED_INTER_COMPACT THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o MATCH_MP COMPACT_IMP_BOUNDED) THEN
+    REWRITE_TAC[BOUNDED_POS] THEN DISCH_THEN(X_CHOOSE_TAC `B:real`) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `B + &1`) THEN
+    REWRITE_TAC[EVENTUALLY_AT_INFINITY_POS; real_ge; IN_ELIM_THM] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c:real` THEN
+    MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `z:complex` THEN
+    DISCH_THEN(fun th -> DISCH_TAC THEN MP_TAC th) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC
+      `vsum(0..n) (\i. c i * z pow i)` o CONJUNCT2) THEN
+    ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+    MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE_UNIV THEN
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED] THEN
+    GEN_TAC THEN MATCH_MP_TAC CONTINUOUS_VSUM THEN
+    REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_COMPLEX_LMUL THEN
+    MATCH_MP_TAC CONTINUOUS_COMPLEX_POW THEN
+    REWRITE_TAC[CONTINUOUS_AT_ID]]);;
+
+let PROPER_MAP_COMPLEX_POLYFUN_UNIV = prove
+ (`!k c n. compact k /\ (?i. i IN 1..n /\ ~(c i = Cx(&0)))
+           ==> compact {z | vsum(0..n) (\i. c i * z pow i) IN k}`,
+  MP_TAC(SPEC `(:complex)` PROPER_MAP_COMPLEX_POLYFUN) THEN
+  REWRITE_TAC[IN_UNIV; CLOSED_UNIV]);;
+
+let PROPER_MAP_COMPLEX_POLYFUN_EQ = prove
+ (`!f. f holomorphic_on (:complex)
+       ==> ((!k. compact k ==> compact {z | f z IN k}) <=>
+            ?c n. 0 < n /\ ~(c n = Cx(&0)) /\
+                  f = \z. vsum(0..n) (\i. c i * z pow i))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [ALL_TAC;
+    REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC PROPER_MAP_COMPLEX_POLYFUN_UNIV THEN
+    ASM_REWRITE_TAC[IN_NUMSEG] THEN ASM_MESON_TAC[LE_REFL; LE_1]] THEN
+  MP_TAC(ISPECL [`f:complex->complex`; `Cx(&0)`] POLE_AT_INFINITY) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [REWRITE_TAC[LIM_AT_INFINITY; real_ge] THEN X_GEN_TAC `e:real` THEN
+    DISCH_TAC THEN REWRITE_TAC[GSYM COMPLEX_VEC_0; DIST_0; o_THM] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `cball(vec 0:complex,inv e)`) THEN
+    REWRITE_TAC[COMPACT_CBALL] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP COMPACT_IMP_BOUNDED) THEN
+    REWRITE_TAC[BOUNDED_POS; IN_ELIM_THM; IN_CBALL_0] THEN
+    DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `B + &1` THEN ASM_SIMP_TAC[REAL_LT_MUL; REAL_LT_01] THEN
+    X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`) THEN
+    ASM_SIMP_TAC[REAL_ARITH `B + &1 <= x ==> ~(x <= B)`; REAL_NOT_LE] THEN
+    ASM_SIMP_TAC[COMPLEX_NORM_INV; REAL_LT_LINV];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:num->complex` THEN
+    DISCH_THEN(X_CHOOSE_TAC `n:num`) THEN
+    ASM_CASES_TAC `!i. i IN 1..n ==> a i = Cx(&0)` THENL
+     [FIRST_X_ASSUM(MP_TAC o SPEC `{a 0:complex}`) THEN
+      ASM_SIMP_TAC[VSUM_CLAUSES_LEFT; LE_0; ADD_CLAUSES; COMPACT_SING] THEN
+      SIMP_TAC[IN_SING; COMPLEX_MUL_LZERO; complex_pow; COMPLEX_MUL_RID] THEN
+      REWRITE_TAC[GSYM COMPLEX_VEC_0; VSUM_0; VECTOR_ADD_RID; UNIV_GSPEC] THEN
+      MESON_TAC[COMPACT_IMP_BOUNDED; NOT_BOUNDED_UNIV];
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
+      DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        (fst(EQ_IMP_RULE(SPEC_ALL num_MAX))))) THEN
+      REWRITE_TAC[NOT_IMP; IN_NUMSEG] THEN
+      ANTS_TAC THENL [MESON_TAC[]; MATCH_MP_TAC MONO_EXISTS] THEN
+      X_GEN_TAC `m:num` THEN STRIP_TAC THEN ASM_SIMP_TAC[LE_1; FUN_EQ_THM] THEN
+      GEN_TAC THEN MATCH_MP_TAC VSUM_EQ_SUPERSET THEN
+      ASM_REWRITE_TAC[SUBSET_NUMSEG; FINITE_NUMSEG; IN_NUMSEG; LE_0] THEN
+      X_GEN_TAC `j:num` THEN REWRITE_TAC[COMPLEX_VEC_0; NOT_LE] THEN
+      STRIP_TAC THEN REWRITE_TAC[COMPLEX_ENTIRE] THEN DISJ1_TAC THEN
+      MATCH_MP_TAC(TAUT `(~p ==> F) ==> p`) THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `j:num`) THEN ASM_REWRITE_TAC[] THEN
+      ASM_ARITH_TAC]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Relating invertibility and nonvanishing of derivative.                    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -14192,7 +14276,6 @@ let HOLOMORPHIC_INVOLUTION_POINT = prove
            `~(k = Cx(&1)) ==> (k * z + l = z <=> z = l / (Cx(&1) - k))`] THEN
           MESON_TAC[]]]]);;
 
-
 (* ------------------------------------------------------------------------- *)
 (* Montel's theorem: a sequence of holomorphic functions uniformly bounded   *)
 (* on compact subsets of an open set S has a subsequence that converges to a *)
@@ -14719,7 +14802,6 @@ let HURWITZ_NO_ZEROS = prove
     REWRITE_TAC[LEFT_EXISTS_AND_THM; CONJ_ASSOC] THEN
     REWRITE_TAC[RIGHT_EXISTS_AND_THM; GSYM CONJ_ASSOC] THEN
     REWRITE_TAC[LEFT_EXISTS_AND_THM] THEN
-
     ASM_SIMP_TAC[PATH_IMAGE_CIRCLEPATH; REAL_HALF; REAL_LT_IMP_LE] THEN
     REWRITE_TAC[sphere; NORM_ARITH `dist(z,w) = norm(w - z)`] THEN
     REWRITE_TAC[IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL

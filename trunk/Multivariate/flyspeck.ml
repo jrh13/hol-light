@@ -6992,6 +6992,15 @@ let NEGLIGIBLE_SPHERE = REWRITE_RULE[sphere] NEGLIGIBLE_SPHERE;;
 let RELATIVE_FRONTIER_OF_POLYHEDRON = RELATIVE_BOUNDARY_OF_POLYHEDRON;;
 
 (* ------------------------------------------------------------------------- *)
+(* Also, the finiteness hypothesis was removed from this theorem.            *)
+(* Put back the old version since that might break some proofs.              *)
+(* ------------------------------------------------------------------------- *)
+
+let SUM_POS_LE = prove 
+ (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x)) ==> &0 <= sum s f`,
+  REWRITE_TAC[REWRITE_RULE[SUM_0] (ISPEC `\x. &0` SUM_LE)]);;             
+
+(* ------------------------------------------------------------------------- *)
 (* Fix the congruence rules as expected in Flyspeck.                         *)
 (* Should exclude 6 recent mixed real/vector limit results.                  *)
 (* ------------------------------------------------------------------------- *)

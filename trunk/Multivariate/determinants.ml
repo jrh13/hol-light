@@ -669,8 +669,8 @@ let DET_EQ_0_RANK = prove
   GEN_TAC THEN MP_TAC(ISPEC `A:real^N^N` RANK_BOUND) THEN
   ARITH_TAC);;
 
-let RANK_EQ_FULL_DET = prove                                                   
- (`!A:real^N^N. rank A = dimindex(:N) <=> ~(det A = &0)`,                      
+let RANK_EQ_FULL_DET = prove
+ (`!A:real^N^N. rank A = dimindex(:N) <=> ~(det A = &0)`,
   GEN_TAC THEN MP_TAC(ISPEC `A:real^N^N` RANK_BOUND) THEN
   SIMP_TAC[DET_EQ_0_RANK; NOT_LT; GSYM LE_ANTISYM; ARITH_RULE `MIN n n = n`]);;
 

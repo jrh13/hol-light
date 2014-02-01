@@ -572,6 +572,14 @@ let CONTINUOUS_COMPLEX_MUL = prove
     f continuous net /\ g continuous net ==> (\x. f(x) * g(x)) continuous net`,
   SIMP_TAC[continuous; LIM_COMPLEX_MUL]);;
 
+let CONTINUOUS_COMPLEX_LMUL = prove
+ (`!c f net. f continuous net ==> (\x. c * f x) continuous net`,
+  SIMP_TAC[CONTINUOUS_COMPLEX_MUL; CONTINUOUS_CONST]);;
+
+let CONTINUOUS_COMPLEX_RMUL = prove
+ (`!c f net. f continuous net ==> (\x. f x * c) continuous net`,
+  SIMP_TAC[CONTINUOUS_COMPLEX_MUL; CONTINUOUS_CONST]);;
+
 let CONTINUOUS_COMPLEX_INV = prove
  (`!net f.
     f continuous net /\ ~(f(netlimit net) = Cx(&0))
