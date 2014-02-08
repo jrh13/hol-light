@@ -526,3 +526,29 @@ let INFINITE_FROM = prove
    (fun th -> SIMP_TAC[th; INFINITE_DIFF_FINITE; FINITE_NUMSEG_LT;
    num_INFINITE]) THEN
   REWRITE_TAC[EXTENSION; from; IN_DIFF; IN_UNIV; IN_ELIM_THM] THEN ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Make a Horner-style evaluation of sum(m..n) (\k. a(k) * x pow k).         *)
+(* ------------------------------------------------------------------------- *)
+
+let HORNER_SUM_CONV =
+  let horner_0,horner_s = (CONJ_PAIR o prove)
+   (`(sum(0..0) (\i. c(i) * x pow i) = c 0) /\
+     (sum(0..SUC n) (\i. c(i) * x pow i) =
+      c(0) + x * sum(0..n) (\i. c(i+1) * x pow i))`,
+    REWRITE_TAC[CONJUNCT1 SUM_CLAUSES_NUMSEG] THEN
+    REWRITE_TAC[GSYM SUM_LMUL] THEN
+    ONCE_REWRITE_TAC[REAL_ARITH `x * c * y:real = c * x * y`] THEN
+    REWRITE_TAC[GSYM(CONJUNCT2 real_pow); ADD1] THEN
+    REWRITE_TAC[GSYM(SPEC `1` SUM_OFFSET)] THEN
+    SIMP_TAC[SUM_CLAUSES_LEFT; LE_0; real_pow; REAL_MUL_RID]) in
+  let conv_0 = GEN_REWRITE_CONV I [horner_0] THENC NUM_REDUCE_CONV
+  and conv_s = LAND_CONV(RAND_CONV(num_CONV)) THENC
+               GEN_REWRITE_CONV I [horner_s] THENC
+               GEN_REWRITE_CONV ONCE_DEPTH_CONV [LEFT_ADD_DISTRIB] THENC
+               GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM ADD_ASSOC] THENC
+               NUM_REDUCE_CONV in
+  let rec conv tm =
+    try (conv_0 THENC REAL_RAT_REDUCE_CONV) tm with Failure _ ->
+    (conv_s THENC RAND_CONV(RAND_CONV conv) THENC REAL_RAT_REDUCE_CONV) tm in
+  conv;;

@@ -14,7 +14,7 @@
 (* given explicitly, so as to not lose sight of the proof.  Readability is   *)
 (* improved by a miz3 interface with few type annotations, back-quotes or    *)
 (* double-quotes, and allowing HOL4/Isabelle math characters, e.g.           *)
-(* ⇒ ⇔ ∧ ∨ ¬ ∀ ∃ ∈ ∉ α β γ λ θ μ ⊂ ∩ ∪ ∅ ━ ≡ ≅ ∡ ∥ ∏ ∘ →.                    *)
+(* ⇒ ⇔ ∧ ∨ ¬ ∀ ∃ ∈ ∉ α β γ λ θ μ ⊂ ∩ ∪ ∅ ━ ≡ ≅ ∡ ∥ ∏ ∘ →  ╪ .                *)
 (* We use ideas for readable formal proofs due to John Harrison ("Towards    *)
 (* more readable proofs" of the tutorial and Examples/mizar.ml), Freek       *)
 (* Wiedijk (Mizarlight/miz2a.ml, miz3/miz3.ml and arxiv.org/pdf/1201.3601    *)
@@ -60,7 +60,7 @@ let CleanMathFontsForHOL_Light s =
       "α","alpha"; "β","beta"; "γ","gamma"; "λ","\\ "; "θ","theta"; "μ","mu";
       "⊂","SUBSET"; "∩","INTER"; "∪","UNION"; "∅","{}"; "━","DIFF";
       "≡","==="; "≅","cong"; "∡","angle"; "∥","parallel";
-      "∏","prod"; "∘","_o_";"→","--->"];;
+      "∏","prod"; "∘","_o_"; "→","--->"; "╪","INSERT"];;
 
 (* printReadExn prints uncluttered error messages via Readable_fail.  This   *)
 (* is due to Mark Adams, who also explained Roland Zumkeller's exec below.   *)
@@ -185,10 +185,12 @@ let subgoal_THEN stm ttac gl =
 (* no reason in readable.ml proofs to use X_gen_TAC instead X_genl_TAC.      *)
 (* intro_TAC is INTRO_TAC with the delimiter ";" replaced with",".           *)
 (* assume notalpha lab tac                                                   *)
-(* is the tactic which, when applied to goal gl = (asl, w), with tac a proof *)
-(* that w <=> x ∨ y,  makes the goal y, with the string statement notalpha   *)
-(* turning into the statement ~x, using the goal gl, which is referred to by *)
-(* the nonempty label lab, both in the proof tac and in the new goal y.      *)
+(* applies to goal gl = (asl, w) with tac a proof that w <=> x ∨ y and that  *)
+(* the string statement notalpha turns into the statement ¬x.  y becomes the *)
+(* new goal, with ¬x an assumption with the nonempty label lab, which also   *)
+(* is the label of x ∨ y which tac must prove is equivalent to the goal g.   *)
+(* In typical cases the goal equals x ∨ y, and then one can simply write     *)
+(*     assume ¬x     [lab] by fol -;                                         *)
 (* eq_tac string tac                                                         *)
 (* requires the goal to be an iff statement of the form x ⇔ y and then       *)
 (* performs an EQ_TAC.  If string = "Right", then the tactic tac proves the  *)

@@ -317,6 +317,21 @@ let LIM_COMPLEX_RMUL = prove
   SIMP_TAC[LIM_COMPLEX_MUL; LIM_CONST]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Mapping real limits between C and R^1.                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let LIM_CX_LIFT = prove
+ (`!net f l.
+     ((\x. Cx(f x)) --> Cx l) net <=> ((\x. lift(f x)) --> lift l) net`,
+  REWRITE_TAC[LIM; DIST_LIFT; DIST_CX]);;
+
+let SERIES_CX_LIFT = prove
+ (`!f s x.
+     ((\x. Cx(f x)) sums (Cx x)) s <=> ((\x. lift(f x)) sums (lift x)) s`,
+  SIMP_TAC[sums; LIM_CX_LIFT; VSUM_CX; FINITE_INTER; FINITE_NUMSEG] THEN
+  REWRITE_TAC[REWRITE_RULE[o_DEF] (GSYM LIFT_SUM)]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Special cases of null limits.                                             *)
 (* ------------------------------------------------------------------------- *)
 

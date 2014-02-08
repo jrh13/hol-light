@@ -5038,6 +5038,17 @@ let SPAN_EQ_INSERT = prove
   REWRITE_TAC[SPAN_EQ; INSERT_SUBSET] THEN
   MESON_TAC[SPAN_INC; SUBSET; SET_RULE `s SUBSET (x INSERT s)`]);;
 
+let SPAN_SPECIAL_SCALE = prove
+ (`!s a x:real^N.
+     span((a % x) INSERT s) = if a = &0 then span s else span(x INSERT s)`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_LZERO; SPAN_INSERT_0] THEN
+  REWRITE_TAC[SPAN_EQ; SUBSET; FORALL_IN_INSERT] THEN
+  SIMP_TAC[SPAN_MUL; SPAN_SUPERSET; IN_INSERT] THEN
+  REWRITE_TAC[SPAN_BREAKDOWN_EQ] THEN EXISTS_TAC `inv a:real` THEN
+  ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID] THEN
+  REWRITE_TAC[SPAN_0; VECTOR_SUB_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* We can extend a linear basis-basis injection to the whole set.            *)
 (* ------------------------------------------------------------------------- *)
