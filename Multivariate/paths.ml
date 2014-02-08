@@ -6507,6 +6507,40 @@ let CARD_EQ_OPEN_IN_AFFINE = prove
   FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Locally convex sets.                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let LOCALLY_CONVEX = prove                                                
+ (`!s:real^N->bool.                                           
+        locally convex s <=>                                          
+        !x. x IN s ==> ?u v. x IN u /\ u SUBSET v /\ v SUBSET s /\
+                             open_in (subtopology euclidean s) u /\
+                             convex v`,                    
+  GEN_TAC THEN REWRITE_TAC[locally] THEN EQ_TAC THEN DISCH_TAC THENL
+   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN FIRST_X_ASSUM         
+     (MP_TAC o SPECL [`s INTER ball(x:real^N,&1)`; `x:real^N`]) THEN
+    ASM_SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_BALL] THEN
+    ASM_REWRITE_TAC[IN_INTER; CENTRE_IN_BALL; REAL_LT_01] THEN
+    MESON_TAC[SUBSET_INTER];                                   
+    MAP_EVERY X_GEN_TAC [`w:real^N->bool`; `x:real^N`] THEN
+    REWRITE_TAC[IMP_CONJ] THEN GEN_REWRITE_TAC LAND_CONV [OPEN_IN_OPEN] THEN
+    DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+    ASM_REWRITE_TAC[IN_INTER] THEN STRIP_TAC THEN                             
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN                  
+    MAP_EVERY X_GEN_TAC [`u:real^N->bool`; `v:real^N->bool`] THEN
+    STRIP_TAC THEN                                       
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_CBALL]) THEN
+    DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(s INTER ball(x:real^N,e)) INTER u` THEN
+    EXISTS_TAC `cball(x:real^N,e) INTER v` THEN                      
+    ASM_SIMP_TAC[OPEN_IN_INTER; OPEN_IN_OPEN_INTER; OPEN_BALL; CENTRE_IN_BALL;
+                 CONVEX_INTER; CONVEX_CBALL; IN_INTER] THEN      
+    MP_TAC(ISPECL [`x:real^N`; `e:real`] BALL_SUBSET_CBALL) THEN
+    ASM SET_TAC[]]);;                                           
+
+(* ------------------------------------------------------------------------- *)
 (* Basic properties of local compactness.                                    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -6733,6 +6767,12 @@ let LOCALLY_COMPACT_CLOSED_IN = prove
         ==> locally compact t`,
   REWRITE_TAC[CLOSED_IN_CLOSED] THEN REPEAT STRIP_TAC THEN
   ASM_SIMP_TAC[LOCALLY_COMPACT_INTER; CLOSED_IMP_LOCALLY_COMPACT]);;
+
+let LOCALLY_COMPACT_DELETE = prove
+ (`!s a:real^N. locally compact s ==> locally compact (s DELETE a)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LOCALLY_COMPACT_OPEN_IN THEN
+  EXISTS_TAC `s:real^N->bool` THEN
+  ASM_SIMP_TAC[OPEN_IN_DELETE; OPEN_IN_REFL]);;
 
 let SIGMA_COMPACT = prove
  (`!s:real^N->bool.
@@ -14302,33 +14342,37 @@ let HOMOTOPY_EQUIVALENT_EMPTY = prove
   SIMP_TAC[HOMOTOPY_EQUIVALENT_CONTRACTIBLE_SETS; CONTRACTIBLE_EMPTY] THEN
   REWRITE_TAC[homotopy_equivalent] THEN SET_TAC[]);;
 
+let HOMOTOPY_DOMINATED_CONTRACTIBILITY = prove
+ (`!f:real^M->real^N g s t.
+        f continuous_on s /\
+        IMAGE f s SUBSET t /\
+        g continuous_on t /\
+        IMAGE g t SUBSET s /\
+        homotopic_with (\x. T) (t,t) (f o g) I /\
+        contractible s
+        ==> contractible t`,
+  REPEAT GEN_TAC THEN SIMP_TAC[contractible; I_DEF] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`; `t:real^N->bool`]
+        NULLHOMOTOPIC_FROM_CONTRACTIBLE) THEN
+  ASM_REWRITE_TAC[contractible; I_DEF] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `b:real^N` THEN
+  ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN DISCH_TAC THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
+  EXISTS_TAC `(f:real^M->real^N) o (g:real^N->real^M)` THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `(\x. (b:real^N)) = (\x. b) o (g:real^N->real^M)`
+  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[]);;
+
 let HOMOTOPY_EQUIVALENT_CONTRACTIBILITY = prove
  (`!s:real^M->bool t:real^N->bool.
         s homotopy_equivalent t ==> (contractible s <=> contractible t)`,
-  let lemma = prove
-   (`!s:real^M->bool t:real^N->bool.
-          s homotopy_equivalent t /\ contractible s ==> contractible t`,
-    REPEAT GEN_TAC THEN SIMP_TAC[homotopy_equivalent; contractible; I_DEF] THEN
-    DISCH_THEN(CONJUNCTS_THEN2
-     (X_CHOOSE_THEN `f:real^M->real^N` (X_CHOOSE_THEN `g:real^N->real^M`
-          STRIP_ASSUME_TAC))
-     (X_CHOOSE_TAC `a:real^M`)) THEN
-    MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`; `t:real^N->bool`]
-          NULLHOMOTOPIC_FROM_CONTRACTIBLE) THEN
-    ASM_REWRITE_TAC[contractible; I_DEF] THEN
-    ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `b:real^N` THEN
-    ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN DISCH_TAC THEN
-    MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
-    EXISTS_TAC `(f:real^M->real^N) o (g:real^N->real^M)` THEN
-    ASM_REWRITE_TAC[] THEN
-    SUBGOAL_THEN `(\x. (b:real^N)) = (\x. b) o (g:real^N->real^M)`
-    SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
-    MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
-    EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[]) in
-  REPEAT STRIP_TAC THEN EQ_TAC THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] lemma) THEN
-  ASM_MESON_TAC[HOMOTOPY_EQUIVALENT_SYM]);;
+  REWRITE_TAC[homotopy_equivalent] THEN REPEAT STRIP_TAC THEN EQ_TAC THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+   (REWRITE_RULE[CONJ_ASSOC] HOMOTOPY_DOMINATED_CONTRACTIBILITY)) THEN
+  ASM_MESON_TAC[]);;
 
 let HOMOTOPY_EQUIVALENT_SING = prove
  (`!s:real^M->bool a:real^N.

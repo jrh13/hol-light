@@ -823,22 +823,6 @@ let REAL_SERIES_SUM = prove
   SUBGOAL_THEN `s INTER k = s:num->bool` ASSUME_TAC THENL
    [ASM SET_TAC[]; ASM_MESON_TAC [REAL_SERIES_FINITE_SUPPORT]]);;
 
-let REAL_SUMS_LE2 = prove
- (`!f g s y z.
-        (f real_sums y) s /\ (g real_sums z) s /\
-        (!i. i IN s ==> f(i) <= g(i))
-        ==> y <= z`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[real_sums] THEN
-  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
-  DISCH_THEN(CONJUNCTS_THEN2
-   (MATCH_MP_TAC o MATCH_MP
-     (ONCE_REWRITE_RULE[IMP_CONJ]
-       (ONCE_REWRITE_RULE[CONJ_ASSOC] REALLIM_LE)))
-   ASSUME_TAC) THEN
-  ASM_SIMP_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN
-  ASM_SIMP_TAC[SUM_LE; FINITE_INTER; IN_INTER; FINITE_NUMSEG] THEN
-  REWRITE_TAC[EVENTUALLY_TRUE]);;
-
 let REAL_SUMS_REINDEX = prove
  (`!k a l n.
      ((\x. a(x + k)) real_sums l) (from n) <=> (a real_sums l) (from(n + k))`,
@@ -866,6 +850,52 @@ let REAL_PARTIAL_SUMS_LE_INFSUM = prove
   REWRITE_TAC[o_DEF] THEN DISCH_THEN(MP_TAC o MATCH_MP
     PARTIAL_SUMS_DROP_LE_INFSUM) THEN
   SIMP_TAC[DROP_VSUM; FINITE_INTER; FINITE_NUMSEG; o_DEF; LIFT_DROP; ETA_AX]);;
+
+let REAL_SERIES_TERMS_TOZERO = prove
+ (`!f l n. (f real_sums l) (from n) ==> (f ---> &0) sequentially`,
+  REWRITE_TAC[REAL_SUMS; TENDSTO_REAL; LIFT_NUM; SERIES_TERMS_TOZERO]);;
+
+let REAL_SERIES_LE = prove
+ (`!f g s y z.
+        (f real_sums y) s /\ (g real_sums z) s /\
+        (!i. i IN s ==> f(i) <= g(i))
+        ==> y <= z`,
+  REWRITE_TAC[REAL_SUMS] THEN REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[MESON[LIFT_DROP] `x = drop(lift x)`] THEN
+  MATCH_MP_TAC SERIES_DROP_LE THEN
+  MAP_EVERY EXISTS_TAC [`lift o (f:num->real)`; `lift o (g:num->real)`] THEN
+  ASM_SIMP_TAC[o_THM; LIFT_DROP] THEN ASM_MESON_TAC[]);;
+
+let REAL_SERIES_POS = prove
+ (`!f s y.
+        (f real_sums y) s /\ (!i. i IN s ==> &0 <= f(i))
+        ==> &0 <= y`,
+  REWRITE_TAC[REAL_SUMS] THEN REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM LIFT_DROP] THEN
+  MATCH_MP_TAC SERIES_DROP_POS THEN
+  EXISTS_TAC `lift o (f:num->real)` THEN
+  ASM_SIMP_TAC[o_THM; LIFT_DROP] THEN ASM_MESON_TAC[]);;
+
+let REAL_SERIES_BOUND = prove
+ (`!f g s a b.
+        (f real_sums a) s /\ (g real_sums b) s /\
+        (!i. i IN s ==> abs(f i) <= g i)
+        ==> abs(a) <= b`,
+  REWRITE_TAC[REAL_SUMS; GSYM NORM_LIFT] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SERIES_BOUND THEN
+  EXISTS_TAC `lift o (f:num->real)` THEN
+  REWRITE_TAC[o_THM] THEN ASM_MESON_TAC[]);;
+
+let REAL_SERIES_COMPARISON_BOUND = prove
+ (`!f g s a.
+        (g real_sums a) s /\ (!i. i IN s ==> abs(f i) <= g i)
+        ==> ?l. (f real_sums l) s /\ abs(l) <= a`,
+  REWRITE_TAC[REAL_SUMS; GSYM EXISTS_LIFT; GSYM NORM_LIFT] THEN
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC (BINDER_CONV o RAND_CONV o RAND_CONV) [GSYM LIFT_DROP] THEN
+  MATCH_MP_TAC SERIES_COMPARISON_BOUND THEN
+  EXISTS_TAC `lift o (g:num->real)` THEN
+  ASM_SIMP_TAC[o_THM; LIFT_DROP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Similar combining theorems just for summability.                          *)

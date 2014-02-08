@@ -646,7 +646,7 @@ let INT_MAX = INT_ARITH `!x y. max x y = if x <= y then y else x`;;
 let INT_MIN = INT_ARITH `!x y. min x y = if x <= y then x else y`;;
 
 (* ------------------------------------------------------------------------- *)
-(* Another useful lemma.                                                     *)
+(* Additional useful lemmas.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
 let INT_OF_NUM_EXISTS = prove
@@ -655,6 +655,8 @@ let INT_OF_NUM_EXISTS = prove
   MP_TAC(ISPEC `x:int` INT_IMAGE) THEN
   REWRITE_TAC[OR_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
   ASM_INT_ARITH_TAC);;
+
+let INT_LE_DISCRETE = INT_ARITH `!x y:int. x <= y <=> x < y + &1`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Archimedian property for the integers.                                    *)

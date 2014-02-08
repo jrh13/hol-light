@@ -1,4 +1,243 @@
-Thu 23rd Jan 2014       iterate.ml
+Thu  6th Feb 2014       int.ml
+
+Added INT_LE_DISCRETE = |- !x y:int. x <= y <=> x < y + &1
+
+Thu  6th Feb 2014       Library/prime.ml
+
+Added a definition of lcm to this file, and a suite of theorems mainly about
+that. Also added "symmetric" clauses to GCD_0 and GCD_1.
+
+  DIVIDES_LCM =
+    |- !m n r. r divides m \/ r divides n ==> r divides lcm (m,n)
+
+  DIVIDES_LCM_GCD =
+    |- !m n d. d divides lcm (m,n) <=> d * gcd (m,n) divides m * n
+
+  DIVISORS_EQ =
+    |- !m n. m = n <=> (!d. d divides m <=> d divides n)
+
+  GCD_LCM_DISTRIB =
+    |- !a b c. gcd (a,lcm (b,c)) = lcm (gcd (a,b),gcd (a,c))
+
+  lcm =
+    |- !m n. lcm (m,n) = (if m * n = 0 then 0 else (m * n) DIV gcd (m,n))
+
+  LCM =
+    |- !m n.
+         m divides lcm (m,n) /\
+         n divides lcm (m,n) /\
+         (!d. m divides d /\ n divides d ==> lcm (m,n) divides d)
+
+  LCM_0 =
+    |- (!n. lcm (0,n) = 0) /\ (!n. lcm (n,0) = 0)
+
+  LCM_1 =
+    |- (!n. lcm (1,n) = n) /\ (!n. lcm (n,1) = n)
+
+  LCM_ASSOC =
+    |- !m n p. lcm (m,lcm (n,p)) = lcm (lcm (m,n),p)
+
+  LCM_DIVIDES =
+    |- !m n d. lcm (m,n) divides d <=> m divides d /\ n divides d
+
+  LCM_EQ =
+    |- !x y u v.
+            (!d. x divides d /\ y divides d <=> u divides d /\ v divides d)
+            ==> lcm (x,y) = lcm (u,v)
+
+  LCM_EXP =
+    |- !n a b. lcm (a EXP n,b EXP n) = lcm (a,b) EXP n
+
+  LCM_GCD_DISTRIB =
+    |- !a b c. lcm (a,gcd (b,c)) = gcd (lcm (a,b),lcm (a,c))
+
+  LCM_LMUL =
+    |- !a b c. lcm (c * a,c * b) = c * lcm (a,b)
+
+  LCM_MULTIPLE =
+    |- !a b. lcm (b,a * b) = a * b
+
+  LCM_REFL =
+    |- !n. lcm (n,n) = n
+
+  LCM_RMUL =
+    |- !a b c. lcm (a * c,b * c) = c * lcm (a,b)
+
+  LCM_SYM =
+    |- !m n. lcm (m,n) = lcm (n,m)
+
+  LCM_UNIQUE =
+    |- !d m n.
+          m divides d /\
+          n divides d /\
+          (!e. m divides e /\ n divides e ==> d divides e) <=>
+          d = lcm (m,n)
+
+  LCM_ZERO =
+    |- !m n. lcm (m,n) = 0 <=> m = 0 \/ n = 0
+
+  MULTIPLES_EQ =
+    |- !m n. m = n <=> (!d. m divides d <=> n divides d)
+
+  PRIMEPOW_DIVIDES_LCM =
+    |- !m n p k. prime p
+                 ==> (p EXP k divides lcm (m,n) <=>
+                      p EXP k divides m \/ p EXP k divides n)
+
+  PRIMEPOW_DIVISORS_DIVIDES =
+    |- !m n. m divides n <=>
+             (!p k.
+                  prime p /\ p EXP k divides m
+                  ==> p EXP k divides n)
+
+  PRIMEPOW_DIVISORS_EQ =
+    |- !m n. m = n <=>
+             (!p k.
+                  prime p
+                  ==> (p EXP k divides m <=> p EXP k divides n))
+
+Wed  5th Feb 2014       Library/products.ml
+
+Added natural number products to "Library/products.ml", with all the analogous
+theorems that are meaningful for their real counterparts:
+
+  nproduct =
+    |- nproduct = iterate (*)
+
+  NPRODUCT_ADD_SPLIT =
+    |- !f m n p.
+               m <= n + 1
+               ==> nproduct (m..n + p) f =
+                   nproduct (m..n) f * nproduct (n + 1..n + p) f
+
+  NPRODUCT_CLAUSES =
+    |- (!f. nproduct {} f = 1) /\
+       (!x f s.
+              FINITE s
+              ==> nproduct (x INSERT s) f =
+                  (if x IN s
+                   then nproduct s f
+                   else f x * nproduct s f))
+
+  NPRODUCT_CLAUSES_LEFT =
+    |- !f m n. m <= n
+                ==> nproduct (m..n) f =
+                    f m * nproduct (m + 1..n) f
+
+  NPRODUCT_CLAUSES_NUMSEG =
+    |- (!m. nproduct (m..0) f = (if m = 0 then f 0 else 1)) /\
+       (!m n.
+            nproduct (m..SUC n) f =
+            (if m <= SUC n
+             then nproduct (m..n) f * f (SUC n)
+             else nproduct (m..n) f))
+
+  NPRODUCT_CLAUSES_RIGHT =
+    |- !f m n.
+           0 < n /\ m <= n
+           ==> nproduct (m..n) f =
+               nproduct (m..n - 1) f * f n
+
+  NPRODUCT_CLOSED =
+    |- !P f s.
+            P 1 /\
+            (!x y. P x /\ P y ==> P (x * y)) /\
+            (!a. a IN s ==> P (f a))
+            ==> P (nproduct s f)
+
+  NPRODUCT_CONST =
+    |- !c s. FINITE s ==> nproduct s (\x. c) = c EXP CARD s
+
+  NPRODUCT_CONST_NUMSEG =
+    |- !c m n. nproduct (m..n) (\x. c) = c EXP ((n + 1) - m)
+
+  NPRODUCT_CONST_NUMSEG_1 =
+    |- !c n. nproduct (1..n) (\x. c) = c EXP n
+
+  NPRODUCT_EQ =
+    |- !f g s. (!x. x IN s ==> f x = g x) ==> nproduct s f = nproduct s g
+
+  NPRODUCT_EQ_0 =
+    |- !f s.
+          FINITE s
+          ==> (nproduct s f = 0 <=> (?x. x IN s /\ f x = 0))
+
+  NPRODUCT_EQ_0_NUMSEG =
+    |- !f m n.
+                 nproduct (m..n) f = 0 <=>
+                 (?x. m <= x /\ x <= n /\ f x = 0)
+  NPRODUCT_EQ_1 =
+    |- !f s. (!x. x IN s ==> f x = 1) ==> nproduct s f = 1
+
+  NPRODUCT_EQ_1_NUMSEG =
+    |- !f m n. (!i. m <= i /\ i <= n ==> f i = 1)
+               ==> nproduct (m..n) f = 1
+
+  NPRODUCT_EQ_NUMSEG =
+    |- !f g m n.
+          (!i. m <= i /\ i <= n ==> f i = g i)
+          ==> nproduct (m..n) f = nproduct (m..n) g
+
+  NPRODUCT_IMAGE =
+    |- !f g s.
+           (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+           ==> nproduct (IMAGE f s) g = nproduct s (g o f)
+
+  NPRODUCT_LE =
+    |- !f s.
+        FINITE s /\ (!x. x IN s ==> 0 <= f x /\ f x <= g x)
+        ==> nproduct s f <= nproduct s g
+
+  NPRODUCT_LE_NUMSEG =
+    |- !f m n.
+               (!i. m <= i /\ i <= n ==> 0 <= f i /\ f i <= g i)
+               ==> nproduct (m..n) f <= nproduct (m..n) g
+
+  NPRODUCT_MUL =
+    |- !f g s.
+         FINITE s
+         ==> nproduct s (\x. f x * g x) =
+             nproduct s f * nproduct s g
+
+  NPRODUCT_MUL_NUMSEG =
+    |- !f g m n.
+                nproduct (m..n) (\x. f x * g x) =
+                nproduct (m..n) f * nproduct (m..n) g
+
+  NPRODUCT_OFFSET =
+    |- !f m p.
+            nproduct (m + p..n + p) f =
+            nproduct (m..n) (\i. f (i + p))
+
+  NPRODUCT_ONE =
+    |- !s. nproduct s (\n. 1) = 1
+
+  NPRODUCT_POS_LT =
+    |- !f s.
+            FINITE s /\ (!x. x IN s ==> 0 < f x)
+            ==> 0 < nproduct s f
+
+  NPRODUCT_POS_LT_NUMSEG =
+    |- !f m n.
+                   (!x. m <= x /\ x <= n ==> 0 < f x)
+                   ==> 0 < nproduct (m..n) f
+
+  NPRODUCT_SING =
+    |- !f x. nproduct {x} f = f x
+
+  NPRODUCT_SING_NUMSEG =
+    |- !f n. nproduct (n..n) f = f n
+
+  NPRODUCT_UNION =
+    |- !f s t.
+           FINITE s /\ FINITE t /\ DISJOINT s t
+           ==> nproduct (s UNION t) f = nproduct s f * nproduct t f
+
+  REAL_OF_NUM_NPRODUCT =
+    |- !f s. FINITE s
+             ==> &(nproduct s f) = product s (\x. &(f x))
+
+Thu 23rd Jan 2014       iterate.ml, Library/isum.ml
 
 Made the incompatible "improvement" of removing the finiteness hypothesis from
 SUM_POS_LE, as well as adding two theorems about how sums of natural numbers
@@ -9,6 +248,9 @@ and integers collapse in the degenerate case of infinite support:
 
   SUM_DEGENERATE =
     |- !f s. ~FINITE {x | x IN s /\ ~(f x = &0)} ==> sum s f = &0
+
+Although I didn't explicitly change the file Library/isum.ml, the theorem
+ISUM_POS_LE automatically inherits the removal of the finiteness hypothesis.
 
 Thu 16th Jan 2014       sets.ml
 

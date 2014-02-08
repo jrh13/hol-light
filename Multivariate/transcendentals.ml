@@ -1006,6 +1006,15 @@ let LOG_POS_LT = prove
   REWRITE_TAC[GSYM LOG_1] THEN
   SIMP_TAC[LOG_MONO_LT; ARITH_RULE `&1 < x ==> &0 < x`; REAL_LT_01]);;
 
+let LOG_PRODUCT = prove
+ (`!f:A->real s.
+        FINITE s /\ (!x. x IN s ==> &0 < f x)
+        ==> log(product s f) = sum s (\x. log(f x))`,
+  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[PRODUCT_CLAUSES; SUM_CLAUSES; LOG_1; FORALL_IN_INSERT; LOG_MUL;
+           PRODUCT_POS_LT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Deduce periodicity just from derivative and zero values.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -1852,23 +1861,14 @@ let TAYLOR_CEXP = prove
 (* ------------------------------------------------------------------------- *)
 
 let E_APPROX_32 = prove
- (`abs(exp(&1) - &11674931555 / &4294967296) <= inv(&2 pow 32)`,
-  let lemma = prove
-   (`abs(e - x) <= e * d
-     ==> &0 <= d /\ d < &1
-         ==> abs(e - x) <= x * d / (&1 - d)`,
-    DISCH_THEN(fun th -> STRIP_TAC THEN ASSUME_TAC th THEN MP_TAC th) THEN
-    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
-    ASM_SIMP_TAC[REAL_ARITH `e * d <= x * d / i <=> d * e <= d * x / i`] THEN
-    MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
-   ASM_SIMP_TAC[REAL_LE_RDIV_EQ; REAL_SUB_LT] THEN ASM_REAL_ARITH_TAC) in
+ (`abs(exp(&1) - &5837465777 / &2147483648) <= inv(&2 pow 32)`,
   MP_TAC(ISPECL [`14`; `Cx(&1)`] TAYLOR_CEXP) THEN
-  SIMP_TAC[GSYM CX_EXP; RE_CX; COMPLEX_NORM_CX; REAL_ABS_NUM;
-           REAL_POW_ONE; GSYM CX_DIV; GSYM CX_POW] THEN
+  SIMP_TAC[RE_CX; REAL_ABS_NUM; GSYM CX_EXP; GSYM CX_DIV; GSYM CX_SUB;
+           COMPLEX_POW_ONE; COMPLEX_NORM_CX] THEN
   CONV_TAC(ONCE_DEPTH_CONV EXPAND_VSUM_CONV) THEN
   REWRITE_TAC[GSYM CX_ADD; GSYM CX_SUB; COMPLEX_NORM_CX] THEN
   CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
-  DISCH_THEN(MP_TAC o MATCH_MP lemma) THEN REAL_ARITH_TAC);;
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Taylor series for complex sine and cosine.                                *)
@@ -1919,6 +1919,29 @@ let TAYLOR_CSIN = prove
   REWRITE_TAC[COMPLEX_POW_ADD; GSYM COMPLEX_POW_POW] THEN
   REWRITE_TAC[COMPLEX_POW_II_2] THEN CONV_TAC COMPLEX_RING);;
 
+let CSIN_CONVERGES = prove
+ (`!z. ((\n. --Cx(&1) pow n * z pow (2 * n + 1) / Cx(&(FACT(2 * n + 1))))
+        sums csin(z)) (from 0)`,
+  GEN_TAC THEN REWRITE_TAC[sums; FROM_0; INTER_UNIV] THEN
+  ONCE_REWRITE_TAC[LIM_NULL] THEN MATCH_MP_TAC LIM_NULL_COMPARISON THEN
+  EXISTS_TAC
+   `\n. exp(abs(Im z)) * norm z pow (2 * n + 3) / &(FACT(2 * n + 2))` THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+  ONCE_REWRITE_TAC[NORM_SUB] THEN REWRITE_TAC[TAYLOR_CSIN] THEN
+  REWRITE_TAC[LIFT_CMUL] THEN MATCH_MP_TAC LIM_NULL_CMUL THEN
+  REWRITE_TAC[ARITH_RULE `2 * n + 3 = SUC(2 * n + 2)`; real_div] THEN
+  REWRITE_TAC[LIFT_CMUL; real_pow] THEN
+  REWRITE_TAC[GSYM VECTOR_MUL_ASSOC] THEN
+  MATCH_MP_TAC LIM_NULL_CMUL THEN
+  MP_TAC(MATCH_MP SERIES_TERMS_TOZERO (SPEC `z:complex` CEXP_CONVERGES)) THEN
+  GEN_REWRITE_TAC LAND_CONV [LIM_NULL_NORM] THEN
+  REWRITE_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_POW; COMPLEX_NORM_CX] THEN
+  REWRITE_TAC[REAL_ABS_NUM; GSYM LIFT_CMUL; GSYM real_div] THEN
+  REWRITE_TAC[LIM_SEQUENTIALLY] THEN
+  MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN MATCH_MP_TAC MONO_IMP THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC);;
+
 let TAYLOR_CCOS_RAW = prove
  (`!n z. norm(ccos z -
               vsum(0..n) (\k. if EVEN k
@@ -1961,6 +1984,29 @@ let TAYLOR_CCOS = prove
   REWRITE_TAC[COMPLEX_POW_MUL; complex_div; COMPLEX_MUL_ASSOC] THEN
   AP_THM_TAC THEN AP_TERM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
   REWRITE_TAC[GSYM COMPLEX_POW_POW; COMPLEX_POW_II_2]);;
+
+let CCOS_CONVERGES = prove
+ (`!z. ((\n. --Cx(&1) pow n * z pow (2 * n) / Cx(&(FACT(2 * n))))
+        sums ccos(z)) (from 0)`,
+  GEN_TAC THEN REWRITE_TAC[sums; FROM_0; INTER_UNIV] THEN
+  ONCE_REWRITE_TAC[LIM_NULL] THEN MATCH_MP_TAC LIM_NULL_COMPARISON THEN
+  EXISTS_TAC
+   `\n. exp(abs(Im z)) * norm z pow (2 * n + 2) / &(FACT(2 * n + 1))` THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+  ONCE_REWRITE_TAC[NORM_SUB] THEN REWRITE_TAC[TAYLOR_CCOS] THEN
+  REWRITE_TAC[LIFT_CMUL] THEN MATCH_MP_TAC LIM_NULL_CMUL THEN
+  REWRITE_TAC[ARITH_RULE `2 * n + 2 = SUC(2 * n + 1)`; real_div] THEN
+  REWRITE_TAC[LIFT_CMUL; real_pow] THEN
+  REWRITE_TAC[GSYM VECTOR_MUL_ASSOC] THEN
+  MATCH_MP_TAC LIM_NULL_CMUL THEN
+  MP_TAC(MATCH_MP SERIES_TERMS_TOZERO (SPEC `z:complex` CEXP_CONVERGES)) THEN
+  GEN_REWRITE_TAC LAND_CONV [LIM_NULL_NORM] THEN
+  REWRITE_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_POW; COMPLEX_NORM_CX] THEN
+  REWRITE_TAC[REAL_ABS_NUM; GSYM LIFT_CMUL; GSYM real_div] THEN
+  REWRITE_TAC[LIM_SEQUENTIALLY] THEN
+  MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN MATCH_MP_TAC MONO_IMP THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* The argument of a complex number, where 0 <= arg(z) < 2 pi                *)
@@ -3258,10 +3304,15 @@ let PI_APPROX_32 = prove
   CONJ_TAC THENL
    [MP_TAC(SPECL [`5`; `Cx(&1686629713 / &3221225472)`] TAYLOR_CSIN);
     MP_TAC(SPECL [`5`; `Cx(&6746518853 / &12884901888)`] TAYLOR_CSIN)] THEN
-  CONV_TAC(ONCE_DEPTH_CONV EXPAND_VSUM_CONV) THEN CONV_TAC NUM_REDUCE_CONV THEN
-  REWRITE_TAC[GSYM CX_POW; GSYM CX_DIV; GSYM CX_ADD; GSYM CX_SUB;
-              GSYM CX_NEG; GSYM CX_MUL; GSYM CX_SIN; COMPLEX_NORM_CX] THEN
-  REWRITE_TAC[IM_CX; REAL_ABS_NUM; REAL_EXP_0] THEN REAL_ARITH_TAC);;
+  SIMP_TAC[COMPLEX_NORM_CX; GSYM CX_POW; GSYM CX_DIV; GSYM CX_MUL;
+           GSYM CX_NEG; VSUM_CX; FINITE_NUMSEG; GSYM CX_SIN; GSYM CX_SUB] THEN
+  REWRITE_TAC[IM_CX; REAL_ABS_NUM; REAL_EXP_0] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  REWRITE_TAC[REAL_POW_ADD; REAL_POW_1; GSYM REAL_POW_POW] THEN
+  REWRITE_TAC[REAL_MUL_ASSOC; GSYM REAL_POW_MUL; real_div] THEN
+  REWRITE_TAC[GSYM REAL_MUL_ASSOC] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  CONV_TAC(ONCE_DEPTH_CONV HORNER_SUM_CONV) THEN REAL_ARITH_TAC);;
 
 let PI2_BOUNDS = prove
  (`&0 < pi / &2 /\ pi / &2 < &2`,
@@ -3919,6 +3970,11 @@ let CLOG_MUL_UNWINDING = prove
 let catn = new_definition
  `catn z = (ii / Cx(&2)) * clog((Cx(&1) - ii * z) / (Cx(&1) + ii * z))`;;
 
+let CATN_0 = prove
+ (`catn(Cx(&0)) = Cx(&0)`,
+  REWRITE_TAC[catn; COMPLEX_MUL_RZERO; COMPLEX_SUB_RZERO; COMPLEX_ADD_RID] THEN
+  REWRITE_TAC[COMPLEX_DIV_1; CLOG_1; COMPLEX_MUL_RZERO]);;
+
 let IM_COMPLEX_DIV_LEMMA = prove
  (`!z. Im((Cx(&1) - ii * z) / (Cx(&1) + ii * z)) = &0 <=> Re z = &0`,
   REWRITE_TAC[IM_COMPLEX_DIV_EQ_0] THEN
@@ -4246,6 +4302,69 @@ let COS_ATN = prove
 let SIN_ATN = prove
  (`!x. sin(atn x) = x / sqrt(&1 + x pow 2)`,
   SIMP_TAC[SIN_TAN; ATN_BOUND; ATN_TAN]);;
+
+let ATN_ABS = prove
+ (`!x. atn(abs x) = abs(atn x)`,
+  GEN_TAC THEN REWRITE_TAC[real_abs; ATN_POS_LE] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[ATN_NEG]);;
+
+let ATN_ADD = prove
+ (`!x y. abs(atn x + atn y) < pi / &2
+         ==> atn(x) + atn(y) = atn((x + y) / (&1 - x * y))`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC EQ_TRANS `atn((tan(atn x) + tan(atn y)) /
+                          (&1 - tan(atn x) * tan(atn y)))` THEN
+  CONJ_TAC THENL [ALL_TAC; REWRITE_TAC[ATN_TAN]] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) TAN_ADD o rand o rand o snd) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[COS_ATN_NZ] THEN MATCH_MP_TAC REAL_LT_IMP_NZ THEN
+    MATCH_MP_TAC COS_POS_PI THEN ASM_REAL_ARITH_TAC;
+    DISCH_THEN(SUBST1_TAC o SYM) THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC TAN_ATN THEN ASM_REAL_ARITH_TAC]);;
+
+let ATN_INV = prove
+ (`!x. &0 < x ==> atn(inv x) = pi / &2 - atn x`,
+  REPEAT STRIP_TAC THEN TRANS_TAC EQ_TRANS `atn(inv(tan(atn x)))` THEN
+  CONJ_TAC THENL [REWRITE_TAC[ATN_TAN]; REWRITE_TAC[GSYM TAN_COT]] THEN
+  MATCH_MP_TAC TAN_ATN THEN REWRITE_TAC[ATN_BOUNDS; REAL_ARITH
+   `--(p / &2) < p / &2 - x /\ p / &2 - x < p / &2 <=> &0 < x /\ x < p`] THEN
+  ASM_REWRITE_TAC[ATN_POS_LT] THEN MP_TAC(SPEC `x:real` ATN_BOUNDS) THEN
+  ASM_REAL_ARITH_TAC);;
+
+let ATN_ADD_SMALL = prove
+ (`!x y. abs(x * y) < &1
+         ==> (atn(x) + atn(y) = atn((x + y) / (&1 - x * y)))`,
+  REPEAT STRIP_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [`x = &0`; `y = &0`] THEN
+  ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_RZERO; REAL_SUB_RZERO;
+                  REAL_DIV_1; REAL_ADD_LID; REAL_ADD_RID; ATN_0] THEN
+  MATCH_MP_TAC ATN_ADD THEN MATCH_MP_TAC(REAL_ARITH
+   `abs(x) < p - abs(y) \/ abs(y) < p - abs(x) ==> abs(x + y) < p`) THEN
+  REWRITE_TAC[GSYM ATN_ABS] THEN
+  ASM_SIMP_TAC[GSYM ATN_INV; REAL_ARITH `~(x = &0) ==> &0 < abs x`;
+        ATN_MONO_LT_EQ; REAL_ARITH `inv x = &1 / x`; REAL_LT_RDIV_EQ] THEN
+  ASM_REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Machin-like formulas for pi.                                              *)
+(* ------------------------------------------------------------------------- *)
+
+let [MACHIN; MACHIN_EULER; MACHIN_GAUSS] = (CONJUNCTS o prove)
+ (`(&4 * atn(&1 / &5) - atn(&1 / &239) = pi / &4) /\
+   (&5 * atn(&1 / &7) + &2 * atn(&3 / &79) = pi / &4) /\
+   (&12 * atn(&1 / &18) + &8 * atn(&1 / &57) - &5 * atn(&1 / &239) = pi / &4)`,
+  REPEAT CONJ_TAC THEN CONV_TAC(ONCE_DEPTH_CONV(fun tm ->
+    if is_binop `( * ):real->real->real` tm
+    then LAND_CONV(RAND_CONV(TOP_DEPTH_CONV num_CONV)) tm
+    else failwith "")) THEN
+  REWRITE_TAC[real_sub; GSYM REAL_MUL_RNEG; GSYM ATN_NEG] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_SUC; REAL_ADD_RDISTRIB] THEN
+  REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_LID; REAL_ADD_LID] THEN
+  CONV_TAC(DEPTH_CONV (fun tm ->
+    let th1 = PART_MATCH (lhand o rand) ATN_ADD_SMALL tm in
+    let th2 = MP th1 (EQT_ELIM(REAL_RAT_REDUCE_CONV(lhand(concl th1)))) in
+    CONV_RULE(RAND_CONV(RAND_CONV REAL_RAT_REDUCE_CONV)) th2)) THEN
+  REWRITE_TAC[ATN_1]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some bound theorems where a bit of simple calculus is handy.              *)
