@@ -971,6 +971,10 @@ let LOG_MONO_LT_IMP = prove
  (`!x y. &0 < x /\ x < y ==> log(x) < log(y)`,
   MESON_TAC[LOG_MONO_LT; REAL_LT_TRANS]);;
 
+let LOG_MONO_LT_REV = prove
+ (`!x y. &0 < x /\ &0 < y /\ log x < log y ==> x < y`,
+  MESON_TAC[LOG_MONO_LT]);;
+
 let LOG_MONO_LE = prove
  (`!x y. &0 < x /\ &0 < y ==> (log(x) <= log(y) <=> x <= y)`,
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM REAL_EXP_MONO_LE] THEN
@@ -979,6 +983,10 @@ let LOG_MONO_LE = prove
 let LOG_MONO_LE_IMP = prove
  (`!x y. &0 < x /\ x <= y ==> log(x) <= log(y)`,
   MESON_TAC[LOG_MONO_LE; REAL_LT_IMP_LE; REAL_LTE_TRANS]);;
+
+let LOG_MONO_LE_REV = prove
+ (`!x y. &0 < x /\ &0 < y /\ log x <= log y ==> x <= y`,
+  MESON_TAC[LOG_MONO_LE]);;
 
 let LOG_POW = prove
  (`!n x. &0 < x ==> (log(x pow n) = &n * log(x))`,
@@ -5110,6 +5118,14 @@ let ASN_BOUNDS = prove
   ASM_REWRITE_TAC[] THEN REPEAT(POP_ASSUM MP_TAC) THEN
   MP_TAC PI_POS THEN REAL_ARITH_TAC);;
 
+let ASN_BOUNDS_PI2 = prove
+ (`!x. &0 <= x /\ x <= &1 ==> &0 <= asn x /\ asn x <= pi / &2`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`&0`; `asn x`] SIN_MONO_LE_EQ) THEN
+  ASM_SIMP_TAC[SIN_0; SIN_ASN; REAL_ARITH `&0 <= x ==> --(&1) <= x`] THEN
+  MP_TAC(SPEC `x:real` ASN_BOUNDS) THEN MP_TAC PI_POS THEN
+  ASM_REAL_ARITH_TAC);;
+
 let ASN_NEG = prove
  (`!x. -- &1 <= x /\ x <= &1 ==> asn(--x) = --asn(x)`,
   GEN_TAC THEN DISCH_TAC THEN
@@ -5959,75 +5975,117 @@ let ARG_ATAN_UPPERHALF = prove
     POP_ASSUM MP_TAC THEN CONV_TAC REAL_FIELD]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Real n'th roots.                                                          *)
+(* Real n'th roots. Regardless of whether n is odd or even, we totalize by   *)
+(* setting root_n(-x) = -root_n(x), which makes some convenient facts hold.  *)
 (* ------------------------------------------------------------------------- *)
 
 let root = new_definition
- `root(n) x = @u:real. (&0 <= x ==> &0 <= u) /\ u pow n = x`;;
+ `root(n) x = real_sgn(x) * exp(log(abs x) / &n)`;;
 
 let ROOT_0 = prove
- (`!n. ~(n = 0) ==> root n (&0) = &0`,
-  SIMP_TAC[root; REAL_LT_REFL; REAL_POW_EQ_0; REAL_LE_REFL; SELECT_REFL;
-           REAL_ARITH `&0 <= u /\ u = &0 <=> u = &0`]);;
+ (`!n. root n (&0) = &0`,
+  REWRITE_TAC[root; REAL_SGN_0; REAL_MUL_LZERO]);;
 
 let ROOT_1 = prove
- (`!n. ~(n = 0) ==> root n (&1) = &1`,
-  SIMP_TAC[root; REAL_POS; REAL_POW_EQ_1; CONJ_ASSOC] THEN
-  REWRITE_TAC[REAL_ARITH `&0 <= u /\ abs u = &1 <=> u = &1`] THEN
-  SIMP_TAC[TAUT `a /\ b <=> ~(a ==> ~b)`] THEN
-  CONV_TAC REAL_RAT_REDUCE_CONV);;
+ (`!n. root n (&1) = &1`,
+  REWRITE_TAC[root; REAL_ABS_NUM; LOG_1; real_div; REAL_MUL_LZERO] THEN
+  REWRITE_TAC[real_sgn; REAL_EXP_0] THEN REAL_ARITH_TAC);;
 
 let ROOT_2 = prove
  (`!x. root 2 x = sqrt x`,
-  GEN_TAC THEN REWRITE_TAC[sqrt; root] THEN
-  AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `y:real` THEN
-  ASM_CASES_TAC `x:real = y pow 2` THEN
-  ASM_REWRITE_TAC[REAL_POW_2; REAL_LE_SQUARE] THEN REAL_ARITH_TAC);;
+  GEN_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC SQRT_UNIQUE_GEN THEN
+  REWRITE_TAC[root; REAL_SGN_MUL; REAL_POW_MUL; REAL_SGN_REAL_SGN] THEN
+  REWRITE_TAC[REAL_SGN_POW_2; GSYM REAL_SGN_POW] THEN
+  SIMP_TAC[real_sgn; REAL_EXP_POS_LT; REAL_MUL_RID] THEN
+  REWRITE_TAC[REAL_ARITH `(&0 < abs x <=> ~(x = &0)) /\ ~(abs x < &0)`] THEN
+  ASM_CASES_TAC `x = &0` THEN
+  ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_ABS_NUM; REAL_MUL_LID] THEN
+  REWRITE_TAC[GSYM REAL_EXP_N; REAL_ARITH `&2 * x / &2 = x`] THEN
+  ASM_SIMP_TAC[EXP_LOG; REAL_ARITH `&0 < abs x <=> ~(x = &0)`]);;
+
+let ROOT_NEG = prove
+ (`!n x. root n (--x) = --(root n x)`,
+  REWRITE_TAC[root; REAL_SGN_NEG; REAL_ABS_NEG; REAL_MUL_LNEG]);;
 
 let ROOT_WORKS = prove
- (`!n x. ODD n \/ ~(n = 0) /\ &0 <= x
-         ==> (&0 <= x ==> &0 <= root n x) /\ (root n x) pow n = x`,
-  REPEAT GEN_TAC THEN
-  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[ARITH] THEN DISCH_TAC THEN
-  REWRITE_TAC[root] THEN CONV_TAC SELECT_CONV THEN
-  REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
-   (REAL_ARITH `x = &0 \/ &0 < x \/ &0 < --x`)
-  THENL
-   [EXISTS_TAC `&0` THEN ASM_REWRITE_TAC[REAL_POW_ZERO];
-    EXISTS_TAC `exp(log x / &n)` THEN REWRITE_TAC[REAL_EXP_POS_LE] THEN
-    ASM_SIMP_TAC[GSYM REAL_EXP_N; REAL_DIV_LMUL; REAL_OF_NUM_EQ; EXP_LOG];
-    FIRST_X_ASSUM(DISJ_CASES_THEN ASSUME_TAC) THENL
-     [ALL_TAC; ASM_REAL_ARITH_TAC] THEN
-    EXISTS_TAC `--exp(log(--x) / &n)` THEN REWRITE_TAC[REAL_POW_NEG] THEN
-    ASM_SIMP_TAC[GSYM NOT_ODD; REAL_ARITH `&0 < --x ==> ~(&0 <= x)`] THEN
-    ASM_SIMP_TAC[GSYM REAL_EXP_N; REAL_DIV_LMUL; REAL_OF_NUM_EQ; EXP_LOG;
-                 REAL_NEG_NEG]]);;
+ (`!n x. real_sgn(root n x) = real_sgn x /\
+         (root n x) pow n = if n = 0 then &1
+                            else real_sgn(x) pow n * abs x`,
+  REWRITE_TAC[root; REAL_SGN_MUL; REAL_POW_MUL; GSYM REAL_EXP_N] THEN
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[real_div; REAL_MUL_LZERO; REAL_MUL_RZERO; REAL_INV_0;
+                  REAL_EXP_0; REAL_MUL_RID; real_pow; REAL_SGN_REAL_SGN] THEN
+  REWRITE_TAC[real_sgn; REAL_LT_01; REAL_MUL_RID] THEN
+  ASM_SIMP_TAC[REAL_EXP_POS_LT; REAL_MUL_RID; GSYM REAL_ABS_NZ;
+               GSYM real_div; REAL_DIV_LMUL; REAL_OF_NUM_EQ] THEN
+  ASM_CASES_TAC `x = &0` THEN
+  ASM_REWRITE_TAC[REAL_LT_REFL; REAL_POW_ZERO; REAL_MUL_LZERO] THEN
+  ASM_SIMP_TAC[EXP_LOG; GSYM REAL_ABS_NZ]);;
 
 let REAL_POW_ROOT = prove
  (`!n x. ODD n \/ ~(n = 0) /\ &0 <= x ==> (root n x) pow n = x`,
-  SIMP_TAC[ROOT_WORKS]);;
-
-let ROOT_POS_LE = prove
- (`!n x. ~(n = 0) /\ &0 <= x ==> &0 <= root n x`,
-  SIMP_TAC[ROOT_WORKS]);;
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[ARITH] THEN STRIP_TAC THEN ASM_REWRITE_TAC[ROOT_WORKS] THENL
+   [FIRST_ASSUM(CHOOSE_THEN SUBST1_TAC o GEN_REWRITE_RULE I [ODD_EXISTS]) THEN
+    REWRITE_TAC[ONCE_REWRITE_RULE[REAL_MUL_SYM] real_pow] THEN
+    REWRITE_TAC[GSYM REAL_MUL_ASSOC; REAL_SGN_ABS] THEN
+    REWRITE_TAC[GSYM REAL_POW_POW] THEN
+    REWRITE_TAC[REWRITE_RULE[REAL_SGN_POW] REAL_SGN_POW_2] THEN
+    REWRITE_TAC[real_sgn; GSYM REAL_ABS_NZ] THEN
+    ASM_CASES_TAC `x = &0` THEN
+    ASM_REWRITE_TAC[REAL_LT_REFL; REAL_POW_ONE] THEN ASM_REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[real_sgn; REAL_LT_LE] THEN
+    ASM_CASES_TAC `x = &0` THEN
+    ASM_REWRITE_TAC[REAL_POW_ZERO; REAL_POW_ONE] THEN
+    ASM_REAL_ARITH_TAC]);;
 
 let ROOT_POS_LT = prove
- (`!n x. ~(n = 0) /\ &0 < x ==> &0 < root n x`,
-  REPEAT GEN_TAC THEN SIMP_TAC[REAL_LT_LE; ROOT_POS_LE] THEN STRIP_TAC THEN
-  DISCH_THEN(ASSUME_TAC o SYM) THEN
-  MP_TAC(SPECL [`n:num`; `x:real`] REAL_POW_ROOT) THEN
-  ASM_REWRITE_TAC[REAL_POW_ZERO]);;
+ (`!n x. &0 < x ==> &0 < root n x`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[root] THEN
+  MATCH_MP_TAC REAL_LT_MUL THEN
+  ASM_REWRITE_TAC[REAL_EXP_POS_LT; REAL_SGN_INEQS]);;
+
+let ROOT_POS_LE = prove
+ (`!n x. &0 <= x ==> &0 <= root n x`,
+  MESON_TAC[REAL_LE_LT; ROOT_POS_LT; ROOT_0; REAL_LT_REFL]);;
+
+let ROOT_LT_0 = prove
+ (`!n x. &0 < root n x <=> &0 < x`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[ROOT_POS_LT] THEN
+  REWRITE_TAC[GSYM REAL_NOT_LE] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[REAL_ARITH `x <= &0 <=> &0 <= --x`; GSYM ROOT_NEG] THEN
+  REWRITE_TAC[ROOT_POS_LE]);;
+
+let ROOT_LE_0 = prove
+ (`!n x. &0 <= root n x <=> &0 <= x`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[ROOT_POS_LE] THEN
+  REWRITE_TAC[GSYM REAL_NOT_LT] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[REAL_ARITH `x < &0 <=> &0 < --x`; GSYM ROOT_NEG] THEN
+  REWRITE_TAC[ROOT_POS_LT]);;
+
+let ROOT_EQ_0 = prove
+ (`!n x. root n x = &0 <=> x = &0`,
+  REWRITE_TAC[root; REAL_ENTIRE; REAL_EXP_NZ; REAL_SGN_INEQS]);;
+
+let REAL_ROOT_MUL = prove
+ (`!n x y. root n (x * y) = root n x * root n y`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[REAL_MUL_LZERO; ROOT_0] THEN
+  ASM_CASES_TAC `y = &0` THEN ASM_REWRITE_TAC[REAL_MUL_RZERO; ROOT_0] THEN
+  REWRITE_TAC[root; REAL_SGN_MUL; REAL_ABS_MUL] THEN
+  ASM_SIMP_TAC[LOG_MUL; GSYM REAL_ABS_NZ; real_div] THEN
+  REWRITE_TAC[REAL_ADD_RDISTRIB; REAL_EXP_ADD] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_ROOT_POW_GEN = prove
+ (`!m n x y. root n (x pow m) = (root n x) pow m`,
+  INDUCT_TAC THEN ASM_REWRITE_TAC[REAL_ROOT_MUL; ROOT_1; real_pow]);;
 
 let REAL_ROOT_POW = prove
  (`!n x. ODD n \/ ~(n = 0) /\ &0 <= x ==> root n (x pow n) = x`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[root] THEN
-  GEN_REWRITE_TAC RAND_CONV [GSYM SELECT_REFL] THEN
-  AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `y:real` THEN
-  MP_TAC(SPECL [`n:num`; `&0`; `x:real`] REAL_POW_LE2_ODD_EQ) THEN
-  POP_ASSUM MP_TAC THEN REWRITE_TAC[REAL_POW_EQ_EQ; GSYM NOT_EVEN] THEN
-  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[ARITH] THEN
-  COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_POW_LE; REAL_POW_ZERO] THEN
-  ASM_REAL_ARITH_TAC);;
+  SIMP_TAC[REAL_ROOT_POW_GEN; REAL_POW_ROOT]);;
 
 let ROOT_UNIQUE = prove
  (`!n x y. y pow n = x /\ (ODD n \/ ~(n = 0) /\ &0 <= y) ==> root n x = y`,
@@ -6035,57 +6093,64 @@ let ROOT_UNIQUE = prove
   UNDISCH_THEN `(y:real) pow n = x` (SUBST_ALL_TAC o SYM) THEN
   MATCH_MP_TAC REAL_ROOT_POW THEN ASM_REWRITE_TAC[]);;
 
-let REAL_ROOT_MUL = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y
-           ==> root n (x * y) = root n x * root n y`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC ROOT_UNIQUE THEN
-  ASM_SIMP_TAC[REAL_POW_MUL; REAL_POW_ROOT; REAL_LE_MUL; ROOT_POS_LE]);;
-
 let REAL_ROOT_INV = prove
- (`!n x. ~(n = 0) /\ &0 <= x ==> root n (inv x) = inv(root n x)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC ROOT_UNIQUE THEN
-  ASM_SIMP_TAC[REAL_POW_INV; REAL_POW_ROOT; REAL_LE_INV_EQ; ROOT_POS_LE]);;
+ (`!n x. root n (inv x) = inv(root n x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[root; REAL_SGN_INV; REAL_INV_SGN] THEN
+  ASM_CASES_TAC `x = &0` THEN
+  ASM_REWRITE_TAC[REAL_SGN_0; REAL_MUL_LZERO; REAL_INV_0] THEN
+  REWRITE_TAC[REAL_INV_MUL; REAL_INV_SGN; REAL_ABS_INV] THEN
+  ASM_SIMP_TAC[GSYM REAL_EXP_NEG; LOG_INV; GSYM REAL_ABS_NZ] THEN
+  REWRITE_TAC[real_div; REAL_MUL_LNEG]);;
 
 let REAL_ROOT_DIV = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y
-           ==> root n (x / y) = root n x / root n y`,
-  SIMP_TAC[real_div; REAL_ROOT_MUL; REAL_ROOT_INV; REAL_LE_INV_EQ]);;
+ (`!n x y. root n (x / y) = root n x / root n y`,
+  SIMP_TAC[real_div; REAL_ROOT_MUL; REAL_ROOT_INV]);;
 
 let ROOT_MONO_LT = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ x < y ==> root n x < root n y`,
-  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  MATCH_MP_TAC(REAL_ARITH
-   `(&0 <= x /\ &0 <= y ==> (v <= u ==> y <= x))
-    ==> &0 <= x /\ x < y ==> u < v`) THEN
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `(root n y) pow n <= (root n x) pow n` MP_TAC THENL
-   [MATCH_MP_TAC REAL_POW_LE2 THEN ASM_SIMP_TAC[ROOT_POS_LE];
-    ASM_SIMP_TAC[REAL_POW_ROOT]]);;
+ (`!n x y. ~(n = 0) /\ x < y ==> root n x < root n y`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `!x y. &0 <= x /\ x < y ==> root n x < root n y`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_POW_LT2_REV THEN
+    EXISTS_TAC `n:num` THEN ASM_REWRITE_TAC[ROOT_WORKS; ROOT_LE_0] THEN
+    ASM_REWRITE_TAC[real_sgn] THEN REPEAT
+     (COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_POW_ONE; REAL_POW_ZERO]) THEN
+    ASM_REAL_ARITH_TAC;
+    REPEAT STRIP_TAC THEN ASM_CASES_TAC `&0 <= x` THEN ASM_SIMP_TAC[] THEN
+    ASM_CASES_TAC `&0 <= y` THENL
+     [MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `&0` THEN
+      ASM_REWRITE_TAC[GSYM REAL_NOT_LE; ROOT_LE_0];
+      FIRST_X_ASSUM(MP_TAC o SPECL [`--y:real`; `--x:real`]) THEN
+      REWRITE_TAC[ROOT_NEG] THEN ASM_REAL_ARITH_TAC]]);;
 
 let ROOT_MONO_LE = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ x <= y ==> root n x <= root n y`,
-  MESON_TAC[ROOT_MONO_LT; REAL_LE_LT]);;
+ (`!n x y. x <= y ==> root n x <= root n y`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_REWRITE_TAC[root; real_div; REAL_INV_0; REAL_MUL_RZERO;
+                    REAL_EXP_0; REAL_MUL_RID] THEN
+    REWRITE_TAC[real_sgn] THEN ASM_REAL_ARITH_TAC;
+    ASM_MESON_TAC[REAL_LE_LT; ROOT_0; ROOT_MONO_LT]]);;
 
 let ROOT_MONO_LT_EQ = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y ==> (root n x < root n y <=> x < y)`,
+ (`!n x y. ~(n = 0) ==> (root n x < root n y <=> x < y)`,
   MESON_TAC[ROOT_MONO_LT; REAL_NOT_LT; ROOT_MONO_LE]);;
 
 let ROOT_MONO_LE_EQ = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y
-           ==> (root n x <= root n y <=> x <= y)`,
+ (`!n x y. ~(n = 0) ==> (root n x <= root n y <=> x <= y)`,
   MESON_TAC[ROOT_MONO_LT; REAL_NOT_LT; ROOT_MONO_LE]);;
 
 let ROOT_INJ = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y ==> (root n x = root n y <=> x = y)`,
+ (`!n x y. ~(n = 0) ==> (root n x = root n y <=> x = y)`,
   SIMP_TAC[GSYM REAL_LE_ANTISYM; ROOT_MONO_LE_EQ]);;
 
 let REAL_ROOT_LE = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y
+ (`!n x y. ~(n = 0) /\ &0 <= y
            ==> (root n x <= y <=> x <= y pow n)`,
   MESON_TAC[REAL_ROOT_POW; REAL_POW_LE; ROOT_MONO_LE_EQ]);;
 
 let REAL_LE_ROOT = prove
- (`!n x y. ~(n = 0) /\ &0 <= x /\ &0 <= y
+ (`!n x y. ~(n = 0) /\ &0 <= x
            ==> (x <= root n y <=> x pow n <= y)`,
   MESON_TAC[REAL_ROOT_POW; REAL_POW_LE; ROOT_MONO_LE_EQ]);;
 
@@ -6097,10 +6162,17 @@ let LOG_ROOT = prove
 
 let ROOT_EXP_LOG = prove
  (`!n x. ~(n = 0) /\ &0 < x ==> root n x = exp(log x / &n)`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP ROOT_POS_LT) THEN
-  REWRITE_TAC[GSYM REAL_EXP_LOG] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
-  AP_TERM_TAC THEN ASM_SIMP_TAC[LOG_ROOT]);;
+  SIMP_TAC[root; real_sgn; real_abs; REAL_LT_IMP_LE; REAL_MUL_LID]);;
+
+let ROOT_PRODUCT = prove
+ (`!n f s. FINITE s ==> root n (product s f) = product s (\i. root n (f i))`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[PRODUCT_CLAUSES; REAL_ROOT_MUL; ROOT_1]);;
+
+let SQRT_PRODUCT = prove
+ (`!f s. FINITE s ==> sqrt(product s f) = product s (\i. sqrt(f i))`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[PRODUCT_CLAUSES; SQRT_MUL; SQRT_1]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Real power function. This involves a few arbitrary choices.               *)
@@ -6147,6 +6219,10 @@ let RPOW_POW = prove
     ASM_MESON_TAC[ODD_MULT];
     DISCH_TAC THEN MAP_EVERY EXISTS_TAC [`n:num`; `1`] THEN
     ASM_REWRITE_TAC[REAL_DIV_1; ARITH_ODD]]);;
+
+let RPOW_0 = prove
+ (`!x. x rpow &0 = &1`,
+  REWRITE_TAC[RPOW_POW; real_pow]);;
 
 let RPOW_NEG = prove
  (`!x y. x rpow (--y) = inv(x rpow y)`,
@@ -6337,6 +6413,10 @@ let REAL_ROOT_RPOW = prove
       `~(n = &0) ==> n * &1 / n * x = x`] THEN
     ONCE_REWRITE_TAC[REAL_ARITH `--x:real = y <=> x = --y`] THEN
     MATCH_MP_TAC EXP_LOG THEN ASM_REAL_ARITH_TAC]);;
+
+let LOG_RPOW = prove
+ (`!x y. &0 < x ==> log(x rpow y) = y * log x`,
+  SIMP_TAC[rpow; LOG_EXP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Formulation of loop homotopy in terms of maps out of S^1                  *)

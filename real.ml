@@ -1437,6 +1437,28 @@ let REAL_SGN_INEQS = prove
    (!x. real_sgn x = &0 <=> x = &0)`,
   REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
 
+let REAL_SGN_POW = prove
+ (`!x n. real_sgn(x pow n) = real_sgn(x) pow n`,
+  GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[REAL_SGN_MUL; real_pow] THEN
+  REWRITE_TAC[real_sgn; REAL_LT_01]);;
+
+let REAL_SGN_POW_2 = prove
+ (`!x. real_sgn(x pow 2) = real_sgn(abs x)`,
+  REWRITE_TAC[real_sgn] THEN
+  SIMP_TAC[GSYM REAL_NOT_LE; REAL_ABS_POS; REAL_LE_POW_2;
+           REAL_ARITH `&0 <= x ==> (x <= &0 <=> x = &0)`] THEN
+  REWRITE_TAC[REAL_POW_EQ_0; REAL_ABS_ZERO; ARITH]);;
+
+let REAL_SGN_REAL_SGN = prove
+ (`!x. real_sgn(real_sgn x) = real_sgn x`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let REAL_INV_SGN = prove
+ (`!x. real_inv(real_sgn x) = real_sgn x`,
+  GEN_TAC THEN REWRITE_TAC[real_sgn] THEN
+  REPEAT COND_CASES_TAC THEN 
+  REWRITE_TAC[REAL_INV_0; REAL_INV_1; REAL_INV_NEG]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Useful "without loss of generality" lemmas.                               *)
 (* ------------------------------------------------------------------------- *)

@@ -2,8 +2,8 @@
 (* Liouville approximation theorem.                                          *)
 (* ========================================================================= *)
 
-needs "Library/poly.ml";;
 needs "Library/floor.ml";;
+needs "Library/poly.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition of algebraic and transcendental.                               *)

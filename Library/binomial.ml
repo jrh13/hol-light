@@ -13,6 +13,10 @@ let binom = define
    (!k. binom(0,SUC(k)) = 0) /\
    (!n k. binom(SUC(n),SUC(k)) = binom(n,SUC(k)) + binom(n,k))`;;
 
+let BINOM_0 = prove
+ (`!n. binom(0,n) = if n = 0 then 1 else 0`,
+  INDUCT_TAC THEN REWRITE_TAC[binom; NOT_SUC]);;
+
 let BINOM_LT = prove
  (`!n k. n < k ==> (binom(n,k) = 0)`,
   INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC[binom; ARITH; LT_SUC; LT] THEN
@@ -22,9 +26,9 @@ let BINOM_REFL = prove
  (`!n. binom(n,n) = 1`,
   INDUCT_TAC THEN ASM_SIMP_TAC[binom; BINOM_LT; LT; ARITH]);;
 
-let BINOM_1 = prove                
+let BINOM_1 = prove
  (`!n. binom(n,1) = n`,
-  REWRITE_TAC[num_CONV `1`] THEN                                         
+  REWRITE_TAC[num_CONV `1`] THEN
   INDUCT_TAC THEN ASM_REWRITE_TAC[binom] THEN ARITH_TAC);;
 
 let BINOM_FACT = prove
@@ -48,6 +52,16 @@ let BINOM_PENULT = prove
   INDUCT_TAC THEN ASM_REWRITE_TAC [binom; ONE; BINOM_REFL] THEN
   SUBGOAL_THEN `binom(n,SUC n)=0` SUBST1_TAC THENL
    [REWRITE_TAC [BINOM_EQ_0; LT]; REWRITE_TAC [ADD; ADD_0; ADD_SUC; SUC_INJ]]);;
+
+let BINOM_GE_TOP = prove
+ (`!m n. 1 <= m /\ m < n ==> n <= binom(n,m)`,
+  INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC[binom] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN STRIP_TAC THEN ASM_CASES_TAC `m = 0` THEN
+  ASM_SIMP_TAC[BINOM_1; ARITH_SUC; binom] THEN REWRITE_TAC[ADD1; LE_REFL] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC(ARITH_RULE `~(c = 0) ==> n <= b ==> n + 1 <= c + b`) THEN
+  REWRITE_TAC[BINOM_EQ_0] THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* More potentially useful lemmas.                                           *)

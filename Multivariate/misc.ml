@@ -423,20 +423,24 @@ let REAL_MIN_INF = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Define square root here to decouple it from the existing analysis theory. *)
+(* We totalize by making sqrt(-x) = -sqrt(x), which looks rather unnatural   *)
+(* but allows many convenient properties to be used without sideconditions.  *)
 (* ------------------------------------------------------------------------- *)
 
 let sqrt = new_definition
-  `sqrt(x) = @y. &0 <= y /\ (y pow 2 = x)`;;
+ `sqrt(x) = @y. real_sgn y = real_sgn x /\ y pow 2 = abs x`;;
 
 let SQRT_UNIQUE = prove
- (`!x y. &0 <= y /\ (y pow 2 = x) ==> (sqrt(x) = y)`,
+ (`!x y. &0 <= y /\ y pow 2 = x ==> sqrt(x) = y`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[sqrt] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[REAL_POW_2] THEN
-  REWRITE_TAC[REAL_ARITH `(x * x = y * y) <=> ((x + y) * (x - y) = &0)`] THEN
-  REWRITE_TAC[REAL_ENTIRE] THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC);;
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[REAL_SGN_POW_2; REAL_ABS_POW] THEN
+  X_GEN_TAC `z:real` THEN ASM_REWRITE_TAC[real_abs] THEN
+  REWRITE_TAC[REAL_RING `x pow 2 = y pow 2 <=> x:real = y \/ x = --y`] THEN
+  REWRITE_TAC[real_sgn] THEN ASM_REAL_ARITH_TAC);;
 
 let POW_2_SQRT = prove
- (`!x. &0 <= x ==> (sqrt(x pow 2) = x)`,
+ (`!x. &0 <= x ==> sqrt(x pow 2) = x`,
   MESON_TAC[SQRT_UNIQUE]);;
 
 let SQRT_0 = prove

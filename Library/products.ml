@@ -20,6 +20,10 @@ let NPRODUCT_CLAUSES = prove
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_MUL]);;
 
+let NPRODUCT_SUPPORT = prove
+ (`!f s. nproduct (support ( * ) f s) f = nproduct s f`,
+  REWRITE_TAC[nproduct; ITERATE_SUPPORT]);;
+
 let NPRODUCT_UNION = prove
  (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
            ==> (nproduct (s UNION t) f = nproduct s f * nproduct t f)`,
@@ -159,6 +163,12 @@ let NPRODUCT_CLAUSES_RIGHT = prove
   GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
   SIMP_TAC[LT_REFL; NPRODUCT_CLAUSES_NUMSEG; SUC_SUB1]);;
 
+let NPRODUCT_SUPERSET = prove
+ (`!f:A->num u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f(x) = 1)
+        ==> nproduct v f = nproduct u f`,
+  SIMP_TAC[nproduct; GSYM NEUTRAL_MUL; ITERATE_SUPERSET; MONOIDAL_MUL]);;
+
 let th = prove
    (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
                 ==> nproduct s (\i. f(i)) = nproduct s g) /\
@@ -187,6 +197,10 @@ let PRODUCT_CLAUSES = prove
   REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
   MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_REAL_MUL]);;
+
+let PRODUCT_SUPPORT = prove
+ (`!f s. product (support ( * ) f s) f = product s f`,
+  REWRITE_TAC[product; ITERATE_SUPPORT]);;
 
 let PRODUCT_UNION = prove
  (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
@@ -384,6 +398,13 @@ let REAL_OF_NUM_NPRODUCT = prove
  (`!f:A->num s. FINITE s ==> &(nproduct s f) = product s (\x. &(f x))`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[PRODUCT_CLAUSES; NPRODUCT_CLAUSES; GSYM REAL_OF_NUM_MUL]);;
+
+let PRODUCT_SUPERSET = prove
+ (`!f:A->real u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f(x) = &1)
+        ==> product v f = product u f`,
+  SIMP_TAC[product; GSYM NEUTRAL_REAL_MUL;
+           ITERATE_SUPERSET; MONOIDAL_REAL_MUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extend congruences.                                                       *)

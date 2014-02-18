@@ -1,9 +1,124 @@
+EXTENSION     |- ∀s t. s = t ⇔ (∀x. x ∈ s ⇔ x ∈ t)
+
+SUBSET     |- ∀s t. s ⊂ t ⇔ (∀x. x ∈ s ⇒ x ∈ t)
+
+SUBSET_REFL     |- ∀s. s ⊂ s
+
+SUBSET_TRANS     |- ∀s t u. s ⊂ t ∧ t ⊂ u ⇒ s ⊂ u
+
+SUBSET_ANTISYM     |- ∀s t. s ⊂ t ∧ t ⊂ s ⇒ s = t
+
+SUBSET_ANTISYM_EQ     |- ∀s t. s ⊂ t ∧ t ⊂ s ⇔ s = t
+
+SUBSET_INTER_ABSORPTION     |- ∀s t. s ⊂ t ⇔ s ∩ t = s
+
+SUBSET_UNIV     |- ∀s. s ⊂ (:A)
+
+
+IN_INSERT     |- ∀x y s. x ∈ y INSERT s ⇔ x = y ∨ x ∈ s
+
+IN_DIFF     |- ∀s t x. x ∈ s ━ t ⇔ x ∈ s ∧ ¬(x ∈ t)
+
+IN_SING     |- ∀x y. x ∈ {y} ⇔ x = y
+
+IN_UNION     |- ∀s t x. x ∈ s ∪ t ⇔ x ∈ s ∨ x ∈ t
+
+IN_INTER     |- ∀s t x. x ∈ s ∩ t ⇔ x ∈ s ∧ x ∈ t
+
+IN_UNIONS     |- ∀s x. x ∈ UNIONS s ⇔ (∃t. t ∈ s ∧ x ∈ t)
+
+IN_INTERS     |- ∀s x. x ∈ INTERS s ⇔ (∀t. t ∈ s ⇒ x ∈ t)
+
+IN_UNIV     |- ∀x. x ∈ (:A)
+
+
+EMPTY     |- ∅ = (λx. F)
+
+NOT_IN_EMPTY     |- ∀x. ¬(x ∈ ∅)
+
+SUBSET_EMPTY     |- ∀s. s ⊂ ∅ ⇔ s = ∅
+
+MEMBER_NOT_EMPTY     |- ∀s. (∃x. x ∈ s) ⇔ ¬(s = ∅)
+
+EMPTY_SUBSET     |- ∀s. ∅ ⊂ s
+
+DIFF_EMPTY     |- ∀s. s ━ ∅ = s
+
+DIFF_EQ_EMPTY     |- ∀s. s ━ s = ∅
+
+INTER_EMPTY     |- (∀s. ∅ ∩ s = ∅) ∧ (∀s. s ∩ ∅ = ∅)
+
+NOT_INSERT_EMPTY     |- ∀x s. ¬(x INSERT s = ∅)
+
+
+SUBSET_DIFF     |- ∀s t. s ━ t ⊂ s
+
+SING_SUBSET     |- ∀s x. {x} ⊂ s ⇔ x ∈ s
+
+INSERT_SUBSET     |- ∀x s t. x INSERT s ⊂ t ⇔ x ∈ t ∧ s ⊂ t
+
+INTER_SUBSET     |- (∀s t. s ∩ t ⊂ s) ∧ (∀s t. t ∩ s ⊂ s)
+
+SUBSET_INTER     |- ∀s t u. s ⊂ t ∩ u ⇔ s ⊂ t ∧ s ⊂ u
+
+SUBSET_UNION     |- (∀s t. s ⊂ s ∪ t) ∧ (∀s t. s ⊂ t ∪ s)
+
+UNION_SUBSET     |- ∀s t u. s ∪ t ⊂ u ⇔ s ⊂ u ∧ t ⊂ u
+
+
+UNION_IDEMPOT     |- ∀s. s ∪ s = s
+
+UNION_COMM     |- ∀s t. s ∪ t = t ∪ s
+
+INTER_IDEMPOT     |- ∀s. s ∩ s = s
+
+INTER_COMM     |- ∀s t. s ∩ t = t ∩ s
+
+
+INTERS_SUBSET
+  |- ∀f t. ¬(f = ∅) ∧ (∀s. s ∈ f ⇒ s ⊂ t) ⇒ INTERS f ⊂ t
+
+UNIONS_SUBSET     |- ∀f t. UNIONS f ⊂ t ⇔ (∀s. s ∈ f ⇒ s ⊂ t)
+
+
+FORALL_SUBSET_IMAGE
+  |- ∀P f s. (∀t. t ⊂ IMAGE f s ⇒ P t) ⇔ (∀t. t ⊂ s ⇒ P (IMAGE f t))
+
+INTERS_INSERT     |- INTERS (s INSERT u) = s ∩ INTERS u
+
+FORALL_IN_INSERT
+  |- ∀P a s. (∀x. x ∈ a INSERT s ⇒ P x) ⇔ P a ∧ (∀x. x ∈ s ⇒ P x)
+
+INTERS_0     |- INTERS ∅ = (:A)
+
+INTER_UNIV     |- (∀s. (:A) ∩ s = s) ∧ (∀s. s ∩ (:A) = s)
+
+
+
 ∉ |- ∀a l. a ∉ l ⇔ ¬(a ∈ l)
 
 DIFF_UNION
   |- ∀u s t. u ━ (s ∪ t) = (u ━ s) ∩ (u ━ t)
 
 DIFF_REFL |- ∀u t. t ⊂ u ⇒ u ━ (u ━ t) = t
+
+SUBSET_COMPLEMENT
+  |- ∀s t A. s ⊂ A ⇒ (s ⊂ A ━ t ⇔ s ∩ t = ∅)
+
+COMPLEMENT_DISJOINT
+  |- ∀s t A. s ⊂ A ⇒ (s ⊂ t ⇔ s ∩ (A ━ t) = ∅)
+
+COMPLEMENT_DUALITY
+  |- ∀A s t. s ⊂ A ∧ t ⊂ A ⇒ (s = t ⇔ A ━ s = A ━ t)
+
+COMPLEMENT_DUALITY_UNION
+  |- ∀A s t. s ⊂ A ∧ t ⊂ A ∧ u ⊂ A
+         ⇒ (s = t ∪ u ⇔ A ━ s = (A ━ t) ∩ (A ━ u))
+
+SUBSET_DUALITY     |- ∀s t u. t ⊂ u ⇒ s ━ u ⊂ s ━ t
+
+COMPLEMENT_INTER_DIFF
+  |- ∀A s t. s ⊂ A ⇒ s ━ t = s ∩ (A ━ t)
 
 INTERS_SUBSET
   |- ∀f t. ¬(f = ∅) ∧ (∀s. s ∈ f ⇒ s ⊂ t) ⇒ INTERS f ⊂ t
@@ -18,19 +133,13 @@ UNION_TENSOR
   |- ∀s s' t t'. s ⊂ s' ∧ t ⊂ t' ⇒ s ∪ t ⊂ s' ∪ t'
 
 ExistsTensorInter
-  |- ∀F G H.
-         (∀x y. F x ∧ G y ⇒ H (x ∩ y))
-         ⇒ (∃x. F x) ∧ (∃y. G y)
-         ⇒ (∃z. H z)
+  |- ∀F G H.  (∀x y. F x ∧ G y ⇒ H (x ∩ y))
+         ⇒ (∃x. F x) ∧ (∃y. G y)  ⇒  (∃z. H z)
 
 istopology
-  |- ∀X L.
-         istopology (X,L) ⇔
-         (∀U. U ∈ L ⇒ U ⊂ X) ∧
-         ∅ ∈ L ∧
-         X ∈ L ∧
-         (∀s t. s ∈ L ∧ t ∈ L ⇒ s ∩ t ∈ L) ∧
-         (∀k. k ⊂ L ⇒ UNIONS k ∈ L)
+  |- ∀X L.  istopology (X,L) ⇔
+         (∀U. U ∈ L ⇒ U ⊂ X) ∧ ∅ ∈ L ∧ X ∈ L ∧
+         (∀s t. s ∈ L ∧ t ∈ L ⇒ s ∩ t ∈ L) ∧ (∀k. k ⊂ L ⇒ UNIONS k ∈ L)
 
 UnderlyingSpace |- ∀α. UnderlyingSpace α = FST α
 
@@ -57,22 +166,15 @@ TopologyPAIR
   |- ∀α. dest_topology α = topspace α,open_in α
 
 Topology_Eq
-  |- ∀α β.
-         topspace α = topspace β ∧
+  |- ∀α β.  topspace α = topspace β ∧
          (∀U. open_in α U ⇔ open_in β U) ⇔
          α = β
 
 OpenInCLAUSES
-  |- ∀α X.
-         topspace α = X
-         ⇒ (∀U. open_in α U ⇒ U ⊂ X) ∧
-             open_in α ∅ ∧
-             open_in α X ∧
-             (∀s t.
-                  open_in α s ∧ open_in α t
-                  ⇒ open_in α (s ∩ t)) ∧
-             (∀k. (∀s. s ∈ k ⇒ open_in α s)
-                  ⇒ open_in α (UNIONS k))
+  |- ∀α X.  topspace α = X
+         ⇒ (∀U. open_in α U ⇒ U ⊂ X) ∧ open_in α ∅ ∧ open_in α X ∧
+             (∀s t.  open_in α s ∧ open_in α t  ⇒  open_in α (s ∩ t)) ∧
+             (∀k. (∀s. s ∈ k ⇒ open_in α s)  ⇒  open_in α (UNIONS k))
 
 OPEN_IN_SUBSET
   |- ∀α s. open_in α s ⇒ s ⊂ topspace α
@@ -80,8 +182,7 @@ OPEN_IN_SUBSET
 OPEN_IN_EMPTY |- ∀α. open_in α ∅
 
 OPEN_IN_INTER
-  |- ∀α s t.
-         open_in α s ∧ open_in α t ⇒ open_in α (s ∩ t)
+  |- ∀α s t.  open_in α s ∧ open_in α t ⇒ open_in α (s ∩ t)
 
 OPEN_IN_UNIONS
   |- ∀α k. (∀s. s ∈ k ⇒ open_in α s) ⇒ open_in α (UNIONS k)
@@ -90,25 +191,19 @@ OpenInUnderlyingSpace
   |- ∀α X. topspace α = X ⇒ open_in α X
 
 OPEN_IN_UNION
-  |- ∀α s t.
-         open_in α s ∧ open_in α t ⇒ open_in α (s ∪ t)
+  |- ∀α s t.  open_in α s ∧ open_in α t ⇒ open_in α (s ∪ t)
 
 OPEN_IN_TOPSPACE |- ∀α. open_in α (topspace α)
 
 OPEN_IN_INTERS
-  |- ∀α s.
-         FINITE s ∧ ¬(s = ∅) ∧ (∀t. t ∈ s ⇒ open_in α t)
+  |- ∀α s.  FINITE s ∧ ¬(s = ∅) ∧ (∀t. t ∈ s ⇒ open_in α t)
          ⇒ open_in α (INTERS s)
 
 OPEN_IN_SUBOPEN
-  |- ∀α s.
-         open_in α s ⇔
-         (∀x. x ∈ s ⇒ (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s))
+  |- ∀α s.  open_in α s ⇔  (∀x. x ∈ s ⇒ (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s))
 
 closed_in
-  |- ∀α s.
-         closed_in α s ⇔
-         s ⊂ topspace α ∧ open_in α (topspace α ━ s)
+  |- ∀α s.  closed_in α s ⇔  s ⊂ topspace α ∧ open_in α (topspace α ━ s)
 
 CLOSED_IN_SUBSET
   |- ∀α s. closed_in α s ⇒ s ⊂ topspace α
@@ -118,56 +213,43 @@ CLOSED_IN_EMPTY |- ∀α. closed_in α ∅
 CLOSED_IN_TOPSPACE |- ∀α. closed_in α (topspace α)
 
 CLOSED_IN_UNION
-  |- ∀α s t.
-         closed_in α s ∧ closed_in α t
-         ⇒ closed_in α (s ∪ t)
+  |- ∀α s t.  closed_in α s ∧ closed_in α t  ⇒  closed_in α (s ∪ t)
 
 CLOSED_IN_INTERS
-  |- ∀α k.
-         ¬(k = ∅) ∧ (∀s. s ∈ k ⇒ closed_in α s)
+  |- ∀α k.  ¬(k = ∅) ∧ (∀s. s ∈ k ⇒ closed_in α s)
          ⇒ closed_in α (INTERS k)
 
+CLOSED_IN_FORALL_IN
+  |- ∀α P Q. ¬(P = ∅) ∧ (∀a. P a ⇒ closed_in α {x | Q a x})
+         ⇒ closed_in α {x | ∀a. P a ⇒ Q a x}
+
 CLOSED_IN_INTER
-  |- ∀α s t.
-         closed_in α s ∧ closed_in α t
-         ⇒ closed_in α (s ∩ t)
+  |- ∀α s t.  closed_in α s ∧ closed_in α t  ⇒  closed_in α (s ∩ t)
 
 OPEN_IN_CLOSED_IN_EQ
-  |- ∀α s.
-         open_in α s ⇔
-         s ⊂ topspace α ∧ closed_in α (topspace α ━ s)
+  |- ∀α s.  open_in α s ⇔  s ⊂ topspace α ∧ closed_in α (topspace α ━ s)
 
 OPEN_IN_CLOSED_IN
-  |- ∀s. s ⊂ topspace α
-         ⇒ (open_in α s ⇔ closed_in α (topspace α ━ s))
+  |- ∀s. s ⊂ topspace α ⇒ (open_in α s ⇔ closed_in α (topspace α ━ s))
 
 OPEN_IN_DIFF
-  |- ∀α s t.
-         open_in α s ∧ closed_in α t ⇒ open_in α (s ━ t)
+  |- ∀α s t.  open_in α s ∧ closed_in α t ⇒ open_in α (s ━ t)
 
 CLOSED_IN_DIFF
-  |- ∀α s t.
-         closed_in α s ∧ open_in α t ⇒ closed_in α (s ━ t)
+  |- ∀α s t.  closed_in α s ∧ open_in α t ⇒ closed_in α (s ━ t)
 
 CLOSED_IN_UNIONS
-  |- ∀α s.
-         FINITE s ∧ (∀t. t ∈ s ⇒ closed_in α t)
-         ⇒ closed_in α (UNIONS s)
+  |- ∀α s.  FINITE s ∧ (∀t. t ∈ s ⇒ closed_in α t)  ⇒  closed_in α (UNIONS s)
 
 subtopology
-  |- ∀α u.
-         subtopology α u = mk_topology (u,{s ∩ u | open_in α s})
+  |- ∀α u.  subtopology α u = mk_topology (u,{s ∩ u | open_in α s})
 
 IstopologySubtopology
-  |- ∀α u.
-         u ⊂ topspace α
-         ⇒ istopology (u,{s ∩ u | open_in α s})
+  |- ∀α u.  u ⊂ topspace α  ⇒  istopology (u,{s ∩ u | open_in α s})
 
 OpenInSubtopology
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ (open_in (subtopology α u) s ⇔
-              ∃t. open_in α t ∧ s = t ∩ u)
+  |- ∀α u s.  u ⊂ topspace α
+         ⇒ (open_in (subtopology α u) s ⇔ ∃t. open_in α t ∧ s = t ∩ u)
 
 TopspaceSubtopology
   |- ∀α u. u ⊂ topspace α ⇒ topspace (subtopology α u) = u
@@ -179,10 +261,8 @@ ClosedInRefl
   |- ∀α s. s ⊂ topspace α ⇒ closed_in (subtopology α s) s
 
 ClosedInSubtopology
-  |- ∀α u C.
-         u ⊂ topspace α
-         ⇒ (closed_in (subtopology α u) C ⇔
-              ∃D. closed_in α D ∧ C = D ∩ u)
+  |- ∀α u C.  u ⊂ topspace α
+         ⇒ (closed_in (subtopology α u) C ⇔ ∃D. closed_in α D ∧ C = D ∩ u)
 
 OPEN_IN_SUBTOPOLOGY_EMPTY
   |- ∀α s. open_in (subtopology α ∅) s ⇔ s = ∅
@@ -194,104 +274,76 @@ SUBTOPOLOGY_TOPSPACE
   |- ∀α. subtopology α (topspace α) = α
 
 OpenInImpSubset
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ open_in (subtopology α s) t
-         ⇒ t ⊂ s
+  |- ∀α s t.  s ⊂ topspace α
+         ⇒ open_in (subtopology α s) t  ⇒  t ⊂ s
 
 ClosedInImpSubset
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ closed_in (subtopology α s) t
-         ⇒ t ⊂ s
+  |- ∀α s t.  s ⊂ topspace α
+         ⇒ closed_in (subtopology α s) t  ⇒  t ⊂ s
 
 OpenInSubtopologyUnion
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ open_in (subtopology α t) s ∧
-             open_in (subtopology α u) s
-         ⇒ open_in (subtopology α (t ∪ u)) s
+   |- ∀α s t u.  t ⊂ topspace α ∧ u ⊂ topspace α
+         ⇒ open_in (subtopology α t) s ∧ open_in (subtopology α u) s
+	 ⇒  open_in (subtopology α (t ∪ u)) s
 
 ClosedInSubtopologyUnion
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ closed_in (subtopology α t) s ∧
-             closed_in (subtopology α u) s
+  |- ∀α s t u.  t ⊂ topspace α ∧ u ⊂ topspace α
+         ⇒ closed_in (subtopology α t) s ∧ closed_in (subtopology α u) s
          ⇒ closed_in (subtopology α (t ∪ u)) s
 
 OpenInSubtopologyInterOpen
-  |- ∀α s t u.
-         u ⊂ topspace α
+  |- ∀α s t u.  u ⊂ topspace α
          ⇒ open_in (subtopology α u) s ∧ open_in α t
          ⇒ open_in (subtopology α u) (s ∩ t)
 
 OpenInOpenInter
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ open_in (subtopology α u) (u ∩ s)
+  |- ∀α u s.  u ⊂ topspace α
+         ⇒ open_in α s  ⇒  open_in (subtopology α u) (u ∩ s)
 
 OpenOpenInTrans
-  |- ∀α s t.
-         open_in α s ∧ open_in α t ∧ t ⊂ s
-         ⇒ open_in (subtopology α s) t
+  |- ∀α s t.  open_in α s ∧ open_in α t ∧ t ⊂ s  ⇒  open_in (subtopology α s) t
 
 ClosedClosedInTrans
-  |- ∀α s t.
-         closed_in α s ∧ closed_in α t ∧ t ⊂ s
+  |- ∀α s t.  closed_in α s ∧ closed_in α t ∧ t ⊂ s
          ⇒ closed_in (subtopology α s) t
 OpenSubset
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t ∧ open_in α s
-         ⇒ open_in (subtopology α t) s
+  |- ∀α s t.  t ⊂ topspace α
+         ⇒ s ⊂ t ∧ open_in α s  ⇒  open_in (subtopology α t) s
 
 ClosedSubsetEq
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ closed_in α s
-         ⇒ (closed_in (subtopology α u) s ⇔ s ⊂ u)
+  |- ∀α u s.  u ⊂ topspace α
+         ⇒ closed_in α s  ⇒  (closed_in (subtopology α u) s ⇔ s ⊂ u)
 
 ClosedInInterClosed
-  |- ∀α s t u.
-         u ⊂ topspace α
+  |- ∀α s t u.  u ⊂ topspace α
          ⇒ closed_in (subtopology α u) s ∧ closed_in α t
          ⇒ closed_in (subtopology α u) (s ∩ t)
 
 ClosedInClosedInter
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ closed_in α s
-         ⇒ closed_in (subtopology α u) (u ∩ s)
+  |- ∀α u s.  u ⊂ topspace α
+         ⇒ closed_in α s  ⇒  closed_in (subtopology α u) (u ∩ s)
 
 ClosedSubset
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t ∧ closed_in α s
-         ⇒ closed_in (subtopology α t) s
+  |- ∀α s t.  t ⊂ topspace α
+         ⇒ s ⊂ t ∧ closed_in α s  ⇒  closed_in (subtopology α t) s
 
 OpenInSubsetTrans
-  |- ∀α s t u.
-         u ⊂ topspace α ∧ t ⊂ topspace α
+   |- ∀α s t u.  u ⊂ topspace α ∧ t ⊂ topspace α
          ⇒ open_in (subtopology α u) s ∧ s ⊂ t ∧ t ⊂ u
          ⇒ open_in (subtopology α t) s
 
 ClosedInSubsetTrans
-  |- ∀α s t u.
-         u ⊂ topspace α ∧ t ⊂ topspace α
+  |- ∀α s t u.  u ⊂ topspace α ∧ t ⊂ topspace α
          ⇒ closed_in (subtopology α u) s ∧ s ⊂ t ∧ t ⊂ u
          ⇒ closed_in (subtopology α t) s
 
 OpenInTrans
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ open_in (subtopology α t) s ∧
-             open_in (subtopology α u) t
-         ⇒ open_in (subtopology α u) s
+  |- ∀α s t u.  t ⊂ topspace α ∧ u ⊂ topspace α
+         ⇒ open_in (subtopology α t) s ∧ open_in (subtopology α u) t
+	 ⇒  open_in (subtopology α u) s
 
 OpenInTransEq
-  |- ∀α s t.
-         t ⊂ topspace α ∧ s ⊂ topspace α
+  |- ∀α s t.  t ⊂ topspace α ∧ s ⊂ topspace α
          ⇒ ((∀u. open_in (subtopology α t) u
                    ⇒ open_in (subtopology α s) t) ⇔
               open_in (subtopology α s) t)
@@ -299,10 +351,8 @@ OpenInTransEq
 
 
 OpenInOpenTrans
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ open_in (subtopology α u) s ∧ open_in α u
-         ⇒ open_in α s
+  |- ∀α u s.  u ⊂ topspace α
+         ⇒ open_in (subtopology α u) s ∧ open_in α u  ⇒  open_in α s
 
 
 
@@ -311,145 +361,118 @@ OpenInOpenTrans
 
 
 OpenInSubtopologyTrans
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ open_in (subtopology α t) s ∧
-             open_in (subtopology α u) t
-         ⇒ open_in (subtopology α u) s
+  |- ∀α s t u.  t ⊂ topspace α ∧ u ⊂ topspace α
+         ⇒ open_in (subtopology α t) s ∧ open_in (subtopology α u) t
+	 ⇒  open_in (subtopology α u) s
 
 SubtopologyOpenInSubopen
-  |- ∀α u s.
-         u ⊂ topspace α
+  |- ∀α u s.  u ⊂ topspace α
          ⇒ (open_in (subtopology α u) s ⇔
-              s ⊂ u ∧
-              (∀x. x ∈ s
-                   ⇒ (∃t. open_in α t ∧ x ∈ t ∧ t ∩ u ⊂ s)))
+              s ⊂ u ∧ (∀x. x ∈ s  ⇒  (∃t. open_in α t ∧ x ∈ t ∧ t ∩ u ⊂ s)))
 
 ClosedInSubtopologyTrans
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ closed_in (subtopology α t) s ∧
-             closed_in (subtopology α u) t
-         ⇒ closed_in (subtopology α u) s
+  |- ∀α s t u.  t ⊂ topspace α ∧ u ⊂ topspace α
+         ⇒ closed_in (subtopology α t) s ∧ closed_in (subtopology α u) t
+	 ⇒  closed_in (subtopology α u) s
 
 ClosedInSubtopologyTransEq
-  |- ∀α s t.
-         t ⊂ topspace α ∧ s ⊂ topspace α
+  |- ∀α s t.  t ⊂ topspace α ∧ s ⊂ topspace α
          ⇒ ((∀u. closed_in (subtopology α t) u
                    ⇒ closed_in (subtopology α s) t) ⇔
               closed_in (subtopology α s) t)
 
 ClosedInClosedTrans
-  |- ∀α s t.
-         u ⊂ topspace α
-         ⇒ closed_in (subtopology α u) s ∧ closed_in α u
-         ⇒ closed_in α s
+  |- ∀α s t.  u ⊂ topspace α
+         ⇒ closed_in (subtopology α u) s ∧ closed_in α u  ⇒  closed_in α s
 
 OpenInSubtopologyInterSubset
-  |- ∀α s u v.
-         u ⊂ topspace α ∧ v ⊂ topspace α
+  |- ∀α s u v.  u ⊂ topspace α ∧ v ⊂ topspace α
          ⇒ open_in (subtopology α u) (u ∩ s) ∧ v ⊂ u
          ⇒ open_in (subtopology α v) (v ∩ s)
 
 OpenInOpenEq
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ (open_in (subtopology α s) t ⇔
+  |- ∀α s t.  s ⊂ topspace α
+         ⇒ open_in α s  ⇒  (open_in (subtopology α s) t ⇔
               open_in α t ∧ t ⊂ s)
 
 ClosedInClosedEq
-  |- ∀α s t.
-         s ⊂ topspace α
+  |- ∀α s t.  s ⊂ topspace α
          ⇒ closed_in α s
-         ⇒ (closed_in (subtopology α s) t ⇔
-              closed_in α t ∧ t ⊂ s)
+         ⇒ (closed_in (subtopology α s) t ⇔ closed_in α t ∧ t ⊂ s)
 
 OpenImpliesSubtopologyInterOpen
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ open_in (subtopology α u) (u ∩ s)
+  |- ∀α u s.  u ⊂ topspace α
+         ⇒ open_in α s  ⇒  open_in (subtopology α u) (u ∩ s)
+
+OPEN_IN_EXISTS_IN
+  |- ∀α P Q. (∀a. P a ⇒ open_in α {x | Q a x})
+         ⇒ open_in α {x | ∃a. P a ∧ Q a x}
 
 Connected_DEF
   |- ∀α. Connected α ⇔
-             ¬(∃e1 e2.
-                   open_in α e1 ∧
-                   open_in α e2 ∧
-                   topspace α = e1 ∪ e2 ∧
-                   e1 ∩ e2 = ∅ ∧
-                   ¬(e1 = ∅) ∧
-                   ¬(e2 = ∅))
+             ¬(∃e1 e2.  open_in α e1 ∧ open_in α e2 ∧
+                   topspace α = e1 ∪ e2 ∧ e1 ∩ e2 = ∅ ∧
+                   ¬(e1 = ∅) ∧ ¬(e2 = ∅))
 
 ConnectedClosedHelp
-  |- ∀α e1 e2.
-         topspace α = e1 ∪ e2 ∧ e1 ∩ e2 = ∅
-         ⇒ (closed_in α e1 ∧ closed_in α e2 ⇔
-              open_in α e1 ∧ open_in α e2)
+  |- ∀α e1 e2.  topspace α = e1 ∪ e2 ∧ e1 ∩ e2 = ∅
+         ⇒ (closed_in α e1 ∧ closed_in α e2 ⇔ open_in α e1 ∧ open_in α e2)
 
 ConnectedClosed
   |- ∀α. Connected α ⇔
-             ¬(∃e1 e2.
-                   closed_in α e1 ∧
-                   closed_in α e2 ∧
-                   topspace α = e1 ∪ e2 ∧
-                   e1 ∩ e2 = ∅ ∧
-                   ¬(e1 = ∅) ∧
-                   ¬(e2 = ∅))
+             ¬(∃e1 e2.  closed_in α e1 ∧ closed_in α e2 ∧
+                   topspace α = e1 ∪ e2 ∧ e1 ∩ e2 = ∅ ∧
+                   ¬(e1 = ∅) ∧ ¬(e2 = ∅))
+
+ConnectedOpenIn
+  |- ∀α s. s ⊂ topspace α
+         ⇒ (Connected (subtopology α s) ⇔ ¬(∃e1 e2.
+               open_in (subtopology α s) e1 ∧ open_in (subtopology α s) e2 ∧
+               s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 = ∅ ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅)))
+
+ConnectedClosedIn
+  |- ∀α s. s ⊂ topspace α
+         ⇒ (Connected (subtopology α s) ⇔ ¬(∃e1 e2.
+              closed_in (subtopology α s) e1 ∧ closed_in (subtopology α s) e2 ∧
+              s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 = ∅ ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅)))
 
 ConnectedSubtopology
-  |- ∀α s.
-         s ⊂ topspace α
+  |- ∀α s.  s ⊂ topspace α
          ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    open_in α e1 ∧
-                    open_in α e2 ∧
-                    s ⊂ e1 ∪ e2 ∧
-                    e1 ∩ e2 ∩ s = ∅ ∧
-                    ¬(e1 ∩ s = ∅) ∧
-                    ¬(e2 ∩ s = ∅)))
+              ¬(∃e1 e2.  open_in α e1 ∧ open_in α e2 ∧
+                    s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 ∩ s = ∅ ∧
+                    ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅)))
+
+ConnectedSubtopology_ALT
+  |- ∀α s. s ⊂ topspace α
+         ⇒ (Connected (subtopology α s) ⇔
+              (∀e1 e2.
+                   open_in α e1 ∧ open_in α e2 ∧ s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 ∩ s = ∅
+                   ⇒ e1 ∩ s = ∅ ∨ e2 ∩ s = ∅))
 
 ConnectedClosedSubtopology
-  |- ∀α s.
-         s ⊂ topspace α
+  |- ∀α s.  s ⊂ topspace α
          ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    closed_in α e1 ∧
-                    closed_in α e2 ∧
-                    s ⊂ e1 ∪ e2 ∧
-                    e1 ∩ e2 ∩ s = ∅ ∧
-                    ¬(e1 ∩ s = ∅) ∧
-                    ¬(e2 ∩ s = ∅)))
+              ¬(∃e1 e2.  closed_in α e1 ∧ closed_in α e2 ∧
+                    s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 ∩ s = ∅ ∧
+                    ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅)))
 
 ConnectedClopen
   |- ∀α. Connected α ⇔
-             (∀t. open_in α t ∧ closed_in α t
-                  ⇒ t = ∅ ∨ t = topspace α)
+             (∀t. open_in α t ∧ closed_in α t  ⇒  t = ∅ ∨ t = topspace α)
 
 ConnectedClosedSet
-  |- ∀α s.
-         s ⊂ topspace α
+  |- ∀α s.  s ⊂ topspace α
          ⇒ closed_in α s
          ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    closed_in α e1 ∧
-                    closed_in α e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
+              ¬(∃e1 e2.  closed_in α e1 ∧ closed_in α e2 ∧
+                    ¬(e1 = ∅) ∧ ¬(e2 = ∅) ∧ e1 ∪ e2 = s ∧ e1 ∩ e2 = ∅))
 
 ConnectedOpenSet
-  |- ∀α s.
-         open_in α s
+  |- ∀α s.  open_in α s
          ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    open_in α e1 ∧
-                    open_in α e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
+              ¬(∃e1 e2.  open_in α e1 ∧ open_in α e2 ∧
+                    ¬(e1 = ∅) ∧ ¬(e2 = ∅) ∧ e1 ∪ e2 = s ∧ e1 ∩ e2 = ∅))
 
 ConnectedEmpty     |- ∀α. Connected (subtopology α ∅)
 
@@ -457,206 +480,164 @@ ConnectedSing
   |- ∀α a. a ∈ topspace α ⇒ Connected (subtopology α {a})
 
 ConnectedUnions
-  |- ∀α P.
-         (∀s. s ∈ P ⇒ s ⊂ topspace α)
-         ⇒ (∀s. s ∈ P ⇒ Connected (subtopology α s)) ∧
-             ¬(INTERS P = ∅)
+  |- ∀α P.  (∀s. s ∈ P ⇒ s ⊂ topspace α)
+         ⇒ (∀s. s ∈ P ⇒ Connected (subtopology α s)) ∧ ¬(INTERS P = ∅)
          ⇒ Connected (subtopology α (UNIONS P))
 
 ConnectedUnion
-  |- ∀α s t.
-         s ⊂ topspace α ∧
-         t ⊂ topspace α ∧
-         ¬(s ∩ t = ∅) ∧
-         Connected (subtopology α s) ∧
-         Connected (subtopology α t)
+  |- ∀α s t.  s ⊂ topspace α ∧ t ⊂ topspace α ∧ ¬(s ∩ t = ∅) ∧
+         Connected (subtopology α s) ∧ Connected (subtopology α t)
          ⇒ Connected (subtopology α (s ∪ t))
 
 ConnectedDiffOpenFromClosed
-  |- ∀α s t u.
-         u ⊂ topspace α
-         ⇒ s ⊂ t ∧
-             t ⊂ u ∧
-             open_in α s ∧
-             closed_in α t ∧
-             Connected (subtopology α u) ∧
-             Connected (subtopology α (t ━ s))
+  |- ∀α s t u.  u ⊂ topspace α
+         ⇒ s ⊂ t ∧ t ⊂ u ∧ open_in α s ∧ closed_in α t ∧
+             Connected (subtopology α u) ∧ Connected (subtopology α (t ━ s))
          ⇒ Connected (subtopology α (u ━ s))
 
 LimitPointOf
-  |- ∀α s.
-         LimitPointOf α s =
-         {x | s ⊂ topspace α ∧
-              x ∈ topspace α ∧
+  |- ∀α s.  LimitPointOf α s =
+         {x | s ⊂ topspace α ∧ x ∈ topspace α ∧
               (∀t. x ∈ t ∧ open_in α t
                    ⇒ (∃y. ¬(y = x) ∧ y ∈ s ∧ y ∈ t))}
 
 IN_LimitPointOf
-  |- ∀α s x.
-         s ⊂ topspace α
+  |- ∀α s x.  s ⊂ topspace α
          ⇒ (x ∈ LimitPointOf α s ⇔
               x ∈ topspace α ∧
-              (∀t. x ∈ t ∧ open_in α t
-                   ⇒ (∃y. ¬(y = x) ∧ y ∈ s ∧ y ∈ t)))
+              (∀t. x ∈ t ∧ open_in α t  ⇒  (∃y. ¬(y = x) ∧ y ∈ s ∧ y ∈ t)))
 
 NotLimitPointOf
-  |- ∀α s x.
-         s ⊂ topspace α ∧ x ∈ topspace α
+  |- ∀α s x.  s ⊂ topspace α ∧ x ∈ topspace α
          ⇒ (x ∉ LimitPointOf α s ⇔
               (∃t. x ∈ t ∧ open_in α t ∧ s ∩ (t ━ {x}) = ∅))
 
 LimptSubset
-  |- ∀α x s t.
-         t ⊂ topspace α
-         ⇒ x ∈ LimitPointOf α s ∧ s ⊂ t
-         ⇒ x ∈ LimitPointOf α t
-
-LimptSubset_ALT
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t
-         ⇒ LimitPointOf α s ⊂ LimitPointOf α t
+  |- ∀α s t. t ⊂ topspace α
+         ⇒ s ⊂ t ⇒ LimitPointOf α s ⊂ LimitPointOf α t
 
 ClosedLimpt
-  |- ∀α s.
-         s ⊂ topspace α
+  |- ∀α s.  s ⊂ topspace α
          ⇒ (closed_in α s ⇔ LimitPointOf α s ⊂ s)
 
 LimptEmpty
   |- ∀α x. x ∈ topspace α ⇒ x ∉ LimitPointOf α ∅
 
 NoLimitPointImpClosed
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (∀x. x ∉ LimitPointOf α s)
-         ⇒ closed_in α s
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ (∀x. x ∉ LimitPointOf α s)  ⇒  closed_in α s
 
 LimitPointUnion
-  |- ∀α s t.
-         s ∪ t ⊂ topspace α
+  |- ∀α s t.  s ∪ t ⊂ topspace α
          ⇒ LimitPointOf α (s ∪ t) =
              LimitPointOf α s ∪ LimitPointOf α t
 
-interior_in
-  |- ∀α s.
-         interior_in α s =
-         {x | s ⊂ topspace α ∧
-              (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s)}
+Interior_DEF
+  |- ∀α s.  Interior α s =
+         {x | s ⊂ topspace α ∧ (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s)}
 
-IN_interior_in
-  |- ∀α s x.
-         s ⊂ topspace α
-         ⇒ (x ∈ interior_in α s ⇔
-              (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s))
+Interior_THM
+  |- ∀α s x.  s ⊂ topspace α
+         ⇒ Interior α s = {x | (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s)}
+
+IN_Interior
+  |- ∀α s x.  s ⊂ topspace α
+         ⇒ (x ∈ Interior α s ⇔ (∃t. open_in α t ∧ x ∈ t ∧ t ⊂ s))
 
 InteriorEq
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (open_in α s ⇔ s = interior_in α s)
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ (open_in α s ⇔ s = Interior α s)
 
 InteriorOpen
-  |- ∀α s. open_in α s ⇒ interior_in α s = s
+  |- ∀α s. open_in α s ⇒ Interior α s = s
 
-InteriorEmpty     |- ∀α. interior_in α ∅ = ∅
+InteriorEmpty     |- ∀α. Interior α ∅ = ∅
 
 OpenInterior
-  |- ∀α s.
-         s ⊂ topspace α ⇒ open_in α (interior_in α s)
+  |- ∀α s.  s ⊂ topspace α ⇒ open_in α (Interior α s)
 
 InteriorInterior
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ interior_in α (interior_in α s) = interior_in α s
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ Interior α (Interior α s) = Interior α s
 
 InteriorSubset
-  |- ∀α s. s ⊂ topspace α ⇒ interior_in α s ⊂ s
+  |- ∀α s. s ⊂ topspace α ⇒ Interior α s ⊂ s
+
+InteriorTopspace
+  |- ∀α s. s ⊂ topspace α ⇒ Interior α s ⊂ topspace α
 
 SubsetInterior
-  |- ∀α s t.
-         s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ s ⊂ t
-         ⇒ interior_in α s ⊂ interior_in α t
+  |- ∀α s t. t ⊂ topspace α
+         ⇒ s ⊂ t ⇒ Interior α s ⊂ Interior α t
 
 InteriorMaximal
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ t ⊂ s ∧ open_in α t
-         ⇒ t ⊂ interior_in α s
+  |- ∀α s t.  s ⊂ topspace α
+         ⇒ t ⊂ s ∧ open_in α t  ⇒  t ⊂ Interior α s
 
 InteriorMaximalEq
-  |- ∀s t.
-         t ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ (s ⊂ interior_in α t ⇔ s ⊂ t)
+  |- ∀s t.  t ⊂ topspace α
+         ⇒ open_in α s  ⇒  (s ⊂ Interior α t ⇔ s ⊂ t)
 
 InteriorUnique
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ t ⊂ s ∧
-             open_in α t ∧
-             (∀t'. t' ⊂ s ∧ open_in α t' ⇒ t' ⊂ t)
-         ⇒ interior_in α s = t
+  |- ∀α s t.  s ⊂ topspace α
+         ⇒ t ⊂ s ∧ open_in α t ∧ (∀t'. t' ⊂ s ∧ open_in α t' ⇒ t' ⊂ t)
+	 ⇒  Interior α s = t
 
 OpenSubsetInterior
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ (s ⊂ interior_in α t ⇔ s ⊂ t)
+  |- ∀α s t.  t ⊂ topspace α ⇒ open_in α s ⇒ (s ⊂ Interior α t ⇔ s ⊂ t)
 
 InteriorInter
-  |- ∀α s t.
-         s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ interior_in α (s ∩ t) =
-             interior_in α s ∩ interior_in α t
+  |- ∀α s t.  s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Interior α (s ∩ t) =
+             Interior α s ∩ Interior α t
 
 InteriorFiniteInters
-  |- ∀α s.
-         FINITE s
-         ⇒ ¬(s = ∅)
-         ⇒ (∀t. t ∈ s ⇒ t ⊂ topspace α)
-         ⇒ interior_in α (INTERS s) =
-             INTERS (IMAGE (interior_in α) s)
+  |- ∀α s.  FINITE s  ⇒  ¬(s = ∅)  ⇒  (∀t. t ∈ s ⇒ t ⊂ topspace α)
+         ⇒ Interior α (INTERS s) =
+             INTERS (IMAGE (Interior α) s)
 
 InteriorIntersSubset
-  |- ∀α f.
-         ¬(f = ∅) ∧ (∀t. t ∈ f ⇒ t ⊂ topspace α)
-         ⇒ interior_in α (INTERS f) ⊂
-             INTERS (IMAGE (interior_in α) f)
+  |- ∀α f.  ¬(f = ∅) ∧ (∀t. t ∈ f ⇒ t ⊂ topspace α)
+         ⇒ Interior α (INTERS f) ⊂
+             INTERS (IMAGE (Interior α) f)
 
 UnionInteriorSubset
-  |- ∀α s t.
-         s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ interior_in α s ∪ interior_in α t SUBSET
-             interior_in α (s ∪ t)
+  |- ∀α s t.  s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Interior α s ∪ Interior α t ⊂
+             Interior α (s ∪ t)
 
 InteriorEqEmpty
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (interior_in α s = ∅ ⇔
-              (∀t. open_in α t ∧ t ⊂ s ⇒ t = ∅))
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ (Interior α s = ∅ ⇔ (∀t. open_in α t ∧ t ⊂ s ⇒ t = ∅))
 
 InteriorEqEmptyAlt
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (interior_in α s = ∅ ⇔
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ (Interior α s = ∅ ⇔
               (∀t. open_in α t ∧ ¬(t = ∅) ⇒ ¬(t ━ s = ∅)))
 
 InteriorUnionsOpenSubsets
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ UNIONS {t | open_in α t ∧ t ⊂ s} = interior_in α s
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ UNIONS {t | open_in α t ∧ t ⊂ s} = Interior α s
+
+InteriorClosedUnionEmptyInterior
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ closed_in α s ∧ Interior α t = ∅
+         ⇒ Interior α (s ∪ t) = Interior α s
+
+InteriorUnionEqEmpty
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ closed_in α s ∨ closed_in α t
+         ⇒ (Interior α (s ∪ t) = ∅ ⇔
+              Interior α s = ∅ ∧ Interior α t = ∅)
 
 Closure_DEF
   |- ∀α s. Closure α s = s ∪ LimitPointOf α s
 
 Closure_THM
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ Closure α s = s ∪ LimitPointOf α s
+  |- ∀α s.  s ⊂ topspace α  ⇒  Closure α s = s ∪ LimitPointOf α s
 
 IN_Closure
-  |- ∀α s x.
-         s ⊂ topspace α
+  |- ∀α s x.  s ⊂ topspace α
          ⇒ (x ∈ Closure α s ⇔
               x ∈ topspace α ∧
               (∀t. x ∈ t ∧ open_in α t ⇒ (∃y. y ∈ s ∧ y ∈ t)))
@@ -665,88 +646,200 @@ ClosureSubset
   |- ∀α s. s ⊂ topspace α ⇒ s ⊂ Closure α s
 
 ClosureTopspace
-  |- ∀α s.
-         s ⊂ topspace α ⇒ Closure α s ⊂ topspace α
+  |- ∀α s.  s ⊂ topspace α ⇒ Closure α s ⊂ topspace α
 
 ClosureInterior
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ Closure α s =
-             topspace α ━ interior_in α (topspace α ━ s)
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ Closure α s = topspace α ━ Interior α (topspace α ━ s)
 
 InteriorClosure
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ interior_in α s =
-             topspace α ━ Closure α (topspace α ━ s)
+  |- ∀α s.  s ⊂ topspace α
+         ⇒ Interior α s = topspace α ━ Closure α (topspace α ━ s)
 
 ClosedClosure
   |- ∀α s. s ⊂ topspace α ⇒ closed_in α (Closure α s)
 
 SubsetClosure
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t
-         ⇒ Closure α s ⊂ Closure α t
+  |- ∀α s t.  t ⊂ topspace α
+         ⇒ s ⊂ t  ⇒  Closure α s ⊂ Closure α t
 
 ClosureHull
-  |- ∀α s.
-         s ⊂ topspace α ⇒ Closure α s = closed_in α hull s
+  |- ∀α s.  s ⊂ topspace α ⇒ Closure α s = closed_in α hull s
 
 ClosureEq
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (Closure α s = s ⇔ closed_in α s)
+   |- ∀α s.  s ⊂ topspace α  ⇒  (Closure α s = s ⇔ closed_in α s)
 
 ClosureClosed
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ closed_in α s
-         ⇒ Closure α s = s
+  |- ∀α s.  s ⊂ topspace α  ⇒  closed_in α s  ⇒  Closure α s = s
 
 ClosureClosure
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ Closure α (Closure α s) = Closure α s
+  |- ∀α s.  s ⊂ topspace α  ⇒  Closure α (Closure α s) = Closure α s
 
 ClosureUnion
-  |- ∀α s t.
-         s ∪ t ⊂ topspace α
+  |- ∀α s t.  s ∪ t ⊂ topspace α
          ⇒ Closure α (s ∪ t) =
              Closure α s ∪ Closure α t
 
 ClosureInterSubset
-  |- ∀α s t.
-         s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ Closure α (s ∩ t) SUBSET
+  |- ∀α s t.  s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Closure α (s ∩ t) ⊂
              Closure α s ∩ Closure α t
 
 ClosureIntersSubset
-  |- ∀α f.
-         (∀s. s ∈ f ⇒ s ⊂ topspace α)
+  |- ∀α f.  (∀s. s ∈ f ⇒ s ⊂ topspace α)
          ⇒ Closure α (INTERS f) ⊂ INTERS (IMAGE (Closure α) f)
 
 ClosureMinimal
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t ∧ closed_in α t
-         ⇒ Closure α s ⊂ t
+  |- ∀α s t.  t ⊂ topspace α
+         ⇒ s ⊂ t ∧ closed_in α t  ⇒  Closure α s ⊂ t
 
 ClosureMinimalEq
-  |- ∀α s t.
-         s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ closed_in α t
-         ⇒ (Closure α s ⊂ t ⇔ s ⊂ t)
+  |- ∀α s t.  s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ closed_in α t  ⇒  (Closure α s ⊂ t ⇔ s ⊂ t)
 
 ClosureUnique
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t ∧
-             closed_in α t ∧
-             (∀u. s ⊂ u ∧ closed_in α u ⇒ t ⊂ u)
+  |- ∀α s t.  t ⊂ topspace α
+         ⇒ s ⊂ t ∧ closed_in α t ∧ (∀u. s ⊂ u ∧ closed_in α u ⇒ t ⊂ u)
          ⇒ Closure α s = t
 
 ClosureEmpty     |- Closure α ∅ = ∅
+
+ClosureUnions
+  |- ∀α f.  FINITE f
+         ⇒ (∀t. t ∈ f ⇒ t ⊂ topspace α)
+         ⇒ Closure α (UNIONS f) = UNIONS {Closure α t | t ∈ f}
+
+ClosureEqEmpty
+  |- ∀α s. s ⊂ topspace α ⇒ (Closure α s = ∅ ⇔ s = ∅)
+
+ClosureSubsetEq
+  |- ∀α s.  s ⊂ topspace α  ⇒  (Closure α s ⊂ s ⇔ closed_in α s)
+
+OpenInterClosureEqEmpty
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ open_in α s ⇒ (s ∩ Closure α t = ∅ ⇔ s ∩ t = ∅)
+
+OpenInterClosureSubset
+  |- ∀α s t. t ⊂ topspace α
+         ⇒ open_in α s ⇒ s ∩ Closure α t ⊂ Closure α (s ∩ t)
+
+ClosureOpenInterSuperset
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ open_in α s ∧ s ⊂ Closure α t ⇒ Closure α (s ∩ t) = Closure α s
+
+ClosureComplement
+  |- ∀α s. s ⊂ topspace α
+         ⇒ Closure α (topspace α ━ s) = topspace α ━ Interior α s
+
+InteriorComplement
+  |- ∀α s. s ⊂ topspace α
+         ⇒ Interior α (topspace α ━ s) = topspace α ━ Closure α s
+
+ClosureInteriorComplement
+  |- ∀α s. s ⊂ topspace α
+         ⇒ topspace α ━ Closure α (Interior α s) =
+             Interior α (Closure α (topspace α ━ s))
+
+InteriorClosureComplement
+  |- ∀α s. s ⊂ topspace α
+         ⇒ topspace α ━ Interior α (Closure α s) =
+             Closure α (Interior α (topspace α ━ s))
+
+ConnectedIntermediateClosure
+  |- ∀α s t. s ⊂ topspace α
+         ⇒ Connected (subtopology α s) ∧ s ⊂ t ∧ t ⊂ Closure α s
+         ⇒ Connected (subtopology α t)
+
+ConnectedClosure
+  |- ∀α s. s ⊂ topspace α
+         ⇒ Connected (subtopology α s)
+         ⇒ Connected (subtopology α (Closure α s))
+
+ConnectedUnionStrong
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Connected (subtopology α s) ∧ Connected (subtopology α t) ∧
+             ¬(Closure α s ∩ t = ∅) ⇒ Connected (subtopology α (s ∪ t))
+
+InteriorDiff
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Interior α (s ━ t) = Interior α s ━ Closure α t
+
+ClosedInLimpt
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ (closed_in (subtopology α t) s ⇔ s ⊂ t ∧ LimitPointOf α s ∩ t ⊂ s)
+
+ClosedInLimpt_ALT : thm =
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ (closed_in (subtopology α t) s ⇔
+              s ⊂ t ∧ (∀x. x ∈ LimitPointOf α s ∧ x ∈ t ⇒ x ∈ s))
+
+ClosedInInterClosure
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ (closed_in (subtopology α s) t ⇔ s ∩ Closure α t = t)
+
+InteriorClosureIdemp
+  |- ∀α s. s ⊂ topspace α
+         ⇒ Interior α (Closure α (Interior α (Closure α s))) =
+             Interior α (Closure α s)
+
+ClosureInteriorIdemp
+  |- ∀α s. s ⊂ topspace α
+         ⇒ Closure α (Interior α (Closure α (Interior α s))) =
+             Closure α (Interior α s)
+
+NowhereDenseUnion
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ (Interior α (Closure α (s ∪ t)) = ∅ ⇔
+              Interior α (Closure α s) = ∅ ∧
+              Interior α (Closure α t) = ∅)
+
+NowhereDense
+  |- ∀α s. s ⊂ topspace α
+         ⇒ (Interior α (Closure α s) = ∅ ⇔
+              (∀t. open_in α t ∧ ¬(t = ∅)
+                   ⇒ (∃u. open_in α u ∧ ¬(u = ∅) ∧ u ⊂ t ∧ u ∩ s = ∅)))
+
+InteriorClosureDiffSpaceEmpty
+  |- ∀α s. s ⊂ topspace α ⇒ Interior α (Closure α s ━ s) = ∅
+
+InteriorClosureInterOpen
+  |- ∀α s t.
+         open_in α s ∧ open_in α t
+         ⇒ Interior α (Closure α (s ∩ t)) =
+             Interior α (Closure α s) ∩ Interior α (Closure α t)
+
+ClosureInteriorUnionClosed
+  |- ∀α s t. closed_in α s ∧ closed_in α t
+         ⇒ Closure α (Interior α (s ∪ t)) =
+             Closure α (Interior α s) ∪ Closure α (Interior α t)
+
+RegularOpenInter
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Interior α (Closure α s) = s ∧  Interior α (Closure α t) = t
+         ⇒ Interior α (Closure α (s ∩ t)) = s ∩ t
+
+RegularClosedUnion
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Closure α (Interior α s) = s ∧ Closure α (Interior α t) = t
+         ⇒ Closure α (Interior α (s ∪ t)) = s ∪ t
+
+DiffClosureSubset
+  |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
+         ⇒ Closure α s ━ Closure α t ⊂ Closure α (s ━ t)
+
+Frontier_DEF
+  |- ∀α s. Frontier α s = Closure α s ━ Interior α s
+
+Frontier_THM
+  |- ∀α s. s ⊂ topspace α
+         ⇒ Frontier α s = Closure α s ━ Interior α s
+
+FrontierClosed
+  |- ∀α s. s ⊂ topspace α ⇒ closed_in α (Frontier α s)
+
+FrontierClosures
+  |- ∀s. s ⊂ topspace α ⇒ Frontier α s =
+             Closure α s ∩ Closure α (topspace α ━ s)
 
 open_def
   |- ∀s. open s ⇔
@@ -758,17 +851,23 @@ euclidean |- euclidean = mk_topology ((:real^∃179083),open)
 
 OPEN_EMPTY |- open ∅
 
-OPEN_UNIV |- open (:real^?255944)
+OPEN_UNIV |- open (:real^∃255944)
 
 OPEN_INTER |- ∀s t. open s ∧ open t ⇒ open (s ∩ t)
 
 OPEN_UNIONS |- (∀s. s ∈ f ⇒ open s) ⇒ open (UNIONS f)
 
-IstopologyEuclidean |- istopology ((:real^?255954),open)
+IstopologyEuclidean |- istopology ((:real^∃255954),open)
 
 OPEN_IN |- ∀s. open s ⇔ open_in euclidean s
 
-TOPSPACE_EUCLIDEAN |- topspace euclidean = (:real^?255961)
+TOPSPACE_EUCLIDEAN |- topspace euclidean = (:real^∃255961)
+
+OPEN_EXISTS_IN
+  |- ∀P Q. (∀a. P a ⇒ open {x | Q a x}) ⇒ open {x | ∃a. P a ∧ Q a x}
+
+OPEN_EXISTS
+  |- ∀Q. (∀a. open {x | Q a x}) ⇒ open {x | ∃a. Q a x}
 
 TOPSPACE_EUCLIDEAN_SUBTOPOLOGY
   |- ∀s. topspace (subtopology euclidean s) = s
@@ -777,9 +876,7 @@ OPEN_IN_REFL |- ∀s. open_in (subtopology euclidean s) s
 
 CLOSED_IN_REFL     |- ∀s. closed_in (subtopology euclidean s) s
 
-CLOSED_IN     |- ∀s. closed s ⇔ closed_in euclidean s
-
-CLOSED_IN_ALT |- ∀s. closed = closed_in euclidean
+CLOSED_IN |- ∀s. closed = closed_in euclidean
 
 OPEN_UNION     |- ∀s t. open s ∧ open t ⇒ open (s ∪ t)
 
@@ -794,9 +891,36 @@ CLOSED_UNION     |- ∀s t. closed s ∧ closed t ⇒ closed (s ∪ t)
 
 CLOSED_INTER     |- ∀s t. closed s ∧ closed t ⇒ closed (s ∩ t)
 
+CLOSED_INTERS
+  |- ∀f. (∀s. s ∈ f ⇒ closed s) ⇒ closed (INTERS f)
+
+CLOSED_FORALL_IN
+  |- ∀P Q. (∀a. P a ⇒ closed {x | Q a x}) ⇒ closed {x | ∀a. P a ⇒ Q a x}
+
+CLOSED_FORALL
+  |- ∀Q. (∀a. closed {x | Q a x}) ⇒ closed {x | ∀a. Q a x}
+
+OPEN_CLOSED     |- ∀s. open s ⇔ closed ((:real^∃318274) ━ s)
+
+OPEN_DIFF     |- ∀s t. open s ∧ closed t ⇒ open (s ━ t)
+
+CLOSED_DIFF     |- ∀s t. closed s ∧ open t ⇒ closed (s ━ t)
+
+OPEN_INTERS
+  |- ∀s. FINITE s ∧ (∀t. t ∈ s ⇒ open t) ⇒ open (INTERS s)
+
+CLOSED_UNIONS
+  |- ∀s. FINITE s ∧ (∀t. t ∈ s ⇒ closed t) ⇒ closed (UNIONS s)
+
 ball |- ∀x e. ball (x,e) = {y | dist (x,y) < e}
 
+cball     |- ∀x e. cball (x,e) = {y | dist (x,y) <= e}
+
 IN_BALL |- ∀x y e. y ∈ ball (x,e) ⇔ dist (x,y) < e
+
+IN_CBALL     |- ∀x y e. y ∈ cball (x,e) ⇔ dist (x,y) <= e
+
+BALL_SUBSET_CBALL     |- ∀x e. ball (x,e) ⊂ cball (x,e)
 
 OPEN_BALL |- ∀x e. open (ball (x,e))
 
@@ -804,56 +928,40 @@ CENTRE_IN_BALL |- ∀x e. x ∈ ball (x,e) ⇔ &0 < e
 
 OPEN_CONTAINS_BALL
   |- ∀s. open s ⇔ (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ ball (x,e) ⊂ s))
-
-cball     |- ∀x e. cball (x,e) = {y | dist (x,y) <= e}
-
-IN_CBALL     |- ∀x y e. y ∈ cball (x,e) ⇔ dist (x,y) <= e
-
-BALL_SUBSET_CBALL     |- ∀x e. ball (x,e) ⊂ cball (x,e)
 
 HALF_CBALL_IN_BALL
   |- ∀e. &0 < e
          ⇒ &0 < e / &2 ∧ e / &2 < e ∧ cball (x,e / &2) ⊂ ball (x,e)
 
 OPEN_IN_CONTAINS_CBALL_LEMMA
-  |- ∀t s x.
-         x ∈ s
+   |- ∀t s x.  x ∈ s
          ⇒ ((∃e. &0 < e ∧ ball (x,e) ∩ t ⊂ s) ⇔
               (∃e. &0 < e ∧ cball (x,e) ∩ t ⊂ s))
 
 OPEN_IN_OPEN
-  |- ∀s u.
-         open_in (subtopology euclidean u) s ⇔
-         (∃t. open t ∧ s = u ∩ t)
+  |- ∀s u.  open_in (subtopology euclidean u) s ⇔ (∃t. open t ∧ s = u ∩ t)
 
 OPEN_IN_INTER_OPEN
-  |- ∀s t u.
-         open_in (subtopology euclidean u) s ∧ open t
+  |- ∀s t u.  open_in (subtopology euclidean u) s ∧ open t
          ⇒ open_in (subtopology euclidean u) (s ∩ t)
 
 OPEN_IN_OPEN_INTER
   |- ∀u s. open s ⇒ open_in (subtopology euclidean u) (u ∩ s)
 
 OPEN_OPEN_IN_TRANS
-  |- ∀s t.
-         open s ∧ open t ∧ t ⊂ s
-         ⇒ open_in (subtopology euclidean s) t
+  |- ∀s t.  open s ∧ open t ∧ t ⊂ s  ⇒  open_in (subtopology euclidean s) t
 
 OPEN_SUBSET
   |- ∀s t. s ⊂ t ∧ open s ⇒ open_in (subtopology euclidean t) s
 
 CLOSED_IN_CLOSED
-  |- ∀s u.
-         closed_in (subtopology euclidean u) s ⇔
-         (∃t. closed t ∧ s = u ∩ t)
+  |- ∀s u.  closed_in (subtopology euclidean u) s ⇔ (∃t. closed t ∧ s = u ∩ t)
 
 CLOSED_SUBSET_EQ
-  |- ∀u s.
-         closed s ⇒ (closed_in (subtopology euclidean u) s ⇔ s ⊂ u)
+  |- ∀u s.  closed s ⇒ (closed_in (subtopology euclidean u) s ⇔ s ⊂ u)
 
 CLOSED_IN_INTER_CLOSED
-  |- ∀s t u.
-         closed_in (subtopology euclidean u) s ∧ closed t
+  |- ∀s t u.  closed_in (subtopology euclidean u) s ∧ closed t
          ⇒ closed_in (subtopology euclidean u) (s ∩ t)
 
 CLOSED_IN_CLOSED_INTER
@@ -863,59 +971,53 @@ CLOSED_SUBSET
   |- ∀s t. s ⊂ t ∧ closed s ⇒ closed_in (subtopology euclidean t) s
 
 OPEN_IN_SUBSET_TRANS
-  |- ∀s t u.
-         open_in (subtopology euclidean u) s ∧ s ⊂ t ∧ t ⊂ u
+  |- ∀s t u.  open_in (subtopology euclidean u) s ∧ s ⊂ t ∧ t ⊂ u
          ⇒ open_in (subtopology euclidean t) s
 
 CLOSED_IN_SUBSET_TRANS
-  |- ∀s t u.
-         closed_in (subtopology euclidean u) s ∧ s ⊂ t ∧ t ⊂ u
+  |- ∀s t u.  closed_in (subtopology euclidean u) s ∧ s ⊂ t ∧ t ⊂ u
          ⇒ closed_in (subtopology euclidean t) s
 
 OPEN_IN_CONTAINS_BALL_LEMMA
-  |- ∀t s x.
-         x ∈ s
+  |- ∀t s x.  x ∈ s
          ⇒ ((∃E. open E ∧ x ∈ E ∧ E ∩ t ⊂ s) ⇔
               (∃e. &0 < e ∧ ball (x,e) ∩ t ⊂ s))
 
 OPEN_IN_CONTAINS_BALL
-  |- ∀s t.
-         open_in (subtopology euclidean t) s ⇔
-         s ⊂ t ∧
-         (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ ball (x,e) ∩ t ⊂ s))
+  |- ∀s t.  open_in (subtopology euclidean t) s ⇔
+         s ⊂ t ∧ (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ ball (x,e) ∩ t ⊂ s))
 
 OPEN_IN_CONTAINS_CBALL
-  |- ∀s t.
-         open_in (subtopology euclidean t) s ⇔
-         s ⊂ t ∧
-         (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ cball (x,e) ∩ t ⊂ s))
+  |- ∀s t.  open_in (subtopology euclidean t) s ⇔
+         s ⊂ t ∧ (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ cball (x,e) ∩ t ⊂ s))
 
 open_in
-  |- ∀u s.
-         open_in (subtopology euclidean u) s ⇔
+  |- ∀u s.  open_in (subtopology euclidean u) s ⇔
          s ⊂ u ∧
-         (∀x. x ∈ s
-              ⇒ (∃e. &0 < e ∧
+         (∀x. x ∈ s  ⇒  (∃e. &0 < e ∧
                        (∀x'. x' ∈ u ∧ dist (x',x) < e ⇒ x' ∈ s)))
 
 OPEN_IN_TRANS
-  |- ∀s t u.
-         open_in (subtopology euclidean t) s ∧
+  |- ∀s t u.  open_in (subtopology euclidean t) s ∧
          open_in (subtopology euclidean u) t
          ⇒ open_in (subtopology euclidean u) s
+
+OPEN_IN_TRANS_EQ
+  |- ∀s t.
+         (∀u. open_in (subtopology euclidean t) u
+              ⇒ open_in (subtopology euclidean s) t) ⇔
+         open_in (subtopology euclidean s) t
 
 OPEN_IN_OPEN_TRANS
   |- ∀u s. open_in (subtopology euclidean u) s ∧ open u ⇒ open s
 
 CLOSED_IN_TRANS
-  |- ∀s t u.
-         closed_in (subtopology euclidean t) s ∧
+  |- ∀s t u.  closed_in (subtopology euclidean t) s ∧
          closed_in (subtopology euclidean u) t
          ⇒ closed_in (subtopology euclidean u) s
 
 CLOSED_IN_TRANS_EQ
-  |- ∀s t.
-         (∀u. closed_in (subtopology euclidean t) u
+  |- ∀s t.  (∀u. closed_in (subtopology euclidean t) u
               ⇒ closed_in (subtopology euclidean s) t) ⇔
          closed_in (subtopology euclidean s) t
 
@@ -923,52 +1025,43 @@ CLOSED_IN_CLOSED_TRANS
   |- ∀s u. closed_in (subtopology euclidean u) s ∧ closed u ⇒ closed s
 
 OPEN_IN_SUBTOPOLOGY_INTER_SUBSET
-  |- ∀s u v.
-         open_in (subtopology euclidean u) (u ∩ s) ∧ v ⊂ u
+  |- ∀s u v.  open_in (subtopology euclidean u) (u ∩ s) ∧ v ⊂ u
          ⇒ open_in (subtopology euclidean v) (v ∩ s)
 
 OPEN_IN_OPEN_EQ
-  |- ∀s t.
-         open s
+  |- ∀s t.  open s
          ⇒ (open_in (subtopology euclidean s) t ⇔ open t ∧ t ⊂ s)
 
 CLOSED_IN_CLOSED_EQ
-  |- ∀s t.
-         closed s
-         ⇒ (closed_in (subtopology euclidean s) t ⇔
-              closed t ∧ t ⊂ s)
+  |- ∀s t.  closed s
+         ⇒ (closed_in (subtopology euclidean s) t ⇔ closed t ∧ t ⊂ s)
 
 OPEN_IN_INJECTIVE_LINEAR_IMAGE
-  |- ∀f s t.
-         linear f ∧ (∀x y. f x = f y ⇒ x = y)
+  |- ∀f s t.  linear f ∧ (∀x y. f x = f y ⇒ x = y)
          ⇒ (open_in (subtopology euclidean (IMAGE f t)) (IMAGE f s) ⇔
               open_in (subtopology euclidean t) s)
 
 CLOSED_IN_INJECTIVE_LINEAR_IMAGE
-  |- ∀f s t.
-         linear f ∧ (∀x y. f x = f y ⇒ x = y)
+  |- ∀f s t.  linear f ∧ (∀x y. f x = f y ⇒ x = y)
          ⇒ (closed_in (subtopology euclidean (IMAGE f t)) (IMAGE f s) ⇔
               closed_in (subtopology euclidean t) s)
 
 OPEN_IN_SUBTOPOLOGY
-  |- ∀u s.
-         open_in (subtopology euclidean u) s ⇔
+  |- ∀u s.  open_in (subtopology euclidean u) s ⇔
          (∃t. open_in euclidean t ∧ s = t ∩ u)
 
 TOPSPACE_SUBTOPOLOGY
   |- ∀u. topspace (subtopology euclidean u) = topspace euclidean ∩ u
 
 CLOSED_IN_SUBTOPOLOGY
-  |- ∀u s.
-         closed_in (subtopology euclidean u) s ⇔
+  |- ∀u s.  closed_in (subtopology euclidean u) s ⇔
          (∃t. closed_in euclidean t ∧ s = t ∩ u)
 
 OPEN_IN_SUBTOPOLOGY_REFL
   |- ∀u. open_in (subtopology euclidean u) u ⇔ u ⊂ topspace euclidean
 
 CLOSED_IN_SUBTOPOLOGY_REFL
-  |- ∀u. closed_in (subtopology euclidean u) u ⇔
-         u ⊂ topspace euclidean
+  |- ∀u. closed_in (subtopology euclidean u) u ⇔ u ⊂ topspace euclidean
 
 SUBTOPOLOGY_UNIV
   |- subtopology euclidean (:real^∃181173) = euclidean
@@ -983,14 +1076,12 @@ CLOSED_IN_IMP_SUBSET
   |- ∀s t. closed_in (subtopology euclidean s) t  ⇒  t ⊂ s
 
 OPEN_IN_SUBTOPOLOGY_UNION
-  |- ∀s t u.
-         open_in (subtopology euclidean t) s ∧
+  |- ∀s t u.  open_in (subtopology euclidean t) s ∧
          open_in (subtopology euclidean u) s
          ⇒ open_in (subtopology euclidean (t ∪ u)) s
 
 CLOSED_IN_SUBTOPOLOGY_UNION
-  |- ∀s t u.
-         closed_in (subtopology euclidean t) s ∧
+  |- ∀s t u.  closed_in (subtopology euclidean t) s ∧
          closed_in (subtopology euclidean u) s
          ⇒ closed_in (subtopology euclidean (t ∪ u)) s
 
@@ -999,843 +1090,72 @@ connected_DEF
 
 connected
   |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               open e1 ∧
-               open e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 ∩ s = ∅ ∧
-               ¬(e1 ∩ s = ∅) ∧
-               ¬(e2 ∩ s = ∅))
+         ¬(∃e1 e2.  open e1 ∧ open e2 ∧ s ⊂ e1 ∪ e2 ∧
+	   e1 ∩ e2 ∩ s = ∅ ∧ ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅))
 
 CONNECTED_CLOSED
   |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               closed e1 ∧
-               closed e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 ∩ s = ∅ ∧
-               ¬(e1 ∩ s = ∅) ∧
-               ¬(e2 ∩ s = ∅))
+         ¬(∃e1 e2.  closed e1 ∧ closed e2 ∧ s ⊂ e1 ∪ e2 ∧
+               e1 ∩ e2 ∩ s = ∅ ∧ ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅))
 
 CONNECTED_OPEN_IN
-  |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
+  |- ∀s. connected s ⇔ ¬(∃e1 e2.
                open_in (subtopology euclidean s) e1 ∧
                open_in (subtopology euclidean s) e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
+               s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 = ∅ ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅))
 
 CONNECTED_OPEN_IN_EQ
   |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               open_in (subtopology euclidean s) e1 ∧
+         ¬(∃e1 e2.  open_in (subtopology euclidean s) e1 ∧
                open_in (subtopology euclidean s) e2 ∧
-               e1 ∪ e2 = s ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
+               e1 ∪ e2 = s ∧ e1 ∩ e2 = ∅ ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅))
 
 CONNECTED_CLOSED_IN
   |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               closed_in (subtopology euclidean s) e1 ∧
+         ¬(∃e1 e2.  closed_in (subtopology euclidean s) e1 ∧
                closed_in (subtopology euclidean s) e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
+               s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 = ∅ ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅))
 
 CONNECTED_CLOSED_IN_EQ
   |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               closed_in (subtopology euclidean s) e1 ∧
+         ¬(∃e1 e2.  closed_in (subtopology euclidean s) e1 ∧
                closed_in (subtopology euclidean s) e2 ∧
-               e1 ∪ e2 = s ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
+               e1 ∪ e2 = s ∧ e1 ∩ e2 = ∅ ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅))
 
 CONNECTED_CLOPEN
   |- ∀s. connected s ⇔
          (∀t. open_in (subtopology euclidean s) t ∧
-              closed_in (subtopology euclidean s) t
-              ⇒ t = ∅ ∨ t = s)
+              closed_in (subtopology euclidean s) t  ⇒  t = ∅ ∨ t = s)
 
 CONNECTED_CLOSED_SET
   |- ∀s. closed s
          ⇒ (connected s ⇔
-              ¬(∃e1 e2.
-                    closed e1 ∧
-                    closed e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
+              ¬(∃e1 e2.  closed e1 ∧ closed e2 ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅) ∧
+                    e1 ∪ e2 = s ∧ e1 ∩ e2 = ∅))
 
 CONNECTED_OPEN_SET
   |- ∀s. open s
          ⇒ (connected s ⇔
-              ¬(∃e1 e2.
-                    open e1 ∧
-                    open e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
+              ¬(∃e1 e2.  open e1 ∧ open e2 ∧ ¬(e1 = ∅) ∧ ¬(e2 = ∅) ∧
+                    e1 ∪ e2 = s ∧ e1 ∩ e2 = ∅))
 
 CONNECTED_EMPTY     |- connected ∅
 
 CONNECTED_SING     |- ∀a. connected {a}
 
 CONNECTED_UNIONS
-  |- ∀P. (∀s. s ∈ P ⇒ connected s) ∧ ¬(INTERS P = ∅)
-         ⇒ connected (UNIONS P)
+  |- ∀P. (∀s. s ∈ P ⇒ connected s) ∧ ¬(INTERS P = ∅)  ⇒  connected (UNIONS P)
 
 CONNECTED_UNION
-  |- ∀s t.
-         connected s ∧ connected t ∧ ¬(s ∩ t = ∅)
-         ⇒ connected (s ∪ t)
+  |- ∀s t.  connected s ∧ connected t ∧ ¬(s ∩ t = ∅)  ⇒  connected (s ∪ t)
 
 CONNECTED_DIFF_OPEN_FROM_CLOSED
-  |- ∀s t u.
-         s ⊂ t ∧
-         t ⊂ u ∧
-         open s ∧
-         closed t ∧
-         connected u ∧
-         connected (t ━ s)
-         ⇒ connected (u ━ s)
-
-interior_DEF     |- ∀s. interior s = interior_in euclidean s
-
-interior
-  |- ∀s. interior s = {x | ∃t. open t ∧ x ∈ t ∧ t ⊂ s}
-
-INTERIOR_EQ     |- ∀s. interior s = s ⇔ open s
-
-INTERIOR_OPEN     |- ∀s. open s ⇒ interior s = s
-
-INTERIOR_EMPTY     |- interior ∅ = ∅
-
-INTERIOR_UNIV     |- interior (:real^∃200598) = (:real^∃200598)
-
-  |- ∀α s.
-         s ⊂ topspace α ⇒ open_in α (interior_in α s)
-
-closed_in
-  |- ∀α s.
-         closed_in α s ⇔
-         s ⊂ topspace α ∧ open_in α (topspace α ━ s)
-
-CLOSED_IN_SUBSET
-  |- ∀α s. closed_in α s ⇒ s ⊂ topspace α
-
-CLOSED_IN_EMPTY |- ∀α. closed_in α ∅
-
-CLOSED_IN_TOPSPACE |- ∀α. closed_in α (topspace α)
-
-CLOSED_IN_UNION
-  |- ∀α s t.
-         closed_in α s ∧ closed_in α t
-         ⇒ closed_in α (s ∪ t)
-
-CLOSED_IN_INTERS
-  |- ∀α k.
-         ¬(k = ∅) ∧ (∀s. s ∈ k ⇒ closed_in α s)
-         ⇒ closed_in α (INTERS k)
-
-CLOSED_IN_INTER
-  |- ∀α s t.
-         closed_in α s ∧ closed_in α t
-         ⇒ closed_in α (s ∩ t)
-
-OPEN_IN_CLOSED_IN_EQ
-  |- ∀α s.
-         open_in α s ⇔
-         s ⊂ topspace α ∧ closed_in α (topspace α ━ s)
-
-OPEN_IN_CLOSED_IN
-  |- ∀s. s ⊂ topspace α
-         ⇒ (open_in α s ⇔ closed_in α (topspace α ━ s))
-
-OPEN_IN_DIFF
-  |- ∀α s t.
-         open_in α s ∧ closed_in α t ⇒ open_in α (s ━ t)
-
-CLOSED_IN_DIFF
-  |- ∀α s t.
-         closed_in α s ∧ open_in α t ⇒ closed_in α (s ━ t)
-
-CLOSED_IN_UNIONS
-  |- ∀α s.
-         FINITE s ∧ (∀t. t ∈ s ⇒ closed_in α t)
-         ⇒ closed_in α (UNIONS s)
-
-subtopology
-  |- ∀α u.
-         subtopology α u = mk_topology (u,{s ∩ u | open_in α s})
-
-IstopologySubtopology
-  |- ∀α u.
-         u ⊂ topspace α
-         ⇒ istopology (u,{s ∩ u | open_in α s})
-
-OpenInSubtopology
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ (open_in (subtopology α u) s ⇔
-              ∃t. open_in α t ∧ s = t ∩ u)
-
-TopspaceSubtopology
-  |- ∀α u. u ⊂ topspace α ⇒ topspace (subtopology α u) = u
-
-OpenInRefl
-  |- ∀α s. s ⊂ topspace α ⇒ open_in (subtopology α s) s
-
-ClosedInRefl
-  |- ∀α s. s ⊂ topspace α ⇒ closed_in (subtopology α s) s
-
-ClosedInSubtopology
-  |- ∀α u C.
-         u ⊂ topspace α
-         ⇒ (closed_in (subtopology α u) C ⇔
-              ∃D. closed_in α D ∧ C = D ∩ u)
-
-OPEN_IN_SUBTOPOLOGY_EMPTY
-  |- ∀α s. open_in (subtopology α ∅) s ⇔ s = ∅
-
-CLOSED_IN_SUBTOPOLOGY_EMPTY
-  |- ∀α s. closed_in (subtopology α ∅) s ⇔ s = ∅
-
-SUBTOPOLOGY_TOPSPACE
-  |- ∀α. subtopology α (topspace α) = α
-
-OpenInImpSubset
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ open_in (subtopology α s) t
-         ⇒ t ⊂ s
-
-ClosedInImpSubset
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ closed_in (subtopology α s) t
-         ⇒ t ⊂ s
-
-OpenInSubtopologyUnion
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ open_in (subtopology α t) s ∧
-             open_in (subtopology α u) s
-         ⇒ open_in (subtopology α (t ∪ u)) s
-
-ClosedInSubtopologyUnion
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ closed_in (subtopology α t) s ∧
-             closed_in (subtopology α u) s
-         ⇒ closed_in (subtopology α (t ∪ u)) s
-
-OpenInSubtopologyInterOpen
-  |- ∀α s t u.
-         u ⊂ topspace α
-         ⇒ open_in (subtopology α u) s ∧ open_in α t
-         ⇒ open_in (subtopology α u) (s ∩ t)
-
-OpenInOpenInter
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ open_in (subtopology α u) (u ∩ s)
-
-OpenOpenInTrans
-  |- ∀α s t.
-         open_in α s ∧ open_in α t ∧ t ⊂ s
-         ⇒ open_in (subtopology α s) t
-
-ClosedClosedInTrans
-  |- ∀α s t.
-         closed_in α s ∧ closed_in α t ∧ t ⊂ s
-         ⇒ closed_in (subtopology α s) t
-OpenSubset
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t ∧ open_in α s
-         ⇒ open_in (subtopology α t) s
-
-ClosedSubsetEq
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ closed_in α s
-         ⇒ (closed_in (subtopology α u) s ⇔ s ⊂ u)
-
-ClosedInInterClosed
-  |- ∀α s t u.
-         u ⊂ topspace α
-         ⇒ closed_in (subtopology α u) s ∧ closed_in α t
-         ⇒ closed_in (subtopology α u) (s ∩ t)
-
-ClosedInClosedInter
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ closed_in α s
-         ⇒ closed_in (subtopology α u) (u ∩ s)
-
-ClosedSubset
-  |- ∀α s t.
-         t ⊂ topspace α
-         ⇒ s ⊂ t ∧ closed_in α s
-         ⇒ closed_in (subtopology α t) s
-
-OpenInSubsetTrans
-  |- ∀α s t u.
-         u ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ open_in (subtopology α u) s ∧ s ⊂ t ∧ t ⊂ u
-         ⇒ open_in (subtopology α t) s
-
-ClosedInSubsetTrans
-  |- ∀α s t u.
-         u ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ closed_in (subtopology α u) s ∧ s ⊂ t ∧ t ⊂ u
-         ⇒ closed_in (subtopology α t) s
-
-OpenInTrans
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ open_in (subtopology α t) s ∧
-             open_in (subtopology α u) t
-         ⇒ open_in (subtopology α u) s
-
-OpenInTransEq
-  |- ∀α s t.
-         t ⊂ topspace α ∧ s ⊂ topspace α
-         ⇒ ((∀u. open_in (subtopology α t) u
-                   ⇒ open_in (subtopology α s) t) ⇔
-              open_in (subtopology α s) t)
-
-
-
-OpenInOpenTrans
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ open_in (subtopology α u) s ∧ open_in α u
-         ⇒ open_in α s
-
-
-
-
-
-
-
-OpenInSubtopologyTrans
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ open_in (subtopology α t) s ∧
-             open_in (subtopology α u) t
-         ⇒ open_in (subtopology α u) s
-
-SubtopologyOpenInSubopen
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ (open_in (subtopology α u) s ⇔
-              s ⊂ u ∧
-              (∀x. x ∈ s
-                   ⇒ (∃t. open_in α t ∧ x ∈ t ∧ t ∩ u ⊂ s)))
-
-ClosedInSubtopologyTrans
-  |- ∀α s t u.
-         t ⊂ topspace α ∧ u ⊂ topspace α
-         ⇒ closed_in (subtopology α t) s ∧
-             closed_in (subtopology α u) t
-         ⇒ closed_in (subtopology α u) s
-
-ClosedInSubtopologyTransEq
-  |- ∀α s t.
-         t ⊂ topspace α ∧ s ⊂ topspace α
-         ⇒ ((∀u. closed_in (subtopology α t) u
-                   ⇒ closed_in (subtopology α s) t) ⇔
-              closed_in (subtopology α s) t)
-
-ClosedInClosedTrans
-  |- ∀α s t.
-         u ⊂ topspace α
-         ⇒ closed_in (subtopology α u) s ∧ closed_in α u
-         ⇒ closed_in α s
-
-OpenInSubtopologyInterSubset
-  |- ∀α s u v.
-         u ⊂ topspace α ∧ v ⊂ topspace α
-         ⇒ open_in (subtopology α u) (u ∩ s) ∧ v ⊂ u
-         ⇒ open_in (subtopology α v) (v ∩ s)
-
-OpenInOpenEq
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ (open_in (subtopology α s) t ⇔
-              open_in α t ∧ t ⊂ s)
-
-ClosedInClosedEq
-  |- ∀α s t.
-         s ⊂ topspace α
-         ⇒ closed_in α s
-         ⇒ (closed_in (subtopology α s) t ⇔
-              closed_in α t ∧ t ⊂ s)
-
-OpenImpliesSubtopologyInterOpen
-  |- ∀α u s.
-         u ⊂ topspace α
-         ⇒ open_in α s
-         ⇒ open_in (subtopology α u) (u ∩ s)
-
-Connected_DEF
-  |- ∀α. Connected α ⇔
-             ¬(∃e1 e2.
-                   open_in α e1 ∧
-                   open_in α e2 ∧
-                   topspace α = e1 ∪ e2 ∧
-                   e1 ∩ e2 = ∅ ∧
-                   ¬(e1 = ∅) ∧
-                   ¬(e2 = ∅))
-
-ConnectedClosedHelp
-  |- ∀α e1 e2.
-         topspace α = e1 ∪ e2 ∧ e1 ∩ e2 = ∅
-         ⇒ (closed_in α e1 ∧ closed_in α e2 ⇔
-              open_in α e1 ∧ open_in α e2)
-
-ConnectedClosed
-  |- ∀α. Connected α ⇔
-             ¬(∃e1 e2.
-                   closed_in α e1 ∧
-                   closed_in α e2 ∧
-                   topspace α = e1 ∪ e2 ∧
-                   e1 ∩ e2 = ∅ ∧
-                   ¬(e1 = ∅) ∧
-                   ¬(e2 = ∅))
-
-ConnectedSubtopology
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    open_in α e1 ∧
-                    open_in α e2 ∧
-                    s ⊂ e1 ∪ e2 ∧
-                    e1 ∩ e2 ∩ s = ∅ ∧
-                    ¬(e1 ∩ s = ∅) ∧
-                    ¬(e2 ∩ s = ∅)))
-
-ConnectedClosedSubtopology
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    closed_in α e1 ∧
-                    closed_in α e2 ∧
-                    s ⊂ e1 ∪ e2 ∧
-                    e1 ∩ e2 ∩ s = ∅ ∧
-                    ¬(e1 ∩ s = ∅) ∧
-                    ¬(e2 ∩ s = ∅)))
-
-ConnectedClopen
-  |- ∀α. Connected α ⇔
-             (∀t. open_in α t ∧ closed_in α t
-                  ⇒ t = ∅ ∨ t = topspace α)
-
-ConnectedClosedSet
-  |- ∀α s.
-         s ⊂ topspace α
-         ⇒ closed_in α s
-         ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    closed_in α e1 ∧
-                    closed_in α e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
-
-ConnectedOpenSet
-  |- ∀α s.
-         open_in α s
-         ⇒ (Connected (subtopology α s) ⇔
-              ¬(∃e1 e2.
-                    open_in α e1 ∧
-                    open_in α e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
-
-ConnectedEmpty     |- ∀α. Connected (subtopology α ∅)
-
-ConnectedSing
-  |- ∀α a. a ∈ topspace α ⇒ Connected (subtopology α {a})
-
-ConnectedUnions
-  |- ∀α P.
-         (∀s. s ∈ P ⇒ s ⊂ topspace α)
-         ⇒ (∀s. s ∈ P ⇒ Connected (subtopology α s)) ∧
-             ¬(INTERS P = ∅)
-         ⇒ Connected (subtopology α (UNIONS P))
-
-ConnectedUnion
-  |- ∀α s t.
-         s ⊂ topspace α ∧
-         t ⊂ topspace α ∧
-         ¬(s ∩ t = ∅) ∧
-         Connected (subtopology α s) ∧
-         Connected (subtopology α t)
-         ⇒ Connected (subtopology α (s ∪ t))
-
-ConnectedDiffOpenFromClosed
-  |- ∀α s t u.
-         u ⊂ topspace α
-         ⇒ s ⊂ t ∧
-             t ⊂ u ∧
-             open_in α s ∧
-             closed_in α t ∧
-             Connected (subtopology α u) ∧
-             Connected (subtopology α (t ━ s))
-         ⇒ Connected (subtopology α (u ━ s))
-
-open_def
-  |- ∀s. open s ⇔
-         (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ (∀x'. dist (x',x) < e ⇒ x' ∈ s)))
-
-closed |- ∀s. closed s ⇔ open ((:real^∃179064) ━ s)
-
-euclidean |- euclidean = mk_topology ((:real^∃179083),open)
-
-OPEN_EMPTY |- open ∅
-
-OPEN_UNIV |- open (:real^?255944)
-
-OPEN_INTER |- ∀s t. open s ∧ open t ⇒ open (s ∩ t)
-
-OPEN_UNIONS |- (∀s. s ∈ f ⇒ open s) ⇒ open (UNIONS f)
-
-IstopologyEuclidean |- istopology ((:real^?255954),open)
-
-OPEN_IN |- ∀s. open s ⇔ open_in euclidean s
-
-TOPSPACE_EUCLIDEAN |- topspace euclidean = (:real^?255961)
-
-TOPSPACE_EUCLIDEAN_SUBTOPOLOGY
-  |- ∀s. topspace (subtopology euclidean s) = s
-
-OPEN_IN_REFL |- ∀s. open_in (subtopology euclidean s) s
-
-CLOSED_IN_REFL |- ∀s. closed_in (subtopology euclidean s) s
-
-CLOSED_IN |- ∀s. closed s ⇔ closed_in euclidean s
-
-OPEN_UNION     |- ∀s t. open s ∧ open t ⇒ open (s ∪ t)
-
-OPEN_SUBOPEN
-  |- ∀s. open s ⇔ (∀x. x ∈ s ⇒ (∃t. open t ∧ x ∈ t ∧ t ⊂ s))
-
-CLOSED_EMPTY     |- closed ∅
-
-CLOSED_UNIV     |- closed (:real^∃254909)
-
-CLOSED_UNION     |- ∀s t. closed s ∧ closed t ⇒ closed (s ∪ t)
-
-CLOSED_INTER     |- ∀s t. closed s ∧ closed t ⇒ closed (s ∩ t)
-
-ball |- ∀x e. ball (x,e) = {y | dist (x,y) < e}
-
-IN_BALL |- ∀x y e. y ∈ ball (x,e) ⇔ dist (x,y) < e
-
-OPEN_BALL |- ∀x e. open (ball (x,e))
-
-CENTRE_IN_BALL |- ∀x e. x ∈ ball (x,e) ⇔ &0 < e
-
-OPEN_CONTAINS_BALL
-  |- ∀s. open s ⇔ (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ ball (x,e) ⊂ s))
-
-OPEN_IN_OPEN
-  |- ∀s u.
-         open_in (subtopology euclidean u) s ⇔
-         (∃t. open t ∧ s = u ∩ t)
-
-OPEN_IN_INTER_OPEN
-  |- ∀s t u.
-         open_in (subtopology euclidean u) s ∧ open t
-         ⇒ open_in (subtopology euclidean u) (s ∩ t)
-
-OPEN_IN_OPEN_INTER
-  |- ∀u s. open s ⇒ open_in (subtopology euclidean u) (u ∩ s)
-
-OPEN_OPEN_IN_TRANS
-  |- ∀s t.
-         open s ∧ open t ∧ t ⊂ s
-         ⇒ open_in (subtopology euclidean s) t
-
-OPEN_SUBSET
-  |- ∀s t. s ⊂ t ∧ open s ⇒ open_in (subtopology euclidean t) s
-
-CLOSED_IN_CLOSED
-  |- ∀s u.
-         closed_in (subtopology euclidean u) s ⇔
-         (∃t. closed t ∧ s = u ∩ t)
-
-CLOSED_SUBSET_EQ
-  |- ∀u s.
-         closed s ⇒ (closed_in (subtopology euclidean u) s ⇔ s ⊂ u)
-
-CLOSED_IN_INTER_CLOSED
-  |- ∀s t u.
-         closed_in (subtopology euclidean u) s ∧ closed t
-         ⇒ closed_in (subtopology euclidean u) (s ∩ t)
-
-CLOSED_IN_CLOSED_INTER
-  |- ∀u s. closed s ⇒ closed_in (subtopology euclidean u) (u ∩ s)
-
-CLOSED_SUBSET
-  |- ∀s t. s ⊂ t ∧ closed s ⇒ closed_in (subtopology euclidean t) s
-
-OPEN_IN_SUBSET_TRANS
-  |- ∀s t u.
-         open_in (subtopology euclidean u) s ∧ s ⊂ t ∧ t ⊂ u
-         ⇒ open_in (subtopology euclidean t) s
-
-CLOSED_IN_SUBSET_TRANS
-  |- ∀s t u.
-         closed_in (subtopology euclidean u) s ∧ s ⊂ t ∧ t ⊂ u
-         ⇒ closed_in (subtopology euclidean t) s
-
-
-
-OPEN_IN_CONTAINS_BALL
-  |- ∀s t.
-         open_in (subtopology euclidean t) s ⇔
-         s ⊂ t ∧
-         (∀x. x ∈ s ⇒ (∃e. &0 < e ∧ ball (x,e) ∩ t ⊂ s))
-
-open_in
-  |- ∀u s.
-         open_in (subtopology euclidean u) s ⇔
-         s ⊂ u ∧
-         (∀x. x ∈ s
-              ⇒ (∃e. &0 < e ∧
-                       (∀x'. x' ∈ u ∧ dist (x',x) < e ⇒ x' ∈ s)))
-
-OPEN_IN_TRANS
-  |- ∀s t u.
-         open_in (subtopology euclidean t) s ∧
-         open_in (subtopology euclidean u) t
-         ⇒ open_in (subtopology euclidean u) s
-
-OPEN_IN_OPEN_TRANS
-  |- ∀u s. open_in (subtopology euclidean u) s ∧ open u ⇒ open s
-
-CLOSED_IN_TRANS
-  |- ∀s t u.
-         closed_in (subtopology euclidean t) s ∧
-         closed_in (subtopology euclidean u) t
-         ⇒ closed_in (subtopology euclidean u) s
-
-CLOSED_IN_TRANS_EQ
-  |- ∀s t.
-         (∀u. closed_in (subtopology euclidean t) u
-              ⇒ closed_in (subtopology euclidean s) t) ⇔
-         closed_in (subtopology euclidean s) t
-
-CLOSED_IN_CLOSED_TRANS
-  |- ∀s u. closed_in (subtopology euclidean u) s ∧ closed u ⇒ closed s
-
-OPEN_IN_SUBTOPOLOGY_INTER_SUBSET
-  |- ∀s u v.
-         open_in (subtopology euclidean u) (u ∩ s) ∧ v ⊂ u
-         ⇒ open_in (subtopology euclidean v) (v ∩ s)
-
-OPEN_IN_OPEN_EQ
-  |- ∀s t.
-         open s
-         ⇒ (open_in (subtopology euclidean s) t ⇔ open t ∧ t ⊂ s)
-
-CLOSED_IN_CLOSED_EQ
-  |- ∀s t.
-         closed s
-         ⇒ (closed_in (subtopology euclidean s) t ⇔
-              closed t ∧ t ⊂ s)
-
-OPEN_IN_INJECTIVE_LINEAR_IMAGE
-  |- ∀f s t.
-         linear f ∧ (∀x y. f x = f y ⇒ x = y)
-         ⇒ (open_in (subtopology euclidean (IMAGE f t)) (IMAGE f s) ⇔
-              open_in (subtopology euclidean t) s)
-
-CLOSED_IN_INJECTIVE_LINEAR_IMAGE
-  |- ∀f s t.
-         linear f ∧ (∀x y. f x = f y ⇒ x = y)
-         ⇒ (closed_in (subtopology euclidean (IMAGE f t)) (IMAGE f s) ⇔
-              closed_in (subtopology euclidean t) s)
-
-OPEN_IN_SUBTOPOLOGY
-  |- ∀u s.
-         open_in (subtopology euclidean u) s ⇔
-         (∃t. open_in euclidean t ∧ s = t ∩ u)
-
-TOPSPACE_SUBTOPOLOGY
-  |- ∀u. topspace (subtopology euclidean u) = topspace euclidean ∩ u
-
-CLOSED_IN_SUBTOPOLOGY
-  |- ∀u s.
-         closed_in (subtopology euclidean u) s ⇔
-         (∃t. closed_in euclidean t ∧ s = t ∩ u)
-
-OPEN_IN_SUBTOPOLOGY_REFL
-  |- ∀u. open_in (subtopology euclidean u) u ⇔ u ⊂ topspace euclidean
-
-CLOSED_IN_SUBTOPOLOGY_REFL
-  |- ∀u. closed_in (subtopology euclidean u) u ⇔
-         u ⊂ topspace euclidean
-
-SUBTOPOLOGY_UNIV
-  |- subtopology euclidean (:real^∃181173) = euclidean
-
-SUBTOPOLOGY_SUPERSET
-  |- ∀s. topspace euclidean ⊂ s ⇒ subtopology euclidean s = euclidean
-
-OPEN_IN_IMP_SUBSET
-  |- ∀s t. open_in (subtopology euclidean s) t ⇒ t ⊂ s
-
-CLOSED_IN_IMP_SUBSET
-  |- ∀s t. closed_in (subtopology euclidean s) t  ⇒  t ⊂ s
-
-OPEN_IN_SUBTOPOLOGY_UNION
-  |- ∀s t u.
-         open_in (subtopology euclidean t) s ∧
-         open_in (subtopology euclidean u) s
-         ⇒ open_in (subtopology euclidean (t ∪ u)) s
-
-CLOSED_IN_SUBTOPOLOGY_UNION
-  |- ∀s t u.
-         closed_in (subtopology euclidean t) s ∧
-         closed_in (subtopology euclidean u) s
-         ⇒ closed_in (subtopology euclidean (t ∪ u)) s
-
-connected_DEF
-  |- ∀s. connected s ⇔ Connected (subtopology euclidean s)
-
-connected
-  |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               open e1 ∧
-               open e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 ∩ s = ∅ ∧
-               ¬(e1 ∩ s = ∅) ∧
-               ¬(e2 ∩ s = ∅))
-
-CONNECTED_CLOSED
-  |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               closed e1 ∧
-               closed e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 ∩ s = ∅ ∧
-               ¬(e1 ∩ s = ∅) ∧
-               ¬(e2 ∩ s = ∅))
-
-CONNECTED_OPEN_IN
-  |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               open_in (subtopology euclidean s) e1 ∧
-               open_in (subtopology euclidean s) e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
-
-CONNECTED_OPEN_IN_EQ
-  |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               open_in (subtopology euclidean s) e1 ∧
-               open_in (subtopology euclidean s) e2 ∧
-               e1 ∪ e2 = s ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
-
-CONNECTED_CLOSED_IN
-  |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               closed_in (subtopology euclidean s) e1 ∧
-               closed_in (subtopology euclidean s) e2 ∧
-               s ⊂ e1 ∪ e2 ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
-
-CONNECTED_CLOSED_IN_EQ
-  |- ∀s. connected s ⇔
-         ¬(∃e1 e2.
-               closed_in (subtopology euclidean s) e1 ∧
-               closed_in (subtopology euclidean s) e2 ∧
-               e1 ∪ e2 = s ∧
-               e1 ∩ e2 = ∅ ∧
-               ¬(e1 = ∅) ∧
-               ¬(e2 = ∅))
-
-CONNECTED_CLOPEN
-  |- ∀s. connected s ⇔
-         (∀t. open_in (subtopology euclidean s) t ∧
-              closed_in (subtopology euclidean s) t
-              ⇒ t = ∅ ∨ t = s)
-
-CONNECTED_CLOSED_SET
-  |- ∀s. closed s
-         ⇒ (connected s ⇔
-              ¬(∃e1 e2.
-                    closed e1 ∧
-                    closed e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
-
-CONNECTED_OPEN_SET
-  |- ∀s. open s
-         ⇒ (connected s ⇔
-              ¬(∃e1 e2.
-                    open e1 ∧
-                    open e2 ∧
-                    ¬(e1 = ∅) ∧
-                    ¬(e2 = ∅) ∧
-                    e1 ∪ e2 = s ∧
-                    e1 ∩ e2 = ∅))
-
-CONNECTED_EMPTY     |- connected ∅
-
-CONNECTED_SING     |- ∀a. connected {a}
-
-CONNECTED_UNIONS
-  |- ∀P. (∀s. s ∈ P ⇒ connected s) ∧ ¬(INTERS P = ∅)
-         ⇒ connected (UNIONS P)
-
-CONNECTED_UNION
-  |- ∀s t.
-         connected s ∧ connected t ∧ ¬(s ∩ t = ∅)
-         ⇒ connected (s ∪ t)
-
-CONNECTED_DIFF_OPEN_FROM_CLOSED
-  |- ∀s t u.
-         s ⊂ t ∧
-         t ⊂ u ∧
-         open s ∧
-         closed t ∧
-         connected u ∧
-         connected (t ━ s)
+  |- ∀s t u.  s ⊂ t ∧ t ⊂ u ∧ open s ∧ closed t ∧
+         connected u ∧ connected (t ━ s)
          ⇒ connected (u ━ s)
 
 limit_point_of_DEF
-  |- ∀x s. x limit_point_of s ⇔ LimitPointOf euclidean x s
+  |- ∀x s. x limit_point_of s ⇔ x ∈ LimitPointOf euclidean s
 
 limit_point_of
   |- x limit_point_of s ⇔
@@ -1853,14 +1173,12 @@ NO_LIMIT_POINT_IMP_CLOSED
   |- ∀s. ¬(∃x. x limit_point_of s) ⇒ closed s
 
 LIMIT_POINT_UNION
-  |- ∀s t x.
-         x limit_point_of s ∪ t ⇔
-         x limit_point_of s ∨ x limit_point_of t
+  |- ∀s t x.  x limit_point_of s ∪ t ⇔ x limit_point_of s ∨ x limit_point_of t
 
 LimitPointOf_euclidean
   |- ∀s. LimitPointOf euclidean s = {x | x limit_point_of s}
 
-interior_DEF     |- ∀s. interior s = interior_in euclidean s
+interior_DEF     |- interior = Interior euclidean
 
 interior
   |- ∀s. interior s = {x | ∃t. open t ∧ x ∈ t ∧ t ⊂ s}
@@ -1889,17 +1207,7 @@ INTERIOR_MAXIMAL_EQ
   |- ∀s t. open s ⇒ (s ⊂ interior t ⇔ s ⊂ t)
 
 INTERIOR_UNIQUE
-  |- !s t.
-         t SUBSET s /\
-         open t /\
-         (!t'. t' SUBSET s /\ open t' ==> t' SUBSET t)
-         ==> interior s = t
-
-INTERIOR_UNIQUE
-  |- ∀s t.
-         t ⊂ s ∧
-         open t ∧
-         (∀t'. t' ⊂ s ∧ open t' ⇒ t' ⊂ t)
+  |- ∀s t. t ⊂ s ∧ open t ∧ (∀t'. t' ⊂ s ∧ open t' ⇒ t' ⊂ t)
          ⇒ interior s = t
 
 IN_INTERIOR
@@ -1969,11 +1277,106 @@ CLOSURE_MINIMAL_EQ
   |- ∀s t. closed t ⇒ (closure s ⊂ t ⇔ s ⊂ t)
 
 CLOSURE_UNIQUE
-  |- ∀s t.
-         s ⊂ t ∧
-         closed t ∧
-         (∀t'. s ⊂ t' ∧ closed t' ⇒ t ⊂ t')
+  |- ∀s t.  s ⊂ t ∧ closed t ∧ (∀t'. s ⊂ t' ∧ closed t' ⇒ t ⊂ t')
          ⇒ closure s = t
 
 CLOSURE_EMPTY     |- closure ∅ = ∅
+
+CLOSURE_UNIV     |- closure (:real^∃303929) = (:real^∃303929)
+
+CLOSURE_UNIONS
+  |- ∀f. FINITE f ⇒ closure (UNIONS f) = UNIONS {closure s | s ∈ f}
+
+CLOSURE_EQ_EMPTY     |- ∀s. closure s = ∅ ⇔ s = ∅
+
+CLOSURE_SUBSET_EQ     |- ∀s. closure s ⊂ s ⇔ closed s
+
+OPEN_INTER_CLOSURE_EQ_EMPTY
+  |- ∀s t. open s ⇒ (s ∩ closure t = ∅ ⇔ s ∩ t = ∅)
+
+OPEN_INTER_CLOSURE_SUBSET
+  |- ∀s t. open s ⇒ s ∩ closure t ⊂ closure (s ∩ t)
+
+CLOSURE_OPEN_INTER_SUPERSET
+  |- ∀s t. open s ∧ s ⊂ closure t ⇒ closure (s ∩ t) = closure s
+
+CLOSURE_COMPLEMENT
+  |- ∀s. closure ((:real^∃430163) ━ s) = (:real^∃430163) ━ interior s
+
+INTERIOR_COMPLEMENT
+  |- ∀s. interior ((:real^∃430675) ━ s) = (:real^∃430675) ━ closure s
+
+CONNECTED_INTERMEDIATE_CLOSURE
+  |- ∀s t. connected s ∧ s ⊂ t ∧ t ⊂ closure s ⇒ connected t
+
+CONNECTED_CLOSURE     |- ∀s. connected s ⇒ connected (closure s)
+
+CONNECTED_UNION_STRONG
+  |- ∀s t.
+         connected s ∧ connected t ∧ ¬(closure s ∩ t = ∅)
+         ⇒ connected (s ∪ t)
+
+INTERIOR_DIFF
+  |- ∀s t. interior (s ━ t) = interior s ━ closure t
+
+CLOSED_IN_LIMPT
+  |- ∀s t. closed_in (subtopology euclidean t) s ⇔
+         s ⊂ t ∧ (∀x. x limit_point_of s ∧ x ∈ t ⇒ x ∈ s)
+
+CLOSED_IN_INTER_CLOSURE
+  |- ∀s t. closed_in (subtopology euclidean s) t ⇔ s ∩ closure t = t
+
+INTERIOR_CLOSURE_IDEMP
+  |- ∀s. interior (closure (interior (closure s))) = interior (closure s)
+
+CLOSURE_INTERIOR_IDEMP
+  |- ∀s. closure (interior (closure (interior s))) = closure (interior s)
+
+INTERIOR_CLOSED_UNION_EMPTY_INTERIOR
+  |- ∀s t. closed s ∧ interior t = ∅ ⇒ interior (s ∪ t) = interior s
+
+INTERIOR_UNION_EQ_EMPTY
+  |- ∀s t.
+         closed s ∨ closed t
+         ⇒ (interior (s ∪ t) = ∅ ⇔
+              interior s = ∅ ∧ interior t = ∅)
+
+NOWHERE_DENSE_UNION
+  |- ∀s t.
+         interior (closure (s ∪ t)) = ∅ ⇔
+         interior (closure s) = ∅ ∧ interior (closure t) = ∅
+
+NOWHERE_DENSE
+  |- ∀s. interior (closure s) = ∅ ⇔
+         (∀t. open t ∧ ¬(t = ∅)
+              ⇒ (∃u. open u ∧ ¬(u = ∅) ∧ u ⊂ t ∧ u ∩ s = ∅))
+
+INTERIOR_CLOSURE_INTER_OPEN
+  |- ∀s t. open s ∧ open t
+         ⇒ interior (closure (s ∩ t)) =
+             interior (closure s) ∩ interior (closure t)
+
+CLOSURE_INTERIOR_UNION_CLOSED
+  |- ∀s t. closed s ∧ closed t ⇒ 
+        closure (interior (s ∪ t)) = closure (interior s) ∪ closure (interior t)
+
+REGULAR_OPEN_INTER
+  |- ∀s t. interior (closure s) = s ∧ interior (closure t) = t
+         ⇒ interior (closure (s ∩ t)) = s ∩ t
+
+REGULAR_CLOSED_UNION
+  |- ∀s t. closure (interior s) = s ∧ closure (interior t) = t
+         ⇒ closure (interior (s ∪ t)) = s ∪ t
+
+DIFF_CLOSURE_SUBSET
+  |- ∀s t. closure s ━ closure t ⊂ closure (s ━ t)
+
+frontier_DEF     |- frontier = Frontier euclidean
+
+frontier     |- ∀s. frontier s = closure s ━ interior s
+
+FRONTIER_CLOSED     |- ∀s. closed (frontier s)
+
+FRONTIER_CLOSURES
+  |- ∀s. frontier s = closure s ∩ closure ((:real^∃217012) ━ s)
 

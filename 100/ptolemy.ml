@@ -2,17 +2,7 @@
 (* Ptolemy's theorem.                                                        *)
 (* ========================================================================= *)
 
-needs "Multivariate/vectors.ml";;
-needs "Library/transc.ml";;
-
-(* ------------------------------------------------------------------------- *)
-(* This gets overwritten by a theorem in transc load.                        *)
-(* ------------------------------------------------------------------------- *)
-
-let SUM_2 = prove
- (`!t. sum(1..2) t = t(1) + t(2)`,
-  REWRITE_TAC[num_CONV `2`; num_CONV `2`; SUM_CLAUSES_NUMSEG] THEN
-  REWRITE_TAC[SUM_SING_NUMSEG; ARITH; REAL_ADD_ASSOC]);;
+needs "Multivariate/transcendentals.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Some 2-vector special cases.                                              *)
@@ -26,17 +16,13 @@ let DOT_VECTOR = prove
 (* Lemma about distance between points with polar coordinates.               *)
 (* ------------------------------------------------------------------------- *)
 
-let SIN_SUB = prove
- (`!x y. sin(x - y) = sin(x) * cos(y) - cos(x) * sin(y)`,
-  REWRITE_TAC[real_sub; SIN_ADD; COS_NEG; SIN_NEG] THEN CONV_TAC REAL_RING);;
-
 let DIST_SEGMENT_LEMMA = prove
  (`!a1 a2. &0 <= a1 /\ a1 <= a2 /\ a2 <= &2 * pi /\ &0 <= radius
            ==> dist(centre + radius % vector [cos(a1);sin(a1)] :real^2,
                     centre + radius % vector [cos(a2);sin(a2)]) =
                &2 * radius *  sin((a2 - a1) / &2)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[dist; vector_norm] THEN
-  MATCH_MP_TAC SQRT_POS_UNIQ THEN REWRITE_TAC[DOT_POS_LE] THEN CONJ_TAC THENL
+  MATCH_MP_TAC SQRT_UNIQUE THEN CONJ_TAC THENL
    [MATCH_MP_TAC REAL_LE_MUL THEN REWRITE_TAC[REAL_POS] THEN
     MATCH_MP_TAC REAL_LE_MUL THEN ASM_REWRITE_TAC[] THEN
     MATCH_MP_TAC SIN_POS_PI_LE THEN

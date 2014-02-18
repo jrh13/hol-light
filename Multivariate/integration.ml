@@ -4977,12 +4977,12 @@ let INTEGRABLE_ON_LITTLE_SUBINTERVALS = prove
 (* Second FCT or existence of antiderivative.                                *)
 (* ------------------------------------------------------------------------- *)
 
-let INTEGRAL_HAS_VECTOR_DERIVATIVE = prove
- (`!f:real^1->real^N a b.
-     (f continuous_on interval[a,b])
-     ==> !x. x IN interval[a,b]
-             ==> ((\u. integral (interval[a,u]) f) has_vector_derivative f(x))
-                 (at x within interval[a,b])`,
+let INTEGRAL_HAS_VECTOR_DERIVATIVE_POINTWISE = prove
+ (`!f:real^1->real^N a b x.
+        f integrable_on interval[a,b] /\ x IN interval[a,b] /\
+        f continuous (at x within interval[a,b])
+        ==> ((\u. integral (interval [a,u]) f) has_vector_derivative f x)
+            (at x within interval [a,b])`,
   REWRITE_TAC[IN_INTERVAL_1] THEN REPEAT STRIP_TAC THEN
   REWRITE_TAC[has_vector_derivative; HAS_DERIVATIVE_WITHIN_ALT] THEN
   CONJ_TAC THENL
@@ -4990,18 +4990,16 @@ let INTEGRAL_HAS_VECTOR_DERIVATIVE = prove
     CONJ_TAC THEN VECTOR_ARITH_TAC;
     ALL_TAC] THEN
   X_GEN_TAC `e:real` THEN DISCH_TAC THEN REWRITE_TAC[IN_INTERVAL_1] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-    COMPACT_UNIFORMLY_CONTINUOUS)) THEN
-  REWRITE_TAC[COMPACT_INTERVAL; uniformly_continuous_on] THEN
-  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN REWRITE_TAC[dist] THEN
-  X_GEN_TAC `d:real` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  X_GEN_TAC `y:real^1` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [continuous_within]) THEN
+  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN
+  ASM_REWRITE_TAC[IN_INTERVAL_1; dist] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN X_GEN_TAC `y:real^1` THEN STRIP_TAC THEN
   REWRITE_TAC[NORM_REAL; GSYM drop; DROP_SUB] THEN
   DISJ_CASES_TAC(REAL_ARITH `drop x <= drop y \/ drop y <= drop x`) THENL
    [ASM_SIMP_TAC[REAL_ARITH `x <= y ==> abs(y - x) = y - x`];
     ONCE_REWRITE_TAC[VECTOR_ARITH
-     `fy - fx - (x - y) % c = --(fx - fy - (y - x) % c)`] THEN
+     `fy - fx - (x - y) % c:real^N = --(fx - fy - (y - x) % c)`] THEN
     ASM_SIMP_TAC[NORM_NEG; REAL_ARITH `x <= y ==> abs(x - y) = y - x`]] THEN
   ASM_SIMP_TAC[GSYM CONTENT_1] THEN MATCH_MP_TAC HAS_INTEGRAL_BOUND THEN
   EXISTS_TAC `(\u. f(u) - f(x)):real^1->real^N` THEN
@@ -5036,12 +5034,22 @@ let INTEGRAL_HAS_VECTOR_DERIVATIVE = prove
     ASM_SIMP_TAC[INTEGRABLE_CONTINUOUS; SUBSET_INTERVAL_1] THEN
     ASM_REAL_ARITH_TAC));;
 
+let INTEGRAL_HAS_VECTOR_DERIVATIVE = prove
+ (`!f:real^1->real^N a b.
+     f continuous_on interval[a,b]
+     ==> !x. x IN interval[a,b]
+             ==> ((\u. integral (interval[a,u]) f) has_vector_derivative f(x))
+                 (at x within interval[a,b])`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC INTEGRAL_HAS_VECTOR_DERIVATIVE_POINTWISE THEN
+  ASM_MESON_TAC[INTEGRABLE_CONTINUOUS; CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN]);;
+
 let ANTIDERIVATIVE_CONTINUOUS = prove
  (`!f:real^1->real^N a b.
-     (f continuous_on interval[a,b])
+     f continuous_on interval[a,b]
      ==> ?g. !x. x IN interval[a,b]
                  ==> (g has_vector_derivative f(x))
-                     (at x within interval[a,b])`,
+                          (at x within interval[a,b])`,
   MESON_TAC[INTEGRAL_HAS_VECTOR_DERIVATIVE]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -16187,6 +16195,20 @@ let VECTOR_VARIATION_INTEGRAL_NORM_DERIVATIVE = prove
   CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ALL_TAC] THEN
   ASM_MESON_TAC[VECTOR_DERIVATIVE_WORKS; HAS_VECTOR_DERIVATIVE_AT_WITHIN;
                 IN_DIFF; SUBSET]);;
+
+let INTEGRABLE_BOUNDED_VARIATION_PRODUCT = prove
+ (`!f:real^1->real^N g a b.
+        f integrable_on interval[a,b] /\
+        g has_bounded_variation_on interval[a,b]
+        ==> (\x. drop(g x) % f x) integrable_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM
+   (MP_TAC o GEN_REWRITE_RULE I [HAS_BOUNDED_VARIATION_DARBOUX]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`h:real^1->real^1`; `k:real^1->real^1`] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[DROP_SUB; VECTOR_SUB_RDISTRIB] THEN
+  MATCH_MP_TAC INTEGRABLE_SUB THEN
+  CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_INCREASING_PRODUCT THEN
+  ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Baby Fubini theorems for continuous functions. Will be generalized.       *)

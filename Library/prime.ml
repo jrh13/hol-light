@@ -187,15 +187,6 @@ let EXP_4 = prove(
 (* Elementary theory of divisibility                                         *)
 (* ------------------------------------------------------------------------- *)
 
-let divides = prove
- (`a divides b <=> ?x. b = a * x`,
-  EQ_TAC THENL [REWRITE_TAC[num_divides; int_divides]; NUMBER_TAC] THEN
-  DISCH_THEN(X_CHOOSE_TAC `x:int`) THEN EXISTS_TAC `num_of_int(abs x)` THEN
-  SIMP_TAC[GSYM INT_OF_NUM_EQ;
-           INT_ARITH `&m:int = &n <=> abs(&m :int) = abs(&n)`] THEN
-  ASM_REWRITE_TAC[GSYM INT_OF_NUM_MUL; INT_ABS_MUL] THEN
-  SIMP_TAC[INT_OF_NUM_OF_INT; INT_ABS_POS; INT_ABS_ABS]);;
-
 let DIVIDES_0 = prove
  (`!x. x divides 0`,
   NUMBER_TAC);;
@@ -1387,6 +1378,15 @@ let DIVIDES_PRIMEPOW = prove
     REWRITE_TAC[LE_EXISTS] THEN STRIP_TAC THEN
     ASM_REWRITE_TAC[EXP_ADD] THEN MESON_TAC[DIVIDES_RMUL; DIVIDES_REFL]]);;
 
+let PRIMEPOW_DIVIDES_PROD = prove
+ (`!p k m n.
+        prime p /\ (p EXP k) divides (m * n)
+        ==> ?i j. (p EXP i) divides m /\ (p EXP j) divides n /\ k = i + j`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP DIVISION_DECOMP) THEN
+  REWRITE_TAC[NUMBER_RULE
+   `a = b * c <=> b divides a /\ c divides a /\ b * c = a`] THEN
+  ASM_MESON_TAC[EXP_ADD; EQ_PRIMEPOW; DIVIDES_PRIMEPOW]);;
+
 let COPRIME_DIVISORS = prove
  (`!a b d e. d divides a /\ e divides b /\ coprime(a,b) ==> coprime(d,e)`,
   NUMBER_TAC);;
@@ -1460,6 +1460,148 @@ let PRIMEPOW_DIVISORS_EQ = prove
  (`!m n. m = n <=>
          !p k. prime p ==> (p EXP k divides m <=> p EXP k divides n)`,
   MESON_TAC[DIVIDES_ANTISYM; PRIMEPOW_DIVISORS_DIVIDES]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Index of a (usually prime) divisor of a number.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let FINITE_EXP_LE = prove
+ (`!P p n. 2 <= p ==> FINITE {j | P j /\ p EXP j <= n}`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `0..n` THEN
+  SIMP_TAC[FINITE_NUMSEG; SUBSET; IN_ELIM_THM; LE_0; IN_NUMSEG] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN TRANS_TAC LE_TRANS `p EXP i` THEN
+  ASM_REWRITE_TAC[] THEN TRANS_TAC LE_TRANS `2 EXP i` THEN
+  ASM_SIMP_TAC[EXP_MONO_LE_IMP; LT_POW2_REFL; LT_IMP_LE]);;
+
+let FINITE_INDICES = prove
+ (`!P p n. 2 <= p /\ ~(n = 0) ==> FINITE {j | P j /\ p EXP j divides n}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+  EXISTS_TAC `{j | P j /\ p EXP j <= n}` THEN
+  ASM_SIMP_TAC[FINITE_EXP_LE] THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+  ASM_MESON_TAC[DIVIDES_LE]);;
+
+let index_def = new_definition
+ `index p n = if p <= 1 \/ n = 0 then 0
+              else CARD {j | 1 <= j /\ p EXP j divides n}`;;
+
+let INDEX_0 = prove
+ (`!p. index p 0 = 0`,
+  REWRITE_TAC[index_def]);;
+
+let PRIMEPOW_DIVIDES_INDEX = prove
+ (`!n p k. p EXP k divides n <=> n = 0 \/ p = 1 \/ k <= index p n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[INDEX_0; DIVIDES_0; EXP_EQ_0] THEN
+  ASM_CASES_TAC `p = 0` THEN
+  ASM_REWRITE_TAC[EXP_ZERO; COND_RAND; COND_RATOR] THEN
+  ASM_SIMP_TAC[LE_0; DIVIDES_1; ARITH; index_def; DIVIDES_ZERO] THEN
+  SIMP_TAC[CONJUNCT1 LE; COND_ID] THEN
+  ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[EXP_ONE; DIVIDES_1] THEN
+  COND_CASES_TAC THENL [ASM_ARITH_TAC; ALL_TAC]  THEN
+  SUBGOAL_THEN `2 <= p` ASSUME_TAC THENL  [ASM_ARITH_TAC; ALL_TAC]  THEN
+  MP_TAC(ISPECL [`n:num`; `p:num`] FACTORIZATION_INDEX) THEN
+  ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `a:num` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `!k. p EXP k divides n <=> k <= a` ASSUME_TAC THENL
+   [GEN_TAC THEN EQ_TAC THENL [ASM_MESON_TAC[NOT_LE]; ALL_TAC] THEN
+    DISCH_TAC THEN TRANS_TAC DIVIDES_TRANS `p EXP a` THEN
+    ASM_SIMP_TAC[DIVIDES_EXP_LE];
+    ASM_REWRITE_TAC[GSYM numseg; CARD_NUMSEG_1]]);;
+
+let LE_INDEX = prove
+ (`!n p k. k <= index p n <=> (n = 0 \/ p = 1 ==> k = 0) /\ p EXP k divides n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[PRIMEPOW_DIVIDES_INDEX] THEN
+  ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[INDEX_0; CONJUNCT1 LE] THEN
+  ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[index_def; ARITH; CONJUNCT1 LE]);;
+
+let INDEX_1 = prove
+ (`!p. index p 1 = 0`,
+  GEN_TAC THEN REWRITE_TAC[index_def; ARITH] THEN COND_CASES_TAC THEN
+  REWRITE_TAC[DIVIDES_ONE; EXP_EQ_1] THEN
+  ASM_SIMP_TAC[ARITH_RULE `~(p <= 1) ==> ~(p = 1)`;
+               ARITH_RULE `~(1 <= j /\ j = 0)`;
+               EMPTY_GSPEC; CARD_CLAUSES]);;
+
+let INDEX_MUL = prove
+ (`!m n. prime p /\ ~(m = 0) /\ ~(n = 0)
+         ==> index p (m * n) = index p m + index p n`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN
+  SUBGOAL_THEN `~(p = 1)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[PRIME_1]; ALL_TAC] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC(MESON[LE_REFL]
+     `(!k:num. k <= m ==> k <= n) ==> m <= n`) THEN
+    MP_TAC(SPEC `p:num` PRIMEPOW_DIVIDES_PROD) THEN
+    ASM_REWRITE_TAC[LE_INDEX; MULT_EQ_0] THEN ASM_MESON_TAC[LE_ADD2; LE_INDEX];
+    ASM_REWRITE_TAC[LE_INDEX; MULT_EQ_0; EXP_ADD] THEN
+    MATCH_MP_TAC DIVIDES_MUL2 THEN ASM_MESON_TAC[LE_INDEX; LE_REFL]]);;
+
+let INDEX_EXP = prove
+ (`!p n k. prime p ==> index p (n EXP k) = k * index p n`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
+  GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[EXP_ZERO; INDEX_0; COND_RAND; COND_RATOR; INDEX_1;
+                  MULT_CLAUSES; COND_ID] THEN
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[INDEX_MUL; EXP_EQ_0; EXP; INDEX_1; MULT_CLAUSES] THEN
+  ARITH_TAC);;
+
+let INDEX_FACT = prove
+ (`!p n. prime p ==> index p (FACT n) = nsum(1..n) (\m. index p m)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN REWRITE_TAC[FACT; NSUM_CLAUSES_NUMSEG; INDEX_1; ARITH] THEN
+  ASM_SIMP_TAC[INDEX_MUL; NOT_SUC; FACT_NZ] THEN ARITH_TAC);;
+
+let INDEX_FACT_ALT = prove
+ (`!p n. prime p
+         ==> index p (FACT n) =
+             nsum {j | 1 <= j /\ p EXP j <= n} (\j. n DIV (p EXP j))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[INDEX_FACT] THEN
+  SUBGOAL_THEN `~(p = 0) /\ ~(p = 1) /\ 2 <= p /\ ~(p <= 1)`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP PRIME_GE_2) THEN ARITH_TAC; ALL_TAC] THEN
+  ASM_SIMP_TAC[index_def; LE_1] THEN
+  TRANS_TAC EQ_TRANS
+   `nsum(1..n) (\m. nsum {j | 1 <= j /\ p EXP j <= n}
+                         (\j. if p EXP j divides m then 1 else 0))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_EQ_NUMSEG THEN X_GEN_TAC `m:num` THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[GSYM NSUM_RESTRICT_SET; IN_ELIM_THM] THEN
+    ASM_SIMP_TAC[NSUM_CONST; FINITE_INDICES; LE_1; MULT_CLAUSES] THEN
+    AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+    ASM_MESON_TAC[DIVIDES_LE; LE_1; LE_TRANS];
+    W(MP_TAC o PART_MATCH (lhs o rand) NSUM_SWAP o lhand o snd) THEN
+    ASM_SIMP_TAC[FINITE_NUMSEG; FINITE_EXP_LE] THEN DISCH_THEN(K ALL_TAC) THEN
+    MATCH_MP_TAC NSUM_EQ THEN X_GEN_TAC `j:num` THEN
+    REWRITE_TAC[IN_ELIM_THM; GSYM NSUM_RESTRICT_SET] THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[NSUM_CONST; FINITE_NUMSEG; FINITE_RESTRICT; MULT_CLAUSES] THEN
+    SUBGOAL_THEN `{m | m IN 1..n /\ p EXP j divides m} =
+                  IMAGE (\q. p EXP j * q) (1..(n DIV p EXP j))`
+     (fun th -> ASM_SIMP_TAC[CARD_IMAGE_INJ; FINITE_NUMSEG; EQ_MULT_LCANCEL;
+                             th; EXP_EQ_0; PRIME_IMP_NZ; CARD_NUMSEG_1]) THEN
+    REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG; IN_ELIM_THM; divides] THEN
+    X_GEN_TAC `d:num` THEN REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+    AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `q:num` THEN
+    ASM_CASES_TAC `d = p EXP j * q` THEN ASM_REWRITE_TAC[] THEN
+    ASM_SIMP_TAC[LE_RDIV_EQ; EXP_EQ_0; PRIME_IMP_NZ; MULT_EQ_0;
+                 ARITH_RULE `1 <= x <=> ~(x = 0)`]]);;
+
+let INDEX_FACT_UNBOUNDED = prove
+ (`!p n. prime p
+         ==> index p (FACT n) = nsum {j | 1 <= j} (\j. n DIV (p EXP j))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[INDEX_FACT_ALT] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC NSUM_SUPERSET THEN
+  ASM_SIMP_TAC[SUBSET; IN_ELIM_THM; IMP_CONJ; DIV_EQ_0; EXP_EQ_0;
+               PRIME_IMP_NZ; NOT_LE]);;
+
+let PRIMEPOW_DIVIDES_FACT = prove
+ (`!p n k. prime p
+           ==> (p EXP k divides FACT n <=>
+                k <= nsum {j | 1 <= j /\ p EXP j <= n} (\j. n DIV (p EXP j)))`,
+  SIMP_TAC[PRIMEPOW_DIVIDES_INDEX; INDEX_FACT_ALT; FACT_NZ] THEN
+  MESON_TAC[PRIME_1]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Least common multiples.                                                   *)
@@ -1791,7 +1933,7 @@ let COPRIME_CONV =
     MP th (EQT_ELIM(NUM_REDUCE_CONV(lhand(concl th))));;
 
 (* ------------------------------------------------------------------------- *)
-(* More general (slightly less efficiently coded) GCD_CONV.                  *)
+(* More general (slightly less efficiently coded) GCD_CONV, and LCM_CONV.    *)
 (* ------------------------------------------------------------------------- *)
 
 let GCD_CONV =
@@ -1831,3 +1973,10 @@ let GCD_CONV =
             let th = SPECL [mtm;ntm;xtm;ytm;dtm;mtm';ntm']
              (if m */ x =/ n */ y +/ d then pth1 else pth2) in
             MP th (EQT_ELIM(NUM_REDUCE_CONV(lhand(concl th))));;
+
+let LCM_CONV =
+  GEN_REWRITE_CONV I [lcm] THENC
+  RATOR_CONV(LAND_CONV(LAND_CONV NUM_MULT_CONV THENC NUM_EQ_CONV)) THENC
+  (GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL COND_CLAUSES)] ORELSEC
+   (GEN_REWRITE_CONV I [CONJUNCT2(SPEC_ALL COND_CLAUSES)] THENC
+    COMB2_CONV (RAND_CONV NUM_MULT_CONV) GCD_CONV THENC NUM_DIV_CONV));;

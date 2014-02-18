@@ -9,20 +9,10 @@
 (* ========================================================================= *)
 
 needs "Library/prime.ml";;
-needs "Multivariate/vectors.ml";;
-needs "Library/transc.ml";;
 needs "Library/floor.ml";;
+needs "Multivariate/transcendentals.ml";;
 
 prioritize_real();;
-
-(* ------------------------------------------------------------------------- *)
-(* This gets overwritten by a theorem in transc load.                        *)
-(* ------------------------------------------------------------------------- *)
-
-let SUM_2 = prove
- (`!t. sum(1..2) t = t(1) + t(2)`,
-  REWRITE_TAC[num_CONV `2`; num_CONV `2`; SUM_CLAUSES_NUMSEG] THEN
-  REWRITE_TAC[SUM_SING_NUMSEG; ARITH; REAL_ADD_ASSOC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The critical lemma.                                                       *)

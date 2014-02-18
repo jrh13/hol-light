@@ -1796,8 +1796,7 @@ let NEWMAN_INGHAM_THEOREM = prove
     REWRITE_TAC[dist; complex_norm] THEN
     MATCH_MP_TAC(REAL_ARITH `&0 < e /\ x < abs e ==> x < e`) THEN
     ASM_REWRITE_TAC[GSYM POW_2_SQRT_ABS] THEN
-    MATCH_MP_TAC SQRT_MONO_LT THEN CONJ_TAC THENL
-     [SIMP_TAC[REAL_POW_2; REAL_LE_SQUARE; REAL_LE_ADD]; ALL_TAC] THEN
+    MATCH_MP_TAC SQRT_MONO_LT THEN
     MATCH_MP_TAC(REAL_ARITH
      `&0 < b * b /\ x <= (b / &2) pow 2 /\ y <= (b / &2) pow 2
       ==> x + y < b pow 2`) THEN

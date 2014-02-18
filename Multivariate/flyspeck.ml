@@ -6996,9 +6996,62 @@ let RELATIVE_FRONTIER_OF_POLYHEDRON = RELATIVE_BOUNDARY_OF_POLYHEDRON;;
 (* Put back the old version since that might break some proofs.              *)
 (* ------------------------------------------------------------------------- *)
 
-let SUM_POS_LE = prove 
+let SUM_POS_LE = prove
  (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x)) ==> &0 <= sum s f`,
-  REWRITE_TAC[REWRITE_RULE[SUM_0] (ISPEC `\x. &0` SUM_LE)]);;             
+  REWRITE_TAC[REWRITE_RULE[SUM_0] (ISPEC `\x. &0` SUM_LE)]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Also, the definition of sqrt was totalized, so keep old theorems          *)
+(* that have more hypotheses than the curren ones.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let SQRT_MUL = prove
+ (`!x y. &0 <= x /\ &0 <= y ==> sqrt(x * y) = sqrt x * sqrt y`,
+  MESON_TAC[SQRT_MUL]);;
+
+let SQRT_INV = prove
+ (`!x. &0 <= x ==> (sqrt (inv x) = inv(sqrt x))`,
+  MESON_TAC[SQRT_INV]);;
+
+let SQRT_DIV = prove
+ (`!x y. &0 <= x /\ &0 <= y ==> sqrt(x / y) = sqrt x / sqrt y`,
+  MESON_TAC[SQRT_DIV]);;
+
+let SQRT_LT_0 = prove
+ (`!x. &0 <= x ==> (&0 < sqrt x <=> &0 < x)`,
+  MESON_TAC[SQRT_LT_0]);;
+
+let SQRT_EQ_0 = prove
+ (`!x. &0 <= x ==> ((sqrt x = &0) <=> (x = &0))`,
+  MESON_TAC[SQRT_EQ_0]);;
+
+let SQRT_MONO_LT = prove
+ (`!x y. &0 <= x /\ x < y ==> sqrt(x) < sqrt(y)`,
+  MESON_TAC[SQRT_MONO_LT]);;
+
+let SQRT_MONO_LE = prove
+ (`!x y. &0 <= x /\ x <= y ==> sqrt(x) <= sqrt(y)`,
+  MESON_TAC[SQRT_MONO_LE]);;
+
+let SQRT_MONO_LT_EQ = prove
+ (`!x y. &0 <= x /\ &0 <= y ==> (sqrt(x) < sqrt(y) <=> x < y)`,
+  MESON_TAC[SQRT_MONO_LT_EQ]);;
+
+let SQRT_MONO_LE_EQ = prove
+ (`!x y. &0 <= x /\ &0 <= y ==> (sqrt(x) <= sqrt(y) <=> x <= y)`,
+  MESON_TAC[SQRT_MONO_LE_EQ]);;
+
+let SQRT_INJ = prove
+ (`!x y. &0 <= x /\ &0 <= y ==> ((sqrt(x) = sqrt(y)) <=> (x = y))`,
+  MESON_TAC[SQRT_INJ]);;
+
+let REAL_LE_LSQRT = prove
+ (`!x y. &0 <= x /\ &0 <= y /\ x <= y pow 2 ==> sqrt(x) <= y`,
+  MESON_TAC[REAL_LE_LSQRT]);;
+
+let REAL_LT_LSQRT = prove
+ (`!x y. &0 <= x /\ &0 <= y /\ x < y pow 2 ==> sqrt x < y`,
+  MESON_TAC[REAL_LT_LSQRT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Fix the congruence rules as expected in Flyspeck.                         *)
