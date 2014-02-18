@@ -1,3 +1,142 @@
+Sun 16th Feb 2014       real.ml
+
+Added the following additional properties of the signum function:
+
+  INT_SGN_POW =
+   |- !x n. int_sgn(x pow n) = int_sgn(x) pow n
+
+  INT_SGN_POW_2 =
+   |- !x. int_sgn(x pow 2) = int_sgn(abs x)
+
+  INT_SGN_REAL_SGN =
+   |- int_sgn(int_sgn x) = int_sgn x
+
+  REAL_INV_SGN =
+   |- !x. inv (real_sgn x) = real_sgn x
+
+  REAL_SGN_POW =
+   |- !x n. real_sgn(x pow n) = real_sgn(x) pow n
+
+  REAL_SGN_POW_2 =
+   |- !x. real_sgn(x pow 2) = real_sgn(abs x)
+
+  REAL_SGN_REAL_SGN =
+   |- real_sgn(real_sgn x) = real_sgn x
+
+Sun 16th Feb 2014       Library/prime.ml
+
+Added a conversion LCM_CONV to compute LCMs of particular numerals, plus a few
+more theorems including a definition of "index":
+
+  PRIMEPOW_DIVIDES_PROD =
+   |- !p k m n.
+        prime p /\ (p EXP k) divides (m * n)
+        ==> ?i j. (p EXP i) divides m /\ (p EXP j) divides n /\ k = i + j
+
+  FINITE_EXP_LE =
+   |- !P p n. 2 <= p ==> FINITE {j | P j /\ p EXP j <= n}
+
+  FINITE_INDICES =
+   |- !P p n. 2 <= p /\ ~(n = 0) ==> FINITE {j | P j /\ p EXP j divides n}
+
+  index_def =
+   |- index p n = if p <= 1 \/ n = 0 then 0
+                  else CARD {j | 1 <= j /\ p EXP j divides n}
+
+  INDEX_0 =
+   |- !p. index p 0 = 0
+
+  PRIMEPOW_DIVIDES_INDEX =
+   |- !n p k. p EXP k divides n <=> n = 0 \/ p = 1 \/ k <= index p n
+
+  LE_INDEX =
+   |- !n p k. k <= index p n <=>
+              (n = 0 \/ p = 1 ==> k = 0) /\ p EXP k divides n
+
+  INDEX_1 = |- !p. index p 1 = 0
+
+  INDEX_MUL =
+   |- !m n. prime p /\ ~(m = 0) /\ ~(n = 0)
+            ==> index p (m * n) = index p m + index p n
+
+  INDEX_EXP =
+   |- !p n k. prime p ==> index p (n EXP k) = k * index p n
+
+  INDEX_FACT =
+   |- !p n. prime p ==> index p (FACT n) = nsum(1..n) (\m. index p m)
+
+  INDEX_FACT_ALT =
+   |- !p n. prime p
+            ==> index p (FACT n) =
+                nsum {j | 1 <= j /\ p EXP j <= n} (\j. n DIV (p EXP j))
+
+  INDEX_FACT_UNBOUNDED =
+   |- !p n. prime p
+            ==> index p (FACT n) = nsum {j | 1 <= j} (\j. n DIV (p EXP j))
+
+  PRIMEPOW_DIVIDES_FACT =
+   |- !p n k. prime p
+              ==> (p EXP k divides FACT n <=>
+                  k <= nsum {j | 1 <= j /\ p EXP j <= n} (\j. n DIV (p EXP j)))
+
+Sun 16th Feb 2014       iterate.ml
+
+Added a slightly more delicate "finite support" vesion of sum comparison:
+
+ NSUM_LE_GEN =
+  |- !f g s. (!x. x IN s ==> f x <= g x) /\ FINITE {x | x IN s /\ ~(g x = 0)}
+             ==> nsum s f <= nsum s g
+
+Wed 12th Feb 2014       Library/floor.ml
+
+Added INTEGER_DIV = |- !m n. integer(&m / &n) <=> n = 0 \/ n divides m
+
+Wed 12th Feb 2014       int.ml, Library/prime.ml
+
+Moved the theorem "divides" out of Library/prime.ml into the core, since it
+seems silly not to have such a basic fact available.
+
+Wed 12th Feb 2014       Library/binomial.ml
+
+Added
+
+  BINOM_0 = |- !n. binom(0,n) = if n = 0 then 1 else 0
+
+  BINOM_GE_TOP = |- !m n. 1 <= m /\ m < n ==> n <= binom(n,m)
+
+Wed 12th Feb 2014       Library/products.ml
+
+Added
+
+  NPRODUCT_SUPPORT =
+   |- !f s. nproduct (support ( * ) f s) f = nproduct s f
+
+  NPRODUCT_SUPERSET =
+   |- !f u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f(x) = 1)
+        ==> nproduct v f = nproduct u f`
+
+  PRODUCT_SUPPORT =
+   |- !f s. product (support ( * ) f s) f = product s f
+
+  PRODUCT_SUPERSET =
+   |- !f:A->real u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f(x) = &1)
+        ==> product v f = product u f
+
+Wed 12th Feb 2014       iterate.ml
+
+Added a couple of convenient theorems about when sums are stricly
+positive:
+
+  NSUM_POS_LT_ALL =
+   |- !s f.
+        FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> 0 < f i) ==> 0 < nsum s f
+
+  SUM_POS_LT_ALL =
+   |- !s f.
+        FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> &0 < f i) ==> &0 < sum s f
+
 Thu  6th Feb 2014       int.ml
 
 Added INT_LE_DISCRETE = |- !x y:int. x <= y <=> x < y + &1

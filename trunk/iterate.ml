@@ -904,6 +904,12 @@ let NSUM_POS_LT = prove
         ==> 0 < nsum s f`,
   SIMP_TAC[ARITH_RULE `0 < n <=> ~(n = 0)`; NSUM_EQ_0_IFF] THEN MESON_TAC[]);;
 
+let NSUM_POS_LT_ALL = prove
+ (`!s f:A->num.
+     FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> 0 < f i) ==> 0 < nsum s f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_POS_LT THEN
+  ASM_MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE]);;
+
 let NSUM_DELETE = prove
  (`!f s a. FINITE s /\ a IN s ==> f(a) + nsum(s DELETE a) f = nsum s f`,
   SIMP_TAC[nsum; ITERATE_DELETE; MONOIDAL_ADD]);;
@@ -1095,6 +1101,21 @@ let NSUM_SUBSET_SIMPLE = prove
  (`!u v f. FINITE v /\ u SUBSET v ==> nsum u f <= nsum v f`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_SUBSET THEN
   ASM_MESON_TAC[IN_DIFF; SUBSET; FINITE_SUBSET]);;
+
+let NSUM_LE_GEN = prove
+ (`!f g s. (!x:A. x IN s ==> f x <= g x) /\ FINITE {x | x IN s /\ ~(g x = 0)}
+           ==> nsum s f <= nsum s g`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM NSUM_SUPPORT] THEN
+  REWRITE_TAC[support; NEUTRAL_ADD] THEN
+  TRANS_TAC LE_TRANS `nsum {x | x IN s /\ ~(g(x:A) = 0)} f` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC NSUM_SUBSET THEN
+    ASM_REWRITE_TAC[IN_ELIM_THM; IN_DIFF] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[LE]] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+      FINITE_SUBSET)) THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_MESON_TAC[LE];
+    MATCH_MP_TAC NSUM_LE THEN ASM_SIMP_TAC[IN_ELIM_THM]]);;
 
 let NSUM_IMAGE_NONZERO = prove
  (`!d:B->num i:A->B s.
@@ -1451,6 +1472,12 @@ let SUM_POS_LT = prove
   EXISTS_TAC `sum (s:A->bool) (\i. &0)` THEN CONJ_TAC THENL
    [REWRITE_TAC[SUM_0; REAL_LE_REFL]; MATCH_MP_TAC SUM_LT] THEN
   ASM_MESON_TAC[]);;
+
+let SUM_POS_LT_ALL = prove
+ (`!s f:A->real.
+     FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> &0 < f i) ==> &0 < sum s f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_POS_LT THEN
+  ASM_MESON_TAC[MEMBER_NOT_EMPTY; REAL_LT_IMP_LE]);;
 
 let SUM_EQ = prove
  (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (sum s f = sum s g)`,

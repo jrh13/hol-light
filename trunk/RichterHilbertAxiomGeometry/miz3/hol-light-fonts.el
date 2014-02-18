@@ -49,11 +49,26 @@
     (while (search-forward " SUBSET " nil t)
       (replace-match " ⊂ " nil t))
     (goto-char (point-min))
+    (while (search-forward " SUBSET
+" nil t)
+      (replace-match " ⊂
+" nil t))
+    (goto-char (point-min))
     (while (search-forward " INTER " nil t)
       (replace-match " ∩ " nil t))
     (goto-char (point-min))
+    (while (search-forward " INTER
+" nil t)
+      (replace-match " ∩
+" nil t))
+    (goto-char (point-min))
     (while (search-forward " UNION " nil t)
       (replace-match " ∪ " nil t))
+    (goto-char (point-min))
+    (while (search-forward " UNION
+" nil t)
+      (replace-match " ∪
+" nil t))
     (goto-char (point-min))
     (while (search-forward "{}" nil t)
       (replace-match "∅" nil t))
@@ -66,6 +81,14 @@
     (goto-char (point-min))
     (while (search-forward " DIFF " nil t)
       (replace-match " ━ " nil t))
+    (goto-char (point-min))
+    (while (search-forward " DIFF
+" nil t)
+      (replace-match " ━
+" nil t))
+    (goto-char (point-min))
+    (while (search-forward " INSERT " nil t)
+      (replace-match " ╪ " nil t))
     (goto-char (point-min))
     (while (search-forward "alpha" nil t)
       (replace-match "α" nil t))

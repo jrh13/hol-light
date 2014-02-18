@@ -7949,6 +7949,24 @@ let CONVEX_ON_JENSEN = prove
   MATCH_MP_TAC(REAL_ARITH `a <= b ==> x <= a ==> x <= b`) THEN
   ASM_SIMP_TAC[SUM_LE_NUMSEG; REAL_LE_LMUL]);;
 
+let CONVEX_ON_IMP_JENSEN = prove
+ (`!f:real^N->real s k:A->bool u x.
+        f convex_on s /\ convex s /\ FINITE k /\
+        (!i. i IN k ==> &0 <= u i /\ x i IN s) /\ sum k u = &1
+        ==> f(vsum k (\i. u i % x i)) <= sum k (\i. u i * f(x i))`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [FINITE_INDEX_NUMSEG]) THEN
+  ABBREV_TAC `n = CARD(k:A->bool)` THEN
+  REWRITE_TAC[INJECTIVE_ON_ALT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:num->A`
+   (CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC)) THEN
+  ASM_SIMP_TAC[VSUM_IMAGE; SUM_IMAGE; FINITE_NUMSEG; IMP_CONJ; o_DEF] THEN
+  DISCH_TAC THEN MP_TAC(ISPECL [`f:real^N->real`; `s:real^N->bool`]
+        CONVEX_ON_JENSEN) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[GSYM IN_NUMSEG] THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Another intermediate value theorem formulation.                           *)
 (* ------------------------------------------------------------------------- *)

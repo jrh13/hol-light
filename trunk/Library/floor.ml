@@ -133,6 +133,15 @@ let INTEGER_ABS_MUL_EQ_1 = prove
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[REAL_ABS_MUL] THEN
   REWRITE_TAC[REAL_OF_NUM_EQ; REAL_OF_NUM_MUL; MULT_EQ_1]);;
 
+let INTEGER_DIV = prove                                                    
+ (`!m n. integer(&m / &n) <=> n = 0 \/ n divides m`,                           
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL                            
+   [ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO; INTEGER_CLOSED];
+    ASM_SIMP_TAC[INTEGER_POS; REAL_POS; REAL_LE_DIV; divides] THEN             
+    ASM_SIMP_TAC[REAL_OF_NUM_EQ; REAL_FIELD                                    
+     `~(n = &0) ==> (x / n = y <=> x = n * y)`] THEN                           
+    REWRITE_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_EQ]]);;                           
+
 (* ------------------------------------------------------------------------- *)
 (* Similar theorems for rational-valued reals.                               *)
 (* ------------------------------------------------------------------------- *)

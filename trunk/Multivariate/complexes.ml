@@ -1402,11 +1402,6 @@ let VSUM_CX = prove
   REWRITE_TAC[DIMINDEX_2; FORALL_2; GSYM RE_DEF; GSYM IM_DEF] THEN
   REWRITE_TAC[IM_CX; SUM_0; RE_CX; ETA_AX]);;
 
-let VSUM_CX = prove
- (`!f:A->real s. FINITE s ==> vsum s (\a. Cx(f a)) = Cx(sum s f)`,
-  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[SUM_CLAUSES; VSUM_CLAUSES; COMPLEX_VEC_0; CX_ADD]);;
-
 let CNJ_VSUM = prove
  (`!f s. FINITE s ==> cnj(vsum s f) = vsum s (\x. cnj(f x))`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN

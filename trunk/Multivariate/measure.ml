@@ -9217,6 +9217,19 @@ let CONTINUOUS_IMP_MEASURABLE_ON_CLOSED_SUBSET = prove
   SIMP_TAC[CONTINUOUS_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET;
            LEBESGUE_MEASURABLE_CLOSED]);;
 
+let CONTINUOUS_AE_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET = prove
+ (`!f:real^M->real^N s m.
+        f continuous_on (s DIFF m) /\ lebesgue_measurable s /\ negligible m
+        ==> f measurable_on s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(f:real^M->real^N) measurable_on (s DIFF m)` MP_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET THEN
+    ASM_SIMP_TAC[LEBESGUE_MEASURABLE_DIFF; NEGLIGIBLE_IMP_LEBESGUE_MEASURABLE];
+    MATCH_MP_TAC MEASURABLE_ON_SPIKE_SET THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+       NEGLIGIBLE_SUBSET)) THEN
+    SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Measurability of a.e. derivatives.                                        *)
 (* ------------------------------------------------------------------------- *)

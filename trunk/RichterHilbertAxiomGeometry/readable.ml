@@ -164,7 +164,7 @@ let NewAxiom s =
 
 (* String versions without type annotations of SUBGOAL_THEN, SUBGOAL_TAC,    *)
 (* intro_TAC, EXISTS_TAC, X_GEN_TAC, and EXISTS_TAC, and also new miz3-type  *)
-(* tactic constructs assume, raa, consider and case_split.                   *)
+(* tactic constructs assume, consider and case_split.                        *)
 
 (* subgoal_THEN stm ttac gl = (SUBGOAL_THEN t ttac) gl,                      *)
 (* where stm is a string that turned into a statement t by make_env and      *)
@@ -184,13 +184,6 @@ let subgoal_THEN stm ttac gl =
 (* string-term list uses whitespace as the delimiter and no braces, there is *)
 (* no reason in readable.ml proofs to use X_gen_TAC instead X_genl_TAC.      *)
 (* intro_TAC is INTRO_TAC with the delimiter ";" replaced with",".           *)
-(* assume notalpha lab tac                                                   *)
-(* applies to goal gl = (asl, w) with tac a proof that w <=> x ∨ y and that  *)
-(* the string statement notalpha turns into the statement ¬x.  y becomes the *)
-(* new goal, with ¬x an assumption with the nonempty label lab, which also   *)
-(* is the label of x ∨ y which tac must prove is equivalent to the goal g.   *)
-(* In typical cases the goal equals x ∨ y, and then one can simply write     *)
-(*     assume ¬x     [lab] by fol -;                                         *)
 (* eq_tac string tac                                                         *)
 (* requires the goal to be an iff statement of the form x ⇔ y and then       *)
 (* performs an EQ_TAC.  If string = "Right", then the tactic tac proves the  *)
@@ -200,12 +193,6 @@ let subgoal_THEN stm ttac gl =
 (* requires the goal to be a conjunction statement x ∧ y and then performs a *)
 (* CONJ_TAC.  If string = "Left" then the tactic tac proves x, and the goal  *)
 (* becomes y.  If string = "Right", tac proves y and the new goal is x.      *)
-(* raa stm lab tac                                                           *)
-(* begins a proof by contradiction (reductio ad absurdum).  The string       *)
-(* statement stm is transformed into a statement x by subgoal_THEN, and tac  *)
-(* proves the goal using the added assumption ~x, labeled by the nonempty    *)
-(* string lab.  If - is used by tac, it will refer to ~x.  There is a new    *)
-(* subgoal F (false) which has the added assumption x, also labeled lab.     *)
 (* consider svars stm lab tac                                                *)
 (* defines new variables given by the string svars = "v1 v2 ... vn" and the  *)
 (* string statement stm, which subgoal_THEN turns into statement t, labeled  *)
@@ -217,6 +204,31 @@ let subgoal_THEN stm ttac gl =
 (* [tac_1;...; tac_n] which prove the statements st_1,..., st_n.  The string *)
 (* sDestruct must have the form "lab_1 |...| lab_n", and lab_i is a label    *)
 (* used by tac_i to prove st_i.  Each lab_i must be a nonempty string.       *)
+(* assume                                                                    *)
+(* can be used for proofs by contradiction, turning a goal w into F with an  *)
+(* assumption ¬w, or turning a disjunction goal α ∨ β into the goal β with   *)
+(* assumption ¬α.  In general,                                               *)
+(* assume notalpha lab tac                                                   *)
+(* turns string statement notalpha into term t, with tactic tac a proof that *)
+(* the goal w follows from the assumption t ⇒ w, which is labeled by the     *)
+(* nonempty string lab.  There is a new assumption t labeled lab. The goal   *)
+(* the simplification of w resulting from using t.                           *)
+(* So if t = ¬α and w is either α ∨ β or β ∨ α, then the new goal is β, and  *)
+(* if t = ¬α and w is either α, then new goal is F (false).                  *)
+(* In these cases, once can simply write                                     *)
+(*     assume notalpha     [lab] by fol -;                                   *)
+(* Suppose instead that tac is a proof of ¬t ⇒ w (think alpha ⇒ w).  Then    *)
+(*     assume notalpha     [lab] tac;                                        *)
+(* will quite often leave the goal w unchanged, and give an extra assumption *)
+(* t labeled by lab.  For this to actually happen, we need for tac to prove  *)
+(* that (t ⇒ w) ⇒ w and for the ONCE_REWRITE_TAC commands in the definition *)
+(* of assume to not change the goal, but these are reasonable expectations,  *)
+(* as we have the tautology proved by TAUT                                   *)
+(* TAUT `(~t ==> w) ==> (t ==> w) ==> w`;;                                   *)
+(* This use of assume saves space if one has a case_split with two forks for *)
+(* one of the two forks have a 1-line proof.  As tac is expected to be a     *)
+(* short proof, a good practice is for the string lab to refer to notalpha,  *)
+(* and to refer, in tac, to the assumption t ⇒ w by "-" instead of lab.      *)
 
 let subgoal_TAC stm lab tac gl =
   SUBGOAL_TAC lab (parse_env_string (make_env gl) stm) [tac] gl;;
@@ -234,13 +246,9 @@ let intro_TAC s = INTRO_TAC (Str.global_replace (Str.regexp ",") ";" s);;
 
 let assume notalpha lab tac (asl, w as gl) =
   let t = parse_env_string (make_env gl) notalpha in
-  let notalpha_implies_beta = mk_imp(t, mk_conj(t, w)) in
+  let notalpha_implies_beta = mk_imp(t, w) in
   (SUBGOAL_THEN notalpha_implies_beta (LABEL_TAC lab) THENL
-  [INTRO_TAC lab; tac] THEN
-  HYP REWRITE_TAC lab [MESON[] `!x y. ~x ==> (~x /\ (x \/ y) <=> y)`]) gl;;
-
-let raa stm lab tac = subgoal_THEN (stm ^ " ==> F") (LABEL_TAC lab) THENL
-  [INTRO_TAC lab; tac];;
+  [INTRO_TAC lab; tac] THEN HYP SIMP_TAC lab []) gl;;
 
 let eq_tac string tac =
   if string = "Right" then CONV_TAC SYM_CONV THEN EQ_TAC THENL [tac; ALL_TAC]
@@ -383,7 +391,7 @@ let ExtractWsStringList string =
 (* 2) CombThmlistTermThm_Thmlist_Term, which combines a thmlist->term->thm   *)
 (*      (e.g. MESON) with a thmlist and a term, and                          *)
 (* 3) CombTermlistThmThm_Termlist, which combines a termlist->thm->thm       *)
-(*      (e.g. SPECL) with a termlist, and a thm produced by theoremify.      *)
+(*      (e.g. SPECL) with a termlist and a thm produced by theoremify.       *)
 (* Similar functions CombThmtactic_Thm and CombThmlisttactic_Thmlist are     *)
 (* used below, along with theoremify, by StringToTactic.                     *)
 
@@ -399,24 +407,6 @@ let CombTermThm_Term word rest gl =
     String.concat ";" stermlist ^"]"))
   with Not_found -> raise (Readable_fail ("term->thm "^ word
   ^" not followed by term list, but instead \n"^ rest));;
-
-let CombThmlistTermThm_Thmlist_Term word rest gl =
-  let ThmlistTermThm = exec_thmlist_term_thm word in
-  try
-    let (stermlist, wsTermRest) = ExtractWsStringList rest in
-    let thmlist = map exec_thm stermlist in
-    if Str.string_match (Str.regexp (ws^ "\[")) wsTermRest 0 then
-      let termRest = Str.string_after wsTermRest (Str.match_end()) in
-      let RightBrace = FindMatch "\[" "\]" termRest in
-      let rest = Str.string_after termRest RightBrace
-      and sterm = Str.string_before termRest (RightBrace - 1) in
-      let term = parse_env_string (make_env gl) sterm in
-      (ThmlistTermThm thmlist term, rest)
-    else raise (Readable_fail ("thmlist->term->thm "^ word
-      ^" followed by list of theorems ["^ String.concat ";" stermlist ^"]
-      not followed by term in\n"^ wsTermRest))
-  with Not_found -> raise (Readable_fail ("thmlist->term->thm "^ word
-  ^" not followed by thm list in\n"^ rest));;
 
 let rec theoremify string gl =
   if Str.string_match (Str.regexp (ws^ "\([^][ \t\n]+\)")) string 0 then
@@ -446,7 +436,30 @@ CombTermlistThmThm_Termlist word rest gl =
     let termlist = map (parse_env_string (make_env gl)) stermlist in
     firstPairMult (TermlistThmThm termlist) (theoremify WsThm gl)
   with Not_found -> raise (Readable_fail ("termlist->thm->thm "^ word
-  ^"\n not followed by term list in\n"^ rest));;
+  ^"\n not followed by term list in\n"^ rest))
+and
+CombThmlistTermThm_Thmlist_Term word rest gl =
+  let thm_create sthm =
+    let (thm, rest) = theoremify (" "^ sthm) gl in
+    if rest = "" then thm
+    else raise (Readable_fail ("an argument of thmlist->term->thm "^ word ^
+    "\n is not a theorem, but instead \n"^ sthm)) in
+  let ThmlistTermThm = exec_thmlist_term_thm word in
+  try
+    let (stermlist, wsTermRest) = ExtractWsStringList rest in
+    let thmlist = map thm_create stermlist in
+    if Str.string_match (Str.regexp (ws^ "\[")) wsTermRest 0 then
+      let termRest = Str.string_after wsTermRest (Str.match_end()) in
+      let RightBrace = FindMatch "\[" "\]" termRest in
+      let rest = Str.string_after termRest RightBrace
+      and sterm = Str.string_before termRest (RightBrace - 1) in
+      let term = parse_env_string (make_env gl) sterm in
+      (ThmlistTermThm thmlist term, rest)
+    else raise (Readable_fail ("thmlist->term->thm "^ word
+      ^" followed by list of theorems ["^ String.concat ";" stermlist ^"]
+      not followed by term in\n"^ wsTermRest))
+  with Not_found -> raise (Readable_fail ("thmlist->term->thm "^ word
+  ^" not followed by thm list in\n"^ rest));;
 
 let CombThmtactic_Thm step =
   if Str.string_match (Str.regexp (ws^ "\([a-zA-Z0-9_]+\)")) step 0 then
@@ -482,11 +495,11 @@ let CombThmlisttactic_Thmlist step =
 (*   case_split string Tactic statement-list Tactic-list |                   *)
 (*   consider variable-list statement label Tactic |                         *)
 (*   eq_tac (Right | Left) Tactic | conj_tac (Right | Left) Tactic |         *)
-(*   (raa | assume | subgoal_TAC) statement label Tactic                     *)
+(*   (assume | subgoal_TAC) statement label Tactic                           *)
 (*                                                                           *)
 (* Thm := theorem-name | label | - [i.e. last assumption] | thm->thm Thm |   *)
 (*   term->thm term | thmlist->term->thm Thm-list term |                     *)
-(*   term_list->thm->thm term-list Thm                                       *)
+(*   termlist->thm->thm term-list Thm                                        *)
 (*                                                                           *)
 (* The string proofs allowed by StringToTactic are written in BNF form as    *)
 (*                                                                           *)
@@ -494,7 +507,7 @@ let CombThmlisttactic_Thmlist step =
 (*   suppose statement; Proof end; ... suppose statement; Proof end; |       *)
 (*   OneStepProof; | consider variable-list statement [label] ByProofQed |   *)
 (*   eq_tac [Right|Left] ByProofQed | conj_tac [Right|Left] ByProofQed |     *)
-(*   (raa | assume | ) statement [label] ByProofQed                          *)
+(*   (assume | ) statement [label] ByProofQed                                *)
 (*                                                                           *)
 (* OneStepProof := one-word-tactic | thm->tactic Thm | intro_TAC string |    *)
 (*   exists_TAC term-string | X_genl_TAC variable-string-list |              *)
@@ -590,12 +603,10 @@ BigStepToTactic s step =
       else if StringRegexpEqual (Str.regexp (ws^ "conj_tac")) statement
       then (conj_tac lab proof, rest)
       else if
-        Str.string_match (Str.regexp (ws^ "\(raa\|assume\)" ^ws)) statement 0
+        Str.string_match (Str.regexp (ws^ "\(assume\)" ^ws)) statement 0
       then
         let statement = Str.string_after statement (Str.match_end()) in
-        if Str.matched_group 1 step = "raa" then
-          (raa statement lab proof, rest)
-        else (assume statement lab proof, rest)
+        (assume statement lab proof, rest)
       else (subgoal_TAC statement lab proof, rest)
     with Not_found -> raise (Readable_fail
     ("Can't parse as a Proof:\n"^ step));;

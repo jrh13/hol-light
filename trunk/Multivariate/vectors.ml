@@ -460,87 +460,132 @@ let SQUARE_CONTINUOUS = prove
     MAP_EVERY UNDISCH_TAC [`abs (y - x) < d`; `d < abs(x)`] THEN
     REAL_ARITH_TAC]);;
 
-let SQRT_WORKS = prove
- (`!x. &0 <= x ==> &0 <= sqrt(x) /\ (sqrt(x) pow 2 = x)`,
-  GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [REAL_LE_LT] THEN STRIP_TAC THENL
-   [ALL_TAC;
-    ASM_MESON_TAC[SQRT_0; REAL_POW_2; REAL_LE_REFL; REAL_MUL_LZERO]] THEN
-  REWRITE_TAC[sqrt] THEN CONV_TAC SELECT_CONV THEN
-  MP_TAC(ISPECL [`(\u. lambda i. u):real->real^1`; `&0`; `&1 + x`;
+let SQRT_WORKS_GEN = prove
+ (`!x. real_sgn(sqrt x) = real_sgn x /\ sqrt(x) pow 2 = abs x`,
+  GEN_TAC THEN REWRITE_TAC[sqrt] THEN CONV_TAC SELECT_CONV THEN
+  SUBGOAL_THEN `!x. &0 < x ==> ?y. &0 < y /\ y pow 2 = x` ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MP_TAC(ISPECL [`(\u. lambda i. u):real->real^1`; `&0`; `&1 + x`;
             `{u:real^1 | u$1 * u$1 < x}`; `{u:real^1 | u$1 * u$1 > x}`]
          CONNECTED_REAL_LEMMA) THEN
-  SIMP_TAC[LAMBDA_BETA; LE_REFL; DIMINDEX_1; DIST_REAL;
-           EXTENSION; IN_INTER; IN_ELIM_THM; NOT_IN_EMPTY;
-           REAL_MUL_LZERO; FORALL_REAL_ONE; real_gt] THEN
-  ANTS_TAC THENL [ALL_TAC; ASM_MESON_TAC[REAL_POW_2; REAL_LT_TOTAL]] THEN
-  ASM_SIMP_TAC[REAL_LT_ANTISYM; REAL_ARITH `&0 < x ==> &0 <= &1 + x`] THEN
-  REWRITE_TAC[SQUARE_BOUND_LEMMA] THEN
-  MESON_TAC[SQUARE_CONTINUOUS; REAL_SUB_LT;
-            REAL_ARITH `abs(z2 - x2) < y - x2 ==> z2 < y`;
-            REAL_ARITH `abs(z2 - x2) < x2 - y ==> y < z2`]);;
+    SIMP_TAC[LAMBDA_BETA; LE_REFL; DIMINDEX_1; DIST_REAL; IN_ELIM_THM] THEN
+    REWRITE_TAC[REAL_POW_2; REAL_ARITH `~(x < y) /\ ~(x > y) <=> x = y`] THEN
+    ANTS_TAC THENL [ALL_TAC; ASM_MESON_TAC[REAL_LT_LE; REAL_ENTIRE]] THEN
+    ASM_REWRITE_TAC[real_gt; SQUARE_BOUND_LEMMA; REAL_MUL_LZERO] THEN
+    CONJ_TAC THENL [ASM_REAL_ARITH_TAC; REWRITE_TAC[REAL_LT_ANTISYM]] THEN
+    MESON_TAC[SQUARE_CONTINUOUS; REAL_SUB_LT;
+              REAL_ARITH `abs(z2 - x2) < y - x2 ==> z2 < y`;
+              REAL_ARITH `abs(z2 - x2) < x2 - y ==> y < z2`];
+    ASM_CASES_TAC `x = &0` THEN
+    ASM_REWRITE_TAC[REAL_SGN_0; REAL_SGN_EQ; UNWIND_THM2] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `abs x`) THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_THEN `y:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `real_sgn x * y` THEN
+    ASM_REWRITE_TAC[REAL_POW_MUL; GSYM REAL_SGN_POW; REAL_SGN_POW_2] THEN
+    REWRITE_TAC[REAL_SGN_MUL; REAL_SGN_REAL_SGN] THEN
+    ASM_SIMP_TAC[real_sgn; REAL_ARITH `&0 < abs x <=> ~(x = &0)`] THEN
+    REWRITE_TAC[REAL_MUL_LID; REAL_MUL_RID]]);;
+
+let SQRT_UNIQUE_GEN = prove
+ (`!x y. real_sgn y = real_sgn x /\ y pow 2 = abs x ==> sqrt x = y`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(GSYM(SPEC `x:real` SQRT_WORKS_GEN)) THEN
+  SIMP_TAC[REAL_RING `x pow 2 = y pow 2 <=> x:real = y \/ x = --y`] THEN
+  DISCH_THEN(K ALL_TAC) THEN REWRITE_TAC[IMP_CONJ_ALT] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[REAL_SGN_NEG] THEN
+  SIMP_TAC[REAL_ARITH `--x = x <=> x = &0`; REAL_SGN_EQ; REAL_NEG_0; SQRT_0]);;
+
+let SQRT_NEG = prove
+ (`!x. sqrt(--x) = --sqrt(x)`,
+  GEN_TAC THEN MATCH_MP_TAC SQRT_UNIQUE_GEN THEN
+  REWRITE_TAC[REAL_SGN_NEG; REAL_POW_NEG; REAL_ABS_NEG; ARITH] THEN
+  REWRITE_TAC[SQRT_WORKS_GEN]);;
+
+let REAL_SGN_SQRT = prove
+ (`!x. real_sgn(sqrt x) = real_sgn x`,
+  REWRITE_TAC[SQRT_WORKS_GEN]);;
+
+let SQRT_WORKS = prove
+ (`!x. &0 <= x ==> &0 <= sqrt(x) /\ sqrt(x) pow 2 = x`,
+  REPEAT STRIP_TAC THEN MP_TAC(SPEC `x:real` SQRT_WORKS_GEN) THEN
+  REWRITE_TAC[real_sgn] THEN ASM_REAL_ARITH_TAC);;
 
 let SQRT_POS_LE = prove
  (`!x. &0 <= x ==> &0 <= sqrt(x)`,
   MESON_TAC[SQRT_WORKS]);;
 
 let SQRT_POW_2 = prove
- (`!x. &0 <= x ==> (sqrt(x) pow 2 = x)`,
+ (`!x. &0 <= x ==> sqrt(x) pow 2 = x`,
   MESON_TAC[SQRT_WORKS]);;
 
-let SQRT_MUL = prove
- (`!x y. &0 <= x /\ &0 <= y
-           ==> (sqrt(x * y) = sqrt x * sqrt y)`,
-  ASM_MESON_TAC[REAL_POW_2; SQRT_WORKS; REAL_LE_MUL; SQRT_UNIQUE;
-                REAL_ARITH `(x * y) * (x * y) = (x * x) * y * y`]);;
-
-let SQRT_INV = prove
- (`!x. &0 <= x ==> (sqrt (inv x) = inv(sqrt x))`,
-  MESON_TAC[SQRT_UNIQUE; SQRT_WORKS; REAL_POW_INV; REAL_LE_INV_EQ]);;
-
-let SQRT_DIV = prove
- (`!x y. &0 <= x /\ &0 <= y ==> (sqrt (x / y) = sqrt x / sqrt y)`,
-  SIMP_TAC[real_div; SQRT_MUL; SQRT_INV; REAL_LE_INV_EQ]);;
-
 let SQRT_POW2 = prove
- (`!x. (sqrt(x) pow 2 = x) <=> &0 <= x`,
+ (`!x. sqrt(x) pow 2 = x <=> &0 <= x`,
   MESON_TAC[REAL_POW_2; REAL_LE_SQUARE; SQRT_POW_2]);;
 
+let SQRT_MUL = prove
+ (`!x y. sqrt(x * y) = sqrt x * sqrt y`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SQRT_UNIQUE_GEN THEN
+  REWRITE_TAC[REAL_SGN_MUL; REAL_POW_MUL; SQRT_WORKS_GEN; REAL_ABS_MUL]);;
+
+let SQRT_INV = prove
+ (`!x. sqrt (inv x) = inv(sqrt x)`,
+  GEN_TAC THEN MATCH_MP_TAC SQRT_UNIQUE_GEN THEN
+  REWRITE_TAC[REAL_SGN_INV; REAL_POW_INV; REAL_ABS_INV; SQRT_WORKS_GEN]);;
+
+let SQRT_DIV = prove
+ (`!x y. sqrt (x / y) = sqrt x / sqrt y`,
+  REWRITE_TAC[real_div; SQRT_MUL; SQRT_INV]);;
+
+let SQRT_LT_0 = prove
+ (`!x. &0 < sqrt x <=> &0 < x`,
+  REWRITE_TAC[GSYM real_gt; GSYM REAL_SGN_EQ; REAL_SGN_SQRT]);;
+
+let SQRT_EQ_0 = prove
+ (`!x. sqrt x = &0 <=> x = &0`,
+  ONCE_REWRITE_TAC[GSYM REAL_SGN_EQ] THEN REWRITE_TAC[REAL_SGN_SQRT]);;
+
+let SQRT_LE_0 = prove
+ (`!x. &0 <= sqrt x <=> &0 <= x`,
+  REWRITE_TAC[REAL_ARITH `&0 <= x <=> &0 < x \/ x = &0`] THEN
+  REWRITE_TAC[SQRT_LT_0; SQRT_EQ_0]);;
+
 let SQRT_MONO_LT = prove
- (`!x y. &0 <= x /\ x < y ==> sqrt(x) < sqrt(y)`,
-  REWRITE_TAC[GSYM REAL_NOT_LE] THEN
-  MESON_TAC[REAL_LT_IMP_LE; REAL_NOT_LE; REAL_LE_TRANS;
-            REAL_POW_LE2; SQRT_WORKS]);;
+ (`!x y. x < y ==> sqrt(x) < sqrt(y)`,
+  SUBGOAL_THEN `!x y. &0 <= x /\ x < y ==> sqrt x < sqrt y` ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_POW_LT2_REV THEN
+    EXISTS_TAC `2` THEN ASM_REWRITE_TAC[SQRT_WORKS_GEN; SQRT_LE_0] THEN
+    ASM_REAL_ARITH_TAC;
+    REPEAT STRIP_TAC THEN ASM_CASES_TAC `&0 <= x` THEN ASM_SIMP_TAC[] THEN
+    ASM_CASES_TAC `&0 <= y` THENL
+     [MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `&0` THEN
+      ASM_REWRITE_TAC[GSYM REAL_NOT_LE; SQRT_LE_0];
+      FIRST_X_ASSUM(MP_TAC o SPECL [`--y:real`; `--x:real`]) THEN
+      REWRITE_TAC[SQRT_NEG] THEN ASM_REAL_ARITH_TAC]]);;
 
 let SQRT_MONO_LE = prove
- (`!x y. &0 <= x /\ x <= y ==> sqrt(x) <= sqrt(y)`,
+ (`!x y. x <= y ==> sqrt(x) <= sqrt(y)`,
   MESON_TAC[REAL_LE_LT; SQRT_MONO_LT]);;
 
 let SQRT_MONO_LT_EQ = prove
- (`!x y. &0 <= x /\ &0 <= y ==> (sqrt(x) < sqrt(y) <=> x < y)`,
+ (`!x y. sqrt(x) < sqrt(y) <=> x < y`,
   MESON_TAC[REAL_NOT_LT; SQRT_MONO_LT; SQRT_MONO_LE]);;
 
 let SQRT_MONO_LE_EQ = prove
- (`!x y. &0 <= x /\ &0 <= y ==> (sqrt(x) <= sqrt(y) <=> x <= y)`,
+ (`!x y. sqrt(x) <= sqrt(y) <=> x <= y`,
   MESON_TAC[REAL_NOT_LT; SQRT_MONO_LT; SQRT_MONO_LE]);;
 
 let SQRT_INJ = prove
- (`!x y. &0 <= x /\ &0 <= y ==> ((sqrt(x) = sqrt(y)) <=> (x = y))`,
+ (`!x y. sqrt(x) = sqrt(y) <=> x = y`,
   SIMP_TAC[GSYM REAL_LE_ANTISYM; SQRT_MONO_LE_EQ]);;
-
-let SQRT_LT_0 = prove
- (`!x. &0 <= x ==> (&0 < sqrt x <=> &0 < x)`,
-  MESON_TAC[SQRT_0; REAL_LE_REFL; SQRT_MONO_LT_EQ]);;
-
-let SQRT_EQ_0 = prove
- (`!x. &0 <= x ==> ((sqrt x = &0) <=> (x = &0))`,
-  MESON_TAC[SQRT_INJ; SQRT_0; REAL_LE_REFL]);;
 
 let SQRT_POS_LT = prove
  (`!x. &0 < x ==> &0 < sqrt(x)`,
   MESON_TAC[REAL_LT_LE; SQRT_POS_LE; SQRT_EQ_0]);;
 
 let REAL_LE_LSQRT = prove
- (`!x y. &0 <= x /\ &0 <= y /\ x <= y pow 2 ==> sqrt(x) <= y`,
+ (`!x y. &0 <= y /\ x <= y pow 2 ==> sqrt(x) <= y`,
   MESON_TAC[SQRT_MONO_LE; REAL_POW_LE; POW_2_SQRT]);;
 
 let REAL_LE_RSQRT = prove
@@ -549,7 +594,7 @@ let REAL_LE_RSQRT = prove
             REAL_LE_SQUARE; REAL_LE_TRANS; POW_2_SQRT]);;
 
 let REAL_LT_LSQRT = prove
- (`!x y. &0 <= x /\ &0 <= y /\ x < y pow 2 ==> sqrt x < y`,
+ (`!x y. &0 <= y /\ x < y pow 2 ==> sqrt x < y`,
   MESON_TAC[SQRT_MONO_LT; REAL_POW_LE; POW_2_SQRT]);;
 
 let REAL_LT_RSQRT = prove
@@ -564,7 +609,7 @@ let SQRT_EVEN_POW2 = prove
   MESON_TAC[SQRT_UNIQUE; REAL_POW_POW; MULT_SYM; REAL_POW_LE; REAL_POS]);;
 
 let REAL_DIV_SQRT = prove
- (`!x. &0 <= x ==> (x / sqrt(x) = sqrt(x))`,
+ (`!x. &0 <= x ==> x / sqrt(x) = sqrt(x)`,
   REWRITE_TAC[REAL_LE_LT] THEN REPEAT STRIP_TAC THENL
    [ALL_TAC; ASM_MESON_TAC[SQRT_0; real_div; REAL_MUL_LZERO]] THEN
   ASM_SIMP_TAC[REAL_EQ_LDIV_EQ; SQRT_POS_LT; GSYM REAL_POW_2] THEN
@@ -577,6 +622,10 @@ let REAL_RSQRT_LE = prove
 let REAL_LSQRT_LE = prove
  (`!x y. &0 <= x /\ sqrt x <= y ==> x <= y pow 2`,
   MESON_TAC[REAL_POW_LE2; SQRT_POS_LE; REAL_LE_TRANS; SQRT_POW_2]);;
+
+let REAL_SQRT_POW_2 = prove
+ (`!x. sqrt x pow 2 = abs x`,
+  REWRITE_TAC[SQRT_WORKS_GEN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence derive more interesting properties of the norm.                     *)
@@ -601,8 +650,7 @@ let NORM_SUB = prove
 let NORM_MUL = prove
  (`!a x. norm(a % x) = abs(a) * norm x`,
   REWRITE_TAC[vector_norm; DOT_LMUL; DOT_RMUL; REAL_MUL_ASSOC] THEN
-  SIMP_TAC[SQRT_MUL; SQRT_POS_LE; DOT_POS_LE; REAL_LE_SQUARE] THEN
-  REWRITE_TAC[GSYM REAL_POW_2; POW_2_SQRT_ABS]);;
+  REWRITE_TAC[SQRT_MUL; GSYM REAL_POW_2; REAL_SQRT_POW_2]);;
 
 let NORM_EQ_0_DOT = prove
  (`!x. (norm x = &0) <=> (x dot x = &0)`,

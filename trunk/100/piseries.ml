@@ -4,8 +4,8 @@
 
 needs "Library/analysis.ml";;
 needs "Library/transc.ml";;
-needs "Library/poly.ml";;
 needs "Library/floor.ml";;
+needs "Library/poly.ml";;
 needs "Examples/machin.ml";;
 needs "Library/iter.ml";;
 
