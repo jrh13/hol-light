@@ -2,10 +2,6 @@
 (* Binary expansions as a bijection between numbers and finite sets.         *)
 (* ========================================================================= *)
 
-let LT_POW2_REFL = prove
- (`!n. n < 2 EXP n`,
-  INDUCT_TAC THEN REWRITE_TAC[EXP] THEN TRY(POP_ASSUM MP_TAC) THEN ARITH_TAC);;
-
 let BINARY_INDUCT = prove
  (`!P. P 0 /\ (!n. P n ==> P(2 * n) /\ P(2 * n + 1)) ==> !n. P n`,
   GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC num_WF THEN GEN_TAC THEN

@@ -1,0 +1,57 @@
+\DOC SEQ_IMP_REWRITE_TAC
+
+\TYPE {SEQ_IMP_REWRITE_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Performs sequential implicational rewriting, adding new assumptions if
+necessary.
+
+\DESCRIBE
+This tactic is closely related to {IMP_REWRITE_TAC} but uses the provided
+theorems sequentially instead of simultaneously: given a list of theorems
+{[th_1;...;th_k]}, the tactic call {SEQ_IMP_REWRITE_TAC [th_1;...;th_k]}
+applies as many implicational rewriting as it can with {th_1}, then with
+{th_2}, etc. When {th_k} is reached, start over from {th_1}. Repeat till no
+more rewrite can be achieved.
+
+\FAILURE
+Fails if no rewrite can be achieved. If the usual behavior of leaving the goal unchanged
+is desired, one can wrap the coal in {TRY_TAC}.
+
+\EXAMPLE
+This uses the basic {IMP_REWRITE_TAC}:
+{
+  # g `!a b c. a < b ==> (a - b) / (a - b) * c = c`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b c. a < b ==> (a - b) / (a - b) * c = c`
+
+  # e(IMP_REWRITE_TAC[REAL_DIV_REFL;REAL_MUL_LID;REAL_SUB_0; REAL_LT_IMP_NE]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b. ~(a < b)`
+}
+But with {SEQ_IMP_REWRITE_TAC}, the same sequence of theorems solves the goal:
+{
+  # e(SEQ_IMP_REWRITE_TAC[REAL_DIV_REFL;REAL_MUL_LID;REAL_SUB_0; REAL_LT_IMP_NE]);;
+  val it : goalstack = No subgoals
+}
+
+\USES
+This addresses a problem which happens already with {REWRITE_TAC} or
+{SIMP_TAC}: one generally rewrites with one theorem, then with another, etc.
+and, in the end, once every step is done, (s)he packs everything in a list and
+provides this list to {IMP_REWRITE_TAC}; but it then happens that some
+surprises happen at this point because the simultaneous use of all theorems
+does not yield the same result as their subsequent use. A usual solution is
+simply to decompose the call into two calls by identifying manually which
+theorems are the source of the unexpected behavior when used together. Or one
+can simply use {SEQ_IMP_REWRITE_TAC}. Note that this is however a lot slower
+than {IMP_REWRITE_TAC}. The user may prefer to first use {IMP_REWRITE_TAC} and
+if it does not work like the sequential use of single implicational rewrites
+then use {SEQ_IMP_REWRITE_TAC}.
+
+\SEEALSO
+IMP_REWRITE_TAC, REWRITE_TAC, SIMP_TAC.
+
+\ENDDOC

@@ -2247,6 +2247,12 @@ let at = new_definition
 let at_infinity = new_definition
   `at_infinity = mk_net(\x y. norm(x) >= norm(y))`;;
 
+let at_posinfinity = new_definition
+  `at_posinfinity = mk_net(\x y:real. x >= y)`;;
+
+let at_neginfinity = new_definition
+  `at_neginfinity = mk_net(\x y:real. x <= y)`;;
+
 let sequentially = new_definition
   `sequentially = mk_net(\m:num n. m >= n)`;;
 
@@ -2274,6 +2280,18 @@ let AT = prove
 let AT_INFINITY = prove
  (`!x y. netord at_infinity x y <=> norm(x) >= norm(y)`,
   NET_PROVE_TAC[at_infinity] THEN
+  REWRITE_TAC[real_ge; REAL_LE_REFL] THEN
+  MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS]);;
+
+let AT_POSINFINITY = prove
+ (`!x y. netord at_posinfinity x y <=> x >= y`,
+  NET_PROVE_TAC[at_posinfinity] THEN
+  REWRITE_TAC[real_ge; REAL_LE_REFL] THEN
+  MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS]);;
+
+let AT_NEGINFINITY = prove
+ (`!x y. netord at_neginfinity x y <=> x <= y`,
+  NET_PROVE_TAC[at_neginfinity] THEN
   REWRITE_TAC[real_ge; REAL_LE_REFL] THEN
   MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS]);;
 
@@ -2343,6 +2361,22 @@ let TRIVIAL_LIMIT_AT_INFINITY = prove
   REWRITE_TAC[trivial_limit; AT_INFINITY; real_ge] THEN
   MESON_TAC[REAL_LE_REFL; VECTOR_CHOOSE_SIZE; REAL_LT_01; REAL_LT_LE]);;
 
+let TRIVIAL_LIMIT_AT_POSINFINITY = prove
+ (`~(trivial_limit at_posinfinity)`,
+  REWRITE_TAC[trivial_limit; AT_POSINFINITY; DE_MORGAN_THM] THEN
+  CONJ_TAC THENL
+   [DISCH_THEN(MP_TAC o SPECL [`&0`; `&1`]) THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[DE_MORGAN_THM; NOT_EXISTS_THM; real_ge; REAL_NOT_LE] THEN
+  MESON_TAC[REAL_LT_TOTAL; REAL_LT_ANTISYM]);;
+
+let TRIVIAL_LIMIT_AT_NEGINFINITY = prove
+ (`~(trivial_limit at_neginfinity)`,
+  REWRITE_TAC[trivial_limit; AT_NEGINFINITY; DE_MORGAN_THM] THEN
+  CONJ_TAC THENL
+   [DISCH_THEN(MP_TAC o SPECL [`&0`; `&1`]) THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[DE_MORGAN_THM; NOT_EXISTS_THM; real_ge; REAL_NOT_LE] THEN
+  MESON_TAC[REAL_LT_TOTAL; REAL_LT_ANTISYM]);;
+
 let TRIVIAL_LIMIT_SEQUENTIALLY = prove
  (`~(trivial_limit sequentially)`,
   REWRITE_TAC[trivial_limit; SEQUENTIALLY] THEN
@@ -2409,6 +2443,16 @@ let EVENTUALLY_AT_INFINITY = prove
   REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[REAL_LE_REFL]; ALL_TAC] THEN
   MESON_TAC[real_ge; REAL_LE_REFL; VECTOR_CHOOSE_SIZE;
     REAL_ARITH `&0 <= b \/ (!x. x >= &0 ==> x >= b)`]);;
+
+let EVENTUALLY_AT_POSINFINITY = prove
+ (`!p. eventually p at_posinfinity <=> ?b. !x. x >= b ==> p x`,
+  REWRITE_TAC[eventually; TRIVIAL_LIMIT_AT_POSINFINITY; AT_POSINFINITY] THEN
+  MESON_TAC[REAL_ARITH `x >= x`]);;
+
+let EVENTUALLY_AT_NEGINFINITY = prove
+ (`!p. eventually p at_neginfinity <=> ?b. !x. x <= b ==> p x`,
+  REWRITE_TAC[eventually; TRIVIAL_LIMIT_AT_NEGINFINITY; AT_NEGINFINITY] THEN
+  MESON_TAC[REAL_LE_REFL]);;
 
 let EVENTUALLY_AT_INFINITY_POS = prove
  (`!p:real^N->bool.
@@ -2545,6 +2589,16 @@ let LIM_AT_INFINITY_POS = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[LIM_AT_INFINITY] THEN
   MESON_TAC[REAL_ARITH `&0 < abs b + &1 /\ (x >= abs b + &1 ==> x >= b)`]);;
 
+let LIM_AT_POSINFINITY = prove
+ (`!f l. (f --> l) at_posinfinity <=>
+               !e. &0 < e ==> ?b. !x. x >= b ==> dist(f(x),l) < e`,
+  REWRITE_TAC[tendsto; EVENTUALLY_AT_POSINFINITY] THEN MESON_TAC[]);;
+
+let LIM_AT_NEGINFINITY = prove
+ (`!f l. (f --> l) at_neginfinity <=>
+               !e. &0 < e ==> ?b. !x. x <= b ==> dist(f(x),l) < e`,
+  REWRITE_TAC[tendsto; EVENTUALLY_AT_NEGINFINITY] THEN MESON_TAC[]);;
+
 let LIM_SEQUENTIALLY = prove
  (`!s l. (s --> l) sequentially <=>
           !e. &0 < e ==> ?N. !n. N <= n ==> dist(s(n),l) < e`,
@@ -2553,6 +2607,18 @@ let LIM_SEQUENTIALLY = prove
 let LIM_EVENTUALLY = prove
  (`!net f l. eventually (\x. f x = l) net ==> (f --> l) net`,
   REWRITE_TAC[eventually; LIM] THEN MESON_TAC[DIST_REFL]);;
+
+let LIM_POSINFINITY_SEQUENTIALLY = prove
+ (`!f l. (f --> l) at_posinfinity ==> ((\n. f(&n)) --> l) sequentially`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[LIM_AT_POSINFINITY; LIM_SEQUENTIALLY] THEN
+  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_TAC `B:real`) THEN
+  MP_TAC(ISPEC `B:real` REAL_ARCH_SIMPLE) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* The expected monotonicity property.                                       *)
@@ -2998,10 +3064,10 @@ let LIM_NULL_VMUL_BOUNDED = prove
   ASM_SIMP_TAC[REAL_LE_LMUL_EQ] THEN REAL_ARITH_TAC);;
 
 let LIM_VSUM = prove
- (`!f:A->B->real^N s.
+ (`!net f:A->B->real^N l s.
         FINITE s /\ (!i. i IN s ==> ((f i) --> (l i)) net)
         ==> ((\x. vsum s (\i. f i x)) --> vsum s l) net`,
-  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[VSUM_CLAUSES; LIM_CONST; LIM_ADD; IN_INSERT; ETA_AX]);;
 
@@ -16291,9 +16357,9 @@ let SUMS_FINITE_UNION = prove
   ASM_REWRITE_TAC[] THEN VECTOR_ARITH_TAC);;
 
 let SUMS_OFFSET = prove
- (`!f:num->real^N l m n.
-        (f sums l) (from m) /\ m < n
-        ==> (f sums (l - vsum(m..(n-1)) f)) (from n)`,
+ (`!f l:real^N m n.
+           (f sums l) (from m) /\ 0 < n /\ m <= n
+           ==> (f sums l - vsum (m..n - 1) f) (from n)`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `from n = from m DIFF (m..(n-1))` SUBST1_TAC THENL
    [REWRITE_TAC[EXTENSION; IN_FROM; IN_DIFF; IN_NUMSEG] THEN ASM_ARITH_TAC;
@@ -16302,7 +16368,8 @@ let SUMS_OFFSET = prove
 
 let SUMS_OFFSET_REV = prove
  (`!f:num->real^N l m n.
-        (f sums l) (from m) /\ n < m
+        (f sums l) (from m) /\ 0 < m /\ n <= m
+
         ==> (f sums (l + vsum(n..m-1) f)) (from n)`,
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`f:num->real^N`; `from m`; `n..m-1`; `l:real^N`]
@@ -16356,7 +16423,8 @@ let SERIES_BOUND = prove
   UNDISCH_TAC `((lift o g) sums lift b) s` THEN
   GEN_REWRITE_TAC LAND_CONV [GSYM SERIES_RESTRICT] THEN
   REWRITE_TAC[GSYM FROM_0] THEN DISCH_THEN(MP_TAC o SPEC `m + 1` o MATCH_MP
-   (REWRITE_RULE[IMP_CONJ] SUMS_OFFSET)) THEN
+   (ONCE_REWRITE_RULE[IMP_CONJ] SUMS_OFFSET)) THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
   REWRITE_TAC[ARITH_RULE `0 < m + 1`; o_DEF; ADD_SUB] THEN
   REWRITE_TAC[GSYM VSUM_RESTRICT_SET] THEN
   REWRITE_TAC[VSUM_REAL; o_DEF; LIFT_DROP; ETA_AX] THEN

@@ -20,7 +20,7 @@ To add the assumptions of the goal to the rewrites, use {ASM_SIMP_TAC} (or just
 {ASM SIMP_TAC}).
 
 \SEEALSO
-ASM, ASM_SIMP_TAC, mk_rewrites, ONCE_SIMP_CONV, REWRITE_TAC, SIMP_CONV,
-SIMP_RULE.
+ASM, ASM_SIMP_TAC, IMP_REWRITE_TAC, mk_rewrites, ONCE_SIMP_CONV, REWRITE_TAC,
+SIMP_CONV, SIMP_RULE, TARGET_REWRITE_TAC.
 
 \ENDDOC

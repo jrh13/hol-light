@@ -11440,6 +11440,55 @@ let HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_CONNECTED = prove
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC[IN_DIFF]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Integration by parts.                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let INTEGRATION_BY_PARTS = prove
+ (`!(bop:real^M->real^M->real^N) f g f' g' a b c y.
+        bilinear bop /\ drop a <= drop b /\ COUNTABLE c /\
+        f continuous_on interval[a,b] /\
+        g continuous_on interval[a,b] /\
+        (!x. x IN interval(a,b) DIFF c
+             ==> (f has_vector_derivative f'(x)) (at x) /\
+                 (g has_vector_derivative g'(x)) (at x)) /\
+        ((\x. bop (f x) (g' x)) has_integral
+         ((bop (f b) (g b) - bop (f a) (g a)) - y))
+            (interval[a,b])
+        ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`\x:real^1. (bop:real^M->real^M->real^N) (f x) (g x)`;
+                 `\x:real^1. (bop:real^M->real^M->real^N) (f x) (g' x) +
+                             (bop:real^M->real^M->real^N) (f' x) (g x)`;
+                 `c:real^1->bool`; `a:real^1`; `b:real^1`]
+    FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG) THEN
+  ASM_SIMP_TAC[BILINEAR_CONTINUOUS_ON_COMPOSE;
+               HAS_VECTOR_DERIVATIVE_BILINEAR_AT] THEN
+  FIRST_ASSUM(fun th -> MP_TAC th THEN REWRITE_TAC[GSYM IMP_CONJ_ALT] THEN
+        DISCH_THEN(MP_TAC o MATCH_MP HAS_INTEGRAL_SUB)) THEN
+  REWRITE_TAC[VECTOR_ARITH `b - a - (b - a - y):real^N = y`; VECTOR_ADD_SUB]);;
+
+let INTEGRATION_BY_PARTS_SIMPLE = prove
+ (`!(bop:real^M->real^M->real^N) f g f' g' a b y.
+        bilinear bop /\ drop a <= drop b /\
+        (!x. x IN interval[a,b]
+             ==> (f has_vector_derivative f'(x)) (at x within interval[a,b]) /\
+                 (g has_vector_derivative g'(x)) (at x within interval[a,b])) /\
+        ((\x. bop (f x) (g' x)) has_integral
+         ((bop (f b) (g b) - bop (f a) (g a)) - y))
+            (interval[a,b])
+        ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`\x:real^1. (bop:real^M->real^M->real^N) (f x) (g x)`;
+                 `\x:real^1. (bop:real^M->real^M->real^N) (f x) (g' x) +
+                             (bop:real^M->real^M->real^N) (f' x) (g x)`;
+                 `a:real^1`; `b:real^1`]
+    FUNDAMENTAL_THEOREM_OF_CALCULUS) THEN
+  ASM_SIMP_TAC[HAS_VECTOR_DERIVATIVE_BILINEAR_WITHIN] THEN
+  FIRST_ASSUM(fun th -> MP_TAC th THEN REWRITE_TAC[GSYM IMP_CONJ_ALT] THEN
+        DISCH_THEN(MP_TAC o MATCH_MP HAS_INTEGRAL_SUB)) THEN
+  REWRITE_TAC[VECTOR_ARITH `b - a - (b - a - y):real^N = y`; VECTOR_ADD_SUB]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Equiintegrability. The definition here only really makes sense for an     *)
 (* elementary set. We just use compact intervals in applications below.      *)
 (* ------------------------------------------------------------------------- *)
@@ -11758,8 +11807,8 @@ let EQUIINTEGRABLE_LIMIT = prove
       MATCH_MP_TAC
        (REWRITE_RULE[LAMBDA_PAIR_THM]
         (REWRITE_RULE[FORALL_PAIR_THM]
-         (ISPEC `\(x:real^M,k:real^M->bool) (n:num).
-                  content k % (f n x:real^N)` LIM_VSUM))) THEN
+         (ISPECL [`sequentially`; `\(x:real^M,k:real^M->bool) (n:num).
+                  content k % (f n x:real^N)`] LIM_VSUM))) THEN
       ASM_REWRITE_TAC[] THEN
       MAP_EVERY X_GEN_TAC [`x:real^M`; `k:real^M->bool`] THEN DISCH_TAC THEN
       MATCH_MP_TAC LIM_CMUL THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
@@ -11800,8 +11849,8 @@ let EQUIINTEGRABLE_LIMIT = prove
     MATCH_MP_TAC
      (REWRITE_RULE[LAMBDA_PAIR_THM]
       (REWRITE_RULE[FORALL_PAIR_THM]
-       (ISPEC `\(x:real^M,k:real^M->bool) (n:num).
-                content k % (f n x:real^N)` LIM_VSUM))) THEN
+       (ISPECL [`sequentially`; `\(x:real^M,k:real^M->bool) (n:num).
+                content k % (f n x:real^N)`] LIM_VSUM))) THEN
     ASM_REWRITE_TAC[] THEN
     MAP_EVERY X_GEN_TAC [`x:real^M`; `k:real^M->bool`] THEN DISCH_TAC THEN
     MATCH_MP_TAC LIM_CMUL THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
@@ -12090,8 +12139,8 @@ let EQUIINTEGRABLE_UNIFORM_LIMIT = prove
    [MATCH_MP_TAC
        (REWRITE_RULE[LAMBDA_PAIR_THM]
         (REWRITE_RULE[FORALL_PAIR_THM]
-         (ISPEC `\(x:real^M,k:real^M->bool) (n:num).
-                  content k % (f n x:real^N)` LIM_VSUM))) THEN
+         (ISPECL [`sequentially`; `\(x:real^M,k:real^M->bool) (n:num).
+                  content k % (f n x:real^N)`] LIM_VSUM))) THEN
     ASM_REWRITE_TAC[] THEN
     MAP_EVERY X_GEN_TAC [`x:real^M`; `k:real^M->bool`] THEN DISCH_TAC THEN
     MATCH_MP_TAC LIM_CMUL THEN FIRST_X_ASSUM MATCH_MP_TAC THEN

@@ -613,6 +613,13 @@ let LE_SQUARE_REFL = prove
  (`!n. n <= n * n`,
   INDUCT_TAC THEN REWRITE_TAC[MULT_CLAUSES; LE_0; LE_ADDR]);;
 
+let LT_POW2_REFL = prove
+ (`!n. n < 2 EXP n`,       
+  INDUCT_TAC THEN REWRITE_TAC[EXP] THEN REWRITE_TAC[MULT_2; ADD1] THEN
+  REWRITE_TAC[ONE; LT] THEN MATCH_MP_TAC LTE_ADD2 THEN 
+  ASM_REWRITE_TAC[LE_SUC_LT; TWO] THEN
+  MESON_TAC[EXP_EQ_0; LE_1; NOT_SUC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Useful "without loss of generality" lemmas.                               *)
 (* ------------------------------------------------------------------------- *)

@@ -355,7 +355,7 @@ let DistinctImplies2moveable = theorem `;
   proof
     intro_TAC ∀A B C A' B' C', H1 H1' H2a H2b H2c;
     {A,B,B'} ⊂ {A,B,A',B'} ∧ {B,B',C} ⊂ {B,C,B',C'}     [3subset4] by SET_TAC;
-    assume ¬move2Cond A B A' B'  ∧ ¬move2Cond B C B' C'     [Con] by fol -;
+    assume ¬move2Cond A B A' B'  ∧ ¬move2Cond B C B' C'     [Con] by fol;
     collinear {A,B,A',B'} ∧ collinear {B,C,B',C'}     [] by fol - H1 H1' H2a H2b H2c collinearSymmetry NotMove2ImpliesCollinear;
     collinear {A,B,C}     [] by fol - 3subset4 H2a H2b H2c COLLINEAR_SUBSET COLLINEAR_3_TRANS;
     fol - H1 H1';

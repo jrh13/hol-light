@@ -127,6 +127,7 @@ loads "trivia.ml";;     (* Some very basic theories, e.g. type ":1"          *)
 loads "canon.ml";;      (* Tools for putting terms in canonical forms        *)
 loads "meson.ml";;      (* First order automation: MESON (model elimination) *)
 loads "quot.ml";;       (* Derived rules for defining quotient types         *)
+loads "impconv.ml";;    (* More powerful implicational rewriting etc.        *)
 
 (* ------------------------------------------------------------------------- *)
 (* Mathematical theories and additional proof tools.                         *)

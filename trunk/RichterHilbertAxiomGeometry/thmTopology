@@ -46,6 +46,8 @@ DIFF_EMPTY     |- ∀s. s ━ ∅ = s
 
 DIFF_EQ_EMPTY     |- ∀s. s ━ s = ∅
 
+EMPTY_DIFF     |- ∀s. ∅ ━ s = ∅
+
 INTER_EMPTY     |- (∀s. ∅ ∩ s = ∅) ∧ (∀s. s ∩ ∅ = ∅)
 
 NOT_INSERT_EMPTY     |- ∀x s. ¬(x INSERT s = ∅)
@@ -100,7 +102,13 @@ INTER_UNIV     |- (∀s. (:A) ∩ s = s) ∧ (∀s. s ∩ (:A) = s)
 DIFF_UNION
   |- ∀u s t. u ━ (s ∪ t) = (u ━ s) ∩ (u ━ t)
 
+DIFF_INTER     |- ∀u s t. u ━ s ∩ t = u ━ s ∪ u ━ t
+
 DIFF_REFL |- ∀u t. t ⊂ u ⇒ u ━ (u ━ t) = t
+
+DIFF_SUBSET     |- ∀u s t. s ⊂ t ⇒ s ━ u ⊂ t ━ u
+
+DOUBLE_DIFF_UNION     |- ∀A s t. A ━ s ━ t = A ━ (s ∪ t)
 
 SUBSET_COMPLEMENT
   |- ∀s t A. s ⊂ A ⇒ (s ⊂ A ━ t ⇔ s ∩ t = ∅)
@@ -187,8 +195,7 @@ OPEN_IN_INTER
 OPEN_IN_UNIONS
   |- ∀α k. (∀s. s ∈ k ⇒ open_in α s) ⇒ open_in α (UNIONS k)
 
-OpenInUnderlyingSpace
-  |- ∀α X. topspace α = X ⇒ open_in α X
+OpenInTopspace     |- ∀α. open_in α (topspace α)
 
 OPEN_IN_UNION
   |- ∀α s t.  open_in α s ∧ open_in α t ⇒ open_in α (s ∪ t)
@@ -553,6 +560,9 @@ InteriorOpen
 
 InteriorEmpty     |- ∀α. Interior α ∅ = ∅
 
+InteriorUniv
+  |- ∀α. Interior α (topspace α) = topspace α
+
 OpenInterior
   |- ∀α s.  s ⊂ topspace α ⇒ open_in α (Interior α s)
 
@@ -598,8 +608,7 @@ InteriorFiniteInters
 
 InteriorIntersSubset
   |- ∀α f.  ¬(f = ∅) ∧ (∀t. t ∈ f ⇒ t ⊂ topspace α)
-         ⇒ Interior α (INTERS f) ⊂
-             INTERS (IMAGE (Interior α) f)
+         ⇒ Interior α (INTERS f) ⊂ INTERS (IMAGE (Interior α) f)
 
 UnionInteriorSubset
   |- ∀α s t.  s ⊂ topspace α ∧ t ⊂ topspace α
@@ -670,7 +679,7 @@ ClosureEq
    |- ∀α s.  s ⊂ topspace α  ⇒  (Closure α s = s ⇔ closed_in α s)
 
 ClosureClosed
-  |- ∀α s.  s ⊂ topspace α  ⇒  closed_in α s  ⇒  Closure α s = s
+  |- ∀α s. closed_in α s ⇒ Closure α s = s
 
 ClosureClosure
   |- ∀α s.  s ⊂ topspace α  ⇒  Closure α (Closure α s) = Closure α s
@@ -690,19 +699,20 @@ ClosureIntersSubset
          ⇒ Closure α (INTERS f) ⊂ INTERS (IMAGE (Closure α) f)
 
 ClosureMinimal
-  |- ∀α s t.  t ⊂ topspace α
-         ⇒ s ⊂ t ∧ closed_in α t  ⇒  Closure α s ⊂ t
+  |- ∀α s t. s ⊂ t ∧ closed_in α t ⇒ Closure α s ⊂ t
 
 ClosureMinimalEq
-  |- ∀α s t.  s ⊂ topspace α ∧ t ⊂ topspace α
-         ⇒ closed_in α t  ⇒  (Closure α s ⊂ t ⇔ s ⊂ t)
+  |- ∀α s t. s ⊂ topspace α
+         ⇒ closed_in α t ⇒ (Closure α s ⊂ t ⇔ s ⊂ t)
 
 ClosureUnique
-  |- ∀α s t.  t ⊂ topspace α
-         ⇒ s ⊂ t ∧ closed_in α t ∧ (∀u. s ⊂ u ∧ closed_in α u ⇒ t ⊂ u)
+  |- ∀α s t. s ⊂ t ∧ closed_in α t ∧ (∀u. s ⊂ u ∧ closed_in α u ⇒ t ⊂ u)
          ⇒ Closure α s = t
 
 ClosureEmpty     |- Closure α ∅ = ∅
+
+ClosureUniv
+  |- ∀α. Closure α (topspace α) = topspace α
 
 ClosureUnions
   |- ∀α f.  FINITE f
@@ -768,7 +778,7 @@ ClosedInLimpt
   |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
          ⇒ (closed_in (subtopology α t) s ⇔ s ⊂ t ∧ LimitPointOf α s ∩ t ⊂ s)
 
-ClosedInLimpt_ALT : thm =
+ClosedInLimpt_ALT
   |- ∀α s t. s ⊂ topspace α ∧ t ⊂ topspace α
          ⇒ (closed_in (subtopology α t) s ⇔
               s ⊂ t ∧ (∀x. x ∈ LimitPointOf α s ∧ x ∈ t ⇒ x ∈ s))
@@ -834,12 +844,118 @@ Frontier_THM
   |- ∀α s. s ⊂ topspace α
          ⇒ Frontier α s = Closure α s ━ Interior α s
 
+FrontierTopspace
+  |- ∀α s. s ⊂ topspace α ⇒ Frontier α s ⊂ topspace α
+
 FrontierClosed
   |- ∀α s. s ⊂ topspace α ⇒ closed_in α (Frontier α s)
 
 FrontierClosures
   |- ∀s. s ⊂ topspace α ⇒ Frontier α s =
              Closure α s ∩ Closure α (topspace α ━ s)
+
+FrontierStraddle
+  |- ∀α a s. s ⊂ topspace α ⇒ (a ∈ Frontier α s ⇔
+              a ∈ topspace α ∧ (∀t. open_in α t ∧ a ∈ t
+                   ⇒ (∃x. x ∈ s ∧ x ∈ t) ∧ (∃x. ¬(x ∈ s) ∧ x ∈ t)))
+
+FrontierSubsetClosed
+  |- ∀α s. closed_in α s ⇒ Frontier α s ⊂ s
+
+FrontierEmpty     |- ∀α. Frontier α ∅ = ∅
+
+FrontierUniv     |- ∀α. Frontier α (topspace α) = ∅
+
+FrontierSubsetEq
+  |- ∀α s. s ⊂ topspace α ⇒ (Frontier α s ⊂ s ⇔ closed_in α s)
+
+FrontierComplement
+  |- ∀α s. s ⊂ topspace α ⇒ Frontier α (topspace α ━ s) = Frontier α s
+
+FrontierDisjointEq
+  |- ∀α s. s ⊂ topspace α ⇒ (Frontier α s ∩ s = ∅ ⇔ open_in α s)
+
+FrontierInterSubset
+  |- ∀α s t. s ∪ t ⊂ topspace α 
+         ⇒ Frontier α (s ∩ t) ⊂ Frontier α s ∪ Frontier α t
+
+FrontierUnionSubset
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ Frontier α (s ∪ t) ⊂ Frontier α s ∪ Frontier α t
+
+FrontierInteriors
+  |- ∀α s. s ⊂ topspace α ⇒ Frontier α s =
+             topspace α ━ Interior α s ━ Interior α (topspace α ━ s)
+
+FrontierFrontierSubset 
+  |- ∀α s. s ⊂ topspace α ⇒ Frontier α (Frontier α s) ⊂ Frontier α s
+
+InteriorFrontier
+  |- ∀α s. s ⊂ topspace α ⇒ Interior α (Frontier α s) =
+             Interior α (Closure α s) ━ Closure α (Interior α s)
+
+InteriorFrontierEmpty
+  |- ∀α s. open_in α s ∨ closed_in α s ⇒ Interior α (Frontier α s) = ∅
+
+FrontierFrontier
+  |- ∀α s. open_in α s ∨ closed_in α s
+         ⇒ Frontier α (Frontier α s) = Frontier α s
+
+UnionFrontierPart1
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ Frontier α s ∩ Interior α t ⊂ Frontier α (s ∩ t)
+
+UnionFrontierPart2
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ Frontier α s ━ Frontier α t ⊂ 
+             Frontier α (s ∩ t) ∪ Frontier α (s ∪ t)
+
+UnionFrontierPart3
+  |- ∀α s t a. s ∪ t ⊂ topspace α
+         ⇒ a ∈ Frontier α s ∧ a ∉ Frontier α t
+         ⇒ a ∈ Frontier α (s ∩ t) ∨ a ∈ Frontier α (s ∪ t)
+
+UnionFrontier
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ Frontier α s ∪ Frontier α t =
+             Frontier α (s ∪ t) ∪ 
+             Frontier α (s ∩ t) ∪
+             Frontier α s ∩ Frontier α t
+
+ConnectedInterFrontier
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ Connected (subtopology α s) ∧ ¬(s ∩ t = ∅) ∧ ¬(s ━ t = ∅)
+         ⇒ ¬(s ∩ Frontier α t = ∅)
+
+InteriorClosedEqEmptyAsFrontier
+  |- ∀α s. s ⊂ topspace α
+         ⇒ (closed_in α s ∧ Interior α s = ∅ ⇔
+              (∃t. open_in α t ∧ s = Frontier α t))
+
+ClosureUnionFrontier
+  |- ∀α s. s ⊂ topspace α ⇒ Closure α s = s ∪ Frontier α s
+
+FrontierInteriorSubset
+  |- ∀α s. s ⊂ topspace α ⇒ Frontier α (Interior α s) ⊂ Frontier α s
+
+FrontierClosureSubset
+  |- ∀α s. s ⊂ topspace α ⇒ Frontier α (Closure α s) ⊂ Frontier α s
+
+SetDiffFrontier
+  |- ∀α s. s ⊂ topspace α ⇒ s ━ Frontier α s = Interior α s
+
+FrontierInterSubsetInter
+  |- ∀α s t. s ∪ t ⊂ topspace α ⇒ Frontier α (s ∩ t) ⊂
+             Closure α s ∩ Frontier α t ∪ Frontier α s ∩ Closure α t
+
+FrontierUnionPart1
+  |- ∀α s t. s ∪ t ⊂ topspace α ⇒ Closure α s ∩ Closure α t = ∅ 
+         ⇒ Frontier α s ∩ Interior α (s ∪ t) = ∅
+
+FrontierUnion
+  |- ∀α s t. s ∪ t ⊂ topspace α
+         ⇒ Closure α s ∩ Closure α t = ∅
+         ⇒ Frontier α (s ∪ t) = Frontier α s ∪ Frontier α t
 
 open_def
   |- ∀s. open s ⇔
@@ -1277,7 +1393,7 @@ CLOSURE_MINIMAL_EQ
   |- ∀s t. closed t ⇒ (closure s ⊂ t ⇔ s ⊂ t)
 
 CLOSURE_UNIQUE
-  |- ∀s t.  s ⊂ t ∧ closed t ∧ (∀t'. s ⊂ t' ∧ closed t' ⇒ t ⊂ t')
+  |- ∀s t. s ⊂ t ∧ closed t ∧ (∀t'. s ⊂ t' ∧ closed t' ⇒ t ⊂ t')
          ⇒ closure s = t
 
 CLOSURE_EMPTY     |- closure ∅ = ∅
@@ -1379,4 +1495,70 @@ FRONTIER_CLOSED     |- ∀s. closed (frontier s)
 
 FRONTIER_CLOSURES
   |- ∀s. frontier s = closure s ∩ closure ((:real^∃217012) ━ s)
+
+FRONTIER_STRADDLE
+  |- ∀a s.
+         a ∈ frontier s ⇔ (∀e. &0 < e
+              ⇒ (∃x. x ∈ s ∧ dist (a,x) < e) ∧ (∃x. ¬(x ∈ s) ∧ dist (a,x) < e))
+
+FRONTIER_SUBSET_CLOSED     |- ∀s. closed s ⇒ frontier s ⊂ s
+
+FRONTIER_EMPTY     |- frontier ∅ = ∅
+
+FRONTIER_UNIV     |- frontier (:real^∃315769) = ∅
+
+FRONTIER_SUBSET_EQ     |- ∀s. frontier s ⊂ s ⇔ closed s
+
+FRONTIER_COMPLEMENT
+  |- ∀s. frontier ((:real^∃353474) ━ s) = frontier s
+
+FRONTIER_DISJOINT_EQ     |- ∀s. frontier s ∩ s = ∅ ⇔ open s
+
+FRONTIER_INTER_SUBSET
+  |- ∀s t. frontier (s ∩ t) ⊂ frontier s ∪ frontier t
+
+FRONTIER_UNION_SUBSET
+  |- ∀s t. frontier (s ∪ t) ⊂ frontier s ∪ frontier t
+
+FRONTIER_INTERIORS
+  |- frontier s = (:real^N) ━ interior s ━ interior ((:real^N) ━ s)
+
+FRONTIER_FRONTIER_SUBSET
+  |- ∀s. frontier (frontier s) ⊂ frontier s
+
+INTERIOR_FRONTIER
+  |- ∀s. interior (frontier s) = interior (closure s) ━ closure (interior s)
+
+INTERIOR_FRONTIER_EMPTY
+  |- ∀s. open s ∨ closed s ⇒ interior (frontier s) = ∅
+
+FRONTIER_FRONTIER
+  |- ∀s. open s ∨ closed s ⇒ frontier (frontier s) = frontier s
+
+UNION_FRONTIER
+  |- ∀s t. frontier s ∪ frontier t =
+         frontier (s ∪ t) ∪ frontier (s ∩ t) ∪ frontier s ∩ frontier t
+
+CONNECTED_INTER_FRONTIER
+  |- ∀s t. connected s ∧ ¬(s ∩ t = ∅) ∧ ¬(s ━ t = ∅) ⇒ ¬(s ∩ frontier t = ∅)
+
+INTERIOR_CLOSED_EQ_EMPTY_AS_FRONTIER
+  |- ∀s. closed s ∧ interior s = ∅ ⇔ (∃t. open t ∧ s = frontier t)
+
+FRONTIER_UNION
+  |- ∀s t. closure s ∩ closure t = ∅ 
+         ⇒ frontier (s ∪ t) = frontier s ∪ frontier t
+
+CLOSURE_UNION_FRONTIER     |- ∀s. closure s = s ∪ frontier s
+
+FRONTIER_INTERIOR_SUBSET
+  |- ∀s. frontier (interior s) ⊂ frontier s
+
+FRONTIER_CLOSURE_SUBSET
+  |- ∀s. frontier (closure s) ⊂ frontier s
+
+SET_DIFF_FRONTIER     |- ∀s. s ━ frontier s = interior s
+
+FRONTIER_INTER_SUBSET_INTER
+  |- ∀s t. frontier (s ∩ t) ⊂ closure s ∩ frontier t ∪ frontier s ∩ closure t
 

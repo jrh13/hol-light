@@ -1,0 +1,117 @@
+\DOC TARGET_REWRITE_TAC
+
+\TYPE {TARGET_REWRITE_TAC : thm list -> thm -> tactic}
+
+\SYNOPSIS
+Performs target implicational rewriting.
+
+\DESCRIBE
+Given a theorem {th} (the ``support theorem''), and another theorem {uh} (the
+``target theorem''), target rewriting generates all the goals that can be
+obtained by rewriting with {th}, until it becomes possible to rewrite with
+{uh}. Contrarily to standard rewriting techniques, only one position is
+rewritten at a time ({REWRITE_TAC}, {SIMP_TAC}, {IMP_REWRITE_TAC}, or even
+{ONCE_REWRITE_TAC} apply rewriting to several parallel positions if
+applicable). Therefore only the rewrites that are useful for the application
+of the theorem {uh} are achieved in the end. More precisely, given a list of
+theorems {[th_1;...;th_k]} of the form {!x_1... x_n. P ==> !y_1... y_m. l = r},
+and a theorem {uh} of the form {!x_1... x_n. Q ==> !y_1... y_m. l' = r'},
+{TARGET_REWRITE_TAC [th_1;...;th_k] uh} applies target implicational rewriting,
+i.e., tries all the possible implicational rewrites with {th_1}, ..., {th_k}
+until it obtains a goal where implicational rewrite with {uh} becomes possible.
+
+To understand better the difference with {REWRITE_TAC} and the need for a
+target theorem, consider a goal g where more than one subterm can be rewritten
+using {th}: with {REWRITE_TAC}, all such subterms are rewritten simultaneously;
+whereas, with {TARGET_REWRITE_TAC}, every of these subterms are rewritten
+independently, thus yielding as many goals. If one of these goals can be
+rewritten (in one position or more) by {uh}, then the tactic returns this goal.
+Otherwise, the ``one-subterm rewriting'' is applied again on every of the new
+goals, iteratively until a goal which can be rewritten by {uh} is obtained.
+
+
+\FAILURE
+Fails if no rewrite can be achieved using the support theorems.
+It may also fail if no path is found to apply the target theorem,
+but, most of the time, it does not terminate in this situation.
+
+\EXAMPLE
+This is a simple example:
+{
+  # REAL_ADD_RINV;;
+  val it : thm = |- !x. x + --x = &0
+  # g `!x y z. --y + x + y = &0`;;
+  Warning: inventing type variables
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!x y z. --y + x + y = &0`
+
+  # e(TARGET_REWRITE_TAC[REAL_ADD_AC] REAL_ADD_RINV);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!x. x + &0 = &0`
+}
+And a slightly more complex one:
+{
+  # REAL_MUL_RINV;;
+  val it : thm = |- !x. ~(x = &0) ==> x * inv x = &1
+  # g `!x y. inv y * x * y = x`;;
+  Warning: inventing type variables
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!x y z. inv y * x * y = x`
+
+  # e(TARGET_REWRITE_TAC[REAL_MUL_AC] REAL_MUL_RINV);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!x y. x * &1 = x / ~(y = &0)`
+}
+Let us finally consider an example which does not involve associativity and
+commutativity. Consider the following goal:
+{
+  # g `!z. norm (cnj z) = norm z`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!z. norm (cnj z) = norm z`
+}
+A preliminary step here is to decompose the left-side z into its polar
+coordinates. This can be done by applying the following theorem:
+{
+  # ARG;;
+  val it : thm =
+  |- !z. &0 <= Arg z /\ Arg z < &2 * pi /\ z = Cx (norm z) * cexp (ii * Cx (Arg z))
+}
+But using standard rewriting would rewrite both sides and would not terminate
+(or actually, in the current implementation of {REWRITE_TAC}, simply would not
+apply). Instead we can use {TARGET_REWRITE_TAC} by noting that we actually plan
+to decompose into polar coordinates with the intention of using {CNJ_MUL}
+afterwards, which yields:
+{
+  # e(TARGET_REWRITE_TAC[ARG] CNJ_MUL);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!z. norm (cnj (Cx (norm z)) * cnj (cexp (ii * Cx (Arg z)))) = norm z`
+}
+
+\USES
+This tactic is useful each time someone does not want to rewrite a theorem
+everywhere or if a rewriting diverges. Therefore, it can replace most calls to
+{ONCE_REWRITE_TAC} or {GEN_REWRITE_TAC}: most of the time, these tactics are
+used to control rewriting more precisely than {REWRITE_TAC}. However, their use
+is tedious and time-consuming whereas the corresponding reasoning is not
+complex. In addition, even when the user manages to come out with a working
+tactic, this tactic is generally very fragile. Instead, with
+{TARGET_REWRITE_TAC}, the user does not have to think about the low-level
+control of rewriting but just gives the theorem which corresponds to the next
+step in the proof (see examples): this is extremely simple and fast to devise.
+Note in addition that, contrarily to an explicit (and therefore fragile) path,
+the target theorem represents a reasoning step which has few chances to change
+in further refinements of the script.
+
+When using associativity-commutativity theorems as support theorems, this 
+tactic allows to achieve AC-rewriting.
+
+\SEEALSO
+CASE_REWRITE_TAC, IMP_REWRITE_TAC, REWRITE_TAC, SEQ_IMP_REWRITE_TAC, SIMP_TAC.
+
+\ENDDOC

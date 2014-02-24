@@ -77,10 +77,6 @@ let MULT_LCANCEL = prove(
   REPEAT GEN_TAC THEN STRUCT_CASES_TAC(SPEC `a:num` num_CASES) THEN
   REWRITE_TAC[NOT_SUC; MULT_MONO_EQ]);;
 
-let LT_POW2_REFL = prove
- (`!n. n < 2 EXP n`,
-  INDUCT_TAC THEN REWRITE_TAC[EXP] THEN TRY(POP_ASSUM MP_TAC) THEN ARITH_TAC);;
-
 (* ------------------------------------------------------------------------- *)
 (* Properties of the exponential function.                                   *)
 (* ------------------------------------------------------------------------- *)
