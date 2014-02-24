@@ -2925,22 +2925,6 @@ let ANR_IMP_CLOSED_NEIGHBOURHOOD_RETRACT = prove
   MESON_TAC[ANR_IMP_ABSOLUTE_CLOSED_NEIGHBOURHOOD_RETRACT;
             HOMEOMORPHIC_REFL]);;
 
-let ANR_IMP_NEIGHBOURHOOD_RETRACT = prove
- (`!s:real^N->bool u.
-        ANR s /\ closed_in (subtopology euclidean u) s
-        ==> ?v. open_in (subtopology euclidean u) v /\
-                s retract_of v`,
-  MESON_TAC[ANR_IMP_ABSOLUTE_NEIGHBOURHOOD_RETRACT; HOMEOMORPHIC_REFL]);;
-
-let ANR_IMP_CLOSED_NEIGHBOURHOOD_RETRACT = prove
- (`!s:real^N->bool u.
-        ANR s /\ closed_in (subtopology euclidean u) s
-        ==> ?v w. open_in (subtopology euclidean u) v /\
-                  closed_in (subtopology euclidean u) w /\
-                  s SUBSET v /\ v SUBSET w /\ s retract_of w`,
-  MESON_TAC[ANR_IMP_ABSOLUTE_CLOSED_NEIGHBOURHOOD_RETRACT;
-            HOMEOMORPHIC_REFL]);;
-
 let HOMEOMORPHIC_ANRNESS = prove
  (`!s:real^M->bool t:real^N->bool.
       s homeomorphic t ==> (ANR s <=> ANR t)`,
@@ -6130,12 +6114,12 @@ let BROUWER_ABSOLUTE_RETRACT_GEN = prove
   ASM_MESON_TAC[RETRACT_OF_CLOSED; CLOSED_UNIV]);;
 
 let SCHAUDER_GEN = prove
- (`!f s t:real^N->bool.                                                  
+ (`!f s t:real^N->bool.
      AR s /\ f continuous_on s /\ IMAGE f s SUBSET t /\ t SUBSET s /\ compact t
-     ==> ?x. x IN t /\ f x = x`,                                   
-  REPEAT STRIP_TAC THEN               
-  MP_TAC(ISPECL [`\x:real^N. x`; `f:real^N->real^N`;     
-                 `t:real^N->bool`; `s:real^N->bool`] 
+     ==> ?x. x IN t /\ f x = x`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`\x:real^N. x`; `f:real^N->real^N`;
+                 `t:real^N->bool`; `s:real^N->bool`]
         BROUWER_FACTOR_THROUGH_AR) THEN
   ASM_REWRITE_TAC[CONTINUOUS_ON_ID; IMAGE_ID]);;
 
@@ -6144,7 +6128,7 @@ let SCHAUDER = prove
         convex s /\ ~(s = {}) /\ t SUBSET s /\ compact t /\
         f continuous_on s /\ IMAGE f s SUBSET t
         ==> ?x. x IN s /\ f x = x`,
-  REPEAT STRIP_TAC THEN 
+  REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`f:real^N->real^N`; `s:real^N->bool`; `t:real^N->bool`]
         SCHAUDER_GEN) THEN
   ASM_SIMP_TAC[CONVEX_IMP_AR] THEN ASM SET_TAC[]);;
@@ -6183,7 +6167,7 @@ let ROTHE = prove
     ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; SUBSET_UNIV];
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `y:real^N` THEN
     REWRITE_TAC[o_THM] THEN STRIP_TAC THEN ASM SET_TAC[]]);;
-                                                                     
+
 (* ------------------------------------------------------------------------- *)
 (* Bijections between intervals.                                             *)
 (* ------------------------------------------------------------------------- *)

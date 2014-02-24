@@ -1,0 +1,130 @@
+\DOC IMP_REWRITE_TAC
+
+\TYPE {IMP_REWRITE_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Performs implicational rewriting, adding new assumptions if necessary.
+
+\DESCRIBE
+Given a list of theorems {[th_1;...;th_k]} of the form
+{!x_1... x_n. P ==> !y_1... y_m. l = r}, the tactic
+{IMP_REWRITE_TAC [th_1;...;th_k]} applies implicational rewriting using all
+theorems, i.e., replaces any occurrence of {l} by {r} in the goal, even
+if {P} does not hold. This may involve adding some propositional atoms
+(typically instantations of {P}) or existentials, but in the end, you are
+(almost) sure that l is replaced by r. Note that P can be ``empty'', in which
+case implicational rewriting is just rewriting.
+
+Additional remarks:
+\begin{{itemize}}
+
+\item A theorem of the form {!x_1... x_n. l = r} is turned into
+{!x_1... x_n. T ==> l = r} (so that {IMP_REWRITE_TAC} can be
+used as a replacement for {REWRITE_TAC} and {SIMP_TAC}).
+
+\item A theorem of the form {!x_1... x_n. P ==> !y_1... y_m. Q}
+is turned into {!x_1... x_n.  P ==> !y_1... y_m. Q = T} (so that
+{IMP_REWRITE_TAC} can be used as a ``deep'' replacement for {MATCH_MP_TAC}).
+
+\item A theorem of the form {!x_1... x_n. P ==> !y_1... y_m. ~Q}
+is turned into {!x_1... x_n. P ==> !y_1... y_m. Q = F}.
+
+\item A theorem of the form
+{!x_1... x_n. P ==> !y_1... y_k. Q ... ==> l = r}
+is turned into {!x_1... x_n,y_1... y_k,... P \wedge Q \wedge ... ==> l = r}
+
+\item A theorem of the form
+{!x_1... x_n. P ==> (!y^1_1... y^1_k. Q_1 ... ==> l_1 = r_1 /\ !y^2_1... y^2_k. Q_2 ... ==> l_2=r_2 /\ ...)}
+is turned into the list of theorems
+{!x_1... x_n, y^1_1... y^1_k,... P /\ Q_1 /\ ... ==> l_1 = r_1},
+{!x_1... x_n,y^2_1... y^2_k,... P /\ Q_2 /\ ... ==> l_2 = r_2} etc.
+
+\end{{itemize}}
+
+\FAILURE
+Fails if no rewrite can be achieved. If the usual behavior of leaving the goal unchanged
+is desired, one can wrap the coal in {TRY_TAC}.
+
+\EXAMPLE
+This is a simple example:
+{
+  # REAL_DIV_REFL;;
+  val it : thm = |- !x. ~(x = &0) ==> x / x = &1
+  # g `!a b c. a < b ==> (a - b) / (a - b) * c = c`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b c. a < b ==> (a - b) / (a - b) * c = c`
+
+  # e(IMP_REWRITE_TAC[REAL_DIV_REFL]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b c. a < b ==> &1 * c = c / ~(a - b = &0)`
+}
+We can actually do more in one step:
+{
+  # g `!a b c. a < b ==> (a - b) / (a - b) * c = c`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b c. a < b ==> (a - b) / (a - b) * c = c`
+
+  # e(IMP_REWRITE_TAC[REAL_DIV_REFL;REAL_MUL_LID;REAL_SUB_0]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b. a < b ==> ~(a = b)`
+}
+And one can easily conclude with:
+{
+  # e(IMP_REWRITE_TAC[REAL_LT_IMP_NE]);;
+  val it : goalstack = No subgoals
+}
+This illustrates the use of this tactic as a replacement for {MATCH_MP_TAC}:
+{
+  # g `!a b. &0 < a - b ==> ~(b = a)`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b. &0 < a - b ==> ~(b = a)`
+
+  # e(IMP_REWRITE_TAC[REAL_LT_IMP_NE]);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!a b. &0 < a - b ==> b < a`
+}
+Actually the goal can be completely proved just by:
+{
+  # e(IMP_REWRITE_TAC[REAL_LT_IMP_NE;REAL_SUB_LT]);;
+  val it : goalstack = No subgoals
+}
+Of course on this simple example, it would actually be enough to use
+{SIMP_TAC}.
+
+\USES
+Allows to make some progress when {REWRITE_TAC} or {SIMP_TAC} cannot. Namely,
+if the precondition P cannot be proved automatically, then these classic
+tactics cannot be used, and one must generally add the precondition explicitly
+using {SUBGOAL_THEN} or {SUBGOAL_TAC}. {IMP_REWRITE_TAC} allows one to do this
+automatically. Additionally, it can add this precondition deep in a term,
+actually to the deepest where it is meaningful. Thus there is no need to first
+use {REPEAT STRIP_TAC} (which often forces to decompose the goal into subgoals
+whereas the user would not want to do so). {IMP_REWRITE_TAC} can also be used
+like {MATCH_MP_TAC}, but, again, deep in a term. Therefore you can avoid the
+common preliminary {REPEAT STRIP_TAC}. The only disadvantages w.r.t.
+{REWRITE_TAC}, {SIMP_TAC} and {MATCH_MP_TAC} are that {IMP_REWRITE_TAC} uses
+only first-order matching and is generally a little bit slower.
+
+\COMMENTS
+Contrarily to {REWRITE_TAC} or {SIMP_TAC}, the goal obtained by using
+implicational rewriting is generally not equivalent to the initial goal. This
+is actually what makes this tactic so useful: applying only ``reversible''
+reasoning steps is quite a big restriction compared to all the reasoning steps
+that could be achieved (and often wanted).
+
+We use only first-order matching because higher-order matching happens to match
+``too much''.
+
+In situations where they can be used, {REWRITE_TAC} and {SIMP_TAC} are generally
+more efficient.
+
+\SEEALSO
+CASE_REWRITE_TAC, REWRITE_TAC, SEQ_IMP_REWRITE_TAC, SIMP_TAC, TARGET_REWRITE_TAC.
+
+\ENDDOC

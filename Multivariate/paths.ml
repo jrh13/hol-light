@@ -2877,11 +2877,6 @@ let SEGMENT_EQ = prove
     ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_SEGMENT_OPEN_CLOSED] THEN
     ASM_REWRITE_TAC[SUBSET_ANTISYM_EQ]]);;
 
-let COMPACT_SEGMENT = prove
- (`!a b. compact(segment[a,b])`,
-  SIMP_TAC[SEGMENT_CONVEX_HULL; COMPACT_CONVEX_HULL; FINITE_IMP_COMPACT;
-           FINITE_INSERT; FINITE_EMPTY]);;
-
 let COLLINEAR_SEGMENT = prove
  (`(!a b:real^N. collinear(segment[a,b])) /\
    (!a b:real^N. collinear(segment(a,b)))`,
@@ -6510,35 +6505,35 @@ let CARD_EQ_OPEN_IN_AFFINE = prove
 (* Locally convex sets.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let LOCALLY_CONVEX = prove                                                
- (`!s:real^N->bool.                                           
-        locally convex s <=>                                          
+let LOCALLY_CONVEX = prove
+ (`!s:real^N->bool.
+        locally convex s <=>
         !x. x IN s ==> ?u v. x IN u /\ u SUBSET v /\ v SUBSET s /\
                              open_in (subtopology euclidean s) u /\
-                             convex v`,                    
+                             convex v`,
   GEN_TAC THEN REWRITE_TAC[locally] THEN EQ_TAC THEN DISCH_TAC THENL
-   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN FIRST_X_ASSUM         
+   [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN FIRST_X_ASSUM
      (MP_TAC o SPECL [`s INTER ball(x:real^N,&1)`; `x:real^N`]) THEN
     ASM_SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_BALL] THEN
     ASM_REWRITE_TAC[IN_INTER; CENTRE_IN_BALL; REAL_LT_01] THEN
-    MESON_TAC[SUBSET_INTER];                                   
+    MESON_TAC[SUBSET_INTER];
     MAP_EVERY X_GEN_TAC [`w:real^N->bool`; `x:real^N`] THEN
     REWRITE_TAC[IMP_CONJ] THEN GEN_REWRITE_TAC LAND_CONV [OPEN_IN_OPEN] THEN
     DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
-    ASM_REWRITE_TAC[IN_INTER] THEN STRIP_TAC THEN                             
+    ASM_REWRITE_TAC[IN_INTER] THEN STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
-    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN                  
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
     MAP_EVERY X_GEN_TAC [`u:real^N->bool`; `v:real^N->bool`] THEN
-    STRIP_TAC THEN                                       
+    STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_CBALL]) THEN
     DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
     DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
     EXISTS_TAC `(s INTER ball(x:real^N,e)) INTER u` THEN
-    EXISTS_TAC `cball(x:real^N,e) INTER v` THEN                      
+    EXISTS_TAC `cball(x:real^N,e) INTER v` THEN
     ASM_SIMP_TAC[OPEN_IN_INTER; OPEN_IN_OPEN_INTER; OPEN_BALL; CENTRE_IN_BALL;
-                 CONVEX_INTER; CONVEX_CBALL; IN_INTER] THEN      
+                 CONVEX_INTER; CONVEX_CBALL; IN_INTER] THEN
     MP_TAC(ISPECL [`x:real^N`; `e:real`] BALL_SUBSET_CBALL) THEN
-    ASM SET_TAC[]]);;                                           
+    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic properties of local compactness.                                    *)

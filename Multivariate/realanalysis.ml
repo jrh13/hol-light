@@ -558,10 +558,10 @@ let REALLIM_CONST_EQ = prove
   REWRITE_TAC[TENDSTO_REAL; LIM_CONST_EQ; o_DEF; LIFT_EQ]);;
 
 let REALLIM_SUM = prove
- (`!f:A->B->real s.
+ (`!net f:A->B->real l s.
         FINITE s /\ (!i. i IN s ==> ((f i) ---> (l i)) net)
         ==> ((\x. sum s (\i. f i x)) ---> sum s l) net`,
-  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; REALLIM_CONST; REALLIM_ADD; IN_INSERT; ETA_AX]);;
 
@@ -1213,6 +1213,11 @@ let REAL_SUMMABLE_GP = prove
   ASM_REWRITE_TAC[REAL_SUMMABLE_COMPLEX] THEN
   ASM_REWRITE_TAC[COMPLEX_NORM_CX; o_DEF; CX_POW]);;
 
+let REAL_SUMMABLE_ZETA_INTEGER = prove
+ (`!n m. 2 <= m ==> real_summable (from n) (\k. inv(&k pow m))`,
+  REWRITE_TAC[REAL_SUMMABLE_COMPLEX; CX_INV; CX_POW;
+              SUMMABLE_ZETA_INTEGER; o_DEF]);;
+
 let REAL_ABEL_LEMMA = prove
  (`!a M r r0.
         &0 <= r /\ r < r0 /\
@@ -1276,29 +1281,11 @@ let REALLIM_POWN = prove
 let atreal = new_definition
  `atreal a = mk_net(\x y. &0 < abs(x - a) /\ abs(x - a) <= abs(y - a))`;;
 
-let at_posinfinity = new_definition
-  `at_posinfinity = mk_net(\x y:real. x >= y)`;;
-
-let at_neginfinity = new_definition
-  `at_neginfinity = mk_net(\x y:real. x <= y)`;;
-
 let ATREAL = prove
  (`!a x y.
         netord(atreal a) x y <=> &0 < abs(x - a) /\ abs(x - a) <= abs(y - a)`,
   GEN_TAC THEN NET_PROVE_TAC[atreal] THEN
   MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS; REAL_LET_TRANS]);;
-
-let AT_POSINFINITY = prove
- (`!x y. netord at_posinfinity x y <=> x >= y`,
-  NET_PROVE_TAC[at_posinfinity] THEN
-  REWRITE_TAC[real_ge; REAL_LE_REFL] THEN
-  MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS]);;
-
-let AT_NEGINFINITY = prove
- (`!x y. netord at_neginfinity x y <=> x <= y`,
-  NET_PROVE_TAC[at_neginfinity] THEN
-  REWRITE_TAC[real_ge; REAL_LE_REFL] THEN
-  MESON_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS]);;
 
 let WITHINREAL_UNIV = prove
  (`!x. atreal x within (:real) = atreal x`,
@@ -1317,22 +1304,6 @@ let TRIVIAL_LIMIT_ATREAL = prove
    [ASM_MESON_TAC[];
     EXISTS_TAC `(a + b) / &2` THEN ASM_REAL_ARITH_TAC;
     EXISTS_TAC `(a + c) / &2` THEN ASM_REAL_ARITH_TAC]);;
-
-let TRIVIAL_LIMIT_AT_POSINFINITY = prove
- (`~(trivial_limit at_posinfinity)`,
-  REWRITE_TAC[trivial_limit; AT_POSINFINITY; DE_MORGAN_THM] THEN
-  CONJ_TAC THENL
-   [DISCH_THEN(MP_TAC o SPECL [`&0`; `&1`]) THEN REAL_ARITH_TAC; ALL_TAC] THEN
-  REWRITE_TAC[DE_MORGAN_THM; NOT_EXISTS_THM; real_ge; REAL_NOT_LE] THEN
-  MESON_TAC[REAL_LT_TOTAL; REAL_LT_ANTISYM]);;
-
-let TRIVIAL_LIMIT_AT_NEGINFINITY = prove
- (`~(trivial_limit at_neginfinity)`,
-  REWRITE_TAC[trivial_limit; AT_NEGINFINITY; DE_MORGAN_THM] THEN
-  CONJ_TAC THENL
-   [DISCH_THEN(MP_TAC o SPECL [`&0`; `&1`]) THEN REAL_ARITH_TAC; ALL_TAC] THEN
-  REWRITE_TAC[DE_MORGAN_THM; NOT_EXISTS_THM; real_ge; REAL_NOT_LE] THEN
-  MESON_TAC[REAL_LT_TOTAL; REAL_LT_ANTISYM]);;
 
 let NETLIMIT_WITHINREAL = prove
  (`!a s. ~(trivial_limit (atreal a within s))
@@ -1388,16 +1359,6 @@ let EVENTUALLY_ATREAL = prove
   ONCE_REWRITE_TAC[GSYM WITHINREAL_UNIV] THEN
   REWRITE_TAC[EVENTUALLY_WITHINREAL; IN_UNIV]);;
 
-let EVENTUALLY_AT_POSINFINITY = prove
- (`!p. eventually p at_posinfinity <=> ?b. !x. x >= b ==> p x`,
-  REWRITE_TAC[eventually; TRIVIAL_LIMIT_AT_POSINFINITY; AT_POSINFINITY] THEN
-  MESON_TAC[REAL_ARITH `x >= x`]);;
-
-let EVENTUALLY_AT_NEGINFINITY = prove
- (`!p. eventually p at_neginfinity <=> ?b. !x. x <= b ==> p x`,
-  REWRITE_TAC[eventually; TRIVIAL_LIMIT_AT_NEGINFINITY; AT_NEGINFINITY] THEN
-  MESON_TAC[REAL_LE_REFL]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Usual limit results with real domain and either vector or real range.     *)
 (* ------------------------------------------------------------------------- *)
@@ -1426,16 +1387,6 @@ let LIM_ATREAL = prove
                   ==> ?d. &0 < d /\ !x. &0 < abs(x - a) /\ abs(x - a) < d
                           ==> dist(f(x),l) < e`,
   REWRITE_TAC[tendsto; EVENTUALLY_ATREAL] THEN MESON_TAC[]);;
-
-let LIM_AT_POSINFINITY = prove
- (`!f l. (f --> l) at_posinfinity <=>
-               !e. &0 < e ==> ?b. !x. x >= b ==> dist(f(x),l) < e`,
-  REWRITE_TAC[tendsto; EVENTUALLY_AT_POSINFINITY] THEN MESON_TAC[]);;
-
-let LIM_AT_NEGINFINITY = prove
- (`!f l. (f --> l) at_neginfinity <=>
-               !e. &0 < e ==> ?b. !x. x <= b ==> dist(f(x),l) < e`,
-  REWRITE_TAC[tendsto; EVENTUALLY_AT_NEGINFINITY] THEN MESON_TAC[]);;
 
 let REALLIM_WITHINREAL_LE = prove
  (`!f l a s.
@@ -5421,18 +5372,6 @@ let REAL_SUM_INTEGRAL_BOUNDS_DECREASING = prove
 (* Relating different kinds of real limits.                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let LIM_POSINFINITY_SEQUENTIALLY = prove
- (`!f l. (f --> l) at_posinfinity ==> ((\n. f(&n)) --> l) sequentially`,
-  REPEAT GEN_TAC THEN
-  REWRITE_TAC[LIM_AT_POSINFINITY; LIM_SEQUENTIALLY] THEN
-  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_TAC `B:real`) THEN
-  MP_TAC(ISPEC `B:real` REAL_ARCH_SIMPLE) THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN
-  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN ASM_REAL_ARITH_TAC);;
-
 let REALLIM_POSINFINITY_SEQUENTIALLY = prove
  (`!f l. (f ---> l) at_posinfinity ==> ((\n. f(&n)) ---> l) sequentially`,
   REPEAT GEN_TAC THEN REWRITE_TAC[TENDSTO_REAL] THEN
@@ -6039,7 +5978,7 @@ let AGM_RPOW = prove
 
 let AGM_ROOT = prove
  (`!k:A->bool x n.
-        k HAS_SIZE n /\ ~(n = 0) /\ (!i. i IN k ==> &0 <= x(i))                
+        k HAS_SIZE n /\ ~(n = 0) /\ (!i. i IN k ==> &0 <= x(i))
         ==> root n (product k x) <= sum k x / &n`,
   REWRITE_TAC[HAS_SIZE] THEN REPEAT STRIP_TAC THEN
   ASM_SIMP_TAC[ROOT_PRODUCT; real_div; GSYM SUM_RMUL] THEN
@@ -6059,11 +5998,11 @@ let AGM_SQRT = prove
   ASM_MESON_TAC[ARITH_RULE `~(1 = 0)`]);;
 
 let AGM = prove
- (`!k:A->bool x n. 
-        k HAS_SIZE n /\ ~(n = 0) /\ (!i. i IN k ==> &0 <= x(i))                
+ (`!k:A->bool x n.
+        k HAS_SIZE n /\ ~(n = 0) /\ (!i. i IN k ==> &0 <= x(i))
         ==> product k x <= (sum k x / &n) pow n`,
   REWRITE_TAC[HAS_SIZE] THEN REPEAT STRIP_TAC THEN
-  TRANS_TAC REAL_LE_TRANS `root n (product (k:A->bool) x) pow n` THEN 
+  TRANS_TAC REAL_LE_TRANS `root n (product (k:A->bool) x) pow n` THEN
   CONJ_TAC THENL
    [ASM_SIMP_TAC[REAL_POW_ROOT; PRODUCT_POS_LE; REAL_LE_REFL];
     MATCH_MP_TAC REAL_POW_LE2 THEN

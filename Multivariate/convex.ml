@@ -4189,27 +4189,6 @@ let AFFINE_HULL_AFFINE_INTER_OPEN_IN = prove
         AFFINE_HULL_CONVEX_INTER_OPEN_IN) THEN
   ASM_SIMP_TAC[HULL_HULL; AFFINE_IMP_CONVEX; AFFINE_AFFINE_HULL; HULL_P]);;
 
-let AFFINE_HULL_CONVEX_INTER_OPEN_IN = prove
- (`!s t:real^N->bool.
-        convex s /\ open_in (subtopology euclidean (affine hull s)) t /\
-        ~(s INTER t = {})
-        ==> affine hull (s INTER t) = affine hull s`,
-  REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_OPEN]) THEN
-  DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
-  ASM_SIMP_TAC[SET_RULE `s SUBSET t ==> s INTER t INTER u = s INTER u`;
-               HULL_SUBSET] THEN
-  MATCH_MP_TAC AFFINE_HULL_CONVEX_INTER_OPEN THEN ASM SET_TAC[]);;
-
-let AFFINE_HULL_AFFINE_INTER_OPEN_IN = prove
- (`!s t:real^N->bool.
-        affine s /\ open_in (subtopology euclidean s) t /\ ~(s INTER t = {})
-        ==> affine hull (s INTER t) = s`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`affine hull s:real^N->bool`; `t:real^N->bool`]
-        AFFINE_HULL_CONVEX_INTER_OPEN_IN) THEN
-  ASM_SIMP_TAC[HULL_HULL; AFFINE_IMP_CONVEX; AFFINE_AFFINE_HULL; HULL_P]);;
-
 let AFFINE_HULL_OPEN_IN = prove
  (`!s t:real^N->bool.
         open_in (subtopology euclidean (affine hull t)) s /\ ~(s = {})

@@ -1,3 +1,18 @@
+Sat 22nd Feb 2014       impconv.ml, Help/CASE_REWRITE_TAC.doc, Help/HINT_EXISTS_TAC.doc, Help/IMP_REWRITE_TAC.doc, Help/SEQ_IMP_REWRITE_TAC.doc, Help/TARGET_REWRITE_TAC.doc [new files], hol.ml
+
+Added a new file from Vincent Aravantinos containing several powerful new
+tactics: IMP_REWRITE_TAC, TARGET_REWRITE_TAC, CASE_REWRITE_TAC,
+SEQ_IMP_REWRITE_TAC and HINT_EXISTS_TAC.
+
+Sat 22nd Feb 2014       arith.ml, Library/binary.ml, Library/prime.ml 
+
+Added the rather trivial "finite Cantor's theorem", which is otherwise
+defined in several different places and is useful enough:
+
+  LT_POW2_REFL = |- !n. n < 2 EXP n
+
+Deleted it from other places now that it's in the core.
+
 Sun 16th Feb 2014       real.ml
 
 Added the following additional properties of the signum function:

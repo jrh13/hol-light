@@ -1,0 +1,51 @@
+\DOC HINT_EXISTS_TAC
+
+\TYPE {HINT_EXISTS_TAC : tactic}
+
+\SYNOPSIS
+Attemps to instantiate existential goals from context.
+
+\DESCRIBE
+Given a goal which contains some subformula of the form
+{?x_1... x_k. P_1 y^1_1 ... y^1_m1 /\ ... /\ P_n y^n_1 ... y^n_mn} in a
+context where {P_i t_1 ... t_mi} holds for some {t_1,...,t_mi}, then
+instantiates {x_i1,...,x_i_mi} with {t_1,...,t_mi}. The ``context'' consists in
+the assumptions or in the premisses of the implications where the existential
+subformula occurs.
+
+Note: it is enough that just P t holds, not the complete existentially
+quantified formula. As the name suggests, we just use the context as a ``hint''
+but it is (in most general uses) not sufficient to solve the existential
+completely: if this is doable automatically, then other techniques can do the
+job in a better way (typically {MESON}).
+
+\FAILURE
+Fails if no instantiation is found from the context.
+
+\EXAMPLE
+{
+  # g `!P Q R S. P 1 /\ Q 2 /\ R 3 ==> ?x y. P x /\ R y /\ S x y`;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!P Q R S. P 1 /\ Q 2 /\ R 3 ==> (?x y. P x /\ R y /\ S x y)`
+
+  # e HINT_EXISTS_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!P Q R S. P 1 /\ Q 2 /\ R 3 ==> S 1 3`
+}
+
+\USES
+When facing an existential goal, it happens often that the context ``suggests''
+a candidate to be a witness. In many cases, this is because the existential
+goal is partly satisfied by a proposition in the context. However, often, the
+context does not allow to automatically prove completely the existential using
+this witness. Therefore, usual automation tactics are useless. Usually, in such
+circumstances, one has to provide the witness explicitly. This is tedious and
+time-consuming whereas this witness can be found automatically from the
+context, this is what this tactic allows to do.
+
+\SEEALSO
+EXISTS_TAC, IMP_REWRITE_TAC, SIMP_TAC.
+
+\ENDDOC

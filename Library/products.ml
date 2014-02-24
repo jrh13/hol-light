@@ -30,7 +30,7 @@ let NPRODUCT_UNION = prove
   SIMP_TAC[nproduct; ITERATE_UNION; MONOIDAL_MUL]);;
 
 let NPRODUCT_IMAGE = prove
- (`!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+ (`!f g s. (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
            ==> (nproduct (IMAGE f s) g = nproduct s (g o f))`,
   REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
   MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_MUL]);;
@@ -208,7 +208,7 @@ let PRODUCT_UNION = prove
   SIMP_TAC[product; ITERATE_UNION; MONOIDAL_REAL_MUL]);;
 
 let PRODUCT_IMAGE = prove
- (`!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+ (`!f g s. (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
            ==> (product (IMAGE f s) g = product s (g o f))`,
   REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
   MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_REAL_MUL]);;

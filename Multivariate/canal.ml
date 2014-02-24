@@ -335,6 +335,16 @@ let SERIES_CX_LIFT = prove
 (* Special cases of null limits.                                             *)
 (* ------------------------------------------------------------------------- *)
 
+let LIM_NULL_COMPLEX = prove
+ (`!net f. (f --> l) net <=> ((\x. f x - l) --> Cx(&0)) net`,
+  REWRITE_TAC[GSYM COMPLEX_VEC_0; GSYM LIM_NULL]);;
+
+let LIM_NULL_COMPLEX_NORM = prove
+ (`!net f. (f --> Cx(&0)) net <=> ((\x. Cx(norm(f x))) --> Cx(&0)) net`,
+  REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
+  ONCE_REWRITE_TAC[LIM_NULL_NORM] THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NORM]);;
+
 let LIM_NULL_COMPLEX_NEG = prove
  (`!net f. (f --> Cx(&0)) net ==> ((\x. --(f x)) --> Cx(&0)) net`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP LIM_NEG) THEN
@@ -1366,6 +1376,17 @@ let COMPLEX_DIFFERENTIABLE_POW_WITHIN = prove
   REWRITE_TAC[complex_differentiable] THEN
   MESON_TAC[HAS_COMPLEX_DERIVATIVE_POW_WITHIN]);;
 
+let COMPLEX_DIFFERENTIABLE_CPRODUCT_WITHIN = prove
+ (`!f k:A->bool z s.
+        FINITE k /\
+        (!i. i IN k ==> f i complex_differentiable (at z within s))
+        ==> (\z. cproduct k (\i. f i z)) complex_differentiable
+            (at z within s)`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[CPRODUCT_CLAUSES; COMPLEX_DIFFERENTIABLE_CONST; FORALL_IN_INSERT;
+           ETA_AX; COMPLEX_DIFFERENTIABLE_MUL_WITHIN]);;
+
 let COMPLEX_DIFFERENTIABLE_TRANSFORM_WITHIN = prove
  (`!f g x s d.
         &0 < d /\
@@ -1423,6 +1444,16 @@ let COMPLEX_DIFFERENTIABLE_POW_AT = prove
         ==> (\z. f z pow n) complex_differentiable at z`,
   REWRITE_TAC[complex_differentiable] THEN
   MESON_TAC[HAS_COMPLEX_DERIVATIVE_POW_AT]);;
+
+let COMPLEX_DIFFERENTIABLE_CPRODUCT_AT = prove
+ (`!f k:A->bool z.
+        FINITE k /\
+        (!i. i IN k ==> f i complex_differentiable (at z))
+        ==> (\z. cproduct k (\i. f i z)) complex_differentiable (at z)`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[CPRODUCT_CLAUSES; COMPLEX_DIFFERENTIABLE_CONST; FORALL_IN_INSERT;
+           ETA_AX; COMPLEX_DIFFERENTIABLE_MUL_AT]);;
 
 let COMPLEX_DIFFERENTIABLE_TRANSFORM_AT = prove
  (`!f g x d.
@@ -1525,6 +1556,14 @@ let HOLOMORPHIC_ON_VSUM = prove
   SIMP_TAC[HOLOMORPHIC_ON_CONST; IN_INSERT; NOT_IN_EMPTY] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HOLOMORPHIC_ON_ADD THEN
   ASM_SIMP_TAC[ETA_AX]);;
+
+let HOLOMORPHIC_ON_CPRODUCT = prove
+ (`!f k:A->bool s.
+        FINITE k /\
+        (!i. i IN k ==> f i holomorphic_on s)
+        ==> (\z. cproduct k (\i. f i z)) holomorphic_on s`,
+  SIMP_TAC[HOLOMORPHIC_ON_DIFFERENTIABLE;
+           COMPLEX_DIFFERENTIABLE_CPRODUCT_WITHIN]);;
 
 let HOLOMORPHIC_ON_COMPOSE_GEN = prove
  (`!f g s t. f holomorphic_on s /\ g holomorphic_on t /\
@@ -2657,6 +2696,82 @@ let SUMMABLE_GP = prove
     COND_CASES_TAC THEN
     ASM_SIMP_TAC[REAL_ABS_POW; REAL_ABS_NORM; REAL_LE_REFL; NORM_POS_LE;
                  COMPLEX_NORM_POW; NORM_0; REAL_ABS_POS; REAL_POW_LE]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Convergence of 1/n^k for n >= 2.                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let SUMMABLE_ZETA_INTEGER = prove
+ (`!n m. 2 <= m ==> summable (from n) (\k. inv(Cx(&k) pow m))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUMMABLE_FROM_ELSEWHERE THEN
+  EXISTS_TAC `1` THEN
+  REWRITE_TAC[summable; GSYM CX_INV; GSYM CX_POW] THEN
+  MATCH_MP_TAC(MESON[] `(?x. P(Cx x)) ==> ?x. P x`) THEN
+  REWRITE_TAC[SERIES_CX_LIFT] THEN
+  REWRITE_TAC[sums; FROM_INTER_NUMSEG; LIM_SEQUENTIALLY; DIST_REAL] THEN
+  REWRITE_TAC[EXISTS_LIFT; LIFT_DROP; GSYM drop] THEN
+  MATCH_MP_TAC CONVERGENT_BOUNDED_MONOTONE THEN
+  EXISTS_TAC `&2 pow m / (&1 - (&1 / &2) pow (m - 1))` THEN CONJ_TAC THENL
+   [ALL_TAC;
+    DISJ1_TAC THEN MAP_EVERY X_GEN_TAC [`i:num`; `j:num`] THEN
+    DISCH_TAC THEN REWRITE_TAC[DROP_VSUM; o_DEF; LIFT_DROP] THEN
+    MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+    SIMP_TAC[REAL_LE_INV_EQ; REAL_POW_LE; REAL_POS] THEN
+    REWRITE_TAC[FINITE_NUMSEG; SUBSET_NUMSEG] THEN ASM_ARITH_TAC] THEN
+  X_GEN_TAC `n:num` THEN REWRITE_TAC[DROP_VSUM; o_DEF; LIFT_DROP] THEN
+  SIMP_TAC[real_abs; SUM_POS_LE_NUMSEG; REAL_LE_INV_EQ;
+           REAL_POW_LE; REAL_POS] THEN
+  TRANS_TAC REAL_LE_TRANS `sum(1..2 EXP n) (\x. inv(&x pow m))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+    SIMP_TAC[REAL_LE_INV_EQ; REAL_POW_LE; REAL_POS] THEN
+    SIMP_TAC[FINITE_NUMSEG; SUBSET_NUMSEG; LE_REFL;
+             LT_POW2_REFL; LT_IMP_LE];
+    ALL_TAC] THEN
+  TRANS_TAC REAL_LE_TRANS
+   `sum(0..n) (\k. &2 pow m / &2 pow (k * (m - 1)))` THEN
+  CONJ_TAC THENL
+   [SPEC_TAC(`n:num`,`n:num`) THEN INDUCT_TAC THEN
+    SIMP_TAC[EXP; SUM_SING_NUMSEG; REAL_POW_ONE; MULT_CLAUSES; real_pow] THEN
+    REWRITE_TAC[REAL_DIV_1; REAL_INV_1; REAL_LE_POW2] THEN
+    MP_TAC(ISPECL
+     [`\k. inv(&k pow m)`; `1`; `2 EXP n`; `2 EXP n`]
+        SUM_ADD_SPLIT) THEN
+    ANTS_TAC THENL [ARITH_TAC; REWRITE_TAC[MULT_2]] THEN
+    DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN
+    MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[] THEN
+    TRANS_TAC REAL_LE_TRANS
+     `sum (2 EXP n + 1..2 EXP n + 2 EXP n) (\k. inv(&2 pow n pow m))` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC SUM_LE_NUMSEG THEN REPEAT STRIP_TAC THEN
+      REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+      ASM_SIMP_TAC[REAL_POW_LT; REAL_OF_NUM_LT; ARITH] THEN
+      MATCH_MP_TAC REAL_POW_LE2 THEN
+      REWRITE_TAC[REAL_OF_NUM_POW; REAL_OF_NUM_LE; LE_0] THEN ASM_ARITH_TAC;
+      REWRITE_TAC[SUM_CONST_NUMSEG; ARITH_RULE `((n + n) + 1) - (n + 1) = n`;
+                  GSYM REAL_OF_NUM_POW; REAL_INV_POW; REAL_POW_2] THEN
+      REWRITE_TAC[REAL_POW_POW; REAL_POW_INV] THEN
+      REWRITE_TAC[GSYM real_div] THEN
+      ASM_SIMP_TAC[REAL_LE_RDIV_EQ; REAL_LT_POW2] THEN
+      REWRITE_TAC[REAL_ARITH `a / b * c:real = (a * c) / b`] THEN
+      ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_LT_POW2] THEN
+      REWRITE_TAC[GSYM(CONJUNCT2 real_pow); GSYM REAL_POW_ADD] THEN
+      MATCH_MP_TAC REAL_POW_MONO THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+      UNDISCH_TAC `2 <= m` THEN SPEC_TAC(`m:num`,`m:num`) THEN
+      INDUCT_TAC THEN REWRITE_TAC[ARITH; SUC_SUB1] THEN ARITH_TAC];
+    ONCE_REWRITE_TAC[MULT_SYM] THEN
+    REWRITE_TAC[GSYM REAL_POW_POW; real_div] THEN
+    REWRITE_TAC[REAL_INV_POW; SUM_LMUL] THEN REWRITE_TAC[SUM_GP] THEN
+    REWRITE_TAC[REAL_INV_EQ_1; REAL_POW_EQ_1; LT] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    ASM_SIMP_TAC[ARITH_RULE `2 <= m ==> ~(m - 1 = 0)`] THEN
+    REWRITE_TAC[CONJUNCT1 real_pow] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN SIMP_TAC[REAL_POW_LE; REAL_POS] THEN
+    REWRITE_TAC[REAL_ARITH `a / b <= inv b <=> a * inv b <= &1 * inv b`] THEN
+    MATCH_MP_TAC REAL_LE_RMUL THEN
+    REWRITE_TAC[REAL_ARITH `&1 - x <= &1 <=> &0 <= x`; REAL_LE_INV_EQ] THEN
+    SIMP_TAC[REAL_POW_LE; REAL_LE_DIV; REAL_POS; REAL_SUB_LE] THEN
+    MATCH_MP_TAC REAL_POW_1_LE THEN CONV_TAC REAL_RAT_REDUCE_CONV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex version (the usual one) of Dirichlet convergence test.            *)

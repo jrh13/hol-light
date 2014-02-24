@@ -1,0 +1,45 @@
+\DOC CASE_REWRITE_TAC
+
+\TYPE {CASE_REWRITE_TAC : thm -> tactic}
+
+\SYNOPSIS
+Performs casewise rewriting.
+
+\DESCRIBE
+Same usage as {IMP_REWRITE_TAC} but applies case rewriting instead of
+implicational rewriting, i.e., given a theorem of the form 
+{!x_1... x_n. P ==> !y_1... y_m. l = r} and a goal with an atom {A} containing
+a subterm matching {l}, turns the atom into {(P' ==> A') /\ (~P' ==> A)} where
+{A'} is the atom in which the matching subterm of {l} is rewritten, and where
+{P'} is the instantiation of {P} so that the rewrite is valid. Note that this
+tactic takes only one theorem since in practice there is seldom a need to
+apply it subsequently with several theorems.
+
+\FAILURE
+Fails if no subterm matching {l} occurs in the goal.
+
+\EXAMPLE
+{
+  # g ‘!a b c. a < b ==> (a - b) / (a - b) * c = c‘;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  ‘!a b c. a < b ==> (a - b) / (a - b) * c = c‘
+
+  # e(CASE_REWRITE_TAC REAL_DIV_REFL);;
+  val it : goalstack = 1 subgoal (1 total)
+
+  ‘!a b c.
+    a < b
+      ==> (~(a - b = &0) ==> &1 * c = c) /\
+        (a - b = &0 ==> (a - b) / (a - b) * c = c)‘
+}
+
+\USES
+Similar to {IMP_REWRITE_TAC}, but instead of assuming that a precondition
+holds, one just wants to make a distinction between the case where this
+precondition holds, and the one where it does not.
+
+\SEEALSO
+IMP_REWRITE_TAC, REWRITE_TAC, SIMP_TAC, SEQ_IMP_REWRITE_TAC, TARGET_REWRITE_TAC.
+
+\ENDDOC

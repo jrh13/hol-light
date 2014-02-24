@@ -23,8 +23,8 @@
 (* INTRO_TAC, DESTRUCT_TAC & HYP), Petros Papapanagiotou (coauthor of        *)
 (* Isabelle Light), Vincent Aravantinos (author of the Q-module              *)
 (* https://github.com/aravantv/HOL-Light-Q) and Mark Adams (author of HOL    *)
-(* Zero and Tactician).  These readability ideas yield miz3-type             *)
-(* "declarative" constructs like consider and case_split.  The semantics of  *)
+(* Zero and Tactician).  These readability ideas yield the miz3-type         *)
+(* declarative constructs assume, consider and case_split.  The semantics of *)
 (* readable.ml is clear from an obvious translation to HOL Light proofs.  An *)
 (* interactive mode is useful in writing, debugging and displaying proofs.   *)
 (*                                                                           *)
@@ -205,30 +205,18 @@ let subgoal_THEN stm ttac gl =
 (* sDestruct must have the form "lab_1 |...| lab_n", and lab_i is a label    *)
 (* used by tac_i to prove st_i.  Each lab_i must be a nonempty string.       *)
 (* assume                                                                    *)
-(* can be used for proofs by contradiction, turning a goal w into F with an  *)
-(* assumption ¬w, or turning a disjunction goal α ∨ β into the goal β with   *)
-(* assumption ¬α.  In general,                                               *)
-(* assume notalpha lab tac                                                   *)
-(* turns string statement notalpha into term t, with tactic tac a proof that *)
-(* the goal w follows from the assumption t ⇒ w, which is labeled by the     *)
-(* nonempty string lab.  There is a new assumption t labeled lab. The goal   *)
-(* the simplification of w resulting from using t.                           *)
-(* So if t = ¬α and w is either α ∨ β or β ∨ α, then the new goal is β, and  *)
-(* if t = ¬α and w is either α, then new goal is F (false).                  *)
-(* In these cases, once can simply write                                     *)
-(*     assume notalpha     [lab] by fol -;                                   *)
-(* Suppose instead that tac is a proof of ¬t ⇒ w (think alpha ⇒ w).  Then    *)
-(*     assume notalpha     [lab] tac;                                        *)
-(* will quite often leave the goal w unchanged, and give an extra assumption *)
-(* t labeled by lab.  For this to actually happen, we need for tac to prove  *)
-(* that (t ⇒ w) ⇒ w and for the ONCE_REWRITE_TAC commands in the definition *)
-(* of assume to not change the goal, but these are reasonable expectations,  *)
-(* as we have the tautology proved by TAUT                                   *)
-(* TAUT `(~t ==> w) ==> (t ==> w) ==> w`;;                                   *)
-(* This use of assume saves space if one has a case_split with two forks for *)
-(* one of the two forks have a 1-line proof.  As tac is expected to be a     *)
-(* short proof, a good practice is for the string lab to refer to notalpha,  *)
-(* and to refer, in tac, to the assumption t ⇒ w by "-" instead of lab.      *)
+(* is a version of ASM_CASES_TAC, and performs proofs by contradiction and   *)
+(* binary case_splits where one of the forks has a short proof.  In general, *)
+(* assume statement lab tac                                                  *)
+(* turns the string statement into a term t, with the tactic tac a proof of  *)
+(* ¬t ⇒ w, where w is the goal. There is a new assumption t labeled lab, and *)
+(* the new goal is the result of applying the tactic SIMP_TAC [t] to w.	     *)
+(* It's recommended to only use assume with a short proof tac.  Three uses   *)
+(* of assume arise when t = ¬w or t = ¬α, with w = α ∨ β or w = β ∨ α.       *)
+(* In all three cases write						     *)
+(*      assume statement     [lab] by fol;  				     *)
+(* and the new goal will be F (false) or β respectively, as a result of the  *)
+(* SIMP_TAC [t].  So do not use assume if SIMP_TAC [t] is disadvantageous.   *)
 
 let subgoal_TAC stm lab tac gl =
   SUBGOAL_TAC lab (parse_env_string (make_env gl) stm) [tac] gl;;
@@ -244,11 +232,10 @@ let X_genl_TAC svarlist = MAP_EVERY X_gen_TAC svarlist;;
 
 let intro_TAC s = INTRO_TAC (Str.global_replace (Str.regexp ",") ";" s);;
 
-let assume notalpha lab tac (asl, w as gl) =
-  let t = parse_env_string (make_env gl) notalpha in
-  let notalpha_implies_beta = mk_imp(t, w) in
-  (SUBGOAL_THEN notalpha_implies_beta (LABEL_TAC lab) THENL
-  [INTRO_TAC lab; tac] THEN HYP SIMP_TAC lab []) gl;;
+let assume statement lab tac (asl, w as gl) =
+  let t = parse_env_string (make_env gl) statement in
+  (DISJ_CASES_THEN (LABEL_TAC lab) (SPEC t EXCLUDED_MIDDLE) THENL
+  [ALL_TAC; FIRST_ASSUM MP_TAC THEN tac] THEN HYP SIMP_TAC lab []) gl;;
 
 let eq_tac string tac =
   if string = "Right" then CONV_TAC SYM_CONV THEN EQ_TAC THENL [tac; ALL_TAC]
