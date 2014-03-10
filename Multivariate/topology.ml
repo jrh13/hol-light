@@ -2656,7 +2656,7 @@ let LIM_UNION_UNIV = prove
 (* ------------------------------------------------------------------------- *)
 
 let LIM_COMPOSE_WITHIN = prove
- (`!net f:real^M->real^N g:real^N->real^P s y z.
+ (`!net f:A->real^N g:real^N->real^P s y z.
     (f --> y) net /\
     eventually (\w. f w IN s /\ (f w = y ==> g y = z)) net /\
     (g --> z) (at y within s)
@@ -2674,13 +2674,13 @@ let LIM_COMPOSE_WITHIN = prove
   ASM_MESON_TAC[DIST_REFL]);;
 
 let LIM_COMPOSE_AT = prove
- (`!net f:real^M->real^N g:real^N->real^P y z.
+ (`!net f:A->real^N g:real^N->real^P y z.
     (f --> y) net /\
     eventually (\w. f w = y ==> g y = z) net /\
     (g --> z) (at y)
     ==> ((g o f) --> z) net`,
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`net:(real^M)net`; `f:real^M->real^N`; `g:real^N->real^P`;
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->real^N`; `g:real^N->real^P`;
                  `(:real^N)`; `y:real^N`; `z:real^P`]
         LIM_COMPOSE_WITHIN) THEN
   ASM_REWRITE_TAC[IN_UNIV; WITHIN_UNIV]);;
@@ -3783,6 +3783,11 @@ let CONNECTED_IMP_PERFECT = prove
     REWRITE_TAC[EXTENSION; IN_INTER; IN_SING] THEN
     ASM_MESON_TAC[CENTRE_IN_CBALL; SUBSET; REAL_LT_IMP_LE];
     ASM SET_TAC[]]);;
+
+let CONNECTED_IMP_PERFECT_CLOSED = prove
+ (`!s x. connected s /\ closed s /\ ~(?a. s = {a})
+         ==> (x limit_point_of s <=> x IN s)`,
+  MESON_TAC[CONNECTED_IMP_PERFECT; CLOSED_LIMPT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Boundedness.                                                              *)
@@ -5236,6 +5241,20 @@ let UNIFORMLY_CONVERGENT_EQ_CAUCHY = prove
   ASM_REWRITE_TAC[LE_ADD] THEN ONCE_REWRITE_TAC[ADD_SYM] THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `M + N:num`) THEN REWRITE_TAC[LE_ADD] THEN
   ASM_MESON_TAC[DIST_TRIANGLE_HALF_L; DIST_SYM]);;
+
+let UNIFORMLY_CONVERGENT_EQ_CAUCHY_ALT = prove
+ (`!P s:num->A->real^N.
+         (?l. !e. &0 < e
+                  ==> ?N. !n x. N <= n /\ P x ==> dist(s n x,l x) < e) <=>
+         (!e. &0 < e
+              ==> ?N. !m n x. N <= m /\ N <= n /\ m < n /\ P x
+                              ==> dist(s m x,s n x) < e)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[UNIFORMLY_CONVERGENT_EQ_CAUCHY] THEN
+  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[] THEN MATCH_MP_TAC WLOG_LT THEN
+  ASM_SIMP_TAC[DIST_REFL] THEN MESON_TAC[DIST_SYM]);;
 
 let UNIFORMLY_CAUCHY_IMP_UNIFORMLY_CONVERGENT = prove
  (`!P (s:num->A->real^N) l.

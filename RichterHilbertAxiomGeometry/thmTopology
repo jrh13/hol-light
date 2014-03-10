@@ -445,7 +445,7 @@ ConnectedClosedIn
 
 ConnectedSubtopology
   |- ∀α s.  s ⊂ topspace α
-         ⇒ (Connected (subtopology α s) ⇔
+         ⇒ (Connected (subtopology α s) ⇔ 
               ¬(∃e1 e2.  open_in α e1 ∧ open_in α e2 ∧
                     s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 ∩ s = ∅ ∧
                     ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅)))
@@ -463,6 +463,12 @@ ConnectedClosedSubtopology
               ¬(∃e1 e2.  closed_in α e1 ∧ closed_in α e2 ∧
                     s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 ∩ s = ∅ ∧
                     ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅)))
+
+ConnectedClosedSubtopology_ALT
+  |- ∀α s. s ⊂ topspace α ⇒ (Connected (subtopology α s) ⇔
+              (∀e1 e2. closed_in α e1 ∧ closed_in α e2 ∧
+                   s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 ∩ s = ∅
+                   ⇒ e1 ∩ s = ∅ ∨ e2 ∩ s = ∅))
 
 ConnectedClopen
   |- ∀α. Connected α ⇔
@@ -501,6 +507,67 @@ ConnectedDiffOpenFromClosed
          ⇒ s ⊂ t ∧ t ⊂ u ∧ open_in α s ∧ closed_in α t ∧
              Connected (subtopology α u) ∧ Connected (subtopology α (t ━ s))
          ⇒ Connected (subtopology α (u ━ s))
+
+ConnectedDisjointUnionsOpenUniquePart1
+  |- ∀α f f' s t a. pairwise DISJOINT f ∧ pairwise DISJOINT f' ∧
+         (∀s. s ∈ f ⇒ open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+         (∀s. s ∈ f' ⇒ open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+         UNIONS f = UNIONS f' ∧ s ∈ f ∧ t ∈ f' ∧ a ∈ s ∧ a ∈ t
+         ⇒ s ⊂ t
+
+ConnectedDisjointUnionsOpenUnique
+  |- ∀α f f'. pairwise DISJOINT f ∧ pairwise DISJOINT f' ∧
+         (∀s. s ∈ f ⇒ open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+         (∀s. s ∈ f' ⇒ open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+         UNIONS f = UNIONS f'
+         ⇒ f = f'
+
+ConnectedFromClosedUnionAndInter
+  |- ∀α s t. s ∪ t ⊂ topspace α ∧ closed_in α s ∧ closed_in α t ∧
+         Connected (subtopology α (s ∪ t)) ∧ Connected (subtopology α (s ∩ t))
+         ⇒ Connected (subtopology α s) ∧ Connected (subtopology α t)
+
+ConnectedFromOpenUnionAndInter
+  |- ∀α s t. s ∪ t ⊂ topspace α ∧ open_in α s ∧ open_in α t ∧
+         Connected (subtopology α (s ∪ t)) ∧ Connected (subtopology α (s ∩ t))
+         ⇒ Connected (subtopology α s) ∧ Connected (subtopology α t)
+
+ConnectedInduction
+  |- ∀α P Q s. s ⊂ topspace α ⇒ Connected (subtopology α s) ∧
+             (∀t a. open_in (subtopology α s) t ∧ a ∈ t
+                  ⇒ (∃z. z ∈ t ∧ P z)) ∧
+             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ a ∈ t ∧ 
+                           (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ∧ Q x ⇒ Q y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ∧ Q a ⇒ Q b)
+
+ConnectedEquivalenceRelationGen
+  |- ∀α P R s. s ⊂ topspace α ⇒ Connected (subtopology α s) ∧
+             (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+             (∀t a. open_in (subtopology α s) t ∧ a ∈ t ⇒ (∃z. z ∈ t ∧ P z)) ∧
+             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ a ∈ t ∧
+                           (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ⇒ R x y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b)
+
+ConnectedEquivalenceRelationGen
+  |- ∀α P R s. s ⊂ topspace α ⇒ Connected (subtopology α s) ∧
+             (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+             (∀t a. open_in (subtopology α s) t ∧ a ∈ t ⇒ (∃z. z ∈ t ∧ P z)) ∧
+             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ a ∈ t ∧
+                           (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ⇒ R x y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b)
+
+ConnectedInductionSimple
+  |- ∀α P s. s ⊂ topspace α ⇒ Connected (subtopology α s) ∧
+             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ a ∈ t ∧
+                           (∀x y. x ∈ t ∧ y ∈ t ∧ P x ⇒ P y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ⇒ P b)
+
+ConnectedEquivalenceRelation
+  |- ∀α R s. s ⊂ topspace α ⇒ Connected (subtopology α s) ∧
+             (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ 
+                           a ∈ t ∧ (∀x. x ∈ t ⇒ R a x)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ⇒ R a b)
 
 LimitPointOf
   |- ∀α s.  LimitPointOf α s =
@@ -1270,6 +1337,59 @@ CONNECTED_DIFF_OPEN_FROM_CLOSED
          connected u ∧ connected (t ━ s)
          ⇒ connected (u ━ s)
 
+CONNECTED_DISJOINT_UNIONS_OPEN_UNIQUE
+  |- ∀f f'. pairwise DISJOINT f ∧ pairwise DISJOINT f' ∧
+         (∀s. s ∈ f ⇒ open s ∧ connected s ∧ ¬(s = ∅)) ∧
+         (∀s. s ∈ f' ⇒ open s ∧ connected s ∧ ¬(s = ∅)) ∧
+         UNIONS f = UNIONS f'
+         ⇒ f = f'
+
+CONNECTED_FROM_CLOSED_UNION_AND_INTER
+  |- ∀s t. closed s ∧ closed t ∧ connected (s ∪ t) ∧ connected (s ∩ t)
+         ⇒ connected s ∧ connected t
+
+CONNECTED_FROM_OPEN_UNION_AND_INTER
+  |- ∀s t. open s ∧ open t ∧ connected (s ∪ t) ∧ connected (s ∩ t)
+         ⇒ connected s ∧ connected t
+
+CONNECTED_INDUCTION
+  |- ∀P Q s. connected s ∧
+         (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t 
+              ⇒ (∃z. z ∈ t ∧ P z)) ∧
+         (∀a. a ∈ s ⇒ (∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
+                       (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ∧ Q x ⇒ Q y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ∧ Q a ⇒ Q b)
+
+CONNECTED_EQUIVALENCE_RELATION_GEN_LEMMA
+  |- ∀P R s. connected s ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+         (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t
+              ⇒ (∃z. z ∈ t ∧ P z)) ∧
+         (∀a. a ∈ s ⇒ (∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
+                       (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ⇒ R x y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b)
+
+CONNECTED_EQUIVALENCE_RELATION_GEN
+  |- ∀P R s. connected s ∧
+         (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+         (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t
+              ⇒ (∃z. z ∈ t ∧ P z)) ∧
+         (∀a. a ∈ s ⇒ (∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
+                       (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ⇒ R x y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b)
+
+CONNECTED_INDUCTION_SIMPLE
+  |- ∀P s. connected s ∧ (∀a. a ∈ s 
+              ⇒ (∃t. open_in (subtopology euclidean s) t ∧
+                       a ∈ t ∧ (∀x y. x ∈ t ∧ y ∈ t ∧ P x ⇒ P y)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ⇒ P b)
+
+CONNECTED_EQUIVALENCE_RELATION
+  |- ∀R s. connected s ∧ 
+         (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+         (∀a. a ∈ s ⇒ (∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧ 
+                       (∀x. x ∈ t ⇒ R a x)))
+         ⇒ (∀a b. a ∈ s ∧ b ∈ s ⇒ R a b)
+
 limit_point_of_DEF
   |- ∀x s. x limit_point_of s ⇔ x ∈ LimitPointOf euclidean s
 
@@ -1521,7 +1641,8 @@ FRONTIER_UNION_SUBSET
   |- ∀s t. frontier (s ∪ t) ⊂ frontier s ∪ frontier t
 
 FRONTIER_INTERIORS
-  |- frontier s = (:real^N) ━ interior s ━ interior ((:real^N) ━ s)
+  |- frontier s =
+     (:real^∃338259) ━ interior s ━ interior ((:real^∃338259) ━ s)
 
 FRONTIER_FRONTIER_SUBSET
   |- ∀s. frontier (frontier s) ⊂ frontier s

@@ -508,20 +508,24 @@ let FROM_0 = prove
  (`from 0 = (:num)`,
   REWRITE_TAC[from; LE_0] THEN SET_TAC[]);;
 
+let IN_FROM = prove
+ (`!m n. m IN from n <=> n <= m`,
+  REWRITE_TAC[from; IN_ELIM_THM]);;
+
 let FROM_INTER_NUMSEG_GEN = prove
  (`!k m n. (from k) INTER (m..n) = (if m < k then k..n else m..n)`,
   REPEAT GEN_TAC THEN COND_CASES_TAC THEN POP_ASSUM MP_TAC THEN
   REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN
   ARITH_TAC);;
 
+let FROM_INTER_NUMSEG_MAX = prove
+ (`!m n p. from p INTER (m..n) = (MAX p m..n)`,
+  REWRITE_TAC[EXTENSION; IN_INTER; IN_NUMSEG; IN_FROM] THEN ARITH_TAC);;
+
 let FROM_INTER_NUMSEG = prove
  (`!k n. (from k) INTER (0..n) = k..n`,
   REWRITE_TAC[from; IN_ELIM_THM; IN_INTER; IN_NUMSEG; EXTENSION] THEN
   ARITH_TAC);;
-
-let IN_FROM = prove
- (`!m n. m IN from n <=> n <= m`,
-  REWRITE_TAC[from; IN_ELIM_THM]);;
 
 let INFINITE_FROM = prove
  (`!n. INFINITE(from n)`,

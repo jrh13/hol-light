@@ -206,7 +206,7 @@ let OPEN_IN_INTERS = theorem `;
     MATCH_MP_TAC FINITE_INDUCT;
     rewrite INTERS_INSERT NOT_INSERT_EMPTY FORALL_IN_INSERT;
     intro_TAC ∀x s, H1, xWorks sWorks;
-    assume ¬(s = ∅) [Nonempty] by simplify INTERS_0 INTER_UNIV xWorks;
+    assume ¬(s = ∅)     [Nonempty] by simplify INTERS_0 INTER_UNIV xWorks;
     fol xWorks Nonempty H1 sWorks OPEN_IN_INTER;
   qed;
 `;;
@@ -788,7 +788,8 @@ let ConnectedSubtopology = theorem `;
 let ConnectedSubtopology_ALT = theorem `;
   ∀α s. s ⊂ topspace α  ⇒
     (Connected (subtopology α s)  ⇔
-    ∀e1 e2. open_in α e1  ∧  open_in α e2  ∧ s ⊂ e1 ∪ e2  ∧  e1 ∩ e2 ∩ s = ∅
+    ∀e1 e2. open_in α e1  ∧  open_in α e2  ∧
+    s ⊂ e1 ∪ e2  ∧  e1 ∩ e2 ∩ s = ∅
     ⇒ e1 ∩ s = ∅  ∨  e2 ∩ s = ∅)
 
   proof     simplify ConnectedSubtopology;     fol;     qed;
@@ -821,6 +822,16 @@ let ConnectedClosedSubtopology = theorem `;
     simplify DIFF_REFL SUBSET_DIFF e12Top OPEN_IN_CLOSED_IN;
     set H1 e12Exist;
   qed;
+`;;
+
+let ConnectedClosedSubtopology_ALT = theorem `;
+  ∀α s. s ⊂ topspace α  ⇒
+    (Connected (subtopology α s)  ⇔
+    ∀e1 e2. closed_in α e1  ∧  closed_in α e2  ∧
+    s ⊂ e1 ∪ e2  ∧  e1 ∩ e2 ∩ s = ∅
+     ⇒ e1 ∩ s = ∅  ∨  e2 ∩ s = ∅)
+
+  proof     simplify ConnectedClosedSubtopology;     fol;     qed;
 `;;
 
 let ConnectedClopen = theorem `;
@@ -980,6 +991,244 @@ let ConnectedDiffOpenFromClosed = theorem `;
   qed;
 `;;
 
+let ConnectedDisjointUnionsOpenUniquePart1 = theorem `;
+  ∀α f f' s t a.  pairwise DISJOINT f ∧ pairwise DISJOINT f' ∧
+    (∀s. s ∈ f  ⇒  open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+    (∀s. s ∈ f'  ⇒  open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+    UNIONS f = UNIONS f' ∧ s ∈ f ∧ t ∈ f' ∧ a ∈ s ∧ a ∈ t
+     ⇒ s ⊂ t
+
+  proof
+    intro_TAC ∀α f f' s t a, pDISJf pDISJf' fConn f'Conn Uf_Uf' sf tf' a_s a_t;
+    ∀s.  s ∈ f ⇒ s ⊂ topspace α     [fTop] by fol fConn OPEN_IN_SUBSET;
+    ∀s.  s ∈ f' ⇒ s ⊂ topspace α     [f'Top] by fol f'Conn OPEN_IN_SUBSET;
+    rewrite SUBSET;
+    X_genl_TAC b;     intro_TAC bs;
+    assume ¬(b ∈ t)     [Contradiction] by fol;
+    ∃e1 e2.  open_in α e1 ∧ open_in α e2 ∧ e1 ∩ e2 ∩ s = ∅ ∧
+     s ⊂ e1 ∪ e2 ∧ ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅)     []
+     proof
+       exists_TAC t;     exists_TAC UNIONS (f' DELETE t);
+       simplify tf' f'Conn IN_DELETE OPEN_IN_UNIONS;
+       conj_tac     [Right] by set sf Uf_Uf' a_s a_t sf bs Contradiction;
+       MATCH_MP_TAC SET_RULE [∀s t u. t ∩ u = ∅ ⇒ t ∩ u ∩ s = ∅];
+       rewrite INTER_UNIONS EMPTY_UNIONS FORALL_IN_GSPEC;
+       rewrite IN_DELETE GSYM DISJOINT;
+       fol pDISJf' tf' pairwise;
+     qed;
+     fol - sf fTop fConn ConnectedSubtopology;
+  qed;
+`;;
+
+let ConnectedDisjointUnionsOpenUnique = theorem `;
+  ∀α f f'.  pairwise DISJOINT f ∧ pairwise DISJOINT f' ∧
+    (∀s. s ∈ f  ⇒  open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+    (∀s. s ∈ f'  ⇒  open_in α s ∧ Connected (subtopology α s) ∧ ¬(s = ∅)) ∧
+    UNIONS f = UNIONS f'
+    ⇒ f = f'
+
+  proof
+    MATCH_MP_TAC MESON [SUBSET_ANTISYM]
+    [(∀α s t. P α s t ⇒ P α t s) ∧ (∀α s t. P α s t ⇒ s ⊂ t)
+    ⇒ (∀α s t. P α s t ⇒ s = t)];
+    conj_tac     [Left] by fol;
+    intro_TAC ∀α f f', pDISJf pDISJf' fConn f'Conn Uf_Uf';
+    rewrite SUBSET;     X_genl_TAC s;     intro_TAC sf;
+    consider t a such that
+    t ∈ f' ∧ a ∈ s ∧ a ∈ t     [taExist] by set sf fConn Uf_Uf';
+    MP_TAC ISPECL [α; f; f'; s; t] ConnectedDisjointUnionsOpenUniquePart1;
+    MP_TAC ISPECL [α; f'; f; t; s] ConnectedDisjointUnionsOpenUniquePart1;
+    fol pDISJf pDISJf' fConn f'Conn Uf_Uf' sf taExist SUBSET_ANTISYM taExist;
+  qed;
+`;;
+
+let ConnectedFromClosedUnionAndInter = theorem `;
+  ∀α s t.  s ∪ t ⊂ topspace α ∧ closed_in α s ∧ closed_in α t ∧
+    Connected (subtopology α (s ∪ t)) ∧ Connected (subtopology α (s ∩ t))
+    ⇒ Connected (subtopology α s) ∧ Connected (subtopology α t)
+
+  proof
+    MATCH_MP_TAC MESON [] [(∀α s t. P α s t ⇒ P α t s) ∧
+    (∀α s t. P α s t ⇒ Q α s) ⇒ ∀α s t. P α s t ⇒ Q α s ∧ Q α t];
+    conj_tac     [Left] by fol UNION_COMM INTER_COMM;
+    ONCE_REWRITE_TAC TAUT
+    [∀a b c d e f.  a ∧ b ∧ c ∧ d ∧ e ⇒ f  ⇔  a ∧ b ∧ c ∧ e ∧ ¬f ⇒ ¬d];
+    intro_TAC ∀α s t, stUnionTop sClosed tClosed stInterConn  NOTsConn;
+    s ⊂ topspace α ∧ t ⊂ topspace α ∧ s ∩ t ⊂ topspace α     [stTop] by fol stUnionTop UNION_SUBSET INTER_SUBSET SUBSET_TRANS;
+    simplify stUnionTop ConnectedClosedSubtopology;
+    consider u v such that closed_in α u ∧ closed_in α v ∧
+    ¬(u = ∅) ∧ ¬(v = ∅) ∧ u ∪ v = s ∧ u ∩ v = ∅     [sDisConn]
+    proof
+      MP_TAC ISPECL [α; s] ConnectedClosedSet;
+      simplify stTop sClosed NOTsConn;
+    qed;
+    s ∩ t ⊂ u ∪ v  ∧  u ∩ v ∩ (s ∩ t) = ∅     [stuvProps] by set sDisConn;
+    u ∩ (s ∩ t) = ∅  ∨  v ∩ (s ∩ t) = ∅     [] by fol stTop stInterConn sDisConn - ConnectedClosedSubtopology_ALT;
+    case_split vstEmpty | ustEmpty by fol -;
+    suppose v ∩ (s ∩ t) = ∅;
+      exists_TAC t ∪ u;     exists_TAC v;
+      simplify tClosed sDisConn CLOSED_IN_UNION;
+      set stuvProps sDisConn vstEmpty;
+    end;
+    suppose u ∩ (s ∩ t) = ∅;
+      exists_TAC t ∪ v;     exists_TAC u;
+      simplify tClosed sDisConn CLOSED_IN_UNION;
+      set stuvProps sDisConn ustEmpty;
+    end;
+  qed;
+`;;
+
+let ConnectedFromOpenUnionAndInter = theorem `;
+  ∀α s t.  s ∪ t ⊂ topspace α ∧ open_in α s ∧ open_in α t ∧
+    Connected (subtopology α (s ∪ t)) ∧ Connected (subtopology α (s ∩ t))
+    ⇒ Connected (subtopology α s) ∧ Connected (subtopology α t)
+
+  proof
+    MATCH_MP_TAC MESON [] [(∀α s t. P α s t ⇒ P α t s) ∧
+    (∀α s t. P α s t ⇒ Q α s) ⇒ ∀α s t. P α s t ⇒ Q α s ∧ Q α t];
+    conj_tac     [Left] by fol UNION_COMM INTER_COMM;
+    ONCE_REWRITE_TAC TAUT
+    [∀a b c d e f.  a ∧ b ∧ c ∧ d ∧ e ⇒ f  ⇔  a ∧ b ∧ c ∧ e ∧ ¬f ⇒ ¬d];
+    intro_TAC ∀α s t, stUnionTop sOpen tOpen stInterConn  NOTsConn;
+    s ⊂ topspace α ∧ t ⊂ topspace α ∧ s ∩ t ⊂ topspace α     [stTop] by fol stUnionTop UNION_SUBSET INTER_SUBSET SUBSET_TRANS;
+    simplify stUnionTop ConnectedSubtopology;
+    consider u v such that open_in α u ∧ open_in α v ∧
+    ¬(u = ∅) ∧ ¬(v = ∅) ∧ u ∪ v = s ∧ u ∩ v = ∅     [sDisConn]
+    proof
+      MP_TAC ISPECL [α; s] ConnectedOpenSet;
+      simplify stTop sOpen NOTsConn;
+    qed;
+    s ∩ t ⊂ u ∪ v  ∧  u ∩ v ∩ (s ∩ t) = ∅     [stuvProps] by set sDisConn;
+    u ∩ (s ∩ t) = ∅  ∨  v ∩ (s ∩ t) = ∅     [] by fol stTop stInterConn sDisConn - ConnectedSubtopology_ALT;
+    case_split vstEmpty | ustEmpty by fol -;
+    suppose v ∩ (s ∩ t) = ∅;
+      exists_TAC t ∪ u;     exists_TAC v;
+      simplify tOpen sDisConn OPEN_IN_UNION;
+      set stuvProps sDisConn vstEmpty;
+    end;
+    suppose u ∩ (s ∩ t) = ∅;
+      exists_TAC t ∪ v;     exists_TAC u;
+      simplify tOpen sDisConn OPEN_IN_UNION;
+      set stuvProps sDisConn ustEmpty;
+    end;
+  qed;
+`;;
+
+let ConnectedInduction = theorem `;
+  ∀α P Q s.  s ⊂ topspace α  ⇒  Connected (subtopology α s) ∧
+    (∀t a. open_in (subtopology α s) t ∧ a ∈ t  ⇒  ∃z. z ∈ t ∧ P z) ∧
+    (∀a. a ∈ s  ⇒  ∃t. open_in (subtopology α s) t ∧ a ∈ t ∧
+    ∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ∧ Q x ⇒ Q y)
+    ⇒ ∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ∧ Q a ⇒ Q b
+
+  proof
+    intro_TAC ∀α P Q s, sTop, sConn atOpenImplies_ztPz asImplies_atOpen_xytPxPyQxasImpliesQy, ∀a b, aINs bINs Pa Pb Qa;
+    assume ¬Q b     [NotQb] by fol;
+    ¬Connected (subtopology α s)     []
+    proof
+      simplify sTop ConnectedOpenIn;
+      exists_TAC
+      {b | ∃t. open_in (subtopology α s) t ∧ b ∈ t ∧ ∀x. x ∈ t ∧ P x ⇒ Q x};
+      exists_TAC
+      {b | ∃t. open_in (subtopology α s) t ∧ b ∈ t ∧ ∀x. x ∈ t ∧ P x ⇒ ¬(Q x)};
+      conj_tac     [Left]
+      proof
+        ONCE_REWRITE_TAC OPEN_IN_SUBOPEN;
+        X_genl_TAC c;
+        rewrite IN_ELIM_THM;
+        MATCH_MP_TAC MONO_EXISTS;
+        set atOpenImplies_ztPz;
+      qed;
+      conj_tac     [Left]
+      proof
+        ONCE_REWRITE_TAC OPEN_IN_SUBOPEN;
+        X_genl_TAC c;
+        rewrite IN_ELIM_THM;
+        MATCH_MP_TAC MONO_EXISTS;
+        set atOpenImplies_ztPz;
+      qed;
+      conj_tac     [Left]
+      proof
+        rewrite SUBSET IN_ELIM_THM IN_UNION;
+        X_genl_TAC c;     intro_TAC cs;
+        MP_TAC SPECL [c] asImplies_atOpen_xytPxPyQxasImpliesQy;
+        set cs;
+      qed;
+      conj_tac     [Right] by set aINs bINs Qa NotQb asImplies_atOpen_xytPxPyQxasImpliesQy Pa Pb;
+      rewrite EXTENSION IN_INTER NOT_IN_EMPTY IN_ELIM_THM;
+      X_genl_TAC c;
+      ONCE_REWRITE_TAC TAUT [∀p. ¬p  ⇔  p ⇒ F];
+      intro_TAC Qx NotQx;
+      consider t such that
+      open_in (subtopology α s) t ∧ c ∈ t ∧ (∀x. x ∈ t ∧ P x ⇒ Q x)     [tExists] by fol Qx;
+      consider u such that
+      open_in (subtopology α s) u ∧ c ∈ u ∧ (∀x. x ∈ u ∧ P x ⇒ ¬Q x)     [uExists] by fol NotQx;
+      MP_TAC SPECL [t ∩ u; c] atOpenImplies_ztPz;
+      simplify tExists uExists OPEN_IN_INTER;
+      set tExists uExists;
+    qed;
+    fol sConn -;
+  qed;
+`;;
+
+let ConnectedEquivalenceRelationGen = theorem `;
+  ∀α P R s.  s ⊂ topspace α  ⇒  Connected (subtopology α s) ∧
+        (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+        (∀t a. open_in (subtopology α s) t ∧ a ∈ t
+               ⇒ ∃z. z ∈ t ∧ P z) ∧
+        (∀a. a ∈ s
+             ⇒ ∃t. open_in (subtopology α s) t ∧ a ∈ t ∧
+                     ∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ⇒ R x y)
+        ⇒ ∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b
+
+  proof
+    intro_TAC ∀α P R s, sTop, sConn Rtrans atOpenImplies_ztPz asImplies_atOpen_xytPxPyImpliesRxy, ∀a b, aINs bINs Pa Pb;
+    ∀a.  a ∈ s ∧ P a  ⇒  ∀b c. b ∈ s ∧ c ∈ s ∧ P b ∧ P c ∧ R a b ⇒ R a c     []
+    proof
+      intro_TAC ∀[p/a], pINs Pp;
+      MP_TAC ISPECL [α; P; λx. R p x; s] ConnectedInduction;
+      rewrite sTop sConn atOpenImplies_ztPz;
+      fol asImplies_atOpen_xytPxPyImpliesRxy Rtrans;
+    qed;
+    fol aINs Pa bINs Pb asImplies_atOpen_xytPxPyImpliesRxy -;
+  qed;
+`;;
+
+let ConnectedInductionSimple = theorem `;
+  ∀α P s.  s ⊂ topspace α  ⇒
+        Connected (subtopology α s) ∧
+        (∀a. a ∈ s
+             ⇒ ∃t. open_in (subtopology α s) t ∧ a ∈ t ∧
+                     ∀x y. x ∈ t ∧ y ∈ t ∧ P x ⇒ P y)
+        ⇒ ∀a b. a ∈ s ∧ b ∈ s ∧ P a ⇒ P b
+
+  proof
+    intro_TAC ∀α P s, sTop;
+    MP_TAC ISPECL [α; (λx. T ∨ x ∈ s); P; s] ConnectedInduction;
+    fol sTop;
+  qed;
+`;;
+
+let ConnectedEquivalenceRelation = theorem `;
+  ∀α R s.  s ⊂ topspace α  ⇒  Connected (subtopology α s)∧
+    (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+    (∀a. a ∈ s ⇒
+    ∃t. open_in (subtopology α s) t ∧ a ∈ t ∧ ∀x. x ∈ t ⇒ R a x)
+    ⇒ ∀a b. a ∈ s ∧ b ∈ s ⇒ R a b
+
+  proof
+    intro_TAC ∀α R s, sTop, sConn Rcomm Rtrans asImplies_atOpen_xtImpliesRax;
+    ∀a. a ∈ s ⇒ ∀b c. b ∈ s ∧ c ∈ s ∧ R a b ⇒ R a c     []
+    proof
+      intro_TAC ∀[p/a], pINs;
+      MP_TAC ISPECL [α; λx. R p x; s] ConnectedInductionSimple;
+       rewrite sTop sConn;
+      fol asImplies_atOpen_xtImpliesRax Rcomm Rtrans;
+    qed;
+    fol asImplies_atOpen_xtImpliesRax -;
+  qed;
+`;;
+
 let LimitPointOf = NewDefinition `;
   ∀α s. LimitPointOf α s  =  {x | s ⊂ topspace α ∧ x ∈ topspace α ∧
     ∀t. x ∈ t ∧ open_in α t  ⇒  ∃y. ¬(y = x) ∧ y ∈ s ∧ y ∈ t}`;;
@@ -998,7 +1247,7 @@ let NotLimitPointOf = theorem `;
   proof
     ONCE_REWRITE_TAC TAUT [∀a b. (a ⇔ b)  ⇔  (¬a  ⇔ ¬b)];
     simplify ∉ NOT_EXISTS_THM IN_LimitPointOf
-     TAUT [∀a b. ¬(a ∧ b ∧ c)  ⇔  a ∧ b ⇒ ¬c] GSYM MEMBER_NOT_EMPTY IN_INTER  IN_DIFF IN_SING;
+    TAUT [∀a b. ¬(a ∧ b ∧ c)  ⇔  a ∧ b ⇒ ¬c] GSYM MEMBER_NOT_EMPTY IN_INTER  IN_DIFF IN_SING;
      fol;
   qed;
 `;;
@@ -1047,7 +1296,7 @@ let LimitPointUnion = theorem `;
     s ⊂ topspace α ∧ t ⊂ topspace α     [stTop] by fol H1 UNION_SUBSET;
     rewrite EXTENSION IN_UNION;
     intro_TAC ∀x;
-    assume x ∈ topspace α [xTop] by fol H1 stTop IN_LimitPointOf;    
+    assume x ∈ topspace α     [xTop] by fol H1 stTop IN_LimitPointOf;
     ONCE_REWRITE_TAC TAUT [∀a b. (a ⇔ b)  ⇔  (¬a  ⇔ ¬b)];
     simplify GSYM NOTIN DE_MORGAN_THM H1 stTop NotLimitPointOf xTop;
     eq_tac     [Left] by set;
@@ -1171,7 +1420,7 @@ let InteriorFiniteInters = theorem `;
     MATCH_MP_TAC FINITE_INDUCT;
     rewrite INTERS_INSERT IMAGE_CLAUSES IN_INSERT;
     intro_TAC ∀x s, sCase, xsNonempty, sSetOfSubsets;
-    assume ¬(s = ∅) [sNonempty] by simplify INTERS_0 INTER_UNIV IMAGE_CLAUSES;
+    assume ¬(s = ∅)     [sNonempty] by simplify INTERS_0 INTER_UNIV IMAGE_CLAUSES;
     simplify INTERS_SUBSET  sSetOfSubsets InteriorInter sNonempty sSetOfSubsets sCase;
   qed;
 `;;
@@ -1658,7 +1907,8 @@ let NowhereDense = theorem `;
       X_genl_TAC t;
       intro_TAC tOpen tNonempty;
       exists_TAC t ━ Closure α s;
-      fol tOpen H1 ClosedClosure OPEN_IN_DIFF tOpen tNonempty H2 SUBSET_DIFF H1 ClosureSubset SET_RULE [∀s t A.  s ⊂ t  ⇒  (A ━ t) ∩ s = ∅];
+      fol tOpen H1 ClosedClosure OPEN_IN_DIFF tOpen tNonempty H2 SUBSET_DIFF H1 ClosureSubset
+      SET_RULE [∀s t A.  s ⊂ t  ⇒  (A ━ t) ∩ s = ∅];
     qed;
     intro_TAC H2;
     X_genl_TAC t;
@@ -1683,7 +1933,7 @@ let InteriorClosureInterOpen = theorem `;
     rewrite SET_RULE [∀s t u. u = s ∩ t  ⇔  s ∩ t ⊂ u ∧ u ⊂ s ∧ u ⊂ t];
     simplify sTop tTop INTER_SUBSET SubsetClosure ClosureTopspace SubsetInterior;
     s ∩ t ⊂ topspace α     [stTop] by fol INTER_SUBSET sTop SUBSET_TRANS;
-    Closure α s ⊂ topspace α  ∧  Closure α t ⊂ topspace α  [CsCtTop] by fol sTop tTop ClosureTopspace;
+    Closure α s ⊂ topspace α  ∧  Closure α t ⊂ topspace α     [CsCtTop] by fol sTop tTop ClosureTopspace;
     Closure α s ∩ Closure α t ⊂ topspace α     [CsIntCtTop] by fol - INTER_SUBSET SUBSET_TRANS;
     Closure α s ━ s ∪ Closure α t ━ t  ⊂  topspace α     [Cs_sUNIONCt_tTop] by fol CsCtTop SUBSET_DIFF UNION_SUBSET SUBSET_TRANS;
     simplify CsCtTop GSYM InteriorInter;
@@ -1784,7 +2034,7 @@ let FrontierSubsetEq = theorem `;
 
   proof
     intro_TAC ∀α s, sTop;
-    eq_tac [Right] by fol FrontierSubsetClosed;
+    eq_tac     [Right] by fol FrontierSubsetClosed;
     simplify sTop Frontier_THM ;
     fol sTop InteriorSubset SET_RULE [∀s t u. s ━ t ⊂ u ∧ t ⊂ u ⇒ s ⊂ u] ClosureSubsetEq;
   qed;
@@ -1839,7 +2089,7 @@ let FrontierUnionSubset = theorem `;
 
   proof
     intro_TAC ∀α s t, H1;
-    s ⊂ topspace α ∧ t ⊂ topspace α  [stTop] by fol H1 SUBSET_UNION SUBSET_TRANS;
+    s ⊂ topspace α ∧ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION SUBSET_TRANS;
     simplify H1 - GSYM FrontierComplement DIFF_UNION;
     topspace α ━ s ∪ topspace α ━ t ⊂ topspace α     [] by fol SUBSET_DIFF UNION_SUBSET SUBSET_TRANS;
     fol - FrontierInterSubset;
@@ -1893,11 +2143,11 @@ let UnionFrontierPart1 = theorem `;
   proof
     intro_TAC ∀α s t, H1;
     s ⊂ topspace α ∧ t ⊂ topspace α ∧ s ∩ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
-    rewrite SUBSET IN_INTER;     
-    X_genl_TAC a;     intro_TAC aFs aIt;   
+    rewrite SUBSET IN_INTER;
+    X_genl_TAC a;     intro_TAC aFs aIt;
     consider O such that
     open_in α O ∧ a ∈ O ∧ O ⊂ t     [aOs] by fol aIt stTop IN_Interior;
-    a ∈ topspace α     [] by fol stTop aFs FrontierTopspace SUBSET; 
+    a ∈ topspace α     [] by fol stTop aFs FrontierTopspace SUBSET;
     simplify stTop FrontierStraddle -;
     X_genl_TAC P;     intro_TAC Popen aP;
     a ∈ O ∩ P ∧ open_in α (O ∩ P)     [aOPopen] by fol aOs aP IN_INTER Popen OPEN_IN_INTER;
@@ -1909,25 +2159,25 @@ let UnionFrontierPart1 = theorem `;
 
 let UnionFrontierPart2 = theorem `;
   ∀α s t.  s ∪ t ⊂ topspace α  ⇒
-    Frontier α s ━ Frontier α t  ⊂  
-    Frontier α (s ∩ t) ∪ Frontier α (s ∪ t) 
+    Frontier α s ━ Frontier α t  ⊂
+    Frontier α (s ∩ t) ∪ Frontier α (s ∪ t)
 
   proof
     intro_TAC ∀α s t, stTop;
-    s ⊂ topspace α ∧ t ⊂ topspace α [] by fol stTop SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
-    Frontier α s ━ Frontier α t = Frontier α s ∩ Interior α t  ∪  
-    Frontier α (topspace α ━ s) ∩ Interior α (topspace α ━ t) [] by fol - FrontierTopspace FrontierInteriors FrontierComplement
+    s ⊂ topspace α ∧ t ⊂ topspace α     [] by fol stTop SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
+    Frontier α s ━ Frontier α t = Frontier α s ∩ Interior α t  ∪
+    Frontier α (topspace α ━ s) ∩ Interior α (topspace α ━ t)     [] by fol - FrontierTopspace FrontierInteriors FrontierComplement
     SET_RULE [∀A s t u. s ⊂ A  ⇒  s ━ (A ━ t ━ u) = s ∩ t ∪ s ∩ u];
-    Frontier α s ━ Frontier α t  ⊂  
-    Frontier α (s ∩ t) ∪  Frontier α (topspace α ━ (s ∪ t)) [] by simplify - stTop UnionFrontierPart1 UNION_TENSOR SUBSET_DIFF UNION_SUBSET DIFF_UNION;
+    Frontier α s ━ Frontier α t  ⊂
+    Frontier α (s ∩ t) ∪  Frontier α (topspace α ━ (s ∪ t))     [] by simplify - stTop UnionFrontierPart1 UNION_TENSOR SUBSET_DIFF UNION_SUBSET DIFF_UNION;
     fol - stTop FrontierComplement;
   qed;
 `;;
 
 let UnionFrontierPart3 = theorem `;
   ∀α s t a.  s ∪ t ⊂ topspace α  ⇒
-    a ∈ Frontier α s ∧ a ∉ Frontier α t  ⇒ 
-    a ∈ Frontier α (s ∩ t)  ∨  a ∈ Frontier α (s ∪ t) 
+    a ∈ Frontier α s ∧ a ∉ Frontier α t  ⇒
+    a ∈ Frontier α (s ∩ t)  ∨  a ∈ Frontier α (s ∪ t)
 
   proof
     intro_TAC ∀α s t a, H1;
@@ -1943,7 +2193,7 @@ let UnionFrontier = theorem `;
 
   proof
     intro_TAC ∀α s t, H1;
-    s ⊂ topspace α ∧ t ⊂ topspace α [stTop] by fol H1 SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
+    s ⊂ topspace α ∧ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
     rewrite GSYM SUBSET_ANTISYM_EQ;
     conj_tac     [Right] by fol SET_RULE [∀s t. s ∩ t ⊂ s ∪ t] stTop FrontierUnionSubset UNION_SUBSET FrontierInterSubset;
     rewrite SUBSET IN_INTER IN_UNION;
@@ -1952,21 +2202,21 @@ let UnionFrontier = theorem `;
 `;;
 
 let ConnectedInterFrontier = theorem `;
-  ∀α s t.  s ∪ t ⊂ topspace α  ⇒ 
+  ∀α s t.  s ∪ t ⊂ topspace α  ⇒
     Connected (subtopology α s) ∧ ¬(s ∩ t = ∅) ∧ ¬(s ━ t = ∅)
     ⇒ ¬(s ∩ Frontier α t = ∅)
 
   proof
     intro_TAC ∀α s t, H1;
-    s ⊂ topspace α ∧ t ⊂ topspace α  [stTop] by fol H1 SUBSET_UNION SUBSET_TRANS;
+    s ⊂ topspace α ∧ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION SUBSET_TRANS;
     ONCE_REWRITE_TAC TAUT [∀a b c d. a ∧ b ∧ c ⇒ ¬d  ⇔  b ∧ c ∧ d ⇒ ¬a];
     intro_TAC sINTERtNonempty sDIFFtNonempty sInterFtEmpty;
     simplify stTop ConnectedOpenIn;
     exists_TAC s ∩ Interior α t;
     exists_TAC s ∩ Interior α (topspace α  ━  t);
     simplify stTop SUBSET_DIFF OpenInterior OpenInOpenInter;
-    Interior α t ⊂ t  ∧  Interior α (topspace α ━ t) ⊂ topspace α ━ t [IntSubs] by fol stTop SUBSET_DIFF InteriorSubset;
-    s  ⊂  Interior α t ∪ Interior α (topspace α ━ t) [] by fol stTop sInterFtEmpty FrontierInteriors DOUBLE_DIFF_UNION COMPLEMENT_DISJOINT;
+    Interior α t ⊂ t  ∧  Interior α (topspace α ━ t) ⊂ topspace α ━ t     [IntSubs] by fol stTop SUBSET_DIFF InteriorSubset;
+    s  ⊂  Interior α t ∪ Interior α (topspace α ━ t)     [] by fol stTop sInterFtEmpty FrontierInteriors DOUBLE_DIFF_UNION COMPLEMENT_DISJOINT;
     set sDIFFtNonempty sINTERtNonempty IntSubs -;
   qed;
 `;;
@@ -1977,7 +2227,7 @@ let InteriorClosedEqEmptyAsFrontier = theorem `;
 
   proof
     intro_TAC ∀α s, sTop;
-    eq_tac [Right] by fol OPEN_IN_SUBSET FrontierClosed InteriorFrontierEmpty;
+    eq_tac     [Right] by fol OPEN_IN_SUBSET FrontierClosed InteriorFrontierEmpty;
     intro_TAC sClosed sEmptyInt;
     exists_TAC topspace α ━ s;
     fol sClosed closed_in sTop FrontierComplement Frontier_THM sEmptyInt DIFF_EMPTY ClosureClosed;
@@ -1990,7 +2240,7 @@ let ClosureUnionFrontier = theorem `;
   proof
     intro_TAC ∀α s, sTop;
     simplify sTop Frontier_THM;
-    s ⊂ Closure α s ∧ Interior α s ⊂ s [] by fol sTop ClosureSubset InteriorSubset;
+    s ⊂ Closure α s ∧ Interior α s ⊂ s     [] by fol sTop ClosureSubset InteriorSubset;
     set -;
   qed;
 `;;
@@ -2009,21 +2259,21 @@ let SetDiffFrontier = theorem `;
   proof
     intro_TAC ∀α s, sTop;
     simplify sTop Frontier_THM;
-    s ⊂ Closure α s ∧ Interior α s ⊂ s [] by fol sTop ClosureSubset InteriorSubset;
+    s ⊂ Closure α s ∧ Interior α s ⊂ s     [] by fol sTop ClosureSubset InteriorSubset;
     set -;
   qed;
 `;;
 
 let FrontierInterSubsetInter = theorem `;
-  ∀α s t.  s ∪ t ⊂ topspace α  ⇒  
-    Frontier α (s ∩ t)  ⊂  
+  ∀α s t.  s ∪ t ⊂ topspace α  ⇒
+    Frontier α (s ∩ t)  ⊂
     Closure α s ∩ Frontier α t  ∪  Frontier α s ∩ Closure α t
 
   proof
     intro_TAC ∀α s t, H1;
     s ⊂ topspace α ∧ t ⊂ topspace α ∧ s ∩ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
     simplify H1 stTop Frontier_THM InteriorInter;
-    Closure α (s ∩ t) ⊂ Closure α s ∩ Closure α t [] by fol stTop ClosureInterSubset;
+    Closure α (s ∩ t) ⊂ Closure α s ∩ Closure α t     [] by fol stTop ClosureInterSubset;
     set -;
   qed;
 `;;
@@ -2035,15 +2285,15 @@ let FrontierUnionPart1 = theorem `;
   proof
     intro_TAC ∀α s t, H1, CsCtDisjoint;
     s ⊂ topspace α ∧ t ⊂ topspace α ∧ s ∩ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
-    Frontier α s ∩ Interior α (s ∪ t)  ⊂ topspace α [FIstTop] by fol stTop FrontierTopspace INTER_SUBSET SUBSET_TRANS;
-    Frontier α s ∩ Interior α (s ∪ t) ∩ (topspace α ━ Closure α t) = ∅ []
+    Frontier α s ∩ Interior α (s ∪ t)  ⊂ topspace α     [FIstTop] by fol stTop FrontierTopspace INTER_SUBSET SUBSET_TRANS;
+    Frontier α s ∩ Interior α (s ∪ t) ∩ (topspace α ━ Closure α t) = ∅     []
     proof
       simplify stTop GSYM InteriorComplement H1 SUBSET_DIFF InteriorInter Frontier_THM;
-      Interior α (s ∪ t) ∩ Interior α (topspace α ━ t)  ⊂ Interior α s [] by
+      Interior α (s ∪ t) ∩ Interior α (topspace α ━ t)  ⊂ Interior α s     [] by
       fol SET_RULE [∀A s t. s ⊂ A  ⇒  (s ∪ t) ∩ (A ━ t) = s ━ t] H1 SUBSET_DIFF InteriorInter stTop SubsetInterior;
       set -;
     qed;
-    Frontier α s ∩ Interior α (s ∪ t)  ⊂  Closure α t [] by fol H1 CsCtDisjoint - FIstTop COMPLEMENT_DISJOINT INTER_ACI;
+    Frontier α s ∩ Interior α (s ∪ t)  ⊂  Closure α t     [] by fol H1 CsCtDisjoint - FIstTop COMPLEMENT_DISJOINT INTER_ACI;
     fol SET_RULE [∀ s t F I. s ∩ t = ∅ ∧ F ⊂ s ∧ F ∩ I ⊂ t  ⇒  F ∩ I = ∅] CsCtDisjoint stTop Frontier_THM SUBSET_DIFF  -;
   qed;
 `;;
@@ -2057,9 +2307,9 @@ let FrontierUnion = theorem `;
     s ⊂ topspace α ∧ t ⊂ topspace α ∧ s ∩ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
     MATCH_MP_TAC SUBSET_ANTISYM;
     simplify H1 FrontierUnionSubset Frontier_THM;
-    Frontier α s ∩ Interior α (s ∪ t)  =  ∅  ∧  
-    Frontier α t ∩ Interior α (s ∪ t)  =  ∅ [usePart1] by fol H1 CsCtDisjoint FrontierUnionPart1 INTER_COMM UNION_COMM;
-    Frontier α s ⊂ Closure α (s ∪ t)  ∧  Frontier α t ⊂ Closure α (s ∪ t) [] by fol stTop Frontier_THM SUBSET_DIFF H1 SUBSET_UNION SubsetClosure SUBSET_TRANS;
+    Frontier α s ∩ Interior α (s ∪ t)  =  ∅  ∧
+    Frontier α t ∩ Interior α (s ∪ t)  =  ∅     [usePart1] by fol H1 CsCtDisjoint FrontierUnionPart1 INTER_COMM UNION_COMM;
+    Frontier α s ⊂ Closure α (s ∪ t)  ∧  Frontier α t ⊂ Closure α (s ∪ t)     [] by fol stTop Frontier_THM SUBSET_DIFF H1 SUBSET_UNION SubsetClosure SUBSET_TRANS;
     set usePart1 -;
   qed;
 `;;
@@ -2102,7 +2352,7 @@ let OPEN_INTER = theorem `;
 `;;
 
 let OPEN_UNIONS = theorem `;
-  (∀s. s ∈ f ⇒ open s)  ⇒  open(UNIONS f)
+  (∀s. s ∈ f ⇒ open s)  ⇒  open (UNIONS f)
   by fol open_def IN_UNIONS`;;
 
 let IstopologyEuclidean = theorem `;
@@ -2198,7 +2448,7 @@ let CLOSED_FORALL = theorem `;
 
   proof
     intro_TAC ∀Q;
-    (∀a. T ⇒ closed {x | Q a x}) ⇒ closed {x | ∀a. T ⇒ Q a x} [] by simplify CLOSED_FORALL_IN;
+    (∀a. T ⇒ closed {x | Q a x}) ⇒ closed {x | ∀a. T ⇒ Q a x}     [] by simplify CLOSED_FORALL_IN;
     MP_TAC -;
     fol;
   qed;
@@ -2687,6 +2937,122 @@ let CONNECTED_DIFF_OPEN_FROM_CLOSED = theorem `;
     ⇒  connected(u ━ s)
   by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN connected_DEF OPEN_IN CLOSED_IN ConnectedDiffOpenFromClosed`;;
 
+let CONNECTED_DISJOINT_UNIONS_OPEN_UNIQUE = theorem `;
+  ∀f f'.  pairwise DISJOINT f ∧ pairwise DISJOINT f' ∧
+    (∀s. s ∈ f ⇒ open s ∧ connected s ∧ ¬(s = ∅)) ∧
+    (∀s. s ∈ f' ⇒ open s ∧ connected s ∧ ¬(s = ∅)) ∧
+    UNIONS f = UNIONS f'
+    ⇒ f = f'
+  by rewrite connected_DEF OPEN_IN ConnectedDisjointUnionsOpenUnique`;;
+
+let CONNECTED_FROM_CLOSED_UNION_AND_INTER = theorem `;
+  ∀s t.  closed s ∧ closed t ∧ connected (s ∪ t) ∧ connected (s ∩ t)
+    ⇒ connected s ∧ connected t
+
+  proof
+    intro_TAC ∀s t;
+    s ∪ t ⊂ topspace euclidean     [] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN;
+    fol -  connected_DEF CLOSED_IN ConnectedFromClosedUnionAndInter;
+  qed;
+`;;
+
+let CONNECTED_FROM_OPEN_UNION_AND_INTER = theorem `;
+  ∀s t.  open s ∧ open t ∧ connected (s ∪ t) ∧ connected (s ∩ t)
+    ⇒ connected s ∧ connected t
+
+  proof
+    intro_TAC ∀s t;
+    s ∪ t ⊂ topspace euclidean     [] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN;
+    fol -  connected_DEF OPEN_IN ConnectedFromOpenUnionAndInter;
+  qed;
+`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Sort of induction principle for connected sets.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let CONNECTED_INDUCTION = theorem `;
+  ∀P Q s.  connected s ∧
+    (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t  ⇒  ∃z. z ∈ t ∧ P z) ∧
+    (∀a. a ∈ s  ⇒  ∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
+    ∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ∧ Q x ⇒ Q y)
+    ⇒ ∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ∧ Q a ⇒ Q b
+
+  proof
+    intro_TAC ∀P Q s;
+    s ⊂ topspace euclidean     [] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN;
+    MP_TAC -;
+    rewrite connected_DEF ConnectedInduction;
+  qed;
+`;;
+
+let CONNECTED_EQUIVALENCE_RELATION_GEN_LEMMA = theorem `;
+  ∀P R s.
+        connected s ∧
+        (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+        (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t
+               ⇒ ∃z. z ∈ t ∧ P z) ∧
+        (∀a. a ∈ s
+             ⇒ ∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
+                     ∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ⇒ R x y)
+        ⇒ ∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b
+
+  proof
+    intro_TAC ∀P R s;
+    s ⊂ topspace euclidean     [] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN;
+    MP_TAC -;
+    rewrite connected_DEF ConnectedEquivalenceRelationGen;
+  qed;
+`;;
+
+let CONNECTED_EQUIVALENCE_RELATION_GEN = theorem `;
+  ∀P R s.
+        connected s ∧
+        (∀x y. R x y ⇒ R y x) ∧
+        (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+        (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t
+               ⇒ ∃z. z ∈ t ∧ P z) ∧
+        (∀a. a ∈ s
+             ⇒ ∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
+                     ∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ⇒ R x y)
+        ⇒ ∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b
+
+  proof
+    intro_TAC ∀P R s;
+    MP_TAC ISPECL [P; R; s] CONNECTED_EQUIVALENCE_RELATION_GEN_LEMMA;
+    fol;
+  qed;
+`;;
+
+let CONNECTED_INDUCTION_SIMPLE = theorem `;
+  ∀P s.  connected s ∧ (∀a. a ∈ s
+    ⇒ ∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
+    ∀x y. x ∈ t ∧ y ∈ t ∧ P x ⇒ P y)
+    ⇒ ∀a b. a ∈ s ∧ b ∈ s ∧ P a ⇒ P b
+
+  proof
+    intro_TAC ∀P s;
+    s ⊂ topspace euclidean     [] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN;
+    MP_TAC -;
+    rewrite connected_DEF ConnectedInductionSimple;
+  qed;
+`;;
+
+let CONNECTED_EQUIVALENCE_RELATION = theorem `;
+  ∀R s.  connected s ∧
+    (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
+    (∀a. a ∈ s
+    ⇒ ∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧ ∀x. x ∈ t ⇒ R a x)
+    ⇒ ∀a b. a ∈ s ∧ b ∈ s ⇒ R a b
+
+  proof
+    intro_TAC ∀R s;
+    s ⊂ topspace euclidean     [] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN;
+    MP_TAC -;
+    rewrite connected_DEF ConnectedEquivalenceRelation;
+  qed;
+`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Limit points.                                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -2804,7 +3170,7 @@ let INTERIOR_FINITE_INTERS = theorem `;
 
   proof
   intro_TAC ∀s, H1;
-  assume ¬(s = ∅) [sNonempty] by simplify INTERS_0 IMAGE_CLAUSES INTERIOR_UNIV;
+  assume ¬(s = ∅)     [sNonempty] by simplify INTERS_0 IMAGE_CLAUSES INTERIOR_UNIV;
       simplify SUBSET_UNIV TOPSPACE_EUCLIDEAN H1 sNonempty interior_DEF InteriorFiniteInters;
   qed;
 `;;
@@ -2814,7 +3180,7 @@ let INTERIOR_FINITE_INTERS = theorem `;
 
   proof
   intro_TAC ∀s, H1;
-  assume s = ∅ [sEmpty] by simplify SUBSET_UNIV TOPSPACE_EUCLIDEAN H1 interior_DEF InteriorFiniteInters;
+  assume s = ∅     [sEmpty] by simplify SUBSET_UNIV TOPSPACE_EUCLIDEAN H1 interior_DEF InteriorFiniteInters;
   rewrite INTERS_0 IMAGE_CLAUSES sEmpty INTERIOR_UNIV;
   qed;
 `;;
@@ -2824,7 +3190,7 @@ let INTERIOR_INTERS_SUBSET = theorem `;
 
   proof
     intro_TAC ∀f;
-    assume f = ∅ [fEmpty] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN interior_DEF InteriorIntersSubset;
+    assume f = ∅     [fEmpty] by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN interior_DEF InteriorIntersSubset;
     rewrite INTERS_0 IMAGE_CLAUSES - INTERIOR_UNIV SUBSET_REFL;
   qed;
 `;;
@@ -3117,7 +3483,7 @@ let FRONTIER_UNION_SUBSET = theorem `;
   by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN frontier_DEF FrontierUnionSubset`;;
 
 let FRONTIER_INTERIORS = theorem `;
-  frontier s = (:real^N) ━ interior(s) ━ interior((:real^N) ━ s)
+  frontier s = UNIV ━ interior(s) ━ interior(UNIV ━ s)
   by fol SUBSET_UNIV TOPSPACE_EUCLIDEAN frontier_DEF interior_DEF FrontierInteriors`;;
 
 let FRONTIER_FRONTIER_SUBSET = theorem `;
@@ -3138,7 +3504,7 @@ let UNION_FRONTIER = theorem `;
   by simplify SUBSET_UNIV TOPSPACE_EUCLIDEAN frontier_DEF UnionFrontier`;;
 
 let CONNECTED_INTER_FRONTIER = theorem `;
-  ∀s t.  connected s ∧ ¬(s ∩ t = ∅) ∧ ¬(s ━ t = ∅)  
+  ∀s t.  connected s ∧ ¬(s ∩ t = ∅) ∧ ¬(s ━ t = ∅)
     ⇒  ¬(s ∩ frontier t = ∅)
   by simplify SUBSET_UNIV TOPSPACE_EUCLIDEAN connected_DEF frontier_DEF ConnectedInterFrontier`;;
 

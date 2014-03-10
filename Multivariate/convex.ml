@@ -738,6 +738,16 @@ let IN_CONVEX_SET = prove
         ==> ((&1 - u) % a + u % b) IN s`,
   MESON_TAC[CONVEX_ALT]);;
 
+let MIDPOINT_IN_CONVEX = prove
+ (`!s x y:real^N.
+        convex s /\ x IN s /\ y IN s ==> midpoint(x,y) IN s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `x:real^N`; `y:real^N`; `&1 / &2`]
+        IN_CONVEX_SET) THEN
+  ASM_REWRITE_TAC[midpoint] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  CONV_TAC VECTOR_ARITH);;
+
 let CONVEX_CONTAINS_SEGMENT = prove
  (`!s. convex s <=> !a b. a IN s /\ b IN s ==> segment[a,b] SUBSET s`,
   REWRITE_TAC[CONVEX_ALT; segment; SUBSET; IN_ELIM_THM] THEN MESON_TAC[]);;
@@ -776,12 +786,6 @@ let CONVEX_INTERS = prove
 let CONVEX_INTER = prove
  (`!s t. convex s /\ convex t ==> convex(s INTER t)`,
   REWRITE_TAC[convex; IN_INTER] THEN MESON_TAC[]);;
-
-let CONVEX_HULLS_EQ = prove
- (`!s t. s SUBSET convex hull t /\ t SUBSET convex hull s
-         ==> convex hull s = convex hull t`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC HULLS_EQ THEN
-  ASM_SIMP_TAC[CONVEX_INTERS]);;
 
 let CONVEX_HALFSPACE_LE = prove
  (`!a b. convex {x | a dot x <= b}`,
@@ -2079,6 +2083,11 @@ let CONVEX_ON_SUBSET = prove
  (`!f s t. f convex_on t /\ s SUBSET t ==> f convex_on s`,
   REWRITE_TAC[convex_on; SUBSET] THEN MESON_TAC[]);;
 
+let CONVEX_ON_EQ = prove
+ (`!f g s. convex s /\ (!x. x IN s ==> f x = g x) /\ f convex_on s
+           ==> g convex_on s`,
+  REWRITE_TAC[convex_on; convex] THEN MESON_TAC[]);;
+
 let CONVEX_ADD = prove
  (`!s f g. f convex_on s /\ g convex_on s ==> (\x. f(x) + g(x)) convex_on s`,
   REWRITE_TAC[convex_on; AND_FORALL_THM] THEN
@@ -2641,9 +2650,20 @@ let CONVEX_HULL_EQ = prove
  (`!s. (convex hull s = s) <=> convex s`,
   SIMP_TAC[HULL_EQ; CONVEX_INTERS]);;
 
+let CONVEX_HULLS_EQ = prove
+ (`!s t. s SUBSET convex hull t /\ t SUBSET convex hull s
+         ==> convex hull s = convex hull t`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HULLS_EQ THEN
+  ASM_SIMP_TAC[CONVEX_INTERS]);;
+
 let IS_CONVEX_HULL = prove
  (`!s. convex s <=> ?t. s = convex hull t`,
   GEN_TAC THEN MATCH_MP_TAC IS_HULL THEN SIMP_TAC[CONVEX_INTERS]);;
+
+let MIDPOINTS_IN_CONVEX_HULL = prove 
+ (`!x:real^N s. x IN convex hull s /\ y IN convex hull s
+         ==> midpoint(x,y) IN convex hull s`,
+  MESON_TAC[MIDPOINT_IN_CONVEX; CONVEX_CONVEX_HULL]);;
 
 let CONVEX_HULL_UNIV = prove
  (`convex hull (:real^N) = (:real^N)`,
