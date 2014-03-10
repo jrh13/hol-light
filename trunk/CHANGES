@@ -1,10 +1,70 @@
+Sat  8th Mar 2014       printer.ml
+
+Added two improvements from Joe Hurd to the treatment of printing.
+First, user printers are generalized over the formatter so that they will
+respect the overall output formatter settings. Moreover, the "print_to_string"
+function now takes the margin into account.
+
+Fri 28th Feb 2014       Library/prime.ml
+
+Added a few more number-theory results, mainly concerning the "index":
+
+  INDEX_REFL =
+    |- !n. index n n = (if n <= 1 then 0 else 1)
+
+  INDEX_EQ_0 =
+    |- !p n. index p n = 0 <=> n = 0 \/ p = 1 \/ ~(p divides n)
+
+  INDEX_TRIVIAL_BOUND =
+    |- !n p. index p n <= n
+
+  INDEX_DECOMPOSITION =
+    |- !n p. ?m. p EXP index p n * m = n /\ (n = 0 \/ p = 1 \/ ~(p divides m))
+
+  INDEX_DECOMPOSITION_PRIME =
+    |- !n p.
+         prime p
+         ==> (?m. p EXP index p n * m = n /\ (n = 0 \/ coprime (p,m)))
+
+  DIVIDES_NSUM =
+    |- !n f s.
+         FINITE s /\ (!i. i IN s ==> n divides f i) ==> n divides nsum s f
+
+Fri 28th Feb 2014       real.ml
+
+Added REAL_LT_POW_2 = |- |- !x. &0 < x pow 2 <=> ~(x = &0)
+
+Fri 28th Feb 2014       Library/products.ml
+
+Added a few more basic theorems about products:
+
+  NPRODUCT_FACT = |- !n. nproduct (1..n) (\m. m) = FACT n
+
+  NPRODUCT_PAIR =
+    |- !f m n.
+           nproduct (2 * m..2 * n + 1) f =
+           nproduct (m..n) (\i. f (2 * i) * f (2 * i + 1))
+
+  NPRODUCT_DELETE =
+    |- !f s a.
+         FINITE s /\ a IN s ==> f a * nproduct (s DELETE a) f = nproduct s f
+
+  PRODUCT_PAIR =
+    |- !f m n.
+           product (2 * m..2 * n + 1) f =
+           product (m..n) (\i. f (2 * i) * f (2 * i + 1))
+
+  PRODUCT_DELETE =
+    |- !f s a.
+         FINITE s /\ a IN s ==> f a * product (s DELETE a) f = product s f
+
 Sat 22nd Feb 2014       impconv.ml, Help/CASE_REWRITE_TAC.doc, Help/HINT_EXISTS_TAC.doc, Help/IMP_REWRITE_TAC.doc, Help/SEQ_IMP_REWRITE_TAC.doc, Help/TARGET_REWRITE_TAC.doc [new files], hol.ml
 
 Added a new file from Vincent Aravantinos containing several powerful new
 tactics: IMP_REWRITE_TAC, TARGET_REWRITE_TAC, CASE_REWRITE_TAC,
 SEQ_IMP_REWRITE_TAC and HINT_EXISTS_TAC.
 
-Sat 22nd Feb 2014       arith.ml, Library/binary.ml, Library/prime.ml 
+Sat 22nd Feb 2014       arith.ml, Library/binary.ml, Library/prime.ml
 
 Added the rather trivial "finite Cantor's theorem", which is otherwise
 defined in several different places and is useful enough:

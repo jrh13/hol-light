@@ -1319,14 +1319,6 @@ let SEGMENTS_SUBSET_CONVEX_HULL = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
   MATCH_MP_TAC HULL_MONO THEN SET_TAC[]);;
 
-let MIDPOINTS_IN_CONVEX_HULL = prove
- (`!x:real^N s. x IN convex hull s /\ y IN convex hull s
-         ==> midpoint(x,y) IN convex hull s`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[midpoint; VECTOR_ARITH
-    `inv(&2) % (x + y):real^N = (&1 - inv(&2)) % x + inv(&2) % y`] THEN
-  MATCH_MP_TAC IN_CONVEX_SET THEN
-  ASM_REWRITE_TAC[CONVEX_CONVEX_HULL] THEN REAL_ARITH_TAC);;
-
 let POINTS_IN_CONVEX_HULL = prove
  (`!x s. x IN s ==> x IN convex hull s`,
   MESON_TAC[SUBSET; HULL_SUBSET]);;
@@ -1441,16 +1433,6 @@ let PATH_INTEGRABLE_CONTINUOUS_LINEPATH = prove
   REWRITE_TAC[CONTINUOUS_ON_LINEPATH]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A complex-specific theorem for integrals.                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let HAS_INTEGRAL_COMPLEX_CMUL = prove
- (`!f y i c. (f has_integral y) i ==> ((\x. c * f(x)) has_integral (c * y)) i`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC
-   (REWRITE_RULE[o_DEF] HAS_INTEGRAL_LINEAR) THEN
-  ASM_REWRITE_TAC[linear; COMPLEX_CMUL] THEN CONV_TAC COMPLEX_RING);;
-
-(* ------------------------------------------------------------------------- *)
 (* Arithmetical combining theorems.                                          *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1483,7 +1465,7 @@ let HAS_PATH_INTEGRAL_SUB = prove
 let HAS_PATH_INTEGRAL_COMPLEX_LMUL = prove
  (`!f g i c. (f has_path_integral i) g
              ==> ((\x. c * f x) has_path_integral (c * i)) g`,
-  REWRITE_TAC[has_path_integral; HAS_INTEGRAL_COMPLEX_CMUL;
+  REWRITE_TAC[has_path_integral; HAS_INTEGRAL_COMPLEX_LMUL;
               GSYM COMPLEX_MUL_ASSOC]);;
 
 let HAS_PATH_INTEGRAL_COMPLEX_RMUL = prove
@@ -9399,6 +9381,80 @@ let TAYLOR_CLOG_NEG = prove
   REWRITE_TAC[COMPLEX_MUL_LNEG; COMPLEX_MUL_LID; COMPLEX_NEG_NEG]);;
 
 (* ------------------------------------------------------------------------- *)
+(* The classical limit for e.                                                *)
+(* ------------------------------------------------------------------------- *)
+
+let CEXP_LIMIT = prove
+ (`!z. ((\n. (Cx(&1) + z / Cx(&n)) pow n) --> cexp(z)) sequentially`,
+  GEN_TAC THEN MATCH_MP_TAC LIM_TRANSFORM_EVENTUALLY THEN
+  EXISTS_TAC `\n. cexp(Cx(&n) * clog(Cx(&1) + z / Cx(&n)))` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[CEXP_N; EVENTUALLY_SEQUENTIALLY] THEN
+    MP_TAC(SPEC `norm(z:complex) + &1` REAL_ARCH_SIMPLE) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN
+    DISCH_TAC THEN X_GEN_TAC `n:num` THEN ASM_CASES_TAC `n = 0` THENL
+     [ASM_REWRITE_TAC[LE] THEN DISCH_THEN SUBST_ALL_TAC THEN
+      ASM_MESON_TAC[NORM_ARITH `~(norm(z:complex) + &1 <= &0)`];
+      DISCH_TAC] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC CEXP_CLOG THEN
+    ASM_SIMP_TAC[CX_INJ; REAL_OF_NUM_EQ; COMPLEX_FIELD
+     `~(n = Cx(&0)) ==> (Cx(&1) + z / n = Cx(&0) <=> z = --n)`] THEN
+    DISCH_THEN(MP_TAC o AP_TERM `norm:complex->real`) THEN
+    REWRITE_TAC[NORM_NEG; COMPLEX_NORM_CX; REAL_ABS_NUM] THEN
+    REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN
+    CONV_TAC NORM_ARITH;
+    MATCH_MP_TAC(ISPEC `cexp` LIM_CONTINUOUS_FUNCTION) THEN
+    REWRITE_TAC[CONTINUOUS_AT_CEXP] THEN
+    ONCE_REWRITE_TAC[LIM_NULL_COMPLEX] THEN
+    MATCH_MP_TAC LIM_NULL_COMPARISON_COMPLEX THEN
+    EXISTS_TAC `\n. Cx(&2 * norm(z:complex) pow 2) * inv(Cx(&n))` THEN
+    SIMP_TAC[LIM_INV_N; LIM_NULL_COMPLEX_LMUL] THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+    MP_TAC(SPEC `&2 * norm(z:complex) + &1` REAL_ARCH_SIMPLE) THEN
+    DISCH_THEN(X_CHOOSE_TAC `N:num`) THEN
+    EXISTS_TAC `MAX N (MAX 1 2)` THEN X_GEN_TAC `n:num` THEN
+    REWRITE_TAC[ARITH_RULE `MAX a b <= c <=> a <= c /\ b <= c`] THEN
+    STRIP_TAC THEN
+    ASM_SIMP_TAC[CX_INJ; REAL_OF_NUM_EQ; LE_1;
+      COMPLEX_FIELD `~(n = Cx(&0)) ==> n * l - z = (l - z / n) * n`] THEN
+    REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_CX; REAL_ABS_NUM;
+                COMPLEX_NORM_INV] THEN
+    ASM_SIMP_TAC[GSYM REAL_LE_RDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
+    REWRITE_TAC[real_div; GSYM REAL_MUL_ASSOC; GSYM REAL_INV_MUL] THEN
+    REWRITE_TAC[GSYM REAL_POW_2] THEN
+    MP_TAC(ISPECL [`1`; `z / Cx(&n)`] TAYLOR_CLOG) THEN
+    REWRITE_TAC[GSYM CX_ADD; VSUM_SING_NUMSEG; COMPLEX_NORM_CX] THEN
+    REWRITE_TAC[VSUM_CLAUSES_NUMSEG] THEN CONV_TAC NUM_REDUCE_CONV THEN
+    REWRITE_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_CX; REAL_ABS_NUM] THEN
+    REWRITE_TAC[REAL_ABS_INV; REAL_ABS_NUM; COMPLEX_DIV_1] THEN
+    ASM_SIMP_TAC[REAL_LT_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN ANTS_TAC THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN
+      ASM_REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    REWRITE_TAC[COMPLEX_POW_1; COMPLEX_POW_NEG; COMPLEX_POW_ONE; ARITH] THEN
+    REWRITE_TAC[COMPLEX_MUL_LID; REAL_POW_DIV] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+    REWRITE_TAC[REAL_ARITH `a / b / c:real = (a / c) * inv b`] THEN
+    MATCH_MP_TAC REAL_LE_RMUL THEN
+    SIMP_TAC[REAL_LE_INV_EQ; REAL_POW_LE; REAL_POS] THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_NUM; REAL_ABS_NORM;
+                REAL_ABS_POW; real_div] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN SIMP_TAC[REAL_POW_LE; NORM_POS_LE] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM REAL_INV_INV] THEN
+    MATCH_MP_TAC REAL_LE_INV2 THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    REWRITE_TAC[REAL_ARITH
+     `&1 / &2 <= &1 - x * &1 / n <=> x / n <= &1 / &2`] THEN
+    ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN
+    ASM_REAL_ARITH_TAC]);;
+
+let EXP_LIMIT = prove
+ (`!x. ((\n. (&1 + x / &n) pow n) ---> exp(x)) sequentially`,
+  REWRITE_TAC[REALLIM_COMPLEX; o_DEF; CX_POW; CX_ADD; CX_DIV; CX_EXP] THEN
+  REWRITE_TAC[CEXP_LIMIT]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Equality between holomorphic functions, on open ball then connected set.  *)
 (* ------------------------------------------------------------------------- *)
 
@@ -9767,7 +9823,7 @@ let HOLOMORPHIC_ON_EXTEND_LIM,HOLOMORPHIC_ON_EXTEND_BOUNDED =
     ASM_SIMP_TAC[EVENTUALLY_WITHIN; GSYM DIST_NZ] THEN
     EXISTS_TAC `&1` THEN CONV_TAC NORM_ARITH;
     DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
-    MATCH_MP_TAC LIM_NULL_COMPLEX_RMUL_BOUNDED THEN
+    MATCH_MP_TAC LIM_NULL_COMPLEX_RMUL_BOUNDED THEN EXISTS_TAC `B:real` THEN
     SUBST1_TAC(COMPLEX_RING `Cx(&0) = a - a`) THEN
     SIMP_TAC[LIM_AT_ID; LIM_CONST; LIM_SUB] THEN
     FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]

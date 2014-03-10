@@ -1238,6 +1238,11 @@ let REAL_LE_POW_2 = prove
  (`!x. &0 <= x pow 2`,
   REWRITE_TAC[REAL_POW_2; REAL_LE_SQUARE]);;
 
+let REAL_LT_POW_2 = prove
+ (`!x. &0 < x pow 2 <=> ~(x = &0)`,
+  REWRITE_TAC[REAL_LE_POW_2; REAL_ARITH `&0 < x <=> &0 <= x /\ ~(x = &0)`] THEN
+  REWRITE_TAC[REAL_POW_EQ_0; ARITH]);;
+
 let REAL_SOS_EQ_0 = prove
  (`!x y. x pow 2 + y pow 2 = &0 <=> x = &0 /\ y = &0`,
   REPEAT GEN_TAC THEN EQ_TAC THEN
@@ -1456,7 +1461,7 @@ let REAL_SGN_REAL_SGN = prove
 let REAL_INV_SGN = prove
  (`!x. real_inv(real_sgn x) = real_sgn x`,
   GEN_TAC THEN REWRITE_TAC[real_sgn] THEN
-  REPEAT COND_CASES_TAC THEN 
+  REPEAT COND_CASES_TAC THEN
   REWRITE_TAC[REAL_INV_0; REAL_INV_1; REAL_INV_NEG]);;
 
 (* ------------------------------------------------------------------------- *)

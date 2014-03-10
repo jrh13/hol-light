@@ -92,32 +92,6 @@ let REAL_INTEGRAL_REFLECT_AND_ADD = prove
                  REAL_ARITH `~(&0 <= a) ==> a <= --a /\ a <= &0`]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Young's inequality (basic form).                                          *)
-(* ------------------------------------------------------------------------- *)
-
-let YOUNG_INEQUALITY = prove
- (`!a b p q. &0 <= a /\ &0 <= b /\ &0 < p /\ &0 < q /\ inv(p) + inv(q) = &1
-             ==> a * b <= a rpow p / p + b rpow q / q`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `a = &0` THEN
-  ASM_SIMP_TAC[REAL_MUL_LZERO; REAL_LE_ADD; RPOW_POS_LE; REAL_LE_DIV;
-               REAL_LT_IMP_LE] THEN
-  ASM_CASES_TAC `b = &0` THEN
-  ASM_SIMP_TAC[REAL_MUL_RZERO; REAL_LE_ADD; RPOW_POS_LE; REAL_LE_DIV;
-               REAL_LT_IMP_LE] THEN
-  STRIP_TAC THEN SUBGOAL_THEN
-   `&0 < a /\ &0 < b` STRIP_ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
-  MP_TAC(REWRITE_RULE[real_convex_on] (SPEC `(:real)` REAL_CONVEX_ON_EXP)) THEN
-  DISCH_THEN(MP_TAC o SPECL
-   [`log(a rpow p)`; `log(b rpow q)`; `inv(p:real)`; `inv(q:real)`]) THEN
-  ASM_SIMP_TAC[EXP_LOG; RPOW_POS_LT; IN_UNIV; REAL_LE_INV_EQ;
-               REAL_LT_IMP_LE] THEN
-  MATCH_MP_TAC(REAL_ARITH
-   `ab <= x ==> x <= inv p * a + inv q * b ==> ab <= a / p + b / q`) THEN
-  ASM_REWRITE_TAC[rpow; LOG_EXP; REAL_MUL_ASSOC] THEN
-  ASM_SIMP_TAC[REAL_MUL_LINV; REAL_LT_IMP_NZ; REAL_MUL_LID] THEN
-  ASM_SIMP_TAC[GSYM LOG_MUL; EXP_LOG; REAL_LT_MUL; REAL_LE_REFL]);;
-
-(* ------------------------------------------------------------------------- *)
 (* L_p spaces with respect to a set s.                                       *)
 (* ------------------------------------------------------------------------- *)
 

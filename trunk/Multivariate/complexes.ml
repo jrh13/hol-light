@@ -1999,6 +1999,31 @@ let CPRODUCT_OFFSET = prove
            EQ_ADD_RCANCEL; FINITE_NUMSEG] THEN
   REWRITE_TAC[o_DEF]);;
 
+let CPRODUCT_CONST = prove
+ (`!c s. FINITE s ==> cproduct s (\x. c) = c pow (CARD s)`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[CPRODUCT_CLAUSES; CARD_CLAUSES; complex_pow]);;
+
+let CPRODUCT_CONST_NUMSEG = prove
+ (`!c m n. cproduct (m..n) (\x. c) = c pow ((n + 1) - m)`,
+  SIMP_TAC[CPRODUCT_CONST; CARD_NUMSEG; FINITE_NUMSEG]);;
+
+let CPRODUCT_PAIR = prove
+ (`!f m n. cproduct(2*m..2*n+1) f = cproduct(m..n) (\i. f(2*i) * f(2*i+1))`,
+  MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_COMPLEX_MUL) THEN
+  REWRITE_TAC[cproduct; NEUTRAL_COMPLEX_MUL]);;
+
+let CNJ_CPRODUCT = prove
+ (`!f s. FINITE s ==> cnj(cproduct s f) = cproduct s (\i. cnj(f i))`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[CPRODUCT_CLAUSES; CNJ_MUL; CNJ_CX]);;
+
+let CX_PRODUCT = prove
+ (`!f s. FINITE s ==> Cx(product s f) = cproduct s (\i. Cx(f i))`,
+  GEN_TAC THEN CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[CPRODUCT_CLAUSES; PRODUCT_CLAUSES; GSYM CX_MUL]);;
+
 let th = prove
  (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
               ==> cproduct s (\i. f(i)) = cproduct s g) /\

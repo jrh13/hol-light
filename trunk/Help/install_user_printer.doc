@@ -1,6 +1,6 @@
 \DOC install_user_printer
 
-\TYPE {install_user_printer : string * (term -> unit) -> unit}
+\TYPE {install_user_printer : string * (formater -> term -> unit) -> unit}
 
 \SYNOPSIS
 Install a user-defined printing function into the HOL Light term printer.
@@ -12,7 +12,10 @@ only if it fails with {Failure ...} will the normal HOL Light printing be
 invoked. The additional string argument {s} is just to provide a convenient
 handle for later removal through {delete_user_printer}. However, any previous
 user printer with the same string tag will be removed when
-{install_user_printer} is called.
+{install_user_printer} is called. The printing function takes two arguments, 
+the second being the term to print and the first being the formatter to be 
+used; this ensures that the printer will automatically have its output sent to 
+the current formatter by the overall printer.
 
 \FAILURE
 Never fails.
@@ -20,9 +23,9 @@ Never fails.
 \EXAMPLE
 The user might wish to print every variable with its type:
 {
-  # let print_typed_var tm =
+  # let print_typed_var fmt tm =
       let s,ty = dest_var tm in
-      print_string("("^s^":"^string_of_type ty^")") in
+      pp_print_string fmt ("("^s^":"^string_of_type ty^")") in
     install_user_printer("print_typed_var",print_typed_var);;
 
   val it : unit = ()

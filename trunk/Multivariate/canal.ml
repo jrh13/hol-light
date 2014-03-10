@@ -181,6 +181,27 @@ let CLOSED_REAL = prove
   GEN_REWRITE_TAC RAND_CONV [SET_RULE `s = {x | s x}`] THEN
   REWRITE_TAC[CLOSED_REAL_SET]);;
 
+let UNBOUNDED_REAL = prove
+ (`~(bounded real)`,
+  REWRITE_TAC[bounded; IN; REAL_EXISTS; LEFT_IMP_EXISTS_THM] THEN
+  MESON_TAC[COMPLEX_NORM_CX; REAL_ARITH `~(abs(abs B + &1) <= B)`]);;
+
+let CONNECTED_REAL = prove
+ (`connected real`,
+  SIMP_TAC[CONVEX_REAL; CONVEX_CONNECTED]);;
+
+let PATH_CONNECTED_REAL = prove
+ (`path_connected real`,
+  SIMP_TAC[CONVEX_REAL; CONVEX_IMP_PATH_CONNECTED]);;
+
+let TRIVIAL_LIMIT_WITHIN_REAL = prove
+ (`!z. trivial_limit (at z within real) <=> ~(real z)`,
+  GEN_TAC THEN REWRITE_TAC[TRIVIAL_LIMIT_WITHIN] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM IN] THEN
+  MATCH_MP_TAC CONNECTED_IMP_PERFECT_CLOSED THEN
+  REWRITE_TAC[CONNECTED_REAL; CLOSED_REAL] THEN
+  MESON_TAC[UNBOUNDED_REAL; BOUNDED_SING]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Complex-specific uniform limit composition theorems.                      *)
 (* ------------------------------------------------------------------------- *)
@@ -398,9 +419,10 @@ let SUMS_COMPLEX_0 = prove
   REWRITE_TAC[GSYM COMPLEX_VEC_0; SUMS_0]);;
 
 let LIM_NULL_COMPLEX_RMUL_BOUNDED = prove
- (`!f g. (f --> Cx(&0)) net /\
-         eventually (\a. f a = Cx(&0) \/ norm(g a) <= B) net
-         ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
+ (`!net f g B.
+        (f --> Cx(&0)) net /\
+        eventually (\a. f a = Cx(&0) \/ norm(g a) <= B) net
+        ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
   REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
   ONCE_REWRITE_TAC[LIM_NULL_NORM] THEN
   REWRITE_TAC[LIFT_CMUL; COMPLEX_NORM_MUL] THEN
@@ -409,11 +431,13 @@ let LIM_NULL_COMPLEX_RMUL_BOUNDED = prove
   ASM_REWRITE_TAC[o_DEF; NORM_LIFT; REAL_ABS_NORM; NORM_EQ_0]);;
 
 let LIM_NULL_COMPLEX_LMUL_BOUNDED = prove
- (`!f g. eventually (\a. norm(f a) <= B \/ g a = Cx(&0)) net /\
-         (g --> Cx(&0)) net
-         ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
+ (`!net f g B.
+        eventually (\a. norm(f a) <= B \/ g a = Cx(&0)) net /\
+        (g --> Cx(&0)) net
+        ==> ((\z. f(z) * g(z)) --> Cx(&0)) net`,
   ONCE_REWRITE_TAC[DISJ_SYM; COMPLEX_MUL_SYM] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC LIM_NULL_COMPLEX_RMUL_BOUNDED THEN ASM_REWRITE_TAC[]);;
+  MATCH_MP_TAC LIM_NULL_COMPLEX_RMUL_BOUNDED THEN
+  ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bound results for real and imaginary components of limits.                *)
@@ -912,9 +936,20 @@ let HAS_COMPLEX_DERIVATIVE_IMP_CONTINUOUS_WITHIN = prove
   REWRITE_TAC[has_complex_derivative] THEN
   MESON_TAC[differentiable; DIFFERENTIABLE_IMP_CONTINUOUS_WITHIN]);;
 
+let COMPLEX_DIFFERENTIABLE_IMP_DIFFERENTIABLE = prove
+ (`!net f. f complex_differentiable net ==> f differentiable net`,
+  SIMP_TAC[complex_differentiable; differentiable; has_complex_derivative] THEN
+  MESON_TAC[]);;
+
 let COMPLEX_DIFFERENTIABLE_IMP_CONTINUOUS_AT = prove
  (`!f x. f complex_differentiable at x ==> f continuous at x`,
   MESON_TAC[HAS_COMPLEX_DERIVATIVE_IMP_CONTINUOUS_AT; complex_differentiable]);;
+
+let COMPLEX_DIFFERENTIABLE_IMP_CONTINUOUS_WITHIN = prove
+ (`!f x s. f complex_differentiable (at x within s)
+           ==> f continuous (at x within s)`,
+  MESON_TAC[COMPLEX_DIFFERENTIABLE_IMP_DIFFERENTIABLE;
+            DIFFERENTIABLE_IMP_CONTINUOUS_WITHIN]);;
 
 let HOLOMORPHIC_ON_IMP_CONTINUOUS_ON = prove
  (`!f s. f holomorphic_on s ==> f continuous_on s`,
@@ -2010,6 +2045,13 @@ let HAS_VECTOR_DERIVATIVE_REAL_COMPLEX = prove
   DISCH_THEN MATCH_MP_TAC THEN MATCH_MP_TAC HAS_DERIVATIVE_LINEAR THEN
   REWRITE_TAC[linear; DROP_ADD; DROP_CMUL; CX_ADD; CX_MUL; COMPLEX_CMUL]);;
 
+let DIFFERENTIABLE_REAL_COMPLEX = prove
+ (`!f a. f complex_differentiable at (Cx(drop a))
+         ==> (\x. f(Cx(drop x))) differentiable at a`,
+  REWRITE_TAC[complex_differentiable; VECTOR_DERIVATIVE_WORKS] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[vector_derivative] THEN
+  ASM_MESON_TAC[HAS_VECTOR_DERIVATIVE_REAL_COMPLEX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Complex differentiation of sequences and series.                          *)
 (* ------------------------------------------------------------------------- *)
@@ -2131,11 +2173,6 @@ let COMPLEX_BASIS = prove
   REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; RE_CX; IM_CX] THEN
   REWRITE_TAC[ii] THEN SIMPLE_COMPLEX_ARITH_TAC);;
 
-let COMPLEX_DIFFERENTIABLE_IMP_DIFFERENTIABLE = prove
- (`!net f. f complex_differentiable net ==> f differentiable net`,
-  SIMP_TAC[complex_differentiable; differentiable; has_complex_derivative] THEN
-  MESON_TAC[]);;
-
 let CAUCHY_RIEMANN = prove
  (`!f z. f complex_differentiable at z <=>
          f differentiable at z  /\
@@ -2247,16 +2284,19 @@ add_complex_differentiation_theorems
   HAS_COMPLEX_DERIVATIVE_POW_WITHIN; HAS_COMPLEX_DERIVATIVE_POW_AT;
   HAS_COMPLEX_DERIVATIVE_INV_WITHIN; HAS_COMPLEX_DERIVATIVE_INV_AT];;
 
-let rec COMPLEX_DIFF_CONV =
+let GEN_COMPLEX_DIFF_CONV ths =
   let partfn tm = let l,r = dest_comb tm in mk_pair(lhand l,r)
-  and is_deriv = can (term_match [] `(f has_complex_derivative f') net`) in
+  and is_deriv = can (term_match [] `(f has_complex_derivative f') net`)
+  and ths' =
+   unions(mapfilter (CONJUNCTS o REWRITE_RULE[FORALL_AND_THM] o
+                     MATCH_MP HAS_COMPLEX_DERIVATIVE_CHAIN_UNIV) ths) in
   let rec COMPLEX_DIFF_CONV tm =
     try tryfind (fun th -> PART_MATCH partfn th (partfn tm))
-                (!complex_differentiation_theorems)
+                (!complex_differentiation_theorems @ ths')
     with Failure _ ->
         let ith = tryfind (fun th ->
          PART_MATCH (partfn o repeat (snd o dest_imp)) th (partfn tm))
-                    (!complex_differentiation_theorems) in
+                    (!complex_differentiation_theorems @ ths') in
         COMPLEX_DIFF_ELIM ith
   and COMPLEX_DIFF_ELIM th =
     let tm = concl th in
@@ -2266,17 +2306,21 @@ let rec COMPLEX_DIFF_CONV =
     else COMPLEX_DIFF_ELIM (MATCH_MP th (COMPLEX_DIFF_CONV t)) in
   COMPLEX_DIFF_CONV;;
 
+let COMPLEX_DIFF_CONV = GEN_COMPLEX_DIFF_CONV [];;
+
 (* ------------------------------------------------------------------------- *)
 (* Hence a tactic.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let COMPLEX_DIFF_TAC =
+let GEN_COMPLEX_DIFF_TAC ths =
   let pth = MESON[]
    `(f has_complex_derivative f') net
     ==> f' = g'
         ==> (f has_complex_derivative g') net` in
-  W(fun (asl,w) -> let th = MATCH_MP pth (COMPLEX_DIFF_CONV w) in
+  W(fun (asl,w) -> let th = MATCH_MP pth (GEN_COMPLEX_DIFF_CONV ths w) in
        MATCH_MP_TAC(repeat (GEN_REWRITE_RULE I [IMP_IMP]) (DISCH_ALL th)));;
+
+let COMPLEX_DIFF_TAC = GEN_COMPLEX_DIFF_TAC [];;
 
 let COMPLEX_DIFFERENTIABLE_TAC =
   let DISCH_FIRST th = DISCH (hd(hyp th)) th in
@@ -2891,6 +2935,57 @@ let SERIES_DIRICHLET_COMPLEX_EXPLICIT = prove
   ASM_SIMP_TAC[GSYM REAL_MUL_ASSOC; REAL_LT_MUL; REAL_OF_NUM_LT; ARITH] THEN
   MATCH_MP_TAC SERIES_DIRICHLET_COMPLEX_VERY_EXPLICIT THEN
   ASM_SIMP_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Integrals and complex multiplication.                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_INTEGRAL_COMPLEX_LMUL = prove
+ (`!f y i c. (f has_integral y) i ==> ((\x. c * f(x)) has_integral (c * y)) i`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC
+   (REWRITE_RULE[o_DEF] HAS_INTEGRAL_LINEAR) THEN
+  ASM_REWRITE_TAC[linear; COMPLEX_CMUL] THEN CONV_TAC COMPLEX_RING);;
+
+let HAS_INTEGRAL_COMPLEX_RMUL = prove
+ (`!f y i c. (f has_integral y) i ==> ((\x. f(x) * c) has_integral (y * c)) i`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  REWRITE_TAC[HAS_INTEGRAL_COMPLEX_LMUL]);;
+
+let HAS_INTEGRAL_COMPLEX_0 = prove
+ (`!s. ((\x. Cx(&0)) has_integral Cx(&0)) s`,
+  REWRITE_TAC[GSYM COMPLEX_VEC_0; HAS_INTEGRAL_0]);;
+
+let INTEGRABLE_COMPLEX_LMUL = prove
+ (`!f:real^N->complex s c.
+        f integrable_on s ==> (\x. c * f x) integrable_on s`,
+  REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_COMPLEX_LMUL]);;
+
+let INTEGRABLE_COMPLEX_RMUL = prove
+ (`!f:real^N->complex s c.
+        f integrable_on s ==> (\x. f x * c) integrable_on s`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  REWRITE_TAC[INTEGRABLE_COMPLEX_LMUL]);;
+
+let INTEGRABLE_COMPLEX_0 = prove
+ (`!s. (\x. Cx(&0)) integrable_on s`,
+  REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_COMPLEX_0]);;
+
+let INTEGRABLE_COMPLEX_LMUL_EQ = prove
+ (`!f:real^N->complex s c.
+        (\x. c * f x) integrable_on s <=> c = Cx(&0) \/ f integrable_on s`,
+  REPEAT(STRIP_TAC ORELSE EQ_TAC) THEN
+  ASM_SIMP_TAC[INTEGRABLE_COMPLEX_LMUL; COMPLEX_MUL_LZERO] THEN
+  REWRITE_TAC[INTEGRABLE_COMPLEX_0] THEN
+  ASM_CASES_TAC `c = Cx(&0)` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `inv c:complex` o
+    MATCH_MP INTEGRABLE_COMPLEX_LMUL) THEN
+  ASM_SIMP_TAC[COMPLEX_MUL_ASSOC; COMPLEX_MUL_LID; COMPLEX_MUL_LINV; ETA_AX]);;
+
+let INTEGRABLE_COMPLEX_RMUL_EQ = prove
+ (`!f:real^N->complex s c.
+        (\x. f x * c) integrable_on s <=> c = Cx(&0) \/ f integrable_on s`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  REWRITE_TAC[INTEGRABLE_COMPLEX_LMUL_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relations among convergence and absolute convergence for power series.    *)

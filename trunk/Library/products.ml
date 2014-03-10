@@ -169,6 +169,21 @@ let NPRODUCT_SUPERSET = prove
         ==> nproduct v f = nproduct u f`,
   SIMP_TAC[nproduct; GSYM NEUTRAL_MUL; ITERATE_SUPERSET; MONOIDAL_MUL]);;
 
+let NPRODUCT_PAIR = prove
+ (`!f m n. nproduct(2*m..2*n+1) f = nproduct(m..n) (\i. f(2*i) * f(2*i+1))`,
+  MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_MUL) THEN
+  REWRITE_TAC[nproduct; NEUTRAL_MUL]);;
+
+let NPRODUCT_DELETE = prove
+ (`!f s a. FINITE s /\ a IN s
+           ==> f(a) * nproduct(s DELETE a) f = nproduct s f`,
+  SIMP_TAC[nproduct; ITERATE_DELETE; MONOIDAL_MUL]);;
+
+let NPRODUCT_FACT = prove
+ (`!n. nproduct(1..n) (\m. m) = FACT n`,
+  INDUCT_TAC THEN REWRITE_TAC[NPRODUCT_CLAUSES_NUMSEG; FACT; ARITH] THEN
+  ASM_REWRITE_TAC[ARITH_RULE `1 <= SUC n`; MULT_SYM]);;
+
 let th = prove
    (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
                 ==> nproduct s (\i. f(i)) = nproduct s g) /\
@@ -405,6 +420,15 @@ let PRODUCT_SUPERSET = prove
         ==> product v f = product u f`,
   SIMP_TAC[product; GSYM NEUTRAL_REAL_MUL;
            ITERATE_SUPERSET; MONOIDAL_REAL_MUL]);;
+
+let PRODUCT_PAIR = prove
+ (`!f m n. product(2*m..2*n+1) f = product(m..n) (\i. f(2*i) * f(2*i+1))`,
+  MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_REAL_MUL) THEN
+  REWRITE_TAC[product; NEUTRAL_REAL_MUL]);;
+
+let PRODUCT_DELETE = prove
+ (`!f s a. FINITE s /\ a IN s ==> f(a) * product(s DELETE a) f = product s f`,
+  SIMP_TAC[product; ITERATE_DELETE; MONOIDAL_REAL_MUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extend congruences.                                                       *)

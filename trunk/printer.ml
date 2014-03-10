@@ -177,11 +177,11 @@ let pp_print_type,pp_print_qtype =
 (* ------------------------------------------------------------------------- *)
 
 let install_user_printer,delete_user_printer,try_user_printer =
-  let user_printers = ref ([]:(string*(term->unit))list) in
+  let user_printers = ref ([]:(string*(formatter->term->unit))list) in
   (fun pr -> user_printers := pr::(!user_printers)),
   (fun s -> user_printers := snd(remove (fun (s',_) -> s = s')
                                         (!user_printers))),
-  (fun tm -> tryfind (fun (_,pr) -> pr tm) (!user_printers));;
+  (fun fmt -> fun tm -> tryfind (fun (_,pr) -> pr fmt tm) (!user_printers));;
 
 (* ------------------------------------------------------------------------- *)
 (* Printer for terms.                                                        *)
@@ -235,7 +235,7 @@ let pp_print_term =
     else [dest_clause tm] in
   fun fmt ->
     let rec print_term prec tm =
-      try try_user_printer tm with Failure _ ->
+      try try_user_printer fmt tm with Failure _ ->
       try pp_print_string fmt (string_of_num(dest_numeral tm)) with Failure _ ->
       try (let tms = dest_list tm in
            try if fst(dest_type(hd(snd(dest_type(type_of tm))))) <> "char"
@@ -526,13 +526,18 @@ let print_thm = pp_print_thm std_formatter;;
 (* ------------------------------------------------------------------------- *)
 
 let print_to_string printer =
-  let sbuff = ref "" in
-  let output s m n = sbuff := (!sbuff)^(String.sub s m n) and flush() = () in
-  let fmt = make_formatter output flush in
-  ignore(pp_set_max_boxes fmt 100);
-  fun i -> ignore(printer fmt i);
-           ignore(pp_print_flush fmt ());
-           let s = !sbuff in sbuff := ""; s;;
+  let buf = Buffer.create 16 in
+  let fmt = formatter_of_buffer buf in
+  let () = pp_set_max_boxes fmt 100 in
+  let print = printer fmt in
+  let flush = pp_print_flush fmt in
+  fun x ->
+    let () = pp_set_margin fmt (get_margin ()) in
+    let () = print x in
+    let () = flush () in
+    let s = Buffer.contents buf in
+    let () = Buffer.reset buf in
+    s;;
 
 let string_of_type = print_to_string pp_print_type;;
 let string_of_term = print_to_string pp_print_term;;
