@@ -68,6 +68,7 @@ echo '### Loading Examples/solovay.ml'; echo 'loadt "Examples/solovay.ml";;' | (
 echo '### Loading Examples/sos.ml'; echo 'loadt "Examples/sos.ml";;' | (time $hollight)
 echo '### Loading Examples/ste.ml'; echo 'loadt "Examples/ste.ml";;' | (time $hollight)
 echo '### Loading Examples/sylvester_gallai.ml'; echo 'loadt "Examples/sylvester_gallai.ml";;' | (time $hollight)
+echo '### Loading Examples/vitali.ml'; echo 'loadt "Examples/vitali.ml";;' | (time $hollight)
 echo '### Loading Library/wo.ml'; echo 'loadt "Library/wo.ml";;' | (time $hollight)
 echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml';
 (echo 'loadt "Library/analysis.ml";;'; echo 'loadt "Library/transc.ml";;';
@@ -109,6 +110,7 @@ echo '### Loading Multivariate/geom.ml'; echo 'loadt "Multivariate/geom.ml";;' |
 echo '### Loading Multivariate/tarski.ml'; echo 'loadt "Multivariate/tarski.ml";;' | (time $hollight)
 echo '### Loading Multivariate/cross.ml'; echo 'loadt "Multivariate/cross.ml";;' | (time $hollight)
 echo '### Loading Multivariate/flyspeck.ml'; echo 'loadt "Multivariate/flyspeck.ml";;' | (time $hollight)
+echo '### Loading Multivariate/gamma.ml'; echo 'loadt "Multivariate/gamma.ml";;' | (time $hollight)
 
 # Some of the "Great 100 theorems"
 

@@ -220,6 +220,37 @@ let BINOM = prove
   REWRITE_TAC[GSYM BINOM_FACT; ADD_SUB] THEN REWRITE_TAC[MULT_AC]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Additional lemmas.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let BINOM_SYM = prove
+ (`!n k. binom(n,n-k) = if k <= n then binom(n,k) else 1`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[binom; ARITH_RULE `~(k <= n) ==> n - k = 0`] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_EQ; REAL_OF_NUM_BINOM] THEN
+  ASM_REWRITE_TAC[ARITH_RULE `n - k:num <= n`] THEN
+  ASM_SIMP_TAC[ARITH_RULE `k:num <= n ==> n - (n - k) = k`] THEN
+  REWRITE_TAC[REAL_OF_NUM_MUL; MULT_SYM]);;
+
+let BINOM_MUL_SHIFT = prove
+ (`!m n k. k <= m
+           ==> binom(n,m) * binom(m,k) = binom(n,k) * binom(n - k,m - k)`,
+  REPEAT STRIP_TAC THEN
+  SIMP_TAC[GSYM REAL_OF_NUM_EQ; GSYM REAL_OF_NUM_MUL; REAL_OF_NUM_BINOM] THEN
+  ASM_CASES_TAC `n:num < m` THENL
+   [REPEAT(COND_CASES_TAC THEN
+      ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_RZERO]) THEN
+    MATCH_MP_TAC(TAUT `F ==> p`) THEN ASM_ARITH_TAC;
+    REPEAT(COND_CASES_TAC THENL
+     [ALL_TAC; MATCH_MP_TAC(TAUT `F ==> p`) THEN  ASM_ARITH_TAC]) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[NOT_LT]) THEN
+    ASM_SIMP_TAC[ARITH_RULE
+     `k:num <= m /\ m <= n ==> n - k - (m - k) = n - m`] THEN
+    MAP_EVERY (MP_TAC o C SPEC FACT_NZ)
+     [`n:num`; `m:num`; `n - m:num`; `n - k:num`; `m - k:num`] THEN
+    REWRITE_TAC[GSYM REAL_OF_NUM_EQ] THEN CONV_TAC REAL_FIELD]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Numerical computation of binom.                                           *)
 (* ------------------------------------------------------------------------- *)
 
@@ -237,6 +268,9 @@ let NUM_BINOM_CONV =
   and pth_1 = prove
    (`binom(n,n) = 1`,
     REWRITE_TAC[BINOM_REFL])
+  and pth_swap = prove
+   (`k <= n ==> binom(n,k) = binom(n,n - k)`, 
+    MESON_TAC[BINOM_SYM]) 
   and k_tm = `k:num` and n_tm = `n:num`
   and x_tm = `x:num` and y_tm = `y:num`
   and binom_tm = `binom` in
@@ -246,6 +280,11 @@ let NUM_BINOM_CONV =
       MP_CONV NUM_LT_CONV th
     else if n =/ k then
       INST [mk_numeral n,n_tm] pth_1
+    else if Int 2 */ k </ n then
+      let th1 = INST [mk_numeral n,n_tm; mk_numeral k,k_tm] pth_swap in
+      let th2 = MP th1 (EQT_ELIM(NUM_LE_CONV (lhand(concl th1)))) in
+      let th3 = CONV_RULE(funpow 3 RAND_CONV NUM_SUB_CONV) th2 in
+      TRANS th3 (BINOM_RULE(n,n -/ k))
     else
       let th1 = BINOM_RULE(n -/ Int 1,k) in
       let y = dest_numeral(rand(concl th1)) in

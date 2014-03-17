@@ -39,6 +39,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/sos \
 	Examples/ste \
 	Examples/sylvester_gallai \
+	Examples/vitali \
 	Library/wo \
 	Library/analysis-transc \
 	Library/prime-pratt \
@@ -67,7 +68,8 @@ EXTENDED_EXAMPLES:=\
 	Multivariate/geom \
 	Multivariate/tarski \
 	Multivariate/cross \
-	Multivariate/flyspeck
+	Multivariate/flyspeck \
+	Multivariate/gamma
 
 GREAT_100_THEOREMS:= \
 	100/arithmetic_geometric_mean \
