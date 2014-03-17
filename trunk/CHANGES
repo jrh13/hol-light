@@ -1,3 +1,17 @@
+Mon 10th Mar 2014       Library/binomial.ml
+
+Added a couple more lemmas:
+
+ BINOM_SYM = |- !n k. binom(n,n - k) = (if k <= n then binom(n,k) else 1)
+
+ BINOM_MUL_SHIFT =
+  |- !m n k.
+         k <= m
+         ==> binom(n,m) * binom(m,k) = binom(n,k) * binom(n - k,m - k)
+
+as well as putting a simple symmetry optimization into NUM_BINOM_CONV for
+the case of NUM_BINOM_CONV `binom(n,k)` where k is small.
+
 Sat  8th Mar 2014       printer.ml
 
 Added two improvements from Joe Hurd to the treatment of printing.
