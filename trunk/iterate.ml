@@ -2068,6 +2068,37 @@ let th = prove
   extend_basic_congs (map SPEC_ALL (CONJUNCTS th));;
 
 (* ------------------------------------------------------------------------- *)
+(* Expand "sum (m..n) f" where m and n are numerals.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let EXPAND_SUM_CONV =
+  let [pth_0; pth_1; pth_2] = (CONJUNCTS o prove)
+   (`(n < m ==> sum(m..n) f = &0) /\
+     sum(m..m) f = f m /\
+     (m <= n ==> sum (m..n) f = f m + sum (m + 1..n) f)`,
+    REWRITE_TAC[SUM_CLAUSES_LEFT; SUM_SING_NUMSEG; SUM_TRIV_NUMSEG])
+  and ns_tm = `..` and f_tm = `f:num->real`
+  and m_tm = `m:num` and n_tm = `n:num` in
+  let rec conv tm =
+    let smn,ftm = dest_comb tm in
+    let s,mn = dest_comb smn in
+    if not(is_const s & fst(dest_const s) = "sum")
+    then failwith "EXPAND_SUM_CONV" else
+    let mtm,ntm = dest_binop ns_tm mn in
+    let m = dest_numeral mtm and n = dest_numeral ntm in
+    if n < m then
+      let th1 = INST [ftm,f_tm; mtm,m_tm; ntm,n_tm] pth_0 in
+      MP th1 (EQT_ELIM(NUM_LT_CONV(lhand(concl th1))))
+    else if n = m then CONV_RULE (RAND_CONV(TRY_CONV BETA_CONV))
+                                 (INST [ftm,f_tm; mtm,m_tm] pth_1)
+    else
+      let th1 = INST [ftm,f_tm; mtm,m_tm; ntm,n_tm] pth_2 in
+      let th2 = MP th1 (EQT_ELIM(NUM_LE_CONV(lhand(concl th1)))) in
+      CONV_RULE (RAND_CONV(COMB2_CONV (RAND_CONV(TRY_CONV BETA_CONV))
+       (LAND_CONV(LAND_CONV NUM_ADD_CONV) THENC conv))) th2 in
+  conv;;
+
+(* ------------------------------------------------------------------------- *)
 (* Some special algebraic rearrangements.                                    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -2202,6 +2233,152 @@ let REAL_POLYFUN_EQ_CONST = prove
     GEN_REWRITE_TAC LAND_CONV [MESON[]
      `(!n. P n) <=> P 0 /\ (!n. ~(n = 0) ==> P n)`] THEN
     SIMP_TAC[LE_0; REAL_SUB_0] THEN MESON_TAC[LE_1]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A general notion of polynomial function.                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let polynomial_function = new_definition
+ `polynomial_function p <=> ?m c. !x. p x = sum(0..m) (\i. c i * x pow i)`;;
+
+let POLYNOMIAL_FUNCTION_CONST = prove
+ (`!c. polynomial_function (\x. c)`,
+  GEN_TAC THEN REWRITE_TAC[polynomial_function] THEN
+  MAP_EVERY EXISTS_TAC [`0`; `(\i. c):num->real`] THEN
+  REWRITE_TAC[SUM_SING_NUMSEG; real_pow; REAL_MUL_RID]);;
+
+let POLYNOMIAL_FUNCTION_ID = prove
+ (`polynomial_function (\x. x)`,
+  REWRITE_TAC[polynomial_function] THEN
+  MAP_EVERY EXISTS_TAC [`SUC 0`; `\i. if i = 1 then &1 else &0`] THEN
+  REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0; ARITH] THEN REAL_ARITH_TAC);;
+
+let POLYNOMIAL_FUNCTION_I = prove
+ (`polynomial_function I`,
+  REWRITE_TAC[I_DEF; POLYNOMIAL_FUNCTION_ID]);;
+
+let POLYNOMIAL_FUNCTION_ADD = prove
+ (`!p q. polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (\x. p x + q x)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ; polynomial_function; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC  [`m:num`; `a:num->real`] THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`n:num`; `b:num->real`] THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN EXISTS_TAC `MAX m n` THEN EXISTS_TAC
+   `\i:num. (if i <= m then a i else &0) + (if i <= n then b i else &0)` THEN
+  GEN_TAC THEN REWRITE_TAC[REAL_ADD_RDISTRIB; SUM_ADD_NUMSEG] THEN
+  REWRITE_TAC[COND_RAND; COND_RATOR; REAL_MUL_LZERO] THEN
+  REWRITE_TAC[GSYM SUM_RESTRICT_SET] THEN BINOP_TAC THEN
+  BINOP_TAC THEN REWRITE_TAC[] THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_NUMSEG] THEN ARITH_TAC);;
+
+let POLYNOMIAL_FUNCTION_LMUL = prove
+ (`!p c. polynomial_function p ==> polynomial_function (\x. c * p x)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ; polynomial_function; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC  [`n:num`; `a:num->real`] THEN STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC [`n:num`; `\i. c * (a:num->real) i`] THEN
+  ASM_REWRITE_TAC[SUM_LMUL; GSYM REAL_MUL_ASSOC]);;
+
+let POLYNOMIAL_FUNCTION_RMUL = prove
+ (`!p c. polynomial_function p ==> polynomial_function (\x. p x * c)`,
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[POLYNOMIAL_FUNCTION_LMUL]);;
+
+let POLYNOMIAL_FUNCTION_NEG = prove
+ (`!p. polynomial_function(\x. --(p x)) <=> polynomial_function p`,
+  GEN_TAC THEN EQ_TAC THEN
+  DISCH_THEN(MP_TAC o SPEC `--(&1)` o MATCH_MP POLYNOMIAL_FUNCTION_LMUL) THEN
+  REWRITE_TAC[REAL_MUL_LNEG; REAL_MUL_LID; ETA_AX; REAL_NEG_NEG]);;
+
+let POLYNOMIAL_FUNCTION_SUB = prove
+ (`!p q. polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (\x. p x - q x)`,
+  SIMP_TAC[real_sub; POLYNOMIAL_FUNCTION_NEG; POLYNOMIAL_FUNCTION_ADD]);;
+
+let POLYNOMIAL_FUNCTION_MUL = prove
+ (`!p q. polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (\x. p x * q x)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC (BINDER_CONV o LAND_CONV) [polynomial_function] THEN
+  SIMP_TAC[LEFT_IMP_EXISTS_THM] THEN
+  ONCE_REWRITE_TAC[MESON[] `(!q m c. P q m c) <=> (!m c q. P q m c)`] THEN
+  ONCE_REWRITE_TAC[GSYM FUN_EQ_THM] THEN
+  REWRITE_TAC[LEFT_FORALL_IMP_THM; EXISTS_REFL] THEN
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[SUM_SING_NUMSEG; real_pow; POLYNOMIAL_FUNCTION_RMUL] THEN
+  X_GEN_TAC `c:num->real` THEN SIMP_TAC[SUM_CLAUSES_LEFT; LE_0; ADD1] THEN
+  REWRITE_TAC[REAL_ADD_LDISTRIB; real_pow] THEN
+  MATCH_MP_TAC POLYNOMIAL_FUNCTION_ADD THEN
+  ASM_SIMP_TAC[POLYNOMIAL_FUNCTION_RMUL] THEN
+  REWRITE_TAC[SPEC `1` SUM_OFFSET] THEN
+  REWRITE_TAC[REAL_POW_ADD; REAL_POW_1; REAL_MUL_ASSOC; SUM_RMUL] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `\i. (c:num->real)(i + 1)`) THEN
+  ABBREV_TAC `q = \x. p x * sum (0..m) (\i. c (i + 1) * x pow i)` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[FUN_EQ_THM]) THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[polynomial_function; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`n:num`; `a:num->real`] THEN STRIP_TAC THEN
+  EXISTS_TAC `n + 1` THEN
+  EXISTS_TAC `\i. if i = 0 then &0 else (a:num->real)(i - 1)` THEN
+  SIMP_TAC[SUM_CLAUSES_LEFT; LE_0] THEN
+  ASM_REWRITE_TAC[SPEC `1` SUM_OFFSET; ADD_EQ_0; ARITH_EQ; ADD_SUB] THEN
+  REWRITE_TAC[REAL_POW_ADD; REAL_MUL_ASSOC; SUM_RMUL] THEN REAL_ARITH_TAC);;
+
+let POLYNOMIAL_FUNCTION_SUM = prove
+ (`!s:A->bool p.
+        FINITE s /\ (!i. i IN s ==> polynomial_function(\x. p x i))
+        ==> polynomial_function (\x. sum s (p x))`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; POLYNOMIAL_FUNCTION_CONST] THEN
+  SIMP_TAC[FORALL_IN_INSERT; POLYNOMIAL_FUNCTION_ADD]);;
+
+let POLYNOMIAL_FUNCTION_POW = prove
+ (`!p n. polynomial_function p ==> polynomial_function (\x. p x pow n)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[real_pow; POLYNOMIAL_FUNCTION_CONST; POLYNOMIAL_FUNCTION_MUL]);;
+
+let POLYNOMIAL_FUNCTION_INDUCT = prove
+ (`!P. P (\x. x) /\ (!c. P (\x. c)) /\
+      (!p q. P p /\ P q ==> P (\x. p x + q x)) /\
+      (!p q. P p /\ P q ==> P (\x. p x * q x))
+      ==> !p. polynomial_function p ==> P p`,
+  GEN_TAC THEN STRIP_TAC THEN
+  REWRITE_TAC[polynomial_function; LEFT_IMP_EXISTS_THM] THEN
+  ONCE_REWRITE_TAC[MESON[] `(!q m c. P q m c) <=> (!m c q. P q m c)`] THEN
+  ONCE_REWRITE_TAC[GSYM FUN_EQ_THM] THEN
+  SIMP_TAC[LEFT_FORALL_IMP_THM; EXISTS_REFL] THEN INDUCT_TAC THEN
+  ASM_REWRITE_TAC[SUM_SING_NUMSEG; real_pow] THEN
+  GEN_TAC THEN SIMP_TAC[SUM_CLAUSES_LEFT; ADD1; LE_0] THEN
+  FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[real_pow] THEN
+  REWRITE_TAC[SPEC `1` SUM_OFFSET] THEN
+  REWRITE_TAC[REAL_POW_ADD; REAL_POW_1; REAL_MUL_ASSOC; SUM_RMUL] THEN
+  ASM_SIMP_TAC[]);;
+
+let POLYNOMIAL_FUNCTION_o = prove
+ (`!p q. polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (p o q)`,
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  REWRITE_TAC[IMP_CONJ_ALT; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC POLYNOMIAL_FUNCTION_INDUCT THEN
+  SIMP_TAC[o_DEF; POLYNOMIAL_FUNCTION_ADD; POLYNOMIAL_FUNCTION_MUL] THEN
+  ASM_REWRITE_TAC[ETA_AX; POLYNOMIAL_FUNCTION_CONST]);;
+
+let POLYNOMIAL_FUNCTION_FINITE_ROOTS = prove
+ (`!p a. polynomial_function p
+         ==> (FINITE {x | p x = a} <=> ~(!x. p x = a))`,
+  ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
+  SUBGOAL_THEN
+   `!p. polynomial_function p ==> (FINITE {x | p x = &0} <=> ~(!x. p x = &0))`
+   (fun th ->
+      SIMP_TAC[th; POLYNOMIAL_FUNCTION_SUB; POLYNOMIAL_FUNCTION_CONST]) THEN
+  GEN_TAC THEN REWRITE_TAC[polynomial_function] THEN
+  STRIP_TAC THEN EQ_TAC THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THENL
+   [SIMP_TAC[UNIV_GSPEC; GSYM INFINITE; real_INFINITE];
+    ASM_REWRITE_TAC[REAL_POLYFUN_FINITE_ROOTS] THEN
+    SIMP_TAC[NOT_EXISTS_THM; TAUT `~(p /\ ~q) <=> p ==> q`] THEN
+    REWRITE_TAC[REAL_MUL_LZERO; SUM_0]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Make natural numbers the default again.                                   *)

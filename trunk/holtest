@@ -42,6 +42,7 @@ echo '### Loading Examples/cooper.ml'; echo 'loadt "Examples/cooper.ml";;' | (ti
 echo '### Loading Examples/dlo.ml'; echo 'loadt "Examples/dlo.ml";;' | (time $hollight)
 echo '### Loading Library/floor.ml'; echo 'loadt "Library/floor.ml";;' | (time $hollight)
 echo '### Loading Examples/forster.ml'; echo 'loadt "Examples/forster.ml";;' | (time $hollight)
+echo '### Loading Examples/harmonicsum.ml'; echo 'loadt "Examples/harmonicsum.ml";;' | (time $hollight)
 echo '### Loading Examples/hol88.ml'; echo 'loadt "Examples/hol88.ml";;' | (time $hollight)
 echo '### Loading Examples/holby.ml'; echo 'loadt "Examples/holby.ml";;' | (time $hollight)
 echo '### Loading Library/integer.ml'; echo 'loadt "Library/integer.ml";;' | (time $hollight)

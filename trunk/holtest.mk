@@ -13,6 +13,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/dlo \
 	Library/floor \
 	Examples/forster \
+	Examples/harmonicsum \
 	Examples/hol88 \
 	Examples/holby \
 	Library/integer \
