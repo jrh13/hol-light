@@ -1,3 +1,98 @@
+Sun 23rd Mar 2014       Examples/harmonicsum.ml [new file]
+
+Added a new file with a rather trivial but nice result that a non-trivial
+contiguous segment of the harmonic series never sums to an integer.
+
+Tue 18th Mar 2014       iterate.ml
+
+Added a definition of a "polynomial function" (R->R) with various basic closure
+properties. This is a sufficiently useful concept that it seems worth having in
+the core, not just in the analytical theories.
+
+ polynomial_function =
+  |- !p. polynomial_function p <=>
+         (?m c. !x. p x = sum (0..m) (\i. c i * x pow i))
+
+ POLYNOMIAL_FUNCTION_ADD =
+  |- !p q.
+         polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (\x. p x + q x)
+
+ POLYNOMIAL_FUNCTION_CONST =
+  |- !c. polynomial_function (\x. c)
+
+ POLYNOMIAL_FUNCTION_FINITE_ROOTS =
+  |- !p a.
+         polynomial_function p ==> (FINITE {x | p x = a} <=> ~(!x. p x = a))
+
+ POLYNOMIAL_FUNCTION_I =
+  |- polynomial_function I
+
+  POLYNOMIAL_FUNCTION_ID =
+   |- polynomial_function (\x. x)
+
+  POLYNOMIAL_FUNCTION_INDUCT =
+   |- !P. P (\x. x) /\
+          (!c. P (\x. c)) /\
+          (!p q. P p /\ P q ==> P (\x. p x + q x)) /\
+          (!p q. P p /\ P q ==> P (\x. p x * q x))
+          ==> (!p. polynomial_function p ==> P p)
+
+  POLYNOMIAL_FUNCTION_LMUL =
+   |- !p c. polynomial_function p ==> polynomial_function (\x. c * p x)
+
+  POLYNOMIAL_FUNCTION_MUL =
+   |- !p q.
+         polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (\x. p x * q x)
+
+  POLYNOMIAL_FUNCTION_NEG =
+   |- !p. polynomial_function (\x. --p x) <=> polynomial_function p
+
+  POLYNOMIAL_FUNCTION_POW =
+    |- !p n. polynomial_function p ==> polynomial_function (\x. p x pow n)
+
+  POLYNOMIAL_FUNCTION_RMUL =
+    |- !p c. polynomial_function p ==> polynomial_function (\x. p x * c)
+
+  POLYNOMIAL_FUNCTION_SUB =
+    |- !p q.
+         polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (\x. p x - q x)
+
+  POLYNOMIAL_FUNCTION_SUM =
+    |- !s p.
+         FINITE s /\ (!i. i IN s ==> polynomial_function (\x. p x i))
+         ==> polynomial_function (\x. sum s (p x))
+
+  POLYNOMIAL_FUNCTION_o =
+    |- !p q.
+         polynomial_function p /\ polynomial_function q
+         ==> polynomial_function (p o q)
+
+Tue 18th Mar 2014       iterate.ml
+
+Added a conversion EXPAND_SUM_CONV to expand "sum (m..n) f" where m and
+n are particular numerals.
+
+Tue 18th Mar 2014       Library/binomial.ml
+
+Added one more lemma about binomial coefficients, a characteristic property of
+Appell sequences:
+
+ APPELL_SEQUENCE =
+  |- !c n x y.
+         sum (0..n)
+         (\k. &(binom (n,k)) *
+              sum (0..k) (\l. &(binom (k,l)) * c l * x pow (k - l)) *
+              y pow (n - k)) =
+         sum (0..n) (\k. &(binom (n,k)) * c k * (x + y) pow (n - k))
+
+Sun 16th Mar 2014       Multivariate/gamma.ml [new file]
+
+Added a new file giving a definition of the complex and real gamma functions
+and proofs of some basic properties.
+
 Mon 10th Mar 2014       Library/binomial.ml
 
 Added a couple more lemmas:
@@ -806,7 +901,6 @@ Added an extra line from Hendrik Tews to make things work more smoothly
 with OCaml 4.xx:
 
 #directory "+compiler-libs";;
-
 
 Fri 24th May 2013       Library/iter.ml
 

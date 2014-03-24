@@ -250,6 +250,29 @@ let BINOM_MUL_SHIFT = prove
      [`n:num`; `m:num`; `n - m:num`; `n - k:num`; `m - k:num`] THEN
     REWRITE_TAC[GSYM REAL_OF_NUM_EQ] THEN CONV_TAC REAL_FIELD]);;
 
+let APPELL_SEQUENCE = prove
+ (`!c n x y. sum (0..n)
+               (\k.  &(binom(n,k)) *
+                     sum(0..k)
+                        (\l. &(binom(k,l)) * c l * x pow (k - l)) *
+                     y pow (n - k)) =
+           sum (0..n) (\k. &(binom(n,k)) * c k * (x + y) pow (n - k))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_BINOMIAL_THEOREM] THEN
+  REWRITE_TAC[GSYM SUM_LMUL; GSYM SUM_RMUL] THEN
+  SIMP_TAC[SUM_SUM_PRODUCT; FINITE_NUMSEG] THEN
+  MATCH_MP_TAC SUM_EQ_GENERAL_INVERSES THEN
+  EXISTS_TAC `(\(x,y). y,x - y):num#num->num#num` THEN
+  EXISTS_TAC `(\(x,y). x + y,x):num#num->num#num` THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; IN_ELIM_PAIR_THM] THEN
+  REWRITE_TAC[PAIR_EQ; IN_NUMSEG] THEN
+  CONJ_TAC THENL [ARITH_TAC; REPEAT GEN_TAC THEN STRIP_TAC] THEN
+  REPEAT(CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC]) THEN
+  ASM_SIMP_TAC[ARITH_RULE
+   `j:num <= k /\ k <= n ==> (n - j) - (k - j) = n - k`] THEN
+  MATCH_MP_TAC(REAL_RING
+   `c * d:real = a * b ==> a * z * b * x * y = c * (d * z * x) * y`) THEN
+  ASM_SIMP_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_EQ; BINOM_MUL_SHIFT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Numerical computation of binom.                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -269,8 +292,8 @@ let NUM_BINOM_CONV =
    (`binom(n,n) = 1`,
     REWRITE_TAC[BINOM_REFL])
   and pth_swap = prove
-   (`k <= n ==> binom(n,k) = binom(n,n - k)`, 
-    MESON_TAC[BINOM_SYM]) 
+   (`k <= n ==> binom(n,k) = binom(n,n - k)`,
+    MESON_TAC[BINOM_SYM])
   and k_tm = `k:num` and n_tm = `n:num`
   and x_tm = `x:num` and y_tm = `y:num`
   and binom_tm = `binom` in
