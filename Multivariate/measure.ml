@@ -6978,6 +6978,70 @@ let MEASURABLE_ON_LIMIT = prove
         FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]]];
     REWRITE_TAC[o_THM] THEN ASM SET_TAC[]]);;
 
+let MEASURABLE_ON_BILINEAR = prove
+ (`!op:real^N->real^P->real^Q f g s:real^M->bool.
+        bilinear op /\ f measurable_on s /\ g measurable_on s
+        ==> (\x. op (f x) (g x)) measurable_on s`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  REWRITE_TAC[measurable_on; LEFT_IMP_EXISTS_THM; IMP_CONJ] THEN
+  MAP_EVERY X_GEN_TAC [`k:real^M->bool`; `ff:num->real^M->real^N`] THEN
+  REPLICATE_TAC 3 DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`k':real^M->bool`; `gg:num->real^M->real^P`] THEN
+  REPLICATE_TAC 3 DISCH_TAC THEN EXISTS_TAC `k UNION k':real^M->bool` THEN
+  EXISTS_TAC
+   `\n:num x:real^M. (op:real^N->real^P->real^Q) (ff n x) (gg n x)` THEN
+  ASM_REWRITE_TAC[NEGLIGIBLE_UNION_EQ] THEN CONJ_TAC THENL
+   [GEN_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+     (REWRITE_RULE[TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+        BILINEAR_CONTINUOUS_ON_COMPOSE)) THEN
+    ASM_REWRITE_TAC[ETA_AX];
+    X_GEN_TAC `x:real^M` THEN REWRITE_TAC[IN_UNION; DE_MORGAN_THM] THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     `(if x IN s then (op:real^N->real^P->real^Q) (f x) (g x) else vec 0) =
+      op (if x IN s then f(x:real^M) else vec 0)
+         (if x IN s then g(x:real^M) else vec 0)`
+    SUBST1_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [bilinear]) THEN
+      DISCH_THEN(CONJUNCTS_THEN2
+       (MP_TAC o GEN `y:real^N` o MATCH_MP LINEAR_0 o SPEC `y:real^N`)
+       (MP_TAC o GEN `z:real^P` o MATCH_MP LINEAR_0 o SPEC `z:real^P`)) THEN
+      MESON_TAC[];
+      REPEAT STRIP_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+       (REWRITE_RULE[TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+                LIM_BILINEAR)) THEN
+      ASM_SIMP_TAC[]]]);;
+
+let ABSOLUTELY_INTEGRABLE_BOUNDED_MEASURABLE_PRODUCT = prove
+ (`!op:real^N->real^P->real^Q f g s:real^M->bool.
+        bilinear op /\
+        f measurable_on s /\ bounded (IMAGE f s) /\
+        g absolutely_integrable_on s
+        ==> (\x. op (f x) (g x)) absolutely_integrable_on s`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP BILINEAR_BOUNDED_POS) THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BOUNDED_POS]) THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `C:real` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_ABSOLUTELY_INTEGRABLE THEN
+  EXISTS_TAC `\x:real^M. lift(B * C * norm((g:real^M->real^P) x))` THEN
+  REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        MEASURABLE_ON_BILINEAR)) THEN
+    ASM_MESON_TAC[ABSOLUTELY_INTEGRABLE_MEASURABLE];
+    REWRITE_TAC[LIFT_CMUL] THEN
+    REPEAT(MATCH_MP_TAC INTEGRABLE_CMUL) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[absolutely_integrable_on]) THEN
+    ASM_REWRITE_TAC[];
+    X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN REWRITE_TAC[LIFT_DROP] THEN
+    TRANS_TAC REAL_LE_TRANS
+     `B * norm((f:real^M->real^N) x) * norm(g x:real^P)` THEN
+    ASM_SIMP_TAC[] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+    ASM_SIMP_TAC[NORM_POS_LE]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Natural closure properties of measurable functions; the intersection      *)
 (* one is actually quite tedious since we end up reinventing cube roots      *)

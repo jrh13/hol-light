@@ -2620,6 +2620,12 @@ let LIM_POSINFINITY_SEQUENTIALLY = prove
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
   RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN ASM_REAL_ARITH_TAC);;
 
+let LIM_INFINITY_POSINFINITY_LIFT = prove
+ (`!f l:real^N. (f --> l) at_infinity ==> ((f o lift) --> l) at_posinfinity`,
+  REWRITE_TAC[LIM_AT_INFINITY; LIM_AT_POSINFINITY; o_THM] THEN
+  REWRITE_TAC[FORALL_DROP; NORM_REAL; GSYM drop; LIFT_DROP] THEN
+  MESON_TAC[REAL_ARITH `x >= b ==> abs(x) >= b`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The expected monotonicity property.                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -16202,7 +16208,7 @@ let SUMS_0 = prove
 
 let SERIES_FINITE_SUPPORT = prove
  (`!f:num->real^N s k.
-     FINITE (s INTER k) /\ (!x. ~(x IN s INTER k) ==> f x = vec 0)
+     FINITE (s INTER k) /\ (!x. x IN k /\ ~(x IN s) ==> f x = vec 0)
      ==> (f sums vsum (s INTER k) f) k`,
   REWRITE_TAC[sums; LIM_SEQUENTIALLY] THEN REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o ISPEC `\x:num. x` o MATCH_MP UPPER_BOUND_FINITE_SET) THEN
@@ -16261,12 +16267,32 @@ let SERIES_VSUM = prove
    [ASM SET_TAC []; ASM_MESON_TAC [SERIES_FINITE_SUPPORT]]);;
 
 let SUMS_REINDEX = prove
- (`!k a l n. ((\x. a(x + k)) sums l) (from n) <=> (a sums l) (from(n + k))`,
+ (`!k a l:real^N n.
+   ((\x. a(x + k)) sums l) (from n) <=> (a sums l) (from(n + k))`,
   REPEAT GEN_TAC THEN REWRITE_TAC[sums; FROM_INTER_NUMSEG] THEN
   REPEAT GEN_TAC THEN REWRITE_TAC[GSYM VSUM_OFFSET] THEN
   REWRITE_TAC[LIM_SEQUENTIALLY] THEN
   ASM_MESON_TAC[ARITH_RULE `N + k:num <= n ==> n = (n - k) + k /\ N <= n - k`;
                 ARITH_RULE `N + k:num <= n ==> N <= n + k`]);;
+
+let SUMS_REINDEX_GEN = prove
+ (`!k a l:real^N s.
+     ((\x. a(x + k)) sums l) s <=> (a sums l) (IMAGE (\i. i + k) s)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM SERIES_RESTRICT] THEN
+  MP_TAC(ISPECL
+   [`k:num`;
+    `\i. if i IN IMAGE (\i. i + k) s then (a:num->real^N) i else vec 0`;
+    `l:real^N`; `0`] SUMS_REINDEX) THEN
+  REWRITE_TAC[FROM_0] THEN
+  SIMP_TAC[EQ_ADD_RCANCEL; SET_RULE
+   `(!x y:num. x + k = y + k <=> x = y)
+         ==> ((x + k) IN IMAGE (\i. i + k) s <=> x IN s)`] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM SERIES_RESTRICT] THEN
+  AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[FUN_EQ_THM; IN_FROM; ADD_CLAUSES] THEN
+  SUBGOAL_THEN `!x:num. x IN IMAGE (\i. i + k) s ==> k <= x` MP_TAC THENL
+   [REWRITE_TAC[FORALL_IN_IMAGE] THEN ARITH_TAC; SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Similar combining theorems just for summability.                          *)

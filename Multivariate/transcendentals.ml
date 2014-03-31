@@ -3955,6 +3955,14 @@ let CLOG_MUL_SIMPLE = prove
          ==> clog(w * z) = clog(w) + clog(z)`,
   SIMP_TAC[CLOG_MUL; IM_ADD] THEN REAL_ARITH_TAC);;
 
+let CLOG_MUL_CX = prove
+ (`(!x z. &0 < x /\ ~(z = Cx(&0)) ==> clog(Cx x * z) = Cx(log x) + clog z) /\
+   (!x z. &0 < x /\ ~(z = Cx(&0)) ==> clog(z * Cx x) = clog z + Cx(log x))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[CX_LOG] THEN
+  MATCH_MP_TAC CLOG_MUL_SIMPLE THEN
+  ASM_SIMP_TAC[CX_INJ; REAL_LT_IMP_NZ; GSYM CX_LOG] THEN
+  ASM_SIMP_TAC[IM_CX; REAL_ADD_LID; REAL_ADD_RID; CLOG_WORKS]);;
+
 let CLOG_NEG = prove
  (`!z. ~(z = Cx(&0))
        ==> clog(--z) = if Im(z) <= &0 /\ ~(Re(z) < &0 /\ Im(z) = &0)
@@ -5647,6 +5655,38 @@ let LIM_1_OVER_POWER = prove
   ASM_SIMP_TAC[EXP_LOG; REAL_OF_NUM_LT; LT_NZ] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN ASM_REAL_ARITH_TAC);;
 
+let LIM_INV_Z_OFFSET = prove
+ (`!z. ((\w. inv(w + z)) --> Cx(&0)) at_infinity`,
+  GEN_TAC THEN REWRITE_TAC[LIM_AT_INFINITY_COMPLEX_0; o_DEF] THEN
+  SIMP_TAC[COMPLEX_INV_DIV; COMPLEX_FIELD
+   `~(w = Cx(&0)) ==> inv w + z = (Cx(&1) + w * z) / w`] THEN
+  GEN_REWRITE_TAC LAND_CONV
+   [COMPLEX_FIELD `Cx(&0) = Cx(&0) / (Cx(&1) + Cx(&0) * z)`] THEN
+  MATCH_MP_TAC LIM_COMPLEX_DIV THEN
+  REWRITE_TAC[COMPLEX_RING `~(Cx(&1) + Cx(&0) * z = Cx(&0))`] THEN
+  CONJ_TAC THEN LIM_TAC);;
+
+let LIM_INV_Z = prove
+ (`((\z. inv(z)) --> Cx(&0)) at_infinity`,
+  ONCE_REWRITE_TAC[MESON[COMPLEX_ADD_RID] `inv z = inv(z + Cx(&0))`] THEN
+  REWRITE_TAC[LIM_INV_Z_OFFSET]);;
+
+let LIM_INV_X_OFFSET = prove
+ (`!z. ((\x. inv(Cx x + z)) --> Cx(&0)) at_posinfinity`,
+  GEN_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[o_DEF] LIM_INFINITY_POSINFINITY_CX) THEN
+  REWRITE_TAC[LIM_INV_Z_OFFSET]);;
+
+let LIM_INV_X = prove
+ (`((\x. inv(Cx x)) --> Cx(&0)) at_posinfinity`,
+  MATCH_MP_TAC(REWRITE_RULE[o_DEF] LIM_INFINITY_POSINFINITY_CX) THEN
+  REWRITE_TAC[REWRITE_RULE[ETA_AX] LIM_INV_Z]);;
+
+let LIM_INV_N_OFFSET = prove
+ (`!z. ((\n. inv(Cx(&n) + z)) --> Cx(&0)) sequentially`,
+  GEN_TAC THEN MATCH_MP_TAC LIM_POSINFINITY_SEQUENTIALLY THEN
+  REWRITE_TAC[LIM_INV_X_OFFSET]);;
+
 let LIM_1_OVER_N = prove
  (`((\n. Cx(&1) / Cx(&n)) --> Cx(&0)) sequentially`,
   MP_TAC(SPEC `Cx(&1)` LIM_1_OVER_POWER) THEN SIMP_TAC[RE_CX; REAL_LT_01] THEN
@@ -5657,6 +5697,43 @@ let LIM_1_OVER_N = prove
 let LIM_INV_N = prove
  (`((\n. inv(Cx(&n))) --> Cx(&0)) sequentially`,
   MP_TAC LIM_1_OVER_N THEN REWRITE_TAC[complex_div; COMPLEX_MUL_LID]);;
+
+let LIM_INV_Z_POW_OFFSET = prove
+ (`!z n. 1 <= n ==> ((\w. inv(w + z) pow n) --> Cx(&0)) at_infinity`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `Cx(&0) = Cx(&0) pow n` SUBST1_TAC THENL
+   [ASM_SIMP_TAC[COMPLEX_POW_ZERO; LE_1];
+    MATCH_MP_TAC LIM_COMPLEX_POW THEN REWRITE_TAC[LIM_INV_Z_OFFSET]]);;
+
+let LIM_INV_Z_POW = prove
+ (`!n. 1 <= n ==> ((\z. inv(z) pow n) --> Cx(&0)) at_infinity`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `Cx(&0) = Cx(&0) pow n` SUBST1_TAC THENL
+   [ASM_SIMP_TAC[COMPLEX_POW_ZERO; LE_1];
+    MATCH_MP_TAC LIM_COMPLEX_POW THEN
+    REWRITE_TAC[REWRITE_RULE[ETA_AX] LIM_INV_Z]]);;
+
+let LIM_INV_X_POW_OFFSET = prove
+ (`!z n. 1 <= n ==> ((\x. inv(Cx x + z) pow n) --> Cx(&0)) at_posinfinity`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[o_DEF] LIM_INFINITY_POSINFINITY_CX) THEN
+  ASM_SIMP_TAC[LIM_INV_Z_POW_OFFSET]);;
+
+let LIM_INV_X_POW = prove
+ (`!n. 1 <= n ==> ((\x. inv(Cx x) pow n) --> Cx(&0)) at_posinfinity`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[o_DEF] LIM_INFINITY_POSINFINITY_CX) THEN
+  ASM_SIMP_TAC[LIM_INV_Z_POW]);;
+
+let LIM_INV_N_POW_OFFSET = prove
+ (`!z m. 1 <= m ==> ((\n. inv(Cx(&n) + z) pow m) --> Cx(&0)) sequentially`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_POSINFINITY_SEQUENTIALLY THEN
+  ASM_SIMP_TAC[LIM_INV_X_POW_OFFSET]);;
+
+let LIM_INV_N_POW = prove
+ (`!m. 1 <= m ==> ((\n. inv(Cx(&n)) pow m) --> Cx(&0)) sequentially`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_POSINFINITY_SEQUENTIALLY THEN
+  ASM_SIMP_TAC[LIM_INV_X_POW]);;
 
 let LIM_1_OVER_LOG = prove
  (`((\n. Cx(&1) / clog(Cx(&n))) --> Cx(&0)) sequentially`,
@@ -6563,6 +6640,11 @@ let REAL_ROOT_RPOW = prove
 let LOG_RPOW = prove
  (`!x y. &0 < x ==> log(x rpow y) = y * log x`,
   SIMP_TAC[rpow; LOG_EXP]);;
+
+let LOG_SQRT = prove
+ (`!x. &0 < x ==> log(sqrt x) = log x / &2`,
+  SIMP_TAC[GSYM RPOW_SQRT; LOG_RPOW; REAL_LT_IMP_LE] THEN
+  REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Formulation of loop homotopy in terms of maps out of S^1                  *)
