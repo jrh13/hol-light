@@ -352,6 +352,11 @@ let SERIES_CX_LIFT = prove
   SIMP_TAC[sums; LIM_CX_LIFT; VSUM_CX; FINITE_INTER; FINITE_NUMSEG] THEN
   REWRITE_TAC[REWRITE_RULE[o_DEF] (GSYM LIFT_SUM)]);;
 
+let LIM_INFINITY_POSINFINITY_CX = prove
+ (`!f l:real^N. (f --> l) at_infinity ==> ((f o Cx) --> l) at_posinfinity`,
+  REWRITE_TAC[LIM_AT_INFINITY; LIM_AT_POSINFINITY; o_THM] THEN
+  MESON_TAC[COMPLEX_NORM_CX; REAL_ARITH `x >= b ==> abs(x) >= b`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Special cases of null limits.                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -1566,6 +1571,14 @@ let HOLOMORPHIC_ON_MUL = prove
         f holomorphic_on s /\ g holomorphic_on s
         ==> (\z. f z * g z) holomorphic_on s`,
   SIMP_TAC[HOLOMORPHIC_ON_DIFFERENTIABLE; COMPLEX_DIFFERENTIABLE_MUL_WITHIN]);;
+
+let HOLOMORPHIC_ON_LMUL = prove
+ (`!f c s. f holomorphic_on s ==> (\x. c * f x) holomorphic_on s`,
+  SIMP_TAC[HOLOMORPHIC_ON_MUL; HOLOMORPHIC_ON_CONST]);;
+
+let HOLOMORPHIC_ON_RMUL = prove
+ (`!f c s. f holomorphic_on s ==> (\x. f x * c) holomorphic_on s`,
+  SIMP_TAC[HOLOMORPHIC_ON_MUL; HOLOMORPHIC_ON_CONST]);;
 
 let HOLOMORPHIC_ON_INV = prove
  (`!f s. f holomorphic_on s /\ (!z. z IN s ==> ~(f z = Cx(&0)))
@@ -2987,6 +3000,27 @@ let INTEGRABLE_COMPLEX_RMUL_EQ = prove
   ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
   REWRITE_TAC[INTEGRABLE_COMPLEX_LMUL_EQ]);;
 
+let INTEGRAL_COMPLEX_LMUL = prove
+ (`!f:real^N->complex s c.
+        f integrable_on s ==> integral s (\x. c * f x) = c * integral s f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
+  MATCH_MP_TAC HAS_INTEGRAL_COMPLEX_LMUL THEN
+  ASM_SIMP_TAC[INTEGRABLE_INTEGRAL]);;
+
+let INTEGRAL_COMPLEX_RMUL = prove
+ (`!f:real^N->complex s c.
+        f integrable_on s ==> integral s (\x. f x * c) = integral s f * c`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  REWRITE_TAC[INTEGRAL_COMPLEX_LMUL]);;
+
+let REAL_COMPLEX_INTEGRAL = prove
+ (`!f:real^N->complex s.
+     f integrable_on s /\ (!x. x IN s ==> real(f x)) ==> real(integral s f)`,
+  REWRITE_TAC[real; IM_DEF] THEN SIMP_TAC[INTEGRAL_COMPONENT] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM LIFT_EQ; LIFT_DROP; LIFT_NUM] THEN
+  MATCH_MP_TAC INTEGRAL_EQ_0 THEN
+  ASM_REWRITE_TAC[GSYM LIFT_NUM; LIFT_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations among convergence and absolute convergence for power series.    *)
 (* ------------------------------------------------------------------------- *)
@@ -3549,3 +3583,178 @@ let ABEL_LIMIT_THEOREM = prove
     REWRITE_TAC[COMPLEX_SUB_REFL; COMPLEX_NORM_CX; COMPLEX_POW_ONE;
                 COMPLEX_MUL_RID; ETA_AX; REAL_ABS_NUM; REAL_SUB_REFL;
                 REAL_LE_REFL; REAL_MUL_RZERO]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity and uniqueness of power series. These would drop easily out    *)
+(* of later developments, but it seems nice to prove them without all the    *)
+(* machinery of Cauchy's theorem etc.                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let POWER_SERIES_CONTINUOUS = prove
+ (`!a k f z r.
+        (!w. w IN ball(z,r) ==> ((\n. a n * (w - z) pow n) sums f w) k)
+        ==> f continuous_on ball(z,r)`,
+  REWRITE_TAC[IN_BALL] THEN REPEAT STRIP_TAC THEN
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_AT; OPEN_BALL] THEN
+  X_GEN_TAC `w:complex` THEN REWRITE_TAC[IN_BALL] THEN DISCH_TAC THEN
+  ABBREV_TAC `R = (r + dist(z,w:complex)) / &2` THEN
+  MATCH_MP_TAC CONTINUOUS_ON_INTERIOR THEN
+  EXISTS_TAC `cball(z:complex,R)` THEN
+  REWRITE_TAC[INTERIOR_CBALL; IN_BALL] THEN CONJ_TAC THENL
+   [ALL_TAC;
+    EXPAND_TAC "R" THEN UNDISCH_TAC `dist(z:complex,w) < r` THEN
+    CONV_TAC NORM_ARITH] THEN
+  MATCH_MP_TAC(ISPEC `sequentially` CONTINUOUS_UNIFORM_LIMIT) THEN
+  EXISTS_TAC
+   `\n w. vsum(k INTER (0..n)) (\i. (a:num->complex) i * (w - z) pow i)` THEN
+  REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN CONJ_TAC THENL
+   [REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN EXISTS_TAC `1` THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_VSUM THEN
+    SIMP_TAC[FINITE_INTER; FINITE_NUMSEG; IN_INTER; IN_NUMSEG] THEN
+    X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPLEX_LMUL THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPLEX_POW THEN
+    MATCH_MP_TAC CONTINUOUS_ON_SUB THEN
+    REWRITE_TAC[CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`\w n. (a:num->complex) n * (w - z) pow n`;
+    `\n. Cx (norm (a n * Cx R pow n))`;
+    `\x:complex. x IN cball(z,R)`;
+    `k:num->bool`] SERIES_COMPARISON_UNIFORM_COMPLEX) THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; dist] THEN ANTS_TAC THENL
+   [REWRITE_TAC[RE_CX; NORM_POS_LE; REAL_CX] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC POWER_SERIES_CONV_IMP_ABSCONV THEN
+      EXISTS_TAC `Cx((r + R) / &2)` THEN CONJ_TAC THENL
+       [FIRST_X_ASSUM(MP_TAC o SPEC `z + Cx((r + R) / &2)`) THEN
+        ANTS_TAC THENL
+         [REWRITE_TAC[NORM_ARITH `dist(z,z + r) = norm r`];
+          REWRITE_TAC[summable; COMPLEX_RING `(z + r) - z:complex = r`] THEN
+          MESON_TAC[]];
+        ALL_TAC] THEN
+      REWRITE_TAC[COMPLEX_NORM_CX] THEN
+      EXPAND_TAC "R" THEN UNDISCH_TAC `dist(z:complex,w) < r` THEN
+      CONV_TAC NORM_ARITH;
+      EXISTS_TAC `1` THEN REWRITE_TAC[IN_CBALL; dist] THEN
+      REPEAT STRIP_TAC THEN REWRITE_TAC[COMPLEX_NORM_MUL] THEN
+      REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_MUL; REAL_ABS_NORM] THEN
+      MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+      REWRITE_TAC[COMPLEX_NORM_POW] THEN MATCH_MP_TAC REAL_POW_LE2 THEN
+      REWRITE_TAC[NORM_POS_LE; COMPLEX_NORM_CX] THEN
+      UNDISCH_TAC `norm(z - x:complex) <= R` THEN CONV_TAC NORM_ARITH];
+    DISCH_THEN(X_CHOOSE_TAC `g:complex->complex`) THEN
+    SUBGOAL_THEN `!x. x IN cball(z,R) ==> (f:complex->complex) x = g x`
+    MP_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+    X_GEN_TAC `y:complex` THEN REWRITE_TAC[IN_CBALL] THEN DISCH_TAC THEN
+    MATCH_MP_TAC SERIES_UNIQUE THEN
+    EXISTS_TAC `\n. (a:num->complex) n * (y - z) pow n` THEN
+    EXISTS_TAC `k:num->bool` THEN REWRITE_TAC[] THEN CONJ_TAC THENL
+     [FIRST_X_ASSUM MATCH_MP_TAC THEN
+      FIRST_X_ASSUM(K ALL_TAC o SPEC `&0`) THEN
+      REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NORM_ARITH;
+      REWRITE_TAC[sums; LIM_SEQUENTIALLY; dist] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[IN_CBALL]) THEN ASM_MESON_TAC[]]]);;
+
+let POWER_SERIES_LIMIT_POINT_OF_ZEROS = prove
+ (`!f k r s.
+        &0 < r /\
+        (!w. dist(w,z) < r ==> ((\i. c i * (w - z) pow i) sums f(w)) k) /\
+        (!w. w IN s ==> f(w) = Cx(&0)) /\ z limit_point_of s
+        ==> !i. i IN k ==> c(i) = Cx(&0)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!x. P x ==> Q x) <=> ~(?x. P x /\ ~Q x)`] THEN
+  GEN_REWRITE_TAC RAND_CONV [num_WOP] THEN
+  REWRITE_TAC[TAUT `(p ==> ~(q /\ ~r)) <=> q /\ p ==> r`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:num` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `!w. w IN ball(z,r) /\ ~(w = z)
+        ==> ((\i. c(m + i) * (w - z) pow i) sums f(w) / (w - z) pow m)
+            {i | m + i IN k}`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC SUMS_EQ THEN
+    EXISTS_TAC `\i. (c(m + i) * (w - z) pow (m + i)) / (w - z) pow m` THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN CONJ_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      REWRITE_TAC[complex_div; GSYM COMPLEX_MUL_ASSOC] THEN
+      AP_TERM_TAC THEN REWRITE_TAC[GSYM complex_div] THEN
+      ASM_SIMP_TAC[COMPLEX_DIV_POW2; COMPLEX_SUB_0; LE_ADD] THEN
+      AP_TERM_TAC THEN ARITH_TAC;
+      REWRITE_TAC[complex_div] THEN
+      MATCH_MP_TAC SERIES_COMPLEX_RMUL THEN
+      MP_TAC(ISPECL [`m:num`; `\i. (c:num->complex) i * (w - z) pow i`;
+                     `(f:complex->complex) w`; `{i:num | m + i IN k}`]
+        (ONCE_REWRITE_RULE[ADD_SYM] SUMS_REINDEX_GEN)) THEN
+      REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+      REWRITE_TAC[IMAGE; IN_ELIM_THM] THEN
+      SUBGOAL_THEN `((\i. c i * (w - z) pow i) sums (f:complex->complex) w) k`
+      MP_TAC THENL [ASM_MESON_TAC[IN_BALL; DIST_SYM]; ALL_TAC] THEN
+      ONCE_REWRITE_TAC[GSYM SERIES_RESTRICT] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUMS_EQ) THEN
+      X_GEN_TAC `i:num` THEN REWRITE_TAC[IN_UNIV; IN_ELIM_THM] THEN
+      REWRITE_TAC[GSYM LE_EXISTS; MESON[]
+        `(?x. f x IN k /\ y = f x) <=> y IN k /\ (?x. y = f x)`] THEN
+      ASM_CASES_TAC `(i:num) IN k` THEN ASM_REWRITE_TAC[] THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[COMPLEX_VEC_0; COMPLEX_ENTIRE] THEN
+      ASM_MESON_TAC[NOT_LE]];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `((\i. c(m + i) * (z - z) pow i) sums
+     vsum {0} (\i. c(m + i) * (z - z) pow i))
+    {i | m + i IN k}`
+  MP_TAC THENL
+   [MATCH_MP_TAC SERIES_VSUM THEN EXISTS_TAC `{0}` THEN
+    REWRITE_TAC[FINITE_SING; SING_SUBSET; IN_ELIM_THM; IN_SING] THEN
+    ASM_REWRITE_TAC[ADD_CLAUSES; COMPLEX_VEC_0; COMPLEX_ENTIRE] THEN
+    SIMP_TAC[COMPLEX_SUB_REFL; COMPLEX_POW_EQ_0];
+    REWRITE_TAC[VSUM_SING; complex_pow; ADD_CLAUSES; COMPLEX_MUL_RID] THEN
+    DISCH_TAC] THEN
+  SUBGOAL_THEN
+   `!w. w IN ball(z,r)
+        ==> summable {i | m + i IN k} (\i. c(m + i) * (w - z) pow i)`
+  MP_TAC THENL
+   [X_GEN_TAC `w:complex` THEN DISCH_TAC THEN REWRITE_TAC[summable] THEN
+    ASM_CASES_TAC `w:complex = z` THEN ASM_MESON_TAC[];
+    REWRITE_TAC[summable; RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN
+    DISCH_THEN(X_CHOOSE_TAC `g:complex->complex`)] THEN
+  SUBGOAL_THEN `(g:complex->complex) continuous_on ball(z,r)`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC POWER_SERIES_CONTINUOUS THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!x. x IN closure((s INTER cball(z,r / &2)) DELETE z)
+        ==> (g:complex->complex) x IN {Cx(&0)}`
+  MP_TAC THENL
+   [MATCH_MP_TAC FORALL_IN_CLOSURE THEN REWRITE_TAC[CLOSED_SING; IN_SING] THEN
+    CONJ_TAC THENL
+     [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET)) THEN
+      TRANS_TAC SUBSET_TRANS `closure(cball(z:complex,r / &2))` THEN
+      SIMP_TAC[SUBSET_CLOSURE; INTER_SUBSET;
+               SET_RULE `s SUBSET t ==> (s DELETE z) SUBSET t`] THEN
+      SIMP_TAC[CLOSURE_CLOSED; CLOSED_CBALL; SUBSET_BALLS; DIST_REFL] THEN
+      ASM_REAL_ARITH_TAC;
+      X_GEN_TAC `w:complex` THEN REWRITE_TAC[IN_INTER; IN_DELETE] THEN
+      STRIP_TAC THEN
+      SUBGOAL_THEN `(g:complex->complex) w = f w / (w - z) pow m`
+       (fun th -> ASM_SIMP_TAC[COMPLEX_DIV_EQ_0; th]) THEN
+      MATCH_MP_TAC SERIES_UNIQUE THEN
+      EXISTS_TAC `\i. (c:num->complex) (m + i) * (w - z) pow i` THEN
+      EXISTS_TAC `{i:num | m + i IN k}` THEN
+      REWRITE_TAC[] THEN CONJ_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
+      ASM_REWRITE_TAC[] THEN UNDISCH_TAC `w IN cball(z:complex,r / &2)` THEN
+      REWRITE_TAC[IN_CBALL; IN_BALL] THEN ASM_REAL_ARITH_TAC];
+    DISCH_THEN(MP_TAC o SPEC `z:complex`) THEN
+    REWRITE_TAC[IN_CLOSURE_DELETE; NOT_IMP; IN_SING] THEN CONJ_TAC THENL
+     [UNDISCH_TAC `(z:complex) limit_point_of s` THEN
+      REWRITE_TAC[LIMPT_INFINITE_CBALL; INTER_ASSOC] THEN
+      REWRITE_TAC[GSYM CBALL_MIN_INTER] THEN
+      DISCH_THEN(fun th -> X_GEN_TAC `e:real` THEN
+        MP_TAC(SPEC `min (r / &2) e` th)) THEN
+      ASM_REWRITE_TAC[REAL_HALF; REAL_LT_MIN];
+      SUBGOAL_THEN `(g:complex->complex) z = c(m:num)`
+       (fun th -> ASM_REWRITE_TAC[th]) THEN
+      MATCH_MP_TAC SERIES_UNIQUE THEN
+      EXISTS_TAC `\i. (c:num->complex) (m + i) * (z - z) pow i` THEN
+      EXISTS_TAC `{i:num | m + i IN k}` THEN
+      ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_REWRITE_TAC[CENTRE_IN_BALL]]]);;

@@ -1691,7 +1691,7 @@ let DOT_RSUM = prove
   ASM_SIMP_TAC[VSUM_CLAUSES; SUM_CLAUSES; DOT_RZERO; DOT_RADD]);;
 
 let VSUM_OFFSET = prove
- (`!f m p. vsum(m + p..n + p) f = vsum(m..n) (\i. f (i + p))`,
+ (`!p f m n. vsum(m + p..n + p) f = vsum(m..n) (\i. f (i + p))`,
   SIMP_TAC[vsum; CART_EQ; LAMBDA_BETA; VEC_COMPONENT; SUM_OFFSET]);;
 
 let VSUM_OFFSET_0 = prove
@@ -1864,18 +1864,35 @@ let th = prove
 (* ------------------------------------------------------------------------- *)
 
 let EXPAND_VSUM_CONV =
-  let pth_0,pth_1 = (CONJ_PAIR o prove)
-   (`vsum(0..0) (f:num->real^N) = f(0) /\
-     vsum(0..SUC n) f = vsum(0..n) f + f(SUC n)`,
-    REWRITE_TAC[VSUM_CLAUSES_NUMSEG; LE_0; VECTOR_ADD_AC]) in
-  let conv_0 = REWR_CONV pth_0 and conv_1 = REWR_CONV pth_1 in
+  let [pth_0; pth_1; pth_2] = (CONJUNCTS o prove)
+   (`(n < m ==> vsum(m..n) (f:num->real^N) = vec 0) /\
+     vsum(m..m) (f:num->real^N) = f m /\
+     (m <= n ==> vsum (m..n) (f:num->real^N) = f m + vsum (m + 1..n) f)`,
+    REWRITE_TAC[VSUM_CLAUSES_LEFT; VSUM_SING_NUMSEG; VSUM_TRIV_NUMSEG])
+  and ns_tm = `..` and f_tm = `f:num->real^N`
+  and m_tm = `m:num` and n_tm = `n:num`
+  and n_ty = `:N` in
   let rec conv tm =
-    try (LAND_CONV(RAND_CONV num_CONV) THENC conv_1 THENC
-         NUM_REDUCE_CONV THENC LAND_CONV conv) tm
-    with Failure _ -> conv_0 tm in
-  conv THENC
-  (REDEPTH_CONV BETA_CONV) THENC
-  GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM VECTOR_ADD_ASSOC];;
+    let smn,ftm = dest_comb tm in
+    let s,mn = dest_comb smn in
+    if not(is_const s & fst(dest_const s) = "vsum")
+    then failwith "EXPAND_VSUM_CONV" else
+    let mtm,ntm = dest_binop ns_tm mn in
+    let m = dest_numeral mtm and n = dest_numeral ntm in
+    let nty = hd(tl(snd(dest_type(snd(dest_fun_ty(type_of ftm)))))) in
+    let ilist = [nty,n_ty] in
+    let ifn = inst ilist and tfn = INST_TYPE ilist in
+    if n < m then
+      let th1 = INST [ftm,ifn f_tm; mtm,m_tm; ntm,n_tm] (tfn pth_0) in
+      MP th1 (EQT_ELIM(NUM_LT_CONV(lhand(concl th1))))
+    else if n = m then CONV_RULE (RAND_CONV(TRY_CONV BETA_CONV))
+                                 (INST [ftm,ifn f_tm; mtm,m_tm] (tfn pth_1))
+    else
+      let th1 = INST [ftm,ifn f_tm; mtm,m_tm; ntm,n_tm] (tfn pth_2) in
+      let th2 = MP th1 (EQT_ELIM(NUM_LE_CONV(lhand(concl th1)))) in
+      CONV_RULE (RAND_CONV(COMB2_CONV (RAND_CONV(TRY_CONV BETA_CONV))
+       (LAND_CONV(LAND_CONV NUM_ADD_CONV) THENC conv))) th2 in
+  conv;;
 
 (* ------------------------------------------------------------------------- *)
 (* Basis vectors in coordinate directions.                                   *)

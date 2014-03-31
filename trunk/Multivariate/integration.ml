@@ -5827,6 +5827,18 @@ let HAS_INTEGRAL_CLOSURE = prove
   MP_TAC(ISPEC `s:real^M->bool` CLOSURE_SUBSET) THEN
   SET_TAC[]);;
 
+let INTEGRABLE_CASES = prove
+ (`!f g:real^M->real^N s.
+        f integrable_on {x | x IN s /\ P x} /\
+        g integrable_on {x | x IN s /\ ~P x}
+        ==> (\x. if P x then f x else g x) integrable_on s`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[GSYM INTEGRABLE_RESTRICT_UNIV] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP INTEGRABLE_ADD) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] INTEGRABLE_EQ) THEN
+  REWRITE_TAC[IN_UNIV; IN_ELIM_THM] THEN
+  MESON_TAC[VECTOR_ADD_LID; VECTOR_ADD_RID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* More lemmas that are useful later.                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -7755,6 +7767,128 @@ let INTEGRABLE_ON_ALL_INTERVALS_INTEGRABLE_BOUND = prove
   EXISTS_TAC `(\x. if x IN s then g x else vec 0):real^M->real^1` THEN
   ASM_REWRITE_TAC[] THEN
   GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC[NORM_0; DROP_VEC; REAL_POS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Explicit limit statement for integrals over [0,inf].                      *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_INTEGRAL_LIM_AT_POSINFINITY = prove
+ (`!f l:real^N.
+        (f has_integral l) {t | &0 <= drop t} <=>
+        (!a. f integrable_on interval[vec 0,a]) /\
+        ((\a. integral (interval[vec 0,lift a]) f) --> l) at_posinfinity`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [HAS_INTEGRAL_ALT] THEN
+  REWRITE_TAC[INTEGRAL_RESTRICT_INTER; INTEGRABLE_RESTRICT_INTER] THEN
+  SUBGOAL_THEN
+   `!a b. {t | &0 <= drop t} INTER interval[a,b] =
+          interval[lift(max (&0) (drop a)),b]`
+   (fun th -> REWRITE_TAC[th])
+  THENL
+   [REWRITE_TAC[EXTENSION; FORALL_LIFT; IN_INTER; IN_INTERVAL_1;
+                LIFT_DROP; IN_ELIM_THM] THEN
+    REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  REWRITE_TAC[LIM_AT_POSINFINITY; dist; real_ge] THEN
+  EQ_TAC THEN STRIP_TAC THEN CONJ_TAC THENL
+   [X_GEN_TAC `a:real^1` THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`vec 0:real^1`; `a:real^1`]) THEN
+    REWRITE_TAC[DROP_VEC; LIFT_NUM; REAL_ARITH `max x x = x`];
+    X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B:real` THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "*")) THEN
+    X_GEN_TAC `b:real` THEN DISCH_TAC THEN
+    REMOVE_THEN "*" (MP_TAC o SPECL [`lift(--b)`; `lift b`]) THEN
+    REWRITE_TAC[DROP_VEC; LIFT_NUM; LIFT_DROP] THEN
+    SUBGOAL_THEN `max (&0) (--b) = &0` SUBST1_TAC THENL
+     [ASM_REAL_ARITH_TAC; REWRITE_TAC[LIFT_NUM]] THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    REWRITE_TAC[BALL_1; SUBSET_INTERVAL_1] THEN
+    REWRITE_TAC[DROP_ADD; DROP_SUB; DROP_VEC; LIFT_DROP] THEN
+    ASM_REAL_ARITH_TAC;
+    MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `b:real^1`) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INTEGRABLE_SUBINTERVAL) THEN
+    SIMP_TAC[SUBSET_INTERVAL_1; DROP_ADD; DROP_SUB; DROP_VEC; LIFT_DROP] THEN
+    REAL_ARITH_TAC;
+    X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `B:real` (LABEL_TAC "*")) THEN
+    EXISTS_TAC `abs B + &1` THEN
+    CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`] THEN
+    REWRITE_TAC[BALL_1; SUBSET_INTERVAL_1] THEN
+    REWRITE_TAC[DROP_ADD; DROP_SUB; DROP_VEC; LIFT_DROP] THEN
+    STRIP_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    SUBGOAL_THEN `max (&0) (drop a) = &0` SUBST1_TAC THENL
+     [ASM_REAL_ARITH_TAC; REWRITE_TAC[LIFT_NUM]] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `drop b`) THEN
+    REWRITE_TAC[LIFT_DROP] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_REAL_ARITH_TAC]);;
+
+let HAS_INTEGRAL_LIM_SEQUENTIALLY = prove
+ (`!f:real^1->real^N l.
+           (f o lift --> vec 0) at_posinfinity /\
+           (!n. f integrable_on interval[vec 0,vec n]) /\
+           ((\n. integral (interval[vec 0,vec n]) f) --> l) sequentially
+           ==> (f has_integral l) {t | &0 <= drop t}`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[HAS_INTEGRAL_LIM_AT_POSINFINITY] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [X_GEN_TAC `a:real^1` THEN MP_TAC(SPEC `drop a` REAL_ARCH_SIMPLE) THEN
+    DISCH_THEN(X_CHOOSE_TAC `n:num`) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INTEGRABLE_SUBINTERVAL) THEN
+    REWRITE_TAC[SUBSET_INTERVAL_1; DROP_VEC] THEN ASM_REAL_ARITH_TAC;
+    DISCH_TAC] THEN
+  REWRITE_TAC[LIM_AT_POSINFINITY; real_ge] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_AT_POSINFINITY]) THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; o_THM; real_ge; FORALL_DROP; LIFT_DROP] THEN
+  REWRITE_TAC[DIST_0; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `B:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_SEQUENTIALLY]) THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+  DISCH_THEN(X_CHOOSE_TAC `N:num`) THEN EXISTS_TAC `max (&N) B + &1` THEN
+  X_GEN_TAC `x:real^1` THEN DISCH_TAC THEN MP_TAC(SPEC `drop x` FLOOR_POS) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_TAC `n:num`) THEN
+  SUBGOAL_THEN
+   `integral(interval[vec 0,x]) (f:real^1->real^N) =
+    integral(interval[vec 0,vec n]) f + integral(interval[vec n,x]) f`
+  SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC INTEGRAL_COMBINE THEN
+    ASM_REWRITE_TAC[DROP_VEC] THEN
+    MP_TAC(SPEC `drop x` FLOOR) THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  MATCH_MP_TAC(NORM_ARITH
+   `dist(a:real^N,l) < e / &2 /\ norm b <= e / &2 ==> dist(a + b,l) < e`) THEN
+  CONJ_TAC THENL
+   [FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN
+    MP_TAC(SPEC `drop x` FLOOR) THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  TRANS_TAC REAL_LE_TRANS
+    `drop(integral(interval[vec n:real^1,x]) (\x. lift(e / &2)))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
+    ASM_REWRITE_TAC[INTEGRABLE_CONST; IN_INTERVAL_1; LIFT_DROP] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
+      EXISTS_TAC `interval[vec 0:real^1,x]` THEN
+      ASM_REWRITE_TAC[SUBSET_INTERVAL_1; DROP_VEC] THEN ASM_REAL_ARITH_TAC;
+      REWRITE_TAC[DROP_VEC] THEN REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC REAL_LT_IMP_LE THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      MP_TAC(SPEC `drop x` FLOOR) THEN ASM_REAL_ARITH_TAC];
+    REWRITE_TAC[INTEGRAL_CONST] THEN IMP_REWRITE_TAC[CONTENT_1] THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[GSYM LIFT_CMUL; LIFT_DROP; DROP_VEC] THEN
+      GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_LID] THEN
+      MATCH_MP_TAC REAL_LE_RMUL THEN
+      MP_TAC(SPEC `drop x` FLOOR) THEN ASM_REAL_ARITH_TAC;
+      REWRITE_TAC[DROP_VEC] THEN MP_TAC(SPEC `drop x` FLOOR) THEN
+      ASM_REAL_ARITH_TAC]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Interval functions of bounded variation on a set.                         *)
@@ -11492,7 +11626,7 @@ let HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_CONNECTED = prove
 (* ------------------------------------------------------------------------- *)
 
 let INTEGRATION_BY_PARTS = prove
- (`!(bop:real^M->real^M->real^N) f g f' g' a b c y.
+ (`!(bop:real^M->real^N->real^P) f g f' g' a b c y.
         bilinear bop /\ drop a <= drop b /\ COUNTABLE c /\
         (\x. bop (f x) (g x)) continuous_on interval[a,b] /\
         (!x. x IN interval(a,b) DIFF c
@@ -11503,9 +11637,9 @@ let INTEGRATION_BY_PARTS = prove
             (interval[a,b])
         ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])`,
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`\x:real^1. (bop:real^M->real^M->real^N) (f x) (g x)`;
-                 `\x:real^1. (bop:real^M->real^M->real^N) (f x) (g' x) +
-                             (bop:real^M->real^M->real^N) (f' x) (g x)`;
+  MP_TAC(ISPECL [`\x:real^1. (bop:real^M->real^N->real^P) (f x) (g x)`;
+                 `\x:real^1. (bop:real^M->real^N->real^P) (f x) (g' x) +
+                             (bop:real^M->real^N->real^P) (f' x) (g x)`;
                  `c:real^1->bool`; `a:real^1`; `b:real^1`]
     FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG) THEN
   ASM_SIMP_TAC[HAS_VECTOR_DERIVATIVE_BILINEAR_AT] THEN
@@ -11514,7 +11648,7 @@ let INTEGRATION_BY_PARTS = prove
   REWRITE_TAC[VECTOR_ARITH `b - a - (b - a - y):real^N = y`; VECTOR_ADD_SUB]);;
 
 let INTEGRATION_BY_PARTS_SIMPLE = prove
- (`!(bop:real^M->real^M->real^N) f g f' g' a b y.
+ (`!(bop:real^M->real^N->real^P) f g f' g' a b y.
         bilinear bop /\ drop a <= drop b /\
         (!x. x IN interval[a,b]
              ==> (f has_vector_derivative f'(x)) (at x within interval[a,b]) /\
@@ -11524,9 +11658,9 @@ let INTEGRATION_BY_PARTS_SIMPLE = prove
             (interval[a,b])
         ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])`,
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`\x:real^1. (bop:real^M->real^M->real^N) (f x) (g x)`;
-                 `\x:real^1. (bop:real^M->real^M->real^N) (f x) (g' x) +
-                             (bop:real^M->real^M->real^N) (f' x) (g x)`;
+  MP_TAC(ISPECL [`\x:real^1. (bop:real^M->real^N->real^P) (f x) (g x)`;
+                 `\x:real^1. (bop:real^M->real^N->real^P) (f x) (g' x) +
+                             (bop:real^M->real^N->real^P) (f' x) (g x)`;
                  `a:real^1`; `b:real^1`]
     FUNDAMENTAL_THEOREM_OF_CALCULUS) THEN
   ASM_SIMP_TAC[HAS_VECTOR_DERIVATIVE_BILINEAR_WITHIN] THEN
@@ -11535,7 +11669,7 @@ let INTEGRATION_BY_PARTS_SIMPLE = prove
   REWRITE_TAC[VECTOR_ARITH `b - a - (b - a - y):real^N = y`; VECTOR_ADD_SUB]);;
 
 let INTEGRABLE_BY_PARTS = prove
- (`!(bop:real^M->real^M->real^N) f g f' g' a b c.
+ (`!(bop:real^M->real^N->real^P) f g f' g' a b c.
         bilinear bop /\ COUNTABLE c /\
         (\x. bop (f x) (g x)) continuous_on interval[a,b] /\
         (!x. x IN interval(a,b) DIFF c
@@ -11549,15 +11683,15 @@ let INTEGRABLE_BY_PARTS = prove
     ASM_REWRITE_TAC[CONTENT_EQ_0_1];
     REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     REWRITE_TAC[integrable_on] THEN
-    DISCH_THEN(X_CHOOSE_THEN `y:real^N` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `(bop ((f:real^1->real^M) b) ((g:real^1->real^M) b) -
-                 bop (f a) (g a)) - (y:real^N)` THEN
+    DISCH_THEN(X_CHOOSE_THEN `y:real^P` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(bop ((f:real^1->real^M) b) ((g:real^1->real^N) b) -
+                 bop (f a) (g a)) - (y:real^P)` THEN
     MATCH_MP_TAC INTEGRATION_BY_PARTS THEN MAP_EVERY EXISTS_TAC
-     [`f:real^1->real^M`; `g':real^1->real^M`; `c:real^1->bool`] THEN
+     [`f:real^1->real^M`; `g':real^1->real^N`; `c:real^1->bool`] THEN
     ASM_REWRITE_TAC[VECTOR_ARITH `b - a - ((b - a) - y):real^N = y`]]);;
 
 let INTEGRABLE_BY_PARTS_EQ = prove
- (`!(bop:real^M->real^M->real^N) f g f' g' a b c.
+ (`!(bop:real^M->real^N->real^P) f g f' g' a b c.
         bilinear bop /\ COUNTABLE c /\
         (\x. bop (f x) (g x)) continuous_on interval[a,b] /\
         (!x. x IN interval(a,b) DIFF c
@@ -11567,11 +11701,11 @@ let INTEGRABLE_BY_PARTS_EQ = prove
              (\x. bop (f' x) (g x)) integrable_on interval[a,b])`,
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [ASM_MESON_TAC[INTEGRABLE_BY_PARTS]; DISCH_TAC] THEN
-  MP_TAC(ISPEC `\x y. (bop:real^M->real^M->real^N) y x`
+  MP_TAC(ISPEC `\x y. (bop:real^M->real^N->real^P) y x`
         INTEGRABLE_BY_PARTS) THEN
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   ANTS_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
-  UNDISCH_TAC `bilinear(bop:real^M->real^M->real^N)` THEN
+  UNDISCH_TAC `bilinear(bop:real^M->real^N->real^P)` THEN
   REWRITE_TAC[bilinear] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -16425,6 +16559,15 @@ let INTEGRABLE_BOUNDED_VARIATION_PRODUCT = prove
   MATCH_MP_TAC INTEGRABLE_SUB THEN
   CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_INCREASING_PRODUCT THEN
   ASM_REWRITE_TAC[]);;
+
+let INTEGRABLE_BOUNDED_VARIATION_PRODUCT_ALT = prove
+ (`!f:real^1->real^N g a b.
+        f integrable_on interval[a,b] /\
+        (lift o g) has_bounded_variation_on interval[a,b]
+        ==> (\x. g x % f x) integrable_on interval[a,b]`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP INTEGRABLE_BOUNDED_VARIATION_PRODUCT) THEN
+  REWRITE_TAC[o_DEF; LIFT_DROP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Baby Fubini theorems for continuous functions. Will be generalized.       *)
