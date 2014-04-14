@@ -1,3 +1,43 @@
+Fri 11th Apr 2014       bool.ml
+
+Bill Richter pointed out that IMP_ANTISYM_RULE could sometimes give fewer
+assumptions than its documentation (with a simple union of the two lists)
+suggested. Fixed this, as well as a similar problem with CONJ, and a few
+related documentation issues also uncovered by Bill.
+
+Wed  9th Apr 2014       equal.ml
+
+Made a few minor optimizations to some functions here, using more
+pattern-matching in place of destructors and adding partial evaluation to
+AP_TERM.
+
+Fri  4th Apr 2014       arith.ml
+
+Added MOD_REFL = |- !n. ~(n = 0) ==> n MOD n = 0
+
+Thu  3rd Apr 2014       nums.ml, calc_num.ml
+
+Completely rewrote the conversions NUM_SUC_CONV, NUM_ADD_CONV and NUM_MULT_CONV
+to improve efficiency, as well as the auxiliary syntax function mk_numeral. The
+new versions do addition in larger blocks for a decent constant factor
+improvement and the multiplication routine uses squaring as the core with quite
+tight coding and the use of 2-part and 3-part interpolation. Also rewrote the
+main relational conversions NUM_LT_CONV, NUM_LE_CONV and NUM_EQ_CONV to call
+addition directly, which is (now) much more efficient than what was used
+before, though it could still be optimized a bit more.
+
+Tue  1st Apr 2014       fusion.ml
+
+Made another rather minor optimization, this time making the check for
+type compatibility in the "vsubst" outer wrapper marginally more efficient.
+
+Thu 27th Mar 2014       fusion.ml
+
+Made a small change to the "type_of" function to use an explicit match in the
+Comb case instead of applying "hd" and "tl". Although perhaps marginally
+uglier, it is somewhat more efficient and gets two more library functions (hd
+and tl) out of the core.
+
 Sun 23rd Mar 2014       Examples/harmonicsum.ml [new file]
 
 Added a new file with a rather trivial but nice result that a non-trivial

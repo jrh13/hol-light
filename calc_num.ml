@@ -195,22 +195,6 @@ let ARITH = end_itlist CONJ
 (* Now more delicate conversions for situations where efficiency matters.    *)
 (* ------------------------------------------------------------------------- *)
 
-let NUM_EQ_CONV,NUM_LE_CONV,NUM_LT_CONV,NUM_GE_CONV,NUM_GT_CONV =
-  let ARITH_GE',ARITH_GT' = (CONJ_PAIR o prove)
-   (`(NUMERAL m >= NUMERAL n <=> n <= m) /\
-     (NUMERAL m > NUMERAL n <=> n < m)`,
-    REWRITE_TAC[GE; GT; NUMERAL])
-  and NUM_EQ_CONV' =
-    REPEATC(GEN_REWRITE_CONV I [CONJUNCT2 ARITH_EQ])
-  and NUM_LL_CONV' =
-    REPEATC(GEN_REWRITE_CONV I [CONJUNCT2 ARITH_LE; CONJUNCT2 ARITH_LT]) in
-  let GEN_NUM_REL_CONV th cnv = GEN_REWRITE_CONV I [th] THENC cnv in
-  GEN_NUM_REL_CONV (CONJUNCT1 ARITH_EQ) NUM_EQ_CONV',
-  GEN_NUM_REL_CONV (CONJUNCT1 ARITH_LE) NUM_LL_CONV',
-  GEN_NUM_REL_CONV (CONJUNCT1 ARITH_LT) NUM_LL_CONV',
-  GEN_NUM_REL_CONV ARITH_GE' NUM_LL_CONV',
-  GEN_NUM_REL_CONV ARITH_GT' NUM_LL_CONV';;
-
 let NUM_EVEN_CONV =
   let tth,rths = CONJ_PAIR ARITH_EVEN in
   GEN_REWRITE_CONV I [tth] THENC GEN_REWRITE_CONV I [rths];;
@@ -219,366 +203,1109 @@ let NUM_ODD_CONV =
   let tth,rths = CONJ_PAIR ARITH_ODD in
   GEN_REWRITE_CONV I [tth] THENC GEN_REWRITE_CONV I [rths];;
 
-let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV =
-  let NUM_SUC_CONV,NUM_ADD_CONV',NUM_ADD_CONV =
-    let std_tm = rand `2` in
-    let bit0_tm,bz_tm = dest_comb std_tm in
-    let bit1_tm,zero_tm = dest_comb bz_tm in
-    let n_tm = `n:num` and m_tm = `m:num` in
-    let [sth_z; sth_0; sth_1] = (CONJUNCTS o prove)
-     (`(SUC _0 = BIT1 _0) /\
-       (SUC(BIT0 n) = BIT1 n) /\
-       (SUC(BIT1 n) = BIT0(SUC n))`,
-      SUBST1_TAC(SYM(SPEC `_0` NUMERAL)) THEN
+let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
+    NUM_LT_CONV,NUM_LE_CONV,NUM_EQ_CONV =
+  let Comb(NUMERAL_tm,Comb(BIT0_tm,Comb(BIT1_tm,zero_tm))) =
+    mk_small_numeral 2
+  and suc_tm = rator(rand(concl TWO))
+  and one_tm = rand(mk_small_numeral 1)
+  and add_tm = rator(rator(lhand(snd(strip_forall(concl ADD_0)))))
+  and mul_tm = rator(rator(rand(snd(strip_forall(concl EXP_2)))))
+  and exp_tm = rator(rator(lhand(snd(strip_forall(concl EXP_2)))))
+  and eq_tm = rator(rator(concl TWO)) in
+  let num_0 = Int 0 and num_1 = Int 1 and num_2 = Int 2 in
+  let a_tm = `a:num`
+  and b_tm = `b:num`
+  and c_tm = `c:num`
+  and d_tm = `d:num`
+  and e_tm = `e:num`
+  and h_tm = `h:num`
+  and l_tm = `l:num`
+  and m_tm = `m:num`
+  and n_tm = `n:num`
+  and p_tm = `p:num` in
+  let STANDARDIZE =
+    let ilist = [BIT0_tm,BIT0_tm; BIT1_tm,BIT1_tm; zero_tm,zero_tm;
+                 suc_tm,suc_tm; add_tm,add_tm; mul_tm,mul_tm;
+                 exp_tm,exp_tm; eq_tm,eq_tm; NUMERAL_tm,NUMERAL_tm;
+                 a_tm,a_tm; b_tm,b_tm; c_tm,c_tm; d_tm,d_tm; e_tm,e_tm;
+                 h_tm,h_tm; l_tm,l_tm; m_tm,m_tm; n_tm,n_tm; p_tm,p_tm] in
+    let rec replace tm =
+      match tm with
+        Var(_,_) | Const(_,_) -> rev_assocd tm ilist tm
+      | Comb(s,t) -> mk_comb(replace s,replace t)
+      | Abs(_,_) -> failwith "replace" in
+    fun th -> let tm' = replace (concl th) in EQ_MP (REFL tm') th in
+  let REFL_bit0 = STANDARDIZE(REFL BIT0_tm)
+  and REFL_bit1 = STANDARDIZE(REFL BIT1_tm) in
+  let AP_BIT0 th = MK_COMB(REFL_bit0,th)
+  and AP_BIT1 th = MK_COMB(REFL_bit1,th)
+  and QUICK_PROVE_HYP ath bth = EQ_MP (DEDUCT_ANTISYM_RULE ath bth) ath in
+  let rec dest_raw_numeral tm =
+    match tm with
+      Comb(Const("BIT1",_),t) -> num_2 */ dest_raw_numeral t +/ num_1
+    | Comb(Const("BIT0",_),t) -> num_2 */ dest_raw_numeral t
+    | Const("_0",_) -> num_0 in
+  let bitcounts =
+    let rec bctr w z tm =
+      match tm with
+        Const("_0",_) -> (w,z)
+      | Comb(Const("BIT0",_),t) -> bctr w (z + 1) t
+      | Comb(Const("BIT1",_),t) -> bctr (w + 1) z t
+      | _ -> failwith "malformed numeral" in
+    bctr 0 0 in
+  let rec wellformed tm =
+    match tm with
+      Const("_0",_) -> true
+    | Comb(Const("BIT0",_),t)|Comb(Const("BIT1",_),t) -> wellformed t
+    | _ -> false in
+  let rec orderrelation mtm ntm =
+    if mtm == ntm then
+      if wellformed mtm then 0 else failwith "orderrelation"
+    else
+      match (mtm,ntm) with
+        Const("_0",_),Const("_0",_) -> 0
+      | Const("_0",_),_ ->
+           if wellformed ntm then -1 else failwith "orderrelation"
+      | _, Const("_0",_) ->
+           if wellformed ntm then 1 else failwith "orderrelation"
+      | Comb(Const("BIT0",_),mt),Comb(Const("BIT0",_),nt)
+      | Comb(Const("BIT1",_),mt),Comb(Const("BIT1",_),nt) ->
+          orderrelation mt nt
+      | Comb(Const("BIT0",_),mt),Comb(Const("BIT1",_),nt) ->
+          if orderrelation mt nt > 0 then 1 else -1
+      | Comb(Const("BIT1",_),mt),Comb(Const("BIT0",_),nt) ->
+          if orderrelation mt nt < 0 then -1 else 1 in
+  let doublebn tm = if tm = zero_tm then tm else mk_comb(BIT0_tm,tm) in
+  let rec subbn mtm ntm =
+    match (mtm,ntm) with
+      (_,Const("_0",_)) -> mtm
+    | (Comb(Const("BIT0",_),mt),Comb(Const("BIT0",_),nt)) ->
+          doublebn (subbn mt nt)
+    | (Comb(Const("BIT1",_),mt),Comb(Const("BIT1",_),nt)) ->
+          doublebn (subbn mt nt)
+    | (Comb(Const("BIT1",_),mt),Comb(Const("BIT0",_),nt)) ->
+          mk_comb(BIT1_tm,subbn mt nt)
+    | (Comb(Const("BIT0",_),mt),Comb(Const("BIT1",_),nt)) ->
+          mk_comb(BIT1_tm,sbcbn mt nt)
+    | _ -> failwith "malformed numeral or wrong relation"
+  and sbcbn mtm ntm =
+    match (mtm,ntm) with
+    | (Comb(Const("BIT0",_),mt),Const("_0",_)) ->
+          mk_comb(BIT1_tm,sbcbn mt ntm)
+    | (Comb(Const("BIT1",_),mt),Const("_0",_)) ->
+          doublebn mt
+    | (Comb(Const("BIT0",_),mt),Comb(Const("BIT0",_),nt)) ->
+          mk_comb(BIT1_tm,sbcbn mt nt)
+    | (Comb(Const("BIT1",_),mt),Comb(Const("BIT1",_),nt)) ->
+          mk_comb(BIT1_tm,sbcbn mt nt)
+    | (Comb(Const("BIT1",_),mt),Comb(Const("BIT0",_),nt)) ->
+          doublebn (subbn mt nt)
+    | (Comb(Const("BIT0",_),mt),Comb(Const("BIT1",_),nt)) ->
+          doublebn (sbcbn mt nt)
+    | _ -> failwith "malformed numeral or wrong relation" in
+  let topsplit tm =
+    match tm with
+     Const("_0",_) -> 0,zero_tm
+   | Comb(Const("BIT1",_),Const("_0",_)) -> 1,zero_tm
+   | Comb(Const("BIT0",_),Comb(Const("BIT1",_),Const("_0",_))) -> 2,zero_tm
+   | Comb(Const("BIT1",_),Comb(Const("BIT1",_),Const("_0",_))) -> 3,zero_tm
+   | Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),Const("_0",_)))) -> 4,zero_tm
+   | Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),Const("_0",_)))) -> 5,zero_tm
+   | Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),Const("_0",_)))) -> 6,zero_tm
+   | Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),Const("_0",_)))) -> 7,zero_tm
+   | Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),n)))) -> 0,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),n)))) -> 1,n
+   | Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),n)))) -> 2,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),n)))) -> 3,n
+   | Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),n)))) -> 4,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),n)))) -> 5,n
+   | Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),n)))) -> 6,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),n)))) -> 7,n
+   | Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),n)))) -> 8,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),n)))) -> 9,n
+   | Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),n)))) -> 10,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),n)))) -> 11,n
+   | Comb(Const("BIT0",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),n)))) -> 12,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),n)))) -> 13,n
+   | Comb(Const("BIT0",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),n)))) -> 14,n
+   | Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),Comb(Const("BIT1",_),n)))) -> 15,n
+   | _ -> failwith "malformed numeral" in
+  let NUM_ADD_RULE,NUM_ADC_RULE =
+    let rec mk_compnumeral k base =
+      if k = 0 then base else
+      let t = mk_compnumeral (k / 2) base in
+      if k mod 2 = 1 then mk_comb(BIT1_tm,t) else mk_comb(BIT0_tm,t) in
+    let bases v =
+        let part2 = map (fun k -> mk_compnumeral k v) (8--15) in
+        let part1 = map (subst[mk_comb(BIT0_tm,v),mk_comb(BIT1_tm,v)])
+                        part2
+        and part0 = map (fun k -> mk_compnumeral k zero_tm) (0--15) in
+        part0 @ part1 @ part2 in
+    let starts =
+      allpairs (fun mtm ntm ->
+        mk_comb(mk_comb(add_tm,mtm),ntm)) (bases m_tm) (bases n_tm) in
+    let BITS_INJ = (STANDARDIZE o prove)
+     (`(BIT0 m = BIT0 n <=> m = n) /\
+       (BIT1 m = BIT1 n <=> m = n)`,
       REWRITE_TAC[BIT0; BIT1] THEN
-      REWRITE_TAC[ADD_CLAUSES])
-    and [ath_0x; ath_x0; ath_00; ath_01; ath_10; ath_11] = (CONJUNCTS o prove)
-     (`(_0 + n = n) /\
-       (n + _0 = n) /\
-       (BIT0 m + BIT0 n = BIT0 (m + n)) /\
-       (BIT0 m + BIT1 n = BIT1 (m + n)) /\
-       (BIT1 m + BIT0 n = BIT1 (m + n)) /\
-       (BIT1 m + BIT1 n = BIT0 (SUC (m + n)))`,
-      SUBST1_TAC(SYM(SPEC `_0` NUMERAL)) THEN
+      REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[SUC_INJ; EQ_MULT_LCANCEL; ARITH_EQ]) in
+    let ARITH_0 = (STANDARDIZE o MESON[NUMERAL; ADD_CLAUSES])
+      `m + _0 = m /\ _0 + n = n` in
+    let patadj = subst[`SUC(m + _0)`,`SUC m`; `SUC(_0 + n)`,`SUC n`] in
+    let mkclauses sucflag t =
+      let tm = if sucflag then mk_comb(suc_tm,t) else t in
+      let th1 = PURE_REWRITE_CONV[ARITH_ADD; ARITH_SUC; ARITH_0] tm in
+      let tm1 = patadj(rand(concl th1)) in
+      if not(free_in add_tm tm1) then th1,
+         (if free_in m_tm tm1 then 0 else 1) else
+      let ptm = rand(rand(rand(rand tm1))) in
+      let tmc = mk_eq(mk_eq(ptm,p_tm),mk_eq(tm,subst[p_tm,ptm] tm1)) in
+      EQT_ELIM(REWRITE_CONV[ARITH_ADD; ARITH_SUC; ARITH_0; BITS_INJ] tmc),
+      (if free_in suc_tm tm1 then 3 else 2) in
+    let add_clauses,add_flags =
+      let l1,l2 = unzip(map (mkclauses false) starts) in
+      Array.of_list(map STANDARDIZE l1),Array.of_list l2 in
+    let adc_clauses,adc_flags =
+      let l1,l2 = unzip(map (mkclauses true) starts) in
+      Array.of_list(map STANDARDIZE l1),Array.of_list l2 in
+    let rec NUM_ADD_RULE mtm ntm =
+      let m_lo,m_hi = topsplit mtm
+      and n_lo,n_hi = topsplit ntm in
+      let m_ind = if m_hi = zero_tm then m_lo else m_lo + 16
+      and n_ind = if n_hi = zero_tm then n_lo else n_lo + 16 in
+      let ind = 32 * m_ind + n_ind in
+      let th1 = Array.get add_clauses ind
+      and fl = Array.get add_flags ind in
+      match fl with
+        0 -> INST [m_hi,m_tm] th1
+      | 1 -> INST [n_hi,n_tm] th1
+      | 2 -> let th2 = NUM_ADD_RULE m_hi n_hi in
+             (match concl th2 with Comb(_,ptm) ->
+              let th3 = INST [m_hi,m_tm; n_hi,n_tm;ptm,p_tm] th1 in
+              EQ_MP th3 th2)
+      | 3 -> let th2 = NUM_ADC_RULE m_hi n_hi in
+             (match concl th2 with Comb(_,ptm) ->
+              let th3 = INST [m_hi,m_tm; n_hi,n_tm;ptm,p_tm] th1 in
+              EQ_MP th3 th2)
+    and NUM_ADC_RULE mtm ntm =
+      let m_lo,m_hi = topsplit mtm
+      and n_lo,n_hi = topsplit ntm in
+      let m_ind = if m_hi = zero_tm then m_lo else m_lo + 16
+      and n_ind = if n_hi = zero_tm then n_lo else n_lo + 16 in
+      let ind = 32 * m_ind + n_ind in
+      let th1 = Array.get adc_clauses ind
+      and fl = Array.get adc_flags ind in
+      match fl with
+        0 -> INST [m_hi,m_tm] th1
+      | 1 -> INST [n_hi,n_tm] th1
+      | 2 -> let th2 = NUM_ADD_RULE m_hi n_hi in
+             (match concl th2 with Comb(_,ptm) ->
+              let th3 = INST [m_hi,m_tm; n_hi,n_tm;ptm,p_tm] th1 in
+              EQ_MP th3 th2)
+      | 3 -> let th2 = NUM_ADC_RULE m_hi n_hi in
+             (match concl th2 with Comb(_,ptm) ->
+              let th3 = INST [m_hi,m_tm; n_hi,n_tm;ptm,p_tm] th1 in
+              EQ_MP th3 th2) in
+    NUM_ADD_RULE,NUM_ADC_RULE in
+  let NUM_SHIFT_CONV =
+    let pth_0 = (STANDARDIZE o prove)
+     (`(n = a + p * b <=> BIT0 n = BIT0 a + BIT0 p * b)`,
       REWRITE_TAC[BIT0; BIT1] THEN
-      REWRITE_TAC[ADD_CLAUSES] THEN REWRITE_TAC[ADD_AC])
-    and [cth_0x; cth_x0; cth_00; cth_01; cth_10; cth_11] = (CONJUNCTS o prove)
-     (`(SUC(_0 + n) = SUC n) /\
-       (SUC(n + _0) = SUC n) /\
-       (SUC(BIT0 m + BIT0 n) = BIT1(m + n)) /\
-       (SUC(BIT0 m + BIT1 n) = BIT0(SUC(m + n))) /\
-       (SUC(BIT1 m + BIT0 n) = BIT0(SUC(m + n))) /\
-       (SUC(BIT1 m + BIT1 n) = BIT1(SUC (m + n)))`,
+      REWRITE_TAC[GSYM MULT_2; GSYM MULT_ASSOC; GSYM LEFT_ADD_DISTRIB] THEN
+      REWRITE_TAC[EQ_MULT_LCANCEL; ARITH_EQ])
+    and pth_z = (STANDARDIZE o prove)
+     (`n = _0 + p * b <=> BIT0 n = _0 + BIT0 p * b`,
       SUBST1_TAC(SYM(SPEC `_0` NUMERAL)) THEN
+      REWRITE_TAC[BIT1; BIT0] THEN
+      REWRITE_TAC[ADD_CLAUSES; GSYM MULT_2] THEN
+      REWRITE_TAC[GSYM MULT_ASSOC; EQ_MULT_LCANCEL; ARITH_EQ])
+    and pth_1 = (STANDARDIZE o prove)
+     (`(n = a + p * b <=> BIT1 n = BIT1 a + BIT0 p * b)`,
       REWRITE_TAC[BIT0; BIT1] THEN
-      REWRITE_TAC[ADD_CLAUSES] THEN REWRITE_TAC[ADD_AC])
-    and pth_suc = prove
-     (`SUC(NUMERAL n) = NUMERAL(SUC n)`,
-      REWRITE_TAC[NUMERAL])
-    and pth_add = prove
-     (`NUMERAL m + NUMERAL n = NUMERAL(m + n)`,
-      REWRITE_TAC[NUMERAL]) in
-    let rec raw_suc_conv tm =
-      let otm = rand tm in
-      if otm = zero_tm then sth_z else
-      let btm,ntm = dest_comb otm in
-      if btm = bit0_tm then INST [ntm,n_tm] sth_0 else
-      let th = INST [ntm,n_tm] sth_1 in
-      let ltm,rtm = dest_comb(rand(concl th)) in
-      TRANS th (AP_TERM ltm (raw_suc_conv rtm)) in
-    let rec raw_add_conv tm =
-      let atm,rtm = dest_comb tm in
-      let ltm = rand atm in
-      if ltm = zero_tm then INST [rtm,n_tm] ath_0x
-      else if rtm = zero_tm then INST [ltm,n_tm] ath_x0 else
-      let lbit,larg = dest_comb ltm
-      and rbit,rarg = dest_comb rtm in
-      if lbit = bit0_tm then
-         if rbit = bit0_tm then
-            let th = INST [larg,m_tm; rarg,n_tm] ath_00 in
-            let ltm,rtm = dest_comb(rand(concl th)) in
-            TRANS th (AP_TERM ltm (raw_add_conv rtm))
-         else
-            let th = INST [larg,m_tm; rarg,n_tm] ath_01 in
-            let ltm,rtm = dest_comb(rand(concl th)) in
-            TRANS th (AP_TERM ltm (raw_add_conv rtm))
-      else
-         if rbit = bit0_tm then
-            let th = INST [larg,m_tm; rarg,n_tm] ath_10 in
-            let ltm,rtm = dest_comb(rand(concl th)) in
-            TRANS th (AP_TERM ltm (raw_add_conv rtm))
-         else
-            let th = INST [larg,m_tm; rarg,n_tm] ath_11 in
-            let ltm,rtm = dest_comb(rand(concl th)) in
-            TRANS th (AP_TERM ltm (raw_adc_conv rtm))
-    and raw_adc_conv tm =
-      let atm,rtm = dest_comb(rand tm) in
-      let ltm = rand atm in
-      if ltm = zero_tm then
-         let th = INST [rtm,n_tm] cth_0x in
-         TRANS th (raw_suc_conv (rand(concl th)))
-      else if rtm = zero_tm then
-         let th = INST [ltm,n_tm] cth_x0 in
-         TRANS th (raw_suc_conv (rand(concl th)))
-      else
-         let lbit,larg = dest_comb ltm
-         and rbit,rarg = dest_comb rtm in
-         if lbit = bit0_tm then
-            if rbit = bit0_tm then
-               let th = INST [larg,m_tm; rarg,n_tm] cth_00 in
-               let ltm,rtm = dest_comb(rand(concl th)) in
-               TRANS th (AP_TERM ltm (raw_add_conv rtm))
-            else
-               let th = INST [larg,m_tm; rarg,n_tm] cth_01 in
-               let ltm,rtm = dest_comb(rand(concl th)) in
-               TRANS th (AP_TERM ltm (raw_adc_conv rtm))
-         else
-            if rbit = bit0_tm then
-               let th = INST [larg,m_tm; rarg,n_tm] cth_10 in
-               let ltm,rtm = dest_comb(rand(concl th)) in
-               TRANS th (AP_TERM ltm (raw_adc_conv rtm))
-            else
-               let th = INST [larg,m_tm; rarg,n_tm] cth_11 in
-               let ltm,rtm = dest_comb(rand(concl th)) in
-               TRANS th (AP_TERM ltm (raw_adc_conv rtm)) in
-    let NUM_SUC_CONV tm =
-      let th = INST [rand(rand tm),n_tm] pth_suc in
-      let ctm = concl th in
-      if lhand ctm <> tm then failwith "NUM_SUC_CONV" else
-      let ltm,rtm = dest_comb(rand ctm) in
-      TRANS th (AP_TERM ltm (raw_suc_conv rtm))
-    and NUM_ADD_CONV tm =
-      let atm,rtm = dest_comb tm in
-      let ltm = rand atm in
-      let th = INST [rand ltm,m_tm; rand rtm,n_tm] pth_add in
-      let ctm = concl th in
-      if lhand ctm <> tm then failwith "NUM_ADD_CONV" else
-      let ltm,rtm = dest_comb(rand(concl th)) in
-      TRANS th (AP_TERM ltm (raw_add_conv rtm)) in
-    NUM_SUC_CONV,raw_add_conv,NUM_ADD_CONV in
-
-  let NUM_MULT_CONV' =
-    let p_tm  = `p:num`
-    and x_tm  = `x:num`
-    and y_tm  = `y:num`
-    and u_tm  = `u:num`
-    and v_tm  = `v:num`
-    and w_tm  = `w:num`
-    and z_tm  = `z:num`
-    and u_tm' = `u':num`
-    and w_tm' = `w':num`
-    and a_tm  = `a:num`
-    and b_tm  = `b:num`
-    and c_tm  = `c:num`
-    and d_tm  = `d:num`
-    and e_tm  = `e:num`
-    and c_tm' = `c':num`
-    and d_tm' = `d':num`
-    and e_tm' = `e':num`
-    and s_tm  = `s:num`
-    and t_tm  = `t:num`
-    and q_tm  = `q:num`
-    and r_tm  = `r:num` in
-    let pth = prove
-     (`(u' + v = x) ==>
-       (w' + z = y) ==>
-       (p * u = u') ==>
-       (p * w = w') ==>
-       (u + v = a) ==>
-       (w + z = b) ==>
-       (a * b = c) ==>
-       (u' * w = d) ==>
-       (v * z = e) ==>
-       (p * e = e') ==>
-       (p * d = d') ==>
-       (p * c = c') ==>
-       (d' + e = s) ==>
-       (d + e' = t) ==>
-       (s + c' = q) ==>
-       (r + t = q) ==> (x * y = r)`,
-      MAP_EVERY (K (DISCH_THEN(SUBST1_TAC o SYM))) (0--14) THEN
+      REWRITE_TAC[GSYM MULT_2; GSYM MULT_ASSOC; GSYM LEFT_ADD_DISTRIB;
+                  ADD_CLAUSES; SUC_INJ] THEN
+      REWRITE_TAC[EQ_MULT_LCANCEL; ARITH_EQ])
+    and pth_base = (STANDARDIZE o prove)
+     (`n = _0 + BIT1 _0 * n`,
+      MESON_TAC[ADD_CLAUSES; MULT_CLAUSES; NUMERAL])
+    and pth_triv = (STANDARDIZE o prove)
+     (`_0 = a + p * b <=> _0 = a + BIT0 p * b`,
+      CONV_TAC(BINOP_CONV SYM_CONV) THEN
+      SUBST1_TAC(SYM(SPEC `_0` NUMERAL)) THEN
+      REWRITE_TAC[ADD_EQ_0; MULT_EQ_0; BIT0])
+    and pths_1 = (Array.of_list o CONJUNCTS o STANDARDIZE o prove)
+     (`(n = a + p * b <=>
+        BIT0(BIT0(BIT0(BIT0 n))) =
+        BIT0(BIT0(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT0(BIT0(BIT0 n))) =
+        BIT1(BIT0(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT0(BIT1(BIT0(BIT0 n))) =
+        BIT0(BIT1(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT1(BIT0(BIT0 n))) =
+        BIT1(BIT1(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT0(BIT0(BIT1(BIT0 n))) =
+        BIT0(BIT0(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT0(BIT1(BIT0 n))) =
+        BIT1(BIT0(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT0(BIT1(BIT1(BIT0 n))) =
+        BIT0(BIT1(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT1(BIT1(BIT0 n))) =
+        BIT1(BIT1(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT0(BIT0(BIT0(BIT1 n))) =
+        BIT0(BIT0(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT0(BIT0(BIT1 n))) =
+        BIT1(BIT0(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT0(BIT1(BIT0(BIT1 n))) =
+        BIT0(BIT1(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT1(BIT0(BIT1 n))) =
+        BIT1(BIT1(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT0(BIT0(BIT1(BIT1 n))) =
+        BIT0(BIT0(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT0(BIT1(BIT1 n))) =
+        BIT1(BIT0(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT0(BIT1(BIT1(BIT1 n))) =
+        BIT0(BIT1(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = a + p * b <=>
+        BIT1(BIT1(BIT1(BIT1 n))) =
+        BIT1(BIT1(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b)`,
+      MP_TAC(REWRITE_RULE[GSYM MULT_2] BIT0) THEN
+      MP_TAC(REWRITE_RULE[GSYM MULT_2] BIT1) THEN
+      ABBREV_TAC `two = 2` THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+      FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[ADD_CLAUSES; SUC_INJ; EQ_MULT_LCANCEL; ARITH_EQ;
+                  GSYM LEFT_ADD_DISTRIB; GSYM MULT_ASSOC])
+    and pths_0 = (Array.of_list o CONJUNCTS o STANDARDIZE o prove)
+     (`(n = _0 + p * b <=>
+        BIT0(BIT0(BIT0(BIT0 n))) =
+        _0 + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT0(BIT0(BIT0 n))) =
+        BIT1 _0 + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT0(BIT1(BIT0(BIT0 n))) =
+        BIT0(BIT1 _0) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT1(BIT0(BIT0 n))) =
+        BIT1(BIT1 _0) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT0(BIT0(BIT1(BIT0 n))) =
+        BIT0(BIT0(BIT1 _0)) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT0(BIT1(BIT0 n))) =
+        BIT1(BIT0(BIT1 _0)) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT0(BIT1(BIT1(BIT0 n))) =
+        BIT0(BIT1(BIT1 _0)) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT1(BIT1(BIT0 n))) =
+        BIT1(BIT1(BIT1 _0)) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT0(BIT0(BIT0(BIT1 n))) =
+        BIT0(BIT0(BIT0(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT0(BIT0(BIT1 n))) =
+        BIT1(BIT0(BIT0(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT0(BIT1(BIT0(BIT1 n))) =
+        BIT0(BIT1(BIT0(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT1(BIT0(BIT1 n))) =
+        BIT1(BIT1(BIT0(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT0(BIT0(BIT1(BIT1 n))) =
+        BIT0(BIT0(BIT1(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT0(BIT1(BIT1 n))) =
+        BIT1(BIT0(BIT1(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT0(BIT1(BIT1(BIT1 n))) =
+        BIT0(BIT1(BIT1(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b) /\
+       (n = _0 + p * b <=>
+        BIT1(BIT1(BIT1(BIT1 n))) =
+        BIT1(BIT1(BIT1(BIT1 _0))) + BIT0(BIT0(BIT0(BIT0 p))) * b)`,
+      SUBST1_TAC(MESON[NUMERAL] `_0 = 0`) THEN
+      MP_TAC(REWRITE_RULE[GSYM MULT_2] BIT0) THEN
+      MP_TAC(REWRITE_RULE[GSYM MULT_2] BIT1) THEN
+      ABBREV_TAC `two = 2` THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+      FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[ADD_CLAUSES; SUC_INJ; EQ_MULT_LCANCEL; ARITH_EQ;
+                  GSYM LEFT_ADD_DISTRIB; GSYM MULT_ASSOC]) in
+    let rec NUM_SHIFT_CONV k tm =
+      if k <= 0 then INST [tm,n_tm] pth_base else
+      match tm with
+        Comb(_,Comb(_,Comb(_,Comb(_,_)))) when k >= 4 ->
+          let i,ntm = topsplit tm in
+          let th1 = NUM_SHIFT_CONV (k - 4) ntm in
+          (match concl th1 with
+               Comb(_,Comb(Comb(_,Const("_0",_)),Comb(Comb(_,ptm),btm))) ->
+                  let th2 = Array.get pths_0 i in
+                  let th3 = INST [ntm,n_tm; btm,b_tm; ptm,p_tm] th2 in
+                  EQ_MP th3 th1
+             | Comb(_,Comb(Comb(_,atm),Comb(Comb(_,ptm),btm))) ->
+                  let th2 = Array.get pths_1 i in
+                  let th3 = INST[ntm,n_tm; atm,a_tm; btm,b_tm; ptm,p_tm] th2 in
+                  EQ_MP th3 th1)
+      | Comb(Const("BIT0",_),ntm) ->
+            let th1 = NUM_SHIFT_CONV (k - 1) ntm in
+            (match concl th1 with
+               Comb(_,Comb(Comb(_,Const("_0",_)),Comb(Comb(_,ptm),btm))) ->
+                 EQ_MP (INST [ntm,n_tm; btm,b_tm; ptm,p_tm] pth_z) th1
+             | Comb(_,Comb(Comb(_,atm),Comb(Comb(_,ptm),btm))) ->
+                 EQ_MP
+                  (INST[ntm,n_tm; atm,a_tm; btm,b_tm; ptm,p_tm] pth_0) th1)
+      | Comb(Const("BIT1",_),ntm) ->
+            let th1 = NUM_SHIFT_CONV (k - 1) ntm in
+            (match concl th1 with
+               Comb(_,Comb(Comb(_,atm),Comb(Comb(_,ptm),btm))) ->
+                 EQ_MP
+                  (INST [ntm,n_tm; atm,a_tm; btm,b_tm; ptm,p_tm] pth_1) th1)
+      | Const("_0",_) ->
+            let th1 = NUM_SHIFT_CONV (k - 1) tm in
+            (match concl th1 with
+               Comb(_,Comb(Comb(_,atm),Comb(Comb(_,ptm),btm))) ->
+                 EQ_MP (INST [atm,a_tm; btm,b_tm; ptm,p_tm] pth_triv)
+                       th1)
+      | _ -> failwith "malformed numeral" in
+    NUM_SHIFT_CONV in
+  let NUM_UNSHIFT_CONV =
+    let pth_triv = (STANDARDIZE o prove)
+     (`a + p * _0 = a`,
+      SUBST1_TAC(SYM(SPEC `_0` NUMERAL)) THEN
+      REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES])
+    and pth_base = (STANDARDIZE o prove)
+     (`a + BIT1 _0 * b = a + b`,
+      SUBST1_TAC(SYM(SPEC `BIT1 _0` NUMERAL)) THEN
+      REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES])
+    and pth_0 = (STANDARDIZE o prove)
+     (`BIT0 a + BIT0 p * b = BIT0(a + p * b)`,
+      REWRITE_TAC[BIT0] THEN REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[GSYM MULT_ASSOC; GSYM LEFT_ADD_DISTRIB])
+    and pth_1 = (STANDARDIZE o prove)
+     (`BIT1 a + BIT0 p * b = BIT1(a + p * b)`,
+      REWRITE_TAC[BIT0; BIT1] THEN REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[ADD_CLAUSES; SUC_INJ] THEN
+      REWRITE_TAC[GSYM MULT_ASSOC; GSYM LEFT_ADD_DISTRIB] THEN
+      REWRITE_TAC[EQ_MULT_LCANCEL; ARITH_EQ])
+    and pth_z = (STANDARDIZE o prove)
+     (`_0 + BIT0 p * b = BIT0(_0 + p * b)`,
+      SUBST1_TAC(SYM(SPEC `_0` NUMERAL)) THEN
+      REWRITE_TAC[BIT1; BIT0] THEN REWRITE_TAC[ADD_CLAUSES] THEN
+      REWRITE_TAC[RIGHT_ADD_DISTRIB])
+    and puths_1 = (Array.of_list o CONJUNCTS o STANDARDIZE o prove)
+       (`(a + p * b = n <=>
+          BIT0(BIT0(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT0(BIT0(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT0(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT0(BIT0(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT0(BIT1(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT1(BIT0(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT1(BIT0(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT1(BIT0(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT0(BIT0(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT0(BIT1(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT0(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT0(BIT1(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT0(BIT1(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT1(BIT1(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT1(BIT1(BIT0 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT1(BIT1(BIT0 n)))) /\
+         (a + p * b = n <=>
+          BIT0(BIT0(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT0(BIT0(BIT1 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT0(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT0(BIT0(BIT1 n)))) /\
+         (a + p * b = n <=>
+          BIT0(BIT1(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT1(BIT0(BIT1 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT1(BIT0(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT1(BIT0(BIT1 n)))) /\
+         (a + p * b = n <=>
+          BIT0(BIT0(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT0(BIT1(BIT1 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT0(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT0(BIT1(BIT1 n)))) /\
+         (a + p * b = n <=>
+          BIT0(BIT1(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT0(BIT1(BIT1(BIT1 n)))) /\
+         (a + p * b = n <=>
+          BIT1(BIT1(BIT1(BIT1 a))) + BIT0(BIT0(BIT0(BIT0 p))) * b =
+          BIT1(BIT1(BIT1(BIT1 n))))`,
+      SUBST1_TAC(MESON[NUMERAL] `_0 = 0`) THEN
+      MP_TAC(REWRITE_RULE[GSYM MULT_2] BIT0) THEN
+      MP_TAC(REWRITE_RULE[GSYM MULT_2] BIT1) THEN
+      ABBREV_TAC `two = 2` THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+      DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+      FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[ADD_CLAUSES; SUC_INJ; EQ_MULT_LCANCEL; ARITH_EQ;
+                  GSYM LEFT_ADD_DISTRIB; GSYM MULT_ASSOC]) in
+    let puths_2 = Array.of_list
+     (map (fun i -> let th1 = Array.get puths_1 (i mod 16)
+                    and th2 = Array.get puths_1 (i / 16) in
+                    let th3 = GEN_REWRITE_RULE RAND_CONV [th1] th2 in
+                    STANDARDIZE th3) (0--255)) in
+    let rec NUM_UNSHIFT_CONV tm =
+      match tm with
+        Comb(Comb(Const("+",_),atm),Comb(Comb(Const("*",_),ptm),btm)) ->
+         (match (atm,ptm,btm) with
+            (_,_,Const("_0",_)) ->
+                INST [atm,a_tm; ptm,p_tm] pth_triv
+          | (_,Comb(Const("BIT1",_),Const("_0",_)),_) ->
+                let th1 = INST [atm,a_tm; btm,b_tm] pth_base in
+                let Comb(_,Comb(Comb(_,mtm),ntm)) = concl th1 in
+                TRANS th1 (NUM_ADD_RULE mtm ntm)
+          | (Comb(_,Comb(_,Comb(_,Comb(_,atm')))),
+              Comb(_,Comb(_,Comb(_,Comb(_,(Comb(_,_) as ptm'))))),_) ->
+                let i,_ = topsplit atm in
+                (match (atm',ptm') with
+                   (Comb(_,Comb(_,Comb(_,Comb(_,atm'')))),
+                      Comb(_,Comb(_,Comb(_,Comb(_,(Comb(_,_) as ptm'')))))) ->
+                     let j,_ = topsplit atm' in
+                     let tm' = mk_comb(mk_comb(add_tm,atm''),
+                                       mk_comb(mk_comb(mul_tm,ptm''),btm)) in
+                     let th1 = NUM_UNSHIFT_CONV tm' in
+                     let th2 = INST [atm'',a_tm; ptm'',p_tm; btm,b_tm;
+                                     rand(concl th1),n_tm]
+                                    (Array.get puths_2 (16 * j + i)) in
+                     EQ_MP th2 th1
+                 | _ ->
+                   let tm' = mk_comb(mk_comb(add_tm,atm'),
+                                     mk_comb(mk_comb(mul_tm,ptm'),btm)) in
+                   let th1 = NUM_UNSHIFT_CONV tm' in
+                   let th2 = INST [atm',a_tm; ptm',p_tm; btm,b_tm;
+                                   rand(concl th1),n_tm]
+                                  (Array.get puths_1 i) in
+                   EQ_MP th2 th1)
+          | (Const("_0",_),Comb(Const("BIT0",_),qtm),_) ->
+                let th1 = INST [btm,b_tm; qtm,p_tm] pth_z in
+                CONV_RULE(RAND_CONV(RAND_CONV NUM_UNSHIFT_CONV)) th1
+          | (Comb(Const("BIT0",_),ctm),Comb(Const("BIT0",_),qtm),_) ->
+                let th1 = INST [ctm,a_tm; btm,b_tm; qtm,p_tm] pth_0 in
+                CONV_RULE(RAND_CONV(RAND_CONV NUM_UNSHIFT_CONV)) th1
+          | (Comb(Const("BIT1",_),ctm),Comb(Const("BIT0",_),qtm),_) ->
+                let th1 = INST [ctm,a_tm; btm,b_tm; qtm,p_tm] pth_1 in
+                CONV_RULE(RAND_CONV(RAND_CONV NUM_UNSHIFT_CONV)) th1
+          | _ -> failwith "malformed numeral")
+      | _ -> failwith "malformed numeral" in
+    NUM_UNSHIFT_CONV in
+  let NUM_SQUARE_RULE =
+    let pth_0 = (STANDARDIZE o prove)
+     (`_0 EXP 2 = _0`,
+      MESON_TAC[NUMERAL; REWRITE_CONV[ARITH] `0 EXP 2`])
+    and pth_1 = (STANDARDIZE o prove)
+     (`(BIT1 _0) EXP 2 = BIT1 _0`,
+      MESON_TAC[NUMERAL; REWRITE_CONV[ARITH] `1 EXP 2`])
+    and pth_even = (STANDARDIZE o prove)
+     (`m EXP 2 = n <=> (BIT0 m) EXP 2 = BIT0(BIT0 n)`,
+      ABBREV_TAC `two = 2` THEN
+      REWRITE_TAC[BIT0] THEN EXPAND_TAC "two" THEN
+      REWRITE_TAC[GSYM MULT_2] THEN REWRITE_TAC[EXP_2] THEN
+      REWRITE_TAC[AC MULT_AC `(2 * m) * (2 * n) = 2 * 2 * m * n`] THEN
+      REWRITE_TAC[EQ_MULT_LCANCEL; ARITH_EQ])
+    and pth_odd = (STANDARDIZE o prove)
+     (`m EXP 2 = n <=> (BIT1 m) EXP 2 = BIT1(BIT0(m + n))`,
+      ABBREV_TAC `two = 2` THEN
+      REWRITE_TAC[NUMERAL; BIT0; BIT1] THEN
+      EXPAND_TAC "two" THEN REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[EXP_2; MULT_CLAUSES; ADD_CLAUSES] THEN
+      REWRITE_TAC[SUC_INJ; GSYM MULT_ASSOC; GSYM LEFT_ADD_DISTRIB] THEN
+      REWRITE_TAC[AC ADD_AC `(m + m * 2 * m) + m = m * 2 * m + m + m`] THEN
+      REWRITE_TAC[GSYM MULT_2; AC MULT_AC `m * 2 * m = 2 * m * m`] THEN
+      REWRITE_TAC[GSYM MULT_ASSOC; GSYM LEFT_ADD_DISTRIB] THEN
+      REWRITE_TAC[EQ_MULT_LCANCEL; ARITH_EQ] THEN
+      GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [ADD_SYM] THEN
+      REWRITE_TAC[EQ_ADD_RCANCEL])
+    and pth_qstep = (UNDISCH o STANDARDIZE o prove)
+     (`n + BIT1 _0 = m /\
+       m EXP 2 = p /\
+       m + a = BIT0(BIT0 p)
+       ==> (BIT1(BIT1(BIT1 n))) EXP 2 = BIT1(BIT0(BIT0(BIT0 a)))`,
+      ABBREV_TAC `two = 2` THEN
+      SUBST1_TAC(MESON[NUMERAL] `_0 = 0`) THEN
+      REWRITE_TAC[BIT1; BIT0] THEN EXPAND_TAC "two" THEN
+      REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[ADD1; LEFT_ADD_DISTRIB; GSYM ADD_ASSOC] THEN
+      REWRITE_TAC[MULT_ASSOC] THEN REWRITE_TAC[ARITH] THEN
+      REWRITE_TAC[IMP_CONJ] THEN
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      DISCH_THEN(SUBST1_TAC o SYM) THEN DISCH_TAC THEN
+      MATCH_MP_TAC(MESON[EQ_ADD_LCANCEL]
+       `!m:num. m + n = m + p ==> n = p`) THEN
+      EXISTS_TAC `16 * (n + 1)` THEN
+      ASM_REWRITE_TAC[ADD_ASSOC; GSYM LEFT_ADD_DISTRIB] THEN
+      EXPAND_TAC "two" THEN REWRITE_TAC[EXP_2] THEN
       REWRITE_TAC[LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
-      REWRITE_TAC[MULT_AC] THEN
-      ONCE_REWRITE_TAC[AC ADD_AC
-       `a + (b + c) + d + e = (a + c + d) + (b + e)`] THEN
-      SIMP_TAC[EQ_ADD_RCANCEL] THEN REWRITE_TAC[ADD_AC]) in
-    let dest_mul = dest_binop `(* )` in
-    let mk_raw_numeral =
-      let Z = mk_const("_0",[])
-      and BIT0 = mk_const("BIT0",[])
-      and BIT1 = mk_const("BIT1",[]) in
-      let rec mk_num n =
-        if n =/ Int 0 then Z else
-        mk_comb((if mod_num n (Int 2) =/ Int 0 then BIT0 else BIT1),
-                mk_num(quo_num n (Int 2))) in
-      mk_num in
-    let rec dest_raw_numeral tm =
-      if try fst(dest_const tm) = "_0" with Failure _ -> false then Int 0 else
-      let l,r = dest_comb tm in
-      let n = Int 2 */ dest_raw_numeral r in
-      let cn = fst(dest_const l) in
-      if cn = "BIT0" then n
-      else if cn = "BIT1" then n +/ Int 1
-      else failwith "dest_raw_numeral" in
-    let rec sizeof_rawnumeral tm =
-      if is_const tm then 0 else
-      1 + sizeof_rawnumeral(rand tm) in
-    let MULTIPLICATION_TABLE =
-      let pth = prove
-       (`(_0 * x = _0) /\
-         (x * _0 = _0) /\
-         (BIT1 _0 * x = x) /\
-         (x * BIT1 _0 = x)`,
-        REWRITE_TAC[BIT1; DENUMERAL MULT_CLAUSES]) in
-      let mk_mul = mk_binop `(* )` in
-      let odds = map (fun x -> 2 * x + 1) (0--7) in
-      let nums = map (fun n -> mk_raw_numeral(Int n)) odds in
-      let pairs = allpairs mk_mul nums nums in
-      let ths = map (REWRITE_CONV[ARITH]) pairs in
-      GEN_REWRITE_CONV I (pth::ths) in
-    let NUM_MULT_EVEN_CONV' =
-      let pth = prove
-       (`(BIT0 x * y = BIT0(x * y)) /\
-         (x * BIT0 y = BIT0(x * y))`,
-        REWRITE_TAC[BIT0; BIT1; DENUMERAL MULT_CLAUSES;
-                    DENUMERAL ADD_CLAUSES] THEN
-        REWRITE_TAC[LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB; GSYM ADD_ASSOC]) in
-      GEN_REWRITE_CONV I [pth] in
-    let right_th = prove
-     (`s * BIT1 x = s + BIT0 (s * x)`,
-      REWRITE_TAC[BIT0; BIT1; DENUMERAL ADD_CLAUSES;
-                  DENUMERAL MULT_CLAUSES] THEN
-      REWRITE_TAC[LEFT_ADD_DISTRIB; ADD_ASSOC])
-    and left_th = prove
-     (`BIT1 x * s = s + BIT0 (x * s)`,
-      REWRITE_TAC[BIT0; BIT1; DENUMERAL ADD_CLAUSES;
-                  DENUMERAL MULT_CLAUSES] THEN
-      REWRITE_TAC[RIGHT_ADD_DISTRIB; ADD_AC]) in
-    let LEFT_REWR_CONV = REWR_CONV left_th
-    and RIGHT_REWR_CONV = REWR_CONV right_th in
-    let rec NUM_MULT_CONV' tm =
-      try MULTIPLICATION_TABLE tm
-      with Failure _ -> try
-          let th1 = NUM_MULT_EVEN_CONV' tm in
-          let l,r = dest_comb(rand(concl th1)) in
-          TRANS th1 (AP_TERM l (NUM_MULT_CONV' r))
-      with Failure _ ->
-        let xtm,ytm = dest_mul tm in
-        let x = dest_raw_numeral xtm
-        and y = dest_raw_numeral ytm in
-        let NX = sizeof_rawnumeral xtm
-        and NY = sizeof_rawnumeral ytm in
-        let N2 = max NX NY in
-        let N = (N2 + 1) / 2 in
-        if NX < N or (N < 32 & NX < NY) then
-          NUM_MULT_RIGHT_CONV' tm
-        else if NY < N or N < 32 then
-          NUM_MULT_LEFT_CONV' tm
-        else
-        let p = power_num (Int 2) (Int N) in
-        let u = quo_num x p
-        and w = quo_num y p in
-        let u' = p */ u
-        and w' = p */ w in
-        let v = x -/ u'
-        and z = y -/ w' in
-        let a = u +/ v
-        and b = w +/ z in
-        let c = a */ b in
-        let d = u' */ w
-        and e = v */ z in
-        let e' = p */ e
-        and d' = p */ d
-        and c' = p */ c in
-        let s = d' +/ e
-        and t = d +/ e' in
-        let q = s +/ c' in
-        let r = x */ y in
-        let ptm  = mk_raw_numeral p
-        and xtm  = mk_raw_numeral x
-        and ytm  = mk_raw_numeral y
-        and utm  = mk_raw_numeral u
-        and vtm  = mk_raw_numeral v
-        and wtm  = mk_raw_numeral w
-        and ztm  = mk_raw_numeral z
-        and utm' = mk_raw_numeral u'
-        and wtm' = mk_raw_numeral w'
-        and atm  = mk_raw_numeral a
-        and btm  = mk_raw_numeral b
-        and ctm  = mk_raw_numeral c
-        and dtm  = mk_raw_numeral d
-        and etm  = mk_raw_numeral e
-        and ctm' = mk_raw_numeral c'
-        and dtm' = mk_raw_numeral d'
-        and etm' = mk_raw_numeral e'
-        and stm  = mk_raw_numeral s
-        and ttm  = mk_raw_numeral t
-        and qtm  = mk_raw_numeral q
-        and rtm  = mk_raw_numeral r in
-        let th0 = INST
-         [ptm,p_tm; xtm,x_tm; ytm,y_tm; utm,u_tm; vtm,v_tm; wtm,w_tm;
-          ztm,z_tm; utm',u_tm'; wtm',w_tm'; atm,a_tm; btm,b_tm; ctm,c_tm;
-          dtm,d_tm; etm,e_tm; ctm',c_tm'; dtm',d_tm'; etm',e_tm'; stm,s_tm;
-          ttm,t_tm; qtm,q_tm; rtm,r_tm] pth in
-        let th1 = MP th0 (NUM_ADD_CONV' (lhand(lhand(concl th0)))) in
-        let th2 = MP th1 (NUM_ADD_CONV' (lhand(lhand(concl th1)))) in
-        let th3 = MP th2 (NUM_MULT_CONV' (lhand(lhand(concl th2)))) in
-        let th4 = MP th3 (NUM_MULT_CONV' (lhand(lhand(concl th3)))) in
-        let th5 = MP th4 (NUM_ADD_CONV' (lhand(lhand(concl th4)))) in
-        let th6 = MP th5 (NUM_ADD_CONV' (lhand(lhand(concl th5)))) in
-        let th7 = MP th6 (NUM_MULT_CONV' (lhand(lhand(concl th6)))) in
-        let th8 = MP th7 (NUM_MULT_CONV' (lhand(lhand(concl th7)))) in
-        let th9 = MP th8 (NUM_MULT_CONV' (lhand(lhand(concl th8)))) in
-        let tha = MP th9 (NUM_MULT_CONV' (lhand(lhand(concl th9)))) in
-        let thb = MP tha (NUM_MULT_CONV' (lhand(lhand(concl tha)))) in
-        let thc = MP thb (NUM_MULT_CONV' (lhand(lhand(concl thb)))) in
-        let thd = MP thc (NUM_ADD_CONV' (lhand(lhand(concl thc)))) in
-        let the = MP thd (NUM_ADD_CONV' (lhand(lhand(concl thd)))) in
-        let thf = MP the (NUM_ADD_CONV' (lhand(lhand(concl the)))) in
-        MP thf (NUM_ADD_CONV' (lhand(lhand(concl thf))))
-      and NUM_MULT_RIGHT_CONV' tm =
-       (RIGHT_REWR_CONV THENC
-        (RAND_CONV(RAND_CONV NUM_MULT_CONV')) THENC
-        NUM_ADD_CONV') tm
-      and NUM_MULT_LEFT_CONV' tm =
-       (LEFT_REWR_CONV THENC
-        (RAND_CONV(RAND_CONV NUM_MULT_CONV')) THENC
-        NUM_ADD_CONV') tm in
-    NUM_MULT_CONV' in
-
+      REWRITE_TAC[MULT_CLAUSES; MULT_ASSOC] THEN
+      REWRITE_TAC[AC MULT_AC `(8 * n) * NUMERAL p = (8 * NUMERAL p) * n`] THEN
+      REWRITE_TAC[ARITH] THEN
+      REWRITE_TAC[AC ADD_AC
+         `(n + 16) + p + q + 49 = (n + p + q) + (16 + 49)`] THEN
+      REWRITE_TAC[GSYM ADD_ASSOC] THEN REWRITE_TAC[ARITH] THEN
+      REWRITE_TAC[ADD_ASSOC; EQ_ADD_RCANCEL] THEN
+      REWRITE_TAC[GSYM ADD_ASSOC; GSYM MULT_2; MULT_ASSOC] THEN
+      ONCE_REWRITE_TAC[AC ADD_AC `a + b + c:num = b + a + c`] THEN
+      REWRITE_TAC[GSYM RIGHT_ADD_DISTRIB] THEN
+      REWRITE_TAC[ARITH])
+    and pth_rec = (UNDISCH o STANDARDIZE o prove)
+     (`n = l + p * h /\
+       h + l = m /\
+       h EXP 2 = a /\
+       l EXP 2 = c /\
+       m EXP 2 = d /\
+       a + c = e /\
+       e + b = d
+       ==> n EXP 2 = c + p * (b + p * a)`,
+      REWRITE_TAC[IMP_CONJ] THEN
+      DISCH_THEN SUBST1_TAC THEN
+      REPLICATE_TAC 5 (DISCH_THEN(SUBST1_TAC o SYM)) THEN
+      REWRITE_TAC[EXP_2; LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
+      REWRITE_TAC[MULT_AC] THEN CONV_TAC(BINOP_CONV NUM_CANCEL_CONV) THEN
+      DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[RIGHT_ADD_DISTRIB] THEN
+      REWRITE_TAC[MULT_AC] THEN REWRITE_TAC[ADD_AC])
+    and pth_toom3 = (STANDARDIZE o prove)
+     (`h EXP 2 = e /\
+       l EXP 2 = a /\
+       (l + BIT1 _0 * (m + BIT1 _0 * h)) EXP 2 =
+       a +  BIT1 _0 * (b +  BIT1 _0 * (c +  BIT1 _0 * (d +  BIT1 _0 * e))) /\
+       (l + BIT0(BIT1 _0) * (m + BIT0(BIT1 _0) * h)) EXP 2 =
+       a + BIT0(BIT1 _0) * (b + BIT0(BIT1 _0) *
+       (c + BIT0(BIT1 _0) * (d + BIT0(BIT1 _0) * e))) /\
+       (h + BIT0(BIT1 _0) * (m + BIT0(BIT1 _0) * l)) EXP 2 =
+       e + BIT0(BIT1 _0) * (d + BIT0(BIT1 _0) *
+       (c + BIT0(BIT1 _0) * (b + BIT0(BIT1 _0) * a)))
+       ==> (l + p * (m + p * h)) EXP 2 =
+           a + p * (b + p * (c + p * (d + p * e)))`,
+      ABBREV_TAC `two = 2` THEN
+      SUBST1_TAC(MESON[NUMERAL] `_0 = 0`) THEN
+      REWRITE_TAC[BIT1; BIT0] THEN
+      EXPAND_TAC "two" THEN REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[ARITH] THEN
+      SUBGOAL_THEN
+       `!p x y z. (x + p * (y + p * z)) EXP 2 =
+                  x * x + p * (2 * x * y + p * ((2 * x * z + y * y) +
+                            p * (2 * y * z + p * z * z)))`
+       (fun th -> REWRITE_TAC[th])
+      THENL
+       [REWRITE_TAC[EXP_2; MULT_2; LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
+        REWRITE_TAC[MULT_AC] THEN REWRITE_TAC[ADD_AC];
+        REWRITE_TAC[EXP_2]] THEN
+      MAP_EVERY ABBREV_TAC
+       [`a':num = l * l`;  `b' = 2 * l * m`; `c' = 2 * l * h + m * m`;
+        `d' = 2 * m * h`; `e':num = h * h`] THEN
+      SUBST1_TAC(AC MULT_AC `2 * m * l = 2 * l * m`) THEN
+      SUBST1_TAC(AC MULT_AC `2 * h * l = 2 * l * h`) THEN
+      SUBST1_TAC(AC MULT_AC `2 * h * m = 2 * m * h`) THEN
+      ASM_REWRITE_TAC[] THEN EXPAND_TAC "two" THEN
+      POP_ASSUM_LIST(K ALL_TAC) THEN
+      ASM_CASES_TAC `a':num = a` THEN ASM_REWRITE_TAC[] THEN
+      ASM_CASES_TAC `e':num = e` THEN ASM_REWRITE_TAC[] THEN
+      POP_ASSUM_LIST(K ALL_TAC) THEN
+      REWRITE_TAC[EQ_ADD_LCANCEL; EQ_MULT_LCANCEL] THEN
+      REWRITE_TAC[LEFT_ADD_DISTRIB; MULT_ASSOC] THEN
+      REWRITE_TAC[ARITH] THEN
+      REWRITE_TAC[MULT_CLAUSES; EQ_ADD_LCANCEL] THEN
+      REWRITE_TAC[ADD_ASSOC; EQ_ADD_RCANCEL] THEN
+      REWRITE_TAC[GSYM ADD_ASSOC] THEN DISCH_TAC THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP (MESON[]
+       `b = b' /\ c = c' /\ d = d'
+        ==> 5 * b + c' + d' = 5 * b' + c + d`)) THEN
+      REWRITE_TAC[LEFT_ADD_DISTRIB; MULT_ASSOC] THEN
+      REWRITE_TAC(map (fun k ->
+          SYM(REWRITE_CONV[ARITH_SUC]
+          (mk_comb(suc_tm,mk_small_numeral(k - 1)))))
+         (1--5)) THEN
+      REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES] THEN
+      CONV_TAC(LAND_CONV NUM_CANCEL_CONV) THEN DISCH_THEN SUBST_ALL_TAC THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP (MESON[]
+       `b = b' /\ c = c' /\ d = d'
+        ==> b + d':num = b' + d /\ 4 * b + d' = 4 * b' + d`)) THEN
+      REWRITE_TAC[LEFT_ADD_DISTRIB; MULT_ASSOC] THEN
+      REWRITE_TAC(map (fun k ->
+          SYM(REWRITE_CONV[ARITH_SUC]
+          (mk_comb(suc_tm,mk_small_numeral(k - 1)))))
+         (1--4)) THEN
+      REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES] THEN
+      CONV_TAC(LAND_CONV(BINOP_CONV NUM_CANCEL_CONV)) THEN
+      REWRITE_TAC[GSYM MULT_2] THEN ONCE_REWRITE_TAC[ADD_SYM] THEN
+      REWRITE_TAC[GSYM(el 4 (CONJUNCTS MULT_CLAUSES))] THEN
+      SIMP_TAC[EQ_MULT_LCANCEL; NOT_SUC])
+    and pth_even3 = (STANDARDIZE o prove)
+     (`m EXP 2 = n <=>
+       (BIT0(BIT0(BIT0 m))) EXP 2 = BIT0(BIT0(BIT0(BIT0(BIT0(BIT0 n)))))`,
+      ABBREV_TAC `two = 2` THEN
+      REWRITE_TAC[BIT0] THEN REWRITE_TAC[GSYM MULT_2] THEN
+      EXPAND_TAC "two" THEN REWRITE_TAC[EXP_2] THEN
+      REWRITE_TAC[AC MULT_AC
+       `(2 * 2 * 2 * m) * 2 * 2 * 2 * m = 2 * 2 * 2 * 2 * 2 * 2 * m * m`] THEN
+      REWRITE_TAC[EQ_MULT_LCANCEL; ARITH_EQ]) in
+    let NUM_UNSHIFT2_CONV =
+      RAND_CONV(RAND_CONV NUM_UNSHIFT_CONV) THENC NUM_UNSHIFT_CONV in
+    let NUM_UNSHIFT3_CONV =
+      RAND_CONV(RAND_CONV NUM_UNSHIFT2_CONV) THENC NUM_UNSHIFT_CONV in
+    let NUM_UNSHIFT4_CONV =
+      RAND_CONV(RAND_CONV NUM_UNSHIFT3_CONV) THENC NUM_UNSHIFT_CONV in
+    let BINOP2_CONV conv1 conv2 = COMB2_CONV (RAND_CONV conv1) conv2 in
+    let TOOM3_CONV = BINOP2_CONV
+      (LAND_CONV NUM_UNSHIFT2_CONV) NUM_UNSHIFT4_CONV in
+    let rec GEN_NUM_SQUARE_RULE w z tm =
+      match tm with
+        Const("_0",_) -> pth_0
+      | Comb(Const("BIT0",_),mtm) ->
+           (match mtm with
+              Comb(Const("BIT0",_),Comb(Const("BIT0",_),ptm)) ->
+                 let th1 = GEN_NUM_SQUARE_RULE w (z - 3) ptm in
+                 let ntm = rand(concl th1) in
+                 EQ_MP (INST [ptm,m_tm; ntm,n_tm] pth_even3) th1
+            | _ ->
+                 let th1 = GEN_NUM_SQUARE_RULE w (z - 1) mtm in
+                 let ntm = rand(concl th1) in
+                 EQ_MP (INST [mtm,m_tm; ntm,n_tm] pth_even) th1)
+      | Comb(Const("BIT1",_),mtm) ->
+            if mtm = zero_tm then pth_1 else
+            if (w < 100 or z < 20) & w + z < 150 then
+              match mtm with
+                Comb(Const("BIT1",_),Comb(Const("BIT1",_),ntm)) ->
+                    let th1 = NUM_ADD_RULE ntm one_tm in
+                    let mtm = rand(concl th1) in
+                    let th2 = NUM_SQUARE_RULE mtm in
+                    let ptm = rand(concl th2) in
+                    let atm = subbn
+                      (mk_comb(BIT0_tm,mk_comb(BIT0_tm,ptm))) mtm in
+                    let th3 = NUM_ADD_RULE mtm atm in
+                    let th4 = INST
+                      [atm,a_tm; mtm,m_tm; ntm,n_tm; ptm,p_tm] pth_qstep in
+                    QUICK_PROVE_HYP (CONJ th1 (CONJ th2 th3)) th4
+              | _ ->
+                    let th1 = GEN_NUM_SQUARE_RULE (w - 1) z mtm in
+                    let ntm = rand(concl th1) in
+                    let th2 = EQ_MP (INST [mtm,m_tm; ntm,n_tm] pth_odd) th1 in
+                    (match concl th2 with
+                      Comb(_,Comb(_,Comb(_,Comb(Comb(_,ptm),qtm)))) ->
+                        let th3 = NUM_ADD_RULE ptm qtm in
+                        TRANS th2 (AP_BIT1 (AP_BIT0 th3)))
+            else if w + z < 800 then
+              let k2 = (w + z) / 2 in
+              let th1 = NUM_SHIFT_CONV k2 tm in
+              let Comb(Comb(_,ltm),Comb(Comb(_,ptm),htm)) = rand(concl th1) in
+              let th2 = NUM_ADD_RULE htm ltm in
+              let mtm = rand(concl th2) in
+              let th3 = NUM_SQUARE_RULE htm
+              and th4 = NUM_SQUARE_RULE ltm
+              and th5 = NUM_SQUARE_RULE mtm in
+              let atm = rand(concl th3)
+              and ctm = rand(concl th4)
+              and dtm = rand(concl th5) in
+              let th6 = NUM_ADD_RULE atm ctm in
+              let etm = rand(concl th6) in
+              let btm = subbn dtm etm in
+              let th7 = NUM_ADD_RULE etm btm in
+              let dtm = rand(concl th7) in
+              let th8 = INST [atm,a_tm; btm,b_tm; ctm,c_tm; dtm,d_tm; etm,e_tm;
+                              htm,h_tm; ltm,l_tm; mtm,m_tm; tm,n_tm; ptm,p_tm]
+                        pth_rec in
+              let th9 = QUICK_PROVE_HYP (end_itlist CONJ
+                   [th1;th2;th3;th4;th5;th6;th7]) th8 in
+              CONV_RULE(RAND_CONV(RAND_CONV(RAND_CONV NUM_UNSHIFT_CONV) THENC
+                                  NUM_UNSHIFT_CONV)) th9
+            else
+              let k3 = (w + z) / 3 in
+              let th0 = (NUM_SHIFT_CONV k3 THENC
+                         RAND_CONV(RAND_CONV(NUM_SHIFT_CONV k3))) tm in
+              let Comb(Comb(_,ltm),Comb(Comb(_,ptm),
+                   Comb(Comb(_,mtm),Comb(Comb(_,_),htm)))) = rand(concl th0) in
+              let th1 = NUM_SQUARE_RULE htm
+              and th2 = NUM_SQUARE_RULE ltm in
+              let atm = rand(concl th2) and etm = rand(concl th1) in
+              let lnum = dest_raw_numeral ltm
+              and mnum = dest_raw_numeral mtm
+              and hnum = dest_raw_numeral htm in
+              let btm = rand(mk_numeral(num_2 */ lnum */ mnum))
+              and ctm = rand(mk_numeral(mnum */ mnum +/ num_2 */ lnum */ hnum))
+              and dtm = rand(mk_numeral(num_2 */ hnum */ mnum)) in
+              let th = INST
+                [atm,a_tm; btm,b_tm; ctm,c_tm; dtm,d_tm; etm,e_tm;
+                 htm,h_tm; mtm,m_tm; ltm,l_tm; ptm,p_tm] pth_toom3 in
+              let th' = CONV_RULE
+               (BINOP2_CONV
+                (RAND_CONV(RAND_CONV
+                 (BINOP2_CONV TOOM3_CONV (BINOP2_CONV TOOM3_CONV TOOM3_CONV))))
+                TOOM3_CONV) th in
+              let [tm3;tm4;tm5] = conjuncts(rand(rand(lhand(concl th')))) in
+              let th3 = NUM_SQUARE_RULE (lhand(lhand tm3))
+              and th4 = NUM_SQUARE_RULE (lhand(lhand tm4))
+              and th5 = NUM_SQUARE_RULE (lhand(lhand tm5)) in
+              MP th' (end_itlist CONJ [th1;th2;th3;th4;th5])
+    and NUM_SQUARE_RULE tm =
+      let w,z = bitcounts tm in GEN_NUM_SQUARE_RULE w z tm in
+    NUM_SQUARE_RULE in
+  let NUM_MUL_RULE =
+    let QUICK_PROVE_HYP ath bth =
+      EQ_MP (DEDUCT_ANTISYM_RULE ath bth) ath
+    and pth_0l,pth_0r = (CONJ_PAIR o STANDARDIZE o prove)
+     (`_0 * n = _0 /\ m * _0 = _0`,
+      MESON_TAC[NUMERAL; MULT_CLAUSES])
+    and pth_1l,pth_1r = (CONJ_PAIR o STANDARDIZE o prove)
+     (`(BIT1 _0) * n = n /\ m * (BIT1 _0) = m`,
+      MESON_TAC[NUMERAL; MULT_CLAUSES])
+    and pth_evenl,pth_evenr = (CONJ_PAIR o STANDARDIZE o prove)
+     (`(m * n = p <=> (BIT0 m) * n = BIT0 p) /\
+       (m * n = p <=> m * BIT0 n = BIT0 p)`,
+      REWRITE_TAC[BIT0] THEN REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[AC MULT_AC `m * 2 * n = 2 * m * n`] THEN
+      REWRITE_TAC[GSYM MULT_ASSOC; EQ_MULT_LCANCEL; ARITH_EQ])
+    and pth_oddl,pth_oddr = (CONJ_PAIR o STANDARDIZE o prove)
+     (`(m * n = p <=> BIT1 m * n = BIT0 p + n) /\
+       (m * n = p <=> m * BIT1 n = BIT0 p + m)`,
+      REWRITE_TAC[BIT0; BIT1] THEN REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[MULT_CLAUSES] THEN
+      REWRITE_TAC[MESON[MULT_AC; ADD_SYM] `m + m * 2 * n = 2 * m * n + m`] THEN
+      REWRITE_TAC[GSYM MULT_ASSOC; EQ_MULT_LCANCEL; EQ_ADD_RCANCEL] THEN
+      REWRITE_TAC[ARITH_EQ]) in
+    let pth_oo1 = (UNDISCH_ALL o STANDARDIZE o prove)
+     (`n + p = m /\ SUC(m + n) = a /\ p EXP 2 = b /\ a EXP 2 = c /\ b + d = c
+        ==> ((BIT1 m) * (BIT1 n) = d)`,
+      ABBREV_TAC `two = 2` THEN REWRITE_TAC[BIT1; IMP_CONJ] THEN
+      FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[EXP_2; GSYM MULT_2] THEN
+      REPLICATE_TAC 4 (DISCH_THEN(SUBST1_TAC o SYM)) THEN
+      REWRITE_TAC[ADD1; AC ADD_AC `((n + p) + n) + 1 = (p + (n + n)) + 1`] THEN
+      REWRITE_TAC[GSYM MULT_2] THEN
+      REWRITE_TAC[LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
+      REWRITE_TAC[GSYM ADD_ASSOC; MULT_CLAUSES; EQ_ADD_LCANCEL] THEN
+      DISCH_THEN SUBST1_TAC THEN
+      REWRITE_TAC[MULT_2; LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
+      REWRITE_TAC[MULT_AC] THEN REWRITE_TAC[ADD_AC]) in
+    let pth_oo2 = PURE_ONCE_REWRITE_RULE[MULT_SYM]
+                   (INST [n_tm,m_tm; m_tm,n_tm] pth_oo1) in
+    let pth_recodel = (UNDISCH_ALL o STANDARDIZE o prove)
+     (`SUC(_0 + m) = p ==> (p * n = a + n <=> m * n = a)`,
+      SUBST1_TAC(MESON[NUMERAL] `_0 = 0`) THEN
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES; EQ_ADD_RCANCEL])
+    and pth_recoder = (UNDISCH_ALL o STANDARDIZE o prove)
+     (`SUC(_0 + n) = p ==> (m * p = a + m <=> m * n = a)`,
+      ONCE_REWRITE_TAC[MULT_SYM] THEN
+      SUBST1_TAC(MESON[NUMERAL] `_0 = 0`) THEN
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES; EQ_ADD_RCANCEL]) in
+    let rec NUM_MUL_RULE k l tm tm' =
+      match (tm,tm') with
+        (Const("_0",_),_) -> INST [tm',n_tm] pth_0l
+      | (_,Const("_0",_)) -> INST [tm,m_tm] pth_0r
+      | (Comb(Const("BIT1",_),Const("_0",_)),_) -> INST [tm',n_tm] pth_1l
+      | (_,Comb(Const("BIT1",_),Const("_0",_))) -> INST [tm,m_tm] pth_1r
+      | (Comb(Const("BIT0",_),mtm),_) ->
+            let th0 = NUM_MUL_RULE (k - 1) l mtm tm' in
+            let th1 = INST
+             [mtm,m_tm; tm',n_tm; rand(concl th0),p_tm] pth_evenl in
+            EQ_MP th1 th0
+      | (_,Comb(Const("BIT0",_),ntm)) ->
+            let th0 = NUM_MUL_RULE k (l - 1) tm ntm in
+            let th1 = INST
+             [tm,m_tm; ntm,n_tm; rand(concl th0),p_tm] pth_evenr in
+            EQ_MP th1 th0
+      | (Comb(Const("BIT1",_),mtm),Comb(Const("BIT1",_),ntm)) ->
+          if k <= 50 or l <= 50 or 
+             Int k */ Int k <=/ Int l or
+             Int l */ Int l <= Int k then
+            match (mtm,ntm) with
+              (Comb(Const("BIT1",_),Comb(Const("BIT1",_),_)),_) ->
+                 let th1 = NUM_ADC_RULE zero_tm tm in
+                 let ptm = rand(concl th1) in
+                 let th2 = NUM_MUL_RULE k l ptm tm' in
+                 let atm = subbn (rand(concl th2)) tm' in
+                 let th3 = INST [tm,m_tm; tm',n_tm; ptm,p_tm; atm,a_tm]
+                                pth_recodel in
+                 let th4 = PROVE_HYP th1 th3 in
+                 EQ_MP th4 (TRANS th2 (SYM(NUM_ADD_RULE atm tm')))
+            | (_,Comb(Const("BIT1",_),Comb(Const("BIT1",_),_))) ->
+                 let th1 = NUM_ADC_RULE zero_tm tm' in
+                 let ptm = rand(concl th1) in
+                 let th2 = NUM_MUL_RULE k l tm ptm in
+                 let atm = subbn (rand(concl th2)) tm in
+                 let th3 = INST [tm,m_tm; tm',n_tm; ptm,p_tm; atm,a_tm]
+                                pth_recoder in
+                 let th4 = PROVE_HYP th1 th3 in
+                 EQ_MP th4 (TRANS th2 (SYM(NUM_ADD_RULE atm tm)))
+            | _ ->
+                 if k <= l then
+                   let th0 = NUM_MUL_RULE (k - 1) l mtm tm' in
+                   let ptm = rand(concl th0) in
+                   let th1 =
+                    EQ_MP (INST [mtm,m_tm; tm',n_tm; ptm,p_tm] pth_oddl) th0 in
+                   let tm1 = lhand(rand(concl th1)) in
+                   TRANS th1 (NUM_ADD_RULE tm1 tm')
+                 else
+                   let th0 = NUM_MUL_RULE k (l - 1) tm ntm in
+                   let ptm = rand(concl th0) in
+                   let th1 =
+                     EQ_MP (INST [tm,m_tm; ntm,n_tm; ptm,p_tm] pth_oddr) th0 in
+                   let tm1 = lhand(rand(concl th1)) in
+                   TRANS th1 (NUM_ADD_RULE tm1 tm)
+          else
+             let mval = dest_raw_numeral mtm
+             and nval = dest_raw_numeral ntm in
+             if nval <=/ mval then
+               let ptm = rand(mk_numeral(mval -/ nval)) in
+               let th2 = NUM_ADD_RULE ntm ptm
+               and th3 = NUM_ADC_RULE mtm ntm in
+               let atm = rand(concl th3) in
+               let th4 = NUM_SQUARE_RULE ptm in
+               let btm = rand(concl th4) in
+               let th5 = NUM_SQUARE_RULE atm in
+               let ctm = rand(concl th5) in
+               let dtm = subbn ctm btm in
+               let th6 = NUM_ADD_RULE btm dtm in
+               let th1 = INST [atm,a_tm; btm,b_tm; ctm,c_tm; dtm,d_tm;
+                               mtm,m_tm; ntm,n_tm; ptm,p_tm] pth_oo1 in
+               QUICK_PROVE_HYP  (end_itlist CONJ
+                   [th2;th3;th4;th5;th6]) th1
+             else
+               let ptm = rand(mk_numeral(nval -/ mval)) in
+               let th2 = NUM_ADD_RULE mtm ptm
+               and th3 = NUM_ADC_RULE ntm mtm in
+               let atm = rand(concl th3) in
+               let th4 = NUM_SQUARE_RULE ptm in
+               let btm = rand(concl th4) in
+               let th5 = NUM_SQUARE_RULE atm in
+               let ctm = rand(concl th5) in
+               let dtm = subbn ctm btm in
+               let th6 = NUM_ADD_RULE btm dtm in
+               let th1 = INST [atm,a_tm; btm,b_tm; ctm,c_tm; dtm,d_tm;
+                               mtm,m_tm; ntm,n_tm; ptm,p_tm] pth_oo2 in
+               QUICK_PROVE_HYP  (end_itlist CONJ
+                   [th2;th3;th4;th5;th6]) th1
+      | _ -> failwith "NUM_MUL_RULE" in
+    NUM_MUL_RULE in
+  let NUM_MULT_CONV' =
+    let pth_refl = (STANDARDIZE o MESON[EXP_2])
+      `m EXP 2 = p <=> m * m = p` in
+    fun tm ->
+      match tm with
+        Comb(Comb(Const("*",_),mtm),ntm) ->
+            if Pervasives.compare mtm ntm = 0 then
+              let th1 = NUM_SQUARE_RULE mtm in
+              let ptm = rand(concl th1) in
+              EQ_MP (INST [mtm,m_tm;ptm,p_tm] pth_refl) th1
+            else
+              let w1,z1 = bitcounts mtm and w2,z2 = bitcounts ntm in
+              NUM_MUL_RULE (w1+z1) (w2+z2) mtm ntm
+    | _ -> failwith "NUM_MULT_CONV'" in
+  let NUM_SUC_CONV =
+    let pth = (STANDARDIZE o prove)
+     (`SUC(_0 + m) = n <=> SUC(NUMERAL m) = NUMERAL n`,
+      BINOP_TAC THEN MESON_TAC[NUMERAL; ADD_CLAUSES]) in
+    fun tm ->
+      match tm with
+        Comb(Const("SUC",_),Comb(Const("NUMERAL",_),mtm))
+        when wellformed mtm ->
+          let th1 = NUM_ADC_RULE zero_tm mtm in
+          let ntm = rand(concl th1) in
+          EQ_MP(INST [mtm,m_tm; ntm,n_tm] pth) th1
+      | _ -> failwith "NUM_SUC_CONV" in
+  let NUM_ADD_CONV =
+    let topthm_add = (STANDARDIZE o MESON[NUMERAL])
+      `m + n = p <=> NUMERAL m + NUMERAL n = NUMERAL p` in
+    fun tm ->
+      match tm with
+        Comb(Comb(Const("+",_),Comb(Const("NUMERAL",_),mtm)),
+          Comb(Const("NUMERAL",_),ntm))
+        when wellformed mtm & wellformed ntm ->
+        let th1 = NUM_ADD_RULE mtm ntm in
+        let ptm = rand(concl th1) in
+        let th2 = INST [mtm,m_tm; ntm,n_tm; ptm,p_tm] topthm_add in
+        EQ_MP th2 th1
+      | _ -> failwith "NUM_ADD_CONV" in
   let NUM_MULT_CONV =
-    let tconv = REWR_CONV(CONJUNCT1 ARITH_MULT) in
-    tconv THENC RAND_CONV NUM_MULT_CONV' in
-
+    let topthm_mul = (STANDARDIZE o MESON[NUMERAL])
+      `m * n = p <=> NUMERAL m * NUMERAL n = NUMERAL p`
+    and pth_refl = (STANDARDIZE o MESON[NUMERAL; EXP_2])
+      `m EXP 2 = p <=> NUMERAL m * NUMERAL m = NUMERAL p` in
+    fun tm ->
+      match tm with
+        Comb(Comb(Const("*",_),Comb(Const("NUMERAL",_),mtm)),
+          Comb(Const("NUMERAL",_),ntm)) ->
+            if Pervasives.compare mtm ntm = 0 then
+              let th1 = NUM_SQUARE_RULE mtm in
+              let ptm = rand(concl th1) in
+              EQ_MP (INST [mtm,m_tm;ptm,p_tm] pth_refl) th1
+            else
+              let w1,z1 = bitcounts mtm and w2,z2 = bitcounts ntm in
+              let th1 = NUM_MUL_RULE (w1+z1) (w2+z2) mtm ntm in
+              let ptm = rand(concl th1) in
+              let th2 = INST [mtm,m_tm; ntm,n_tm; ptm,p_tm] topthm_mul in
+              EQ_MP th2 th1
+      | _ -> failwith "NUM_MULT_CONV" in
   let NUM_EXP_CONV =
-    let pth0 = prove
-     (`(x EXP n = y) ==> (y * y = z) ==> (x EXP (BIT0 n) = z)`,
+    let pth0 = (STANDARDIZE o prove)
+     (`(m EXP n = p) ==> (p * p = a) ==> (m EXP (BIT0 n) = a)`,
        REPEAT(DISCH_THEN(SUBST1_TAC o SYM)) THEN
        REWRITE_TAC[BIT0; EXP_ADD])
-    and pth1 = prove
-     (`(x EXP n = y) ==> (y * y = w) ==> (x * w = z) ==> (x EXP (BIT1 n) = z)`,
+    and pth1 = (STANDARDIZE o prove)
+     (`(m EXP n = p) ==> (p * p = b) ==> (m * b = a) ==> (m EXP (BIT1 n) = a)`,
       REPEAT(DISCH_THEN(SUBST1_TAC o SYM)) THEN
       REWRITE_TAC[BIT1; EXP_ADD; EXP])
-    and pth = prove
-     (`x EXP _0 = BIT1 _0`,
+    and pth = (STANDARDIZE o prove)
+     (`m EXP _0 = BIT1 _0`,
       MP_TAC (CONJUNCT1 EXP) THEN REWRITE_TAC[NUMERAL; BIT1] THEN
       DISCH_THEN MATCH_ACCEPT_TAC)
-    and tth = prove
-     (`(NUMERAL x) EXP (NUMERAL n) = x EXP n`,
+    and tth = (STANDARDIZE o prove)
+     (`(NUMERAL m) EXP (NUMERAL n) = m EXP n`,
       REWRITE_TAC[NUMERAL])
-    and fth = prove
-     (`x = NUMERAL x`,
-      REWRITE_TAC[NUMERAL])
-    and n = `n:num` and w = `w:num` and x = `x:num`
-    and y = `y:num` and z = `z:num`
-    and Z = `_0` and BIT0 = `BIT0`
-    and mul = `(*)` in
+    and fth = (STANDARDIZE o prove)
+     (`m = NUMERAL m`,
+      REWRITE_TAC[NUMERAL]) in
     let tconv = GEN_REWRITE_CONV I [tth] in
     let rec NUM_EXP_CONV l r =
-      if r = Z then INST [l,x] pth else
+      if r = zero_tm then INST [l,m_tm] pth else
       let b,r' = dest_comb r in
-      if b = BIT0 then
+      if b = BIT0_tm then
         let th1 = NUM_EXP_CONV l r' in
         let tm1 = rand(concl th1) in
-        let th2 = NUM_MULT_CONV' (mk_binop mul tm1 tm1) in
+        let th2 = NUM_MULT_CONV' (mk_binop mul_tm tm1 tm1) in
         let tm2 = rand(concl th2) in
-        MP (MP (INST [l,x; r',n; tm1,y; tm2,z] pth0) th1) th2
+        MP (MP (INST [l,m_tm; r',n_tm; tm1,p_tm; tm2,a_tm] pth0) th1) th2
       else
         let th1 = NUM_EXP_CONV l r' in
         let tm1 = rand(concl th1) in
-        let th2 = NUM_MULT_CONV' (mk_binop mul tm1 tm1) in
+        let th2 = NUM_MULT_CONV' (mk_binop mul_tm tm1 tm1) in
         let tm2 = rand(concl th2) in
-        let th3 = NUM_MULT_CONV' (mk_binop mul l tm2) in
+        let th3 = NUM_MULT_CONV' (mk_binop mul_tm l tm2) in
         let tm3 = rand(concl th3) in
-        MP (MP (MP (INST [l,x; r',n; tm1,y; tm2,w; tm3,z] pth1) th1) th2) th3 in
+        MP (MP (MP (INST [l,m_tm; r',n_tm; tm1,p_tm; tm2,b_tm; tm3,a_tm]
+                         pth1) th1) th2) th3 in
     fun tm -> try let th = tconv tm in
                   let lop,r = dest_comb (rand(concl th)) in
                   let _,l = dest_comb lop in
+                  if not (wellformed l & wellformed r) then failwith "" else
                   let th' = NUM_EXP_CONV l r in
                   let tm' = rand(concl th') in
-                  TRANS (TRANS th th') (INST [tm',x] fth)
+                  TRANS (TRANS th th') (INST [tm',m_tm] fth)
               with Failure _ -> failwith "NUM_EXP_CONV" in
-  NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV;;
+  let NUM_LT_CONV =
+    let pth = (UNDISCH o STANDARDIZE o prove)
+     (`SUC(m + n) = p ==> ((NUMERAL n < NUMERAL p) <=> T)`,
+      REWRITE_TAC[NUMERAL; LT_EXISTS; ADD_CLAUSES] THEN
+      MESON_TAC[ADD_SYM])
+    and qth = (UNDISCH o STANDARDIZE o prove)
+     (`m + p = n ==> (NUMERAL n < NUMERAL p <=> F)`,
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[NOT_LT; NUMERAL] THEN
+      MESON_TAC[LE_ADD; ADD_SYM])
+    and rth = (STANDARDIZE o prove)
+     (`NUMERAL n < NUMERAL n <=> F`,
+      MESON_TAC[LT_REFL]) in
+    fun tm ->
+      match tm with
+        Comb(Comb(Const("<",_),Comb(Const("NUMERAL",_),mtm)),
+             Comb(Const("NUMERAL",_),ntm)) ->
+          let rel = orderrelation mtm ntm in
+          if rel = 0 then INST[ntm,n_tm] rth
+          else if rel < 0 then
+            let dtm = sbcbn ntm mtm in
+            let th = NUM_ADC_RULE dtm mtm in
+            QUICK_PROVE_HYP th (INST [dtm,m_tm; mtm,n_tm; ntm,p_tm] pth)
+          else
+            let dtm = subbn mtm ntm in
+            let th = NUM_ADD_RULE dtm ntm in
+            QUICK_PROVE_HYP th (INST [dtm,m_tm; mtm,n_tm; ntm,p_tm] qth)
+      | _ -> failwith "NUM_LT_CONV"
+  and NUM_LE_CONV =
+    let pth = (UNDISCH o STANDARDIZE o prove)
+     (`m + n = p ==> ((NUMERAL n <= NUMERAL p) <=> T)`,
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[NUMERAL] THEN
+      MESON_TAC[LE_ADD; ADD_SYM])
+    and qth = (UNDISCH o STANDARDIZE o prove)
+     (`SUC(m + p) = n ==> (NUMERAL n <= NUMERAL p <=> F)`,
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[NUMERAL; NOT_LE; ADD_CLAUSES; LT_EXISTS] THEN
+      MESON_TAC[ADD_SYM])
+    and rth = (STANDARDIZE o prove)
+     (`NUMERAL n <= NUMERAL n <=> T`,
+      REWRITE_TAC[LE_REFL]) in
+    fun tm ->
+      match tm with
+        Comb(Comb(Const("<=",_),Comb(Const("NUMERAL",_),mtm)),
+             Comb(Const("NUMERAL",_),ntm)) ->
+          let rel = orderrelation mtm ntm in
+          if rel = 0 then INST[ntm,n_tm] rth
+          else if rel < 0 then
+            let dtm = subbn ntm mtm in
+            let th = NUM_ADD_RULE dtm mtm in
+            QUICK_PROVE_HYP th (INST [dtm,m_tm; mtm,n_tm; ntm,p_tm] pth)
+          else
+            let dtm = sbcbn mtm ntm in
+            let th = NUM_ADC_RULE dtm ntm in
+            QUICK_PROVE_HYP th (INST [dtm,m_tm; mtm,n_tm; ntm,p_tm] qth)
+      | _ -> failwith "NUM_LE_CONV"
+  and NUM_EQ_CONV =
+    let pth = (UNDISCH o STANDARDIZE o prove)
+     (`SUC(m + n) = p ==> ((NUMERAL n = NUMERAL p) <=> F)`,
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[NUMERAL; GSYM LE_ANTISYM; DE_MORGAN_THM] THEN
+      REWRITE_TAC[NOT_LE; LT_EXISTS; ADD_CLAUSES] THEN
+      MESON_TAC[ADD_SYM])
+    and qth = (UNDISCH o STANDARDIZE o prove)
+     (`SUC(m + p) = n ==> ((NUMERAL n = NUMERAL p) <=> F)`,
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[NUMERAL; GSYM LE_ANTISYM; DE_MORGAN_THM] THEN
+      REWRITE_TAC[NOT_LE; LT_EXISTS; ADD_CLAUSES] THEN
+      MESON_TAC[ADD_SYM])
+    and rth = (STANDARDIZE o prove)
+     (`(NUMERAL n = NUMERAL n) <=> T`,
+      REWRITE_TAC[]) in
+    fun tm ->
+      match tm with
+        Comb(Comb(Const("=",_),Comb(Const("NUMERAL",_),mtm)),
+             Comb(Const("NUMERAL",_),ntm)) ->
+          let rel = orderrelation mtm ntm in
+          if rel = 0 then INST [ntm,n_tm] rth
+          else if rel < 0 then
+             let dtm = sbcbn ntm mtm in
+             let th = NUM_ADC_RULE dtm mtm in
+             QUICK_PROVE_HYP th (INST [dtm,m_tm; mtm,n_tm; ntm,p_tm] pth)
+          else
+             let dtm = sbcbn mtm ntm in
+             let th = NUM_ADC_RULE dtm ntm in
+             QUICK_PROVE_HYP th (INST [dtm,m_tm; mtm,n_tm; ntm,p_tm] qth)
+      | _ -> failwith "NUM_EQ_CONV" in
+  NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
+  NUM_LT_CONV,NUM_LE_CONV,NUM_EQ_CONV;;
+
+let NUM_GT_CONV = GEN_REWRITE_CONV I [GT] THENC NUM_LT_CONV;;
+
+let NUM_GE_CONV = GEN_REWRITE_CONV I [GE] THENC NUM_LE_CONV;;
 
 let NUM_PRE_CONV =
   let tth = prove

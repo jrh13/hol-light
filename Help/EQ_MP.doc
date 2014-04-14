@@ -9,17 +9,18 @@ Equality version of the Modus Ponens rule.
 rule, equality, modus, ponens.
 
 \DESCRIBE
-When applied to theorems {A1 |- t1 <=> t2} and {A2 |- t1}, the inference
-rule {EQ_MP} returns the theorem {A1 u A2 |- t2}.
+When applied to theorems {A1 |- t1 <=> t2} and {A2 |- t1'} where {t1} and {t1'}
+are alpha-equivalent (for example, identical), the inference rule {EQ_MP}
+returns the theorem {A1 u A2 |- t2}.
 {
-    A1 |- t1 <=> t2   A2 |- t1
-   ----------------------------  EQ_MP
+    A1 |- t1 <=> t2   A2 |- t1'
+   -----------------------------  EQ_MP
          A1 u A2 |- t2
 }
 \FAILURE
-Fails unless the first theorem is equational and its left side
-is the same as the conclusion of the second theorem (and is therefore
-of type {bool}), up to alpha-conversion.
+Fails unless the first theorem is equational and its left side is the same as
+the conclusion of the second theorem (and is therefore of type {bool}), up to
+alpha-conversion.
 
 \EXAMPLE
 {

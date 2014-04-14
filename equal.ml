@@ -54,9 +54,10 @@ let BETA_CONV tm =
 (* A few very basic derived equality rules.                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let AP_TERM tm th =
-  try MK_COMB(REFL tm,th)
-  with Failure _ -> failwith "AP_TERM";;
+let AP_TERM tm =
+  let rth = REFL tm in
+  fun th -> try MK_COMB(rth,th)
+            with Failure _ -> failwith "AP_TERM";;
 
 let AP_THM th tm =
   try MK_COMB(th,REFL tm)
@@ -81,8 +82,9 @@ let GEN_ALPHA_CONV v tm =
   let b,abs = dest_comb tm in
   AP_TERM b (ALPHA_CONV v abs);;
 
-let MK_BINOP op (lth,rth) =
-  MK_COMB(AP_TERM op lth,rth);;
+let MK_BINOP op = 
+  let afn = AP_TERM op in
+  fun (lth,rth) -> MK_COMB(afn lth,rth);;
 
 (* ------------------------------------------------------------------------- *)
 (* Terminal conversion combinators.                                          *)
@@ -130,16 +132,23 @@ let TRY_CONV conv = conv ORELSEC ALL_CONV;;
 
 let (RATOR_CONV:conv->conv) =
   fun conv tm ->
-    let l,r = dest_comb tm in AP_THM (conv l) r;;
+    match tm with
+      Comb(l,r) -> AP_THM (conv l) r
+    | _ -> failwith "RATOR_CONV: Not a combination";;
 
 let (RAND_CONV:conv->conv) =
   fun conv tm ->
-    let l,r = dest_comb tm in AP_TERM l (conv r);;
+   match tm with    
+     Comb(l,r) -> MK_COMB(REFL l,conv r)    
+   |  _ -> failwith "RAND_CONV: Not a combination";;
 
 let LAND_CONV = RATOR_CONV o RAND_CONV;;
 
 let (COMB2_CONV: conv->conv->conv) =
-  fun lconv rconv tm -> let l,r = dest_comb tm in MK_COMB(lconv l,rconv r);;
+  fun lconv rconv tm -> 
+   match tm with    
+     Comb(l,r) -> MK_COMB(lconv l,rconv r)
+  | _ -> failwith "COMB2_CONV: Not a combination";;
 
 let COMB_CONV = W COMB2_CONV;;
 
@@ -192,15 +201,18 @@ let (ONCE_DEPTH_CONV: conv->conv),
     try let th2 = conv2(rand(concl th1)) in TRANS th1 th2
     with Failure _ -> th1
   and COMB_QCONV conv tm =
-    let l,r = dest_comb tm in
-    try let th1 = conv l in
-        try let th2 = conv r in MK_COMB(th1,th2)
-        with Failure _ -> AP_THM th1 r
-    with Failure _ -> AP_TERM l (conv r) in
+    match tm with
+      Comb(l,r) -> 
+        (try let th1 = conv l in
+             try let th2 = conv r in MK_COMB(th1,th2)
+             with Failure _ -> AP_THM th1 r
+         with Failure _ -> AP_TERM l (conv r)) 
+    | _ -> failwith "COMB_QCONV: Not a combination" in
   let rec REPEATQC conv tm = THENCQC conv (REPEATQC conv) tm in
   let SUB_QCONV conv tm =
-    if is_abs tm then ABS_CONV conv tm
-    else COMB_QCONV conv tm in
+    match tm with
+      Abs(_,_) -> ABS_CONV conv tm
+    | _ -> COMB_QCONV conv tm in
   let rec ONCE_DEPTH_QCONV conv tm =
       (conv ORELSEC (SUB_QCONV (ONCE_DEPTH_QCONV conv))) tm
   and DEPTH_QCONV conv tm =
@@ -228,7 +240,7 @@ let (ONCE_DEPTH_CONV: conv->conv),
 
 let rec DEPTH_BINOP_CONV op conv tm =
   match tm with
-    Comb(Comb(op',l),r) when op' = op ->
+    Comb(Comb(op',l),r) when Pervasives.compare op' op = 0 ->
       let l,r = dest_binop op tm in
       let lth = DEPTH_BINOP_CONV op conv l
       and rth = DEPTH_BINOP_CONV op conv r in

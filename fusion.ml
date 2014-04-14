@@ -235,7 +235,7 @@ module Hol : Hol_kernel = struct
     match tm with
       Var(_,ty) -> ty
     | Const(_,ty) -> ty
-    | Comb(s,_) -> hd(tl(snd(dest_type(type_of s))))
+    | Comb(s,_) -> (match type_of s with Tyapp("fun",[dty;rty]) -> rty)
     | Abs(Var(_,ty),t) -> Tyapp("fun",[ty;type_of t])
 
 (* ------------------------------------------------------------------------- *)
@@ -364,7 +364,8 @@ module Hol : Hol_kernel = struct
                     else Abs(v,s') in
     fun theta ->
       if theta = [] then (fun tm -> tm) else
-      if forall (fun (t,x) -> type_of t = snd(dest_var x)) theta
+      if forall (function (t,Var(_,y)) -> Pervasives.compare (type_of t) y = 0
+                        | _ -> false) theta
       then vsubst theta else failwith "vsubst: Bad substitution list"
 
 (* ------------------------------------------------------------------------- *)
