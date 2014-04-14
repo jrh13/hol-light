@@ -14,9 +14,12 @@ conclusion of the second and the union of the assumption list minus the
 conclusion of the first theorem.
 {
      A1 |- t1     A2 |- t2
-   ------------------------  PROVE_HYP
-    (A1 u A2) - {{t1}} |- t2
+   -------------------------  PROVE_HYP
+     A1 u (A2 - {{t1}}) |- t2
 }
+If {t1} does not occurr in {A2} then the function simply returns the second
+theorem {A2 |- t2} unchanged without including the assumptions {A1}.
+
 \FAILURE
 Never fails.
 
@@ -32,8 +35,8 @@ Never fails.
 }
 
 \COMMENTS
-This is sometimes known as the Cut rule. It is not necessary for the conclusion
-of the first theorem to be the same as an assumption of the second, but
+This is sometimes known as the Cut rule. Although it is not necessary for the
+conclusion of the first theorem to be the same as an assumption of the second,
 {PROVE_HYP} is otherwise of doubtful value.
 
 \SEEALSO

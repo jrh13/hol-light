@@ -10,16 +10,16 @@ The rule {SIMPLE_DISJ_CASES} takes two `case' theorems with alpha-equivalent
 conclusions and returns a theorem with the first hypotheses disjoined:
 {
 
-        A u {{p}} |- r    B u {{q}} |- r
-      ----------------------------------- SIMPLE_DISJ_CASES
-            A u B u {{p \/ q}} |- r
+              A u {{p}} |- r    B u {{q}} |- r
+         ----------------------------------------- SIMPLE_DISJ_CASES
+           (A - {{p}}) u (B - {{q}}) u {{p \/ q}} |- r
 }
-To avoid dependency on the order of the hypotheses, it is only recommended when 
+To avoid dependency on the order of the hypotheses, it is only recommended when
 each theorem has exactly one hypothesis:
 {
-         {{p}} |- r    {{q}} |- r 
-      ----------------------------------- SIMPLE_DISJ_CASES
-                {{p \/ q}} |- r
+         {{p}} |- r    {{q}} |- r
+      ---------------------------- SIMPLE_DISJ_CASES
+              {{p \/ q}} |- r
 }
 For more sophisticated or-elimination, use {DISJ_CASES}.
 

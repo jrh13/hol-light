@@ -16,6 +16,11 @@ Refer to the reference manual for more details of individual functions:
         http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.html (HTML files)
         http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.pdf (one PDF file)
 
+For information on using HOL Light with the native OCaml toplevel
+(which generally leads to something like a 4x improvement in runtime
+at the cost of much longer load times), see (or run) INSTALL_OCAMLNAT.
+
+
         *       *       *       *       *       *       *       *
 
                              INSTALLATION
@@ -67,7 +72,7 @@ you hit the same issues, you may like to try the same fix, or suggest
 better ones.
 
     1. The "toploop.cmi" file has moved down into a subdirectory
-       "compiler-libs". You can fix this by adding 
+       "compiler-libs". You can fix this by adding
 
             -I +compiler-libs
 

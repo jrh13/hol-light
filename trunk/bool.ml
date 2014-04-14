@@ -101,20 +101,26 @@ let mk_conj = mk_binary "/\\";;
 let list_mk_conj = end_itlist (curry mk_conj);;
 
 let CONJ =
-  let f = `f:bool->bool->bool`
-  and p = `p:bool`
-  and q = `q:bool` in
-  let pth =
-    let pth = ASSUME p
-    and qth = ASSUME q in
-    let th1 = MK_COMB(AP_TERM f (EQT_INTRO pth),EQT_INTRO qth) in
-    let th2 = ABS f th1 in
-    let th3 = BETA_RULE (AP_THM (AP_THM AND_DEF p) q) in
+  let f = `f:bool->bool->bool`                                   
+  and p = `p:bool`                                                   
+  and q = `q:bool` in      
+  let pth1 =  
+    let th1 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM AND_DEF p) in
+    let th2 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM th1 q) in
+    let th3 = EQ_MP th2 (ASSUME(mk_conj(p,q))) in
+    EQT_ELIM(BETA_RULE (AP_THM th3 `\(p:bool) (q:bool). q`))
+  and pth2 = 
+    let pth = ASSUME p                                                    
+    and qth = ASSUME q in                                             
+    let th1 = MK_COMB(AP_TERM f (EQT_INTRO pth),EQT_INTRO qth) in              
+    let th2 = ABS f th1 in                                                     
+    let th3 = BETA_RULE (AP_THM (AP_THM AND_DEF p) q) in     
     EQ_MP (SYM th3) th2 in
-  fun th1 th2 ->
-    let th = INST [concl th1,p; concl th2,q] pth in
-    PROVE_HYP th2 (PROVE_HYP th1 th);;
-
+  let pth = DEDUCT_ANTISYM_RULE pth1 pth2 in
+  fun th1 th2 ->                                                          
+    let th = INST [concl th1,p; concl th2,q] pth in                   
+    EQ_MP (PROVE_HYP th1 th) th2;;
+                 
 let CONJUNCT1 =
   let P = `P:bool` and Q = `Q:bool` in
   let pth =
@@ -190,8 +196,18 @@ let rec UNDISCH_ALL th =
   if is_imp (concl th) then UNDISCH_ALL (UNDISCH th)
   else th;;
 
-let IMP_ANTISYM_RULE th1 th2 =
-  DEDUCT_ANTISYM_RULE (UNDISCH th2) (UNDISCH th1);;
+let IMP_ANTISYM_RULE =
+  let p = `p:bool` and q = `q:bool` and imp_tm = `(==>)` in
+  let pq = mk_imp(p,q) and qp = mk_imp(q,p) in
+  let pth1,pth2 = CONJ_PAIR(ASSUME(mk_conj(pq,qp))) in
+  let pth3 = DEDUCT_ANTISYM_RULE (UNDISCH pth2) (UNDISCH pth1) in
+  let pth4 = DISCH_ALL(ASSUME q) and pth5 = ASSUME(mk_eq(p,q)) in
+  let pth6 = CONJ (EQ_MP (SYM(AP_THM (AP_TERM imp_tm pth5) q)) pth4)
+                  (EQ_MP (SYM(AP_TERM (mk_comb(imp_tm,q)) pth5)) pth4) in
+  let pth = DEDUCT_ANTISYM_RULE pth6 pth3 in
+  fun th1 th2 ->
+    let p1,q1 = dest_imp(concl th1) and p2,q2 = dest_imp(concl th2) in
+    EQ_MP (INST [p1,p; q1,q] pth) (CONJ th1 th2);;
 
 let ADD_ASSUM tm th = MP (DISCH tm th) (ASSUME tm);;
 
@@ -267,7 +283,7 @@ let ISPECL tms th =
   with Failure _ -> failwith "ISPECL";;
 
 let GEN =
-  let pth = SYM(CONV_RULE (RAND_CONV BETA_CONV) 
+  let pth = SYM(CONV_RULE (RAND_CONV BETA_CONV)
                           (AP_THM FORALL_DEF `P:A->bool`)) in
   fun x ->
     let qth = INST_TYPE[snd(dest_var x),aty] pth in

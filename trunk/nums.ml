@@ -205,17 +205,31 @@ let BIT1_DEF = new_definition
 (* ------------------------------------------------------------------------- *)
 
 let mk_numeral =
-  let Z = mk_const("_0",[])
-  and BIT0 = mk_const("BIT0",[])
-  and BIT1 = mk_const("BIT1",[])
-  and NUMERAL = mk_const("NUMERAL",[])
-  and zero = num_0 in
-  let rec mk_num n =
-    if n =/ num_0 then Z else
-    mk_comb((if mod_num n num_2 =/ num_0 then BIT0 else BIT1),
-            mk_num(quo_num n num_2)) in
-  fun n -> if n </ zero then failwith "mk_numeral: negative argument"
-           else mk_comb(NUMERAL,mk_num n);;
+  let pow24 = pow2 24 and num_0 = Int 0
+  and zero_tm = mk_const("_0",[])
+  and BIT0_tm = mk_const("BIT0",[])
+  and BIT1_tm = mk_const("BIT1",[])
+  and NUMERAL_tm = mk_const("NUMERAL",[]) in
+  let rec stripzeros l = match l with false::t -> stripzeros t | _ -> l in
+  let rec raw_list_of_num l n =
+    if n =/ num_0 then stripzeros l else
+    let h = Num.int_of_num(mod_num n pow24) in
+    raw_list_of_num
+     ((h land 8388608 <> 0)::(h land 4194304 <> 0)::(h land 2097152 <> 0)::
+      (h land 1048576 <> 0)::(h land 524288 <> 0)::(h land 262144 <> 0)::
+      (h land 131072 <> 0)::(h land 65536 <> 0)::(h land 32768 <> 0)::
+      (h land 16384 <> 0)::(h land 8192 <> 0)::(h land 4096 <> 0)::
+      (h land 2048 <> 0)::(h land 1024 <> 0)::(h land 512 <> 0)::
+      (h land 256 <> 0)::(h land 128 <> 0)::(h land 64 <> 0)::
+      (h land 32 <> 0)::(h land 16 <> 0)::(h land 8 <> 0)::(h land 4 <> 0)::
+      (h land 2 <> 0)::(h land 1 <> 0)::l) (quo_num n pow24) in
+  let rec numeral_of_list t l =
+    match l with
+      [] -> t
+    | b::r -> numeral_of_list(mk_comb((if b then BIT1_tm else BIT0_tm),t)) r in
+  let mk_raw_numeral n = numeral_of_list zero_tm (raw_list_of_num [] n) in
+  fun n -> if n </ num_0 then failwith "mk_numeral: negative argument" else
+           mk_comb(NUMERAL_tm,mk_raw_numeral n);;
 
 let mk_small_numeral n = mk_numeral(Int n);;
 
