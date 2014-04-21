@@ -101,32 +101,32 @@ let mk_conj = mk_binary "/\\";;
 let list_mk_conj = end_itlist (curry mk_conj);;
 
 let CONJ =
-  let f = `f:bool->bool->bool`                                   
-  and p = `p:bool`                                                   
-  and q = `q:bool` in      
-  let pth1 =  
+  let f = `f:bool->bool->bool`
+  and p = `p:bool`
+  and q = `q:bool` in
+  let pth1 =
     let th1 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM AND_DEF p) in
     let th2 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM th1 q) in
     let th3 = EQ_MP th2 (ASSUME(mk_conj(p,q))) in
     EQT_ELIM(BETA_RULE (AP_THM th3 `\(p:bool) (q:bool). q`))
-  and pth2 = 
-    let pth = ASSUME p                                                    
-    and qth = ASSUME q in                                             
-    let th1 = MK_COMB(AP_TERM f (EQT_INTRO pth),EQT_INTRO qth) in              
-    let th2 = ABS f th1 in                                                     
-    let th3 = BETA_RULE (AP_THM (AP_THM AND_DEF p) q) in     
+  and pth2 =
+    let pth = ASSUME p
+    and qth = ASSUME q in
+    let th1 = MK_COMB(AP_TERM f (EQT_INTRO pth),EQT_INTRO qth) in
+    let th2 = ABS f th1 in
+    let th3 = BETA_RULE (AP_THM (AP_THM AND_DEF p) q) in
     EQ_MP (SYM th3) th2 in
   let pth = DEDUCT_ANTISYM_RULE pth1 pth2 in
-  fun th1 th2 ->                                                          
-    let th = INST [concl th1,p; concl th2,q] pth in                   
+  fun th1 th2 ->
+    let th = INST [concl th1,p; concl th2,q] pth in
     EQ_MP (PROVE_HYP th1 th) th2;;
-                 
+
 let CONJUNCT1 =
   let P = `P:bool` and Q = `Q:bool` in
   let pth =
-    let th1 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM AND_DEF `P:bool`) in
-    let th2 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM th1 `Q:bool`) in
-    let th3 = EQ_MP th2 (ASSUME `P /\ Q`) in
+    let th1 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM AND_DEF P) in
+    let th2 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM th1 Q) in
+    let th3 = EQ_MP th2 (ASSUME(mk_conj(P,Q))) in
     EQT_ELIM(BETA_RULE (AP_THM th3 `\(p:bool) (q:bool). p`)) in
   fun th ->
     try let l,r = dest_conj(concl th) in
@@ -136,9 +136,9 @@ let CONJUNCT1 =
 let CONJUNCT2 =
   let P = `P:bool` and Q = `Q:bool` in
   let pth =
-    let th1 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM AND_DEF `P:bool`) in
-    let th2 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM th1 `Q:bool`) in
-    let th3 = EQ_MP th2 (ASSUME `P /\ Q`) in
+    let th1 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM AND_DEF P) in
+    let th2 = CONV_RULE (RAND_CONV BETA_CONV) (AP_THM th1 Q) in
+    let th3 = EQ_MP th2 (ASSUME(mk_conj(P,Q))) in
     EQT_ELIM(BETA_RULE (AP_THM th3 `\(p:bool) (q:bool). q`)) in
   fun th ->
     try let l,r = dest_conj(concl th) in
@@ -160,18 +160,23 @@ let IMP_DEF = new_basic_definition
 
 let mk_imp = mk_binary "==>";;
 
-let MP =
-  let p = `p:bool`
-  and q = `q:bool` in
-  let pth =
+let MP = 
+  let p = `p:bool` and q = `q:bool` in
+  let pth = 
+    let th1 = BETA_RULE (AP_THM (AP_THM IMP_DEF p) q)                        
+    and th2 = CONJ (ASSUME p) (ASSUME q)        
+    and th3 = CONJUNCT1(ASSUME(mk_conj(p,q))) in
+    EQ_MP (SYM th1) (DEDUCT_ANTISYM_RULE th2 th3)
+  and qth = 
     let th1 = BETA_RULE (AP_THM (AP_THM IMP_DEF p) q) in
-    let th2 = EQ_MP th1 (ASSUME `p ==> q`) in
-    CONJUNCT2 (EQ_MP (SYM th2) (ASSUME `p:bool`)) in
-  fun ith th ->
+    let th2 = EQ_MP th1 (ASSUME(mk_imp(p,q))) in
+    CONJUNCT2 (EQ_MP (SYM th2) (ASSUME p)) in
+  let rth = DEDUCT_ANTISYM_RULE pth qth in
+  fun ith th ->                           
     let ant,con = dest_imp (concl ith) in
     if aconv ant (concl th) then
-      PROVE_HYP th (PROVE_HYP ith (INST [ant,p; con,q] pth))
-    else failwith "MP: theorems do not agree";;
+      EQ_MP (PROVE_HYP th (INST [ant,p; con,q] rth)) ith
+    else failwith "MP: theorems do not agree";;      
 
 let DISCH =
   let p = `p:bool`

@@ -23,6 +23,7 @@ STANDALONE_EXAMPLES:=\
 	Library/isum \
 	Examples/kb \
 	Examples/lagrange_lemma \
+	Examples/lucas_lehmer \
 	Examples/mangoldt \
 	Examples/mccarthy \
 	Examples/mizar \

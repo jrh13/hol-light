@@ -2,6 +2,7 @@
 (* HOL primality proving via Pocklington-optimized  Pratt certificates.      *)
 (* ========================================================================= *)
 
+needs "Library/iter.ml";;
 needs "Library/prime.ml";;
 
 prioritize_num();;
@@ -580,6 +581,11 @@ let PHI_LOWERBOUND_2 = prove
     REWRITE_TAC[CARD_NUMSEG_LE; FINITE_NUMSEG_LE] THEN
     SIMP_TAC[SUBSET; IN_ELIM_THM]]);;
 
+let PHI_EQ_0 = prove
+ (`!n. phi n = 0 <=> n = 0`,
+  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[PHI_0] THEN
+  MP_TAC(SPEC `n:num` PHI_LOWERBOUND_1_STRONG) THEN ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Value on primes and prime powers.                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -903,102 +909,68 @@ let LUCAS = prove
   REWRITE_TAC[EXP_EXP; EXP_ONE]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Definition of the order of a number mod n (0 in non-coprime case).        *)
+(* Definition of the order of a number mod n (always 0 in non-coprime case). *)
 (* ------------------------------------------------------------------------- *)
 
 let order = new_definition
- `order(n) a = if coprime(n,a)
-               then minimal d. d > 0 /\ (a EXP d == 1) (mod n)
-               else 0`;;
+ `order n a = @d. !k. (a EXP k == 1) (mod n) <=> d divides k`;;
 
-(* ------------------------------------------------------------------------- *)
-(* This has the expected properties.                                         *)
-(* ------------------------------------------------------------------------- *)
+let EXP_ITER = prove                                              
+ (`!x n. x EXP n = ITER n (\y. x * y) (1)`,            
+  GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[ITER; EXP]);;     
+
+let ORDER_DIVIDES = prove
+ (`!n a d. (a EXP d == 1) (mod n) <=> order(n) a divides d`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[order] THEN CONV_TAC SELECT_CONV THEN
+  MP_TAC(ISPECL [`\x y:num. (x == y) (mod n)`; `\x:num. a * x`; `1`]
+        ORDER_EXISTENCE_ITER) THEN
+  REWRITE_TAC[GSYM EXP_ITER] THEN DISCH_THEN MATCH_MP_TAC THEN
+  NUMBER_TAC);;
+
+let ORDER = prove
+ (`!n a. (a EXP (order(n) a) == 1) (mod n)`,
+  REWRITE_TAC[ORDER_DIVIDES; DIVIDES_REFL]);;
+
+let ORDER_MINIMAL = prove
+ (`!n a m. 0 < m /\ m < order(n) a ==> ~((a EXP m == 1) (mod n))`,
+  REWRITE_TAC[ORDER_DIVIDES] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN ASM_ARITH_TAC);;
+
+let ORDER_WORKS = prove
+ (`!n a. (a EXP (order(n) a) == 1) (mod n) /\
+         !m. 0 < m /\ m < order(n) a ==> ~((a EXP m == 1) (mod n))`,
+  MESON_TAC[ORDER; ORDER_MINIMAL]);;
+
+let ORDER_1 = prove
+ (`!n. order n 1 = 1`,
+  REWRITE_TAC[GSYM DIVIDES_ONE; GSYM ORDER_DIVIDES; EXP_1; CONG_REFL]);;
+
+let ORDER_EQ_0 = prove
+ (`!n a. order(n) a = 0 <=> ~coprime(n,a)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [ONCE_REWRITE_TAC[COPRIME_SYM] THEN DISCH_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP FERMAT_LITTLE) THEN
+    ASM_REWRITE_TAC[ORDER_DIVIDES; DIVIDES_ZERO; PHI_EQ_0] THEN
+    ASM_MESON_TAC[COPRIME_0; ORDER_1; ARITH_RULE `~(1 = 0)`];
+    MP_TAC(SPECL [`n:num`; `a:num`] ORDER) THEN
+    SPEC_TAC(`order n a`,`m:num`) THEN INDUCT_TAC THEN REWRITE_TAC[] THEN
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (TAUT
+     `~p ==> (q ==> p) ==> q ==> r`)) THEN
+    REWRITE_TAC[EXP] THEN CONV_TAC NUMBER_RULE]);;
+
+let ORDER_CONG = prove
+ (`!n a b. (a == b) (mod n) ==> order n a = order n b`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[order] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN
+  ASM_MESON_TAC[CONG_EXP; CONG_REFL; CONG_SYM; CONG_TRANS]);;
 
 let COPRIME_ORDER = prove
  (`!n a. coprime(n,a)
          ==> order(n) a > 0 /\
             (a EXP (order(n) a) == 1) (mod n) /\
             !m. 0 < m /\ m < order(n) a ==> ~((a EXP m == 1) (mod n))`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[order; GT] THEN
-  ONCE_REWRITE_TAC[TAUT `a /\ b ==> ~c <=> b ==> ~(a /\ c)`] THEN
-  GEN_REWRITE_TAC I [CONJ_ASSOC] THEN REWRITE_TAC[GSYM MINIMAL] THEN
-  ASM_CASES_TAC `2 <= n` THENL
-   [ASM_MESON_TAC[PHI_LOWERBOUND_1; FERMAT_LITTLE; COPRIME_SYM;
-                  ARITH_RULE `1 <= n ==> 0 < n`];
-    ALL_TAC] THEN
-  EXISTS_TAC `1` THEN REWRITE_TAC[EXP_1; ARITH] THEN
-  FIRST_X_ASSUM(DISJ_CASES_THEN SUBST_ALL_TAC o MATCH_MP (ARITH_RULE
-   `~(2 <= n) ==> (n = 0) \/ (n = 1)`)) THEN
-  ASM_MESON_TAC[CONG_MOD_0; CONG_MOD_1; COPRIME_0; COPRIME_SYM]);;
-
-(* ------------------------------------------------------------------------- *)
-(* With the special value 0 for non-coprime case, it's more convenient.      *)
-(* ------------------------------------------------------------------------- *)
-
-let ORDER_WORKS = prove
- (`!n a. (a EXP (order(n) a) == 1) (mod n) /\
-         !m. 0 < m /\ m < order(n) a ==> ~((a EXP m == 1) (mod n))`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `coprime(n,a)` THENL
-   [ASM_MESON_TAC[COPRIME_ORDER]; ALL_TAC] THEN
-  ASM_SIMP_TAC[order; EXP; LT; CONG_REFL]);;
-
-let ORDER = prove
- (`!n a. (a EXP (order(n) a) == 1) (mod n)`,
-  REWRITE_TAC[ORDER_WORKS]);;
-
-let ORDER_MINIMAL = prove
- (`!n a m. 0 < m /\ m < order(n) a ==> ~((a EXP m == 1) (mod n))`,
-  REWRITE_TAC[ORDER_WORKS]);;
-
-let ORDER_EQ_0 = prove
- (`!n a. (order(n) a = 0) <=> ~coprime(n,a)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `coprime(n,a)` THENL
-   [ASM_MESON_TAC[COPRIME_ORDER; LT_REFL; GT]; ASM_REWRITE_TAC[order]]);;
-
-let ORDER_DIVIDES = prove
- (`!n a d. (a EXP d == 1) (mod n) <=> order(n) a divides d`,
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `coprime(n,a)` THENL
-   [ALL_TAC;
-    ASM_REWRITE_TAC[order; DIVIDES_ZERO] THEN
-    ASM_CASES_TAC `d = 0` THEN ASM_REWRITE_TAC[EXP; CONG_REFL] THEN
-    UNDISCH_TAC `~coprime (n,a)` THEN
-    REWRITE_TAC[coprime; NOT_FORALL_THM; NOT_IMP] THEN
-    DISCH_THEN(X_CHOOSE_THEN `p:num` STRIP_ASSUME_TAC) THEN
-    REWRITE_TAC[cong; nat_mod; NOT_EXISTS_THM] THEN
-    MAP_EVERY X_GEN_TAC [`q1:num`; `q2:num`] THEN STRIP_TAC THEN
-    SUBGOAL_THEN `p divides 1` (fun th -> ASM_MESON_TAC[th; DIVIDES_ONE]) THEN
-    SUBGOAL_THEN `p divides (a EXP d + n * q1) /\ p divides (n * q2)`
-     (fun th -> ASM_MESON_TAC[DIVIDES_ADD_REVL; th]) THEN
-    ASM_MESON_TAC[DIVIDES_ADD; DIVIDES_RMUL; DIVIDES_EXP; DIVIDES_EXP2]] THEN
-  EQ_TAC THENL
-   [ALL_TAC;
-    SIMP_TAC[divides; LEFT_IMP_EXISTS_THM] THEN
-    X_GEN_TAC `e:num` THEN DISCH_THEN(K ALL_TAC) THEN
-    REWRITE_TAC[EXP_MULT] THEN
-    MATCH_MP_TAC CONG_TRANS THEN EXISTS_TAC `1 EXP e` THEN
-    CONJ_TAC THENL [ALL_TAC; REWRITE_TAC[EXP_ONE; CONG_REFL]] THEN
-    MATCH_MP_TAC CONG_EXP THEN REWRITE_TAC[ORDER]] THEN
-  MP_TAC(SPECL [`d:num`; `order n a`] DIVISION) THEN
-  ASM_REWRITE_TAC[ORDER_EQ_0] THEN
-  MAP_EVERY ABBREV_TAC [`q = d DIV order n a`; `r = d MOD order n a`] THEN
-  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
-  EXPAND_TAC "d" THEN REWRITE_TAC[EXP_ADD] THEN DISCH_TAC THEN
-  SUBGOAL_THEN `(1 * a EXP r == 1) (mod n)` MP_TAC THENL
-   [MATCH_MP_TAC CONG_TRANS THEN
-    EXISTS_TAC `a EXP (q * order n a) * a EXP r` THEN ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC CONG_MULT THEN REWRITE_TAC[CONG_REFL] THEN
-    ONCE_REWRITE_TAC[CONG_SYM] THEN
-    MATCH_MP_TAC CONG_TRANS THEN EXISTS_TAC `1 EXP q` THEN
-    CONJ_TAC THENL [ALL_TAC; REWRITE_TAC[EXP_ONE; CONG_REFL]] THEN
-    ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[EXP_MULT] THEN
-    MATCH_MP_TAC CONG_EXP THEN REWRITE_TAC[ORDER];
-    ALL_TAC] THEN
-  REWRITE_TAC[MULT_CLAUSES] THEN
-  DISJ_CASES_TAC(ARITH_RULE `(r = 0) \/ 0 < r`) THENL
-   [ALL_TAC; ASM_MESON_TAC[ORDER_WORKS]] THEN
-  REWRITE_TAC[ASSUME `r = 0`; ADD_CLAUSES] THEN
-  MESON_TAC[divides; MULT_AC]);;
+  SIMP_TAC[ARITH_RULE `n > 0 <=> ~(n = 0)`; ORDER_EQ_0] THEN
+  MESON_TAC[ORDER; ORDER_MINIMAL]);;
 
 let ORDER_DIVIDES_PHI = prove
  (`!a n. coprime(n,a) ==> (order n a) divides (phi n)`,
@@ -1020,13 +992,6 @@ let ORDER_DIVIDES_EXPDIFF = prove
   ASM_SIMP_TAC[CONG_ADD_LCANCEL_EQ; COPRIME_EXP;
     ONCE_REWRITE_RULE[COPRIME_SYM] CONG_MULT_LCANCEL_EQ] THEN
   REWRITE_TAC[EXP; CONG_0_DIVIDES; ORDER_DIVIDES]);;
-
-let ORDER_CONG = prove
- (`!n a b. (a == b) (mod n) ==> (order n a = order n b)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[order] THEN AP_THM_TAC THEN BINOP_TAC THENL
-   [POP_ASSUM MP_TAC THEN NUMBER_TAC; ALL_TAC] THEN
-  AP_TERM_TAC THEN ABS_TAC THEN AP_TERM_TAC THEN
-  ASM_MESON_TAC[CONG_EXP; CONG_SYM; CONG_TRANS]);;
 
 let ORDER_UNIQUE = prove
  (`!n a k. 0 < k /\

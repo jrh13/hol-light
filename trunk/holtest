@@ -52,6 +52,7 @@ echo '### Loading RichterHilbertAxiomGeometry/inverse_bug_puzzle_read.ml'; echo 
 echo '### Loading Library/isum.ml'; echo 'loadt "Library/isum.ml";;' | (time $hollight)
 echo '### Loading Examples/kb.ml'; echo 'loadt "Examples/kb.ml";;' | (time $hollight)
 echo '### Loading Examples/lagrange_lemma.ml'; echo 'loadt "Examples/lagrange_lemma.ml";;' | (time $hollight)
+echo '### Loading Examples/lucas_lehmer.ml'; echo 'loadt "Examples/lucas_lehmer.ml";;' | (time $hollight)
 echo '### Loading Examples/mangoldt.ml'; echo 'loadt "Examples/mangoldt.ml";;' | (time $hollight)
 echo '### Loading Examples/mccarthy.ml'; echo 'loadt "Examples/mccarthy.ml";;' | (time $hollight)
 echo '### Loading Examples/mizar.ml'; echo 'loadt "Examples/mizar.ml";;' | (time $hollight)

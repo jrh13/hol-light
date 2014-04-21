@@ -18,7 +18,7 @@ rule, discharge, assumption, implication.
 {DISCH} will fail if {`u`} is not boolean.
 
 \COMMENTS
-The term {`u`} need not be a hypothesis.  Discharging {`u`} will remove all
+The term {`u`} need not be a hypothesis.  Discharging {`u`} will remove any
 identical and alpha-equivalent hypotheses.
 
 \EXAMPLE

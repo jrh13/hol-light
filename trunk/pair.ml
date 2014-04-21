@@ -328,6 +328,14 @@ let FORALL_CURRY = prove
  (`!P. (!f. P f) <=> (!f. P (\(a,b). f a b))`,
   REWRITE_TAC[FORALL_UNCURRY; PAIRED_ETA_THM]);;
 
+let FORALL_UNPAIR_THM = prove
+ (`!P. (!x y. P x y) <=> !z. P (FST z) (SND z)`,
+  REWRITE_TAC[FORALL_PAIR_THM; FST; SND] THEN MESON_TAC[]);;
+
+let EXISTS_UNPAIR_THM = prove
+ (`!P. (?x y. P x y) <=> ?z. P (FST z) (SND z)`,
+  REWRITE_TAC[EXISTS_PAIR_THM; FST; SND] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Related theorems for explicitly paired quantifiers.                       *)
 (* ------------------------------------------------------------------------- *)
