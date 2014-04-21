@@ -549,7 +549,7 @@ let PRIMITIVE_ROOT_MODULO_DOUBLE_PRIMEPOW = prove
 
 let PRIMITIVE_ROOT_MODULO_0 = prove
  (`(?x. order 0 x = phi(0))`,
-  EXISTS_TAC `2` THEN REWRITE_TAC[PHI_0; order; COPRIME_2; ODD]);;
+  EXISTS_TAC `2` THEN REWRITE_TAC[PHI_0; ORDER_EQ_0; COPRIME_2; ODD]);;
 
 let PRIMITIVE_ROOT_MODULO_1 = prove
  (`?x. order 1 x = phi(1)`,

@@ -926,7 +926,9 @@ let FORALL_IN_GSPEC = prove
    (!P f. (!z. z IN {f x y | P x y} ==> Q z) <=>
           (!x y. P x y ==> Q(f x y))) /\
    (!P f. (!z. z IN {f w x y | P w x y} ==> Q z) <=>
-          (!w x y. P w x y ==> Q(f w x y)))`,
+          (!w x y. P w x y ==> Q(f w x y))) /\
+   (!P f. (!z. z IN {f v w x y | P v w x y} ==> Q z) <=>
+          (!v w x y. P v w x y ==> Q(f v w x y)))`,
   SET_TAC[]);;
 
 let EXISTS_IN_GSPEC = prove
@@ -934,7 +936,9 @@ let EXISTS_IN_GSPEC = prove
    (!P f. (?z. z IN {f x y | P x y} /\ Q z) <=>
           (?x y. P x y /\ Q(f x y))) /\
    (!P f. (?z. z IN {f w x y | P w x y} /\ Q z) <=>
-          (?w x y. P w x y /\ Q(f w x y)))`,
+          (?w x y. P w x y /\ Q(f w x y))) /\
+   (!P f. (?z. z IN {f v w x y | P v w x y} /\ Q z) <=>
+          (?v w x y. P v w x y /\ Q(f v w x y)))`,
   SET_TAC[]);;
 
 let SET_PROVE_CASES = prove

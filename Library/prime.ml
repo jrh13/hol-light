@@ -292,11 +292,6 @@ let DIVIDES_CASES = prove
   SIMP_TAC[divides; LEFT_IMP_EXISTS_THM] THEN
   REWRITE_TAC[MULT_EQ_0; EQ_MULT_LCANCEL; LE_MULT_LCANCEL] THEN ARITH_TAC);;
 
-let DIVIDES_LE = prove
- (`!m n. m divides n ==> m <= n \/ (n = 0)`,
-  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP DIVIDES_CASES) THEN
-  ARITH_TAC);;
-
 let DIVIDES_LE_STRONG = prove
  (`!m n. m divides n ==> 1 <= m /\ m <= n \/ n = 0`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `m = 0` THEN

@@ -1,3 +1,103 @@
+Sat 19th Apr 2014       sets.ml
+
+Added another clause to FORALL_IN_GSPEC and EXISTS_IN_GSPEC for the case of 4
+bound variables, so they have now become:
+
+  FORALL_IN_GSPEC =
+   |- (!P f. (!z. z IN {f x | P x} ==> Q z) <=> (!x. P x ==> Q(f x))) /\
+      (!P f. (!z. z IN {f x y | P x y} ==> Q z) <=>
+             (!x y. P x y ==> Q(f x y))) /\
+      (!P f. (!z. z IN {f w x y | P w x y} ==> Q z) <=>
+             (!w x y. P w x y ==> Q(f w x y))) /\
+      (!P f. (!z. z IN {f v w x y | P v w x y} ==> Q z) <=>
+             (!v w x y. P v w x y ==> Q(f v w x y)))
+
+  EXISTS_IN_GSPEC =
+   |- (!P f. (?z. z IN {f x | P x} /\ Q z) <=> (?x. P x /\ Q(f x))) /\
+      (!P f. (?z. z IN {f x y | P x y} /\ Q z) <=>
+             (?x y. P x y /\ Q(f x y))) /\
+      (!P f. (?z. z IN {f w x y | P w x y} /\ Q z) <=>
+             (?w x y. P w x y /\ Q(f w x y))) /\
+      (!P f. (?z. z IN {f v w x y | P v w x y} /\ Q z) <=>
+             (?v w x y. P v w x y /\ Q(f v w x y)))
+
+Sat 19th Apr 2014       pair.ml
+
+Added "unpair" theorems:
+
+  FORALL_UNPAIR_THM =
+    |- (!x y. P x y) <=> (!z. P (FST z) (SND z))
+
+  EXISTS_UNPAIR_THM =
+    |- (?x y. P x y) <=> (?z. P (FST z) (SND z))
+
+Tue 15th Apr 2014       bool.ml
+
+Did a little more rationalization of the Boolean rule, recoding MP so that it
+produces precisely the union of the two assumption lists, as the documentation
+claims.
+
+Mon 14th Apr 2014       Examples/lucas_lehmer.ml, 100/sqrt.ml [new file]
+
+Added a new file containing a formalization of the Lucas-Lehmer test for
+primality of Mersenne numbers, and a derived rule for applying it in particular
+cases. This is quite a bit faster than the usual PRIME_CONV (in this special
+case 2^p-1), and also scales better because it doesn't rely on factorization at
+all. This uses as a lemma the fact that sqrt(3) is not rational, so also added 
+a file with a trivial proof that sqrt(p) is irrational for prime p.
+
+Mon 14th Apr 2014       int.ml, Library/prime.ml, Library/iter.ml, Library/pocklington.ml, Library/primitive.ml
+
+Moved this very basic result out of the Library/prime.ml file into the main
+core
+
+  DIVIDES_LE = |- !m n. m divides n ==> m <= n \/ n = 0
+
+Added some theorems to Library/iter.ml about the "order" or "characteristic" in
+a general setting
+
+  val ORDER_EXISTENCE_GEN : thm =
+    |- !P f.
+           P (f 0) /\
+           (!m n. P (f m) /\ ~(m = 0) ==> (P (f (m + n)) <=> P (f n)))
+           ==> ?d. !n. P (f n) <=> d divides n
+
+  val ORDER_EXISTENCE_ITER : thm =
+    |- !R f z.
+           R z z /\
+           (!x y. R x y ==> R y x) /\
+           (!x y z. R x y /\ R y z ==> R x z) /\
+           (!x y. R x y ==> R (f x) (f y))
+           ==> ?d. !n. R (ITER n f z) z <=> d divides n
+
+  val ORDER_EXISTENCE_CARD : thm =
+    |- !R f z k.
+           FINITE {R (ITER n f z) | n IN (:num)} /\
+           CARD {R (ITER n f z) | n IN (:num)} <= k /\
+           R z z /\
+           (!x y. R x y ==> R y x) /\
+           (!x y z. R x y /\ R y z ==> R x z) /\
+           (!x y. R (f x) (f y) <=> R x y)
+           ==> ?d. 0 < d /\ d <= k /\ (!n. R (ITER n f z) z <=> d divides n)
+
+  val ORDER_EXISTENCE_FINITE : thm =
+    |- !R f z.
+           FINITE {R (ITER n f z) | n IN (:num)} /\
+           R z z /\
+           (!x y. R x y ==> R y x) /\
+           (!x y z. R x y /\ R y z ==> R x z) /\
+           (!x y. R (f x) (f y) <=> R x y)
+           ==> ?d. 0 < d /\ (!n. R (ITER n f z) z <=> d divides n)
+
+Changed the definition of "order" in Library/pocklington.ml to use that as the
+basis, as well as adding three basic new theorems:
+
+        EXP_ITER = |- !x n. x EXP n = ITER n (\y. x * y) 1
+
+        PHI_EQ_0 = |- !n. phi n = 0 <=> n = 0
+
+        ORDER_1 = |- !n. order n 1 = 1
+
 Fri 11th Apr 2014       bool.ml
 
 Bill Richter pointed out that IMP_ANTISYM_RULE could sometimes give fewer

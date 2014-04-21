@@ -1430,6 +1430,14 @@ let divides = prove
   ASM_REWRITE_TAC[GSYM INT_OF_NUM_MUL; INT_ABS_MUL] THEN
   SIMP_TAC[INT_OF_NUM_OF_INT; INT_ABS_POS; INT_ABS_ABS]);;
 
+let DIVIDES_LE = prove
+ (`!m n. m divides n ==> m <= n \/ n = 0`,
+  SUBGOAL_THEN `!m n. m <= m * n \/ m * n = 0`
+    (fun th -> MESON_TAC[divides; th]) THEN
+  REWRITE_TAC[LE_MULT_LCANCEL; MULT_EQ_0; ARITH_RULE
+   `m <= m * n <=> m * 1 <= m * n`] THEN
+  ASM_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Make sure we give priority to N.                                          *)
 (* ------------------------------------------------------------------------- *)
