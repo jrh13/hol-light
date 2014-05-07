@@ -1,3 +1,13 @@
+Sun 27th Apr 2014       Library/permutations.ml
+
+Added
+
+  PERMUTES_BIJECTIONS =
+   |- !p q. (!x. x IN s ==> p x IN s) /\ (!x. ~(x IN s) ==> p x = x) /\
+            (!x. x IN s ==> q x IN s) /\ (!x. ~(x IN s) ==> q x = x) /\
+            (!x. p(q x) = x) /\ (!x. q(p x) = x)
+            ==> p permutes s
+
 Sat 19th Apr 2014       sets.ml
 
 Added another clause to FORALL_IN_GSPEC and EXISTS_IN_GSPEC for the case of 4
@@ -43,7 +53,7 @@ Added a new file containing a formalization of the Lucas-Lehmer test for
 primality of Mersenne numbers, and a derived rule for applying it in particular
 cases. This is quite a bit faster than the usual PRIME_CONV (in this special
 case 2^p-1), and also scales better because it doesn't rely on factorization at
-all. This uses as a lemma the fact that sqrt(3) is not rational, so also added 
+all. This uses as a lemma the fact that sqrt(3) is not rational, so also added
 a file with a trivial proof that sqrt(p) is irrational for prime p.
 
 Mon 14th Apr 2014       int.ml, Library/prime.ml, Library/iter.ml, Library/pocklington.ml, Library/primitive.ml

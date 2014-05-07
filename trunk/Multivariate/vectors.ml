@@ -7419,6 +7419,37 @@ let DIM_SPECIAL_SUBSPACE = prove
              IN_DIFF; IN_NUMSEG; BASIS_NONZERO]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* More injective/surjective versus dimension variants.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let LINEAR_INJECTIVE_IFF_DIM = prove
+ (`!f:real^M->real^N.
+        linear f
+        ==> ((!x y. f x = f y ==> x = y) <=>
+             dim(IMAGE f (:real^M)) = dimindex(:M))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `f:real^M->real^N` DIM_IMAGE_KERNEL) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(SUBST1_TAC o MATCH_MP (ARITH_RULE
+    `x + y:num = m ==> (x = m <=> y = 0)`)) THEN
+  REWRITE_TAC[DIM_EQ_0; SUBSET; IN_ELIM_THM; IN_SING] THEN
+  ASM_MESON_TAC[LINEAR_INJECTIVE_0]);;
+
+let LINEAR_SURJECTIVE_IFF_DIM = prove
+ (`!f:real^M->real^N.
+        linear f
+        ==> ((!y. ?x. f x = y) <=>
+             dim(IMAGE f (:real^M)) = dimindex(:N))`,
+  SIMP_TAC[DIM_EQ_FULL; SPAN_LINEAR_IMAGE; SPAN_UNIV] THEN SET_TAC[]);;
+
+let LINEAR_SURJECTIVE_IFF_INJECTIVE_GEN = prove
+ (`!f:real^M->real^N.
+      dimindex(:M) = dimindex(:N) /\ linear f
+      ==> ((!y. ?x. f x = y) <=> (!x y. f x = f y ==> x = y))`,
+  SIMP_TAC[LINEAR_INJECTIVE_IFF_DIM; LINEAR_SURJECTIVE_IFF_DIM] THEN
+  MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* More about product spaces.                                                *)
 (* ------------------------------------------------------------------------- *)
 
