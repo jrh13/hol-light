@@ -127,6 +127,13 @@ let PERMUTES_SUPERSET = prove
            ==> p permutes t`,
   REWRITE_TAC[permutes; IN_DIFF] THEN MESON_TAC[]);;
 
+let PERMUTES_BIJECTIONS = prove                                                
+ (`!p q. (!x. x IN s ==> p x IN s) /\ (!x. ~(x IN s) ==> p x = x) /\      
+         (!x. x IN s ==> q x IN s) /\ (!x. ~(x IN s) ==> q x = x) /\          
+         (!x. p(q x) = x) /\ (!x. q(p x) = x)                   
+         ==> p permutes s`,                                   
+  REWRITE_TAC[permutes] THEN MESON_TAC[]);;                     
+
 (* ------------------------------------------------------------------------- *)
 (* Group properties.                                                         *)
 (* ------------------------------------------------------------------------- *)

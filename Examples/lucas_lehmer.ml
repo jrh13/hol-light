@@ -107,7 +107,7 @@ let LUCAS_LEHMER = prove
      `(!x y. P x y ==> P y x) ==> (!x y. P x y <=> P y x)`) THEN
     REWRITE_TAC[cong] THEN EXPAND_TAC "equiv" THEN
     MESON_TAC[INTEGER_CLOSED; REAL_ARITH
-      `x - y = (a + b * s) * q ==> y - x = (--a + --b * s) * q`];
+      `x - y:real = (a + b * s) * q ==> y - x = (--a + --b * s) * q`];
     ALL_TAC] THEN
   SUBGOAL_THEN
    `!x y z:real. (x == y) equiv /\ (y == z) equiv ==> (x == z) equiv`
@@ -116,7 +116,7 @@ let LUCAS_LEHMER = prove
     MESON_TAC[INTEGER_CLOSED; REAL_ARITH
       `x - y = (a + b * s) * q /\
        y - z = (a' + b' * s) * q
-       ==> x - z = ((a + a') + (b + b') * s) * q`];
+       ==> x - z:real = ((a + a') + (b + b') * s) * q`];
     ALL_TAC] THEN
   SUBGOAL_THEN
    `!k. ?a b. (&2 + sqrt(&3)) pow k = &a + &b * sqrt(&3)`

@@ -7676,8 +7676,7 @@ let CONTINUOUS_ON_LIFT_DOT = prove
 
 let CLOSED_INTERVAL_LEFT = prove
  (`!b:real^N.
-     closed
-        {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> x$i <= b$i}`,
+     closed {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> x$i <= b$i}`,
   REWRITE_TAC[CLOSED_LIMPT; LIMPT_APPROACHABLE; IN_ELIM_THM] THEN
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `(x:real^N)$i - (b:real^N)$i`) THEN
@@ -7692,8 +7691,7 @@ let CLOSED_INTERVAL_LEFT = prove
 
 let CLOSED_INTERVAL_RIGHT = prove
  (`!a:real^N.
-     closed
-        {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= x$i}`,
+     closed {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= x$i}`,
   REWRITE_TAC[CLOSED_LIMPT; LIMPT_APPROACHABLE; IN_ELIM_THM] THEN
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `(a:real^N)$i - (x:real^N)$i`) THEN
@@ -7820,6 +7818,35 @@ let OPEN_POSITIVE_MULTIPLES = prove
     EXISTS_TAC `c:real` THEN EXISTS_TAC `inv(c) % y:real^N` THEN
     ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV; REAL_LT_IMP_NZ] THEN
     VECTOR_ARITH_TAC]);;
+
+let OPEN_INTERVAL_LEFT = prove
+ (`!b:real^N. open {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> x$i < b$i}`,
+  GEN_TAC THEN
+  SUBGOAL_THEN
+   `{x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> x$i < b$i} =
+    INTERS{{x | x$i < (b:real^N)$i} | i IN 1..dimindex(:N)}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[INTERS_GSPEC; IN_NUMSEG] THEN SET_TAC[];
+    MATCH_MP_TAC OPEN_INTERS THEN
+    SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FINITE_NUMSEG] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; OPEN_HALFSPACE_COMPONENT_LT]]);;
+
+let OPEN_INTERVAL_RIGHT = prove
+ (`!a:real^N. open {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> a$i < x$i}`,
+  GEN_TAC THEN
+  SUBGOAL_THEN
+   `{x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> a$i < x$i} =
+    INTERS{{x | (a:real^N)$i < x$i} | i IN 1..dimindex(:N)}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[INTERS_GSPEC; IN_NUMSEG] THEN SET_TAC[];
+    MATCH_MP_TAC OPEN_INTERS THEN
+    SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FINITE_NUMSEG] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; GSYM real_gt; OPEN_HALFSPACE_COMPONENT_GT]]);;
+
+let OPEN_POSITIVE_ORTHANT = prove
+ (`open {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> &0 < x$i}`,
+  MP_TAC(ISPEC `vec 0:real^N` OPEN_INTERVAL_RIGHT) THEN
+  REWRITE_TAC[VEC_COMPONENT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Closures and interiors of halfspaces.                                     *)
@@ -11588,6 +11615,21 @@ let DIAMETER_INTERVAL = prove
     SUBGOAL_THEN `interval[a:real^N,b] = closure(interval(a,b))`
     SUBST_ALL_TAC THEN ASM_REWRITE_TAC[CLOSURE_INTERVAL] THEN
     ASM_MESON_TAC[DIAMETER_CLOSURE; BOUNDED_INTERVAL]]);;
+
+let IMAGE_TWIZZLE_INTERVAL = prove
+ (`!p a b. dimindex(:M) = dimindex(:N) /\ p permutes 1..dimindex(:N)
+           ==> IMAGE ((\x. lambda i. x$(p i)):real^M->real^N) (interval[a,b]) =
+               interval[(lambda i. a$(p i)),(lambda i. b$(p i))]`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+  SIMP_TAC[IN_INTERVAL; CART_EQ; LAMBDA_BETA] THEN CONJ_TAC THENL
+   [X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+    EXISTS_TAC `(lambda i. (y:real^N)$(inverse p i)):real^M` THEN
+    IMP_REWRITE_TAC[LAMBDA_BETA] THEN
+    ASM_REWRITE_TAC[GSYM IN_NUMSEG] THEN
+    ASM_MESON_TAC[PERMUTES_INVERSE_EQ; PERMUTES_IN_IMAGE];
+    REWRITE_TAC[GSYM IN_NUMSEG] THEN
+    ASM_MESON_TAC[PERMUTES_INVERSES; PERMUTES_IN_IMAGE]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some special cases for intervals in R^1.                                  *)
