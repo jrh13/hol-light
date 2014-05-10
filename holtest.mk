@@ -10,6 +10,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/combin \
 	Examples/cong \
 	Examples/cooper \
+	Examples/dickson \
 	Examples/dlo \
 	Library/floor \
 	Examples/forster \

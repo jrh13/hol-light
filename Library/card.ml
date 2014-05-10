@@ -1182,6 +1182,10 @@ let COUNTABLE_RESTRICT = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
   SET_TAC[]);;
 
+let COUNTABLE_SUBSET_NUM = prove                                               
+ (`!s:num->bool. COUNTABLE s`,                                                 
+  MESON_TAC[NUM_COUNTABLE; COUNTABLE_SUBSET; SUBSET_UNIV]);;                   
+
 let FINITE_IMP_COUNTABLE = prove
  (`!s. FINITE s ==> COUNTABLE s`,
   SIMP_TAC[FINITE_CARD_LT; lt_c; COUNTABLE; ge_c]);;
