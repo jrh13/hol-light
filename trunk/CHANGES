@@ -1,3 +1,13 @@
+Sat 10th May 2014       Examples/dickson.ml
+
+Added a proof of Dickson's Lemma, plus the Nash-Williams minimal bad sequence
+property in a bit more generality (for a "safety property" of sequences in the
+Lamport/Alpern/Schneider sense).
+
+Fri  9th May 2014       Library/card.ml
+
+Added COUNTABLE_SUBSET_NUM = |- !s:num->bool. COUNTABLE s
+
 Sun 27th Apr 2014       Library/permutations.ml
 
 Added
