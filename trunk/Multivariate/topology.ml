@@ -2991,6 +2991,22 @@ let LIM_NULL_CMUL = prove
   REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN
   ASM_SIMP_TAC[LIM_NULL_CMUL_EQ; VECTOR_MUL_LZERO; LIM_CONST]);;
 
+let LIM_NULL_ADD = prove
+ (`!net f g:A->real^N.
+        (f --> vec 0) net /\ (g --> vec 0) net
+        ==> ((\x. f x + g x) --> vec 0) net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_ADD) THEN
+  REWRITE_TAC[VECTOR_ADD_LID]);;
+
+let LIM_NULL_SUB = prove
+ (`!net f g:A->real^N.
+        (f --> vec 0) net /\ (g --> vec 0) net
+        ==> ((\x. f x - g x) --> vec 0) net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_SUB) THEN
+  REWRITE_TAC[VECTOR_SUB_RZERO]);;
+
 let LIM_NULL_COMPARISON = prove
  (`!net f g. eventually (\x. norm(f x) <= g x) net /\
              ((\x. lift(g x)) --> vec 0) net

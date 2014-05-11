@@ -103,6 +103,10 @@ let INT_DIVIDES_RPOW_SUC = prove
  (`!x y n. x divides y ==> x divides (y pow (SUC n))`,
   SIMP_TAC[INT_DIVIDES_RPOW; NOT_SUC]);;
 
+let INT_DIVIDES_ANTISYM_DIVISORS = prove
+ (`!a b:int. a divides b /\ b divides a <=> !d. d divides a <=> d divides b`,
+  MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Now carefully distinguish signs.                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -226,6 +230,16 @@ let INT_GCD_SUB = prove
    (!a b. gcd(a,a - b) = gcd(a,b)) /\
    (!a b. gcd(a,b - a) = gcd(a,b))`,
   SIMP_TAC[INT_GCD_UNIQUE; INT_GCD_POS] THEN INTEGER_TAC);;
+
+let INT_DIVIDES_GCD_LEFT = prove
+ (`!m n:int. m divides n <=> gcd(m,n) = abs m`,
+  SIMP_TAC[INT_GCD_UNIQUE; INT_ABS_POS; INT_DIVIDES_ABS; INT_DIVIDES_REFL] THEN
+  MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
+
+let INT_DIVIDES_GCD_RIGHT = prove
+ (`!m n:int. n divides m <=> gcd(m,n) = abs n`,
+  SIMP_TAC[INT_GCD_UNIQUE; INT_ABS_POS; INT_DIVIDES_ABS; INT_DIVIDES_REFL] THEN
+  MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More lemmas about coprimality.                                            *)
