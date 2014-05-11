@@ -1,3 +1,28 @@
+Sat 10th May 2014       int.ml, real.ml, Library/prime.ml, Library/integer.ml
+
+Added a few miscellaneous trivial theorems:
+
+  DIVIDES_GCD_LEFT =
+    |- !m n. m divides n <=> gcd (m,n) = m
+
+  DIVIDES_GCD_RIGHT =
+    |- !m n. n divides m <=> gcd (m,n) = n
+
+  INT_DIVIDES_ANTISYM_DIVISORS =
+    |- !a b. a divides b /\ b divides a <=> (!d. d divides a <=> d divides b)
+
+  INT_DIVIDES_GCD_LEFT =
+    |- !m n. m divides n <=> gcd (m,n) = abs m
+
+  INT_DIVIDES_GCD_RIGHT =
+    |- !m n. n divides m <=> gcd (m,n) = abs n
+
+  INT_EQ_SGN_ABS =
+    |- !x y. x = y <=> int_sgn x = int_sgn y /\ abs x = abs y
+
+  REAL_EQ_SGN_ABS =
+    |- !x y. x = y <=> real_sgn x = real_sgn y /\ abs x = abs y
+
 Sat 10th May 2014       Examples/dickson.ml
 
 Added a proof of Dickson's Lemma, plus the Nash-Williams minimal bad sequence

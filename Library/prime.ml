@@ -707,6 +707,16 @@ let GCD_SUB = prove
    (!a b. a <= b ==> gcd(a,b - a) = gcd(a,b))`,
   MESON_TAC[SUB_ADD; GCD_ADD]);;
 
+let DIVIDES_GCD_LEFT = prove
+ (`!m n:num. m divides n <=> gcd(m,n) = m`,
+  REWRITE_TAC[DIVISORS_EQ; DIVIDES_GCD] THEN
+  MESON_TAC[DIVIDES_REFL; DIVIDES_TRANS]);;
+
+let DIVIDES_GCD_RIGHT = prove
+ (`!m n:num. n divides m <=> gcd(m,n) = n`,
+  REWRITE_TAC[DIVISORS_EQ; DIVIDES_GCD] THEN
+  MESON_TAC[DIVIDES_REFL; DIVIDES_TRANS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Coprimality                                                               *)
 (* ------------------------------------------------------------------------- *)

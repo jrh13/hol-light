@@ -1391,6 +1391,10 @@ let REAL_SGN_ABS = prove
  (`!x. real_sgn(x) * abs(x) = x`,
   REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
 
+let REAL_EQ_SGN_ABS = prove
+ (`!x y:real. x = y <=> real_sgn x = real_sgn y /\ abs x = abs y`,
+  MESON_TAC[REAL_SGN_ABS]);;
+
 let REAL_ABS_SGN = prove
  (`!x. abs(real_sgn x) = real_sgn(abs x)`,
   REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
