@@ -1,3 +1,9 @@
+Mon 12th May 2014       Examples/gcdrecurrence.ml [new file]
+
+Added a new file with the cute result that the gcd operation "commutes" with
+certain integer sequences, with applications to the Mersenne numbers, the
+Fibonacci series, and solutions to the Pell equation.
+
 Sat 10th May 2014       int.ml, real.ml, Library/prime.ml, Library/integer.ml
 
 Added a few miscellaneous trivial theorems:

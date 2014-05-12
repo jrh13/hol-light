@@ -14,6 +14,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/dlo \
 	Library/floor \
 	Examples/forster \
+	Examples/gcdrecurrence \
 	Examples/harmonicsum \
 	Examples/hol88 \
 	Examples/holby \
