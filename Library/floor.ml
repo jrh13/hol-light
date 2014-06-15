@@ -133,14 +133,14 @@ let INTEGER_ABS_MUL_EQ_1 = prove
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[REAL_ABS_MUL] THEN
   REWRITE_TAC[REAL_OF_NUM_EQ; REAL_OF_NUM_MUL; MULT_EQ_1]);;
 
-let INTEGER_DIV = prove                                                    
- (`!m n. integer(&m / &n) <=> n = 0 \/ n divides m`,                           
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL                            
+let INTEGER_DIV = prove
+ (`!m n. integer(&m / &n) <=> n = 0 \/ n divides m`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
    [ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO; INTEGER_CLOSED];
-    ASM_SIMP_TAC[INTEGER_POS; REAL_POS; REAL_LE_DIV; divides] THEN             
-    ASM_SIMP_TAC[REAL_OF_NUM_EQ; REAL_FIELD                                    
-     `~(n = &0) ==> (x / n = y <=> x = n * y)`] THEN                           
-    REWRITE_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_EQ]]);;                           
+    ASM_SIMP_TAC[INTEGER_POS; REAL_POS; REAL_LE_DIV; divides] THEN
+    ASM_SIMP_TAC[REAL_OF_NUM_EQ; REAL_FIELD
+     `~(n = &0) ==> (x / n = y <=> x = n * y)`] THEN
+    REWRITE_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_EQ]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Similar theorems for rational-valued reals.                               *)
@@ -430,6 +430,20 @@ let INTEGER_ROUND = prove
   GEN_TAC THEN MATCH_MP_TAC(MESON[] `!a. P a \/ P(a + &1) ==> ?x. P x`) THEN
   EXISTS_TAC `floor x` THEN MP_TAC(ISPEC `x:real` FLOOR) THEN
   SIMP_TAC[INTEGER_CLOSED] THEN REAL_ARITH_TAC);;
+
+let FRAC_DIV_MOD = prove
+ (`!m n. ~(n = 0) ==> frac(&m / &n) = &(m MOD n) / &n`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM FRAC_UNIQUE] THEN
+  ASM_SIMP_TAC[REAL_LE_DIV; REAL_POS; REAL_LT_LDIV_EQ; REAL_OF_NUM_LT; LE_1;
+               REAL_ARITH `x / a - y / a:real = (x - y) / a`] THEN
+  MP_TAC(SPECL [`m:num`; `n:num`] DIVISION) THEN
+  ASM_SIMP_TAC[REAL_OF_NUM_LT; REAL_MUL_LID] THEN
+  DISCH_THEN(fun th ->
+    GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o LAND_CONV o RAND_CONV)
+                    [CONJUNCT1 th]) THEN
+  SIMP_TAC[REAL_OF_NUM_SUB; ONCE_REWRITE_RULE[ADD_SYM] LE_ADD; ADD_SUB] THEN
+  ASM_SIMP_TAC[GSYM REAL_OF_NUM_MUL; REAL_OF_NUM_EQ; INTEGER_CLOSED;
+               REAL_FIELD `~(n:real = &0) ==> (x * n) / n = x`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Assertions that there are integers between well-spaced reals.             *)

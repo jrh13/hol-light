@@ -2385,6 +2385,11 @@ let POLYTOPE_SING = prove
  (`!a. polytope {a}`,
   MESON_TAC[POLYTOPE_INTERVAL; INTERVAL_SING]);;
 
+let POLYTOPE_1 = prove
+ (`!s:real^1->bool. polytope s <=> ?a b. s = interval[a,b]`,
+  MESON_TAC[IS_INTERVAL_COMPACT; POLYTOPE_IMP_COMPACT; POLYTOPE_IMP_CONVEX;
+            IS_INTERVAL_CONVEX_1; POLYTOPE_INTERVAL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Approximation of bounded convex sets by polytopes.                        *)
 (* ------------------------------------------------------------------------- *)
