@@ -127,12 +127,12 @@ let PERMUTES_SUPERSET = prove
            ==> p permutes t`,
   REWRITE_TAC[permutes; IN_DIFF] THEN MESON_TAC[]);;
 
-let PERMUTES_BIJECTIONS = prove                                                
- (`!p q. (!x. x IN s ==> p x IN s) /\ (!x. ~(x IN s) ==> p x = x) /\      
-         (!x. x IN s ==> q x IN s) /\ (!x. ~(x IN s) ==> q x = x) /\          
-         (!x. p(q x) = x) /\ (!x. q(p x) = x)                   
-         ==> p permutes s`,                                   
-  REWRITE_TAC[permutes] THEN MESON_TAC[]);;                     
+let PERMUTES_BIJECTIONS = prove
+ (`!p q. (!x. x IN s ==> p x IN s) /\ (!x. ~(x IN s) ==> p x = x) /\
+         (!x. x IN s ==> q x IN s) /\ (!x. ~(x IN s) ==> q x = x) /\
+         (!x. p(q x) = x) /\ (!x. q(p x) = x)
+         ==> p permutes s`,
+  REWRITE_TAC[permutes] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Group properties.                                                         *)
@@ -769,6 +769,96 @@ let SUM_PERMUTATIONS_COMPOSE_R = prove
   REWRITE_TAC[GSYM o_ASSOC] THEN
   EVERY_ASSUM(CONJUNCTS_THEN SUBST1_TAC o MATCH_MP PERMUTES_INVERSES_o) THEN
   REWRITE_TAC[I_O_ID]);;
+
+let CARD_EVEN_PERMUTATIONS = prove
+ (`!s:A->bool. FINITE s /\ 2 <= CARD s
+               ==> 2 * CARD {p | p permutes s /\ evenperm p} = FACT(CARD s)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?a b:A. a IN s /\ b IN s /\ ~(a = b)` STRIP_ASSUME_TAC THENL
+   [MP_TAC(SPECL [`2`; `s:A->bool`] CHOOSE_SUBSET_STRONG) THEN
+    ASM_REWRITE_TAC[HAS_SIZE_CONV `s HAS_SIZE 2`] THEN SET_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `!p:A->A. p permutes s ==> permutation p` ASSUME_TAC THENL
+   [ASM_MESON_TAC[PERMUTATION_PERMUTES]; ALL_TAC] THEN
+  SUBGOAL_THEN `!Q. FINITE {p:A->A | p permutes s /\ Q p}` ASSUME_TAC THENL
+   [REWRITE_TAC[SET_RULE `{p | p permutes s /\ Q p} =
+                            {p | p IN {p | p permutes s} /\ Q p}`] THEN
+    ASM_SIMP_TAC[FINITE_RESTRICT; FINITE_PERMUTATIONS];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `FACT(CARD s) = CARD ({p | p permutes s /\ evenperm p} UNION
+                         IMAGE (\p. swap(a:A,b) o p)
+                               {p | p permutes s /\ evenperm p})`
+  SUBST1_TAC THENL
+   [FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP CARD_PERMUTATIONS) THEN
+    AP_TERM_TAC THEN MATCH_MP_TAC(SET_RULE
+     `(!x. P x ==> P(f x)) /\ (!x. f(f x) = x) /\
+      (!x. P x ==> Q x \/ Q(f x))
+      ==> {x | P x} = {x | P x /\ Q x} UNION IMAGE f {x | P x /\ Q x}`) THEN
+    ASM_SIMP_TAC[PERMUTES_COMPOSE; PERMUTES_SWAP; SWAP_IDEMPOTENT; o_ASSOC;
+      I_O_ID; EVENPERM_COMPOSE; PERMUTATION_SWAP; EVENPERM_SWAP] THEN
+    CONV_TAC TAUT;
+    W(MP_TAC o PART_MATCH (lhs o rand) CARD_UNION o rand o snd) THEN
+    ASM_SIMP_TAC[FINITE_IMAGE] THEN ANTS_TAC THENL
+     [MATCH_MP_TAC(SET_RULE
+       `(!x. P x ==> ~P(f x)) ==> {x | P x} INTER IMAGE f {x | P x} = {}`) THEN
+      ASM_SIMP_TAC[IN_ELIM_THM; EVENPERM_COMPOSE; PERMUTATION_SWAP] THEN
+      ASM_REWRITE_TAC[EVENPERM_SWAP];
+      DISCH_THEN SUBST1_TAC] THEN
+    MATCH_MP_TAC(ARITH_RULE `b = a ==> 2 * a = a + b`) THEN
+    MATCH_MP_TAC CARD_IMAGE_INJ THEN ASM_SIMP_TAC[IN_ELIM_THM] THEN
+    MATCH_MP_TAC(MESON[]
+     `(!x. f(f x) = x) ==> (!x y. P x /\ P y /\ f x = f y ==> x = y)`) THEN
+    ASM_SIMP_TAC[SWAP_IDEMPOTENT; o_ASSOC; I_O_ID]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The special case of involutions.                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let PERMUTES_INVOLUTION = prove
+ (`!p s:A->bool. (!x. p(p x) = x) /\ (!x. ~(x IN s) ==> p x = x)
+                 ==> p permutes s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC PERMUTES_BIJECTIONS THEN
+  EXISTS_TAC `p:A->A` THEN ASM_MESON_TAC[]);;
+
+let SIGN_INVOLUTION = prove
+ (`!p:A->A s. FINITE s /\ (!x. p(p x) = x) /\ (!x. ~(x IN s) ==> p x = x)
+              ==> sign p = --(&1) pow (CARD {x | ~(p x = x)} DIV 2)`,
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN GEN_TAC THEN
+  WF_INDUCT_TAC `CARD(s:A->bool)` THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `p:A->A = I` THEN
+  ASM_SIMP_TAC[I_THM; EMPTY_GSPEC; CARD_CLAUSES; SIGN_I; DIV_0; real_pow;
+               ARITH_EQ] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [FUN_EQ_THM]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; I_THM; NOT_FORALL_THM] THEN
+  X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `(a:A) IN s /\ p a IN s` STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `s DELETE (a:A) DELETE (p a)`) THEN
+  ASM_SIMP_TAC[CARD_DELETE; FINITE_DELETE; IN_DELETE] THEN
+  ASM_SIMP_TAC[CARD_EQ_0; ARITH_RULE `n - 1 - 1 < n <=> ~(n = 0)`] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `permutation(p:A->A)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[PERMUTATION_PERMUTES; PERMUTES_INVOLUTION]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `p o swap(a:A,p a)`) THEN
+  ASM_SIMP_TAC[SIGN_COMPOSE; PERMUTATION_SWAP; SIGN_SWAP] THEN
+  REWRITE_TAC[o_THM; swap] THEN ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC(REAL_RING `-- &1 * a:real = b ==> s * -- &1 = a ==> s = b`) THEN
+  SUBGOAL_THEN
+   `{x | ~(p (if x = a then p a else if x = p a then a else x) = x)} =
+    {x:A | ~(p x = x)} DELETE a DELETE (p a)`
+  SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `FINITE {x:A | ~(p x = x)}` ASSUME_TAC THENL
+   [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `s:A->bool` THEN
+    ASM SET_TAC[];
+    ASM_SIMP_TAC[CARD_DELETE; IN_ELIM_THM; FINITE_DELETE; IN_DELETE]] THEN
+  REWRITE_TAC[GSYM(CONJUNCT2 real_pow)] THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC(ARITH_RULE `m + 2 = n ==> SUC(m DIV 2) = n DIV 2`) THEN
+  MATCH_MP_TAC(ARITH_RULE `2 <= n ==> n - 1 - 1 + 2 = n`) THEN
+  TRANS_TAC LE_TRANS `CARD {a:A,p a}` THEN CONJ_TAC THENL
+   [ASM_SIMP_TAC[CARD_CLAUSES; FINITE_RULES; IN_SING; NOT_IN_EMPTY] THEN
+    CONV_TAC NUM_REDUCE_CONV;
+    MATCH_MP_TAC CARD_SUBSET THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversion for `{p | p permutes s}` where s is a set enumeration.         *)

@@ -2522,10 +2522,6 @@ let CARD_LE_COMPONENTS = prove
 (* More stuff about segments.                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let SEGMENT_OPEN_SUBSET_CLOSED = prove
- (`!a b. segment(a,b) SUBSET segment[a,b]`,
-  REWRITE_TAC[CONJUNCT2(SPEC_ALL segment)] THEN SET_TAC[]);;
-
 let BOUNDED_SEGMENT = prove
  (`(!a b:real^N. bounded(segment[a,b])) /\
    (!a b:real^N. bounded(segment(a,b)))`,
@@ -3121,6 +3117,44 @@ let CONNECTED_COMPONENT_1_GEN = prove
 let CONNECTED_COMPONENT_1 = prove
  (`!s a b:real^1. connected_component s a b <=> segment[a,b] SUBSET s`,
   SIMP_TAC[CONNECTED_COMPONENT_1_GEN; DIMINDEX_1]);;
+
+let HOMEOMORPHIC_SEGMENTS = prove
+ (`(!a b:real^M c d:real^N.
+        segment[a,b] homeomorphic segment[c,d] <=> (a = b <=> c = d)) /\
+   (!a b:real^M c d:real^N.
+        ~(segment[a,b] homeomorphic segment(c,d))) /\
+   (!a b:real^M c d:real^N.
+        ~(segment(a,b) homeomorphic segment[c,d])) /\
+   (!a b:real^M c d:real^N.
+        segment(a,b) homeomorphic segment(c,d) <=> (a = b <=> c = d))`,
+  let lemma = prove
+   (`!a b:real^N. (\u:real^1. (&1 - drop u) % a + drop u % b) =
+                  (\u. a + u) o (\u. drop u % (b - a))`,
+    REWRITE_TAC[FUN_EQ_THM; o_THM] THEN VECTOR_ARITH_TAC) in
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r /\ s <=> (q /\ r) /\ (p /\ s)`] THEN
+  CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHIC_COMPACTNESS) THEN
+    REWRITE_TAC[COMPACT_SEGMENT] THEN POP_ASSUM MP_TAC THEN
+    ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+    SIMP_TAC[SEGMENT_REFL; HOMEOMORPHIC_EMPTY; SEGMENT_EQ_EMPTY];
+    REPEAT STRIP_TAC THEN
+    (EQ_TAC THENL
+      [DISCH_THEN(MP_TAC o MATCH_MP HOMEOMORPHIC_FINITENESS) THEN
+       REWRITE_TAC[FINITE_SEGMENT];
+       ASM_CASES_TAC `c:real^N = d` THEN
+       ASM_SIMP_TAC[SEGMENT_REFL; HOMEOMORPHIC_SING; HOMEOMORPHIC_EMPTY] THEN
+       DISCH_TAC])] THEN
+  ASM_SIMP_TAC[SEGMENT_IMAGE_INTERVAL] THENL
+   [TRANS_TAC HOMEOMORPHIC_TRANS `interval[vec 0:real^1,vec 1]`;
+    TRANS_TAC HOMEOMORPHIC_TRANS `interval(vec 0:real^1,vec 1)`] THEN
+  (CONJ_TAC THENL [ALL_TAC; ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM]]) THEN
+  REWRITE_TAC[lemma; IMAGE_o; HOMEOMORPHIC_TRANSLATION_LEFT_EQ] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand)
+    HOMEOMORPHIC_INJECTIVE_LINEAR_IMAGE_LEFT_EQ o snd) THEN
+  REWRITE_TAC[HOMEOMORPHIC_REFL] THEN DISCH_THEN MATCH_MP_TAC THEN
+  SIMP_TAC[LINEAR_VMUL_DROP; LINEAR_ID; VECTOR_MUL_RCANCEL] THEN
+  ASM_REWRITE_TAC[DROP_EQ; VECTOR_SUB_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* An injective function into R is a homeomorphism and so an open map.       *)

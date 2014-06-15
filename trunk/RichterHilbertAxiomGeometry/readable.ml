@@ -504,8 +504,12 @@ let CombThmlisttactic_Thmlist step =
 (*                                                                           *)
 (* theorem is a version of prove based on the miz3.ml thm, with argument     *)
 (* statement ByProofQed                                                      *)
+(*                                                                           *)
+(* Miz3-style comments are supported.  If a line contains ::, then the       *)
+(* substring of the line beginning with :: is ignored by StringToTactic.     *)
 
 let rec StringToTactic s =
+  let s = Str.global_replace (Str.regexp "::[^\n]*") "" s in
   if StringRegexpEqual (Str.regexp ws0) s then ALL_TAC
   else
     try makeCaseSplit s

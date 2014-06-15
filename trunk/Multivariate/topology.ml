@@ -5512,7 +5512,7 @@ let ISOMETRY_ON_IMP_CONTINUOUS_ON = prove
 (* ------------------------------------------------------------------------- *)
 
 let CONTINUOUS_WITHIN_SEQUENTIALLY = prove
- (`!f a:real^N.
+ (`!f s a:real^N.
         f continuous (at a within s) <=>
                 !x. (!n. x(n) IN s) /\ (x --> a) sequentially
                      ==> ((f o x) --> f(a)) sequentially`,
@@ -11797,6 +11797,23 @@ let CLOSED_DIFF_OPEN_INTERVAL_1 = prove
   ASM_REWRITE_TAC[NOT_IN_EMPTY; IN_INSERT; NOT_IN_EMPTY] THEN
   REWRITE_TAC[GSYM DROP_EQ] THEN ASM_REAL_ARITH_TAC);;
 
+let INTERVAL_1 = prove
+ (`(!a b:real^1. interval[a,b] =
+                 if drop a <= drop b then cball(midpoint(a,b),dist(a,b) / &2)
+                 else {}) /\
+   (!a b:real^1. interval(a,b) =
+                 if drop a < drop b then ball(midpoint(a,b),dist(a,b) / &2)
+                 else {})`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LE; REAL_NOT_LT]) THEN
+  ASM_REWRITE_TAC[INTERVAL_EQ_EMPTY_1] THEN
+  REWRITE_TAC[BALL_1; DIST_REAL] THEN
+  ASM_SIMP_TAC[GSYM drop; REAL_SUB_LE; REAL_LT_IMP_LE;
+               REAL_ARITH `a <= b ==> abs(a - b) = b - a`] THEN
+  REWRITE_TAC[REAL_ARITH `x / &2 = inv(&2) * x`; LIFT_CMUL] THEN
+  REWRITE_TAC[LIFT_SUB; LIFT_DROP; midpoint] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[PAIR_EQ; CONS_11] THEN VECTOR_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Intervals in general, including infinite and mixtures of open and closed. *)
 (* ------------------------------------------------------------------------- *)
@@ -12188,6 +12205,51 @@ let lemma = prove
   SIMP_TAC[IS_INTERVAL_SCALING_EQ; REAL_LT_IMP_NZ]) in
 add_scaling_theorems [lemma];;
 
+let CARD_FRONTIER_INTERVAL_1 = prove
+ (`!s:real^1->bool.
+        is_interval s ==> FINITE(frontier s) /\ CARD(frontier s) <= 2`,
+  let lemma = prove
+   (`~(?a b c. drop a < drop b /\ drop b < drop c /\
+               a IN s /\ b IN s /\ c IN s)
+     ==> FINITE s /\ CARD(s) <= 2`,
+    ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[TAUT `~(p /\ q) <=> p ==> ~q`] THEN
+    REWRITE_TAC[ARITH_RULE `~(n <= 2) <=> 3 <= n`] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CHOOSE_SUBSET_STRONG) THEN
+    REWRITE_TAC[HAS_SIZE_CONV `t HAS_SIZE 3`] THEN
+    REWRITE_TAC[CONJ_ASSOC; MESON[]
+     `(?t. P t /\ ?x y z. Q x y z /\ t = f x y z) <=>
+      (?x y z. Q x y z /\ P(f x y z))`] THEN
+    SIMP_TAC[LEFT_IMP_EXISTS_THM; GSYM CONJ_ASSOC; FORALL_LIFT; LIFT_EQ] THEN
+    REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET] THEN
+    MATCH_MP_TAC(MESON[REAL_LE_TOTAL]
+     `(!m n p:real. P m n p ==> P n p m /\ P n m p) /\
+      (!m n p. m <= n /\ n <= p ==> P m n p)
+      ==> !m n p. P m n p`) THEN
+    CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+    REWRITE_TAC[FORALL_DROP; DROP_EQ; LIFT_DROP] THEN
+    REWRITE_TAC[REAL_LT_LE; DROP_EQ] THEN MESON_TAC[]) in
+  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC lemma THEN
+  REWRITE_TAC[NOT_EXISTS_THM; FRONTIER_CLOSURES; IN_INTER] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`; `c:real^1`] THEN STRIP_TAC THEN
+  MAP_EVERY UNDISCH_TAC
+   [`b IN closure ((:real^1) DIFF s)`;
+    `(a:real^1) IN closure s`; `(c:real^1) IN closure s`] THEN
+  SIMP_TAC[CLOSURE_APPROACHABLE; IN_DIFF; IN_UNIV; DIST_REAL; GSYM drop] THEN
+  DISCH_THEN(MP_TAC o SPEC `(drop c - drop b) / &2`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_SUB_LT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `v:real^1` STRIP_ASSUME_TAC) THEN
+  DISCH_THEN(MP_TAC o SPEC `(drop b - drop a) / &2`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_SUB_LT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:real^1` STRIP_ASSUME_TAC) THEN
+  DISCH_THEN(MP_TAC o SPEC
+    `min ((drop b - drop a) / &2) ((drop c - drop b) / &2)`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_SUB_LT; REAL_LT_MIN] THEN
+  DISCH_THEN(X_CHOOSE_THEN `w:real^1` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IS_INTERVAL_1]) THEN
+  DISCH_THEN(MP_TAC o SPECL [`u:real^1`; `v:real^1`; `w:real^1`]) THEN
+  ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Line segments, with same open/closed overloading as for intervals.        *)
 (* ------------------------------------------------------------------------- *)
@@ -12267,6 +12329,10 @@ let SEGMENT_CLOSED_OPEN = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[open_segment] THEN MATCH_MP_TAC(SET_RULE
    `a IN s /\ b IN s ==> s = (s DIFF {a,b}) UNION {a,b}`) THEN
   REWRITE_TAC[ENDS_IN_SEGMENT]);;
+
+let SEGMENT_OPEN_SUBSET_CLOSED = prove
+ (`!a b. segment(a,b) SUBSET segment[a,b]`,
+  REWRITE_TAC[CONJUNCT2(SPEC_ALL segment)] THEN SET_TAC[]);;
 
 let MIDPOINT_IN_SEGMENT = prove
  (`(!a b:real^N. midpoint(a,b) IN segment[a,b]) /\
@@ -13128,6 +13194,13 @@ let HOMEOMORPHIC_IMP_CARD_EQ = prove
  (`!s:real^M->bool t:real^N->bool. s homeomorphic t ==> s =_c t`,
   REPEAT GEN_TAC THEN REWRITE_TAC[homeomorphic; homeomorphism; eq_c] THEN
   MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
+
+let HOMEOMORPHIC_FINITENESS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t ==> (FINITE s <=> FINITE t)`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP HOMEOMORPHIC_IMP_CARD_EQ) THEN
+  DISCH_THEN(ACCEPT_TAC o MATCH_MP CARD_FINITE_CONG));;
 
 let HOMEOMORPHIC_EMPTY = prove
  (`(!s. (s:real^N->bool) homeomorphic ({}:real^M->bool) <=> s = {}) /\

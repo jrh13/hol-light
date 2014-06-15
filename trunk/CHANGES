@@ -1,3 +1,26 @@
+Tue 27th May 2014       Library/permutations.ml
+
+Added three more lemmas about permutations:
+
+  CARD_EVEN_PERMUTATIONS =
+    |- !s. FINITE s /\ 2 <= CARD s
+           ==> 2 * CARD {p | p permutes s /\ evenperm p} = FACT (CARD s)
+
+  PERMUTES_INVOLUTION =
+    |- !p s. (!x. p (p x) = x) /\ (!x. ~(x IN s) ==> p x = x) ==> p permutes s
+
+  SIGN_INVOLUTION =
+    |- !p s.
+         FINITE s /\ (!x. p (p x) = x) /\ (!x. ~(x IN s) ==> p x = x)
+         ==> sign p = -- &1 pow (CARD {x | ~(p x = x)} DIV 2)
+
+Tue 27th May 2014       Library/floor.ml
+
+Added the following theorem, a natural counterpart for FLOOR_DIV_DIV
+
+  FRAC_DIV_MOD =
+   |- !m n. ~(n = 0) ==> frac(&m / &n) = &(m MOD n) / &n
+
 Mon 12th May 2014       Examples/gcdrecurrence.ml [new file]
 
 Added a new file with the cute result that the gcd operation "commutes" with
