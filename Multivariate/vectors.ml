@@ -2348,6 +2348,11 @@ let SYMMETRIC_LINEAR_IMAGE = prove
 let bilinear = new_definition
   `bilinear f <=> (!x. linear(\y. f x y)) /\ (!y. linear(\x. f x y))`;;
 
+let BILINEAR_SWAP = prove
+ (`!op:real^M->real^N->real^P.
+        bilinear(\x y. op y x) <=> bilinear op`,
+  REWRITE_TAC[bilinear; ETA_AX] THEN MESON_TAC[]);;
+
 let BILINEAR_LADD = prove
  (`!h x y z. bilinear h ==> h (x + y) z = (h x z) + (h y z)`,
   SIMP_TAC[bilinear; linear]);;

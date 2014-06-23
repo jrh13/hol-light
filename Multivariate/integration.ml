@@ -17873,6 +17873,57 @@ let INTEGRABLE_BOUNDED_VARIATION_PRODUCT_ALT = prove
   DISCH_THEN(MP_TAC o MATCH_MP INTEGRABLE_BOUNDED_VARIATION_PRODUCT) THEN
   REWRITE_TAC[o_DEF; LIFT_DROP]);;
 
+let INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL = prove
+ (`!op:real^M->real^N->real^P f g a b.
+        bilinear op /\
+        f integrable_on interval[a,b] /\
+        g has_bounded_variation_on interval[a,b]
+        ==> (\x. op (g x) (f x)) integrable_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV o LAND_CONV)
+   [GSYM BASIS_EXPANSION] THEN
+  FIRST_ASSUM(ASSUME_TAC o CONJUNCT2 o GEN_REWRITE_RULE I [bilinear]) THEN
+  FIRST_ASSUM(MP_TAC o GEN_ALL o ISPEC `1..n` o
+    ONCE_REWRITE_RULE[SWAP_FORALL_THM] o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        LINEAR_VSUM) o SPEC_ALL) THEN
+  SIMP_TAC[FINITE_NUMSEG; o_DEF] THEN DISCH_THEN(K ALL_TAC) THEN
+  MATCH_MP_TAC INTEGRABLE_VSUM THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+  X_GEN_TAC `k:num` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_ALL o MATCH_MP LINEAR_CMUL o SPEC_ALL) THEN
+  SIMP_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN
+  MATCH_MP_TAC INTEGRABLE_BOUNDED_VARIATION_PRODUCT_ALT THEN
+  RULE_ASSUM_TAC(ONCE_REWRITE_RULE
+    [HAS_BOUNDED_VARIATION_ON_COMPONENTWISE]) THEN
+  ASM_SIMP_TAC[o_DEF; IN_NUMSEG] THEN ONCE_REWRITE_TAC[GSYM o_DEF] THEN
+  MATCH_MP_TAC INTEGRABLE_LINEAR THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MP_TAC o CONJUNCT1 o GEN_REWRITE_RULE I [bilinear]) THEN
+  SIMP_TAC[ETA_AX]);;
+
+let INTEGRABLE_BOUNDED_VARIATION_BILINEAR_RMUL = prove
+ (`!op:real^M->real^N->real^P f g a b.
+        bilinear op /\
+        f integrable_on interval[a,b] /\
+        g has_bounded_variation_on interval[a,b]
+        ==> (\x. op (f x) (g x)) integrable_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`\x y. (op:real^M->real^N->real^P) y x`;
+    `f:real^1->real^M`; `g:real^1->real^N`;
+    `a:real^1`; `b:real^1`] INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL) THEN
+  ASM_REWRITE_TAC[BILINEAR_SWAP]);;
+
+let INTEGRABLE_BOUNDED_VARIATION = prove
+ (`!f:real^1->real^N a b.
+        f has_bounded_variation_on interval[a,b]
+        ==> f integrable_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`\x:real^1 y:real^N. drop x % y`;
+    `(\x. vec 1):real^1->real^1`;
+    `f:real^1->real^N`; `a:real^1`; `b:real^1`]
+        INTEGRABLE_BOUNDED_VARIATION_BILINEAR_RMUL) THEN
+  ASM_REWRITE_TAC[BILINEAR_DROP_MUL; DROP_VEC; INTEGRABLE_CONST] THEN
+  REWRITE_TAC[VECTOR_MUL_LID; ETA_AX]);;
+
 let HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_RIGHT = prove
  (`!f:real^1->real^N a b.
         f absolutely_integrable_on interval[a,b]
