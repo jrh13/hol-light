@@ -4,26 +4,35 @@
           Distributed under the same license as HOL Light
 
 readable.ml is a miz3-type interface for HOL Light tactics proofs
-allowing full use of REWRITE_TAC and other thm list -> tactics.
+allowing full use of REWRITE_TAC and other thm list -> tactics.  All
+the HOL Light code below is written using readable.ml, except for
+from_topology.ml, which is a subset of John Harrison's code.
 
-HilbertAxiom_read.ml, which uses readable.ml, is a formalization of
-the plane geometry part of the Hilbert axiomatic geometry paper
+HilbertAxiom_read.ml is a formalization of the plane geometry part of
+the Hilbert axiomatic geometry paper
 http://www.math.northwestern.edu/~richter/hilbert.pdf
 
-inverse_bug_puzzle_read.ml, which uses readable.ml, is a formalization
-partly due to John Harrison of a theorem due to Tom Hales explained at
-the end of sec 10.1 "The bug puzzle" of the HOL Light tutorial.
+inverse_bug_puzzle_read.ml is a formalization partly due to John
+Harrison of a theorem due to Tom Hales explained at the end of sec
+10.1 "The bug puzzle" of the HOL Light tutorial.
 
 UniversalPropCartProd.ml defines FunctionSpace and FunctionComposition
 so that Cartesian product satisfies the usual universal property.
 
-Topology.ml is an in-progress readable.ml port of the point-set
-topology in Multivariate/topology.ml, changing the definition of a
-topological space and the use of subtopology theorems.
+Topology.ml is an in-progress port of the point-set topology in
+Multivariate/topology.ml, changing the definition of a topological
+space and the use of subtopology theorems.
 
 from_topology.ml is a subset of Multivariate/topology.ml which run
 after Topology.ml is loaded, in spite of the above "low-level"
 changes, upholding the principle of data abstraction.
+
+TarskiAxiomGeometry_read.ml is a partial formalization of
+Schwabhäuser's theorem that Tarski's plane geometry axioms imply
+Hilbert's, basically done up through Gupta's theorem.  Julien Narboux
+has completely formalized Schwabhäuser's theorem in Coq.  Adam
+Grabowski Jesse Alama improved my original Mizar Tarski code and
+published it in MML.
 
 thmTopology is a list of the theorems of Topology.ml.
 

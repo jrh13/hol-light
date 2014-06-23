@@ -3293,6 +3293,16 @@ let JORDAN_BROUWER_ACCESSIBILITY = prove
   ASM_MESON_TAC[JORDAN_BROUWER_FRONTIER; OPEN_COMPONENTS;
                 IN_COMPONENTS_CONNECTED]);;
 
+let CONNECTED_COMPLEMENT_CONTRACTIBLE = prove
+ (`!s. 2 <= dimindex(:N) /\ compact s /\ contractible s
+       ==> connected((:real^N) DIFF s)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[DIFF_EMPTY; CONNECTED_UNIV] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `{a:real^N}`]
+        HOMOTOPY_EQUIVALENT_SEPARATION) THEN
+  ASM_SIMP_TAC[HOMOTOPY_EQUIVALENT_SING; COMPACT_SING; AR_SING;
+               CONNECTED_COMPLEMENT_ABSOLUTE_RETRACT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Invariance of domain and corollaries.                                     *)
 (* ------------------------------------------------------------------------- *)

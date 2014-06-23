@@ -3021,6 +3021,23 @@ let REAL_COMPLEX_INTEGRAL = prove
   MATCH_MP_TAC INTEGRAL_EQ_0 THEN
   ASM_REWRITE_TAC[GSYM LIFT_NUM; LIFT_EQ]);;
 
+let INTEGRABLE_BOUNDED_VARIATION_COMPLEX_LMUL = prove
+ (`!f g a b.
+        f integrable_on interval[a,b] /\
+        g has_bounded_variation_on interval[a,b]
+        ==> (\x. g x * f x) integrable_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL THEN
+  ASM_REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;
+
+let INTEGRABLE_BOUNDED_VARIATION_COMPLEX_RMUL = prove
+ (`!f g a b.
+        f integrable_on interval[a,b] /\
+        g has_bounded_variation_on interval[a,b]
+        ==> (\x. f x * g x) integrable_on interval[a,b]`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  REWRITE_TAC[INTEGRABLE_BOUNDED_VARIATION_COMPLEX_LMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations among convergence and absolute convergence for power series.    *)
 (* ------------------------------------------------------------------------- *)
