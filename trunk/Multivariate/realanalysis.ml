@@ -381,6 +381,11 @@ let REALLIM_NULL_NEG = prove
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[REAL_ARITH `--x = --(&1) * x`] THEN
   MATCH_MP_TAC REALLIM_NULL_LMUL_EQ THEN CONV_TAC REAL_RAT_REDUCE_CONV);;
 
+let REALLIM_NULL_SUB = prove
+ (`!net:(A)net f g.
+    (f ---> &0) net /\ (g ---> &0) net ==> ((\x. f(x) - g(x)) ---> &0) net`,
+  SIMP_TAC[real_sub; REALLIM_NULL_ADD; REALLIM_NULL_NEG]);;
+
 let REALLIM_RE = prove
  (`!net f l. (f --> l) net ==> ((Re o f) ---> Re l) net`,
   REWRITE_TAC[REALLIM_COMPLEX] THEN
@@ -569,6 +574,13 @@ let REALLIM_SUM = prove
   REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[SUM_CLAUSES; REALLIM_CONST; REALLIM_ADD; IN_INSERT; ETA_AX]);;
+
+let REALLIM_NULL_SUM = prove
+ (`!net f:A->B->real s.
+        FINITE s /\ (!a. a IN s ==> ((\x. f x a) ---> &0) net)
+        ==> ((\x. sum s (f x)) ---> &0) net`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP REALLIM_SUM) THEN
+  REWRITE_TAC[SUM_0; ETA_AX]);;
 
 let REALLIM_NULL_COMPARISON = prove
  (`!net:(A)net f g.
@@ -2798,6 +2810,37 @@ let HAS_COMPLEX_REAL_DERIVATIVE_AT = prove
   EXISTS_TAC `h:complex->complex` THEN
   ASM_REWRITE_TAC[IN_UNIV; ETA_AX; SET_RULE `{x | r x} = r`]);;
 
+let HAS_REAL_DERIVATIVE_FROM_COMPLEX_AT = prove
+ (`!f f' x.
+        (f has_complex_derivative f') (at (Cx x)) /\
+        (!z. real z ==> real(f z))
+        ==> ((Re o f o Cx) has_real_derivative (Re f')) (atreal x)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HAS_COMPLEX_REAL_DERIVATIVE_AT THEN
+  EXISTS_TAC `f:complex->complex` THEN REWRITE_TAC[o_DEF] THEN
+  CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[REAL; REAL_CX; RE_CX]] THEN
+  FIRST_X_ASSUM(ASSUME_TAC o SPEC `real` o
+    MATCH_MP HAS_COMPLEX_DERIVATIVE_AT_WITHIN) THEN
+  SUBGOAL_THEN `real f'` (fun th -> ASM_MESON_TAC[REAL; th]) THEN
+  MATCH_MP_TAC(ISPEC `at (Cx x) within real` REAL_LIM) THEN
+  EXISTS_TAC `\y. ((f:complex->complex) y - f (Cx x)) / (y - Cx x)` THEN
+  ASM_REWRITE_TAC[GSYM HAS_COMPLEX_DERIVATIVE_WITHIN] THEN
+  REWRITE_TAC[TRIVIAL_LIMIT_WITHIN_REAL; REAL_CX] THEN
+  REWRITE_TAC[WITHIN; AT] THEN
+  REWRITE_TAC[SET_RULE `p /\ x IN real <=> real x /\ p`] THEN
+  SIMP_TAC[REAL_EXISTS; IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN
+  ASM_SIMP_TAC[GSYM REAL_EXISTS; GSYM CX_SUB; GSYM CX_DIV; REAL_CX;
+               REAL_DIV; REAL_SUB] THEN
+  REPEAT(EXISTS_TAC `Cx(x + &1)`) THEN
+  REWRITE_TAC[REAL_LE_REFL; REAL_CX; DIST_CX] THEN REAL_ARITH_TAC);;
+
+let REAL_DIFFERENTIABLE_FROM_COMPLEX_AT = prove
+ (`!f x. f complex_differentiable at (Cx x) /\
+         (!z. real z ==> real(f z))
+         ==> (Re o f o Cx) real_differentiable (atreal x)`,
+  REWRITE_TAC[complex_differentiable; real_differentiable] THEN
+  MESON_TAC[HAS_REAL_DERIVATIVE_FROM_COMPLEX_AT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Caratheodory characterization.                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -4482,6 +4525,11 @@ let REAL_DIFFERENTIABLE_AT_RPOW = prove
        ASM_REAL_ARITH_TAC;
        REAL_DIFFERENTIABLE_TAC THEN ASM_REAL_ARITH_TAC])]);;
 
+let REAL_DIFFERENTIABLE_AT_RPOW_RIGHT = prove
+ (`!a x. &0 < a ==> (\x. a rpow x) real_differentiable (atreal x)`,
+  REWRITE_TAC[real_differentiable] THEN
+  MESON_TAC[HAS_REAL_DERIVATIVE_RPOW_RIGHT]);;
+
 let REAL_CONTINUOUS_AT_RPOW = prove
  (`!x y. (x = &0 ==> &0 <= y)
          ==> (\x. x rpow y) real_continuous (atreal x)`,
@@ -4511,6 +4559,11 @@ let REAL_CONTINUOUS_ON_RPOW = prove
   REWRITE_TAC[REAL_CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_WITHIN_RPOW THEN
   ASM_MESON_TAC[]);;
+
+let REAL_CONTINUOUS_AT_RPOW_RIGHT = prove
+ (`!a x. &0 < a ==> (\x. a rpow x) real_continuous (atreal x)`,
+  SIMP_TAC[REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL;
+           REAL_DIFFERENTIABLE_AT_RPOW_RIGHT]);;
 
 let REALLIM_RPOW = prove
  (`!net f l n.
@@ -12162,6 +12215,21 @@ let real_polynomial_function_RULES,
   (!f g. real_polynomial_function f /\ real_polynomial_function g
          ==> real_polynomial_function(\x:real^N. f x * g x))`;;
 
+let REAL_POLYNOMIAL_FUNCTION_SUM = prove
+ (`!f s. FINITE s /\
+         (!a. a IN s ==> real_polynomial_function(\x. f x a))
+         ==> real_polynomial_function (\x. sum s (f x))`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[real_polynomial_function_RULES; SUM_CLAUSES; FORALL_IN_INSERT]);;
+
+let REAL_POLYNOMIAL_FUNCTION_POW = prove
+ (`!p n. real_polynomial_function p
+         ==> real_polynomial_function(\x. p(x) pow n)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[real_polynomial_function_RULES; real_pow]);;
+
 let REAL_CONTINUOUS_REAL_POLYMONIAL_FUNCTION = prove
  (`!f x:real^N.
         real_polynomial_function f ==> f real_continuous at x`,
@@ -12768,7 +12836,7 @@ let DIFFERENTIABLE_ON_VECTOR_POLYNOMIAL_FUNCTION = prove
 (* Non-trivial algebraic variety has empty interior.                         *)
 (* ------------------------------------------------------------------------- *)
 
-let NOWHERE_DENSE_ALGEBRAIC_VARIETY = prove
+let EMPTY_INTERIOR_ALGEBRAIC_VARIETY = prove
  (`!f c. real_polynomial_function f /\ ~(!x. f x = c)
          ==> interior {x:real^N | f(x) = c} = {}`,
   REPEAT STRIP_TAC THEN
@@ -12821,6 +12889,20 @@ let NOWHERE_DENSE_ALGEBRAIC_VARIETY = prove
           ASM_SIMP_TAC[REAL_LT_DIV; NORM_POS_LT; VECTOR_SUB_EQ];
           REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_BALL_0;
                       IN_ELIM_THM; LIFT_DROP]]]]]);;
+
+let NOWHERE_DENSE_ALGEBRAIC_VARIETY = prove
+ (`!f c. real_polynomial_function f /\ ~(!x. f x = c)
+         ==> interior(closure {x:real^N | f(x) = c}) = {}`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP EMPTY_INTERIOR_ALGEBRAIC_VARIETY) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EQ_TRANS) THEN
+  AP_TERM_TAC THEN REWRITE_TAC[CLOSURE_EQ] THEN
+  REWRITE_TAC[GSYM LIFT_EQ] THEN ONCE_REWRITE_TAC[GSYM IN_SING] THEN
+  MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE_UNIV THEN
+  REWRITE_TAC[CLOSED_SING] THEN GEN_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_VECTOR_POLYNOMIAL_FUNCTION THEN
+  REWRITE_TAC[GSYM REAL_POLYNOMIAL_FUNCTION_DROP; o_DEF; LIFT_DROP] THEN
+  ASM_REWRITE_TAC[ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bernoulli polynomials, defined recursively. We don't explicitly introduce *)

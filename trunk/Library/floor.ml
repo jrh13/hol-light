@@ -27,13 +27,17 @@ let INTEGER_CLOSED = prove
    (!x y. integer(x) /\ integer(y) ==> integer(x * y)) /\
    (!x r. integer(x) ==> integer(x pow r)) /\
    (!x. integer(x) ==> integer(--x)) /\
-   (!x. integer(x) ==> integer(abs x))`,
+   (!x. integer(x) ==> integer(abs x)) /\
+   (!x y. integer(x) /\ integer(y) ==> integer(max x y)) /\
+   (!x y. integer(x) /\ integer(y) ==> integer(min x y))`,
   REWRITE_TAC[integer] THEN
   MATCH_MP_TAC(TAUT
-   `x /\ c /\ d /\ e /\ f /\ (a /\ e ==> b) /\ a
-    ==> x /\ a /\ b /\ c /\ d /\ e /\ f`) THEN
+   `g /\ h /\ x /\ c /\ d /\ e /\ f /\ (a /\ e ==> b) /\ a
+    ==> x /\ a /\ b /\ c /\ d /\ e /\ f /\ g /\ h`) THEN
   REPEAT CONJ_TAC THENL
-   [REWRITE_TAC[REAL_ABS_NUM] THEN MESON_TAC[];
+   [REWRITE_TAC[real_max] THEN MESON_TAC[];
+    REWRITE_TAC[real_min] THEN MESON_TAC[];
+    REWRITE_TAC[REAL_ABS_NUM] THEN MESON_TAC[];
     REWRITE_TAC[REAL_ABS_MUL] THEN MESON_TAC[REAL_OF_NUM_MUL];
     REWRITE_TAC[REAL_ABS_POW] THEN MESON_TAC[REAL_OF_NUM_POW];
     REWRITE_TAC[REAL_ABS_NEG]; REWRITE_TAC[REAL_ABS_ABS];

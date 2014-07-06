@@ -92,7 +92,8 @@ let BLICHFELDT = prove
     EXISTS_TAC `x + (v - u):real^N` THEN
     ASM_REWRITE_TAC[VECTOR_ARITH `x = x + (v - u) <=> v:real^N = u`] THEN
     ASM_SIMP_TAC[VECTOR_SUB_COMPONENT; VECTOR_ADD_COMPONENT] THEN
-    ASM_SIMP_TAC[REAL_ARITH `x - (x + v - u) = u - v`; INTEGER_CLOSED]] THEN
+    ASM_SIMP_TAC[REAL_ARITH `x - (x + v - u):real = u - v`; 
+                 INTEGER_CLOSED]] THEN
   REPEAT CONJ_TAC THENL
    [SUBGOAL_THEN
      `?N. !x:real^N i. x IN s /\ 1 <= i /\ i <= dimindex(:N) ==> abs(x$i) < &N`
