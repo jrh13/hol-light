@@ -1,3 +1,22 @@
+Tue  1st Jul 2014       Library/floor.ml
+
+Added clauses for "max" and "min" to INTEGER_CLOSED, so it is now:
+
+  INTEGER_CLOSED =
+  |- (!n. integer (&n)) /\
+     (!x y. integer x /\ integer y ==> integer (x + y)) /\
+     (!x y. integer x /\ integer y ==> integer (x - y)) /\
+     (!x y. integer x /\ integer y ==> integer (x * y)) /\
+     (!x r. integer x ==> integer (x pow r)) /\
+     (!x. integer x ==> integer (--x)) /\
+     (!x. integer x ==> integer (abs x)) /\
+     (!x y. integer x /\ integer y ==> integer (max x y)) /\
+     (!x y. integer x /\ integer y ==> integer (min x y))
+
+Tue  1st Jul 2014       sets.ml
+
+Added CROSS_UNIV = |- (:A) CROSS (:B) = (:A#B)
+
 Tue 27th May 2014       Library/permutations.ml
 
 Added three more lemmas about permutations:

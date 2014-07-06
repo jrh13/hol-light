@@ -3093,6 +3093,13 @@ let LIM_VSUM = prove
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[VSUM_CLAUSES; LIM_CONST; LIM_ADD; IN_INSERT; ETA_AX]);;
 
+let LIM_NULL_VSUM = prove
+ (`!net f:A->B->real^N s.
+        FINITE s /\ (!a. a IN s ==> ((\x. f x a) --> vec 0) net)
+        ==> ((\x. vsum s (f x)) --> vec 0) net`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP LIM_VSUM) THEN
+  REWRITE_TAC[VSUM_0; ETA_AX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Deducing things about the limit from the elements.                        *)
 (* ------------------------------------------------------------------------- *)
@@ -19945,7 +19952,7 @@ let ARZELA_ASCOLI = prove
   ASM_REWRITE_TAC[dist; GE] THEN ASM_MESON_TAC[SUBSET; LE_TRANS]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Two forms of the Baire propery of dense sets.                             *)
+(* Forms of the Baire propery of dense sets.                                 *)
 (* ------------------------------------------------------------------------- *)
 
 let BAIRE = prove
@@ -20089,6 +20096,33 @@ let BAIRE_ALT = prove
       ASM_SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_BALL; SUBSET; IN_INTER; IN_BALL;
                    IN_DIFF] THEN
       MESON_TAC[DIST_SYM]]]);;
+
+let NOWHERE_DENSE_COUNTABLE_UNIONS_CLOSED = prove
+ (`!g:(real^N->bool)->bool.
+        COUNTABLE g /\ (!s. s IN g ==> closed s /\ interior s = {})
+        ==> interior(UNIONS g) = {}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`{(:real^N) DIFF s | s IN g}`; `(:real^N)`]
+        BAIRE) THEN
+  REWRITE_TAC[CLOSED_UNIV; GSYM OPEN_IN; SUBTOPOLOGY_UNIV] THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+  ASM_SIMP_TAC[GSYM closed; SET_RULE
+   `UNIV SUBSET s <=> UNIV DIFF s = {}`] THEN
+  REWRITE_TAC[GSYM INTERIOR_COMPLEMENT] THEN
+  REWRITE_TAC[GSYM SIMPLE_IMAGE; GSYM UNIONS_INTERS] THEN
+  ASM_SIMP_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`]);;
+
+let NOWHERE_DENSE_COUNTABLE_UNIONS = prove
+ (`!g:(real^N->bool)->bool.
+        COUNTABLE g /\ (!s. s IN g ==> interior(closure s) = {})
+        ==> interior(UNIONS g) = {}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `IMAGE closure (g:(real^N->bool)->bool)`
+        NOWHERE_DENSE_COUNTABLE_UNIONS_CLOSED) THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE; CLOSED_CLOSURE] THEN
+  MATCH_MP_TAC(SET_RULE `s SUBSET t ==> t = {} ==> s = {}`) THEN
+  MATCH_MP_TAC SUBSET_INTERIOR THEN MATCH_MP_TAC UNIONS_MONO THEN
+  REWRITE_TAC[EXISTS_IN_IMAGE] THEN MESON_TAC[CLOSURE_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Several variants of paracompactness.                                      *)

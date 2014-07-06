@@ -2144,6 +2144,10 @@ let CROSS_EQ_EMPTY = prove
   REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_CROSS; NOT_IN_EMPTY] THEN
   MESON_TAC[]);;
 
+let CROSS_UNIV = prove
+ (`(:A) CROSS (:B) = (:A#B)`,
+  REWRITE_TAC[CROSS; EXTENSION; IN_ELIM_PAIR_THM; FORALL_PAIR_THM; IN_UNIV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
 (* ------------------------------------------------------------------------- *)
