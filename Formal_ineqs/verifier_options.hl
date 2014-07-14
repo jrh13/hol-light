@@ -1,0 +1,18 @@
+(* =========================================================== *)
+(* Options of the verification library                         *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+module Verifier_options = struct
+
+let report0 s =
+  Format.print_string s; Format.print_flush();;
+
+(* Debug/info printing level:
+   0 - no debug/info printing
+   1 - print important messages only
+   2 - print all information *)
+let info_print_level = ref 1;;
+
+end;;

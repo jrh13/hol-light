@@ -1,0 +1,25 @@
+(* =========================================================== *)
+(* Options of the arithmetic library                           *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+module Arith_options = struct
+
+(* Base of arithmetic operations with natural numbers *)
+(* The base should be even in order to represent inv(2) exactly *)
+let base = ref 100;;
+(* If true then results of natural number operations are cached *)
+let cached = ref true;;
+(* Initial size of the cache *)
+let init_cache_size = ref 10000;;
+(* Maximal size of the cache *)
+let max_cache_size = ref 20000;;
+
+(* Minimal exponent value for floating point numbers *)
+(* (should be even for the square root operation) *)
+let min_exp = ref 50;;
+(* If true, then arithmetic operations with floating point numbers are cached *)
+let float_cached = ref true;;
+
+end;;

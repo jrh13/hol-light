@@ -1,0 +1,202 @@
+(* =========================================================== *)
+(* Special list conversions                                    *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+needs "arith/more_float.hl";;
+needs "list/list_conversions.hl";;
+needs "misc/vars.hl";;
+
+
+module type List_float_sig = sig
+  val list_sum : thm
+  val list_sum2 : thm
+  val error_mul_f2 : thm
+  val error_mul_f1 : thm
+  val list_sum_conv : (term -> thm) -> term -> thm
+  val list_sum2_le_conv : int -> (int -> term -> term -> thm) -> term -> thm
+  val error_mul_f2_le_conv : int -> term -> term -> thm
+  val error_mul_f2_le_conv2 : int -> term -> term -> thm
+  val error_mul_f1_le_conv : term -> int -> term -> term -> thm
+end;;
+
+
+module List_float : List_float_sig = struct
+
+open Arith_misc;;
+open Arith_nat;;
+open Arith_float;;
+open More_float;;
+open Float_theory;;
+open List_conversions;;
+open Misc_vars;;
+
+let MY_RULE_FLOAT = UNDISCH_ALL o NUMERALS_TO_NUM o
+  PURE_REWRITE_RULE[FLOAT_OF_NUM; min_exp_def; GSYM IMP_IMP] o SPEC_ALL;;
+
+
+(****************************)
+(* new definitions *)
+
+let list_sum = new_definition `list_sum list f = ITLIST (\t1 t2. f t1 + t2) list (&0)`;;
+let list_sum2 = new_definition `list_sum2 f l1 l2 = ITLIST2 (\a b c. f a b + c) l1 l2 (&0)`;;
+
+let error_mul_f2 = new_definition `error_mul_f2 a int = a * iabs int`;;
+let error_mul_f1 = new_definition `error_mul_f1 w x list = x * list_sum2 error_mul_f2 w list`;;
+
+(*************************************)
+(* list_sum conversions *)
+
+let LIST_SUM_A_EMPTY = prove(`list_sum [] (f:A->real) = &0`, REWRITE_TAC[list_sum; ITLIST]) and
+    LIST_SUM_A_H = prove(`list_sum [h:A] f = f h`, REWRITE_TAC[list_sum; ITLIST; REAL_ADD_RID]) and
+    LIST_SUM_A_CONS = prove(`list_sum (CONS (h:A) t) f = f h + list_sum t f`, REWRITE_TAC[list_sum; ITLIST]);;
+
+
+let list_sum_conv f_conv tm =
+  let ltm, f_tm = dest_comb tm in
+  let list_tm = rand ltm in
+  let list_ty = type_of list_tm in
+  let f_ty = type_of f_tm in
+  let ty = (hd o snd o dest_type) list_ty in
+  let f_var = mk_var("f", f_ty) and
+      h_var = mk_var("h", ty) and
+      t_var = mk_var("t", list_ty) in
+  let inst_t = INST[f_tm, f_var] o INST_TYPE[ty, aty] in
+  let list_sum_h = inst_t LIST_SUM_A_H and
+      list_sum_cons = inst_t LIST_SUM_A_CONS in
+
+  let rec list_sum_conv_raw = fun h_tm t_tm ->
+    if (is_comb t_tm) then
+      let h_tm', t_tm' = dest_comb t_tm in
+      let th0 = INST[h_tm, h_var; t_tm, t_var] list_sum_cons in
+      let ltm, rtm = dest_comb(rand(concl th0)) in
+      let plus_op, fh_tm = dest_comb ltm in
+      let f_th = f_conv fh_tm in
+      let th1 = list_sum_conv_raw (rand h_tm') t_tm' in
+      let th2 = MK_COMB(AP_TERM plus_op f_th, th1) in
+        TRANS th0 th2
+    else
+      let th0 = INST[h_tm, h_var] list_sum_h in
+      let f_th = f_conv (rand(concl th0)) in
+        TRANS th0 f_th in
+
+    if (is_comb list_tm) then
+      let h_tm, t_tm = dest_comb list_tm in
+        list_sum_conv_raw (rand h_tm) t_tm
+    else
+      inst_t LIST_SUM_A_EMPTY;;
+
+
+
+(*************************************)
+(* list_sum2 evaluation *)
+
+let LIST_SUM2_0_LE' = (MY_RULE_FLOAT o prove)(`list_sum2 (f:A->B->real) [] [] <= &0`,
+                                              REWRITE_TAC[list_sum2; ITLIST2; REAL_LE_REFL]);;
+let LIST_SUM2_1_LE' = (MY_RULE_FLOAT o prove)(`f h1 h2 <= x ==> list_sum2 (f:A->B->real) [h1] [h2] <= x`,
+                                        REWRITE_TAC[list_sum2; ITLIST2; REAL_ADD_RID]);;
+let LIST_SUM2_LE' = (MY_RULE_FLOAT o prove)(`f h1 h2 <= x /\ list_sum2 f t1 t2 <= y /\ x + y <= z ==>
+                                        list_sum2 (f:A->B->real) (CONS h1 t1) (CONS h2 t2) <= z`,
+                                      REWRITE_TAC[list_sum2; ITLIST2] THEN STRIP_TAC THEN
+                                        MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x + y:real` THEN
+                                        ASM_SIMP_TAC[REAL_LE_ADD2]);;
+
+
+let list_sum2_le_conv pp f_le_conv tm =
+  let ltm, list2_tm = dest_comb tm in
+  let ltm2, list1_tm = dest_comb ltm in
+  let f_tm = rand ltm2 in
+  let list1_ty = type_of list1_tm and
+      list2_ty = type_of list2_tm and
+      f_ty = type_of f_tm in
+  let ty1 = (hd o snd o dest_type) list1_ty and
+      ty2 = (hd o snd o dest_type) list2_ty in
+  let f_var = mk_var ("f", f_ty) and
+      h1_var, t1_var = mk_var ("h1", ty1), mk_var ("t1", list1_ty) and
+      h2_var, t2_var = mk_var ("h2", ty2), mk_var ("t2", list2_ty) in
+  let inst_t = INST[f_tm, f_var] o INST_TYPE[ty1, aty; ty2, bty] in
+  let list2_0, list2_1, list2_le = inst_t LIST_SUM2_0_LE', inst_t LIST_SUM2_1_LE', inst_t LIST_SUM2_LE' in
+
+  let rec rec_conv = fun list1_tm list2_tm ->
+    if (is_comb list1_tm) then
+      let h1_tm, t1_tm = dest_cons list1_tm and
+          h2_tm, t2_tm = dest_cons list2_tm in
+      let f_le_th = f_le_conv pp h1_tm h2_tm in
+      let x_tm = (rand o concl) f_le_th in
+      let inst0 = INST[h1_tm, h1_var; h2_tm, h2_var; x_tm, x_var_real] in
+        if is_comb t1_tm then
+          let sum2_t_th = rec_conv t1_tm t2_tm in
+          let y_tm = (rand o concl) sum2_t_th in
+          let xy_th = float_add_hi pp x_tm y_tm in
+          let z_tm = (rand o concl) xy_th in
+            (MY_PROVE_HYP xy_th o MY_PROVE_HYP sum2_t_th o MY_PROVE_HYP f_le_th o
+               INST[y_tm, y_var_real; z_tm, z_var_real; t1_tm, t1_var; t2_tm, t2_var] o
+               inst0) list2_le
+        else
+          if is_comb t2_tm then failwith ("sum2_le_conv: t1 = []; t2 = "^string_of_term t2_tm) else
+            (MY_PROVE_HYP f_le_th o inst0) list2_1
+    else
+      if is_comb list2_tm  then failwith ("sum2_le_conv: list1 = []; list2 = "^string_of_term list2_tm) else
+        list2_0 in
+
+    rec_conv list1_tm list2_tm;;
+
+
+
+(**************************)
+(* \a b c. a * iabs b + c *)
+
+let ERROR_MUL_F2' = (SYM o MY_RULE_FLOAT) error_mul_f2;;
+
+
+(* |- x = a, |- P x y -> P a y *)
+let rewrite_lhs eq_th th =
+  let ltm, rhs = dest_comb (concl th) in
+  let th0 = AP_THM (AP_TERM (rator ltm) eq_th) rhs in
+    EQ_MP th0 th;;
+
+let error_mul_f2_le_conv pp tm1 tm2 =
+  let eq_th = INST[tm1, a_var_real; tm2, int_var] ERROR_MUL_F2' in
+  let iabs_th = float_iabs tm2 in
+  let iabs_tm = (rand o concl) iabs_th in
+  let mul_th = float_mul_hi pp tm1 iabs_tm in
+  let th0 = AP_TERM (mk_comb (mul_op_real, tm1)) iabs_th in
+  let th1 = AP_THM (AP_TERM le_op_real th0) (rand (concl mul_th)) in
+  let le_th = EQ_MP (SYM th1) mul_th in
+    rewrite_lhs eq_th le_th;;
+
+let ERROR_MUL_F2_LEMMA' = (MY_RULE_FLOAT o prove)(`iabs int = x /\ a * x <= y ==> error_mul_f2 a int <= y`,
+                                          REWRITE_TAC[error_mul_f2] THEN STRIP_TAC THEN ASM_REWRITE_TAC[]);;
+
+let error_mul_f2_le_conv2 pp tm1 tm2 =
+  let iabs_th = float_iabs tm2 in
+  let x_tm = (rand o concl) iabs_th in
+  let mul_th = float_mul_hi pp tm1 x_tm in
+  let y_tm = (rand o concl) mul_th in
+    (MY_PROVE_HYP iabs_th o MY_PROVE_HYP mul_th o
+       INST[tm2, int_var; tm1, a_var_real; x_tm, x_var_real; y_tm, y_var_real]) ERROR_MUL_F2_LEMMA';;
+
+
+
+(**************************)
+(* \a b c. a * iabs b + c *)
+
+let ERROR_MUL_F1_LEMMA' = (MY_RULE_FLOAT o prove)(`x * list_sum2 error_mul_f2 w list <= z ==>
+                                           error_mul_f1 w x list <= z`, REWRITE_TAC[error_mul_f1]);;
+
+let list_sum2_error2_const = `list_sum2 error_mul_f2` and
+    w_var_list = `w:(real)list` and
+    list_var = `list:(real#real)list`;;
+
+let error_mul_f1_le_conv w_tm pp x_tm list_tm =
+  (* TODO: if x = 0 then do not need to compute the sum *)
+  let sum2_tm = mk_binop list_sum2_error2_const w_tm list_tm in
+  let sum2_le_th = list_sum2_le_conv pp error_mul_f2_le_conv2 sum2_tm in
+  let ineq_th = mul_ineq_pos_const_hi pp x_tm sum2_le_th in
+  let z_tm = (rand o concl) ineq_th in
+    (MY_PROVE_HYP ineq_th o
+       INST[x_tm, x_var_real; z_tm, z_var_real; w_tm, w_var_list; list_tm, list_var]) ERROR_MUL_F1_LEMMA';;
+
+
+end;;

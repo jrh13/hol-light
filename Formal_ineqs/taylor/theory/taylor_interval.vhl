@@ -1,0 +1,2050 @@
+(* =========================================================== *)
+(* Theory of univariate taylor intervals                       *)
+(* Requires SSReflect/HOL Light for translation                *)
+(* See http://code.google.com/p/flyspeck/downloads/list        *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+"needs \"lib/ssrbool-compiled.hl\"".
+"needs \"lib/ssrnat-compiled.hl\"".
+"needs \"arith/interval_arith.hl\"".
+"needs \"Multivariate/realanalysis.ml\"".
+
+"open Interval_arith".
+"prioritize_real()".
+
+"let derivative = new_definition `derivative f = \y. @d. (f has_real_derivative d) (atreal y)`".
+
+"let nth_derivative = new_definition `nth_derivative n f = iter n derivative f`".
+
+
+"let nth_differentiable = define `(nth_differentiable 0 f x <=> f real_continuous atreal x) /\
+        (nth_differentiable (SUC n) f x <=> nth_differentiable n f x /\
+                        nth_derivative n f real_differentiable atreal x)`".
+
+"let nth_differentiable_on = new_definition `nth_differentiable_on n s f <=>
+        !x. x IN s ==> nth_differentiable n f x`".
+
+"let nth_differentiable_on_int = new_definition `nth_differentiable_on_int n int f <=>
+        !x. interval_arith x int ==> nth_differentiable n f x`".
+
+"let nth_diff_weak = new_definition `nth_diff_weak n f x <=> f real_continuous atreal x /\
+        ?F. F 0 = f /\ !i. i < n ==> (F i has_real_derivative F (SUC i) x) (atreal x)`".
+
+
+"let nth_diff_strong = new_definition `nth_diff_strong n f x <=>
+        ?s. real_open s /\ x IN s /\ nth_differentiable_on n s f`".
+
+"let nth_diff_strong_int = new_definition `nth_diff_strong_int n int f <=>
+        !x. interval_arith x int ==> nth_diff_strong n f x`".
+
+
+Section NthDerivatives.
+
+Lemma has_derivative_cond f x : `(?d. (f has_real_derivative d) (atreal x)) ==>
+        (f has_real_derivative (derivative f x)) (atreal x)`.
+move => [d] df.
+suff ->: `derivative f x = d`; first exact.
+rewrite derivative /=; apply SELECT_UNIQUE => /= y; split => [df2 | -> //].
+by apply: (REAL_DERIVATIVE_UNIQUE_ATREAL f x).
+Qed.
+
+Lemma has_derivative_alt f x : `f real_differentiable atreal x ==>
+        (f has_real_derivative (derivative f x)) (atreal x)`.
+by rewrite real_differentiable => /has_derivative_cond. Qed.
+
+Lemma derivative_unique f f' x :
+        `(f has_real_derivative f') (atreal x) ==> derivative f x = f'`.
+move => df; apply: (REAL_DERIVATIVE_UNIQUE_ATREAL f x).
+by rewrite df has_derivative_cond //; exists f'.
+Qed.
+
+Lemma derivative_unique_on s f f':
+        `(!x. x IN s ==> (f has_real_derivative f' x) (atreal x)) ==>
+        (!x. x IN s ==> f' x = derivative f x)`.
+move => df x xs.
+by rewrite (derivative_unique f `f' x`) // df.
+Qed.
+
+Lemma has_derivative_lemma f f' x : `f real_differentiable atreal x /\
+        derivative f x = f' ==>
+        (f has_real_derivative f') (atreal x)`.
+by move => [diff <-]; rewrite has_derivative_alt. Qed.
+
+Lemma nth_derivative0 f : `nth_derivative 0 f = f`.
+by rewrite nth_derivative "GEN_ALL iter". Qed.
+
+Lemma nth_derivativeS n f : `nth_derivative (SUC n) f = derivative (nth_derivative n f)`.
+by rewrite !nth_derivative iterS. Qed.
+
+Lemma nth_Sderivative n f : `nth_derivative (SUC n) f = nth_derivative n (derivative f)`.
+by rewrite nth_derivative iterSr -nth_derivative. Qed.
+
+
+Lemma nth_derivative1 f : `nth_derivative 1 f = derivative f`.
+by rewrite ONE nth_derivativeS nth_derivative0. Qed.
+
+Lemma nth_derivative2 f : `nth_derivative 2 f = derivative (derivative f)`.
+by rewrite "ARITH_RULE `2 = SUC(SUC 0)`" nth_derivative !iterS "GEN_ALL iter". Qed.
+
+Lemma nth_derivative_add n m f :
+        `nth_derivative n (nth_derivative m f) = nth_derivative (n + m) f`.
+by rewrite !nth_derivative iter_add. Qed.
+
+Lemma nth_diff_continuous n f x : `nth_differentiable n f x ==>
+        f real_continuous atreal x`.
+elim: n => [|n IHn]; rewrite nth_differentiable //.
+by move => [/IHn] /=.
+Qed.
+
+Lemma nth_differentiable_cond n f x : `nth_differentiable n f x ==>
+   !i. i < n ==> (nth_derivative i f has_real_derivative (nth_derivative (SUC i) f x)) (atreal x)`.
+elim: n => [|n IHn]; first by rewrite ltn0.
+rewrite nth_differentiable => [] [/IHn df_n dfn] i.
+rewrite ltE leqSS leq_eqVlt; case => [-> | /df_n //].
+by rewrite nth_derivativeS has_derivative_alt.
+Qed.
+
+Lemma nth_differentiable_on_cond n s f : `nth_differentiable_on n s f ==>
+ !x. x IN s ==>
+  !i. i < n ==> (nth_derivative i f has_real_derivative (nth_derivative (SUC i) f x)) (atreal x)`.
+rewrite nth_differentiable_on => cond x.
+by move/cond => /nth_differentiable_cond.
+Qed.
+
+Lemma nth_differentiable_eq n f x : `nth_differentiable n f x <=>
+  f real_continuous atreal x /\
+  !i. i < n ==> (nth_derivative i f has_real_derivative (nth_derivative (SUC i) f x)) (atreal x)`.
+split => [dn_f | [f_cont]].
+  by rewrite (nth_diff_continuous dn_f) andTb; exact: nth_differentiable_cond.
+elim: n => [|n IHn]; rewrite nth_differentiable // ltE leqSS leq_eqVlt => cond.
+rewrite IHn ?andTb; first by move => i i_lt_n; apply: cond.
+rewrite real_differentiable; exists `nth_derivative (SUC n) f x`.
+exact: cond.
+Qed.
+
+Lemma nth_differentiable_on_int2 f int : `nth_differentiable_on_int 2 int f ==>
+        ?f' f''. f' = derivative f /\ f'' = nth_derivative 2 f /\
+                !x. interval_arith x int ==> (f has_real_derivative f' x) (atreal x) /\
+                                        (f' has_real_derivative f'' x) (atreal x)`.
+rewrite nth_differentiable_on_int => h.
+exists `derivative f` `nth_derivative 2 f` => /= x ineq.
+rewrite -nth_derivative1 -{1}(nth_derivative0 f) {1}ONE "ARITH_RULE `2 = SUC 1`".
+by rewrite !(nth_differentiable_cond `2`) // h //; arith.
+Qed.
+
+
+Lemma nth_mth_diff n m f x: `n <= m ==> nth_differentiable m f x ==> nth_differentiable n f x`.
+Proof.
+move => n_le_m; rewrite !nth_differentiable_eq => [] [-> cond]; rewrite andTb => i i_lt.
+by apply: cond; apply: ltn_leq_trans n_le_m.
+Qed.
+
+Lemma nth_differentiable1 f x : `nth_differentiable 1 f x <=> f real_differentiable atreal x`.
+rewrite ONE !"GEN_ALL nth_differentiable" nth_derivative0; split => [-> | df].
+by rewrite REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL.
+Qed.
+
+Lemma nth_diff_imp_diff n f x : `0 < n ==> nth_differentiable n f x ==>
+        f real_differentiable atreal x`.
+by rewrite ltE -ONE => ineq df; rewrite -nth_differentiable1; apply: nth_mth_diff; exists n. Qed.
+
+Lemma nth_derivative_continuous n f x i: `nth_differentiable n f x ==> i < n ==>
+        nth_derivative i f real_continuous atreal x`.
+rewrite nth_differentiable_eq => [] [_] df.
+move/df => cond; apply: REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL.
+by rewrite real_differentiable; exists `nth_derivative (SUC i) f x`.
+Qed.
+
+Lemma ith_derivative_differentiable i n f x: `nth_differentiable n f x ==> i < n ==>
+        nth_differentiable (n - i) (nth_derivative i f) x`.
+move => dnf.
+move: (dnf); rewrite !nth_differentiable_eq => [] [_] cond i_lt_n.
+rewrite (nth_derivative_continuous dnf) // andTb => j j_lt_ni.
+by rewrite !nth_derivative_add addSn cond; move: j_lt_ni; arith.
+Qed.
+
+
+Lemma nth_diff_strong_imp_diff n f x :
+        `nth_diff_strong n f x ==>      nth_differentiable n f x`.
+rewrite nth_diff_strong => [] [s] [_] [xs]; rewrite nth_differentiable_on => h.
+exact: h.
+Qed.
+
+
+Section DerivativeArith.
+
+(* Elementary derivatives *)
+Section ElementaryDerivatives.
+
+
+Lemma derivative_x : `derivative (\x. x) = (\x. &1)`.
+rewrite -eq_ext => x /=.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_ID.
+Qed.
+
+Lemma derivative_const c : `derivative (\x. c) = (\x. &0)`.
+rewrite -eq_ext => x /=.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_CONST.
+Qed.
+
+Lemma derivative_inv x : `~(x = &0) ==> derivative inv x = -- inv (x * x)`.
+move => xn0.
+by apply: derivative_unique; rewrite -REAL_POW_2 HAS_REAL_DERIVATIVE_INV_BASIC.
+Qed.
+
+Lemma derivative_atn : `derivative atn = (\x. inv (&1 + x * x))`.
+rewrite -eq_ext -REAL_POW_2 => x /=.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_ATN.
+Qed.
+
+Lemma derivative_exp : `derivative exp = exp`.
+rewrite -eq_ext => x /=.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_EXP.
+Qed.
+
+Lemma derivative_acs x : `abs x < &1 ==> derivative acs x = --inv(sqrt(&1 - x * x))`.
+move => x_ineq.
+by apply: derivative_unique; rewrite -REAL_POW_2 HAS_REAL_DERIVATIVE_ACS.
+Qed.
+
+Lemma derivative_sqrt x : `&0 < x ==> derivative sqrt x = inv (&2 * sqrt x)`.
+move => xg0.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_SQRT.
+Qed.
+
+Lemma derivative_composition f g x: `f real_differentiable atreal x ==>
+        g real_differentiable atreal (f x) ==>
+        derivative (\x. g (f x)) x = derivative f x * derivative g (f x)`.
+move => /has_derivative_alt df /has_derivative_alt dg; apply: derivative_unique.
+have := "GEN_ALL HAS_REAL_DERIVATIVE_CHAIN"
+        `derivative f x` `derivative g` `\y. y = f x` f g;
+"ANTS_TAC"; first by move => y ->.
+by move => [_]; apply.
+Qed.
+
+
+Section ElementaryCompose.
+
+Lemma REAL_DIFFERENTIABLE_AT_INV x : `~(x = &0) ==> inv real_differentiable atreal x`.
+move => xn0.
+have := REAL_DIFFERENTIABLE_INV_ATREAL `(\x. x:real)` x.
+by rewrite /= REAL_DIFFERENTIABLE_ID xn0 /=; rewr ETA_AX.
+Qed.
+
+Variable f : `:real->real`.
+Variable x : `:real`.
+Hypothesis df : `f real_differentiable atreal x`.
+
+Lemma derivative_compose_atn : `(\x. atn (f x)) real_differentiable atreal x /\
+        derivative (\x. atn (f x)) x = derivative f x / (&1 + f x * f x)`.
+split.
+  rewrite -(o_THM `atn`); rewr ETA_AX; apply: REAL_DIFFERENTIABLE_COMPOSE_ATREAL.
+  by rewrite REAL_DIFFERENTIABLE_AT_ATN df.
+rewrite derivative_composition ?df ?REAL_DIFFERENTIABLE_AT_ATN //.
+by rewrite derivative_atn /= real_div.
+Qed.
+
+Lemma derivative_compose_exp : `(\x. exp (f x)) real_differentiable atreal x /\
+        derivative (\x. exp (f x)) x = exp (f x) * derivative f x`.
+split.
+  rewrite -(o_THM `exp`); rewr ETA_AX; apply: REAL_DIFFERENTIABLE_COMPOSE_ATREAL.
+  by rewrite REAL_DIFFERENTIABLE_AT_EXP df.
+rewrite derivative_composition ?df ?REAL_DIFFERENTIABLE_AT_EXP //.
+by rewrite derivative_exp REAL_MUL_SYM.
+Qed.
+
+Lemma derivative_compose_inv : `~(f x = &0) ==>
+        (\x. inv (f x)) real_differentiable atreal x /\
+        derivative (\x. inv (f x)) x = -- inv (f x * f x) * derivative f x`.
+move => fn0; split; first by apply: REAL_DIFFERENTIABLE_INV_ATREAL.
+by rewrite derivative_composition ?derivative_inv ?REAL_MUL_SYM // df REAL_DIFFERENTIABLE_AT_INV.
+Qed.
+
+Lemma derivative_compose_sqrt : `&0 < f x ==>
+        (\x. sqrt (f x)) real_differentiable atreal x /\
+        derivative (\x. sqrt (f x)) x = derivative f x / (&2 * sqrt (f x))`.
+move => f_pos; split.
+  rewrite -(o_THM `sqrt`); rewr ETA_AX; apply: REAL_DIFFERENTIABLE_COMPOSE_ATREAL.
+  by rewrite df andTb; apply: REAL_DIFFERENTIABLE_AT_SQRT.
+rewrite derivative_composition ?df ?REAL_DIFFERENTIABLE_AT_SQRT //.
+by rewrite derivative_sqrt // real_div.
+Qed.
+
+Lemma derivative_compose_acs : `abs (f x) < &1 ==>
+        (\x. acs (f x)) real_differentiable atreal x /\
+        derivative (\x. acs (f x)) x = -- (derivative f x / sqrt (&1 - f x * f x))`.
+move => f_abs; split.
+  rewrite -(o_THM `acs`); rewr ETA_AX; apply: REAL_DIFFERENTIABLE_COMPOSE_ATREAL.
+  by rewrite df andTb REAL_DIFFERENTIABLE_AT_ACS.
+rewrite derivative_composition ?df ?REAL_DIFFERENTIABLE_AT_ACS //.
+by rewrite derivative_acs // REAL_MUL_RNEG real_div.
+Qed.
+
+End ElementaryCompose.
+
+
+End ElementaryDerivatives.
+
+
+
+Variables f g : `:real -> real`.
+Variables x c : `:real`.
+
+
+(* One function *)
+Hypothesis df : `f real_differentiable atreal x`.
+
+Lemma derivative_scale : `derivative (\x. c * f x) x = c * derivative f x`.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_LMUL_ATREAL has_derivative_alt. Qed.
+
+Lemma derivative_neg : `derivative (\x. -- f x) x = -- derivative f x`.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_NEG has_derivative_alt. Qed.
+
+Lemma derivative_pow n : `derivative (\x. f x pow n) x = &n * f x pow (n - 1) * derivative f x`.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_POW_ATREAL has_derivative_alt. Qed.
+
+
+(* The second function *)
+Hypothesis dg : `g real_differentiable atreal x`.
+
+Lemma derivative_add : `derivative (\x. f x + g x) x = derivative f x + derivative g x`.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_ADD !has_derivative_alt. Qed.
+
+Lemma derivative_mul :
+        `derivative (\x. f x * g x) x = f x * derivative g x + derivative f x * g x`.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_MUL_ATREAL !has_derivative_alt. Qed.
+
+Lemma derivative_sub : `derivative (\x. f x - g x) x = derivative f x - derivative g x`.
+by apply: derivative_unique; rewrite HAS_REAL_DERIVATIVE_SUB !has_derivative_alt. Qed.
+
+Lemma derivative_div : `~(g x = &0) ==>
+  derivative (\x. f x / g x) x = (derivative f x * g x - f x * derivative g x) / (g x * g x)`.
+move => gn0; apply: derivative_unique; rewrite -REAL_POW_2 HAS_REAL_DERIVATIVE_DIV_ATREAL //.
+by rewrite !has_derivative_alt.
+Qed.
+
+
+End DerivativeArith.
+
+
+Section MoreDerivativeArith.
+
+Lemma differentiable_sum_numseg G n m x :
+        `(!i. i IN n..m ==> G i real_differentiable atreal x) ==>
+        (\x. sum (n..m) (\i. G i x)) real_differentiable atreal x`.
+elim: m => [|m IHm] dG; rewrite !"GEN_ALL SUM_CLAUSES_NUMSEG".
+  case: (EXCLUDED_MIDDLE `n = 0`) => /= n_eq_0; rewr ETA_AX REAL_DIFFERENTIABLE_CONST //.
+  by rewrite dG IN_NUMSEG n_eq_0 leqnn.
+case: (EXCLUDED_MIDDLE `n <= SUC m`) => /= n_le_Sm; last first.
+  apply: IHm => i i_in; apply: dG.
+  by move: i_in; rewrite !IN_NUMSEG; arith.
+rewrite REAL_DIFFERENTIABLE_ADD; rewr ETA_AX; rewrite dG ?IHm // IN_NUMSEG ?n_le_Sm ?leqnn //.
+move => i ineq; apply: dG; rewrite IN_NUMSEG.
+by move: ineq; arith.
+Qed.
+
+(* Sum *)
+Lemma derivative_sum_numseg G n m x : `(!i. i IN n..m ==> G i real_differentiable atreal x) ==>
+        derivative (\x. sum (n..m) (\i. G i x)) x = sum (n..m) (\i. derivative (G i) x)`.
+elim: m => [|m IHm] dG; rewrite !"GEN_ALL SUM_CLAUSES_NUMSEG".
+  by case: `n = 0` => /=; rewr ETA_AX // derivative_const.
+case: (EXCLUDED_MIDDLE `n <= SUC m`) => /= n_le_Sm; last first.
+  apply: IHm => i i_in; apply: dG.
+  by move: i_in; rewrite !IN_NUMSEG; arith.
+rewrite -IHm.
+  move => i i_in; apply: dG.
+  move: i_in; rewrite !IN_NUMSEG; arith.
+rewrite derivative_add; rewr ETA_AX //.
+rewrite dG ?IN_NUMSEG ?leqnn // andbT differentiable_sum_numseg => i i_in.
+by apply: dG; move: i_in; rewrite !IN_NUMSEG; arith.
+Qed.
+
+End MoreDerivativeArith.
+
+
+Lemma HAS_REAL_DERIVATIVE_LOCAL f g x g': `(g has_real_derivative g') (atreal x) /\
+        (?s. real_open s /\ x IN s /\ (!y. y IN s ==> f y = g y))
+        ==> (f has_real_derivative g') (atreal x)`.
+Proof.
+move => [dg] [s] [open_s] [xs] f_eq_g.
+move: dg; rewrite -!(HAS_REAL_DERIVATIVE_WITHIN_REAL_OPEN open_s) // => dg.
+apply: (HAS_REAL_DERIVATIVE_TRANSFORM_WITHIN dg).
+by exists `&1`; rewrite REAL_LT_01 xs !andTb => y [] /f_eq_g ->.
+Qed.
+
+
+Lemma differentiable_local f g x s : `g real_differentiable atreal x /\ real_open s /\ x IN s /\
+        (!y. y IN s ==> f y = g y) ==> f real_differentiable atreal x`.
+rewrite !real_differentiable => [] [] [f'] dg [open_s] [xs] eq.
+exists f'; apply: HAS_REAL_DERIVATIVE_LOCAL.
+by exists g; rewrite dg andTb; exists s.
+Qed.
+
+
+
+Section NthDerivativeArith.
+
+Variables f g : `:real->real`.
+Variable int : `:real#real`.
+Variable n : `:num`.
+
+
+(* Unary operation *)
+Hypothesis df : `nth_diff_strong_int n int f`.
+
+Lemma nth_derivative_scale_strong c i x : `interval_arith x int ==> i <= n ==>
+        ?s. real_open s /\ x IN s /\
+        !y. y IN s ==> nth_derivative i (\y. c * f y) y = c * nth_derivative i f y`.
+move: df; rewrite nth_diff_strong_int nth_diff_strong => df.
+move/df => [s] [open_s] [xs]; rewrite nth_differentiable_on nth_differentiable_eq => diff.
+elim: i => [_|i IHi]; first by rewrite !nth_derivative0; exists s.
+rewrite nth_derivativeS -ltE => i_lt_n.
+move: (IHi (ltnW i_lt_n)) => [t] [open_t] [xt] eq; move: IHi => _.
+exists `s INTER t`; rewrite REAL_OPEN_INTER // !IN_INTER xt xs !andTb => y [ys yt].
+apply: derivative_unique.
+apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `\y. c * nth_derivative i f y`.
+rewrite HAS_REAL_DERIVATIVE_LMUL_ATREAL ?andTb.
+  by rewr ETA_AX; rewrite (diff ys).
+exists `s INTER t`; rewrite REAL_OPEN_INTER // !IN_INTER {1}yt {1}ys !andTb => z z_in /=.
+by rewrite eq.
+Qed.
+
+Lemma nth_derivative_scale_strong_all c x : `interval_arith x int ==>
+        ?s. real_open s /\ x IN s /\
+        !i y. i <= n /\ y IN s ==> nth_derivative i (\y. c * f y) y = c * nth_derivative i f y`.
+move => /(nth_derivative_scale_strong c) h.
+set P := `\i s. real_open s /\ x IN s /\
+        (!y. y IN s ==> nth_derivative i (\y. c * f y) y = c * nth_derivative i f y)`.
+have sel_P : `!i. i <= n:num ==> P i ((@) (P i))`.
+  move => i i_le_n; apply SELECT_AX.
+  move: (h i_le_n) => [s] cond.
+  by exists s; rewrite -P_def /=.
+set S := `INTERS (IMAGE (\i. (@) (P i)) (0..n))`.
+exists S.
+rewrite -S_def REAL_OPEN_INTERS ?FINITE_IMAGE ?FINITE_NUMSEG ?IN_IMAGE ?andTb.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+rewrite !IN_INTERS !IN_IMAGE; split.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+move => i y [i_le_n].
+move: (sel_P i_le_n); rewrite -{1}P_def /= => [] [_] [_] y_in /(_ `(@) (P i)`).
+"ANTS_TAC"; first by exists i; rewrite IN_NUMSEG_0.
+exact: y_in.
+Qed.
+
+
+Lemma nth_derivative_scale c i x : `interval_arith x int ==> i <= n ==>
+        nth_derivative i (\x. c * f x) x = c * nth_derivative i f x`.
+move => ineq i_le_n.
+have := nth_derivative_scale_strong c ineq i_le_n.
+move => [s] [_] [xs] h.
+exact: h.
+Qed.
+
+
+Lemma nth_diff_scale c : `nth_diff_strong_int n int (\x. c * f x)`.
+move: (df); rewrite !nth_diff_strong_int !nth_diff_strong !nth_differentiable_on !nth_differentiable_eq.
+move => df x ineq.
+have := nth_derivative_scale_strong_all c ineq.
+move => [s] [open_s] [xs] diff.
+move: (df ineq) => [t] [open_t] [xt] diff2.
+exists `s INTER t`; rewrite REAL_OPEN_INTER // IN_INTER {1}xs {1}xt !andTb => y [ys yt].
+rewrite REAL_CONTINUOUS_LMUL ?diff2 // andTb => i i_lt_n.
+rewrite diff ?ys -?ltE //.
+apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `(\y. c * nth_derivative i f y)`.
+rewrite HAS_REAL_DERIVATIVE_LMUL_ATREAL ?andTb; first by rewr ETA_AX; rewrite (diff2 yt).
+exists s; rewrite open_s {1}ys !andTb => z zs /=.
+by apply: diff; rewrite ltnW.
+Qed.
+
+
+(* Binary operations *)
+Hypothesis dg : `nth_diff_strong_int n int g`.
+
+(* Addition *)
+Lemma nth_derivative_add_strong i x : `interval_arith x int ==> i <= n ==>
+   ?s. real_open s /\ x IN s /\
+      !y. y IN s ==> nth_derivative i (\y. f y + g y) y = nth_derivative i f y + nth_derivative i g y`.
+move: df dg; rewrite !nth_diff_strong_int !nth_diff_strong => df dg ineq.
+move: (df ineq) => [sf] [open_sf] [xsf]; move: df => _.
+move: (dg ineq) => [sg] [open_sg] [xsg]; move: dg => _.
+rewrite !nth_differentiable_on !nth_differentiable_eq => diff_g diff_f.
+elim: i => [_|i IHi]; first by rewrite !nth_derivative0; exists sf.
+rewrite nth_derivativeS -ltE => i_lt_n.
+move: (IHi (ltnW i_lt_n)) => [t] [open_t] [xt] eq; move: IHi => _.
+exists `sf INTER sg INTER t`.
+rewrite !REAL_OPEN_INTER // !IN_INTER xt xsf xsg !andTb => y [ysf] [ysg yt].
+apply: derivative_unique.
+apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `(\y. nth_derivative i f y + nth_derivative i g y)`.
+rewrite HAS_REAL_DERIVATIVE_ADD ?andTb.
+  by rewr ETA_AX; rewrite (diff_f ysf) // (diff_g ysg).
+exists `sf INTER sg INTER t`; rewrite !REAL_OPEN_INTER // !IN_INTER {1}yt {1}ysf {1}ysg !andTb.
+by move => z z_in /=; rewrite eq.
+Qed.
+
+Lemma nth_derivative_add_strong_all x : `interval_arith x int ==>
+        ?s. real_open s /\ x IN s /\
+        !i y. i <= n /\ y IN s ==>
+                nth_derivative i (\y. f y + g y) y = nth_derivative i f y + nth_derivative i g y`.
+move => /(nth_derivative_add_strong) h.
+set P := `\i s. real_open s /\ x IN s /\
+   (!y. y IN s ==> nth_derivative i (\y. f y + g y) y = nth_derivative i f y + nth_derivative i g y)`.
+have sel_P : `!i. i <= n:num ==> P i ((@) (P i))`.
+  move => i i_le_n; apply SELECT_AX.
+  move: (h i_le_n) => [s] cond.
+  by exists s; rewrite -P_def /=.
+set S := `INTERS (IMAGE (\i. (@) (P i)) (0..n))`.
+exists S.
+rewrite -S_def REAL_OPEN_INTERS ?FINITE_IMAGE ?FINITE_NUMSEG ?IN_IMAGE ?andTb.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+rewrite !IN_INTERS !IN_IMAGE; split.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+move => i y [i_le_n].
+move: (sel_P i_le_n); rewrite -{1}P_def /= => [] [_] [_] y_in /(_ `(@) (P i)`).
+"ANTS_TAC"; first by exists i; rewrite IN_NUMSEG_0.
+exact: y_in.
+Qed.
+
+
+Lemma nth_derivative_add i x : `interval_arith x int ==> i <= n ==>
+        nth_derivative i (\x. f x + g x) x = nth_derivative i f x + nth_derivative i g x`.
+move => ineq i_le_n.
+have := nth_derivative_add_strong ineq i_le_n.
+move => [s] [_] [xs] h.
+exact: h.
+Qed.
+
+
+Lemma nth_diff_add : `nth_diff_strong_int n int (\x. f x + g x)`.
+move: (df) (dg).
+rewrite !nth_diff_strong_int !nth_diff_strong !nth_differentiable_on !nth_differentiable_eq.
+move => df dg x ineq.
+have := nth_derivative_add_strong_all ineq.
+move => [s] [open_s] [xs] diff.
+move: (df ineq) => [tf] [open_tf] [xtf] diff_f.
+move: (dg ineq) => [tg] [open_tg] [xtg] diff_g.
+exists `s INTER tf INTER tg`; rewrite !REAL_OPEN_INTER // !IN_INTER {1}xs {1}xtf {1}xtg !andTb.
+move => y [ys [ytf ytg]].
+rewrite REAL_CONTINUOUS_ADD ?diff_f ?diff_g // andTb => i i_lt_n.
+rewrite diff ?ys -?ltE //.
+apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `(\y. nth_derivative i f y + nth_derivative i g y)`.
+rewrite HAS_REAL_DERIVATIVE_ADD ?andTb; first by rewr ETA_AX; rewrite (diff_f ytf) // (diff_g ytg).
+exists s; rewrite open_s {1}ys !andTb => z zs /=.
+by apply: diff; rewrite ltnW.
+Qed.
+
+
+(* Subtraction *)
+Lemma nth_derivative_sub_strong i x : `interval_arith x int ==> i <= n ==>
+   ?s. real_open s /\ x IN s /\
+      !y. y IN s ==> nth_derivative i (\y. f y - g y) y = nth_derivative i f y - nth_derivative i g y`.
+move: df dg; rewrite !nth_diff_strong_int !nth_diff_strong => df dg ineq.
+move: (df ineq) => [sf] [open_sf] [xsf]; move: df => _.
+move: (dg ineq) => [sg] [open_sg] [xsg]; move: dg => _.
+rewrite !nth_differentiable_on !nth_differentiable_eq => diff_g diff_f.
+elim: i => [_|i IHi]; first by rewrite !nth_derivative0; exists sf.
+rewrite nth_derivativeS -ltE => i_lt_n.
+move: (IHi (ltnW i_lt_n)) => [t] [open_t] [xt] eq; move: IHi => _.
+exists `sf INTER sg INTER t`.
+rewrite !REAL_OPEN_INTER // !IN_INTER xt xsf xsg !andTb => y [ysf] [ysg yt].
+apply: derivative_unique.
+apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `(\y. nth_derivative i f y - nth_derivative i g y)`.
+rewrite HAS_REAL_DERIVATIVE_SUB ?andTb.
+  by rewr ETA_AX; rewrite (diff_f ysf) // (diff_g ysg).
+exists `sf INTER sg INTER t`; rewrite !REAL_OPEN_INTER // !IN_INTER {1}yt {1}ysf {1}ysg !andTb.
+by move => z z_in /=; rewrite eq.
+Qed.
+
+Lemma nth_derivative_sub_strong_all x : `interval_arith x int ==>
+        ?s. real_open s /\ x IN s /\
+        !i y. i <= n /\ y IN s ==>
+                nth_derivative i (\y. f y - g y) y = nth_derivative i f y - nth_derivative i g y`.
+move => /(nth_derivative_sub_strong) h.
+set P := `\i s. real_open s /\ x IN s /\
+   (!y. y IN s ==> nth_derivative i (\y. f y - g y) y = nth_derivative i f y - nth_derivative i g y)`.
+have sel_P : `!i. i <= n:num ==> P i ((@) (P i))`.
+  move => i i_le_n; apply SELECT_AX.
+  move: (h i_le_n) => [s] cond.
+  by exists s; rewrite -P_def /=.
+set S := `INTERS (IMAGE (\i. (@) (P i)) (0..n))`.
+exists S.
+rewrite -S_def REAL_OPEN_INTERS ?FINITE_IMAGE ?FINITE_NUMSEG ?IN_IMAGE ?andTb.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+rewrite !IN_INTERS !IN_IMAGE; split.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+move => i y [i_le_n].
+move: (sel_P i_le_n); rewrite -{1}P_def /= => [] [_] [_] y_in /(_ `(@) (P i)`).
+"ANTS_TAC"; first by exists i; rewrite IN_NUMSEG_0.
+exact: y_in.
+Qed.
+
+
+Lemma nth_derivative_sub i x : `interval_arith x int ==> i <= n ==>
+        nth_derivative i (\x. f x - g x) x = nth_derivative i f x - nth_derivative i g x`.
+move => ineq i_le_n.
+have := nth_derivative_sub_strong ineq i_le_n.
+move => [s] [_] [xs] h.
+exact: h.
+Qed.
+
+
+Lemma nth_diff_sub : `nth_diff_strong_int n int (\x. f x - g x)`.
+move: (df) (dg).
+rewrite !nth_diff_strong_int !nth_diff_strong !nth_differentiable_on !nth_differentiable_eq.
+move => df dg x ineq.
+have := nth_derivative_sub_strong_all ineq.
+move => [s] [open_s] [xs] diff.
+move: (df ineq) => [tf] [open_tf] [xtf] diff_f.
+move: (dg ineq) => [tg] [open_tg] [xtg] diff_g.
+exists `s INTER tf INTER tg`; rewrite !REAL_OPEN_INTER // !IN_INTER {1}xs {1}xtf {1}xtg !andTb.
+move => y [ys [ytf ytg]].
+rewrite REAL_CONTINUOUS_SUB ?diff_f ?diff_g // andTb => i i_lt_n.
+rewrite diff ?ys -?ltE //.
+apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `(\y. nth_derivative i f y - nth_derivative i g y)`.
+rewrite HAS_REAL_DERIVATIVE_SUB ?andTb; first by rewr ETA_AX; rewrite (diff_f ytf) // (diff_g ytg).
+exists s; rewrite open_s {1}ys !andTb => z zs /=.
+by apply: diff; rewrite ltnW.
+Qed.
+
+(* Multiplication *)
+Lemma nth_derivative_mul_strong i x : `interval_arith x int ==> i <= n ==>
+   ?s. real_open s /\ x IN s /\
+      !y. y IN s ==> nth_derivative i (\y. f y * g y) y =
+        sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)`.
+move: df dg; rewrite !nth_diff_strong_int !nth_diff_strong => df dg ineq.
+move: (df ineq) => [sf] [open_sf] [xsf]; move: df => _.
+move: (dg ineq) => [sg] [open_sg] [xsg]; move: dg => _.
+rewrite !nth_differentiable_on !nth_differentiable_eq => diff_g diff_f.
+elim: i => [_|i IHi].
+  exists sf; rewrite open_sf xsf !andTb !nth_derivative0 SUM_SING_NUMSEG => y _ /=.
+  by rewrite subn0 !nth_derivative0 binom REAL_MUL_LID.
+rewrite nth_derivativeS -ltE => i_lt_n.
+move: (IHi (ltnW i_lt_n)) => [t] [open_t] [xt] eq; move: IHi => _.
+exists `sf INTER sg INTER t`.
+rewrite !REAL_OPEN_INTER // !IN_INTER xt xsf xsg !andTb => y [ysf] [ysg yt].
+apply: derivative_unique.
+apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `\y. sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)`.
+split; last first.
+  exists `sf INTER sg INTER t`; rewrite !REAL_OPEN_INTER // !IN_INTER {1}yt {1}ysf {1}ysg !andTb.
+  by move => z z_in /=; rewrite eq.
+apply: has_derivative_lemma.
+have diff_cond : `!k. k IN 0..i ==>
+        nth_derivative k f real_differentiable atreal y /\
+        nth_derivative (i - k) g real_differentiable atreal y`.
+  rewrite IN_NUMSEG => k ineq /=; rewrite !real_differentiable; split.
+    exists `nth_derivative (SUC k) f y`; rewrite (diff_f ysf).
+    by move: ineq i_lt_n; arith.
+  exists `nth_derivative (SUC (i - k)) g y`; rewrite (diff_g ysg).
+  by move: ineq i_lt_n; arith.
+have diff_cond2 : `!k. k IN 0..i ==>
+        (\y. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)
+                real_differentiable atreal y`.
+  move => k k_in /=.
+  by rewrite !REAL_DIFFERENTIABLE_MUL_ATREAL ?REAL_DIFFERENTIABLE_CONST; rewr ETA_AX; rewrite !diff_cond //.
+rewrite differentiable_sum_numseg ?derivative_sum_numseg; rewr /= diff_cond2 //.
+set lhs := `sum (0..i) _`.
+set sum1 := `sum (0 + 1..i + 1) (\k. &(binom (i, k - 1)) * nth_derivative k f y * nth_derivative (SUC i - k) g y)`.
+set sum2 := `sum (0..i + 1) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (SUC i - k) g y)`.
+have ->: `lhs = sum1 + sum2`.
+  rewrite -sum1_def SUM_OFFSET /= addn1 succnK subSS.
+  rewrite -sum2_def addn1 "GEN_ALL SUM_CLAUSES_NUMSEG" "ARITH_RULE `0 <= SUC i`" /=.
+  have ->: `binom(i, SUC i) = 0`; first by rewrite BINOM_EQ_0; arith.
+  rewrite REAL_MUL_LZERO REAL_ADD_RID -SUM_ADD_NUMSEG /= -lhs_def.
+  apply SUM_EQ => k k_in /=.
+  rewrite derivative_scale ?REAL_DIFFERENTIABLE_MUL_ATREAL; rewr ETA_AX; rewrite ?diff_cond //.
+  rewrite -REAL_ADD_LDISTRIB REAL_EQ_MUL_LCANCEL; right.
+  rewrite derivative_mul; rewr ETA_AX; rewrite ?diff_cond //.
+  rewrite REAL_ADD_SYM -!nth_derivativeS.
+  suff ->: `SUC (i - k) = SUC i - k`; first by done.
+  by move: k_in; rewrite IN_NUMSEG; arith.
+rewrite REAL_ADD_SYM SUM_CLAUSES_LEFT -?sum2_def 1?SUM_CLAUSES_LEFT /=; try arith.
+rewrite !binom !REAL_MUL_LID -REAL_ADD_ASSOC REAL_EQ_ADD_LCANCEL.
+rewrite -sum1_def -SUM_ADD_NUMSEG (addn1 i).
+apply SUM_EQ => k k_in /=.
+rewrite -REAL_ADD_RDISTRIB REAL_EQ_MUL_RCANCEL; left.
+case: k k_in => [|k]; rewrite IN_NUMSEG; first by arith.
+by rewrite binom ONE subSS subn0 REAL_OF_NUM_ADD.
+Qed.
+
+
+Lemma nth_derivative_mul_strong_all x : `interval_arith x int ==>
+        ?s. real_open s /\ x IN s /\
+        !i y. i <= n /\ y IN s ==>
+          nth_derivative i (\y. f y * g y) y =
+                sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)`.
+move => /(nth_derivative_mul_strong) h.
+set P := `\i s. real_open s /\ x IN s /\
+   (!y. y IN s ==> nth_derivative i (\y. f y * g y) y =
+        sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f y * nth_derivative (i - k) g y))`.
+have sel_P : `!i. i <= n:num ==> P i ((@) (P i))`.
+  move => i i_le_n; apply SELECT_AX.
+  move: (h i_le_n) => [s] cond.
+  by exists s; rewrite -P_def /=.
+set S := `INTERS (IMAGE (\i. (@) (P i)) (0..n))`.
+exists S.
+rewrite -S_def REAL_OPEN_INTERS ?FINITE_IMAGE ?FINITE_NUMSEG ?IN_IMAGE ?andTb.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+rewrite !IN_INTERS !IN_IMAGE; split.
+  move => t [i] [->]; rewrite IN_NUMSEG_0 => /sel_P.
+  by rewrite -{1}P_def /=.
+move => i y [i_le_n].
+move: (sel_P i_le_n); rewrite -{1}P_def /= => [] [_] [_] y_in /(_ `(@) (P i)`).
+"ANTS_TAC"; first by exists i; rewrite IN_NUMSEG_0.
+exact: y_in.
+Qed.
+
+
+Lemma nth_derivative_mul i x : `interval_arith x int ==> i <= n ==>
+        nth_derivative i (\x. f x * g x) x =
+          sum (0..i) (\k. &(binom (i, k)) * nth_derivative k f x * nth_derivative (i - k) g x)`.
+move => ineq i_le_n.
+have := nth_derivative_mul_strong ineq i_le_n.
+move => [s] [_] [xs] h.
+exact: h.
+Qed.
+
+
+Lemma nth_diff_mul : `nth_diff_strong_int n int (\x. f x * g x)`.
+move: (df) (dg).
+rewrite !nth_diff_strong_int !nth_diff_strong !nth_differentiable_on !nth_differentiable_eq.
+move => df dg x ineq.
+have := nth_derivative_mul_strong_all ineq.
+move => [s] [open_s] [xs] diff.
+move: (df ineq) => [tf] [open_tf] [xtf] diff_f.
+move: (dg ineq) => [tg] [open_tg] [xtg] diff_g.
+exists `s INTER tf INTER tg`; rewrite !REAL_OPEN_INTER // !IN_INTER {1}xs {1}xtf {1}xtg !andTb.
+move => y [ys [ytf ytg]].
+rewrite REAL_CONTINUOUS_MUL ?diff_f ?diff_g // andTb => i i_lt_n.
+rewrite nth_derivativeS has_derivative_alt.
+apply: differentiable_local.
+exists `\y. sum (0..i) (\k. &(binom(i, k)) * nth_derivative k f y * nth_derivative (i - k) g y)` s.
+rewrite open_s {1}ys !andTb; split; last by move => z zs; rewrite diff // ltnW.
+rewrite differentiable_sum_numseg IN_NUMSEG => k k_in /=.
+rewrite !REAL_DIFFERENTIABLE_MUL_ATREAL ?REAL_DIFFERENTIABLE_CONST //; rewr ETA_AX.
+rewrite !real_differentiable; split.
+  exists `nth_derivative (SUC k) f y`; rewrite (diff_f ytf).
+  by move: k_in i_lt_n; arith.
+exists `nth_derivative (SUC (i - k)) g y`; rewrite (diff_g ytg).
+by move: k_in i_lt_n; arith.
+Qed.
+
+
+End NthDerivativeArith.
+
+End NthDerivatives.
+
+
+(* Linear approximation and Taylor interval *)
+
+"let lin_approx = new_definition `lin_approx f x f_bounds df_bounds <=>
+        interval_arith (f x) f_bounds /\
+        (?f'. (f has_real_derivative f') (atreal x) /\ interval_arith f' df_bounds)`".
+
+"let has_bounded_second_derivative = new_definition `has_bounded_second_derivative f int dd_bounds <=>
+        nth_diff_strong_int 2 int f /\
+        bounded_on_int (nth_derivative 2 f) int dd_bounds`".
+
+
+"let taylor_interval = new_definition
+  `taylor_interval f x y z w f_bounds df_bounds ddf_bounds <=>
+        x <= y /\ y <= z /\ y - x <= w /\ z - y <= w /\
+        lin_approx f y f_bounds df_bounds /\
+        has_bounded_second_derivative f (x, z) ddf_bounds`".
+
+
+
+Lemma nth_diff_strong_imp_diff_int n int f: `nth_diff_strong_int n int f ==>
+        nth_differentiable_on_int n int f`.
+rewrite nth_diff_strong_int nth_differentiable_on_int nth_diff_strong nth_differentiable_on.
+move => h x ineq.
+by move: (h ineq) => [s] [_] [xs]; exact.
+Qed.
+
+
+Lemma has_bounded_second_derivative_old f int dd_bounds :
+        `has_bounded_second_derivative f int dd_bounds ==>
+        ?f' f''. (!x. interval_arith x int ==> (f has_real_derivative f' x) (atreal x) /\
+                (f' has_real_derivative f'' x) (atreal x) /\    interval_arith (f'' x) dd_bounds)`.
+rewrite has_bounded_second_derivative => [] [/nth_diff_strong_imp_diff_int].
+move/nth_differentiable_on_int2 => [f'] [f''].
+move => [eq1] [eq2] h b; exists f' f'' => x ineq.
+move: b; rewrite bounded_on_int -eq2 => b.
+by rewrite !h // b.
+Qed.
+
+
+
+Lemma exists_and_left P Q : `(?x. P x /\ Q x) ==> (?x. P x)`.
+move => [x] [Px _].
+by exists x.
+Qed.
+
+
+Lemma lim_ineq a b : `(!e. &0 < e ==> a <= b + e) <=> (a <= b)`.
+split => [| ineq e e0]; last first.
+  by rewrite -(REAL_ADD_RID a) REAL_LE_ADD2 ineq REAL_LT_IMP_LE.
+apply: contraLR; rewrite NOT_FORALL_THM NOT_IMP !REAL_NOT_LE => ba.
+by exists `(a - b) / &2`; move: ba; arith.
+Qed.
+
+
+Lemma continuous_leq f c a: `(?b. a < b /\ !x. x IN real_interval (a, b) ==> f x <= c) /\
+        f real_continuous atreal a ==> f a <= c`.
+move => [[b] [ab] ineq].
+rewrite REAL_CONTINUOUS_ATREAL REALLIM_ATREAL => f_cont.
+rewrite -lim_ineq => e /f_cont [d] [d0] cond.
+set r := `a + min (b - a) d / &2`.
+move: (cond r); "ANTS_TAC"; first by move: r_def d0 ab; arith.
+move: (ineq r); "ANTS_TAC"; last by arith.
+by rewrite IN_REAL_INTERVAL; move: r_def d0 ab; arith.
+Qed.
+
+
+Lemma continuous_reflection f x : `f real_continuous atreal x <=>
+        (\x. f (--x)) real_continuous atreal (--x)`.
+rewrite !REAL_CONTINUOUS_ATREAL /= !REALLIM_ATREAL REAL_NEG_NEG /=; split => h e e0.
+  move: (h e0) => [d] [d0] cond.
+  exists d; rewrite d0 andTb => y ineqs; apply: cond.
+  by move: ineqs; arith.
+move: (h e0) => [d] [d0] cond.
+exists d; rewrite d0 andTb => y ineqs.
+by move: (cond `--y`); rewrite REAL_NEG_NEG; apply; move: ineqs; arith.
+Qed.
+
+
+Lemma continuous_leq_segment f c a b :
+        `a < b ==> f real_continuous atreal a ==> f real_continuous atreal b ==>
+        (!x. x IN real_interval (a, b) ==> f x <= c) ==>
+        (!x. x IN real_interval [a, b] ==> f x <= c)`.
+move => ab f_cont_a f_cont_b ineq x.
+rewrite IN_REAL_INTERVAL 2!"REAL_ARITH `!a b. a <= b <=> (a = b \/ a < b)`".
+case; case => [<- _| ax].
+  by apply: continuous_leq; rewrite f_cont_a andbT; exists b.
+case => [-> | xb]; last by apply: ineq; rewrite IN_REAL_INTERVAL.
+set g := `\x. f (--x)`.
+have fg: `!x. f x = g (--x)`; first by rewrite -g_def /= REAL_NEG_NEG.
+rewrite fg; apply: continuous_leq; split.
+  exists `--a`; rewrite REAL_LT_NEG ab andTb IN_REAL_INTERVAL => y.
+  by move: (ineq `--y`); rewrite IN_REAL_INTERVAL fg REAL_NEG_NEG; arith.
+by rewrite -g_def -continuous_reflection.
+Qed.
+
+Lemma pair_eq p : `p = (FST p, SND p)`. done. Qed.
+
+
+
+(* Properties of taylor_interval *)
+Section Taylor.
+
+
+Lemma iabs_alt lo hi a : `interval_arith a (lo, hi) ==> iabs (lo, hi) = max (abs lo) (abs hi)`.
+by rewrite interval_arith iabs; arith. Qed.
+
+
+Lemma iabs_pos lo hi a : `interval_arith a (lo, hi) ==> &0 <= iabs (lo, hi)`.
+by rewrite interval_arith iabs; arith. Qed.
+
+
+Variable f : `:real -> real`.
+Variables x y z w : `:real`.
+Variables f_bounds df_bounds ddf_bounds : `:real#real`.
+Variable dd_bound : `:real`.
+
+
+Hypothesis dd_bound_eq : `dd_bound = iabs ddf_bounds`.
+Hypothesis tif : `taylor_interval f x y z w f_bounds df_bounds ddf_bounds`.
+
+
+Lemma f_continuous : `!t. t IN real_interval [x, z] ==> f real_continuous atreal t`.
+rewrite IN_REAL_INTERVAL -interval_arith => t t_in.
+apply: HAS_REAL_DERIVATIVE_IMP_CONTINUOUS_ATREAL.
+move: tif; rewrite taylor_interval !andbA => [] [_] /has_bounded_second_derivative_old.
+move => [f'] [f''] df.
+by exists `f' t`; rewrite df.
+Qed.
+
+
+
+Lemma taylor_error t : `x <= t /\ t <= z ==>
+        abs (f t - f y) <= w * iabs df_bounds + w * w * dd_bound / &2`.
+move => t_ineqs.
+have := tif; rewrite taylor_interval !andbA => [] [] [domain_ineqs] lin_app.
+move/has_bounded_second_derivative_old => [f'] [f''] df.
+have abs_ty : `abs (t - y) <= w`.
+  by move: domain_ineqs t_ineqs; arith.
+have y_in : `interval_arith y (x, z)`; first by rewrite interval_arith.
+have dd_prop : `&0 <= dd_bound /\ !p. p IN real_interval [x, z] ==> abs (f'' p) <= dd_bound`.
+  rewrite dd_bound_eq; split.
+    by move: (df y_in); rewrite pair_eq interval_arith iabs; arith.
+  by rewrite IN_REAL_INTERVAL -interval_arith; move => p /df; rewrite pair_eq interval_arith iabs; arith.
+suff: `abs (f t - (f y + f' y * (t - y) pow 1)) <= dd_bound * abs (t - y) pow (1 + 1) / &2`.
+  set b1 := `f' y * _`; set b2 := `dd_bound * _` => ineq1.
+  apply: REAL_LE_TRANS; exists `abs (f t - (f y + b1)) + abs b1`; split.
+    by rewrite "REAL_ARITH `!a b. a - b = (a - (b + b1)) + b1`" REAL_ABS_TRIANGLE.
+  rewrite REAL_ADD_SYM REAL_LE_ADD2 -{1}b1_def REAL_POW_1 REAL_ABS_MUL REAL_MUL_SYM REAL_LE_MUL2.
+    rewrite !REAL_ABS_POS abs_ty !andTb pair_eq iabs.
+    move: lin_app; rewrite lin_approx => [] [_] [ff] [df'].
+    suff ->: `ff = f' y`; first by rewrite pair_eq interval_arith; arith.
+    by apply: (REAL_DERIVATIVE_UNIQUE_ATREAL f y); rewrite df' df // IN_REAL_INTERVAL.
+  rewrite andTb; apply: REAL_LE_TRANS; exists b2.
+  rewrite ineq1 andTb -b2_def !real_div !REAL_MUL_ASSOC REAL_LE_MUL2 "ARITH_RULE `1 + 1 = 2`".
+  rewrite REAL_LE_REFL REAL_LE_INV ?REAL_LE_MUL ?dd_prop ?REAL_LE_POW_2; try arith.
+  rewrite andTb !andbT REAL_MUL_SYM -REAL_POW_2 REAL_LE_MUL2 REAL_LE_REFL dd_prop.
+  by rewrite REAL_LE_POW_2 andTb !andbT -REAL_LE_SQUARE_ABS REAL_ABS_ABS; move: abs_ty; arith.
+set Df := `\i. if i = 0 then f else if i = 1 then f' else if i = 2 then f'' else I`.
+have arith := "ARITH_RULE `0 + 1 = 1 /\ ~(1 = 0) /\ 1 + 1 = 2 /\
+        ~(2 = 1) /\ ~(2 = 1) /\ ~(2 = 0)`".
+have := REAL_TAYLOR Df `1` `real_interval [x, z]` dd_bound.
+"ANTS_TAC".
+  rewrite IS_REALINTERVAL_INTERVAL andTb; split.
+    rewrite IN_REAL_INTERVAL -interval_arith.
+    move => i p [p_in]; rewrite "ARITH_RULE `i <= 1 <=> i = 0 \/ i = 1`".
+    by case => ->; rewrite -Df_def /=; apply HAS_REAL_DERIVATIVE_ATREAL_WITHIN;
+        rewrite !arith /= df.
+  move => p p_in; rewrite -Df_def /=.
+  by rewrite !arith /= dd_prop.
+move => /(_ y t); rewrite !IN_REAL_INTERVAL !domain_ineqs !t_ineqs /=.
+rewrite {1}ONE "GEN_ALL SUM_CLAUSES_NUMSEG" SUM_SING_NUMSEG /= -Df_def /= -ONE.
+rewrite !"ARITH_RULE `0 <= 1 /\ ~(1 = 0)`" /= "GEN_ALL real_pow" FACT.
+by rewrite !"ARITH_RULE `FACT 1 = 1 /\ FACT (1 + 1) = 2`" !REAL_DIV_1 REAL_MUL_RID.
+Qed.
+
+
+Lemma taylor_upper_bound : `!t. x <= t /\ t <= z ==>
+        f t <= SND f_bounds + (w * iabs df_bounds + w * w * dd_bound / &2)`.
+move: (pair_eq f_bounds) => eq.
+move => t /taylor_error.
+move: tif; rewrite taylor_interval !andbA lin_approx => [] [] [_] [f_int] _ _.
+by move: f_int; rewrite {1}eq interval_arith; arith.
+Qed.
+
+Lemma taylor_lower_bound : `!t. x <= t /\ t <= z ==>
+        FST f_bounds - (w * iabs df_bounds + w * w * dd_bound / &2) <= f t`.
+have eq := pair_eq f_bounds.
+move => t /taylor_error.
+move: tif; rewrite {1}eq taylor_interval !andbA lin_approx => [] [] [_] [f_int] _ _.
+move: f_int; rewrite interval_arith; arith.
+Qed.
+
+Lemma taylor_derivative_error : `!t. x <= t /\ t <= z ==>
+        abs (derivative f t - derivative f y) <= w * dd_bound`.
+move => t t_ineqs.
+have := tif; rewrite taylor_interval !andbA => [] [] [domain_ineqs] _.
+move/has_bounded_second_derivative_old => [f'] [f''] df.
+have abs_ty : `abs (t - y) <= w`.
+  by move: domain_ineqs t_ineqs; arith.
+have der_eq: `!p. x <= p /\ p <= z ==> derivative f p = f' p`.
+  rewrite -IN_REAL_INTERVAL EQ_SYM_EQ; apply: derivative_unique_on.
+  by rewrite IN_REAL_INTERVAL -interval_arith => p /df /=.
+rewrite !der_eq //.
+have dd_prop : `&0 <= dd_bound /\ !p. p IN real_interval [x, z] ==> abs (f'' p) <= dd_bound`.
+  rewrite dd_bound_eq IN_REAL_INTERVAL -interval_arith; split.
+    by move: (df y); rewrite (pair_eq ddf_bounds) !interval_arith iabs !domain_ineqs; arith.
+  by move => p /df; rewrite pair_eq interval_arith iabs; arith.
+set Df := `\i. if i = 0 then f' else if i = 1 then f'' else I`.
+have arith := "ARITH_RULE `0 + 1 = 1 /\ ~(1 = 0) /\ 1 + 1 = 2 /\
+        ~(2 = 1) /\ ~(2 = 1) /\ ~(2 = 0)`".
+have := REAL_TAYLOR Df `0` `real_interval [x, z]` dd_bound.
+"ANTS_TAC".
+  rewrite IS_REALINTERVAL_INTERVAL andTb; split.
+    move => i p [p_in]; rewrite "ARITH_RULE `i <= 0 <=> i = 0`" => ->.
+    rewrite -Df_def /= !arith /=; apply: HAS_REAL_DERIVATIVE_ATREAL_WITHIN.
+    by rewrite df interval_arith -IN_REAL_INTERVAL.
+  move => p p_in; rewrite -Df_def /=.
+  by rewrite !arith /= dd_prop.
+move => /(_ y t); rewrite !IN_REAL_INTERVAL !domain_ineqs !t_ineqs /=.
+rewrite {1}ONE SUM_SING_NUMSEG /= -Df_def /= -ONE.
+rewrite "GEN_ALL real_pow" !arith !FACT "ARITH_RULE `FACT 1 = 1`" !REAL_DIV_1 REAL_MUL_RID.
+rewrite REAL_POW_1 => ineq.
+apply: REAL_LE_TRANS; exists `dd_bound * abs (t - y)`.
+by rewrite ineq andTb REAL_MUL_SYM REAL_LE_RMUL dd_prop abs_ty.
+Qed.
+
+
+Lemma derivative_interval : `FST df_bounds <= derivative f y /\ derivative f y <= SND df_bounds`.
+have eq := pair_eq df_bounds.
+move: tif; rewrite taylor_interval lin_approx !andbA => [] [] [ineqs] [g] [fg g_int] _.
+suff ->: `derivative f y = g`; first by move: g_int; rewrite eq interval_arith.
+apply: (REAL_DERIVATIVE_UNIQUE_ATREAL f y).
+by rewrite fg has_derivative_cond //; exists g.
+Qed.
+
+Lemma taylor_derivative_upper_bound : `!t. x <= t /\ t <= z ==>
+        derivative f t <= SND df_bounds + w * dd_bound`.
+by move => t /taylor_derivative_error; move: derivative_interval; arith.
+Qed.
+
+Lemma taylor_derivative_lower_bound : `!t. x <= t /\ t <= z ==>
+        FST df_bounds - w * dd_bound <= derivative f t`.
+by move => t /taylor_derivative_error; move: derivative_interval; arith.
+Qed.
+
+
+End Taylor.
+
+
+Section LinearApproximation.
+
+Variable f : `:real->real`.
+Variables f_bounds df_bounds : `:real#real`.
+Variable x : `:real`.
+
+
+Lemma lin_approx_eq : `lin_approx f x f_bounds df_bounds <=>
+        (f real_differentiable atreal x /\ interval_arith (f x) f_bounds /\
+        interval_arith (derivative f x) df_bounds)`.
+rewrite lin_approx real_differentiable; split => [[-> [f'] [df' int_f']] | [[f'] df] [-> df_int]].
+  split; first by exists f'.
+  by rewrite (derivative_unique f f').
+by rewrite andTb; exists f'; rewrite df -(derivative_unique f f' x).
+Qed.
+
+
+
+Hypothesis approx_f : `lin_approx f x f_bounds df_bounds`.
+
+Lemma lin_approx_imp_f_interval : `interval_arith (f x) f_bounds`.
+by move: approx_f; rewrite lin_approx_eq /=. Qed.
+
+Lemma lin_approx_imp_df_interval : `interval_arith (derivative f x) df_bounds`.
+by move: approx_f; rewrite lin_approx_eq /=. Qed.
+
+Lemma lin_approx_imp_f_diff : `f real_differentiable atreal x`.
+by move: approx_f; rewrite lin_approx_eq /=. Qed.
+
+End LinearApproximation.
+
+
+Section MoreLinearApproximation.
+
+(* f, g *)
+Variable f g : `:real->real`.
+Variable x : `:real`.
+Variables f_bounds df_bounds : `:real#real`.
+Variables g_bounds dg_bounds : `:real#real`.
+
+
+Lemma interval_arith_not_zero x int : `interval_arith x int ==> interval_not_zero int ==>
+        ~(x = &0)`.
+by rewrite -(PAIR int) interval_arith interval_not_zero; arith. Qed.
+
+Lemma interval_arith_pos x int : `interval_arith x int ==> interval_pos int ==> &0 < x`.
+by case: int; rewrite interval_arith interval_pos; arith. Qed.
+
+Lemma interval_arith_abs x int y : `interval_arith x int ==> iabs int < y ==> abs x < y`.
+by rewrite -(PAIR int) interval_arith iabs; arith. Qed.
+
+Lemma lin_approx_x : `lin_approx (\x. x) x (x, x) (&1, &1)`.
+by rewrite lin_approx_eq derivative_x !interval_arith /= REAL_DIFFERENTIABLE_ID !REAL_LE_REFL.
+Qed.
+
+Lemma lin_approx_const c : `lin_approx (\x. c) x (c, c) (&0, &0)`.
+rewrite lin_approx_eq derivative_const !interval_arith /= REAL_DIFFERENTIABLE_CONST.
+by rewrite !REAL_LE_REFL.
+Qed.
+
+
+Section LinearApproxUnivariateComposition.
+
+
+Hypothesis approx_f : `lin_approx f x f_bounds df_bounds`.
+
+
+Lemma lin_approx_compose_atn : `(\x. atn (f x)) real_differentiable atreal x /\
+        derivative (\x. atn (f x)) x = derivative f x / (&1 + f x * f x)`.
+by apply: derivative_compose_atn; move: approx_f; rewrite lin_approx_eq => ->. Qed.
+
+Lemma lin_approx_compose_exp : `(\x. exp (f x)) real_differentiable atreal x /\
+        derivative (\x. exp (f x)) x = exp (f x) * derivative f x`.
+by apply: derivative_compose_exp; move: approx_f; rewrite lin_approx_eq => ->. Qed.
+
+Lemma lin_approx_compose_inv : `interval_not_zero f_bounds ==>
+        (\x. inv (f x)) real_differentiable atreal x /\
+        derivative (\x. inv (f x)) x = -- inv (f x * f x) * derivative f x`.
+move: approx_f; rewrite lin_approx_eq => [] [df h] f0.
+have fn0 : `~(f x = &0)`; first by apply: interval_arith_not_zero; exists f_bounds.
+exact: (derivative_compose_inv df fn0).
+Qed.
+
+Lemma lin_approx_compose_sqrt : `interval_pos f_bounds ==>
+        (\x. sqrt (f x)) real_differentiable atreal x /\
+        derivative (\x. sqrt (f x)) x = derivative f x / (&2 * sqrt (f x))`.
+move: approx_f; rewrite lin_approx_eq => [] [df h] f_ineq.
+have f_pos : `&0 < f x`; first by apply: interval_arith_pos; exists f_bounds.
+exact: (derivative_compose_sqrt df f_pos).
+Qed.
+
+Lemma lin_approx_compose_acs : `iabs f_bounds < &1 ==>
+        (\x. acs (f x)) real_differentiable atreal x /\
+        derivative (\x. acs (f x)) x = -- (derivative f x / sqrt (&1 - f x * f x))`.
+move: approx_f; rewrite lin_approx_eq => [] [df h] f_ineq.
+have f_abs : `abs (f x) < &1`; first by apply: interval_arith_abs; exists f_bounds.
+exact: (derivative_compose_acs df f_abs).
+Qed.
+
+
+End LinearApproxUnivariateComposition.
+
+
+Hypothesis approx_f : `lin_approx f x f_bounds df_bounds`.
+Hypothesis approx_g : `lin_approx g x g_bounds dg_bounds`.
+
+Lemma lin_approx_imp_add_diff : `(\x. f x + g x) real_differentiable atreal x`.
+apply: REAL_DIFFERENTIABLE_ADD.
+by rewrite (lin_approx_imp_f_diff approx_f) (lin_approx_imp_f_diff approx_g).
+Qed.
+
+Lemma lin_approx_imp_sub_diff : `(\x. f x - g x) real_differentiable atreal x`.
+apply: REAL_DIFFERENTIABLE_SUB.
+by rewrite (lin_approx_imp_f_diff approx_f) (lin_approx_imp_f_diff approx_g).
+Qed.
+
+Lemma lin_approx_imp_mul_diff : `(\x. f x * g x) real_differentiable atreal x`.
+apply: REAL_DIFFERENTIABLE_MUL_ATREAL.
+by rewrite (lin_approx_imp_f_diff approx_f) (lin_approx_imp_f_diff approx_g).
+Qed.
+
+Lemma lin_approx_imp_div_diff : `interval_not_zero g_bounds ==> (\x. f x / g x) real_differentiable atreal x`.
+move => gn0; apply: REAL_DIFFERENTIABLE_DIV_ATREAL.
+rewrite (lin_approx_imp_f_diff approx_f) (lin_approx_imp_f_diff approx_g) !andTb.
+apply: interval_arith_not_zero; exists g_bounds.
+by move: approx_g; rewrite lin_approx_eq => ->.
+Qed.
+
+
+End MoreLinearApproximation.
+
+
+
+(* Arithmetic of linear approximations *)
+Section LinearApproxArith.
+
+Variables f1 f2 : `:real->real`.
+Variables f1_bounds f2_bounds : `:real#real`.
+Variables df1_lo df1_hi df2_lo df2_hi : `:real`.
+Variables f_bounds : `:real#real`.
+Variables df_lo df_hi : `:real`.
+Variable x : `:real`.
+
+
+Hypothesis approx1 : `lin_approx f1 x f1_bounds (df1_lo, df1_hi)`.
+
+
+Lemma lin_approx_scale c : `&0 <= c ==> interval_arith (c * f1 x) f_bounds /\
+        df_lo <= c * df1_lo /\ c * df1_hi <= df_hi ==>
+        lin_approx (\x. c * f1 x) x f_bounds (df_lo, df_hi)`.
+rewrite pair_eq interval_arith => c0 ineqs.
+rewrite lin_approx /=; split.
+  by rewrite pair_eq; move: approx1 ineqs; rewrite !lin_approx !interval_arith; arith.
+move: approx1; rewrite !lin_approx => [] [int_f1] [f1'] [df1 int_f1'].
+exists `c * f1'`; rewrite HAS_REAL_DERIVATIVE_LMUL_ATREAL // andTb.
+move: int_f1'; rewrite !interval_arith => ineqs2; split; apply: REAL_LE_TRANS.
+  by exists `c * df1_lo`; rewrite ineqs REAL_LE_LMUL.
+by exists `c * df1_hi`; rewrite ineqs REAL_LE_LMUL.
+Qed.
+
+
+
+Hypothesis approx2 : `lin_approx f2 x f2_bounds (df2_lo, df2_hi)`.
+
+
+Lemma lin_approx_add : `interval_arith (f1 x + f2 x) f_bounds /\
+        df_lo <= df1_lo + df2_lo /\ df1_hi + df2_hi <= df_hi ==>
+        lin_approx (\x. f1 x + f2 x) x f_bounds (df_lo, df_hi)`.
+rewrite pair_eq interval_arith => ineqs.
+rewrite lin_approx /=; split.
+  by rewrite pair_eq; move: approx1 approx2 ineqs; rewrite !lin_approx !interval_arith; arith.
+move: approx1 approx2; rewrite !lin_approx => [] [int_f1] [f1'] [df1 int_f1'].
+move => [int_f2] [f2'] [df2 int_f2'].
+exists `f1' + f2':real`; rewrite HAS_REAL_DERIVATIVE_ADD // andTb.
+by move: ineqs int_f1' int_f2'; rewrite !interval_arith; arith.
+Qed.
+
+
+
+End LinearApproxArith.
+
+
+
+
+(* Bounds on the second derivative *)
+Section SecondDerivativeBound.
+
+Variables f1 f2 : `:real->real`.
+Variable int : `:real#real`.
+Variables dd1 dd2 : `:real#real`.
+
+
+Lemma nth_diff_strong2_eq_alt f x : `nth_diff_strong 2 f x <=> ?s. real_open s /\ x IN s /\
+        !y. y IN s ==> (f has_real_derivative derivative f y) (atreal y) /\
+        (derivative f has_real_derivative nth_derivative 2 f y) (atreal y)`.
+rewrite nth_diff_strong nth_differentiable_on nth_differentiable_eq "ARITH_RULE `i < 2 <=> i = 0 \/ i = 1`".
+split => [] [s] [open_s] [xs] df.
+  exists s; rewrite open_s xs !andTb => y /df [_] h.
+  by move: (h `0`) (h `1`) => /=; rewrite -ONE nth_derivative1 nth_derivative0 -TWO => -> ->.
+exists s; rewrite open_s {1}xs !andTb => y /df h.
+rewrite REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL ?andTb.
+  by rewrite real_differentiable; exists `derivative f y`.
+by move => i; case => ->; rewrite -?ONE -?TWO !(nth_derivative0, nth_derivative1).
+Qed.
+
+
+Lemma nth_diff_strong2_eq f x : `nth_diff_strong 2 f x <=> ?s. real_open s /\ x IN s /\
+        !y. y IN s ==> f real_differentiable atreal y /\ derivative f real_differentiable atreal y`.
+rewrite nth_diff_strong nth_differentiable_on TWO ONE !"GEN_ALL nth_differentiable".
+rewrite -ONE nth_derivative0 nth_derivative1.
+split => [] [s] [open_s] [xs] df.
+  by exists s; rewrite open_s xs !andTb => y /df h.
+exists s; rewrite open_s {1}xs !andTb => y /df h.
+by rewrite !h REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL.
+Qed.
+
+
+Lemma lin_approx_compose f g y g_bounds f_bounds d_bounds:
+        `nth_diff_strong_int 2 g_bounds f ==>
+          g real_differentiable atreal y ==>
+          interval_arith (g y) g_bounds ==>
+          bounded_on_int f g_bounds f_bounds ==>
+          interval_arith (derivative g y * derivative f (g y)) d_bounds ==>
+          lin_approx (\x. f (g x)) y f_bounds d_bounds`.
+rewrite nth_diff_strong_int nth_diff_strong2_eq bounded_on_int => df dg g_int f_int dfg_int.
+have dfgy : `f real_differentiable atreal (g y)`.
+  by move: (df g_int) => [s] [open_s] [ys] ->.
+rewrite lin_approx_eq derivative_composition // dfg_int /= f_int // andbT.
+by rewrite -(o_THM f); rewr ETA_AX; exact: REAL_DIFFERENTIABLE_COMPOSE_ATREAL.
+Qed.
+
+
+
+(* atn *)
+
+Lemma second_derivative_atn_eq x : `((\x. inv (&1 + x pow 2)) has_real_derivative
+        (-- &2 * x) * inv (&1 + x pow 2) pow 2) (atreal x)`.
+rewrite REAL_POW_INV -real_div -REAL_NEG_LMUL HAS_REAL_DERIVATIVE_INV_ATREAL; split.
+  rewrite -(REAL_ADD_LID `&2 * x`) HAS_REAL_DERIVATIVE_ADD HAS_REAL_DERIVATIVE_CONST andTb.
+  rewrite REAL_POW_2 "REAL_ARITH `&2 * x = x * &1 + &1 * x`".
+  by rewrite HAS_REAL_DERIVATIVE_MUL_ATREAL HAS_REAL_DERIVATIVE_ID.
+by rewrite REAL_POS_NZ // REAL_ADD_SYM REAL_LT_ADD1 REAL_LE_POW_2.
+Qed.
+
+Lemma second_derivative_atn :
+        `derivative (derivative atn) = (\x. (-- &2 * x) * inv (&1 + x pow 2) pow 2)`.
+rewrite derivative_atn -eq_ext => x /=; apply: derivative_unique.
+by rewrite -REAL_POW_2 second_derivative_atn_eq.
+Qed.
+
+Lemma diff2_atn x : `nth_diff_strong 2 atn x`.
+rewrite nth_diff_strong2_eq_alt; exists `(:real)`.
+rewrite IN_UNIV REAL_OPEN_UNIV !andTb IN_UNIV => y /=.
+rewrite derivative_atn -REAL_POW_2 /= HAS_REAL_DERIVATIVE_ATN andTb.
+by rewrite nth_derivative2 second_derivative_atn /= second_derivative_atn_eq.
+Qed.
+
+
+(* inv *)
+
+Lemma second_derivative_inv x : `~(x = &0) ==> nth_derivative 2 inv x = &2 * inv (x pow 3)`.
+rewrite nth_derivative2 => xn0.
+apply: derivative_unique; apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `(\x. -- inv (x * x))`; split.
+  move: "(DISCH_ALL o REAL_DIFF_CONV) `((\x. -- inv(x * x)) has_real_derivative f) (atreal x)`".
+  rewrite REAL_ENTIRE xn0 /= real_div REAL_MUL_LNEG REAL_NEG_NEG REAL_MUL_LID REAL_MUL_RID -REAL_MUL_2.
+  rewrite "REAL_ARITH `(x * x) pow 2 = x * x pow 3`" !REAL_INV_MUL.
+  by rewrite "REAL_ARITH `!a. (&2 * x) * inv x * a = &2 * (x * inv x) * a`" REAL_MUL_RINV ?REAL_MUL_LID.
+exists `real_interval (x - abs x, x + abs x)`.
+rewrite REAL_OPEN_REAL_INTERVAL andTb !IN_REAL_INTERVAL; split => [|y ineq].
+  by move: xn0; arith.
+rewrite derivative_inv //=.
+by move: ineq xn0; arith.
+Qed.
+
+
+Lemma diff2_inv x : `~(x = &0) ==> nth_diff_strong 2 inv x`.
+rewrite nth_diff_strong2_eq => xn0.
+exists `real_interval (x - abs x, x + abs x)`.
+rewrite REAL_OPEN_REAL_INTERVAL andTb !IN_REAL_INTERVAL; split => [|y ineq].
+  by move: xn0; arith.
+rewrite REAL_DIFFERENTIABLE_AT_INV ?andTb; first by move: ineq xn0; arith.
+apply: differentiable_local; exists `\x. --inv (x * x)` `real_interval (y - abs y, y + abs y)`.
+rewrite REAL_OPEN_REAL_INTERVAL !IN_REAL_INTERVAL andTb; split.
+  rewrite REAL_DIFFERENTIABLE_NEG REAL_DIFFERENTIABLE_INV_ATREAL.
+  rewrite REAL_DIFFERENTIABLE_MUL_ATREAL ?REAL_DIFFERENTIABLE_ID // REAL_ENTIRE.
+  by move: ineq xn0; arith.
+split => [|z ineq2].
+  by move: ineq xn0; arith.
+by rewrite derivative_inv //; move: ineq ineq2 xn0; arith.
+Qed.
+
+
+(* sqrt *)
+
+Lemma SQRT_POW x n : `&0 <= x ==> sqrt x pow n = sqrt (x pow n)`.
+move => ineq; elim: n => [|n IHn]; rewrite !"GEN_ALL real_pow" ?SQRT_1 //.
+by rewrite IHn SQRT_MUL_COMPAT // REAL_POW_LE.
+Qed.
+
+
+Lemma second_derivative_sqrt x : `&0 < x ==> nth_derivative 2 sqrt x = -- inv(&4 * sqrt (x pow 3))`.
+rewrite nth_derivative2 => x_pos.
+apply: derivative_unique; apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `(\x. inv (&2 * sqrt x))`; split.
+  move: "(DISCH_ALL o REAL_DIFF_CONV) `((\x. inv(&2 * sqrt x)) has_real_derivative f) (atreal x)`".
+  have ineq : `~(&2 * sqrt x = &0)`.
+    by rewrite REAL_ENTIRE negb_or SQRT_EQ_0_COMPAT ?REAL_LT_IMP_LE //; move: x_pos; arith.
+  rewrite x_pos ineq /= real_div REAL_INV_POW REAL_MUL_LID -REAL_MUL_LNEG -REAL_MUL_ASSOC.
+  rewrite -"GEN_ALL real_pow" -REAL_INV_POW REAL_POW_MUL !REAL_INV_MUL SQRT_POW ?REAL_LT_IMP_LE //.
+  rewrite REAL_MUL_ASSOC "GEN_ALL real_pow" REAL_MUL_LNEG REAL_INV_MUL REAL_MUL_ASSOC.
+  rewrite REAL_MUL_RINV ?REAL_MUL_LID; first by arith.
+  by rewrite REAL_MUL_LNEG "REAL_ARITH `&2 pow 2 = &4`" "ARITH_RULE `SUC 2 = 3`".
+exists `real_interval (&0, x + &1)`.
+rewrite REAL_OPEN_REAL_INTERVAL andTb !IN_REAL_INTERVAL; split => [|y ineq].
+  by move: x_pos; arith.
+by rewrite derivative_sqrt.
+Qed.
+
+
+Lemma diff2_sqrt x : `&0 < x ==> nth_diff_strong 2 sqrt x`.
+rewrite nth_diff_strong2_eq => x_pos.
+exists `real_interval (&0, x + &1)`.
+rewrite REAL_OPEN_REAL_INTERVAL andTb !IN_REAL_INTERVAL; split => [|y ineq].
+  by move: x_pos; arith.
+rewrite REAL_DIFFERENTIABLE_AT_SQRT ?andTb; first by move: ineq x_pos; arith.
+apply: differentiable_local; exists `\x. inv (&2 * sqrt x)` `real_interval (&0, y + &1)`.
+rewrite REAL_OPEN_REAL_INTERVAL !IN_REAL_INTERVAL andTb; split.
+  rewrite REAL_DIFFERENTIABLE_INV_ATREAL REAL_DIFFERENTIABLE_MUL_ATREAL.
+    by rewrite REAL_DIFFERENTIABLE_CONST REAL_DIFFERENTIABLE_AT_SQRT.
+  by rewrite REAL_ENTIRE SQRT_EQ_0_COMPAT ?REAL_LT_IMP_LE //; move: ineq; arith.
+split => [|z ineq2]; first by move: ineq x_pos; arith.
+by rewrite derivative_sqrt.
+Qed.
+
+(* acs *)
+
+Lemma real_powS x n : `x pow (SUC n) = x * x pow n`. by rewrite real_pow. Qed.
+
+Lemma second_derivative_acs x : `abs x < &1 ==>
+        nth_derivative 2 acs x = --(x / sqrt ((&1 - x * x) pow 3))`.
+rewrite nth_derivative2 => x_ineq.
+apply: derivative_unique; apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `\x. --inv (sqrt (&1 - x * x))`; split.
+  move: "(DISCH_ALL o REAL_DIFF_CONV) `((\x. --inv (sqrt (&1 - x * x))) has_real_derivative f) (atreal x)`".
+  have ineqs: `&0 < &1 - x * x /\ ~(sqrt(&1 - x * x) = &0)`.
+    suff h: `&0 < &1 - x * x`.
+      by rewrite SQRT_EQ_0_COMPAT ?REAL_LT_IMP_LE //; move: h; arith.
+    rewrite "REAL_ARITH `&1 - x * x = (&1 - x) * (&1 + x)`" REAL_LT_MUL.
+    by move: x_ineq; arith.
+  rewrite !ineqs /= !real_div REAL_INV_MUL REAL_SUB_LZERO !REAL_MUL_LNEG REAL_NEG_NEG -!REAL_MUL_ASSOC.
+  rewrite -REAL_INV_MUL -real_powS SQRT_POW ?REAL_LT_IMP_LE //.
+  rewrite REAL_MUL_LID REAL_MUL_RID -REAL_MUL_2.
+  rewrite "REAL_ARITH `!a. (&2 * x) * inv (&2) * a = (&2 * inv (&2)) * x * a`" "ARITH_RULE `SUC 2 = 3`".
+  by rewrite REAL_MUL_RINV ?REAL_MUL_LID; arith.
+set e := `&1 - abs x`.
+exists `real_interval (x - e, x + e)`.
+rewrite REAL_OPEN_REAL_INTERVAL andTb !IN_REAL_INTERVAL; split => [|y ineq].
+  by move: x_ineq e_def; arith.
+rewrite derivative_acs //=.
+by move: ineq x_ineq e_def; arith.
+Qed.
+
+
+Lemma diff2_acs x : `abs x < &1 ==> nth_diff_strong 2 acs x`.
+rewrite nth_diff_strong2_eq => x_ineq.
+set e := `&1 - abs x`.
+exists `real_interval (x - e, x + e)`.
+rewrite REAL_OPEN_REAL_INTERVAL andTb !IN_REAL_INTERVAL; split => [|y ineq].
+  by move: x_ineq e_def; arith.
+rewrite REAL_DIFFERENTIABLE_AT_ACS ?andTb; first by move: ineq x_ineq e_def; arith.
+set e2 := `&1 - abs y`.
+apply: differentiable_local; exists `\x. --inv (sqrt (&1 - x * x))` `real_interval (y - e2, y + e2)`.
+rewrite REAL_OPEN_REAL_INTERVAL !IN_REAL_INTERVAL andTb; split.
+  rewrite REAL_DIFFERENTIABLE_NEG REAL_DIFFERENTIABLE_INV_ATREAL.
+  have gt0 : `&0 < &1 - y * y`.
+    by rewrite "REAL_ARITH `&1 - y * y = (&1 - y) * (&1 + y)`" REAL_LT_MUL; move: ineq e_def; arith.
+  rewrite SQRT_EQ_0_COMPAT ?REAL_LT_IMP_LE // REAL_LT_IMP_NZ //=.
+  have ->: `(\x. sqrt (&1 - x * x)) = sqrt o (\x. &1 - x * x)`.
+    by rewrite -eq_ext o_THM /=.
+  rewrite REAL_DIFFERENTIABLE_COMPOSE_ATREAL REAL_DIFFERENTIABLE_AT_SQRT //.
+  rewrite REAL_DIFFERENTIABLE_SUB // REAL_DIFFERENTIABLE_CONST REAL_DIFFERENTIABLE_MUL_ATREAL //.
+  by rewrite REAL_DIFFERENTIABLE_ID.
+split => [|z ineq2].
+  by move: ineq x_ineq e_def e2_def; arith.
+rewrite derivative_acs //=.
+by move: x_ineq ineq e_def e2_def ineq2; arith.
+Qed.
+
+
+Section SecondDerivativeCompose.
+
+Lemma REAL_CONTINUOUS_OPEN_PREIMAGE f s t : `f real_continuous_on s ==> real_open s ==> real_open t ==>
+        real_open {x | x IN s /\ f x IN t}`.
+move => f_cont open_s open_t.
+rewrite REAL_OPEN.
+suff ->: `IMAGE lift {x | x IN s /\ f x IN t} =
+        {x | x IN (IMAGE lift s) /\ (lift o f o drop) x IN (IMAGE lift t)}`.
+  by rewrite CONTINUOUS_OPEN_PREIMAGE -!REAL_OPEN; rewr ETA_AX; rewrite -REAL_CONTINUOUS_ON.
+rewrite EXTENSION IN_IMAGE_LIFT_DROP !IN_ELIM_THM !IN_IMAGE_LIFT_DROP => z /=; split.
+  move => [x] [x_in] x_eq; exists `lift x`.
+  by rewrite !o_THM !LIFT_DROP !x_in -x_eq LIFT_DROP.
+rewrite !o_THM LIFT_DROP => [] [x] [x_in] x_eq.
+by exists `drop x`.
+Qed.
+
+
+Lemma second_derivative_compose f g x : `nth_diff_strong 2 g x ==> nth_diff_strong 2 f (g x) ==>
+        nth_derivative 2 (\x. f (g x)) x =
+        nth_derivative 2 f (g x) * (derivative g x) pow 2 + derivative f (g x) * nth_derivative 2 g x`.
+move => dg df.
+rewrite nth_derivative2; apply: derivative_unique; apply: HAS_REAL_DERIVATIVE_LOCAL.
+exists `\x. derivative f (g x) * derivative g x`; split; last first.
+  move: (df) (dg); rewrite !nth_diff_strong2_eq => [] [s] [open_s] [gxs] d_f [t] [open_t] [xt] d_g.
+  set s' := `{z | z IN t /\ g z IN s}`.
+  have open_s' : `real_open s'`.
+    rewrite -s'_def REAL_CONTINUOUS_OPEN_PREIMAGE open_t open_s !andbT.
+    rewrite REAL_CONTINUOUS_ON_EQ_REAL_CONTINUOUS_AT // => y yt.
+    by rewrite REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL d_g.
+  exists `t INTER s'`; rewrite REAL_OPEN_INTER // !IN_INTER andTb; split.
+    by rewrite -s'_def IN_ELIM_THM xt andTb /=; exists x.
+  move => y [yt ys']; rewrite derivative_composition ?REAL_MUL_SYM //.
+  by rewrite d_g // d_f //; move: ys'; rewrite -s'_def IN_ELIM_THM => [] [z] /=.
+move: df dg; rewrite !nth_diff_strong2_eq_alt => [] [_] d_f [_] d_g.
+rewrite REAL_ADD_SYM REAL_POW_2 REAL_MUL_ASSOC HAS_REAL_DERIVATIVE_MUL_ATREAL; split; last first.
+  by rewr ETA_AX; rewrite d_g.
+rewrite -(o_THM `derivative f`); rewr ETA_AX; rewrite REAL_DIFF_CHAIN_ATREAL.
+by rewrite d_g // d_f.
+Qed.
+
+
+Lemma diff2_compose f g x : `nth_diff_strong 2 g x ==> nth_diff_strong 2 f (g x) ==>
+        nth_diff_strong 2 (\x. f (g x)) x`.
+rewrite !nth_diff_strong2_eq => [] [s] [open_s] [xs] dg [t] [open_t] [gxt] df.
+set s' := `{z | z IN s /\ g z IN t}`.
+have open_s' : `real_open s'`.
+  rewrite -s'_def REAL_CONTINUOUS_OPEN_PREIMAGE open_t open_s !andbT.
+  rewrite REAL_CONTINUOUS_ON_EQ_REAL_CONTINUOUS_AT // => y yt.
+  by rewrite REAL_DIFFERENTIABLE_IMP_CONTINUOUS_ATREAL dg.
+exists `s INTER s'`; rewrite REAL_OPEN_INTER // !IN_INTER andTb; split.
+  by rewrite -s'_def IN_ELIM_THM xs andTb; exists x => /=.
+move => y [ys ys'].
+rewrite -{1}(o_THM f); rewr ETA_AX; rewrite REAL_DIFFERENTIABLE_COMPOSE_ATREAL ?dg ?df ?andTb //.
+  by move: ys'; rewrite -s'_def; rewrite IN_ELIM_THM => [] [z] /=.
+apply: differentiable_local.
+exists `\x. derivative g x * derivative f (g x)` `s INTER s'`; split; last first.
+  rewrite REAL_OPEN_INTER // !IN_INTER {1}ys {1}ys' !andTb => z z_in.
+  rewrite derivative_composition // dg // df //.
+  by move: z_in; rewrite -s'_def; rewrite IN_ELIM_THM => [] [_] [_] /=.
+rewrite REAL_DIFFERENTIABLE_MUL_ATREAL; rewr ETA_AX; rewrite dg // andTb.
+rewrite -(o_THM `derivative f`); rewr ETA_AX; rewrite REAL_DIFFERENTIABLE_COMPOSE_ATREAL dg // df //.
+by move: ys'; rewrite -s'_def; rewrite IN_ELIM_THM => [] [z] /=.
+Qed.
+
+
+(* Auxiliary results about open sets *)
+
+Lemma continuous_not0_exists_open f x : `~(f x = &0) ==> f real_continuous atreal x ==>
+        ?s. real_open s /\ x IN s /\ !y. y IN s ==> ~(f y = &0)`.
+rewrite real_continuous_atreal => fn0 /(_ `abs (f x)`).
+"ANTS_TAC"; first by move: fn0; arith.
+move => [d] [d0] ineq.
+exists `real_interval (x - d, x + d)`.
+rewrite REAL_OPEN_REAL_INTERVAL !IN_REAL_INTERVAL andTb; split => [|y]; first by move: d0; arith.
+by move: (ineq y) d0 fn0; arith.
+Qed.
+
+Lemma continuous_gt_exists_open a f x : `a < f x ==> f real_continuous atreal x ==>
+        ?s. real_open s /\ x IN s /\ !y. y IN s ==> a < f y`.
+move => f_ineq; rewrite real_continuous_atreal => /(_ `f x - a`).
+"ANTS_TAC"; first by move: f_ineq; arith.
+move => [d] [d0] ineq.
+exists `real_interval (x - d, x + d)`.
+rewrite REAL_OPEN_REAL_INTERVAL !IN_REAL_INTERVAL andTb; split => [|y]; first by move: d0; arith.
+by move: (ineq y) d0 f_ineq; arith.
+Qed.
+
+Lemma continuous_lt_exists_open a f x : `f x < a ==> f real_continuous atreal x ==>
+        ?s. real_open s /\ x IN s /\ !y. y IN s ==> f y < a`.
+move => f_ineq; rewrite real_continuous_atreal => /(_ `a - f x`).
+"ANTS_TAC"; first by move: f_ineq; arith.
+move => [d] [d0] ineq.
+exists `real_interval (x - d, x + d)`.
+rewrite REAL_OPEN_REAL_INTERVAL !IN_REAL_INTERVAL andTb; split => [|y]; first by move: d0; arith.
+by move: (ineq y) d0 f_ineq; arith.
+Qed.
+
+
+Variable f : `:real->real`.
+Variable x : `:real`.
+Hypothesis df : `nth_diff_strong 2 f x`.
+
+Lemma second_derivative_compose_atn :
+        `nth_derivative 2 (\x. atn (f x)) x =
+        (nth_derivative 2 f x * (&1 + f x * f x) - &2 * f x * derivative f x pow 2) / (&1 + f x * f x) pow 2`.
+rewrite second_derivative_compose ?diff2_atn // nth_derivative2 second_derivative_atn /= derivative_atn /=.
+rewrite REAL_ADD_SYM !REAL_MUL_LNEG -real_sub.
+set lhs1 := `_1 * _2`; set lhs2 := `_1 * _2`.
+rewrite real_div REAL_INV_POW REAL_SUB_RDISTRIB.
+set rhs1 := `_1 * _2`; set rhs2 := `_1 * _2`.
+apply: "REAL_ARITH `lhs1 = rhs1 /\ lhs2 = rhs2 ==> lhs1 - lhs2 = rhs1 - rhs2`".
+rewrite -lhs2_def -rhs2_def -!REAL_MUL_ASSOC [`_1 * _2 pow 2`]REAL_MUL_SYM -REAL_POW_2; split => //.
+rewrite -rhs1_def REAL_POW_2 -!REAL_MUL_ASSOC "REAL_ARITH `!a b c d. a * b * c * d = a * (b * c) * d`".
+rewrite REAL_MUL_RINV -?lhs1_def ?REAL_MUL_LID ?REAL_MUL_SYM //.
+by move: (REAL_LE_SQUARE `f x`); arith.
+Qed.
+
+
+
+Lemma second_derivative_compose_inv : `~(f x = &0) ==>
+        nth_derivative 2 (\x. inv (f x)) x =
+        (&2 * derivative f x pow 2 - nth_derivative 2 f x * f x) / (f x pow 3)`.
+move => fn0.
+rewrite second_derivative_compose ?diff2_inv // second_derivative_inv // derivative_inv //.
+rewrite REAL_MUL_LNEG -real_sub real_div REAL_SUB_RDISTRIB.
+apply: "REAL_ARITH `!a b c d. a = c /\ b = d ==> a - b = c - d`"; split; first by arith.
+rewrite REAL_INV_POW "ARITH_RULE `3 = SUC 2`" real_powS.
+rewrite "REAL_ARITH `!a b c d. (a * b) * c * d = a * (b * c) * d`" REAL_MUL_RINV // REAL_MUL_LID.
+by rewrite REAL_INV_MUL -REAL_POW_2 REAL_MUL_SYM.
+Qed.
+
+
+Lemma second_derivative_compose_sqrt : `&0 < f x ==>
+        nth_derivative 2 (\x. sqrt (f x)) x =
+        (&2 * nth_derivative 2 f x * f x - derivative f x pow 2) / (&4 * sqrt (f x pow 3))`.
+move => f_pos.
+rewrite second_derivative_compose ?diff2_sqrt // second_derivative_sqrt // derivative_sqrt //.
+rewrite REAL_MUL_LNEG REAL_ADD_SYM -real_sub real_div REAL_SUB_RDISTRIB.
+apply: "REAL_ARITH `!a b c d. a = c /\ b = d ==> a - b = c - d`"; split; last by arith.
+have ->: `sqrt (f x pow 3) = sqrt (f x) * f x`.
+  by rewrite -SQRT_POW ?REAL_LT_IMP_LE // "ARITH_RULE `3 = SUC 2`" real_powS SQRT_POW_2 ?REAL_LT_IMP_LE.
+rewrite !REAL_INV_MUL.
+rewrite "REAL_ARITH `!a b c d. (&2 * a * b) * inv (&4) * c * d = (inv (&2) * c) * a * (b * d)`".
+by rewrite REAL_MUL_RINV ?REAL_POS_NZ // REAL_MUL_RID.
+Qed.
+
+
+Lemma second_derivative_compose_acs : `abs (f x) < &1 ==>
+        nth_derivative 2 (\x. acs (f x)) x =
+        -- ((nth_derivative 2 f x * (&1 - f x * f x) + f x * derivative f x pow 2) /
+        sqrt ((&1 - f x * f x) pow 3))`.
+move => f_ineq.
+rewrite second_derivative_compose ?diff2_acs // second_derivative_acs // derivative_acs //.
+rewrite !REAL_MUL_LNEG -REAL_NEG_ADD REAL_EQ_NEG2 !real_div REAL_ADD_RDISTRIB REAL_ADD_SYM.
+apply: "REAL_ARITH `!a b c d. a = c /\ b = d ==> a + b = c + d`"; split; last by arith.
+set y := `&1 - f x * f x`.
+have y_ineq: `&0 <= y /\ &0 < y /\ ~(y = &0)`.
+  rewrite -y_def "REAL_ARITH `!a. &1 - a * a = (&1 - a) * (&1 + a)`".
+  by rewrite REAL_ENTIRE REAL_LE_MUL ?REAL_LT_MUL; move: f_ineq; arith.
+have ->: `sqrt (y pow 3) = sqrt y * y`.
+  by rewrite -SQRT_POW // "ARITH_RULE `3 = SUC 2`" real_powS SQRT_POW_2.
+rewrite REAL_INV_MUL "REAL_ARITH `!a b c d. (a * b) * c * d = c * a * (b * d)`".
+by rewrite REAL_MUL_RINV // REAL_MUL_RID.
+Qed.
+
+
+(* atn *)
+Lemma diff2_compose_atn : `nth_diff_strong 2 (\x. atn (f x)) x`.
+by rewrite diff2_compose diff2_atn. Qed.
+
+(* inv *)
+Lemma diff2_compose_inv : `~(f x = &0) ==> nth_diff_strong 2 (\x. inv (f x)) x`.
+by move => fn0; rewrite diff2_compose diff2_inv. Qed.
+
+(* sqrt *)
+Lemma diff2_compose_sqrt : `&0 < f x ==> nth_diff_strong 2 (\x. sqrt (f x)) x`.
+by move => f_pos; rewrite diff2_compose diff2_sqrt. Qed.
+
+(* acs *)
+Lemma diff2_compose_acs : `abs (f x) < &1 ==> nth_diff_strong 2 (\x. acs (f x)) x`.
+by move => f_abs; rewrite diff2_compose diff2_acs. Qed.
+
+
+End SecondDerivativeCompose.
+
+
+
+(* mul *)
+
+Lemma second_derivative_mul f g x : `nth_diff_strong 2 f x ==>
+  nth_diff_strong 2 g x ==>
+  nth_derivative 2 (\x. f x * g x) x =
+  f x * nth_derivative 2 g x + &2 * derivative f x * derivative g x + nth_derivative 2 f x * g x`.
+move => df0 dg0; set int := `(x,x)`.
+have [ineq [df dg]]: `interval_arith x int /\ nth_diff_strong_int 2 int f /\ nth_diff_strong_int 2 int g`.
+  rewrite -!int_def !nth_diff_strong_int CONST_INTERVAL andTb.
+  by split => y; rewrite interval_arith REAL_LE_ANTISYM => <-.
+have := nth_derivative_mul df dg `2` ineq; rewrite leqnn => -> //.
+rewrite {1}TWO {1}ONE !"GEN_ALL SUM_CLAUSES_NUMSEG" !"ARITH_RULE `!n. 0 <= SUC n`" /= -ONE -TWO.
+rewrite subnn subn0 "ARITH_RULE `2 - 1 = 1`" !nth_derivative0 !nth_derivative1.
+by rewrite binom BINOM_1 BINOM_REFL !REAL_MUL_LID REAL_ADD_ASSOC.
+Qed.
+
+
+(* div *)
+Lemma second_derivative_div f g x : `~(g x = &0) ==>
+        nth_diff_strong 2 f x ==>
+        nth_diff_strong 2 g x ==>
+        nth_derivative 2 (\x. f x / g x) x =
+        ((nth_derivative 2 f x * g x - f x * nth_derivative 2 g x) * g x -
+        &2 * derivative g x * (derivative f x * g x - f x * derivative g x)) / (g x pow 3)`.
+move => gn0 diff_f diff_g.
+set dg := `derivative g x`; set df := `derivative f x`.
+set ddg := `nth_derivative 2 g x`; set ddf := `nth_derivative 2 f x`.
+rewrite !real_div second_derivative_mul ?second_derivative_compose_inv ?diff2_compose_inv //.
+rewrite derivative_compose_inv.
+  by move: diff_g; rewrite nth_diff_strong2_eq => [] [s] [open_s] [xs] -> //.
+rewrite ddf_def ddg_def df_def dg_def !real_div.
+set lhs := `_1 + _2`.
+rewrite "REAL_RING `!f g x. ((ddf * g x - f x * ddg) * g x - &2 * dg * (df * g x - f x * dg)) *
+                                                inv (g x pow 3) =
+                        f x * (&2 * dg pow 2 - ddg * g x) * inv (g x pow 3) +
+                        &2 * df * --(g x * inv (g x pow 3)) * dg +
+                        ddf * (g x * g x * inv (g x pow 3))`".
+have ->: `g x * inv (g x pow 3) = inv (g x pow 2)`.
+  by rewrite "ARITH_RULE `3 = SUC 2`" real_powS REAL_INV_MUL REAL_MUL_ASSOC REAL_MUL_RINV // REAL_MUL_LID.
+have ->: `g x * inv (g x pow 2) = inv (g x)`.
+  by rewrite TWO real_powS REAL_INV_MUL REAL_MUL_ASSOC REAL_MUL_RINV // REAL_MUL_LID REAL_POW_1.
+by rewrite (REAL_POW_2 `g x`) lhs_def.
+Qed.
+
+Lemma diff2_div f g x : `~(g x = &0) ==> nth_diff_strong 2 f x ==> nth_diff_strong 2 g x ==>
+        nth_diff_strong 2 (\x. f x / g x) x`.
+move => gn0 df0 dg0; set int := `(x,x)`.
+have [ineq [df dg]]: `interval_arith x int /\ nth_diff_strong_int 2 int f /\ nth_diff_strong_int 2 int g`.
+  rewrite -!int_def !nth_diff_strong_int CONST_INTERVAL andTb.
+  by split => y; rewrite interval_arith REAL_LE_ANTISYM => <-.
+have := nth_diff_mul `2` int f `\x. inv (g x)` df.
+rewrite !nth_diff_strong_int /= real_div => ->; split => // y.
+rewrite -int_def interval_arith REAL_LE_ANTISYM => <-.
+by rewrite diff2_compose_inv.
+Qed.
+
+
+(* scale *)
+
+Lemma second_derivative_scale f c x : `nth_diff_strong 2 f x ==>
+        nth_derivative 2 (\x. c * f x) x = c * nth_derivative 2 f x`.
+move => df0; set int := `(x,x)`.
+have [ineq df]: `interval_arith x int /\ nth_diff_strong_int 2 int f`.
+  rewrite -!int_def !nth_diff_strong_int CONST_INTERVAL andTb.
+  by move => y; rewrite interval_arith REAL_LE_ANTISYM => <-.
+by have := nth_derivative_scale df c `2` ineq; rewrite leqnn => ->.
+Qed.
+
+
+(* add *)
+
+Lemma second_derivative_add f g x : `nth_diff_strong 2 f x ==>
+        nth_diff_strong 2 g x ==>
+        nth_derivative 2 (\x. f x + g x) x = nth_derivative 2 f x + nth_derivative 2 g x`.
+move => df0 dg0; set int := `(x,x)`.
+have [ineq [df dg]]: `interval_arith x int /\ nth_diff_strong_int 2 int f /\ nth_diff_strong_int 2 int g`.
+  rewrite -!int_def !nth_diff_strong_int CONST_INTERVAL andTb.
+  by split => y; rewrite interval_arith REAL_LE_ANTISYM => <-.
+by have := nth_derivative_add df dg `2` ineq; rewrite leqnn => ->.
+Qed.
+
+
+(* sub *)
+
+Lemma second_derivative_sub f g x : `nth_diff_strong 2 f x ==>
+        nth_diff_strong 2 g x ==>
+        nth_derivative 2 (\x. f x - g x) x = nth_derivative 2 f x - nth_derivative 2 g x`.
+move => df0 dg0; set int := `(x,x)`.
+have [ineq [df dg]]: `interval_arith x int /\ nth_diff_strong_int 2 int f /\ nth_diff_strong_int 2 int g`.
+  rewrite -!int_def !nth_diff_strong_int CONST_INTERVAL andTb.
+  by split => y; rewrite interval_arith REAL_LE_ANTISYM => <-.
+by have := nth_derivative_sub df dg `2` ineq; rewrite leqnn => ->.
+Qed.
+
+
+(*************************)
+(* Bounds *)
+
+
+(* Composition *)
+Lemma second_derivative_compose_bounds f g int g_bounds dd_bounds :
+        `nth_diff_strong_int 2 int g ==>
+        bounded_on_int g int g_bounds ==>
+        nth_diff_strong_int 2 g_bounds f ==>
+        bounded_on_int (\x. nth_derivative 2 f (g x) * derivative g x pow 2 +
+                        derivative f (g x) * nth_derivative 2 g x) int dd_bounds ==>
+        has_bounded_second_derivative (\x. f (g x)) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /=.
+move => dg g_bounded df bounded; split => x ineq.
+  by rewrite diff2_compose dg // df // g_bounded.
+by rewrite second_derivative_compose ?dg ?df ?g_bounded // bounded.
+Qed.
+
+(* atn *)
+
+Lemma second_derivative_atn_bounds dd_bounds :
+        `bounded_on_int (\x. (-- &2 * x) * inv(&1 + x pow 2) pow 2) int dd_bounds ==>
+        has_bounded_second_derivative atn int dd_bounds`.
+rewrite bounded_on_int has_bounded_second_derivative => ineq.
+split; last by rewrite nth_derivative2 second_derivative_atn bounded_on_int.
+by rewrite nth_diff_strong_int diff2_atn.
+Qed.
+
+Lemma second_derivative_compose_atn_bounds f dd_bounds :
+        `nth_diff_strong_int 2 int f ==>
+        bounded_on_int (\x. (nth_derivative 2 f x * (&1 + f x * f x) - &2 * f x * derivative f x pow 2) /
+                        (&1 + f x * f x) pow 2) int dd_bounds ==>
+        has_bounded_second_derivative (\x. atn (f x)) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /= => df bounded; split => x ineq.
+  by rewrite diff2_compose_atn df.
+by rewrite second_derivative_compose_atn ?df // bounded.
+Qed.
+
+
+(* inv *)
+
+Lemma second_derivative_inv_bounds dd_bounds :
+        `interval_not_zero int ==>
+        bounded_on_int (\x. &2 * inv (x pow 3)) int dd_bounds ==>
+        has_bounded_second_derivative inv int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /= => int0 bounded; split => x ineq.
+  by rewrite diff2_inv (interval_arith_not_zero x int).
+by rewrite second_derivative_inv ?(interval_arith_not_zero x int) // bounded.
+Qed.
+
+Lemma second_derivative_compose_inv_bounds f f_bounds dd_bounds :
+        `bounded_on_int f int f_bounds ==> interval_not_zero f_bounds ==>
+        nth_diff_strong_int 2 int f ==>
+        bounded_on_int (\x. (&2 * derivative f x pow 2 - nth_derivative 2 f x * f x) / f x pow 3)
+                        int dd_bounds ==>
+        has_bounded_second_derivative (\x. inv (f x)) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /= => f_bounded f0 df bounded.
+have fn0: `!x. interval_arith x int ==> ~(f x = &0)`.
+  by move => x ineq; rewrite (interval_arith_not_zero `f x` f_bounds) // f_bounded.
+split => x ineq.
+  by rewrite diff2_compose_inv df // fn0.
+by rewrite second_derivative_compose_inv ?df ?fn0 // bounded.
+Qed.
+
+
+(* sqrt *)
+
+Lemma second_derivative_sqrt_bounds dd_bounds :
+        `interval_pos int ==>
+        bounded_on_int (\x. --inv (&4 * sqrt (x pow 3))) int dd_bounds ==>
+        has_bounded_second_derivative sqrt int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /= => int_pos bounded.
+split => x ineq.
+  by rewrite diff2_sqrt (interval_arith_pos x int).
+by rewrite second_derivative_sqrt ?(interval_arith_pos x int) // bounded.
+Qed.
+
+Lemma second_derivative_compose_sqrt_bounds f f_bounds dd_bounds :
+        `bounded_on_int f int f_bounds ==> interval_pos f_bounds ==>
+        nth_diff_strong_int 2 int f ==>
+        bounded_on_int (\x. (&2 * nth_derivative 2 f x * f x - derivative f x pow 2) /
+                        (&4 * sqrt (f x pow 3)))
+                        int dd_bounds ==>
+        has_bounded_second_derivative (\x. sqrt (f x)) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /= => f_bounded f_int df bounded.
+have f_pos: `!x. interval_arith x int ==> &0 < f x`.
+  by move => x ineq; rewrite (interval_arith_pos `f x` f_bounds) // f_bounded.
+split => x ineq.
+  by rewrite diff2_compose_sqrt df // f_pos.
+by rewrite second_derivative_compose_sqrt ?df ?f_pos // bounded.
+Qed.
+
+
+(* acs *)
+
+Lemma second_derivative_acs_bounds dd_bounds :
+        `iabs int < &1 ==>
+        bounded_on_int (\x. --(x / sqrt ((&1 - x * x) pow 3))) int dd_bounds ==>
+        has_bounded_second_derivative acs int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /= => int_abs bounded.
+split => x ineq.
+  by rewrite diff2_acs (interval_arith_abs x int).
+by rewrite second_derivative_acs ?(interval_arith_abs x int) // bounded.
+Qed.
+
+Lemma second_derivative_compose_acs_bounds f f_bounds dd_bounds :
+        `bounded_on_int f int f_bounds ==> iabs f_bounds < &1 ==>
+        nth_diff_strong_int 2 int f ==>
+        bounded_on_int (\x. --((nth_derivative 2 f x * (&1 - f x * f x) + f x * derivative f x pow 2) /
+                                sqrt ((&1 - f x * f x) pow 3))) int dd_bounds ==>
+        has_bounded_second_derivative (\x. acs (f x)) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int /= => f_bounded f_abs df bounded.
+have fabs: `!x. interval_arith x int ==> abs (f x) < &1`.
+  by move => x ineq; rewrite (interval_arith_abs `f x` f_bounds) // f_bounded.
+split => x ineq.
+  by rewrite diff2_compose_acs df // fabs.
+by rewrite second_derivative_compose_acs ?df ?fabs // bounded.
+Qed.
+
+
+(* scale *)
+
+Lemma second_derivative_scale_bounds c f dd_bounds : `nth_diff_strong_int 2 int f ==>
+        bounded_on_int (\x. c * nth_derivative 2 f x) int dd_bounds ==>
+        has_bounded_second_derivative (\x. c * f x) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int => /= df b.
+rewrite nth_diff_scale // andTb => x ineq.
+rewrite second_derivative_scale ?b //.
+by move: df; rewrite nth_diff_strong_int; exact.
+Qed.
+
+
+(* add *)
+
+Lemma second_derivative_add_bounds f g dd_bounds : `nth_diff_strong_int 2 int f ==>
+        nth_diff_strong_int 2 int g ==>
+        bounded_on_int (\x. nth_derivative 2 f x + nth_derivative 2 g x) int dd_bounds ==>
+        has_bounded_second_derivative (\x. f x + g x) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int => /= df dg b.
+rewrite nth_diff_add // andTb => x ineq.
+rewrite second_derivative_add ?b //.
+by move: df dg; rewrite !nth_diff_strong_int => -> // ->.
+Qed.
+
+
+(* sub *)
+
+Lemma second_derivative_sub_bounds f g dd_bounds : `nth_diff_strong_int 2 int f ==>
+        nth_diff_strong_int 2 int g ==>
+        bounded_on_int (\x. nth_derivative 2 f x - nth_derivative 2 g x) int dd_bounds ==>
+        has_bounded_second_derivative (\x. f x - g x) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int => /= df dg b.
+rewrite nth_diff_sub // andTb => x ineq.
+rewrite second_derivative_sub ?b //.
+by move: df dg; rewrite !nth_diff_strong_int => -> // ->.
+Qed.
+
+
+(* mul *)
+
+Lemma second_derivative_mul_bounds f g dd_bounds : `nth_diff_strong_int 2 int f ==>
+        nth_diff_strong_int 2 int g ==>
+        bounded_on_int (\x. f x * nth_derivative 2 g x + &2 * derivative f x * derivative g x +
+                        nth_derivative 2 f x * g x) int dd_bounds ==>
+        has_bounded_second_derivative (\x. f x * g x) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int => /= df dg b.
+rewrite nth_diff_mul // andTb => x ineq.
+rewrite second_derivative_mul ?b //.
+by move: df dg; rewrite !nth_diff_strong_int => -> // ->.
+Qed.
+
+
+(* div *)
+
+Lemma second_derivative_div_bounds f g g_bounds dd_bounds :
+        `bounded_on_int g int g_bounds ==> interval_not_zero g_bounds ==>
+        nth_diff_strong_int 2 int f ==>
+        nth_diff_strong_int 2 int g ==>
+        bounded_on_int (\x. ((nth_derivative 2 f x * g x - f x * nth_derivative 2 g x) * g x -
+          &2 * derivative g x * (derivative f x * g x - f x * derivative g x)) / g x pow 3) int dd_bounds ==>
+        has_bounded_second_derivative (\x. f x / g x) int dd_bounds`.
+rewrite has_bounded_second_derivative !bounded_on_int !nth_diff_strong_int => bg gn0 /= df dg b.
+have g0 : `!x. interval_arith x int ==> ~(g x = &0)`.
+  by move => x ineq; apply: interval_arith_not_zero; exists `g_bounds`; rewrite bg.
+split => x ineq; first by rewrite diff2_div g0 // df ?dg.
+by rewrite second_derivative_div ?g0 ?df ?dg // b.
+Qed.
+
+
+End SecondDerivativeBound.
+
+
+
+Section TaylorArith.
+
+
+"let cell_domain = new_definition `cell_domain x y z w <=>
+        x <= y /\ y <= z /\ y - x <= w /\ z - y <= w`".
+
+
+Lemma taylor_x x y z w: `cell_domain x y z w ==>
+        taylor_interval (\x. x) x y z w (y, y) (&1, &1) (&0, &0)`.
+rewrite cell_domain => ineqs.
+rewrite taylor_interval !ineqs lin_approx_x !andTb.
+rewrite has_bounded_second_derivative.
+rewrite nth_diff_strong_int nth_diff_strong nth_differentiable_on nth_differentiable_eq; split.
+  move => p _; exists `(:real)`; rewrite REAL_OPEN_UNIV !IN_UNIV !andTb => q /=.
+  rewrite REAL_CONTINUOUS_AT_ID andTb => i.
+  rewrite "ARITH_RULE `i < 2 <=> i = 0 \/ i = 1`"; case => ->.
+    by rewrite nth_derivative0 -ONE nth_derivative1 derivative_x /= HAS_REAL_DERIVATIVE_ID.
+  rewrite nth_derivative1 -TWO nth_derivative2 derivative_x /= derivative_const /=.
+  by rewrite HAS_REAL_DERIVATIVE_CONST.
+rewrite nth_derivative2 derivative_x /= derivative_const bounded_on_int /=.
+by rewrite !interval_arith REAL_LE_REFL.
+Qed.
+
+
+Lemma taylor_const c x y z w: `cell_domain x y z w ==>
+        taylor_interval (\x. c) x y z w (c, c) (&0, &0) (&0, &0)`.
+rewrite cell_domain => ineqs.
+rewrite taylor_interval !ineqs lin_approx_const !andTb.
+rewrite has_bounded_second_derivative.
+rewrite nth_diff_strong_int nth_diff_strong nth_differentiable_on nth_differentiable_eq; split.
+  move => p _; exists `(:real)`; rewrite REAL_OPEN_UNIV !IN_UNIV !andTb => q /=.
+  rewrite REAL_CONTINUOUS_CONST andTb => i.
+  rewrite "ARITH_RULE `i < 2 <=> i = 0 \/ i = 1`"; case => ->.
+    by rewrite nth_derivative0 -ONE nth_derivative1 derivative_const /= HAS_REAL_DERIVATIVE_CONST.
+  by rewrite nth_derivative1 -TWO nth_derivative2 !derivative_const /= HAS_REAL_DERIVATIVE_CONST.
+rewrite nth_derivative2 !derivative_const /= bounded_on_int /=.
+by rewrite !interval_arith REAL_LE_REFL.
+Qed.
+
+
+Variable f : `:real->real`.
+Variables x y z w : `:real`.
+Variables f_bounds df_bounds dd_bounds : `:real#real`.
+Variables f_lo f_hi df_lo df_hi : `:real`.
+
+
+Lemma taylor_f_bounds df dd lo hi t : `taylor_interval f x y z w (f_lo, f_hi) df_bounds dd_bounds ==>
+        iabs df_bounds = df ==>
+        iabs dd_bounds = dd ==>
+        w * (df + w * dd * inv(&2)) <= t ==>
+        f_hi + t <= hi ==> lo <= f_lo - t ==>
+        bounded_on_int f (x, z) (lo, hi)`.
+move => taylor_f iabs_df iabs_dd t_ineq hi_ineq lo_ineq.
+rewrite bounded_on_int !interval_arith => p ineq.
+move: (taylor_lower_bound (EQ_SYM iabs_dd) taylor_f) (taylor_upper_bound (EQ_SYM iabs_dd) taylor_f).
+rewrite /= !real_div iabs_df => /(_ ineq) ineq1 /(_ ineq) ineq2.
+by move: ineq1 ineq2 lo_ineq hi_ineq t_ineq; arith.
+Qed.
+
+
+Lemma taylor_df_bounds dd lo hi: `taylor_interval f x y z w f_bounds (df_lo, df_hi) dd_bounds ==>
+        iabs dd_bounds = dd ==>
+        df_hi + w * dd <= hi ==>
+        lo <= df_lo - w * dd ==>
+        bounded_on_int (derivative f) (x, z) (lo, hi)`.
+move => taylor_f iabs_dd hi_ineq lo_ineq.
+rewrite bounded_on_int !interval_arith => p ineq.
+move: (taylor_derivative_lower_bound (EQ_SYM iabs_dd) taylor_f ineq).
+move: (taylor_derivative_upper_bound (EQ_SYM iabs_dd) taylor_f ineq).
+by move: lo_ineq hi_ineq; arith.
+Qed.
+
+
+Lemma bounded_on_int_compose g int g_bounds : `bounded_on_int g int g_bounds ==>
+        bounded_on_int f g_bounds f_bounds ==>
+        bounded_on_int (\x. f (g x)) int f_bounds`.
+rewrite !bounded_on_int => g_bounded f_bounded x ineq /=.
+by rewrite f_bounded g_bounded.
+Qed.
+
+
+Lemma bounded_on_int_imp_interval_arith int : `bounded_on_int f int f_bounds ==>
+        interval_arith y int ==> interval_arith (f y) f_bounds`.
+rewrite bounded_on_int => bounded_f int_y.
+by rewrite bounded_f.
+Qed.
+
+
+Lemma taylor_interval_narrow x0 z0 w0: `taylor_interval f x y z w f_bounds df_bounds dd_bounds ==>
+        cell_domain x0 y z0 w0 ==>
+        x <= x0 ==> z0 <= z ==>
+        taylor_interval f x0 y z0 w0 f_bounds df_bounds dd_bounds`.
+rewrite !taylor_interval cell_domain !andbA => [] [[ineq lin] dd] c i1 i2.
+rewrite lin andbT; split; first by move: c i1 i2; arith.
+move: dd; rewrite !has_bounded_second_derivative !nth_diff_strong_int !bounded_on_int => df.
+split => p int_p.
+  by rewrite df; move: int_p i1 i2; rewrite !"GEN_ALL interval_arith"; arith.
+by rewrite df; move: int_p i1 i2; rewrite !"GEN_ALL interval_arith"; arith.
+Qed.
+
+
+End TaylorArith.
+
+
+
+
+(********************************)
+
+(*
+Lemma second_derivative_scale a dd : `abs a * dd1 <= dd ==>
+        has_bounded_second_derivative (\x. a * f1 x) s dd`.
+move => ineq; move: ddf1; rewrite !has_bounded_second_derivative.
+move => [dd1_pos] [f'] [f''] ddf; split.
+  by apply: REAL_LE_TRANS; exists `abs a * dd1`; rewrite ineq REAL_LE_MUL // REAL_ABS_POS.
+exists `\x. a * f' x` `\x. a * f'' x` => x xs /=.
+rewrite !HAS_REAL_DERIVATIVE_LMUL_ATREAL ?ddf // !andTb.
+apply: REAL_LE_TRANS; exists `abs a * dd1`; rewrite ineq REAL_ABS_MUL REAL_LE_MUL2 //.
+by rewrite !REAL_ABS_POS REAL_LE_REFL ddf.
+Qed.
+
+
+Hypothesis ddf2 : `has_bounded_second_derivative f2 s dd2`.
+
+Lemma second_derivative_add dd : `dd1 + dd2 <= dd ==>
+        has_bounded_second_derivative (\x. f1 x + f2 x) s dd`.
+move => ineq; move: ddf1 ddf2; rewrite !has_bounded_second_derivative.
+move => [dd1_pos] [f1'] [f1''] ddf1 [dd2_pos] [f2'] [f2''] ddf2; split.
+  by apply: REAL_LE_TRANS; exists `dd1 + dd2:real`; rewrite ineq REAL_LE_ADD.
+exists `\x. f1' x + f2' x:real` `\x. f1'' x + f2'' x:real` => x xs /=.
+rewrite !HAS_REAL_DERIVATIVE_ADD ?ddf1 ?ddf2 // !andTb.
+apply: REAL_LE_TRANS; exists `dd1 + dd2 : real`; rewrite ineq andbT.
+apply: REAL_LE_TRANS; exists `abs (f1'' x) + abs (f2'' x)`.
+by rewrite REAL_LE_ADD2 ?ddf1 ?ddf2 // REAL_ABS_TRIANGLE.
+Qed.
+
+
+Lemma second_derivative_sub dd : `dd1 + dd2 <= dd ==>
+        has_bounded_second_derivative (\x. f1 x - f2 x) s dd`.
+move => ineq; move: ddf1 ddf2; rewrite !has_bounded_second_derivative.
+move => [dd1_pos] [f1'] [f1''] ddf1 [dd2_pos] [f2'] [f2''] ddf2; split.
+  by apply: REAL_LE_TRANS; exists `dd1 + dd2:real`; rewrite ineq REAL_LE_ADD.
+exists `\x. f1' x - f2' x:real` `\x. f1'' x - f2'' x:real` => x xs /=.
+rewrite !HAS_REAL_DERIVATIVE_SUB ?ddf1 ?ddf2 // !andTb real_sub.
+apply: REAL_LE_TRANS; exists `dd1 + dd2 : real`; rewrite ineq andbT.
+apply: REAL_LE_TRANS; exists `abs (f1'' x) + abs (-- f2'' x)`.
+by rewrite {2}REAL_ABS_NEG REAL_LE_ADD2 ?ddf1 ?ddf2 // REAL_ABS_TRIANGLE.
+Qed.
+
+
+Lemma second_derivative_mul dd bf1 bf2 bdf1 bdf2 :
+        `bounded_on f1 s bf1 ==> bounded_on f2 s bf2 ==>
+        bounded_on (derivative f1) s bdf1 ==> bounded_on (derivative f2) s bdf2 ==>
+        dd1 * bf2 + &2 * bdf1 * bdf2 + dd2 * bf1 <= dd ==>
+        has_bounded_second_derivative (\x. f1 x * f2 x) s dd`.
+rewrite !bounded_on => b_f1 b_f2 b_df1 b_df2 ineq.
+move: ddf1 ddf2; rewrite !has_bounded_second_derivative.
+move => [dd1_pos] [f1'] [f1''] ddf1 [dd2_pos] [f2'] [f2''] ddf2; split.
+  apply: REAL_LE_TRANS; exists `dd1 * bf2 + &2 * bdf1 * bdf2 + dd2 * bf1`.
+  by rewrite ineq andbT !REAL_LE_ADD ?REAL_LE_MUL //; arith.
+have : `bounded_on f1' s bdf1`.
+  rewrite bounded_on b_df1 andTb => x xs.
+  suff ->: `f1' x = derivative f1 x`; first by rewrite b_df1.
+  by rewrite EQ_SYM_EQ; apply: derivative_unique; rewrite ddf1.
+have : `bounded_on f2' s bdf2`.
+  rewrite bounded_on b_df2 andTb => x xs.
+  suff ->: `f2' x = derivative f2 x`; first by rewrite b_df2.
+  by rewrite EQ_SYM_EQ; apply: derivative_unique; rewrite ddf2.
+rewrite !bounded_on => b_f2' b_f1'.
+exists `\x. f1 x * f2' x + f1' x * f2 x`.
+exists `\x. f1'' x * f2 x + &2 * f1' x * f2' x + f1 x * f2'' x` => x xs /=.
+rewrite HAS_REAL_DERIVATIVE_MUL_ATREAL ?ddf1 ?ddf2 // andTb; split; last first.
+  apply: REAL_LE_TRANS; exists `dd1 * bf2 + &2 * bdf1 * bdf2 + dd2 * bf1`.
+  rewrite ineq andbT.
+  apply: REAL_LE_TRANS; exists `abs (f1'' x * f2 x) + abs (&2 * f1' x * f2' x + f1 x * f2'' x)`.
+  rewrite REAL_ABS_TRIANGLE andTb REAL_LE_ADD2 REAL_ABS_MUL.
+  rewrite REAL_LE_MUL2 ?REAL_ABS_POS ?ddf1 ?b_f2 // andTb.
+  apply: REAL_LE_TRANS; exists `abs (&2 * f1' x * f2' x) + abs (f1 x * f2'' x)`.
+  rewrite REAL_ABS_TRIANGLE andTb REAL_LE_ADD2 !REAL_ABS_MUL [`dd2 * _`]REAL_MUL_SYM.
+  rewrite !REAL_LE_MUL2 ?REAL_ABS_POS ?b_f1' ?b_f2' ?b_f1 ?ddf2 // REAL_LE_MUL ?REAL_ABS_POS //.
+  by arith.
+rewrite "REAL_ARITH `f1'' (x:real) * f2 x + &2 * f1' x * f2' x + f1 x * f2'' x =
+                   (f1 x * f2'' x + f1' x * f2' x) + (f1' x * f2' x + f1'' x * f2 x)`".
+by rewrite HAS_REAL_DERIVATIVE_ADD !HAS_REAL_DERIVATIVE_MUL_ATREAL ?ddf1 ?ddf2.
+Qed.
+*)

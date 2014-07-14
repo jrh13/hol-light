@@ -1,0 +1,582 @@
+(* =========================================================== *)
+(* Formal arctangent and arccosine                             *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "Multivariate/realanalysis.ml";;
+
+needs "jordan/refinement.hl";;
+open Refinement;;
+needs "jordan/parse_ext_override_interface.hl";;
+needs "jordan/real_ext.hl";;
+prioritize_real();;
+needs "jordan/taylor_atn.hl";;
+
+needs "arith/float.hl";;
+needs "list/more_list.hl";;
+
+module type Float_atn_sig =
+  sig
+    val float_interval_pow_simple : int -> int -> thm -> thm
+    val pi_approx_array : thm array
+    val pi2_approx_array : thm array
+
+    val float_interval_atn : int -> thm -> thm
+    val float_interval_acs : int -> thm -> thm
+end;;
+
+module Float_atn : Float_atn_sig = struct
+
+open Arith_misc;;
+open Interval_arith;;
+open Float_theory;;
+open Arith_float;;
+open Taylor_atn;;
+open More_list;;
+
+(******************************)
+let x_var_real = `x:real` and
+    n_var_num = `n:num` and
+    e_var_num = `e:num` and
+    a_var_real = `a:real` and
+    b_var_real = `b:real` and
+    d_var_real = `d:real` and
+    hi_var_real = `hi:real` and
+    lo_var_real = `lo:real`;;
+
+let add_op_real = `(+):real->real->real` and
+    sub_op_real = `(-):real->real->real` and
+    mul_op_real = `( * ):real->real->real` and
+    div_op_real = `(/):real->real->real` and
+    neg_op_real = `(--):real->real` and
+    mul_op_num = `( * ):num->num->num` and
+    add_op_num = `(+):num->num->num`;;
+
+(******************************)
+(* halfatn and halfatn4 *)
+
+let float_interval_1 = mk_float_interval_small_num 1;;
+
+let HALFATN' = (SYM o SPEC_ALL o REWRITE_RULE[REAL_POW_2]) halfatn;;
+let HALFATN4' = prove(`halfatn(halfatn(halfatn(halfatn x))) = halfatn4 x`,
+                      REWRITE_TAC[halfatn4; o_THM]);;
+
+let float_interval_halfatn pp x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let xx_th = float_interval_mul pp x_th x_th in
+  let one_xx_th = float_interval_add pp float_interval_1 xx_th in
+  let sqrt_th = float_interval_sqrt pp one_xx_th in
+  let one_sqrt_th = float_interval_add pp sqrt_th float_interval_1 in
+  let r_th = float_interval_div pp x_th one_sqrt_th in
+  let th0 = INST[x_tm, x_var_real] HALFATN' in
+  let ltm, rtm = dest_comb(concl r_th) in
+    EQ_MP (AP_THM (AP_TERM (rator ltm) th0) rtm) r_th;;
+
+let float_interval_halfatn4 pp x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let r_th = float_interval_halfatn pp
+    (float_interval_halfatn pp
+       (float_interval_halfatn pp (float_interval_halfatn pp x_th))) in
+  let th0 = INST[x_tm, x_var_real] HALFATN4' in
+  let ltm, rtm = dest_comb(concl r_th) in
+    EQ_MP (AP_THM (AP_TERM (rator ltm) th0) rtm) r_th;;
+
+
+(****************************************)
+let rec float_interval_calc pp expr x_th =
+  if is_var expr then
+    x_th
+  else
+    let ltm, r_tm = dest_comb expr in
+      if is_comb ltm then
+        let op, l_tm = dest_comb ltm in
+        let l_th = float_interval_calc pp l_tm x_th in
+        let r_th = float_interval_calc pp r_tm x_th in
+          if op = add_op_real then
+            float_interval_add pp l_th r_th
+          else if op = mul_op_real then
+            float_interval_mul pp l_th r_th
+          else if op = div_op_real then
+            float_interval_div pp l_th r_th
+          else if op = sub_op_real then
+            float_interval_sub pp l_th r_th
+          else
+            failwith ("Unknown operation: " ^ (fst o dest_const) op)
+      else
+        if ltm = neg_op_real then
+          let r_th = float_interval_calc pp r_tm x_th in
+            float_interval_neg r_th
+        else
+          mk_float_interval_num (dest_numeral r_tm);;
+
+
+(*************************************)
+(* Polynomial functions *)
+let poly_f = new_definition `poly_f cs x = ITLIST (\c s. c + x * s) cs (&0)`;;
+
+(* Even function *)
+let poly_f_even = new_definition `poly_f_even cs x = ITLIST (\c s. c + (x * x) * s) cs (&0)`;;
+(* Odd function *)
+let poly_f_odd = new_definition `poly_f_odd cs x = x * poly_f_even cs x`;;
+let poly_f_odd' = SPECL[`t:(real)list`; `x:real`] poly_f_odd;;
+
+let NUMERALS_TO_NUM = Arith_nat.NUMERALS_TO_NUM;;
+
+let POLY_F_EMPTY = (NUMERALS_TO_NUM o prove) (`poly_f [] x = &0`, REWRITE_TAC[poly_f; ITLIST]) and
+    POLY_F_CONS = prove(`poly_f (CONS h t) x = h + x * poly_f t x`, REWRITE_TAC[poly_f; ITLIST]);;
+
+let POLY_F_EVEN_EMPTY = (NUMERALS_TO_NUM o prove) (`poly_f_even [] x = &0`, REWRITE_TAC[poly_f_even; ITLIST]) and
+    POLY_F_EVEN_CONS = prove(`poly_f_even (CONS h t) x = h + (x * x) * poly_f_even t x`, REWRITE_TAC[poly_f_even; ITLIST]);;
+
+let POLY_F_ODD_EMPTY = (NUMERALS_TO_NUM o prove) (`poly_f_odd [] x = &0`, REWRITE_TAC[poly_f_odd; poly_f_even; ITLIST; REAL_MUL_RZERO]);;
+
+(* TABLE *)
+let rec reverse_table_conv tm =
+  let ltm, i_tm = dest_comb tm in
+    if (i_tm = `0`) then
+      ONCE_REWRITE_CONV[REVERSE_TABLE] tm
+    else
+      let i_suc = num_CONV i_tm in
+      let th1 = ONCE_REWRITE_RULE[REVERSE_TABLE] (AP_TERM ltm i_suc) in
+      let ltm, rtm = dest_comb (rand(concl th1)) in
+      let th2 = reverse_table_conv rtm in
+        TRANS th1 (AP_TERM ltm th2);;
+
+let atn_co_table = new_definition `atn_co_table n = TABLE
+  (\k. (if (EVEN k) then &1 else --(&1)) / &(2 * k + 1)) (SUC n)`;;
+
+(* Returns a theorem |- atn_co_table n = [...] and
+   a list of interval approximations of the coefficients in the table *)
+let mk_atn_co_table pp n =
+  let table = SPEC (mk_small_numeral n) atn_co_table in
+  let th = CONV_RULE (DEPTH_CONV NUM_SUC_CONV THENC
+                        REWRITE_CONV[TABLE] THENC
+                        ONCE_DEPTH_CONV reverse_table_conv THENC
+                        REWRITE_CONV[REVERSE; APPEND] THENC
+                        NUM_REDUCE_CONV) table in
+  let list = (rand o concl) th in
+    th, map (fun tm -> float_interval_calc pp tm float_interval_1) (dest_list list);;
+
+let POLY_F_EVEN_ALT = prove(`poly_f_even cs x = poly_f cs (x * x)`,
+                            REWRITE_TAC[poly_f_even; poly_f]);;
+
+let POLY_F_APPEND = prove(`!x b a. poly_f (APPEND a b) x = poly_f a x + x pow (LENGTH a) * poly_f b x`,
+   GEN_TAC THEN GEN_TAC THEN
+     MATCH_MP_TAC list_INDUCT THEN
+     REPEAT STRIP_TAC THENL
+     [
+       REWRITE_TAC[APPEND; poly_f; ITLIST; LENGTH] THEN
+         REWRITE_TAC[real_pow; REAL_MUL_LID; REAL_ADD_LID];
+       ALL_TAC
+     ] THEN
+
+     REWRITE_TAC[APPEND; poly_f; ITLIST] THEN
+     ASM_REWRITE_TAC[GSYM poly_f] THEN
+     REWRITE_TAC[LENGTH; real_pow] THEN
+     REAL_ARITH_TAC);;
+
+let POLY_F_EVEN_APPEND = prove(`!x b a. poly_f_even (APPEND a b) x = poly_f_even a x + x pow (2 * LENGTH a) * poly_f_even b x`,
+   REWRITE_TAC[POLY_F_EVEN_ALT; POLY_F_APPEND] THEN
+     REWRITE_TAC[GSYM REAL_POW_2; REAL_POW_POW]);;
+
+let POLY_F_ODD_APPEND = prove(`!x b a. poly_f_odd (APPEND a b) x = poly_f_odd a x + x pow (2 * LENGTH a) * poly_f_odd b x`,
+   REPEAT GEN_TAC THEN
+     REWRITE_TAC[poly_f_odd] THEN
+     REWRITE_TAC[POLY_F_EVEN_APPEND] THEN
+     REAL_ARITH_TAC);;
+
+let ATN_SUM_TABLE = prove(`!x n. sum (0..n) (halfatn4_co x) = poly_f_odd (atn_co_table n) (halfatn4 x)`,
+   GEN_TAC THEN INDUCT_TAC THENL
+     [
+       REWRITE_TAC[SUM_SING_NUMSEG; atn_co_table; TABLE; REVERSE_TABLE; REVERSE; APPEND] THEN
+         REWRITE_TAC[ARITH_EVEN] THEN
+         REWRITE_TAC[poly_f_odd; poly_f_even; ITLIST] THEN
+         REWRITE_TAC[halfatn4_co; REAL_MUL_RZERO; REAL_ADD_RID] THEN
+         REWRITE_TAC[MULT_CLAUSES; ARITH_ADD; REAL_POW_1; real_pow] THEN
+         REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+
+     REWRITE_TAC[SUM_CLAUSES_NUMSEG; atn_co_table; TABLE; LE_0] THEN
+     ONCE_REWRITE_TAC[REVERSE_TABLE] THEN
+     ONCE_REWRITE_TAC[REVERSE] THEN
+     REWRITE_TAC[GSYM TABLE; GSYM atn_co_table] THEN
+     ASM_REWRITE_TAC[POLY_F_ODD_APPEND] THEN
+     REWRITE_TAC[REAL_EQ_ADD_LCANCEL] THEN
+     REWRITE_TAC[atn_co_table; LENGTH_TABLE; halfatn4_co] THEN
+     REWRITE_TAC[poly_f_odd; poly_f_even; ITLIST; REAL_MUL_RZERO; REAL_ADD_RID] THEN
+     REWRITE_TAC[real_div; REAL_MUL_ASSOC] THEN
+     REWRITE_TAC[REAL_EQ_MUL_RCANCEL] THEN
+     DISJ1_TAC THEN
+     REWRITE_TAC[REAL_MUL_AC] THEN
+     REWRITE_TAC[GSYM real_pow; ARITH_RULE `2 * SUC n + 1 = SUC (2 * SUC n)`] THEN
+     GEN_REWRITE_TAC LAND_CONV [REAL_MUL_AC] THEN
+     REWRITE_TAC[REAL_EQ_MUL_RCANCEL] THEN
+     DISJ1_TAC THEN
+     REWRITE_TAC[REAL_POW_NEG; real_pow; REAL_POW_ONE; REAL_MUL_RID]);;
+
+let POLY_F_SING = prove(`poly_f [c] x = c`,
+   REWRITE_TAC[poly_f; ITLIST; REAL_MUL_RZERO; REAL_ADD_RID]);;
+
+(********************)
+let c_var_real = `c:real` and
+    cs_var_list = `cs:(real)list` and
+    h_var_real = `h:real` and
+    t_var_list = `t:(real)list`;;
+
+let interval_const = `interval_arith`;;
+
+let rec float_interval_poly_f pp (cs, l) x_th =
+  if length l = 0 then
+    failwith "float_interval_poly_f: an empty coefficient list"
+  else
+    let ltm, x_bounds = dest_comb (concl x_th) in
+    let x_tm = rand ltm in
+    let first = hd l in
+    let ltm, first_bounds = dest_comb (concl first) in
+    let first_tm = rand ltm in
+      if length l = 1 then
+        let th0 = INST[first_tm, c_var_real; x_tm, x_var_real] POLY_F_SING in
+          EQ_MP (SYM (AP_THM (AP_TERM interval_const th0) first_bounds)) first
+      else
+        let ltm, t_tm = dest_comb cs in
+        let h_tm = rand ltm in
+
+        let th0 = INST[h_tm, h_var_real; t_tm, t_var_list; x_tm, x_var_real] POLY_F_CONS in
+        let r_th = float_interval_poly_f pp (t_tm, tl l) x_th in
+        let th1 = float_interval_add pp first (float_interval_mul pp x_th r_th) in
+        let bounds = rand (concl th1) in
+          EQ_MP (SYM (AP_THM (AP_TERM interval_const th0) bounds)) th1;;
+
+let float_interval_poly_f_even pp (cs, l) x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let xx_th = float_interval_mul pp x_th x_th in
+  let th0 = INST[cs, cs_var_list; x_tm, x_var_real] POLY_F_EVEN_ALT in
+  let th1 = float_interval_poly_f pp (cs, l) xx_th in
+  let bounds = rand(concl th1) in
+    EQ_MP (SYM (AP_THM (AP_TERM interval_const th0) bounds)) th1;;
+
+let float_interval_poly_f_odd pp (cs, l) x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let th0 = INST[cs, t_var_list; x_tm, x_var_real] poly_f_odd' in
+  let even_th = float_interval_poly_f_even pp (cs, l) x_th in
+  let th1 = float_interval_mul pp x_th even_th in
+  let bounds = rand(concl th1) in
+    EQ_MP (SYM (AP_THM (AP_TERM interval_const th0) bounds)) th1;;
+
+
+let poly_f_odd_const = `poly_f_odd`;;
+let ATN_SUM_TABLE' = SPEC_ALL ATN_SUM_TABLE;;
+let float_interval_16 = mk_float_interval_small_num 16;;
+
+(* Computes an interval for &16 * sum(0..n) (halfatn4_co x) *)
+let float_interval_atn_sum pp (cs_th, l) x_th =
+  let n_tm = (rand o lhand o concl) cs_th in
+  let cs_tm = rand(concl cs_th) in
+  let halfatn4 = float_interval_halfatn4 pp x_th in
+
+  let poly_th = float_interval_poly_f_odd pp (cs_tm, l) halfatn4 in
+  let bounds = rand (concl poly_th) in
+  let halfatn4_tm = (rand o rator o concl) halfatn4 in
+  let x_tm = rand halfatn4_tm in
+
+  let th1 = AP_THM (AP_TERM interval_const (AP_THM (AP_TERM poly_f_odd_const cs_th) halfatn4_tm)) bounds in
+  let poly_atn_th = EQ_MP (SYM th1) poly_th in
+  let bounds = rand (concl poly_atn_th) in
+
+  let th2 = INST[n_tm, n_var_num; x_tm, x_var_real] ATN_SUM_TABLE' in
+  let th3 = EQ_MP (SYM (AP_THM (AP_TERM interval_const th2) bounds)) poly_atn_th in
+    float_interval_mul pp float_interval_16 th3;;
+
+
+(******************************)
+let bounds_var_pair = `bounds:real#real`;;
+
+let FLOAT_INTERVAL_INV = prove(`interval_arith (&1 / x) bounds <=>
+                                 interval_arith (inv x) bounds`,
+   REWRITE_TAC[real_div; REAL_MUL_LID]);;
+
+let float_interval_inv pp x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let r_th = float_interval_div pp float_interval_1 x_th in
+  let th0 = INST[x_tm, x_var_real; rand(concl r_th), bounds_var_pair] FLOAT_INTERVAL_INV in
+    EQ_MP th0 r_th;;
+
+let REAL_POW_SUC = (SPEC_ALL o CONJUNCT2) real_pow;;
+
+let INTERVAL_REAL_POW_0 = prove(mk_comb(`interval_arith (x pow 0)`, (rand o concl) float_interval_1),
+                                REWRITE_TAC[real_pow; float_interval_1]);;
+
+let INTERVAL_REAL_POW_1 = prove(`interval_arith x bounds <=> interval_arith (x pow 1) bounds`,
+                                REWRITE_TAC[REAL_POW_1]);;
+
+
+let rec float_interval_pow_simple pp n x_th =
+  let x_tm = (rand o rator o concl) x_th in
+    if n = 0 then
+      INST[x_tm, x_var_real] INTERVAL_REAL_POW_0
+    else
+      if n = 1 then
+        let bounds = rand(concl x_th) in
+        let th0 = INST[x_tm, x_var_real; bounds, bounds_var_pair] INTERVAL_REAL_POW_1 in
+          EQ_MP th0 x_th
+      else
+        let n_tm' = mk_small_numeral n in
+        let n_suc = num_CONV n_tm' in
+        let n_tm = rand(rand(concl n_suc)) in
+        let th0 = INST[x_tm, x_var_real; n_tm, n_var_num] REAL_POW_SUC in
+        let r_th = float_interval_pow_simple pp (n - 1) x_th in
+        let th1 = float_interval_mul pp x_th r_th in
+        let bounds = rand (concl th1) in
+        let th2 = TRANS (AP_TERM (rator(lhand(concl th0))) n_suc) th0 in
+          EQ_MP (SYM (AP_THM (AP_TERM interval_const th2) bounds)) th1;;
+
+let float_interval_2 = mk_float_interval_small_num 2 and
+    six_const = `6` and
+    five_const = `5`;;
+
+(* Computes an interval for inv(&2 pow (6 * n + 5)) *)
+let compute_eps1 pp n =
+  let n_tm = mk_small_numeral n in
+  let n6 = NUM_MULT_CONV (mk_binop mul_op_num six_const n_tm) in
+  let n65_1 = AP_THM (AP_TERM add_op_num n6) five_const in
+  let n65_2 = NUM_ADD_CONV (rand (concl n65_1)) in
+  let n65 = TRANS n65_1 n65_2 in
+  let pow_th = float_interval_pow_simple pp (6 * n + 5) float_interval_2 in
+  let ltm, bounds = dest_comb(concl pow_th) in
+  let pow_tm = (rator o rand) ltm in
+  let th0 = EQ_MP (SYM (AP_THM (AP_TERM interval_const (AP_TERM pow_tm n65)) bounds)) pow_th in
+    float_interval_inv pp th0;;
+
+
+(**********************************)
+let FLOAT_ATN_LO_HI = prove(`interval_arith (&16 * sum(0..n) (halfatn4_co x)) (a, b) /\
+                              interval_arith (inv(&2 pow (6*n + 5))) (c,d) /\
+                              b + d <= hi /\ lo <= a - d
+                              ==> interval_arith (atn x) (lo, hi)`,
+   REWRITE_TAC[interval_arith] THEN
+     STRIP_TAC THEN
+     MP_TAC (SPEC_ALL real_taylor_atn_halfatn4) THEN
+     MP_TAC (REAL_ARITH `&0 <= abs(&16)`) THEN
+     REWRITE_TAC[IMP_IMP] THEN
+     DISCH_THEN (MP_TAC o MATCH_MP REAL_LE_LMUL) THEN
+     REWRITE_TAC[GSYM REAL_ABS_MUL; REAL_ARITH `a * (b - c) = a * b - a * c:real`] THEN
+     ONCE_REWRITE_TAC[GSYM atn_halfatn4] THEN
+     REWRITE_TAC[REAL_ARITH `abs (x - v) <= e <=> v - e <= x /\ x <= v + e`] THEN
+     REWRITE_TAC[REAL_ABS_NUM] THEN
+     SUBGOAL_THEN `&16 * inv(&8 pow (2 * n + 3)) = inv(&2 pow (6 * n + 5))` (fun th -> REWRITE_TAC[th]) THENL
+     [
+       REWRITE_TAC[GSYM real_div] THEN
+         SUBGOAL_THEN `&16 = &2 pow 4 /\ &8 = &2 pow 3 /\ ~(&2 = &0)` ASSUME_TAC THENL
+         [
+           REAL_ARITH_TAC;
+           ALL_TAC
+         ] THEN
+         ASM_REWRITE_TAC[REAL_POW_POW] THEN
+         ASM_SIMP_TAC[REAL_DIV_POW2] THEN
+         REWRITE_TAC[ARITH_RULE `~(3 * (2 * n + 3) <= 4)`] THEN
+         REPEAT AP_TERM_TAC THEN
+         ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[GSYM halfatn4_co] THEN
+     SUBGOAL_THEN `sum (0..n) (\j. halfatn4_co x j) = sum (0..n) (halfatn4_co x)` (fun th -> REWRITE_TAC[th]) THENL
+     [
+       AP_TERM_TAC THEN
+         REWRITE_TAC[FUN_EQ_THM];
+       ALL_TAC
+     ] THEN
+     REPEAT (POP_ASSUM MP_TAC) THEN
+     REAL_ARITH_TAC);;
+
+let FLOAT_ATN_LO_HI' = (UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP]) FLOAT_ATN_LO_HI;;
+
+let float_interval_atn_0 pp (cs_th, l) eps1_th x_th =
+  let sum_th = float_interval_atn_sum pp (cs_th, l) x_th in
+  let n_tm = (rand o lhand o concl) cs_th in
+  let x_tm = (rand o rator o concl) x_th in
+
+  let sum_bounds = rand (concl sum_th) in
+  let a_tm, b_tm = dest_pair sum_bounds in
+  let c_tm, d_tm = (dest_pair o rand o concl) eps1_th in
+
+  let hi_th = float_add_hi pp b_tm d_tm in
+  let lo_th = float_sub_lo pp a_tm d_tm in
+  let hi_tm = rand(concl hi_th) in
+  let lo_tm = lhand(concl lo_th) in
+
+  let th0 = INST[n_tm, n_var_num; x_tm, x_var_real;
+                 a_tm, a_var_real; b_tm, b_var_real;
+                 c_tm, c_var_real; d_tm, d_var_real;
+                 hi_tm, hi_var_real; lo_tm, lo_var_real] FLOAT_ATN_LO_HI' in
+    MY_PROVE_HYP lo_th (MY_PROVE_HYP hi_th (MY_PROVE_HYP sum_th (MY_PROVE_HYP eps1_th th0)));;
+
+(* Fill in lookup tables *)
+
+(* Computes n such that 2^(-(6n + 5)) <= base^(-(p + 1)) *)
+let n_of_p pp =
+  let x = (float_of_int (pp + 1) *. log (float_of_int Arith_hash.arith_base) /. log (2.0) -. 5.0) /. 6.0 in
+  let n = (int_of_float o ceil) x in
+    if n < 1 then 1 else n;;
+
+let atn_co_array = Array.init 21 (fun i -> mk_atn_co_table (i + 1) (n_of_p i));;
+let eps1_array = Array.init 21 (fun i -> compute_eps1 (i + 1) (n_of_p i));;
+
+let float_interval_atn pp x_th =
+  float_interval_atn_0 pp atn_co_array.(pp) eps1_array.(pp) x_th;;
+
+(*****************************************)
+(* pi approximation *)
+
+let pp = 20;;
+let x_th = float_interval_1;;
+let th1 = float_interval_atn pp x_th;;
+let th2 = float_interval_mul pp (mk_float_interval_small_num 4) th1;;
+let float_interval_pi = REWRITE_RULE[ATN_1; REAL_ARITH `&4 * pi / &4 = pi`] th2;;
+let float_interval_pi2 = float_interval_div pp float_interval_pi float_interval_2;;
+
+
+let pi_approx_array = Array.init 19 (fun i -> float_interval_round i float_interval_pi);;
+let pi2_approx_array = Array.init 19 (fun i -> float_interval_round i float_interval_pi2);;
+
+(********************************************)
+(* acs *)
+
+let TAN_HALF = prove(`!x. ~(cos x = -- &1) ==> tan (x / &2) = sin x / (&1 + cos x)`,
+   GEN_TAC THEN
+     ABBREV_TAC `t = x / &2` THEN
+     SUBGOAL_THEN `x = &2 * t` ASSUME_TAC THENL
+     [
+       EXPAND_TAC "t" THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+
+     ASM_REWRITE_TAC[SIN_DOUBLE; COS_DOUBLE_COS; REAL_ARITH `&1 + a - &1 = a`] THEN
+     REWRITE_TAC[REAL_ARITH `a - &1 = -- &1 <=> a = &0`] THEN
+     REWRITE_TAC[real_div; REAL_INV_MUL; REAL_POW_2] THEN
+     REWRITE_TAC[REAL_ENTIRE; REAL_ARITH `&2 = &0 <=> F`] THEN
+     DISCH_TAC THEN
+     REWRITE_TAC[REAL_ARITH `(&2 * s * c) * i2 * ic * ic = (&2 * i2) * (c * ic) * s * ic`] THEN
+     ASM_SIMP_TAC[REAL_MUL_RINV; REAL_ARITH `~(&2 = &0)`] THEN
+     REWRITE_TAC[REAL_MUL_LID; tan; real_div]);;
+
+let X_EQ_COS_T = prove(`!x. abs x <= &1 ==> ?t. &0 <= t /\ t <= pi /\ x = cos t`,
+   REWRITE_TAC[REAL_ARITH `abs x <= &1 <=> -- &1 <= x /\ x <= &1`] THEN
+     REPEAT STRIP_TAC THEN
+     EXISTS_TAC `acs x` THEN
+     ASM_SIMP_TAC[ACS_BOUNDS; COS_ACS]);;
+
+let ACS_ATN_ALT = prove(`!x. -- &1 < x /\ x <= &1 ==>
+                          acs x = &2 * atn (sqrt (&1 - x pow 2) / (&1 + x))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPEC_ALL X_EQ_COS_T) THEN
+     ANTS_TAC THENL
+     [
+       REPEAT (POP_ASSUM MP_TAC) THEN
+         REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REPEAT STRIP_TAC THEN
+     ASM_REWRITE_TAC[] THEN
+     ASM_SIMP_TAC[ACS_COS] THEN
+     MP_TAC (SPEC `t:real` SIN_COS_SQRT) THEN
+     ANTS_TAC THENL
+     [
+       ASM_SIMP_TAC[SIN_POS_PI_LE];
+       ALL_TAC
+     ] THEN
+
+     DISCH_THEN (fun th -> REWRITE_TAC[SYM th]) THEN
+     MP_TAC (SPEC `t:real` TAN_HALF) THEN
+     ANTS_TAC THENL
+     [
+       POP_ASSUM (fun th -> REWRITE_TAC[SYM th]) THEN
+         UNDISCH_TAC `-- &1 < x` THEN
+         REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+
+     DISCH_THEN (fun th -> REWRITE_TAC[SYM th]) THEN
+     REWRITE_TAC[REAL_ARITH `t = &2 * a <=> a = t / &2`] THEN
+     MATCH_MP_TAC TAN_ATN THEN
+     REWRITE_TAC[REAL_ARITH `a / &2 < b / &2 <=> a < b`] THEN
+     REWRITE_TAC[REAL_ARITH `--(a / &2) < b / &2 <=> --a < b`] THEN
+     CONJ_TAC THENL
+     [
+       MATCH_MP_TAC REAL_LTE_TRANS THEN
+         EXISTS_TAC `&0` THEN
+         ASM_REWRITE_TAC[REAL_NEG_LT0; PI_POS];
+       SUBGOAL_THEN `t = acs x` MP_TAC THENL
+         [
+           ASM_SIMP_TAC[ACS_COS];
+           ALL_TAC
+         ] THEN
+         DISCH_THEN (fun th -> REWRITE_TAC[th]) THEN
+         REWRITE_TAC[SYM ACS_NEG_1] THEN
+         MATCH_MP_TAC ACS_MONO_LT THEN
+         ASM_REWRITE_TAC[REAL_LE_REFL]
+     ]);;
+
+let FLOAT_F_LT = prove(`!n e. &0 < float_num F n e <=> ~(n = 0)`,
+                       REWRITE_TAC[REAL_ARITH `&0 < a <=> &0 <= a /\ ~(a = &0)`] THEN
+                         REWRITE_TAC[FLOAT_F_POS; FLOAT_EQ_0]);;
+
+let FLOAT_INTERVAL_ACS = prove(`interval_arith (pi / &2 - atn(x / sqrt(&1 - x * x))) bounds /\
+                                 interval_arith (&1 - x * x) (float_num F n e, hi) /\
+                                 ~(n = 0)
+                                 ==> interval_arith (acs x) bounds`,
+   REWRITE_TAC[GSYM REAL_POW_2] THEN
+     STRIP_TAC THEN
+     MP_TAC (SPEC_ALL ACS_ATN) THEN
+     ANTS_TAC THENL
+     [
+       POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN
+         REWRITE_TAC[interval_arith] THEN
+         REWRITE_TAC[REAL_ARITH `-- &1 < x /\ x < &1 <=> abs x < abs (&1)`] THEN
+         REWRITE_TAC[REAL_LT_SQUARE_ABS] THEN
+         REWRITE_TAC[REAL_ARITH `&1 pow 2 = &1`] THEN
+         REPEAT STRIP_TAC THEN
+         REWRITE_TAC[REAL_ARITH `a < &1 <=> &0 < &1 - a`] THEN
+
+         MP_TAC (SPEC_ALL FLOAT_F_LT) THEN
+         ASM_REWRITE_TAC[] THEN
+         UNDISCH_TAC `float_num F n e <= &1 - x pow 2` THEN
+         REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+
+     DISCH_THEN (fun th -> ASM_REWRITE_TAC[th]));;
+
+let ZERO_EQ_ZERO_CONST = prove(`0 = _0`, REWRITE_TAC[NUMERAL]);;
+
+let FLOAT_INTERVAL_ACS' = (UNDISCH_ALL o
+                             PURE_ONCE_REWRITE_RULE[TAUT `~P <=> (P <=> F)`] o
+                             REWRITE_RULE[ZERO_EQ_ZERO_CONST; GSYM IMP_IMP]) FLOAT_INTERVAL_ACS;;
+
+let float_interval_acs_0 pp (cs_th, l) eps1_th x_th =
+  let int1 = float_interval_sub pp float_interval_1 (float_interval_mul pp x_th x_th) in
+  let int2 = float_interval_div pp x_th (float_interval_sqrt pp int1) in
+  let atn_int = float_interval_atn_0 pp (cs_th, l) eps1_th int2 in
+  let acs_int = float_interval_sub pp pi2_approx_array.(pp + 1) atn_int in
+
+  let x_tm = (rand o rator o concl) x_th in
+  let bounds = (rand o concl) acs_int in
+  let int1_bounds = (rand o concl) int1 in
+  let lo_tm, hi_tm = dest_pair int1_bounds in
+  let s, n_tm, e_tm = dest_float lo_tm in
+    if s <> "F" then
+      failwith "float_interval_acs_0: &1 - x pow 2 < &1 is not satisfied"
+    else
+      let n_th = Arith_nat.raw_eq0_hash_conv n_tm in
+      let th0 = INST[x_tm, x_var_real; bounds, bounds_var_pair;
+                     n_tm, n_var_num; e_tm, e_var_num;
+                     hi_tm, hi_var_real] FLOAT_INTERVAL_ACS' in
+        MY_PROVE_HYP acs_int (MY_PROVE_HYP int1 (MY_PROVE_HYP n_th th0));;
+
+let float_interval_acs pp x_th =
+  float_interval_acs_0 pp atn_co_array.(pp) eps1_array.(pp) x_th;;
+
+(****************************************)
+end;;

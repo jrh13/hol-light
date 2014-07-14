@@ -4,6 +4,7 @@
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (* ========================================================================= *)
 
+needs "Library/floor.ml";;
 needs "Multivariate/misc.ml";;
 
 (* ------------------------------------------------------------------------- *)
@@ -1190,6 +1191,68 @@ let NORM_ARITH_TAC = CONV_TAC NORM_ARITH;;
 let ASM_NORM_ARITH_TAC =
   REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
   NORM_ARITH_TAC;;
+
+(* ------------------------------------------------------------------------- *)
+(* There are no non-trivial homomorphisms R->R                               *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMOMORPHISM_REAL_TO_REAL = prove
+ (`!f:real->real.
+        (!x y. f(x + y) = f x + f y) /\ (!x y. f(x * y) = f x * f y) <=>
+        (f = \x. &0) \/ (f = \x. x)`,
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[REAL_ADD_LID; REAL_MUL_LZERO] THEN
+  REWRITE_TAC[FUN_EQ_THM; TAUT `p \/ q <=> ~p ==> q`] THEN
+  REWRITE_TAC[NOT_FORALL_THM] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `(f:real->real)(&0) = &0` ASSUME_TAC THENL
+   [ASM_MESON_TAC[REAL_EQ_ADD_LCANCEL_0]; ALL_TAC] THEN
+  SUBGOAL_THEN `(f:real->real)(&1) = &1` ASSUME_TAC THENL
+   [ASM_MESON_TAC[REAL_MUL_LID; REAL_RING `x = y * x <=> y = &1 \/ x = &0`];
+    FIRST_X_ASSUM(CHOOSE_THEN (K ALL_TAC))] THEN
+  SUBGOAL_THEN `!x. (f:real->real)(--x) = --(f x)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[REAL_ARITH `x:real = --y <=> x + y = &0`]; ALL_TAC] THEN
+  SUBGOAL_THEN `!x y. (f:real->real)(x - y) = f x - f y` ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[real_sub]; ALL_TAC] THEN
+  SUBGOAL_THEN `!x. (f:real->real) x = &0 <=> x = &0` ASSUME_TAC THENL
+   [GEN_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[] THEN DISCH_TAC THEN
+    ASM_CASES_TAC `x:real = &0` THEN ASM_REWRITE_TAC[] THEN
+    SUBGOAL_THEN `(f:real->real)(inv x * x) = f(&1)` MP_TAC THENL
+     [ASM_MESON_TAC[REAL_MUL_LINV]; ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `!x y. (f:real->real) x = f y <=> x = y` ASSUME_TAC THENL
+   [ASM_MESON_TAC[REAL_SUB_0]; ALL_TAC] THEN
+  SUBGOAL_THEN `!x y. x <= y ==> (f:real->real) x <= f y` ASSUME_TAC THENL
+   [REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_SUB_LE] THEN
+    FIRST_X_ASSUM(fun th ->
+      GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM th]) THEN
+    SPEC_TAC(`y - x:real`,`z:real`) THEN GEN_TAC THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM SQRT_POW2] THEN
+    DISCH_THEN(SUBST1_TAC o SYM) THEN
+    ASM_REWRITE_TAC[REAL_POW_2; REAL_LE_SQUARE];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `!x y. (f:real->real) x <= f y <=> x <= y` ASSUME_TAC THENL
+   [ASM_MESON_TAC[REAL_LE_TOTAL; REAL_LE_ANTISYM]; ALL_TAC] THEN
+  SUBGOAL_THEN `!x y. (f:real->real) x < f y <=> x < y` ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[GSYM REAL_NOT_LE]; ALL_TAC] THEN
+  SUBGOAL_THEN `!n. (f:real->real)(&n) = &n` ASSUME_TAC THENL
+   [INDUCT_TAC THEN ASM_REWRITE_TAC[ADD1; GSYM REAL_OF_NUM_ADD]; ALL_TAC] THEN
+  SUBGOAL_THEN `!x. integer x ==> f x = x` ASSUME_TAC THENL
+   [REWRITE_TAC[is_int] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `!x. rational x ==> f x = x` ASSUME_TAC THENL
+   [REWRITE_TAC[rational; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`z:real`; `x:real`; `y:real`] THEN
+    STRIP_TAC THEN ASM_SIMP_TAC[REAL_FIELD
+     `~(y = &0) ==> (z = x / y <=> y * z = x)`] THEN
+    TRANS_TAC EQ_TRANS `(f:real->real) y * f(x / y)` THEN CONJ_TAC THENL
+     [ASM_MESON_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [GSYM th]) THEN
+    ASM_SIMP_TAC[REAL_DIV_LMUL];
+    ALL_TAC] THEN
+  X_GEN_TAC `x:real` THEN
+  MATCH_MP_TAC(REAL_ARITH `~(x < y) /\ ~(y < x) ==> x:real = y`) THEN
+  CONJ_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `q:real` MP_TAC o MATCH_MP RATIONAL_BETWEEN) THEN
+  ASM_MESON_TAC[REAL_LT_ANTISYM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Dot product in terms of the norm rather than conversely.                  *)

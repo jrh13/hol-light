@@ -6169,6 +6169,105 @@ let ROTHE = prove
     REWRITE_TAC[o_THM] THEN STRIP_TAC THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Perron-Frobenius theorem.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let PERRON_FROBENIUS = prove
+ (`!A:real^N^N.
+        (!i j. 1 <= i /\ i <= dimindex(:N) /\ 1 <= j /\ j <= dimindex(:N)
+               ==> &0 <= A$i$j)
+        ==> ?v c. norm v = &1 /\ &0 <= c /\ A ** v = c % v`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `?v. ~(v = vec 0) /\ (A:real^N^N) ** v = vec 0` THENL
+   [FIRST_X_ASSUM(X_CHOOSE_THEN `v:real^N` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `inv(norm v) % v:real^N` THEN EXISTS_TAC `&0` THEN
+    ASM_SIMP_TAC[REAL_LE_REFL; NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM;
+                 REAL_MUL_LINV; NORM_EQ_0; MATRIX_VECTOR_MUL_RMUL] THEN
+    REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_MUL_RZERO];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_EXISTS_THM]) THEN
+    REWRITE_TAC[TAUT `~(~p /\ q) <=> q ==> p`] THEN DISCH_TAC] THEN
+  MP_TAC(ISPECL
+   [`\x:real^N. inv(vec 1 dot (A ** x)) % ((A:real^N^N) ** x)`;
+    `{x:real^N | vec 1 dot x = &1} INTER
+     {x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i}`]
+   BROUWER) THEN
+  SIMP_TAC[CONVEX_INTER; CONVEX_POSITIVE_ORTHANT; CONVEX_HYPERPLANE] THEN
+  SUBGOAL_THEN
+   `!x. (!i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i)
+        ==> !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= ((A:real^N^N) ** x)$i`
+  ASSUME_TAC THENL
+   [GEN_TAC THEN STRIP_TAC THEN SIMP_TAC[matrix_vector_mul; LAMBDA_BETA] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_POS_LE_NUMSEG THEN
+    ASM_MESON_TAC[REAL_LE_MUL];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!x. (!i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= x$i) /\ vec 1 dot x = &1
+        ==> &0 < vec 1 dot ((A:real^N^N) ** x)`
+  ASSUME_TAC THENL
+   [X_GEN_TAC `x:real^N` THEN ASM_CASES_TAC `x:real^N = vec 0` THEN
+    ASM_REWRITE_TAC[DOT_RZERO] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    REWRITE_TAC[REAL_ARITH `&0 < x <=> &0 <= x /\ ~(x = &0)`] THEN
+    DISCH_TAC THEN REWRITE_TAC[dot; VEC_COMPONENT; REAL_MUL_LID] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC SUM_POS_LE_NUMSEG THEN ASM_MESON_TAC[];
+      DISCH_THEN(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+        SUM_POS_EQ_0_NUMSEG)) THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[CART_EQ; VEC_COMPONENT]) THEN
+      ASM_MESON_TAC[]];
+    ALL_TAC] THEN
+  ANTS_TAC THENL
+   [REPEAT CONJ_TAC THENL
+     [SIMP_TAC[COMPACT_EQ_BOUNDED_CLOSED; CLOSED_INTER; CLOSED_HYPERPLANE;
+               CLOSED_POSITIVE_ORTHANT] THEN
+      MATCH_MP_TAC BOUNDED_SUBSET THEN
+      EXISTS_TAC `interval[vec 0:real^N,vec 1]` THEN
+      SIMP_TAC[BOUNDED_INTERVAL; SUBSET; IN_INTER; IN_ELIM_THM; IN_INTERVAL;
+               dot; VEC_COMPONENT; REAL_MUL_LID] THEN
+      X_GEN_TAC `x:real^N` THEN STRIP_TAC THEN
+      X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+      TRANS_TAC REAL_LE_TRANS `sum {i} (\i. (x:real^N)$i)` THEN
+      CONJ_TAC THENL [REWRITE_TAC[SUM_SING; REAL_LE_REFL]; ALL_TAC] THEN
+      MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+      REWRITE_TAC[FINITE_SING; FINITE_NUMSEG] THEN
+      ASM_SIMP_TAC[SING_SUBSET; IN_SING; IN_DIFF; IN_NUMSEG];
+      REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN EXISTS_TAC `basis 1:real^N` THEN
+      SIMP_TAC[IN_INTER; IN_ELIM_THM; BASIS_COMPONENT] THEN
+      CONJ_TAC THENL [ALL_TAC; MESON_TAC[REAL_POS]] THEN
+      SIMP_TAC[DOT_BASIS; DIMINDEX_GE_1; LE_REFL; VEC_COMPONENT];
+      MATCH_MP_TAC CONTINUOUS_ON_MUL THEN
+      SIMP_TAC[LINEAR_CONTINUOUS_ON; MATRIX_VECTOR_MUL_LINEAR; o_DEF] THEN
+      MATCH_MP_TAC(REWRITE_RULE[o_DEF] CONTINUOUS_ON_INV) THEN
+      SIMP_TAC[CONTINUOUS_ON_LIFT_DOT2; MATRIX_VECTOR_MUL_LINEAR;
+               CONTINUOUS_ON_CONST; LINEAR_CONTINUOUS_ON] THEN
+      REWRITE_TAC[IN_INTER; IN_ELIM_THM] THEN
+      ASM_MESON_TAC[REAL_LT_REFL];
+      SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_INTER; IN_ELIM_THM] THEN
+      REWRITE_TAC[DOT_RMUL] THEN REPEAT STRIP_TAC THENL
+       [MATCH_MP_TAC REAL_MUL_LINV THEN MATCH_MP_TAC REAL_LT_IMP_NZ THEN
+        FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[];
+        REWRITE_TAC[VECTOR_MUL_COMPONENT] THEN MATCH_MP_TAC REAL_LE_MUL THEN
+        REWRITE_TAC[REAL_LE_INV_EQ] THEN ASM_MESON_TAC[REAL_LT_IMP_LE]]];
+    REWRITE_TAC[IN_INTER; IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `x:real^N` THEN ASM_CASES_TAC `x:real^N = vec 0` THEN
+    ASM_REWRITE_TAC[DOT_RZERO] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    STRIP_TAC THEN EXISTS_TAC `inv(norm x) % x:real^N` THEN
+    EXISTS_TAC `vec 1 dot ((A:real^N^N) ** x)` THEN REPEAT CONJ_TAC THENL
+     [REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+      MATCH_MP_TAC REAL_MUL_LINV THEN ASM_REWRITE_TAC[NORM_EQ_0];
+      ASM_MESON_TAC[REAL_LT_IMP_LE];
+      REWRITE_TAC[MATRIX_VECTOR_MUL_RMUL; VECTOR_MUL_ASSOC] THEN
+      ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+      REWRITE_TAC[GSYM VECTOR_MUL_ASSOC] THEN AP_TERM_TAC THEN
+      FIRST_X_ASSUM(SUBST1_TAC o SYM o AP_TERM
+        `(%) (vec 1 dot ((A:real^N^N) ** x)):real^N->real^N`) THEN
+      REWRITE_TAC[VECTOR_MUL_ASSOC; VECTOR_MUL_EQ_0; VECTOR_ARITH
+       `v:real^N = c % v <=> (c - &1) % v = vec 0`] THEN
+      DISJ1_TAC THEN REWRITE_TAC[REAL_SUB_0] THEN
+      MATCH_MP_TAC REAL_MUL_RINV THEN MATCH_MP_TAC REAL_LT_IMP_NZ THEN
+      ASM_MESON_TAC[]]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Bijections between intervals.                                             *)
 (* ------------------------------------------------------------------------- *)
 

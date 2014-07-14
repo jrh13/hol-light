@@ -1,0 +1,79 @@
+(* ========================================================================== *)
+(* FLYSPECK - BOOK FORMALIZATION                                              *)
+(*                                                                            *)
+(* Chapter: Jordan                                                            *)
+(* Copied from HOL Light jordan directory                                     *)
+(* Author: Thomas C. Hales                                                    *)
+(* Date: 2010-07-08                                                           *)
+(* ========================================================================== *)
+
+
+
+module Refinement = struct
+
+(* ------------------------------------------------------------------ *)
+(* This bundles an interactive session into a proof. *)
+(* Later split off into general/prove_by_refinement *)
+(* ------------------------------------------------------------------ *)
+
+(*
+let labels_flag = ref false;; (* if true add labels to assumptions *)
+*)
+
+let LABEL_ALL_TAC:tactic =
+ let mk_label avoid =
+  let rec mk_one_label i avoid  =
+    let label = "Z-"^(string_of_int i) in
+      if not(mem label avoid) then label else mk_one_label (i+1) avoid in
+    mk_one_label 0 avoid in
+ let update_label i asl =
+  let rec f_at_i f j =
+    function [] -> []
+      | a::b -> if (j=0) then (f a)::b else a::(f_at_i f (j-1) b) in
+  let avoid = map fst asl in
+  let current = el i avoid in
+  let new_label = mk_label avoid in
+  if (String.length current > 0) then asl else
+    f_at_i (fun (_,y) -> (new_label,y) ) i asl in
+  fun (asl,w) ->
+    let aslp = ref asl in
+    (for i=0 to ((length asl)-1) do (aslp := update_label i !aslp) done;
+    (ALL_TAC (!aslp,w)));;
+
+(* global_var *)
+let enhance flag every tac =
+  if flag then (tac THEN every) THEN LABEL_ALL_TAC
+   else tac;;
+
+let (e_enhance :bool ->tactic->tactic ->goalstack) =
+   fun flag every tac -> refine(by(VALID (enhance flag every tac)));;
+
+(*
+let e_bak = e;;
+let every = ALL_TAC;;
+let e = e_enhance true every;;
+*)
+
+let has_stv t =
+  let typ = (type_vars_in_term t) in
+  can (find (fun ty -> (is_vartype ty) && ((dest_vartype ty).[0] = '?'))) typ;;
+
+let enhanced_prove_by_refinement flag every (t,(tacl:tactic list)) =
+  if (length (frees t) > 0)
+    then failwith "prove_by_refinement: free vars" else
+  if (has_stv t)
+    then failwith "prove_by_refinement: has stv" else
+  let gstate = mk_goalstate ([],t) in
+  let _,sgs,just = rev_itlist
+    (fun tac gs -> by  (enhance flag every tac) gs)
+     tacl gstate in
+  let th = if sgs = [] then just null_inst []
+  else failwith "BY_REFINEMENT_PROOF: Unsolved goals" in
+  let t' = concl th in
+  if t' = t then th else
+  try EQ_MP (ALPHA t' t) th
+  with Failure _ -> failwith "prove_by_refinement: generated wrong theorem";;
+
+let prove_by_refinement = enhanced_prove_by_refinement false ALL_TAC;;
+
+end;;

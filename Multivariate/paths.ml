@@ -1705,6 +1705,69 @@ let EXISTS_PATH_SUBPATH_TO_FRONTIER_CLOSED = prove
    [ASM_MESON_TAC[frontier; CLOSURE_EQ; IN_DIFF];
     ASM_MESON_TAC[SUBSET_TRANS; INTERIOR_SUBSET]]);;
 
+let PATH_COMBINE = prove
+ (`!u g:real^1->real^N.
+        u IN interval[vec 0,vec 1]
+        ==> (path g <=>
+             path(subpath (vec 0) u g) /\ path(subpath u (vec 1) g))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  ASM_SIMP_TAC[PATH_SUBPATH; ENDS_IN_UNIT_INTERVAL] THEN
+  ASM_CASES_TAC `u:real^1 = vec 0` THEN ASM_SIMP_TAC[SUBPATH_TRIVIAL] THEN
+  ASM_CASES_TAC `u:real^1 = vec 1` THEN ASM_SIMP_TAC[SUBPATH_TRIVIAL] THEN
+  REWRITE_TAC[path; subpath; VECTOR_ADD_LID; VECTOR_SUB_RZERO] THEN
+  STRIP_TAC THEN SUBGOAL_THEN
+   `interval[vec 0:real^1,vec 1] = interval[vec 0,u] UNION interval[u,vec 1]`
+  SUBST1_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERVAL_1]) THEN
+    REWRITE_TAC[EXTENSION; IN_UNION; IN_INTERVAL_1] THEN REAL_ARITH_TAC;
+    MATCH_MP_TAC CONTINUOUS_ON_UNION THEN REWRITE_TAC[CLOSED_INTERVAL] THEN
+    CONJ_TAC THENL
+     [SUBGOAL_THEN
+       `(g:real^1->real^N) = (\x. g(drop u % x)) o (\x. inv(drop u) % x)`
+      SUBST1_TAC THENL
+       [REWRITE_TAC[FUN_EQ_THM; o_THM; VECTOR_MUL_ASSOC] THEN
+        ASM_SIMP_TAC[REAL_MUL_RINV; VECTOR_MUL_LID;
+                     GSYM LIFT_EQ; LIFT_NUM; LIFT_DROP];
+        MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+        SIMP_TAC[LINEAR_SCALING; LINEAR_CONTINUOUS_ON] THEN
+        ONCE_REWRITE_TAC[VECTOR_ARITH
+         `inv u % x:real^N = inv u % x + vec 0`] THEN
+        REWRITE_TAC[IMAGE_AFFINITY_INTERVAL] THEN
+        RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL_1;
+                        GSYM DROP_EQ; DROP_VEC]) THEN
+        ASM_REWRITE_TAC[INTERVAL_EQ_EMPTY_1; DROP_VEC; GSYM REAL_NOT_LE;
+                        REAL_LE_INV_EQ] THEN
+        REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_RID] THEN
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CONTINUOUS_ON_SUBSET)) THEN
+        MATCH_MP_TAC(SET_RULE `s = t ==> s SUBSET t`) THEN
+        AP_TERM_TAC THEN REWRITE_TAC[CONS_11; PAIR_EQ] THEN
+        ASM_SIMP_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_VEC; REAL_MUL_LINV]];
+      SUBGOAL_THEN
+       `(g:real^1->real^N) = (\x. g(u + drop(vec 1 - u) % x)) o
+                             (\x. inv(drop(vec 1 - u)) % (x - u))`
+      SUBST1_TAC THENL
+       [REWRITE_TAC[FUN_EQ_THM; o_THM; VECTOR_MUL_ASSOC] THEN
+        ASM_SIMP_TAC[REAL_MUL_RINV; VECTOR_MUL_LID; VECTOR_SUB_EQ;
+                     GSYM LIFT_EQ; LIFT_NUM; LIFT_DROP] THEN
+        REWRITE_TAC[VECTOR_ARITH `u + x - u:real^N = x`];
+        MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+        SIMP_TAC[CONTINUOUS_ON_CMUL; CONTINUOUS_ON_SUB;
+                 CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID] THEN
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CONTINUOUS_ON_SUBSET)) THEN
+        MATCH_MP_TAC(SET_RULE `s = t ==> s SUBSET t`) THEN
+        REWRITE_TAC[VECTOR_ARITH `c % (x - u):real^N = c % x + --(c % u)`] THEN
+        REWRITE_TAC[IMAGE_AFFINITY_INTERVAL] THEN
+        REWRITE_TAC[IMAGE_AFFINITY_INTERVAL] THEN
+        RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL_1;
+                        GSYM DROP_EQ; DROP_VEC]) THEN
+        ASM_REWRITE_TAC[INTERVAL_EQ_EMPTY_1; DROP_VEC; GSYM REAL_NOT_LE;
+                        REAL_LE_INV_EQ; DROP_SUB; REAL_SUB_LE] THEN
+        AP_TERM_TAC THEN REWRITE_TAC[CONS_11; PAIR_EQ] THEN
+        REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_VEC; DROP_ADD; DROP_NEG] THEN
+        REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Special case of straight-line paths.                                      *)
 (* ------------------------------------------------------------------------- *)
