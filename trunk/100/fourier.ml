@@ -341,7 +341,7 @@ let LSPACE_MONO = prove
     DISJ_CASES_TAC(ISPECL [`&1`; `norm((f:real^M->real^N) x)`] REAL_LE_TOTAL)
     THENL
      [MATCH_MP_TAC(REAL_ARITH `x <= y ==> x <= max z y`) THEN
-      MATCH_MP_TAC RPOW_MONO THEN ASM_REWRITE_TAC[];
+      MATCH_MP_TAC RPOW_MONO_LE THEN ASM_REWRITE_TAC[];
       MATCH_MP_TAC(REAL_ARITH `x <= y ==> x <= max y z`) THEN
       MATCH_MP_TAC RPOW_1_LE THEN REWRITE_TAC[NORM_POS_LE] THEN
       ASM_REAL_ARITH_TAC]]);;

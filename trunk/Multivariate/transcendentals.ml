@@ -6597,10 +6597,40 @@ let RPOW_SQRT = prove
      `&0 <= x /\ &0 <= y ==> x + y = &0 ==> x = &0 /\ y = &0`) THEN
     ASM_SIMP_TAC[SQRT_POS_LE; RPOW_POS_LE]]);;
 
-let RPOW_MONO = prove
+let RPOW_MONO_LE = prove
  (`!a b x. &1 <= x /\ a <= b ==> x rpow a <= x rpow b`,
   SIMP_TAC[rpow; REAL_ARITH `&1 <= x ==> &0 < x`] THEN
   SIMP_TAC[REAL_EXP_MONO_LE; LOG_POS; REAL_LE_RMUL]);;
+
+let RPOW_MONO_LT = prove
+ (`!a b x. &1 < x /\ a < b ==> x rpow a < x rpow b`,
+  SIMP_TAC[rpow; REAL_ARITH `&1 < x ==> &0 < x`] THEN
+  SIMP_TAC[REAL_EXP_MONO_LT; LOG_POS_LT; REAL_LT_RMUL]);;
+
+let RPOW_MONO_LE_EQ = prove
+ (`!a b x. &1 < x ==> (x rpow a <= x rpow b <=> a <= b)`,
+  MESON_TAC[RPOW_MONO_LT; RPOW_MONO_LE; REAL_NOT_LT; REAL_LT_IMP_LE]);;
+
+let RPOW_MONO_LT_EQ = prove
+ (`!a b x. &1 < x ==> (x rpow a < x rpow b <=> a < b)`,
+  SIMP_TAC[GSYM REAL_NOT_LE; RPOW_MONO_LE_EQ]);;
+
+let RPOW_INJ = prove
+ (`!x y z. &0 < x ==> (x rpow y = x rpow z <=> x = &1 \/ y = z)`,
+  REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (REAL_ARITH `x = &1 \/ &1 < x \/ x < &1`) THEN
+  ASM_SIMP_TAC[RPOW_ONE; REAL_LT_IMP_NE] THENL
+   [ALL_TAC; GEN_REWRITE_TAC LAND_CONV [GSYM REAL_EQ_INV2]] THEN
+  ASM_SIMP_TAC[REAL_INV_RPOW; GSYM REAL_LE_ANTISYM; RPOW_MONO_LE_EQ;
+               REAL_INV_1_LT]);;
+
+let RPOW_LE_1 = prove
+ (`!x y. &1 <= x /\ &0 <= y ==> &1 <= x rpow y`,
+  MESON_TAC[RPOW_0; RPOW_MONO_LE]);;
+
+let RPOW_LT_1 = prove
+ (`!x y. &1 < x /\ &0 < y ==> &1 < x rpow y`,
+  MESON_TAC[RPOW_0; RPOW_MONO_LT]);;
 
 let RPOW_MONO_INV = prove
  (`!a b x. &0 < x /\ x <= &1 /\ b <= a ==> x rpow a <= x rpow b`,
@@ -6608,7 +6638,7 @@ let RPOW_MONO_INV = prove
   GEN_REWRITE_TAC BINOP_CONV [GSYM REAL_INV_INV] THEN
   MATCH_MP_TAC REAL_LE_INV2 THEN
   ASM_SIMP_TAC[REAL_LT_INV_EQ; RPOW_POS_LT; GSYM RPOW_INV] THEN
-  MATCH_MP_TAC RPOW_MONO THEN
+  MATCH_MP_TAC RPOW_MONO_LE THEN
   ASM_SIMP_TAC[REAL_INV_1_LE]);;
 
 let RPOW_1_LE = prove
@@ -6645,6 +6675,99 @@ let LOG_SQRT = prove
  (`!x. &0 < x ==> log(sqrt x) = log x / &2`,
   SIMP_TAC[GSYM RPOW_SQRT; LOG_RPOW; REAL_LT_IMP_LE] THEN
   REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Summability of zeta function series.                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let SUMMABLE_ZETA = prove
+ (`!n z. &1 < Re z ==> summable (from n) (\k. inv(Cx(&k) cpow z))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUMMABLE_FROM_ELSEWHERE THEN
+  EXISTS_TAC `1` THEN MATCH_MP_TAC SERIES_ABSCONV_IMP_CONV THEN
+  MATCH_MP_TAC SUMMABLE_EQ THEN EXISTS_TAC `\k. Cx(inv(&k rpow (Re z)))` THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[IN_FROM; NORM_CPOW_REAL; REAL_CX; RE_CX; REAL_OF_NUM_LT; LE_1;
+             COMPLEX_NORM_INV; rpow];
+    POP_ASSUM MP_TAC THEN SPEC_TAC(`Re z`,`x:real`)] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[summable] THEN
+  MATCH_MP_TAC(MESON[] `(?x. P(Cx x)) ==> ?x. P x`) THEN
+  REWRITE_TAC[SERIES_CX_LIFT] THEN
+  REWRITE_TAC[sums; FROM_INTER_NUMSEG; LIM_SEQUENTIALLY; DIST_REAL] THEN
+  REWRITE_TAC[GSYM drop; LIFT_DROP; VSUM_REAL; o_DEF] THEN
+  MATCH_MP_TAC CONVERGENT_BOUNDED_MONOTONE THEN
+  EXISTS_TAC `&2 rpow x / (&1 - (&1 / &2) rpow (x - &1))` THEN CONJ_TAC THENL
+   [ALL_TAC;
+    DISJ1_TAC THEN MAP_EVERY X_GEN_TAC [`i:num`; `j:num`] THEN DISCH_TAC THEN
+    MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+    SIMP_TAC[REAL_LE_INV_EQ; RPOW_POS_LE; REAL_POS] THEN
+    REWRITE_TAC[FINITE_NUMSEG; SUBSET_NUMSEG] THEN ASM_ARITH_TAC] THEN
+  X_GEN_TAC `n:num` THEN
+  TRANS_TAC REAL_LE_TRANS `sum(1..2 EXP n) (\k. inv(&k rpow x))` THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[SUM_POS_LE_NUMSEG; REAL_LE_INV_EQ; RPOW_POS_LE; REAL_POS;
+             real_abs] THEN
+    MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
+    SIMP_TAC[REAL_LE_INV_EQ; RPOW_POS_LE; REAL_POS] THEN
+    SIMP_TAC[FINITE_NUMSEG; SUBSET_NUMSEG; LE_REFL;
+             LT_POW2_REFL; LT_IMP_LE];
+    ALL_TAC] THEN
+  TRANS_TAC REAL_LE_TRANS
+   `sum(0..n) (\k. &2 rpow x / &2 rpow (&k * (x - &1)))` THEN
+  CONJ_TAC THENL
+   [SPEC_TAC(`n:num`,`n:num`) THEN INDUCT_TAC THENL
+     [REWRITE_TAC[EXP; SUM_SING_NUMSEG; REAL_MUL_LZERO; RPOW_0; REAL_INV_RPOW;
+                  REAL_DIV_1] THEN
+      MATCH_MP_TAC RPOW_LE2 THEN ASM_REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    MP_TAC(ISPECL
+     [`\k. inv(&k rpow x)`; `1`; `2 EXP n`; `2 EXP n`]
+        SUM_ADD_SPLIT) THEN
+    ANTS_TAC THENL [ARITH_TAC; REWRITE_TAC[MULT_2; EXP]] THEN
+    DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN
+    MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[] THEN
+    TRANS_TAC REAL_LE_TRANS
+     `sum (2 EXP n + 1..2 EXP n + 2 EXP n) (\k. inv(&2 pow n rpow x))` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC SUM_LE_NUMSEG THEN REPEAT STRIP_TAC THEN
+      REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+      ASM_SIMP_TAC[REAL_POW_LT; REAL_OF_NUM_LT; ARITH; RPOW_POS_LT] THEN
+      MATCH_MP_TAC RPOW_LE2 THEN
+      ASM_SIMP_TAC[RPOW_POW; REAL_OF_NUM_POW; REAL_OF_NUM_LE; LE_0] THEN
+      ASM_ARITH_TAC;
+      REWRITE_TAC[SUM_CONST_NUMSEG; ARITH_RULE `((n + n) + 1) - (n + 1) = n`;
+                  GSYM REAL_OF_NUM_POW; REAL_INV_POW; REAL_POW_2] THEN
+      REWRITE_TAC[real_div; GSYM RPOW_NEG] THEN
+      SIMP_TAC[GSYM RPOW_POW; RPOW_RPOW; REAL_POS; GSYM RPOW_ADD;
+               REAL_OF_NUM_LT; ARITH] THEN
+      MATCH_MP_TAC RPOW_MONO_LE THEN REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
+      ASM_REAL_ARITH_TAC];
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    SIMP_TAC[GSYM RPOW_RPOW; REAL_POS; real_div; RPOW_POW] THEN
+    REWRITE_TAC[REAL_INV_POW; SUM_LMUL] THEN REWRITE_TAC[SUM_GP] THEN
+    REWRITE_TAC[CONJUNCT1 LT; CONJUNCT1 real_pow] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN SIMP_TAC[RPOW_POS_LE; REAL_POS] THEN
+    COND_CASES_TAC THENL
+     [MATCH_MP_TAC(TAUT `F ==> p`) THEN
+      FIRST_X_ASSUM(MP_TAC o MATCH_MP (REAL_ARITH `x = &1 ==> &1 <= x`)) THEN
+      REWRITE_TAC[REAL_NOT_LE] THEN MATCH_MP_TAC REAL_INV_LT_1 THEN
+      MATCH_MP_TAC RPOW_LT_1 THEN ASM_REAL_ARITH_TAC;
+      REWRITE_TAC[REAL_MUL_LID; RPOW_INV] THEN
+      REWRITE_TAC[REAL_ARITH `a / b <= inv b <=> a * inv b <= &1 * inv b`] THEN
+      MATCH_MP_TAC REAL_LE_RMUL THEN
+      REWRITE_TAC[REAL_ARITH `&1 - x <= &1 <=> &0 <= x`; REAL_LE_INV_EQ] THEN
+      SIMP_TAC[REAL_POW_LE; REAL_LE_DIV; REAL_POS; REAL_SUB_LE;
+               RPOW_POS_LE; REAL_LE_INV_EQ] THEN
+      MATCH_MP_TAC REAL_INV_LE_1 THEN
+      MATCH_MP_TAC RPOW_LE_1 THEN ASM_REAL_ARITH_TAC]]);;
+
+let SUMMABLE_ZETA_INTEGER = prove
+ (`!n m. 2 <= m ==> summable (from n) (\k. inv(Cx(&k) pow m))`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SUMMABLE_FROM_ELSEWHERE THEN EXISTS_TAC `1` THEN
+  MP_TAC(SPECL [`1`; `Cx(&m)`] SUMMABLE_ZETA) THEN
+  ASM_SIMP_TAC[RE_CX; REAL_OF_NUM_LT; ARITH_RULE `2 <= n ==> 1 < n`] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUMMABLE_EQ) THEN
+  SIMP_TAC[IN_FROM; CPOW_N; CX_INJ; REAL_OF_NUM_EQ; LE_1]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Formulation of loop homotopy in terms of maps out of S^1                  *)

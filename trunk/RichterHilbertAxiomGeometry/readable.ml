@@ -60,7 +60,8 @@ let CleanMathFontsForHOL_Light s =
       "α","alpha"; "β","beta"; "γ","gamma"; "λ","\\ "; "θ","theta"; "μ","mu";
       "⊂","SUBSET"; "∩","INTER"; "∪","UNION"; "∅","{}"; "━","DIFF";
       "≡","==="; "≅","cong"; "∡","angle"; "∥","parallel";
-      "∏","prod"; "∘","_o_"; "→","--->"; "╪","INSERT"];;
+      "∏","prod"; "∘","_o_"; "→","--->"; "╪","INSERT";
+      "≃", "TarskiCong"; "≊", "TarskiTriangleCong"; "ℬ", "TarskiBetween"];;
 
 (* printReadExn prints uncluttered error messages via Readable_fail.  This   *)
 (* is due to Mark Adams, who also explained Roland Zumkeller's exec below.   *)

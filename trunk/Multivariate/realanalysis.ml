@@ -1230,6 +1230,17 @@ let REAL_SUMMABLE_GP = prove
   ASM_REWRITE_TAC[REAL_SUMMABLE_COMPLEX] THEN
   ASM_REWRITE_TAC[COMPLEX_NORM_CX; o_DEF; CX_POW]);;
 
+let REAL_SUMMABLE_ZETA = prove
+ (`!n x. &1 < x ==> real_summable (from n) (\k. inv(&k rpow x))`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC REAL_SUMMABLE_FROM_ELSEWHERE THEN EXISTS_TAC `1` THEN
+  REWRITE_TAC[REAL_SUMMABLE_COMPLEX] THEN
+  MP_TAC(ISPECL [`1`; `Cx x`] SUMMABLE_ZETA) THEN
+  ASM_REWRITE_TAC[RE_CX; o_DEF] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUMMABLE_EQ) THEN
+  SIMP_TAC[IN_FROM; cpow; rpow; REAL_OF_NUM_EQ; REAL_OF_NUM_LT; CX_INJ; LE_1;
+           GSYM CX_LOG; GSYM CX_MUL; GSYM CX_EXP; GSYM CX_INV]);;
+
 let REAL_SUMMABLE_ZETA_INTEGER = prove
  (`!n m. 2 <= m ==> real_summable (from n) (\k. inv(&k pow m))`,
   REWRITE_TAC[REAL_SUMMABLE_COMPLEX; CX_INV; CX_POW;
@@ -1514,6 +1525,10 @@ let REALLIM_COMPOSE_AT = prove
 (* ------------------------------------------------------------------------- *)
 (* Some real limits involving transcendentals.                               *)
 (* ------------------------------------------------------------------------- *)
+
+let REALLIM_1_OVER_N_OFFSET = prove
+ (`!a. ((\n. inv(&n + a)) ---> &0) sequentially`,
+  REWRITE_TAC[REALLIM_COMPLEX; o_DEF; CX_INV; CX_ADD; LIM_INV_N_OFFSET]);;
 
 let REALLIM_1_OVER_N = prove
  (`((\n. inv(&n)) ---> &0) sequentially`,
@@ -9705,6 +9720,41 @@ let REAL_INTEGRABLE_BY_PARTS_EQ = prove
   MATCH_MP_TAC REAL_INTEGRABLE_BY_PARTS THEN
   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_MESON_TAC[]);;
 
+let ABSOLUTE_REAL_INTEGRATION_BY_PARTS = prove
+ (`!f  g f' g' a b.
+        a <= b /\
+        f' absolutely_real_integrable_on real_interval[a,b] /\
+        g' absolutely_real_integrable_on real_interval[a,b] /\
+        (!x. x IN real_interval[a,b]
+             ==> (f' has_real_integral f(x)) (real_interval[a,x])) /\
+        (!x. x IN real_interval[a,b]
+             ==> (g' has_real_integral g(x)) (real_interval[a,x]))
+        ==> (\x. f x * g' x) absolutely_real_integrable_on
+                real_interval[a,b] /\
+            (\x. f' x * g x) absolutely_real_integrable_on
+                real_interval[a,b] /\
+            real_integral (real_interval[a,b]) (\x. f x * g' x) +
+            real_integral (real_interval[a,b]) (\x. f' x * g x) =
+            f b * g b - f a * g a`,
+  REWRITE_TAC[FORALL_DROP; ABSOLUTELY_REAL_INTEGRABLE_ON; HAS_REAL_INTEGRAL;
+              GSYM IMAGE_DROP_INTERVAL; DROP_IN_IMAGE_DROP] THEN
+  REWRITE_TAC[GSYM IMAGE_o; o_DEF; LIFT_DROP; IMAGE_ID] THEN
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `bilinear (\x y. lift(drop x * drop y))` MP_TAC THENL
+   [REWRITE_TAC[bilinear; linear; FORALL_LIFT; LIFT_DROP;
+      DROP_ADD; DROP_CMUL; GSYM LIFT_ADD; LIFT_EQ; GSYM LIFT_CMUL] THEN
+    REAL_ARITH_TAC;
+    REWRITE_TAC[IMP_IMP; GSYM CONJ_ASSOC] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP ABSOLUTE_INTEGRATION_BY_PARTS) THEN
+    REWRITE_TAC[LIFT_DROP] THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ASM_REWRITE_TAC[GSYM LIFT_EQ; LIFT_ADD; LIFT_SUB] THEN
+    DISCH_THEN(SUBST1_TAC o SYM) THEN BINOP_TAC THEN
+    REWRITE_TAC[GSYM DROP_EQ; LIFT_DROP] THEN
+    W(MP_TAC o PART_MATCH (lhs o rand) REAL_INTEGRAL o lhs o snd) THEN
+    ASM_SIMP_TAC[REAL_INTEGRABLE_ON; GSYM IMAGE_o; o_DEF; IMAGE_ID;
+                 LIFT_DROP; ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Change of variable in real integral (one that we know exists).            *)
 (* ------------------------------------------------------------------------- *)
@@ -12215,6 +12265,32 @@ let real_polynomial_function_RULES,
   (!f g. real_polynomial_function f /\ real_polynomial_function g
          ==> real_polynomial_function(\x:real^N. f x * g x))`;;
 
+let REAL_POLYNOMIAL_FUNCTION_ADD = prove
+ (`!f g. real_polynomial_function f /\ real_polynomial_function g
+         ==> real_polynomial_function(\x. f x + g x)`,
+  REWRITE_TAC[real_polynomial_function_RULES]);;
+
+let REAL_POLYNOMIAL_FUNCTION_MUL = prove
+ (`!f g. real_polynomial_function f /\ real_polynomial_function g
+         ==> real_polynomial_function(\x. f x * g x)`,
+  REWRITE_TAC[real_polynomial_function_RULES]);;
+
+let REAL_POLYNOMIAL_FUNCTION_NEG = prove
+ (`!f:real^N->real.
+        real_polynomial_function(\x. --(f x)) <=> real_polynomial_function f`,
+  MATCH_MP_TAC(MESON[]
+   `(!x. n(n x) = x) /\ (!x. P x ==> P(n x)) ==> (!x. P(n x) <=> P x)`) THEN
+  REWRITE_TAC[REAL_NEG_NEG; ETA_AX] THEN REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `--x:real = --(&1) * x`] THEN
+  ASM_SIMP_TAC[real_polynomial_function_RULES; ETA_AX]);;
+
+let REAL_POLYNOMIAL_FUNCTION_SUB = prove
+ (`!f g:real^N->real.
+        real_polynomial_function f /\ real_polynomial_function g
+        ==> real_polynomial_function (\x. f x - g x)`,
+  SIMP_TAC[real_sub; REAL_POLYNOMIAL_FUNCTION_NEG;
+           REAL_POLYNOMIAL_FUNCTION_ADD]);;
+
 let REAL_POLYNOMIAL_FUNCTION_SUM = prove
  (`!f s. FINITE s /\
          (!a. a IN s ==> real_polynomial_function(\x. f x a))
@@ -12223,12 +12299,181 @@ let REAL_POLYNOMIAL_FUNCTION_SUM = prove
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[real_polynomial_function_RULES; SUM_CLAUSES; FORALL_IN_INSERT]);;
 
+let REAL_POLYNOMIAL_FUNCTION_PRODUCT = prove
+ (`!f s. FINITE s /\
+         (!a. a IN s ==> real_polynomial_function(\x. f x a))
+         ==> real_polynomial_function (\x. product s (f x))`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[real_polynomial_function_RULES; PRODUCT_CLAUSES;
+           FORALL_IN_INSERT]);;
+
 let REAL_POLYNOMIAL_FUNCTION_POW = prove
  (`!p n. real_polynomial_function p
          ==> real_polynomial_function(\x. p(x) pow n)`,
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
   GEN_TAC THEN DISCH_TAC THEN
   INDUCT_TAC THEN ASM_SIMP_TAC[real_polynomial_function_RULES; real_pow]);;
+
+let REAL_POLYNOMIAL_FUNCTION_EXPLICIT,
+    REAL_POLYNOMIAL_FUNCTION_EXPLICIT_NZ,
+    REAL_POLYNOMIAL_FUNCTION_EXPLICIT_UNIV =
+  let lemma1,lemma2 = (CONJ_PAIR o prove)
+   (`(!f:real^N->real.
+        (?a:num^N->real.
+          FINITE {k | ~(a k = &0)} /\
+          f = \x. sum (:num^N)
+                   (\k. a(k) * product(1..dimindex(:N)) (\i. x$i pow k$i))) <=>
+        (?(s:num^N->bool) a.
+            FINITE s /\
+            f = \x. sum s
+                  (\k. a(k) * product(1..dimindex(:N)) (\i. x$i pow k$i)))) /\
+     (!f:real^N->real.
+        (?a:num^N->real.
+          FINITE {k | ~(a k = &0)} /\
+          f = \x. sum (:num^N)
+                   (\k. a(k) * product(1..dimindex(:N)) (\i. x$i pow k$i))) <=>
+        (?(s:num^N->bool) a.
+            FINITE s /\ (!k. k IN s ==> ~(a k = &0)) /\
+            f = \x. sum s
+                    (\k. a(k) * product(1..dimindex(:N)) (\i. x$i pow k$i))))`,
+    REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN MATCH_MP_TAC(TAUT
+     `(r ==> q) /\ (p ==> r) /\ (q ==> p) ==> (p <=> q) /\ (p <=> r)`) THEN
+    REPEAT CONJ_TAC THENL
+     [MESON_TAC[];
+      ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      X_GEN_TAC `a:num^N->real` THEN STRIP_TAC THEN
+      EXISTS_TAC `{k:num^N | ~(a k = &0)}` THEN
+      ASM_REWRITE_TAC[IN_ELIM_THM] THEN
+      ABS_TAC THEN MATCH_MP_TAC SUM_SUPERSET THEN
+      SIMP_TAC[SUBSET_UNIV; IN_ELIM_THM; IN_UNIV; REAL_MUL_LZERO];
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [`s:num^N->bool`; `a:num^N->real`] THEN
+      STRIP_TAC THEN
+      EXISTS_TAC `\k. if k IN s then (a:num^N->real) k else &0` THEN
+      ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+       [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          FINITE_SUBSET)) THEN
+        SET_TAC[];
+        ABS_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC SUM_EQ_SUPERSET THEN
+        ASM_SIMP_TAC[SUBSET_UNIV; REAL_MUL_LZERO]]]) in
+  let REAL_POLYNOMIAL_FUNCTION_EXPLICIT_UNIV = prove
+   (`!f:real^N->real.
+          real_polynomial_function f <=>
+          ?a:num^N->real.
+            FINITE {k | ~(a k = &0)} /\
+            f = \x. sum (:num^N)
+                     (\k. a(k) * product(1..dimindex(:N)) (\i. x$i pow k$i))`,
+    REWRITE_TAC[TAUT `(p <=> q) <=> (q ==> p) /\ (p ==> q)`;
+                FORALL_AND_THM] THEN
+    CONJ_TAC THENL
+     [GEN_TAC THEN REWRITE_TAC[lemma1] THEN
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [`s:num^N->bool`; `a:num^N->real`] THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_SUM THEN
+      ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_MUL THEN
+      REWRITE_TAC[real_polynomial_function_RULES] THEN
+      MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_PRODUCT THEN
+      REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_POW THEN
+      ASM_SIMP_TAC[real_polynomial_function_RULES];
+      ALL_TAC] THEN
+    MATCH_MP_TAC real_polynomial_function_INDUCT THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [X_GEN_TAC `j:num` THEN STRIP_TAC THEN REWRITE_TAC[lemma1] THEN
+      EXISTS_TAC `{(lambda i. if i = j then 1 else 0):num^N}` THEN
+      EXISTS_TAC `\k:num^N. &1` THEN
+      REWRITE_TAC[FINITE_SING; SUM_SING; REAL_MUL_LID] THEN ABS_TAC THEN
+      ASM_SIMP_TAC[LAMBDA_BETA; COND_RAND; real_pow; PRODUCT_DELTA; IN_NUMSEG;
+                   REAL_POW_1];
+      DISCH_TAC] THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [X_GEN_TAC `c:real` THEN REWRITE_TAC[lemma1] THEN
+      EXISTS_TAC `{(lambda i. 0):num^N}` THEN
+      EXISTS_TAC `(\k. c):num^N->real` THEN
+      REWRITE_TAC[FINITE_SING; SUM_SING] THEN ABS_TAC THEN
+      ASM_SIMP_TAC[LAMBDA_BETA; real_pow; PRODUCT_ONE; REAL_MUL_RID];
+      DISCH_TAC] THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2
+       (X_CHOOSE_THEN `a:num^N->real` STRIP_ASSUME_TAC)
+       (X_CHOOSE_THEN `b:num^N->real` STRIP_ASSUME_TAC)) THEN
+      EXISTS_TAC `(\k. a k + b k):num^N->real` THEN
+      REWRITE_TAC[] THEN CONJ_TAC THENL
+       [MATCH_MP_TAC FINITE_SUBSET THEN
+        EXISTS_TAC `{k:num^N | ~(a k = &0)} UNION {k:num^N | ~(b k = &0)}` THEN
+        ASM_REWRITE_TAC[FINITE_UNION; SUBSET; IN_UNION; IN_ELIM_THM] THEN
+        REAL_ARITH_TAC;
+        ASM_REWRITE_TAC[REAL_ADD_RDISTRIB] THEN ABS_TAC THEN
+        CONV_TAC SYM_CONV THEN MATCH_MP_TAC SUM_ADD_GEN THEN
+        REWRITE_TAC[IN_UNIV; REAL_ENTIRE; DE_MORGAN_THM] THEN
+        CONJ_TAC THEN MATCH_MP_TAC(MESON[FINITE_SUBSET]
+         `FINITE {k | P k} /\ {k | P k /\ Q k} SUBSET {k | P k}
+          ==> FINITE {k | P k /\ Q k}`) THEN
+        ASM_REWRITE_TAC[] THEN SET_TAC[]];
+      DISCH_TAC] THEN
+    REPEAT GEN_TAC THEN REWRITE_TAC[lemma1] THEN DISCH_THEN(CONJUNCTS_THEN2
+     (X_CHOOSE_THEN `s:num^N->bool` (X_CHOOSE_THEN `a:num^N->real`
+          STRIP_ASSUME_TAC))
+     (X_CHOOSE_THEN `t:num^N->bool` (X_CHOOSE_THEN `b:num^N->real`
+          STRIP_ASSUME_TAC))) THEN
+    ASM_REWRITE_TAC[GSYM SUM_RMUL] THEN ASM_REWRITE_TAC[GSYM SUM_LMUL] THEN
+    ASM_SIMP_TAC[SUM_SUM_PRODUCT] THEN
+    MP_TAC(GEN `g:num^N#num^N->real` (ISPECL
+     [`(\(k,l). lambda i. k$i + l$i):num^N#num^N->num^N`;
+      `g:num^N#num^N->real`; `{k,l | (k:num^N) IN s /\ (l:num^N) IN t}`;
+      `(:num^N)`] SUM_GROUP)) THEN
+    ASM_SIMP_TAC[FINITE_PRODUCT; SUBSET_UNIV; GSYM lemma1] THEN
+    DISCH_THEN(fun th -> REWRITE_TAC[GSYM th]) THEN
+    EXISTS_TAC `\m:num^N. sum {(k:num^N,l:num^N) | k IN s /\ l IN t /\
+                                                   (lambda i. k$i + l$i) = m}
+                              (\(k,l). (a:num^N->real) k * b l)` THEN
+    REWRITE_TAC[] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC FINITE_SUBSET THEN
+      EXISTS_TAC `IMAGE ((\(k,l). lambda i. k$i + l$i):num^N#num^N->num^N)
+                        {k,l | k IN s /\ l IN t}` THEN
+      ASM_SIMP_TAC[FINITE_PRODUCT; FINITE_IMAGE] THEN
+      REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+      REWRITE_TAC[CONTRAPOS_THM; SET_RULE
+       `x IN IMAGE f s <=> ~({y | y IN s /\ f y = x} = {})`] THEN
+      GEN_TAC THEN DISCH_THEN(fun th ->
+       MATCH_MP_TAC(MESON[SUM_CLAUSES] `s = {} ==> sum s f = &0`) THEN
+       GEN_REWRITE_TAC RAND_CONV [GSYM th]) THEN
+      REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN
+      REWRITE_TAC[IN_ELIM_THM; IN_ELIM_PAIR_THM; GSYM CONJ_ASSOC];
+      ABS_TAC THEN MATCH_MP_TAC SUM_EQ THEN X_GEN_TAC `m:num^N` THEN
+      REWRITE_TAC[IN_UNIV; GSYM SUM_RMUL] THEN
+      MATCH_MP_TAC(MESON[SUM_EQ]
+       `s = t /\ (!x. x IN t ==> f x = g x) ==> sum s f = sum t g`) THEN
+      REWRITE_TAC[FORALL_IN_GSPEC; EXTENSION; FORALL_PAIR_THM;
+                  IN_ELIM_PAIR_THM; IN_ELIM_THM; GSYM CONJ_ASSOC] THEN
+      REPEAT GEN_TAC THEN DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+      MATCH_MP_TAC(REAL_RING
+       `p1 * p2:real = p ==> (a * p1) * (b * p2) = (a * b) * p`) THEN
+      ASM_SIMP_TAC[GSYM PRODUCT_MUL_NUMSEG; LAMBDA_BETA; REAL_POW_ADD]]) in
+  let REAL_POLYNOMIAL_FUNCTION_EXPLICIT = prove
+   (`!f:real^N->real.
+        real_polynomial_function f <=>
+        ?(s:num^N->bool) a.
+          FINITE s /\
+          f = \x. sum s
+                   (\k. a(k) * product(1..dimindex(:N)) (\i. x$i pow k$i))`,
+    REWRITE_TAC[GSYM lemma1] THEN
+  REWRITE_TAC[REAL_POLYNOMIAL_FUNCTION_EXPLICIT_UNIV]) in
+  let REAL_POLYNOMIAL_FUNCTION_EXPLICIT_NZ = prove
+   (`!f:real^N->real.
+        real_polynomial_function f <=>
+        ?(s:num^N->bool) a.
+            FINITE s /\ (!k. k IN s ==> ~(a k = &0)) /\
+            f = \x. sum s
+                    (\k. a(k) * product(1..dimindex(:N)) (\i. x$i pow k$i))`,
+    REWRITE_TAC[GSYM lemma2] THEN
+    REWRITE_TAC[REAL_POLYNOMIAL_FUNCTION_EXPLICIT_UNIV]) in
+  REAL_POLYNOMIAL_FUNCTION_EXPLICIT,
+  REAL_POLYNOMIAL_FUNCTION_EXPLICIT_NZ,
+  REAL_POLYNOMIAL_FUNCTION_EXPLICIT_UNIV;;
 
 let REAL_CONTINUOUS_REAL_POLYMONIAL_FUNCTION = prove
  (`!f x:real^N.
@@ -12833,76 +13078,127 @@ let DIFFERENTIABLE_ON_VECTOR_POLYNOMIAL_FUNCTION = prove
            DIFFERENTIABLE_VECTOR_POLYNOMIAL_FUNCTION]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Non-trivial algebraic variety has empty interior.                         *)
+(* Some basic properties of affine real algebraic varieties.                 *)
 (* ------------------------------------------------------------------------- *)
 
-let EMPTY_INTERIOR_ALGEBRAIC_VARIETY = prove
- (`!f c. real_polynomial_function f /\ ~(!x. f x = c)
-         ==> interior {x:real^N | f(x) = c} = {}`,
+let CLOSED_ALGEBRAIC_VARIETY = prove
+ (`!f c. real_polynomial_function f ==> closed {x | f x = c}`,
   REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
-  DISCH_THEN(X_CHOOSE_TAC `y:real^N`) THEN
-  REWRITE_TAC[EXTENSION; NOT_IN_EMPTY] THEN X_GEN_TAC `x:real^N` THEN
-  REWRITE_TAC[IN_INTERIOR] THEN
-  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
-  SUBGOAL_THEN
-   `?a n. !t. f(x + t % (y - x):real^N) - c = sum(0..n) (\i. a i * t pow i)`
-  STRIP_ASSUME_TAC THENL
-   [REWRITE_TAC[FORALL_DROP;
-                GSYM(REWRITE_RULE[FUN_EQ_THM] REAL_POLYNOMIAL_FUNCTION_1)] THEN
-    REWRITE_TAC[real_sub] THEN
-    MATCH_MP_TAC(el 2 (CONJUNCTS real_polynomial_function_RULES)) THEN
-    REWRITE_TAC[real_polynomial_function_RULES] THEN
-    ONCE_REWRITE_TAC[GSYM o_DEF] THEN
-    MATCH_MP_TAC REAL_VECTOR_POLYNOMIAL_FUNCTION_o THEN
-    ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC VECTOR_POLYNOMIAL_FUNCTION_ADD THEN
-    REWRITE_TAC[VECTOR_POLYNOMIAL_FUNCTION_CONST] THEN
-    MATCH_MP_TAC VECTOR_POLYNOMIAL_FUNCTION_MUL THEN
-    SIMP_TAC[o_DEF; LIFT_DROP; VECTOR_POLYNOMIAL_FUNCTION_SUB;
-             VECTOR_POLYNOMIAL_FUNCTION_ID; VECTOR_POLYNOMIAL_FUNCTION_CONST];
-    FIRST_X_ASSUM(MP_TAC o GEN `t:real` o SPEC
-     `x + t % (y - x):real^N` o GEN_REWRITE_RULE I [SUBSET]) THEN
-    ASM_REWRITE_TAC[IN_BALL; IN_ELIM_THM] THEN
-    ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
-    ASM_REWRITE_TAC[NORM_ARITH `dist(x:real^N,x + y) = norm y`] THEN
-    SIMP_TAC[SET_RULE `(!x. P x ==> Q x) <=> {x | P x} SUBSET {x | Q x}`] THEN
-    MATCH_MP_TAC(MESON[FINITE_SUBSET; INFINITE]
-     `FINITE t /\ INFINITE s ==> ~(s SUBSET t)`) THEN
-    REWRITE_TAC[REAL_POLYFUN_FINITE_ROOTS] THEN CONJ_TAC THENL
-     [FIRST_X_ASSUM(MP_TAC o SPEC `&1`) THEN
-      ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
-      SIMP_TAC[NOT_EXISTS_THM; TAUT `~(p /\ ~q) <=> p ==> q`] THEN
-      DISCH_THEN(K ALL_TAC) THEN REWRITE_TAC[REAL_MUL_LZERO; SUM_0] THEN
-      ASM_REWRITE_TAC[REAL_SUB_0; VECTOR_ARITH `x + &1 % (y - x):real^N = y`];
-      ASM_CASES_TAC `y:real^N = x` THENL
-       [ASM_REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_SUB_REFL; NORM_0] THEN
-        REWRITE_TAC[UNIV_GSPEC; real_INFINITE];
-        ASM_SIMP_TAC[NORM_MUL; GSYM REAL_LT_RDIV_EQ; NORM_POS_LT;
-                     VECTOR_SUB_EQ; GSYM NORM_LIFT] THEN
-        MATCH_MP_TAC INFINITE_SUPERSET THEN EXISTS_TAC
-         `IMAGE drop (ball(vec 0:real^1,e / norm(y - x:real^N)))` THEN
-        CONJ_TAC THENL
-         [MP_TAC(ISPEC `drop` INFINITE_IMAGE_INJ) THEN
-          SIMP_TAC[DROP_EQ] THEN DISCH_THEN MATCH_MP_TAC THEN
-          REWRITE_TAC[INFINITE; FINITE_BALL; REAL_NOT_LE] THEN
-          ASM_SIMP_TAC[REAL_LT_DIV; NORM_POS_LT; VECTOR_SUB_EQ];
-          REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_BALL_0;
-                      IN_ELIM_THM; LIFT_DROP]]]]]);;
-
-let NOWHERE_DENSE_ALGEBRAIC_VARIETY = prove
- (`!f c. real_polynomial_function f /\ ~(!x. f x = c)
-         ==> interior(closure {x:real^N | f(x) = c}) = {}`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP EMPTY_INTERIOR_ALGEBRAIC_VARIETY) THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EQ_TRANS) THEN
-  AP_TERM_TAC THEN REWRITE_TAC[CLOSURE_EQ] THEN
   REWRITE_TAC[GSYM LIFT_EQ] THEN ONCE_REWRITE_TAC[GSYM IN_SING] THEN
   MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE_UNIV THEN
   REWRITE_TAC[CLOSED_SING] THEN GEN_TAC THEN
   MATCH_MP_TAC CONTINUOUS_VECTOR_POLYNOMIAL_FUNCTION THEN
   REWRITE_TAC[GSYM REAL_POLYNOMIAL_FUNCTION_DROP; o_DEF; LIFT_DROP] THEN
   ASM_REWRITE_TAC[ETA_AX]);;
+
+let NEGLIGIBLE_ALGEBRAIC_VARIETY = prove
+ (`!f c. real_polynomial_function f /\ ~(!x. f x = c)
+         ==> negligible {x | f x = c}`,
+  let lemma0 = prove
+   (`negligible {x | INFINITE {a | P a x}}
+     ==> negligible {x | ~negligible {lift a | P a x}}`,
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM; INFINITE; CONTRAPOS_THM] THEN
+    REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+    ASM_SIMP_TAC[NEGLIGIBLE_FINITE; FINITE_IMAGE]) in
+  let lemma1 = prove
+   (`!n s a.
+          n <= dimindex(:N) /\ FINITE s /\
+          ~(!x:real^N. sum s
+              (\k. a(k) * product(1..n) (\i. x$i pow (k i))) = &0)
+          ==> negligible {x:real^N | sum s
+                               (\k. a(k) * product(1..n) (\i. x$i pow (k i))) =
+                          &0}`,
+    INDUCT_TAC THENL
+     [REWRITE_TAC[PRODUCT_CLAUSES_NUMSEG; ARITH] THEN
+      SIMP_TAC[SET_RULE `{x | P} = if P then UNIV else {}`; NEGLIGIBLE_EMPTY];
+      MAP_EVERY X_GEN_TAC [`s:(num->num)->bool`; `a:(num->num)->real`] THEN
+      REPLICATE_TAC 2 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC))] THEN
+    SUBGOAL_THEN
+     `closed {x:real^N | sum s (\k. a(k) * product (1..SUC n)
+                                                   (\i. x$i pow (k i))) = &0}`
+    MP_TAC THENL
+     [MATCH_MP_TAC CLOSED_ALGEBRAIC_VARIETY THEN
+      MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_SUM THEN
+      ASM_SIMP_TAC[FINITE_RESTRICT] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_MUL THEN
+      REWRITE_TAC[real_polynomial_function_RULES] THEN
+      MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_PRODUCT THEN
+      REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_POW THEN
+      MATCH_MP_TAC(CONJUNCT1 real_polynomial_function_RULES) THEN 
+      ASM_ARITH_TAC;
+      ALL_TAC] THEN
+    REWRITE_TAC[PRODUCT_CLAUSES_NUMSEG; ARITH_RULE `1 <= SUC n`] THEN
+    MP_TAC(ISPECL
+     [`\k. (k: num->num) (SUC n)`; `s:(num->num)->bool`]
+          UPPER_BOUND_FINITE_SET) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN(X_CHOOSE_TAC `m:num`) THEN
+    MP_TAC(GEN `g:(num->num)->real` (ISPECL
+       [`\k. (k: num->num) (SUC n)`;
+        `g:(num->num)->real`; `s:(num->num)->bool`;
+        `0..m`] SUM_GROUP)) THEN
+    ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_NUMSEG; LE_0] THEN
+    DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+    SIMP_TAC[IN_ELIM_THM] THEN REWRITE_TAC[REAL_MUL_ASSOC; SUM_RMUL] THEN
+    DISCH_THEN(fun th -> DISCH_TAC THEN MP_TAC th) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP LEBESGUE_MEASURABLE_CLOSED) THEN
+    DISCH_THEN(MP_TAC o SPEC `SUC n` o MATCH_MP
+      FUBINI_NEGLIGIBLE_REPLACEMENTS_ALT) THEN
+    DISCH_THEN SUBST1_TAC THEN
+    SUBGOAL_THEN `SUC n <= dimindex(:N) /\
+                  !i. i <= n ==> i <= dimindex(:N)` MP_TAC THENL
+     [ASM_ARITH_TAC; ALL_TAC] THEN
+    SIMP_TAC[IN_ELIM_THM; LAMBDA_BETA; ARITH_RULE `1 <= SUC n`] THEN
+    DISCH_THEN(K ALL_TAC) THEN MATCH_MP_TAC lemma0 THEN
+    SIMP_TAC[ARITH_RULE `i <= n ==> ~(i = SUC n)`] THEN
+    REWRITE_TAC[SUM_RMUL; REAL_MUL_ASSOC] THEN
+    REWRITE_TAC[INFINITE; REAL_POLYFUN_FINITE_ROOTS] THEN
+    REWRITE_TAC[MESON[] `~(?y. y IN s /\ ~P y) <=> !i. i IN s ==> P i`] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
+    DISCH_THEN(X_CHOOSE_THEN `x:real^N` MP_TAC) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP
+     (ONCE_REWRITE_RULE[GSYM CONTRAPOS_THM] SUM_EQ_0)) THEN
+    REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; IN_NUMSEG; LE_0] THEN
+    DISCH_THEN(X_CHOOSE_THEN `j:num` MP_TAC) THEN
+    SIMP_TAC[IN_ELIM_THM] THEN REWRITE_TAC[REAL_MUL_ASSOC; SUM_RMUL] THEN
+    REWRITE_TAC[REAL_ENTIRE; DE_MORGAN_THM] THEN STRIP_TAC THEN
+    MATCH_MP_TAC(MESON[NEGLIGIBLE_SUBSET]
+     `!k:num. {x | !i:num. i <= m ==> P i x} SUBSET {x | P k x} /\
+              negligible {x | P k x}
+             ==> negligible {x:real^N | !i:num. i <= m ==> P i x}`) THEN
+    EXISTS_TAC `j:num` THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC[FINITE_RESTRICT] THEN
+    CONJ_TAC THENL [ASM_ARITH_TAC; ASM_MESON_TAC[]]) in
+  let lemma2 = prove
+   (`!f:real^N->real.
+          real_polynomial_function f /\ ~(!x. f x = &0)
+          ==> negligible {x | f x = &0}`,
+    GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+    REWRITE_TAC[REAL_POLYNOMIAL_FUNCTION_EXPLICIT; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`s:num^N->bool`; `a:num^N->real`] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC) THEN
+    MP_TAC(ISPECL
+     [`dimindex(:N)`; `IMAGE (\x:num^N i. x$i) s`;
+       `(a:num^N->real) o (\k. lambda i. k i)`] lemma1) THEN
+    ASM_SIMP_TAC[FINITE_IMAGE; LE_REFL] THEN
+    SIMP_TAC[SUM_IMAGE; FUN_EQ_THM; CART_EQ] THEN
+    REWRITE_TAC[o_DEF; LAMBDA_ETA]) in
+  ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC lemma2 THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_POLYNOMIAL_FUNCTION_SUB THEN
+  ASM_REWRITE_TAC[real_polynomial_function_RULES]);;
+
+let EMPTY_INTERIOR_ALGEBRAIC_VARIETY = prove                   
+ (`!f c. real_polynomial_function f /\ ~(!x. f x = c)                      
+         ==> interior {x:real^N | f(x) = c} = {}`,
+  SIMP_TAC[NEGLIGIBLE_ALGEBRAIC_VARIETY; NEGLIGIBLE_EMPTY_INTERIOR]);;
+
+let NOWHERE_DENSE_ALGEBRAIC_VARIETY = prove
+ (`!f c. real_polynomial_function f /\ ~(!x. f x = c)
+         ==> interior(closure {x:real^N | f(x) = c}) = {}`,
+  MESON_TAC[EMPTY_INTERIOR_ALGEBRAIC_VARIETY; CLOSURE_EQ;
+            CLOSED_ALGEBRAIC_VARIETY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bernoulli polynomials, defined recursively. We don't explicitly introduce *)

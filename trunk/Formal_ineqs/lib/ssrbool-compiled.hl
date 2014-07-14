@@ -1,0 +1,759 @@
+needs "lib/ssrfun-compiled.hl";;
+
+(* Section ApplyIff *)
+begin_section "ApplyIff";;
+(add_section_var (mk_var ("P", (`:bool`))); add_section_var (mk_var ("Q", (`:bool`))));;
+(add_section_hyp "eqPQ" (`P <=> Q`));;
+
+(* Lemma iffLR *)
+let iffLR = section_proof []
+`P ==> Q`
+[
+   (done_tac);
+];;
+
+(* Lemma iffRL *)
+let iffRL = section_proof []
+`Q ==> P`
+[
+   (done_tac);
+];;
+
+(* Lemma iffLRn *)
+let iffLRn = section_proof []
+`~P ==> ~Q`
+[
+   (done_tac);
+];;
+
+(* Lemma iffRLn *)
+let iffRLn = section_proof []
+`~Q ==> ~P`
+[
+   (done_tac);
+];;
+
+(* Finalization of the section ApplyIff *)
+let iffLR = finalize_theorem iffLR;;
+let iffRL = finalize_theorem iffRL;;
+let iffLRn = finalize_theorem iffLRn;;
+let iffRLn = finalize_theorem iffRLn;;
+end_section "ApplyIff";;
+
+(* Lemma is_true_true *)
+let is_true_true = section_proof []
+`T`
+[
+   (done_tac);
+];;
+
+(* Lemma not_false_is_true *)
+let not_false_is_true = section_proof []
+`~F`
+[
+   (done_tac);
+];;
+let isT = is_true_true;;
+let notF = not_false_is_true;;
+
+(* Lemma negbT *)
+let negbT = section_proof ["b"]
+`(b = F) ==> ~b`
+[
+   (done_tac);
+];;
+
+(* Lemma negbTE *)
+let negbTE = section_proof ["b"]
+`~b ==> b = F`
+[
+   (done_tac);
+];;
+
+(* Lemma negbF *)
+let negbF = section_proof ["b"]
+`b ==> ~b = F`
+[
+   (done_tac);
+];;
+
+(* Lemma negbFE *)
+let negbFE = section_proof ["b"]
+`~b = F ==> b`
+[
+   (done_tac);
+];;
+
+(* Lemma negbK *)
+let negbK = section_proof ["b"]
+`~ ~b = b`
+[
+   (done_tac);
+];;
+
+(* Lemma negbNE *)
+let negbNE = section_proof ["b"]
+`~ ~ b ==> b`
+[
+   (done_tac);
+];;
+
+(* Lemma negb_inj *)
+let negb_inj = section_proof ["b1";"b2"]
+`~b1 = ~b2 ==> b1 = b2`
+[
+   ((((use_arg_then "b1") (disch_tac [])) THEN (clear_assumption "b1") THEN case) THEN (((use_arg_then "b2") (disch_tac [])) THEN (clear_assumption "b2") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma negbLR *)
+let negbLR = section_proof ["b";"c"]
+`b = ~c ==> ~b = c`
+[
+   ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "negbK")(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma negbRL *)
+let negbRL = section_proof ["b";"c"]
+`~b = c ==> b = ~c`
+[
+   ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then "negbK")(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma contra *)
+let contra = section_proof ["c";"b"]
+`(c ==> b) ==> ~b ==> ~c`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)));
+];;
+let contraNN = contra;;
+
+(* Lemma contraL *)
+let contraL = section_proof ["c";"b"]
+`(c ==> ~b) ==> b ==> ~c`
+[
+   (BETA_TAC THEN (move ["h"]));
+   ((((fun arg_tac -> (use_arg_then "contra") (fun fst_arg -> (use_arg_then "h") (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (((use_arg_then "negbK")(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma contraR *)
+let contraR = section_proof ["c";"b"]
+`(~c ==> b) ==> ~b ==> c`
+[
+   (BETA_TAC THEN (move ["h"]));
+   ((((fun arg_tac -> (use_arg_then "contra") (fun fst_arg -> (use_arg_then "h") (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (((use_arg_then "negbK")(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma contraLR *)
+let contraLR = section_proof ["c";"b"]
+`(~c ==> ~b) ==> b ==> c`
+[
+   (BETA_TAC THEN (move ["h"]));
+   ((((fun arg_tac -> (use_arg_then "contra") (fun fst_arg -> (use_arg_then "h") (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (repeat_tactic 1 9 (((use_arg_then "negbK")(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma contraT *)
+let contraT = section_proof ["b"]
+`(~b ==> F) ==> b`
+[
+   (done_tac);
+];;
+
+(* Lemma wlog_neg *)
+let wlog_neg = section_proof ["b"]
+`(~b ==> b) ==> b`
+[
+   (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac));
+];;
+
+(* Lemma contraFT *)
+let contraFT = section_proof ["c";"b"]
+`(~c ==> b) ==> b = F ==> c`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma contraFN *)
+let contraFN = section_proof ["c";"b"]
+`(c ==> b) ==> b = F ==> ~c`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma contraTF *)
+let contraTF = section_proof ["c";"b"]
+`(c ==> ~b) ==> b ==> c = F`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma contraNF *)
+let contraNF = section_proof ["c";"b"]
+`(c ==> b) ==> ~b ==> c = F`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma contraFF *)
+let contraFF = section_proof ["c";"b"]
+`(c ==> b) ==> b = F ==> c = F`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)));
+];;
+let isSome = define `isSome NONE = F /\ (!x. isSome (SOME x) = T)`;;
+
+(* Section BoolIf *)
+begin_section "BoolIf";;
+(add_section_var (mk_var ("vT", (`:A`))); add_section_var (mk_var ("vF", (`:A`))));;
+(add_section_var (mk_var ("f", (`:A -> B`))));;
+(add_section_var (mk_var ("b", (`:bool`))));;
+
+(* Lemma if_same *)
+let if_same = section_proof []
+`(if b then vT else vT) = vT`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma if_neg *)
+let if_neg = section_proof []
+`(if ~b then vT else vF) = if b then vF else vT`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma fun_if *)
+let fun_if = section_proof []
+`f (if b then vT else vF) = if b then f vT else f vF`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma if_arg *)
+let if_arg = section_proof ["fT";"fF";"x"]
+`(if b then (fT:A->B) else fF) x = if b then fT x else fF x`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Finalization of the section BoolIf *)
+let if_same = finalize_theorem if_same;;
+let if_neg = finalize_theorem if_neg;;
+let fun_if = finalize_theorem fun_if;;
+let if_arg = finalize_theorem if_arg;;
+end_section "BoolIf";;
+
+(* Lemma andTb *)
+let andTb = section_proof ["b"]
+`(T /\ b) = b`
+[
+   (done_tac);
+];;
+
+(* Lemma andFb *)
+let andFb = section_proof ["b"]
+`(F /\ b) = F`
+[
+   (done_tac);
+];;
+
+(* Lemma andbT *)
+let andbT = section_proof ["b"]
+`(b /\ T) = b`
+[
+   (done_tac);
+];;
+
+(* Lemma andbF *)
+let andbF = section_proof ["b"]
+`(b /\ F) = F`
+[
+   (done_tac);
+];;
+
+(* Lemma andbb *)
+let andbb = section_proof ["b"]
+`(b /\ b) = b`
+[
+   (done_tac);
+];;
+
+(* Lemma andbC *)
+let andbC = section_proof ["b";"c"]
+`(b /\ c) = (c /\ b)`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andbA *)
+let andbA = section_proof ["b";"c";"p"]
+`b /\ (c /\ p) <=> (b /\ c) /\ p`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andbCA *)
+let andbCA = section_proof ["b";"c";"p"]
+`b /\ (c /\ p) <=> c /\ (b /\ p)`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andbAC *)
+let andbAC = section_proof ["b";"c";"p"]
+`(b /\ c) /\ p <=> (b /\ p) /\ c`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orTb *)
+let orTb = section_proof ["b"]
+`T \/ b <=> T`
+[
+   (done_tac);
+];;
+
+(* Lemma orFb *)
+let orFb = section_proof ["b"]
+`F \/ b <=> b`
+[
+   (done_tac);
+];;
+
+(* Lemma orbT *)
+let orbT = section_proof ["b"]
+`b \/ T <=> T`
+[
+   (done_tac);
+];;
+
+(* Lemma orbF *)
+let orbF = section_proof ["b"]
+`b \/ F <=> b`
+[
+   (done_tac);
+];;
+
+(* Lemma orbb *)
+let orbb = section_proof ["b"]
+`b \/ b <=> b`
+[
+   (done_tac);
+];;
+
+(* Lemma orbC *)
+let orbC = section_proof ["b";"c"]
+`b \/ c <=> c \/ b`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orbA *)
+let orbA = section_proof ["b";"c";"p"]
+`b \/ (c \/ p) <=> (b \/ c) \/ p`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orbCA *)
+let orbCA = section_proof ["b";"c";"p"]
+`b \/ (c \/ p) <=> c \/ (b \/ p)`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orbAC *)
+let orbAC = section_proof ["b";"c";"p"]
+`(b \/ c) \/ p <=> (b \/ p) \/ c`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andbN *)
+let andbN = section_proof ["b"]
+`b /\ ~b <=> F`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andNb *)
+let andNb = section_proof ["b"]
+`~b /\ b <=> F`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orbN *)
+let orbN = section_proof ["b"]
+`b \/ ~b`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orNb *)
+let orNb = section_proof ["b"]
+`~b \/ b`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andb_orl *)
+let andb_orl = section_proof ["b";"c";"p"]
+`(b \/ c) /\ p <=> (b /\ p) \/ (c /\ p)`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andb_orr *)
+let andb_orr = section_proof ["b";"c";"p"]
+`b /\ (c \/ p) <=> (b /\ c) \/ (b /\ p)`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orb_andl *)
+let orb_andl = section_proof ["b";"c";"p"]
+`(b /\ c) \/ p <=> (b \/ p) /\ (c \/ p)`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orb_andr *)
+let orb_andr = section_proof ["b";"c";"p"]
+`b \/ (c /\ p) <=> (b \/ c) /\ (b \/ p)`
+[
+   ((((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andb_idl *)
+let andb_idl = section_proof ["a";"b"]
+`(b ==> a) ==> (a /\ b <=> b)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andb_idr *)
+let andb_idr = section_proof ["a";"b"]
+`(a ==> b) ==> (a /\ b <=> a)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andb_id2l *)
+let andb_id2l = section_proof ["a";"b";"c"]
+`(a ==> (b <=> c)) ==> (a /\ b <=> a /\ c)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andb_id2r *)
+let andb_id2r = section_proof ["a";"b";"c"]
+`(b ==> (a <=> c)) ==> (a /\ b <=> c /\ b)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orb_idl *)
+let orb_idl = section_proof ["a";"b"]
+`(a ==> b) ==> (a \/ b <=> b)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orbb_idr *)
+let orbb_idr = section_proof ["a";"b"]
+`(b ==> a) ==> (a \/ b <=> a)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orb_id2l *)
+let orb_id2l = section_proof ["a";"b";"c"]
+`(~ a ==> (b <=> c)) ==> (a \/ b <=> a \/ c)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orb_id2r *)
+let orb_id2r = section_proof ["a";"b";"c"]
+`(~ b ==> (a <=> c)) ==> (a \/ b <=> c \/ b)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma negb_and *)
+let negb_and = section_proof ["a";"b"]
+`~ (a /\ b) <=> ~ a \/ ~ b`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma negb_or *)
+let negb_or = section_proof ["a";"b"]
+`~ (a \/ b) <=> ~ a /\ ~ b`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andbK *)
+let andbK = section_proof ["a";"b"]
+`((a /\ b) \/ a) = a`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma andKb *)
+let andKb = section_proof ["a";"b"]
+`a \/ b /\ a <=> a`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orbK *)
+let orbK = section_proof ["a";"b"]
+`(a \/ b) /\ a <=> a`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma orKb *)
+let orKb = section_proof ["a";"b"]
+`a /\ (b \/ a) <=> a`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implybT *)
+let implybT = section_proof ["b"]
+`b ==> T`
+[
+   (done_tac);
+];;
+
+(* Lemma implybF *)
+let implybF = section_proof ["b"]
+`(b ==> F) <=> ~ b`
+[
+   (done_tac);
+];;
+
+(* Lemma implyFb *)
+let implyFb = section_proof ["b"]
+`F ==> b`
+[
+   (done_tac);
+];;
+
+(* Lemma implyTb *)
+let implyTb = section_proof ["b"]
+`(T ==> b) <=> b`
+[
+   (done_tac);
+];;
+
+(* Lemma implybb *)
+let implybb = section_proof ["b"]
+`b ==> b`
+[
+   (done_tac);
+];;
+
+(* Lemma negb_imply *)
+let negb_imply = section_proof ["a";"b"]
+`~ (a ==> b) <=> a /\ ~ b`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implybE *)
+let implybE = section_proof ["a";"b"]
+`(a ==> b) <=> ~ a \/ b`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implyNb *)
+let implyNb = section_proof ["a";"b"]
+`(~ a ==> b) <=> a \/ b`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implybN *)
+let implybN = section_proof ["a";"b"]
+`(a ==> ~ b) <=> (b ==> ~ a)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implybNN *)
+let implybNN = section_proof ["a";"b"]
+`(~ a ==> ~ b) <=> b ==> a`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implyb_idl *)
+let implyb_idl = section_proof ["a";"b"]
+`(~ a ==> b) ==> ((a ==> b) <=> b)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implyb_idr *)
+let implyb_idr = section_proof ["a";"b"]
+`(b ==> ~ a) ==> ((a ==> b) <=> ~ a)`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma implyb_id2l *)
+let implyb_id2l = section_proof ["a";"b";"c"]
+`(a ==> (b <=> c)) ==> ((a ==> b) <=> (a ==> c))`
+[
+   ((((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+let XOR_DEF = new_definition `XOR p q = if p then ~q else q`;;
+overload_interface("+", `XOR`);;
+
+(* Lemma addFb *)
+let addFb = section_proof ["b"]
+`F + b <=> b`
+[
+   ((((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma addbF *)
+let addbF = section_proof ["b"]
+`b + F <=> b`
+[
+   ((((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma addbb *)
+let addbb = section_proof ["b"]
+`b + b <=> F`
+[
+   ((((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma addbC *)
+let addbC = section_proof ["b";"c"]
+`b + c <=> c + b`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma addbA *)
+let addbA = section_proof ["a";"b";"c"]
+`a + (b + c) <=> (a + b) + c`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case) THEN (((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addbCA *)
+let addbCA = section_proof ["a";"b";"c"]
+`(a + b) + c <=> (a + c) + b`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case) THEN (((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addbAC *)
+let addbAC = section_proof ["a";"b";"c"]
+`a + (b + c) <=> b + (a + c)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case) THEN (((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma andb_addl *)
+let andb_addl = section_proof ["a";"b";"c"]
+`(a + b) /\ c <=> (a /\ c) + (b /\ c)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case) THEN (((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma andb_addr *)
+let andb_addr = section_proof ["a";"b";"c"]
+`a /\ (b + c) <=> (a /\ b) + (a /\ c)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN (((use_arg_then "c") (disch_tac [])) THEN (clear_assumption "c") THEN case) THEN (((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addKb *)
+let addKb = section_proof ["x";"y"]
+`x + (x + y) <=> y`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "x") (disch_tac [])) THEN (clear_assumption "x") THEN case) THEN (((use_arg_then "y") (disch_tac [])) THEN (clear_assumption "y") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addbK *)
+let addbK = section_proof ["x";"y"]
+`(y + x) + x <=> y`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "x") (disch_tac [])) THEN (clear_assumption "x") THEN case) THEN (((use_arg_then "y") (disch_tac [])) THEN (clear_assumption "y") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addIb *)
+let addIb = section_proof ["x";"y1";"y2"]
+`(y1 + x <=> y2 + x) ==> (y1 = y2)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "y1") (disch_tac [])) THEN (clear_assumption "y1") THEN case) THEN (((use_arg_then "y2") (disch_tac [])) THEN (clear_assumption "y2") THEN case) THEN (((use_arg_then "x") (disch_tac [])) THEN (clear_assumption "x") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addbI *)
+let addbI = section_proof ["x";"y1";"y2"]
+`(x + y1 <=> x + y2) ==> (y1 = y2)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "x") (disch_tac [])) THEN (clear_assumption "x") THEN case) THEN (((use_arg_then "y1") (disch_tac [])) THEN (clear_assumption "y1") THEN case) THEN (((use_arg_then "y2") (disch_tac [])) THEN (clear_assumption "y2") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addTb *)
+let addTb = section_proof ["b"]
+`T + b <=> ~b`
+[
+   (((((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac))) THEN (done_tac));
+];;
+
+(* Lemma addbT *)
+let addbT = section_proof ["b"]
+`b + T <=> ~ b`
+[
+   ((((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma addbN *)
+let addbN = section_proof ["a";"b"]
+`a + ~ b <=> ~ (a + b)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)));
+];;
+
+(* Lemma addNb *)
+let addNb = section_proof ["a";"b"]
+`~ a + b <=> ~ (a + b)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then "XOR_DEF")(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "a") (disch_tac [])) THEN (clear_assumption "a") THEN case) THEN (((use_arg_then "b") (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)));
+];;
+let subpred = new_definition `subpred p1 p2 <=> (!x. p1 x ==> p2 x)`;;
+let subrel = new_definition `subrel r1 r2 <=> (!x y. r1 x y ==> r2 x y)`;;
+let pred0 = new_definition `pred0 = (\x. F)`;;
+let predT = new_definition `predT = (\x. T)`;;
+let predI = new_definition `predI p1 p2 = (\x. p1 x /\ p2 x)`;;
+let predU = new_definition `predU p1 p2 = (\x. p1 x \/ p2 x)`;;
+let predC = new_definition `predC p = (\x. ~p x)`;;
+let predD = new_definition `predD p1 p2 = (\x. ~p2 x /\ p1 x)`;;
+let preim = new_definition `preim f (d:A->bool) = (\x. d (f x))`;;
+let relU = new_definition `relU r1 r2 = (\x y. r1 x y \/ r2 x y)`;;
+
+(* Lemma subrelUl *)
+let subrelUl = section_proof ["r1";"r2"]
+`subrel r1 (relU r1 r2)`
+[
+   (((((use_arg_then "relU")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "subrel")(thm_tac (new_rewrite [] [])))) THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma subrelUr *)
+let subrelUr = section_proof ["r1";"r2"]
+`subrel r2 (relU r1 r2)`
+[
+   (((((use_arg_then "relU")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "subrel")(thm_tac (new_rewrite [] [])))) THEN (simp_tac)) THEN (done_tac));
+];;

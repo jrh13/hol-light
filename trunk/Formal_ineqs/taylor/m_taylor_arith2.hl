@@ -1,0 +1,682 @@
+(* =========================================================== *)
+(* Formal arithmetic of taylor intervals 2                     *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+needs "taylor/m_taylor_arith.hl";;
+
+
+module M_taylor_arith2 = struct
+
+open Arith_misc;;
+open Arith_nat;;
+open Arith_float;;
+open More_float;;
+open Float_atn;;
+open Float_theory;;
+open M_taylor;;
+open M_taylor_arith;;
+open Misc_vars;;
+
+
+
+(**************************************)
+let mk_vars n name ty = map (fun i -> mk_var (name^string_of_int i, ty)) (1--n);;
+
+
+let all_n_components2 n all_n_th =
+  let th0 = SYM (all_n_array.(n)) in
+  let _, list_tm, s_tm = dest_all_n (concl all_n_th) in
+  let list_ty = type_of list_tm in
+  let ty = (hd o snd o dest_type) list_ty in
+  let s_var = mk_var ("s", type_of s_tm) and
+      a_vars = mk_vars n "a" ty in
+
+  let list_tms = dest_list list_tm in
+  let th1 = (INST ([s_tm, s_var] @ zip list_tms a_vars) o INST_TYPE[ty, aty]) th0 in
+    CONJUNCTS (EQ_MP th1 all_n_th);;
+
+
+
+(***************************************)
+
+let gen_taylor_arith_thm arith_th final_rule n =
+  let num1_th = (SYM o REWRITE_RULE[Arith_hash.NUM_THM] o NUMERAL_TO_NUM_CONV) `1` in
+  let th0 = (REWRITE_RULE[num1_th] o DISCH_ALL o INST_TYPE[n_type_array.(n), nty]) arith_th in
+  let pty = `:real#real` in
+  let dfs = mk_vars n "df" pty in
+  let ddfs' = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+  let ddfs = map (fun list -> mk_list (list, pty)) ddfs' in
+  let d_bounds_list = mk_list (dfs, pty) in
+  let dd_bounds_list = mk_list (ddfs, type_of (hd ddfs)) in
+  let th1 = INST[d_bounds_list, d_bounds_list_var; dd_bounds_list, dd_bounds_list_var] th0 in
+  let th2 = (CONV_RULE NUM_REDUCE_CONV o REWRITE_RULE[all_n]) th1 in
+    (UNDISCH_ALL o final_rule o REWRITE_RULE[GSYM CONJ_ASSOC] o
+       NUMERALS_TO_NUM o PURE_REWRITE_RULE[FLOAT_OF_NUM; min_exp_def]) th2;;
+
+
+let gen_add_thm = gen_taylor_arith_thm MK_M_TAYLOR_ADD' (CONV_RULE ALL_CONV);;
+let gen_sub_thm = gen_taylor_arith_thm MK_M_TAYLOR_SUB' (CONV_RULE ALL_CONV);;
+let gen_mul_thm = gen_taylor_arith_thm MK_M_TAYLOR_MUL' (CONV_RULE ALL_CONV);;
+let gen_neg_thm = gen_taylor_arith_thm MK_M_TAYLOR_NEG' (CONV_RULE ALL_CONV);;
+let gen_inv_thm = gen_taylor_arith_thm MK_M_TAYLOR_INV' (REWRITE_RULE[float2_eq]);;
+let gen_sqrt_thm = gen_taylor_arith_thm MK_M_TAYLOR_SQRT' (REWRITE_RULE[float2_eq]);;
+
+let gen_atn_thm =
+  let pow2_th = (SYM o REWRITE_CONV[SYM num2_eq]) `x pow 2` in
+    gen_taylor_arith_thm MK_M_TAYLOR_ATN' (REWRITE_RULE[float2_eq; float1_eq; pow2_th]);;
+
+let gen_acs_thm =
+  let iabs_lemma = REWRITE_CONV[SYM float1_eq] `iabs f_bounds < &1` in
+  let pow3_lemma = (SYM o REWRITE_CONV[SYM num3_eq]) `x pow 3` in
+    gen_taylor_arith_thm MK_M_TAYLOR_ACS' (REWRITE_RULE[iabs_lemma] o REWRITE_RULE[float1_eq; pow3_lemma]);;
+
+
+let add_ths_array,
+  sub_ths_array,
+  mul_ths_array,
+  neg_ths_array,
+  inv_ths_array,
+  sqrt_ths_array,
+  atn_ths_array,
+  acs_ths_array =
+  let gen = fun f -> Array.init (max_dim + 1) (fun i -> if i = 0 then TRUTH else f i) in
+    gen gen_add_thm,
+  gen gen_sub_thm,
+  gen gen_mul_thm,
+  gen gen_neg_thm,
+  gen gen_inv_thm,
+  gen gen_sqrt_thm,
+  gen gen_atn_thm,
+  gen gen_acs_thm;;
+
+
+(*********************)
+(* add *)
+
+let eval_m_taylor_add2 n p_lin p_second taylor1_th taylor2_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let _, diff2_f2_th, lin2_th, second2_th = dest_m_taylor_thms n taylor2_th in
+  let f1_tm = (rand o concl) diff2_f1_th and
+      f2_tm = (rand o concl) diff2_f2_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+  let ty = type_of y_tm in
+
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      g_var = mk_var ("g", type_of f2_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th and
+      _, bounds2_th, df2_th = m_lin_approx_components n lin2_th in
+
+  let bounds_th = float_interval_add p_lin bounds1_th bounds2_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  let df_ths =
+    let df1_ths = map MY_BETA_RULE (all_n_components2 n df1_th) in
+    let df2_ths = map MY_BETA_RULE (all_n_components2 n df2_th) in
+      map2 (float_interval_add p_lin) df1_ths df2_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  let dd_ths =
+    let dd1' = all_n_components2 n (second_bounded_components n second1_th) in
+    let dd2' = all_n_components2 n (second_bounded_components n second2_th) in
+    let dd1 = map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd1' in
+    let dd2 = map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd2' in
+      map2 (map2 (float_interval_add p_second)) dd1 dd2 in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP diff2_f2_th o
+              MY_PROVE_HYP bounds_th o MY_PROVE_HYP domain_th o
+              MY_PROVE_HYP df_th o MY_PROVE_HYP dd_th o
+              INST([f1_tm, f_var; f2_tm, g_var;
+                   domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                   bounds_tm, bounds_var] @ inst_list)) add_ths_array.(n) in
+  let eq_th = binary_beta_gen_eq f1_tm f2_tm x_var add_op_real in
+    m_taylor_interval_norm th eq_th;;
+
+
+(*********************)
+(* sub *)
+
+let eval_m_taylor_sub2 n p_lin p_second taylor1_th taylor2_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let _, diff2_f2_th, lin2_th, second2_th = dest_m_taylor_thms n taylor2_th in
+  let f1_tm = (rand o concl) diff2_f1_th and
+      f2_tm = (rand o concl) diff2_f2_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+  let ty = type_of y_tm in
+
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      g_var = mk_var ("g", type_of f2_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th and
+      _, bounds2_th, df2_th = m_lin_approx_components n lin2_th in
+
+  let bounds_th = float_interval_sub p_lin bounds1_th bounds2_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  let df_ths =
+    let df1_ths = map MY_BETA_RULE (all_n_components2 n df1_th) in
+    let df2_ths = map MY_BETA_RULE (all_n_components2 n df2_th) in
+      map2 (float_interval_sub p_lin) df1_ths df2_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  let dd_ths =
+    let dd1' = all_n_components2 n (second_bounded_components n second1_th) in
+    let dd2' = all_n_components2 n (second_bounded_components n second2_th) in
+    let dd1 = map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd1' in
+    let dd2 = map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd2' in
+      map2 (map2 (float_interval_sub p_second)) dd1 dd2 in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP diff2_f2_th o
+              MY_PROVE_HYP bounds_th o MY_PROVE_HYP domain_th o
+              MY_PROVE_HYP df_th o MY_PROVE_HYP dd_th o
+              INST([f1_tm, f_var; f2_tm, g_var;
+                   domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                   bounds_tm, bounds_var] @ inst_list)) sub_ths_array.(n) in
+  let eq_th = binary_beta_gen_eq f1_tm f2_tm x_var sub_op_real in
+    m_taylor_interval_norm th eq_th;;
+
+
+(*********************)
+(* mul *)
+
+let eval_m_taylor_mul2 n p_lin p_second taylor1_th taylor2_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let _, diff2_f2_th, lin2_th, second2_th = dest_m_taylor_thms n taylor2_th in
+  let f1_tm = (rand o concl) diff2_f1_th and
+      f2_tm = (rand o concl) diff2_f2_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+  let ty = type_of y_tm in
+
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      g_var = mk_var ("g", type_of f2_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let undisch = UNDISCH o SPEC x_var in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th and
+      _, bounds2_th, df2_th = m_lin_approx_components n lin2_th in
+
+  let bounds_th = float_interval_mul p_lin bounds1_th bounds2_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  (* first partials *)
+  let df_ths =
+    let df1_ths = map MY_BETA_RULE (all_n_components2 n df1_th) in
+    let df2_ths = map MY_BETA_RULE (all_n_components2 n df2_th) in
+    let ( * ), ( + ) = float_interval_mul p_lin, float_interval_add p_lin in
+      map2 (fun d1 d2 -> d1 * bounds2_th + bounds1_th * d2) df1_ths df2_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  (* second partials *)
+  let d1_bounds = map (fun i ->
+                         undisch (eval_m_taylor_partial_bound n p_second i taylor1_th)) (1--n) in
+  let d2_bounds = map (fun i ->
+                         undisch (eval_m_taylor_partial_bound n p_second i taylor2_th)) (1--n) in
+  let f1_bound = undisch (eval_m_taylor_bound n p_second taylor1_th) in
+  let f2_bound = undisch (eval_m_taylor_bound n p_second taylor2_th) in
+
+  let dd_ths =
+    let ns = 1--n in
+    let dd1' = all_n_components2 n (second_bounded_components n second1_th) in
+    let dd2' = all_n_components2 n (second_bounded_components n second2_th) in
+    let dd1 = map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) ns dd1' in
+    let dd2 = map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) ns dd2' in
+    let ( * ), ( + ) = float_interval_mul p_second, float_interval_add p_second in
+      map2 (fun (dd1_list, dd2_list) i ->
+              let di1 = List.nth d1_bounds (i - 1) in
+              let di2 = List.nth d2_bounds (i - 1) in
+                map2 (fun (dd1, dd2) j ->
+                        let dj1 = List.nth d1_bounds (j - 1) in
+                        let dj2 = List.nth d2_bounds (j - 1) in
+                          (dd1 * f2_bound + di1 * dj2) + (dj1 * di2 + f1_bound * dd2))
+                  (zip dd1_list dd2_list) (1--i)) (zip dd1 dd2) ns in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP diff2_f2_th o
+              MY_PROVE_HYP bounds_th o MY_PROVE_HYP domain_th o
+              MY_PROVE_HYP df_th o MY_PROVE_HYP dd_th o
+              INST([f1_tm, f_var; f2_tm, g_var;
+                   domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                   bounds_tm, bounds_var] @ inst_list)) mul_ths_array.(n) in
+  let eq_th = binary_beta_gen_eq f1_tm f2_tm x_var mul_op_real in
+    m_taylor_interval_norm th eq_th;;
+
+
+(*********************)
+(* neg *)
+
+let eval_m_taylor_neg2 n taylor1_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let f1_tm = (rand o concl) diff2_f1_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+  let ty = type_of y_tm in
+
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th in
+
+  let bounds_th = float_interval_neg bounds1_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  let df_ths =
+    let df1_ths = map MY_BETA_RULE (all_n_components2 n df1_th) in
+      map (float_interval_neg) df1_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  let dd_ths =
+    let dd1' = all_n_components2 n (second_bounded_components n second1_th) in
+    let dd1 = map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd1' in
+      map (map float_interval_neg) dd1 in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP bounds_th o
+        MY_PROVE_HYP domain_th o MY_PROVE_HYP df_th o MY_PROVE_HYP dd_th o
+              INST([f1_tm, f_var;
+                   domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                   bounds_tm, bounds_var] @ inst_list)) neg_ths_array.(n) in
+  let eq_th = unary_beta_gen_eq f1_tm x_var neg_op_real in
+    m_taylor_interval_norm th eq_th;;
+
+
+(******************************)
+(* inv *)
+
+let eval_m_taylor_inv2 n p_lin p_second taylor1_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let f1_tm = (rand o concl) diff2_f1_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+
+  let ty = type_of y_tm in
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let undisch = UNDISCH o SPEC x_var in
+
+  let f1_bound0 = eval_m_taylor_bound n p_second taylor1_th in
+  let f1_bound = undisch f1_bound0 in
+  let f_bounds_tm = (rand o concl) f1_bound in
+
+  (* cond *)
+  let cond_th = check_interval_not_zero f_bounds_tm in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th in
+
+  let bounds_th = float_interval_inv p_lin bounds1_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  (* first partials *)
+  let u_bounds =
+    let neg, inv, ( * ) = float_interval_neg, float_interval_inv p_lin, float_interval_mul p_lin in
+      neg (inv (bounds1_th * bounds1_th)) in
+
+  let df1_ths' = all_n_components2 n df1_th in
+  let df1_ths = map MY_BETA_RULE df1_ths' in
+
+  let df_ths =
+    let ( * ) = float_interval_mul p_lin in
+      map (fun th1 -> u_bounds * th1) df1_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  (* second partials *)
+  let dd_ths =
+    let dd1 = all_n_components2 n (second_bounded_components n second1_th) in
+      map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd1 in
+
+  let d1_bounds = map (fun i ->
+                         let th0 = eval_m_taylor_partial_bound n p_second i taylor1_th in
+                           undisch th0) (1--n) in
+
+  (* u'(f x), u''(f x) *)
+  let d1_th0, d2_th0 =
+    let inv, ( * ) = float_interval_inv p_second, float_interval_mul p_second in
+    let ff = f1_bound * f1_bound in
+      inv ff,
+    two_interval * inv (f1_bound * ff) in
+
+  let dd_ths =
+    let ( * ), ( - ) = float_interval_mul p_second, float_interval_sub p_second in
+      map2 (fun dd_list di1 ->
+              my_map2 (fun dd dj1 ->
+                         (d2_th0 * dj1) * di1 - d1_th0 * dd) dd_list d1_bounds) dd_ths d1_bounds in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  (***)
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th1 = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP cond_th o MY_PROVE_HYP f1_bound0 o
+               MY_PROVE_HYP bounds_th o MY_PROVE_HYP domain_th o
+               MY_PROVE_HYP dd_th o MY_PROVE_HYP df_th o
+               INST([f1_tm, f_var; f_bounds_tm, f_bounds_var;
+                  domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                  bounds_tm, bounds_var] @ inst_list)) inv_ths_array.(n) in
+  let eq_th = unary_beta_gen_eq f1_tm x_var inv_op_real in
+    m_taylor_interval_norm th1 eq_th;;
+
+
+
+(******************************)
+(* sqrt *)
+
+let eval_m_taylor_sqrt2 n p_lin p_second taylor1_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let f1_tm = (rand o concl) diff2_f1_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+
+  let ty = type_of y_tm in
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let undisch = UNDISCH o SPEC x_var in
+
+  let f1_bound0 = eval_m_taylor_bound n p_second taylor1_th in
+  let f1_bound = undisch f1_bound0 in
+  let f_bounds_tm = (rand o concl) f1_bound in
+
+  (* cond *)
+  let cond_th = check_interval_pos f_bounds_tm in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th in
+
+  let bounds_th = float_interval_sqrt p_lin bounds1_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  (* first partials *)
+  let u_bounds =
+    let inv, ( * ) = float_interval_inv p_lin, float_interval_mul p_lin in
+      inv (two_interval * bounds_th) in
+
+  let df1_ths' = all_n_components2 n df1_th in
+  let df1_ths = map MY_BETA_RULE df1_ths' in
+
+  let df_ths =
+    let ( * ) = float_interval_mul p_lin in
+      map (fun th1 -> u_bounds * th1) df1_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  (* second partials *)
+  let dd_ths =
+    let dd1 = all_n_components2 n (second_bounded_components n second1_th) in
+      map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd1 in
+
+  let d1_bounds = map (fun i ->
+                         let th0 = eval_m_taylor_partial_bound n p_second i taylor1_th in
+                           undisch th0) (1--n) in
+
+  (* u'(f x), u''(f x) *)
+  let d1_th0, d2_th0 =
+    let neg, sqrt, inv, ( * ) = float_interval_neg, float_interval_sqrt p_second,
+      float_interval_inv p_second, float_interval_mul p_second in
+    let two_sqrt_f = two_interval * sqrt f1_bound in
+      inv two_sqrt_f, neg (inv (two_sqrt_f * (two_interval * f1_bound))) in
+
+  let dd_ths =
+    let ( * ), ( + ) = float_interval_mul p_second, float_interval_add p_second in
+      map2 (fun dd_list di1 ->
+              my_map2 (fun dd dj1 ->
+                      (d2_th0 * dj1) * di1 + d1_th0 * dd) dd_list d1_bounds) dd_ths d1_bounds in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  (***)
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th1 = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP cond_th o MY_PROVE_HYP f1_bound0 o
+               MY_PROVE_HYP bounds_th o MY_PROVE_HYP domain_th o
+               MY_PROVE_HYP dd_th o MY_PROVE_HYP df_th o
+               INST([f1_tm, f_var; f_bounds_tm, f_bounds_var;
+                  domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                  bounds_tm, bounds_var] @ inst_list)) sqrt_ths_array.(n) in
+  let eq_th = unary_beta_gen_eq f1_tm x_var sqrt_tm in
+    m_taylor_interval_norm th1 eq_th;;
+
+
+
+(******************************)
+(* atn *)
+
+let eval_m_taylor_atn2 n p_lin p_second taylor1_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let f1_tm = (rand o concl) diff2_f1_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+
+  let ty = type_of y_tm in
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let undisch = UNDISCH o SPEC x_var in
+
+  let f1_bound0 = eval_m_taylor_bound n p_second taylor1_th in
+  let f1_bound = undisch f1_bound0 in
+  let f_bounds_tm = (rand o concl) f1_bound in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th in
+
+  let bounds_th = float_interval_atn p_lin bounds1_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  (* first partials *)
+  let u_bounds =
+    let inv, ( + ), ( * ) = float_interval_inv p_lin,
+      float_interval_add p_lin, float_interval_mul p_lin in
+      inv (one_interval + bounds1_th * bounds1_th) in
+
+  let df1_ths' = all_n_components2 n df1_th in
+  let df1_ths = map MY_BETA_RULE df1_ths' in
+
+  let df_ths =
+    let ( * ) = float_interval_mul p_lin in
+      map (fun th1 -> u_bounds * th1) df1_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  (* second partials *)
+  let dd_ths =
+    let dd1 = all_n_components2 n (second_bounded_components n second1_th) in
+      map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd1 in
+
+  let d1_bounds = map (fun i ->
+                         let th0 = eval_m_taylor_partial_bound n p_second i taylor1_th in
+                           undisch th0) (1--n) in
+
+  (* u'(f x), u''(f x) *)
+  let d1_th0, d2_th0 =
+    let neg, inv, ( + ), ( * ), pow2 = float_interval_neg, float_interval_inv p_second,
+      float_interval_add p_second, float_interval_mul p_second, float_interval_pow_simple p_second 2 in
+    let inv_one_ff = inv (one_interval + f1_bound * f1_bound) in
+      inv_one_ff, (neg_two_interval * f1_bound) * pow2 inv_one_ff in
+
+  let dd_ths =
+    let ( * ), ( + ) = float_interval_mul p_second, float_interval_add p_second in
+      map2 (fun dd_list di1 ->
+              my_map2 (fun dd dj1 ->
+                      (d2_th0 * dj1) * di1 + d1_th0 * dd) dd_list d1_bounds) dd_ths d1_bounds in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  (***)
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th1 = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP f1_bound0 o
+               MY_PROVE_HYP bounds_th o MY_PROVE_HYP domain_th o
+               MY_PROVE_HYP dd_th o MY_PROVE_HYP df_th o
+               INST([f1_tm, f_var; f_bounds_tm, f_bounds_var;
+                  domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                  bounds_tm, bounds_var] @ inst_list)) atn_ths_array.(n) in
+  let eq_th = unary_beta_gen_eq f1_tm x_var atn_tm in
+    m_taylor_interval_norm th1 eq_th;;
+
+
+(******************************)
+(* acs *)
+
+let eval_m_taylor_acs2 n p_lin p_second taylor1_th =
+  let domain_th, diff2_f1_th, lin1_th, second1_th = dest_m_taylor_thms n taylor1_th in
+  let f1_tm = (rand o concl) diff2_f1_th in
+  let domain_tm, y_tm, w_tm = dest_m_cell_domain (concl domain_th) in
+
+  let ty = type_of y_tm in
+  let x_var = mk_var ("x", ty) and
+      y_var = mk_var ("y", ty) and
+      w_var = mk_var ("w", ty) and
+      f_var = mk_var ("f", type_of f1_tm) and
+      domain_var = mk_var ("domain", type_of domain_tm) in
+
+  let undisch = UNDISCH o SPEC x_var in
+
+  let f1_bound0 = eval_m_taylor_bound n p_second taylor1_th in
+  let f1_bound = undisch f1_bound0 in
+  let f_bounds_tm = (rand o concl) f1_bound in
+
+  (* cond *)
+  let cond_th = EQT_ELIM (check_interval_iabs f_bounds_tm one_float) in
+
+  let _, bounds1_th, df1_th = m_lin_approx_components n lin1_th in
+
+  let bounds_th = float_interval_acs p_lin bounds1_th in
+  let bounds_tm = (rand o concl) bounds_th in
+
+  (* first partials *)
+  let u_bounds =
+    let inv, sqrt, neg = float_interval_inv p_lin, float_interval_sqrt p_lin, float_interval_neg in
+    let ( * ), ( - ) = float_interval_mul p_lin, float_interval_sub p_lin in
+      neg (inv (sqrt (one_interval - bounds1_th * bounds1_th))) in
+
+  let df1_ths' = all_n_components2 n df1_th in
+  let df1_ths = map MY_BETA_RULE df1_ths' in
+
+  let df_ths =
+    let ( * ) = float_interval_mul p_lin in
+      map (fun th1 -> u_bounds * th1) df1_ths in
+
+  let df_th = end_itlist CONJ df_ths in
+
+  (* second partials *)
+  let dd_ths =
+    let dd1 = all_n_components2 n (second_bounded_components n second1_th) in
+      map2 (fun i -> map MY_BETA_RULE o all_n_components2 i o MY_BETA_RULE) (1--n) dd1 in
+
+  let d1_bounds = map (fun i ->
+                         let th0 = eval_m_taylor_partial_bound n p_second i taylor1_th in
+                           undisch th0) (1--n) in
+
+  (* u'(f x), u''(f x) *)
+  let d1_th0, d2_th0 =
+    let neg, sqrt, inv = float_interval_neg, float_interval_sqrt p_second, float_interval_inv p_second in
+    let ( - ), ( * ), ( / ), pow3 = float_interval_sub p_second, float_interval_mul p_second,
+      float_interval_div p_second, float_interval_pow_simple p_second 3 in
+    let ff_1 = one_interval - f1_bound * f1_bound in
+      inv (sqrt ff_1), neg (f1_bound / sqrt (pow3 ff_1)) in
+
+  let dd_ths =
+    let ( * ), ( - ) = float_interval_mul p_second, float_interval_sub p_second in
+      map2 (fun dd_list di1 ->
+              my_map2 (fun dd dj1 ->
+                         (d2_th0 * dj1) * di1 - d1_th0 * dd) dd_list d1_bounds) dd_ths d1_bounds in
+
+  let dd_th = (GEN x_var o DISCH_ALL o end_itlist CONJ) (List.flatten dd_ths) in
+
+  (***)
+  let df_vars = map (fun i -> df_vars_array.(i)) (1--n) in
+  let dd_vars = map (fun i -> map (fun j -> dd_vars_array.(i).(j)) (1--i)) (1--n) in
+
+  let dfs = map (rand o concl) df_ths in
+  let dds = map (map (rand o concl)) dd_ths in
+
+  let inst_list = union (zip dfs df_vars) (zip (List.flatten dds) (List.flatten dd_vars)) in
+
+  let th1 = (MY_PROVE_HYP diff2_f1_th o MY_PROVE_HYP cond_th o MY_PROVE_HYP f1_bound0 o
+               MY_PROVE_HYP bounds_th o MY_PROVE_HYP domain_th o
+               MY_PROVE_HYP dd_th o MY_PROVE_HYP df_th o
+               INST([f1_tm, f_var; f_bounds_tm, f_bounds_var;
+                  domain_tm, domain_var; y_tm, y_var; w_tm, w_var;
+                  bounds_tm, bounds_var] @ inst_list)) acs_ths_array.(n) in
+  let eq_th = unary_beta_gen_eq f1_tm x_var acs_tm in
+    m_taylor_interval_norm th1 eq_th;;
+
+
+end;;

@@ -2088,6 +2088,10 @@ let CONVEX_ON_EQ = prove
            ==> g convex_on s`,
   REWRITE_TAC[convex_on; convex] THEN MESON_TAC[]);;
 
+let CONVEX_ON_CONST = prove
+ (`!s a. (\x. a) convex_on s`,
+  SIMP_TAC[convex_on; GSYM REAL_ADD_RDISTRIB; REAL_MUL_LID; REAL_LE_REFL]);;
+
 let CONVEX_ADD = prove
  (`!s f g. f convex_on s /\ g convex_on s ==> (\x. f(x) + g(x)) convex_on s`,
   REWRITE_TAC[convex_on; AND_FORALL_THM] THEN
@@ -7951,6 +7955,32 @@ let CONVEX_ON_EPIGRAPH_SLICE_LT = prove
   ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LET_TRANS) THEN
   MATCH_MP_TAC REAL_CONVEX_BOUND_LT THEN ASM_REWRITE_TAC[]);;
+
+let CONVEX_ON_SUP = prove
+ (`!t:A->bool s:real^N->bool.
+        convex s /\
+        (!i. i IN t ==> f i convex_on s) /\
+        (!x. x IN s ==> ?B. !i. i IN t ==> f i x <= B)
+        ==> (\x. sup {f i x | i IN t}) convex_on s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `t:A->bool = {}` THEN
+  ASM_REWRITE_TAC[NOT_IN_EMPTY; CONVEX_ON_CONST; SET_RULE
+   `{f i x | i | F} = {}`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  ASM_SIMP_TAC[CONVEX_EPIGRAPH_CONVEX] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `convex(INTERS {epigraph (s:real^N->bool) (f i) | (i:A) IN t})`
+  MP_TAC THENL [ASM_SIMP_TAC[CONVEX_INTERS; FORALL_IN_GSPEC]; ALL_TAC] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; FORALL_PASTECART; INTERS_GSPEC; IN_ELIM_THM] THEN
+  REWRITE_TAC[epigraph; IN_ELIM_THM; FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  REWRITE_TAC[GSYM FORALL_DROP] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real`] THEN
+  ASM_CASES_TAC `(x:real^N) IN s` THEN ASM_REWRITE_TAC[] THENL
+   [CONV_TAC SYM_CONV; ASM_MESON_TAC[MEMBER_NOT_EMPTY]] THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) REAL_SUP_LE_EQ o lhand o snd) THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN DISCH_THEN MATCH_MP_TAC THEN
+  ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Use this to derive general bound property of convex function.             *)

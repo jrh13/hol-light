@@ -1,0 +1,326 @@
+(* Some inequalities from the Flyspeck project *)
+(* http://code.google.com/p/flyspeck/ *)
+
+(* Set up the loading path:
+load_path := "path to the formal_ineqs directory" :: !load_path;;
+*)
+
+(* Change default arithmetic options before loading other libraries *)
+(* (arithmetic options cannot be changed later) *)
+needs "arith_options.hl";;
+
+(* Set the base of natural number arithmetic to 200 *)
+Arith_options.base := 200;;
+
+(* Load all verification libraries *)
+(* Note: the verification library loads Multivariate/realanalysis.ml,
+   so it is recommended to use a checkpointed version of HOL Light
+   with preloaded realanalysis.ml *)
+needs "verifier/m_verifier_main.hl";;
+
+(*
+  Set the level of info/debug printing:
+  0 - no info/debug printing
+  1 - report important steps (default)
+  2 - report everything
+*)
+needs "verifier_options.hl";;
+Verifier_options.info_print_level := 1;;
+
+(* Open the main verification module *)
+open M_verifier_main;;
+
+
+
+
+(************************)
+(* Flyspeck definitions *)
+
+
+(* ineq *)
+let ineq = define
+ `(!c. ineq [] c <=> c)
+    /\ (!a x b xs c. ineq (CONS (a,x,b) xs) c <=> a <= x /\ x <= b ==> ineq xs c)`;;
+
+(* A modified (only one case is considered, x > 0) definition of atn2 *)
+(* Add ' to some definitions to avoid conflicts with original Flyspeck definitions *)
+let atn2' = new_definition `atn2'(x,y) = atn(y / x)`
+
+
+(* delta_x *)
+let delta_x = new_definition (`delta_x x1 x2 x3 x4 x5 x6 =
+        x1*x4*(--x1 + x2 + x3 -x4 + x5 + x6) +
+        x2*x5*(x1 - x2 + x3 + x4 -x5 + x6) +
+        x3*x6*(x1 + x2 - x3 + x4 + x5 - x6)
+        -x2*x3*x4 - x1*x3*x5 - x1*x2*x6 -x4*x5*x6`);;
+
+(* delta_y *)
+let delta_y = new_definition `delta_y y1 y2 y3 y4 y5 y6 =
+    delta_x (y1*y1) (y2*y2) (y3*y3) (y4*y4) (y5*y5) (y6*y6)`;;
+
+(* delta_x4 *)
+let delta_x4= new_definition(`delta_x4 x1 x2 x3 x4 x5 x6
+        =  -- x2* x3 -  x1* x4 + x2* x5
+        + x3* x6 -  x5* x6 + x1* (-- x1 +  x2 +  x3 -  x4 +  x5 +  x6)`);;
+
+(* ups_x *)
+let ups_x = new_definition(`ups_x x1 x2 x6 =
+    --x1*x1 - x2*x2 - x6*x6
+    + &2 *x1*x6 + &2 *x1*x2 + &2 *x2*x6`);;
+
+(* rho_x *)
+let rho_x = new_definition(`rho_x x1 x2 x3 x4 x5 x6 =
+        --x1*x1*x4*x4 - x2*x2*x5*x5 - x3*x3*x6*x6 +
+        (&2)*x1*x2*x4*x5 + (&2)*x1*x3*x4*x6 + (&2)*x2*x3*x5*x6`);;
+
+(* rad2_x *)
+let rad2_x = new_definition(`rad2_x x1 x2 x3 x4 x5 x6 =
+        (rho_x x1 x2 x3 x4 x5 x6)/((delta_x x1 x2 x3 x4 x5 x6)*(&4))`);;
+
+(* dih_x', atn2 replaced with atan2 *)
+let dih_x' = new_definition(`dih_x' x1 x2 x3 x4 x5 x6 =
+       let d_x4 = delta_x4 x1 x2 x3 x4 x5 x6 in
+       let d = delta_x x1 x2 x3 x4 x5 x6 in
+       pi/ (&2) +  atn2'( (sqrt ((&4) * x1 * d)),--  d_x4)`);;
+
+(* dih_y *)
+let dih_y' = new_definition(`dih_y' y1 y2 y3 y4 y5 y6 =
+       let (x1,x2,x3,x4,x5,x6)= (y1*y1,y2*y2,y3*y3,y4*y4,y5*y5,y6*y6) in
+       dih_x' x1 x2 x3 x4 x5 x6`);;
+
+(* arclength *)
+let arclength' = new_definition(`arclength' a b c =
+        pi/(&2) + (atn2'( (sqrt (ups_x (a*a) (b*b) (c*c))),(c*c - a*a  -b*b)))`);;
+
+(* sol_x *)
+let sol_x' = new_definition(`sol_x' x1 x2 x3 x4 x5 x6 =
+        (dih_x' x1 x2 x3 x4 x5 x6) +
+        (dih_x' x2 x3 x1 x5 x6 x4) +  (dih_x' x3 x1 x2 x6 x4 x5) -  pi`);;
+
+(* sol_y *)
+let sol_y' = new_definition(`sol_y' y1 y2 y3 y4 y5 y6 =
+        (dih_y' y1 y2 y3 y4 y5 y6) +
+        (dih_y' y2 y3 y1 y5 y6 y4) +  (dih_y' y3 y1 y2 y6 y4 y5) -  pi`);;
+
+
+(* const1 *)
+let const1' = new_definition `const1' = sol_y' (&2) (&2) (&2) (&2) (&2) (&2) / pi`;;
+
+(* h0 *)
+let h0 = new_definition `h0 = #1.26`;;
+
+(* lfun *)
+let lfun = new_definition `lfun h =  (h0 - h)/(h0 - &1)`;;
+
+(* lfun_y1 *)
+let lfun_y1 = new_definition `lfun_y1 (y1:real) (y2:real) (y3:real)
+  (y4:real) (y5:real) (y6:real) =  lfun y1`;;
+
+
+(* num1 *)
+let num1 = new_definition `num1 e1 e2 e3 a2 b2 c2 =
+   -- &4*((a2 pow 2) *e1 + &8*(b2 - c2)*(e2 - e3) -
+  a2*(&16*e1 + ( b2 - &8 )*e2 + (c2 - &8)*e3))`;;
+
+(* unit6 *)
+let unit6 = define `unit6 x1 x2 x3 x4 x5 x6 = &1`;;
+
+(* arc_hhn *)
+let arc_hhn' = new_definition `arc_hhn' =
+  arclength' (&2 * h0) (&2 * h0) (&2)`;;
+
+(* arclength_y1 *)
+let arclength_y1' = new_definition
+ `arclength_y1' a b
+  (y1:real) (y2:real) (y3:real) (y4:real) (y5:real) (y6:real) =
+  arclength' y1 a b`;;
+
+(* arclength_x1 *)
+let arclength_x1' = new_definition
+ `arclength_x1' a b x1 x2 x3 x4 x5 x6 =
+  arclength_y1' a b (sqrt x1) (sqrt x2) (sqrt x3) (sqrt x4) (sqrt x5) (sqrt x6)`;;
+
+(* arclength_x_123 *)
+let arclength_x_123' = new_definition `arclength_x_123'  (x1:real) (x2:real) (x3:real) (x4:real) (x5:real) (x6:real) =
+                arclength' (sqrt x1) (sqrt x2) (sqrt x3)`;;
+
+(* acs_sqrt_x1_d4 *)
+let acs_sqrt_x1_d4 = new_definition `acs_sqrt_x1_d4 (x1:real) (x2:real) (x3:real) (x4:real) (x5:real) (x6:real) =
+  acs (sqrt(x1)/ &4)`;;
+
+let sqrt_x1 = define `sqrt_x1 x1 x2 x3 x4 x5 x6 = sqrt x1`;;
+
+let sqrt_x2 = define `sqrt_x2 x1 x2 x3 x4 x5 x6 = sqrt x2`;;
+
+let sqrt_x3 = define `sqrt_x3 x1 x2 x3 x4 x5 x6 = sqrt x3`;;
+
+let sqrt_x4 = define `sqrt_x4 x1 x2 x3 x4 x5 x6 = sqrt x4`;;
+
+let sqrt_x5 = define `sqrt_x5 x1 x2 x3 x4 x5 x6 = sqrt x5`;;
+
+let sqrt_x6 = define `sqrt_x6 x1 x2 x3 x4 x5 x6 = sqrt x6`;;
+
+
+(* All definitions in one list *)
+let flyspeck_defs = [atn2'; delta_x; delta_y; delta_x4;
+              ups_x; rho_x; dih_x'; dih_y'; arclength';
+              sol_x'; sol_y'; const1'; num1; unit6; h0; lfun; lfun_y1;
+              rad2_x; arc_hhn'; arclength_y1'; arclength_x1'; acs_sqrt_x1_d4;
+              arclength_x_123'; sqrt_x1; sqrt_x2; sqrt_x3; sqrt_x4; sqrt_x5; sqrt_x6];;
+
+
+
+(* A simple function for verifying Flyspeck inequalities *)
+let verify_flyspeck_ineq pp ineq_tm =
+  let conv = REWRITE_CONV ([ineq; IMP_IMP] @ flyspeck_defs) THENC DEPTH_CONV let_CONV in
+  let eq_th = conv ineq_tm in
+  let ineq_tm1 = (rand o concl) eq_th in
+  let th, time = verify_ineq default_params pp ineq_tm1 in
+    REWRITE_RULE[GSYM eq_th] th, time;;
+
+
+(* Create a hashtable for saving inequalities *)
+
+type difficulty = Easy | Medium | Hard;;
+
+type flyspeck_example =
+{
+  difficulty : difficulty;
+  id : string;
+  ineq_tm : term;
+};;
+
+let examples = Hashtbl.create 20;;
+let add_example ex =
+  Hashtbl.add examples ex.id ex;;
+
+(* 2485876245a *)
+add_example {id = "2485876245a";
+             difficulty = Easy;
+             ineq_tm = `ineq
+    [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #6.3504;
+      #3.0 *  #3.0, x5, #2.0 *  #2.52 *  #2.0 *  #2.52;  #4.0,x6, #6.3504]
+    (delta_x4 x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
+
+
+(* 4559601669b *)
+add_example {id = "4559601669b";
+             difficulty = Easy;
+             ineq_tm = `ineq
+    [ #4.0,x1, #6.3504;  #4.0,x2, #4.0;  #4.0,x3, #6.3504;
+      #3.01 *  #3.01, x4, #3.01 *  #3.01; #4.0, x5, #6.3504;  #4.0,x6, #4.0]
+    (delta_x4 x1 x2 x3 x4 x5 x6 < &0)`};;
+
+
+(* 5512912661 *)
+add_example {id = "5512912661";
+             difficulty = Easy;
+             ineq_tm = `ineq [&1,x1,&1 + (pi * const1') / pi; &1,x2,&1 + (pi * const1') / pi;
+                              &1, x3, &1 + (pi * const1') / pi;  #2.38 * #2.38, x4, #3.01 * #3.01;
+                              &2 * &2, x5, #2.52 *  #2.52;  #3.15 /  #1.26 *  #3.15 /  #1.26,x6, #15.53]
+    (num1 x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
+
+
+(* 6843920790 *)
+add_example {id = "6843920790";
+             difficulty = Easy;
+             ineq_tm = `ineq [&1,x1,&1 + (pi * const1') / pi; &1,x2,&1 + (pi * const1') / pi;
+                              &1, x3, &1 + (pi * const1') / pi; &2 / #1.26 * &2 / #1.26, x4, #3.01 * #3.01;
+                              #2.38 *  #2.38, x5, #15.53;  #2.38 *  #2.38,x6, #15.53]
+    (num1 x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
+
+
+(* 6096597438a *)
+add_example {id = "6096597438a";
+             difficulty = Easy;
+             ineq_tm = `ineq [ #1.0,x1, #1.0; &1,x2,&1; &1,x3,&1; &1,x4,&1; &1,x5,&1; &1,x6,&1]
+    (unit6 x1 x2 x3 x4 x5 x6 *  #0.591 +
+       unit6 x1 x2 x3 x4 x5 x6 *  #0.0331 * -- &64 +
+       unit6 x1 x2 x3 x4 x5 x6 *  #0.506 *  #1.26 * &1 / ( #1.26 + -- &1) +
+       unit6 x1 x2 x3 x4 x5 x6 *  #0.506 * --(&1 / ( #1.26 + -- &1)) +
+       unit6 x1 x2 x3 x4 x5 x6 *  #1.0 < &0)`};;
+
+
+(* 4717061266 *)
+add_example {id = "4717061266";
+             difficulty = Easy;
+             ineq_tm = `ineq
+    [ #4.0,x1, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0, x2, #2.0 *  #1.26 *  #2.0 *  #1.26;
+      #4.0, x3, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0,x4, #2.0 *  #1.26 *  #2.0 *  #1.26;
+      #4.0, x5, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0,x6, #2.0 *  #1.26 *  #2.0 *  #1.26]
+    (delta_x x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
+
+
+(* SDCCMGA b *)
+add_example {id = "SDCCMGA b";
+             difficulty = Easy;
+             ineq_tm = `ineq [ #4.0,x1, #6.3504; &1 * &1,x2,&1 * &1; &1 * &1,x3,&1 * &1;
+                               &1 * &1, x4, &1 * &1; &1 * &1, x5, &1 * &1; &1 * &1,x6,&1 * &1]
+    (arclength_x1'  #2.0 ( #2.0 *  #1.26) x1 x2 x3 x4 x5 x6 +
+       arclength_x1'  #2.0 ( #2.0 *  #1.26) x1 x2 x3 x4 x5 x6 +
+       arclength_x1' ( #2.0 *  #1.26)  #2.0 x1 x2 x3 x4 x5 x6 * -- &1 +
+       unit6 x1 x2 x3 x4 x5 x6 * pi * --(&1 / &3) +
+       unit6 x1 x2 x3 x4 x5 x6 * --arc_hhn' < &0)`};;
+
+
+(* TSKAJXY-TADIAMB *)
+add_example {id = "TSKAJXY-TADIAMB";
+             difficulty = Medium;
+             ineq_tm = `ineq
+    [ #2.0 *  #1.3254 *  #2.0 *  #1.3254,x1, #8.0;  #2.0 * #1.3254 * #2.0 * #1.3254, x2, #8.0;
+      #4.0,x3, #8.0; #4.0, x4, #8.0;  #4.0,x5, #8.0;  #4.0,x6, #8.0]
+    ((unit6 x1 x2 x3 x4 x5 x6 * #2.0) * (delta_x x1 x2 x3 x4 x5 x6 * &4) < rho_x x1 x2 x3 x4 x5 x6)`};;
+
+
+(* 7067938795 *)
+add_example {id = "7067938795";
+             difficulty = Medium;
+             ineq_tm = `ineq [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #4.0;
+                               #3.01 *  #3.01, x5, #3.24 *  #3.24;  #3.01 *  #3.01,x6, #3.24 *  #3.24]
+    (dih_x' x1 x2 x3 x4 x5 x6 +
+       unit6 x1 x2 x3 x4 x5 x6 * pi * --(&1 /  #2.0) +
+       unit6 x1 x2 x3 x4 x5 x6 *  #0.46 <
+     &0)`};;
+
+(* 5490182221 *)
+add_example { id = "5490182221";
+              difficulty = Medium;
+              ineq_tm = `ineq
+    [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #6.3504;
+      #4.0, x5, #6.3504;  #4.0,x6, #6.3504]
+    (dih_x' x1 x2 x3 x4 x5 x6 + unit6 x1 x2 x3 x4 x5 x6 * -- #1.893 < &0)`};;
+
+
+
+(* 3318775219 *)
+add_example { id = "3318775219";
+              difficulty = Hard;
+              ineq_tm = `ineq [&2, y1, #2.52; &2, y2, #2.52;
+                               &2, y3, #2.52; #2.52, y4, sqrt(&8);
+                               &2, y5, #2.52; &2, y6, #2.52]
+    ( ((dih_y' y1 y2 y3 y4 y5 y6) - #1.629 +
+         (#0.414 * (y2 + y3 + y5 + y6 - #8.0)) -
+         (#0.763 * (y4 - #2.52)) -
+         (#0.315 * (y1 - #2.0))) * (-- &1)  < &0)`};;
+
+
+(* Tests *)
+
+let run_example id =
+  id, verify_flyspeck_ineq 4 (Hashtbl.find examples id).ineq_tm;;
+
+
+
+let test_easy, test_medium, test_hard =
+  let run keys = map run_example keys in
+  let get_keys d0 =
+    let list = Hashtbl.fold (fun k v acc -> (k, v.difficulty) :: acc) examples [] in
+      (setify o fst o unzip) (filter (fun (_, d) -> d = d0) list) in
+    (fun () -> run (get_keys Easy)),
+  (fun () -> run (get_keys Medium)),
+  (fun () -> run (get_keys Hard));;
+
+
+let easy = test_easy();;
+(* let medium = test_medium();; *)
+(* let hard = test_hard();; *)

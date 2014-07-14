@@ -7,6 +7,7 @@ loadt "Library/permutations.ml";;       (* For determinants                 *)
 loadt "Library/products.ml";;           (* For determinants and integrals   *)
 loadt "Library/floor.ml";;              (* Useful here and there            *)
 loadt "Multivariate/misc.ml";;          (* Background stuff                 *)
+loadt "Library/iter.ml";;               (* n-fold iteration of function     *)
 
 (* ------------------------------------------------------------------------- *)
 (* The main core theory.                                                     *)

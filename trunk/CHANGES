@@ -1,3 +1,20 @@
+Sun 13th Jul 2014       Formal_ineqs/* [new files]
+
+Added Alexey Solovyev's formal inequality prover (used extensively
+in the Flyspeck project) to the HOL Light distribution.
+
+Thu 10th Jul 2014       Library/products.ml
+
+Added a couple more trivial theorems about products:
+
+  NPRODUCT_DELTA =
+    |- !s a.
+         nproduct s (\x. if x = a then b else 1) = (if a IN s then b else 1)
+
+  PRODUCT_DELTA =
+    |- !s a.
+         product s (\x. if x = a then b else &1) = (if a IN s then b else &1)
+
 Tue  1st Jul 2014       Library/floor.ml
 
 Added clauses for "max" and "min" to INTEGER_CLOSED, so it is now:

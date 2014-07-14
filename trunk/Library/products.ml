@@ -184,6 +184,12 @@ let NPRODUCT_FACT = prove
   INDUCT_TAC THEN REWRITE_TAC[NPRODUCT_CLAUSES_NUMSEG; FACT; ARITH] THEN
   ASM_REWRITE_TAC[ARITH_RULE `1 <= SUC n`; MULT_SYM]);;
 
+let NPRODUCT_DELTA = prove
+ (`!s a. nproduct s (\x. if x = a then b else 1) =
+         (if a IN s then b else 1)`,
+  REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
+  SIMP_TAC[ITERATE_DELTA; MONOIDAL_MUL]);;
+
 let th = prove
    (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
                 ==> nproduct s (\i. f(i)) = nproduct s g) /\
@@ -429,6 +435,12 @@ let PRODUCT_PAIR = prove
 let PRODUCT_DELETE = prove
  (`!f s a. FINITE s /\ a IN s ==> f(a) * product(s DELETE a) f = product s f`,
   SIMP_TAC[product; ITERATE_DELETE; MONOIDAL_REAL_MUL]);;
+
+let PRODUCT_DELTA = prove
+ (`!s a. product s (\x. if x = a then b else &1) =
+         (if a IN s then b else &1)`,
+  REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
+  SIMP_TAC[ITERATE_DELTA; MONOIDAL_REAL_MUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extend congruences.                                                       *)

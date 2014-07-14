@@ -1,0 +1,74 @@
+(* Several simple examples *)
+
+(* Set up the loading path:
+load_path := "path to the formal_ineqs directory" :: !load_path;;
+*)
+
+(* Change default arithmetic options before loading other libraries *)
+(* (arithmetic options cannot be changed later) *)
+needs "arith_options.hl";;
+
+(* Set the base of natural number arithmetic to 200 *)
+Arith_options.base := 200;;
+
+(* Load all verification libraries *)
+(* Note: the verification library loads Multivariate/realanalysis.ml,
+   so it is recommended to use a checkpointed version of HOL Light
+   with preloaded realanalysis.ml *)
+needs "verifier/m_verifier_main.hl";;
+
+(*
+  Set the level of info/debug printing:
+  0 - no info/debug printing
+  1 - report important steps (default)
+  2 - report everything
+*)
+needs "verifier_options.hl";;
+Verifier_options.info_print_level := 1;;
+
+(* Open the main verification module *)
+open M_verifier_main;;
+
+
+(* Several simple tests *)
+
+(* default_params: default verification parameters *)
+(* 5: precision parameter for floating point arithmetic *)
+let test1 () =
+  verify_ineq default_params 5 `sqrt(pi) < #1.773`;;
+
+let test2 () =
+  verify_ineq default_params 11 `#1.230959417 < acs(&1 / &3)`;;
+
+let test3 () =
+  verify_ineq default_params 11 `#1.230959418 > acs(&1 / &3)`;;
+
+(* An approximation of atn *)
+let test4 () =
+  let ineq1 = `&0 <= x /\ x <= &1 ==> atn x - x / (&1 + #0.28 * x * x) < #0.005` in
+  let ineq2 = `&0 <= x /\ x <= &1 ==> -- #0.005 < atn x - x / (&1 + #0.28 * x * x)` in
+    [verify_ineq default_params 5 ineq1;
+     verify_ineq default_params 6 ineq2];;
+
+(* A polynomial approximation of atn *)
+(* Taken from: *)
+(* Marc Daumas, David Lester, and César Muñoz,
+   Verified real number calculations: A library for interval arithmetic,
+   IEEE Transactions on Computers, Volume 58, Number 2, 2009. *)
+let test5 () =
+  let ineq1 = `-- &1 / &30 <= x /\ x <= &1 / &30 ==> x * (&1 - (x * x) * (&11184811 / &33554432 - (x * x) * (&13421773 / &67108864))) - atn x < #0.1 pow 7` in
+  let ineq2 = `-- &1 / &30 <= x /\ x <= &1 / &30 ==> -- (#0.1 pow 7) < x * (&1 - (x * x) * (&11184811 / &33554432 - (x * x) * (&13421773 / &67108864))) - atn x` in
+    [verify_ineq default_params 5 ineq1;
+     verify_ineq default_params 5 ineq2];;
+
+
+(* Returns a list of theorems with verification information *)
+let run_tests () =
+  [test1(); test2(); test3()] @ test4() @ test5();;
+
+(* Returns a list of theorems *)
+let results () =
+  map fst (run_tests ());;
+
+
+results();;

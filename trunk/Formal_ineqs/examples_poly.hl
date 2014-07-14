@@ -1,0 +1,141 @@
+(* Multivariate polynomial inequalities *)
+(* Examples are taken from the paper:
+   César Muñoz and Anthony Narkawicz,
+   Formalization of a Representation of Bernstein Polynomials and Applications to Global Optimization,
+   Journal of Automated Reasoning, DOI: 10.1007/s10817-012-9256-3
+   http://shemesh.larc.nasa.gov/people/cam/Bernstein/ *)
+
+
+(* Set up the loading path:
+load_path := "path to the formal_ineqs directory" :: !load_path;;
+*)
+
+(* Change default arithmetic options before loading other libraries *)
+(* (arithmetic options cannot be changed later) *)
+needs "arith_options.hl";;
+
+(* Set the base of natural number arithmetic to 200 *)
+Arith_options.base := 200;;
+
+(* Load all verification libraries *)
+(* Note: the verification library loads Multivariate/realanalysis.ml,
+   so it is recommended to use a checkpointed version of HOL Light
+   with preloaded realanalysis.ml *)
+needs "verifier/m_verifier_main.hl";;
+
+(*
+  Set the level of info/debug printing:
+  0 - no info/debug printing
+  1 - report important steps (default)
+  2 - report everything
+*)
+needs "verifier_options.hl";;
+Verifier_options.info_print_level := 1;;
+
+(* Open the main verification module *)
+open M_verifier_main;;
+
+
+(* Data *)
+
+(* Polynomials *)
+let schwefel_poly = `(x1 - x2 pow 2) pow 2 + (x2 - &1) pow 2 +
+  (x1 - x3 pow 2) pow 2 + (x3 - &1) pow 2` and
+
+    rd_poly = `-- x1 + &2 * x2 - x3 - #0.835634534 * x2 * (&1 + x2)` and
+
+    caprasse_poly = `-- x1 * x3 pow 3 + &4 * x2 * x3 pow 2 * x4 +
+  &4 * x1 * x3 * x4 pow 2 + &2 * x2 * x4 pow 3 + &4 * x1 * x3 + &4 * x3 pow 2 -
+  &10 * x2 * x4 - &10 * x4 pow 2 + &2` and
+
+    lv_poly = `x1 * x2 pow 2 + x1 * x3 pow 2 + x1 * x4 pow 2 - #1.1 * x1 + &1` and
+
+    butcher_poly = `x6 * x2 pow 2 + x5 * x3 pow 2 - x1 * x4 pow 2 + x4 pow 2 -
+  &1 / &3 * x1 + &4 / &3 * x4` and
+
+    magnetism_poly = `x1 pow 2 + &2 * x2 pow 2 + &2 * x3 pow 2 + &2 * x4 pow 2 +
+  &2 * x5 pow 2 + &2 * x6 pow 2 + &2 * x7 pow 2 - x1` and
+
+    heart_poly = `-- x1 * x6 pow 3 + &3 * x1 * x6 * x7 pow 2 - x3 * x7 pow 3 +
+  &3 * x3 * x7 * x6 pow 2 - x2 * x5 pow 3 + &3 * x2 * x5 * x8 pow 2 - x4 * x8 pow 3 +
+  &3 * x4 * x8 * x5 pow 2 - #0.9563453`;;
+
+(* Minimal values *)
+let schwefel_min = `-- #0.00000000058806` and
+    rd_min = `-- #36.7126907` and
+    caprasse_min = `-- #3.1801` and
+    lv_min = `-- #20.801` and
+    butcher_min = `-- #1.44` and
+    magnetism_min = `-- #0.25001` and
+    heart_min = `-- #1.7435`;;
+
+(* Domains *)
+let schwefel_dom = `[-- &10; -- &10; -- &10]`, `[&10; &10; &10]` and
+    rd_dom = `[-- &5; -- &5; -- &5]`, `[&5; &5; &5]` and
+    caprasse_dom = `[-- #0.5; -- #0.5; -- #0.5; -- #0.5]`, `[#0.5; #0.5; #0.5; #0.5]` and
+    lv_dom = `[-- &2; -- &2; -- &2; -- &2]`, `[&2; &2; &2; &2]` and
+    butcher_dom = `[-- &1; -- #0.1; -- #0.1; -- &1; -- #0.1; -- #0.1]`,
+  `[&0; #0.9; #0.5; -- #0.1; -- #0.05; -- #0.03]` and
+    magnetism_dom = `[-- &1; -- &1; -- &1; -- &1; -- &1; -- &1; -- &1]`,
+  `[&1; &1; &1; &1; &1; &1; &1]` and
+    heart_dom = `[-- #0.1; #0.4; -- #0.7; -- #0.7; #0.1; -- #0.1; -- #0.3; -- #1.1]`,
+  `[#0.4; &1; -- #0.4; #0.4; #0.2; #0.2; #1.1; -- #0.3]`;;
+
+
+let mk_poly_ineq poly_tm min_tm dom =
+  let n = length (frees poly_tm) in
+  let xs = map (fun i -> "x"^string_of_int i) (1--n) in
+  let ineq_tm = mk_binop `(<):real->real->bool` min_tm poly_tm in
+  let ineq2_tm = M_verifier_main.mk_ineq ineq_tm xs dom in
+    ineq2_tm;;
+
+(* Create all inequalities *)
+let schwefel_ineq,
+  rd_ineq,
+  caprasse_ineq,
+  lv_ineq,
+  butcher_ineq,
+  magnetism_ineq,
+  heart_ineq =
+  mk_poly_ineq schwefel_poly schwefel_min schwefel_dom,
+  mk_poly_ineq rd_poly rd_min rd_dom,
+  mk_poly_ineq caprasse_poly caprasse_min caprasse_dom,
+  mk_poly_ineq lv_poly lv_min lv_dom,
+  mk_poly_ineq butcher_poly butcher_min butcher_dom,
+  mk_poly_ineq magnetism_poly magnetism_min magnetism_dom,
+  mk_poly_ineq heart_poly heart_min heart_dom;;
+
+
+(* Tests *)
+
+let test_schwefel () =
+  verify_ineq default_params 5 schwefel_ineq;;
+
+let test_rd () =
+  verify_ineq default_params 5 rd_ineq;;
+
+let test_caprasse () =
+  verify_ineq default_params 5 caprasse_ineq;;
+
+let test_lv () =
+  verify_ineq default_params 5 lv_ineq;;
+
+let test_butcher () =
+  verify_ineq default_params 5 butcher_ineq;;
+
+let test_magnetism () =
+  verify_ineq default_params 5 magnetism_ineq;;
+
+let test_heart () =
+  verify_ineq {default_params with eps = 1e-10} 5 heart_ineq;;
+
+
+let run_tests () =
+  [test_schwefel(); test_rd(); test_caprasse(); test_lv();
+   test_butcher(); test_magnetism(); test_heart()];;
+
+let results () =
+  map fst (run_tests());;
+
+
+results();;
