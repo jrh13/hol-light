@@ -590,6 +590,17 @@ let DET_MUL = prove
    [ASM_MESON_TAC[VECTOR_MUL_COMPONENT; PERMUTES_IN_IMAGE; IN_NUMSEG];
     ASM_MESON_TAC[PERMUTES_INVERSES]]);;
 
+let DET_LINEAR_ROWS = prove
+ (`!f:real^N->real^N A:real^N^N.
+        linear f ==> det(lambda i. f(A$i)) = det(matrix f) * det A`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM DET_TRANSP] THEN
+  REWRITE_TAC[GSYM DET_MUL] THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[GSYM(MATCH_MP MATRIX_WORKS th)]) THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM DET_TRANSP] THEN
+  REWRITE_TAC[matrix_mul; matrix_vector_mul; transp] THEN
+  AP_TERM_TAC THEN SIMP_TAC[CART_EQ; LAMBDA_BETA]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relation to invertibility.                                                *)
 (* ------------------------------------------------------------------------- *)
@@ -1347,10 +1358,19 @@ let ORTHOGONAL_TRANSFORMATION = prove
   GEN_TAC THEN REWRITE_TAC[orthogonal_transformation] THEN EQ_TAC THENL
    [MESON_TAC[vector_norm]; SIMP_TAC[DOT_NORM] THEN MESON_TAC[LINEAR_ADD]]);;
 
+let ORTHOGONAL_TRANSFORMATION_IMP_LINEAR = prove
+ (`!f:real^N->real^N. orthogonal_transformation f ==> linear f`,
+  SIMP_TAC[orthogonal_transformation]);;
+
 let ORTHOGONAL_TRANSFORMATION_COMPOSE = prove
  (`!f g. orthogonal_transformation f /\ orthogonal_transformation g
          ==> orthogonal_transformation(f o g)`,
   SIMP_TAC[orthogonal_transformation; LINEAR_COMPOSE; o_THM]);;
+
+let ORTHOGONAL_TRANSFORMATION_NEG = prove
+ (`!f:real^N->real^N.
+     orthogonal_transformation(\x. --(f x)) <=> orthogonal_transformation f`,
+  REWRITE_TAC[ORTHOGONAL_TRANSFORMATION; LINEAR_COMPOSE_NEG_EQ; NORM_NEG]);;
 
 let orthogonal_matrix = new_definition
  `orthogonal_matrix(Q:real^N^N) <=>

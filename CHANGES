@@ -1,3 +1,162 @@
+Tue  9th Sep 2014       Library/card.ml
+
+Added a few more general lemma about cardinal operations
+
+        CARD_EMPTY_LE =
+              |- !s. {} <=_c s
+
+        CARD_EQ_REFL_IMP =
+              |- !s t. s = t ==> s =_c t
+
+        CARD_LE_FINITE_INFINITE =
+              |- !s t. FINITE s /\ INFINITE t ==> s <=_c t
+
+        CARD_MUL_C =
+          |- !s t. FINITE s /\ FINITE t ==> CARD (s *_c t) = CARD s * CARD t
+
+        CARD_SING_LE =
+              |- !a s. {a} <=_c s <=> ~(s = {})
+
+        LE_C_IMAGE =
+              |- !s t. s <=_c t <=> s = {} \/ (?f. IMAGE f t = s)
+
+together with a definition of cardinal exponentiation and its
+basic properties:
+
+        exp_c =
+          |- !s t.
+                 s ^_c t =
+                 {f | (!x. x IN t ==> f x IN s) /\
+                      (!x. ~(x IN t) ==> f x = (@y. F))}
+
+       CARD_EQ_COUNTABLE_SUBSETS_SUBREAL =
+         |- !s. INFINITE s /\ s <=_c (:real)
+                ==> {t | t SUBSET s /\ COUNTABLE t} =_c (:real)
+
+        CARD_EQ_FULLSIZE_POWERSET =
+          |- !s. INFINITE s ==> {t | t SUBSET s /\ t =_c s} =_c {t | t SUBSET s}
+
+        CARD_EQ_LIMITED_POWERSET =
+          |- !s t.
+                 INFINITE s
+                 ==> (if t <=_c s
+                      then {k | k SUBSET s /\ k <=_c t} =_c s ^_c t
+                      else {k | k SUBSET s /\ k <=_c t} =_c (:bool) ^_c s)
+
+        CARD_EQ_RESTRICTED_POWERSET =
+          |- !s t.
+                 INFINITE s
+                 ==> {k | k SUBSET s /\ k =_c t} =_c
+                     (if t <=_c s then s ^_c t else {})
+
+        CARD_EXP_0 =
+              |- !s c. s ^_c {} =_c {c};
+
+        CARD_EXP_ABSORB =
+              |- !s t.
+                    INFINITE t /\ (:bool) <=_c s /\ s <=_c (:bool) ^_c t
+                    ==> s ^_c t =_c (:bool) ^_c t
+
+        CARD_EXP_ADD =
+              |- !s t u. s ^_c (t +_c u) =_c s ^_c t *_c s ^_c u
+
+        CARD_EXP_C =
+          |- !s t. FINITE s /\ FINITE t ==> CARD (s ^_c t) = CARD s EXP CARD t
+
+        CARD_EXP_CANTOR =
+              |- !s. s <_c (:bool) ^_c s
+
+        CARD_EXP_CONG =
+              |- !s s' t t'. s =_c s' /\ t =_c t' ==> s ^_c t =_c s' ^_c t'
+
+        CARD_EXP_FINITE =
+              |- !s t. FINITE s /\ FINITE t ==> FINITE (s ^_c t)
+
+        CARD_EXP_GRAPH =
+          |- !s t.
+                 s ^_c t =_c
+                 {R | (!x y. R x y ==> x IN t /\ y IN s) /\
+                      (!x. x IN t ==> (?!y. R x y))}
+
+        CARD_EXP_GRAPH_PAIRED =
+          |- !s t.
+                 s ^_c t =_c
+                 {R | (!x y. R (x,y) ==> x IN t /\ y IN s) /\
+                      (!x. x IN t ==> (?!y. R (x,y)))}
+
+        CARD_EXP_MUL =
+              |- !s t u. s ^_c (t *_c u) =_c s ^_c t ^_c u
+
+        CARD_EXP_POWERSET =
+              |- !s. (:bool) ^_c s =_c {t | t SUBSET s}
+
+        CARD_EXP_SING =
+              |- !s b. s ^_c {b} =_c s
+
+        CARD_EXP_UNIV =
+              |- (:A) ^_c (:B) = (:B->A)
+
+        CARD_EXP_ZERO =
+              |- !s c. {} ^_c s =_c (if s = {} then {c} else {})
+
+        CARD_LE_EXP =
+              |- !s s' t t'.
+                 ~(s = {}) /\ s <=_c s' /\ t <=_c t' ==> s ^_c t <=_c s' ^_c t'
+
+        CARD_LE_EXP_LEFT =
+              |- !s s' t. s <=_c s' ==> s ^_c t <=_c s' ^_c t
+
+        CARD_LE_EXP_RIGHT =
+              |- !s t t'. ~(s = {}) /\ t <=_c t' ==> s ^_c t <=_c s ^_c t'
+
+        CARD_MUL_EXP =
+              |- !s t u. (s *_c t) ^_c u =_c s ^_c u *_c t ^_c u
+
+Tue  9th Sep 2014       Library/products.ml
+
+Added two straightforward "finite support" generalizations of existing theorems
+about products:
+
+NPRODUCT_MUL_GEN =
+ |- !f g s.
+       FINITE {x | x IN s /\ ~(f x = 1)} /\ FINITE {x | x IN s /\ ~(g x = 1)}
+       ==> nproduct s (\x. f x * g x) = nproduct s f * nproduct s g
+
+PRODUCT_MUL_GEN =
+ |- !f g s.
+       FINITE {x | x IN s /\ ~(f x = &1)} /\ FINITE {x | x IN s /\ ~(g x = &1)}
+       ==> product s (\x. f x * g x) = product s f * product s g
+
+Tue 19th Aug 2014       Library/floor.ml
+
+Added
+
+        NONNEGATIVE_INTEGER =
+         |- !x. integer x /\ &0 <= x <=> ?n. x = &n
+
+        NONPOSITIVE_INTEGER =
+         |- !x. integer x /\ x <= &0 <=> ?n. x = -- &n
+
+        NONPOSITIVE_INTEGER_ALT =
+         |- !x. integer x /\ x <= &0 <=> ?n. x + &n = &0
+
+        REAL_FLOOR_NEG =
+         |- !x. floor(--x) = if integer x then --x else --(floor x + &1)
+
+        FRAC_NEG =
+         |- !x. frac(--x) = if integer x then &0 else &1 - frac x
+
+Tue 19th Aug 2014       iterate.ml
+
+Added REAL_OF_NUM_SUM_GEN =
+   |- !f s. FINITE {i | i IN s /\ ~(f i = 0)}
+            ==> &(nsum s f) = sum s (\x. &(f x))`,
+
+Tue 19th Aug 2014       real.ml
+
+Added REAL_OF_NUM_SUB_CASES =
+        |- `!m n. &m - &n = if n <= m then &(m - n) else -- &(n - m)
+
 Sun 13th Jul 2014       Formal_ineqs/* [new files]
 
 Added Alexey Solovyev's formal inequality prover (used extensively

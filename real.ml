@@ -47,6 +47,12 @@ let REAL_OF_NUM_SUB = prove
   REWRITE_TAC[real_sub; GSYM REAL_ADD_ASSOC] THEN
   MESON_TAC[REAL_ADD_LINV; REAL_ADD_SYM; REAL_ADD_LID]);;
 
+let REAL_OF_NUM_SUB_CASES = prove
+ (`!m n. &m - &n = if n <= m then &(m - n) else -- &(n - m)`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_OF_NUM_SUB] THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM REAL_NEG_SUB] THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC REAL_OF_NUM_SUB THEN ASM_MESON_TAC[LE_CASES]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A few theorems we need to prove explicitly for later.                     *)
 (* ------------------------------------------------------------------------- *)
