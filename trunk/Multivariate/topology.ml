@@ -1356,20 +1356,6 @@ let LIMPT_APPROACHABLE_LE = prove
   REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; NOT_EXISTS_THM] THEN
   REWRITE_TAC[TAUT `~(a /\ b /\ c) <=> c ==> ~(a /\ b)`; APPROACHABLE_LT_LE]);;
 
-let LIMPT_UNIV = prove
- (`!x:real^N. x limit_point_of UNIV`,
-  GEN_TAC THEN REWRITE_TAC[LIMPT_APPROACHABLE; IN_UNIV] THEN
-  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  SUBGOAL_THEN `?c:real^N. norm(c) = e / &2` CHOOSE_TAC THENL
-   [ASM_SIMP_TAC[VECTOR_CHOOSE_SIZE; REAL_HALF; REAL_LT_IMP_LE];
-    ALL_TAC] THEN
-  EXISTS_TAC `x + c:real^N` THEN
-  REWRITE_TAC[dist; VECTOR_EQ_ADDR] THEN ASM_REWRITE_TAC[VECTOR_ADD_SUB] THEN
-  SUBGOAL_THEN `&0 < e / &2 /\ e / &2 < e`
-   (fun th -> ASM_MESON_TAC[th; NORM_0; REAL_LT_REFL]) THEN
-  SIMP_TAC[REAL_LT_LDIV_EQ; REAL_LT_RDIV_EQ; REAL_OF_NUM_LT; ARITH] THEN
-  UNDISCH_TAC `&0 < e` THEN REAL_ARITH_TAC);;
-
 let CLOSED_LIMPT = prove
  (`!s. closed s <=> !x. x limit_point_of s ==> x IN s`,
   REWRITE_TAC[closed] THEN ONCE_REWRITE_TAC[OPEN_SUBOPEN] THEN
@@ -1693,6 +1679,11 @@ let INTERIOR_UNIONS_OPEN_SUBSETS = prove
 let closure = new_definition
   `closure s = s UNION {x | x limit_point_of s}`;;
 
+let CLOSURE_APPROACHABLE = prove
+ (`!x s. x IN closure(s) <=> !e. &0 < e ==> ?y. y IN s /\ dist(y,x) < e`,
+  REWRITE_TAC[closure; LIMPT_APPROACHABLE; IN_UNION; IN_ELIM_THM] THEN
+  MESON_TAC[DIST_REFL]);;
+
 let CLOSURE_INTERIOR = prove
  (`!s:real^N->bool. closure s = UNIV DIFF (interior (UNIV DIFF s))`,
   REWRITE_TAC[EXTENSION; closure; IN_UNION; IN_DIFF; IN_UNIV; interior;
@@ -1799,6 +1790,38 @@ let OPEN_INTER_CLOSURE_EQ_EMPTY = prove
   DISCH_TAC THEN REWRITE_TAC[CLOSURE_INTERIOR] THEN
   MATCH_MP_TAC(SET_RULE `s SUBSET t ==> s INTER (UNIV DIFF t) = {}`) THEN
   ASM_SIMP_TAC[OPEN_SUBSET_INTERIOR] THEN ASM SET_TAC[]);;
+
+let CLOSURE_OPEN_IN_INTER_CLOSURE = prove
+ (`!s t u:real^N->bool.
+        open_in (subtopology euclidean u) s /\ t SUBSET u
+        ==> closure(s INTER closure t) = closure(s INTER t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  SIMP_TAC[CLOSURE_SUBSET; SUBSET_CLOSURE; SET_RULE
+   `t SUBSET u ==> s INTER t SUBSET s INTER u`] THEN
+  REWRITE_TAC[SUBSET; CLOSURE_APPROACHABLE] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; IN_INTER; CLOSURE_APPROACHABLE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `y:real^N` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [open_in]) THEN
+  REWRITE_TAC[SUBSET] THEN
+  DISCH_THEN(CONJUNCTS_THEN(MP_TAC o SPEC `y:real^N`)) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `min d (e / &2)`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_LT_MIN] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `z:real^N` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN ASM_SIMP_TAC[] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_NOT_LE])) THEN
+  CONV_TAC NORM_ARITH);;
+
+let CLOSURE_OPEN_INTER_CLOSURE = prove
+ (`!s t:real^N->bool.
+        open s ==> closure(s INTER closure t) = closure(s INTER t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOSURE_OPEN_IN_INTER_CLOSURE THEN
+  EXISTS_TAC `(:real^N)` THEN
+  ASM_REWRITE_TAC[SUBSET_UNIV; GSYM OPEN_IN; SUBTOPOLOGY_UNIV]);;
 
 let OPEN_INTER_CLOSURE_SUBSET = prove
  (`!s t:real^N->bool.
@@ -1982,6 +2005,15 @@ let REGULAR_CLOSED_UNION = prove
         ==> closure(interior(s UNION t)) = s UNION t`,
   MESON_TAC[CLOSURE_INTERIOR_UNION_CLOSED; CLOSED_CLOSURE]);;
 
+let REGULAR_CLOSED_UNIONS = prove
+ (`!f:(real^N->bool)->bool.
+        FINITE f /\ (!t. t IN f ==> closure(interior t) = t)
+        ==> closure(interior(UNIONS f)) = UNIONS f`,
+  REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[UNIONS_INSERT; UNIONS_0; INTERIOR_EMPTY; CLOSURE_EMPTY] THEN
+  SIMP_TAC[FORALL_IN_INSERT; REGULAR_CLOSED_UNION]);;
+
 let DIFF_CLOSURE_SUBSET = prove
  (`!s t:real^N->bool. closure(s) DIFF closure t SUBSET closure(s DIFF t)`,
   REPEAT GEN_TAC THEN
@@ -1993,6 +2025,39 @@ let DIFF_CLOSURE_SUBSET = prove
   MATCH_MP_TAC SUBSET_CLOSURE THEN
   MATCH_MP_TAC(SET_RULE `t SUBSET u ==> s DIFF u SUBSET s DIFF t`) THEN
   REWRITE_TAC[CLOSURE_SUBSET]);;
+
+let DENSE_OPEN_INTER = prove
+ (`!s t u:real^N->bool.
+        (open_in (subtopology euclidean u) s /\ t SUBSET u \/
+         open_in (subtopology euclidean u) t /\ s SUBSET u)
+        ==> (u SUBSET closure (s INTER t) <=>
+             u SUBSET closure s /\ u SUBSET closure t)`,
+  MATCH_MP_TAC(MESON[]
+   `(!s t u. R s t u ==> R t s u) /\
+    (!s t u. P s t u ==> R s t u)
+    ==> !s t u. P s t u \/ P t s u ==> R s t u`) THEN
+  CONJ_TAC THENL [SIMP_TAC[INTER_COMM; CONJ_ACI]; ALL_TAC] THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[SUBSET_TRANS; SUBSET_CLOSURE; INTER_SUBSET]; ALL_TAC] THEN
+  REWRITE_TAC[SUBSET; CLOSURE_APPROACHABLE] THEN DISCH_TAC THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN2 (MP_TAC o SPEC `x:real^N`) ASSUME_TAC) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+  DISCH_THEN(X_CHOOSE_THEN `y:real^N` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `y:real^N`) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [open_in]) THEN
+  REWRITE_TAC[SUBSET; IN_INTER] THEN
+  DISCH_THEN(CONJUNCTS_THEN (MP_TAC o SPEC `y:real^N`)) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN DISCH_TAC THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `min d (e / &2)`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_LT_MIN] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `z:real^N` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN ASM_SIMP_TAC[] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_NOT_LE])) THEN
+  CONV_TAC NORM_ARITH);;
 
 (* ------------------------------------------------------------------------- *)
 (* Frontier (aka boundary).                                                  *)
@@ -2359,7 +2424,7 @@ let TRIVIAL_LIMIT_WITHIN = prove
 let TRIVIAL_LIMIT_AT = prove
  (`!a. ~(trivial_limit (at a))`,
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[TRIVIAL_LIMIT_WITHIN; LIMPT_UNIV]);;
+  REWRITE_TAC[TRIVIAL_LIMIT_WITHIN; LIMPT_OF_UNIV]);;
 
 let TRIVIAL_LIMIT_AT_INFINITY = prove
  (`~(trivial_limit at_infinity)`,
@@ -3432,6 +3497,18 @@ let LIM_TRANSFORM_WITHIN_SET = prove
   EXISTS_TAC `min d k:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
   ASM_MESON_TAC[]);;
 
+let LIM_TRANSFORM_WITHIN_SET_IMP = prove
+ (`!f l a s t.
+        eventually (\x. x IN t ==> x IN s) (at a) /\ (f --> l) (at a within s)
+        ==> (f --> l) (at a within t)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ; EVENTUALLY_AT; LIM_WITHIN] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `min d k:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+  ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Common case assuming being away from some crucial point like 0.           *)
 (* ------------------------------------------------------------------------- *)
@@ -3563,11 +3640,6 @@ let CLOSED_SEQUENTIAL_LIMITS = prove
   MESON_TAC[CLOSURE_SEQUENTIAL; CLOSURE_CLOSED;
             CLOSED_LIMPT; LIMPT_SEQUENTIAL; IN_DELETE]);;
 
-let CLOSURE_APPROACHABLE = prove
- (`!x s. x IN closure(s) <=> !e. &0 < e ==> ?y. y IN s /\ dist(y,x) < e`,
-  REWRITE_TAC[closure; LIMPT_APPROACHABLE; IN_UNION; IN_ELIM_THM] THEN
-  MESON_TAC[DIST_REFL]);;
-
 let CLOSED_APPROACHABLE = prove
  (`!x s. closed s
          ==> ((!e. &0 < e ==> ?y. y IN s /\ dist(y,x) < e) <=> x IN s)`,
@@ -3576,6 +3648,29 @@ let CLOSED_APPROACHABLE = prove
 let IN_CLOSURE_DELETE = prove
  (`!s x:real^N. x IN closure(s DELETE x) <=> x limit_point_of s`,
   SIMP_TAC[CLOSURE_APPROACHABLE; LIMPT_APPROACHABLE; IN_DELETE; CONJ_ASSOC]);;
+
+let DENSE_IMP_PERFECT = prove
+ (`!s. closure s = (:real^N) ==> !x. x IN s ==> x limit_point_of s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[LIMPT_APPROACHABLE] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN REWRITE_TAC[MESON[]
+   `(?x. P x /\ Q x /\ R x) <=> ~(!x. Q x /\ R x ==> ~P x)`] THEN
+  DISCH_TAC THEN MP_TAC(ISPECL [`x:real^N`; `e / &2`] VECTOR_CHOOSE_DIST) THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE; REAL_HALF] THEN
+  DISCH_THEN(X_CHOOSE_TAC `y:real^N`) THEN
+  FIRST_ASSUM(MP_TAC o SPEC `y:real^N` o MATCH_MP (SET_RULE
+   `s = UNIV ==> !x. x IN s`)) THEN
+  REWRITE_TAC[CLOSURE_APPROACHABLE] THEN
+  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; NOT_EXISTS_THM] THEN
+  X_GEN_TAC `z:real^N` THEN FIRST_X_ASSUM(MP_TAC o SPEC `z:real^N`) THEN
+  ASM_CASES_TAC `(z:real^N) IN s` THEN ASM_REWRITE_TAC[] THEN
+  UNDISCH_TAC `dist(x:real^N,y) = e / &2` THEN CONV_TAC NORM_ARITH);;
+
+let DENSE_LIMIT_POINTS = prove
+ (`!x. {x | x limit_point_of s} = (:real^N) <=> closure s = (:real^N)`,
+  GEN_TAC THEN EQ_TAC THENL [SIMP_TAC[closure] THEN SET_TAC[]; DISCH_TAC] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP DENSE_IMP_PERFECT) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[closure]) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some other lemmas about sequences.                                        *)
@@ -5377,6 +5472,12 @@ let CONTINUOUS_TRANSFORM_WITHIN_OPEN_IN = prove
         f continuous (at a within t)
         ==> g continuous (at a within t)`,
   MESON_TAC[CONTINUOUS_WITHIN; LIM_TRANSFORM_WITHIN_OPEN_IN]);;
+
+let CONTINUOUS_TRANSFORM_WITHIN_SET_IMP = prove
+ (`!f a s t. eventually (\x. x IN t ==> x IN s) (at a) /\
+             f continuous (at a within s)
+             ==> f continuous (at a within t)`,
+  REWRITE_TAC[CONTINUOUS_WITHIN; LIM_TRANSFORM_WITHIN_SET_IMP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Derive the epsilon-delta forms, which we often use as "definitions"       *)

@@ -1889,6 +1889,14 @@ let SUM_CLOSED = prove
   DISCH_THEN(MP_TAC o SPEC `P:real->bool`) THEN
   ASM_SIMP_TAC[NEUTRAL_REAL_ADD; GSYM sum]);;
 
+let REAL_OF_NUM_SUM_GEN = prove
+ (`!f s:A->bool.
+       FINITE {i | i IN s /\ ~(f i = 0)} ==> &(nsum s f) = sum s (\x. &(f x))`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM SUM_SUPPORT; GSYM NSUM_SUPPORT] THEN
+  REWRITE_TAC[support; NEUTRAL_ADD; NEUTRAL_REAL_ADD; REAL_OF_NUM_EQ] THEN
+  ASM_SIMP_TAC[REAL_OF_NUM_SUM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Specialize them to sums over intervals of numbers.                        *)
 (* ------------------------------------------------------------------------- *)

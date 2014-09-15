@@ -2291,6 +2291,13 @@ let LINEAR_COMPOSE_NEG = prove
  (`!f. linear f ==> linear (\x. --(f(x)))`,
   SIMP_TAC[linear] THEN REPEAT STRIP_TAC THEN VECTOR_ARITH_TAC);;
 
+let LINEAR_COMPOSE_NEG_EQ = prove
+ (`!f:real^M->real^N. linear(\x. --(f x)) <=> linear f`,
+  MATCH_MP_TAC(MESON[]
+   `(!x. P x ==> P(f x)) /\ (!x. f(f x) = x)
+    ==> (!x. P(f x) <=> P x)`) THEN
+  REWRITE_TAC[LINEAR_COMPOSE_NEG; VECTOR_NEG_NEG; ETA_AX]);;
+
 let LINEAR_COMPOSE_ADD = prove
  (`!f g. linear f /\ linear g ==> linear (\x. f(x) + g(x))`,
   SIMP_TAC[linear] THEN REPEAT STRIP_TAC THEN VECTOR_ARITH_TAC);;
@@ -3078,6 +3085,12 @@ let MAT_EQ = prove
   SIMP_TAC[CART_EQ; MAT_COMPONENT] THEN REPEAT STRIP_TAC THEN
   MESON_TAC[REAL_OF_NUM_EQ; DIMINDEX_GE_1; LE_REFL]);;
 
+let MATRIX_VECTOR_LMUL = prove
+ (`!A:real^M^N c x:real^M. (c %% A) ** x = c % (A ** x)`,
+  SIMP_TAC[matrix_cmul; CART_EQ; LAMBDA_BETA; matrix_vector_mul;
+           VECTOR_MUL_COMPONENT] THEN
+  REWRITE_TAC[GSYM REAL_MUL_ASSOC; SUM_LMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Two sometimes fruitful ways of looking at matrix-vector multiplication.   *)
 (* ------------------------------------------------------------------------- *)
@@ -3247,6 +3260,16 @@ let LINEAR_EQ_MATRIX = prove
   REPEAT STRIP_TAC THEN
   REPEAT(FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP MATRIX_VECTOR_MUL)) THEN
   ASM_REWRITE_TAC[]);;
+
+let MATRIX_CMUL = prove
+ (`!f:real^M->real^N c.
+        linear f ==> matrix(\x. c % f x) = c %% matrix f`,
+  SIMP_TAC[MATRIX_EQ; MATRIX_WORKS; LINEAR_COMPOSE_CMUL; MATRIX_VECTOR_LMUL]);;
+
+let MATRIX_NEG = prove
+ (`!f:real^M->real^N.
+        linear f ==> matrix(\x. --(f x)) = --(matrix f)`,
+  SIMP_TAC[GSYM MATRIX_NEG_MINUS1; VECTOR_NEG_MINUS1; MATRIX_CMUL]);;
 
 let MATRIX_SELF_ADJOINT = prove
  (`!f. linear f ==> (adjoint f = f <=> transp(matrix f) = matrix f)`,
@@ -3824,6 +3847,12 @@ let NORM_PASTECART_LE = prove
   REPEAT GEN_TAC THEN MATCH_MP_TAC TRIANGLE_LEMMA THEN
   REWRITE_TAC[NORM_POS_LE; NORM_POW_2; DOT_PASTECART; REAL_LE_REFL]);;
 
+let DIST_PASTECART_LE = prove
+ (`!x1 y1 x2 y2.
+        dist(pastecart x1 y1,pastecart x2 y2)
+        <= dist(x1,x2) + dist(y1,y2)`,
+  REWRITE_TAC[dist; PASTECART_SUB; NORM_PASTECART_LE]);;
+
 let NORM_LE_PASTECART = prove
  (`!x:real^M y:real^N.
     norm(x) <= norm(pastecart x y) /\
@@ -3831,6 +3860,12 @@ let NORM_LE_PASTECART = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[NORM_PASTECART] THEN CONJ_TAC THEN
   MATCH_MP_TAC REAL_LE_RSQRT THEN
   REWRITE_TAC[REAL_LE_ADDL; REAL_LE_ADDR; REAL_LE_POW_2]);;
+
+let DIST_LE_PASTECART = prove
+ (`!x1 y1 x2 y2.
+        dist(x1,x2) <= dist(pastecart x1 y1,pastecart x2 y2) /\
+        dist(y1,y2) <= dist(pastecart x1 y1,pastecart x2 y2)`,
+  REWRITE_TAC[dist; PASTECART_SUB; NORM_LE_PASTECART]);;
 
 let NORM_PASTECART_0 = prove
  (`(!x. norm(pastecart x (vec 0)) = norm x) /\
@@ -7348,6 +7383,16 @@ let DIM_SUMS_INTER = prove
    (fun th -> ASM_REWRITE_TAC[th]) THEN
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC VSUM_SUPERSET THEN
   ASM_SIMP_TAC[VECTOR_MUL_EQ_0] THEN ASM_MESON_TAC[]);;
+
+let DIM_UNION_INTER = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t
+        ==> dim(s UNION t) + dim(s INTER t) = dim s + dim t`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [GSYM DIM_SPAN] THEN
+  MP_TAC(ISPECL [`span s:real^N->bool`; `span t:real^N->bool`]
+        DIM_SUMS_INTER) THEN
+  ASM_SIMP_TAC[SPAN_UNION; SUBSPACE_SPAN; SPAN_OF_SUBSPACE]);;
 
 let DIM_KERNEL_COMPOSE = prove
  (`!f:real^M->real^N g:real^N->real^P.

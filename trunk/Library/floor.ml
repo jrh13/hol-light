@@ -111,6 +111,21 @@ let INTEGER_POS = prove
  (`!x. &0 <= x ==> (integer(x) <=> ?n. x = &n)`,
   SIMP_TAC[integer; real_abs]);;
 
+let NONNEGATIVE_INTEGER = prove
+ (`!x. integer x /\ &0 <= x <=> ?n. x = &n`,
+  MESON_TAC[INTEGER_POS; INTEGER_CLOSED; REAL_POS]);;
+
+let NONPOSITIVE_INTEGER = prove
+ (`!x. integer x /\ x <= &0 <=> ?n. x = -- &n`,
+  GEN_TAC THEN REWRITE_TAC[is_int] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM; REAL_ARITH `a + b = &0 <=> a = --b`] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN REAL_ARITH_TAC);;
+
+let NONPOSITIVE_INTEGER_ALT = prove
+ (`!x. integer x /\ x <= &0 <=> ?n. x + &n = &0`,
+  GEN_TAC THEN REWRITE_TAC[NONPOSITIVE_INTEGER] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN REAL_ARITH_TAC);;
+
 let INTEGER_ADD_EQ = prove
  (`(!x y. integer(x) ==> (integer(x + y) <=> integer(y))) /\
    (!x y. integer(y) ==> (integer(x + y) <=> integer(x)))`,
@@ -410,6 +425,13 @@ let REAL_FLOOR_ADD = prove
   MAP_EVERY (MP_TAC o C SPEC FLOOR_FRAC)[`x:real`; `y:real`; `x + y:real`] THEN
   REAL_ARITH_TAC);;
 
+let REAL_FLOOR_NEG = prove
+ (`!x. floor(--x) = if integer x then --x else --(floor x + &1)`,
+  GEN_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[GSYM FLOOR_UNIQUE] THEN
+  MP_TAC(SPEC `x:real` FLOOR) THEN
+  MP_TAC(SPEC `x:real` REAL_FLOOR_EQ) THEN
+  ASM_SIMP_TAC[INTEGER_CLOSED] THEN REAL_ARITH_TAC);;
+
 let REAL_FRAC_ADD = prove
  (`!x y. frac(x + y) = if frac x + frac y < &1 then frac(x) + frac(y)
                        else (frac(x) + frac(y)) - &1`,
@@ -448,6 +470,11 @@ let FRAC_DIV_MOD = prove
   SIMP_TAC[REAL_OF_NUM_SUB; ONCE_REWRITE_RULE[ADD_SYM] LE_ADD; ADD_SUB] THEN
   ASM_SIMP_TAC[GSYM REAL_OF_NUM_MUL; REAL_OF_NUM_EQ; INTEGER_CLOSED;
                REAL_FIELD `~(n:real = &0) ==> (x * n) / n = x`]);;
+
+let FRAC_NEG = prove
+ (`!x. frac(--x) = if integer x then &0 else &1 - frac x`,
+  GEN_TAC THEN REWRITE_TAC[FRAC_FLOOR; REAL_FLOOR_NEG] THEN
+  COND_CASES_TAC THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Assertions that there are integers between well-spaced reals.             *)
