@@ -1,3 +1,29 @@
+Fri 19th Sep 2014       Library/q.ml [new file]
+
+Added a file from Vincent Aravantinos with Pa.xxx variants of many standard
+HOL Light functions, taking strings instead of terms and inferring types
+appropriately. This is similar to the Q module in HOL4.
+
+Thu 18th Sep 2014       sets.ml
+
+Added a couple more set theory rewrites:
+
+        FORALL_SUBSET_INSERT =
+         |- !a t. (!s. s SUBSET a INSERT t ==> P s) <=>
+                  (!s. s SUBSET t ==> P s /\ P (a INSERT s))
+
+        EXISTS_SUBSET_INSERT =
+         |- !a t. (?s. s SUBSET a INSERT t /\ P s) <=>
+                  (?s. s SUBSET t /\ (P s \/ P (a INSERT s)))
+
+Tue 16th Sep 2014       Library/permutations.ml
+
+Added a couple more theorems about permutations:
+
+ PERMUTES_ID = |- !s. (\x. x) permutes s
+
+ REAL_SGN_SIGN = |- !p. real_sgn (sign p) = sign p
+
 Tue  9th Sep 2014       Library/card.ml
 
 Added a few more general lemma about cardinal operations

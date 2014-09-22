@@ -138,6 +138,10 @@ let PERMUTES_BIJECTIONS = prove
 (* Group properties.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
+let PERMUTES_ID = prove
+ (`!s:A->bool. (\x. x) permutes s`,
+  REWRITE_TAC[permutes] THEN MESON_TAC[]);;
+
 let PERMUTES_I = prove
  (`!s. I permutes s`,
   REWRITE_TAC[permutes; I_THM] THEN MESON_TAC[]);;
@@ -672,6 +676,12 @@ let SIGN_IDEMPOTENT = prove
 let REAL_ABS_SIGN = prove
  (`!p. abs(sign p) = &1`,
   REWRITE_TAC[sign] THEN REAL_ARITH_TAC);;
+
+let REAL_SGN_SIGN = prove
+ (`!p:A->A. real_sgn(sign p) = sign p`,
+  GEN_TAC THEN REWRITE_TAC[sign] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_SGN_EQ] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
 
 (* ------------------------------------------------------------------------- *)
 (* More lemmas about permutations.                                           *)

@@ -18,10 +18,10 @@ Fails unless applied to a term of the form {m..n} for specific numerals {m} and
 \EXAMPLE
 {
   # NUMSEG_CONV `7..11`;;
-  val it : thm = |- 7..11 = {7, 8, 9, 10, 11}
+  val it : thm = |- 7..11 = {{7, 8, 9, 10, 11}}
 
   # NUMSEG_CONV `24..7`;;
-  val it : thm = |- 24..7 = {}
+  val it : thm = |- 24..7 = {{}}
 }
 
 \SEEALSO

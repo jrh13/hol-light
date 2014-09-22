@@ -262,6 +262,11 @@ let HULL_UNION_RIGHT = prove
   AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM; UNION_SUBSET] THEN
   MESON_TAC[SUBSET_HULL]);;
 
+let HULL_INSERT = prove
+ (`!P a s. P hull (a INSERT s) = P hull (a INSERT P hull s)`,
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  ONCE_REWRITE_TAC[HULL_UNION] THEN REWRITE_TAC[HULL_HULL]);;
+
 let HULL_REDUNDANT_EQ = prove
  (`!P a s. a IN (P hull s) <=> (P hull (a INSERT s) = P hull s)`,
   REWRITE_TAC[hull] THEN SET_TAC[]);;

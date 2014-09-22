@@ -9261,6 +9261,51 @@ let PATH_CONNECTED_OPEN_IN_DIFF_UNIONS_LOWDIM = prove
         MATCH_MP_TAC AFF_DIM_OPEN_IN THEN
         ASM_REWRITE_TAC[AFFINE_AFFINE_HULL]]]]);;
 
+let CONNECTED_OPEN_IN_DIFF_UNIONS_LOWDIM = prove
+ (`!f s:real^N->bool.
+        connected s /\ open_in (subtopology euclidean (affine hull s)) s /\
+        FINITE f /\ (!t. t IN f ==> aff_dim t + &2 <= aff_dim s)
+        ==> connected(s DIFF UNIONS f)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC CONNECTED_INTERMEDIATE_CLOSURE THEN
+  EXISTS_TAC `s DIFF UNIONS {closure t:real^N->bool | t IN f}` THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC PATH_CONNECTED_IMP_CONNECTED THEN
+    MATCH_MP_TAC PATH_CONNECTED_OPEN_IN_DIFF_UNIONS_LOWDIM THEN
+    ASM_SIMP_TAC[FORALL_IN_GSPEC; CLOSED_CLOSURE; AFF_DIM_CLOSURE] THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE];
+    MATCH_MP_TAC(SET_RULE `u SUBSET t ==> s DIFF t SUBSET s DIFF u`) THEN
+    MATCH_MP_TAC UNIONS_MONO THEN REWRITE_TAC[EXISTS_IN_GSPEC] THEN
+    MESON_TAC[CLOSURE_SUBSET];
+    ASM_CASES_TAC `f:(real^N->bool)->bool = {}` THEN
+    ASM_REWRITE_TAC[UNIONS_0; SET_RULE `{f x |x| F} = {}`; NOT_IN_EMPTY;
+                    DIFF_EMPTY; CLOSURE_SUBSET] THEN
+    REWRITE_TAC[DIFF_UNIONS] THEN
+    REWRITE_TAC[SET_RULE `{f x | x IN {g y | P y}} = {f(g y) | P y}`] THEN
+    MP_TAC(ISPECL [`s:real^N->bool`;
+                   `INTERS {s DIFF closure t:real^N->bool | t IN f}`;
+                   `affine hull s:real^N->bool`]
+        CLOSURE_OPEN_IN_INTER_CLOSURE) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [TRANS_TAC SUBSET_TRANS `s:real^N->bool` THEN
+      REWRITE_TAC[HULL_SUBSET; INTERS_GSPEC] THEN ASM SET_TAC[];
+      DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    MATCH_MP_TAC(SET_RULE
+     `u SUBSET closure u /\ s = u ==> s INTER t SUBSET closure u`) THEN
+    REWRITE_TAC[CLOSURE_SUBSET; SET_RULE `s = s INTER t <=> s SUBSET t`] THEN
+    MATCH_MP_TAC DENSE_OPEN_INTERS THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE] THEN
+    X_GEN_TAC `t:real^N->bool` THEN REPEAT STRIP_TAC THENL
+     [ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
+      SIMP_TAC[OPEN_IN_OPEN_INTER; GSYM closed; CLOSED_CLOSURE];
+      TRANS_TAC SUBSET_TRANS `closure s:real^N->bool` THEN
+      REWRITE_TAC[CLOSURE_SUBSET] THEN
+      MATCH_MP_TAC(SET_RULE `t = s ==> s SUBSET t`) THEN
+      MATCH_MP_TAC DENSE_COMPLEMENT_OPEN_IN_AFFINE_HULL THEN
+      ASM_REWRITE_TAC[AFF_DIM_CLOSURE] THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `t:real^N->bool`) THEN
+      ASM_REWRITE_TAC[] THEN INT_ARITH_TAC]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Existence of unbounded components.                                        *)
 (* ------------------------------------------------------------------------- *)
