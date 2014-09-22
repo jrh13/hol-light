@@ -437,6 +437,21 @@ let EXISTS_SUBSET_UNION = prove
   REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
   REWRITE_TAC[FORALL_SUBSET_UNION] THEN MESON_TAC[]);;
 
+let FORALL_SUBSET_INSERT = prove
+ (`!a:A t. (!s. s SUBSET a INSERT t ==> P s) <=>
+           (!s. s SUBSET t ==> P s /\ P (a INSERT s))`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  REWRITE_TAC[FORALL_SUBSET_UNION; SET_RULE
+   `s SUBSET {a} <=> s = {} \/ s = {a}`] THEN
+  MESON_TAC[UNION_EMPTY]);;
+
+let EXISTS_SUBSET_INSERT = prove
+ (`!a:A t. (?s. s SUBSET a INSERT t /\ P s) <=>
+           (?s. s SUBSET t /\ (P s \/ P (a INSERT s)))`,
+  REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  REWRITE_TAC[FORALL_SUBSET_INSERT] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Intersection.                                                             *)
 (* ------------------------------------------------------------------------- *)

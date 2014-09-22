@@ -2059,6 +2059,29 @@ let DENSE_OPEN_INTER = prove
   REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_NOT_LE])) THEN
   CONV_TAC NORM_ARITH);;
 
+let DENSE_OPEN_INTERS = prove
+ (`!g s:real^N->bool.
+         FINITE g /\
+         (!t. t IN g
+              ==> open_in (subtopology euclidean s) t /\ s SUBSET closure t)
+         ==> s SUBSET closure (INTERS g)`,
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[INTERS_0; CLOSURE_UNIV; SUBSET_UNIV] THEN
+  REWRITE_TAC[FORALL_IN_INSERT; INTERS_INSERT] THEN
+  MAP_EVERY X_GEN_TAC [`t:real^N->bool`; `f:(real^N->bool)->bool`] THEN
+  STRIP_TAC THEN ASM_CASES_TAC `f:(real^N->bool)->bool = {}` THEN
+  ASM_SIMP_TAC[INTERS_0; INTER_UNIV] THEN STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) DENSE_OPEN_INTER o snd) THEN
+  ANTS_TAC THENL [ALL_TAC; ASM_SIMP_TAC[]] THEN
+  DISJ1_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `u:real^N->bool`) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `u:real^N->bool`) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET o CONJUNCT1) THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Frontier (aka boundary).                                                  *)
 (* ------------------------------------------------------------------------- *)
