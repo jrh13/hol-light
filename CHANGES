@@ -1,3 +1,29 @@
+Sat  4th Oct 2014       Functionspaces/README, Functionspaces/make.ml, Functionspaces/utils.ml, Functionspaces/cfunspace.ml [new files], Jordan/float.ml
+
+Added a new library by Mohamed Yousri Mahmoud and Vincent Aravantinos of vector
+spaces of complex functions, building on top of the Multivariate theories.
+
+Sat  4th Oct 2014       system.ml
+
+Added another form to the quotation expander so that any quotation ending
+in a colon, i.e. of the form `....:`, will just be parsed as an (escaped)
+string. This is convenient for use with the new Library/q.ml file so that
+potential issues with capturing backslashes in plain strings can be
+avoided. It seems quite an intuitive syntax since one is then expecting
+the system to infer the type from context.
+
+Tweaked cases in Jordan/float.ml where there was already a colon at
+the end of a quotation, just adding spaces around the body.
+
+Fri 26th Sep 2014       sets.ml
+
+Added the following, a natural complement to IMAGE_UNIONS and IMAGE_INTER:
+
+  IMAGE_INTERS =
+    |- !f s. ~(s = {}) /\
+             (!x y. x IN UNIONS s /\ y IN UNIONS s /\ f x = f y ==> x = y)
+             ==> IMAGE f (INTERS s) = INTERS(IMAGE (IMAGE f) s)
+
 Fri 19th Sep 2014       Library/q.ml [new file]
 
 Added a file from Vincent Aravantinos with Pa.xxx variants of many standard

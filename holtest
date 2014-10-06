@@ -118,6 +118,7 @@ echo '### Loading Multivariate/flyspeck.ml'; echo 'loadt "Multivariate/flyspeck.
 echo '### Loading Multivariate/gamma.ml'; echo 'loadt "Multivariate/gamma.ml";;' | (time $hollight)
 echo '### Loading RichterHilbertAxiomGeometry/Topology.ml'; echo 'loadt "RichterHilbertAxiomGeometry/Topology.ml";;' | (time $hollight)
 echo '### Loading RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read.ml'; echo 'loadt "RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read.ml";;' | (time $hollight)
+echo '### Loading Functionspaces/make.ml'; echo 'loadt "Functionspaces/make.ml";;' | (time $hollight)
 echo '### Loading Formal_ineqs/make.ml,examples.hl,examples_poly.hl,examples_flyspeck.hl';
 (echo 'loadt "Formal_ineqs/make.ml";;';
  echo 'loadt "Formal_ineqs/examples.hl";;';
