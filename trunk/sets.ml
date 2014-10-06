@@ -988,6 +988,12 @@ let INTERS_GSPEC = prove
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
   REWRITE_TAC[IN_INTERS; IN_ELIM_THM] THEN MESON_TAC[]);;
 
+let IMAGE_INTERS = prove
+ (`!f s. ~(s = {}) /\
+         (!x y. x IN UNIONS s /\ y IN UNIONS s /\ f x = f y ==> x = y)
+         ==> IMAGE f (INTERS s) = INTERS(IMAGE (IMAGE f) s)`,
+  REWRITE_TAC[INTERS_IMAGE] THEN SET_TAC[]);;
+
 let DIFF_INTERS = prove
  (`!u s. u DIFF INTERS s = UNIONS {u DIFF t | t IN s}`,
   REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]);;

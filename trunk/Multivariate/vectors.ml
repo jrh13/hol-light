@@ -3054,6 +3054,18 @@ let MATRIX_VECTOR_MUL_TRANSP = prove
  (`!A:real^M^N x:real^M. A ** x = x ** transp A`,
   REWRITE_TAC[VECTOR_MATRIX_MUL_TRANSP; TRANSP_TRANSP]);;
 
+let ROWS_NONEMPTY = prove
+ (`!A:real^N^M. ~(rows A = {})`,
+  REWRITE_TAC[rows] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  REWRITE_TAC[IMAGE_EQ_EMPTY; GSYM numseg; NUMSEG_EMPTY] THEN
+  REWRITE_TAC[NOT_LT; DIMINDEX_GE_1]);;
+
+let COLUMNS_NONEMPTY = prove
+ (`!A:real^N^M. ~(columns A = {})`,
+  REWRITE_TAC[columns] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  REWRITE_TAC[IMAGE_EQ_EMPTY; GSYM numseg; NUMSEG_EMPTY] THEN
+  REWRITE_TAC[NOT_LT; DIMINDEX_GE_1]);;
+
 let FINITE_ROWS = prove
  (`!A:real^N^M. FINITE(rows A)`,
   REWRITE_TAC[rows] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
@@ -8441,8 +8453,6 @@ let SCALING_INVARIANT =
     let cths = map (fun t -> find(fun th -> aconv (concl th) t) pths) cjs in
     let oth = MP (SPECL avs ith) (end_itlist CONJ cths) in
     GEN c_tm (DISCH sa_tm (GENL avs oth));;
-
-let scaling_theorems = ref([]:thm list);;
 
 (* ------------------------------------------------------------------------- *)
 (* Augmentation of the lists. The "add_linear_invariants" also updates       *)

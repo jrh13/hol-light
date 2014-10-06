@@ -4792,7 +4792,7 @@ let ABSOLUTE_RETRACT_CONVEX = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Borsuk homotopy extension thorem. It's only this late so we can use the   *)
-(* concept of retraction, saying that the domain sets or range set are ENRs. *)
+(* concept of retraction, saying that the domain sets or range set are ANRs. *)
 (* ------------------------------------------------------------------------- *)
 
 let BORSUK_HOMOTOPY_EXTENSION_HOMOTOPIC = prove

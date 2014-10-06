@@ -223,6 +223,10 @@ let HULL_ANTIMONO = prove
  (`!P Q s. P SUBSET Q ==> (Q hull s) SUBSET (P hull s)`,
   REWRITE_TAC[SUBSET; hull; IN_INTERS; IN_ELIM_THM] THEN MESON_TAC[IN]);;
 
+let HULL_UNIV = prove
+ (`!P:(A->bool)->bool. P hull UNIV = UNIV`,
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_UNIV; HULL_SUBSET]);;
+
 let HULL_MINIMAL = prove
  (`!P s t. s SUBSET t /\ P t ==> (P hull s) SUBSET t`,
   REWRITE_TAC[hull; SUBSET; IN_INTERS; IN_ELIM_THM] THEN MESON_TAC[]);;

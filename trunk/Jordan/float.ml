@@ -62,8 +62,8 @@ let (mk_int:Num.num -> term) =
   fun a ->
     let sgn = Num.sign_num a in
     let abv = Num.abs_num a in
-    let r = mk_comb(`&:`,mk_numeral abv) in
-    try (if (sgn<0) then mk_comb (`--:`,r) else r) with
+    let r = mk_comb(` &: `,mk_numeral abv) in
+    try (if (sgn<0) then mk_comb (` --: `,r) else r) with
         Failure _ -> failwith ("dest_int "^(string_of_num a));;
 
 add_test("mk_int",
@@ -1579,13 +1579,13 @@ let is_decimal_format  =
 let is_pos_int_format =
     let fn x =
       let (h,t) = dest_comb x in
-       (h = `&:`) && (is_numeral_format t) in
+       (h = ` &: `) && (is_numeral_format t) in
     falsify_ex fn;;
 
 let is_neg_int_format =
     let fn x =
       let (h,t) = dest_comb x in
-        (h = `--:`) && (is_pos_int_format t) in
+        (h = ` --: `) && (is_pos_int_format t) in
       falsify_ex fn;;
 
 let is_int_format x =
