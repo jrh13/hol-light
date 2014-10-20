@@ -6,19 +6,24 @@
 Fixes universally quantified variables in goal.
 
 \DESCRIBE
+
 Given a string {s} indicating a sequence of variable names, {FIX_TAC s}
-performs the introduction of the indicated variables. It is not required to
-specify the variables in any particular order. The syntax for the string
-argument s allows the following patterns:
+performs the introduction of the indicated universally quantified variables.
+It is not required to specify the variables in any particular order. The
+syntax for the string argument s allows the following patterns:
 
 \begin{{itemize}}
 
-\item a variable name {varname} (meaning intruduce the variable varname)
+\item a variable name {varname} (meaning introduce the variable varname)
 
 \item a pattern {[newname/varname]} (meaning introduce {varname} and call it
    {newname})
 
-\item a final {*} (meaning introduce the remaining variables)
+\item a pattern {[newname]} (meaning introduce the outermost variable and
+   call it {newname})
+
+\item a final {*} (meaning introduce the remaining outermost universal
+   quantified variables)
 
 \end{{itemize}}
 
@@ -38,10 +43,25 @@ Here we fix just the variable {a}:
 \noindent while here we rename one of the variables and fix all the others:
 {
   # g `!a b x. a + b + x = (a + b) + x`;;
-  #  e (FIX_TAC "[d/x] *");;
+  # e (FIX_TAC "[d/x] *");;
   val it : goalstack = 1 subgoal (1 total)
 
   `a + b + d = (a + b) + d`
+}
+
+Here we fix an automatically generated variable and choose a meaningful name
+for it
+{
+  # g `(@x. x = 0) + 0 = 0`;;
+  # e SELECT_ELIM_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `!_75605. (!x. x = 0 ==> _75605 = 0) ==> _75605 + 0 = 0`
+
+  # e (FIX_TAC "[y]");;
+  val it : goalstack = 1 subgoal (1 total)
+
+  `(!x. x = 0 ==> y = 0) ==> y + 0 = 0`
 }
 
 \SEEALSO

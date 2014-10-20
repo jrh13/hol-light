@@ -1339,11 +1339,73 @@ let diagonal_matrix = new_definition
               ~(i = j)
               ==> A$i$j = &0`;;
 
+let DIAGONAL_MATRIX = prove
+ (`!A:real^N^N.
+     diagonal_matrix A <=> A = (lambda i j. if i = j then A$i$j else &0)`,
+  SIMP_TAC[CART_EQ; LAMBDA_BETA; diagonal_matrix] THEN MESON_TAC[]);;
+
 let TRANSP_DIAGONAL_MATRIX = prove
  (`!A:real^N^N. diagonal_matrix A ==> transp A = A`,
   GEN_TAC THEN REWRITE_TAC[diagonal_matrix; CART_EQ; TRANSP_COMPONENT] THEN
   STRIP_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN X_GEN_TAC `j:num` THEN
   STRIP_TAC THEN ASM_CASES_TAC `i:num = j` THEN ASM_SIMP_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Positive semidefinite matrices.                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let positive_semidefinite = new_definition
+ `positive_semidefinite(A:real^N^N) <=>
+    transp A = A /\ !x. &0 <= x dot (A ** x)`;;
+
+let POSITIVE_SEMIDEFINITE_TRANSP = prove
+ (`!A:real^N^N. positive_semidefinite(transp A) <=> positive_semidefinite A`,
+  REWRITE_TAC[positive_semidefinite] THEN MESON_TAC[TRANSP_TRANSP]);;
+
+let POSITIVE_SEMIDEFINITE_COVARIANCE = prove
+ (`!A:real^N^N. positive_semidefinite(transp A ** A)`,
+  REWRITE_TAC[positive_semidefinite; MATRIX_TRANSP_MUL; TRANSP_TRANSP] THEN
+  REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_ASSOC] THEN
+  ONCE_REWRITE_TAC[GSYM DOT_LMUL_MATRIX] THEN
+  REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_TRANSP; DOT_POS_LE]);;
+
+let POSITIVE_SEMIDEFINITE_SIMILAR = prove
+ (`!A B:real^N^M.
+        positive_semidefinite A
+        ==> positive_semidefinite(transp B ** A ** B)`,
+  REWRITE_TAC[positive_semidefinite] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP; GSYM MATRIX_MUL_ASSOC] THEN
+  REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_ASSOC] THEN
+  REWRITE_TAC[GSYM DOT_LMUL_MATRIX; GSYM MATRIX_VECTOR_MUL_TRANSP] THEN
+  ASM_REWRITE_TAC[DOT_LMUL_MATRIX]);;
+
+let POSITIVE_SEMIDEFINITE_DIAGONAL_MATRIX = prove
+ (`!D:real^N^N.
+        diagonal_matrix D /\
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= D$i$i)
+        ==> positive_semidefinite D`,
+  SIMP_TAC[positive_semidefinite; TRANSP_DIAGONAL_MATRIX] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(SUBST1_TAC o GEN_REWRITE_RULE I [DIAGONAL_MATRIX]) THEN
+  SIMP_TAC[matrix_vector_mul; LAMBDA_BETA; dot] THEN
+  SIMP_TAC[COND_RATOR; COND_RAND; REAL_MUL_LZERO] THEN
+  CONV_TAC(RAND_CONV(ONCE_DEPTH_CONV SYM_CONV)) THEN
+  SIMP_TAC[SUM_DELTA] THEN MATCH_MP_TAC SUM_POS_LE_NUMSEG THEN
+  GEN_TAC THEN STRIP_TAC THEN
+  REWRITE_TAC[REAL_ARITH `x * d * x:real = d * x * x`] THEN
+  MATCH_MP_TAC REAL_LE_MUL THEN
+  ASM_SIMP_TAC[REAL_LE_SQUARE]);;
+
+let POSITIVE_SEMIDEFINITE_DIAGONAL_MATRIX_EQ = prove
+ (`!D:real^N^N.
+        diagonal_matrix D
+        ==> (positive_semidefinite D <=>
+             !i. 1 <= i /\ i <= dimindex(:N) ==> &0 <= D$i$i)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  ASM_SIMP_TAC[POSITIVE_SEMIDEFINITE_DIAGONAL_MATRIX] THEN
+  REWRITE_TAC[positive_semidefinite] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `basis i:real^N`) THEN
+  ASM_SIMP_TAC[DOT_BASIS; MATRIX_VECTOR_MUL_BASIS; column; LAMBDA_BETA]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Orthogonality of a transformation and matrix.                             *)
@@ -1588,6 +1650,33 @@ let ORTHOGONAL_MATRIX_ORTHOGONAL_EIGENVECTORS = prove
   REWRITE_TAC[ORTHOGONAL_MATRIX_TRANSFORMATION;
               ORTHOGONAL_TRANSFORMATION_ORTHOGONAL_EIGENVECTORS]);;
 
+let ORTHOGONAL_TRANSFORMATION_ID = prove
+ (`orthogonal_transformation(\x. x)`,
+  REWRITE_TAC[orthogonal_transformation; LINEAR_ID]);;
+
+let ORTHOGONAL_TRANSFORMATION_I = prove
+ (`orthogonal_transformation I`,
+  REWRITE_TAC[I_DEF; ORTHOGONAL_TRANSFORMATION_ID]);;
+
+let ORTHOGONAL_TRANSFORMATION_1_GEN = prove
+ (`!f:real^N->real^N.
+        dimindex(:N) = 1
+        ==> (orthogonal_transformation f <=> f = I \/ f = (--))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[I_DEF] THEN
+  GEN_REWRITE_TAC (funpow 3 RAND_CONV) [GSYM ETA_AX] THEN
+  EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_ID;
+                  ORTHOGONAL_TRANSFORMATION_NEG] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [ORTHOGONAL_TRANSFORMATION]) THEN
+  ASM_SIMP_TAC[LINEAR_1_GEN] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+  ASM_REWRITE_TAC[NORM_MUL] THEN
+  DISCH_THEN(MP_TAC o SPEC `basis 1:real^N`) THEN
+  SIMP_TAC[NORM_BASIS; DIMINDEX_GE_1; LE_REFL; DIMINDEX_1] THEN
+  REWRITE_TAC[REAL_ARITH `abs x * &1 = &1 <=> x = &1 \/ x = -- &1`] THEN
+  MATCH_MP_TAC MONO_OR THEN SIMP_TAC[FUN_EQ_THM] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC VECTOR_ARITH);;
+
 (* ------------------------------------------------------------------------- *)
 (* Linearity of scaling, and hence isometry, that preserves origin.          *)
 (* ------------------------------------------------------------------------- *)
@@ -1731,14 +1820,6 @@ let ORTHOGONAL_TRANSFORMATION_INVERSE = prove
   GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP ORTHOGONAL_TRANSFORMATION_INVERSE_o) THEN
   REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM]);;
-
-let ORTHOGONAL_TRANSFORMATION_ID = prove
- (`orthogonal_transformation(\x. x)`,
-  REWRITE_TAC[orthogonal_transformation; LINEAR_ID]);;
-
-let ORTHOGONAL_TRANSFORMATION_I = prove
- (`orthogonal_transformation I`,
-  REWRITE_TAC[I_DEF; ORTHOGONAL_TRANSFORMATION_ID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* We can find an orthogonal matrix taking any unit vector to any other.     *)
@@ -2401,7 +2482,7 @@ let REFLECT_ALONG_EQ_0 = prove
  (`!v x:real^N. reflect_along v x = vec 0 <=> x = vec 0`,
   MESON_TAC[REFLECT_ALONG_0; REFLECT_ALONG_INVOLUTION]);;
 
-let ORTHGOONAL_TRANSFORMATION_REFLECT_ALONG = prove
+let ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG = prove
  (`!v:real^N. orthogonal_transformation(reflect_along v)`,
   GEN_TAC THEN ASM_CASES_TAC `v:real^N = vec 0` THENL
    [GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
@@ -2483,7 +2564,7 @@ let ROTOINVERSION_MATRIX_REFLECT_ALONG = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[rotoinversion_matrix] THEN
   CONJ_TAC THENL
    [ASM_MESON_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX;
-                ORTHGOONAL_TRANSFORMATION_REFLECT_ALONG];
+                ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG];
     ALL_TAC] THEN
   ABBREV_TAC `w:real^N = inv(norm v) % v` THEN
   SUBGOAL_THEN `reflect_along (v:real^N) = reflect_along w` SUBST1_TAC THENL
@@ -2567,7 +2648,7 @@ let ORTHOGONAL_TRANSFORMATION_GENERATED_BY_REFLECTIONS = prove
     DISCH_THEN(X_CHOOSE_TAC `a:real^N`) THEN
     ABBREV_TAC `v:real^N = inv(&2) % (f a - a)` THEN FIRST_X_ASSUM
       (MP_TAC o SPEC `reflect_along v o (f:real^N->real^N)`) THEN
-    ASM_SIMP_TAC[ORTHGOONAL_TRANSFORMATION_REFLECT_ALONG;
+    ASM_SIMP_TAC[ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG;
                  ORTHOGONAL_TRANSFORMATION_COMPOSE] THEN
     ANTS_TAC THENL
      [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ARITH_RULE

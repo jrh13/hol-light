@@ -10251,10 +10251,13 @@ let LEBESGUE_MEASURABLE_REGULAR_INNER = prove
 
 let LEBESGUE_MEASURABLE_ALMOST_FSIGMA = prove
  (`!s:real^N->bool.
-        lebesgue_measurable s
-        ==> ?c t. UNIONS c UNION t = s /\ DISJOINT (UNIONS c) t /\
-                  COUNTABLE c /\ (!u. u IN c ==> closed u) /\ negligible t`,
-  REPEAT STRIP_TAC THEN
+        lebesgue_measurable s  
+        ==> ?c t. fsigma c /\ negligible t /\ c UNION t = s /\ DISJOINT c t`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[fsigma; LEFT_AND_EXISTS_THM] THEN
+  ONCE_REWRITE_TAC[MESON[] `(?a b c. P a b c) <=> (?c b a. P a b c)`] THEN
+  REWRITE_TAC[TAUT `(p /\ q /\ r) /\ s /\ t /\ u <=> 
+                    r /\ t /\ u /\ p /\ q /\ s`] THEN
+  REWRITE_TAC[UNWIND_THM1] THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         LEBESGUE_MEASURABLE_INNER_CLOSED)) THEN
   DISCH_THEN(MP_TAC o GEN `n:num` o SPEC `inv(&n + &1)`) THEN

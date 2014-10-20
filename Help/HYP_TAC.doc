@@ -1,0 +1,69 @@
+\DOC HYP_TAC
+
+\TYPE {HYP_TAC : string -> (thm -> thm) -> tactic}
+
+\SYNOPSIS
+Applies a rule to a named hypothesis.
+
+\DESCRIBE
+
+Given a string {s} and a rule {r}, {HYP_TAC s r} applies {r} to the hypothesis
+labeled {l} as specified by the pattern {s} which can be of one of the
+following form:
+
+\begin{{itemize}}
+
+\item "{l} : {patt}", meaning apply {r} to hypothesis {l} and destruct it
+  with {patt}, like {REMOVE_THEN l (DESTRUCT_TAC patt o r)}
+
+\item a label {"l"}, meaning apply {r} to the hypothesis {l}, a shorthand for
+  {HYP_TAC "l : l" r}
+
+\item "{l} : {patt}", meaning apply {r} to hypothesis {l} and destruct it
+  with {patt} but keep hypothesis {l}, like
+  {USE_THEN l (DESTRUCT_TAC patt o r)}
+
+\end{{itemize}}
+
+\FAILURE
+Applied to its arguments fails if the pattern is ill-formed.  When executed
+as a tactic, fails if it refers to non-existent hypothesis or the rule fails
+or do not produce a theorem of a suitable form.
+
+\EXAMPLE
+Here we use the theorem {MEMBER_NOT_EMPTY} to obtain an element {a} from a
+non empty set {s}
+{
+  # g `!s. ~(s = {}) ==> (minimal n. n IN s) IN s`;;
+  # e (INTRO_TAC "!s; s");;
+  # e (HYP_TAC "s : @a. +" (REWRITE_RULE[GSYM MEMBER_NOT_EMPTY]));;
+  val it : goalstack = 1 subgoal (1 total)
+
+    `a IN s ==> (minimal n. n IN s) IN s`
+}
+\noindent next we can finish with this goal with
+{
+  # e (MESON_TAC[MINIMAL]);;
+}
+
+Here we derive that a strictly positive number is a non negative number
+{
+  # g `!x. &0 < x ==> &0 <= inv x`;;
+  # e (INTRO_TAC "!x; xgt");;
+  # e (HYP_TAC "xgt -> xge" (MATCH_MP REAL_LT_IMP_LE));;
+  val it : goalstack = 1 subgoal (1 total)
+
+    0 [`&0 < x`] (xgt)
+    1 [`&0 <= x`] (xge)
+
+  `&0 <= inv x`
+}
+\noindent then we can solve the goal with
+{
+  # e (HYP SIMP_TAC "xge" [REAL_LE_INV]);;
+}
+
+\SEEALSO
+DESTRUCT_TAC, HYP, LABEL_TAC, REMOVE_THEN, USE_THEN
+
+\ENDDOC

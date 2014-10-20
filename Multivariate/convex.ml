@@ -1911,6 +1911,10 @@ let convex_on = new_definition
         !x y u v. x IN s /\ y IN s /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
                   ==> f(u % x + v % y) <= u * f(x) + v * f(y)`;;
 
+let CONVEX_ON_EMPTY = prove
+ (`!f:real^N->real. f convex_on {}`,
+  REWRITE_TAC[convex_on; NOT_IN_EMPTY]);;
+
 let CONVEX_ON_SUBSET = prove
  (`!f s t. f convex_on t /\ s SUBSET t ==> f convex_on s`,
   REWRITE_TAC[convex_on; SUBSET] THEN MESON_TAC[]);;
@@ -4262,6 +4266,10 @@ let AFF_DIM_OPEN = prove
 let AFF_DIM_NONEMPTY_INTERIOR = prove
  (`!s:real^N->bool. ~(interior s = {}) ==> aff_dim s = &(dimindex(:N))`,
   SIMP_TAC[AFF_DIM_EQ_FULL; AFFINE_HULL_NONEMPTY_INTERIOR]);;
+
+let EMPTY_INTERIOR_AFF_DIM = prove
+ (`!s:real^N->bool. aff_dim s < &(dimindex(:N)) ==> interior s = {}`,
+  MESON_TAC[AFF_DIM_NONEMPTY_INTERIOR; INT_LT_ANTISYM]);;
 
 let SPAN_OPEN = prove
  (`!s. open s /\ ~(s = {}) ==> span s = (:real^N)`,
