@@ -1868,6 +1868,40 @@ let SUBPATH_REFL = prove
               FUN_EQ_THM; VECTOR_ADD_RID] THEN
   VECTOR_ARITH_TAC);;
 
+let SEGMENT_TO_FRONTIER = prove
+ (`!s a b:real^N.
+        a IN interior s /\ ~(b IN interior s)
+        ==> ?c. c IN segment[a,b] /\ ~(c = a) /\ c IN frontier s /\
+                segment(a,c) SUBSET interior s`,
+  GEOM_ORIGIN_TAC `a:real^N` THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(MESON[]
+   `(!x. R x ==> Q x) /\ (?x. P x /\ R x /\ S x)
+    ==> ?x. P x /\ Q x /\ R x /\ S x`) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[frontier; IN_DIFF]; ALL_TAC] THEN
+  MP_TAC(ISPECL [`linepath(vec 0:real^N,b)`; `interior s:real^N->bool`]
+    SUBPATH_TO_FRONTIER) THEN
+  ASM_REWRITE_TAC[PATH_LINEPATH; PATHSTART_LINEPATH; PATHFINISH_LINEPATH] THEN
+  REWRITE_TAC[PATH_IMAGE_LINEPATH; INTERIOR_INTERIOR] THEN
+  REWRITE_TAC[subpath; linepath; VECTOR_ADD_LID; VECTOR_SUB_RZERO;
+              VECTOR_MUL_RZERO; pathstart; pathfinish] THEN
+  REWRITE_TAC[IN_INTERVAL_1; GSYM EXISTS_DROP; DROP_VEC] THEN
+  REWRITE_TAC[DROP_CMUL; path_image; DROP_VEC; REAL_MUL_RID] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `u % b:real^N` THEN
+  REWRITE_TAC[IN_SEGMENT; VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN CONJ_TAC THENL
+    [ASM_MESON_TAC[FRONTIER_INTERIOR_SUBSET; SUBSET]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+   SUBSET_TRANS)) THEN
+  ONCE_REWRITE_TAC[segment] THEN MATCH_MP_TAC(SET_RULE
+   `s SUBSET t ==> s DIFF {a,b} SUBSET t DELETE b`) THEN
+  REWRITE_TAC[segment; SUBSET; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `v:real` THEN STRIP_TAC THEN
+  REWRITE_TAC[IN_IMAGE; VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  EXISTS_TAC `lift v` THEN REWRITE_TAC[IN_INTERVAL_1] THEN
+  ASM_REWRITE_TAC[LIFT_DROP; DROP_VEC; VECTOR_MUL_ASSOC] THEN
+  REWRITE_TAC[REAL_MUL_SYM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Bounding a point away from a path.                                        *)
 (* ------------------------------------------------------------------------- *)

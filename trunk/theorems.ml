@@ -373,14 +373,29 @@ let EXISTS_UNIQUE = prove
   REWRITE_TAC[CONJ_ACI]);;
 
 (* ------------------------------------------------------------------------- *)
-(* DESTRUCT_TAC, FIX_TAC and INTRO_TAC, giving more brief and elegant ways   *)
-(* of naming introduced variables and assumptions (from Marco Maggesi).      *)
+(* DESTRUCT_TAC, FIX_TAC, INTRO_TAC and HYP_TAC, giving more brief and       *)
+(* elegant ways of naming introduced variables and assumptions (from Marco   *)
+(* Maggesi).                                                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let DESTRUCT_TAC,FIX_TAC,INTRO_TAC =
-  let NAME_GEN_TAC s gl =
-    let ty = (snd o dest_var o fst o dest_forall o snd) gl  in
-    X_GEN_TAC (mk_var(s,ty)) gl
+let DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC =
+  (* ---------------------------------------------------------------------- *)
+  (* Like GEN_TAC but fails instead of generating a primed variant when the *)
+  (* variable occurs free in the context.                                   *)
+  (* ---------------------------------------------------------------------- *)
+  let (PURE_GEN_TAC: tactic) =
+    fun (asl,w) ->
+      try let x = fst(dest_forall w) in
+          let avoids = itlist (union o thm_frees o snd) asl (frees w) in
+          if mem x avoids then fail() else X_GEN_TAC x (asl,w)
+      with Failure _ -> failwith "PURE_GEN_TAC"
+  (* ---------------------------------------------------------------------- *)
+  (* Like X_GEN_TAC but needs only the name of the variable, not the type.  *)
+  (* ---------------------------------------------------------------------- *)
+  and (NAME_GEN_TAC: string -> tactic) =
+    fun s gl ->
+      let ty = (snd o dest_var o fst o dest_forall o snd) gl  in
+      X_GEN_TAC (mk_var(s,ty)) gl
   and OBTAIN_THEN v ttac th =
     let ty = (snd o dest_var o fst o dest_exists o concl) th in
     X_CHOOSE_THEN (mk_var(v,ty)) ttac th
@@ -404,26 +419,26 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC =
           else
             fail () in
       PULL_FORALL in
-  let parse_fix =
-    let ident = function
-        Ident s::rest when isalpha s -> s,rest
-      | _ -> raise Noparse in
-    let rename =
-      let old_name = possibly (a(Ident "/") ++ ident >> snd) in
-      (a(Resword "[") ++ ident >> snd) ++ old_name ++ a(Resword "]") >> fst in
-    let mk_var v = CONV_TAC (NAME_PULL_FORALL_CONV v) THEN GEN_TAC
-    and mk_rename =
+  let pa_ident p = function
+      Ident s::rest when p s -> s,rest
+    | _ -> raise Noparse in
+  let pa_label = pa_ident isalnum
+  and pa_var = pa_ident isalpha in
+  let fix_tac =
+    let fix_var v = CONV_TAC (NAME_PULL_FORALL_CONV v) THEN PURE_GEN_TAC
+    and fix_rename =
       function u,[v] -> CONV_TAC (NAME_PULL_FORALL_CONV v) THEN NAME_GEN_TAC u
              | u,_   -> NAME_GEN_TAC u in
-    let vars = many (rename >> mk_rename || ident >> mk_var) >> EVERY
-    and star = possibly (a (Ident "*") >> K (REPEAT GEN_TAC)) in
+    let vars =
+      let pa_rename =
+        let oname = possibly (a(Ident "/") ++ pa_var >> snd) in
+        (a(Resword "[") ++ pa_var >> snd) ++ oname ++ a(Resword "]") >> fst in
+      many (pa_rename >> fix_rename || pa_var >> fix_var) >> EVERY
+    and star = possibly (a (Ident "*") >> K ()) in
     vars ++ star >> function tac,[] -> tac | tac,_ -> tac THEN REPEAT GEN_TAC
-  and parse_destruct =
+  and destruct_tac =
     let OBTAINL_THEN : string list -> thm_tactical =
       EVERY_TCL o map OBTAIN_THEN in
-    let ident p = function
-        Ident s::rest when p s -> s,rest
-      | _ -> raise Noparse in
     let rec destruct inp = disj inp
     and disj inp =
       let DISJ_CASES_LIST = end_itlist DISJ_CASES_THEN2 in
@@ -431,25 +446,27 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC =
     and conj inp = (atleast 1 atom >> end_itlist CONJUNCTS_THEN2) inp
     and obtain inp =
       let obtain_prfx =
-        let var_list = atleast 1 (ident isalpha) in
+        let var_list = atleast 1 pa_var in
         (a(Ident "@") ++ var_list >> snd) ++ a(Resword ".") >> fst in
       (obtain_prfx ++ destruct >> uncurry OBTAINL_THEN) inp
     and atom inp =
-      let label = ident isalnum >> LABEL_TAC in
-      let paren =
-       (a(Resword "(") ++ destruct >> snd) ++ a(Resword ")") >> fst in
-      (label || obtain || paren) inp in
+      let label =
+        function Ident "_"::res -> K ALL_TAC,res
+               | Ident "+"::res -> MP_TAC,res
+               | Ident s::res when isalnum s -> LABEL_TAC s,res
+               | _ -> raise Noparse
+      and paren =
+        (a(Resword "(") ++ destruct >> snd) ++ a(Resword ")") >> fst in
+      (obtain || label || paren) inp in
     destruct in
-  let parse_intro =
+  let intro_tac =
     let number = function
         Ident s::rest ->
-          (try
-             let n = int_of_string s in
-             if n < 1 then raise Noparse else n,rest
+          (try check ((<=) 1) (int_of_string s), rest
            with Failure _ -> raise Noparse)
       | _ -> raise Noparse
-    and pa_fix = a(Ident "!") ++ parse_fix >> snd
-    and pa_dest = parse_destruct >> DISCH_THEN in
+    and pa_fix = a(Ident "!") ++ fix_tac >> snd
+    and pa_dest = destruct_tac >> DISCH_THEN in
     let pa_prefix =
       elistof (pa_fix || pa_dest) (a(Resword ";")) "Prefix intro pattern" in
     let rec pa_intro toks =
@@ -463,15 +480,27 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC =
       let disj = number >> NUM_DISJ_TAC in
       ((a(Ident "#") ++ disj >> snd) ++ pa_intro >> uncurry (THEN)) toks in
     pa_intro in
+  let hyp_tac rule =
+    let pa_action = function
+        Resword ":" :: rest -> REMOVE_THEN,rest
+      | Resword "->" :: rest -> USE_THEN,rest
+      | _ -> raise Noparse in
+    pa_label ++ possibly (pa_action ++ destruct_tac) >>
+    (function
+       | lbl,[action,tac] -> action lbl (tac o rule)
+       | lbl,_ -> REMOVE_THEN lbl (LABEL_TAC lbl o rule)) in
   let DESTRUCT_TAC s =
     let tac,rest =
-      (fix "Destruct pattern" parse_destruct o lex o explode) s in
+      (fix "Destruct pattern" destruct_tac o lex o explode) s in
     if rest=[] then tac else failwith "Garbage after destruct pattern"
   and INTRO_TAC s =
     let tac,rest =
-      (fix "Introduction pattern" parse_intro o lex o explode) s in
+      (fix "Introduction pattern" intro_tac o lex o explode) s in
     if rest=[] then tac else failwith "Garbage after intro pattern"
   and FIX_TAC s =
-    let tac,rest = (parse_fix o lex o explode) s in
-    if rest=[] then tac else failwith "FIX_TAC: invalid pattern" in
-  DESTRUCT_TAC,FIX_TAC,INTRO_TAC;;
+    let tac,rest = (fix_tac o lex o explode) s in
+    if rest=[] then tac else failwith "FIX_TAC: invalid pattern"
+  and HYP_TAC s rule =
+    let tac,rest = (hyp_tac rule o lex o explode) s in
+    if rest=[] then tac else failwith "HYP_TAC: invalid pattern" in
+  DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC;;

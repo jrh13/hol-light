@@ -6,13 +6,18 @@
 Performs elimination on a theorem within a tactic proof.
 
 \DESCRIBE
-Given a string {s} and a theorem {th}, {DESTRUCT_TAC s th} performs the      
+Given a string {s} and a theorem {th}, {DESTRUCT_TAC s th} performs the
 elimination of {th} according with the pattern given in {s}. The
 syntax of the pattern {s} is the following:
 
 \begin{{itemize}}
 
-\item An identifier {l} assumes a hypothesis with label {l}
+\item An identifier {l} other than `_` and `+` assumes a hypothesis
+  with label {l}
+
+\item The identifier `_' does nothing (discard the hypothesis)
+
+\item The identifier `+' adds the theorem as antecedent as with MP_TAC
 
 \item A sequence of patterns (separated by spaces) destructs a conjunction
 
@@ -26,25 +31,45 @@ syntax of the pattern {s} is the following:
 Fails if the pattern is ill-formed or does not match the form of the theorem.
 
 \EXAMPLE
-Here we use the cases theorem for numerals, performing a disjunctive split and 
+Here we use the cases theorem for numerals, performing a disjunctive split and
 introducing names for the resulting hypotheses:
 {
   # let th = SPEC `n:num` (cases "num");;
   # g `n = 0 \/ (1 <= n /\ ?m. n = m + 1)`;;
-  # e (DESTRUCT_TAC "neq0 | @m. neqsuc" th);; 
+  # e (DESTRUCT_TAC "neq0 | @m. neqsuc" th);;
   val it : goalstack = 2 subgoals (2 total)
-  
+
     0 [`n = SUC m`] (neqsuc)
-  
+
   `n = 0 \/ 1 <= n /\ (?m. n = m + 1)`
-  
+
     0 [`n = 0`] (neq0)
-  
+
   `n = 0 \/ 1 <= n /\ (?m. n = m + 1)`
 }
 
+Here we use the theorem
+{
+  # let th = SPEC `n+2` EVEN_EXISTS_LEMMA;;
+  val th : thm =
+    |- (EVEN (n + 2) ==> (?m. n + 2 = 2 * m)) /\
+       (~EVEN (n + 2) ==> (?m. n + 2 = SUC (2 * m)))
+}
+\noindent
+adding as antecedent the right-hand side of the disjunction
+{
+  # g `!n. ~EVEN n ==> ?a. n + 2 = 2 * a + 1`;;
+  # e (REPEAT STRIP_TAC THEN DESTRUCT_TAC "_ +" th);;
+
+  val it : goalstack = 1 subgoal (1 total)
+
+    0 [`~EVEN n`]
+
+  `(~EVEN (n + 2) ==> (?m. n + 2 = SUC (2 * m))) ==> (?a. n + 2 = 2 * a + 1)`
+}
+
 \SEEALSO
-ASSUME_TAC, FIX_TAC, GEN_TAC, INTRO_TAC, LABEL_TAC, REMOVE_THEN, STRIP_TAC,
-USE_THEN.
+ASSUME_TAC, FIX_TAC, GEN_TAC, INTRO_TAC, LABEL_TAC, MP_TAC, REMOVE_THEN,
+STRIP_TAC, USE_THEN.
 
 \ENDDOC

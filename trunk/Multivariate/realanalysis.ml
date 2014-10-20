@@ -5957,6 +5957,10 @@ let real_convex_on = new_definition
         !x y u v. x IN s /\ y IN s /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
                   ==> f(u * x + v * y) <= u * f(x) + v * f(y)`;;
 
+let REAL_CONVEX_ON_EMPTY = prove
+ (`!f. f real_convex_on {}`,
+  REWRITE_TAC[real_convex_on; NOT_IN_EMPTY]);;
+
 let REAL_CONVEX_ON = prove
  (`!f s. f real_convex_on s <=> (f o drop) convex_on (IMAGE lift s)`,
   REWRITE_TAC[real_convex_on; convex_on] THEN
@@ -6731,6 +6735,10 @@ let log_convex_on = new_definition
                    ==> &0 <= f(u % x + v % y) /\
                        f(u % x + v % y) <= f(x) rpow u * f(y) rpow v)`;;
 
+let LOG_CONVEX_ON_EMPTY = prove
+ (`!f:real^N->real. f log_convex_on {}`,
+  REWRITE_TAC[log_convex_on; NOT_IN_EMPTY]);;
+
 let LOG_CONVEX_ON_SUBSET = prove
  (`!f s t. f log_convex_on t /\ s SUBSET t ==> f log_convex_on s`,
   REWRITE_TAC[log_convex_on] THEN SET_TAC[]);;
@@ -6857,6 +6865,10 @@ let real_log_convex_on = new_definition
         (!x y u v. x IN s /\ y IN s /\ &0 <= u /\ &0 <= v /\ u + v = &1
                    ==> &0 <= f(u * x + v * y) /\
                        f(u * x + v * y) <= f(x) rpow u * f(y) rpow v)`;;
+
+let REAL_LOG_CONVEX_ON_EMPTY = prove
+ (`!f. f real_log_convex_on {}`,
+  REWRITE_TAC[real_log_convex_on; NOT_IN_EMPTY]);;
 
 let REAL_LOG_CONVEX_ON_SUBSET = prove
  (`!f s t. f real_log_convex_on t /\ s SUBSET t ==> f real_log_convex_on s`,

@@ -1,3 +1,32 @@
+Sun 12th Oct 2014       theorems.ml, Help/DESTRUCT_TAC/doc, Help/FIX_TAX.doc, Help/HYP_TAC.doc [new file]
+
+Added a new tactic HYP_TAC from Marco Maggesi. This fits into the existing
+suite of tatics (FIX_TAC, DESTRUCT_TAC etc.) for manipulations via brief
+strings, now applying to a named hypothesis. Also added a few improvements
+to the existing suite and their documentation.
+
+Sun 12th Oct 2014       Library/integer.ml
+
+Removed the theorem INT_CONG_0, which as pointed out by Marco Maggesi is
+the same as INT_CONG_0_DIVIDES except for the order of quantification.
+The longer name was kept because it fits the natural number case which
+is called CONG_DIVIDES_0, and it is actually used elsewhere.
+
+Thu  9th Oct 2014       iterate.ml
+
+Added variants of "grouping" theorems for sums, not requiring an explicit
+function:
+
+  NSUM_GROUP_RELATION =
+    |- !R g s t.
+           FINITE s /\ (!x. x IN s ==> (?!y. y IN t /\ R x y))
+           ==> nsum t (\y. nsum {x | x IN s /\ R x y} g) = nsum s g
+
+  SUM_GROUP_RELATION =
+    |- !R g s t.
+           FINITE s /\ (!x. x IN s ==> (?!y. y IN t /\ R x y))
+           ==> sum t (\y. sum {x | x IN s /\ R x y} g) = sum s g
+
 Sat  4th Oct 2014       Functionspaces/README, Functionspaces/make.ml, Functionspaces/utils.ml, Functionspaces/cfunspace.ml [new files], Jordan/float.ml
 
 Added a new library by Mohamed Yousri Mahmoud and Vincent Aravantinos of vector

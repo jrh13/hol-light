@@ -1084,6 +1084,20 @@ let NSUM_GROUP = prove
   MATCH_MP_TAC NSUM_SUPERSET THEN ASM_REWRITE_TAC[] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ_0 THEN ASM SET_TAC[]);;
 
+let NSUM_GROUP_RELATION = prove
+ (`!R:A->B->bool g s t.
+         FINITE s /\
+         (!x. x IN s ==> ?!y. y IN t /\ R x y)
+         ==> nsum t (\y. nsum {x | x IN s /\ R x y} g) = nsum s g`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`\x:A. @y:B. y IN t /\ R x y`; `g:A->num`;
+                 `s:A->bool`; `t:B->bool`]
+        NSUM_GROUP) THEN
+  ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  MATCH_MP_TAC NSUM_EQ THEN REPEAT STRIP_TAC THEN REWRITE_TAC[] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
+
 let NSUM_SUBSET = prove
  (`!u v f. FINITE u /\ FINITE v /\ (!x:A. x IN (u DIFF v) ==> f(x) = 0)
            ==> nsum u f <= nsum v f`,
@@ -1730,6 +1744,20 @@ let SUM_GROUP = prove
   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
   MATCH_MP_TAC SUM_SUPERSET THEN ASM_REWRITE_TAC[] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_EQ_0 THEN ASM SET_TAC[]);;
+
+let SUM_GROUP_RELATION = prove
+ (`!R:A->B->bool g s t.
+         FINITE s /\
+         (!x. x IN s ==> ?!y. y IN t /\ R x y)
+         ==> sum t (\y. sum {x | x IN s /\ R x y} g) = sum s g`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`\x:A. @y:B. y IN t /\ R x y`; `g:A->real`;
+                 `s:A->bool`; `t:B->bool`]
+        SUM_GROUP) THEN
+  ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  MATCH_MP_TAC SUM_EQ THEN REPEAT STRIP_TAC THEN REWRITE_TAC[] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
 
 let REAL_OF_NUM_SUM = prove
  (`!f s. FINITE s ==> (&(nsum s f) = sum s (\x. &(f x)))`,

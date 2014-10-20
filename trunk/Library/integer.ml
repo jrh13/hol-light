@@ -407,10 +407,6 @@ let INT_CONG_MOD_1 = prove
  (`!x y. (x == y) (mod &1)`,
   INTEGER_TAC);;
 
-let INT_CONG_0 = prove
- (`!x n. ((x == &0) (mod n) <=> n divides x)`,
-  INTEGER_TAC);;
-
 let INT_CONG = prove
  (`!x y n. (x == y) (mod n) <=> n divides (x - y)`,
   INTEGER_TAC);;

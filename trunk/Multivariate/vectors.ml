@@ -4,6 +4,7 @@
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (* ========================================================================= *)
 
+needs "Library/card.ml";;       
 needs "Library/floor.ml";;
 needs "Multivariate/misc.ml";;
 
@@ -1360,6 +1361,39 @@ let DIST_0 = prove
   NORM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Bounding distances between scaled versions of vectors.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let DIST_DESCALE = prove
+ (`!a b x y:real^N.
+        &0 <= a /\ &0 <= b /\ norm(x) = norm(y)
+        ==> dist(a % x,b % y) >= min a b * dist(x,y)`,
+  MATCH_MP_TAC REAL_WLOG_LE THEN CONJ_TAC THENL
+   [MESON_TAC[DIST_SYM; REAL_ARITH `min a b:real = min b a`]; ALL_TAC] THEN
+  SIMP_TAC[real_min] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[dist; NORM_GE_SQUARE; REAL_POW_MUL; NORM_POW_2] THEN
+  DISJ2_TAC THEN REWRITE_TAC[real_ge] THEN REWRITE_TAC[VECTOR_ARITH
+   `(x - y:real^N) dot (x - y) = (x dot x + y dot y) - &2 * x dot y`] THEN
+  ASM_REWRITE_TAC[GSYM NORM_POW_2; NORM_MUL; real_abs; REAL_ARITH
+   `a pow 2 * ((y pow 2 + y pow 2) - &2 * d) <=
+    ((a * y) pow 2 + (b * y) pow 2) - &2 * e <=>
+    &2 * (e - a pow 2 * d) <= (b pow 2 - a pow 2) * y pow 2`] THEN
+  REWRITE_TAC[DOT_LMUL] THEN REWRITE_TAC[DOT_RMUL] THEN
+  REWRITE_TAC[REAL_POW2_ABS; REAL_MUL_ASSOC; GSYM REAL_SUB_RDISTRIB] THEN
+  MATCH_MP_TAC(REAL_ARITH `abs a <= b ==> a <= b`) THEN
+  ONCE_REWRITE_TAC[REAL_ABS_MUL] THEN TRANS_TAC REAL_LE_TRANS
+    `abs (&2 * (a * b - a pow 2)) * norm(x:real^N) * norm(y:real^N)` THEN
+  SIMP_TAC[REAL_LE_LMUL; REAL_ABS_POS; NORM_CAUCHY_SCHWARZ_ABS] THEN
+  ASM_REWRITE_TAC[GSYM REAL_POW_2] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+  REWRITE_TAC[REAL_LE_POW_2] THEN
+  MATCH_MP_TAC(REAL_ARITH `&0 <= x /\ x <= y ==> abs x <= y`) THEN
+  REWRITE_TAC[REAL_ARITH `(a * b - a pow 2):real = a * (b - a)`] THEN
+  ASM_SIMP_TAC[REAL_LE_MUL; REAL_POS; REAL_SUB_LE] THEN
+  REWRITE_TAC[REAL_MUL_ASSOC; REAL_ARITH
+   `(b pow 2 - a pow 2):real = (a + b) * (b - a)`] THEN
+  MATCH_MP_TAC REAL_LE_RMUL THEN ASM_REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* Sums of vectors.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1575,6 +1609,13 @@ let VSUM_GROUP = prove
         FINITE s /\ IMAGE f s SUBSET t
         ==> vsum t (\y. vsum {x | x IN s /\ f(x) = y} g) = vsum s g`,
   SIMP_TAC[vsum; CART_EQ; LAMBDA_BETA; SUM_GROUP]);;
+
+let VSUM_GROUP_RELATION = prove
+ (`!R:A->B->bool g s t.
+         FINITE s /\
+         (!x. x IN s ==> ?!y. y IN t /\ R x y)
+         ==> vsum t (\y. vsum {x | x IN s /\ R x y} g) = vsum s g`,
+  SIMP_TAC[vsum; CART_EQ; LAMBDA_BETA; SUM_GROUP_RELATION]);;
 
 let VSUM_VMUL = prove
  (`!f v s. (sum s f) % v = vsum s (\x. f(x) % v)`,
@@ -3295,12 +3336,26 @@ let LINEAR_MATRIX_EXISTS = prove
   DISCH_TAC THEN EXISTS_TAC `matrix(f:real^M->real^N)` THEN
   ASM_SIMP_TAC[GSYM MATRIX_VECTOR_MUL]);;
 
+let LINEAR_1_GEN = prove
+ (`!f:real^N->real^N.
+        dimindex(:N) = 1 ==> (linear f <=> ?c. f = \x. c % x)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[LINEAR_COMPOSE_CMUL; LINEAR_ID] THEN
+  ASM_SIMP_TAC[FUN_EQ_THM; CART_EQ; FORALL_1] THEN
+  EXISTS_TAC `(f:real^N->real^N)(basis 1)$1` THEN
+  REWRITE_TAC[VECTOR_MUL_COMPONENT] THEN
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  REWRITE_TAC[GSYM VECTOR_MUL_COMPONENT] THEN
+  X_GEN_TAC `x:real^N` THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [linear]) THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[GSYM th]) THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+  ASM_SIMP_TAC[CART_EQ; FORALL_1; VECTOR_MUL_COMPONENT; BASIS_COMPONENT;
+               ARITH; REAL_MUL_RID]);;
+
 let LINEAR_1 = prove
  (`!f:real^1->real^1. linear f <=> ?c. f = \x. c % x`,
-  SIMP_TAC[LINEAR_MATRIX_EXISTS; EXISTS_VECTOR_1] THEN
-  SIMP_TAC[FUN_EQ_THM; CART_EQ; FORALL_1; DIMINDEX_1; VECTOR_1;
-           matrix_vector_mul; SUM_1; CART_EQ; LAMBDA_BETA;
-           VECTOR_MUL_COMPONENT]);;
+  SIMP_TAC[LINEAR_1_GEN; DIMINDEX_1]);;
 
 let SYMMETRIC_MATRIX = prove
  (`!A:real^N^N. transp A = A <=> adjoint(\x. A ** x) = \x. A ** x`,
@@ -8498,14 +8553,16 @@ let th_sets = prove
            (IMAGE f s = IMAGE f t <=> s = t) /\
            ((IMAGE f s) HAS_SIZE n <=> s HAS_SIZE n) /\
            (FINITE(IMAGE f s) <=> FINITE s) /\
-           (INFINITE(IMAGE f s) <=> INFINITE s)`,
+           (INFINITE(IMAGE f s) <=> INFINITE s) /\
+           (COUNTABLE(IMAGE f s) <=> COUNTABLE s)`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[IMAGE_UNIONS] THEN
   REWRITE_TAC[o_THM; MESON[IN] `IMAGE f s y <=> y IN IMAGE f s`] THEN
   REPLICATE_TAC 2 (CONJ_TAC THENL [MESON_TAC[]; ALL_TAC]) THEN
   REWRITE_TAC[INFINITE; TAUT `(~p <=> ~q) <=> (p <=> q)`] THEN
   REPLICATE_TAC 11 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
   REWRITE_TAC[HAS_SIZE] THEN
-  ASM_MESON_TAC[FINITE_IMAGE_INJ_EQ; CARD_IMAGE_INJ]) in
+  ASM_MESON_TAC[COUNTABLE_IMAGE_INJ_EQ;
+                FINITE_IMAGE_INJ_EQ; CARD_IMAGE_INJ]) in
 let f = `f:real^M->real^N`
 and imf = `IMAGE (f:real^M->real^N)`
 and a = `a:real^N`
