@@ -4,7 +4,7 @@
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (* ========================================================================= *)
 
-needs "Library/card.ml";;       
+needs "Library/card.ml";;
 needs "Library/floor.ml";;
 needs "Multivariate/misc.ml";;
 
@@ -2768,6 +2768,14 @@ let MAT_0_COMPONENT = prove
   CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
   ASM_SIMP_TAC[mat; COND_ID; LAMBDA_BETA]);;
 
+let ROW_0 = prove
+ (`!i. row i (mat 0:real^N^N) = vec 0`,
+  SIMP_TAC[MAT_0_COMPONENT; CART_EQ; row; VEC_COMPONENT; LAMBDA_BETA]);;
+
+let COLUMN_0 = prove
+ (`!i. column i (mat 0:real^N^N) = vec 0`,
+  SIMP_TAC[MAT_0_COMPONENT; CART_EQ; column; VEC_COMPONENT; LAMBDA_BETA]);;
+
 let MATRIX_CMUL_ASSOC = prove
  (`!a b X:real^M^N. a %% (b %% X) = (a * b) %% X`,
   SIMP_TAC[CART_EQ; matrix_cmul; LAMBDA_BETA; REAL_MUL_ASSOC]);;
@@ -2810,6 +2818,11 @@ let MATRIX_SUB = prove
 let MATRIX_SUB_REFL = prove
  (`!A. A - A = mat 0`,
   REWRITE_TAC[MATRIX_SUB; MATRIX_ADD_RNEG]);;
+
+let MATRIX_SUB_EQ = prove
+ (`!A B:real^N^M. A - B = mat 0 <=> A = B`,
+  SIMP_TAC[CART_EQ; MAT_COMPONENT;
+           MATRIX_SUB_COMPONENT; COND_ID; REAL_SUB_0]);;
 
 let MATRIX_ADD_LDISTRIB = prove
  (`!A:real^N^M B:real^P^N C. A ** (B + C) = A ** B + A ** C`,
@@ -3117,6 +3130,22 @@ let FINITE_COLUMNS = prove
   REWRITE_TAC[columns] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
   SIMP_TAC[GSYM numseg; FINITE_IMAGE; FINITE_NUMSEG]);;
 
+let CARD_ROWS_LE = prove
+ (`!A:real^M^N. CARD(rows A) <= dimindex(:N)`,
+  GEN_TAC THEN REWRITE_TAC[rows] THEN
+  ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  REWRITE_TAC[GSYM numseg] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM CARD_NUMSEG_1] THEN
+  SIMP_TAC[CARD_IMAGE_LE; FINITE_NUMSEG]);;
+
+let CARD_COLUMNS_LE = prove
+ (`!A:real^M^N. CARD(columns A) <= dimindex(:M)`,
+  GEN_TAC THEN REWRITE_TAC[columns] THEN
+  ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  REWRITE_TAC[GSYM numseg] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM CARD_NUMSEG_1] THEN
+  SIMP_TAC[CARD_IMAGE_LE; FINITE_NUMSEG]);;
+
 let MATRIX_EQUAL_ROWS = prove
  (`!A B:real^N^M.
         A = B <=> !i. 1 <= i /\ i <= dimindex(:M) ==> row i A = row i B`,
@@ -3233,6 +3262,10 @@ let MATRIX_INV_I = prove
  (`matrix_inv(mat 1:real^N^N) = mat 1`,
   MATCH_MP_TAC MATRIX_INV_UNIQUE THEN
   REWRITE_TAC[MATRIX_MUL_LID]);;
+
+let INVERTIBLE_MATRIX_INV = prove                        
+ (`!A:real^N^N. invertible A ==> invertible(matrix_inv A)`,               
+  MESON_TAC[MATRIX_INV; invertible]);;                            
 
 (* ------------------------------------------------------------------------- *)
 (* Correspondence between matrices and linear operators.                     *)
@@ -5036,6 +5069,22 @@ let DIM_EQ_CARD = prove
   REPEAT STRIP_TAC THEN MP_TAC
    (ISPECL [`span s:real^N->bool`; `s:real^N->bool`] BASIS_CARD_EQ_DIM) THEN
   ASM_SIMP_TAC[SUBSET_REFL; SPAN_INC; DIM_SPAN]);;
+
+let DEPENDENT_EQ_DIM_LT_CARD = prove
+ (`!s:real^N->bool. dependent s <=> FINITE s ==> dim s < CARD s`,
+  GEN_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[GSYM GT; DEPENDENT_BIGGERSET_GENERAL] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[GSYM independent; NOT_IMP] THEN
+  STRIP_TAC THEN MATCH_MP_TAC CARD_LE_DIM_SPANNING THEN
+  EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[SPAN_INC] THEN
+  ASM_ARITH_TAC);;
+
+let INDEPENDENT_EQ_DIM_EQ_CARD = prove
+ (`!s:real^N->bool. independent s <=> FINITE s /\ dim s = CARD s`,
+  GEN_TAC THEN EQ_TAC THEN
+  SIMP_TAC[DIM_EQ_CARD; INDEPENDENT_IMP_FINITE] THEN
+  SIMP_TAC[DEPENDENT_EQ_DIM_LT_CARD; independent; LT_REFL]);;
 
 let SUBSET_LE_DIM = prove
  (`!s t:real^N->bool. s SUBSET (span t) ==> dim s <= dim t`,
@@ -7819,6 +7868,10 @@ let RANK_TRIANGLE = prove
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV;
               MATRIX_VECTOR_MUL_ADD_RDISTRIB] THEN
   REWRITE_TAC[IN_ELIM_THM; IN_IMAGE; IN_UNIV] THEN MESON_TAC[]);;
+
+let COVARIANCE_MATRIX_EQ_0 = prove
+ (`!A:real^N^N. transp A ** A = mat 0 <=> A = mat 0`,
+  REWRITE_TAC[GSYM RANK_EQ_0; RANK_GRAM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Infinity norm.                                                            *)

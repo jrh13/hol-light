@@ -56,7 +56,7 @@ let MOD_MOD_REFL = theorem `;
 
 (*                  Exception: Can't parse as a Proof:
 
-    INTRO_TAC !m n, H1.							     *)
+    INTRO_TAC !m n, H1.                                                      *)
 
 let MOD_MOD_REFL = theorem `;
   ∀m n. ¬(n = 0)  ⇒  ((m MOD n) MOD n = m MOD n)
@@ -69,7 +69,7 @@ let MOD_MOD_REFL = theorem `;
 `;;
 
 (*                Exception: Not a theorem:
- mod_mod.								     *)
+ mod_mod.                                                                    *)
 
 
 let MOD_MOD_REFL = theorem `;
@@ -131,7 +131,7 @@ let EXP_2 = theorem `;
 
 (*      Exception:
 Not a proof:
- REWRITE BIT0_THM BIT1_THM EXP EXP_ADD MULT_CLAUSES ADD_CLAUSES.             
+ REWRITE BIT0_THM BIT1_THM EXP EXP_ADD MULT_CLAUSES ADD_CLAUSES.
 
 The problem is that REWRITE should be rewrite.*)
 

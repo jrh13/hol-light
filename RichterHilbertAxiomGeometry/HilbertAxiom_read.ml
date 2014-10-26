@@ -819,7 +819,7 @@ let RayWellDefinedHalfway = theorem `;
     P ∈ m  ∧  P ∈ m ━ {O}  ∧  Q ∈ m ━ {O}     [PQm_O] by fol OQm H2' RayLine SUBSET H2' OQm H1 IN_DIFF IN_SING;
     O ∉ Open (P, Q)     [notPOQ] by fol H2' IN_Ray;
     rewrite SUBSET;
-    X_genl_TAC X;    intro_TAC XrayOP;
+    intro_TAC ∀[X], XrayOP;
     X ∈ m  ∧  O ∉ Open (X, P)     [XrOP] by fol - SUBSET OQm PQm_O H2' RayLine IN_Ray;
     Collinear O Q X     [OQXcol] by fol OQm -  Collinear_DEF;
     assume ¬(X = O)     [notXO] by fol H1 OriginInRay;

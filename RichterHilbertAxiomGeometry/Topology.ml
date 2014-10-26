@@ -1003,7 +1003,7 @@ let ConnectedDisjointUnionsOpenUniquePart1 = theorem `;
     ∀s.  s ∈ f ⇒ s ⊂ topspace α     [fTop] by fol fConn OPEN_IN_SUBSET;
     ∀s.  s ∈ f' ⇒ s ⊂ topspace α     [f'Top] by fol f'Conn OPEN_IN_SUBSET;
     rewrite SUBSET;
-    X_genl_TAC b;     intro_TAC bs;
+    intro_TAC ∀[b], bs;
     assume ¬(b ∈ t)     [Contradiction] by fol;
     ∃e1 e2.  open_in α e1 ∧ open_in α e2 ∧ e1 ∩ e2 ∩ s = ∅ ∧
      s ⊂ e1 ∪ e2 ∧ ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅)     []
@@ -1033,7 +1033,8 @@ let ConnectedDisjointUnionsOpenUnique = theorem `;
     ⇒ (∀α s t. P α s t ⇒ s = t)];
     conj_tac     [Left] by fol;
     intro_TAC ∀α f f', pDISJf pDISJf' fConn f'Conn Uf_Uf';
-    rewrite SUBSET;     X_genl_TAC s;     intro_TAC sf;
+    rewrite SUBSET;
+    intro_TAC ∀[s], sf;
     consider t a such that
     t ∈ f' ∧ a ∈ s ∧ a ∈ t     [taExist] by set sf fConn Uf_Uf';
     MP_TAC ISPECL [α; f; f'; s; t] ConnectedDisjointUnionsOpenUniquePart1;
@@ -1134,7 +1135,7 @@ let ConnectedInduction = theorem `;
       conj_tac     [Left]
       proof
         ONCE_REWRITE_TAC OPEN_IN_SUBOPEN;
-        X_genl_TAC c;
+        intro_TAC ∀[c];
         rewrite IN_ELIM_THM;
         MATCH_MP_TAC MONO_EXISTS;
         set atOpenImplies_ztPz;
@@ -1142,7 +1143,7 @@ let ConnectedInduction = theorem `;
       conj_tac     [Left]
       proof
         ONCE_REWRITE_TAC OPEN_IN_SUBOPEN;
-        X_genl_TAC c;
+        intro_TAC ∀[c];
         rewrite IN_ELIM_THM;
         MATCH_MP_TAC MONO_EXISTS;
         set atOpenImplies_ztPz;
@@ -1150,13 +1151,13 @@ let ConnectedInduction = theorem `;
       conj_tac     [Left]
       proof
         rewrite SUBSET IN_ELIM_THM IN_UNION;
-        X_genl_TAC c;     intro_TAC cs;
+        intro_TAC ∀[c], cs;
         MP_TAC SPECL [c] asImplies_atOpen_xytPxPyQxasImpliesQy;
         set cs;
       qed;
       conj_tac     [Right] by set aINs bINs Qa NotQb asImplies_atOpen_xytPxPyQxasImpliesQy Pa Pb;
       rewrite EXTENSION IN_INTER NOT_IN_EMPTY IN_ELIM_THM;
-      X_genl_TAC c;
+      intro_TAC ∀[c];
       ONCE_REWRITE_TAC TAUT [∀p. ¬p  ⇔  p ⇒ F];
       intro_TAC Qx NotQx;
       consider t such that
@@ -1486,7 +1487,7 @@ let InteriorClosedUnionEmptyInterior = theorem `;
     Interior α (s ∪ t) ⊂ s     []
     proof
       simplify SUBSET stTop IN_Interior LEFT_IMP_EXISTS_THM;
-      X_genl_TAC y O;     intro_TAC openO yO Os_t;
+      intro_TAC ∀[y] [O], openO yO Os_t;
       consider O' such that O' = (topspace α ━ s) ∩ O     [O'def] by fol -;
       O' ⊂ t     [O't] by set O'def Os_t;
       assume y ∉ s     [yNOTs] by fol ∉;
@@ -1615,8 +1616,7 @@ let ClosureIntersSubset = theorem `;
   proof
     intro_TAC ∀α f, H1;
     rewrite SET_RULE [s ⊂ INTERS f ⇔ ∀t. t ∈ f ⇒ s ⊂ t] FORALL_IN_IMAGE;
-    X_genl_TAC s;
-    intro_TAC sf;
+    intro_TAC ∀[s], sf;
     s ⊂ topspace α  ∧  INTERS f ⊂ s  ∧  INTERS f ⊂ topspace α     [] by set H1 sf;
     fol SubsetClosure -;
   qed;
@@ -1690,8 +1690,7 @@ let OpenInterClosureSubset = theorem `;
     s ∩ LimitPointOf α t  ⊂  LimitPointOf α (s ∩ t)     []
     proof
       simplify SUBSET IN_INTER tTop stTop IN_LimitPointOf;
-      X_genl_TAC x;     intro_TAC xs xTop xLIMt;
-      X_genl_TAC O;     intro_TAC xO Oopen;
+      intro_TAC ∀[x], xs xTop xLIMt, ∀[O], xO Oopen;
       x ∈ O ∩ s  ∧  open_in α (O ∩ s)     [xOsOpen] by fol xs xO IN_INTER Oopen sOpen OPEN_IN_INTER;
       fol xOsOpen xLIMt IN_INTER;
     qed;
@@ -1744,8 +1743,7 @@ let ConnectedIntermediateClosure = theorem `;
     intro_TAC ∀α s t, sTop, sCon st tCs;
     t ⊂ topspace α     [tTop] by fol tCs sTop ClosureTopspace SUBSET_TRANS;
     simplify tTop ConnectedSubtopology_ALT;
-    X_genl_TAC u v;
-    intro_TAC uOpen vOpen t_uv uvtEmpty;
+    intro_TAC ∀[u] [v], uOpen vOpen t_uv uvtEmpty;
     u ⊂ topspace α  ∧  v ⊂ topspace α     [uvTop] by fol uOpen vOpen OPEN_IN_SUBSET;
     u ∩ s = ∅  ∨  v ∩ s = ∅     [] by fol sTop uvTop uOpen vOpen st t_uv uvtEmpty SUBSET_TRANS SUBSET_REFL INTER_TENSOR SUBSET_EMPTY sCon ConnectedSubtopology_ALT;
     s ⊂ topspace α ━ u  ∨  s ⊂ topspace α ━ v     [] by fol - sTop uvTop INTER_COMM SUBSET_COMPLEMENT;
@@ -1796,7 +1794,8 @@ let ClosedInLimpt = theorem `;
       simplify H1 ClosedClosure Closure_THM INTER_COMM UNION_OVER_INTER;
       set sSUBt LIMstSUBs;
     qed;
-    rewrite LEFT_IMP_EXISTS_THM;     X_genl_TAC D;     intro_TAC Dexists;
+    rewrite LEFT_IMP_EXISTS_THM;
+    intro_TAC ∀[D], Dexists;
     LimitPointOf α (D ∩ t) ⊂ D     [] by fol Dexists CLOSED_IN_SUBSET INTER_SUBSET LimptSubset ClosedLimpt SUBSET_TRANS;
     fol Dexists INTER_SUBSET - SUBSET_REFL INTER_TENSOR;
   qed;
@@ -1903,16 +1902,12 @@ let NowhereDense = theorem `;
     simplify H1 ClosureTopspace InteriorEqEmptyAlt;
     eq_tac     [Left]
     proof
-      intro_TAC H2;
-      X_genl_TAC t;
-      intro_TAC tOpen tNonempty;
+      intro_TAC H2, ∀[t], tOpen tNonempty;
       exists_TAC t ━ Closure α s;
       fol tOpen H1 ClosedClosure OPEN_IN_DIFF tOpen tNonempty H2 SUBSET_DIFF H1 ClosureSubset
       SET_RULE [∀s t A.  s ⊂ t  ⇒  (A ━ t) ∩ s = ∅];
     qed;
-    intro_TAC H2;
-    X_genl_TAC t;
-    intro_TAC tOpen tNonempty;
+    intro_TAC H2, ∀[t], tOpen tNonempty;
     consider u such that
     open_in α u ∧ ¬(u = ∅) ∧ u ⊂ t ∧ u ∩ s = ∅     [uExists] by simplify tOpen tNonempty H2;
     MP_TAC ISPECL [α; u; s] OpenInterClosureEqEmpty;
@@ -2144,12 +2139,12 @@ let UnionFrontierPart1 = theorem `;
     intro_TAC ∀α s t, H1;
     s ⊂ topspace α ∧ t ⊂ topspace α ∧ s ∩ t ⊂ topspace α     [stTop] by fol H1 SUBSET_UNION INTER_SUBSET SUBSET_TRANS;
     rewrite SUBSET IN_INTER;
-    X_genl_TAC a;     intro_TAC aFs aIt;
+    intro_TAC ∀[a], aFs aIt;
     consider O such that
     open_in α O ∧ a ∈ O ∧ O ⊂ t     [aOs] by fol aIt stTop IN_Interior;
     a ∈ topspace α     [] by fol stTop aFs FrontierTopspace SUBSET;
     simplify stTop FrontierStraddle -;
-    X_genl_TAC P;     intro_TAC Popen aP;
+    intro_TAC ∀[P], Popen aP;
     a ∈ O ∩ P ∧ open_in α (O ∩ P)     [aOPopen] by fol aOs aP IN_INTER Popen OPEN_IN_INTER;
     consider x y such that
     x ∈ s ∧ x ∈ O ∩ P ∧ ¬(y ∈ s) ∧ y ∈ O ∩ P     [xExists] by fol aOs Popen OPEN_IN_INTER aOPopen stTop aFs FrontierStraddle;

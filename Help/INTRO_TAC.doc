@@ -17,16 +17,15 @@ introduction pattern uses the following syntax:
 \item {! fix_pattern} introduces universally quantified variables as with
    {FIX_TAC}
 
-\item a destruct pattern introduces and destructs an implication
-
-\item juxtaposition introduces a conjunction in the hypothesis
-
-\item { ... | ... | ....} introduces a branch in a disjunction in the
-   hypothesis
+\item a destruct pattern introduces and destructs an implication as with
+   {DESTRUCT_TAC}
 
 \item {#n} selects disjunct {n} in the goal
 
 \end{{itemize}}
+
+Several fix patterns and intro patterns can be combined sequentially,
+separed by semicolons `;'.
 
 \FAILURE
 Fails if the pattern is ill-formed or does not match the form of the goal.
@@ -56,6 +55,23 @@ Now a further step will select the first disjunct to prove in the top goal:
     0 [`p`] (p)
 
   `p /\ q`
+}
+
+Here we fix an automatically generated variable, choosing a meaningful name
+for it, and we introduce a labeled hypothesis in a single command:
+{
+  # g `(@x. x = 0) + 0 = 0`;;
+  # e SELECT_ELIM_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+  
+  `!_75725. (!x. x = 0 ==> _75725 = 0) ==> _75725 + 0 = 0`
+  
+  # e (INTRO_TAC "![y]; hp");;
+  val it : goalstack = 1 subgoal (1 total)
+  
+    0 [`!x. x = 0 ==> y = 0`] (hp)
+  
+  `y + 0 = 0`
 }
 
 \SEEALSO
