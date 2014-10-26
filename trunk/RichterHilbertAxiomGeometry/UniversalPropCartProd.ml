@@ -223,8 +223,8 @@ let UseFunctionComposition = theorem `;
 
   proof
     rewrite FORALL_PAIR_THM makeFunction FunctionComposition SOURCE TARGET FUN BETA_THM o_THM IN_FunctionSpace FUNCTION SOURCE TARGET NOTIN PAIR_EQ;
-    X_genl_TAC u' f' t' t1 g1 s1 u f t g s;
-    intro_TAC Hα Hβ Hβ_st Hs Ht;
+    intro_TAC ∀[u'] [f'] [t'] [t1] [g1] [s1] [u] [f] [t] [g] [s],
+    Hα Hβ Hβ_st Hs Ht;
     (∀x. x ∈ s ⇒ g x ∈ t)     [g_st] by fol Hβ_st Hβ;
     simplify Hα GSYM Hs Hβ g_st;
   qed;

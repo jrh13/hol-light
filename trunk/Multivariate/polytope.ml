@@ -338,20 +338,20 @@ let FACE_OF_DISJOINT_INTERIOR = prove
   MP_TAC(ISPEC `s:real^N->bool` INTERIOR_SUBSET_RELATIVE_INTERIOR) THEN
   SET_TAC[]);;
 
-let SUBSET_OF_FACE_OF_AFFINE_HULL = prove                                       
- (`!s t u:real^N->bool.                                                        
-        t face_of s /\ convex s /\ u SUBSET s /\                               
-        ~DISJOINT (affine hull t) (relative_interior u)                        
-        ==> u SUBSET t`,                                                       
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_OF_FACE_OF THEN                    
-  EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN                      
-  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`] FACE_OF_STILLCONVEX) THEN 
-  MP_TAC(ISPEC `u:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN                 
-  ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;                                      
+let SUBSET_OF_FACE_OF_AFFINE_HULL = prove
+ (`!s t u:real^N->bool.
+        t face_of s /\ convex s /\ u SUBSET s /\
+        ~DISJOINT (affine hull t) (relative_interior u)
+        ==> u SUBSET t`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_OF_FACE_OF THEN
+  EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`] FACE_OF_STILLCONVEX) THEN
+  MP_TAC(ISPEC `u:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
+  ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
 
 let AFFINE_HULL_FACE_OF_DISJOINT_RELATIVE_INTERIOR = prove
- (`!s f:real^N->bool.                                              
-        convex s /\ f face_of s /\ ~(f = s)                       
+ (`!s f:real^N->bool.
+        convex s /\ f face_of s /\ ~(f = s)
         ==> affine hull f INTER relative_interior s = {}`,
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`s:real^N->bool`; `f:real^N->bool`; `s:real^N->bool`]
@@ -7190,6 +7190,40 @@ let SIMPLEX_INSERT = prove
         (?n. n simplex s) /\ ~(a IN affine hull s)
         ==> ?n. n simplex (convex hull (a INSERT s))`,
   MESON_TAC[SIMPLEX_INSERT_DIMPLUS1]);;
+
+let SIMPLEX_ALT = prove
+ (`!s:real^N->bool i.
+        i simplex s <=>
+          convex s /\ compact s /\
+          FINITE {v | v extreme_point_of s} /\
+          &(CARD {v | v extreme_point_of s}) = i + &1 /\
+          ~affine_dependent {v | v extreme_point_of s}`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[SIMPLEX_EXTREME_POINTS; SIMPLEX_IMP_CONVEX; SIMPLEX_IMP_COMPACT];
+    STRIP_TAC THEN REWRITE_TAC[simplex] THEN
+    EXISTS_TAC `{v:real^N | v extreme_point_of s}` THEN
+    ASM_MESON_TAC[KREIN_MILMAN_MINKOWSKI]]);;
+
+let SIMPLEX_ALT1 = prove
+ (`!s:real^N->bool.
+        (&n - &1) simplex s <=>
+          convex s /\ compact s /\
+          {v | v extreme_point_of s} HAS_SIZE n /\
+          ~affine_dependent {v | v extreme_point_of s}`,
+  REWRITE_TAC[SIMPLEX_ALT; INT_SUB_ADD; INT_OF_NUM_EQ; HAS_SIZE] THEN
+  CONV_TAC TAUT);;
+
+let SIMPLEX_0_NOT_IN_AFFINE_HULL = prove
+ (`!s:real^N->bool.
+        (&n - &1) simplex s /\ ~(vec 0 IN affine hull s) <=>
+        convex s /\ compact s /\
+        {v | v extreme_point_of s} HAS_SIZE n /\
+        independent {v | v extreme_point_of s}`,
+  GEN_TAC THEN
+  MP_TAC(ISPEC `s:real^N->bool` KREIN_MILMAN_MINKOWSKI) THEN
+  REWRITE_TAC[independent; DEPENDENT_AFFINE_DEPENDENT_CASES;
+              SIMPLEX_ALT1] THEN
+  MESON_TAC[AFFINE_HULL_CONVEX_HULL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Simplicial complexes and triangulations.                                  *)

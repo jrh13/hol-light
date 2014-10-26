@@ -68,7 +68,7 @@ let A6 = NewAxiom `;
   ∀a b. ℬ a b a ⇒ a = b`;;
 
 let A7 = NewAxiom `;
-  ∀a b p q z.  ℬ a p z ∧ ℬ b q z 
+  ∀a b p q z.  ℬ a p z ∧ ℬ b q z
     ⇒ ∃x. ℬ p x b ∧ ℬ q x a`;;
 
 (* A4 is the Segment Construction axiom, A5 is the SAS axiom and A7 is
@@ -193,8 +193,8 @@ let B124and234Ordered_THM = theorem `;
 `;;
 
 let SegmentAddition_THM = theorem `;
-  ∀a b c a' b' c'.  ℬ a b c  ∧ ℬ a' b' c'  ∧  
-    a,b ≃ a',b'  ∧  b,c ≃ b',c'                                      
+  ∀a b c a' b' c'.  ℬ a b c  ∧ ℬ a' b' c'  ∧
+    a,b ≃ a',b'  ∧  b,c ≃ b',c'
     ⇒  a,c ≃ a',c'
 
   proof
@@ -210,7 +210,7 @@ let CongruenceDoubleSymmetry_THM = theorem `;
   by fol A1 EquivTransitive`;;
 
 let C1prime_THM = theorem `;
-  ∀a b x y.  ¬(a = b)  ∧  ℬ a b x  ∧  ℬ a b y  ∧  a,x ≃ a,y 
+  ∀a b x y.  ¬(a = b)  ∧  ℬ a b x  ∧  ℬ a b y  ∧  a,x ≃ a,y
     ⇒ x = y
 
   proof
@@ -228,7 +228,7 @@ let C1prime_THM = theorem `;
 `;;
 
 let SegmentSubtraction_THM = theorem `;
-  ∀a b c a' b' c'.  ℬ a b c ∧ ℬ a' b' c' ∧ 
+  ∀a b c a' b' c'.  ℬ a b c ∧ ℬ a' b' c' ∧
     a,b ≃ a',b' ∧ a,c ≃ a',c'  ⇒  b,c ≃ b',c'
 
   proof
@@ -244,13 +244,13 @@ let SegmentSubtraction_THM = theorem `;
 `;;
 
 let EasyAngleTransport_THM = theorem `;
-    ∀a O b.  ¬(O = a)    
+    ∀a O b.  ¬(O = a)
       ⇒ ∃x y.  ℬ b O x ∧ ℬ a O y ∧ x,y,O ≊ a,b,O
 
   proof
     intro_TAC ∀a O b, H1;
     consider x y such that
-    ℬ b O x ∧ O,x ≃ O,a  ∧  
+    ℬ b O x ∧ O,x ≃ O,a  ∧
     ℬ a O y ∧ O,y ≃ O,b     [X2] by fol A4;
     x,O ≃ a,O     [X3] by fol - CongruenceDoubleSymmetry_THM;
     a,O,x ≊ x,O,a     [X5] by fol - EquivSymmetric A1 X2 cong_DEF;
@@ -261,9 +261,9 @@ let EasyAngleTransport_THM = theorem `;
 `;;
 
 let B123and134Ordered_THM = theorem `;
-  ∀a b c d.  
- ℬ a b c ∧ 
- ℬ a c d ⇒ 
+  ∀a b c d.
+ ℬ a b c ∧
+ ℬ a c d ⇒
  is_ordered (a,b,c,d)
 
   proof
@@ -275,7 +275,7 @@ let B123and134Ordered_THM = theorem `;
 `;;
 
 let BextendToLine_THM = theorem `;
-  ∀a b c d.  ¬(a = b)  ∧  ℬ a b c  ∧  ℬ a b d 
+  ∀a b c d.  ¬(a = b)  ∧  ℬ a b c  ∧  ℬ a b d
     ⇒ ∃x.  is_ordered (a,b,c,x) ∧ is_ordered (a,b,d,x)
 
   proof
@@ -298,7 +298,7 @@ let BextendToLine_THM = theorem `;
 `;;
 
 let GuptaEasy_THM = theorem `;
-  ∀a b c d.  ¬(a = b) ∧ ℬ a b c ∧ ℬ a b d ∧  
+  ∀a b c d.  ¬(a = b) ∧ ℬ a b c ∧ ℬ a b d ∧
     ¬(b = c) ∧ ¬(b = d)  ⇒  ¬ℬ c b d
 
   proof
@@ -317,7 +317,7 @@ let GuptaEasy_THM = theorem `;
 (* We apply Inner5Segments to abc-x and a'b'c'-x'.                           *)
 
 let Inner5Segments_THM = theorem `;
-  ∀a b c x a' b' c' x'.  a,b,c ≊ a',b',c' ∧ 
+  ∀a b c x a' b' c' x'.  a,b,c ≊ a',b',c' ∧
     ℬ a x c ∧ ℬ a' x' c' ∧ c,x ≃ c',x'  ⇒  b,x ≃ b',x'
 
   proof
@@ -343,8 +343,8 @@ let Inner5Segments_THM = theorem `;
 `;;
 
 let RhombusDiagBisect_THM = theorem `;
-  ∀b c d c' d'.  ℬ b c d' ∧ ℬ b d c' ∧ 
-    c,d' ≃ c,d ∧ d,c' ≃ c,d ∧ d',c' ≃ c,d 
+  ∀b c d c' d'.  ℬ b c d' ∧ ℬ b d c' ∧
+    c,d' ≃ c,d ∧ d,c' ≃ c,d ∧ d',c' ≃ c,d
     ⇒ ∃e. ℬ c e c' ∧ ℬ d e d' ∧ c,e ≃ c',e ∧ d,e ≃ d',e
 
   proof
@@ -366,8 +366,8 @@ let RhombusDiagBisect_THM = theorem `;
 `;;
 
 let FlatNormal_THM = theorem `;
-  ∀a b c d d' e.  ℬ d e d'  ∧  
-    c,d' ≃ c,d  ∧  d,e ≃ d',e  ∧  ¬(c = d)  ∧  ¬(e = d) 
+  ∀a b c d d' e.  ℬ d e d'  ∧
+    c,d' ≃ c,d  ∧  d,e ≃ d',e  ∧  ¬(c = d)  ∧  ¬(e = d)
     ⇒ ∃p r q. ℬ p r q ∧ ℬ r c d' ∧ ℬ e c p ∧
     r,c,p ≊ r,c,q ∧ r,c ≃ e,c ∧ p,r ≃ d,e
 
@@ -375,7 +375,7 @@ let FlatNormal_THM = theorem `;
     intro_TAC ∀a b c d d' e, H1 H2 H3 H4 H5;
     ¬(c = d')     [] by fol H4 H2 EquivSymmetric A3;
     consider p r such that
-    ℬ e c p ∧ ℬ d' c r ∧ p,r,c ≊ d',e,c     [X1] by fol 
+    ℬ e c p ∧ ℬ d' c r ∧ p,r,c ≊ d',e,c     [X1] by fol
     - EasyAngleTransport_THM;
     p,r ≃ d',e ∧ p,c ≃ d',c ∧ r,c ≃ e,c     [X2] by fol - X1 cong_DEF;
     p,r ≃ d,e     [X3] by fol H3 EquivSymmetric X2 EquivTransitive;
@@ -391,7 +391,7 @@ let FlatNormal_THM = theorem `;
 `;;
 
 let EqDist2PointsBetween_THM = theorem `;
-  ∀a b c p q.  ¬(a = b) ∧ ℬ a b c ∧ a,p ≃ a,q ∧ b,p ≃ b,q 
+  ∀a b c p q.  ¬(a = b) ∧ ℬ a b c ∧ a,p ≃ a,q ∧ b,p ≃ b,q
     ⇒ c,p ≃ c,q
 
   proof
@@ -404,7 +404,7 @@ let EqDist2PointsBetween_THM = theorem `;
 `;;
 
 let EqDist2PointsInnerBetween_THM = theorem `;
-  ∀a x c p q.  ℬ a x c  ∧  a,p ≃ a,q  ∧  c,p ≃ c,q 
+  ∀a x c p q.  ℬ a x c  ∧  a,p ≃ a,q  ∧  c,p ≃ c,q
     ⇒ x,p ≃ x,q
 
   proof
@@ -418,7 +418,7 @@ let EqDist2PointsInnerBetween_THM = theorem `;
 `;;
 
 let Gupta_THM = theorem `;
-  ∀a b c d.  ¬(a = b)  ∧  ℬ a b c  ∧  ℬ a b d 
+  ∀a b c d.  ¬(a = b)  ∧  ℬ a b c  ∧  ℬ a b d
     ⇒ ℬ b d c  ∨  ℬ b c d
 
   proof
@@ -441,7 +441,7 @@ let Gupta_THM = theorem `;
 ::  In the proof below, we prove a stronger result than
 ::  BextendToLine_THM with much the same proof.  We find u ∧ b'
 ::  with essentially a,b,c,d',u and a b,d,c',b' ordered 5-tuples
-::  with d'u ≃ db ∧ cb' ≃ bc. 
+::  with d'u ≃ db ∧ cb' ≃ bc.
     consider u such that
     ℬ c d' u ∧ d',u ≃ b,d     [Y1] by fol A4;
     is_ordered (b,c,d',u)     [] by fol X5 X3 Y1 BTransitivityOrdered_THM;
@@ -466,17 +466,17 @@ let Gupta_THM = theorem `;
     ℬ c e c' ∧ ℬ d e d' ∧ c,e ≃ c',e ∧ d,e ≃ d',e     [Z4] by fol - X3 X4 X1 X2 RhombusDiagBisect_THM;
     ¬(e = c)     [U1]
     proof
-      assume e = c     [U2] by fol; 
+      assume e = c     [U2] by fol;
       c' = c     [] by fol U2 Z4 EquivSymmetric A3;
       ℬ b d c     [U3] by fol - X4;
       fol - U3 H5;
     qed;
     e = d     [V1]
     proof
-      assume ¬(e = d)     [V2] by fol; 
+      assume ¬(e = d)     [V2] by fol;
       consider p r q such that
       ℬ p r q ∧ ℬ r c d' ∧ ℬ e c p ∧
-      r,c,p ≊ r,c,q ∧ r,c ≃ e,c ∧ p,r ≃ d,e     [W1] 
+      r,c,p ≊ r,c,q ∧ r,c ≃ e,c ∧ p,r ≃ d,e     [W1]
         proof
           MP_TAC ISPECL [a; b; c; d; d'; e] FlatNormal_THM;
           fol Z4 X1 H4 V2;
@@ -485,10 +485,10 @@ let Gupta_THM = theorem `;
 ::    r and c are equidistant from p and q, r <> c, ℬ r,c,d', thus also d'
       ¬(c = r)     [] by fol W1 U1 EquivSymmetric A3;
       d',p ≃ d',q     [W3] by fol - W1 W2 EqDist2PointsBetween_THM;
-::    c and d' are equidistant from p and q, c <> d', 
+::    c and d' are equidistant from p and q, c <> d',
 ::    ℬ c,d',b', thus also b'.
       b',p ≃ b',q     [W4] by fol Y1 Y13 X5 W2 W3 EqDist2PointsBetween_THM;
-::    d' and c are equidistant from p and q, d' <> c, ℬ d',c,b, thus also b. 
+::    d' and c are equidistant from p and q, d' <> c, ℬ d',c,b, thus also b.
       b,p ≃ b,q     [] by fol X3 Bsymmetry_THM X5 W3 W2 EqDist2PointsBetween_THM;
 ::    b and b' are equidistant from p and q, ℬ b,c',b, thus also c'.
       c',p ≃ c',q     [W7] by fol Y4 W4 - EqDist2PointsInnerBetween_THM;
@@ -604,12 +604,12 @@ let LineEqA1_THM = theorem `;
 `;;
 
 let LineEqSymmetric_THM = theorem `;
-  ∀a b c d.  ¬(a = b) ∧ ¬(c = d)  ⇒  a,b equal_line c,d 
+  ∀a b c d.  ¬(a = b) ∧ ¬(c = d)  ⇒  a,b equal_line c,d
     ⇒  c,d equal_line a,b
   by fol LineEq_DEF`;;
 
 let LineEqTrans_THM = theorem `;
-  ∀a b c d e f.  ¬(a = b) ∧ ¬(c = d) ∧ ¬(e = f)  ⇒  a,b equal_line c,d  ⇒ 
+  ∀a b c d e f.  ¬(a = b) ∧ ¬(c = d) ∧ ¬(e = f)  ⇒  a,b equal_line c,d  ⇒
     c,d equal_line e,f ⇒  a,b equal_line e,f
 
   proof
@@ -620,12 +620,12 @@ let LineEqTrans_THM = theorem `;
 `;;
 
 let onlineEq_THM = theorem `;
-  ∀a b c d x.  x on_line a,b  ⇒  a,b equal_line c,d 
+  ∀a b c d x.  x on_line a,b  ⇒  a,b equal_line c,d
     ⇒  x on_line c,d
   by fol LineEq_DEF`;;
 
 let I1part2Reverse_THM = theorem `;
-  ∀a b y.  ¬(a = b) ∧ ¬(b = y)  ⇒  y on_line a,b  
+  ∀a b y.  ¬(a = b) ∧ ¬(b = y)  ⇒  y on_line a,b
     ⇒  a,b equal_line y,b
 
   proof
@@ -638,7 +638,7 @@ let I1part2Reverse_THM = theorem `;
 `;;
 
 let I1_THM = theorem `;
-  ∀a b x y.  ¬(a = b) ∧ ¬(x = y) ∧ a on_line x,y ∧ b on_line x,y 
+  ∀a b x y.  ¬(a = b) ∧ ¬(x = y) ∧ a on_line x,y ∧ b on_line x,y
     ⇒ x,y equal_line a,b
 
   proof
