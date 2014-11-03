@@ -347,6 +347,43 @@ let TRIV_EXISTS_IMP_THM = prove
   ITAUT_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Monotonicity theorems for logical operations w.r.t. implication.          *)
+(* ------------------------------------------------------------------------- *)
+
+let MONO_AND = ITAUT `(A ==> B) /\ (C ==> D) ==> (A /\ C ==> B /\ D)`;;
+
+let MONO_OR = ITAUT `(A ==> B) /\ (C ==> D) ==> (A \/ C ==> B \/ D)`;;
+
+let MONO_IMP = ITAUT `(B ==> A) /\ (C ==> D) ==> ((A ==> C) ==> (B ==> D))`;;
+
+let MONO_NOT = ITAUT `(B ==> A) ==> (~A ==> ~B)`;;
+
+let MONO_FORALL = prove
+ (`(!x:A. P x ==> Q x) ==> ((!x. P x) ==> (!x. Q x))`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[]);;
+
+let MONO_EXISTS = prove
+ (`(!x:A. P x ==> Q x) ==> ((?x. P x) ==> (?x. Q x))`,
+  DISCH_TAC THEN DISCH_THEN(X_CHOOSE_TAC `x:A`) THEN
+  EXISTS_TAC `x:A` THEN FIRST_ASSUM MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A generic "without loss of generality" lemma for symmetry.                *)
+(* ------------------------------------------------------------------------- *)
+
+let WLOG_RELATION = prove
+ (`!R P. (!x y. P x y ==> P y x) /\
+         (!x y. R x y \/ R y x) /\
+         (!x y. R x y ==> P x y)
+         ==> !x y. P x y`,
+  REPEAT GEN_TAC THEN DISCH_THEN
+   (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)) THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Alternative versions of unique existence.                                 *)
 (* ------------------------------------------------------------------------- *)
 

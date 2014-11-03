@@ -1,3 +1,25 @@
+Fri 31st Oct 2014       sets.ml
+
+Added the following, both stronger and more convenient than the existing
+INFINITE_IMAGE_INJ (which is kept for compatibility):
+
+  INFINITE_IMAGE
+    |- !f s.
+         INFINITE s /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+         ==> INFINITE (IMAGE f s)
+
+Fri 31st Oct 2014       theorems.ml, ind_defs.ml
+
+Added a general form of "without loss of generality" lemmas like REAL_WLOG_LE,
+as well as reshuffling other theorems from ind_defs.ml to theorems.ml.
+
+  WLOG_RELATION =
+    |- !R P.
+         (!x y. P x y ==> P y x) /\
+         (!x y. R x y \/ R y x) /\
+         (!x y. R x y ==> P x y)
+         ==> (!x y. P x y)
+
 Sun 12th Oct 2014       theorems.ml, Help/DESTRUCT_TAC/doc, Help/FIX_TAX.doc, Help/HYP_TAC.doc [new file]
 
 Added a new tactic HYP_TAC from Marco Maggesi. This fits into the existing

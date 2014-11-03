@@ -3263,9 +3263,9 @@ let MATRIX_INV_I = prove
   MATCH_MP_TAC MATRIX_INV_UNIQUE THEN
   REWRITE_TAC[MATRIX_MUL_LID]);;
 
-let INVERTIBLE_MATRIX_INV = prove                        
- (`!A:real^N^N. invertible A ==> invertible(matrix_inv A)`,               
-  MESON_TAC[MATRIX_INV; invertible]);;                            
+let INVERTIBLE_MATRIX_INV = prove
+ (`!A:real^N^N. invertible A ==> invertible(matrix_inv A)`,
+  MESON_TAC[MATRIX_INV; invertible]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Correspondence between matrices and linear operators.                     *)
@@ -6334,6 +6334,51 @@ let RANK_MUL_LE_LEFT = prove
   ONCE_REWRITE_TAC[GSYM RANK_TRANSP] THEN
   REWRITE_TAC[MATRIX_TRANSP_MUL] THEN
   REWRITE_TAC[RANK_MUL_LE_RIGHT]);;
+
+let SPAN_COLUMNSPACE = prove                                                   
+ (`!A:real^M^N. span(columns A) = {y | ?x. A ** x = y}`,                       
+  GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN       
+  X_GEN_TAC `y:real^N` THEN EQ_TAC THENL
+   [ALL_TAC; MESON_TAC[MATRIX_VECTOR_MUL_IN_COLUMNSPACE]] THEN
+  SPEC_TAC(`y:real^N`,`y:real^N`) THEN                       
+  MATCH_MP_TAC SPAN_INDUCT THEN REWRITE_TAC[] THEN CONJ_TAC THENL  
+   [REWRITE_TAC[columns; FORALL_IN_GSPEC] THEN             
+    X_GEN_TAC `i:num` THEN STRIP_TAC THEN REWRITE_TAC[IN] THEN             
+    EXISTS_TAC `basis i:real^M` THEN ASM_SIMP_TAC[MATRIX_VECTOR_MUL_BASIS]; 
+    REWRITE_TAC[subspace; IN] THEN                              
+    MESON_TAC[MATRIX_VECTOR_MUL_RZERO; MATRIX_VECTOR_MUL_RMUL;
+              MATRIX_VECTOR_MUL_ADD_LDISTRIB]]);;                   
+
+let MATRIX_AUGMENTED_LINEAR_EQUATIONS = prove                                  
+ (`!A:real^N^M y:real^N.                                                       
+        (?x. transp A ** x = y) <=>                                   
+        rank(pastecart A (rowvector y)) = rank A`,                            
+  REWRITE_TAC[RANK_ROW; rows] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN 
+  REWRITE_TAC[GSYM numseg; DIMINDEX_FINITE_SUM; DIMINDEX_1] THEN      
+  SIMP_TAC[GSYM ADD1; NUMSEG_REC; ARITH_RULE `1 <= SUC n`] THEN          
+  REWRITE_TAC[IMAGE_CLAUSES; DIM_INSERT] THEN REPEAT GEN_TAC THEN             
+  ONCE_REWRITE_TAC[SET_RULE `(?x. f x = y) <=> y IN {z | ?x. f x = z}`] THEN
+  REWRITE_TAC[GSYM SPAN_COLUMNSPACE; COLUMNS_TRANSP] THEN                 
+  SUBGOAL_THEN                                                      
+    `IMAGE (\i. row i (pastecart (A:real^N^M) (rowvector(y:real^N))))
+           (1..dimindex (:M)) =                                      
+     rows A`                                                               
+  SUBST1_TAC THENL                                                          
+   [REWRITE_TAC[rows] THEN MATCH_MP_TAC(SET_RULE                   
+     `{x | P x} = s /\ (!x. x IN s ==> f x = g x)                              
+      ==> IMAGE f s = {g x | P x}`) THEN                                       
+    SIMP_TAC[numseg; FORALL_IN_GSPEC; row; pastecart; LAMBDA_BETA; CART_EQ;    
+             LAMBDA_ETA; DIMINDEX_FINITE_SUM;                         
+             ARITH_RULE `i:num <= n ==> i <= n + m`];                    
+    REWRITE_TAC[ETA_AX; GSYM SIMPLE_IMAGE; IN_NUMSEG; GSYM rows]] THEN 
+  SUBGOAL_THEN                                                       
+   `row (SUC(dimindex(:M))) (pastecart (A:real^N^M) (rowvector(y:real^N))) = y`
+  SUBST1_TAC THENL                                                  
+   [SIMP_TAC[row; pastecart; CART_EQ; LAMBDA_BETA; DIMINDEX_1; rowvector;
+             DIMINDEX_FINITE_SUM; DIMINDEX_GE_1; ARITH_RULE `1 <= SUC m`;
+             ARITH_RULE `1 <= m ==> SUC m <= m + 1`; LAMBDA_ETA;      
+             ARITH_RULE `~(SUC m <= m) /\ SUC m - m = 1`; DIMINDEX_1; ARITH];
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some bounds on components etc. relative to operator norm.                 *)

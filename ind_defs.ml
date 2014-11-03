@@ -245,29 +245,6 @@ let derive_nonschematic_inductive_relations =
 (* Part 2: Tactic-integrated tools for proving monotonicity automatically.   *)
 (* ========================================================================= *)
 
-let MONO_AND = ITAUT `(A ==> B) /\ (C ==> D) ==> (A /\ C ==> B /\ D)`;;
-
-let MONO_OR = ITAUT `(A ==> B) /\ (C ==> D) ==> (A \/ C ==> B \/ D)`;;
-
-let MONO_IMP = ITAUT `(B ==> A) /\ (C ==> D) ==> ((A ==> C) ==> (B ==> D))`;;
-
-let MONO_NOT = ITAUT `(B ==> A) ==> (~A ==> ~B)`;;
-
-let MONO_FORALL = prove
- (`(!x:A. P x ==> Q x) ==> ((!x. P x) ==> (!x. Q x))`,
-  REPEAT STRIP_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
-  ASM_REWRITE_TAC[]);;
-
-let MONO_EXISTS = prove
- (`(!x:A. P x ==> Q x) ==> ((?x. P x) ==> (?x. Q x))`,
-  DISCH_TAC THEN DISCH_THEN(X_CHOOSE_TAC `x:A`) THEN
-  EXISTS_TAC `x:A` THEN FIRST_ASSUM MATCH_MP_TAC THEN
-  ASM_REWRITE_TAC[]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Assignable list of monotonicity theorems, so users can add their own.     *)
-(* ------------------------------------------------------------------------- *)
-
 let monotonicity_theorems = ref
  [MONO_AND; MONO_OR; MONO_IMP; MONO_NOT; MONO_EXISTS; MONO_FORALL];;
 

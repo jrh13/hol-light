@@ -1435,6 +1435,18 @@ let SIN_POS_PI_REV = prove
    [MATCH_MP_TAC SIN_POS_PI THEN ASM_REAL_ARITH_TAC;
     REWRITE_TAC[SIN_SUB; SIN_NPI; COS_NPI] THEN ASM_REAL_ARITH_TAC]);;
 
+let SIN_PI3 = prove                                          
+ (`sin(pi / &3) = sqrt(&3) / &2`,                               
+  REWRITE_TAC[SIN_DOUBLE; COS_PI6; SIN_PI6;
+              REAL_ARITH `x / &3 = &2 * x / &6`] THEN
+  REAL_ARITH_TAC);;
+
+let COS_PI3 = prove
+ (`cos(pi / &3) = &1 / &2`,
+  REWRITE_TAC[COS_DOUBLE_COS; COS_PI6; REAL_ARITH `x / &3 = &2 * x / &6`] THEN
+  SIMP_TAC[REAL_POW_DIV; SQRT_POW_2; REAL_POS; REAL_ARITH
+   `&2 * s / &2 pow 2 - &1 = &1 / &2 <=> s = &3`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Prove totality of trigs.                                                  *)
 (* ------------------------------------------------------------------------- *)
@@ -3377,6 +3389,20 @@ let COS_INJ_PI = prove
          ==> x = y`,
   REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN MESON_TAC[COS_MONO_LE_EQ]);;
 
+let REAL_ABS_COS_MONO_LE_EQ = prove
+ (`!x y. abs(x) <= pi / &2 /\ abs(y) <= pi / &2
+         ==> (abs(cos x) <= abs(cos y) <=> abs y <= abs x)`,
+  MAP_EVERY (fun t ->
+    MATCH_MP_TAC(MESON[REAL_LE_NEGTOTAL]
+     `(!x. P(--x) <=> P x) /\ (!x. &0 <= x ==> P x) ==> !x. P x`) THEN
+    REWRITE_TAC[REAL_ABS_NEG; COS_NEG] THEN X_GEN_TAC t THEN DISCH_TAC)
+   [`x:real`; `y:real`] THEN
+  SIMP_TAC[REWRITE_RULE[REAL_BOUNDS_LE] COS_POS_PI_LE;
+           REAL_ARITH `&0 <= cos x ==> abs(cos x) = cos x`] THEN
+  REWRITE_TAC[REAL_BOUNDS_LE] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[real_abs] THEN MATCH_MP_TAC COS_MONO_LE_EQ THEN
+  ASM_REAL_ARITH_TAC);;
+
 let TAN_MONO_LT = prove
  (`!x y. --(pi / &2) < x /\ x < y /\ y < pi / &2 ==> tan(x) < tan(y)`,
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [GSYM REAL_SUB_LT] THEN
@@ -3412,6 +3438,35 @@ let TAN_COT = prove
  (`!x. tan(pi / &2 - x) = inv(tan x)`,
   REWRITE_TAC[tan; SIN_SUB; COS_SUB; SIN_PI2; COS_PI2; REAL_INV_DIV] THEN
   GEN_TAC THEN BINOP_TAC THEN REAL_ARITH_TAC);;
+
+let REAL_ABS_SIN_BOUND_LT = prove               
+ (`!x. ~(x = &0) ==> abs(sin x) < abs x`,
+  MATCH_MP_TAC(MESON[SIN_NEG; REAL_ABS_NEG; REAL_LT_NEGTOTAL]                 
+   `(!x. &0 < x ==> abs(sin x) < abs x)      
+    ==> !x. ~(x = &0) ==> abs(sin x) < abs x`) THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(REAL_ARITH `a < x ==> a < abs x`) THEN   
+  MATCH_MP_TAC(REAL_ARITH              
+   `abs s <= &1 /\ (x <= &1 ==> abs(s) < x) ==> abs s < x`) THEN
+  REWRITE_TAC[SIN_BOUND] THEN DISCH_TAC THEN                           
+  MP_TAC(SPECL [`1`; `Cx x`] TAYLOR_CSIN) THEN             
+  REWRITE_TAC[num_CONV `1`; VSUM_CLAUSES_NUMSEG; IM_CX] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN                                            
+  REWRITE_TAC[REAL_ABS_NUM; REAL_EXP_0; COMPLEX_POW_1; complex_pow;
+              COMPLEX_DIV_1] THEN                          
+  REWRITE_TAC[GSYM CX_SIN; GSYM CX_MUL; GSYM CX_NEG; GSYM CX_POW; GSYM CX_DIV;
+              GSYM CX_SUB; GSYM CX_ADD; REAL_MUL_LID; COMPLEX_NORM_CX] THEN
+  MATCH_MP_TAC(REAL_ARITH         
+   `a < x /\ e < a ==> abs(s - (x + -- &1 * a)) <= e ==> abs s < x`) THEN
+  ASM_SIMP_TAC[real_abs; REAL_LT_IMP_LE] THEN CONJ_TAC THENL       
+   [MATCH_MP_TAC(REAL_ARITH `&0 < y /\ x <= y pow 1 ==> x / &6 < y`);
+    MATCH_MP_TAC(REAL_ARITH `&0 < x /\ x <= y ==> x / &24 < y / &6`)] THEN
+  ASM_SIMP_TAC[REAL_POW_LT] THEN MATCH_MP_TAC REAL_POW_MONO_INV THEN        
+  CONV_TAC NUM_REDUCE_CONV THEN ASM_REAL_ARITH_TAC);;    
+                                                  
+let REAL_ABS_SIN_BOUND_LE = prove                                   
+ (`!x. abs(sin x) <= abs x`,                                        
+  GEN_TAC THEN ASM_CASES_TAC `x = &0` THEN                   
+  ASM_SIMP_TAC[REAL_ABS_SIN_BOUND_LT; REAL_LT_IMP_LE; SIN_0; REAL_LE_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Approximation to pi.                                                      *)
