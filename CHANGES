@@ -1,3 +1,18 @@
+Fri  7th Nov 2014       Examples/misiurewicz.ml [new file]
+
+Added a new example, a formalization (suggested on the FOM list by Lasse
+Rempe-Gillen) of Misiurewicz's original proof that the complex exponential map
+is topologically transitive. See "On iterates of e^z", Ergodic Theory and
+Dynamical Systems, vol 1, pp. 103-106, 1981.
+
+Fri  7th Nov 2014       Library/iter.ml
+
+Added ITER_ADD_POINTLESS : thm = |- !m n. ITER (m + n) f = ITER m f o ITER n f
+
+Fri  7th Nov 2014       sets.ml
+
+Added FINITE_SUBSET_NUMSEG = |- !s. FINITE s <=> (?n. s SUBSET 0..n)
+
 Fri 31st Oct 2014       sets.ml
 
 Added the following, both stronger and more convenient than the existing

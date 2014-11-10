@@ -2740,6 +2740,14 @@ let RELATIVE_INTERIOR_SEGMENT = prove
     MATCH_MP_TAC CONVEX_RELATIVE_INTERIOR_CLOSURE THEN
     REWRITE_TAC[CONVEX_SEGMENT]]);;
 
+let OPEN_IN_SEGMENT = prove
+ (`!s a b:real^N.
+        segment(a,b) SUBSET s /\ s SUBSET affine hull (segment(a,b))
+        ==> open_in (subtopology euclidean s) (segment(a,b))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC OPEN_IN_SUBSET_TRANS THEN
+  EXISTS_TAC `affine hull (segment(a:real^N,b))` THEN
+  ASM_MESON_TAC[OPEN_IN_RELATIVE_INTERIOR; RELATIVE_INTERIOR_SEGMENT]);;
+
 let AFF_DIM_SEGMENT = prove
  (`(!a b:real^N. aff_dim(segment[a,b]) = if a = b then &0 else &1) /\
    (!a b:real^N. aff_dim(segment(a,b)) = if a = b then -- &1 else &1)`,

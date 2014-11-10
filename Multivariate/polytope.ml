@@ -1160,6 +1160,10 @@ let exposed_face_of = new_definition
     t face_of s /\
     ?a b. s SUBSET {x | a dot x <= b} /\ t = s INTER {x | a dot x = b}`;;
 
+let EXPOSED_FACE_OF_IMP_FACE_OF = prove
+ (`!s t:real^N->bool. t exposed_face_of s ==> t face_of s`,
+  SIMP_TAC[exposed_face_of]);;
+
 let EMPTY_EXPOSED_FACE_OF = prove
  (`!s:real^N->bool. {} exposed_face_of s`,
   GEN_TAC THEN REWRITE_TAC[exposed_face_of; EMPTY_FACE_OF] THEN
@@ -1424,6 +1428,26 @@ let EXPOSED_FACE_OF_PARALLEL = prove
        `w + --a:real^N = w + &1 % (w - (w + a))`] THEN
       ASM_SIMP_TAC[IN_AFFINE_ADD_MUL_DIFF; AFFINE_AFFINE_HULL]]]);;
 
+let RELATIVE_BOUNDARY_POINT_IN_EXPOSED_FACE = prove
+ (`!s x:real^N.
+           convex s /\ x IN s /\ ~(x IN relative_interior s)
+           ==> ?f. f exposed_face_of s /\ ~(f = s) /\ x IN f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `x:real^N`]
+        SUPPORTING_HYPERPLANE_RELATIVE_BOUNDARY) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:real^N` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `s INTER {y:real^N | a dot y = a dot x}` THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; IN_INTER] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC EXPOSED_FACE_OF_INTER_SUPPORTING_HYPERPLANE_GE THEN
+    ASM_REWRITE_TAC[real_ge];
+    SUBGOAL_THEN `~(relative_interior s:real^N->bool = {})` MP_TAC THENL
+     [ASM_SIMP_TAC[RELATIVE_INTERIOR_EQ_EMPTY] THEN ASM SET_TAC[];
+      REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; EXTENSION; NOT_FORALL_THM]] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `z:real^N` THEN
+    SIMP_TAC[IN_INTER; REWRITE_RULE[SUBSET] RELATIVE_INTERIOR_SUBSET] THEN
+    ASM_SIMP_TAC[IN_ELIM_THM; REAL_LT_IMP_NE]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Extreme points of a set, which are its singleton faces.                   *)
 (* ------------------------------------------------------------------------- *)
@@ -1462,6 +1486,13 @@ let EXTREME_POINT_NOT_IN_INTERIOR = prove
   DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[SUBSET]
     INTERIOR_SUBSET_RELATIVE_INTERIOR)) THEN
   ASM_SIMP_TAC[EXTREME_POINT_NOT_IN_RELATIVE_INTERIOR]);;
+
+let EXTREME_POINT_IN_RELATIVE_FRONTIER = prove
+ (`!s x:real^N.
+        x extreme_point_of s /\ ~(s = {x}) ==> x IN relative_frontier s`,
+  SIMP_TAC[EXTREME_POINT_NOT_IN_RELATIVE_INTERIOR;
+           relative_frontier; IN_DIFF] THEN
+  SIMP_TAC[extreme_point_of; REWRITE_RULE[SUBSET] CLOSURE_SUBSET]);;
 
 let EXTREME_POINT_OF_FACE = prove
  (`!f s v. f face_of s
@@ -2547,6 +2578,84 @@ let FACET_OF_HALFSPACE_GE = prove
         FACET_OF_HALFSPACE_LE) THEN
   SIMP_TAC[DOT_LNEG; REAL_LE_NEG2; REAL_EQ_NEG2; VECTOR_NEG_EQ_0; real_ge]);;
 
+let EXPOSED_FACET_OF = prove
+ (`!s t:real^N->bool. convex s /\ t facet_of s ==> t exposed_face_of s`,
+  REWRITE_TAC[facet_of] THEN REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `~(relative_interior t:real^N->bool = {})` MP_TAC THENL
+   [ASM_MESON_TAC[RELATIVE_INTERIOR_EQ_EMPTY; face_of];
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `a:real^N` THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N`]
+        RELATIVE_BOUNDARY_POINT_IN_EXPOSED_FACE) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`]
+        FACE_OF_SUBSET_RELATIVE_BOUNDARY) THEN
+    ASM_REWRITE_TAC[SUBSET; IN_DIFF] THEN
+    ASM_MESON_TAC[SUBSET; face_of; RELATIVE_INTERIOR_SUBSET;
+                  INT_ARITH `~(t:int = t - &1)`];
+    DISCH_THEN(X_CHOOSE_THEN `f:real^N->bool` STRIP_ASSUME_TAC)] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `f:real^N->bool`; `t:real^N->bool`]
+        SUBSET_OF_FACE_OF) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[EXPOSED_FACE_OF_IMP_FACE_OF; FACE_OF_IMP_SUBSET] THEN
+    ASM SET_TAC[];
+    DISCH_TAC] THEN
+  ASM_CASES_TAC `t:real^N->bool = f` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (INT_ARITH
+   `t:int = s - &1 ==> !f. t < f /\ f < s ==> F`)) THEN
+  MATCH_MP_TAC(TAUT `~p ==> p ==> q`) THEN
+  DISCH_THEN(MP_TAC o SPEC `aff_dim(f:real^N->bool)`) THEN
+  REWRITE_TAC[] THEN CONJ_TAC THEN MATCH_MP_TAC FACE_OF_AFF_DIM_LT THEN
+  ASM_SIMP_TAC[EXPOSED_FACE_OF_IMP_FACE_OF] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[exposed_face_of; face_of]; ALL_TAC] THEN
+  MATCH_MP_TAC FACE_OF_SUBSET THEN EXISTS_TAC `s:real^N->bool` THEN
+  ASM_MESON_TAC[exposed_face_of; face_of]);;
+
+let OPEN_IN_RELATIVE_FRONTIER_INTERIOR_FACET = prove
+ (`!s f:real^N->bool.
+        convex s /\ f facet_of s
+        ==> open_in (subtopology euclidean (relative_frontier s))
+                    (relative_interior f)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `relative_interior s:real^N->bool = {}` THENL
+   [ASM_MESON_TAC[RELATIVE_INTERIOR_EQ_EMPTY; FACET_OF_EMPTY];
+    POP_ASSUM MP_TAC] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `z:real^N` THEN GEOM_ORIGIN_TAC `z:real^N` THEN
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `relative_interior f:real^N->bool`]
+        INTER_RELATIVE_FRONTIER_CONIC_HULL) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[FACE_OF_SUBSET_RELATIVE_FRONTIER; FACET_OF_REFL; facet_of;
+                  SUBSET_TRANS; RELATIVE_INTERIOR_SUBSET];
+    DISCH_THEN SUBST1_TAC] THEN
+  SUBGOAL_THEN
+   `~(vec 0 IN affine hull (f:real^N->bool))`
+  ASSUME_TAC THENL
+   [MP_TAC(ISPECL [`s:real^N->bool`; `f:real^N->bool`]
+        AFFINE_HULL_FACE_OF_DISJOINT_RELATIVE_INTERIOR) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[facet_of; FACET_OF_REFL]; ASM SET_TAC[]];
+    ASM_SIMP_TAC[CONIC_HULL_RELATIVE_INTERIOR]] THEN
+  COND_CASES_TAC THENL
+   [ASM_MESON_TAC[RELATIVE_INTERIOR_EQ_EMPTY; facet_of; face_of]; ALL_TAC] THEN
+  ASM_SIMP_TAC[relative_frontier; SET_RULE
+    `z IN i ==> (c DIFF i) INTER (z INSERT s) = (c DIFF i) INTER s`] THEN
+  REWRITE_TAC[GSYM relative_frontier] THEN
+  MATCH_MP_TAC OPEN_IN_SUBTOPOLOGY_INTER_SUBSET THEN
+  EXISTS_TAC `affine hull s:real^N->bool` THEN
+  SIMP_TAC[CLOSURE_SUBSET_AFFINE_HULL; relative_frontier;
+           SET_RULE `s SUBSET t ==> s DIFF u SUBSET t`] THEN
+  MATCH_MP_TAC OPEN_IN_INTER THEN REWRITE_TAC[OPEN_IN_REFL] THEN
+  MP_TAC(ISPEC `conic hull f:real^N->bool` OPEN_IN_RELATIVE_INTERIOR) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[AFFINE_HULL_CONIC_HULL] THEN
+  COND_CASES_TAC THENL [ASM_MESON_TAC[facet_of]; ALL_TAC] THEN
+  MATCH_MP_TAC AFF_DIM_EQ_AFFINE_HULL THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[facet_of]) THEN
+  ASM_REWRITE_TAC[INSERT_SUBSET; AFF_DIM_INSERT] THEN
+  CONJ_TAC THENL [ALL_TAC; INT_ARITH_TAC] THEN
+  ASM_MESON_TAC[face_of; SUBSET; RELATIVE_INTERIOR_SUBSET; SUBSET]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Edges, i.e. faces of affine dimension 1.                                  *)
 (* ------------------------------------------------------------------------- *)
@@ -2763,6 +2872,21 @@ let KREIN_MILMAN_MINKOWSKI = prove
     REWRITE_TAC[UNWIND_THM2];
     MATCH_MP_TAC HULL_MINIMAL THEN
     ASM_SIMP_TAC[SUBSET; extreme_point_of; IN_ELIM_THM]]);;
+
+let KREIN_MILMAN_EQ = prove
+ (`!s e:real^N->bool.
+        compact s /\ convex s
+        ==> (convex hull e = s <=>
+             e SUBSET s /\ {x | x extreme_point_of s} SUBSET e)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [EXPAND_TAC "s" THEN
+    REWRITE_TAC[HULL_SUBSET; EXTREME_POINTS_OF_CONVEX_HULL];
+    MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+     [MATCH_MP_TAC HULL_MINIMAL THEN ASM_REWRITE_TAC[];
+      TRANS_TAC SUBSET_TRANS
+       `convex hull {x:real^N | x extreme_point_of s}` THEN
+      ASM_SIMP_TAC[HULL_MONO] THEN
+      ASM_MESON_TAC[KREIN_MILMAN_MINKOWSKI; SUBSET_REFL]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Applying it to convex hulls of explicitly indicated finite sets.          *)

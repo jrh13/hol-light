@@ -32,6 +32,10 @@ let ITER_ADD = prove
   (`!f n m x. ITER n f (ITER m f x) = ITER (n + m) f x`,
    GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[ITER; ADD]);;
 
+let ITER_ADD_POINTLESS = prove
+ (`!m n. ITER (m + n) f = ITER m f o ITER n f`,
+  REWRITE_TAC[FUN_EQ_THM; o_THM; ITER_ADD]);;
+
 let ITER_MUL = prove
   (`!f n m x. ITER n (ITER m f) x = ITER (n * m) f x`,
    GEN_TAC THEN INDUCT_TAC THEN

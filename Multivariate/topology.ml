@@ -1061,34 +1061,34 @@ let BETWEEN_IN_SEGMENT = prove
                 NORM_MUL; GSYM REAL_ADD_LDISTRIB] THEN
     REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD]);;
 
-let BETWEEN_RESTRICTED_CASES = prove                                     
- (`!a b c x:real^N.                                                         
-        between x (a,b) /\ between x (a,c) /\ ~(x = a)   
-        ==> between b (a,c) \/ between c (a,b)`,                      
-  REPEAT GEN_TAC THEN                                                  
-  GEOM_ORIGIN_TAC `a:real^N` THEN                                   
-  REWRITE_TAC[BETWEEN_IN_SEGMENT; IN_SEGMENT;                             
-              VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN            
-  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2                          
-    (X_CHOOSE_THEN `u:real` STRIP_ASSUME_TAC) MP_TAC) THEN                     
+let BETWEEN_RESTRICTED_CASES = prove
+ (`!a b c x:real^N.
+        between x (a,b) /\ between x (a,c) /\ ~(x = a)
+        ==> between b (a,c) \/ between c (a,b)`,
+  REPEAT GEN_TAC THEN
+  GEOM_ORIGIN_TAC `a:real^N` THEN
+  REWRITE_TAC[BETWEEN_IN_SEGMENT; IN_SEGMENT;
+              VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2
+    (X_CHOOSE_THEN `u:real` STRIP_ASSUME_TAC) MP_TAC) THEN
   ASM_REWRITE_TAC[VECTOR_MUL_EQ_0; DE_MORGAN_THM] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN           
-  FIRST_X_ASSUM SUBST_ALL_TAC THEN                                             
-  DISCH_THEN(X_CHOOSE_THEN `v:real` STRIP_ASSUME_TAC) THEN                     
-  SUBGOAL_THEN `&0 < u` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN    
-  ASM_CASES_TAC `v:real <= u` THENL                                            
-   [DISJ1_TAC THEN EXISTS_TAC `v / u:real` THEN                                
-    ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; REAL_LE_LDIV_EQ] THEN            
-    ASM_REWRITE_TAC[REAL_MUL_LID] THEN                                 
-    FIRST_X_ASSUM(MP_TAC o AP_TERM `(%) (inv u):real^N->real^N`) THEN         
-    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID] THEN
-    REWRITE_TAC[real_div; REAL_MUL_AC];                   
-    SUBGOAL_THEN `&0 < v /\ ~(v = &0) /\ u <= v` STRIP_ASSUME_TAC THENL
-     [ASM_REAL_ARITH_TAC; ALL_TAC] THEN                          
-    DISJ2_TAC THEN EXISTS_TAC `u / v:real` THEN                               
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM SUBST_ALL_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `v:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `&0 < u` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_CASES_TAC `v:real <= u` THENL
+   [DISJ1_TAC THEN EXISTS_TAC `v / u:real` THEN
     ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; REAL_LE_LDIV_EQ] THEN
-    ASM_REWRITE_TAC[REAL_MUL_LID] THEN                                   
-    FIRST_X_ASSUM(MP_TAC o AP_TERM `(%) (inv v):real^N->real^N`) THEN         
+    ASM_REWRITE_TAC[REAL_MUL_LID] THEN
+    FIRST_X_ASSUM(MP_TAC o AP_TERM `(%) (inv u):real^N->real^N`) THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID] THEN
+    REWRITE_TAC[real_div; REAL_MUL_AC];
+    SUBGOAL_THEN `&0 < v /\ ~(v = &0) /\ u <= v` STRIP_ASSUME_TAC THENL
+     [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    DISJ2_TAC THEN EXISTS_TAC `u / v:real` THEN
+    ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; REAL_LE_LDIV_EQ] THEN
+    ASM_REWRITE_TAC[REAL_MUL_LID] THEN
+    FIRST_X_ASSUM(MP_TAC o AP_TERM `(%) (inv v):real^N->real^N`) THEN
     ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID] THEN
     DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[real_div; REAL_MUL_AC]]);;
 
@@ -3441,6 +3441,17 @@ let LIM_ABS = prove
   MATCH_MP_TAC NORM_LE_COMPONENTWISE THEN
   SIMP_TAC[LAMBDA_BETA; VECTOR_SUB_COMPONENT] THEN
   REAL_ARITH_TAC);;
+
+let LIM_LIFT_ABS_COMPONENT = prove
+ (`!net:(A)net f:A->real^N l k. 
+     (f --> l) net ==> ((\x. lift(abs(f(x)$k))) --> lift(abs(l$k))) net`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[tendsto] THEN
+  MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN MATCH_MP_TAC MONO_IMP THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  GEN_TAC THEN REWRITE_TAC[DIST_LIFT] THEN REWRITE_TAC[dist] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `abs(x - y) <= a ==> a < e ==> abs(abs x - abs y) < e`) THEN
+  REWRITE_TAC[GSYM VECTOR_SUB_COMPONENT; COMPONENT_LE_NORM]);;
 
 let LIM_SUB = prove
  (`!net:(A)net f g l m.
@@ -6178,6 +6189,11 @@ let CONTINUOUS_ABS = prove
         f continuous net
         ==> (\x. (lambda i. abs(f(x)$i)):real^N) continuous net`,
   REWRITE_TAC[continuous; LIM_ABS]);;
+                                                             
+let CONTINUOUS_LIFT_ABS_COMPONENT = prove                     
+ (`!net:(A)net f:A->real^N k.
+     f continuous net ==> (\x. lift(abs(f x$k))) continuous net`,
+  REWRITE_TAC[continuous; LIM_LIFT_ABS_COMPONENT]);;
 
 let CONTINUOUS_MAX = prove
  (`!(f:A->real^N) (g:A->real^N) net.
@@ -6225,6 +6241,12 @@ let CONTINUOUS_ON_SUB = prove
  (`!f g s. f continuous_on s /\ g continuous_on s
            ==> (\x. f(x) - g(x)) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_SUB]);;
+
+let CONTINUOUS_ON_LIFT_ABS_COMPONENT = prove                     
+ (`!f:real^M->real^N s.                                               
+     f continuous_on s ==> (\x. lift(abs(f x$k))) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; 
+           CONTINUOUS_LIFT_ABS_COMPONENT]);;
 
 let CONTINUOUS_ON_ABS = prove
  (`!f:real^M->real^N s.
@@ -8580,6 +8602,30 @@ let FRONTIER_HALFSPACE_GT = prove
   MP_TAC(ISPECL [`--a:real^N`; `--b:real`] FRONTIER_HALFSPACE_LT) THEN
   ASM_REWRITE_TAC[VECTOR_NEG_EQ_0; REAL_NEG_EQ_0; DOT_LNEG] THEN
   REWRITE_TAC[REAL_LT_NEG2; REAL_EQ_NEG2; real_gt]);;
+
+let FRONTIER_HALFSPACE_COMPONENT_LE = prove
+ (`!a k. frontier {x:real^N | x$k <= a} = {x | x$k = a}`,
+  SIMP_TAC[frontier; CLOSURE_CLOSED; CLOSED_HALFSPACE_COMPONENT_LE;
+           INTERIOR_HALFSPACE_COMPONENT_LE] THEN
+  REWRITE_TAC[IN_DIFF; EXTENSION; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
+
+let FRONTIER_HALFSPACE_COMPONENT_GE = prove
+ (`!a k. frontier {x:real^N | x$k >= a} = {x | x$k = a}`,
+  SIMP_TAC[frontier; CLOSURE_CLOSED; CLOSED_HALFSPACE_COMPONENT_GE;
+           INTERIOR_HALFSPACE_COMPONENT_GE] THEN
+  REWRITE_TAC[IN_DIFF; EXTENSION; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
+
+let FRONTIER_HALFSPACE_COMPONENT_LT = prove
+ (`!a k. frontier {x:real^N | x$k < a} = {x | x$k = a}`,
+  SIMP_TAC[frontier; INTERIOR_OPEN; OPEN_HALFSPACE_COMPONENT_LT;
+           CLOSURE_HALFSPACE_COMPONENT_LT] THEN
+  REWRITE_TAC[IN_DIFF; EXTENSION; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
+
+let FRONTIER_HALFSPACE_COMPONENT_GT = prove
+ (`!a k. frontier {x:real^N | x$k > a} = {x | x$k = a}`,
+  SIMP_TAC[frontier; INTERIOR_OPEN; OPEN_HALFSPACE_COMPONENT_GT;
+           CLOSURE_HALFSPACE_COMPONENT_GT] THEN
+  REWRITE_TAC[IN_DIFF; EXTENSION; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
 
 let INTERIOR_STANDARD_HYPERPLANE = prove
  (`!k a. interior {x:real^N | x$k = a} = {}`,
