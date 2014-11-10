@@ -37,20 +37,6 @@ let DIM_HYPERPLANE = prove
   SIMP_TAC[VECTOR_MUL_EQ_0; DE_MORGAN_THM; DOT_LMUL; DOT_BASIS;
            DIMINDEX_GE_1; LE_REFL; REAL_ENTIRE; DIM_SPECIAL_HYPERPLANE]);;
 
-let LOWDIM_EQ_HYPERPLANE = prove
- (`!s. dim s = dimindex(:N) - 1
-       ==> ?a:real^N. ~(a = vec 0) /\ span s = {x | a dot x = &0}`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPEC `s:real^N->bool` LOWDIM_SUBSET_HYPERPLANE) THEN
-  ASM_SIMP_TAC[DIMINDEX_GE_1; ARITH_RULE `1 <= a ==> a - 1 < a`] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:real^N` THEN STRIP_TAC THEN
-  ASM_REWRITE_TAC[] THEN
-  MP_TAC(ISPEC `a:real^N` SUBSPACE_HYPERPLANE) THEN
-  ONCE_REWRITE_TAC[GSYM SPAN_EQ_SELF] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
-  MATCH_MP_TAC DIM_EQ_SPAN THEN
-  ASM_SIMP_TAC[DIM_HYPERPLANE; LE_REFL] THEN
-  ASM_MESON_TAC[SUBSET_TRANS; SPAN_INC]);;
-
 let DIM_EQ_HYPERPLANE = prove
  (`!s. dim s = dimindex(:N) - 1 <=>
        ?a:real^N. ~(a = vec 0) /\ span s = {x | a dot x = &0}`,
@@ -908,6 +894,20 @@ let CONVEX_HALFSPACE_COMPONENT_GT = prove
    [ASM_REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
   MP_TAC(ISPECL [`basis i:real^N`; `a:real`] CONVEX_HALFSPACE_GT) THEN
   ASM_SIMP_TAC[DOT_BASIS]);;
+
+let CONVEX_STRIP_COMPONENT_LE = prove
+ (`!a k. convex {x:real^N | abs(x$k) <= a}`,
+  REWRITE_TAC[REAL_ARITH `abs(x) <= a <=> x <= a /\ x >= --a`] THEN
+  REWRITE_TAC[SET_RULE `{x | P x /\ Q x} = {x | P x} INTER {x | Q x}`] THEN
+  SIMP_TAC[CONVEX_HALFSPACE_COMPONENT_LE; CONVEX_HALFSPACE_COMPONENT_GE;
+           CONVEX_INTER]);;
+
+let CONVEX_STRIP_COMPONENT_LT = prove
+ (`!a k. convex {x:real^N | abs(x$k) < a}`,
+  REWRITE_TAC[REAL_ARITH `abs(x) < a <=> x < a /\ x > --a`] THEN
+  REWRITE_TAC[SET_RULE `{x | P x /\ Q x} = {x | P x} INTER {x | Q x}`] THEN
+  SIMP_TAC[CONVEX_HALFSPACE_COMPONENT_LT; CONVEX_HALFSPACE_COMPONENT_GT;
+           CONVEX_INTER]);;
 
 let CONVEX_POSITIVE_ORTHANT = prove
  (`convex {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
@@ -3092,6 +3092,36 @@ let CONVEX_HULL_SUMS = prove
       ASM_SIMP_TAC[FINITE_NUMSEG; CONVEX_CONVEX_HULL; IN_NUMSEG] THEN
       REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[]]]);;
 
+let AFFINE_HULL_SUMS = prove
+ (`!s t:real^N->bool.
+        affine hull {x + y | x IN s /\ y IN t} =
+        {x + y | x IN affine hull s /\ y IN affine hull t}`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC HULL_MINIMAL THEN
+    SIMP_TAC[AFFINE_SUMS; AFFINE_AFFINE_HULL] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[HULL_INC];
+    REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [AFFINE_HULL_INDEXED] THEN
+    REWRITE_TAC[IN_ELIM_THM; LEFT_AND_EXISTS_THM] THEN
+    REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC
+     [`k1:num`; `u1:num->real`; `x1:num->real^N`;
+      `k2:num`; `u2:num->real`; `x2:num->real^N`] THEN
+    STRIP_TAC THEN
+    SUBGOAL_THEN
+     `x + y:real^N =
+      vsum(1..k1) (\i. vsum(1..k2) (\j. u1 i % u2 j % (x1 i + x2 j)))`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[VECTOR_ADD_LDISTRIB; VSUM_ADD_NUMSEG] THEN
+      ASM_SIMP_TAC[VSUM_LMUL; VSUM_RMUL; VECTOR_MUL_LID];
+      REWRITE_TAC[VSUM_LMUL] THEN MATCH_MP_TAC AFFINE_VSUM THEN
+      ASM_SIMP_TAC[FINITE_NUMSEG; AFFINE_AFFINE_HULL; IN_NUMSEG] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC AFFINE_VSUM THEN
+      ASM_SIMP_TAC[FINITE_NUMSEG; AFFINE_AFFINE_HULL; IN_NUMSEG] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[]]]);;
+
 let AFFINE_HULL_PCROSS,CONVEX_HULL_PCROSS = (CONJ_PAIR o prove)
  (`(!s:real^M->bool t:real^N->bool.
         affine hull (s PCROSS t) =
@@ -5222,6 +5252,32 @@ let CONVEX_HULL_EXCHANGE_INTER = prove
 (* Representing affine hull as hyperplane or finite intersection of them.    *)
 (* ------------------------------------------------------------------------- *)
 
+let AFF_DIM_EQ_INTER_HYPERPLANE = prove
+ (`!s t:real^N->bool.
+        affine s /\ affine t /\ t SUBSET s /\ aff_dim t + &1 = aff_dim s
+        ==> ?a b. ~(a = vec 0) /\ {x | a dot x = b} INTER s = t`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `t:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[AFF_DIM_EMPTY; INT_ARITH `--a + a:int = b <=> b = &0`] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o last o CONJUNCTS)) THEN
+    REWRITE_TAC[AFF_DIM_EQ_0; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `a:real^N` THEN DISCH_THEN SUBST1_TAC THEN MAP_EVERY EXISTS_TAC
+     [`basis 1:real^N`; `basis 1 dot (a:real^N) + &1`] THEN
+    SIMP_TAC[BASIS_NONZERO; LE_REFL; DIMINDEX_GE_1;
+             REAL_ARITH `x:real = x + &1 <=> F`; IN_ELIM_THM;
+             SET_RULE `s INTER {a} = {} <=> ~(a IN s)`];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `z:real^N` THEN
+    GEN_GEOM_ORIGIN_TAC `z:real^N` ["a"] THEN
+    REPEAT GEN_TAC THEN DISCH_TAC THEN
+    ASM_CASES_TAC `(vec 0:real^N) IN s` THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    ASM_SIMP_TAC[AFFINE_EQ_SUBSPACE; AFF_DIM_DIM; HULL_INC] THEN
+    REWRITE_TAC[INT_OF_NUM_ADD; INT_OF_NUM_EQ] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP LOWDIM_EQ_INTER_HYPERPLANE) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:real^N` THEN
+    DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN ASM_REWRITE_TAC[DOT_RADD] THEN
+    EXISTS_TAC `(a:real^N) dot z` THEN
+    REWRITE_TAC[REAL_EQ_ADD_LCANCEL_0]]);;
+
 let AFF_DIM_EQ_HYPERPLANE = prove
  (`!s. aff_dim s = &(dimindex(:N)) - &1 <=>
        ?a b. ~(a = vec 0) /\ affine hull s = {x:real^N | a dot x = b}`,
@@ -5947,6 +6003,66 @@ let CLOSEST_POINT_AFFINE_ORTHOGONAL_EQ = prove
     MATCH_MP_TAC CLOSEST_POINT_UNIQUE THEN
     ASM_SIMP_TAC[CLOSED_AFFINE; AFFINE_IMP_CONVEX] THEN
     MATCH_MP_TAC ORTHOGONAL_ANY_CLOSEST_POINT THEN ASM_REWRITE_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Using "closest_point" to give orthogonal projection onto a subspace       *)
+(* ------------------------------------------------------------------------- *)
+
+let CLOSEST_POINT_SUBSPACE_ORTHOGONAL_EQ = prove
+ (`!s a b:real^N.
+         subspace s
+         ==> (closest_point s a = b <=>
+              b IN s /\ (!x. x IN s ==> orthogonal (a - b) x))`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `(b:real^N) IN s` THENL
+   [ASM_SIMP_TAC[CLOSEST_POINT_AFFINE_ORTHOGONAL_EQ; SUBSPACE_IMP_AFFINE];
+    ASM_MESON_TAC[CLOSEST_POINT_IN_SET; CLOSED_SUBSPACE;
+                  SUBSPACE_IMP_NONEMPTY]] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [ORTHOGONAL_SYM] THEN
+  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o SPEC `b + x:real^N`);
+    FIRST_X_ASSUM(MP_TAC o SPEC `x - b:real^N`)] THEN
+  ASM_SIMP_TAC[SUBSPACE_SUB; SUBSPACE_ADD; VECTOR_ADD_SUB]);;
+
+let CLOSEST_POINT_SUBSPACE_ORTHOGONAL = prove
+ (`!s a b:real^N.
+        subspace s /\ b IN s ==> orthogonal (a - closest_point s a) b`,
+  MESON_TAC[CLOSEST_POINT_SUBSPACE_ORTHOGONAL_EQ]);;
+
+let LINEAR_CLOSEST_POINT = prove
+ (`!s:real^N->bool. subspace s ==> linear(closest_point s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[linear] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[CLOSEST_POINT_SUBSPACE_ORTHOGONAL_EQ] THEN
+  ASM_SIMP_TAC[SUBSPACE_ADD; SUBSPACE_MUL; CLOSEST_POINT_IN_SET;
+               CLOSED_SUBSPACE; SUBSPACE_IMP_NONEMPTY]
+  THENL
+   [REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[VECTOR_ARITH
+     `(x + y) - (a + b):real^N = (x - a) + (y - b)`] THEN
+    MATCH_MP_TAC(el 8 (CONJUNCTS ORTHOGONAL_CLAUSES));
+    REWRITE_TAC[GSYM VECTOR_SUB_LDISTRIB; ORTHOGONAL_MUL]] THEN
+  ASM_MESON_TAC[CLOSEST_POINT_SUBSPACE_ORTHOGONAL_EQ]);;
+
+let SELF_ADJOINT_CLOSEST_POINT = prove
+ (`!s:real^N->bool.
+        subspace s ==> adjoint(closest_point s) = closest_point s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `closest_point(s:real^N->bool)`
+   ORTHOGONAL_PROJECTION_EQ_SELF_ADJOINT_IDEMPOTENT) THEN
+  ASM_SIMP_TAC[ORTHOGONAL_PROJECTION_ALT; LINEAR_CLOSEST_POINT; ETA_AX] THEN
+  MATCH_MP_TAC(TAUT `p ==> (p <=> q /\ r) ==> q`) THEN
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM VECTOR_NEG_SUB] THEN
+  REWRITE_TAC[ORTHOGONAL_LNEG] THEN
+  MATCH_MP_TAC CLOSEST_POINT_SUBSPACE_ORTHOGONAL THEN
+  ASM_SIMP_TAC[CLOSEST_POINT_IN_SET; CLOSED_SUBSPACE;
+               SUBSPACE_IMP_NONEMPTY]);;
+
+let CLOSEST_POINT_IDEMPOTENT = prove
+ (`!s:real^N->bool.
+        closed s ==> closest_point s o closest_point s = closest_point s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM; o_THM] THEN
+  ASM_CASES_TAC `s:real^N->bool = {}` THENL
+   [ASM_REWRITE_TAC[closest_point; NOT_IN_EMPTY];
+    ASM_SIMP_TAC[CLOSEST_POINT_SELF; CLOSEST_POINT_IN_SET]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Stronger separating hyperplane results for affine sets / affine hulls.    *)
@@ -9367,6 +9483,39 @@ let IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT = prove
   MATCH_MP_TAC IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SHRINK THEN
   ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
 
+let INTER_RELATIVE_FRONTIER_CONIC_HULL = prove
+ (`!s t:real^N->bool.
+     convex s /\ vec 0 IN relative_interior s /\ t SUBSET relative_frontier s
+     ==> t = relative_frontier s INTER conic hull t`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_INTER; HULL_SUBSET] THEN
+  REWRITE_TAC[SUBSET; IN_INTER; CONIC_HULL_EXPLICIT; IMP_CONJ_ALT] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  MAP_EVERY X_GEN_TAC [`c:real`; `x:real^N`] THEN
+  ASM_CASES_TAC `c = &0` THENL
+   [ASM_REWRITE_TAC[relative_frontier; IN_DIFF; VECTOR_MUL_LZERO];
+    ASM_REWRITE_TAC[REAL_LE_LT]] THEN
+  REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (ISPECL [`c:real`; `&1`] REAL_LT_TOTAL) THEN
+  ASM_SIMP_TAC[VECTOR_MUL_LID] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(TAUT `F ==> p`) THEN MP_TAC (ISPECL
+   [`s:real^N->bool`; `vec 0:real^N`]
+   IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT) THEN
+  ASM_REWRITE_TAC[] THENL
+   [DISCH_THEN(MP_TAC o SPEC `x:real^N`);
+    DISCH_THEN(MP_TAC o SPEC `c % x:real^N`)] THEN
+  (ANTS_TAC THENL
+    [ASM_MESON_TAC[relative_frontier; IN_DIFF; SUBSET]; ALL_TAC]) THEN
+  REWRITE_TAC[SUBSET; IN_SEGMENT; VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  MATCH_MP_TAC(MESON[]
+   `P /\ (?u. &0 < u /\ u < &1 /\ ~Q(u % y))
+    ==> ~(!x. P /\ (?u. &0 < u /\ u < &1 /\ x = u % y) ==> Q x)`) THEN
+  (CONJ_TAC THENL [ASM_MESON_TAC[relative_frontier; IN_DIFF; SUBSET]; ALL_TAC])
+  THENL [EXISTS_TAC `c:real`; EXISTS_TAC `inv c:real`] THEN
+  ASM_SIMP_TAC[REAL_LT_INV_EQ; REAL_INV_LT_1; VECTOR_MUL_ASSOC;
+               VECTOR_MUL_LID; REAL_MUL_LINV] THEN
+  ASM_MESON_TAC[relative_frontier; IN_DIFF; SUBSET]);;
+
 let INTER_CONVEX_HULL_INSERT_RELATIVE_EXTERIOR = prove
  (`!c t s z:real^N.
         convex c /\ t SUBSET c /\ z IN relative_interior c /\
@@ -10091,6 +10240,7 @@ let RELATIVE_INTERIOR_INTER = prove
         IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT)] THEN
     ASM_SIMP_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET] THEN ASM SET_TAC[]]);;
 
+
 (* ------------------------------------------------------------------------- *)
 (* Some convexity-related properties of Hausdorff distance                   *)
 (* ------------------------------------------------------------------------- *)
@@ -10591,6 +10741,24 @@ let RELATIVE_INTERIOR_LINEAR_IMAGE_CONVEX = prove
     DISCH_THEN(MP_TAC o ISPEC `f:real^M->real^N` o MATCH_MP FUN_IN_IMAGE) THEN
     ASM_MESON_TAC[LINEAR_ADD; LINEAR_SUB; LINEAR_CMUL]]);;
 
+let RELATIVE_INTERIOR_SUMS = prove
+ (`!s t:real^N->bool.
+        convex s /\ convex t
+        ==> relative_interior {x + y | x IN s /\ y IN t} =
+            {x + y | x IN relative_interior s /\ y IN relative_interior t}`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!s t. {x + y:real^N | x IN s /\ y IN t} =
+          IMAGE (\z. fstcart z + sndcart z) (s PCROSS t)`
+   (fun th -> REWRITE_TAC[th])
+  THENL
+   [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM; EXISTS_PASTECART] THEN
+    REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; PASTECART_IN_PCROSS] THEN
+    MESON_TAC[];
+    ASM_SIMP_TAC[RELATIVE_INTERIOR_LINEAR_IMAGE_CONVEX; CONVEX_PCROSS;
+                 LINEAR_COMPOSE_ADD; LINEAR_FSTCART; LINEAR_SNDCART] THEN
+    REWRITE_TAC[RELATIVE_INTERIOR_PCROSS]]);;
+
 let CLOSURE_INTERS_CONVEX = prove
  (`!f:(real^N->bool)->bool.
         (!s. s IN f ==> convex s) /\
@@ -10738,6 +10906,63 @@ let RELATIVE_INTERIOR_CONVEX_INTER_AFFINE = prove
     ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_LT_DIV; NORM_POS_LT; VECTOR_MUL_LID;
                  REAL_LT_INV_EQ; REAL_MUL_LINV; REAL_INV_LT_1; REAL_ARITH
                  `&0 < x ==> &1 < &1 + x /\ &0 < &1 + x /\ ~(&1 + x = &0)`]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Theorems about strips between bounds on a component.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let CLOSED_STRIP_COMPONENT_LE = prove
+ (`!a k. closed {x:real^N | abs(x$k) <= a}`,
+  REWRITE_TAC[REAL_ARITH `abs(x) <= a <=> x <= a /\ x >= --a`] THEN
+  REWRITE_TAC[SET_RULE `{x | P x /\ Q x} = {x | P x} INTER {x | Q x}`] THEN
+  SIMP_TAC[CLOSED_HALFSPACE_COMPONENT_LE; CLOSED_HALFSPACE_COMPONENT_GE;
+           CLOSED_INTER]);;
+
+let OPEN_STRIP_COMPONENT_LT = prove
+ (`!a k. open {x:real^N | abs(x$k) < a}`,
+  REWRITE_TAC[REAL_ARITH `abs(x) < a <=> x < a /\ x > --a`] THEN
+  REWRITE_TAC[SET_RULE `{x | P x /\ Q x} = {x | P x} INTER {x | Q x}`] THEN
+  SIMP_TAC[OPEN_HALFSPACE_COMPONENT_LT; OPEN_HALFSPACE_COMPONENT_GT;
+           OPEN_INTER]);;
+
+let INTERIOR_STRIP_COMPONENT_LE = prove
+ (`!a k. interior {x:real^N | abs(x$k) <= a} = {x | abs(x$k) < a}`,
+  REWRITE_TAC[REAL_ARITH `abs(x) <= a <=> x <= a /\ x >= --a`;
+              REAL_ARITH `abs(x) < a <=> x < a /\ x > --a`] THEN
+  REWRITE_TAC[SET_RULE `{x | P x /\ Q x} = {x | P x} INTER {x | Q x}`] THEN
+  REWRITE_TAC[INTERIOR_INTER; INTERIOR_HALFSPACE_COMPONENT_LE;
+              INTERIOR_HALFSPACE_COMPONENT_GE]);;
+
+let CLOSURE_STRIP_COMPONENT_LT = prove
+ (`!a k. closure {x:real^N | abs(x$k) < a} =
+         if a = &0 then {} else {x | abs(x$k) <= a}`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[REAL_ARITH `~(abs x < &0)`; EMPTY_GSPEC; CLOSURE_EMPTY] THEN
+  ASM_CASES_TAC `a < &0` THEN
+  ASM_SIMP_TAC[REAL_ARITH `a < &0 ==> ~(abs x < a) /\ ~(abs x <= a)`;
+               EMPTY_GSPEC; CLOSURE_EMPTY] THEN
+  REWRITE_TAC[GSYM INTERIOR_STRIP_COMPONENT_LE] THEN
+  GEN_REWRITE_TAC RAND_CONV
+   [GSYM(MATCH_MP CLOSURE_CLOSED (SPEC_ALL CLOSED_STRIP_COMPONENT_LE))] THEN
+  MATCH_MP_TAC CONVEX_CLOSURE_INTERIOR THEN
+  REWRITE_TAC[CONVEX_STRIP_COMPONENT_LE; GSYM MEMBER_NOT_EMPTY] THEN
+  REWRITE_TAC[INTERIOR_STRIP_COMPONENT_LE; IN_ELIM_THM] THEN
+  EXISTS_TAC `vec 0:real^N` THEN REWRITE_TAC[VEC_COMPONENT] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let FRONTIER_STRIP_COMPONENT_LE = prove
+ (`!a k. frontier {x:real^N | abs(x$k) <= a} = {x | abs(x$k) = a}`,
+  SIMP_TAC[frontier; CLOSED_STRIP_COMPONENT_LE; CLOSURE_CLOSED;
+           INTERIOR_STRIP_COMPONENT_LE] THEN
+  REWRITE_TAC[IN_DIFF; EXTENSION; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
+
+let FRONTIER_STRIP_COMPONENT_LT = prove
+ (`!a k. frontier {x:real^N | abs(x$k) < a} =
+         if a = &0 then {} else {x | abs(x$k) = a}`,
+  SIMP_TAC[frontier; OPEN_STRIP_COMPONENT_LT; INTERIOR_OPEN;
+           CLOSURE_STRIP_COMPONENT_LT] THEN
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[EMPTY_DIFF] THEN
+  REWRITE_TAC[IN_DIFF; EXTENSION; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lower-dimensional affine subsets are nowhere dense.                       *)

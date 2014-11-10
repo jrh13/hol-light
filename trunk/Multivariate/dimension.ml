@@ -2222,6 +2222,14 @@ let RETRACT_OF_REFL = prove
  (`!s. s retract_of s`,
   REWRITE_TAC[retract_of] THEN MESON_TAC[RETRACTION_REFL]);;
 
+let RETRACTION_CLOSEST_POINT = prove
+ (`!s t:real^N->bool.
+        convex t /\ closed t /\ ~(t = {}) /\ t SUBSET s
+        ==> retraction (s,t) (closest_point t)`,
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[retraction] THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; CLOSEST_POINT_SELF;
+               CLOSEST_POINT_IN_SET; CONTINUOUS_ON_CLOSEST_POINT]);;
+
 let RETRACT_OF_IMP_SUBSET = prove
  (`!s t. s retract_of t ==> s SUBSET t`,
   SIMP_TAC[retract_of; retraction] THEN MESON_TAC[]);;

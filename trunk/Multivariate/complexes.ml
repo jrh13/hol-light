@@ -1598,6 +1598,21 @@ let IMAGE_CX = prove
  (`!s. IMAGE Cx s = {z | real z /\ Re(z) IN s}`,
   REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_IMAGE] THEN MESON_TAC[RE_CX; REAL]);;
 
+let SUBSPACE_REAL = prove
+ (`subspace real`,
+  REWRITE_TAC[subspace] THEN
+  SIMP_TAC[COMPLEX_CMUL; COMPLEX_VEC_0; IN; REAL_CX; REAL_ADD; REAL_MUL]);;
+
+let DIM_REAL = prove
+ (`dim real = 1`,
+  ONCE_REWRITE_TAC[SET_RULE `real = {x | real x}`] THEN
+  SIMP_TAC[real; IM_DEF; DIM_SPECIAL_HYPERPLANE; DIMINDEX_2; ARITH]);;
+
+let INTERIOR_REAL = prove
+ (`interior real = {}`,
+  MATCH_MP_TAC EMPTY_INTERIOR_LOWDIM THEN
+  REWRITE_TAC[DIM_REAL; DIMINDEX_2; ARITH]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Useful bound-type theorems for real quantities.                           *)
 (* ------------------------------------------------------------------------- *)
