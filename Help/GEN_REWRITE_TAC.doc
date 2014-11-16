@@ -30,7 +30,7 @@ these functions are {ONCE_DEPTH_CONV} and {RAND_CONV}. The first argument to
 it specifies how subterms (on which substitutions are allowed) should be
 searched for.
 
-The second and third arguments are lists of theorems used for rewriting. The
+The second argument is a list of theorems used for rewriting. The
 order in which these are used is not specified. The theorems need not be in
 equational form: negated terms, say {"~ t"}, are transformed into the
 equivalent equational form {"t = F"}, while other non-equational theorems with

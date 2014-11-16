@@ -1364,6 +1364,12 @@ let DIST_0 = prove
 (* Bounding distances between scaled versions of vectors.                    *)
 (* ------------------------------------------------------------------------- *)
 
+let DIST_RESCALE = prove
+ (`!a x y:real^N. norm(x) = norm(y) ==> dist(a % x,y) = dist(x,a % y)`,
+  SIMP_TAC[dist; NORM_EQ_SQUARE; NORM_POS_LE; NORM_POW_2] THEN
+  REWRITE_TAC[DOT_LSUB; DOT_RSUB; DOT_LMUL; DOT_RMUL] THEN
+  CONV_TAC REAL_RING);;
+
 let DIST_DESCALE = prove
  (`!a b x y:real^N.
         &0 <= a /\ &0 <= b /\ norm(x) = norm(y)

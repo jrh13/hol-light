@@ -17,7 +17,7 @@ of the theorem {uh} are achieved in the end. More precisely, given a list of
 theorems {[th_1;...;th_k]} of the form {!x_1... x_n. P ==> !y_1... y_m. l = r},
 and a theorem {uh} of the form {!x_1... x_n. Q ==> !y_1... y_m. l' = r'},
 {TARGET_REWRITE_TAC [th_1;...;th_k] uh} applies target implicational rewriting,
-i.e., tries all the possible implicational rewrites with {th_1}, ..., {th_k}
+i.e. tries all the possible implicational rewrites with {th_1}, ..., {th_k}
 until it obtains a goal where implicational rewrite with {uh} becomes possible.
 
 To understand better the difference with {REWRITE_TAC} and the need for a
@@ -108,7 +108,7 @@ Note in addition that, contrarily to an explicit (and therefore fragile) path,
 the target theorem represents a reasoning step which has few chances to change
 in further refinements of the script.
 
-When using associativity-commutativity theorems as support theorems, this 
+When using associativity-commutativity theorems as support theorems, this
 tactic allows to achieve AC-rewriting.
 
 \SEEALSO

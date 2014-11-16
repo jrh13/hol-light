@@ -7,7 +7,7 @@ Tests for failure.
 
 \DESCRIBE
 {can f x} evaluates to {true} if the application of {f} to {x} succeeds.
-It evaluates to {false} if the application with a {Failure _} exception.
+It evaluates to {false} if the application fails with a {Failure _} exception.
 
 \FAILURE
 Never fails.

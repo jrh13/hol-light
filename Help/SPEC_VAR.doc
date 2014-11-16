@@ -23,7 +23,7 @@ Fails unless the theorem's conclusion is universally quantified.
 \EXAMPLE
 Note how the variable is renamed to avoid the free {m} in the assumptions:
 {
-  #  let th = ADD_ASSUM `m = 1` ADD_SYM;;
+  # let th = ADD_ASSUM `m = 1` ADD_SYM;;
   val th : thm = m = 1 |- !m n. m + n = n + m
 
   # SPEC_VAR th;;

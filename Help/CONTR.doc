@@ -26,7 +26,7 @@ conclusion.
   # let th = REWRITE_RULE[ARITH] (ASSUME `1 = 0`);;
   val th : thm = 1 = 0 |- F
 
-  #  CONTR `Russell:Person = Pope` th;;
+  # CONTR `Russell:Person = Pope` th;;
   val it : thm = 1 = 0 |- Russell = Pope
 }
 

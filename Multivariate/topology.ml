@@ -3443,7 +3443,7 @@ let LIM_ABS = prove
   REAL_ARITH_TAC);;
 
 let LIM_LIFT_ABS_COMPONENT = prove
- (`!net:(A)net f:A->real^N l k. 
+ (`!net:(A)net f:A->real^N l k.
      (f --> l) net ==> ((\x. lift(abs(f(x)$k))) --> lift(abs(l$k))) net`,
   REPEAT GEN_TAC THEN REWRITE_TAC[tendsto] THEN
   MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN MATCH_MP_TAC MONO_IMP THEN
@@ -6189,8 +6189,8 @@ let CONTINUOUS_ABS = prove
         f continuous net
         ==> (\x. (lambda i. abs(f(x)$i)):real^N) continuous net`,
   REWRITE_TAC[continuous; LIM_ABS]);;
-                                                             
-let CONTINUOUS_LIFT_ABS_COMPONENT = prove                     
+
+let CONTINUOUS_LIFT_ABS_COMPONENT = prove
  (`!net:(A)net f:A->real^N k.
      f continuous net ==> (\x. lift(abs(f x$k))) continuous net`,
   REWRITE_TAC[continuous; LIM_LIFT_ABS_COMPONENT]);;
@@ -6242,10 +6242,10 @@ let CONTINUOUS_ON_SUB = prove
            ==> (\x. f(x) - g(x)) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_SUB]);;
 
-let CONTINUOUS_ON_LIFT_ABS_COMPONENT = prove                     
- (`!f:real^M->real^N s.                                               
+let CONTINUOUS_ON_LIFT_ABS_COMPONENT = prove
+ (`!f:real^M->real^N s.
      f continuous_on s ==> (\x. lift(abs(f x$k))) continuous_on s`,
-  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; 
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
            CONTINUOUS_LIFT_ABS_COMPONENT]);;
 
 let CONTINUOUS_ON_ABS = prove
@@ -20365,6 +20365,34 @@ let SETDIST_SING_LE_HAUSDIST = prove
    [ALL_TAC; ONCE_REWRITE_TAC[DIST_SYM]] THEN
   MATCH_MP_TAC SETDIST_LE_DIST THEN ASM_REWRITE_TAC[IN_SING]);;
 
+let SETDIST_HAUSDIST_TRIANGLE = prove                                          
+ (`!s t u:real^N->bool.                                                        
+        ~(t = {}) /\ bounded t /\ bounded u                                    
+        ==> setdist(s,u) <= setdist(s,t) + hausdist(t,u)`,
+  REPEAT STRIP_TAC THEN     
+  MAP_EVERY ASM_CASES_TAC [`s:real^N->bool = {}`; `u:real^N->bool = {}`] THEN
+  ASM_SIMP_TAC[SETDIST_EMPTY; REAL_LE_ADD; REAL_ADD_LID;            
+               SETDIST_POS_LE; HAUSDIST_POS_LE] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `a <= b + c <=> a - c <= b`] THEN
+  ASM_REWRITE_TAC[REAL_LE_SETDIST_EQ; NOT_INSERT_EMPTY; IN_SING] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
+  REWRITE_TAC[REAL_LE_SUB_RADD] THEN
+  TRANS_TAC REAL_LE_TRANS `setdist({x:real^N},u)` THEN                        
+  ASM_SIMP_TAC[SETDIST_LE_SING] THEN
+  MP_TAC(ISPECL [`u:real^N->bool`; `x:real^N`; `y:real^N`]
+        SETDIST_SING_TRIANGLE) THEN
+  MATCH_MP_TAC(REAL_ARITH                                   
+   `yu <= z ==> abs(xu - yu) <= d ==> xu <= d + z`) THEN
+  MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]);;
+                                                       
+let HAUSDIST_SETDIST_TRIANGLE = prove
+ (`!s t u:real^N->bool.          
+        ~(t = {}) /\ bounded s /\ bounded t
+        ==> setdist(s,u) <= hausdist(s,t) + setdist(t,u)`, 
+  ONCE_REWRITE_TAC[SETDIST_SYM; HAUSDIST_SYM] THEN
+  ONCE_REWRITE_TAC[REAL_ADD_SYM] THEN
+  SIMP_TAC[SETDIST_HAUSDIST_TRIANGLE]);;                              
+
 let REAL_LT_HAUSDIST_POINT_EXISTS = prove
  (`!s t x:real^N d.
         bounded s /\ bounded t /\ ~(t = {}) /\ hausdist(s,t) < d /\ x IN s
@@ -20468,6 +20496,29 @@ let REAL_HAUSDIST_LE_EQ = prove
   MATCH_MP_TAC MONO_EXISTS THEN REWRITE_TAC[FORALL_IN_GSPEC; GSYM dist] THEN
   ASM_MESON_TAC[SETDIST_LE_DIST; dist; DIST_SYM; REAL_LE_TRANS;
                 MEMBER_NOT_EMPTY; IN_SING]);;
+
+let HAUSDIST_UNION_LE = prove                               
+ (`!s t u:real^N->bool.                   
+        bounded s /\ bounded t /\ bounded u /\ ~(t = {}) /\ ~(u = {})
+        ==> hausdist(s UNION t,s UNION u) <= hausdist(t,u)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[REAL_HAUSDIST_LE_EQ; BOUNDED_UNION; EMPTY_UNION] THEN
+  REWRITE_TAC[FORALL_IN_UNION] THEN
+  SIMP_TAC[SETDIST_SING_IN_SET; IN_UNION; HAUSDIST_POS_LE] THEN
+  ASM_SIMP_TAC[GSYM REAL_HAUSDIST_LE_EQ; BOUNDED_UNION; EMPTY_UNION] THEN
+  CONJ_TAC THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THENL
+   [TRANS_TAC REAL_LE_TRANS `setdist({x:real^N},u)`;
+    TRANS_TAC REAL_LE_TRANS `setdist({x:real^N},t)`] THEN
+  ASM_SIMP_TAC[SETDIST_SUBSET_RIGHT; SUBSET_UNION] THENL   
+   [ALL_TAC; ONCE_REWRITE_TAC[HAUSDIST_SYM]] THEN
+  MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]);;
+                                                         
+let HAUSDIST_INSERT_LE = prove
+ (`!s t a:real^N.                  
+        bounded s /\ bounded t /\ ~(s = {}) /\ ~(t = {})          
+        ==> hausdist(a INSERT s,a INSERT t) <= hausdist(s,t)`,       
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  ASM_SIMP_TAC[HAUSDIST_UNION_LE; NOT_INSERT_EMPTY; BOUNDED_SING]);;
 
 let HAUSDIST_COMPACT_EXISTS = prove
  (`!s t:real^N->bool.

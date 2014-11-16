@@ -7,22 +7,22 @@ Produce distinctness theorem for an inductive type.
 
 \DESCRIBE
 A call {distinctness "ty"} where {"ty"} is the name of a recursive type defined
-with {define_type}, returns a ``distinctness'' theorem asserting that elements 
+with {define_type}, returns a ``distinctness'' theorem asserting that elements
 constructed by different type constructors are always different. The effect is
-exactly the same is if {prove_constructors_distinct} were applied to the
+exactly the same as if {prove_constructors_distinct} were applied to the
 recursion theorem produced by {define_type}, and the documentation for
 {prove_constructors_distinct} gives a lengthier discussion.
 
 \FAILURE
-Fails if {ty} is not the name of a recursive type, or if the type has only one 
+Fails if {ty} is not the name of a recursive type, or if the type has only one
 constructor.
 
 \EXAMPLE
 {
-  # distinctness "num";;             
+  # distinctness "num";;
   val it : thm = |- !n'. ~(0 = SUC n')
 
-  # distinctness "list";;         
+  # distinctness "list";;
   val it : thm = |- !a0' a1'. ~([] = CONS a0' a1')
 }
 

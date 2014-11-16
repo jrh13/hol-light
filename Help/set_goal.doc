@@ -24,7 +24,7 @@ Fails unless all terms in the goal are of type {bool}.
 }
 
 \USES
-Starting  an interactive proof session with the subgoal package.
+Starting an interactive proof session with the subgoal package.
 
 The subgoal package implements a simple framework for interactive goal-directed
 proof.  When conducting a proof that involves many subgoals and tactics, the

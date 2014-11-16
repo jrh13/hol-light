@@ -38,7 +38,7 @@ The resulting goal can trivially be solved in any number of ways, but if we
 want to ensure that {MESON_TAC} uses exactly the assumptions relating to {q}
 and {r} and no extraneous ones, we could do:
 {
-  #  e(HYP MESON_TAC "asm_r asm_q" []);;
+  # e(HYP MESON_TAC "asm_r asm_q" []);;
   val it : goalstack = No subgoals
 }
 

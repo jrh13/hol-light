@@ -30,10 +30,10 @@ The {graph} function is implemented based on the following invocation of
   # graph f;;
   val it : (int * int) list = [(1, 2); (2, 3)]
 
-  #  foldl (fun a x y -> (x,y)::a) [] f;;
+  # foldl (fun a x y -> (x,y)::a) [] f;;
   val it : (int * int) list = [(1, 2); (2, 3)]
 }
-Note that in this case the order happened to be the same, but this is an 
+Note that in this case the order happened to be the same, but this is an
 accident.
 
 \SEEALSO
