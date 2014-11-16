@@ -21,7 +21,7 @@ result of applying the conversion {c2} to the term {`t`}.
   # (NUM_ADD_CONV ORELSEC NUM_MULT_CONV) `2 + 2`;;
   val it : thm = |- 2 + 2 = 4
 
-  #  (NUM_ADD_CONV ORELSEC NUM_MULT_CONV) `1 * 1`;;
+  # (NUM_ADD_CONV ORELSEC NUM_MULT_CONV) `1 * 1`;;
   val it : thm = |- 1 * 1 = 1
 }
 

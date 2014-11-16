@@ -24,7 +24,7 @@ introduction pattern uses the following syntax:
 
 \end{{itemize}}
 
-Several fix patterns and intro patterns can be combined sequentially,
+Several fix patterns and destruct patterns can be combined sequentially,
 separed by semicolons `;'.
 
 \FAILURE
@@ -57,21 +57,28 @@ Now a further step will select the first disjunct to prove in the top goal:
   `p /\ q`
 }
 
-Here we fix an automatically generated variable, choosing a meaningful name
-for it, and we introduce a labeled hypothesis in a single command:
+In the next example we introduce an alternation of universally quantified
+variables and antecedents.  Along the way we split a disjunction and rename
+variables x1, x2 into n, n'.  All is done in a single tactic invocation.
 {
-  # g `(@x. x = 0) + 0 = 0`;;
-  # e SELECT_ELIM_TAC;;
+  # g `!a. ~(a = 0) ==> ONE_ONE (\n. a * n)`;;
+  # e (REWRITE_TAC[ONE_ONE; EQ_MULT_LCANCEL]);;
   val it : goalstack = 1 subgoal (1 total)
   
-  `!_75725. (!x. x = 0 ==> _75725 = 0) ==> _75725 + 0 = 0`
+  `!a. ~(a = 0) ==> (!x1 x2. a = 0 \/ x1 = x2 ==> x1 = x2)`
   
-  # e (INTRO_TAC "![y]; hp");;
-  val it : goalstack = 1 subgoal (1 total)
+  # e (INTRO_TAC "!a; anz; ![n] [n']; az | eq");;
+  val it : goalstack = 2 subgoals (2 total)
   
-    0 [`!x. x = 0 ==> y = 0`] (hp)
+    0 [`~(a = 0)`] (anz)
+    1 [`n = n'`] (eq)
   
-  `y + 0 = 0`
+  `n = n'`
+  
+    0 [`~(a = 0)`] (anz)
+    1 [`a = 0`] (az)
+  
+  `n = n'`
 }
 
 \SEEALSO

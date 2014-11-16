@@ -42,7 +42,7 @@ bound variable:
 little of the term needs to be traversed to find the answer (just one level in
 the case of {p}, since it is bound at the outer term constructor).
 {
-  #  time (vfree_in `q:bool`) tm;;
+  # time (vfree_in `q:bool`) tm;;
   CPU time (user): 0.
   val it : bool = true
 }

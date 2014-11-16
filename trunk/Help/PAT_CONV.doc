@@ -8,8 +8,8 @@ Apply a conversion at subterms identified by a ``pattern'' lambda-abstraction.
 \DESCRIBE
 The call {PAT_CONV `\x1 ... xn. t[x1,...,xn]` cnv} gives a new conversion that
 applies {cnv} to subterms of the target term corresponding to the free
-instances of any {xi} in the pattern {t[x1,...,xn]}. The fact that the pattern 
-is a function has no logical significance; it is just used as a convenient 
+instances of any {xi} in the pattern {t[x1,...,xn]}. The fact that the pattern
+is a function has no logical significance; it is just used as a convenient
 format for the pattern.
 
 \FAILURE
@@ -24,7 +24,7 @@ Here we choose to evaluate just two subterms:
 }
 \noindent while here we swap two particular quantifiers in a long chain:
 {
-  #  PAT_CONV `\x. !x1 x2 x3 x4 x5. x` (REWR_CONV SWAP_FORALL_THM)
+  # PAT_CONV `\x. !x1 x2 x3 x4 x5. x` (REWR_CONV SWAP_FORALL_THM)
       `!a b c d e f g h. something`;;
   Warning: inventing type variables
   Warning: inventing type variables

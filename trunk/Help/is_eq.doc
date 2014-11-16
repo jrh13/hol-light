@@ -21,7 +21,7 @@ Never fails.
   # is_eq `p /\ q <=> q /\ p`;;
   val it : bool = true
 
-  #  is_eq `p ==> p`;;
+  # is_eq `p ==> p`;;
   val it : bool = false
 }
 

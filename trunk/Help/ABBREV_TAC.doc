@@ -24,7 +24,7 @@ of variable arguments.
 
   `(12345 + 12345) + f (12345 + 12345) = f (12345 + 12345)`
 
-  #  e(ABBREV_TAC `n = 12345 + 12345`);;
+  # e(ABBREV_TAC `n = 12345 + 12345`);;
   val it : goalstack = 1 subgoal (1 total)
 
    0 [`12345 + 12345 = n`]

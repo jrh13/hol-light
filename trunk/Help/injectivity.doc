@@ -6,28 +6,28 @@
 Produce injectivity theorem for an inductive type.
 
 \DESCRIBE
-A call {injectivity "ty"} where {"ty"} is the name of a recursive type defined 
-with {define_type}, returns a ``injectivity'' theorem asserting that elements 
+A call {injectivity "ty"} where {"ty"} is the name of a recursive type defined
+with {define_type}, returns a ``injectivity'' theorem asserting that elements
 constructed by different type constructors are always different. The effect is
-exactly the same is if {prove_constructors_injective} were applied to the        
+exactly the same as if {prove_constructors_injective} were applied to the
 recursion theorem produced by {define_type}, and the documentation for
 {prove_constructors_injective} gives a lengthier discussion.
 
 \FAILURE
-Fails if {ty} is not the name of a recursive type, or if all its constructors 
+Fails if {ty} is not the name of a recursive type, or if all its constructors
 are nullary.
 
 \EXAMPLE
-{                                               
-  # injectivity "num";;         
+{
+  # injectivity "num";;
   val it : thm = |- !n n'. SUC n = SUC n' <=> n = n'
-  
-  # injectivity "list";;         
+
+  # injectivity "list";;
   val it : thm =
     |- !a0 a1 a0' a1'. CONS a0 a1 = CONS a0' a1' <=> a0 = a0' /\ a1 = a1'
-}       
-                                                 
-\SEEALSO                                         
+}
+
+\SEEALSO
 cases, define_type, distinctness, prove_constructors_injective.
-           
-\ENDDOC    
+
+\ENDDOC

@@ -6,9 +6,9 @@
 Output a string and newline if and only if {verbose} flag is set.
 
 \DESCRIBE
-If the {verbose} flag is set to {true}, then the call {remark s} prints the 
+If the {verbose} flag is set to {true}, then the call {remark s} prints the
 string {s} and a following newline. If the {verbose} flag is set to {false},
-this call does nothing. This function is used for informative output in several 
+this call does nothing. This function is used for informative output in several
 automated rules such as {MESON}.
 
 \FAILURE
@@ -21,7 +21,7 @@ Never fails.
   val it : unit = ()
   # verbose := false;;
   val it : unit = ()
-  #  remark "Proof is going OK so far";;
+  # remark "Proof is going OK so far";;
   val it : unit = ()
 }
 

@@ -1928,6 +1928,12 @@ let CONVEX_ON_CONST = prove
  (`!s a. (\x. a) convex_on s`,
   SIMP_TAC[convex_on; GSYM REAL_ADD_RDISTRIB; REAL_MUL_LID; REAL_LE_REFL]);;
 
+let CONVEX_ON_SING = prove
+ (`!f a:real^N. f convex_on {a}`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC CONVEX_ON_EQ THEN
+  EXISTS_TAC `\x:real^N. (f:real^N->real) a` THEN
+  SIMP_TAC[IN_SING; CONVEX_SING; CONVEX_ON_CONST]);;
+
 let CONVEX_ADD = prove
  (`!s f g. f convex_on s /\ g convex_on s ==> (\x. f(x) + g(x)) convex_on s`,
   REWRITE_TAC[convex_on; AND_FORALL_THM] THEN
@@ -4336,6 +4342,15 @@ let AFF_DIM_DIM = prove
   ASM_SIMP_TAC[AFF_DIM_DIM_0; IN_INSERT; HULL_INC; DIM_INSERT_0] THEN
   INT_ARITH_TAC);;
 
+let AFF_DIM_CONIC_HULL_DIM = prove
+ (`!s:real^N->bool.
+        aff_dim (conic hull s) = if s = {} then -- &1 else &(dim s)`,
+  GEN_TAC THEN
+  REWRITE_TAC[AFF_DIM_DIM; AFFINE_HULL_CONIC_HULL] THEN
+  ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_SIMP_TAC[AFFINE_HULL_EQ_SPAN; SPAN_INSERT_0; HULL_INC; IN_INSERT; SPAN_0;
+               DIM_CONIC_HULL; NOT_IN_EMPTY; DIM_EMPTY; INT_SUB_LZERO]);;
+
 let AFFINE_BOUNDED_EQ_TRIVIAL = prove
  (`!s:real^N->bool.
         affine s ==> (bounded s <=> s = {} \/ ?a. s = {a})`,
@@ -6533,6 +6548,19 @@ let CONVEX_INTERIOR = prove
                                 ((&1 - u) % x + u % y) - z:real^N`;
                 VECTOR_ARITH `y - (z + (&1 - u) % (y - x)) =
                                 ((&1 - u) % x + u % y) - z:real^N`]);;
+
+let CONVEX_HULL_CLOSURE_SUBSET = prove
+ (`!s:real^N->bool. convex hull (closure s) SUBSET closure(convex hull s)`,
+  GEN_TAC THEN MATCH_MP_TAC HULL_MINIMAL THEN
+  SIMP_TAC[SUBSET_CLOSURE; HULL_SUBSET; CONVEX_CLOSURE; CONVEX_CONVEX_HULL]);;
+
+let CONVEX_HULL_CLOSURE = prove
+ (`!s. bounded s ==> convex hull (closure s) = closure(convex hull s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  SIMP_TAC[CONVEX_HULL_CLOSURE_SUBSET] THEN MATCH_MP_TAC CLOSURE_MINIMAL THEN
+  SIMP_TAC[HULL_MONO; CLOSURE_SUBSET] THEN
+  MATCH_MP_TAC COMPACT_IMP_CLOSED THEN MATCH_MP_TAC COMPACT_CONVEX_HULL THEN
+  ASM_REWRITE_TAC[COMPACT_CLOSURE]);;
 
 let SUPPORTING_HYPERPLANE_POINT = prove
  (`!s z:real^N.
@@ -9047,6 +9075,10 @@ let RELATIVE_INTERIOR_SUBSET = prove
  (`!s. (relative_interior s) SUBSET s`,
   REWRITE_TAC[SUBSET; relative_interior; IN_ELIM_THM] THEN MESON_TAC[]);;
 
+let BOUNDED_RELATIVE_INTERIOR = prove
+ (`!s:real^N->bool. bounded s ==> bounded(relative_interior s)`,
+  MESON_TAC[BOUNDED_SUBSET; RELATIVE_INTERIOR_SUBSET]);;
+
 let OPEN_IN_SET_RELATIVE_INTERIOR = prove
  (`!s:real^N->bool. open_in (subtopology euclidean s) (relative_interior s)`,
   GEN_TAC THEN MATCH_MP_TAC OPEN_IN_SUBSET_TRANS THEN
@@ -9137,6 +9169,14 @@ let CONIC_HULL_EQ_SPAN,CONIC_HULL_EQ_AFFINE_HULL = (CONJ_PAIR o prove)
   ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_LE_DIV; NORM_POS_LE; REAL_LT_IMP_LE] THEN
   ASM_SIMP_TAC[VECTOR_MUL_LID; NORM_EQ_0; REAL_FIELD
    `~(x = &0) /\ &0 < e ==> x / e * e / x = &1`]);;
+
+let CONIC_HULL_EQ_SPAN_EQ = prove                                        
+ (`!s:real^N->bool.                                                          
+        vec 0 IN relative_interior(conic hull s) <=> conic hull s = span s`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL                  
+   [MP_TAC(ISPEC `conic hull s:real^N->bool` CONIC_HULL_EQ_SPAN) THEN
+    ASM_REWRITE_TAC[SPAN_CONIC_HULL; HULL_HULL];
+    ASM_SIMP_TAC[RELATIVE_INTERIOR_AFFINE; AFFINE_SPAN; SPAN_0]]);;
 
 let OPEN_IN_SUBSET_RELATIVE_INTERIOR = prove
  (`!s t. open_in(subtopology euclidean (affine hull t)) s
@@ -10560,6 +10600,16 @@ let CONVEX_CLOSURE_RELATIVE_INTERIOR = prove
       ASM_REAL_ARITH_TAC]] THEN
   ASM_SIMP_TAC[REAL_LT_DIV; NORM_POS_LT; REAL_OF_NUM_LT;
                  VECTOR_SUB_EQ; ARITH]);;
+
+let SETDIST_RELATIVE_INTERIOR = prove
+ (`(!s t. convex s ==> setdist(relative_interior s,t) = setdist(s,t)) /\
+   (!s t. convex t ==> setdist(s,relative_interior t) = setdist(s,t))`,
+  MESON_TAC[CONVEX_CLOSURE_RELATIVE_INTERIOR; SETDIST_CLOSURE]);;
+
+let HAUSDIST_RELATIVE_INTERIOR = prove
+ (`(!s t. convex s ==> hausdist(relative_interior s,t) = hausdist(s,t)) /\
+   (!s t. convex t ==> hausdist(s,relative_interior t) = hausdist(s,t))`,
+  MESON_TAC[CONVEX_CLOSURE_RELATIVE_INTERIOR; HAUSDIST_CLOSURE]);;
 
 let AFFINE_HULL_RELATIVE_INTERIOR = prove
  (`!s. convex s

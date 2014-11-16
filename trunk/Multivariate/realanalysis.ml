@@ -3170,6 +3170,16 @@ let INTERVAL_REAL_INTERVAL = prove
   REWRITE_TAC[EXTENSION; IN_IMAGE; IN_INTERVAL_1; IN_REAL_INTERVAL] THEN
   REWRITE_TAC[EXISTS_DROP; LIFT_DROP; UNWIND_THM1]);;
 
+let DROP_IN_REAL_INTERVAL = prove
+ (`(!a b x. drop x IN real_interval[a,b] <=> x IN interval[lift a,lift b]) /\
+   (!a b x. drop x IN real_interval(a,b) <=> x IN interval(lift a,lift b))`,
+  REWRITE_TAC[REAL_INTERVAL_INTERVAL; IN_IMAGE] THEN MESON_TAC[LIFT_DROP]);;
+
+let LIFT_IN_INTERVAL = prove
+ (`(!a b x. lift x IN interval[a,b] <=> x IN real_interval[drop a,drop b]) /\
+   (!a b x. lift x IN interval(a,b) <=> x IN real_interval(drop a,drop b))`,
+  REWRITE_TAC[FORALL_DROP; DROP_IN_REAL_INTERVAL; LIFT_DROP]);;
+
 let EMPTY_AS_REAL_INTERVAL = prove
  (`{} = real_interval[&1,&0]`,
   REWRITE_TAC[REAL_INTERVAL_INTERVAL; LIFT_NUM; GSYM EMPTY_AS_INTERVAL] THEN
@@ -5967,6 +5977,21 @@ let REAL_CONVEX_ON = prove
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
   REWRITE_TAC[o_THM; LIFT_DROP; DROP_ADD; DROP_CMUL]);;
 
+let REAL_CONVEX_ON_EQ = prove
+ (`!f g s.
+         is_realinterval s /\ (!x. x IN s ==> f x = g x) /\ f real_convex_on s
+         ==> g real_convex_on s`,
+  REWRITE_TAC[IS_REALINTERVAL_CONVEX; REAL_CONVEX_ON] THEN
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+    (REWRITE_RULE[CONJ_ASSOC] CONVEX_ON_EQ)) THEN
+  ASM_REWRITE_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP]);;
+
+let REAL_CONVEX_ON_SING = prove
+ (`!f a. f real_convex_on {a}`,
+  REWRITE_TAC[REAL_CONVEX_ON; IMAGE_CLAUSES; CONVEX_ON_SING]);;
+
 let REAL_CONVEX_ON_SUBSET = prove
  (`!f s t. f real_convex_on t /\ s SUBSET t ==> f real_convex_on s`,
   REWRITE_TAC[REAL_CONVEX_ON] THEN
@@ -6743,6 +6768,12 @@ let LOG_CONVEX_ON_SUBSET = prove
  (`!f s t. f log_convex_on t /\ s SUBSET t ==> f log_convex_on s`,
   REWRITE_TAC[log_convex_on] THEN SET_TAC[]);;
 
+let LOG_CONVEX_ON_EQ = prove
+ (`!f g s:real^N->bool.
+         convex s /\ (!x. x IN s ==> f x = g x) /\ f log_convex_on s
+         ==> g log_convex_on s`,
+  REWRITE_TAC[IMP_CONJ] THEN SIMP_TAC[convex; log_convex_on]);;
+
 let LOG_CONVEX_IMP_POS = prove
  (`!f s x:real^N.
         f log_convex_on s /\ x IN s ==> &0 <= f x`,
@@ -6846,6 +6877,14 @@ let LOG_CONVEX_CONST = prove
   IMP_REWRITE_TAC[GSYM RPOW_ADD_ALT] THEN
   REWRITE_TAC[RPOW_POW; REAL_POW_1; REAL_LE_REFL] THEN REAL_ARITH_TAC);;
 
+let LOG_CONVEX_ON_SING = prove
+ (`!f a:real^N. f log_convex_on {a} <=> &0 <= f a`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[LOG_CONVEX_IMP_POS; IN_SING]; DISCH_TAC] THEN
+  MATCH_MP_TAC LOG_CONVEX_ON_EQ THEN
+  EXISTS_TAC `\x:real^N. (f:real^N->real) a` THEN
+  ASM_SIMP_TAC[IN_SING; CONVEX_SING; LOG_CONVEX_CONST]);;
+
 let LOG_CONVEX_PRODUCT = prove
  (`!f s k. FINITE k /\ (!i. i IN k ==> (\x. f x i) log_convex_on s)
            ==> (\x. product k (f x)) log_convex_on s`,
@@ -6879,6 +6918,23 @@ let REAL_LOG_CONVEX_LOG_CONVEX = prove
   REWRITE_TAC[real_log_convex_on; log_convex_on] THEN
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
   REWRITE_TAC[o_DEF; DROP_ADD; DROP_CMUL; LIFT_DROP]);;
+
+let REAL_LOG_CONVEX_ON_EQ = prove
+ (`!f g s.
+         is_realinterval s /\ (!x. x IN s ==> f x = g x) /\
+         f real_log_convex_on s
+         ==> g real_log_convex_on s`,
+  REWRITE_TAC[IS_REALINTERVAL_CONVEX; REAL_LOG_CONVEX_LOG_CONVEX] THEN
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+    (REWRITE_RULE[CONJ_ASSOC] LOG_CONVEX_ON_EQ)) THEN
+  ASM_REWRITE_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP]);;
+
+let REAL_LOG_CONVEX_ON_SING = prove
+ (`!f a. f real_log_convex_on {a} <=> &0 <= f a`,
+  REWRITE_TAC[REAL_LOG_CONVEX_LOG_CONVEX; LOG_CONVEX_ON_SING] THEN
+  REWRITE_TAC[IMAGE_CLAUSES; LOG_CONVEX_ON_SING; o_THM; LIFT_DROP]);;
 
 let REAL_LOG_CONVEX_IMP_POS = prove
  (`!f s x.

@@ -7,7 +7,7 @@ Performs casewise rewriting.
 
 \DESCRIBE
 Same usage as {IMP_REWRITE_TAC} but applies case rewriting instead of
-implicational rewriting, i.e., given a theorem of the form 
+implicational rewriting, i.e. given a theorem of the form
 {!x_1... x_n. P ==> !y_1... y_m. l = r} and a goal with an atom {A} containing
 a subterm matching {l}, turns the atom into {(P' ==> A') /\ (~P' ==> A)} where
 {A'} is the atom in which the matching subterm of {l} is rewritten, and where
