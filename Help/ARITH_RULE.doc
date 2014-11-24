@@ -33,6 +33,6 @@ methods employed, e.g. requiring nonlinear inequality reasoning.
 Disposing of elementary arithmetic goals.
 
 \SEEALSO
-ARITH_CONV, ARITH_TAC, INT_ARITH, NUM_RING, REAL_ARITH, REAL_FIELD, REAL_RING.
+ARITH_TAC, INT_ARITH, NUM_RING, REAL_ARITH, REAL_FIELD, REAL_RING.
 
 \ENDDOC

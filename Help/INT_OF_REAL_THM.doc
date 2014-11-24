@@ -7,7 +7,7 @@ Map a universally quantified theorem from reals to integers.
 
 \DESCRIBE
 We often regard integers as a subset of the reals, so any universally
-quantified theorem over the reals also holds for the integers, and indeed any 
+quantified theorem over the reals also holds for the integers, and indeed any
 other subset. In HOL, integers and reals are completely separate types ({int}
 and {real} respectively). However, there is a natural injection (actually
 called {dest_int}) from integers to reals that maps integer operations to their
@@ -34,7 +34,7 @@ Never fails.
 }
 
 \SEEALSO
-ARITH_RULE, INT_ARITH, INT_ARITH_CONV, INT_ARITH_TAC, NUM_TO_INT_CONV,
+ARITH_RULE, INT_ARITH, INT_ARITH_TAC, NUM_TO_INT_CONV,
 REAL_ARITH.
 
 \ENDDOC

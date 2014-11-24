@@ -6079,6 +6079,21 @@ let CLOSEST_POINT_IDEMPOTENT = prove
    [ASM_REWRITE_TAC[closest_point; NOT_IN_EMPTY];
     ASM_SIMP_TAC[CLOSEST_POINT_SELF; CLOSEST_POINT_IN_SET]]);;
 
+let MATRIX_INV_PROJECTION_IMAGE,MATRIX_INV_PROJECTION_IMAGE_ALT =
+   (CONJ_PAIR o prove)
+ (`(!A:real^M^N. A ** matrix_inv A =
+                 matrix(closest_point (IMAGE (\x. A ** x) UNIV))) /\
+   (!A:real^M^N x. (A ** matrix_inv A) ** x =
+                  closest_point (IMAGE (\x. A ** x) UNIV) x)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  SIMP_TAC[MATRIX_EQ; MATRIX_WORKS; GSYM MATRIX_VECTOR_MUL_ASSOC;
+           LINEAR_CLOSEST_POINT; MATRIX_VECTOR_MUL_LINEAR;
+           SUBSPACE_LINEAR_IMAGE; SUBSPACE_UNIV;
+           CLOSEST_POINT_SUBSPACE_ORTHOGONAL_EQ] THEN
+  REPEAT GEN_TAC THEN
+  (CONJ_TAC THENL [SET_TAC[]; REWRITE_TAC[FORALL_IN_IMAGE]]) THEN
+  REWRITE_TAC[MOORE_PENROSE_PSEUDOINVERSE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Stronger separating hyperplane results for affine sets / affine hulls.    *)
 (* ------------------------------------------------------------------------- *)
@@ -9170,10 +9185,10 @@ let CONIC_HULL_EQ_SPAN,CONIC_HULL_EQ_AFFINE_HULL = (CONJ_PAIR o prove)
   ASM_SIMP_TAC[VECTOR_MUL_LID; NORM_EQ_0; REAL_FIELD
    `~(x = &0) /\ &0 < e ==> x / e * e / x = &1`]);;
 
-let CONIC_HULL_EQ_SPAN_EQ = prove                                        
- (`!s:real^N->bool.                                                          
+let CONIC_HULL_EQ_SPAN_EQ = prove
+ (`!s:real^N->bool.
         vec 0 IN relative_interior(conic hull s) <=> conic hull s = span s`,
-  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL                  
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
    [MP_TAC(ISPEC `conic hull s:real^N->bool` CONIC_HULL_EQ_SPAN) THEN
     ASM_REWRITE_TAC[SPAN_CONIC_HULL; HULL_HULL];
     ASM_SIMP_TAC[RELATIVE_INTERIOR_AFFINE; AFFINE_SPAN; SPAN_0]]);;

@@ -1,3 +1,11 @@
+Sun 23rd Nov 2014       sets.ml
+
+Added this, a natural dual to the existing INTERS_OVER_UNIONS
+
+UNIONS_OVER_INTERS =
+  |- !f s. UNIONS {INTERS (f x) | x IN s} =
+           INTERS {UNIONS {g x | x IN s} | g | !x. x IN s ==> g x IN f x}
+
 Fri  7th Nov 2014       Examples/misiurewicz.ml [new file]
 
 Added a new example, a formalization (suggested on the FOM list by Lasse

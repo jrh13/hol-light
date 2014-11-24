@@ -1030,6 +1030,17 @@ let INTERS_OVER_UNIONS = prove
   X_GEN_TAC `b:B` THEN REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN
   MESON_TAC[]);;
 
+let UNIONS_OVER_INTERS = prove
+ (`!f:A->(B->bool)->bool s.
+        UNIONS { INTERS(f x) | x IN s} =
+        INTERS { UNIONS {g x | x IN s} |g| !x. x IN s ==> g x IN f x}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[SIMPLE_IMAGE; INTERS_IMAGE; UNIONS_IMAGE; INTERS_GSPEC] THEN
+  REWRITE_TAC[IN_INTERS; IN_ELIM_THM] THEN
+  GEN_TAC THEN ONCE_REWRITE_TAC[TAUT `(p <=> q) <=> (~p <=> ~q)`] THEN
+  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; NOT_EXISTS_THM] THEN
+  REWRITE_TAC[AND_FORALL_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Stronger form of induction is sometimes handy.                            *)
 (* ------------------------------------------------------------------------- *)
@@ -1303,14 +1314,14 @@ let FINITE_IMAGE_INJ = prove
     FINITE_IMAGE_INJ_GENERAL) THEN REWRITE_TAC[IN_UNIV]);;
 
 let INFINITE_IMAGE = prove
- (`!f:A->B s. 
+ (`!f:A->B s.
         INFINITE s /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
         ==> INFINITE (IMAGE f s)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ_ALT; INJECTIVE_ON_LEFT_INVERSE] THEN
   DISCH_THEN(X_CHOOSE_TAC `g:B->A`) THEN
   REWRITE_TAC[INFINITE; CONTRAPOS_THM] THEN DISCH_TAC THEN
-  SUBGOAL_THEN `s = IMAGE (g:B->A) (IMAGE f s)` SUBST1_TAC THENL 
-   [ASM SET_TAC[]; MATCH_MP_TAC FINITE_IMAGE THEN ASM_REWRITE_TAC[]]);;         
+  SUBGOAL_THEN `s = IMAGE (g:B->A) (IMAGE f s)` SUBST1_TAC THENL
+   [ASM SET_TAC[]; MATCH_MP_TAC FINITE_IMAGE THEN ASM_REWRITE_TAC[]]);;
 
 let INFINITE_IMAGE_INJ = prove
  (`!f:A->B. (!x y. (f x = f y) ==> (x = y))
