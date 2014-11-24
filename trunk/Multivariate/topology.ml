@@ -15868,7 +15868,6 @@ let NEARBY_INVERTIBLE_MATRIX_GEN = prove
   REWRITE_TAC[INVERTIBLE_DET_NZ] THEN REPEAT STRIP_TAC THEN
   MP_TAC(ISPEC `matrix_inv(B:real^N^N) ** (A:real^N^N)`
         NEARBY_INVERTIBLE_MATRIX) THEN
-
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN STRIP_TAC THEN
   ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real` THEN STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `x:real`) THEN
@@ -16911,8 +16910,49 @@ let SYMMETRIC_MATRIX_EQ_DIAGONALIZABLE_ALT = prove
   ASM_REWRITE_TAC[MATRIX_MUL_LID; MATRIX_MUL_RID]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Hence more about positive (semi)definite matrices.                        *)
+(* Hence deduce more general results using diagonalization.                  *)
 (* ------------------------------------------------------------------------- *)
+
+let TRACE_MATRIX_INV_LMUL = prove
+ (`!A:real^N^M. trace(matrix_inv A ** A) = &(rank A)`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[GSYM RANK_MATRIX_INV_LMUL] THEN
+  SUBGOAL_THEN
+   `(matrix_inv(A:real^N^M) ** A) ** (matrix_inv A ** A) = matrix_inv A ** A`
+  MP_TAC THENL
+   [REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_INV_MUL_INNER];
+    MP_TAC(ISPEC `A:real^N^M` SYMMETRIC_MATRIX_INV_LMUL)] THEN
+  SPEC_TAC(`matrix_inv(A:real^N^M) ** A`,`A:real^N^N`) THEN GEN_TAC THEN
+  REWRITE_TAC[SYMMETRIC_MATRIX_EQ_DIAGONALIZABLE_ALT; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`P:real^N^N`; `D:real^N^N`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM SUBST1_TAC THEN
+  ASM_SIMP_TAC[ORTHOGONAL_MATRIX_IMP_INVERTIBLE; RANK_CONJUGATE;
+    GSYM ORTHOGONAL_MATRIX_INV; TRACE_CONJUGATE; INVERTIBLE_MATRIX_INV;
+    GSYM MATRIX_MUL_ASSOC; MATRIX_MUL_LCANCEL] THEN
+  ASM_SIMP_TAC[MATRIX_MUL_ASSOC; MATRIX_MUL_RCANCEL;
+               ORTHOGONAL_MATRIX_IMP_INVERTIBLE] THEN
+  GEN_REWRITE_TAC (funpow 3 LAND_CONV) [GSYM MATRIX_MUL_ASSOC] THEN
+  ASM_SIMP_TAC[MATRIX_INV; ORTHOGONAL_MATRIX_IMP_INVERTIBLE] THEN
+  REWRITE_TAC[MATRIX_MUL_RID] THEN
+  ASM_SIMP_TAC[DIAGONAL_MATRIX_MUL_EXPLICIT; RANK_DIAGONAL_MATRIX; trace] THEN
+  SIMP_TAC[CART_EQ; LAMBDA_BETA; REAL_RING
+   `x * x = x <=> x = &0 \/ x = &1`] THEN
+  DISCH_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_RID] THEN
+  SIMP_TAC[GSYM SUM_CONST; FINITE_NUMSEG; FINITE_RESTRICT] THEN
+  REWRITE_TAC[SUM_RESTRICT_SET] THEN MATCH_MP_TAC SUM_EQ_NUMSEG THEN
+  ASM_MESON_TAC[]);;
+
+let TRACE_MATRIX_INV_RMUL = prove
+ (`!A:real^N^M. trace(A ** matrix_inv A) = &(rank A)`,
+  ONCE_REWRITE_TAC[GSYM TRACE_TRANSP] THEN
+  REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_MATRIX_INV] THEN
+  REWRITE_TAC[TRACE_MATRIX_INV_LMUL; RANK_TRANSP]);;
+
+let IDEMPOTENT_MATRIX_TRACE_EQ_RANK = prove
+ (`!A:real^N^N. A ** A = A ==> trace A = &(rank A)`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM MATRIX_INV_MUL_INNER] THEN
+  ONCE_REWRITE_TAC[TRACE_MUL_CYCLIC] THEN
+  ASM_REWRITE_TAC[TRACE_MATRIX_INV_LMUL]);;
 
 let POSITIVE_SEMIDEFINITE_EIGENVALUES = prove
  (`!A:real^N^N. positive_semidefinite A <=>
@@ -17202,26 +17242,22 @@ let POSITIVE_SEMIDEFINITE_AND_ORTHOGONAL = prove
   REWRITE_TAC[REAL_RING `x * x = &1 <=> x = &1 \/ x = -- &1`] THEN
   REAL_ARITH_TAC);;
 
+let POSITIVE_SEMIDEFINITE_INV = prove
+ (`!A:real^N^N.
+     positive_semidefinite(matrix_inv A) <=> positive_semidefinite A`,
+  SUBGOAL_THEN
+   `!A:real^N^N. positive_semidefinite A
+                 ==> positive_semidefinite(matrix_inv A)`
+  MP_TAC THENL [GEN_TAC; MESON_TAC[MATRIX_INV_INV]] THEN
+  REWRITE_TAC[POSITIVE_SEMIDEFINITE_COVARIANCE_EQ] THEN
+  DISCH_THEN(X_CHOOSE_THEN `S:real^N^N` SUBST1_TAC) THEN
+  REWRITE_TAC[MATRIX_INV_COVARIANCE] THEN MESON_TAC[TRANSP_TRANSP]);;
+
 let POSITIVE_DEFINITE_INV = prove
- (`!A:real^N^N. positive_definite A ==> positive_definite (matrix_inv A)`,
-  REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(ASSUME_TAC o MATCH_MP POSITIVE_DEFINITE_IMP_INVERTIBLE) THEN
-  REWRITE_TAC[POSITIVE_DEFINITE_EIGENVALUES] THEN
-  ASM_SIMP_TAC[TRANSP_MATRIX_INV] THEN
-  CONJ_TAC THENL [ASM_MESON_TAC[positive_definite]; ALL_TAC] THEN
-  MAP_EVERY X_GEN_TAC [`c:real`; `v:real^N`] THEN
-  ASM_CASES_TAC `c % v:real^N = vec 0` THENL
-   [ASM_MESON_TAC[MATRIX_LEFT_INVERTIBLE_KER; INVERTIBLE_MATRIX_INV;
-                  invertible];
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [VECTOR_MUL_EQ_0])] THEN
-  REWRITE_TAC[DE_MORGAN_THM] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(MP_TAC o AP_TERM `(**) A:real^N->real^N` o SYM) THEN
-  ASM_SIMP_TAC[MATRIX_VECTOR_MUL_ASSOC; MATRIX_INV; MATRIX_VECTOR_MUL_LID] THEN
-  DISCH_TAC THEN FIRST_ASSUM(MP_TAC o
-   GEN_REWRITE_RULE I [POSITIVE_DEFINITE_EIGENVALUES]) THEN
-  DISCH_THEN(MP_TAC o SPECL [`inv c:real`; `c % v:real^N`] o CONJUNCT2) THEN
-  ASM_REWRITE_TAC[VECTOR_MUL_EQ_0; REAL_LT_INV_EQ] THEN
-  ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID]);;
+ (`!A:real^N^N.
+     positive_definite(matrix_inv A) <=> positive_definite A`,
+  REWRITE_TAC[POSITIVE_DEFINITE_POSITIVE_SEMIDEFINITE;
+              POSITIVE_SEMIDEFINITE_INV; INVERTIBLE_MATRIX_INV]);;
 
 let POSITIVE_SEMIDEFINITE_COVARIANCE_UNIQUE = prove
  (`!A:real^N^N. positive_semidefinite A <=>
@@ -20365,33 +20401,33 @@ let SETDIST_SING_LE_HAUSDIST = prove
    [ALL_TAC; ONCE_REWRITE_TAC[DIST_SYM]] THEN
   MATCH_MP_TAC SETDIST_LE_DIST THEN ASM_REWRITE_TAC[IN_SING]);;
 
-let SETDIST_HAUSDIST_TRIANGLE = prove                                          
- (`!s t u:real^N->bool.                                                        
-        ~(t = {}) /\ bounded t /\ bounded u                                    
+let SETDIST_HAUSDIST_TRIANGLE = prove
+ (`!s t u:real^N->bool.
+        ~(t = {}) /\ bounded t /\ bounded u
         ==> setdist(s,u) <= setdist(s,t) + hausdist(t,u)`,
-  REPEAT STRIP_TAC THEN     
+  REPEAT STRIP_TAC THEN
   MAP_EVERY ASM_CASES_TAC [`s:real^N->bool = {}`; `u:real^N->bool = {}`] THEN
-  ASM_SIMP_TAC[SETDIST_EMPTY; REAL_LE_ADD; REAL_ADD_LID;            
+  ASM_SIMP_TAC[SETDIST_EMPTY; REAL_LE_ADD; REAL_ADD_LID;
                SETDIST_POS_LE; HAUSDIST_POS_LE] THEN
   ONCE_REWRITE_TAC[REAL_ARITH `a <= b + c <=> a - c <= b`] THEN
   ASM_REWRITE_TAC[REAL_LE_SETDIST_EQ; NOT_INSERT_EMPTY; IN_SING] THEN
   MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
   REWRITE_TAC[REAL_LE_SUB_RADD] THEN
-  TRANS_TAC REAL_LE_TRANS `setdist({x:real^N},u)` THEN                        
+  TRANS_TAC REAL_LE_TRANS `setdist({x:real^N},u)` THEN
   ASM_SIMP_TAC[SETDIST_LE_SING] THEN
   MP_TAC(ISPECL [`u:real^N->bool`; `x:real^N`; `y:real^N`]
         SETDIST_SING_TRIANGLE) THEN
-  MATCH_MP_TAC(REAL_ARITH                                   
+  MATCH_MP_TAC(REAL_ARITH
    `yu <= z ==> abs(xu - yu) <= d ==> xu <= d + z`) THEN
   MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]);;
-                                                       
+
 let HAUSDIST_SETDIST_TRIANGLE = prove
- (`!s t u:real^N->bool.          
+ (`!s t u:real^N->bool.
         ~(t = {}) /\ bounded s /\ bounded t
-        ==> setdist(s,u) <= hausdist(s,t) + setdist(t,u)`, 
+        ==> setdist(s,u) <= hausdist(s,t) + setdist(t,u)`,
   ONCE_REWRITE_TAC[SETDIST_SYM; HAUSDIST_SYM] THEN
   ONCE_REWRITE_TAC[REAL_ADD_SYM] THEN
-  SIMP_TAC[SETDIST_HAUSDIST_TRIANGLE]);;                              
+  SIMP_TAC[SETDIST_HAUSDIST_TRIANGLE]);;
 
 let REAL_LT_HAUSDIST_POINT_EXISTS = prove
  (`!s t x:real^N d.
@@ -20497,8 +20533,8 @@ let REAL_HAUSDIST_LE_EQ = prove
   ASM_MESON_TAC[SETDIST_LE_DIST; dist; DIST_SYM; REAL_LE_TRANS;
                 MEMBER_NOT_EMPTY; IN_SING]);;
 
-let HAUSDIST_UNION_LE = prove                               
- (`!s t u:real^N->bool.                   
+let HAUSDIST_UNION_LE = prove
+ (`!s t u:real^N->bool.
         bounded s /\ bounded t /\ bounded u /\ ~(t = {}) /\ ~(u = {})
         ==> hausdist(s UNION t,s UNION u) <= hausdist(t,u)`,
   REPEAT STRIP_TAC THEN
@@ -20509,14 +20545,14 @@ let HAUSDIST_UNION_LE = prove
   CONJ_TAC THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THENL
    [TRANS_TAC REAL_LE_TRANS `setdist({x:real^N},u)`;
     TRANS_TAC REAL_LE_TRANS `setdist({x:real^N},t)`] THEN
-  ASM_SIMP_TAC[SETDIST_SUBSET_RIGHT; SUBSET_UNION] THENL   
+  ASM_SIMP_TAC[SETDIST_SUBSET_RIGHT; SUBSET_UNION] THENL
    [ALL_TAC; ONCE_REWRITE_TAC[HAUSDIST_SYM]] THEN
   MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]);;
-                                                         
+
 let HAUSDIST_INSERT_LE = prove
- (`!s t a:real^N.                  
-        bounded s /\ bounded t /\ ~(s = {}) /\ ~(t = {})          
-        ==> hausdist(a INSERT s,a INSERT t) <= hausdist(s,t)`,       
+ (`!s t a:real^N.
+        bounded s /\ bounded t /\ ~(s = {}) /\ ~(t = {})
+        ==> hausdist(a INSERT s,a INSERT t) <= hausdist(s,t)`,
   ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
   ASM_SIMP_TAC[HAUSDIST_UNION_LE; NOT_INSERT_EMPTY; BOUNDED_SING]);;
 
@@ -20542,6 +20578,43 @@ let HAUSDIST_COMPACT_EXISTS = prove
   MATCH_MP_TAC MONO_EXISTS THEN
   ASM_MESON_TAC[SETDIST_LE_DIST; dist; DIST_SYM; REAL_LE_TRANS;
                 MEMBER_NOT_EMPTY; IN_SING]);;
+
+let HAUSDIST_TRIANGLE = prove
+ (`!s t u:real^N->bool.
+        bounded s /\ bounded t /\ bounded u /\ ~(t = {})
+        ==> hausdist(s,u) <= hausdist(s,t) + hausdist(t,u)`,
+  ONCE_REWRITE_TAC[GSYM(CONJUNCT1 HAUSDIST_CLOSURE)] THEN
+  ONCE_REWRITE_TAC[GSYM(CONJUNCT2 HAUSDIST_CLOSURE)] THEN
+  ONCE_REWRITE_TAC[GSYM COMPACT_CLOSURE; GSYM CLOSURE_EQ_EMPTY] THEN
+  REPEAT GEN_TAC THEN MAP_EVERY
+   (fun t -> SPEC_TAC(mk_comb(`closure:(real^N->bool)->real^N->bool`,t),t))
+   [`u:real^N->bool`; `t:real^N->bool`; `s:real^N->bool`] THEN
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[HAUSDIST_EMPTY; HAUSDIST_POS_LE; REAL_ADD_LID] THEN
+  ASM_CASES_TAC `u:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[HAUSDIST_EMPTY; HAUSDIST_POS_LE; REAL_ADD_RID] THEN
+  ASM_SIMP_TAC[REAL_HAUSDIST_LE_EQ; COMPACT_IMP_BOUNDED] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [HAUSDIST_SYM] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [REAL_ADD_SYM] THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN
+   MAP_EVERY (fun t -> SPEC_TAC(t,t))
+   [`u:real^N->bool`; `t:real^N->bool`; `s:real^N->bool`] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!s t u. P s t u ==> P u t s) /\
+    (!s t u. P s t u ==> Q s t u)
+    ==> (!s t u. P s t u ==> Q s t u /\ Q u t s)`) THEN
+  CONJ_TAC THENL [REWRITE_TAC[CONJ_ACI]; REPEAT GEN_TAC THEN STRIP_TAC] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `?y:real^N. y IN t /\ dist(x,y) <= hausdist(s,t)`
+  STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[HAUSDIST_COMPACT_EXISTS; COMPACT_IMP_BOUNDED]; ALL_TAC] THEN
+  SUBGOAL_THEN `?z:real^N. z IN u /\ dist(y,z) <= hausdist(t,u)`
+  STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[HAUSDIST_COMPACT_EXISTS; COMPACT_IMP_BOUNDED]; ALL_TAC] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (NORM_ARITH
+   `dist(y,z) <= b ==> dist(x,y) <= a /\ s <= dist(x,z) ==> s <= a + b`)) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC SETDIST_LE_DIST THEN
+  ASM_REWRITE_TAC[IN_SING]);;
 
 let HAUSDIST_COMPACT_SUMS = prove
  (`!s t:real^N->bool.

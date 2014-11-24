@@ -566,3 +566,12 @@ let DOUBLE_DISTRIB = time PROVER9
  `(!x y z. (x * y) * z = (x * z) * (y * z)) /\
   (!x y z. z * (x * y) = (z * x) * (z * y))
   ==> !a b c. (a * b) * (c * a) = (a * c) * (b * a)`;;
+
+let MOORE_PENROSE_PSEUDOINVERSE_UNIQUE = time PROVER9
+ `X * A * X = X /\ transpose(A * X) = A * X /\
+  A * X * A = A /\ transpose(X * A) = X * A /\                     
+  Y * A * Y = Y /\ transpose(A * Y) = A * Y /\                             
+  A * Y * A = A /\ transpose(Y * A) = Y * A /\                       
+  (!x y z. (x * y) * z = x * (y * z)) /\                           
+  (!x y. transpose(x * y) = transpose(y) * transpose(x))      
+  ==> X = Y`;;

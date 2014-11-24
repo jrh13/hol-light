@@ -10,8 +10,8 @@ When applied to a term, {NUM_SIMPLIFY_CONV} tries to get rid of instances of
 the natural number operators {PRE}, {DIV}, {MOD} and {-} (which is cutoff
 subtraction), as well as the {EVEN} and {ODD} predicates, by rephrasing
 properties in terms of multiplication and addition, adding new variables if
-necessary. Some attempt is made to introduce quantifiers so that they are 
-effectively universally quantified. However, the input formula should be in NNF 
+necessary. Some attempt is made to introduce quantifiers so that they are
+effectively universally quantified. However, the input formula should be in NNF
 for this aspect to be completely reliable.
 
 \FAILURE
@@ -37,6 +37,6 @@ such rules can handle these troublesome operators to some extent, e.g.
 }
 
 \SEEALSO
-ARITH_CONV, ARITH_RULE, ARITH_TAC, NUM_RING.
+ARITH_RULE, ARITH_TAC, NUM_RING.
 
 \ENDDOC

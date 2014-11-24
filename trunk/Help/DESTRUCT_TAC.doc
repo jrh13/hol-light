@@ -12,12 +12,12 @@ syntax of the pattern {s} is the following:
 
 \begin{{itemize}}
 
-\item An identifier {l} other than `_` and `+` assumes a hypothesis
+\item An identifier {l} other than {`_`} and {`+`} assumes a hypothesis
   with label {l}
 
-\item The identifier `_' does nothing (discard the hypothesis)
+\item The identifier {`_'} does nothing (discard the hypothesis)
 
-\item The identifier `+' adds the theorem as antecedent as with MP_TAC
+\item The identifier {`+'} adds the theorem as antecedent as with MP\_TAC
 
 \item A sequence of patterns (separated by spaces) destructs a conjunction
 
