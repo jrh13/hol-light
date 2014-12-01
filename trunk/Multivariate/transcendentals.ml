@@ -3280,6 +3280,35 @@ let HOMOTOPIC_RESTRICTED_LINEAR_MAPS = prove
     ASM_SIMP_TAC[REAL_SGN_EQ; DET_POSITIVE_DEFINITE; real_gt]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* "If and only if" variants of unrestricted homotopy characterization       *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ = prove
+ (`!f g:real^N->real^N.
+        orthogonal_transformation f /\ orthogonal_transformation g
+        ==> (homotopic_with
+                (\x. T) (sphere (vec 0,&1),sphere (vec 0,&1)) f g <=>
+             det(matrix f) = det(matrix g))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [MATCH_MP_TAC HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_IMP THEN
+    ASM_REWRITE_TAC[];
+    MATCH_MP_TAC HOMOTOPIC_WITH_MONO THEN
+    EXISTS_TAC `orthogonal_transformation:(real^N->real^N)->bool` THEN
+    SIMP_TAC[HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_SPHERE; REAL_LT_01] THEN
+    ASM_REWRITE_TAC[HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS]]);;
+
+let HOMOTOPIC_ANTIPODAL_IDENTITY_MAP = prove
+ (`homotopic_with (\x. T) (sphere(vec 0,&1),sphere(vec 0,&1))
+                  (\x:real^N. --x) (\x. x) <=>
+   EVEN(dimindex(:N))`,
+  SIMP_TAC[HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ;
+           ORTHOGONAL_TRANSFORMATION_NEG;
+           ORTHOGONAL_TRANSFORMATION_ID] THEN
+  SIMP_TAC[MATRIX_NEG; LINEAR_ID; DET_NEG; MATRIX_ID; DET_I] THEN
+  REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+(* ------------------------------------------------------------------------- *)
 (* Complex tangent function.                                                 *)
 (* ------------------------------------------------------------------------- *)
 

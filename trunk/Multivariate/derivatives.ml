@@ -4,7 +4,7 @@
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (* ========================================================================= *)
 
-needs "Multivariate/dimension.ml";;
+needs "Multivariate/degree.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Derivatives. The definition is slightly tricky since we make it work over *)
