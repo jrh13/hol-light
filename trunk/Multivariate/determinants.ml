@@ -35,6 +35,14 @@ let TRACE_SUB = prove
  (`!A B:real^N^N. trace(A - B) = trace(A) - trace(B)`,
   SIMP_TAC[trace; matrix_sub; SUM_SUB_NUMSEG; LAMBDA_BETA]);;
 
+let TRACE_CMUL = prove
+ (`!c A:real^N^N. trace(c %% A) = c * trace A`,
+  REWRITE_TAC[trace; MATRIX_CMUL_COMPONENT; SUM_LMUL]);;
+
+let TRACE_NEG = prove
+ (`!A:real^N^N. trace(--A) = --(trace A)`,
+  REWRITE_TAC[trace; MATRIX_NEG_COMPONENT; SUM_NEG]);;
+
 let TRACE_MUL_SYM = prove
  (`!A B:real^N^N. trace(A ** B) = trace(B ** A)`,
   REPEAT GEN_TAC THEN SIMP_TAC[trace; matrix_mul; LAMBDA_BETA] THEN
@@ -1562,7 +1570,7 @@ let POSITIVE_SEMIDEFINITE_TRANSP = prove
   REWRITE_TAC[positive_semidefinite] THEN MESON_TAC[TRANSP_TRANSP]);;
 
 let POSITIVE_SEMIDEFINITE_COVARIANCE = prove
- (`!A:real^N^N. positive_semidefinite(transp A ** A)`,
+ (`!A:real^N^M. positive_semidefinite(transp A ** A)`,
   REWRITE_TAC[positive_semidefinite; MATRIX_TRANSP_MUL; TRANSP_TRANSP] THEN
   REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_ASSOC] THEN
   ONCE_REWRITE_TAC[GSYM DOT_LMUL_MATRIX] THEN
@@ -1631,6 +1639,20 @@ let TRACE_POSITIVE_SEMIDEFINITE = prove
  (`!A:real^N^N. positive_semidefinite A ==> &0 <= trace A`,
   SIMP_TAC[trace; SUM_POS_LE_NUMSEG; DIAGONAL_POSITIVE_SEMIDEFINITE]);;
 
+let TRACE_LE_MUL_SQUARES = prove
+ (`!A B:real^N^N.
+        transp A = A /\ transp B = B
+        ==> trace((A ** B) ** (A ** B)) <= trace((A ** A) ** (B ** B))`,
+  REPEAT STRIP_TAC THEN MP_TAC
+   (ISPEC `A ** B - B ** A:real^N^N` POSITIVE_SEMIDEFINITE_COVARIANCE) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP TRACE_POSITIVE_SEMIDEFINITE) THEN
+  REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_MATRIX_SUB; MATRIX_SUB_LDISTRIB] THEN
+  ASM_REWRITE_TAC[MATRIX_SUB_RDISTRIB; TRACE_SUB] THEN MATCH_MP_TAC(REAL_ARITH
+  `a = y /\ d = y /\ b = x /\ c = x ==> &0 <= a - b - (c - d) ==> x <= y`) THEN
+  REWRITE_TAC[GSYM MATRIX_MUL_ASSOC] THEN REPEAT CONJ_TAC THEN
+  REPEAT(GEN_REWRITE_TAC LAND_CONV [TRACE_MUL_SYM] THEN
+         REWRITE_TAC[GSYM MATRIX_MUL_ASSOC]));;
+
 let POSITIVE_SEMIDEFINITE_ZERO_FORM = prove
  (`!A:real^N^N. positive_semidefinite A /\ x dot (A ** x) = &0
                 ==> A ** x = vec 0`,
@@ -1698,6 +1720,68 @@ let POSITIVE_SEMIDEFINITE_SUBMATRIX_2 = prove
       ASM_SIMP_TAC[SET_RULE `P a ==> {x | P x /\ x = a} = {a}`;
                    IN_NUMSEG; IN_ELIM_THM; SUM_SING] THEN
       SIMP_TAC[dot; LAMBDA_BETA] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM])]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Trace of covariance as an inner product (actually if we "flatten" the     *)
+(* matrix into a vector, which we could do, it's the usual dot product).     *)
+(* ------------------------------------------------------------------------- *)
+
+let TRACE_COVARIANCE_POS_LE = prove
+ (`!A:real^M^N. &0 <= trace(transp A ** A)`,
+  SIMP_TAC[POSITIVE_SEMIDEFINITE_COVARIANCE; TRACE_POSITIVE_SEMIDEFINITE]);;
+
+let TRACE_COVARIANCE_EQ_0 = prove
+ (`!A:real^M^N. trace(transp A ** A) = &0 <=> A = mat 0`,
+  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[TRACE_0; MATRIX_MUL_RZERO] THEN
+  SIMP_TAC[trace; matrix_mul; transp; LAMBDA_BETA] THEN REPEAT
+  (DISCH_THEN(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+        SUM_POS_EQ_0_NUMSEG)) THEN
+   SIMP_TAC[SUM_POS_LE; REAL_LE_SQUARE; REAL_ENTIRE] THEN
+   ONCE_REWRITE_TAC[GSYM TRANSP_EQ_0] THEN
+   REWRITE_TAC[CART_EQ; MAT_0_COMPONENT; TRANSP_COMPONENT] THEN
+   MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:num` THEN
+   DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+   ASM_REWRITE_TAC[]));;
+
+let TRACE_COVARIANCE_POS_LT = prove
+ (`!A:real^M^N. &0 < trace(transp A ** A) <=> ~(A = mat 0)`,
+  MESON_TAC[REAL_LT_LE; TRACE_COVARIANCE_POS_LE; TRACE_COVARIANCE_EQ_0]);;
+
+let TRACE_COVARIANCE_CAUCHY_SCHWARZ = prove
+ (`!A B:real^M^N.
+        trace(transp A ** B)
+         <= sqrt(trace(transp A ** A)) * sqrt(trace(transp B ** B))`,
+  REPEAT STRIP_TAC THEN MAP_EVERY ASM_CASES_TAC
+   [`A:real^M^N = mat 0`; `B:real^M^N = mat 0`] THEN
+  ASM_REWRITE_TAC[MATRIX_MUL_LZERO; TRANSP_MAT; TRACE_0; SQRT_0; REAL_ABS_NUM;
+    REAL_MUL_LZERO; REAL_LE_REFL; MATRIX_MUL_RZERO; REAL_MUL_RZERO] THEN
+  MP_TAC(ISPEC
+   `sqrt(trace(transp(B:real^M^N) ** B)) %% A -
+    sqrt(trace(transp(A:real^M^N) ** A)) %% B`
+   TRACE_COVARIANCE_POS_LE) THEN
+  REWRITE_TAC[MATRIX_SUB_LDISTRIB; MATRIX_SUB_RDISTRIB; TRACE_SUB;
+              TRANSP_MATRIX_SUB; TRANSP_MATRIX_CMUL;
+              MATRIX_MUL_LMUL; MATRIX_MUL_RMUL; TRACE_CMUL] THEN
+  ASM_SIMP_TAC[SQRT_POW_2; TRACE_COVARIANCE_POS_LE; REAL_RING
+   `sqrt a pow 2 = a /\ sqrt b pow 2 = b
+    ==> sqrt b * (sqrt b * a - sqrt a * y) -
+        sqrt a * (sqrt b * x - sqrt a * b) =
+        sqrt a * sqrt b * (&2 * sqrt a * sqrt b - (x + y))`] THEN
+  ASM_SIMP_TAC[REAL_LE_MUL_EQ; SQRT_POS_LT; TRACE_COVARIANCE_POS_LT] THEN
+  GEN_REWRITE_TAC (LAND_CONV o funpow 3 RAND_CONV) [GSYM TRACE_TRANSP] THEN
+  REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP] THEN REAL_ARITH_TAC);;
+
+let TRACE_COVARIANCE_CAUCHY_SCHWARZ_ABS = prove
+ (`!A B:real^M^N.
+        abs(trace(transp A ** B))
+         <= sqrt(trace(transp A ** A)) * sqrt(trace(transp B ** B))`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM REAL_BOUNDS_LE; TRACE_COVARIANCE_CAUCHY_SCHWARZ] THEN
+  MP_TAC(ISPECL [`A:real^M^N`; `--B:real^M^N`]
+    TRACE_COVARIANCE_CAUCHY_SCHWARZ) THEN
+  REWRITE_TAC[TRANSP_MATRIX_NEG; MATRIX_MUL_LNEG; MATRIX_MUL_RNEG;
+              MATRIX_NEG_NEG; TRACE_NEG] THEN
+  REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Positive definite matrices.                                               *)

@@ -2531,25 +2531,25 @@ let INTER_CONIC_HULL = prove
   ASM_SIMP_TAC[FRONTIER_HALFSPACE_LE; SUBSET; IN_ELIM_THM] THEN
   ASM_MESON_TAC[HULL_INC]);;
 
-let RELATIVE_INTERIOR_CONIC_HULL_0 = prove                                   
- (`!s:real^N->bool.                       
-        convex s  
-        ==> (vec 0 IN relative_interior(conic hull s) <=>                    
-             vec 0 IN relative_interior s)`,  
-  REPEAT STRIP_TAC THEN                      
-  ASM_CASES_TAC `s:real^N->bool = {}` THEN                             
+let RELATIVE_INTERIOR_CONIC_HULL_0 = prove
+ (`!s:real^N->bool.
+        convex s
+        ==> (vec 0 IN relative_interior(conic hull s) <=>
+             vec 0 IN relative_interior s)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `s:real^N->bool = {}` THEN
   ASM_REWRITE_TAC[CONIC_HULL_EMPTY; RELATIVE_INTERIOR_EMPTY; NOT_IN_EMPTY] THEN
-  ASM_CASES_TAC `(vec 0:real^N) IN affine hull s` THENL  
-   [ALL_TAC;                                    
-    ASM_SIMP_TAC[RELATIVE_INTERIOR_CONIC_HULL; IN_DELETE] THEN             
+  ASM_CASES_TAC `(vec 0:real^N) IN affine hull s` THENL
+   [ALL_TAC;
+    ASM_SIMP_TAC[RELATIVE_INTERIOR_CONIC_HULL; IN_DELETE] THEN
     ASM_MESON_TAC[SUBSET; HULL_INC; RELATIVE_INTERIOR_SUBSET]] THEN
   ASM_CASES_TAC `conic hull s:real^N->bool = span s` THENL
-   [ALL_TAC;       
+   [ALL_TAC;
     ASM_MESON_TAC[CONIC_HULL_EQ_SPAN; CONIC_HULL_EQ_SPAN_EQ]] THEN
-  ASM_SIMP_TAC[RELATIVE_INTERIOR_AFFINE; AFFINE_SPAN; SPAN_0] THEN 
+  ASM_SIMP_TAC[RELATIVE_INTERIOR_AFFINE; AFFINE_SPAN; SPAN_0] THEN
   ASM_SIMP_TAC[IN_RELATIVE_INTERIOR_IN_OPEN_SEGMENT_EQ] THEN
-  X_GEN_TAC `x:real^N` THEN STRIP_TAC THEN                   
-  SUBGOAL_THEN `(--x:real^N) IN conic hull s` MP_TAC THENL                
+  X_GEN_TAC `x:real^N` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `(--x:real^N) IN conic hull s` MP_TAC THENL
    [ASM_SIMP_TAC[SPAN_NEG; SPAN_SUPERSET]; ALL_TAC] THEN
   REWRITE_TAC[CONIC_HULL_EXPLICIT; IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
   X_GEN_TAC `a:real` THEN ASM_CASES_TAC `a = &0` THEN
@@ -2558,7 +2558,7 @@ let RELATIVE_INTERIOR_CONIC_HULL_0 = prove
   ASM_REWRITE_TAC[IN_OPEN_SEGMENT] THEN CONJ_TAC THENL
    [REWRITE_TAC[GSYM BETWEEN_IN_SEGMENT; between] THEN
     ONCE_REWRITE_TAC[NORM_ARITH `dist(a:real^N,b) = dist(--a,--b)`] THEN
-    ASM_REWRITE_TAC[] THEN 
+    ASM_REWRITE_TAC[] THEN
     REWRITE_TAC[dist; VECTOR_SUB_LZERO; VECTOR_NEG_0; VECTOR_NEG_NEG;
        VECTOR_SUB_RZERO; VECTOR_ARITH `a % y - --y:real^N = (a + &1) % y`] THEN
     REWRITE_TAC[NORM_MUL] THEN MATCH_MP_TAC(REAL_RING
@@ -3083,6 +3083,12 @@ let EXTREME_POINT_OF_CONVEX_HULL_AFFINE_INDEPENDENT = prove
   ASM_SIMP_TAC[AFFINE_INDEPENDENT_IMP_FINITE; FINITE_IMP_COMPACT] THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [affine_dependent]) THEN
   MESON_TAC[SUBSET; CONVEX_HULL_SUBSET_AFFINE_HULL]);;
+
+let EXTREME_POINTS_OF_CONVEX_HULL_AFFINE_INDEPENDENT = prove
+ (`!s:real^N->bool.
+        ~affine_dependent s ==> {x | x extreme_point_of convex hull s} = s`,
+  SIMP_TAC[EXTENSION; IN_ELIM_THM;
+           EXTREME_POINT_OF_CONVEX_HULL_AFFINE_INDEPENDENT]);;
 
 let SIMPLEX_VERTICES_UNIQUE = prove
  (`!s t:real^N->bool.
@@ -7647,6 +7653,36 @@ let triangulation = new_definition
         (!t t'. t IN tr /\ t' IN tr
                 ==> (t INTER t') face_of t /\ (t INTER t') face_of t')`;;
 
+let SIMPLICIAL_COMPLEX_TRANSLATION = prove
+ (`!a:real^N tr.
+   simplicial_complex(IMAGE (IMAGE (\x. a + x)) tr) <=> simplicial_complex tr`,
+  REWRITE_TAC[simplicial_complex] THEN GEOM_TRANSLATE_TAC[]);;
+
+add_translation_invariants [SIMPLICIAL_COMPLEX_TRANSLATION];;
+
+let SIMPLICIAL_COMPLEX_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N tr.
+       linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+       ==> (simplicial_complex(IMAGE (IMAGE f) tr) <=> simplicial_complex tr)`,
+  REWRITE_TAC[simplicial_complex] THEN GEOM_TRANSFORM_TAC[]);;
+
+add_linear_invariants [SIMPLICIAL_COMPLEX_LINEAR_IMAGE];;
+
+let TRIANGULATION_TRANSLATION = prove
+ (`!a:real^N tr.
+        triangulation(IMAGE (IMAGE (\x. a + x)) tr) <=> triangulation tr`,
+  REWRITE_TAC[triangulation] THEN GEOM_TRANSLATE_TAC[]);;
+
+add_translation_invariants [TRIANGULATION_TRANSLATION];;
+
+let TRIANGULATION_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N tr.
+        linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+        ==> (triangulation(IMAGE (IMAGE f) tr) <=> triangulation tr)`,
+  REWRITE_TAC[triangulation] THEN GEOM_TRANSFORM_TAC[]);;
+
+add_linear_invariants [TRIANGULATION_LINEAR_IMAGE];;
+
 let SIMPLICIAL_COMPLEX_IMP_TRIANGULATION = prove
  (`!tr. simplicial_complex tr ==> triangulation tr`,
   REWRITE_TAC[triangulation; simplicial_complex] THEN MESON_TAC[]);;
@@ -7747,6 +7783,57 @@ let TRIANGULATION_SIMPLEX_FACETS = prove
    `{c:real^N->bool | c face_of s /\ aff_dim c = aff_dim s - &1}` THEN
   CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
   MATCH_MP_TAC TRIANGULATION_SIMPLEX_FACES THEN ASM_MESON_TAC[]);;
+
+let CELL_COMPLEX_DISJOINT_RELATIVE_INTERIORS = prove
+ (`!c d:real^N->bool.
+        c INTER d face_of c /\ c INTER d face_of d /\ ~(c = d)
+        ==> relative_interior c INTER relative_interior d = {}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `c INTER d:real^N->bool`FACE_OF_DISJOINT_RELATIVE_INTERIOR) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(SPEC `d:real^N->bool` th) THEN
+    MP_TAC(SPEC `c:real^N->bool` th)) THEN
+  ASM_REWRITE_TAC[] THEN
+  MAP_EVERY (MP_TAC o C ISPEC RELATIVE_INTERIOR_SUBSET)
+   [`c:real^N->bool`; `d:real^N->bool`] THEN
+  ASM SET_TAC[]);;
+
+let TRIANGULATION_DISJOINT_RELATIVE_INTERIORS = prove
+ (`!t c d:real^N->bool.
+        triangulation t /\ c IN t /\ d IN t /\ ~(c = d)
+        ==> relative_interior c INTER relative_interior d = {}`,
+  REWRITE_TAC[triangulation] THEN
+  MESON_TAC[CELL_COMPLEX_DISJOINT_RELATIVE_INTERIORS]);;
+
+let SIMPLICIAL_COMPLEX_DISJOINT_RELATIVE_INTERIORS = prove
+ (`!t c d:real^N->bool.
+        simplicial_complex t /\ c IN t /\ d IN t /\ ~(c = d)
+        ==> relative_interior c INTER relative_interior d = {}`,
+  MESON_TAC[TRIANGULATION_DISJOINT_RELATIVE_INTERIORS;
+            SIMPLICIAL_COMPLEX_IMP_TRIANGULATION]);;
+
+let NOT_IN_AFFINE_HULL_SURFACE_TRIANGULATION = prove
+ (`!t u z. convex u /\ bounded u /\ z IN interior u /\
+           triangulation t /\ UNIONS t SUBSET frontier u
+           ==> !c:real^N->bool. c IN t ==> ~(z IN affine hull c)`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `z:real^N` THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`closure u:real^N->bool`; `c:real^N->bool`]
+        CONVEX_RELATIVE_BOUNDARY_SUBSET_OF_PROPER_FACE) THEN
+  ASM_SIMP_TAC[CONVEX_RELATIVE_INTERIOR_CLOSURE; CONVEX_CLOSURE] THEN
+  REWRITE_TAC[GSYM relative_frontier; CLOSURE_EQ_EMPTY; NOT_IMP] THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[INTERIOR_EMPTY; NOT_IN_EMPTY];
+    ASM_MESON_TAC[triangulation; SIMPLEX_IMP_CONVEX];
+    MP_TAC(ISPEC `u:real^N->bool` RELATIVE_FRONTIER_NONEMPTY_INTERIOR) THEN
+    ASM SET_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `k:real^N->bool` STRIP_ASSUME_TAC)] THEN
+  MP_TAC(ISPECL [`closure u:real^N->bool`; `k:real^N->bool`]
+   AFFINE_HULL_FACE_OF_DISJOINT_RELATIVE_INTERIOR) THEN
+  ASM_SIMP_TAC[CONVEX_RELATIVE_INTERIOR_CLOSURE; CONVEX_CLOSURE] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_INTER] THEN
+  EXISTS_TAC `vec 0:real^N` THEN
+  ASM_SIMP_TAC[REWRITE_RULE[SUBSET] INTERIOR_SUBSET_RELATIVE_INTERIOR] THEN
+  ASM_MESON_TAC[SUBSET; HULL_MONO]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Subdividing a cell complex (not necessarily simplicial).                  *)

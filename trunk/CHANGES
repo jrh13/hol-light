@@ -1,3 +1,23 @@
+Sun 30th Nov 2014       lists.ml, Help/dest_char.doc [new file], Help/mk_char.doc [new file], Help/dest_string.doc [new file], Help/mk_string.doc [new file], Help/CHAR_EQ_CONV.doc [new file], Help/STRING_EQ_CONV.doc [new file]
+
+Added a systematic set of syntax constructors, destructors and comparison
+conversions for characters and for strings (== char lists), written by Marco
+Maggesi:
+
+        dest_char
+        mk_char
+        dest_string
+        mk_string
+        CHAR_EQ_CONV
+        STRING_EQ_CONV
+
+Sun 30th Nov 2014       parser.ml
+
+Fixed a bug in the parsing of HOL strings where the special handling of a
+quotation with just a single identifier (designed to allow one to omit the
+parantheses round infixes in this special case) was accidentally catching
+strings as well.
+
 Sun 23rd Nov 2014       sets.ml
 
 Added this, a natural dual to the existing INTERS_OVER_UNIONS

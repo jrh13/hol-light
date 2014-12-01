@@ -479,10 +479,14 @@ let parse_preterm =
    ((possibly (a (Resword "|")) ++
      listof clause (a (Resword "|")) "pattern-match clause" >> snd)
     >> end_itlist (fun s t -> Combp(Combp(Varp("_SEQPATTERN",dpty),s),t))) i in
-  (fun inp ->
-    match inp with
-      [Ident s] -> Varp(s,dpty),[]
-    | _ -> preterm inp);;
+  (fun inp ->           
+    match inp with                            
+      [Ident s] when
+        not(String.length s >= 2 &
+            String.sub s 0 1 = "\"" &                  
+            String.sub s (String.length s - 1) 1 = "\"")
+      -> Varp(s,dpty),[]      
+    | _ -> preterm inp);;                         
 
 (* ------------------------------------------------------------------------- *)
 (* Type and term parsers.                                                    *)

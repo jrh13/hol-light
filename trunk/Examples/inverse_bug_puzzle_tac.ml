@@ -113,7 +113,7 @@ let Noncollinear_2Span = prove
   (M ** x)$2 = v$2 * x$1 + w$2 * x$2)`
   [HYP SIMP_TAC "H1' Mexists" [matrix_vector_mul; DIMINDEX_2; SUM_2;
   TRANSP_COMPONENT; VECTOR_2; LAMBDA_BETA; ARITH; CART_EQ; FORALL_2; DET_2] THEN VEC2_TAC] THEN
-  consider "x such that" `(M:real^2^2) ** x = u`
+  consider "x such that" `(M:real^2^2) ** (x:real^2) = u`
   [so (MESON_TAC [ARITH_RULE `~(r < n)  /\  r <= MIN n n  ==>  r = n`;
   DET_EQ_0_RANK; RANK_BOUND; MATRIX_FULL_LINEAR_EQUATIONS])] "xDef" THEN
   MAP_EVERY EXISTS_TAC [`(x:real^2)$1`; `(x:real^2)$2`] THEN SUBGOAL_TAC ""

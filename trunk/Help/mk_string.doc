@@ -1,0 +1,27 @@
+\DOC mk_string
+
+\TYPE {mk_string : string -> term}
+
+\SYNOPSIS
+Constructs object-level string from OCaml string.
+
+\DESCRIBE
+{mk_string "..."} produces the HOL term of type {string} (which is an 
+abbreviation for {char list}) corresponding to the OCaml string {"..."}.
+
+\FAILURE
+Never fails
+
+\EXAMPLE
+{
+  # mk_string "hello";;
+  val it : term = `"hello"`
+
+  # type_of it;;
+  val it : hol_type = `:(char)list`
+}
+
+\SEEALSO
+dest_char, dest_list, dest_string, mk_char, mk_list.
+
+\ENDDOC

@@ -1,0 +1,25 @@
+\DOC dest_string
+
+\TYPE {dest_string : term -> string}
+
+\SYNOPSIS
+Produces OCaml string corresponding to object-level string.
+
+\DESCRIBE
+{dest_string t} where {t} is a literal string in the HOL object logic of type
+{string} (which is an abbreviation for {char list}), produces the corresponding
+OCaml string.
+
+\FAILURE
+Fails if the term is not a literal term of type {string}
+
+\EXAMPLE
+{
+  # dest_string `"HOL"`;;
+  val it : string = "HOL"
+}
+
+\SEEALSO
+dest_char, dest_list, mk_char, mk_list, mk_string.
+
+\ENDDOC

@@ -10660,21 +10660,39 @@ let HOMOTOPIC_WITH_TRANS = prove
     REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; DROP_CMUL; DROP_SUB] THEN
     ASM_REAL_ARITH_TAC]);;
 
+let HOMOTOPIC_WITH_COMPOSE = prove
+ (`!P Q R f f':real^M->real^N g g':real^N->real^P s t u.
+           (!f g. f continuous_on s /\ IMAGE f s SUBSET t /\ P f /\
+                  g continuous_on t /\ IMAGE g t SUBSET u /\ Q g
+                  ==> R(g o f)) /\
+           homotopic_with P (s,t) f f' /\
+           homotopic_with Q (t,u) g g'
+           ==> homotopic_with R (s,u) (g o f) (g' o f')`,
+  REPEAT STRIP_TAC THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
+  EXISTS_TAC `(g:real^N->real^P) o (f':real^M->real^N)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT;
+    MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT] THEN
+  EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+  (CONJ_TAC THENL
+    [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+      (ONCE_REWRITE_RULE[IMP_CONJ] HOMOTOPIC_WITH_MONO)) THEN
+     FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_PROPERTY) THEN
+     FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_CONTINUOUS) THEN
+     FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_SUBSET) THEN
+     ASM_SIMP_TAC[];
+     ASM_MESON_TAC[HOMOTOPIC_WITH_IMP_CONTINUOUS;
+                   HOMOTOPIC_WITH_IMP_SUBSET]]));;
+
 let HOMOTOPIC_COMPOSE = prove
  (`!f f':real^M->real^N g g':real^N->real^P s t u.
         homotopic_with (\x. T) (s,t) f f' /\
         homotopic_with (\x. T) (t,u) g g'
         ==> homotopic_with (\x. T) (s,u) (g o f) (g' o f')`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
-  EXISTS_TAC `(g:real^N->real^P) o (f':real^M->real^N)` THEN
-  CONJ_TAC THENL
-   [MATCH_MP_TAC HOMOTOPIC_COMPOSE_CONTINUOUS_LEFT;
-    MATCH_MP_TAC HOMOTOPIC_COMPOSE_CONTINUOUS_RIGHT] THEN
-  EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
-  REPEAT(FIRST_X_ASSUM(fun th ->
-    ASSUME_TAC(MATCH_MP HOMOTOPIC_WITH_IMP_CONTINUOUS th) THEN
-    ASSUME_TAC(MATCH_MP HOMOTOPIC_WITH_IMP_SUBSET th))) THEN
-  ASM_REWRITE_TAC[]);;
+  REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ] HOMOTOPIC_WITH_COMPOSE) THEN
+  REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Two characterizations of homotopic triviality, one of which               *)

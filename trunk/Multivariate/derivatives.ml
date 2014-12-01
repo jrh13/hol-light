@@ -1023,7 +1023,7 @@ let DIFFERENTIAL_ZERO_MAXMIN_COMPONENT = prove
         ==> (jacobian f (at x) $ k = vec 0)`,
   REWRITE_TAC[JACOBIAN_WORKS] THEN REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
-   [`f:real^M->real^N`; `\h. jacobian (f:real^M->real^N) (at x) ** h`;
+   [`f:real^M->real^N`; `\h:real^M. jacobian (f:real^M->real^N) (at x) ** h`;
     `x:real^M`; `ball(x:real^M,e)`; `k:num`]
       DIFFERENTIAL_COMPONENT_ZERO_AT_MAXMIN) THEN
   ASM_REWRITE_TAC[CENTRE_IN_BALL; OPEN_BALL] THEN
