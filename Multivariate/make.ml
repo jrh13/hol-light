@@ -19,7 +19,7 @@ loadt "Multivariate/topology.ml";;      (* Basic topological notions        *)
 loadt "Multivariate/convex.ml";;        (* Convex sets and functions        *)
 loadt "Multivariate/paths.ml";;         (* Paths, simple connectedness etc. *)
 loadt "Multivariate/polytope.ml";;      (* Faces, polytopes, polyhedra etc. *)
-loadt "Multivariate/dimension.ml";;     (* Dimensional theorems             *)
+loadt "Multivariate/degree.ml";;        (* Brouwer degree                   *)
 loadt "Multivariate/derivatives.ml";;   (* Derivatives                      *)
 
 (* ------------------------------------------------------------------------- *)
