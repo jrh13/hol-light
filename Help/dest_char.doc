@@ -1,0 +1,32 @@
+\DOC dest_char
+
+\TYPE {dest_char : term -> char}
+
+\SYNOPSIS
+Produces OCaml character corresponding to object-level character.
+
+\DESCRIBE
+{dest_char t} where {t} is a term of HOL type {char}, produces the 
+corresponding OCaml character.
+
+\FAILURE
+Fails if the term is not of type {char}
+
+\EXAMPLE
+{
+  # lhand `"hello"`;;
+  val it : term = `ASCII F T T F T F F F`
+
+  # dest_char it;;
+  val it : char = 'h'
+}
+
+\COMMENTS
+There is no particularly convenient parser/printer support for the HOL {char} 
+type, but when combined into lists they are considered as strings and provided 
+with more intuitive parser/printer support.                          
+
+\SEEALSO
+dest_string, mk_char, mk_string.
+
+\ENDDOC

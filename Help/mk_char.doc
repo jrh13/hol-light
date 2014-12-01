@@ -1,0 +1,29 @@
+\DOC mk_char
+
+\TYPE {mk_char : char -> term}
+
+\SYNOPSIS
+Constructs object-level character from OCaml character.
+
+\DESCRIBE
+{mk_char 'c'} produces the HOL term of type {char} corresponding to the OCaml 
+character {c}.
+
+\FAILURE
+Never fails
+
+\EXAMPLE
+{
+  # mk_char 'c';;
+  val it : term = `ASCII F T T F F F T T`
+}
+
+\COMMENTS
+There is no particularly convenient parser/printer support for the HOL {char} 
+type, but when combined into lists they are considered as strings and provided 
+with more intuitive parser/printer support.
+
+\SEEALSO
+dest_char, dest_string, mk_string.
+
+\ENDDOC

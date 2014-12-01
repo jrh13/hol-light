@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                 (c) Copyright, Marco Maggesi 2014                         *)
 (* ========================================================================= *)
 
 needs "ind_types.ml";;
@@ -542,10 +543,124 @@ let rec LIST_CONV conv tm =
   else failwith "LIST_CONV";;
 
 (* ------------------------------------------------------------------------- *)
-(* Type of characters, like the HOL88 "ascii" type.                          *)
+(* Type of characters, like the HOL88 "ascii" type, with syntax              *)
+(* constructors and equality conversions for chars and strings.              *)
 (* ------------------------------------------------------------------------- *)
 
 let char_INDUCT,char_RECURSION = define_type
  "char = ASCII bool bool bool bool bool bool bool bool";;
 
 new_type_abbrev("string",`:char list`);;
+
+let dest_char,mk_char,dest_string,mk_string,CHAR_EQ_CONV,STRING_EQ_CONV =
+  let bool_of_term t =
+    match t with
+      Const("T",_) -> true
+    | Const("F",_) -> false
+    | _ -> failwith "bool_of_term" in
+  let code_of_term t =
+    let f,tms = strip_comb t in
+    if not(is_const f && fst(dest_const f) = "ASCII")
+       or not(length tms = 8) then failwith "code_of_term"
+    else
+       itlist (fun b f -> if b then 1 + 2 * f else 2 * f)
+              (map bool_of_term (rev tms)) 0 in
+  let char_of_term = Char.chr o code_of_term in
+  let dest_string tm =
+    try let tms = dest_list tm in
+        if fst(dest_type(hd(snd(dest_type(type_of tm))))) <> "char"
+        then fail() else
+        let ccs = map (String.make 1 o char_of_term) tms in
+        String.escaped (implode ccs)
+    with Failure _ -> failwith "dest_string" in
+  let mk_bool b =
+    let true_tm,false_tm = `T`,`F` in
+    if b then true_tm else false_tm in
+  let mk_code =
+    let ascii_tm = `ASCII` in
+    let mk_code c =
+      let lis = map (fun i -> mk_bool((c / (1 lsl i)) mod 2 = 1)) (0--7) in
+      itlist (fun x y -> mk_comb(y,x)) lis ascii_tm in
+    let codes = Array.map mk_code (Array.of_list (0--255)) in
+    fun c -> Array.get codes c in
+  let mk_char = mk_code o Char.code in
+  let mk_string s =
+    let ns = map (fun i -> Char.code(String.get s i))
+                 (0--(String.length s - 1)) in
+    mk_list(map mk_code ns,`:char`) in
+  let CHAR_DISTINCTNESS =
+    let avars,bvars,cvars =
+     [`a0:bool`;`a1:bool`;`a2:bool`;`a3:bool`;`a4:bool`;`a5:bool`;`a6:bool`],
+     [`b1:bool`;`b2:bool`;`b3:bool`;`b4:bool`;`b5:bool`;`b6:bool`;`b7:bool`],
+     [`c1:bool`;`c2:bool`;`c3:bool`;`c4:bool`;`c5:bool`;`c6:bool`;`c7:bool`] in
+    let ASCII_NEQS_FT = (map EQF_INTRO o CONJUNCTS o prove)
+     (`~(ASCII F b1 b2 b3 b4 b5 b6 b7 = ASCII T c1 c2 c3 c4 c5 c6 c7) /\
+       ~(ASCII a0 F b2 b3 b4 b5 b6 b7 = ASCII a0 T c2 c3 c4 c5 c6 c7) /\
+       ~(ASCII a0 a1 F b3 b4 b5 b6 b7 = ASCII a0 a1 T c3 c4 c5 c6 c7) /\
+       ~(ASCII a0 a1 a2 F b4 b5 b6 b7 = ASCII a0 a1 a2 T c4 c5 c6 c7) /\
+       ~(ASCII a0 a1 a2 a3 F b5 b6 b7 = ASCII a0 a1 a2 a3 T c5 c6 c7) /\
+       ~(ASCII a0 a1 a2 a3 a4 F b6 b7 = ASCII a0 a1 a2 a3 a4 T c6 c7) /\
+       ~(ASCII a0 a1 a2 a3 a4 a5 F b7 = ASCII a0 a1 a2 a3 a4 a5 T c7) /\
+       ~(ASCII a0 a1 a2 a3 a4 a5 a6 F = ASCII a0 a1 a2 a3 a4 a5 a6 T)`,
+      REWRITE_TAC[injectivity "char"]) in
+    let ASCII_NEQS_TF =
+      let ilist = zip bvars cvars @ zip cvars bvars in
+      let f = EQF_INTRO o INST ilist o GSYM o EQF_ELIM in
+      map f ASCII_NEQS_FT in
+    let rec prefix n l =
+      if n = 0 then [] else
+      match l with
+        h::t -> h :: prefix (n-1) t
+      | _ -> l in
+    let rec findneq n prefix a b =
+      match a,b with
+        b1::a, b2::b -> if b1 <> b2 then n,rev prefix,bool_of_term b2,a,b else
+                        findneq (n+1) (b1 :: prefix) a b
+      | _, _ -> fail() in
+    fun c1 c2 ->
+      let _,a = strip_comb c1
+      and _,b = strip_comb c2 in
+      let n,p,b,s1,s2 = findneq 0 [] a b in
+      let ss1 = funpow n tl bvars
+      and ss2 = funpow n tl cvars in
+      let pp = prefix n avars in
+      let pth = if b then ASCII_NEQS_FT else ASCII_NEQS_TF in
+      INST (zip p pp @ zip s1 ss1 @ zip s2 ss2) (el n pth) in
+  let rec STRING_DISTINCTNESS =
+    let xtm,xstm = `x:char`,`xs:string`
+    and ytm,ystm = `y:char`,`ys:string`
+    and niltm = `[]:string` in
+    let NIL_EQ_THM = EQT_INTRO (REFL niltm)
+    and CONS_EQ_THM,CONS_NEQ_THM = (CONJ_PAIR o prove)
+     (`(CONS x xs:string = CONS x ys <=> xs = ys) /\
+       ((x = y <=> F) ==> (CONS x xs:string = CONS y ys <=> F))`,
+      REWRITE_TAC[CONS_11] THEN MESON_TAC[])
+    and NIL_NEQ_CONS,CONS_NEQ_NIL = (CONJ_PAIR o prove)
+     (`(NIL:string = CONS x xs <=> F) /\
+       (CONS x xs:string = NIL <=> F)`,
+      REWRITE_TAC[NOT_CONS_NIL]) in
+    fun s1 s2 ->
+      if s1 = niltm
+      then if s2 = niltm then NIL_EQ_THM
+           else let c2,s2 = rand (rator s2),rand s2 in
+                INST [c2,xtm;s2,xstm] NIL_NEQ_CONS
+      else let c1,s1 = rand (rator s1),rand s1 in
+           if s2 = niltm then INST [c1,xtm;s1,xstm] CONS_NEQ_NIL
+           else let c2,s2 = rand (rator s2),rand s2 in
+           if c1 = c2
+           then let th1 = INST [c1,xtm; s1,xstm; s2,ystm] CONS_EQ_THM
+                and th2 = STRING_DISTINCTNESS s1 s2 in
+                TRANS th1 th2
+           else let ilist = [c1,xtm; c2,ytm; s1,xstm; s2,ystm] in
+                let itm = INST ilist CONS_NEQ_THM in
+                MP itm (CHAR_DISTINCTNESS c1 c2) in
+  let CHAR_EQ_CONV : conv =
+    fun tm ->
+      let c1,c2 = dest_eq tm in
+      if compare c1 c2 = 0 then EQT_INTRO (REFL c1) else
+      CHAR_DISTINCTNESS c1 c2
+  and STRING_EQ_CONV tm =
+    let ltm,rtm = dest_eq tm in
+    if compare ltm rtm = 0 then EQT_INTRO (REFL ltm) else
+    STRING_DISTINCTNESS ltm rtm in
+  char_of_term,mk_char,dest_string,mk_string,CHAR_EQ_CONV,STRING_EQ_CONV;;

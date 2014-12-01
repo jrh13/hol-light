@@ -10295,6 +10295,24 @@ let RELATIVE_INTERIOR_INTER = prove
         IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT)] THEN
     ASM_SIMP_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET] THEN ASM SET_TAC[]]);;
 
+let SUBSET_RELATIVE_INTERIOR_INTERSECTING_CONVEX = prove
+ (`!s t:real^N->bool.
+        convex s /\ convex t /\
+        s SUBSET t /\ ~(s INTER relative_interior t = {})
+        ==> relative_interior s SUBSET relative_interior t`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  REWRITE_TAC[IN_INTER; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `a:real^N` THEN STRIP_TAC THEN
+  REWRITE_TAC[SUBSET] THEN X_GEN_TAC `x:real^N` THEN
+  ASM_CASES_TAC `x:real^N = a` THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `x:real^N`; `a:real^N`]
+        IN_RELATIVE_INTERIOR_IN_OPEN_SEGMENT) THEN
+  ASM_SIMP_TAC[HULL_INC] THEN DISCH_THEN(X_CHOOSE_THEN `b:real^N`
+   (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MATCH_MP_TAC(SET_RULE `s SUBSET t ==> a IN s ==> a IN t`) THEN
+  MATCH_MP_TAC IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT THEN
+  ASM_MESON_TAC[SUBSET; CLOSURE_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some convexity-related properties of Hausdorff distance                   *)

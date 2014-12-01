@@ -2608,7 +2608,8 @@ let ROTATION_MATRIX_ROTATE2D_EQ = prove
   ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
-(* Homotopy staying within the set of orthogonal transformations             *)
+(* Homotopy of linear maps of various kinds where the homotopy stays inside  *)
+(* that class of linear maps.                                                *)
 (* ------------------------------------------------------------------------- *)
 
 let NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION = prove
@@ -3108,6 +3109,175 @@ let HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_SPHERE = prove
       ASM_SIMP_TAC[DIST_0; NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM; REAL_ABS_MUL;
                    REAL_ARITH `&0 < r ==> abs r = r`] THEN
       ASM_SIMP_TAC[GSYM real_div; REAL_DIV_RMUL; NORM_EQ_0; REAL_LT_REFL]]]);;
+
+let HOMOTOPIC_LINEAR_MAPS = prove
+ (`!f g. homotopic_with linear ((:real^M),(:real^N)) f g <=>
+         linear f /\ linear g`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_IMP_PROPERTY] THEN
+  STRIP_TAC THEN REWRITE_TAC[homotopic_with] THEN
+  EXISTS_TAC `\z. (&1 - drop(fstcart z)) % (f:real^M->real^N) (sndcart z) +
+                  drop(fstcart z) % (g:real^M->real^N) (sndcart z)` THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; DROP_VEC; SUBSET_UNIV;
+              VECTOR_MUL_LID; VECTOR_MUL_LZERO; REAL_SUB_RZERO; REAL_SUB_REFL;
+              VECTOR_ADD_LID; VECTOR_ADD_RID] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_ON_ADD THEN CONJ_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_ON_MUL THEN
+    SIMP_TAC[o_DEF; LIFT_SUB; LIFT_DROP; CONTINUOUS_ON_SUB; LINEAR_FSTCART;
+      ETA_AX; LINEAR_SNDCART; CONTINUOUS_ON_CONST; LINEAR_CONTINUOUS_ON] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART; LINEAR_SNDCART];
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC LINEAR_COMPOSE_ADD THEN
+    CONJ_TAC THEN MATCH_MP_TAC LINEAR_COMPOSE_CMUL THEN ASM_REWRITE_TAC[]]);;
+
+let HOMOTOPIC_LINEAR_POSITIVE_SEMIDEFINITE_MAPS = prove
+ (`!f g. homotopic_with (\f. linear f /\ positive_semidefinite(matrix f))
+                        ((:real^N),(:real^N)) f g <=>
+           linear f /\ linear g /\
+           positive_semidefinite(matrix f) /\
+           positive_semidefinite(matrix g)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_PROPERTY) THEN SIMP_TAC[];
+    REWRITE_TAC[homotopic_with]] THEN
+  EXISTS_TAC `\z. (&1 - drop(fstcart z)) % (f:real^N->real^N) (sndcart z) +
+                  drop(fstcart z) % (g:real^N->real^N) (sndcart z)` THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; DROP_VEC; SUBSET_UNIV;
+              VECTOR_MUL_LID; VECTOR_MUL_LZERO; REAL_SUB_RZERO; REAL_SUB_REFL;
+              VECTOR_ADD_LID; VECTOR_ADD_RID] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_ON_ADD THEN CONJ_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_ON_MUL THEN
+    SIMP_TAC[o_DEF; LIFT_SUB; LIFT_DROP; CONTINUOUS_ON_SUB; LINEAR_FSTCART;
+      ETA_AX; LINEAR_SNDCART; CONTINUOUS_ON_CONST; LINEAR_CONTINUOUS_ON] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART; LINEAR_SNDCART];
+    REWRITE_TAC[IN_INTERVAL_1; GSYM FORALL_DROP; DROP_VEC] THEN
+    ASM_SIMP_TAC[LINEAR_COMPOSE_ADD; MATRIX_ADD; LINEAR_COMPOSE_CMUL;
+                 MATRIX_CMUL] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC POSITIVE_SEMIDEFINITE_ADD THEN
+    CONJ_TAC THEN MATCH_MP_TAC POSITIVE_SEMIDEFINITE_CMUL THEN
+    ASM_REWRITE_TAC[REAL_SUB_LE]]);;
+
+let HOMOTOPIC_LINEAR_POSITIVE_DEFINITE_MAPS = prove
+ (`!f g. homotopic_with (\f. linear f /\ positive_definite(matrix f))
+                        ((:real^N),(:real^N)) f g <=>
+           linear f /\ linear g /\
+           positive_definite(matrix f) /\
+           positive_definite(matrix g)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_PROPERTY) THEN SIMP_TAC[];
+    REWRITE_TAC[homotopic_with]] THEN
+  EXISTS_TAC `\z. (&1 - drop(fstcart z)) % (f:real^N->real^N) (sndcart z) +
+                  drop(fstcart z) % (g:real^N->real^N) (sndcart z)` THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; DROP_VEC; SUBSET_UNIV;
+              VECTOR_MUL_LID; VECTOR_MUL_LZERO; REAL_SUB_RZERO; REAL_SUB_REFL;
+              VECTOR_ADD_LID; VECTOR_ADD_RID] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_ON_ADD THEN CONJ_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_ON_MUL THEN
+    SIMP_TAC[o_DEF; LIFT_SUB; LIFT_DROP; CONTINUOUS_ON_SUB; LINEAR_FSTCART;
+      ETA_AX; LINEAR_SNDCART; CONTINUOUS_ON_CONST; LINEAR_CONTINUOUS_ON] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART; LINEAR_SNDCART];
+    REWRITE_TAC[IN_INTERVAL_1; GSYM FORALL_DROP; DROP_VEC] THEN
+    ASM_SIMP_TAC[LINEAR_COMPOSE_ADD; MATRIX_ADD; LINEAR_COMPOSE_CMUL;
+                 MATRIX_CMUL] THEN
+    X_GEN_TAC `t:real` THEN STRIP_TAC THEN ASM_CASES_TAC `t = &0` THEN
+    ASM_REWRITE_TAC[REAL_SUB_RZERO; MATRIX_CMUL_LZERO; MATRIX_ADD_RID;
+                    MATRIX_CMUL_LID] THEN
+    ASM_CASES_TAC `t = &1` THEN
+    ASM_REWRITE_TAC[REAL_SUB_REFL; MATRIX_CMUL_LZERO; MATRIX_ADD_LID;
+                    MATRIX_CMUL_LID] THEN
+    MATCH_MP_TAC POSITIVE_DEFINITE_ADD THEN
+    CONJ_TAC THEN MATCH_MP_TAC POSITIVE_DEFINITE_CMUL THEN
+    ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC]);;
+
+let HOMOTOPIC_RESTRICTED_LINEAR_MAPS = prove
+ (`!f g b. homotopic_with (\f. linear f /\ real_sgn(det(matrix f)) = b)
+                          ((:real^N),(:real^N)) f g <=>
+           linear f /\ linear g /\
+           real_sgn(det(matrix f)) = b /\
+           real_sgn(det(matrix g)) = b`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_PROPERTY) THEN SIMP_TAC[];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `b = &0` THENL
+   [ASM_REWRITE_TAC[REAL_SGN_EQ] THEN STRIP_TAC THEN
+    MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
+    EXISTS_TAC `(\x. vec 0):real^N->real^N` THEN
+    GEN_REWRITE_TAC LAND_CONV [HOMOTOPIC_WITH_SYM] THEN
+    REWRITE_TAC[homotopic_with] THEN CONJ_TAC THENL
+     [EXISTS_TAC `\z. drop(fstcart z) % (f:real^N->real^N) (sndcart z)`;
+      EXISTS_TAC `\z. drop(fstcart z) % (g:real^N->real^N) (sndcart z)`] THEN
+    REWRITE_TAC[SUBSET_UNIV; FSTCART_PASTECART; SNDCART_PASTECART;
+                DROP_VEC; VECTOR_MUL_LZERO; VECTOR_MUL_LID] THEN
+    ASM_SIMP_TAC[LINEAR_COMPOSE_CMUL; MATRIX_CMUL] THEN
+    ASM_REWRITE_TAC[DET_CMUL; REAL_MUL_RZERO] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_MUL THEN
+    SIMP_TAC[o_DEF; LIFT_DROP; LINEAR_FSTCART; ETA_AX; LINEAR_SNDCART;
+             LINEAR_CONTINUOUS_ON] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART; LINEAR_SNDCART];
+    ALL_TAC] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(?fu fp. linear fu /\ linear fp /\
+             orthogonal_transformation fu /\
+             positive_definite(matrix fp) /\
+             (f:real^N->real^N) = fu o fp) /\
+    (?gu gp. linear gu /\ linear gp /\
+             orthogonal_transformation gu /\
+             positive_definite(matrix gp) /\
+             (g:real^N->real^N) = gu o gp)`
+  STRIP_ASSUME_TAC THENL
+   [CONJ_TAC THENL
+     [MP_TAC(ISPEC `matrix(f:real^N->real^N)`
+        RIGHT_POLAR_DECOMPOSITION_INVERTIBLE);
+      MP_TAC(ISPEC `matrix(g:real^N->real^N)`
+        RIGHT_POLAR_DECOMPOSITION_INVERTIBLE)] THEN
+    REWRITE_TAC[INVERTIBLE_DET_NZ] THEN
+    GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o RAND_CONV) [GSYM REAL_SGN_EQ] THEN
+    ASM_REWRITE_TAC[] THEN
+    REPEAT(MATCH_MP_TAC(MESON[]
+     `(!M. P M ==> Q(\x:real^N. M ** x))
+      ==> (?M. P M) ==> (?f. Q f)`) THEN GEN_TAC) THEN
+    SIMP_TAC[GSYM ORTHOGONAL_MATRIX_TRANSFORMATION;
+             MATRIX_VECTOR_MUL_LINEAR; MATRIX_OF_MATRIX_VECTOR_MUL] THEN
+    STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM; o_DEF] THEN
+    ASM_REWRITE_TAC[MATRIX_VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[MATRIX_WORKS];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE THEN
+  EXISTS_TAC `\h. linear h /\ positive_definite(matrix h:real^N^N)` THEN
+  EXISTS_TAC `\h. orthogonal_transformation h /\
+                det(matrix h:real^N^N) = det (matrix fu:real^N^N)` THEN
+  EXISTS_TAC `(:real^N)` THEN SIMP_TAC[SUBSET_UNIV] THEN REPEAT CONJ_TAC THENL
+   [UNDISCH_THEN `real_sgn(det(matrix f:real^N^N)) = b`
+     (SUBST1_TAC o SYM) THEN
+    ASM_SIMP_TAC[LINEAR_COMPOSE; MATRIX_COMPOSE; DET_MUL; REAL_SGN_MUL;
+                 ORTHOGONAL_TRANSFORMATION_IMP_LINEAR] THEN
+    REPEAT STRIP_TAC THEN
+    AP_TERM_TAC THEN ASM_SIMP_TAC[real_sgn; DET_POSITIVE_DEFINITE];
+    ASM_REWRITE_TAC[HOMOTOPIC_LINEAR_POSITIVE_DEFINITE_MAPS];
+    REWRITE_TAC[HOMOTOPIC_SPECIAL_ORTHOGONAL_TRANSFORMATIONS] THEN
+    ASM_REWRITE_TAC[HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS] THEN
+    ONCE_REWRITE_TAC[REAL_EQ_SGN_ABS] THEN CONJ_TAC THENL
+     [ALL_TAC;
+      MATCH_MP_TAC(REAL_ARITH
+       `(a = &1 \/ a = -- &1) /\ (b = &1 \/ b = -- &1) ==> abs a = abs b`) THEN
+      CONJ_TAC THEN MATCH_MP_TAC DET_ORTHOGONAL_MATRIX THEN
+      ASM_SIMP_TAC[ORTHOGONAL_MATRIX_MATRIX]] THEN
+    UNDISCH_TAC `real_sgn(det(matrix f:real^N^N)) = b` THEN
+    UNDISCH_THEN `real_sgn(det(matrix g:real^N^N)) = b`
+     (SUBST1_TAC o SYM) THEN
+    ASM_SIMP_TAC[MATRIX_COMPOSE; ORTHOGONAL_TRANSFORMATION_IMP_LINEAR] THEN
+    ASM_REWRITE_TAC[DET_MUL; REAL_SGN_MUL] THEN MATCH_MP_TAC(REAL_RING
+     `x = &1 /\ y = &1 ==> a * x = b * y ==> a = b`) THEN
+    ASM_SIMP_TAC[REAL_SGN_EQ; DET_POSITIVE_DEFINITE; real_gt]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex tangent function.                                                 *)

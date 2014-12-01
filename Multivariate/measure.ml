@@ -8425,6 +8425,20 @@ let LEBESGUE_MEASURABLE_INTERS = prove
         ==> lebesgue_measurable (INTERS f)`,
   SIMP_TAC[LEBESGUE_MEASURABLE_COUNTABLE_INTERS; FINITE_IMP_COUNTABLE]);;
 
+let GDELTA_IMP_LEBESGUE_MEASURABLE = prove
+ (`!s:real^N->bool. gdelta s ==> lebesgue_measurable s`,
+  GEN_TAC THEN REWRITE_TAC[gdelta] THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC LEBESGUE_MEASURABLE_COUNTABLE_INTERS THEN
+  ASM_SIMP_TAC[LEBESGUE_MEASURABLE_OPEN]);;
+
+let FSIGMA_IMP_LEBESGUE_MEASURABLE = prove
+ (`!s:real^N->bool. fsigma s ==> lebesgue_measurable s`,
+  GEN_TAC THEN REWRITE_TAC[fsigma] THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC LEBESGUE_MEASURABLE_COUNTABLE_UNIONS THEN
+  ASM_SIMP_TAC[LEBESGUE_MEASURABLE_CLOSED]);;
+
 let LEBESGUE_MEASURABLE_IFF_MEASURABLE = prove
  (`!s:real^N->bool. bounded s ==> (lebesgue_measurable s <=> measurable s)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN
@@ -10251,11 +10265,11 @@ let LEBESGUE_MEASURABLE_REGULAR_INNER = prove
 
 let LEBESGUE_MEASURABLE_ALMOST_FSIGMA = prove
  (`!s:real^N->bool.
-        lebesgue_measurable s  
+        lebesgue_measurable s
         ==> ?c t. fsigma c /\ negligible t /\ c UNION t = s /\ DISJOINT c t`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[fsigma; LEFT_AND_EXISTS_THM] THEN
   ONCE_REWRITE_TAC[MESON[] `(?a b c. P a b c) <=> (?c b a. P a b c)`] THEN
-  REWRITE_TAC[TAUT `(p /\ q /\ r) /\ s /\ t /\ u <=> 
+  REWRITE_TAC[TAUT `(p /\ q /\ r) /\ s /\ t /\ u <=>
                     r /\ t /\ u /\ p /\ q /\ s`] THEN
   REWRITE_TAC[UNWIND_THM1] THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]

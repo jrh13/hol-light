@@ -1,0 +1,37 @@
+\DOC STRING_EQ_CONV
+
+\TYPE {STRING_EQ_CONV : term -> thm}
+
+\SYNOPSIS
+Proves equality or inequality of two HOL string literals.
+
+\DESCRIBE
+If {"s"} and {"t"} are two string literals in the HOL logic,
+{STRING_EQ_CONV `"s" = "t"`} returns:
+
+{
+   |- "s" = "t" <=> T       or       |- "s" = "t" <=> F
+}
+\noindent depending on whether the string literals are equal or not equal, 
+respectively.
+
+\FAILURE
+{STRING_EQ_CONV tm} fails if {tm} is not of the specified form, an equation 
+between string literals.
+
+\EXAMPLE
+{
+  # STRING_EQ_CONV `"same" = "same"`;;
+  val it : thm = |- "same" = "same" <=> T
+  
+  # STRING_EQ_CONV `"knowledge" = "power"`;;
+  val it : thm = |- "knowledge" = "power" <=> F
+}
+
+\USES
+Performing basic equality reasoning while producing string-related proofs.
+
+\SEEALSO
+dest_string, CHAR_EQ_CONV, mk_string, NUM_EQ_CONV.
+
+\ENDDOC

@@ -2693,9 +2693,9 @@ overload_interface ("-",`(matrix_sub):real^N^M->real^N^M->real^N^M`);;
 
 make_overloadable "**" `:A->B->C`;;
 
+overload_interface ("**",`(vector_matrix_mul):real^M->real^N^M->real^N`);;
 overload_interface ("**",`(matrix_mul):real^N^M->real^P^N->real^P^M`);;
 overload_interface ("**",`(matrix_vector_mul):real^N^M->real^N->real^M`);;
-overload_interface ("**",`(vector_matrix_mul):real^M->real^N^M->real^N`);;
 
 parse_as_infix("%%",(21,"right"));;
 
@@ -3028,12 +3028,12 @@ let MATRIX_VECTOR_MUL_SUB_LDISTRIB = prove
            SUM_SUB_NUMSEG; REAL_SUB_LDISTRIB]);;
 
 let MATRIX_VECTOR_MUL_ADD_RDISTRIB = prove
- (`!A:real^M^N B x. (A + B) ** x = (A ** x) + (B ** x)`,
+ (`!A:real^M^N B x:real^M. (A + B) ** x = (A ** x) + (B ** x)`,
   SIMP_TAC[CART_EQ; matrix_vector_mul; matrix_add; LAMBDA_BETA;
            VECTOR_ADD_COMPONENT; REAL_ADD_RDISTRIB; SUM_ADD_NUMSEG]);;
 
 let MATRIX_VECTOR_MUL_SUB_RDISTRIB = prove
- (`!A:real^M^N B x. (A - B) ** x = (A ** x) - (B ** x)`,
+ (`!A:real^M^N B x:real^M. (A - B) ** x = (A ** x) - (B ** x)`,
   SIMP_TAC[CART_EQ; matrix_vector_mul; matrix_sub; LAMBDA_BETA;
            VECTOR_SUB_COMPONENT; REAL_SUB_RDISTRIB; SUM_SUB_NUMSEG]);;
 
@@ -3058,6 +3058,10 @@ let MATRIX_TRANSP_MUL = prove
  (`!A B. transp(A ** B) = transp(B) ** transp(A)`,
   SIMP_TAC[matrix_mul; transp; CART_EQ; LAMBDA_BETA] THEN
   REWRITE_TAC[REAL_MUL_AC]);;
+
+let TRANSP_EQ_0 = prove
+ (`!A:real^N^M. transp A = mat 0 <=> A = mat 0`,
+  REWRITE_TAC[MAT_0_COMPONENT; CART_EQ; TRANSP_COMPONENT] THEN MESON_TAC[]);;
 
 let SYMMETRIC_MATRIX_MUL = prove
  (`!A B:real^N^N.
@@ -3368,6 +3372,12 @@ let MATRIX_NEG = prove
  (`!f:real^M->real^N.
         linear f ==> matrix(\x. --(f x)) = --(matrix f)`,
   SIMP_TAC[GSYM MATRIX_NEG_MINUS1; VECTOR_NEG_MINUS1; MATRIX_CMUL]);;
+
+let MATRIX_ADD = prove
+ (`!f g:real^M->real^N.
+        linear f /\ linear g ==> matrix(\x. f x + g x) = matrix f + matrix g`,
+  REWRITE_TAC[MATRIX_EQ; MATRIX_VECTOR_MUL_ADD_RDISTRIB] THEN
+  SIMP_TAC[MATRIX_WORKS; LINEAR_COMPOSE_ADD]);;
 
 let MATRIX_SELF_ADJOINT = prove
  (`!f. linear f ==> (adjoint f = f <=> transp(matrix f) = matrix f)`,
@@ -5667,7 +5677,7 @@ let MATRIX_LEFT_INVERTIBLE_KER = prove
 
 let MATRIX_RIGHT_INVERTIBLE_SURJECTIVE = prove
  (`!A:real^N^M.
-        (?B:real^M^N. A ** B = mat 1) <=> !y. ?x. A ** x = y`,
+        (?B:real^M^N. A ** B = mat 1) <=> !y:real^M. ?x. A ** x = y`,
   GEN_TAC THEN EQ_TAC THENL
    [STRIP_TAC THEN X_GEN_TAC `y:real^M` THEN
     EXISTS_TAC `(B:real^M^N) ** (y:real^M)` THEN
@@ -8396,7 +8406,8 @@ let KERNEL_MATRIX_INV = prove
 
 let IMAGE_MATRIX_INV = prove
  (`!A:real^M^N.
-        IMAGE (\x. matrix_inv A ** x) UNIV = IMAGE (\x. transp A ** x) UNIV`,
+        IMAGE (\x:real^N. matrix_inv A ** x) UNIV =
+        IMAGE (\x. transp A ** x) UNIV`,
   GEN_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN CONJ_TAC THEN
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THENL
    [ONCE_REWRITE_TAC[MATRIX_INV_MULTIPLE_TRANP_LEFT];
@@ -8422,6 +8433,26 @@ let COMMUTING_MATRIX_INV_NORMAL = prove
   REWRITE_TAC[GSYM MATRIX_MUL_ASSOC] THEN
   ONCE_REWRITE_TAC[COMMUTING_MATRIX_INV_COVARIANCE] THEN
   ASM_REWRITE_TAC[MATRIX_MUL_ASSOC]);;
+
+let MATRIX_MUL_INV_EQ_0 = prove
+ (`!A:real^P^N B:real^N^M.
+        matrix_inv A ** matrix_inv B = mat 0 <=> B ** A = mat 0`,
+  let lemma = prove
+   (`!A:real^P^N B:real^N^M.
+        B ** A = mat 0 ==> matrix_inv A ** matrix_inv B = mat 0`,
+    REPEAT STRIP_TAC THEN
+    GEN_REWRITE_TAC (LAND_CONV o LAND_CONV)
+     [MATRIX_INV_MULTIPLE_TRANP_RIGHT] THEN
+    GEN_REWRITE_TAC (LAND_CONV o RAND_CONV)
+     [MATRIX_INV_MULTIPLE_TRANP_LEFT] THEN
+    ONCE_REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
+    GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o TOP_DEPTH_CONV)
+     [GSYM MATRIX_MUL_ASSOC] THEN
+    ASM_REWRITE_TAC[GSYM MATRIX_TRANSP_MUL] THEN
+    REWRITE_TAC[MATRIX_MUL_LZERO; MATRIX_MUL_RZERO; TRANSP_MAT]) in
+  REPEAT GEN_TAC THEN EQ_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP lemma) THEN
+  REWRITE_TAC[MATRIX_INV_INV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Infinity norm.                                                            *)
