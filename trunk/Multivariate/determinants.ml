@@ -1551,6 +1551,10 @@ let positive_semidefinite = new_definition
  `positive_semidefinite(A:real^N^N) <=>
     transp A = A /\ !x. &0 <= x dot (A ** x)`;;
 
+let POSITIVE_SEMIDEFINITE_IMP_SYMMETRIC = prove
+ (`!A:real^N^N. positive_semidefinite A ==> transp A = A`,
+  SIMP_TAC[positive_semidefinite]);;
+
 let POSITIVE_SEMIDEFINITE_ADD = prove
  (`!A B:real^N^N.
         positive_semidefinite A /\ positive_semidefinite B
@@ -1791,6 +1795,10 @@ let positive_definite = new_definition
  `positive_definite(A:real^N^N) <=>
          transp A = A /\ !x. ~(x = vec 0) ==> &0 < x dot (A ** x)`;;
 
+let POSITIVE_DEFINITE_IMP_SYMMETRIC = prove
+ (`!A:real^N^N. positive_definite A ==> transp A = A`,
+  SIMP_TAC[positive_definite]);;
+
 let POSITIVE_DEFINITE_POSITIVE_SEMIDEFINITE = prove
  (`!A:real^N^N.
         positive_definite A <=> positive_semidefinite A /\ invertible A`,
@@ -1804,6 +1812,12 @@ let POSITIVE_DEFINITE_POSITIVE_SEMIDEFINITE = prove
   ASM_SIMP_TAC[POSITIVE_SEMIDEFINITE_ZERO_FORM_EQ] THEN
   REWRITE_TAC[GSYM HOMOGENEOUS_LINEAR_EQUATIONS_DET; INVERTIBLE_DET_NZ] THEN
   MESON_TAC[]);;
+
+let POSITIVE_DEFINITE_1 = prove
+ (`!A:real^1^1. positive_definite A <=> &0 < A$1$1`,
+  REWRITE_TAC[POSITIVE_DEFINITE_POSITIVE_SEMIDEFINITE; DET_1;
+              POSITIVE_SEMIDEFINITE_1; INVERTIBLE_DET_NZ] THEN
+  REAL_ARITH_TAC);;
 
 let POSITIVE_DEFINITE_IMP_INVERTIBLE = prove
  (`!A:real^N^N. positive_definite A ==> invertible A`,

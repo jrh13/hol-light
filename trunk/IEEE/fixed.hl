@@ -1,0 +1,131 @@
+(* ========================================================================== *)
+(* FIXED POINT DEFINITIONS                                                    *)
+(* ========================================================================== *)
+
+(* needs "IEEE/common.hl";; *)
+
+(* -------------------------------------------------------------------------- *)
+(* Fixed point format                                                         *)
+(* -------------------------------------------------------------------------- *)
+
+(* Fix r:num > 1 and even, p:num > 0, and e:int. A fixed point number is a    *)
+(* real number that can be written as                                         *)
+(*                                                                            *)
+(*     +/- f * r^(e - p + 1)                                                  *)
+(*                                                                            *)
+(* where                                                                      *)
+(*                                                                            *)
+(*   -- f:num                                                                 *)
+(*   -- 0 <= f < r^(p - 1)                                                    *)
+
+let is_valid_fformat = define
+  `is_valid_fformat (r:num, p:num, e:int) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
+
+let fformat_typbij = new_type_definition
+  "fformat"
+  ("mk_fformat", "dest_fformat")
+  (prove (`?(fmt:num#num#int). is_valid_fformat fmt`,
+          EXISTS_TAC `(2:num, 1:num, (&0):int)` THEN
+            REWRITE_TAC[is_valid_fformat] THEN
+            ARITH_TAC));;
+
+let fr = define
+  `fr (fmt:fformat) = (FST (dest_fformat fmt))`;;
+
+let fp = define
+  `fp (fmt:fformat) = (FST (SND (dest_fformat fmt)))`;;
+
+let fe = define
+  `fe (fmt:fformat) = (SND (SND (dest_fformat fmt)))`;;
+
+let is_frac = define
+  `is_frac (fmt:fformat) (x:real) (f:num) =
+  (f <= (fr fmt) EXP ((fp fmt) - 1) /\
+      abs(x) = &f * &(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
+
+let ff = define
+  `ff (fmt:fformat) (x:real) = (@(f:num) . is_frac(fmt) x f)`;;
+
+let is_fixed = define
+  `is_fixed (fmt:fformat) (x:real) = (?(f:num) . is_frac(fmt) x f)`;;
+
+let is_finite_fixed =
+  `is_fixed (fmt:fformat) (x:real) = (?(f:num) . (is_frac(fmt) x f) /\
+                                        f < (fr fmt) EXP ((fp fmt) - 1))`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Helpful constants                                                          *)
+(* -------------------------------------------------------------------------- *)
+
+(* fixed point ulp                                                            *)
+let fulp = define
+  `fulp (fmt:fformat) = (&(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
+
+(* fixed point infinity                                                       *)
+let finf = define
+  `finf (fmt:fformat) = (&(fr fmt) ipow (fe fmt))`;;
+
+let fixed = define
+  `fixed (fmt:fformat) = { x | is_fixed(fmt) x }`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Greatest / least                                                           *)
+(* -------------------------------------------------------------------------- *)
+
+let is_lb = define
+  `is_lb (fmt:fformat) (x:real) (y:real) = (y IN (fixed fmt) /\ y <= x)`;;
+
+let is_glb = define
+  `is_glb (fmt:fformat) (x:real) (y:real) =
+  (is_lb(fmt) x y /\ (!y'. is_lb(fmt) x y' ==> y' <= y))`;;
+
+let is_ub = define
+  `is_ub (fmt:fformat) (x:real) (y:real) = (y IN (fixed fmt) /\ x <= y)`;;
+
+let is_lub = define
+  `is_lub (fmt:fformat) (x:real) (y:real) =
+  (is_ub(fmt) x y /\ (!y'. is_ub(fmt) x y' ==> y <= y'))`;;
+
+(* Simple wrappers around sup / inf                                           *)
+
+let glb = define
+  `glb (fmt:fformat) (x:real) = sup({y:real | y IN (fixed fmt) /\ y <= x})`;;
+
+let lub = define
+  `lub (fmt:fformat) (x:real) = inf({y:real | y IN (fixed fmt) /\ x <= y})`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Fixed point rounding                                                       *)
+(* -------------------------------------------------------------------------- *)
+
+let roundmode_INDUCT, roundmode_RECURSION = define_type
+  "roundmode = To_near | To_zero | To_pinf | To_ninf";;
+
+let fround = define
+  `((fround (fmt:fformat) (To_near) (x:real) =
+        (let lo = (glb(fmt) x)
+         and hi = (lub(fmt) x)
+         in
+           (if (closer lo hi x)
+            then
+              lo
+            else if (closer hi lo x)
+            then
+              hi
+            else if (EVEN (ff(fmt) lo))
+            then
+              lo
+            else
+              hi))) /\
+
+      (fround (fmt:fformat) (To_zero) (x:real) =
+          (if (&0 <= x)
+           then (glb(fmt) x)
+           else (lub(fmt) x))) /\
+
+      (fround (fmt:fformat) (To_pinf) (x:real) =
+          (lub(fmt) x)) /\
+
+      (fround (fmt:fformat) (To_ninf) (x:real) =
+          (glb(fmt) x)))`;;
+

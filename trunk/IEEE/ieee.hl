@@ -1,0 +1,174 @@
+(* ========================================================================== *)
+(* FLOATING POINT DEFINITIONS                                                 *)
+(* ========================================================================== *)
+
+(* needs "IEEE/common.hl";; *)
+(* needs "IEEE/fixed.hl";; *)
+(* needs "IEEE/float.hl";; *)
+
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* IEEE Floating point format                                                 *)
+(* -------------------------------------------------------------------------- *)
+
+(* Fix r:num > 1 and even, p:num > 1, emin:int, and emax:int >= emin. x is an *)
+(* IEEE floating point number if:                                             *)
+(*                                                                            *)
+(*   -- x is a fixed point number in the format (r, p, emin)                  *)
+(*   -- x is a floating point number in the format (r, p) and its normalized  *)
+(*      exponent e satisfies emin <= e <= emax                                *)
+(*   -- x has absolute value >= r^(emax + 1) (all real numbers in this range  *)
+(*      are `absorbed' to +/- inf)                                            *)
+(*                                                                            *)
+(* This specification says nothing about NaNs.                                *)
+
+let is_valid_ieee_format = define
+  `is_valid_ieee_format (r:num, p:num, emin:int, emax:int) =
+  (1 < r /\ (EVEN r) /\ (1 < p) /\ (emin <= emax))`;;
+
+let ieee_format_typbij = new_type_definition
+  "ieee_format"
+  ("mk_ieee_format", "dest_ieee_format")
+  (prove (`?(fmt:num#num#int#int). is_valid_ieee_format fmt`,
+          EXISTS_TAC `(2:num, 2:num, (&0):int, (&0):int)` THEN
+            REWRITE_TAC[is_valid_ieee_format] THEN
+            ARITH_TAC));;
+
+let ieee_r = define
+  `ieee_r (fmt:ieee_format) = (FST (dest_ieee_format fmt))`;;
+
+let ieee_p = define
+  `ieee_p (fmt:ieee_format) = (FST (SND (dest_ieee_format fmt)))`;;
+
+let ieee_emin = define
+  `ieee_emin (fmt:ieee_format) = (FST (SND (SND (dest_ieee_format fmt))))`;;
+
+let ieee_emax = define
+  `ieee_emax (fmt:ieee_format) = (SND (SND (SND (dest_ieee_format fmt))))`;;
+
+let ieee_to_fformat = define
+  `ieee_to_fformat (fmt:ieee_format) =
+  (mk_fformat ((ieee_r fmt), (ieee_p fmt), (ieee_emin fmt)))`;;
+
+let ieee_to_flformat = define
+  `ieee_to_flformat (fmt:ieee_format) =
+  (mk_flformat ((ieee_r fmt), (ieee_p fmt)))`;;
+
+(* Largest ieee fp magnitude = f_max * r^(emax - p + 1) *)
+let max_ieee = define
+  `max_ieee (fmt:ieee_format) =
+  (&(((ieee_r fmt) EXP (ieee_p fmt)) - 1) *
+   &(ieee_r fmt) ipow ((ieee_emax fmt) - &(ieee_p fmt) + &1))`;;
+
+(* If a real number's magnitude is larger than threshold, it gets absorbed    *)
+(* into the +/- ieee infinity equivalence classes (depending on the real      *)
+(* number's sign). The threshold is                                           *)
+(*                                                                            *)
+(*        max_ieee + (ulp for the largest fp phase)                           *)
+(*                                                                            *)
+(* where the ulp in the largest fp phase is r^(emax - p + 1). In terms of the *)
+(* floating point machine epsilon, this is                                    *)
+(*                                                                            *)
+(*        max_ieee + 2 * machine_eps * r^emax                                 *)
+(*                                                                            *)
+let ieee_threshold = define
+  `ieee_threshold (fmt:ieee_format) =
+  (max_ieee(fmt) +
+   &(ieee_r fmt) ipow ((ieee_emax fmt) - &(ieee_p fmt) + &1))`;;
+
+let is_ieee_pinf = define
+  `is_ieee_pinf (fmt:ieee_format) (x:real) = ((ieee_threshold fmt) <= x)`;;
+
+let is_ieee_ninf = define
+  `is_ieee_ninf (fmt:ieee_format) (x:real) = (x <= (-- (ieee_threshold fmt)))`;;
+
+let is_ieee = define
+  `is_ieee (fmt:ieee_format) (x:real) =
+  (is_fixed(ieee_to_fformat fmt) x \/
+     (is_float(ieee_to_flformat fmt) x /\
+        (ieee_emin fmt) <= (greatest_e(ieee_to_flformat fmt) x) /\
+        (greatest_e(ieee_to_flformat fmt) x) <= (ieee_emax fmt)) \/
+     is_ieee_pinf(fmt) x \/
+     is_ieee_ninf(fmt) x)`;;
+
+let ieee_exp = define
+  `ieee_exp (fmt:ieee_format) (x:real) =
+  (if abs(x) <= (finf(ieee_to_fformat fmt))
+   then
+     (ieee_emin fmt)
+   else
+     (greatest_e(ieee_to_flformat fmt) x))`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Rounding                                                                   *)
+(* -------------------------------------------------------------------------- *)
+
+(* -- If x is within the fixed point number range, round to the closest fixed *)
+(* point number.                                                              *)
+(* -- If x is outside of the fixed point number range, but within the         *)
+(* floating point number range, round to the closest floating point number    *)
+(* (this could round to ieee +/- infinity)                                    *)
+(* -- If x is outside of the threshold, the result depends on the rounding    *)
+(* mode:                                                                      *)
+(*    -- round to nearest                                                     *)
+(*       ans = x (= +/- ieee infinity, depending on the sign of x)            *)
+(*    -- round to zero                                                        *)
+(*       ans = ieee fp number with largest magnitude and proper sign          *)
+(*    -- round to pinf                                                        *)
+(*       ans = most negative ieee fp number if x is negative                  *)
+(*       ans = x (= + ieee infinity) if x is positive                         *)
+(*    -- round to ninf                                                        *)
+(*       ans = most positive ieee fp number if x is positive                  *)
+(*       ans = x (= - ieee infinity) if x is negative                         *)
+let ieee_round = define
+  `((ieee_round (fmt:ieee_format) (To_near) (x:real) =
+       (if (abs(x) <= (finf (ieee_to_fformat fmt)))
+        then
+          (fround(ieee_to_fformat fmt) To_near x)
+        else if (abs(x) <= (ieee_threshold fmt))
+        then
+          (flround(ieee_to_flformat fmt) To_near x)
+        else
+          x))                                        /\
+
+   (ieee_round (fmt:ieee_format) (To_zero) (x:real) =
+       (if (abs(x) <= (finf (ieee_to_fformat fmt)))
+        then
+          (fround(ieee_to_fformat fmt) To_zero x)
+        else if (abs(x) <= (ieee_threshold fmt))
+        then
+          (flround(ieee_to_flformat fmt) To_zero x)
+        else if (x > (ieee_threshold fmt))
+        then
+          (max_ieee fmt)
+        else
+          (-- (max_ieee fmt))))                        /\
+
+   (ieee_round (fmt:ieee_format) (To_pinf) (x:real) =
+       (if (abs(x) <= (finf (ieee_to_fformat fmt)))
+        then
+          (fround(ieee_to_fformat fmt) To_pinf x)
+        else if x <= (-- (max_ieee fmt))
+        then
+          (-- (max_ieee fmt))
+        else
+          (flround(ieee_to_flformat fmt) To_pinf x))) /\
+
+   (ieee_round (fmt:ieee_format) (To_ninf) (x:real) =
+       (if (abs(x) <= (finf (ieee_to_fformat fmt)))
+        then
+          (fround(ieee_to_fformat fmt) To_ninf x)
+        else if (max_ieee fmt) <= x
+        then
+          (max_ieee fmt)
+        else
+          (flround(ieee_to_flformat fmt) To_ninf x))))`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Machine Epsilon                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(* Simple wrapper around floating point machine eps.                          *)
+let ieee_eps = define
+  `ieee_eps (fmt:ieee_format) = (fl_eps (ieee_to_flformat fmt))`;;

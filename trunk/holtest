@@ -92,6 +92,7 @@ echo '### Loading Library/rstc.ml,reduct.ml';
 echo '### Loading Arithmetic/make.ml'; echo 'loadt "Arithmetic/make.ml";;' | (time $hollight)
 echo '### Loading Boyer_Moore/make.ml'; echo 'loadt "Boyer_Moore/make.ml";;' | (time $hollight)
 echo '### Loading Complex/make.ml'; echo 'loadt "Complex/make.ml";;' | (time $hollight)
+echo '### Loading IEEE/make.ml'; echo 'loadt "IEEE/make.ml";;' | (time $hollight)
 echo '### Loading IsabelleLight/make.ml'; echo 'loadt "IsabelleLight/make.ml";;' | (time $hollight)
 echo '### Loading Jordan/make.ml'; echo 'loadt "Jordan/make.ml";;' | (time $hollight)
 echo '### Loading Mizarlight/make.ml'; echo 'loadt "Mizarlight/make.ml";;' | (time $hollight)
