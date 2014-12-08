@@ -1,3 +1,10 @@
+Sat  6th Dec 2014       IEEE/* [new directory]
+
+Added an extensive formal theory of IEEE floating-point arithmetic, written by
+Charlie Jacobsen. This includes theories of fixed-point numbers, generalized
+floating-point numbers (with any even radix >= 2 and any precision >= 2) and
+then the properties of the usual IEEE floating-point numbers.
+
 Sun 30th Nov 2014       lists.ml, Help/dest_char.doc [new file], Help/mk_char.doc [new file], Help/dest_string.doc [new file], Help/mk_string.doc [new file], Help/CHAR_EQ_CONV.doc [new file], Help/STRING_EQ_CONV.doc [new file]
 
 Added a systematic set of syntax constructors, destructors and comparison

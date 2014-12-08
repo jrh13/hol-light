@@ -1,0 +1,34 @@
+               FORMAL THEORY OF IEEE FLOATING-POINT NUMBERS
+
+                      (c) Charlie Jacobsen, 2014
+
+                           University of Utah
+
+                Distributed under the same license as HOL Light
+
+            Also available at https://github.com/skoobit/formal-ieee
+
+Overview
+--------
+
+This repository contains a formalization of IEEE floating point numbers.
+First, we formalize fixed point numbers so we can model IEEE subnormal
+numbers (in fixed.hl and fixed_thms.hl). Next, we formalize
+`generalized' floating point numbers to model IEEE normal numbers
+(in float.hl and float_thms.hl; Cf. John Harrison's work and the Coq
+formalization). Finally, we piece the two formalizations together to
+formalize IEEE (ieee.hl and ieee_thms.hl).
+
+In the process, we needed a formalization and basic theorems for raising
+real numbers to an integer power; this is in common.hl.
+
+IEEE floating point numbers are treated as a subset of the real numbers.
+We can model mostly everything except signed zero and NaNs.
+
+Usage
+-----
+
+To load the theorems and formalizations, load IEEE/make.ml after loading
+base HOL Light, e.g.
+
+        loadt "IEEE/make.ml";;

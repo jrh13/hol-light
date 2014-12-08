@@ -1,0 +1,460 @@
+(* ========================================================================== *)
+(* IEEE FLOATING POINT THEOREMS                                               *)
+(* ========================================================================== *)
+
+(* needs "IEEE/common.hl";; *)
+(* needs "IEEE/fixed_thms.hl";; *)
+(* needs "IEEE/fixed.hl";; *)
+(* needs "IEEE/float_thms.hl";; *)
+(* needs "IEEE/float.hl";; *)
+(* needs "IEEE/ieee.hl";; *)
+
+(* -------------------------------------------------------------------------- *)
+(* Valid ieee_format properties                                               *)
+(* -------------------------------------------------------------------------- *)
+
+let IEEE_FORMAT_SPLIT = TAUT `!(fmt:ieee_format).
+  (dest_ieee_format fmt) = (FST (dest_ieee_format fmt),
+                            (FST (SND (dest_ieee_format fmt))),
+                            (FST (SND (SND (dest_ieee_format fmt)))),
+                            (SND (SND (SND (dest_ieee_format fmt)))))`;;
+
+let IEEE_FORMAT_VALID_IMP_RADIX_LT_1 =
+  prove(`!(r:num) (p:num) (emin:int) (emax:int).
+          ((is_valid_ieee_format (r,p,emin,emax)) ==>
+             1 < (FST (r,p,emin,emax)))`,
+        REPEAT GEN_TAC THEN REWRITE_TAC[is_valid_ieee_format] THEN ARITH_TAC);;
+
+let IEEE_FORMAT_VALID_IMP_RADIX_EVEN =
+  prove(`!(r:num) (p:num) (emin:int) (emax:int).
+          ((is_valid_ieee_format (r,p,emin,emax)) ==>
+             EVEN (FST (r,p,emin,emax)))`,
+        REPEAT GEN_TAC THEN REWRITE_TAC[is_valid_ieee_format] THEN
+          MESON_TAC[]);;
+
+let IEEE_FORMAT_VALID_IMP_PREC_LT_1 =
+  prove(`!(r:num) (p:num) (emin:int) (emax:int).
+          ((is_valid_ieee_format (r,p,emin,emax)) ==>
+             1 < (FST (SND (r,p,emin,emax))))`,
+        REPEAT GEN_TAC THEN REWRITE_TAC[is_valid_ieee_format] THEN
+          MESON_TAC[]);;
+
+let IEEE_FORMAT_VALID_IMP_EMIN_LE_EMAX =
+  prove(`!(r:num) (p:num) (emin:int) (emax:int).
+          ((is_valid_ieee_format (r,p,emin,emax)) ==>
+             (FST (SND (SND (r,p,emin,emax)))) <=
+             (SND (SND (SND (r,p,emin,emax)))))`,
+        REPEAT GEN_TAC THEN REWRITE_TAC[is_valid_ieee_format] THEN
+          MESON_TAC[]);;
+
+let IEEE_FORMAT_VALID =
+  prove(`!(fmt:ieee_format). is_valid_ieee_format (dest_ieee_format fmt)`,
+        REWRITE_TAC[ieee_format_typbij]);;
+
+let IEEE_FORMAT_RADIX_LT_1 =
+  prove(`!(fmt:ieee_format). 1 < (ieee_r fmt)`,
+        GEN_TAC THEN REWRITE_TAC[ieee_r] THEN
+          ONCE_REWRITE_TAC[IEEE_FORMAT_SPLIT] THEN
+          MATCH_MP_TAC IEEE_FORMAT_VALID_IMP_RADIX_LT_1 THEN
+          REWRITE_TAC[IEEE_FORMAT_VALID]);;
+
+let IEEE_FORMAT_RADIX_LT_0 =
+  prove(`!(fmt:ieee_format). 0 < (ieee_r fmt)`,
+        GEN_TAC THEN MATCH_MP_TAC (ARITH_RULE `1 < x ==> 0 < x`) THEN
+        REWRITE_TAC[IEEE_FORMAT_RADIX_LT_1]);;
+
+let IEEE_FORMAT_RADIX_NE_0 =
+  prove(`!(fmt:ieee_format). ~(&(ieee_r fmt) = &0)`,
+        GEN_TAC THEN REWRITE_TAC[REAL_OF_NUM_EQ] THEN MATCH_MP_TAC
+        (ARITH_RULE `0 < x ==> ~(x = 0)`) THEN
+        REWRITE_TAC[IEEE_FORMAT_RADIX_LT_0]);;
+
+let IEEE_FORMAT_RADIX_EVEN =
+  prove(`!(fmt:ieee_format). EVEN (ieee_r fmt)`,
+        GEN_TAC THEN REWRITE_TAC[ieee_r] THEN
+          ONCE_REWRITE_TAC[IEEE_FORMAT_SPLIT] THEN
+          MATCH_MP_TAC IEEE_FORMAT_VALID_IMP_RADIX_EVEN THEN
+          REWRITE_TAC[IEEE_FORMAT_VALID]);;
+
+let IEEE_FORMAT_RADIX_LE_2 =
+  prove(`!(fmt:ieee_format). 2 <= (ieee_r fmt)`,
+        GEN_TAC THEN
+        SUBGOAL_THEN `!x. ~(x = 0) /\ EVEN x ==> 2 <= x` MATCH_MP_TAC THENL [
+          GEN_TAC THEN
+          DISCH_THEN (LABEL_CONJUNCTS_TAC ["xneq0"; "evenx"]) THEN
+          ASM_CASES_TAC `x = 0` THENL [
+            ASM_ARITH_TAC; ALL_TAC] THEN
+          ASM_CASES_TAC `x = 1` THENL [
+            USE_THEN "evenx" (fun evenx ->
+            ASSUME_TAC (REWRITE_RULE[ASSUME `x = 1`] evenx)) THEN
+            ASSUME_TAC (REWRITE_RULE[GSYM NOT_EVEN] (ARITH_RULE `ODD 1`)) THEN
+            ASM_ARITH_TAC; ASM_ARITH_TAC]; ALL_TAC] THEN
+        REWRITE_TAC[REWRITE_RULE[REAL_OF_NUM_EQ] IEEE_FORMAT_RADIX_NE_0] THEN
+        REWRITE_TAC[IEEE_FORMAT_RADIX_EVEN]);;
+
+let IEEE_FORMAT_PREC_LT_1 =
+  prove(`!(fmt:ieee_format). 1 < (ieee_p fmt)`,
+        GEN_TAC THEN REWRITE_TAC[ieee_p] THEN
+          ONCE_REWRITE_TAC[IEEE_FORMAT_SPLIT] THEN
+          MATCH_MP_TAC IEEE_FORMAT_VALID_IMP_PREC_LT_1 THEN
+          REWRITE_TAC[IEEE_FORMAT_VALID]);;
+
+let IEEE_FORMAT_PREC_LE_1 =
+  prove(`!(fmt:ieee_format). 1 <= (ieee_p fmt)`,
+        GEN_TAC THEN
+          MATCH_MP_TAC (ARITH_RULE `1 < x ==> 1 <= x`) THEN
+          REWRITE_TAC[IEEE_FORMAT_PREC_LT_1]);;
+
+let IEEE_FORMAT_PREC_LT_0 =
+  prove(`!(fmt:ieee_format). 0 < (ieee_p fmt)`,
+        GEN_TAC THEN MATCH_MP_TAC (ARITH_RULE `1 < x ==> 0 < x`) THEN
+        REWRITE_TAC[IEEE_FORMAT_PREC_LT_1]);;
+
+let IEEE_FORMAT_PREC_NE_0 =
+  prove(`!(fmt:ieee_format). ~((ieee_p fmt) = 0)`,
+        GEN_TAC THEN MATCH_MP_TAC (ARITH_RULE `0 < n ==> ~(n = 0)`) THEN
+        REWRITE_TAC[IEEE_FORMAT_PREC_LT_0]);;
+
+let IEEE_FORMAT_PREC_MINUS_1 =
+  prove(`!(fmt:ieee_format). &0 <= (&(ieee_p fmt):int) - (&1:int)`,
+        REWRITE_TAC[ARITH_RULE `&0 <= x:int - &1:int <=> &1 <= x`] THEN
+        REWRITE_TAC[INT_OF_NUM_LE] THEN
+        REWRITE_TAC[ARITH_RULE `1 <= n <=> 0 < n`] THEN
+        REWRITE_TAC[IEEE_FORMAT_PREC_LT_0]);;
+
+let IEEE_FORMAT_PREC_IPOW_EQ_EXP =
+  prove(`!(fmt:ieee_format). &(ieee_r fmt) ipow (&(ieee_p fmt) - &1) =
+      &((ieee_r fmt) EXP ((ieee_p fmt) - 1))`,
+        REPEAT GEN_TAC THEN MATCH_MP_TAC IPOW_EQ_EXP_P THEN
+        REWRITE_TAC[IEEE_FORMAT_PREC_LT_0]);;
+
+let IEEE_FORMAT_RADIX_IPOW_LE_0 =
+  prove(`!(fmt:ieee_format) (e:int). &0 <= &(ieee_r fmt) ipow e`,
+        REPEAT GEN_TAC THEN
+        MATCH_MP_TAC (ARITH_RULE `&0 < (x:real) ==> &0 <= x`) THEN
+        MATCH_MP_TAC IPOW_LT_0 THEN
+        REWRITE_TAC[REAL_OF_NUM_LT] THEN
+        REWRITE_TAC[IEEE_FORMAT_RADIX_LT_0]);;
+
+let IEEE_FORMAT_RADIX_IPOW_LT_0 =
+  prove(`!(fmt:ieee_format) (e:int). &0 < &(ieee_r fmt) ipow e`,
+        REPEAT GEN_TAC THEN
+        MATCH_MP_TAC IPOW_LT_0 THEN
+        REWRITE_TAC[REAL_OF_NUM_LT] THEN
+        REWRITE_TAC[IEEE_FORMAT_RADIX_LT_0]);;
+
+let IEEE_FORMAT_RADIX_IPOW_NEQ_0 =
+  prove(`!(fmt:ieee_format) (e:int). ~(&(ieee_r fmt) ipow e = &0)`,
+        REPEAT GEN_TAC THEN
+        MATCH_MP_TAC (ARITH_RULE `&0 < (x:real) ==> ~(x = &0)`) THEN
+        MATCH_MP_TAC IPOW_LT_0 THEN
+        REWRITE_TAC[REAL_OF_NUM_LT] THEN
+        REWRITE_TAC[IEEE_FORMAT_RADIX_LT_0]);;
+
+let IEEE_FORMAT_RADIX_IPOW_ADD_EXP =
+  prove(`!(fmt:ieee_format) (u:int) (v:int).
+        &(ieee_r fmt) ipow u * &(ieee_r fmt) ipow v =
+      &(ieee_r fmt) ipow (u + v)`,
+        REPEAT GEN_TAC THEN MATCH_MP_TAC IPOW_ADD_EXP THEN
+        REWRITE_TAC[IEEE_FORMAT_RADIX_NE_0]);;
+
+let IEEE_FORMAT_EMIN_LE_EMAX =
+  prove(`!(fmt:ieee_format). (ieee_emin fmt) <= (ieee_emax fmt)`,
+        GEN_TAC THEN REWRITE_TAC[ieee_emin] THEN REWRITE_TAC[ieee_emax] THEN
+          ONCE_REWRITE_TAC[IEEE_FORMAT_SPLIT] THEN
+          MATCH_MP_TAC IEEE_FORMAT_VALID_IMP_EMIN_LE_EMAX THEN
+          REWRITE_TAC[IEEE_FORMAT_VALID]);;
+
+let IEEE_FORMAT_TO_FFORMAT =
+  prove(`!(fmt:ieee_format).
+          (fr (ieee_to_fformat fmt)) = (ieee_r fmt) /\
+          (fp (ieee_to_fformat fmt)) = (ieee_p fmt) /\
+          (fe (ieee_to_fformat fmt)) = (ieee_emin fmt)`,
+        GEN_TAC THEN REWRITE_TAC[ieee_to_fformat] THEN
+
+        SUBGOAL_THEN `is_valid_fformat (ieee_r fmt, ieee_p fmt, ieee_emin fmt)`
+          (fun thm -> ASSUME_TAC (REWRITE_RULE[fformat_typbij] thm)) THENL [
+            REWRITE_TAC[is_valid_fformat] THEN
+            REWRITE_TAC[IEEE_FORMAT_RADIX_LT_1] THEN
+            REWRITE_TAC[IEEE_FORMAT_RADIX_EVEN] THEN
+            REWRITE_TAC[IEEE_FORMAT_PREC_LT_0]; ALL_TAC] THEN
+
+        REWRITE_TAC[fr; fp; fe] THEN
+        ASM_REWRITE_TAC[]);;
+
+let IEEE_FORMAT_TO_FLFORMAT =
+  prove(`!(fmt:ieee_format).
+          (flr (ieee_to_flformat fmt)) = (ieee_r fmt) /\
+          (flp (ieee_to_flformat fmt)) = (ieee_p fmt)`,
+        GEN_TAC THEN REWRITE_TAC[ieee_to_flformat] THEN
+
+        SUBGOAL_THEN `is_valid_flformat (ieee_r fmt, ieee_p fmt)`
+          (fun thm -> ASSUME_TAC (REWRITE_RULE[flformat_typbij] thm)) THENL [
+            REWRITE_TAC[is_valid_flformat] THEN
+            REWRITE_TAC[IEEE_FORMAT_RADIX_LT_1] THEN
+            REWRITE_TAC[IEEE_FORMAT_RADIX_EVEN] THEN
+            REWRITE_TAC[IEEE_FORMAT_PREC_LT_1]; ALL_TAC] THEN
+
+        REWRITE_TAC[flr; flp] THEN
+        ASM_REWRITE_TAC[]);;
+
+let IEEE_FORMAT_DISJ_EXP =
+  prove(`!(fmt:ieee_format). (ieee_emin fmt) = (ieee_emax fmt) \/
+      (ieee_emin fmt) < (ieee_emax fmt)`,
+        GEN_TAC THEN
+        MATCH_MP_TAC (ARITH_RULE `(a:int) <= b ==> (a = b) \/ (a < b)`) THEN
+        REWRITE_TAC[IEEE_FORMAT_EMIN_LE_EMAX]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Useful arithmetic lemmas                                                   *)
+(* -------------------------------------------------------------------------- *)
+
+let IEEE_RADIX_EXP_PREC_LT_1 =
+  prove(`!(fmt:ieee_format). 1 < (ieee_r fmt) EXP (ieee_p fmt)`,
+          GEN_TAC THEN
+          ONCE_REWRITE_TAC[GSYM(SPEC `(ieee_p fmt)` EXP_ONE)] THEN
+          REWRITE_TAC[EXP_MONO_LT] THEN
+          REWRITE_TAC[IEEE_FORMAT_RADIX_LT_1] THEN
+          REWRITE_TAC[IEEE_FORMAT_PREC_NE_0]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Useful properties of special ieee fp values                                *)
+(* -------------------------------------------------------------------------- *)
+
+let IEEE_MAX_IEEE_LE_0 =
+  prove(`!(fmt:ieee_format). &0 <= (max_ieee fmt)`,
+        GEN_TAC THEN REWRITE_TAC[max_ieee] THEN
+        MATCH_MP_TAC REAL_LE_MUL THEN
+        CONJ_TAC THENL [
+
+          SUBGOAL_THEN
+            `&(ieee_r fmt EXP ieee_p fmt - 1) =
+            &(ieee_r fmt EXP ieee_p fmt) - &1`
+            (fun thm -> REWRITE_TAC[thm]) THENL [
+              ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN
+              MATCH_MP_TAC REAL_OF_NUM_SUB THEN
+              MATCH_MP_TAC (ARITH_RULE `1 < x ==> 1 <= x`) THEN
+              REWRITE_TAC[IEEE_RADIX_EXP_PREC_LT_1]; ALL_TAC] THEN
+          REWRITE_TAC[ARITH_RULE `&0 <= x - &1 <=> &1 <= x`] THEN
+          REWRITE_TAC[REAL_OF_NUM_LE] THEN
+          MATCH_MP_TAC (ARITH_RULE `1 < x ==> 1 <= x`) THEN
+          REWRITE_TAC[IEEE_RADIX_EXP_PREC_LT_1];
+
+          REWRITE_TAC[IEEE_FORMAT_RADIX_IPOW_LE_0]]);;
+
+let IEEE_MAX_IEEE_IS_IEEE =
+  prove(`!(fmt:ieee_format). (is_ieee(fmt) (max_ieee fmt))`,
+        GEN_TAC THEN REWRITE_TAC[is_ieee] THEN
+        DISJ2_TAC THEN DISJ1_TAC THEN REWRITE_TAC[is_float] THEN
+
+        CONJ_TAC THENL [
+          EXISTS_TAC `(ieee_r fmt) EXP (ieee_p fmt) - 1` THEN
+          EXISTS_TAC `(ieee_emax fmt)` THEN
+          REWRITE_TAC[is_frac_and_exp] THEN
+
+          CONJ_TAC THENL [
+            MATCH_MP_TAC (ARITH_RULE `1 < x ==> 0 < x - 1`) THEN
+            REWRITE_TAC[IEEE_RADIX_EXP_PREC_LT_1]; ALL_TAC] THEN
+
+          CONJ_TAC THENL [
+            REWRITE_TAC[IEEE_FORMAT_TO_FLFORMAT] THEN
+            MATCH_MP_TAC (ARITH_RULE `1 < x ==> x - 1 < x`) THEN
+            REWRITE_TAC[IEEE_RADIX_EXP_PREC_LT_1]; ALL_TAC] THEN
+
+          REWRITE_TAC[MATCH_MP (ARITH_RULE `&0 <= x ==> abs(x) = x`)
+                      (SPEC `fmt:ieee_format` IEEE_MAX_IEEE_LE_0)] THEN
+          REWRITE_TAC[IEEE_FORMAT_TO_FLFORMAT] THEN
+          REWRITE_TAC[max_ieee]; ALL_TAC] THEN
+
+        REWRITE_TAC[max_ieee] THEN
+
+         SUBGOAL_THEN `greatest_e (ieee_to_flformat fmt)
+           (&(ieee_r fmt EXP ieee_p fmt - 1) *
+            &(ieee_r fmt) ipow (ieee_emax fmt - &(ieee_p fmt) + &1)) =
+           (ieee_emax fmt)` (fun thm -> REWRITE_TAC[thm]) THENL [
+           REWRITE_TAC[GSYM IEEE_FORMAT_TO_FLFORMAT] THEN
+           MATCH_MP_TAC FLOAT_GREATEST_E_OF THEN
+           REWRITE_TAC[IEEE_FORMAT_TO_FLFORMAT] THEN
+           (* this is harder than it should be ... *)
+           CONJ_TAC THENL [
+             (* switch to real numbers for a second, it will be easier *)
+             REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN
+             SUBGOAL_THEN `&(ieee_r fmt EXP ieee_p fmt - 1) =
+               &(ieee_r fmt EXP ieee_p fmt) - &1`
+               (fun thm -> REWRITE_TAC[thm]) THENL [
+                 ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN
+                 MATCH_MP_TAC REAL_OF_NUM_SUB THEN
+                 ONCE_REWRITE_TAC[GSYM (SPEC `(ieee_p fmt)` EXP_ONE)] THEN
+                 REWRITE_TAC[EXP_MONO_LE] THEN
+                 DISJ1_TAC THEN
+                 MATCH_MP_TAC (ARITH_RULE `1 < x ==> 1 <= x`) THEN
+                 REWRITE_TAC[IEEE_FORMAT_RADIX_LT_1]; ALL_TAC] THEN
+
+             REWRITE_TAC[ARITH_RULE `x <= y - &1 <=> &1 <= y - x`] THEN
+             REWRITE_TAC[GSYM REAL_OF_NUM_POW] THEN
+
+             SUBGOAL_THEN `(ieee_p fmt) = (ieee_p fmt) - 1 + 1`
+               (fun thm -> GEN_REWRITE_TAC
+                    (RAND_CONV o RATOR_CONV o ONCE_DEPTH_CONV) [thm]) THENL [
+               MATCH_MP_TAC (ARITH_RULE `1 <= n ==> n = n - 1 + 1`) THEN
+               REWRITE_TAC[IEEE_FORMAT_PREC_LE_1]; ALL_TAC] THEN
+
+             REWRITE_TAC[REAL_POW_ADD] THEN
+             REWRITE_TAC[REAL_POW_1] THEN
+             GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o ONCE_DEPTH_CONV)
+               [ARITH_RULE `x = (x:real) * &1`] THEN
+             REWRITE_TAC[GSYM REAL_SUB_LDISTRIB] THEN
+             GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV)
+               [ARITH_RULE `&1 = &1 * &1`] THEN
+             MATCH_MP_TAC REAL_LE_MUL2 THEN
+             CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+             CONJ_TAC THENL [
+               GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV)
+                 [GSYM (SPEC `(ieee_p fmt) - 1` REAL_POW_ONE)] THEN
+               MATCH_MP_TAC REAL_POW_LE2 THEN
+               CONJ_TAC THENL [ ARITH_TAC; ALL_TAC] THEN
+               MATCH_MP_TAC (ARITH_RULE `&1 < x ==> &1 <= x`) THEN
+               REWRITE_TAC[REAL_OF_NUM_LT] THEN
+               REWRITE_TAC[IEEE_FORMAT_RADIX_LT_1]; ALL_TAC] THEN
+             CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+             REWRITE_TAC[ARITH_RULE `&1 <= x - &1 <=> &2 <= x`] THEN
+             REWRITE_TAC[REAL_OF_NUM_LE] THEN
+             REWRITE_TAC[IEEE_FORMAT_RADIX_LE_2];
+
+             MATCH_MP_TAC (ARITH_RULE `0 < x ==> x - 1 < x`) THEN
+             REWRITE_TAC[EXP_LT_0] THEN
+             DISJ1_TAC THEN
+             REWRITE_TAC[GSYM REAL_OF_NUM_EQ] THEN
+             REWRITE_TAC[IEEE_FORMAT_RADIX_NE_0]]; ALL_TAC] THEN
+
+       REWRITE_TAC[IEEE_FORMAT_EMIN_LE_EMAX] THEN ARITH_TAC);;
+
+(* -------------------------------------------------------------------------- *)
+(* Absolute error theorems                                                    *)
+(* -------------------------------------------------------------------------- *)
+
+(* rounding to pinf / ninf requires tricky logic, so I'm ommitting them  *)
+(* for now *)
+
+let IEEE_ROUND_NEAR_ABS_ERR =
+  prove(`!(fmt:ieee_format) (x:real). abs(x) <= (ieee_threshold fmt) ==>
+          abs(x - (ieee_round(fmt) To_near x)) <=
+          &(ieee_r fmt) ipow ((ieee_exp(fmt) x) - &(ieee_p fmt) + &1) / &2`,
+        REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absxthresh") THEN
+        REWRITE_TAC[ieee_round] THEN
+        COND_CASES_TAC THENL [
+          REWRITE_TAC[ieee_exp] THEN
+          ASM_REWRITE_TAC[] THEN
+          ONCE_REWRITE_TAC[GSYM IEEE_FORMAT_TO_FFORMAT] THEN
+          REWRITE_TAC[GSYM fulp] THEN
+          ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
+          MATCH_MP_TAC FIXED_RD_NEAREST_ABS_ERROR THEN
+          ASM_REWRITE_TAC[];
+
+          ASM_REWRITE_TAC[] THEN REWRITE_TAC[ieee_exp] THEN
+          ASM_REWRITE_TAC[] THEN
+
+      ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
+
+      SUBGOAL_THEN `&(ieee_r fmt) ipow
+              (greatest_e (ieee_to_flformat fmt) x - &(ieee_p fmt) + &1) =
+            fulp (to_fformat (ieee_to_flformat fmt)
+                             (greatest_e (ieee_to_flformat fmt) x))`
+          (fun thm -> REWRITE_TAC[thm]) THENL [
+
+            REWRITE_TAC[fulp] THEN
+            REWRITE_TAC[FLFORMAT_TO_FFORMAT_2] THEN
+            REWRITE_TAC[IEEE_FORMAT_TO_FLFORMAT]; ALL_TAC] THEN
+
+      MATCH_MP_TAC FLOAT_RD_NEAR_ABS_ERR THEN
+      MATCH_MP_TAC (ARITH_RULE `&0 < abs(x) ==> ~(x = &0)`) THEN
+      MATCH_MP_TAC REAL_LT_TRANS THEN
+      EXISTS_TAC `finf (ieee_to_fformat fmt)` THEN
+      CONJ_TAC THENL [
+        REWRITE_TAC[finf] THEN
+        REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0];
+        ASM_ARITH_TAC]]);;
+
+let IEEE_ROUND_ZERO_ABS_ERR =
+  prove(`!(fmt:ieee_format) (x:real). abs(x) <= (ieee_threshold fmt) ==>
+          abs(x - (ieee_round(fmt) To_zero x)) <=
+          &(ieee_r fmt) ipow ((ieee_exp(fmt) x) - &(ieee_p fmt) + &1)`,
+        REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absxthresh") THEN
+        REWRITE_TAC[ieee_round] THEN
+        COND_CASES_TAC THENL [
+          REWRITE_TAC[ieee_exp] THEN
+          ASM_REWRITE_TAC[] THEN
+          ONCE_REWRITE_TAC[GSYM IEEE_FORMAT_TO_FFORMAT] THEN
+          REWRITE_TAC[GSYM fulp] THEN
+          ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
+          MATCH_MP_TAC FIXED_RD_ZERO_ABS_ERROR THEN
+          ASM_REWRITE_TAC[];
+
+          ASM_REWRITE_TAC[] THEN REWRITE_TAC[ieee_exp] THEN
+          ASM_REWRITE_TAC[] THEN
+
+      ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
+
+      SUBGOAL_THEN `&(ieee_r fmt) ipow
+              (greatest_e (ieee_to_flformat fmt) x - &(ieee_p fmt) + &1) =
+            fulp (to_fformat (ieee_to_flformat fmt)
+                             (greatest_e (ieee_to_flformat fmt) x))`
+          (fun thm -> REWRITE_TAC[thm]) THENL [
+
+            REWRITE_TAC[fulp] THEN
+            REWRITE_TAC[FLFORMAT_TO_FFORMAT_2] THEN
+            REWRITE_TAC[IEEE_FORMAT_TO_FLFORMAT]; ALL_TAC] THEN
+
+      MATCH_MP_TAC FLOAT_RD_ZERO_ABS_ERR THEN
+      MATCH_MP_TAC (ARITH_RULE `&0 < abs(x) ==> ~(x = &0)`) THEN
+      MATCH_MP_TAC REAL_LT_TRANS THEN
+      EXISTS_TAC `finf (ieee_to_fformat fmt)` THEN
+      CONJ_TAC THENL [
+        REWRITE_TAC[finf] THEN
+        REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0];
+        ASM_ARITH_TAC]]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Relative error theorems                                                    *)
+(* -------------------------------------------------------------------------- *)
+
+(* for r^emin <= |x| <= threshold (x is in the range of normalized fp         *)
+(* numbers), round to near relative error bounded by the machine epsilon.     *)
+(* This is basically the generalized float thm, but `lifted' to ieee.         *)
+let IEEE_ROUND_NEAR_REL_ERR =
+  prove(`!(fmt:ieee_format) (x:real).
+          ~(abs(x) <= (finf (ieee_to_fformat fmt))) /\
+          abs(x) <= (ieee_threshold fmt) ==>
+          (rerror x (ieee_round(fmt) To_near x)) <= ieee_eps(fmt)`,
+        REPEAT GEN_TAC THEN
+        DISCH_THEN (LABEL_CONJUNCTS_TAC ["absxlow"; "absxhi"]) THEN
+        REWRITE_TAC[ieee_round] THEN
+        ASM_REWRITE_TAC[] THEN
+        REWRITE_TAC[ieee_eps] THEN
+        MATCH_MP_TAC FLOAT_RD_NEAR_REL_ERROR THEN
+        MATCH_MP_TAC (ARITH_RULE `&0 < abs(x) ==> ~(x = &0)`) THEN
+        MATCH_MP_TAC REAL_LT_TRANS THEN
+        EXISTS_TAC `finf (ieee_to_fformat fmt)` THEN
+        CONJ_TAC THENL [
+          REWRITE_TAC[finf] THEN
+          REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0];
+          ASM_ARITH_TAC]);;
+
+(* for |x| <= r^emin (x is in the range of subnormal fp numbers), round to    *)
+(* near relative error bounded by 1 (and this is the tightest upper bound).   *)
+(* Basically the fixed thm, but `lifted' to ieee.                             *)
+let IEEE_ROUND_NEAR_REL_ERR =
+  prove(`!(fmt:ieee_format) (x:real).
+          (abs(x) <= (finf (ieee_to_fformat fmt))) /\ ~(x = &0) ==>
+          (rerror x (ieee_round(fmt) To_near x)) <= &1`,
+        REPEAT GEN_TAC THEN
+        DISCH_THEN (LABEL_CONJUNCTS_TAC ["absxlow"; "absxhi"]) THEN
+        REWRITE_TAC[ieee_round] THEN
+        ASM_REWRITE_TAC[] THEN
+        MATCH_MP_TAC FIXED_RD_NEAREST_REL_ERROR THEN
+        ASM_REWRITE_TAC[]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Delta bounds                                                               *)
+(* -------------------------------------------------------------------------- *)
+
