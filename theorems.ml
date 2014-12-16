@@ -541,3 +541,5 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC =
     let tac,rest = (hyp_tac rule o lex o explode) s in
     if rest=[] then tac else failwith "HYP_TAC: invalid pattern" in
   DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC;;
+
+let CLAIM_TAC s tm = SUBGOAL_THEN tm (DESTRUCT_TAC s);;

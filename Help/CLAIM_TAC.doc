@@ -1,0 +1,62 @@
+\DOC CLAIM_TAC
+
+\TYPE {CLAIM_TAC : string -> term -> tactic}
+
+\SYNOPSIS
+Breaks down and labels an intermediate claim in a proof.
+
+\DESCRIBE
+Given a Boolean term {t} and a string {s} of the form expected by
+{DESTRUCT_TAC} indicating how to break down and label that assertion,
+{CLAIM_TAC s t} breaks the current goal into two or more subgoals. One of
+these is to establish {t} using the current context and the others are to
+establish the original goal with the broken-down form of {t} as additional
+assumptions.
+
+\FAILURE
+Fails if the term is not Boolean or the pattern is ill-formed or does not match
+the form of the theorem.
+
+\EXAMPLE
+Here we show how we can attack a propositional goal (admittedly trivial with
+{TAUT}).
+{
+  # g `(p <=> q) ==> p \/ ~q`;;
+
+  val it : goalstack = 1 subgoal (1 total)
+
+  `(p <=> q) ==> p \/ ~q`
+
+  # e DISCH_TAC;;
+  val it : goalstack = 1 subgoal (1 total)
+
+    0 [`p <=> q`]
+
+  `p \/ ~q`
+}
+
+We establish the intermediate goal {p /\ q \/ ~p /\ ~q}, the disjunction being
+in turn broken down into two labelled hypotheses {yes} and {no}:
+{
+  # e(CLAIM_TAC "yes|no" `p /\ q \/ ~p /\ ~q`);;
+  val it : goalstack = 3 subgoals (3 total)
+
+    0 [`p <=> q`]
+    1 [`~p /\ ~q`] (no)
+
+  `p \/ ~q`
+
+    0 [`p <=> q`]
+    1 [`p /\ q`] (yes)
+
+  `p \/ ~q`
+
+    0 [`p <=> q`]
+
+  `p /\ q \/ ~p /\ ~q`
+}
+
+\SEEALSO
+DESTRUCT_TAC, SUBGOAL_TAC, SUBGOAL_THEN.
+
+\ENDDOC

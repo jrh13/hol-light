@@ -127,6 +127,6 @@ automated step rather large. If you step back three steps with
 }
 
 \SEEALSO
-MATCH_MP_TAC, MP_TAC, SUBGOAL_TAC.
+CLAIM_TAC, MATCH_MP_TAC, MP_TAC, SUBGOAL_TAC.
 
 \ENDDOC

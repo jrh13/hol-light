@@ -4,6 +4,7 @@
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (*                 (c) Copyright, Lars Schewe 2007                           *)
 (*              (c) Copyright, Valentina Bruno 2010                          *)
+(*               (c) Copyright, Marco Maggesi 2014                           *)
 (* ========================================================================= *)
 
 needs "Multivariate/topology.ml";;
@@ -121,6 +122,10 @@ let AFFINE_LINEAR_IMAGE_EQ = prove
   MATCH_ACCEPT_TAC(LINEAR_INVARIANT_RULE AFFINE_LINEAR_IMAGE));;
 
 add_linear_invariants [AFFINE_LINEAR_IMAGE_EQ];;
+
+let AFFINE_LINEAR_PREIMAGE = prove
+ (`!f:real^M->real^N s. linear f /\ affine s ==> affine {x | f(x) IN s}`,
+  REWRITE_TAC[affine; IN_ELIM_THM] THEN SIMP_TAC[LINEAR_ADD; LINEAR_CMUL]);;
 
 let AFFINE_EMPTY = prove
  (`affine {}`,
@@ -3259,6 +3264,10 @@ let AFFINE_IMP_SUBSPACE = prove
  (`!s. affine s /\ vec 0 IN s ==> subspace s`,
   SIMP_TAC[GSYM AFFINE_EQ_SUBSPACE]);;
 
+let SUBSPACE_EQ_AFFINE = prove
+ (`!s:real^N->bool. subspace s <=> affine s /\ vec 0 IN s`,
+  MESON_TAC[AFFINE_IMP_SUBSPACE; SUBSPACE_IMP_AFFINE; SUBSPACE_0]);;
+
 let AFFINE_HULL_EQ_SPAN = prove
  (`!s:real^N->bool. (vec 0) IN affine hull s ==> affine hull s = span s`,
   GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
@@ -5965,6 +5974,22 @@ let CONTINUOUS_ON_CLOSEST_POINT = prove
  (`!s t. convex s /\ closed s /\ ~(s = {})
          ==> (closest_point s) continuous_on t`,
   MESON_TAC[CONTINUOUS_AT_IMP_CONTINUOUS_ON; CONTINUOUS_AT_CLOSEST_POINT]);;
+
+let CLOSEST_POINT_TRANSLATION = prove
+ (`!s a:real^N.
+     convex s /\ closed s /\ ~(s = {})
+     ==> closest_point (IMAGE (\x. a + x) s) (a + x) =
+         a + closest_point s x`,
+  INTRO_TAC "!s a; cvx cld nempty" THEN
+  MATCH_MP_TAC (GSYM CLOSEST_POINT_UNIQUE) THEN
+  ASM_SIMP_TAC[CONVEX_TRANSLATION; CLOSED_TRANSLATION; IN_IMAGE] THEN
+  CONJ_TAC THENL
+  [EXISTS_TAC `closest_point s (x:real^N)` THEN
+   ASM_SIMP_TAC[CLOSEST_POINT_IN_SET];
+   ALL_TAC] THEN
+  INTRO_TAC "!z; @y. zdef yhp" THEN REMOVE_THEN "zdef" SUBST1_TAC THEN
+  SUBGOAL_THEN `dist(x:real^N,closest_point s x) <= dist(x,y)` MP_TAC THENL
+  [ASM_SIMP_TAC[CLOSEST_POINT_LE]; ALL_TAC] THEN NORM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relating closest points and orthogonality.                                *)
@@ -8687,6 +8712,46 @@ let SEGMENT_CONVEX_HULL = prove
   ONCE_REWRITE_TAC[TAUT `a /\ b /\ c /\ d <=> c /\ a /\ b /\ d`] THEN
   ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN REWRITE_TAC[UNWIND_THM2] THEN
   REWRITE_TAC[REAL_LE_SUB_LADD; REAL_ADD_LID] THEN MESON_TAC[]);;
+
+let CONTINUOUS_INCREASING_IMAGE_INTERVAL_1 = prove
+ (`!f:real^1->real^1 a b.
+        ~(interval[a,b] = {}) /\ f continuous_on interval[a,b] /\
+        (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ drop x <= drop y
+               ==> drop(f x) <= drop(f y))
+        ==> IMAGE f (interval[a,b]) = interval[f a,f b]`,
+  REWRITE_TAC[INTERVAL_NE_EMPTY_1; IN_INTERVAL_1] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  CONJ_TAC THENL
+   [ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_INTERVAL_1] THEN
+    ASM_MESON_TAC[REAL_LE_REFL; REAL_LE_TRANS];
+    ALL_TAC] THEN
+  TRANS_TAC SUBSET_TRANS `segment[(f:real^1->real^1) a,f b]` THEN
+  CONJ_TAC THENL
+   [ASM_SIMP_TAC[SEGMENT_1; REAL_LE_REFL; SUBSET_REFL]; ALL_TAC] THEN
+  REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN MATCH_MP_TAC HULL_MINIMAL THEN
+  ASM_SIMP_TAC[INSERT_SUBSET; EMPTY_SUBSET; FUN_IN_IMAGE; ENDS_IN_INTERVAL;
+               INTERVAL_NE_EMPTY_1; CONVEX_CONNECTED_1] THEN
+  ASM_SIMP_TAC[CONNECTED_CONTINUOUS_IMAGE; CONNECTED_INTERVAL]);;
+
+let CONTINUOUS_DECREASING_IMAGE_INTERVAL_1 = prove
+ (`!f:real^1->real^1 a b.
+        ~(interval[a,b] = {}) /\ f continuous_on interval[a,b] /\
+        (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ drop x <= drop y
+               ==> drop(f y) <= drop(f x))
+        ==> IMAGE f (interval[a,b]) = interval[f b,f a]`,
+  REWRITE_TAC[INTERVAL_NE_EMPTY_1; IN_INTERVAL_1] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  CONJ_TAC THENL
+   [ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_INTERVAL_1] THEN
+    ASM_MESON_TAC[REAL_LE_REFL; REAL_LE_TRANS];
+    ALL_TAC] THEN
+  TRANS_TAC SUBSET_TRANS `segment[(f:real^1->real^1) b,f a]` THEN
+  CONJ_TAC THENL
+   [ASM_SIMP_TAC[SEGMENT_1; REAL_LE_REFL; SUBSET_REFL]; ALL_TAC] THEN
+  REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN MATCH_MP_TAC HULL_MINIMAL THEN
+  ASM_SIMP_TAC[INSERT_SUBSET; EMPTY_SUBSET; FUN_IN_IMAGE; ENDS_IN_INTERVAL;
+               INTERVAL_NE_EMPTY_1; CONVEX_CONNECTED_1] THEN
+  ASM_SIMP_TAC[CONNECTED_CONTINUOUS_IMAGE; CONNECTED_INTERVAL]);;
 
 let SEGMENT_FURTHEST_LE = prove
  (`!a b x y:real^N.

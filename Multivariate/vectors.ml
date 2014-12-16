@@ -2,6 +2,7 @@
 (* Real vectors in Euclidean space, and elementary linear algebra.           *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
+(*               (c) Copyright, Marco Maggesi 2014                           *)
 (* ========================================================================= *)
 
 needs "Library/card.ml";;
