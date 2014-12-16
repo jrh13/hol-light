@@ -2880,7 +2880,7 @@ let WF_FINITE = prove
   INDUCT_TAC THEN REWRITE_TAC[IN_ELIM_THM] THEN ASM_MESON_TAC[LT_0]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Cardinal comparisons (more theory in Examples/card.ml)                    *)
+(* Cardinal comparisons (more theory in Library/card.ml)                     *)
 (* ------------------------------------------------------------------------- *)
 
 let le_c = new_definition

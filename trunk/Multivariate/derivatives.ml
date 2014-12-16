@@ -2,6 +2,7 @@
 (* Multivariate calculus in Euclidean space.                                 *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
+(*               (c) Copyright, Marco Maggesi 2014                           *)
 (* ========================================================================= *)
 
 needs "Multivariate/degree.ml";;
@@ -2485,6 +2486,31 @@ let VECTOR_DIFF_CHAIN_WITHIN = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[has_vector_derivative] THEN
   DISCH_THEN(MP_TAC o MATCH_MP DIFF_CHAIN_WITHIN) THEN
   REWRITE_TAC[o_DEF; DROP_CMUL; GSYM VECTOR_MUL_ASSOC]);;
+
+let VECTOR_DIFFERENTIABLE_BOUND = prove
+ (`!f f':real^1->real^N s B.
+     convex s /\
+     (!x. x IN s ==> (f has_vector_derivative f' x) (at x within s)) /\
+     (!x. x IN s ==> norm (f' x) <= B)
+     ==> (!x y. x IN s /\ y IN s ==> norm (f x - f y) <= B * norm (x - y))`,
+  INTRO_TAC "!f f' s B; cvx diff bound; !x y; x y" THEN
+  MP_TAC (ISPECL [`f:real^1->real^N`; `\x:real^1 h. drop h % f' x : real^N`;
+                  `s:real^1->bool`; `B:real`] DIFFERENTIABLE_BOUND) THEN
+  ANTS_TAC THENL
+  [HYP_TAC "diff" (REWRITE_RULE[has_vector_derivative]) THEN
+   HYP REWRITE_TAC "cvx diff" [] THEN
+   INTRO_TAC "![x0]; x0" THEN
+   CLAIM_TAC "lin" `linear (\h. drop h % f' (x0:real^1):real^N)` THENL
+   [REWRITE_TAC[linear; DROP_ADD; DROP_CMUL; VECTOR_MUL_ASSOC;
+                VECTOR_ADD_RDISTRIB];
+    ALL_TAC] THEN
+   HYP_TAC "lin -> _ onorm_le" (REWRITE_RULE[] o MATCH_MP ONORM) THEN
+   REMOVE_THEN "onorm_le" MATCH_MP_TAC THEN
+   FIX_TAC "[h]" THEN
+   REWRITE_TAC[NORM_MUL; GSYM NORM_1] THEN
+   GEN_REWRITE_TAC LAND_CONV [REAL_MUL_SYM] THEN
+   HYP SIMP_TAC "x0 bound" [REAL_LE_RMUL; NORM_POS_LE];
+   DISCH_THEN MATCH_MP_TAC THEN HYP REWRITE_TAC "x y" []]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Various versions of Kachurovskii's theorem.                               *)

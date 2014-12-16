@@ -1,3 +1,8 @@
+Sat 13th Dec 2014       theorems.ml
+
+Added CLAIM_TAC from Marco Maggesi. This combines SUBGOAL_THEN and DESTRUCT_TAC
+in a natural way so one can make a labelled claim with a subproof.
+
 Sat  6th Dec 2014       IEEE/* [new directory]
 
 Added an extensive formal theory of IEEE floating-point arithmetic, written by

@@ -40,6 +40,6 @@ If we want to prove
 Structuring proofs via a sequence of simple lemmas.
 
 \SEEALSO
-SUBGOAL_THEN.
+CLAIM_TAC, SUBGOAL_THEN.
 
 \ENDDOC

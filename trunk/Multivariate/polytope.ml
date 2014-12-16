@@ -5640,6 +5640,24 @@ let POLYHEDRON_NEGATIONS = prove
   REWRITE_TAC[VECTOR_ARITH `--x:real^N = y <=> x = --y`; EXISTS_REFL] THEN
   REWRITE_TAC[LINEAR_NEGATION] THEN VECTOR_ARITH_TAC);;
 
+let POLYHEDRON_LINEAR_PREIMAGE = prove
+ (`!f:real^M->real^N s.
+        linear f /\ polyhedron s ==> polyhedron {x | f x IN s}`,
+  let lemma = prove
+   (`{x | f x IN INTERS s} = INTERS {{x | f x IN c} | c IN s}`,
+    REWRITE_TAC[INTERS_GSPEC] THEN SET_TAC[]) in
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [polyhedron] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM SUBST1_TAC THEN
+  ONCE_REWRITE_TAC[lemma] THEN MATCH_MP_TAC POLYHEDRON_INTERS THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `h:real^N->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `h:real^N->bool`) THEN
+  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN ASM_REWRITE_TAC[IN_ELIM_THM] THEN
+  FIRST_X_ASSUM(fun th ->
+    ONCE_REWRITE_TAC[GSYM(MATCH_MP ADJOINT_CLAUSES th)]) THEN
+  REWRITE_TAC[POLYHEDRON_HALFSPACE_LE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relation between polytopes and polyhedra.                                 *)
 (* ------------------------------------------------------------------------- *)
