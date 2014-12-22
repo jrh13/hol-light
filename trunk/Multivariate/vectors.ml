@@ -3226,6 +3226,17 @@ let MATRIX_VECTOR_LMUL = prove
            VECTOR_MUL_COMPONENT] THEN
   REWRITE_TAC[GSYM REAL_MUL_ASSOC; SUM_LMUL]);;
 
+let COLUMN_MATRIX_MUL = prove
+ (`!A:real^N^M B:real^P^N.
+      1 <= i /\ i <= dimindex(:P) ==> column i (A ** B) = A ** column i B`,
+  SIMP_TAC[column; matrix_mul; matrix_vector_mul; LAMBDA_BETA; CART_EQ]);;
+
+let ROW_MATRIX_MUL = prove
+ (`!A:real^N^M B:real^P^N.
+      1 <= i /\ i <= dimindex(:M) ==> row i (A ** B) = transp B ** row i A`,
+  SIMP_TAC[GSYM COLUMN_TRANSP] THEN
+  SIMP_TAC[MATRIX_TRANSP_MUL; COLUMN_MATRIX_MUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Two sometimes fruitful ways of looking at matrix-vector multiplication.   *)
 (* ------------------------------------------------------------------------- *)
@@ -9351,6 +9362,12 @@ let PRESERVES_NORM_PRESERVES_DOT = prove
   MP_TAC(ISPECL [`f:real^M->real^N`; `\x:real^M. x`]
         SAME_NORM_SAME_DOT) THEN
   ASM_SIMP_TAC[LINEAR_ID]);;
+
+let PRESEVES_NORM_PRESERVES_DIST = prove
+ (`!f:real^M->real^N.
+        linear f /\ (!x. norm(f x) = norm x)
+        ==> !x y. dist(f x,f y) = dist(x,y)`,
+  REWRITE_TAC[dist] THEN MESON_TAC[LINEAR_SUB]);;
 
 let PRESERVES_NORM_INJECTIVE = prove
  (`!f:real^M->real^N.

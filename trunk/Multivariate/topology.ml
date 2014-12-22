@@ -21875,10 +21875,12 @@ let LINDELOF_OPEN_IN = prove
   `!f'. f' SUBSET f ==> UNIONS f' = (u:real^N->bool) INTER UNIONS (IMAGE v f')`
   MP_TAC THENL [ASM SET_TAC[]; ASM_SIMP_TAC[SUBSET_REFL]]);;
 
-let COUNTABLE_DISJOINT_OPEN_SUBSETS = prove
- (`!f. (!s:real^N->bool. s IN f ==> open s) /\ pairwise DISJOINT f
-       ==> COUNTABLE f`,
-  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP LINDELOF) THEN
+let COUNTABLE_DISJOINT_OPEN_IN_SUBSETS = prove
+ (`!f:(real^N->bool)->bool u.
+        (!s. s IN f ==> open_in (subtopology euclidean u) s) /\
+        pairwise DISJOINT f
+        ==> COUNTABLE f`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP LINDELOF_OPEN_IN) THEN
   DISCH_THEN(X_CHOOSE_THEN `g:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
   MATCH_MP_TAC COUNTABLE_SUBSET THEN
   EXISTS_TAC `({}:real^N->bool) INSERT g` THEN
@@ -21889,6 +21891,51 @@ let COUNTABLE_DISJOINT_OPEN_SUBSETS = prove
   REWRITE_TAC[IN_UNIONS; pairwise] THEN
   REWRITE_TAC[SET_RULE `DISJOINT s t <=> !x. ~(x IN s /\ x IN t)`] THEN
   REWRITE_TAC[NOT_IN_EMPTY] THEN MESON_TAC[]);;
+
+let COUNTABLE_DISJOINT_OPEN_SUBSETS = prove
+ (`!f. (!s:real^N->bool. s IN f ==> open s) /\ pairwise DISJOINT f
+       ==> COUNTABLE f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:(real^N->bool)->bool`; `(:real^N)`]
+        COUNTABLE_DISJOINT_OPEN_IN_SUBSETS) THEN
+  ASM_SIMP_TAC[GSYM OPEN_IN; SUBTOPOLOGY_UNIV]);;
+
+let COUNTABLE_COMPACT_OPEN_IN = prove
+ (`!u:real^N->bool.
+        COUNTABLE {c | compact c /\ open_in (subtopology euclidean u) c}`,
+  GEN_TAC THEN MP_TAC(ISPEC `u:real^N->bool` SUBSET_SECOND_COUNTABLE) THEN
+  DISCH_THEN(X_CHOOSE_THEN `b:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC
+   `IMAGE UNIONS {t:(real^N->bool)->bool | t SUBSET b /\ FINITE t}` THEN
+  ASM_SIMP_TAC[COUNTABLE_FINITE_SUBSETS; COUNTABLE_IMAGE] THEN
+  GEN_REWRITE_TAC I [SUBSET] THEN
+  REWRITE_TAC[IN_IMAGE; IN_UNIONS; IN_ELIM_THM] THEN
+  X_GEN_TAC `c:real^N->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o C MATCH_MP (ASSUME
+   `open_in (subtopology euclidean u) (c:real^N->bool)`)) THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:(real^N->bool)->bool`
+   (STRIP_ASSUME_TAC o GSYM)) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `t:(real^N->bool)->bool` o
+    GEN_REWRITE_RULE I [COMPACT_EQ_HEINE_BOREL_SUBTOPOLOGY]) THEN
+  ASM_REWRITE_TAC[SUBSET_REFL] THEN ANTS_TAC THENL
+   [X_GEN_TAC `v:real^N->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `v:real^N->bool`) THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; STRIP_TAC] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        OPEN_IN_SUBSET_TRANS)) THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN ASM SET_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:(real^N->bool)->bool` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[]]);;
+
+let COUNTABLE_CLOPEN_IN = prove
+ (`!u:real^N->bool.
+        compact u
+        ==> COUNTABLE {c | closed_in (subtopology euclidean u) c /\
+                           open_in (subtopology euclidean u) c}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC
+   `{c:real^N->bool | compact c /\ open_in (subtopology euclidean u) c}` THEN
+  REWRITE_TAC[COUNTABLE_COMPACT_OPEN_IN; SUBSET; IN_ELIM_THM] THEN
+  ASM_MESON_TAC[CLOSED_IN_COMPACT]);;
 
 let CARD_EQ_OPEN_SETS = prove
  (`{s:real^N->bool | open s} =_c (:real)`,
@@ -21959,6 +22006,22 @@ let COUNTABLE_NON_CONDENSATION_POINTS = prove
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
     MATCH_MP_TAC COUNTABLE_SUBSET THEN
     EXISTS_TAC `s INTER t:real^N->bool` THEN ASM SET_TAC[]]);;
+
+let COUNTABLE_NON_LIMIT_POINTS = prove
+ (`!s:real^N->bool. COUNTABLE(s DIFF {x | x limit_point_of s})`,
+  GEN_TAC THEN MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC `s DIFF {x:real^N | x condensation_point_of s}` THEN
+  REWRITE_TAC[COUNTABLE_NON_CONDENSATION_POINTS] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. Q x ==> P x) ==> s DIFF {x | P x} SUBSET s DIFF {x | Q x}`) THEN
+  REWRITE_TAC[CONDENSATION_POINT_IMP_LIMPT]);;
+
+let COUNTABLE_ISOLATED_SET = prove
+ (`!s:real^N->bool.
+        (!a. a IN s ==> ~(a limit_point_of s)) ==> COUNTABLE s`,
+  GEN_TAC THEN DISCH_THEN(SUBST1_TAC o MATCH_MP (SET_RULE
+   `(!x. x IN s ==> ~(P x)) ==> s = s DIFF {x | P x}`)) THEN
+  REWRITE_TAC[COUNTABLE_NON_LIMIT_POINTS]);;
 
 let CARD_EQ_CONDENSATION_POINTS_IN_SET = prove
  (`!s:real^N->bool.
