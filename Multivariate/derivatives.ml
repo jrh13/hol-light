@@ -2300,6 +2300,14 @@ let VECTOR_DERIVATIVE_WORKS = prove
   MATCH_MP_TAC LINEAR_FROM_REALS THEN
   RULE_ASSUM_TAC(REWRITE_RULE[has_derivative]) THEN ASM_REWRITE_TAC[]);;
 
+let VECTOR_DIFFERENTIABLE = prove
+ (`!f net. f differentiable net <=> (?f'. (f has_vector_derivative f') net)`,
+  MESON_TAC[differentiable; has_vector_derivative; VECTOR_DERIVATIVE_WORKS]);;
+
+let HAS_VECTOR_DERIVATIVE_IMP_DIFFERENTIABLE = prove
+ (`!f f' net. (f has_vector_derivative f') net ==> f differentiable net`,
+  MESON_TAC[VECTOR_DIFFERENTIABLE]);;
+
 let VECTOR_DERIVATIVE_UNIQUE_AT = prove
  (`!f:real^1->real^N x f' f''.
      (f has_vector_derivative f') (at x) /\
@@ -2511,6 +2519,18 @@ let VECTOR_DIFFERENTIABLE_BOUND = prove
    GEN_REWRITE_TAC LAND_CONV [REAL_MUL_SYM] THEN
    HYP SIMP_TAC "x0 bound" [REAL_LE_RMUL; NORM_POS_LE];
    DISCH_THEN MATCH_MP_TAC THEN HYP REWRITE_TAC "x y" []]);;
+
+let HAS_BOUNDED_VECTOR_DERIVATIVE_IMP_LIPSCHITZ = prove
+ (`!f:real^1->real^N f' s.
+      (!x. x IN s ==> (f has_vector_derivative f'(x)) (at x within s)) /\
+      convex s /\ bounded(IMAGE f' s)
+      ==> ?B. &0 < B /\
+              !x y. x IN s /\ y IN s ==> norm(f x - f y) <= B * norm (x - y)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BOUNDED_POS]) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B:real` THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC VECTOR_DIFFERENTIABLE_BOUND THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Various versions of Kachurovskii's theorem.                               *)

@@ -8908,6 +8908,23 @@ let UNION_SEGMENT = prove
     REWRITE_TAC[IMAGE_CLAUSES; UNIONS_2] THEN
     BINOP_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]]);;
 
+let CONVEX_STARCENTRES = prove
+ (`!s:real^N->bool.
+        convex {a | a IN s /\ !x. x IN s ==> segment[a,x] SUBSET s}`,
+  GEN_TAC THEN REWRITE_TAC[CONVEX_CONTAINS_SEGMENT; IN_ELIM_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN
+  REWRITE_TAC[SUBSET; RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  X_GEN_TAC `c:real^N` THEN DISCH_THEN(DESTRUCT_TAC "a aseg b bseg c") THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`y:real^N`; `z:real^N`] THEN STRIP_TAC THEN
+  SUBGOAL_THEN `(z:real^N) IN convex hull {a,b,y}` MP_TAC THENL
+   [ONCE_REWRITE_TAC[SET_RULE `{a,b,y} = {y,b,a}`]; ALL_TAC] THEN
+  ONCE_REWRITE_TAC[CONVEX_HULL_INSERT_SEGMENTS] THEN
+  REWRITE_TAC[NOT_INSERT_EMPTY; GSYM SEGMENT_CONVEX_HULL] THENL
+   [ONCE_REWRITE_TAC[SEGMENT_SYM]; ALL_TAC] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* It might occasionally be handy to use midpoint convexity only.            *)
 (* ------------------------------------------------------------------------- *)
