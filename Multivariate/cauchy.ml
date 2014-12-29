@@ -80,6 +80,22 @@ let PIECEWISE_DIFFERENTIABLE_COMPOSE = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_CHAIN_AT THEN
   CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]);;
 
+let DIFFERENTIABLE_PIECEWISE_DIFFERENTIABLE_COMPOSE = prove
+ (`!f:real^M->real^N g:real^N->real^P s.
+        f piecewise_differentiable_on s /\
+        g differentiable_on (:real^N)
+        ==> (g o f) piecewise_differentiable_on s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[piecewise_differentiable_on] THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[CONTINUOUS_ON_COMPOSE; CONTINUOUS_ON_SUBSET; SUBSET_UNIV;
+                  DIFFERENTIABLE_IMP_CONTINUOUS_ON];
+    FIRST_X_ASSUM(MP_TAC o check (is_exists o concl)) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+
+    MATCH_MP_TAC DIFFERENTIABLE_CHAIN_AT THEN
+    ASM_MESON_TAC[DIFFERENTIABLE_ON_EQ_DIFFERENTIABLE_AT;
+                  OPEN_UNIV; IN_UNIV]]);;
+
 let PIECEWISE_DIFFERENTIABLE_AFFINE = prove
  (`!f:real^M->real^N s m c.
         f piecewise_differentiable_on (IMAGE (\x. m % x + c) s)
@@ -213,6 +229,36 @@ let VALID_PATH_COMPOSE = prove
         INTERVAL_OPEN_SUBSET_CLOSED) THEN ASM SET_TAC[];
       ASM_SIMP_TAC[DIFFERENTIABLE_WITHIN_OPEN; OPEN_DIFF; OPEN_INTERVAL;
                    FINITE_IMP_CLOSED]]]);;
+
+let VALID_PATH_TRANSLATION_EQ = prove
+ (`!a g. valid_path((\x. a + x) o g) <=> valid_path g`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[valid_path] THEN EQ_TAC THEN DISCH_TAC THENL
+   [SUBGOAL_THEN `(g:real^1->complex) = (\x. --a + x) o (\x. a + x) o g`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_THM] THEN VECTOR_ARITH_TAC; ALL_TAC];
+    ALL_TAC] THEN
+  MATCH_MP_TAC DIFFERENTIABLE_PIECEWISE_DIFFERENTIABLE_COMPOSE THEN
+  ASM_REWRITE_TAC[] THEN
+  SIMP_TAC[DIFFERENTIABLE_ON_ADD; DIFFERENTIABLE_ON_CONST;
+
+           DIFFERENTIABLE_ON_ID]);;
+
+add_translation_invariants [VALID_PATH_TRANSLATION_EQ];;
+
+let VALID_PATH_LINEAR_IMAGE_EQ = prove
+ (`!f g. linear f /\ (!x y. f x = f y ==> x = y)
+         ==> (valid_path(f o g) <=> valid_path g)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(X_CHOOSE_THEN `h:complex->complex` STRIP_ASSUME_TAC o
+        MATCH_MP LINEAR_INJECTIVE_LEFT_INVERSE) THEN
+  REWRITE_TAC[valid_path] THEN EQ_TAC THEN DISCH_TAC THENL
+   [SUBGOAL_THEN `g:real^1->complex = h o (f:complex->complex) o g`
+    SUBST1_TAC THENL [ASM_REWRITE_TAC[o_ASSOC; I_O_ID]; ALL_TAC];
+    ALL_TAC] THEN
+  MATCH_MP_TAC DIFFERENTIABLE_PIECEWISE_DIFFERENTIABLE_COMPOSE THEN
+  ASM_SIMP_TAC[DIFFERENTIABLE_ON_LINEAR]);;
+
+add_linear_invariants [VALID_PATH_LINEAR_IMAGE_EQ];;
 
 (* ------------------------------------------------------------------------- *)
 (* In particular, all results for paths apply.                               *)
@@ -575,6 +621,12 @@ let VALID_PATH_JOIN = prove
         valid_path g1 /\ valid_path g2 /\ pathfinish g1 = pathstart g2
         ==> valid_path(g1 ++ g2)`,
   MESON_TAC[VALID_PATH_JOIN_EQ]);;
+
+let VALID_PATH_SYM = prove
+ (`!p q:real^1->complex.
+        pathfinish p = pathstart q /\ pathfinish q = pathstart p
+        ==> (valid_path(p ++ q) <=> valid_path(q ++ p))`,
+  SIMP_TAC[VALID_PATH_JOIN_EQ] THEN CONV_TAC TAUT);;
 
 let HAS_PATH_INTEGRAL_JOIN = prove
  (`!f g1 g2 i1 i2.
@@ -6881,6 +6933,45 @@ let IN_PATH_IMAGE_PARTCIRCLEPATH = prove
   REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
   REWRITE_TAC[SUBSET; IN_SPHERE; dist; NORM_SUB] THEN SET_TAC[]);;
 
+let RECTIFIABLE_PATH_PARTCIRCLEPATH,PATH_LENGTH_PARTCIRCLEPATH =
+  let lemma = prove
+   (`(partcirclepath (z,r,s,t) has_vector_derivative
+      ii * Cx(t - s) * partcirclepath (Cx(&0),r,s,t) u) (at u)`,
+    REWRITE_TAC[partcirclepath; linepath; COMPLEX_CMUL; CX_SUB] THEN
+    MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_REAL_COMPLEX THEN COMPLEX_DIFF_TAC THEN
+    REWRITE_TAC[CX_MUL; CX_SUB; CX_ADD] THEN
+    CONV_TAC COMPLEX_RING) in
+  let RECTIFIABLE_PATH_PARTCIRCLEPATH = prove
+   (`!z r s t. rectifiable_path(partcirclepath(z,r,s,t))`,
+    REPEAT GEN_TAC THEN REWRITE_TAC[rectifiable_path; PATH_PARTCIRCLEPATH] THEN
+    MATCH_MP_TAC
+      HAS_BOUNDED_VECTOR_DERIVATIVE_IMP_HAS_BOUNDED_VARIATION_ON THEN
+    EXISTS_TAC `\x. ii * Cx(t - s) *  partcirclepath (Cx(&0),r,s,t) x` THEN
+    SIMP_TAC[lemma; HAS_VECTOR_DERIVATIVE_AT_WITHIN] THEN
+    REWRITE_TAC[CONVEX_INTERVAL; BOUNDED_INTERVAL] THEN
+    MATCH_MP_TAC COMPACT_IMP_BOUNDED THEN
+    MATCH_MP_TAC COMPACT_CONTINUOUS_IMAGE THEN
+    REWRITE_TAC[COMPACT_INTERVAL] THEN
+    REPLICATE_TAC 2 (MATCH_MP_TAC CONTINUOUS_ON_COMPLEX_LMUL) THEN
+    MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
+    MATCH_MP_TAC DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON THEN
+    X_GEN_TAC `x:real^1` THEN DISCH_TAC THEN
+    MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_IMP_DIFFERENTIABLE THEN
+    REWRITE_TAC[ETA_AX] THEN MESON_TAC[lemma]) in
+  let PATH_LENGTH_PARTCIRCLEPATH = prove
+   (`!z r s t. path_length(partcirclepath(z,r,s,t)) = abs(r * (t - s))`,
+    SIMP_TAC[PATH_LENGTH_VALID_PATH; VALID_PATH_PARTCIRCLEPATH;
+             RECTIFIABLE_PATH_PARTCIRCLEPATH] THEN
+    REWRITE_TAC[MATCH_MP HAS_VECTOR_DERIVATIVE_UNIQUE_AT lemma] THEN
+    REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_II; partcirclepath;
+                COMPLEX_ADD_LID; COMPLEX_NORM_CX; NORM_CEXP] THEN
+    REWRITE_TAC[RE_MUL_II; linepath; IM_CMUL; IM_ADD; IM_CX] THEN
+    REWRITE_TAC[REAL_MUL_RZERO; REAL_MUL_LID; REAL_ADD_RID] THEN
+    REWRITE_TAC[REAL_EXP_0; REAL_NEG_0; REAL_MUL_RID] THEN
+    REWRITE_TAC[INTEGRAL_CONST; CONTENT_UNIT; VECTOR_MUL_LID; LIFT_DROP] THEN
+    REWRITE_TAC[GSYM REAL_ABS_MUL; REAL_MUL_SYM]) in
+  RECTIFIABLE_PATH_PARTCIRCLEPATH,PATH_LENGTH_PARTCIRCLEPATH;;
+
 let HAS_PATH_INTEGRAL_BOUND_PARTCIRCLEPATH_STRONG = prove
  (`!f i z r s t B k.
         FINITE k /\
@@ -7212,6 +7303,16 @@ let VECTOR_DERIVATIVE_CIRCLEPATH = prove
 let VALID_PATH_CIRCLEPATH = prove
  (`!z r. valid_path (circlepath(z,r))`,
   REWRITE_TAC[circlepath; VALID_PATH_PARTCIRCLEPATH]);;
+
+let RECTIFIABLE_PATH_CIRCLEPATH = prove
+ (`!z r. rectifiable_path(circlepath(z,r))`,
+  REWRITE_TAC[circlepath; RECTIFIABLE_PATH_PARTCIRCLEPATH]);;
+
+let PATH_LENGTH_CIRCLEPATH = prove
+ (`!z r. path_length(circlepath(z,r)) = &2 * pi * abs r`,
+  REWRITE_TAC[circlepath; PATH_LENGTH_PARTCIRCLEPATH] THEN
+  REWRITE_TAC[REAL_ABS_MUL; REAL_SUB_RZERO; REAL_ABS_NUM; REAL_ABS_PI] THEN
+  REWRITE_TAC[REAL_MUL_AC]);;
 
 let PATH_IMAGE_CIRCLEPATH = prove
  (`!z r. &0 <= r ==> path_image (circlepath(z,r)) = sphere(z,r)`,

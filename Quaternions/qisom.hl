@@ -1,0 +1,316 @@
+(* ========================================================================= *)
+(* Quaternions for describing 3D isometries.                                 *)
+(*                                                                           *)
+(* Copyright (c) 2014 Marco Maggesi                                          *)
+(* ========================================================================= *)
+
+(* ------------------------------------------------------------------------- *)
+(* We need the definition of cross product 3D.                               *)
+(* ------------------------------------------------------------------------- *)
+
+needs "Multivariate/cross.ml";;
+
+(* ------------------------------------------------------------------------- *)
+(* HIm                                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let HIM_DEF = new_definition
+  `HIm(q:quat) : real^3 = vector[q$2;q$3;q$4]`;;
+
+let HIM = prove
+ (`!x y z w. HIm(quat(x,y,z,w)):real^3 = vector[y;z;w]`,
+  REWRITE_TAC[HIM_DEF; quat; VECTOR_4]);;
+
+let HIM_COMPONENT = prove
+ (`(!q. HIm q $ 1 = Im1 q) /\
+   (!q. HIm q $ 2 = Im2 q) /\
+   (!q. HIm q $ 3 = Im3 q)`,
+  REWRITE_TAC[FORALL_QUAT; HIM; QUAT_COMPONENTS; VECTOR_3]);;
+
+let HIM_EQ = prove
+ (`!p q. HIm p = HIm q <=> Im1 p = Im1 q /\ Im2 p = Im2 q /\ Im3 p = Im3 q`,
+  REWRITE_TAC[CART_EQ; DIMINDEX_3; FORALL_3; HIM_COMPONENT]);;
+
+let HIM_HX = prove
+ (`!a. HIm(Hx a) = vec 0`,
+  REWRITE_TAC[HX_DEF; HIM; CART_EQ; DIMINDEX_3; VEC_COMPONENT;
+              DIMINDEX_3; FORALL_3; VECTOR_3]);;
+
+let HIM_CNJ = prove
+ (`!q. HIm(cnj q) = -- HIm q`,
+  REWRITE_TAC[CART_EQ; QUAT_CNJ_COMPONENTS; HIM_COMPONENT;
+              VECTOR_NEG_COMPONENT; DIMINDEX_3; FORALL_3; VECTOR_3]);;
+
+let HIM_MUL_HX = prove
+ (`(!a q. HIm(Hx a * q) = a % HIm q) /\
+   (!a q. HIm(q * Hx a) = a % HIm q)`,
+  REWRITE_TAC[CART_EQ; VECTOR_MUL_COMPONENT; HIM_COMPONENT; DIMINDEX_3;
+              FORALL_3; VECTOR_3; MUL_HX_COMPONENTS] THEN
+  MESON_TAC[REAL_MUL_SYM]);;
+
+let HIM_ADD = prove
+ (`!p q. HIm(p + q) = HIm p + HIm q`,
+  REWRITE_TAC[CART_EQ; VECTOR_ADD_COMPONENT; DIMINDEX_3] THEN
+  REWRITE_TAC[FORALL_3; HIM_COMPONENT; QUAT_ADD_COMPONENTS]);;
+
+let HIM_NEG = prove
+ (`!q. HIm(--q) = --HIm q`,
+  REWRITE_TAC[CART_EQ; VECTOR_NEG_COMPONENT; DIMINDEX_3] THEN
+  REWRITE_TAC[FORALL_3; HIM_COMPONENT; QUAT_NEG_COMPONENTS]);;
+
+let HIM_SUB = prove
+ (`!p q. HIm(p - q) = HIm p - HIm q`,
+  REWRITE_TAC[CART_EQ; VECTOR_SUB_COMPONENT; DIMINDEX_3] THEN
+  REWRITE_TAC[FORALL_3; HIM_COMPONENT; QUAT_SUB_COMPONENTS]);;
+
+let HIM_VSUM = prove
+ (`!f s. FINITE s ==> HIm(vsum s f) = vsum s (\x:A. HIm(f x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CART_EQ] THEN
+  ASM_SIMP_TAC[VSUM_COMPONENT] THEN
+  REWRITE_TAC[DIMINDEX_3; FORALL_3; HIM_COMPONENT] THEN
+  ASM_SIMP_TAC[QUAT_VSUM_COMPONENTS]);;
+
+let CMUL_HIM = prove
+ (`!c q. c % HIm q = HIm(Hx c * q)`,
+  REWRITE_TAC[GSYM QUAT_CMUL; VECTOR_EQ_3; HIM_DEF; VECTOR_3;
+              VECTOR_MUL_COMPONENT]);;
+
+let LINEAR_HIM = prove
+ (`linear(HIm)`,
+  REWRITE_TAC[linear; HIM_ADD; CMUL_HIM; QUAT_CMUL]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Hv                                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let HV = new_definition
+  `Hv(x:real^3) = quat(&0,x$1,x$2,x$3)`;;
+
+let HV_COMPONENTS = prove
+ (`(!x. Re(Hv(x)) = &0) /\
+   (!x. Im1(Hv(x)) = x$1) /\
+   (!x. Im2(Hv(x)) = x$2) /\
+   (!x. Im3(Hv(x)) = x$3)`,
+  REWRITE_TAC[HV; QUAT_COMPONENTS; VECTOR_4]);;
+
+let HV_VEC = prove
+ (`!n. Hv(vec n) = quat(&0, &n, &n, &n)`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; QUAT_COMPONENTS; VEC_COMPONENT]);;
+
+let HV_EQ_ZERO = prove
+ (`!v. Hv v = Hx(&0) <=> v = vec 0`,
+  GEN_TAC THEN REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; HX_COMPONENTS] THEN
+  REWRITE_TAC[VECTOR_EQ_3; VEC_COMPONENT]);;
+
+let HV_ZERO = prove
+ (`Hv(vec 0) = Hx(&0)`,
+  REWRITE_TAC[HV_EQ_ZERO]);;
+
+let HV_VECTOR = prove
+ (`!x y z. Hv(vector[x;y;z]) = quat(&0,x,y,z)`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; QUAT_COMPONENTS; VECTOR_3]);;
+
+let HV_BASIS = prove
+ (`Hv(basis 1) = ii /\ Hv(basis 2) = jj /\ Hv(basis 3) = kk`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; QUAT_UNITS_COMPONENTS] THEN
+  SIMP_TAC[BASIS_COMPONENT; DIMINDEX_3; ARITH_LE; ARITH_LT; ARITH_EQ]);;
+
+let HV_ADD = prove
+ (`!x y. Hv(x + y) = Hv x + Hv y`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; QUAT_ADD_COMPONENTS;
+              VECTOR_ADD_COMPONENT; REAL_ADD_LID]);;
+
+let HV_NEG = prove
+ (`!x. Hv(--x) = --Hv x`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; QUAT_NEG_COMPONENTS;
+              VECTOR_NEG_COMPONENT; REAL_NEG_0]);;
+
+let HV_SUB = prove
+ (`!x y. Hv(x - y) = Hv x - Hv y`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; QUAT_SUB_COMPONENTS;
+              VECTOR_SUB_COMPONENT; REAL_SUB_RZERO]);;
+
+let HV_CMUL = prove
+ (`!a x. Hv(a % x) = Hx a * Hv x`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; MUL_HX_COMPONENTS; REAL_MUL_RZERO;
+              VECTOR_MUL_COMPONENT]);;
+
+let HV_VSUM = prove
+ (`!f s. FINITE s ==> Hv(vsum s f) = vsum s (\x:A. Hv(f x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[QUAT_EQ] THEN
+  ASM_SIMP_TAC[HV_COMPONENTS; QUAT_VSUM_COMPONENTS; SUM_0] THEN
+  ASM_SIMP_TAC[VSUM_COMPONENT; DIMINDEX_3; ARITH]);;
+
+let HV_INJ = prove
+ (`!x y. Hv x = Hv y <=> x = y`,
+  REWRITE_TAC[QUAT_EQ; HV_COMPONENTS] THEN
+  REWRITE_TAC[CART_EQ; DIMINDEX_3; FORALL_3]);;
+
+let LINEAR_HV = prove
+ (`linear(Hv)`,
+  REWRITE_TAC[linear; HV_ADD; HV_CMUL; QUAT_CMUL]);;
+
+let HIM_HV = prove
+ (`!x. HIm(Hv x) = x`,
+  REWRITE_TAC[HIM; HV; CART_EQ; DIMINDEX_3; FORALL_3;
+              VECTOR_MUL_COMPONENT; VECTOR_3]);;
+
+let CNJ_HV = prove
+ (`!v. cnj(Hv v) = --Hv v`,
+  REWRITE_TAC[QUAT_EQ; QUAT_CNJ_COMPONENTS; HV_COMPONENTS;
+              QUAT_NEG_COMPONENTS; REAL_NEG_0]);;
+
+let HV_HIM = prove
+ (`!q. Hv(HIm q) = quat(&0, Im1 q, Im2 q, Im3 q)`,
+  REWRITE_TAC[FORALL_QUAT; HIM; HV; QUAT_COMPONENTS; VECTOR_3]);;
+
+let HV_HIM_EQ = prove
+ (`!q. Hv(HIm q) = q <=> Re q = &0`,
+  GEN_TAC THEN REWRITE_TAC[QUAT_EQ; HV_COMPONENTS; HIM_COMPONENT] THEN
+  EQ_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[]);;
+
+let DOT_HV = prove
+ (`!u v. Hv u dot Hv v = u dot v`,
+  REWRITE_TAC[DOT_3; QUAT_DOT; HV_COMPONENTS; REAL_MUL_LZERO; REAL_ADD_LID]);;
+
+let NORM_HV = prove
+ (`!v. norm (Hv v) = norm v`,
+  REWRITE_TAC[vector_norm; DOT_HV]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Geometric interpretation of product of imaginary quaternions.             *)
+(* ------------------------------------------------------------------------- *)
+
+let MUL_HV_EQ_CROSS_DOT = prove
+ (`!x y. Hv x * Hv y = Hv(x cross y) - Hx (x dot y)`,
+  REWRITE_TAC[QUAT_EQ; QUAT_SUB_COMPONENTS; HV_COMPONENTS; HX_COMPONENTS;
+              quat_mul; QUAT_COMPONENTS; CROSS_COMPONENTS; DOT_3] THEN
+  CONV_TAC REAL_RING);;
+
+(* ------------------------------------------------------------------------- *)
+(* Representing orthogonal transformations as conjugation or congruence with *)
+(* a quaternion.                                                             *)
+(* ------------------------------------------------------------------------- *)
+
+let ORTHOGONAL_TRANSFORMATION_QUAT_CONGRUENCE = time prove
+ (`!q. norm q = &1
+       ==> orthogonal_transformation (\x. HIm(cnj q * Hv x * q))`,
+  INTRO_TAC "!q; qnorm" THEN
+  REWRITE_TAC[orthogonal_transformation; linear] THEN CONJ_TAC THENL
+  [CONJ_TAC THEN REPEAT STRIP_TAC THENL
+   [REWRITE_TAC[HV_ADD; QUAT_ADD_LDISTRIB; QUAT_ADD_RDISTRIB; HIM_ADD];
+    REWRITE_TAC[CMUL_HIM; HV_CMUL] THEN AP_TERM_TAC THEN
+    CONV_TAC QUAT_POLY];
+   ALL_TAC] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[DOT_3; HIM_COMPONENT; quat_mul; HV_COMPONENTS; QUAT_COMPONENTS;
+              QUAT_CNJ_COMPONENTS] THEN
+  POP_ASSUM MP_TAC THEN ONCE_REWRITE_TAC[GSYM VECTOR_NORM_SQNORM_UNIT] THEN
+  REWRITE_TAC[QUAT_SQNORM] THEN CONV_TAC REAL_RING);;
+
+let ORTHOGONAL_TRANSFORMATION_QUAT_CONJUGATION = prove
+ (`!q. ~(q = Hx(&0))
+       ==> orthogonal_transformation (\x. HIm(inv q * Hv x * q))`,
+  INTRO_TAC "!q; qnz" THEN
+  SUBGOAL_THEN `?c p. q = Hx c * p /\ norm p = &1`
+               (DESTRUCT_TAC "@c p. qeq pnorm") THENL
+  [MAP_EVERY EXISTS_TAC [`norm (q:quat)`; `inv (Hx (norm q)) * q`] THEN
+   REWRITE_TAC[QUAT_NORM_MUL; QUAT_NORM_INV; REAL_ABS_NORM; QUAT_MUL_ASSOC;
+               NORM_HX; GSYM HX_INV; GSYM HX_MUL] THEN
+   ASM_SIMP_TAC[REAL_MUL_RINV; REAL_MUL_LINV; QUAT_NORM_ZERO; QUAT_MUL_LID];
+   ALL_TAC] THEN
+  REMOVE_THEN "qeq" SUBST_ALL_TAC THEN
+  REMOVE_THEN "qnz"
+    (DESTRUCT_TAC "cnz pnz" o
+     REWRITE_RULE[QUAT_ENTIRE; HX_INJ; DE_MORGAN_THM]) THEN
+  REWRITE_TAC[QUAT_INV_MUL; GSYM HX_INV] THEN
+  ASM_SIMP_TAC[QUAT_INV_EQ_CNJ] THEN
+  CONV_TAC (ONCE_DEPTH_CONV (CHANGED_CONV QUAT_POLY_CONV)) THEN
+  ASM_SIMP_TAC[REAL_MUL_RINV; QUAT_MUL_LID;
+               ORTHOGONAL_TRANSFORMATION_QUAT_CONGRUENCE]);;
+
+let REFLECT_ALONG_EQ_QUAT_PRODUCT = time prove
+ (`!v x. norm v = &1 ==> reflect_along v x = HIm(Hv v * Hv x * Hv v)`,
+  INTRO_TAC "!v x; vnorm" THEN REWRITE_TAC[reflect_along] THEN
+  SUBGOAL_THEN `v:real^3 dot v = &1` SUBST1_TAC THENL
+  [ASM_SIMP_TAC[GSYM NORM_EQ_1]; REWRITE_TAC[REAL_DIV_1]] THEN
+  REWRITE_TAC[VECTOR_EQ_3; VECTOR_SUB_COMPONENT; VECTOR_MUL_COMPONENT;
+    HIM_COMPONENT; quat_mul; HV_COMPONENTS; QUAT_COMPONENTS; DOT_3] THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC[NORM_EQ_1; DOT_3] THEN
+  CONV_TAC REAL_RING);;
+
+let REFLECT_ALONG_EQ_QUAT_CONJUGATION = prove
+ (`!v. ~(v = vec 0)
+       ==> reflect_along v = \x. -- HIm(inv (Hv v) * Hv x * Hv v)`,
+  REWRITE_TAC[FUN_EQ_THM] THEN INTRO_TAC "!v; vnz; !x" THEN
+  SUBGOAL_THEN `?c u:real^3. v = c % u /\ norm u = &1`
+               (DESTRUCT_TAC "@c u. veq unorm") THENL
+  [MAP_EVERY EXISTS_TAC [`norm (v:real^3)`; `inv (norm (v:real^3)) % v`] THEN
+   REWRITE_TAC[VECTOR_MUL_ASSOC; NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+   ASM_SIMP_TAC[REAL_MUL_LINV; REAL_MUL_RINV; NORM_EQ_0; VECTOR_MUL_LID];
+   ALL_TAC] THEN
+  REMOVE_THEN "veq" SUBST_ALL_TAC THEN REMOVE_THEN "vnz" MP_TAC THEN
+  REWRITE_TAC[VECTOR_MUL_EQ_0; DE_MORGAN_THM] THEN INTRO_TAC "cnz unz" THEN
+  ASM_SIMP_TAC[REFLECT_ALONG_SCALE] THEN
+  ASM_SIMP_TAC[REFLECT_ALONG_EQ_QUAT_PRODUCT] THEN
+  REWRITE_TAC[GSYM HIM_NEG; HV_CMUL; QUAT_INV_MUL; GSYM HX_INV] THEN
+  AP_TERM_TAC THEN CONV_TAC (BINOP_CONV QUAT_POLY_CONV) THEN
+  ASM_SIMP_TAC[REAL_FIELD `~(c = &0) ==> -- &1 * c * inv c = -- &1`] THEN
+  SUBGOAL_THEN `inv (Hv u) = --Hv u` SUBST1_TAC THENL
+  [ONCE_REWRITE_TAC[QUAT_INV_CNJ] THEN
+   ASM_REWRITE_TAC[CNJ_HV; NORM_HV; REAL_POW_ONE; QUAT_INV_1; QUAT_MUL_LID];
+   CONV_TAC QUAT_POLY]);;
+
+let ORTHOGONAL_TRANSFORMATION_AS_QUAT_CONJUGATION = prove
+ (`!f. orthogonal_transformation f
+       ==> (?q. norm q = &1 /\
+                ((!x. f x = HIm(inv q * Hv x * q)) \/
+                 (!x. f x = -- HIm(inv q * Hv x * q))))`,
+  INTRO_TAC "!f; orth" THEN MP_TAC (ISPECL [`f:real^3->real^3`;`3`]
+    ORTHOGONAL_TRANSFORMATION_GENERATED_BY_REFLECTIONS) THEN
+  ANTS_TAC THENL [ASM_REWRITE_TAC[DIMINDEX_3] THEN ARITH_TAC; ALL_TAC] THEN
+  INTRO_TAC "@l. len hp feq" THEN HYP MP_LIST_TAC "hp feq" [] THEN
+  POP_ASSUM_LIST (K ALL_TAC) THEN ABBREV_TAC `n = LENGTH (l:(real^3)list)` THEN
+  POP_ASSUM MP_TAC THEN MAP_EVERY (fun t -> SPEC_TAC (t,t))
+    [`f:real^3->real^3`; `l:(real^3)list`; `n:num`] THEN
+  INDUCT_TAC THENL
+  [REPEAT GEN_TAC THEN REWRITE_TAC[LENGTH_EQ_NIL] THEN DISCH_THEN
+   SUBST1_TAC THEN REWRITE_TAC[ALL; ITLIST] THEN DISCH_THEN SUBST1_TAC THEN
+   EXISTS_TAC `Hx(&1)` THEN
+   REWRITE_TAC[NORM_HX; REAL_ABS_1; I_THM; QUAT_INV_1; QUAT_MUL_LID;
+               QUAT_MUL_RID; HIM_HV];
+   ALL_TAC] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[LENGTH_EQ_CONS] THEN
+  INTRO_TAC "@h t. leq len; all feq" THEN
+  REMOVE_THEN "ind_n"
+    (fun ind_n -> REMOVE_THEN "len" (MP_TAC o MATCH_MP ind_n)) THEN
+  REMOVE_THEN "leq" SUBST_ALL_TAC THEN REMOVE_THEN "all" MP_TAC THEN
+  REWRITE_TAC[ALL] THEN INTRO_TAC "hnz tnz" THEN ASM_REWRITE_TAC[] THEN
+  ABBREV_TAC `g = ITLIST (\v:real^3 h. reflect_along v o h) t I` THEN
+  DISCH_THEN (fun ant -> POP_ASSUM (MP_TAC o MATCH_MP ant)) THEN
+  INTRO_TAC "@q. qnorm hp" THEN
+  SUBGOAL_THEN `!x. Hv(HIm((inv q * Hv x) * q)) = (inv q * Hv x) * q`
+    (LABEL_TAC "rel") THENL
+  [GEN_TAC THEN ASM_SIMP_TAC[QUAT_INV_EQ_CNJ] THEN
+   REWRITE_TAC[HV_HIM_EQ; quat_mul; QUAT_COMPONENTS; QUAT_CNJ_COMPONENTS;
+               HV_COMPONENTS] THEN
+   CONV_TAC REAL_RING;
+   ALL_TAC] THEN
+  ABBREV_TAC `p = Hx(inv (norm h)) * Hv h` THEN EXISTS_TAC `q * p : quat` THEN
+  POP_ASSUM (LABEL_TAC "p") THEN REWRITE_TAC[ITLIST; o_THM] THEN CONJ_TAC THENL
+  [ASM_REWRITE_TAC[QUAT_NORM_MUL; REAL_MUL_LID] THEN EXPAND_TAC "p" THEN
+   REWRITE_TAC[QUAT_NORM_MUL; NORM_HX; REAL_ABS_INV;
+               REAL_ABS_NORM; NORM_HV] THEN
+   HYP SIMP_TAC "hnz" [REAL_MUL_LINV; NORM_EQ_0];
+   ALL_TAC] THEN
+  HYP SIMP_TAC "hnz" [REFLECT_ALONG_EQ_QUAT_CONJUGATION] THEN
+  REMOVE_THEN "hp" (DESTRUCT_TAC "hp|hp") THENL
+  [DISJ2_TAC; DISJ1_TAC] THEN GEN_TAC THEN HYP REWRITE_TAC "hp" [] THEN
+  REWRITE_TAC[HV_NEG; QUAT_MUL_LNEG; QUAT_MUL_RNEG; HIM_NEG;
+              VECTOR_NEG_NEG] THEN
+  AP_TERM_TAC THEN TRY AP_TERM_TAC THEN
+  MAP_EVERY (fun s -> REMOVE_THEN s (K ALL_TAC)) ["feq"; "tnz"; "hp"] THEN
+  REMOVE_THEN "p" (SUBST1_TAC o GSYM) THEN
+  REWRITE_TAC[QUAT_INV_MUL; GSYM HX_INV; REAL_INV_INV] THEN
+  CONV_TAC (BINOP_CONV QUAT_POLY_CONV) THEN
+  ASM_SIMP_TAC[REAL_MUL_LINV; NORM_EQ_0; QUAT_MUL_LID; QUAT_MUL_ASSOC]);;

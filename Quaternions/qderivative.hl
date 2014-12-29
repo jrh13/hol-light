@@ -1,0 +1,63 @@
+(* ========================================================================= *)
+(* General results about differential for quaternionic functions.            *)
+(*                                                                           *)
+(* Copyright (c) 2014 Marco Maggesi                                          *)
+(* ========================================================================= *)
+
+let QUAT_HAS_DERIVATIVE_CONST = prove
+  (`!net p. ((\q:real^N. p) has_derivative (\q. Hx(&0))) net`,
+   REWRITE_TAC[HAS_DERIVATIVE_CONST; GSYM QUAT_VEC_0]);;
+
+let QUAT_HAS_DERIVATIVE_RMUL = prove
+ (`!net p. ((\q. q * p) has_derivative (\q. q * p)) net`,
+  SIMP_TAC[HAS_DERIVATIVE_LINEAR; LINEAR_QUAT_RMUL]);;
+
+let QUAT_HAS_DERIVATIVE_MUL_AT = prove
+ (`!f f' g g' q.
+     (f has_derivative f') (at q) /\ (g has_derivative g') (at q)
+     ==> ((\x:quat. f x * g x) has_derivative
+          (\x. f q * g' x + f' x * g q)) (at q)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_DERIVATIVE_BILINEAR_AT THEN
+  ASM_REWRITE_TAC [HAS_DERIVATIVE_BILINEAR_AT; BILINEAR_QUAT_MUL]);;
+
+let QUAT_HAS_DERIVATIVE_MUL_WITHIN = prove
+ (`!f f' g g' q s.
+     (f has_derivative f') (at q within s) /\
+     (g has_derivative g') (at q within s)
+     ==> ((\x:quat. f x * g x) has_derivative
+          (\x. f q * g' x + f' x * g q)) (at q within s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_DERIVATIVE_BILINEAR_WITHIN THEN
+  ASM_REWRITE_TAC [HAS_DERIVATIVE_BILINEAR_WITHIN; BILINEAR_QUAT_MUL]);;
+
+let QUAT_HAS_DERIVATIVE_SQUARE = prove
+ (`!q0. ((\q. q * q) has_derivative (\q. q0 * q + q * q0)) (at q0)`,
+  GEN_TAC THEN SUBGOAL_THEN
+    `((\x. (\q. q) x * (\q. q) x) has_derivative
+      (\d. (\q. q) q0 * (\q. q) d + (\q. q) d * (\q. q) q0)) (at q0)`
+    MP_TAC THENL
+  [SIMP_TAC[HAS_DERIVATIVE_BILINEAR_AT; HAS_DERIVATIVE_ID; BILINEAR_QUAT_MUL];
+   REWRITE_TAC[]]);;
+
+let QUAT_HAS_DERIVATIVE_POW = prove
+ (`!q0 n.
+     ((\q. q pow n) has_derivative
+      (\q. vsum (1..n) (\i. q0 pow (n - i) * q * q0 pow (i - 1))))
+     (at q0)`,
+  GEN_TAC THEN INDUCT_TAC THENL
+  [REWRITE_TAC[quat_pow; NUMSEG_CONV `1..0`; VSUM_CLAUSES; QUAT_VEC_0] THEN
+   MATCH_ACCEPT_TAC QUAT_HAS_DERIVATIVE_CONST; ALL_TAC] THEN
+  REWRITE_TAC[quat_pow; VSUM_CLAUSES_NUMSEG; ARITH_RULE `1 <= SUC n`;
+              SUB_REFL; QUAT_MUL_LID; ARITH_RULE `SUC n - 1 = n`] THEN
+  SUBGOAL_THEN
+    `!q. vsum (1..n) (\i. q0 pow (SUC n - i) * q * q0 pow (i - 1)) =
+         q0 * vsum (1..n) (\i. q0 pow (n - i) * q * q0 pow (i - 1))`
+    (fun th -> REWRITE_TAC[th]) THENL
+  [GEN_TAC THEN SIMP_TAC[FINITE_NUMSEG; GSYM VSUM_QUAT_LMUL] THEN
+   MATCH_MP_TAC VSUM_EQ THEN
+   REWRITE_TAC[IN_NUMSEG; FUN_EQ_THM] THEN REPEAT STRIP_TAC THEN
+   ASM_SIMP_TAC[ARITH_RULE `x <= n ==> SUC n - x = SUC (n - x)`;
+                quat_pow; GSYM QUAT_MUL_ASSOC];
+   LABEL_TAC "id" (ISPEC `(at (q0:quat))` HAS_DERIVATIVE_ID) THEN
+   HYP MP_LIST_TAC "id ind_n" [BILINEAR_QUAT_MUL] THEN
+   DISCH_THEN (MP_TAC o MATCH_MP HAS_DERIVATIVE_BILINEAR_AT) THEN
+   REWRITE_TAC[]]);;

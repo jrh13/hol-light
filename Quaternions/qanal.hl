@@ -1,0 +1,492 @@
+(* ========================================================================= *)
+(* Quaternionic analysis.                                                    *)
+(*                                                                           *)
+(* Copyright (c) 2014 Marco Maggesi                                          *)
+(* ========================================================================= *)
+
+prioritize_quat();;
+
+(* ------------------------------------------------------------------------- *)
+(* Lemmata on quaternions.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let QUAT_SQNORM_MUL = prove
+ (`!q. norm q pow 2 = Re(cnj q * q)`,
+   REWRITE_TAC[QUAT_SQNORM; quat_cnj; quat_mul; QUAT_COMPONENTS] THEN
+   GEN_TAC THEN CONV_TAC(BINOP_CONV REAL_POLY_CONV) THEN REFL_TAC);;
+
+let QUAT_INV_POW = prove
+ (`!x n. inv (x pow n) = inv x pow n`,
+  GEN_TAC THEN INDUCT_TAC THENL
+  [REWRITE_TAC[quat_pow; QUAT_INV_1];
+   GEN_REWRITE_TAC RAND_CONV [quat_pow] THEN
+   ASM_REWRITE_TAC[QUAT_POW_SUC_ALT; QUAT_INV_MUL]]);;
+
+let QUAT_NORM_IMG = prove
+ (`!x. Re x = &0 ==> x pow 2 = --(Hx(norm x) pow 2)`,
+  REWRITE_TAC[QUAT_NORM_POW_2] THEN
+  REWRITE_TAC[QUAT_POW_2; FORALL_QUAT; QUAT_EQ] THEN
+  REWRITE_TAC[quat_mul; QUAT_COMPONENTS; HX_COMPONENTS; QUAT_NEG_COMPONENTS;
+    QUAT_CNJ_COMPONENTS; CNJ_QUAT] THEN
+  CONV_TAC REAL_RING);;
+
+(* ------------------------------------------------------------------------- *)
+(* Quat-specific uniform limit composition theorems.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let UNIFORM_LIM_QUAT_MUL = prove
+ (`!net:(A)net P f g l m b1 b2.
+     eventually (\x. !n. P n ==> norm(l n) <= b1) net /\
+     eventually (\x. !n. P n ==> norm(m n) <= b2) net /\
+     (!e. &0 < e
+          ==> eventually (\x. !n:B. P n ==> norm(f n x - l n) < e) net) /\
+     (!e. &0 < e
+          ==> eventually (\x. !n. P n ==> norm(g n x - m n) < e) net)
+     ==> !e. &0 < e
+             ==> eventually
+                  (\x. !n. P n ==> norm(f n x * g n x - l n * m n) < e)
+                  net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o CONJ BILINEAR_QUAT_MUL) THEN
+  REWRITE_TAC[UNIFORM_LIM_BILINEAR]);;
+
+let UNIFORM_LIM_QUAT_INV = prove
+ (`!net:(A)net P f l b.
+     (!e. &0 < e
+          ==> eventually (\x. !n:B. P n ==> norm(f n x - l n) < e) net) /\
+     &0 < b /\ eventually (\x. !n. P n ==> b <= norm(l n)) net
+     ==> !e. &0 < e
+             ==> eventually
+                 (\x. !n. P n ==> norm(inv(f n x) - inv(l n)) < e) net`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EVENTUALLY_MONO THEN
+  EXISTS_TAC
+   `\x. !n. P n ==> b <= norm(l n) /\
+                    b / &2 <= norm((f:B->A->quat) n x) /\
+                    norm(f n x - l n) < e * b pow 2 / &2` THEN
+  REWRITE_TAC[TAUT `(p ==> q /\ r) <=> (p ==> q) /\ (p ==> r)`] THEN
+  REWRITE_TAC[FORALL_AND_THM] THEN CONJ_TAC THENL
+   [X_GEN_TAC `x:A` THEN STRIP_TAC THEN X_GEN_TAC `n:B` THEN DISCH_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `n:B`) THEN ASM_REWRITE_TAC[]) THEN
+    REPEAT DISCH_TAC THEN
+    SUBGOAL_THEN `~((f:B->A->quat) n x = Hx(&0)) /\ ~(l n = Hx(&0))`
+    STRIP_ASSUME_TAC THENL
+     [CONJ_TAC THEN DISCH_THEN SUBST_ALL_TAC THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[NORM_HX]) THEN ASM_REAL_ARITH_TAC;
+      ALL_TAC] THEN
+    SUBGOAL_THEN `!p q. ~(p = Hx(&0)) /\ ~(q = Hx(&0))
+      ==> inv p - inv q = inv p * (q - p) * inv q`
+      (fun th -> ASM_SIMP_TAC[th]) THENL
+    [REPEAT STRIP_TAC THEN MATCH_MP_TAC QUAT_MUL_LCANCEL THEN
+     EXISTS_TAC `p:quat` THEN
+     ASM_SIMP_TAC[QUAT_SUB_LDISTRIB; QUAT_MUL_ASSOC; QUAT_MUL_RINV;
+                  QUAT_MUL_LID] THEN
+     MATCH_MP_TAC QUAT_MUL_RCANCEL THEN EXISTS_TAC `q:quat` THEN
+     ASM_SIMP_TAC[QUAT_SUB_RDISTRIB; GSYM QUAT_MUL_ASSOC; QUAT_MUL_LINV;
+                  QUAT_MUL_RID; QUAT_MUL_LID];
+     ALL_TAC] THEN
+    REWRITE_TAC[QUAT_NORM_MUL; QUAT_NORM_INV] THEN
+    MATCH_MP_TAC REAL_LT_RCANCEL_IMP THEN
+    EXISTS_TAC `norm ((l:B->quat) n)` THEN
+    ASM_SIMP_TAC[QUAT_NORM_NZ; QUAT_NORM_ZERO; GSYM REAL_MUL_ASSOC;
+                 REAL_MUL_LINV; REAL_MUL_RID] THEN
+    MATCH_MP_TAC REAL_LT_LCANCEL_IMP THEN
+    EXISTS_TAC `norm ((f:B->A->quat) n x)` THEN
+    ASM_SIMP_TAC[QUAT_NORM_NZ; QUAT_NORM_ZERO; REAL_MUL_ASSOC;
+                 REAL_MUL_RINV; REAL_MUL_LID] THEN
+    ONCE_REWRITE_TAC[NORM_SUB] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        REAL_LTE_TRANS)) THEN
+    REWRITE_TAC [REAL_ARITH `(a * e) * b = e * a * b:real`] THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL_EQ; REAL_ARITH `b pow 2 / &2 = b / &2 * b`] THEN
+    MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[EVENTUALLY_AND] THEN CONJ_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o SPEC `b / &2`) THEN
+      ASM_REWRITE_TAC[REAL_HALF] THEN
+      FIRST_X_ASSUM(fun th -> MP_TAC th THEN REWRITE_TAC[IMP_IMP] THEN
+        GEN_REWRITE_TAC LAND_CONV [GSYM EVENTUALLY_AND]) THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+      REWRITE_TAC[] THEN
+      ASM_MESON_TAC[NORM_ARITH
+       `b <= norm l /\ norm(f - l) < b / &2 ==> b / &2 <= norm f`];
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_SIMP_TAC[REAL_HALF; REAL_POW_LT; REAL_LT_MUL]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The usual non-uniform versions.                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let LIM_QUAT_MUL = prove
+ (`!net:(A)net f g l m.
+     (f --> l) net /\ (g --> m) net ==> ((\x. f x * g x) --> l * m) net`,
+  SIMP_TAC[LIM_BILINEAR; BILINEAR_QUAT_MUL]);;
+
+let LIM_QUAT_INV = prove
+ (`!net:(A)net f l.
+     (f --> l) net /\ ~(l = Hx(&0))
+     ==> ((\x. inv(f x)) --> inv(l)) net`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`net:(A)net`; `\x:one. T`;
+    `\n:one. (f:A->quat)`;
+    `\n:one. (l:quat)`;
+    `norm(l:quat)`] UNIFORM_LIM_QUAT_INV) THEN
+  ASM_REWRITE_TAC[REAL_LE_REFL; EVENTUALLY_TRUE] THEN
+  ASM_REWRITE_TAC[GSYM dist; GSYM tendsto; QUAT_NORM_NZ]);;
+
+let LIM_QUAT_POW = prove
+ (`!net:(A)net f l n.
+     (f --> l) net ==> ((\x. f(x) pow n) --> l pow n) net`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[LIM_QUAT_MUL; quat_pow; LIM_CONST]);;
+
+let LIM_QUAT_LMUL = prove
+ (`!f l c. (f --> l) net ==> ((\x:A. c * f x) --> c * l) net`,
+  SIMP_TAC[LIM_QUAT_MUL; LIM_CONST]);;
+
+let LIM_QUAT_RMUL = prove
+ (`!f l c. (f --> l) net ==> ((\x:A. f x * c) --> l * c) net`,
+  SIMP_TAC[LIM_QUAT_MUL; LIM_CONST]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Special cases of null limits.                                             *)
+(* ------------------------------------------------------------------------- *)
+
+let LIM_NULL_QUAT_NEG = prove
+ (`!net f. (f --> Hx(&0)) net ==> ((\x:A. --(f x)) --> Hx(&0)) net`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP LIM_NEG) THEN
+  REWRITE_TAC[QUAT_NEG_0]);;
+
+let LIM_NULL_QUAT_ADD = prove
+ (`!net f g. (f --> Hx(&0)) net /\ (g --> Hx(&0)) net
+             ==> ((\x:A. f x + g x) --> Hx(&0)) net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_ADD) THEN
+  REWRITE_TAC[QUAT_ADD_LID]);;
+
+let LIM_NULL_QUAT_SUB = prove
+ (`!net f g. (f --> Hx(&0)) net /\ (g --> Hx(&0)) net
+             ==> ((\x:A. f x - g x) --> Hx(&0)) net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_SUB) THEN
+  REWRITE_TAC[QUAT_SUB_REFL]);;
+
+let LIM_NULL_QUAT_MUL = prove
+ (`!net f g. (f --> Hx(&0)) net /\ (g --> Hx(&0)) net
+             ==> ((\x:A. f x * g x) --> Hx(&0)) net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_QUAT_MUL) THEN
+  REWRITE_TAC[QUAT_MUL_LZERO]);;
+
+let LIM_NULL_QUAT_LMUL = prove
+ (`!net f c. (f --> Hx(&0)) net ==> ((\x:A. c * f x) --> Hx(&0)) net`,
+  REPEAT STRIP_TAC THEN
+  SUBST1_TAC(QUAT_POLY `Hx(&0) = c * Hx(&0)`) THEN
+  ASM_SIMP_TAC[LIM_QUAT_LMUL]);;
+
+let LIM_NULL_QUAT_RMUL = prove
+ (`!net f c. (f --> Hx(&0)) net ==> ((\x:A. f x * c) --> Hx(&0)) net`,
+  REPEAT STRIP_TAC THEN
+  SUBST1_TAC(QUAT_POLY `Hx(&0) = Hx(&0) * c`) THEN
+  ASM_SIMP_TAC[LIM_QUAT_RMUL]);;
+
+let LIM_NULL_QUAT_POW = prove
+ (`!net f n. (f --> Hx(&0)) net /\ ~(n = 0)
+             ==> ((\x:A. (f x) pow n) --> Hx(&0)) net`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `n:num` o MATCH_MP LIM_QUAT_POW) THEN
+  ASM_REWRITE_TAC[QUAT_POW_ZERO]);;
+
+let LIM_NULL_QUAT_BOUND = prove
+ (`!net:(A)net f g.
+     eventually (\n. norm (f n) <= norm (g n)) net /\ (g --> Hx(&0)) net
+     ==> (f --> Hx(&0)) net`,
+  REWRITE_TAC[GSYM QUAT_VEC_0; LIM_TRANSFORM_BOUND]);;
+
+let SUMS_QUAT_0 = prove
+ (`!f s. (!n. n IN s ==> f n = Hx(&0)) ==> (f sums Hx(&0)) s`,
+  REWRITE_TAC[GSYM QUAT_VEC_0; SUMS_0]);;
+
+let LIM_NULL_QUAT_RMUL_BOUNDED = prove
+ (`!f g. (f --> Hx(&0)) net /\ eventually (\a:A. norm(g a) <= B) net
+         ==> ((\z. f(z) * g(z)) --> Hx(&0)) net`,
+  REWRITE_TAC[GSYM QUAT_VEC_0] THEN ONCE_REWRITE_TAC[LIM_NULL_NORM] THEN
+  REWRITE_TAC[QUAT_NORM_MUL; LIFT_CMUL] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC LIM_NULL_VMUL_BOUNDED THEN EXISTS_TAC `B:real` THEN
+  ASM_REWRITE_TAC[o_DEF; NORM_LIFT; REAL_ABS_NORM] THEN
+  MATCH_MP_TAC EVENTUALLY_MONO THEN ASM_MESON_TAC[]);;
+
+let LIM_NULL_QUAT_LMUL_BOUNDED = prove
+ (`!net:(A)net f g.
+     eventually (\a. norm(f a) <= B) net /\ (g --> Hx(&0)) net
+     ==> ((\z. f(z) * g(z)) --> Hx(&0)) net`,
+  REWRITE_TAC[GSYM QUAT_VEC_0] THEN ONCE_REWRITE_TAC[LIM_NULL_NORM] THEN
+  REWRITE_TAC[QUAT_NORM_MUL] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  REWRITE_TAC[LIFT_CMUL] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC LIM_NULL_VMUL_BOUNDED THEN EXISTS_TAC `B:real` THEN
+  ASM_REWRITE_TAC[o_DEF; NORM_LIFT; REAL_ABS_NORM] THEN
+  MATCH_MP_TAC EVENTUALLY_MONO THEN ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Bound results for real and imaginary components of limits.                *)
+(* ------------------------------------------------------------------------- *)
+
+let LIM_QUAT_RE_UBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. Re(f x) <= b) net
+     ==> Re(l) <= b`,
+  REWRITE_TAC[QUAT_RE_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `1`]
+                LIM_COMPONENT_UBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let LIM_IM1_UBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. Im1(f x) <= b) net
+     ==> Im1(l) <= b`,
+  REWRITE_TAC[QUAT_IM1_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `2`]
+                LIM_COMPONENT_UBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let LIM_IM2_UBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. Im2(f x) <= b) net
+     ==> Im2(l) <= b`,
+  REWRITE_TAC[QUAT_IM2_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `3`]
+                LIM_COMPONENT_UBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let LIM_IM3_UBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. Im3(f x) <= b) net
+     ==> Im3(l) <= b`,
+  REWRITE_TAC[QUAT_IM3_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `4`]
+                LIM_COMPONENT_UBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let QUAT_LIM_UBOUND_COMPONENTS = end_itlist CONJ
+  [LIM_QUAT_RE_UBOUND; LIM_IM1_UBOUND; LIM_IM2_UBOUND; LIM_IM3_UBOUND];;
+
+let LIM_QUAT_RE_LBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. b <= Re(f x)) net
+     ==> b <= Re(l)`,
+  REWRITE_TAC[QUAT_RE_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `1`]
+                LIM_COMPONENT_LBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let LIM_IM1_LBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. b <= Im1(f x)) net
+     ==> b <= Im1(l)`,
+  REWRITE_TAC[QUAT_IM1_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `2`]
+                LIM_COMPONENT_LBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let LIM_IM2_LBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. b <= Im2(f x)) net
+     ==> b <= Im2(l)`,
+  REWRITE_TAC[QUAT_IM2_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `3`]
+                LIM_COMPONENT_LBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let LIM_IM3_LBOUND = prove
+ (`!net:(A)net f l b.
+     ~(trivial_limit net) /\ (f --> l) net /\
+     eventually (\x. b <= Im3(f x)) net
+     ==> b <= Im3(l)`,
+  REWRITE_TAC[QUAT_IM3_DEF] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:(A)net`; `f:A->quat`; `l:quat`; `b:real`; `4`]
+                LIM_COMPONENT_LBOUND) THEN
+  ASM_REWRITE_TAC[DIMINDEX_4; ARITH]);;
+
+let QUAT_LIM_LBOUND_COMPONENTS = end_itlist CONJ
+  [LIM_QUAT_RE_LBOUND; LIM_IM1_LBOUND; LIM_IM2_LBOUND; LIM_IM3_LBOUND];;
+
+(* ------------------------------------------------------------------------- *)
+(* Left and right multiplication of series.                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let SERIES_QUAT_LMUL = prove
+ (`!f l c s. (f sums l) s ==> ((\x. c * f x) sums c * l) s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SERIES_LINEAR THEN
+  ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+  REWRITE_TAC[LINEAR_QUAT_LMUL]);;
+
+let SERIES_QUAT_RMUL = prove
+ (`!f l c s. (f sums l) s ==> ((\x. f x * c) sums l * c) s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `((\x. (\y. y * c) (f x)) sums (\y. y * c) l) s`
+    (fun th -> MP_TAC th THEN REWRITE_TAC[]) THEN
+  MATCH_MP_TAC SERIES_LINEAR THEN
+  ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+  REWRITE_TAC[LINEAR_QUAT_RMUL]);;
+
+let SUMMABLE_QUAT_LMUL = prove
+ (`!f c s. summable s f ==> summable s (\x. c * f x)`,
+  REWRITE_TAC[summable] THEN MESON_TAC[SERIES_QUAT_LMUL]);;
+
+let SUMMABLE_QUAT_RMUL = prove
+ (`!f c s. summable s f ==> summable s (\x. f x * c)`,
+  REWRITE_TAC[summable] THEN MESON_TAC[SERIES_QUAT_RMUL]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Quat-specific continuity closures.                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_QUAT_MUL = prove
+ (`!net:(A)net f g.
+     f continuous net /\ g continuous net
+     ==> (\x. f(x) * g(x)) continuous net`,
+  SIMP_TAC[continuous; LIM_QUAT_MUL]);;
+
+let CONTINUOUS_QUAT_INV = prove
+ (`!net:(A)net f.
+     f continuous net /\ ~(f(netlimit net) = Hx(&0))
+     ==> (\x. inv(f x)) continuous net`,
+  SIMP_TAC[continuous; LIM_QUAT_INV]);;
+
+let CONTINUOUS_QUAT_POW = prove
+ (`!net:(A)net f n. f continuous net ==> (\x. f(x) pow n) continuous net`,
+  SIMP_TAC[continuous; LIM_QUAT_POW]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Write away the netlimit, which is otherwise a bit tedious.                *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_QUAT_INV_WITHIN = prove
+ (`!f s a. f continuous (at a within s) /\ ~(f a = Hx(&0))
+           ==> (\x:real^N. inv(f x)) continuous (at a within s)`,
+  MESON_TAC[CONTINUOUS_QUAT_INV; CONTINUOUS_TRIVIAL_LIMIT;
+            NETLIMIT_WITHIN]);;
+
+let CONTINUOUS_QUAT_INV_AT = prove
+ (`!f a. f continuous (at a) /\ ~(f a = Hx(&0))
+         ==> (\x:real^N. inv(f x)) continuous (at a)`,
+  SIMP_TAC[CONTINUOUS_QUAT_INV; NETLIMIT_AT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Also prove "on" variants as needed.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_ON_QUAT_MUL = prove
+ (`!f g s. f continuous_on s /\ g continuous_on s
+           ==> (\x:real^N. f(x) * g(x)) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+  SIMP_TAC[CONTINUOUS_QUAT_MUL]);;
+
+let CONTINUOUS_ON_QUAT_LMUL = prove
+ (`!f:real^N->quat s. f continuous_on s ==> (\x. c * f(x)) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON] THEN SIMP_TAC[LIM_QUAT_MUL; LIM_CONST]);;
+
+let CONTINUOUS_ON_QUAT_RMUL = prove
+ (`!f:real^N->quat s. f continuous_on s ==> (\x. f(x) * c) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON] THEN SIMP_TAC[LIM_QUAT_MUL; LIM_CONST]);;
+
+let CONTINUOUS_ON_QUAT_INV = prove
+ (`!f:real^N->quat.
+     f continuous_on s /\
+     (!x. x IN s ==> ~(f x = Hx(&0)))
+     ==> (\x. inv(f x)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;
+           CONTINUOUS_QUAT_INV_WITHIN]);;
+
+let CONTINUOUS_ON_QUAT_POW = prove
+ (`!f n s. f continuous_on s ==> (\x:real^N. f(x) pow n) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_QUAT_POW]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity of the norm.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_AT_HX_NORM = prove
+ (`!z:real^N. (\z. Hx(norm z)) continuous at z`,
+  REWRITE_TAC[continuous_at; dist; GSYM HX_SUB; NORM_HX] THEN
+  MESON_TAC[NORM_ARITH
+    `norm(a - b:real^N) < d ==> abs(norm a - norm b) < d`]);;
+
+let CONTINUOUS_WITHIN_HX_NORM = prove
+ (`!z:real^N s. (\z. Hx(norm z)) continuous (at z within s)`,
+  SIMP_TAC[CONTINUOUS_AT_HX_NORM; CONTINUOUS_AT_WITHIN]);;
+
+let CONTINUOUS_ON_HX_NORM = prove
+ (`!s. (\z:real^N. Hx(norm z)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_WITHIN_HX_NORM]);;
+
+let CONTINUOUS_AT_HX_DOT = prove
+ (`!c z:real^N. (\z. Hx(c dot z)) continuous at z`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC LINEAR_CONTINUOUS_AT THEN
+  REWRITE_TAC[linear; DOT_RADD; DOT_RMUL; HX_ADD; QUAT_CMUL; HX_MUL]);;
+
+let CONTINUOUS_WITHIN_HX_DOT = prove
+ (`!c z:real^N s. (\z. Hx(c dot z)) continuous (at z within s)`,
+  SIMP_TAC[CONTINUOUS_AT_HX_DOT; CONTINUOUS_AT_WITHIN]);;
+
+let CONTINUOUS_ON_HX_DOT = prove
+ (`!s c:real^N. (\z. Hx(c dot z)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_WITHIN_HX_DOT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Continuity switching range between quat and real^1                        *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_HX_DROP = prove
+ (`!net f. f continuous net ==> (\x:A. Hx(drop(f x))) continuous net`,
+  REWRITE_TAC[continuous; tendsto] THEN
+  REWRITE_TAC[dist; GSYM HX_SUB; NORM_HX; GSYM DROP_SUB] THEN
+  REWRITE_TAC[GSYM ABS_DROP]);;
+
+let CONTINUOUS_ON_HX_DROP = prove
+ (`!f s. f continuous_on s ==> (\x:real^N. Hx(drop(f x))) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_HX_DROP]);;
+
+let CONTINUOUS_HX_LIFT = prove
+ (`!f. (\x:A. Hx(f x)) continuous net <=> (\x. lift(f x)) continuous net`,
+  REWRITE_TAC[continuous; LIM; dist; GSYM HX_SUB; GSYM LIFT_SUB] THEN
+  REWRITE_TAC[NORM_HX; NORM_LIFT]);;
+
+let CONTINUOUS_ON_HX_LIFT = prove
+ (`!f s. (\x:real^N. Hx(f x)) continuous_on s <=>
+         (\x. lift(f x)) continuous_on s`,
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_HX_LIFT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Linearity and continuity of the components.                               *)
+(* ------------------------------------------------------------------------- *)
+
+let LINEAR_QUAT_COMPONENTS = prove
+ (`linear(Hx o  Re) /\
+   linear(Hx o Im1) /\
+   linear(Hx o Im2) /\
+   linear(Hx o Im3)`,
+  REWRITE_TAC[linear; o_THM; QUAT_ADD_COMPONENTS; QUAT_CMUL_COMPONENTS;
+              HX_ADD; HX_MUL; QUAT_CMUL]);;
+
+let CONTINUOUS_AT_QUAT_COMPONENTS = prove
+ (`(!q. (Hx o  Re) continuous at q) /\
+   (!q. (Hx o Im1) continuous at q) /\
+   (!q. (Hx o Im2) continuous at q) /\
+   (!q. (Hx o Im3) continuous at q)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LINEAR_CONTINUOUS_AT THEN
+  REWRITE_TAC[LINEAR_QUAT_COMPONENTS]);;
+
+let CONTINUOUS_ON_QUAT_COMPONENTS = prove
+ (`(!s. (Hx o  Re) continuous_on s) /\
+   (!s. (Hx o Im1) continuous_on s) /\
+   (!s. (Hx o Im2) continuous_on s) /\
+   (!s. (Hx o Im3) continuous_on s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LINEAR_CONTINUOUS_ON THEN
+  REWRITE_TAC[LINEAR_QUAT_COMPONENTS]);;

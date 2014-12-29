@@ -109,6 +109,7 @@ echo '### Loading Multivariate/make_complex.ml'; echo 'loadt "Multivariate/make_
 echo '### Loading Ntrie/ntrie.ml'; echo 'loadt "Ntrie/ntrie.ml";;' | (time $hollight)
 echo '### Loading Permutation/make.ml'; echo 'loadt "Permutation/make.ml";;' | (time $hollight)
 echo '### Loading QBF/make.ml'; echo 'loadt "QBF/make.ml";;' | (time $hollight)
+echo '### Loading Quaternions/make.ml'; echo 'loadt "Quaternions/make.ml";;' | (time $hollight)
 echo '### Loading RichterHilbertAxiomGeometry/miz3/make.ml'; echo 'loadt "RichterHilbertAxiomGeometry/miz3/make.ml";;' | (time $hollight)
 echo '### Loading RichterHilbertAxiomGeometry/HilbertAxiom_read.ml'; echo 'loadt "RichterHilbertAxiomGeometry/HilbertAxiom_read.ml";;' | (time $hollight)
 echo '### Loading Rqe/make.ml'; echo 'loadt "Rqe/make.ml";;' | (time $hollight)

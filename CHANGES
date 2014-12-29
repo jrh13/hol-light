@@ -1,3 +1,9 @@
+Sat 27th Dec 2014       Quaternions/*
+
+Added a substantial new theory of quaternions from Marco Maggesi. This includes
+basic operations, automatic normalization, quaternionic analysis and the
+relation of quaternions to orthogonal transformations.
+
 Sat 13th Dec 2014       theorems.ml
 
 Added CLAIM_TAC from Marco Maggesi. This combines SUBGOAL_THEN and DESTRUCT_TAC
