@@ -1,0 +1,72 @@
+(* ========================================================================= *)
+(* Miscellanea.                                                              *)
+(*                                                                           *)
+(* Copyright (c) 2014 Marco Maggesi                                          *)
+(* ========================================================================= *)
+
+(* ------------------------------------------------------------------------- *)
+(* Instrument classical tactics to attach label to generated hypothesis.     *)
+(* ------------------------------------------------------------------------- *)
+
+let INDUCT_TAC =
+  let IND_TAC = MATCH_MP_TAC num_INDUCTION THEN CONJ_TAC in
+  fun (asl,w as gl) ->
+    let s = fst (dest_var (fst (dest_forall w)))  in
+    (IND_TAC THENL
+     [ALL_TAC; GEN_TAC THEN DISCH_THEN (LABEL_TAC("ind_"^s))])
+    gl;;
+
+(* ------------------------------------------------------------------------- *)
+(* Further tactics that promote the use of labeled hypothesis.               *)
+(* ------------------------------------------------------------------------- *)
+
+let CASES_TAC s tm =
+  let th = SPEC tm EXCLUDED_MIDDLE in
+  DISJ_CASES_THEN2 (LABEL_TAC s) (LABEL_TAC ("not_"^s)) th;;
+
+(* ------------------------------------------------------------------------- *)
+(* Further tactics for structuring the proof flow.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let MP_LIST_TAC = MP_TAC o end_itlist CONJ;;
+
+(* ------------------------------------------------------------------------- *)
+(* Lemmata about vectors and euclidean geometry.                             *)
+(* ------------------------------------------------------------------------- *)
+
+let VECTOR_EQ_1 = prove
+ (`!u v:real^1. u = v <=> u$1 = v$1`,
+  REWRITE_TAC[CART_EQ; DIMINDEX_1; FORALL_1]);;
+
+let VECTOR_EQ_2 = prove
+ (`!u v:real^2. u = v <=> u$1 = v$1 /\ u$2 = v$2`,
+  REWRITE_TAC[CART_EQ; DIMINDEX_2; FORALL_2]);;
+
+let VECTOR_EQ_3 = prove
+ (`!u v:real^3. u = v <=> u$1 = v$1 /\ u$2 = v$2 /\ u$3 = v$3`,
+  REWRITE_TAC[CART_EQ; DIMINDEX_3; FORALL_3]);;
+
+let VECTOR_EQ_4 = prove
+ (`!u v:real^4. u = v <=> u$1 = v$1 /\ u$2 = v$2 /\ u$3 = v$3 /\ u$4 = v$4`,
+  REWRITE_TAC[CART_EQ; DIMINDEX_4; FORALL_4]);;
+
+let DOT_LBASIS = prove
+ (`!i x:real^N. 1 <= i /\ i <= dimindex(:N) ==> basis i dot x = x$i`,
+  INTRO_TAC "!i x; ihp" THEN REWRITE_TAC[dot] THEN
+  TRANS_TAC EQ_TRANS `sum {i} (\j. (basis i:real^N)$j * (x:real^N)$j)` THEN
+  CONJ_TAC THENL
+  [ALL_TAC; ASM_SIMP_TAC[SUM_SING; BASIS_COMPONENT; REAL_MUL_LID]] THEN
+  MATCH_MP_TAC SUM_SUPERSET THEN ASM_REWRITE_TAC[SING_SUBSET; IN_NUMSEG] THEN
+  X_GEN_TAC `j:num` THEN REWRITE_TAC[IN_SING] THEN INTRO_TAC "jhp neq" THEN
+  ASM_SIMP_TAC[BASIS_COMPONENT; REAL_MUL_LZERO]);;
+
+let DOT_RBASIS = prove
+ (`!x:real^N i. 1 <= i /\ i <= dimindex(:N) ==> x dot basis i = x$i`,
+  MESON_TAC[DOT_SYM; DOT_LBASIS]);;
+
+let VECTOR_NORM_SQNORM_UNIT = prove
+ (`!x:real^N. norm x pow 2 = &1 <=> norm x = &1`,
+  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[REAL_POW_ONE] THEN
+  REWRITE_TAC[REAL_ARITH `a pow 2 = &1 <=> (a - &1) * (a + &1) = &0`;
+              REAL_ENTIRE] THEN
+  CONV_TAC NORM_ARITH);;

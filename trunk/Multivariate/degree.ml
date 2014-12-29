@@ -6704,18 +6704,6 @@ let NOT_ABSOLUTE_RETRACT_COBOUNDED = prove
   REWRITE_TAC[SUBSET; IN_BALL; IN_SPHERE; IN_DIFF; IN_UNIV] THEN
   MESON_TAC[REAL_LT_REFL]);;
 
-let CONTRACTIBLE_SPHERE = prove
- (`!a:real^N r. contractible(sphere(a,r)) <=> r <= &0`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[contractible; GSYM REAL_NOT_LT] THEN
-  REWRITE_TAC[NULLHOMOTOPIC_FROM_SPHERE_EXTENSION] THEN
-  ASM_CASES_TAC `&0 < r` THEN ASM_REWRITE_TAC[] THENL
-   [FIRST_ASSUM(MP_TAC o ISPEC `a:real^N` o MATCH_MP NO_RETRACTION_CBALL) THEN
-    SIMP_TAC[retract_of; retraction; SPHERE_SUBSET_CBALL];
-    RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LT]) THEN
-    EXISTS_TAC `\x:real^N. x` THEN REWRITE_TAC[CONTINUOUS_ON_ID; IMAGE_ID] THEN
-    REWRITE_TAC[SUBSET; IN_CBALL; IN_SPHERE; IN_ELIM_THM] THEN
-    POP_ASSUM MP_TAC THEN NORM_ARITH_TAC]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Some more theorems about connectivity of retract complements.             *)
 (* ------------------------------------------------------------------------- *)

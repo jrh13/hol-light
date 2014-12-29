@@ -1,0 +1,182 @@
+(* ========================================================================= *)
+(* Computing with literal quaternions.                                       *)
+(*                                                                           *)
+(* Copyright (c) 2014 Marco Maggesi                                          *)
+(* ========================================================================= *)
+
+(* ------------------------------------------------------------------------- *)
+(* Conversions performing computations on literal quaternions with           *)
+(* rational components, i.e., terms of the form `quat(x,y,z,w)` where        *)
+(* x,y,z,w are literal rational numbers (e.g. `&2 / &3`).  We adopt the      *)
+(* following name convention RAT_QUAT_op_CONV (op = ADD, MUL, NEG, etc).     *)
+(*                                                                           *)
+(* N.B.: In quaternions.hl are available other conversion for constant       *)
+(* rational quaternions (terms of the form `Hx(x)` where x is a literal      *)
+(* rational number.  Those conversions are named with the convention         *)
+(* QUAT_RAT_op_CONV.                                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let dest_quat tm =
+  let quat_tm = `quat` in
+  let f,p = dest_comb tm in
+  if f <> quat_tm then failwith "dest_quat" else
+  let tm1,p1 = dest_pair p in
+  let tm2,p2 = dest_pair p1 in
+  let tm3,tm4 = dest_pair p2 in
+  (tm1,tm2,tm3,tm4);;
+
+let CNJ_QUAT = prove
+ (`!x y z w. cnj(quat(x,y,z,w)) = quat(x, --y, --z, --w)`,
+  REWRITE_TAC[QUAT_EQ; QUAT_CNJ_COMPONENTS; QUAT_COMPONENTS]);;
+
+let QUAT_COMPONENTS_CONV conv =
+  RAND_CONV (LAND_CONV conv THENC
+             RAND_CONV (LAND_CONV conv THENC
+                        RAND_CONV (BINOP_CONV conv)));;
+
+let RAT_QUAT_EQ_CONV : conv =
+  let qth_eq = prove
+   (`!x1 x2 x3 x4 y1 y2 y3 y4.
+       quat(x1,x2,x3,x4) = quat(y1,y2,y3,y4) <=>
+       x1 = y1 /\ x2 = y2 /\ x3 = y3 /\ x4 = y4`,
+    REWRITE_TAC[QUAT_EQ; QUAT_COMPONENTS]) in
+  let th1,th2 = CONJ_PAIR (TAUT `(F /\ p <=> F) /\ (T /\ p <=> p)`) in
+  let c1,c2 = REWR_CONV th1, REWR_CONV th2 in
+  REWR_CONV qth_eq THENC LAND_CONV REAL_RAT_EQ_CONV THENC
+  (c1 ORELSEC
+   (c2 THENC LAND_CONV REAL_RAT_EQ_CONV THENC
+    (c1 ORELSEC
+     (c2 THENC LAND_CONV REAL_RAT_EQ_CONV THENC
+      (c1 ORELSEC
+       (c2 THENC
+        REAL_RAT_EQ_CONV))))));;
+
+let RAT_QUAT_ADD_CONV : conv =
+  let qth_add = prove
+   (`!x1 x2 x3 x4 y1 y2 y3 y4.
+       quat(x1,x2,x3,x4) + quat(y1,y2,y3,y4) = quat(x1+y1,x2+y2,x3+y3,x4+y4)`,
+    REWRITE_TAC[quat_add; QUAT_EQ; QUAT_COMPONENTS]) in
+  REWR_CONV qth_add THENC QUAT_COMPONENTS_CONV REAL_RAT_ADD_CONV;;
+
+let RAT_QUAT_NEG_CONV : conv =
+  let qth_neg = prove
+   (`!x1 x2 x3 x4. -- quat(x1,x2,x3,x4) = quat(--x1, --x2, --x3, --x4)`,
+    REWRITE_TAC[quat_neg; QUAT_EQ; QUAT_COMPONENTS]) in
+  REWR_CONV qth_neg THENC QUAT_COMPONENTS_CONV REAL_RAT_NEG_CONV;;
+
+let RAT_QUAT_SUB_CONV : conv =
+  let qth_sub = prove
+   (`!x1 x2 x3 x4 y1 y2 y3 y4.
+       quat(x1,x2,x3,x4) - quat(y1,y2,y3,y4) = quat(x1-y1,x2-y2,x3-y3,x4-y4)`,
+    REWRITE_TAC[quat_sub; quat_neg; quat_add; real_sub;
+                QUAT_EQ; QUAT_COMPONENTS]) in
+  REWR_CONV qth_sub THENC QUAT_COMPONENTS_CONV REAL_RAT_SUB_CONV;;
+
+let RAT_QUAT_MUL_CONV : conv =
+  let qth_mul = prove
+   (`!x1 x2 x3 x4 y1 y2 y3 y4.
+       quat(x1,x2,x3,x4) * quat(y1,y2,y3,y4) =
+       quat(x1 * y1 - x2 * y2 - x3 * y3 - x4 * y4,
+            x1 * y2 + x2 * y1 + x3 * y4 - x4 * y3,
+            x1 * y3 - x2 * y4 + x3 * y1 + x4 * y2,
+            x1 * y4 + x2 * y3 - x3 * y2 + x4 * y1)`,
+    REWRITE_TAC[quat_mul; QUAT_EQ; QUAT_COMPONENTS]) in
+  REWR_CONV qth_mul THENC QUAT_COMPONENTS_CONV REAL_RAT_REDUCE_CONV;;
+
+let RAT_QUAT_INV_CONV : conv =
+  let qth_inv = prove
+   (`!x1 x2 x3 x4.
+       inv (quat(x1,x2,x3,x4)) =
+       quat(  x1 / (x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2),
+            --x2 / (x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2),
+            --x3 / (x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2),
+            --x4 / (x1 pow 2 + x2 pow 2 + x3 pow 2 + x4 pow 2))`,
+    REWRITE_TAC[quat_inv; QUAT_EQ; QUAT_COMPONENTS]) in
+  REWR_CONV qth_inv THENC QUAT_COMPONENTS_CONV REAL_RAT_REDUCE_CONV;;
+
+let RAT_QUAT_POW_CONV : conv =
+  let n = `n:num` and Z = `_0`
+  and x = `x:quat` and y = `y:quat` and z = `z:quat` and t = `t:quat`
+  and bit0 = `BIT0`
+  and mul = `quat_mul` in
+  let th_pow = prove
+   (`(x pow NUMERAL n = x pow n )/\
+     (x pow _0 = quat(&1,&0,&0,&0)) /\
+     (x pow n = y ==> y * y = z ==> x pow BIT0 n = z) /\
+     (x pow n = y ==> y * y = z ==> x * z = t ==> x pow BIT1 n = t)`,
+    REWRITE_TAC[NUMERAL; DENUMERAL quat_pow; GSYM HX_DEF] THEN CONJ_TAC THEN
+    REPEAT (DISCH_THEN (SUBST1_TAC o GSYM)) THEN
+    REWRITE_TAC[BIT0; BIT1; quat_pow; QUAT_POW_ADD]) in
+  let [pth0; pth1; pth2; pth3] = CONJUNCTS th_pow in
+  let pow = `quat_pow` in
+  let dest_pow = dest_binop pow in
+  let rec QUAT_POW l r =
+    if r = Z then INST [l,x] pth1 else
+    let b,r' = dest_comb r in
+    if b = bit0 then
+      let th1 = QUAT_POW l r' in
+      let tm1 = rand(concl th1) in
+      let th2 = RAT_QUAT_MUL_CONV (mk_binop mul tm1 tm1) in
+      let tm2 = rand(concl th2) in
+      MP (MP (INST [l,x; r',n; tm1,y; tm2,z] pth2) th1) th2
+    else
+      let th1 = QUAT_POW l r' in
+      let tm1 = rand(concl th1) in
+      let th2 = RAT_QUAT_MUL_CONV (mk_binop mul tm1 tm1) in
+      let tm2 = rand(concl th2) in
+      let th3 = RAT_QUAT_MUL_CONV (mk_binop mul l tm2) in
+      let tm3 = rand(concl th3) in
+      MP (MP (MP (INST [l,x; r',n; tm1,y; tm2,z; tm3,t] pth3) th1) th2) th3 in
+  fun tm -> let th0 = REWR_CONV pth0 tm in
+            let l,r = dest_pow(rand(concl th0)) in
+            TRANS th0 (QUAT_POW l r);;
+
+let RAT_QUAT_CNJ_CONV : conv =
+  let neg_tm = `real_neg`
+  and cnj_tm = `quat_cnj`
+  and x_tm = `x:real`
+  and y_tm = `y:real` and y'_tm = `y':real`
+  and z_tm = `z:real` and z'_tm = `z':real`
+  and w_tm = `w:real` and w'_tm = `w':real`
+  and cnj_th = prove
+   (`--y=y' ==> --z=z' ==> --w=w'
+     ==> cnj(quat(x,y,z,w)) = quat(x, y', z', w')`,
+    SIMP_TAC[CNJ_QUAT]) in
+  fun tm ->
+    let op,q = dest_comb tm in
+    if op <> cnj_tm then failwith "RAT_QUAT_CNJ_CONV" else
+    let x,y,z,w = dest_quat q in
+    let yth = REAL_RAT_NEG_CONV (mk_comb(neg_tm,y))
+    and zth = REAL_RAT_NEG_CONV (mk_comb(neg_tm,z))
+    and wth = REAL_RAT_NEG_CONV (mk_comb(neg_tm,w)) in
+    let y' = rand(concl yth)
+    and z' = rand(concl zth)
+    and w' = rand(concl wth) in
+    let th =
+      INST[x,x_tm;y,y_tm;z,z_tm;w,w_tm;y',y'_tm;z',z'_tm;w',w'_tm] cnj_th in
+    MP (MP (MP th yth) zth) wth;;
+
+let RAT_QUAT_RED_CONV =
+  let gconv_net = itlist (uncurry net_of_conv)
+    [`quat x = quat y`,RAT_QUAT_EQ_CONV;
+     `quat x + quat y`,RAT_QUAT_ADD_CONV;
+     `quat x - quat y`,RAT_QUAT_SUB_CONV;
+     `quat x * quat y`,RAT_QUAT_MUL_CONV;
+     `inv (quat x)`,RAT_QUAT_INV_CONV;
+     `quat x pow n`,RAT_QUAT_POW_CONV;
+     `cnj(quat x)`,RAT_QUAT_CNJ_CONV]
+    (basic_net()) in
+  REWRITES_CONV gconv_net;;
+
+let RAT_QUAT_REDUCE_CONV = DEPTH_CONV RAT_QUAT_RED_CONV;;
+
+let RAT_QUAT_REDUCE_TAC = CONV_TAC RAT_QUAT_REDUCE_CONV;;
+
+let QUAT_TRAD_CONV : conv =
+  REWR_CONV QUAT_TRAD THENC
+  GEN_REWRITE_CONV DEPTH_CONV
+    [QUAT_MUL_RID; QUAT_MUL_RZERO; QUAT_ADD_LID; QUAT_ADD_RID];;
+
+let RATIONAL_QUAT_CONV : conv =
+  GEN_REWRITE_CONV DEPTH_CONV [HX_DEF; quat_ii; quat_jj; quat_kk] THENC
+  RAT_QUAT_REDUCE_CONV THENC QUAT_TRAD_CONV;;

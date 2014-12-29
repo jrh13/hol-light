@@ -1,0 +1,346 @@
+(* ========================================================================= *)
+(* Canonical polynomial form for quaternionic expressions.                   *)
+(*                                                                           *)
+(* Copyright (c) 2014 Marco Maggesi                                          *)
+(* ========================================================================= *)
+
+let QUAT_MUL_HX_MUL_SYM = prove
+ (`(!x y a. x * (Hx a * y) = Hx a * (x * y))`,
+  REWRITE_TAC[QUAT_MUL_ASSOC; QUAT_MUL_HX_SYM]);;
+
+let QUAT_POLY_CONV : conv =
+
+  (* ---------------------------------------------------------------------- *)
+  (* Syntax for binary and unary operators on quaternions.                  *)
+  (* ---------------------------------------------------------------------- *)
+
+  let is_quat_real =
+    let hx_tm = `Hx` in
+    fun tm -> is_comb tm && rator tm = hx_tm in
+
+  let is_quat_add = is_binop `(+):quat->quat->quat` in
+  let mk_quat_add = mk_binop `(+):quat->quat->quat` in
+  let dest_quat_add = dest_binop `(+):quat->quat->quat` in
+
+  let is_quat_mul = is_binop `quat_mul` in
+  let dest_quat_mul = dest_binop `quat_mul` in
+
+  let is_quat_pow = is_binop `quat_pow` in
+  let dest_quat_pow = dest_binop `quat_pow` in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Monomial multiplication.                                               *)
+  (* ---------------------------------------------------------------------- *)
+
+  let POW_MUL_FUSE_CONV : conv =
+    let th1 = prove
+     (`(!x m n. x:quat pow m * x pow n = x pow (m + n)) /\
+       (!x n. x:quat * x pow n = x pow (n + 1)) /\
+       (!x n. x:quat pow n * x = x pow (n + 1)) /\
+       (!x. x:quat * x = x pow 2)`,
+      REWRITE_TAC[QUAT_POW_ADD; QUAT_POW_1; QUAT_POW_2] THEN
+      REWRITE_TAC[GSYM quat_pow; GSYM QUAT_POW_SUC_ALT]) in
+    GEN_REWRITE_CONV I [th1] THENC
+    RAND_CONV NUM_NORMALIZE_CONV in
+
+  let POW_MONOMIAL_MUL_FUSE_CONV : conv =
+    let assoc = REWR_CONV QUAT_MUL_ASSOC
+    and pow_fuse = TRY_CONV POW_MUL_FUSE_CONV in
+    fun tm ->
+      if can (dest_quat_mul o snd o dest_quat_mul) tm
+      then (TRY_CONV (assoc THENC LAND_CONV POW_MUL_FUSE_CONV)) tm
+      else pow_fuse tm in
+
+  let MONOMIAL_MUL_CONV : conv =
+    let assoc_dx = TRY_CONV (REWR_CONV (GSYM QUAT_MUL_ASSOC)) in
+    let rec monomial_mul tm =
+      if can (dest_quat_mul o fst o dest_quat_mul) tm
+      then (assoc_dx THENC RAND_CONV monomial_mul) tm
+      else POW_MONOMIAL_MUL_FUSE_CONV tm in
+    monomial_mul in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Term multiplication.                                                   *)
+  (* ---------------------------------------------------------------------- *)
+
+  let TERM_MUL_CONV : conv =
+    let conv0 = REWR_CONV QUAT_MUL_LID in
+    let [conv1;conv2;conv3;conv4;conv5] = (map REWR_CONV o CONJUNCTS o prove)
+     (`(!a b x y. (Hx a * x) * (Hx b * y) = Hx (a * b) * x * y) /\
+       (!a b x. (Hx a * x) * Hx b = Hx (a * b) * x) /\
+       (!a b x. Hx a * (Hx b * x) = Hx (a * b) * x) /\
+       (!a x y. (Hx a * x) * y = Hx a * x * y) /\
+       (!a x y. x * (Hx a * y) = Hx a * x * y)`,
+      REWRITE_TAC[HX_MUL; QUAT_MUL_ASSOC] THEN
+      ONCE_REWRITE_TAC[QUAT_MUL_HX_MUL_SYM; QUAT_MUL_HX_SYM] THEN
+      REWRITE_TAC[HX_MUL; QUAT_MUL_ASSOC]) in
+    REWR_CONV QUAT_MUL_LZERO ORELSEC
+    REWR_CONV QUAT_MUL_RZERO ORELSEC
+    conv0 ORELSEC REWR_CONV QUAT_MUL_RID ORELSEC
+    (REWR_CONV (GSYM HX_MUL) THENC RAND_CONV REAL_POLY_CONV) ORELSEC
+    (((conv1 THENC RAND_CONV MONOMIAL_MUL_CONV) ORELSEC
+       conv2 ORELSEC conv3) THENC
+     LAND_CONV (RAND_CONV REAL_POLY_CONV) THENC TRY_CONV conv0) ORELSEC
+    ((conv4 ORELSEC conv5) THENC
+     RAND_CONV MONOMIAL_MUL_CONV) ORELSEC
+    REWR_CONV QUAT_MUL_HX_SYM ORELSEC
+    MONOMIAL_MUL_CONV in
+
+  let TERMS_FUSE_ADD_CONV : conv =
+    let th1 = prove
+     (`!x y q. Hx x * q + Hx y * q = Hx(x+y) * q`,
+      REWRITE_TAC[HX_ADD; QUAT_ADD_RDISTRIB])
+    and th2 = prove
+     (`!x q. Hx x * q + q = Hx(x + &1) * q`,
+      REWRITE_TAC[HX_ADD; QUAT_ADD_RDISTRIB; QUAT_MUL_LID])
+    and th3 = prove
+     (`!x q. q + Hx x * q = Hx(&1 + x) * q`,
+      REWRITE_TAC[HX_ADD; QUAT_ADD_RDISTRIB; QUAT_MUL_LID]) in
+    (REWR_CONV QUAT_ADD_LID ORELSEC
+     REWR_CONV QUAT_ADD_RID ORELSEC
+     (REWR_CONV (GSYM HX_ADD) THENC RAND_CONV REAL_POLY_CONV) ORELSEC
+     ((REWR_CONV th1 ORELSEC
+       REWR_CONV th2 ORELSEC
+       REWR_CONV th3) THENC
+      LAND_CONV (RAND_CONV REAL_POLY_CONV)) ORELSEC
+     REWR_CONV (GSYM QUAT_MUL_2)) THENC
+    (REWR_CONV QUAT_MUL_LID ORELSEC
+     REWR_CONV QUAT_MUL_LZERO ORELSEC ALL_CONV) in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Monomial and term comparison.                                          *)
+  (* ---------------------------------------------------------------------- *)
+
+  let dest_literal_quat_pow tm =
+    try
+      let b,e = dest_quat_pow tm in
+      (b,dest_numeral e)
+    with Failure _ -> (tm,num_1) in
+
+  let pow_compare tm1 tm2 =
+    let b1,e1 = dest_literal_quat_pow tm1
+    and b2,e2 = dest_literal_quat_pow tm2 in
+    let c = compare b1 b2 in
+    if c <> 0 then c else compare e1 e2 in
+
+  let rec mon_compare tm1 tm2 =
+    match is_quat_mul tm1, is_quat_mul tm2 with
+    | true,true ->
+        let c = pow_compare (lhand tm1) (lhand tm2) in
+        if c <> 0 then c else
+        mon_compare (rand tm1) (rand tm2)
+    | true,false -> 1
+    | false,true -> -1
+    | false,false -> pow_compare tm1 tm2 in
+
+  let mon_of_term tm =
+    try
+      let c,m = dest_quat_mul tm in
+      if is_quat_real c then m else tm
+    with Failure _ -> tm in
+
+  let term_compare tm1 tm2 =
+    match is_quat_real tm1, is_quat_real tm2 with
+    | true, false -> -1
+    | false, true -> 1
+    | true, true -> 0
+    | false,false -> mon_compare (mon_of_term tm1) (mon_of_term tm2) in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Term insertion.                                                        *)
+  (* ---------------------------------------------------------------------- *)
+
+  let insert_term_th = prove
+   (`!p q r. p + (q + r) = q + (p + r)`,
+    REWRITE_TAC[QUAT_ADD_AC]) in
+
+  let rec INSERT_TERM tm tms : thm =
+    let ptm = mk_quat_add tm tms in
+    try
+      REWR_CONV QUAT_ADD_LID ptm
+    with Failure _ ->
+    try
+      let tm1,tms = dest_quat_add tms in
+      match term_compare tm tm1 with
+      | 0 ->
+          (REWR_CONV QUAT_ADD_ASSOC THENC
+           LAND_CONV (REWR_CONV
+             (TERMS_FUSE_ADD_CONV (mk_quat_add tm tm1))) THENC
+           TRY_CONV (REWR_CONV QUAT_ADD_LID))
+          ptm
+      | c when c > 0 ->
+          (REWR_CONV insert_term_th THENC
+           RAND_CONV INSERT_TERM_CONV THENC
+           TRY_CONV (REWR_CONV QUAT_ADD_RID))
+          ptm
+      | _ -> ALL_CONV ptm
+    with Failure _ ->
+      match term_compare tm tms with
+      | 0 -> TERMS_FUSE_ADD_CONV ptm
+      | c when c > 0 -> REWR_CONV QUAT_ADD_SYM ptm
+      | _ -> ALL_CONV ptm
+  and INSERT_TERM_CONV tm =
+    try
+      let tm,tms = dest_quat_add tm in
+      INSERT_TERM tm tms
+    with Failure _ -> ALL_CONV tm in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Addition.                                                              *)
+  (* ---------------------------------------------------------------------- *)
+
+  let th_add1 = prove
+   (`!p q r:quat. (p + q) + (r + s) = (p + r) + (q + s)`,
+    REWRITE_TAC[QUAT_ADD_AC]) in
+  let th_add2 = prove
+   (`!p q r:quat. (p + q) + (r + s) = p + (q + (r + s))`,
+    REWRITE_TAC[QUAT_ADD_AC]) in
+  let th_add3 = prove
+   (`!p q r:quat. (p + q) + (r + s) = r + ((p + q) + s)`,
+    REWRITE_TAC[QUAT_ADD_AC]) in
+
+  let rec PRE_ADD_CONV tm =
+    let tm1,tm2 = dest_quat_add tm in
+    if is_quat_add tm1
+    then let htm1,ttm1 = dest_quat_add tm1 in
+         if is_quat_add tm2
+         then let htm2,ttm2 = dest_quat_add tm2 in
+              match term_compare htm1 htm2 with
+              | 0 ->
+                  (REWR_CONV th_add1 THENC
+                   LAND_CONV TERMS_FUSE_ADD_CONV THENC
+                   ((REWR_CONV QUAT_ADD_LID THENC PRE_ADD_CONV) ORELSEC
+                    RAND_CONV PRE_ADD_CONV THENC
+                  TRY_CONV (REWR_CONV QUAT_ADD_RID))) tm
+              | c when c < 0 ->
+                  (REWR_CONV th_add2 THENC RAND_CONV PRE_ADD_CONV) tm
+              | c when c > 0 ->
+                  (REWR_CONV th_add3 THENC RAND_CONV PRE_ADD_CONV) tm
+         else (REWR_CONV QUAT_ADD_SYM THENC INSERT_TERM_CONV) tm
+    else INSERT_TERM_CONV tm in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Multiplication.                                                        *)
+  (* ---------------------------------------------------------------------- *)
+
+  let LDISTRIB_CONV : conv =
+    let DIST_CONV = REWR_CONV QUAT_ADD_LDISTRIB in
+    let rec LDISTRIB_CONV tm =
+      ((DIST_CONV THENC LAND_CONV TERM_MUL_CONV THENC
+        RAND_CONV (LDISTRIB_CONV)) ORELSEC
+      TERM_MUL_CONV)
+      tm in
+    LDISTRIB_CONV in
+
+  let RDISTRIB_CONV : conv =
+    let DIST_CONV = REWR_CONV QUAT_ADD_RDISTRIB in
+    let rec RDISTRIB_CONV tm =
+      ((DIST_CONV THENC LAND_CONV TERM_MUL_CONV THENC
+        RAND_CONV (RDISTRIB_CONV)) ORELSEC
+      TERM_MUL_CONV)
+      tm in
+    RDISTRIB_CONV in
+
+  let th_mul = prove
+   (`!p q r s:quat. (p + q) * (r + s) = p * r + ((p * s + q * r) + q * s)`,
+    REWRITE_TAC[QUAT_ADD_LDISTRIB; QUAT_ADD_RDISTRIB; QUAT_ADD_AC]) in
+
+  let BINOP_CONV2 conv1 conv2 =
+    LAND_CONV conv1 THENC RAND_CONV conv2 in
+
+  let rec PRE_MUL_CONV tm =
+    let l,r = dest_quat_mul tm in
+    if not (is_quat_add l) then LDISTRIB_CONV tm else
+    if not (is_quat_add r) then RDISTRIB_CONV tm else
+    (REWR_CONV th_mul THENC BINOP_CONV2 TERM_MUL_CONV
+     (BINOP_CONV2
+      (BINOP_CONV2 LDISTRIB_CONV RDISTRIB_CONV THENC PRE_ADD_CONV)
+      PRE_MUL_CONV THENC
+      PRE_ADD_CONV)) tm in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Power.                                                                 *)
+  (* ---------------------------------------------------------------------- *)
+
+  let PRE_POW_CONV : conv =
+    let QUAT_POW_DENUMERAL = prove
+     (`x pow NUMERAL n = x pow n`,
+      REWRITE_TAC[NUMERAL])
+    and QUAT_POW_BIT0 = prove
+     (`!x n. x pow BIT0 n = (x * x) pow n`,
+      REPEAT GEN_TAC THEN REWRITE_TAC[BIT0; QUAT_POW_ADD] THEN
+      REWRITE_TAC[GSYM QUAT_POW_2; QUAT_POW_POW; MULT_SYM])
+    and QUAT_POW_BIT1 = prove
+     (`!x n. x pow BIT1 n = x * (x * x) pow n`,
+      REPEAT GEN_TAC THEN REWRITE_TAC[BIT1; quat_pow; QUAT_POW_ADD] THEN
+      REWRITE_TAC[GSYM QUAT_POW_2; QUAT_POW_POW; MULT_SYM])
+    and QUAT_POW_0 = prove
+     (`!x. x pow _0 = Hx(&1)`,
+      REWRITE_TAC[DENUMERAL quat_pow; NUMERAL]) in
+    let rec PRE_POW_CONV tm =
+      (REWR_CONV QUAT_POW_0 ORELSEC
+       (REWR_CONV QUAT_POW_BIT0 THENC
+        LAND_CONV PRE_MUL_CONV THENC
+        PRE_POW_CONV) ORELSEC
+       (REWR_CONV QUAT_POW_BIT1 THENC
+        RAND_CONV (LAND_CONV PRE_MUL_CONV THENC PRE_POW_CONV) THENC
+        PRE_MUL_CONV) ORELSEC
+       ALL_CONV) tm in
+    REWR_CONV QUAT_POW_DENUMERAL THENC PRE_POW_CONV in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Glue all together.                                                     *)
+  (* ---------------------------------------------------------------------- *)
+
+  let rec POLY_CONV tm =
+    if is_quat_add tm then ADD_CONV tm else
+    if is_quat_mul tm then MUL_CONV tm else
+    if is_quat_pow tm then POW_CONV tm else
+    ALL_CONV tm
+  and ADD_CONV tm = (BINOP_CONV POLY_CONV THENC PRE_ADD_CONV) tm
+  and MUL_CONV tm = (BINOP_CONV POLY_CONV THENC PRE_MUL_CONV) tm
+  and POW_CONV tm = (LAND_CONV POLY_CONV THENC
+                     RAND_CONV NUM_NORMALIZE_CONV THENC
+                     TRY_CONV PRE_POW_CONV) tm in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Initial normalization.                                                 *)
+  (* ---------------------------------------------------------------------- *)
+
+  let QUAT_DESUGAR_CONV =
+    let QUAT_DESUGAR_CLAUSES = prove
+      (`(!x. Hx (&0) + x = x) /\
+         (!x. --x = Hx (-- &1) * x) /\
+         (!x y. x - y = x + Hx (-- &1) * y) /\
+         (!x. Hx (&1) * x = x) /\
+         (!x. x * Hx (&1) = x) /\
+         (!x. Hx (&0) * x = Hx (&0)) /\
+         (!x. x * Hx (&0) = Hx (&0)) /\
+         (!x. x pow 0 = Hx (&1)) /\
+         (!x y. cnj (x + y) = cnj x + cnj y) /\
+         (!x y. cnj (x * y) = cnj y * cnj x) /\
+         (!x. cnj (inv x) = inv (cnj x)) /\
+         (!x n. cnj (x pow n) = cnj x pow n) /\
+         (!a. cnj (Hx a) = Hx a) /\
+         cnj ii =  Hx(-- &1) * ii /\
+         cnj jj =  Hx(-- &1) * jj /\
+         cnj kk =  Hx(-- &1) * kk`,
+       REWRITE_TAC[QUAT_POLY_CLAUSES; QUAT_CNJ_ADD; QUAT_CNJ_MUL;
+         QUAT_CNJ_INV; QUAT_CNJ_POW; CNJ_HX; QUAT_CNJ_UNITS]) in
+    REWRITE_CONV[QUAT_DESUGAR_CLAUSES] in
+
+  (* ---------------------------------------------------------------------- *)
+  (* Main call.                                                             *)
+  (* ---------------------------------------------------------------------- *)
+
+  QUAT_DESUGAR_CONV THENC POLY_CONV;;
+
+(* ------------------------------------------------------------------------- *)
+(* Some handy rules derived from QUAT_POLY_CONV.                             *)
+(* ------------------------------------------------------------------------- *)
+
+let QUAT_EQ_CONV : conv =
+  BINOP_CONV QUAT_POLY_CONV THENC REWR_CONV REFL_CLAUSE;;
+
+let QUAT_POLY tm =
+  prove(tm, REPEAT GEN_TAC THEN CONV_TAC QUAT_EQ_CONV);;
