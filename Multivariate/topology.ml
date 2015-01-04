@@ -5449,6 +5449,24 @@ let DISCRETE_BOUNDED_IMP_FINITE = prove
   DISCH_THEN(MP_TAC o SPEC `x:real^N` o GEN_REWRITE_RULE I [SUBSET]) THEN
   ASM_REWRITE_TAC[IN_ELIM_THM; IN_BALL; dist] THEN ASM_MESON_TAC[SUBSET]);;
 
+let FINITE_EQ_BOUNDED_DISCRETE = prove
+ (`!s:real^N->bool.
+        FINITE s <=>
+        bounded s /\
+        ?r. &0 < r /\ !x y. x IN s /\ y IN s /\ norm (y - x) < r ==> x = y`,
+  GEN_TAC THEN EQ_TAC THENL
+   [SIMP_TAC[FINITE_IMP_BOUNDED]; MESON_TAC[DISCRETE_BOUNDED_IMP_FINITE]] THEN
+  DISCH_TAC THEN
+  ASM_CASES_TAC `{(x:real^N,y) | x IN s /\ y IN s DELETE x} = {}` THENL
+   [EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EXTENSION]) THEN
+    REWRITE_TAC[FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN SET_TAC[];
+    ALL_TAC] THEN
+  EXISTS_TAC `inf (IMAGE dist {(x:real^N,y) | x IN s /\ y IN s DELETE x})` THEN
+  ASM_SIMP_TAC[FINITE_PRODUCT_DEPENDENT; FINITE_DELETE; REAL_LT_INF_FINITE;
+    FINITE_IMAGE; IMAGE_EQ_EMPTY; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
+  SIMP_TAC[IN_DELETE; DIST_POS_LT; dist] THEN MESON_TAC[REAL_LT_REFL]);;
+
 let BOLZANO_WEIERSTRASS = prove
  (`!s:real^N->bool. bounded s /\ INFINITE s ==> ?x. x limit_point_of s`,
   GEN_TAC THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
@@ -23460,6 +23478,35 @@ let LOCALLY_COMPACT_PROPER_IMAGE = prove
         locally compact s
         ==> locally compact (IMAGE f s)`,
   MESON_TAC[LOCALLY_COMPACT_PROPER_IMAGE_EQ]);;
+
+let LOCALLY_COMPACT_PROPER_CONTINUOUS_PREIMAGE = prove
+ (`!f:real^M->real^N s t c.
+        f continuous_on s /\ IMAGE f s SUBSET t /\
+        (!k. k SUBSET t /\ compact k
+             ==> compact {x | x IN s /\ f x IN k}) /\
+        locally compact c /\ c SUBSET t
+        ==> locally compact {x | x IN s /\ f x IN c}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[LOCALLY_COMPACT] THEN
+  STRIP_TAC THEN X_GEN_TAC `x:real^M` THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `(f:real^M->real^N) x`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^N->bool`; `k:real^N->bool`] THEN
+  STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+   [`{x | x IN s /\ (f:real^M->real^N) x IN u}`;
+    `{x | x IN s /\ (f:real^M->real^N) x IN k}`] THEN
+  REPLICATE_TAC 3 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+  CONJ_TAC THENL
+   [SUBGOAL_THEN
+     `{x | x IN s /\ (f:real^M->real^N) x IN u} =
+      {x | x IN {x | x IN s /\ f x IN c} /\ f x IN u}`
+    SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN THEN
+    EXISTS_TAC `c:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CONTINUOUS_ON_SUBSET)) THEN SET_TAC[];
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]]);;
 
 let MUMFORD_LEMMA = prove
  (`!f:real^M->real^N s t y.

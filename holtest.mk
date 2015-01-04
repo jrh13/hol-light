@@ -28,6 +28,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/lucas_lehmer \
 	Examples/mangoldt \
 	Examples/mccarthy \
+	Examples/misiurewicz \
 	Examples/mizar \
 	Library/multiplicative \
 	Examples/multiwf \
@@ -37,6 +38,7 @@ STANDALONE_EXAMPLES:=\
 	Library/products \
 	Examples/prog \
 	Examples/prover9 \
+	Examples/q \
 	Examples/rectypes \
 	Examples/schnirelmann \
 	Examples/solovay \
@@ -54,6 +56,7 @@ EXTENDED_EXAMPLES:=\
 	Arithmetic/make \
 	Boyer_Moore/make \
 	Complex/make \
+	IEEE/make \
 	IsabelleLight/make \
 	Jordan/make \
 	Mizarlight/make \
@@ -65,6 +68,7 @@ EXTENDED_EXAMPLES:=\
 	Ntrie/ntrie \
 	Permutation/make \
 	QBF/make \
+	Quaternions/make \
 	RichterHilbertAxiomGeometry/miz3/make \
 	RichterHilbertAxiomGeometry/HilbertAxiom_read \
 	Rqe/make \
@@ -73,7 +77,11 @@ EXTENDED_EXAMPLES:=\
 	Multivariate/tarski \
 	Multivariate/cross \
 	Multivariate/flyspeck \
-	Multivariate/gamma
+	Multivariate/gamma \
+	RichterHilbertAxiomGeometry/Topology \
+	RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read \
+	Functionspaces/make \
+	Formal_ineqs/make-ineqs
 
 GREAT_100_THEOREMS:= \
 	100/arithmetic_geometric_mean \
@@ -189,6 +197,11 @@ Minisat/make-taut:
 	else \
 		echo '### Error: skip Minisat/make.ml, Minisat/taut.ml because zchaff is not available' > $(LOGDIR)/$@ ; \
 	fi
+
+Formal_ineqs/make-ineqs:
+	@mkdir -p $(LOGDIR)/$$(dirname $@)
+	@echo '### Loading Formal_ineqs/make.ml, examples.hl, examples_poly.hl, examples_flyspeck.hl' > $(LOGDIR)/$@
+	@(echo 'loadt "Formal_ineqs/make.ml";;'; echo 'loadt "Formal_ineqs/examples.hl";;'; echo 'loadt "Formal_ineqs/examples_poly.hl";;'; echo 'loadt "Formal_ineqs/examples_flyspeck.hl";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
 
 100/bertrand-primerecip:
 	@mkdir -p $(LOGDIR)/$$(dirname $@)

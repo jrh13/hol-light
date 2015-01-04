@@ -4394,6 +4394,14 @@ let AR_IMP_CONTRACTIBLE = prove
  (`!s:real^N->bool. AR s ==> contractible s`,
   SIMP_TAC[AR_ANR]);;
 
+let AR_IMP_PATH_CONNECTED = prove
+ (`!s:real^N->bool. AR s ==> path_connected s`,
+  MESON_TAC[AR_IMP_CONTRACTIBLE; CONTRACTIBLE_IMP_PATH_CONNECTED]);;
+
+let AR_IMP_CONNECTED = prove
+ (`!s:real^N->bool. AR s ==> connected s`,
+  MESON_TAC[AR_IMP_CONTRACTIBLE; CONTRACTIBLE_IMP_CONNECTED]);;
+
 let ENR_IMP_LOCALLY_COMPACT = prove
  (`!s:real^N->bool. ENR s ==> locally compact s`,
   SIMP_TAC[ENR_ANR]);;
