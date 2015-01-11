@@ -870,6 +870,13 @@ let OPEN_IN_SUBTOPOLOGY_INTER_SUBSET = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_OPEN; LEFT_AND_EXISTS_THM] THEN
   MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
 
+let CLOSED_IN_SUBTOPOLOGY_INTER_SUBSET = prove
+ (`!s u v:real^N->bool.
+           closed_in (subtopology euclidean u) (u INTER s) /\ v SUBSET u
+           ==> closed_in (subtopology euclidean v) (v INTER s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_CLOSED; LEFT_AND_EXISTS_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
+
 let OPEN_IN_OPEN_EQ = prove
  (`!s t. open s
          ==> (open_in (subtopology euclidean s) t <=> open t /\ t SUBSET s)`,
@@ -2165,6 +2172,16 @@ let OPEN_INTER_CLOSURE_EQ_EMPTY = prove
   DISCH_TAC THEN REWRITE_TAC[CLOSURE_INTERIOR] THEN
   MATCH_MP_TAC(SET_RULE `s SUBSET t ==> s INTER (UNIV DIFF t) = {}`) THEN
   ASM_SIMP_TAC[OPEN_SUBSET_INTERIOR] THEN ASM SET_TAC[]);;
+
+let CLOSURE_MINIMAL_LOCAL = prove
+ (`!s t u:real^N->bool.
+        closed_in (subtopology euclidean s) u /\ t SUBSET u
+        ==> s INTER closure t SUBSET u`,
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[IMP_CONJ; CLOSED_IN_CLOSED; LEFT_IMP_EXISTS_THM; SUBSET_INTER] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INTER_SUBSET] THEN
+  MATCH_MP_TAC(SET_RULE `t SUBSET u ==> s INTER t SUBSET u`) THEN
+  MATCH_MP_TAC CLOSURE_MINIMAL THEN ASM_REWRITE_TAC[]);;
 
 let CLOSURE_OPEN_IN_INTER_CLOSURE = prove
  (`!s t u:real^N->bool.
@@ -8012,13 +8029,21 @@ let COMPACT_CONTINUOUS_IMAGE_EQ = prove
   FIRST_ASSUM(ASSUME_TAC o MATCH_MP CLOSED_IN_IMP_SUBSET) THEN ASM SET_TAC[]);;
 
 let PROPER_MAP_FROM_COMPACT = prove
- (`!f:real^M->real^N s k.
+ (`!f:real^M->real^N s k t.
         f continuous_on s /\ IMAGE f s SUBSET t /\ compact s /\
         closed_in (subtopology euclidean t) k
         ==> compact {x | x IN s /\ f x IN k}`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC CLOSED_IN_COMPACT THEN EXISTS_TAC `s:real^M->bool` THEN
   ASM_MESON_TAC[CONTINUOUS_CLOSED_IN_PREIMAGE_GEN]);;
+
+let PROPER_MAP_FROM_COMPACT_ALT = prove
+ (`!f:real^M->real^N s t.
+         compact s /\ f continuous_on s /\ IMAGE f s SUBSET t
+         ==> !k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC PROPER_MAP_FROM_COMPACT THEN
+  EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CLOSED_SUBSET THEN ASM_SIMP_TAC[COMPACT_IMP_CLOSED]);;
 
 let PROPER_MAP_COMPOSE = prove
  (`!f:real^M->real^N g:real^N->real^P s t u.
@@ -23282,36 +23307,24 @@ let LOCALLY_CLOSED = prove
   ASM_REWRITE_TAC[IN_INTER; CENTRE_IN_BALL; REAL_LT_01] THEN
   MP_TAC(ISPEC `x:real^N` BALL_SUBSET_CBALL) THEN ASM SET_TAC[]);;
 
-let LOCALLY_COMPACT_OPEN_UNION = prove
- (`!s t:real^N->bool.
-        locally compact s /\ locally compact t /\
-        open_in (subtopology euclidean (s UNION t)) s /\
-        open_in (subtopology euclidean (s UNION t)) t
-        ==> locally compact (s UNION t)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[LOCALLY_COMPACT_INTER_CBALL; IN_UNION] THEN
-  INTRO_TAC "lcs lct os ot" THEN X_GEN_TAC `x:real^N` THEN STRIP_TAC THENL
-   [REMOVE_THEN "lcs" (MP_TAC o SPEC `x:real^N`) THEN
-    REMOVE_THEN "os"
-     (MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_CONTAINS_CBALL]);
-    REMOVE_THEN "lct" (MP_TAC o SPEC `x:real^N`) THEN
-    REMOVE_THEN "ot"
-     (MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_CONTAINS_CBALL])] THEN
-  DISCH_THEN(MP_TAC o SPEC `x:real^N` o CONJUNCT2) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
-  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `min d e:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
-  REWRITE_TAC[CBALL_MIN_INTER; INTER_ASSOC] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP (SET_RULE
-   `u INTER st SUBSET s ==> s SUBSET st ==> u INTER st = u INTER s`)) THEN
-  REWRITE_TAC[SUBSET_UNION] THEN DISCH_THEN SUBST1_TAC THEN
-  ASM_MESON_TAC[CLOSED_INTER; CLOSED_CBALL; INTER_ACI]);;
-
 let LOCALLY_COMPACT_CLOSED_UNION = prove
- (`!s t:real^N->bool.
+ (`!s t u:real^N->bool.
+        locally compact s /\ locally compact t /\
+        closed_in (subtopology euclidean u) s /\
+        closed_in (subtopology euclidean u) t
+        ==> locally compact (s UNION t)`,
+  SUBGOAL_THEN
+   `!s t:real^N->bool.
         locally compact s /\ locally compact t /\
         closed_in (subtopology euclidean (s UNION t)) s /\
         closed_in (subtopology euclidean (s UNION t)) t
-        ==> locally compact (s UNION t)`,
+        ==> locally compact (s UNION t)`
+  MP_TAC THENL
+   [ALL_TAC;
+    REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_MESON_TAC[CLOSED_IN_SUBSET_TRANS; SUBSET_UNION; UNION_SUBSET;
+                  CLOSED_IN_IMP_SUBSET]] THEN
   REPEAT GEN_TAC THEN REWRITE_TAC[LOCALLY_COMPACT_INTER_CBALL; IN_UNION] THEN
   INTRO_TAC "lcs lct cs ct" THEN X_GEN_TAC `x:real^N` THEN
   DISCH_THEN(STRIP_ASSUME_TAC o MATCH_MP (TAUT
@@ -23344,6 +23357,39 @@ let LOCALLY_COMPACT_CLOSED_UNION = prove
                   cball(x,d) INTER cball (x,e) INTER t` SUBST1_TAC
     THENL [REWRITE_TAC[CBALL_MIN_INTER] THEN ASM SET_TAC[]; ALL_TAC]] THEN
   ASM_MESON_TAC[CLOSED_INTER; CLOSED_CBALL]);;
+
+let LOCALLY_COMPACT_OPEN_UNIONS = prove
+ (`!f:(real^N->bool)->bool u.
+        (!c. c IN f ==> locally compact c) /\
+        (!c. c IN f ==> open_in (subtopology euclidean u) c)
+        ==> locally compact (UNIONS f)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  REWRITE_TAC[LOCALLY_COMPACT_ALT; FORALL_IN_UNIONS] THEN
+  MAP_EVERY X_GEN_TAC [`t:real^N->bool`; `x:real^N`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `t:real^N->bool` o
+    GEN_REWRITE_RULE (BINDER_CONV o RAND_CONV) [LOCALLY_COMPACT_ALT]) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `v:real^N->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC OPEN_IN_SUBSET_TRANS THEN
+  EXISTS_TAC `u:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[OPEN_IN_TRANS]; ALL_TAC] THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[UNIONS_SUBSET]] THEN
+  ASM_MESON_TAC[OPEN_IN_IMP_SUBSET]);;
+
+let LOCALLY_COMPACT_OPEN_UNION = prove
+ (`!s t:real^N->bool u.
+        locally compact s /\ locally compact t /\
+        open_in (subtopology euclidean u) s /\
+        open_in (subtopology euclidean u) t
+        ==> locally compact (s UNION t)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`{s:real^N->bool,t}`; `u:real^N->bool`]
+    LOCALLY_COMPACT_OPEN_UNIONS) THEN
+  ASM_REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; UNIONS_2]);;
 
 let LOCALLY_COMPACT_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.

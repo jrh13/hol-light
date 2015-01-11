@@ -38,7 +38,7 @@ STANDALONE_EXAMPLES:=\
 	Library/products \
 	Examples/prog \
 	Examples/prover9 \
-	Examples/q \
+	Library/q \
 	Examples/rectypes \
 	Examples/schnirelmann \
 	Examples/solovay \
