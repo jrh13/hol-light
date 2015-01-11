@@ -15202,74 +15202,158 @@ let COVERING_SPACE_QUOTIENT_MAP = prove
   FIRST_ASSUM(SUBST1_TAC o MATCH_MP COVERING_SPACE_IMP_SURJECTIVE) THEN
   ASM_MESON_TAC[COVERING_SPACE_OPEN_MAP]);;
 
+let COVERING_SPACE_LOCALIZED_HOMEOMORPHISM = prove
+ (`!p:real^M->real^N c s.
+        covering_space (c,p) s
+        ==> !w x. x IN w /\ open_in (subtopology euclidean c) w
+                  ==> ?t u. x IN t /\ open_in (subtopology euclidean c) t /\
+                            p(x) IN u /\ open_in (subtopology euclidean s) u /\
+                            t SUBSET w /\
+                            ?q. homeomorphism (t,u) (p,q)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `x:real^M` o MATCH_MP
+    COVERING_SPACE_LOCAL_HOMEOMORPHISM) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^M->bool`; `v:real^N->bool`] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(X_CHOOSE_TAC `q:real^N->real^M`) THEN
+  MAP_EVERY EXISTS_TAC
+   [`u INTER w:real^M->bool`; `IMAGE (p:real^M->real^N) (u INTER w)`] THEN
+  ASM_SIMP_TAC[IN_INTER; OPEN_IN_INTER; INTER_SUBSET] THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_SIMP_TAC[FUN_IN_IMAGE; IN_INTER];
+    ASM_MESON_TAC[COVERING_SPACE_OPEN_MAP; OPEN_IN_INTER];
+    EXISTS_TAC `q:real^N->real^M` THEN
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+      HOMEOMORPHISM_OF_SUBSETS)) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]]);;
+
+let COVERING_SPACE_LOCALIZED_HOMEOMORPHISM_ALT = prove
+ (`!p:real^M->real^N c s.
+        covering_space (c,p) s
+        ==> !w y. y IN w /\ open_in (subtopology euclidean s) w
+                ==> ?x t u. p(x) = y /\
+                            x IN t /\ open_in (subtopology euclidean c) t /\
+                            y IN u /\ open_in (subtopology euclidean s) u /\
+                            u SUBSET w /\
+                            ?q. homeomorphism (t,u) (p,q)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+  SUBGOAL_THEN `?x. x IN c /\ (p:real^M->real^N) x = y` MP_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o MATCH_MP COVERING_SPACE_IMP_SURJECTIVE) THEN
+    ASM SET_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:real^M` THEN STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o
+      SPECL [`{x | x IN c /\ (p:real^M->real^N) x IN w}`; `x:real^M`] o
+      MATCH_MP COVERING_SPACE_LOCALIZED_HOMEOMORPHISM) THEN
+    ASM_REWRITE_TAC[IN_ELIM_THM] THEN ANTS_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[covering_space]) THEN
+      ASM_MESON_TAC[SUBSET_REFL];
+      REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+      SIMP_TAC[] THEN REWRITE_TAC[homeomorphism] THEN REPEAT STRIP_TAC THEN
+      REPEAT(FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
+      ASM SET_TAC[]]]);;
+
+let COVERING_SPACE_LOCALLY_HOMEOMORPHIC = prove
+ (`!P Q p:real^M->real^N c s.
+           covering_space (c,p) s /\
+           (!q u v. ~(u = {}) /\ u SUBSET c /\ v SUBSET s /\
+                    homeomorphism (u,v) (p,q) /\ P u
+                    ==> Q v) /\
+           locally P c
+           ==> locally Q s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[locally] THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`w:real^N->bool`; `y:real^N`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPECL [`w:real^N->bool`; `y:real^N`] o
+    MATCH_MP COVERING_SPACE_LOCALIZED_HOMEOMORPHISM_ALT) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^M`; `u:real^M->bool`; `v:real^N->bool`] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(X_CHOOSE_TAC `q:real^N->real^M`) THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`u:real^M->bool`; `x:real^M`]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`n:real^M->bool`; `l:real^M->bool`] THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (p:real^M->real^N) n` THEN
+  EXISTS_TAC `IMAGE (p:real^M->real^N) l` THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[COVERING_SPACE_OPEN_MAP; OPEN_IN_INTER];
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`q:real^N->real^M`; `l:real^M->bool`] THEN
+    ASM_REWRITE_TAC[] THEN REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+     [ALL_TAC;
+      FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+       HOMEOMORPHISM_OF_SUBSETS))] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[covering_space]) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN
+    REPEAT(FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
+    ASM SET_TAC[];
+    ASM SET_TAC[];
+    ASM SET_TAC[];
+    RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN ASM SET_TAC[]]);;
+
+let COVERING_SPACE_LOCALLY_HOMEOMORPHIC_EQ = prove
+ (`!P Q p:real^M->real^N c s.
+           covering_space (c,p) s /\
+           (!q u v. ~(u = {}) /\ u SUBSET c /\ v SUBSET s /\
+                    homeomorphism (u,v) (p,q)
+                    ==> (P u <=> Q v))
+           ==> (locally P c <=> locally Q s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[COVERING_SPACE_LOCALLY_HOMEOMORPHIC]; ALL_TAC] THEN
+  REWRITE_TAC[locally] THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`w:real^M->bool`; `x:real^M`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+  FIRST_ASSUM(MP_TAC o SPECL [`w:real^M->bool`; `x:real^M`] o
+    MATCH_MP COVERING_SPACE_LOCALIZED_HOMEOMORPHISM) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^M->bool`; `v:real^N->bool`] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(X_CHOOSE_TAC `q:real^N->real^M`) THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`v:real^N->bool`; `(p:real^M->real^N) x`]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`n:real^N->bool`; `l:real^N->bool`] THEN STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC
+   [`{x | x IN u /\ (p:real^M->real^N) x IN n}`;
+    `{x | x IN u /\ (p:real^M->real^N) x IN l}`] THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC OPEN_IN_TRANS THEN EXISTS_TAC `u:real^M->bool` THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN THEN
+    EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+    REPEAT(FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[covering_space]) THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ASM SET_TAC[]];
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN FIRST_X_ASSUM(MP_TAC o
+      SPECL [`q:real^N->real^M`; `{x | x IN u /\ (p:real^M->real^N) x IN l}`;
+             `l:real^N->bool`]) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+    REPLICATE_TAC 2 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[covering_space]) THEN
+    REPEAT(FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+       HOMEOMORPHISM_OF_SUBSETS)) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN ASM SET_TAC[]]);;
+
 let COVERING_SPACE_LOCALLY = prove
  (`!P Q p:real^M->real^N c s.
         covering_space (c,p) s /\ (!t. t SUBSET c /\ P t ==> Q(IMAGE p t)) /\
         locally P c
         ==> locally Q s`,
-  REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP COVERING_SPACE_IMP_SURJECTIVE) THEN
-  MATCH_MP_TAC LOCALLY_OPEN_MAP_IMAGE THEN
-  EXISTS_TAC `P:(real^M->bool)->bool` THEN
-  CONJ_TAC THENL [ASM_MESON_TAC[COVERING_SPACE_IMP_CONTINUOUS]; ALL_TAC] THEN
-  ASM_SIMP_TAC[] THEN
-  FIRST_ASSUM(SUBST1_TAC o MATCH_MP COVERING_SPACE_IMP_SURJECTIVE) THEN
-  ASM_MESON_TAC[COVERING_SPACE_OPEN_MAP]);;
+  MP_TAC COVERING_SPACE_LOCALLY_HOMEOMORPHIC THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  REWRITE_TAC[homeomorphism] THEN MESON_TAC[]);;
 
 let COVERING_SPACE_LOCALLY_EQ = prove
  (`!P Q p:real^M->real^N c s.
         covering_space (c,p) s /\
         (!t. t SUBSET c /\ P t ==> Q(IMAGE p t)) /\
         (!q u. u SUBSET s /\ q continuous_on u /\ Q u ==> P(IMAGE q u))
-
         ==> (locally Q s <=> locally P c)`,
-  REPEAT STRIP_TAC THEN EQ_TAC THENL
-   [ALL_TAC; ASM_MESON_TAC[COVERING_SPACE_LOCALLY]] THEN
-  REWRITE_TAC[locally] THEN STRIP_TAC THEN
-  MAP_EVERY X_GEN_TAC [`v:real^M->bool`; `x:real^M`] THEN STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [covering_space]) THEN
-  DISCH_THEN(MP_TAC o SPEC `(p:real^M->real^N) x` o last o CONJUNCTS) THEN
-  ANTS_TAC THENL
-   [ASM_MESON_TAC[covering_space; FUN_IN_IMAGE; OPEN_IN_IMP_SUBSET; SUBSET];
-    DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` MP_TAC)] THEN
-  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  DISCH_THEN(X_CHOOSE_THEN `vv:(real^M->bool)->bool` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EXTENSION]) THEN
-  DISCH_THEN(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[IN_ELIM_THM] THEN
-  MATCH_MP_TAC(TAUT `q /\ (p ==> r) ==> (p <=> q) ==> r`) THEN
-  CONJ_TAC THENL [ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; SUBSET]; ALL_TAC] THEN
-  REWRITE_TAC[IN_UNIONS; LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC `u:real^M->bool` THEN STRIP_TAC THEN
-  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `u:real^M->bool`)) THEN
-  ASM_REWRITE_TAC[] THEN REPEAT DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPECL
-    [`IMAGE (p:real^M->real^N) (u INTER v)`; `(p:real^M->real^N) x`]) THEN
-  ASM_SIMP_TAC[FUN_IN_IMAGE; IN_INTER] THEN ANTS_TAC THENL
-   [ASM_MESON_TAC[COVERING_SPACE_OPEN_MAP; OPEN_IN_INTER]; ALL_TAC] THEN
-  DISCH_THEN(X_CHOOSE_THEN `w:real^N->bool`
-   (X_CHOOSE_THEN `w':real^N->bool` STRIP_ASSUME_TAC)) THEN
-  FIRST_X_ASSUM(X_CHOOSE_THEN `q:real^N->real^M` MP_TAC) THEN
-  REWRITE_TAC[homeomorphism] THEN STRIP_TAC THEN
-  EXISTS_TAC `IMAGE (q:real^N->real^M) w` THEN
-  EXISTS_TAC `IMAGE (q:real^N->real^M) w'` THEN REPEAT CONJ_TAC THENL
-   [MATCH_MP_TAC OPEN_IN_TRANS THEN EXISTS_TAC `u:real^M->bool` THEN
-    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC HOMEOMORPHISM_IMP_OPEN_MAP THEN
-    MAP_EVERY EXISTS_TAC [`p:real^M->real^N`; `t:real^N->bool`] THEN
-    ASM_REWRITE_TAC[homeomorphism] THEN
-
-    MATCH_MP_TAC OPEN_IN_SUBSET_TRANS THEN
-    EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
-    REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
-    ASM SET_TAC[];
-    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-     [REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
-      ASM SET_TAC[];
-      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-        CONTINUOUS_ON_SUBSET)) THEN
-      ASM SET_TAC[]];
-    ASM SET_TAC[];
-    ASM SET_TAC[];
-    ASM SET_TAC[]]);;
+  MP_TAC COVERING_SPACE_LOCALLY_HOMEOMORPHIC_EQ THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  REWRITE_TAC[homeomorphism] THEN MESON_TAC[]);;
 
 let COVERING_SPACE_LOCALLY_COMPACT_EQ = prove
  (`!p:real^M->real^N c s.
@@ -17087,7 +17171,7 @@ let COVERING_SPACE_COMPACT = prove
 
 let PROPER_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP = prove
  (`!p:real^M->real^N c s.
-        p continuous_on c /\ IMAGE p c = s /\
+        IMAGE p c = s /\
         (!k. k SUBSET s /\ compact k ==> compact {x | x IN c /\ p x IN k}) /\
         (!x. x IN c
              ==> ?t u q. x IN t /\
@@ -17095,7 +17179,27 @@ let PROPER_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP = prove
                          open_in (subtopology euclidean s) u /\
                          homeomorphism (t,u) (p,q))
         ==> covering_space (c,p) s`,
-  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[covering_space] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(p:real^M->real^N) continuous_on c` ASSUME_TAC THENL
+   [REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+    X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `t:real^M->bool` STRIP_ASSUME_TAC) THEN
+    UNDISCH_TAC `open_in (subtopology euclidean c) (t:real^M->bool)` THEN
+    REWRITE_TAC[CONTINUOUS_WITHIN_OPEN; OPEN_IN_OPEN] THEN
+    DISCH_THEN(X_CHOOSE_THEN `v:real^M->bool` STRIP_ASSUME_TAC) THEN
+    X_GEN_TAC `w:real^N->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o CONJUNCT1 o GEN_REWRITE_RULE I [HOMEOMORPHISM]) THEN
+    REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+    REWRITE_TAC[CONTINUOUS_WITHIN_OPEN] THEN
+    DISCH_THEN(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o SPEC `w:real^N->bool`) THEN
+    ASM_REWRITE_TAC[IN_INTER] THEN
+    DISCH_THEN(X_CHOOSE_THEN `y:real^M->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `y INTER v:real^M->bool` THEN
+    ASM_SIMP_TAC[OPEN_INTER; IN_INTER] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[covering_space] THEN
   SUBGOAL_THEN
    `!y. y IN s ==> FINITE {x | x IN c /\ (p:real^M->real^N) x = y}`
   ASSUME_TAC THENL

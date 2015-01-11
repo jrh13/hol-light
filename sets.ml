@@ -2663,6 +2663,20 @@ let PAIRWISE_IMAGE = prove
          pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s`,
   REWRITE_TAC[pairwise; IN_IMAGE] THEN MESON_TAC[]);;
 
+let DIFF_UNIONS_PAIRWISE_DISJOINT = prove
+ (`!s t:(A->bool)->bool.
+        pairwise DISJOINT s /\ t SUBSET s
+        ==> UNIONS s DIFF UNIONS t = UNIONS(s DIFF t)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(SET_RULE `t UNION u = s /\ DISJOINT t u ==> s DIFF t = u`) THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[GSYM UNIONS_UNION] THEN AP_TERM_TAC THEN ASM SET_TAC[];
+    REWRITE_TAC[DISJOINT; INTER_UNIONS; EMPTY_UNIONS; FORALL_IN_GSPEC] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [pairwise]) THEN
+    REWRITE_TAC[DISJOINT; IN_DIFF] THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN ASM_MESON_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some additional properties of "set_of_list".                              *)
 (* ------------------------------------------------------------------------- *)

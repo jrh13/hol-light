@@ -1,3 +1,11 @@
+Fri  9th Jan 2015       sets.ml
+
+Added this fairly obvious theorem:
+
+  DIFF_UNIONS_PAIRWISE_DISJOINT =
+    |- !s t. pairwise DISJOINT s /\ t SUBSET s
+             ==> UNIONS s DIFF UNIONS t = UNIONS(s DIFF t)
+
 Sat 27th Dec 2014       Quaternions/*
 
 Added a substantial new theory of quaternions from Marco Maggesi. This includes
