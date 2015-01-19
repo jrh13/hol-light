@@ -7853,6 +7853,21 @@ let NOT_IN_AFFINE_HULL_SURFACE_TRIANGULATION = prove
   ASM_SIMP_TAC[REWRITE_RULE[SUBSET] INTERIOR_SUBSET_RELATIVE_INTERIOR] THEN
   ASM_MESON_TAC[SUBSET; HULL_MONO]);;
 
+let TRIANGULATION_SUBFACES = prove
+ (`!tr:(real^N->bool)->bool tr'.
+        triangulation tr /\ (!c'. c' IN tr' ==> ?c. c IN tr /\ c' face_of c)
+        ==> triangulation tr'`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[triangulation] THEN STRIP_TAC THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC FINITE_SUBSET THEN
+    EXISTS_TAC `UNIONS {{f:real^N->bool | f face_of c} | c IN tr}` THEN
+    REWRITE_TAC[FINITE_UNIONS; SIMPLE_IMAGE; FORALL_IN_IMAGE] THEN
+    ASM_SIMP_TAC[FINITE_IMAGE] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[FINITE_FACES_OF_SIMPLEX]; ALL_TAC] THEN
+    REWRITE_TAC[UNIONS_IMAGE] THEN ASM SET_TAC[];
+    ASM_MESON_TAC[SIMPLEX_FACE_OF_SIMPLEX];
+    ASM_MESON_TAC[FACE_OF_INTER_SUBFACE]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Subdividing a cell complex (not necessarily simplicial).                  *)
 (* ------------------------------------------------------------------------- *)

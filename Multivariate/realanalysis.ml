@@ -648,6 +648,12 @@ let REAL_SERIES_CAUCHY = prove
   SIMP_TAC[NORM_REAL; GSYM drop; DROP_VSUM; FINITE_INTER_NUMSEG] THEN
   REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
 
+let REAL_SUMMABLE_CAUCHY = prove
+ (`!f s. real_summable s f <=>
+         !e. &0 < e
+             ==> ?N. !m n. m >= N ==> abs(sum(s INTER (m..n)) f) < e`,
+  REWRITE_TAC[real_summable; GSYM REAL_SERIES_CAUCHY]);;
+
 let REAL_SUMS_SUMMABLE = prove
  (`!f l s. (f real_sums l) s ==> real_summable s f`,
   REWRITE_TAC[real_summable] THEN MESON_TAC[]);;
@@ -1552,6 +1558,57 @@ let REALLIM_COMPOSE_AT = prove
                  `(:real)`; `y:real`; `z:real`]
         REALLIM_COMPOSE_WITHIN) THEN
   ASM_REWRITE_TAC[IN_UNIV; WITHINREAL_UNIV]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Summability of alternating seties.                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let ALTERNATING_SUM_BOUNDS = prove
+ (`!a. (!n. abs(a(SUC n)) <= abs(a n)) /\
+       (!n. EVEN n ==> &0 <= a n) /\ (!n. ODD n ==> a n <= &0)
+       ==> !m n. (EVEN m ==> &0 <= sum(m..n) a /\ sum(m..n) a <= a(m)) /\
+                 (ODD m ==> a(m) <= sum(m..n) a /\ sum(m..n) a <= &0)`,
+  GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC(MESON[LE_EXISTS; NOT_LT]
+   `(!m n:num. n < m ==> P m n) /\ (!n m. P m (m + n)) ==> !m n. P m n`) THEN
+  ASM_SIMP_TAC[GSYM NUMSEG_EMPTY; SUM_CLAUSES; REAL_LE_REFL] THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[ADD_CLAUSES; SUM_SING_NUMSEG; REAL_LE_REFL] THEN
+  SIMP_TAC[SUM_CLAUSES_LEFT; ARITH_RULE `m <= SUC(m + n)`] THEN
+  X_GEN_TAC `m:num` THEN  SIMP_TAC[ARITH_RULE `SUC(m + n) = (m + 1) + n`] THEN
+  CONJ_TAC THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN MP_TAC o SPEC `m + 1`) THEN
+  ASM_REWRITE_TAC[ODD_ADD; EVEN_ADD; ARITH; NOT_ODD; NOT_EVEN] THEN
+  SIMP_TAC[REAL_LE_ADDR; REAL_ARITH `x + y <= x <=> y <= &0`] THENL
+   [MATCH_MP_TAC(REAL_ARITH
+     `abs b <= abs a /\ &0 <= a ==> b <= s /\ u <= v ==> &0 <= a + s`);
+    MATCH_MP_TAC(REAL_ARITH
+     `abs b <= abs a /\ a <= &0 ==> u <= v /\ s <= b ==> a + s <= &0`)] THEN
+  ASM_SIMP_TAC[GSYM ADD1]);;
+
+let ALTERNATING_SUM_BOUND = prove
+ (`!a. (!n. abs(a(SUC n)) <= abs(a n)) /\
+       (!n. EVEN n ==> &0 <= a n) /\ (!n. ODD n ==> a n <= &0)
+       ==> !m n. abs(sum(m..n) a) <= abs(a m)`,
+  GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP ALTERNATING_SUM_BOUNDS) THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  REWRITE_TAC[GSYM NOT_EVEN] THEN ASM_CASES_TAC `EVEN m` THEN
+  ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let REAL_SUMMABLE_ALTERNATING_SERIES = prove
+ (`!a m. (!n. abs(a(SUC n)) <= abs(a n)) /\
+         (!n. EVEN n ==> &0 <= a n) /\ (!n. ODD n ==> a n <= &0) /\
+         (a ---> &0) sequentially
+         ==> real_summable (from m) a`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[REAL_SUMMABLE_CAUCHY; FROM_INTER_NUMSEG_MAX] THEN
+  X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [REALLIM_SEQUENTIALLY]) THEN
+  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN
+  ASM_REWRITE_TAC[GE; REAL_SUB_RZERO] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`n:num`; `p:num`] THEN DISCH_TAC THEN
+  TRANS_TAC REAL_LET_TRANS `abs(a(MAX m n))` THEN
+  ASM_SIMP_TAC[ALTERNATING_SUM_BOUND] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some real limits involving transcendentals.                               *)
