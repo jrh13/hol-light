@@ -854,6 +854,19 @@ let L1_LE_NORM = prove
   ONCE_REWRITE_TAC[GSYM REAL_SUB_LE] THEN REWRITE_TAC[lemma] THEN
   SIMP_TAC[SUM_POS_LE_NUMSEG; REAL_LE_POW_2]);;
 
+let DIST_INCREASES_ONLINE = prove
+ (`!a b d. ~(d = vec 0)    
+           ==> dist(a,b + d) > dist(a,b) \/ dist(a,b - d) > dist(a,b)`,
+  REWRITE_TAC[dist; vector_norm; real_gt; GSYM NORM_POS_LT] THEN
+  SIMP_TAC[SQRT_MONO_LT_EQ; DOT_POS_LE; SQRT_LT_0] THEN                
+  REWRITE_TAC[DOT_RSUB; DOT_RADD; DOT_LSUB; DOT_LADD] THEN REAL_ARITH_TAC);;
+                                                                 
+let NORM_INCREASES_ONLINE = prove                                    
+ (`!a:real^N d. ~(d = vec 0)                    
+                ==> norm(a + d) > norm(a) \/ norm(a - d) > norm(a)`,
+  MP_TAC(ISPEC `vec 0 :real^N` DIST_INCREASES_ONLINE) THEN
+  REWRITE_TAC[dist; VECTOR_SUB_LZERO; NORM_NEG]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Squaring equations and inequalities involving norms.                      *)
 (* ------------------------------------------------------------------------- *)

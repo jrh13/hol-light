@@ -2677,6 +2677,21 @@ let DIFF_UNIONS_PAIRWISE_DISJOINT = prove
     FIRST_X_ASSUM MATCH_MP_TAC THEN
     REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN ASM_MESON_TAC[]]);;
 
+let INTER_UNIONS_PAIRWISE_DISJOINT = prove
+ (`!s t:(A->bool)->bool.
+        pairwise DISJOINT (s UNION t)
+        ==> UNIONS s INTER UNIONS t = UNIONS(s INTER t)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[INTER_UNIONS; SIMPLE_IMAGE; UNIONS_IMAGE] THEN
+  GEN_REWRITE_TAC RAND_CONV [EXTENSION] THEN
+  REWRITE_TAC[pairwise; IN_UNIONS; IN_INTER; IN_ELIM_THM; IN_UNION] THEN
+  DISCH_TAC THEN X_GEN_TAC `z:A` THEN REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+  EQ_TAC THENL [REWRITE_TAC[LEFT_IMP_EXISTS_THM]; MESON_TAC[]] THEN
+  MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`u:A->bool`; `v:A->bool`]) THEN
+  ASM_CASES_TAC `u:A->bool = v` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_MESON_TAC[]; ASM SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some additional properties of "set_of_list".                              *)
 (* ------------------------------------------------------------------------- *)

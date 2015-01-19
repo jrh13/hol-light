@@ -1,3 +1,12 @@
+Mon 12th Jan 2015       sets.ml
+
+Added another related theorem to the previous addition:
+
+ INTER_UNIONS_PAIRWISE_DISJOINT =
+  |- !s t.
+         pairwise DISJOINT (s UNION t)
+         ==> UNIONS s INTER UNIONS t = UNIONS (s INTER t)
+
 Fri  9th Jan 2015       sets.ml
 
 Added this fairly obvious theorem:

@@ -5722,19 +5722,6 @@ let CONVEX_HULL_INTERIOR_SUBSET = prove
 (* Extremal points of a simplex are some vertices.                           *)
 (* ------------------------------------------------------------------------- *)
 
-let DIST_INCREASES_ONLINE = prove
- (`!a b d. ~(d = vec 0)
-           ==> dist(a,b + d) > dist(a,b) \/ dist(a,b - d) > dist(a,b)`,
-  REWRITE_TAC[dist; vector_norm; real_gt; GSYM NORM_POS_LT] THEN
-  SIMP_TAC[SQRT_MONO_LT_EQ; DOT_POS_LE; SQRT_LT_0] THEN
-  REWRITE_TAC[DOT_RSUB; DOT_RADD; DOT_LSUB; DOT_LADD] THEN REAL_ARITH_TAC);;
-
-let NORM_INCREASES_ONLINE = prove
- (`!a:real^N d. ~(d = vec 0)
-                ==> norm(a + d) > norm(a) \/ norm(a - d) > norm(a)`,
-  MP_TAC(ISPEC `vec 0 :real^N` DIST_INCREASES_ONLINE) THEN
-  REWRITE_TAC[dist; VECTOR_SUB_LZERO; NORM_NEG]);;
-
 let SIMPLEX_FURTHEST_LT = prove
  (`!a:real^N s.
         FINITE s
@@ -10255,7 +10242,8 @@ let DIAMETER_RELATIVE_FRONTIER = prove
   REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
   ASM_REWRITE_TAC[RELATIVE_FRONTIER_EMPTY] THEN
   REWRITE_TAC[relative_frontier] THEN
-  ASM_SIMP_TAC[GSYM DIAMETER_CLOSURE; GSYM REAL_LE_ANTISYM] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM DIAMETER_CLOSURE] THEN
+  ASM_SIMP_TAC[GSYM REAL_LE_ANTISYM] THEN
   ASM_SIMP_TAC[SUBSET_DIFF; DIAMETER_SUBSET; BOUNDED_CLOSURE] THEN
   ASM_SIMP_TAC[DIAMETER_CLOSURE] THEN
   MP_TAC(ISPEC `s:real^N->bool` DIAMETER_ATTAINED_RELATIVE_FRONTIER) THEN
@@ -10281,11 +10269,12 @@ let DIAMETER_FRONTIER = prove
    `!r. r <= f /\ f <= s /\ r = s ==> f = s`) THEN
   EXISTS_TAC `diameter(closure s DIFF relative_interior s:real^N->bool)` THEN
   REPEAT CONJ_TAC THENL
-   [ASM_SIMP_TAC[GSYM DIAMETER_CLOSURE] THEN MATCH_MP_TAC DIAMETER_SUBSET THEN
+   [MATCH_MP_TAC DIAMETER_SUBSET THEN
     ASM_SIMP_TAC[BOUNDED_FRONTIER] THEN REWRITE_TAC[frontier] THEN
     MP_TAC(ISPEC `s:real^N->bool` INTERIOR_SUBSET_RELATIVE_INTERIOR) THEN
     SET_TAC[];
-    ASM_SIMP_TAC[GSYM DIAMETER_CLOSURE] THEN MATCH_MP_TAC DIAMETER_SUBSET THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM DIAMETER_CLOSURE] THEN
+    MATCH_MP_TAC DIAMETER_SUBSET THEN
     ASM_SIMP_TAC[BOUNDED_CLOSURE; frontier; SUBSET_DIFF];
     ASM_SIMP_TAC[DIAMETER_RELATIVE_FRONTIER; GSYM relative_frontier]]);;
 
