@@ -1,3 +1,24 @@
+Fri 23rd Jan 2015       Library/card.ml
+
+Added
+
+   CARD_MUL_FINITE_EQ =
+     |- !s t. FINITE (s *_c t) <=> s = {} \/ t = {} \/ FINITE s /\ FINITE t
+
+Fri 23rd Jan 2015       sets.ml
+
+Added three more simple theorems:
+
+  CROSS_EMPTY = |- (!s. s CROSS {} = {}) /\ (!t. {} CROSS t = {})
+
+  FINITE_CROSS_EQ =
+    |- !s t. FINITE (s CROSS t) <=> s = {} \/ t = {} \/ FINITE s /\ FINITE t
+
+  PAIRWISE_IMP =
+   |- !P Q s.
+        pairwise P s /\ (!x y. P x y /\ ~(x = y) ==> Q x y)
+        ==> pairwise Q s
+
 Mon 12th Jan 2015       sets.ml
 
 Added another related theorem to the previous addition:

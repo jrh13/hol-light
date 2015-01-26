@@ -4284,6 +4284,69 @@ let NO_EMBEDDING_SPHERE_LOWDIM = prove
                   OPEN_IN_REFL; INT_OF_NUM_LT] THEN
   ASM_REAL_ARITH_TAC);;
 
+let EMPTY_INTERIOR_LOWDIM_GEN = prove
+ (`!s:real^N->bool t:real^M->bool.
+        dimindex(:M) < dimindex(:N) /\ s homeomorphic t ==> interior s = {}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(:real^M)`; `(:real^N)`] ISOMETRY_SUBSET_SUBSPACE) THEN
+  ASM_SIMP_TAC[SUBSPACE_UNIV; DIM_UNIV; LT_IMP_LE; IN_UNIV; SUBSET_UNIV] THEN
+  DISCH_THEN(X_CHOOSE_THEN `h:real^M->real^N` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC(MESON[HOMEOMORPHIC_EMPTY]
+   `!t. interior(t:real^N->bool) homeomorphic interior(s:real^N->bool) /\
+        interior t = {}
+        ==> interior s = {}`) THEN
+  EXISTS_TAC `IMAGE (h:real^M->real^N) t` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC HOMEOMORPHIC_INTERIORS_SAME_DIMENSION THEN REWRITE_TAC[] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_SYM]) THEN
+    MATCH_MP_TAC EQ_IMP THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC HOMEOMORPHIC_INJECTIVE_LINEAR_IMAGE_LEFT_EQ THEN
+    ASM_MESON_TAC[PRESERVES_NORM_INJECTIVE];
+    MATCH_MP_TAC(SET_RULE `!t. s SUBSET t /\ t = {} ==> s = {}`) THEN
+    EXISTS_TAC `interior(IMAGE (h:real^M->real^N) (:real^M))` THEN
+    SIMP_TAC[SUBSET_INTERIOR; SET_RULE `IMAGE f s SUBSET IMAGE f UNIV`] THEN
+    MATCH_MP_TAC EMPTY_INTERIOR_LOWDIM THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        LET_TRANS)) THEN
+    REWRITE_TAC[GSYM DIM_UNIV] THEN
+    MATCH_MP_TAC EQ_IMP_LE THEN MATCH_MP_TAC DIM_INJECTIVE_LINEAR_IMAGE THEN
+    ASM_MESON_TAC[PRESERVES_NORM_INJECTIVE]]);;
+
+let EMPTY_INTERIOR_LOWDIM_GEN_LE = prove
+ (`!s:real^N->bool t:real^M->bool.
+        dimindex(:M) <= dimindex(:N) /\
+        interior t = {} /\
+        s homeomorphic t
+        ==> interior s = {}`,
+  REWRITE_TAC[LE_LT] THEN REPEAT STRIP_TAC THENL
+   [ASM_MESON_TAC[EMPTY_INTERIOR_LOWDIM_GEN];
+    ASM_MESON_TAC[HOMEOMORPHIC_INTERIORS_SAME_DIMENSION;
+                  HOMEOMORPHIC_EMPTY]]);;
+
+let INTERIOR_ARC_IMAGE = prove
+ (`!g:real^1->real^N.
+        2 <= dimindex(:N) /\ arc g ==> interior(path_image g) = {}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`path_image(g:real^1->real^N)`; `interval[vec 0:real^1,vec 1]`]
+   EMPTY_INTERIOR_LOWDIM_GEN) THEN
+  DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[DIMINDEX_1] THEN
+  CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC HOMEOMORPHIC_ARC_IMAGE_INTERVAL THEN
+  ASM_REWRITE_TAC[DROP_VEC; REAL_LT_01]);;
+
+let INTERIOR_SIMPLE_PATH_IMAGE = prove
+ (`!g:real^1->real^N.
+        2 <= dimindex(:N) /\ simple_path g ==> interior(path_image g) = {}`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(DISJ_CASES_TAC o MATCH_MP SIMPLE_PATH_CASES) THEN
+  ASM_SIMP_TAC[INTERIOR_ARC_IMAGE] THEN
+  MP_TAC(ISPECL [`path_image(g:real^1->real^N)`; `sphere(vec 0:real^2,&1)`]
+        EMPTY_INTERIOR_LOWDIM_GEN_LE) THEN
+  ASM_REWRITE_TAC[DIMINDEX_2; INTERIOR_SPHERE] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  MATCH_MP_TAC HOMEOMORPHIC_SIMPLE_PATH_IMAGE_CIRCLE THEN
+  ASM_REWRITE_TAC[REAL_LT_01]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Dimension-based conditions for various homeomorphisms.                    *)
 (* ------------------------------------------------------------------------- *)

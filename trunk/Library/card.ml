@@ -1049,6 +1049,11 @@ let CARD_MUL_FINITE = prove
  (`!s t. FINITE s /\ FINITE t ==> FINITE(s *_c t)`,
   SIMP_TAC[mul_c; FINITE_PRODUCT]);;
 
+let CARD_MUL_FINITE_EQ = prove
+ (`!s:A->bool t:B->bool.
+        FINITE(s *_c t) <=> s = {} \/ t = {} \/ FINITE s /\ FINITE t`,
+  REWRITE_TAC[mul_c; GSYM CROSS; FINITE_CROSS_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Hence the "absorption laws" for arithmetic with an infinite cardinal.     *)
 (* ------------------------------------------------------------------------- *)

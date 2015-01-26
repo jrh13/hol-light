@@ -21,11 +21,6 @@ loadt "Multivariate/paths.ml";;         (* Paths, simple connectedness etc. *)
 loadt "Multivariate/polytope.ml";;      (* Faces, polytopes, polyhedra etc. *)
 loadt "Multivariate/degree.ml";;        (* Brouwer degree, retracts etc.    *)
 loadt "Multivariate/derivatives.ml";;   (* Derivatives                      *)
-
-(* ------------------------------------------------------------------------- *)
-(* Work in progress.                                                         *)
-(* ------------------------------------------------------------------------- *)
-
 loadt "Multivariate/clifford.ml";;      (* Geometric (Clifford) algebra     *)
 loadt "Multivariate/integration.ml";;   (* Integration                      *)
 loadt "Multivariate/measure.ml";;       (* Lebesgue measure                 *)

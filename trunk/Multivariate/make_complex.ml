@@ -20,19 +20,14 @@ loadt "Multivariate/topology.ml";;      (* Basic topological notions        *)
 loadt "Multivariate/convex.ml";;        (* Convex sets and functions        *)
 loadt "Multivariate/paths.ml";;         (* Paths, simple connectedness etc. *)
 loadt "Multivariate/polytope.ml";;      (* Faces, polytopes, polyhedra etc. *)
-loadt "Multivariate/degree.ml";;        (* Brouwer degree, retracts etc.    *)  
+loadt "Multivariate/degree.ml";;        (* Brouwer degree, retracts etc.    *)
 loadt "Multivariate/derivatives.ml";;   (* Derivatives                      *)
-
-(* ------------------------------------------------------------------------- *)
-(* Work in progress.                                                         *)
-(* ------------------------------------------------------------------------- *)
-
 loadt "Multivariate/clifford.ml";;      (* Geometric (Clifford) algebra     *)
 loadt "Multivariate/integration.ml";;   (* Integration                      *)
 loadt "Multivariate/measure.ml";;       (* Lebesgue measure                 *)
 
 (* ------------------------------------------------------------------------- *)
-(* Complex numbers (as R^2) and complex analysis.                            *)
+(* Complex numbers (as R^2), complex analysis and some more topology.        *)
 (* ------------------------------------------------------------------------- *)
 
 loadt "Multivariate/complexes.ml";;       (* Complex numbers                *)
