@@ -3279,6 +3279,90 @@ let HOMOTOPIC_RESTRICTED_LINEAR_MAPS = prove
      `x = &1 /\ y = &1 ==> a * x = b * y ==> a = b`) THEN
     ASM_SIMP_TAC[REAL_SGN_EQ; DET_POSITIVE_DEFINITE; real_gt]]);;
 
+let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT = prove
+ (`!f g. homotopic_with (\h. linear h /\ invertible(matrix h))
+                        ((:real^N),(:real^N)) f g <=>
+         linear f /\ linear g /\
+         &0 < real_sgn(det(matrix f)) * real_sgn(det(matrix g))`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `linear f /\ linear g /\
+                 invertible(matrix(f:real^N->real^N)) /\
+                 invertible(matrix(g:real^N->real^N))`
+  THENL
+   [POP_ASSUM MP_TAC THEN REWRITE_TAC[INVERTIBLE_DET_NZ] THEN STRIP_TAC;
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (TAUT
+     `~p ==> (q ==> p) /\ (r ==> p) ==> (q <=> r)`)) THEN
+    CONJ_TAC THENL
+     [DISCH_THEN(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_PROPERTY) THEN
+      SIMP_TAC[];
+      ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+      REWRITE_TAC[INVERTIBLE_DET_NZ; DE_MORGAN_THM] THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[REAL_SGN_0] THEN
+      REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_RZERO; REAL_LT_REFL]]] THEN
+  ASM_REWRITE_TAC[] THEN TRANS_TAC EQ_TRANS
+   `homotopic_with (\h. linear h /\
+                        real_sgn(det(matrix h)) = real_sgn(det(matrix f)))
+         ((:real^N),(:real^N)) f g` THEN
+  CONJ_TAC THENL
+   [ALL_TAC;
+    ASM_REWRITE_TAC[HOMOTOPIC_RESTRICTED_LINEAR_MAPS] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o check (is_neg o concl))) THEN
+    ONCE_REWRITE_TAC[GSYM(CONJUNCT1 REAL_SGN_EQ)] THEN
+    MP_TAC(ISPEC `det(matrix(f:real^N->real^N))` REAL_SGN_CASES) THEN
+    MP_TAC(ISPEC `det(matrix(g:real^N->real^N))` REAL_SGN_CASES) THEN
+    STRIP_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV] THEN
+  REWRITE_TAC[homotopic_with] THEN
+  GEN_REWRITE_TAC
+    (LAND_CONV o ONCE_DEPTH_CONV) [GSYM(CONJUNCT1 REAL_SGN_EQ)] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[] THEN
+  ASM_REWRITE_TAC[REAL_SGN_EQ] THEN
+  X_GEN_TAC `h:real^(1,N)finite_sum->real^N` THEN STRIP_TAC THEN
+  X_GEN_TAC `t:real^1` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `(\t. lift(det(matrix((h:real^(1,N)finite_sum->real^N) o pastecart t))))
+    continuous_on interval[vec 0,vec 1]`
+  MP_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_ON_LIFT_DET THEN
+    SIMP_TAC[matrix; LAMBDA_BETA; o_THM] THEN
+    MAP_EVERY X_GEN_TAC [`i:num`; `j:num`] THEN STRIP_TAC THEN
+    MATCH_MP_TAC CONTINUOUS_ON_LIFT_COMPONENT_COMPOSE THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    SIMP_TAC[CONTINUOUS_ON_PASTECART; CONTINUOUS_ON_CONST;
+             CONTINUOUS_ON_ID] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_ON_SUBSET)) THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; PASTECART_IN_PCROSS; IN_UNIV];
+    ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONNECTED_CONTINUOUS_IMAGE)) THEN
+  REWRITE_TAC[CONNECTED_INTERVAL] THEN
+  REWRITE_TAC[GSYM CONVEX_CONNECTED_1; CONVEX_CONTAINS_SEGMENT] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; o_DEF] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN
+  DISCH_THEN(MP_TAC o SPEC `vec 0:real^1`) THEN
+  REWRITE_TAC[ENDS_IN_UNIT_INTERVAL] THEN
+  DISCH_THEN(MP_TAC o SPEC `t:real^1`) THEN ASM_REWRITE_TAC[ETA_AX] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> ~(f x = vec 0)) /\ (~P ==> vec 0 IN t)
+    ==> t SUBSET IMAGE f s ==> P`) THEN
+  ASM_SIMP_TAC[GSYM DROP_EQ; LIFT_DROP; DROP_VEC] THEN
+  SPEC_TAC(`det(matrix(\x. (h:real^(1,N)finite_sum->real^N) (pastecart t x)))`,
+           `a:real`) THEN
+  SPEC_TAC(`det(matrix(f:real^N->real^N))`,`b:real`) THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[SEGMENT_1; LIFT_DROP] THEN
+  ONCE_REWRITE_TAC[COND_RAND] THEN
+  REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; DROP_VEC] THEN
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS = prove
+ (`!f g. homotopic_with (\h. linear h /\ invertible(matrix h))
+                        ((:real^N),(:real^N)) f g <=>
+         linear f /\ linear g /\ &0 < det(matrix f) * det(matrix g)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT] THEN
+  REWRITE_TAC[GSYM REAL_SGN_MUL; REAL_SGN_INEQS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* "If and only if" variants of unrestricted homotopy characterization       *)
 (* ------------------------------------------------------------------------- *)

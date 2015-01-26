@@ -19444,10 +19444,11 @@ let SIMPLY_CONNECTED_INTER = prove
 (* ------------------------------------------------------------------------- *)
 
 let FINITE_ORDER_FUNDAMENTAL_GROUP_IMP_BORSUKIAN = prove
- (`!s:real^N->bool.
-        path_connected s /\ locally path_connected s /\
-        (!p. path p /\ path_image p SUBSET s /\ pathfinish p = pathstart p
-             ==> ?n a. homotopic_paths s (ITER n ((++) p) p) (linepath(a,a)))
+ (`!s a:real^N.
+        path_connected s /\ locally path_connected s /\ a IN s /\
+        (!p. path p /\ path_image p SUBSET s /\
+             pathstart p = a /\ pathfinish p = a
+             ==> ?n. homotopic_paths s (ITER n ((++) p) p) (linepath(a,a)))
          ==> borsukian s`,
   let lemma = prove
    (`!n f p q. f o ITER n ((++) p) q = ITER n ((++) (f o p)) (f o q)`,
@@ -19470,12 +19471,8 @@ let FINITE_ORDER_FUNDAMENTAL_GROUP_IMP_BORSUKIAN = prove
   REPEAT STRIP_TAC THEN
   ASM_REWRITE_TAC[BORSUKIAN_CONTINUOUS_LOGARITHM] THEN
   X_GEN_TAC `f:real^N->complex` THEN STRIP_TAC THEN
-  ASM_CASES_TAC `s:real^N->bool = {}` THEN
-  ASM_REWRITE_TAC[NOT_IN_EMPTY; CONTINUOUS_ON_EMPTY] THEN
-  FIRST_ASSUM(X_CHOOSE_TAC `b:real^N` o
-    GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
   MP_TAC(ISPECL
-   [`f:real^N->complex`; `s:real^N->bool`; `clog(f(b:real^N))`; `b:real^N`]
+   [`f:real^N->complex`; `s:real^N->bool`; `clog(f(a:real^N))`; `a:real^N`]
    (MATCH_MP(ONCE_REWRITE_RULE[IMP_CONJ] COVERING_SPACE_LIFT_STRONGER)
      COVERING_SPACE_CEXP_PUNCTURED_PLANE)) THEN
   ASM_REWRITE_TAC[SUBSET_UNIV; IN_UNIV] THEN
@@ -19483,9 +19480,10 @@ let FINITE_ORDER_FUNDAMENTAL_GROUP_IMP_BORSUKIAN = prove
    [CONV_TAC SYM_CONV THEN MATCH_MP_TAC CEXP_CLOG THEN ASM SET_TAC[];
     ALL_TAC] THEN
   X_GEN_TAC `p:real^1->real^N` THEN STRIP_TAC THEN
+  EXISTS_TAC `(f:real^N->complex) a` THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `p:real^1->real^N`) THEN
   ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`n:num`; `a:real^N`] THEN STRIP_TAC THEN
+  X_GEN_TAC `n:num` THEN STRIP_TAC THEN
   SUBGOAL_THEN `path((f:real^N->complex) o p)` ASSUME_TAC THENL
    [MATCH_MP_TAC PATH_CONTINUOUS_IMAGE THEN
     ASM_MESON_TAC[CONTINUOUS_ON_SUBSET];
@@ -19514,23 +19512,22 @@ let FINITE_ORDER_FUNDAMENTAL_GROUP_IMP_BORSUKIAN = prove
     REWRITE_TAC[PATH_IMAGE_LINEPATH; SEGMENT_REFL] THEN ASM SET_TAC[];
     DISCH_THEN SUBST1_TAC] THEN
   REWRITE_TAC[COMPLEX_ENTIRE; CX_INJ; REAL_ARITH `~(&n + &1 = &0)`] THEN
-  DISCH_TAC THEN REWRITE_TAC[LINEPATH_REFL] THEN
-  W(MP_TAC o PART_MATCH (rand o rand)
-        WINDING_NUMBER_HOMOTOPIC_PATHS_NULL_EQ o snd) THEN
-  ASM_REWRITE_TAC[]);;
+  W(MP_TAC o PART_MATCH (lhand o rand)
+        WINDING_NUMBER_HOMOTOPIC_PATHS_NULL_EQ o lhand o snd) THEN
+  ASM_REWRITE_TAC[LINEPATH_REFL] THEN DISCH_THEN SUBST1_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `b:complex` (fun th ->
+    MP_TAC th THEN MP_TAC(MATCH_MP HOMOTOPIC_PATHS_IMP_PATHFINISH th))) THEN
+  ASM_SIMP_TAC[PATHFINISH_COMPOSE] THEN REWRITE_TAC[pathfinish]);;
 
 let FINITE_FUNDAMENTAL_GROUP_IMP_BORSUKIAN = prove
- (`!s:real^N->bool.
+ (`!s:real^N->bool a.
         path_connected s /\ locally path_connected s /\
-        FINITE { homotopic_paths s p | p |
-                 path p /\ path_image p SUBSET s /\ pathfinish p = pathstart p}
+        a IN s /\ FINITE (fundamental_group(s,a))
          ==> borsukian s`,
-  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[fundamental_group] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC FINITE_ORDER_FUNDAMENTAL_GROUP_IMP_BORSUKIAN THEN
-  ASM_REWRITE_TAC[] THEN X_GEN_TAC `p:real^1->real^N` THEN
-  STRIP_TAC THEN ABBREV_TAC `a:real^N =  pathstart p` THEN
-  SUBGOAL_THEN `(a:real^N) IN s` ASSUME_TAC THENL
-   [ASM_MESON_TAC[SUBSET; PATHSTART_IN_PATH_IMAGE]; ALL_TAC] THEN
+  EXISTS_TAC `a:real^N` THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `p:real^1->real^N` THEN STRIP_TAC THEN
   SUBGOAL_THEN
    `(!n. path(ITER n ((++) p) (linepath(a:real^N,a)))) /\
     (!n. path_image(ITER n ((++) p) (linepath(a:real^N,a))) SUBSET s) /\
@@ -19564,7 +19561,7 @@ let FINITE_FUNDAMENTAL_GROUP_IMP_BORSUKIAN = prove
     ONCE_REWRITE_TAC[MESON[] `(!a b c. P a b c) <=> (!a c b. P a b c)`] THEN
     REWRITE_TAC[FORALL_UNWIND_THM2; GSYM ITER_ADD] THEN
     MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN
-    STRIP_TAC THEN MAP_EVERY EXISTS_TAC [`n:num`; `a:real^N`] THEN
+    STRIP_TAC THEN EXISTS_TAC `n:num` THEN
     TRANS_TAC HOMOTOPIC_PATHS_TRANS
       `ITER (SUC n) ((++) p) (linepath(a:real^N,a))` THEN
     CONJ_TAC THENL

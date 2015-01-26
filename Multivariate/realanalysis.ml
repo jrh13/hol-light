@@ -590,6 +590,16 @@ let REALLIM_NULL_COMPARISON = prove
   MATCH_MP_TAC LIM_NULL_COMPARISON THEN
   EXISTS_TAC `g:A->real` THEN ASM_REWRITE_TAC[NORM_LIFT]);;
 
+let CONVERGENT_REAL_BOUNDED_MONOTONE = prove
+ (`!s. real_bounded(IMAGE s (:num)) /\
+       ((!n. s n <= s(SUC n)) \/ (!n. s(SUC n) <= s n))
+       ==> ?l. (s ---> l) sequentially`,
+  GEN_TAC THEN REWRITE_TAC[REAL_BOUNDED; GSYM IMAGE_o] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+    CONVERGENT_BOUNDED_MONOTONE_1)) THEN
+  ASM_REWRITE_TAC[o_THM; LIFT_DROP; TENDSTO_REAL; EXISTS_LIFT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Real series.                                                              *)
 (* ------------------------------------------------------------------------- *)

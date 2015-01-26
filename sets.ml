@@ -2181,9 +2181,28 @@ let CROSS_EQ_EMPTY = prove
   REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_CROSS; NOT_IN_EMPTY] THEN
   MESON_TAC[]);;
 
+let CROSS_EMPTY = prove
+ (`(!s:A->bool. s CROSS {} = {}) /\ (!t:B->bool. {} CROSS t = {})`,
+  REWRITE_TAC[CROSS_EQ_EMPTY]);;
+
 let CROSS_UNIV = prove
  (`(:A) CROSS (:B) = (:A#B)`,
   REWRITE_TAC[CROSS; EXTENSION; IN_ELIM_PAIR_THM; FORALL_PAIR_THM; IN_UNIV]);;
+
+let FINITE_CROSS_EQ = prove
+ (`!s:A->bool t:B->bool.
+        FINITE(s CROSS t) <=> s = {} \/ t = {} \/ FINITE s /\ FINITE t`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:A->bool = {}` THEN
+  ASM_REWRITE_TAC[CROSS_EMPTY; FINITE_EMPTY] THEN
+  ASM_CASES_TAC `t:B->bool = {}` THEN
+  ASM_REWRITE_TAC[CROSS_EMPTY; FINITE_EMPTY] THEN
+  EQ_TAC THEN REWRITE_TAC[FINITE_CROSS] THEN REPEAT STRIP_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP(ISPEC `FST:A#B->A` FINITE_IMAGE));
+    FIRST_ASSUM(MP_TAC o MATCH_MP(ISPEC `SND:A#B->B` FINITE_IMAGE))] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+  REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
+  ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
@@ -2646,6 +2665,11 @@ let PAIRWISE_EMPTY = prove
 let PAIRWISE_SING = prove
  (`!r x. pairwise r {x} <=> T`,
   REWRITE_TAC[pairwise; IN_SING] THEN MESON_TAC[]);;
+
+let PAIRWISE_IMP = prove
+ (`!P Q s:A->bool.
+        pairwise P s /\ (!x y. P x y /\ ~(x = y) ==> Q x y) ==> pairwise Q s`,
+  REWRITE_TAC[pairwise] THEN SET_TAC[]);;
 
 let PAIRWISE_MONO = prove
  (`!r s t. pairwise r s /\ t SUBSET s ==> pairwise r t`,
