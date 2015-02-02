@@ -19351,6 +19351,8 @@ let ARC_LENGTH_REPARAMETRIZATION = prove
                 pathstart h = pathstart g /\
                 pathfinish h = pathfinish g /\
                 path_length h = path_length g /\
+                (arc g ==> arc h) /\
+                (simple_path g ==> simple_path h) /\
                 (!t. t IN interval[vec 0,vec 1]
                      ==> path_length(subpath (vec 0) t h) =
                          path_length g * drop t) /\
@@ -19399,7 +19401,8 @@ let ARC_LENGTH_REPARAMETRIZATION = prove
     DISCH_THEN MATCH_MP_TAC THEN
     SIMP_TAC[CONTINUOUS_ON_CMUL; CONTINUOUS_ON_ID];
     DISCH_TAC] THEN
-  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
    [REWRITE_TAC[pathstart; pathfinish; o_DEF; VECTOR_MUL_RZERO] THEN
     CONJ_TAC THEN FIRST_X_ASSUM(fun th ->
      W(MP_TAC o PART_MATCH (rand o rand) th o rand o snd)) THEN
@@ -19409,10 +19412,49 @@ let ARC_LENGTH_REPARAMETRIZATION = prove
     REWRITE_TAC[GSYM DROP_EQ; DROP_VEC; LIFT_DROP] THEN
     MATCH_MP_TAC VECTOR_VARIATION_ON_NULL THEN
     REWRITE_TAC[BOUNDED_INTERVAL; CONTENT_EQ_0_1; REAL_LE_REFL];
-    ALL_TAC] THEN
-  MATCH_MP_TAC(TAUT `(q ==> p) /\ r /\ q ==> p /\ q /\ r`) THEN
+    STRIP_TAC] THEN
+  MATCH_MP_TAC(TAUT
+    `(s ==> a) /\ s /\ (q ==> p) /\ r /\ q ==> p /\ a /\ s /\ q /\ r`) THEN
   REPEAT CONJ_TAC THENL
-   [DISCH_THEN(MP_TAC o SPEC `vec 1:real^1`) THEN
+   [ASM_SIMP_TAC[ARC_SIMPLE_PATH];
+    REWRITE_TAC[simple_path] THEN STRIP_TAC THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[rectifiable_path]; ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [`x:real^1`; `y:real^1`] THEN
+    REWRITE_TAC[o_THM] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `~(l = &0)` ASSUME_TAC THENL
+     [EXPAND_TAC "l" THEN ASM_SIMP_TAC[PATH_LENGTH_EQ_0] THEN
+      DISCH_THEN(CHOOSE_THEN (fun th ->
+        FIRST_X_ASSUM(MP_TAC o SPECL [`lift(&0)`; `lift(&1 / &2)`]) THEN
+        MP_TAC(SPEC `lift(&0)` th) THEN
+        MP_TAC(SPEC `lift(&1 / &2)` th))) THEN
+      REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; DROP_VEC] THEN
+      SIMP_TAC[GSYM LIFT_NUM; LIFT_EQ] THEN
+      CONV_TAC REAL_RAT_REDUCE_CONV THEN SIMP_TAC[];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `(l % x) IN interval[vec 0:real^1,lift l] /\
+      (l % y) IN interval[vec 0:real^1,lift l]`
+    MP_TAC THENL
+     [REWRITE_TAC[IN_INTERVAL_1; DROP_CMUL; LIFT_DROP; DROP_VEC] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL_1; DROP_VEC]);
+      FIRST_ASSUM(fun th ->
+       GEN_REWRITE_TAC (LAND_CONV o BINOP_CONV o RAND_CONV) [SYM th]) THEN
+      REWRITE_TAC[IN_IMAGE; IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN
+      X_GEN_TAC `x':real^1` THEN REPEAT DISCH_TAC THEN
+      X_GEN_TAC `y':real^1` THEN REPEAT DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL [`x':real^1`; `y':real^1`]) THEN
+      ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+      MATCH_MP_TAC MONO_OR THEN CONJ_TAC THENL
+       [DISCH_THEN SUBST_ALL_TAC THEN
+        MATCH_MP_TAC VECTOR_MUL_LCANCEL_IMP THEN EXISTS_TAC `l:real` THEN
+        ASM_REWRITE_TAC[];
+        MATCH_MP_TAC MONO_OR THEN REPEAT STRIP_TAC THEN
+        MATCH_MP_TAC VECTOR_MUL_LCANCEL_IMP THEN EXISTS_TAC `l:real` THEN
+        ASM_REWRITE_TAC[VECTOR_MUL_RZERO; GSYM path_length; LIFT_EQ_CMUL] THEN
+        REWRITE_TAC[VECTOR_MUL_EQ_0] THEN DISJ1_TAC THEN
+        MATCH_MP_TAC VECTOR_VARIATION_ON_NULL THEN
+        REWRITE_TAC[BOUNDED_INTERVAL; CONTENT_EQ_0_1; REAL_LE_REFL]]];
+    DISCH_THEN(MP_TAC o SPEC `vec 1:real^1`) THEN
     REWRITE_TAC[ENDS_IN_UNIT_INTERVAL; SUBPATH_TRIVIAL] THEN
     REWRITE_TAC[DROP_VEC; REAL_MUL_RID];
     MAP_EVERY X_GEN_TAC [`x:real^1`; `y:real^1`] THEN

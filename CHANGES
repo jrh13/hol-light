@@ -1,3 +1,13 @@
+Fri 30th Jan 2015       sets.ml
+
+Added the following, which is convenient to avoid manual reshuffling
+around FORALL_IN_IMAGE:
+
+ FORALL_IN_IMAGE_2 =
+  |- !f P s.
+         (!x y. x IN IMAGE f s /\ y IN IMAGE f s ==> P x y) <=>
+         (!x y. x IN s /\ y IN s ==> P (f x) (f y))
+
 Fri 23rd Jan 2015       Library/card.ml
 
 Added

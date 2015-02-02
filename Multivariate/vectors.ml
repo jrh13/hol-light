@@ -855,14 +855,14 @@ let L1_LE_NORM = prove
   SIMP_TAC[SUM_POS_LE_NUMSEG; REAL_LE_POW_2]);;
 
 let DIST_INCREASES_ONLINE = prove
- (`!a b d. ~(d = vec 0)    
+ (`!a b d. ~(d = vec 0)
            ==> dist(a,b + d) > dist(a,b) \/ dist(a,b - d) > dist(a,b)`,
   REWRITE_TAC[dist; vector_norm; real_gt; GSYM NORM_POS_LT] THEN
-  SIMP_TAC[SQRT_MONO_LT_EQ; DOT_POS_LE; SQRT_LT_0] THEN                
+  SIMP_TAC[SQRT_MONO_LT_EQ; DOT_POS_LE; SQRT_LT_0] THEN
   REWRITE_TAC[DOT_RSUB; DOT_RADD; DOT_LSUB; DOT_LADD] THEN REAL_ARITH_TAC);;
-                                                                 
-let NORM_INCREASES_ONLINE = prove                                    
- (`!a:real^N d. ~(d = vec 0)                    
+
+let NORM_INCREASES_ONLINE = prove
+ (`!a:real^N d. ~(d = vec 0)
                 ==> norm(a + d) > norm(a) \/ norm(a - d) > norm(a)`,
   MP_TAC(ISPEC `vec 0 :real^N` DIST_INCREASES_ONLINE) THEN
   REWRITE_TAC[dist; VECTOR_SUB_LZERO; NORM_NEG]);;
@@ -2695,6 +2695,58 @@ let ORTHOGONAL_PROJECTION_EQ_SELF_ADJOINT_IDEMPOTENT = prove
    REWRITE_TAC[FUN_EQ_THM; o_THM] THEN STRIP_TAC THEN
    FIRST_ASSUM(MP_TAC o GSYM o MATCH_MP ADJOINT_WORKS) THEN
    ASM_SIMP_TAC[orthogonal; LINEAR_SUB; VECTOR_SUB_REFL; DOT_LZERO]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some basics about Lipschitz functions.                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let LIPSCHITZ_ON_POS = prove
+ (`!f:real^M->real^N s.
+        (?B. !x y. x IN s /\ y IN s
+                   ==> norm(f x - f y) <= B * norm(x - y)) <=>
+        (?B. &0 < B /\
+             !x y. x IN s /\ y IN s
+                   ==> norm(f x - f y) <= B * norm(x - y))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:real`
+    (fun th -> EXISTS_TAC `abs B + &1` THEN MP_TAC th)) THEN
+  REWRITE_TAC[REAL_ARITH `&0 < abs B + &1`] THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+  REAL_ARITH_TAC);;
+
+let LIPSCHITZ_POS = prove
+ (`!f:real^M->real^N.
+        (?B. !x y. norm(f x - f y) <= B * norm(x - y)) <=>
+        (?B. &0 < B /\ !x y. norm(f x - f y) <= B * norm(x - y))`,
+  GEN_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `(:real^M)`] LIPSCHITZ_ON_POS) THEN
+  REWRITE_TAC[IN_UNIV]);;
+
+let LIPSCHITZ_ON_COMPOSE = prove
+ (`!f:real^M->real^N g:real^N->real^P s t.
+        (?B. !x y. x IN s /\ y IN s ==> norm(f x - f y) <= B * norm(x - y)) /\
+        (?B. !x y. x IN t /\ y IN t ==> norm(g x - g y) <= B * norm(x - y)) /\
+        IMAGE f s SUBSET t
+        ==> ?B. !x y. x IN s /\ y IN s
+                      ==> norm(g(f x) - g(f y)) <= B * norm(x - y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONJ_ASSOC; SUBSET; FORALL_IN_IMAGE] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  ONCE_REWRITE_TAC[LIPSCHITZ_ON_POS] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (X_CHOOSE_TAC `B:real`)
+                             (X_CHOOSE_TAC `C:real`)) THEN
+  EXISTS_TAC `B * C:real` THEN ASM_SIMP_TAC[REAL_LT_MUL] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
+  TRANS_TAC REAL_LE_TRANS `C * norm((f:real^M->real^N) x - f y)` THEN
+  ASM_SIMP_TAC[REAL_ARITH `(B * C) * d:real = C * B * d`] THEN
+  ASM_SIMP_TAC[REAL_LE_LMUL_EQ]);;
+
+let LINEAR_IMP_LIPSCHITZ = prove
+ (`!f:real^M->real^N x y.
+        linear f ==> ?B. !x y. norm(f x - f y) <= B * norm(x - y)`,
+  SIMP_TAC[GSYM LINEAR_SUB] THEN MESON_TAC[LINEAR_BOUNDED]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Matrix notation. NB: an MxN matrix is of type real^N^M, not real^M^N.     *)

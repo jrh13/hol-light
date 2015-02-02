@@ -9310,6 +9310,35 @@ let BOUNDED_UNIFORMLY_CONTINUOUS_IMAGE = prove
                   COMPACT_IMP_BOUNDED; COMPACT_CONTINUOUS_IMAGE];
     MP_TAC(ISPEC `s:real^M->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]]);;
 
+let LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_ON = prove
+ (`!f:real^M->real^N s.
+        (?B. !x y. x IN s /\ y IN s ==> norm(f x - f y) <= B * norm(x - y))
+        ==> f uniformly_continuous_on s`,
+  ONCE_REWRITE_TAC[LIPSCHITZ_ON_POS] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[uniformly_continuous_on; dist] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `e / B:real` THEN ASM_SIMP_TAC[REAL_LT_DIV] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`y:real^M`; `x:real^M`]) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LET_TRANS) THEN
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_SIMP_TAC[GSYM REAL_LT_RDIV_EQ]);;
+
+let BOUNDED_LIPSCHITZ_IMAGE = prove
+ (`!f:real^M->real^N s.
+        (?B. !x y. x IN s /\ y IN s ==> norm(f x - f y) <= B * norm(x - y)) /\
+        bounded s
+        ==> bounded (IMAGE f s)`,
+  MESON_TAC[BOUNDED_UNIFORMLY_CONTINUOUS_IMAGE;
+            LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_ON]);;
+
+let LIPSCHITZ_IMP_CONTINUOUS_ON = prove
+ (`!f:real^M->real^N s.
+        (?B. !x y. x IN s /\ y IN s ==> norm(f x - f y) <= B * norm(x - y))
+        ==> f continuous_on s`,
+  SIMP_TAC[LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_ON;
+           UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Occasionally useful invariance properties.                                *)
 (* ------------------------------------------------------------------------- *)
@@ -15974,6 +16003,11 @@ let CLOSED_SPAN = prove
  (`!s. closed(span s)`,
   SIMP_TAC[CLOSED_SUBSPACE; SUBSPACE_SPAN]);;
 
+let CLOSURE_SUBSET_SPAN = prove
+ (`!s:real^N->bool. closure s SUBSET span s`,
+  GEN_TAC THEN MATCH_MP_TAC CLOSURE_MINIMAL THEN
+  REWRITE_TAC[CLOSED_SPAN; SPAN_INC]);;
+
 let DIM_CLOSURE = prove
  (`!s:real^N->bool. dim(closure s) = dim s`,
   GEN_TAC THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN CONJ_TAC THENL
@@ -20126,6 +20160,58 @@ let CLOSEST_POINT_IN_FRONTIER = prove
         ==> (closest_point s x) IN frontier s`,
   SIMP_TAC[frontier; IN_DIFF; CLOSEST_POINT_IN_INTERIOR] THEN
   SIMP_TAC[CLOSEST_POINT_IN_SET; CLOSURE_CLOSED]);;
+
+let CLOSEST_POINT_FRONTIER = prove
+ (`!s x:real^N.
+        ~(x IN interior s)
+        ==> closest_point (frontier s) x = closest_point (closure s) x`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[FRONTIER_EMPTY; CLOSURE_EMPTY] THEN
+  ASM_CASES_TAC `s = (:real^N)` THEN
+  ASM_REWRITE_TAC[INTERIOR_UNIV; IN_UNIV] THEN DISCH_TAC THEN
+  REWRITE_TAC[closest_point] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `y:real^N` THEN
+  REWRITE_TAC[] THEN EQ_TAC THEN STRIP_TAC THENL
+   [CONJ_TAC THENL [ASM_MESON_TAC[frontier; IN_DIFF]; ALL_TAC] THEN
+    X_GEN_TAC `z:real^N` THEN ASM_CASES_TAC `(z:real^N) IN interior s` THENL
+     [DISCH_THEN(K ALL_TAC); ASM_MESON_TAC[frontier; IN_DIFF]] THEN
+    ONCE_REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`segment[x:real^N,z]`; `interior s:real^N->bool`]
+        CONNECTED_INTER_FRONTIER) THEN
+    PURE_REWRITE_TAC[CONNECTED_SEGMENT; GSYM MEMBER_NOT_EMPTY; NOT_IMP] THEN
+    REWRITE_TAC[IN_INTER; IN_DIFF; NOT_IMP] THEN REPEAT CONJ_TAC THENL
+     [EXISTS_TAC `z:real^N` THEN ASM_REWRITE_TAC[ENDS_IN_SEGMENT];
+      EXISTS_TAC `x:real^N` THEN ASM_REWRITE_TAC[ENDS_IN_SEGMENT];
+      DISCH_THEN(X_CHOOSE_THEN `w:real^N` STRIP_ASSUME_TAC) THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `w:real^N`) THEN
+      REWRITE_TAC[NOT_IMP] THEN
+      FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP (REWRITE_RULE[SUBSET]
+        FRONTIER_INTERIOR_SUBSET)) THEN
+      CONJ_TAC THENL [ASM_MESON_TAC[SUBSET; frontier; IN_DIFF]; ALL_TAC] THEN
+      REWRITE_TAC[REAL_NOT_LE] THEN
+      TRANS_TAC REAL_LET_TRANS `dist(x:real^N,z)` THEN
+      ASM_MESON_TAC[DIST_IN_CLOSED_SEGMENT; DIST_SYM]];
+    CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[frontier; IN_DIFF]] THEN
+    ASM_REWRITE_TAC[frontier; IN_DIFF] THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`segment[x:real^N,y]`; `interior s:real^N->bool`]
+        CONNECTED_INTER_FRONTIER) THEN
+    PURE_REWRITE_TAC[CONNECTED_SEGMENT; GSYM MEMBER_NOT_EMPTY; NOT_IMP] THEN
+    REWRITE_TAC[IN_INTER; IN_DIFF; NOT_IMP] THEN REPEAT CONJ_TAC THENL
+     [EXISTS_TAC `y:real^N` THEN ASM_REWRITE_TAC[ENDS_IN_SEGMENT];
+      EXISTS_TAC `x:real^N` THEN ASM_REWRITE_TAC[ENDS_IN_SEGMENT];
+      DISCH_THEN(X_CHOOSE_THEN `z:real^N` STRIP_ASSUME_TAC) THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `z:real^N`) THEN
+      REWRITE_TAC[NOT_IMP] THEN
+      FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP (REWRITE_RULE[SUBSET]
+        FRONTIER_INTERIOR_SUBSET)) THEN
+      CONJ_TAC THENL [ASM_MESON_TAC[SUBSET; frontier; IN_DIFF]; ALL_TAC] THEN
+      ASM_CASES_TAC `z:real^N = x` THEN
+      ASM_REWRITE_TAC[REAL_NOT_LE; DIST_REFL; GSYM DIST_NZ] THENL
+       [ASM_MESON_TAC[]; ALL_TAC] THEN
+      SUBGOAL_THEN `z IN segment(x:real^N,y)` MP_TAC THENL
+       [ALL_TAC; ASM_MESON_TAC[DIST_IN_OPEN_SEGMENT; DIST_SYM]] THEN
+      ASM_REWRITE_TAC[open_segment; IN_DIFF; IN_INSERT; NOT_IN_EMPTY] THEN
+      ASM_MESON_TAC[frontier; IN_DIFF]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More general infimum of distance between two sets.                        *)
