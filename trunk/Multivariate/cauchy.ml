@@ -7274,6 +7274,10 @@ let CIRCLEPATH = prove
   REWRITE_TAC[COMPLEX_MUL_RZERO; COMPLEX_ADD_LID] THEN
   REWRITE_TAC[CX_MUL; COMPLEX_MUL_AC]);;
 
+let PATH_CIRCLEPATH = prove
+ (`!z r. path(circlepath(z,r))`,
+  REWRITE_TAC[circlepath; PATH_PARTCIRCLEPATH]);;
+
 let PATHSTART_CIRCLEPATH = prove
  (`!r z. pathstart(circlepath(z,r)) = z + Cx(r)`,
   REWRITE_TAC[circlepath; PATHSTART_PARTCIRCLEPATH] THEN
@@ -7419,6 +7423,91 @@ let WINDING_NUMBER_CIRCLEPATH = prove
     REWRITE_TAC[circlepath] THEN
     MATCH_MP_TAC WINDING_NUMBER_PARTCIRCLEPATH_POS_LT THEN
     ASM_SIMP_TAC[REAL_LT_MUL; PI_POS; REAL_OF_NUM_LT; ARITH]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* We can also deduce this; it's pushed to this late point in the build      *)
+(* just for the convenience of using "circlepath".                           *)
+(* ------------------------------------------------------------------------- *)
+
+let RECTIFIABLE_LOOP_RELATIVE_FRONTIER_CONVEX = prove
+ (`!s:real^N->bool.
+        bounded s /\ convex s /\ aff_dim s = &2
+        ==> ?g. simple_path g /\
+                rectifiable_path g /\
+                pathfinish g = pathstart g /\
+                path_image g = relative_frontier s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`cball(Cx(&0),&1)`; `s:real^N->bool`]
+        BILIPSCHITZ_HOMEOMORPHISM_RELATIVE_FRONTIERS) THEN
+  ASM_REWRITE_TAC[CONVEX_CBALL; BOUNDED_CBALL; AFF_DIM_CBALL] THEN
+  REWRITE_TAC[RELATIVE_FRONTIER_CBALL; DIMINDEX_2; homeomorphism] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:complex->real^N`; `g:real^N->complex`] THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  EXISTS_TAC `(f:complex->real^N) o circlepath(Cx(&0),&1)` THEN
+  ASM_SIMP_TAC[PATH_IMAGE_COMPOSE; PATH_IMAGE_CIRCLEPATH; REAL_POS] THEN
+  REWRITE_TAC[PATHSTART_COMPOSE; PATHFINISH_COMPOSE;
+              PATHSTART_CIRCLEPATH; PATHFINISH_CIRCLEPATH] THEN
+  REWRITE_TAC[simple_path; rectifiable_path; o_THM] THEN
+  ASM_SIMP_TAC[PATH_CONTINUOUS_IMAGE; PATH_IMAGE_CIRCLEPATH; REAL_POS;
+               PATH_CIRCLEPATH] THEN
+  CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MP_TAC(SPECL [`Cx(&0)`; `&1`] SIMPLE_PATH_CIRCLEPATH) THEN
+    MP_TAC(SPECL [`Cx(&0)`; `&1`] PATH_IMAGE_CIRCLEPATH) THEN
+    REWRITE_TAC[simple_path] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    REWRITE_TAC[path_image; EXTENSION; IN_IMAGE] THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[];
+    MATCH_MP_TAC HAS_BOUNDED_VARIATION_LIPSCHITZ_COMPOSE THEN
+    SIMP_TAC[GSYM path_image; PATH_IMAGE_CIRCLEPATH; REAL_POS] THEN
+    ASM_REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN
+    MP_TAC(SPECL [`Cx(&0)`; `&1`] RECTIFIABLE_PATH_CIRCLEPATH) THEN
+    SIMP_TAC[rectifiable_path]]);;
+
+let RECTIFIABLE_LOOP_FRONTIER_CONVEX = prove
+ (`!s:real^2->bool.
+        bounded s /\ convex s /\ ~(interior s = {})
+        ==> ?g. simple_path g /\
+                rectifiable_path g /\
+                pathfinish g = pathstart g /\
+                path_image g = frontier s`,
+  SIMP_TAC[GSYM RELATIVE_FRONTIER_NONEMPTY_INTERIOR] THEN
+  SIMP_TAC[IMP_CONJ; GSYM AFF_DIM_NONEMPTY_INTERIOR_EQ; DIMINDEX_2] THEN
+  REWRITE_TAC[IMP_IMP; GSYM CONJ_ASSOC] THEN
+  REWRITE_TAC[RECTIFIABLE_LOOP_RELATIVE_FRONTIER_CONVEX]);;
+
+let RECTIFIABLE_PATH_FRONTIER_CONVEX = prove
+ (`!s:real^2->bool.
+        bounded s /\ convex s /\ ~(s = {})
+        ==> ?g. rectifiable_path g /\
+                pathfinish g = pathstart g /\
+                path_image g = frontier s`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[GSYM FRONTIER_CLOSURE_CONVEX; GSYM COMPACT_CLOSURE] THEN
+  SUBGOAL_THEN
+   `compact(closure s:real^2->bool) /\ convex(closure s) /\ ~(closure s = {})`
+  MP_TAC THENL
+   [ASM_SIMP_TAC[CONVEX_CLOSURE; COMPACT_CLOSURE; CLOSURE_EQ_EMPTY];
+    POP_ASSUM_LIST(K ALL_TAC) THEN
+    SPEC_TAC(`closure s:real^2->bool`,`s:real^2->bool`)] THEN
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `interior s:real^2->bool = {}` THENL
+   [ALL_TAC;
+    MP_TAC(SPEC `s:real^2->bool` RECTIFIABLE_LOOP_FRONTIER_CONVEX) THEN
+    ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN MESON_TAC[]] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP AFF_DIM_NONEMPTY_INTERIOR_EQ) THEN
+  ASM_REWRITE_TAC[DIMINDEX_2] THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `s:real^2->bool` COMPACT_CONVEX_COLLINEAR_SEGMENT) THEN
+  ASM_REWRITE_TAC[COLLINEAR_AFF_DIM; INT_ARITH `x:int <= &1 <=> x < &2`] THEN
+  ASM_REWRITE_TAC[INT_LT_LE] THEN REWRITE_TAC[GSYM DIMINDEX_2] THEN
+  REWRITE_TAC[AFF_DIM_LE_UNIV; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^2`; `b:real^2`] THEN STRIP_TAC THEN
+  EXISTS_TAC `linepath(a:real^2,b) ++ linepath(b,a)` THEN
+  SIMP_TAC[PATHSTART_JOIN; PATHFINISH_JOIN; PATH_IMAGE_JOIN;
+           RECTIFIABLE_PATH_JOIN; RECTIFIABLE_PATH_LINEPATH;
+           PATHSTART_LINEPATH; PATHFINISH_LINEPATH] THEN
+  ASM_REWRITE_TAC[PATH_IMAGE_LINEPATH; FRONTIER_SEGMENT] THEN
+  REWRITE_TAC[SEGMENT_SYM; DIMINDEX_2; LE_REFL; UNION_IDEMPOT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence the Cauchy formula for points inside a circle.                      *)
@@ -12460,6 +12549,68 @@ let MAXIMUM_REAL_FRONTIER = prove
   ASM_SIMP_TAC[NORM_CEXP; o_THM; HOLOMORPHIC_ON_COMPOSE; HOLOMORPHIC_ON_CEXP;
                CONTINUOUS_ON_COMPOSE; CONTINUOUS_ON_CEXP] THEN
   ASM_REWRITE_TAC[REAL_EXP_MONO_LE]);;
+
+let HOLOMORPHIC_CONSTANT_ON_FRONTIER = prove
+ (`!f s c.
+        bounded s /\
+        f holomorphic_on interior s /\
+        f continuous_on closure s /\
+        (!z. z IN frontier s ==> f z = c)
+        ==> !z. z IN s ==> f z = c`,
+  REWRITE_TAC[NORM_ARITH `x:complex = c <=> norm(x - c) <= &0`] THEN
+  REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC MAXIMUM_MODULUS_FRONTIER THEN
+  ASM_SIMP_TAC[HOLOMORPHIC_ON_SUB; CONTINUOUS_ON_SUB;
+               HOLOMORPHIC_ON_CONST; CONTINUOUS_ON_CONST]);;
+
+let HOLOMORPHIC_CONSTANT_NORM = prove
+ (`!f s c.
+        open s /\ connected s /\
+        f holomorphic_on s /\
+        (?c. !z. z IN s ==> norm(f z) = c)
+        ==> ?a. !z. z IN s ==> f z = a`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `s:complex->bool = {}` THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `w:complex`) THEN
+  MATCH_MP_TAC MAXIMUM_MODULUS_PRINCIPLE THEN
+  MAP_EVERY EXISTS_TAC [`s:complex->bool`; `w:complex`] THEN
+  ASM_SIMP_TAC[SUBSET_REFL; REAL_LE_REFL]);;
+
+let HOLOMORPHIC_NONZERO_CONSTANT_NORM_ON_FRONTIER = prove
+ (`!f s.
+        bounded s /\ open s /\ connected s /\
+        f holomorphic_on s /\ f continuous_on closure s /\
+        (!z. z IN s ==> ~(f z = Cx(&0))) /\
+        (?c. !z. z IN frontier s ==> norm(f z) = c)
+        ==> ?a. !z. z IN s ==> f z = a`,
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THENL
+   [DISCH_THEN(fun th -> EXISTS_TAC `Cx(&0)` THEN MP_TAC th) THEN
+    ASM_REWRITE_TAC[GSYM COMPLEX_NORM_ZERO] THEN
+    REWRITE_TAC[NORM_ARITH `norm(x) = &0 <=> norm(x) <= &0`] THEN
+    ASM_MESON_TAC[MAXIMUM_MODULUS_FRONTIER; INTERIOR_OPEN];
+    STRIP_TAC] THEN
+  MATCH_MP_TAC HOLOMORPHIC_CONSTANT_NORM THEN
+  ASM_REWRITE_TAC[] THEN EXISTS_TAC `c:real` THEN
+  REWRITE_TAC[GSYM REAL_LE_ANTISYM; FORALL_AND_THM; TAUT
+   `p ==> q /\ r <=> (p ==> q) /\ (p ==> r)`] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC MAXIMUM_MODULUS_FRONTIER THEN
+    ASM_SIMP_TAC[REAL_LE_REFL; INTERIOR_OPEN];
+    ALL_TAC] THEN
+  X_GEN_TAC `w:complex` THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC BINOP_CONV [GSYM REAL_INV_INV] THEN
+  ONCE_REWRITE_TAC[GSYM COMPLEX_NORM_INV] THEN
+  MATCH_MP_TAC REAL_LE_INV2 THEN
+  ASM_SIMP_TAC[COMPLEX_NORM_NZ; COMPLEX_INV_EQ_0] THEN
+  UNDISCH_TAC `(w:complex) IN s` THEN SPEC_TAC(`w:complex`,`w:complex`) THEN
+  MATCH_MP_TAC MAXIMUM_MODULUS_FRONTIER THEN
+  ASM_SIMP_TAC[REAL_LE_REFL; INTERIOR_OPEN; HOLOMORPHIC_ON_INV] THEN
+  ASM_SIMP_TAC[COMPLEX_NORM_INV; REAL_LE_REFL] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_COMPLEX_INV THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `w:complex` THEN ASM_CASES_TAC `(w:complex) IN frontier s` THENL
+   [ASM_MESON_TAC[COMPLEX_NORM_ZERO];
+    ASM_MESON_TAC[frontier; IN_DIFF; INTERIOR_SUBSET; SUBSET]]);;
 
 let MAXIMUM_MODULUS_LIMIT_ATINFINITY = prove
  (`!f s B.

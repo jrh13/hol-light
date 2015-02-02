@@ -861,6 +861,11 @@ let EXISTS_IN_IMAGE = prove
  (`!f s. (?y. y IN IMAGE f s /\ P y) <=> ?x. x IN s /\ P(f x)`,
   REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[]);;
 
+let FORALL_IN_IMAGE_2 = prove
+ (`!f P s. (!x y. x IN IMAGE f s /\ y IN IMAGE f s ==> P x y) <=>
+           (!x y. x IN s /\ y IN s ==> P (f x) (f y))`,
+  SET_TAC[]);;
+
 let SUBSET_IMAGE = prove
  (`!f:A->B s t. s SUBSET (IMAGE f t) <=> ?u. u SUBSET t /\ (s = IMAGE f u)`,
   REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[IMAGE_SUBSET]] THEN

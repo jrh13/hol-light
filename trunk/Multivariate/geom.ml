@@ -88,6 +88,22 @@ let VECTOR_ANGLE_NEG2 = prove
  (`!x y. vector_angle (--x) (--y) = vector_angle x y`,
   REWRITE_TAC[VECTOR_ANGLE_LNEG; VECTOR_ANGLE_RNEG] THEN REAL_ARITH_TAC);;
 
+let SIN_VECTOR_ANGLE_LMUL = prove
+ (`!a x y:real^N.
+        sin(vector_angle (a % x) y) =
+        if a = &0 then &1 else sin(vector_angle x y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[VECTOR_ANGLE_LMUL] THEN
+  ASM_CASES_TAC `a = &0` THEN ASM_REWRITE_TAC[SIN_PI2] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[SIN_SUB; SIN_PI; COS_PI] THEN
+  REAL_ARITH_TAC);;
+
+let SIN_VECTOR_ANGLE_RMUL = prove
+ (`!a x y:real^N.
+        sin(vector_angle x (a % y)) =
+        if a = &0 then &1 else sin(vector_angle x y)`,
+  ONCE_REWRITE_TAC[VECTOR_ANGLE_SYM] THEN
+  REWRITE_TAC[SIN_VECTOR_ANGLE_LMUL]);;
+
 let VECTOR_ANGLE = prove
  (`!x y:real^N. x dot y = norm(x) * norm(y) * cos(vector_angle x y)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[vector_angle] THEN
@@ -581,6 +597,86 @@ let SIN_SQUARED_ANGLE = prove
   REWRITE_TAC[angle; SIN_SQUARED_VECTOR_ANGLE; VECTOR_SUB_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
+(* The basic right angle triangles of elementary trigonometry.               *)
+(* ------------------------------------------------------------------------- *)
+
+let COS_ADJACENT_HYPOTENUSE = prove
+ (`!A B C:real^N.
+        orthogonal (A - B) (C - B)
+        ==> dist(A,C) * cos(angle(B,A,C)) = dist(A,B)`,
+  GEOM_ORIGIN_TAC `A:real^N` THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[DIST_0; angle; VECTOR_SUB_RZERO] THEN
+  REWRITE_TAC[ORTHOGONAL_LNEG; VECTOR_SUB_LZERO] THEN DISCH_TAC THEN
+  ASM_CASES_TAC `B:real^N = vec 0` THENL
+   [ASM_REWRITE_TAC[vector_angle; COS_PI2; NORM_0; REAL_MUL_RZERO];
+    MATCH_MP_TAC(REAL_RING `~(b = &0) /\ b * x = b pow 2 ==> x = b`) THEN
+    ASM_REWRITE_TAC[NORM_EQ_0; GSYM VECTOR_ANGLE] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [orthogonal]) THEN
+    REWRITE_TAC[DOT_RSUB; NORM_POW_2] THEN REAL_ARITH_TAC]);;
+
+let COS_ADJACENT_OVER_HYPOTENUSE = prove
+ (`!A B C:real^N.
+        orthogonal (A - B) (C - B)
+        ==> cos(angle(B,A,C)) = dist(A,B) / dist(A,C)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `A:real^N = C` THENL
+   [ASM_REWRITE_TAC[DIST_REFL; real_div; REAL_INV_0; angle; VECTOR_SUB_REFL;
+                    vector_angle] THEN
+    REWRITE_TAC[GSYM real_div; COS_PI2; REAL_MUL_RZERO];
+    ASM_SIMP_TAC[REAL_EQ_RDIV_EQ; DIST_POS_LT] THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    REWRITE_TAC[COS_ADJACENT_HYPOTENUSE]]);;
+
+let SIN_OPPOSITE_HYPOTENUSE = prove
+ (`!A B C:real^N.
+        orthogonal (A - B) (C - B)
+        ==> dist(A,C) * sin(angle(B,A,C)) = dist(C,B)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `A:real^N = C` THEN
+  ASM_SIMP_TAC[ORTHOGONAL_REFL; VECTOR_SUB_EQ; DIST_REFL; REAL_MUL_LZERO] THEN
+  DISCH_TAC THEN CONV_TAC SYM_CONV THEN
+  REWRITE_TAC[dist; NORM_EQ_SQUARE] THEN
+  SIMP_TAC[REAL_LE_MUL; SIN_ANGLE_POS; NORM_POS_LE] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP COS_ADJACENT_HYPOTENUSE) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REAL_RING
+   `x:real = y ==> x pow 2 = y pow 2`)) THEN
+  REWRITE_TAC[REAL_POW_MUL; GSYM NORM_POW_2; GSYM dist] THEN
+  MATCH_MP_TAC(REAL_RING
+   `d + e = h /\ s + c = &1 /\ ~(h = &0) ==> h * c = d ==> e = h * s`) THEN
+  ASM_REWRITE_TAC[SIN_CIRCLE; REAL_POW_EQ_0; DIST_EQ_0] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP PYTHAGORAS) THEN
+  REWRITE_TAC[GSYM dist; DIST_SYM] THEN REAL_ARITH_TAC);;
+
+let SIN_OPPOSITE_OVER_HYPOTENUSE = prove
+ (`!A B C:real^N.
+        orthogonal (A - B) (C - B) /\ ~(A = C)
+        ==> sin(angle(B,A,C)) = dist(C,B) / dist(A,C)`,
+  SIMP_TAC[REAL_EQ_RDIV_EQ; DIST_POS_LT] THEN
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  SIMP_TAC[SIN_OPPOSITE_HYPOTENUSE]);;
+
+let TAN_OPPOSITE_ADJACENT = prove
+ (`!A B C:real^N.
+        orthogonal (A - B) (C - B) /\ ~(A = B)
+        ==> dist(A,B) * tan(angle(B,A,C)) = dist(C,B)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[tan] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP COS_ADJACENT_HYPOTENUSE) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP SIN_OPPOSITE_HYPOTENUSE) THEN
+  ASM_CASES_TAC `cos (angle (B:real^N,A,C)) = &0` THENL
+   [ALL_TAC; POP_ASSUM MP_TAC THEN CONV_TAC REAL_FIELD] THEN
+  ASM_REWRITE_TAC[REAL_MUL_RZERO; real_div; REAL_MUL_RZERO; REAL_INV_0] THEN
+  ASM_MESON_TAC[DIST_EQ_0]);;
+
+let TAN_OPPOSITE_OVER_ADJACENT = prove
+ (`!A B C:real^N.
+        orthogonal (A - B) (C - B)
+        ==> tan(angle(B,A,C)) = dist(C,B) / dist(A,B)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `A:real^N = B` THENL
+   [ASM_REWRITE_TAC[angle; VECTOR_SUB_REFL; vector_angle] THEN
+    REWRITE_TAC[tan; COS_PI2; DIST_REFL; real_div; REAL_INV_0; REAL_MUL_RZERO];
+    ASM_SIMP_TAC[REAL_EQ_RDIV_EQ; DIST_POS_LT] THEN
+    ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    ASM_SIMP_TAC[TAN_OPPOSITE_ADJACENT]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* The law of cosines.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -931,3 +1027,38 @@ let ANGLES_ADD_BETWEEN = prove
   THENL [ALL_TAC; REWRITE_TAC[ANGLE_SYM] THEN REAL_ARITH_TAC] THEN
   CONJ_TAC THEN MATCH_MP_TAC ANGLE_EQ_0_RIGHT THEN
   ASM_MESON_TAC[ANGLE_EQ_PI_OTHERS; BETWEEN_ANGLE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Distance from a point to a line expressed with angles.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let SETDIST_POINT_LINE = prove
+ (`!x y z:real^N.
+        setdist({x},affine hull {y,z}) = dist(x,y) * sin(angle(x,y,z))`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `y:real^N` THEN
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[SETDIST_CLOSEST_POINT; CLOSED_AFFINE_HULL;
+           AFFINE_HULL_EQ_EMPTY; NOT_INSERT_EMPTY] THEN
+  ABBREV_TAC `y = closest_point (affine hull {vec 0, z}) (x:real^N)` THEN
+  MP_TAC(ISPECL [`vec 0:real^N`; `y:real^N`; `x:real^N`]
+        SIN_OPPOSITE_HYPOTENUSE) THEN
+  MP_TAC(ISPECL [`affine hull {vec 0:real^N, z}`; `x:real^N`; `vec 0:real^N`]
+        CLOSEST_POINT_AFFINE_ORTHOGONAL) THEN
+  ASM_SIMP_TAC[HULL_INC; IN_INSERT; AFFINE_AFFINE_HULL;
+               AFFINE_HULL_EQ_EMPTY; NOT_INSERT_EMPTY] THEN
+  DISCH_THEN(K ALL_TAC) THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[DIST_SYM] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [ANGLE_SYM] THEN
+  MP_TAC(ISPECL [`affine hull {vec 0:real^N, z}`; `x:real^N`]
+        CLOSEST_POINT_IN_SET) THEN
+  ASM_SIMP_TAC[CLOSED_AFFINE_HULL; AFFINE_HULL_EQ_EMPTY; NOT_INSERT_EMPTY] THEN
+  SIMP_TAC[AFFINE_HULL_2; IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
+  MAP_EVERY X_GEN_TAC [`b:real`; `a:real`] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`affine hull {vec 0:real^N, z}`; `x:real^N`; `z:real^N`]
+        CLOSEST_POINT_AFFINE_ORTHOGONAL) THEN
+  ASM_SIMP_TAC[HULL_INC; IN_INSERT; AFFINE_AFFINE_HULL;
+               AFFINE_HULL_EQ_EMPTY; NOT_INSERT_EMPTY] THEN
+  REWRITE_TAC[angle; VECTOR_SUB_RZERO; SIN_VECTOR_ANGLE_LMUL] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_SUB_RZERO] THEN
+  SIMP_TAC[ORTHOGONAL_VECTOR_ANGLE; SIN_PI2]);;
