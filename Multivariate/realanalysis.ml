@@ -13224,7 +13224,9 @@ let RECTIFIABLE_PATH_VECTOR_POLYNOMIAL_FUNCTION = prove
   SIMP_TAC[HAS_BOUNDED_VARIATION_ON_ID; BOUNDED_INTERVAL] THEN
   REWRITE_TAC[HAS_BOUNDED_VARIATION_ON_ADD] THEN
   REPEAT GEN_TAC THEN
-  DISCH_THEN(MP_TAC o MATCH_MP HAS_BOUNDED_VARIATION_ON_MUL) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+   (ONCE_REWRITE_RULE[CONJ_ASSOC] HAS_BOUNDED_VARIATION_ON_MUL))) THEN
+  REWRITE_TAC[IS_INTERVAL_INTERVAL] THEN
   REWRITE_TAC[LIFT_CMUL; LIFT_DROP; DROP_CMUL]);;
 
 let PATH_APPROX_VECTOR_POLYNOMIAL_FUNCTION = prove
@@ -15872,12 +15874,13 @@ let HAS_BOUNDED_REAL_VARIATION_ON_IMP_BOUNDED_ON_INTERVAL = prove
   REWRITE_TAC[IMAGE_o; IMAGE_DROP_INTERVAL; LIFT_DROP]);;
 
 let HAS_BOUNDED_REAL_VARIATION_ON_MUL = prove
- (`!f g a b.
-        f has_bounded_real_variation_on real_interval[a,b] /\
-        g has_bounded_real_variation_on real_interval[a,b]
-        ==> (\x. f x * g x) has_bounded_real_variation_on real_interval[a,b]`,
+ (`!f g s.
+        f has_bounded_real_variation_on s /\
+        g has_bounded_real_variation_on s /\
+        is_realinterval s
+        ==> (\x. f x * g x) has_bounded_real_variation_on s`,
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_real_variation_on] THEN
-  REWRITE_TAC[IMAGE_LIFT_REAL_INTERVAL] THEN
+  REWRITE_TAC[IMAGE_LIFT_REAL_INTERVAL; IS_REALINTERVAL_IS_INTERVAL] THEN
   DISCH_THEN(MP_TAC o MATCH_MP HAS_BOUNDED_VARIATION_ON_MUL) THEN
   REWRITE_TAC[o_DEF; LIFT_CMUL; LIFT_DROP]);;
 
