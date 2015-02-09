@@ -2963,10 +2963,11 @@ let INTEGRABLE_BOUNDED_VARIATION_COMPLEX_RMUL = prove
   REWRITE_TAC[INTEGRABLE_BOUNDED_VARIATION_COMPLEX_LMUL]);;
 
 let HAS_BOUNDED_VARIATION_ON_COMPLEX_MUL = prove
- (`!f g:real^1->complex a b.
-        f has_bounded_variation_on interval[a,b] /\
-        g has_bounded_variation_on interval[a,b]
-        ==> (\x. f x * g x) has_bounded_variation_on interval[a,b]`,
+ (`!f g:real^1->complex s.
+        f has_bounded_variation_on s /\
+        g has_bounded_variation_on s /\
+        is_interval s
+        ==> (\x. f x * g x) has_bounded_variation_on s`,
   REPEAT GEN_TAC THEN
   ONCE_REWRITE_TAC[HAS_BOUNDED_VARIATION_ON_COMPONENTWISE] THEN
   REWRITE_TAC[complex_mul; DIMINDEX_2; FORALL_2; GSYM IM_DEF; GSYM RE_DEF] THEN

@@ -8033,19 +8033,19 @@ let NEGLIGIBLE_IMAGE_BOUNDED_VARIATION_INTERVAL = prove
  (`!f:real^1->real^N a b.
         2 <= dimindex(:N) /\ f has_bounded_variation_on interval[a,b]
         ==> negligible(IMAGE f (interval[a,b]))`,
-  REPEAT STRIP_TAC THEN                                                        
-  FIRST_ASSUM(MP_TAC o MATCH_MP FACTOR_THROUGH_VARIATION) THEN                 
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP FACTOR_THROUGH_VARIATION) THEN
   DISCH_THEN(X_CHOOSE_THEN `g:real^1->real^N` (STRIP_ASSUME_TAC o GSYM)) THEN
-  SUBGOAL_THEN                                                               
+  SUBGOAL_THEN
    `IMAGE (f:real^1->real^N) (interval[a,b]) =
     IMAGE g { lift(vector_variation (interval[a,u]) f) | u |
-              u IN interval[a,b]}`                            
-  SUBST1_TAC THENL                                                  
-   [REWRITE_TAC[SIMPLE_IMAGE; GSYM IMAGE_o; o_DEF] THEN ASM SET_TAC[];         
-    MATCH_MP_TAC NEGLIGIBLE_LOCALLY_LIPSCHITZ_IMAGE_LOWDIM THEN                
-    ASM_REWRITE_TAC[DIMINDEX_1; ARITH_RULE `1 < n <=> 2 <= n`] THEN            
+              u IN interval[a,b]}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[SIMPLE_IMAGE; GSYM IMAGE_o; o_DEF] THEN ASM SET_TAC[];
+    MATCH_MP_TAC NEGLIGIBLE_LOCALLY_LIPSCHITZ_IMAGE_LOWDIM THEN
+    ASM_REWRITE_TAC[DIMINDEX_1; ARITH_RULE `1 < n <=> 2 <= n`] THEN
     X_GEN_TAC `x:real^1` THEN DISCH_TAC THEN
-    MAP_EVERY EXISTS_TAC [`(:real^1)`; `&1`] THEN                             
+    MAP_EVERY EXISTS_TAC [`(:real^1)`; `&1`] THEN
     ASM_SIMP_TAC[GSYM dist; REAL_MUL_LID; IN_INTER; IN_UNIV; OPEN_UNIV]]);;
 
 let NEGLIGIBLE_RECTIFIABLE_PATH_IMAGE = prove
@@ -11555,7 +11555,7 @@ let EGOROV = prove
     ASM_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A kind of absolute continuity of the integral.                            *)
+(* Forms of absolute continuity of the indefinite (absolute) integral.       *)
 (* ------------------------------------------------------------------------- *)
 
 let ABSOLUTELY_CONTINUOUS_INTEGRAL = prove
@@ -11580,7 +11580,6 @@ let ABSOLUTELY_CONTINUOUS_INTEGRAL = prove
   TRANS_TAC REAL_LET_TRANS
    `drop(integral t (\x. lift(norm((if x IN s then f x else vec 0) - g x)) +
                          lift(norm((g:real^M->real^N) x))))` THEN
-
   SUBGOAL_THEN
    `(g:real^M->real^N) absolutely_integrable_on t /\
     (\x. if x IN s then (f:real^M->real^N) x else vec 0)
@@ -11619,7 +11618,6 @@ let ABSOLUTELY_CONTINUOUS_INTEGRAL = prove
     ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_NORM; IN_UNIV; SUBSET_UNIV; LIFT_DROP;
      ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE; ABSOLUTELY_INTEGRABLE_SUB] THEN
     REWRITE_TAC[NORM_POS_LE];
-
     TRANS_TAC REAL_LET_TRANS `drop(integral t (\x:real^M. lift B))` THEN
     CONJ_TAC THENL
      [MATCH_MP_TAC INTEGRAL_DROP_LE THEN
@@ -11630,6 +11628,75 @@ let ABSOLUTELY_CONTINUOUS_INTEGRAL = prove
       REWRITE_TAC[DROP_CMUL; DROP_VEC; REAL_MUL_RID] THEN
      ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
      ASM_SIMP_TAC[GSYM REAL_LT_RDIV_EQ]]]);;
+
+let ABSOLUTELY_SETCONTINUOUS_INDEFINITE_INTEGRAL = prove
+ (`!f:real^M->real^N s.
+        f absolutely_integrable_on s /\ lebesgue_measurable s
+        ==> (\k. integral k f) absolutely_setcontinuous_on s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ABSOLUTELY_SETCONTINUOUS_ON_ALT] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `e:real` o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ] ABSOLUTELY_CONTINUOUS_INTEGRAL)) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `r:real` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MAP_EVERY X_GEN_TAC [`d:(real^M->bool)->bool`; `t:real^M->bool`] THEN
+  STRIP_TAC THEN FIRST_ASSUM(MP_TAC o ISPEC `f:real^M->real^N` o
+    MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+               INTEGRAL_COMBINE_DIVISION_TOPDOWN)) THEN
+  ANTS_TAC THENL
+   [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_SUBSET)) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MEASURABLE_IMP_LEBESGUE_MEASURABLE THEN
+    ASM_MESON_TAC[MEASURABLE_ELEMENTARY];
+    DISCH_THEN(SUBST1_TAC o SYM) THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+     [ASM_MESON_TAC[MEASURABLE_ELEMENTARY];
+      ASM_MESON_TAC[MEASURE_ELEMENTARY]]]);;
+
+let ABSOLUTELY_CONTINUOUS_INDEFINITE_INTEGRAL_RIGHT = prove
+ (`!f:real^1->real^N a b.
+        f absolutely_integrable_on interval[a,b]
+        ==> (\x. integral(interval[a,x]) f)
+            absolutely_continuous_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[absolutely_continuous_on] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        ABSOLUTELY_SETCONTINUOUS_INDEFINITE_INTEGRAL)) THEN
+  REWRITE_TAC[LEBESGUE_MEASURABLE_INTERVAL] THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+        ABSOLUTELY_SETCONTINUOUS_COMPARISON) THEN
+  SIMP_TAC[INTERVAL_LOWERBOUND_NONEMPTY; INTERVAL_UPPERBOUND_NONEMPTY] THEN
+  MAP_EVERY X_GEN_TAC [`c:real^1`; `d:real^1`] THEN
+  REWRITE_TAC[INTERVAL_NE_EMPTY_1; SUBSET_INTERVAL_1] THEN
+  STRIP_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC(NORM_ARITH `y + z:real^N = x ==> norm(x - y) <= norm z`) THEN
+  MATCH_MP_TAC INTEGRAL_COMBINE THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] INTEGRABLE_ON_SUBINTERVAL) o
+   MATCH_MP ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE) THEN
+  ASM_REWRITE_TAC[SUBSET_INTERVAL_1] THEN ASM_REAL_ARITH_TAC);;
+
+let ABSOLUTELY_CONTINUOUS_INDEFINITE_INTEGRAL_LEFT = prove
+ (`!f:real^1->real^N a b.
+        f absolutely_integrable_on interval[a,b]
+        ==> (\x. integral(interval[x,b]) f)
+            absolutely_continuous_on interval[a,b]`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[absolutely_continuous_on] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        ABSOLUTELY_SETCONTINUOUS_INDEFINITE_INTEGRAL)) THEN
+  REWRITE_TAC[LEBESGUE_MEASURABLE_INTERVAL] THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+        ABSOLUTELY_SETCONTINUOUS_COMPARISON) THEN
+  SIMP_TAC[INTERVAL_LOWERBOUND_NONEMPTY; INTERVAL_UPPERBOUND_NONEMPTY] THEN
+  MAP_EVERY X_GEN_TAC [`c:real^1`; `d:real^1`] THEN
+  REWRITE_TAC[INTERVAL_NE_EMPTY_1; SUBSET_INTERVAL_1] THEN
+  STRIP_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC(NORM_ARITH `z + x:real^N = y ==> norm(x - y) <= norm z`) THEN
+  MATCH_MP_TAC INTEGRAL_COMBINE THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] INTEGRABLE_ON_SUBINTERVAL) o
+   MATCH_MP ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE) THEN
+  ASM_REWRITE_TAC[SUBSET_INTERVAL_1] THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convergence in measure implies convergence AE of a subsequence.           *)
