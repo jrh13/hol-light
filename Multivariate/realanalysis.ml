@@ -163,6 +163,40 @@ let REAL_OPEN_HALFSPACE_GT = prove
   REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[LIFT_DROP]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Euclidean metric on real numbers.                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let real_euclidean_metric = new_definition
+  `real_euclidean_metric = metric ((:real),\(x,y). abs(y-x))`;;
+
+let REAL_EUCLIDEAN_METRIC = prove
+ (`mspace real_euclidean_metric = (:real) /\
+   (!x y. mdist real_euclidean_metric (x,y) = abs(y-x))`,
+  SUBGOAL_THEN `is_metric_space((:real),\ (x,y). abs(y-x))` MP_TAC THENL
+  [REWRITE_TAC[is_metric_space; IN_UNIV] THEN REAL_ARITH_TAC;
+   SIMP_TAC[real_euclidean_metric; metric_tybij; mspace; mdist]]);;
+
+let MTOPOLOGY_REAL_EUCLIDEAN_METRIC = prove
+ (`mtopology real_euclidean_metric = euclideanreal`,
+  REWRITE_TAC[TOPOLOGY_EQ; OPEN_IN_MTOPOLOGY; REAL_EUCLIDEAN_METRIC;
+    GSYM REAL_OPEN_IN; real_open; IN_MBALL; REAL_EUCLIDEAN_METRIC;
+    SUBSET; IN_UNIV]);;
+
+let CONTINUOUS_ON_MDIST = prove
+ (`!m a. a:A IN mspace m
+         ==> topcontinuous (mtopology m) euclideanreal (\x. mdist m (a,x))`,
+  INTRO_TAC "!m a; a" THEN
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC; METRIC_TOPCONTINUOUS;
+              REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  INTRO_TAC "![b] e; epos b" THEN EXISTS_TAC `e:real` THEN
+  ASM_REWRITE_TAC[] THEN INTRO_TAC "!x; x dist" THEN
+  REWRITE_TAC[topcontinuous; TOPSPACE_EUCLIDEANREAL; IN_UNIV;
+              TOPSPACE_MTOPOLOGY; GSYM REAL_OPEN_IN; OPEN_IN_MTOPOLOGY] THEN
+  TRANS_TAC REAL_LET_TRANS `mdist m (b:A,x)` THEN
+  HYP REWRITE_TAC "dist" [] THEN
+  ASM_MESON_TAC[MDIST_REVERSE_TRIANGLE; MDIST_SYM]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Compactness of a set of reals.                                            *)
 (* ------------------------------------------------------------------------- *)
 

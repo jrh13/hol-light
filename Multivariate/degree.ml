@@ -5064,15 +5064,6 @@ let ANR_CLOSED_UNION = prove
         ==> ANR(s UNION t)`,
   MESON_TAC[ANR_CLOSED_UNION_LOCAL; CLOSED_SUBSET; SUBSET_UNION]);;
 
-let ENR_CLOSED_UNION_LOCAL = prove
- (`!s t u:real^N->bool.
-        closed_in (subtopology euclidean u) s /\
-        closed_in (subtopology euclidean u) t /\
-        ENR(s) /\ ENR(t) /\ ENR(s INTER t)
-        ==> ENR(s UNION t)`,
-  REWRITE_TAC[ENR_ANR] THEN
-  MESON_TAC[ENR_ANR; ANR_CLOSED_UNION_LOCAL; LOCALLY_COMPACT_CLOSED_UNION]);;
-
 let ENR_CLOSED_UNION = prove
  (`!s t:real^N->bool.
         closed s /\ closed t /\ ENR(s) /\ ENR(t) /\ ENR(s INTER t)

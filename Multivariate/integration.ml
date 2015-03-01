@@ -21432,3 +21432,449 @@ let PATH_LENGTH_DIFFERENTIABLE = prove
   REWRITE_TAC[rectifiable_path; path_length; path] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC VECTOR_VARIATION_INTEGRAL_NORM_DERIVATIVE THEN
   EXISTS_TAC `s:real^1->bool` THEN ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Solutions to differential equations: the Picard-Lindelof theorem.         *)
+(* ------------------------------------------------------------------------- *)
+
+let PICARD_LINDELOF_RIGHT = prove
+ (`!s (f:real^(1,N)finite_sum->real^N) t0 u0 r0 r1 B c.
+     open s /\ f continuous_on s /\
+     &0 < r0 /\ &0 < r1 /\ B * r0 < r1 /\ c * r0 < &1 /\
+     interval[t0,t0 + lift r0] PCROSS cball(u0,r1) SUBSET s /\
+     (!x. x IN s ==> norm(f x) <= B) /\
+     (!t v w. t IN interval[t0,t0 + lift r0] /\
+              v IN cball(u0,r1) /\ w IN cball(u0,r1)
+              ==> norm(f(pastecart t v) - f(pastecart t w)) <= c * norm(v - w))
+     ==> ?u. u t0 = u0 /\
+             (!t. t IN interval[t0,t0 + lift r0]
+                  ==> (u has_vector_derivative f(pastecart t (u t)))
+                        (at t within interval[t0,t0 + lift r0])) /\
+             (!v. (!t. t IN interval[t0,t0 + lift r0]
+                  ==> pastecart t (v t) IN s) /\
+                  v t0 = u0 /\
+                  (!t. t IN interval[t0,t0 + lift r0]
+                       ==> (v has_vector_derivative f(pastecart t (v t)))
+                             (at t within interval[t0,t0 + lift r0]))
+                  ==> (!t. t IN interval[t0,t0 + lift r0] ==> v t = u t))`,
+  REPEAT GEN_TAC THEN
+  INTRO_TAC "open fcont r0pos r1pos r0lt1 r0lt2 subs bound c" THEN
+  LABEL_ABBREV_TAC
+    `X = cfunspace (subtopology euclidean (interval[t0:real^1,t0 + lift r0]))
+                   (submetric euclidean_metric (cball(u0:real^N,r1)))` THEN
+  CLAIM_TAC "X_complete" `mcomplete (X:(real^1->real^N)metric)` THENL
+  [EXPAND_TAC "X" THEN MATCH_MP_TAC MCOMPLETE_CFUNSPACE THEN
+   MATCH_MP_TAC CLOSED_IN_MCOMPLETE_IMP_MCOMPLETE THEN
+   REWRITE_TAC[MTOPOLOGY_EUCLIDEAN_METRIC; MCOMPLETE_EUCLIDEAN;
+               GSYM CLOSED_IN; CLOSED_CBALL];
+   ALL_TAC] THEN
+  LABEL_ABBREV_TAC
+    `H (v:real^1->real^N) =
+      RESTRICTION (interval[t0,t0 + lift r0])
+        (\t. u0 + integral (interval[t0,t])
+                    (\t. f(pastecart t (v t))):real^N)` THEN
+  CLAIM_TAC "mspaceX"
+    `!u:real^1->real^N.
+       u IN mspace X <=>
+       u IN EXTENSIONAL (interval[t0,t0 + lift r0]) /\
+       u continuous_on interval[t0,t0 + lift r0] /\
+       (!t. t IN interval[t0,t0 + lift r0] ==> u t IN cball(u0,r1))` THENL
+  [GEN_TAC THEN EXPAND_TAC "X" THEN REWRITE_TAC[CFUNSPACE] THEN
+   REWRITE_TAC[IN_ELIM_THM; SUBMETRIC; TOPSPACE_SUBTOPOLOGY;
+     MTOPOLOGY_SUBMETRIC; EUCLIDEAN_METRIC; MTOPOLOGY_EUCLIDEAN_METRIC;
+     TOPSPACE_EUCLIDEAN; MBOUNDED_SUBMETRIC; MBOUNDED_EQ_BOUNDED;
+     TOPCONTINUOUS_IN_SUBTOPOLGY; TOPCONTINUOUS_EQ_CONTINUOUS_ON;
+     INTER_UNIV; IN_INTER;
+     SET_RULE
+       `IMAGE (u:real^1->real^N) s SUBSET t <=> !x. x IN s ==> u x IN t`] THEN
+   EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+   MATCH_MP_TAC BOUNDED_SUBSET THEN EXISTS_TAC `cball (u0:real^N,r1)` THEN
+   REWRITE_TAC[BOUNDED_CBALL; INTER_SUBSET];
+   ALL_TAC] THEN
+  CLAIM_TAC "Bpos" `&0 <= B` THENL
+  [TRANS_TAC REAL_LE_TRANS
+    `norm (f(pastecart (t0:real^1) (u0:real^N)):real^N)` THEN
+   REWRITE_TAC[NORM_POS_LE] THEN REMOVE_THEN "bound" MATCH_MP_TAC THEN
+   CUT_TAC `pastecart t0 (u0:real^N) IN
+            interval [t0,t0 + lift r0] PCROSS cball (u0,r1)` THENL
+   [HYP SET_TAC "subs" []; ALL_TAC] THEN
+   REWRITE_TAC[PASTECART_IN_PCROSS; CENTRE_IN_CBALL] THEN
+   HYP SIMP_TAC "r1pos" [REAL_LT_IMP_LE] THEN
+   REWRITE_TAC[IN_INTERVAL_1; REAL_LE_REFL; DROP_ADD; LIFT_DROP] THEN
+   REMOVE_THEN "r0pos" MP_TAC THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  CLAIM_TAC "cpos" `&0 <= c` THENL
+  [REMOVE_THEN "c" (MP_TAC o
+    SPECL[`t0:real^1`;`u0:real^N`;`u0 + r1 % basis 1:real^N`]) THEN
+   REWRITE_TAC[IN_INTERVAL_1; CENTRE_IN_CBALL; REAL_LE_REFL; REAL_LE_ADDR;
+               DROP_ADD; LIFT_DROP] THEN
+   HYP SIMP_TAC "r0pos r1pos" [REAL_LT_IMP_LE] THEN
+   REWRITE_TAC[IN_CBALL; dist; VECTOR_SUB_RADD; NORM_NEG; NORM_MUL;
+               NORM_BASIS_1; REAL_MUL_RID] THEN
+   HYP SIMP_TAC "r1pos"
+     [REAL_ARITH `&0 < r1 ==> abs r1 = r1`; REAL_LE_REFL] THEN
+   INTRO_TAC "hp" THEN
+   TRANS_TAC REAL_LE_TRANS
+     `norm (f (pastecart (t0:real^1) (u0:real^N)) -
+            f (pastecart t0 (u0 + r1 % basis 1)):real^N) / r1` THEN
+   HYP SIMP_TAC "hp r1pos" [REAL_LE_LDIV_EQ] THEN
+   MATCH_MP_TAC REAL_LE_DIV THEN
+   HYP SIMP_TAC "r1pos" [REAL_LT_IMP_LE; NORM_POS_LE];
+   ALL_TAC] THEN
+  CLAIM_TAC "fu_cont" `!u:real^1->real^N.
+    u IN mspace X ==> (\t. f (pastecart t (u t)):real^N) continuous_on
+                      interval[t0,t0 + lift r0]` THENL
+  [HYP REWRITE_TAC "mspaceX" [] THEN INTRO_TAC "!u; ext ucont wd" THEN
+   SUBGOAL_THEN
+     `(\t:real^1. f (pastecart t (u t:real^N)):real^N) =
+      f o (\t. pastecart t (u t))` SUBST1_TAC THENL
+   [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+   MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+   HYP SIMP_TAC "ucont" [CONTINUOUS_ON_PASTECART; CONTINUOUS_ON_ID] THEN
+   MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+   EXISTS_TAC `s:real^(1,N)finite_sum->bool` THEN
+   HYP REWRITE_TAC "fcont" [] THEN
+   TRANS_TAC SUBSET_TRANS
+     `interval [t0,t0 + lift r0] PCROSS cball (u0:real^N,r1)` THEN
+   HYP REWRITE_TAC "subs" [] THEN REWRITE_TAC[SUBSET; IN_IMAGE] THEN
+   INTRO_TAC "!x; @t. xeq t" THEN REMOVE_THEN "xeq" SUBST_VAR_TAC THEN
+   HYP SIMP_TAC "t wd" [PASTECART_IN_PCROSS];
+   ALL_TAC] THEN
+  CLAIM_TAC "fixpoint" `?!u:real^1->real^N. u IN mspace X /\ H u = u` THENL
+  [MATCH_MP_TAC BANACH_FIXPOINT_THM THEN EXISTS_TAC `c * r0` THEN
+   HYP REWRITE_TAC "r0lt2 X_complete" [] THEN
+   SUBGOAL_THEN `~(mspace X = {}:(real^1->real^N)->bool)`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+    EXISTS_TAC
+      `RESTRICTION (interval[t0,t0 + lift r0]) (\t:real^1. u0:real^N)` THEN
+    HYP REWRITE_TAC "mspaceX" [RESTRICTION_IN_EXTENSIONAL] THEN
+    SIMP_TAC[RESTRICTION_CONTINUOUS_ON; SUBSET_REFL; CONTINUOUS_ON_CONST] THEN
+    HYP SIMP_TAC "r1pos" [RESTRICTION; CENTRE_IN_CBALL; REAL_LT_IMP_LE];
+    ALL_TAC] THEN
+   CLAIM_TAC "fu_intgr" `!u:real^1->real^N.
+     u IN mspace X ==> (\t. f (pastecart t (u t)):real^N) integrable_on
+                       interval[t0,t0 + lift r0]` THENL
+   [HYP SIMP_TAC "fu_cont" [INTEGRABLE_CONTINUOUS]; ALL_TAC] THEN
+   CLAIM_TAC "fu_intgr'" `!u:real^1->real^N t.
+     u IN mspace X /\ t IN interval[t0,t0 + lift r0]
+     ==> (\t. f (pastecart t (u t)):real^N) integrable_on interval[t0,t]` THENL
+   [INTRO_TAC "!u t; u t" THEN MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
+    EXISTS_TAC `interval[t0:real^1,t0 + lift r0]` THEN
+    HYP SIMP_TAC "fu_intgr u" [] THEN REMOVE_THEN "t" MP_TAC THEN
+    SIMP_TAC[IN_INTERVAL_1; SUBSET_INTERVAL_1; REAL_LE_REFL];
+    ALL_TAC] THEN
+   CLAIM_TAC "fu_aintgr"
+     `!u:real^1->real^N.
+        u IN mspace X
+        ==> (\t. f (pastecart t (u t)):real^N) absolutely_integrable_on
+            interval[t0,t0 + lift r0]` THENL
+   [INTRO_TAC "!u; u" THEN
+    MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
+    EXISTS_TAC `\t:real^1. lift B` THEN
+    REWRITE_TAC[LIFT_DROP; INTEGRABLE_CONST] THEN
+    CONJ_TAC THENL
+    [INTRO_TAC "![t]; t" THEN REMOVE_THEN "bound" MATCH_MP_TAC THEN
+     CUT_TAC `pastecart (t:real^1) (u t:real^N) IN
+              interval [t0,t0 + lift r0] PCROSS cball (u0,r1)` THENL
+     [HYP SET_TAC "subs" []; ALL_TAC] THEN
+     HYP REWRITE_TAC "t" [PASTECART_IN_PCROSS] THEN
+     USE_THEN "mspaceX"
+       (fun th -> HYP_TAC "u -> _ _ u'" (REWRITE_RULE[th])) THEN
+     HYP SIMP_TAC "u' t" [];
+     ALL_TAC] THEN
+    HYP SIMP_TAC "fu_intgr u" [];
+    ALL_TAC] THEN
+   CLAIM_TAC "fu_aintgr'" `!u:real^1->real^N t.
+     u IN mspace X /\ t IN interval[t0,t0 + lift r0]
+     ==> (\t. f (pastecart t (u t)):real^N) absolutely_integrable_on
+         interval[t0,t]` THENL
+   [INTRO_TAC "!u t; u t" THEN
+    MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ON_SUBINTERVAL THEN
+    EXISTS_TAC `interval[t0,t0 + lift r0]` THEN
+    HYP SIMP_TAC "fu_aintgr u" [] THEN REMOVE_THEN "t" MP_TAC THEN
+    SIMP_TAC[SUBSET; IN_INTERVAL_1] THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   CLAIM_TAC "H_in_X"
+     `!u:real^1->real^N. u IN mspace X ==> H u IN mspace X` THENL
+   [INTRO_TAC "!u; u" THEN
+    REMOVE_THEN "H" (fun th -> REWRITE_TAC[GSYM th]) THEN
+    HYP REWRITE_TAC "mspaceX" [RESTRICTION_IN_EXTENSIONAL] THEN
+    SIMP_TAC[RESTRICTION_CONTINUOUS_ON; SUBSET_REFL] THEN CONJ_TAC THENL
+    [MATCH_MP_TAC CONTINUOUS_ON_ADD THEN REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
+     HYP SIMP_TAC "u fu_intgr" [INDEFINITE_INTEGRAL_CONTINUOUS_RIGHT];
+     ALL_TAC] THEN
+    INTRO_TAC "!t; t" THEN HYP REWRITE_TAC "t" [RESTRICTION] THEN
+    CUT_TAC `norm(integral (interval [t0:real^1,t])
+                    (\t. f (pastecart t (u t:real^N))):real^N) <= r1` THENL
+    [REWRITE_TAC[IN_CBALL] THEN NORM_ARITH_TAC; ALL_TAC] THEN
+    TRANS_TAC REAL_LE_TRANS
+      `drop(integral (interval[t0:real^1,t])
+              (\t. lift(norm (f (pastecart t (u t:real^N)):real^N))))` THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_LE THEN
+     HYP SIMP_TAC "fu_aintgr' u t" [];
+     ALL_TAC] THEN
+    TRANS_TAC REAL_LE_TRANS
+      `drop (integral (interval[t0,t]) (\t:real^1. lift B))` THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC INTEGRAL_DROP_LE THEN
+     REWRITE_TAC[INTEGRABLE_CONST; LIFT_DROP] THEN CONJ_TAC THENL
+     [CUT_TAC `(\t:real^1. f (pastecart t (u t:real^N)):real^N)
+                  absolutely_integrable_on interval [t0,t]` THENL
+      [REWRITE_TAC[absolutely_integrable_on] THEN MESON_TAC[];
+       HYP SIMP_TAC "fu_aintgr' u t" []];
+      INTRO_TAC "!x; x" THEN REMOVE_THEN "bound" MATCH_MP_TAC THEN
+      CUT_TAC `pastecart (x:real^1) (u x:real^N) IN
+               interval [t0,t0 + lift r0] PCROSS cball (u0,r1)` THENL
+      [HYP SET_TAC "subs" []; ALL_TAC] THEN
+      REWRITE_TAC[PASTECART_IN_PCROSS] THEN
+      CLAIM_TAC "t'" `x IN interval[t0,t0 + lift r0]` THENL
+      [REMOVE_THEN "x" MP_TAC THEN REMOVE_THEN "t" MP_TAC THEN
+       SIMP_TAC[IN_INTERVAL_1] THEN REAL_ARITH_TAC;
+       USE_THEN "mspaceX" (fun th -> HYP_TAC "u -> _ _ u'"
+         (REWRITE_RULE[th])) THEN HYP SIMP_TAC "u' t'" []]];
+     REWRITE_TAC[INTEGRAL_CONST] THEN
+     SUBGOAL_THEN `content(interval [t0:real^1,t]) = drop t - drop t0`
+       SUBST1_TAC THENL
+     [MATCH_MP_TAC CONTENT_1 THEN REMOVE_THEN "t" MP_TAC THEN
+      SIMP_TAC[IN_INTERVAL_1];
+      ALL_TAC] THEN
+     REWRITE_TAC[GSYM LIFT_CMUL; DROP_SUB; LIFT_DROP] THEN
+     TRANS_TAC REAL_LE_TRANS `B * r0` THEN
+     HYP SIMP_TAC "r0lt1" [REAL_LT_IMP_LE] THEN
+     GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN
+     MATCH_MP_TAC REAL_LE_RMUL THEN HYP REWRITE_TAC "Bpos" [] THEN
+     REMOVE_THEN "t" MP_TAC THEN
+     REWRITE_TAC[IN_INTERVAL_1; DROP_ADD; LIFT_DROP] THEN
+     ASM_REAL_ARITH_TAC];
+    HYP REWRITE_TAC "H_in_X" []] THEN
+   CLAIM_TAC "mdistX"
+     `!u v. mdist X (u,v) =
+                sup{dist(u t,v t:real^N) |
+                    t IN interval[t0,t0 + lift r0]}` THENL
+   [REPEAT GEN_TAC THEN HYP REWRITE_TAC "mspaceX" [] THEN EXPAND_TAC "X" THEN
+    REWRITE_TAC[CFUNSPACE; TOPSPACE_SUBTOPOLOGY; TOPSPACE_EUCLIDEAN;
+                SUBMETRIC; EUCLIDEAN_METRIC; INTER_UNIV; INTERVAL_EQ_EMPTY_1;
+                DROP_ADD; LIFT_DROP] THEN
+    HYP SIMP_TAC "r0pos" [REAL_ARITH `&0 < y ==> ~(x + y < x)`];
+    ALL_TAC] THEN
+   INTRO_TAC "!u [v]; u v" THEN
+   REMOVE_THEN "H" (fun th -> REWRITE_TAC[GSYM th]) THEN
+   SUBGOAL_THEN
+     `!p q:real^1->real^N.
+        mdist X (RESTRICTION (interval [t0,t0 + lift r0]) p,
+                 RESTRICTION (interval [t0,t0 + lift r0]) q) =
+        mdist X (p,q)`
+     (fun th -> REWRITE_TAC[th]) THENL
+   [REPEAT GEN_TAC THEN HYP REWRITE_TAC "mdistX" [] THEN AP_TERM_TAC THEN
+    CUT_TAC `!r x. x IN interval [t0,t0 + lift r0]
+      ==> RESTRICTION (interval [t0,t0 + lift r0]) r x = r x:real^N` THENL
+    [SET_TAC[]; SIMP_TAC[RESTRICTION]];
+    ALL_TAC] THEN
+   EXPAND_TAC "X" THEN MATCH_MP_TAC MDIST_CFUNSPACE_LE THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_MUL THEN
+    HYP SIMP_TAC "cpos r0pos" [REAL_LE_MUL; REAL_LT_IMP_LE] THEN
+    HYP SIMP_TAC "X u v" [MDIST_POS_LE];
+    ALL_TAC] THEN
+   REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; TOPSPACE_EUCLIDEAN; SUBMETRIC;
+               EUCLIDEAN_METRIC; IN_INTER; IN_UNIV] THEN
+   INTRO_TAC "![t]; t" THEN
+   REWRITE_TAC[NORM_ARITH `dist(u0 + u:real^N,u0 + v) = dist(u,v)`] THEN
+   HYP SIMP_TAC "u v t fu_intgr'" [dist; GSYM INTEGRAL_SUB] THEN
+   TRANS_TAC REAL_LE_TRANS
+     `drop(integral (interval[t0:real^1,t])
+       (\s. lift(norm(f(pastecart s (u s:real^N)) -
+                      f(pastecart s (v s)):real^N))))` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_LE THEN
+    HYP SIMP_TAC "fu_aintgr' u v t" [ABSOLUTELY_INTEGRABLE_SUB];
+    ALL_TAC] THEN
+   CLAIM_TAC "uv_ai"
+     `(\s:real^1. u s - v s:real^N) absolutely_integrable_on
+        interval[t0,t]` THENL
+   [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_CONTINUOUS THEN
+    MATCH_MP_TAC CONTINUOUS_ON_SUB THEN
+    USE_THEN "mspaceX"
+      (fun th -> HYP_TAC "u: _ ucont _" (REWRITE_RULE[th])) THEN
+    USE_THEN "mspaceX"
+      (fun th -> HYP_TAC "v: _ vcont _" (REWRITE_RULE[th])) THEN
+    CUT_TAC `interval[t0:real^1,t] SUBSET interval[t0,t0 + lift r0]` THENL
+    [HYP MESON_TAC "ucont vcont" [CONTINUOUS_ON_SUBSET]; ALL_TAC] THEN
+    REWRITE_TAC[SUBSET_INTERVAL_1; REAL_LE_REFL] THEN
+    REMOVE_THEN "t" MP_TAC THEN SIMP_TAC[IN_INTERVAL_1];
+    ALL_TAC] THEN
+   TRANS_TAC REAL_LE_TRANS
+     `c * drop (integral (interval[t0:real^1,t])
+                  (\s. lift(norm (u s - v s:real^N))))` THEN
+   CONJ_TAC THENL
+   [REWRITE_TAC[GSYM DROP_CMUL] THEN
+    SUBGOAL_THEN
+      `c % integral (interval[t0:real^1,t])
+             (\s. lift (norm (u s - v s:real^N))) =
+       integral (interval[t0,t]) (\s. c % lift(norm (u s - v s)))`
+      SUBST1_TAC THENL
+    [MATCH_MP_TAC (GSYM INTEGRAL_CMUL) THEN
+     HYP_TAC "uv_ai: _ +" (REWRITE_RULE[absolutely_integrable_on]) THEN
+     REWRITE_TAC[];
+     ALL_TAC] THEN
+    MATCH_MP_TAC INTEGRAL_DROP_LE THEN CONJ_TAC THENL
+    [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_LIFT_NORM_INTEGRABLE THEN
+     MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SUB THEN
+     HYP SIMP_TAC "fu_aintgr' u v t" [];
+     ALL_TAC] THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC INTEGRABLE_CMUL THEN
+     MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_LIFT_NORM_INTEGRABLE THEN
+     MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SUB THEN
+     CLAIM_TAC "hp" `interval[t0,t] SUBSET interval[t0,t0 + lift r0]` THENL
+     [REMOVE_THEN "t" MP_TAC THEN
+      SIMP_TAC[IN_INTERVAL_1; SUBSET_INTERVAL_1; REAL_LE_REFL;
+               DROP_ADD; LIFT_DROP];
+      ALL_TAC] THEN
+     CONJ_TAC THEN MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_CONTINUOUS THENL
+     [USE_THEN "mspaceX"
+        (fun th -> HYP_TAC "u: _ + _" (REWRITE_RULE[th]));
+      USE_THEN "mspaceX"
+        (fun th -> HYP_TAC "v: _ + _" (REWRITE_RULE[th]))] THEN
+     HYP MESON_TAC "hp" [CONTINUOUS_ON_SUBSET];
+     ALL_TAC] THEN
+    INTRO_TAC "!x; x" THEN REWRITE_TAC[GSYM LIFT_CMUL; LIFT_DROP] THEN
+    USE_THEN "c" MATCH_MP_TAC THEN CONJ_TAC THENL
+    [REMOVE_THEN "x" MP_TAC THEN REMOVE_THEN "t" MP_TAC THEN
+     SIMP_TAC[IN_INTERVAL_1] THEN REAL_ARITH_TAC;
+     ALL_TAC] THEN
+    CONJ_TAC THENL
+    [REMOVE_THEN "mspaceX"
+       (fun th -> HYP_TAC "u -> _ _ hp" (REWRITE_RULE[th])) THEN
+     REMOVE_THEN "hp" MATCH_MP_TAC THEN REMOVE_THEN "x" MP_TAC THEN
+     REMOVE_THEN "t" MP_TAC THEN SIMP_TAC[IN_INTERVAL_1] THEN REAL_ARITH_TAC;
+     REMOVE_THEN "mspaceX"
+       (fun th -> HYP_TAC "v -> _ _ hp" (REWRITE_RULE[th])) THEN
+     REMOVE_THEN "hp" MATCH_MP_TAC THEN REMOVE_THEN "x" MP_TAC THEN
+     REMOVE_THEN "t" MP_TAC THEN SIMP_TAC[IN_INTERVAL_1] THEN REAL_ARITH_TAC];
+    ALL_TAC] THEN
+   REWRITE_TAC[GSYM REAL_MUL_ASSOC] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+   HYP REWRITE_TAC "cpos X" [] THEN
+   TRANS_TAC REAL_LE_TRANS
+     `drop(integral (interval[t0,t])
+             (\s:real^1. lift(mdist X (u:real^1->real^N,v))))` THEN
+   CONJ_TAC THENL
+   [MATCH_MP_TAC INTEGRAL_DROP_LE THEN CONJ_TAC THENL
+    [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_LIFT_NORM_INTEGRABLE THEN
+     MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ON_SUBINTERVAL THEN
+     EXISTS_TAC `interval[t0,t0 + lift r0]` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SUB THEN
+      USE_THEN "mspaceX"
+        (fun th -> HYP_TAC "u -> _ ucont _" (REWRITE_RULE[th])) THEN
+      USE_THEN "mspaceX"
+        (fun th -> HYP_TAC "v -> _ vcont _" (REWRITE_RULE[th])) THEN
+      HYP SIMP_TAC "ucont vcont" [ABSOLUTELY_INTEGRABLE_CONTINUOUS];
+      REMOVE_THEN "t" MP_TAC THEN
+      SIMP_TAC[SUBSET_INTERVAL_1; IN_INTERVAL_1] THEN REAL_ARITH_TAC];
+     ALL_TAC] THEN
+    CONJ_TAC THENL
+    [MATCH_MP_TAC INTEGRABLE_CONTINUOUS THEN REWRITE_TAC[CONTINUOUS_ON_CONST];
+     ALL_TAC] THEN
+    INTRO_TAC "!x; x" THEN REWRITE_TAC[LIFT_DROP] THEN
+    SUBGOAL_THEN
+      `norm(u (x:real^1):real^N - v x) =
+       mdist (submetric euclidean_metric (cball (u0,r1))) (u x, v x)`
+      SUBST1_TAC THENL
+    [REWRITE_TAC[SUBMETRIC; EUCLIDEAN_METRIC; dist]; ALL_TAC] THEN
+    MATCH_MP_TAC MDIST_CFUNSPACE_IMP_MDIST_LE THEN
+    EXISTS_TAC `subtopology euclidean (interval [t0,t0 + lift r0])` THEN
+    HYP REWRITE_TAC "X u v" [REAL_LE_REFL] THEN
+    REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; TOPSPACE_EUCLIDEAN; INTER_UNIV] THEN
+    REMOVE_THEN "x" MP_TAC THEN REMOVE_THEN "t" MP_TAC THEN
+    SIMP_TAC[IN_INTERVAL_1] THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   REWRITE_TAC[INTEGRAL_CONST; DROP_CMUL; LIFT_DROP] THEN
+   MATCH_MP_TAC REAL_LE_RMUL THEN HYP SIMP_TAC "u v" [MDIST_POS_LE] THEN
+   CUT_TAC `drop t0 <= drop t` THENL
+   [REMOVE_THEN "t" MP_TAC THEN
+    REWRITE_TAC[IN_INTERVAL_1; DROP_ADD; LIFT_DROP] THEN
+    SIMP_TAC[CONTENT_1] THEN REAL_ARITH_TAC;
+    REMOVE_THEN "t" MP_TAC THEN SIMP_TAC[IN_INTERVAL_1]];
+   ALL_TAC] THEN
+  HYP_TAC "fixpoint: @u. (u fix) uniq" (REWRITE_RULE[EXISTS_UNIQUE]) THEN
+  EXISTS_TAC `u:real^1->real^N` THEN CONJ_TAC THENL
+  [REMOVE_THEN "fix" (SUBST1_TAC o GSYM) THEN
+   REMOVE_THEN "H" (fun th -> REWRITE_TAC[GSYM th]) THEN
+   REWRITE_TAC[RESTRICTION; ENDS_IN_INTERVAL; INTERVAL_EQ_EMPTY_1] THEN
+   HYP SIMP_TAC "r0pos"
+     [DROP_ADD; LIFT_DROP; REAL_ARITH `&0 < b ==> ~(a + b < a)`] THEN
+   REWRITE_TAC[INTEGRAL_REFL; VECTOR_ADD_RID];
+   ALL_TAC] THEN
+  CONJ_TAC THENL
+  [INTRO_TAC "!t; t" THEN
+   REMOVE_THEN "fix"
+     (fun th -> GEN_REWRITE_TAC (RATOR_CONV o LAND_CONV) [GSYM th]) THEN
+   REMOVE_THEN "H" (fun th -> REWRITE_TAC[GSYM th]) THEN
+   HYP SIMP_TAC "t" [RESTRICTION_HAS_DERIVATIVE] THEN
+   GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV)
+     [VECTOR_ARITH `x = vec 0 + x:real^N`] THEN
+   MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_ADD THEN
+   REWRITE_TAC[HAS_VECTOR_DERIVATIVE_CONST] THEN
+   MP_TAC (ISPECL[`\t:real^1. f (pastecart t (u t:real^N)):real^N`;
+                  `t0:real^1`; `t0 + lift r0`]
+                 INTEGRAL_HAS_VECTOR_DERIVATIVE) THEN
+   HYP SIMP_TAC "fu_cont u t" [];
+   ALL_TAC] THEN
+  INTRO_TAC "!v; vINs v0 v" THEN
+  SUBGOAL_THEN `RESTRICTION (interval[t0:real^1, t0 + lift r0]) v =
+                u:real^1->real^N`
+               (SUBST1_TAC o GSYM) THENL [ALL_TAC; SIMP_TAC[RESTRICTION]] THEN
+  REMOVE_THEN "uniq" MATCH_MP_TAC THEN CONJ_TAC THENL
+  [HYP REWRITE_TAC "mspaceX" [] THEN
+   REWRITE_TAC[RESTRICTION_IN_EXTENSIONAL] THEN CONJ_TAC THENL
+   [SIMP_TAC[RESTRICTION_CONTINUOUS_ON; SUBSET_REFL] THEN
+    MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
+    REWRITE_TAC[differentiable_on; differentiable] THEN
+    REMOVE_THEN "v" (MP_TAC o REWRITE_RULE[has_vector_derivative]) THEN
+    MESON_TAC[];
+    ALL_TAC] THEN
+   SIMP_TAC[RESTRICTION] THEN REFUTE_THEN (LABEL_TAC "contra") THEN
+   HYP_TAC "contra: @t1. t1 contra"
+     (REWRITE_RULE[NOT_FORALL_THM; NOT_IMP]) THEN
+   HYP_TAC "contra" (REWRITE_RULE[IN_CBALL; REAL_NOT_LE]) THEN
+   CUT_TAC `r1 < r1` THENL [REWRITE_TAC[REAL_LT_REFL]; ALL_TAC] THEN
+   TRANS_TAC REAL_LTE_TRANS `norm(u0 - v (t1:real^1):real^N)` THEN
+   CONJ_TAC THENL [HYP REWRITE_TAC "contra" [GSYM dist]; ALL_TAC] THEN
+   TRANS_TAC REAL_LE_TRANS `B * norm (t0 - t1:real^1)` THEN CONJ_TAC THENL
+   [ALL_TAC;
+    TRANS_TAC REAL_LE_TRANS `B * r0` THEN
+    HYP SIMP_TAC "r0lt1" [REAL_LT_IMP_LE] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+    HYP REWRITE_TAC "Bpos" [] THEN REMOVE_THEN "t1" MP_TAC THEN
+    REWRITE_TAC[IN_INTERVAL_1; NORM_1; DROP_SUB; DROP_ADD; LIFT_DROP] THEN
+    REAL_ARITH_TAC] THEN
+   REMOVE_THEN "v0" (SUBST1_TAC o GSYM) THEN
+   MATCH_MP_TAC (REWRITE_RULE [IMP_IMP; GSYM RIGHT_FORALL_IMP_THM]
+                              VECTOR_DIFFERENTIABLE_BOUND) THEN
+   EXISTS_TAC `\t:real^1. f(pastecart t (v t:real^N)):real^N` THEN
+   EXISTS_TAC `interval[t0,t0 + lift r0]` THEN
+   HYP REWRITE_TAC "t1 v" [CONVEX_INTERVAL; ENDS_IN_INTERVAL] THEN
+   CONJ_TAC THENL
+   [INTRO_TAC "!x; x" THEN REMOVE_THEN "bound" MATCH_MP_TAC THEN
+    HYP SIMP_TAC "vINs x" [];
+    REWRITE_TAC[INTERVAL_EQ_EMPTY_1; DROP_ADD; LIFT_DROP] THEN
+    REMOVE_THEN "r0pos" MP_TAC THEN REAL_ARITH_TAC];
+   ALL_TAC] THEN
+  REMOVE_THEN "H" (fun th -> REWRITE_TAC[GSYM th]) THEN
+  REWRITE_TAC[RESTRICTION_EXTENSION] THEN INTRO_TAC "![t]; t" THEN
+  REWRITE_TAC[VECTOR_ARITH `u0 + p = q:real^N <=> p = q - u0`] THEN
+  MATCH_MP_TAC INTEGRAL_UNIQUE THEN REMOVE_THEN "v0" (SUBST1_TAC o GSYM) THEN
+  MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS THEN
+  CONJ_TAC THENL
+  [REMOVE_THEN "t" MP_TAC THEN SIMP_TAC[IN_INTERVAL_1]; ALL_TAC] THEN
+  INTRO_TAC "!x; x" THEN
+  CLAIM_TAC "x'" `x IN interval [t0,t0 + lift r0]` THENL
+  [REMOVE_THEN "x" MP_TAC THEN REMOVE_THEN "t" MP_TAC THEN
+   SIMP_TAC[IN_INTERVAL_1] THEN REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  HYP REWRITE_TAC "x'" [RESTRICTION] THEN
+  MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_WITHIN_SUBSET THEN
+  EXISTS_TAC `interval[t0,t0 + lift r0]` THEN HYP SIMP_TAC "v x'" [] THEN
+  REMOVE_THEN "t" MP_TAC THEN
+  SIMP_TAC[IN_INTERVAL_1; SUBSET_INTERVAL_1; REAL_LE_REFL]);;
