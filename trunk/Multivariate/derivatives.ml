@@ -2532,6 +2532,23 @@ let HAS_BOUNDED_VECTOR_DERIVATIVE_IMP_LIPSCHITZ = prove
   REWRITE_TAC[FORALL_IN_IMAGE] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC VECTOR_DIFFERENTIABLE_BOUND THEN ASM_MESON_TAC[]);;
 
+let RESTRICTION_HAS_DERIVATIVE = prove
+ (`!f:real^1->real^N f' s x.
+     x IN s
+     ==> ((RESTRICTION s f has_vector_derivative f') (at x within s) <=>
+          (f has_vector_derivative f') (at x within s))`,
+  INTRO_TAC "!f f' s x; x" THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN
+   MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_TRANSFORM_WITHIN THEN
+   MAP_EVERY EXISTS_TAC [`RESTRICTION s f:real^1->real^N`; `&1`] THEN
+   ASM_REWRITE_TAC[REAL_LT_01] THEN
+   SIMP_TAC[RESTRICTION];
+   INTRO_TAC "hp" THEN
+   MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_TRANSFORM_WITHIN THEN
+   MAP_EVERY EXISTS_TAC [`f:real^1->real^N`; `&1`] THEN
+   ASM_REWRITE_TAC[REAL_LT_01] THEN
+   SIMP_TAC[RESTRICTION]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Various versions of Kachurovskii's theorem.                               *)
 (* ------------------------------------------------------------------------- *)
