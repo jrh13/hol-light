@@ -4692,6 +4692,77 @@ let MCOMPLETE_EUCLIDEAN = prove
     CAUCHY_IN_EQ_CAUCHY; LIMIT_EUCLIDEAN; CONVERGENT_EQ_CAUCHY]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Cauchy-type criteria for limits at a point.                               *)
+(* ------------------------------------------------------------------------- *)
+
+let CONVERGENT_EQ_CAUCHY_WITHIN = prove
+ (`!f:real^M->real^N s a.
+        (?l. (f --> l) (at a within s)) <=>
+        (!e. &0 < e
+             ==> ?d. &0 < d /\
+                     !x x'. x IN s /\ &0 < dist(x,a) /\ dist(x,a) < d /\
+                            x' IN s /\ &0 < dist(x',a) /\ dist(x',a) < d
+                            ==> dist(f x,f x') < e)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_WITHIN]) THEN
+    DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[] THEN MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN
+    STRIP_TAC THEN FIRST_X_ASSUM(fun th ->
+      MP_TAC(SPEC `y:real^M` th) THEN MP_TAC(SPEC `x:real^M` th)) THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC NORM_ARITH;
+    ASM_CASES_TAC `trivial_limit (at (a:real^M) within s)` THENL
+     [ASM_REWRITE_TAC[LIM]; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o
+      GEN_REWRITE_RULE RAND_CONV [TRIVIAL_LIMIT_WITHIN]) THEN
+    REWRITE_TAC[LIMPT_SEQUENTIAL; IN_DELETE; FORALL_AND_THM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `b:num->real^M` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `?l. (((f:real^M->real^N) o b) --> l) sequentially`
+    MP_TAC THENL
+     [REWRITE_TAC[CONVERGENT_EQ_CAUCHY; cauchy; o_THM; GE] THEN
+      X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+      DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_SEQUENTIALLY]) THEN
+      DISCH_THEN(MP_TAC o SPEC `d:real`) THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN ASM_MESON_TAC[DIST_NZ];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `l:real^N` THEN
+      DISCH_THEN(LABEL_TAC "*") THEN REWRITE_TAC[LIM_WITHIN] THEN
+      X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN
+      ASM_REWRITE_TAC[REAL_HALF] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[GSYM DIST_NZ] THEN
+      X_GEN_TAC `x:real^M` THEN STRIP_TAC THEN
+      REMOVE_THEN "*" MP_TAC THEN REWRITE_TAC[tendsto] THEN
+      DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [tendsto]) THEN
+      DISCH_THEN(MP_TAC o SPEC `d:real`) THEN
+      ASM_REWRITE_TAC[IMP_IMP; GSYM EVENTUALLY_AND; o_THM] THEN
+      REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+      DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
+      REWRITE_TAC[LE_REFL] THEN
+      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+      MATCH_MP_TAC(NORM_ARITH
+       `dist(f:real^N,b) < e / &2
+        ==> dist(b,l) < e / &2 ==> dist(f,l) < e`) THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[GSYM DIST_NZ]]]);;
+
+let CONVERGENT_EQ_CAUCHY_AT = prove
+ (`!f:real^M->real^N a.
+        (?l. (f --> l) (at a)) <=>
+        (!e. &0 < e
+             ==> ?d. &0 < d /\
+                     !x x'. &0 < dist(x,a) /\ dist(x,a) < d /\
+                            &0 < dist(x',a) /\ dist(x',a) < d
+                            ==> dist(f x,f x') < e)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `(:real^M)`; `a:real^M`]
+        CONVERGENT_EQ_CAUCHY_WITHIN) THEN
+  REWRITE_TAC[WITHIN_UNIV; IN_UNIV]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Total boundedness.                                                        *)
 (* ------------------------------------------------------------------------- *)
 

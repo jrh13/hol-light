@@ -7365,6 +7365,124 @@ let COMPONENT_INTERMEDIATE_CLOPEN = prove
       CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
       MATCH_MP_TAC CLOSED_SUBSET THEN ASM_SIMP_TAC[COMPACT_IMP_CLOSED]]]);;
 
+let COMPONENTS_SUBSETS_CLOPEN_PARTITION = prove
+ (`!u s:real^N->bool.
+        locally compact s /\
+        FINITE u /\ ~(u = {}) /\ u SUBSET components s /\
+        (!c. c IN u ==> compact c)
+        ==> ?f. (!c. c IN u
+                     ==> open_in (subtopology euclidean s) (f c) /\
+                         closed_in (subtopology euclidean s) (f c) /\
+                         c SUBSET f(c)) /\
+                pairwise (\c c'. ~(f(c) = f(c'))) u /\
+                pairwise (\c c'. DISJOINT (f c) (f c')) u /\
+                UNIONS (IMAGE f u) = s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?l. !c. c IN u
+          ==> closed_in (subtopology euclidean s) (l c) /\
+              open_in (subtopology euclidean s) (l c) /\
+              (c:real^N->bool) SUBSET l c /\
+              (!c'. c' IN u /\ ~(c' = c) ==> DISJOINT (l c) (l c'))`
+  STRIP_ASSUME_TAC THENL
+   [SUBGOAL_THEN
+     `!c. c IN u
+          ==> ?l. closed_in (subtopology euclidean s) l /\
+                  open_in (subtopology euclidean s) l /\
+                  c SUBSET l /\
+                  (!c':real^N->bool. c' IN u /\ ~(c' = c) ==> DISJOINT c' l)`
+    MP_TAC THENL
+     [X_GEN_TAC `c:real^N->bool` THEN DISCH_TAC THEN
+      MP_TAC(ISPECL
+       [`s:real^N->bool`; `c:real^N->bool`;
+        `s DIFF UNIONS (u DELETE c):real^N->bool`]
+          COMPONENT_INTERMEDIATE_CLOPEN) THEN
+      ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+       [ALL_TAC; MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]] THEN
+      REPEAT CONJ_TAC THENL
+       [ASM SET_TAC[];
+        MATCH_MP_TAC OPEN_IN_DIFF THEN REWRITE_TAC[OPEN_IN_REFL] THEN
+        MATCH_MP_TAC CLOSED_IN_UNIONS THEN ASM_REWRITE_TAC[FINITE_DELETE] THEN
+        ASM_SIMP_TAC[IN_DELETE; COMPACT_IMP_CLOSED; CLOSED_SUBSET_EQ] THEN
+        ASM_MESON_TAC[IN_COMPONENTS_SUBSET; SUBSET];
+        MATCH_MP_TAC(SET_RULE
+         `c SUBSET s /\ (!d. d IN u ==> DISJOINT c d)
+          ==> c SUBSET s DIFF UNIONS u`) THEN
+        CONJ_TAC THENL
+         [ASM_MESON_TAC[IN_COMPONENTS_SUBSET; SUBSET];
+          REWRITE_TAC[IN_DELETE] THEN
+          ASM_MESON_TAC[REWRITE_RULE[pairwise] PAIRWISE_DISJOINT_COMPONENTS;
+                        SUBSET]];
+        ASM SET_TAC[]];
+      GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+      REWRITE_TAC[SKOLEM_THM] THEN
+      DISCH_THEN(X_CHOOSE_TAC `l:(real^N->bool)->(real^N->bool)`) THEN
+      EXISTS_TAC `\c. (l:(real^N->bool)->(real^N->bool)) c DIFF
+                      UNIONS (IMAGE l (u DELETE c))` THEN
+      X_GEN_TAC `c:real^N->bool` THEN DISCH_TAC THEN REWRITE_TAC[] THEN
+      REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC CLOSED_IN_DIFF THEN ASM_SIMP_TAC[] THEN
+        MATCH_MP_TAC OPEN_IN_UNIONS THEN ASM SET_TAC[];
+        MATCH_MP_TAC OPEN_IN_DIFF THEN ASM_SIMP_TAC[] THEN
+        MATCH_MP_TAC CLOSED_IN_UNIONS THEN
+        ASM_SIMP_TAC[FINITE_DELETE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+        ASM SET_TAC[];
+        MATCH_MP_TAC(SET_RULE
+         `c SUBSET s /\ (!d. d IN u ==> DISJOINT c d)
+          ==> c SUBSET s DIFF UNIONS u`) THEN
+        CONJ_TAC THENL
+         [ASM_MESON_TAC[IN_COMPONENTS_SUBSET; SUBSET];
+          REWRITE_TAC[IN_DELETE; FORALL_IN_IMAGE] THEN
+          ASM_MESON_TAC[REWRITE_RULE[pairwise] PAIRWISE_DISJOINT_COMPONENTS;
+                        SUBSET]];
+        SET_TAC[]]];
+    ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `d:real^N->bool`) THEN
+  EXISTS_TAC `\c. if c = d then s DIFF UNIONS (IMAGE l (u DELETE d))
+                  else (l:(real^N->bool)->(real^N->bool)) c` THEN
+  REWRITE_TAC[] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r /\ s <=> p /\ (q /\ r) /\ s`] THEN
+  REWRITE_TAC[PAIRWISE_AND] THEN REPEAT CONJ_TAC THENL
+   [X_GEN_TAC `c:real^N->bool` THEN DISCH_TAC THEN
+    COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC OPEN_IN_DIFF THEN REWRITE_TAC[OPEN_IN_REFL] THEN
+      MATCH_MP_TAC CLOSED_IN_UNIONS THEN
+      ASM_SIMP_TAC[FINITE_DELETE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+      ASM SET_TAC[];
+      MATCH_MP_TAC CLOSED_IN_DIFF THEN REWRITE_TAC[CLOSED_IN_REFL] THEN
+      MATCH_MP_TAC OPEN_IN_UNIONS THEN ASM SET_TAC[];
+      MATCH_MP_TAC(SET_RULE
+       `c SUBSET s /\ (!d. d IN u ==> DISJOINT c d)
+        ==> c SUBSET s DIFF UNIONS u`) THEN
+      CONJ_TAC THENL
+       [ASM_MESON_TAC[IN_COMPONENTS_SUBSET; SUBSET]; ALL_TAC] THEN
+      REWRITE_TAC[IN_DELETE; FORALL_IN_IMAGE] THEN
+      ASM_MESON_TAC[SET_RULE `c SUBSET c' /\ DISJOINT c' d ==> DISJOINT c d`]];
+    FIRST_ASSUM(SUBST1_TAC o MATCH_MP (SET_RULE
+     `a IN s ==> s = a INSERT (s DELETE a)`)) THEN
+    REWRITE_TAC[PAIRWISE_INSERT] THEN
+    ASM_SIMP_TAC[SET_RULE `a IN s ==> a INSERT (s DELETE a) = s`] THEN
+    SUBGOAL_THEN
+     `!c:real^N->bool. c IN u ==> ~(l c:real^N->bool = {})`
+    ASSUME_TAC THENL
+     [ASM_MESON_TAC[SUBSET_EMPTY; IN_COMPONENTS_NONEMPTY; SUBSET];
+      ALL_TAC] THEN
+    ASM_SIMP_TAC[IN_DELETE; pairwise; SET_RULE
+      `~(c' = {}) ==> ((~(c = c') /\ DISJOINT c c') /\
+                       (~(c' = c) /\ DISJOINT c' c) <=> DISJOINT c c')`] THEN
+    ASM SET_TAC[];
+    FIRST_ASSUM(SUBST1_TAC o MATCH_MP (SET_RULE
+     `a IN s ==> s = a INSERT (s DELETE a)`)) THEN
+    REWRITE_TAC[IMAGE_CLAUSES; UNIONS_INSERT] THEN
+    ASM_SIMP_TAC[SET_RULE `a IN s ==> a INSERT (s DELETE a) = s`] THEN
+    REWRITE_TAC[SET_RULE
+     `IMAGE (\x. if x = a then f x else g x) (s DELETE a) =
+      IMAGE g (s DELETE a)`] THEN
+    MATCH_MP_TAC(SET_RULE `u SUBSET s ==> (s DIFF u) UNION u = s`) THEN
+    REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_IMAGE; IN_DELETE] THEN
+    ASM_MESON_TAC[OPEN_IN_IMP_SUBSET]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relations between components and path components.                         *)
 (* ------------------------------------------------------------------------- *)

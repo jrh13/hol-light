@@ -2680,6 +2680,11 @@ let PAIRWISE_MONO = prove
  (`!r s t. pairwise r s /\ t SUBSET s ==> pairwise r t`,
   REWRITE_TAC[pairwise] THEN SET_TAC[]);;
 
+let PAIRWISE_AND = prove
+ (`!R R' s. pairwise R s /\ pairwise R' s <=>
+            pairwise (\x y. R x y /\ R' x y) s`,
+  REWRITE_TAC[pairwise] THEN SET_TAC[]);;
+
 let PAIRWISE_INSERT = prove
  (`!r x s.
         pairwise r (x INSERT s) <=>

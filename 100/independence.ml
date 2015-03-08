@@ -31,19 +31,19 @@ needs "Multivariate/cauchy.ml";;
 (* default outside unit ball so some handy theorems become unconditional.    *)
 (* ------------------------------------------------------------------------- *)
 
-let mdist = new_definition
- `mdist(x:real^N,y:real^N) =
+let ddist = new_definition
+ `ddist(x:real^N,y:real^N) =
     if norm(x) < &1 /\ norm(y) < &1 then
      (&1 - x dot y) pow 2 / ((&1 - norm(x) pow 2) * (&1 - norm(y) pow 2)) - &1
     else dist(x,y)`;;
 
-let MDIST_INCREASES_ONLINE = prove
+let DDIST_INCREASES_ONLINE = prove
  (`!a b x:real^N.
       norm a < &1 /\ norm b < &1 /\ norm x < &1 /\ between x (a,b) /\ ~(x = b)
-      ==> mdist(a,x) < mdist(a,b)`,
+      ==> ddist(a,x) < ddist(a,b)`,
   REPEAT STRIP_TAC THEN ASM_CASES_TAC `b:real^N = a` THENL
    [ASM_MESON_TAC[BETWEEN_REFL_EQ]; ALL_TAC] THEN
-  ASM_SIMP_TAC[mdist; real_div; REAL_INV_MUL] THEN
+  ASM_SIMP_TAC[ddist; real_div; REAL_INV_MUL] THEN
   SUBGOAL_THEN
    `norm(a:real^N) pow 2 < &1 /\ norm(b:real^N) pow 2 < &1 /\
     norm(x:real^N) pow 2 < &1`
@@ -84,53 +84,53 @@ let MDIST_INCREASES_ONLINE = prove
   MATCH_MP_TAC REAL_LTE_ADD THEN REWRITE_TAC[REAL_LE_POW_2] THEN
   MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC[DOT_POS_LT; REAL_SUB_LT]);;
 
-let MDIST_REFL = prove
- (`!x:real^N. mdist(x,x) = &0`,
-  GEN_TAC THEN REWRITE_TAC[mdist; DIST_REFL; NORM_POW_2; NORM_LT_SQUARE] THEN
+let DDIST_REFL = prove
+ (`!x:real^N. ddist(x,x) = &0`,
+  GEN_TAC THEN REWRITE_TAC[ddist; DIST_REFL; NORM_POW_2; NORM_LT_SQUARE] THEN
   CONV_TAC REAL_FIELD);;
 
-let MDIST_SYM = prove
- (`!x y:real^N. mdist(x,y) = mdist(y,x)`,
-  REWRITE_TAC[mdist; CONJ_ACI; REAL_MUL_AC; DIST_SYM; DOT_SYM]);;
+let DDIST_SYM = prove
+ (`!x y:real^N. ddist(x,y) = ddist(y,x)`,
+  REWRITE_TAC[ddist; CONJ_ACI; REAL_MUL_AC; DIST_SYM; DOT_SYM]);;
 
-let MDIST_POS_LT = prove
- (`!x y:real^N. ~(x = y) ==> &0 < mdist(x,y)`,
+let DDIST_POS_LT = prove
+ (`!x y:real^N. ~(x = y) ==> &0 < ddist(x,y)`,
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC `norm(x:real^N) < &1 /\ norm(y:real^N) < &1` THENL
-   [ASM_MESON_TAC[MDIST_INCREASES_ONLINE; MDIST_REFL; BETWEEN_REFL];
-    ASM_SIMP_TAC[mdist; DIST_POS_LT]]);;
+   [ASM_MESON_TAC[DDIST_INCREASES_ONLINE; DDIST_REFL; BETWEEN_REFL];
+    ASM_SIMP_TAC[ddist; DIST_POS_LT]]);;
 
-let MDIST_POS_LE = prove
- (`!x y:real^N. &0 <= mdist(x,y)`,
+let DDIST_POS_LE = prove
+ (`!x y:real^N. &0 <= ddist(x,y)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `x:real^N = y` THEN
-  ASM_SIMP_TAC[MDIST_REFL; MDIST_POS_LT; REAL_LE_LT]);;
+  ASM_SIMP_TAC[DDIST_REFL; DDIST_POS_LT; REAL_LE_LT]);;
 
-let MDIST_EQ_0 = prove
- (`!x y:real^N. mdist(x,y) = &0 <=> x = y`,
-  MESON_TAC[MDIST_REFL; MDIST_POS_LT; REAL_LT_REFL]);;
+let DDIST_EQ_0 = prove
+ (`!x y:real^N. ddist(x,y) = &0 <=> x = y`,
+  MESON_TAC[DDIST_REFL; DDIST_POS_LT; REAL_LT_REFL]);;
 
-let BETWEEN_COLLINEAR_MDIST_EQ = prove
+let BETWEEN_COLLINEAR_DDIST_EQ = prove
  (`!a b x:real^N.
         norm(a) < &1 /\ norm(b) < &1 /\ norm(x) < &1
         ==> (between x (a,b) <=>
              collinear {a, x, b} /\
-             mdist(x,a) <= mdist (a,b) /\ mdist(x,b) <= mdist(a,b))`,
+             ddist(x,a) <= ddist (a,b) /\ ddist(x,b) <= ddist(a,b))`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN EQ_TAC THENL
    [SIMP_TAC[BETWEEN_IMP_COLLINEAR];
     REWRITE_TAC[COLLINEAR_BETWEEN_CASES]] THEN
-  ASM_MESON_TAC[MDIST_INCREASES_ONLINE; MDIST_SYM; REAL_LT_IMP_LE;
+  ASM_MESON_TAC[DDIST_INCREASES_ONLINE; DDIST_SYM; REAL_LT_IMP_LE;
                 REAL_LE_REFL; BETWEEN_SYM; REAL_NOT_LE; BETWEEN_REFL]);;
 
-let CONTINUOUS_AT_LIFT_MDIST = prove
+let CONTINUOUS_AT_LIFT_DDIST = prove
  (`!a x:real^N.
-      norm(a) < &1 /\ norm(x) < &1 ==> (\x. lift(mdist(a,x))) continuous at x`,
+      norm(a) < &1 /\ norm(x) < &1 ==> (\x. lift(ddist(a,x))) continuous at x`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_TRANSFORM_AT THEN EXISTS_TAC
    `\x:real^N. lift((&1 - a dot x) pow 2 /
                     ((&1 - norm a pow 2) * (&1 - norm x pow 2)) - &1)` THEN
   EXISTS_TAC `&1 - norm(x:real^N)` THEN ASM_REWRITE_TAC[REAL_SUB_LT] THEN
   CONJ_TAC THENL
    [X_GEN_TAC `y:real^N` THEN DISCH_THEN(MP_TAC o MATCH_MP (NORM_ARITH
-    `dist(y,x) < &1 - norm x ==> norm y < &1`)) THEN ASM_SIMP_TAC[mdist];
+    `dist(y,x) < &1 - norm x ==> norm y < &1`)) THEN ASM_SIMP_TAC[ddist];
     REWRITE_TAC[LIFT_SUB; real_div; LIFT_CMUL; REAL_INV_MUL] THEN
     MATCH_MP_TAC CONTINUOUS_SUB THEN SIMP_TAC[CONTINUOUS_CONST] THEN
     REPEAT(MATCH_MP_TAC CONTINUOUS_MUL THEN CONJ_TAC) THEN
@@ -145,48 +145,48 @@ let CONTINUOUS_AT_LIFT_MDIST = prove
 let HYPERBOLIC_MIDPOINT = prove
  (`!a b:real^N.
         norm a < &1 /\ norm b < &1
-        ==> ?x. between x (a,b) /\ mdist(x,a) = mdist(x,b)`,
+        ==> ?x. between x (a,b) /\ ddist(x,a) = ddist(x,b)`,
   REPEAT STRIP_TAC THEN MP_TAC(ISPECL
-   [`\x:real^N. lift(mdist(x,a) - mdist(x,b))`; `segment[a:real^N,b]`]
+   [`\x:real^N. lift(ddist(x,a) - ddist(x,b))`; `segment[a:real^N,b]`]
      CONNECTED_CONTINUOUS_IMAGE) THEN
   ANTS_TAC THENL
    [REWRITE_TAC[CONNECTED_SEGMENT; LIFT_SUB] THEN
     MATCH_MP_TAC CONTINUOUS_AT_IMP_CONTINUOUS_ON THEN REPEAT STRIP_TAC THEN
-    MATCH_MP_TAC CONTINUOUS_SUB THEN ONCE_REWRITE_TAC[MDIST_SYM] THEN
-    CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_AT_LIFT_MDIST THEN
+    MATCH_MP_TAC CONTINUOUS_SUB THEN ONCE_REWRITE_TAC[DDIST_SYM] THEN
+    CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_AT_LIFT_DDIST THEN
     ASM_MESON_TAC[BETWEEN_NORM_LT; BETWEEN_IN_SEGMENT];
     REWRITE_TAC[GSYM IS_INTERVAL_CONNECTED_1; IS_INTERVAL_1] THEN
     REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
     REWRITE_TAC[IMP_IMP; RIGHT_IMP_FORALL_THM; LIFT_DROP] THEN
     DISCH_THEN(MP_TAC o SPECL [`a:real^N`; `b:real^N`; `lift(&0)`]) THEN
-    ASM_SIMP_TAC[MDIST_REFL; LIFT_DROP; ENDS_IN_SEGMENT; IN_IMAGE] THEN
+    ASM_SIMP_TAC[DDIST_REFL; LIFT_DROP; ENDS_IN_SEGMENT; IN_IMAGE] THEN
     REWRITE_TAC[REAL_SUB_RZERO; REAL_ARITH `&0 - x <= &0 <=> &0 <= x`] THEN
-    ASM_SIMP_TAC[MDIST_POS_LE; LIFT_EQ; BETWEEN_IN_SEGMENT] THEN
-    ASM_MESON_TAC[REAL_SUB_0; MDIST_SYM]]);;
+    ASM_SIMP_TAC[DDIST_POS_LE; LIFT_EQ; BETWEEN_IN_SEGMENT] THEN
+    ASM_MESON_TAC[REAL_SUB_0; DDIST_SYM]]);;
 
-let MDIST_EQ_ORIGIN = prove
+let DDIST_EQ_ORIGIN = prove
  (`!x:real^N y:real^N.
         norm x < &1 /\ norm y < &1
-        ==> (mdist(vec 0,x) = mdist(vec 0,y) <=> norm x = norm y)`,
-  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[mdist; NORM_0; REAL_LT_01] THEN
+        ==> (ddist(vec 0,x) = ddist(vec 0,y) <=> norm x = norm y)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[ddist; NORM_0; REAL_LT_01] THEN
   REWRITE_TAC[DOT_LZERO] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
   REWRITE_TAC[real_div; REAL_MUL_LID; REAL_EQ_INV2;
               REAL_ARITH `x - &1 = y - &1 <=> x = y`] THEN
   REWRITE_TAC[REAL_ARITH `&1 - x = &1 - y <=> x = y`;
               GSYM REAL_EQ_SQUARE_ABS; REAL_ABS_NORM]);;
 
-let MDIST_CONGRUENT_TRIPLES_0 = prove
+let DDIST_CONGRUENT_TRIPLES_0 = prove
  (`!a b:real^N a' b':real^N.
         norm a < &1 /\ norm b < &1 /\ norm a' < &1 /\ norm b' < &1
-        ==> (mdist(vec 0,a) = mdist(vec 0,a') /\ mdist(a,b) = mdist(a',b') /\
-             mdist(b,vec 0) = mdist(b',vec 0) <=>
+        ==> (ddist(vec 0,a) = ddist(vec 0,a') /\ ddist(a,b) = ddist(a',b') /\
+             ddist(b,vec 0) = ddist(b',vec 0) <=>
              dist(vec 0,a) = dist(vec 0,a') /\ dist(a,b) = dist(a',b') /\
              dist(b,vec 0) = dist(b',vec 0))`,
   REPEAT STRIP_TAC THEN
-  ASM_SIMP_TAC[MDIST_EQ_ORIGIN; REWRITE_RULE[MDIST_SYM] MDIST_EQ_ORIGIN] THEN
+  ASM_SIMP_TAC[DDIST_EQ_ORIGIN; REWRITE_RULE[DDIST_SYM] DDIST_EQ_ORIGIN] THEN
   REWRITE_TAC[DIST_0; NORM_0; REAL_LT_01] THEN MATCH_MP_TAC(TAUT
    `(a /\ b ==> (x <=> y)) ==> (a /\ x /\ b <=> a /\ y /\ b)`) THEN
-  STRIP_TAC THEN ASM_SIMP_TAC[mdist; DIST_EQ; real_div; REAL_INV_MUL; REAL_RING
+  STRIP_TAC THEN ASM_SIMP_TAC[ddist; DIST_EQ; real_div; REAL_INV_MUL; REAL_RING
    `x * a * b - &1 = y * a * b - &1 <=> x = y \/ a = &0 \/ b = &0`] THEN
   REWRITE_TAC[dist; NORM_POW_2; DOT_LSUB; DOT_RSUB; DOT_SYM] THEN
   REWRITE_TAC[GSYM REAL_EQ_SQUARE_ABS; NORM_POW_2] THEN
@@ -298,9 +298,9 @@ let POINCARIFY_KLEINIFY = prove
   MATCH_MP_TAC(REAL_ARITH `abs(x) < &1 ==> ~(&1 + x = &0)`) THEN
   ASM_REWRITE_TAC[REAL_ABS_POW; REAL_ABS_NORM; ABS_SQUARE_LT_1]);;
 
-let MDIST_KLEINIFY = prove
+let DDIST_KLEINIFY = prove
  (`!w z. ~(norm w = &1) /\ ~(norm z = &1)
-         ==> mdist(kleinify w,kleinify z) =
+         ==> ddist(kleinify w,kleinify z) =
              &4 * (&1 / &2 + norm(w - z) pow 2 /
                              ((&1 - norm w pow 2) * (&1 - norm z pow 2))) pow 2
              - &1`,
@@ -309,7 +309,7 @@ let MDIST_KLEINIFY = prove
      ((&1 - norm w pow 2) * (&1 - norm z pow 2) + norm(w - z) pow 2)) /
     ((&1 - norm w pow 2) pow 2 * (&1 - norm z pow 2) pow 2)` THEN
   CONJ_TAC THENL
-   [ASM_SIMP_TAC[mdist; NORM_KLEINIFY_LT] THEN MATCH_MP_TAC(REAL_FIELD
+   [ASM_SIMP_TAC[ddist; NORM_KLEINIFY_LT] THEN MATCH_MP_TAC(REAL_FIELD
      `~(y = &0) /\ z = (w + &1) * y ==> z / y - &1 = w`) THEN
     CONJ_TAC THENL
      [REWRITE_TAC[REAL_ENTIRE; DE_MORGAN_THM] THEN CONJ_TAC THEN
@@ -341,13 +341,13 @@ let MDIST_KLEINIFY = prove
     REPEAT(POP_ASSUM MP_TAC) THEN
     REWRITE_TAC[NORM_EQ_SQUARE; GSYM NORM_POW_2] THEN CONV_TAC REAL_FIELD]);;
 
-let MDIST_KLEINIFY_EQ = prove
+let DDIST_KLEINIFY_EQ = prove
  (`!w z w' z'.
       ~(norm w = &1) /\ ~(norm z = &1) /\ ~(norm w' = &1) /\ ~(norm z' = &1) /\
       norm(w - z) pow 2 * (&1 - norm w' pow 2) * (&1 - norm z' pow 2) =
       norm(w' - z') pow 2 * (&1 - norm w pow 2) * (&1 - norm z pow 2)
-      ==> mdist(kleinify w,kleinify z) = mdist(kleinify w',kleinify z')`,
-  SIMP_TAC[MDIST_KLEINIFY; NORM_EQ_SQUARE; GSYM NORM_POW_2; REAL_POS] THEN
+      ==> ddist(kleinify w,kleinify z) = ddist(kleinify w',kleinify z')`,
+  SIMP_TAC[DDIST_KLEINIFY; NORM_EQ_SQUARE; GSYM NORM_POW_2; REAL_POS] THEN
   CONV_TAC REAL_FIELD);;
 
 let NORM_KLEINIFY_MOEBIUS_LT = prove
@@ -355,12 +355,12 @@ let NORM_KLEINIFY_MOEBIUS_LT = prove
          ==> norm(kleinify(moebius_function (&0) w x)) < &1`,
   SIMP_TAC[MOEBIUS_FUNCTION_NORM_LT_1; NORM_KLEINIFY_LT; REAL_LT_IMP_NE]);;
 
-let MDIST_KLEINIFY_MOEBIUS = prove
+let DDIST_KLEINIFY_MOEBIUS = prove
  (`!w x y. norm w < &1 /\ norm x < &1 /\ norm y < &1
-           ==> mdist(kleinify(moebius_function (&0) w x),
+           ==> ddist(kleinify(moebius_function (&0) w x),
                      kleinify(moebius_function (&0) w y)) =
-               mdist(kleinify x,kleinify y)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC MDIST_KLEINIFY_EQ THEN
+               ddist(kleinify x,kleinify y)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DDIST_KLEINIFY_EQ THEN
   ASM_SIMP_TAC[MOEBIUS_FUNCTION_NORM_LT_1; REAL_LT_IMP_NE] THEN
   REWRITE_TAC[MOEBIUS_FUNCTION_SIMPLE] THEN
   SUBGOAL_THEN
@@ -461,14 +461,14 @@ let BETWEEN_KLEINIFY_MOEBIUS = prove
                           (kleinify(moebius_function (&0) w y),
                            kleinify(moebius_function (&0) w z)) <=>
                   between (kleinify x) (kleinify y,kleinify z))`,
-  SIMP_TAC[BETWEEN_COLLINEAR_MDIST_EQ; NORM_KLEINIFY_MOEBIUS_LT;
+  SIMP_TAC[BETWEEN_COLLINEAR_DDIST_EQ; NORM_KLEINIFY_MOEBIUS_LT;
            NORM_KLEINIFY_LT; REAL_LT_IMP_NE;
-           COLLINEAR_KLEINIFY_MOEBIUS; MDIST_KLEINIFY_MOEBIUS]);;
+           COLLINEAR_KLEINIFY_MOEBIUS; DDIST_KLEINIFY_MOEBIUS]);;
 
 let hyperbolic_isometry = new_definition
  `hyperbolic_isometry (f:real^2->real^2) <=>
     (!x. norm x < &1 ==> norm(f x) < &1) /\
-    (!x y. norm x < &1 /\ norm y < &1 ==> mdist(f x,f y) = mdist(x,y)) /\
+    (!x y. norm x < &1 /\ norm y < &1 ==> ddist(f x,f y) = ddist(x,y)) /\
     (!x y z. norm x < &1 /\ norm y < &1 /\ norm z < &1
              ==> (between (f x) (f y,f z) <=> between x (y,z)))`;;
 
@@ -483,7 +483,7 @@ let HYPERBOLIC_TRANSLATION = prove
    [`\x. kleinify(moebius_function(&0) (poincarify w) (poincarify x))`;
    `\x. kleinify(moebius_function(&0) (--(poincarify w)) (poincarify x))`] THEN
   ASM_SIMP_TAC[NORM_KLEINIFY_MOEBIUS_LT; NORM_POINCARIFY_LT;
-               MDIST_KLEINIFY_MOEBIUS; KLEINIFY_POINCARIFY; VECTOR_NEG_NEG;
+               DDIST_KLEINIFY_MOEBIUS; KLEINIFY_POINCARIFY; VECTOR_NEG_NEG;
                BETWEEN_KLEINIFY_MOEBIUS; NORM_NEG; MOEBIUS_FUNCTION_COMPOSE;
                POINCARIFY_KLEINIFY; MOEBIUS_FUNCTION_NORM_LT_1] THEN
   ASM_SIMP_TAC[MOEBIUS_FUNCTION_SIMPLE; COMPLEX_SUB_REFL; complex_div;
@@ -506,7 +506,7 @@ let pbetween = new_definition
  `pbetween y (x,z) <=> between (dest_plane y) (dest_plane x,dest_plane z)`;;
 
 let pdist = new_definition
- `pdist(x,y) = mdist(dest_plane x,dest_plane y)`;;
+ `pdist(x,y) = ddist(dest_plane x,dest_plane y)`;;
 
 let DEST_PLANE_NORM_LT = prove
  (`!x. norm(dest_plane x) < &1`,
@@ -530,7 +530,7 @@ let EXISTS_DEST_PLANE = prove
 
 let TARSKI_AXIOM_1_NONEUCLIDEAN = prove
  (`!a b. pdist(a,b) = pdist(b,a)`,
-  REWRITE_TAC[pdist; MDIST_SYM]);;
+  REWRITE_TAC[pdist; DDIST_SYM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Axiom 2 (transitivity for equidistance).                                  *)
@@ -548,7 +548,7 @@ let TARSKI_AXIOM_2_NONEUCLIDEAN = prove
 
 let TARSKI_AXIOM_3_NONEUCLIDEAN = prove
  (`!a b c. pdist(a,b) = pdist(c,c) ==> a = b`,
-  SIMP_TAC[FORALL_DEST_PLANE; pdist; MDIST_REFL; MDIST_EQ_0; DEST_PLANE_EQ]);;
+  SIMP_TAC[FORALL_DEST_PLANE; pdist; DDIST_REFL; DDIST_EQ_0; DEST_PLANE_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Axiom 4 (segment construction).                                           *)
@@ -559,7 +559,7 @@ let TARSKI_AXIOM_4_NONEUCLIDEAN = prove
   REWRITE_TAC[pbetween; pdist; FORALL_DEST_PLANE; EXISTS_DEST_PLANE] THEN
   REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
   REPEAT GEN_TAC THEN DISCH_TAC THEN
-  SUBGOAL_THEN `?d:real^2. norm d < &1 /\ mdist(b:real^2,c) = mdist(vec 0,d)`
+  SUBGOAL_THEN `?d:real^2. norm d < &1 /\ ddist(b:real^2,c) = ddist(vec 0,d)`
   STRIP_ASSUME_TAC THENL
    [MP_TAC(SPEC `b:real^2` HYPERBOLIC_TRANSLATION) THEN
     ASM_REWRITE_TAC[hyperbolic_isometry] THEN ASM_MESON_TAC[];
@@ -571,7 +571,7 @@ let TARSKI_AXIOM_4_NONEUCLIDEAN = prove
   MATCH_MP_TAC(MESON[] `P(vec 0) /\ (P(vec 0) ==> !x. P x) ==> !x. P x`) THEN
   REWRITE_TAC[NORM_0; REAL_LT_01] THEN CONJ_TAC THENL
    [MP_TAC(ISPEC `vec 0:real^2` TARSKI_AXIOM_4_EUCLIDEAN) THEN
-    MESON_TAC[DIST_0; MDIST_EQ_ORIGIN];
+    MESON_TAC[DIST_0; DDIST_EQ_ORIGIN];
     DISCH_THEN(LABEL_TAC "*") THEN REPEAT STRIP_TAC THEN
     MP_TAC(ISPEC `a:real^2` HYPERBOLIC_TRANSLATION) THEN
     ASM_REWRITE_TAC[hyperbolic_isometry; LEFT_IMP_EXISTS_THM] THEN
@@ -603,31 +603,31 @@ let TARSKI_AXIOM_5_NONEUCLIDEAN = prove
     `g':real^2->real^2`] THEN REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`(f:real^2->real^2) x`; `(f:real^2->real^2) c`;
                 `(g:real^2->real^2) x'`; `(g:real^2->real^2) c'`]
-        MDIST_CONGRUENT_TRIPLES_0) THEN
+        DDIST_CONGRUENT_TRIPLES_0) THEN
   ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
   MATCH_MP_TAC(TAUT `(p ==> r) /\ q ==> (p <=> q) ==> r`) THEN
-  CONJ_TAC THENL [ASM_MESON_TAC[MDIST_SYM]; ALL_TAC] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[DDIST_SYM]; ALL_TAC] THEN
   MP_TAC(ISPECL [`(f:real^2->real^2) a`; `(f:real^2->real^2) c`;
                 `(g:real^2->real^2) a'`; `(g:real^2->real^2) c'`]
-        MDIST_CONGRUENT_TRIPLES_0) THEN
+        DDIST_CONGRUENT_TRIPLES_0) THEN
   ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
   MATCH_MP_TAC(TAUT `p /\ (q ==> r) ==> (p <=> q) ==> r`) THEN CONJ_TAC THENL
-   [ASM_SIMP_TAC[GSYM MDIST_CONGRUENT_TRIPLES_0] THEN  CONJ_TAC THEN
+   [ASM_SIMP_TAC[GSYM DDIST_CONGRUENT_TRIPLES_0] THEN  CONJ_TAC THEN
     GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
      [SYM(ASSUME `(f:complex->complex) b = vec 0`)] THEN
     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
      [SYM(ASSUME `(g:complex->complex) b' = vec 0`)] THEN
-    ASM_SIMP_TAC[] THEN ASM_MESON_TAC[MDIST_SYM];
+    ASM_SIMP_TAC[] THEN ASM_MESON_TAC[DDIST_SYM];
     STRIP_TAC THEN MP_TAC(ISPECL
      [`(f:real^2->real^2) a`; `(f:real^2->real^2) b`; `(f:real^2->real^2) c`;
       `(f:real^2->real^2) x`;`(g:real^2->real^2) a'`; `(g:real^2->real^2) b'`;
       `(g:real^2->real^2) c'`; `(g:real^2->real^2) x'`]
      TARSKI_AXIOM_5_EUCLIDEAN) THEN
     SUBGOAL_THEN
-     `mdist((f:real^2->real^2) b,f x) = mdist((g:real^2->real^2) b',g x')`
+     `ddist((f:real^2->real^2) b,f x) = ddist((g:real^2->real^2) b',g x')`
     MP_TAC THENL
      [ASM_SIMP_TAC[];
-      ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC[MDIST_EQ_ORIGIN] THEN DISCH_TAC] THEN
+      ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC[DDIST_EQ_ORIGIN] THEN DISCH_TAC] THEN
     ASM_MESON_TAC[DIST_SYM; DIST_0]]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -688,20 +688,20 @@ let TARSKI_AXIOM_9_NONEUCLIDEAN = prove
   REWRITE_TAC[GSYM COLLINEAR_BETWEEN_CASES] THEN REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `collinear{(f:real^2->real^2) b,f c,f a}` MP_TAC THENL
    [ALL_TAC; ASM_SIMP_TAC[COLLINEAR_BETWEEN_CASES]] THEN
-  SUBGOAL_THEN `mdist(f a,f p) = mdist(f a,f q) /\
-                mdist(f b,f p) = mdist(f b,f q) /\
-                mdist(f c,f p) = mdist(f c,f q) /\
+  SUBGOAL_THEN `ddist(f a,f p) = ddist(f a,f q) /\
+                ddist(f b,f p) = ddist(f b,f q) /\
+                ddist(f c,f p) = ddist(f c,f q) /\
                 ~((f:real^2->real^2) q = f p)`
   MP_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
   SUBGOAL_THEN `(f:real^2->real^2) q = --(f p)` SUBST1_TAC THENL
    [SUBGOAL_THEN `between ((f:real^2->real^2) x) (f p,f q) /\
-                  mdist(f x,f p) = mdist(f x,f q)`
+                  ddist(f x,f p) = ddist(f x,f q)`
     MP_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
-    ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC[MDIST_EQ_ORIGIN] THEN
+    ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC[DDIST_EQ_ORIGIN] THEN
     REWRITE_TAC[GSYM MIDPOINT_BETWEEN; midpoint; NORM_ARITH
      `norm(a:real^N) = norm b <=> dist(a,vec 0) = dist(vec 0,b)`] THEN
     VECTOR_ARITH_TAC;
-    REWRITE_TAC[mdist] THEN ASM_SIMP_TAC[NORM_NEG; real_div; REAL_INV_MUL] THEN
+    REWRITE_TAC[ddist] THEN ASM_SIMP_TAC[NORM_NEG; real_div; REAL_INV_MUL] THEN
     ASM_SIMP_TAC[REAL_SUB_LT; ABS_SQUARE_LT_1; REAL_ABS_NORM; REAL_FIELD
      `&0 < x /\ &0 < y
       ==> (a * inv x * inv y - &1 = b * inv x * inv y - &1 <=> a = b)`] THEN
