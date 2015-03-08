@@ -4250,6 +4250,11 @@ let CONVEX_IMP_ANR = prove
  (`!s:real^N->bool. convex s ==> ANR s`,
   MESON_TAC[ANR_EMPTY; CONVEX_IMP_AR; AR_IMP_ANR]);;
 
+let IS_INTERVAL_IMP_ENR = prove
+ (`!s:real^N->bool. is_interval s ==> ENR s`,
+  SIMP_TAC[ENR_ANR; IS_INTERVAL_IMP_LOCALLY_COMPACT] THEN
+  SIMP_TAC[CONVEX_IMP_ANR; IS_INTERVAL_CONVEX]);;
+
 let ENR_CONVEX_CLOSED = prove
  (`!s:real^N->bool. closed s /\ convex s ==> ENR s`,
   MESON_TAC[CONVEX_IMP_ANR; ENR_ANR; CLOSED_IMP_LOCALLY_COMPACT]);;
@@ -6249,6 +6254,14 @@ let ENR_IMP_GDELTA = prove
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP ENR_INTER_CLOSED_OPEN) THEN
   ASM_SIMP_TAC[CLOSED_IMP_GDELTA; OPEN_IMP_GDELTA; GDELTA_INTER]);;
+
+let IS_INTERVAL_IMP_FSIGMA = prove
+ (`!s:real^N->bool. is_interval s ==> fsigma s`,
+  SIMP_TAC[IS_INTERVAL_IMP_ENR; ENR_IMP_FSGIMA]);;
+
+let IS_INTERVAL_IMP_GDELTA = prove
+ (`!s:real^N->bool. is_interval s ==> gdelta s`,
+  SIMP_TAC[IS_INTERVAL_IMP_ENR; ENR_IMP_GDELTA]);;
 
 let ANR_COMPONENTWISE = prove
  (`!s:real^N->bool.

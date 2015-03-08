@@ -1,3 +1,9 @@
+Fri  6th Mar 2015       sets.ml
+
+Added PAIRWISE_AND =
+    |- !R R' s.
+           pairwise R s /\ pairwise R' s <=> pairwise (\x y. R x y /\ R' x y) s
+
 Fri  6th Feb 2015       iterate.ml
 
 Added two rather trivial but occasionally useful results:
