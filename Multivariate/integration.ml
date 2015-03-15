@@ -4892,8 +4892,45 @@ let OPERATIVE_1_LE = prove
   REWRITE_TAC[GSYM drop] THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
-(* Special case of additivity we need for the FCT.                           *)
+(* Additivity in R^1 for differences between function at endpoints.          *)
 (* ------------------------------------------------------------------------- *)
+
+let ADDITIVE_DIVISION_1 = prove
+ (`!f:real^1->real^N d a b.
+        drop a <= drop b /\
+        d division_of interval[a,b]
+        ==> vsum d (\k. f(interval_upperbound k) - f(interval_lowerbound k)) =
+            f b - f a`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`(+):real^N->real^N->real^N`;
+    `d:(real^1->bool)->bool`;
+    `a:real^1`; `b:real^1`;
+    `(\k. if k = {} then vec 0
+          else f(interval_upperbound k) - f(interval_lowerbound k)):
+     ((real^1->bool)->real^N)`] OPERATIVE_DIVISION) THEN
+  ASM_SIMP_TAC[MONOIDAL_VECTOR_ADD; OPERATIVE_1_LT; NEUTRAL_VECTOR_ADD;
+               INTERVAL_LOWERBOUND_1; INTERVAL_UPPERBOUND_1] THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[INTERVAL_EQ_EMPTY_1; REAL_ARITH `a <= b ==> ~(b < a)`;
+                 REAL_LT_IMP_LE; CONTENT_EQ_0_1;
+                 INTERVAL_LOWERBOUND_1; INTERVAL_UPPERBOUND_1] THEN
+    SIMP_TAC[REAL_ARITH `b <= a ==> (b < a <=> ~(b = a))`] THEN
+    SIMP_TAC[DROP_EQ; TAUT
+      `(if ~p then x else y) = (if p then y else x)`] THEN
+    SIMP_TAC[INTERVAL_LOWERBOUND_1; INTERVAL_UPPERBOUND_1; REAL_LE_REFL] THEN
+    REWRITE_TAC[VECTOR_SUB_REFL; COND_ID; EQ_SYM_EQ] THEN
+    REPEAT GEN_TAC THEN DISCH_TAC THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP REAL_LT_TRANS) THEN
+    ASM_SIMP_TAC[INTERVAL_LOWERBOUND_1; INTERVAL_UPPERBOUND_1;
+                 REAL_ARITH `b < a ==> ~(a < b)`; REAL_LT_IMP_LE] THEN
+    MESON_TAC[VECTOR_ARITH `(c - a) + (b - c):real^N = b - a`];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[INTERVAL_EQ_EMPTY_1; GSYM REAL_NOT_LE] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN
+  ASM_SIMP_TAC[GSYM VSUM] THEN MATCH_MP_TAC VSUM_EQ THEN
+  ASM_MESON_TAC[division_of; MEMBER_NOT_EMPTY]);;
 
 let ADDITIVE_TAGGED_DIVISION_1 = prove
  (`!f:real^1->real^N p a b.
@@ -4982,7 +5019,7 @@ let GAUGE_MODIFY = prove
   REWRITE_TAC[IN]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Integrabibility on subintervals.                                          *)
+(* Integrability on subintervals.                                            *)
 (* ------------------------------------------------------------------------- *)
 
 let OPERATIVE_INTEGRABLE = prove
@@ -16055,7 +16092,7 @@ let HAS_BOUNDED_VARIATION_WORKS_ON_ELEMENTARY = prove
               HAS_BOUNDED_SETVARIATION_WORKS_ON_ELEMENTARY]);;
 
 let HAS_BOUNDED_VARIATION_WORKS_ON_INTERVAL = prove
- (`!f:real^1->real^N s.
+ (`!f:real^1->real^N.
         f has_bounded_variation_on interval[a,b]
         ==> (!d. d division_of interval[a,b]
                  ==> sum d (\k. norm(f(interval_upperbound k) -

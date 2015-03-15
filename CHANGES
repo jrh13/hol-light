@@ -1,3 +1,13 @@
+Wed 11th Mar 2015       sets.ml
+
+Added a couple of trivial but convenient sup/inf theorems:
+
+  ELEMENT_LE_SUP =
+    |- !s a. (?b. !x. x IN s ==> x <= b) /\ a IN s ==> a <= sup s
+
+  INF_LE_ELEMENT =
+    |- !s a. (?b. !x. x IN s ==> b <= x) /\ a IN s ==> inf s <= a
+
 Fri  6th Mar 2015       sets.ml
 
 Added PAIRWISE_AND =
