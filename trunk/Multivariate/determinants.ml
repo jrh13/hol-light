@@ -180,15 +180,6 @@ let DET_UPPERTRIANGULAR = prove
   MP_TAC(SPECL [`p:num->num`; `1..dimindex(:N)`] PERMUTES_NUMSET_GE) THEN
   ASM_MESON_TAC[PERMUTES_IN_IMAGE; IN_NUMSEG; NOT_LT]);;
 
-let DET_DIAGONAL = prove
- (`!A:real^N^N.
-        (!i j. 1 <= i /\ i <= dimindex(:N) /\
-               1 <= j /\ j <= dimindex(:N) /\ ~(i = j) ==> A$i$j = &0)
-        ==> det(A) = product(1..dimindex(:N)) (\i. A$i$i)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC DET_LOWERTRIANGULAR THEN
-  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
-  ASM_MESON_TAC[LT_REFL]);;
-
 let DET_I = prove
  (`det(mat 1 :real^N^N) = &1`,
   MATCH_MP_TAC EQ_TRANS THEN
@@ -1469,6 +1460,15 @@ let DIAGONAL_MATRIX_INV = prove
   POP_ASSUM MP_TAC THEN SIMP_TAC[diagonal_matrix; LAMBDA_BETA] THEN
   REWRITE_TAC[REAL_INV_0]);;
 
+let DET_DIAGONAL = prove
+ (`!A:real^N^N.
+        diagonal_matrix A
+        ==> det(A) = product(1..dimindex(:N)) (\i. A$i$i)`,
+  REWRITE_TAC[diagonal_matrix] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DET_LOWERTRIANGULAR THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+  ASM_MESON_TAC[LT_REFL]);;
+
 let COMMUTING_WITH_DIAGONAL_MATRIX = prove
  (`!A D:real^N^N.
         diagonal_matrix D
@@ -2002,6 +2002,15 @@ let ORTHOGONAL_MATRIX_MATRIX = prove
  (`!f:real^N->real^N.
     orthogonal_transformation f ==> orthogonal_matrix(matrix f)`,
   SIMP_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX]);;
+
+let ORTHOGONAL_MATRIX_NORM_EQ = prove
+ (`!A. orthogonal_matrix A <=> !x. norm(A ** x) = norm x`,
+  REWRITE_TAC[ORTHOGONAL_MATRIX_TRANSFORMATION; MATRIX_VECTOR_MUL_LINEAR;
+              ORTHOGONAL_TRANSFORMATION]);;
+
+let ORTHOGONAL_MATRIX_NORM = prove
+ (`!A x:real^N. orthogonal_matrix A ==> norm(A ** x) = norm x`,
+  SIMP_TAC[ORTHOGONAL_MATRIX_TRANSFORMATION; ORTHOGONAL_TRANSFORMATION]);;
 
 let DET_ORTHOGONAL_MATRIX = prove
  (`!Q. orthogonal_matrix Q ==> det(Q) = &1 \/ det(Q) = -- &1`,
