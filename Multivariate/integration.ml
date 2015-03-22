@@ -20468,6 +20468,12 @@ let ABSOLUTELY_CONTINUOUS_ON_IMP_UNIFORMLY_CONTINUOUS = prove
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE LAND_CONV [DIST_REAL]) THEN
     REWRITE_TAC[drop] THEN REAL_ARITH_TAC]);;
 
+let ABSOLUTELY_CONTINUOUS_ON_IMP_CONTINUOUS = prove
+ (`!f s. f absolutely_continuous_on s /\ is_interval s
+         ==> f continuous_on s`,
+  MESON_TAC[ABSOLUTELY_CONTINUOUS_ON_IMP_UNIFORMLY_CONTINUOUS;
+            UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS]);;
+
 let ABSOLUTELY_CONTINUOUS_ON_IMP_HAS_BOUNDED_VARIATION_ON = prove
  (`!f:real^1->real^N s.
         f absolutely_continuous_on s /\ bounded s

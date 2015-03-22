@@ -866,24 +866,6 @@ let FORALL_IN_IMAGE_2 = prove
            (!x y. x IN s /\ y IN s ==> P (f x) (f y))`,
   SET_TAC[]);;
 
-let SUBSET_IMAGE = prove
- (`!f:A->B s t. s SUBSET (IMAGE f t) <=> ?u. u SUBSET t /\ (s = IMAGE f u)`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[IMAGE_SUBSET]] THEN
-  DISCH_TAC THEN EXISTS_TAC `{x | x IN t /\ (f:A->B) x IN s}` THEN
-  POP_ASSUM MP_TAC THEN
-  REWRITE_TAC[EXTENSION; SUBSET; IN_IMAGE; IN_ELIM_THM] THEN
-  MESON_TAC[]);;
-
-let FORALL_SUBSET_IMAGE = prove
- (`!P f s. (!t. t SUBSET IMAGE f s ==> P t) <=>
-           (!t. t SUBSET s ==> P(IMAGE f t))`,
-  REWRITE_TAC[SUBSET_IMAGE] THEN MESON_TAC[]);;
-
-let EXISTS_SUBSET_IMAGE = prove
- (`!P f s.
-    (?t. t SUBSET IMAGE f s /\ P t) <=> (?t. t SUBSET s /\ P (IMAGE f t))`,
-  REWRITE_TAC[SUBSET_IMAGE] THEN MESON_TAC[]);;
-
 let IMAGE_CONST = prove
  (`!s c. IMAGE (\x. c) s = if s = {} then {} else {c}`,
   REPEAT GEN_TAC THEN COND_CASES_TAC THEN
@@ -1346,28 +1328,77 @@ let INFINITE_DIFF_FINITE = prove
   EXISTS_TAC `(t:A->bool) UNION (s DIFF t)` THEN
   ASM_REWRITE_TAC[FINITE_UNION] THEN SET_TAC[]);;
 
-let FINITE_SUBSET_IMAGE = prove
+let SUBSET_IMAGE_INJ = prove
  (`!f:A->B s t.
-        FINITE(t) /\ t SUBSET (IMAGE f s) <=>
-        ?s'. FINITE s' /\ s' SUBSET s /\ (t = IMAGE f s')`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL
-   [ALL_TAC; ASM_MESON_TAC[FINITE_IMAGE; IMAGE_SUBSET]] THEN
-  STRIP_TAC THEN
-  EXISTS_TAC `IMAGE (\y. @x. x IN s /\ ((f:A->B)(x) = y)) t` THEN
-  ASM_SIMP_TAC[FINITE_IMAGE] THEN
-  REWRITE_TAC[EXTENSION; SUBSET; FORALL_IN_IMAGE] THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[SUBSET; IN_IMAGE]; ALL_TAC] THEN
-  REWRITE_TAC[IN_IMAGE] THEN X_GEN_TAC `y:B` THEN
-  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
-  ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
-  REWRITE_TAC[UNWIND_THM2; GSYM CONJ_ASSOC] THEN
-  ASM_MESON_TAC[SUBSET; IN_IMAGE]);;
+        s SUBSET (IMAGE f t) <=>
+        ?u. u SUBSET t /\
+            (!x y. x IN u /\ y IN u ==> (f x = f y <=> x = y)) /\
+            s = IMAGE f u`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[IMAGE_SUBSET]] THEN
+  DISCH_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP (SET_RULE
+   `s SUBSET IMAGE f t ==> !x. x IN s ==> ?y. y IN t /\ f y = x`)) THEN
+  REWRITE_TAC[SURJECTIVE_ON_RIGHT_INVERSE] THEN
+  DISCH_THEN(X_CHOOSE_TAC `g:B->A`) THEN
+  EXISTS_TAC `IMAGE (g:B->A) s` THEN ASM SET_TAC[]);;
+
+let SUBSET_IMAGE = prove
+ (`!f:A->B s t. s SUBSET (IMAGE f t) <=> ?u. u SUBSET t /\ (s = IMAGE f u)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[IMAGE_SUBSET]] THEN
+  REWRITE_TAC[SUBSET_IMAGE_INJ] THEN MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
+
+let EXISTS_SUBSET_IMAGE = prove
+ (`!P f s.
+    (?t. t SUBSET IMAGE f s /\ P t) <=> (?t. t SUBSET s /\ P (IMAGE f t))`,
+  REWRITE_TAC[SUBSET_IMAGE] THEN MESON_TAC[]);;
+
+let FORALL_SUBSET_IMAGE = prove
+ (`!P f s. (!t. t SUBSET IMAGE f s ==> P t) <=>
+           (!t. t SUBSET s ==> P(IMAGE f t))`,
+  REWRITE_TAC[SUBSET_IMAGE] THEN MESON_TAC[]);;
+
+let EXISTS_SUBSET_IMAGE_INJ = prove
+ (`!P f s.
+    (?t. t SUBSET IMAGE f s /\ P t) <=>
+    (?t. t SUBSET s /\
+         (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
+         P (IMAGE f t))`,
+  REWRITE_TAC[SUBSET_IMAGE_INJ] THEN MESON_TAC[]);;
+
+let FORALL_SUBSET_IMAGE_INJ = prove
+ (`!P f s. (!t. t SUBSET IMAGE f s ==> P t) <=>
+           (!t. t SUBSET s /\
+                (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))
+                 ==> P(IMAGE f t))`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!t. p t) <=> ~(?t. ~p t)`] THEN
+  REWRITE_TAC[NOT_IMP; EXISTS_SUBSET_IMAGE_INJ; GSYM CONJ_ASSOC]);;
+
+let EXISTS_FINITE_SUBSET_IMAGE_INJ = prove
+ (`!P f s.
+    (?t. FINITE t /\ t SUBSET IMAGE f s /\ P t) <=>
+    (?t. FINITE t /\ t SUBSET s /\
+         (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
+         P (IMAGE f t))`,
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[EXISTS_SUBSET_IMAGE_INJ] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN MESON_TAC[FINITE_IMAGE_INJ_EQ]);;
+
+let FORALL_FINITE_SUBSET_IMAGE_INJ = prove
+ (`!P f s. (!t. FINITE t /\ t SUBSET IMAGE f s ==> P t) <=>
+           (!t. FINITE t /\ t SUBSET s /\
+                (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))
+                 ==> P(IMAGE f t))`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!t. p t) <=> ~(?t. ~p t)`] THEN
+  REWRITE_TAC[NOT_IMP; EXISTS_FINITE_SUBSET_IMAGE_INJ; GSYM CONJ_ASSOC]);;
 
 let EXISTS_FINITE_SUBSET_IMAGE = prove
  (`!P f s.
     (?t. FINITE t /\ t SUBSET IMAGE f s /\ P t) <=>
     (?t. FINITE t /\ t SUBSET s /\ P (IMAGE f t))`,
-  REWRITE_TAC[FINITE_SUBSET_IMAGE; CONJ_ASSOC] THEN MESON_TAC[]);;
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[EXISTS_FINITE_SUBSET_IMAGE_INJ] THEN MESON_TAC[];
+    MESON_TAC[FINITE_IMAGE; IMAGE_SUBSET]]);;
 
 let FORALL_FINITE_SUBSET_IMAGE = prove
  (`!P f s. (!t. FINITE t /\ t SUBSET IMAGE f s ==> P t) <=>
@@ -1375,6 +1406,15 @@ let FORALL_FINITE_SUBSET_IMAGE = prove
   REPEAT GEN_TAC THEN
   ONCE_REWRITE_TAC[MESON[] `(!x. P x) <=> ~(?x. ~P x)`] THEN
   REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC; EXISTS_FINITE_SUBSET_IMAGE]);;
+
+let FINITE_SUBSET_IMAGE = prove
+ (`!f:A->B s t.
+        FINITE(t) /\ t SUBSET (IMAGE f s) <=>
+        ?s'. FINITE s' /\ s' SUBSET s /\ (t = IMAGE f s')`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[FINITE_IMAGE; IMAGE_SUBSET]] THEN
+  SPEC_TAC(`t:B->bool`,`t:B->bool`) THEN
+  REWRITE_TAC[FORALL_FINITE_SUBSET_IMAGE] THEN MESON_TAC[]);;
 
 let FINITE_SUBSET_IMAGE_IMP = prove
  (`!f:A->B s t.
