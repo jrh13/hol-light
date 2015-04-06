@@ -16458,6 +16458,25 @@ let REAL_INTEGRABLE_REAL_BOUNDED_VARIATION_PRODUCT = prove
   DISCH_THEN(MP_TAC o MATCH_MP INTEGRABLE_BOUNDED_VARIATION_PRODUCT) THEN
   REWRITE_TAC[LIFT_DROP]);;
 
+let REAL_LEBESGUE_DIFFERENTIATION_THEOREM = prove
+ (`!f s. is_realinterval s /\ f has_bounded_real_variation_on s
+           ==> real_negligible
+                 {x | x IN s /\ ~(f real_differentiable atreal x)}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[real_negligible] THEN
+  REWRITE_TAC[has_bounded_real_variation_on; IS_REALINTERVAL_IS_INTERVAL] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LEBESGUE_DIFFERENTIATION_THEOREM) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+  REWRITE_TAC[REAL_DIFFERENTIABLE_AT] THEN SET_TAC[]);;
+
+let REAL_LEBESGUE_DIFFERENTIATION_THEOREM_ALT = prove
+ (`!f s. is_realinterval s /\ f has_bounded_real_variation_on s
+         ==> ?t. t SUBSET s /\ real_negligible t /\
+                 !x. x IN s DIFF t ==> f real_differentiable atreal x`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `{x | x IN s /\ ~(f real_differentiable atreal x)}` THEN
+  ASM_SIMP_TAC[REAL_LEBESGUE_DIFFERENTIATION_THEOREM; SUBSET_RESTRICT] THEN
+  REWRITE_TAC[IN_DIFF; IN_ELIM_THM] THEN CONV_TAC TAUT);;
+
 (* ------------------------------------------------------------------------- *)
 (* Lebesgue density theorem. This isn't about R specifically, but it's most  *)
 (* naturally stated as a real limit so it ends up here in this file.         *)

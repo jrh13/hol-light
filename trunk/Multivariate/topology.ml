@@ -10495,6 +10495,15 @@ let LIM_MUL = prove
   REWRITE_TAC[bilinear; linear; DROP_ADD; DROP_CMUL] THEN
   REPEAT STRIP_TAC THEN VECTOR_ARITH_TAC);;
 
+let LIM_LIFT_POW = prove
+ (`!net:(A)net f l n.
+        ((\a. lift(f a)) --> lift l) net
+        ==> ((\a. lift(f(a) pow n)) --> lift(l pow n)) net`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN REWRITE_TAC[real_pow; LIM_CONST; LIFT_CMUL] THEN
+  MATCH_MP_TAC LIM_MUL THEN ASM_REWRITE_TAC[o_DEF]);;
+
 let LIM_LIFT_PRODUCT = prove
  (`!net:(A)net f g (t:B->bool).
         FINITE t /\

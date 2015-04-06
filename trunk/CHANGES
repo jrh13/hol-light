@@ -1,3 +1,12 @@
+Mon 30th Mar 2015       sets.ml
+
+Added a simple lemma about "pairwise":
+
+  PAIRWISE_UNION =
+   |- !R s t. pairwise R (s UNION t) <=>
+              pairwise R s /\ pairwise R t /\
+              (!x y. x IN s DIFF t /\ y IN t DIFF s ==> R x y /\ R y x)
+
 Fri 20th Mar 2015       sets.ml, Library/card.ml
 
 Added a few convenient rewrites extending existing ones with an injectivity
@@ -10,7 +19,7 @@ assumption:
                 t SUBSET s /\
                 (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
                 P (IMAGE f t))
-  
+
   EXISTS_FINITE_SUBSET_IMAGE_INJ =
     |- !P f s.
            (?t. FINITE t /\ t SUBSET IMAGE f s /\ P t) <=>
@@ -18,14 +27,14 @@ assumption:
                 t SUBSET s /\
                 (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
                 P (IMAGE f t))
-  
+
   EXISTS_SUBSET_IMAGE_INJ =
     |- !P f s.
            (?t. t SUBSET IMAGE f s /\ P t) <=>
            (?t. t SUBSET s /\
                 (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
                 P (IMAGE f t))
-  
+
   FORALL_COUNTABLE_SUBSET_IMAGE_INJ =
     |- !P f s.
            (!t. COUNTABLE t /\ t SUBSET IMAGE f s ==> P t) <=>
@@ -33,7 +42,7 @@ assumption:
                 t SUBSET s /\
                 (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))
                 ==> P (IMAGE f t))
-  
+
   FORALL_FINITE_SUBSET_IMAGE_INJ =
     |- !P f s.
            (!t. FINITE t /\ t SUBSET IMAGE f s ==> P t) <=>
@@ -41,21 +50,21 @@ assumption:
                 t SUBSET s /\
                 (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))
                 ==> P (IMAGE f t))
-  
+
   FORALL_SUBSET_IMAGE_INJ =
     |- !P f s.
            (!t. t SUBSET IMAGE f s ==> P t) <=>
            (!t. t SUBSET s /\
                 (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))
                 ==> P (IMAGE f t))
-  
+
   SUBSET_IMAGE_INJ =
     |- !f s t.
            s SUBSET IMAGE f t <=>
            (?u. u SUBSET t /\
                 (!x y. x IN u /\ y IN u ==> (f x = f y <=> x = y)) /\
                 s = IMAGE f u)
-  
+
 Wed 11th Mar 2015       sets.ml
 
 Added a couple of trivial but convenient sup/inf theorems:

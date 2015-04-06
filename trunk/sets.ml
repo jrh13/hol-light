@@ -2737,6 +2737,12 @@ let PAIRWISE_IMAGE = prove
          pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s`,
   REWRITE_TAC[pairwise; IN_IMAGE] THEN MESON_TAC[]);;
 
+let PAIRWISE_UNION = prove
+ (`!R s t. pairwise R (s UNION t) <=>
+           pairwise R s /\ pairwise R t /\
+           (!x y. x IN s DIFF t /\ y IN t DIFF s ==> R x y /\ R y x)`,
+  REWRITE_TAC[pairwise] THEN SET_TAC[]);;
+
 let DIFF_UNIONS_PAIRWISE_DISJOINT = prove
  (`!s t:(A->bool)->bool.
         pairwise DISJOINT s /\ t SUBSET s
