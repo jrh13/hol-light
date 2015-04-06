@@ -3928,6 +3928,33 @@ let HAUSDIST_STILL_SAME_PLACE_CONIC_HULL = prove
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
     MESON_TAC[]]);;
 
+let CONVEX_SYMDIFF_CLOSE_TO_FRONTIER = prove
+ (`!s t:real^N->bool e.
+        bounded s /\ convex s /\ ~(s = {}) /\
+        bounded t /\ convex t /\ ~(t = {}) /\
+        hausdist(s,t) < e
+        ==> (s DIFF t) UNION (t DIFF s) SUBSET
+            {u + v:real^N | u IN frontier s /\ v IN ball(vec 0,e)}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:real^N` THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`; `x:real^N`]
+        HAUSDIST_STILL_SAME_PLACE) THEN
+  ASM_REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[REAL_NOT_LT] THEN MATCH_MP_TAC MONO_IMP THEN
+  CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `e:real` o MATCH_MP
+   (REAL_ARITH `a <= b ==> !c. b < c ==> a < c`)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ_ALT] (REWRITE_RULE[CONJ_ASSOC]
+        REAL_SETDIST_LT_EXISTS))) THEN
+  ASM_REWRITE_TAC[NOT_INSERT_EMPTY; FRONTIER_EQ_EMPTY] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[NOT_BOUNDED_UNIV]; ALL_TAC] THEN
+  REWRITE_TAC[IN_SING; RIGHT_EXISTS_AND_THM; UNWIND_THM2; GSYM CONJ_ASSOC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:real^N` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN EXISTS_TAC `x - u:real^N` THEN
+  ASM_REWRITE_TAC[IN_BALL_0; GSYM dist] THEN CONV_TAC VECTOR_ARITH);;
+
 (* ------------------------------------------------------------------------- *)
 (* Polytopes.                                                                *)
 (* ------------------------------------------------------------------------- *)
