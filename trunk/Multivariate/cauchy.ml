@@ -303,9 +303,22 @@ let PATH_LENGTH_VALID_PATH = prove
                  drop(integral (interval[vec 0,vec 1])
                                (\t. lift(norm(vector_derivative g (at t)))))`,
   REWRITE_TAC[valid_path; piecewise_differentiable_on; GSYM path] THEN
-
   REPEAT STRIP_TAC THEN MATCH_MP_TAC PATH_LENGTH_DIFFERENTIABLE THEN
   ASM_MESON_TAC[FINITE_IMP_COUNTABLE]);;
+
+let ABSOLUTELY_CONTINUOUS_RECTIFIABLE_VALID_PATH = prove
+ (`!g:real^1->complex.
+        valid_path g /\ rectifiable_path g
+        ==> g absolutely_continuous_on interval[vec 0,vec 1]`,
+  GEN_TAC THEN
+  REWRITE_TAC[valid_path; rectifiable_path; piecewise_differentiable_on] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+   (X_CHOOSE_THEN `c:real^1->bool` STRIP_ASSUME_TAC)) THEN
+  MATCH_MP_TAC ABSOLUTELY_CONTINUOUS_DIFFERENTIABLE_BV_GEN THEN
+  EXISTS_TAC `c:real^1->bool` THEN ASM_SIMP_TAC[FINITE_IMP_COUNTABLE] THEN
+  ASM_REWRITE_TAC[IS_INTERVAL_INTERVAL; BOUNDED_INTERVAL] THEN
+  ASM_MESON_TAC[DIFFERENTIABLE_AT_WITHIN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Negligibility of valid_path image                                         *)

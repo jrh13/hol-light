@@ -2549,6 +2549,33 @@ let RESTRICTION_HAS_DERIVATIVE = prove
    ASM_REWRITE_TAC[REAL_LT_01] THEN
    SIMP_TAC[RESTRICTION]]);;
 
+let HAS_VECTOR_DERIVATIVE_WITHIN_1D = prove
+ (`!f:real^1->real^1 s x.
+      (f has_vector_derivative f') (at x within s) <=>
+      ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x within s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[has_vector_derivative; has_derivative_within] THEN
+  SIMP_TAC[LINEAR_VMUL_DROP; LINEAR_ID] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [LIM_NULL] THEN
+  GEN_REWRITE_TAC LAND_CONV [LIM_NULL_NORM] THEN
+  REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+  REWRITE_TAC[NORM_1; GSYM REAL_ABS_INV] THEN
+  REWRITE_TAC[GSYM NORM_1; GSYM NORM_MUL] THEN
+  REWRITE_TAC[GSYM LIM_NULL_NORM] THEN MATCH_MP_TAC LIM_TRANSFORM_EQ THEN
+  MATCH_MP_TAC LIM_EVENTUALLY THEN REWRITE_TAC[EVENTUALLY_WITHIN] THEN
+  REWRITE_TAC[GSYM DIST_NZ; VECTOR_SUB_EQ] THEN
+  REWRITE_TAC[VECTOR_ADD_LDISTRIB; VECTOR_SUB_LDISTRIB] THEN
+  SIMP_TAC[VECTOR_MUL_ASSOC; DROP_SUB; DROP_EQ; REAL_MUL_LINV; REAL_SUB_0] THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC VECTOR_ARITH);;
+
+let HAS_VECTOR_DERIVATIVE_AT_1D = prove
+ (`!f:real^1->real^1 x.
+      (f has_vector_derivative f') (at x) <=>
+      ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x)`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Various versions of Kachurovskii's theorem.                               *)
 (* ------------------------------------------------------------------------- *)
