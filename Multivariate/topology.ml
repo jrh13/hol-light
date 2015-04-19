@@ -5864,7 +5864,7 @@ let ISOMETRY_ON_IMP_CONTINUOUS_ON = prove
   SIMP_TAC[CONTRACTION_IMP_CONTINUOUS_ON; REAL_LE_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Characterization of various kinds of continuity in terms of sequences.    *)
+(* Characterization of limits and continuity in terms of sequences.          *)
 (* ------------------------------------------------------------------------- *)
 
 let CONTINUOUS_WITHIN_SEQUENTIALLY = prove
@@ -5940,6 +5940,41 @@ let LIM_CONTINUOUS_FUNCTION = prove
  (`!f net g l.
         f continuous (at l) /\ (g --> l) net ==> ((\x. f(g x)) --> f l) net`,
   REWRITE_TAC[tendsto; continuous_at; eventually] THEN MESON_TAC[]);;
+
+let LIM_WITHIN_SEQUENTIALLY = prove
+ (`!f:real^M->real^N s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\ (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially`,
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[LIM_WITHIN; LIM_SEQUENTIALLY; GSYM DIST_NZ; o_THM; IN_DELETE] THEN
+  EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; NOT_EXISTS_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN `e:real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(MP_TAC o GEN `n:num` o SPEC `&1 / (&n + &1)`) THEN
+  SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; REAL_OF_NUM_LE; REAL_POS; ARITH;
+       REAL_ARITH `&0 <= n ==> &0 < n + &1`; NOT_FORALL_THM; SKOLEM_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN REWRITE_TAC[NOT_IMP; FORALL_AND_THM] THEN
+  X_GEN_TAC `y:num->real^M` THEN REWRITE_TAC[LIM_SEQUENTIALLY; o_THM] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[GSYM CONJ_ASSOC] THEN CONJ_TAC THENL
+   [ASM_REWRITE_TAC[] THEN MATCH_MP_TAC FORALL_POS_MONO_1 THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[REAL_LT_TRANS]; ALL_TAC] THEN
+    X_GEN_TAC `n:num` THEN EXISTS_TAC `n:num` THEN X_GEN_TAC `m:num` THEN
+    DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+    EXISTS_TAC `&1 / (&m + &1)` THEN ASM_REWRITE_TAC[] THEN
+    ASM_SIMP_TAC[REAL_LE_INV2; real_div; REAL_ARITH `&0 <= x ==> &0 < x + &1`;
+                 REAL_POS; REAL_MUL_LID; REAL_LE_RADD; REAL_OF_NUM_LE];
+    EXISTS_TAC `e:real` THEN ASM_REWRITE_TAC[] THEN
+    EXISTS_TAC `\n:num. n` THEN ASM_REWRITE_TAC[LE_REFL]]);;
+
+let LIM_AT_SEQUENTIALLY = prove
+ (`!f:real^M->real^N a l.
+        (f --> l) (at a) <=>
+        !x. (!n. ~(x(n) = a)) /\ (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[LIM_WITHIN_SEQUENTIALLY; IN_UNIV; IN_DELETE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)
@@ -22418,20 +22453,35 @@ let CLOSED_CONDENSATION_POINTS = prove
  (`!s:real^N->bool. closed {x | x condensation_point_of s}`,
   SIMP_TAC[CLOSED_LIMPT; LIMPT_OF_CONDENSATION_POINTS; IN_ELIM_THM]);;
 
+let CANTOR_BENDIXSON_GEN = prove
+ (`!s:real^N->bool.
+      ?t u.
+        closed_in (subtopology euclidean s) t /\
+        (!x. x IN t ==> x condensation_point_of t) /\
+        COUNTABLE u /\ s = t UNION u`,
+  GEN_TAC THEN
+  EXISTS_TAC `s INTER {x:real^N | x condensation_point_of s}` THEN
+  EXISTS_TAC `s DIFF {x:real^N | x condensation_point_of s}` THEN
+  SIMP_TAC[CLOSED_IN_CLOSED_INTER; CLOSED_CONDENSATION_POINTS] THEN
+  REWRITE_TAC[COUNTABLE_NON_CONDENSATION_POINTS] THEN
+  CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+  X_GEN_TAC `x:real^N` THEN REWRITE_TAC[IN_INTER; IN_ELIM_THM] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ONCE_REWRITE_TAC[condensation_point_of] THEN
+  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `t:real^N->bool` THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[CONTRAPOS_THM] THEN
+  MP_TAC(ISPEC `s:real^N->bool` COUNTABLE_NON_CONDENSATION_POINTS) THEN
+  REWRITE_TAC[IMP_IMP; GSYM COUNTABLE_UNION] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN SET_TAC[]);;
+
 let CANTOR_BENDIXSON = prove
  (`!s:real^N->bool.
         closed s
         ==> ?t u. closed t /\ (!x. x IN t ==> x limit_point_of t) /\
                   COUNTABLE u /\ s = t UNION u`,
-  REPEAT STRIP_TAC THEN MAP_EVERY EXISTS_TAC
-   [`{x:real^N | x condensation_point_of s}`;
-    `s DIFF {x:real^N | x condensation_point_of s}`] THEN
-  REWRITE_TAC[COUNTABLE_NON_CONDENSATION_POINTS; CLOSED_CONDENSATION_POINTS;
-              IN_ELIM_THM; LIMPT_OF_CONDENSATION_POINTS] THEN
-  REWRITE_TAC[SET_RULE `s = t UNION (s DIFF t) <=> t SUBSET s`] THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[CLOSED_LIMPT]) THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
-  ASM_MESON_TAC[CONDENSATION_POINT_IMP_LIMPT]);;
+  MESON_TAC[CLOSED_IN_CLOSED_TRANS; CANTOR_BENDIXSON_GEN;
+                CONDENSATION_POINT_IMP_LIMPT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A discrete set is countable, and an uncountable set has a limit point.    *)
@@ -23290,8 +23340,8 @@ let GDELTA_POINTS_OF_CONTINUITY = prove
   SUBGOAL_THEN
    `{x | (f:real^M->real^N) continuous at x} =
     INTERS {UNIONS {u | open u /\
-                         bounded(IMAGE f u) /\
-                         diameter(IMAGE f u) < inv(&n + &1)} |
+                        bounded(IMAGE f u) /\
+                        diameter(IMAGE f u) < inv(&n + &1)} |
             n IN (:num)}`
   SUBST1_TAC THENL
    [ALL_TAC;

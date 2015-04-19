@@ -2550,7 +2550,7 @@ let RESTRICTION_HAS_DERIVATIVE = prove
    SIMP_TAC[RESTRICTION]]);;
 
 let HAS_VECTOR_DERIVATIVE_WITHIN_1D = prove
- (`!f:real^1->real^1 s x.
+ (`!f:real^1->real^N s x.
       (f has_vector_derivative f') (at x within s) <=>
       ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x within s)`,
   REPEAT GEN_TAC THEN
@@ -2570,7 +2570,7 @@ let HAS_VECTOR_DERIVATIVE_WITHIN_1D = prove
   REPEAT STRIP_TAC THEN CONV_TAC VECTOR_ARITH);;
 
 let HAS_VECTOR_DERIVATIVE_AT_1D = prove
- (`!f:real^1->real^1 x.
+ (`!f:real^1->real^N x.
       (f has_vector_derivative f') (at x) <=>
       ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x)`,
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
