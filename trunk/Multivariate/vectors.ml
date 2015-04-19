@@ -6559,6 +6559,65 @@ let COMPONENT_LE_ONORM = prove
         [MATCH_MP MATRIX_VECTOR_MUL th]) THEN
   REWRITE_TAC[MATRIX_COMPONENT_LE_ONORM]);;
 
+let ONORM_LE_MATRIX_COMPONENT = prove
+ (`!A:real^N^M B.
+        (!i j. 1 <= i /\ i <= dimindex(:M) /\
+               1 <= j /\ j <= dimindex(:N)
+               ==> abs(A$i$j) <= B)
+        ==> onorm(\x. A ** x) <= &(dimindex(:M)) * &(dimindex(:N)) * B`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(CONJUNCT2
+   (MATCH_MP ONORM (SPEC_ALL MATRIX_VECTOR_MUL_LINEAR))) THEN
+  X_GEN_TAC `x:real^N` THEN
+  W(MP_TAC o PART_MATCH lhand NORM_LE_L1 o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  REWRITE_TAC[GSYM REAL_MUL_ASSOC; REAL_POW_2] THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o RAND_CONV)
+   [GSYM CARD_NUMSEG_1] THEN
+  SIMP_TAC[GSYM SUM_CONST; FINITE_NUMSEG] THEN MATCH_MP_TAC SUM_LE_NUMSEG THEN
+  SIMP_TAC[MATRIX_MUL_DOT; LAMBDA_BETA] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH lhand NORM_CAUCHY_SCHWARZ_ABS o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  REWRITE_TAC[REAL_MUL_ASSOC] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+  REWRITE_TAC[NORM_POS_LE] THEN
+  W(MP_TAC o PART_MATCH lhand NORM_LE_L1 o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o RAND_CONV)
+   [GSYM CARD_NUMSEG_1] THEN
+  SIMP_TAC[GSYM SUM_CONST; FINITE_NUMSEG] THEN MATCH_MP_TAC SUM_LE_NUMSEG THEN
+  ASM_SIMP_TAC[]);;
+
+let MATRIX_RATIONAL_APPROXIMATION = prove
+ (`!A:real^N^M e.
+        &0 < e
+        ==> ?B. (!i j. 1 <= i /\ i <= dimindex(:M) /\
+                       1 <= j /\ j <= dimindex(:N)
+                       ==> rational(B$i$j)) /\
+                onorm(\x. (A - B) ** x) < e`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!i j. 1 <= i /\ i <= dimindex(:M) /\ 1 <= j /\ j <= dimindex(:N)
+          ==> ?q. rational(q) /\
+                  abs(q - (A:real^N^M)$i$j) <
+                  e / &2 / &(dimindex(:M)) / &(dimindex(:N))`
+  MP_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC RATIONAL_APPROXIMATION THEN
+    ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; LE_1; DIMINDEX_GE_1; REAL_HALF];
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r ==> s <=> p /\ q ==> r ==> s`] THEN
+    REWRITE_TAC[RIGHT_FORALL_IMP_THM; LAMBDA_SKOLEM]] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B:real^N^M` THEN
+  GEN_REWRITE_TAC (BINOP_CONV o TOP_DEPTH_CONV)
+   [RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  REWRITE_TAC[GSYM MATRIX_SUB_COMPONENT] THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[] THEN TRANS_TAC REAL_LET_TRANS
+    `&(dimindex(:M)) * &(dimindex(:N)) *
+     e / &2 / &(dimindex(:M)) / &(dimindex(:N))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC ONORM_LE_MATRIX_COMPONENT THEN
+    ASM_MESON_TAC[MATRIX_SUB_COMPONENT; REAL_ABS_SUB; REAL_LT_IMP_LE];
+    SIMP_TAC[REAL_DIV_LMUL; REAL_OF_NUM_EQ; DIMINDEX_NONZERO] THEN
+    ASM_REAL_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Basic lemmas about hyperplanes and halfspaces.                            *)
 (* ------------------------------------------------------------------------- *)

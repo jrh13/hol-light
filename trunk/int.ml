@@ -662,6 +662,15 @@ let INT_OF_NUM_EXISTS = prove
 
 let INT_LE_DISCRETE = INT_ARITH `!x y:int. x <= y <=> x < y + &1`;;
 
+let INT_LE_TRANS_LE = prove
+ (`!x y:int. x <= y <=> (!z. y <= z ==> x <= z)`,
+  MESON_TAC[INT_LE_TRANS; INT_LE_REFL]);;
+
+let INT_LE_TRANS_LT = prove
+ (`!x y:int. x <= y <=> (!z. y < z ==> x < z)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [INT_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `y + &1:int`) THEN INT_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Archimedian property for the integers.                                    *)
 (* ------------------------------------------------------------------------- *)

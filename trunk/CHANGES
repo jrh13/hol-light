@@ -1,3 +1,14 @@
+Fri 17th Apr 2015       calc_rat.ml, int.ml
+
+Added a few equivalential forms of transitivity; the first few in
+particular can be useful for epsilon-delta arguments in analysis.
+
+  REAL_LE_TRANS_LE = |- !x y:real. x <= y <=> (!z. y <= z ==> x <= z)
+  REAL_LE_TRANS_LTE = |- !x y:real. x <= y <=> (!z. y < z ==> x <= z)
+  REAL_LE_TRANS_LT = |- !x y:real. x <= y <=> (!z. y < z ==> x < z)
+  INT_LE_TRANS_LE = |- !x y:int x <= y <=> (!z. y <= z ==> x <= z)
+  INT_LE_TRANS_LT = |- !x y:int. x <= y <=> (!z. y < z ==> x < z)
+
 Mon 30th Mar 2015       sets.ml
 
 Added a simple lemma about "pairwise":

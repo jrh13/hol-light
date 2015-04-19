@@ -529,6 +529,24 @@ let ASM_REAL_ARITH_TAC =
   REAL_ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
+(* A few handy equivalential forms of transitivity.                          *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_LE_TRANS_LE = prove
+ (`!x y:real. x <= y <=> (!z. y <= z ==> x <= z)`,
+  MESON_TAC[REAL_LE_TRANS; REAL_LE_REFL]);;
+
+let REAL_LE_TRANS_LTE = prove
+ (`!x y:real. x <= y <=> (!z. y < z ==> x <= z)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `y + (x - y) / &2`) THEN REAL_ARITH_TAC);;
+
+let REAL_LE_TRANS_LT = prove
+ (`!x y:real. x <= y <=> (!z. y < z ==> x < z)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `y + (x - y) / &2`) THEN REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* A simple "field" rule.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
