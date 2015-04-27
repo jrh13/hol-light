@@ -2577,6 +2577,60 @@ let HAS_VECTOR_DERIVATIVE_AT_1D = prove
   REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Bounds on derivatives from function properties.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let VECTOR_DERIVATIVE_INCREASING_WITHIN = prove
+ (`!f f' s a.
+        (!x y. x IN s /\ y IN s /\ drop x <= drop y
+               ==> drop(f x) <= drop(f y)) /\
+        a IN s /\ a limit_point_of s /\
+        (f has_vector_derivative f') (at a within s)
+        ==> &0 <= drop f'`,
+  REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ] LIM_DROP_LBOUND)) THEN
+  ASM_REWRITE_TAC[TRIVIAL_LIMIT_WITHIN; EVENTUALLY_WITHIN] THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01; DROP_CMUL; DROP_SUB] THEN
+  X_GEN_TAC `b:real^1` THEN STRIP_TAC THEN
+  DISJ_CASES_TAC(REAL_ARITH `drop a <= drop b \/ drop b <= drop a`) THENL
+    [ALL_TAC;
+     ONCE_REWRITE_TAC[GSYM REAL_NEG_SUB] THEN
+     SIMP_TAC[REAL_INV_NEG; REAL_MUL_LNEG; REAL_MUL_RNEG; REAL_NEG_NEG]] THEN
+  MATCH_MP_TAC REAL_LE_MUL THEN
+  ASM_SIMP_TAC[REAL_LE_INV_EQ; REAL_SUB_LE]);;
+
+let NORM_VECTOR_DERIVATIVES_LE_WITHIN = prove
+ (`!f:real^1->real^M g:real^1->real^N f' g' x s.
+        x limit_point_of s /\
+        (f has_vector_derivative f') (at x within s) /\
+        (g has_vector_derivative g') (at x within s) /\
+        eventually (\y. norm(f y - f x) <= norm(g y - g x)) (at x within s)
+        ==> norm f' <= norm g'`,
+  REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D] THEN
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC BINOP_CONV [GSYM LIFT_DROP] THEN
+  MATCH_MP_TAC(ISPEC `at (x:real^1) within s` LIM_DROP_LE) THEN
+  MAP_EVERY EXISTS_TAC
+   [`\y. lift(norm(inv(drop(y - x)) % (f y - f x:real^M)))`;
+    `\y. lift(norm(inv(drop(y - x)) % (g y - g x:real^N)))`] THEN
+  ASM_SIMP_TAC[TRIVIAL_LIMIT_WITHIN; LIM_NORM] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        EVENTUALLY_MONO)) THEN
+  SIMP_TAC[NORM_MUL; LIFT_DROP; REAL_LE_LMUL; REAL_ABS_POS]);;
+
+let NORM_VECTOR_DERIVATIVES_LE_AT = prove
+ (`!f:real^1->real^M g:real^1->real^N f' g' x.
+        (f has_vector_derivative f') (at x) /\
+        (g has_vector_derivative g') (at x) /\
+        eventually (\y. norm(f y - f x) <= norm(g y - g x)) (at x)
+        ==> norm f' <= norm g'`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NORM_VECTOR_DERIVATIVES_LE_WITHIN THEN
+  MAP_EVERY EXISTS_TAC
+   [`f:real^1->real^M`; `g:real^1->real^N`; `x:real^1`; `(:real^1)`] THEN
+  ASM_REWRITE_TAC[LIMPT_OF_UNIV; WITHIN_UNIV]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Various versions of Kachurovskii's theorem.                               *)
 (* ------------------------------------------------------------------------- *)
 
