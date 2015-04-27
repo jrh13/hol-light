@@ -405,6 +405,19 @@ let FORALL_POS_MONO_1 = prove
        ==> !e. &0 < e ==> P e`,
   REWRITE_TAC[REAL_OF_NUM_SUC; GSYM FORALL_SUC; FORALL_POS_MONO]);;
 
+let FORALL_POS_MONO_EQ = prove
+ (`!P. (!d e. d < e /\ P d ==> P e)
+       ==> ((!e. &0 < e ==> P e) <=> (!n. ~(n = 0) ==> P(inv(&n))))`,
+  MESON_TAC[REAL_ARCH_INV; REAL_LT_INV_EQ; REAL_LT_TRANS; LE_1;
+            REAL_OF_NUM_LT]);;
+
+let FORALL_POS_MONO_1_EQ = prove
+ (`!P. (!d e. d < e /\ P d ==> P e)
+       ==> ((!e. &0 < e ==> P e) <=> (!n. P(inv(&n + &1))))`,
+  GEN_TAC THEN
+  DISCH_THEN(SUBST1_TAC o MATCH_MP FORALL_POS_MONO_EQ) THEN
+  REWRITE_TAC[REAL_OF_NUM_SUC; GSYM FORALL_SUC]);;
+
 let REAL_ARCH_RDIV_EQ_0 = prove
  (`!x c. &0 <= x /\ &0 <= c /\ (!m. 0 < m ==> &m * x <= c) ==> x = &0`,
   SIMP_TAC [GSYM REAL_LE_ANTISYM; GSYM REAL_NOT_LT] THEN REPEAT STRIP_TAC THEN

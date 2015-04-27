@@ -1,3 +1,20 @@
+Fri 24th Apr 2015       sets.ml
+
+Slightly sharpened PAIRWISE_IMP to
+
+  |- !P Q s.
+         pairwise P s /\
+         (!x y. x IN s /\ y IN s /\ P x y /\ ~(x = y) ==> Q x y)
+         ==> pairwise Q s
+
+and added one more trivial but useful theorem about "pairwise":
+
+  PAIRWISE_CHAIN_UNIONS =
+    |- !R c.
+         (!s. s IN c ==> pairwise R s) /\
+         (!s t. s IN c /\ t IN c ==> s SUBSET t \/ t SUBSET s)
+         ==> pairwise R (UNIONS c)
+
 Fri 17th Apr 2015       calc_rat.ml, int.ml
 
 Added a few equivalential forms of transitivity; the first few in

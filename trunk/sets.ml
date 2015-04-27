@@ -2713,7 +2713,9 @@ let PAIRWISE_SING = prove
 
 let PAIRWISE_IMP = prove
  (`!P Q s:A->bool.
-        pairwise P s /\ (!x y. P x y /\ ~(x = y) ==> Q x y) ==> pairwise Q s`,
+        pairwise P s /\
+        (!x y. x IN s /\ y IN s /\ P x y /\ ~(x = y) ==> Q x y)
+        ==> pairwise Q s`,
   REWRITE_TAC[pairwise] THEN SET_TAC[]);;
 
 let PAIRWISE_MONO = prove
@@ -2741,6 +2743,13 @@ let PAIRWISE_UNION = prove
  (`!R s t. pairwise R (s UNION t) <=>
            pairwise R s /\ pairwise R t /\
            (!x y. x IN s DIFF t /\ y IN t DIFF s ==> R x y /\ R y x)`,
+  REWRITE_TAC[pairwise] THEN SET_TAC[]);;
+
+let PAIRWISE_CHAIN_UNIONS = prove
+ (`!R:A->A->bool c.
+        (!s. s IN c ==> pairwise R s) /\
+        (!s t. s IN c /\ t IN c ==> s SUBSET t \/ t SUBSET s)
+        ==> pairwise R (UNIONS c)`,
   REWRITE_TAC[pairwise] THEN SET_TAC[]);;
 
 let DIFF_UNIONS_PAIRWISE_DISJOINT = prove
