@@ -3932,6 +3932,12 @@ let LINEAR_COMPONENTWISE = prove
   REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT] THEN
   MESON_TAC[]);;
 
+let DROP_BASIS = prove
+ (`!i. drop(basis i) = if i = 1 then &1 else &0`,
+  REWRITE_TAC[GSYM LIFT_EQ; LIFT_DROP] THEN
+  SIMP_TAC[basis; lift; CART_EQ; LAMBDA_BETA; DIMINDEX_1; FORALL_1] THEN
+  MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -6558,6 +6564,24 @@ let COMPONENT_LE_ONORM = prove
   FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV)
         [MATCH_MP MATRIX_VECTOR_MUL th]) THEN
   REWRITE_TAC[MATRIX_COMPONENT_LE_ONORM]);;
+
+let ONORM_LE_MATRIX_COMPONENT_SUM = prove
+ (`!A:real^N^M.
+        onorm(\x. A ** x) <=
+        sum (1..dimindex(:M))
+            (\i. sum(1..dimindex(:N)) (\j. abs(A$i$j)))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(CONJUNCT2
+   (MATCH_MP ONORM (SPEC_ALL MATRIX_VECTOR_MUL_LINEAR))) THEN
+  X_GEN_TAC `x:real^N` THEN
+  W(MP_TAC o PART_MATCH lhand NORM_LE_L1 o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  REWRITE_TAC[GSYM SUM_RMUL] THEN MATCH_MP_TAC SUM_LE_NUMSEG THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[matrix_vector_mul; LAMBDA_BETA] THEN
+  W(MP_TAC o PART_MATCH lhand SUM_ABS_NUMSEG o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  MATCH_MP_TAC SUM_LE_NUMSEG THEN X_GEN_TAC `j:num` THEN STRIP_TAC THEN
+  SIMP_TAC[REAL_ABS_MUL; REAL_LE_LMUL; COMPONENT_LE_NORM; REAL_ABS_POS]);;
 
 let ONORM_LE_MATRIX_COMPONENT = prove
  (`!A:real^N^M B.
