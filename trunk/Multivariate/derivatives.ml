@@ -337,6 +337,15 @@ let DIFFERENTIABLE_TRANSFORM_AT = prove
   REWRITE_TAC[differentiable] THEN
   MESON_TAC[HAS_DERIVATIVE_TRANSFORM_AT]);;
 
+let DIFFERENTIABLE_ON_EQ = prove
+ (`!f g:real^M->real^N s.
+        (!x. x IN s ==> f x = g x) /\ f differentiable_on s
+        ==> g differentiable_on s`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  REWRITE_TAC[differentiable_on] THEN
+  ASM_MESON_TAC[DIFFERENTIABLE_TRANSFORM_WITHIN; REAL_LT_01]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Frechet derivative and Jacobian matrix.                                   *)
 (* ------------------------------------------------------------------------- *)
