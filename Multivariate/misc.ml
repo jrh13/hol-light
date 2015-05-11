@@ -648,6 +648,47 @@ let CONVERGENT_BOUNDED_MONOTONE = prove
   ASM_MESON_TAC[REAL_ARITH `abs(x - --l) = abs(--x - l)`]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A characterization of monotonicity.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_NON_MONOTONE = prove
+ (`!P f:real->real.
+        (!x y. P x /\ P y /\ x <= y ==> f x <= f y) \/
+        (!x y. P x /\ P y /\ x <= y ==> f y <= f x) <=>
+        ~(?x y z. P x /\ P y /\ P z /\ x < y /\ y < z /\
+                 (f x < f y /\ f z < f y \/ f y < f x /\ f y < f z))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [MESON_TAC[REAL_LT_IMP_LE; REAL_LET_ANTISYM]; ALL_TAC] THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[NOT_FORALL_THM; LEFT_IMP_EXISTS_THM; NOT_IMP; DE_MORGAN_THM] THEN
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC; REAL_NOT_LE; MESON[REAL_LT_LE]
+   `(x <= y /\ (f:real->real) y < f x <=> x < y /\ f y < f x) /\
+    (x <= y /\ f x < f y <=> x < y /\ f x < f y)`] THEN
+  MAP_EVERY X_GEN_TAC [`u:real`; `v:real`] THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`w:real`; `z:real`] THEN STRIP_TAC THEN
+  REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC (REAL_ARITH
+   `u:real = w \/ u < w \/ w < u`)
+  THENL
+   [FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    MATCH_MP_TAC(MESON[] `P w v z \/ P w z v ==> ?x y z. P x y z`);
+    MATCH_MP_TAC(MESON[] `P u v \/ P u w \/ P u z ==> ?x y. P x y`) THEN
+    ASM_REWRITE_TAC[OR_EXISTS_THM; REAL_LT_REFL] THEN
+    MATCH_MP_TAC(MESON[] `P(v:real) \/ P z ==> ?x. P x`);
+    MATCH_MP_TAC(MESON[] `P w u \/ P w v \/ P w z ==> ?x y. P x y`) THEN
+    ASM_REWRITE_TAC[OR_EXISTS_THM; REAL_LT_REFL] THEN
+    MATCH_MP_TAC(MESON[] `P(v:real) \/ P z ==> ?x. P x`)] THEN
+  ASM_SIMP_TAC[REAL_LT_REFL; REAL_ARITH `a < b ==> ~(b < a)`] THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ o rev) THEN
+  CONV_TAC NNFC_CONV THEN CONV_TAC CNF_CONV THEN
+  REPEAT CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
+  ASM_CASES_TAC `u:real = w` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
+  ASM_CASES_TAC `u:real = z` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
+  ASM_CASES_TAC `v:real = w` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
+  ASM_CASES_TAC `v:real = z` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
+  REPEAT(FIRST_X_ASSUM SUBST_ALL_TAC) THEN ASM_REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* Extensional functions over a set.                                         *)
 (* ------------------------------------------------------------------------- *)
 

@@ -1530,6 +1530,11 @@ let EXTREME_POINT_IN_RELATIVE_FRONTIER = prove
            relative_frontier; IN_DIFF] THEN
   SIMP_TAC[extreme_point_of; REWRITE_RULE[SUBSET] CLOSURE_SUBSET]);;
 
+let EXTREME_POINT_IN_FRONTIER = prove
+ (`!s x:real^N. x extreme_point_of s ==> x IN frontier s`,
+  SIMP_TAC[frontier; IN_DIFF; EXTREME_POINT_NOT_IN_INTERIOR] THEN
+  SIMP_TAC[extreme_point_of; CLOSURE_INC]);;
+
 let EXTREME_POINT_OF_FACE = prove
  (`!f s v. f face_of s
            ==> (v extreme_point_of f <=> v extreme_point_of s /\ v IN f)`,
@@ -3496,6 +3501,27 @@ let FACE_OF_CONVEX_HULL_INSERT_EQ = prove
     CONJ_TAC THENL [CONV_TAC REAL_RING; REPEAT CONJ_TAC] THEN
     MATCH_MP_TAC(REWRITE_RULE[SUBSET] CONVEX_HULL_SUBSET_AFFINE_HULL) THEN
     ASM_REWRITE_TAC[] THEN ASM SET_TAC[]]);;
+
+let CONVEX_HULL_REDUNDANT_SUBSET = prove
+ (`!s t:real^N->bool.
+        compact s /\ t SUBSET s /\
+        s DIFF t SUBSET interior(convex hull s)
+        ==> convex hull s = convex hull t`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  ASM_SIMP_TAC[HULL_MONO] THEN
+  MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[CONVEX_CONVEX_HULL] THEN
+  MP_TAC(ISPEC `s:real^N->bool` EXTREME_POINTS_OF_CONVEX_HULL) THEN
+  DISCH_THEN(DISJ_CASES_TAC o SPEC `t:real^N->bool` o MATCH_MP (SET_RULE
+   `e SUBSET s ==> !t. e SUBSET t \/ ~DISJOINT e (s DIFF t)`))
+  THENL
+   [TRANS_TAC SUBSET_TRANS `convex hull s:real^N->bool` THEN
+    REWRITE_TAC[HULL_SUBSET] THEN
+    MP_TAC(ISPEC `convex hull s:real^N->bool` KREIN_MILMAN_MINKOWSKI) THEN
+    ASM_SIMP_TAC[COMPACT_CONVEX_HULL; CONVEX_CONVEX_HULL] THEN
+    DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC[HULL_MONO];
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP(SET_RULE
+      `~DISJOINT {x | P x} t ==> (!x. x IN t ==> ~P x) ==> Q`)) THEN
+    ASM_MESON_TAC[EXTREME_POINT_NOT_IN_INTERIOR; IN_DIFF; SUBSET]]);;
 
 let HAUSDIST_FRONTIERS_CONVEX = prove
  (`!s t:real^N->bool.
