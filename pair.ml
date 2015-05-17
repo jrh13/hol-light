@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                 (c) Copyright, Marco Maggesi 2015                         *)
 (* ========================================================================= *)
 
 needs "quot.ml";;
@@ -303,6 +304,10 @@ let LAMBDA_PAIR_THM = prove
  (`!t. (\p. t p) = (\(x,y). t(x,y))`,
   REWRITE_TAC[FORALL_PAIR_THM; FUN_EQ_THM]);;
 
+let LAMBDA_UNPAIR_THM = prove
+ (`!f:A->B->C. (\ (x:A,y:B). f x y) = (\p. f (FST p) (SND p))`,
+  REWRITE_TAC[LAMBDA_PAIR_THM]);;
+
 let PAIRED_ETA_THM = prove
  (`(!f. (\(x,y). f (x,y)) = f) /\
    (!f. (\(x,y,z). f (x,y,z)) = f) /\
@@ -363,6 +368,24 @@ let EXISTS_TRIPLED_THM = prove
  (`!P. (?(x,y,z). P x y z) <=> (?x y z. P x y z)`,
   GEN_TAC THEN MATCH_MP_TAC(TAUT `(~p <=> ~q) ==> (p <=> q)`) THEN
   REWRITE_TAC[REWRITE_RULE[ETA_AX] NOT_EXISTS_THM; FORALL_PAIR_THM]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Similar theorems for the choice operator.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let CHOICE_UNPAIR_THM = prove
+ (`!P. (@(x:A,y:B). P x y) = (@p. P (FST p) (SND p))`,
+  REWRITE_TAC[LAMBDA_UNPAIR_THM]);;
+
+let CHOICE_PAIRED_THM = prove
+ (`!P Q. (?x:A y:B. P x y) /\ (!x y. P x y ==> Q(x,y)) ==> Q (@(x,y). P x y)`,
+  INTRO_TAC "!P Q; (@x0 y0. P0) PQ" THEN
+  SUBGOAL_THEN `(\ (x:A,y:B). P x y:bool) = (\p. P (FST p) (SND p))`
+    SUBST1_TAC THENL
+  [REWRITE_TAC[LAMBDA_PAIR_THM]; SELECT_ELIM_TAC] THEN
+  INTRO_TAC "![c]; c" THEN ONCE_REWRITE_TAC[GSYM PAIR] THEN
+  REMOVE_THEN "PQ" MATCH_MP_TAC THEN REMOVE_THEN "c" MATCH_MP_TAC THEN
+  REWRITE_TAC[EXISTS_PAIR_THM] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Expansion of a let-term.                                                  *)

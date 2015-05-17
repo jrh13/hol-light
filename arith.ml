@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                 (c) Copyright, Marco Maggesi 2015                         *)
 (* ========================================================================= *)
 
 needs "recursion.ml";;
@@ -665,6 +666,19 @@ let num_MAX = prove
       FIRST_ASSUM(MP_TAC o SPEC `p:num`) THEN REWRITE_TAC[LE] THEN
       ASM_CASES_TAC `p = SUC m` THEN ASM_REWRITE_TAC[]];
     REPEAT STRIP_TAC THEN EXISTS_TAC `m:num` THEN ASM_REWRITE_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Another variant of induction.                                             *)
+(* ------------------------------------------------------------------------- *)
+
+let LE_INDUCT = prove
+ (`!P. (!m:num. P m m) /\
+       (!m n. m <= n /\ P m n ==> P m (SUC n))
+       ==> (!m n. m <= n ==> P m n)`,
+   GEN_TAC THEN REWRITE_TAC[IMP_CONJ; MESON[LE_EXISTS]
+    `(!m n:num. m <= n ==> R m n) <=> (!m d. R m (m + d))`] THEN
+  REPEAT DISCH_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
+  ASM_SIMP_TAC[ADD_CLAUSES]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Oddness and evenness (recursively rather than inductively!)               *)

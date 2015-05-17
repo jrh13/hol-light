@@ -1,3 +1,23 @@
+Fri 15th May 2015       pair.ml, arith.ml, sets.ml
+
+Added a few useful theorems from Marco Maggesi:
+
+  CHOICE_PAIRED_THM =
+    |- !P Q. (?x y. P x y) /\ (!x y. P x y ==> Q (x,y)) ==> Q (@(x,y). P x y)
+
+  CHOICE_UNPAIR_THM =
+    |- !P. (@(x,y). P x y) = (@p. P (FST p) (SND p))
+
+  INTERS_SUBSET =
+    |- !u s. ~(u = {}) /\ (!t. t IN u ==> t SUBSET s) ==> INTERS u SUBSET s
+
+  LAMBDA_UNPAIR_THM =
+    |- !f. (\(x,y). f x y) = (\p. f (FST p) (SND p))
+
+  LE_INDUCT =
+    |- !P. (!m. P m m) /\ (!m n. m <= n /\ P m n ==> P m (SUC n))
+           ==> (!m n. m <= n ==> P m n)
+
 Fri 24th Apr 2015       sets.ml
 
 Slightly sharpened PAIRWISE_IMP to

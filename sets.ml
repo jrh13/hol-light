@@ -5,7 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
-(*                 (c) Copyright, Marco Maggesi 2012                         *)
+(*              (c) Copyright, Marco Maggesi 2012-2015                       *)
 (* ========================================================================= *)
 
 needs "int.ml";;
@@ -802,6 +802,11 @@ let INTERS_INSERT = prove
 
 let SUBSET_INTERS = prove
  (`!s f. s SUBSET INTERS f <=> (!t. t IN f ==> s SUBSET t)`,
+  SET_TAC[]);;
+
+let INTERS_SUBSET = prove
+ (`!u s:A->bool.
+    ~(u = {}) /\ (!t. t IN u ==> t SUBSET s) ==> INTERS u SUBSET s`,
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
