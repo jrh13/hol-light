@@ -9444,6 +9444,7 @@ let th_sets = prove
            ((f x) IN (IMAGE f s) <=> x IN s) /\
            ((f o xs) (n:num) = f(xs n)) /\
            ((f o pt) (tt:real^1) = f(pt tt)) /\
+           (IMAGE (f o g) k = IMAGE f (IMAGE g k)) /\
            (DISJOINT (IMAGE f s) (IMAGE f t) <=> DISJOINT s t) /\
            ((IMAGE f s) SUBSET (IMAGE f t) <=> s SUBSET t) /\
            ((IMAGE f s) PSUBSET (IMAGE f t) <=> s PSUBSET t) /\
@@ -9452,7 +9453,8 @@ let th_sets = prove
            (FINITE(IMAGE f s) <=> FINITE s) /\
            (INFINITE(IMAGE f s) <=> INFINITE s) /\
            (COUNTABLE(IMAGE f s) <=> COUNTABLE s)`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[IMAGE_UNIONS] THEN
+  REPEAT GEN_TAC THEN DISCH_TAC THEN 
+  REWRITE_TAC[IMAGE_UNIONS; IMAGE_o] THEN
   REWRITE_TAC[o_THM; MESON[IN] `IMAGE f s y <=> y IN IMAGE f s`] THEN
   REPLICATE_TAC 2 (CONJ_TAC THENL [MESON_TAC[]; ALL_TAC]) THEN
   REWRITE_TAC[INFINITE; TAUT `(~p <=> ~q) <=> (p <=> q)`] THEN

@@ -10576,6 +10576,18 @@ let CONVEX_OPEN_SEGMENT_CASES = prove
     MP_TAC(SPEC `b:real^N` th) THEN MP_TAC(SPEC `a:real^N` th)) THEN
   ASM_REWRITE_TAC[SEGMENT_SYM; CONJUNCT2 segment] THEN ASM SET_TAC[]);;
 
+let SEGMENT_SUBSET_RELATIVE_FRONTIER_CONVEX = prove
+ (`!s a b c:real^N.
+        convex s /\ c IN segment(a,b) /\ {a,b,c} SUBSET relative_frontier s
+        ==> segment[a,b] SUBSET relative_frontier s`,
+  REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[SEGMENT_CLOSED_OPEN; UNION_SUBSET] THEN
+  ASM_REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N`; `b:real^N`]
+        CONVEX_OPEN_SEGMENT_CASES) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[relative_frontier; IN_DIFF]) THEN
+  ASM SET_TAC[]);;
+
 let RELATIVE_INTERIOR_SING = prove
  (`!a. relative_interior {a} = {a}`,
   GEN_TAC THEN MATCH_MP_TAC(SET_RULE
