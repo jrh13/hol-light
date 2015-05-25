@@ -2803,6 +2803,18 @@ let EVENTUALLY_AT_INFINITY_POS = prove
   GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT_INFINITY; real_ge] THEN
   MESON_TAC[REAL_ARITH `&0 < abs b + &1 /\ (abs b + &1 <= x ==> b <= x)`]);;
 
+let EVENTUALLY_WITHIN_INTER_IMP = prove
+ (`!P s t a:real^N.
+        eventually P (at a within s INTER t) <=>
+        eventually (\x. x IN t ==> P x) (at a within s)`,
+  REWRITE_TAC[EVENTUALLY_WITHIN; IN_INTER] THEN MESON_TAC[]);;
+
+let EVENTUALLY_WITHIN_IMP = prove
+ (`!P s a:real^N.
+        eventually P (at a within s) <=>
+        eventually (\x. x IN s ==> P x) (at a)`,
+  REWRITE_TAC[EVENTUALLY_WITHIN; EVENTUALLY_AT] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)
 (* ------------------------------------------------------------------------- *)
@@ -3045,6 +3057,46 @@ let LIM_WITHIN_OPEN = prove
   DISCH_THEN(X_CHOOSE_THEN `d2:real` STRIP_ASSUME_TAC) THEN
   MP_TAC(SPECL [`d1:real`; `d2:real`] REAL_DOWN2) THEN ASM_REWRITE_TAC[] THEN
   ASM_MESON_TAC[REAL_LT_TRANS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Two-sided limits on R^1.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let TWO_SIDED_LIMIT_WITHIN = prove
+ (`!f s a l:real^N.
+        (f --> l) (at a within s) <=>
+        (f --> l) (at a within s INTER {x | drop x <= drop a}) /\
+        (f --> l) (at a within s INTER {x | drop a <= drop x})`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[tendsto] THEN
+  REWRITE_TAC[AND_FORALL_THM; TAUT
+   `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+  REWRITE_TAC[EVENTUALLY_WITHIN_INTER_IMP; GSYM EVENTUALLY_AND] THEN
+  REWRITE_TAC[TAUT `(p ==> r) /\ (q ==> r) <=> p \/ q ==> r`] THEN
+  REWRITE_TAC[IN_ELIM_THM; REAL_LE_TOTAL]);;
+
+let TWO_SIDED_LIMIT_AT = prove
+ (`!f a l:real^N.
+        (f --> l) (at a) <=>
+        (f --> l) (at a within {x | drop x <= drop a}) /\
+        (f --> l) (at a within {x | drop a <= drop x})`,
+  REPEAT GEN_TAC THEN
+  SUBST1_TAC(SYM(ISPEC `a:real^1` WITHIN_UNIV)) THEN
+  REWRITE_TAC[WITHIN_WITHIN; GSYM TWO_SIDED_LIMIT_WITHIN]);;
+
+let NON_TRIVIAL_LIMIT_LEFT = prove
+ (`!a. ~trivial_limit (at a within {x | drop x <= drop a})`,
+  GEN_TAC THEN REWRITE_TAC[TRIVIAL_LIMIT_WITHIN; LIMPT_APPROACHABLE_LE] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN EXISTS_TAC `a - lift e` THEN
+  REWRITE_TAC[IN_ELIM_THM; DIST_1; DROP_SUB; LIFT_DROP; GSYM DROP_EQ] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let NON_TRIVIAL_LIMIT_RIGHT = prove
+ (`!a. ~trivial_limit (at a within {x | drop a <= drop x})`,
+  GEN_TAC THEN REWRITE_TAC[TRIVIAL_LIMIT_WITHIN; LIMPT_APPROACHABLE_LE] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN EXISTS_TAC `a + lift e` THEN
+  REWRITE_TAC[IN_ELIM_THM; DIST_1; DROP_ADD; DROP_SUB;
+              LIFT_DROP; GSYM DROP_EQ] THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* More limit point characterizations.                                       *)
@@ -4150,16 +4202,29 @@ let SPHERE_EQ_SING = prove
 (* For points in the interior, localization of limits makes no difference.   *)
 (* ------------------------------------------------------------------------- *)
 
-let EVENTUALLY_WITHIN_INTERIOR = prove
- (`!p s x.
+let EVENTUALLY_WITHIN_INTERIOR_INTER = prove
+ (`!p s t x.
         x IN interior s
-        ==> (eventually p (at x within s) <=> eventually p (at x))`,
-  REWRITE_TAC[EVENTUALLY_WITHIN; EVENTUALLY_AT; IN_INTERIOR] THEN
+        ==> (eventually p (at x within s INTER t) <=>
+             eventually p (at x within t))`,
+  REWRITE_TAC[EVENTUALLY_WITHIN; IN_INTER; IN_INTERIOR] THEN
   REPEAT GEN_TAC THEN SIMP_TAC[SUBSET; IN_BALL; LEFT_IMP_FORALL_THM] THEN
   DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
   EQ_TAC THEN DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `min (d:real) e` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
   ASM_MESON_TAC[DIST_SYM]);;
+
+let EVENTUALLY_WITHIN_INTERIOR = prove
+ (`!p s x.
+        x IN interior s
+        ==> (eventually p (at x within s) <=> eventually p (at x))`,
+  MESON_TAC[EVENTUALLY_WITHIN_INTERIOR_INTER; WITHIN_UNIV; INTER_UNIV]);;
+
+let LIM_WITHIN_INTERIOR_INTER = prove
+ (`!f l s x.
+        x IN interior s
+        ==> ((f --> l) (at x within s INTER t) <=> (f --> l) (at x within t))`,
+  SIMP_TAC[tendsto; EVENTUALLY_WITHIN_INTERIOR_INTER]);;
 
 let LIM_WITHIN_INTERIOR = prove
  (`!f l s x.
@@ -13467,6 +13532,14 @@ let IS_INTERVAL_SCALING_EQ = prove
     ASM_SIMP_TAC[GSYM IMAGE_o; VECTOR_MUL_ASSOC; o_DEF; REAL_MUL_LINV;
                  VECTOR_MUL_LID; IMAGE_ID]]);;
 
+let IS_INTERVAL_REFLECT = prove
+ (`!s:real^N->bool. is_interval(IMAGE (--) s) <=> is_interval s`,
+  GEN_TAC THEN TRANS_TAC EQ_TRANS
+   `is_interval(IMAGE (\x:real^N. --(&1) % x) s)` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[VECTOR_MUL_LNEG; VECTOR_MUL_LID] THEN REWRITE_TAC[ETA_AX];
+    REWRITE_TAC[IS_INTERVAL_SCALING_EQ] THEN CONV_TAC REAL_RAT_REDUCE_CONV]);;
+
 let lemma = prove
  (`!c. &0 < c
        ==> !s:real^N->bool. is_interval(IMAGE (\x. c % x) s) <=>
@@ -13594,6 +13667,36 @@ let LIM_DROP_LBOUND = prove
   SIMP_TAC[drop] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC LIM_COMPONENT_LBOUND THEN
   REWRITE_TAC[LE_REFL; DIMINDEX_1] THEN ASM_MESON_TAC[]);;
+
+let LIMIT_PAIR_DROP_LE = prove
+ (`!net1:(A)net net2:(B)net f g l m.
+        ~(trivial_limit net1) /\ ~(trivial_limit net2) /\
+        (f --> l) net1 /\ (g --> m) net2 /\
+        eventually (\x. eventually (\y. drop(f x) <= drop(g y)) net2) net1
+        ==> drop l <= drop m`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+  UNDISCH_TAC `((g:B->real^1) --> m) net2` THEN
+  UNDISCH_TAC `((f:A->real^1) --> l) net1` THEN
+  REWRITE_TAC[tendsto] THEN
+  DISCH_THEN(MP_TAC o SPEC `(drop l - drop m) / &2`) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_SUB_LT] THEN
+  FIRST_X_ASSUM(fun th ->
+    MP_TAC th THEN REWRITE_TAC[IMP_IMP] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM EVENTUALLY_AND]) THEN
+  GEN_REWRITE_TAC LAND_CONV [eventually] THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `a0:A` (MP_TAC o MATCH_MP
+   (MESON[] `(?x. P x) /\ (!x. P x ==> Q x) ==> ?x. Q x`))) THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A` (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)) THEN
+  DISCH_THEN(fun th ->
+    DISCH_THEN(MP_TAC o SPEC `(drop l - drop m) / &2`) THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[REAL_HALF; REAL_SUB_LT] THEN
+  REWRITE_TAC[TAUT `p ==> ~q <=> ~(p /\ q)`; GSYM EVENTUALLY_AND] THEN
+  ASM_REWRITE_TAC[eventually] THEN
+  DISCH_THEN(X_CHOOSE_THEN `b0:B` (MP_TAC o MATCH_MP
+   (MESON[] `(?x. P x) /\ (!x. P x ==> Q x) ==> ?x. Q x`))) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[DIST_1]) THEN
+  REWRITE_TAC[DIST_1] THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Also extending closed bounds to closures.                                 *)

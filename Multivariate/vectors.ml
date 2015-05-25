@@ -3852,6 +3852,10 @@ let NORM_1 = prove
  (`!x. norm x = abs(drop x)`,
   REWRITE_TAC[drop; NORM_REAL]);;
 
+let DIST_1 = prove
+ (`!x y. dist(x,y) = abs(drop x - drop y)`,
+  REWRITE_TAC[dist; DROP_SUB; NORM_1]);;
+
 let NORM_1_POS = prove
  (`!x. &0 <= drop x ==> norm x = drop x`,
   SIMP_TAC[NORM_1; real_abs]);;
@@ -9453,7 +9457,7 @@ let th_sets = prove
            (FINITE(IMAGE f s) <=> FINITE s) /\
            (INFINITE(IMAGE f s) <=> INFINITE s) /\
            (COUNTABLE(IMAGE f s) <=> COUNTABLE s)`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN 
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
   REWRITE_TAC[IMAGE_UNIONS; IMAGE_o] THEN
   REWRITE_TAC[o_THM; MESON[IN] `IMAGE f s y <=> y IN IMAGE f s`] THEN
   REPLICATE_TAC 2 (CONJ_TAC THENL [MESON_TAC[]; ALL_TAC]) THEN

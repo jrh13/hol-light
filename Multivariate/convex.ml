@@ -9380,16 +9380,22 @@ let CLOSED_INTERVAL_AS_CONVEX_HULL = prove
 (* Characterizations of convex functions in terms of secants.                *)
 (* ------------------------------------------------------------------------- *)
 
-let CONVEX_ON_LEFT_SECANT_MUL,CONVEX_ON_RIGHT_SECANT_MUL = (CONJ_PAIR o prove)
+let [CONVEX_ON_LEFT_SECANT_MUL;
+     CONVEX_ON_RIGHT_SECANT_MUL;
+     CONVEX_ON_MID_SECANT_MUL] = (CONJUNCTS o prove)
  (`(!f s:real^N->bool.
         f convex_on s <=>
-          !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
-                  ==> (f x - f a) * norm(b - a) <= (f b - f a) * norm(x - a)) /\
+        !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
+                ==> (f x - f a) * norm(b - a) <= (f b - f a) * norm(x - a)) /\
    (!f s:real^N->bool.
         f convex_on s <=>
-          !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
-                  ==> (f b - f a) * norm(b - x) <= (f b - f x) * norm(b - a))`,
-  CONJ_TAC THEN
+        !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
+                ==> (f b - f a) * norm(b - x) <= (f b - f x) * norm(b - a)) /\
+   (!f s:real^N->bool.
+        f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
+                ==> (f x - f a) * norm (b - x) <= (f b - f x) * norm(x - a))`,
+  REPEAT CONJ_TAC THEN
   REPEAT GEN_TAC THEN REWRITE_TAC[convex_on] THEN
   AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
   X_GEN_TAC `a:real^N` THEN REWRITE_TAC[] THEN
@@ -9420,7 +9426,9 @@ let CONVEX_ON_LEFT_SECANT_MUL,CONVEX_ON_RIGHT_SECANT_MUL = (CONJ_PAIR o prove)
      `&0 <= u /\ u <= &1 ==> abs u = u /\ abs(&1 - u) = &1 - u`] THEN
     REAL_ARITH_TAC]));;
 
-let CONVEX_ON_LEFT_SECANT,CONVEX_ON_RIGHT_SECANT = (CONJ_PAIR o prove)
+let [CONVEX_ON_LEFT_SECANT;
+     CONVEX_ON_RIGHT_SECANT;
+     CONVEX_ON_MID_SECANT] = (CONJUNCTS o prove)
  (`(!f s:real^N->bool.
       f convex_on s <=>
         !a b x. a IN s /\ b IN s /\ x IN segment(a,b)
@@ -9428,10 +9436,15 @@ let CONVEX_ON_LEFT_SECANT,CONVEX_ON_RIGHT_SECANT = (CONJ_PAIR o prove)
    (!f s:real^N->bool.
       f convex_on s <=>
         !a b x. a IN s /\ b IN s /\ x IN segment(a,b)
-                ==> (f b - f a) / norm(b - a) <= (f b - f x) / norm(b - x))`,
-  CONJ_TAC THEN REPEAT GEN_TAC THENL
+                ==> (f b - f a) / norm(b - a) <= (f b - f x) / norm(b - x)) /\
+   (!f s:real^N->bool.
+      f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment(a,b)
+                ==> (f x - f a) / norm (x - a) <= (f b - f x) / norm(b - x))`,
+  REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL
    [REWRITE_TAC[CONVEX_ON_LEFT_SECANT_MUL];
-    REWRITE_TAC[CONVEX_ON_RIGHT_SECANT_MUL]] THEN
+    REWRITE_TAC[CONVEX_ON_RIGHT_SECANT_MUL];
+     REWRITE_TAC[CONVEX_ON_MID_SECANT_MUL]] THEN
   AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
   X_GEN_TAC `a:real^N` THEN REWRITE_TAC[] THEN
   AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
@@ -9441,6 +9454,7 @@ let CONVEX_ON_LEFT_SECANT,CONVEX_ON_RIGHT_SECANT = (CONJ_PAIR o prove)
   ASM_CASES_TAC `a:real^N = b` THEN
   ASM_REWRITE_TAC[SEGMENT_REFL; NOT_IN_EMPTY; REAL_SUB_REFL; VECTOR_SUB_REFL;
                   NORM_0; REAL_MUL_LZERO; REAL_MUL_RZERO; REAL_LE_REFL] THEN
+  REWRITE_TAC[IN_SING; FORALL_UNWIND_THM2; REAL_LE_REFL] THEN
   AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
   X_GEN_TAC `x:real^N` THEN REWRITE_TAC[] THEN
   REWRITE_TAC[open_segment; IN_DIFF; IN_INSERT; NOT_IN_EMPTY] THEN
@@ -9450,6 +9464,63 @@ let CONVEX_ON_LEFT_SECANT,CONVEX_ON_RIGHT_SECANT = (CONJ_PAIR o prove)
   ASM_SIMP_TAC[REAL_LE_RDIV_EQ; GSYM REAL_LE_LDIV_EQ; NORM_POS_LT;
                VECTOR_SUB_EQ] THEN
   AP_TERM_TAC THEN REAL_ARITH_TAC);;
+
+let CONVEX_ON_SECANTS_1_IMP = prove
+ (`!f s a b c d.
+        f convex_on s /\
+        a IN s /\ b IN s /\ c IN s /\ d IN s /\
+        drop a < drop b /\ drop b <= drop c /\ drop c < drop d
+        ==> (f b - f a) / (drop b - drop a)
+            <= (f d - f c) / (drop d - drop c)`,
+  REWRITE_TAC[CONVEX_ON_MID_SECANT] THEN
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `c:real^1 = b` THENL
+   [FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    SUBGOAL_THEN `drop a <= drop d` ASSUME_TAC THENL
+     [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`a:real^1`; `d:real^1`; `b:real^1`]) THEN
+    ASM_SIMP_TAC[SEGMENT_1; NORM_1; DROP_SUB; REAL_LT_IMP_LE; real_abs;
+                 REAL_SUB_LT; IN_INTERVAL_1];
+    SUBGOAL_THEN `drop b < drop c` ASSUME_TAC THENL
+     [ASM_REWRITE_TAC[REAL_LT_LE; DROP_EQ]; ALL_TAC]] THEN
+  SUBGOAL_THEN `drop a <= drop c /\ drop b <= drop d` ASSUME_TAC THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  TRANS_TAC REAL_LE_TRANS `(f c - f b) / (drop c - drop b)` THEN
+  CONJ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o SPECL [`a:real^1`; `c:real^1`; `b:real^1`]);
+    FIRST_X_ASSUM(MP_TAC o SPECL [`b:real^1`; `d:real^1`; `c:real^1`])] THEN
+  ASM_SIMP_TAC[SEGMENT_1; NORM_1; DROP_SUB; REAL_LT_IMP_LE; real_abs;
+               REAL_SUB_LT; IN_INTERVAL_1]);;
+
+let CONVEX_ON_SECANTS_1 = prove
+ (`!f s. is_interval s
+         ==> (f convex_on s <=>
+              !a b c d. a IN s /\ b IN s /\ c IN s /\ d IN s /\
+                         drop a < drop b /\ drop b <= drop c /\ drop c < drop d
+                         ==> (f b - f a) / (drop b - drop a)
+                             <= (f d - f c) / (drop d - drop c))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [MESON_TAC[CONVEX_ON_SECANTS_1_IMP]; DISCH_TAC] THEN
+  REWRITE_TAC[CONVEX_ON_MID_SECANT] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`; `x:real^1`] THEN
+  DISJ_CASES_THEN MP_TAC (REAL_ARITH
+   `drop a = drop b \/ drop a < drop b \/ drop b < drop a`)
+  THENL [ASM_MESON_TAC[DROP_EQ; SEGMENT_REFL; NOT_IN_EMPTY]; ALL_TAC] THEN
+  STRIP_TAC THEN
+  ASM_SIMP_TAC[SEGMENT_1; IN_INTERVAL_1; REAL_LT_IMP_LE;
+     REAL_ARITH `a < b ==> ~(b <= a)`] THEN
+  STRIP_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o SPECL
+      [`a:real^1`; `x:real^1`; `x:real^1`; `b:real^1`]) THEN
+    ASM_SIMP_TAC[NORM_1; DROP_SUB; REAL_LT_IMP_LE; real_abs;
+                 REAL_SUB_LT; REAL_LE_REFL] THEN
+    ASM_MESON_TAC[IS_INTERVAL_1; REAL_LT_IMP_LE];
+    FIRST_X_ASSUM(MP_TAC o SPECL
+      [`b:real^1`; `x:real^1`; `x:real^1`; `a:real^1`]) THEN
+    ASM_SIMP_TAC[NORM_1; DROP_SUB; REAL_LT_IMP_LE; real_abs;
+                 REAL_SUB_LT; REAL_LE_REFL; REAL_SUB_LE;
+                 REAL_ARITH `a < b ==> ~(b <= a)`] THEN
+    REWRITE_TAC[REAL_NEG_SUB] THEN ANTS_TAC THENL
+     [ASM_MESON_TAC[IS_INTERVAL_1; REAL_LT_IMP_LE]; REAL_ARITH_TAC]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Starlike sets and more stuff about line segments.                         *)
