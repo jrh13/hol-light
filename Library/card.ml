@@ -1352,6 +1352,22 @@ let COUNTABLE_AS_INJECTIVE_IMAGE = prove
   REWRITE_TAC[CARD_LE_ANTISYM; eq_c] THEN
   MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
 
+let COUNTABLE_AS_IMAGE_NUM_SUBSET,COUNTABLE_AS_INJECTIVE_IMAGE_SUBSET =
+ (CONJ_PAIR o prove)
+ (`(!s. COUNTABLE s <=> ?(f:num->A) k. s = IMAGE f k) /\
+   (!s. COUNTABLE s <=>
+       ?(f:num->A) k. s = IMAGE f k /\
+                      (!m n. m IN k /\ n IN k /\ f m = f n ==> m = n))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN X_GEN_TAC `s:A->bool` THEN
+  MATCH_MP_TAC(TAUT
+   `(r ==> q) /\ (q ==> p) /\ (p ==> r) ==> (p <=> q) /\ (p <=> r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [MESON_TAC[];
+    SIMP_TAC[LEFT_IMP_EXISTS_THM; COUNTABLE_IMAGE; COUNTABLE_SUBSET_NUM];
+    DISCH_TAC THEN ASM_CASES_TAC `FINITE(s:A->bool)` THENL
+     [ASM_MESON_TAC[FINITE_INDEX_NUMBERS];
+      ASM_MESON_TAC[COUNTABLE_AS_INJECTIVE_IMAGE; INFINITE]]]);;
+
 let COUNTABLE_UNIONS = prove
  (`!A:(A->bool)->bool.
         COUNTABLE A /\ (!s. s IN A ==> COUNTABLE s)

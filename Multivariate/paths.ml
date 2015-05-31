@@ -8678,6 +8678,23 @@ let COMPONENTS_OPEN_UNIQUE = prove
   ASM_MESON_TAC[OPEN_COMPONENTS; IN_COMPONENTS_NONEMPTY;
                 IN_COMPONENTS_CONNECTED; OPEN_UNIONS]);;
 
+let COUNTABLE_OPEN_COMPONENTS = prove
+ (`!s:real^N->bool. open s ==> COUNTABLE(components s)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC COUNTABLE_DISJOINT_OPEN_SUBSETS THEN
+  REWRITE_TAC[PAIRWISE_DISJOINT_COMPONENTS] THEN
+  ASM_MESON_TAC[OPEN_COMPONENTS]);;
+
+let COUNTABLE_OPEN_CONNECTED_COMPONENTS = prove
+ (`!s t:real^N->bool.
+        open s ==> COUNTABLE {connected_component s x | x IN t}`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC `{} INSERT components(s:real^N->bool)` THEN
+  ASM_SIMP_TAC[COUNTABLE_INSERT; COUNTABLE_OPEN_COMPONENTS] THEN
+  REWRITE_TAC[SUBSET; IN_INSERT; components; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[CONNECTED_COMPONENT_EQ_EMPTY] THEN SET_TAC[]);;
+
 let CONTINUOUS_ON_COMPONENTS = prove
  (`!f:real^M->real^N s.
         locally connected s /\ (!c. c IN components s ==> f continuous_on c)
@@ -11713,6 +11730,11 @@ let INSIDE_MONO = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] BOUNDED_SUBSET) THEN
   MATCH_MP_TAC CONNECTED_COMPONENT_MONO THEN ASM SET_TAC[]);;
 
+let INSIDE_MONO_ALT = prove
+ (`!s t:real^N->bool. s SUBSET t ==> inside s SUBSET t UNION inside t`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP INSIDE_MONO) THEN
+  SET_TAC[]);;
+
 let COBOUNDED_OUTSIDE = prove
  (`!s:real^N->bool. bounded s ==> bounded((:real^N) DIFF outside s)`,
   GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[outside] THEN
@@ -12072,6 +12094,17 @@ let OUTSIDE_SUBSET_CONVEX = prove
   ASM_SIMP_TAC[OUTSIDE_MONO] THEN
   ASM_SIMP_TAC[OUTSIDE_CONVEX; SUBSET_REFL]);;
 
+let INSIDE_SUBSET_CONVEX = prove
+ (`!s c:real^N->bool. convex c /\ s SUBSET c ==> inside s SUBSET c`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INSIDE_OUTSIDE] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `c:real^N->bool`]
+    OUTSIDE_SUBSET_CONVEX) THEN
+  ASM SET_TAC[]);;
+
+let INSIDE_SUBSET_CONVEX_HULL = prove
+ (`!s:real^N->bool. inside s SUBSET convex hull s`,
+  SIMP_TAC[INSIDE_SUBSET_CONVEX; CONVEX_CONVEX_HULL; HULL_SUBSET]);;
+
 let OUTSIDE_FRONTIER_MISSES_CLOSURE = prove
  (`!s. bounded s ==> outside(frontier s) SUBSET (:real^N) DIFF closure s`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[OUTSIDE_INSIDE] THEN
@@ -12098,6 +12131,16 @@ let INSIDE_FRONTIER_EQ_INTERIOR = prove
   MAP_EVERY (MP_TAC o ISPEC `s:real^N->bool`)
    [CLOSURE_SUBSET; INTERIOR_SUBSET] THEN
   ASM SET_TAC[]);;
+
+let INSIDE_SPHERE = prove
+ (`!a:real^N r. inside(sphere(a,r)) = ball(a,r)`,
+  REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
+  SIMP_TAC[INSIDE_FRONTIER_EQ_INTERIOR; BOUNDED_CBALL; CONVEX_CBALL] THEN
+  REWRITE_TAC[INTERIOR_CBALL]);;
+
+let OUTSIDE_SPHERE = prove
+ (`!a r. outside(sphere(a,r)) = (:real^N) DIFF cball(a,r)`,
+  REWRITE_TAC[OUTSIDE_INSIDE; INSIDE_SPHERE; SPHERE_UNION_BALL]);;
 
 let OPEN_INSIDE = prove
  (`!s:real^N->bool. closed s ==> open(inside s)`,

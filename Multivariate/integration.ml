@@ -16495,6 +16495,12 @@ let VECTOR_VARIATION_ON_NULL = prove
   MATCH_MP_TAC SET_VARIATION_ON_NULL THEN ASM_REWRITE_TAC[] THEN
   SIMP_TAC[INTERVAL_BOUNDS_NULL_1; VECTOR_SUB_REFL]);;
 
+let VECTOR_VARIATION_SING = prove
+ (`!f:real^1->real^N a. vector_variation {a} f = &0`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC VECTOR_VARIATION_ON_NULL THEN
+  REWRITE_TAC[BOUNDED_SING; GSYM INTERVAL_SING] THEN
+  REWRITE_TAC[CONTENT_EQ_0_1; REAL_LE_REFL]);;
+
 let HAS_BOUNDED_VARIATION_ON_NORM = prove
  (`!f:real^1->real^N s.
         f has_bounded_variation_on s
@@ -17599,6 +17605,29 @@ let HAS_BOUNDED_VARIATION_ON_ID = prove
   SIMP_TAC[CONTENT_1; INTERVAL_NE_EMPTY_1; NORM_1; DROP_SUB] THEN
   REAL_ARITH_TAC);;
 
+let LINEAR_IMP_HAS_BOUNDED_VARIATION = prove
+ (`!f:real^1->real^N.
+
+        linear f /\ bounded s ==> f has_bounded_variation_on s`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `c:real^N` SUBST1_TAC o
+   GEN_REWRITE_RULE I [LINEAR_FROM_1]) THEN
+  MATCH_MP_TAC HAS_BOUNDED_VARIATION_ON_VMUL THEN
+  ASM_SIMP_TAC[LIFT_DROP; HAS_BOUNDED_VARIATION_ON_ID]);;
+
+let VECTOR_VARIATION_LINEAR = prove
+ (`!f:real^1->real^N a b.
+        linear f /\ drop a <= drop b
+        ==> vector_variation(interval[a,b]) f = dist(f a,f b)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `c:real^N` SUBST1_TAC o
+   GEN_REWRITE_RULE I [LINEAR_FROM_1]) THEN
+  ASM_SIMP_TAC[VECTOR_VARIATION_VMUL; LIFT_DROP; HAS_BOUNDED_VARIATION_ON_ID;
+               BOUNDED_INTERVAL; VECTOR_VARIATION_ID; INTERVAL_EQ_EMPTY_1;
+               GSYM REAL_NOT_LE; dist; GSYM VECTOR_SUB_RDISTRIB; NORM_MUL] THEN
+  ASM_SIMP_TAC[NORM_1; REAL_ARITH `a <= b ==> abs(a - b) = b - a`] THEN
+  REWRITE_TAC[REAL_MUL_SYM]);;
+
 let HAS_BOUNDED_VARIATION_LIPSCHITZ_COMPOSE = prove
  (`!f:real^M->real^N g s B.
         g has_bounded_variation_on s /\
@@ -17629,6 +17658,33 @@ let LIPSCHITZ_IMP_HAS_BOUNDED_VARIATION = prove
   ASM_REWRITE_TAC[o_DEF; IMAGE_ID; ETA_AX] THEN
   DISCH_THEN MATCH_MP_TAC THEN
   ASM_SIMP_TAC[HAS_BOUNDED_VARIATION_ON_ID]);;
+
+let VECTOR_VARIATION_LIPSCHITZ = prove
+ (`!f:real^1->real^N a b l.
+        drop a <= drop b /\
+        (!x y. x IN interval[a,b] /\ y IN interval[a,b]
+               ==> norm(f x - f y) <= l * norm(x - y))
+        ==> vector_variation (interval[a,b]) f <= l * (drop b - drop a)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `b:real^1 = a` THEN
+  ASM_REWRITE_TAC[REAL_SUB_REFL; VECTOR_VARIATION_SING; INTERVAL_SING;
+                  REAL_MUL_RZERO; REAL_LE_REFL] THEN
+  SUBGOAL_THEN `drop a < drop b` ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[REAL_LT_LE; DROP_EQ]; ALL_TAC] THEN
+  SUBGOAL_THEN `&0 <= l` ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o SPECL [`a:real^1`; `b:real^1`]) THEN
+    ASM_REWRITE_TAC[ENDS_IN_INTERVAL; INTERVAL_NE_EMPTY_1] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (NORM_ARITH
+     `norm(x:real^N) <= a ==> &0 <= a`)) THEN
+    ASM_SIMP_TAC[REAL_LE_MUL_EQ; NORM_POS_LT; VECTOR_SUB_EQ];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL[`\x:real^1. l % x`; `f:real^1->real^N`; `interval[a:real^1,b]`]
+        VECTOR_VARIATION_COMPARISON) THEN
+  ASM_SIMP_TAC[dist; HAS_BOUNDED_VARIATION_ON_CMUL;
+               HAS_BOUNDED_VARIATION_ON_ID; BOUNDED_INTERVAL;
+               VECTOR_VARIATION_CMUL; VECTOR_VARIATION_ID] THEN
+  ASM_SIMP_TAC[INTERVAL_EQ_EMPTY_1; REAL_ARITH `a <= b ==> ~(b < a)`] THEN
+  REWRITE_TAC[GSYM VECTOR_SUB_LDISTRIB; NORM_MUL] THEN
+  ASM_SIMP_TAC[real_abs]);;
 
 let HAS_BOUNDED_VECTOR_DERIVATIVE_IMP_HAS_BOUNDED_VARIATION_ON = prove
  (`!f:real^1->real^N f' s.
@@ -21837,6 +21893,89 @@ let RECTIFIABLE_PATH_SYM = prove
         ==> (rectifiable_path(p ++ q) <=> rectifiable_path(q ++ p))`,
   SIMP_TAC[RECTIFIABLE_PATH_JOIN] THEN CONV_TAC TAUT);;
 
+let RECTIFIABLE_PATH_SHIFTPATH = prove
+ (`!g:real^1->real^N a.
+           rectifiable_path g /\
+           pathfinish g = pathstart g /\
+           a IN interval[vec 0,vec 1]
+           ==> rectifiable_path(shiftpath a g)`,
+  SIMP_TAC[rectifiable_path; PATH_SHIFTPATH] THEN
+  REWRITE_TAC[IN_INTERVAL_1; shiftpath; DROP_ADD; DROP_VEC] THEN
+  REPEAT STRIP_TAC THEN MP_TAC(GEN `f:real^1->real^N`
+    (ISPECL [`f:real^1->real^N`; `vec 0:real^1`; `vec 1:real^1`;
+                 `vec 1 - a:real^1`]
+        HAS_BOUNDED_VARIATION_ON_COMBINE)) THEN
+  REWRITE_TAC[DROP_SUB; DROP_VEC; RIGHT_FORALL_IMP_THM] THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN CONJ_TAC THEN
+  MATCH_MP_TAC HAS_BOUNDED_VARIATION_ON_EQ THENL
+   [EXISTS_TAC `\x. (g:real^1->real^N) (a + x)`;
+    EXISTS_TAC `\x. (g:real^1->real^N) (a + x - vec 1)`] THEN
+  (CONJ_TAC THENL
+    [SIMP_TAC[IN_INTERVAL_1; DROP_SUB; DROP_VEC; REAL_ARITH
+                `x <= &1 - a <=> a + x <= &1`];
+     MATCH_MP_TAC(REWRITE_RULE[o_DEF]
+       HAS_BOUNDED_VARIATION_COMPOSE_INCREASING) THEN
+     SIMP_TAC[DROP_ADD; DROP_SUB; DROP_VEC] THEN
+     CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+     FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HAS_BOUNDED_VARIATION_ON_SUBSET)) THEN
+     REWRITE_TAC[SUBSET_INTERVAL_1; DROP_ADD; DROP_SUB; DROP_VEC] THEN
+     ASM_REAL_ARITH_TAC]) THEN
+  X_GEN_TAC `x:real^1` THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SYM o GEN_REWRITE_RULE RAND_CONV [pathstart]) THEN
+  REWRITE_TAC[pathfinish] THEN MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THEN
+  AP_TERM_TAC THEN REWRITE_TAC[GSYM DROP_EQ; DROP_ADD; DROP_SUB; DROP_VEC] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let PATH_LENGTH_SHIFTPATH = prove
+ (`!g:real^1->real^N a.
+           rectifiable_path g /\
+           pathfinish g = pathstart g /\
+           a IN interval[vec 0,vec 1]
+           ==> path_length(shiftpath a g) = path_length g`,
+  REWRITE_TAC[rectifiable_path] THEN
+  REWRITE_TAC[IN_INTERVAL_1; shiftpath; path_length; DROP_ADD; DROP_VEC] THEN
+  REPEAT STRIP_TAC THEN MP_TAC(GEN `f:real^1->real^N`
+    (ISPECL [`f:real^1->real^N`; `vec 0:real^1`; `vec 1:real^1`;
+                 `vec 1 - a:real^1`]
+        VECTOR_VARIATION_COMBINE)) THEN
+  DISCH_THEN(fun th ->
+    W(MP_TAC o PART_MATCH (rand o rand) th o lhand o snd)) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[DROP_SUB; DROP_VEC] THEN
+    REPEAT(CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC]) THEN
+    MP_TAC(ISPECL [`g:real^1->real^N`; `a:real^1`]
+        RECTIFIABLE_PATH_SHIFTPATH) THEN
+    ASM_SIMP_TAC[rectifiable_path; shiftpath; DROP_ADD;
+                 IN_INTERVAL_1; DROP_VEC];
+    DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  TRANS_TAC EQ_TRANS
+   `vector_variation (interval[vec 0,vec 1 - a])
+                     (\x. (g:real^1->real^N) (a + x)) +
+    vector_variation (interval[vec 1 - a,vec 1]) (\x.  g (a + x - vec 1))` THEN
+  CONJ_TAC THENL
+   [BINOP_TAC THEN MATCH_MP_TAC VECTOR_VARIATION_EQ THEN
+    SIMP_TAC[IN_INTERVAL_1; DROP_SUB; DROP_VEC; REAL_ARITH
+                `x <= &1 - a <=> a + x <= &1`] THEN
+    X_GEN_TAC `x:real^1` THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+    STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [pathstart]) THEN
+    REWRITE_TAC[pathfinish] THEN MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THEN
+    AP_TERM_TAC THEN
+    REWRITE_TAC[GSYM DROP_EQ; DROP_ADD; DROP_SUB; DROP_VEC] THEN
+    ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  REWRITE_TAC[VECTOR_ARITH `a + x - vec 1:real^1 = (a - vec 1) + x`] THEN
+  REWRITE_TAC[VECTOR_VARIATION_TRANSLATION_INTERVAL] THEN
+  REWRITE_TAC[VECTOR_ADD_RID; VECTOR_ARITH `a + x - a:real^1 = x`] THEN
+  REWRITE_TAC[VECTOR_ARITH `a - x + x:real^N = a`] THEN
+  REWRITE_TAC[VECTOR_ARITH `a - x + x - a:real^N = vec 0`] THEN
+  ONCE_REWRITE_TAC[REAL_ADD_SYM] THEN
+  MATCH_MP_TAC VECTOR_VARIATION_COMBINE THEN
+  ASM_REWRITE_TAC[IN_INTERVAL_1; DROP_VEC]);;
+
 let PATH_LENGTH_POS_LE = prove
  (`!g:real^1->real^N.
         rectifiable_path g ==> &0 <= path_length g`,
@@ -21890,16 +22029,44 @@ let PATH_LENGTH_JOIN = prove
     REWRITE_TAC[DROP_ADD; DROP_CMUL; LIFT_DROP; DROP_VEC; DROP_NEG] THEN
     REAL_ARITH_TAC]);;
 
-let DIST_ENDPOINTS_LE_PATH_LENGTH = prove
- (`!g:real^1->real^N.
-      rectifiable_path g ==> dist(pathstart g,pathfinish g) <= path_length g`,
+let LIPSCHITZ_IMP_RECTIFIABLE_PATH = prove
+ (`!g:real^1->real^N b.
+        (!x y. x IN interval[vec 0,vec 1] /\ y IN interval[vec 0,vec 1]
+               ==> norm(g x - g y) <= b * norm(x - y))
+        ==> rectifiable_path g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[rectifiable_path] THEN CONJ_TAC THENL
+   [REWRITE_TAC[path] THEN ASM_MESON_TAC[LIPSCHITZ_IMP_CONTINUOUS_ON];
+    ASM_MESON_TAC[LIPSCHITZ_IMP_HAS_BOUNDED_VARIATION; BOUNDED_INTERVAL]]);;
+
+let PATH_LENGTH_LIPSCHITZ = prove
+ (`!g:real^1->real^N b.
+        (!x y. x IN interval[vec 0,vec 1] /\ y IN interval[vec 0,vec 1]
+               ==> norm(g x - g y) <= b * norm(x - y))
+        ==> path_length g <= b`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+    VECTOR_VARIATION_LIPSCHITZ)) THEN
+  REWRITE_TAC[path_length; DROP_VEC] THEN REAL_ARITH_TAC);;
+
+let DIST_POINTS_LE_PATH_LENGTH = prove
+ (`!g:real^1->real^N a b.
+        rectifiable_path g /\
+        a IN interval[vec 0,vec 1] /\
+        b IN interval[vec 0,vec 1]
+        ==> dist (g a,g b) <= path_length g`,
   REWRITE_TAC[rectifiable_path] THEN REPEAT STRIP_TAC THEN
-  REWRITE_TAC[dist; pathstart; pathfinish; path_length] THEN
+  REWRITE_TAC[dist; path_length] THEN
   MATCH_MP_TAC VECTOR_VARIATION_GE_NORM_FUNCTION THEN
   ASM_REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN
   MATCH_MP_TAC HULL_MINIMAL THEN
-  REWRITE_TAC[INSERT_SUBSET; CONVEX_INTERVAL; EMPTY_SUBSET] THEN
-  REWRITE_TAC[ENDS_IN_UNIT_INTERVAL]);;
+  ASM_REWRITE_TAC[INSERT_SUBSET; CONVEX_INTERVAL; EMPTY_SUBSET]);;
+
+let DIST_ENDPOINTS_LE_PATH_LENGTH = prove
+ (`!g:real^1->real^N.
+      rectifiable_path g ==> dist(pathstart g,pathfinish g) <= path_length g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[pathstart; pathfinish] THEN
+  MATCH_MP_TAC DIST_POINTS_LE_PATH_LENGTH THEN
+  ASM_REWRITE_TAC[ENDS_IN_UNIT_INTERVAL]);;
 
 let PATH_LENGTH_EQ_LINE_SEGMENT = prove
  (`!g:real^1->real^N.
