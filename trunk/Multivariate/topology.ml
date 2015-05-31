@@ -1990,6 +1990,12 @@ let CLOSURE_UNION = prove
  (`!s t:real^N->bool. closure(s UNION t) = closure s UNION closure t`,
   REWRITE_TAC[LIMIT_POINT_UNION; closure] THEN SET_TAC[]);;
 
+let CLOSURE_UNIONS_SUBSET = prove
+ (`!(f:(real^N->bool)->bool).
+        UNIONS {closure s | s IN f} SUBSET closure(UNIONS f)`,
+  REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_CLOSURE THEN ASM SET_TAC[]);;
+
 let CLOSURE_INTER_SUBSET = prove
  (`!s t. closure(s INTER t) SUBSET closure(s) INTER closure(t)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[SUBSET_INTER] THEN
@@ -4840,6 +4846,21 @@ let CAUCHY_IMP_BOUNDED = prove
     ASM_MESON_TAC[LE_CASES;
                   REAL_ARITH `x <= a \/ x <= b ==> x <= abs a + abs b`]]);;
 
+let CAUCHY_CONVERGENT_SUBSEQUENCE = prove
+ (`!x:num->real^N r.
+        cauchy x /\ (!m n. m < n ==> r m < r n) /\ ((x o r) --> l) sequentially
+        ==> (x --> l) sequentially`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] LIM_ADD)) THEN
+  DISCH_THEN(MP_TAC o SPEC `\n. (x:num->real^N)(n) - x(r n)`) THEN
+  DISCH_THEN(MP_TAC o SPEC `vec 0: real^N`) THEN ASM_REWRITE_TAC[o_THM] THEN
+  REWRITE_TAC[VECTOR_ADD_RID; VECTOR_SUB_ADD2; ETA_AX] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [cauchy]) THEN
+  REWRITE_TAC[GE; LIM; SEQUENTIALLY; dist; VECTOR_SUB_RZERO] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MONOTONE_BIGGER) THEN
+  ASM_MESON_TAC[LE_TRANS]);;
+
 let COMPACT_IMP_COMPLETE = prove
  (`!s:real^N->bool. compact s ==> complete s`,
   GEN_TAC THEN REWRITE_TAC[complete; compact] THEN
@@ -4847,15 +4868,8 @@ let COMPACT_IMP_COMPLETE = prove
   DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
   DISCH_THEN(X_CHOOSE_THEN `r:num->num` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] LIM_ADD)) THEN
-  DISCH_THEN(MP_TAC o SPEC `\n. (f:num->real^N)(n) - f(r n)`) THEN
-  DISCH_THEN(MP_TAC o SPEC `vec 0: real^N`) THEN ASM_REWRITE_TAC[o_THM] THEN
-  REWRITE_TAC[VECTOR_ADD_RID; VECTOR_SUB_ADD2; ETA_AX] THEN
-  DISCH_THEN MATCH_MP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [cauchy]) THEN
-  REWRITE_TAC[GE; LIM; SEQUENTIALLY; dist; VECTOR_SUB_RZERO] THEN
-  SUBGOAL_THEN `!n:num. n <= r(n)` MP_TAC THENL [INDUCT_TAC; ALL_TAC] THEN
-  ASM_MESON_TAC[ LE_TRANS; LE_REFL; LT; LET_TRANS; LE_0; LE_SUC_LT]);;
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CAUCHY_CONVERGENT_SUBSEQUENCE THEN
+  ASM_MESON_TAC[]);;
 
 let COMPLETE_UNIV = prove
  (`complete(:real^N)`,
@@ -6184,11 +6198,6 @@ let UNIFORMLY_CONTINUOUS_ON_SEQUENTIALLY = prove
     EXISTS_TAC `e:real` THEN ASM_REWRITE_TAC[] THEN
     EXISTS_TAC `\x:num. x` THEN ASM_REWRITE_TAC[LE_REFL]]);;
 
-let LIM_CONTINUOUS_FUNCTION = prove
- (`!f net g l.
-        f continuous (at l) /\ (g --> l) net ==> ((\x. f(g x)) --> f l) net`,
-  REWRITE_TAC[tendsto; continuous_at; eventually] THEN MESON_TAC[]);;
-
 let [LIM_WITHIN_SEQUENTIALLY;
      LIM_WITHIN_SEQUENTIALLY_INJ;
      LIM_WITHIN_SEQUENTIALLY_DECREASING] = (CONJUNCTS o prove)
@@ -6354,6 +6363,16 @@ let CONTINUOUS_AT_SEQUENTIALLY_INJ = prove
             ==> (f o x --> f a) sequentially`,
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[CONTINUOUS_WITHIN_SEQUENTIALLY_INJ; IN_DELETE; IN_UNIV]);;
+
+let LIM_CONTINUOUS = prove
+ (`!net f:A->real^N l.
+        f continuous net /\ f(netlimit net) = l ==> (f --> l) net`,
+  MESON_TAC[continuous]);;
+
+let LIM_CONTINUOUS_FUNCTION = prove
+ (`!f net g l.
+        f continuous (at l) /\ (g --> l) net ==> ((\x. f(g x)) --> f l) net`,
+  REWRITE_TAC[tendsto; continuous_at; eventually] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)
@@ -9446,6 +9465,37 @@ let LIPSCHITZ_IMP_CONTINUOUS_ON = prove
         ==> f continuous_on s`,
   SIMP_TAC[LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_ON;
            UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS]);;
+
+let LIPSCHITZ_LIM = prove
+ (`!f:num->real^M->real^N g s b.
+      (!n x y. x IN s /\ y IN s ==> norm(f n x - f n y) <= b * norm(x - y)) /\
+      (!x. x IN s ==> ((\n. f n x) --> g x) sequentially)
+      ==> !x y. x IN s /\ y IN s ==> norm(g x - g y) <= b * norm(x - y)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `x:real^M = y` THEN
+  ASM_REWRITE_TAC[VECTOR_SUB_REFL; NORM_0; REAL_LE_REFL; REAL_MUL_RZERO] THEN
+  ASM_SIMP_TAC[GSYM REAL_LE_LDIV_EQ; NORM_POS_LT; VECTOR_SUB_EQ] THEN
+  GEN_REWRITE_TAC I [REAL_LE_TRANS_LTE] THEN
+  X_GEN_TAC `c:real` THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[REAL_LE_LDIV_EQ; NORM_POS_LT; VECTOR_SUB_EQ] THEN
+  FIRST_X_ASSUM(fun th ->
+    MP_TAC(SPEC `y:real^M` th) THEN MP_TAC(SPEC `x:real^M` th)) THEN
+  ASM_REWRITE_TAC[tendsto; IMP_IMP; AND_FORALL_THM] THEN
+  DISCH_THEN(MP_TAC o SPEC `(c - b) / &2 * norm(x - y:real^M)`) THEN
+  ASM_SIMP_TAC[REAL_SUB_LT; REAL_HALF; REAL_LT_MUL; NORM_POS_LT;
+               VECTOR_SUB_EQ; GSYM EVENTUALLY_AND] THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+  DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
+  REWRITE_TAC[LE_REFL] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `x:real^M`; `y:real^M`]) THEN
+  ASM_REWRITE_TAC[IMP_IMP] THEN
+  MATCH_MP_TAC(NORM_ARITH
+   `a + &2 * b <= c
+    ==> norm(fx - fy:real^N) <= a /\ dist(fx,gx) < b /\ dist(fy,gy) < b
+        ==> norm(gx - gy) <= c`) THEN
+  REWRITE_TAC[GSYM REAL_ADD_RDISTRIB; REAL_MUL_ASSOC] THEN
+  MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Occasionally useful invariance properties.                                *)
@@ -19667,6 +19717,19 @@ let SERIES_RATIO = prove
     MATCH_MP_TAC REAL_LT_IMP_LE THEN
     ASM_SIMP_TAC[REAL_SUB_LT; REAL_LT_MUL; REAL_LT_DIV; NORM_POS_LT]]);;
 
+let SUMMABLE_RATIO = prove
+ (`!c a:num->real^N s N.
+      c < &1 /\
+      (!n. n >= N ==> norm(a(SUC n)) <= c * norm(a(n)))
+      ==> summable s a`,
+  REWRITE_TAC[summable; SERIES_RATIO]);;
+
+let SUMMABLE_REAL_GP = prove
+ (`!x k. abs x < &1 ==> summable k (\n. lift(x pow n))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUMMABLE_RATIO THEN
+  MAP_EVERY EXISTS_TAC [`abs x`; `0`] THEN
+  ASM_REWRITE_TAC[NORM_LIFT; real_pow; REAL_ABS_MUL; REAL_LE_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Ostensibly weaker versions of the boundedness of partial sums.            *)
 (* ------------------------------------------------------------------------- *)
@@ -19926,6 +19989,86 @@ let SUMMABLE_REARRANGE = prove
         summable s (\n. lift(norm(x n))) /\ p permutes s
         ==> summable s (x o p)`,
   MESON_TAC[SERIES_LIFT_ABSCONV_IMP_CONV; summable; SERIES_REARRANGE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relate Cauchy sequences to summability or absolute convergence.           *)
+(* ------------------------------------------------------------------------- *)
+
+let CAUCHY_EQ_SUMMABLE = prove
+ (`!x:num->real^N. cauchy x <=> summable (from 0) (\n. x(n + 1) - x n)`,
+  REWRITE_TAC[cauchy; SUMMABLE_CAUCHY; FROM_0; INTER_UNIV] THEN
+  GEN_TAC THEN REWRITE_TAC[VSUM_DIFFS_ALT] THEN EQ_TAC THEN DISCH_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real`) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `N:num` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `N + 1` THEN REWRITE_TAC[GE] THENL
+   [REWRITE_TAC[GE] THEN REPEAT STRIP_TAC THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[NORM_0; GSYM dist] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+    MATCH_MP_TAC WLOG_LT THEN ASM_REWRITE_TAC[DIST_REFL] THEN
+    CONJ_TAC THENL [MESON_TAC[DIST_SYM]; ALL_TAC] THEN
+    X_GEN_TAC `m:num` THEN MATCH_MP_TAC num_INDUCTION THEN
+    REWRITE_TAC[CONJUNCT1 LT] THEN X_GEN_TAC `n:num` THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`m:num`; `n:num`]) THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    COND_CASES_TAC THENL [ALL_TAC; ASM_ARITH_TAC] THEN
+    REWRITE_TAC[ADD1] THEN CONV_TAC NORM_ARITH]);;
+
+let CAUCHY_ABSOLUTELY_SUMMABLE_SUBSEQUENCE = prove
+ (`!x:num->real^N.
+        cauchy x
+        ==> ?r. (!m n. m < n ==> r m < r n) /\
+                summable (from 0) (\n. lift(dist(x(r(n + 1)),x(r n))))`,
+  REWRITE_TAC[cauchy] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN `n:num` o SPEC `inv(&2 pow n)`) THEN
+  SIMP_TAC[REAL_LT_INV_EQ; REAL_LT_POW2; SKOLEM_THM] THEN
+  DISCH_THEN(X_CHOOSE_TAC `N:num->num`) THEN
+  SUBGOAL_THEN
+   `?r:num->num.
+        (!n. N n <= r n) /\ (!n. r(n) < r(SUC n))`
+  MP_TAC THENL
+   [MATCH_MP_TAC DEPENDENT_CHOICE THEN
+    REWRITE_TAC[ARITH_RULE `a <= x /\ b < x <=> MAX a (SUC b) <= x`] THEN
+    MESON_TAC[LE_REFL];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r:num->num`] THEN
+  STRIP_TAC THEN CONJ_TAC THENL
+   [MATCH_MP_TAC TRANSITIVE_STEPWISE_LT THEN ASM_REWRITE_TAC[LT_TRANS];
+    ALL_TAC] THEN
+  MATCH_MP_TAC SUMMABLE_COMPARISON THEN
+  EXISTS_TAC `\n. inv(&2 pow n)` THEN CONJ_TAC THENL
+   [REWRITE_TAC[o_DEF; REAL_INV_POW] THEN MATCH_MP_TAC SUMMABLE_REAL_GP THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV;
+    EXISTS_TAC `0` THEN X_GEN_TAC `n:num` THEN STRIP_TAC THEN
+    REWRITE_TAC[] THEN
+    MATCH_MP_TAC REAL_LT_IMP_LE THEN REWRITE_TAC[NORM_LIFT; REAL_ABS_DIST] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `n:num`)) THEN
+    REWRITE_TAC[ADD1] THEN ARITH_TAC]);;
+
+let ABSOLUTELY_SUMMABLE_IMP_CAUCHY = prove
+ (`!x:num->real^N.
+        summable (from 0) (\n. lift(dist(x(n + 1),x n))) ==> cauchy x`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CAUCHY_EQ_SUMMABLE] THEN
+  MATCH_MP_TAC SERIES_LIFT_ABSCONV_IMP_CONV THEN
+  ASM_REWRITE_TAC[GSYM dist]);;
+
+let COMPLETE_ABSOLUTELY_SUMMABLE = prove
+ (`!s:real^N->bool.
+        complete s <=>
+        !f. (!n. f n IN s) /\ summable (from 0) (\n. lift(dist(f(n + 1),f n)))
+            ==> ?l. l IN s /\ (f --> l) sequentially`,
+  GEN_TAC THEN REWRITE_TAC[complete] THEN EQ_TAC THENL
+   [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC ABSOLUTELY_SUMMABLE_IMP_CAUCHY THEN
+    ASM_REWRITE_TAC[];
+    DISCH_TAC THEN X_GEN_TAC `f:num->real^N` THEN STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o
+      MATCH_MP CAUCHY_ABSOLUTELY_SUMMABLE_SUBSEQUENCE) THEN
+    DISCH_THEN(X_CHOOSE_THEN `r:num->num` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(f:num->real^N) o (r:num->num)`) THEN
+    ASM_REWRITE_TAC[o_THM] THEN
+    ASM_MESON_TAC[CAUCHY_CONVERGENT_SUBSEQUENCE]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Banach fixed point theorem (not really topological...)                    *)
@@ -23294,6 +23437,62 @@ let ARZELA_ASCOLI = prove
   ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
   DISCH_THEN(MP_TAC o SPECL [`m:num`; `n:num`]) THEN
   ASM_REWRITE_TAC[dist; GE] THEN ASM_MESON_TAC[SUBSET; LE_TRANS]);;
+
+let ARZELA_ASCOLI_LIPSCHITZ = prove
+ (`!f:num->real^M->real^N s t b.
+     compact s /\ bounded t /\
+     (!n x. x IN s ==> ~(IMAGE (f n) s INTER t = {})) /\
+     (!n x y. x IN s /\ y IN s ==> norm(f n x - f n y) <= b * norm(x - y))
+     ==> ?g. (!x y. x IN s /\ y IN s ==> norm(g x - g y) <= b * norm(x - y)) /\
+             ?r. (!m n. m < n ==> r m < r n) /\
+                 !e. &0 < e
+                     ==> ?N. !n:num x. n >= N /\ x IN s
+                                       ==> norm(f (r n) x - g x) < e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(MATCH_MP MONO_EXISTS (ISPECL
+   [`f:num->real^M->real^N`; `s:real^M->bool`] ARZELA_ASCOLI)) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [REWRITE_TAC[LEFT_EXISTS_AND_THM] THEN CONJ_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BOUNDED_POS]) THEN
+      DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+      MP_TAC(ISPECL [`s:real^M->bool`; `s:real^M->bool`] BOUNDED_DIFFS) THEN
+      ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN
+      REWRITE_TAC[BOUNDED_POS; LEFT_IMP_EXISTS_THM; FORALL_IN_GSPEC] THEN
+      X_GEN_TAC `C:real` THEN STRIP_TAC THEN
+      EXISTS_TAC `B + abs b * C:real` THEN
+      MAP_EVERY X_GEN_TAC [`n:num`; `x:real^M`] THEN DISCH_TAC THEN
+      SUBGOAL_THEN `~(IMAGE ((f:num->real^M->real^N) n) s INTER t = {})`
+      MP_TAC THENL [ASM_MESON_TAC[]; REWRITE_TAC[GSYM MEMBER_NOT_EMPTY]] THEN
+      REWRITE_TAC[EXISTS_IN_IMAGE; IN_INTER] THEN
+      DISCH_THEN(X_CHOOSE_THEN `y:real^M` STRIP_ASSUME_TAC) THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `x:real^M`; `y:real^M`]) THEN
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(NORM_ARITH
+      `norm(y) <= b /\ a <= c
+        ==> norm(x - y:real^M) <= a ==> norm(x) <= b + c`) THEN
+      ASM_SIMP_TAC[] THEN
+      TRANS_TAC REAL_LE_TRANS `abs b * norm(x - y:real^M)` THEN
+      ASM_SIMP_TAC[REAL_LE_LMUL; REAL_ABS_POS] THEN
+      MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+      REAL_ARITH_TAC;
+      MAP_EVERY X_GEN_TAC [`x:real^M`; `e:real`] THEN STRIP_TAC THEN
+      EXISTS_TAC `e / (abs b + &1)` THEN
+      ASM_SIMP_TAC[REAL_LT_RDIV_EQ; REAL_ARITH `&0 < abs b + &1`] THEN
+      ASM_REWRITE_TAC[REAL_MUL_LZERO] THEN
+      MAP_EVERY X_GEN_TAC [`n:num`; `y:real^M`] THEN
+      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LET_TRANS) THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL [`n:num`; `x:real^M`; `y:real^M`]) THEN
+      ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+      GEN_REWRITE_TAC LAND_CONV [REAL_MUL_SYM] THEN
+      MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+      REAL_ARITH_TAC];
+    REWRITE_TAC[RIGHT_AND_EXISTS_THM; dist; GE] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^M->real^N` THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r:num->num` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC LIPSCHITZ_LIM THEN
+    EXISTS_TAC `(f:num->real^M->real^N) o (r:num->num)` THEN
+    ASM_REWRITE_TAC[LIM_SEQUENTIALLY; dist; o_DEF] THEN ASM_MESON_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basics about "local" properties in general.                               *)

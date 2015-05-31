@@ -1313,6 +1313,10 @@ let DIST_POS_LE = prove
  (`!x y. &0 <= dist(x,y)`,
   NORM_ARITH_TAC);;
 
+let REAL_ABS_DIST = prove
+ (`!x y:real^N. abs(dist(x,y)) = dist(x,y)`,
+  NORM_ARITH_TAC);;
+
 let DIST_TRIANGLE = prove
  (`!x:real^N y z. dist(x,z) <= dist(x,y) + dist(y,z)`,
   NORM_ARITH_TAC);;
@@ -3890,6 +3894,12 @@ let LINEAR_TO_REALS = prove
   DISCH_THEN(fun th -> REWRITE_TAC[GSYM(MATCH_MP MATRIX_WORKS th)]) THEN
   SIMP_TAC[CART_EQ; matrix_vector_mul; dot; LAMBDA_BETA;
            DIMINDEX_1; SUM_SING_NUMSEG; lift; row; LE_ANTISYM]);;
+
+let LINEAR_FROM_1 = prove
+ (`!f:real^1->real^N. linear f <=> ?c. f = \x. drop x % c`,
+  GEN_TAC THEN EQ_TAC THENL [MESON_TAC[LINEAR_FROM_REALS]; ALL_TAC] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC LINEAR_VMUL_DROP THEN
+  REWRITE_TAC[LINEAR_ID]);;
 
 let DROP_EQ_0 = prove
  (`!x. drop x = &0 <=> x = vec 0`,

@@ -788,10 +788,6 @@ let CONTINUOUS_TAC =
 (* Hence a limit calculator                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let LIM_CONTINUOUS = prove
- (`!net f l. f continuous net /\ f(netlimit net) = l ==> (f --> l) net`,
-  MESON_TAC[continuous]);;
-
 let LIM_TAC =
   MATCH_MP_TAC LIM_CONTINUOUS THEN CONJ_TAC THENL
    [CONTINUOUS_TAC; REWRITE_TAC[NETLIMIT_AT; NETLIMIT_WITHIN]];;
@@ -2738,21 +2734,9 @@ let SUMS_GP = prove
 
 let SUMMABLE_GP = prove
  (`!z k. norm(z) < &1 ==> summable k (\n. z pow n)`,
-  REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC SUMMABLE_SUBSET THEN EXISTS_TAC `(:num)` THEN
-  REWRITE_TAC[SUBSET_UNIV] THEN
-  MATCH_MP_TAC SERIES_COMPARISON_COMPLEX THEN
-  EXISTS_TAC `\n. Cx(norm(z:complex) pow n)` THEN
-  REWRITE_TAC[REAL_CX; RE_CX; COMPLEX_NORM_CX] THEN
-  SIMP_TAC[REAL_POW_LE; NORM_POS_LE] THEN CONJ_TAC THENL
-   [REWRITE_TAC[summable; GSYM FROM_0; CX_POW] THEN
-    EXISTS_TAC `Cx(norm z) pow 0 / (Cx(&1) - Cx(norm(z:complex)))` THEN
-    MATCH_MP_TAC SUMS_GP THEN
-    ASM_REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NORM];
-    EXISTS_TAC `0` THEN REPEAT STRIP_TAC THEN
-    COND_CASES_TAC THEN
-    ASM_SIMP_TAC[REAL_ABS_POW; REAL_ABS_NORM; REAL_LE_REFL; NORM_POS_LE;
-                 COMPLEX_NORM_POW; NORM_0; REAL_ABS_POS; REAL_POW_LE]]);;
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUMMABLE_RATIO THEN
+  MAP_EVERY EXISTS_TAC [`norm(z:complex)`; `0`] THEN
+  ASM_REWRITE_TAC[complex_pow; COMPLEX_NORM_MUL; REAL_LE_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex version (the usual one) of Dirichlet convergence test.            *)

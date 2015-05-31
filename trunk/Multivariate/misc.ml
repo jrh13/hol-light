@@ -346,6 +346,20 @@ let HULL_P_AND_Q = prove
   MATCH_MP_TAC HULL_UNIQUE THEN ASM_SIMP_TAC[HULL_INC; SUBSET_HULL] THEN
   ASM_MESON_TAC[P_HULL; HULL_SUBSET; SUBSET_TRANS]);;
 
+let HULL_UNIONS_SUBSET = prove
+ (`!P f. UNIONS {P hull s | s IN f} SUBSET P hull (UNIONS f)`,
+  REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_MONO THEN ASM SET_TAC[]);;
+
+let HULL_INTERS_SUBSET = prove
+ (`!P f. P hull (INTERS f) SUBSET INTERS {P hull s | s IN f}`,
+  REWRITE_TAC[SUBSET_INTERS; FORALL_IN_GSPEC] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HULL_MONO THEN ASM SET_TAC[]);;
+
+let HULL_INTER_SUBSET = prove
+ (`!P s t. P hull (s INTER t) SUBSET (P hull s) INTER (P hull t)`,
+  REWRITE_TAC[hull; INTERS_GSPEC] THEN SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* More variants of the Archimedian property and useful consequences.        *)
 (* ------------------------------------------------------------------------- *)

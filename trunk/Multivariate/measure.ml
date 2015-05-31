@@ -8588,6 +8588,12 @@ let NEGLIGIBLE_RECTIFIABLE_PATH_IMAGE = prove
   SIMP_TAC[NEGLIGIBLE_IMAGE_BOUNDED_VARIATION_INTERVAL;
            IS_INTERVAL_INTERVAL]);;
 
+let INTERIOR_RECTIFIABLE_PATH_IMAGE = prove
+ (`!g:real^1->real^N.
+        2 <= dimindex(:N) /\ rectifiable_path g
+        ==> interior(path_image g) = {}`,
+  MESON_TAC[NEGLIGIBLE_RECTIFIABLE_PATH_IMAGE; NEGLIGIBLE_EMPTY_INTERIOR]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Properties of Lebesgue measurable sets.                                   *)
 (* ------------------------------------------------------------------------- *)
