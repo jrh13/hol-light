@@ -13101,6 +13101,10 @@ let OPEN_SEGMENT_1 = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[SEGMENT_1] THEN
   COND_CASES_TAC THEN REWRITE_TAC[OPEN_INTERVAL]);;
 
+let INTERVAL_SUBSET_SEGMENT_1 = prove
+ (`!a b:real^1. interval[a,b] SUBSET segment[a,b]`,
+  REWRITE_TAC[SEGMENT_1; GSYM INTERVAL_NE_EMPTY_1] THEN SET_TAC[]);;
+
 let SEGMENT_SCALAR_MULTIPLE = prove
  (`(!a b v. segment[a % v,b % v] =
             {x % v:real^N | a <= x /\ x <= b \/ b <= x /\ x <= a}) /\
@@ -13641,6 +13645,35 @@ let CARD_FRONTIER_INTERVAL_1 = prove
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IS_INTERVAL_1]) THEN
   DISCH_THEN(MP_TAC o SPECL [`u:real^1`; `v:real^1`; `w:real^1`]) THEN
   ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let UNION_INTERVAL_SUBSET_INTERVAL = prove
+ (`!s a b c d:real^N.
+        is_interval s /\
+        interval[a,b] SUBSET s /\ interval[c,d] SUBSET s
+        ==> ?u v. interval[a,b] UNION interval[c,d] SUBSET interval[u,v] /\
+                  interval[u,v] SUBSET s`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `interval[a:real^N,b] = {}` THENL
+   [ASM_REWRITE_TAC[UNION_EMPTY] THEN MESON_TAC[SUBSET_REFL]; ALL_TAC] THEN
+  ASM_CASES_TAC `interval[c:real^N,d] = {}` THENL
+   [ASM_REWRITE_TAC[UNION_EMPTY] THEN MESON_TAC[SUBSET_REFL]; ALL_TAC] THEN
+  REWRITE_TAC[is_interval; GSYM UNION_SUBSET] THEN REPEAT STRIP_TAC THEN
+  EXISTS_TAC `(lambda i. min ((a:real^N)$i) ((c:real^N)$i)):real^N` THEN
+  EXISTS_TAC `(lambda i. max ((b:real^N)$i) ((d:real^N)$i)):real^N` THEN
+  SIMP_TAC[UNION_SUBSET; SUBSET_INTERVAL; LAMBDA_BETA] THEN
+  REPEAT(CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC]) THEN
+  SIMP_TAC[SUBSET; IN_INTERVAL; LAMBDA_BETA] THEN
+  REPEAT STRIP_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
+  EXISTS_TAC `(lambda i. min ((a:real^N)$i) ((c:real^N)$i)):real^N` THEN
+  EXISTS_TAC `(lambda i. max ((b:real^N)$i) ((d:real^N)$i)):real^N` THEN
+  ASM_SIMP_TAC[LAMBDA_BETA] THEN CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THENL
+   [MAP_EVERY EXISTS_TAC [`a:real^N`; `c:real^N`];
+    MAP_EVERY EXISTS_TAC [`b:real^N`; `d:real^N`]] THEN
+  SIMP_TAC[LAMBDA_BETA; CONJ_ASSOC] THEN
+  (CONJ_TAC THENL [CONJ_TAC; REAL_ARITH_TAC]) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[IN_UNION; ENDS_IN_INTERVAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limit component bounds.                                                   *)

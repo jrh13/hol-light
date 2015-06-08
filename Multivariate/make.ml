@@ -23,7 +23,7 @@ loadt "Multivariate/polytope.ml";;      (* Faces, polytopes, polyhedra etc. *)
 loadt "Multivariate/degree.ml";;        (* Brouwer degree, retracts etc.    *)
 loadt "Multivariate/derivatives.ml";;   (* Derivatives                      *)
 loadt "Multivariate/clifford.ml";;      (* Geometric (Clifford) algebra     *)
-loadt "Multivariate/integration.ml";;   (* Integration                      *)
+loadt "Multivariate/integration.ml";;   (* Integration, bounded variation   *)
 loadt "Multivariate/measure.ml";;       (* Lebesgue measure                 *)
 
 (* ------------------------------------------------------------------------- *)

@@ -3769,6 +3769,18 @@ let INJECTIVE_INTO_1D_IMP_OPEN_MAP = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHISM_IMP_OPEN_MAP THEN
   ASM_MESON_TAC[INJECTIVE_INTO_1D_EQ_HOMEOMORPHISM]);;
 
+let HOMEOMORPHISM_INTO_1D = prove
+ (`!f:real^N->real^1 s t.
+        path_connected s /\
+        f continuous_on s /\ IMAGE f s = t /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> ?g. homeomorphism(s,t) (f,g)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HOMEOMORPHISM_INJECTIVE_OPEN_MAP THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INJECTIVE_INTO_1D_IMP_OPEN_MAP THEN
+  ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Injective function on an interval is strictly increasing or decreasing.   *)
 (* ------------------------------------------------------------------------- *)
@@ -3844,6 +3856,46 @@ let CONTINUOUS_INJECTIVE_IFF_MONOTONIC = prove
     DISCH_THEN SUBST_ALL_TAC THEN SIMP_TAC[GSYM DROP_EQ] THEN tac "acb" "cab";
     REWRITE_TAC[GSYM DROP_EQ] THEN STRIP_TAC] THEN
   ASM_CASES_TAC `drop a <= drop c` THENL [tac "acb" "acd"; tac "cab" "cad"]);;
+
+let CONTINUOUS_INJECTIVE_IMP_MONOTONIC = prove
+ (`!f s.
+        f continuous_on s /\ is_interval s /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> (!x y. x IN s /\ y IN s
+                   ==> (drop(f x) < drop(f y) <=> drop x < drop y)) \/
+            (!x y. x IN s /\ y IN s
+                   ==> (drop(f x) < drop(f y) <=> drop y < drop x))`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC th THEN ASM_SIMP_TAC[CONTINUOUS_INJECTIVE_IFF_MONOTONIC] THEN
+    ASSUME_TAC(REWRITE_RULE[INJECTIVE_ON_ALT] th)) THEN
+  MATCH_MP_TAC MONO_OR THEN CONJ_TAC THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`x:real^1`; `y:real^1`] THEN
+  STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[] THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[REAL_NOT_LT] THEN REWRITE_TAC[REAL_LE_LT] THEN
+  ASM_MESON_TAC[DROP_EQ]);;
+
+let HOMEOMORPHISM_1D_IMP_MONOTONIC = prove
+ (`!f g s t.
+        homeomorphism(s,t) (f,g) /\ is_interval s
+        ==> (!x y. x IN s /\ y IN s
+                   ==> (drop(f x) < drop(f y) <=> drop x < drop y)) /\
+            (!x y. x IN t /\ y IN t
+                   ==> (drop(g x) < drop(g y) <=> drop x < drop y)) \/
+            (!x y. x IN s /\ y IN s
+                   ==> (drop(f x) < drop(f y) <=> drop y < drop x)) /\
+            (!x y. x IN t /\ y IN t
+                   ==> (drop(g x) < drop(g y) <=> drop y < drop x))`,
+  REWRITE_TAC[homeomorphism] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^1->real^1`; `s:real^1->bool`]
+        CONTINUOUS_INJECTIVE_IMP_MONOTONIC) THEN
+  ASM_REWRITE_TAC[] THEN
+  REPEAT(ANTS_TAC THENL [ASM SET_TAC[]; STRIP_TAC]) THEN
+  ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[EXTENSION; IN_IMAGE]) THEN
+  ASM_MESON_TAC[REAL_LT_ANTISYM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Topological characterizations of non-strict monotonicity.                 *)
