@@ -29,6 +29,6 @@ Useful as an initial simplification before more substantial normal form
 conversions.
 
 \SEEALSO
-CNF_CONV, DNF_CONV, MINISCOPE_CONV, NNF_CONV, PRENEX_CONV, SKOLEM_CONV.
+CNF_CONV, DNF_CONV, NNF_CONV, PRENEX_CONV, SKOLEM_CONV.
 
 \ENDDOC

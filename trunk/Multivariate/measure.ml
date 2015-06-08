@@ -6533,8 +6533,8 @@ let INTEGRABLE_CCONTINUOUS_EXPLICIT_SYMMETRIC = prove
    `&0 < uv(tag(k:real^M->bool):real^M):real` ASSUME_TAC
   THENL [ASM_MESON_TAC[SUBSET]; ALL_TAC] THEN
   SUBGOAL_THEN
-   `&0 < measure(box(uv(tag(k:real^M->bool):real^M):real) (tag
-k):real^M->bool)`
+   `&0
+    < measure(box(uv(tag(k:real^M->bool):real^M):real) (tag k):real^M->bool)`
   MP_TAC THENL
    [EXPAND_TAC "box" THEN
     REWRITE_TAC[MEASURE_INTERVAL; CONTENT_CLOSED_INTERVAL_CASES] THEN
@@ -11536,7 +11536,6 @@ let LOCALLY_LEBESGUE_MEASURABLE = prove
     ASM_SIMP_TAC[OPEN_IN_INTER; OPEN_IN_REFL; INTER_SUBSET; SUBSET_REFL] THEN
     ASM_MESON_TAC[SUBSET; IN_INTER; OPEN_IN_IMP_SUBSET;
                   LEBESGUE_MEASURABLE_OPEN_IN; LEBESGUE_MEASURABLE_INTER]]);;
-
 
 let NEGLIGIBLE_EQ_ZERO_DENSITY_ALT = prove
  (`!s:real^N->bool.

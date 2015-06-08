@@ -195,6 +195,29 @@ let valid_path = new_definition
 let closed_path = new_definition
  `closed_path g <=> pathstart g = pathfinish g`;;
 
+let VALID_PATH_EQ = prove                                
+ (`!p q. (!t. t IN interval[vec 0,vec 1] ==> p t = q t) /\ valid_path p
+         ==> valid_path q`,                                                 
+  REPEAT GEN_TAC THEN                                                     
+  REWRITE_TAC[valid_path; piecewise_differentiable_on] THEN           
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN            
+  MATCH_MP_TAC MONO_AND THEN                                                
+  CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_EQ]; ALL_TAC] THEN               
+  DISCH_THEN(X_CHOOSE_THEN `k:real^1->bool` STRIP_ASSUME_TAC) THEN             
+  EXISTS_TAC `{vec 0:real^1,vec 1} UNION k` THEN                               
+  ASM_REWRITE_TAC[FINITE_UNION; FINITE_INSERT; FINITE_EMPTY] THEN
+  X_GEN_TAC `x:real^1` THEN                                          
+  STRIP_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_TRANSFORM_AT THEN
+  EXISTS_TAC `p:real^1->real^2` THEN                                         
+  SUBGOAL_THEN                                                         
+   `open(interval[vec 0:real^1,vec 1] DIFF ({vec 0:real^1,vec 1} UNION k))`
+  MP_TAC THENL                                                              
+   [REWRITE_TAC[SET_RULE `a DIFF (b UNION c) = (a DIFF b) DIFF c`] THEN 
+    REWRITE_TAC[GSYM OPEN_CLOSED_INTERVAL_1] THEN MATCH_MP_TAC OPEN_DIFF THEN
+    ASM_SIMP_TAC[OPEN_INTERVAL; FINITE_IMP_CLOSED];             
+    REWRITE_TAC[open_def] THEN DISCH_THEN(MP_TAC o SPEC `x:real^1`)] THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]);;
+
 let VALID_PATH_COMPOSE = prove
  (`!f g. valid_path g /\ f differentiable_on (path_image g)
          ==> valid_path (f o g)`,

@@ -6,21 +6,21 @@
 Constructs an explicit set enumeration from a nonempty list of elements.
 
 \DESCRIBE
-When applied to a list of terms {[`t1`; ...; `tn`]} of the same type, the 
+When applied to a list of terms {[`t1`; ...; `tn`]} of the same type, the
 function {mk_fset} constructs an explicit set enumeration term {`{{t1, ...,
 tn}}`}. Note that duplicated elements are maintained in the resulting term,
-though this is logically the same as the set without them. If you need to 
-generate enumerations for empty sets, use {mk_setenum}; in this case the type 
+though this is logically the same as the set without them. If you need to
+generate enumerations for empty sets, use {mk_setenum}; in this case the type
 also needs to be specified.
 
 \FAILURE
-Fails if there are terms of more than one type in the list, or if the list is 
+Fails if there are terms of more than one type in the list, or if the list is
 empty.
 
 \EXAMPLE
 {
   # mk_fset (map mk_small_numeral (0--7));;
-  val it : term = `{0, 1, 2, 3, 4, 5, 6, 7}`
+  val it : term = `{{0, 1, 2, 3, 4, 5, 6, 7}}`
 }
 
 \SEEALSO
