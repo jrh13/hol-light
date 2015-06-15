@@ -7010,43 +7010,35 @@ let INTEGRAL_UNION = prove
   MATCH_MP_TAC HAS_INTEGRAL_UNION THEN
   ASM_REWRITE_TAC[GSYM HAS_INTEGRAL_INTEGRAL]);;
 
+let HAS_INTEGRAL_UNIONS_IMAGE = prove
+ (`!f:real^M->real^N k i t:A->bool.
+        FINITE t /\
+        (!s. s IN t ==> (f has_integral (i s)) (k s)) /\
+        pairwise (\i j. negligible(k i INTER k j)) t
+        ==> (f has_integral (vsum t i)) (UNIONS (IMAGE k t))`,
+  REPLICATE_TAC 3 GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[IMAGE_CLAUSES; UNIONS_0; UNIONS_INSERT] THEN
+  REWRITE_TAC[HAS_INTEGRAL_EMPTY_EQ; VSUM_CLAUSES] THEN
+  REWRITE_TAC[FORALL_IN_INSERT; PAIRWISE_INSERT] THEN
+  MAP_EVERY X_GEN_TAC [`n:A`; `t:A->bool`] THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_SIMP_TAC[VSUM_CLAUSES] THEN STRIP_TAC THEN
+  MATCH_MP_TAC HAS_INTEGRAL_UNION THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[INTER_UNIONS] THEN MATCH_MP_TAC NEGLIGIBLE_UNIONS THEN
+
+  ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[pairwise]) THEN ASM SET_TAC[]);;
+
 let HAS_INTEGRAL_UNIONS = prove
  (`!f:real^M->real^N i t.
         FINITE t /\
         (!s. s IN t ==> (f has_integral (i s)) s) /\
         (!s s'. s IN t /\ s' IN t /\ ~(s = s') ==> negligible(s INTER s'))
         ==> (f has_integral (vsum t i)) (UNIONS t)`,
-  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM HAS_INTEGRAL_RESTRICT_UNIV] THEN
-  REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP HAS_INTEGRAL_VSUM) THEN REWRITE_TAC[] THEN
-  MATCH_MP_TAC(REWRITE_RULE[TAUT `a /\ b /\ c ==> d <=> a /\ b ==> c ==> d`]
-                HAS_INTEGRAL_SPIKE) THEN
-  EXISTS_TAC
-   `UNIONS (IMAGE (\(a,b). a INTER b :real^M->bool)
-                  {a,b | a IN t /\ b IN {y | y IN t /\ ~(a = y)}})` THEN
-  CONJ_TAC THENL
-   [MATCH_MP_TAC NEGLIGIBLE_UNIONS THEN CONJ_TAC THENL
-     [MATCH_MP_TAC FINITE_IMAGE THEN MATCH_MP_TAC FINITE_PRODUCT_DEPENDENT THEN
-      ASM_SIMP_TAC[FINITE_RESTRICT];
-      REWRITE_TAC[FORALL_IN_IMAGE; FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN
-      ASM_SIMP_TAC[IN_ELIM_THM]];
-    X_GEN_TAC `x:real^M` THEN REWRITE_TAC[IN_UNIV; IN_DIFF] THEN
-    ASM_CASES_TAC `(x:real^M) IN UNIONS t` THEN ASM_REWRITE_TAC[] THENL
-     [ALL_TAC;
-      RULE_ASSUM_TAC(REWRITE_RULE[SET_RULE
-       `~(x IN UNIONS t) <=> !s. s IN t ==> ~(x IN s)`]) THEN
-      ASM_SIMP_TAC[VSUM_0]] THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_UNIONS]) THEN
-    DISCH_THEN(X_CHOOSE_THEN `a:real^M->bool` STRIP_ASSUME_TAC) THEN
-    REWRITE_TAC[IN_UNIONS; EXISTS_IN_IMAGE; EXISTS_PAIR_THM] THEN
-    REWRITE_TAC[IN_ELIM_PAIR_THM; NOT_EXISTS_THM] THEN
-    DISCH_THEN(MP_TAC o SPEC `a:real^M->bool`) THEN
-    ASM_REWRITE_TAC[IN_ELIM_THM; IN_INTER] THEN
-    ASM_SIMP_TAC[MESON[]
-     `x IN a /\ a IN t
-      ==> ((!b. ~((b IN t /\ ~(a = b)) /\ x IN b)) <=>
-           (!b. b IN t ==> (x IN b <=> b = a)))`] THEN
-    ASM_REWRITE_TAC[VSUM_DELTA]]);;
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM pairwise] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP HAS_INTEGRAL_UNIONS_IMAGE) THEN
+  REWRITE_TAC[IMAGE_ID]);;
 
 let HAS_INTEGRAL_DIFF = prove
  (`!f:real^M->real^N i j s t.
@@ -11362,6 +11354,53 @@ let DOMINATED_CONVERGENCE_AE = prove
   FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
     NEGLIGIBLE_SUBSET)) THEN
   SET_TAC[]);;
+
+let INTEGRAL_COUNTABLE_UNIONS = prove
+ (`!f:real^M->real^N s.
+        (!n. f integrable_on (s n)) /\
+        pairwise (\i j. negligible (s i INTER s j)) (:num) /\
+        f absolutely_integrable_on (UNIONS {s n | n IN (:num)})
+        ==> ((\n. vsum(0..n) (\i. integral (s i) f))
+             --> integral (UNIONS {s n | n IN (:num)}) f) sequentially`,
+  REPEAT STRIP_TAC THEN MP_TAC(GEN `n:num` (ISPECL
+   [`f:real^M->real^N`; `s:num->real^M->bool`;
+    `\k:num. integral (s k) (f:real^M->real^N)`; `0..n`]
+   HAS_INTEGRAL_UNIONS_IMAGE)) THEN
+  ASM_REWRITE_TAC[FINITE_NUMSEG; GSYM HAS_INTEGRAL_INTEGRAL] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP MONO_FORALL) THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[PAIRWISE_MONO; SUBSET_UNIV]; ALL_TAC] THEN
+  REWRITE_TAC[HAS_INTEGRAL_INTEGRABLE_INTEGRAL; FORALL_AND_THM] THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(TAUT `!p. p /\ q ==> q`) THEN
+  EXISTS_TAC
+   `(f:real^M->real^N) integrable_on UNIONS {s n | n IN (:num)}` THEN
+  ONCE_REWRITE_TAC[GSYM INTEGRAL_RESTRICT_UNIV;
+                   GSYM INTEGRABLE_RESTRICT_UNIV] THEN
+  MATCH_MP_TAC DOMINATED_CONVERGENCE THEN
+  EXISTS_TAC `\x. if x IN UNIONS {s n | n IN (:num)}
+                  then lift(norm((f:real^M->real^N) x))
+                  else vec 0` THEN
+  ASM_REWRITE_TAC[INTEGRABLE_RESTRICT_UNIV] THEN
+  ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_IMP_LIFT_NORM_INTEGRABLE] THEN
+  REWRITE_TAC[IN_UNIV] THEN CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`n:num`; `x:real^M`] THEN
+    REWRITE_TAC[UNIONS_GSPEC; UNIONS_IMAGE; IN_ELIM_THM] THEN
+    ASM_CASES_TAC `!n. ~(x IN (s:num->real^M->bool) n)` THEN
+    ASM_REWRITE_TAC[NORM_0; DROP_VEC; REAL_LE_REFL] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[NOT_FORALL_THM]) THEN
+    ASM_REWRITE_TAC[] THEN COND_CASES_TAC THEN
+    REWRITE_TAC[LIFT_DROP; REAL_LE_REFL; NORM_0; NORM_POS_LE];
+    X_GEN_TAC `x:real^M` THEN
+    REWRITE_TAC[UNIONS_GSPEC; UNIONS_IMAGE; IN_ELIM_THM] THEN
+    ASM_CASES_TAC `!n. ~(x IN (s:num->real^M->bool) n)` THEN
+    ASM_REWRITE_TAC[LIM_CONST] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
+    REWRITE_TAC[LIM_SEQUENTIALLY] THEN
+    DISCH_THEN(X_CHOOSE_TAC `N:num`) THEN X_GEN_TAC `e:real` THEN
+    DISCH_TAC THEN EXISTS_TAC `N:num` THEN X_GEN_TAC `n:num` THEN
+    DISCH_TAC THEN REWRITE_TAC[IN_NUMSEG; LE_0] THEN
+    REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[DIST_REFL]) THEN
+    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A few more properties of negligible sets.                                 *)
@@ -17011,6 +17050,42 @@ let VECTOR_VARIATION_COMBINE = prove
            DIMINDEX_1; LE_REFL] THEN
   REWRITE_TAC[GSYM drop] THEN ASM_REAL_ARITH_TAC);;
 
+let VECTOR_VARIATION_SEGMENT_TRIANGLE = prove
+ (`!f:real^1->real^N s a b c.
+        f has_bounded_variation_on s /\
+        is_interval s /\ a IN s /\ b IN s /\ c IN s
+        ==> vector_variation (segment[a,c]) f <=
+            vector_variation (segment[a,b]) f +
+            vector_variation (segment[b,c]) f`,
+  REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+   (REAL_ARITH
+     `drop a <= drop b /\ drop b <= drop c \/
+      drop a <= drop c /\ drop c <= drop b \/
+      drop b <= drop a /\ drop a <= drop c \/
+      drop b <= drop c /\ drop c <= drop a \/
+      drop c <= drop a /\ drop a <= drop b \/
+      drop c <= drop b /\ drop b <= drop a`) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP REAL_LE_TRANS) THEN
+  ASM_REWRITE_TAC[SEGMENT_1] THEN REWRITE_TAC[GSYM SEGMENT_1] THEN
+  ONCE_REWRITE_TAC[SEGMENT_SYM] THEN
+  ASM_REWRITE_TAC[SEGMENT_1] THEN REWRITE_TAC[GSYM SEGMENT_1] THEN
+  FIRST_ASSUM(MP_TAC o ISPEC `f:real^1->real^N` o MATCH_MP
+   (ONCE_REWRITE_RULE[TAUT `a /\ b /\ c ==> d <=> a /\ b ==> c ==> d`]
+        VECTOR_VARIATION_COMBINE)) THEN
+  (ANTS_TAC THENL
+    [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HAS_BOUNDED_VARIATION_ON_SUBSET)) THEN
+     ASM_SIMP_TAC[INTERVAL_SUBSET_IS_INTERVAL];
+     DISCH_THEN(SUBST1_TAC o SYM)]) THEN
+  REWRITE_TAC[REAL_ADD_SYM; REAL_LE_REFL] THEN
+  REPEAT(MATCH_MP_TAC(REAL_ARITH `&0 <= y ==> x <= x + y`) ORELSE
+         (MATCH_MP_TAC(REAL_ARITH `&0 <= y /\ x <= z ==> x <= y + z`) THEN
+          CONJ_TAC)) THEN
+  REWRITE_TAC[REAL_LE_REFL] THEN MATCH_MP_TAC VECTOR_VARIATION_POS_LE THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HAS_BOUNDED_VARIATION_ON_SUBSET)) THEN
+  ASM_SIMP_TAC[INTERVAL_SUBSET_IS_INTERVAL]);;
+
 let VECTOR_VARIATION_MINUS_FUNCTION_MONOTONE = prove
  (`!f a b c d.
         f has_bounded_variation_on interval[a,b] /\
@@ -22022,6 +22097,13 @@ let PATH_LENGTH_EQ = prove
         ==> path_length p = path_length q`,
   REWRITE_TAC[path_length] THEN MESON_TAC[VECTOR_VARIATION_EQ]);;
 
+let PATH_LENGTH_SCALING = prove
+ (`!g:real^1->real^N c.
+        rectifiable_path g
+        ==> path_length ((\x. c % x) o g) = abs c * path_length g`,
+  REWRITE_TAC[rectifiable_path; path_length; o_THM] THEN
+  REWRITE_TAC[IMP_CONJ; o_DEF; VECTOR_VARIATION_CMUL]);;
+
 let BOUNDED_RECTIFIABLE_PATH_IMAGE = prove
  (`!g:real^1->real^N. rectifiable_path g ==> bounded(path_image g)`,
   SIMP_TAC[rectifiable_path; BOUNDED_PATH_IMAGE]);;
@@ -22534,6 +22616,55 @@ let ARC_LENGTH_UNIQUE = prove
     RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism; path_image]) THEN
     REWRITE_TAC[o_THM] THEN ASM SET_TAC[]]);;
 
+let CONTINUOUS_ON_PATH_LENGTH_SUBPATH_RIGHT = prove
+ (`!g:real^1->real^N a.
+        rectifiable_path g /\ a IN interval[vec 0,vec 1]
+        ==> (\x. lift(path_length(subpath a x g)))
+            continuous_on interval[vec 0,vec 1]`,
+  REWRITE_TAC[rectifiable_path] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_ON_EQ THEN
+  EXISTS_TAC `\x.
+   lift(abs(path_length(subpath (vec 0) x (g:real^1->real^N)) -
+            path_length(subpath (vec 0) a g)))` THEN
+  REWRITE_TAC[] THEN CONJ_TAC THENL
+   [X_GEN_TAC `b:real^1` THEN DISCH_TAC THEN
+    REWRITE_TAC[PATH_LENGTH_SUBPATH] THEN AP_TERM_TAC THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL_1; DROP_VEC]) THEN
+    ASM_REWRITE_TAC[SEGMENT_1; DROP_VEC] THEN COND_CASES_TAC THENL
+     [MATCH_MP_TAC(REAL_ARITH `&0 <= c /\ a + c = b ==> abs(b - a) = c`);
+      MATCH_MP_TAC(REAL_ARITH `&0 <= c /\ a + c = b ==> abs(a - b) = c`)] THEN
+    (CONJ_TAC THENL
+      [MATCH_MP_TAC VECTOR_VARIATION_POS_LE;
+       MATCH_MP_TAC VECTOR_VARIATION_COMBINE]) THEN
+    ASM_SIMP_TAC[DROP_VEC; REAL_ARITH `~(a <= b) ==> b <= a`] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HAS_BOUNDED_VARIATION_ON_SUBSET)) THEN
+    REWRITE_TAC[SUBSET_INTERVAL_1; DROP_VEC] THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_LIFT_ABS THEN
+  REWRITE_TAC[LIFT_SUB] THEN MATCH_MP_TAC CONTINUOUS_ON_SUB THEN
+  REWRITE_TAC[CONTINUOUS_ON_CONST; PATH_LENGTH_SUBPATH] THEN
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+  X_GEN_TAC `b:real^1` THEN DISCH_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_TRANSFORM_WITHIN THEN
+  EXISTS_TAC
+   `\x. lift (vector_variation(interval[vec 0,x]) (g:real^1->real^N))` THEN
+  EXISTS_TAC `&1` THEN SIMP_TAC[SEGMENT_1; IN_INTERVAL_1; REAL_LT_01] THEN
+  ASM_REWRITE_TAC[GSYM IN_INTERVAL_1] THEN
+  ASM_SIMP_TAC[VECTOR_VARIATION_CONTINUOUS] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[path; CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN]) THEN
+  ASM_SIMP_TAC[]);;
+
+let CONTINUOUS_ON_PATH_LENGTH_SUBPATH_LEFT = prove
+ (`!g:real^1->real^N a.
+        rectifiable_path g /\ a IN interval[vec 0,vec 1]
+        ==> (\x. lift(path_length(subpath x a g)))
+            continuous_on interval[vec 0,vec 1]`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM REVERSEPATH_SUBPATH] THEN
+  ONCE_REWRITE_TAC[PATH_LENGTH_REVERSEPATH] THEN
+  ASM_SIMP_TAC[CONTINUOUS_ON_PATH_LENGTH_SUBPATH_RIGHT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Arc length reparametrization, and existence of shortest paths.            *)
 (* ------------------------------------------------------------------------- *)
@@ -22822,17 +22953,17 @@ let SHORTEST_PATH_EXISTS_GEN = prove
                   ARITH_RULE `i < p - l <=> ~(p <= l + i)`]);;
 
 let SHORTEST_PATH_EXISTS_STRADDLE = prove
- (`!s t a b:real^N.
-        closed s /\ a IN s /\ b IN s /\
+ (`!s t a b:real^N->bool.
+        closed s /\ compact a /\ compact b /\
         (?g. rectifiable_path g /\
              t SUBSET path_image g /\ path_image g SUBSET s /\
-             pathstart g = a /\ pathfinish g = b)
+             pathstart g IN a /\ pathfinish g IN b)
         ==> ?g. rectifiable_path g /\
                 t SUBSET path_image g /\ path_image g SUBSET s /\
-                pathstart g = a /\ pathfinish g = b /\
+                pathstart g IN a /\ pathfinish g IN b /\
                 !h. rectifiable_path h /\
                     t SUBSET path_image h /\ path_image h SUBSET s /\
-                    pathstart h = a /\ pathfinish h = b
+                    pathstart h IN a /\ pathfinish h IN b
                     ==> path_length g <= path_length h`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
@@ -22894,41 +23025,39 @@ let SHORTEST_PATH_EXISTS_STRADDLE = prove
     ASM_REWRITE_TAC[] THEN
     RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; path_image; FORALL_IN_IMAGE]) THEN
     ASM_SIMP_TAC[];
-    REWRITE_TAC[pathstart] THEN MATCH_MP_TAC(NORM_ARITH
-     `~(&0 < norm(x - y)) ==> x:real^N = y`) THEN DISCH_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `norm((g:real^1->real^N) (vec 0) - a)`) THEN
-    ASM_REWRITE_TAC[] THEN
-    DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
-    DISCH_THEN(MP_TAC o SPEC `vec 0:real^1`) THEN
-    REWRITE_TAC[GE; LE_REFL; ENDS_IN_UNIT_INTERVAL] THEN
-    MATCH_MP_TAC(NORM_ARITH
-     `h:real^N = a ==> ~(norm(h - g) < norm(g - a))`) THEN
-    ASM_MESON_TAC[pathstart];
-    REWRITE_TAC[pathfinish] THEN MATCH_MP_TAC(NORM_ARITH
-     `~(&0 < norm(x - y)) ==> x:real^N = y`) THEN DISCH_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `norm((g:real^1->real^N) (vec 1) - b)`) THEN
-    ASM_REWRITE_TAC[] THEN
-    DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
-    DISCH_THEN(MP_TAC o SPEC `vec 1:real^1`) THEN
-    REWRITE_TAC[GE; LE_REFL; ENDS_IN_UNIT_INTERVAL] THEN
-    MATCH_MP_TAC(NORM_ARITH
-     `h:real^N = a ==> ~(norm(h - g) < norm(g - a))`) THEN
-    ASM_MESON_TAC[pathfinish];
-    EXISTS_TAC `{a:real^N}` THEN REWRITE_TAC[BOUNDED_SING] THEN
+    MATCH_MP_TAC(ISPEC `sequentially` LIM_IN_CLOSED_SET) THEN
+    EXISTS_TAC `\n. (h:num->real^1->real^N) n (vec 0)` THEN
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED; TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC ALWAYS_EVENTUALLY THEN ASM_MESON_TAC[pathstart];
+      REWRITE_TAC[pathstart; tendsto]] THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; dist; GSYM GE] THEN
+    ASM_MESON_TAC[ENDS_IN_UNIT_INTERVAL];
+    MATCH_MP_TAC(ISPEC `sequentially` LIM_IN_CLOSED_SET) THEN
+    EXISTS_TAC `\n. (h:num->real^1->real^N) n (vec 1)` THEN
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED; TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC ALWAYS_EVENTUALLY THEN ASM_MESON_TAC[pathfinish];
+      REWRITE_TAC[pathfinish; tendsto]] THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; dist; GSYM GE] THEN
+    ASM_MESON_TAC[ENDS_IN_UNIT_INTERVAL];
+    EXISTS_TAC `a:real^N->bool` THEN ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN
     X_GEN_TAC `g:real^1->real^N` THEN STRIP_TAC THEN
-    MATCH_MP_TAC(SET_RULE
-     `s SUBSET convex hull s /\ a IN s ==> ~DISJOINT {a} (convex hull s)`) THEN
-    REWRITE_TAC[HULL_SUBSET] THEN ASM_MESON_TAC[PATHSTART_IN_PATH_IMAGE]]);;
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `a IN t ==> s SUBSET convex hull s /\ a IN s
+      ==> ~DISJOINT t (convex hull s)`)) THEN
+    REWRITE_TAC[HULL_SUBSET] THEN
+    ASM_MESON_TAC[PATHSTART_IN_PATH_IMAGE; RECTIFIABLE_PATH_IMP_PATH]]);;
 
 let SHORTEST_PATH_EXISTS = prove
- (`!s a b:real^N.
-        closed s /\ a IN s /\ b IN s /\
+ (`!s a b:real^N->bool.
+        closed s /\ compact a /\ compact b /\
         (?g. rectifiable_path g /\ path_image g SUBSET s /\
-             pathstart g = a /\ pathfinish g = b)
+             pathstart g IN a /\ pathfinish g IN b)
         ==> ?g. rectifiable_path g /\ path_image g SUBSET s /\
-                pathstart g = a /\ pathfinish g = b /\
+                pathstart g IN a /\ pathfinish g IN b /\
                 !h. rectifiable_path h /\ path_image h SUBSET s /\
-                    pathstart h = a /\ pathfinish h = b
+                    pathstart h IN a /\ pathfinish h IN b
                     ==> path_length g <= path_length h`,
   ONCE_REWRITE_TAC[SET_RULE `s SUBSET t <=> {} SUBSET s /\ s SUBSET t`] THEN
   REWRITE_TAC[GSYM CONJ_ASSOC] THEN
@@ -22936,7 +23065,7 @@ let SHORTEST_PATH_EXISTS = prove
 
 let SHORTEST_ARC_EXISTS = prove
  (`!s a b:real^N.
-        closed s /\ a IN s /\ b IN s /\ ~(a = b) /\
+        closed s /\ ~(a = b) /\
         (?g. rectifiable_path g /\ path_image g SUBSET s /\
              pathstart g = a /\ pathfinish g = b)
         ==> ?g. rectifiable_path g /\ arc g /\ path_image g SUBSET s /\
@@ -22946,9 +23075,9 @@ let SHORTEST_ARC_EXISTS = prove
                     ==> path_length g <= path_length h`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
-  MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N`; `b:real^N`]
+  MP_TAC(ISPECL [`s:real^N->bool`; `{a:real^N}`; `{b:real^N}`]
         SHORTEST_PATH_EXISTS) THEN
-  ASM_REWRITE_TAC[] THEN
+  ASM_REWRITE_TAC[COMPACT_SING; IN_SING] THEN
   FIRST_X_ASSUM(K ALL_TAC o check is_exists o concl) THEN
   DISCH_THEN(X_CHOOSE_THEN `f:real^1->real^N` STRIP_ASSUME_TAC) THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP ARC_LENGTH_REPARAMETRIZATION) THEN

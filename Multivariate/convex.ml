@@ -6695,6 +6695,23 @@ let SEPARATING_HYPERPLANE_SETS = prove
 (* More convexity generalities.                                              *)
 (* ------------------------------------------------------------------------- *)
 
+let UNBOUNDED_COMPLEMENT_CONVEX = prove
+ (`!c. convex c /\ ~(c = (:real^N)) ==> ~bounded((:real^N) DIFF c)`,
+  GEN_TAC THEN STRIP_TAC THEN ASM_CASES_TAC `c:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[NOT_BOUNDED_UNIV; DIFF_EMPTY] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP
+   (SET_RULE `~(s = UNIV) ==> ?a. ~(a IN s)`)) THEN
+  DISCH_THEN(X_CHOOSE_TAC `a:real^N`) THEN
+  MP_TAC(ISPECL [`c:real^N->bool`; `{a:real^N}`]
+        SEPARATING_HYPERPLANE_SETS) THEN
+  ASM_REWRITE_TAC[CONVEX_SING] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`v:real^N`; `d:real`] THEN STRIP_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] BOUNDED_SUBSET)) THEN
+  DISCH_THEN(MP_TAC o SPEC `{x:real^N | ~(v dot x <= d)}`) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[REAL_NOT_LE]] THEN
+  ASM_REWRITE_TAC[BOUNDED_HALFSPACE_GT; GSYM real_gt]);;
+
 let CONVEX_CLOSURE = prove
  (`!s:real^N->bool. convex s ==> convex(closure s)`,
   REWRITE_TAC[convex; CLOSURE_SEQUENTIAL] THEN
