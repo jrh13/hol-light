@@ -11,12 +11,12 @@ theorem that systematically replaces free instances of each variable {xi} with
 the corresponding term {ti} in both assumptions and conclusion.
 {
                A |- t
-   -----------------------------------  INST_TYPE [t1,x1;...;tn,xn]
+   -----------------------------------  INST [t1,x1;...;tn,xn]
     A[t1,...,tn/x1,...,xn]
         |- t[t1,...,tn/x1,...,xn]
 }
-Bound variables will be renamed if necessary to avoid capture. All variables 
-are substituted in parallel, so there is no problem if there is an overlap 
+Bound variables will be renamed if necessary to avoid capture. All variables
+are substituted in parallel, so there is no problem if there is an overlap
 between the terms {ti} and {xi}.
 
 \FAILURE

@@ -3144,6 +3144,13 @@ let SUP_SING = prove
  (`!a. sup {a} = a`,
   SIMP_TAC[SUP_INSERT_FINITE; FINITE_EMPTY]);;
 
+let SUP_INSERT_INSERT = prove
+ (`!a b s. sup (b INSERT a INSERT s) = sup (max a b INSERT s)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC SUP_EQ THEN
+  X_GEN_TAC `c:real` THEN REWRITE_TAC[FORALL_IN_INSERT] THEN
+  ASM_CASES_TAC `!x:real. x IN s ==> x <= c` THEN ASM_REWRITE_TAC[] THEN
+  REAL_ARITH_TAC);;
+
 let REAL_LE_SUP = prove
  (`!s a b y. y IN s /\ a <= y /\ (!x. x IN s ==> x <= b) ==> a <= sup s`,
   MESON_TAC[SUP; MEMBER_NOT_EMPTY; REAL_LE_TRANS]);;
@@ -3279,6 +3286,13 @@ let INF_INSERT_FINITE = prove
 let INF_SING = prove
  (`!a. inf {a} = a`,
   SIMP_TAC[INF_INSERT_FINITE; FINITE_EMPTY]);;
+
+let INF_INSERT_INSERT = prove
+ (`!a b s. inf (b INSERT a INSERT s) = inf (min a b INSERT s)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC INF_EQ THEN
+  X_GEN_TAC `c:real` THEN REWRITE_TAC[FORALL_IN_INSERT] THEN
+  ASM_CASES_TAC `!x:real. x IN s ==> c <= x` THEN ASM_REWRITE_TAC[] THEN
+  REAL_ARITH_TAC);;
 
 let REAL_SUP_EQ_INF = prove
  (`!s. ~(s = {}) /\ (?B. !x. x IN s ==> abs(x) <= B)

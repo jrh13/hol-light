@@ -2179,6 +2179,21 @@ let CONNECTED_SUBSET_PATH_IMAGE_ARC = prove
   RULE_ASSUM_TAC(REWRITE_RULE[pathstart; pathfinish; path_image]) THEN
   ASM SET_TAC[]);;
 
+let ARC_IMAGE_UNIQUE = prove                                              
+ (`!g h:real^1->real^N.                                                     
+        path g /\ arc h /\ path_image g SUBSET path_image h /\     
+        {pathstart g,pathfinish g} = {pathstart h,pathfinish h}             
+        ==> path_image g = path_image h`,                                    
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP (SET_RULE  
+   `{a,b} = {c,d} ==> a = c /\ b = d \/ a = d /\ b = c`)) THEN          
+  STRIP_TAC THENL
+   [ALL_TAC; GEN_REWRITE_TAC RAND_CONV [GSYM PATH_IMAGE_REVERSEPATH]] THEN
+  MATCH_MP_TAC CONNECTED_SUBSET_PATH_IMAGE_ARC THEN
+  ASM_REWRITE_TAC[ARC_REVERSEPATH_EQ; PATH_IMAGE_REVERSEPATH] THEN
+  REWRITE_TAC[PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH] THEN
+  ASM_MESON_TAC[CONNECTED_PATH_IMAGE; ARC_IMP_PATH;
+                PATHSTART_IN_PATH_IMAGE; PATHFINISH_IN_PATH_IMAGE]);;
+
 let CONNECTED_SUBSET_ARC_PAIR = prove
  (`!g h s:real^N->bool.
         arc g /\ arc h /\
@@ -12156,6 +12171,50 @@ let INSIDE_SUBSET_CONVEX = prove
 let INSIDE_SUBSET_CONVEX_HULL = prove
  (`!s:real^N->bool. inside s SUBSET convex hull s`,
   SIMP_TAC[INSIDE_SUBSET_CONVEX; CONVEX_CONVEX_HULL; HULL_SUBSET]);;
+
+let UNBOUNDED_DISJOINT_IN_OUTSIDE = prove
+ (`!s t x:real^N.
+       connected t /\ ~bounded t /\ x IN t /\ DISJOINT s t ==> x IN outside s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[outside; IN_ELIM_THM] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  UNDISCH_TAC `~bounded(t:real^N->bool)` THEN REWRITE_TAC[CONTRAPOS_THM] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] BOUNDED_SUBSET) THEN
+  MATCH_MP_TAC CONNECTED_COMPONENT_MAXIMAL THEN ASM SET_TAC[]);;
+
+let INSIDE_SUBSET_INTERIOR_CONVEX = prove
+ (`!s c:real^N->bool. convex c /\ s SUBSET c ==> inside s SUBSET interior c`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SET_DIFF_FRONTIER] THEN
+  REWRITE_TAC[SET_RULE `s SUBSET t DIFF u <=> s SUBSET t /\ DISJOINT s u`] THEN
+  ASM_SIMP_TAC[INSIDE_SUBSET_CONVEX] THEN
+  REWRITE_TAC[SET_RULE `DISJOINT s t <=> !x. x IN s ==> ~(x IN t)`] THEN
+  X_GEN_TAC `x:real^N` THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPECL [`c:real^N->bool`; `x:real^N`]
+    SUPPORTING_HYPERPLANE_FRONTIER) THEN
+  ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN X_GEN_TAC `a:real^N` THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `x INSERT {y:real^N | a dot y < a dot x}`;
+                 `x:real^N`] UNBOUNDED_DISJOINT_IN_OUTSIDE) THEN
+  REWRITE_TAC[NOT_IMP] THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC CONNECTED_INTERMEDIATE_CLOSURE THEN
+    EXISTS_TAC `{y:real^N | a dot y < a dot x}` THEN
+    ASM_SIMP_TAC[CLOSURE_HALFSPACE_LT; CONVEX_CONNECTED; CONVEX_HALFSPACE_LT;
+                 INSERT_SUBSET; IN_ELIM_THM; SUBSET; IN_INSERT] THEN
+    REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[BOUNDED_INSERT; BOUNDED_HALFSPACE_LT];
+    REWRITE_TAC[IN_INSERT];
+    REWRITE_TAC[SET_RULE
+    `DISJOINT s (x INSERT t) <=> ~(x IN s) /\ (!y. y IN s ==> ~(y IN t))`] THEN
+    CONJ_TAC THENL
+     [MP_TAC(ISPEC `s:real^N->bool` INSIDE_NO_OVERLAP) THEN ASM SET_TAC[];
+      REWRITE_TAC[IN_ELIM_THM; REAL_NOT_LT] THEN REPEAT STRIP_TAC THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      MATCH_MP_TAC CLOSURE_INC THEN ASM SET_TAC[]];
+    MP_TAC(ISPEC `s:real^N->bool` INSIDE_INTER_OUTSIDE) THEN ASM SET_TAC[]]);;
+
+let INSIDE_SUBSET_INTERIOR_CONVEX_HULL = prove
+ (`!s:real^N->bool. inside s SUBSET interior(convex hull s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INSIDE_SUBSET_INTERIOR_CONVEX THEN
+  REWRITE_TAC[CONVEX_CONVEX_HULL; HULL_SUBSET]);;
 
 let OUTSIDE_FRONTIER_MISSES_CLOSURE = prove
  (`!s. bounded s ==> outside(frontier s) SUBSET (:real^N) DIFF closure s`,

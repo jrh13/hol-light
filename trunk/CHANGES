@@ -1,3 +1,15 @@
+Fri 12th Jun 2015       sets.ml
+
+Added two useful rewrites for sup and inf on finite sets from Marco
+Maggesi. Note that they don't a priori require the set to be finite,
+so they are easy to apply.
+
+  INF_INSERT_INSERT =
+    |- !a b s. inf (b INSERT a INSERT s) = inf (min a b INSERT s)
+
+  SUP_INSERT_INSERT =
+    |- !a b s. sup (b INSERT a INSERT s) = sup (max a b INSERT s)
+
 Fri 29th May 2015       Library/card.ml
 
 Added two more theorems about representing countable sets as images:

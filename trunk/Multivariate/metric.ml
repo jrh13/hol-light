@@ -570,6 +570,11 @@ let [MDIST_POS_LE; MDIST_0; MDIST_SYM; MDIST_TRIANGLE] =
     SIMP_TAC[FORALL_METRIC_THM; MSPACE; MDIST; is_metric_space]) in
   (CONJUNCTS o REWRITE_RULE [FORALL_AND_THM] o prove) METRIC_AXIOMS;;
 
+let REAL_ABS_MDIST = prove
+ (`!m x y:A. x IN mspace m /\ y IN mspace m
+             ==> abs(mdist m (x,y)) = mdist m (x,y)`,
+  SIMP_TAC[REAL_ABS_REFL; MDIST_POS_LE]);;
+
 let MDIST_POS_LT = prove
  (`!m x y:A. x IN mspace m /\ y IN mspace m /\ ~(x=y)
              ==> &0 < mdist m (x,y)`,
@@ -904,7 +909,7 @@ let OPEN_IN_MTOPOLOGY_MCBALL = prove
          u SUBSET mspace m /\
          (!x. x IN u ==> (?r. &0 < r /\ mcball m (x,r) SUBSET u))`,
   REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_MTOPOLOGY] THEN
-  ASM_CASES_TAC `u:A->bool SUBSET mspace m` THEN                                
+  ASM_CASES_TAC `u:A->bool SUBSET mspace m` THEN
   ASM_REWRITE_TAC[] THEN EQ_TAC THENL
   [INTRO_TAC "hp; !x; x" THEN
    REMOVE_THEN "x" (HYP_TAC "hp: @r. rpos sub" o C MATCH_MP) THEN
@@ -1025,6 +1030,253 @@ let MBOUNDED_SUBMETRIC = prove
      mbounded (submetric m s) t <=> mbounded m (s INTER t) /\ t SUBSET s`,
   REPEAT GEN_TAC THEN REWRITE_TAC[MBOUNDED_IFF_FINITE_DIAMETER; SUBMETRIC] THEN
   SET_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A decision procedure for metric spaces.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let METRIC_ARITH : term -> thm =
+  let SUP_CONV =
+    let conv0 = REWR_CONV SUP_INSERT_INSERT
+    and conv1 = REWR_CONV SUP_SING in
+    conv1 ORELSEC (conv0 THENC REPEATC conv0 THENC TRY_CONV conv1) in
+  let MAXDIST_THM = prove
+   (`!m s x y:A.
+       mbounded m s /\ x IN s /\ y IN s
+       ==> mdist m (x,y) =
+           sup (IMAGE (\a. abs(mdist m (x,a) - mdist m (a,y))) s)`,
+    REPEAT GEN_TAC THEN INTRO_TAC "bnd x y" THEN
+    MATCH_MP_TAC (GSYM SUP_UNIQUE) THEN
+    CLAIM_TAC "inc" `!p:A. p IN s ==> p IN mspace m` THENL
+    [HYP SET_TAC "bnd" [MBOUNDED_SUBSET_MSPACE]; ALL_TAC] THEN
+    GEN_TAC THEN REWRITE_TAC[FORALL_IN_IMAGE] THEN EQ_TAC THENL
+    [INTRO_TAC "le; ![z]; z" THEN
+     TRANS_TAC REAL_LE_TRANS `mdist m (x:A,y)` THEN
+     ASM_SIMP_TAC[MDIST_REVERSE_TRIANGLE];
+     DISCH_THEN (MP_TAC o C MATCH_MP (ASSUME `y:A IN s`)) THEN
+     ASM_SIMP_TAC[MDIST_REFL; REAL_SUB_RZERO; REAL_ABS_MDIST]])
+  and METRIC_EQ_THM = prove
+   (`!m s x y:A.
+       s SUBSET mspace m /\ x IN s /\ y IN s
+       ==> (x = y <=> (!a. a IN s ==> mdist m (x,a) = mdist m (y,a)))`,
+    INTRO_TAC "!m s x y; sub sx sy" THEN EQ_TAC THEN SIMP_TAC[] THEN
+    DISCH_THEN (MP_TAC o SPEC `y:A`) THEN
+    CLAIM_TAC "x y" `x:A IN mspace m /\ y IN mspace m` THENL
+    [ASM SET_TAC []; ASM_SIMP_TAC[MDIST_REFL; MDIST_0]]) in
+  let CONJ1_CONV : conv -> conv =
+    let TRUE_CONJ_CONV = REWR_CONV (MESON [] `T /\ p <=> p`) in
+    fun conv -> LAND_CONV conv THENC TRUE_CONJ_CONV in
+  let IN_CONV : conv =
+    let DISJ_TRUE_CONV = REWR_CONV (MESON [] `p \/ T <=> T`)
+    and TRUE_DISJ_CONV = REWR_CONV (MESON [] `T \/ p <=> T`) in
+    let REFL_CONV = REWR_CONV (MESON [] `x:A = x <=> T`) in
+    let conv0 = REWR_CONV (EQF_INTRO (SPEC_ALL NOT_IN_EMPTY)) in
+    let conv1 = REWR_CONV IN_INSERT in
+    let conv2 = LAND_CONV REFL_CONV THENC TRUE_DISJ_CONV in
+    let rec IN_CONV tm =
+      (conv0 ORELSEC
+       (conv1 THENC
+        (conv2 ORELSEC
+         (RAND_CONV IN_CONV THENC DISJ_TRUE_CONV)))) tm in
+    IN_CONV
+  and IMAGE_CONV : conv =
+    let pth0,pth1 = CONJ_PAIR IMAGE_CLAUSES in
+    let conv0 = REWR_CONV pth0
+    and conv1 = REWR_CONV pth1 THENC TRY_CONV (LAND_CONV BETA_CONV) in
+    let rec IMAGE_CONV tm =
+      (conv0 ORELSEC (conv1 THENC RAND_CONV IMAGE_CONV)) tm in
+    IMAGE_CONV in
+  let SUBSET_CONV : conv -> conv =
+    let conv0 = REWR_CONV (EQT_INTRO (SPEC_ALL EMPTY_SUBSET)) in
+    let conv1 = REWR_CONV INSERT_SUBSET in
+    fun conv ->
+      let conv2 = conv1 THENC CONJ1_CONV conv in
+      REPEATC conv2 THENC conv0 in
+  let rec prove_hyps th =
+    match hyp th with
+    | [] -> th
+    | htm :: _ ->
+        let emth = SPEC htm EXCLUDED_MIDDLE in
+        let nhp = EQF_INTRO (ASSUME (mk_neg htm)) in
+        let nth1 = (SUBS_CONV [nhp] THENC PRESIMP_CONV) (concl th) in
+        let nth2 = MESON [nhp] (rand (concl nth1)) in
+        let nth = EQ_MP (SYM nth1) nth2 in
+        prove_hyps(DISJ_CASES emth th nth) in
+  let rec guess_metric tm =
+    match tm with
+    | Comb(Const("mdist",_),m) -> m
+    | Comb(Const("mspace",_),m) -> m
+    | Comb(s,t) -> (try guess_metric s with Failure _ -> guess_metric t)
+    | Abs(_, bd) -> guess_metric bd
+    | _ -> failwith "metric not found" in
+  let find_mdist mtm =
+    let rec find tm =
+      match tm with
+      | Comb(Comb(Const("mdist",_),pmtm),p) when pmtm = mtm -> [tm]
+      | Comb(s,t) -> union (find s) (find t)
+      | Abs(v, bd) -> filter (fun x -> not(free_in v x)) (find bd)
+      | _ -> [] in
+    find
+  and find_eq mty =
+    let rec find tm =
+      match tm with
+      | Comb(Comb(Const("=",ty),_),_) when fst(dest_fun_ty ty) = mty -> [tm]
+      | Comb(s,t) -> union (find s) (find t)
+      | Abs(v, bd) -> filter (fun x -> not(free_in v x)) (find bd)
+      | _ -> [] in
+    find
+  and find_points mtm =
+    let rec find tm =
+      match tm with
+      | Comb(Comb(Const("mdist",_),pmtm),p) when pmtm = mtm ->
+          let x,y = dest_pair p in
+          if x = y then [x] else [x;y]
+      | Comb(s,t) -> union (find s) (find t)
+      | Abs(v, bd) -> filter (fun x -> not(free_in v x)) (find bd)
+      | _ -> [] in
+    find in
+  let prenex_conv =
+    TOP_DEPTH_CONV BETA_CONV THENC
+    PURE_REWRITE_CONV[FORALL_SIMP; EXISTS_SIMP] THENC
+    NNFC_CONV THENC DEPTH_BINOP_CONV `(/\)` CONDS_CELIM_CONV THENC
+    PRESIMP_CONV THENC
+    GEN_REWRITE_CONV REDEPTH_CONV
+      [AND_FORALL_THM; LEFT_AND_FORALL_THM; RIGHT_AND_FORALL_THM;
+       LEFT_OR_FORALL_THM; RIGHT_OR_FORALL_THM] THENC
+    PRENEX_CONV
+  and real_poly_conv =
+    let eths = REAL_ARITH
+      `(x = y <=> x - y = &0) /\
+       (x < y <=> y - x > &0) /\
+       (x > y <=> x - y > &0) /\
+       (x <= y <=> y - x >= &0) /\
+       (x >= y <=> x - y >= &0)` in
+    GEN_REWRITE_CONV I [eths] THENC LAND_CONV REAL_POLY_CONV
+  and augment_mdist_pos_thm =
+    MESON [] `p ==> (q <=> r) ==> (q <=> (p ==> r))` in
+  fun tm ->
+    let mtm = guess_metric tm in
+    let mty = hd(snd(dest_type(type_of mtm))) in
+    let mspace_tm = mk_icomb(mk_const("mspace",[]),mtm) in
+    let metric_eq_thm = ISPEC mtm METRIC_EQ_THM
+    and mk_in_mspace_th =
+      let in_tm = mk_const("IN",[mty,aty]) in
+      fun pt -> ASSUME (mk_comb(mk_comb(in_tm,pt),mspace_tm)) in
+    let th0 = prenex_conv tm in
+    let tm0 = rand (concl th0) in
+    let avs,bod = strip_forall tm0 in
+    let points = find_points mtm bod in
+    let in_mspace_conv = GEN_REWRITE_CONV I (map mk_in_mspace_th points) in
+    let in_mspace2_conv = CONJ1_CONV in_mspace_conv THENC in_mspace_conv in
+    let MDIST_REFL_CONV =
+      let pconv = IMP_REWR_CONV (ISPEC mtm MDIST_REFL) in
+      fun tm -> MP_CONV in_mspace_conv (pconv tm)
+    and MDIST_SYM_CONV =
+      let pconv = IMP_REWR_CONV (ISPEC mtm MDIST_SYM) in
+      fun tm -> let x,y = dest_pair (rand tm) in
+                if x <= y then failwith "MDIST_SYM_CONV" else
+                MP_CONV in_mspace2_conv (pconv tm)
+    and MBOUNDED_CONV =
+      let conv0 = REWR_CONV (EQT_INTRO (ISPEC mtm MBOUNDED_EMPTY)) in
+      let conv1 = REWR_CONV (ISPEC mtm MBOUNDED_INSERT) in
+      let rec mbounded_conv tm =
+        try conv0 tm with Failure _ ->
+        (conv1 THENC CONJ1_CONV in_mspace_conv THENC mbounded_conv) tm in
+      mbounded_conv in
+    let REFL_SYM_CONV = MDIST_REFL_CONV ORELSEC MDIST_SYM_CONV in
+    let ABS_MDIST_CONV =
+      let pconv = IMP_REWR_CONV (ISPEC mtm REAL_ABS_MDIST) in
+      fun tm -> MP_CONV in_mspace2_conv (pconv tm) in
+    let metric_eq_prerule =
+      (CONV_RULE o BINDER_CONV o BINDER_CONV)
+      (LAND_CONV (CONJ1_CONV (SUBSET_CONV in_mspace_conv)) THENC
+       RAND_CONV (REWRITE_CONV[FORALL_IN_INSERT; NOT_IN_EMPTY])) in
+    let MAXDIST_CONV =
+      let maxdist_thm = ISPEC mtm MAXDIST_THM
+      and ante_conv =
+        CONJ1_CONV MBOUNDED_CONV THENC CONJ1_CONV IN_CONV THENC IN_CONV
+      and image_conv =
+        IMAGE_CONV THENC ONCE_DEPTH_CONV REFL_SYM_CONV THENC
+        PURE_REWRITE_CONV
+          [REAL_SUB_LZERO; REAL_SUB_RZERO; REAL_SUB_REFL;
+           REAL_ABS_0; REAL_ABS_NEG; REAL_ABS_SUB; INSERT_AC] THENC
+        ONCE_DEPTH_CONV ABS_MDIST_CONV THENC
+        PURE_REWRITE_CONV[INSERT_AC] in
+      let sup_conv = RAND_CONV image_conv THENC SUP_CONV in
+      fun fset_tm ->
+        let maxdist_th = SPEC fset_tm maxdist_thm in
+        fun tm ->
+          let th0 = MP_CONV ante_conv (IMP_REWR_CONV maxdist_th tm) in
+          let tm0 = rand (concl th0) in
+          let th1 = sup_conv tm0 in
+          TRANS th0 th1 in
+    let AUGMENT_MDISTS_POS_RULE =
+      let mdist_pos_le = ISPEC mtm MDIST_POS_LE in
+      let augment_rule : term -> thm -> thm =
+        let mk_mdist_pos_thm tm =
+          let xtm,ytm = dest_pair (rand tm) in
+          let pth = SPECL[xtm;ytm] mdist_pos_le in
+          MP_CONV (CONJ1_CONV in_mspace_conv THENC in_mspace_conv) pth in
+        fun mdist_tm ->
+          let ith =
+            MATCH_MP augment_mdist_pos_thm (mk_mdist_pos_thm mdist_tm) in
+          fun th -> MATCH_MP ith th in
+      fun th ->
+        let mdist_thl = find_mdist mtm (concl th) in
+        itlist augment_rule mdist_thl th in
+    let BASIC_METRIC_ARITH (tm : term) : thm =
+      let mdist_tms = find_mdist mtm tm in
+      let th0 =
+        let eqs =
+          mapfilter (MDIST_REFL_CONV ORELSEC MDIST_SYM_CONV) mdist_tms in
+        (ONCE_DEPTH_CONV in_mspace_conv THENC PRESIMP_CONV THENC
+         SUBS_CONV eqs THENC REAL_RAT_REDUCE_CONV THENC
+         ONCE_DEPTH_CONV real_poly_conv) tm in
+      let tm0 = rand (concl th0) in
+      let points = find_points mtm tm0 in
+      let fset_tm = mk_setenum(points,mty) in
+      let METRIC_EQ_CONV =
+        let th = metric_eq_prerule (SPEC fset_tm metric_eq_thm) in
+        fun tm ->
+          let xtm,ytm = dest_eq tm in
+          let th0 = SPECL[xtm;ytm] th in
+          let th1 = MP_CONV (CONJ1_CONV IN_CONV THENC IN_CONV) th0 in
+          let tm1 = rand (concl th1) in
+          let th2 = ONCE_DEPTH_CONV REFL_SYM_CONV tm1 in
+          TRANS th1 th2 in
+      let eq1 = map (MAXDIST_CONV fset_tm) (find_mdist mtm tm0)
+      and eq2 = map METRIC_EQ_CONV (find_eq mty tm0) in
+      let th1 = AUGMENT_MDISTS_POS_RULE (SUBS_CONV (eq1 @ eq2) tm0) in
+      let tm1 = rand (concl th1) in
+      prove_hyps (EQ_MP (SYM th0) (EQ_MP (SYM th1) (REAL_ARITH tm1))) in
+    let SIMPLE_METRIC_ARITH tm =
+      let th0 = (WEAK_CNF_CONV THENC CONJ_CANON_CONV) tm in
+      let tml =
+        try conjuncts (rand (concl th0))
+        with Failure s -> failwith("conjuncts "^s) in
+      let th1 =
+        try end_itlist CONJ (map BASIC_METRIC_ARITH tml)
+        with Failure s -> failwith("end_itlist "^s) in
+      EQ_MP (SYM th0) th1 in
+    let elim_exists tm =
+      let points = find_points mtm tm in
+      let rec try_points v tm ptl =
+        if ptl = [] then fail () else
+        let xtm = hd ptl in
+        try EXISTS (mk_exists(v,tm),xtm) (elim_exists (vsubst [xtm,v] tm))
+        with Failure _ -> try_points v tm (tl ptl)
+      and elim_exists tm =
+        try let v,bd = dest_exists tm in
+            try_points v bd points
+        with Failure _ -> SIMPLE_METRIC_ARITH tm in
+      elim_exists tm in
+    EQ_MP (SYM th0) (GENL avs (elim_exists bod));;
+
+let METRIC_ARITH_TAC = CONV_TAC METRIC_ARITH;;
+
+let ASM_METRIC_ARITH_TAC =
+  REPEAT(FIRST_X_ASSUM(MP_TAC o check (not o is_forall o concl))) THEN
+  METRIC_ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
 (* Compact sets.                                                             *)
@@ -1447,34 +1699,34 @@ let METRIC_DERIVED_SET_OF = prove
 
 parse_as_infix("closure_of",(21,"left"));;
 
-let closure_of = new_definition                          
-  `top closure_of s =                                              
-   {x:A | x IN topspace top /\                                     
+let closure_of = new_definition
+  `top closure_of s =
+   {x:A | x IN topspace top /\
           (!t. x IN t /\ open_in top t ==> ?y. y IN s /\ y IN t)}`;;
-                                            
-let IN_CLOSURE_OF = prove                                        
- (`!top s x:A.                                                              
-     x IN top closure_of s <=>                                              
-     x IN topspace top /\  
+
+let IN_CLOSURE_OF = prove
+ (`!top s x:A.
+     x IN top closure_of s <=>
+     x IN topspace top /\
      (!t. x IN t /\ open_in top t ==> ?y. y IN s /\ y IN t)`,
   REWRITE_TAC[closure_of; IN_ELIM_THM]);;
-                          
-let CLOSURE_OF_EMPTY = prove                 
- (`!top. top closure_of {}:A->bool = {}`,                          
-  REWRITE_TAC[EXTENSION; IN_CLOSURE_OF; NOT_IN_EMPTY] THEN         
-  MESON_TAC[OPEN_IN_TOPSPACE]);;         
-                                                                   
-let CLOSURE_OF_TOPSPACE = prove                                    
+
+let CLOSURE_OF_EMPTY = prove
+ (`!top. top closure_of {}:A->bool = {}`,
+  REWRITE_TAC[EXTENSION; IN_CLOSURE_OF; NOT_IN_EMPTY] THEN
+  MESON_TAC[OPEN_IN_TOPSPACE]);;
+
+let CLOSURE_OF_TOPSPACE = prove
  (`!top:A topology. top closure_of topspace top = topspace top`,
-  REWRITE_TAC[EXTENSION; IN_CLOSURE_OF] THEN MESON_TAC[]);;  
-                                                             
-let CLOSURE_OF_UNIV = prove                      
- (`!top. top closure_of (:A) = topspace top`,    
-  REWRITE_TAC[closure_of] THEN SET_TAC[]);;         
-                                                                          
-let CLOSURE_OF_SUBSET_TOPSPACE = prove                                    
- (`!top s:A->bool. top closure_of s SUBSET topspace top`,        
-  REWRITE_TAC[closure_of] THEN SET_TAC[]);;                                    
+  REWRITE_TAC[EXTENSION; IN_CLOSURE_OF] THEN MESON_TAC[]);;
+
+let CLOSURE_OF_UNIV = prove
+ (`!top. top closure_of (:A) = topspace top`,
+  REWRITE_TAC[closure_of] THEN SET_TAC[]);;
+
+let CLOSURE_OF_SUBSET_TOPSPACE = prove
+ (`!top s:A->bool. top closure_of s SUBSET topspace top`,
+  REWRITE_TAC[closure_of] THEN SET_TAC[]);;
 
 let METRIC_CLOSURE_OF = prove
   (`!m s.
