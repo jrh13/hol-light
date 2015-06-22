@@ -800,6 +800,11 @@ let CONVEX_CONTAINS_SEGMENT_IMP = prove
  (`!s a b. convex s ==> (segment[a,b] SUBSET s <=> a IN s /\ b IN s)`,
   SIMP_TAC[CONVEX_CONTAINS_SEGMENT_EQ]);;
 
+let SEGMENT_SUBSET_CONVEX = prove
+ (`!s a b:real^N.
+        convex s /\ a IN s /\ b IN s ==> segment[a,b] SUBSET s`,
+  MESON_TAC[CONVEX_CONTAINS_SEGMENT]);;
+
 let CONVEX_EMPTY = prove
  (`convex {}`,
   REWRITE_TAC[convex; NOT_IN_EMPTY]);;
@@ -6695,22 +6700,44 @@ let SEPARATING_HYPERPLANE_SETS = prove
 (* More convexity generalities.                                              *)
 (* ------------------------------------------------------------------------- *)
 
-let UNBOUNDED_COMPLEMENT_CONVEX = prove
- (`!c. convex c /\ ~(c = (:real^N)) ==> ~bounded((:real^N) DIFF c)`,
-  GEN_TAC THEN STRIP_TAC THEN ASM_CASES_TAC `c:real^N->bool = {}` THEN
-  ASM_REWRITE_TAC[NOT_BOUNDED_UNIV; DIFF_EMPTY] THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP
-   (SET_RULE `~(s = UNIV) ==> ?a. ~(a IN s)`)) THEN
+let UNBOUNDED_COMPLEMENT_COMPONENT_CONVEX = prove
+ (`!s c:real^N->bool.
+        convex s /\ c IN components((:real^N) DIFF s) ==> ~bounded c`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_SIMP_TAC[DIFF_EMPTY; COMPONENTS_UNIV; IN_SING; NOT_BOUNDED_UNIV] THEN
+  STRIP_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY) THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM MEMBER_NOT_EMPTY] THEN
   DISCH_THEN(X_CHOOSE_TAC `a:real^N`) THEN
-  MP_TAC(ISPECL [`c:real^N->bool`; `{a:real^N}`]
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN
+  ASM_CASES_TAC `(a:real^N) IN s` THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `{a:real^N}`]
         SEPARATING_HYPERPLANE_SETS) THEN
-  ASM_REWRITE_TAC[CONVEX_SING] THEN
+  ASM_REWRITE_TAC[CONVEX_SING; NOT_IMP] THEN
   ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
   MAP_EVERY X_GEN_TAC [`v:real^N`; `d:real`] THEN STRIP_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] BOUNDED_SUBSET)) THEN
-  DISCH_THEN(MP_TAC o SPEC `{x:real^N | ~(v dot x <= d)}`) THEN
-  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[REAL_NOT_LE]] THEN
-  ASM_REWRITE_TAC[BOUNDED_HALFSPACE_GT; GSYM real_gt]);;
+  DISCH_THEN(MP_TAC o SPEC `a INSERT {x:real^N | ~(v dot x <= d)}`) THEN
+  REWRITE_TAC[BOUNDED_INSERT] THEN
+  ASM_REWRITE_TAC[BOUNDED_HALFSPACE_GT; GSYM real_gt; REAL_NOT_LE] THEN
+  MATCH_MP_TAC COMPONENTS_MAXIMAL THEN EXISTS_TAC `(:real^N) DIFF s` THEN
+  ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [SIMP_TAC[CONNECTED_INSERT; CONVEX_HALFSPACE_GT; CONVEX_CONNECTED] THEN
+    DISJ2_TAC THEN ASM_SIMP_TAC[CLOSURE_HALFSPACE_GT] THEN ASM SET_TAC[];
+    ASM_REWRITE_TAC[INSERT_SUBSET; IN_DIFF; IN_UNIV] THEN
+    ASM_REWRITE_TAC[real_gt; IN_ELIM_THM; REAL_NOT_LT; SET_RULE
+     `s SUBSET UNIV DIFF t <=> !x. x IN t ==> ~(x IN s)`];
+    ASM SET_TAC[]]);;
+
+let UNBOUNDED_COMPLEMENT_CONVEX = prove
+ (`!c. convex c /\ ~(c = (:real^N)) ==> ~bounded((:real^N) DIFF c)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `(:real^N) DIFF c` COMPONENTS_EQ_EMPTY) THEN
+  ASM_REWRITE_TAC[SET_RULE `UNIV DIFF s = {} <=> s = UNIV`] THEN
+  REWRITE_TAC[EXTENSION; NOT_IN_EMPTY] THEN X_GEN_TAC `k:real^N->bool` THEN
+  DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        UNBOUNDED_COMPLEMENT_COMPONENT_CONVEX)) THEN
+  ASM_MESON_TAC[BOUNDED_SUBSET; IN_COMPONENTS_SUBSET]);;
 
 let CONVEX_CLOSURE = prove
  (`!s:real^N->bool. convex s ==> convex(closure s)`,
@@ -7560,6 +7587,54 @@ let CONNECTED_CONVEX_1_GEN = prove
  (`!s:real^N->bool.
         dimindex(:N) = 1 ==> (convex s <=> connected s)`,
   SIMP_TAC[CONVEX_CONNECTED_1_GEN]);;
+
+let COMPACT_CONVEX_COLLINEAR_SEGMENT_ALT = prove
+ (`!s:real^N->bool.
+        ~(s = {}) /\ compact s /\ connected s /\ collinear s
+        ==> ?a b. s = segment[a,b]`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [COLLINEAR_AFFINE_HULL]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`z:real^N`; `w:real^N`] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN GEOM_ORIGIN_TAC `z:real^N` THEN
+  REPEAT GEN_TAC THEN GEOM_BASIS_MULTIPLE_TAC 1 `w:real^N` THEN
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `IMAGE (\x:real^N. lift(x$1)) s`
+        CONNECTED_COMPACT_INTERVAL_1) THEN
+  ASM_SIMP_TAC[CONNECTED_CONTINUOUS_IMAGE; COMPACT_CONTINUOUS_IMAGE;
+               LINEAR_LIFT_COMPONENT; LINEAR_CONTINUOUS_ON] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`] THEN
+  ASM_CASES_TAC `interval[a:real^1,b] = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_EQ_EMPTY] THEN STRIP_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[INTERVAL_NE_EMPTY_1]) THEN
+  MAP_EVERY EXISTS_TAC
+   [`drop a % basis 1:real^N`; `drop b % basis 1:real^N`] THEN
+  ASM_SIMP_TAC[SEGMENT_SCALAR_MULTIPLE; REAL_ARITH
+   `a <= b
+    ==> (a <= x /\ x <= b \/ b <= x /\ x <= a <=> a <= x /\ x <= b)`] THEN
+  ONCE_REWRITE_TAC[MESON[LIFT_DROP]
+   `a <= x /\ x <= b <=> a <= drop(lift x) /\ drop(lift x) <= b`] THEN
+  REWRITE_TAC[GSYM IN_INTERVAL_1] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. lift(drop x) = x) /\ (!x. drop(lift x) = x) /\
+     (!x. x IN s ==> f(drop(g x)) = x)
+    ==> s = {f y | lift y IN IMAGE g s}`) THEN
+  REWRITE_TAC[LIFT_DROP] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (SET_RULE `s SUBSET t
+              ==> (!x. x IN t ==> P x) ==> (!x. x IN s ==> P x)`)) THEN
+  MATCH_MP_TAC HULL_INDUCT THEN
+  SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; VECTOR_MUL_COMPONENT;
+           VEC_COMPONENT; DIMINDEX_GE_1; LE_REFL; VECTOR_MUL_LZERO;
+           BASIS_COMPONENT; REAL_MUL_RID; affine; IN_ELIM_THM;
+           VECTOR_ADD_COMPONENT; VECTOR_ADD_RDISTRIB; GSYM VECTOR_MUL_ASSOC]);;
+
+let COMPACT_CONVEX_COLLINEAR_SEGMENT = prove
+ (`!s:real^N->bool.
+        ~(s = {}) /\ compact s /\ convex s /\ collinear s
+        ==> ?a b. s = segment[a,b]`,
+  MESON_TAC[COMPACT_CONVEX_COLLINEAR_SEGMENT_ALT;
+            CONVEX_CONNECTED_COLLINEAR]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Jung's theorem.                                                           *)
@@ -11814,6 +11889,108 @@ let HAUSDIST_COMPLEMENTS_CONVEX_LE = prove
   DISCH_THEN(X_CHOOSE_THEN `y:real^N` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LET_TRANS) THEN
   MATCH_MP_TAC SETDIST_LE_DIST THEN ASM SET_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The Blaschke selection principle and related results.                     *)
+(* ------------------------------------------------------------------------- *)
+
+let CONVEX_HAUSDIST_LIMIT = prove
+ (`!s:(num->real^N->bool) t.
+    eventually (\n. bounded(s n) /\ convex(s n) /\ ~(s n = {})) sequentially /\
+    compact t /\ ((\n. lift(hausdist(s n,t))) --> vec 0) sequentially
+    ==> convex t`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `t:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[CONVEX_EMPTY] THEN
+  SUBGOAL_THEN `hausdist(convex hull t:real^N->bool,t) = &0` MP_TAC THENL
+   [ALL_TAC;
+    ASM_SIMP_TAC[HAUSDIST_EQ_0; COMPACT_IMP_CLOSED; CONVEX_HULL_EQ_EMPTY;
+      CLOSURE_CLOSED; COMPACT_IMP_BOUNDED; COMPACT_CONVEX_HULL] THEN
+    REWRITE_TAC[CONVEX_HULL_EQ]] THEN
+  REWRITE_TAC[GSYM LIFT_EQ; LIFT_NUM] THEN
+  MATCH_MP_TAC(MESON[LIM_CONST; LIM_UNIQUE; TRIVIAL_LIMIT_SEQUENTIALLY]
+   `((\x. a) --> b) sequentially ==> a = b`) THEN
+  MATCH_MP_TAC LIM_NULL_COMPARISON THEN
+  EXISTS_TAC
+   `\n. hausdist(convex hull t,convex hull ((s:num->real^N->bool) n)) +
+        hausdist(s n,t)` THEN
+  REWRITE_TAC[NORM_LIFT; REAL_ABS_HAUSDIST] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        EVENTUALLY_MONO)) THEN
+    SIMP_TAC[HULL_P] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC HAUSDIST_TRIANGLE THEN
+    ASM_SIMP_TAC[COMPACT_CONVEX_HULL; COMPACT_IMP_BOUNDED];
+    REWRITE_TAC[LIFT_ADD] THEN MATCH_MP_TAC LIM_NULL_ADD THEN
+    ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+          LIM_NULL_COMPARISON)) THEN
+    REWRITE_TAC[NORM_LIFT; REAL_ABS_HAUSDIST] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+          EVENTUALLY_MONO)) THEN
+    REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    GEN_REWRITE_TAC RAND_CONV [HAUSDIST_SYM] THEN
+    MATCH_MP_TAC HAUSDIST_CONVEX_HULLS THEN
+    ASM_SIMP_TAC[COMPACT_IMP_BOUNDED]]);;
+
+let COMPLETE_HAUSDIST_CONVEX = prove
+ (`!f:num->(real^N->bool) c.
+        closed c /\
+        (!n. bounded(f n) /\ convex(f n) /\ ~(f n = {}) /\ f n SUBSET c) /\
+        (!e. &0 < e
+             ==> ?N. !m n. m >= N /\ n >= N ==> hausdist(f m,f n) < e)
+        ==> ?s. compact s /\ convex s /\ ~(s = {}) /\ s SUBSET c /\
+                ((\n. lift(hausdist(f n,s))) --> vec 0) sequentially`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:num->(real^N->bool)`; `c:real^N->bool`]
+        COMPLETE_HAUSDIST) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  GEN_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CONVEX_HAUSDIST_LIMIT THEN
+  EXISTS_TAC `f:num->real^N->bool` THEN
+  ASM_REWRITE_TAC[EVENTUALLY_SEQUENTIALLY]);;
+
+let COMPLETE_HAUSDIST_CONVEX_UNIV = prove
+ (`!f:num->(real^N->bool).
+        (!n. bounded(f n) /\ convex(f n) /\ ~(f n = {})) /\
+        (!e. &0 < e
+             ==> ?N. !m n. m >= N /\ n >= N ==> hausdist(f m,f n) < e)
+        ==> ?s. compact s /\ convex s /\ ~(s = {}) /\
+                ((\n. lift(hausdist(f n,s))) --> vec 0) sequentially`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:num->(real^N->bool)`; `(:real^N)`]
+        COMPLETE_HAUSDIST_CONVEX) THEN
+  ASM_REWRITE_TAC[SUBSET_UNIV; CLOSED_UNIV]);;
+
+let BLASCHKE = prove
+ (`!f:num->(real^N->bool) c.
+        compact c /\ (!n. convex(f n) /\ ~(f n = {}) /\ f n SUBSET c)
+        ==> ?r s. (!m n. m < n ==> r m < r n) /\
+                  compact s /\ convex s /\ ~(s = {}) /\ s SUBSET c /\
+                  ((\n. lift(hausdist(f(r n),s))) --> vec 0) sequentially`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:num->(real^N->bool)`; `c:real^N->bool`]
+        COMPACT_HAUSDIST) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r:num->num` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `s:real^N->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CONVEX_HAUSDIST_LIMIT THEN
+  EXISTS_TAC `(f:num->real^N->bool) o (r:num->num)` THEN
+  ASM_REWRITE_TAC[o_THM; EVENTUALLY_SEQUENTIALLY] THEN
+  ASM_MESON_TAC[BOUNDED_SUBSET; COMPACT_IMP_BOUNDED]);;
+
+let BLASCHKE_UNIV = prove
+ (`!f:num->(real^N->bool) c.
+        bounded c /\ (!n. convex(f n) /\ ~(f n = {}) /\ f n SUBSET c)
+        ==> ?r s. (!m n. m < n ==> r m < r n) /\
+                  compact s /\ convex s /\ ~(s = {}) /\
+                  ((\n. lift(hausdist(f(r n),s))) --> vec 0) sequentially`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:num->(real^N->bool)`; `closure c:real^N->bool`]
+        BLASCHKE) THEN
+  ASM_REWRITE_TAC[COMPACT_CLOSURE] THEN
+  ANTS_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+  ASM_MESON_TAC[SUBSET; CLOSURE_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Interior, relative interior and closure interrelations.                   *)
