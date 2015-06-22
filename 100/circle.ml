@@ -104,8 +104,6 @@ let AREA_BALL = prove
 (* Volume of a ball too, just for fun.                                       *)
 (* ------------------------------------------------------------------------- *)
 
-needs "Multivariate/wlog.ml";;
-
 let VOLUME_CBALL = prove
  (`!z:real^3 r. &0 <= r ==> measure(cball(z,r)) = &4 / &3 * pi * r pow 3`,
   GEOM_ORIGIN_TAC `z:real^3` THEN REPEAT STRIP_TAC THEN

@@ -1062,3 +1062,29 @@ let SETDIST_POINT_LINE = prove
   REWRITE_TAC[angle; VECTOR_SUB_RZERO; SIN_VECTOR_ANGLE_LMUL] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_SUB_RZERO] THEN
   SIMP_TAC[ORTHOGONAL_VECTOR_ANGLE; SIN_PI2]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A standard formula for the area of a triangle.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let AREA_TRIANGLE_SIN = prove
+ (`!a b c:real^2.
+     measure(convex hull {a,b,c}) =
+     (dist(a,b) * dist(a,c) * sin(angle(b,a,c))) / &2`,
+  GEOM_ORIGIN_TAC `a:real^2` THEN
+  REWRITE_TAC[MEASURE_TRIANGLE; angle] THEN
+  REWRITE_TAC[VECTOR_SUB_RZERO; VEC_COMPONENT; REAL_SUB_RZERO; DIST_0] THEN
+  REPEAT GEN_TAC THEN MATCH_MP_TAC(REAL_ARITH
+   `&0 <= y /\ abs x = abs y ==> abs x / &2 = y / &2`) THEN
+  SIMP_TAC[REAL_LE_MUL; NORM_POS_LE; SIN_VECTOR_ANGLE_POS] THEN
+  REWRITE_TAC[REAL_EQ_SQUARE_ABS] THEN
+  ASM_CASES_TAC `b:real^2 = vec 0` THENL
+   [ASM_REWRITE_TAC[VEC_COMPONENT; NORM_0] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_CASES_TAC `c:real^2 = vec 0` THENL
+   [ASM_REWRITE_TAC[VEC_COMPONENT; NORM_0] THEN REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_REWRITE_TAC[REAL_POW_MUL; SIN_SQUARED_VECTOR_ANGLE] THEN
+  ASM_SIMP_TAC[NORM_EQ_0; REAL_FIELD
+   `~(b = &0) /\ ~(c = &0)
+    ==> b pow 2 * c pow 2 * (&1 - (d / (b * c)) pow 2) =
+        b pow 2 * c pow 2 - d pow 2`] THEN
+  REWRITE_TAC[NORM_POW_2; DOT_2] THEN CONV_TAC REAL_RING);;
