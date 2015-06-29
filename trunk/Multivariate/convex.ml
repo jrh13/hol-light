@@ -919,6 +919,28 @@ let CONVEX_STRIP_COMPONENT_LT = prove
   SIMP_TAC[CONVEX_HALFSPACE_COMPONENT_LT; CONVEX_HALFSPACE_COMPONENT_GT;
            CONVEX_INTER]);;
 
+let CONVEX_HALFSPACE_SGN = prove
+ (`!a b. convex {x:real^N | real_sgn(a dot x) = b}`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `b = &0` THEN
+  ASM_REWRITE_TAC[CONVEX_HYPERPLANE; REAL_SGN_EQ] THEN
+  ASM_CASES_TAC `b = -- &1` THEN
+  ASM_REWRITE_TAC[CONVEX_HALFSPACE_LT; REAL_SGN_EQ] THEN
+  ASM_CASES_TAC `b = &1` THEN
+  ASM_REWRITE_TAC[CONVEX_HALFSPACE_GT; REAL_SGN_EQ] THEN
+  ASM_SIMP_TAC[CONVEX_EMPTY; MATCH_MP (SET_RULE
+   `(!x. P(real_sgn x)) ==> ~(P b) ==> {x | real_sgn(f x) = b} = {}`)
+    REAL_SGN_CASES]);;
+
+let CONVEX_HALFSPACE_COMPONENT_SGN = prove
+ (`!a k. convex {x:real^N | real_sgn(x$k) = a}`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?i. 1 <= i /\ i <= dimindex(:N) /\ !x:real^N. x$k = x$i`
+  CHOOSE_TAC THENL
+   [ASM_REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  MP_TAC(ISPECL [`basis i:real^N`; `a:real`] CONVEX_HALFSPACE_SGN) THEN
+  ASM_SIMP_TAC[DOT_BASIS]);;
+
 let CONVEX_POSITIVE_ORTHANT = prove
  (`convex {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
                           ==> &0 <= x$i}`,

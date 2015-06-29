@@ -2510,6 +2510,13 @@ let MEASURE_SEGMENT_1 = prove
   COND_CASES_TAC THEN ASM_REWRITE_TAC[MEASURE_INTERVAL_1] THEN
   REWRITE_TAC[NORM_REAL; GSYM drop; DROP_SUB] THEN ASM_REAL_ARITH_TAC);;
 
+let NEGLIGIBLE_SEGMENT = prove
+ (`(!a b:real^N. negligible(segment[a,b]) <=> 2 <= dimindex(:N) \/ a = b) /\
+   (!a b:real^N. negligible(segment(a,b)) <=> 2 <= dimindex(:N) \/ a = b)`,
+  SIMP_TAC[NEGLIGIBLE_CONVEX_INTERIOR; CONVEX_SEGMENT] THEN
+  REWRITE_TAC[INTERIOR_SEGMENT] THEN REPEAT STRIP_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[SEGMENT_EQ_EMPTY]);;
+
 let MEASURE_BALL_SCALING = prove
  (`!a:real^N c r.
       &0 <= c

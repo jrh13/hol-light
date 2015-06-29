@@ -136,6 +136,14 @@ let CONVEX_HALFSPACE_IM_LT = prove
   REWRITE_TAC[EXTENSION; dot; SUM_2; DIMINDEX_2; GSYM RE_DEF; GSYM IM_DEF] THEN
   REWRITE_TAC[ii; RE_CX; IM_CX; RE; IM; IN_ELIM_THM] THEN REAL_ARITH_TAC);;
 
+let CONVEX_HALFSPACE_RE_SGN = prove
+ (`!b. convex {z | real_sgn(Re z) = b}`,
+  REWRITE_TAC[RE_DEF; CONVEX_HALFSPACE_COMPONENT_SGN]);;
+
+let CONVEX_HALFSPACE_IM_SGN = prove
+ (`!b. convex {z | real_sgn(Im z) = b}`,
+  REWRITE_TAC[IM_DEF; CONVEX_HALFSPACE_COMPONENT_SGN]);;
+
 let COMPLEX_IN_BALL_0 = prove
  (`!v r. v IN ball(Cx(&0),r) <=> norm v < r`,
   REWRITE_TAC [GSYM COMPLEX_VEC_0; IN_BALL_0]);;
