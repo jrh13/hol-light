@@ -3179,6 +3179,30 @@ let DET_MATRIX_REFLECT_ALONG = prove
   FIRST_ASSUM(MP_TAC o MATCH_MP ROTOINVERSION_MATRIX_REFLECT_ALONG) THEN
   SIMP_TAC[rotoinversion_matrix]);;
 
+let REFLECT_ALONG_BASIS_COMPONENT = prove
+ (`!x:real^N i j.
+       1 <= i /\ i <= dimindex(:N) /\
+       1 <= j /\ j <= dimindex(:N)
+       ==> reflect_along (basis i) x$j = if j = i then --(x$j) else x$j`,
+  SIMP_TAC[REFLECT_ALONG_BASIS; VECTOR_SUB_COMPONENT] THEN
+  SIMP_TAC[VECTOR_MUL_COMPONENT; BASIS_COMPONENT] THEN
+  REPEAT STRIP_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let NORM_REFLECT_ALONG = prove
+ (`!v x:real^N. norm(reflect_along v x) = norm x`,
+  MESON_TAC[ORTHOGONAL_TRANSFORMATION;
+            ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG]);;
+
+let REFLECT_ALONG_EQ = prove
+ (`!v x y:real^N. reflect_along v x = reflect_along v y <=> x = y`,
+  MESON_TAC[ORTHOGONAL_TRANSFORMATION_INJECTIVE;
+            ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG]);;
+
+let REFLECT_ALONG_SURJECTIVE = prove
+ (`!v y:real^N. ?x. reflect_along v x = y`,
+  MESON_TAC[REFLECT_ALONG_INVOLUTION]);;
+
 (* ------------------------------------------------------------------------- *)
 (* All orthogonal transformations are a composition of reflections.          *)
 (* ------------------------------------------------------------------------- *)
