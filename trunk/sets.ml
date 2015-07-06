@@ -780,6 +780,11 @@ let UNIONS_MONO_IMAGE = prove
    ==> UNIONS(IMAGE f s) SUBSET UNIONS(IMAGE g s)`,
   SET_TAC[]);;
 
+let UNIONS_UNIV = prove
+ (`UNIONS (:A->bool) = (:A)`,
+  REWRITE_TAC[EXTENSION; IN_UNIONS; IN_UNIV] THEN
+  MESON_TAC[IN_SING]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Multiple intersection.                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -2253,6 +2258,81 @@ let FINITE_CROSS_EQ = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
   REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
   ASM SET_TAC[]);;
+
+let FORALL_IN_CROSS = prove
+ (`!P s t. (!z. z IN s CROSS t ==> P z) <=>
+           (!x y. x IN s /\ y IN t ==> P(x,y))`,
+  REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS]);;
+
+let EXISTS_IN_CROSS = prove
+ (`!P s t. (?z. z IN s CROSS t /\ P z) <=>
+           (?x y. x IN s /\ y IN t /\ P(x,y))`,
+  REWRITE_TAC[EXISTS_PAIR_THM; GSYM CONJ_ASSOC; IN_CROSS]);;
+
+let SUBSET_CROSS = prove
+ (`!s t s' t'. s CROSS t SUBSET s' CROSS t' <=>
+                s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'`,
+  SIMP_TAC[CROSS; EXTENSION; IN_ELIM_PAIR_THM; SUBSET;
+   FORALL_PAIR_THM; IN_CROSS; NOT_IN_EMPTY] THEN MESON_TAC[]);;
+
+let CROSS_MONO = prove
+ (`!s t s' t'. s SUBSET s' /\ t SUBSET t' ==> s CROSS t SUBSET s' CROSS t'`,
+  SIMP_TAC[SUBSET_CROSS]);;
+
+let CROSS_EQ = prove
+ (`!s s':A->bool t t':B->bool.
+        s CROSS t = s' CROSS t' <=>
+        (s = {} \/ t = {}) /\ (s' = {} \/ t' = {}) \/ s = s' /\ t = t'`,
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_CROSS] THEN SET_TAC[]);;
+
+let IMAGE_FST_CROSS = prove
+ (`!s:A->bool t:B->bool.
+        IMAGE FST (s CROSS t) = if t = {} then {} else s`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[CROSS_EMPTY; IMAGE_CLAUSES] THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+  REWRITE_TAC[EXISTS_IN_CROSS; FST] THEN ASM SET_TAC[]);;
+
+let IMAGE_SND_CROSS = prove
+ (`!s:A->bool t:B->bool.
+        IMAGE SND (s CROSS t) = if s = {} then {} else t`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[CROSS_EMPTY; IMAGE_CLAUSES] THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+  REWRITE_TAC[EXISTS_IN_CROSS; SND] THEN ASM SET_TAC[]);;
+
+let CROSS_INTER = prove
+ (`(!s t u. s CROSS (t INTER u) = (s CROSS t) INTER (s CROSS u)) /\
+   (!s t u. (s INTER t) CROSS u = (s CROSS u) INTER (t CROSS u))`,
+  REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_INTER; IN_CROSS] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC TAUT);;
+
+let CROSS_UNION = prove
+ (`(!s t u. s CROSS (t UNION u) = (s CROSS t) UNION (s CROSS u)) /\
+   (!s t u. (s UNION t) CROSS u = (s CROSS u) UNION (t CROSS u))`,
+  REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_UNION; IN_CROSS] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC TAUT);;
+
+let CROSS_DIFF = prove
+ (`(!s t u. s CROSS (t DIFF u) = (s CROSS t) DIFF (s CROSS u)) /\
+   (!s t u. (s DIFF t) CROSS u = (s CROSS u) DIFF (t CROSS u))`,
+  REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_DIFF; IN_CROSS] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC TAUT);;
+
+let INTER_CROSS = prove
+ (`!s s' t t'.
+      (s CROSS t) INTER (s' CROSS t') = (s INTER s') CROSS (t INTER t')`,
+  REWRITE_TAC[EXTENSION; IN_INTER; FORALL_PAIR_THM; IN_CROSS] THEN
+  CONV_TAC TAUT);;
+
+let CROSS_UNIONS_UNIONS,CROSS_UNIONS = (CONJ_PAIR o prove)
+ (`(!f g. (UNIONS f) CROSS (UNIONS g) =
+          UNIONS {s CROSS t | s IN f /\ t IN g}) /\
+   (!s f. s CROSS (UNIONS f) = UNIONS {s CROSS t | t IN f}) /\
+   (!f t. (UNIONS f) CROSS t = UNIONS {s CROSS t | s IN f})`,
+  REWRITE_TAC[UNIONS_GSPEC; EXTENSION; FORALL_PAIR_THM; IN_ELIM_THM;
+              IN_CROSS] THEN
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)

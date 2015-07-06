@@ -7002,7 +7002,7 @@ let SUM_POS_LE = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Also, the definition of sqrt was totalized, so keep old theorems          *)
-(* that have more hypotheses than the curren ones.                           *)
+(* that have more hypotheses than the current ones.                          *)
 (* ------------------------------------------------------------------------- *)
 
 let SQRT_MUL = prove

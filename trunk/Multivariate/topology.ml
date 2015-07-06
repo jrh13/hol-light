@@ -851,37 +851,6 @@ let BETWEEN_IN_SEGMENT = prove
                 NORM_MUL; GSYM REAL_ADD_LDISTRIB] THEN
     REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD]);;
 
-let BETWEEN_RESTRICTED_CASES = prove
- (`!a b c x:real^N.
-        between x (a,b) /\ between x (a,c) /\ ~(x = a)
-        ==> between b (a,c) \/ between c (a,b)`,
-  REPEAT GEN_TAC THEN
-  GEOM_ORIGIN_TAC `a:real^N` THEN
-  REWRITE_TAC[BETWEEN_IN_SEGMENT; IN_SEGMENT;
-              VECTOR_MUL_RZERO; VECTOR_ADD_LID] THEN
-  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2
-    (X_CHOOSE_THEN `u:real` STRIP_ASSUME_TAC) MP_TAC) THEN
-  ASM_REWRITE_TAC[VECTOR_MUL_EQ_0; DE_MORGAN_THM] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM SUBST_ALL_TAC THEN
-  DISCH_THEN(X_CHOOSE_THEN `v:real` STRIP_ASSUME_TAC) THEN
-  SUBGOAL_THEN `&0 < u` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
-  ASM_CASES_TAC `v:real <= u` THENL
-   [DISJ1_TAC THEN EXISTS_TAC `v / u:real` THEN
-    ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; REAL_LE_LDIV_EQ] THEN
-    ASM_REWRITE_TAC[REAL_MUL_LID] THEN
-    FIRST_X_ASSUM(MP_TAC o AP_TERM `(%) (inv u):real^N->real^N`) THEN
-    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID] THEN
-    REWRITE_TAC[real_div; REAL_MUL_AC];
-    SUBGOAL_THEN `&0 < v /\ ~(v = &0) /\ u <= v` STRIP_ASSUME_TAC THENL
-     [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
-    DISJ2_TAC THEN EXISTS_TAC `u / v:real` THEN
-    ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE; REAL_LE_LDIV_EQ] THEN
-    ASM_REWRITE_TAC[REAL_MUL_LID] THEN
-    FIRST_X_ASSUM(MP_TAC o AP_TERM `(%) (inv v):real^N->real^N`) THEN
-    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID] THEN
-    DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[real_div; REAL_MUL_AC]]);;
-
 let IN_SEGMENT_COMPONENT = prove
  (`!a b x:real^N i.
         x IN segment[a,b] /\ 1 <= i /\ i <= dimindex(:N)
@@ -14752,6 +14721,51 @@ let LIFT_TO_QUOTIENT_SPACE_UNIQUE = prove
   MAP_EVERY EXISTS_TAC
    [`k:real^N->real^P`; `h:real^P->real^N`] THEN
   ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Domain of a continuous function is homeomorphic to its graph.             *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMEOMORPHISM_GRAPH_EXPLICIT = prove
+ (`!f:real^M->real^N s.
+        homeomorphism (s,{pastecart x (f x) | x IN s})
+                      ((\x. pastecart x (f x)),fstcart) <=>
+        f continuous_on s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homeomorphism] THEN EQ_TAC THEN
+  STRIP_TAC THEN REPEAT CONJ_TAC THENL
+   [SUBGOAL_THEN `(f:real^M->real^N) = sndcart o (\x. pastecart x (f x))`
+    SUBST1_TAC THENL [SIMP_TAC[o_DEF; SNDCART_PASTECART; ETA_AX]; ALL_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_SNDCART];
+    REWRITE_TAC[FSTCART_PASTECART];
+    SET_TAC[];
+    ASM_SIMP_TAC[CONTINUOUS_ON_PASTECART; CONTINUOUS_ON_ID];
+    REWRITE_TAC[FORALL_IN_GSPEC; FSTCART_PASTECART];
+    REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN
+    REWRITE_TAC[IN_ELIM_THM; EXISTS_PASTECART; FORALL_PASTECART] THEN
+    REWRITE_TAC[FSTCART_PASTECART; PASTECART_INJ] THEN MESON_TAC[];
+    SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART]]);;
+
+let HOMEOMORPHISM_GRAPH = prove
+ (`!f:real^M->real^N s.
+        (?g. homeomorphism (s,{pastecart x (f x) | x IN s})
+                           ((\x. pastecart x (f x)),g)) <=>
+        f continuous_on s`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[GSYM HOMEOMORPHISM_GRAPH_EXPLICIT] THEN MESON_TAC[]] THEN
+  REWRITE_TAC[homeomorphism] THEN STRIP_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_ON_EQ THEN
+  EXISTS_TAC `sndcart o (\x. pastecart x ((f:real^M->real^N) x))` THEN
+  ASM_SIMP_TAC[CONTINUOUS_ON_COMPOSE; LINEAR_CONTINUOUS_ON; LINEAR_SNDCART;
+               o_THM; SNDCART_PASTECART]);;
+
+let HOMEOMORPHIC_GRAPH = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s ==> {pastecart x (f x) | x IN s} homeomorphic s`,
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
+  REWRITE_TAC[GSYM HOMEOMORPHISM_GRAPH_EXPLICIT; homeomorphic] THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Inverse function property for open/closed maps.                           *)
