@@ -1187,6 +1187,252 @@ let DET_4 = prove
   REWRITE_TAC[o_THM; swap; ARITH] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Disjoint or subset-related halfspaces and hyperplanes are parallel.       *)
+(* ------------------------------------------------------------------------- *)
+
+let DISJOINT_HYPERPLANES_IMP_COLLINEAR = prove
+ (`!a b:real^N c d.
+        DISJOINT {x | a dot x = c} {x | b dot x = d}
+        ==> collinear {vec 0, a, b}`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP (SET_RULE
+   `DISJOINT {x:real^N | a dot x = c} {x | b dot x = d}
+    ==> !u v. a dot (u % a + v % b) = c /\
+              b dot (u % a + v % b) = d ==> F`)) THEN
+  REWRITE_TAC[DOT_RADD; DOT_RMUL] THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  MP_TAC(ISPECL
+   [`vector[vector[(a:real^N) dot a; a dot b];
+            vector[a dot b; b dot b]]:real^2^2`;
+    `vector[c;d]:real^2`] MATRIX_FULL_LINEAR_EQUATIONS) THEN
+  REWRITE_TAC[RANK_EQ_FULL_DET] THEN
+  SIMP_TAC[CART_EQ; DIMINDEX_2; MATRIX_VECTOR_MUL_COMPONENT; ARITH;
+           VECTOR_2; FORALL_2; DOT_2; EXISTS_VECTOR_2; DET_2] THEN
+  MATCH_MP_TAC MONO_IMP THEN CONJ_TAC THENL
+   [REWRITE_TAC[CONTRAPOS_THM]; MESON_TAC[DOT_SYM; REAL_MUL_SYM]] THEN
+  REWRITE_TAC[REAL_ARITH `a - b * b = &0 <=> b pow 2 = a`] THEN
+  REWRITE_TAC[DOT_CAUCHY_SCHWARZ_EQUAL]);;
+
+let DISJOINT_HALFSPACES_IMP_COLLINEAR = prove
+ (`(!a b:real^N c d.
+        DISJOINT {x | a dot x < c} {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x < c} {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x < c} {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x < c} {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x < c} {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x <= c} {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x <= c} {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x <= c} {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x <= c} {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x <= c} {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x = c} {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x = c} {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x = c} {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x = c} {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x = c} {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x >= c} {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x >= c} {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x >= c} {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x >= c} {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x >= c} {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x > c} {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x > c} {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x > c} {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x > c} {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        DISJOINT {x | a dot x > c} {x | b dot x > d}
+        ==> collinear {vec 0, a, b})`,
+  let lemma = prove
+   (`(!a b:real^N. collinear {vec 0,--a,b} <=> collinear{vec 0,a,b}) /\
+     (!a b:real^N. collinear {vec 0,a,--b} <=> collinear{vec 0,a,b})`,
+    REWRITE_TAC[COLLINEAR_LEMMA_ALT; VECTOR_NEG_EQ_0] THEN
+    REWRITE_TAC[VECTOR_ARITH `b:real^N = c % --a <=> b = --c % a`;
+                VECTOR_ARITH `--b:real^N = c % a <=> b = --c % a`] THEN
+    REWRITE_TAC[MESON[REAL_NEG_NEG] `(?x:real. P(--x)) <=> ?x. P x`]) in
+  REWRITE_TAC[REAL_ARITH `x >= d <=> --x <= --d`;
+              REAL_ARITH `x > d <=> --x < --d`] THEN
+  REWRITE_TAC[GSYM DOT_LNEG] THEN REPEAT STRIP_TAC THEN
+  REPLICATE_TAC 2
+  (TRY(FIRST_X_ASSUM(MP_TAC o MATCH_MP (SET_RULE
+     `DISJOINT {x | a dot x <= b} t
+      ==> (!x y. x < y ==> x <= y) ==> DISJOINT {x | a dot x < b} t`)) THEN
+    REWRITE_TAC[REAL_LT_IMP_LE] THEN DISCH_TAC) THEN
+    RULE_ASSUM_TAC(ONCE_REWRITE_RULE[DISJOINT_SYM])) THEN
+  REPLICATE_TAC 2
+  (TRY(FIRST_X_ASSUM(MP_TAC o MATCH_MP (SET_RULE
+      `DISJOINT {x | a dot x < b} t
+       ==> b - &1 < b ==> DISJOINT {x | a dot x = b - &1} t`)) THEN
+     REWRITE_TAC[ARITH_RULE `c - &1 < c`] THEN DISCH_TAC) THEN
+   RULE_ASSUM_TAC(ONCE_REWRITE_RULE[DISJOINT_SYM])) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP DISJOINT_HYPERPLANES_IMP_COLLINEAR) THEN
+  REWRITE_TAC[lemma]);;
+
+let SUBSET_HALFSPACES_IMP_COLLINEAR = prove
+ (`(!a b:real^N c d.
+        {x | a dot x < c} SUBSET {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x < c} SUBSET {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x < c} SUBSET {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x < c} SUBSET {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x < c} SUBSET {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x <= c} SUBSET {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x <= c} SUBSET {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x <= c} SUBSET {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x <= c} SUBSET {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x <= c} SUBSET {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x = c} SUBSET {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x = c} SUBSET {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x = c} SUBSET {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x = c} SUBSET {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x = c} SUBSET {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x >= c} SUBSET {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x >= c} SUBSET {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x >= c} SUBSET {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x >= c} SUBSET {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x >= c} SUBSET {x | b dot x > d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x > c} SUBSET {x | b dot x < d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x > c} SUBSET {x | b dot x <= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x > c} SUBSET {x | b dot x = d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x > c} SUBSET {x | b dot x >= d}
+        ==> collinear {vec 0, a, b}) /\
+   (!a b:real^N c d.
+        {x | a dot x > c} SUBSET {x | b dot x > d}
+        ==> collinear {vec 0, a, b})`,
+  REWRITE_TAC[SET_RULE `s SUBSET {x | P x} <=> DISJOINT s {x | ~P x}`] THEN
+  REWRITE_TAC[REAL_ARITH
+    `(~(x < a) <=> x >= a) /\ (~(x <= a) <=> x > a) /\
+     (~(x = a) <=> x > a \/ x < a) /\
+     (~(x > a) <=> x <= a) /\ (~(x >= a) <=> x < a)`] THEN
+  REWRITE_TAC[SET_RULE
+   `DISJOINT s {x | P x \/ Q x} <=>
+    DISJOINT s {x | P x} /\ DISJOINT s {x | Q x}`] THEN
+  REPEAT CONJ_TAC THEN REPEAT GEN_TAC THEN
+  TRY(DISCH_THEN(MP_TAC o CONJUNCT1)) THEN
+  REWRITE_TAC[DISJOINT_HALFSPACES_IMP_COLLINEAR]);;
+
+let SUBSET_HYPERPLANES = prove
+ (`!a b a' b'.
+        {x | a dot x = b} SUBSET {x | a' dot x = b'} <=>
+        {x | a dot x = b} = {} \/ {x | a' dot x = b'} = (:real^N) \/
+        {x | a dot x = b} = {x | a' dot x = b'}`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `{x:real^N | a dot x = b} = {}` THEN
+  ASM_REWRITE_TAC[EMPTY_SUBSET] THEN
+  ASM_CASES_TAC `{x | a' dot x = b'} = (:real^N)` THEN
+  ASM_REWRITE_TAC[SUBSET_UNIV] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [HYPERPLANE_EQ_EMPTY; HYPERPLANE_EQ_UNIV]) THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  ASM_CASES_TAC `{x:real^N | a dot x = b} SUBSET {x | a' dot x = b'}` THEN
+  ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPECL [`a:real^N`; `a':real^N`; `b:real`; `b':real`]
+   (el 12 (CONJUNCTS SUBSET_HALFSPACES_IMP_COLLINEAR))) THEN
+  ASM_REWRITE_TAC[COLLINEAR_LEMMA_ALT] THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ o rev) THEN
+  ASM_CASES_TAC `a:real^N = vec 0` THEN ASM_SIMP_TAC[DOT_LZERO] THENL
+   [SET_TAC[]; STRIP_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `c:real` SUBST_ALL_TAC) THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ o rev) THEN
+  ASM_CASES_TAC `c % a:real^N = vec 0` THEN ASM_SIMP_TAC[DOT_LZERO] THENL
+   [SET_TAC[]; POP_ASSUM MP_TAC] THEN
+  SIMP_TAC[VECTOR_MUL_EQ_0; DE_MORGAN_THM; DOT_LMUL; REAL_FIELD
+   `~(c = &0) ==> (c * a = b <=> a = b / c)`] THEN
+  STRIP_TAC THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+  DISCH_THEN(MP_TAC o SPEC `(b / (a dot a)) % a:real^N`) THEN
+  ASM_SIMP_TAC[DOT_RMUL; REAL_DIV_RMUL; DOT_EQ_0]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Existence of the characteristic polynomial.                               *)
 (* ------------------------------------------------------------------------- *)
 

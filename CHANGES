@@ -1,3 +1,62 @@
+Tue 30th Jun 2015       sets.ml
+
+Added a variety of set theorems, mostly basic properties of CROSS that are
+near-clones of existing theorems for PCROSS, many with the same proof.
+
+  CROSS_DIFF =
+    |- (!s t u. s CROSS (t DIFF u) = s CROSS t DIFF s CROSS u) /\
+       (!s t u. (s DIFF t) CROSS u = s CROSS u DIFF t CROSS u)
+
+  CROSS_EQ =
+    |- !s s' t t'.
+           s CROSS t = s' CROSS t' <=>
+           (s = {} \/ t = {}) /\ (s' = {} \/ t' = {}) \/ s = s' /\ t = t'
+
+  CROSS_INTER =
+    |- (!s t u. s CROSS (t INTER u) = s CROSS t INTER s CROSS u) /\
+       (!s t u. (s INTER t) CROSS u = s CROSS u INTER t CROSS u)
+
+  CROSS_MONO =
+    |- !s t s' t'. s SUBSET s' /\ t SUBSET t' ==> s CROSS t SUBSET s' CROSS t'
+
+  CROSS_UNION =
+    |- (!s t u. s CROSS (t UNION u) = s CROSS t UNION s CROSS u) /\
+       (!s t u. (s UNION t) CROSS u = s CROSS u UNION t CROSS u)
+
+  CROSS_UNIONS =
+    |- (!s f. s CROSS UNIONS f = UNIONS {s CROSS t | t IN f}) /\
+       (!f t. UNIONS f CROSS t = UNIONS {s CROSS t | s IN f})
+
+  CROSS_UNIONS_UNIONS =
+    |- !f g. UNIONS f CROSS UNIONS g = UNIONS {s CROSS t | s IN f /\ t IN g}
+
+  EXISTS_IN_CROSS =
+    |- !P s t.
+         (?z. z IN s CROSS t /\ P z) <=> (?x y. x IN s /\ y IN t /\ P (x,y))
+
+  FORALL_IN_CROSS =
+    |- !P s t.
+         (!z. z IN s CROSS t ==> P z) <=>
+         (!x y. x IN s /\ y IN t ==> P (x,y))
+
+  IMAGE_FST_CROSS = 
+    |- !s t. IMAGE FST (s CROSS t) = (if t = {} then {} else s)
+
+  IMAGE_SND_CROSS = 
+    |- !s t. IMAGE SND (s CROSS t) = (if s = {} then {} else t)
+
+  INTER_CROSS =
+    |- !s s' t t'.
+         s CROSS t INTER s' CROSS t' = (s INTER s') CROSS (t INTER t')
+
+  SUBSET_CROSS =
+    |- !s t s' t'.
+         s CROSS t SUBSET s' CROSS t' <=>
+         s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'
+
+  UNIONS_UNIV = 
+    |- UNIONS (:A->bool) = (:A)
+
 Fri 12th Jun 2015       sets.ml
 
 Added two useful rewrites for sup and inf on finite sets from Marco

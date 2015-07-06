@@ -8929,6 +8929,18 @@ let NORM_CROSS_MULTIPLY = prove
 let collinear = new_definition
  `collinear s <=> ?u. !x y. x IN s /\ y IN s ==> ?c. x - y = c % u`;;
 
+let COLLINEAR_ALT2 = prove
+ (`!s:real^N->bool. collinear s <=> ?u v. !x. x IN s ==> ?c. x - u = c % v`,
+  GEN_TAC THEN REWRITE_TAC[collinear] THEN EQ_TAC THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL [SET_TAC[]; ALL_TAC] THEN
+  MESON_TAC[VECTOR_ARITH
+    `x - u:real^N = c % v /\ y - u = d % v ==> x - y = (c - d) % v`]);;
+
+let COLLINEAR_ALT = prove
+ (`!s:real^N->bool. collinear s <=> ?u v. !x. x IN s ==> ?c. x = u + c % v`,
+  REWRITE_TAC[COLLINEAR_ALT2] THEN MESON_TAC[VECTOR_ARITH
+   `x - u:real^N = c % v <=> x = u + c % v`]);;
+
 let COLLINEAR_SUBSET = prove
  (`!s t. collinear t /\ s SUBSET t ==> collinear s`,
   REWRITE_TAC[collinear] THEN SET_TAC[]);;
@@ -9145,6 +9157,10 @@ let BETWEEN_TRANS_2 = prove
  (`!a b c d. between a (b,c) /\ between d (a,b) ==> between a (c,d)`,
   REWRITE_TAC[between; DIST_SYM] THEN NORM_ARITH_TAC);;
 
+let BETWEEN_TRANSLATION = prove
+ (`!a x y. between (a + x) (a + y,a + z) <=> between x (y,z)`,
+  REWRITE_TAC[between] THEN NORM_ARITH_TAC);;
+
 let BETWEEN_NORM = prove
  (`!a b x:real^N.
      between x (a,b) <=> norm(x - a) % (b - x) = norm(b - x) % (x - a)`,
@@ -9180,28 +9196,72 @@ let BETWEEN_IMP_COLLINEAR = prove
   ASM_SIMP_TAC[REAL_DIV_LMUL; NORM_EQ_0; VECTOR_SUB_EQ] THEN
   VECTOR_ARITH_TAC);;
 
+let BETWEEN_CMUL_LIFT = prove
+ (`!a b c v:real^N.
+        between (c % v) (a % v,b % v) <=>
+        v = vec 0 \/ between (lift c) (lift a,lift b)`,
+  REWRITE_TAC[between; dist; GSYM VECTOR_SUB_RDISTRIB; GSYM LIFT_SUB;
+              NORM_MUL; GSYM REAL_ADD_RDISTRIB; NORM_LIFT] THEN
+  REWRITE_TAC[GSYM NORM_EQ_0] THEN CONV_TAC REAL_RING);;
+
+let BETWEEN_1 = prove
+ (`!a b x. between x (a,b) <=>
+           drop a <= drop x /\ drop x <= drop b \/
+           drop b <= drop x /\ drop x <= drop a`,
+  REWRITE_TAC[between; DIST_REAL; GSYM drop] THEN REAL_ARITH_TAC);;
+
 let COLLINEAR_BETWEEN_CASES = prove
  (`!a b c:real^N.
         collinear {a,b,c} <=>
         between a (b,c) \/ between b (c,a) \/ between c (a,b)`,
-  REPEAT STRIP_TAC THEN EQ_TAC THENL
-   [REWRITE_TAC[COLLINEAR_3_EXPAND] THEN
-    ASM_CASES_TAC `c:real^N = a` THEN ASM_REWRITE_TAC[BETWEEN_REFL] THEN
-    STRIP_TAC THEN ASM_REWRITE_TAC[between; dist] THEN
-    REWRITE_TAC[VECTOR_ARITH `(u % a + (&1 - u) % c) - c = --u % (c - a)`;
-      VECTOR_ARITH `(u % a + (&1 - u) % c) - a = (&1 - u) % (c - a)`;
-      VECTOR_ARITH `c - (u % a + (&1 - u) % c) = u % (c - a)`;
-      VECTOR_ARITH `a - (u % a + (&1 - u) % c) = (u - &1) % (c - a)`] THEN
-    REWRITE_TAC[NORM_MUL] THEN
-    SUBST1_TAC(NORM_ARITH `norm(a - c:real^N) = norm(c - a)`) THEN
-    REWRITE_TAC[REAL_ARITH `a * c + c = (a + &1) * c`; GSYM REAL_ADD_RDISTRIB;
-                REAL_ARITH `c + a * c = (a + &1) * c`] THEN
-    ASM_REWRITE_TAC[REAL_EQ_MUL_RCANCEL;
-                    REAL_RING `n = x * n <=> n = &0 \/ x = &1`] THEN
-    ASM_REWRITE_TAC[NORM_EQ_0; VECTOR_SUB_EQ] THEN REAL_ARITH_TAC;
-    DISCH_THEN(REPEAT_TCL DISJ_CASES_THEN (MP_TAC o MATCH_MP
-      BETWEEN_IMP_COLLINEAR)) THEN
-    REWRITE_TAC[INSERT_AC]]);;
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [ALL_TAC; MESON_TAC[BETWEEN_IMP_COLLINEAR; INSERT_AC]] THEN
+  REWRITE_TAC[COLLINEAR_ALT; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`z:real^N`; `v:real^N`] THEN
+  REWRITE_TAC[VECTOR_SUB_RZERO; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+  REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[BETWEEN_TRANSLATION; BETWEEN_CMUL_LIFT] THEN
+  ASM_CASES_TAC `v:real^N = vec 0` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[BETWEEN_1; LIFT_DROP] THEN REAL_ARITH_TAC);;
+
+let COLLINEAR_BETWEEN_CASES_2 = prove
+ (`!a b c d:real^N.
+        between c (a,b) /\ between d (a,b)
+        ==> between d (a,c) \/ between d (c,b)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `b:real^N = a` THEN
+  ASM_SIMP_TAC[BETWEEN_REFL_EQ] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `collinear {a:real^N,b,c,d}` MP_TAC THENL
+   [W(MP_TAC o PART_MATCH (lhand o rand) COLLINEAR_TRIPLES o snd) THEN
+    ASM_REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+    ASM_MESON_TAC[BETWEEN_IMP_COLLINEAR; INSERT_AC];
+    REWRITE_TAC[COLLINEAR_ALT; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`z:real^N`; `v:real^N`] THEN
+    DISCH_THEN(fun th -> REPEAT(POP_ASSUM MP_TAC) THEN MP_TAC th) THEN
+    REWRITE_TAC[VECTOR_SUB_RZERO; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+    STRIP_TAC THEN DISCH_THEN(K ALL_TAC) THEN
+    ASM_REWRITE_TAC[BETWEEN_TRANSLATION; BETWEEN_CMUL_LIFT] THEN
+    ASM_CASES_TAC `v:real^N = vec 0` THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[BETWEEN_1; LIFT_DROP] THEN REAL_ARITH_TAC]);;
+
+let BETWEEN_RESTRICTED_CASES = prove
+ (`!a b c x:real^N.
+        between x (a,b) /\ between x (a,c) /\ ~(x = a)
+        ==> between b (a,c) \/ between c (a,b)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `collinear{a:real^N,x,b,c}` MP_TAC THENL
+   [W(MP_TAC o PART_MATCH (lhand o rand) COLLINEAR_TRIPLES o snd) THEN
+    ASM_REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+    ASM_MESON_TAC[BETWEEN_IMP_COLLINEAR; INSERT_AC];
+    REWRITE_TAC[COLLINEAR_ALT; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`z:real^N`; `v:real^N`] THEN
+    DISCH_THEN(fun th -> REPEAT(POP_ASSUM MP_TAC) THEN MP_TAC th) THEN
+    REWRITE_TAC[VECTOR_SUB_RZERO; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[BETWEEN_TRANSLATION] THEN
+    ASM_REWRITE_TAC[BETWEEN_CMUL_LIFT; VECTOR_MUL_RCANCEL;
+        VECTOR_ARITH `a + x:real^N = a + y <=> x = y`] THEN
+    ASM_CASES_TAC `v:real^N = vec 0` THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[BETWEEN_1; LIFT_DROP] THEN REAL_ARITH_TAC]);;
 
 let COLLINEAR_DIST_BETWEEN = prove
  (`!a b x. collinear {x,a,b} /\
@@ -9296,6 +9356,10 @@ let MIDPOINT_BETWEEN = prove
    [ASM_SIMP_TAC[BETWEEN_REFL_EQ; MIDPOINT_REFL; DIST_SYM]; ALL_TAC] THEN
   EQ_TAC THEN SIMP_TAC[BETWEEN_MIDPOINT; DIST_MIDPOINT] THEN
   ASM_MESON_TAC[MIDPOINT_COLLINEAR; BETWEEN_IMP_COLLINEAR]);;
+
+let DROP_MIDPOINT = prove
+ (`!x y. drop(midpoint(x,y)) = (drop x + drop y) / &2`,
+  REWRITE_TAC[midpoint; DROP_ADD; DROP_CMUL] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* General "one way" lemma for properties preserved by injective map.        *)
