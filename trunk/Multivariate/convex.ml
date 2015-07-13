@@ -5675,6 +5675,21 @@ let AFF_LOWDIM_SUBSET_HYPERPLANE = prove
     ASM_REWRITE_TAC[DOT_RADD; REAL_EQ_ADD_LCANCEL_0] THEN
     ASM_MESON_TAC[SPAN_INC; SUBSET_TRANS]]);;
 
+let COLLINEAR_HYPERPLANE_2 = prove
+ (`!a:real^N b.
+     dimindex(:N) <= 2 /\ ~(a = vec 0) ==> collinear {x | a dot x = b}`,
+  SIMP_TAC[COLLINEAR_AFF_DIM; AFF_DIM_HYPERPLANE; GSYM INT_OF_NUM_LE] THEN
+  INT_ARITH_TAC);;
+
+let COLLINEAR_STANDARD_HYPERPLANE_2 = prove
+ (`!k b. dimindex(:N) <= 2 ==> collinear {x:real^N | x$k = b}`,
+  REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `?i. 1 <= i /\ i <= dimindex(:N) /\ !x:real^N. x$k = x$i`
+  CHOOSE_TAC THENL
+   [ASM_REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
+  MP_TAC(ISPECL [`basis i:real^N`; `b:real`] COLLINEAR_HYPERPLANE_2) THEN
+  ASM_SIMP_TAC[DOT_BASIS; BASIS_NONZERO]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Openness and compactness are preserved by convex hull operation.          *)
 (* ------------------------------------------------------------------------- *)

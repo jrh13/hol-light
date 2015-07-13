@@ -232,14 +232,19 @@ let MEASURE_LE = prove
     REWRITE_TAC[MEASURE] THEN MESON_TAC[NOT_LE; LTE_TRANS; LT_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Trivially, a WF relation is irreflexive.                                  *)
+(* Trivially, a WF relation is irreflexive and antisymmetric.                *)
 (* ------------------------------------------------------------------------- *)
+
+let WF_ANTISYM = prove
+ (`!(<<) x y:A. WF(<<) ==> ~(x << y /\ y << x)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [WF]) THEN
+  DISCH_THEN(MP_TAC o SPEC `\z:A. z = x \/ z = y`) THEN
+  ASM_MESON_TAC[]);;
 
 let WF_REFL = prove
  (`!x:A. WF(<<) ==> ~(x << x)`,
-  GEN_TAC THEN REWRITE_TAC[WF] THEN
-  DISCH_THEN(MP_TAC o SPEC `\y:A. y = x`) THEN
-  REWRITE_TAC[] THEN MESON_TAC[]);;
+  MESON_TAC[WF_ANTISYM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Even more trivially, the everywhere-false relation is wellfounded.        *)

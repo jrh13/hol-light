@@ -84,6 +84,19 @@ parse_as_infix("inseg",(12,"right"));;
 let inseg = new_definition
   `(l:A#A->bool) inseg m <=> !x y. l(x,y) <=> m(x,y) /\ fl(l) y`;;
 
+let INSEG_ANTISYM = prove
+ (`!l m:A#A->bool. l inseg m /\ m inseg l ==> l = m`,
+  REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[inseg] THEN MESON_TAC[]);;
+
+let INSEG_REFL = prove
+ (`!l:A#A->bool. l inseg l`,
+  REWRITE_TAC[inseg; fl] THEN MESON_TAC[]);;
+
+let INSEG_TRANS = prove
+ (`!l m n:A#A->bool. l inseg m /\ m inseg n ==> l inseg n`,
+  REWRITE_TAC[inseg; fl] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------ *)
 (* Specific form of initial segment: `all elements in fl(l) less than a`.   *)
 (* ------------------------------------------------------------------------ *)
@@ -134,11 +147,13 @@ let WOSET_TRANS_LESS = prove
   REWRITE_TAC[woset; less] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------ *)
-(* Antisymmetry and wellfoundedness are sufficient for a wellorder          *)
+(* Wellfoundedness (in two slightly different senses) and either totality   *)
+(* or antisymmetry are sufficient for a wellorder.                          *)
 (* ------------------------------------------------------------------------ *)
 
 let WOSET = prove
- (`!l:A#A->bool. woset l <=>
+ (`!l:A#A->bool.
+        woset l <=>
         (!x y. l(x,y) /\ l(y,x) ==> (x = y)) /\
         (!P. (!x. P x ==> fl(l) x) /\ (?x. P x) ==>
              (?y. P y /\ (!z. P z ==> l(y,z))))`,
@@ -151,6 +166,23 @@ let WOSET = prove
     REWRITE_TAC[fl];
     FIRST_ASSUM(MP_TAC o SPEC `\w:A. (w = x) \/ (w = y)`)] THEN
   ASM_MESON_TAC[]);;
+
+let WOSET_WF = prove
+ (`!l:A#A->bool.
+        woset l <=>
+        WF(\x y. l(x,y) /\ ~(x = y)) /\
+        (!x y. fl l x /\ fl l y ==> l(x,y) \/ l(y,x))`,
+  GEN_TAC THEN
+  ASM_CASES_TAC `!x y:A. fl l x /\ fl l y ==> l(x,y) \/ l(y,x)` THENL
+   [ASM_REWRITE_TAC[WOSET]; ASM_REWRITE_TAC[woset]] THEN
+  ASM_CASES_TAC `!x y:A. l(x,y) /\ l(y,x) ==> x = y` THEN
+  ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[WF];
+    DISCH_THEN(MP_TAC o MATCH_MP WF_ANTISYM) THEN ASM_MESON_TAC[]] THEN
+  EQ_TAC THENL [DISCH_TAC; MATCH_MP_TAC MONO_FORALL THEN ASM_MESON_TAC[]] THEN
+  X_GEN_TAC `P:A->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `\x:A. P x /\ fl l x`) THEN
+  REWRITE_TAC[fl] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------ *)
 (* Misc lemmas.                                                             *)
@@ -220,6 +252,17 @@ let INSEG_WOSET = prove
    [ASM_MESON_TAC[WOSET_ANTISYM];
     GEN_TAC THEN FIRST_ASSUM(MP_TAC o SPEC_ALL o MATCH_MP WOSET_WELL) THEN
     ASM_MESON_TAC[fl]]);;
+
+let INSEG_ORDINAL = prove
+ (`!l m:A#A->bool. m inseg l /\ ordinal l ==> ordinal m`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ordinal] THEN STRIP_TAC THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[INSEG_WOSET]; ALL_TAC] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP INSEG_SUBSET_FL) THEN
+  ASM_SIMP_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  AP_TERM_TAC THEN ABS_TAC THEN AP_TERM_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[inseg]) THEN ASM_REWRITE_TAC[less]);;
 
 (* ------------------------------------------------------------------------ *)
 (* Properties of segments of the `linseg` form.                             *)
@@ -346,6 +389,26 @@ let ORDINAL_CHAINED = prove
     UNDISCH_TAC `UNIONS (\k. k inseg l /\ k inseg m) = linseg l (a:A)` THEN
     DISCH_THEN(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[]] THEN
   MATCH_MP_TAC EXTEND_LINSEG THEN ASM_REWRITE_TAC[]);;
+
+let ORDINAL_FL_UNIQUE = prove
+ (`!l m:A#A->bool.
+        ordinal l /\ ordinal m /\ fl l = fl m ==> l = m`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`l:A#A->bool`; `m:A#A->bool`]
+        ORDINAL_CHAINED) THEN
+  REWRITE_TAC[inseg; FUN_EQ_THM; FORALL_PAIR_THM] THEN
+  ASM_MESON_TAC[fl]);;
+
+let ORDINAL_FL_SUBSET = prove
+ (`!l m:A#A->bool.
+        ordinal l /\ ordinal m /\ fl l SUBSET fl m ==> l inseg m`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`l:A#A->bool`; `m:A#A->bool`]
+        ORDINAL_CHAINED) THEN
+  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+  MATCH_MP_TAC(MESON[INSEG_REFL] `x = y ==> x inseg y`) THEN
+  MATCH_MP_TAC ORDINAL_FL_UNIQUE THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP INSEG_SUBSET_FL) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------ *)
 (* Proof that any none-universe ordinal can be extended to its "successor". *)
@@ -507,7 +570,7 @@ let ORDINAL_UP = prove
   ASM_REWRITE_TAC[FL_SUC] THEN
   CONV_TAC SELECT_CONV THEN ASM_REWRITE_TAC[]);;
 
-let LEMMA = prove
+let WO_ORDINAL = prove
  (`?l:A#A->bool. ordinal(l) /\ !x. fl(l) x`,
   EXISTS_TAC `UNIONS (ordinal:(A#A->bool)->bool)` THEN
   MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
@@ -535,7 +598,7 @@ let FL_RESTRICT = prove
 let WO = prove
  (`!P. ?l:A#A->bool. woset l /\ (fl(l) = P)`,
   GEN_TAC THEN X_CHOOSE_THEN `l:A#A->bool` STRIP_ASSUME_TAC
-   (REWRITE_RULE[ordinal] LEMMA) THEN
+   (REWRITE_RULE[ordinal] WO_ORDINAL) THEN
   EXISTS_TAC `\(x:A,y). P x /\ P y /\ l(x,y)` THEN REWRITE_TAC[WOSET] THEN
   PBETA_TAC THEN
   GEN_REWRITE_TAC RAND_CONV [FUN_EQ_THM] THEN
@@ -551,6 +614,71 @@ let WO = prove
     EXISTS_TAC `y:A` THEN ASM_REWRITE_TAC[] THEN GEN_TAC THEN DISCH_TAC THEN
     REPEAT CONJ_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
     FIRST_ASSUM ACCEPT_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Moreover, the ordinals themselves are wellordered by "inseg".             *)
+(* ------------------------------------------------------------------------- *)
+
+let WF_INSEG_WOSET = prove
+ (`WF(\(x:A#A->bool) y. woset x /\ woset y /\ x inseg y /\ ~(x = y))`,
+  REWRITE_TAC[WF] THEN X_GEN_TAC `P:(A#A->bool)->bool` THEN
+  DISCH_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[TAUT `~(p /\ q) <=> p ==> ~q`] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [NOT_FORALL_THM] THEN
+  REWRITE_TAC[NOT_IMP] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `!x:A#A->bool. P x ==> woset x` ASSUME_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `!y. ?(a:A) z. P y ==> P z /\ fl y a /\ linseg y a = z`
+  MP_TAC THENL
+   [X_GEN_TAC `y:A#A->bool` THEN
+    ASM_CASES_TAC `(P:(A#A->bool)->bool) y` THEN ASM_REWRITE_TAC[] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `y:A#A->bool`)) THEN
+    ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[INSEG_LINSEG];
+    ALL_TAC] THEN
+  REWRITE_TAC[SKOLEM_THM; NOT_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:(A#A->bool)->A`; `l:(A#A->bool)->(A#A->bool)`] THEN
+  DISCH_TAC THEN FIRST_X_ASSUM(X_CHOOSE_TAC `z:A#A->bool`) THEN
+  SUBGOAL_THEN `woset(z:A#A->bool)` MP_TAC THENL
+   [ASM_MESON_TAC[]; REWRITE_TAC[woset]] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(MP_TAC o SPEC `{(a:(A#A->bool)->A) x | P x /\ x inseg z}`) THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  REWRITE_TAC[TAUT `P /\ x = y <=> x = y /\ P`] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; LEFT_AND_EXISTS_THM] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC] THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM; SWAP_FORALL_THM] THEN
+  REWRITE_TAC[UNWIND_THM2; FORALL_UNWIND_THM2; IMP_CONJ;
+              RIGHT_FORALL_IMP_THM] THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM; SWAP_FORALL_THM] THEN
+  REWRITE_TAC[UNWIND_THM2; FORALL_UNWIND_THM2; IMP_CONJ;
+              RIGHT_FORALL_IMP_THM; NOT_IMP] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[INSEG_SUBSET_FL]; ALL_TAC] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[INSEG_REFL]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `w:A#A->bool` MP_TAC) THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(MP_TAC o SPEC `(l:(A#A->bool)->(A#A->bool)) w`) THEN
+  ASM_SIMP_TAC[NOT_IMP] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[LINSEG_INSEG; INSEG_TRANS]; DISCH_TAC] THEN
+  FIRST_X_ASSUM(fun th ->
+   MP_TAC(SPEC `(l:(A#A->bool)->(A#A->bool)) w` th) THEN
+   MP_TAC(SPEC `w:A#A->bool` th)) THEN
+  ASM_SIMP_TAC[] THEN REPEAT STRIP_TAC THEN
+  UNDISCH_TAC `fl ((l:(A#A->bool)->(A#A->bool)) w) (a (l w))` THEN
+  FIRST_X_ASSUM(fun th ->
+    GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [SYM th]) THEN
+  ASM_SIMP_TAC[LINSEG_FL; less] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[inseg]) THEN ASM_MESON_TAC[]);;
+
+let WOSET_INSEG_ORDINAL = prove
+ (`woset (\(x:A#A->bool,y). ordinal x /\ ordinal y /\ x inseg y)`,
+  REWRITE_TAC[WOSET_WF; fl] THEN
+  CONJ_TAC THENL [ALL_TAC; MESON_TAC[ORDINAL_CHAINED]] THEN
+  MATCH_MP_TAC(MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] WF_SUBSET)
+        WF_INSEG_WOSET) THEN
+  SIMP_TAC[ordinal]);;
 
 (* ======================================================================== *)
 (* (3) CANTOR-ZERMELO WELL-ORDERING THEOREM ==> HAUSDORFF MAXIMAL PRINCIPLE *)
@@ -750,6 +878,77 @@ let KL = prove
     EXISTS_TAC `D:A->bool` THEN ASM_REWRITE_TAC[] THEN
     REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
     FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Special case of Zorn's Lemma for restriction of subset lattice.           *)
+(* ------------------------------------------------------------------------- *)
+
+let POSET_RESTRICTED_SUBSET = prove
+ (`!P. poset(\(x,y). P(x) /\ P(y) /\ x SUBSET y)`,
+  GEN_TAC THEN REWRITE_TAC[poset; fl] THEN
+  CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN
+  REWRITE_TAC[SUBSET; EXTENSION] THEN MESON_TAC[]);;
+
+let FL_RESTRICTED_SUBSET = prove
+ (`!P. fl(\(x,y). P(x) /\ P(y) /\ x SUBSET y) = P`,
+  REWRITE_TAC[fl; FORALL_PAIR_THM; FUN_EQ_THM] THEN
+  CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN MESON_TAC[SUBSET_REFL]);;
+
+let ZL_SUBSETS = prove
+ (`!P. (!c. (!x. x IN c ==> P x) /\
+            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
+            ==> ?z. P z /\ (!x. x IN c ==> x SUBSET z))
+       ==> ?a:A->bool. P a /\ (!x. P x /\ a SUBSET x ==> (a = x))`,
+  GEN_TAC THEN
+  MP_TAC(ISPEC `\(x,y). P(x:A->bool) /\ P(y) /\ x SUBSET y` ZL) THEN
+  REWRITE_TAC[POSET_RESTRICTED_SUBSET; FL_RESTRICTED_SUBSET] THEN
+  REWRITE_TAC[chain] THEN
+  CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN
+  REWRITE_TAC[IN] THEN MATCH_MP_TAC MONO_IMP THEN CONJ_TAC THENL
+   [MATCH_MP_TAC MONO_FORALL; ALL_TAC] THEN
+  MESON_TAC[]);;
+
+let ZL_SUBSETS_UNIONS = prove
+ (`!P. (!c. (!x. x IN c ==> P x) /\
+            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
+            ==> P(UNIONS c))
+       ==> ?a:A->bool. P a /\ (!x. P x /\ a SUBSET x ==> (a = x))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ZL_SUBSETS THEN
+  REPEAT STRIP_TAC THEN EXISTS_TAC `UNIONS(c:(A->bool)->bool)` THEN
+  ASM_MESON_TAC[SUBSET; IN_UNIONS]);;
+
+let ZL_SUBSETS_UNIONS_NONEMPTY = prove
+ (`!P. (?x. P x) /\
+       (!c. (?x. x IN c) /\
+            (!x. x IN c ==> P x) /\
+            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
+            ==> P(UNIONS c))
+       ==> ?a:A->bool. P a /\ (!x. P x /\ a SUBSET x ==> (a = x))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ZL_SUBSETS THEN
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `?x:A->bool. x IN c` THENL
+   [EXISTS_TAC `UNIONS(c:(A->bool)->bool)` THEN
+    ASM_SIMP_TAC[] THEN MESON_TAC[SUBSET; IN_UNIONS];
+    ASM_MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A form of Tukey's lemma.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let TUKEY = prove
+ (`!s:(A->bool)->bool.
+        ~(s = {}) /\
+        (!t. (!c. FINITE c /\ c SUBSET t ==> c IN s) <=> t IN s)
+        ==> ?u. u IN s /\ !v. v IN s /\ u SUBSET v ==> u = v`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ZL_SUBSETS_UNIONS_NONEMPTY THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  X_GEN_TAC `c:(A->bool)->bool` THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  FIRST_ASSUM(fun th -> GEN_REWRITE_TAC I [GSYM th]) THEN
+  SUBGOAL_THEN
+   `!d. FINITE d ==> d SUBSET UNIONS c ==> ?e:A->bool. e IN c /\ d SUBSET e`
+  MP_TAC THENL [ALL_TAC; MATCH_MP_TAC MONO_FORALL THEN ASM SET_TAC[]] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[INSERT_SUBSET] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Also the order extension theorem, using Abian's proof.                    *)
