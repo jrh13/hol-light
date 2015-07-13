@@ -9126,6 +9126,18 @@ let COLLINEAR_3_DOT_MULTIPLES = prove
     REWRITE_TAC[GSYM DOT_EQ_0; DOT_RSUB; DOT_LSUB; DOT_RMUL; DOT_LMUL] THEN
     REWRITE_TAC[DOT_SYM] THEN CONV_TAC REAL_RING]);;
 
+let ORTHOGONAL_AND_COLLINEAR = prove
+ (`!x y:real^N.
+        orthogonal x y /\ collinear{vec 0,x,y} <=> x = vec 0 \/ y = vec 0`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `x:real^N = vec 0` THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_0; COLLINEAR_2; SET_RULE `{a,a,b} = {a,b}`] THEN
+  ASM_CASES_TAC `y:real^N = vec 0` THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_0; COLLINEAR_2; SET_RULE `{a,b,a} = {a,b}`] THEN
+  DISCH_THEN(CONJUNCTS_THEN MP_TAC) THEN
+  ASM_SIMP_TAC[COLLINEAR_LEMMA_ALT; LEFT_IMP_EXISTS_THM] THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_MUL; ORTHOGONAL_REFL] THEN
+  ASM_MESON_TAC[VECTOR_MUL_LZERO]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Between-ness.                                                             *)
 (* ------------------------------------------------------------------------- *)

@@ -185,6 +185,15 @@ let ARC_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [ARC_LINEAR_IMAGE_EQ];;
 
+let ARC_CONTINUOUS_IMAGE = prove
+ (`!f g:real^1->real^N.
+        arc g /\
+        f continuous_on path_image g /\
+        (!x y. x IN path_image g /\ y IN path_image g /\ f x = f y ==> x = y)
+        ==> arc(f o g)`,
+  REWRITE_TAC[arc; INJECTIVE_ON_ALT] THEN SIMP_TAC[PATH_CONTINUOUS_IMAGE] THEN
+  REWRITE_TAC[path_image; o_THM] THEN SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Basic lemmas about paths.                                                 *)
 (* ------------------------------------------------------------------------- *)

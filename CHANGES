@@ -1,3 +1,59 @@
+Fri 10th Jul 2015       Library/floor.ml
+
+Added a couple more rational approximation theorems:
+
+  RATIONAL_APPROXIMATION_ABOVE =
+    |- !x e. &0 < e ==> (?q. rational q /\ x < q /\ q < x + e)
+
+  RATIONAL_APPROXIMATION_BELOW =
+    |- !x e. &0 < e ==> (?q. rational q /\ x - e < q /\ q < x)
+
+Fri 10th Jul 2015       Library/wo.ml, Library/card.ml
+
+Added a few new theorems about ordered sets, ordinals and cardinals, including
+slightly reshuffling things between these two files. Tukey's lemma is the only 
+real "named" theorem. Several of these slightly fill out the rather sparse
+theory of ordinals (for example showing they are themselves wellordered by 
+"initial segment of"), which however remains pretty sparse.
+
+  INSEG_ANTISYM = |- !l m. l inseg m /\ m inseg l ==> l = m
+  
+  INSEG_ORDINAL = |- !l m. m inseg l /\ ordinal l ==> ordinal m
+  
+  INSEG_REFL = |- !l. l inseg l
+  
+  INSEG_TRANS = |- !l m n. l inseg m /\ m inseg n ==> l inseg n
+  
+  LE_C_IMAGE_SUBSET = |- !s t. s <=_c t <=> (?f. s SUBSET IMAGE f t)
+  
+  ORDINAL_FL_SUBSET =
+    |- !l m. ordinal l /\ ordinal m /\ fl l SUBSET fl m ==> l inseg m
+  
+  ORDINAL_FL_UNIQUE =
+   |- !l m. ordinal l /\ ordinal m /\ fl l = fl m ==> l = m
+  
+  TUKEY =
+    |- !s. ~(s = {}) /\
+           (!t. (!c. FINITE c /\ c SUBSET t ==> c IN s) <=> t IN s)
+           ==> (?u. u IN s /\ (!v. v IN s /\ u SUBSET v ==> u = v))
+  
+  WF_INSEG_WOSET =
+    |- WF (\x y. woset x /\ woset y /\ x inseg y /\ ~(x = y))
+  
+  WOSET_INSEG_ORDINAL =
+    |- woset (\(x,y). ordinal x /\ ordinal y /\ x inseg y)
+  
+  WOSET_WF =
+    |- !l. woset l <=>
+           WF (\x y. l(x,y) /\ ~(x = y)) /\
+           (!x y. fl l x /\ fl l y ==> l(x,y) \/ l(y,x))
+
+Fri 10th Jul 2015       wf.ml
+
+Added the simple fact that a wellfounded relation is antisymmetric
+
+ WF_ANTISYM = |- !(<<) x y. WF (<<) ==> ~(x << y /\ y << x)
+
 Tue 30th Jun 2015       sets.ml
 
 Added a variety of set theorems, mostly basic properties of CROSS that are
@@ -39,10 +95,10 @@ near-clones of existing theorems for PCROSS, many with the same proof.
          (!z. z IN s CROSS t ==> P z) <=>
          (!x y. x IN s /\ y IN t ==> P (x,y))
 
-  IMAGE_FST_CROSS = 
+  IMAGE_FST_CROSS =
     |- !s t. IMAGE FST (s CROSS t) = (if t = {} then {} else s)
 
-  IMAGE_SND_CROSS = 
+  IMAGE_SND_CROSS =
     |- !s t. IMAGE SND (s CROSS t) = (if s = {} then {} else t)
 
   INTER_CROSS =
@@ -54,7 +110,7 @@ near-clones of existing theorems for PCROSS, many with the same proof.
          s CROSS t SUBSET s' CROSS t' <=>
          s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'
 
-  UNIONS_UNIV = 
+  UNIONS_UNIV =
     |- UNIONS (:A->bool) = (:A)
 
 Fri 12th Jun 2015       sets.ml

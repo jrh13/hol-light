@@ -26,57 +26,6 @@ let EXISTS_SUM_THM = prove
   MESON_TAC[sum_CASES]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Special case of Zorn's Lemma for restriction of subset lattice.           *)
-(* ------------------------------------------------------------------------- *)
-
-let POSET_RESTRICTED_SUBSET = prove
- (`!P. poset(\(x,y). P(x) /\ P(y) /\ x SUBSET y)`,
-  GEN_TAC THEN REWRITE_TAC[poset; fl] THEN
-  CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN
-  REWRITE_TAC[SUBSET; EXTENSION] THEN MESON_TAC[]);;
-
-let FL_RESTRICTED_SUBSET = prove
- (`!P. fl(\(x,y). P(x) /\ P(y) /\ x SUBSET y) = P`,
-  REWRITE_TAC[fl; FORALL_PAIR_THM; FUN_EQ_THM] THEN
-  CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN MESON_TAC[SUBSET_REFL]);;
-
-let ZL_SUBSETS = prove
- (`!P. (!c. (!x. x IN c ==> P x) /\
-            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
-            ==> ?z. P z /\ (!x. x IN c ==> x SUBSET z))
-       ==> ?a:A->bool. P a /\ (!x. P x /\ a SUBSET x ==> (a = x))`,
-  GEN_TAC THEN
-  MP_TAC(ISPEC `\(x,y). P(x:A->bool) /\ P(y) /\ x SUBSET y` ZL) THEN
-  REWRITE_TAC[POSET_RESTRICTED_SUBSET; FL_RESTRICTED_SUBSET] THEN
-  REWRITE_TAC[chain] THEN
-  CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN
-  REWRITE_TAC[IN] THEN MATCH_MP_TAC MONO_IMP THEN CONJ_TAC THENL
-   [MATCH_MP_TAC MONO_FORALL; ALL_TAC] THEN
-  MESON_TAC[]);;
-
-let ZL_SUBSETS_UNIONS = prove
- (`!P. (!c. (!x. x IN c ==> P x) /\
-            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
-            ==> P(UNIONS c))
-       ==> ?a:A->bool. P a /\ (!x. P x /\ a SUBSET x ==> (a = x))`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC ZL_SUBSETS THEN
-  REPEAT STRIP_TAC THEN EXISTS_TAC `UNIONS(c:(A->bool)->bool)` THEN
-  ASM_MESON_TAC[SUBSET; IN_UNIONS]);;
-
-let ZL_SUBSETS_UNIONS_NONEMPTY = prove
- (`!P. (?x. P x) /\
-       (!c. (?x. x IN c) /\
-            (!x. x IN c ==> P x) /\
-            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
-            ==> P(UNIONS c))
-       ==> ?a:A->bool. P a /\ (!x. P x /\ a SUBSET x ==> (a = x))`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC ZL_SUBSETS THEN
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `?x:A->bool. x IN c` THENL
-   [EXISTS_TAC `UNIONS(c:(A->bool)->bool)` THEN
-    ASM_SIMP_TAC[] THEN MESON_TAC[SUBSET; IN_UNIONS];
-    ASM_MESON_TAC[]]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Useful lemma to reduce some higher order stuff to first order.            *)
 (* ------------------------------------------------------------------------- *)
 
@@ -586,6 +535,14 @@ let LE_C_IMAGE = prove
     EXISTS_TAC `\x. if (f:B->A) x IN s then f x else a` THEN
     ASM SET_TAC[];
     DISCH_THEN(CHOOSE_THEN(SUBST1_TAC o SYM)) THEN
+    REWRITE_TAC[CARD_LE_IMAGE]]);;
+
+let LE_C_IMAGE_SUBSET = prove
+ (`!s:A->bool t:B->bool. s <=_c t <=> ?f. s SUBSET IMAGE f t`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[LE_C_IMAGE] THEN MESON_TAC[EMPTY_SUBSET; SUBSET_REFL];
+    DISCH_THEN(CHOOSE_THEN(MP_TAC o MATCH_MP CARD_LE_SUBSET)) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_TRANS) THEN
     REWRITE_TAC[CARD_LE_IMAGE]]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -1144,6 +1101,32 @@ let CARD_LT_ADD = prove
       TRANS_TAC CARD_LTE_TRANS `t':D->bool` THEN
       ASM_REWRITE_TAC[CARD_LE_ADDL]]]);;
 
+let CARD_LE_UNIONS2 = prove
+ (`!u:((A->bool)->bool) k:B->bool l:C->bool.
+     u <=_c k /\ (!s. s IN u ==> s <=_c l) ==> UNIONS u <=_c k *_c l`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [LE_C_IMAGE_SUBSET] THEN
+  REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM; LEFT_AND_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:B->A->bool`; `g:(A->bool)->C->A`] THEN STRIP_TAC THEN
+  TRANS_TAC CARD_LE_TRANS
+   `IMAGE (\(x,y). (g:(A->bool)->C->A) (f x) y)
+          ((k:B->bool) *_c (l:C->bool))` THEN
+  REWRITE_TAC[CARD_LE_IMAGE] THEN MATCH_MP_TAC CARD_LE_SUBSET THEN
+  REWRITE_TAC[SUBSET; IN_UNIONS; IN_IMAGE; mul_c; IN_ELIM_PAIR_THM;
+              EXISTS_PAIR_THM] THEN
+  ASM SET_TAC[]);;
+
+let CARD_LE_UNIONS = prove
+ (`!k:B->bool u:(A->bool)->bool.
+        INFINITE k /\ u <=_c k /\ (!s. s IN u ==> s <=_c k)
+        ==> UNIONS u <=_c k`,
+  REPEAT GEN_TAC THEN DISCH_THEN
+   (CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o MATCH_MP CARD_LE_UNIONS2)) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_TRANS) THEN
+  MATCH_MP_TAC CARD_EQ_IMP_LE THEN MATCH_MP_TAC CARD_SQUARE_INFINITE THEN
+  ASM_REWRITE_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some more ad-hoc but useful theorems.                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -1372,20 +1355,8 @@ let COUNTABLE_UNIONS = prove
  (`!A:(A->bool)->bool.
         COUNTABLE A /\ (!s. s IN A ==> COUNTABLE s)
         ==> COUNTABLE (UNIONS A)`,
-  GEN_TAC THEN
-  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
-   [COUNTABLE_AS_IMAGE_SUBSET_EQ] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 (X_CHOOSE_TAC `f:num->A->bool`) MP_TAC) THEN
-  GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [RIGHT_IMP_EXISTS_THM] THEN
-  REWRITE_TAC[SKOLEM_THM] THEN
-  DISCH_THEN(X_CHOOSE_TAC `g:(A->bool)->num->A`) THEN
-  MATCH_MP_TAC COUNTABLE_SUBSET THEN
-  EXISTS_TAC `IMAGE (\(m,n). (g:(A->bool)->num->A) ((f:num->A->bool) m) n)
-                    ((:num) CROSS (:num))` THEN
-  ASM_SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_CROSS; NUM_COUNTABLE] THEN
-  REWRITE_TAC[SUBSET; FORALL_IN_UNIONS] THEN
-  REWRITE_TAC[IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS; IN_UNIV] THEN
-  ASM SET_TAC[]);;
+  REWRITE_TAC[COUNTABLE; ge_c] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC CARD_LE_UNIONS THEN ASM_REWRITE_TAC[num_INFINITE]);;
 
 let COUNTABLE_PRODUCT_DEPENDENT = prove
  (`!f:A->B->C s t.

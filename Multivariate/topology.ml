@@ -9277,6 +9277,41 @@ let CONTINUOUS_ON_CLOSURE_SEQUENTIALLY = prove
   REWRITE_TAC[IMP_IMP; GSYM continuous_within] THEN
   REWRITE_TAC[CONTINUOUS_WITHIN_SEQUENTIALLY] THEN MESON_TAC[]);;
 
+let CONTINUOUS_ON_INTERMEDIATE_CLOSURE_POINTWISE = prove
+ (`!f:real^M->real^N s t.
+        s SUBSET t /\ t SUBSET closure s /\
+        (!x. x IN t ==> f continuous_on (x INSERT s))
+        ==> f continuous_on t`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_INTERMEDIATE_CLOSURE THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[FORALL_IN_INSERT; CONTINUOUS_ON]) THEN
+  ASM_MESON_TAC[LIM_WITHIN_SUBSET; SET_RULE `s SUBSET x INSERT s`]);;
+
+let FUNCTION_EXTENSION_POINTWISE = prove
+ (`!f:real^M->real^N s t u.
+        s SUBSET t /\ t SUBSET closure s /\
+        (!x. x IN t ==> ?g. g continuous_on (x INSERT s) /\
+                            IMAGE g (x INSERT s) SUBSET u /\
+                            (!x. x IN s ==> g x = f x))
+        ==> ?g. g continuous_on t /\
+                IMAGE g t SUBSET u /\
+                (!x. x IN s ==> g x = f x)`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SKOLEM_THM]) THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_INSERT] THEN
+  DISCH_THEN(X_CHOOSE_TAC `g:real^M->real^M->real^N`) THEN
+  EXISTS_TAC `\x. (g:real^M->real^M->real^N) x x` THEN REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_INTERMEDIATE_CLOSURE_POINTWISE THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `a:real^M` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `a:real^M`) THEN
+  ANTS_TAC THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] CONTINUOUS_ON_EQ) THEN
+  ASM SET_TAC[]);;
+
 let UNIFORMLY_CONTINUOUS_ON_CLOSURE = prove
  (`!f:real^M->real^N s.
         f uniformly_continuous_on s /\ f continuous_on closure s

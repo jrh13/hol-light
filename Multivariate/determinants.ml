@@ -2178,10 +2178,6 @@ let ORTHOGONAL_TRANSFORMATION = prove
   GEN_TAC THEN REWRITE_TAC[orthogonal_transformation] THEN EQ_TAC THENL
    [MESON_TAC[vector_norm]; SIMP_TAC[DOT_NORM] THEN MESON_TAC[LINEAR_ADD]]);;
 
-let ORTHOGONAL_TRANSFORMATION_IMP_LINEAR = prove
- (`!f:real^N->real^N. orthogonal_transformation f ==> linear f`,
-  SIMP_TAC[orthogonal_transformation]);;
-
 let ORTHOGONAL_TRANSFORMATION_COMPOSE = prove
  (`!f g. orthogonal_transformation f /\ orthogonal_transformation g
          ==> orthogonal_transformation(f o g)`,
