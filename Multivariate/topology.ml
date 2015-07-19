@@ -2791,6 +2791,11 @@ let EVENTUALLY_AT_INFINITY_POS = prove
   GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT_INFINITY; real_ge] THEN
   MESON_TAC[REAL_ARITH `&0 < abs b + &1 /\ (abs b + &1 <= x ==> b <= x)`]);;
 
+let EVENTUALLY_AT_WITHIN = prove
+ (`!P s a:real^N.
+        eventually P (at a) ==> eventually P (at a within s)`,
+  REWRITE_TAC[EVENTUALLY_AT; EVENTUALLY_WITHIN] THEN MESON_TAC[]);;
+
 let EVENTUALLY_WITHIN_INTER_IMP = prove
  (`!P s t a:real^N.
         eventually P (at a within s INTER t) <=>
@@ -2831,6 +2836,30 @@ let EVENTUALLY_INV1_LT = prove
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
     REWRITE_TAC[REAL_OF_NUM_ADD; REAL_OF_NUM_LE; REAL_OF_NUM_LT] THEN
     ASM_ARITH_TAC]);;
+
+let IN_INTERIOR_EVENTUALLY = prove
+ (`!s a:real^N. a IN interior s <=> a IN s /\ eventually (\x. x IN s) (at a)`,
+  REWRITE_TAC[IN_INTERIOR; EVENTUALLY_AT; SUBSET; IN_BALL; GSYM DIST_NZ] THEN
+  MESON_TAC[DIST_SYM; DIST_REFL]);;
+
+let EVENTUALLY_WITHIN_INTERIOR = prove
+ (`!P s a.
+        a IN interior s
+        ==> (eventually P (at a within s) <=> eventually P (at a))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IN_INTERIOR_EVENTUALLY] THEN
+  MATCH_MP_TAC(TAUT
+   `(p /\ q ==> r) /\ (p /\ r ==> q) ==> p' /\ p ==> (q <=> r)`) THEN
+  REWRITE_TAC[GSYM EVENTUALLY_AND; EVENTUALLY_WITHIN_IMP] THEN
+  CONJ_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  SIMP_TAC[]);;
+
+let EVENTUALLY_WITHIN_OPEN = prove
+ (`!f l a:real^M s.
+        a IN s /\ open s
+        ==> (eventually P (at a within s) <=> eventually P (at a))`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC EVENTUALLY_WITHIN_INTERIOR THEN
+  ASM_MESON_TAC[INTERIOR_OPEN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)
@@ -3063,17 +3092,8 @@ let LIM_AT_WITHIN = prove
 
 let LIM_WITHIN_OPEN = prove
  (`!f l a:real^M s.
-     a IN s /\ open s ==> ((f --> l)(at a within s) <=> (f --> l)(at a))`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC[LIM_AT_WITHIN] THEN
-  REWRITE_TAC[LIM_AT; LIM_WITHIN] THEN
-  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN
-  ASM_CASES_TAC `&0 < e` THEN ASM_REWRITE_TAC[] THEN
-   DISCH_THEN(X_CHOOSE_THEN `d1:real` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `a:real^M` o GEN_REWRITE_RULE I [open_def]) THEN
-  ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `d2:real` STRIP_ASSUME_TAC) THEN
-  MP_TAC(SPECL [`d1:real`; `d2:real`] REAL_DOWN2) THEN ASM_REWRITE_TAC[] THEN
-  ASM_MESON_TAC[REAL_LT_TRANS]);;
+     a IN s /\ open s ==> ((f --> l) (at a within s) <=> (f --> l) (at a))`,
+  SIMP_TAC[tendsto; EVENTUALLY_WITHIN_OPEN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Two-sided limits on R^1.                                                  *)
@@ -9651,6 +9671,72 @@ let LIPSCHITZ_LIM = prove
   REWRITE_TAC[GSYM REAL_ADD_RDISTRIB; REAL_MUL_ASSOC] THEN
   MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
   ASM_REAL_ARITH_TAC);;
+
+let LIPSCHITZ_ON_SUP = prove
+ (`!P:(real^N->real^1)->bool B s.
+        &0 <= B /\
+        (!f. P f
+             ==> !x y. x IN s /\ y IN s
+                       ==> norm(f x - f y) <= B * norm(x - y)) /\
+        (!x. x IN s ==> ?C. !f. P f ==> drop(f x) <= C)
+        ==> !x y. x IN s /\ y IN s
+                  ==> norm(lift(sup {drop(f x) | P f}) -
+                           lift(sup {drop(f y) | P f}))
+                      <= B * norm(x - y)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `!f:real^N->real^1. ~(P f)` THENL
+   [ASM_REWRITE_TAC[SET_RULE `{f x | x | F} = {}`; VECTOR_SUB_REFL] THEN
+    ASM_SIMP_TAC[NORM_0; REAL_LE_MUL; NORM_POS_LE];
+    ALL_TAC] THEN
+  MP_TAC(SPEC `{drop(f(y:real^N)) | P f}` SUP) THEN
+  MP_TAC(SPEC `{drop(f(x:real^N)) | P f}` SUP) THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  ABBREV_TAC `fy = sup {drop(f(y:real^N)) | P f}` THEN
+  ABBREV_TAC `fx = sup {drop(f(x:real^N)) | P f}` THEN
+  REPEAT(ANTS_TAC THENL [ASM SET_TAC[]; STRIP_TAC]) THEN
+  REWRITE_TAC[NORM_1; DROP_SUB; LIFT_DROP; REAL_ARITH
+   `abs(x - y) <= b <=> x <= y + b /\ y <= x + b`] THEN
+  CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  X_GEN_TAC `f:real^N->real^1` THEN DISCH_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `f:real^N->real^1`)) THEN
+  ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM REAL_LE_SUB_RADD] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+    (REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS)) THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^N`; `y:real^N`]) THEN
+  ASM_REWRITE_TAC[NORM_1; DROP_SUB] THEN REAL_ARITH_TAC);;
+
+let LIPSCHITZ_ON_INF = prove
+ (`!P:(real^N->real^1)->bool B s.
+        &0 <= B /\
+        (!f. P f
+             ==> !x y. x IN s /\ y IN s
+                       ==> norm(f x - f y) <= B * norm(x - y)) /\
+        (!x. x IN s ==> ?C. !f. P f ==> C <= drop(f x))
+        ==> !x y. x IN s /\ y IN s
+                  ==> norm(lift(inf {drop(f x) | P f}) -
+                           lift(inf {drop(f y) | P f}))
+                      <= B * norm(x - y)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `!f:real^N->real^1. ~(P f)` THENL
+   [ASM_REWRITE_TAC[SET_RULE `{f x | x | F} = {}`; VECTOR_SUB_REFL] THEN
+    ASM_SIMP_TAC[NORM_0; REAL_LE_MUL; NORM_POS_LE];
+    ALL_TAC] THEN
+  MP_TAC(SPEC `{drop(f(y:real^N)) | P f}` INF) THEN
+  MP_TAC(SPEC `{drop(f(x:real^N)) | P f}` INF) THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  ABBREV_TAC `fy = inf {drop(f(y:real^N)) | P f}` THEN
+  ABBREV_TAC `fx = inf {drop(f(x:real^N)) | P f}` THEN
+  REPEAT(ANTS_TAC THENL [ASM SET_TAC[]; STRIP_TAC]) THEN
+  REWRITE_TAC[NORM_1; DROP_SUB; LIFT_DROP; REAL_ARITH
+   `abs(x - y) <= b <=> x - b <= y /\ y - b <= x`] THEN
+  CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  X_GEN_TAC `f:real^N->real^1` THEN DISCH_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `f:real^N->real^1`)) THEN
+  ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[REAL_LE_SUB_RADD] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+    (REWRITE_RULE[IMP_CONJ] REAL_LE_TRANS)) THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^N`; `y:real^N`]) THEN
+  ASM_REWRITE_TAC[NORM_1; DROP_SUB] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Occasionally useful invariance properties.                                *)
