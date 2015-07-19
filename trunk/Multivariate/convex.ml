@@ -12437,6 +12437,52 @@ let RELATIVE_INTERIOR_LINEAR_IMAGE_CONVEX = prove
     DISCH_THEN(MP_TAC o ISPEC `f:real^M->real^N` o MATCH_MP FUN_IN_IMAGE) THEN
     ASM_MESON_TAC[LINEAR_ADD; LINEAR_SUB; LINEAR_CMUL]]);;
 
+let RELATIVE_INTERIOR_LINEAR_PREIMAGE_CONVEX = prove
+ (`!f:real^M->real^N s.
+        linear f /\ convex s /\ ~({x | f(x) IN relative_interior s} = {})
+        ==> relative_interior {x | f(x) IN s} =
+            {x | f(x) IN relative_interior s}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [MATCH_MP_TAC(SET_RULE
+     `IMAGE f s SUBSET t ==> s SUBSET {x | f x IN t}`) THEN
+    ASM_SIMP_TAC[GSYM RELATIVE_INTERIOR_LINEAR_IMAGE_CONVEX;
+                 CONVEX_LINEAR_PREIMAGE; CONVEX_RELATIVE_INTERIOR] THEN
+    MATCH_MP_TAC SUBSET_RELATIVE_INTERIOR_INTERSECTING_CONVEX THEN
+    ASM_SIMP_TAC[CONVEX_LINEAR_IMAGE; CONVEX_LINEAR_PREIMAGE] THEN
+    CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_INTER; EXISTS_IN_IMAGE] THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN
+    MP_TAC(ISPEC `s:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
+    ASM SET_TAC[];
+    MATCH_MP_TAC RELATIVE_INTERIOR_MAXIMAL THEN CONJ_TAC THENL
+     [MP_TAC(ISPEC `s:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN SET_TAC[];
+      MATCH_MP_TAC OPEN_IN_SUBSET_TRANS THEN
+      EXISTS_TAC `{x | (f:real^M->real^N) x IN affine hull s}` THEN
+      REPEAT CONJ_TAC THENL
+       [SUBGOAL_THEN
+         `{x | f x IN relative_interior s} =
+          {x | x IN {x | (f:real^M->real^N) x IN affine hull s} /\
+               f x IN relative_interior s}`
+        SUBST1_TAC THENL
+         [REWRITE_TAC[IN_ELIM_THM] THEN MATCH_MP_TAC(SET_RULE
+           `relative_interior s SUBSET s /\ s SUBSET affine hull s
+            ==> {x | f x IN relative_interior s} =
+                {x | f x IN affine hull s /\ f x IN relative_interior s}`) THEN
+          REWRITE_TAC[RELATIVE_INTERIOR_SUBSET; HULL_SUBSET];
+          MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN THEN
+          EXISTS_TAC `affine hull s:real^N->bool` THEN
+          ASM_SIMP_TAC[OPEN_IN_RELATIVE_INTERIOR; LINEAR_CONTINUOUS_ON] THEN
+          SET_TAC[]];
+        REWRITE_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN
+        MATCH_MP_TAC HULL_INC THEN
+        MP_TAC(ISPEC `s:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
+        ASM SET_TAC[];
+        MATCH_MP_TAC HULL_MINIMAL THEN
+        ASM_SIMP_TAC[AFFINE_LINEAR_PREIMAGE; AFFINE_AFFINE_HULL] THEN
+        MATCH_MP_TAC(SET_RULE
+         `s SUBSET t ==> {x | f x IN s} SUBSET {x | f x IN t}`) THEN
+        REWRITE_TAC[HULL_SUBSET]]]]);;
+
 let RELATIVE_INTERIOR_SUMS = prove
  (`!s t:real^N->bool.
         convex s /\ convex t

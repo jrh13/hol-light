@@ -1094,18 +1094,13 @@ let COPRIME_PRIME_EQ = prove(
     MATCH_MP_TAC DIVIDES_TRANS THEN EXISTS_TAC `d:num` THEN
     ASM_REWRITE_TAC[]]);;
 
-let PRIME_COPRIME = prove(
-  `!n p. prime(p) ==> (n = 1) \/ p divides n \/ coprime(p,n)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[prime; COPRIME_GCD] THEN
-  STRIP_ASSUME_TAC(SPECL [`p:num`; `n:num`] GCD) THEN
-  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  DISCH_THEN(MP_TAC o SPEC `gcd(p,n)`) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(DISJ_CASES_THEN SUBST_ALL_TAC) THEN
-  ASM_REWRITE_TAC[]);;
-
 let PRIME_COPRIME_STRONG = prove
  (`!n p. prime(p) ==> p divides n \/ coprime(p,n)`,
-  MESON_TAC[PRIME_COPRIME; COPRIME_1]);;
+  REWRITE_TAC[prime; coprime] THEN MESON_TAC[]);;
+
+let PRIME_COPRIME = prove
+ (`!n p. prime(p) ==> (n = 1) \/ p divides n \/ coprime(p,n)`,
+  MESON_TAC[PRIME_COPRIME_STRONG]);;
 
 let PRIME_COPRIME_EQ = prove
  (`!p n. prime p ==> (coprime(p,n) <=> ~(p divides n))`,
@@ -1139,16 +1134,9 @@ let BEZOUT_PRIME = prove
   MESON_TAC[PRIME_COPRIME_STRONG; COPRIME_SYM;
      COPRIME_BEZOUT_STRONG; PRIME_1]);;
 
-let PRIME_DIVPROD = prove(
-  `!p a b. prime(p) /\ p divides (a * b) ==> p divides a \/ p divides b`,
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o SPEC `a:num` o MATCH_MP PRIME_COPRIME) THEN
-  DISCH_THEN(REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC) THEN
-  ASM_REWRITE_TAC[] THENL
-   [DISJ2_TAC THEN UNDISCH_TAC `p divides (a * b)` THEN
-    ASM_REWRITE_TAC[MULT_CLAUSES];
-    DISJ2_TAC THEN MATCH_MP_TAC COPRIME_DIVPROD THEN
-    EXISTS_TAC `a:num` THEN ASM_REWRITE_TAC[]]);;
+let PRIME_DIVPROD = prove
+ (`!p a b. prime(p) /\ p divides (a * b) ==> p divides a \/ p divides b`,
+  MESON_TAC[PRIME_COPRIME_STRONG; COPRIME_DIVPROD]);;
 
 let PRIME_DIVPROD_EQ = prove
  (`!p a b. prime(p) ==> (p divides (a * b) <=> p divides a \/ p divides b)`,
@@ -1261,6 +1249,23 @@ let DIVIDES_EXP_MINUS1 = prove
     POP_ASSUM(K ALL_TAC) THEN REWRITE_TAC[GSYM INT_OF_NUM_POW] THEN
     SPEC_TAC(`k:num`,`k:num`) THEN INDUCT_TAC THEN REWRITE_TAC[INT_POW] THEN
     REPEAT(POP_ASSUM MP_TAC) THEN INTEGER_TAC]);;
+
+let PRIME_IRREDUCIBLE = prove
+ (`!p. prime p <=>
+       p > 1 /\ !a b. p divides (a * b) ==> p divides a \/ p divides b`,
+  GEN_TAC THEN REWRITE_TAC[ARITH_RULE `p > 1 <=> ~(p = 0) /\ ~(p = 1)`] THEN
+  ASM_CASES_TAC `p = 0` THEN ASM_REWRITE_TAC[PRIME_0] THEN
+  ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[PRIME_1] THEN
+  EQ_TAC THENL [MESON_TAC[PRIME_DIVPROD]; ASM_REWRITE_TAC[prime]] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [divides] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  DISCH_THEN(fun th -> DISCH_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[DIVIDES_REFL] THEN
+  DISCH_THEN(DISJ_CASES_THEN (MP_TAC o MATCH_MP (MESON[DIVIDES_ANTISYM]
+   `a divides b ==> b divides a ==> a = b`))) THEN
+  SIMP_TAC[DIVIDES_LMUL; DIVIDES_RMUL; DIVIDES_REFL] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NUM_RING);;
 
 (* ------------------------------------------------------------------------- *)
 (* One property of coprimality is easier to prove via prime factors.         *)
