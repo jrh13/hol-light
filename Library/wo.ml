@@ -184,6 +184,16 @@ let WOSET_WF = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `\x:A. P x /\ fl l x`) THEN
   REWRITE_TAC[fl] THEN ASM_MESON_TAC[]);;
 
+let WOSET_FINITE_TOSET = prove
+ (`!l:A#A->bool. toset l /\ FINITE(fl l) ==> woset l`,
+  SIMP_TAC[toset; WOSET_WF; poset; IN] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC WF_FINITE THEN REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; X_GEN_TAC `a:A`] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+    FINITE_SUBSET)) THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN REWRITE_TAC[fl; IN] THEN
+  ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------ *)
 (* Misc lemmas.                                                             *)
 (* ------------------------------------------------------------------------ *)

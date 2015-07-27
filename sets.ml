@@ -2970,7 +2970,7 @@ let EXISTS_IN_CLAUSES = prove
   REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Injectivity and surjectivity of image under a function.                   *)
+(* Injectivity and surjectivity of image and preimage under a function.      *)
 (* ------------------------------------------------------------------------- *)
 
 let INJECTIVE_ON_IMAGE = prove
@@ -3003,6 +3003,47 @@ let SURJECTIVE_IMAGE = prove
   GEN_TAC THEN
   MP_TAC(ISPECL [`f:A->B`; `(:A)`; `(:B)`] SURJECTIVE_ON_IMAGE) THEN
   REWRITE_TAC[IN_UNIV; SUBSET_UNIV]);;
+
+let INJECTIVE_ON_PREIMAGE = prove
+ (`!f:A->B s u.
+        (!t t'. t SUBSET u /\ t' SUBSET u /\
+                {x | x IN s /\ f x IN t} = {x | x IN s /\ f x IN t'}
+                ==> t = t') <=>
+        u SUBSET IMAGE f s`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  REWRITE_TAC[SUBSET] THEN X_GEN_TAC `y:B` THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`{y:B}`; `{}:B->bool`]) THEN ASM SET_TAC[]);;
+
+let SURJECTIVE_ON_PREIMAGE = prove
+ (`!f:A->B s u.
+        (!k. k SUBSET s
+             ==> ?t. t SUBSET u /\ {x | x IN s /\ f x IN t} = k) <=>
+        IMAGE f s SUBSET u /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [CONJ_TAC THENL
+     [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN X_GEN_TAC `x:A` THEN
+      DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `{x:A}`) THEN ASM SET_TAC[];
+      MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `{x:A}`) THEN ASM SET_TAC[]];
+    X_GEN_TAC `k:A->bool` THEN STRIP_TAC THEN
+    EXISTS_TAC `IMAGE (f:A->B) k` THEN ASM SET_TAC[]]);;
+
+let INJECTIVE_PREIMAGE = prove
+ (`!f:A->B.
+        (!t t'. {x | f x IN t} = {x | f x IN t'} ==> t = t') <=>
+        IMAGE f UNIV = UNIV`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `(:A)`; `(:B)`]
+        INJECTIVE_ON_PREIMAGE) THEN
+  REWRITE_TAC[IN_UNIV; SUBSET_UNIV] THEN SET_TAC[]);;
+
+let SURJECTIVE_PREIMAGE = prove
+ (`!f:A->B. (!k. ?t. {x | f x IN t} = k) <=> (!x y. f x = f y ==> x = y)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `(:A)`; `(:B)`]
+        SURJECTIVE_ON_PREIMAGE) THEN
+  REWRITE_TAC[IN_UNIV; SUBSET_UNIV] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of bijections between two finite sets of same size.             *)

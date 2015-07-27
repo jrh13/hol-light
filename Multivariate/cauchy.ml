@@ -195,26 +195,26 @@ let valid_path = new_definition
 let closed_path = new_definition
  `closed_path g <=> pathstart g = pathfinish g`;;
 
-let VALID_PATH_EQ = prove                                
+let VALID_PATH_EQ = prove
  (`!p q. (!t. t IN interval[vec 0,vec 1] ==> p t = q t) /\ valid_path p
-         ==> valid_path q`,                                                 
-  REPEAT GEN_TAC THEN                                                     
-  REWRITE_TAC[valid_path; piecewise_differentiable_on] THEN           
-  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN            
-  MATCH_MP_TAC MONO_AND THEN                                                
-  CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_EQ]; ALL_TAC] THEN               
-  DISCH_THEN(X_CHOOSE_THEN `k:real^1->bool` STRIP_ASSUME_TAC) THEN             
-  EXISTS_TAC `{vec 0:real^1,vec 1} UNION k` THEN                               
+         ==> valid_path q`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[valid_path; piecewise_differentiable_on] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  MATCH_MP_TAC MONO_AND THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_EQ]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real^1->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `{vec 0:real^1,vec 1} UNION k` THEN
   ASM_REWRITE_TAC[FINITE_UNION; FINITE_INSERT; FINITE_EMPTY] THEN
-  X_GEN_TAC `x:real^1` THEN                                          
+  X_GEN_TAC `x:real^1` THEN
   STRIP_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_TRANSFORM_AT THEN
-  EXISTS_TAC `p:real^1->real^2` THEN                                         
-  SUBGOAL_THEN                                                         
+  EXISTS_TAC `p:real^1->real^2` THEN
+  SUBGOAL_THEN
    `open(interval[vec 0:real^1,vec 1] DIFF ({vec 0:real^1,vec 1} UNION k))`
-  MP_TAC THENL                                                              
-   [REWRITE_TAC[SET_RULE `a DIFF (b UNION c) = (a DIFF b) DIFF c`] THEN 
+  MP_TAC THENL
+   [REWRITE_TAC[SET_RULE `a DIFF (b UNION c) = (a DIFF b) DIFF c`] THEN
     REWRITE_TAC[GSYM OPEN_CLOSED_INTERVAL_1] THEN MATCH_MP_TAC OPEN_DIFF THEN
-    ASM_SIMP_TAC[OPEN_INTERVAL; FINITE_IMP_CLOSED];             
+    ASM_SIMP_TAC[OPEN_INTERVAL; FINITE_IMP_CLOSED];
     REWRITE_TAC[open_def] THEN DISCH_THEN(MP_TAC o SPEC `x:real^1`)] THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]);;
 
@@ -14784,6 +14784,56 @@ let SCHWARZ_REFLECTION = prove
       SUBGOAL_THEN `real z` ASSUME_TAC THENL
        [REWRITE_TAC[real] THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
       RULE_ASSUM_TAC(REWRITE_RULE[REAL_CNJ]) THEN ASM_MESON_TAC[]]]);;
+
+let SCHWARZ_REFLECTION_UNIQUE = prove
+ (`!f s. open s /\ connected s /\ (!z. z IN s ==> cnj z IN s) /\
+         f holomorphic_on s /\ (!z. z IN s /\ real z ==> real(f z))
+         ==> (!z. z IN s ==> f(cnj z) = cnj(f z))`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  ASM_CASES_TAC `!z. z IN s ==> real z` THENL
+   [ASM_MESON_TAC[REAL_CNJ; real];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
+    REWRITE_TAC[real; NOT_IMP; REAL_ARITH `~(x = &0) <=> &0 < x \/ &0 < --x`;
+                GSYM IM_CNJ] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (MESON[]
+     `(?z. P z /\ (Q z \/ R z))
+      ==> (!z. P z ==> P(cnj z)) /\ (!z. R z ==> Q(cnj z))
+          ==> ?z. P z /\ Q z`)) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_TAC] THEN
+  MP_TAC(ISPECL [`f:complex->complex`; `s:complex->bool`]
+        SCHWARZ_REFLECTION) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL
+     [ALL_TAC; MATCH_MP_TAC HOLOMORPHIC_ON_IMP_CONTINUOUS_ON] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HOLOMORPHIC_ON_SUBSET)) THEN
+    REWRITE_TAC[SUBSET_RESTRICT];
+    DISCH_TAC] THEN
+  SUBGOAL_THEN
+   `!z. z IN s
+        ==> (if &0 <= Im z then f z else cnj (f (cnj z))) - f z = Cx(&0)`
+  MP_TAC THENL
+   [ALL_TAC;
+    DISCH_THEN(LABEL_TAC "*") THEN X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+    REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
+     (REAL_ARITH `Im z = &0 \/ &0 < Im z \/ Im z < &0`)
+    THENL
+     [ASM_MESON_TAC[REAL_CNJ; real];
+      REMOVE_THEN "*" (MP_TAC o SPEC `cnj z`) THEN
+      ASM_SIMP_TAC[IM_CNJ; REAL_ARITH `&0 <= --z <=> ~(&0 < z)`; CNJ_CNJ] THEN
+      CONV_TAC COMPLEX_RING;
+      REMOVE_THEN "*" (MP_TAC o SPEC `z:complex`) THEN
+      ASM_SIMP_TAC[GSYM REAL_NOT_LT; COMPLEX_SUB_0] THEN
+      MESON_TAC[CNJ_CNJ]]] THEN
+  MATCH_MP_TAC ANALYTIC_CONTINUATION THEN
+  EXISTS_TAC `s INTER {w | Im w > &0}` THEN
+  ASM_SIMP_TAC[IN_INTER; real_gt; REAL_LT_IMP_LE; COMPLEX_SUB_0; IN_ELIM_THM;
+               INTER_SUBSET; RIGHT_EXISTS_AND_THM; HOLOMORPHIC_ON_SUB] THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `w:complex` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `w:complex` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC LIMPT_OF_OPEN THEN ASM_REWRITE_TAC[IN_INTER; IN_ELIM_THM] THEN
+  MATCH_MP_TAC OPEN_INTER THEN
+  ASM_REWRITE_TAC[GSYM real_gt; OPEN_HALFSPACE_IM_GT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bloch's theorem.                                                          *)

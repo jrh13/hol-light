@@ -3599,6 +3599,14 @@ let ONORM = prove
   DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[IN_ELIM_THM] THEN
   ASM_MESON_TAC[VECTOR_CHOOSE_SIZE; LINEAR_BOUNDED; REAL_POS]);;
 
+let ONORM_LE_EQ = prove
+ (`!f:real^M->real^N b.
+        linear f ==> (onorm f <= b <=> !x. norm(f x) <= b * norm x)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL
+   [TRANS_TAC REAL_LE_TRANS `onorm(f:real^M->real^N) * norm(x:real^M)` THEN
+    ASM_SIMP_TAC[ONORM; REAL_LE_RMUL; NORM_POS_LE];
+    ASM_MESON_TAC[ONORM]]);;
+
 let ONORM_POS_LE = prove
  (`!f. linear f ==> &0 <= onorm f`,
   MESON_TAC[ONORM; VECTOR_CHOOSE_SIZE; REAL_POS; REAL_MUL_RID; NORM_POS_LE;
@@ -7267,6 +7275,30 @@ let ORTHONORMAL_BASIS_EXPAND = prove
   MATCH_MP_TAC SUM_EQ THEN ASM_REWRITE_TAC[] THEN
   X_GEN_TAC `w:real^N` THEN DISCH_TAC THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_MUL_RID; REAL_MUL_RZERO]);;
+
+let ORTHONORMAL_BASIS_EXPAND_DOT = prove
+ (`!b x y:real^N.
+        pairwise orthogonal b /\
+        (!v. v IN b ==> norm v = &1) /\
+        (x IN span b \/ y IN span b)
+        ==> sum b (\v. (v dot x) * (v dot y)) = x dot y`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `b:real^N->bool` ORTHONORMAL_BASIS_EXPAND) THENL
+   [DISCH_THEN(MP_TAC o SPEC `x:real^N`);
+    DISCH_THEN(MP_TAC o SPEC `y:real^N`)] THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(fun th ->
+    GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [SYM th]) THEN
+  ASM_SIMP_TAC[DOT_LSUM; DOT_RSUM; PAIRWISE_ORTHOGONAL_IMP_FINITE] THEN
+  REWRITE_TAC[DOT_LMUL; DOT_RMUL] THEN
+  MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[REAL_MUL_SYM; DOT_SYM]);;
+
+let ORTHONORMAL_BASIS_EXPAND_NORM = prove
+ (`!b x:real^N.
+        pairwise orthogonal b /\
+        (!v. v IN b ==> norm v = &1) /\
+        x IN span b
+        ==> sum b (\v. (v dot x) pow 2) = norm x pow 2`,
+  ASM_SIMP_TAC[REAL_POW_2; ORTHONORMAL_BASIS_EXPAND_DOT; NORM_POW_2]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Decomposing a vector into parts in orthogonal subspaces.                  *)
