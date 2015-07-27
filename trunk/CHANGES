@@ -1,3 +1,48 @@
+Wed 22nd Jul 2015       Library/wo.ml
+
+Added the basic fact that a finite toset is a woset:
+
+ WOSET_FINITE_TOSET = |- !l. toset l /\ FINITE (fl l) ==> woset l
+
+Mon 20th Jul 2015       sets.ml
+
+Added a series of theorems about injectivity and surjectivity of the "preimage"
+construct. These are a natural dual to existing "IMAGE" versions, and
+essentially show that the preimage map is injective/surjective when the
+function itself is surjective/injective.
+
+  INJECTIVE_ON_PREIMAGE =
+    |- !f:A->B s u.
+          (!t t'. t SUBSET u /\ t' SUBSET u /\
+                  {x | x IN s /\ f x IN t} = {x | x IN s /\ f x IN t'}
+                  ==> t = t') <=>
+          u SUBSET IMAGE f s
+
+  SURJECTIVE_ON_PREIMAGE =
+    |- !f s u.
+        (!k. k SUBSET s ==> ?t. t SUBSET u /\ {x | x IN s /\ f x IN t} = k) <=>
+        IMAGE f s SUBSET u /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+
+  INJECTIVE_PREIMAGE =
+    |- !f. (!t t'. {x | f x IN t} = {x | f x IN t'} ==> t = t') <=>
+           IMAGE f UNIV = UNIV
+
+  SURJECTIVE_PREIMAGE =
+    |- !f. (!k. ?t. {x | f x IN t} = k) <=> (!x y. f x = f y ==> x = y)
+
+Sun 19th Jul 2015       Library/card.ml
+
+Renamed CARD_ADD_ABSORB to CARD_ADD_ABSORB_LEFT and added a few more basic
+theorems:
+
+  CARD_ADD_ABSORB_RIGHT  = |- !s t. INFINITE s /\ t <=_c s ==> s +_c t =_c s
+
+  CARD_DIFF_ABSORB = |- !s t. INFINITE s /\ t <_c s ==> s DIFF t =_c s
+
+  CARD_UNION_ABSORB_LEFT = |- !s t. INFINITE t /\ s <=_c t ==> s UNION t =_c t
+
+  CARD_UNION_ABSORB_RIGHT = |- !s t. INFINITE s /\ t <=_c s ==> s UNION t =_c s
+
 Fri 17th Jul 2015       Library/floor.ml
 
 Added one more theorem about the rationals:

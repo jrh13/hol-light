@@ -20295,6 +20295,16 @@ let CONTINUOUS_BV_IMP_UNIFORMLY_CONTINUOUS = prove
                     INTERVAL_NE_EMPTY_1] THEN
     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL_1]) THEN ASM_REAL_ARITH_TAC]);;
 
+let HAS_BOUNDED_VARIATION_ON_DARBOUX_IMP_CONTINUOUS = prove
+ (`!f:real^1->real^N s.
+      is_interval s /\ f has_bounded_variation_on s /\
+      (!c. c SUBSET s /\ connected c ==> connected(IMAGE f c))
+      ==> f continuous_on s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DARBOUX_AND_REGULATED_IMP_CONTINUOUS THEN
+  ASM_REWRITE_TAC[SET_RULE `s INTER {x | P x} = {x | x IN s /\ P x}`] THEN
+  ASM_SIMP_TAC[HAS_BOUNDED_VARIATION_LEFT_LIMIT_GEN;
+               HAS_BOUNDED_VARIATION_RIGHT_LIMIT_GEN]);;
+
 (* ------------------------------------------------------------------------- *)
 (* We can factor a BV function through its variation. Moreover the           *)
 (* factor is Lipschitz and continuous on its domain, though without          *)

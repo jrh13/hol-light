@@ -1225,6 +1225,57 @@ let DIFFERENTIABLE_BOUND = prove
   ASM_MESON_TAC[INTERVAL_OPEN_SUBSET_CLOSED; SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A sort of converse bounding the derivatives.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let ONORM_DERIVATIVES_LE = prove
+ (`!f:real^M->real^N g:real^M->real^P f' g' x.
+        (f has_derivative f') (at x) /\
+        (g has_derivative g') (at x) /\
+        eventually (\y. norm(f y - f x) <= norm(g y - g x)) (at x)
+        ==> onorm f' <= onorm g'`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
+  ONCE_REWRITE_TAC[REAL_LE_TRANS_LTE] THEN
+  X_GEN_TAC `b:real` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `((\y. inv(norm(y - x:real^M)) %
+          lift((norm(f y - f x:real^N) - norm(g y - g x:real^P)) -
+               (norm(f'(y - x):real^N) - norm(g'(y - x):real^P))))
+     --> vec 0) (at x)`
+  MP_TAC THENL
+   [FIRST_X_ASSUM(CONJUNCTS_THEN(MP_TAC o CONJUNCT2 o
+     GEN_REWRITE_RULE I [has_derivative_at])) THEN
+    REWRITE_TAC[IMP_IMP] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [LIM_NULL_NORM] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP LIM_NULL_ADD) THEN
+    REWRITE_TAC[GSYM LIFT_ADD] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_NULL_COMPARISON) THEN
+    MATCH_MP_TAC ALWAYS_EVENTUALLY THEN X_GEN_TAC `y:real^M` THEN
+    REWRITE_TAC[NORM_MUL; GSYM REAL_ADD_LDISTRIB] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[REAL_ABS_POS] THEN
+    REWRITE_TAC[NORM_LIFT] THEN CONV_TAC NORM_ARITH;
+    REWRITE_TAC[tendsto] THEN
+    DISCH_THEN(MP_TAC o SPEC `b - onorm(g':real^M->real^P)`) THEN
+    ASM_REWRITE_TAC[REAL_SUB_LT] THEN FIRST_ASSUM(fun th -> MP_TAC th THEN
+     REWRITE_TAC[IMP_IMP] THEN
+     GEN_REWRITE_TAC LAND_CONV [GSYM EVENTUALLY_AND]) THEN
+    FIRST_ASSUM(CONJUNCTS_THEN(ASSUME_TAC o CONJUNCT1 o
+      GEN_REWRITE_RULE I [has_derivative_at])) THEN
+    ASM_SIMP_TAC[ONORM_LE_EVENTUALLY] THEN
+    GEN_REWRITE_TAC LAND_CONV [EVENTUALLY_AT_ZERO] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MP) THEN
+    REWRITE_TAC[EVENTUALLY_AT; DIST_0; VECTOR_ADD_SUB; NORM_POS_LT] THEN
+    EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN X_GEN_TAC `h:real^M` THEN
+    STRIP_TAC THEN REWRITE_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+    REWRITE_TAC[ONCE_REWRITE_RULE[REAL_MUL_SYM] (GSYM real_div)] THEN
+    ASM_SIMP_TAC[REAL_LT_LDIV_EQ; NORM_POS_LT; NORM_LIFT] THEN
+    MATCH_MP_TAC(REAL_ARITH
+     `abs g <= x * h
+      ==> u <= v /\ abs(u - v - (f - g)) < (b - x) * h ==> f <= b * h`) THEN
+    ASM_SIMP_TAC[REAL_ABS_NORM; ONORM]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* In particular.                                                            *)
 (* ------------------------------------------------------------------------- *)
 

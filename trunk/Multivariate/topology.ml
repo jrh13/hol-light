@@ -2791,6 +2791,18 @@ let EVENTUALLY_AT_INFINITY_POS = prove
   GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT_INFINITY; real_ge] THEN
   MESON_TAC[REAL_ARITH `&0 < abs b + &1 /\ (abs b + &1 <= x ==> b <= x)`]);;
 
+let EVENTUALLY_AT_ZERO = prove
+ (`!P:real^N->bool a.
+        eventually P (at a) <=> eventually (\x. P(a + x)) (at (vec 0))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN
+  ASM_CASES_TAC `&0 < d` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `x:real^N` THENL
+   [FIRST_X_ASSUM(MP_TAC o SPEC `a + x:real^N`) THEN
+    REWRITE_TAC[dist; VECTOR_ADD_SUB; VECTOR_SUB_RZERO];
+    FIRST_X_ASSUM(MP_TAC o SPEC `x - a:real^N`) THEN
+    REWRITE_TAC[dist; VECTOR_SUB_RZERO; VECTOR_SUB_ADD2]]);;
+
 let EVENTUALLY_AT_WITHIN = prove
  (`!P s a:real^N.
         eventually P (at a) ==> eventually P (at a within s)`,
@@ -2860,6 +2872,53 @@ let EVENTUALLY_WITHIN_OPEN = prove
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC EVENTUALLY_WITHIN_INTERIOR THEN
   ASM_MESON_TAC[INTERIOR_OPEN]);;
+
+let EVENTUALLY_SCALABLE_PROPERTY = prove
+ (`!P. (!c x:real^N. &0 <= c /\ P x ==> P(c % x)) /\
+       eventually P (at (vec 0))
+       ==> !x. P x`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EVENTUALLY_AT]) THEN
+  REWRITE_TAC[EVENTUALLY_AT; DIST_0; NORM_POS_LT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  ASM_CASES_TAC `x:real^N = vec 0` THENL
+   [SUBGOAL_THEN `?y:real^N. norm(y) = d / &2` STRIP_ASSUME_TAC THENL
+     [MATCH_MP_TAC VECTOR_CHOOSE_SIZE THEN ASM_REAL_ARITH_TAC;
+      FIRST_X_ASSUM(MP_TAC o SPEC `y:real^N`)] THEN
+    ASM_REWRITE_TAC[GSYM NORM_EQ_0] THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; DISCH_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`&0`; `y:real^N`]) THEN
+    ASM_REWRITE_TAC[VECTOR_MUL_LZERO; REAL_LE_REFL];
+    FIRST_X_ASSUM(MP_TAC o SPEC `d / &2 / norm(x) % x:real^N`) THEN
+    ASM_SIMP_TAC[VECTOR_MUL_EQ_0; NORM_MUL; REAL_DIV_EQ_0] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    ASM_SIMP_TAC[NORM_EQ_0; REAL_LT_IMP_NZ; REAL_ABS_DIV; REAL_ABS_NUM] THEN
+    ASM_SIMP_TAC[REAL_ABS_NORM; REAL_DIV_RMUL; NORM_EQ_0] THEN
+    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; DISCH_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL
+     [`norm(x:real^N) / (d / &2)`; `d / &2 / norm(x) % x:real^N`]) THEN
+    ASM_SIMP_TAC[REAL_LE_DIV; NORM_POS_LE; REAL_HALF; REAL_LT_IMP_LE] THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; NORM_EQ_0; REAL_FIELD
+     `~(n = &0) /\ &0 < d ==> n / (d / &2) * d / &2 / n = &1`] THEN
+    REWRITE_TAC[VECTOR_MUL_LID]]);;
+
+let EVENTUALLY_SCALABLE_PROPERTY_EQ = prove
+ (`!P. (!c x:real^N. &0 <= c /\ P x ==> P(c % x))
+       ==> (eventually P (at (vec 0)) <=> !x. P x)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[ALWAYS_EVENTUALLY] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_SCALABLE_PROPERTY) THEN
+  ASM_SIMP_TAC[]);;
+
+let ONORM_LE_EVENTUALLY = prove
+ (`!f:real^M->real^N b.
+        linear f
+        ==> (onorm f <= b <=>
+             eventually (\y. norm(f y) <= b * norm y) (at (vec 0)))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[ONORM_LE_EQ] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC EVENTUALLY_SCALABLE_PROPERTY_EQ THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP LINEAR_CMUL th]) THEN
+  REWRITE_TAC[NORM_MUL] THEN
+  MESON_TAC[REAL_LE_LMUL; REAL_ABS_POS; REAL_MUL_AC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)
@@ -3764,16 +3823,9 @@ let LIM_AT_ID = prove
 let LIM_AT_ZERO = prove
  (`!f:real^M->real^N l a.
         (f --> l) (at a) <=> ((\x. f(a + x)) --> l) (at(vec 0))`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_AT] THEN
-  AP_TERM_TAC THEN ABS_TAC THEN
-  ASM_CASES_TAC `&0 < e` THEN ASM_REWRITE_TAC[] THEN
-  AP_TERM_TAC THEN ABS_TAC THEN
-  ASM_CASES_TAC `&0 < d` THEN ASM_REWRITE_TAC[] THEN
-  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `x:real^M` THENL
-   [FIRST_X_ASSUM(MP_TAC o SPEC `a + x:real^M`) THEN
-    REWRITE_TAC[dist; VECTOR_ADD_SUB; VECTOR_SUB_RZERO];
-    FIRST_X_ASSUM(MP_TAC o SPEC `x - a:real^M`) THEN
-    REWRITE_TAC[dist; VECTOR_SUB_RZERO; VECTOR_SUB_ADD2]]);;
+  REPEAT GEN_TAC THEN REWRITE_TAC[tendsto] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [EVENTUALLY_AT_ZERO] THEN
+  REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
@@ -14249,6 +14301,34 @@ let EXTENSION_FROM_CLOPEN = prove
   CONJ_TAC THENL [MATCH_MP_TAC CLOSED_IN_DIFF; MESON_TAC[]] THEN
   ASM_REWRITE_TAC[CLOSED_IN_REFL]);;
 
+let CONTINUOUS_ON_CLOPEN_INDICATOR = prove
+ (`!s t:real^M->bool a b:real^N.
+        (\x. if x IN t then a else b) continuous_on s <=>
+        a = b \/
+        open_in (subtopology euclidean s) (s INTER t) /\
+        closed_in (subtopology euclidean s) (s INTER t)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = b` THEN
+  ASM_REWRITE_TAC[COND_ID; CONTINUOUS_ON_CONST] THEN
+  EQ_TAC THENL
+   [ DISCH_TAC THEN SUBGOAL_THEN
+    `s INTER t = {x:real^M | x IN s /\ (if x IN t then a else b:real^N) IN {a}}`
+    SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN;
+      MATCH_MP_TAC CONTINUOUS_CLOSED_IN_PREIMAGE_GEN] THEN
+    EXISTS_TAC `{a:real^N,b}` THEN ASM_REWRITE_TAC[] THEN
+    (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+    REWRITE_TAC[CLOSED_IN_SING; OPEN_IN_SING; IN_INSERT] THEN
+    SIMP_TAC[LIMIT_POINT_FINITE; FINITE_RULES];
+    STRIP_TAC THEN
+    SUBST1_TAC(SET_RULE `s:real^M->bool = (s INTER t) UNION (s DIFF t)`) THEN
+    MATCH_MP_TAC CONTINUOUS_ON_CASES_LOCAL THEN
+    REWRITE_TAC[SET_RULE `(s INTER t) UNION (s DIFF t) = s`] THEN
+    ASM_REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s DIFF s INTER t`] THEN
+    ASM_SIMP_TAC[CLOSED_IN_DIFF; CLOSED_IN_REFL]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Componentwise limits and continuity.                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -23800,7 +23880,7 @@ let CARD_EQ_CONDENSATION_POINTS_IN_SET = prove
    `(s DIFF {x | x condensation_point_of s}) +_c
     {x:real^N | x IN s /\ x condensation_point_of s}` THEN
   CONJ_TAC THENL
-   [ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN MATCH_MP_TAC CARD_ADD_ABSORB THEN
+   [ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN MATCH_MP_TAC CARD_ADD_ABSORB_LEFT THEN
     MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
      [POP_ASSUM MP_TAC THEN REWRITE_TAC[INFINITE; CONTRAPOS_THM] THEN
       DISCH_THEN(MP_TAC o CONJ (SPEC `s:real^N->bool`
@@ -26051,6 +26131,206 @@ let HOMEOMORPHIC_GDELTANESS = prove
     MATCH_MP_TAC CONTINUOUS_GDELTA_PREIMAGE THEN ASM_SIMP_TAC[]) in
   REPEAT STRIP_TAC THEN EQ_TAC THEN
   MATCH_MP_TAC lemma THEN ASM_MESON_TAC[HOMEOMORPHIC_SYM]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Very basics about Borel sets.                                             *)
+(* ------------------------------------------------------------------------- *)
+
+let borel_RULES,borel_INDUCT,borel_CASES = new_inductive_definition
+ `(!s. open s ==> borel s) /\
+  (!s. borel s ==> borel((:real^N) DIFF s)) /\
+  (!u. COUNTABLE u /\ (!s. s IN u ==> borel s) ==> borel(UNIONS u))`;;
+
+let OPEN_IMP_BOREL = prove
+ (`!s:real^N->bool. open s ==> borel s`,
+  REWRITE_TAC[borel_RULES]);;
+
+let BOREL_COMPLEMENT = prove
+ (`!s. borel((:real^N) DIFF s) <=> borel s`,
+  MESON_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`; borel_RULES]);;
+
+let BOREL_UNIONS = prove
+ (`!u. COUNTABLE u /\ (!s:real^N->bool. s IN u ==> borel s)
+       ==> borel(UNIONS u)`,
+  REWRITE_TAC[borel_RULES]);;
+
+let BOREL_INTERS = prove
+ (`!u. COUNTABLE u /\ (!s:real^N->bool. s IN u ==> borel s)
+       ==> borel(INTERS u)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INTERS_UNIONS] THEN
+  REWRITE_TAC[BOREL_COMPLEMENT; SIMPLE_IMAGE] THEN
+  MATCH_MP_TAC BOREL_UNIONS THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE; BOREL_COMPLEMENT]);;
+
+let BOREL_EMPTY = prove
+ (`borel {}`,
+  SIMP_TAC[OPEN_IMP_BOREL; OPEN_EMPTY]);;
+
+let BOREL_UNIV = prove
+ (`borel(:real^N)`,
+  SIMP_TAC[OPEN_IMP_BOREL; OPEN_UNIV]);;
+
+let BOREL_UNION = prove
+ (`!s t:real^N->bool. borel s /\ borel t ==> borel(s UNION t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM UNIONS_2] THEN
+  MATCH_MP_TAC BOREL_UNIONS THEN
+  REWRITE_TAC[COUNTABLE_INSERT; FORALL_IN_INSERT] THEN
+  ASM_REWRITE_TAC[COUNTABLE_EMPTY; NOT_IN_EMPTY]);;
+
+let BOREL_INTER = prove
+ (`!s t:real^N->bool. borel s /\ borel t ==> borel(s INTER t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM INTERS_2] THEN
+  MATCH_MP_TAC BOREL_INTERS THEN
+  REWRITE_TAC[COUNTABLE_INSERT; FORALL_IN_INSERT] THEN
+  ASM_REWRITE_TAC[COUNTABLE_EMPTY; NOT_IN_EMPTY]);;
+
+let BOREL_DIFF = prove
+ (`!s t:real^N->bool. borel s /\ borel t ==> borel(s DIFF t)`,
+  ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
+  SIMP_TAC[BOREL_INTER; BOREL_COMPLEMENT]);;
+
+let CLOSED_IMP_BOREL = prove
+ (`!s:real^N->bool. closed s ==> borel s`,
+  GEN_TAC THEN REWRITE_TAC[closed] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP OPEN_IMP_BOREL) THEN
+  REWRITE_TAC[BOREL_COMPLEMENT]);;
+
+let COMPACT_IMP_BOREL = prove
+ (`!s:real^N->bool. compact s ==> borel s`,
+  SIMP_TAC[CLOSED_IMP_BOREL; COMPACT_IMP_CLOSED]);;
+
+let FSIGMA_IMP_BOREL = prove
+ (`!s:real^N->bool. fsigma s ==> borel s`,
+  GEN_TAC THEN REWRITE_TAC[fsigma] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:(real^N->bool)->bool`
+   (STRIP_ASSUME_TAC o GSYM)) THEN
+  ASM_SIMP_TAC[BOREL_UNIONS; CLOSED_IMP_BOREL]);;
+
+let GDELTA_IMP_BOREL = prove
+ (`!s:real^N->bool. gdelta s ==> borel s`,
+  GEN_TAC THEN REWRITE_TAC[gdelta] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:(real^N->bool)->bool`
+   (STRIP_ASSUME_TAC o GSYM)) THEN
+  ASM_SIMP_TAC[BOREL_INTERS; OPEN_IMP_BOREL]);;
+
+let LOCALLY_COMPACT_IMP_BOREL = prove
+ (`!s:real^N->bool. locally compact s ==> borel s`,
+  SIMP_TAC[FSIGMA_IMP_BOREL; FSIGMA_LOCALLY_COMPACT]);;
+
+let OPEN_IN_BOREL = prove
+ (`!s t:real^N->bool.
+        open_in (subtopology euclidean t) s /\ borel t ==> borel s`,
+  REWRITE_TAC[OPEN_IN_OPEN] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC BOREL_INTER THEN
+  ASM_SIMP_TAC[OPEN_IMP_BOREL]);;
+
+let CLOSED_IN_BOREL = prove
+ (`!s t:real^N->bool.
+        closed_in (subtopology euclidean t) s /\ borel t ==> borel s`,
+  REWRITE_TAC[CLOSED_IN_CLOSED] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC BOREL_INTER THEN
+  ASM_SIMP_TAC[CLOSED_IMP_BOREL]);;
+
+let CONTINUOUS_BOREL_PREIMAGE = prove
+ (`!f:real^M->real^N s t.
+        f continuous_on s /\ borel s /\ borel t
+        ==> borel {x | x IN s /\ f x IN t}`,
+  let lemma = prove
+   (`{x | x IN s /\ f x IN UNIONS u} =
+     UNIONS {{x | x IN s /\ f x IN t} | t IN u}`,
+    REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]) in
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MATCH_MP_TAC borel_INDUCT THEN REPEAT CONJ_TAC THENL
+   [X_GEN_TAC `t:real^N->bool` THEN DISCH_TAC THEN
+    MATCH_MP_TAC OPEN_IN_BOREL THEN EXISTS_TAC `s:real^M->bool` THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE THEN
+    ASM_REWRITE_TAC[];
+    ASM_SIMP_TAC[BOREL_DIFF; SET_RULE
+     `{x | x IN s /\ f x IN UNIV DIFF t} = s DIFF {x | x IN s /\ f x IN t}`];
+    REPEAT STRIP_TAC THEN REWRITE_TAC[lemma] THEN
+    MATCH_MP_TAC BOREL_UNIONS THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE]]);;
+
+let HOMEOMORPHIC_BORELNESS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t ==> (borel s <=> borel t)`,
+  let lemma = prove
+   (`!s:real^M->bool t:real^N->bool.
+          s homeomorphic t ==> borel s ==> borel t`,
+    REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+    STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP LAVRENTIEV_HOMEOMORPHISM) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:real^M->bool`; `v:real^N->bool`] THEN
+    MAP_EVERY X_GEN_TAC [`f':real^M->real^N`; `g':real^N->real^M`] THEN
+    STRIP_TAC THEN RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN
+    SUBGOAL_THEN `t = {x | x IN v /\ (g':real^N->real^M) x IN s}`
+    SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_BOREL_PREIMAGE THEN
+    ASM_SIMP_TAC[GDELTA_IMP_BOREL]) in
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  MATCH_MP_TAC lemma THEN ASM_MESON_TAC[HOMEOMORPHIC_SYM]);;
+
+let BOREL_TRANSLATION = prove
+ (`!a:real^N s. borel (IMAGE (\x. a + x) s) <=> borel s`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_BORELNESS THEN
+  REWRITE_TAC[HOMEOMORPHIC_TRANSLATION_SELF]);;
+
+add_translation_invariants [BOREL_TRANSLATION];;
+
+let BOREL_LINEAR_IMAGE = prove
+ (`!f:real^N->real^N s.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> (borel(IMAGE f s) <=> borel s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_BORELNESS THEN
+  MATCH_MP_TAC HOMEOMORPHIC_INJECTIVE_LINEAR_IMAGE_SELF THEN
+  ASM_REWRITE_TAC[]);;
+
+add_linear_invariants [BOREL_LINEAR_IMAGE];;
+
+let BOREL_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool. borel s /\ borel t ==> borel(s PCROSS t)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `s PCROSS t = (s PCROSS (:real^N)) INTER ((:real^M) PCROSS t)`
+  SUBST1_TAC THENL [REWRITE_TAC[INTER_PCROSS; INTER_UNIV]; ALL_TAC] THEN
+  MATCH_MP_TAC BOREL_INTER THEN CONJ_TAC THENL
+   [UNDISCH_TAC `borel(s:real^M->bool)` THEN
+    SPEC_TAC(`s:real^M->bool`,`s:real^M->bool`);
+    UNDISCH_TAC `borel(t:real^N->bool)` THEN
+    SPEC_TAC(`t:real^N->bool`,`t:real^N->bool`)] THEN
+  MATCH_MP_TAC borel_INDUCT THEN REWRITE_TAC[PCROSS_DIFF] THEN
+  SIMP_TAC[OPEN_PCROSS; OPEN_UNIV; OPEN_IMP_BOREL; BOREL_DIFF] THEN
+  REWRITE_TAC[PCROSS_UNIONS] THEN
+  SIMP_TAC[BOREL_UNIONS; FORALL_IN_IMAGE; SIMPLE_IMAGE; COUNTABLE_IMAGE]);;
+
+let BOREL_PCROSS_EQ = prove
+ (`!s:real^M->bool t:real^N->bool.
+        borel(s PCROSS t) <=> s = {} \/ t = {} \/ borel s /\ borel t`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[BOREL_PCROSS; PCROSS_EMPTY; BOREL_EMPTY] THEN
+  MATCH_MP_TAC(TAUT `(~p /\ ~q ==> r) ==> p \/ q \/ r`) THEN
+  REPEAT STRIP_TAC THENL
+   [UNDISCH_TAC `~(t:real^N->bool = {})`;
+    UNDISCH_TAC `~(s:real^M->bool = {})`] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THENL
+   [X_GEN_TAC `y:real^N`; X_GEN_TAC `x:real^M`] THEN
+  DISCH_TAC THENL
+   [SUBGOAL_THEN `s = {x | x IN (:real^M) /\
+                           pastecart x (y:real^N) IN (s PCROSS t)}`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[PASTECART_IN_PCROSS] THEN ASM SET_TAC[]; ALL_TAC];
+    SUBGOAL_THEN `t = {y | y IN (:real^N) /\
+                           pastecart (x:real^M) y IN (s PCROSS t)}`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[PASTECART_IN_PCROSS] THEN ASM SET_TAC[]; ALL_TAC]] THEN
+  MATCH_MP_TAC CONTINUOUS_BOREL_PREIMAGE THEN
+  ASM_REWRITE_TAC[BOREL_UNIV] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_PASTECART THEN
+  REWRITE_TAC[CONTINUOUS_ON_ID; CONTINUOUS_ON_CONST]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Forms of the Baire property of dense sets.                                *)

@@ -90,6 +90,21 @@ let INTEGRAL_MEASURE_UNIV = prove
            lift(measure s)`,
   SIMP_TAC[GSYM DROP_EQ; LIFT_DROP; MEASURE_INTEGRAL_UNIV]);;
 
+let INTEGRABLE_ON_INDICATOR = prove
+ (`!s t:real^N->bool. indicator s integrable_on t <=> measurable(s INTER t)`,
+  ONCE_REWRITE_TAC[GSYM INTEGRABLE_RESTRICT_UNIV] THEN
+  REWRITE_TAC[MEASURABLE_INTEGRABLE; GSYM indicator] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[indicator; IN_INTER] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[VEC_EQ; ARITH_EQ]));;
+
+let ABSOLUTELY_INTEGRABLE_ON_INDICATOR = prove
+ (`!s t:real^N->bool.
+    indicator s absolutely_integrable_on t <=> measurable(s INTER t)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM INTEGRABLE_ON_INDICATOR] THEN
+  REWRITE_TAC[absolutely_integrable_on; indicator; COND_RAND] THEN
+  REWRITE_TAC[NORM_1; DROP_VEC; REAL_ABS_NUM; LIFT_NUM]);;
+
 let HAS_MEASURE_INTERVAL = prove
  (`(!a b:real^N. interval[a,b] has_measure content(interval[a,b])) /\
    (!a b:real^N. interval(a,b) has_measure content(interval[a,b]))`,
@@ -959,6 +974,23 @@ let ABSOLUTELY_INTEGRABLE_ON_CONST = prove
  (`!c. (\x. c) absolutely_integrable_on s <=> c = vec 0 \/ measurable s`,
   REWRITE_TAC[absolutely_integrable_on; INTEGRABLE_ON_CONST] THEN
   REWRITE_TAC[GSYM DROP_EQ; LIFT_DROP; DROP_VEC; NORM_EQ_0]);;
+
+let HAS_INTEGRAL_CONST_GEN = prove
+ (`!s c. measurable s
+         ==> (((\x. c):real^M->real^N) has_integral (measure s % c)) s`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`(\x. vec 1):real^M->real^1`; `integral s ((\x. vec 1):real^M->real^1)`;
+   `s:real^M->bool`; `\v. drop v % (c:real^N)`] HAS_INTEGRAL_LINEAR) THEN
+  ASM_SIMP_TAC[o_DEF; DROP_VEC; VECTOR_MUL_LID; GSYM MEASURE_INTEGRAL] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  SIMP_TAC[LINEAR_VMUL_DROP; LINEAR_ID; GSYM HAS_INTEGRAL_INTEGRAL] THEN
+  ASM_REWRITE_TAC[INTEGRABLE_ON_CONST]);;
+
+let INTEGRAL_CONST_GEN = prove
+ (`!s c. measurable s
+         ==> integral s ((\x. c):real^M->real^N) = measure s % c`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
+  MATCH_MP_TAC HAS_INTEGRAL_CONST_GEN THEN ASM_REWRITE_TAC[]);;
 
 let OPEN_NOT_NEGLIGIBLE = prove
  (`!s:real^N->bool. open s /\ ~(s = {}) ==> ~(negligible s)`,
@@ -8777,6 +8809,12 @@ let FSIGMA_IMP_LEBESGUE_MEASURABLE = prove
   MATCH_MP_TAC LEBESGUE_MEASURABLE_COUNTABLE_UNIONS THEN
   ASM_SIMP_TAC[LEBESGUE_MEASURABLE_CLOSED]);;
 
+let BOREL_IMP_LEBESGUE_MEASURABLE = prove
+ (`!s:real^N->bool. borel s ==> lebesgue_measurable s`,
+  MATCH_MP_TAC borel_INDUCT THEN
+  REWRITE_TAC[LEBESGUE_MEASURABLE_OPEN; LEBESGUE_MEASURABLE_COMPL] THEN
+  REWRITE_TAC[LEBESGUE_MEASURABLE_COUNTABLE_UNIONS]);;
+
 let LEBESGUE_MEASURABLE_IFF_MEASURABLE = prove
  (`!s:real^N->bool. bounded s ==> (lebesgue_measurable s <=> measurable s)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN
@@ -8890,6 +8928,36 @@ let LEBESGUE_MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ = prove
         negligible(s DIFF t UNION t DIFF s)
         ==> (lebesgue_measurable s <=> lebesgue_measurable t)`,
   MESON_TAC[LEBESGUE_MEASURABLE_NEGLIGIBLE_SYMDIFF; UNION_COMM]);;
+
+let ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_INTER = prove
+ (`!f:real^M->real^N s t.
+        f absolutely_integrable_on s /\ lebesgue_measurable t
+        ==> f absolutely_integrable_on (s INTER t)`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[GSYM ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV] THEN
+  STRIP_TAC THEN
+  MATCH_MP_TAC
+    MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_ABSOLUTELY_INTEGRABLE THEN
+  EXISTS_TAC
+   `\x. lift(norm(if x IN s then (f:real^M->real^N) x else vec 0))` THEN
+  ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_NORM; IN_UNIV; IN_INTER;
+               ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE] THEN
+  REWRITE_TAC[MESON[]
+   `(if p /\ q then x else y) = if q then if p then x else y else y`] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC MEASURABLE_ON_CASES THEN
+    ASM_REWRITE_TAC[SET_RULE `{x | x IN s} = s`; MEASURABLE_ON_0] THEN
+    ASM_SIMP_TAC[INTEGRABLE_IMP_MEASURABLE;
+                 ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE];
+    X_GEN_TAC `x:real^M` THEN ASM_CASES_TAC `(x:real^M) IN t` THEN
+    ASM_REWRITE_TAC[REAL_LE_REFL; LIFT_DROP; NORM_0; NORM_POS_LE]]);;
+
+let ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_SUBSET = prove
+ (`!f:real^M->real^N s t.
+        f absolutely_integrable_on s /\ t SUBSET s /\ lebesgue_measurable t
+        ==> f absolutely_integrable_on t`,
+  MESON_TAC[ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_INTER;
+            SET_RULE `s SUBSET t ==> s = t INTER s`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Invariance theorems for Lebesgue measurability.                           *)
@@ -9355,6 +9423,22 @@ let MEASURABLE_ON_PREIMAGE_CLOSED_INTERVAL = prove
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM]);;
 
+let MEASURABLE_ON_PREIMAGE_BOREL = prove
+ (`!f:real^M->real^N.
+        f measurable_on (:real^M) <=>
+        !t. borel t ==> lebesgue_measurable {x | f x IN t}`,
+  let lemma = prove
+   (`{x | f x IN UNIONS u} = UNIONS {{x | f x IN t} | t IN u}`,
+    REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]) in
+  GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC; MESON_TAC[MEASURABLE_ON_PREIMAGE_OPEN; OPEN_IMP_BOREL]] THEN
+  MATCH_MP_TAC borel_INDUCT THEN
+  ASM_REWRITE_TAC[GSYM MEASURABLE_ON_PREIMAGE_OPEN] THEN
+  REWRITE_TAC[LEBESGUE_MEASURABLE_COMPL; lemma;
+    SET_RULE `{x | f x IN UNIV DIFF t} = UNIV DIFF {x | f x IN t}`] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LEBESGUE_MEASURABLE_COUNTABLE_UNIONS THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE]);;
+
 let LEBESGUE_MEASURABLE_PREIMAGE_OPEN = prove
  (`!f:real^M->real^N t.
         f measurable_on (:real^M) /\ open t
@@ -9366,6 +9450,12 @@ let LEBESGUE_MEASURABLE_PREIMAGE_CLOSED = prove
         f measurable_on (:real^M) /\ closed t
         ==> lebesgue_measurable {x | f(x) IN t}`,
   SIMP_TAC[MEASURABLE_ON_PREIMAGE_CLOSED]);;
+
+let LEBESGUE_MEASURABLE_PREIMAGE_BOREL = prove
+ (`!f:real^M->real^N t.
+        f measurable_on (:real^M) /\ borel t
+        ==> lebesgue_measurable {x | f(x) IN t}`,
+  SIMP_TAC[MEASURABLE_ON_PREIMAGE_BOREL]);;
 
 let MEASURABLE_ON_PREIMAGE_ORTHANT_LE = prove
  (`!f:real^M->real^N.
@@ -10269,7 +10359,8 @@ let [MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_CLOSED;
      MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_HALFSPACE_COMPONENT_GT;
      MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_HALFSPACE_COMPONENT_LE;
      MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_HALFSPACE_COMPONENT_LT;
-     MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_OPEN_INTERVAL] =
+     MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_OPEN_INTERVAL;
+     MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_BOREL] =
   (CONJUNCTS o prove)
  (`(!f:real^M->real^N s.
       lebesgue_measurable s
@@ -10306,7 +10397,11 @@ let [MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_CLOSED;
    (!f:real^M->real^N s.
       lebesgue_measurable s
       ==> (f measurable_on s <=>
-           !a b. lebesgue_measurable {x | x IN s /\ f x IN interval(a,b)}))`,
+           !a b. lebesgue_measurable {x | x IN s /\ f x IN interval(a,b)})) /\
+   (!f:real^M->real^N s.
+        lebesgue_measurable s
+        ==> (f measurable_on s <=>
+             !t. borel t ==> lebesgue_measurable {x | x IN s /\ f x IN t}))`,
   let lemma = prove
    (`!f s P. {x | P(if x IN s then f x else vec 0)} =
              if P(vec 0) then s INTER {x | P(f x)} UNION ((:real^M) DIFF s)
@@ -10321,7 +10416,8 @@ let [MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_CLOSED;
     REWRITE_TAC[MEASURABLE_ON_PREIMAGE_HALFSPACE_COMPONENT_GT];
     REWRITE_TAC[MEASURABLE_ON_PREIMAGE_HALFSPACE_COMPONENT_LE];
     REWRITE_TAC[MEASURABLE_ON_PREIMAGE_HALFSPACE_COMPONENT_LT];
-    REWRITE_TAC[MEASURABLE_ON_PREIMAGE_OPEN_INTERVAL]] THEN
+    REWRITE_TAC[MEASURABLE_ON_PREIMAGE_OPEN_INTERVAL];
+    REWRITE_TAC[MEASURABLE_ON_PREIMAGE_BOREL]] THEN
   MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`] lemma) THEN
   DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
   REPEAT(AP_TERM_TAC THEN ABS_TAC) THEN
@@ -10462,6 +10558,22 @@ let MEASURABLE_ON_MEASURABLE_PREIMAGE_CLOSED_EQ = prove
   DISCH_THEN(fun th -> MP_TAC th THEN MP_TAC(SPEC `(:real^N)` th)) THEN
   REWRITE_TAC[CLOSED_UNIV; SET_RULE `{x | x IN s /\ f x IN UNIV} = s`] THEN
   SIMP_TAC[MEASURABLE_ON_MEASURABLE_PREIMAGE_CLOSED]);;
+
+let LEBESGUE_MEASURABLE_LEBESGUE_MEASURABLE_PREIMAGE_BOREL = prove
+ (`!f:real^M->real^N s t.
+        f measurable_on s /\ lebesgue_measurable s /\ borel t
+        ==> lebesgue_measurable {x | x IN s /\ f(x) IN t}`,
+  MESON_TAC[MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_BOREL]);;
+
+let MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_BOREL_EQ = prove
+ (`!f:real^M->real^N s.
+        f measurable_on s /\ lebesgue_measurable s <=>
+        !t. borel t ==> lebesgue_measurable {x | x IN s /\ f x IN t}`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN
+  SIMP_TAC[LEBESGUE_MEASURABLE_LEBESGUE_MEASURABLE_PREIMAGE_BOREL] THEN
+  DISCH_THEN(fun th -> MP_TAC th THEN MP_TAC(SPEC `(:real^N)` th)) THEN
+  REWRITE_TAC[BOREL_UNIV; SET_RULE `{x | x IN s /\ f x IN UNIV} = s`] THEN
+  SIMP_TAC[MEASURABLE_ON_LEBESGUE_MEASURABLE_PREIMAGE_BOREL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Regularity properties and Steinhaus, this time for Lebesgue measure.      *)
@@ -10637,7 +10749,7 @@ let LEBESGUE_MEASURABLE_SMALL_IMP_NEGLIGIBLE = prove
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A Lebesgue measurable set is almost an F_sigma.                           *)
+(* A Lebesgue measurable set is almost an F_sigma or G_delta.                *)
 (* ------------------------------------------------------------------------- *)
 
 let LEBESGUE_MEASURABLE_ALMOST_FSIGMA = prove
@@ -10670,6 +10782,18 @@ let LEBESGUE_MEASURABLE_ALMOST_FSIGMA = prove
   ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
   REWRITE_TAC[REAL_OF_NUM_LE; REAL_OF_NUM_LT; REAL_OF_NUM_ADD] THEN
   ASM_ARITH_TAC);;
+
+let LEBESGUE_MEASURABLE_ALMOST_GDELTA = prove
+ (`!s:real^N->bool.
+        lebesgue_measurable s
+        ==> ?c t. gdelta c /\ negligible t /\ s UNION t = c /\ DISJOINT t s`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM LEBESGUE_MEASURABLE_COMPL] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LEBESGUE_MEASURABLE_ALMOST_FSIGMA) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`c:real^N->bool`; `t:real^N->bool`] THEN STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC [`(:real^N) DIFF c`; `t:real^N->bool`] THEN
+  ASM_REWRITE_TAC[GDELTA_COMPLEMENT] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of nonmeasurable subsets of any set of positive measure.        *)
@@ -10991,51 +11115,37 @@ let CONTINUOUS_AE_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET = prove
     SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Versions of the Lebesgue density theorem. Later we have cosmetically      *)
-(* nicer ones using real limits.                                             *)
+(* Versions of the Lebesgue density theorem, both integral and measure       *)
+(* forms. Later we have cosmetically nicer ones using real limits.           *)
 (* ------------------------------------------------------------------------- *)
 
-let LEBESGUE_DENSITY_THEOREM_LIFT_CBALL = prove
- (`!s:real^N->bool.
-      lebesgue_measurable s
-      ==> ?k. negligible k /\
-              !x. ~(x IN k)
-                  ==> ((\e. lift(measure(s INTER cball(x,drop e)) /
-                                 measure(cball(x,drop e))))
-                       --> (if x IN s then vec 1 else vec 0))
-                      (at (vec 0) within {t | &0 < drop t})`,
-  REPEAT STRIP_TAC THEN MP_TAC (ISPEC
-   `indicator(s:real^N->bool)` ABSOLUTELY_INTEGRABLE_LEBESGUE_POINTS) THEN
-  ANTS_TAC THENL
-   [REPEAT GEN_TAC THEN REWRITE_TAC[indicator] THEN
-    MATCH_MP_TAC NONNEGATIVE_ABSOLUTELY_INTEGRABLE THEN CONJ_TAC THENL
-     [MESON_TAC[VEC_COMPONENT; REAL_POS]; ALL_TAC] THEN
-    REWRITE_TAC[INTEGRABLE_RESTRICT_INTER] THEN
-    ONCE_REWRITE_TAC[GSYM INTEGRABLE_RESTRICT_UNIV] THEN
-    REWRITE_TAC[GSYM MEASURABLE_INTEGRABLE] THEN
-    MATCH_MP_TAC MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE THEN
-    ASM_REWRITE_TAC[MEASURABLE_INTERVAL];
-    ALL_TAC] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real^N->bool` THEN
+let LEBESGUE_DENSITY_THEOREM_INTEGRAL_NORM_CBALL = prove
+ (`!f:real^M->real^N.
+        (!a b. f absolutely_integrable_on interval[a,b])
+        ==> ?k. negligible k /\
+                !x. ~(x IN k)
+                    ==> ((\e. inv(measure(cball(x,drop e))) %
+                              integral (cball(x,drop e))
+                                       (\y. lift(norm(f y - f x))))
+                        --> vec 0)
+                        (at (vec 0) within {t | &0 < drop t})`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP ABSOLUTELY_INTEGRABLE_LEBESGUE_POINTS) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real^M->bool` THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[LIM_WITHIN; IN_ELIM_THM] THEN
-  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN
   STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
-   [`x:real^N`; `e / &(dimindex(:N)) pow dimindex(:N)`]) THEN
-  ASM_SIMP_TAC[REAL_LT_DIV; REAL_POW_LT;
+   [`x:real^M`; `e / &(dimindex(:M)) pow dimindex(:M)`]) THEN
+  ASM_SIMP_TAC[REAL_LT_DIV; REAL_POW_LT; DIST_0;
                REAL_OF_NUM_LT; LE_1; DIMINDEX_GE_1] THEN
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN STRIP_TAC THEN
-  ASM_REWRITE_TAC[REAL_SUB_RZERO] THEN
-  REWRITE_TAC[FORALL_LIFT; LIFT_DROP; DIST_0; NORM_LIFT] THEN
+  ASM_REWRITE_TAC[FORALL_LIFT; NORM_LIFT; LIFT_DROP] THEN
   X_GEN_TAC `h:real` THEN STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `h:real`) THEN
   ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
   SIMP_TAC[REAL_LT_RDIV_EQ;  REAL_POW_LT;
            REAL_OF_NUM_LT; LE_1; DIMINDEX_GE_1] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LET_TRANS) THEN
-  REWRITE_TAC[DIST_1; LIFT_DROP] THEN
-  ONCE_REWRITE_TAC[COND_RAND] THEN REWRITE_TAC[DROP_VEC] THEN
-  ASM_SIMP_TAC[MEASURE_CBALL_POS; REAL_FIELD
-   `&0 < y ==> x / y - a = inv(y) * (x - a * y)`] THEN
   REWRITE_TAC[REAL_ABS_MUL; NORM_MUL] THEN ONCE_REWRITE_TAC
    [REAL_ARITH `x <= (abs a * b) * c <=> x <= (abs(a) * c) * b`] THEN
   MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_ABS_POS] THEN
@@ -11049,9 +11159,9 @@ let LEBESGUE_DENSITY_THEOREM_LIFT_CBALL = prove
                   VECTOR_SUB_COMPONENT] THEN ASM_REAL_ARITH_TAC;
       SIMP_TAC[real_abs; CONTENT_POS_LE; MEASURE_POS_LE; MEASURABLE_CBALL] THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN
-      EXISTS_TAC `measure(interval[x - h / &(dimindex(:N)) % vec 1:real^N,
-                                   x + h / &(dimindex(:N)) % vec 1]) *
-                  &(dimindex (:N)) pow dimindex (:N)` THEN
+      EXISTS_TAC `measure(interval[x - h / &(dimindex(:M)) % vec 1:real^M,
+                                   x + h / &(dimindex(:M)) % vec 1]) *
+                  &(dimindex (:M)) pow dimindex (:M)` THEN
       CONJ_TAC THENL
        [REWRITE_TAC[MEASURE_INTERVAL; CONTENT_CLOSED_INTERVAL_CASES] THEN
         REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT; VEC_COMPONENT;
@@ -11068,73 +11178,175 @@ let LEBESGUE_DENSITY_THEOREM_LIFT_CBALL = prove
         MATCH_MP_TAC MEASURE_SUBSET THEN
         REWRITE_TAC[MEASURABLE_INTERVAL; MEASURABLE_CBALL] THEN
         REWRITE_TAC[SUBSET; IN_INTERVAL; IN_CBALL] THEN
-        X_GEN_TAC `y:real^N` THEN
+        X_GEN_TAC `y:real^M` THEN
         REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT; VEC_COMPONENT;
                     VECTOR_SUB_COMPONENT; REAL_MUL_RID; REAL_ARITH
                      `x - h <= y /\ y <= x + h <=> abs(x - y) <= h`] THEN
         STRIP_TAC THEN REWRITE_TAC[dist] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
-        EXISTS_TAC `sum(1..dimindex(:N)) (\i. abs((x - y:real^N)$i))` THEN
+        EXISTS_TAC `sum(1..dimindex(:M)) (\i. abs((x - y:real^M)$i))` THEN
         REWRITE_TAC[NORM_LE_L1] THEN MATCH_MP_TAC SUM_BOUND_GEN THEN
         ASM_REWRITE_TAC[CARD_NUMSEG_1; VECTOR_SUB_COMPONENT; IN_NUMSEG] THEN
         REWRITE_TAC[FINITE_NUMSEG; NUMSEG_EMPTY; NOT_LT; DIMINDEX_GE_1]]];
-    REWRITE_TAC[NORM_REAL; GSYM drop] THEN
-    MATCH_MP_TAC(REAL_ARITH `x <= y ==> x <= abs y`) THEN
-    MATCH_MP_TAC REAL_LE_TRANS THEN
-    EXISTS_TAC `drop(integral (cball(x:real^N,h))
-                   (\t. lift(norm(indicator s t - indicator s x))))` THEN
-    CONJ_TAC THENL
-     [ASM_SIMP_TAC[MEASURE_INTEGRAL; MEASURABLE_CBALL;
-                   MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE] THEN
-      REWRITE_TAC[GSYM INTEGRAL_RESTRICT_INTER; GSYM DROP_CMUL] THEN
-      SIMP_TAC[GSYM INTEGRAL_CMUL; GSYM MEASURABLE; MEASURABLE_CBALL] THEN
-      REWRITE_TAC[GSYM DROP_SUB; COND_RATOR; COND_RAND] THEN
-      REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_MUL_LID] THEN
-      ASM_SIMP_TAC[GSYM INTEGRAL_SUB; INTEGRABLE_RESTRICT_INTER;
-                   GSYM MEASURABLE; MEASURABLE_CBALL; INTEGRABLE_ON_CONST;
-                   MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE] THEN
-      REWRITE_TAC[GSYM NORM_REAL; drop] THEN REWRITE_TAC[GSYM drop] THEN
-      MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
-      ASM_SIMP_TAC[INTEGRABLE_SUB; INTEGRABLE_RESTRICT_INTER;
-                   GSYM MEASURABLE; MEASURABLE_CBALL; INTEGRABLE_ON_CONST;
-                   MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE] THEN
-      CONJ_TAC THENL
-       [ALL_TAC;
-        GEN_TAC THEN DISCH_TAC THEN
-        REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[indicator]) THEN
-        REWRITE_TAC[NORM_REAL; GSYM drop; DROP_SUB; LIFT_DROP; DROP_VEC] THEN
-        REAL_ARITH_TAC];
-      REWRITE_TAC[NORM_REAL; GSYM drop; LIFT_DROP] THEN
-      MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE THEN
-      REPEAT CONJ_TAC THENL
+      REWRITE_TAC[NORM_POS_LE] THEN
+      SUBGOAL_THEN
+       `cball(x:real^M,h) SUBSET interval[x - h % vec 1,x + h % vec 1]`
+      ASSUME_TAC THENL
        [REWRITE_TAC[SUBSET; IN_CBALL; IN_INTERVAL] THEN
         REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT; VEC_COMPONENT;
                     VECTOR_SUB_COMPONENT; REAL_MUL_RID; REAL_ARITH
                        `x - h <= y /\ y <= x + h <=> abs(x - y) <= h`] THEN
         REWRITE_TAC[dist; GSYM VECTOR_SUB_COMPONENT] THEN
         MESON_TAC[REAL_LE_TRANS; COMPONENT_LE_NORM];
-        ALL_TAC;
-        ALL_TAC;
-        REWRITE_TAC[LIFT_DROP; REAL_ABS_POS]]]] THEN
-  REWRITE_TAC[GSYM NORM_REAL; drop] THEN
-  MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE THEN
-  MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_NORM THEN
-  MATCH_MP_TAC(INST_TYPE [`:1`,`:P`]
-    ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND) THEN
-  EXISTS_TAC `(\x. vec 1):real^N->real^1` THEN
-  REWRITE_TAC[DROP_VEC; GSYM MEASURABLE; MEASURABLE_INTERVAL;
-              MEASURABLE_CBALL] THEN
-  (CONJ_TAC THENL
-    [GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[indicator] THEN
-     REPEAT(COND_CASES_TAC THEN
-            ASM_REWRITE_TAC[NORM_REAL; GSYM drop; DROP_SUB; DROP_VEC]) THEN
-     CONV_TAC REAL_RAT_REDUCE_CONV;
-     ALL_TAC]) THEN
-  MATCH_MP_TAC INTEGRABLE_SUB THEN
-  REWRITE_TAC[INTEGRABLE_ON_CONST; MEASURABLE_INTERVAL; MEASURABLE_CBALL] THEN
-  REWRITE_TAC[indicator; INTEGRABLE_RESTRICT_INTER] THEN
-  REWRITE_TAC[GSYM MEASURABLE] THEN
-  ASM_SIMP_TAC[MEASURABLE_CBALL; MEASURABLE_INTERVAL;
-               MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE]);;
+        ALL_TAC] THEN
+      SUBGOAL_THEN
+       `(f:real^M->real^N) absolutely_integrable_on cball(x,h)`
+      ASSUME_TAC THENL
+       [ASM_MESON_TAC[ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_SUBSET;
+                      LEBESGUE_MEASURABLE_CBALL];
+        ALL_TAC] THEN
+      ONCE_REWRITE_TAC[GSYM INTEGRAL_RESTRICT_UNIV] THEN
+      REWRITE_TAC[NORM_1] THEN
+      MATCH_MP_TAC(REAL_ARITH `a <= b ==> a <= abs b`) THEN
+      REWRITE_TAC[GSYM NORM_1] THEN
+      MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
+      ASM_REWRITE_TAC[INTEGRABLE_RESTRICT_UNIV] THEN
+      ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_IMP_LIFT_NORM_INTEGRABLE;
+                   ABSOLUTELY_INTEGRABLE_SUB; ABSOLUTELY_INTEGRABLE_ON_CONST;
+                   MEASURABLE_CBALL; MEASURABLE_INTERVAL; IN_UNIV] THEN
+      GEN_TAC THEN
+      REPEAT(COND_CASES_TAC THEN
+             ASM_REWRITE_TAC[NORM_LIFT; REAL_ABS_NORM; LIFT_DROP; NORM_0;
+                             DROP_VEC; NORM_POS_LE; REAL_LE_REFL]) THEN
+      ASM SET_TAC[]]);;
+
+let LEBESGUE_DENSITY_THEOREM_INTEGRAL_NORM_BALL = prove
+ (`!f:real^M->real^N.
+        (!a b. f absolutely_integrable_on interval[a,b])
+        ==> ?k. negligible k /\
+                !x. ~(x IN k)
+                    ==> ((\e. inv(measure(ball(x,drop e))) %
+                              integral (ball(x,drop e))
+                                       (\y. lift(norm(f y - f x))))
+                        --> vec 0)
+                        (at (vec 0) within {t | &0 < drop t})`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o
+    MATCH_MP LEBESGUE_DENSITY_THEOREM_INTEGRAL_NORM_CBALL) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real^M->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_TRANSFORM_EVENTUALLY) THEN
+  REWRITE_TAC[EVENTUALLY_WITHIN; IN_ELIM_THM; FORALL_LIFT; LIFT_DROP] THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[DIST_0; NORM_LIFT; REAL_LT_01] THEN
+  X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[GSYM CLOSURE_BALL; MEASURE_CLOSURE; BOUNDED_BALL;
+               NEGLIGIBLE_CONVEX_FRONTIER; CONVEX_BALL] THEN
+  AP_TERM_TAC THEN MATCH_MP_TAC INTEGRAL_SPIKE_SET THEN
+  ASM_SIMP_TAC[CLOSURE_BALL] THEN MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `sphere(x:real^M,e)` THEN REWRITE_TAC[NEGLIGIBLE_SPHERE] THEN
+  REWRITE_TAC[GSYM SPHERE_UNION_BALL] THEN SET_TAC[]);;
+
+let LEBESGUE_DENSITY_THEOREM_INTEGRAL_CBALL = prove
+ (`!f:real^M->real^N s.
+        (!a b. f absolutely_integrable_on (s INTER interval[a,b]))
+        ==> ?k. negligible k /\
+                !x. ~(x IN k)
+                    ==> ((\e. inv(measure(cball(x,drop e))) %
+                              integral (s INTER cball(x,drop e)) f)
+                         --> (if x IN s then f x else vec 0))
+                        (at (vec 0) within {t | &0 < drop t})`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM INTEGRAL_RESTRICT_INTER] THEN
+  ONCE_REWRITE_TAC[GSYM ABSOLUTELY_INTEGRABLE_RESTRICT_INTER] THEN
+  ABBREV_TAC `g:real^M->real^N = \x. if x IN s then f x else vec 0` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[FUN_EQ_THM]) THEN ASM_REWRITE_TAC[] THEN
+  POP_ASSUM_LIST(K ALL_TAC) THEN
+  SPEC_TAC(`g:real^M->real^N`,`f:real^M->real^N`) THEN
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP
+    LEBESGUE_DENSITY_THEOREM_INTEGRAL_NORM_CBALL) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real^M->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [LIM_NULL] THEN
+  GEN_REWRITE_TAC (LAND_CONV o RATOR_CONV o LAND_CONV o ABS_CONV)
+   [GSYM LIFT_DROP] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_NULL_COMPARISON) THEN
+  REWRITE_TAC[EVENTUALLY_WITHIN; IN_ELIM_THM; DIST_0; FORALL_LIFT] THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[LIFT_DROP; NORM_LIFT; REAL_LT_01] THEN
+  X_GEN_TAC `e:real` THEN STRIP_TAC THEN REWRITE_TAC[DROP_CMUL] THEN
+  ASM_SIMP_TAC[ONCE_REWRITE_RULE[REAL_MUL_SYM] (GSYM real_div);
+               REAL_LE_RDIV_EQ; MEASURE_CBALL_POS] THEN
+  MATCH_MP_TAC(REAL_ARITH `abs(x * y) <= z ==> y * x <= z`) THEN
+  REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_NORM; GSYM NORM_MUL] THEN
+  ASM_SIMP_TAC[VECTOR_SUB_LDISTRIB; VECTOR_MUL_ASSOC; REAL_MUL_RINV;
+               REAL_LT_IMP_NZ; MEASURE_CBALL_POS] THEN
+  SIMP_TAC[GSYM INTEGRAL_CONST_GEN; MEASURABLE_CBALL; VECTOR_MUL_LID] THEN
+  SUBGOAL_THEN `(f:real^M->real^N) absolutely_integrable_on cball(x,e)`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_SUBSET THEN
+    EXISTS_TAC `interval[x - e % vec 1:real^M,x + e % vec 1]` THEN
+    ASM_REWRITE_TAC[LEBESGUE_MEASURABLE_CBALL] THEN
+    REWRITE_TAC[SUBSET; IN_CBALL; IN_INTERVAL] THEN
+    REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_MUL_COMPONENT; VEC_COMPONENT;
+                VECTOR_SUB_COMPONENT; REAL_MUL_RID; REAL_ARITH
+                   `x - h <= y /\ y <= x + h <=> abs(x - y) <= h`] THEN
+    REWRITE_TAC[dist; GSYM VECTOR_SUB_COMPONENT] THEN
+    MESON_TAC[REAL_LE_TRANS; COMPONENT_LE_NORM];
+    ASM_SIMP_TAC[GSYM INTEGRAL_SUB; INTEGRABLE_ON_CONST; MEASURABLE_CBALL;
+                 ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE]] THEN
+  MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
+  ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_IMP_LIFT_NORM_INTEGRABLE;
+               ABSOLUTELY_INTEGRABLE_SUB; ABSOLUTELY_INTEGRABLE_ON_CONST;
+               MEASURABLE_CBALL; ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE] THEN
+  REWRITE_TAC[LIFT_DROP; REAL_LE_REFL]);;
+
+let LEBESGUE_DENSITY_THEOREM_INTEGRAL_BALL = prove
+ (`!f:real^M->real^N s.
+        (!a b. f absolutely_integrable_on (s INTER interval[a,b]))
+        ==> ?k. negligible k /\
+                !x. ~(x IN k)
+                    ==> ((\e. inv(measure(ball(x,drop e))) %
+                              integral (s INTER ball(x,drop e)) f)
+                         --> (if x IN s then f x else vec 0))
+                        (at (vec 0) within {t | &0 < drop t})`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP LEBESGUE_DENSITY_THEOREM_INTEGRAL_CBALL) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real^M->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_TRANSFORM_EVENTUALLY) THEN
+  REWRITE_TAC[EVENTUALLY_WITHIN; IN_ELIM_THM; FORALL_LIFT; LIFT_DROP] THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[DIST_0; NORM_LIFT; REAL_LT_01] THEN
+  X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[GSYM CLOSURE_BALL; MEASURE_CLOSURE; BOUNDED_BALL;
+               NEGLIGIBLE_CONVEX_FRONTIER; CONVEX_BALL] THEN
+  AP_TERM_TAC THEN MATCH_MP_TAC INTEGRAL_SPIKE_SET THEN
+  ASM_SIMP_TAC[CLOSURE_BALL] THEN MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `sphere(x:real^M,e)` THEN REWRITE_TAC[NEGLIGIBLE_SPHERE] THEN
+  REWRITE_TAC[GSYM SPHERE_UNION_BALL] THEN SET_TAC[]);;
+
+let LEBESGUE_DENSITY_THEOREM_LIFT_CBALL = prove
+ (`!s:real^N->bool.
+      lebesgue_measurable s
+      ==> ?k. negligible k /\
+              !x. ~(x IN k)
+                  ==> ((\e. lift(measure(s INTER cball(x,drop e)) /
+                                 measure(cball(x,drop e))))
+                       --> (if x IN s then vec 1 else vec 0))
+                      (at (vec 0) within {t | &0 < drop t})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`indicator(s:real^N->bool)`; `(:real^N)`]
+        LEBESGUE_DENSITY_THEOREM_INTEGRAL_CBALL) THEN
+  REWRITE_TAC[IN_UNIV; INTER_UNIV] THEN
+  ASM_REWRITE_TAC[ABSOLUTELY_INTEGRABLE_ON_INDICATOR] THEN
+  ASM_SIMP_TAC[MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE;
+               MEASURABLE_INTERVAL] THEN
+  REWRITE_TAC[indicator; INTEGRAL_RESTRICT_INTER] THEN
+  ASM_SIMP_TAC[INTEGRAL_CONST_GEN; MEASURABLE_CBALL;
+               MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE] THEN
+  REWRITE_TAC[GSYM LIFT_EQ_CMUL] THEN
+  REWRITE_TAC[ONCE_REWRITE_RULE[REAL_MUL_SYM] real_div; LIFT_CMUL]);;
 
 let LEBESGUE_DENSITY_THEOREM_LIFT_BALL = prove
  (`!s:real^N->bool.
@@ -11343,6 +11555,73 @@ let DIFFERENTIAL_ZERO_MAXMIN_DENSITY = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
   ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[DIST_SYM] THEN
   ASM_REAL_ARITH_TAC);;
+
+let DIFFERENTIAL_ZERO_LEVELSET_DENSITY = prove
+ (`!f:real^M->real^N f' s a c.
+        (f has_derivative f') (at a within s) /\
+        eventually (\x. f x = c) (at a within s) /\
+        lebesgue_measurable s /\
+        ((\e. lift
+              (measure (s INTER ball (a,drop e)) /
+               measure (ball (a,drop e)))) -->
+         vec 1)
+        (at (vec 0) within {t | &0 < drop t})
+        ==> f' = \h. vec 0`,
+  ONCE_REWRITE_TAC[HAS_DERIVATIVE_COMPONENTWISE_WITHIN] THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `!i. 1 <= i /\ i <= dimindex(:N)
+                    ==> (\x. lift((f':real^M->real^N) x$i)) = (\x. vec 0)`
+  MP_TAC THENL
+   [ALL_TAC;
+    SIMP_TAC[FUN_EQ_THM; GSYM DROP_EQ; LIFT_DROP; DROP_VEC] THEN
+    SIMP_TAC[CART_EQ; VEC_COMPONENT]] THEN
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC DIFFERENTIAL_ZERO_MAXMIN_DENSITY THEN
+  MAP_EVERY EXISTS_TAC
+   [`\x. lift((f:real^M->real^N) x$i)`; `s:real^M->bool`; `a:real^M`] THEN
+  ASM_SIMP_TAC[LIFT_DROP] THEN
+  ASM_CASES_TAC `(c:real^N)$i <= (f:real^M->real^N) a$i` THENL
+   [DISJ2_TAC; DISJ1_TAC] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP(REWRITE_RULE[IMP_CONJ_ALT]
+        EVENTUALLY_MONO)) THEN
+  ASM_SIMP_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let NEGLIGIBLE_POINTS_OF_AMBIGUOUS_DERIVATIVE = prove
+ (`!f:real^M->real^N s.
+        lebesgue_measurable s
+        ==> negligible
+             {x | x IN s /\ ?y z. (f has_derivative y) (at x within s) /\
+                                  (f has_derivative z) (at x within s) /\
+                                  ~(y = z)}`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC
+   `{x:real^M | x IN s /\
+                ~(((\e. lift(measure(s INTER ball(x,drop e)) /
+                             measure(ball(x,drop e)))) -->
+                  vec 1) (at (vec 0) within {t | &0 < drop t}))}` THEN
+  CONJ_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP LEBESGUE_DENSITY_THEOREM_LIFT_BALL) THEN
+    DISCH_THEN(X_CHOOSE_THEN `k:real^M->bool`
+     (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)) THEN
+    MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:real^M` THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ ~q ==> r <=> p ==> ~r ==> q`] THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN
+    ASM_REWRITE_TAC[];
+    REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:real^M` THEN
+    MATCH_MP_TAC(TAUT `(p ==> r ==> ~q) ==> p /\ q ==> p /\ ~r`) THEN
+    REWRITE_TAC[NOT_EXISTS_THM] THEN REPEAT DISCH_TAC THEN
+    MAP_EVERY X_GEN_TAC [`f':real^M->real^N`; `f'':real^M->real^N`] THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    REWRITE_TAC[FUN_EQ_THM] THEN ONCE_REWRITE_TAC[GSYM VECTOR_SUB_EQ] THEN
+    GEN_REWRITE_TAC I [GSYM FUN_EQ_THM] THEN
+    MATCH_MP_TAC DIFFERENTIAL_ZERO_LEVELSET_DENSITY THEN
+    MAP_EVERY EXISTS_TAC
+     [`\x. (f:real^M->real^N) x - f x`;
+      `s:real^M->bool`; `x:real^M`; `vec 0:real^N`] THEN
+    ASM_SIMP_TAC[HAS_DERIVATIVE_SUB] THEN
+    REWRITE_TAC[VECTOR_SUB_REFL; EVENTUALLY_TRUE]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Various Vitali-type covering lemmas.                                      *)
@@ -13407,36 +13686,6 @@ let MEASURABLE_ON_VECTOR_DERIVATIVE = prove
     FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         NEGLIGIBLE_SUBSET)) THEN
     SET_TAC[]]);;
-
-let ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_INTER = prove
- (`!f:real^M->real^N s t.
-        f absolutely_integrable_on s /\ lebesgue_measurable t
-        ==> f absolutely_integrable_on (s INTER t)`,
-  REPEAT GEN_TAC THEN
-  ONCE_REWRITE_TAC[GSYM ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV] THEN
-  STRIP_TAC THEN
-  MATCH_MP_TAC
-    MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_ABSOLUTELY_INTEGRABLE THEN
-  EXISTS_TAC
-   `\x. lift(norm(if x IN s then (f:real^M->real^N) x else vec 0))` THEN
-  ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_NORM; IN_UNIV; IN_INTER;
-               ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE] THEN
-  REWRITE_TAC[MESON[]
-   `(if p /\ q then x else y) = if q then if p then x else y else y`] THEN
-  CONJ_TAC THENL
-   [MATCH_MP_TAC MEASURABLE_ON_CASES THEN
-    ASM_REWRITE_TAC[SET_RULE `{x | x IN s} = s`; MEASURABLE_ON_0] THEN
-    ASM_SIMP_TAC[INTEGRABLE_IMP_MEASURABLE;
-                 ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE];
-    X_GEN_TAC `x:real^M` THEN ASM_CASES_TAC `(x:real^M) IN t` THEN
-    ASM_REWRITE_TAC[REAL_LE_REFL; LIFT_DROP; NORM_0; NORM_POS_LE]]);;
-
-let ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_SUBSET = prove
- (`!f:real^M->real^N s t.
-        f absolutely_integrable_on s /\ t SUBSET s /\ lebesgue_measurable t
-        ==> f absolutely_integrable_on t`,
-  MESON_TAC[ABSOLUTELY_INTEGRABLE_ON_LEBSESGUE_MEASURABLE_INTER;
-            SET_RULE `s SUBSET t ==> s = t INTER s`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More refined measurability bounds for Lipschitz or differentiable images. *)
@@ -18326,6 +18575,40 @@ let ABSOLUTELY_CONTINUOUS_DIFFERENTIABLE_BV = prove
   ASM_REWRITE_TAC[COUNTABLE_EMPTY; DIFF_EMPTY; GSYM differentiable_on] THEN
   ASM_SIMP_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_ON] THEN
   REWRITE_TAC[IS_INTERVAL_INTERVAL; BOUNDED_INTERVAL]);;
+
+let ABSOLUTELY_CONTINUOUS_ON_COMPOSE = prove
+ (`!f:real^1->real^N g s t.
+        is_interval s /\ bounded s /\
+        is_interval t /\ bounded t /\
+        f absolutely_continuous_on t /\
+        g absolutely_continuous_on s /\
+        IMAGE g s SUBSET t
+        ==> ((f o g) absolutely_continuous_on s <=>
+             (f o g) has_bounded_variation_on s)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THEN
+  ASM_SIMP_TAC[ABSOLUTELY_CONTINUOUS_ON_IMP_HAS_BOUNDED_VARIATION_ON] THEN
+  ONCE_REWRITE_TAC[ABSOLUTELY_CONTINUOUS_ON_COMPONENTWISE;
+                   HAS_BOUNDED_VARIATION_ON_COMPONENTWISE] THEN
+  POP_ASSUM MP_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o funpow 4 RAND_CONV o LAND_CONV)
+   [ABSOLUTELY_CONTINUOUS_ON_COMPONENTWISE] THEN
+  REWRITE_TAC[RIGHT_AND_FORALL_THM; LEFT_AND_FORALL_THM] THEN
+  REWRITE_TAC[IMP_IMP; AND_FORALL_THM] THEN MATCH_MP_TAC MONO_FORALL THEN
+  X_GEN_TAC `i:num` THEN
+  ASM_CASES_TAC `1 <= i /\ i <= dimindex(:N)` THEN ASM_REWRITE_TAC[o_DEF] THEN
+  SUBGOAL_THEN
+   `!h. (\x:real^1. lift(((f:real^1->real^N)(h x))$i)) =
+        (\x. lift(f x$i)) o h`
+   (fun th -> ONCE_REWRITE_TAC[th])
+  THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  SPEC_TAC(`\x. lift((f:real^1->real^N)x$i)`,`f:real^1->real^1`) THEN
+  POP_ASSUM(K ALL_TAC) THEN REWRITE_TAC[GSYM I_DEF; I_O_ID] THEN
+  GEN_TAC THEN REWRITE_TAC[GSYM CONJ_ASSOC] THEN
+  REPLICATE_TAC 4 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ASM_SIMP_TAC[BANACH_ZARECKI_GEN] THEN REPEAT STRIP_TAC THENL
+   [ASM_MESON_TAC[CONTINUOUS_ON_COMPOSE; CONTINUOUS_ON_SUBSET];
+    REWRITE_TAC[IMAGE_o] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More refined ways of deducing increasing/decreasing/constant status       *)
