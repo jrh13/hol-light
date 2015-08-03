@@ -25,13 +25,21 @@ at the cost of much longer load times), see (or run) INSTALL_OCAMLNAT.
 
                              INSTALLATION
 
-The Objective CAML (OCaml) implementation is a prerequisite for
-running HOL Light. HOL Light should work with any recent version of
-OCaml; I've tried it on at least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3,
-3.10.0, 3.11.2 and 4.00. However, for versions >= 3.10 (in 3.10 there
-was an incompatible change in the camlp4 preprocessor) you will also
-need to get camlp5 (version >= 4.07). Installing both items of
-software should not be too difficult, depending on the platform.
+If you use Debian Linux or some other Debian-based Linux distribution
+(Knoppix, Mint, Ubuntu, etc.), there is actually a "hol-light" package,
+thanks to Hendrik Tews, so installation of HOL Light and all its
+prerequisites is as simple as
+
+  sudo apt-get install hol-light
+
+For other OSs, more work is involved. The Objective CAML (OCaml)
+implementation is a prerequisite for running HOL Light. HOL Light
+should work with any recent version of OCaml; I've tried it on at
+least 3.04, 3.06, 3.07+2, 3.08.1, 3.09.3, 3.10.0, 3.11.2 and 4.00.
+However, for versions >= 3.10 (in 3.10 there was an incompatible
+change in the camlp4 preprocessor) you will also need to get camlp5
+(version >= 4.07). Installing both items of software should not be too
+difficult, depending on the platform.
 
  1. OCaml: there are packages for many Linux distributions. For
     example, on a debian derivative like Ubuntu, you may just need

@@ -2594,6 +2594,22 @@ let FRONTIER_INTER_SUBSET_INTER = prove
         CLOSURE_INTER_SUBSET) THEN
   SET_TAC[]);;
 
+let COMMON_FRONTIER_DOMAINS = prove
+ (`!s t:real^N->bool.
+      open s /\ open t /\ connected s /\ connected t /\ frontier s = frontier t
+      ==> s = t \/ DISJOINT s t`,
+  REWRITE_TAC[SET_RULE
+    `s = t \/ DISJOINT s t <=>
+     (s SUBSET t \/ DISJOINT s t) /\ (t SUBSET s \/ DISJOINT t s)`] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!x y. P x y ==> P y x) /\ (!x y. P x y ==> Q x y)
+    ==> !x y. P x y ==> Q x y /\ Q y x`) THEN
+  CONJ_TAC THENL [MESON_TAC[]; REPEAT STRIP_TAC] THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`]
+        CONNECTED_INTER_FRONTIER) THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  ASM_SIMP_TAC[frontier; INTERIOR_OPEN] THEN SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Useful nets in Euclidean space.                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -10979,6 +10995,39 @@ let CLOPEN_IN_COMPONENTS = prove
     EXISTS_TAC `u:real^N->bool` THEN
     MP_TAC(ISPEC `u:real^N->bool` UNIONS_COMPONENTS) THEN ASM SET_TAC[]]);;
 
+let CONNECTED_UNIONS_PAIRWISE = prove
+ (`!f. (!s:real^N->bool. s IN f ==> connected s) /\
+       pairwise (\s t. ~(s = {}) /\ ~(t = {}) ==> ~(s INTER t = {})) f
+       ==> connected(UNIONS f)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[CONNECTED_EQ_COMPONENTS_SUBSET_SING_EXISTS] THEN
+  REWRITE_TAC[SET_RULE
+   `(?c. s SUBSET {c}) <=> !a b. a IN s /\ b IN s ==> a = b`] THEN
+  MAP_EVERY X_GEN_TAC [`c1:real^N->bool`; `c2:real^N->bool`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`UNIONS f:real^N->bool`; `c1:real^N->bool`; `c2:real^N->bool`]
+    COMPONENTS_EQ) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+  SUBGOAL_THEN
+   `?a1:real^N a2:real^N. a1 IN c1 /\ a1 IN UNIONS f /\
+                          a2 IN c2 /\ a2 IN UNIONS f`
+  MP_TAC THENL
+   [REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN
+    REWRITE_TAC[CONJ_ASSOC; LEFT_EXISTS_AND_THM] THEN CONJ_TAC THEN
+    ASM_MESON_TAC[IN_COMPONENTS_NONEMPTY; IN_COMPONENTS_SUBSET;
+                  MEMBER_NOT_EMPTY; SUBSET];
+    REWRITE_TAC[IN_UNIONS; LEFT_IMP_EXISTS_THM; IMP_CONJ]] THEN
+  MAP_EVERY X_GEN_TAC [`a1:real^N`; `a2:real^N`] THEN DISCH_TAC THEN
+  X_GEN_TAC `s1:real^N->bool` THEN REPEAT DISCH_TAC THEN
+  X_GEN_TAC `s2:real^N->bool` THEN REPEAT DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [pairwise]) THEN
+  DISCH_THEN(MP_TAC o SPECL [`s1:real^N->bool`; `s2:real^N->bool`]) THEN
+  SUBGOAL_THEN
+   `(s1:real^N->bool) SUBSET c1 /\ (s2:real^N->bool) SUBSET c2`
+  MP_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  CONJ_TAC THEN MATCH_MP_TAC COMPONENTS_MAXIMAL THEN
+  EXISTS_TAC `UNIONS f:real^N->bool` THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Continuity implies uniform continuity on a compact domain.                *)
 (* ------------------------------------------------------------------------- *)
@@ -12158,10 +12207,6 @@ let COMPLETE_TRANSLATION_EQ = prove
   REWRITE_TAC[COMPLETE_EQ_CLOSED; CLOSED_TRANSLATION_EQ]);;
 
 add_translation_invariants [COMPLETE_TRANSLATION_EQ];;
-
-let TRANSLATION_UNIV = prove
- (`!a. IMAGE (\x. a + x) (:real^N) = (:real^N)`,
-  CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN GEOM_TRANSLATE_TAC[]);;
 
 let TRANSLATION_DIFF = prove
  (`!s t:real^N->bool.

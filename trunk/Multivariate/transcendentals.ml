@@ -7156,6 +7156,20 @@ let NORM_CPOW = prove
   ASM_CASES_TAC `w = Cx(&0)` THEN ASM_REWRITE_TAC[RE_CX; REAL_LT_REFL] THEN
   SIMP_TAC[REAL_NORM; real_abs; REAL_LT_IMP_LE]);;
 
+let REAL_MAX_RPOW = prove
+ (`!x y z. &0 <= x /\ &0 <= y /\ &0 <= z
+           ==> max (x rpow z) (y rpow z) = (max x y) rpow z`,
+  MATCH_MP_TAC REAL_WLOG_LE THEN CONJ_TAC THENL
+   [MESON_TAC[REAL_ARITH `max x y:real = max y x`]; ALL_TAC] THEN
+  SIMP_TAC[RPOW_LE2; REAL_ARITH `max x y:real = if x <= y then y else x`]);;
+
+let REAL_MIN_RPOW = prove
+ (`!x y z. &0 <= x /\ &0 <= y /\ &0 <= z
+           ==> min (x rpow z) (y rpow z) = (min x y) rpow z`,
+  MATCH_MP_TAC REAL_WLOG_LE THEN CONJ_TAC THENL
+   [MESON_TAC[REAL_ARITH `min x y:real = min y x`]; ALL_TAC] THEN
+  SIMP_TAC[RPOW_LE2; REAL_ARITH `min x y:real = if x <= y then x else y`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Summability of zeta function series.                                      *)
 (* ------------------------------------------------------------------------- *)

@@ -338,6 +338,38 @@ let FORALL_DOT_EQ_0 = prove
   MESON_TAC[DOT_LZERO; DOT_RZERO; DOT_EQ_0]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Some trivial theorems about mapping R^n itself.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let REFLECT_UNIV = prove
+ (`IMAGE (--) (:real^N) = (:real^N)`,
+  MP_TAC(VECTOR_ARITH `!x:real^N. --(--x) = x`) THEN SET_TAC[]);;
+
+let TRANSLATION_UNIV = prove
+ (`!a. IMAGE (\x. a + x) (:real^N) = (:real^N)`,
+  GEN_TAC THEN MP_TAC(VECTOR_ARITH `!x. a + (x - a):real^N = x`) THEN
+  SET_TAC[]);;
+
+let TRANSLATION_SUBSET_GALOIS_RIGHT = prove
+ (`!s t a:real^N.
+    s SUBSET IMAGE (\x. a + x) t <=> IMAGE (\x. --a + x) s SUBSET t`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC(SET_RULE
+   `(!x. f(g x) = x) /\ (!y. g(f y) = y)
+    ==> (s SUBSET IMAGE f t <=> IMAGE g s SUBSET t)`) THEN
+  REWRITE_TAC[] THEN CONV_TAC VECTOR_ARITH);;
+
+let TRANSLATION_SUBSET_GALOIS_LEFT = prove
+ (`!s t a:real^N.
+     IMAGE (\x. a + x) s SUBSET t <=> s SUBSET IMAGE (\x. --a + x) t`,
+  REWRITE_TAC[TRANSLATION_SUBSET_GALOIS_RIGHT; VECTOR_NEG_NEG]);;
+
+let TRANSLATION_GALOIS = prove
+ (`!s t a:real^N. s = IMAGE (\x. a + x) t <=> t = IMAGE (\x. --a + x) s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[TRANSLATION_SUBSET_GALOIS_RIGHT; VECTOR_NEG_NEG] THEN
+  REWRITE_TAC[CONJ_ACI]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Introduce norms, but defer many properties till we get square roots.      *)
 (* ------------------------------------------------------------------------- *)
 
