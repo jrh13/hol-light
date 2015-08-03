@@ -4887,6 +4887,21 @@ let LIM_NULL_COMPLEX_POW_EQ = prove
   REWRITE_TAC[COMPLEX_NORM_POW; REAL_TENDSTO; o_DEF; LIFT_DROP] THEN
   ASM_SIMP_TAC[REALLIM_NULL_POW_EQ; DROP_VEC]);;
 
+let LIM_NULL_RPOW = prove                               
+ (`!net p x:A->real.                                                 
+        ((lift o x) --> vec 0) net /\ &0 < p
+        ==> ((\i. lift(x(i) rpow p)) --> vec 0) net`,                          
+  REPEAT GEN_TAC THEN                                 
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN                        
+  DISCH_THEN(MP_TAC o ISPEC `lift o (\x. x rpow p) o drop` o    
+    MATCH_MP(REWRITE_RULE[IMP_CONJ_ALT] LIM_CONTINUOUS_FUNCTION)) THEN
+  ASM_SIMP_TAC[o_THM; DROP_VEC; RPOW_ZERO; REAL_LT_IMP_NZ; LIFT_NUM] THEN
+  REWRITE_TAC[LIFT_DROP] THEN DISCH_THEN MATCH_MP_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM LIFT_DROP] THEN
+  REWRITE_TAC[GSYM REAL_CONTINUOUS_CONTINUOUS_ATREAL] THEN                 
+  MATCH_MP_TAC REAL_CONTINUOUS_AT_RPOW THEN
+  REWRITE_TAC[REAL_LE_INV_EQ] THEN ASM_REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Analytic result for "frac".                                               *)
 (* ------------------------------------------------------------------------- *)
@@ -14981,6 +14996,22 @@ let REAL_MEASURABLE_ON_RPOW = prove
   MATCH_MP_TAC REAL_MEASURABLE_ON_COMPOSE_CONTINUOUS_0 THEN
   ASM_SIMP_TAC[REAL_CONTINUOUS_ON_RPOW; RPOW_ZERO;
                REAL_LT_IMP_LE; REAL_LT_IMP_NZ]);;
+
+let MEASURABLE_ON_LIFT_RPOW = prove          
+ (`!f:real^N->real s y.                               
+        (\x. lift(f x)) measurable_on s /\ &0 < y      
+        ==> (\x. lift(f x rpow y)) measurable_on s`,                   
+  REPEAT STRIP_TAC THEN             
+  SUBGOAL_THEN                                                              
+   `(\x:real^N. lift(f x rpow y)) =
+    (lift o (\w. w rpow y) o drop) o (\x. lift(f x))`                  
+  SUBST1_TAC THENL [REWRITE_TAC[FUN_EQ_THM; o_THM; LIFT_DROP]; ALL_TAC] THEN
+  MATCH_MP_TAC MEASURABLE_ON_COMPOSE_CONTINUOUS_0 THEN REPEAT CONJ_TAC THENL   
+   [ASM_REWRITE_TAC[];    
+    ONCE_REWRITE_TAC[GSYM IMAGE_LIFT_UNIV] THEN           
+    REWRITE_TAC[GSYM REAL_CONTINUOUS_ON] THEN    
+    MATCH_MP_TAC REAL_CONTINUOUS_ON_RPOW THEN ASM_REAL_ARITH_TAC;
+    ASM_SIMP_TAC[o_DEF; DROP_VEC; RPOW_ZERO; LIFT_NUM; REAL_LT_IMP_NZ]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Properties of real Lebesgue measurable sets.                              *)

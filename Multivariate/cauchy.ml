@@ -7545,6 +7545,25 @@ let RECTIFIABLE_PATH_FRONTIER_CONVEX = prove
   ASM_REWRITE_TAC[PATH_IMAGE_LINEPATH; FRONTIER_SEGMENT] THEN
   REWRITE_TAC[SEGMENT_SYM; DIMINDEX_2; LE_REFL; UNION_IDEMPOT]);;
 
+let HOMEOMORPHIC_SIMPLE_PATH_IMAGE_CIRCLE_EQ = prove
+ (`!s:real^N->bool a:real^2 r.
+        &0 < r
+        ==> (s homeomorphic sphere(a,r) <=>
+             ?g. simple_path g /\ pathfinish g = pathstart g /\
+                 path_image g = s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[HOMEOMORPHIC_SIMPLE_PATH_IMAGE_CIRCLE]] THEN
+  REWRITE_TAC[homeomorphic; homeomorphism; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:real^N->real^2`; `g:real^2->real^N`] THEN
+  STRIP_TAC THEN EXISTS_TAC `(g:real^2->real^N) o circlepath(a,r)` THEN
+  ASM_SIMP_TAC[PATH_IMAGE_COMPOSE; PATH_IMAGE_LINEPATH; PATH_IMAGE_CIRCLEPATH;
+               REAL_LT_IMP_LE; PATHSTART_COMPOSE; PATHFINISH_COMPOSE] THEN
+  REWRITE_TAC[PATHSTART_CIRCLEPATH; PATHFINISH_CIRCLEPATH] THEN
+  MATCH_MP_TAC SIMPLE_PATH_CONTINUOUS_IMAGE THEN
+  ASM_SIMP_TAC[PATH_IMAGE_CIRCLEPATH; SIMPLE_PATH_CIRCLEPATH;
+               REAL_LT_IMP_NZ; REAL_LT_IMP_LE] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Hence the Cauchy formula for points inside a circle.                      *)
 (* ------------------------------------------------------------------------- *)

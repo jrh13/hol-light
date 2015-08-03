@@ -6464,6 +6464,20 @@ let NONSEPARATION_BY_COMPONENT_EQ = prove
   ASM_REWRITE_TAC[CONNECTED_UNIV; SUBSET_UNIV;
                   SET_RULE `UNIV DIFF (UNIV DIFF s) = s`]);;
 
+let CONNECTED_COMMON_FRONTIER_DOMAINS = prove
+ (`!s t c:real^N->bool.
+        open s /\ connected s /\
+        open t /\ connected t /\
+        ~(s = t) /\ frontier s = c /\ frontier t = c
+        ==> connected c`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`]
+        COMMON_FRONTIER_DOMAINS) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`]
+    CONNECTED_FRONTIER_DISJOINT) THEN
+  ASM_REWRITE_TAC[SUBSET_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Another interesting equivalent of an inessential mapping into C-{0}       *)
 (* ------------------------------------------------------------------------- *)

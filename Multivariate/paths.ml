@@ -185,6 +185,16 @@ let ARC_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [ARC_LINEAR_IMAGE_EQ];;
 
+let SIMPLE_PATH_CONTINUOUS_IMAGE = prove
+ (`!f g. simple_path g /\
+         f continuous_on path_image g /\
+         (!x y.
+              x IN path_image g /\ y IN path_image g /\ f x = f y ==> x = y)
+         ==> simple_path(f o g)`,
+  REWRITE_TAC[simple_path; INJECTIVE_ON_ALT] THEN
+  SIMP_TAC[PATH_CONTINUOUS_IMAGE] THEN
+  REWRITE_TAC[path_image; o_THM] THEN SET_TAC[]);;
+
 let ARC_CONTINUOUS_IMAGE = prove
  (`!f g:real^1->real^N.
         arc g /\
@@ -2127,6 +2137,20 @@ let HOMEOMORPHIC_ARC_IMAGE_SEGMENT = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM PATH_IMAGE_LINEPATH] THEN
   MATCH_MP_TAC HOMEOMORPHIC_ARC_IMAGES THEN
   ASM_REWRITE_TAC[ARC_LINEPATH_EQ]);;
+
+let HOMEOMORPHIC_ARC_IMAGE_SEGMENT_EQ = prove
+ (`!s:real^N->bool a b:real^M.
+        ~(a = b)
+        ==> (s homeomorphic segment[a,b] <=>
+             ?g. arc g /\ path_image g = s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[HOMEOMORPHIC_ARC_IMAGE_SEGMENT]] THEN
+  REWRITE_TAC[homeomorphic; homeomorphism; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:real^N->real^M`; `g:real^M->real^N`] THEN
+  STRIP_TAC THEN EXISTS_TAC `(g:real^M->real^N) o linepath(a,b)` THEN
+  ASM_REWRITE_TAC[PATH_IMAGE_COMPOSE; PATH_IMAGE_LINEPATH] THEN
+  MATCH_MP_TAC ARC_CONTINUOUS_IMAGE THEN
+  ASM_REWRITE_TAC[PATH_IMAGE_LINEPATH; ARC_LINEPATH_EQ] THEN ASM SET_TAC[]);;
 
 let CONNECTED_SUBSET_PATH_IMAGE_ARC = prove
  (`!s g:real^1->real^N.
@@ -11115,6 +11139,42 @@ let CONNECTED_OPEN_IN_DIFF_UNIONS_LOWDIM = prove
       ASM_REWRITE_TAC[AFF_DIM_CLOSURE] THEN
       FIRST_X_ASSUM(MP_TAC o SPEC `t:real^N->bool`) THEN
       ASM_REWRITE_TAC[] THEN INT_ARITH_TAC]]);;
+
+let BOUNDED_FRONTIER_BOUNDED_OR_COBOUNDED = prove
+ (`!s. 2 <= dimindex(:N) /\ bounded(frontier s)
+       ==> bounded(s) \/ bounded((:real^N) DIFF s)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `vec 0:real^N` o MATCH_MP BOUNDED_SUBSET_BALL) THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
+  STRIP_TAC THEN
+  REWRITE_TAC[SET_RULE `f SUBSET s <=> (UNIV DIFF s) INTER f = {}`] THEN
+  MATCH_MP_TAC CONNECTED_INTER_FRONTIER THEN
+  ASM_SIMP_TAC[CONNECTED_COMPLEMENT_BOUNDED_CONVEX; BOUNDED_BALL; CONVEX_BALL;
+               SET_RULE `UNIV DIFF s DIFF t = {} <=> UNIV DIFF t SUBSET s`;
+               SET_RULE `(UNIV DIFF s) INTER t = {} <=> t SUBSET s`] THEN
+  ASM_MESON_TAC[BOUNDED_SUBSET; BOUNDED_BALL]);;
+
+let BOUNDED_COMMON_FRONTIER_DOMAINS = prove
+ (`!s t c:real^N->bool.
+        2 <= dimindex(:N) /\ bounded c /\
+        open s /\ connected s /\
+        open t /\ connected t /\
+        ~(s = t) /\ frontier s = c /\ frontier t = c
+        ==> bounded s \/ bounded t`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `t:real^N->bool` BOUNDED_FRONTIER_BOUNDED_OR_COBOUNDED) THEN
+  MP_TAC(ISPEC `s:real^N->bool` BOUNDED_FRONTIER_BOUNDED_OR_COBOUNDED) THEN
+  ASM_REWRITE_TAC[] THEN
+  REPEAT(STRIP_TAC THEN ASM_REWRITE_TAC[]) THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`]
+        COMMON_FRONTIER_DOMAINS) THEN
+  ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+  DISCH_THEN(K ALL_TAC) THEN
+  MATCH_MP_TAC(SET_RULE
+   `~((UNIV DIFF s) UNION (UNIV DIFF t) = UNIV) ==> ~DISJOINT s t`) THEN
+  MATCH_MP_TAC(MESON[NOT_BOUNDED_UNIV] `bounded s ==> ~(s = (:real^N))`) THEN
+  ASM_REWRITE_TAC[BOUNDED_UNION]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of unbounded components.                                        *)

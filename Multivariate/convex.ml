@@ -13,14 +13,6 @@ needs "Multivariate/topology.ml";;
 (* Some miscelleneous things that are convenient to prove here.              *)
 (* ------------------------------------------------------------------------- *)
 
-let TRANSLATION_GALOIS = prove
- (`!s t a:real^N. s = IMAGE (\x. a + x) t <=> t = IMAGE (\x. --a + x) s`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THEN
-  ASM_REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN
-  REWRITE_TAC[VECTOR_ARITH `--a + a + x:real^N = x`;
-              VECTOR_ARITH `a + --a + x:real^N = x`] THEN
-  REWRITE_TAC[IMAGE_ID]);;
-
 let TRANSLATION_EQ_IMP = prove
  (`!P:(real^N->bool)->bool.
         (!a s. P(IMAGE (\x. a + x) s) <=> P s) <=>
