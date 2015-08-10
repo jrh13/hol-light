@@ -2123,6 +2123,67 @@ let CONVEX_ON_TRANSLATION = prove
    `u % (a + x) + v % (a + y):real^N = (u + v) % a + u % x + v % y`] THEN
   SIMP_TAC[VECTOR_MUL_LID]);;
 
+let LINEAR_CONVEX_ON_1 = prove
+ (`!f:real^N->real^1.
+        linear f <=>
+        f(vec 0) = vec 0 /\
+        (drop o f) convex_on UNIV /\
+        ((--) o drop o f) convex_on UNIV`,
+  GEN_TAC THEN REWRITE_TAC[convex_on; IN_UNIV; o_THM] THEN
+  REWRITE_TAC[AND_FORALL_THM; TAUT `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`;
+    REAL_ARITH `--a <= u * --x + v * --y <=> u * x + v * y <= a`] THEN
+  REWRITE_TAC[REAL_LE_ANTISYM] THEN
+  REWRITE_TAC[GSYM DROP_CMUL; GSYM DROP_ADD; DROP_EQ] THEN
+  EQ_TAC THENL
+   [MESON_TAC[LINEAR_ADD; LINEAR_CMUL; LINEAR_0];
+    STRIP_TAC THEN REWRITE_TAC[linear]] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
+    FIRST_ASSUM(fun th ->
+      MP_TAC(SPECL[`x:real^N`; `y:real^N`; `&1 / &2`; `&1 / &2`] th) THEN
+
+      MP_TAC(SPECL[`x + y:real^N`; `vec 0:real^N`;
+                   `&1 / &2`; `&1 / &2`] th)) THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    ASM_REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_RID] THEN
+    REWRITE_TAC[VECTOR_ADD_LDISTRIB] THEN
+    DISCH_THEN SUBST1_TAC THEN CONV_TAC VECTOR_ARITH;
+    DISCH_TAC] THEN
+  SUBGOAL_THEN
+   `!c x:real^N. &0 <= c /\ c <= &1 ==> (f:real^N->real^1)(c % x) = c % f x`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o
+      SPECL [`x:real^N`; `vec 0:real^N`; `c:real`; `&1 - c`]) THEN
+    ASM_REWRITE_TAC[VECTOR_MUL_RZERO; VECTOR_ADD_RID] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+
+   `!c x:real^N. &0 <= c ==> (f:real^N->real^1)(c % x) = c % f x`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN ASM_CASES_TAC `c <= &1` THEN ASM_SIMP_TAC[] THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`inv c:real`; `c % x:real^N`]) THEN
+    SUBGOAL_THEN `&1 <= c /\ ~(c = &0)` STRIP_ASSUME_TAC THENL
+     [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    ASM_SIMP_TAC[REAL_INV_LE_1; REAL_LE_INV_EQ] THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID] THEN
+    ASM_SIMP_TAC[REAL_MUL_RINV; VECTOR_MUL_LID];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `!x. (f:real^N->real^1) (--x) = --(f x)` ASSUME_TAC THENL
+   [GEN_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL
+     [`x:real^N`; `--x:real^N`; `inv(&2)`; `inv(&2)`]) THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    REWRITE_TAC[VECTOR_ARITH `a % x + a % --x:real^N = vec 0`] THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC VECTOR_ARITH;
+    ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [`c:real`; `x:real^N`] THEN
+    ASM_CASES_TAC `&0 <= c` THEN ASM_SIMP_TAC[] THEN
+    SUBGOAL_THEN `(f:real^N->real^1)(--c % x) = --c % f x` MP_TAC THENL
+     [ASM_SIMP_TAC[REAL_ARITH `~(&0 <= c) ==> &0 <= --c`];
+      ASM_REWRITE_TAC[VECTOR_MUL_LNEG; VECTOR_EQ_NEG2]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Open and closed balls are convex and hence connected.                     *)
 (* ------------------------------------------------------------------------- *)
