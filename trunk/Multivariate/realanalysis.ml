@@ -4887,18 +4887,18 @@ let LIM_NULL_COMPLEX_POW_EQ = prove
   REWRITE_TAC[COMPLEX_NORM_POW; REAL_TENDSTO; o_DEF; LIFT_DROP] THEN
   ASM_SIMP_TAC[REALLIM_NULL_POW_EQ; DROP_VEC]);;
 
-let LIM_NULL_RPOW = prove                               
- (`!net p x:A->real.                                                 
+let LIM_NULL_RPOW = prove
+ (`!net p x:A->real.
         ((lift o x) --> vec 0) net /\ &0 < p
-        ==> ((\i. lift(x(i) rpow p)) --> vec 0) net`,                          
-  REPEAT GEN_TAC THEN                                 
-  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN                        
-  DISCH_THEN(MP_TAC o ISPEC `lift o (\x. x rpow p) o drop` o    
+        ==> ((\i. lift(x(i) rpow p)) --> vec 0) net`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  DISCH_THEN(MP_TAC o ISPEC `lift o (\x. x rpow p) o drop` o
     MATCH_MP(REWRITE_RULE[IMP_CONJ_ALT] LIM_CONTINUOUS_FUNCTION)) THEN
   ASM_SIMP_TAC[o_THM; DROP_VEC; RPOW_ZERO; REAL_LT_IMP_NZ; LIFT_NUM] THEN
   REWRITE_TAC[LIFT_DROP] THEN DISCH_THEN MATCH_MP_TAC THEN
   GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM LIFT_DROP] THEN
-  REWRITE_TAC[GSYM REAL_CONTINUOUS_CONTINUOUS_ATREAL] THEN                 
+  REWRITE_TAC[GSYM REAL_CONTINUOUS_CONTINUOUS_ATREAL] THEN
   MATCH_MP_TAC REAL_CONTINUOUS_AT_RPOW THEN
   REWRITE_TAC[REAL_LE_INV_EQ] THEN ASM_REAL_ARITH_TAC);;
 
@@ -11428,123 +11428,6 @@ let REAL_CONTINUOUS_ON_CONST_DYADIC_RATIONALS = prove
                REAL_ARITH `inv(&2) * x = x / &2`] THEN
   ASM_MESON_TAC[LIFT_DROP]);;
 
-(* ------------------------------------------------------------------------- *)
-(* Various sufficient conditions for additivity to imply linearity.          *)
-(* ------------------------------------------------------------------------- *)
-
-let CONTINUOUS_ADDITIVE_IMP_LINEAR = prove
- (`!f:real^M->real^N.
-        f continuous_on (:real^M) /\
-        (!x y. f(x + y) = f(x) + f(y))
-        ==> linear f`,
-  GEN_TAC THEN STRIP_TAC THEN
-  SUBGOAL_THEN `(f:real^M->real^N) (vec 0) = vec 0` ASSUME_TAC THENL
-   [FIRST_ASSUM(MP_TAC o repeat (SPEC `vec 0:real^M`)) THEN
-    REWRITE_TAC[VECTOR_ADD_LID] THEN VECTOR_ARITH_TAC;
-    ALL_TAC] THEN
-  ASM_REWRITE_TAC[linear] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN X_GEN_TAC `x:real^M` THEN
-  MP_TAC(ISPECL [`\c. norm((f:real^M->real^N)(c % x) - c % f(x))`; `&0`]
-        REAL_CONTINUOUS_ON_CONST_DYADIC_RATIONALS) THEN
-  REWRITE_TAC[NORM_EQ_0; VECTOR_SUB_EQ] THEN DISCH_THEN MATCH_MP_TAC THEN
-  REPEAT CONJ_TAC THENL
-   [RULE_ASSUM_TAC(REWRITE_RULE[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN]) THEN
-    RULE_ASSUM_TAC(REWRITE_RULE[IN_UNIV; WITHIN_UNIV]) THEN
-    REWRITE_TAC[REAL_CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; IN_UNIV] THEN
-    GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
-    MATCH_MP_TAC REAL_CONTINUOUS_CONTINUOUS_WITHINREAL_COMPOSE THEN
-    SIMP_TAC[REAL_CONTINUOUS_NORM_WITHIN] THEN MATCH_MP_TAC CONTINUOUS_SUB THEN
-    ASM_SIMP_TAC[REWRITE_RULE[GSYM REAL_CONTINUOUS_CONTINUOUS1]CONTINUOUS_VMUL;
-                 REAL_CONTINUOUS_WITHIN_ID; CONTINUOUS_AT_WITHIN;
-                 REWRITE_RULE[o_DEF] CONTINUOUS_WITHINREAL_COMPOSE];
-    MATCH_MP_TAC FORALL_INTEGER THEN CONJ_TAC THENL
-     [INDUCT_TAC THEN ASM_SIMP_TAC[VECTOR_MUL_LZERO; GSYM REAL_OF_NUM_SUC] THEN
-      ASM_REWRITE_TAC[VECTOR_ADD_RDISTRIB; VECTOR_MUL_LID];
-      X_GEN_TAC `c:real` THEN
-      FIRST_X_ASSUM(MP_TAC o SPECL [`c % x:real^M`; `--(c % x):real^M`]) THEN
-      ASM_REWRITE_TAC[VECTOR_ADD_RINV; VECTOR_MUL_LNEG; IMP_IMP] THEN
-      VECTOR_ARITH_TAC];
-    X_GEN_TAC `c:real` THEN
-    FIRST_X_ASSUM(MP_TAC o funpow 2 (SPEC `c / &2 % x:real^M`)) THEN
-    REWRITE_TAC[VECTOR_ARITH `c / &2 % x + c / &2 % x:real^N = c % x`] THEN
-    REWRITE_TAC[IMP_IMP] THEN VECTOR_ARITH_TAC]);;
-
-let OSTROWSKI_THEOREM = prove
- (`!f:real^M->real^N B s.
-        (!x y. f(x + y) = f(x) + f(y)) /\
-        (!x. x IN s ==> norm(f x) <= B) /\
-        measurable s /\ &0 < measure s
-        ==> linear f`,
-  REPEAT GEN_TAC THEN
-  REPLICATE_TAC 2 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC o
-    MATCH_MP STEINHAUS) THEN
-  SUBGOAL_THEN `!x y. (f:real^M->real^N)(x - y) = f x - f y` ASSUME_TAC THENL
-   [ASM_MESON_TAC[VECTOR_ARITH `x - y:real^M = z <=> x = y + z`];
-    ALL_TAC] THEN
-  SUBGOAL_THEN `!n x. &n % (f:real^M->real^N) x = f(&n % x)` ASSUME_TAC THENL
-   [INDUCT_TAC THENL
-     [ASM_MESON_TAC[VECTOR_SUB_REFL; VECTOR_MUL_LZERO];
-      ASM_REWRITE_TAC[GSYM REAL_OF_NUM_SUC; VECTOR_ADD_RDISTRIB] THEN
-      REWRITE_TAC[VECTOR_MUL_LID]];
-    ALL_TAC] THEN
-  MATCH_MP_TAC CONTINUOUS_ADDITIVE_IMP_LINEAR THEN ASM_REWRITE_TAC[] THEN
-  SUBGOAL_THEN `!x. norm(x) < d ==> norm((f:real^M->real^N) x) <= &2 * B`
-  ASSUME_TAC THENL
-   [X_GEN_TAC `z:real^M` THEN DISCH_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `z:real^M` o GEN_REWRITE_RULE I [SUBSET]) THEN
-    ASM_REWRITE_TAC[IN_BALL_0] THEN SPEC_TAC(`z:real^M`,`z:real^M`) THEN
-    ASM_REWRITE_TAC[FORALL_IN_GSPEC] THEN REWRITE_TAC[IN_ELIM_THM] THEN
-    REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN(ANTE_RES_THEN MP_TAC)) THEN
-    CONV_TAC NORM_ARITH;
-    ALL_TAC] THEN
-  REWRITE_TAC[continuous_on; IN_UNIV; dist] THEN
-  MAP_EVERY X_GEN_TAC [`x:real^M`; `e:real`] THEN DISCH_TAC THEN
-  MP_TAC(SPEC `e:real` REAL_ARCH) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `n:num` MP_TAC o SPEC `max (&1) (&2 * B)`) THEN
-  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[] THENL
-   [REAL_ARITH_TAC; DISCH_TAC] THEN
-  EXISTS_TAC `d / &n` THEN
-  ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; LE_1] THEN
-  X_GEN_TAC `y:real^M` THEN DISCH_TAC THEN
-  SUBGOAL_THEN `norm(&n % (f:real^M->real^N)(y - x)) <= &2 * B` MP_TAC THENL
-   [ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-    SIMP_TAC[NORM_MUL; REAL_ABS_NUM] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-    ASM_SIMP_TAC[GSYM REAL_LT_RDIV_EQ; REAL_OF_NUM_LT; LE_1];
-    SIMP_TAC[NORM_MUL; REAL_ABS_NUM] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-    ASM_SIMP_TAC[GSYM REAL_LE_RDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
-    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LET_TRANS) THEN
-    ASM_SIMP_TAC[REAL_LT_LDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
-    ASM_REAL_ARITH_TAC]);;
-
-let MEASURABLE_ADDITIVE_IMP_LINEAR = prove
- (`!f:real^M->real^N.
-        f measurable_on (:real^M) /\ (!x y. f(x + y) = f(x) + f(y))
-        ==> linear f`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC OSTROWSKI_THEOREM THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP MEASURABLE_ON_NORM) THEN
-  REWRITE_TAC[MEASURABLE_ON_PREIMAGE_HALFSPACE_COMPONENT_LE] THEN
-  REWRITE_TAC[DIMINDEX_1; FORALL_1; GSYM drop; LIFT_DROP] THEN
-  DISCH_TAC THEN
-  ASM_CASES_TAC `!b. negligible {x | norm((f:real^M->real^N) x) <= b}` THENL
-   [FIRST_X_ASSUM(MP_TAC o MATCH_MP NEGLIGIBLE_COUNTABLE_UNIONS o
-        GEN `n:num` o SPEC `&n:real`) THEN
-    REWRITE_TAC[UNIONS_GSPEC; IN_ELIM_THM; IN_UNIV; REAL_ARCH_SIMPLE] THEN
-    SIMP_TAC[SET_RULE `{x | T} = (:real^M)`; OPEN_NOT_NEGLIGIBLE;
-             OPEN_UNIV; UNIV_NOT_EMPTY];
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM]) THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B:real` THEN
-    ONCE_REWRITE_TAC[NEGLIGIBLE_ON_INTERVALS] THEN
-    REWRITE_TAC[NOT_FORALL_THM; LEFT_IMP_EXISTS_THM] THEN
-    MAP_EVERY X_GEN_TAC [`a:real^M`; `b:real^M`] THEN DISCH_TAC THEN
-    EXISTS_TAC `{x:real^M | norm(f x:real^N) <= B} INTER interval[a,b]` THEN
-    ASM_SIMP_TAC[IN_ELIM_THM; IN_INTER] THEN
-    MATCH_MP_TAC(MESON[MEASURABLE_MEASURE_POS_LT]
-     `measurable s /\ ~negligible s ==> measurable s /\ &0 < measure s`) THEN
-    ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC MEASURABLE_LEGESGUE_MEASURABLE_INTER_MEASURABLE THEN
-    ASM_REWRITE_TAC[MEASURABLE_INTERVAL]]);;
-
 let REAL_CONTINUOUS_ADDITIVE_IMP_LINEAR = prove
  (`!f. f real_continuous_on (:real) /\
        (!x y. f(x + y) = f(x) + f(y))
@@ -14997,19 +14880,19 @@ let REAL_MEASURABLE_ON_RPOW = prove
   ASM_SIMP_TAC[REAL_CONTINUOUS_ON_RPOW; RPOW_ZERO;
                REAL_LT_IMP_LE; REAL_LT_IMP_NZ]);;
 
-let MEASURABLE_ON_LIFT_RPOW = prove          
- (`!f:real^N->real s y.                               
-        (\x. lift(f x)) measurable_on s /\ &0 < y      
-        ==> (\x. lift(f x rpow y)) measurable_on s`,                   
-  REPEAT STRIP_TAC THEN             
-  SUBGOAL_THEN                                                              
+let MEASURABLE_ON_LIFT_RPOW = prove
+ (`!f:real^N->real s y.
+        (\x. lift(f x)) measurable_on s /\ &0 < y
+        ==> (\x. lift(f x rpow y)) measurable_on s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
    `(\x:real^N. lift(f x rpow y)) =
-    (lift o (\w. w rpow y) o drop) o (\x. lift(f x))`                  
+    (lift o (\w. w rpow y) o drop) o (\x. lift(f x))`
   SUBST1_TAC THENL [REWRITE_TAC[FUN_EQ_THM; o_THM; LIFT_DROP]; ALL_TAC] THEN
-  MATCH_MP_TAC MEASURABLE_ON_COMPOSE_CONTINUOUS_0 THEN REPEAT CONJ_TAC THENL   
-   [ASM_REWRITE_TAC[];    
-    ONCE_REWRITE_TAC[GSYM IMAGE_LIFT_UNIV] THEN           
-    REWRITE_TAC[GSYM REAL_CONTINUOUS_ON] THEN    
+  MATCH_MP_TAC MEASURABLE_ON_COMPOSE_CONTINUOUS_0 THEN REPEAT CONJ_TAC THENL
+   [ASM_REWRITE_TAC[];
+    ONCE_REWRITE_TAC[GSYM IMAGE_LIFT_UNIV] THEN
+    REWRITE_TAC[GSYM REAL_CONTINUOUS_ON] THEN
     MATCH_MP_TAC REAL_CONTINUOUS_ON_RPOW THEN ASM_REAL_ARITH_TAC;
     ASM_SIMP_TAC[o_DEF; DROP_VEC; RPOW_ZERO; LIFT_NUM; REAL_LT_IMP_NZ]]);;
 
