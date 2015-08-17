@@ -1982,6 +1982,16 @@ let CONVEX_MAX = prove
   MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THEN
   MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC);;
 
+let CONVEX_ON_IMP_MIDPOINT_CONVEX = prove
+ (`!f s x y:real^N.
+        f convex_on s /\ x IN s /\ y IN s
+        ==> f(midpoint(x,y)) <= (f x + f y) / &2`,
+  REWRITE_TAC[convex_on] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[midpoint; VECTOR_ADD_LDISTRIB;
+              REAL_ARITH `(x + y) / &2 = inv(&2) * x + inv(&2) * y`] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  ASM_REWRITE_TAC[]);;
+
 let CONVEX_LOWER = prove
  (`!f s x y:real^N u v.
         f convex_on s /\

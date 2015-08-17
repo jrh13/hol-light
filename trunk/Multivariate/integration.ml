@@ -2380,6 +2380,12 @@ let INTEGRABLE_NEG = prove
         f integrable_on s ==> (\x. --f(x)) integrable_on s`,
   REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_NEG]);;
 
+let INTEGRABLE_NEG_EQ = prove
+ (`!f:real^M->real^N s. (\x. --f x) integrable_on s <=> f integrable_on s`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP INTEGRABLE_NEG) THEN
+  REWRITE_TAC[VECTOR_NEG_NEG; ETA_AX]);;
+
 let INTEGRABLE_SUB = prove
  (`!f:real^M->real^N g s.
         f integrable_on s /\ g integrable_on s
@@ -9433,6 +9439,20 @@ let ABSOLUTELY_INTEGRABLE_IMP_LIFT_NORM_INTEGRABLE = prove
      f absolutely_integrable_on s ==> (\x. lift (norm (f x))) integrable_on s`,
   REWRITE_TAC[absolutely_integrable_on] THEN MESON_TAC[]);;
 
+let ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV = prove
+ (`!f s. (\x. if x IN s then f x else vec 0)
+              absolutely_integrable_on (:real^M) <=>
+         f absolutely_integrable_on s`,
+  REWRITE_TAC[absolutely_integrable_on; INTEGRABLE_RESTRICT_UNIV;
+              COND_RAND; NORM_0; LIFT_NUM]);;
+
+let ABSOLUTELY_INTEGRABLE_RESTRICT_INTER = prove
+ (`!f:real^M->real^N s t.
+        (\x. if x IN s then f x else vec 0) absolutely_integrable_on t <=>
+        f absolutely_integrable_on (s INTER t)`,
+  REWRITE_TAC[absolutely_integrable_on; GSYM INTEGRABLE_RESTRICT_INTER] THEN
+  REWRITE_TAC[COND_RAND; NORM_0; LIFT_NUM]);;
+
 let ABSOLUTELY_INTEGRABLE_LE = prove
  (`!f:real^M->real^N s.
         f absolutely_integrable_on s
@@ -9490,12 +9510,28 @@ let ABSOLUTELY_INTEGRABLE_SPIKE = prove
   CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_SPIKE THEN
   EXISTS_TAC `s:real^M->bool` THEN ASM_SIMP_TAC[]);;
 
-let ABSOLUTELY_INTEGRABLE_RESTRICT_INTER = prove
+let ABSOLUTELY_INTEGRABLE_SPIKE_EQ = prove
+ (`!f:real^M->real^N g s t.
+        negligible s /\ (!x. x IN t DIFF s ==> g x = f x)
+        ==> (f absolutely_integrable_on t <=> g absolutely_integrable_on t)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SPIKE THEN ASM_MESON_TAC[]);;
+
+let ABSOLUTELY_INTEGRABLE_SPIKE_SET_EQ = prove
  (`!f:real^M->real^N s t.
-        (\x. if x IN s then f x else vec 0) absolutely_integrable_on t <=>
-        f absolutely_integrable_on (s INTER t)`,
-  REWRITE_TAC[absolutely_integrable_on; GSYM INTEGRABLE_RESTRICT_INTER] THEN
-  REWRITE_TAC[COND_RAND; NORM_0; LIFT_NUM]);;
+        negligible(s DIFF t UNION t DIFF s)
+        ==> (f absolutely_integrable_on s <=> f absolutely_integrable_on t)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV] THEN
+  MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SPIKE_EQ THEN
+  EXISTS_TAC `s DIFF t UNION t DIFF s:real^M->bool` THEN
+  ASM_REWRITE_TAC[] THEN SET_TAC[]);;
+
+let ABSOLUTELY_INTEGRABLE_SPIKE_SET = prove
+ (`!f:real^M->real^N s t.
+        negligible(s DIFF t UNION t DIFF s)
+        ==> f absolutely_integrable_on s ==> f absolutely_integrable_on t`,
+  MESON_TAC[ABSOLUTELY_INTEGRABLE_SPIKE_SET_EQ]);;
 
 let ABSOLUTELY_INTEGRABLE_EQ = prove
  (`!f:real^M->real^N g s.
@@ -10360,13 +10396,6 @@ let ABSOLUTELY_INTEGRABLE_SET_VARIATION = prove
        W(MP_TAC o PART_MATCH (rand o rand) th o rand o snd)) THEN
       SIMP_TAC[INTEGRAL_NULL; NORM_0] THEN
       DISCH_THEN(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[]]]);;
-
-let ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV = prove
- (`!f s. (\x. if x IN s then f x else vec 0)
-              absolutely_integrable_on (:real^M) <=>
-         f absolutely_integrable_on s`,
-  REWRITE_TAC[absolutely_integrable_on; INTEGRABLE_RESTRICT_UNIV;
-              COND_RAND; NORM_0; LIFT_NUM]);;
 
 let ABSOLUTELY_INTEGRABLE_CONST = prove
  (`!a b c. (\x. c) absolutely_integrable_on interval[a,b]`,
