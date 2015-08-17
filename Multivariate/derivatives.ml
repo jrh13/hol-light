@@ -1333,6 +1333,79 @@ let HAS_DERIVATIVE_ZERO_CONNECTED_UNIQUE = prove
 (* Differentiability of inverse function (most basic form).                  *)
 (* ------------------------------------------------------------------------- *)
 
+let HAS_DERIVATIVE_INVERSE_WITHIN = prove
+ (`!f:real^M->real^N f' g g' s a.
+        a IN s /\
+        (!x. x IN s ==> g(f x) = x) /\
+        (f has_derivative f') (at a within s) /\
+        linear g' /\ g' o f' = I /\
+        g continuous (at (f a) within IMAGE f s)
+        ==> (g has_derivative g') (at (f a) within IMAGE f s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN
+  ASM_REWRITE_TAC[HAS_DERIVATIVE_WITHIN_ALT] THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[IMP_CONJ; FORALL_IN_IMAGE] THEN
+  MP_TAC(ISPEC `g':real^N->real^M` LINEAR_BOUNDED_POS) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `C:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `?B k. &0 < B /\ &0 < k /\
+          !x. x IN s /\ norm((f:real^M->real^N) x - f a) < k
+              ==> norm(x - a) <= B * norm(f x - f a)`
+  STRIP_ASSUME_TAC THENL
+   [MP_TAC(ISPEC `f':real^M->real^N` LINEAR_INJECTIVE_BOUNDED_BELOW_POS) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `&2 / B` THEN
+    ASM_SIMP_TAC[REAL_LT_DIV; REAL_ARITH `&0 < &2`] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `B / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [continuous_within]) THEN
+    DISCH_THEN(MP_TAC o SPEC `d:real`) THEN
+    ASM_SIMP_TAC[IMP_CONJ; FORALL_IN_IMAGE; dist] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real` THEN
+    MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:real^M` THEN
+    DISCH_THEN(fun th -> REPEAT DISCH_TAC THEN MP_TAC th) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (NORM_ARITH
+     `norm(y - b - f':real^N) <= B / &2 * norm(x - a:real^M)
+      ==> norm(x - a) * B <= norm f'
+          ==> norm(y - b) >= B / &2 * norm(x - a)`)) THEN
+    ASM_REWRITE_TAC[real_ge] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    ASM_SIMP_TAC[GSYM REAL_LE_RDIV_EQ; REAL_HALF] THEN
+    REWRITE_TAC[real_div; REAL_INV_MUL; REAL_INV_INV] THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / (B * C):real`) THEN
+  ASM_SIMP_TAC[REAL_LT_DIV; REAL_LT_MUL] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `min k (d / B)` THEN
+  ASM_SIMP_TAC[REAL_LT_MIN; REAL_LT_DIV] THEN
+  X_GEN_TAC `x:real^M` THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN ANTS_TAC THENL
+   [ASM_REWRITE_TAC[] THEN
+    TRANS_TAC REAL_LET_TRANS `B * norm((f:real^M->real^N) x - f a)` THEN
+    ASM_SIMP_TAC[] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    ASM_SIMP_TAC[GSYM REAL_LT_RDIV_EQ];
+    DISCH_TAC] THEN
+  TRANS_TAC REAL_LE_TRANS
+   `norm((g':real^N->real^M)(f x - f a - ((f':real^M->real^N) (x - a))))` THEN
+  CONJ_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[FUN_EQ_THM; o_THM; I_THM]) THEN
+    ASM_SIMP_TAC[LINEAR_SUB] THEN CONV_TAC NORM_ARITH;
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(fun th -> W(MP_TAC o PART_MATCH lhand th o lhand o snd)) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_SIMP_TAC[GSYM REAL_LE_RDIV_EQ] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        REAL_LE_TRANS)) THEN
+  REWRITE_TAC[real_div; REAL_INV_MUL] THEN REWRITE_TAC[GSYM real_div] THEN
+  REWRITE_TAC[REAL_ARITH `(e * inv B / C) * n:real = (n / B * e) / C`] THEN
+  ASM_SIMP_TAC[REAL_LE_DIV2_EQ; REAL_LE_RMUL_EQ] THEN
+  ASM_SIMP_TAC[REAL_LE_LDIV_EQ] THEN ASM_MESON_TAC[REAL_MUL_SYM]);;
+
 let HAS_DERIVATIVE_INVERSE_BASIC = prove
  (`!f:real^M->real^N g f' g' t y.
         (f has_derivative f') (at (g y)) /\ linear g' /\ (g' o f' = I) /\
