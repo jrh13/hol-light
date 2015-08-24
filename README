@@ -101,6 +101,8 @@ Windows], but the steps automated by the Makefile are easy enough to
 invoke manually. There's more detail on doing that in the Tutorial.
 
 (0) You can download the HOL Light sources from the Google Code site.
+    [AS OF 2015/08/24 GOOGLE CODE IS ABOUT TO GO READ-ONLY, SO THESE
+    INSTRUCTIONS WILL SOON CHANGE --- REFER TO THE HOME PAGE ABOVE.]
     For example, the following will copy the code from the trunk of the
     Google Code repository into a new directory 'hol_light':
 
