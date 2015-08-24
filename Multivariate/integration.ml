@@ -4441,6 +4441,19 @@ let HAS_INTEGRAL_NEGLIGIBLE = prove
   ASM_REWRITE_TAC[real_abs] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
   ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
 
+let HAS_INTEGRAL_ON_NEGLIGIBLE = prove
+ (`!f:real^M->real^N s. negligible s ==> (f has_integral vec 0) s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_NEGLIGIBLE THEN
+  EXISTS_TAC `s:real^M->bool` THEN ASM SET_TAC[]);;
+
+let INTEGRABLE_ON_NEGLIGIBLE = prove
+ (`!f:real^M->real^N s. negligible s ==> f integrable_on s`,
+  REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_ON_NEGLIGIBLE]);;
+
+let INTEGRAL_ON_NEGLIGIBLE = prove
+ (`!f:real^M->real^N s. negligible s ==> integral s f = vec 0`,
+  MESON_TAC[HAS_INTEGRAL_ON_NEGLIGIBLE; INTEGRAL_UNIQUE]);;
+
 let HAS_INTEGRAL_SPIKE = prove
  (`!f:real^M->real^N g s t.
         negligible s /\ (!x. x IN (t DIFF s) ==> g x = f x) /\
@@ -7086,6 +7099,26 @@ let INTEGRAL_UNION = prove
   MATCH_MP_TAC HAS_INTEGRAL_UNION THEN
   ASM_REWRITE_TAC[GSYM HAS_INTEGRAL_INTEGRAL]);;
 
+let INTEGRABLE_UNION = prove
+ (`!f:real^M->real^N s t.
+        f integrable_on s /\ f integrable_on t /\ negligible(s INTER t)
+        ==> f integrable_on (s UNION t)`,
+  REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_UNION]);;
+
+let INTEGRABLE_UNION_EQ = prove
+ (`!f:real^M->real^N s t.
+        f integrable_on s /\ f integrable_on t
+        ==> (f integrable_on (s UNION t) <=> f integrable_on (s INTER t))`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM INTEGRABLE_RESTRICT_UNIV] THEN
+  DISCH_THEN(ASSUME_TAC o MATCH_MP INTEGRABLE_ADD) THEN EQ_TAC THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC[IMP_IMP] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP INTEGRABLE_SUB) THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+  X_GEN_TAC `x:real^M` THEN
+  MAP_EVERY ASM_CASES_TAC [`(x:real^M) IN s`; `(x:real^M) IN t`] THEN
+  ASM_REWRITE_TAC[IN_INTER; IN_UNION] THEN CONV_TAC VECTOR_ARITH);;
+
 let HAS_INTEGRAL_UNIONS_IMAGE = prove
  (`!f:real^M->real^N k i t:A->bool.
         FINITE t /\
@@ -9479,6 +9512,14 @@ let ABSOLUTELY_INTEGRABLE_CMUL = prove
            ==> (\x. c % f(x)) absolutely_integrable_on s`,
   SIMP_TAC[absolutely_integrable_on; INTEGRABLE_CMUL; NORM_MUL; LIFT_CMUL]);;
 
+let ABSOLUTELY_INTEGRABLE_CMUL_EQ = prove
+ (`!f:real^M->real^N s c.
+      (\x. c % f x) absolutely_integrable_on s <=>
+      c = &0 \/ f absolutely_integrable_on s`,
+  REWRITE_TAC[absolutely_integrable_on; INTEGRABLE_CMUL_EQ;
+              NORM_MUL; LIFT_CMUL; REAL_ABS_ZERO] THEN
+  CONV_TAC TAUT);;
+
 let ABSOLUTELY_INTEGRABLE_NEG = prove
  (`!f s. f absolutely_integrable_on s
          ==> (\x. --f(x)) absolutely_integrable_on s`,
@@ -9500,6 +9541,10 @@ let ABSOLUTELY_INTEGRABLE_ON_SUBINTERVAL = prove
         ==> f absolutely_integrable_on interval[a,b]`,
   REWRITE_TAC[absolutely_integrable_on] THEN
   MESON_TAC[INTEGRABLE_ON_SUBINTERVAL]);;
+
+let ABSOLUTELY_INTEGRABLE_ON_NEGLIGIBLE = prove
+ (`!f:real^M->real^N s. negligible s ==> f absolutely_integrable_on s`,
+  SIMP_TAC[INTEGRABLE_ON_NEGLIGIBLE; absolutely_integrable_on]);;
 
 let ABSOLUTELY_INTEGRABLE_SPIKE = prove
  (`!f:real^M->real^N g s t.
@@ -10900,6 +10945,17 @@ let ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_DROP_LBOUND = prove
   EXISTS_TAC `f:real^M->real^1` THEN
   ASM_REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   ASM_REWRITE_TAC[IMP_IMP; FORALL_1; DIMINDEX_1; GSYM drop]);;
+
+let ABSOLUTELY_INTEGRABLE_EQ_INTEGRABLE_POS = prove
+ (`!f:real^N->real^1 s.
+        (!x. x IN s ==> &0 <= drop(f x))
+        ==> (f absolutely_integrable_on s <=> f integrable_on s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE] THEN
+  MATCH_MP_TAC(REWRITE_RULE[TAUT `p /\ q /\ r ==> s <=> p /\ q ==> r ==> s`]
+        ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_DROP_LBOUND) THEN
+  EXISTS_TAC `(\x. vec 0):real^N->real^1` THEN
+  ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_0; DROP_VEC]);;
 
 let ABSOLUTELY_INTEGRABLE_PASTECART_SYM = prove
  (`!f:real^(M,N)finite_sum->real^P s y.

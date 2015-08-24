@@ -14541,6 +14541,22 @@ let MEASURABLE_ON_COMPLEX_DIV = prove
   REWRITE_TAC[FUN_EQ_THM; complex_div; COMPLEX_VEC_0] THEN
   GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[COMPLEX_MUL_LZERO]);;
 
+let MEASURABLE_ON_CPRODUCT = prove                                              
+ (`!f:A->real^N->complex s t.
+         FINITE t /\ (t = {} ==> lebesgue_measurable s) /\
+         (!i. i IN t ==> f i measurable_on s)                              
+         ==> (\x. cproduct t (\i. f i x)) measurable_on s`,   
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN                    
+  SIMP_TAC[CPRODUCT_CLAUSES; MEASURABLE_ON_CONST_EQ] THEN                   
+  REWRITE_TAC[FORALL_IN_INSERT; NOT_INSERT_EMPTY] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `k:A->bool`] THEN
+  REWRITE_TAC[IMP_IMP] THEN STRIP_TAC THEN            
+  ASM_CASES_TAC `k:A->bool = {}` THEN                   
+  ASM_SIMP_TAC[CPRODUCT_CLAUSES; COMPLEX_MUL_RID; ETA_AX] THEN                 
+  MATCH_MP_TAC MEASURABLE_ON_COMPLEX_MUL THEN ASM_REWRITE_TAC[ETA_AX] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;                    
+
 (* ------------------------------------------------------------------------- *)
 (* Measurable real->real functions.                                          *)
 (* ------------------------------------------------------------------------- *)
