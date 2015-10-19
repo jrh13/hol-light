@@ -6,6 +6,10 @@ its front end. This is the HOL Light homepage:
 
         http://www.cl.cam.ac.uk/~jrh13/hol-light/index.html
 
+and this is the root of the Github code repository:
+
+        https://github.com/jrh13/hol-light
+
 Basic installation instructions are below. For more detailed information
 on usage, see the Tutorial:
 
@@ -100,13 +104,11 @@ environment such as Linux [or Cygwin (see www.cygwin.com) under
 Windows], but the steps automated by the Makefile are easy enough to
 invoke manually. There's more detail on doing that in the Tutorial.
 
-(0) You can download the HOL Light sources from the Google Code site.
-    [AS OF 2015/08/24 GOOGLE CODE IS ABOUT TO GO READ-ONLY, SO THESE
-    INSTRUCTIONS WILL SOON CHANGE --- REFER TO THE HOME PAGE ABOVE.]
+(0) You can download the HOL Light sources from the Github site.
     For example, the following will copy the code from the trunk of the
-    Google Code repository into a new directory 'hol_light':
+    Github repository into a new directory 'hol-light':
 
-        svn checkout http://hol-light.googlecode.com/svn/trunk/ hol_light
+        git clone https://github.com/jrh13/hol-light.git
 
     The above is now the recommended way of getting HOL Light. There
     are also gzipped tar files on the HOL Light Web page, but they are
