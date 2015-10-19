@@ -859,6 +859,12 @@ let NORM_LE_COMPONENTWISE = prove
   MATCH_MP_TAC SUM_LE_NUMSEG THEN
   ASM_SIMP_TAC[GSYM REAL_POW_2; GSYM REAL_LE_SQUARE_ABS]);;
 
+let NORM_EQ_COMPONENTWISE = prove                                              
+ (`!x:real^N y:real^N.                                                         
+        (!i. 1 <= i /\ i <= dimindex (:N) ==> abs(x$i) = abs(y$i))             
+        ==> norm x = norm y`,                                                  
+  SIMP_TAC[GSYM REAL_LE_ANTISYM; NORM_LE_COMPONENTWISE]);;               
+
 let L1_LE_NORM = prove
  (`!x:real^N.
     sum(1..dimindex(:N)) (\i. abs(x$i)) <= sqrt(&(dimindex(:N))) * norm x`,
@@ -3975,6 +3981,12 @@ let BILINEAR_DROP_MUL = prove
  (`bilinear (\x y:real^N. drop x % y)`,
   REWRITE_TAC[bilinear; linear] THEN
   REWRITE_TAC[DROP_ADD; DROP_CMUL] THEN VECTOR_ARITH_TAC);;
+
+let BILINEAR_LIFT_MUL = prove
+ (`bilinear (\x y. lift(drop x * drop y))`,
+  REWRITE_TAC[linear; bilinear; GSYM DROP_EQ;
+              LIFT_DROP; DROP_ADD; DROP_CMUL] THEN
+  REAL_ARITH_TAC);;
 
 let LINEAR_COMPONENTWISE = prove
  (`!f:real^M->real^N.

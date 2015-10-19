@@ -3699,6 +3699,20 @@ let CONNECTED_SUBSET_SEGMENT = prove
   RULE_ASSUM_TAC(REWRITE_RULE[pathstart; pathfinish; path_image]) THEN
   ASM SET_TAC[]);;
 
+let DIAMETER_SEGMENT = prove
+ (`(!a b:real^N. diameter(segment[a,b]) = dist(a,b)) /\
+   (!a b:real^N. diameter(segment(a,b)) = dist(a,b))`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `a:real^N = b` THEN
+  ASM_REWRITE_TAC[SEGMENT_REFL; DIST_REFL; DIAMETER_SING; DIAMETER_EMPTY] THENL
+   [ALL_TAC;
+    GEN_REWRITE_TAC LAND_CONV [GSYM DIAMETER_CLOSURE] THEN
+    ASM_REWRITE_TAC[CLOSURE_SEGMENT]] THEN
+  (REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
+    [MATCH_MP_TAC DIAMETER_LE;
+     REWRITE_TAC[dist] THEN MATCH_MP_TAC DIAMETER_BOUNDED_BOUND]) THEN
+  REWRITE_TAC[BOUNDED_SEGMENT; ENDS_IN_SEGMENT; DIST_POS_LE] THEN
+  REWRITE_TAC[GSYM dist; DIST_IN_CLOSED_SEGMENT_2]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Removing points from arcs and simple paths, hence allowing us to          *)
 (* distinguish simple closed curves and arcs topologically.                  *)
@@ -4210,7 +4224,7 @@ let MONOTONE_TOPOLOGICALLY_POINTS = prove
 
 (* ------------------------------------------------------------------------- *)
 (* Topological rendering of Darboux continuity, proof it implies continuity  *)
-(* for a regulated function from R^ 1(having left and right limits).         *)
+(* for a regulated function from R^1 (having left and right limits).         *)
 (* ------------------------------------------------------------------------- *)
 
 let CONVEXITY_PRESERVING = prove

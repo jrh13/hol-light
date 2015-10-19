@@ -965,6 +965,17 @@ let DIST_DECREASES_CLOSED_SEGMENT = prove
   REWRITE_TAC[SEGMENT_CLOSED_OPEN; IN_UNION; IN_INSERT; NOT_IN_EMPTY] THEN
   ASM_MESON_TAC[DIST_DECREASES_OPEN_SEGMENT; REAL_LE_REFL; REAL_LT_IMP_LE]);;
 
+let DIST_IN_CLOSED_SEGMENT_2 = prove
+ (`!a b x y:real^N.
+        x IN segment[a,b] /\ y IN segment[a,b] ==> dist(x,y) <= dist(a,b)`,
+  REWRITE_TAC[IN_SEGMENT; dist] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[NORM_MUL; VECTOR_ARITH
+   `((&1 - u) % a + u % b) - ((&1 - v) % a + v % b):real^N =
+    (v - u) % (a - b)`] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_LID] THEN
+  MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+  ASM_REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Connectedness.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -1997,6 +2008,10 @@ let CLOSURE_EMPTY = prove
 let CLOSURE_UNIV = prove
  (`closure(:real^N) = (:real^N)`,
   SIMP_TAC[CLOSURE_CLOSED; CLOSED_UNIV]);;
+
+let LIMPT_OF_OPEN_CLOSURE = prove
+ (`!s x:real^N. open s /\ x IN closure s ==> x limit_point_of s`,
+  REWRITE_TAC[closure; IN_UNION; IN_ELIM_THM] THEN MESON_TAC[LIMPT_OF_OPEN]);;
 
 let CLOSURE_UNIONS = prove
  (`!f. FINITE f ==> closure(UNIONS f) = UNIONS {closure s | s IN f}`,
@@ -4121,6 +4136,11 @@ let SEQ_OFFSET_REV = prove
   REWRITE_TAC[LIM_SEQUENTIALLY] THEN
   MESON_TAC[ARITH_RULE `N + k <= n ==> N <= n - k /\ (n - k) + k = n:num`]);;
 
+let SEQ_OFFSET_EQ = prove
+ (`!k f l:real^N.
+        ((\i. f (i + k)) --> l) sequentially <=> (f --> l) sequentially`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[SEQ_OFFSET_REV; SEQ_OFFSET]);;
+
 let SEQ_HARMONIC_OFFSET = prove
  (`!a. ((\n. lift(inv(&n + a))) --> vec 0) sequentially`,
   GEN_TAC THEN REWRITE_TAC[LIM_SEQUENTIALLY] THEN
@@ -4302,6 +4322,11 @@ let SPHERE_EQ_SING = prove
    `!y. (x IN s ==> y IN s /\ ~(y = x)) ==> ~(s = {x})`) THEN
   EXISTS_TAC `a - (x - a):real^N` THEN REWRITE_TAC[IN_SPHERE] THEN
   REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NORM_ARITH);;
+
+let HAS_SIZE_SPHERE_1 = prove
+ (`!a:real^N r. sphere(a,r) HAS_SIZE 1 <=> r = &0`,
+  REPEAT GEN_TAC THEN CONV_TAC(LAND_CONV HAS_SIZE_CONV) THEN
+  REWRITE_TAC[SPHERE_EQ_SING] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* For points in the interior, localization of limits makes no difference.   *)
@@ -4920,6 +4945,20 @@ let CAUCHY = prove
   X_GEN_TAC `e:real` THEN DISCH_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
   MESON_TAC[DIST_TRIANGLE_HALF_L]);;
+
+let CAUCHY_SUBSEQUENCE = prove
+ (`!x:num->real^N r:num->num.
+        (!m n. m < n ==> r m < r n) /\ cauchy x ==> cauchy (x o r)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP MONOTONE_BIGGER) THEN
+  REWRITE_TAC[cauchy; o_DEF; GE] THEN MESON_TAC[LE_TRANS]);;
+
+let CAUCHY_OFFSET = prove
+ (`!k x:num->real^N. cauchy (\i. x(i + k)) <=> cauchy x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[cauchy; GE] THEN EQ_TAC THENL
+   [ALL_TAC; MESON_TAC[LE_ADD; LE_TRANS]] THEN
+  MESON_TAC[ARITH_RULE
+   `N + k:num <= n ==> n = (n - k) + k /\ N <= n - k`]);;
 
 let CONVERGENT_IMP_CAUCHY = prove
  (`!s l. (s --> l) sequentially ==> cauchy s`,
@@ -11082,6 +11121,30 @@ let COMPACT_UNIFORMLY_CONTINUOUS = prove
   REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ; IN_SING; FORALL_UNWIND_THM2] THEN
   ASM_MESON_TAC[]);;
 
+let CONTINUOUS_EQ_CAUCHY_CONTINUOUS_CLOSED = prove
+ (`!f:real^M->real^N s.
+        closed s
+        ==> (f continuous_on s <=>
+             !x. cauchy x /\ (!n. x n IN s) ==> cauchy(f o x))`,
+  MESON_TAC[CAUCHY_CONTINUOUS_IMP_CONTINUOUS;
+            CONTINUOUS_CLOSED_IMP_CAUCHY_CONTINUOUS]);;
+
+let UNIFORMLY_CONTINUOUS_EQ_CAUCHY_CONTINUOUS_BOUNDED = prove
+ (`!f:real^M->real^N s.
+        bounded s
+        ==> (f uniformly_continuous_on s <=>
+             !x. cauchy x /\ (!n. x n IN s) ==> cauchy(f o x))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_IMP_CAUCHY_CONTINUOUS] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CAUCHY_CONTINUOUS_EXTENDS_TO_CLOSURE) THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:real^M->real^N` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_ON_EQ THEN
+  EXISTS_TAC `g:real^M->real^N` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_ON_SUBSET THEN
+  EXISTS_TAC `closure s:real^M->bool` THEN REWRITE_TAC[CLOSURE_SUBSET] THEN
+  MATCH_MP_TAC COMPACT_UNIFORMLY_CONTINUOUS THEN
+  ASM_REWRITE_TAC[COMPACT_CLOSURE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A uniformly convergent limit of continuous functions is continuous.       *)
 (* ------------------------------------------------------------------------- *)
@@ -11933,6 +11996,10 @@ let BOUNDED_AND_DIAMETER_LE = prove
   MATCH_MP_TAC BOUNDED_SUBSET THEN EXISTS_TAC `cball(a:real^N,r)` THEN
   ASM_SIMP_TAC[BOUNDED_CBALL; SUBSET; IN_CBALL; dist]);;
 
+let DIST_LE_DIAMETER = prove
+ (`!s a b:real^N. bounded s /\ a IN s /\ b IN s ==> dist(a,b) <= diameter s`,
+  MESON_TAC[BOUNDED_AND_DIAMETER_LE; REAL_LE_REFL]);;
+
 let DIAMETER_CBALL = prove
  (`!a:real^N r. diameter(cball(a,r)) = if r < &0 then &0 else &2 * r`,
   REPEAT GEN_TAC THEN COND_CASES_TAC THENL
@@ -12030,6 +12097,28 @@ let DIAMETER_LE_SUMS_LEFT = prove
         ~(s = {}) /\ bounded s /\ bounded t
         ==> diameter t <= diameter {x + y | x IN s /\ y IN t}`,
   ONCE_REWRITE_TAC[SUMS_SYM] THEN SIMP_TAC[DIAMETER_LE_SUMS_RIGHT]);;
+
+let DIAMETER_UNION_LE = prove
+ (`!s t:real^N->bool.
+        bounded s /\ bounded t /\ ~(s INTER t = {})
+        ==> diameter(s UNION t) <= diameter s + diameter t`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DIAMETER_LE THEN
+  ASM_SIMP_TAC[REAL_LE_ADD; DIAMETER_POS_LE; IN_UNION] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  REWRITE_TAC[IN_INTER; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `z:real^N` THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THENL
+   [MATCH_MP_TAC(REAL_ARITH `x <= a /\ &0 <= b ==> x <= a + b`) THEN
+    ASM_SIMP_TAC[DIAMETER_POS_LE];
+    MATCH_MP_TAC(NORM_ARITH
+     `norm(x - z:real^N) <= s /\ norm(y - z) <= t
+      ==> norm(x - y) <= s + t`) THEN CONJ_TAC;
+    MATCH_MP_TAC(NORM_ARITH
+     `norm(x - z:real^N) <= t /\ norm(y - z) <= s
+      ==> norm(x - y) <= s + t`) THEN CONJ_TAC;
+    MATCH_MP_TAC(REAL_ARITH `x <= b /\ &0 <= a ==> x <= a + b`) THEN
+    ASM_SIMP_TAC[DIAMETER_POS_LE]] THEN
+  MATCH_MP_TAC DIAMETER_BOUNDED_BOUND THEN ASM_REWRITE_TAC[]);;
 
 let LEBESGUE_COVERING_LEMMA = prove
  (`!s:real^N->bool c.
@@ -21062,6 +21151,10 @@ let SETDIST_POS_LE = prove
   MATCH_MP_TAC REAL_LE_INF THEN
   REWRITE_TAC[FORALL_IN_GSPEC; DIST_POS_LE] THEN ASM SET_TAC[]);;
 
+let SETDIST_POS_LT = prove
+ (`!s t:real^N->bool. &0 < setdist(s,t) <=> ~(setdist(s,t) = &0)`,
+  REWRITE_TAC[REAL_LT_LE; SETDIST_POS_LE] THEN REAL_ARITH_TAC);;
+
 let SETDIST_SUBSETS_EQ = prove
  (`!s t s' t':real^N->bool.
      s' SUBSET s /\ t' SUBSET t /\
@@ -21897,6 +21990,10 @@ let HAUSDIST_POS_LE = prove
   MATCH_MP_TAC(SET_RULE
    `~(s = {}) /\ (!x. x IN s ==> P x) ==> ?y. y IN s /\ P y`) THEN
   ASM_REWRITE_TAC[FORALL_IN_GSPEC; FORALL_IN_UNION; SETDIST_POS_LE]);;
+
+let HAUSDIST_POS_LT = prove
+ (`!s t:real^N->bool. &0 < hausdist(s,t) <=> ~(hausdist(s,t) = &0)`,
+  REWRITE_TAC[REAL_LT_LE; HAUSDIST_POS_LE] THEN REAL_ARITH_TAC);;
 
 let REAL_ABS_HAUSDIST = prove
  (`!s t:real^N->bool. abs(hausdist(s,t)) = hausdist(s,t)`,

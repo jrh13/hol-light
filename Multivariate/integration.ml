@@ -4094,8 +4094,13 @@ let CONTENT_DOUBLESPLIT = prove
   ASM_REWRITE_TAC[] THEN EXPAND_TAC "d" THEN REAL_ARITH_TAC);;
 
 let NEGLIGIBLE_STANDARD_HYPERPLANE = prove
- (`!c k. 1 <= k /\ k <= dimindex(:N) ==> negligible {x:real^N | x$k = c}`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[negligible; has_integral] THEN
+ (`!c k. negligible {x:real^N | x$k = c}`,
+  MAP_EVERY X_GEN_TAC [`c:real`; `i:num`] THEN
+  SUBGOAL_THEN `?k. 1 <= k /\ k <= dimindex(:N) /\ !x:real^N. x$i = x$k`
+  (X_CHOOSE_THEN `k:num` STRIP_ASSUME_TAC) THENL
+   [ASM_REWRITE_TAC[FINITE_INDEX_INRANGE]; ASM_REWRITE_TAC[]] THEN
+  FIRST_X_ASSUM(K ALL_TAC o SPEC `x:real^N`) THEN
+  REWRITE_TAC[negligible; has_integral] THEN
   REPEAT STRIP_TAC THEN REWRITE_TAC[VECTOR_SUB_RZERO] THEN
   MP_TAC(ISPECL [`a:real^N`; `b:real^N`; `k:num`; `c:real`; `e:real`]
         CONTENT_DOUBLESPLIT) THEN
@@ -5931,6 +5936,24 @@ let HAS_INTEGRAL_TWIZZLE_EQ = prove
   REWRITE_TAC[GSYM IN_NUMSEG] THEN
   ASM_MESON_TAC[PERMUTES_INVERSES; PERMUTES_IN_IMAGE]);;
 
+let INTEGRABLE_TWIZZLE_EQ = prove                                       
+ (`!f:real^N->real^P s:real^M->bool p.                                         
+        dimindex(:M) = dimindex(:N) /\ p permutes 1..dimindex(:N)              
+        ==> (f integrable_on IMAGE (\x. lambda i. x$p i) s <=>                 
+             (\x. f(lambda i. x$p i)) integrable_on s)`,                       
+  REPEAT GEN_TAC THEN                                                          
+  DISCH_THEN(ASSUME_TAC o MATCH_MP HAS_INTEGRAL_TWIZZLE_EQ) THEN     
+  ASM_REWRITE_TAC[integrable_on]);;                            
+                           
+let INTEGRAL_TWIZZLE_EQ = prove                           
+ (`!f:real^N->real^P s:real^M->bool p.                                      
+        dimindex(:M) = dimindex(:N) /\ p permutes 1..dimindex(:N)
+        ==> integral (IMAGE (\x. lambda i. x$p i) s) f =            
+            integral s (\x. f(lambda i. x$p i))`,            
+  REPEAT STRIP_TAC THEN REWRITE_TAC[integral] THEN                 
+  AP_TERM_TAC THEN ABS_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_TWIZZLE_EQ THEN
+  FIRST_X_ASSUM SUBST1_TAC THEN ASM_REWRITE_TAC[]);;            
+                                                
 let HAS_INTEGRAL_PASTECART_SYM_ALT = prove
  (`!f:real^(M,N)finite_sum->real^P s y.
         ((\z. f(pastecart (sndcart z) (fstcart z))) has_integral y) s <=>
@@ -6339,6 +6362,26 @@ let INTEGRAL_SUBSET_DROP_LE = prove
         ==> drop(integral s f) <= drop(integral t f)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_SUBSET_DROP_LE THEN
   ASM_MESON_TAC[INTEGRABLE_INTEGRAL]);;
+
+let INTEGRAL_SUBSET_DROP_LE_AE = prove
+ (`!f:real^M->real^1 s t u.
+        s SUBSET t /\ f integrable_on s /\ f integrable_on t /\
+        negligible u /\ (!x. x IN t DIFF u ==> &0 <= drop(f(x)))
+        ==> drop(integral s f) <= drop(integral t f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^1`;
+                 `s DIFF u:real^M->bool`; `t DIFF u:real^M->bool`]
+        INTEGRAL_SUBSET_DROP_LE) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ASM SET_TAC[]; CONJ_TAC] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_IMP] INTEGRABLE_SPIKE_SET) THENL
+     [EXISTS_TAC `s:real^M->bool`; EXISTS_TAC `t:real^M->bool`] THEN
+    ASM_REWRITE_TAC[];
+    MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THEN
+    AP_TERM_TAC THEN MATCH_MP_TAC INTEGRAL_SPIKE_SET] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        NEGLIGIBLE_SUBSET)) THEN
+  SET_TAC[]);;
 
 let HAS_INTEGRAL_ALT = prove
  (`!f:real^M->real^N s i.
@@ -9587,6 +9630,17 @@ let ABSOLUTELY_INTEGRABLE_EQ = prove
    [EXISTS_TAC `f:real^M->real^N`;
     EXISTS_TAC `\x. lift(norm((f:real^M->real^N) x))`] THEN
   ASM_SIMP_TAC[]);;
+
+let ABSOLUTELY_INTEGRABLE_TWIZZLE_EQ = prove                          
+ (`!f:real^N->real^P s:real^M->bool p.                                      
+        dimindex(:M) = dimindex(:N) /\ p permutes 1..dimindex(:N)        
+        ==> (f absolutely_integrable_on IMAGE (\x. lambda i. x$p i) s <=>
+             (\x. f(lambda i. x$p i)) absolutely_integrable_on s)`,   
+  REPEAT STRIP_TAC THEN REWRITE_TAC[absolutely_integrable_on] THEN   
+  BINOP_TAC THEN                                                            
+  W(MP_TAC o PART_MATCH (lhand o rand)                                       
+    INTEGRABLE_TWIZZLE_EQ o lhand o snd) THEN                               
+  FIRST_X_ASSUM SUBST1_TAC THEN ASM_REWRITE_TAC[]);;                  
 
 let ABSOLUTELY_INTEGRABLE_AFFINITY = prove
  (`!f:real^M->real^N s m c.

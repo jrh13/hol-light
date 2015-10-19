@@ -2474,6 +2474,48 @@ let MATRIX_INV_ORTHOGONAL_RMUL = prove
   ONCE_REWRITE_TAC[GSYM TRANSP_EQ; GSYM ORTHOGONAL_MATRIX_TRANSP] THEN
   SIMP_TAC[TRANSP_MATRIX_INV; MATRIX_TRANSP_MUL; MATRIX_INV_ORTHOGONAL_LMUL]);;
 
+let ORTHOGONAL_TRANSFORMATION_EQ_ADJOINT_LEFT = prove
+ (`!f:real^N->real^N.
+        orthogonal_transformation f <=> linear f /\ adjoint f o f = I`,
+  GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM; I_THM; o_THM] THEN EQ_TAC THENL
+   [REWRITE_TAC[orthogonal_transformation] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    ASM_REWRITE_TAC[] THEN
+    FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP ADJOINT_WORKS th]) THEN
+    ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN REWRITE_TAC[VECTOR_EQ_LDOT];
+    STRIP_TAC THEN ASM_REWRITE_TAC[ORTHOGONAL_TRANSFORMATION] THEN
+    REWRITE_TAC[NORM_EQ] THEN
+    FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP ADJOINT_WORKS th]) THEN
+    ASM_REWRITE_TAC[]]);;
+
+let ORTHOGONAL_TRANSFORMATION_EQ_ADJOINT_RIGHT = prove
+ (`!f:real^N->real^N.
+        orthogonal_transformation f <=> linear f /\ f o adjoint f = I`,
+  GEN_TAC THEN REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_EQ_ADJOINT_LEFT] THEN
+  MESON_TAC[ADJOINT_LINEAR; LINEAR_INVERSE_LEFT]);;
+
+let ORTHOGONAL_TRANSFORMATION_EQ_ADJOINT = prove
+ (`!f:real^N->real^N.
+        orthogonal_transformation f <=>
+        linear f /\ adjoint f o f = I /\ f o adjoint f = I`,
+  MESON_TAC[ORTHOGONAL_TRANSFORMATION_EQ_ADJOINT_LEFT;
+            ORTHOGONAL_TRANSFORMATION_EQ_ADJOINT_RIGHT]);;
+
+let ORTHOGONAL_TRANSFORMATION_ADJOINT = prove
+ (`!f:real^N->real^N.
+        orthogonal_transformation f ==> orthogonal_transformation(adjoint f)`,
+  REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_EQ_ADJOINT_LEFT] THEN
+  SIMP_TAC[ADJOINT_ADJOINT; ADJOINT_LINEAR] THEN
+  MESON_TAC[ADJOINT_LINEAR; LINEAR_INVERSE_LEFT]);;
+
+let ORTHOGONAL_TRANSFORMATION_ADJOINT_EQ =
+ (`!f:real^N->real^N.
+        linear f
+        ==> (orthogonal_transformation(adjoint f) <=>
+             orthogonal_transformation f)`,
+  MESON_TAC[ORTHOGONAL_TRANSFORMATION_ADJOINT; ADJOINT_LINEAR;
+            ADJOINT_ADJOINT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Linearity of scaling, and hence isometry, that preserves origin.          *)
 (* ------------------------------------------------------------------------- *)

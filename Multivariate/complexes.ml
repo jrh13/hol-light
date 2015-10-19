@@ -1386,6 +1386,15 @@ let LINEAR_CNJ = prove
  (`linear cnj`,
   REWRITE_TAC[linear; COMPLEX_CMUL; CNJ_ADD; CNJ_MUL; CNJ_CX]);;
 
+let LINEAR_COMPLEX_LMUL = prove                   
+ (`!f:real^N->complex c. linear f ==> linear (\x. c * f x)`,
+  SIMP_TAC[linear; COMPLEX_CMUL] THEN                                          
+  REPEAT STRIP_TAC THEN CONV_TAC COMPLEX_RING);;                               
+                                                                               
+let LINEAR_COMPLEX_RMUL = prove                           
+ (`!f:real^N->complex c. linear f ==> linear (\x. f x * c)`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN REWRITE_TAC[LINEAR_COMPLEX_LMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Complex-specific theorems about sums.                                     *)
 (* ------------------------------------------------------------------------- *)

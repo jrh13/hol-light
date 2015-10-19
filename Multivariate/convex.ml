@@ -1952,6 +1952,12 @@ let CONVEX_ON_CONST = prove
  (`!s a. (\x. a) convex_on s`,
   SIMP_TAC[convex_on; GSYM REAL_ADD_RDISTRIB; REAL_MUL_LID; REAL_LE_REFL]);;
 
+let LINEAR_IMP_CONVEX_ON = prove
+ (`!f s:real^N->bool. linear (lift o f) ==> f convex_on s`,
+  REWRITE_TAC[linear; convex_on] THEN
+  SIMP_TAC[GSYM DROP_EQ; DROP_ADD; o_DEF; LIFT_DROP; DROP_CMUL] THEN
+  REWRITE_TAC[REAL_LE_REFL]);;
+
 let CONVEX_ON_SING = prove
  (`!f a:real^N. f convex_on {a}`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC CONVEX_ON_EQ THEN
@@ -1965,6 +1971,14 @@ let CONVEX_ADD = prove
   MATCH_MP_TAC(TAUT
     `(b /\ c ==> d) ==> (a ==> b) /\ (a ==> c) ==> a ==> d`) THEN
   REAL_ARITH_TAC);;
+
+let CONVEX_ADD_EQ = prove
+ (`!a f s:real^N->bool. (\x. a + f x) convex_on s <=> f convex_on s`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN                                         
+  SIMP_TAC[CONVEX_ADD; CONVEX_ON_CONST] THEN                     
+  DISCH_THEN(MP_TAC o ISPEC `(\x. --a):real^N->real` o
+    MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] CONVEX_ADD)) THEN           
+  REWRITE_TAC[CONVEX_ON_CONST; ETA_AX; REAL_ARITH `--a + a + x:real = x`]);;
 
 let CONVEX_CMUL = prove
  (`!s c f. &0 <= c /\ f convex_on s ==> (\x. c * f(x)) convex_on s`,

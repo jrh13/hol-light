@@ -12934,6 +12934,81 @@ let MAXIMUM_MODULUS_BOUNDED_FUNCTION = prove
                ARITH_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A proper holomorphic function maps frontier onto frontier.                *)
+(* ------------------------------------------------------------------------- *)
+
+let FRONTIER_PROPER_HOLOMORPHIC_IMAGE = prove
+ (`!f s. open s /\ connected s /\ bounded s /\
+         f holomorphic_on s /\ f continuous_on closure s /\
+         (!k. compact k /\ k SUBSET IMAGE f s
+              ==> compact {x | x IN s /\ f x IN k})
+         ==> frontier(IMAGE f s) = IMAGE f (frontier s)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `s:complex->bool = {}` THEN
+  ASM_REWRITE_TAC[FRONTIER_EMPTY; IMAGE_CLAUSES] THEN
+  ASM_CASES_TAC `?c. !z. z IN s ==> (f:complex->complex) z = c` THENL
+   [FIRST_X_ASSUM(X_CHOOSE_TAC `c:complex`) THEN
+    SUBGOAL_THEN `!x. x IN closure s ==> (f:complex->complex) x IN {c}`
+    ASSUME_TAC THENL
+     [MATCH_MP_TAC FORALL_IN_CLOSURE THEN
+      ASM_REWRITE_TAC[IN_SING; CLOSED_SING];
+      ALL_TAC] THEN
+    SUBGOAL_THEN `IMAGE (f:complex->complex) s = {c}` SUBST1_TAC THENL
+     [ASM SET_TAC[]; REWRITE_TAC[FRONTIER_SING]] THEN
+    SUBGOAL_THEN `~(frontier s:complex->bool = {})` MP_TAC THENL
+     [ALL_TAC; REWRITE_TAC[frontier] THEN ASM SET_TAC[]] THEN
+    ASM_MESON_TAC[FRONTIER_EQ_EMPTY; NOT_BOUNDED_UNIV];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`f:complex->complex`; `s:complex->bool`]
+    CLOSURE_IMAGE_BOUNDED) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`s:complex->bool`; `f:complex->complex`]
+        OPEN_MAPPING_THM) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `s:complex->bool`) THEN
+  ASM_REWRITE_TAC[SUBSET_REFL] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `DISJOINT (IMAGE (f:complex->complex) (frontier s)) (IMAGE f s)`
+  MP_TAC THENL
+   [ALL_TAC; ASM_SIMP_TAC[frontier; INTERIOR_OPEN] THEN ASM SET_TAC[]] THEN
+  REWRITE_TAC[SET_RULE
+   `DISJOINT (IMAGE f s) (IMAGE f t) <=>
+    !x y. x IN s /\ y IN t ==> ~(f x = f y)`] THEN
+  MAP_EVERY X_GEN_TAC [`x:complex`; `x':complex`] THEN REPEAT STRIP_TAC THEN
+  ABBREV_TAC `y = (f:complex->complex) x'` THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_CBALL]) THEN
+  DISCH_THEN(MP_TAC o SPEC `y:complex`) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `closed {x | x IN s /\ (f:complex->complex) x IN cball(y,r)}`
+  MP_TAC THENL
+   [MATCH_MP_TAC COMPACT_IMP_CLOSED THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[COMPACT_CBALL];
+    REWRITE_TAC[CLOSED_LIMPT]] THEN
+  DISCH_THEN(MP_TAC o SPEC `x:complex`) THEN
+  REWRITE_TAC[NOT_IMP; IN_ELIM_THM] THEN CONJ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[frontier; IN_DIFF; INTERIOR_OPEN]] THEN
+  REWRITE_TAC[LIMPT_APPROACHABLE; IN_ELIM_THM] THEN
+  X_GEN_TAC `d:real` THEN DISCH_TAC THEN FIRST_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE I [CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN]) THEN
+  DISCH_THEN(MP_TAC o SPEC `x:complex`) THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[frontier; IN_DIFF]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `s:complex->bool` o
+        MATCH_MP (REWRITE_RULE[IMP_CONJ] CONTINUOUS_WITHIN_SUBSET)) THEN
+  REWRITE_TAC[CLOSURE_SUBSET; continuous_within] THEN
+  DISCH_THEN(MP_TAC o SPEC `r:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [frontier]) THEN
+  REWRITE_TAC[IN_DIFF] THEN DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        LIMPT_OF_OPEN_CLOSURE)) THEN
+  ASM_REWRITE_TAC[LIMPT_APPROACHABLE] THEN
+  DISCH_THEN(MP_TAC o SPEC `min d e:real`) THEN
+  ASM_REWRITE_TAC[REAL_LT_MIN] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[ONCE_REWRITE_RULE[DIST_SYM] IN_CBALL] THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Various forms of Hadamard's three-line theorem.                           *)
 (* ------------------------------------------------------------------------- *)
 
