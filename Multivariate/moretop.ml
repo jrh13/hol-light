@@ -5997,10 +5997,8 @@ let UNICOHERENT_MONOTONE_IMAGE_COMPACT = prove
   ASM_SIMP_TAC[CLOSED_IN_CLOSED_EQ; COMPACT_IMP_CLOSED; SUBSET_RESTRICT;
                CONTINUOUS_CLOSED_PREIMAGE; CONJ_ASSOC] THEN
   REWRITE_TAC[IMP_CONJ_ALT] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
-
   MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`; `t:real^N->bool`]
     CONNECTED_CLOSED_MONOTONE_PREIMAGE) THEN
-
   ASM_REWRITE_TAC[] THEN
   ANTS_TAC THENL [ASM_MESON_TAC[CONTINUOUS_IMP_CLOSED_MAP]; ALL_TAC] THEN
   DISCH_TAC THEN ASM_SIMP_TAC[] THEN
@@ -6980,6 +6978,18 @@ let JORDAN_INSIDE_OUTSIDE = prove
                 outside(path_image c):real^2->bool = out `
    (fun th -> ASM_REWRITE_TAC[th]) THEN
   MATCH_MP_TAC INSIDE_OUTSIDE_UNIQUE THEN ASM_SIMP_TAC[JORDAN_DISCONNECTED]);;
+
+let JORDAN_COMPONENTS = prove
+ (`!g. simple_path g /\ pathfinish g = pathstart g
+       ==> components((:real^2) DIFF path_image g) =
+           {inside(path_image g),outside(path_image g)}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC COMPONENTS_OPEN_UNIQUE THEN
+  REWRITE_TAC[UNIONS_2; PAIRWISE_INSERT; NOT_IN_EMPTY; FORALL_IN_INSERT;
+              IMP_CONJ; PAIRWISE_EMPTY] THEN
+  MP_TAC(ISPEC `g:real^1->real^2` JORDAN_INSIDE_OUTSIDE) THEN
+  ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPEC `path_image g:complex->bool` INSIDE_INTER_OUTSIDE) THEN
+  REPLICATE_TAC 2 STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Triple-curve or "theta-curve" theorem. Proof that there is no fourth      *)

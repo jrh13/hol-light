@@ -658,6 +658,16 @@ let CONTINUOUS_COMPLEX_POW = prove
  (`!net f n. f continuous net ==> (\x. f(x) pow n) continuous net`,
   SIMP_TAC[continuous; LIM_COMPLEX_POW]);;
 
+let CONTINUOUS_CPRODUCT = prove
+ (`!(net:B net) f k:A->bool.
+        FINITE k /\
+        (!i. i IN k ==> f i continuous net)
+        ==> (\z. cproduct k (\i. f i z)) continuous net`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[CPRODUCT_CLAUSES; CONTINUOUS_CONST; FORALL_IN_INSERT;
+           ETA_AX; CONTINUOUS_COMPLEX_MUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Write away the netlimit, which is otherwise a bit tedious.                *)
 (* ------------------------------------------------------------------------- *)
@@ -725,6 +735,13 @@ let CONTINUOUS_ON_COMPLEX_DIV = prove
 let CONTINUOUS_ON_COMPLEX_POW = prove
  (`!f n s. f continuous_on s ==> (\x. f(x) pow n) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_COMPLEX_POW]);;
+
+let CONTINUOUS_ON_CPRODUCT = prove
+ (`!f k:A->bool s.
+        FINITE k /\
+        (!i. i IN k ==> f i continuous_on s)
+        ==> (\z. cproduct k (\i. f i z)) continuous_on s`,
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_CPRODUCT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* And also uniform versions.                                                *)

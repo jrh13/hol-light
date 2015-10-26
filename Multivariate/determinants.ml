@@ -2395,6 +2395,14 @@ let ORTHOGONAL_MATRIX_INV = prove
  (`!A:real^N^N. orthogonal_matrix A ==> matrix_inv A = transp A`,
   MESON_TAC[orthogonal_matrix; MATRIX_INV_UNIQUE]);;
 
+let ORTHOGONAL_MATRIX_INV_EQ = prove
+ (`!A:real^N^N. orthogonal_matrix(matrix_inv A) <=> orthogonal_matrix A`,
+  MATCH_MP_TAC(MESON[]
+   `(!x. f(f x) = x) /\ (!x. P x ==> P(f x)) ==> (!x. P(f x) <=> P x)`) THEN
+  REWRITE_TAC[MATRIX_INV_INV] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(SUBST1_TAC o MATCH_MP ORTHOGONAL_MATRIX_INV) THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_MATRIX_TRANSP]);;
+
 let ORTHOGONAL_TRANSFORMATION_ORTHOGONAL_EIGENVECTORS = prove
  (`!f:real^N->real^N v w a b.
         orthogonal_transformation f /\ f v = a % v /\ f w = b % w /\ ~(a = b)
@@ -2659,6 +2667,18 @@ let ORTHOGONAL_TRANSFORMATION_INVERSE = prove
   GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP ORTHOGONAL_TRANSFORMATION_INVERSE_o) THEN
   REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM]);;
+
+let ONORM_COMPOSE_ORTHOGONAL_TRANSFORMATION_LEFT = prove
+ (`!f g. orthogonal_transformation f ==> onorm(f o g) = onorm g`,
+  SIMP_TAC[ORTHOGONAL_TRANSFORMATION; onorm; o_DEF]);;
+
+let ONORM_COMPOSE_ORTHOGONAL_TRANSFORMATION_RIGHT = prove
+ (`!f g. orthogonal_transformation g ==> onorm(f o g) = onorm f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[onorm; o_DEF] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP ORTHOGONAL_TRANSFORMATION_INVERSE_o) THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN
+  REWRITE_TAC[ORTHOGONAL_TRANSFORMATION] THEN
+  REPEAT STRIP_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* We can find an orthogonal matrix taking any unit vector to any other.     *)

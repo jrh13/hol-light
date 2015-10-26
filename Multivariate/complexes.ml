@@ -742,6 +742,10 @@ let COMPLEX_INV_DIV = prove
   REWRITE_TAC[complex_div; COMPLEX_INV_MUL; COMPLEX_INV_INV] THEN
   REWRITE_TAC[COMPLEX_MUL_AC]);;
 
+let COMPLEX_EQ_INV2 = prove
+ (`!w x:complex. inv w = inv z <=> w = z`,
+  MESON_TAC[COMPLEX_INV_INV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* And also field procedure.                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -1386,12 +1390,12 @@ let LINEAR_CNJ = prove
  (`linear cnj`,
   REWRITE_TAC[linear; COMPLEX_CMUL; CNJ_ADD; CNJ_MUL; CNJ_CX]);;
 
-let LINEAR_COMPLEX_LMUL = prove                   
+let LINEAR_COMPLEX_LMUL = prove
  (`!f:real^N->complex c. linear f ==> linear (\x. c * f x)`,
-  SIMP_TAC[linear; COMPLEX_CMUL] THEN                                          
-  REPEAT STRIP_TAC THEN CONV_TAC COMPLEX_RING);;                               
-                                                                               
-let LINEAR_COMPLEX_RMUL = prove                           
+  SIMP_TAC[linear; COMPLEX_CMUL] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC COMPLEX_RING);;
+
+let LINEAR_COMPLEX_RMUL = prove
  (`!f:real^N->complex c. linear f ==> linear (\x. f x * c)`,
   ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN REWRITE_TAC[LINEAR_COMPLEX_LMUL]);;
 

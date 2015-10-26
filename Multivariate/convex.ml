@@ -1974,10 +1974,10 @@ let CONVEX_ADD = prove
 
 let CONVEX_ADD_EQ = prove
  (`!a f s:real^N->bool. (\x. a + f x) convex_on s <=> f convex_on s`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN                                         
-  SIMP_TAC[CONVEX_ADD; CONVEX_ON_CONST] THEN                     
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  SIMP_TAC[CONVEX_ADD; CONVEX_ON_CONST] THEN
   DISCH_THEN(MP_TAC o ISPEC `(\x. --a):real^N->real` o
-    MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] CONVEX_ADD)) THEN           
+    MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] CONVEX_ADD)) THEN
   REWRITE_TAC[CONVEX_ON_CONST; ETA_AX; REAL_ARITH `--a + a + x:real = x`]);;
 
 let CONVEX_CMUL = prove
@@ -10395,6 +10395,15 @@ let RELATIVE_INTERIOR_SUBSET = prove
  (`!s. (relative_interior s) SUBSET s`,
   REWRITE_TAC[SUBSET; relative_interior; IN_ELIM_THM] THEN MESON_TAC[]);;
 
+let RELATIVE_FRONTIER_SUBSET = prove
+ (`!s:real^N->bool. closed s ==> relative_frontier s SUBSET s`,
+  REWRITE_TAC[GSYM CLOSURE_SUBSET_EQ; relative_frontier] THEN SET_TAC[]);;
+
+let RELATIVE_FRONTIER_SUBSET_EQ = prove
+ (`!s:real^N->bool. relative_frontier s SUBSET s <=> closed s`,
+  GEN_TAC THEN REWRITE_TAC[GSYM CLOSURE_SUBSET_EQ; relative_frontier] THEN
+  MP_TAC(ISPEC `s:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN SET_TAC[]);;
+
 let BOUNDED_RELATIVE_INTERIOR = prove
  (`!s:real^N->bool. bounded s ==> bounded(relative_interior s)`,
   MESON_TAC[BOUNDED_SUBSET; RELATIVE_INTERIOR_SUBSET]);;
@@ -10983,6 +10992,62 @@ let RELATIVE_FRONTIER_BALL = prove
   ASM_SIMP_TAC[RELATIVE_FRONTIER_NONEMPTY_INTERIOR; INTERIOR_OPEN; OPEN_BALL;
                BALL_EQ_EMPTY; GSYM REAL_NOT_LT; FRONTIER_BALL]);;
 
+let DIFFERENT_NORM_3_COLLINEAR_POINTS = prove
+ (`!a b x:real^N.
+     ~(x IN segment(a,b) /\ norm(a) = norm(b) /\ norm(x) = norm(b))`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = b` THEN
+  ASM_SIMP_TAC[SEGMENT_REFL; NOT_IN_EMPTY; OPEN_SEGMENT_ALT] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN DISCH_THEN
+   (CONJUNCTS_THEN2 (X_CHOOSE_THEN `u:real` STRIP_ASSUME_TAC) MP_TAC) THEN
+  ASM_REWRITE_TAC[NORM_EQ] THEN REWRITE_TAC[VECTOR_ARITH
+   `(x + y:real^N) dot (x + y) = x dot x + &2 * x dot y + y dot y`] THEN
+  REWRITE_TAC[DOT_LMUL; DOT_RMUL] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (ASSUME_TAC o SYM) MP_TAC) THEN
+  UNDISCH_TAC `~(a:real^N = b)` THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM VECTOR_SUB_EQ] THEN
+  REWRITE_TAC[GSYM DOT_EQ_0; VECTOR_ARITH
+   `(a - b:real^N) dot (a - b) = a dot a + b dot b - &2 * a dot b`] THEN
+  ASM_REWRITE_TAC[REAL_RING `a + a - &2 * ab = &0 <=> ab = a`] THEN
+  SIMP_TAC[REAL_RING
+   `(&1 - u) * (&1 - u) * a + &2 * (&1 - u) * u * x + u * u * a = a <=>
+    x = a \/ u = &0 \/ u = &1`] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let OPEN_SEGMENT_SUBSET_BALL = prove
+ (`!a r u v:real^N.
+      u IN cball(a,r) /\ v IN cball(a,r) ==> segment(u,v) SUBSET ball(a,r)`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `a:real^N` THEN REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `u:real^N = v` THEN
+  ASM_REWRITE_TAC[SEGMENT_REFL; EMPTY_SUBSET] THEN
+  ASM_CASES_TAC `r < &0` THEN ASM_SIMP_TAC[CBALL_EMPTY; NOT_IN_EMPTY] THEN
+  ASM_CASES_TAC `r = &0` THEN ASM_SIMP_TAC[CBALL_SING; IN_SING] THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < r` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; STRIP_TAC] THEN
+  ASM_CASES_TAC `u IN ball(vec 0:real^N,r)` THENL
+   [MP_TAC(ISPECL [`ball(vec 0:real^N,r)`; `u:real^N`; `v:real^N`]
+      IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT) THEN
+    ASM_SIMP_TAC[CONVEX_BALL; RELATIVE_INTERIOR_BALL; CLOSURE_BALL];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `v IN ball(vec 0:real^N,r)` THENL
+   [MP_TAC(ISPECL [`ball(vec 0:real^N,r)`; `v:real^N`; `u:real^N`]
+      IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT) THEN
+    ASM_SIMP_TAC[CONVEX_BALL; RELATIVE_INTERIOR_BALL; CLOSURE_BALL] THEN
+    REWRITE_TAC[SEGMENT_SYM];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`ball(vec 0:real^N,r)`; `u:real^N`; `v:real^N`]
+        CONVEX_OPEN_SEGMENT_CASES) THEN
+  ASM_SIMP_TAC[CLOSURE_BALL; CONVEX_BALL] THEN
+  DISCH_THEN(DISJ_CASES_THEN MP_TAC) THEN
+  ASM_REWRITE_TAC[RELATIVE_INTERIOR_BALL; RELATIVE_FRONTIER_BALL] THEN
+  REWRITE_TAC[SUBSET] THEN
+  DISCH_THEN(MP_TAC o SPEC `midpoint(u,v):real^N`) THEN
+  ASM_REWRITE_TAC[MIDPOINT_IN_SEGMENT] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`u:real^N`; `v:real^N`; `midpoint(u,v):real^N`]
+        DIFFERENT_NORM_3_COLLINEAR_POINTS) THEN
+  ASM_REWRITE_TAC[MIDPOINT_IN_SEGMENT] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[IN_SPHERE_0; IN_BALL_0; IN_CBALL_0]) THEN
+  ASM_REAL_ARITH_TAC);;
+
 let STARLIKE_CONVEX_TWEAK_BOUNDARY_POINTS = prove
  (`!s t:real^N->bool.
         convex s /\ ~(s = {}) /\
@@ -11346,6 +11411,33 @@ let SUBSET_CONVEX_HULL_FRONTIER = prove
   ASM_REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; CONVEX_CONVEX_HULL] THEN
   ASM_SIMP_TAC[HULL_INC]);;
 
+let KREIN_MILMAN_RELATIVE_FRONTIER = prove
+ (`!s:real^N->bool.
+        convex s /\ compact s /\ ~(?a. s = {a})
+        ==> s = convex hull (relative_frontier s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  ASM_SIMP_TAC[SUBSET_CONVEX_HULL_RELATIVE_FRONTIER; COMPACT_IMP_BOUNDED] THEN
+  ASM_SIMP_TAC[SUBSET_HULL] THEN
+  ASM_SIMP_TAC[relative_frontier; CLOSURE_CLOSED; COMPACT_IMP_CLOSED] THEN
+  SET_TAC[]);;
+
+let KREIN_MILMAN_RELATIVE_BOUNDARY = prove
+ (`!s:real^N->bool.
+        convex s /\ compact s /\ ~(?a. s = {a})
+        ==> s = convex hull (s DIFF relative_interior s)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP KREIN_MILMAN_RELATIVE_FRONTIER) THEN
+  ASM_SIMP_TAC[relative_frontier; CLOSURE_CLOSED; COMPACT_IMP_CLOSED]);;
+
+let KREIN_MILMAN_FRONTIER = prove
+ (`!s:real^N->bool.
+        convex s /\ compact s ==> s = convex hull (frontier s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  ASM_SIMP_TAC[SUBSET_CONVEX_HULL_FRONTIER; COMPACT_IMP_BOUNDED] THEN
+  ASM_SIMP_TAC[SUBSET_HULL] THEN
+  ASM_SIMP_TAC[frontier; CLOSURE_CLOSED; COMPACT_IMP_CLOSED] THEN
+  SET_TAC[]);;
+
 let RELATIVE_FRONTIER_NOT_SING = prove
  (`!s a:real^N. bounded s ==> ~(relative_frontier s = {a})`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
@@ -11524,11 +11616,6 @@ let DIAMETER_FRONTIER = prove
     MATCH_MP_TAC DIAMETER_SUBSET THEN
     ASM_SIMP_TAC[BOUNDED_CLOSURE; frontier; SUBSET_DIFF];
     ASM_SIMP_TAC[DIAMETER_RELATIVE_FRONTIER; GSYM relative_frontier]]);;
-
-let DIAMETER_SPHERE = prove
- (`!a:real^N r. diameter(sphere(a,r)) = if r < &0 then &0 else &2 * r`,
-  REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
-  ASM_SIMP_TAC[DIAMETER_FRONTIER; BOUNDED_CBALL; DIAMETER_CBALL]);;
 
 let CLOSEST_POINT_IN_RELATIVE_INTERIOR = prove
  (`!s x:real^N.
@@ -11737,6 +11824,22 @@ let SUBSET_RELATIVE_INTERIOR_INTERSECTING_CONVEX = prove
   MATCH_MP_TAC(SET_RULE `s SUBSET t ==> a IN s ==> a IN t`) THEN
   MATCH_MP_TAC IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT THEN
   ASM_MESON_TAC[SUBSET; CLOSURE_SUBSET]);;
+
+let CONVEX_HULL_SPHERE = prove
+ (`!s:real^N r. convex hull (sphere(a,r)) = cball(a,r)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC KREIN_MILMAN_FRONTIER THEN
+  REWRITE_TAC[CONVEX_CBALL; COMPACT_CBALL]);;
+
+let SPHERE_SUBSET_CONVEX = prove
+ (`!s a:real^N r. convex s ==> (sphere(a,r) SUBSET s <=> cball(a,r) SUBSET s)`,
+  REWRITE_TAC[GSYM CONVEX_HULL_SPHERE] THEN
+  CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN REWRITE_TAC[SUBSET_HULL]);;
+
+let DIAMETER_SPHERE = prove
+ (`!a:real^N r. diameter(sphere(a,r)) = if r < &0 then &0 else &2 * r`,
+  REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
+  ASM_SIMP_TAC[DIAMETER_FRONTIER; BOUNDED_CBALL; DIAMETER_CBALL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Shrinking space to a ball while preserving convexity.                     *)

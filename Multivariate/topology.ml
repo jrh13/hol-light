@@ -2886,15 +2886,21 @@ let IN_INTERIOR_EVENTUALLY = prove
   MESON_TAC[DIST_SYM; DIST_REFL]);;
 
 let EVENTUALLY_WITHIN_INTERIOR = prove
- (`!P s a.
-        a IN interior s
-        ==> (eventually P (at a within s) <=> eventually P (at a))`,
+ (`!p s x:real^N.
+        x IN interior s
+        ==> (eventually p (at x within s) <=> eventually p (at x))`,
   REPEAT GEN_TAC THEN REWRITE_TAC[IN_INTERIOR_EVENTUALLY] THEN
   MATCH_MP_TAC(TAUT
    `(p /\ q ==> r) /\ (p /\ r ==> q) ==> p' /\ p ==> (q <=> r)`) THEN
   REWRITE_TAC[GSYM EVENTUALLY_AND; EVENTUALLY_WITHIN_IMP] THEN
   CONJ_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
   SIMP_TAC[]);;
+
+let EVENTUALLY_IN_OPEN = prove
+ (`!s a:real^N. open s /\ a IN s ==> eventually (\x. x IN s) (at a)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N`] IN_INTERIOR_EVENTUALLY) THEN
+  ASM_SIMP_TAC[INTERIOR_OPEN]);;
 
 let EVENTUALLY_WITHIN_OPEN = prove
  (`!f l a:real^M s.
@@ -4344,12 +4350,6 @@ let EVENTUALLY_WITHIN_INTERIOR_INTER = prove
   EXISTS_TAC `min (d:real) e` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
   ASM_MESON_TAC[DIST_SYM]);;
 
-let EVENTUALLY_WITHIN_INTERIOR = prove
- (`!p s x.
-        x IN interior s
-        ==> (eventually p (at x within s) <=> eventually p (at x))`,
-  MESON_TAC[EVENTUALLY_WITHIN_INTERIOR_INTER; WITHIN_UNIV; INTER_UNIV]);;
-
 let LIM_WITHIN_INTERIOR_INTER = prove
  (`!f l s x.
         x IN interior s
@@ -4819,6 +4819,12 @@ let compact = new_definition
             (!n. f(n) IN s)
             ==> ?l r. l IN s /\ (!m n:num. m < n ==> r(m) < r(n)) /\
                       ((f o r) --> l) sequentially`;;
+
+let EVENTUALLY_SUBSEQUENCE = prove
+ (`!P r s. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
+           ==> eventually (P o r) sequentially`,
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; o_THM] THEN
+  MESON_TAC[MONOTONE_BIGGER; LE_TRANS]);;
 
 let LIM_SUBSEQUENCE = prove
  (`!s r l. (!m n. m < n ==> r(m) < r(n)) /\ (s --> l) sequentially
@@ -10890,6 +10896,23 @@ let COMPONENTS_MAXIMAL = prove
   FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP CONNECTED_COMPONENT_EQ) THEN
   MATCH_MP_TAC CONNECTED_COMPONENT_MAXIMAL THEN ASM_REWRITE_TAC[]);;
 
+let IN_COMPONENTS_MAXIMAL_ALT = prove
+ (`!s c:real^N->bool.
+        c IN components s <=>
+        ~(c = {}) /\ c SUBSET s /\ connected c /\
+        (!c'. ~(c INTER c' = {}) /\ c' SUBSET s /\ connected c'
+              ==> c' SUBSET c)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY) THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP IN_COMPONENTS_CONNECTED) THEN
+    ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC COMPONENTS_MAXIMAL THEN ASM_MESON_TAC[];
+    STRIP_TAC THEN ASM_REWRITE_TAC[IN_COMPONENTS_MAXIMAL] THEN
+    REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]]);;
+
 let COMPONENTS_UNIQUE = prove
  (`!s:real^N->bool k.
         UNIONS k = s /\
@@ -10962,6 +10985,17 @@ let COMPONENTS_INTERMEDIATE_SUBSET = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[IN_COMPONENTS; LEFT_AND_EXISTS_THM] THEN
   MESON_TAC[CONNECTED_COMPONENT_INTERMEDIATE_SUBSET; SUBSET;
             CONNECTED_COMPONENT_REFL; IN; CONNECTED_COMPONENT_SUBSET]);;
+
+let COMPONENTS_INTER_COMPONENTS = prove
+ (`!s t c d:real^N->bool.
+        c IN components s /\ d IN components (t INTER c)
+        ==> d IN components(t INTER s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[IN_COMPONENTS_MAXIMAL_ALT; SUBSET_INTER] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; REPEAT STRIP_TAC] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
 
 let IN_COMPONENTS_UNIONS_COMPLEMENT = prove
  (`!s c:real^N->bool.
@@ -11144,6 +11178,61 @@ let UNIFORMLY_CONTINUOUS_EQ_CAUCHY_CONTINUOUS_BOUNDED = prove
   EXISTS_TAC `closure s:real^M->bool` THEN REWRITE_TAC[CLOSURE_SUBSET] THEN
   MATCH_MP_TAC COMPACT_UNIFORMLY_CONTINUOUS THEN
   ASM_REWRITE_TAC[COMPACT_CLOSURE]);;
+
+let UNIFORMLY_CONTINUOUS_ON_UNION = prove
+ (`!f:real^M->real^N s t.
+        bounded s /\ bounded t /\
+        f uniformly_continuous_on t /\
+        f continuous_on (closure s UNION t)
+        ==> f uniformly_continuous_on (s UNION t)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[UNIFORMLY_CONTINUOUS_EQ_CAUCHY_CONTINUOUS_BOUNDED;
+               BOUNDED_UNION; COMPACT_IMP_BOUNDED] THEN
+  X_GEN_TAC `x:num->real^M` THEN STRIP_TAC THEN
+  ASM_CASES_TAC `eventually (\n. (x:num->real^M) n IN t) sequentially` THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EVENTUALLY_SEQUENTIALLY]) THEN
+    DISCH_THEN(X_CHOOSE_THEN `k:num`
+      (MP_TAC o GEN `n:num` o SPEC `n + k:num`)) THEN
+    REWRITE_TAC[ONCE_REWRITE_RULE[ADD_SYM] LE_ADD] THEN
+    DISCH_TAC THEN
+    UNDISCH_TAC `(f:real^M->real^N) uniformly_continuous_on t` THEN
+    ASM_SIMP_TAC[UNIFORMLY_CONTINUOUS_EQ_CAUCHY_CONTINUOUS_BOUNDED] THEN
+    DISCH_THEN(MP_TAC o SPEC `\n. (x:num->real^M)(n + k)`) THEN
+    UNDISCH_TAC `cauchy(x:num->real^M)` THEN ASM_REWRITE_TAC[o_DEF] THEN
+    MATCH_MP_TAC(TAUT
+     `(q <=> p) /\ (r <=> s) ==> p ==> (q ==> r) ==> s`) THEN
+    CONJ_TAC THENL
+     [MP_TAC(SPEC `k:num` (INST_TYPE [`:M`,`:N`] CAUCHY_OFFSET));
+      MP_TAC(SPEC `k:num` CAUCHY_OFFSET)] THEN
+    SIMP_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPEC `{n | (x:num->real^M) n IN s}` INFINITE_ENUMERATE_WEAK) THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN ANTS_TAC THENL
+   [REWRITE_TAC[INFINITE] THEN DISCH_THEN(MP_TAC o
+      ISPEC `\n:num. n` o MATCH_MP UPPER_BOUND_FINITE_SET) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV
+      [EVENTUALLY_SEQUENTIALLY]) THEN
+    REWRITE_TAC[CONTRAPOS_THM; IN_ELIM_THM] THEN
+    DISCH_THEN(X_CHOOSE_TAC `N:num`) THEN EXISTS_TAC `N + 1` THEN
+    ASM_MESON_TAC[IN_UNION; ARITH_RULE `~(n <= N /\ N + 1 <= n)`];
+    DISCH_THEN(X_CHOOSE_THEN `r:num->num` STRIP_ASSUME_TAC)] THEN
+  SUBGOAL_THEN
+   `?l. l IN closure s /\ ((\n. (x:num->real^M)(r n)) --> l) sequentially`
+  STRIP_ASSUME_TAC THENL
+   [MP_TAC(ISPEC `closure s:real^M->bool` complete) THEN
+    REWRITE_TAC[COMPLETE_EQ_CLOSED; CLOSED_CLOSURE] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC[CLOSURE_INC] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CAUCHY_SUBSEQUENCE THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `((x:num->real^M) --> l) sequentially` ASSUME_TAC THENL
+   [MATCH_MP_TAC  CAUCHY_CONVERGENT_SUBSEQUENCE THEN
+    EXISTS_TAC `r:num->num` THEN ASM_REWRITE_TAC[o_DEF];
+    ALL_TAC] THEN
+  MATCH_MP_TAC CONVERGENT_IMP_CAUCHY THEN
+  EXISTS_TAC `(f:real^M->real^N) l` THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONTINUOUS_ON_SEQUENTIALLY]) THEN
+  DISCH_THEN MATCH_MP_TAC THEN ASM_MESON_TAC[IN_UNION; CLOSURE_INC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A uniformly convergent limit of continuous functions is continuous.       *)
@@ -25778,6 +25867,13 @@ let CLOSED_IN_GDELTA = prove
   REWRITE_TAC[CLOSED_IN_CLOSED] THEN REPEAT STRIP_TAC THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC GDELTA_INTER THEN
   ASM_SIMP_TAC[CLOSED_IMP_GDELTA]);;
+
+let GDELTA_LOCALLY_COMPACT = prove
+ (`!s:real^N->bool. locally compact s ==> gdelta s`,
+  GEN_TAC THEN DISCH_THEN(STRIP_ASSUME_TAC o MATCH_MP
+    LOCALLY_COMPACT_OPEN_INTER_CLOSURE) THEN
+  ONCE_ASM_REWRITE_TAC[] THEN MATCH_MP_TAC GDELTA_INTER THEN
+  ASM_SIMP_TAC[OPEN_IMP_GDELTA; CLOSED_IMP_GDELTA; CLOSED_CLOSURE]);;
 
 let FSIGMA_CONTINUOUS_IMAGE = prove
  (`!f:real^M->real^N s. f continuous_on s /\ fsigma s ==> fsigma (IMAGE f s)`,

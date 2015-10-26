@@ -5,31 +5,6 @@
 needs "Multivariate/paths.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* A simple lemma.                                                           *)
-(* ------------------------------------------------------------------------- *)
-
-let DIFFERENT_NORM_3_COLLINEAR_POINTS = prove
- (`!a b x:real^N.
-     ~(x IN segment(a,b) /\ norm(a) = norm(b) /\ norm(x) = norm(b))`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = b` THEN
-  ASM_SIMP_TAC[SEGMENT_REFL; NOT_IN_EMPTY; OPEN_SEGMENT_ALT] THEN
-  REWRITE_TAC[IN_ELIM_THM] THEN DISCH_THEN
-   (CONJUNCTS_THEN2 (X_CHOOSE_THEN `u:real` STRIP_ASSUME_TAC) MP_TAC) THEN
-  ASM_REWRITE_TAC[NORM_EQ] THEN REWRITE_TAC[VECTOR_ARITH
-   `(x + y:real^N) dot (x + y) = x dot x + &2 * x dot y + y dot y`] THEN
-  REWRITE_TAC[DOT_LMUL; DOT_RMUL] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 (ASSUME_TAC o SYM) MP_TAC) THEN
-  UNDISCH_TAC `~(a:real^N = b)` THEN
-  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM VECTOR_SUB_EQ] THEN
-  REWRITE_TAC[GSYM DOT_EQ_0; VECTOR_ARITH
-   `(a - b:real^N) dot (a - b) = a dot a + b dot b - &2 * a dot b`] THEN
-  ASM_REWRITE_TAC[REAL_RING `a + a - &2 * ab = &0 <=> ab = a`] THEN
-  SIMP_TAC[REAL_RING
-   `(&1 - u) * (&1 - u) * a + &2 * (&1 - u) * u * x + u * u * a = a <=>
-    x = a \/ u = &0 \/ u = &1`] THEN
-  ASM_REAL_ARITH_TAC);;
-
-(* ------------------------------------------------------------------------- *)
 (* Faces of a (usually convex) set.                                          *)
 (* ------------------------------------------------------------------------- *)
 
@@ -3269,47 +3244,6 @@ let SEGMENT_EDGE_OF = prove
    [ALL_TAC; ASM_MESON_TAC[edge_of; SEGMENT_FACE_OF]] THEN
   POP_ASSUM MP_TAC THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
   SIMP_TAC[SEGMENT_REFL; edge_of; AFF_DIM_SING] THEN INT_ARITH_TAC);;
-
-let KREIN_MILMAN_RELATIVE_BOUNDARY = prove
- (`!s:real^N->bool.
-        convex s /\ compact s /\ ~(?a. s = {a})
-        ==> s = convex hull (s DIFF relative_interior s)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
-   [MATCH_MP_TAC SUBSET_TRANS THEN
-    EXISTS_TAC `convex hull {x:real^N | x extreme_point_of s}` THEN
-    CONJ_TAC THENL
-     [ASM_SIMP_TAC[GSYM KREIN_MILMAN_MINKOWSKI; SUBSET_REFL];
-      MATCH_MP_TAC HULL_MONO THEN SIMP_TAC[SUBSET; IN_ELIM_THM; IN_DIFF] THEN
-      ASM_MESON_TAC[EXTREME_POINT_NOT_IN_RELATIVE_INTERIOR; extreme_point_of]];
-    MATCH_MP_TAC SUBSET_TRANS THEN
-    EXISTS_TAC `convex hull s:real^N->bool` THEN CONJ_TAC THENL
-     [MATCH_MP_TAC HULL_MONO THEN SET_TAC[];
-      ASM_SIMP_TAC[HULL_P; SUBSET_REFL]]]);;
-
-let KREIN_MILMAN_RELATIVE_FRONTIER = prove
- (`!s:real^N->bool.
-        convex s /\ compact s /\ ~(?a. s = {a})
-        ==> s = convex hull (relative_frontier s)`,
-  SIMP_TAC[relative_frontier; CLOSURE_CLOSED; COMPACT_IMP_CLOSED] THEN
-  REWRITE_TAC[KREIN_MILMAN_RELATIVE_BOUNDARY]);;
-
-let KREIN_MILMAN_FRONTIER = prove
- (`!s:real^N->bool.
-        convex s /\ compact s
-        ==> s = convex hull (frontier s)`,
-  REPEAT STRIP_TAC THEN
-  ASM_SIMP_TAC[frontier; COMPACT_IMP_CLOSED; CLOSURE_CLOSED] THEN
-  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
-   [MATCH_MP_TAC SUBSET_TRANS THEN
-    EXISTS_TAC `convex hull {x:real^N | x extreme_point_of s}` THEN
-    CONJ_TAC THENL
-     [ASM_SIMP_TAC[GSYM KREIN_MILMAN_MINKOWSKI; SUBSET_REFL];
-      MATCH_MP_TAC HULL_MONO THEN SIMP_TAC[SUBSET; IN_ELIM_THM; IN_DIFF] THEN
-      ASM_MESON_TAC[EXTREME_POINT_NOT_IN_INTERIOR; extreme_point_of]];
-    MATCH_MP_TAC SUBSET_TRANS THEN
-    EXISTS_TAC `convex hull s:real^N->bool` THEN CONJ_TAC THENL
-     [MATCH_MP_TAC HULL_MONO THEN SET_TAC[];
-      ASM_SIMP_TAC[HULL_P; SUBSET_REFL]]]);;
 
 let EXTREME_POINT_OF_CONVEX_HULL_INSERT_EQ = prove
  (`!s a x:real^N.

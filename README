@@ -115,10 +115,10 @@ invoke manually. There's more detail on doing that in the Tutorial.
     only for quite old versions and will probably be difficult to use
     with recent versions of OCaml.
 
-    You should next enter the 'hol_light' directory that has been
+    You should next enter the 'hol-light' directory that has been
      created:
 
-        cd ./hol_light
+        cd ./hol-light
 
 There are now two alternatives: launch the OCaml toplevel and directly
 load the HOL Light source files into it, or create a standalone image
@@ -169,7 +169,7 @@ be available for some platforms. First the basic approach:
 
     to, for example
 
-        let hol_dir = "/home/johnh/hol_light";;
+        let hol_dir = "/home/johnh/hol-light";;
 
     or
 
@@ -190,7 +190,7 @@ recent Linux kernel/libc combinations.
 
         make hol
 
-    in the 'hol_light' directory, and a standalone HOL Light image
+    in the 'hol-light' directory, and a standalone HOL Light image
     called 'hol' should be created. If desired you can move or copy
     this to some other place such as '~/bin' or '/usr/local/bin'. You
     then simply type 'hol' (or './hol') to start the system up and

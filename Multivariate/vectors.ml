@@ -859,11 +859,11 @@ let NORM_LE_COMPONENTWISE = prove
   MATCH_MP_TAC SUM_LE_NUMSEG THEN
   ASM_SIMP_TAC[GSYM REAL_POW_2; GSYM REAL_LE_SQUARE_ABS]);;
 
-let NORM_EQ_COMPONENTWISE = prove                                              
- (`!x:real^N y:real^N.                                                         
-        (!i. 1 <= i /\ i <= dimindex (:N) ==> abs(x$i) = abs(y$i))             
-        ==> norm x = norm y`,                                                  
-  SIMP_TAC[GSYM REAL_LE_ANTISYM; NORM_LE_COMPONENTWISE]);;               
+let NORM_EQ_COMPONENTWISE = prove
+ (`!x:real^N y:real^N.
+        (!i. 1 <= i /\ i <= dimindex (:N) ==> abs(x$i) = abs(y$i))
+        ==> norm x = norm y`,
+  SIMP_TAC[GSYM REAL_LE_ANTISYM; NORM_LE_COMPONENTWISE]);;
 
 let L1_LE_NORM = prove
  (`!x:real^N.
@@ -3967,6 +3967,12 @@ let IMAGE_DROP_UNIV = prove
 let LINEAR_LIFT_DOT = prove
  (`!a. linear(\x. lift(a dot x))`,
   REWRITE_TAC[linear; DOT_RMUL; DOT_RADD; LIFT_ADD; LIFT_CMUL]);;
+
+let LINEAR_TO_1 = prove
+ (`!f:real^N->real^1. linear f <=> ?a. f = \x. lift(a dot x)`,
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_SIMP_TAC[LINEAR_LIFT_DOT] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP LINEAR_TO_REALS) THEN
+  DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
 
 let LINEAR_LIFT_COMPONENT = prove
  (`!k. linear(\x:real^N. lift(x$k))`,
