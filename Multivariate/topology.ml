@@ -157,6 +157,17 @@ let CLOSED_UNIONS = prove
   REWRITE_TAC[UNIONS_INSERT; UNIONS_0; CLOSED_EMPTY; IN_INSERT] THEN
   MESON_TAC[CLOSED_UNION]);;
 
+let CLOSED_LOCALLY_FINITE_UNIONS = prove
+ (`!f:(real^N->bool)->bool.
+        (!s. s IN f ==> closed s) /\
+        (!x. ?u. open u /\ x IN u /\ FINITE {s | s IN f /\ ~(s INTER u = {})})
+        ==> closed(UNIONS f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`euclidean:(real^N)topology`; `f:(real^N->bool)->bool`]
+        CLOSED_IN_LOCALLY_FINITE_UNIONS) THEN
+  REWRITE_TAC[GSYM OPEN_IN; GSYM CLOSED_IN] THEN
+  ASM_REWRITE_TAC[IN_UNIV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Open and closed balls and spheres.                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -2118,6 +2129,24 @@ let INTERIOR_COMPLEMENT = prove
  (`!s:real^N->bool. interior(UNIV DIFF s) = UNIV DIFF closure(s)`,
   REWRITE_TAC[SET_RULE `s = UNIV DIFF t <=> UNIV DIFF s = t`] THEN
   REWRITE_TAC[GSYM CLOSURE_INTERIOR]);;
+
+let CLOSURE_LOCALLY_FINITE_UNIONS = prove
+ (`!f:(real^N->bool)->bool.
+        (!x. ?u. open u /\ x IN u /\ FINITE {s | s IN f /\ ~(s INTER u = {})})
+        ==> closure(UNIONS f) = UNIONS {closure s | s IN f}`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; CLOSURE_UNIONS_SUBSET] THEN
+  MATCH_MP_TAC CLOSURE_MINIMAL THEN CONJ_TAC THENL
+   [MATCH_MP_TAC UNIONS_MONO THEN REWRITE_TAC[EXISTS_IN_GSPEC] THEN
+    MESON_TAC[CLOSURE_SUBSET];
+    MATCH_MP_TAC CLOSED_LOCALLY_FINITE_UNIONS THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; CLOSED_CLOSURE] THEN
+    X_GEN_TAC `x:real^N` THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:real^N->bool` THEN
+    REWRITE_TAC[SET_RULE
+     `{y | y IN {f x | x IN s} /\ P y} = IMAGE f {x | x IN s /\ P(f x)}`] THEN
+    ONCE_REWRITE_TAC[INTER_COMM] THEN
+    SIMP_TAC[OPEN_INTER_CLOSURE_EQ_EMPTY; FINITE_IMAGE]]);;
 
 let CONNECTED_INTERMEDIATE_CLOSURE = prove
  (`!s t:real^N->bool.
@@ -8622,14 +8651,15 @@ let PASTING_LEMMA = prove
     ASM_MESON_TAC[OPEN_IN_TRANS]]);;
 
 let PASTING_LEMMA_EXISTS = prove
- (`!f:A->real^M->real^N t s k.
+ (`!f:A->real^M->real^N t s k u.
         s SUBSET UNIONS {t i | i IN k} /\
         (!i. i IN k
              ==> open_in (subtopology euclidean s) (t i) /\
-                 (f i) continuous_on (t i)) /\
+                 (f i) continuous_on (t i) /\
+                 IMAGE (f i) (t i) SUBSET u) /\
         (!i j x. i IN k /\ j IN k /\ x IN s INTER t i INTER t j
                  ==> f i x = f j x)
-        ==> ?g. g continuous_on s /\
+        ==> ?g. g continuous_on s /\ IMAGE g s SUBSET u /\
                 (!x i. i IN k /\ x IN s INTER t i ==> g x = f i x)`,
   REPEAT STRIP_TAC THEN
   EXISTS_TAC `\x. (f:A->real^M->real^N)(@i. i IN k /\ x IN t i) x` THEN
@@ -8683,12 +8713,14 @@ let CONTINUOUS_ON_CASES_OPEN = prove
   ASM_SIMP_TAC[OPEN_UNION] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Likewise on closed sets, with a finiteness assumption.                    *)
+(* Likewise on closed sets, with a (local) finiteness condition.             *)
 (* ------------------------------------------------------------------------- *)
 
-let PASTING_LEMMA_CLOSED = prove
+let PASTING_LEMMA_LOCALLY_FINITE = prove
  (`!f:A->real^M->real^N g t s k.
-        FINITE k /\
+        (!x. x IN s
+             ==> ?v. open_in (subtopology euclidean s) v /\ x IN v /\
+                     FINITE {i | i IN k /\ ~(t i INTER v = {})}) /\
         (!i. i IN k
              ==> closed_in (subtopology euclidean s) (t i) /\
                  (f i) continuous_on (t i)) /\
@@ -8707,20 +8739,70 @@ let PASTING_LEMMA_CLOSED = prove
     ASSUME_TAC THENL
      [ASM_MESON_TAC[CLOSED_IN_SUBSET; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY];
       REWRITE_TAC[UNIONS_GSPEC] THEN ASM SET_TAC[]];
-    MATCH_MP_TAC CLOSED_IN_UNIONS THEN
-    ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
-    ASM_MESON_TAC[CLOSED_IN_TRANS]]);;
+    MATCH_MP_TAC CLOSED_IN_LOCALLY_FINITE_UNIONS THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[CLOSED_IN_TRANS]; ALL_TAC] THEN
+    REWRITE_TAC[SET_RULE
+     `{y | y IN {f x | x IN s} /\ P y} = IMAGE f {x | x IN s /\ P(f x)}`] THEN
+    X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(fun th -> MP_TAC(SPEC `x:real^M` th) THEN
+        ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS) THEN
+    X_GEN_TAC `v:real^M->bool` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC FINITE_IMAGE THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        FINITE_SUBSET)) THEN
+    SET_TAC[]]);;
 
-let PASTING_LEMMA_EXISTS_CLOSED = prove
- (`!f:A->real^M->real^N t s k.
-        FINITE k /\
+let PASTING_LEMMA_EXISTS_LOCALLY_FINITE = prove
+ (`!f:A->real^M->real^N t s k u.
+        (!x. x IN s
+             ==> ?v. open_in (subtopology euclidean s) v /\ x IN v /\
+                     FINITE {i | i IN k /\ ~(t i INTER v = {})}) /\
         s SUBSET UNIONS {t i | i IN k} /\
+        (!i. i IN k
+             ==> closed_in (subtopology euclidean s) (t i) /\
+                 (f i) continuous_on (t i) /\
+                 IMAGE (f i) (t i) SUBSET u) /\
+        (!i j x. i IN k /\ j IN k /\ x IN s INTER t i INTER t j
+                 ==> f i x = f j x)
+        ==> ?g. g continuous_on s /\ IMAGE g s SUBSET u /\
+                (!x i. i IN k /\ x IN s INTER t i ==> g x = f i x)`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `\x. (f:A->real^M->real^N)(@i. i IN k /\ x IN t i) x` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC PASTING_LEMMA_LOCALLY_FINITE THEN
+  MAP_EVERY EXISTS_TAC
+   [`f:A->real^M->real^N`; `t:A->real^M->bool`; `k:A->bool`] THEN
+  ASM SET_TAC[]);;
+
+let PASTING_LEMMA_CLOSED = prove
+ (`!f:A->real^M->real^N g t s k.
+        FINITE k /\
         (!i. i IN k
              ==> closed_in (subtopology euclidean s) (t i) /\
                  (f i) continuous_on (t i)) /\
         (!i j x. i IN k /\ j IN k /\ x IN s INTER t i INTER t j
+                 ==> f i x = f j x) /\
+        (!x. x IN s ==> ?j. j IN k /\ x IN t j /\ g x = f j x)
+        ==> g continuous_on s`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`f:A->real^M->real^N`; `g:real^M->real^N`; `t:A->real^M->bool`;
+    `s:real^M->bool`; `k:A->bool`] PASTING_LEMMA_LOCALLY_FINITE) THEN
+  DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN EXISTS_TAC `s:real^M->bool` THEN
+  ASM_REWRITE_TAC[OPEN_IN_REFL] THEN   ASM_SIMP_TAC[FINITE_RESTRICT]);;
+
+let PASTING_LEMMA_EXISTS_CLOSED = prove
+ (`!f:A->real^M->real^N t s k u.
+        FINITE k /\
+        s SUBSET UNIONS {t i | i IN k} /\
+        (!i. i IN k
+             ==> closed_in (subtopology euclidean s) (t i) /\
+                 (f i) continuous_on (t i) /\
+                 IMAGE (f i) (t i) SUBSET u) /\
+        (!i j x. i IN k /\ j IN k /\ x IN s INTER t i INTER t j
                  ==> f i x = f j x)
-        ==> ?g. g continuous_on s /\
+        ==> ?g. g continuous_on s /\ IMAGE g s SUBSET u /\
                 (!x i. i IN k /\ x IN s INTER t i ==> g x = f i x)`,
   REPEAT STRIP_TAC THEN
   EXISTS_TAC `\x. (f:A->real^M->real^N)(@i. i IN k /\ x IN t i) x` THEN
@@ -15592,17 +15674,31 @@ let [HOMEOMORPHIC_BALLS; HOMEOMORPHIC_CBALLS; HOMEOMORPHIC_SPHERES] =
 (* Homeomorphism of one-point compactifications.                             *)
 (* ------------------------------------------------------------------------- *)
 
-let HOMEOMORPHIC_ONE_POINT_COMPACTIFICATIONS = prove
- (`!s:real^M->bool t:real^N->bool a b.
-        compact s /\ compact t /\ a IN s /\ b IN t /\
-        (s DELETE a) homeomorphic (t DELETE b)
-        ==> s homeomorphic t`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_COMPACT THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
-  REWRITE_TAC[HOMEOMORPHISM; LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
-  STRIP_TAC THEN
+let HOMEOMORPHISM_ONE_POINT_COMPACTIFICATIONS = prove
+ (`!f:real^M->real^N g:real^N->real^M s t a b.
+        compact s /\ compact t /\ a IN s /\ b IN t /\         
+        homeomorphism (s DELETE a,t DELETE b) (f,g)
+        ==> ?f' g'. homeomorphism (s,t) (f',g') /\
+                    f' a = b /\ g' b = a /\
+                    (!x. x IN s DELETE a ==> f' x = f x) /\
+                    (!y. y IN t DELETE b ==> g' y = g y)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [HOMEOMORPHISM]) THEN
+  ONCE_REWRITE_TAC[TAUT 
+    `p /\ q /\ r /\ s /\ t <=> p /\ (q /\ s) /\ r /\ t`] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!f g. P f /\ R f g ==> Q f g) /\
+    (?f. P f /\ ?g. R f g)
+    ==> ?f g. R f g /\ P f /\ Q f g`) THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[HOMEOMORPHISM] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN X_GEN_TAC `y:real^N` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN `(f':real^M->real^N) (g(y:real^N)) = y` MP_TAC THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
   EXISTS_TAC `\x. if x = a then b else (f:real^M->real^N) x` THEN
+  SIMP_TAC[IN_DELETE] THEN MATCH_MP_TAC HOMEOMORPHISM_COMPACT THEN
   ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
   REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
@@ -15642,6 +15738,16 @@ let HOMEOMORPHIC_ONE_POINT_COMPACTIFICATIONS = prove
     EXISTS_TAC `min d (dist(a:real^M,x))` THEN
     ASM_REWRITE_TAC[REAL_LT_MIN; GSYM DIST_NZ] THEN
     ASM_MESON_TAC[REAL_LT_REFL]]);;
+
+let HOMEOMORPHIC_ONE_POINT_COMPACTIFICATIONS = prove
+ (`!s:real^M->bool t:real^N->bool a b.
+        compact s /\ compact t /\ a IN s /\ b IN t /\
+        (s DELETE a) homeomorphic (t DELETE b)
+        ==> s homeomorphic t`,
+  REWRITE_TAC[homeomorphic] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+    (REWRITE_RULE[CONJ_ASSOC] HOMEOMORPHISM_ONE_POINT_COMPACTIFICATIONS))) THEN
+  ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Homeomorphisms between open intervals in real^1 and then in real^N.       *)
