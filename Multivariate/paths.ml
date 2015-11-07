@@ -875,6 +875,20 @@ let SIMPLE_PATH_JOIN_LOOP_EQ = prove
              {pathstart g1, pathstart g2})`,
   MESON_TAC[SIMPLE_PATH_JOIN_IMP; SIMPLE_PATH_JOIN_LOOP]);;
 
+let SIMPLE_PATH_JOIN_LOOP_EQ_ALT = prove
+ (`!g1 g2:real^1->real^N.
+        pathfinish g2 = pathstart g1 /\
+        pathfinish g1 = pathstart g2
+        ==> (simple_path(g1 ++ g2) <=>
+             arc g1 /\ arc g2 /\
+             path_image g1 INTER path_image g2 =
+             {pathstart g1, pathstart g2})`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SIMPLE_PATH_JOIN_LOOP_EQ] THEN
+  AP_TERM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC(SET_RULE
+   `a IN s /\ b IN s ==> (s SUBSET {a,b} <=> s = {a,b})`) THEN
+  REWRITE_TAC[IN_INTER] THEN
+  ASM_MESON_TAC[PATHSTART_IN_PATH_IMAGE; PATHFINISH_IN_PATH_IMAGE]);;
+
 let ARC_JOIN_EQ = prove
  (`!g1 g2:real^1->real^N.
         pathfinish g1 = pathstart g2
@@ -2316,6 +2330,26 @@ let CONNECTED_SUBSET_ARC_PAIR = prove
        ASM_MESON_TAC[REAL_LE_ANTISYM; LIFT_EQ; LIFT_NUM; LIFT_DROP;
                      pathstart; pathfinish]]));;
 
+let HOMEOMORPHIC_SIMPLE_PATH_IMAGES = prove
+ (`!g:real^1->real^M h:real^1->real^N.
+        simple_path g /\ pathfinish g = pathstart g /\
+        simple_path h /\ pathfinish h = pathstart h
+        ==> (path_image g) homeomorphic (path_image h)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`g:real^1->real^M`; `h:real^1->real^N`; `interval[vec 0:real^1,vec 1]`;
+    `path_image g:real^M->bool`; `path_image h:real^N->bool`]
+   LIFT_TO_QUOTIENT_SPACE_UNIQUE) THEN
+  REWRITE_TAC[path_image; CONJ_ASSOC] THEN DISCH_THEN MATCH_MP_TAC THEN
+  CONJ_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_IMP_QUOTIENT_MAP THEN
+    ASM_SIMP_TAC[GSYM path; COMPACT_INTERVAL; SIMPLE_PATH_IMP_PATH];
+    RULE_ASSUM_TAC(REWRITE_RULE[simple_path; pathstart; pathfinish]) THEN
+    MAP_EVERY X_GEN_TAC [`x:real^1`; `y:real^1`] THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL
+      [`x:real^1`; `y:real^1`] o CONJUNCT2)) THEN
+    ASM_MESON_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Path component, considered as a "joinability" relation (from Tom Hales).  *)
 (* ------------------------------------------------------------------------- *)
@@ -3469,6 +3503,53 @@ let ARC_ENDS_UNIQUE = prove
     ==> {x | x IN s /\ P x} = {a,b}`) THEN
   REWRITE_TAC[PATHSTART_IN_PATH_IMAGE; PATHFINISH_IN_PATH_IMAGE] THEN
   ASM_SIMP_TAC[CONNECTED_ARC_IMAGE_DELETE]);;
+
+let ARC_HOMEOMORPHISM_ENDS = prove
+ (`!g h f f':real^N->real^N.
+        homeomorphism (path_image g,path_image h) (f,f') /\ arc g /\ arc h
+        ==> f(pathstart g) = pathstart h /\
+            f(pathfinish g) = pathfinish h /\
+            f'(pathstart h) = pathstart g /\
+            f'(pathfinish h) = pathfinish g \/
+            f(pathstart g) = pathfinish h /\
+            f(pathfinish g) = pathstart h /\
+            f'(pathstart h) = pathfinish g /\
+            f'(pathfinish h) = pathstart g`,
+  REWRITE_TAC[homeomorphism] THEN REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(f:real^N->real^N) o (g:real^1->real^N)`; `h:real^1->real^N`]
+        ARC_ENDS_UNIQUE) THEN
+  ASM_REWRITE_TAC[PATH_IMAGE_COMPOSE] THEN ANTS_TAC THENL
+   [ASM_SIMP_TAC[ARC_IMP_SIMPLE_PATH] THEN
+    MATCH_MP_TAC ARC_CONTINUOUS_IMAGE THEN ASM_REWRITE_TAC[] THEN
+    ASM SET_TAC[];
+    REWRITE_TAC[PATHSTART_COMPOSE; PATHFINISH_COMPOSE; SET_RULE
+     `{a,b} = {a',b'} <=> a = a' /\ b = b' \/ a = b' /\ b = a'`] THEN
+    MATCH_MP_TAC MONO_OR THEN SIMP_TAC[] THEN CONJ_TAC THEN
+    DISCH_THEN(CONJUNCTS_THEN(SUBST1_TAC o SYM)) THEN CONJ_TAC THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    REWRITE_TAC[PATHSTART_IN_PATH_IMAGE; PATHFINISH_IN_PATH_IMAGE]]);;
+
+let HOMEOMORPHISM_ARC_IMAGES = prove
+ (`!g:real^1->real^M h:real^1->real^N.
+        arc g /\ arc h
+        ==> ?f f'. homeomorphism (path_image g,path_image h) (f,f') /\
+                   f(pathstart g) = pathstart h /\
+                   f(pathfinish g) = pathfinish h /\
+                   f'(pathstart h) = pathstart g /\
+                   f'(pathfinish h) = pathfinish g`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `h:real^1->real^N` HOMEOMORPHISM_ARC) THEN
+  MP_TAC(ISPEC `g:real^1->real^M` HOMEOMORPHISM_ARC) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g':real^M->real^1` THEN STRIP_TAC THEN
+  X_GEN_TAC `h':real^N->real^1` THEN STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC
+   [`(h:real^1->real^N) o (g':real^M->real^1)`;
+    `(g:real^1->real^M) o (h':real^N->real^1)`] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC HOMEOMORPHISM_COMPOSE THEN ASM_MESON_TAC[HOMEOMORPHISM_SYM];
+    RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN
+    ASM_SIMP_TAC[o_THM; pathstart; pathfinish; ENDS_IN_UNIT_INTERVAL]]);;
 
 let COLLINEAR_SIMPLE_PATH_IMAGE = prove
  (`!g:real^1->real^N.
@@ -10156,6 +10237,22 @@ let CONNECTED_PUNCTURED_BALL = prove
  (`!a:real^N r. 2 <= dimindex(:N) ==> connected(ball(a,r) DELETE a)`,
   SIMP_TAC[CONNECTED_OPEN_DELETE; OPEN_BALL; CONNECTED_BALL]);;
 
+let PATH_CONNECTED_PUNCTURED_CBALL = prove
+ (`!a:real^N r. 2 <= dimindex(:N) ==> path_connected(cball(a,r) DELETE a)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `&0 < r` THENL
+   [MATCH_MP_TAC PATH_CONNECTED_PUNCTURED_CONVEX THEN
+    ASM_REWRITE_TAC[CONVEX_CBALL; AFF_DIM_CBALL; INT_OF_NUM_EQ] THEN
+    ASM_ARITH_TAC;
+    MATCH_MP_TAC(MESON[PATH_CONNECTED_EMPTY]
+     `s = {} ==> path_connected s`) THEN
+    FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP (REAL_ARITH
+     `~(&0 < r) ==> r = &0 \/ r < &0`)) THEN
+    ASM_SIMP_TAC[CBALL_EMPTY; CBALL_SING] THEN ASM SET_TAC[]]);;
+
+let CONNECTED_PUNCTURED_CBALL = prove
+ (`!a:real^N r. 2 <= dimindex(:N) ==> connected(cball(a,r) DELETE a)`,
+  SIMP_TAC[PATH_CONNECTED_PUNCTURED_CBALL; PATH_CONNECTED_IMP_CONNECTED]);;
+
 let PATH_CONNECTED_SPHERE = prove
  (`!a:real^N r. 2 <= dimindex(:N) ==> path_connected(sphere(a,r))`,
   REPEAT GEN_TAC THEN
@@ -10711,6 +10808,48 @@ let PATH_CONNECTED_DIFF_BALL = prove
       ==> s INTER u = {}`)) THEN
   ASM_REWRITE_TAC[BALL_SUBSET_CBALL; IN_BALL; REAL_LT_REFL]);;
 
+let CONNECTED_DELETE_INTERIOR_POINT = prove
+ (`!s a:real^N.
+        2 <= dimindex(:N) /\ connected s /\ a IN interior s
+        ==> connected(s DELETE a)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERIOR_CBALL]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `s DELETE a = (s DIFF ball(a:real^N,r)) UNION (cball(a,r) DELETE a)`
+  SUBST1_TAC THENL
+   [MP_TAC(ISPECL [`a:real^N`; `r:real`] BALL_SUBSET_CBALL) THEN
+    MP_TAC(ISPECL [`a:real^N`; `r:real`] CENTRE_IN_BALL) THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+    MATCH_MP_TAC CONNECTED_UNION THEN
+    ASM_SIMP_TAC[CONNECTED_DIFF_BALL; CONNECTED_PUNCTURED_CBALL] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `c SUBSET s ==> ~(c DIFF b = {}) /\ a IN b
+                     ==> ~((s DIFF b) INTER (c DELETE a) = {})`)) THEN
+    ASM_REWRITE_TAC[CBALL_DIFF_BALL; CENTRE_IN_BALL; SPHERE_EQ_EMPTY] THEN
+    ASM_REAL_ARITH_TAC]);;
+
+let PATH_CONNECTED_DELETE_INTERIOR_POINT = prove
+ (`!s a:real^N.
+        2 <= dimindex(:N) /\ path_connected s /\ a IN interior s
+        ==> path_connected(s DELETE a)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERIOR_CBALL]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN
+   `s DELETE a = (s DIFF ball(a:real^N,r)) UNION (cball(a,r) DELETE a)`
+  SUBST1_TAC THENL
+   [MP_TAC(ISPECL [`a:real^N`; `r:real`] BALL_SUBSET_CBALL) THEN
+    MP_TAC(ISPECL [`a:real^N`; `r:real`] CENTRE_IN_BALL) THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+    MATCH_MP_TAC PATH_CONNECTED_UNION THEN
+    ASM_SIMP_TAC[PATH_CONNECTED_DIFF_BALL; PATH_CONNECTED_PUNCTURED_CBALL] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `c SUBSET s ==> ~(c DIFF b = {}) /\ a IN b
+                     ==> ~((s DIFF b) INTER (c DELETE a) = {})`)) THEN
+    ASM_REWRITE_TAC[CBALL_DIFF_BALL; CENTRE_IN_BALL; SPHERE_EQ_EMPTY] THEN
+    ASM_REAL_ARITH_TAC]);;
+
 let CONNECTED_OPEN_DIFF_CBALL = prove
  (`!s a:real^N r.
         2 <= dimindex (:N) /\ open s /\ connected s /\ cball(a,r) SUBSET s
@@ -11005,6 +11144,72 @@ let BOUNDED_COMMON_FRONTIER_DOMAINS = prove
    `~((UNIV DIFF s) UNION (UNIV DIFF t) = UNIV) ==> ~DISJOINT s t`) THEN
   MATCH_MP_TAC(MESON[NOT_BOUNDED_UNIV] `bounded s ==> ~(s = (:real^N))`) THEN
   ASM_REWRITE_TAC[BOUNDED_UNION]);;
+
+let INTERIOR_ARC_IMAGE = prove
+ (`!g:real^1->real^N.
+        2 <= dimindex(:N) /\ arc g ==> interior(path_image g) = {}`,
+  REPEAT STRIP_TAC THEN
+  SIMP_TAC[path_image; CLOSED_OPEN_INTERVAL_1; DROP_VEC; REAL_POS] THEN
+  REWRITE_TAC[IMAGE_UNION; IMAGE_CLAUSES] THEN
+  SIMP_TAC[INTERIOR_UNION_EQ_EMPTY; CLOSED_INSERT; CLOSED_EMPTY] THEN
+  SIMP_TAC[EMPTY_INTERIOR_FINITE; FINITE_INSERT; FINITE_EMPTY] THEN
+  MATCH_MP_TAC(SET_RULE `(!a. ~(a IN s)) ==> s = {}`) THEN
+  X_GEN_TAC `a:real^N` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+    (REWRITE_RULE[CONJ_ASSOC] CONNECTED_DELETE_INTERIOR_POINT))) THEN
+  ASM_REWRITE_TAC[NOT_IMP] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CONNECTED_CONTINUOUS_IMAGE THEN
+    REWRITE_TAC[CONNECTED_INTERVAL] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+    EXISTS_TAC `interval[vec 0:real^1,vec 1]` THEN
+    ASM_SIMP_TAC[INTERVAL_OPEN_SUBSET_CLOSED; GSYM path; ARC_IMP_PATH];
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP(REWRITE_RULE[SUBSET] INTERIOR_SUBSET)) THEN
+    SPEC_TAC(`a:real^N`,`a:real^N`) THEN
+    REWRITE_TAC[FORALL_IN_IMAGE] THEN X_GEN_TAC `t:real^1` THEN
+    REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHISM_ARC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `h:real^N->real^1` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o ISPEC `interval(vec 0,vec 1) DELETE (t:real^1)` o
+       MATCH_MP (REWRITE_RULE[IMP_CONJ] HOMEOMORPHISM_CONNECTEDNESS)) THEN
+    MATCH_MP_TAC(TAUT `p /\ q /\ ~r ==> (p ==> (q <=> r)) ==> F`) THEN
+    REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC(SET_RULE `s SUBSET t ==> s DELETE a SUBSET t`) THEN
+      REWRITE_TAC[INTERVAL_OPEN_SUBSET_CLOSED];
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (MESON[]
+       `connected s ==> s = t ==> connected t`)) THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[arc]) THEN
+      MP_TAC(ISPECL [`vec 0:real^1`; `vec 1:real^1`]
+         INTERVAL_OPEN_SUBSET_CLOSED) THEN
+      ASM SET_TAC[];
+      REWRITE_TAC[GSYM IS_INTERVAL_CONNECTED_1; IS_INTERVAL_1] THEN
+      DISCH_THEN(MP_TAC o SPECL
+       [`midpoint(vec 0:real^1,t)`;
+        `midpoint(vec 1:real^1,t)`; `t:real^1`]) THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERVAL_1]) THEN
+      REWRITE_TAC[DROP_VEC; IN_DELETE; IN_INTERVAL_1; GSYM DROP_EQ;
+                  midpoint; DROP_ADD; DROP_CMUL] THEN
+      REAL_ARITH_TAC]]);;
+
+let INTERIOR_SIMPLE_PATH_IMAGE = prove
+ (`!g:real^1->real^N.
+        2 <= dimindex(:N) /\ simple_path g ==> interior(path_image g) = {}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`g:real^1->real^N`; `lift(&1 / &2)`]
+        PATH_IMAGE_SUBPATH_COMBINE) THEN
+  REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; DROP_VEC] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_SIMP_TAC[SIMPLE_PATH_IMP_PATH] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) INTERIOR_UNION_EQ_EMPTY o snd) THEN
+  ANTS_TAC THENL
+   [DISJ1_TAC THEN MATCH_MP_TAC CLOSED_PATH_IMAGE THEN
+    MATCH_MP_TAC PATH_SUBPATH THEN
+    REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; DROP_VEC] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_SIMP_TAC[SIMPLE_PATH_IMP_PATH];
+    DISCH_THEN SUBST1_TAC THEN CONJ_TAC THEN
+    MATCH_MP_TAC INTERIOR_ARC_IMAGE THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC ARC_SIMPLE_PATH_SUBPATH_INTERIOR THEN
+    ASM_REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; DROP_VEC; GSYM DROP_EQ] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of unbounded components.                                        *)

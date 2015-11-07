@@ -4535,6 +4535,14 @@ let BOUNDED_SING = prove
  (`!a. bounded {a}`,
   REWRITE_TAC[BOUNDED_INSERT; BOUNDED_EMPTY]);;
 
+let BOUNDED_DELETE = prove
+ (`!x:real^N s. bounded(s DELETE x) <=> bounded s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `(x:real^N) IN s` THEN
+  ASM_SIMP_TAC[SET_RULE `~(x IN s) ==> s DELETE x = s`] THEN
+  TRANS_TAC EQ_TRANS `bounded((x:real^N) INSERT (s DELETE x))` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[BOUNDED_INSERT]; AP_TERM_TAC THEN ASM SET_TAC[]]);;
+
 let BOUNDED_INTERS = prove
  (`!f:(real^N->bool)->bool.
         (?s:real^N->bool. s IN f /\ bounded s) ==> bounded(INTERS f)`,
@@ -4550,6 +4558,14 @@ let NOT_BOUNDED_UNIV = prove
   MP_TAC(SPEC `B + &1` VECTOR_CHOOSE_SIZE) THEN
   ASM_SIMP_TAC[REAL_ARITH `&0 < B ==> &0 <= B + &1`] THEN
   MATCH_MP_TAC MONO_EXISTS THEN REAL_ARITH_TAC);;
+
+let NOT_OPEN_SING = prove
+ (`!a:real^N. ~(open {a})`,
+  GEN_TAC THEN MP_TAC(ISPEC `{a:real^N}` CLOPEN) THEN
+  REWRITE_TAC[NOT_INSERT_EMPTY; CLOSED_SING] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  DISCH_THEN(MP_TAC o AP_TERM `bounded:(real^N->bool)->bool`) THEN
+  REWRITE_TAC[BOUNDED_SING; NOT_BOUNDED_UNIV]);;
 
 let COBOUNDED_IMP_UNBOUNDED = prove
  (`!s. bounded((:real^N) DIFF s) ==> ~bounded s`,
@@ -4850,8 +4866,8 @@ let compact = new_definition
                       ((f o r) --> l) sequentially`;;
 
 let EVENTUALLY_SUBSEQUENCE = prove
- (`!P r s. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
-           ==> eventually (P o r) sequentially`,
+ (`!P r. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
+         ==> eventually (P o r) sequentially`,
   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; o_THM] THEN
   MESON_TAC[MONOTONE_BIGGER; LE_TRANS]);;
 
@@ -14905,6 +14921,10 @@ let HOMEOMORPHISM = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[homeomorphism] THEN
   EQ_TAC THEN SIMP_TAC[] THEN SET_TAC[]);;
 
+let HOMEOMORPHISM_IMP_HOMEOMORPHIC = prove
+ (`!f:real^M->real^N g s t. homeomorphism (s,t) (f,g) ==> s homeomorphic t`,
+  REWRITE_TAC[homeomorphic] THEN MESON_TAC[]);;
+
 let HOMEOMORPHISM_OF_SUBSETS = prove
  (`!f g s t s' t'.
     homeomorphism (s,t) (f,g) /\ s' SUBSET s /\ t' SUBSET t /\ IMAGE f s' = t'
@@ -15227,6 +15247,45 @@ let LIFT_TO_QUOTIENT_SPACE_UNIQUE = prove
   MAP_EVERY EXISTS_TAC
    [`k:real^N->real^P`; `h:real^P->real^N`] THEN
   ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
+
+let HOMOEOMORPHISM_PASTE = prove
+ (`!f:real^M->real^N g f' g' s t s' t'.
+        homeomorphism (s,t) (f,g) /\ homeomorphism (s',t') (f',g') /\
+        (open_in (subtopology euclidean (s UNION s')) s /\
+         open_in (subtopology euclidean (s UNION s')) s' /\
+         open_in (subtopology euclidean (t UNION t')) t /\
+         open_in (subtopology euclidean (t UNION t')) t' \/
+         closed_in (subtopology euclidean (s UNION s')) s /\
+         closed_in (subtopology euclidean (s UNION s')) s' /\
+         closed_in (subtopology euclidean (t UNION t')) t /\
+         closed_in (subtopology euclidean (t UNION t')) t') /\
+        (!x. x IN s INTER s' ==> f' x = f x) /\
+        (!y. y IN t INTER t' ==> g' y = g y)
+        ==> ?h k. homeomorphism (s UNION s',t UNION t') (h,k) /\
+                  (!x. x IN s ==> h x = f x) /\ (!x. x IN s' ==> h x = f' x) /\
+                  (!y. y IN t ==> k y = g y) /\ (!y. y IN t' ==> k y = g' y) /\
+                  IMAGE h s = t /\ IMAGE h s' = t' /\
+                  IMAGE k t = s /\ IMAGE k t' = s' /\
+                  IMAGE h (s INTER s') = t INTER t' /\
+                  IMAGE h (s DIFF s') = t DIFF t' /\
+                  IMAGE h (s' DIFF s) = t' DIFF t /\
+                  IMAGE k (t INTER t') = s INTER s' /\
+                  IMAGE k (t DIFF t') = s DIFF s' /\
+                  IMAGE k (t' DIFF t) = s' DIFF s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homeomorphism] THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  EXISTS_TAC `\x. if x IN s then (f:real^M->real^N) x else f' x` THEN
+  EXISTS_TAC `\x. if x IN t then (g:real^N->real^M) x else g' x` THEN
+  REWRITE_TAC[IN_UNION] THEN
+  MATCH_MP_TAC(TAUT
+   `(p /\ q /\ s /\ t /\ v) /\ (r /\ u)
+    ==> (p /\ q /\ r /\ s /\ t /\ u) /\ v`) THEN
+  CONJ_TAC THENL [REPEAT CONJ_TAC THEN ASM SET_TAC[]; ALL_TAC] THEN
+  CONJ_TAC THEN
+   (FIRST_X_ASSUM DISJ_CASES_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_ON_CASES_LOCAL_OPEN;
+      MATCH_MP_TAC CONTINUOUS_ON_CASES_LOCAL] THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[]));;
 
 (* ------------------------------------------------------------------------- *)
 (* Domain of a continuous function is homeomorphic to its graph.             *)
@@ -15610,6 +15669,29 @@ let HOMEOMORPHIC_CONNECTEDNESS = prove
   REWRITE_TAC[homeomorphic; homeomorphism] THEN
   MESON_TAC[CONNECTED_CONTINUOUS_IMAGE]);;
 
+let HOMEOMORPHISM_COMPACTNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (compact(IMAGE f k) <=> compact k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_COMPACTNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
+let HOMEOMORPHISM_CONNECTEDNESS = prove
+ (`!f:real^M->real^N g s t k.
+
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (connected(IMAGE f k) <=> connected k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_CONNECTEDNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Results on translation, scaling etc.                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -15676,7 +15758,7 @@ let [HOMEOMORPHIC_BALLS; HOMEOMORPHIC_CBALLS; HOMEOMORPHIC_SPHERES] =
 
 let HOMEOMORPHISM_ONE_POINT_COMPACTIFICATIONS = prove
  (`!f:real^M->real^N g:real^N->real^M s t a b.
-        compact s /\ compact t /\ a IN s /\ b IN t /\         
+        compact s /\ compact t /\ a IN s /\ b IN t /\
         homeomorphism (s DELETE a,t DELETE b) (f,g)
         ==> ?f' g'. homeomorphism (s,t) (f',g') /\
                     f' a = b /\ g' b = a /\
@@ -15684,7 +15766,7 @@ let HOMEOMORPHISM_ONE_POINT_COMPACTIFICATIONS = prove
                     (!y. y IN t DELETE b ==> g' y = g y)`,
   REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [HOMEOMORPHISM]) THEN
-  ONCE_REWRITE_TAC[TAUT 
+  ONCE_REWRITE_TAC[TAUT
     `p /\ q /\ r /\ s /\ t <=> p /\ (q /\ s) /\ r /\ t`] THEN
   MATCH_MP_TAC(MESON[]
    `(!f g. P f /\ R f g ==> Q f g) /\

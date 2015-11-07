@@ -3608,7 +3608,7 @@ let onorm = new_definition
 let NORM_BOUND_GENERALIZE = prove
  (`!f:real^M->real^N b.
         linear f
-        ==> ((!x. (norm(x) = &1) ==> norm(f x) <= b) <=>
+        ==> ((!x. norm(x) = &1 ==> norm(f x) <= b) <=>
              (!x. norm(f x) <= b * norm(x)))`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
    [ALL_TAC; ASM_MESON_TAC[REAL_MUL_RID]] THEN
@@ -3622,6 +3622,29 @@ let NORM_BOUND_GENERALIZE = prove
   FIRST_ASSUM(fun th -> REWRITE_TAC[GSYM(MATCH_MP LINEAR_CMUL th)]) THEN
   ASM_SIMP_TAC[NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM; REAL_MUL_LINV;
                NORM_EQ_0]);;
+
+let ONORM_DOT = prove
+ (`!f:real^M->real^N. onorm f = sup {f x dot y | norm x = &1 /\ norm y = &1}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[onorm] THEN MATCH_MP_TAC SUP_EQ THEN
+  X_GEN_TAC `b:real` THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  EQ_TAC THEN DISCH_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^N`] THEN STRIP_TAC THEN
+    TRANS_TAC REAL_LE_TRANS `norm((f:real^M->real^N) x) * norm(y:real^N)` THEN
+    REWRITE_TAC[NORM_CAUCHY_SCHWARZ] THEN ASM_SIMP_TAC[REAL_MUL_RID];
+    FIRST_ASSUM(fun th ->
+      MP_TAC(ISPECL [`basis 1:real^M`; `--basis 1:real^N`] th) THEN
+      MP_TAC(ISPECL [`basis 1:real^M`; `basis 1:real^N`] th)) THEN
+    SIMP_TAC[NORM_BASIS; DIMINDEX_GE_1; LE_REFL; NORM_NEG] THEN
+    REWRITE_TAC[DOT_RNEG; IMP_IMP] THEN DISCH_THEN(ASSUME_TAC o MATCH_MP
+     (REAL_ARITH `x <= b /\ --x <= b ==> &0 <= b`)) THEN
+    X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+    ASM_CASES_TAC `(f:real^M->real^N) x = vec 0` THEN
+    ASM_REWRITE_TAC[NORM_0] THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL
+     [`x:real^M`; `inv(norm((f:real^M->real^N) x)) % f x`]) THEN
+    ASM_REWRITE_TAC[DOT_RMUL; NORM_MUL; REAL_ABS_INV; REAL_ABS_NORM] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; NORM_EQ_0; GSYM NORM_POW_2;
+                 REAL_FIELD `~(x = &0) ==> inv x * x pow 2 = x`]]);;
 
 let ONORM = prove
  (`!f:real^M->real^N.
