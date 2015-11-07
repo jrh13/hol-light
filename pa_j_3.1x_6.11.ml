@@ -836,15 +836,7 @@ value keyword_or_error ctx loc s =
       else ("", s) ]
 ;
 
-value rev_implode l =
-  let s = String.create (List.length l) in
-  loop (String.length s - 1) l where rec loop i =
-    fun
-    [ [c :: l] -> do { String.unsafe_set s i c; loop (i - 1) l }
-    | [] -> s ]
-;
-
-value implode l = rev_implode (List.rev l);
+value implode l = List.fold_right(fun x y -> String.make 1 x ^ y) l "";
 
 value stream_peek_nth n strm =
   loop n (Stream.npeek n strm) where rec loop n =
@@ -1205,7 +1197,7 @@ value next_token_after_spaces ctx bp =
       jrh_identifier ctx.find_kwd id
 (********** JRH: original was
       try ("", ctx.find_kwd id) with [ Not_found -> ("LIDENT", id) ]
- *********)               
+ *********)
   | '1'-'9' number!
   | "0" [ 'o' | 'O' ] (digits octal)!
   | "0" [ 'x' | 'X' ] (digits hexa)!
@@ -2868,7 +2860,7 @@ IFDEF JOCAML THEN
   DELETE_RULE expr: SELF; "&"; SELF END;
   EXTEND
     GLOBAL: str_item expr;
-    str_item: 
+    str_item:
       [ [ "def"; jal = V (LIST1 joinautomaton SEP "and") ->
             <:str_item< def $_list:jal$ >> ] ]
     ;

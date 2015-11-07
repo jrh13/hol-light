@@ -1,3 +1,13 @@
+Fri  6th Nov 2015       Makefile, pa_j_3.1x_6.11.ml, README
+
+Made two changes suggested by Randy Pollack so that HOL Light makes use
+of the non-mutable strings in OCaml 4.02 in the build process for the
+camlp5 syntax extension. First, modified the Makefile to explicitly build
+with the "-safe-string" option for OCaml >= 4.02, and recoded the
+"implode" function in pa_j_3.1x_6.11.ml to avoid the use of imperative
+features. Also added a recommendation to the README file to use the
+"-safe-string" option in the main HOL Light session itself.
+
 Wed 22nd Jul 2015       Library/wo.ml
 
 Added the basic fact that a finite toset is a woset:

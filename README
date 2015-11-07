@@ -139,10 +139,12 @@ be available for some platforms. First the basic approach:
 
       export CAMLP5LIB=$HOME/mylib/ocaml/camlp5
 
-(2) Do 'ocaml' (possibly 'ocamlnum' on some platforms --- see [*] below).
-    You should see a prompt, something like:
+(2) Do 'ocaml'. (Actually for OCaml >= 4.02 I prefer 'ocaml -safe-string'
+    to avoid mutable strings, while you may need something else like
+    'ocamlnum' on some platforms --- see [*] below.) You should see a
+    prompt, something like:
 
-                Objective Caml version 3.08.2
+                Objective Caml version 4.01.0
 
         #
 
