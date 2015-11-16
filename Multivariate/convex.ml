@@ -2183,7 +2183,6 @@ let LINEAR_CONVEX_ON_1 = prove
     DISCH_THEN MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC;
     ALL_TAC] THEN
   SUBGOAL_THEN
-
    `!c x:real^N. &0 <= c ==> (f:real^N->real^1)(c % x) = c % f x`
   ASSUME_TAC THENL
    [REPEAT STRIP_TAC THEN ASM_CASES_TAC `c <= &1` THEN ASM_SIMP_TAC[] THEN
@@ -2207,6 +2206,26 @@ let LINEAR_CONVEX_ON_1 = prove
     SUBGOAL_THEN `(f:real^N->real^1)(--c % x) = --c % f x` MP_TAC THENL
      [ASM_SIMP_TAC[REAL_ARITH `~(&0 <= c) ==> &0 <= --c`];
       ASM_REWRITE_TAC[VECTOR_MUL_LNEG; VECTOR_EQ_NEG2]]);;
+
+let CONVEX_CONCAVE_EQ_AFFINE = prove
+ (`!f:real^N->real.
+        f convex_on UNIV /\ ((--) o f) convex_on UNIV <=>
+        (?a b. f = \x. a dot x + b)`,
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [MP_TAC(ISPEC `\x. lift(--f(vec 0) + (f:real^N->real) x)`
+        LINEAR_CONVEX_ON_1) THEN
+    REWRITE_TAC[o_DEF; LIFT_DROP; REAL_ADD_LINV; LIFT_NUM] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[o_DEF]) THEN
+    ASM_SIMP_TAC[CONVEX_ADD; CONVEX_ON_CONST; REAL_NEG_ADD] THEN
+    REWRITE_TAC[LINEAR_TO_1] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:real^N` THEN
+    REWRITE_TAC[FUN_EQ_THM; GSYM DROP_EQ; LIFT_DROP] THEN
+    DISCH_THEN(fun th -> REWRITE_TAC[GSYM th]) THEN
+    EXISTS_TAC `(f:real^N->real) (vec 0)` THEN REAL_ARITH_TAC;
+    REWRITE_TAC[o_DEF; REAL_NEG_ADD; GSYM DOT_LNEG] THEN CONJ_TAC THEN
+    MATCH_MP_TAC CONVEX_ADD THEN REWRITE_TAC[CONVEX_ON_CONST] THEN
+    MATCH_MP_TAC LINEAR_IMP_CONVEX_ON THEN
+    REWRITE_TAC[o_DEF; LINEAR_LIFT_DOT]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Open and closed balls are convex and hence connected.                     *)

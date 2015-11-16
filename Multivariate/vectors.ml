@@ -3748,6 +3748,36 @@ let ONORM_I = prove
  (`onorm(I:real^N->real^N) = &1`,
   REWRITE_TAC[I_DEF; ONORM_ID]);;
 
+let ONORM_ADJOINT = prove
+ (`!f:real^N->real^N. linear f ==> onorm(adjoint f) = onorm f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ONORM_DOT] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [DOT_SYM] THEN
+  ASM_SIMP_TAC[GSYM ADJOINT_WORKS] THEN AP_TERM_TAC THEN SET_TAC[]);;
+
+let ONORM_COMPOSE_ADJOINT_LEFT = prove
+ (`!f:real^N->real^N. linear f ==> onorm(adjoint f o f) = onorm f pow 2`,
+  REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN REPEAT STRIP_TAC THENL
+   [ASM_MESON_TAC[REAL_POW_2; ONORM_COMPOSE; ADJOINT_LINEAR; ONORM_ADJOINT];
+    MATCH_MP_TAC REAL_RSQRT_LE THEN
+    ASM_SIMP_TAC[LINEAR_COMPOSE; ADJOINT_LINEAR; ONORM_POS_LE] THEN
+    ASM_SIMP_TAC[ONORM_LE_EQ] THEN X_GEN_TAC `x:real^N` THEN
+    GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [vector_norm] THEN
+    REWRITE_TAC[GSYM SQRT_MUL] THEN MATCH_MP_TAC REAL_LE_RSQRT THEN
+    REWRITE_TAC[NORM_POW_2] THEN
+    FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP ADJOINT_WORKS th]) THEN
+    W(MP_TAC o PART_MATCH lhand NORM_CAUCHY_SCHWARZ o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+    SIMP_TAC[GSYM NORM_POW_2; REAL_ARITH `(x:real) * y pow 2 = y * x * y`] THEN
+    MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+    MP_TAC(ISPEC `adjoint f o (f:real^N->real^N)` ONORM) THEN
+    ASM_SIMP_TAC[LINEAR_COMPOSE; ADJOINT_LINEAR; o_DEF]]);;
+
+let ONORM_COMPOSE_ADJOINT_RIGHT = prove
+ (`!f:real^N->real^N. linear f ==> onorm(f o adjoint f) = onorm f pow 2`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `adjoint f:real^N->real^N` ONORM_COMPOSE_ADJOINT_LEFT) THEN
+  ASM_SIMP_TAC[ADJOINT_LINEAR; ADJOINT_ADJOINT; ONORM_ADJOINT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* It's handy to "lift" from R to R^1 and "drop" from R^1 to R.              *)
 (* ------------------------------------------------------------------------- *)

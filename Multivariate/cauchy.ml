@@ -19232,6 +19232,21 @@ let CONNECTED_COMPLEMENT_IFF_SIMPLY_CONNECTED_COMPONENTS = prove
   ASM_MESON_TAC[SIMPLY_CONNECTED_IFF_SIMPLE; OPEN_COMPONENTS;
             IN_COMPONENTS_SUBSET; BOUNDED_SUBSET; IN_COMPONENTS_CONNECTED]);;
 
+let SIMPLY_CONNECTED_COMPONENT_PATH_COMPLEMENT = prove
+ (`!g c. path g /\ c IN components((:real^2) DIFF path_image g) /\ bounded c
+         ==> simply_connected c`,
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) SIMPLY_CONNECTED_IFF_SIMPLE o snd) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        OPEN_COMPONENTS)) THEN
+  ASM_SIMP_TAC[GSYM closed; CLOSED_PATH_IMAGE] THEN DISCH_TAC THEN
+  DISCH_THEN SUBST1_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP IN_COMPONENTS_CONNECTED) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC COMPONENT_COMPLEMENT_CONNECTED THEN
+  EXISTS_TAC `path_image g:real^2->bool` THEN
+  ASM_SIMP_TAC[SUBSET_UNIV; CONNECTED_UNIV; CONNECTED_PATH_IMAGE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Yet another set of equivalences based on *continuous* logs and sqrts.     *)
 (* ------------------------------------------------------------------------- *)

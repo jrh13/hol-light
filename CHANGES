@@ -1,3 +1,26 @@
+Sun 15th Nov 2015       Library/wo.ml, Library/card.ml
+
+Added a few basic ordinal and cardinal lemmas, such as that every set is the
+same size as an ordinal (on the same type) and that strict cardinal
+comparability is, on a given type, wellfounded.
+
+  CARD_EQ_ORDINAL_EXISTS = |- !s. ?l. ordinal l /\ fl l =_c s
+  
+  INSEG_FL_SUBSET = |- !l m. l inseg m ==> fl l SUBSET fl m
+  
+  ORDINAL_FL_SUBSET_EQ =
+    |- !l m. ordinal l /\ ordinal m ==> (fl l SUBSET fl m <=> l inseg m)
+  
+  ORDINAL_IMP_WOSET = |- !l. ordinal l ==> woset l
+  
+  SUBWOSET_ISO_INSEG =
+    |- !l s.
+           woset l /\ fl l = (:A)
+           ==> ?f. (!x y. x IN s /\ y IN s ==> (l (f x,f y) <=> l (x,y))) /\
+                   (!x y. y IN IMAGE f s /\ l (x,y) ==> x IN IMAGE f s)
+  
+  WF_CARD_LT =  |- WF (<_c)
+
 Fri  6th Nov 2015       Makefile, pa_j_3.1x_6.11.ml, README
 
 Made two changes suggested by Randy Pollack so that HOL Light makes use

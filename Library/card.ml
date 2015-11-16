@@ -546,6 +546,56 @@ let LE_C_IMAGE_SUBSET = prove
     REWRITE_TAC[CARD_LE_IMAGE]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Strict cardinal comparability on a given type is a wellfounded relation.  *)
+(* ------------------------------------------------------------------------- *)
+
+let CARD_EQ_ORDINAL_EXISTS = prove
+ (`!s:A->bool. ?l:A#A->bool. ordinal l /\ fl l =_c s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?l:A#A->bool. ordinal l /\ !x. fl l x` STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[WO_ORDINAL];
+    MP_TAC(ISPECL [`l:A#A->bool`; `s:A->bool`] SUBWOSET_ISO_INSEG)] THEN
+  FIRST_ASSUM(ASSUME_TAC o CONJUNCT1 o REWRITE_RULE[ordinal]) THEN
+  ASM_REWRITE_TAC[SET_RULE `s = UNIV <=> !x. s x`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `f:A->A` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\(x,y). x IN IMAGE (f:A->A) s /\ y IN IMAGE f s /\ l(x,y)` THEN
+  CONJ_TAC THENL
+   [FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+     INSEG_ORDINAL)) THEN ASM_SIMP_TAC[inseg; FL_RESTRICT];
+    GEN_REWRITE_TAC LAND_CONV [GSYM ETA_AX] THEN
+    ASM_SIMP_TAC[FL_RESTRICT; SET_RULE `(\x. x IN s) = s`] THEN
+    MATCH_MP_TAC CARD_EQ_IMAGE] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[]);;
+
+let WF_CARD_LT = prove
+ (`WF((<_c):(A->bool)->(A->bool)->bool)`,
+  SUBGOAL_THEN
+   `?w:(A->bool)->A#A->bool. (!s. ordinal(w s)) /\ (!s. fl(w s) =_c s)`
+  STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[AND_FORALL_THM; GSYM SKOLEM_THM; CARD_EQ_ORDINAL_EXISTS];
+    ALL_TAC] THEN
+  MP_TAC(ISPEC `w:(A->bool)->A#A->bool`
+    (MATCH_MP WF_MEASURE_GEN (INST_TYPE [`:B`,`:A`] WF_INSEG_WOSET))) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] WF_SUBSET) THEN
+  REWRITE_TAC[] THEN
+  MAP_EVERY X_GEN_TAC [`s:A->bool`; `t:A->bool`] THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[ORDINAL_IMP_WOSET] THEN
+  MP_TAC(ISPECL [`(w:(A->bool)->A#A->bool) s`; `(w:(A->bool)->A#A->bool) t`]
+        ORDINAL_CHAINED) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(TAUT
+   `~p /\ (~p /\ q ==> r) ==> p \/ q ==> r`) THEN
+  CONJ_TAC THENL [ALL_TAC; MESON_TAC[INSEG_REFL]] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP INSEG_SUBSET_FL) THEN
+  REWRITE_TAC[SET_RULE `(!x. s x ==> t x) <=> s SUBSET t`; ETA_AX] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CARD_LE_SUBSET) THEN
+  REWRITE_TAC[CARD_NOT_LE] THEN
+  TRANS_TAC CARD_LET_TRANS `s:A->bool` THEN
+  ASM_SIMP_TAC[CARD_EQ_IMP_LE] THEN
+  TRANS_TAC CARD_LTE_TRANS `t:A->bool` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
+  ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Cardinal arithmetic operations.                                           *)
 (* ------------------------------------------------------------------------- *)
 

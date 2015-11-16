@@ -12998,9 +12998,242 @@ let LEBESGUE_MEASURABLE_POINTS_OF_CONVERGENCE = prove
 (* partial derivatives and vector derivatives. These proofs are both         *)
 (* similar and have some technicalities to handle the extra generality       *)
 (* of "within s" (we show that the set of points where this makes the        *)
-(* limit ill-defined is negligible). But conceptually there is a very        *)
-(* simple argument showing that the set is Borel in the usual "at" case.     *)
+(* limit ill-defined is negligible). In the unrestricted case, the same      *)
+(* idea works and shows the set of points of differentiability is Borel.     *)
 (* ------------------------------------------------------------------------- *)
+
+let BOREL_POINTS_OF_DIFFERENTIABILITY = prove
+ (`!f:real^M->real^N. borel {x | f differentiable at x}`,
+  let lemur = prove
+   (`!f:real^M->real^N x.
+       f differentiable (at x) <=>
+       !e. &0 < e
+           ==> ?d A. &0 < d /\
+                     (!i j. 1 <= i /\ i <= dimindex(:N) /\
+                            1 <= j /\ j <= dimindex(:M)
+                            ==> rational(A$i$j)) /\
+                     !y. norm(y - x) < d
+                         ==> norm(f y - f x - A ** (y - x)) <= e * norm(y -
+x)`,
+    REPEAT GEN_TAC THEN
+    REWRITE_TAC[differentiable; HAS_DERIVATIVE_AT_ALT] THEN EQ_TAC THENL
+     [DISCH_THEN(X_CHOOSE_THEN `f':real^M->real^N` STRIP_ASSUME_TAC) THEN
+      X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN
+      ASM_REWRITE_TAC[REAL_HALF] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      X_GEN_TAC `d:real` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN MP_TAC
+       (ISPEC `matrix(f':real^M->real^N)` MATRIX_RATIONAL_APPROXIMATION) THEN
+      DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B:real^M^N` THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+      X_GEN_TAC `y:real^M` THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `y:real^M`) THEN ASM_REWRITE_TAC[] THEN
+      REWRITE_TAC[REAL_ARITH `x / &2 * y = (x * y) / &2`] THEN
+      MATCH_MP_TAC(NORM_ARITH
+       `norm(d' - d:real^N) <= e / &2
+        ==> norm(y - x - d') <= e / &2 ==> norm(y - x - d) <= e`) THEN
+      FIRST_ASSUM(fun th ->
+        ONCE_REWRITE_TAC[GSYM(MATCH_MP MATRIX_WORKS th)]) THEN
+      REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_SUB_RDISTRIB] THEN
+      TRANS_TAC REAL_LE_TRANS
+       `onorm(\x. (matrix(f':real^M->real^N) - B) ** x) *
+        norm(y - x:real^M)` THEN
+      ASM_SIMP_TAC[ONORM; LINEAR_COMPOSE_SUB; MATRIX_VECTOR_MUL_LINEAR] THEN
+      REWRITE_TAC[REAL_ARITH `(e * x) / &2 = e / &2 * x`] THEN
+      MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+      ASM_SIMP_TAC[REAL_LT_IMP_LE];
+      ALL_TAC] THEN
+    DISCH_THEN(MP_TAC o GEN `n:num` o SPEC `inv(&n + &1)`) THEN
+    REWRITE_TAC[REAL_LT_INV_EQ; REAL_ARITH `&0 < &n + &1`] THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; FORALL_AND_THM] THEN
+    MAP_EVERY X_GEN_TAC [`d:num->real`; `A:num->real^M^N`] THEN
+    STRIP_TAC THEN
+    SUBGOAL_THEN
+     `!i j. 1 <= i /\ i <= dimindex(:N) /\ 1 <= j /\ j <= dimindex(:M)
+            ==> ?a. ((\n. lift((A n:real^M^N)$i$j)) --> a) sequentially`
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN REWRITE_TAC[CONVERGENT_EQ_CAUCHY; cauchy] THEN
+      X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+      MP_TAC(SPEC `e / &2` REAL_ARCH_INV) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN
+      X_GEN_TAC `N:num` THEN STRIP_TAC THEN REWRITE_TAC[GE] THEN
+      MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN STRIP_TAC THEN ABBREV_TAC
+       `y:real^M = x + min ((d:num->real) m) (d n) / &2 % basis j` THEN
+      FIRST_X_ASSUM(fun th ->
+        MP_TAC(SPECL [`m:num`; `y:real^M`] th) THEN
+        MP_TAC(SPECL [`n:num`; `y:real^M`] th)) THEN
+      MATCH_MP_TAC(TAUT `(q /\ p) /\ (r /\ s ==> t)
+                  ==> (p ==> r) ==> (q ==> s) ==> t`) THEN
+      CONJ_TAC THENL
+       [REWRITE_TAC[GSYM REAL_LT_MIN] THEN EXPAND_TAC "y" THEN
+        REWRITE_TAC[VECTOR_ADD_SUB; NORM_MUL] THEN
+        ASM_SIMP_TAC[NORM_BASIS; REAL_MUL_RID] THEN
+        MATCH_MP_TAC(REAL_ARITH `&0 < d ==> abs(d / &2) < d`) THEN
+        ASM_REWRITE_TAC[REAL_LT_MIN];
+        DISCH_THEN(MP_TAC o MATCH_MP (NORM_ARITH
+         `norm(y - x - d) <= a /\ norm(y - x - e) <= b
+          ==> norm(d - e:real^N) <= a + b`)) THEN
+        REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_SUB_RDISTRIB] THEN
+        EXPAND_TAC "y" THEN REWRITE_TAC[VECTOR_ADD_SUB] THEN
+        REWRITE_TAC[MATRIX_VECTOR_MUL_RMUL; NORM_MUL] THEN
+        ASM_SIMP_TAC[NORM_BASIS; REAL_MUL_RID] THEN
+        REWRITE_TAC[REAL_ARITH
+         `a * x <= n * a + m * a <=> a * x <= a * (n + m)`] THEN
+        ASM_SIMP_TAC[REAL_LE_LMUL_EQ; REAL_ARITH `&0 < x ==> &0 < abs x`;
+                     REAL_HALF; REAL_LT_MIN] THEN
+        ASM_SIMP_TAC[MATRIX_VECTOR_MUL_BASIS; column] THEN
+        DISCH_THEN(MP_TAC o MATCH_MP (MESON[COMPONENT_LE_NORM; REAL_LE_TRANS]
+         `norm(x:real^N) <= a ==> !i. abs(x$i) <= a`)) THEN
+        DISCH_THEN(MP_TAC o SPEC `i:num`) THEN
+        ASM_SIMP_TAC[DIST_LIFT; LAMBDA_BETA; MATRIX_SUB_COMPONENT] THEN
+        MATCH_MP_TAC(REAL_ARITH
+         `x < e / &2 /\ y < e / &2
+          ==> abs(a - b) <= x + y ==> abs(b - a) < e`) THEN
+        CONJ_TAC THEN TRANS_TAC REAL_LET_TRANS `inv(&N)` THEN
+        ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+        REWRITE_TAC[REAL_OF_NUM_ADD; REAL_OF_NUM_LE; REAL_OF_NUM_LT] THEN
+        ASM_ARITH_TAC];
+      ALL_TAC] THEN
+    REWRITE_TAC[EXISTS_LIFT] THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r ==> s <=> p /\ q ==> r ==> s`] THEN
+      REWRITE_TAC[RIGHT_FORALL_IMP_THM; LAMBDA_SKOLEM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `B:real^M^N` (LABEL_TAC "*")) THEN
+    EXISTS_TAC `\x. (B:real^M^N) ** x` THEN
+    REWRITE_TAC[MATRIX_VECTOR_MUL_LINEAR] THEN
+    X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    REMOVE_THEN "*" (MP_TAC o REWRITE_RULE[tendsto]) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (MESON[]
+     `(!i. P i ==> !j. Q j ==> !e. R i j e)
+      ==> !e i. P i ==> !j. Q j ==> R i j e`)) THEN
+    DISCH_THEN(MP_TAC o SPEC `e / &2 / &(dimindex(:N)) / &(dimindex(:M))`) THEN
+    REWRITE_TAC[GSYM IN_NUMSEG] THEN
+    ASM_SIMP_TAC[CONV_RULE (RAND_CONV SYM_CONV) (SPEC_ALL EVENTUALLY_FORALL);
+                 FINITE_NUMSEG; NUMSEG_EMPTY; NOT_LT; DIMINDEX_GE_1;
+                 REAL_LT_DIV; LE_1; REAL_HALF; REAL_OF_NUM_LT] THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; LEFT_IMP_EXISTS_THM] THEN
+    MP_TAC(SPEC `e / &2` REAL_ARCH_INV) THEN
+    ASM_REWRITE_TAC[REAL_HALF; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `m:num` THEN STRIP_TAC THEN
+    X_GEN_TAC `n:num` THEN DISCH_THEN(MP_TAC o SPEC `n + m:num`) THEN
+    REWRITE_TAC[LE_ADD; RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+    REWRITE_TAC[IN_NUMSEG] THEN DISCH_TAC THEN
+    EXISTS_TAC `(d:num->real) (n + m)` THEN ASM_REWRITE_TAC[] THEN
+    X_GEN_TAC `y:real^M` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`n + m:num`; `y:real^M`]) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(NORM_ARITH
+     `norm(d' - d:real^N) <= e' - e
+        ==> norm(y - x - d') <= e ==> norm(y - x - d) <= e'`) THEN
+    REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_SUB_RDISTRIB] THEN
+    TRANS_TAC REAL_LE_TRANS
+    `onorm(\x. ((A:num->real^M^N) (n + m) - B) ** x) * norm(y - x:real^M)` THEN
+    SIMP_TAC[ONORM; MATRIX_VECTOR_MUL_LINEAR] THEN
+    REWRITE_TAC[GSYM REAL_SUB_RDISTRIB] THEN
+    MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+    MATCH_MP_TAC(REAL_ARITH `d <= e / &2 /\ x <= e / &2 ==> x <= e - d`) THEN
+    CONJ_TAC THENL
+     [TRANS_TAC REAL_LE_TRANS `inv(&m)` THEN ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+      MATCH_MP_TAC REAL_LE_INV2 THEN
+      REWRITE_TAC[REAL_OF_NUM_LE; REAL_OF_NUM_LT; REAL_OF_NUM_ADD] THEN
+      ASM_ARITH_TAC;
+      TRANS_TAC REAL_LE_TRANS
+       `&(dimindex(:N)) * &(dimindex(:M)) *
+        e / &2 / &(dimindex(:N)) / &(dimindex(:M))` THEN
+      CONJ_TAC THENL
+       [MATCH_MP_TAC ONORM_LE_MATRIX_COMPONENT THEN
+        RULE_ASSUM_TAC(REWRITE_RULE[DIST_LIFT]) THEN
+        ASM_SIMP_TAC[REAL_LT_IMP_LE; MATRIX_SUB_COMPONENT];
+        SIMP_TAC[REAL_DIV_LMUL; REAL_OF_NUM_EQ; DIMINDEX_NONZERO] THEN
+        ASM_REAL_ARITH_TAC]]) in
+  GEN_TAC THEN
+  SUBGOAL_THEN
+   `{x | (f:real^M->real^N) differentiable at x} =
+    {x | f continuous at x} INTER
+    INTERS
+        { UNIONS
+           { UNIONS
+              { {x | f continuous at x} INTER
+                INTERS {{x | f continuous at x /\
+                             (norm(y - x) < d
+                              ==> norm(f y - f x - A ** (y - x)) <=
+                                  e * norm(y - x))}
+                        |y| y IN UNIV}
+                |d| d IN {d | d IN rational /\ &0 < d}}
+             |A| A IN {A | !i j. 1 <= i /\ i <= dimindex(:N) /\
+                                 1 <= j /\ j <= dimindex(:M)
+                                 ==> rational (A$i$j)}}
+        |e| e IN {e | e IN rational /\ &0 < e}}`
+  SUBST1_TAC THENL
+   [MATCH_MP_TAC(SET_RULE
+     `(!x. P x ==> Q x) /\ (!x. Q x ==> (P x <=> x IN s))
+      ==> {x | P x} = {x | Q x} INTER s`) THEN
+    REWRITE_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_AT] THEN
+    X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN REWRITE_TAC[lemur] THEN
+    REWRITE_TAC[UNIONS_GSPEC; INTERS_GSPEC; IN_ELIM_THM; IN_INTER] THEN
+    REWRITE_TAC[SET_RULE `x IN rational <=> rational x`] THEN
+    EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP RATIONAL_BETWEEN) THEN
+    DISCH_THEN(X_CHOOSE_THEN `e':real` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `e':real`) THEN ASM_REWRITE_TAC[IN_UNIV] THEN
+    ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `A:real^M^N` THEN REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP RATIONAL_BETWEEN) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d':real` THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[] THEN X_GEN_TAC `y:real^M` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `y:real^M`) THEN
+    (ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC]) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+    MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[NORM_POS_LE] THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE];
+    ALL_TAC] THEN
+  MATCH_MP_TAC BOREL_INTER THEN
+  SIMP_TAC[GDELTA_IMP_BOREL; GDELTA_POINTS_OF_CONTINUITY] THEN
+  MATCH_MP_TAC BOREL_INTERS THEN CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
+    SIMP_TAC[COUNTABLE_RESTRICT; COUNTABLE_IMAGE; COUNTABLE_RATIONAL];
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN X_GEN_TAC `e:real` THEN STRIP_TAC] THEN
+  MATCH_MP_TAC BOREL_UNIONS THEN CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN MATCH_MP_TAC COUNTABLE_IMAGE THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r ==> s <=> p /\ q ==> r ==> s`] THEN
+    REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN MATCH_MP_TAC COUNTABLE_CART THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC COUNTABLE_CART THEN
+    REWRITE_TAC[COUNTABLE_RATIONAL; SET_RULE `{x | s x} = s`];
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    X_GEN_TAC `A:real^M^N` THEN STRIP_TAC] THEN
+  MATCH_MP_TAC BOREL_UNIONS THEN CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN
+    SIMP_TAC[COUNTABLE_RESTRICT; COUNTABLE_IMAGE; COUNTABLE_RATIONAL];
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN X_GEN_TAC `d:real` THEN STRIP_TAC] THEN
+  MATCH_MP_TAC CLOSED_IN_BOREL THEN
+  EXISTS_TAC `{x | (f:real^M->real^N) continuous at x}` THEN
+  SIMP_TAC[GDELTA_IMP_BOREL; GDELTA_POINTS_OF_CONTINUITY] THEN
+  MATCH_MP_TAC(MESON[SET_RULE `s INTER INTERS {} = s`; CLOSED_IN_REFL]
+   `(~(u = {}) ==> closed_in (subtopology euclidean s) (s INTER INTERS u))
+    ==> closed_in (subtopology euclidean s) (s INTER INTERS u)`) THEN
+  DISCH_TAC THEN MATCH_MP_TAC CLOSED_IN_INTER THEN
+  REWRITE_TAC[CLOSED_IN_REFL] THEN
+  MATCH_MP_TAC CLOSED_IN_INTERS THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; IN_UNIV] THEN X_GEN_TAC `y:real^M` THEN
+  REWRITE_TAC[SET_RULE
+  `{x | P x /\ (Q x ==> R x)} =
+   {x | x IN {x | P x} /\ ~Q x} UNION {x | x IN {x | P x} /\ R x}`] THEN
+  MATCH_MP_TAC CLOSED_IN_UNION THEN REWRITE_TAC[REAL_NOT_LT] THEN
+  CONJ_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_SUB_LE] THEN
+  ONCE_REWRITE_TAC[MESON[LIFT_DROP] `&0 <= d <=> &0 <= drop(lift d)`] THEN
+  ONCE_REWRITE_TAC[SET_RULE `&0 <= drop x <=> x IN {x | &0 <= drop x}`] THEN
+  MATCH_MP_TAC CONTINUOUS_CLOSED_IN_PREIMAGE THEN
+  REWRITE_TAC[REWRITE_RULE[real_ge] CLOSED_HALFSPACE_COMPONENT_GE; drop] THEN
+  REWRITE_TAC[LIFT_SUB] THEN MATCH_MP_TAC CONTINUOUS_ON_SUB THEN
+  CONJ_TAC THEN REWRITE_TAC[LIFT_CMUL] THEN
+  TRY(MATCH_MP_TAC CONTINUOUS_ON_CMUL) THEN
+  REWRITE_TAC[CONTINUOUS_ON_CONST; dist] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_LIFT_NORM_COMPOSE THEN
+  MATCH_MP_TAC CONTINUOUS_ON_SUB THEN
+  REWRITE_TAC[CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID] THEN
+  CONJ_TAC THEN REWRITE_TAC[MATRIX_VECTOR_MUL_SUB_LDISTRIB] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_SUB THEN REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
+  SIMP_TAC[MATRIX_VECTOR_MUL_LINEAR; LINEAR_CONTINUOUS_ON] THEN
+  MATCH_MP_TAC CONTINUOUS_AT_IMP_CONTINUOUS_ON THEN SET_TAC[]);;
 
 let LEBESGUE_MEASURABLE_POINTS_OF_DIFFERENTIABILITY_WITHIN = prove
  (`!f:real^M->real^N s.
@@ -18199,8 +18432,7 @@ let LEBESGUE_MEASURABLE_MEASURABLE_IMAGE,MEASURABLE_ON_INVERSE_FUNCTION =
 
 let EGOROV = prove
  (`!f:num->real^M->real^N g s t.
-        measurable s /\ negligible t /\
-        (!n. f n measurable_on s) /\ g measurable_on s /\
+        measurable s /\ negligible t /\ (!n. f n measurable_on s) /\
         (!x. x IN s DIFF t ==> ((\n. f n x) --> g x) sequentially)
         ==> !d. &0 < d
                 ==> ?k. k SUBSET s /\ measurable k /\ measure k < d /\
@@ -18208,6 +18440,8 @@ let EGOROV = prove
                             ==> ?N. !n x. N <= n /\ x IN s DIFF k
                                           ==> dist(f n x,g x) < e`,
   REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(g:real^M->real^N) measurable_on s` ASSUME_TAC THENL
+   [MATCH_MP_TAC MEASURABLE_ON_LIMIT THEN ASM_MESON_TAC[]; ALL_TAC] THEN
   ABBREV_TAC `e = \n m. UNIONS{{x | x IN s /\
                                     dist((f:num->real^M->real^N) k x,g x)
                                       >= inv(&m + &1)} | n <= k}` THEN
@@ -18289,7 +18523,6 @@ let EGOROV = prove
     MATCH_MP_TAC(REAL_ARITH
      `&0 <= x ==> (&1 - x) / (&1 / &2) * &1 / &4 <= &1 / &2`) THEN
     MATCH_MP_TAC REAL_POW_LE THEN CONV_TAC REAL_RAT_REDUCE_CONV;
-
     X_GEN_TAC `e:real` THEN DISCH_TAC THEN
     MP_TAC(SPEC `e:real` REAL_ARCH_INV) THEN
     ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN

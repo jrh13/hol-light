@@ -10876,6 +10876,12 @@ let CLOSED_COMPONENTS = prove
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; components; FORALL_IN_GSPEC] THEN
   SIMP_TAC[CLOSED_CONNECTED_COMPONENT]);;
 
+let COMPACT_CONNECTED_COMPONENT = prove
+ (`!s a:real^N. compact s ==> compact(connected_component s a)`,
+  REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CLOSED_IN_COMPACT) THEN
+  REWRITE_TAC[CLOSED_IN_CONNECTED_COMPONENT]);;
+
 let COMPACT_COMPONENTS = prove
  (`!s c:real^N->bool. compact s /\ c IN components s ==> compact c`,
   REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED] THEN
@@ -15368,6 +15374,17 @@ let CONTINUOUS_ON_INVERSE_CLOSED_MAP = prove
   FIRST_ASSUM(MP_TAC o CONJUNCT1 o GEN_REWRITE_RULE I [closed_in]) THEN
   REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN ASM SET_TAC[]);;
 
+let CONTINUOUS_INVERSE_INJECTIVE_PROPER_MAP = prove
+ (`!f:real^M->real^N g s t.
+        f continuous_on s /\ IMAGE f s = t /\
+        (!x. x IN s ==> g(f x) = x) /\
+        (!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k})
+        ==> g continuous_on t`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ASM_SIMP_TAC[PROPER_MAP; SUBSET_REFL] THEN STRIP_TAC THEN
+  MATCH_MP_TAC CONTINUOUS_ON_INVERSE_CLOSED_MAP THEN ASM_MESON_TAC[]);;
+
 let HOMEOMORPHISM_INJECTIVE_OPEN_MAP = prove
  (`!f:real^M->real^N s t.
         f continuous_on s /\ IMAGE f s = t /\
@@ -15492,6 +15509,35 @@ let HOMEOMORPHISM_CLOSED_IN_EQ = prove
   FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
     HOMEOMORPHISM_OF_SUBSETS)) THEN
   RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
+let HOMEOMORPHISM_CLOSURE = prove                                
+ (`!f:real^M->real^N g s t u.
+        homeomorphism (s,t) (f,g) /\ u SUBSET s
+        ==> t INTER closure (IMAGE f u) = IMAGE f (s INTER closure u)`,
+  let lemma = prove
+   (`!f:real^M->real^N g s t u.             
+        homeomorphism (s,t) (f,g)          
+        ==> u SUBSET s 
+           ==> t INTER closure (IMAGE f u) SUBSET IMAGE f (s INTER closure u)`,
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOSURE_MINIMAL_LOCAL THEN
+    CONJ_TAC THENL
+     [FIRST_ASSUM(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        HOMEOMORPHISM_CLOSED_IN_EQ)) THEN
+      DISCH_THEN(MP_TAC o SPECL             
+       [`s:real^M->bool`; `s INTER closure u:real^M->bool`]) THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN
+      ASM_SIMP_TAC[CLOSED_IN_CLOSED_INTER; CLOSED_CLOSURE; SUBSET_REFL] THEN
+      REWRITE_TAC[INTER_SUBSET];      
+      MP_TAC(ISPEC `u:real^M->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]]) in
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[lemma]; ALL_TAC] THEN     
+  FIRST_ASSUM(MP_TAC o SPEC `IMAGE (f:real^M->real^N) u` o MATCH_MP
+   (ONCE_REWRITE_RULE[HOMEOMORPHISM_SYM] lemma)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN                     
+  DISCH_THEN(MP_TAC o ISPEC `f:real^M->real^N` o MATCH_MP IMAGE_SUBSET) THEN
+  MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  REPLICATE_TAC 3 AP_TERM_TAC THEN ASM SET_TAC[]);;
 
 let HOMEOMORPHISM_CONNECTED_COMPONENT = prove
  (`!f:real^M->real^N g s t x.
@@ -15830,6 +15876,33 @@ let HOMEOMORPHIC_ONE_POINT_COMPACTIFICATIONS = prove
   FIRST_ASSUM(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
     (REWRITE_RULE[CONJ_ASSOC] HOMEOMORPHISM_ONE_POINT_COMPACTIFICATIONS))) THEN
   ASM_MESON_TAC[]);;
+
+let BOUNDED_IMAGE_IN_COMPACTIFICATION = prove
+ (`!f:real^M->real^N g u s t c.
+        homeomorphism (u,s DIFF t) (f,g) /\
+        compact s /\ closed u /\ c SUBSET u
+        ==> (bounded c <=> closure(IMAGE f c) INTER t = {})`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM COMPACT_CLOSURE] THEN
+  SUBGOAL_THEN `closure(c:real^M->bool) SUBSET u` ASSUME_TAC THENL
+   [ASM_SIMP_TAC[CLOSURE_MINIMAL]; ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o SPEC `closure c:real^M->bool` o
+        MATCH_MP(REWRITE_RULE[IMP_CONJ] HOMEOMORPHISM_COMPACTNESS)) THEN
+  ASM_SIMP_TAC[CLOSURE_MINIMAL] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o MATCH_MP COMPACT_IMP_CLOSED) THEN
+    REWRITE_TAC[GSYM CLOSURE_EQ] THEN MATCH_MP_TAC(SET_RULE
+     `closure(IMAGE f c) SUBSET closure(IMAGE f (closure c)) /\
+      IMAGE f (closure c) SUBSET s DIFF t
+      ==> closure (IMAGE f (closure c)) = IMAGE f (closure c)
+          ==> closure (IMAGE f c) INTER t = {}`) THEN
+    SIMP_TAC[IMAGE_SUBSET; CLOSURE_SUBSET; SUBSET_CLOSURE] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN ASM SET_TAC[];
+    FIRST_ASSUM(MP_TAC o SPEC `c:real^M->bool` o
+        MATCH_MP(REWRITE_RULE[IMP_CONJ] HOMEOMORPHISM_CLOSURE)) THEN
+    ASM_SIMP_TAC[CLOSURE_MINIMAL; SET_RULE `c SUBSET u ==> u INTER c = c`] THEN
+    DISCH_THEN(SUBST1_TAC o SYM) THEN
+    ASM_SIMP_TAC[COMPACT_INTER_CLOSED; CLOSED_CLOSURE; SET_RULE
+    `k INTER t = {} ==> (s DIFF t) INTER k = s INTER k`]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Homeomorphisms between open intervals in real^1 and then in real^N.       *)
@@ -22954,20 +23027,11 @@ let HAUSDIST_ALT = prove
   ASM_SIMP_TAC[SETDIST_LE_DIST; IN_SING] THEN
   UNDISCH_TAC `dist(y:real^N,x) <= b` THEN CONV_TAC NORM_ARITH);;
 
-let CONTINUOUS_DIAMETER = prove
- (`!s:real^N->bool e.
-        bounded s /\ ~(s = {}) /\ &0 < e
-        ==> ?d. &0 < d /\
-                !t. bounded t /\ ~(t = {}) /\ hausdist(s,t) < d
-                    ==> abs(diameter s - diameter t) < e`,
-  REPEAT STRIP_TAC THEN EXISTS_TAC `e / &2` THEN
-  ASM_REWRITE_TAC[REAL_HALF] THEN REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `diameter(s:real^N->bool) - diameter(t:real^N->bool) =
-                diameter(closure s) - diameter(closure t)`
-  SUBST1_TAC THENL [ASM_MESON_TAC[DIAMETER_CLOSURE]; ALL_TAC] THEN
-  MATCH_MP_TAC REAL_LET_TRANS THEN
-  EXISTS_TAC `&2 * hausdist(s:real^N->bool,t)` THEN
-  CONJ_TAC THENL [ALL_TAC; ASM_REAL_ARITH_TAC] THEN
+let DIAMETERS_HAUSDIST_BOUND = prove
+ (`!s t:real^N->bool.
+        bounded s /\ ~(s = {}) /\ bounded t /\ ~(t = {})
+        ==> abs(diameter s - diameter t) <= &2 * hausdist(s,t)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM DIAMETER_CLOSURE] THEN
   MP_TAC(ISPECL [`vec 0:real^N`; `hausdist(s:real^N->bool,t)`]
     DIAMETER_CBALL) THEN
   ASM_SIMP_TAC[HAUSDIST_POS_LE; GSYM REAL_NOT_LE] THEN
@@ -22984,6 +23048,17 @@ let CONTINUOUS_DIAMETER = prove
   THENL [ALL_TAC; ONCE_REWRITE_TAC[HAUSDIST_SYM]] THEN
   MATCH_MP_TAC HAUSDIST_COMPACT_SUMS THEN
   ASM_SIMP_TAC[COMPACT_CLOSURE; BOUNDED_CLOSURE; CLOSURE_EQ_EMPTY]);;
+
+let CONTINUOUS_DIAMETER = prove
+ (`!s:real^N->bool e.
+        bounded s /\ ~(s = {}) /\ &0 < e
+        ==> ?d. &0 < d /\
+                !t. bounded t /\ ~(t = {}) /\ hausdist(s,t) < d
+                    ==> abs(diameter s - diameter t) < e`,
+  REPEAT STRIP_TAC THEN EXISTS_TAC `e / &2` THEN
+  ASM_REWRITE_TAC[REAL_HALF] THEN REPEAT STRIP_TAC THEN
+  TRANS_TAC REAL_LET_TRANS `&2 * hausdist(s:real^N->bool,t)` THEN
+  ASM_SIMP_TAC[DIAMETERS_HAUSDIST_BOUND] THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hausdorff metric inherits completeness, total boundedness, compactness.   *)

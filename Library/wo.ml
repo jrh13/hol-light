@@ -227,6 +227,10 @@ let WOSET_TOTAL_LT = prove
      !x y. fl(l) x /\ fl(l) y ==> (x = y) \/ (less l)(x,y) \/ (less l)(y,x)`,
   REWRITE_TAC[less] THEN MESON_TAC[WOSET_TOTAL]);;
 
+let ORDINAL_IMP_WOSET = prove
+ (`!l:A#A->bool. ordinal l ==> woset l`,
+  SIMP_TAC[ordinal]);;
+
 (* ======================================================================== *)
 (* (2) AXIOM OF CHOICE ==> CANTOR-ZERMELO WELLORDERING THEOREM              *)
 (* ======================================================================== *)
@@ -254,6 +258,11 @@ let INSEG_SUBSET = prove
 let INSEG_SUBSET_FL = prove
  (`!(l:A#A->bool) m. m inseg l ==> !x. fl(m) x ==> fl(l) x`,
   REWRITE_TAC[fl] THEN MESON_TAC[INSEG_SUBSET]);;
+
+let INSEG_FL_SUBSET = prove
+ (`!l m:A#A->bool. l inseg m ==> fl l SUBSET fl m`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP INSEG_SUBSET_FL) THEN
+  SET_TAC[]);;
 
 let INSEG_WOSET = prove
  (`!(l:A#A->bool) m. m inseg l /\ woset l ==> woset m`,
@@ -419,6 +428,11 @@ let ORDINAL_FL_SUBSET = prove
   MATCH_MP_TAC(MESON[INSEG_REFL] `x = y ==> x inseg y`) THEN
   MATCH_MP_TAC ORDINAL_FL_UNIQUE THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP INSEG_SUBSET_FL) THEN ASM SET_TAC[]);;
+
+let ORDINAL_FL_SUBSET_EQ = prove
+ (`!l m:A#A->bool.
+        ordinal l /\ ordinal m ==> (fl l SUBSET fl m <=> l inseg m)`,
+  MESON_TAC[ORDINAL_FL_SUBSET; INSEG_FL_SUBSET]);;
 
 (* ------------------------------------------------------------------------ *)
 (* Proof that any none-universe ordinal can be extended to its "successor". *)
@@ -689,6 +703,68 @@ let WOSET_INSEG_ORDINAL = prove
   MATCH_MP_TAC(MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] WF_SUBSET)
         WF_INSEG_WOSET) THEN
   SIMP_TAC[ordinal]);;
+
+let SUBWOSET_ISO_INSEG = prove
+ (`!l s. woset l /\ fl l = (:A)
+         ==> ?f. (!x y. x IN s /\ y IN s ==> (l(f x,f y) <=> l(x,y))) /\
+                 (!x y. y IN IMAGE f s /\ l(x,y) ==> x IN IMAGE f s)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o last o CONJUNCTS o GEN_REWRITE_RULE I [woset]) THEN
+  DISCH_THEN(MP_TAC o GEN `s:A->bool` o SPEC `\x:A. x IN s`) THEN
+  ASM_REWRITE_TAC[UNIV; MEMBER_NOT_EMPTY] THEN
+  GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `m:(A->bool)->A` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `?f:A->A. !x. f(x) = m (UNIV DIFF IMAGE f {u | u IN s /\ less l (u,x)})`
+  MP_TAC THENL
+   [FIRST_ASSUM(MP_TAC o CONJUNCT1 o REWRITE_RULE[WOSET_WF]) THEN
+    DISCH_THEN(MATCH_MP_TAC o MATCH_MP WF_REC) THEN
+    REWRITE_TAC[less] THEN REPEAT STRIP_TAC THEN
+    AP_TERM_TAC THEN ASM SET_TAC[];
+    MATCH_MP_TAC MONO_EXISTS] THEN
+  X_GEN_TAC `f:A->A` THEN DISCH_THEN(ASSUME_TAC o GSYM) THEN
+  SUBGOAL_THEN `!x. x IN s ==> (l:A#A->bool)(f x,x)` ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o CONJUNCT1 o REWRITE_RULE[WOSET_WF]) THEN
+    REWRITE_TAC[WF_IND] THEN DISCH_THEN MATCH_MP_TAC THEN
+    X_GEN_TAC `x:A` THEN REWRITE_TAC[IMP_IMP; GSYM CONJ_ASSOC] THEN
+    STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC
+     `(:A) DIFF IMAGE (f:A->A) {u | u IN s /\ less l (u,x)}`) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[];
+      REWRITE_TAC[IN_DIFF; IN_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
+      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MATCH_MP_TAC) THEN
+      REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[]];
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP MONO_FORALL o GEN `x:A` o SPEC
+     `(:A) DIFF IMAGE (f:A->A) {u | u IN s /\ less l (u,x)}`) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[];
+    FIRST_X_ASSUM(K ALL_TAC o CONV_RULE (BINDER_CONV SYM_CONV))] THEN
+  REWRITE_TAC[IN_UNIV; IN_IMAGE; IN_DIFF; IN_ELIM_THM; FORALL_AND_THM] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!x z:A. x IN s /\ less l (z,f x) ==> ?u. u IN s /\ less l (u,x) /\ f u = z`
+  ASSUME_TAC THENL
+   [REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!x z:A. x IN s /\ l(z,f x) ==> ?u. u IN s /\ l(u,x) /\ f u = z`
+  ASSUME_TAC THENL
+   [REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[];
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [SUBGOAL_THEN
+     `!x y:A. x IN s /\ y IN s /\ less l (x,y) ==> less l (f x,f y)`
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [`x:A`; `(f:A->A) y`])) THEN
+      REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[];
+      MATCH_MP_TAC(MESON[]
+       `(!x y. P x y /\ P y x ==> Q x y)
+        ==> (!x y. P x y) ==> (!x y. Q x y)`) THEN
+      REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[]];
+    REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[less; woset] THEN SET_TAC[]]);;
 
 (* ======================================================================== *)
 (* (3) CANTOR-ZERMELO WELL-ORDERING THEOREM ==> HAUSDORFF MAXIMAL PRINCIPLE *)
