@@ -2790,6 +2790,24 @@ let LINEAR_IMP_LIPSCHITZ = prove
         linear f ==> ?B. !x y. norm(f x - f y) <= B * norm(x - y)`,
   SIMP_TAC[GSYM LINEAR_SUB] THEN MESON_TAC[LINEAR_BOUNDED]);;
 
+let LIPSCHITZ_ON_COMPONENTWISE = prove
+ (`!f:real^M->real^N s.
+      (?B. !x y. x IN s /\ y IN s ==> norm(f x - f y) <= B * norm(x - y)) <=>
+      !i. 1 <= i /\ i <= dimindex(:N)
+          ==> ?B. !x y. x IN s /\ y IN s
+                        ==> abs(f x$i - f y$i) <= B * norm(x - y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM VECTOR_SUB_COMPONENT] THEN EQ_TAC THENL
+   [MESON_TAC[COMPONENT_LE_NORM; REAL_LE_TRANS]; ALL_TAC] THEN
+  GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `B:num->real` THEN REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP] THEN
+  DISCH_TAC THEN EXISTS_TAC `sum(1..dimindex(:N)) B` THEN
+  MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH lhand NORM_LE_L1 o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  REWRITE_TAC[GSYM SUM_RMUL] THEN MATCH_MP_TAC SUM_LE_NUMSEG THEN
+  ASM_SIMP_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Matrix notation. NB: an MxN matrix is of type real^N^M, not real^M^N.     *)
 (* We could define a special type if we're going to use them a lot.          *)
@@ -3231,7 +3249,7 @@ let TRANSP_TRANSP = prove
  (`!A:real^N^M. transp(transp A) = A`,
   SIMP_TAC[CART_EQ; transp; LAMBDA_BETA]);;
 
-let SYMMETRIX_MATRIX_CONJUGATE = prove
+let SYMMETRIC_MATRIX_SIMILAR = prove
  (`!A B:real^N^N. transp B = B
                   ==> transp(transp A ** B ** A) = transp A ** B ** A`,
   SIMP_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP; MATRIX_MUL_ASSOC]);;
@@ -8710,7 +8728,7 @@ let MATRIX_INV_COVARIANCE_LMUL = prove
   REWRITE_TAC[SYMMETRIC_MATRIX_INV_LMUL; GSYM MATRIX_MUL_ASSOC] THEN
   REWRITE_TAC[MATRIX_INV_MUL_OUTER]);;
 
-let RANK_CONJUGATE = prove
+let RANK_SIMILAR = prove
  (`!A:real^N^N U:real^M^N.
         invertible U ==> rank(matrix_inv U ** A ** U) = rank A`,
   SIMP_TAC[RANK_INVERTIBLE_RMUL; RANK_INVERTIBLE_LMUL;

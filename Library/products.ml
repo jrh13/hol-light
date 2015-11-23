@@ -456,6 +456,15 @@ let PRODUCT_DELTA = prove
   REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
   SIMP_TAC[ITERATE_DELTA; MONOIDAL_REAL_MUL]);;
 
+let POLYNOMIAL_FUNCTION_PRODUCT = prove
+ (`!s:A->bool p.
+        FINITE s /\ (!i. i IN s ==> polynomial_function(\x. p x i))
+        ==> polynomial_function (\x. product s (p x))`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[PRODUCT_CLAUSES; POLYNOMIAL_FUNCTION_CONST] THEN
+  SIMP_TAC[FORALL_IN_INSERT; POLYNOMIAL_FUNCTION_MUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Extend congruences.                                                       *)
 (* ------------------------------------------------------------------------- *)

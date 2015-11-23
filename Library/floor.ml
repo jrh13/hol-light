@@ -256,6 +256,11 @@ let RATIONAL_INV_EQ = prove
  (`!x. rational(inv x) <=> rational x`,
   MESON_TAC[REAL_INV_INV; RATIONAL_INV]);;
 
+let RATIONAL_SUM = prove
+ (`!s x. (!i. i IN s ==> rational(x i)) ==> rational(sum s x)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_CLOSED THEN
+  ASM_SIMP_TAC[RATIONAL_CLOSED]);;
+
 let RATIONAL_ALT = prove
  (`!x. rational(x) <=> ?p q. ~(q = 0) /\ abs x = &p / &q`,
   GEN_TAC THEN REWRITE_TAC[rational] THEN EQ_TAC THENL

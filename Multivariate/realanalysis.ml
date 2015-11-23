@@ -2596,6 +2596,15 @@ let REAL_CONTINUOUS_SUM = prove
   SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; SUM_CLAUSES;
            REAL_CONTINUOUS_CONST; REAL_CONTINUOUS_ADD; ETA_AX]);;
 
+let REAL_CONTINUOUS_PRODUCT = prove
+ (`!net f s.
+     FINITE s /\ (!a. a IN s ==> f a real_continuous net)
+     ==> (\x. product s (\a. f a x)) real_continuous net`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; PRODUCT_CLAUSES;
+           REAL_CONTINUOUS_CONST; REAL_CONTINUOUS_MUL; ETA_AX]);;
+
 let REAL_CONTINUOUS_ON_SUM = prove
  (`!t f s.
          FINITE s /\ (!a. a IN s ==> f a real_continuous_on t)
@@ -2603,6 +2612,15 @@ let REAL_CONTINUOUS_ON_SUM = prove
   REPEAT GEN_TAC THEN SIMP_TAC[REAL_CONTINUOUS_ON; o_DEF; LIFT_SUM] THEN
   DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_ON_VSUM) THEN
   REWRITE_TAC[]);;
+
+let REAL_CONTINUOUS_ON_PRODUCT = prove
+ (`!t f s.
+         FINITE s /\ (!a. a IN s ==> f a real_continuous_on t)
+         ==> (\x. product s (\a. f a x)) real_continuous_on t`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; PRODUCT_CLAUSES;
+           REAL_CONTINUOUS_ON_CONST; REAL_CONTINUOUS_ON_MUL; ETA_AX]);;
 
 let REALLIM_CONTINUOUS_FUNCTION = prove
  (`!f net g l.
@@ -14541,21 +14559,21 @@ let MEASURABLE_ON_COMPLEX_DIV = prove
   REWRITE_TAC[FUN_EQ_THM; complex_div; COMPLEX_VEC_0] THEN
   GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[COMPLEX_MUL_LZERO]);;
 
-let MEASURABLE_ON_CPRODUCT = prove                                              
+let MEASURABLE_ON_CPRODUCT = prove
  (`!f:A->real^N->complex s t.
          FINITE t /\ (t = {} ==> lebesgue_measurable s) /\
-         (!i. i IN t ==> f i measurable_on s)                              
-         ==> (\x. cproduct t (\i. f i x)) measurable_on s`,   
+         (!i. i IN t ==> f i measurable_on s)
+         ==> (\x. cproduct t (\i. f i x)) measurable_on s`,
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN                    
-  SIMP_TAC[CPRODUCT_CLAUSES; MEASURABLE_ON_CONST_EQ] THEN                   
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[CPRODUCT_CLAUSES; MEASURABLE_ON_CONST_EQ] THEN
   REWRITE_TAC[FORALL_IN_INSERT; NOT_INSERT_EMPTY] THEN
   MAP_EVERY X_GEN_TAC [`a:A`; `k:A->bool`] THEN
-  REWRITE_TAC[IMP_IMP] THEN STRIP_TAC THEN            
-  ASM_CASES_TAC `k:A->bool = {}` THEN                   
-  ASM_SIMP_TAC[CPRODUCT_CLAUSES; COMPLEX_MUL_RID; ETA_AX] THEN                 
+  REWRITE_TAC[IMP_IMP] THEN STRIP_TAC THEN
+  ASM_CASES_TAC `k:A->bool = {}` THEN
+  ASM_SIMP_TAC[CPRODUCT_CLAUSES; COMPLEX_MUL_RID; ETA_AX] THEN
   MATCH_MP_TAC MEASURABLE_ON_COMPLEX_MUL THEN ASM_REWRITE_TAC[ETA_AX] THEN
-  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;                    
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Measurable real->real functions.                                          *)

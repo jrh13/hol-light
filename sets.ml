@@ -785,6 +785,16 @@ let UNIONS_UNIV = prove
   REWRITE_TAC[EXTENSION; IN_UNIONS; IN_UNIV] THEN
   MESON_TAC[IN_SING]);;
 
+let UNIONS_INSERT_EMPTY = prove
+ (`!s. UNIONS({} INSERT s) = UNIONS s`,
+  ONCE_REWRITE_TAC[EXTENSION] THEN
+  REWRITE_TAC[IN_UNIONS; IN_INSERT] THEN MESON_TAC[NOT_IN_EMPTY]);;
+
+let UNIONS_DELETE_EMPTY = prove
+ (`!s. UNIONS(s DELETE {}) = UNIONS s`,
+  ONCE_REWRITE_TAC[EXTENSION] THEN
+  REWRITE_TAC[IN_UNIONS; IN_DELETE] THEN MESON_TAC[NOT_IN_EMPTY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Multiple intersection.                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -1037,6 +1047,69 @@ let UNIONS_OVER_INTERS = prove
   GEN_TAC THEN ONCE_REWRITE_TAC[TAUT `(p <=> q) <=> (~p <=> ~q)`] THEN
   REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; NOT_EXISTS_THM] THEN
   REWRITE_TAC[AND_FORALL_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
+
+let IMAGE_INTERS_SUBSET = prove
+ (`!f s. IMAGE f (INTERS g) SUBSET INTERS (IMAGE (IMAGE f) g)`,
+  REWRITE_TAC[INTERS_IMAGE] THEN SET_TAC[]);;
+
+let IMAGE_INTER_SUBSET = prove
+ (`!f s t. IMAGE f (s INTER t) SUBSET IMAGE f s INTER IMAGE f t`,
+  SET_TAC[]);;
+
+let IMAGE_INTER_SATURATED_GEN = prove
+ (`!f:A->B s t u.
+        {x | x IN u /\ f(x) IN IMAGE f s} SUBSET s /\ t SUBSET u \/
+        {x | x IN u /\ f(x) IN IMAGE f t} SUBSET t /\ s SUBSET u
+        ==> IMAGE f (s INTER t) = IMAGE f s INTER IMAGE f t`,
+  SET_TAC[]);;
+
+let IMAGE_INTERS_SATURATED_GEN = prove
+ (`!f:A->B g s u.
+        ~(g = {}) /\
+        (!t. t IN g ==> t SUBSET u) /\
+        (!t. t IN g DELETE s ==> {x | x IN u /\ f(x) IN IMAGE f t} SUBSET t)
+        ==> IMAGE f (INTERS g) = INTERS (IMAGE (IMAGE f) g)`,
+  let lemma = prove
+   (`~(g = {}) /\
+     (!t. t IN g ==> t SUBSET u /\ {x | x IN u /\ f(x) IN IMAGE f t} SUBSET t)
+     ==> IMAGE f (INTERS g) = INTERS (IMAGE (IMAGE f) g)`,
+    ONCE_REWRITE_TAC[EXTENSION] THEN
+    REWRITE_TAC[INTERS_IMAGE; IN_INTERS; IN_IMAGE] THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+    ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+    REWRITE_TAC[IMP_CONJ; FORALL_UNWIND_THM2] THEN SET_TAC[]) in
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `(s:A->bool) IN g` THEN
+  ASM_SIMP_TAC[SET_RULE `~(s IN g) ==> g DELETE s = g`] THENL
+   [ALL_TAC; MESON_TAC[lemma]] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP (SET_RULE
+   `x IN s ==> s = x INSERT (s DELETE x)`)) THEN
+  REWRITE_TAC[FORALL_IN_INSERT; NOT_INSERT_EMPTY] THEN
+  STRIP_TAC THEN ASM_CASES_TAC `g DELETE (s:A->bool) = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES; INTERS_0; INTERS_1] THEN
+  REWRITE_TAC[IMAGE_CLAUSES; INTERS_INSERT] THEN
+  MATCH_MP_TAC(SET_RULE
+   `IMAGE f (s INTER t) = IMAGE f s INTER IMAGE f t /\
+    IMAGE f t = u ==> IMAGE f (s INTER t) = IMAGE f s INTER u`) THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC IMAGE_INTER_SATURATED_GEN THEN
+    EXISTS_TAC `u:A->bool` THEN ASM SET_TAC[];
+    MATCH_MP_TAC lemma THEN ASM SET_TAC[]]);;
+
+let IMAGE_INTER_SATURATED = prove
+ (`!f:A->B s t.
+        {x | f(x) IN IMAGE f s} SUBSET s \/ {x | f(x) IN IMAGE f t} SUBSET t
+         ==> IMAGE f (s INTER t) = IMAGE f s INTER IMAGE f t`,
+  SET_TAC[]);;
+
+let IMAGE_INTERS_SATURATED = prove
+ (`!f:A->B g s.
+        ~(g = {}) /\ (!t. t IN g DELETE s ==> {x | f(x) IN IMAGE f t} SUBSET t)
+        ==> IMAGE f (INTERS g) = INTERS (IMAGE (IMAGE f) g)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC IMAGE_INTERS_SATURATED_GEN THEN
+  MAP_EVERY EXISTS_TAC [`s:A->bool`; `(:A)`] THEN
+  ASM_REWRITE_TAC[IN_UNIV; SUBSET_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Stronger form of induction is sometimes handy.                            *)
@@ -2865,6 +2938,20 @@ let INTER_UNIONS_PAIRWISE_DISJOINT = prove
   FIRST_X_ASSUM(MP_TAC o SPECL [`u:A->bool`; `v:A->bool`]) THEN
   ASM_CASES_TAC `u:A->bool = v` THEN ASM_REWRITE_TAC[] THENL
    [ASM_MESON_TAC[]; ASM SET_TAC[]]);;
+
+let PSUBSET_UNIONS_PAIRWISE_DISJOINT = prove
+ (`!u v:(A->bool)->bool.
+        pairwise DISJOINT v /\ u PSUBSET (v DELETE {})
+        ==> UNIONS u PSUBSET UNIONS v`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(SET_RULE `u SUBSET v /\ ~(v DIFF u = {}) ==> u PSUBSET v`) THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand)
+      DIFF_UNIONS_PAIRWISE_DISJOINT o lhand o rand o snd) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[EMPTY_UNIONS] THEN
+  FIRST_ASSUM(MP_TAC o CONJUNCT2 o GEN_REWRITE_RULE I [PSUBSET_ALT]) THEN
+  REWRITE_TAC[IN_DELETE; IN_DIFF] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some additional properties of "set_of_list".                              *)

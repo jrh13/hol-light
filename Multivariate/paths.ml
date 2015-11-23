@@ -17510,6 +17510,10 @@ let CONTRACTIBLE_SING = prove
  (`!a:real^N. contractible {a}`,
   SIMP_TAC[CONVEX_IMP_CONTRACTIBLE; CONVEX_SING]);;
 
+let SIMPLY_CONNECTED_SING = prove
+ (`!a:real^N. simply_connected {a}`,
+  SIMP_TAC[CONTRACTIBLE_SING; CONTRACTIBLE_IMP_SIMPLY_CONNECTED]);;
+
 let IS_INTERVAL_CONTRACTIBLE_1 = prove
  (`!s:real^1->bool. is_interval s <=> contractible s`,
   MESON_TAC[CONTRACTIBLE_IMP_PATH_CONNECTED; IS_INTERVAL_PATH_CONNECTED_1;

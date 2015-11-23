@@ -21910,6 +21910,51 @@ let CONVERGENCE_IN_MEASURE = prove
     REWRITE_TAC[GSYM REAL_POW_INV] THEN MATCH_MP_TAC REAL_POW_MONO_INV THEN
     CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_ARITH_TAC]);;
 
+let CONVERGENCE_IN_MEASURE_UNIQUE = prove
+ (`!f:num->real^M->real^N g h s.
+        (!n. f n measurable_on s) /\
+        (!e. &0 < e
+             ==> eventually
+                  (\n. ?t. {x | x IN s /\ dist(f n x,g x) >= e} SUBSET t /\
+                           measurable t /\ measure t < e)
+                  sequentially) /\
+        (!e. &0 < e
+             ==> eventually
+                  (\n. ?t. {x | x IN s /\ dist(f n x,h x) >= e} SUBSET t /\
+                           measurable t /\ measure t < e)
+                  sequentially)
+        ==> negligible {x | x IN s /\ ~(g x = h x)}`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (LABEL_TAC "g") (LABEL_TAC "h")) THEN
+  MP_TAC(ISPECL [`f:num->real^M->real^N`; `g:real^M->real^N`;
+                 `s:real^M->bool`] CONVERGENCE_IN_MEASURE) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`r:num->num`; `t:real^M->bool`] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`(f:num->real^M->real^N) o (r:num->num)`; `h:real^M->real^N`;
+                 `s:real^M->bool`] CONVERGENCE_IN_MEASURE) THEN
+  ASM_REWRITE_TAC[o_THM] THEN ANTS_TAC THENL
+   [X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    REMOVE_THEN "h" (MP_TAC o SPEC `e:real`) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o SPEC `r:num->num` o MATCH_MP
+     (ONCE_REWRITE_RULE[IMP_CONJ_ALT] EVENTUALLY_SUBSEQUENCE)) THEN
+    ASM_REWRITE_TAC[o_DEF];
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM; o_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`r':num->num`; `t':real^M->bool`] THEN
+  STRIP_TAC THEN MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `t UNION t':real^M->bool` THEN
+  ASM_REWRITE_TAC[NEGLIGIBLE_UNION_EQ; SET_RULE
+   `{x | x IN s /\ ~P x} SUBSET t <=> !x. x IN s DIFF t ==> P x`] THEN
+  X_GEN_TAC `x:real^M` THEN
+  REWRITE_TAC[SET_RULE
+   `x IN s DIFF (t UNION t') <=> x IN s DIFF t /\ x IN s DIFF t'`] THEN
+  STRIP_TAC THEN
+  MATCH_MP_TAC(ISPEC `sequentially` LIM_UNIQUE) THEN EXISTS_TAC
+   `((\n. (f:num->real^M->real^N) n x) o (r:num->num)) o (r':num->num)` THEN
+  REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+  CONJ_TAC THENL [MATCH_MP_TAC LIM_SUBSEQUENCE; ALL_TAC] THEN
+  ASM_SIMP_TAC[o_DEF]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Fubini-type results for measure.                                          *)
 (* ------------------------------------------------------------------------- *)

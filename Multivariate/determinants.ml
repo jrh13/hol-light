@@ -52,7 +52,7 @@ let TRACE_TRANSP = prove
  (`!A:real^N^N. trace(transp A) = trace A`,
   SIMP_TAC[trace; transp; LAMBDA_BETA]);;
 
-let TRACE_CONJUGATE = prove
+let TRACE_SIMILAR = prove
  (`!A:real^N^N U:real^N^N.
         invertible U ==> trace(matrix_inv U ** A ** U) = trace A`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[TRACE_MUL_SYM] THEN
@@ -716,6 +716,11 @@ let MATRIX_INV_MUL = prove
   GEN_REWRITE_TAC (BINOP_CONV o LAND_CONV o LAND_CONV)
    [GSYM MATRIX_MUL_ASSOC] THEN
   ASM_SIMP_TAC[MATRIX_MUL_LINV; DET_EQ_0; MATRIX_MUL_RID; MATRIX_MUL_RINV]);;
+
+let DET_SIMILAR = prove
+ (`!S:real^N^N A. invertible S ==> det(matrix_inv S ** A ** S) = det A`,
+  REWRITE_TAC[INVERTIBLE_DET_NZ; DET_MUL; DET_MATRIX_INV] THEN
+  CONV_TAC REAL_FIELD);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cramer's rule.                                                            *)

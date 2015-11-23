@@ -1,3 +1,62 @@
+Fri 20th Nov 2015       Library/products.ml
+
+Added POLYNOMIAL_FUNCTION_PRODUCT =
+  |- !s p.
+         FINITE s /\ (!i. i IN s ==> polynomial_function (\x. p x i))
+         ==> polynomial_function (\x. product s (p x))
+
+Fri 20th Nov 2015       Library/floor.ml
+
+Added the following natural analog of INTEGER_SUM:
+
+  RATIONAL_SUM = |- !s x. (!i. i IN s ==> rational(x i)) ==> rational(sum s x)
+
+Fri 20th Nov 2015       sets.ml
+
+Added a few miscellaneous set theorems, especially about images of
+saturated intersections.
+
+  IMAGE_INTERS_SATURATED =
+    |- !f g s.
+           ~(g = {}) /\
+           (!t. t IN g DELETE s ==> {x | f x IN IMAGE f t} SUBSET t)
+           ==> IMAGE f (INTERS g) = INTERS (IMAGE (IMAGE f) g)
+
+  IMAGE_INTERS_SATURATED_GEN =
+    |- !f g s u.
+           ~(g = {}) /\
+           (!t. t IN g ==> t SUBSET u) /\
+           (!t. t IN g DELETE s ==> {x | x IN u /\ f x IN IMAGE f t} SUBSET t)
+           ==> IMAGE f (INTERS g) = INTERS (IMAGE (IMAGE f) g)
+
+  IMAGE_INTERS_SUBSET =
+    |- !f s. IMAGE f (INTERS g) SUBSET INTERS (IMAGE (IMAGE f) g)
+
+  IMAGE_INTER_SATURATED =
+    |- !f s t.
+           {x | f x IN IMAGE f s} SUBSET s \/ {x | f x IN IMAGE f t} SUBSET t
+           ==> IMAGE f (s INTER t) = IMAGE f s INTER IMAGE f t
+
+  IMAGE_INTER_SATURATED_GEN =
+    |- !f s t u.
+           {x | x IN u /\ f x IN IMAGE f s} SUBSET s /\ t SUBSET u \/
+           {x | x IN u /\ f x IN IMAGE f t} SUBSET t /\ s SUBSET u
+           ==> IMAGE f (s INTER t) = IMAGE f s INTER IMAGE f t
+
+  IMAGE_INTER_SUBSET =
+    |- !f s t. IMAGE f (s INTER t) SUBSET IMAGE f s INTER IMAGE f t
+
+  PSUBSET_UNIONS_PAIRWISE_DISJOINT =
+    |- !u v.
+           pairwise DISJOINT v /\ u PSUBSET v DELETE {}
+           ==> UNIONS u PSUBSET UNIONS v
+
+  UNIONS_DELETE_EMPTY =
+    |- !s. UNIONS (s DELETE {}) = UNIONS s
+
+  UNIONS_INSERT_EMPTY =
+    |- !s. UNIONS ({} INSERT s) = UNIONS s
+
 Sun 15th Nov 2015       Library/wo.ml, Library/card.ml
 
 Added a few basic ordinal and cardinal lemmas, such as that every set is the
@@ -5,20 +64,20 @@ same size as an ordinal (on the same type) and that strict cardinal
 comparability is, on a given type, wellfounded.
 
   CARD_EQ_ORDINAL_EXISTS = |- !s. ?l. ordinal l /\ fl l =_c s
-  
+
   INSEG_FL_SUBSET = |- !l m. l inseg m ==> fl l SUBSET fl m
-  
+
   ORDINAL_FL_SUBSET_EQ =
     |- !l m. ordinal l /\ ordinal m ==> (fl l SUBSET fl m <=> l inseg m)
-  
+
   ORDINAL_IMP_WOSET = |- !l. ordinal l ==> woset l
-  
+
   SUBWOSET_ISO_INSEG =
     |- !l s.
            woset l /\ fl l = (:A)
            ==> ?f. (!x y. x IN s /\ y IN s ==> (l (f x,f y) <=> l (x,y))) /\
                    (!x y. y IN IMAGE f s /\ l (x,y) ==> x IN IMAGE f s)
-  
+
   WF_CARD_LT =  |- WF (<_c)
 
 Fri  6th Nov 2015       Makefile, pa_j_3.1x_6.11.ml, README

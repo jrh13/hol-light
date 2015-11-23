@@ -7432,6 +7432,31 @@ let COHOMOTOPICALLY_TRIVIAL_1D = prove
 (* A few simple lemmas about deformation retracts.                           *)
 (* ------------------------------------------------------------------------- *)
 
+let DEFORMATION_RETRACTION_COMPOSE = prove
+ (`!s t u r1 r2:real^N->real^N.
+        homotopic_with (\x. T) (s,s) (\x. x) r1 /\ retraction (s,t) r1 /\
+        homotopic_with (\x. T) (t,t) (\x. x) r2 /\ retraction (t,u) r2
+        ==> homotopic_with (\x. T) (s,s) (\x. x) (r2 o r1) /\
+            retraction (s,u) (r2 o r1)`,
+  REPEAT STRIP_TAC THENL [ALL_TAC; ASM_MESON_TAC[RETRACTION_o]] THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
+  EXISTS_TAC `(\x. x) o (r1:real^N->real^N)` THEN CONJ_TAC THENL
+   [ASM_REWRITE_TAC[o_DEF; ETA_AX]; ALL_TAC] THEN
+  MATCH_MP_TAC HOMOTOPIC_COMPOSE_CONTINUOUS_RIGHT THEN
+  EXISTS_TAC `t:real^N->bool` THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        HOMOTOPIC_WITH_RESTRICT));
+    ALL_TAC] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[retraction]) THEN
+  ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
+
+let DEFORMATION_RETRACT_TRANS = prove
+ (`!s t u:real^N->bool.
+        (?r. homotopic_with (\x. T) (s,s) (\x. x) r /\ retraction (s,t) r) /\
+        (?r. homotopic_with (\x. T) (t,t) (\x. x) r /\ retraction (t,u) r)
+        ==> ?r. homotopic_with (\x. T) (s,s) (\x. x) r /\ retraction (s,u) r`,
+  MESON_TAC[DEFORMATION_RETRACTION_COMPOSE]);;
+
 let DEFORMATION_RETRACT_IMP_HOMOTOPY_EQUIVALENT = prove
  (`!s t:real^N->bool.
         (?r. homotopic_with (\x. T) (s,s) (\x. x) r /\ retraction(s,t) r)
