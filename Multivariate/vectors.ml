@@ -3796,6 +3796,27 @@ let ONORM_COMPOSE_ADJOINT_RIGHT = prove
   MP_TAC(ISPEC `adjoint f:real^N->real^N` ONORM_COMPOSE_ADJOINT_LEFT) THEN
   ASM_SIMP_TAC[ADJOINT_LINEAR; ADJOINT_ADJOINT; ONORM_ADJOINT]);;
 
+let ONORM_TRANSP = prove
+ (`!A:real^N^N. onorm(\x. transp A ** x) = onorm(\x. A ** x)`,
+  REWRITE_TAC[GSYM ADJOINT_MATRIX] THEN
+  SIMP_TAC[ONORM_ADJOINT; MATRIX_VECTOR_MUL_LINEAR]);;
+
+let ONORM_COVARIANCE = prove
+ (`!A:real^N^N.
+        onorm(\x. (transp A ** A) ** x) = onorm(\x. A ** x) pow 2`,
+  GEN_TAC THEN
+  MP_TAC(ISPEC `\x:real^N. (A:real^N^N) ** x` ONORM_COMPOSE_ADJOINT_LEFT) THEN
+  REWRITE_TAC[ADJOINT_MATRIX; MATRIX_VECTOR_MUL_LINEAR; o_DEF] THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_ASSOC]);;
+
+let ONORM_COVARIANCE_ALT = prove
+ (`!A:real^N^N.
+        onorm(\x. (A ** transp A) ** x) = onorm(\x. A ** x) pow 2`,
+  GEN_TAC THEN
+  MP_TAC(ISPEC `\x:real^N. (A:real^N^N) ** x` ONORM_COMPOSE_ADJOINT_RIGHT) THEN
+  REWRITE_TAC[ADJOINT_MATRIX; MATRIX_VECTOR_MUL_LINEAR; o_DEF] THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_ASSOC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* It's handy to "lift" from R to R^1 and "drop" from R^1 to R.              *)
 (* ------------------------------------------------------------------------- *)
