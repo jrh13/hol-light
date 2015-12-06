@@ -4,6 +4,7 @@
 (* Copyright (c) 2014 Marco Maggesi                                          *)
 (* ========================================================================= *)
 
+needs "Multivariate/derivatives.ml";;
 needs "Multivariate/complexes.ml";;
 
 prioritize_real ();;

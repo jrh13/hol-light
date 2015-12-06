@@ -8,6 +8,7 @@
 
 needs "Library/floor.ml";;
 needs "Library/iter.ml";;
+needs "Multivariate/integration.ml";;
 needs "Multivariate/complexes.ml";;
 
 prioritize_complex();;

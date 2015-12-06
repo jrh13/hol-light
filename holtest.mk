@@ -73,11 +73,12 @@ EXTENDED_EXAMPLES:=\
 	RichterHilbertAxiomGeometry/HilbertAxiom_read \
 	Rqe/make \
 	Unity/make \
-	Multivariate/geom \
-	Multivariate/tarski \
 	Multivariate/cross \
+	Multivariate/cvectors \
 	Multivariate/flyspeck \
 	Multivariate/gamma \
+	Multivariate/geom \
+	Multivariate/tarski \
 	RichterHilbertAxiomGeometry/Topology \
 	RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read \
 	Functionspaces/make \

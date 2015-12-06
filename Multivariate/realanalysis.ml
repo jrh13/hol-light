@@ -5,8 +5,8 @@
 (* ========================================================================= *)
 
 needs "Library/binomial.ml";;
-needs "Multivariate/measure.ml";;
 needs "Multivariate/polytope.ml";;
+needs "Multivariate/measure.ml";;
 needs "Multivariate/transcendentals.ml";;
 
 (* ------------------------------------------------------------------------- *)

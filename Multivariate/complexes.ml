@@ -5,7 +5,7 @@
 (*              (c) Copyright, Valentina Bruno 2010                          *)
 (* ========================================================================= *)
 
-needs "Multivariate/integration.ml";;
+needs "Multivariate/convex.ml";;
 
 new_type_abbrev("complex",`:real^2`);;
 
