@@ -2040,6 +2040,11 @@ let LINEPATH_REFL = prove
  (`!a. linepath(a,a) = \x. a`,
   REWRITE_TAC[linepath; VECTOR_ARITH `(&1 - u) % x + u % x:real^N = x`]);;
 
+let PATH_IMAGE_CONST = prove
+ (`!a:real^N. path_image (\x. a) = {a}`,
+  REWRITE_TAC[GSYM LINEPATH_REFL; PATH_IMAGE_LINEPATH] THEN
+  REWRITE_TAC[SEGMENT_REFL]);;
+
 let SHIFTPATH_TRIVIAL = prove
  (`!t a. shiftpath t (linepath(a,a)) = linepath(a,a)`,
   REWRITE_TAC[shiftpath; LINEPATH_REFL; COND_ID]);;
@@ -7833,6 +7838,15 @@ let LOCALLY_CONNECTED_COMPACT_UNION = prove
   EXISTS_TAC `c UNION d:(real^N->bool)->bool` THEN
   ASM_REWRITE_TAC[UNIONS_UNION; FINITE_UNION] THEN ASM SET_TAC[]);;
 
+let LOCALLY_CONNECTED_COMPACT_UNIONS = prove
+ (`!f:(real^N->bool)->bool.
+        FINITE f /\ (!s. s IN f ==> compact s /\ locally connected s)
+        ==> locally connected (UNIONS f)`,
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; UNIONS_0; UNIONS_INSERT] THEN
+  REWRITE_TAC[LOCALLY_EMPTY] THEN
+  ASM_SIMP_TAC[LOCALLY_CONNECTED_COMPACT_UNION; COMPACT_UNIONS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Sufficient conditions for "semi-local connectedness"                      *)
 (* ------------------------------------------------------------------------- *)
@@ -9725,6 +9739,130 @@ let ARBITRARILY_SMALL_CONTINUUM = prove
    [MATCH_MP_TAC CLOSED_SUBSET THEN ASM_SIMP_TAC[COMPACT_IMP_CLOSED];
     ALL_TAC] THEN
   ASM SET_TAC[]);;
+
+let BOUNDARY_BUMPING_THEOREM_INTER = prove
+ (`!s u c:real^N->bool.
+        connected s /\ locally compact s /\
+        open u /\ ~(s SUBSET u) /\ compact(s INTER closure u) /\
+        c IN components(s INTER closure u)
+        ==> ~(c INTER frontier u = {})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`s INTER closure u:real^N->bool`; `c:real^N->bool`;
+    `s INTER frontier u:real^N->bool`]
+        COMPACT_PARTITION_CONTAINING_CLOSED) THEN
+  ASM_REWRITE_TAC[NOT_IMP] THEN REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[CLOSED_COMPONENTS; COMPACT_IMP_CLOSED];
+    SUBGOAL_THEN
+     `s INTER frontier u:real^N->bool = (s INTER closure u) INTER frontier u`
+     (fun th -> ASM_SIMP_TAC[th; CLOSED_INTER; FRONTIER_CLOSED;
+                             COMPACT_IMP_CLOSED]) THEN
+    REWRITE_TAC[frontier] THEN SET_TAC[];
+    ASM_SIMP_TAC[IN_COMPONENTS_SUBSET];
+    REWRITE_TAC[frontier] THEN SET_TAC[];
+    MP_TAC(ISPEC `s INTER closure u:real^N->bool`
+        PAIRWISE_DISJOINT_COMPONENTS) THEN
+    REWRITE_TAC[pairwise] THEN
+    DISCH_THEN(MP_TAC o SPEC `c:real^N->bool`) THEN
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `d:real^N->bool` THEN
+    DISCH_THEN(fun th -> DISCH_TAC THEN MP_TAC th) THEN ASM SET_TAC[];
+    REWRITE_TAC[NOT_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`k:real^N->bool`; `l:real^N->bool`] THEN
+    STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_CLOSED_IN]) THEN
+    REWRITE_TAC[] THEN MAP_EVERY EXISTS_TAC
+     [`k:real^N->bool`; `l UNION (s DIFF closure u):real^N->bool`] THEN
+    ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC CLOSED_SUBSET THEN
+      ASM_SIMP_TAC[COMPACT_IMP_CLOSED] THEN ASM SET_TAC[];
+      SUBGOAL_THEN
+       `l UNION s DIFF closure u:real^N->bool =
+        s INTER (l UNION closure(s DIFF closure u))`
+       (fun th -> ASM_SIMP_TAC[th; CLOSED_IN_CLOSED_INTER; CLOSED_UNION;
+                              COMPACT_IMP_CLOSED; CLOSED_CLOSURE]) THEN
+       MP_TAC(ISPECL [`u:real^N->bool`; `s DIFF closure u:real^N->bool`]
+            OPEN_INTER_CLOSURE_EQ_EMPTY) THEN
+       ASM_REWRITE_TAC[] THEN
+       MP_TAC(ISPEC `u:real^N->bool` CLOSURE_UNION_FRONTIER) THEN MP_TAC
+        (ISPEC `s DIFF closure u:real^N->bool` CLOSURE_UNION_FRONTIER) THEN
+       ASM SET_TAC[];
+      ASM SET_TAC[];
+      ASM SET_TAC[];
+      FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY) THEN
+      ASM SET_TAC[];
+      SUBGOAL_THEN `frontier u:real^N->bool = closure u DIFF u`
+      SUBST_ALL_TAC THENL
+       [ASM_SIMP_TAC[frontier; INTERIOR_OPEN]; ALL_TAC] THEN ASM SET_TAC[]]]);;
+
+let BOUNDARY_BUMPING_THEOREM_INTER_ALT = prove
+ (`!s u c:real^N->bool.
+        connected s /\ locally compact s /\
+        open u /\ ~(s INTER u = {}) /\ ~(s SUBSET u) /\
+        compact(s INTER closure u) /\
+        c IN components(s INTER u)
+        ==> ?x. x IN frontier u /\ x limit_point_of c`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `~(closure c INTER frontier u:real^N->bool = {})` MP_TAC THENL
+   [DISCH_TAC;
+    REWRITE_TAC[closure] THEN MATCH_MP_TAC(SET_RULE
+     `s INTER u = {}
+      ==> ~((s UNION {x | P x}) INTER u = {}) ==> ?x. x IN u /\ P x`) THEN
+    ASM_SIMP_TAC[frontier; INTERIOR_OPEN] THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN SET_TAC[]] THEN
+  SUBGOAL_THEN `closed(c:real^N->bool)` ASSUME_TAC THENL
+   [MATCH_MP_TAC CLOSED_IN_CLOSED_TRANS THEN
+    EXISTS_TAC `s INTER closure u:real^N->bool` THEN
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_COMPONENT) THEN
+    REWRITE_TAC[CLOSED_IN_LIMPT] THEN MATCH_MP_TAC MONO_AND THEN CONJ_TAC THENL
+     [REWRITE_TAC[closure] THEN SET_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE (LAND_CONV o LAND_CONV)
+      [closure]) THEN
+    ASM_SIMP_TAC[frontier; INTERIOR_OPEN] THEN SET_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`c:real^N->bool`; `(:real^N) DIFF u`]
+        SEPARATION_NORMAL) THEN
+  ASM_REWRITE_TAC[GSYM OPEN_CLOSED; NOT_IMP] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN SET_TAC[];
+    REWRITE_TAC[NOT_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`h:real^N->bool`; `k:real^N->bool`] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN `closure(h:real^N->bool) SUBSET u` ASSUME_TAC THENL
+   [TRANS_TAC SUBSET_TRANS `(:real^N) DIFF k` THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC CLOSURE_MINIMAL THEN ASM_REWRITE_TAC[GSYM OPEN_CLOSED] THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`s INTER closure h:real^N->bool`; `c:real^N->bool`]
+        EXISTS_COMPONENT_SUPERSET) THEN
+  REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC] THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY) THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN
+    REWRITE_TAC[closure] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `c':real^N->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `h:real^N->bool`; `c':real^N->bool`]
+        BOUNDARY_BUMPING_THEOREM_INTER) THEN
+  ASM_REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN CONJ_TAC THENL
+   [SUBGOAL_THEN
+     `s INTER closure(h:real^N->bool) = (s INTER closure u) INTER closure h`
+     (fun th -> ASM_SIMP_TAC[COMPACT_INTER_CLOSED; th; CLOSED_CLOSURE]) THEN
+    MP_TAC(ISPEC `u:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `c':real^N->bool = c` SUBST_ALL_TAC THENL
+   [ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+    MATCH_MP_TAC COMPONENTS_MAXIMAL THEN
+    EXISTS_TAC `s INTER u:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED]; ALL_TAC] THEN
+    CONJ_TAC THENL
+     [TRANS_TAC SUBSET_TRANS `s INTER closure h:real^N->bool` THEN
+      ASM_SIMP_TAC[IN_COMPONENTS_SUBSET] THEN ASM SET_TAC[];
+      REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY)) THEN
+      ASM SET_TAC[]];
+    ASM_SIMP_TAC[frontier; INTERIOR_OPEN] THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relations between components and path components.                         *)
@@ -13365,6 +13503,15 @@ let OUTSIDE_INSIDE = prove
    [INSIDE_INTER_OUTSIDE; INSIDE_UNION_OUTSIDE] THEN
   SET_TAC[]);;
 
+let INSIDE_SELF_OUTSIDE_EVERSION = prove
+ (`!s t:real^N->bool.
+        s UNION inside s SUBSET inside t <=>
+        t UNION outside t SUBSET outside s`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV[SET_RULE `s SUBSET t <=>
+    UNIV DIFF t SUBSET UNIV DIFF s`] THEN
+  REWRITE_TAC[GSYM INSIDE_OUTSIDE] THEN
+  REWRITE_TAC[OUTSIDE_INSIDE] THEN ASM SET_TAC[]);;
+
 let UNION_WITH_INSIDE = prove
  (`!s. s UNION inside s = (:real^N) DIFF outside s`,
   REWRITE_TAC[OUTSIDE_INSIDE] THEN SET_TAC[]);;
@@ -14084,6 +14231,22 @@ let INSIDE_INSIDE_COMPACT_CONNECTED = prove
      [ASM_MESON_TAC[NOT_BOUNDED_UNIV; BOUNDED_BALL]; ALL_TAC] THEN
     CONJ_TAC THEN MATCH_MP_TAC OUTSIDE_SUBSET_CONVEX THEN
     REWRITE_TAC[CONVEX_BALL] THEN ASM SET_TAC[]]);;
+
+let INSIDE_SELF_OUTSIDE_COMPACT_CONNECTED = prove
+ (`!s t:real^N->bool.
+        closed s /\ compact t /\ s SUBSET inside t /\ connected t
+        ==> t UNION outside t SUBSET outside s`,
+  REWRITE_TAC[GSYM INSIDE_SELF_OUTSIDE_EVERSION] THEN
+  SIMP_TAC[UNION_SUBSET] THEN
+  REWRITE_TAC[INSIDE_INSIDE_COMPACT_CONNECTED]);;
+
+let INSIDE_OUTSIDE_COMPACT_CONNECTED = prove
+ (`!s t:real^N->bool.
+        closed s /\ compact t /\ s SUBSET inside t /\ connected t
+        ==> t SUBSET outside s`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC SUBSET_TRANS `t UNION outside t:real^N->bool` THEN
+  ASM_SIMP_TAC[INSIDE_SELF_OUTSIDE_COMPACT_CONNECTED] THEN SET_TAC[]);;
 
 let CONNECTED_WITH_INSIDE = prove
  (`!s:real^N->bool. closed s /\ connected s ==> connected(s UNION inside s)`,

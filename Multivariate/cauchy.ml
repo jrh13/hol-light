@@ -20003,6 +20003,19 @@ let SIMPLY_CONNECTED_INSIDE_SIMPLE_PATH = prove
   ASM_SIMP_TAC[JORDAN_INSIDE_OUTSIDE; INSIDE_ARC_EMPTY; ARC_SIMPLE_PATH] THEN
   REWRITE_TAC[CONNECTED_EMPTY]);;
 
+let HOMEOMORPHIC_INSIDE_SIMPLE_PATH_BALL = prove
+ (`!p:real^1->real^2 a:real^2 r.
+        simple_path p /\ pathfinish p = pathstart p /\ &0 < r
+        ==> inside(path_image p) homeomorphic ball(a,r)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `inside(path_image p):real^2->bool`
+        SIMPLY_CONNECTED_EQ_HOMEOMORPHIC_TO_DISC) THEN
+  MP_TAC(ISPEC `p:real^1->real^2` JORDAN_INSIDE_OUTSIDE) THEN
+  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[SIMPLY_CONNECTED_INSIDE_SIMPLE_PATH] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] HOMEOMORPHIC_TRANS) THEN
+  ASM_SIMP_TAC[HOMEOMORPHIC_BALLS; REAL_LT_01]);;
+
 let SIMPLY_CONNECTED_INTER = prove
  (`!s t:real^2->bool.
         open s /\ open t /\ simply_connected s /\ simply_connected t /\

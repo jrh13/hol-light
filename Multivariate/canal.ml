@@ -2250,6 +2250,23 @@ let COMPLEX_DERIVATIVE_JACOBIAN = prove
   REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; IM; RE; complex_mul] THEN
   REAL_ARITH_TAC);;
 
+let JACOBIAN_COMPLEX_DERIVATIVE = prove
+ (`!f f' z.
+        (f has_complex_derivative f') (at z)
+        ==> det(jacobian f (at z)) = norm(f') pow 2`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(fst(EQ_IMP_RULE(ISPECL [`f:complex->complex`; `z:complex`]
+        CAUCHY_RIEMANN))) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[complex_differentiable]; STRIP_TAC] THEN
+  ASM_REWRITE_TAC[DET_2; GSYM DOT_2; GSYM NORM_POW_2; REAL_ARITH
+   `y * y - --x * x:real = x * x + y * y`] THEN
+  REWRITE_TAC[jacobian] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[has_complex_derivative]) THEN
+  FIRST_ASSUM(SUBST1_TAC o MATCH_MP HAS_FRECHET_DERIVATIVE_UNIQUE_AT) THEN
+  SIMP_TAC[NORM_POW_2; DOT_2; matrix; LAMBDA_BETA; DIMINDEX_2; ARITH; complex;
+           complex_mul; VECTOR_2; IM_DEF; RE_DEF; BASIS_COMPONENT] THEN
+  REAL_ARITH_TAC);;
+
 let COMPLEX_DIFFERENTIABLE_EQ_CONFORMAL = prove
  (`!f z.
       f complex_differentiable at z /\ ~(complex_derivative f z = Cx(&0)) <=>

@@ -3351,6 +3351,16 @@ let MATRIX_VECTOR_LMUL = prove
            VECTOR_MUL_COMPONENT] THEN
   REWRITE_TAC[GSYM REAL_MUL_ASSOC; SUM_LMUL]);;
 
+let MATRIX_VECTOR_MUL_LNEG = prove
+ (`!A:real^M^N x:real^M. --A ** x = --(A ** x)`,
+  REWRITE_TAC[MATRIX_NEG_MINUS1; MATRIX_VECTOR_LMUL] THEN
+  CONV_TAC VECTOR_ARITH);;
+
+let MATRIX_VECTOR_MUL_RNEG = prove
+ (`!A:real^M^N x:real^M. A ** --x = --(A ** x)`,
+  REWRITE_TAC[VECTOR_NEG_MINUS1; MATRIX_VECTOR_MUL_RMUL] THEN
+  CONV_TAC VECTOR_ARITH);;
+
 let COLUMN_MATRIX_MUL = prove
  (`!A:real^N^M B:real^P^N.
       1 <= i /\ i <= dimindex(:P) ==> column i (A ** B) = A ** column i B`,
@@ -8639,6 +8649,14 @@ let MATRIX_INV = prove
   ASM_REWRITE_TAC[MATRIX_MUL_ASSOC; MATRIX_MUL_LID] THEN
   ASM_REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_MUL_RID] THEN
   SIMP_TAC[MATRIX_MUL_LID]);;
+
+let MATRIX_INV_LEFT = prove
+ (`!A:real^N^N. matrix_inv A ** A = mat 1 <=> invertible A`,
+  MESON_TAC[INVERTIBLE_LEFT_INVERSE; MATRIX_INV]);;
+
+let MATRIX_INV_RIGHT = prove
+ (`!A:real^N^N. A ** matrix_inv A = mat 1 <=> invertible A`,
+  MESON_TAC[INVERTIBLE_RIGHT_INVERSE; MATRIX_INV]);;
 
 let MATRIX_MUL_LCANCEL = prove
  (`!A:real^M^N B:real^P^M C.
