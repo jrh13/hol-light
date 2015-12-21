@@ -205,6 +205,23 @@ let HAS_DERIVATIVE_COMPONENTWISE_AT = prove
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   MATCH_ACCEPT_TAC HAS_DERIVATIVE_COMPONENTWISE_WITHIN);;
 
+let HAS_DERIVATIVE_PASTECART_EQ = prove
+ (`!net f:real^M->real^N g:real^M->real^P f' g'.
+        ((\x. pastecart (f x) (g x)) has_derivative
+        (\x. pastecart (f' x) (g' x))) net <=>
+        (f has_derivative f') net /\ (g has_derivative g') net`,
+   REWRITE_TAC[has_derivative; PASTECART_SUB; PASTECART_ADD] THEN
+  REWRITE_TAC[GSYM PASTECART_CMUL; GSYM PASTECART_VEC] THEN
+  REWRITE_TAC[LIM_PASTECART_EQ; LINEAR_PASTECART_EQ] THEN
+  REWRITE_TAC[CONJ_ACI]);;
+
+let HAS_DERIVATIVE_PASTECART = prove
+ (`!net f:real^M->real^N g:real^M->real^P f' g'.
+        (f has_derivative f') net /\ (g has_derivative g') net
+        ==> ((\x. pastecart (f x) (g x)) has_derivative
+             (\x. pastecart (f' x) (g' x))) net`,
+  REWRITE_TAC[HAS_DERIVATIVE_PASTECART_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Somewhat different results for derivative of scalar multiplier.           *)
 (* ------------------------------------------------------------------------- *)

@@ -824,6 +824,10 @@ let INTERS_SUBSET = prove
     ~(u = {}) /\ (!t. t IN u ==> t SUBSET s) ==> INTERS u SUBSET s`,
   SET_TAC[]);;
 
+let INTERS_SUBSET_STRONG = prove
+ (`!u s:A->bool. (?t. t IN u /\ t SUBSET s) ==> INTERS u SUBSET s`,
+  SET_TAC[]);;                                                                 
+
 (* ------------------------------------------------------------------------- *)
 (* Image.                                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -1049,7 +1053,7 @@ let UNIONS_OVER_INTERS = prove
   REWRITE_TAC[AND_FORALL_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]);;
 
 let IMAGE_INTERS_SUBSET = prove
- (`!f s. IMAGE f (INTERS g) SUBSET INTERS (IMAGE (IMAGE f) g)`,
+ (`!(f:A->B) g. IMAGE f (INTERS g) SUBSET INTERS (IMAGE (IMAGE f) g)`,
   REWRITE_TAC[INTERS_IMAGE] THEN SET_TAC[]);;
 
 let IMAGE_INTER_SUBSET = prove

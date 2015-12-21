@@ -17,11 +17,7 @@ Breaks apart an implication into antecedent and consequent.
 \FAILURE
 Fails with {dest_imp} if term is not an implication.
 
-\COMMENTS
-Previous version of {dest_imp} treats negations as an implication
-with {F} as the conclusion. This is renamed to {dest_neg_imp}.
-
 \SEEALSO
-mk_imp, is_imp, strip_imp, dest_neg_imp.
+is_imp, mk_imp, strip_imp.
 
 \ENDDOC

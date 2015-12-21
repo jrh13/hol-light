@@ -3,9 +3,9 @@
 \TYPE {tysubst : (hol_type * hol_type) list -> hol_type -> hol_type}
 
 \DESCRIBE
-The call {tysubst [ty1',ty1; ... ; tyn',tyn] ty} will systematically traverse 
-the type {ty} and replace the topmost instances of any {tyi} encountered with 
-the corresponding {tyi'}. In the (usual) case where all the {tyi} are type 
+The call {tysubst [ty1',ty1; ... ; tyn',tyn] ty} will systematically traverse
+the type {ty} and replace the topmost instances of any {tyi} encountered with
+the corresponding {tyi'}. In the (usual) case where all the {tyi} are type
 variables, this is the same as {type_subst}, but also works when they are not.
 
 \FAILURE
@@ -14,13 +14,13 @@ used to determine the substitution.
 
 \EXAMPLE
 {
-  # tysubst [`:num`,`:A`; `:bool`,`:B`] `:A->(B)list->A#B#C`;;            
+  # tysubst [`:num`,`:A`; `:bool`,`:B`] `:A->(B)list->A#B#C`;;
   val it : hol_type = `:num->(bool)list->num#bool#C`
   # tysubst [`:A`,`:(num)list`] `:num->(num)list->(num)list`;;
   val it : hol_type = `:num->A->A`
 }
 
 \SEEALSO
-inst, tysubst.
+inst, type_subst.
 
 \ENDDOC

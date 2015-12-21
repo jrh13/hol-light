@@ -2,10 +2,10 @@
 
 \TYPE {ran : ('a, 'b) func -> 'b list}
 
-This is one of a suite of operations on finite partial functions, type 
+This is one of a suite of operations on finite partial functions, type
 {('a,'b)func}. These may sometimes be preferable to ordinary functions since
 they permit more operations such as equality comparison, extraction of domain
-etc. The {ran} operation returns the domain of such a function, i.e. the set of
+etc. The {ran} operation returns the range of such a function, i.e. the set of
 result values for the points on which it is defined.
 
 \FAILURE
@@ -14,14 +14,14 @@ admit comparisons.
 
 \EXAMPLE
 {
-  # ran (1 |=> "1");;       
+  # ran (1 |=> "1");;
   val it : string list = ["1"]
   # ran(itlist I [2|->4; 3|->6] undefined);;
   val it : int list = [4; 6]
 }
 
 \SEEALSO
-|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr,
 graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
 
 \ENDDOC

@@ -4325,6 +4325,12 @@ let LINEAR_PASTECART = prove
         linear f /\ linear g ==> linear (\x. pastecart (f x) (g x))`,
   SIMP_TAC[linear; PASTECART_ADD; GSYM PASTECART_CMUL]);;
 
+let LINEAR_PASTECART_EQ = prove
+ (`!f:real^M->real^N g:real^M->real^P.
+        linear (\x. pastecart (f x) (g x)) <=> linear f /\ linear g`,
+  REWRITE_TAC[linear; PASTECART_ADD; GSYM PASTECART_CMUL] THEN
+  REWRITE_TAC[PASTECART_INJ] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A bit of linear algebra.                                                  *)
 (* ------------------------------------------------------------------------- *)
@@ -6063,6 +6069,13 @@ let MATRIX_LEFT_INVERTIBLE_SPAN_ROWS = prove
  (`!A:real^N^M. (?B:real^M^N. B ** A = mat 1) <=> span(rows A) = (:real^N)`,
   MESON_TAC[RIGHT_INVERTIBLE_TRANSP; COLUMNS_TRANSP;
             MATRIX_RIGHT_INVERTIBLE_SPAN_COLUMNS]);;
+
+let MATRIX_LEFT_INVERTIBLE_NULLSPACE = prove
+ (`!A:real^M^N.
+      (?B:real^N^M. B ** A = mat 1) <=> (!x. A ** x = vec 0 ==> x = vec 0)`,
+  GEN_TAC THEN REWRITE_TAC[MATRIX_LEFT_INVERTIBLE_INJECTIVE] THEN
+  MATCH_MP_TAC LINEAR_INJECTIVE_0 THEN
+  SIMP_TAC[MATRIX_VECTOR_MUL_LINEAR]);;
 
 (* ------------------------------------------------------------------------- *)
 (* An injective map real^N->real^N is also surjective.                       *)

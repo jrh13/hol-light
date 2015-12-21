@@ -1,3 +1,45 @@
+Thu 17th Dec 2015       Help/*.doc
+
+Fixed several documentation errors pointed out by Marco Maggesi.
+
+Thu 17th Dec 2015       Library/card.ml
+
+Added a few more fairly basic cardinality lemmas:
+
+  COUNTABLE_CARD_ADD =
+    |- !s t. COUNTABLE s /\ COUNTABLE t ==> COUNTABLE (s +_c t)
+
+  COUNTABLE_CARD_ADD_EQ =
+    |- !s t. COUNTABLE (s +_c t) <=> COUNTABLE s /\ COUNTABLE t
+
+  CARD_LE_EXISTS = |-  !s t. s <=_c t <=> (?u. t =_c s +_c u)
+
+  CARD_LT_IMP_SUC_LE = |- !s t a. s <_c t ==> s +_c {a} <=_c t
+
+Thu 17th Dec 2015       real.ml, int.ml
+
+Added two theorems characterizing sign equality as an inequality for R and Z:
+
+  REAL_SGN_EQ_INEQ =
+    |- !x y. real_sgn x = real_sgn y <=>
+             x = y \/ abs (x - y) < max (abs x) (abs y)
+
+
+  INT_SGN_EQ_INEQ =
+    |- !x y. int_sgn x = int_sgn y <=>
+             x = y \/ abs (x - y) < max (abs x) (abs y)
+
+Thu 17th Dec 2015       sets.ml
+
+Added a new and stronger form of INTERS_SUBSET
+
+ INTERS_SUBSET_STRONG =
+   |- !u s. (?t. t IN u /\ t SUBSET s) ==> INTERS u SUBSET s
+
+and fixed a quantifier fumble in IMAGE_INTERS_SUBSET (now quantifies over all
+the free variables and not the spurious "s"). Both these improvements were
+pointed out by Joe Hurd.
+
 Thu  3rd Dec 2015       Multivariate/cvectors.ml [new file], holtest, holtest.mk
 
 Added a new contribution from Sanaz Khan Afshar and Vincent Aravantinos (with

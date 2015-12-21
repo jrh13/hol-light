@@ -30,6 +30,6 @@ Never fails, and never loops infinitely.
   val it : thm = |- (!n. n = 0 + n) /\ (!m n. SUC (m + n) = SUC m + n)
 }
 \SEEALSO
-NOT_EQ_SYM, REFL, SYM.
+REFL, SYM.
 
 \ENDDOC

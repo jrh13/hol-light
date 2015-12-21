@@ -3724,6 +3724,17 @@ let AR_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [AR_LINEAR_IMAGE_EQ];;
 
+let HOMEOMORPHISM_ARNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (AR(IMAGE f k) <=> AR k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_ARNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 let ANR_IMP_ABSOLUTE_NEIGHBOURHOOD_EXTENSOR = prove
  (`!f:real^M->real^N u t s.
         ANR s /\ f continuous_on t /\ IMAGE f t SUBSET s /\
@@ -3970,6 +3981,17 @@ let ANR_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [ANR_LINEAR_IMAGE_EQ];;
 
+let HOMEOMORPHISM_ANRNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (ANR(IMAGE f k) <=> ANR k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_ANRNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Analogous properties of ENRs.                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -4064,6 +4086,17 @@ let ENR_LINEAR_IMAGE_EQ = prove
   ASM_MESON_TAC[HOMEOMORPHIC_INJECTIVE_LINEAR_IMAGE_SELF]);;
 
 add_linear_invariants [ENR_LINEAR_IMAGE_EQ];;
+
+let HOMEOMORPHISM_ENRNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (ENR(IMAGE f k) <=> ENR k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_ENRNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some relations among the concepts. We also relate AR to being a retract   *)

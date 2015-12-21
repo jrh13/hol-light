@@ -45,7 +45,7 @@ An easier interface is {distinctness "tree"}; this function is mainly intended
 to generate that theorem internally.
 
 \SEEALSO
-define_type, distinctness, INDUCT_THEN, new_recursive_definition,
+define_type, distinctness, INDUCT_TAC, new_recursive_definition,
 prove_cases_thm, prove_constructors_one_one, prove_induction_thm,
 prove_rec_fn_exists.
 

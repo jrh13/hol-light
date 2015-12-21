@@ -1474,6 +1474,11 @@ let REAL_INV_SGN = prove
   REPEAT COND_CASES_TAC THEN
   REWRITE_TAC[REAL_INV_0; REAL_INV_1; REAL_INV_NEG]);;
 
+let REAL_SGN_EQ_INEQ = prove
+ (`!x y. real_sgn x = real_sgn y <=>
+         x = y \/ abs(x - y) < max (abs x) (abs y)`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Useful "without loss of generality" lemmas.                               *)
 (* ------------------------------------------------------------------------- *)
