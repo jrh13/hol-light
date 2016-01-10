@@ -5481,6 +5481,17 @@ let BORSUKIAN_INJECTIVE_LINEAR_IMAGE = prove
 
 add_linear_invariants [BORSUKIAN_INJECTIVE_LINEAR_IMAGE];;
 
+let HOMEOMORPHISM_BORSUKIANNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (borsukian(IMAGE f k) <=> borsukian k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_BORSUKIAN_EQ THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 let HOMOTOPY_EQUIVALENT_BORSUKIANNESS = prove
  (`!s:real^M->bool t:real^N->bool.
         s homotopy_equivalent t
@@ -6035,6 +6046,17 @@ let UNICOHERENT_INJECTIVE_LINEAR_IMAGE = prove
                 HOMEOMORPHIC_REFL]);;
 
 add_linear_invariants [UNICOHERENT_INJECTIVE_LINEAR_IMAGE];;
+
+let HOMEOMORPHISM_UNICOHERENCE = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (unicoherent(IMAGE f k) <=> unicoherent k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_UNICOHERENT_EQ THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
 
 let BORSUKIAN_IMP_UNICOHERENT = prove
  (`!u:real^N->bool. borsukian u ==> unicoherent u`,

@@ -606,6 +606,11 @@ let HORNER_SUM_CONV =
 (* Some general lemmas about subsequences.                                   *)
 (* ------------------------------------------------------------------------- *)
 
+let SUBSEQUENCE_IMP_INJECTIVE = prove
+ (`!r:num->num. (!m n. m < n ==> r m < r n) ==> (!m n. r m = r n <=> m = n)`,
+  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC WLOG_LT THEN
+  ASM_MESON_TAC[LT_REFL]);;
+
 let MONOTONE_BIGGER = prove
  (`!r. (!m n. m < n ==> r(m) < r(n)) ==> !n:num. n <= r(n)`,
   GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN

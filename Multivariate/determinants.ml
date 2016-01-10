@@ -695,6 +695,10 @@ let RANK_EQ_FULL_DET = prove
   GEN_TAC THEN MP_TAC(ISPEC `A:real^N^N` RANK_BOUND) THEN
   SIMP_TAC[DET_EQ_0_RANK; NOT_LT; GSYM LE_ANTISYM; ARITH_RULE `MIN n n = n`]);;
 
+let INVERTIBLE_COVARIANCE_RANK = prove
+ (`!A:real^N^M. invertible(transp A ** A) <=> rank A = dimindex(:N)`,
+  REWRITE_TAC[INVERTIBLE_DET_NZ; GSYM RANK_EQ_FULL_DET; RANK_GRAM]);;
+
 let HOMOGENEOUS_LINEAR_EQUATIONS_DET = prove
  (`!A:real^N^N. (?x. ~(x = vec 0) /\ A ** x = vec 0) <=> det A = &0`,
   GEN_TAC THEN
@@ -2312,6 +2316,22 @@ let TRACE_POSITIVE_DEFINITE = prove
   SIMP_TAC[trace; SUM_POS_LT_ALL; DIAGONAL_POSITIVE_DEFINITE;
            IN_NUMSEG; FINITE_NUMSEG; NUMSEG_EMPTY; NOT_LT; DIMINDEX_GE_1]);;
 
+let POSITIVE_DEFINITE_MAT = prove
+ (`!m. positive_definite(mat m:real^N^N) <=> 0 < m`,
+  SIMP_TAC[POSITIVE_DEFINITE_DIAGONAL_MATRIX_EQ; DIAGONAL_MATRIX_MAT] THEN
+  SIMP_TAC[mat; LAMBDA_BETA; REAL_OF_NUM_LT] THEN
+  MESON_TAC[LE_REFL; DIMINDEX_GE_1]);;
+
+let POSITIVE_DEFINITE_ID = prove
+ (`positive_definite(mat 1:real^N^N)`,
+  REWRITE_TAC[POSITIVE_DEFINITE_MAT; ARITH]);;
+
+let POSITIVE_SEMIDEFINITE_MAT = prove
+ (`!m. positive_semidefinite(mat m:real^N^N)`,
+  SIMP_TAC[POSITIVE_SEMIDEFINITE_DIAGONAL_MATRIX_EQ; DIAGONAL_MATRIX_MAT] THEN
+  SIMP_TAC[mat; LAMBDA_BETA; REAL_POS] THEN
+  MESON_TAC[LE_REFL; DIMINDEX_GE_1]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Hadamard's inequality.                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -2829,6 +2849,20 @@ let ORTHOGONAL_TRANSFORMATION_ADJOINT_EQ =
              orthogonal_transformation f)`,
   MESON_TAC[ORTHOGONAL_TRANSFORMATION_ADJOINT; ADJOINT_LINEAR;
             ADJOINT_ADJOINT]);;
+
+let ONORM_ORTHOGONAL_TRANSFORMATION = prove
+ (`!f:real^N->real^N. orthogonal_transformation f ==> onorm f = &1`,
+  SIMP_TAC[ORTHOGONAL_TRANSFORMATION; onorm] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUP_UNIQUE THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `c:real` THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+  DISCH_THEN(MP_TAC o SPEC `basis 1:real^N`) THEN
+  SIMP_TAC[NORM_BASIS; DIMINDEX_GE_1; LE_REFL]);;
+
+let ONORM_ORTHOGONAL_MATRIX = prove
+ (`!A:real^N^N. orthogonal_matrix A ==> onorm(\x. A ** x) = &1`,
+  REWRITE_TAC[ORTHOGONAL_MATRIX_TRANSFORMATION] THEN
+  REWRITE_TAC[ONORM_ORTHOGONAL_TRANSFORMATION]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Linearity of scaling, and hence isometry, that preserves origin.          *)

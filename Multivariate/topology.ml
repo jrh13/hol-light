@@ -12051,6 +12051,49 @@ let CONNECTED_PCROSS_EQ = prove
               FSTCART_PASTECART; SNDCART_PASTECART] THEN
   ASM SET_TAC[]);;
 
+let CONNECTED_COMPONENT_PCROSS = prove
+ (`!s t a:real^M b:real^N.
+        connected_component (s PCROSS t) (pastecart a b) =
+        connected_component s a PCROSS connected_component t b`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `(a:real^M) IN s /\ (b:real^N) IN t` THENL
+   [MATCH_MP_TAC CONNECTED_COMPONENT_UNIQUE THEN
+    REWRITE_TAC[PASTECART_IN_PCROSS; SUBSET_PCROSS; CONNECTED_PCROSS_EQ] THEN
+    REWRITE_TAC[CONNECTED_COMPONENT_SUBSET; CONNECTED_CONNECTED_COMPONENT] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [IN] THEN
+    ASM_REWRITE_TAC[CONNECTED_COMPONENT_REFL_EQ] THEN
+    X_GEN_TAC `c:real^(M,N)finite_sum->bool` THEN
+    REWRITE_TAC[SUBSET; FORALL_PASTECART; PASTECART_IN_PCROSS] THEN
+    STRIP_TAC THEN
+    MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^N`] THEN DISCH_TAC THEN
+    REWRITE_TAC[IN] THEN REWRITE_TAC[connected_component] THEN CONJ_TAC THENL
+     [EXISTS_TAC `IMAGE fstcart (c:real^(M,N)finite_sum->bool)`;
+      EXISTS_TAC `IMAGE sndcart (c:real^(M,N)finite_sum->bool)`] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+    REWRITE_TAC[FORALL_PASTECART; EXISTS_PASTECART; IN_IMAGE] THEN
+    REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART] THEN
+    (CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]]) THEN
+    MATCH_MP_TAC CONNECTED_CONTINUOUS_IMAGE THEN
+    ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART; LINEAR_SNDCART];
+    MATCH_MP_TAC(SET_RULE `s = {} /\ t = {} ==> s = t`) THEN
+    REWRITE_TAC[PCROSS_EQ_EMPTY; CONNECTED_COMPONENT_EQ_EMPTY] THEN
+    REWRITE_TAC[PASTECART_IN_PCROSS] THEN ASM_MESON_TAC[]]);;
+
+let COMPONENTS_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool.
+    components(s PCROSS t) =
+    {c PCROSS d | c IN components s /\ d IN components t}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[components] THEN
+  REWRITE_TAC[SIMPLE_IMAGE] THEN
+  GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o ABS_CONV o RAND_CONV)
+   [GSYM PASTECART_FST_SND] THEN
+  REWRITE_TAC[CONNECTED_COMPONENT_PCROSS] THEN
+  REWRITE_TAC[SET_RULE
+   `{f x y | x IN IMAGE g s /\ y IN IMAGE h t} =
+    {f (g x) (h y) | x IN s /\ y IN t}`] THEN
+  REWRITE_TAC[PCROSS; GSYM SIMPLE_IMAGE; SET_RULE
+   `{f z | z IN {g x y | P x y}} = {f(g x y) | P x y}`] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART]);;
+
 let CLOSURE_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.
         closure (s PCROSS t) = (closure s) PCROSS (closure t)`,
@@ -27590,6 +27633,17 @@ let BOREL_LINEAR_IMAGE = prove
   ASM_REWRITE_TAC[]);;
 
 add_linear_invariants [BOREL_LINEAR_IMAGE];;
+
+let HOMEOMORPHISM_BORELNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (borel(IMAGE f k) <=> borel k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_BORELNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
 
 let BOREL_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool. borel s /\ borel t ==> borel(s PCROSS t)`,
