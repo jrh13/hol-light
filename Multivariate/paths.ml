@@ -7394,6 +7394,36 @@ let LOCALLY_PATH_CONNECTED_PCROSS_EQ = prove
    [SUBSET; FORALL_IN_PCROSS; PASTECART_IN_PCROSS; FORALL_PASTECART]) THEN
   ASM SET_TAC[]);;
 
+let LOCALLY_CONNECTED_SUBREGION = prove
+ (`!s t c:real^N->bool.
+        locally connected s /\ t SUBSET s /\
+        connected c /\ open_in (subtopology euclidean t) c
+        ==> ?c'. connected c' /\ open_in (subtopology euclidean s) c' /\
+                 c = t INTER c'`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_OPEN]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC) THEN
+  ASM_CASES_TAC `s INTER u:real^N->bool = {}` THENL
+   [EXISTS_TAC `{}:real^N->bool` THEN
+    ASM_REWRITE_TAC[CONNECTED_EMPTY; OPEN_IN_EMPTY] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`s INTER u:real^N->bool`; `t INTER u:real^N->bool`]
+        EXISTS_COMPONENT_SUPERSET) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real^N->bool` THEN
+  REPEAT STRIP_TAC THENL
+   [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED];
+    MATCH_MP_TAC OPEN_IN_TRANS THEN EXISTS_TAC `s INTER u:real^N->bool` THEN
+    ASM_SIMP_TAC[OPEN_IN_OPEN_INTER] THEN
+    MATCH_MP_TAC OPEN_IN_COMPONENTS_LOCALLY_CONNECTED THEN
+    ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        LOCALLY_OPEN_SUBSET)) THEN
+    ASM_SIMP_TAC[OPEN_IN_OPEN_INTER];
+    ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_INTER; INTER_SUBSET] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN SET_TAC[]]);;
+
 let CARD_EQ_OPEN_IN = prove
  (`!u s:real^N->bool.
       locally connected u /\
@@ -8852,6 +8882,25 @@ let LOCALLY_CONNECTED_CONTINUUM = prove
       TRANS_TAC SUBSET_TRANS `c:real^N->bool` THEN
       ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CLOSURE_MINIMAL THEN
       ASM_SIMP_TAC[COMPACT_IMP_CLOSED] THEN ASM SET_TAC[]]]);;
+
+let COMPACT_LOCALLY_CONNECTED_EQ_FCCCOVERABLE_ALT = prove
+ (`!s:real^N->bool.
+        compact s /\ locally connected s <=>
+        !e. &0 < e
+            ==> ?c. FINITE c /\ UNIONS c = s /\
+                    !t. t IN c
+                        ==> connected t /\ compact t /\ locally connected t /\
+                            diameter t <= e`,
+  GEN_TAC THEN EQ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    REWRITE_TAC[MESON[COMPACT_IMP_BOUNDED]
+     `P c /\ compact c /\ Q c /\ R c <=>
+      (compact c /\ P c /\ Q c) /\ bounded c /\ R c`] THEN
+    MATCH_MP_TAC LOCALLY_FINE_COVERING_COMPACT THEN
+    ASM_REWRITE_TAC[LOCALLY_CONNECTED_CONTINUUM] THEN
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED; CLOSED_IMP_LOCALLY_COMPACT];
+    REWRITE_TAC[COMPACT_LOCALLY_CONNECTED_EQ_FCCCOVERABLE] THEN
+    MESON_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Sufficient conditions for "semi-local connectedness"                      *)
@@ -13574,6 +13623,24 @@ let INTERIOR_SIMPLE_PATH_IMAGE = prove
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC ARC_SIMPLE_PATH_SUBPATH_INTERIOR THEN
     ASM_REWRITE_TAC[IN_INTERVAL_1; LIFT_DROP; DROP_VEC; GSYM DROP_EQ] THEN
     CONV_TAC REAL_RAT_REDUCE_CONV]);;
+
+let ENDPOINTS_NOT_IN_INTERIOR_SIMPLE_PATH_IMAGE = prove
+ (`!g:real^1->real^N.
+     simple_path g
+     ==> DISJOINT {pathstart g,pathfinish g} (interior(path_image g))`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `2 <= dimindex(:N)` THENL
+   [ASM_SIMP_TAC[INTERIOR_SIMPLE_PATH_IMAGE] THEN SET_TAC[];
+    FIRST_ASSUM(MP_TAC o MATCH_MP (ARITH_RULE
+     `~(2 <= p) ==> 1 <= p ==> p = 1`))] THEN
+  REWRITE_TAC[DIMINDEX_GE_1] THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          COLLINEAR_SIMPLE_PATH_IMAGE)) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[COLLINEAR_AFF_DIM] THEN ASM_MESON_TAC[AFF_DIM_LE_UNIV];
+    DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[DISJOINT_INSERT; DISJOINT_EMPTY; INTERIOR_SEGMENT] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[ENDS_NOT_IN_SEGMENT; NOT_IN_EMPTY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Existence of unbounded components.                                        *)
@@ -19763,6 +19830,47 @@ let CONTRACTIBLE_PUNCTURED_SPHERE = prove
     ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
     MATCH_MP_TAC HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE THEN
     ASM_SIMP_TAC[BASIS_NONZERO; LE_REFL; DIMINDEX_GE_1]]);;
+
+let CONNECTED_PUNCTURED_SPHERE = prove
+ (`!a r b:real^N.
+     connected(sphere(a,r) DELETE b) <=>
+     (dimindex(:N) = 1 /\ &0 < r ==> b IN sphere(a,r))`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `r < &0` THEN
+  ASM_SIMP_TAC[SPHERE_EMPTY; EMPTY_DELETE; NOT_IN_EMPTY; CONNECTED_EMPTY] THENL
+   [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_CASES_TAC `r = &0` THEN ASM_SIMP_TAC[SPHERE_SING; REAL_LT_REFL] THENL
+   [SUBGOAL_THEN `{a:real^N} DELETE b = {a} \/ {a} DELETE b = {}` MP_TAC THENL
+     [SET_TAC[]; DISCH_THEN(DISJ_CASES_THEN SUBST1_TAC)] THEN
+    REWRITE_TAC[CONNECTED_EMPTY; CONNECTED_SING];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `&0 < r` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  ASM_CASES_TAC `dimindex(:N) = 1` THEN ASM_REWRITE_TAC[] THENL
+   [MP_TAC(ISPECL [`a:real^N`; `r:real`] HAS_SIZE_SPHERE_2) THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC(LAND_CONV HAS_SIZE_CONV) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:real^N`; `v:real^N`] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+    ASM_CASES_TAC `b:real^N = u` THENL
+     [SUBGOAL_THEN `{u:real^N,v} DELETE b = {v}` SUBST1_TAC THENL
+       [ASM SET_TAC[]; ASM_REWRITE_TAC[CONNECTED_SING]];
+      ALL_TAC] THEN
+    ASM_CASES_TAC `b:real^N = v` THENL
+     [SUBGOAL_THEN `{u:real^N,v} DELETE b = {u}` SUBST1_TAC THENL
+       [ASM SET_TAC[]; ASM_REWRITE_TAC[CONNECTED_SING]];
+      ALL_TAC] THEN
+    SUBGOAL_THEN `{u:real^N,v} DELETE b = {u,v}` SUBST1_TAC THENL
+     [ASM SET_TAC[]; ASM_REWRITE_TAC[CONNECTED_2] THEN ASM SET_TAC[]];
+    ASM_CASES_TAC `b IN sphere(a:real^N,r)` THENL
+     [MP_TAC(ISPECL [`a:real^N`; `r:real`; `b:real^N`; `basis 1:real^N`; `&0`]
+       HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE) THEN
+      ASM_SIMP_TAC[BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL] THEN
+      DISCH_THEN(MP_TAC o MATCH_MP HOMEOMORPHIC_CONNECTEDNESS) THEN
+      SIMP_TAC[CONVEX_HYPERPLANE; CONVEX_CONNECTED];
+      ASM_SIMP_TAC[SET_RULE `~(x IN s) ==> s DELETE x = s`] THEN
+      MATCH_MP_TAC CONNECTED_SPHERE THEN
+      MATCH_MP_TAC(ARITH_RULE `1 <= n /\ ~(n = 1) ==> 2 <= n`) THEN
+      ASM_REWRITE_TAC[DIMINDEX_GE_1]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* When dealing with AR, ANR and ANR later, it's useful to know that any set *)

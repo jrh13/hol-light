@@ -12660,11 +12660,10 @@ let HOLOMORPHIC_CONSTANT_ON_FRONTIER = prove
                HOLOMORPHIC_ON_CONST; CONTINUOUS_ON_CONST]);;
 
 let HOLOMORPHIC_CONSTANT_NORM = prove
- (`!f s c.
-        open s /\ connected s /\
-        f holomorphic_on s /\
-        (?c. !z. z IN s ==> norm(f z) = c)
-        ==> ?a. !z. z IN s ==> f z = a`,
+ (`!f s. open s /\ connected s /\
+         f holomorphic_on s /\
+         (?c. !z. z IN s ==> norm(f z) = c)
+         ==> ?a. !z. z IN s ==> f z = a`,
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC `s:complex->bool = {}` THENL [ASM SET_TAC[]; ALL_TAC] THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN

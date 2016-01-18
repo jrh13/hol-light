@@ -15273,6 +15273,17 @@ let HOMEOMORPHIC_FINITENESS = prove
   DISCH_THEN(MP_TAC o MATCH_MP HOMEOMORPHIC_IMP_CARD_EQ) THEN
   DISCH_THEN(ACCEPT_TAC o MATCH_MP CARD_FINITE_CONG));;
 
+let HOMEOMORPHISM_FINITENESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (FINITE(IMAGE f k) <=> FINITE k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_FINITENESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 let HOMEOMORPHIC_EMPTY = prove
  (`(!s. (s:real^N->bool) homeomorphic ({}:real^M->bool) <=> s = {}) /\
    (!s. ({}:real^M->bool) homeomorphic (s:real^N->bool) <=> s = {})`,
@@ -15482,6 +15493,17 @@ let HOMEOMORPHIC_HAS_SIZE = prove
   FIRST_ASSUM(MP_TAC o MATCH_MP HOMEOMORPHIC_FINITENESS) THEN
   ASM_CASES_TAC `FINITE(t:real^N->bool)` THEN ASM_SIMP_TAC[HAS_SIZE] THEN
   DISCH_TAC THEN ASM_MESON_TAC[HOMEOMORPHIC_FINITE]);;
+
+let HOMEOMORPHISM_HAS_SIZE_EQ = prove
+ (`!f:real^M->real^N g s t k n.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> ((IMAGE f k) HAS_SIZE n <=> k HAS_SIZE n)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_HAS_SIZE THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
 
 let HOMEOMORPHIC_SING = prove
  (`!a:real^M b:real^N. {a} homeomorphic {b}`,
@@ -25886,6 +25908,44 @@ let LOCALLY_OPEN_MAP_IMAGE = prove
    [`IMAGE (f:real^M->real^N) u`; `IMAGE (f:real^M->real^N) v`] THEN
   ASM_SIMP_TAC[] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]);;
+
+let LOCALLY_FINE_COVERING_COMPACT = prove
+ (`!P s:real^N->bool e.
+        compact s /\ locally P s /\ &0 < e
+        ==> ?f. FINITE f /\ UNIONS f = s /\
+                !c. c IN f ==> P c /\ bounded c /\ diameter c <= e`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [locally]) THEN
+  DISCH_THEN(MP_TAC o GEN `x:real^N` o
+    SPECL [`s INTER ball(x:real^N,e / &2)`; `x:real^N`]) THEN
+  ASM_REWRITE_TAC[IN_INTER; REAL_HALF; CENTRE_IN_BALL] THEN
+  SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_BALL; SUBSET_INTER] THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^N->real^N->bool`; `v:real^N->real^N->bool`] THEN
+  DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I
+    [COMPACT_EQ_HEINE_BOREL_SUBTOPOLOGY]) THEN
+  DISCH_THEN(MP_TAC o SPEC `IMAGE (u:real^N->real^N->bool) s`) THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; UNIONS_IMAGE] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+  REWRITE_TAC[EXISTS_FINITE_SUBSET_IMAGE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `IMAGE (v:real^N->real^N->bool) t` THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN CONJ_TAC THENL
+   [ASM_SIMP_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET; FORALL_IN_IMAGE;
+                 FORALL_IN_UNIONS] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; GSYM SUBSET] THEN
+    ASM_SIMP_TAC[FORALL_IN_IMAGE] THEN ASM SET_TAC[];
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; STRIP_TAC] THEN
+    ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[BOUNDED_SUBSET; BOUNDED_BALL]; ALL_TAC] THEN
+    TRANS_TAC REAL_LE_TRANS `diameter(ball(x:real^N,e / &2))` THEN
+    ASM_SIMP_TAC[DIAMETER_SUBSET; BOUNDED_BALL] THEN
+    REWRITE_TAC[DIAMETER_BALL] THEN ASM_REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Local compactness.                                                        *)
