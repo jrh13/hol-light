@@ -2304,6 +2304,80 @@ let COMPLEX_DIFFERENTIABLE_EQ_CONFORMAL = prove
                  ==> ~(x pow 2 + y pow 2 = &0)`)) THEN
     ASM_REWRITE_TAC[RE_DEF; IM_DEF]]);;
 
+let HOLOMORPHIC_CONSTANT_RE = prove
+ (`!f s. open s /\ connected s /\
+         f holomorphic_on s /\
+         (?c. !z. z IN s ==> Re(f z) = c)
+         ==> (?a. !z. z IN s ==> f z = a)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HAS_DERIVATIVE_ZERO_CONNECTED_CONSTANT THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `!z. z IN s ==> f complex_differentiable at z` MP_TAC
+  THENL [ASM_MESON_TAC[HOLOMORPHIC_ON_IMP_DIFFERENTIABLE_AT]; ALL_TAC] THEN
+  REWRITE_TAC[CAUCHY_RIEMANN; JACOBIAN_WORKS] THEN STRIP_TAC THEN
+  X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `(\h. jacobian (f:complex->complex) (at z) ** h) = (\h. vec 0)`
+   (fun th -> ASM_SIMP_TAC[GSYM th]) THEN
+  SUBGOAL_THEN
+   `(Cx o Re) o (\h. jacobian (f:complex->complex) (at z) ** h) = (\h. vec 0)`
+  MP_TAC THENL
+   [MATCH_MP_TAC FRECHET_DERIVATIVE_UNIQUE_AT THEN
+    MAP_EVERY EXISTS_TAC [`(Cx o Re) o (f:complex->complex)`; `z:complex`] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC DIFF_CHAIN_AT THEN
+      ASM_SIMP_TAC[HAS_DERIVATIVE_LINEAR; LINEAR_CX_RE];
+      MATCH_MP_TAC HAS_DERIVATIVE_TRANSFORM_WITHIN_OPEN THEN
+      MAP_EVERY EXISTS_TAC
+       [`(\z. Cx c):complex->complex`; `s:complex->bool`] THEN
+      ASM_SIMP_TAC[HAS_DERIVATIVE_CONST; o_THM]];
+    REWRITE_TAC[COMPLEX_VEC_0] THEN
+    REWRITE_TAC[FUN_EQ_THM; o_THM; RE_DEF; CX_INJ] THEN
+    SIMP_TAC[MATRIX_VECTOR_MUL_COMPONENT; DIMINDEX_2; ARITH] THEN
+    REWRITE_TAC[FORALL_DOT_EQ_0] THEN
+    REWRITE_TAC[CART_EQ; FORALL_2; DIMINDEX_2; VEC_COMPONENT] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
+    SIMP_TAC[MATRIX_VECTOR_MUL_COMPONENT; DIMINDEX_2; ARITH] THEN
+    SIMP_TAC[DOT_2; VEC_COMPONENT] THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`)) THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RING]);;
+
+let HOLOMORPHIC_CONSTANT_IM = prove
+ (`!f s. open s /\ connected s /\
+         f holomorphic_on s /\
+         (?c. !z. z IN s ==> Im(f z) = c)
+         ==> (?a. !z. z IN s ==> f z = a)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HAS_DERIVATIVE_ZERO_CONNECTED_CONSTANT THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `!z. z IN s ==> f complex_differentiable at z` MP_TAC
+  THENL [ASM_MESON_TAC[HOLOMORPHIC_ON_IMP_DIFFERENTIABLE_AT]; ALL_TAC] THEN
+  REWRITE_TAC[CAUCHY_RIEMANN; JACOBIAN_WORKS] THEN STRIP_TAC THEN
+  X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `(\h. jacobian (f:complex->complex) (at z) ** h) = (\h. vec 0)`
+   (fun th -> ASM_SIMP_TAC[GSYM th]) THEN
+  SUBGOAL_THEN
+   `(Cx o Im) o (\h. jacobian (f:complex->complex) (at z) ** h) = (\h. vec 0)`
+  MP_TAC THENL
+   [MATCH_MP_TAC FRECHET_DERIVATIVE_UNIQUE_AT THEN
+    MAP_EVERY EXISTS_TAC [`(Cx o Im) o (f:complex->complex)`; `z:complex`] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC DIFF_CHAIN_AT THEN
+      ASM_SIMP_TAC[HAS_DERIVATIVE_LINEAR; LINEAR_CX_IM];
+      MATCH_MP_TAC HAS_DERIVATIVE_TRANSFORM_WITHIN_OPEN THEN
+      MAP_EVERY EXISTS_TAC
+       [`(\z. Cx c):complex->complex`; `s:complex->bool`] THEN
+      ASM_SIMP_TAC[HAS_DERIVATIVE_CONST; o_THM]];
+    REWRITE_TAC[COMPLEX_VEC_0] THEN
+    REWRITE_TAC[FUN_EQ_THM; o_THM; IM_DEF; CX_INJ] THEN
+    SIMP_TAC[MATRIX_VECTOR_MUL_COMPONENT; DIMINDEX_2; ARITH] THEN
+    REWRITE_TAC[FORALL_DOT_EQ_0] THEN
+    REWRITE_TAC[CART_EQ; FORALL_2; DIMINDEX_2; VEC_COMPONENT] THEN
+    REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
+    SIMP_TAC[MATRIX_VECTOR_MUL_COMPONENT; DIMINDEX_2; ARITH] THEN
+    SIMP_TAC[DOT_2; VEC_COMPONENT] THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`)) THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC REAL_RING]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Differentiation conversion.                                               *)
 (* ------------------------------------------------------------------------- *)
