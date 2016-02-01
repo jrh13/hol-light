@@ -1,3 +1,88 @@
+Fri 29th Jan 2016       cart.ml
+
+Added a "subtraction" on type indices, with a type constructor "finite_diff"
+analogous to "finite_sum", with the following type definition theorem and other
+lemmas:
+
+ finite_diff_tybij =
+  |- (!a. mk_finite_diff (dest_finite_diff a) = a) /\
+     (!r. r IN
+          1..
+          (if dimindex (:B) < dimindex (:A)
+           then dimindex (:A) - dimindex (:B)
+           else 1) <=>
+          dest_finite_diff (mk_finite_diff r) = r)
+
+ FINITE_DIFF_IMAGE =
+  |- (:(A,B)finite_diff) =
+     IMAGE mk_finite_diff
+     (1..
+      (if dimindex (:B) < dimindex (:A)
+       then dimindex (:A) - dimindex (:B)
+       else 1))
+
+ DIMINDEX_HAS_SIZE_FINITE_DIFF =
+  |- (:(M,N)finite_diff) HAS_SIZE
+     (if dimindex (:N) < dimindex (:M)
+      then dimindex (:M) - dimindex (:N)
+      else 1)
+
+ DIMINDEX_FINITE_DIFF =
+  |- dimindex (:(M,N)finite_diff) =
+     (if dimindex (:N) < dimindex (:M)
+      then dimindex (:M) - dimindex (:N)
+      else 1)
+
+ FINITE_DIFF_IMAGE =
+  |- (:(A,B)finite_diff) =
+     IMAGE mk_finite_diff
+     (1..
+      (if dimindex (:B) < dimindex (:A)
+       then dimindex (:A) - dimindex (:B)
+       else 1))
+
+ DIMINDEX_HAS_SIZE_FINITE_DIFF =
+  |- (:(M,N)finite_diff) HAS_SIZE
+     (if dimindex (:N) < dimindex (:M)
+      then dimindex (:M) - dimindex (:N)
+      else 1)
+
+This can occasionally be useful to make "size-lowering" arguments.
+
+Fri 29th Jan 2016       sets.ml
+
+Incompatibly improved (by making the hypotheses sharper) the following
+two theorems (formerly, the antecendent did not have the set membership
+assertions in their own antecedent):
+
+ IMAGE_DIFF_INJ =
+  |- !f s t.
+         (!x y. x IN s /\ y IN t /\ f x = f y ==> x = y)
+         ==> IMAGE f (s DIFF t) = IMAGE f s DIFF IMAGE f t
+
+ IMAGE_DELETE_INJ =
+  |- !f s a.
+         (!x. x IN s /\ f x = f a ==> x = a)
+         ==> IMAGE f (s DELETE a) = IMAGE f s DELETE f a
+
+Also added the following two variants:
+
+ IMAGE_DIFF_INJ_ALT =
+  |- !f s t.
+         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\ t SUBSET s
+         ==> IMAGE f (s DIFF t) = IMAGE f s DIFF IMAGE f t
+
+ IMAGE_DELETE_INJ_ALT =
+  |- !f s a.
+         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\ a IN s
+         ==> IMAGE f (s DELETE a) = IMAGE f s DELETE f a
+
+Thu 28th Jan 2016       Makefile
+
+Updated the Makefile with yet more cases, to work with OCaml 4.02 and with
+camlp5 6.15. HOL Light has been tested with OCaml 4.02.3 and camlp5 6.15 (under
+Cygwin64), so the combination of the two seems to work.
+
 Thu 17th Dec 2015       Help/*.doc
 
 Fixed several documentation errors pointed out by Marco Maggesi.

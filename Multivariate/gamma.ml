@@ -5,7 +5,7 @@
 needs "Multivariate/cauchy.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Euler-Macheroni constant.                                                 *)
+(* Euler-Mascheroni constant.                                                *)
 (* ------------------------------------------------------------------------- *)
 
 let euler_mascheroni = new_definition

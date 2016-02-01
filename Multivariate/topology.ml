@@ -2388,13 +2388,27 @@ let DENSE_OPEN_INTERS = prove
   DISCH_THEN(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET o CONJUNCT1) THEN
   ASM SET_TAC[]);;
 
-let CONNECTED_SEPARATION = prove
- (`!s:real^N->bool.
+let CONNECTED_SEPARATION,CONNECTED_SEPARATION_ALT = (CONJ_PAIR o prove)
+ (`(!s:real^N->bool.
         connected s <=>
         ~(?c1 c2. c1 UNION c2 = s /\ ~(c1 = {}) /\ ~(c2 = {}) /\
-                  c1 INTER closure c2 = {} /\ c2 INTER closure c1 = {})`,
-  GEN_TAC THEN EQ_TAC THENL
-   [ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+                  c1 INTER closure c2 = {} /\ c2 INTER closure c1 = {})) /\
+   (!s:real^N->bool.
+        connected s <=>
+        ~(?c1 c2.
+            s SUBSET c1 UNION c2 /\ ~(c1 INTER s = {}) /\ ~(c2 INTER s = {}) /\
+            c1 INTER closure c2 = {} /\ c2 INTER closure c1 = {}))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN X_GEN_TAC `s:real^N->bool` THEN
+  MATCH_MP_TAC(TAUT
+   `(q ==> r) /\ (~q ==> p) /\ (r ==> ~p)
+    ==> (p <=> ~q) /\ (p <=> ~r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN SET_TAC[];
+    REWRITE_TAC[CONNECTED_CLOSED_IN_EQ; CONTRAPOS_THM] THEN
+    REWRITE_TAC[CLOSED_IN_INTER_CLOSURE] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c1:real^N->bool` THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c2:real^N->bool` THEN
+    SET_TAC[];
     REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
     MAP_EVERY X_GEN_TAC [`c1:real^N->bool`; `c2:real^N->bool`] THEN
     STRIP_TAC THEN REWRITE_TAC[CONNECTED_CLOSED] THEN
@@ -2402,12 +2416,7 @@ let CONNECTED_SEPARATION = prove
      [`closure c1:real^N->bool`; `closure c2:real^N->bool`] THEN
     REWRITE_TAC[CLOSED_CLOSURE] THEN
     MP_TAC(ISPEC `c1:real^N->bool` CLOSURE_SUBSET) THEN
-    MP_TAC(ISPEC `c2:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[];
-    REWRITE_TAC[CONNECTED_CLOSED_IN_EQ; CONTRAPOS_THM] THEN
-    REWRITE_TAC[CLOSED_IN_INTER_CLOSURE] THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c1:real^N->bool` THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c2:real^N->bool` THEN
-    SET_TAC[]]);;
+    MP_TAC(ISPEC `c2:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Frontier (aka boundary).                                                  *)
@@ -4467,6 +4476,61 @@ let HAS_SIZE_SPHERE_1 = prove
  (`!a:real^N r. sphere(a,r) HAS_SIZE 1 <=> r = &0`,
   REPEAT GEN_TAC THEN CONV_TAC(LAND_CONV HAS_SIZE_CONV) THEN
   REWRITE_TAC[SPHERE_EQ_SING] THEN MESON_TAC[]);;
+
+let IMAGE_AFFINITY_CBALL = prove
+ (`!m c a:real^N r.
+        IMAGE (\x. m % x + c) (cball(a,r)) =
+        if &0 <= r \/ ~(m = &0) then cball(m % a + c,abs m * r) else {}`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `m = &0` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID] THEN
+    REWRITE_TAC[REAL_ABS_NUM; REAL_MUL_LZERO] THEN COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; CBALL_EQ_EMPTY; GSYM REAL_NOT_LE] THEN
+    MATCH_MP_TAC(SET_RULE `~(s = {}) /\ t = {a} ==> IMAGE (\x. a) s = t`) THEN
+    ASM_REWRITE_TAC[CBALL_TRIVIAL; CBALL_EQ_EMPTY; REAL_NOT_LT];
+    MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    REWRITE_TAC[IN_CBALL; DIST_MUL; NORM_ARITH
+     `dist(x + a:real^N,y + a) = dist(x,y)`] THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL_EQ; GSYM REAL_ABS_NZ] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_THEN(K ALL_TAC) THEN
+    EXISTS_TAC `inv(m) % (x - c):real^N` THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV] THEN VECTOR_ARITH_TAC]);;
+
+let IMAGE_AFFINITY_BALL = prove
+ (`!m c a:real^N r.
+        IMAGE (\x. m % x + c) (ball(a,r)) =
+        if ~(m = &0) then ball(m % a + c,abs m * r)
+        else if r <= &0 then {} else {c}`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `m = &0` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID] THEN
+    REWRITE_TAC[REAL_ABS_NUM; REAL_MUL_LZERO] THEN COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; BALL_EQ_EMPTY; GSYM REAL_NOT_LT] THEN
+    MATCH_MP_TAC(SET_RULE `~(s = {}) ==> IMAGE (\x. a) s = {a}`) THEN
+    ASM_REWRITE_TAC[BALL_EQ_EMPTY];
+    MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    REWRITE_TAC[IN_BALL; DIST_MUL; NORM_ARITH
+     `dist(x + a:real^N,y + a) = dist(x,y)`] THEN
+    ASM_SIMP_TAC[REAL_LT_LMUL_EQ; GSYM REAL_ABS_NZ] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_THEN(K ALL_TAC) THEN
+    EXISTS_TAC `inv(m) % (x - c):real^N` THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV] THEN VECTOR_ARITH_TAC]);;
+
+let IMAGE_AFFINITY_SPHERE = prove
+ (`!m c a:real^N r.
+        IMAGE (\x. m % x + c) (sphere(a,r)) =
+        if &0 <= r \/ ~(m = &0) then sphere(m % a + c,abs m * r) else {}`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `m = &0` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_ADD_LID] THEN
+    REWRITE_TAC[REAL_ABS_NUM; REAL_MUL_LZERO] THEN COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; SPHERE_EQ_EMPTY; GSYM REAL_NOT_LE] THEN
+    MATCH_MP_TAC(SET_RULE `~(s = {}) /\ t = {a} ==> IMAGE (\x. a) s = t`) THEN
+    ASM_SIMP_TAC[SPHERE_SING; SPHERE_EQ_EMPTY; REAL_NOT_LT];
+    MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    REWRITE_TAC[IN_SPHERE; DIST_MUL; NORM_ARITH
+     `dist(x + a:real^N,y + a) = dist(x,y)`] THEN
+    ASM_SIMP_TAC[REAL_EQ_MUL_LCANCEL; REAL_ABS_ZERO; GSYM REAL_ABS_NZ] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_THEN(K ALL_TAC) THEN
+    EXISTS_TAC `inv(m) % (x - c):real^N` THEN
+    ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV] THEN VECTOR_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* For points in the interior, localization of limits makes no difference.   *)
@@ -10917,6 +10981,40 @@ let CONNECTED_UNIONS_STRONG = prove
   CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
   MATCH_MP_TAC CONNECTED_UNION_STRONG THEN ASM SET_TAC[]);;
 
+let NOT_CONNECTED_COMPONENT_SEPARATED_UNION = prove
+ (`!s t x y:real^N.
+        s INTER closure t = {} /\ t INTER closure s = {} /\ x IN s /\ y IN t
+        ==> ~connected_component (s UNION t) x y`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[connected_component] THEN
+  DISCH_THEN(X_CHOOSE_THEN `c:real^N->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_SEPARATION_ALT]) THEN
+  REWRITE_TAC[] THEN
+  MAP_EVERY EXISTS_TAC [`s:real^N->bool`; `t:real^N->bool`] THEN
+  ASM SET_TAC[]);;
+
+let CONNECTED_COMPONENT_SEPARATED_UNION = prove
+ (`!s t x:real^N.
+        s INTER closure t = {} /\ t INTER closure s = {}
+        ==> connected_component (s UNION t) x =
+            if x IN s then connected_component s x
+            else if x IN t then connected_component t x
+            else {}`,
+  REPEAT STRIP_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  ASM_REWRITE_TAC[CONNECTED_COMPONENT_EQ_EMPTY; IN_UNION] THEN
+  SIMP_TAC[GSYM SUBSET_ANTISYM_EQ; CONNECTED_COMPONENT_MONO; SUBSET_UNION] THEN
+  MATCH_MP_TAC CONNECTED_COMPONENT_MAXIMAL THEN
+  REWRITE_TAC[CONNECTED_CONNECTED_COMPONENT; IN] THEN
+  ASM_REWRITE_TAC[CONNECTED_COMPONENT_REFL_EQ; IN_UNION] THEN
+  MATCH_MP_TAC(SET_RULE
+   `connected_component s x SUBSET s /\
+    (!y. ~(y IN t) ==> y IN s ==> ~(connected_component s x y))
+    ==> connected_component s x SUBSET t`) THEN
+  SIMP_TAC[CONNECTED_COMPONENT_SUBSET; IN_UNION] THEN
+  ASM_SIMP_TAC[NOT_CONNECTED_COMPONENT_SEPARATED_UNION] THEN
+  ONCE_REWRITE_TAC[UNION_COMM] THEN
+  ASM_SIMP_TAC[NOT_CONNECTED_COMPONENT_SEPARATED_UNION]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The set of connected components of a set.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -11374,6 +11472,18 @@ let CONNECTED_UNIONS_PAIRWISE = prove
   MP_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
   CONJ_TAC THEN MATCH_MP_TAC COMPONENTS_MAXIMAL THEN
   EXISTS_TAC `UNIONS f:real^N->bool` THEN ASM SET_TAC[]);;
+
+let COMPONENTS_SEPARATED_UNION = prove
+ (`!s t:real^N->bool.
+        s INTER closure t = {} /\ t INTER closure s = {}
+        ==> components(s UNION t) = components(s) UNION components(t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[components] THEN
+  REWRITE_TAC[SIMPLE_IMAGE; IMAGE_UNION] THEN BINOP_TAC THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  X_GEN_TAC `x:real^N` THEN REWRITE_TAC[GSYM SUBSET_ANTISYM] THENL
+   [ALL_TAC; ONCE_REWRITE_TAC[UNION_COMM]] THEN
+  ASM_SIMP_TAC[CONNECTED_COMPONENT_SEPARATED_UNION]);;
 
 let CARD_LE_COMPONENTS_UNION = prove
  (`!s t:real^N->bool.

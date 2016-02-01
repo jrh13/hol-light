@@ -826,7 +826,7 @@ let INTERS_SUBSET = prove
 
 let INTERS_SUBSET_STRONG = prove
  (`!u s:A->bool. (?t. t IN u /\ t SUBSET s) ==> INTERS u SUBSET s`,
-  SET_TAC[]);;                                                                 
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Image.                                                                    *)
@@ -864,14 +864,28 @@ let IMAGE_INTER_INJ = prove
   REWRITE_TAC[EXTENSION; IN_IMAGE; IN_INTER] THEN MESON_TAC[]);;
 
 let IMAGE_DIFF_INJ = prove
- (`!f s t. (!x y. (f(x) = f(y)) ==> (x = y))
-           ==> (IMAGE f (s DIFF t) = (IMAGE f s) DIFF (IMAGE f t))`,
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_DIFF] THEN MESON_TAC[]);;
+ (`!f:A->B s t.
+        (!x y. x IN s /\ y IN t /\ f x = f y ==> x = y)
+        ==> IMAGE f (s DIFF t) = IMAGE f s DIFF IMAGE f t`,
+  SET_TAC[]);;
+
+let IMAGE_DIFF_INJ_ALT = prove
+ (`!f:A->B s t.
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\ t SUBSET s
+        ==> IMAGE f (s DIFF t) = IMAGE f s DIFF IMAGE f t`,
+  SET_TAC[]);;
 
 let IMAGE_DELETE_INJ = prove
- (`!f s a. (!x. (f(x) = f(a)) ==> (x = a))
-           ==> (IMAGE f (s DELETE a) = (IMAGE f s) DELETE (f a))`,
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_DELETE] THEN MESON_TAC[]);;
+ (`!f:A->B s a.
+        (!x. x IN s /\ f x = f a ==> x = a)
+        ==> IMAGE f (s DELETE a) = IMAGE f s DELETE f a`,
+  SET_TAC[]);;
+
+let IMAGE_DELETE_INJ_ALT = prove
+ (`!f:A->B s a.
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\ a IN s
+        ==> IMAGE f (s DELETE a) = IMAGE f s DELETE f a`,
+  SET_TAC[]);;
 
 let IMAGE_EQ_EMPTY = prove
  (`!f s. (IMAGE f s = {}) <=> (s = {})`,

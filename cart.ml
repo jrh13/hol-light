@@ -233,6 +233,39 @@ let PASTECART_INJ = prove
   REWRITE_TAC[PASTECART_EQ; FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Likewise a "subtraction" function on type indices.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let finite_diff_tybij =
+  let th = prove
+   (`?x. x IN 1..(if dimindex(:B) < dimindex(:A)
+                  then dimindex(:A) - dimindex(:B) else 1)`,
+    EXISTS_TAC `1` THEN REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC) in
+  new_type_definition "finite_diff" ("mk_finite_diff","dest_finite_diff") th;;
+
+let FINITE_DIFF_IMAGE = prove
+ (`UNIV:(A,B)finite_diff->bool =
+       IMAGE mk_finite_diff
+       (1..(if dimindex(:B) < dimindex(:A)
+                  then dimindex(:A) - dimindex(:B) else 1))`,
+  REWRITE_TAC[EXTENSION; IN_UNIV; IN_IMAGE] THEN
+  MESON_TAC[finite_diff_tybij]);;
+
+let DIMINDEX_HAS_SIZE_FINITE_DIFF = prove
+ (`(UNIV:(M,N)finite_diff->bool) HAS_SIZE
+   (if dimindex(:N) < dimindex(:M) then dimindex(:M) - dimindex(:N) else 1)`,
+  SIMP_TAC[FINITE_DIFF_IMAGE] THEN
+  MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+  ONCE_REWRITE_TAC[DIMINDEX_UNIV] THEN REWRITE_TAC[HAS_SIZE_NUMSEG_1] THEN
+  MESON_TAC[finite_diff_tybij]);;
+
+let DIMINDEX_FINITE_DIFF = prove
+ (`dimindex(:(M,N)finite_diff) =
+     if dimindex(:N) < dimindex(:M) then dimindex(:M) - dimindex(:N) else 1`,
+  GEN_REWRITE_TAC LAND_CONV [dimindex] THEN
+  REWRITE_TAC[REWRITE_RULE[HAS_SIZE] DIMINDEX_HAS_SIZE_FINITE_DIFF]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Automatically define a type of size n.                                    *)
 (* ------------------------------------------------------------------------- *)
 
