@@ -1865,7 +1865,7 @@ Qed.
 
 Lemma real_open_delete s x : `real_open s ==> real_open (s DELETE x)`.
 rewrite !REAL_OPEN => /OPEN_DELETE /(_ `lift x`).
-by rewrite IMAGE_DELETE_INJ ?LIFT_EQ.
+by rewrite IMAGE_DELETE_INJ_COMPAT ?LIFT_EQ.
 Qed.
 
 

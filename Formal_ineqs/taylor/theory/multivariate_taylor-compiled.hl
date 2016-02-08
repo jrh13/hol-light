@@ -2208,7 +2208,7 @@ let real_open_delete = section_proof ["s";"x"]
 `real_open s ==> real_open (s DELETE x)`
 [
    ((repeat_tactic 1 9 (((use_arg_then "REAL_OPEN")(thm_tac (new_rewrite [] []))))) THEN (DISCH_THEN (fun snd_th -> (use_arg_then "OPEN_DELETE") (thm_tac (match_mp_then snd_th MP_TAC)))) THEN ((fun arg_tac ->  (conv_thm_tac DISCH_THEN)  (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`lift x`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac MP_TAC)));
-   (((((use_arg_then "IMAGE_DELETE_INJ")(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then "LIFT_EQ")(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+   (((((use_arg_then "IMAGE_DELETE_INJ_COMPAT")(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then "LIFT_EQ")(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
 ];;
 
 (* Lemma diff2c_inv_compose *)

@@ -1630,6 +1630,14 @@ let CHARACTERISTIC_POLYNOMIAL = prove
     FIRST_X_ASSUM(MP_TAC o SPEC `p:num->num`) THEN ANTS_TAC THENL
      [ASM_MESON_TAC[PERMUTES_IMAGE; SUBSET_REFL]; SIMP_TAC[]]]);;
 
+let FINITE_EIGENVALUES = prove
+ (`!A:real^N^N. FINITE {c | ?v. ~(v = vec 0) /\ A ** v = c % v}`,
+  GEN_TAC THEN REWRITE_TAC[EIGENVALUES_CHARACTERISTIC] THEN
+  MP_TAC(ISPEC `A:real^N^N` CHARACTERISTIC_POLYNOMIAL) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[REAL_POLYFUN_FINITE_ROOTS] THEN EXISTS_TAC `dimindex(:N)` THEN
+  ASM_REWRITE_TAC[IN_NUMSEG; LE_0; LE_REFL] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Grassmann-Plucker relations for n = 2, n = 3 and n = 4.                   *)
 (* I have a proof of the general n case but the proof is a bit long and the  *)
