@@ -148,7 +148,7 @@ let PERMUTES_I = prove
 
 let PERMUTES_COMPOSE = prove
  (`!p q s. p permutes s /\ q permutes s ==> (q o p) permutes s`,
-  REWRITE_TAC[permutes; o_THM] THEN MESON_TAC[]);;
+  REWRITE_TAC[permutes; o_THM] THEN METIS_TAC[]);;
 
 let PERMUTES_INVERSE = prove
  (`!p s. p permutes s ==> inverse(p) permutes s`,

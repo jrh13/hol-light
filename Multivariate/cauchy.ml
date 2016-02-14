@@ -9540,7 +9540,6 @@ let CLOG_CONVERGES = prove
       MATCH_MP_TAC HOLOMORPHIC_ON_CLOG THEN
       REWRITE_TAC[IMP_CONJ; FORALL_IN_IMAGE; RE_ADD; RE_CX] THEN
       REWRITE_TAC[COMPLEX_IN_BALL_0] THEN REPEAT STRIP_TAC THEN
-
       MATCH_MP_TAC(REAL_ARITH
        `abs(Re x) <= norm x /\ norm x < &1 ==> &0 < &1 + Re x`) THEN
       ASM_REWRITE_TAC[COMPLEX_NORM_GE_RE_IM] THEN ASM_REAL_ARITH_TAC];
@@ -9572,7 +9571,6 @@ let CLOG_CONVERGES = prove
       MATCH_MP_TAC(REAL_ARITH
         `abs(Re x) <= norm x /\ norm x < &1 ==> &0 < &1 + Re x`) THEN
       ASM_REWRITE_TAC[COMPLEX_NORM_GE_RE_IM] THEN ASM_REAL_ARITH_TAC;
-
       MATCH_MP_TAC HAS_COMPLEX_DERIVATIVE_DERIVATIVE THEN
       MATCH_MP_TAC HAS_COMPLEX_DERIVATIVE_TRANSFORM_WITHIN_OPEN THEN
       MAP_EVERY EXISTS_TAC
@@ -14840,13 +14838,16 @@ let SCHWARZ_LEMMA = prove
 
 let HOLOMORPHIC_SUBORDINATION = prove
  (`!f g a r s.
-        &0 <= r /\ r <= s /\
-        f a = g a /\
+        r <= s /\ f a = g a /\
         f holomorphic_on ball(a,s) /\ g holomorphic_on ball(a,s) /\
         (!w z. w IN ball(a,s) /\ z IN ball(a,s) /\ g w = g z ==> w = z) /\
         IMAGE f (ball(a,s)) SUBSET IMAGE g (ball(a,s))
         ==> IMAGE f (ball(a,r)) SUBSET IMAGE g (ball(a,r))`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `s = &0` THEN
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `r < &0` THEN
+  ASM_SIMP_TAC[BALL_EMPTY; REAL_LT_IMP_LE; IMAGE_CLAUSES; EMPTY_SUBSET] THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC[IMP_IMP; REAL_NOT_LT] THEN
+  ASM_CASES_TAC `s = &0` THEN
   ASM_SIMP_TAC[CONJ_ASSOC; ONCE_REWRITE_RULE[CONJ_SYM] REAL_LE_ANTISYM] THEN
   REWRITE_TAC[GSYM CONJ_ASSOC] THEN STRIP_TAC THEN
   SUBGOAL_THEN `&0 < s` ASSUME_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN

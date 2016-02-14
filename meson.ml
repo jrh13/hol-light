@@ -60,10 +60,16 @@ type fol_goal =
 (* General MESON procedure, using assumptions and with settable limits.      *)
 (* ------------------------------------------------------------------------- *)
 
-let GEN_MESON_TAC =
+module Meson = struct
 
   let offinc = 10000
-  and inferences = ref 0 in
+  and inferences = ref 0
+
+  (* ----------------------------------------------------------------------- *)
+  (* Negate a clause.                                                        *)
+  (* ----------------------------------------------------------------------- *)
+
+    let mk_negated (p,a) = -p,a
 
   (* ----------------------------------------------------------------------- *)
   (* Like partition, but with short-circuiting for special situation.        *)
@@ -80,7 +86,7 @@ let GEN_MESON_TAC =
                   else
                     let yes,no = qpartition t in yes,h::no in
     function l -> try qpartition l
-                  with Unchanged -> [],l in
+                  with Unchanged -> [],l
 
   (* ----------------------------------------------------------------------- *)
   (* Translate a term (in NNF) into the shadow syntax.                       *)
@@ -110,7 +116,7 @@ let GEN_MESON_TAC =
       let hv' = hol_of_var v' in
       let gv = genvar(type_of hv') in
       gstore := (gv,v)::(!gstore); gv in
-    reset_vars,fol_of_var,hol_of_bumped_var in
+    reset_vars,fol_of_var,hol_of_bumped_var
 
   let reset_consts,fol_of_const,hol_of_const =
     let false_tm = `F` in
@@ -123,7 +129,7 @@ let GEN_MESON_TAC =
       let n = !ccounter in
       ccounter := n + 1; cstore := (c,n)::currentconsts; n in
     let hol_of_const c = rev_assoc c (!cstore) in
-    reset_consts,fol_of_const,hol_of_const in
+    reset_consts,fol_of_const,hol_of_const
 
   let rec fol_of_term env consts tm =
     if is_var tm & not (mem tm consts) then
@@ -132,19 +138,19 @@ let GEN_MESON_TAC =
       let f,args = strip_comb tm in
       if mem f env then failwith "fol_of_term: higher order" else
       let ff = fol_of_const f in
-      Fnapp(ff,map (fol_of_term env consts) args) in
+      Fnapp(ff,map (fol_of_term env consts) args)
 
   let fol_of_atom env consts tm =
     let f,args = strip_comb tm in
     if mem f env then failwith "fol_of_atom: higher order" else
     let ff = fol_of_const f in
-    ff,map (fol_of_term env consts) args in
+    ff,map (fol_of_term env consts) args
 
   let fol_of_literal env consts tm =
     try let tm' = dest_neg tm in
         let p,a = fol_of_atom env consts tm' in
         -p,a
-    with Failure _ -> fol_of_atom env consts tm in
+    with Failure _ -> fol_of_atom env consts tm
 
   let rec fol_of_form env consts tm =
     try let v,bod = dest_forall tm in
@@ -162,7 +168,7 @@ let GEN_MESON_TAC =
         and fr = fol_of_form env consts r in
         Disj(fl,fr)
     with Failure _ ->
-        Atom(fol_of_literal env consts tm) in
+        Atom(fol_of_literal env consts tm)
 
   (* ----------------------------------------------------------------------- *)
   (* Further translation functions for HOL formulas.                         *)
@@ -171,14 +177,14 @@ let GEN_MESON_TAC =
   let rec hol_of_term tm =
     match tm with
       Fvar v -> hol_of_var v
-    | Fnapp(f,args) -> list_mk_comb(hol_of_const f,map hol_of_term args) in
+    | Fnapp(f,args) -> list_mk_comb(hol_of_const f,map hol_of_term args)
 
   let hol_of_atom (p,args) =
-    list_mk_comb(hol_of_const p,map hol_of_term args) in
+    list_mk_comb(hol_of_const p,map hol_of_term args)
 
   let hol_of_literal (p,args) =
     if p < 0 then mk_neg(hol_of_atom(-p,args))
-    else hol_of_atom (p,args) in
+    else hol_of_atom (p,args)
 
   (* ----------------------------------------------------------------------- *)
   (* Versions of shadow syntax operations with variable bumping.             *)
@@ -187,18 +193,18 @@ let GEN_MESON_TAC =
   let rec fol_free_in v tm =
     match tm with
       Fvar x -> x = v
-    | Fnapp(_,lis) -> exists (fol_free_in v) lis in
+    | Fnapp(_,lis) -> exists (fol_free_in v) lis
 
   let rec fol_subst theta tm =
     match tm with
       Fvar v -> rev_assocd v theta tm
     | Fnapp(f,args) ->
           let args' = qmap (fol_subst theta) args in
-          if args' == args then tm else Fnapp(f,args') in
+          if args' == args then tm else Fnapp(f,args')
 
   let fol_inst theta ((p,args) as at:fol_atom) =
     let args' = qmap (fol_subst theta) args in
-    if args' == args then at else p,args' in
+    if args' == args then at else p,args'
 
   let rec fol_subst_bump offset theta tm =
     match tm with
@@ -209,11 +215,11 @@ let GEN_MESON_TAC =
                  rev_assocd v theta tm
     | Fnapp(f,args) ->
           let args' = qmap (fol_subst_bump offset theta) args in
-          if args' == args then tm else Fnapp(f,args') in
+          if args' == args then tm else Fnapp(f,args')
 
   let fol_inst_bump offset theta ((p,args) as at:fol_atom) =
     let args' = qmap (fol_subst_bump offset theta) args in
-    if args' == args then at else p,args' in
+    if args' == args then at else p,args'
 
   (* ----------------------------------------------------------------------- *)
   (* Main unification function, maintaining a "graph" instantiation.         *)
@@ -226,7 +232,7 @@ let GEN_MESON_TAC =
       Fvar y -> y = x or
                 (try let t' = rev_assoc y env in istriv env x t'
                  with Failure "find" -> false)
-    | Fnapp(f,args) -> exists (istriv env x) args & failwith "cyclic" in
+    | Fnapp(f,args) -> exists (istriv env x) args & failwith "cyclic"
 
   let rec fol_unify offset tm1 tm2 sofar =
     match tm1,tm2 with
@@ -246,7 +252,7 @@ let GEN_MESON_TAC =
           with Failure "find" ->
               let tm2' = fol_subst_bump offset [] tm2 in
               if istriv sofar x tm2' then sofar
-              else (tm2',x)::sofar) in
+              else (tm2',x)::sofar)
 
   (* ----------------------------------------------------------------------- *)
   (* Test for equality under the pending instantiations.                     *)
@@ -266,10 +272,10 @@ let GEN_MESON_TAC =
          (try let tm1' = rev_assoc x insts in
               fol_eq insts tm1' tm2
           with Failure "find" ->
-          try istriv insts x tm2 with Failure _ -> false) in
+          try istriv insts x tm2 with Failure _ -> false)
 
   let fol_atom_eq insts (p1,args1) (p2,args2) =
-    p1 = p2 & forall2 (fol_eq insts) args1 args2 in
+    p1 = p2 & forall2 (fol_eq insts) args1 args2
 
   (* ----------------------------------------------------------------------- *)
   (* Cacheing continuations. Very crude, but it works remarkably well.       *)
@@ -282,7 +288,7 @@ let GEN_MESON_TAC =
                      insts = insts' & (size <= size' or !meson_depth))
           (!memory)
       then failwith "cachecont"
-      else memory := input::(!memory); f input in
+      else memory := input::(!memory); f input
 
   (* ----------------------------------------------------------------------- *)
   (* Check ancestor list for repetition.                                     *)
@@ -295,7 +301,7 @@ let GEN_MESON_TAC =
         if exists (fun u -> fol_atom_eq insts t' (snd(fst u))) ours
         then failwith "checkan"
         else ancestors
-    with Failure "find" -> ancestors in
+    with Failure "find" -> ancestors
 
   (* ----------------------------------------------------------------------- *)
   (* Insert new goal's negation in ancestor clause, given refinement.        *)
@@ -310,7 +316,7 @@ let GEN_MESON_TAC =
     let ouranc = snd ourancp in
     if exists (fun u -> fol_atom_eq insts t' (snd(fst u))) ouranc
     then failwith "insertan: loop"
-    else (p',(([],t'),(0,TRUTH))::ouranc)::otheranc in
+    else (p',(([],t'),(0,TRUTH))::ouranc)::otheranc
 
   (* ----------------------------------------------------------------------- *)
   (* Apply a multi-level "graph" instantiation.                              *)
@@ -321,7 +327,7 @@ let GEN_MESON_TAC =
       Fvar(v) -> (try let t = rev_assoc v insts in
                       fol_subst_partial insts t
                   with Failure "find" -> tm)
-    | Fnapp(f,args) -> Fnapp(f,map (fol_subst_partial insts) args) in
+    | Fnapp(f,args) -> Fnapp(f,map (fol_subst_partial insts) args)
 
   (* ----------------------------------------------------------------------- *)
   (* Tease apart local and global instantiations.                            *)
@@ -335,7 +341,7 @@ let GEN_MESON_TAC =
       map (fun (t,x) -> fol_subst_partial newinsts t,x) locins,oldinsts
     else
       map (fun (t,x) -> fol_subst_partial newinsts t,x) locins,
-      map (fun (t,x) -> fol_subst_partial newinsts t,x) globins in
+      map (fun (t,x) -> fol_subst_partial newinsts t,x) globins
 
   (* ----------------------------------------------------------------------- *)
   (* Perform basic MESON expansion.                                          *)
@@ -350,7 +356,7 @@ let GEN_MESON_TAC =
       h',checkan insts h' ancestors in
     let newhyps =  map mk_ihyp hyps in
     inferences := !inferences + 1;
-    newhyps,(globin,offset+offinc,size-length hyps) in
+    newhyps,(globin,offset+offinc,size-length hyps)
 
   (* ----------------------------------------------------------------------- *)
   (* Perform first basic expansion which allows continuation call.           *)
@@ -358,7 +364,7 @@ let GEN_MESON_TAC =
 
   let meson_expand_cont loffset rules state cont =
     tryfind
-     (fun r -> cont (snd r) (meson_single_expand loffset r state)) rules in
+     (fun r -> cont (snd r) (meson_single_expand loffset r state)) rules
 
   (* ----------------------------------------------------------------------- *)
   (* Try expansion and continuation call with ancestor or initial rule.      *)
@@ -376,7 +382,7 @@ let GEN_MESON_TAC =
               filter (fun ((h,_),_) -> length h <= size) (assoc pr rules) in
             meson_expand_cont offset crules newstate cont
         with Cut -> failwith "meson_expand"
-           | Failure _ -> failwith "meson_expand" in
+           | Failure _ -> failwith "meson_expand"
 
   (* ----------------------------------------------------------------------- *)
   (* Simple Prolog engine organizing search and backtracking.                *)
@@ -429,7 +435,7 @@ let GEN_MESON_TAC =
                         (cacheconts(fun (gs',ftup) -> cont(g'::gs',ftup))))) in
 
     fun g maxdep maxinf cont ->
-      expand_goal maxdep (g,([],2 * offinc,maxinf)) cont in
+      expand_goal maxdep (g,([],2 * offinc,maxinf)) cont
 
   (* ----------------------------------------------------------------------- *)
   (* With iterative deepening of inferences or depth.                        *)
@@ -461,7 +467,7 @@ let GEN_MESON_TAC =
            else ());
           gi
       with Failure _ -> solve (n + incsize) g in
-    fun g -> solve min (g,[]) in
+    fun g -> solve min (g,[])
 
   (* ----------------------------------------------------------------------- *)
   (* Creation of tagged contrapositives from a HOL clause.                   *)
@@ -472,7 +478,6 @@ let GEN_MESON_TAC =
   let fol_of_hol_clauses =
     let eqt (a1,(b1,c1)) (a2, (b2,c2)) =
      ((a1 = a2) & (b1 = b2) & (equals_thm c1 c2)) in
-    let mk_negated (p,a) = -p,a in
     let rec mk_contraposes n th used unused sofar =
       match unused with
         [] -> sofar
@@ -493,7 +498,7 @@ let GEN_MESON_TAC =
       let prules =
         map (fun t -> t,filter ((=) t o fst o snd o fst) rawrules) prs in
       let srules = sort (fun (p,_) (q,_) -> abs(p) <= abs(q)) prules in
-      srules in
+      srules
 
   (* ----------------------------------------------------------------------- *)
   (* Optimize set of clauses; changing literal order complicates HOL stuff.  *)
@@ -502,7 +507,7 @@ let GEN_MESON_TAC =
   let optimize_rules =
     let optimize_clause_order cls =
       sort (fun ((l1,_),_) ((l2,_),_) -> length l1 <= length l2) cls in
-    map (fun (a,b) -> a,optimize_clause_order b) in
+    map (fun (a,b) -> a,optimize_clause_order b)
 
   (* ----------------------------------------------------------------------- *)
   (* Create a HOL contrapositive on demand, with a cache.                    *)
@@ -536,7 +541,15 @@ let GEN_MESON_TAC =
           if length djs = 1 then acth
           else CONV_RULE (imp_CONV THENC push_CONV) acth in
         (memory := (key,fth)::(!memory); fth) in
-    clear_contrapos_cache,make_hol_contrapos in
+    clear_contrapos_cache,make_hol_contrapos
+
+  (* ---------------------------------------------------------------------- *)
+  (* Handle trivial start/finish stuff.                                     *)
+  (* ---------------------------------------------------------------------- *)
+
+  let finish_RULE =
+      GEN_REWRITE_RULE I
+       [TAUT `(~p ==> p) <=> p`; TAUT `(p ==> ~p) <=> ~p`]
 
   (* ----------------------------------------------------------------------- *)
   (* Translate back the saved proof into HOL.                                *)
@@ -547,9 +560,6 @@ let GEN_MESON_TAC =
       try dest_neg tm with Failure _ -> mk_neg tm in
     let merge_inst (t,x) current =
       (fol_subst current t,x)::current in
-    let finish_RULE =
-      GEN_REWRITE_RULE I
-       [TAUT `(~p ==> p) <=> p`; TAUT `(p ==> ~p) <=> ~p`] in
     let rec meson_to_hol insts (Subgoal(g,gs,(n,th),offset,locin)) =
       let newins = itlist merge_inst locin insts in
       let g' = fol_inst newins g in
@@ -561,7 +571,7 @@ let GEN_MESON_TAC =
         if ths = [] then cth else MATCH_MP cth (end_itlist CONJ ths) in
       let ith = PART_MATCH I hth hol_g in
       finish_RULE (DISCH (hol_negate(concl ith)) ith) in
-    meson_to_hol in
+    meson_to_hol
 
   (* ----------------------------------------------------------------------- *)
   (* Create equality axioms for all the function and predicate symbols in    *)
@@ -631,7 +641,7 @@ let GEN_MESON_TAC =
                let equivs =
                  itlist (union' equals_thm o create_equivalence_axioms)
                         eqs [] in
-               equivs@pcongs@fcongs in
+               equivs@pcongs@fcongs
 
   (* ----------------------------------------------------------------------- *)
   (* Brand's transformation.                                                 *)
@@ -706,7 +716,7 @@ let GEN_MESON_TAC =
         let ths' = map BRAND_CONGS ths in
         let ths'' = itlist (union' equals_thm o BRAND_TRANS) ths' [] in
         REFLEXATE ths''
-      else ths in
+      else ths
 
   (* ----------------------------------------------------------------------- *)
   (* Push duplicated copies of poly theorems to match existing assumptions.  *)
@@ -753,7 +763,7 @@ let GEN_MESON_TAC =
     fun ths (asl,w as gl) ->
       let mconsts = itlist (grab_constants o concl o snd) asl [] in
       let ths' = polymorph_all mconsts ths [] in
-      MAP_EVERY ASSUME_TAC ths' gl in
+      MAP_EVERY ASSUME_TAC ths' gl
 
   (* ----------------------------------------------------------------------- *)
   (* Basic HOL MESON procedure.                                              *)
@@ -770,51 +780,57 @@ let GEN_MESON_TAC =
     let proof,(insts,_,_) =
       solve_goal rules (!meson_depth) min max inc (1,[]) in
     meson_dcutin := old_dcutin;
-    meson_to_hol insts proof in
+    meson_to_hol insts proof
 
   let CONJUNCTS_THEN' ttac cth =
-    ttac(CONJUNCT1 cth) THEN ttac(CONJUNCT2 cth) in
+    ttac(CONJUNCT1 cth) THEN ttac(CONJUNCT2 cth)
 
   let PURE_MESON_TAC min max inc gl =
     reset_vars(); reset_consts();
     (FIRST_ASSUM CONTR_TAC ORELSE
-     W(ACCEPT_TAC o SIMPLE_MESON_REFUTE min max inc o map snd o fst)) gl in
+     W(ACCEPT_TAC o SIMPLE_MESON_REFUTE min max inc o map snd o fst)) gl
 
   let QUANT_BOOL_CONV =
     PURE_REWRITE_CONV[FORALL_BOOL_THM; EXISTS_BOOL_THM; COND_CLAUSES;
                       NOT_CLAUSES; IMP_CLAUSES; AND_CLAUSES; OR_CLAUSES;
-                      EQ_CLAUSES; FORALL_SIMP; EXISTS_SIMP] in
+                      EQ_CLAUSES; FORALL_SIMP; EXISTS_SIMP]
 
   let rec SPLIT_TAC n g =
     ((FIRST_X_ASSUM(CONJUNCTS_THEN' ASSUME_TAC) THEN SPLIT_TAC n) ORELSE
      (if n > 0 then FIRST_X_ASSUM DISJ_CASES_TAC THEN SPLIT_TAC (n - 1)
       else NO_TAC) ORELSE
-     ALL_TAC) g in
+     ALL_TAC) g
 
-  fun min max step ths ->
-    REFUTE_THEN ASSUME_TAC THEN
-    POLY_ASSUME_TAC (map GEN_ALL ths) THEN
-    W(MAP_EVERY(UNDISCH_TAC o concl o snd) o fst) THEN
-    SELECT_ELIM_TAC THEN
-    W(fun (asl,w) -> MAP_EVERY (fun v -> SPEC_TAC(v,v)) (frees w)) THEN
-    CONV_TAC(PRESIMP_CONV THENC
-             TOP_DEPTH_CONV BETA_CONV THENC
-             LAMBDA_ELIM_CONV THENC
-             CONDS_CELIM_CONV THENC
-             QUANT_BOOL_CONV) THEN
-    REPEAT(GEN_TAC ORELSE DISCH_TAC) THEN
-    REFUTE_THEN ASSUME_TAC THEN
-    RULE_ASSUM_TAC(CONV_RULE(NNF_CONV THENC SKOLEM_CONV)) THEN
-    REPEAT (FIRST_X_ASSUM CHOOSE_TAC) THEN
-    ASM_FOL_TAC THEN
-    SPLIT_TAC (!meson_split_limit) THEN
-    RULE_ASSUM_TAC(CONV_RULE(PRENEX_CONV THENC WEAK_CNF_CONV)) THEN
-    RULE_ASSUM_TAC(repeat
-     (fun th -> SPEC(genvar(type_of(fst(dest_forall(concl th))))) th)) THEN
-    REPEAT (FIRST_X_ASSUM (CONJUNCTS_THEN' ASSUME_TAC)) THEN
-    RULE_ASSUM_TAC(CONV_RULE(ASSOC_CONV DISJ_ASSOC)) THEN
-    REPEAT (FIRST_X_ASSUM SUBST_VAR_TAC) THEN
-    PURE_MESON_TAC min max step;;
+end;;
+
+(* ------------------------------------------------------------------------- *)
+(* Basic MESON tactic with settable parameters.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let GEN_MESON_TAC min max step ths =
+  REFUTE_THEN ASSUME_TAC THEN
+  Meson.POLY_ASSUME_TAC (map GEN_ALL ths) THEN
+  W(MAP_EVERY(UNDISCH_TAC o concl o snd) o fst) THEN
+  SELECT_ELIM_TAC THEN
+  W(fun (asl,w) -> MAP_EVERY (fun v -> SPEC_TAC(v,v)) (frees w)) THEN
+  CONV_TAC(PRESIMP_CONV THENC
+           TOP_DEPTH_CONV BETA_CONV THENC
+           LAMBDA_ELIM_CONV THENC
+           CONDS_CELIM_CONV THENC
+           Meson.QUANT_BOOL_CONV) THEN
+  REPEAT(GEN_TAC ORELSE DISCH_TAC) THEN
+  REFUTE_THEN ASSUME_TAC THEN
+  RULE_ASSUM_TAC(CONV_RULE(NNF_CONV THENC SKOLEM_CONV)) THEN
+  REPEAT (FIRST_X_ASSUM CHOOSE_TAC) THEN
+  ASM_FOL_TAC THEN
+  Meson.SPLIT_TAC (!meson_split_limit) THEN
+  RULE_ASSUM_TAC(CONV_RULE(PRENEX_CONV THENC WEAK_CNF_CONV)) THEN
+  RULE_ASSUM_TAC(repeat
+   (fun th -> SPEC(genvar(type_of(fst(dest_forall(concl th))))) th)) THEN
+  REPEAT (FIRST_X_ASSUM (Meson.CONJUNCTS_THEN' ASSUME_TAC)) THEN
+  RULE_ASSUM_TAC(CONV_RULE(ASSOC_CONV DISJ_ASSOC)) THEN
+  REPEAT (FIRST_X_ASSUM SUBST_VAR_TAC) THEN
+  Meson.PURE_MESON_TAC min max step;;
 
 (* ------------------------------------------------------------------------- *)
 (* Common cases.                                                             *)

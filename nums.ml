@@ -146,8 +146,12 @@ let num_Axiom = prove
 (* The basic numeral tag; rewrite existing instances of "_0".                *)
 (* ------------------------------------------------------------------------- *)
 
-let NUMERAL = new_definition
- `NUMERAL (n:num) = n`;;
+let NUMERAL =
+  let num_ty = type_of(lhand(concl ZERO_DEF)) in
+  let funn_ty = mk_fun_ty num_ty num_ty in
+  let numeral_tm = mk_var("NUMERAL",funn_ty) in
+  let n_tm = mk_var("n",num_ty) in
+  new_definition(mk_eq(mk_comb(numeral_tm,n_tm),n_tm));;
 
 let [NOT_SUC; num_INDUCTION; num_Axiom] =
   let th = prove(`_0 = 0`,REWRITE_TAC[NUMERAL]) in
@@ -192,13 +196,20 @@ inductive_type_store :=
 (* ------------------------------------------------------------------------- *)
 
 let BIT0_DEF =
+  let funn_ty = type_of(rator(lhand(snd(dest_forall(concl NUMERAL))))) in
+  let num_ty = snd(dest_fun_ty funn_ty) in
+  let bit0_tm = mk_var("BIT0",funn_ty) in
   let def = new_definition
-   `BIT0 = @fn. fn 0 = 0 /\ (!n. fn (SUC n) = SUC (SUC(fn n)))`
+   (mk_eq(bit0_tm,`@fn. fn 0 = 0 /\ (!n. fn (SUC n) = SUC (SUC(fn n)))`))
   and th = BETA_RULE(ISPECL [`0`; `\m n:num. SUC(SUC m)`] num_RECURSION) in
   REWRITE_RULE[GSYM def] (SELECT_RULE th);;
 
-let BIT1_DEF = new_definition
- `BIT1 n = SUC (BIT0 n)`;;
+let BIT1_DEF =
+  let funn_ty = type_of(rator(lhand(lhand(concl BIT0_DEF)))) in
+  let num_ty = snd(dest_fun_ty funn_ty) in
+  let n_tm = mk_var("n",num_ty) in
+  let bit1_tm = mk_var("BIT1",funn_ty) in
+  new_definition(mk_eq(mk_comb(bit1_tm,n_tm),`SUC (BIT0 n)`));;
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax operations on numerals.                                            *)

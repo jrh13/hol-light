@@ -511,8 +511,8 @@ module Hol : Hol_kernel = struct
   let MK_COMB(Sequent(asl1,c1),Sequent(asl2,c2)) =
      match (c1,c2) with
        Comb(Comb(Const("=",_),l1),r1),Comb(Comb(Const("=",_),l2),r2) ->
-        (match type_of l1 with
-           Tyapp("fun",[ty;_]) when Pervasives.compare ty (type_of l2) = 0
+        (match type_of r1 with
+           Tyapp("fun",[ty;_]) when Pervasives.compare ty (type_of r2) = 0
              -> Sequent(term_union asl1 asl2,
                         safe_mk_eq (Comb(l1,l2)) (Comb(r1,r2)))
          | _ -> failwith "MK_COMB: types do not agree")

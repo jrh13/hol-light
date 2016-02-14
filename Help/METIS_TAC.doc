@@ -1,0 +1,49 @@
+\DOC METIS_TAC
+
+\TYPE {METIS_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Automated first-order proof search tactic using Metis algorithm.
+
+\DESCRIBE
+A call to {METIS_TAC[theorems]} will attempt to establish the current goal
+using pure first-order reasoning, taking {theorems} as the starting-point. (It
+does not take the assumptions of the goal into account, but the similar
+function {ASM_METIS_TAC} does.) It will usually either solve the goal
+completely or run for an infeasibly long time, but it may sometimes fail
+quickly.
+
+This tactic is closely related to {MESON_TAC}, and many of the same general
+comments apply. Generally speaking, {METIS_TAC} is capable of solving more
+challenging problems than {MESON_TAC}, though the latter is often faster where
+it succeeds. Like {MESON_TAC}, it will exploit no special properties of the
+constants in the goal, other than equality and logical primitives. Any
+properties that are needed must be supplied explicitly in the theorem list,
+e.g. {LE_REFL} to tell it that {<=} on natural numbers is reflexive, or
+{REAL_ADD_SYM} to tell it that addition on real numbers is symmetric.
+
+Sometimes the similar {MESON_TAC} tactic is faster, especially on simpler
+goals.
+
+\FAILURE
+Fails if the goal is unprovable within the search bounds.
+
+\EXAMPLE
+Here is a simple `group theory' type property about a binary function {m}:
+{
+  # g `(!x y z. m(x, m(y,z)) = m(m(x,y), z) /\ m(x,y) = m(y,x))
+       ==> m(a, m(b, m(c, m(d, m(e, f))))) = m(f, m(e, m(d, m(c, m(b, a)))))`;;
+
+}
+It is solved in a fraction of a second by:
+{
+  # e(METIS_TAC[]);;
+  val it : goalstack = No subgoals
+}
+This is an example where {METIS_TAC} substantially outperforms {MESON_TAC},
+which does not seem to be able to solve that problem in a reasonable time.
+
+\SEEALSO
+ASM_METIS_TAC, MESON_TAC, METIS.
+
+\ENDDOC

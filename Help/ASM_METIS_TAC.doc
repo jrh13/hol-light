@@ -1,22 +1,21 @@
-\DOC ASM_MESON_TAC
+\DOC ASM_METIS_TAC
 
-\TYPE {ASM_MESON_TAC : thm list -> tactic}
+\TYPE {ASM_METIS_TAC : thm list -> tactic}
 
 \SYNOPSIS
 Automated first-order proof search tactic using assumptions of goal.
 
 \DESCRIBE
-A call to {ASM_MESON_TAC[theorems]} will attempt to establish the goal using
+A call to {ASM_METIS_TAC[theorems]} will attempt to establish the goal using
 pure first-order reasoning, taking {theorems} and the assumptions of the goal
 as the starting-point. It will usually either solve the goal completely or run
 for an infeasible length of time before terminating, but it may sometimes fail
-quickly. For more details, see {MESON} or {MESON_TAC}.
+quickly. For more details, see {METIS} or {METIS_TAC}.
 
 \FAILURE
-Fails if the goal is unprovable within the search bounds, though not
-necessarily in a feasible amount of time.
+Fails if the goal is unprovable within the search bounds.
 
 \SEEALSO
-ASM_METIS_TAC, GEN_MESON_TAC, MESON, MESON_TAC.
+ASM_MESON_TAC, METIS, METIS_TAC.
 
 \ENDDOC

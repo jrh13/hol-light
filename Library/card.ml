@@ -405,7 +405,7 @@ let FINITE_CARD_LT = prove
 
 let CARD_LE_SUBSET = prove
  (`!s:A->bool t. s SUBSET t ==> s <=_c t`,
-  REWRITE_TAC[SUBSET; le_c] THEN MESON_TAC[I_THM]);;
+  REWRITE_TAC[SUBSET; le_c] THEN METIS_TAC[I_THM]);;
 
 let CARD_LE_UNIV = prove
  (`!s:A->bool. s <=_c (:A)`,

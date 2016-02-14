@@ -1,3 +1,22 @@
+Thu 11th Feb 2016       fusion.ml, nums.ml, calc_num.ml
+
+Slightly tweaked "MK_COMB" to compare the types of the right-hand sides of the
+equations rather than the left (on the expectation that in typical uses the
+RHS will be simpler and therefore quicker to type).
+
+Also made a couple of tiny efficiency tweaks to ensure the :num and :num->num
+types in "NUMERAL", "BIT0" and "BIT1" are actually pointer ==.
+
+Tue  9th Feb 2016       metis.ml [new file], meson.ml, passim
+
+Installed Michael Färber and Cezary Kaliszyk's OCaml and HOL Light version
+of Joe Leslie-Hurd's Metis prover. This provides alternatives to the various
+MESON functions with the same naming convention: ASM_METIS_TAC, METIS_TAC and
+METIS. Slightly reorganized meson.ml as part of this installation into a module
+so that some of the "hidden" functions can be re-used, and changed a few MESON
+calls to METIS where it is obviously faster (no doubt there are many more, and
+many opportunities to prove things automatically that are currently manual).
+
 Fri 29th Jan 2016       cart.ml
 
 Added a "subtraction" on type indices, with a type constructor "finite_diff"

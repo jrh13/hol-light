@@ -205,6 +205,7 @@ let NUM_ODD_CONV =
 
 let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
     NUM_LT_CONV,NUM_LE_CONV,NUM_EQ_CONV =
+  let num_ty = type_of(lhand(concl ZERO_DEF)) in
   let Comb(NUMERAL_tm,Comb(BIT0_tm,Comb(BIT1_tm,zero_tm))) =
     mk_small_numeral 2
   and suc_tm = rator(rand(concl TWO))
@@ -214,16 +215,16 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
   and exp_tm = rator(rator(lhand(snd(strip_forall(concl EXP_2)))))
   and eq_tm = rator(rator(concl TWO)) in
   let num_0 = Int 0 and num_1 = Int 1 and num_2 = Int 2 in
-  let a_tm = `a:num`
-  and b_tm = `b:num`
-  and c_tm = `c:num`
-  and d_tm = `d:num`
-  and e_tm = `e:num`
-  and h_tm = `h:num`
-  and l_tm = `l:num`
-  and m_tm = `m:num`
-  and n_tm = `n:num`
-  and p_tm = `p:num` in
+  let a_tm = mk_var("a",num_ty)
+  and b_tm = mk_var("b",num_ty)
+  and c_tm = mk_var("c",num_ty)
+  and d_tm = mk_var("d",num_ty)
+  and e_tm = mk_var("e",num_ty)
+  and h_tm = mk_var("h",num_ty)
+  and l_tm = mk_var("l",num_ty)
+  and m_tm = mk_var("m",num_ty)
+  and n_tm = mk_var("n",num_ty)
+  and p_tm = mk_var("p",num_ty) in
   let STANDARDIZE =
     let ilist = [BIT0_tm,BIT0_tm; BIT1_tm,BIT1_tm; zero_tm,zero_tm;
                  suc_tm,suc_tm; add_tm,add_tm; mul_tm,mul_tm;
@@ -1035,7 +1036,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
              [tm,m_tm; ntm,n_tm; rand(concl th0),p_tm] pth_evenr in
             EQ_MP th1 th0
       | (Comb(Const("BIT1",_),mtm),Comb(Const("BIT1",_),ntm)) ->
-          if k <= 50 or l <= 50 or 
+          if k <= 50 or l <= 50 or
              Int k */ Int k <=/ Int l or
              Int l */ Int l <= Int k then
             match (mtm,ntm) with

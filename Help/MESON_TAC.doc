@@ -21,6 +21,8 @@ needed must be supplied explicitly in the theorem list, e.g. {LE_REFL} to tell
 it that {<=} on natural numbers is reflexive, or {REAL_ADD_SYM} to tell it that
 addition on real numbers is symmetric.
 
+For more challenging first-order problems, {METIS_TAC} may be recommended.
+
 \FAILURE
 Fails if the goal is unprovable within the search bounds, though not
 necessarily in a feasible amount of time.
@@ -69,6 +71,6 @@ quantification over a function {g}:
 \noindent and both of those are solvable directly by {MESON_TAC[]}.
 
 \SEEALSO
-ASM_MESON_TAC, GEN_MESON_TAC, MESON.
+ASM_MESON_TAC, GEN_MESON_TAC, MESON, METIS_TAC.
 
 \ENDDOC

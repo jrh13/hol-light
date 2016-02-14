@@ -8,8 +8,8 @@ Attempt to prove a term by first-order proof search.
 \DESCRIBE
 A call {MESON[theorems] `tm`} will attempt to prove {tm} using pure first-order
 reasoning, taking {theorems} as the starting-point. It will usually either
-solve the goal completely or run for an infeasible length of time before
-terminating, but it may sometimes fail quickly.
+solve it completely or run for an infeasible length of time before terminating,
+but it may sometimes fail quickly.
 
 Although {MESON} is capable of some fairly non-obvious pieces of first-order
 reasoning, and will handle equality adequately, it does purely logical
@@ -18,6 +18,9 @@ other than equality and logical primitives. Any properties that are needed must
 be supplied explicitly in the theorem list, e.g. {LE_REFL} to tell it that {<=}
 on natural numbers is reflexive, or {REAL_ADD_SYM} to tell it that addition on
 real numbers is symmetric.
+
+For more challenging first-order problems the related {METIS} rule often
+performs better.
 
 \FAILURE
 Will fail if the term is not provable, but not necessarily in a feasible amount
@@ -51,6 +54,6 @@ documentation for {MESON_TAC} to find more examples.
 Generating simple logical lemmas as part of a large proof.
 
 \SEEALSO
-ASM_MESON_TAC, GEN_MESON_TAC, MESON_TAC.
+ASM_MESON_TAC, GEN_MESON_TAC, MESON_TAC, METIS.
 
 \ENDDOC
