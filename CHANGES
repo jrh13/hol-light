@@ -1,3 +1,76 @@
+Wed 17th Feb 2016       metis.ml
+
+Hid or removed some local theorems inside the Metis module so that they don't
+show up in "search" results:
+
+        Metis_reconstruct.EXCLUDED_MIDDLE
+        Metis_reconstruct.IMPL_NOT_L
+        Metis_reconstruct.IMPL_NOT_R
+        Metis_reconstruct.RESOLVE_1
+        Metis_reconstruct.RESOLVE_2L
+        Metis_reconstruct.RESOLVE_2R
+        Metis_reconstruct.RESOLVE_3
+
+Wed 17th Feb 2016       Permutation/morelist.ml, Permutation/permutation.ml
+
+Added a few more lemmas based on the concepts in the Permutation library:
+
+  LIST_UNIQ_EQ_PAIRWISE_DISTINCT =
+   |- LIST_UNIQ = PAIRWISE (\x y. ~(x = y))
+  
+  ORDERED_PAIRWISE =
+   |- ORDERED = PAIRWISE
+  
+  PERMUTED_APPEND_CONG =
+    |- !l1 l1' l2 l2'.
+           l1 PERMUTED l1' /\ l2 PERMUTED l2'
+           ==> APPEND l1 l2 PERMUTED APPEND l1' l2'
+  
+  PERMUTED_APPEND_LCANCEL =
+    |- !l1 l2 l3. APPEND l1 l2 PERMUTED APPEND l1 l3 <=> l2 PERMUTED l3
+  
+  PERMUTED_APPEND_RCANCEL =
+    |- !l1 l2 l3. APPEND l1 l3 PERMUTED APPEND l2 l3 <=> l1 PERMUTED l2
+  
+  PERMUTED_LENGTH_MEM =
+    |- !l l'.
+           LIST_UNIQ l /\ LENGTH l = LENGTH l' /\ (!x. MEM x l <=> MEM x l')
+           ==> l PERMUTED l'
+
+Wed 17th Feb 2016       lists.ml, sets.ml
+
+Added a few elementary list theorems and moved the definition of (list)
+PAIRWISE from sets.ml to lists.ml, which seems a more thematic home. New
+theorems:
+
+  LENGTH_ZIP =
+    |- !l1 l2. LENGTH l1 = LENGTH l2 ==> LENGTH (ZIP l1 l2) = LENGTH l2
+
+  PAIRWISE_APPEND =
+    |- !R l m.
+           PAIRWISE R (APPEND l m) <=>
+           PAIRWISE R l /\ PAIRWISE R m /\ (!x y. MEM x l /\ MEM y m ==> R x y)
+
+  PAIRWISE_IMPLIES =
+    |- !R R' l.
+           PAIRWISE R l /\ (!x y. MEM x l /\ MEM y l /\ R x y ==> R' x y)
+           ==> PAIRWISE R' l
+
+  PAIRWISE_MAP =
+    |- !R f l. PAIRWISE R (MAP f l) <=> PAIRWISE (\x y. R (f x) (f y)) l
+
+  PAIRWISE_TRANSITIVE =
+    |- !R x y l.
+           (!x y z. R x y /\ R y z ==> R x z)
+           ==> (PAIRWISE R (CONS x (CONS y l)) <=>
+                R x y /\ PAIRWISE R (CONS y l))
+
+Fri 12th Feb 2016       Minisat/README, Minisat/zc2mso/zc2mso.C, Formal_ineqs/examples_flyspeck.hl, Formal_ineqs/docs/FormalVerifier.tex
+
+Fixed a few broken URLs (including changing Flyspeck from Google Code to the
+new Github repo: https://github.com/flyspeck/flyspeck), and added a line to
+Minisat/zc2mso/zc2mso.C to make it compile out of the box with a recent g++.
+
 Thu 11th Feb 2016       fusion.ml, nums.ml, calc_num.ml
 
 Slightly tweaked "MK_COMB" to compare the types of the right-hand sides of the
@@ -581,7 +654,7 @@ Added two rather trivial but occasionally useful results:
   NSUM_MUL_BOUND =
     |- !a b s. FINITE s ==> nsum s (\i. a i * b i) <= nsum s a * nsum s b
 
-  SUM_MUL_BOUND;;
+  SUM_MUL_BOUND =
     |- !a b s.
         FINITE s /\ (!i. i IN s ==> &0 <= a i /\ &0 <= b i)
         ==> sum s (\i. a i * b i) <= sum s a * sum s b
@@ -2187,7 +2260,7 @@ PCROSS_MONO =
   |- !s t s' t'.
          s SUBSET s' /\ t SUBSET t' ==> s PCROSS t SUBSET s' PCROSS t'
 
-SUBSET_PCROSS;;
+SUBSET_PCROSS =
   |- !s t s' t'.
          s PCROSS t SUBSET s' PCROSS t' <=>
          s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'
@@ -3141,7 +3214,7 @@ Added two natural theorems about intersections of unions
   INTERS_UNION =
    |- !s t. INTERS (s UNION t) = INTERS s INTER INTERS t
 
-  INTERS_OVER_UNIONS;;
+  INTERS_OVER_UNIONS =
    |- !f s.
         INTERS {UNIONS (f x) | x IN s} =
         UNIONS {INTERS {g x | x IN s} | g | !x. x IN s ==> g x IN f x}
@@ -3943,7 +4016,7 @@ REAL_POW_LT2_ODD).
   REAL_POW_EQ_ODD =
     |- !n x y. ODD n /\ x pow n = y pow n ==> x = y
 
-  REAL_POW_EQ_EQ;;
+  REAL_POW_EQ_EQ =
   |- !n x y.
          x pow n = y pow n <=>
          (if EVEN n then n = 0 \/ abs x = abs y else x = y)

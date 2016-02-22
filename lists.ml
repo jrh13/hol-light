@@ -129,6 +129,10 @@ let ZIP = prove
    (ZIP (CONS h1 t1) (CONS h2 t2) = CONS (h1,h2) (ZIP t1 t2))`,
   REWRITE_TAC[ZIP_DEF; HD; TL]);;
 
+let PAIRWISE = new_recursive_definition list_RECURSION
+  `(PAIRWISE (r:A->A->bool) [] <=> T) /\
+   (PAIRWISE (r:A->A->bool) (CONS h t) <=> ALL (r h) t /\ PAIRWISE r t)`;;
+
 (* ------------------------------------------------------------------------- *)
 (* Various trivial theorems.                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -334,6 +338,11 @@ let MAP_SND_ZIP = prove
   LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
   ASM_SIMP_TAC[LENGTH; SUC_INJ; MAP; FST; ZIP; NOT_SUC]);;
 
+let LENGTH_ZIP = prove
+ (`!l1 l2. LENGTH l1 = LENGTH l2 ==> LENGTH(ZIP l1 l2) = LENGTH l2`,
+  REPEAT(LIST_INDUCT_TAC ORELSE GEN_TAC) THEN
+  ASM_SIMP_TAC[LENGTH; NOT_SUC; ZIP; SUC_INJ]);;
+
 let MEM_ASSOC = prove
  (`!l x. MEM (x,ASSOC x l) l <=> MEM x (MAP FST l)`,
   LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[MEM; MAP; ASSOC] THEN
@@ -493,6 +502,38 @@ let MEM_APPEND_DECOMPOSE = prove
   REWRITE_TAC[TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
   SIMP_TAC[LEFT_IMP_EXISTS_THM; MEM_APPEND; MEM] THEN
   ONCE_REWRITE_TAC[MEM_APPEND_DECOMPOSE_LEFT] THEN MESON_TAC[]);;
+
+let PAIRWISE_APPEND = prove
+ (`!R:A->A->bool l m.
+        PAIRWISE R (APPEND l m) <=>
+        PAIRWISE R l /\ PAIRWISE R m /\ (!x y. MEM x l /\ MEM y m ==> R x y)`,
+  GEN_TAC THEN MATCH_MP_TAC list_INDUCT THEN
+  REWRITE_TAC[APPEND; PAIRWISE; MEM; ALL_APPEND; GSYM ALL_MEM] THEN
+  MESON_TAC[]);;
+
+let PAIRWISE_MAP = prove
+ (`!R f:A->B l.
+        PAIRWISE R (MAP f l) <=> PAIRWISE (\x y. R (f x) (f y)) l`,
+  GEN_TAC THEN GEN_TAC THEN
+  LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[PAIRWISE; MAP; ALL_MAP; o_DEF]);;
+
+let PAIRWISE_IMPLIES = prove
+ (`!R:A->A->bool R' l.
+        PAIRWISE R l /\ (!x y. MEM x l /\ MEM y l /\ R x y ==> R' x y)
+        ==> PAIRWISE R' l`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC list_INDUCT THEN
+  REWRITE_TAC[PAIRWISE; GSYM ALL_MEM; MEM] THEN MESON_TAC[]);;
+
+let PAIRWISE_TRANSITIVE = prove
+ (`!R x y:A l.
+      (!x y z. R x y /\ R y z ==> R x z)
+      ==> (PAIRWISE R (CONS x (CONS y l)) <=> R x y /\ PAIRWISE R (CONS y l))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[PAIRWISE; ALL; GSYM CONJ_ASSOC;
+              TAUT `(p /\ q /\ r /\ s <=> p /\ r /\ s) <=>
+                    p /\ s ==> r ==> q`] THEN
+  STRIP_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] ALL_IMP) THEN
+  ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)

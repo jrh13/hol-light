@@ -2875,10 +2875,6 @@ let mk_fset l = mk_setenum(l,type_of(hd l));;
 let pairwise = new_definition
   `pairwise r s <=> !x y. x IN s /\ y IN s /\ ~(x = y) ==> r x y`;;
 
-let PAIRWISE = new_recursive_definition list_RECURSION
-  `(PAIRWISE (r:A->A->bool) [] <=> T) /\
-   (PAIRWISE (r:A->A->bool) (CONS h t) <=> ALL (r h) t /\ PAIRWISE r t)`;;
-
 let PAIRWISE_EMPTY = prove
  (`!r. pairwise r {} <=> T`,
   REWRITE_TAC[pairwise; NOT_IN_EMPTY] THEN MESON_TAC[]);;

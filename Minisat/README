@@ -12,7 +12,7 @@ detail).
 To use this code, you need to have a copy of MiniSat, specifically its
 proof-logging version "MiniSat-p" installed. For downloads, see:
 
-  http://www.cs.chalmers.se/Cs/Research/FormalMethods/MiniSat/MiniSat.html
+  http://minisat.se/MiniSat.html
 
 By default, the code will look for MiniSat on your PATH. If it
 doesn't find it, you can explicitly indicate the directory that

@@ -9913,8 +9913,6 @@ let match_axiom axioms lits =
   try find (fun thm -> concl thm = clause) axioms'
   with _ -> failwith "match_axiom"
 
-let EXCLUDED_MIDDLE = TAUT `!a. a \/ ~a`
-
 (* move a literal in the proof of a disjunction to the first position
    may not preserve the order of the other literals *)
 let FRONT lit thm =
@@ -9928,14 +9926,14 @@ let FRONT lit thm =
   let eq = DISJ_ACI_RULE (mk_eq (conc, conc')) in
   (PURE_ONCE_REWRITE_RULE [eq] thm, rest)
 
-let RESOLVE_1  = TAUT `!a. a ==> ~a ==> F`
-let RESOLVE_2L = TAUT `!a b. a \/ b ==> ~a ==> b`
-let RESOLVE_2R = TAUT `!a c. a ==> ~a \/ c ==> c`
-let RESOLVE_3  = TAUT `!a b c. a \/ b ==> ~a \/ c ==> b \/ c`
-
 (* resolve two clauses, where atom has to appear at the first position of
    both clauses: positive in the first and negative in the second clause *)
-let RESOLVE_N atom = function
+let RESOLVE_N =
+  let RESOLVE_1  = TAUT `!a. a ==> ~a ==> F`
+  and RESOLVE_2L = TAUT `!a b. a \/ b ==> ~a ==> b`
+  and RESOLVE_2R = TAUT `!a c. a ==> ~a \/ c ==> c`
+  and RESOLVE_3  = TAUT `!a b c. a \/ b ==> ~a \/ c ==> b \/ c` in
+  fun atom -> function
   ([], []) -> SPEC atom RESOLVE_1
 | (r1, []) -> SPECL [atom; list_mk_disj r1] RESOLVE_2L
 | ([], r2) -> SPECL [atom; list_mk_disj r2] RESOLVE_2R
@@ -9953,18 +9951,18 @@ let RESOLVE atom th1 th2 =
   MP (MP res th1') th2'
   with _ -> failwith "resolve"
 
-let IMPL_NOT_L = TAUT `!a b. ~a ==> b <=>  a \/ b`;;
-let IMPL_NOT_R = TAUT `!a b.  a ==> b <=> ~a \/ b`;;
-
 (* given A,  tm |- C, prove A |- ~tm \/ C or
    given A, ~tm |- C, prove A |-  tm \/ C *)
-let DISCH_DISJ tm th =
-  let impl = DISCH tm th
-  and (tm', IMPL_NOT) =
-    try dest_neg tm, IMPL_NOT_L
-    with _ ->    tm, IMPL_NOT_R in
-  let eq = SPECL [tm'; concl th] IMPL_NOT in
-  PURE_ONCE_REWRITE_RULE [eq] impl
+let DISCH_DISJ =
+  let IMPL_NOT_L = TAUT `!a b. ~a ==> b <=>  a \/ b`
+  and IMPL_NOT_R = TAUT `!a b.  a ==> b <=> ~a \/ b` in
+  fun tm th ->
+    let impl = DISCH tm th
+    and (tm', IMPL_NOT) =
+      try dest_neg tm, IMPL_NOT_L
+      with _ ->    tm, IMPL_NOT_R in
+    let eq = SPECL [tm'; concl th] IMPL_NOT in
+    PURE_ONCE_REWRITE_RULE [eq] impl
 
 (* given A, tm1, .., tmn |- th, prove A |- ~tm1 \/ .. \/ ~tmn \/ th *)
 let DISCH_DISJS tms th = List.fold_right DISCH_DISJ tms th

@@ -19,10 +19,10 @@ BINDIR=${HOME}/bin
 
 # This is the list of source files in the HOL Light core
 
-HOLSRC=system.ml lib.ml type.ml term.ml thm.ml basics.ml nets.ml        \
-       preterm.ml parser.ml printer.ml equal.ml bool.ml drule.ml        \
-       tactics.ml itab.ml simp.ml theorems.ml ind_defs.ml class.ml      \
-       trivia.ml canon.ml meson.ml quot.ml recursion.ml pair.ml         \
+HOLSRC=system.ml lib.ml fusion.ml basics.ml nets.ml preterm.ml          \
+       parser.ml printer.ml equal.ml bool.ml drule.ml tactics.ml        \
+       itab.ml simp.ml theorems.ml ind_defs.ml class.ml trivia.ml       \
+       canon.ml meson.ml metis.ml quot.ml recursion.ml pair.ml          \
        nums.ml arith.ml wf.ml calc_num.ml normalizer.ml grobner.ml      \
        ind_types.ml lists.ml realax.ml calc_int.ml realarith.ml         \
        real.ml calc_rat.ml int.ml sets.ml iterate.ml cart.ml define.ml  \
@@ -85,13 +85,14 @@ hol: pa_j.cmo ${HOLSRC} update_database.ml;                    \
 # Build an image with multivariate calculus preloaded.
 
 hol.multivariate: ./hol                                                 \
-     Library/card.ml Library/permutations.ml Multivariate/misc.ml       \
-     Library/products.ml Library/floor.ml Multivariate/vectors.ml       \
+     Library/card.ml Library/permutations.ml Library/products.ml        \
+     Library/floor.ml Multivariate/misc.ml Library/iter.ml              \
+     Multivariate/metric.ml Multivariate/vectors.ml                     \
      Multivariate/determinants.ml Multivariate/topology.ml              \
-     Multivariate/convex.ml Multivariate/polytope.ml                    \
-     Multivariate/dimension.ml Multivariate/derivatives.ml              \
-     Multivariate/clifford.ml Multivariate/integration.ml               \
-     Multivariate/measure.ml                                            \
+     Multivariate/convex.ml Multivariate/paths.ml                       \
+     Multivariate/polytope.ml Multivariate/degree.ml                    \
+     Multivariate/derivatives.ml Multivariate/clifford.ml               \
+     Multivariate/integration.ml Multivariate/measure.ml                \
      Multivariate/multivariate_database.ml update_database.ml;          \
      echo -e 'loadt "Multivariate/make.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate analysis";;' | ./hol; mv hol.snapshot hol.multivariate;
 
@@ -110,10 +111,11 @@ hol.card: ./hol Library/card.ml; update_database.ml;                    \
 # Build an image with multivariate-based complex analysis preloaded
 
 hol.complex: ./hol.multivariate                                         \
-        Library/binomial.ml Library/iter.ml Multivariate/complexes.ml   \
+        Library/binomial.ml Multivariate/complexes.ml                   \
         Multivariate/canal.ml Multivariate/transcendentals.ml           \
-        Multivariate/realanalysis.ml Multivariate/cauchy.ml             \
-        Multivariate/complex_database.ml update_database.ml;            \
+        Multivariate/realanalysis.ml Multivariate/moretop.ml            \
+        Multivariate/cauchy.ml Multivariate/complex_database.ml         \
+        update_database.ml;                                             \
         echo -e 'loadt "Multivariate/complexes.ml";;\nloadt "Multivariate/canal.ml";;\nloadt "Multivariate/transcendentals.ml";;\nloadt "Multivariate/realanalysis.ml";;\nloadt "Multivariate/cauchy.ml";;\nloadt "Multivariate/complex_database.ml";;\nloadt "update_database.ml";;\nself_destruct "Preloaded with multivariate-based complex analysis";;' | ./hol.multivariate; mv hol.snapshot hol.complex;
 
 # Build all those

@@ -2926,6 +2926,17 @@ let PATH_CONNECTED_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [PATH_CONNECTED_LINEAR_IMAGE_EQ];;
 
+let HOMEOMORPHISM_PATH_CONNECTEDNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (path_connected(IMAGE f k) <=> path_connected k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_PATH_CONNECTEDNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 let PATH_CONNECTED_EMPTY = prove
  (`path_connected {}`,
   REWRITE_TAC[path_connected; NOT_IN_EMPTY]);;
@@ -7145,11 +7156,33 @@ let HOMEOMORPHIC_LOCAL_CONNECTEDNESS = prove
   MATCH_MP_TAC HOMEOMORPHIC_LOCALLY THEN
   REWRITE_TAC[HOMEOMORPHIC_CONNECTEDNESS]);;
 
+let HOMEOMORPHISM_LOCAL_CONNECTEDNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (locally connected (IMAGE f k) <=> locally connected k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_LOCAL_CONNECTEDNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 let HOMEOMORPHIC_LOCAL_PATH_CONNECTEDNESS = prove
  (`!s t. s homeomorphic t
          ==> (locally path_connected s <=> locally path_connected t)`,
   MATCH_MP_TAC HOMEOMORPHIC_LOCALLY THEN
   REWRITE_TAC[HOMEOMORPHIC_PATH_CONNECTEDNESS]);;
+
+let HOMEOMORPHISM_LOCAL_PATH_CONNECTEDNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (locally path_connected (IMAGE f k) <=> locally path_connected k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_LOCAL_PATH_CONNECTEDNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
 
 let LOCALLY_PATH_CONNECTED_TRANSLATION_EQ = prove
  (`!a:real^N s. locally path_connected (IMAGE (\x. a + x) s) <=>
@@ -7567,6 +7600,91 @@ let CARD_EQ_OPEN_IN_AFFINE = prove
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONNECTED_IMP_PERFECT_AFF_DIM THEN
   ASM_SIMP_TAC[AFFINE_IMP_CONVEX; CONVEX_CONNECTED] THEN
   FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN ASM SET_TAC[]);;
+
+let SEPARATION_BY_CLOSED_INTERMEDIATES = prove
+ (`!u s:real^N->bool.
+        s SUBSET u /\ ~connected(u DIFF s)
+        ==> ?t. closed_in (subtopology euclidean u) t /\ t SUBSET s /\
+                !c. closed_in (subtopology euclidean u) c /\
+                    t SUBSET c /\ c SUBSET s
+                    ==> ~connected(u DIFF c)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [CONNECTED]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`g1:real^N->bool`; `g2:real^N->bool`] THEN
+  STRIP_TAC THEN EXISTS_TAC `u DIFF (g1 UNION g2):real^N->bool` THEN
+  ASM_SIMP_TAC[CLOSED_IN_DIFF_OPEN; OPEN_UNION] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  X_GEN_TAC `c:real^N->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CLOSED_IN_CLOSED]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real^N->bool` MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC) THEN
+  REWRITE_TAC[connected] THEN
+  MAP_EVERY EXISTS_TAC
+   [`g1 DIFF d:real^N->bool`; `g2 DIFF d:real^N->bool`] THEN
+  ASM_SIMP_TAC[OPEN_DIFF] THEN ASM SET_TAC[]);;
+
+let SEPARATION_BY_CLOSED_INTERMEDIATES_EQ = prove
+ (`!u s:real^N->bool.
+        locally connected u /\ s SUBSET u
+        ==> (~connected(u DIFF s) <=>
+             ?t. closed_in (subtopology euclidean u) t /\ t SUBSET s /\
+                 !c. closed_in (subtopology euclidean u) c /\
+                     t SUBSET c /\ c SUBSET s
+                     ==> ~connected(u DIFF c))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN MATCH_MP_TAC SEPARATION_BY_CLOSED_INTERMEDIATES THEN
+    ASM_REWRITE_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC)] THEN
+  ASM_CASES_TAC `s:real^N->bool = u` THENL
+   [FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[CLOSED_IN_REFL; SUBSET_REFL];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `~(UNIONS(components(u DIFF t)) DIFF s:real^N->bool = {})`
+  MP_TAC THENL
+   [REWRITE_TAC[GSYM UNIONS_COMPONENTS] THEN ASM SET_TAC[];
+    REWRITE_TAC[UNIONS_DIFF; EMPTY_UNIONS; FORALL_IN_GSPEC]] THEN
+  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `c:real^N->bool` THEN STRIP_TAC THEN
+  REWRITE_TAC[CONNECTED_OPEN_IN] THEN
+  MAP_EVERY EXISTS_TAC
+   [`c DIFF s:real^N->bool`; `(u DIFF t DIFF c DIFF s):real^N->bool`] THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+   [SUBGOAL_THEN
+     `open_in (subtopology euclidean u) (c:real^N->bool) /\
+      open_in (subtopology euclidean u) (u DIFF t DIFF c)`
+    MP_TAC THENL
+     [CONJ_TAC THEN MATCH_MP_TAC OPEN_IN_TRANS THEN
+      EXISTS_TAC `u DIFF t:real^N->bool` THEN
+      ASM_SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_REFL] THENL
+       [MATCH_MP_TAC OPEN_IN_COMPONENTS_LOCALLY_CONNECTED THEN
+        ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+         (REWRITE_RULE[IMP_CONJ] LOCALLY_OPEN_SUBSET)) THEN
+        ASM_SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_REFL];
+        MATCH_MP_TAC OPEN_IN_DIFF THEN REWRITE_TAC[OPEN_IN_REFL] THEN
+        ASM_SIMP_TAC[CLOSED_IN_COMPONENT]];
+      MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[OPEN_IN_OPEN] THEN
+      CONJ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]];
+    ASM_REWRITE_TAC[] THEN
+    REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `u DIFF c:real^N->bool`) THEN
+    REWRITE_TAC[NOT_IMP] THEN REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC CLOSED_IN_DIFF THEN REWRITE_TAC[CLOSED_IN_REFL] THEN
+      MATCH_MP_TAC OPEN_IN_TRANS THEN
+      EXISTS_TAC `u DIFF t:real^N->bool` THEN
+      ASM_SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_REFL] THEN
+      MATCH_MP_TAC OPEN_IN_COMPONENTS_LOCALLY_CONNECTED THEN
+      ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+       (REWRITE_RULE[IMP_CONJ] LOCALLY_OPEN_SUBSET)) THEN
+      ASM_SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_REFL];
+      FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN
+      ASM SET_TAC[];
+      ASM SET_TAC[];
+      SUBGOAL_THEN `u DIFF (u DIFF c):real^N->bool = c` SUBST1_TAC THENL
+       [FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_SUBSET) THEN
+        ASM SET_TAC[];
+        ASM_MESON_TAC[IN_COMPONENTS_CONNECTED]]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Two uniform variants of local connectedness. ULC is an abbreviation for   *)
@@ -19010,6 +19128,17 @@ let SIMPLY_CONNECTED_INJECTIVE_LINEAR_IMAGE = prove
                 HOMEOMORPHIC_REFL]);;
 
 add_linear_invariants [SIMPLY_CONNECTED_INJECTIVE_LINEAR_IMAGE];;
+
+let HOMEOMORPHISM_SIMPLE_CONNECTEDNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (simply_connected(IMAGE f k) <=> simply_connected k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_SIMPLY_CONNECTED_EQ THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
 
 let SIMPLY_CONNECTED_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.

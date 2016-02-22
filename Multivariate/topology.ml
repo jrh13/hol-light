@@ -14287,6 +14287,43 @@ let FINITE_INTER_COLLINEAR_OPEN_SEGMENTS = prove
         GEN_REWRITE_RULE I [GSYM BETWEEN_IN_SEGMENT])) THEN
     REPEAT(POP_ASSUM MP_TAC) THEN SIMP_TAC[INSERT_AC]]);;
 
+let BOUNDED_SEPARATION_1D = prove
+ (`!s:real^N->bool.
+        dimindex(:N) = 1 /\ bounded s
+        ==> (connected((:real^N) DIFF s) <=> s = {})`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[DIFF_EMPTY; CONNECTED_UNIV] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `a:real^N`) THEN REWRITE_TAC[connected] THEN
+  MAP_EVERY EXISTS_TAC
+   [`{x:real^N | x$1 < (a:real^N)$1}`;
+    `{x:real^N | x$1 > (a:real^N)$1}`] THEN
+  REWRITE_TAC[OPEN_HALFSPACE_COMPONENT_GT; OPEN_HALFSPACE_COMPONENT_LT] THEN
+  REWRITE_TAC[SUBSET; EXTENSION; IN_INTER; IN_ELIM_THM; NOT_IN_EMPTY;
+              IN_UNION; IN_DIFF; IN_UNIV] THEN
+  REWRITE_TAC[CONJ_ASSOC; REAL_ARITH `x < a /\ x > a <=> F`] THEN
+  REWRITE_TAC[REAL_ARITH `x < a \/ x > a <=> ~(x = a)`; real_gt] THEN
+  REWRITE_TAC[CONTRAPOS_THM; NOT_FORALL_THM] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC] THEN CONJ_TAC THENL
+   [X_GEN_TAC `b:real^N` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `b:real^N = a` (fun th -> ASM_REWRITE_TAC[th]) THEN
+    ASM_REWRITE_TAC[CART_EQ; DIMINDEX_1; FORALL_1];
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP BOUNDED_SUBSET_CLOSED_INTERVAL) THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:real^N`; `v:real^N`] THEN
+    ASM_REWRITE_TAC[SUBSET; IN_INTERVAL; DIMINDEX_1; FORALL_1] THEN
+    DISCH_TAC THEN CONJ_TAC THENL
+     [EXISTS_TAC `u - basis 1:real^N`; EXISTS_TAC `v + basis 1:real^N`] THEN
+    FIRST_ASSUM(MP_TAC o SPEC `a:real^N`) THEN
+    (ANTS_TAC THENL [ASM_REWRITE_TAC[]; STRIP_TAC]) THEN
+    (CONJ_TAC THENL
+      [ALL_TAC;
+       FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE BINDER_CONV
+        [GSYM CONTRAPOS_THM])] THEN
+      REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_SUB_COMPONENT] THEN
+      SIMP_TAC[BASIS_COMPONENT; DIMINDEX_GE_1; LE_REFL] THEN
+      ASM_REAL_ARITH_TAC)]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Intervals in general, including infinite and mixtures of open and closed. *)
 (* ------------------------------------------------------------------------- *)
@@ -26574,6 +26611,17 @@ let LOCALLY_COMPACT_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [LOCALLY_COMPACT_LINEAR_IMAGE_EQ];;
 
+let HOMEOMORPHISM_LOCAL_COMPACTNESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (locally compact (IMAGE f k) <=> locally compact k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_LOCAL_COMPACTNESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 let LOCALLY_CLOSED = prove
  (`!s:real^N->bool. locally closed s <=> locally compact s`,
   GEN_TAC THEN EQ_TAC THENL
@@ -27301,6 +27349,17 @@ let HOMEOMORPHIC_FSIGMANESS = prove
   REWRITE_TAC[homeomorphic; homeomorphism] THEN
   MESON_TAC[FSIGMA_CONTINUOUS_IMAGE]);;
 
+let HOMEOMORPHISM_FSIGMANESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (fsigma(IMAGE f k) <=> fsigma k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_FSIGMANESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
 let CONTINUOUS_FSIGMA_PREIMAGE = prove
  (`!f:real^M->real^N s t.
         f continuous_on s /\ fsigma s /\ fsigma t
@@ -27810,6 +27869,17 @@ let HOMEOMORPHIC_GDELTANESS = prove
     MATCH_MP_TAC CONTINUOUS_GDELTA_PREIMAGE THEN ASM_SIMP_TAC[]) in
   REPEAT STRIP_TAC THEN EQ_TAC THEN
   MATCH_MP_TAC lemma THEN ASM_MESON_TAC[HOMEOMORPHIC_SYM]);;
+
+let HOMEOMORPHISM_GDELTANESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (gdelta(IMAGE f k) <=> gdelta k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_GDELTANESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Very basics about Borel sets.                                             *)

@@ -1891,7 +1891,7 @@ let REAL_ABEL_LIMIT_THEOREM = prove
              (atreal (&1) within {z | z <= &1})`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MP_TAC(ISPECL [`&1`; `s:num->bool`; `Cx o (a:num->real)`]
-        ABEL_LIMIT_THEOREM) THEN
+        ABEL_LIMIT_THEOREM_1) THEN
   ASM_REWRITE_TAC[GSYM REAL_SUMMABLE_COMPLEX; REAL_LT_01] THEN STRIP_TAC THEN
   MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
    [X_GEN_TAC `r:real` THEN STRIP_TAC THEN

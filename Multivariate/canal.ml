@@ -3182,6 +3182,13 @@ let POWER_SERIES_CONV_IMP_ABSCONV_WEAK = prove
   REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_CX; REAL_ABS_NORM;
               REAL_ABS_MUL; REAL_LE_REFL]);;
 
+let POWER_SERIES_RADIUS_OF_CONVERGENCE = prove
+ (`!a k w z.
+           summable k (\n. a n * z pow n) /\ norm w < norm z
+           ==> summable k (\n. a n * w pow n)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SERIES_ABSCONV_IMP_CONV THEN
+  REWRITE_TAC[] THEN ASM_MESON_TAC[POWER_SERIES_CONV_IMP_ABSCONV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Comparing sums and "integrals" via complex antiderivatives.               *)
 (* ------------------------------------------------------------------------- *)
@@ -3630,14 +3637,14 @@ let POWER_SERIES_UNIFORM_CONVERGENCE_STOLZ = prove
 (* ------------------------------------------------------------------------- *)
 
 let ABEL_POWER_SERIES_CONTINUOUS = prove
- (`!M s a.
-        summable s a /\ &0 < M
+ (`!M s a w.
+        summable s (\i. a i * w pow i) /\ &0 < M
         ==> (\z. infsum s (\i. a i * z pow i)) continuous_on
-            {z | norm(Cx(&1) - z) <= M * (&1 - norm z)}`,
+            {z | norm(w - z) <= M * (norm w - norm z)}`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(ISPEC `sequentially` CONTINUOUS_UNIFORM_LIMIT) THEN
   EXISTS_TAC `\n z. vsum (s INTER (0..n)) (\i. a i * z pow i)` THEN
-  ASM_SIMP_TAC[POWER_SERIES_UNIFORM_CONVERGENCE_STOLZ_1; IN_ELIM_THM;
+  ASM_SIMP_TAC[POWER_SERIES_UNIFORM_CONVERGENCE_STOLZ; IN_ELIM_THM;
                TRIVIAL_LIMIT_SEQUENTIALLY] THEN
   MATCH_MP_TAC ALWAYS_EVENTUALLY THEN X_GEN_TAC `n:num` THEN
   REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_ON_VSUM THEN
@@ -3645,41 +3652,44 @@ let ABEL_POWER_SERIES_CONTINUOUS = prove
            CONTINUOUS_ON_ID; CONTINUOUS_ON_CONST; FINITE_INTER;
            FINITE_NUMSEG]);;
 
+let ABEL_POWER_SERIES_CONTINUOUS_1 = prove
+ (`!M s a.
+        summable s a /\ &0 < M
+        ==> (\z. infsum s (\i. a i * z pow i)) continuous_on
+            {z | norm(Cx(&1) - z) <= M * (&1 - norm z)}`,
+  MP_TAC ABEL_POWER_SERIES_CONTINUOUS THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  DISCH_THEN(MP_TAC o SPEC `Cx(&1)`) THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NUM; COMPLEX_POW_ONE] THEN
+  REWRITE_TAC[COMPLEX_MUL_RID; ETA_AX]);;
+
 let ABEL_LIMIT_THEOREM = prove
+ (`!M s a w.
+        summable s (\i. a i * w pow i) /\ &0 < M
+        ==> (!z. norm(z) < norm(w) ==> summable s (\i. a i * z pow i)) /\
+            ((\z. infsum s (\i. a i * z pow i)) -->
+             infsum s  (\i. a i * w pow i))
+            (at w within {z | norm(w - z) <= M * (norm w - norm z)})`,
+  MP_TAC ABEL_POWER_SERIES_CONTINUOUS THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THENL
+   [ASM_MESON_TAC[POWER_SERIES_RADIUS_OF_CONVERGENCE]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o REWRITE_RULE[CONTINUOUS_ON]) THEN
+  REWRITE_TAC[IN_ELIM_THM; COMPLEX_SUB_REFL; REAL_SUB_REFL] THEN
+  REWRITE_TAC[COMPLEX_NORM_CX] THEN REAL_ARITH_TAC);;
+
+let ABEL_LIMIT_THEOREM_1 = prove
  (`!M s a.
         summable s a /\ &0 < M
         ==> (!z. norm(z) < &1 ==> summable s (\i. a i * z pow i)) /\
             ((\z. infsum s (\i. a i * z pow i)) --> infsum s a)
             (at (Cx(&1)) within {z | norm(Cx(&1) - z) <= M * (&1 - norm z)})`,
-  GEN_TAC THEN ASM_CASES_TAC `&0 < M` THEN ASM_REWRITE_TAC[] THEN
-  SUBGOAL_THEN
-   `!a. summable (:num) a
-        ==> (!z. norm(z) < &1 ==> summable (:num) (\i. a i * z pow i)) /\
-            ((\z. infsum (:num) (\i. a i * z pow i))
-              --> infsum (:num) a)
-            (at (Cx(&1)) within {z | norm(Cx(&1) - z) <= M * (&1 - norm z)})`
-  ASSUME_TAC THENL
-   [ALL_TAC;
-    REPEAT GEN_TAC THEN STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC
-     `(\n. if n IN s then a n else vec 0):num->complex`) THEN
-    REWRITE_TAC[COND_RAND; COND_RATOR; COMPLEX_VEC_0; COMPLEX_MUL_LZERO] THEN
-    REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
-    ASM_REWRITE_TAC[SUMMABLE_RESTRICT; INFSUM_RESTRICT]] THEN
-  GEN_TAC THEN STRIP_TAC THEN CONJ_TAC THENL
-   [X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
-    MATCH_MP_TAC SERIES_ABSCONV_IMP_CONV THEN
-    REWRITE_TAC[] THEN MATCH_MP_TAC POWER_SERIES_CONV_IMP_ABSCONV THEN
-    EXISTS_TAC `Cx(&1)` THEN REWRITE_TAC[COMPLEX_POW_ONE; COMPLEX_NORM_CX] THEN
-    ASM_REWRITE_TAC[REAL_ABS_NUM; COMPLEX_MUL_RID; ETA_AX];
-    MP_TAC(ISPECL [`M:real`; `(:num)`; `a:num->complex`]
-       ABEL_POWER_SERIES_CONTINUOUS) THEN
-    ASM_REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
-    DISCH_THEN(MP_TAC o SPEC `Cx(&1)`) THEN
-    REWRITE_TAC[IN_ELIM_THM; CONTINUOUS_WITHIN] THEN
-    REWRITE_TAC[COMPLEX_SUB_REFL; COMPLEX_NORM_CX; COMPLEX_POW_ONE;
-                COMPLEX_MUL_RID; ETA_AX; REAL_ABS_NUM; REAL_SUB_REFL;
-                REAL_LE_REFL; REAL_MUL_RZERO]]);;
+  MP_TAC ABEL_LIMIT_THEOREM THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  DISCH_THEN(MP_TAC o SPEC `Cx(&1)`) THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_NUM; COMPLEX_POW_ONE] THEN
+  REWRITE_TAC[COMPLEX_MUL_RID; ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Continuity and uniqueness of power series. These would drop easily out    *)

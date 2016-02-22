@@ -42,6 +42,12 @@ let ORDERED_APPEND = prove
    REWRITE_TAC [APPEND; ALL; ORDERED_RULES; ORDERED_CONS] THEN
    ASM_SIMP_TAC [ORDERED_CONS; ALL_APPEND] THEN ASM_MESON_TAC [ALL_APPEND]);;
 
+let ORDERED_PAIRWISE = prove
+ (`ORDERED = PAIRWISE`,
+  REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+  MATCH_MP_TAC list_INDUCT THEN REWRITE_TAC[PAIRWISE; ORDERED_RULES] THEN
+  SIMP_TAC[ORDERED_CONS] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (*  Quick Sort.                                                              *)
 (* ------------------------------------------------------------------------- *)

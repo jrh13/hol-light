@@ -17,6 +17,7 @@
 #include "Sort.h"
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 // Redfine if you want output to go somewhere else:
 #define reportf(format, args...) ( printf(format , ## args), fflush(stdout) )

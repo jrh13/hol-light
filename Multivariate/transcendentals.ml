@@ -7037,6 +7037,10 @@ let RPOW_ADD = prove
   REPEAT STRIP_TAC THEN
   ASM_REWRITE_TAC[rpow; REAL_ADD_RDISTRIB; REAL_EXP_ADD]);;
 
+let RPOW_SUB = prove
+ (`!x y z. &0 < x ==> x rpow (y - z) = x rpow y / x rpow z`,
+  SIMP_TAC[real_sub; RPOW_ADD; RPOW_NEG; real_div]);;
+
 let RPOW_ADD_ALT = prove
  (`!x y z. &0 <= x /\ (x = &0 /\ y + z = &0 ==> y = &0 \/ z = &0)
            ==> x rpow (y + z) = x rpow y * x rpow z`,
@@ -7047,6 +7051,12 @@ let RPOW_ADD_ALT = prove
   ASM_REWRITE_TAC[REAL_MUL_LID; REAL_ADD_LID] THEN
   ASM_CASES_TAC `y + z = &0` THEN ASM_REWRITE_TAC[] THEN
   ASM_REAL_ARITH_TAC);;
+
+let RPOW_SUB_ALT = prove
+ (`!x y z. &0 <= x /\ (x = &0 /\ y = z ==> y = &0 \/ z = &0)
+           ==> x rpow (y - z) = x rpow y / x rpow z`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[real_sub; real_div; GSYM RPOW_NEG] THEN
+  MATCH_MP_TAC RPOW_ADD_ALT THEN ASM_REAL_ARITH_TAC);;
 
 let RPOW_SQRT = prove
  (`!x. &0 <= x ==> x rpow (&1 / &2) = sqrt x`,
