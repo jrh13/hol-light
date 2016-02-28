@@ -6218,6 +6218,25 @@ let ENR_FROM_UNION_AND_INTER = prove
   MATCH_MP_TAC ENR_FROM_UNION_AND_INTER_GEN THEN
   ASM_MESON_TAC[CLOSED_SUBSET; SUBSET_UNION]);;
 
+let ENR_CLOSURE_FROM_FRONTIER = prove
+ (`!s:real^N->bool. ENR(frontier s) ==> ENR(closure s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ENR_FROM_UNION_AND_INTER THEN
+  EXISTS_TAC `closure((:real^N) DIFF s)` THEN
+  ASM_REWRITE_TAC[CLOSED_CLOSURE; GSYM FRONTIER_CLOSURES] THEN
+  SUBGOAL_THEN
+   `closure s UNION closure ((:real^N) DIFF s) = (:real^N)`
+   (fun th -> REWRITE_TAC[th; ENR_UNIV]) THEN
+  MATCH_MP_TAC(SET_RULE
+   `s SUBSET closure s /\ (:real^N) DIFF s SUBSET closure((:real^N) DIFF s)
+    ==> closure s UNION closure ((:real^N) DIFF s) = (:real^N)`) THEN
+  REWRITE_TAC[CLOSURE_SUBSET]);;
+
+let ANR_CLOSURE_FROM_FRONTIER = prove
+ (`!s:real^N->bool. ANR(frontier s) ==> ANR(closure s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ENR_IMP_ANR THEN
+  MATCH_MP_TAC ENR_CLOSURE_FROM_FRONTIER THEN
+  ASM_SIMP_TAC[ENR_ANR; FRONTIER_CLOSED; CLOSED_IMP_LOCALLY_COMPACT]);;
+
 let ENR_FINITE_UNIONS_CONVEX_CLOSED = prove
  (`!t:(real^N->bool)->bool.
         FINITE t /\ (!c. c IN t ==> closed c /\ convex c) ==> ENR(UNIONS t)`,

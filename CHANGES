@@ -1,3 +1,11 @@
+Fri 26th Feb 2016       real.ml, int.ml
+
+Added another simple lemma about the sign function for reals and integers:
+
+  REAL_SGN_ABS_ALT = |- !x. real_sgn x * x = abs x
+
+  INT_SGN_ABS_ALT = |- !x. int_sgn x * x = abs x
+
 Wed 17th Feb 2016       metis.ml
 
 Hid or removed some local theorems inside the Metis module so that they don't
@@ -17,21 +25,21 @@ Added a few more lemmas based on the concepts in the Permutation library:
 
   LIST_UNIQ_EQ_PAIRWISE_DISTINCT =
    |- LIST_UNIQ = PAIRWISE (\x y. ~(x = y))
-  
+
   ORDERED_PAIRWISE =
    |- ORDERED = PAIRWISE
-  
+
   PERMUTED_APPEND_CONG =
     |- !l1 l1' l2 l2'.
            l1 PERMUTED l1' /\ l2 PERMUTED l2'
            ==> APPEND l1 l2 PERMUTED APPEND l1' l2'
-  
+
   PERMUTED_APPEND_LCANCEL =
     |- !l1 l2 l3. APPEND l1 l2 PERMUTED APPEND l1 l3 <=> l2 PERMUTED l3
-  
+
   PERMUTED_APPEND_RCANCEL =
     |- !l1 l2 l3. APPEND l1 l3 PERMUTED APPEND l2 l3 <=> l1 PERMUTED l2
-  
+
   PERMUTED_LENGTH_MEM =
     |- !l l'.
            LIST_UNIQ l /\ LENGTH l = LENGTH l' /\ (!x. MEM x l <=> MEM x l')

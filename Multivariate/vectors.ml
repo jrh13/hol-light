@@ -2994,6 +2994,16 @@ let MATRIX_SUB_EQ = prove
   SIMP_TAC[CART_EQ; MAT_COMPONENT;
            MATRIX_SUB_COMPONENT; COND_ID; REAL_SUB_0]);;
 
+let MATRIX_SUB_ADD = prove
+ (`!A B:real^N^M. (A - B) + B = A`,
+  REWRITE_TAC[CART_EQ; MATRIX_ADD_COMPONENT; MATRIX_SUB_COMPONENT] THEN
+  REAL_ARITH_TAC);;
+
+let MATRIX_SUB_ADD2 = prove
+ (`!A B:real^N^M. A + (B - A) = B`,
+  REWRITE_TAC[CART_EQ; MATRIX_ADD_COMPONENT; MATRIX_SUB_COMPONENT] THEN
+  REAL_ARITH_TAC);;
+
 let MATRIX_ADD_LDISTRIB = prove
  (`!A:real^N^M B:real^P^N C. A ** (B + C) = A ** B + A ** C`,
   SIMP_TAC[matrix_mul; matrix_add; CART_EQ; LAMBDA_BETA;
