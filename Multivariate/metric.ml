@@ -5,6 +5,8 @@
 (*                (c) Copyright, Marco Maggesi 2014                          *)
 (* ========================================================================= *)
 
+needs "Multivariate/misc.ml";;
+needs "Library/iter.ml";;
 prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
@@ -225,25 +227,25 @@ let CLOSED_IN_UNIONS = prove
   REWRITE_TAC[UNIONS_INSERT; UNIONS_0; CLOSED_IN_EMPTY; IN_INSERT] THEN
   MESON_TAC[CLOSED_IN_UNION]);;
 
-let CLOSED_IN_LOCALLY_FINITE_UNIONS = prove                       
- (`!top f:(A->bool)->bool.                
-        (!s. s IN f ==> closed_in top s) /\                          
-        (!x. x IN topspace top                                               
-             ==> ?v. open_in top v /\ x IN v /\                        
-                     FINITE {s | s IN f /\ ~(s INTER v = {})}) 
-        ==> closed_in top (UNIONS f)`,                   
+let CLOSED_IN_LOCALLY_FINITE_UNIONS = prove
+ (`!top f:(A->bool)->bool.
+        (!s. s IN f ==> closed_in top s) /\
+        (!x. x IN topspace top
+             ==> ?v. open_in top v /\ x IN v /\
+                     FINITE {s | s IN f /\ ~(s INTER v = {})})
+        ==> closed_in top (UNIONS f)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[closed_in] THEN CONJ_TAC THENL
-    [RULE_ASSUM_TAC(REWRITE_RULE[closed_in]) THEN                             
+    [RULE_ASSUM_TAC(REWRITE_RULE[closed_in]) THEN
      ASM_SIMP_TAC[UNIONS_SUBSET];
-     ALL_TAC] THEN                      
+     ALL_TAC] THEN
   ONCE_REWRITE_TAC[OPEN_IN_SUBOPEN] THEN X_GEN_TAC `x:A` THEN
   REWRITE_TAC[IN_DIFF] THEN STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN ASM_REWRITE_TAC[] THEN              
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN ASM_REWRITE_TAC[] THEN
   DISCH_THEN(X_CHOOSE_THEN `v:A->bool` STRIP_ASSUME_TAC) THEN EXISTS_TAC
     `v DIFF UNIONS {s | s IN f /\ ~(s INTER v = {})}:A->bool` THEN
-  ASM_REWRITE_TAC[IN_DIFF; GSYM CONJ_ASSOC] THEN CONJ_TAC THENL          
+  ASM_REWRITE_TAC[IN_DIFF; GSYM CONJ_ASSOC] THEN CONJ_TAC THENL
    [MATCH_MP_TAC OPEN_IN_DIFF THEN ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC CLOSED_IN_UNIONS THEN ASM_SIMP_TAC[IN_ELIM_THM]; 
+    MATCH_MP_TAC CLOSED_IN_UNIONS THEN ASM_SIMP_TAC[IN_ELIM_THM];
     FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)

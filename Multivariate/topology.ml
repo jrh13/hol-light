@@ -8,8 +8,8 @@
 
 needs "Library/card.ml";;
 needs "Library/iter.ml";;
-needs "Multivariate/determinants.ml";;
 needs "Multivariate/metric.ml";;
+needs "Multivariate/determinants.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* The universal Euclidean topology that we use most of the time.            *)
@@ -24932,50 +24932,6 @@ let URYSOHN = prove
   REWRITE_TAC[IN_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Countability of some relevant sets.                                       *)
-(* ------------------------------------------------------------------------- *)
-
-let COUNTABLE_INTEGER = prove
- (`COUNTABLE integer`,
-  MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC
-   `IMAGE (\n. (&n:real)) (:num) UNION IMAGE (\n. --(&n)) (:num)` THEN
-  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_UNION; NUM_COUNTABLE] THEN
-  REWRITE_TAC[SUBSET; IN_UNION; IN_IMAGE; IN_UNIV] THEN
-  REWRITE_TAC[IN; INTEGER_CASES]);;
-
-let CARD_EQ_INTEGER = prove
- (`integer =_c (:num)`,
-  REWRITE_TAC[GSYM CARD_LE_ANTISYM; GSYM COUNTABLE_ALT; COUNTABLE_INTEGER] THEN
-  REWRITE_TAC[le_c] THEN EXISTS_TAC `real_of_num` THEN
-  REWRITE_TAC[IN_UNIV; REAL_OF_NUM_EQ] THEN
-  REWRITE_TAC[IN; INTEGER_CLOSED]);;
-
-let COUNTABLE_RATIONAL = prove
- (`COUNTABLE rational`,
-  MATCH_MP_TAC COUNTABLE_SUBSET THEN
-  EXISTS_TAC `IMAGE (\(x,y). x / y) (integer CROSS integer)` THEN
-  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_CROSS; COUNTABLE_INTEGER] THEN
-  REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
-  REWRITE_TAC[rational; IN] THEN MESON_TAC[]);;
-
-let CARD_EQ_RATIONAL = prove
- (`rational =_c (:num)`,
-  REWRITE_TAC[GSYM CARD_LE_ANTISYM; GSYM COUNTABLE_ALT; COUNTABLE_RATIONAL] THEN
-  REWRITE_TAC[le_c] THEN EXISTS_TAC `real_of_num` THEN
-  REWRITE_TAC[IN_UNIV; REAL_OF_NUM_EQ] THEN
-  REWRITE_TAC[IN; RATIONAL_CLOSED]);;
-
-let COUNTABLE_INTEGER_COORDINATES = prove
- (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> integer(x$i) }`,
-  MATCH_MP_TAC COUNTABLE_CART THEN
-  REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_INTEGER]);;
-
-let COUNTABLE_RATIONAL_COORDINATES = prove
- (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> rational(x$i) }`,
-  MATCH_MP_TAC COUNTABLE_CART THEN
-  REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_RATIONAL]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Density of points with rational, or just dyadic rational, coordinates.    *)
 (* ------------------------------------------------------------------------- *)
 
@@ -27107,6 +27063,37 @@ let LOCALLY_COMPACT_CLOSED_INTER_OPEN = prove
   MESON_TAC[CLOSED_IMP_LOCALLY_COMPACT; OPEN_IMP_LOCALLY_COMPACT;
             LOCALLY_COMPACT_INTER; INTER_COMM; CLOSED_CLOSURE;
             LOCALLY_COMPACT_OPEN_INTER_CLOSURE]);;
+
+let LOCALLY_COMPACT_CLOSED_DIFF = prove
+ (`!s:real^N->bool.
+        locally compact s <=> ?t u. closed t /\ closed u /\ t DIFF u = s`,
+  GEN_TAC THEN REWRITE_TAC[LOCALLY_COMPACT_CLOSED_INTER_OPEN] THEN
+  MATCH_MP_TAC(MESON[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`]
+    `(!t u. P t u <=> Q t (UNIV DIFF u))
+     ==> ((?t u. P t u) <=> (?t u. Q t u))`) THEN
+  REWRITE_TAC[GSYM OPEN_CLOSED; SET_RULE
+    `t DIFF (UNIV DIFF s) = t INTER s`] THEN
+  REWRITE_TAC[EQ_SYM_EQ]);;
+
+let LOCALLY_COMPACT_CLOSURE_DIFF = prove
+ (`!s:real^N->bool. locally compact s <=> closed(closure s DIFF s)`,
+  GEN_TAC THEN EQ_TAC THENL
+   [SIMP_TAC[LOCALLY_COMPACT_CLOSED_INTER_OPEN; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`c:real^N->bool`; `u:real^N->bool`] THEN
+    STRIP_TAC THEN
+    SUBGOAL_THEN
+     `closure(c INTER u) DIFF (c INTER u):real^N->bool =
+      closure(c INTER u) INTER (c DIFF u)`
+     (fun t -> ASM_SIMP_TAC[CLOSED_CLOSURE; CLOSED_DIFF; CLOSED_INTER; t]) THEN
+    MP_TAC(SET_RULE `c:real^N->bool = (c INTER u) UNION (c DIFF u)`) THEN
+    DISCH_THEN(MP_TAC o AP_TERM `closure:(real^N->bool)->real^N->bool`) THEN
+    ASM_SIMP_TAC[CLOSURE_UNION; CLOSURE_CLOSED; CLOSED_DIFF] THEN SET_TAC[];
+    DISCH_TAC THEN
+    SUBGOAL_THEN `s:real^N->bool = closure s DIFF (closure(s) DIFF s)`
+    SUBST1_TAC THENL
+     [MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[];
+      REWRITE_TAC[LOCALLY_COMPACT_CLOSED_DIFF] THEN
+      ASM_MESON_TAC[CLOSED_CLOSURE]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* F_sigma and G_delta sets.                                                 *)

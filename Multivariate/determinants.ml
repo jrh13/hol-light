@@ -2260,6 +2260,13 @@ let POSITIVE_DEFINITE_CMUL = prove
   SIMP_TAC[positive_definite; TRANSP_MATRIX_CMUL] THEN
   SIMP_TAC[MATRIX_VECTOR_LMUL; DOT_RMUL; REAL_LT_MUL]);;
 
+let NEARBY_POSITIVE_DEFINITE_MATRIX_GEN = prove
+ (`!A:real^N^N B x.
+        positive_semidefinite A /\ positive_definite B /\ &0 < x
+        ==> positive_definite(A + x %% B)`,
+  SIMP_TAC[POSITIVE_SEMIDEFINITE_POSITIVE_DEFINITE_ADD;
+           POSITIVE_DEFINITE_CMUL]);;
+
 let POSITIVE_DEFINITE_TRANSP = prove
  (`!A:real^N^N. positive_definite(transp A) <=> positive_definite A`,
   REWRITE_TAC[positive_definite] THEN MESON_TAC[TRANSP_TRANSP]);;
@@ -2339,6 +2346,11 @@ let POSITIVE_SEMIDEFINITE_MAT = prove
   SIMP_TAC[POSITIVE_SEMIDEFINITE_DIAGONAL_MATRIX_EQ; DIAGONAL_MATRIX_MAT] THEN
   SIMP_TAC[mat; LAMBDA_BETA; REAL_POS] THEN
   MESON_TAC[LE_REFL; DIMINDEX_GE_1]);;
+
+let NEARBY_POSITIVE_DEFINITE_MATRIX = prove
+ (`!A:real^N^N x.
+      positive_semidefinite A /\ &0 < x ==> positive_definite(A + x %% mat 1)`,
+  SIMP_TAC[NEARBY_POSITIVE_DEFINITE_MATRIX_GEN; POSITIVE_DEFINITE_ID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hadamard's inequality.                                                    *)

@@ -5,6 +5,8 @@
 (*                (c) Copyright, Marco Maggesi 2014                          *)
 (* ========================================================================= *)
 
+needs "Library/card.ml";;
+needs "Library/floor.ml";;
 prioritize_real();;
 
 (* ------------------------------------------------------------------------- *)
@@ -706,6 +708,129 @@ let REAL_NON_MONOTONE = prove
   ASM_CASES_TAC `v:real = w` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
   ASM_CASES_TAC `v:real = z` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
   REPEAT(FIRST_X_ASSUM SUBST_ALL_TAC) THEN ASM_REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Countability of some relevant sets.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let COUNTABLE_INTEGER = prove
+ (`COUNTABLE integer`,
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC
+   `IMAGE (\n. (&n:real)) (:num) UNION IMAGE (\n. --(&n)) (:num)` THEN
+  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_UNION; NUM_COUNTABLE] THEN
+  REWRITE_TAC[SUBSET; IN_UNION; IN_IMAGE; IN_UNIV] THEN
+  REWRITE_TAC[IN; INTEGER_CASES]);;
+
+let CARD_EQ_INTEGER = prove
+ (`integer =_c (:num)`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM; GSYM COUNTABLE_ALT; COUNTABLE_INTEGER] THEN
+  REWRITE_TAC[le_c] THEN EXISTS_TAC `real_of_num` THEN
+  REWRITE_TAC[IN_UNIV; REAL_OF_NUM_EQ] THEN
+  REWRITE_TAC[IN; INTEGER_CLOSED]);;
+
+let COUNTABLE_RATIONAL = prove
+ (`COUNTABLE rational`,
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC `IMAGE (\(x,y). x / y) (integer CROSS integer)` THEN
+  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_CROSS; COUNTABLE_INTEGER] THEN
+  REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
+  REWRITE_TAC[rational; IN] THEN MESON_TAC[]);;
+
+let CARD_EQ_RATIONAL = prove
+ (`rational =_c (:num)`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM; GSYM COUNTABLE_ALT; COUNTABLE_RATIONAL] THEN
+  REWRITE_TAC[le_c] THEN EXISTS_TAC `real_of_num` THEN
+  REWRITE_TAC[IN_UNIV; REAL_OF_NUM_EQ] THEN
+  REWRITE_TAC[IN; RATIONAL_CLOSED]);;
+
+let COUNTABLE_INTEGER_COORDINATES = prove
+ (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> integer(x$i) }`,
+  MATCH_MP_TAC COUNTABLE_CART THEN
+  REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_INTEGER]);;
+
+let COUNTABLE_RATIONAL_COORDINATES = prove
+ (`COUNTABLE { x:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> rational(x$i) }`,
+  MATCH_MP_TAC COUNTABLE_CART THEN
+  REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_RATIONAL]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Countability of extrema for arbitrary function R->R.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let COUNTABLE_LOCAL_MAXIMA = prove
+ (`!f:real->real.
+    COUNTABLE {f x |x| ?d. &0 < d /\ !x'. abs(x' - x) < d ==> f(x') <= f(x)}`,
+  GEN_TAC THEN
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC
+   `IMAGE (\(a,b). sup {f x | a <= x /\ x <= b})
+          ((rational CROSS rational) INTER
+           {(a,b) | ?x. a < x /\ x < b /\
+                        !x'. a <= x' /\ x' <= b ==> f x' <= f x})` THEN
+  SIMP_TAC[COUNTABLE_INTER; COUNTABLE_CROSS; COUNTABLE_RATIONAL;
+           COUNTABLE_IMAGE; SUBSET; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `x:real` THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[IN_IMAGE; IN_INTER; EXISTS_PAIR_THM] THEN
+  MP_TAC(ISPECL [`x:real`; `d:real`] RATIONAL_APPROXIMATION_STRADDLE) THEN
+  ASM_REWRITE_TAC[IN_CROSS; IN_ELIM_PAIR_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:real` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[IN] THEN CONJ_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_SUP_UNIQUE THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; EXISTS_IN_GSPEC];
+    ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN TRY(EXISTS_TAC `x:real`) THEN
+  REPEAT STRIP_TAC THEN TRY(FIRST_X_ASSUM MATCH_MP_TAC) THEN
+  ASM_REAL_ARITH_TAC);;
+
+let COUNTABLE_LOCAL_MINIMA = prove
+ (`!f:real->real.
+    COUNTABLE {f x |x| ?d. &0 < d /\ !x'. abs(x' - x) < d ==> f(x) <= f(x')}`,
+  GEN_TAC THEN MP_TAC(SPEC `(--) o (f:real->real)` COUNTABLE_LOCAL_MAXIMA) THEN
+  ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN REWRITE_TAC[ETA_AX; IMAGE_o] THEN
+  REWRITE_TAC[o_THM; REAL_LE_NEG2] THEN MATCH_MP_TAC EQ_IMP THEN
+  MATCH_MP_TAC COUNTABLE_IMAGE_INJ_EQ THEN SIMP_TAC[REAL_EQ_NEG2]);;
+
+let COUNTABLE_STRICT_LOCAL_MAXIMA = prove
+ (`!f:real->real.
+    COUNTABLE {x | ?d. &0 < d /\
+                       !x'. abs(x' - x) < d /\ ~(x' = x) ==> f(x') < f(x)}`,
+  GEN_TAC THEN
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC
+   `IMAGE (\(a,b). @x. a < x /\ x < b /\
+                        !x'. a <= x' /\ x' <= b /\ ~(x' = x)
+                             ==> f x' < f x)
+          ((rational CROSS rational) INTER
+           {(a,b) | ?x. a < x /\ x < b /\
+                        !x'. a <= x' /\ x' <= b /\ ~(x' = x)
+                             ==> f x' < f x})` THEN
+  SIMP_TAC[COUNTABLE_INTER; COUNTABLE_CROSS; COUNTABLE_RATIONAL;
+           COUNTABLE_IMAGE; SUBSET; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `x:real` THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[IN_IMAGE; IN_INTER; EXISTS_PAIR_THM] THEN
+  MP_TAC(ISPECL [`x:real`; `d:real`] RATIONAL_APPROXIMATION_STRADDLE) THEN
+  ASM_REWRITE_TAC[IN_CROSS; IN_ELIM_PAIR_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:real` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[IN] THEN
+  MATCH_MP_TAC(MESON[]
+   `P x /\ (!x y. P x /\ P y ==> x = y) ==> x = (@y. P y) /\ (?y. P y)`) THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC;
+    ASM_MESON_TAC[REAL_LT_ANTISYM; REAL_LT_IMP_LE]]);;
+
+let COUNTABLE_STRICT_LOCAL_MINIMA = prove
+ (`!f:real->real.
+    COUNTABLE {x | ?d. &0 < d /\
+                       !x'. abs(x' - x) < d /\ ~(x' = x) ==> f(x) < f(x')}`,
+  GEN_TAC THEN
+  MP_TAC(SPEC `(--) o (f:real->real)` COUNTABLE_STRICT_LOCAL_MAXIMA) THEN
+   ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN REWRITE_TAC[ETA_AX; IMAGE_o] THEN
+  REWRITE_TAC[o_THM; REAL_LT_NEG2] THEN MATCH_MP_TAC EQ_IMP THEN
+  MATCH_MP_TAC COUNTABLE_IMAGE_INJ_EQ THEN SIMP_TAC[REAL_EQ_NEG2]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extensional functions over a set.                                         *)

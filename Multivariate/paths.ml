@@ -15758,6 +15758,16 @@ let OUTSIDE_INSIDE = prove
    [INSIDE_INTER_OUTSIDE; INSIDE_UNION_OUTSIDE] THEN
   SET_TAC[]);;
 
+let INSIDE_EMPTY_EQ_NO_BOUNDED_COMPONENT_COMPLEMENT = prove
+ (`!s. inside s = {} <=>
+       !c. c IN components((:real^N) DIFF s) ==> ~bounded c`,
+  REWRITE_TAC[components; FORALL_IN_GSPEC; inside] THEN SET_TAC[]);;
+
+let OUTSIDE_EMPTY_EQ_NO_BOUNDED_COMPONENT_COMPLEMENT = prove
+ (`!s. outside s = {} <=>
+       !c. c IN components((:real^N) DIFF s) ==> bounded c`,
+  REWRITE_TAC[components; FORALL_IN_GSPEC; outside] THEN SET_TAC[]);;
+
 let INSIDE_SELF_OUTSIDE_EVERSION = prove
  (`!s t:real^N->bool.
         s UNION inside s SUBSET inside t <=>

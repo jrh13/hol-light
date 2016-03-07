@@ -20044,32 +20044,54 @@ let HAS_BOUNDED_VARIATION_DARBOUX_STRONG = prove
     REWRITE_TAC[SUBSET_INTERVAL_1; INTERVAL_EQ_EMPTY_1] THEN
     ASM_REAL_ARITH_TAC));;
 
-let HAS_BOUNDED_VARIATION_COUNTABLE_DISCONTINUITIES = prove
- (`!f:real^1->real^1 a b.
-        f has_bounded_variation_on interval[a,b]
-        ==> COUNTABLE {x | x IN interval[a,b] /\ ~(f continuous at x)}`,
+let INCREASING_COUNTABLE_DISCONTINUITIES = prove
+ (`!f s. is_interval s /\
+         (!x y. x IN s /\ y IN s /\ drop x <= drop y
+                ==> drop(f x) <= drop(f y))
+         ==> COUNTABLE {x | x IN s /\ ~(f continuous at x)}`,
+  REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
-   `!f a b.
-        (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ drop x <= drop y
-               ==> drop(f x) <= drop(f y))
-        ==> COUNTABLE {x | x IN interval[a,b] /\ ~(f continuous at x)}`
-  ASSUME_TAC THENL
+   `COUNTABLE {x | x IN frontier s /\ ~(f continuous at x)} /\
+    COUNTABLE {x | x IN interior s /\
+                    ~((f:real^1->real^1) continuous at x)}`
+  MP_TAC THENL
    [ALL_TAC;
-    REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o
-     GEN_REWRITE_RULE I [HAS_BOUNDED_VARIATION_DARBOUX]) THEN
-    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-    MAP_EVERY X_GEN_TAC [`g:real^1->real^1`; `h:real^1->real^1`] THEN
-    STRIP_TAC THEN FIRST_X_ASSUM(fun th ->
-      MP_TAC(ISPECL [`g:real^1->real^1`; `a:real^1`; `b:real^1`] th) THEN
-      MP_TAC(ISPECL [`h:real^1->real^1`; `a:real^1`; `b:real^1`] th)) THEN
-    ASM_REWRITE_TAC[IMP_IMP; GSYM COUNTABLE_UNION] THEN
+    REWRITE_TAC[GSYM COUNTABLE_UNION] THEN
     MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
-    REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN GEN_TAC THEN
-    MATCH_MP_TAC(TAUT
-     `(p /\ q ==> r) ==> a /\ ~r ==> a /\ ~p \/ a /\ ~q`) THEN
-    GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [GSYM ETA_AX] THEN
-    ASM_SIMP_TAC[CONTINUOUS_SUB]] THEN
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `interval[a:real^1,b] = {}` THEN
+    REWRITE_TAC[frontier] THEN
+    MP_TAC(ISPEC `s:real^1->bool` CLOSURE_SUBSET) THEN SET_TAC[]] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC FINITE_IMP_COUNTABLE THEN MATCH_MP_TAC FINITE_RESTRICT THEN
+    ASM_MESON_TAC[CARD_FRONTIER_INTERVAL_1];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `open(interior s) /\
+    !x y. x IN interior s /\ y IN interior s /\ drop x <= drop y
+          ==> drop(f x) <= drop(f y)`
+  MP_TAC THENL
+   [REWRITE_TAC[OPEN_INTERIOR] THEN
+    MP_TAC(ISPEC `s:real^1->bool` INTERIOR_SUBSET) THEN ASM SET_TAC[];
+    POP_ASSUM_LIST(K ALL_TAC)] THEN
+  SPEC_TAC(`interior s:real^1->bool`,`s:real^1->bool`) THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_COUNTABLE_UNION_CLOSED_INTERVALS) THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:(real^1->bool)->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[SET_RULE `{x | x IN s /\ P x} = s INTER {x | P x}`] THEN
+  REWRITE_TAC[INTER_UNIONS] THEN MATCH_MP_TAC COUNTABLE_UNIONS THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `i:real^1->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `i:real^1->bool`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM; IMP_CONJ] THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`] THEN
+  DISCH_THEN SUBST_ALL_TAC THEN
+  REWRITE_TAC[SET_RULE `s INTER {x | P x} = {x | x IN s /\ P x}`] THEN
+  SUBGOAL_THEN
+   `!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ drop x <= drop y
+          ==> drop(f x) <= drop(f y)`
+  MP_TAC THENL
+   [ASM SET_TAC[]; POP_ASSUM_LIST(K ALL_TAC) THEN DISCH_TAC] THEN
+  ASM_CASES_TAC `interval[a:real^1,b] = {}` THEN
   ASM_REWRITE_TAC[NOT_IN_EMPTY; EMPTY_GSPEC; COUNTABLE_EMPTY] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[INTERVAL_EQ_EMPTY_1; REAL_NOT_LT]) THEN
   ASM_SIMP_TAC[CLOSED_OPEN_INTERVAL_1] THEN
@@ -20111,7 +20133,7 @@ let HAS_BOUNDED_VARIATION_COUNTABLE_DISCONTINUITIES = prove
     REWRITE_TAC[IN_INTERVAL_1] THEN
     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL_1]) THEN ASM_REAL_ARITH_TAC;
     ALL_TAC] THEN
-  SUBGOAL_THEN
+    SUBGOAL_THEN
    `(!c x. c IN interval(a:real^1,b) /\ x IN interval[a,b] /\ drop x < drop c
            ==> drop(f x) <= drop(l c)) /\
     (!c x. c IN interval(a:real^1,b) /\ x IN interval[a,b] /\ drop c < drop x
@@ -20195,6 +20217,42 @@ let HAS_BOUNDED_VARIATION_COUNTABLE_DISCONTINUITIES = prove
   CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_REWRITE_TAC[IN_INTERVAL_1; DROP_CMUL; DROP_ADD] THEN
   ASM_REAL_ARITH_TAC);;
+
+let DECREASING_COUNTABLE_DISCONTINUITIES = prove
+ (`!f s. is_interval s /\
+         (!x y. x IN s /\ y IN s /\ drop x <= drop y
+                ==> drop(f y) <= drop(f x))
+         ==> COUNTABLE {x | x IN s /\ ~(f continuous at x)}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(--) o (f:real^1->real^1)`; `s:real^1->bool`]
+        INCREASING_COUNTABLE_DISCONTINUITIES) THEN
+  ASM_REWRITE_TAC[o_THM; DROP_NEG; REAL_LE_NEG2] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+  REPEAT(STRIP_TAC THEN ASM_REWRITE_TAC[]) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP CONTINUOUS_NEG) THEN
+  ASM_REWRITE_TAC[o_THM; VECTOR_NEG_NEG; ETA_AX]);;
+
+let HAS_BOUNDED_VARIATION_COUNTABLE_DISCONTINUITIES = prove
+ (`!f:real^1->real^1 a b.
+        f has_bounded_variation_on interval[a,b]
+        ==> COUNTABLE {x | x IN interval[a,b] /\ ~(f continuous at x)}`,
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o
+   GEN_REWRITE_RULE I [HAS_BOUNDED_VARIATION_DARBOUX]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`g:real^1->real^1`; `h:real^1->real^1`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL [`g:real^1->real^1`; `interval[a:real^1,b]`]
+        INCREASING_COUNTABLE_DISCONTINUITIES) THEN
+  MP_TAC(ISPECL [`h:real^1->real^1`; `interval[a:real^1,b]`]
+        INCREASING_COUNTABLE_DISCONTINUITIES) THEN
+  ASM_REWRITE_TAC[IMP_IMP; IS_INTERVAL_INTERVAL; GSYM COUNTABLE_UNION] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
+  REWRITE_TAC[SUBSET; IN_UNION; IN_ELIM_THM] THEN GEN_TAC THEN
+  MATCH_MP_TAC(TAUT
+   `(p /\ q ==> r) ==> a /\ ~r ==> a /\ ~p \/ a /\ ~q`) THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [GSYM ETA_AX] THEN
+  ASM_SIMP_TAC[CONTINUOUS_SUB]);;
 
 let HAS_BOUNDED_VARIATION_ABSOLUTELY_INTEGRABLE_DERIVATIVE = prove
  (`!f:real^1->real^N s a b.
