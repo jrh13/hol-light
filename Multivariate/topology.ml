@@ -2979,6 +2979,31 @@ let EVENTUALLY_WITHIN_OPEN = prove
   MATCH_MP_TAC EVENTUALLY_WITHIN_INTERIOR THEN
   ASM_MESON_TAC[INTERIOR_OPEN]);;
 
+let EVENTUALLY_WITHIN_OPEN_IN = prove
+ (`!P a s t:real^N->bool.
+         a IN t /\ open_in (subtopology euclidean s) t
+         ==> (eventually P (at a within t) <=> eventually P (at a within s))`,
+  REWRITE_TAC[OPEN_IN_OPEN] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[EVENTUALLY_WITHIN_IMP] THEN ONCE_REWRITE_TAC[SET_RULE
+   `x IN s INTER t ==> P <=> x IN t ==> x IN s ==> P`] THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM EVENTUALLY_WITHIN_IMP] THEN
+  MATCH_MP_TAC EVENTUALLY_WITHIN_OPEN THEN ASM SET_TAC[]);;
+
+let EVENTUALLY_WITHIN_INTERIOR_LOCAL = prove
+ (`!P a s t u:real^N->bool.
+        a IN u /\ u SUBSET t /\ t SUBSET s /\
+        open_in (subtopology euclidean s) u
+        ==> (eventually P (at a within t) <=> eventually P (at a within s))`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC EQ_TRANS `eventually P (at (a:real^N) within u)` THEN
+  MATCH_MP_TAC(TAUT
+   `(s ==> t) /\ (t ==> u) /\ (u <=> s) ==> (t <=> u) /\ (u <=> s)`) THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+   [ALL_TAC; ASM_SIMP_TAC[EVENTUALLY_WITHIN_OPEN_IN]] THEN
+  REWRITE_TAC[EVENTUALLY_WITHIN_IMP] THEN CONJ_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN ASM SET_TAC[]);;
+
 let EVENTUALLY_SCALABLE_PROPERTY = prove
  (`!P. (!c x:real^N. &0 <= c /\ P x ==> P(c % x)) /\
        eventually P (at (vec 0))
@@ -26292,6 +26317,32 @@ let LOCALLY_FINE_COVERING_COMPACT = prove
     ASM_SIMP_TAC[DIAMETER_SUBSET; BOUNDED_BALL] THEN
     REWRITE_TAC[DIAMETER_BALL] THEN ASM_REAL_ARITH_TAC]);;
 
+let LOCALLY_COUNTABLE = prove
+ (`!s:real^N->bool. locally COUNTABLE s <=> COUNTABLE s`,
+  GEN_TAC THEN REWRITE_TAC[locally] THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o GEN `x:real^N` o
+      SPECL [`s:real^N->bool`; `x:real^N`]) THEN
+    REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[OPEN_IN_REFL] THEN MAP_EVERY X_GEN_TAC
+     [`u:real^N->real^N->bool`; `vu:real^N->real^N->bool`] THEN
+    DISCH_TAC THEN MATCH_MP_TAC COUNTABLE_SUBSET THEN
+    EXISTS_TAC `UNIONS(IMAGE (u:real^N->real^N->bool) s)` THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MP_TAC(ISPECL [`IMAGE (u:real^N->real^N->bool) s`; `s:real^N->bool`]
+          LINDELOF_OPEN_IN) THEN
+    ASM_SIMP_TAC[FORALL_IN_IMAGE] THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+    REWRITE_TAC[EXISTS_COUNTABLE_SUBSET_IMAGE] THEN
+    DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+    MATCH_MP_TAC COUNTABLE_UNIONS THEN
+    ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+    ASM_MESON_TAC[SUBSET; COUNTABLE_SUBSET];
+    DISCH_TAC THEN MAP_EVERY X_GEN_TAC [`w:real^N->bool`; `x:real^N`] THEN
+    DISCH_TAC THEN REPEAT(EXISTS_TAC `w:real^N->bool`) THEN
+    ASM_REWRITE_TAC[SUBSET_REFL] THEN
+    ASM_MESON_TAC[COUNTABLE_SUBSET; OPEN_IN_IMP_SUBSET]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Local compactness.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -26482,18 +26533,38 @@ let CLOSED_IMP_LOCALLY_COMPACT = prove
   ASM_SIMP_TAC[CLOSED_INTER_COMPACT; COMPACT_CBALL] THEN
   MP_TAC(ISPECL [`x:real^N`; `&1`] BALL_SUBSET_CBALL) THEN ASM SET_TAC[]);;
 
+let IS_INTERVAL_LOCALLY_COMPACT_INTERVAL = prove
+ (`!s:real^N->bool.
+        is_interval s ==> locally (\k. ?a b. k = interval[a,b]) s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[locally] THEN
+  REWRITE_TAC[OPEN_IN_OPEN; LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`ww:real^N->bool`; `x:real^N`; `w:real^N->bool`] THEN
+  ASM_CASES_TAC `s INTER w:real^N->bool = ww` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(SUBST_ALL_TAC o SYM) THEN REWRITE_TAC[IN_INTER] THEN
+  STRIP_TAC THEN MP_TAC(ISPECL [`s:real^N->bool`; `x:real^N`]
+   INTERVAL_CONTAINS_COMPACT_NEIGHBOURHOOD) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; SUBSET]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`; `e:real`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_INTERVAL]) THEN
+  DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`c:real^N`; `d:real^N`] THEN STRIP_TAC THEN
+  EXISTS_TAC `s INTER ball(x:real^N,e) INTER interval(c,d)` THEN
+  EXISTS_TAC `interval[a:real^N,b] INTER interval[c:real^N,d]` THEN
+  EXISTS_TAC `ball(x:real^N,e) INTER interval(c,d)` THEN
+  ASM_SIMP_TAC[OPEN_INTERVAL; OPEN_INTER; OPEN_BALL; IN_INTER] THEN
+  ASM_REWRITE_TAC[CENTRE_IN_BALL; LEFT_EXISTS_AND_THM] THEN CONJ_TAC THENL
+   [REWRITE_TAC[INTER_INTERVAL] THEN MESON_TAC[];
+    MP_TAC(ISPECL [`c:real^N`; `d:real^N`] INTERVAL_OPEN_SUBSET_CLOSED) THEN
+    ASM SET_TAC[]]);;
+
 let IS_INTERVAL_IMP_LOCALLY_COMPACT = prove
  (`!s:real^N->bool. is_interval s ==> locally compact s`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[LOCALLY_COMPACT] THEN
-  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
-  MP_TAC(ISPECL [`s:real^N->bool`; `x:real^N`]
-   INTERVAL_CONTAINS_COMPACT_NEIGHBOURHOOD) THEN
-  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`; `d:real`] THEN STRIP_TAC THEN
-  MAP_EVERY EXISTS_TAC
-   [`s INTER ball(x:real^N,d)`; `interval[a:real^N,b]`] THEN
-  ASM_SIMP_TAC[COMPACT_INTERVAL; OPEN_IN_OPEN_INTER; OPEN_BALL] THEN
-  ASM_REWRITE_TAC[CENTRE_IN_BALL; IN_INTER] THEN ASM SET_TAC[]);;
+  GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP IS_INTERVAL_LOCALLY_COMPACT_INTERVAL) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LOCALLY_MONO) THEN
+  SIMP_TAC[LEFT_IMP_EXISTS_THM; COMPACT_INTERVAL]);;
 
 let LOCALLY_COMPACT_UNIV = prove
  (`locally compact (:real^N)`,

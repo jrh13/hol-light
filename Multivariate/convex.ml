@@ -11861,6 +11861,89 @@ let DIAMETER_SPHERE = prove
   ASM_SIMP_TAC[DIAMETER_FRONTIER; BOUNDED_CBALL; DIAMETER_CBALL]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Basic closure properties for "is_interval".                               *)
+(* ------------------------------------------------------------------------- *)
+
+let IS_INTERVAL_RELATIVE_INTERIOR = prove
+ (`!s:real^N->bool. is_interval s ==> is_interval(relative_interior s)`,
+  REWRITE_TAC[is_interval; IN_RELATIVE_INTERIOR_CBALL] THEN
+  GEN_TAC THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`; `x:real^N`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC
+    (X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC)) MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC
+    (X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC)) ASSUME_TAC) THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN
+  CONJ_TAC THENL [ASM_METIS_TAC[]; DISCH_TAC] THEN
+  EXISTS_TAC `min d e:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+  REWRITE_TAC[SUBSET; IN_CBALL; IN_INTER] THEN
+  X_GEN_TAC `y:real^N` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  MAP_EVERY EXISTS_TAC [`a + (y - x):real^N`; `b + (y - x):real^N`] THEN
+  REWRITE_TAC[VECTOR_ADD_COMPONENT; VECTOR_SUB_COMPONENT] THEN
+  REWRITE_TAC[REAL_ARITH `a + y - x <= y <=> a <= x`] THEN
+  ASM_REWRITE_TAC[REAL_ARITH `y <= b + y - x <=> x <= b`] THEN CONJ_TAC THENL
+   [UNDISCH_TAC `cball(a:real^N,d) INTER affine hull s SUBSET s`;
+    UNDISCH_TAC `cball(b:real^N,e) INTER affine hull s SUBSET s`] THEN
+  REWRITE_TAC[SUBSET] THEN DISCH_THEN MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[IN_CBALL; IN_INTER] THEN
+  (CONJ_TAC THENL
+    [UNDISCH_TAC `dist(x:real^N,y) <= min d e` THEN CONV_TAC NORM_ARITH;
+     ONCE_REWRITE_TAC[VECTOR_ARITH `a + b:real^N = a + &1 % b`] THEN
+     MATCH_MP_TAC IN_AFFINE_ADD_MUL_DIFF THEN
+     ASM_SIMP_TAC[AFFINE_AFFINE_HULL; HULL_INC]]));;
+
+let IS_INTERVAL_INTERIOR = prove
+ (`!s:real^N->bool. is_interval s ==> is_interval(interior s)`,
+  GEN_TAC THEN ASM_CASES_TAC `interior s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[IS_INTERVAL_EMPTY] THEN
+  ASM_SIMP_TAC[GSYM RELATIVE_INTERIOR_NONEMPTY_INTERIOR] THEN
+  REWRITE_TAC[IS_INTERVAL_RELATIVE_INTERIOR]);;
+
+let IS_INTERVAL_CLOSURE = prove
+ (`!s:real^N->bool. is_interval s ==> is_interval(closure s)`,
+  let lemma = prove
+   (`!a b u v. (u <= x /\ x <= v \/ v <= x /\ x <= u) /\
+               abs(a - u) < e /\ abs(b - v) < e
+               ==> ?y. (a <= y /\ y <= b \/ b <= y /\ y <= a) /\
+                       abs(y - x) < e`,
+    REPEAT GEN_TAC THEN DISCH_TAC THEN
+    MATCH_MP_TAC(MESON[] `!a b c. P a \/ P b \/ P c ==> ?x. P x`) THEN
+    MAP_EVERY EXISTS_TAC [`x:real`; `a:real`; `b:real`] THEN
+    ASM_REAL_ARITH_TAC) in
+  REWRITE_TAC[is_interval; CLOSURE_APPROACHABLE] THEN
+  GEN_TAC THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`; `x:real^N`] THEN
+  REWRITE_TAC[CONJ_ASSOC; AND_FORALL_THM] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &(dimindex(:N))`) THEN
+  ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; DIMINDEX_GE_1; LE_1] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+    (X_CHOOSE_THEN `u:real^N` STRIP_ASSUME_TAC)
+    (X_CHOOSE_THEN `v:real^N` STRIP_ASSUME_TAC)) THEN
+  SUBGOAL_THEN
+   `!i. 1 <= i /\ i <= dimindex(:N)
+        ==> ?y. ((u:real^N)$i <= y /\ y <= (v:real^N)$i \/
+                 v$i <= y /\ y <= u$i) /\
+                abs(y - (x:real^N)$i) < e / &(dimindex(:N))`
+  MP_TAC THENL
+   [X_GEN_TAC `i:num` THEN STRIP_TAC THEN MATCH_MP_TAC lemma THEN
+    MAP_EVERY EXISTS_TAC [`(a:real^N)$i`; `(b:real^N)$i`] THEN
+    ASM_SIMP_TAC[GSYM VECTOR_SUB_COMPONENT] THEN CONJ_TAC THEN
+    W(MP_TAC o PART_MATCH lhand COMPONENT_LE_NORM o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LET_TRANS) THEN
+    ASM_REWRITE_TAC[GSYM dist];
+    REWRITE_TAC[LAMBDA_SKOLEM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`u:real^N`; `v:real^N`; `y:real^N`]) THEN
+    ASM_SIMP_TAC[] THEN DISCH_TAC THEN REWRITE_TAC[dist] THEN
+    W(MP_TAC o PART_MATCH lhand NORM_LE_L1 o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LET_TRANS) THEN
+    MATCH_MP_TAC SUM_BOUND_LT_GEN THEN
+    ASM_SIMP_TAC[FINITE_NUMSEG; IN_NUMSEG; CARD_NUMSEG_1; VECTOR_SUB_COMPONENT;
+                 NUMSEG_EMPTY; NOT_LT; DIMINDEX_GE_1]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Shrinking space to a ball while preserving convexity.                     *)
 (* ------------------------------------------------------------------------- *)
 

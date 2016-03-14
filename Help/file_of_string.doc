@@ -1,14 +1,14 @@
 \DOC file_of_string
 
-\TYPE {file_of_string : string -> string}
+\TYPE {file_of_string : string -> string -> unit}
 
 \SYNOPSIS
 Write out a string to a named file.
 
 \DESCRIBE
-Given a filename {fn} and a string {s}, the call {file_of_string fn s} attempts 
-to open the file {fn} for writing and writes the string {s} to it before 
-closing. If the file exists, it will be overwritten, and otherwise a new file 
+Given a filename {fn} and a string {s}, the call {file_of_string fn s} attempts
+to open the file {fn} for writing and writes the string {s} to it before
+closing. If the file exists, it will be overwritten, and otherwise a new file
 will be created.
 
 \FAILURE

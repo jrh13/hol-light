@@ -16381,12 +16381,11 @@ let HAS_BOUNDED_REAL_VARIATION_DARBOUX_STRONG = prove
     ASM_REAL_ARITH_TAC));;
 
 let HAS_BOUNDED_REAL_VARIATION_COUNTABLE_DISCONTINUITIES = prove
- (`!f a b. f has_bounded_real_variation_on real_interval[a,b]
-           ==> COUNTABLE {x | x IN real_interval[a,b] /\
-                              ~(f real_continuous atreal x)}`,
+ (`!f s. f has_bounded_real_variation_on s /\ is_realinterval s
+           ==> COUNTABLE {x | x IN s /\ ~(f real_continuous atreal x)}`,
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_real_variation_on] THEN
   REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS_ATREAL] THEN
-  REWRITE_TAC[IMAGE_LIFT_REAL_INTERVAL] THEN DISCH_THEN(MP_TAC o
+  REWRITE_TAC[IS_REALINTERVAL_IS_INTERVAL] THEN DISCH_THEN(MP_TAC o
     MATCH_MP HAS_BOUNDED_VARIATION_COUNTABLE_DISCONTINUITIES) THEN
   DISCH_THEN(MP_TAC o ISPEC `drop` o MATCH_MP COUNTABLE_IMAGE) THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
