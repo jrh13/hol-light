@@ -2566,6 +2566,28 @@ let BILINEAR_RSUB = prove
  (`!h x y z. bilinear h ==> h x (y - z) = (h x y) - (h x z)`,
   SIMP_TAC[VECTOR_SUB; BILINEAR_RNEG; BILINEAR_RADD]);;
 
+let BILINEAR_LSUM = prove
+ (`!bop:real^M->real^N->real^P f s:A->bool y.
+        bilinear bop /\ FINITE s
+        ==> bop(vsum s f) y = vsum s (\i. bop (f i) y)`,
+  REWRITE_TAC[bilinear] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `y:real^N`) THEN
+  DISCH_THEN(MP_TAC o
+   ISPECL [`f:A->real^M`; `s:A->bool`] o
+   MATCH_MP (REWRITE_RULE[IMP_CONJ] LINEAR_VSUM)) THEN
+  ASM_REWRITE_TAC[o_DEF]);;
+
+let BILINEAR_RSUM = prove
+ (`!bop:real^M->real^N->real^P f s:A->bool x.
+        bilinear bop /\ FINITE s
+        ==> bop x (vsum s f) = vsum s (\i. bop x (f i))`,
+  REWRITE_TAC[bilinear] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `x:real^M`) THEN
+  DISCH_THEN(MP_TAC o
+   ISPECL [`f:A->real^N`; `s:A->bool`] o
+   MATCH_MP (REWRITE_RULE[IMP_CONJ] LINEAR_VSUM)) THEN
+  ASM_REWRITE_TAC[o_DEF]);;
+
 let BILINEAR_VSUM = prove
  (`!h:real^M->real^N->real^P.
        bilinear h /\ FINITE s /\ FINITE t
@@ -3489,6 +3511,18 @@ let MATRIX_ENTIRE = prove
 let matrix = new_definition
   `(matrix:(real^M->real^N)->real^M^N) f = lambda i j. f(basis j)$i`;;
 
+let MATRIX_COMPONENT = prove
+ (`!f:real^M->real^N i j.
+        1 <= j /\ j <= dimindex(:M)
+        ==> (matrix f)$i$j = f (basis j)$i`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?k. 1 <= k /\ k <= dimindex(:N) /\
+        (!A:real^M^N. A$i = A$k) /\ (!z:real^N. z$i = z$k)`
+  STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[finite_index] THEN MESON_TAC[FINITE_INDEX_WORKS];
+    ASM_SIMP_TAC[matrix; LAMBDA_BETA]]);;
+
 let MATRIX_VECTOR_MUL_LINEAR = prove
  (`!A:real^N^M. linear(\x. A ** x)`,
   REWRITE_TAC[linear; matrix_vector_mul] THEN
@@ -4107,6 +4141,11 @@ let BILINEAR_DROP_MUL = prove
  (`bilinear (\x y:real^N. drop x % y)`,
   REWRITE_TAC[bilinear; linear] THEN
   REWRITE_TAC[DROP_ADD; DROP_CMUL] THEN VECTOR_ARITH_TAC);;
+
+let BILINEAR_MUL_DROP = prove
+ (`bilinear(\y:real^N x. drop x % y)`,
+  GEN_REWRITE_TAC I [GSYM BILINEAR_SWAP] THEN
+  REWRITE_TAC[BILINEAR_DROP_MUL]);;
 
 let BILINEAR_LIFT_MUL = prove
  (`bilinear (\x y. lift(drop x * drop y))`,

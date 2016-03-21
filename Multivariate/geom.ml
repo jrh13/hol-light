@@ -33,6 +33,12 @@ let VECTOR_ANGLE_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [VECTOR_ANGLE_LINEAR_IMAGE_EQ];;
 
+let VECTOR_ANGLE_ORTHOGONAL_TRANSFORMATION = prove
+ (`!f x y:real^N.
+        orthogonal_transformation f
+        ==> vector_angle (f x) (f y) = vector_angle x y`,
+  REWRITE_TAC[ORTHOGONAL_TRANSFORMATION; VECTOR_ANGLE_LINEAR_IMAGE_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Basic properties of vector angles.                                        *)
 (* ------------------------------------------------------------------------- *)

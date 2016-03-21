@@ -1150,6 +1150,79 @@ let MVT_VERY_SIMPLE = prove
     MATCH_MP_TAC MONO_EXISTS THEN
     SIMP_TAC[REWRITE_RULE[SUBSET] INTERVAL_OPEN_SUBSET_CLOSED]]);;
 
+let MVT_SEGMENT = prove
+ (`!f:real^N->real^1 f' a b.
+        ~(a = b) /\
+        f continuous_on segment[a,b] /\
+        (!x. x IN segment(a,b)
+
+             ==> (f has_derivative f' x) (at x within segment(a,b)))
+        ==> ?c. c IN segment(a,b) /\ f(b) - f(a) = f'(c) (b - a)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(f:real^N->real^1) o (\x. (&1 - drop x) % a + drop x % b)`;
+                 `\x. (f':real^N->real^N->real^1)
+                      ((&1 - drop x) % a + drop x % b) o
+                      (\x. drop x % (b - a))`;
+                 `vec 0:real^1`; `vec 1:real^1`]
+        MVT) THEN
+  REWRITE_TAC[DROP_VEC; REAL_LT_01; o_THM] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL
+     [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+      ASM_SIMP_TAC[GSYM SEGMENT_IMAGE_INTERVAL] THEN
+      SIMP_TAC[CONTINUOUS_ON_ADD; CONTINUOUS_ON_VMUL; o_DEF; LIFT_DROP;
+               CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID; LIFT_SUB;
+               CONTINUOUS_ON_SUB];
+      X_GEN_TAC `x:real^1` THEN DISCH_TAC THEN
+      FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+       (MESON[HAS_DERIVATIVE_WITHIN_OPEN]
+         `a IN s
+          ==> open s /\ (f has_derivative f') (at a within s)
+              ==> (f has_derivative f') (at a)`)) THEN
+      REWRITE_TAC[OPEN_INTERVAL] THEN
+      MATCH_MP_TAC DIFF_CHAIN_WITHIN THEN
+      ASM_SIMP_TAC[OPEN_INTERVAL; GSYM SEGMENT_IMAGE_INTERVAL] THEN
+      CONJ_TAC THENL
+       [GEN_REWRITE_TAC (LAND_CONV o ABS_CONV) [GSYM VECTOR_ADD_LID] THEN
+        REWRITE_TAC[VECTOR_ARITH
+         `(&1 - x) % a + x % b:real^N = a + x % (b - a)`] THEN
+        MATCH_MP_TAC HAS_DERIVATIVE_ADD THEN
+        REWRITE_TAC[HAS_DERIVATIVE_CONST] THEN
+        MATCH_MP_TAC HAS_DERIVATIVE_LINEAR THEN
+        MATCH_MP_TAC LINEAR_VMUL_DROP THEN REWRITE_TAC[LINEAR_ID];
+        FIRST_X_ASSUM MATCH_MP_TAC THEN
+        ASM_SIMP_TAC[SEGMENT_IMAGE_INTERVAL] THEN ASM SET_TAC[]]];
+  ASM_SIMP_TAC[SEGMENT_IMAGE_INTERVAL; EXISTS_IN_IMAGE] THEN
+  REWRITE_TAC[REAL_SUB_RZERO; VECTOR_SUB_RZERO; DROP_VEC] THEN
+  REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_MUL_LID; REAL_SUB_REFL] THEN
+  REWRITE_TAC[VECTOR_ADD_LID; VECTOR_ADD_RID]]);;
+
+let MVT_SEGMENT_SIMPLE = prove
+ (`!f:real^N->real^1 f' a b.
+        ~(a = b) /\
+        (!x. x IN segment[a,b]
+             ==> (f has_derivative f' x) (at x within segment(a,b)))
+        ==> ?c. c IN segment(a,b) /\ f(b) - f(a) = f'(c) (b - a)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MVT_SEGMENT THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [ALL_TAC;
+    ASM_MESON_TAC[REWRITE_RULE[SUBSET] SEGMENT_OPEN_SUBSET_CLOSED]] THEN
+  MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
+  REWRITE_TAC[differentiable_on] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  REWRITE_TAC[differentiable] THEN
+  EXISTS_TAC `(f':real^N->real^N->real^1) x` THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC[has_derivative_within] THEN
+  AP_TERM_TAC THEN MATCH_MP_TAC LIM_TRANSFORM_WITHIN_SET THEN
+  REWRITE_TAC[EVENTUALLY_AT] THEN
+  ASM_CASES_TAC `x:real^N = a \/ x:real^N = b` THENL
+   [EXISTS_TAC `dist(a:real^N,b)` THEN
+    FIRST_X_ASSUM(DISJ_CASES_THEN SUBST_ALL_TAC);
+    RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
+    EXISTS_TAC `min (dist(x:real^N,a)) (dist(x,b))`] THEN
+  ASM_SIMP_TAC[GSYM DIST_NZ; REAL_LT_MIN; SEGMENT_CLOSED_OPEN; IN_UNION] THEN
+  SIMP_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[DIST_SYM; REAL_LT_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A nice generalization (see Havin's proof of 5.19 from Rudin's book).      *)
 (* ------------------------------------------------------------------------- *)

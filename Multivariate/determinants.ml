@@ -1753,6 +1753,12 @@ let DIAGONAL_MATRIX_MUL_COMPONENT = prove
         ==> (A ** B)$i$j = A$i$j * B$i$j`,
   ASM_SIMP_TAC[DIAGONAL_MATRIX_MUL_EXPLICIT; LAMBDA_BETA]);;
 
+let MATRIX_MUL_DIAGONAL = prove
+ (`!A:real^N^N B:real^N^N.
+        diagonal_matrix A /\ diagonal_matrix B
+        ==> A ** B = lambda i j. A$i$j * B$i$j`,
+  SIMP_TAC[CART_EQ; LAMBDA_BETA; DIAGONAL_MATRIX_MUL_COMPONENT]);;
+
 let DIAGONAL_MATRIX_MUL = prove
  (`!A:real^N^N B:real^N^N.
         diagonal_matrix A /\ diagonal_matrix B
@@ -2205,6 +2211,15 @@ let POSITIVE_DEFINITE_POSITIVE_SEMIDEFINITE = prove
   REWRITE_TAC[GSYM HOMOGENEOUS_LINEAR_EQUATIONS_DET; INVERTIBLE_DET_NZ] THEN
   MESON_TAC[]);;
 
+let POSITIVE_DEFINITE_SIMILAR_EQ = prove
+ (`!A B:real^N^N.
+        positive_definite(transp B ** A ** B) <=>
+        invertible B /\ positive_definite A`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[POSITIVE_DEFINITE_POSITIVE_SEMIDEFINITE] THEN
+  REWRITE_TAC[INVERTIBLE_MATRIX_MUL; INVERTIBLE_TRANSP] THEN
+  MESON_TAC[POSITIVE_SEMIDEFINITE_SIMILAR_EQ]);;
+
 let POSITIVE_DEFINITE_1_GEN = prove
  (`!A:real^N^N.
         dimindex(:N) = 1 ==> (positive_definite A <=> &0 < A$1$1)`,
@@ -2523,6 +2538,12 @@ let ORTHOGONAL_TRANSFORMATION = prove
  (`!f. orthogonal_transformation f <=> linear f /\ !v. norm(f v) = norm(v)`,
   GEN_TAC THEN REWRITE_TAC[orthogonal_transformation] THEN EQ_TAC THENL
    [MESON_TAC[vector_norm]; SIMP_TAC[DOT_NORM] THEN MESON_TAC[LINEAR_ADD]]);;
+
+let ORTHOGONAL_ORTHOGONAL_TRANSFORMATION = prove
+ (`!f x y:real^N.
+        orthogonal_transformation f
+        ==> (orthogonal (f x) (f y) <=> orthogonal x y)`,
+  SIMP_TAC[orthogonal; orthogonal_transformation]);;
 
 let ORTHOGONAL_TRANSFORMATION_COMPOSE = prove
  (`!f g. orthogonal_transformation f /\ orthogonal_transformation g

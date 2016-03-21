@@ -3083,6 +3083,43 @@ let RETRACT_OF_SING = prove
   DISCH_TAC THEN EXISTS_TAC `(\y. x):real^N->real^N` THEN
   REWRITE_TAC[CONTINUOUS_ON_CONST] THEN ASM SET_TAC[]);;
 
+let RETRACT_OF_OPEN_UNION = prove
+ (`!s t:real^N->bool.
+        open_in (subtopology euclidean (s UNION t)) s /\
+        open_in (subtopology euclidean (s UNION t)) t /\
+        DISJOINT s t /\ (s = {} ==> t = {})
+        ==> s retract_of (s UNION t)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_SIMP_TAC[RETRACT_OF_EMPTY; UNION_EMPTY] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `a:real^N`) THEN STRIP_TAC THEN
+  REWRITE_TAC[retract_of; retraction] THEN
+  EXISTS_TAC `\x:real^N. if x IN s then x else a` THEN
+  SIMP_TAC[SUBSET_UNION] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_UNION_LOCAL_OPEN THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_EQ THENL
+   [EXISTS_TAC `\x:real^N. x`;
+    EXISTS_TAC `(\x. a):real^N->real^N`] THEN
+  REWRITE_TAC[CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID] THEN ASM SET_TAC[]);;
+
+let RETRACT_OF_SEPARATED_UNION = prove
+ (`!s t:real^N->bool.
+        s INTER closure t = {} /\ t INTER closure s = {} /\
+        (s = {} ==> t = {})
+        ==> s retract_of (s UNION t)`,
+  REWRITE_TAC[CONJ_ASSOC; SEPARATION_OPEN_IN_UNION] THEN
+  MESON_TAC[RETRACT_OF_OPEN_UNION]);;
+
+let RETRACT_OF_CLOSED_UNION = prove
+ (`!s t:real^N->bool.
+        closed_in (subtopology euclidean (s UNION t)) s /\
+        closed_in (subtopology euclidean (s UNION t)) t /\
+        DISJOINT s t /\ (s = {} ==> t = {})
+        ==> s retract_of (s UNION t)`,
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r /\ s <=> (r /\ p /\ q) /\ s`] THEN
+  REWRITE_TAC[GSYM SEPARATION_CLOSED_IN_UNION] THEN
+  MESON_TAC[RETRACT_OF_SEPARATED_UNION]);;
+
 let RETRACTION_o = prove
  (`!f g s t u:real^N->bool.
         retraction (s,t) f /\ retraction (t,u) g

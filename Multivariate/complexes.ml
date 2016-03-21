@@ -1372,6 +1372,16 @@ let CSQRT_EQ_0 = prove
 (* A few more complex-specific cases of vector notions.                      *)
 (* ------------------------------------------------------------------------- *)
 
+let DOT_COMPLEX_MUL_CNJ = prove
+ (`!w z. w dot z = Re(w * cnj z)`,
+  REWRITE_TAC[cnj; complex_mul; RE; IM] THEN
+  REWRITE_TAC[DOT_2; RE_DEF; IM_DEF] THEN REAL_ARITH_TAC);;
+
+let DOT_CNJ = prove
+ (`!w z. cnj w dot cnj z = w dot z`,
+  REWRITE_TAC[DOT_2; GSYM RE_DEF; GSYM IM_DEF] THEN
+  REWRITE_TAC[cnj; RE; IM] THEN REAL_ARITH_TAC);;
+
 let COMPLEX_CMUL = prove
  (`!c x. c % x = Cx(c) * x`,
   SIMP_TAC[CART_EQ; VECTOR_MUL_COMPONENT; CX_DEF; complex;
@@ -1390,6 +1400,10 @@ let LINEAR_CNJ = prove
  (`linear cnj`,
   REWRITE_TAC[linear; COMPLEX_CMUL; CNJ_ADD; CNJ_MUL; CNJ_CX]);;
 
+let ORTHOGONAL_TRANSFORMATION_CNJ = prove
+ (`orthogonal_transformation cnj`,
+  REWRITE_TAC[orthogonal_transformation; LINEAR_CNJ; DOT_CNJ]);;
+
 let LINEAR_COMPLEX_LMUL = prove
  (`!f:real^N->complex c. linear f ==> linear (\x. c * f x)`,
   SIMP_TAC[linear; COMPLEX_CMUL] THEN
@@ -1398,6 +1412,12 @@ let LINEAR_COMPLEX_LMUL = prove
 let LINEAR_COMPLEX_RMUL = prove
  (`!f:real^N->complex c. linear f ==> linear (\x. f x * c)`,
   ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN REWRITE_TAC[LINEAR_COMPLEX_LMUL]);;
+
+let COMPLEX_CAUCHY_SCHWARZ_EQ = prove
+ (`!w z. (w dot z) pow 2 + ((ii * w) dot z) pow 2 =
+          norm(w) pow 2 * norm(z) pow 2`,
+  REWRITE_TAC[NORM_POW_2; DOT_2; GSYM RE_DEF; GSYM IM_DEF] THEN
+  REWRITE_TAC[ii; complex_mul; RE; IM] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex-specific theorems about sums.                                     *)
