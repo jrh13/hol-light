@@ -770,6 +770,10 @@ let REAL_SUMMABLE_FROM_ELSEWHERE = prove
   SIMP_TAC[FINITE_NUMSEG; SUBSET; IN_NUMSEG; IN_UNION; IN_DIFF; IN_FROM] THEN
   ARITH_TAC);;
 
+let REAL_SUMMABLE_FROM_ELSEWHERE_EQ = prove
+ (`!n m f. real_summable (from m) f <=> real_summable (from n) f`,
+  MESON_TAC[REAL_SUMMABLE_FROM_ELSEWHERE]);;
+
 let REAL_SERIES_GOESTOZERO = prove
  (`!s x. real_summable s x
          ==> !e. &0 < e
@@ -898,6 +902,20 @@ let REAL_SUMS_REINDEX = prove
   REWRITE_TAC[REALLIM_SEQUENTIALLY] THEN
   ASM_MESON_TAC[ARITH_RULE `N + k:num <= n ==> n = (n - k) + k /\ N <= n - k`;
                 ARITH_RULE `N + k:num <= n ==> N <= n + k`]);;
+
+let REAL_SERIES_EVEN = prove
+ (`!f l n.
+    (f real_sums l) (from n) <=>
+    ((\i. if EVEN i then f(i DIV 2) else &0) real_sums l) (from (2 * n))`,
+  REWRITE_TAC[REAL_SUMS; o_DEF; COND_RAND; LIFT_NUM] THEN
+  REWRITE_TAC[GSYM SERIES_EVEN]);;
+
+let REAL_SERIES_ODD = prove
+ (`!f l n.
+    (f real_sums l) (from n) <=>
+    ((\i. if ODD i then f(i DIV 2) else &0) real_sums l) (from (2 * n + 1))`,
+  REWRITE_TAC[REAL_SUMS; o_DEF; COND_RAND; LIFT_NUM] THEN
+  REWRITE_TAC[GSYM SERIES_ODD]);;
 
 let REAL_INFSUM = prove
  (`!f s. real_summable s f ==> real_infsum s f = drop(infsum s (lift o f))`,
@@ -1101,6 +1119,18 @@ let REAL_SUMS_OFFSET_REV = prove
   REWRITE_TAC[EXTENSION; IN_DIFF; IN_UNION; IN_FROM; IN_NUMSEG] THEN
   ASM_ARITH_TAC);;
 
+let REAL_SUMMABLE_EVEN = prove
+ (`!f n.
+      real_summable (from n) f <=>
+      real_summable (from (2 * n)) (\i. if EVEN i then f(i DIV 2) else &0)`,
+  REWRITE_TAC[real_summable; GSYM REAL_SERIES_EVEN]);;
+
+let REAL_SUMMABLE_ODD = prove
+ (`!f n.
+      real_summable (from n) f <=>
+      real_summable (from (2 * n + 1)) (\i. if ODD i then f(i DIV 2) else &0)`,
+  REWRITE_TAC[real_summable; GSYM REAL_SERIES_ODD]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Similar combining theorems for infsum.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -1159,6 +1189,18 @@ let REAL_INFSUM_RESTRICT = prove
     ASM_REWRITE_TAC[REAL_SERIES_RESTRICT; REAL_SUMS_INFSUM];
     RULE_ASSUM_TAC(REWRITE_RULE[real_summable; NOT_EXISTS_THM]) THEN
     ASM_REWRITE_TAC[real_infsum]]);;
+
+let REAL_INFSUM_EVEN = prove
+ (`!f n.
+        real_infsum (from n) f =
+        real_infsum (from (2 * n)) (\i. if EVEN i then f(i DIV 2) else &0)`,
+  REWRITE_TAC[real_infsum; GSYM REAL_SERIES_EVEN]);;
+
+let REAL_INFSUM_ODD = prove
+ (`!f n.
+        real_infsum (from n) f =
+        real_infsum (from (2 * n + 1)) (\i. if ODD i then f(i DIV 2) else &0)`,
+  REWRITE_TAC[real_infsum; GSYM REAL_SERIES_ODD]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convergence tests for real series.                                        *)

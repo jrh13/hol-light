@@ -6956,20 +6956,24 @@ let PATH_IMAGE_PARTCIRCLEPATH = prove
     AP_TERM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
     REWRITE_TAC[CX_INJ] THEN ASM_REAL_ARITH_TAC]);;
 
+let PATH_IMAGE_PARTCIRCLEPATH_SUBSET_ABS = prove
+ (`!z r s t. path_image(partcirclepath(z,r,s,t)) SUBSET sphere(z,abs r)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[path_image; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[partcirclepath; IN_SPHERE] THEN
+  X_GEN_TAC `t:real^1` THEN DISCH_TAC THEN
+  REWRITE_TAC[NORM_ARITH `dist(z,z + x) = norm x`; COMPLEX_NORM_MUL] THEN
+  REWRITE_TAC[NORM_CEXP; RE_MUL_II; IM_LINEPATH_CX; REAL_NEG_0] THEN
+  REWRITE_TAC[COMPLEX_NORM_CX; REAL_EXP_0] THEN REAL_ARITH_TAC);;
+
 let PATH_IMAGE_PARTCIRCLEPATH_SUBSET = prove
  (`!z r s t.
-        &0 <= r /\ s <= t
+        &0 <= r
         ==> path_image(partcirclepath(z,r,s,t)) SUBSET sphere(z,r)`,
-  SIMP_TAC[PATH_IMAGE_PARTCIRCLEPATH] THEN
-  SIMP_TAC[SUBSET; IN_ELIM_THM; IN_SPHERE; LEFT_IMP_EXISTS_THM] THEN
-  REWRITE_TAC[NORM_ARITH `dist(z,z + a) = norm a`] THEN
-  REWRITE_TAC[COMPLEX_NORM_MUL; NORM_CEXP; COMPLEX_NORM_CX;
-              RE_MUL_II; IM_CX; REAL_NEG_0; REAL_EXP_0] THEN
-  REAL_ARITH_TAC);;
+  MESON_TAC[PATH_IMAGE_PARTCIRCLEPATH_SUBSET_ABS; real_abs]);;
 
 let IN_PATH_IMAGE_PARTCIRCLEPATH = prove
  (`!z r s t w.
-        &0 <= r /\ s <= t /\ w IN path_image(partcirclepath(z,r,s,t))
+        &0 <= r /\ w IN path_image(partcirclepath(z,r,s,t))
         ==> norm(w - z) = r`,
   MP_TAC PATH_IMAGE_PARTCIRCLEPATH_SUBSET THEN
   REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
@@ -9396,131 +9400,6 @@ let HIGHER_COMPLEX_DERIVATIVE_POWER_SERIES = prove
     ASM_SIMP_TAC[GSYM COMPLEX_VEC_0; SERIES_RESTRICT]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Taylor series for arctan. So we can do term-by-term integration of        *)
-(* geometric series, this ends up quite late in the development.             *)
-(* ------------------------------------------------------------------------- *)
-
-let CATAN_CONVERGS = prove
- (`!z. norm(z) < &1
-       ==> ((\n. --(Cx(&1)) pow n / Cx(&(2 * n + 1)) * z pow (2 * n + 1))
-            sums catn(z)) (from 0)`,
-  MP_TAC(ISPECL
-     [`\n z. --(Cx(&1)) pow n / Cx(&(2 * n + 1)) * z pow (2 * n + 1)`;
-      `\n z. --(Cx(&1)) pow n * z pow (2 * n)`;
-      `ball(Cx(&0),&1)`; `from 0`
-     ] SERIES_AND_DERIVATIVE_COMPARISON_COMPLEX) THEN
-  REWRITE_TAC[OPEN_BALL; COMPLEX_IN_BALL_0] THEN ANTS_TAC THENL
-   [CONJ_TAC THENL
-     [REPEAT STRIP_TAC THEN
-      COMPLEX_DIFF_TAC THEN REWRITE_TAC[COMPLEX_MUL_RID; ADD_SUB] THEN
-      REWRITE_TAC[COMPLEX_MUL_ASSOC] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-      REWRITE_TAC[GSYM CX_POW; GSYM CX_NEG; GSYM CX_MUL; GSYM CX_DIV; CX_INJ;
-                  GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_MUL] THEN
-      CONV_TAC REAL_FIELD;
-      X_GEN_TAC `z:complex` THEN DISCH_TAC THEN
-      EXISTS_TAC `(&1 - norm(z:complex)) / &2` THEN
-      EXISTS_TAC `\n. Cx((&1 + norm(z:complex)) / &2) pow (2 * n + 1)` THEN
-      EXISTS_TAC `1` THEN REWRITE_TAC[o_DEF] THEN REPEAT CONJ_TAC THENL
-       [ASM_REAL_ARITH_TAC;
-        REWRITE_TAC[COMPLEX_POW_ADD; GSYM COMPLEX_POW_POW] THEN
-        MATCH_MP_TAC SUMMABLE_COMPLEX_RMUL THEN MATCH_MP_TAC SUMMABLE_GP THEN
-        REWRITE_TAC[COMPLEX_NORM_CX; COMPLEX_NORM_POW; ABS_SQUARE_LT_1] THEN
-        POP_ASSUM MP_TAC THEN NORM_ARITH_TAC;
-        SIMP_TAC[RE_CX; REAL_POW; REAL_CX; GSYM CX_POW] THEN
-        SIMP_TAC[REAL_POW_LE; NORM_ARITH `&0 <= (&1 + norm(z:complex)) / &2`];
-        REWRITE_TAC[IN_BALL] THEN REPEAT STRIP_TAC THEN
-        SIMP_TAC[COMPLEX_NORM_DIV; COMPLEX_NORM_MUL] THEN
-        REWRITE_TAC[COMPLEX_NORM_POW; NORM_NEG; COMPLEX_NORM_CX] THEN
-        REWRITE_TAC[REAL_ABS_NUM; REAL_POW_ONE; real_div; REAL_MUL_LID] THEN
-        GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_LID] THEN
-        MATCH_MP_TAC REAL_LE_MUL2 THEN
-        SIMP_TAC[REAL_LE_INV_EQ; REAL_POS; NORM_POS_LE; REAL_POW_LE] THEN
-        CONJ_TAC THENL
-         [MATCH_MP_TAC REAL_INV_LE_1 THEN REWRITE_TAC[REAL_OF_NUM_LE] THEN
-          ARITH_TAC;
-          MATCH_MP_TAC REAL_POW_LE2 THEN
-          UNDISCH_TAC `dist(z:complex,y) < (&1 - norm z) / &2` THEN
-          CONV_TAC NORM_ARITH]]];
-    REWRITE_TAC[LEFT_IMP_EXISTS_THM; GSYM COMPLEX_POW_POW] THEN
-    MAP_EVERY X_GEN_TAC [`a:complex->complex`; `i:complex->complex`] THEN
-    REWRITE_TAC[GSYM COMPLEX_POW_MUL; COMPLEX_MUL_LNEG; COMPLEX_MUL_LID] THEN
-    REPEAT STRIP_TAC THEN
-    MP_TAC(SPECL [`\z. a z - catn(z)`; `ball(Cx(&0),&1)`]
-        HAS_COMPLEX_DERIVATIVE_ZERO_CONSTANT) THEN
-    REWRITE_TAC[CONVEX_BALL; COMPLEX_IN_BALL_0] THEN ANTS_TAC THENL
-     [X_GEN_TAC `w:complex` THEN DISCH_TAC THEN
-      SUBST1_TAC(COMPLEX_RING `Cx(&0) = i(w:complex) - i w`) THEN
-      MATCH_MP_TAC HAS_COMPLEX_DERIVATIVE_SUB THEN
-      ASM_SIMP_TAC[COMPLEX_SUB_REFL; HAS_COMPLEX_DERIVATIVE_AT_WITHIN] THEN
-      MATCH_MP_TAC HAS_COMPLEX_DERIVATIVE_AT_WITHIN THEN
-      MP_TAC(ISPEC `w:complex` HAS_COMPLEX_DERIVATIVE_CATN) THEN ANTS_TAC THENL
-       [ASM_MESON_TAC[COMPLEX_NORM_GE_RE_IM; REAL_LET_TRANS]; ALL_TAC] THEN
-      MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-      MATCH_MP_TAC SERIES_UNIQUE THEN
-      MAP_EVERY EXISTS_TAC [`\n. --(w pow 2) pow n`; `from 0`] THEN
-      ASM_SIMP_TAC[] THEN
-      MP_TAC(SPECL [`0`; `--((w:complex) pow 2)`] SUMS_GP) THEN
-      ASM_SIMP_TAC[complex_pow; COMPLEX_NORM_POW; NORM_NEG; ABS_SQUARE_LT_1;
-        REAL_ABS_NORM; complex_div; COMPLEX_MUL_LID; COMPLEX_SUB_RNEG];
-      DISCH_THEN(X_CHOOSE_THEN `c:complex` (fun th ->
-        MP_TAC th THEN MP_TAC(SPEC `Cx(&0)` th))) THEN
-      ASM_SIMP_TAC[CATN_0; COMPLEX_NORM_0; REAL_LT_01; COMPLEX_SUB_RZERO] THEN
-      FIRST_ASSUM(MP_TAC o SPEC `Cx(&0)`) THEN
-      SIMP_TAC[COMPLEX_NORM_0; REAL_LT_01] THEN
-      DISCH_THEN(MP_TAC o CONJUNCT1) THEN
-      REWRITE_TAC[COMPLEX_POW_ADD; COMPLEX_POW_1; COMPLEX_MUL_RZERO] THEN
-      MP_TAC(SPECL [`\n:num. Cx(&0)`; `from 0`] SUMS_COMPLEX_0) THEN
-      REWRITE_TAC[] THEN ONCE_REWRITE_TAC[IMP_IMP] THEN
-      DISCH_THEN(SUBST1_TAC o SYM o MATCH_MP SERIES_UNIQUE) THEN
-      DISCH_THEN(SUBST1_TAC o SYM) THEN
-      DISCH_THEN(MP_TAC o SPEC `z:complex`) THEN
-      ASM_REWRITE_TAC[COMPLEX_SUB_0] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
-      FIRST_X_ASSUM(MP_TAC o SPEC `z:complex`) THEN
-      ASM_SIMP_TAC[COMPLEX_POW_ADD; COMPLEX_POW_1]]]);;
-
-let TAYLOR_CATN = prove
- (`!n z. norm(z) < &1
-          ==> norm(catn z -
-                   vsum(0..n) (\k. --(Cx(&1)) pow k / Cx(&(2 * k + 1)) *
-                                   z pow (2 * k + 1)))
-              <= norm(z) pow (2 * n + 3) /
-                 ((&2 * &n + &3) * (&1 - norm z pow 2))`,
-  REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP CATAN_CONVERGS) THEN
-  DISCH_THEN(MP_TAC o SPEC `n + 1` o MATCH_MP
-   (ONCE_REWRITE_RULE[IMP_CONJ] SUMS_OFFSET)) THEN
-  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
-  REWRITE_TAC[ARITH_RULE `0 < n + 1`; ADD_SUB] THEN
-  MATCH_MP_TAC(MESON[]
-    `(!l. (f sums l) k ==> norm l <= e) ==> (f sums a) k ==> norm a <= e`) THEN
-  GEN_TAC THEN MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] SERIES_BOUND) THEN
-  EXISTS_TAC
-    `\i. norm(z:complex)  / (&2 * &n + &3) * (norm(z) pow 2) pow i` THEN
-  CONJ_TAC THENL
-   [REWRITE_TAC[GSYM SERIES_CX_LIFT; o_DEF] THEN
-    MP_TAC(ISPECL [`n + 1`; `Cx(norm(z:complex) pow 2)`] SUMS_GP) THEN
-    ASM_REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_POW; REAL_ABS_NORM;
-                    ABS_SQUARE_LT_1; REAL_ABS_ABS] THEN
-    DISCH_THEN(MP_TAC o SPEC `Cx(norm(z:complex) / (&2 * &n + &3))` o
-        MATCH_MP SERIES_COMPLEX_LMUL) THEN
-    REWRITE_TAC[GSYM CX_POW; GSYM CX_SUB; GSYM CX_DIV; GSYM CX_MUL] THEN
-    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
-    REWRITE_TAC[GSYM REAL_POW_POW; REAL_POW_ADD; REAL_POW_1; real_div;
-                REAL_INV_MUL] THEN
-    REAL_ARITH_TAC;
-    X_GEN_TAC `k:num` THEN REWRITE_TAC[IN_FROM] THEN STRIP_TAC THEN
-    REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_DIV; COMPLEX_NORM_POW] THEN
-    REWRITE_TAC[NORM_NEG; COMPLEX_NORM_CX; REAL_ABS_NUM; REAL_POW_ONE] THEN
-    GEN_REWRITE_TAC RAND_CONV
-     [REAL_ARITH `a / b * c:real = inv b * (a * c)`] THEN
-    REWRITE_TAC[GSYM(CONJUNCT2 real_pow); REAL_POW_POW; ADD1] THEN
-    MATCH_MP_TAC REAL_LE_RMUL THEN SIMP_TAC[REAL_POW_LE; NORM_POS_LE] THEN
-    REWRITE_TAC[REAL_MUL_LID; real_div] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
-    REWRITE_TAC[REAL_OF_NUM_ADD; REAL_OF_NUM_LE;
-                REAL_OF_NUM_LT; REAL_OF_NUM_MUL] THEN
-    ASM_ARITH_TAC]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Taylor series for log. It's this late because we can more easily get      *)
 (* a good error bound given the convergence of the series.                   *)
 (* ------------------------------------------------------------------------- *)
@@ -9773,6 +9652,115 @@ let LOG2_APPROX_32 = prove
   CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
   REWRITE_TAC[real_div; REAL_MUL_LID] THEN
   SIMP_TAC[LOG_INV; REAL_ARITH `&0 < &2`] THEN REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Taylor series for arctan.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let CATN_CONVERGES_STRONG = prove
+ (`!z. norm z <= &1 /\ ~(z = ii) /\ ~(z = --ii)
+       ==> ((\n. --Cx(&1) pow n / Cx(&(2 * n + 1)) * z pow (2 * n + 1))
+            sums catn z) (from 0)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SERIES_ODD] THEN
+  MP_TAC(ISPEC `ii * z` CLOG_CONVERGES_STRONG) THEN
+  MP_TAC(ISPEC `--ii * z` CLOG_CONVERGES_STRONG) THEN
+  ASM_REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_II; NORM_NEG] THEN
+  ASM_REWRITE_TAC[COMPLEX_RING `ii * z = --Cx(&1) <=> z = ii`] THEN
+  ASM_REWRITE_TAC[COMPLEX_RING `--ii * z = --Cx(&1) <=> z = --ii`] THEN
+  ASM_REWRITE_TAC[REAL_MUL_LID; IMP_IMP] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP SERIES_SUB) THEN REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o SPEC `ii / Cx(&2)` o MATCH_MP SERIES_COMPLEX_LMUL) THEN
+  REWRITE_TAC[COMPLEX_RING `a + --ii * z = a - ii * z`] THEN
+  REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES] THEN
+  MATCH_MP_TAC(MESON[] `f = g /\ l = m ==> (f sums l) s ==> (g sums m) s`) THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[FUN_EQ_THM; COMPLEX_POW_ADD; COMPLEX_POW_1; SIMPLE_COMPLEX_ARITH
+    `(a * --Cx(&1)) * b / c - (a * --Cx(&1)) * b' / c =
+     (a * b' - a * b) / c`] THEN
+    X_GEN_TAC `n:num` THEN
+    ONCE_REWRITE_TAC[GSYM COND_SWAP] THEN REWRITE_TAC[COMPLEX_VEC_0] THEN
+    REWRITE_TAC[GSYM COMPLEX_POW_MUL; COMPLEX_MUL_LNEG; COMPLEX_MUL_RNEG] THEN
+    REWRITE_TAC[COMPLEX_NEG_NEG; COMPLEX_MUL_LID] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [COMPLEX_POW_NEG] THEN
+    REWRITE_TAC[NOT_ODD] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+     [SIMPLE_COMPLEX_ARITH_TAC; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NOT_EVEN]) THEN
+    REWRITE_TAC[ODD_EXISTS; LEFT_IMP_EXISTS_THM; ADD1] THEN
+    X_GEN_TAC `m:num` THEN DISCH_THEN SUBST1_TAC THEN
+    REWRITE_TAC[ARITH_RULE `(2 * m + 1) DIV 2 = m`; SIMPLE_COMPLEX_ARITH
+      `i / Cx(&2) * (--x - x) / y = --i * x / y`] THEN
+    REWRITE_TAC[COMPLEX_POW_ADD; COMPLEX_POW_1; complex_div] THEN
+    REWRITE_TAC[COMPLEX_RING `--ii * (x * ii * z) * y = x * y * z`] THEN
+    REWRITE_TAC[COMPLEX_POW_MUL; GSYM COMPLEX_POW_POW; COMPLEX_POW_II_2] THEN
+    REWRITE_TAC[COMPLEX_MUL_AC];
+    REWRITE_TAC[catn] THEN AP_TERM_TAC THEN
+    MATCH_MP_TAC(GSYM CLOG_DIV_POS) THEN
+    REWRITE_TAC[RE_SUB; RE_MUL_II; RE_ADD; RE_CX] THEN
+    MATCH_MP_TAC(REAL_ARITH
+     `abs x < &1 ==> &0 < &1 - --x /\ &0 < &1 + --x`) THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+     `n <= &1 ==> a <= n /\ (a = &1 ==> ~(n = &1)) ==> a < &1`)) THEN
+    REWRITE_TAC[COMPLEX_NORM_GE_RE_IM] THEN
+    REWRITE_TAC[NORM_EQ_SQUARE; REAL_POS; GSYM NORM_POW_2] THEN
+    REWRITE_TAC[COMPLEX_SQNORM] THEN ONCE_REWRITE_TAC[GSYM REAL_POW2_ABS] THEN
+    SIMP_TAC[REAL_POW_ONE; REAL_ABS_NUM; REAL_EQ_ADD_RCANCEL_0] THEN
+    REWRITE_TAC[REAL_POW_EQ_0; ARITH_EQ; REAL_ABS_ZERO] THEN
+    REPEAT STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o check (is_neg o concl))) THEN
+    ASM_REWRITE_TAC[COMPLEX_EQ; RE_II; IM_NEG; IM_II; RE_NEG] THEN
+    ASM_REAL_ARITH_TAC]);;
+
+let CATN_CONVERGES = prove
+ (`!z. norm(z) < &1
+       ==> ((\n. --(Cx(&1)) pow n / Cx(&(2 * n + 1)) * z pow (2 * n + 1))
+            sums catn(z)) (from 0)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CATN_CONVERGES_STRONG THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+  CONJ_TAC THEN DISCH_THEN SUBST_ALL_TAC THEN POP_ASSUM MP_TAC THEN
+  REWRITE_TAC[NORM_NEG; COMPLEX_NORM_II] THEN REAL_ARITH_TAC);;
+
+let TAYLOR_CATN = prove
+ (`!n z. norm(z) < &1
+          ==> norm(catn z -
+                   vsum(0..n) (\k. --(Cx(&1)) pow k / Cx(&(2 * k + 1)) *
+                                   z pow (2 * k + 1)))
+              <= norm(z) pow (2 * n + 3) /
+                 ((&2 * &n + &3) * (&1 - norm z pow 2))`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CATN_CONVERGES) THEN
+  DISCH_THEN(MP_TAC o SPEC `n + 1` o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ] SUMS_OFFSET)) THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[ARITH_RULE `0 < n + 1`; ADD_SUB] THEN
+  MATCH_MP_TAC(MESON[]
+    `(!l. (f sums l) k ==> norm l <= e) ==> (f sums a) k ==> norm a <= e`) THEN
+  GEN_TAC THEN MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] SERIES_BOUND) THEN
+  EXISTS_TAC
+    `\i. norm(z:complex)  / (&2 * &n + &3) * (norm(z) pow 2) pow i` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[GSYM SERIES_CX_LIFT; o_DEF] THEN
+    MP_TAC(ISPECL [`n + 1`; `Cx(norm(z:complex) pow 2)`] SUMS_GP) THEN
+    ASM_REWRITE_TAC[COMPLEX_NORM_CX; REAL_ABS_POW; REAL_ABS_NORM;
+                    ABS_SQUARE_LT_1; REAL_ABS_ABS] THEN
+    DISCH_THEN(MP_TAC o SPEC `Cx(norm(z:complex) / (&2 * &n + &3))` o
+        MATCH_MP SERIES_COMPLEX_LMUL) THEN
+    REWRITE_TAC[GSYM CX_POW; GSYM CX_SUB; GSYM CX_DIV; GSYM CX_MUL] THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+    REWRITE_TAC[GSYM REAL_POW_POW; REAL_POW_ADD; REAL_POW_1; real_div;
+                REAL_INV_MUL] THEN
+    REAL_ARITH_TAC;
+    X_GEN_TAC `k:num` THEN REWRITE_TAC[IN_FROM] THEN STRIP_TAC THEN
+    REWRITE_TAC[COMPLEX_NORM_MUL; COMPLEX_NORM_DIV; COMPLEX_NORM_POW] THEN
+    REWRITE_TAC[NORM_NEG; COMPLEX_NORM_CX; REAL_ABS_NUM; REAL_POW_ONE] THEN
+    GEN_REWRITE_TAC RAND_CONV
+     [REAL_ARITH `a / b * c:real = inv b * (a * c)`] THEN
+    REWRITE_TAC[GSYM(CONJUNCT2 real_pow); REAL_POW_POW; ADD1] THEN
+    MATCH_MP_TAC REAL_LE_RMUL THEN SIMP_TAC[REAL_POW_LE; NORM_POS_LE] THEN
+    REWRITE_TAC[REAL_MUL_LID; real_div] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+    REWRITE_TAC[REAL_OF_NUM_ADD; REAL_OF_NUM_LE;
+                REAL_OF_NUM_LT; REAL_OF_NUM_MUL] THEN
+    ASM_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The classical limit for e and other useful limits.                        *)

@@ -3865,3 +3865,22 @@ let POWER_SERIES_LIMIT_POINT_OF_ZEROS = prove
       EXISTS_TAC `{i:num | m + i IN k}` THEN
       ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_REWRITE_TAC[CENTRE_IN_BALL]]]);;
+
+let POWER_SERIES_UNIQUE = prove
+ (`!f g c d k r s t z.
+        &0 < r /\ &0 < s /\
+        (!w. w IN ball(z,r) ==> ((\i. c i * (w - z) pow i) sums f w) k) /\
+        (!w. w IN ball(z,s) ==> ((\i. d i * (w - z) pow i) sums g w) k) /\
+        (!w. w IN t ==> f w = g w) /\
+        z limit_point_of t
+        ==> (!i. i IN k ==> c i = d i)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM COMPLEX_SUB_0] THEN
+  MATCH_MP_TAC POWER_SERIES_LIMIT_POINT_OF_ZEROS THEN
+  EXISTS_TAC `\z. (f:complex->complex) z - g z` THEN
+  EXISTS_TAC `min r s:real` THEN
+  EXISTS_TAC `t:complex->bool` THEN
+  ONCE_REWRITE_TAC[DIST_SYM] THEN
+  ASM_REWRITE_TAC[GSYM IN_BALL; BALL_MIN_INTER; IN_INTER] THEN
+  ASM_REWRITE_TAC[REAL_LT_MIN; COMPLEX_SUB_0] THEN
+  REWRITE_TAC[COMPLEX_SUB_RDISTRIB] THEN
+  ASM_SIMP_TAC[SERIES_SUB]);;

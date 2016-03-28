@@ -529,6 +529,18 @@ let FORALL_EVENTUALLY = prove
              eventually (\x. !a. a IN s ==> p a x) net)`,
   SIMP_TAC[EVENTUALLY_FORALL]);;
 
+let ARCH_EVENTUALLY_LT = prove
+ (`!x. eventually (\n. x < &n) sequentially`,
+  GEN_TAC THEN MP_TAC(ISPEC `x + &1` REAL_ARCH_SIMPLE) THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN REAL_ARITH_TAC);;
+
+let ARCH_EVENTUALLY_LE = prove
+ (`!x. eventually (\n. x <= &n) sequentially`,
+  GEN_TAC THEN MP_TAC(ISPEC `x:real` REAL_ARCH_SIMPLE) THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Metric spaces.                                                            *)
 (* ------------------------------------------------------------------------- *)

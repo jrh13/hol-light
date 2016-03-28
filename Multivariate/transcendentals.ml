@@ -4423,6 +4423,21 @@ let CLOG_MUL_CX = prove
   ASM_SIMP_TAC[CX_INJ; REAL_LT_IMP_NZ; GSYM CX_LOG] THEN
   ASM_SIMP_TAC[IM_CX; REAL_ADD_LID; REAL_ADD_RID; CLOG_WORKS]);;
 
+let CLOG_MUL_POS = prove                                                   
+ (`!w z. &0 < Re w /\ &0 < Re z ==> clog(w * z) = clog w + clog z`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOG_MUL_SIMPLE THEN
+  MATCH_MP_TAC(TAUT `(p /\ q) /\ (p /\ q ==> r) ==> p /\ q /\ r`) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[RE_CX; REAL_LT_REFL]; STRIP_TAC] THEN
+  MATCH_MP_TAC(REAL_ARITH
+    `abs(x) < pi / &2 /\ abs(y) < pi / &2
+     ==> --pi < x + y /\ x + y <= pi`) THEN                           
+  ASM_SIMP_TAC[RE_CLOG_POS_LT]);;
+                         
+let CLOG_DIV_POS = prove                                             
+ (`!w z. &0 < Re w /\ &0 < Re z ==> clog(w / z) = clog w - clog z`,   
+  ASM_SIMP_TAC[complex_div; CLOG_MUL_POS; CLOG_INV; RE_COMPLEX_INV_GT_0] THEN 
+  REWRITE_TAC[complex_sub]);;                      
+
 let CLOG_NEG = prove
  (`!z. ~(z = Cx(&0))
        ==> clog(--z) = if Im(z) <= &0 /\ ~(Re(z) < &0 /\ Im(z) = &0)

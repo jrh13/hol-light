@@ -2271,6 +2271,11 @@ let CARD_LE_POWERSET = prove
   MATCH_MP_TAC CARD_LE_SUBPOWERSET THEN
   ASM_SIMP_TAC[]);;
 
+let CARD_POWERSET_CONG = prove                                 
+ (`!s:A->bool t:B->bool.                                                   
+        s =_c t ==> {u | u SUBSET s} =_c {v | v SUBSET t}`,
+  SIMP_TAC[GSYM CARD_LE_ANTISYM; CARD_LE_POWERSET]);;   
+
 let COUNTABLE_LIST_GEN = prove
  (`!s:A->bool. COUNTABLE s ==> COUNTABLE {l | !x. MEM x l ==> x IN s}`,
   GEN_TAC THEN REWRITE_TAC[COUNTABLE; ge_c] THEN

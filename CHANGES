@@ -1,3 +1,14 @@
+Sun 20th Mar 2016       class.ml, sets.ml, Library/card.ml
+
+Added a few handy trivialities:
+
+  COND_SWAP = |- !p x y. (if ~p then x else y) = (if p then y else x)
+
+  num_INFINITE_EQ = |- !s:num->bool. INFINITE s <=> !N. ?n. N <= n /\ n IN s
+
+  CARD_POWERSET_CONG =
+    |- !s t. s =_c t ==> {u | u SUBSET s} =_c {v | v SUBSET t}
+
 Fri 26th Feb 2016       real.ml, int.ml
 
 Added another simple lemma about the sign function for reals and integers:

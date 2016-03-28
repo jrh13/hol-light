@@ -1420,6 +1420,99 @@ let HAS_DERIVATIVE_ZERO_CONNECTED_UNIQUE = prove
   MESON_TAC[HAS_DERIVATIVE_ZERO_CONNECTED_CONSTANT]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Discreteness of point preimage sets for differentiable function.          *)
+(* ------------------------------------------------------------------------- *)
+
+let DIFFERENTIABLE_DISCRETE_PREIMAGES = prove
+ (`!f f' s y:real^N.
+        (!x. x IN s ==> (f has_derivative f' x) (at x within s)) /\
+        (!x. x IN s /\ f(x) = y ==> ~(det(matrix (f' x)) = &0))
+        ==> {l | l IN s /\ l limit_point_of {x | x IN s /\ f x = y}} = {}`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM] THEN
+  X_GEN_TAC `x0:real^N` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `(f:real^N->real^N) x0 = y` ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIMPT_SEQUENTIAL]) THEN
+    REWRITE_TAC[IN_DELETE; IN_ELIM_THM; FORALL_AND_THM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `x:num->real^N` STRIP_ASSUME_TAC) THEN
+    MATCH_MP_TAC(ISPEC `sequentially` LIM_UNIQUE) THEN
+    EXISTS_TAC `(f:real^N->real^N) o (x:num->real^N)` THEN
+    REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN CONJ_TAC THENL
+     [SUBGOAL_THEN `(f:real^N->real^N) continuous_on s` MP_TAC THENL
+       [ASM_MESON_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_ON;
+                      differentiable_on; differentiable];
+        REWRITE_TAC[CONTINUOUS_ON_SEQUENTIALLY] THEN
+        DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[]];
+      ASM_REWRITE_TAC[o_DEF; LIM_CONST]];
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x0:real^N`) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[has_derivative]) THEN
+  ASM_SIMP_TAC[DET_MATRIX_EQ_0] THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:real^N->real^N` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`(f':real^N->real^N->real^N) x0`; `g:real^N->real^N`]
+        LINEAR_INVERTIBLE_BOUNDED_BELOW_POS) THEN
+  ASM_SIMP_TAC[LINEAR_FRECHET_DERIVATIVE] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[GSYM has_derivative]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `((f:real^N->real^N) has_derivative f' x0) (at x0 within s)`
+  MP_TAC THENL [ASM_MESON_TAC[]; ASM_REWRITE_TAC[has_derivative_within]] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  REWRITE_TAC[LIM_WITHIN] THEN
+  DISCH_THEN(MP_TAC o SPEC `B:real`) THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[dist; VECTOR_SUB_RZERO; VECTOR_ARITH
+   `c % (y - (x + d)):real^N = c % (y - x) - c % d`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `d:real` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIMPT_APPROACHABLE]) THEN
+  DISCH_THEN(MP_TAC o SPEC `d:real`) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; dist; NOT_FORALL_THM; NOT_IMP] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[NORM_POS_LT; VECTOR_SUB_EQ] THEN
+  REWRITE_TAC[VECTOR_ARITH `c % (p - p) - v:real^N = --v`] THEN
+  REWRITE_TAC[REAL_NOT_LT; NORM_NEG; NORM_MUL; REAL_ABS_INV;
+              REAL_ABS_NORM; REAL_ARITH `inv x * y:real = y / x`] THEN
+  ASM_SIMP_TAC[REAL_LE_RDIV_EQ; NORM_POS_LT; VECTOR_SUB_EQ]);;
+
+let DIFFERENTIABLE_DISCRETE_PREIMAGES_CLOSED = prove
+ (`!f f' s y:real^N.
+        closed s /\
+        (!x. x IN s ==> (f has_derivative f' x) (at x within s)) /\
+        (!x. x IN s /\ f(x) = y ==> ~(det(matrix (f' x)) = &0))
+        ==> {l | l limit_point_of {x | x IN s /\ f x = y}} = {}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(SET_RULE
+   `!s. {x | x IN s /\ P x} = {} /\ (!x. P x ==> x IN s)
+        ==> {x | P x} = {}`) THEN
+  EXISTS_TAC `s:real^N->bool` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC DIFFERENTIABLE_DISCRETE_PREIMAGES THEN ASM_MESON_TAC[];
+    X_GEN_TAC `l:real^N` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o REWRITE_RULE[CLOSED_LIMPT]) THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+      LIMPT_SUBSET)) THEN
+    REWRITE_TAC[SUBSET_RESTRICT]]);;
+
+let DIFFERENTIABLE_COUNTABLE_PREIMAGES = prove
+ (`!f f' s y:real^N.
+        (!x. x IN s ==> (f has_derivative f' x) (at x within s)) /\
+        (!x. x IN s /\ f(x) = y ==> ~(det(matrix (f' x)) = &0))
+        ==> COUNTABLE {x | x IN s /\ f(x) = y}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DISCRETE_IMP_COUNTABLE THEN
+  REWRITE_TAC[GSYM DISCRETE_SET; IN_ELIM_THM] THEN
+  MATCH_MP_TAC(SET_RULE
+   `{x | P x /\ R x} = {} ==> {x | (P x /\ Q x) /\ R x} = {}`) THEN
+  MATCH_MP_TAC DIFFERENTIABLE_DISCRETE_PREIMAGES THEN ASM_MESON_TAC[]);;
+
+let DIFFERENTIABLE_FINITE_PREIMAGES = prove
+ (`!f f' s y:real^N.
+        compact s /\
+        (!x. x IN s ==> (f has_derivative f' x) (at x within s)) /\
+        (!x. x IN s /\ f(x) = y ==> ~(det(matrix (f' x)) = &0))
+        ==> FINITE {x | x IN s /\ f(x) = y}`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP DIFFERENTIABLE_DISCRETE_PREIMAGES) THEN
+  MATCH_MP_TAC EQ_IMP THEN MATCH_MP_TAC DISCRETE_EQ_FINITE_COMPACT THEN
+  ASM_REWRITE_TAC[SUBSET_RESTRICT]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Differentiability of inverse function (most basic form).                  *)
 (* ------------------------------------------------------------------------- *)
 

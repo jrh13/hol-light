@@ -388,6 +388,17 @@ let COMPLEX_DIV_REFL = prove
  (`!x. ~(x = Cx(&0)) ==> (x / x = Cx(&1))`,
   REWRITE_TAC[COMPLEX_EQ_0] THEN SIMPLE_COMPLEX_ARITH_TAC);;
 
+let COMPLEX_VEC_0 = prove
+ (`vec 0 = Cx(&0)`,
+  SIMP_TAC[CART_EQ; VEC_COMPONENT; CX_DEF; complex;
+           DIMINDEX_2; FORALL_2; VECTOR_2]);;
+
+let COMPLEX_CMUL = prove
+ (`!c x. c % x = Cx(c) * x`,
+  SIMP_TAC[CART_EQ; VECTOR_MUL_COMPONENT; CX_DEF; complex;
+           complex_mul; DIMINDEX_2; FORALL_2; IM_DEF; RE_DEF; VECTOR_2] THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Homomorphic embedding properties for Cx mapping.                          *)
 (* ------------------------------------------------------------------------- *)
@@ -746,6 +757,25 @@ let COMPLEX_EQ_INV2 = prove
  (`!w x:complex. inv w = inv z <=> w = z`,
   MESON_TAC[COMPLEX_INV_INV]);;
 
+let SGN_RE_COMPLEX_INV = prove
+ (`!z. real_sgn(Re(inv z)) = real_sgn(Re z)`,
+  GEN_TAC THEN ASM_CASES_TAC `z = Cx(&0)` THEN
+  ASM_REWRITE_TAC[COMPLEX_INV_0] THEN
+  REWRITE_TAC[RE; complex_inv; REAL_SGN_DIV] THEN
+  SUBGOAL_THEN `real_sgn (Re z pow 2 + Im z pow 2) = &1`
+   (fun th -> REWRITE_TAC[REAL_DIV_1; th]) THEN
+  REWRITE_TAC[REAL_SGN_EQ; real_gt; GSYM COMPLEX_SQNORM] THEN
+  ASM_SIMP_TAC[REAL_POW_LT; NORM_POS_LT; COMPLEX_VEC_0]);;
+
+let RE_COMPLEX_INV_GT_0 = prove
+ (`!z. &0 < Re(inv z) <=> &0 < Re z`,
+  REWRITE_TAC[GSYM real_gt; GSYM REAL_SGN_EQ; SGN_RE_COMPLEX_INV]);;
+
+let RE_COMPLEX_INV_GE_0 = prove
+ (`!z. &0 <= Re(inv z) <=> &0 <= Re z`,
+  REWRITE_TAC[GSYM REAL_NOT_LT] THEN
+  REWRITE_TAC[GSYM REAL_SGN_EQ; SGN_RE_COMPLEX_INV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* And also field procedure.                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -919,11 +949,6 @@ let COMPLEX_DIV_POW2 = prove
 (* ------------------------------------------------------------------------- *)
 (* Norms (aka "moduli").                                                     *)
 (* ------------------------------------------------------------------------- *)
-
-let COMPLEX_VEC_0 = prove
- (`vec 0 = Cx(&0)`,
-  SIMP_TAC[CART_EQ; VEC_COMPONENT; CX_DEF; complex;
-           DIMINDEX_2; FORALL_2; VECTOR_2]);;
 
 let COMPLEX_NORM_ZERO = prove
  (`!z. (norm z = &0) <=> (z = Cx(&0))`,
@@ -1381,12 +1406,6 @@ let DOT_CNJ = prove
  (`!w z. cnj w dot cnj z = w dot z`,
   REWRITE_TAC[DOT_2; GSYM RE_DEF; GSYM IM_DEF] THEN
   REWRITE_TAC[cnj; RE; IM] THEN REAL_ARITH_TAC);;
-
-let COMPLEX_CMUL = prove
- (`!c x. c % x = Cx(c) * x`,
-  SIMP_TAC[CART_EQ; VECTOR_MUL_COMPONENT; CX_DEF; complex;
-           complex_mul; DIMINDEX_2; FORALL_2; IM_DEF; RE_DEF; VECTOR_2] THEN
-  REAL_ARITH_TAC);;
 
 let LINEAR_COMPLEX_MUL = prove
  (`!c. linear (\x. c * x)`,

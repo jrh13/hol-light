@@ -2619,6 +2619,11 @@ let num_FINITE_AVOID = prove
  (`!s:num->bool. FINITE(s) ==> ?a. ~(a IN s)`,
   MESON_TAC[num_FINITE; LT; NOT_LT]);;
 
+let num_INFINITE_EQ = prove
+ (`!s:num->bool. INFINITE s <=> !N. ?n. N <= n /\ n IN s`,
+  GEN_TAC THEN REWRITE_TAC[INFINITE; num_FINITE] THEN
+  MESON_TAC[NOT_LE; LT_IMP_LE; LE_SUC_LT]);;
+
 let num_INFINITE = prove
  (`INFINITE(:num)`,
   REWRITE_TAC[INFINITE] THEN MESON_TAC[num_FINITE_AVOID; IN_UNIV]);;
