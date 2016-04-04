@@ -3552,6 +3552,11 @@ let MATRIX_COMPOSE = prove
   SIMP_TAC[MATRIX_EQ; MATRIX_WORKS; LINEAR_COMPOSE;
            GSYM MATRIX_VECTOR_MUL_ASSOC; o_THM]);;
 
+let MATRIX_0 = prove
+ (`matrix(\x. vec 0):real^M^N = mat 0`,
+  SIMP_TAC[matrix; CART_EQ; MAT_COMPONENT; LAMBDA_BETA; COND_ID;
+           VEC_COMPONENT]);;
+
 let MATRIX_VECTOR_COLUMN = prove
  (`!A:real^N^M x.
         A ** x = vsum(1..dimindex(:N)) (\i. x$i % (transp A)$i)`,
@@ -3793,9 +3798,8 @@ let ONORM_CMUL = prove
     ASM_SIMP_TAC[GSYM real_div; REAL_LE_RDIV_EQ; GSYM REAL_ABS_NZ]]);;
 
 let ONORM_NEG = prove
- (`!f:real^M->real^N. linear f ==> (onorm(\x. --(f x)) = onorm f)`,
-  ONCE_REWRITE_TAC[VECTOR_ARITH `--x:real^N = --(&1) % x`] THEN
-  SIMP_TAC[ONORM_CMUL; REAL_ABS_NEG; REAL_ABS_NUM; REAL_MUL_LID]);;
+ (`!f:real^M->real^N. onorm(\x. --f x) = onorm f`,
+  REWRITE_TAC[onorm; NORM_NEG]);;
 
 let ONORM_TRIANGLE = prove
  (`!f:real^M->real^N g.

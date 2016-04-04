@@ -1,3 +1,13 @@
+  * *****************************************************************
+  * NB: This CHANGES file no longer gives a comprehensive list of   *
+  * changes made to the system. In particular, most changes in the  *
+  * Multivariate theories are excluded, simply because there are    *
+  * so many of them that tracking them would be tedious. For more   *
+  * detailed update lists, consult the git logs ("git log" if you   *
+  * have the system downloaed) or the list of commits on the Web    *
+  * page: https://github.com/jrh13/hol-light/commits/master         *
+  * *****************************************************************
+
 Sun 20th Mar 2016       class.ml, sets.ml, Library/card.ml
 
 Added a few handy trivialities:

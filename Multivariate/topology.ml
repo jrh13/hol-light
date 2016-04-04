@@ -11266,6 +11266,14 @@ let IN_COMPONENTS_CONNECTED = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[components; IN_ELIM_THM] THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[CONNECTED_CONNECTED_COMPONENT]);;
 
+let CONNECTED_COMPONENT_IN_COMPONENTS = prove
+ (`!s c x:real^N. connected_component s x IN components s <=> x IN s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `(x:real^N) IN s` THEN
+  ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[components; IN_ELIM_THM] THEN ASM_MESON_TAC[];
+    RULE_ASSUM_TAC(REWRITE_RULE[GSYM CONNECTED_COMPONENT_EQ_EMPTY]) THEN
+    ASM_MESON_TAC[IN_COMPONENTS_NONEMPTY]]);;
+
 let IN_COMPONENTS_MAXIMAL = prove
  (`!s c:real^N->bool.
         c IN components s <=>
@@ -22795,6 +22803,53 @@ let SETDIST_SCALING = prove
     DISCH_THEN MATCH_MP_TAC THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
     MESON_TAC[DIST_POS_LE]]);;
 
+let SETDIST_UNIFORMLY_CONTINUOUS_ON,SETDIST_UNIFORMLY_CONTINUOUS_ON_ALT =
+ (CONJ_PAIR o prove)
+ (`(!f:real^M->real^N s.
+        f uniformly_continuous_on s <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !t t'. t SUBSET s /\ t' SUBSET s /\ setdist(t',t) < d
+                           ==> setdist(IMAGE f t',IMAGE f t) < e) /\
+   (!f:real^M->real^N s.
+        f uniformly_continuous_on s <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !t t'. t SUBSET s /\ t' SUBSET s /\
+                           bounded t /\ bounded t' /\
+                           setdist(t',t) < d
+                           ==> setdist(IMAGE f t',IMAGE f t) < e)`,
+  CONJ_TAC THEN
+  (REPEAT GEN_TAC THEN REWRITE_TAC[uniformly_continuous_on] THEN EQ_TAC THENL
+   [DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `d / &2` THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    MAP_EVERY X_GEN_TAC [`t:real^M->bool`; `t':real^M->bool`] THEN
+    STRIP_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH `&0 < e /\ x <= e / &2 ==> x < e`) THEN
+    ASM_CASES_TAC `t:real^M->bool = {}` THEN
+    ASM_SIMP_TAC[SETDIST_EMPTY; IMAGE_CLAUSES; REAL_HALF; REAL_LT_IMP_LE] THEN
+    ASM_CASES_TAC `t':real^M->bool = {}` THEN
+    ASM_SIMP_TAC[SETDIST_EMPTY; IMAGE_CLAUSES; REAL_HALF; REAL_LT_IMP_LE] THEN
+    MP_TAC(ISPECL [`t':real^M->bool`; `t:real^M->bool`; `d / &2`]
+        REAL_SETDIST_LT_EXISTS) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`y:real^M`; `x:real^M`] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^M`; `y:real^M`]) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+    ASM_SIMP_TAC[REAL_ARITH `x < d / &2 /\ &0 < d ==> x < d`] THEN
+    MATCH_MP_TAC(REAL_ARITH `x <= y ==> y < e / &2 ==> x <= e / &2`) THEN
+    MATCH_MP_TAC SETDIST_LE_DIST THEN ASM_SIMP_TAC[IN_SING; FUN_IN_IMAGE];
+    MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+    MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+    MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+    REWRITE_TAC[GSYM SETDIST_SINGS] THEN REPEAT STRIP_TAC THEN
+    ONCE_REWRITE_TAC[SET_RULE `{f x} = IMAGE f {x}`] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[SING_SUBSET; BOUNDED_SING]]));;
+
 let th = prove
  (`!c. &0 < c
        ==> !s t. setdist(IMAGE (\x. c % x) s,IMAGE (\x. c % x) t) =
@@ -24085,6 +24140,71 @@ let REAL_LT_HAUSDIST_POINT_EXISTS = prove
   TRANS_TAC REAL_LET_TRANS `hausdist(s:real^N->bool,t)` THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN
   ASM_REWRITE_TAC[]);;
+
+let HAUSDIST_UNIFORMLY_CONTINUOUS_ON = prove
+ (`!f:real^M->real^N s.
+        f uniformly_continuous_on s <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !t t'. t SUBSET s /\ t' SUBSET s /\
+                           bounded t /\ bounded t' /\
+                           hausdist(t',t) < d
+                           ==> hausdist(IMAGE f t',IMAGE f t) < e`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[uniformly_continuous_on] THEN EQ_TAC THENL
+   [DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `d / &2` THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+    MAP_EVERY X_GEN_TAC [`t:real^M->bool`; `t':real^M->bool`] THEN
+    STRIP_TAC THEN
+    MATCH_MP_TAC(REAL_ARITH `&0 < e /\ x <= e / &2 ==> x < e`) THEN
+    ASM_CASES_TAC `t:real^M->bool = {}` THEN
+    ASM_SIMP_TAC[HAUSDIST_EMPTY; IMAGE_CLAUSES; REAL_HALF; REAL_LT_IMP_LE] THEN
+    ASM_CASES_TAC `t':real^M->bool = {}` THEN
+    ASM_SIMP_TAC[HAUSDIST_EMPTY; IMAGE_CLAUSES; REAL_HALF; REAL_LT_IMP_LE] THEN
+    MATCH_MP_TAC REAL_HAUSDIST_LE THEN
+    ASM_REWRITE_TAC[FORALL_IN_IMAGE; IMAGE_EQ_EMPTY] THEN
+    CONJ_TAC THEN X_GEN_TAC `x:real^M` THEN DISCH_TAC THENL
+     [MP_TAC(ISPECL [`t':real^M->bool`; `t:real^M->bool`; `x:real^M`; `d / &2`]
+        REAL_LT_HAUSDIST_POINT_EXISTS);
+      MP_TAC(ISPECL [`t:real^M->bool`; `t':real^M->bool`; `x:real^M`; `d / &2`]
+        REAL_LT_HAUSDIST_POINT_EXISTS)] THEN
+    ASM_REWRITE_TAC[] THEN
+    ONCE_REWRITE_TAC[HAUSDIST_SYM] THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `y:real^M` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`y:real^M`; `x:real^M`]) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+    ASM_SIMP_TAC[REAL_ARITH `x < d / &2 /\ &0 < d ==> x < d`] THEN
+    MATCH_MP_TAC(REAL_ARITH `x <= y ==> y < e / &2 ==> x <= e / &2`) THEN
+    MATCH_MP_TAC SETDIST_LE_DIST THEN ASM_SIMP_TAC[IN_SING; FUN_IN_IMAGE];
+    MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+    MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+    MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+    REWRITE_TAC[GSYM HAUSDIST_SINGS] THEN REPEAT STRIP_TAC THEN
+    ONCE_REWRITE_TAC[SET_RULE `{f x} = IMAGE f {x}`] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[SING_SUBSET; BOUNDED_SING]]);;
+
+let SUBSET_COMPACT_HAUSDIST_LIMIT = prove
+ (`!f s t:real^N->bool.
+        compact s /\ ~(s = {}) /\
+        (!n. t SUBSET f n) /\ (!n. bounded(f n)) /\
+        ((\n. lift(hausdist (f n,s))) --> vec 0) sequentially
+        ==> t SUBSET s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[SUBSET] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `setdist({x:real^N},s) = &0` MP_TAC THENL
+   [GEN_REWRITE_TAC I [TAUT `p <=> ~ ~ p`];
+    ASM_SIMP_TAC[SETDIST_EQ_0_SING; CLOSURE_CLOSED; COMPACT_IMP_CLOSED]] THEN
+  PURE_REWRITE_TAC[GSYM SETDIST_POS_LT] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIM_SEQUENTIALLY]) THEN
+  DISCH_THEN(MP_TAC o SPEC `setdist({x:real^N},s)`) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
+  REWRITE_TAC[DIST_0; NORM_LIFT; REAL_ABS_HAUSDIST; LE_REFL] THEN
+  REWRITE_TAC[REAL_NOT_LT] THEN MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN
+  ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN ASM SET_TAC[]);;
 
 let UPPER_LOWER_HEMICONTINUOUS = prove
  (`!f:real^M->real^N->bool t s.
