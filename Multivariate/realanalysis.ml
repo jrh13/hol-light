@@ -995,6 +995,41 @@ let REAL_SERIES_COMPARISON_BOUND = prove
   EXISTS_TAC `lift o (g:num->real)` THEN
   ASM_SIMP_TAC[o_THM; LIFT_DROP]);;
 
+let REAL_SERIES_MUL = prove
+ (`!x y a b.
+        (x real_sums a) (from 0) /\ (y real_sums b) (from 0) /\
+        (real_summable (from 0) (\n. abs(x n)) \/
+         real_summable (from 0) (\n. abs(y n)))
+        ==> ((\n. sum(0..n) (\i. x i * y(n - i))) real_sums (a * b))
+            (from 0)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  MP_TAC(ISPECL
+   [`\x y:real^1. drop x % y`;
+    `lift o (x:num->real)`; `lift o (y:num->real)`;
+    `lift a`; `lift b`]
+   SERIES_BILINEAR) THEN
+  ASM_REWRITE_TAC[GSYM REAL_SUMMABLE; GSYM REAL_SUMS; BILINEAR_DROP_MUL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [REAL_SUMMABLE; REAL_SUMS; o_DEF; GSYM NORM_1]) THEN
+  ASM_REWRITE_TAC[o_DEF; NORM_LIFT; REAL_SUMS; TENDSTO_REAL; LIFT_SUM] THEN
+  REWRITE_TAC[DROP_CMUL; LIFT_DROP; LIFT_CMUL]);;
+
+let REAL_SERIES_MUL_UNIQUE = prove
+ (`!x y a b c.
+        (x real_sums a) (from 0) /\ (y real_sums b) (from 0) /\
+        ((\n. sum (0..n) (\i. x i * y(n - i))) real_sums c) (from 0)
+        ==> a * b = c`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`\x y:real^1. drop x % y`;
+    `lift o (x:num->real)`; `lift o (y:num->real)`;
+    `lift a`; `lift b`; `lift c`]
+   SERIES_BILINEAR_UNIQUE) THEN
+  ASM_REWRITE_TAC[GSYM REAL_SUMS; BILINEAR_DROP_MUL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[REAL_SUMS; o_DEF; LIFT_SUM; GSYM NORM_1]) THEN
+  ASM_REWRITE_TAC[o_DEF; DROP_CMUL; LIFT_DROP; GSYM LIFT_CMUL] THEN
+  REWRITE_TAC[LIFT_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Similar combining theorems just for summability.                          *)
 (* ------------------------------------------------------------------------- *)
@@ -1363,6 +1398,36 @@ let POWER_REAL_SERIES_CONV_IMP_ABSCONV_WEAK = prove
   REWRITE_TAC[REAL_SUMMABLE_COMPLEX; o_DEF; CX_MUL; CX_ABS; CX_POW] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC POWER_SERIES_CONV_IMP_ABSCONV_WEAK THEN
   EXISTS_TAC `Cx z` THEN ASM_REWRITE_TAC[COMPLEX_NORM_CX]);;
+
+let REAL_SUMMABLE_MUL_LEFT = prove
+ (`!x y m n p.
+        real_summable (from m) (\n. abs(x n)) /\
+        real_summable (from n) y
+        ==> real_summable (from p) (\n. sum(0..n) (\i. x i * y(n - i)))`,
+  ONCE_REWRITE_TAC[SPEC `0` REAL_SUMMABLE_FROM_ELSEWHERE_EQ] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP REAL_SERIES_ABSCONV_IMP_CONV) THEN
+  UNDISCH_TAC `real_summable (from 0) y` THEN
+  REWRITE_TAC[real_summable; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:real` THEN DISCH_TAC THEN
+  X_GEN_TAC `a:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `a * b:real` THEN MATCH_MP_TAC REAL_SERIES_MUL THEN
+  ASM_REWRITE_TAC[]);;
+
+let REAL_SUMMABLE_MUL_RIGHT = prove
+ (`!x y m n p.
+        real_summable (from m) x /\
+        real_summable (from n) (\n. abs(y n))
+        ==> real_summable (from p) (\n. sum(0..n) (\i. x i * y(n - i)))`,
+  ONCE_REWRITE_TAC[SPEC `0` REAL_SUMMABLE_FROM_ELSEWHERE_EQ] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP REAL_SERIES_ABSCONV_IMP_CONV) THEN
+  UNDISCH_TAC `real_summable (from 0) x` THEN
+  REWRITE_TAC[real_summable; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `a:real` THEN DISCH_TAC THEN
+  X_GEN_TAC `b:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `a * b:real` THEN MATCH_MP_TAC REAL_SERIES_MUL THEN
+  ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Nets for real limit.                                                      *)

@@ -8,6 +8,32 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  8th Apr 2016       iterate.ml, Library/products.ml
+
+Added some theorems about "reflecting" (= reindexing in reverse order)
+various iterated constructs:
+
+  ITERATE_REFLECT =
+    |- !op:A->A->A.
+          monoidal op
+          ==> !x m n. iterate op (m..n) x =
+                      if n < m then neutral op
+                      else iterate op (0..n-m) (\i. x(n - i))
+
+  NSUM_REFLECT =
+    |- !x m n. nsum(m..n) x = if n < m then 0 else nsum(0..n-m) (\i. x(n - i))
+
+  SUM_REFLECT =
+    |- !x m n. sum(m..n) x = if n < m then &0 else sum(0..n-m) (\i. x(n - i))
+
+  NPRODUCT_REFLECT =
+    |- !x m n. nproduct(m..n) x =
+               if n < m then 1 else nproduct(0..n-m) (\i. x(n - i))
+
+  PRODUCT_REFLECT =
+    |- !x m n. product(m..n) x =
+               if n < m then &1 else product(0..n-m) (\i. x(n - i))
+
 Sun 20th Mar 2016       class.ml, sets.ml, Library/card.ml
 
 Added a few handy trivialities:

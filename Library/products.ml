@@ -181,6 +181,13 @@ let NPRODUCT_PAIR = prove
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_MUL) THEN
   REWRITE_TAC[nproduct; NEUTRAL_MUL]);;
 
+let NPRODUCT_REFLECT = prove
+ (`!x m n. nproduct(m..n) x =
+           if n < m then 1 else nproduct(0..n-m) (\i. x(n - i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[nproduct] THEN
+  GEN_REWRITE_TAC LAND_CONV [MATCH_MP ITERATE_REFLECT MONOIDAL_MUL] THEN
+  REWRITE_TAC[NEUTRAL_MUL]);;
+
 let NPRODUCT_DELETE = prove
  (`!f s a. FINITE s /\ a IN s
            ==> f(a) * nproduct(s DELETE a) f = nproduct s f`,
@@ -445,6 +452,13 @@ let PRODUCT_PAIR = prove
  (`!f m n. product(2*m..2*n+1) f = product(m..n) (\i. f(2*i) * f(2*i+1))`,
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_REAL_MUL) THEN
   REWRITE_TAC[product; NEUTRAL_REAL_MUL]);;
+
+let PRODUCT_REFLECT = prove
+ (`!x m n. product(m..n) x =
+           if n < m then &1 else product(0..n-m) (\i. x(n - i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[product] THEN
+  GEN_REWRITE_TAC LAND_CONV [MATCH_MP ITERATE_REFLECT MONOIDAL_REAL_MUL] THEN
+  REWRITE_TAC[NEUTRAL_REAL_MUL]);;
 
 let PRODUCT_DELETE = prove
  (`!f s a. FINITE s /\ a IN s ==> f(a) * product(s DELETE a) f = product s f`,

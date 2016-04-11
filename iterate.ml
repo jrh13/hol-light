@@ -758,6 +758,28 @@ let ITERATE_PAIR = prove
                 ARITH_RULE `2 * SUC n + 1 = SUC(SUC(2 * n + 1))`] THEN
     ASM_MESON_TAC[monoidal]]);;
 
+let ITERATE_REFLECT = prove
+ (`!op:A->A->A.
+        monoidal op
+        ==> !x m n. iterate op (m..n) x =
+                    if n < m then neutral op
+                    else iterate op (0..n-m) (\i. x(n - i))`,
+  REWRITE_TAC[GSYM NUMSEG_EMPTY] THEN REPEAT STRIP_TAC THEN
+  COND_CASES_TAC THENL
+   [ASM_MESON_TAC[ITERATE_CLAUSES];
+    RULE_ASSUM_TAC(REWRITE_RULE[NUMSEG_EMPTY; NOT_LT])] THEN
+  FIRST_ASSUM(MP_TAC o
+   ISPECL [`\i:num. n - i`; `x:num->A`; `0..n-m`] o
+   MATCH_MP (INST_TYPE [`:X`,`:A`] ITERATE_IMAGE)) THEN
+  REWRITE_TAC[o_DEF; IN_NUMSEG] THEN
+  ANTS_TAC THENL [ARITH_TAC; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG] THEN
+  REWRITE_TAC[UNWIND_THM2; ARITH_RULE
+    `x = n - y /\ 0 <= y /\ y <= n - m <=>
+     y = n - x /\ x <= n /\ y <= n - m`] THEN
+  ASM_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Sums of natural numbers.                                                  *)
 (* ------------------------------------------------------------------------- *)
@@ -1312,6 +1334,12 @@ let NSUM_PAIR = prove
  (`!f m n. nsum(2*m..2*n+1) f = nsum(m..n) (\i. f(2*i) + f(2*i+1))`,
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_ADD) THEN
   REWRITE_TAC[nsum; NEUTRAL_ADD]);;
+
+let NSUM_REFLECT = prove
+ (`!x m n. nsum(m..n) x = if n < m then 0 else nsum(0..n-m) (\i. x(n - i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[nsum] THEN
+  GEN_REWRITE_TAC LAND_CONV [MATCH_MP ITERATE_REFLECT MONOIDAL_ADD] THEN
+  REWRITE_TAC[NEUTRAL_ADD]);;
 
 let MOD_NSUM_MOD = prove
  (`!f:A->num n s.
@@ -2051,6 +2079,12 @@ let SUM_PAIR = prove
  (`!f m n. sum(2*m..2*n+1) f = sum(m..n) (\i. f(2*i) + f(2*i+1))`,
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_REAL_ADD) THEN
   REWRITE_TAC[sum; NEUTRAL_REAL_ADD]);;
+
+let SUM_REFLECT = prove
+ (`!x m n. sum(m..n) x = if n < m then &0 else sum(0..n-m) (\i. x(n - i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sum] THEN
+  GEN_REWRITE_TAC LAND_CONV [MATCH_MP ITERATE_REFLECT MONOIDAL_REAL_ADD] THEN
+  REWRITE_TAC[NEUTRAL_REAL_ADD]);;
 
 let REAL_OF_NUM_SUM_NUMSEG = prove
  (`!f m n. (&(nsum(m..n) f) = sum (m..n) (\i. &(f i)))`,

@@ -597,7 +597,7 @@ let LIM_COMPLEX_INV_NONDEGENERATE = prove
     RULE_ASSUM_TAC(REWRITE_RULE[COMPLEX_NORM_0]) THEN ASM_REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Left and right multiplication of series.                                  *)
+(* Multiplication of complex series.                                         *)
 (* ------------------------------------------------------------------------- *)
 
 let SERIES_COMPLEX_LMUL = prove
@@ -625,6 +625,40 @@ let SUMMABLE_COMPLEX_RMUL = prove
 let SUMMABLE_COMPLEX_DIV = prove
  (`!f c s. summable s f ==> summable s (\x. f x / c)`,
   REWRITE_TAC[summable] THEN MESON_TAC[SERIES_COMPLEX_DIV]);;
+                                                               
+let SERIES_COMPLEX_MUL = prove                                                
+ (`!x y a b.                                                                   
+        (x sums a) (from 0) /\ (y sums b) (from 0) /\                   
+        (summable (from 0) (\n. lift(norm(x n))) \/                           
+         summable (from 0) (\n. lift(norm(y n))))                             
+        ==> ((\n. vsum(0..n) (\i. x i * y(n - i))) sums (a * b))
+            (from 0)`,                                       
+  MP_TAC(ISPEC `( * ):complex->complex->complex` SERIES_BILINEAR) THEN         
+  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;                                   
+                                                                             
+let SERIES_COMPLEX_MUL_UNIQUE = prove                         
+ (`!x y a b c.                                                          
+        (x sums a) (from 0) /\ (y sums b) (from 0) /\                  
+        ((\n. vsum (0..n) (\i. x i * y(n - i))) sums c) (from 0)        
+        ==> a * b = c`,                                                       
+  MP_TAC(ISPEC `( * ):complex->complex->complex` SERIES_BILINEAR_UNIQUE) THEN
+  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;                             
+                                                                           
+let SUMMABLE_COMPLEX_MUL_LEFT = prove                                   
+ (`!x y m n p.                                                      
+        summable (from m) (\n. lift(norm(x n))) /\ summable (from n) y
+        ==> summable (from p) (\n. vsum(0..n) (\i. x i * y(n - i)))`,
+  MP_TAC(ISPEC `( * ):complex->complex->complex`
+     SUMMABLE_BILINEAR_LEFT) THEN
+  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;
+
+let SUMMABLE_COMPLEX_MUL_RIGHT = prove
+ (`!x y m n p.
+        summable (from m) x /\ summable (from n) (\n. lift(norm(y n)))
+        ==> summable (from p) (\n. vsum(0..n) (\i. x i * y(n - i)))`,
+  MP_TAC(ISPEC `( * ):complex->complex->complex`
+     SUMMABLE_BILINEAR_RIGHT) THEN
+  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Complex-specific continuity closures.                                     *)

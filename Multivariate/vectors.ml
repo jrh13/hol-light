@@ -2008,6 +2008,13 @@ let VSUM_PAIR_0 = prove
   MP_TAC(ISPECL [`f:num->real^N`; `0`; `n:num`] VSUM_PAIR) THEN
   ASM_REWRITE_TAC[ARITH]);;
 
+let VSUM_REFLECT = prove
+ (`!x m n. vsum(m..n) x =
+           if n < m then vec 0 else vsum(0..n-m) (\i. x(n - i))`,
+  REPEAT GEN_TAC THEN SIMP_TAC[VSUM; FINITE_NUMSEG] THEN
+  GEN_REWRITE_TAC LAND_CONV [MATCH_MP ITERATE_REFLECT MONOIDAL_VECTOR_ADD] THEN
+  REWRITE_TAC[NEUTRAL_VECTOR_ADD]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Add useful congruences to the simplifier.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -2665,6 +2672,40 @@ let BILINEAR_VSUM_PARTIAL_PRE = prove
    REWRITE_TAC[ADD_SUB] THEN DISCH_THEN SUBST1_TAC THEN
   COND_CASES_TAC THEN REWRITE_TAC[]);;
 
+let BILINEAR_VSUM_CONVOLUTION_1 = prove
+ (`!bop:real^M->real^N->real^P a b n.
+        bilinear bop
+        ==> vsum(0..n) (\m. vsum (0..m) (\i. bop (a i) (b(m - i)))) =
+            vsum(0..n) (\m. bop (a m) (vsum(0..n-m) b))`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[BILINEAR_RSUM; FINITE_NUMSEG] THEN
+  SIMP_TAC[VSUM_VSUM_PRODUCT; FINITE_NUMSEG] THEN
+  MATCH_MP_TAC VSUM_EQ_GENERAL_INVERSES THEN
+  EXISTS_TAC `(\(x,y). y,x - y):num#num->num#num` THEN
+  EXISTS_TAC `(\(x,y). x + y,x):num#num->num#num` THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN REWRITE_TAC[IN_ELIM_PAIR_THM] THEN
+  REWRITE_TAC[PAIR_EQ; IN_NUMSEG; LE_0] THEN ARITH_TAC);;
+
+let BILINEAR_VSUM_CONVOLUTION_2 = prove
+ (`!bop:real^M->real^N->real^P a b n.
+    bilinear bop
+    ==> vsum(0..n) (\m. vsum(0..m) (\k. vsum(0..k) (\i. bop (a i) (b(k-i))))) =
+        vsum(0..n) (\m. bop (vsum(0..m) a) (vsum(0..n-m) b))`,
+  REPEAT STRIP_TAC THEN
+  ABBREV_TAC `summery:(num->real^P)->real^P = vsum(0..n)` THEN
+  ASM_SIMP_TAC[BILINEAR_LSUM; FINITE_NUMSEG] THEN
+  ASM_SIMP_TAC[BILINEAR_RSUM; FINITE_NUMSEG] THEN
+  SIMP_TAC[VSUM_VSUM_PRODUCT; FINITE_NUMSEG] THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  SIMP_TAC[VSUM_VSUM_PRODUCT; FINITE_NUMSEG; FINITE_PRODUCT_DEPENDENT] THEN
+  MATCH_MP_TAC VSUM_EQ_GENERAL_INVERSES THEN
+  EXISTS_TAC
+   `(\(m,k,i). (n-m)+i,i,k - i):num#num#num->num#num#num` THEN
+  EXISTS_TAC
+   `(\(a,b,c). n-(a-b),b+c,b):num#num#num->num#num#num` THEN
+  REWRITE_TAC[FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN
+  REWRITE_TAC[IN_NUMSEG; LE_0; PAIR_EQ] THEN ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Adjoints.                                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -3212,7 +3253,7 @@ let MATRIX_MUL_RNEG = prove
   REWRITE_TAC[MATRIX_NEG_MINUS1; MATRIX_MUL_RMUL]);;
 
 let MATRIX_NEG_NEG = prove
- (`!A:real^N^N. --(--A) = A`,
+ (`!A:real^N^M. --(--A) = A`,
   SIMP_TAC[CART_EQ; MATRIX_NEG_COMPONENT; REAL_NEG_NEG]);;
 
 let MATRIX_TRANSP_MUL = prove

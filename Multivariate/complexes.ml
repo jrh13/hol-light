@@ -2080,6 +2080,14 @@ let CPRODUCT_PAIR = prove
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_COMPLEX_MUL) THEN
   REWRITE_TAC[cproduct; NEUTRAL_COMPLEX_MUL]);;
 
+let CPRODUCT_REFLECT = prove
+ (`!x m n. cproduct(m..n) x =
+           if n < m then Cx(&1) else cproduct(0..n-m) (\i. x(n - i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[cproduct] THEN
+  GEN_REWRITE_TAC LAND_CONV
+   [MATCH_MP ITERATE_REFLECT MONOIDAL_COMPLEX_MUL] THEN
+  REWRITE_TAC[NEUTRAL_COMPLEX_MUL]);;
+
 let CNJ_CPRODUCT = prove
  (`!f s. FINITE s ==> cnj(cproduct s f) = cproduct s (\i. cnj(f i))`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
