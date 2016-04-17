@@ -7307,6 +7307,35 @@ let ARC_PARTCIRCLEPATH = prove
   REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERVAL_1])) THEN
   REWRITE_TAC[DROP_VEC] THEN REAL_ARITH_TAC);;
 
+let WINDING_NUMBER_PARTCIRCLEPATH = prove
+ (`!z r s t.
+        ~(r = &0)
+        ==> winding_number (partcirclepath(z,r,s,t),z) =
+            Cx((t - s) / (&2 * pi))`,
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand)
+    WINDING_NUMBER_VALID_PATH o lhand o snd) THEN
+  REWRITE_TAC[VALID_PATH_PARTCIRCLEPATH] THEN ANTS_TAC THENL
+   [MATCH_MP_TAC(SET_RULE `!s. ~(z IN s) /\ t SUBSET s ==> ~(z IN t)`) THEN
+    EXISTS_TAC `sphere(z:complex,abs r)` THEN
+    ASM_REWRITE_TAC[PATH_IMAGE_PARTCIRCLEPATH_SUBSET_ABS; IN_SPHERE] THEN
+    POP_ASSUM MP_TAC THEN CONV_TAC NORM_ARITH;
+    DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[complex_div; CX_DIV; CX_MUL; COMPLEX_INV_MUL] THEN
+  MATCH_MP_TAC(COMPLEX_FIELD
+   `i = ii * ts
+    ==> (Cx(&1) * inv(Cx(&2)) * p * inv ii) * i = ts * inv(Cx(&2)) * p`) THEN
+  MATCH_MP_TAC PATH_INTEGRAL_UNIQUE THEN
+  REWRITE_TAC[HAS_PATH_INTEGRAL; VECTOR_DERIVATIVE_PARTCIRCLEPATH] THEN
+  REWRITE_TAC[partcirclepath; COMPLEX_ADD_SUB] THEN
+  ASM_SIMP_TAC[CEXP_NZ; CX_INJ; CX_SUB; COMPLEX_FIELD
+   `~(r = Cx(&0)) /\ ~(e = Cx(&0))
+    ==> (Cx(&1) * inv(r * e)) * ii * r * ts * e = ii * ts`] THEN
+  MP_TAC(ISPECL
+   [`vec 0:real^1`; `vec 1:real^1`; `ii * (Cx t - Cx s)`]
+   HAS_INTEGRAL_CONST) THEN
+  SIMP_TAC[CONTENT_1; DROP_VEC; REAL_POS; REAL_SUB_RZERO; VECTOR_MUL_LID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Special case of one complete circle.                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -20149,6 +20178,34 @@ let WINDING_NUMBER_HOMOTOPIC_LOOPS_EQ = prove
                PATH_IMAGE_JOIN; IN_UNION; PATH_IMAGE_REVERSEPATH;
                WINDING_NUMBER_JOIN; WINDING_NUMBER_REVERSEPATH] THEN
   DISCH_THEN(SUBST1_TAC o SYM) THEN SIMPLE_COMPLEX_ARITH_TAC);;
+
+let HOMOTOPIC_LOOPS_PARTCIRCLEPATH = prove
+ (`!g z r n.
+        path g /\ pathfinish g = pathstart g /\ ~(z IN path_image g) /\
+        &0 < r /\ winding_number(g,z) = Cx(n)
+        ==> homotopic_loops ((:complex) DELETE z)
+                            g (partcirclepath(z,r,&0,&2 * n * pi))`,
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (rand o rand) WINDING_NUMBER_HOMOTOPIC_LOOPS_EQ o
+    snd) THEN
+  ASM_REWRITE_TAC[PATH_PARTCIRCLEPATH] THEN
+  MATCH_MP_TAC(TAUT
+   `(q ==> p) /\ q /\ r ==> ((p /\ q ==> (r <=> s)) ==> s)`) THEN
+  REPEAT CONJ_TAC THENL
+   [DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        INTEGER_WINDING_NUMBER_EQ)) THEN
+    REWRITE_TAC[PATH_PARTCIRCLEPATH] THEN DISCH_THEN(SUBST1_TAC o SYM);
+    MATCH_MP_TAC(SET_RULE `!s. ~(z IN s) /\ t SUBSET s ==> ~(z IN t)`) THEN
+    EXISTS_TAC `sphere(z:complex,abs r)` THEN
+    ASM_REWRITE_TAC[PATH_IMAGE_PARTCIRCLEPATH_SUBSET_ABS; IN_SPHERE] THEN
+    REWRITE_TAC[DIST_REFL] THEN ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[WINDING_NUMBER_PARTCIRCLEPATH; REAL_LT_IMP_NZ] THEN
+  SIMP_TAC[PI_POS; REAL_FIELD
+   `&0 < p ==> (&2 * n * p - &0) / (&2 * p) = n`] THEN
+  MP_TAC(ISPECL [`g:real^1->complex`; `z:complex`]
+    INTEGER_WINDING_NUMBER_EQ) THEN
+  ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A few simple corollaries from the various equivalences.                   *)

@@ -8,6 +8,36 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 13th Apr 2016       Library/wo.ml, Library/card.ml
+
+Added a few basic theorems including the fact that a toset contains a
+cofinal woset.
+
+
+   COUNTABLE_FL =
+        |- !l. COUNTABLE(fl l) <=> COUNTABLE l
+
+   FINITE_FL =
+        |- !l. FINITE(fl l) <=> FINITE l
+     
+   FL = 
+        |- !l. fl l = {x | ?y. l(x,y) \/ l(y,x)}
+
+   FL_SUBSET =
+        |- !l r. l SUBSET r ==> fl l SUBSET fl r
+
+   TOSET_COFINAL_WOSET =
+    |- !l. toset l
+           ==> ?w. w SUBSET l /\
+                   woset w /\
+                   !x. x IN fl l ==> ?y. y IN fl w /\ l(x,y)
+
+Wed 13th Apr 2016       sets.ml
+
+Added one more trivial set theorem:
+
+        INTERS_EQ_UNIV = |- !f. INTERS f = (:A) <=> !s. s IN f ==> s = (:A)
+
 Fri  8th Apr 2016       iterate.ml, Library/products.ml
 
 Added some theorems about "reflecting" (= reindexing in reverse order)

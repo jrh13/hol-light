@@ -184,16 +184,6 @@ let WOSET_WF = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `\x:A. P x /\ fl l x`) THEN
   REWRITE_TAC[fl] THEN ASM_MESON_TAC[]);;
 
-let WOSET_FINITE_TOSET = prove
- (`!l:A#A->bool. toset l /\ FINITE(fl l) ==> woset l`,
-  SIMP_TAC[toset; WOSET_WF; poset; IN] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC WF_FINITE THEN REWRITE_TAC[] THEN
-  CONJ_TAC THENL [ASM_MESON_TAC[]; X_GEN_TAC `a:A`] THEN
-  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
-    FINITE_SUBSET)) THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN REWRITE_TAC[fl; IN] THEN
-  ASM_MESON_TAC[]);;
-
 (* ------------------------------------------------------------------------ *)
 (* Misc lemmas.                                                             *)
 (* ------------------------------------------------------------------------ *)
@@ -230,6 +220,40 @@ let WOSET_TOTAL_LT = prove
 let ORDINAL_IMP_WOSET = prove
  (`!l:A#A->bool. ordinal l ==> woset l`,
   SIMP_TAC[ordinal]);;
+
+let FL = prove
+ (`!l:A#A->bool. fl l = {x:A | ?y. l(x,y) \/ l(y,x)}`,
+  REWRITE_TAC[FUN_EQ_THM; IN_ELIM_THM; fl]);;
+
+let FL_SUBSET = prove
+ (`!l r. l SUBSET r ==> fl l SUBSET fl r`,
+  REWRITE_TAC[SUBSET; IN; fl] THEN MESON_TAC[]);;
+
+let FINITE_FL = prove
+ (`!l:A#A->bool. FINITE(fl l) <=> FINITE l`,
+  GEN_TAC THEN REWRITE_TAC[FL] THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o MATCH_MP FINITE_CROSS o W CONJ) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_CROSS] THEN SET_TAC[];
+    DISCH_THEN((fun th ->
+     MP_TAC(ISPEC `FST:A#A->A` th) THEN MP_TAC(ISPEC `SND:A#A->A` th)) o
+     MATCH_MP FINITE_IMAGE) THEN
+    REWRITE_TAC[IMP_IMP; GSYM FINITE_UNION] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_CROSS; IN_UNION; IN_IMAGE] THEN
+    REWRITE_TAC[EXISTS_PAIR_THM; IN_ELIM_THM] THEN REWRITE_TAC[IN] THEN
+    SET_TAC[]]);;
+
+let WOSET_FINITE_TOSET = prove
+ (`!l:A#A->bool. toset l /\ FINITE l ==> woset l`,
+  ONCE_REWRITE_TAC[GSYM FINITE_FL] THEN
+  SIMP_TAC[toset; WOSET_WF; poset; IN] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC WF_FINITE THEN REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; X_GEN_TAC `a:A`] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+    FINITE_SUBSET)) THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN REWRITE_TAC[fl; IN] THEN
+  ASM_MESON_TAC[]);;
 
 (* ======================================================================== *)
 (* (2) AXIOM OF CHOICE ==> CANTOR-ZERMELO WELLORDERING THEOREM              *)
@@ -1117,3 +1141,138 @@ let OEP = prove
     REMOVE_THEN "*" (MP_TAC o SPECL [`x:A`; `y:A`]) THEN
     ASM_REWRITE_TAC[OR_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
     MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Every toset contains a cofinal woset.                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let TOSET_COFINAL_WOSET = prove
+ (`!l. toset l
+       ==> ?w. w SUBSET l /\ woset w /\
+               !x:A. x IN fl l ==> ?y. y IN fl w /\ l(x,y)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `fl l:A->bool = {}` THENL
+   [ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
+    EXISTS_TAC `(\(x,y). F):A#A->bool` THEN
+    ASM_REWRITE_TAC[woset; FORALL_PAIR_THM; fl; SUBSET] THEN
+    REWRITE_TAC[IN] THEN MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `?r. ordinal r /\ fl r = (:A->bool)` STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_UNIV] THEN REWRITE_TAC[IN; WO_ORDINAL];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?f. !w. f w = if ?x:A. x IN fl l /\
+                           !v:A->bool. r(v,w) /\ ~(v = w) ==> ~l(x,f v)
+                  then @x:A. x IN fl l /\
+                             !v. r(v,w) /\ ~(v = w) ==> ~l(x,f v)
+                  else @x:A. x IN fl l`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP ORDINAL_IMP_WOSET) THEN
+    REWRITE_TAC[WOSET_WF] THEN
+    DISCH_THEN(MATCH_MP_TAC o MATCH_MP WF_REC o CONJUNCT1) THEN
+    REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC(MESON[]
+     `(p <=> p') /\ x' = x
+      ==> (if p then x else a) = (if p' then x' else a)`) THEN
+    CONJ_TAC THENL [ALL_TAC; AP_TERM_TAC THEN ABS_TAC] THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!w. (f:(A->bool)->A) w IN fl l`
+  ASSUME_TAC THENL
+   [GEN_TAC THEN ONCE_ASM_REWRITE_TAC[] THEN
+    COND_CASES_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    CONV_TAC SELECT_CONV THEN ASM_REWRITE_TAC[MEMBER_NOT_EMPTY];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?w:A->bool. (!x. x IN fl l ==> ?v. r(v,w) /\ ~(v = w) /\ l(x:A,f v)) /\
+                !z. (!x. x IN fl l ==> ?v. r(v,z) /\ ~(v = z) /\ l(x,f v))
+                    ==> r(w,z)`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_ASSUM(MATCH_MP_TAC o last o CONJUNCTS o REWRITE_RULE[woset] o
+        MATCH_MP ORDINAL_IMP_WOSET) THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    ONCE_REWRITE_TAC[MESON[] `(?w. P w) <=> ~(!w. ~P w)`] THEN
+    GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [NOT_FORALL_THM] THEN
+    REWRITE_TAC[NOT_IMP; NOT_EXISTS_THM; TAUT
+     `~(p /\ q /\ r) <=> (p /\ q ==> ~r)`] THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN `!v w:A->bool. f v:A = f w ==> v = w` MP_TAC THENL
+     [FIRST_ASSUM(MP_TAC o el 3 o CONJUNCTS o REWRITE_RULE[woset] o
+        MATCH_MP ORDINAL_IMP_WOSET) THEN
+      FIRST_X_ASSUM SUBST1_TAC THEN REWRITE_TAC[UNIV] THEN
+      MATCH_MP_TAC(MESON[]
+       `(!x y. P x y ==> P y x) /\ (!x y. R x y ==> P x y)
+        ==> (!x y. R x y \/ R y x) ==> (!x y. P x y)`) THEN
+      CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+      REPEAT GEN_TAC THEN DISCH_TAC THEN
+      GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(fun t -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [t]) THEN
+      ASM_SIMP_TAC[] THEN DISCH_THEN(MP_TAC o MATCH_MP (MESON[]
+       `(y = @x. P x) ==> (?x. P x) ==> P y`)) THEN
+      ASM_SIMP_TAC[] THEN RULE_ASSUM_TAC(REWRITE_RULE[toset]) THEN
+      ASM_MESON_TAC[];
+      REWRITE_TAC[INJECTIVE_LEFT_INVERSE; NOT_EXISTS_THM] THEN
+      X_GEN_TAC `g:A->(A->bool)` THEN
+      DISCH_THEN(MP_TAC o SPEC `\x:A. ~(g x x)`) THEN
+      REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!x y. r(x,y) /\ r(y,w) /\ ~(y = w) ==> l((f:(A->bool)->A) x,f y)`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC(MESON[]
+     `(l(a,b) \/ l(b,a)) /\ (~(b = a) ==> ~l(b,a)) ==> l(a,b)`) THEN
+    CONJ_TAC THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE[toset]) THEN ASM SET_TAC[];
+      DISCH_THEN(ASSUME_TAC o MATCH_MP (MESON[]
+       `~(f x = f y) ==> ~(x = y)`))] THEN
+    FIRST_X_ASSUM(fun th ->
+     GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o LAND_CONV) [th]) THEN
+    COND_CASES_TAC THENL
+     [FIRST_X_ASSUM(MATCH_MP_TAC o CONJUNCT2 o SELECT_RULE) THEN
+      ASM_REWRITE_TAC[];
+      FIRST_ASSUM(MP_TAC o REWRITE_RULE[woset] o
+       MATCH_MP ORDINAL_IMP_WOSET) THEN
+      ASM_MESON_TAC[]];
+    ALL_TAC] THEN
+  EXISTS_TAC `\(x,y). x IN IMAGE (f:(A->bool)->A) {v | r(v,w) /\ ~(v = w)} /\
+                      y IN IMAGE (f:(A->bool)->A) {v | r(v,w) /\ ~(v = w)} /\
+                      l(x,y)` THEN
+  SUBGOAL_THEN
+   `fl(\(x,y). x IN IMAGE (f:(A->bool)->A) {v | r(v,w) /\ ~(v = w)} /\
+               y IN IMAGE (f:(A->bool)->A) {v | r(v,w) /\ ~(v = w)} /\
+               l(x,y)) =
+    IMAGE f {v | r(v,w) /\ ~(v = w)}`
+  ASSUME_TAC THENL
+   [GEN_REWRITE_TAC I [EXTENSION] THEN
+    REWRITE_TAC[IN_ELIM_THM; IN_IMAGE] THEN
+    REWRITE_TAC[IN; fl] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[toset]) THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  REPEAT CONJ_TAC THENL
+   [SIMP_TAC[SUBSET; FORALL_PAIR_THM; IN];
+    ASM_REWRITE_TAC[REWRITE_RULE[SET_RULE `fl l x <=> x IN fl l`] woset];
+    ASM_REWRITE_TAC[] THEN REWRITE_TAC[EXISTS_IN_IMAGE] THEN
+    ASM SET_TAC[]] THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [toset]) THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [poset]) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[SET_RULE `fl l x <=> x IN fl l`]) THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; SIMP_TAC[]] THEN
+  X_GEN_TAC `P:A->bool` THEN REWRITE_TAC[] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP ORDINAL_IMP_WOSET) THEN
+  REWRITE_TAC[woset] THEN
+  DISCH_THEN(MP_TAC o SPEC
+    `\x:A->bool. (P:A->bool) (f x)` o last o CONJUNCTS) THEN
+  REWRITE_TAC[] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `z:A->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `(f:(A->bool)->A) z` THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+   `(!z. P z ==> z IN IMAGE f s)
+    ==> (!x. x IN s /\ P(f x) ==> Q(f x))
+        ==> !y. P y ==> Q y`)) THEN
+  X_GEN_TAC `y:A->bool` THEN REWRITE_TAC[IN_ELIM_THM] THEN STRIP_TAC THEN
+  CONJ_TAC THENL
+   [FIRST_X_ASSUM MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC;
+    ASM SET_TAC[]]);;

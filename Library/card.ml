@@ -1647,6 +1647,21 @@ let COUNTABLE_SUBSET_IMAGE = prove
   SPEC_TAC(`t:B->bool`,`t:B->bool`) THEN
   REWRITE_TAC[FORALL_COUNTABLE_SUBSET_IMAGE] THEN MESON_TAC[]);;
 
+let COUNTABLE_FL = prove
+ (`!l:A#A->bool. COUNTABLE(fl l) <=> COUNTABLE l`,
+  GEN_TAC THEN REWRITE_TAC[FL] THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o MATCH_MP COUNTABLE_CROSS o W CONJ) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_CROSS] THEN SET_TAC[];
+    DISCH_THEN((fun th ->
+     MP_TAC(ISPEC `FST:A#A->A` th) THEN MP_TAC(ISPEC `SND:A#A->A` th)) o
+     MATCH_MP COUNTABLE_IMAGE) THEN
+    REWRITE_TAC[IMP_IMP; GSYM COUNTABLE_UNION] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_CROSS; IN_UNION; IN_IMAGE] THEN
+    REWRITE_TAC[EXISTS_PAIR_THM; IN_ELIM_THM] THEN REWRITE_TAC[IN] THEN
+    SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of infinite list and cartesian product types.                 *)
 (* ------------------------------------------------------------------------- *)
@@ -2271,10 +2286,10 @@ let CARD_LE_POWERSET = prove
   MATCH_MP_TAC CARD_LE_SUBPOWERSET THEN
   ASM_SIMP_TAC[]);;
 
-let CARD_POWERSET_CONG = prove                                 
- (`!s:A->bool t:B->bool.                                                   
+let CARD_POWERSET_CONG = prove
+ (`!s:A->bool t:B->bool.
         s =_c t ==> {u | u SUBSET s} =_c {v | v SUBSET t}`,
-  SIMP_TAC[GSYM CARD_LE_ANTISYM; CARD_LE_POWERSET]);;   
+  SIMP_TAC[GSYM CARD_LE_ANTISYM; CARD_LE_POWERSET]);;
 
 let COUNTABLE_LIST_GEN = prove
  (`!s:A->bool. COUNTABLE s ==> COUNTABLE {l | !x. MEM x l ==> x IN s}`,

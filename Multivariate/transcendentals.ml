@@ -3373,6 +3373,35 @@ let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS = prove
 (* "If and only if" variants of unrestricted homotopy characterization       *)
 (* ------------------------------------------------------------------------- *)
 
+let HOMOTOPIC_LINEAR_MAPS_EQ = prove
+ (`!f g:real^N->real^N.
+        linear f /\ linear g
+        ==> (homotopic_with (\x. T)
+               ((:real^N) DELETE vec 0,(:real^N) DELETE vec 0) f g <=>
+             &0 < det(matrix f) * det(matrix g))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  ASM_SIMP_TAC[HOMOTOPIC_LINEAR_MAPS_ALT] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^N->real^N`; `g:real^N->real^N`]
+      HOMOTOPIC_INVERTIBLE_LINEAR_MAPS) THEN
+  ASM_REWRITE_TAC[homotopic_with] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `h:real^(1,N)finite_sum->real^N` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+       CONTINUOUS_ON_SUBSET)) THEN
+    REWRITE_TAC[SUBSET_PCROSS] THEN SET_TAC[];
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_PASTECART] THEN
+    MAP_EVERY X_GEN_TAC [`t:real^1`; `x:real^N`] THEN
+    REWRITE_TAC[PASTECART_IN_PCROSS; IN_UNIV; IN_DELETE] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `t:real^1`) THEN
+    ASM_SIMP_TAC[IMP_CONJ; MATRIX_INVERTIBLE] THEN DISCH_THEN(K ALL_TAC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `k:real^N->real^N` MP_TAC) THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[FUN_EQ_THM; o_THM] THEN DISCH_TAC THEN
+    DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[I_THM] THEN
+    ASM_MESON_TAC[LINEAR_0]]);;
+
 let HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ = prove
  (`!f g:real^N->real^N.
         orthogonal_transformation f /\ orthogonal_transformation g
@@ -4423,20 +4452,20 @@ let CLOG_MUL_CX = prove
   ASM_SIMP_TAC[CX_INJ; REAL_LT_IMP_NZ; GSYM CX_LOG] THEN
   ASM_SIMP_TAC[IM_CX; REAL_ADD_LID; REAL_ADD_RID; CLOG_WORKS]);;
 
-let CLOG_MUL_POS = prove                                                   
+let CLOG_MUL_POS = prove
  (`!w z. &0 < Re w /\ &0 < Re z ==> clog(w * z) = clog w + clog z`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOG_MUL_SIMPLE THEN
   MATCH_MP_TAC(TAUT `(p /\ q) /\ (p /\ q ==> r) ==> p /\ q /\ r`) THEN
   CONJ_TAC THENL [ASM_MESON_TAC[RE_CX; REAL_LT_REFL]; STRIP_TAC] THEN
   MATCH_MP_TAC(REAL_ARITH
     `abs(x) < pi / &2 /\ abs(y) < pi / &2
-     ==> --pi < x + y /\ x + y <= pi`) THEN                           
+     ==> --pi < x + y /\ x + y <= pi`) THEN
   ASM_SIMP_TAC[RE_CLOG_POS_LT]);;
-                         
-let CLOG_DIV_POS = prove                                             
- (`!w z. &0 < Re w /\ &0 < Re z ==> clog(w / z) = clog w - clog z`,   
-  ASM_SIMP_TAC[complex_div; CLOG_MUL_POS; CLOG_INV; RE_COMPLEX_INV_GT_0] THEN 
-  REWRITE_TAC[complex_sub]);;                      
+
+let CLOG_DIV_POS = prove
+ (`!w z. &0 < Re w /\ &0 < Re z ==> clog(w / z) = clog w - clog z`,
+  ASM_SIMP_TAC[complex_div; CLOG_MUL_POS; CLOG_INV; RE_COMPLEX_INV_GT_0] THEN
+  REWRITE_TAC[complex_sub]);;
 
 let CLOG_NEG = prove
  (`!z. ~(z = Cx(&0))

@@ -12247,6 +12247,86 @@ let NEGLIGIBLE_POINTS_OF_AMBIGUOUS_DERIVATIVE = prove
     REWRITE_TAC[VECTOR_SUB_REFL; EVENTUALLY_TRUE]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Can only have countably many disjoint sets of positive measure.           *)
+(* ------------------------------------------------------------------------- *)
+
+let PAIRWISE_DISJOINT_LEBESGUE_MEASURABLE_IMP_COUNTABLE = prove
+ (`!f:(real^N->bool)->bool.
+        pairwise (\s t. negligible (s INTER t)) f /\
+        (!s. s IN f ==> lebesgue_measurable s /\ ~negligible s)
+        ==> COUNTABLE f`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC
+   `UNIONS
+     (IMAGE (\(m,n).
+        {s | s IN f /\
+           inv(&m + &1) < measure(s INTER interval[--vec n:real^N,vec n])})
+     ((:num) CROSS (:num)))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC COUNTABLE_UNIONS THEN
+    SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_CROSS; NUM_COUNTABLE] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_CROSS; IN_UNIV] THEN
+    MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN
+    MATCH_MP_TAC FINITE_IMP_COUNTABLE THEN
+    MATCH_MP_TAC(MESON[] `!n. ~(FINITE s ==> n <= CARD s) ==> FINITE s`) THEN
+    EXISTS_TAC `1 + (m + 1) * (2 * n) EXP dimindex(:N)` THEN
+    MATCH_MP_TAC(ONCE_REWRITE_RULE
+     [GSYM CONTRAPOS_THM] CHOOSE_SUBSET_STRONG) THEN
+    REWRITE_TAC[NOT_EXISTS_THM; SUBSET; HAS_SIZE; IN_ELIM_THM] THEN
+    X_GEN_TAC `t:(real^N->bool)->bool` THEN STRIP_TAC THEN
+    MP_TAC(ISPECL [`\s. s INTER interval[--vec n:real^N,vec n]`;
+                   `t:(real^N->bool)->bool`]
+        MEASURE_NEGLIGIBLE_UNIONS_IMAGE) THEN
+    ASM_SIMP_TAC[MEASURABLE_LEBESGUE_MEASURABLE_INTER_MEASURABLE;
+                 MEASURABLE_INTERVAL; NOT_IMP] THEN
+    CONJ_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [pairwise]) THEN
+      REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+      MATCH_MP_TAC MONO_IMP THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+      REWRITE_TAC[] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+      SET_TAC[];
+      MATCH_MP_TAC(REAL_ARITH `!z. x <= z /\ z < y ==> ~(x = y)`) THEN
+      EXISTS_TAC `measure(interval[--vec n:real^N,vec n])` THEN CONJ_TAC THENL
+       [MATCH_MP_TAC MEASURE_SUBSET THEN REWRITE_TAC[MEASURABLE_INTERVAL] THEN
+        CONJ_TAC THENL [ALL_TAC; REWRITE_TAC[UNIONS_IMAGE] THEN SET_TAC[]] THEN
+        MATCH_MP_TAC MEASURABLE_UNIONS THEN
+        ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+        ASM_SIMP_TAC[MEASURABLE_LEBESGUE_MEASURABLE_INTER_MEASURABLE;
+                     MEASURABLE_INTERVAL];
+        TRANS_TAC REAL_LET_TRANS
+         `sum (t:(real^N->bool)->bool) (\s. inv(&m + &1))` THEN
+        CONJ_TAC THENL
+         [ASM_SIMP_TAC[SUM_CONST; MEASURE_INTERVAL; GSYM REAL_OF_NUM_MUL;
+            GSYM REAL_OF_NUM_ADD; CONTENT_CLOSED_INTERVAL_CASES] THEN
+          REWRITE_TAC[VEC_COMPONENT; VECTOR_NEG_COMPONENT] THEN
+          REWRITE_TAC[REAL_ARITH `-- &n <= &n /\ x - --x = &2 * x`] THEN
+          SIMP_TAC[REAL_FIELD
+           `(&1 + (&m + &1) * x) * inv(&m + &1) = x + inv(&m + &1)`] THEN
+          MATCH_MP_TAC(REAL_ARITH `x <= y /\ &0 <= z ==> x <= y + z`) THEN
+          REWRITE_TAC[REAL_LE_INV_EQ; REAL_ARITH `&0 <= &m + &1`] THEN
+          REWRITE_TAC[PRODUCT_CONST_NUMSEG; REAL_OF_NUM_MUL; REAL_OF_NUM_POW;
+                      REAL_OF_NUM_LE; ADD_SUB; LE_REFL];
+          MATCH_MP_TAC SUM_LT_ALL THEN ASM_SIMP_TAC[GSYM CARD_EQ_0] THEN
+          REWRITE_TAC[MULT_EQ_0; EXP_EQ_0; ARITH_EQ; ADD_EQ_0]]]];
+    REWRITE_TAC[SUBSET; UNIONS_IMAGE] THEN
+    X_GEN_TAC `s:real^N->bool` THEN DISCH_TAC THEN
+    REWRITE_TAC[EXISTS_PAIR_THM; IN_CROSS; IN_UNIV; IN_ELIM_THM] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `s:real^N->bool`) THEN
+    ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+    ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV
+     [NEGLIGIBLE_ON_COUNTABLE_INTERVALS]) THEN
+    REWRITE_TAC[NOT_FORALL_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `n:num` THEN
+    ASM_SIMP_TAC[GSYM MEASURABLE_MEASURE_POS_LT; MEASURABLE_INTERVAL;
+                 MEASURABLE_LEBESGUE_MEASURABLE_INTER_MEASURABLE] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM EVENTUALLY_INV1_LT] THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    SIMP_TAC[LE_REFL]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Various Vitali-type covering lemmas.                                      *)
 (* ------------------------------------------------------------------------- *)
 

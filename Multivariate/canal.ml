@@ -625,27 +625,27 @@ let SUMMABLE_COMPLEX_RMUL = prove
 let SUMMABLE_COMPLEX_DIV = prove
  (`!f c s. summable s f ==> summable s (\x. f x / c)`,
   REWRITE_TAC[summable] THEN MESON_TAC[SERIES_COMPLEX_DIV]);;
-                                                               
-let SERIES_COMPLEX_MUL = prove                                                
- (`!x y a b.                                                                   
-        (x sums a) (from 0) /\ (y sums b) (from 0) /\                   
-        (summable (from 0) (\n. lift(norm(x n))) \/                           
-         summable (from 0) (\n. lift(norm(y n))))                             
+
+let SERIES_COMPLEX_MUL = prove
+ (`!x y a b.
+        (x sums a) (from 0) /\ (y sums b) (from 0) /\
+        (summable (from 0) (\n. lift(norm(x n))) \/
+         summable (from 0) (\n. lift(norm(y n))))
         ==> ((\n. vsum(0..n) (\i. x i * y(n - i))) sums (a * b))
-            (from 0)`,                                       
-  MP_TAC(ISPEC `( * ):complex->complex->complex` SERIES_BILINEAR) THEN         
-  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;                                   
-                                                                             
-let SERIES_COMPLEX_MUL_UNIQUE = prove                         
- (`!x y a b c.                                                          
-        (x sums a) (from 0) /\ (y sums b) (from 0) /\                  
-        ((\n. vsum (0..n) (\i. x i * y(n - i))) sums c) (from 0)        
-        ==> a * b = c`,                                                       
+            (from 0)`,
+  MP_TAC(ISPEC `( * ):complex->complex->complex` SERIES_BILINEAR) THEN
+  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;
+
+let SERIES_COMPLEX_MUL_UNIQUE = prove
+ (`!x y a b c.
+        (x sums a) (from 0) /\ (y sums b) (from 0) /\
+        ((\n. vsum (0..n) (\i. x i * y(n - i))) sums c) (from 0)
+        ==> a * b = c`,
   MP_TAC(ISPEC `( * ):complex->complex->complex` SERIES_BILINEAR_UNIQUE) THEN
-  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;                             
-                                                                           
-let SUMMABLE_COMPLEX_MUL_LEFT = prove                                   
- (`!x y m n p.                                                      
+  REWRITE_TAC[BILINEAR_COMPLEX_MUL]);;
+
+let SUMMABLE_COMPLEX_MUL_LEFT = prove
+ (`!x y m n p.
         summable (from m) (\n. lift(norm(x n))) /\ summable (from n) y
         ==> summable (from p) (\n. vsum(0..n) (\i. x i * y(n - i)))`,
   MP_TAC(ISPEC `( * ):complex->complex->complex`
@@ -2236,36 +2236,22 @@ let HAS_COMPLEX_DERIVATIVE_INVERSE_STRONG_X = prove
 (* Cauchy-Riemann condition and relation to conformal.                       *)
 (* ------------------------------------------------------------------------- *)
 
-let COMPLEX_BASIS = prove
- (`basis 1 = Cx(&1) /\ basis 2 = ii`,
-  SIMP_TAC[CART_EQ; FORALL_2; BASIS_COMPONENT; DIMINDEX_2; ARITH] THEN
-  REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; RE_CX; IM_CX] THEN
-  REWRITE_TAC[ii] THEN SIMPLE_COMPLEX_ARITH_TAC);;
-
 let CAUCHY_RIEMANN = prove
  (`!f z. f complex_differentiable at z <=>
          f differentiable at z  /\
          (jacobian f (at z))$1$1 = (jacobian f (at z))$2$2 /\
          (jacobian f (at z))$1$2 = --((jacobian f (at z))$2$1)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[complex_differentiable] THEN EQ_TAC THENL
-   [REWRITE_TAC[has_complex_derivative] THEN
-    DISCH_THEN(X_CHOOSE_THEN `f':complex` ASSUME_TAC) THEN
-    CONJ_TAC THENL [ASM_MESON_TAC[differentiable]; ALL_TAC] THEN
-    REWRITE_TAC[jacobian] THEN
-    FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP FRECHET_DERIVATIVE_AT) THEN
-    SIMP_TAC[matrix; LAMBDA_BETA; DIMINDEX_2; ARITH] THEN
-    REWRITE_TAC[COMPLEX_BASIS; GSYM RE_DEF; GSYM IM_DEF; ii] THEN
-    SIMPLE_COMPLEX_ARITH_TAC;
-    STRIP_TAC THEN EXISTS_TAC
-     `complex(jacobian (f:complex->complex) (at z)$1$1,
-              jacobian f (at z)$2$1)` THEN
-    REWRITE_TAC[has_complex_derivative] THEN
-    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [JACOBIAN_WORKS]) THEN
-    MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-    ASM_SIMP_TAC[CART_EQ; matrix_vector_mul; DIMINDEX_2; SUM_2; ARITH;
-                 FORALL_2; FUN_EQ_THM; LAMBDA_BETA] THEN
-    REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; IM; RE; complex_mul] THEN
-    REAL_ARITH_TAC]);;
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[complex_differentiable; differentiable; has_complex_derivative] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!y. (f has_derivative y) (at z)
+         ==> ((?x. y = h x) <=> P f))
+    ==> ((?x. (f has_derivative (h x)) (at z)) <=>
+         (?y. (f has_derivative y) (at z)) /\ P f)`) THEN
+  GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[jacobian] THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP FRECHET_DERIVATIVE_AT) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[has_derivative]) THEN
+  ASM_REWRITE_TAC[COMPLEX_LINEAR]);;
 
 let COMPLEX_DERIVATIVE_JACOBIAN = prove
  (`!f z.

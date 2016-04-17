@@ -795,6 +795,10 @@ let UNIONS_DELETE_EMPTY = prove
   ONCE_REWRITE_TAC[EXTENSION] THEN
   REWRITE_TAC[IN_UNIONS; IN_DELETE] THEN MESON_TAC[NOT_IN_EMPTY]);;
 
+let INTERS_EQ_UNIV = prove
+ (`!f. INTERS f = (:A) <=> !s. s IN f ==> s = (:A)`,                           
+  SET_TAC[]);;                                         
+
 (* ------------------------------------------------------------------------- *)
 (* Multiple intersection.                                                    *)
 (* ------------------------------------------------------------------------- *)

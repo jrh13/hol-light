@@ -465,6 +465,40 @@ let VECTOR_ANGLE_ARG = prove
       ONCE_REWRITE_TAC[GSYM COMPLEX_INV_DIV] THEN
       REWRITE_TAC[IM_COMPLEX_INV_GE_0] THEN ASM_REAL_ARITH_TAC]]);;
 
+let VECTOR_ANGLE_PRESERVING_EQ_SIMILARITY = prove
+ (`!f:real^N->real^N.
+      linear f /\ (!x y. vector_angle (f x) (f y) = vector_angle x y) <=>
+      ?c g. ~(c = &0) /\ orthogonal_transformation g /\ f = \z. c % g z`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [ALL_TAC;
+    ASM_SIMP_TAC[ORTHOGONAL_TRANSFORMATION_LINEAR; LINEAR_COMPOSE_CMUL] THEN
+    ASM_SIMP_TAC[VECTOR_ANGLE_LMUL; VECTOR_ANGLE_RMUL] THEN
+    REWRITE_TAC[REAL_ARITH `pi - (pi - x) = x`; COND_ID] THEN
+    ASM_MESON_TAC[VECTOR_ANGLE_ORTHOGONAL_TRANSFORMATION]] THEN
+  MP_TAC(ISPEC `f:real^N->real^N` ORTHOGONALITY_PRESERVING_EQ_SIMILARITY) THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_VECTOR_ANGLE] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c:real` THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^N->real^N` THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`basis 1:real^N`; `basis 1:real^N`]) THEN
+  ASM_REWRITE_TAC[VECTOR_ANGLE_REFL; VECTOR_MUL_LZERO] THEN
+  SIMP_TAC[BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL] THEN
+  MP_TAC PI_POS THEN REAL_ARITH_TAC);;
+
+let VECTOR_ANGLE_PRESERVING_EQ_SIMILARITY_ALT = prove
+ (`!f:real^N->real^N.
+      linear f /\ (!x y. vector_angle (f x) (f y) = vector_angle x y) <=>
+      ?c g. &0 < c /\ orthogonal_transformation g /\ f = \z. c % g z`,
+  GEN_TAC THEN REWRITE_TAC[VECTOR_ANGLE_PRESERVING_EQ_SIMILARITY] THEN
+  EQ_TAC THENL [REWRITE_TAC[LEFT_IMP_EXISTS_THM]; MESON_TAC[REAL_LT_REFL]] THEN
+  MAP_EVERY X_GEN_TAC [`c:real`; `g:real^N->real^N`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP (REAL_ARITH
+   `~(c = &0) ==> &0 < c \/ &0 < --c`))
+  THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MAP_EVERY EXISTS_TAC [`--c:real`; `\x. --((g:real^N->real^N) x)`] THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_NEG] THEN
+  REWRITE_TAC[VECTOR_MUL_LNEG; VECTOR_MUL_RNEG; VECTOR_NEG_NEG]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Traditional geometric notion of angle (always 0 <= theta <= pi).          *)
 (* ------------------------------------------------------------------------- *)

@@ -1499,6 +1499,19 @@ let CONNECTED_EQUIVALENCE_RELATION = prove
   GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC CONNECTED_INDUCTION_SIMPLE THEN
   ASM_MESON_TAC[]);;
 
+let LOCALLY_CONSTANT_IMP_CONSTANT = prove
+ (`!f:real^N->A s.
+        connected s /\
+        (!x. x IN s
+             ==> ?u. open_in (subtopology euclidean s) u /\ x IN u /\
+                     !x'. x' IN u ==> f x' = f x)
+        ==> ?c. !x. x IN s ==> f x = c`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[MESON[]
+   `(?c. !x. P x ==> f x = c) <=> (!x y. P x /\ P y ==> f x = f y)`] THEN
+  CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN
+  MATCH_MP_TAC CONNECTED_EQUIVALENCE_RELATION THEN
+  ASM_SIMP_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Limit points.                                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -4295,7 +4308,7 @@ let LIM_CASES_SEQUENTIALLY = prove
 (* ------------------------------------------------------------------------- *)
 
 let LIM_CONG_WITHIN = prove
- (`(!x. ~(x = a) ==> f x = g x)
+ (`(!x. x IN s /\ ~(x = a) ==> f x = g x)
    ==> (((\x. f x) --> l) (at a within s) <=> ((g --> l) (at a within s)))`,
   REWRITE_TAC[LIM_WITHIN; GSYM DIST_NZ] THEN SIMP_TAC[]);;
 
@@ -27358,6 +27371,18 @@ let LOCALLY_COUNTABLE = prove
     DISCH_TAC THEN REPEAT(EXISTS_TAC `w:real^N->bool`) THEN
     ASM_REWRITE_TAC[SUBSET_REFL] THEN
     ASM_MESON_TAC[COUNTABLE_SUBSET; OPEN_IN_IMP_SUBSET]]);;
+
+let LOCALLY_CONSTANT = prove
+ (`!f:real^N->A s.
+        connected s
+        ==> (locally (\u. ?c. !x. x IN u ==> f x = c) s <=>
+             ?c. !x. x IN s ==> f x = c)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[locally] THEN EQ_TAC THENL
+   [DISCH_TAC; MESON_TAC[SUBSET; OPEN_IN_IMP_SUBSET]] THEN
+  MATCH_MP_TAC LOCALLY_CONSTANT_IMP_CONSTANT THEN
+  ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`s:real^N->bool`; `x:real^N`]) THEN
+  ASM_REWRITE_TAC[OPEN_IN_REFL] THEN MESON_TAC[SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Local compactness.                                                        *)

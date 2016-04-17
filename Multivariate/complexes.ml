@@ -1438,6 +1438,48 @@ let COMPLEX_CAUCHY_SCHWARZ_EQ = prove
   REWRITE_TAC[NORM_POW_2; DOT_2; GSYM RE_DEF; GSYM IM_DEF] THEN
   REWRITE_TAC[ii; complex_mul; RE; IM] THEN REAL_ARITH_TAC);;
 
+let COMPLEX_BASIS = prove
+ (`basis 1 = Cx(&1) /\ basis 2 = ii`,
+  SIMP_TAC[CART_EQ; FORALL_2; BASIS_COMPONENT; DIMINDEX_2; ARITH] THEN
+  REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; RE_CX; IM_CX] THEN
+  REWRITE_TAC[ii] THEN SIMPLE_COMPLEX_ARITH_TAC);;
+
+let COMPLEX_LINEAR = prove
+ (`!f:complex->complex.
+        (?c. f = \z. c * z) <=>
+        linear f /\
+        (matrix f)$1$1 = (matrix f)$2$2 /\
+        (matrix f)$1$2 = --((matrix f)$2$1)`,
+  GEN_TAC THEN EQ_TAC THENL
+   [STRIP_TAC THEN ASM_REWRITE_TAC[LINEAR_COMPLEX_MUL] THEN
+    SIMP_TAC[matrix; LAMBDA_BETA; DIMINDEX_2; ARITH] THEN
+    REWRITE_TAC[COMPLEX_BASIS; GSYM RE_DEF; GSYM IM_DEF; ii] THEN
+    SIMPLE_COMPLEX_ARITH_TAC;
+    STRIP_TAC THEN
+    EXISTS_TAC `complex(matrix(f:complex->complex)$1$1,matrix f$2$1)` THEN
+    FIRST_ASSUM(fun th ->
+      GEN_REWRITE_TAC LAND_CONV [MATCH_MP MATRIX_VECTOR_MUL th]) THEN
+    ASM_SIMP_TAC[CART_EQ; matrix_vector_mul; DIMINDEX_2; SUM_2; ARITH;
+                 FORALL_2; FUN_EQ_THM; LAMBDA_BETA] THEN
+    REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; IM; RE; complex_mul] THEN
+    REAL_ARITH_TAC]);;
+
+let COMPLEX_LINEAR_ALT = prove
+ (`!f:complex->complex.
+        (?c. f = \z. c * z) <=> linear f /\ f(ii) = ii * f(Cx(&1))`,
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[LINEAR_COMPLEX_MUL] THENL
+   [SIMPLE_COMPLEX_ARITH_TAC; ASM_REWRITE_TAC[COMPLEX_LINEAR]] THEN
+  FIRST_ASSUM(MP_TAC o SYM) THEN
+  FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+   [MATCH_MP MATRIX_VECTOR_MUL th]) THEN
+  REWRITE_TAC[CART_EQ; FORALL_2; DIMINDEX_2] THEN
+  REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; RE_MUL_II; IM_MUL_II] THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_COMPONENT; IM_DEF; RE_DEF] THEN
+  SIMP_TAC[MATRIX_VECTOR_MUL_COMPONENT; DIMINDEX_2; ARITH; DOT_2] THEN
+  REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; CX_DEF; RE; IM; RE_II; IM_II] THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Complex-specific theorems about sums.                                     *)
 (* ------------------------------------------------------------------------- *)

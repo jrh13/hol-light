@@ -8540,6 +8540,14 @@ let MATRIX_MUL_COVARIANCE_RCANCEL = prove
   REWRITE_TAC[MATRIX_TRANSP_MUL] THEN
   REWRITE_TAC[MATRIX_MUL_COVARIANCE_LCANCEL]);;
 
+let MATRIX_VECTOR_MUL_COVARIANCE_EQ_0 = prove
+ (`!A:real^M^N x. (transp A ** A) ** x = vec 0 <=> A ** x = vec 0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM MATRIX_VECTOR_MUL_ASSOC] THEN
+  EQ_TAC THEN SIMP_TAC[MATRIX_VECTOR_MUL_RZERO] THEN
+  DISCH_THEN(MP_TAC o AP_TERM `(dot) (x:real^M)`) THEN
+  REWRITE_TAC[DOT_MATRIX_TRANSP_RMUL; DOT_RZERO] THEN
+  REWRITE_TAC[DOT_EQ_0]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Inverse matrices. These are actually, in general, Moore-Penrose           *)
 (* pseudoinverses, but collapse to the usual inverse in the invertible case. *)
