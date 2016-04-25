@@ -2877,11 +2877,39 @@ let EVENTUALLY_WITHIN = prove
   ONCE_REWRITE_TAC[TAUT `a /\ b /\ c ==> d <=> c ==> a /\ b ==> d`] THEN
   REWRITE_TAC[APPROACHABLE_LT_LE]);;
 
+let EVENTUALLY_WITHIN_TOPOLOGICAL = prove
+ (`!P s a:real^N.                                                  
+        eventually P (at a within s) <=>
+        ?t. open t /\ a IN t /\
+            !x. x IN s INTER (t DELETE a) ==> P x`,               
+  REPEAT GEN_TAC THEN REWRITE_TAC[EVENTUALLY_WITHIN] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `ball(a:real^N,d)` THEN                          
+    ASM_REWRITE_TAC[OPEN_BALL; CENTRE_IN_BALL; IN_INTER; IN_DELETE] THEN
+    REWRITE_TAC[IN_BALL; DIST_NZ] THEN ASM_MESON_TAC[DIST_SYM];
+    DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_BALL]) THEN
+    DISCH_THEN(MP_TAC o SPEC `a:real^N`) THEN         
+    ASM_REWRITE_TAC[SUBSET; IN_BALL] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN         
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    X_GEN_TAC `x:real^N` THEN                                 
+    STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[IN_INTER; IN_DELETE; DIST_NZ] THEN
+    ASM_MESON_TAC[DIST_SYM]]);;
+
 let EVENTUALLY_AT = prove
  (`!a p. eventually p (at a) <=>
          ?d. &0 < d /\ !x. &0 < dist(x,a) /\ dist(x,a) < d ==> p(x)`,
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[EVENTUALLY_WITHIN; IN_UNIV]);;
+
+let EVENTUALLY_AT_TOPOLOGICAL = prove
+ (`!P a:real^N.
+        eventually P (at a) <=>
+        ?t. open t /\ a IN t /\ !x. x IN t DELETE a ==> P x`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[EVENTUALLY_WITHIN_TOPOLOGICAL; IN_INTER; IN_UNIV]);;
 
 let EVENTUALLY_AT_INFINITY = prove
  (`!p. eventually p at_infinity <=> ?b. !x. norm(x) >= b ==> p x`,
@@ -6495,10 +6523,20 @@ let CONTINUOUS_WITHIN = prove
   ASM_CASES_TAC `trivial_limit(at (x:real^M) within s)` THENL
    [ASM_REWRITE_TAC[LIM]; ASM_SIMP_TAC[NETLIMIT_WITHIN]]);;
 
+let LIM_CONTINUOUS_SELF_WITHIN = prove
+ (`!f:real^M->real^N s x y.
+        f continuous (at x within s) /\ f x = y ==> (f --> y) (at x within s)`,
+  REWRITE_TAC[CONTINUOUS_WITHIN] THEN MESON_TAC[]);;
+
 let CONTINUOUS_AT = prove
  (`!f (x:real^N). f continuous (at x) <=> (f --> f(x)) (at x)`,
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[CONTINUOUS_WITHIN; IN_UNIV]);;
+
+let LIM_CONTINUOUS_SELF_AT = prove
+ (`!f:real^M->real^N x y.
+        f continuous (at x) /\ f x = y ==> (f --> y) (at x)`,
+  REWRITE_TAC[CONTINUOUS_AT] THEN MESON_TAC[]);;
 
 let CONTINUOUS_AT_WITHIN = prove
  (`!f:real^M->real^N x s.

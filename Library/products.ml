@@ -204,6 +204,79 @@ let NPRODUCT_DELTA = prove
   REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
   SIMP_TAC[ITERATE_DELTA; MONOIDAL_MUL]);;
 
+let HAS_SIZE_CART = prove
+ (`!P m. (!i. 1 <= i /\ i <= dimindex(:N) ==> {x | P i x} HAS_SIZE m i)
+         ==> {v:A^N | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)}
+             HAS_SIZE nproduct (1..dimindex(:N)) m`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `!n. n <= dimindex(:N)
+        ==> {v:A^N | (!i. 1 <= i /\ i <= dimindex(:N) /\ i <= n
+                          ==> P i (v$i)) /\
+                     (!i. 1 <= i /\ i <= dimindex(:N) /\ n < i
+                          ==> v$i = @x. F)}
+            HAS_SIZE nproduct(1..n) m`
+    (MP_TAC o SPEC `dimindex(:N)`) THEN REWRITE_TAC[LE_REFL; LET_ANTISYM] THEN
+  INDUCT_TAC THEN REWRITE_TAC[NPRODUCT_CLAUSES_NUMSEG; ARITH_EQ] THENL
+   [REWRITE_TAC[ARITH_RULE `1 <= i /\ i <= n /\ i <= 0 <=> F`] THEN
+    SIMP_TAC[ARITH_RULE `1 <= i /\ i <= n /\ 0 < i <=> 1 <= i /\ i <= n`] THEN
+    SUBGOAL_THEN
+     `{v | !i. 1 <= i /\ i <= dimindex (:N) ==> v$i = (@x. F)} =
+      {(lambda i. @x. F):A^N}`
+     (fun th -> SIMP_TAC[th; HAS_SIZE; FINITE_SING; CARD_SING]) THEN
+    SIMP_TAC[EXTENSION; IN_SING; IN_ELIM_THM; CART_EQ; LAMBDA_BETA];
+    DISCH_TAC] THEN
+  MATCH_MP_TAC(MESON[] `!t. t = s /\ t HAS_SIZE n ==> s HAS_SIZE n`) THEN
+  EXISTS_TAC
+   `IMAGE (\(x:A,v:A^N). (lambda i. if i = SUC n then x else v$i):A^N)
+          {x,v | x IN {x:A | P (SUC n) x} /\
+                 v IN {v:A^N | (!i. 1 <= i /\ i <= dimindex(:N) /\ i <= n
+                                ==> P i (v$i)) /\
+                           (!i. 1 <= i /\ i <= dimindex (:N) /\ n < i
+                                ==> v$i = (@x. F))}}` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN CONJ_TAC THENL
+     [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
+      SIMP_TAC[IN_ELIM_THM; LAMBDA_BETA] THEN
+      REPEAT GEN_TAC THEN STRIP_TAC THEN CONJ_TAC THEN
+      REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[LT_REFL] THEN
+      TRY ASM_ARITH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+      REWRITE_TAC[SUBSET; IN_IMAGE; IN_ELIM_PAIR_THM; EXISTS_PAIR_THM] THEN
+      X_GEN_TAC `v:A^N` THEN REWRITE_TAC[IN_ELIM_THM] THEN
+      STRIP_TAC THEN EXISTS_TAC `(v:A^N)$(SUC n)` THEN
+      EXISTS_TAC `(lambda i. if i = SUC n then @x. F else (v:A^N)$i):A^N` THEN
+      SIMP_TAC[CART_EQ; LAMBDA_BETA; ARITH_RULE `i <= n ==> ~(i = SUC n)`] THEN
+      ASM_MESON_TAC[LE; ARITH_RULE `1 <= SUC n`;
+                    ARITH_RULE `n < i /\ ~(i = SUC n) ==> SUC n < i`]];
+    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN CONJ_TAC THENL
+     [REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC] THEN
+      REWRITE_TAC[IMP_IMP; PAIR_EQ; CART_EQ] THEN
+      SIMP_TAC[LAMBDA_BETA] THEN
+      X_GEN_TAC `a:A` THEN DISCH_TAC THEN X_GEN_TAC `v:A^N` THEN STRIP_TAC THEN
+      X_GEN_TAC `b:A` THEN DISCH_TAC THEN X_GEN_TAC `w:A^N` THEN STRIP_TAC THEN
+      CONJ_TAC THENL
+       [REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `SUC n`)) THEN
+        ASM_REWRITE_TAC[ARITH_RULE `1 <= SUC n`];
+        X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+        REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+        ASM_REWRITE_TAC[] THEN
+        ASM_CASES_TAC `(n:num) < i` THEN
+        ASM_REWRITE_TAC[GSYM NOT_LT] THEN
+        TRY ASM_ARITH_TAC THEN ASM_MESON_TAC[]];
+      REWRITE_TAC[ARITH_RULE `1 <= SUC n`] THEN
+      GEN_REWRITE_TAC RAND_CONV [MULT_SYM] THEN
+      MATCH_MP_TAC HAS_SIZE_PRODUCT THEN
+      CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC]]);;
+
+let CARD_CART = prove
+ (`!P. (!i. 1 <= i /\ i <= dimindex(:N) ==> FINITE {x | P i x})
+       ==> CARD {v:A^N | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)} =
+           nproduct (1..dimindex(:N)) (\i. CARD {x | P i x})`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(MESON[HAS_SIZE] `s HAS_SIZE n ==> CARD s = n`) THEN
+  MATCH_MP_TAC HAS_SIZE_CART THEN
+  ASM_REWRITE_TAC[GSYM FINITE_HAS_SIZE]);;
+
 let th = prove
    (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
                 ==> nproduct s (\i. f(i)) = nproduct s g) /\

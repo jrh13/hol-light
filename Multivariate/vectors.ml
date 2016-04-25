@@ -367,6 +367,16 @@ let TRANSLATION_GALOIS = prove
   REWRITE_TAC[TRANSLATION_SUBSET_GALOIS_RIGHT; VECTOR_NEG_NEG] THEN
   REWRITE_TAC[CONJ_ACI]);;
 
+let IN_TRANSLATION_GALOIS = prove
+ (`!s a b:real^N. b IN IMAGE (\x. a + x) s <=> (b - a) IN s`,
+  REWRITE_TAC[GSYM SING_SUBSET; TRANSLATION_SUBSET_GALOIS_RIGHT] THEN
+  REWRITE_TAC[VECTOR_ARITH `b - a:real^N = --a + b`] THEN SET_TAC[]);;
+
+let IN_TRANSLATION_GALOIS_ALT = prove
+ (`!s a b:real^N. (a + b) IN s <=> b IN IMAGE (\x. --a + x) s`,
+  REWRITE_TAC[GSYM SING_SUBSET; TRANSLATION_SUBSET_GALOIS_RIGHT] THEN
+  REWRITE_TAC[IMAGE_CLAUSES; VECTOR_NEG_NEG]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Introduce norms, but defer many properties till we get square roots.      *)
 (* ------------------------------------------------------------------------- *)

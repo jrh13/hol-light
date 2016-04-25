@@ -1480,6 +1480,72 @@ let COMPLEX_LINEAR_ALT = prove
   REWRITE_TAC[GSYM RE_DEF; GSYM IM_DEF; CX_DEF; RE; IM; RE_II; IM_II] THEN
   REAL_ARITH_TAC);;
 
+let ORTHOGONAL_TRANSFORMATION_COMPLEX_MUL = prove                               
+ (`!c. orthogonal_transformation(\z. c * z) <=> norm c = &1`,                   
+  REWRITE_TAC[ORTHOGONAL_TRANSFORMATION; LINEAR_COMPLEX_MUL] THEN              
+  GEN_TAC THEN REWRITE_TAC[COMPLEX_NORM_MUL] THEN                              
+  REWRITE_TAC[REAL_RING `c * v:real = v <=> c = &1 \/ v = &0`] THEN            
+  ASM_CASES_TAC `norm(c:complex) = &1` THEN ASM_REWRITE_TAC[] THEN             
+  DISCH_THEN(MP_TAC o SPEC `Cx(&1)`) THEN REWRITE_TAC[COMPLEX_NORM_CX] THEN    
+  REAL_ARITH_TAC);;                                                            
+
+let COMPLEX_ORTHOGONAL_ROTATION = prove                                         
+ (`!f:complex->complex.                                                        
+        orthogonal_transformation f /\ det(matrix f) = &1 <=>                  
+        ?c. norm c = &1 /\ f = \z. c * z`,                                     
+  GEN_TAC THEN TRANS_TAC EQ_TRANS                                              
+   `(!z. norm(f z) = norm z) /\ (?c. f = \z:complex. c * z)` THEN               
+  CONJ_TAC THENL                                                               
+   [REWRITE_TAC[COMPLEX_LINEAR] THEN                                           
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> (q /\ p) /\ r`] THEN            
+    REWRITE_TAC[GSYM ORTHOGONAL_TRANSFORMATION] THEN                       
+    REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_MATRIX] THEN                      
+    REWRITE_TAC[GSYM CONJ_ASSOC] THEN AP_TERM_TAC THEN                         
+    REWRITE_TAC[ORTHOGONAL_MATRIX_2; DET_2] THEN CONV_TAC REAL_RING;           
+    REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN                                     
+    AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN                       
+    X_GEN_TAC `c:complex` THEN REWRITE_TAC[] THEN                              
+    ASM_CASES_TAC `f:complex->complex = \z. c * z` THEN                        
+    ASM_REWRITE_TAC[COMPLEX_NORM_MUL] THEN                                     
+    REWRITE_TAC[REAL_RING `c * v:real = v <=> c = &1 \/ v = &0`] THEN          
+    ASM_CASES_TAC `norm(c:complex) = &1` THEN ASM_REWRITE_TAC[] THEN           
+    DISCH_THEN(MP_TAC o SPEC `Cx(&1)`) THEN REWRITE_TAC[COMPLEX_NORM_CX] THEN  
+    REAL_ARITH_TAC]);;                                                          
+                                                                               
+let COMPLEX_ORTHOGONAL_ROTOINVERSION = prove                                   
+ (`!f:complex->complex.                                                        
+        orthogonal_transformation f /\ det(matrix f) = -- &1 <=>               
+        ?c. norm c = &1 /\ f = \z. c * cnj z`,                                 
+  GEN_TAC THEN                                                                 
+  SUBGOAL_THEN                                                             
+   `!c. (f = \z. c * cnj z) = (f o cnj = \z. c * z)`                           
+   (fun th -> REWRITE_TAC[th])                                                 
+  THENL                                                                        
+   [REWRITE_TAC[FUN_EQ_THM; o_THM] THEN MESON_TAC[CNJ_CNJ; CNJ_MUL];
+    REWRITE_TAC[GSYM COMPLEX_ORTHOGONAL_ROTATION]] THEN
+  EQ_TAC THEN DISCH_TAC THENL
+   [ALL_TAC;
+    SUBGOAL_THEN `(f:complex->complex) = (f o cnj) o cnj` SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_THM; CNJ_CNJ];
+      POP_ASSUM MP_TAC THEN
+      SPEC_TAC(`(f:complex->complex) o cnj`,`f:complex->complex`) THEN
+      REPEAT STRIP_TAC]] THEN
+  ASM_SIMP_TAC[ORTHOGONAL_TRANSFORMATION_COMPOSE; MATRIX_COMPOSE; DET_MUL;
+    ORTHOGONAL_TRANSFORMATION_CNJ; ORTHOGONAL_TRANSFORMATION_LINEAR] THEN
+  SIMP_TAC[DET_2; MATRIX_COMPONENT; DIMINDEX_2; ARITH] THEN
+  REWRITE_TAC[COMPLEX_BASIS; CNJ_II; CNJ_CX] THEN
+  REWRITE_TAC[GSYM IM_DEF; GSYM RE_DEF; IM; RE; CX_DEF; ii; complex_neg] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+let COMPLEX_ORTHOGONAL_TRANSFORMATION = prove
+ (`!f:complex->complex.
+        orthogonal_transformation f <=>
+        ?c. norm c = &1 /\ ((f = \z. c * z) \/ (f = \z. c * cnj z))`,
+  GEN_TAC THEN
+  REWRITE_TAC[LEFT_OR_DISTRIB; EXISTS_OR_THM] THEN
+  REWRITE_TAC[GSYM COMPLEX_ORTHOGONAL_ROTATION;
+              GSYM COMPLEX_ORTHOGONAL_ROTOINVERSION] THEN
+  MESON_TAC[DET_ORTHOGONAL_MATRIX; ORTHOGONAL_TRANSFORMATION_MATRIX]);;
 (* ------------------------------------------------------------------------- *)
 (* Complex-specific theorems about sums.                                     *)
 (* ------------------------------------------------------------------------- *)

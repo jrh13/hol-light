@@ -8,6 +8,21 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 23rd Apr 2016       Library/products.ml
+
+Added two obvious theorems about the sizes of cartesian products:
+
+  HAS_SIZE_CART =
+    |- !P m.
+           (!i. 1 <= i /\ i <= dimindex (:N) ==> {x | P i x} HAS_SIZE m i)
+           ==> {v | !i. 1 <= i /\ i <= dimindex (:N) ==> P i (v$i)} HAS_SIZE
+               nproduct (1..dimindex (:N)) m
+
+  CARD_CART =
+    |- !P. (!i. 1 <= i /\ i <= dimindex (:N) ==> FINITE {x | P i x})
+           ==> CARD {v | !i. 1 <= i /\ i <= dimindex (:N) ==> P i (v$i)} =
+               nproduct (1..dimindex (:N)) (\i. CARD {x | P i x})
+
 Wed 13th Apr 2016       Library/wo.ml, Library/card.ml
 
 Added a few basic theorems including the fact that a toset contains a
@@ -19,8 +34,8 @@ cofinal woset.
 
    FINITE_FL =
         |- !l. FINITE(fl l) <=> FINITE l
-     
-   FL = 
+
+   FL =
         |- !l. fl l = {x | ?y. l(x,y) \/ l(y,x)}
 
    FL_SUBSET =

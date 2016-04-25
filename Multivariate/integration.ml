@@ -21109,6 +21109,164 @@ let HAS_BOUNDED_VARIATION_ON_DARBOUX_IMP_CONTINUOUS = prove
   ASM_SIMP_TAC[HAS_BOUNDED_VARIATION_LEFT_LIMIT_GEN;
                HAS_BOUNDED_VARIATION_RIGHT_LIMIT_GEN]);;
 
+let VECTOR_VARIATION_ON_INTERIOR = prove
+ (`!f:real^1->real^N s.
+        is_interval s /\
+        f has_bounded_variation_on (interior s) /\
+        f continuous_on s
+        ==> vector_variation (interior s) f = vector_variation s f`,
+  let lemma1 = prove
+   (`!f:real^1->real^N a b.
+          f has_bounded_variation_on interval[a,b] /\
+          f continuous_on interval[a,b]
+          ==> vector_variation (interval[a,b] DELETE b) f =
+              vector_variation(interval[a,b]) f`,
+    REPEAT STRIP_TAC THEN ASM_CASES_TAC `interval[a:real^1,b] = {}` THEN
+    ASM_REWRITE_TAC[EMPTY_DELETE] THEN
+    MP_TAC(ISPECL
+     [`\x. lift(vector_variation (interval[a,x]) (f:real^1->real^N))`;
+      `interval[a:real^1,b] DELETE b`;
+      `{x | drop x <=
+            vector_variation (interval[a,b] DELETE b) (f:real^1->real^N)}`]
+     FORALL_IN_CLOSURE) THEN
+    REWRITE_TAC[IN_ELIM_THM; LIFT_DROP] THEN
+    REWRITE_TAC[drop; CLOSED_HALFSPACE_COMPONENT_LE] THEN ANTS_TAC THENL
+     [CONJ_TAC THENL
+       [MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+        EXISTS_TAC `interval[a:real^1,b]` THEN
+        ASM_SIMP_TAC[CONTINUOUS_ON_VECTOR_VARIATION] THEN
+        MATCH_MP_TAC CLOSURE_MINIMAL THEN
+        REWRITE_TAC[CLOSED_INTERVAL] THEN SET_TAC[];
+        REWRITE_TAC[IN_INTERVAL_1; IN_DELETE; GSYM DROP_EQ] THEN
+        REPEAT STRIP_TAC THEN MATCH_MP_TAC VECTOR_VARIATION_MONOTONE THEN
+        CONJ_TAC THENL
+         [ASM_MESON_TAC[DELETE_SUBSET; HAS_BOUNDED_VARIATION_ON_SUBSET];
+          REWRITE_TAC[SUBSET; IN_INTERVAL_1; IN_DELETE; GSYM DROP_EQ] THEN
+          ASM_REAL_ARITH_TAC]];
+      DISCH_THEN(MP_TAC o SPEC `b:real^1`) THEN MP_TAC
+       (ISPEC `interval[a:real^1,b]` CONNECTED_LIMIT_POINTS_EQ_CLOSURE) THEN
+      REWRITE_TAC[CONNECTED_INTERVAL] THEN MATCH_MP_TAC(SET_RULE
+       `b IN s /\ (s = {b} ==> Q) /\ (P ==> Q)
+       ==> (~(?a. s = {a}) ==> P) ==> Q`) THEN
+      ASM_SIMP_TAC[ENDS_IN_INTERVAL; SET_RULE `{a} DELETE a = {}`] THEN
+      REWRITE_TAC[VECTOR_VARIATION_SING; VECTOR_VARIATION_ON_EMPTY] THEN
+      SIMP_TAC[CLOSURE_INTERVAL; EXTENSION;
+               IN_ELIM_THM; IN_CLOSURE_DELETE] THEN
+      DISCH_THEN(K ALL_TAC) THEN ASM_REWRITE_TAC[ENDS_IN_INTERVAL] THEN
+      ASM_SIMP_TAC[GSYM REAL_LE_ANTISYM] THEN DISCH_TAC THEN
+      MATCH_MP_TAC VECTOR_VARIATION_MONOTONE THEN ASM SET_TAC[]]) in
+  let lemma2 = prove
+   (`!f:real^1->real^N a b.
+          f has_bounded_variation_on interval[a,b] /\
+          f continuous_on interval[a,b]
+          ==> vector_variation (interval[a,b] DELETE a) f =
+              vector_variation(interval[a,b]) f`,
+    REPEAT STRIP_TAC THEN
+    ONCE_REWRITE_TAC[GSYM VECTOR_VARIATION_REFLECT2] THEN
+    SIMP_TAC[IMAGE_DELETE_INJ; VECTOR_EQ_NEG2; REFLECT_INTERVAL] THEN
+    MATCH_MP_TAC lemma1 THEN
+    ASM_SIMP_TAC[HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL; VECTOR_NEG_NEG] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    ASM_REWRITE_TAC[REFLECT_INTERVAL; VECTOR_NEG_NEG] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM ETA_AX] THEN
+    SIMP_TAC[CONTINUOUS_ON_NEG; CONTINUOUS_ON_ID]) in
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_SIMP_TAC[HAS_BOUNDED_VARIATION_ON_INTERIOR_EQ] THEN STRIP_TAC THEN
+  ASM_CASES_TAC `s:real^1->bool = {}` THEN
+  ASM_REWRITE_TAC[INTERIOR_EMPTY] THEN
+  ASM_CASES_TAC `interior s:real^1->bool = {}` THENL
+   [MP_TAC(ISPEC `s:real^1->bool` AFF_DIM_NONEMPTY_INTERIOR_EQ) THEN
+    ASM_REWRITE_TAC[GSYM IS_INTERVAL_CONVEX_1] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (INT_ARITH
+     `~(s:int = d)
+      ==> ~(s = -- &1) /\ --(&1) <= s /\ s <= d /\ d = &1 ==> s = &0`)) THEN
+    REWRITE_TAC[AFF_DIM_EQ_MINUS1; AFF_DIM_LE_UNIV; AFF_DIM_GE] THEN
+    ASM_REWRITE_TAC[DIMINDEX_1; AFF_DIM_EQ_0] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[VECTOR_VARIATION_SING; VECTOR_VARIATION_ON_EMPTY];
+    UNDISCH_TAC `~(interior s:real^1->bool = {})`] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `a:real^1` THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `f:real^1->real^N` VECTOR_VARIATION_SPLIT) THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  DISCH_THEN(MP_TAC o SPEC `drop a`) THEN DISCH_THEN(fun th ->
+    MP_TAC(SPEC `interior s:real^1->bool` th) THEN
+    MP_TAC(SPEC `s:real^1->bool` th)) THEN
+  ASM_SIMP_TAC[HAS_BOUNDED_VARIATION_ON_INTERIOR_EQ; IS_INTERVAL_INTERIOR] THEN
+  REPEAT(DISCH_THEN(SUBST1_TAC o SYM)) THEN BINOP_TAC THEN
+  MATCH_MP_TAC(MESON[]
+   `(~(s = t) ==> vector_variation s f = vector_variation t f)
+    ==> vector_variation s f = vector_variation t f`) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+   `~({x | x IN i /\ P x} = {x | x IN s /\ P x})
+    ==> i SUBSET s ==> ?b. b IN s /\ P b /\ ~(b IN i)`)) THEN
+  REWRITE_TAC[INTERIOR_SUBSET; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:real^1` THEN
+  ASM_CASES_TAC `b:real^1 = a` THEN ASM_REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [REAL_LE_LT] THEN
+  ASM_REWRITE_TAC[DROP_EQ] THEN STRIP_TAC THENL
+   [SUBGOAL_THEN
+     `{x | x IN interior s /\ drop x <= drop a} = interval[b,a] DELETE b /\
+      {x | x IN s /\ drop x <= drop a} = interval[b,a]`
+    STRIP_ASSUME_TAC THENL
+     [ALL_TAC;
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC lemma2 THEN CONJ_TAC THENL
+       [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          HAS_BOUNDED_VARIATION_ON_SUBSET));
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CONTINUOUS_ON_SUBSET))] THEN
+      ASM SET_TAC[]];
+    SUBGOAL_THEN
+     `{x | x IN interior s /\ drop a <= drop x} = interval[a,b] DELETE b /\
+      {x | x IN s /\ drop a <= drop x} = interval[a,b]`
+    STRIP_ASSUME_TAC THENL
+     [ALL_TAC;
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC lemma1 THEN CONJ_TAC THENL
+       [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          HAS_BOUNDED_VARIATION_ON_SUBSET));
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CONTINUOUS_ON_SUBSET))] THEN
+      ASM SET_TAC[]]] THEN
+  MATCH_MP_TAC(SET_RULE
+   `b IN s /\ ~(b IN si) /\ si SUBSET s /\
+    s SUBSET i /\ i DELETE b SUBSET si
+    ==> si = i DELETE b /\ s = i`) THEN
+  ASM_SIMP_TAC[IN_ELIM_THM; SUBSET; REAL_LT_IMP_LE; IN_INTERVAL_1;
+               IN_DELETE; REWRITE_RULE[SUBSET] INTERIOR_SUBSET] THEN
+  REWRITE_TAC[GSYM DROP_EQ; REAL_ARITH
+   `((b <= x /\ x <= a) /\ ~(x = b) <=> b < x /\ x <= a) /\
+    ((a <= x /\ x <= b) /\ ~(x = b) <=> a <= x /\ x < b)`] THEN
+ (CONJ_TAC THEN X_GEN_TAC `c:real^1` THEN STRIP_TAC THENL
+   [REWRITE_TAC[GSYM REAL_NOT_LT] THEN DISCH_TAC THEN
+    UNDISCH_TAC `~((b:real^1) IN interior s)` THEN REWRITE_TAC[];
+    ASM_CASES_TAC `c:real^1 = a` THEN ASM_REWRITE_TAC[] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[GSYM DROP_EQ])] THEN
+  MATCH_MP_TAC(REWRITE_RULE[SUBSET; RIGHT_IMP_FORALL_THM; IMP_IMP]
+    IN_INTERIOR_CLOSURE_CONVEX_SEGMENT) THEN
+  EXISTS_TAC `a:real^1` THENL
+   [EXISTS_TAC `c:real^1`; EXISTS_TAC `b:real^1`] THEN
+  ASM_SIMP_TAC[CLOSURE_INC; GSYM IS_INTERVAL_CONVEX_1] THEN
+  REWRITE_TAC[SEGMENT_1] THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[IN_INTERVAL_1] THEN ASM_REAL_ARITH_TAC));;
+
+let VECTOR_VARIATION_ON_CLOSURE = prove
+ (`!f:real^1->real^N s.
+        is_interval s /\
+        f has_bounded_variation_on s /\
+        f continuous_on closure s
+        ==> vector_variation (closure s) f = vector_variation s f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^1->real^N`; `closure s:real^1->bool`]
+        VECTOR_VARIATION_ON_INTERIOR) THEN
+  ASM_SIMP_TAC[IS_INTERVAL_CLOSURE; HAS_BOUNDED_VARIATION_ON_INTERIOR_EQ;
+               HAS_BOUNDED_VARIATION_ON_CLOSURE_EQ] THEN
+  ASM_SIMP_TAC[CONVEX_INTERIOR_CLOSURE; GSYM IS_INTERVAL_CONVEX_1] THEN
+  MATCH_MP_TAC(REAL_ARITH `s <= c /\ i <= s ==> i = c ==> c = s`) THEN
+  CONJ_TAC THEN MATCH_MP_TAC VECTOR_VARIATION_MONOTONE THEN
+  ASM_SIMP_TAC[INTERIOR_SUBSET; CLOSURE_SUBSET;
+               HAS_BOUNDED_VARIATION_ON_CLOSURE_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* We can factor a BV function through its variation. Moreover the           *)
 (* factor is Lipschitz and continuous on its domain, though without          *)

@@ -600,6 +600,42 @@ let DIFF_CHAIN_AT = prove
   ASM_MESON_TAC[DIFF_CHAIN_WITHIN; LIM_WITHIN_SUBSET; SUBSET_UNIV;
                 HAS_DERIVATIVE_WITHIN_SUBSET]);;
 
+let HAS_DERIVATIVE_WITHIN_REFLECT = prove                               
+ (`!f:real^M->real^N f' s a.                                                   
+        ((\x. f(--x)) has_derivative (\x. f'(--x)))             
+        (at (--a) within (IMAGE (--) s)) <=>           
+        (f has_derivative f') (at a within s)`,  
+  REWRITE_TAC[TAUT `(p <=> q) <=> (q ==> p) /\ (p ==> q)`] THEN
+  REWRITE_TAC[FORALL_AND_THM] THEN                              
+  MATCH_MP_TAC(TAUT `q /\ (q ==> p) ==> p /\ q`) THEN CONJ_TAC THENL
+   [REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o SPEC `(--):real^M->real^M` o 
+     MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] DIFF_CHAIN_WITHIN)) THEN            
+    REWRITE_TAC[o_DEF; VECTOR_NEG_NEG; ETA_AX] THEN                            
+    SIMP_TAC[LINEAR_NEGATION; HAS_DERIVATIVE_LINEAR];           
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN       
+    ASM_REWRITE_TAC[o_DEF; VECTOR_NEG_NEG; ETA_AX; GSYM IMAGE_o; IMAGE_ID]]);;
+                                                        
+let HAS_DERIVATIVE_AT_REFLECT = prove                     
+ (`!f:real^M->real^N f' a.                              
+        ((\x. f(--x)) has_derivative (\x. f'(--x))) (at (--a)) <=>       
+        (f has_derivative f') (at a)`,                           
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM HAS_DERIVATIVE_WITHIN_REFLECT] THEN        
+  REWRITE_TAC[REFLECT_UNIV]);;                                      
+                                                                        
+let DIFFERENTIABLE_ON_REFLECT = prove                       
+ (`!f:real^M->real^N s.                                                 
+        (\x. f(--x)) differentiable_on (IMAGE (--) s) <=>        
+        f differentiable_on s`,                            
+  REPEAT GEN_TAC THEN                                           
+  REWRITE_TAC[differentiable_on; differentiable; FORALL_IN_IMAGE] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:real^M` THEN
+  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN                       
+  DISCH_THEN(CHOOSE_THEN MP_TAC) THEN     
+  GEN_REWRITE_TAC LAND_CONV [GSYM HAS_DERIVATIVE_WITHIN_REFLECT] THEN
+  REWRITE_TAC[o_DEF; VECTOR_NEG_NEG; ETA_AX; GSYM IMAGE_o; IMAGE_ID] THEN
+  MESON_TAC[]);;                                               
+
 (* ------------------------------------------------------------------------- *)
 (* Composition rules stated just for differentiability.                      *)
 (* ------------------------------------------------------------------------- *)
