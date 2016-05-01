@@ -6405,12 +6405,19 @@ let INVERTIBLE_RIGHT_INVERSE = prove
   MESON_TAC[invertible; MATRIX_LEFT_RIGHT_INVERSE]);;
 
 let MATRIX_INVERTIBLE = prove
- (`!f:real^N->real^N.
+ (`!f:real^M->real^N.
         linear f
         ==> (invertible(matrix f) <=>
              ?g. linear g /\ f o g = I /\ g o f = I)`,
-  SIMP_TAC[INVERTIBLE_LEFT_INVERSE; MATRIX_LEFT_INVERTIBLE] THEN
-  MESON_TAC[LINEAR_INVERSE_LEFT]);;
+  REPEAT STRIP_TAC THEN REWRITE_TAC[invertible] THEN
+  REWRITE_TAC[FUN_EQ_THM; MATRIX_EQ; MATRIX_VECTOR_MUL_LID; I_THM; o_THM] THEN
+  ASM_SIMP_TAC[GSYM MATRIX_VECTOR_MUL_ASSOC; MATRIX_WORKS] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `A:real^N^M` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `\x:real^N. (A:real^N^M) ** x` THEN
+    ASM_REWRITE_TAC[MATRIX_VECTOR_MUL_LINEAR];
+    DISCH_THEN(X_CHOOSE_THEN `g:real^N->real^M` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `matrix(g:real^N->real^M)` THEN
+    ASM_SIMP_TAC[GSYM MATRIX_VECTOR_MUL_ASSOC; MATRIX_WORKS]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Left-invertible linear transformation has a lower bound.                  *)
@@ -9785,6 +9792,10 @@ let scaling_theorems = ref([]:thm list);;
 (* ------------------------------------------------------------------------- *)
 (* Scaling theorems and derivation from linear invariance.                   *)
 (* ------------------------------------------------------------------------- *)
+
+let AFFINITY_SCALING_TRANSLATION = prove
+ (`!m c:real^N. (\x. m % x + c) = (\x. c + x) o (\x. m % x)`,
+  REWRITE_TAC[o_DEF; VECTOR_ADD_SYM]);;
 
 let LINEAR_SCALING = prove
  (`!c. linear(\x:real^N. c % x)`,

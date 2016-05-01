@@ -9597,6 +9597,12 @@ let ABSOLUTELY_INTEGRABLE_NEG = prove
          ==> (\x. --f(x)) absolutely_integrable_on s`,
   SIMP_TAC[absolutely_integrable_on; INTEGRABLE_NEG; NORM_NEG]);;
 
+let ABSOLUTELY_INTEGRABLE_NEG_EQ = prove                                       
+ (`!f:real^M->real^N s.                                                        
+        (\x. --f x) absolutely_integrable_on s <=>                          
+        f absolutely_integrable_on s`,                                     
+  REWRITE_TAC[absolutely_integrable_on; NORM_NEG; INTEGRABLE_NEG_EQ]);;       
+
 let ABSOLUTELY_INTEGRABLE_NORM = prove
  (`!f s. f absolutely_integrable_on s
          ==> (\x. lift(norm(f x))) absolutely_integrable_on s`,

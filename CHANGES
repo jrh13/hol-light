@@ -8,6 +8,25 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 29th Apr 2016       Library/card.ml
+
+Added two theorems asserting that a countable chain has an "equivalent"
+omega-indexed chain:
+
+ COUNTABLE_ASCENDING_CHAIN =
+   |- !f:(A->bool)->bool.
+        COUNTABLE f /\ ~(f = {}) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(n) SUBSET u(SUC n)) /\
+                UNIONS {u n | n IN (:num)} = UNIONS f
+
+ COUNTABLE_DESCENDING_CHAIN = prove
+   |- !f:(A->bool)->bool.
+        COUNTABLE f /\ ~(f = {}) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(SUC n) SUBSET u(n)) /\
+                INTERS {u n | n IN (:num)} = INTERS f
+
 Sat 23rd Apr 2016       Library/products.ml
 
 Added two obvious theorems about the sizes of cartesian products:

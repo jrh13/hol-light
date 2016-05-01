@@ -4133,6 +4133,14 @@ let FINITE_POLYTOPE_FACETS = prove
    `{x | P x /\ Q x} = {x | x IN {x | P x} /\ Q x}`] THEN
   SIMP_TAC[FINITE_RESTRICT; FINITE_POLYTOPE_FACES]);;
 
+let POLYTOPE_INTERVAL = prove
+ (`!a b. polytope(interval[a,b])`,
+  REWRITE_TAC[polytope] THEN MESON_TAC[CLOSED_INTERVAL_AS_CONVEX_HULL]);;
+
+let POLYTOPE_SING = prove
+ (`!a. polytope {a}`,
+  MESON_TAC[POLYTOPE_INTERVAL; INTERVAL_SING]);;
+
 let POLYTOPE_SCALING = prove
  (`!c s:real^N->bool. polytope s ==> polytope (IMAGE (\x. c % x) s)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[polytope] THEN DISCH_THEN
@@ -4141,12 +4149,25 @@ let POLYTOPE_SCALING = prove
   ASM_SIMP_TAC[CONVEX_HULL_SCALING; FINITE_IMAGE]);;
 
 let POLYTOPE_SCALING_EQ = prove
- (`!c s:real^N->bool.
-     ~(c = &0) ==> (polytope (IMAGE (\x. c % x) s) <=> polytope s)`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[POLYTOPE_SCALING] THEN
-  DISCH_THEN(MP_TAC o SPEC `inv c:real` o MATCH_MP POLYTOPE_SCALING) THEN
-  ASM_SIMP_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC;
-               REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]);;
+ (`!s:real^N->bool c.
+        polytope (IMAGE (\x. c % x) s) <=> c = &0 \/ polytope s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    MESON_TAC[POLYTOPE_SING; POLYTOPE_EMPTY];
+    EQ_TAC THEN REWRITE_TAC[POLYTOPE_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP POLYTOPE_SCALING) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]]);;
+
+let POLYTOPE_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        polytope (IMAGE (\x. m % x + c) s) <=> m = &0 \/ polytope s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; POLYTOPE_TRANSLATION_EQ;
+              POLYTOPE_SCALING_EQ; IMAGE_o]);;
+
+let POLYTOPE_AFFINITY = prove
+ (`!s m c:real^N. polytope s ==> polytope (IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[POLYTOPE_AFFINITY_EQ]);;
 
 let POLYTOPE_SUMS = prove
  (`!s t:real^N->bool.
@@ -4173,14 +4194,6 @@ let POLYTOPE_IMP_CLOSED = prove
 let POLYTOPE_IMP_BOUNDED = prove
  (`!s. polytope s ==> bounded s`,
   SIMP_TAC[POLYTOPE_IMP_COMPACT; COMPACT_IMP_BOUNDED]);;
-
-let POLYTOPE_INTERVAL = prove
- (`!a b. polytope(interval[a,b])`,
-  REWRITE_TAC[polytope] THEN MESON_TAC[CLOSED_INTERVAL_AS_CONVEX_HULL]);;
-
-let POLYTOPE_SING = prove
- (`!a. polytope {a}`,
-  MESON_TAC[POLYTOPE_INTERVAL; INTERVAL_SING]);;
 
 let POLYTOPE_1 = prove
  (`!s:real^1->bool. polytope s <=> ?a b. s = interval[a,b]`,

@@ -2878,22 +2878,22 @@ let EVENTUALLY_WITHIN = prove
   REWRITE_TAC[APPROACHABLE_LT_LE]);;
 
 let EVENTUALLY_WITHIN_TOPOLOGICAL = prove
- (`!P s a:real^N.                                                  
+ (`!P s a:real^N.
         eventually P (at a within s) <=>
         ?t. open t /\ a IN t /\
-            !x. x IN s INTER (t DELETE a) ==> P x`,               
+            !x. x IN s INTER (t DELETE a) ==> P x`,
   REPEAT GEN_TAC THEN REWRITE_TAC[EVENTUALLY_WITHIN] THEN EQ_TAC THENL
    [DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `ball(a:real^N,d)` THEN                          
+    EXISTS_TAC `ball(a:real^N,d)` THEN
     ASM_REWRITE_TAC[OPEN_BALL; CENTRE_IN_BALL; IN_INTER; IN_DELETE] THEN
     REWRITE_TAC[IN_BALL; DIST_NZ] THEN ASM_MESON_TAC[DIST_SYM];
     DISCH_THEN(X_CHOOSE_THEN `t:real^N->bool` STRIP_ASSUME_TAC) THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_CONTAINS_BALL]) THEN
-    DISCH_THEN(MP_TAC o SPEC `a:real^N`) THEN         
+    DISCH_THEN(MP_TAC o SPEC `a:real^N`) THEN
     ASM_REWRITE_TAC[SUBSET; IN_BALL] THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN         
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN
     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-    X_GEN_TAC `x:real^N` THEN                                 
+    X_GEN_TAC `x:real^N` THEN
     STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
     ASM_REWRITE_TAC[IN_INTER; IN_DELETE; DIST_NZ] THEN
     ASM_MESON_TAC[DIST_SYM]]);;
@@ -4948,6 +4948,26 @@ let BOUNDED_TRANSLATION_EQ = prove
               VECTOR_ARITH `--a + a + x:real^N = x`]);;
 
 add_translation_invariants [BOUNDED_TRANSLATION_EQ];;
+
+let BOUNDED_SCALING_EQ = prove
+ (`!s:real^N->bool c. bounded (IMAGE (\x. c % x) s) <=> c = &0 \/ bounded s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    MESON_TAC[BOUNDED_SING; BOUNDED_EMPTY];
+    EQ_TAC THEN REWRITE_TAC[BOUNDED_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP BOUNDED_SCALING) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]]);;
+
+let BOUNDED_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        bounded (IMAGE (\x. m % x + c) s) <=> m = &0 \/ bounded s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; BOUNDED_TRANSLATION_EQ;
+              BOUNDED_SCALING_EQ; IMAGE_o]);;
+
+let BOUNDED_AFFINITY = prove
+ (`!s m c:real^N. bounded s ==> bounded (IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[BOUNDED_AFFINITY_EQ]);;
 
 let BOUNDED_DIFFS = prove
  (`!s t:real^N->bool.
@@ -10582,6 +10602,18 @@ let OPEN_SCALING = prove
     ASM_SIMP_TAC[GSYM real_div; REAL_LT_LDIV_EQ; GSYM REAL_ABS_NZ] THEN
     ASM_REWRITE_TAC[GSYM dist]]);;
 
+let OPEN_SCALING_EQ = prove
+ (`!s:real^N->bool c.
+        open(IMAGE (\x. c % x) s) <=> (c = &0 ==> s = {}) /\ open s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[OPEN_EMPTY; NOT_OPEN_SING];
+    EQ_TAC THEN ASM_SIMP_TAC[OPEN_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP
+      (REWRITE_RULE[IMP_CONJ_ALT] OPEN_SCALING)) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; REAL_INV_EQ_0; IMAGE_ID]]);;
+
 let OPEN_NEGATIONS = prove
  (`!s:real^N->bool. open s ==> open (IMAGE (--) s)`,
   SUBGOAL_THEN `(--) = \x:real^N. --(&1) % x`
@@ -10605,13 +10637,16 @@ let OPEN_TRANSLATION_EQ = prove
 
 add_translation_invariants [OPEN_TRANSLATION_EQ];;
 
+let OPEN_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        open(IMAGE (\x. m % x + c) s) <=> (m = &0 ==> s = {}) /\ open s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; OPEN_TRANSLATION_EQ;
+              OPEN_SCALING_EQ; IMAGE_o]);;
+
 let OPEN_AFFINITY = prove
- (`!s a:real^N c.
-        open s /\ ~(c = &0) ==> open (IMAGE (\x. a + c % x) s)`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `(\x:real^N. a + c % x) = (\x. a + x) o (\x. c % x)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
-  ASM_SIMP_TAC[IMAGE_o; OPEN_TRANSLATION; OPEN_SCALING]);;
+ (`!s m c:real^N.
+        open s /\ (m = &0 ==> s = {}) ==> open(IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[OPEN_AFFINITY_EQ]);;
 
 let INTERIOR_TRANSLATION = prove
  (`!a:real^N s.
@@ -12621,6 +12656,27 @@ let CONNECTED_NEGATIONS = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LINEAR_CONTINUOUS_AT THEN
   REWRITE_TAC[linear] THEN CONJ_TAC THEN VECTOR_ARITH_TAC);;
 
+let CONNECTED_SCALING_EQ = prove
+ (`!s:real^N->bool c.
+        connected (IMAGE (\x. c % x) s) <=> c = &0 \/ connected s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    MESON_TAC[CONNECTED_SING; CONNECTED_EMPTY];
+    EQ_TAC THEN REWRITE_TAC[CONNECTED_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP CONNECTED_SCALING) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]]);;
+
+let CONNECTED_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        connected (IMAGE (\x. m % x + c) s) <=> m = &0 \/ connected s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; CONNECTED_TRANSLATION_EQ;
+              CONNECTED_SCALING_EQ; IMAGE_o]);;
+
+let CONNECTED_AFFINITY = prove
+ (`!s m c:real^N. connected s ==> connected (IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[CONNECTED_AFFINITY_EQ]);;
+
 let CONNECTED_SUMS = prove
  (`!s t:real^N->bool.
         connected s /\ connected t ==> connected {x + y | x IN s /\ y IN t}`,
@@ -12684,10 +12740,10 @@ let COMPACT_DIFFERENCES = prove
 
 let COMPACT_AFFINITY = prove
  (`!s a:real^N c.
-        compact s ==> compact (IMAGE (\x. a + c % x) s)`,
+        compact s ==> compact (IMAGE (\x. c % x + a) s)`,
   REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `(\x:real^N. a + c % x) = (\x. a + x) o (\x. c % x)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  SUBGOAL_THEN `(\x:real^N. c % x + a) = (\x. a + x) o (\x. c % x)`
+  SUBST1_TAC THENL [REWRITE_TAC[o_DEF; VECTOR_ADD_SYM]; ALL_TAC] THEN
   ASM_SIMP_TAC[IMAGE_o; COMPACT_TRANSLATION; COMPACT_SCALING]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -13207,6 +13263,26 @@ let COMPLETE_TRANSLATION_EQ = prove
   REWRITE_TAC[COMPLETE_EQ_CLOSED; CLOSED_TRANSLATION_EQ]);;
 
 add_translation_invariants [COMPLETE_TRANSLATION_EQ];;
+
+let CLOSED_SCALING_EQ = prove
+ (`!s:real^N->bool c. closed (IMAGE (\x. c % x) s) <=> c = &0 \/ closed s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    MESON_TAC[CLOSED_SING; CLOSED_EMPTY];
+    EQ_TAC THEN REWRITE_TAC[CLOSED_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP CLOSED_SCALING) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]]);;
+
+let CLOSED_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        closed (IMAGE (\x. m % x + c) s) <=> m = &0 \/ closed s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; CLOSED_TRANSLATION_EQ;
+              CLOSED_SCALING_EQ; IMAGE_o]);;
+
+let CLOSED_AFFINITY = prove
+ (`!s m c:real^N. closed s ==> closed (IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[CLOSED_AFFINITY_EQ]);;
 
 let TRANSLATION_DIFF = prove
  (`!s t:real^N->bool.
@@ -16595,14 +16671,10 @@ let HOMEOMORPHIC_TRANSLATION = prove
   REWRITE_TAC[IN_IMAGE] THEN MESON_TAC[]);;
 
 let HOMEOMORPHIC_AFFINITY = prove
- (`!s a:real^N c. ~(c = &0) ==> s homeomorphic (IMAGE (\x. a + c % x) s)`,
-  REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC HOMEOMORPHIC_TRANS THEN
-  EXISTS_TAC `IMAGE (\x:real^N. c % x) s` THEN
-  ASM_SIMP_TAC[HOMEOMORPHIC_SCALING] THEN
-  SUBGOAL_THEN `(\x:real^N. a + c % x) = (\x. a + x) o (\x. c % x)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
-  REWRITE_TAC[IMAGE_o; HOMEOMORPHIC_TRANSLATION]);;
+ (`!s a:real^N c. ~(c = &0) ==> s homeomorphic (IMAGE (\x. c % x + a) s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[AFFINITY_SCALING_TRANSLATION] THEN
+  TRANS_TAC HOMEOMORPHIC_TRANS `IMAGE (\x:real^N. c % x) s` THEN
+  ASM_SIMP_TAC[HOMEOMORPHIC_TRANSLATION; IMAGE_o; HOMEOMORPHIC_SCALING]);;
 
 let [HOMEOMORPHIC_BALLS; HOMEOMORPHIC_CBALLS; HOMEOMORPHIC_SPHERES] =
   (CONJUNCTS o prove)
@@ -17578,6 +17650,14 @@ let OPEN_BIJECTIVE_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [OPEN_BIJECTIVE_LINEAR_IMAGE_EQ];;
 
+let OPEN_INVERTIBLE_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N s.
+        linear f /\ invertible(matrix f) /\ open s
+        ==> open(IMAGE f s)`,
+  SIMP_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; MATRIX_INVERTIBLE] THEN
+  REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MATCH_MP_TAC OPEN_SURJECTIVE_LINEAR_IMAGE THEN ASM_MESON_TAC[]);;
+
 let CLOSED_INJECTIVE_LINEAR_IMAGE = prove
  (`!f:real^M->real^N.
         linear f /\ (!x y. f x = f y ==> x = y)
@@ -17811,6 +17891,47 @@ let OPEN_OPEN_RIGHT_PROJECTION = prove
 (* ------------------------------------------------------------------------- *)
 (* Even more special cases.                                                  *)
 (* ------------------------------------------------------------------------- *)
+
+let INTERIOR_SCALING = prove
+ (`!s:real^N->bool c.
+        interior (IMAGE (\x. c % x) s) =
+        if c = &0 then {} else IMAGE (\x. c % x) (interior s)`,
+  REPEAT GEN_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[VECTOR_MUL_LZERO] THENL
+   [MATCH_MP_TAC(SET_RULE `!t. s SUBSET t /\ t = {} ==> s = {}`) THEN
+    EXISTS_TAC `interior {vec 0:real^N}` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUBSET_INTERIOR THEN SET_TAC[]; REWRITE_TAC[INTERIOR_SING]];
+    MATCH_MP_TAC INTERIOR_INJECTIVE_LINEAR_IMAGE THEN
+    ASM_REWRITE_TAC[VECTOR_MUL_LCANCEL; LINEAR_SCALING]]);;
+
+let INTERIOR_AFFINITY = prove
+ (`!s m c:real^N.
+        interior(IMAGE (\x. m % x + c) s) =
+        if m = &0 then {} else IMAGE (\x. m % x + c) (interior s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; IMAGE_o] THEN
+  REWRITE_TAC[INTERIOR_TRANSLATION; INTERIOR_SCALING] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[IMAGE_CLAUSES]);;
+
+let CLOSURE_SCALING = prove
+ (`!s:real^N->bool c.
+        closure(IMAGE (\x. c % x) s) = IMAGE (\x. c % x) (closure s)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[CLOSURE_EMPTY; IMAGE_CLAUSES] THEN
+  ASM_CASES_TAC `c = &0` THEN
+  ASM_SIMP_TAC[VECTOR_MUL_LZERO; CLOSURE_EQ_EMPTY; CLOSURE_SING;
+               IMAGE_CONST] THEN
+  MATCH_MP_TAC CLOSURE_INJECTIVE_LINEAR_IMAGE THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_LCANCEL; LINEAR_SCALING]);;
+
+let CLOSURE_AFFINITY = prove
+ (`!s m c:real^N.
+        closure(IMAGE (\x. m % x + c) s) = IMAGE (\x. m % x + c) (closure s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; IMAGE_o] THEN
+  REWRITE_TAC[CLOSURE_TRANSLATION; CLOSURE_SCALING] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[IMAGE_CLAUSES]);;
 
 let INTERIOR_NEGATIONS = prove
  (`!s. interior(IMAGE (--) s) = IMAGE (--) (interior s)`,

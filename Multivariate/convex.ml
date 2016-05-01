@@ -55,13 +55,6 @@ let AFFINE_SCALING = prove
    `u % c % x + v % c % y = c % (u % x + v % y)`] THEN
   ASM_MESON_TAC[]);;
 
-let AFFINE_SCALING_EQ = prove
- (`!s c. ~(c = &0) ==> (affine (IMAGE (\x. c % x) s) <=> affine s)`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[AFFINE_SCALING] THEN
-  DISCH_THEN(MP_TAC o SPEC `inv c` o MATCH_MP AFFINE_SCALING) THEN
-  ASM_SIMP_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC;
-               REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]);;
-
 let AFFINE_NEGATIONS = prove
  (`!s. affine s ==> affine (IMAGE (--) s)`,
   REWRITE_TAC[affine; IN_IMAGE] THEN REPEAT STRIP_TAC THEN
@@ -95,14 +88,6 @@ let AFFINE_TRANSLATION = prove
  (`!s a:real^N. affine s ==> affine (IMAGE (\x. a + x) s)`,
   REWRITE_TAC[AFFINE_TRANSLATION_EQ]);;
 
-let AFFINE_AFFINITY = prove
- (`!s a:real^N c.
-        affine s ==> affine (IMAGE (\x. a + c % x) s)`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `(\x:real^N. a + c % x) = (\x. a + x) o (\x. c % x)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
-  ASM_SIMP_TAC[IMAGE_o; AFFINE_TRANSLATION; AFFINE_SCALING]);;
-
 let AFFINE_LINEAR_IMAGE = prove
  (`!f s. affine s /\ linear f ==> affine(IMAGE f s)`,
   REWRITE_TAC[affine; FORALL_IN_IMAGE; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
@@ -128,6 +113,26 @@ let AFFINE_SING = prove
   SIMP_TAC[AFFINE_ALT; IN_SING] THEN
   REWRITE_TAC[GSYM VECTOR_ADD_RDISTRIB] THEN
   REWRITE_TAC[REAL_SUB_ADD; VECTOR_MUL_LID]);;
+
+let AFFINE_SCALING_EQ = prove
+ (`!s:real^N->bool c. affine (IMAGE (\x. c % x) s) <=> c = &0 \/ affine s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    MESON_TAC[AFFINE_SING; AFFINE_EMPTY];
+    EQ_TAC THEN REWRITE_TAC[AFFINE_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP AFFINE_SCALING) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]]);;
+
+let AFFINE_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        affine (IMAGE (\x. m % x + c) s) <=> m = &0 \/ affine s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; AFFINE_TRANSLATION_EQ;
+              AFFINE_SCALING_EQ; IMAGE_o]);;
+
+let AFFINE_AFFINITY = prove
+ (`!s m c:real^N. affine s ==> affine (IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[AFFINE_AFFINITY_EQ]);;
 
 let AFFINE_UNIV = prove
  (`affine(UNIV:real^N->bool)`,
@@ -739,6 +744,29 @@ let AFFINE_HULL_EQ_SING = prove
   MATCH_MP_TAC(SET_RULE `~(s = {}) /\ s SUBSET {a} ==> s = {a}`) THEN
   ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
   REWRITE_TAC[HULL_SUBSET]);;
+
+let AFFINE_HULL_SCALING = prove
+ (`!s:real^N->bool c.
+        affine hull (IMAGE (\x. c % x) s) =
+        IMAGE (\x. c % x) (affine hull s)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THENL
+   [ASM_SIMP_TAC[IMAGE_CONST; VECTOR_MUL_LZERO; AFFINE_HULL_EQ_EMPTY] THEN
+    COND_CASES_TAC THEN REWRITE_TAC[AFFINE_HULL_EMPTY; AFFINE_HULL_SING];
+    ALL_TAC] THEN
+  MATCH_MP_TAC HULL_IMAGE THEN
+  ASM_SIMP_TAC[AFFINE_SCALING_EQ; AFFINE_AFFINE_HULL] THEN
+  REWRITE_TAC[VECTOR_ARITH `c % x = c % y <=> c % (x - y) = vec 0`] THEN
+  ASM_SIMP_TAC[VECTOR_MUL_EQ_0; VECTOR_SUB_EQ] THEN
+  X_GEN_TAC `x:real^N` THEN EXISTS_TAC `inv c % x:real^N` THEN
+  ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_RINV; VECTOR_MUL_LID]);;
+
+let AFFINE_HULL_AFFINITY = prove
+ (`!s a:real^N c.
+        affine hull (IMAGE (\x. c % x + a) s) =
+        IMAGE (\x. c % x + a) (affine hull s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION] THEN
+  ASM_SIMP_TAC[IMAGE_o; AFFINE_HULL_TRANSLATION; AFFINE_HULL_SCALING]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convexity.                                                                *)
@@ -2526,11 +2554,14 @@ let CONVEX_SCALING = prove
   ASM_MESON_TAC[]);;
 
 let CONVEX_SCALING_EQ = prove
- (`!s c. ~(c = &0) ==> (convex (IMAGE (\x. c % x) s) <=> convex s)`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[CONVEX_SCALING] THEN
-  DISCH_THEN(MP_TAC o SPEC `inv c` o MATCH_MP CONVEX_SCALING) THEN
-  ASM_SIMP_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC;
-               REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]);;
+ (`!s:real^N->bool c. convex (IMAGE (\x. c % x) s) <=> c = &0 \/ convex s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    MESON_TAC[CONVEX_SING; CONVEX_EMPTY];
+    EQ_TAC THEN REWRITE_TAC[CONVEX_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP CONVEX_SCALING) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]]);;
 
 let CONVEX_NEGATIONS = prove
  (`!s. convex s ==> convex (IMAGE (--) s)`,
@@ -2553,13 +2584,15 @@ let CONVEX_DIFFERENCES = prove
     `u % (a - b) + v % (c - d) = (u % a + v % c) - (u % b + v % d)`] THEN
   ASM_MESON_TAC[]);;
 
+let CONVEX_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        convex (IMAGE (\x. m % x + c) s) <=> m = &0 \/ convex s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; CONVEX_TRANSLATION_EQ;
+              CONVEX_SCALING_EQ; IMAGE_o]);;
+
 let CONVEX_AFFINITY = prove
- (`!s a:real^N c.
-        convex s ==> convex (IMAGE (\x. a + c % x) s)`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `(\x:real^N. a + c % x) = (\x. a + x) o (\x. c % x)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
-  ASM_SIMP_TAC[IMAGE_o; CONVEX_TRANSLATION; CONVEX_SCALING]);;
+ (`!s m c:real^N. convex s ==> convex (IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[CONVEX_AFFINITY_EQ]);;
 
 let CONVEX_LINEAR_PREIMAGE = prove
  (`!f:real^M->real^N.
@@ -7075,11 +7108,10 @@ let CONVEX_HULL_SCALING = prove
 
 let CONVEX_HULL_AFFINITY = prove
  (`!s a:real^N c.
-        convex hull (IMAGE (\x. a + c % x) s) =
-        IMAGE (\x. a + c % x) (convex hull s)`,
+        convex hull (IMAGE (\x. c % x + a) s) =
+        IMAGE (\x. c % x + a) (convex hull s)`,
   REPEAT GEN_TAC THEN
-  SUBGOAL_THEN `(\x:real^N. a + c % x) = (\x. a + x) o (\x. c % x)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION] THEN
   ASM_SIMP_TAC[IMAGE_o; CONVEX_HULL_TRANSLATION; CONVEX_HULL_SCALING]);;
 
 (* ------------------------------------------------------------------------- *)

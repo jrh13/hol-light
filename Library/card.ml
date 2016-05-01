@@ -1663,6 +1663,66 @@ let COUNTABLE_FL = prove
     SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A countable chain has an "equivalent" omega-chain.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let COUNTABLE_ASCENDING_CHAIN = prove
+ (`!f:(A->bool)->bool.
+        COUNTABLE f /\ ~(f = {}) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(n) SUBSET u(SUC n)) /\
+                UNIONS {u n | n IN (:num)} = UNIONS f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `f:(A->bool)->bool` COUNTABLE_AS_IMAGE) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:num->A->bool` THEN DISCH_THEN(ASSUME_TAC o SYM) THEN
+  EXISTS_TAC `\n. UNIONS(IMAGE (b:num->A->bool) (0..n))` THEN
+  ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [INDUCT_TAC THEN
+    ASM_REWRITE_TAC[NUMSEG_CLAUSES; LE_0; IMAGE_CLAUSES] THEN
+    REWRITE_TAC[UNIONS_0; UNIONS_INSERT; UNION_EMPTY] THENL
+     [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC(MESON[]
+     `a IN f /\ b IN f /\ (a UNION b = a \/ a UNION b = b)
+      ==> (a UNION b) IN f`) THEN
+    ASM_REWRITE_TAC[SET_RULE `a UNION b = a <=> b SUBSET a`;
+                    SET_RULE `a UNION b = b <=> a SUBSET b`] THEN
+    ASM SET_TAC[];
+    GEN_TAC THEN REWRITE_TAC[NUMSEG_CLAUSES; LE_0] THEN SET_TAC[];
+    EXPAND_TAC "f" THEN REWRITE_TAC[UNIONS_GSPEC; UNIONS_IMAGE] THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_UNIV; IN_NUMSEG; LE_0] THEN
+    MESON_TAC[LE_REFL]]);;
+
+let COUNTABLE_DESCENDING_CHAIN = prove
+ (`!f:(A->bool)->bool.
+
+        COUNTABLE f /\ ~(f = {}) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(SUC n) SUBSET u(n)) /\
+                INTERS {u n | n IN (:num)} = INTERS f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `f:(A->bool)->bool` COUNTABLE_AS_IMAGE) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:num->A->bool` THEN DISCH_THEN(ASSUME_TAC o SYM) THEN
+  EXISTS_TAC `\n. INTERS(IMAGE (b:num->A->bool) (0..n))` THEN
+
+  ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [INDUCT_TAC THEN
+    ASM_REWRITE_TAC[NUMSEG_CLAUSES; LE_0; IMAGE_CLAUSES] THEN
+    REWRITE_TAC[INTERS_0; INTERS_INSERT; INTER_UNIV] THENL
+     [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC(MESON[]
+     `a IN f /\ b IN f /\ (a INTER b = a \/ a INTER b = b)
+      ==> (a INTER b) IN f`) THEN
+    ASM_REWRITE_TAC[SET_RULE `a INTER b = a <=> a SUBSET b`;
+                    SET_RULE `a INTER b = b <=> b SUBSET a`] THEN
+    ASM SET_TAC[];
+    GEN_TAC THEN REWRITE_TAC[NUMSEG_CLAUSES; LE_0] THEN SET_TAC[];
+    EXPAND_TAC "f" THEN REWRITE_TAC[INTERS_GSPEC; INTERS_IMAGE] THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_UNIV; IN_NUMSEG; LE_0] THEN
+    MESON_TAC[LE_REFL]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Cardinality of infinite list and cartesian product types.                 *)
 (* ------------------------------------------------------------------------- *)
 
