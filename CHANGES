@@ -8,6 +8,11 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  7th May 2016       Library/floor.ml
+
+Added RATIONAL_BETWEEN_EQ = 
+          |- !a b. (?q. rational q /\ a < q /\ q < b) <=> a < b
+
 Fri 29th Apr 2016       Library/card.ml
 
 Added two theorems asserting that a countable chain has an "equivalent"

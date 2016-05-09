@@ -677,6 +677,10 @@ let RATIONAL_BETWEEN = prove
   ANTS_TAC THENL [ALL_TAC; MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[]] THEN
   ASM_REAL_ARITH_TAC);;
 
+let RATIONAL_BETWEEN_EQ = prove
+ (`!a b. (?q. rational q /\ a < q /\ q < b) <=> a < b`,
+  MESON_TAC[RATIONAL_BETWEEN; REAL_LT_TRANS]);;
+
 let RATIONAL_APPROXIMATION_STRADDLE = prove
  (`!x e. &0 < e
          ==> ?a b. rational a /\ rational b /\
