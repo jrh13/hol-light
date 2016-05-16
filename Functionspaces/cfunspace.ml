@@ -7,10 +7,9 @@
 (*                  Concordia University                                     *)
 (*                                                                           *)
 (*           Contact: <mosolim@ece.concordia.ca>, <vincent@ece.concordia.ca> *)
-(*   Last update: Jan 2014                                                   *)
+(*   Last update: April 2016                                                 *)
 (* ========================================================================= *)
 
-needs "Multivariate/realanalysis.ml";;
 needs "Functionspaces/utils.ml";;
 
 (* ------------------------------------------------------------------------- *)
@@ -178,7 +177,6 @@ let CFUN_ARITH t = prove(t,CFUN_ARITH_TAC);;
 (* Properties *)
 
 
-let CFUN_ADD_THM = CFUN_ARITH `!f g. (f + g) x = f x + g x`;;
 
 let CFUN_SUB = CFUN_ARITH `!f g. f - g = \x. f x - g x`;;
 
@@ -202,8 +200,6 @@ let CFUN_ADD_ASSOC = CFUN_ARITH `!x y z. (x + y) + z = x + y + z`;;
 
 let CFUN_SUB_NEG = CFUN_ARITH `!x y. x - y = x + --y`;;
 
-let CFUN_SUB_REFL = CFUN_ARITH `!x. x - x = cfun_zero`;;
-
 let CFUN_SMUL_LZERO = CFUN_ARITH `!x. Cx(&0) % x = cfun_zero`;;
 
 let CFUN_ADD_LID = CFUN_ARITH `!x. cfun_zero + x = x`;;
@@ -214,12 +210,12 @@ let CFUN_SUB_RID = CFUN_ARITH `!x. x - cfun_zero = x`;;
 
 let CFUN_SMUL_RZERO = CFUN_ARITH `!a. a % cfun_zero = cfun_zero`;;
 
+let CFUN_SUB_REFL = CFUN_ARITH `!x. x - x = cfun_zero`;;
+
 let CFUN_ZERO_CLAUSES =
   CONJS [CFUN_SUB_REFL;CFUN_ADD_RID;CFUN_SMUL_LZERO;CFUN_SMUL_RZERO];;
 
 let CFUN_SMUL_SYM = CFUN_ARITH `!a b x. a % (b % x) = b % (a % x)`;;
-
-let CFUN_SUB_REFL = CFUN_ARITH `!x. x - x = cfun_zero`;;
 
 let CFUN_SMUL_DIS = CFUN_ARITH `!a x y. a % (x + y) = a % x + a % y`;;
 
@@ -382,6 +378,11 @@ let CFUN_OF_COMPLEX_OF_CFUN = prove
 
 new_type_abbrev("inprod",`:cfun->cfun->complex`);;
 
+parse_as_infix("equv",(24,"left"));;
+
+let are_equv = new_definition
+        ` ((f:cfun) equv (g:cfun)) inprod <=> inprod (f-g) (f-g) = Cx(&0)`;;
+
 new_type_abbrev("inner_space",`:(cfun->bool)#inprod`);;
 
 let is_inner_space = new_definition
@@ -389,9 +390,9 @@ let is_inner_space = new_definition
     is_cfun_subspace s /\
     !x. x IN s ==>
       real (inprod x x) /\ &0 <= real_of_complex (inprod x x)
-      /\ (inprod x x = Cx(&0) <=> x = cfun_zero)
       /\ !y. y IN s ==>
-        cnj (inprod y x) = inprod x y /\
+             (inprod x x = Cx(&0) ==> inprod y x = Cx(&0))
+        /\ cnj (inprod y x) = inprod x y /\
         (!a. inprod x (a%y) = a * (inprod x y))
         /\ !z. z IN s ==> inprod (x+y) z = inprod x z + inprod y z`;;
 
@@ -460,12 +461,12 @@ let INPROD_ADD_RDIST = inner_space_prove
   SIMP_TAC[is_inner_space]);;
 
 let INPROD_ZERO_EQ = inner_space_prove
-  (`!x. x IN s ==> (inprod x x = Cx(&0) <=> x = cfun_zero):`,
+  (`!x y. x IN s /\ y IN s ==> (inprod x x = Cx(&0) ==> inprod y x = Cx(&0)):`,
   SIMP_TAC[is_inner_space]);;
 
-let INPROD_ZERO = inner_space_prove
-  (`inprod cfun_zero cfun_zero = Cx(&0):`,
-  SIMP_TAC[is_inner_space;is_cfun_subspace]);;
+let INPROD_LZERO_EQ = inner_space_prove
+  (`!x y. x IN s /\ y IN s ==> (inprod x x = Cx(&0) ==> inprod x y = Cx(&0)):`,
+  MESON_TAC[INPROD_ZERO_EQ;INPROD_CNJ]);;
 
 let INPROD_NORM = inner_space_prove
   (`!x. x IN s ==> real (inprod x x) /\ &0 <= real_of_complex (inprod x x):`,
@@ -515,6 +516,10 @@ let INPROD_LZERO = inner_space_prove
   (`!x. x IN s ==> inprod cfun_zero x = Cx(&0):`,
   IMP_REWRITE_TAC[GSYM CFUN_SMUL_LZERO;INPROD_LSMUL;CNJ_CX;COMPLEX_MUL_LZERO]);;
 
+let INPROD_ZERO = inner_space_prove
+  (`inprod cfun_zero cfun_zero = Cx(&0):`,
+  MESON_TAC[INPROD_LZERO;INNER_SPACE_ZERO]);;
+
 let INPROD_SELF_CNJ = inner_space_prove
   (`!x. x IN s ==> cnj (inprod x x) = inprod x x:`,
   SIMP_TAC[GSYM REAL_CNJ;is_inner_space]);;
@@ -532,19 +537,6 @@ let INPROD_SELF_RE = inner_space_prove
   (`!x. x IN s ==> real_of_complex (inprod x x) = Re (inprod x x):`,
   MESON_TAC[is_inner_space;REAL_OF_COMPLEX_RE]);;
 
-(* Surjection holds in finite dimension only *)
-let INPROD_INJ = inner_space_prove
-  (`!x y. x IN s /\ y IN s ==> (inprod x = inprod y <=> x = y):`,
-  TARGET_REWRITE_TAC[GSYM CFUN_SUB_0] (GSYM INPROD_ZERO_EQ)
-  THEN IMP_REWRITE_TAC [INPROD_SUB_RDIST;COMPLEX_SUB_0;CFUN_SUBSPACE_SUB;
-    INNER_SPACE_IS_SUBSPACE]);;
-
-let INPROD_INJ_ALT = inner_space_prove
-  (`!x y. x IN s /\ y IN s
-    ==> ((!z. z IN s ==> inprod x z = inprod y z) <=> x = y):`,
-  TARGET_REWRITE_TAC[GSYM CFUN_SUB_0] (GSYM INPROD_ZERO_EQ)
-  THEN IMP_REWRITE_TAC [INPROD_SUB_RDIST;COMPLEX_SUB_0;CFUN_SUBSPACE_SUB;
-  INNER_SPACE_IS_SUBSPACE]);;
 
 
 let INPROD_NEG = inner_space_prove
@@ -554,32 +546,98 @@ let INPROD_NEG = inner_space_prove
 (* TODO RIESZ *)
 
 
+let EQUV_ZERO = prove
+        (`!x inprod. inprod x x = Cx(&0) <=> (x equv cfun_zero) inprod`,
+        REWRITE_TAC[are_equv;CFUN_SUB_RID]);;
+
+let INPROD_NOT_ZERO = inner_space_prove
+ (`!x. x IN s /\ ~(x equv cfun_zero) inprod ==> ~(x = cfun_zero):`,
+   MESON_TAC[are_equv;INPROD_ZERO;CFUN_SUB_RID]);;
+
+let EQUV_SUB_ZERO = prove
+   (`!x inprod.   (x equv y) inprod  <=> ((x - y) equv cfun_zero) inprod`,
+        REWRITE_TAC[are_equv;CFUN_SUB_RID]);;
+
+let INPROD_ZERO_EQUV = inner_space_prove
+ (`!x y. x IN s /\ y IN s ==> (x equv cfun_zero) inprod ==> inprod y x = Cx(&0):`,
+  MESON_TAC[EQUV_ZERO;INPROD_ZERO_EQ]);;
+
+let INPROD_EQUV_SYM = inner_space_prove
+        (`!x y. x IN s /\ y IN s ==>  ((x equv y) inprod <=> (y equv x) inprod):`,
+        REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[are_equv] THEN DISCH_TAC
+        THEN TARGET_REWRITE_TAC[CFUN_ARITH `! x y. x-y = --(y-x)`]INPROD_NEG
+        THEN ASM_MESON_TAC[INNER_SPACE_SUB]);;
+
+
+let INPROD_EQUV_RREPLACE =      prove
+        (`!s inprod x y z.
+         (x equv y) inprod ==>
+                 is_inner_space (s,inprod) /\
+         x IN s /\
+         y IN s /\
+         z IN s
+         ==> inprod z x = inprod z y`,
+       ONCE_REWRITE_TAC[GSYM COMPLEX_SUB_0;EQUV_SUB_ZERO] THEN
+           REPEAT GEN_TAC THEN
+          MESON_TAC[INNER_SPACE_SUB;Pa.SPECL ["s";"inprod";"x-y";"z"]
+           (GSYM INPROD_ZERO_EQUV);INPROD_SUB_LDIST]);;
+
+let INPROD_EQUV_LREPLACE =      prove
+        (`!s inprod x y z.
+         (x equv y) inprod ==>
+                 is_inner_space (s,inprod) /\
+         x IN s /\
+         y IN s /\
+         z IN s
+         ==> inprod x z = inprod y z`,
+       MESON_TAC[GSYM INPROD_CNJ;INPROD_EQUV_RREPLACE]);;
+
+let INPROD_INJ_ALT = inner_space_prove
+  (`!x y. x IN s /\ y IN s
+    ==> ((x equv y) inprod  <=> (!z. z IN s ==> inprod x z = inprod y z)):`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL[ASM_MESON_TAC[INPROD_EQUV_LREPLACE];ALL_TAC] THEN
+  TARGET_REWRITE_TAC[GSYM COMPLEX_SUB_0] (GSYM INPROD_SUB_RDIST)
+  THEN ASM_MESON_TAC [are_equv;COMPLEX_SUB_0;CFUN_SUBSPACE_SUB;
+  INNER_SPACE_IS_SUBSPACE]);;
+
+let INPROD_EQUV_TAC ths = ASSUM_LIST(fun thl-> let mthl =  map  (fun th->
+        try CONJ (MATCH_MP INPROD_EQUV_RREPLACE th)  (MATCH_MP INPROD_EQUV_LREPLACE th) with
+                                |Failure explanation -> th
+                                ) thl in  IMP_REWRITE_TAC (mthl@ths));;
+
+let INPROD_EQUV_TRANSTIVE = inner_space_prove
+        (`!x y z. x IN s /\ y IN s /\ z IN s ==> (x equv y) inprod /\
+          (y equv z) inprod ==> (x equv z) inprod:`,
+          REPEAT STRIP_TAC THEN
+          INPROD_EQUV_TAC[are_equv;INPROD_SUB_RDIST;INPROD_SUB_LDIST;INNER_SPACE_SUB;
+          COMPLEX_SUB_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* ORTHOGONALITY                                                             *)
 (* ------------------------------------------------------------------------- *)
 
 let are_orthogonal = new_definition
-  `are_orthogonal ((s,inprod):inner_space) u v <=>
+  `are_orthogonal1 ((s,inprod):inner_space) u v <=>
     is_inner_space (s,inprod) /\ u IN s /\ v IN s ==> inprod u v = Cx(&0)`;;
 
 let ARE_ORTHOGONAL = inner_space_prove
   (`!u v. u IN s /\ v IN s ==>
-      (are_orthogonal (s,inprod) u v <=> inprod u v = Cx(&0)):`,
+      (are_orthogonal1 (s,inprod) u v <=> inprod u v = Cx(&0)):`,
   MESON_TAC [are_orthogonal]);;
 
 let ARE_ORTHOGONAL_SYM = inner_space_prove
   (`!u v. u IN s /\ v IN s
-      ==> (are_orthogonal (s,inprod) u v <=> are_orthogonal (s,inprod) v u):`,
+      ==> (are_orthogonal1 (s,inprod) u v <=> are_orthogonal1 (s,inprod) v u):`,
   SIMP_TAC[ARE_ORTHOGONAL] THEN REPEAT (STRIP_TAC ORELSE EQ_TAC)
   THEN ONCE_REWRITE_TAC[GSYM CNJ_INJ] THEN ASM_MESON_TAC[CNJ_CX;INPROD_CNJ]);;
 
 let ARE_ORTHOGONAL_LSCALAR = inner_space_prove
-  (`!u v. u IN s /\ v IN s /\ are_orthogonal (s,inprod) u v
-      ==> !a. are_orthogonal (s,inprod) (a % u) v:`,
+  (`!u v. u IN s /\ v IN s /\ are_orthogonal1 (s,inprod) u v
+      ==> !a. are_orthogonal1 (s,inprod) (a % u) v:`,
   IMP_REWRITE_TAC[are_orthogonal;INPROD_LSMUL;COMPLEX_MUL_RZERO]);;
 
 let ORTHOGONAL_SUM_NORM = inner_space_prove
-  (`!u v. u IN s /\ v IN s /\ are_orthogonal (s,inprod) u v ==>
+  (`!u v. u IN s /\ v IN s /\ are_orthogonal1 (s,inprod) u v ==>
     inprod (u+v) (u+v) = inprod u u + inprod v v:`,
   IMP_REWRITE_TAC[are_orthogonal;INPROD_ADD_LDIST;INPROD_ADD_RDIST;
     CFUN_SUBSPACE_ADD;INNER_SPACE_IS_SUBSPACE]
@@ -592,14 +650,14 @@ let ORTHOGONAL_DECOMPOS_WRT_CFUN = inner_space_prove
       let proj_v = inprod v u / inprod v v in
       let orthogonal_component = u - proj_v % v in
       u = proj_v % v + orthogonal_component
-      /\ are_orthogonal (s,inprod) v orthogonal_component:`,
+      /\ are_orthogonal1 (s,inprod) v orthogonal_component:`,
   REWRITE_TAC[LET_DEFS;CFUN_SUB_ADD2;are_orthogonal]
   THEN IMP_REWRITE_TAC [INPROD_SUB_LDIST;INPROD_RSMUL;CFUN_SUBSPACE_SMUL;
     INNER_SPACE_IS_SUBSPACE]
-  THEN REPEAT STRIP_TAC THEN Pa.ASM_CASES_TAC `v=cfun_zero:` THENL [
-    IMP_REWRITE_TAC [CFUN_SMUL_RZERO;INPROD_LZERO;CFUN_SUBSPACE_ZERO;
+  THEN REPEAT STRIP_TAC THEN Pa.ASM_CASES_TAC `(v equv cfun_zero) inprod:` THENL [
+    INPROD_EQUV_TAC [CFUN_SMUL_RZERO;INPROD_LZERO;CFUN_SUBSPACE_ZERO;
     INNER_SPACE_IS_SUBSPACE];
-    IMP_REWRITE_TAC [COMPLEX_DIV_RMUL;INPROD_ZERO_EQ]
+     IMP_REWRITE_TAC [COMPLEX_DIV_RMUL;INPROD_NOT_ZERO;EQUV_ZERO]
   ] THEN SIMPLE_COMPLEX_ARITH_TAC);;
 
 let ORTHOGONAL_DECOMPOS_WRT_CFUN_DECOMPOSITION = inner_space_prove
@@ -612,7 +670,7 @@ let ORTHOGONAL_DECOMPOS_WRT_CFUN_DECOMPOSITION = inner_space_prove
 
 let ORTHOGONAL_DECOMPOS_WRT_CFUN_ORTHOGONAL = inner_space_prove
   (`!u v. u IN s /\ v IN s ==>
-      are_orthogonal (s,inprod) v (u - (inprod v u / inprod v v) % v):`,
+      are_orthogonal1 (s,inprod) v (u - (inprod v u / inprod v v) % v):`,
   REWRITE_TAC [LET_DEFS]
   THEN MESON_TAC[REWRITE_RULE [LET_DEFS] ORTHOGONAL_DECOMPOS_WRT_CFUN]);;
 
@@ -649,8 +707,7 @@ let SCHWARZ_INEQUALITY = inner_space_prove
       [CFUN_SUBSPACE_SUB;CFUN_SUBSPACE_SMUL;INNER_SPACE_IS_SUBSPACE]
     THEN ASM_REWRITE_TAC[];
     ASM_REWRITE_TAC[] THEN GCONV_TAC COMPLEX_POLY_CONV
-    THEN POP_ASSUM MP_TAC THEN IMP_REWRITE_TAC [INPROD_ZERO_EQ]
-    THEN SIMP_TAC[] THEN IMP_REWRITE_TAC [INPROD_RZERO]
+    THEN IMP_REWRITE_TAC [INPROD_ZERO_EQ]
     THEN REWRITE_TAC[COMPLEX_NORM_0;RE_CX] THEN ARITH_TAC
   ]);;
 
@@ -767,8 +824,6 @@ let COP_SMUL_ALT = COP_ARITH `!a op. a % op = \x. a * op x`;;
 
 let COP_MUL = COP_ARITH `!op1 op2. op1 ** op2 = \x. op1 (op2 x)`;;
 
-let COP_MUL_THM = COP_ARITH `!op1 op2 x. (op1 ** op2) x = op1 (op2 x)`;;
-
 let COP_ADD = COP_ARITH `!op1 op2. op1 + op2 = \x. op1 x + op2 x`;;
 
 let COP_SUB_ABS = COP_ARITH `!op1 op2. op1 - op2 = \x. op1 x - op2 x`;;
@@ -809,8 +864,6 @@ let COP_ADD_I_SYM = COP_ARITH `!op. op + I = I + op`;;
 
 let COP_I_SCALAR = COP_ARITH `(\x. a % x)  = a % I`;;
 
-let COP_SMUL = COP_ARITH `!a op. a % op = \x. a % op x`;;
-
 let COP_MUL_THM = COP_ARITH `!x op1 op2. (op1 ** op2) x = op1 (op2 x)`;;
 
 let COP_SMUL_LNEG = COP_ARITH `!a op. --a % op = --(a % op)`;;
@@ -836,11 +889,6 @@ let COP_SMUL_SYM = COP_ARITH `!a b op. a % (b % op) = b % (a % op)`;;
 
 let COP_MUL_LSMUL = COP_ARITH `!op1 op2. a % op1 ** op2 = a % (op1 ** op2)`;;
 
-let COP_ADD_SYM = COP_ARITH `!op1 op2. op1 + op2 = op2 + op1 `;;
-
-let COP_ADD_ASSOC = COP_ARITH
-  `!op1 op2 op3. (op1 + op2) + op3  = op1 + op2 + op3 `;;
-
 let COP_ADD_LDISTRIB = COP_ARITH
   `!a op1 op2. a % (op1 + op2) = a % op1 + a % op2`;;
 
@@ -857,10 +905,6 @@ let COP_ADD_RSUB = COP_ARITH `!x y z. x + (y - z) = (x + y) - z`;;
 
 let COP_SUB_SUB = COP_ARITH `!x y z. x - (y - z) = x - y + z`;;
 
-let COP_ADD_RID = COP_ARITH `!x. x + cop_zero = x`;;
-
-let COP_ADD_LID = COP_ARITH `!x. cop_zero + x = x`;;
-
 let COP_ADD_SYM = COP_ARITH `!op1 op2. op1 + op2 = op2 + op1`;;
 
 let COP_ADD_ASSOC = COP_ARITH `!x y z. (x + y) + z = x + y + z`;;
@@ -869,8 +913,6 @@ let COP_ADD_AC = COP_ARITH
   `!m n p. m + n = n + m /\ (m + n) + p = m + n + p /\ m + n + p = n + m + p`;;
 
 let COP_MUL_ASSOC = COP_ARITH `!x y z . (x ** y) ** z = x ** y ** z`;;
-
-let COP_SUB_REFL = COP_ARITH `!x. x - x = cop_zero`;;
 
 let COP_SUB_ADD = COP_ARITH `!x y z. (x-y)+z= (x+z)-y`;;
 
@@ -943,6 +985,10 @@ let COP_POW_COMMUTE_N = prove
         ASM_REWRITE_TAC[GSYM cop_pow;COP_MUL_ASSOC]);;
 
 let COP_ADD_2 = COP_ARITH `!op. Cx(&2) % op  = op + op`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Bounded OPERATORS                                                          *)
+(* ------------------------------------------------------------------------- *)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1386,22 +1432,22 @@ let HERM_UNIQUENESS = prove
   (`!s inprod op1 op2 op3.
       is_inner_space (s,inprod)
       /\ is_hermitian (s,inprod) op1 op2 /\ is_hermitian (s,inprod) op1 op3
-        ==> !x. x IN s ==> op2 x = op3 x`,
-  IMP_REWRITE_TAC [is_hermitian;COP_EQ;is_closed_by;GSYM INPROD_INJ_ALT]
+        ==> !x. x IN s ==> (op2 x equv op3 x) inprod`,
+  IMP_REWRITE_TAC [is_hermitian;COP_EQ;is_closed_by;INPROD_INJ_ALT]
   THEN ASM_MESON_TAC[]);;
 
 let HERM_UNIQUENESS_ALT = prove
   (`!s inprod op1 op2 op3.
     is_inner_space (s,inprod) /\
     is_hermitian (s,inprod) op2 op1 /\ is_hermitian (s,inprod) op3 op1
-      ==> !x. x IN s ==> op2 x = op3 x`,
+      ==> !x. x IN s ==> (op2 x equv op3 x) inprod`,
   MESON_TAC[HERM_SYM;HERM_UNIQUENESS]);;
 
 let HERM_PROP_ADVANCED = inner_space_prove
   (`!a b op1 op2 op3 op4 op5.
     is_hermitian (s,inprod) op1 op2 /\ is_hermitian (s,inprod) op3 op4
     /\ is_hermitian (s,inprod) op5 (a % op1 + b % op3)
-      ==> !x. x IN s ==> op5 x = (cnj a % op2 + cnj b % op4) x:`,
+      ==> !x. x IN s ==> (op5 x equv (cnj a % op2 + cnj b % op4) x) inprod:`,
   IMP_REWRITE_TAC[COP_EQ;GIMP_IMP HERM_UNIQUENESS_ALT]
   THEN MESON_TAC[ARITH_HERM_CLAUSES;CNJ_CNJ;HERM_SYM]);;
 
@@ -1411,52 +1457,52 @@ let HERM_PROP_ADVANCED = inner_space_prove
 (* ------------------------------------------------------------------------- *)
 
 let is_self_adjoint = new_definition
-  `is_self_adjoint is op <=> is_hermitian is op op`;;
+  `is_self_adjoint1 is op <=> is_hermitian is op op`;;
 
 let IS_SELF_ADJOINT =
   REWRITE_RULE[FORALL_INNER_SPACE_THM;is_hermitian] is_self_adjoint;;
 
 let SELF_ADJ_IS_LINCOP = full_inner_space_prove
-  (`!op. is_self_adjoint is op ==> is_linear_cop op:`,
+  (`!op. is_self_adjoint1 is op ==> is_linear_cop op:`,
   IMP_REWRITE_TAC[is_self_adjoint;HERM_LINCOP_L]);;
 
 let SELF_ADJ_IS_CLOSED_BY = inner_space_prove
-  (`!op. is_self_adjoint (s,inprod) op ==> is_closed_by s op:`,
+  (`!op. is_self_adjoint1 (s,inprod) op ==> is_closed_by s op:`,
   IMP_REWRITE_TAC[is_self_adjoint;HERM_IS_CLOSED_BY_L]);;
 
 let SELF_ADJ_INPROD = inner_space_prove
-  (`!op1 op2. is_self_adjoint (s,inprod) op1 /\ is_closed_by s op2
+  (`!op1 op2. is_self_adjoint1 (s,inprod) op1 /\ is_closed_by s op2
     ==> !x y. x IN s /\ y IN s
       ==> inprod x ((op1 ** op2) y) = inprod (op1 x) (op2 y):`,
   REWRITE_TAC[IS_SELF_ADJOINT;COP_MUL;is_closed_by] THEN MESON_TAC[]);;
 
 let ADD_SELF_ADJ = full_inner_space_prove
-  (`!op1 op2. is_self_adjoint is op1 /\ is_self_adjoint is op2
-    ==> is_self_adjoint is (op1 + op2):`,
+  (`!op1 op2. is_self_adjoint1 is op1 /\ is_self_adjoint1 is op2
+    ==> is_self_adjoint1 is (op1 + op2):`,
   IMP_REWRITE_TAC[is_self_adjoint;ADD_HERM]);;
 
 let SUB_SELF_ADJ = full_inner_space_prove
-  (`!op1 op2. is_self_adjoint is op1 /\ is_self_adjoint is op2
-    ==> is_self_adjoint is (op1 - op2):`,
+  (`!op1 op2. is_self_adjoint1 is op1 /\ is_self_adjoint1 is op2
+    ==> is_self_adjoint1 is (op1 - op2):`,
   IMP_REWRITE_TAC[is_self_adjoint;SUB_HERM]);;
 
 let SMUL_SELF_ADJ = full_inner_space_prove
-  (`!a op. real a /\ is_self_adjoint is op ==> is_self_adjoint is (a % op):`,
+  (`!a op. real a /\ is_self_adjoint1 is op ==> is_self_adjoint1 is (a % op):`,
   MESON_TAC[is_self_adjoint;SMUL_HERM;REAL_CNJ]);;
 
 let MUL_SELF_ADJ = full_inner_space_prove
   (`!op1 op2.
-    is_self_adjoint is op1 /\ is_self_adjoint is op2 /\ op1 ** op2 = op2 ** op1
-    ==> is_self_adjoint is (op1 ** op2):`,
+    is_self_adjoint1 is op1 /\ is_self_adjoint1 is op2 /\ op1 ** op2 = op2 ** op1
+    ==> is_self_adjoint1 is (op1 ** op2):`,
   MESON_TAC[is_self_adjoint;MUL_HERM]);;
 
 let I_SELF_ADJ = prove
-  (`!is. is_self_adjoint is I`,
+  (`!is. is_self_adjoint1 is I`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM;IS_SELF_ADJOINT;I_LINCOP;I_THM;
     IS_CLOSED_BY_I]);;
 
 let ZERO_SELF_ADJ = prove
-  (`!is. is_self_adjoint is cop_zero`,
+  (`!is. is_self_adjoint1 is cop_zero`,
   REWRITE_TAC[is_self_adjoint;ZERO_HERM]);;
 
 let selfadjoint_thms = ref [];;
@@ -1480,7 +1526,7 @@ let rec SELF_ADJOINT_TAC g =
   (REPEAT STRIP_TAC
   THEN (fun (_,c as g) ->
     let head = fst (strip_comb c) in
-    if (name_of head = "is_self_adjoint"
+    if (name_of head = "is_self_adjoint1"
       && can (type_match `:inner_space->cop->bool` (type_of head)) [])
     then CHANGED_TAC (REPEAT (LOOP THEN REPEAT CONJ_TAC)) g
     else FAIL_TAC "bad goal" g)) g;;
@@ -1492,8 +1538,8 @@ add_selfadjoint_thms [ADD_SELF_ADJ;SUB_SELF_ADJ;SMUL_SELF_ADJ;
   REWRITE_RULE[COP_SMUL] SMUL_SELF_ADJ;MUL_SELF_ADJ;I_SELF_ADJ;ZERO_SELF_ADJ];;
 
 let ANTI_COMMUTATOR_SELF_ADJ = full_inner_space_prove
-  (`!op1 op2. is_self_adjoint is op1 /\ is_self_adjoint is op2
-    ==> is_self_adjoint is (op1 ** op2 + op2 ** op1):`,
+  (`!op1 op2. is_self_adjoint1 is op1 /\ is_self_adjoint1 is op2
+    ==> is_self_adjoint1 is (op1 ** op2 + op2 ** op1):`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM;IS_SELF_ADJOINT]
   THEN SIMP_HORN_TAC THEN REPEAT STRIP_TAC THEN TRY LINEARITY_TAC
   THEN ASM IMP_REWRITE_TAC[IS_CLOSED_BY_COP_ADD;IS_CLOSED_BY_COP_MUL;COP_MUL;
@@ -1504,8 +1550,8 @@ let ANTI_COMMUTATOR_SELF_ADJ = full_inner_space_prove
 add_selfadjoint_thm ANTI_COMMUTATOR_SELF_ADJ;;
 
 let NEG_SELF_ADJ = full_inner_space_prove
-  (`!op. is_linear_cop op /\ is_self_adjoint is op
-    ==> is_self_adjoint is (--op):`,
+  (`!op. is_linear_cop op /\ is_self_adjoint1 is op
+    ==> is_self_adjoint1 is (--op):`,
   ONCE_REWRITE_TAC[GSYM COP_SUB_LZERO] THEN SELF_ADJOINT_TAC);;
 
 add_selfadjoint_thm NEG_SELF_ADJ;;
@@ -1513,7 +1559,7 @@ add_selfadjoint_thm NEG_SELF_ADJ;;
 let SCALAR_II_HERM = inner_space_prove
   (`!op. is_linear_cop op /\ (!x y. inprod (op x) y = -- (inprod x (op y)))
       /\ is_closed_by s op
-        ==> is_self_adjoint (s,inprod) (ii % op):`,
+        ==> is_self_adjoint1 (s,inprod) (ii % op):`,
   IMP_REWRITE_TAC[IS_SELF_ADJOINT;COP_SMUL_THM;IS_CLOSED_BY_COP_SMUL;
    is_closed_by;INNER_SPACE_IS_SUBSPACE;INPROD_LSMUL;INPROD_RSMUL;
    CNJ_II;COMPLEX_NEG_MUL2] THEN LINEARITY_TAC);;
@@ -1521,7 +1567,7 @@ let SCALAR_II_HERM = inner_space_prove
 add_selfadjoint_thm SCALAR_II_HERM;;
 
 let COMMUTATOR_ANTI_HERM = inner_space_prove
-  (`!op1 op2. is_self_adjoint (s,inprod) op1 /\ is_self_adjoint (s,inprod) op2
+  (`!op1 op2. is_self_adjoint1 (s,inprod) op1 /\ is_self_adjoint1 (s,inprod) op2
     ==> !x y. x IN s /\ y IN s
      ==> inprod (commutator op1 op2 x) y = --(inprod x (commutator op1 op2 y)):`,
   IMP_REWRITE_TAC[commutator;IS_SELF_ADJOINT;COP_MUL_THM;COP_SUB_THM;
@@ -1530,8 +1576,8 @@ let COMMUTATOR_ANTI_HERM = inner_space_prove
 add_selfadjoint_thm COMMUTATOR_ANTI_HERM;;
 
 let II_COMMUTATOR_HERM = full_inner_space_prove
-  (`!op1 op2. is_self_adjoint is op1 /\ is_self_adjoint is op2
-    ==> is_self_adjoint is (ii % commutator op1 op2):`,
+  (`!op1 op2. is_self_adjoint1 is op1 /\ is_self_adjoint1 is op2
+    ==> is_self_adjoint1 is (ii % commutator op1 op2):`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM;IS_SELF_ADJOINT] THEN
   IMP_REWRITE_TAC[COP_SMUL_THM;INPROD_RSMUL;
     INPROD_LSMUL;IS_CLOSED_BY_COMMUTATOR;IS_CLOSED_BY_COP_SMUL;CNJ_II;II_NZ;
@@ -1545,7 +1591,7 @@ let II_COMMUTATOR_HERM = full_inner_space_prove
 add_selfadjoint_thm II_COMMUTATOR_HERM;;
 
 let EXPEC_HERM_REAL = inner_space_prove
-  (`!op state. is_self_adjoint (s,inprod) op /\ state IN s
+  (`!op state. is_self_adjoint1 (s,inprod) op /\ state IN s
     ==> real (expectation inprod state op):`,
   IMP_REWRITE_TAC[IS_SELF_ADJOINT;expectation;is_closed_by
   ;REAL_CNJ;INPROD_CNJ]);;
@@ -1553,14 +1599,14 @@ let EXPEC_HERM_REAL = inner_space_prove
 add_real_thms [EXPEC_HERM_REAL; REWRITE_RULE[expectation] EXPEC_HERM_REAL];;
 
 let DEVIATION_HERM = inner_space_prove
-  (`!op state. is_self_adjoint (s,inprod) op /\ state IN s
-    ==> is_self_adjoint (s,inprod) (deviation inprod state op):`,
+  (`!op state. is_self_adjoint1 (s,inprod) op /\ state IN s
+    ==> is_self_adjoint1 (s,inprod) (deviation inprod state op):`,
   REWRITE_TAC[DEVIATION_ALT] THEN SELF_ADJOINT_TAC THEN ASM_MESON_TAC[]);;
 
 add_selfadjoint_thms [DEVIATION_HERM; REWRITE_RULE[deviation] DEVIATION_HERM];;
 
 let VARIANCE_REAL = inner_space_prove
-  (`!op state.  state IN s /\ is_self_adjoint (s,inprod) op
+  (`!op state.  state IN s /\ is_self_adjoint1 (s,inprod) op
     ==> real (variance inprod state op):`,
   REWRITE_TAC[variance] THEN REAL_TAC THEN HINT_EXISTS_TAC
   THEN SELF_ADJOINT_TAC);;
@@ -1599,6 +1645,447 @@ let is_eigen_val = new_definition
 
 let is_eigen_fun = new_definition
   `is_eigen_fun (op:cfun->cfun) x <=> ?a. is_eigen_pair op (x,a)`;;
+
+
+
+(*****************************************************************************)
+(* Unbounded   Operators                                                     *)
+(*****************************************************************************)
+
+
+(*****************************************************************************)
+(*           Linear Operators                                                *)
+(*****************************************************************************)
+
+
+let is_unbounded_linear_cop = new_definition
+  `is_unbounded_linear_cop s (op:cop) <=> is_cfun_subspace s /\
+    !x y. x IN s /\ y IN s ==> op (x + y) = op x + op y /\
+                !a. op (a % x) = a % (op x)`;;
+
+let ULINCOP_SUBSPACE = prove(`!op s.
+ is_unbounded_linear_cop s op
+   ==> is_cfun_subspace s`,
+  MESON_TAC[is_unbounded_linear_cop]);;
+
+
+let ULINCOP_SMUL = prove(`!op s a x.
+ is_unbounded_linear_cop s op /\ x IN s
+   ==> op (a % x) = a % op x`,
+  MESON_TAC[is_unbounded_linear_cop]);;
+
+let ULINCOP_ADD = prove
+  (`!op s x y. is_unbounded_linear_cop s op /\ x IN s /\ y IN s
+   ==> op (x + y) = op x + op y`,
+  SIMP_TAC[is_unbounded_linear_cop]);;
+
+let ULINCOP_SUBSPACE = prove
+  (`!op s. is_unbounded_linear_cop s op
+   ==> is_cfun_subspace s`,
+  SIMP_TAC[is_unbounded_linear_cop]);;
+
+let ULINCOP_SUB = prove
+  (`!x y op s.  is_unbounded_linear_cop s op /\
+  x IN s /\ y IN s
+   ==> op (x - y) = op x - op y`,
+  IMP_REWRITE_TAC[CFUN_SUBSPACE_SMUL;ULINCOP_SUBSPACE
+  ;ULINCOP_ADD;CFUN_SUB_NEG;GSYM CFUN_SMUL_LID_NEG]
+  THEN ASM_MESON_TAC[ ULINCOP_SMUL]);;
+
+let ULINCOP_ZERO = prove
+  (`!op s. is_unbounded_linear_cop s op  ==>
+    op cfun_zero = cfun_zero`,
+  ONCE_REWRITE_TAC[GSYM (Pa.SPEC `cfun_zero:` CFUN_SMUL_LZERO)] THEN
+  MESON_TAC[ULINCOP_SMUL;CFUN_SMUL_LZERO;CFUN_SUBSPACE_ZERO;ULINCOP_SUBSPACE]);;
+
+let SUBSPACE_INTER = prove
+(`!s1 s2. is_cfun_subspace s1 /\ is_cfun_subspace s2 ==>
+     is_cfun_subspace (s1 INTER s2)`,
+         SIMP_TAC[is_cfun_subspace;INTER;IN_ELIM_THM]);;
+
+let CFUN_ADD_AC = CFUN_ARITH
+  `!m n p:cfun. m + n = n + m /\ (m + n) + p = m + n + p /\ m + n + p = n + m + p`;;
+
+let ADD_ULINCOP = prove
+        (`!s1 s2 op1 op2. is_unbounded_linear_cop s1 op1
+        /\ is_unbounded_linear_cop s2 op2
+                ==> is_unbounded_linear_cop (s1 INTER s2) (op1+op2)`,
+                SIMP_TAC[is_unbounded_linear_cop
+                ;SUBSPACE_INTER;IN_INTER;CFUN_ADD_AC;COP_ADD_THM]
+                THEN MESON_TAC[CFUN_ADD_LDISTRIB]);;
+
+let SMUL_ULINCOP = prove
+        (`!s op a. is_unbounded_linear_cop s op
+                ==> is_unbounded_linear_cop s  (a%op)`,
+                SIMP_TAC[is_unbounded_linear_cop;COP_TO_CFUN;COP_ADD_THM;CFUN_ADD_LDISTRIB]
+                THEN MESON_TAC[COMPLEX_MUL_SYM;CFUN_SMUL_DISTRIB]);;
+
+let SUB_ULINCOP = prove
+        (`!s1 s2 op1 op2. is_unbounded_linear_cop s1 op1
+        /\ is_unbounded_linear_cop s2 op2
+                ==> is_unbounded_linear_cop (s1 INTER s2) (op1-op2)`,
+                IMP_REWRITE_TAC[ADD_ULINCOP;REWRITE_RULE[CNJ_CX]
+        (SPEC_V ("a","Cx x")SMUL_ULINCOP);COP_SUB;
+        GSYM COP_SMUL_LID_NEG;GSYM CX_NEG]);;
+
+
+let I_ULINCOP = prove
+        (`!s1. is_cfun_subspace s1 ==> is_unbounded_linear_cop s1 I`,
+        REWRITE_TAC[is_unbounded_linear_cop;I_THM]);;
+
+let MUL_LEMMA = prove
+(`!s1 s2 op2. is_cfun_subspace s1 /\
+ is_unbounded_linear_cop s2 op2 ==>
+  is_cfun_subspace {x| x IN s2 /\ op2 x IN s1}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[is_cfun_subspace;IN_ELIM_THM] THEN
+  IMP_REWRITE_TAC[ULINCOP_SMUL;ULINCOP_SUBSPACE;CFUN_SUBSPACE_SMUL;
+  CFUN_SUBSPACE_ADD;ULINCOP_ADD;CFUN_SUBSPACE_ZERO;ULINCOP_ZERO];
+  );;
+
+let MUL_ULINCOP = prove
+        (`!s1 s2 op1 op2. is_unbounded_linear_cop s1 op1
+        /\ is_unbounded_linear_cop s2 op2
+                ==> is_unbounded_linear_cop {x| x IN s2 /\ op2 x IN s1} (op1**op2)`,
+                REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[is_unbounded_linear_cop]
+                THEN  IMP_REWRITE_TAC[MUL_LEMMA;ULINCOP_SUBSPACE] THEN  POP_ASSUM MP_TAC
+                THEN POP_ASSUM MP_TAC THEN
+                SIMP_TAC[is_unbounded_linear_cop;COP_TO_CFUN;COP_ADD_THM;CFUN_ADD_LDISTRIB
+                ;IN_ELIM_THM]
+                THEN ASM_MESON_TAC[COMPLEX_MUL_SYM;CFUN_SMUL_DISTRIB]);;
+
+let ulinearity_thms = ref [];;
+let add_ulinearity_thm thm =
+  let thm = GIMP_IMP thm in
+  ulinearity_thms := thm :: !ulinearity_thms;
+  let eta_thm = SIMP_RULE[ETA_AX] thm in
+  if (not (equals_thm thm eta_thm))
+  then ulinearity_thms := eta_thm :: !ulinearity_thms;;
+let add_ulinearity_thms = List.iter add_ulinearity_thm;;
+
+add_ulinearity_thms [ADD_ULINCOP;SUB_ULINCOP;SMUL_ULINCOP;MUL_ULINCOP;
+  REWRITE_RULE[cop_smul] SMUL_ULINCOP];;
+
+let ULINEARITY_TAC g =
+  let MATCH_MP_TAC x y = MATCH_MP_TAC x y in
+  let TRY_LINEARITY_THM = ASM (MAP_FIRST (fun x ->
+    MATCH_ACCEPT_TAC x ORELSE MATCH_MP_TAC x)) !ulinearity_thms in
+  let LOOP = TRY_LINEARITY_THM ORELSE (SIMP_TAC[ETA_AX] THEN TRY_LINEARITY_THM)
+    ORELSE (ASM_SIMP_TAC[] THEN NO_TAC) in
+  (REPEAT STRIP_TAC THEN CHANGED_TAC (REPEAT (LOOP THEN REPEAT CONJ_TAC))) g;;
+
+let COMMUTAOR_ULINCOP = prove
+
+(`!op1 s1 op2 s2.
+   is_unbounded_linear_cop s1 op1 /\ is_unbounded_linear_cop s2 op2
+        ==> is_unbounded_linear_cop  ({x|x IN s2 /\ op2 x IN s1}
+               INTER {x|x IN s1 /\ op1 x IN s2}) (commutator op1 op2)`,
+        REWRITE_TAC[commutator] THEN ULINEARITY_TAC);;
+
+(*****************************************************************************)
+(* Adjoints of Unbounded Linear Operators                                    *)
+(*****************************************************************************)
+
+let is_hermitian_unbounded = new_definition
+  `is_hermitian_unbounded ((s,inprod):inner_space) s1 s2 op1 op2 <=>
+    is_inner_space (s,inprod) ==>
+       s1 SUBSET s /\ s2 SUBSET s /\
+           is_unbounded_linear_cop s1 op1 /\ is_unbounded_linear_cop s2 op2 /\
+           (!x. x IN s1 ==> op1 x IN s) /\ (!x. x IN s2 ==> op2 x IN s)
+      /\ (!x y. x IN s2 /\ y IN s1  ==> inprod x (op1 y) = inprod (op2 x) y)`;;
+
+
+let ADD_HERM_UNBOUNDED = prove
+(`!op1 op2 op3 op4 s1 s2 s3 s4 s inprod.
+  is_hermitian_unbounded ((s,inprod):inner_space) s1 s2 op1 op2 /\
+        is_hermitian_unbounded ((s,inprod):inner_space) s3 s4 op3 op4
+        ==> is_hermitian_unbounded (
+          (s,inprod):inner_space) (s1 INTER s3)  (s2 INTER s4) (op1+op3) (op2+op4)`,
+        REWRITE_TAC[is_hermitian_unbounded;IN_INTER]
+        THEN REPEAT STRIP_TAC THENL[
+        ASSUM_LIST SET_TAC;ASSUM_LIST SET_TAC;ASM_SIMP_TAC[ADD_ULINCOP];
+        ASM_SIMP_TAC[ADD_ULINCOP];
+        REWRITE_TAC[COP_ADD_THM] THEN ASM_MESON_TAC[INNER_SPACE_ADD;SUBSET];
+        REWRITE_TAC[COP_ADD_THM] THEN ASM_MESON_TAC[INNER_SPACE_ADD;SUBSET];
+        IMP_REWRITE_TAC[COP_ADD_THM;INPROD_ADD_RDIST;INPROD_ADD_LDIST] THEN
+         ASM_MESON_TAC[INNER_SPACE_ADD;SUBSET]
+        ]);;
+
+let SMUL_HERM_UNBOUNDED = prove
+  (`!a op1 op2 op3 op4 s1 s2 s3 s4 s inprod.
+    is_hermitian_unbounded ((s,inprod):inner_space) s1 s2 op1 op2
+      ==> is_hermitian_unbounded ((s,inprod):inner_space) s1 s2 (a % op1) (cnj a % op2)`,
+  SIMP_TAC[is_hermitian_unbounded;SMUL_ULINCOP]
+  THEN REPEAT STRIP_TAC THEN IMP_REWRITE_TAC[INPROD_LSMUL;INPROD_RSMUL;CNJ_CNJ;INNER_SPACE_SMUL;SUBSET;COP_TO_CFUN]
+  THEN ASM_MESON_TAC[INNER_SPACE_SMUL;SUBSET;COP_TO_CFUN]);;
+
+let SUB_HERM_UNBOUNDED = prove
+(`!op1 op2 op3 op4 s1 s2 s3 s4 s inprod.
+  is_hermitian_unbounded ((s,inprod):inner_space) s1 s2 op1 op2 /\
+        is_hermitian_unbounded ((s,inprod):inner_space) s3 s4 op3 op4
+        ==> is_hermitian_unbounded ((s,inprod):inner_space)
+        (s1 INTER s3)  (s2 INTER s4) (op1-op3) (op2-op4)`,
+        IMP_REWRITE_TAC[ADD_HERM_UNBOUNDED;REWRITE_RULE[CNJ_CX]
+        (SPEC_V ("a","Cx x")SMUL_HERM_UNBOUNDED);COP_SUB;
+        GSYM COP_SMUL_LID_NEG;GSYM CX_NEG]);;
+
+let MUL_HERM_UNBOUNDED = prove
+(`!op1 op2 op3 op4 s1 s2 s3 s4 s inprod.
+  is_hermitian_unbounded ((s,inprod):inner_space) s1 s2 op1 op2 /\
+        is_hermitian_unbounded ((s,inprod):inner_space) s3 s4 op3 op4
+    ==>
+        is_hermitian_unbounded ((s,inprod):inner_space)
+        {x| x IN s3 /\ op3 x IN s1}
+        {x| x IN s2 /\ op2 x IN s4}  (op1**op3) (op4**op2)`,
+        SIMP_TAC[is_hermitian_unbounded;MUL_ULINCOP]
+        THEN SIMP_TAC[IN_ELIM_THM;COP_MUL;SUBSET]);;
+
+
+let HERM_ITSELF_UNBOUNDED = inner_space_prove
+  (`!op1 op2 s1 s2 x y.
+  is_hermitian_unbounded (s,inprod) s1 s2 op1 op2
+  /\ x IN s2 /\ y IN s1 ==>
+   inprod x (op1 y) = inprod (op2 x) y:`,
+  SIMP_TAC[is_hermitian_unbounded]);;
+
+let HERMITAIN_INPROD_UNBOUNDED = inner_space_prove
+  (`!op1 op2 op3 s1 s2. is_hermitian_unbounded (s,inprod) s1 s2 op1 op2
+    ==> !x y. x IN s2 /\ op3 y IN s1
+      ==> inprod x ((op1 ** op3) y) = inprod (op2 x) (op3 y):`,
+   MESON_TAC[HERM_ITSELF_UNBOUNDED;COP_MUL]);;
+
+
+let HERM_SYM_UNBOUNDED = prove
+  (`!is op1 op2 s1 s2.
+    is_hermitian_unbounded is s1 s2 op1 op2 <=>
+        is_hermitian_unbounded is s2 s1 op2 op1`,
+  REWRITE_TAC[FORALL_INNER_SPACE_THM;is_hermitian_unbounded]
+  THEN MESON_TAC[SUBSET;INPROD_CNJ]);;
+
+(* ------------------------------------------------------------------------- *)
+(* SYMMETRIC Operators                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let is_symmetric  = new_definition
+  `is_symmetric is s op <=> is_hermitian_unbounded is s s op op`;;
+
+let IS_SYMMETRIC =
+  REWRITE_RULE[FORALL_INNER_SPACE_THM;is_hermitian_unbounded] is_symmetric;;
+
+let SYMMETRIC_IS_LINCOP = prove
+  (`!op s1 s inprod. is_inner_space (s,inprod) /\
+  is_symmetric (s,inprod) s1 op ==> is_unbounded_linear_cop s1 op`,
+  MESON_TAC[is_symmetric;is_hermitian_unbounded]);;
+
+
+let SYMMETRIC_SUBSET = prove
+  (`!op s1 s inprod. is_inner_space (s,inprod) /\
+  is_symmetric (s,inprod) s1 op ==> s1 SUBSET s`,
+  MESON_TAC[is_symmetric;is_hermitian_unbounded]);;
+
+let SYMMETRIC_CLOSURE = prove
+  (`!op s1 s inprod. is_inner_space (s,inprod) /\
+  is_symmetric (s,inprod) s1 op ==> !x. x IN s1 ==> op x IN s`,
+  MESON_TAC[is_symmetric;is_hermitian_unbounded]);;
+
+let SYMMETRIC_ITSELF = prove
+  (`!op s1 s inprod. is_inner_space (s,inprod) /\
+  is_symmetric (s,inprod) s1 op ==>
+  (!x y. x IN s1 /\ y IN s1  ==> inprod x (op y) = inprod (op x) y) `,
+  MESON_TAC[is_symmetric;is_hermitian_unbounded]);;
+
+  let IS_SYMMETRIC_INPROD = prove
+  (`!op1 op2 s1 s inprod. is_inner_space (s,inprod)
+  /\ is_symmetric (s,inprod) s1 op1
+    ==> !x y. x IN s1 /\ op2 y IN s1
+      ==> inprod x ((op1 ** op2) y) = inprod (op1 x) (op2 y)`,
+  MESON_TAC[is_symmetric;HERMITAIN_INPROD_UNBOUNDED]);;
+
+let ADD_SYMMETRIC = prove
+  (`!op1 op2 s1 s2 s inprod. is_symmetric (s,inprod)  s1 op1 /\
+    is_symmetric (s,inprod)  s2 op2
+    ==> is_symmetric (s,inprod)  (s1 INTER s2) (op1 + op2)`,
+  MESON_TAC[is_symmetric;ADD_HERM_UNBOUNDED]);;
+
+let SUB_SYMMETRIC = prove
+  (`!op1 op2 s1 s2 s inprod. is_symmetric (s,inprod)  s1 op1 /\
+    is_symmetric (s,inprod)  s2 op2
+    ==> is_symmetric (s,inprod)  (s1 INTER s2) (op1 - op2)`,
+  MESON_TAC[is_symmetric;SUB_HERM_UNBOUNDED]);;
+
+let SMUL_SYMMETRIC = prove
+  (`!a ops s inprod. real a /\ is_symmetric (s,inprod) s1 op ==>
+  is_symmetric (s,inprod) s1 (a % op)`,
+  MESON_TAC[is_symmetric;SMUL_HERM_UNBOUNDED;REAL_CNJ]);;
+
+
+let POW2_SYM_UNBOUNDED = prove
+(`!op s1 s inprod.
+  is_symmetric (s,inprod)  s1 op
+    ==>
+        is_symmetric ((s,inprod):inner_space)
+        {x| x IN s1 /\ op x IN s1}  (op**op)`,
+        SIMP_TAC[is_symmetric;MUL_HERM_UNBOUNDED]);;
+
+
+let I_SYMMETRIC = prove
+  (`!s1 s inprod. s1 SUBSET s /\ is_cfun_subspace s1 ==>  is_symmetric (s,inprod) s1 I`,
+  SIMP_TAC[IS_SYMMETRIC;I_ULINCOP;is_unbounded_linear_cop;I_THM;SUBSET]);;
+
+let symmetric_thms = ref [];;
+let add_symmetric_thm thm =
+  let thm = GIMP_IMP thm in
+  symmetric_thms := thm :: !symmetric_thms;
+  let eta_thm = SIMP_RULE[ETA_AX] thm in
+  if (not (equals_thm thm eta_thm))
+  then selfadjoint_thms := eta_thm :: !symmetric_thms;;
+let add_symmetric_thms = List.iter add_symmetric_thm;;
+
+add_symmetric_thms [ADD_SYMMETRIC;SUB_SYMMETRIC;SMUL_SYMMETRIC;
+    REWRITE_RULE[COP_SMUL] SMUL_SYMMETRIC;I_SYMMETRIC;POW2_SYM_UNBOUNDED];;
+
+let rec SYMMETRIC_TAC g =
+  let MATCH_MP_TAC x y = MATCH_MP_TAC x y in
+  let TRY_SYMMETRIC_THM =
+    ASM (MAP_FIRST (fun x ->
+      MATCH_ACCEPT_TAC x ORELSE MATCH_MP_TAC x)) !symmetric_thms in
+  let LOOP =
+    TRY_SYMMETRIC_THM ORELSE (SIMP_TAC[ETA_AX] THEN TRY_SYMMETRIC_THM)
+    ORELSE (ASM_SIMP_TAC[] THEN NO_TAC) ORELSE ULINEARITY_TAC
+    ORELSE REAL_TAC ~alternatives:[SYMMETRIC_TAC;ULINEARITY_TAC] in
+  (REPEAT STRIP_TAC
+  THEN (fun (_,c as g) ->
+    let head = fst (strip_comb c) in
+    if (name_of head = "is_symmetric"
+      && can (type_match `:inner_space->(cfun->boo)->cop->bool` (type_of head)) [])
+    then CHANGED_TAC (REPEAT (LOOP THEN REPEAT CONJ_TAC)) g
+    else FAIL_TAC "bad goal" g)) g;;
+
+let REAL_TAC ?(alternatives=[]) =
+  REAL_TAC ~alternatives:(SYMMETRIC_TAC::ULINEARITY_TAC::SELF_ADJOINT_TAC::LINEARITY_TAC::alternatives);;
+
+
+let ANTI_COMMUTATOR_SYMMETRIC = prove
+  (`!op1 op2 s1 s2 s inprod. is_symmetric (s,inprod) s1  op1 /\ is_symmetric (s,inprod) s2 op2
+    ==> is_symmetric (s,inprod)
+        ( {x| x IN s2 /\ op2 x IN s1} INTER {x| x IN s1 /\ op1 x IN s2})
+        (op1 ** op2 + op2 ** op1)`,
+  REWRITE_TAC[IS_SYMMETRIC]
+  THEN SIMP_HORN_TAC THEN REPEAT STRIP_TAC THENL[RULE_ASSUM_TAC (REWRITE_RULE [INTER;IN_ELIM_THM]) THEN
+   IMP_REWRITE_TAC[COP_MUL;INPROD_ADD_LDIST;INPROD_ADD_RDIST;SUBSET;INTER;COP_ADD_THM]
+   THEN ASM_SIMP_TAC[COMPLEX_ADD_SYM] THEN ASM_MESON_TAC[SUBSET];
+   IMP_REWRITE_TAC[SUBSET;INNER_SPACE_ADD;COP_ADD_THM;COP_MUL] THEN ASSUM_LIST SET_TAC;
+   ULINEARITY_TAC;
+   ASSUM_LIST SET_TAC]);;
+
+add_symmetric_thm ANTI_COMMUTATOR_SYMMETRIC;;
+
+let NEG_SYMMETRIC = prove
+  (`!op s1 s inprod. is_symmetric (s,inprod) s1 op
+    ==> is_symmetric (s,inprod) s1 (--op)`,
+  REWRITE_TAC[COP_ARITH `--op = --Cx(&1) % op`] THEN SYMMETRIC_TAC THEN
+  REWRITE_TAC[REAL_CX;GSYM   CX_NEG]);;
+
+add_symmetric_thm NEG_SYMMETRIC;;
+
+let SCALAR_II_HERM_UNBOUND = prove
+  (`!op s1 s inprod.
+  is_unbounded_linear_cop s1 op /\ s1 SUBSET s  /\ (!x. x IN s1 ==> op x IN s)
+  /\ (!x y. x IN s1 /\ y IN s1 ==> inprod (op x) y = -- (inprod x (op y)))
+        ==> is_symmetric (s,inprod) s1 (ii % op)`,
+  REPEAT STRIP_TAC
+  THEN IMP_REWRITE_TAC[IS_SYMMETRIC;COP_SMUL_THM;INPROD_LSMUL;INPROD_RSMUL;
+  CNJ_II;COMPLEX_NEG_MUL2;SUBSET
+  ;INNER_SPACE_SMUL;SMUL_ULINCOP]
+  THEN ASSUM_LIST SET_TAC);;
+
+add_symmetric_thm SCALAR_II_HERM_UNBOUND;;
+
+let COMMUTATOR_ANTI_UNBOUNDED_HERM = prove
+  (`!op1 op2 s1 s2 s inprod.
+  is_inner_space (s,inprod) /\
+  is_symmetric (s,inprod) s1  op1 /\ is_symmetric (s,inprod) s2 op2
+    ==> !x y. x IN s2 /\ op2 x IN s1 /\ x IN s1 /\ op1 x IN s2
+         /\ y IN s2 /\ op2 y IN s1 /\ y IN s1 /\ op1 y IN s2
+      ==> inprod (commutator op1 op2 x) y = --(inprod x (commutator op1 op2 y))`,
+  IMP_REWRITE_TAC[commutator;IS_SYMMETRIC;COP_MUL_THM;COP_SUB_THM;INPROD_SUB_LDIST;
+  INPROD_SUB_RDIST;COMPLEX_NEG_SUB;INPROD_SUB_LDIST;INPROD_SUB_RDIST;COMPLEX_NEG_SUB]
+  THEN SET_TAC[]);;
+
+add_symmetric_thm COMMUTATOR_ANTI_UNBOUNDED_HERM;;
+
+
+let II_COMMUTATOR_UNBOUNDED_HERM = prove
+  (`!op1 op2 s1 s2 s inprod.
+  is_inner_space (s,inprod) /\
+  is_symmetric (s,inprod) s1  op1 /\ is_symmetric (s,inprod) s2 op2
+   ==> is_symmetric (s,inprod) ({x| x IN s2 /\ op2 x IN s1} INTER {x| x IN s1 /\ op1 x IN s2})
+   (ii % commutator op1 op2)`,
+   SYMMETRIC_TAC THENL [REWRITE_TAC[commutator] THEN ULINEARITY_TAC THEN ASM_MESON_TAC[SYMMETRIC_IS_LINCOP]
+   ;REWRITE_TAC[SUBSET;INTER;IN_ELIM_THM] THEN ASM_MESON_TAC[SUBSET;SYMMETRIC_SUBSET]
+   ; REWRITE_TAC[commutator;INTER;IN_ELIM_THM;COP_SUB_THM;COP_MUL] THEN
+   ASM_MESON_TAC[SYMMETRIC_CLOSURE;SYMMETRIC_SUBSET;SUBSET;INNER_SPACE_SUB]
+   ;REWRITE_TAC[commutator;INTER;IN_ELIM_THM;COP_SUB_THM;COP_MUL] THEN
+   IMP_REWRITE_TAC[INPROD_SUB_RDIST;INPROD_SUB_LDIST] THEN
+   IMP_REWRITE_TAC[SYMMETRIC_ITSELF;COMPLEX_FIELD `--(a:complex-b) = b-a`
+   ;SYMMETRIC_SUBSET;SYMMETRIC_CLOSURE] THEN ASM_MESON_TAC[SYMMETRIC_SUBSET;SUBSET]]);;
+
+add_symmetric_thm II_COMMUTATOR_UNBOUNDED_HERM;;
+
+let EXPEC_UNBOUNDED_HERM_REAL = prove
+  (`!op s1 s inprod.
+  is_inner_space (s,inprod) /\ is_symmetric (s,inprod) s1  op
+    ==> !state. state IN s1 ==> real (expectation inprod state op)`,
+  IMP_REWRITE_TAC[IS_SYMMETRIC;expectation;REAL_CNJ;INPROD_CNJ]
+  THEN SIMP_TAC[SUBSET]);;
+
+add_real_thms [EXPEC_UNBOUNDED_HERM_REAL; REWRITE_RULE[expectation] EXPEC_UNBOUNDED_HERM_REAL];;
+
+let DEVIATION_UNBOUNDED_HERM_ALT = prove
+  (`!op s1 s inprod state.
+  is_inner_space (s,inprod) /\ is_symmetric (s,inprod) s1  op /\
+  state IN s1 ==>  is_symmetric (s,inprod) (s1 INTER s1) (deviation inprod state op)`,
+  REWRITE_TAC[DEVIATION_ALT] THEN SYMMETRIC_TAC THEN
+  ASM_MESON_TAC[SYMMETRIC_SUBSET;SUBSET;SYMMETRIC_IS_LINCOP;ULINCOP_SUBSPACE]);;
+
+let DEVIATION_UNBOUNDED_HERM = REWRITE_RULE [SET_RULE`s INTER s = s`] DEVIATION_UNBOUNDED_HERM_ALT;;
+
+
+add_symmetric_thms [DEVIATION_UNBOUNDED_HERM; REWRITE_RULE[deviation] DEVIATION_UNBOUNDED_HERM];;
+
+
+let VARIANCE_UNBOUNDED_REAL = prove
+  (`!op s1 s inprod.
+  is_inner_space (s,inprod) /\ is_symmetric (s,inprod) s1  op
+   ==> !state. state IN s1 /\ deviation inprod state op state IN s1
+   ==>  real (variance inprod state op)`,
+  REWRITE_TAC[variance] THEN REAL_TAC THEN
+  Pa.EXISTS_TAC `{x| x IN s1 /\  deviation inprod state op x IN s1}:` THEN
+  Pa.EXISTS_TAC "s" THEN ASM_SIMP_TAC[IN_ELIM_THM]
+  THEN SYMMETRIC_TAC);;
+
+add_real_thm VARIANCE_REAL;;
+
+let is_eigen_pair_unbounded = new_definition
+  `is_eigen_pair_unbounded s (op:cfun->cfun) (x,a) <=>
+    is_unbounded_linear_cop s op ==> x IN s /\ op x = a % x /\ ~(x = cfun_zero)`;;
+
+
+
+let EIGEN_PAIR_SMUL_UNBOUNDED = prove
+  (`!op s v x. is_eigen_pair_unbounded s op (x,v)
+    ==> !a. ~(a = Cx(&0)) ==> is_eigen_pair_unbounded s op (a % x,v)`,
+  SIMP_TAC[is_eigen_pair_unbounded;CFUN_ENTIRE] THEN
+  MESON_TAC[ULINCOP_SMUL;ULINCOP_SUBSPACE;
+  CFUN_SMUL_SYM;CFUN_SUBSPACE_SMUL]);;
+
+let EIGEN_PAIR_ADD_UNBOUNDED = prove
+  (`!op s v x y. is_eigen_pair_unbounded s op (x,v) /\
+    is_eigen_pair_unbounded s op (y,v)
+        /\ ~(x + y = cfun_zero)
+          ==> is_eigen_pair_unbounded  s op (x+y,v)`,
+  SIMP_TAC[is_eigen_pair_unbounded]THEN
+  MESON_TAC[ULINCOP_ADD;CFUN_ADD_LDISTRIB
+  ;ULINCOP_SUBSPACE;CFUN_SUBSPACE_ADD]);;
 
 (* ------------------------------------------------------------------------- *)
 (*                              cfun norm                                    *)
@@ -1689,9 +2176,9 @@ let CFUN_NORM_0 = inner_space_prove(
   MESON_TAC[cfun_norm;INPROD_ZERO;REAL_OF_COMPLEX_CX;SQRT_0]);;
 
 let CFUN_NORM_EQ_0 = inner_space_prove(
-  `!x. x IN s ==> (cfun_norm inprod x = &0 <=> x = cfun_zero):`,
-   MESON_TAC[cfun_norm;SQRT_EQ_0;REAL_OF_COMPLEX_ZERO;
-   INPROD_ZERO_EQ;INPROD_NORM]);;
+  `!x. x IN s ==> (cfun_norm inprod x = &0 <=> (x  equv cfun_zero) inprod):`,
+    MESON_TAC[cfun_norm;SQRT_EQ_0;REAL_OF_COMPLEX_ZERO;INPROD_NORM;GSYM EQUV_ZERO]);;
+
 
 let CFUN_NORM_POS_LE = inner_space_prove(
   `!x. x IN s ==> &0 <= cfun_norm inprod x :`,
@@ -1707,7 +2194,7 @@ let CFUN_NORM_INPROD_0 = inner_space_prove(
    MESON_TAC[cfun_norm;INPROD_SELF_POS;SQRT_EQ_0]);;
 
 let CFUN_NORM_NZ = inner_space_prove(
-  `!x. x IN s ==> (~(x = cfun_zero) <=> &0 < cfun_norm inprod x):`,
+  `!x. x IN s ==> (~((x equv cfun_zero) inprod) <=> &0 < cfun_norm inprod x):`,
    IMP_REWRITE_TAC[ GSYM CFUN_NORM_EQ_0] THEN
    MESON_TAC[REAL_ARITH ` y <= x ==>  (~(x=y) <=> y < x)`;CFUN_NORM_POS_LE]
    );;
@@ -1723,10 +2210,10 @@ let CFUN_NORM_SMUL = inner_space_prove(
 
 let CFUN_DIST_NZ = inner_space_prove(
   `!x y. x IN s /\ y IN s ==>
-    (~(x=y) <=>  &0 < cfun_dist inprod x y):`,
+    (~((x equv y) inprod) <=>  &0 < cfun_dist inprod x y):`,
         ONCE_REWRITE_TAC[GSYM CFUN_SUB_0] THEN
         REWRITE_TAC[cfun_dist;GSYM cfun_norm] THEN
-    MESON_TAC[CFUN_NORM_NZ;INNER_SPACE_SUB]
+    MESON_TAC[CFUN_NORM_NZ;EQUV_SUB_ZERO;INNER_SPACE_SUB]
         );;
 (* ------------------------------------------------------------------------- *)
 (* FINITE/INFINITE summation of cfun                                         *)
@@ -1877,18 +2364,18 @@ let CUN_SUM_ADD_NUMSEG = prove
   SIMP_TAC[CFUN_SUM_ADD; FINITE_NUMSEG]);;
 
 let cfun_lim = new_definition
-  `cfun_lim (s,inprod) f l net <=>
+  `cfun_lim1 (s,inprod) f l net <=>
    is_inner_space (s,inprod) /\ l IN s /\ (!x. (f x) IN s) /\
    (!e. &0 < e ==> eventually (\x. cfun_dist inprod (f x) l < e) net)`;;
 
 let CFUN_LIM_INNER_SPACE = prove
- (`!innerspc f l net. cfun_lim innerspc f l net ==> is_inner_space innerspc`,
+ (`!innerspc f l net. cfun_lim1 innerspc f l net ==> is_inner_space innerspc`,
   SIMP_TAC[FORALL_INNER_SPACE_THM;cfun_lim]);;
 
 let is_bounded = new_definition
- `is_bounded  (s,inprod) h <=> is_inner_space (s,inprod)
-     ==> is_closed_by s h /\ ?B. &0 < B /\
-         (!x. x IN s ==> sqrt(real_of_complex(inprod (h x) (h x))) <=
+ `is_bounded1  (s,inprod)  h <=> is_inner_space (s,inprod)
+     ==>   ?B. &0 < B /\
+         (!x.  x IN s /\ h x IN s ==> sqrt(real_of_complex(inprod (h x) (h x))) <=
            B * sqrt(real_of_complex(inprod x x)))`;;
 
 let is_bounded_linear = new_definition
@@ -1897,64 +2384,33 @@ let is_bounded_linear = new_definition
          (!x. x IN s ==> sqrt(real_of_complex(inprod (h x) (h x))) <=
            B * sqrt(real_of_complex(inprod x x)))`;;
 
-let COP_MUL_BOUNDED = prove
-(`!s inprod h f.is_bounded  (s,inprod) h /\ is_bounded (s,inprod) f
-    ==> is_bounded  (s,inprod) (h ** f)`,
-  let lem = MESON[REAL_LE_TRANS;REAL_LE_LMUL]
-   `&0 <= e /\ a <= b * c /\ d <= e * a ==> d <= e * b * c` in
- REWRITE_TAC[is_bounded;GSYM cfun_norm] THEN REPEAT STRIP_TAC
- THENL[ASM_MESON_TAC[IS_CLOSED_BY_COP_MUL;INNER_SPACE_IS_SUBSPACE];
- Pa.SUBGOAL_THEN
-  `?B. &0 < B /\ (!x. x IN s ==> cfun_norm inprod (h (f x)) <=
-       B * (cfun_norm inprod (f x))):` ASSUME_TAC]
-  THENL[ASM_MESON_TAC[IS_CLOSED_BY_THM];
-  Pa.SUBGOAL_THEN  `?B. &0 < B /\ (!x. x IN s ==> cfun_norm inprod (f x) <=
-  B * cfun_norm inprod x)):` ASSUME_TAC]
-  THENL[ASM_SIMP_TAC[];
-  POP_ASSUM (X_CHOOSE_TAC `B1:real`)] THEN
-  FIRST_X_ASSUM ((X_CHOOSE_TAC `B2:real`)) THEN Pa.EXISTS_TAC `B2 * B1:`
-  THEN ASM_SIMP_TAC[REAL_LT_MUL] THEN REPEAT STRIP_TAC THEN
-  IMP_REWRITE_TAC[GSYM REAL_MUL_ASSOC;lem]
-  THEN Pa.EXISTS_TAC `cfun_norm inprod (f x):` THEN
-  ASM_SIMP_TAC[ REAL_ARITH `&0 < a ==> &0 <= a`;COP_MUL]);;
-
-
 let SCALAR_BOUNDED = prove
- (`!a is. is_bounded is (\x:cfun. a % x) /\ is_linear_cop (\x:cfun. a % x)`,
-        SIMP_TAC[FORALL_INNER_SPACE_THM;is_bounded;SCALAR_LINCOP;is_closed_by]
+ (`!a is. is_bounded1 is (\x:cfun. a % x)`,
+        SIMP_TAC[FORALL_INNER_SPACE_THM;is_bounded]
         THEN REPEAT STRIP_TAC
-        THENL[ASM_MESON_TAC[INNER_SPACE_SMUL]; Pa.ASM_CASES_TAC `a = Cx(&0):`
+        THEN Pa.ASM_CASES_TAC `a = Cx(&0):`
          THENL[  Pa.EXISTS_TAC `&1:` THEN
              ASM_REWRITE_TAC[REAL_LT_01;CFUN_SMUL_LZERO;REAL_MUL_LID] THEN
                  ASM_MESON_TAC[SQRT_POS_LE;REAL_OF_COMPLEX_CX;SQRT_0;INPROD_ZERO;
                  INPROD_SELF_POS];Pa.EXISTS_TAC `norm a:` THEN
                  IMP_REWRITE_TAC[COMPLEX_NORM_NZ;REAL_LE_REFL;GSYM cfun_norm;
-                 CFUN_NORM_SMUL]]]);;
-
-let COP_SMUL_BOUNDED = prove
- (`!s inprod h a.is_bounded  (s,inprod) h ==> is_bounded  (s,inprod) (a % h)`,
-    SIMP_TAC[COP_ARITH `a%h = (\x.a%x) ** h`;COP_MUL_BOUNDED;SCALAR_BOUNDED]);;
-
-let COP_POW_BOUNDED = prove
- (`!s inprod h a.is_bounded  (s,inprod) h ==>
-                !n. is_bounded  (s,inprod) (h pow n)`,
-    REPEAT GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN
-        ASM_SIMP_TAC[cop_pow;COP_MUL_BOUNDED;SCALAR_BOUNDED;
-        COP_ARITH `I = \x:cfun. Cx(&1) % x `]);;
+                 CFUN_NORM_SMUL]]);;
 
 let CFUN_LIM = prove
- (`cfun_lim (s,inprod) f l net  <=>
+ (`cfun_lim1 (s,inprod) f l net  <=>
     is_inner_space (s,inprod) /\ l IN s /\ (!x. (f x) IN s) /\
         (trivial_limit net \/
         !e. &0 < e ==> ?y. (?x. netord(net) x y) /\
                            !x. netord(net) x y ==> cfun_dist inprod (f x) l < e)`,
   REWRITE_TAC[cfun_lim; eventually] THEN MESON_TAC[]);;
 
-let CFUN_LIM_SLINEAR = prove
- (`!net:(A)net h f l s inprod.
-        cfun_lim (s,inprod) f l net /\ is_set_linear_cop s h /\
-                  is_bounded (s,inprod) h
-                ==> cfun_lim (s,inprod) (\x.h (f x)) (h l) net`,
+let CFUN_LIM_ULINEAR = prove
+ (`!net:(A)net h s1 f l s inprod.
+        cfun_lim1 (s,inprod) f l net /\ is_unbounded_linear_cop s1 h
+                /\ (!x. x IN s1 ==> x IN s /\ h x IN s)
+                /\ (!x. f x IN s1) /\ l IN s1 /\
+                  is_bounded1 (s,inprod) h
+                ==> cfun_lim1 (s,inprod) (\x.h (f x)) (h l) net`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN
   REPEAT GEN_TAC THEN REWRITE_TAC[CFUN_LIM] THEN
   ASM_CASES_TAC `trivial_limit (net:(A)net)` THEN
@@ -1963,19 +2419,17 @@ let CFUN_LIM_SLINEAR = prove
   FIRST_ASSUM STRIP_ASSUME_TAC  THEN REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o Pa.SPEC `e / B:`) THEN
   ASM_SIMP_TAC[REAL_LT_DIV;cfun_dist;REAL_LT_RDIV_EQ] THEN
-  IMP_REWRITE_TAC[GSYM SLINCOP_SUB;INNER_SPACE_IS_SUBSPACE] THEN
-  ASM_MESON_TAC[REAL_LET_TRANS; REAL_MUL_SYM;INNER_SPACE_SUB]);;
+  IMP_REWRITE_TAC[GSYM (Pa.SPEC "s1" ULINCOP_SUB);ULINCOP_SUBSPACE] THEN
+  REPEAT STRIP_TAC THEN Pa.EXISTS_TAC "y" THEN CONJ_TAC THENL[ASM_MESON_TAC[];ALL_TAC]
+  THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
+  Pa.EXISTS_TAC "sqrt (real_of_complex (inprod (f x' - l) (f x' - l))) * B" THEN ASM_SIMP_TAC[]
+  THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN IMP_REWRITE_TAC[INNER_SPACE_SUB]
+  THEN ASM_MESON_TAC[ULINCOP_SUB;INNER_SPACE_SUB]);;
 
-let CFUN_LIM_LINEAR = prove
- (`!net:(A)net h f l s inprod.
-        cfun_lim (s,inprod) f l net /\ is_bounded (s,inprod) h
-                 /\ is_linear_cop h
-                ==> cfun_lim (s,inprod) (\x.h (f x)) (h l) net`,
-        SIMP_TAC[LINCOP_SLINCOP;CFUN_LIM_SLINEAR]);;
 
 let cfun_sums = new_definition
  `cfun_sums innerspc f l s <=>
-    cfun_lim innerspc (\n. cfun_sum (s INTER (0..n)) f) l sequentially`;;
+    cfun_lim1 innerspc (\n. cfun_sum (s INTER (0..n)) f) l sequentially`;;
 
 let cfun_infsum = new_definition
  `cfun_infsum innerspc s f = @l.  cfun_sums innerspc f l s`;;
@@ -2004,10 +2458,6 @@ let CFUN_SUMS_INFSUM = prove
 
 
 
-let CFUN_SUM_EQ = prove
- (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (cfun_sum s f = cfun_sum s g)`,
-    REWRITE_TAC[cfun_sum] THEN
-  MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_CFUN_ADD]);;
 
  let CFUN_SUM_RESTRICT = prove
  (`!f s. FINITE s
@@ -2022,15 +2472,15 @@ let CFUN_SUM_SUPERSET = prove
   SIMP_TAC[cfun_sum; GSYM NEUTRAL_CFUN_ADD; ITERATE_SUPERSET; MONOIDAL_CFUN_ADD]);;
 
 let CFUN_LIM_SEQUENTIALLY = prove
- (`!f l s inprod. cfun_lim (s,inprod) f l sequentially <=>
+ (`!f l s inprod. cfun_lim1 (s,inprod) f l sequentially <=>
        is_inner_space (s,inprod) /\  l IN s /\
           (!x. f x IN s)
           /\ (!e. &0 < e ==> ?N. !n. N <= n ==> cfun_dist inprod (f n) l < e)`,
   REWRITE_TAC[cfun_lim; EVENTUALLY_SEQUENTIALLY] THEN MESON_TAC[]);;
 
 let CFUN_LIM_NEG = prove
- (`!net f l innerspc.  cfun_lim innerspc f l net
-     ==> cfun_lim innerspc (\x. --(f x)) (--l) net`,
+ (`!net f l innerspc.  cfun_lim1 innerspc f l net
+     ==> cfun_lim1 innerspc (\x. --(f x)) (--l) net`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN REPEAT GEN_TAC THEN
   REWRITE_TAC[CFUN_LIM;cfun_dist] THEN
   IMP_REWRITE_TAC[CFUN_ARITH `--(x:cfun) - --y = --(x - y)`;
@@ -2040,8 +2490,8 @@ let CFUN_LIM_NEG = prove
 
 let CFUN_LIM_ADD = prove
  (`!net f g l m innerspc.
-    cfun_lim innerspc f l net /\ cfun_lim innerspc g m net
-        ==> cfun_lim innerspc (\x. f(x) + g(x)) (l+m) net`,
+    cfun_lim1 innerspc f l net /\ cfun_lim1 innerspc g m net
+        ==> cfun_lim1 innerspc (\x. f(x) + g(x)) (l+m) net`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN REPEAT GEN_TAC
   THEN REWRITE_TAC[CFUN_LIM;CONJ_ACI] THEN
   Pa.ASM_CASES_TAC `trivial_limit net:` THEN
@@ -2061,28 +2511,32 @@ let CFUN_LIM_ADD = prove
 
 let CFUN_LIM_SUB = prove
  (`!net f g l m innerspc.
-    cfun_lim innerspc f l net /\ cfun_lim innerspc g m net
-        ==> cfun_lim innerspc (\x. f(x) - g(x)) (l-m) net`,
+    cfun_lim1 innerspc f l net /\ cfun_lim1 innerspc g m net
+        ==> cfun_lim1 innerspc (\x. f(x) - g(x)) (l-m) net`,
   REWRITE_TAC[CFUN_SUB_NEG] THEN ASM_SIMP_TAC[CFUN_LIM_ADD;CFUN_LIM_NEG]);;
 
 let CFUN_LIM_CONST = prove
  (`!net s inprod y. y IN s /\ is_inner_space (s,inprod)
-     ==> cfun_lim (s,inprod) (\x. y) y net`,
+     ==> cfun_lim1 (s,inprod) (\x. y) y net`,
   IMP_REWRITE_TAC[CFUN_LIM; CFUN_DIST_REFL; trivial_limit] THEN MESON_TAC[]);;
 
 let CFUN_LIM_SMUL = prove
  (`!a net f l  innerspc.
-    cfun_lim innerspc f l net
-        ==> cfun_lim innerspc (\x. a% f(x)) (a%l) net`,
+    cfun_lim1 innerspc f l net
+        ==> cfun_lim1 innerspc (\x. a% f(x)) (a%l) net`,
           REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN
-          REPEAT STRIP_TAC THEN MATCH_MP_TAC CFUN_LIM_LINEAR THEN
-          ASM_SIMP_TAC[REWRITE_RULE [ETA_AX]SCALAR_BOUNDED]);;
+          REPEAT STRIP_TAC THEN MATCH_MP_TAC CFUN_LIM_ULINEAR THEN
+          Pa.EXISTS_TAC "s" THEN
+                  ASM_SIMP_TAC[REWRITE_RULE [ETA_AX]SCALAR_BOUNDED;is_unbounded_linear_cop]
+                  THEN RULE_ASSUM_TAC(REWRITE_RULE[cfun_lim]) THEN
+                  ASM_MESON_TAC[INNER_SPACE_IS_SUBSPACE;CFUN_SUBSPACE_SMUL;CFUN_ADD_LDISTRIB;CFUN_SMUL_ASSOC;COMPLEX_MUL_SYM]
+                  );;
 
 
 let CFUN_LIM_NORM_UBOUND = prove
  (`!net:(A)net f l b s inprod.
       ~(trivial_limit net) /\
-      cfun_lim (s,inprod) f l net /\
+      cfun_lim1 (s,inprod) f l net /\
       eventually (\x. cfun_norm inprod (f x) <= b) net
       ==> cfun_norm inprod l <= b`,
   let STEP =  MESON[CFUN_NORM_SUB_INEQ;CFUN_NORM_SUB;
@@ -2105,10 +2559,9 @@ let CFUN_LIM_NORM_UBOUND = prove
 
 
 let CFUN_LIM_UNIQUE = prove
- (`!net:(A)net f l l' innerspc.
-      ~(trivial_limit net) /\ cfun_lim innerspc f l net
-      /\ cfun_lim innerspc f l' net ==> (l = l')`,
-  REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN
+ (`!net:(A)net f l l' s inprod.
+      ~(trivial_limit net) /\ cfun_lim1 (s,inprod) f l net
+      /\ cfun_lim1 (s,inprod) f l' net ==> (l equv l') inprod`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN (fun thm -> ASSUME_TAC (REWRITE_RULE[cfun_lim] thm) THEN
   (ASSUME_TAC  (REWRITE_RULE[CFUN_SUB_REFL]  (MATCH_MP CFUN_LIM_SUB thm)))) THEN
@@ -2123,7 +2576,7 @@ let CFUN_LIM_UNIQUE = prove
     IMP_REWRITE_TAC[CFUN_DIST_NZ] THEN REWRITE_TAC[cfun_dist;GSYM cfun_norm] THEN
     DISCH_THEN (fun thm ->
      ASSUM_LIST(fun thms ->
-       MP_TAC (REWRITE_RULE thms (Pa.SPECL [`inprod:`;`s:`] thm)))) THEN
+       MP_TAC (REWRITE_RULE thms (Pa.SPECL [`s:`] thm)))) THEN
     ASM_SIMP_TAC[REAL_LT_RDIV_EQ; REAL_LE_RDIV_EQ; REAL_OF_NUM_LT; ARITH] THEN
          REAL_ARITH_TAC]);;
 
@@ -2143,13 +2596,13 @@ let CFUN_SERIES_SMUL = prove
   SIMP_TAC[cfun_sums; FINITE_INTER_NUMSEG; CFUN_SUM_SMUL; CFUN_LIM_SMUL]);;
 
 let CFUN_SERIES_UNIQUE = prove
- (`!f l l' s innerspc. cfun_sums innerspc f l s /\ cfun_sums innerspc f l' s
-                        ==> (l = l')`,
+ (`!f l l' s s1 inprod. cfun_sums (s1,inprod) f l s /\ cfun_sums (s1,inprod) f l' s
+                        ==> (l equv l') inprod`,
   REWRITE_TAC[cfun_sums] THEN MESON_TAC[TRIVIAL_LIMIT_SEQUENTIALLY;
   CFUN_LIM_UNIQUE]);;
 
 let CFUN_INFSUM_UNIQUE = prove
- (`!f l s innerspc. cfun_sums innerspc f l s ==> cfun_infsum innerspc s f = l`,
+ (`!f l s s1 inprod. cfun_sums (s1,inprod) f l s ==> (cfun_infsum (s1,inprod) s f equv l) inprod`,
   MESON_TAC[CFUN_SERIES_UNIQUE; CFUN_SUMS_INFSUM; cfun_summable]);;
 
 let INFSUM_IN_SPC = prove
@@ -2179,56 +2632,49 @@ let CFUN_SERIES_0 = prove
   ASM_MESON_TAC[LE_TRANS;CFUN_DIST_REFL]);;
 
 let CFUN_SERIES_SLINEAR = prove
- (`!f h l s spc inprod. cfun_sums (spc,inprod) f l s /\
-     is_set_linear_cop spc h  /\ is_bounded (spc,inprod) h /\
-         (!n. f n IN spc)
-       ==> cfun_sums (spc,inprod) (\n. h(f n)) (h l) s `,
+ (`!f h l s s1 s2 inprod. cfun_sums (s2,inprod) f l s /\
+     is_unbounded_linear_cop s1 h  /\ is_bounded1 (s2,inprod) h /\
+         (!x. x IN s1 ==> x IN s2 /\ h x IN s2) /\
+         (!n. f n IN s1) /\ l IN s1
+       ==> cfun_sums (s2,inprod) (\n. h(f n)) (h l) s `,
            REWRITE_TAC[cfun_sums] THEN REPEAT STRIP_TAC THEN
            Pa.SUBGOAL_THEN
            `!n. cfun_sum (s INTER(0..n)) (\x. h(f x)) = h(cfun_sum (s INTER(0..n)) f):`
                  ASSUME_TAC
                  THENL[IMP_REWRITE_TAC[FINITE_INTER; FINITE_NUMSEG;
            GSYM(REWRITE_RULE[o_DEF] SLINEAR_CFUN_SUM_IMP)] THEN
-                   ASM_MESON_TAC[INNER_SPACE_IS_SUBSPACE;CFUN_LIM_INNER_SPACE];
-                   ASM_SIMP_TAC[cfun_sums;CFUN_LIM_SLINEAR]]);;
+                   ASM_MESON_TAC[ULINCOP_SUBSPACE;ULINCOP_ADD;ULINCOP_SMUL;is_set_linear_cop];
+                                   ASM_SIMP_TAC[cfun_sums]
+                                   THEN MATCH_MP_TAC CFUN_LIM_ULINEAR
+                                   THEN Pa.EXISTS_TAC "s1" THEN
+                                   ASM_MESON_TAC[CFUN_SUM_IN_SPC;ULINCOP_SUBSPACE;FINITE_INTER; FINITE_NUMSEG]
+                                   ]);;
 
 let CFUN_INFSUM_0 = prove
- (`!is s. is_inner_space (spc,inprod) ==>
-    cfun_infsum (spc,inprod) s (\i. cfun_zero) = cfun_zero`,
+ (`!spc inprod s. is_inner_space (spc,inprod) ==>
+    (cfun_infsum (spc,inprod) s (\i. cfun_zero) equv cfun_zero) inprod`,
  REPEAT STRIP_TAC THEN MATCH_MP_TAC CFUN_INFSUM_UNIQUE
  THEN ASM_SIMP_TAC[CFUN_SERIES_0]);;
 
-let CFUN_SERIES_LINEAR = prove
- (`!f h l s innerspc. cfun_sums innerspc f l s /\ is_linear_cop h
-   /\ is_bounded innerspc h
- ==> cfun_sums innerspc (\n. h(f n)) (h l) s `,
-  SIMP_TAC[cfun_sums; FINITE_INTER; FINITE_NUMSEG;
-           GSYM(REWRITE_RULE[o_DEF] LINEAR_CFUN_SUM);
-                   FORALL_INNER_SPACE_THM;CFUN_LIM_LINEAR]);;
 
 let CFUN_INFSUM_SLINEAR = prove
- (`!f h l s spc inprod. cfun_summable (spc,inprod) s f /\
-   is_set_linear_cop spc h  /\ is_bounded (spc,inprod) h /\
-     (!n. f n IN spc)
-           ==> cfun_infsum (spc,inprod) s (\n. h(f n)) =
-                       h (cfun_infsum (spc,inprod) s f)`,
+ (`!f h l s s1 s2 inprod. cfun_summable (s2,inprod) s f /\
+   is_unbounded_linear_cop s1 h  /\ is_bounded1 (s2,inprod) h /\
+   (!x. x IN s1 ==> x IN s2 /\ h x IN s2) /\
+     (!n. f n IN s1) /\  (cfun_infsum (s2,inprod) s f) IN s1
+           ==> (cfun_infsum (s2,inprod) s (\n. h(f n)) equv
+                       h (cfun_infsum (s2,inprod) s f)) inprod`,
         REPEAT STRIP_TAC THEN MATCH_MP_TAC CFUN_INFSUM_UNIQUE THEN
-  MATCH_MP_TAC CFUN_SERIES_SLINEAR THEN ASM_REWRITE_TAC[CFUN_SUMS_INFSUM]);;
-
-let CFUN_INFSUM_LINEAR = prove
- (`!f h l s innerspc. cfun_summable innerspc s f /\ is_linear_cop h
-   /\ is_bounded innerspc h
-           ==> cfun_infsum innerspc s (\n. h(f n)) = h(cfun_infsum innerspc s f)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC CFUN_INFSUM_UNIQUE THEN
-  MATCH_MP_TAC CFUN_SERIES_LINEAR THEN ASM_REWRITE_TAC[CFUN_SUMS_INFSUM]);;
+                MATCH_MP_TAC CFUN_SERIES_SLINEAR THEN
+                Pa.EXISTS_TAC "s1" THEN ASM_SIMP_TAC[CFUN_SUMS_INFSUM]);;
 
  let CFUN_INFSUM_SMUL = prove
- (`!a f innerspc. cfun_summable innerspc s f
-   ==>  cfun_infsum innerspc s (\n.a% (f n)) = a % (cfun_infsum innerspc s f)`,
+ (`!a f s s1 inprod. cfun_summable (s1,inprod) s f
+   ==>  (cfun_infsum (s1,inprod) s (\n.a% (f n)) equv a % (cfun_infsum (s1,inprod) s f)) inprod`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CFUN_INFSUM_UNIQUE THEN
   MATCH_MP_TAC CFUN_SERIES_SMUL THEN ASM_REWRITE_TAC[CFUN_SUMS_INFSUM]);;
 
-  let CFUN_SERIES_RESTRICT = prove
+let CFUN_SERIES_RESTRICT = prove
  (`!f k l innerspc.
         cfun_sums innerspc (\n. if n IN k then f(n) else cfun_zero)  l (:num)
                         <=> cfun_sums innerspc f  l k`,
@@ -2281,11 +2727,11 @@ let CFUN_SUMMABLE_OFFSET = prove
 let CFUN_INFSUM_OFFSET = prove
 (`!f s inprod n m. cfun_summable (s,inprod) (from m) f
    /\ (!x. f x IN s) /\ m < n ==>
- cfun_infsum (s,inprod) (from m)  f =
-   cfun_sum (m..n-1) f + cfun_infsum (s,inprod) (from n) f`,
+ (cfun_infsum (s,inprod) (from n) f equv
+   ( cfun_infsum (s,inprod) (from m) f - cfun_sum (m..n-1) f))inprod`,
  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM CFUN_SUMS_INFSUM] THEN
  DISCH_THEN(MP_TAC o MATCH_MP CFUN_SUMS_OFFSET) THEN
- MESON_TAC[CFUN_ARITH `x:cfun = y + z <=> z = x - y`;CFUN_INFSUM_UNIQUE]);;
+ MESON_TAC[CFUN_INFSUM_UNIQUE]);;
 
 let CFUN_SUMS_REINDEX = prove
  (`!f innerspc n l k. cfun_sums innerspc (\x. f(x+k)) l (from n) <=>
@@ -2308,14 +2754,14 @@ let CFUN_SUMMABLE_REINDEX = prove
          MESON_TAC[cfun_summable;CFUN_SUMS_REINDEX]);;
 
 let CFUN_INFSUM_REINDEX = prove
-   (`!f innerspc n k.  cfun_summable  innerspc (from n) (\x. f (x + k)) ==>
-       cfun_infsum innerspc (from (n+k)) f =
-                        cfun_infsum innerspc (from n) (\x. f(x+k)) `,
+   (`!f s inprod n k.  cfun_summable  (s,inprod) (from n) (\x. f (x + k)) ==>
+       (cfun_infsum (s,inprod) (from (n+k)) f equv
+                        cfun_infsum (s,inprod) (from n) (\x. f(x+k))) inprod `,
    REPEAT STRIP_TAC THEN MATCH_MP_TAC CFUN_INFSUM_UNIQUE
    THEN ASM_SIMP_TAC[GSYM CFUN_SUMS_REINDEX;CFUN_SUMS_INFSUM]);;
 
 (* ------------------------------------------------------------------------- *)
-(* FINITE/INFINITE summation of cop                                         *)
+(* FINITE           summation of cop                                         *)
 (* ------------------------------------------------------------------------- *)
 let cop_sum = new_definition`cop_sum s f = \x. cfun_sum s (\n.(f n) x)`;;
 
@@ -2351,147 +2797,3 @@ let COP_BINOMIAL_THEOREM = prove
           SIMP_TAC[ARITH_RULE `k <= n ==> SUC n - k = SUC(n - k)`; cop_pow]
           THEN ASM_SIMP_TAC[COP_POW_COMMUTE_N] THEN
           SIMP_TAC[COP_POW_COMMUTE_N; COP_MUL_ASSOC]);;
-
-let cop_sums = new_definition
- `cop_sums (s,inprod) f l set <=> !x. x IN s ==>
-                cfun_sums (s,inprod) (\n.(f n) x) (l x) set`;;
-
-let cop_infsum = new_definition
- `cop_infsum innerspc s f = @l. cop_sums innerspc f l s`;;
-
-
-let cop_summable = new_definition
- `cop_summable innerspc s f = ?l. cop_sums innerspc f l s`;;
-
-let COP_SUMS_INFSUM = prove
- (`!f s innerspc. cop_sums innerspc f (cop_infsum innerspc s f) s <=>
-     cop_summable innerspc s f`,
-  REWRITE_TAC[cop_infsum;cop_summable] THEN MESON_TAC[]);;
-
-
-let COP_SERIES_UNIQUE = prove
- (`!sp inprod f s l l' x. x IN sp /\
-  cop_sums (sp,inprod) f l s /\ cop_sums (sp,inprod) f l' s ==>  l x = l' x`,
-  MESON_TAC[cop_sums;CFUN_SERIES_UNIQUE]);;
-
-
-
-let COP_INFSUM_UNIQUE = prove
- (`!sp inprod f s l l' x. x IN sp /\
-  cop_sums (sp,inprod) f l s ==> cop_infsum (sp,inprod) s f x = l x`,
-  MESON_TAC[cop_summable;COP_SERIES_UNIQUE;COP_SUMS_INFSUM]);;
-
-
-let exp_sums =   new_definition
- `exp_sums innerspc  (op:cfun->cfun) l  <=>
-  cop_sums innerspc (\n. Cx (inv(&(FACT n))) % (op pow n )) l (from 0)`;;
-
-let exp_summable =   new_definition
- `exp_summable innerspc  (op:cfun->cfun) <=>
-   cop_summable innerspc (from 0) (\n. Cx (inv(&(FACT n))) % (op pow n ))`;;
-
-
- let EXP_SUMS_CLOSED_BY =  prove
- (`!s inprod op l.  exp_sums (s,inprod) op l ==> (!x. x IN s ==> (l x) IN s)`,
-   SIMP_TAC[exp_sums;cop_sums;cfun_sums;cfun_lim]);;
-
-let LINCOP_EXP = prove
- (`!s inprod op l. is_linear_cop op /\ exp_sums (s,inprod) op l
-    ==> is_set_linear_cop s l`,
-        let lem = [ASM_MESON_TAC[CFUN_SUMS_INNER_SPACE;INNER_SPACE_ADD;
-        INNER_SPACE_SMUL];
-        ASM_SIMP_TAC[LINCOP_ADD;POW_LINCOP;SMUL_LINCOP;CFUN_SERIES_ADD;
-        LINCOP_SMUL;CFUN_SERIES_SMUL]] in
-        REWRITE_TAC[exp_sums;cop_sums;is_set_linear_cop] THEN REPEAT STRIP_TAC THEN
-        REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
-        MATCH_MP_TAC CFUN_SERIES_UNIQUE
-        THENL[Pa.EXISTS_TAC `(\n. (Cx (inv (&(FACT n))) % (op pow n)) (x+y)):`;
-        Pa.EXISTS_TAC `(\n. (Cx (inv (&(FACT n))) % (op pow n)) (a%x)):`] THEN
-        MAP_EVERY Pa.EXISTS_TAC [`(from 0):`;`(s,inprod):`] THEN STRIP_TAC
-        THENL lem@lem);;
-
-let LINCOP_EXP_MUL = prove
- (`!s inprod op1 l1 op2 l2. is_linear_cop op1 /\ exp_sums (s,inprod) op1 l1
-    /\  is_linear_cop op2 /\ exp_sums (s,inprod) op2 l2
-    ==> is_set_linear_cop s (l1 ** l2)`,
-     REWRITE_TAC[is_set_linear_cop;COP_MUL_THM] THEN REPEAT STRIP_TAC THEN
-        IMP_REWRITE_TAC[SLINCOP_ADD;SLINCOP_SMUL] THEN
-        ASM_MESON_TAC[LINCOP_EXP;EXP_SUMS_CLOSED_BY]);;
-
-let COP_ZERO_SUM = prove
- (`!x n. cfun_sum (0..n) (\n. (Cx (inv(&(FACT n))) % (cop_zero pow n ))  x) = x`,
-         SIMP_TAC[CFUN_SUM_CLAUSES_LEFT;LE_0;ADD_CLAUSES;cop_pow;FACT] THEN
-         REPEAT STRIP_TAC THEN Pa.ASM_CASES_TAC `n=0:`
-         THENL[ASM_SIMP_TAC[NUMSEG_EMPTY_IMP; NUM_LT_CONV `0 < 1`;CFUN_SUM_CLAUSES];
-         ASM_SIMP_TAC[CFUN_SUM_OFFSET_0;ARITH_RULE `~(n=0) ==> 1 <= n`;COP_POW_ZERO;
-         COP_SMUL_RZERO;COP_ZERO_THM;CFUN_SUM_CONST;FINITE_NUMSEG;CARD_NUMSEG]]
-         THEN COP_ARITH_TAC);;
-
-let COP_EXP_0 = prove
- (`!is. is_inner_space is ==> exp_sums is cop_zero I`,
-         SIMP_TAC[FORALL_INNER_SPACE_THM;exp_sums;cop_sums;cfun_sums;
-         COP_ZERO_SUM;FROM_INTER_NUMSEG;I_DEF;CFUN_LIM_CONST]);;
-
-let CFUN_VSUM_SCALAR = prove
- (`!f q s.  FINITE s ==> cfun_sum s (\n.(f n) % x) = (vsum s f) % x`,
-   GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-   SIMP_TAC[CFUN_SUM_CLAUSES;VSUM_CLAUSES;COMPLEX_VEC_0;
-   CFUN_SMUL_LZERO;CFUN_ADD_RDISTRIB]);;
-
-let COP_EXP_SCALAR = prove
- (`!is a .
-      is_inner_space is==> exp_sums is (\x.a%x) (\x.(cexp a)%x)`,
-         MP_TAC CEXP_CONVERGES THEN
-         SIMP_TAC[FORALL_INNER_SPACE_THM;exp_sums;cop_sums;cfun_sums;CFUN_LIM;LIM;sums;
-         CFUN_VSUM_SCALAR;FINITE_INTER;FINITE_NUMSEG;COP_POW_SCALAR;COP_SMUL;
-         CFUN_SMUL_ASSOC;TRIVIAL_LIMIT_SEQUENTIALLY;CX_INV;
-         COMPLEX_FIELD `inv a * b  = b / a`; cfun_dist;GSYM CFUN_SUB_RDISTRIB] THEN
-         IMP_REWRITE_TAC[INNER_SPACE_SMUL;INPROD_RSMUL;INPROD_LSMUL] THEN
-         REWRITE_TAC[COMPLEX_MUL_CNJ;COMPLEX_MUL_ASSOC;COMPLEX_POW_2;
-         GSYM CX_MUL;GSYM REAL_POW_2;SQRT_MUL] THEN
-         IMP_REWRITE_TAC[REAL_OF_COMPLEX_MUL;REAL_CX;INPROD_SELF_REAL;
-         REAL_OF_COMPLEX_CX;NORM_POS_LE;POW_2_SQRT;SQRT_MUL;GSYM dist;
-         GSYM cfun_norm;INPROD_SELF_POS;REAL_LE_POW_2;DIST_POS_LE] THEN
-         REPEAT STRIP_TAC THEN Pa.ASM_CASES_TAC `x = cfun_zero:`
-        THENL[ASM_MESON_TAC[CFUN_NORM_0;REAL_MUL_RZERO];
-         REPEAT (IMP_REWRITE_TAC[GSYM REAL_LT_RDIV_EQ;
-         GSYM CFUN_NORM_NZ;REAL_LT_DIV])]);;
-
-
-
-let cop_exp =   new_definition
- `cop_exp is (op:cfun->cfun)  =
-   cop_infsum is (from 0) (\n. Cx (inv(&(FACT n))) % (op pow n ))`;;
-
-let EXP_SUMS_INFSUM = prove
- (`!f s innerspc. exp_sums innerspc op (cop_exp innerspc op)  <=>
-     exp_summable innerspc op`,
-  SIMP_TAC[exp_sums;cop_exp;exp_summable;COP_SUMS_INFSUM] );;
-
-let COP_EXP_CLOSED_BY =  prove
- (`!s inprod op l.  exp_summable (s,inprod) op  ==>
-                (!x. x IN s ==> (cop_exp (s,inprod) op ) x IN s)`,
-   MESON_TAC[EXP_SUMS_INFSUM;EXP_SUMS_CLOSED_BY]);;
-
-let COP_EXP_ZERO = prove
-(`!s inprod x. x IN s /\ is_inner_space(s,inprod) ==>
-        cop_exp (s,inprod) cop_zero x = I x`,
- MESON_TAC[I_THM;cop_exp;COP_INFSUM_UNIQUE;GSYM exp_sums;COP_EXP_0;GSYM I_DEF]);;
-
-let COP_EXP_CEXP = prove
- (`!s inprod a x.   x IN s /\ is_inner_space (s,inprod)
-    ==> cop_exp (s,inprod) (\y.a%y) x = cexp a % x`,
-MESON_TAC[cop_exp;COP_INFSUM_UNIQUE;GSYM exp_sums;COP_EXP_SCALAR]);;
-
-
-let EXP_LINCOP = prove
- (`!s inprod op. exp_summable (s,inprod) op /\ is_linear_cop op
-            ==> is_set_linear_cop s (cop_exp (s,inprod) op)`,
-  MESON_TAC[EXP_SUMS_INFSUM;LINCOP_EXP]);;
-
-let EXP_MUL_LINCOP = prove
-  (`!s inprod op1 op2. exp_summable (s,inprod) op1 /\ is_linear_cop op1
-     /\ exp_summable (s,inprod) op2 /\ is_linear_cop op2
-         ==>
-         is_set_linear_cop s ((cop_exp (s,inprod) op1) ** (cop_exp (s,inprod) op2))`,
-        MESON_TAC[EXP_SUMS_INFSUM;LINCOP_EXP_MUL]);;

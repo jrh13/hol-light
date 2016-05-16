@@ -16600,6 +16600,34 @@ let HOMEOMORPHISM_COMPONENTS = prove
    `(!x. x IN s ==> f x = g x) ==> {f x | x IN s} = {g x | x IN s}`) THEN
   ASM_MESON_TAC[HOMEOMORPHISM_CONNECTED_COMPONENT]);;
 
+let LOCAL_HOMEOMORPHISM_IMP_OPEN_MAP = prove
+ (`!f:real^M->real^N s t.
+        (!x. x IN s
+             ==> ?u v g. x IN u /\
+                         open_in (subtopology euclidean s) u /\
+                         open_in (subtopology euclidean t) v /\
+                         homeomorphism (u,v) (f,g))
+        ==> !u. open_in (subtopology euclidean s) u
+                ==> open_in (subtopology euclidean t) (IMAGE f u)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[OPEN_IN_SUBOPEN] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN X_GEN_TAC `x:real^M` THEN
+  DISCH_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^M`) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC
+   [`v:real^M->bool`; `w:real^N->bool`; `g:real^N->real^M`] THEN
+  STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) (u INTER v)` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  TRANS_TAC OPEN_IN_TRANS `w:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HOMEOMORPHISM_IMP_OPEN_MAP)) THEN
+  ONCE_REWRITE_TAC[INTER_COMM] THEN
+  MATCH_MP_TAC OPEN_IN_SUBTOPOLOGY_INTER_SUBSET THEN
+  EXISTS_TAC `s:real^M->bool` THEN
+  ASM_MESON_TAC[OPEN_IN_INTER; OPEN_IN_REFL; OPEN_IN_IMP_SUBSET]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relatively weak hypotheses if the domain of the function is compact.      *)
 (* ------------------------------------------------------------------------- *)

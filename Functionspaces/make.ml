@@ -6,7 +6,7 @@
 (*                  Concordia University                                     *)
 (*                                                                           *)
 (*           Contact: <mosolim@ece.concordia.ca>, <vincent@ece.concordia.ca> *)
-(*   Last update: Jan 2014                                                   *)
+(*   Last update: Mar 2015                                                   *)
 (* ========================================================================= *)
 
 needs "Multivariate/realanalysis.ml";;
@@ -23,11 +23,4 @@ needs "Library/q.ml";;
 
 needs "Functionspaces/utils.ml";;
 needs "Functionspaces/cfunspace.ml";;
-
-(*****
-needs "Functionspaces/derive_cfun.ml";;
-needs "Functionspaces/derive_linear.ml";;
-needs "Functionspaces/derive_cdot.ml";;
-needs "Functionspaces/cvectors.ml";;
-needs "Functionspaces/cmatrices.ml";;
-******)
+needs "Functionspaces/L2.ml";;
