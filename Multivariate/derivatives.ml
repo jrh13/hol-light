@@ -1881,6 +1881,55 @@ let SUSSMANN_OPEN_MAPPING = prove
   ASM_SIMP_TAC[GSYM REAL_LE_RDIV_EQ] THEN
   ASM_MESON_TAC[IN_CBALL; dist; NORM_SUB; REAL_LT_IMP_LE; REAL_LE_TRANS]);;
 
+let DIFFERENTIABLE_IMP_OPEN_MAP_GEN = prove
+ (`!f:real^M->real^N f' g' s.
+        open s /\
+        (!x. x IN s
+             ==> (f has_derivative f' x) (at x) /\
+                 linear(g' x) /\ f' x o g' x = I)
+        ==> open(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM SUBSET_INTERIOR_EQ; SUBSET; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+  MP_TAC(ISPECL
+   [`f:real^M->real^N`; `(f':real^M->real^M->real^N) x`;
+    `(g':real^M->real^N->real^M) x`; `s:real^M->bool`; `x:real^M`]
+   SUSSMANN_OPEN_MAPPING) THEN
+  ASM_SIMP_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[SUBSET_REFL; INTERIOR_OPEN] THEN
+  MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
+  ASM_SIMP_TAC[DIFFERENTIABLE_ON_EQ_DIFFERENTIABLE_AT; differentiable] THEN
+  ASM_MESON_TAC[]);;
+
+let DIFFERENTIABLE_IMP_OPEN_MAP = prove
+ (`!f:real^N->real^N f' s.
+        open s /\
+        (!x. x IN s
+             ==> (f has_derivative f' x) (at x) /\ ~(det(matrix(f' x)) = &0))
+        ==> open(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_IMP_OPEN_MAP_GEN THEN
+  EXISTS_TAC `f':real^N->real^N->real^N` THEN
+  ASM_SIMP_TAC[GSYM SKOLEM_THM; RIGHT_EXISTS_IMP_THM] THEN
+  ASM_MESON_TAC[DET_MATRIX_EQ_0_RIGHT; has_derivative]);;
+
+let DIFFERENTIABLE_IMP_OPEN_MAP_ALT = prove
+ (`!f:real^N->real^N f' g' s t.
+        (!x. x IN s
+             ==> (f has_derivative f' x) (at x within s) /\
+                 ~(det(matrix(f' x)) = &0)) /\
+        open t /\ t SUBSET s
+        ==> open(IMAGE f t)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC DIFFERENTIABLE_IMP_OPEN_MAP THEN
+  EXISTS_TAC `f':real^N->real^N->real^N` THEN
+  ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o SPEC `t:real^N->bool` o
+    MATCH_MP (REWRITE_RULE[IMP_CONJ] HAS_DERIVATIVE_WITHIN_SUBSET)) THEN
+  ASM_SIMP_TAC[HAS_DERIVATIVE_WITHIN_OPEN]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Hence the following eccentric variant of the inverse function theorem.    *)
 (* This has no continuity assumptions, but we do need the inverse function.  *)
@@ -2515,86 +2564,13 @@ let INVERSE_FUNCTION_THEOREM = prove
     MP_TAC(ISPECL [`v:real^N->bool`; `IMAGE (f:real^N->real^N) u`]
         CONNECTED_INTER_FRONTIER) THEN
     ASM_REWRITE_TAC[NOT_IMP] THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
-    REWRITE_TAC[EXTENSION; IN_INTER; IN_ELIM_THM; NOT_IN_EMPTY] THEN
-    X_GEN_TAC `c:real^N` THEN STRIP_TAC THEN
-    SUBGOAL_THEN `?e. &0 < e /\ ball(c:real^N,&3 * e) SUBSET v`
-    STRIP_ASSUME_TAC THENL
-     [MP_TAC(ISPEC `v:real^N->bool` OPEN_CONTAINS_BALL) THEN
-      ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `c:real^N`) THEN
-      ASM_MESON_TAC[REAL_ARITH `&3 * e / &3 = e /\ (&0 < e / &3 <=> &0 < e)`];
-      ALL_TAC] THEN
-    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [FRONTIER_STRADDLE]) THEN
-    DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[EXISTS_IN_IMAGE] THEN DISCH_THEN(CONJUNCTS_THEN2
-     (X_CHOOSE_THEN `x:real^N` STRIP_ASSUME_TAC) MP_TAC) THEN
-    REWRITE_TAC[NOT_EXISTS_THM] THEN
-    REWRITE_TAC[GSYM IN_BALL; TAUT `~(~p /\ q) <=> q ==> p`] THEN
-    X_GEN_TAC `b:real^N` THEN DISCH_TAC THEN
-    ABBREV_TAC `p = \z. lift(norm((f:real^N->real^N) z - b) pow 2)` THEN
-    SUBGOAL_THEN
-     `!z. z IN s
-          ==> ((p:real^N->real^1) has_derivative
-               (\h. &2 % lift((f z - b) dot (f':real^N->real^N->real^N) z h)))
-              (at z)`
-    ASSUME_TAC THENL
-     [REPEAT STRIP_TAC THEN
-      MP_TAC(ISPECL
-       [`\x. (f:real^N->real^N) x - b`; `\x:real^N. lift (norm x pow 2)`;
-        `\h. (f':real^N->real^N->real^N) z h - vec 0`;
-        `\x:real^N. &2 % lift((f(z:real^N) - b) dot x)`;
-       `z:real^N`] DIFF_CHAIN_AT) THEN
-      ASM_REWRITE_TAC[o_DEF; HAS_DERIVATIVE_SQNORM_AT] THEN
-      ANTS_TAC THENL [ALL_TAC; REWRITE_TAC[VECTOR_SUB_RZERO]] THEN
-      MATCH_MP_TAC HAS_DERIVATIVE_SUB THEN
-      ASM_SIMP_TAC[HAS_DERIVATIVE_CONST; ETA_AX];
-      ALL_TAC] THEN
-    MP_TAC(ISPECL [`drop o (p:real^N->real^1)`; `closure u:real^N->bool`]
-        CONTINUOUS_ATTAINS_INF) THEN
-    ASM_REWRITE_TAC[CLOSURE_EQ_EMPTY; COMPACT_CLOSURE] THEN ANTS_TAC THENL
-     [CONJ_TAC THENL
-       [ASM_MESON_TAC[FRONTIER_EMPTY; IMAGE_CLAUSES; NOT_IN_EMPTY];
-        REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX] THEN
-        MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
-        MATCH_MP_TAC DIFFERENTIABLE_ON_SUBSET THEN
-        EXISTS_TAC `s:real^N->bool` THEN
-        ASM_SIMP_TAC[DIFFERENTIABLE_ON_EQ_DIFFERENTIABLE_AT] THEN
-        ASM_MESON_TAC[differentiable]];
-      REWRITE_TAC[o_THM; LEFT_IMP_EXISTS_THM]] THEN
-    X_GEN_TAC `z:real^N` THEN
-    DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-    ASM_CASES_TAC `(z:real^N) IN s` THENL
-     [REWRITE_TAC[CLOSURE_UNION_FRONTIER; IN_UNION];
-      MP_TAC(ISPEC `u:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]] THEN
-    STRIP_TAC THENL
-     [MP_TAC(ISPECL
-       [`p:real^N->real^1`;
-        `(\h. &2 % lift((f z - b) dot h)) o (f':real^N->real^N->real^N) z`;
-        `z:real^N`; `u:real^N->bool`]
-        DIFFERENTIAL_ZERO_MAXMIN) THEN
-      ASM_REWRITE_TAC[o_THM] THEN ANTS_TAC THENL
-       [REWRITE_TAC[o_DEF] THEN REPEAT(DISJ2_TAC ORELSE STRIP_TAC) THEN
-        FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
-        ASM_SIMP_TAC[CLOSURE_INC];
-        DISCH_THEN(MP_TAC o AP_TERM
-         `\f. (f:real^N->real^1) o (g':real^N->real^N->real^N) z`) THEN
-        ASM_SIMP_TAC[GSYM o_ASSOC; I_O_ID] THEN
-        REWRITE_TAC[FUN_EQ_THM; o_THM; VECTOR_MUL_EQ_0] THEN
-        CONV_TAC REAL_RAT_REDUCE_CONV THEN
-        REWRITE_TAC[GSYM DROP_EQ; LIFT_DROP; DROP_VEC] THEN
-        REWRITE_TAC[FORALL_DOT_EQ_0; VECTOR_SUB_EQ] THEN ASM SET_TAC[]];
-      SUBGOAL_THEN `~((f:real^N->real^N) z IN ball(c,&3 * e))` MP_TAC THENL
-       [ASM SET_TAC[]; REWRITE_TAC[IN_BALL; dist]] THEN
-      GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
-      REWRITE_TAC[] THEN ONCE_REWRITE_TAC[NORM_SUB] THEN
-      MATCH_MP_TAC(NORM_ARITH
-       `!b fx. norm(fz - b) <= norm(fx - b) /\
-               dist(c,fx) < e /\ dist(c,b) < e
-               ==> norm(fz - c:real^N) < &3 * e`) THEN
-      MAP_EVERY EXISTS_TAC [`b:real^N`; `(f:real^N->real^N) x`] THEN
-      ASM_REWRITE_TAC[] THEN ASM_REWRITE_TAC[GSYM IN_BALL] THEN
-      SUBGOAL_THEN `drop(p(z:real^N)) <= drop(p x)` MP_TAC THENL
-       [ASM_SIMP_TAC[CLOSURE_INC]; EXPAND_TAC "p"] THEN
-      REWRITE_TAC[GSYM REAL_LE_SQUARE_ABS; LIFT_DROP; REAL_ABS_NORM]];
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `v INTER s = {} ==> t SUBSET s ==> v INTER t = {}`)) THEN
+    MATCH_MP_TAC FRONTIER_OPEN_MAP_IMAGE_SUBSET THEN ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ALL_TAC] THEN
+    ASM_SIMP_TAC[INTERIOR_OPEN] THEN
+    MATCH_MP_TAC DIFFERENTIABLE_IMP_OPEN_MAP THEN
+    ASM_MESON_TAC[SUBSET; CLOSURE_SUBSET];
     ALL_TAC] THEN
   SUBGOAL_THEN
    `!e a b. &0 < e /\ a IN s /\ norm((f:real^N->real^N) a - b) <= e

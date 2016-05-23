@@ -12254,11 +12254,9 @@ let DIFFERENTIAL_ZERO_MAXMIN_DENSITY = prove
      [ASM_REWRITE_TAC[VECTOR_SUB_REFL] THEN
       FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP LINEAR_0 th]) THEN
       REWRITE_TAC[DROP_VEC; NORM_0; REAL_MUL_RZERO; REAL_LE_REFL];
-
       ASM_SIMP_TAC[REAL_LT_LDIV_EQ; NORM_POS_LT; VECTOR_SUB_EQ] THEN
       REWRITE_TAC[NORM_1; DROP_SUB; DROP_ADD] THEN REAL_ARITH_TAC];
     FIRST_X_ASSUM(K ALL_TAC o SPEC `&0:real`)] THEN
-
   FIRST_ASSUM(MP_TAC o MATCH_MP LINEAR_TO_REALS) THEN
   ABBREV_TAC `d = row 1 (matrix(f':real^N->real^1))` THEN
   DISCH_THEN SUBST1_TAC THEN
@@ -13269,8 +13267,8 @@ let BOREL_POINTS_OF_DIFFERENTIABILITY = prove
                             1 <= j /\ j <= dimindex(:M)
                             ==> rational(A$i$j)) /\
                      !y. norm(y - x) < d
-                         ==> norm(f y - f x - A ** (y - x)) <= e * norm(y -
-x)`,
+                         ==> norm(f y - f x - A ** (y - x)) 
+                             <= e * norm(y - x)`,
     REPEAT GEN_TAC THEN
     REWRITE_TAC[differentiable; HAS_DERIVATIVE_AT_ALT] THEN EQ_TAC THENL
      [DISCH_THEN(X_CHOOSE_THEN `f':real^M->real^N` STRIP_ASSUME_TAC) THEN

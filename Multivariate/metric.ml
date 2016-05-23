@@ -541,6 +541,14 @@ let ARCH_EVENTUALLY_LE = prove
   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN MATCH_MP_TAC MONO_EXISTS THEN
   REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN REAL_ARITH_TAC);;
 
+let EVENTUALLY_IN_SEQUENTIALLY = prove
+ (`!P. eventually P sequentially <=> FINITE {n | ~P n}`,
+  GEN_TAC THEN
+  REWRITE_TAC[num_FINITE; EVENTUALLY_SEQUENTIALLY; IN_ELIM_THM] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[NOT_LE] THEN
+  MESON_TAC[LT_IMP_LE; ARITH_RULE `a + 1 <= x ==> a < x`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Metric spaces.                                                            *)
 (* ------------------------------------------------------------------------- *)

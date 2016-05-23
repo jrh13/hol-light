@@ -6544,6 +6544,67 @@ let COMPACT_NEST = prove
   MATCH_MP_TAC WLOG_LE THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Relating convergent subsequences to escaping from a compact set.          *)
+(* ------------------------------------------------------------------------- *)
+
+let SEQUENCE_ESCAPES = prove
+ (`!s x:num->real^N.
+      (!n. x n IN s)
+      ==> ((!k. k SUBSET s /\ compact k ==> FINITE {n | x n IN k}) <=>
+           ~(?y r. y IN s /\
+                  (!m n. m < n ==> r m < r n) /\
+                  (x o r --> y) sequentially))`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[TAUT `(p <=> ~q) <=> (~p <=> q)`] THEN
+  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN EQ_TAC THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
+   [X_GEN_TAC `k:real^N->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM INFINITE]) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP INFINITE_ENUMERATE) THEN
+    DISCH_THEN(X_CHOOSE_THEN `r:num->num` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [compact]) THEN
+    DISCH_THEN(MP_TAC o SPEC `(x:num->real^N) o (r:num->num)`) THEN
+    REWRITE_TAC[o_THM] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `y:real^N` THEN
+    DISCH_THEN(X_CHOOSE_THEN `q:num->num` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(r:num->num) o (q:num->num)` THEN
+    ASM_SIMP_TAC[o_ASSOC; o_THM] THEN ASM SET_TAC[];
+    MAP_EVERY X_GEN_TAC [`y:real^N`; `r:num->num`] THEN STRIP_TAC THEN
+    EXISTS_TAC `y INSERT (IMAGE ((x:num->real^N) o r) (:num))` THEN
+    ASM_SIMP_TAC[COMPACT_SEQUENCE_WITH_LIMIT; INSERT_SUBSET; IMAGE_o] THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] FINITE_SUBSET)) THEN
+    DISCH_THEN(MP_TAC o SPEC `IMAGE (r:num->num) (:num)`) THEN
+    REWRITE_TAC[num_FINITE; NOT_IMP; FORALL_IN_IMAGE; IN_UNIV] THEN
+    CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n + 1`)) THEN
+    MATCH_MP_TAC(ARITH_RULE `n + 1 <= x ==> x <= n ==> F`) THEN
+    ASM_MESON_TAC[MONOTONE_BIGGER]]);;
+
+let SEQUENCE_ESCAPES_ALT = prove
+ (`!s x:num->real^N.
+      (!n. x n IN s)
+      ==> ((!k. k SUBSET s /\ compact k
+                ==> eventually (\n. ~(x n IN k)) sequentially) <=>
+           ~(?y r. y IN s /\
+                  (!m n. m < n ==> r m < r n) /\
+                  (x o r --> y) sequentially))`,
+  REWRITE_TAC[EVENTUALLY_IN_SEQUENTIALLY; SEQUENCE_ESCAPES]);;
+
+let CONVERGENT_SUBSEQUENCE = prove
+ (`!s x:num->real^N.
+      (!n. x n IN s)
+      ==> ((?y r. y IN s /\
+                  (!m n. m < n ==> r m < r n) /\
+                  (x o r --> y) sequentially) <=>
+           (?k. k SUBSET s /\ compact k /\ INFINITE {n | x(n) IN k}))`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o
+    AP_TERM `~` o MATCH_MP SEQUENCE_ESCAPES) THEN
+  REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[NOT_FORALL_THM; INFINITE] THEN
+  MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Cauchy-type criteria for *uniform* convergence.                           *)
 (* ------------------------------------------------------------------------- *)
 
@@ -8975,6 +9036,19 @@ let PROPER_MAP = prove
       REWRITE_TAC[UNIONS_IMAGE; SUBSET; IN_UNIONS; IN_ELIM_THM] THEN
       ASM SET_TAC[]]]);;
 
+let PROPER_MAP_EQ = prove
+ (`!f:real^M->real^N s t.
+        IMAGE f s SUBSET t /\
+        (!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}) <=>
+        (!k. closed_in (subtopology euclidean s) k
+             ==> closed_in (subtopology euclidean t) (IMAGE f k)) /\
+        (!a. a IN t ==> compact {x | x IN s /\ f x = a})`,
+  REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(TAUT
+   `(p ==> (q <=> r /\ s)) /\ (r ==> p) ==> (p /\ q <=> r /\ s)`) THEN
+  REWRITE_TAC[PROPER_MAP] THEN
+  MESON_TAC[CLOSED_IN_REFL; CLOSED_IN_IMP_SUBSET]);;
+
 let PROPER_MAP_FROM_COMPACT = prove
  (`!f:real^M->real^N s k t.
         f continuous_on s /\ IMAGE f s SUBSET t /\ compact s /\
@@ -9180,6 +9254,121 @@ let TUBE_LEMMA_GEN = prove
     DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_TAC `c:real^N`)) THEN
     FIRST_X_ASSUM(MP_TAC o SPEC `c:real^N`) THEN
     ASM_REWRITE_TAC[SUBSET; FORALL_IN_PCROSS] THEN ASM SET_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Sequential characterizations of proper-ness.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let PROPER_MAP_SEQUENTIALLY_IMP = prove
+ (`!f:real^M->real^N s t x y.
+        IMAGE f s SUBSET t /\
+        (!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}) /\
+        (!n. x(n) IN s) /\ y IN t /\ ((f o x) --> y) sequentially
+        ==> ?z r. z IN s /\ (!m n. m < n ==> r m < r n) /\
+                  ((x o r) --> z) sequentially`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+      `y INSERT IMAGE ((f:real^M->real^N) o x) (:num)`) THEN
+    ASM_SIMP_TAC[COMPACT_SEQUENCE_WITH_LIMIT; INSERT_SUBSET] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; o_THM] THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[compact]] THEN
+    DISCH_THEN(MP_TAC o SPEC `x:num->real^M`) THEN
+    ASM_REWRITE_TAC[IN_ELIM_THM; IN_INSERT; IMAGE_o] THEN ASM SET_TAC[]);;
+
+let PROPER_MAP_SEQUENTIALLY_REV = prove
+ (`!f:real^M->real^N s t.
+        f continuous_on s /\
+        (!x y. (!n. x(n) IN s) /\ y IN t /\ ((f o x) --> y) sequentially
+               ==> ?z r. z IN s /\ (!m n. m < n ==> r m < r n) /\
+                         ((x o r) --> z) sequentially)
+        ==> !k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[compact; IN_ELIM_THM; AND_FORALL_THM] THEN
+  X_GEN_TAC `x:num->real^M` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [compact]) THEN
+  DISCH_THEN(MP_TAC o SPEC `(f:real^M->real^N) o (x:num->real^M)`) THEN
+  ASM_REWRITE_TAC[o_THM; LEFT_IMP_EXISTS_THM; GSYM o_ASSOC] THEN
+  MAP_EVERY X_GEN_TAC [`y:real^N`; `r:num->num`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`(x:num->real^M) o (r:num->num)`; `y:real^N`]) THEN
+  ASM_REWRITE_TAC[o_THM] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `z:real^M` THEN
+  REWRITE_TAC[GSYM o_ASSOC; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `q:num->num` THEN STRIP_TAC THEN
+  EXISTS_TAC `(r:num->num) o (q:num->num)` THEN
+  ASM_SIMP_TAC[o_THM] THEN MATCH_MP_TAC CLOSED_CONTAINS_SEQUENTIAL_LIMIT THEN
+  EXISTS_TAC `(f:real^M->real^N) o (x:num->real^M) o r o (q:num->num)` THEN
+  ASM_SIMP_TAC[o_THM; COMPACT_IMP_CLOSED] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o REWRITE_RULE[CONTINUOUS_ON_SEQUENTIALLY]) THEN
+  ASM_REWRITE_TAC[o_THM]);;
+
+let PROPER_MAP_SEQUENTIALLY = prove
+ (`!f:real^M->real^N s t.
+    f continuous_on s /\ IMAGE f s SUBSET t
+    ==> ((!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}) <=>
+         !x y. (!n. x(n) IN s) /\ y IN t /\ ((f o x) --> y) sequentially
+               ==> ?z r. z IN s /\
+                         (!m n. m < n ==> r m < r n) /\
+                         ((x o r) --> z) sequentially)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC PROPER_MAP_SEQUENTIALLY_IMP THEN ASM_MESON_TAC[];
+    DISCH_TAC THEN MATCH_MP_TAC PROPER_MAP_SEQUENTIALLY_REV THEN
+    ASM_REWRITE_TAC[]]);;
+
+let PROPER_MAP_ESCAPES_IMP = prove
+ (`!f:real^M->real^N s t x.
+        IMAGE f s SUBSET t /\
+        (!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}) /\
+        (!n:num. x n IN s) /\
+        (!c. c SUBSET s /\ compact c ==> FINITE {n | x n IN c})
+        ==> (!k. k SUBSET t /\ compact k ==> FINITE {n | f(x n) IN k})`,
+  REPEAT GEN_TAC THEN
+  REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  SUBGOAL_THEN
+   `!x. (!n. x n IN s) ==> (!n:num. (f:real^M->real^N) (x n) IN t)`
+  MP_TAC THENL [ASM SET_TAC[]; ASM_SIMP_TAC[SEQUENCE_ESCAPES]] THEN
+  DISCH_THEN(K ALL_TAC) THEN
+  REWRITE_TAC[CONTRAPOS_THM; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC; o_DEF] THEN
+  MAP_EVERY X_GEN_TAC [`y:real^N`; `r:num->num`] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`; `t:real^N->bool`;
+                 `(x:num->real^M) o (r:num->num)`; `y:real^N`]
+        PROPER_MAP_SEQUENTIALLY_IMP) THEN
+  ASM_REWRITE_TAC[o_DEF] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `z:real^M` THEN
+  DISCH_THEN(X_CHOOSE_THEN `q:num->num` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `(r:num->num) o (q:num->num)` THEN
+  ASM_SIMP_TAC[o_DEF]);;
+
+let PROPER_MAP_ESCAPES = prove
+ (`!f:real^M->real^N s t.
+    f continuous_on s /\ IMAGE f s SUBSET t
+    ==> ((!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}) <=>
+         !x. (!n:num. x n IN s) /\
+             (!c. c SUBSET s /\ compact c ==> FINITE {n | x n IN c})
+             ==> (!k. k SUBSET t /\ compact k ==> FINITE {n | f(x n) IN k}))`,
+  REPEAT STRIP_TAC THEN
+  SIMP_TAC[IMP_CONJ; SEQUENCE_ESCAPES] THEN
+  ASM_SIMP_TAC[PROPER_MAP_SEQUENTIALLY; IMP_IMP] THEN
+  SUBGOAL_THEN
+   `!x. (!n. x n IN s) ==> (!n:num. (f:real^M->real^N) (x n) IN t)`
+  MP_TAC THENL [ASM SET_TAC[]; SIMP_TAC[SEQUENCE_ESCAPES]] THEN
+  DISCH_THEN(K ALL_TAC) THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[CONTRAPOS_THM; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC; o_DEF] THEN
+  EQ_TAC THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`x:num->real^M`; `y:real^N`] THENL
+   [X_GEN_TAC `r:num->num` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL
+     [`(x:num->real^M) o (r:num->num)`; `y:real^N`]) THEN
+    ASM_REWRITE_TAC[o_DEF] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `z:real^M` THEN
+    DISCH_THEN(X_CHOOSE_THEN `q:num->num` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(r:num->num) o (q:num->num)` THEN ASM_SIMP_TAC[o_THM];
+    STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`y:real^N`; `\n:num. n`] THEN
+    ASM_REWRITE_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Pasting functions together on open sets.                                  *)
@@ -15452,6 +15641,129 @@ let CONTINUOUS_MAP_CLOSURES = prove
         f continuous_on UNIV <=>
         !s. IMAGE f (closure s) SUBSET closure(IMAGE f s)`,
   REWRITE_TAC[CONTINUOUS_MAP_CLOSURES_GEN; SUBSET_UNIV; INTER_UNIV]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relating images and frontiers.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let PROPER_MAP_ESCAPES_FROM_IMAGE = prove
+ (`!f:real^M->real^N s t x r a b.
+        IMAGE f s SUBSET t /\
+        (!k. k SUBSET t /\ compact k
+             ==> compact {x | x IN s /\ f x IN k}) /\
+        (!n. x n IN s) /\ ~(a IN s) /\ (x --> a) sequentially /\
+        (!m n. m < n ==> r m < r n) /\ ((f o x o r) --> b) sequentially
+        ==> ~(b IN IMAGE f s)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`; `t:real^N->bool`;
+                 `x:num->real^M`] PROPER_MAP_ESCAPES_IMP) THEN
+  ASM_SIMP_TAC[NOT_IMP; SEQUENCE_ESCAPES; NOT_EXISTS_THM] THEN CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`a':real^M`; `r':num->num`] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `a':real^M = a` (fun th -> ASM_MESON_TAC[th]) THEN
+    MATCH_MP_TAC(ISPEC `sequentially` LIM_UNIQUE) THEN
+    EXISTS_TAC `(x:num->real^M) o (r':num->num)` THEN
+    ASM_SIMP_TAC[LIM_SUBSEQUENCE; TRIVIAL_LIMIT_SEQUENTIALLY];
+    W(MP_TAC o PART_MATCH (lhand o rand) SEQUENCE_ESCAPES o rand o snd) THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+    REWRITE_TAC[] THEN RULE_ASSUM_TAC(REWRITE_RULE[o_DEF]) THEN
+    MAP_EVERY EXISTS_TAC [`b:real^N`; `r:num->num`] THEN
+    ASM_REWRITE_TAC[o_DEF] THEN ASM SET_TAC[]]);;
+
+let FRONTIER_PROPER_MAP_IMAGE_SUBSET_GEN = prove
+ (`!f:real^M->real^N s t.
+        IMAGE f s SUBSET t /\
+        f continuous_on closure s /\
+        (!k. k SUBSET t /\ compact k
+             ==> compact {x | x IN s /\ f x IN k})
+        ==> IMAGE f (closure s DIFF s) SUBSET
+            closure(IMAGE f s) DIFF IMAGE f s`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(SET_RULE
+   `IMAGE f c SUBSET c' /\ IMAGE f (c DIFF i) INTER i' = {}
+    ==> IMAGE f (c DIFF i) SUBSET c' DIFF i'`) THEN
+  CONJ_TAC THENL
+   [FIRST_ASSUM(MP_TAC o SPEC `s:real^M->bool` o
+      GEN_REWRITE_RULE I [CONTINUOUS_MAP_CLOSURES_GEN]) THEN
+    REWRITE_TAC[CLOSURE_SUBSET; INTER_IDEMPOT];
+    REWRITE_TAC[SET_RULE `s INTER t = {} <=> !x. x IN s ==> ~(x IN t)`] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; IN_DIFF] THEN X_GEN_TAC `a:real^M` THEN
+    STRIP_TAC THEN MATCH_MP_TAC PROPER_MAP_ESCAPES_FROM_IMAGE THEN
+    EXISTS_TAC `t:real^N->bool` THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CLOSURE_SEQUENTIAL]) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:num->real^M` THEN
+    STRIP_TAC THEN MAP_EVERY EXISTS_TAC [`I:num->num`; `a:real^M`] THEN
+    ASM_REWRITE_TAC[I_O_ID; I_THM] THEN
+    ASM_MESON_TAC[CONTINUOUS_ON_CLOSURE_SEQUENTIALLY]]);;
+
+let FRONTIER_PROPER_MAP_IMAGE_SUBSET = prove
+ (`!f:real^M->real^N s t.
+        IMAGE f s SUBSET t /\
+        open s /\
+        f continuous_on closure s /\
+        (!k. k SUBSET t /\ compact k
+             ==> compact {x | x IN s /\ f x IN k})
+        ==> IMAGE f (frontier s) SUBSET frontier(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`; `t:real^N->bool`]
+        FRONTIER_PROPER_MAP_IMAGE_SUBSET_GEN) THEN
+  ASM_SIMP_TAC[frontier; INTERIOR_OPEN] THEN
+  MP_TAC(ISPEC `IMAGE (f:real^M->real^N) s` INTERIOR_SUBSET) THEN SET_TAC[]);;
+
+let FRONTIER_CLOPEN_MAP_IMAGE_SUBSET = prove
+ (`!f:real^M->real^N s.
+        closed(IMAGE f (closure s)) /\ open(IMAGE f (interior s))
+        ==> frontier(IMAGE f s) SUBSET IMAGE f (frontier s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[frontier] THEN
+  MATCH_MP_TAC(SET_RULE
+   `IMAGE f i SUBSET i' /\ c' SUBSET IMAGE f c
+    ==> c' DIFF i' SUBSET IMAGE f (c DIFF i)`) THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC INTERIOR_MAXIMAL; MATCH_MP_TAC CLOSURE_MINIMAL] THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC IMAGE_SUBSET THEN
+  REWRITE_TAC[INTERIOR_SUBSET; CLOSURE_SUBSET]);;
+
+let FRONTIER_OPEN_MAP_IMAGE_SUBSET = prove
+ (`!f:real^M->real^N s.
+        bounded s /\ f continuous_on closure s /\ open(IMAGE f (interior s))
+        ==> frontier(IMAGE f s) SUBSET IMAGE f (frontier s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FRONTIER_CLOPEN_MAP_IMAGE_SUBSET THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC COMPACT_IMP_CLOSED THEN
+  MATCH_MP_TAC COMPACT_CONTINUOUS_IMAGE THEN
+  ASM_REWRITE_TAC[COMPACT_CLOSURE]);;
+
+let FRONTIER_PROPER_CLOPEN_MAP_IMAGE = prove
+ (`!f:real^M->real^N s t.
+        open s /\ IMAGE f s SUBSET t /\ f continuous_on closure s /\
+        open(IMAGE f s) /\ closed(IMAGE f (closure s)) /\
+        (!k. k SUBSET t /\ compact k
+             ==> compact {x | x IN s /\ f x IN k})
+        ==> IMAGE f (frontier s) = frontier(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  ASM_SIMP_TAC[FRONTIER_CLOPEN_MAP_IMAGE_SUBSET; INTERIOR_OPEN] THEN
+  MATCH_MP_TAC FRONTIER_PROPER_MAP_IMAGE_SUBSET THEN ASM_MESON_TAC[]);;
+
+let FRONTIER_PROPER_OPEN_MAP_IMAGE = prove
+ (`!f:real^M->real^N s t.
+        bounded s /\ open s /\ open(IMAGE f s) /\
+        f continuous_on closure s /\
+        IMAGE f s SUBSET t /\
+        (!k. k SUBSET t /\ compact k
+             ==> compact {x | x IN s /\ f x IN k})
+        ==> IMAGE f (frontier s) = frontier(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  ASM_SIMP_TAC[FRONTIER_OPEN_MAP_IMAGE_SUBSET; INTERIOR_OPEN] THEN
+  MATCH_MP_TAC FRONTIER_PROPER_MAP_IMAGE_SUBSET THEN ASM_MESON_TAC[]);;
+
+let FRONTIER_CLOPEN_MAP_IMAGE = prove
+ (`!f:real^M->real^N s t.
+        open s /\ open(IMAGE f s) /\ closed(IMAGE f (closure s)) /\
+        f continuous_on closure s /\
+        (!y. compact {x | x IN s /\ f x = y}) /\
+        (!c. closed_in (subtopology euclidean s) c
+             ==> closed_in (subtopology euclidean t) (IMAGE f c))
+        ==> IMAGE f (frontier s) = frontier(IMAGE f s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FRONTIER_PROPER_CLOPEN_MAP_IMAGE THEN
+  ASM_REWRITE_TAC[PROPER_MAP_EQ] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limits relative to a union.                                               *)
