@@ -4308,6 +4308,64 @@ let INVERSE_FUNCTION_C1 = prove
                 differentiable; SUBSET; IN_INTER]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A Hadamard-style global inverse function theorem when the function is     *)
+(* a closed (or equivalently proper) map into a simply connected set.        *)
+(* ------------------------------------------------------------------------- *)
+
+let INVERSE_FUNCTION_THEOREM_GLOBAL = prove
+ (`!f:real^N->real^N f' s t.
+      open s /\ connected s /\ simply_connected t /\ (s = {} ==> t = {}) /\
+      (!c. closed_in (subtopology euclidean s) c
+           ==> closed_in (subtopology euclidean t) (IMAGE f c)) /\
+      (!x. x IN s
+           ==> (f has_derivative f' x) (at x) /\ ~(det(matrix(f' x)) = &0))
+      ==> ?g g'. homeomorphism (s,t) (f,g) /\
+                 (!y. y IN t
+                      ==> (g has_derivative g' y) (at y) /\
+                          f' (g y) o g' y = I /\ g' y o f' (g y) = I) /\
+                 (!x. x IN s ==> f' x o g' (f x) = I /\ g' (f x) o f' x = I)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `open(IMAGE (f:real^N->real^N) s)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[DIFFERENTIABLE_IMP_OPEN_MAP]; ALL_TAC] THEN
+  MP_TAC(ISPECL
+    [`f:real^N->real^N`; `s:real^N->bool`; `t:real^N->bool`]
+    CLOSED_LOCAL_HOMEOMORPHISM_GLOBAL) THEN
+  ASM_SIMP_TAC[CONNECTED_OPEN_PATH_CONNECTED; OPEN_IN_OPEN_EQ] THEN
+  ANTS_TAC THENL
+   [X_GEN_TAC `a:real^N` THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`f:real^N->real^N`; `f':real^N->real^N->real^N`;
+                   `a:real^N`; `s:real^N->bool`]
+        INVERSE_FUNCTION_THEOREM) THEN
+    ASM_REWRITE_TAC[] THEN
+    REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+    SIMP_TAC[LEFT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[HOMEOMORPHISM] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC OPEN_SUBSET THEN
+    FIRST_ASSUM(MP_TAC o SPEC `s:real^N->bool`) THEN
+    REWRITE_TAC[CLOSED_IN_REFL] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CLOSED_IN_IMP_SUBSET) THEN
+    ASM SET_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:real^N->real^N`] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!x. P /\ Q x ==> R x) /\ (P ==> ?x. Q x)
+    ==> (P ==> ?x. P /\ Q x /\ R x)`) THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[HOMEOMORPHISM; SUBSET; FORALL_IN_IMAGE] THEN SET_TAC[];
+    REWRITE_TAC[GSYM SKOLEM_THM; RIGHT_EXISTS_IMP_THM] THEN
+    SIMP_TAC[HOMEOMORPHISM; SUBSET; FORALL_IN_IMAGE] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `t = IMAGE (f:real^N->real^N) s` SUBST1_TAC THENL
+     [ASM SET_TAC[]; ASM_SIMP_TAC[FORALL_IN_IMAGE]] THEN
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    MP_TAC(ISPEC `(f':real^N->real^N->real^N) x` MATRIX_INVERTIBLE) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[has_derivative]; ALL_TAC] THEN
+    ASM_SIMP_TAC[INVERTIBLE_DET_NZ] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g':real^N->real^N` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC HAS_DERIVATIVE_INVERSE_STRONG THEN MAP_EVERY EXISTS_TAC
+     [`(f':real^N->real^N->real^N) x`; `s:real^N->bool`] THEN
+    ASM_SIMP_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Considering derivative R(^1)->R^n as a vector.                            *)
 (* ------------------------------------------------------------------------- *)
 

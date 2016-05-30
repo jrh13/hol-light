@@ -13267,7 +13267,7 @@ let BOREL_POINTS_OF_DIFFERENTIABILITY = prove
                             1 <= j /\ j <= dimindex(:M)
                             ==> rational(A$i$j)) /\
                      !y. norm(y - x) < d
-                         ==> norm(f y - f x - A ** (y - x)) 
+                         ==> norm(f y - f x - A ** (y - x))
                              <= e * norm(y - x)`,
     REPEAT GEN_TAC THEN
     REWRITE_TAC[differentiable; HAS_DERIVATIVE_AT_ALT] THEN EQ_TAC THENL
@@ -17997,6 +17997,47 @@ let CONTINUOUS_ON_ABSOLUTELY_INTEGRABLE_TRANSLATION = prove
   MP_TAC(ISPECL [`f:real^M->real^N`; `(:real^M)`; `(:real^M)`]
     CONTINUOUS_ON_ABSOLUTELY_INTEGRABLE_TRANSLATION_GEN) THEN
   ASM_REWRITE_TAC[LEBESGUE_MEASURABLE_UNIV; SUBSET_UNIV; UNIV_GSPEC]);;
+
+let CONTINUOUS_MEASURE_TRANSLATION_SYMDIFF = prove
+ (`!s:real^N->bool.
+        measurable s
+        ==> ((\a. lift(measure(((IMAGE (\x. a + x) s) DIFF s) UNION
+                               (s DIFF IMAGE (\x. a + x) s)))) --> vec 0)
+            (at (vec 0))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [GSYM LIM_AT_REFLECT] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV
+   [SET_RULE `s = s INTER UNIV`]) THEN
+  REWRITE_TAC[GSYM ABSOLUTELY_INTEGRABLE_ON_INDICATOR] THEN
+  REWRITE_TAC[VECTOR_NEG_0] THEN DISCH_THEN(MP_TAC o
+    MATCH_MP CONTINUOUS_ON_ABSOLUTELY_INTEGRABLE_TRANSLATION_NORM) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_TRANSFORM_EVENTUALLY) THEN
+  MATCH_MP_TAC ALWAYS_EVENTUALLY THEN X_GEN_TAC `a:real^N` THEN
+  ASM_SIMP_TAC[MEASURE_INTEGRAL; MEASURABLE_UNION; MEASURABLE_DIFF;
+               MEASURABLE_TRANSLATION_EQ; LIFT_DROP] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM INTEGRAL_RESTRICT_UNIV] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN
+  ASM_REWRITE_TAC[indicator; IN_DIFF; IN_UNION] THEN
+  REWRITE_TAC[IN_TRANSLATION_GALOIS] THEN
+  REWRITE_TAC[VECTOR_ARITH `x - --a:real^N = a + x`] THEN
+  REWRITE_TAC[GSYM DROP_EQ; LIFT_DROP; NORM_1] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[DROP_SUB; DROP_VEC]) THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+let CONTINUOUS_MEASURE_TRANSLATION_DIFF = prove
+ (`!s:real^N->bool.
+        measurable s
+        ==> ((\a. lift(measure((IMAGE (\x. a + x) s) DIFF s))) --> vec 0)
+            (at (vec 0))`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CONTINUOUS_MEASURE_TRANSLATION_SYMDIFF) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_NULL_COMPARISON) THEN
+  MATCH_MP_TAC ALWAYS_EVENTUALLY THEN X_GEN_TAC `a:real^N` THEN
+  ASM_SIMP_TAC[NORM_LIFT; real_abs; MEASURE_POS_LE; MEASURABLE_DIFF;
+               MEASURABLE_TRANSLATION_EQ] THEN
+  MATCH_MP_TAC MEASURE_SUBSET THEN
+  ASM_SIMP_TAC[MEASURABLE_UNION; MEASURABLE_DIFF;
+               MEASURABLE_TRANSLATION_EQ] THEN
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A derivative-free formulation of (absolute) integration by parts.         *)

@@ -796,8 +796,8 @@ let UNIONS_DELETE_EMPTY = prove
   REWRITE_TAC[IN_UNIONS; IN_DELETE] THEN MESON_TAC[NOT_IN_EMPTY]);;
 
 let INTERS_EQ_UNIV = prove
- (`!f. INTERS f = (:A) <=> !s. s IN f ==> s = (:A)`,                           
-  SET_TAC[]);;                                         
+ (`!f. INTERS f = (:A) <=> !s. s IN f ==> s = (:A)`,
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Multiple intersection.                                                    *)
@@ -3232,6 +3232,13 @@ let WF_FINITE = prove
   ASM_REWRITE_TAC[FINITE_INSERT] THEN
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_UNIV; IN_INSERT] THEN
   INDUCT_TAC THEN REWRITE_TAC[IN_ELIM_THM] THEN ASM_MESON_TAC[LT_0]);;
+
+let WF_PSUBSET = prove
+ (`!s:A->bool. FINITE s ==> WF (\t1 t2. t1 PSUBSET t2 /\ t2 SUBSET s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC WF_FINITE THEN SIMP_TAC[CONJ_ASSOC] THEN
+  CONJ_TAC THENL [SET_TAC[]; X_GEN_TAC `t:A->bool`] THEN
+  MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{t:A->bool | t SUBSET s}` THEN
+  ASM_SIMP_TAC[FINITE_POWERSET] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinal comparisons (more theory in Library/card.ml)                     *)

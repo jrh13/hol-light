@@ -6066,6 +6066,14 @@ let LINEAR_INJECTIVE_LEFT_INVERSE = prove
     ASM_SIMP_TAC[I_DEF; LINEAR_COMPOSE; LINEAR_ID; o_THM] THEN
     ASM_MESON_TAC[]]);;
 
+let LINEAR_INJECTIVE_LEFT_INVERSE_EQ = prove                                   
+ (`!f:real^M->real^N.                                                          
+        linear f                                                               
+        ==> ((!x y. f x = f y ==> x = y) <=> ?g. linear g /\ g o f = I)`,      
+  REPEAT STRIP_TAC THEN EQ_TAC THENL                                           
+   [ASM_MESON_TAC[LINEAR_INJECTIVE_LEFT_INVERSE];                              
+    REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN MESON_TAC[]]);;                 
+
 let LINEAR_SURJECTIVE_RIGHT_INVERSE = prove
  (`!f:real^M->real^N.
         linear f /\ (!y. ?x. f x = y) ==> ?g. linear g /\ f o g = I`,
@@ -6080,6 +6088,14 @@ let LINEAR_SURJECTIVE_RIGHT_INVERSE = prove
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC LINEAR_EQ_STDBASIS THEN
     ASM_SIMP_TAC[I_DEF; LINEAR_COMPOSE; LINEAR_ID; o_THM] THEN
     ASM_MESON_TAC[]]);;
+
+let LINEAR_SURJECTIVE_RIGHT_INVERSE_EQ = prove                                 
+ (`!f:real^M->real^N.                                                          
+        linear f                                                               
+        ==> ((!y. ?x. f x = y) <=> ?g. linear g /\ f o g = I)`,                
+  REPEAT STRIP_TAC THEN EQ_TAC THENL                                            
+   [ASM_MESON_TAC[LINEAR_SURJECTIVE_RIGHT_INVERSE];                            
+    REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN MESON_TAC[]]);;                 
 
 let MATRIX_LEFT_INVERTIBLE_INJECTIVE = prove
  (`!A:real^N^M.
@@ -6336,6 +6352,15 @@ let LINEAR_BIJECTIVE_LEFT_RIGHT_INVERSE = prove
   MATCH_MP_TAC LEFT_RIGHT_INVERSE_LINEAR THEN
   EXISTS_TAC `f:real^M->real^N` THEN
   ASM_REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM]);;
+
+let LINEAR_BIJECTIVE_LEFT_RIGHT_INVERSE_EQ = prove                             
+ (`!f:real^M->real^N.                                                          
+        linear f                                                              
+        ==> ((!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y) <=>              
+             ?g. linear g /\ f o g = I /\ g o f = I)`,                         
+  REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN                                    
+  REPEAT STRIP_TAC THEN EQ_TAC THENL [REPEAT STRIP_TAC; MESON_TAC[]] THEN
+  ASM METIS_TAC[LINEAR_BIJECTIVE_LEFT_RIGHT_INVERSE]);;                        
 
 (* ------------------------------------------------------------------------- *)
 (* The same result in terms of square matrices.                              *)
@@ -8341,6 +8366,47 @@ let LINEAR_SURJECTIVE_IFF_INJECTIVE_GEN = prove
       ==> ((!y. ?x. f x = y) <=> (!x y. f x = f y ==> x = y))`,
   SIMP_TAC[LINEAR_INJECTIVE_IFF_DIM; LINEAR_SURJECTIVE_IFF_DIM] THEN
   MESON_TAC[]);;
+
+let MATRIX_INVERTIBLE_LEFT_GEN = prove                                         
+ (`!f:real^M->real^N.                                                          
+        linear f /\ dimindex(:N) <= dimindex(:M)                               
+        ==> (invertible(matrix f) <=> ?g. linear g /\ g o f = I)`,             
+  REPEAT STRIP_TAC THEN                                                         
+
+  ASM_SIMP_TAC[MATRIX_INVERTIBLE] THEN                                         
+  ASM_SIMP_TAC[GSYM LINEAR_BIJECTIVE_LEFT_RIGHT_INVERSE_EQ;                    
+               GSYM LINEAR_INJECTIVE_LEFT_INVERSE_EQ] THEN                     
+  REWRITE_TAC[TAUT `(p /\ q <=> p) <=> p ==> (q <=> p)`] THEN
+  DISCH_TAC THEN MATCH_MP_TAC LINEAR_SURJECTIVE_IFF_INJECTIVE_GEN THEN
+  ASM_REWRITE_TAC[GSYM LE_ANTISYM] THEN
+  MATCH_MP_TAC LINEAR_INJECTIVE_DIMINDEX_LE THEN
+  ASM_MESON_TAC[]);;
+
+let MATRIX_INVERTIBLE_LEFT = prove
+ (`!f:real^N->real^N.
+        linear f
+        ==> (invertible(matrix f) <=> ?g. linear g /\ g o f = I)`,
+  SIMP_TAC[MATRIX_INVERTIBLE_LEFT_GEN; LE_REFL]);;
+
+let MATRIX_INVERTIBLE_RIGHT_GEN = prove
+ (`!f:real^M->real^N.
+        linear f /\ dimindex(:M) <= dimindex(:N)
+        ==> (invertible(matrix f) <=> ?g. linear g /\ f o g = I)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[MATRIX_INVERTIBLE] THEN
+  ASM_SIMP_TAC[GSYM LINEAR_BIJECTIVE_LEFT_RIGHT_INVERSE_EQ;
+               GSYM LINEAR_SURJECTIVE_RIGHT_INVERSE_EQ] THEN
+  REWRITE_TAC[TAUT `(q /\ p <=> p) <=> p ==> (p <=> q)`] THEN
+  DISCH_TAC THEN MATCH_MP_TAC LINEAR_SURJECTIVE_IFF_INJECTIVE_GEN THEN
+  ASM_REWRITE_TAC[GSYM LE_ANTISYM] THEN
+  MATCH_MP_TAC LINEAR_SURJECTIVE_DIMINDEX_LE THEN
+  ASM_MESON_TAC[]);;
+
+let MATRIX_INVERTIBLE_RIGHT_GEN = prove
+ (`!f:real^N->real^N.
+        linear f
+        ==> (invertible(matrix f) <=> ?g. linear g /\ f o g = I)`,
+  SIMP_TAC[MATRIX_INVERTIBLE_RIGHT_GEN; LE_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More about product spaces.                                                *)

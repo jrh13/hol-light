@@ -23811,7 +23811,7 @@ let COVERING_SPACE_COMPACT = prove
     SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A proper local homeomorphism is in fact a covering map.                   *)
+(* A proper (or closed) local homeomorphism is in fact a covering map.       *)
 (* ------------------------------------------------------------------------- *)
 
 let PROPER_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP = prove
@@ -24119,6 +24119,89 @@ let PROPER_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP = prove
      (ONCE_REWRITE_RULE[IMP_CONJ] HOMEOMORPHISM_OF_SUBSETS)) THEN
     ASM_REWRITE_TAC[SUBSET_RESTRICT] THEN ASM SET_TAC[]]);;
 
+let CLOSED_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP = prove
+ (`!p:real^M->real^N c s.
+        (!x. connected_component c x = {x} ==> c = {x}) /\
+        IMAGE p c = s /\
+        (!k. closed_in (subtopology euclidean c) k
+             ==> closed_in (subtopology euclidean s) (IMAGE p k)) /\
+        (!x. x IN c
+             ==> ?t u q. x IN t /\
+                         open_in (subtopology euclidean c) t /\
+                         open_in (subtopology euclidean s) u /\
+                         homeomorphism (t,u) (p,q))
+        ==> covering_space (c,p) s`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC PROPER_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CLOSED_LOCAL_HOMEOMORPHISM_IMP_PROPER THEN
+  ASM_REWRITE_TAC[SUBSET_REFL]);;
+
+let PROPER_LOCAL_HOMEOMORPHISM_GLOBAL = prove
+ (`!f:real^M->real^N s t.
+        path_connected s /\ simply_connected t /\ (s = {} ==> t = {}) /\
+        (!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}) /\
+        (!x. x IN s
+             ==> ?u v q. x IN u /\
+                         open_in (subtopology euclidean s) u /\
+                         open_in (subtopology euclidean t) v /\
+                         homeomorphism (u,v) (f,q))
+        ==> ?g. homeomorphism (s,t) (f,g)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `s:real^M->bool = {}` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[HOMEOMORPHISM; NOT_IN_EMPTY; CONTINUOUS_ON_EMPTY] THEN
+    SET_TAC[];
+    STRIP_TAC] THEN
+  MATCH_MP_TAC COVERING_SPACE_HOMEOMORPHISM THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC PROPER_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP THEN
+  ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP SIMPLY_CONNECTED_IMP_CONNECTED) THEN
+  REWRITE_TAC[CONNECTED_CLOPEN] THEN
+  DISCH_THEN(MP_TAC o SPEC `IMAGE (f:real^M->real^N) s`) THEN
+  ASM_REWRITE_TAC[IMAGE_EQ_EMPTY] THEN DISCH_THEN MATCH_MP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP LOCAL_HOMEOMORPHISM_IMP_OPEN_MAP) THEN
+  DISCH_THEN(MP_TAC o SPEC `s:real^M->bool`) THEN
+  REWRITE_TAC[OPEN_IN_REFL] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP PROPER_MAP o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN ASM_SIMP_TAC[CLOSED_IN_REFL] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP LOCAL_HOMEOMORPHISM_IMP_OPEN_MAP) THEN
+  REWRITE_TAC[OPEN_IN_REFL]);;
+
+let CLOSED_LOCAL_HOMEOMORPHISM_GLOBAL = prove
+ (`!f:real^M->real^N s t.
+        path_connected s /\ simply_connected t /\ (s = {} ==> t = {}) /\
+        (!c. closed_in (subtopology euclidean s) c
+             ==> closed_in (subtopology euclidean t) (IMAGE f c)) /\
+        (!x. x IN s
+             ==> ?u v g. x IN u /\
+                         open_in (subtopology euclidean s) u /\
+                         open_in (subtopology euclidean t) v /\
+                         homeomorphism (u,v) (f,g))
+        ==> ?g. homeomorphism (s,t) (f,g)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THENL
+   [ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[HOMEOMORPHISM; NOT_IN_EMPTY; CONTINUOUS_ON_EMPTY] THEN
+    SET_TAC[];
+    STRIP_TAC] THEN
+  MATCH_MP_TAC COVERING_SPACE_HOMEOMORPHISM THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CLOSED_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [X_GEN_TAC `x:real^M` THEN
+    ASM_CASES_TAC `connected_component s (x:real^M) = {}` THEN
+    ASM_REWRITE_TAC[NOT_INSERT_EMPTY] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[CONNECTED_COMPONENT_EQ_EMPTY]) THEN
+    ASM_MESON_TAC[CONNECTED_CONNECTED_COMPONENT_SET;
+                  PATH_CONNECTED_IMP_CONNECTED];
+    FIRST_ASSUM(MP_TAC o MATCH_MP SIMPLY_CONNECTED_IMP_CONNECTED) THEN
+    REWRITE_TAC[CONNECTED_CLOPEN] THEN
+    DISCH_THEN(MP_TAC o SPEC `IMAGE (f:real^M->real^N) s`) THEN
+    ASM_REWRITE_TAC[IMAGE_EQ_EMPTY] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[CLOSED_IN_REFL] THEN
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP LOCAL_HOMEOMORPHISM_IMP_OPEN_MAP) THEN
+    REWRITE_TAC[OPEN_IN_REFL]]);;
+
 let PROPER_LOCALLY_INJECTIVE_OPEN_IMP_COVERING_MAP = prove
  (`!p:real^M->real^N c s.
         p continuous_on c /\ IMAGE p c = s /\
@@ -24164,38 +24247,6 @@ let PROPER_LOCALLY_INJECTIVE_OPEN_IMP_COVERING_MAP_GEN = prove
   ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC CLOSED_MAP_IMP_OPEN_MAP THEN
   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[PROPER_MAP; SUBSET_REFL]);;
-
-let PROPER_LOCAL_HOMEOMORPHISM_GLOBAL = prove
- (`!f:real^M->real^N s t.
-        path_connected s /\ simply_connected t /\ (s = {} ==> t = {}) /\
-        (!k. k SUBSET t /\ compact k ==> compact {x | x IN s /\ f x IN k}) /\
-        (!x. x IN s
-             ==> ?u v q. x IN u /\
-                         open_in (subtopology euclidean s) u /\
-                         open_in (subtopology euclidean t) v /\
-                         homeomorphism (u,v) (f,q))
-        ==> ?g. homeomorphism (s,t) (f,g)`,
-  REPEAT GEN_TAC THEN
-  ASM_CASES_TAC `s:real^M->bool = {}` THEN ASM_REWRITE_TAC[] THENL
-   [ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN STRIP_TAC THEN
-    ASM_REWRITE_TAC[HOMEOMORPHISM; NOT_IN_EMPTY; CONTINUOUS_ON_EMPTY] THEN
-    SET_TAC[];
-    STRIP_TAC] THEN
-  MATCH_MP_TAC COVERING_SPACE_HOMEOMORPHISM THEN
-  ASM_REWRITE_TAC[] THEN
-  MATCH_MP_TAC PROPER_LOCAL_HOMEOMORPHISM_IMP_COVERING_MAP THEN
-  ASM_REWRITE_TAC[] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP SIMPLY_CONNECTED_IMP_CONNECTED) THEN
-  REWRITE_TAC[CONNECTED_CLOPEN] THEN
-  DISCH_THEN(MP_TAC o SPEC `IMAGE (f:real^M->real^N) s`) THEN
-  ASM_REWRITE_TAC[IMAGE_EQ_EMPTY] THEN DISCH_THEN MATCH_MP_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP LOCAL_HOMEOMORPHISM_IMP_OPEN_MAP) THEN
-  DISCH_THEN(MP_TAC o SPEC `s:real^M->bool`) THEN
-  REWRITE_TAC[OPEN_IN_REFL] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP PROPER_MAP o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
-  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN ASM_SIMP_TAC[CLOSED_IN_REFL] THEN
-  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP LOCAL_HOMEOMORPHISM_IMP_OPEN_MAP) THEN
-  REWRITE_TAC[OPEN_IN_REFL]);;
 
 let PROPER_LOCALLY_INJECTIVE_OPEN_IMP_HOMEOMORPHISM = prove
  (`!f:real^M->real^N s t.

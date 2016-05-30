@@ -8,9 +8,16 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 25th May 2016       sets.ml
+
+Added the simple fact that the "proper subset" relation on a finite
+set is wellfounded:
+
+  WF_PSUBSET = |- !s. FINITE s ==> WF (\t1 t2. t1 PSUBSET t2 /\ t2 SUBSET s)
+
 Sat  7th May 2016       Library/floor.ml
 
-Added RATIONAL_BETWEEN_EQ = 
+Added RATIONAL_BETWEEN_EQ =
           |- !a b. (?q. rational q /\ a < q /\ q < b) <=> a < b
 
 Fri 29th Apr 2016       Library/card.ml
