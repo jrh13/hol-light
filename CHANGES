@@ -8,6 +8,20 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  4th Jun 2016       Examples/division_algebras.ml [new file]
+
+Added a new example with two nonexistence proofs for division algebras in
+higher dimensions; these are fairly straightforward corollaries of some
+Multivariate results like the global inverse function theorem.
+
+Sat  4th Jun 2016       sets.ml
+
+Added an equivalential form of an existing theorem:
+
+ INFINITE_ENUMERATE_EQ =
+  |- !s. INFINITE s <=>
+         (?r. (!m n. m < n ==> r m < r n) /\ IMAGE r (:num) = s)
+
 Wed 25th May 2016       sets.ml
 
 Added the simple fact that the "proper subset" relation on a finite
@@ -893,7 +907,7 @@ Dynamical Systems, vol 1, pp. 103-106, 1981.
 
 Fri  7th Nov 2014       Library/iter.ml
 
-Added ITER_ADD_POINTLESS : thm = |- !m n. ITER (m + n) f = ITER m f o ITER n f
+Added ITER_ADD_POINTLESS = |- !m n. ITER (m + n) f = ITER m f o ITER n f
 
 Fri  7th Nov 2014       sets.ml
 
@@ -1329,13 +1343,13 @@ core
 Added some theorems to Library/iter.ml about the "order" or "characteristic" in
 a general setting
 
-  val ORDER_EXISTENCE_GEN : thm =
+  val ORDER_EXISTENCE_GEN =
     |- !P f.
            P (f 0) /\
            (!m n. P (f m) /\ ~(m = 0) ==> (P (f (m + n)) <=> P (f n)))
            ==> ?d. !n. P (f n) <=> d divides n
 
-  val ORDER_EXISTENCE_ITER : thm =
+  val ORDER_EXISTENCE_ITER =
     |- !R f z.
            R z z /\
            (!x y. R x y ==> R y x) /\
@@ -1343,7 +1357,7 @@ a general setting
            (!x y. R x y ==> R (f x) (f y))
            ==> ?d. !n. R (ITER n f z) z <=> d divides n
 
-  val ORDER_EXISTENCE_CARD : thm =
+  val ORDER_EXISTENCE_CARD =
     |- !R f z k.
            FINITE {R (ITER n f z) | n IN (:num)} /\
            CARD {R (ITER n f z) | n IN (:num)} <= k /\
@@ -1353,7 +1367,7 @@ a general setting
            (!x y. R (f x) (f y) <=> R x y)
            ==> ?d. 0 < d /\ d <= k /\ (!n. R (ITER n f z) z <=> d divides n)
 
-  val ORDER_EXISTENCE_FINITE : thm =
+  val ORDER_EXISTENCE_FINITE =
     |- !R f z.
            FINITE {R (ITER n f z) | n IN (:num)} /\
            R z z /\
@@ -4034,7 +4048,7 @@ intervals.
 
 as well as the trivial consequence
 
-  real_INFINITE : thm = |- INFINITE(:real)
+  real_INFINITE = |- INFINITE(:real)
 
 Fri  8th Jan 2010       pair.ml
 
@@ -5647,8 +5661,8 @@ Tue 20th Nov 2007       real.ml
 
 Added two theorems that I keep regenerating:
 
- ( REAL_BOUNDS_LE ) : thm = |- !x k. --k <= x /\ x <= k <=> abs x <= k
- ( REAL_BOUNDS_LT ) : thm = |- !x k. --k < x /\ x < k <=> abs x < k
+  REAL_BOUNDS_LE = |- !x k. --k <= x /\ x <= k <=> abs x <= k
+  REAL_BOUNDS_LT = |- !x k. --k < x /\ x < k <=> abs x < k
 
 The symmetric form of the first one was already there as REAL_ABS_BOUNDS, but
 I've never actually used it (however, since it's used by Freek and Tom, I

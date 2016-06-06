@@ -2107,6 +2107,12 @@ let CLOSURE_OPEN_IN_INTER_CLOSURE = prove
   REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM REAL_NOT_LE])) THEN
   CONV_TAC NORM_ARITH);;
 
+let OPEN_IN_INTER_CLOSURE_EQ_EMPTY = prove
+ (`!u s t:real^N->bool.
+        open_in (subtopology euclidean u) s /\ t SUBSET u
+        ==> (s INTER closure t = {} <=> s INTER t = {})`,
+  MESON_TAC[CLOSURE_OPEN_IN_INTER_CLOSURE; CLOSURE_EQ_EMPTY]);;
+
 let CLOSURE_OPEN_INTER_CLOSURE = prove
  (`!s t:real^N->bool.
         open s ==> closure(s INTER closure t) = closure(s INTER t)`,
@@ -2747,6 +2753,49 @@ let COMMON_FRONTIER_DOMAINS = prove
         CONNECTED_INTER_FRONTIER) THEN
   FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
   ASM_SIMP_TAC[frontier; INTERIOR_OPEN] THEN SET_TAC[]);;
+
+let FRONTIER_OPEN_UNION = prove
+ (`!s t:real^N->bool.
+        open s /\ open t /\ DISJOINT s t
+        ==> frontier(s UNION t) = frontier s UNION frontier t`,
+  REWRITE_TAC[DISJOINT; FRONTIER_CLOSURES] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[CLOSURE_CLOSED; GSYM OPEN_CLOSED; OPEN_UNION] THEN
+  REWRITE_TAC[CLOSURE_UNION] THEN
+  SUBGOAL_THEN
+   `(s:real^N->bool) INTER closure t = {} /\ t INTER closure s = {}`
+  MP_TAC THENL
+   [ASM_SIMP_TAC[OPEN_INTER_CLOSURE_EQ_EMPTY] THEN ASM SET_TAC[];
+    ASM SET_TAC[]]);;
+
+let FRONTIER_OPEN_UNIONS = prove
+ (`!f:(real^N->bool)->bool.
+        FINITE f /\ (!s. s IN f ==> open s) /\ pairwise DISJOINT f
+        ==> frontier(UNIONS f) = UNIONS {frontier s | s IN f}`,
+  REWRITE_TAC[IMP_CONJ; SIMPLE_IMAGE] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; UNIONS_0; UNIONS_INSERT] THEN
+  REWRITE_TAC[UNIONS_0; IMAGE_CLAUSES; FRONTIER_EMPTY; UNIONS_INSERT] THEN
+  REWRITE_TAC[PAIRWISE_INSERT] THEN REPEAT GEN_TAC THEN
+  DISCH_THEN(fun th -> REPEAT STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (SUBST1_TAC o SYM) ASSUME_TAC) THEN
+  MATCH_MP_TAC FRONTIER_OPEN_UNION THEN ASM_SIMP_TAC[OPEN_UNIONS] THEN
+  REWRITE_TAC[DISJOINT; INTER_UNIONS; EMPTY_UNIONS; FORALL_IN_GSPEC] THEN
+  ASM_MESON_TAC[DISJOINT]);;
+
+let CONNECTED_CLOSURE_FROM_FRONTIER = prove
+ (`!s:real^N->bool. connected(frontier s) ==> connected(closure s)`,
+  REPEAT STRIP_TAC THEN  MATCH_MP_TAC(TAUT `!q. p /\ q ==> p`) THEN
+  EXISTS_TAC `connected(closure((:real^N) DIFF s))` THEN
+  MATCH_MP_TAC CONNECTED_FROM_CLOSED_UNION_AND_INTER THEN
+  ASM_REWRITE_TAC[CLOSED_CLOSURE; GSYM FRONTIER_CLOSURES] THEN
+  SUBGOAL_THEN
+   `closure s UNION closure ((:real^N) DIFF s) = (:real^N)`
+   (fun th -> REWRITE_TAC[th; CONNECTED_UNIV]) THEN
+  MATCH_MP_TAC(SET_RULE
+   `s SUBSET closure s /\ (:real^N) DIFF s SUBSET closure((:real^N) DIFF s)
+    ==> closure s UNION closure ((:real^N) DIFF s) = (:real^N)`) THEN
+  REWRITE_TAC[CLOSURE_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Useful nets in Euclidean space.                                           *)
@@ -3441,6 +3490,13 @@ let LIM_WITHIN_OPEN = prove
  (`!f l a:real^M s.
      a IN s /\ open s ==> ((f --> l) (at a within s) <=> (f --> l) (at a))`,
   SIMP_TAC[tendsto; EVENTUALLY_WITHIN_OPEN]);;
+
+let LIM_WITHIN_OPEN_IN = prove
+ (`!f:real^M->real^N l a s t.
+
+        a IN t /\ open_in (subtopology euclidean s) t
+        ==> ((f --> l) (at a within t) <=> (f --> l) (at a within s))`,
+  REWRITE_TAC[tendsto] THEN MESON_TAC[EVENTUALLY_WITHIN_OPEN_IN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Two-sided limits on R^1.                                                  *)
@@ -6851,6 +6907,12 @@ let CONTINUOUS_ON_EQ_CONTINUOUS_AT = prove
       open s ==> (f continuous_on s <=> (!x. x IN s ==> f continuous (at x)))`,
   SIMP_TAC[CONTINUOUS_ON; CONTINUOUS_AT; LIM_WITHIN_OPEN]);;
 
+let CONTINUOUS_WITHIN_OPEN_IN = prove
+ (`!f:real^M->real^N a s t.
+        a IN t /\ open_in (subtopology euclidean s) t
+        ==> (f continuous (at a within t) <=> f continuous (at a within s))`,
+  REWRITE_TAC[CONTINUOUS_WITHIN] THEN MESON_TAC[LIM_WITHIN_OPEN_IN]);;
+
 let CONTINUOUS_WITHIN_SUBSET = prove
  (`!f s t x. f continuous (at x within s) /\ t SUBSET s
              ==> f continuous (at x within t)`,
@@ -7326,6 +7388,13 @@ let CONTINUOUS_ON_VSUM = prove
  (`!t f s. FINITE s /\ (!a. a IN s ==> (f a) continuous_on t)
              ==> (\x. vsum s (\a. f a x)) continuous_on t`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_VSUM]);;
+
+let CONTINUOUS_ON_REFLECT = prove
+ (`!f:real^M->real^N s.
+        (\x. f(--x)) continuous_on (IMAGE (--) s) <=>
+        f continuous_on s`,
+  REWRITE_TAC[continuous_on; FORALL_IN_IMAGE; EXISTS_IN_IMAGE; IMP_CONJ] THEN
+  REWRITE_TAC[VECTOR_NEG_NEG; NORM_ARITH `dist(--x:real^N,--y) = dist(x,y)`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Same thing for uniform continuity, using sequential formulations.         *)
@@ -12447,6 +12516,32 @@ let CONTINUOUS_ON_LIFT_NORM = prove
   REWRITE_TAC[CONTINUOUS_ON_LIFT_RANGE; NORM_LIFT] THEN
   MESON_TAC[REAL_ABS_SUB_NORM; REAL_LET_TRANS]);;
 
+let PROPER_MAP_NORM_SIMPLE = prove
+ (`!k. compact k ==> compact {x:real^N | lift(norm x) IN k}`,
+  REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED] THEN REPEAT STRIP_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [bounded]) THEN
+    REWRITE_TAC[bounded; FORALL_IN_GSPEC] THEN
+    MESON_TAC[NORM_LIFT; REAL_ABS_NORM];
+    MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE_UNIV THEN
+    ASM_REWRITE_TAC[REWRITE_RULE[o_DEF] CONTINUOUS_AT_LIFT_NORM]]);;
+
+let PROPER_MAP_NORM = prove
+ (`!s t. closed s
+         ==> !k. k SUBSET t /\ compact k
+                 ==> compact {x:real^N | x IN s /\ lift(norm x) IN k}`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE `{x | x IN s /\ P x} = s INTER {x | P x}`] THEN
+  MATCH_MP_TAC CLOSED_INTER_COMPACT THEN
+  ASM_SIMP_TAC[PROPER_MAP_NORM_SIMPLE]);;
+
+let CLOSED_MAP_NORM = prove
+ (`!s:real^N->bool. closed s ==> closed (IMAGE (lift o norm) s)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(:real^N)`; `(:real^1)`] PROPER_MAP_NORM) THEN
+  REWRITE_TAC[CLOSED_UNIV] THEN
+  SIMP_TAC[PROPER_MAP; SUBSET_UNIV] THEN
+  ASM_SIMP_TAC[GSYM CLOSED_IN; SUBTOPOLOGY_UNIV; o_DEF]);;
+
 let CONTINUOUS_AT_LIFT_COMPONENT = prove
  (`!i a. 1 <= i /\ i <= dimindex(:N)
          ==> (\x:real^N. lift(x$i)) continuous (at a)`,
@@ -12991,6 +13086,16 @@ let COMPACT_SCALING = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LINEAR_CONTINUOUS_AT THEN
   REWRITE_TAC[linear] THEN CONJ_TAC THEN VECTOR_ARITH_TAC);;
 
+let COMPACT_SCALING_EQ = prove
+ (`!s:real^N->bool c. compact (IMAGE (\x. c % x) s) <=> c = &0 \/ compact s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c = &0` THEN ASM_REWRITE_TAC[] THENL
+   [REWRITE_TAC[IMAGE_CONST; VECTOR_MUL_LZERO] THEN
+    MESON_TAC[COMPACT_SING; COMPACT_EMPTY];
+    EQ_TAC THEN REWRITE_TAC[COMPACT_SCALING] THEN
+    DISCH_THEN(MP_TAC o SPEC `inv(c):real` o MATCH_MP COMPACT_SCALING) THEN
+    REWRITE_TAC[GSYM IMAGE_o; o_DEF; VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; IMAGE_ID]]);;
+
 let COMPACT_NEGATIONS = prove
  (`!s:real^N->bool. compact s ==> compact (IMAGE (--) s)`,
   REPEAT STRIP_TAC THEN
@@ -13030,13 +13135,15 @@ let COMPACT_DIFFERENCES = prove
   SIMP_TAC[VECTOR_SUB; GSYM CONJ_ASSOC; UNWIND_THM2] THEN
   MESON_TAC[VECTOR_NEG_NEG]);;
 
+let COMPACT_AFFINITY_EQ = prove
+ (`!s m c:real^N.
+        compact (IMAGE (\x. m % x + c) s) <=> m = &0 \/ compact s`,
+  REWRITE_TAC[AFFINITY_SCALING_TRANSLATION; COMPACT_TRANSLATION_EQ;
+              COMPACT_SCALING_EQ; IMAGE_o]);;
+
 let COMPACT_AFFINITY = prove
- (`!s a:real^N c.
-        compact s ==> compact (IMAGE (\x. c % x + a) s)`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `(\x:real^N. c % x + a) = (\x. a + x) o (\x. c % x)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF; VECTOR_ADD_SYM]; ALL_TAC] THEN
-  ASM_SIMP_TAC[IMAGE_o; COMPACT_TRANSLATION; COMPACT_SCALING]);;
+ (`!s m c:real^N. compact s ==> compact (IMAGE (\x. m % x + c) s)`,
+  SIMP_TAC[COMPACT_AFFINITY_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence we get the following.                                               *)

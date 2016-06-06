@@ -2619,6 +2619,24 @@ let CONVEX_SUMS_MULTIPLES = prove
       ASM_SIMP_TAC[REAL_LE_DIV; REAL_LT_IMP_LE] THEN
       UNDISCH_TAC `&0 < c + d` THEN CONV_TAC REAL_FIELD]]);;
 
+let CONVEX_TRANSLATION_SUBSET_PREIMAGE = prove
+ (`!s t:real^N->bool.
+        convex t ==> convex {a | IMAGE (\x. a + x) s SUBSET t}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONVEX_ALT] THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`; `u:real`] THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM; FORALL_IN_IMAGE] THEN STRIP_TAC THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN ONCE_REWRITE_TAC[VECTOR_ARITH
+   `((&1 - u) % a + u % b) + x:real^N = (&1 - u) % (a + x) + u % (b + x)`] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC[]);;
+
+let CONVEX_TRANSLATION_SUPERSET_PREIMAGE = prove
+ (`!s t:real^N->bool.
+        convex t ==> convex {a | s SUBSET IMAGE (\x. a + x) t}`,
+  REWRITE_TAC[TRANSLATION_SUBSET_GALOIS_RIGHT] THEN
+  ASM_SIMP_TAC[VECTOR_NEG_NEG; CONVEX_NEGATIONS;
+               CONVEX_TRANSLATION_SUBSET_PREIMAGE; SET_RULE
+  `(!x:real^N. --(--x) = x) ==> {a:real^N | P(--a)} = IMAGE (--) {a | P a}`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some interesting "cancellation" properties for sum-sets.                  *)
 (* ------------------------------------------------------------------------- *)

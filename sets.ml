@@ -2774,6 +2774,15 @@ let INFINITE_ENUMERATE = prove
     EXISTS_TAC `0` THEN ASM_REWRITE_TAC[GSYM LE_ANTISYM; GSYM NOT_LT] THEN
     ASM_MESON_TAC[LE_0]]);;
 
+let INFINITE_ENUMERATE_EQ = prove
+ (`!s:num->bool.
+     INFINITE s <=> ?r. (!m n:num. m < n ==> r m < r n) /\ IMAGE r (:num) = s`,
+  GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[INFINITE_ENUMERATE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:num->num` (STRIP_ASSUME_TAC o GSYM)) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC INFINITE_IMAGE THEN
+  REWRITE_TAC[num_INFINITE; IN_UNIV] THEN
+  MATCH_MP_TAC WLOG_LT THEN ASM_MESON_TAC[LT_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Mapping between finite sets and lists.                                    *)
 (* ------------------------------------------------------------------------- *)

@@ -96,13 +96,6 @@ let REAL_CONVEX_BOUND_LE = prove
   CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[REAL_LE_REFL; REAL_MUL_LID]] THEN
   ASM_SIMP_TAC[REAL_ADD_RDISTRIB; REAL_LE_ADD2; REAL_LE_LMUL]);;
 
-let INFINITE_ENUMERATE_WEAK = prove
- (`!s:num->bool.
-       INFINITE s
-       ==> ?r:num->num. (!m n. m < n ==> r(m) < r(n)) /\ (!n. r n IN s)`,
-  GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP INFINITE_ENUMERATE) THEN
-  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
-
 let APPROACHABLE_LT_LE = prove
  (`!P f. (?d. &0 < d /\ !x. f(x) < d ==> P x) =
          (?d. &0 < d /\ !x. f(x) <= d ==> P x)`,
@@ -617,6 +610,24 @@ let MONOTONE_BIGGER = prove
  (`!r. (!m n. m < n ==> r(m) < r(n)) ==> !n:num. n <= r(n)`,
   GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN
   ASM_MESON_TAC[LE_0; ARITH_RULE `n <= m /\ m < p ==> SUC n <= p`; LT]);;
+
+let INFINITE_ENUMERATE_WEAK = prove
+ (`!s:num->bool.
+       INFINITE s
+       ==> ?r:num->num. (!m n. m < n ==> r(m) < r(n)) /\ (!n. r n IN s)`,
+  GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP INFINITE_ENUMERATE) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
+
+let INFINITE_ENUMERATE_EQ_ALT = prove
+ (`!s:num->bool.
+        INFINITE s <=> ?r. (!m n:num. m < n ==> r m < r n) /\ (!n. r n IN s)`,
+  GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[INFINITE_ENUMERATE_WEAK] THEN
+  STRIP_TAC THEN MATCH_MP_TAC INFINITE_SUPERSET THEN
+  EXISTS_TAC `IMAGE (r:num->num) (:num)` THEN
+  ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  MATCH_MP_TAC INFINITE_IMAGE THEN
+  REWRITE_TAC[num_INFINITE; IN_UNIV] THEN
+  ASM_MESON_TAC[SUBSEQUENCE_IMP_INJECTIVE]);;
 
 let MONOTONE_SUBSEQUENCE = prove
  (`!s:num->real. ?r:num->num.

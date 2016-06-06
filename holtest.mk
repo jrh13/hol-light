@@ -11,6 +11,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/cong \
 	Examples/cooper \
 	Examples/dickson \
+	Examples/division_algebras \
 	Examples/dlo \
 	Library/floor \
 	Examples/forster \

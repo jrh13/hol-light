@@ -549,6 +549,14 @@ let EVENTUALLY_IN_SEQUENTIALLY = prove
   REWRITE_TAC[NOT_LE] THEN
   MESON_TAC[LT_IMP_LE; ARITH_RULE `a + 1 <= x ==> a < x`]);;
 
+let EVENTUALLY_NO_SUBSEQUENCE = prove
+ (`!P. eventually P sequentially <=>
+       ~(?r:num->num. (!m n. m < n ==> r m < r n) /\ (!n. ~P(r n)))`,
+  GEN_TAC THEN REWRITE_TAC[EVENTUALLY_IN_SEQUENTIALLY] THEN
+  ONCE_REWRITE_TAC[TAUT `(p <=> ~q) <=> (~p <=> q)`] THEN
+  REWRITE_TAC[GSYM INFINITE; INFINITE_ENUMERATE_EQ_ALT] THEN
+  REWRITE_TAC[IN_ELIM_THM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Metric spaces.                                                            *)
 (* ------------------------------------------------------------------------- *)
