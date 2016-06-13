@@ -8360,18 +8360,73 @@ let DIM_SPECIAL_SUBSPACE = prove
 (* More injective/surjective versus dimension variants.                      *)
 (* ------------------------------------------------------------------------- *)
 
+let LINEAR_INJECTIVE_ON_IFF_DIM = prove
+ (`!f:real^M->real^N s.
+        linear f /\ subspace s
+        ==> ((!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) <=>
+             dim(IMAGE f s) = dim s)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`]
+        DIM_IMAGE_KERNEL_GEN) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[ARITH_RULE `m:num = m + n <=> n = 0`] THEN
+  ASM_SIMP_TAC[LINEAR_INJECTIVE_0_SUBSPACE; DIM_EQ_0] THEN SET_TAC[]);;
+
+let DIM_INJECTIVE_ON_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N s.
+        linear f /\ subspace s /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> dim(IMAGE f s) = dim s`,
+  MESON_TAC[LINEAR_INJECTIVE_ON_IFF_DIM]);;
+
+let DIM_EQ_SUBSPACES = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t /\ s SUBSET t /\ dim t <= dim s
+        ==> s = t`,
+  MESON_TAC[DIM_EQ_SPAN; SPAN_EQ_SELF]);;
+
+let DIM_EQ_SUBSPACE = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t /\ s SUBSET t
+        ==> (dim s = dim t <=> s = t)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC[] THEN
+  DISCH_TAC THEN MATCH_MP_TAC DIM_EQ_SUBSPACES THEN
+  ASM_REWRITE_TAC[LE_REFL]);;
+
+let LINEAR_SURJECTIVE_ON_IFF_DIM = prove
+ (`!f:real^M->real^N s t.
+        linear f /\ subspace s /\ subspace t /\ IMAGE f s SUBSET t
+        ==> (IMAGE f s = t <=> dim(IMAGE f s) = dim t)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC DIM_EQ_SUBSPACE THEN ASM_SIMP_TAC[SUBSPACE_LINEAR_IMAGE]);;
+
+let LINEAR_INJECTIVE_IMP_SURJECTIVE_ON = prove
+ (`!f:real^M->real^N s t.
+        linear f /\ subspace s /\ subspace t /\
+        IMAGE f s SUBSET t /\ dim t <= dim s /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> IMAGE f s = t`,
+  REWRITE_TAC[INJECTIVE_ON_ALT] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[LINEAR_SURJECTIVE_ON_IFF_DIM] THEN
+  ASM_SIMP_TAC[DIM_SUBSET; GSYM LE_ANTISYM] THEN
+  ASM_SIMP_TAC[LINEAR_INJECTIVE_ON_IFF_DIM] THEN
+  ASM_SIMP_TAC[DIM_INJECTIVE_ON_LINEAR_IMAGE; INJECTIVE_ON_ALT]);;
+
+let LINEAR_SURJECTIVE_IFF_INJECTIVE_ON = prove
+ (`!f:real^M->real^N s t.
+        linear f /\ subspace s /\ subspace t /\
+        IMAGE f s SUBSET t /\ dim s = dim t
+        ==> (IMAGE f s = t <=>
+             !x y. x IN s /\ y IN s /\ f x = f y ==> x = y)`,
+  SIMP_TAC[LINEAR_SURJECTIVE_ON_IFF_DIM; LINEAR_INJECTIVE_ON_IFF_DIM]);;
+
 let LINEAR_INJECTIVE_IFF_DIM = prove
  (`!f:real^M->real^N.
         linear f
         ==> ((!x y. f x = f y ==> x = y) <=>
              dim(IMAGE f (:real^M)) = dimindex(:M))`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPEC `f:real^M->real^N` DIM_IMAGE_KERNEL) THEN
-  ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(SUBST1_TAC o MATCH_MP (ARITH_RULE
-    `x + y:num = m ==> (x = m <=> y = 0)`)) THEN
-  REWRITE_TAC[DIM_EQ_0; SUBSET; IN_ELIM_THM; IN_SING] THEN
-  ASM_MESON_TAC[LINEAR_INJECTIVE_0]);;
+  SIMP_TAC[GSYM LINEAR_INJECTIVE_ON_IFF_DIM; GSYM DIM_UNIV; SUBSPACE_UNIV] THEN
+  REWRITE_TAC[IN_UNIV]);;
 
 let LINEAR_SURJECTIVE_IFF_DIM = prove
  (`!f:real^M->real^N.
@@ -8392,7 +8447,6 @@ let MATRIX_INVERTIBLE_LEFT_GEN = prove
         linear f /\ dimindex(:N) <= dimindex(:M)
         ==> (invertible(matrix f) <=> ?g. linear g /\ g o f = I)`,
   REPEAT STRIP_TAC THEN
-
   ASM_SIMP_TAC[MATRIX_INVERTIBLE] THEN
   ASM_SIMP_TAC[GSYM LINEAR_BIJECTIVE_LEFT_RIGHT_INVERSE_EQ;
                GSYM LINEAR_INJECTIVE_LEFT_INVERSE_EQ] THEN
