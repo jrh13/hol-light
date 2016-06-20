@@ -790,8 +790,20 @@ let MEASURABLE_INSERT = prove
   MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN EXISTS_TAC `{x:real^N}` THEN
   REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
 
+let MEASURABLE_DELETE = prove
+ (`!x s:real^N->bool. measurable(s DELETE x) <=> measurable s`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN EXISTS_TAC `{x:real^N}` THEN
+  REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
+
 let MEASURE_INSERT = prove
  (`!x s:real^N->bool. measure(x INSERT s) = measure s`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC MEASURE_NEGLIGIBLE_SYMDIFF THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN EXISTS_TAC `{x:real^N}` THEN
+  REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
+
+let MEASURE_DELETE = prove
+ (`!x s:real^N->bool. measure(s DELETE x) = measure s`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC MEASURE_NEGLIGIBLE_SYMDIFF THEN
   MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN EXISTS_TAC `{x:real^N}` THEN
   REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
@@ -9294,6 +9306,22 @@ let LEBESGUE_MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ = prove
         negligible(s DIFF t UNION t DIFF s)
         ==> (lebesgue_measurable s <=> lebesgue_measurable t)`,
   MESON_TAC[LEBESGUE_MEASURABLE_NEGLIGIBLE_SYMDIFF; UNION_COMM]);;
+
+let LEBESGUE_MEASURABLE_INSERT = prove
+ (`!s a:real^N. lebesgue_measurable(a INSERT s) <=> lebesgue_measurable s`,
+  REPEAT GEN_TAC THEN
+  MATCH_MP_TAC LEBESGUE_MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `{a:real^N}` THEN
+  REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
+
+let LEBESGUE_MEASURABLE_DELETE = prove
+ (`!s a:real^N. lebesgue_measurable(s DELETE a) <=> lebesgue_measurable s`,
+  REPEAT GEN_TAC THEN
+  MATCH_MP_TAC LEBESGUE_MEASURABLE_NEGLIGIBLE_SYMDIFF_EQ THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `{a:real^N}` THEN
+  REWRITE_TAC[NEGLIGIBLE_SING] THEN SET_TAC[]);;
 
 let ABSOLUTELY_INTEGRABLE_ON_LEBESGUE_MEASURABLE_INTER = prove
  (`!f:real^M->real^N s t.
@@ -18935,8 +18963,86 @@ let LUZIN_SIGMA = prove
      EXISTS_TAC `(lambda i. floor((x:real^M)$i)):real^M` THEN
      ASM_SIMP_TAC[LAMBDA_BETA; FLOOR]]);;
 
+let LUZIN_SIGMA_EXPLICIT = prove
+ (`!f:real^M->real^N s.
+        lebesgue_measurable s /\ f measurable_on s
+        ==> ?k. (!n. compact(k n)) /\
+                (!n. k n SUBSET s) /\
+                (!n. f continuous_on k n) /\
+                pairwise (\m n. DISJOINT (k m) (k n)) (:num) /\
+                negligible(s DIFF UNIONS {k n | n IN (:num)})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`]
+        LUZIN_SIGMA) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `u:(real^M->bool)->bool` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I
+   [COUNTABLE_AS_INJECTIVE_IMAGE_SUBSET]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; INJECTIVE_ON_ALT] THEN
+  MAP_EVERY X_GEN_TAC [`k:num->real^M->bool`; `t:num->bool`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 SUBST_ALL_TAC ASSUME_TAC) THEN
+  EXISTS_TAC `\n. if n IN t then (k:num->real^M->bool) n else {}` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[FORALL_IN_IMAGE]) THEN
+  REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[COMPACT_EMPTY];
+    ASM_MESON_TAC[EMPTY_SUBSET];
+    ASM_MESON_TAC[CONTINUOUS_ON_EMPTY];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [pairwise]) THEN
+    REWRITE_TAC[pairwise; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    ASM_SIMP_TAC[FORALL_IN_IMAGE; IN_UNIV] THEN
+    REPEAT STRIP_TAC THEN
+    REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN ASM SET_TAC[];
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+            NEGLIGIBLE_SUBSET)) THEN
+    MATCH_MP_TAC(SET_RULE `s = t ==> s SUBSET t`) THEN
+    AP_TERM_TAC THEN ONCE_REWRITE_TAC[GSYM UNIONS_INSERT_EMPTY] THEN
+    AP_TERM_TAC THEN SET_TAC[]]);;
+
+let LUZIN_SIGMA_NESTED = prove
+ (`!f:real^M->real^N s.
+        lebesgue_measurable s /\ f measurable_on s
+        ==> ?k. (!n. compact(k n)) /\
+                (!n. k n SUBSET s) /\
+                (!n. f continuous_on k n) /\
+                (!n. k n SUBSET k(SUC n)) /\
+                negligible(s DIFF UNIONS {k n | n IN (:num)})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`]
+        LUZIN_SIGMA_EXPLICIT) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `c:num->real^M->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\n. UNIONS {(c:num->real^M->bool) m | m <= n}` THEN
+  REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [GEN_TAC THEN MATCH_MP_TAC COMPACT_UNIONS THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+    ASM_SIMP_TAC[FORALL_IN_IMAGE; FINITE_NUMSEG_LE; FINITE_IMAGE];
+    ASM_REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC];
+    X_GEN_TAC `k:num` THEN
+    MP_TAC(ISPEC `\n:num. (f:real^M->real^N)`
+      PASTING_LEMMA_LOCALLY_FINITE) THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`c:num->real^M->bool`; `{n:num | n <= k}`] THEN
+    REWRITE_TAC[FORALL_IN_UNIONS] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ASM_SIMP_TAC[CLOSED_SUBSET_EQ; COMPACT_IMP_CLOSED; UNIONS_GSPEC] THEN
+    SIMP_TAC[FINITE_RESTRICT; FINITE_NUMSEG_LE] THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+    X_GEN_TAC `j:num` THEN DISCH_TAC THEN
+    X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+    MATCH_MP_TAC(MESON[OPEN_IN_REFL]
+     `P(s:real^N->bool)
+      ==> ?t. open_in (subtopology euclidean s) t /\ P t`) THEN
+    ASM SET_TAC[];
+    REWRITE_TAC[LE; UNIONS_GSPEC] THEN SET_TAC[];
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+            NEGLIGIBLE_SUBSET)) THEN
+    REWRITE_TAC[SUBSET; IN_DIFF; UNIONS_GSPEC; IN_ELIM_THM; IN_UNIV] THEN
+    MESON_TAC[LE_REFL]]);;
+
 (* ------------------------------------------------------------------------- *)
-(* Measurability of inverse function.                                        *)
+(* A measurable subset on which a function is injective, the simple version  *)
+(* first and then some approximate variants with a "better" subsets.         *)
 (* ------------------------------------------------------------------------- *)
 
 let PRESERVES_LEBESGUE_MEASURABLE_IFF_PRESERVES_NEGLIGIBLE_GEN = prove
@@ -18965,6 +19071,154 @@ let PRESERVES_LEBESGUE_MEASURABLE_IFF_PRESERVES_NEGLIGIBLE_GEN = prove
     ASM_SIMP_TAC[COMPACT_CONTINUOUS_IMAGE; LEBESGUE_MEASURABLE_COMPACT];
     MATCH_MP_TAC NEGLIGIBLE_IMP_LEBESGUE_MEASURABLE THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[]]);;
+
+let LEBESGUE_MEASURABLE_DOMAIN_OF_INJECTIVITY = prove
+ (`!f:real^M->real^N s.
+        f measurable_on s
+        ==> ?t. lebesgue_measurable t /\ t SUBSET s /\
+                IMAGE f t = IMAGE f s /\
+                !x y. x IN t /\ y IN t /\ f x = f y ==> x = y`,
+  SUBGOAL_THEN
+   `!f:real^M->real^N s.
+        f measurable_on s /\ lebesgue_measurable s
+        ==> ?t. lebesgue_measurable t /\ t SUBSET s /\
+                IMAGE f t = IMAGE f s /\
+                !x y. x IN t /\ y IN t /\ f x = f y ==> x = y`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`] LUZIN_SIGMA) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `u:(real^M->bool)->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPECL [`f:real^M->real^N`; `u:(real^M->bool)->bool`]
+          BOREL_DOMAIN_OF_INJECTIVITY_CONTINUOUS_GEN) THEN
+    ASM_SIMP_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `b:real^M->bool` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN
+     `!y. ?x. y IN IMAGE f s DIFF IMAGE f (UNIONS u)
+              ==> x IN s DIFF UNIONS u /\ (f:real^M->real^N) x = y`
+    MP_TAC THENL [SET_TAC[]; REWRITE_TAC[SKOLEM_THM]] THEN
+    DISCH_THEN(X_CHOOSE_THEN `g:real^N->real^M` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC
+     `b UNION IMAGE (g:real^N->real^M)
+                    (IMAGE (f:real^M->real^N) s DIFF IMAGE f (UNIONS u))` THEN
+    REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC LEBESGUE_MEASURABLE_NEGLIGIBLE_SYMDIFF THEN
+      EXISTS_TAC `b:real^M->bool` THEN
+      ASM_SIMP_TAC[BOREL_IMP_LEBESGUE_MEASURABLE] THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+              NEGLIGIBLE_SUBSET)) THEN
+      ASM SET_TAC[];
+      ASM SET_TAC[];
+      ABBREV_TAC `v:real^M->bool = UNIONS u` THEN
+      ASM_REWRITE_TAC[IMAGE_UNION] THEN ASM SET_TAC[];
+      ABBREV_TAC `v:real^M->bool = UNIONS u` THEN ASM SET_TAC[]];
+    REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     `lebesgue_measurable {x | x IN s /\ ~((f:real^M->real^N) x = vec 0)}`
+    ASSUME_TAC THENL
+     [FIRST_ASSUM(MP_TAC o SPEC `(:real^N) DELETE (vec 0)` o
+          GEN_REWRITE_RULE I [MEASURABLE_ON_PREIMAGE_OPEN] o
+          GEN_REWRITE_RULE I [GSYM MEASURABLE_ON_UNIV]) THEN
+      SIMP_TAC[OPEN_DELETE; OPEN_UNIV] THEN
+      MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN SET_TAC[];
+      ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o ISPECL
+     [`f:real^M->real^N`;
+      `{x | x IN s /\ ~((f:real^M->real^N) x = vec 0)}`]) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [MATCH_MP_TAC MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET THEN
+      EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[SUBSET_RESTRICT];
+      REWRITE_TAC[SET_RULE
+       `IMAGE f {x | x IN s /\ ~(f x = a)} = IMAGE f s DELETE a`]] THEN
+    DISCH_THEN(X_CHOOSE_THEN `t:real^M->bool` STRIP_ASSUME_TAC) THEN
+    ASM_CASES_TAC `vec 0 IN IMAGE (f:real^M->real^N) s` THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_IMAGE]) THEN
+      DISCH_THEN(X_CHOOSE_THEN `a:real^M` (STRIP_ASSUME_TAC o GSYM)) THEN
+      EXISTS_TAC `(a:real^M) INSERT t` THEN
+      ASM_REWRITE_TAC[LEBESGUE_MEASURABLE_INSERT] THEN ASM SET_TAC[];
+      EXISTS_TAC `t:real^M->bool` THEN ASM_REWRITE_TAC[] THEN
+      ASM SET_TAC[]]]);;
+
+let BOREL_DOMAIN_OF_INJECTIVITY = prove
+ (`!f:real^M->real^N s.
+        f measurable_on s /\ lebesgue_measurable s /\
+        (!n. n SUBSET s /\ negligible n ==> negligible(IMAGE f n))
+        ==> ?t. borel t /\ t SUBSET s /\
+                negligible(IMAGE f s DIFF IMAGE f t) /\
+                !x y. x IN t /\ y IN t /\ f x = f y ==> x = y`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`] LUZIN_SIGMA) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:(real^M->bool)->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `u:(real^M->bool)->bool`]
+        BOREL_DOMAIN_OF_INJECTIVITY_CONTINUOUS_GEN) THEN
+  ASM_SIMP_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `b:real^M->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `IMAGE (f:real^M->real^N) (s DIFF UNIONS u)` THEN
+  ASM_SIMP_TAC[SUBSET_DIFF] THEN ASM SET_TAC[]);;
+
+let GDELTA_DOMAIN_OF_INJECTIVITY_MEASURABLE = prove
+ (`!f:real^M->real^N s u e.
+        f measurable_on s /\ lebesgue_measurable s /\ &0 < e /\
+        IMAGE f s SUBSET u /\ measurable u /\
+        (!t. t SUBSET s /\ negligible t ==> negligible(IMAGE f t))
+        ==> ?t. t SUBSET s /\ gdelta t /\ bounded t /\ measurable t /\
+                measurable(IMAGE f t) /\
+                measure(IMAGE f s DIFF IMAGE f t) < e /\
+                (!x y. x IN t /\ y IN t /\ f x = f y ==> x = y)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`]
+        LUZIN_SIGMA_NESTED) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:num->real^M->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP
+    PRESERVES_LEBESGUE_MEASURABLE_IFF_PRESERVES_NEGLIGIBLE_GEN) THEN
+  ONCE_REWRITE_TAC[CONJ_SYM] THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `\n:num. IMAGE (f:real^M->real^N) s DIFF IMAGE f (k n)`
+        HAS_MEASURE_NESTED_INTERS) THEN
+  REWRITE_TAC[] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [X_GEN_TAC `n:num`; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC MEASURABLE_LEBESGUE_MEASURABLE_SUBSET THEN
+    EXISTS_TAC `u:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC LEBESGUE_MEASURABLE_DIFF THEN
+    CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[SUBSET_REFL; LEBESGUE_MEASURABLE_COMPACT];
+    DISCH_THEN(MP_TAC o CONJUNCT2)] THEN
+  SUBGOAL_THEN
+   `measure(INTERS {IMAGE (f:real^M->real^N) s DIFF IMAGE f (k n) |
+                    n IN (:num)}) = &0`
+  SUBST1_TAC THENL
+   [MATCH_MP_TAC MEASURE_EQ_0 THEN
+    MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+    EXISTS_TAC `IMAGE (f:real^M->real^N)
+                      (s DIFF UNIONS {k n | n IN (:num)})` THEN
+    ASM_SIMP_TAC[SUBSET_DIFF] THEN
+    REWRITE_TAC[INTERS_GSPEC; UNIONS_GSPEC] THEN ASM SET_TAC[];
+    REWRITE_TAC[LIM_SEQUENTIALLY; DIST_LIFT]] THEN
+  DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
+  REWRITE_TAC[REAL_SUB_RZERO; LE_REFL] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `(k:num->real^M->bool) n`]
+        GDELTA_DOMAIN_OF_INJECTIVITY_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[INJECTIVE_ON_ALT] THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [ASM_MESON_TAC[BOUNDED_SUBSET; COMPACT_IMP_BOUNDED];
+    MATCH_MP_TAC MEASURABLE_LEBESGUE_MEASURABLE_SUBSET THEN
+    EXISTS_TAC `(k:num->real^M->bool) n` THEN
+    ASM_SIMP_TAC[GDELTA_IMP_LEBESGUE_MEASURABLE; MEASURABLE_COMPACT];
+    ASM_SIMP_TAC[MEASURABLE_COMPACT; COMPACT_CONTINUOUS_IMAGE];
+    ASM_SIMP_TAC[REAL_ARITH `abs x < e ==> x < e`];
+    ASM_SIMP_TAC[];
+    ASM_MESON_TAC[SUBSET_TRANS]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Measurability of inverse function (including sections / selections).      *)
+(* ------------------------------------------------------------------------- *)
 
 let DOUBLE_LEBESGUE_MEASURABLE_INVERSE_FUNCTION_GEN = prove
  (`!f:real^M->real^N s.
@@ -19029,6 +19283,73 @@ let LEBESGUE_MEASURABLE_MEASURABLE_IMAGE,MEASURABLE_ON_INVERSE_FUNCTION =
         DOUBLE_LEBESGUE_MEASURABLE_INVERSE_FUNCTION) THEN
   ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
   ASM_SIMP_TAC[LEBESGUE_MEASURABLE_OPEN]);;
+
+let DOUBLE_LEBESGUE_MEASURABLE_LEFT_INVERSE = prove
+ (`!f:real^M->real^N s.
+      f measurable_on s /\
+      (!t. negligible t /\ t SUBSET s ==> negligible (IMAGE f t)) /\
+      (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+      ==> ?g. (!x. x IN s ==> g(f x) = x) /\
+              (!t. lebesgue_measurable t
+                   ==> lebesgue_measurable {y | y IN IMAGE f s /\ g y IN t})`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  REWRITE_TAC[INJECTIVE_ON_LEFT_INVERSE] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN DISCH_TAC THEN
+  CONJ_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC DOUBLE_LEBESGUE_MEASURABLE_INVERSE_FUNCTION THEN
+  ASM_REWRITE_TAC[]);;
+
+let MEASURABLE_ON_LEFT_INVERSE = prove
+ (`!f:real^M->real^N s.
+        f measurable_on s /\
+        (!t. negligible t /\ t SUBSET s ==> negligible (IMAGE f t)) /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> ?g. (!x. x IN s ==> g(f x) = x) /\ g measurable_on IMAGE f s`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  REWRITE_TAC[INJECTIVE_ON_LEFT_INVERSE] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN DISCH_TAC THEN
+  CONJ_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MEASURABLE_ON_INVERSE_FUNCTION THEN
+  ASM_REWRITE_TAC[]);;
+
+let DOUBLE_LEBESGUE_MEASURABLE_RIGHT_INVERSE = prove
+ (`!f:real^M->real^N s.
+       f measurable_on s /\
+       (!t. negligible t /\ t SUBSET s ==> negligible (IMAGE f t))
+       ==> ?g. (!y. y IN IMAGE f s ==> g y IN s /\ f(g y) = y) /\
+               (!t. lebesgue_measurable t
+                    ==> lebesgue_measurable {y | y IN IMAGE f s /\ g y IN t})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`]
+        LEBESGUE_MEASURABLE_DOMAIN_OF_INJECTIVITY) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `t:real^M->bool` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `t:real^M->bool`]
+        DOUBLE_LEBESGUE_MEASURABLE_LEFT_INVERSE) THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET; SUBSET_TRANS];
+    MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]]);;
+
+let MEASURABLE_ON_RIGHT_INVERSE = prove
+ (`!f:real^M->real^N s.
+        f measurable_on s /\
+        (!t. negligible t /\ t SUBSET s ==> negligible (IMAGE f t))
+        ==> ?g. (!y. y IN IMAGE f s ==> g y IN s /\ f(g y) = y) /\
+                g measurable_on IMAGE f s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`]
+        LEBESGUE_MEASURABLE_DOMAIN_OF_INJECTIVITY) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `t:real^M->bool` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `t:real^M->bool`]
+        MEASURABLE_ON_LEFT_INVERSE) THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET; SUBSET_TRANS];
+    MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Egorov's thoerem.                                                         *)

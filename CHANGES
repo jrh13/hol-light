@@ -8,6 +8,45 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 14th Jun 2016       sets.ml
+
+Added a few handy set theory lemmas, mainly on a theme of finite subsets
+of the union of a chain:
+
+  CARD_LE_UNIONS_CHAIN =
+    |- !f n.
+         (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t) /\
+         (!t. t IN f ==> FINITE t /\ CARD t <= n)
+         ==> FINITE (UNIONS f) /\ CARD (UNIONS f) <= n
+
+  CHOOSE_SUBSET_EQ =
+    |- !n s. FINITE s ==> n <= CARD s <=> (?t. t SUBSET s /\ t HAS_SIZE n)
+
+  FINITE_SUBSET_UNIONS =
+    |- !f s.
+           FINITE s /\ s SUBSET UNIONS f
+           ==> (?f'. FINITE f' /\ f' SUBSET f /\ s SUBSET UNIONS f')
+
+  FINITE_SUBSET_UNIONS_CHAIN =
+    |- !f s.
+           FINITE s /\
+           s SUBSET UNIONS f /\
+           ~(f = {}) /\
+           (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t)
+           ==> (?t. t IN f /\ s SUBSET t)
+
+  INTERS_IN_CHAIN =
+    |- !f. FINITE f /\
+           ~(f = {}) /\
+           (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+           ==> INTERS f IN f
+
+  UNIONS_IN_CHAIN =
+    |- !f. FINITE f /\
+           ~(f = {}) /\
+           (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+           ==> UNIONS f IN f
+
 Sat  4th Jun 2016       Examples/division_algebras.ml [new file]
 
 Added a new example with two nonexistence proofs for division algebras in

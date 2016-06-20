@@ -1560,6 +1560,72 @@ let UNIONS_MAXIMAL_SETS = prove
   REPEAT CONJ_TAC THENL [SET_TAC[]; SET_TAC[]; ALL_TAC; ASM SET_TAC[]] THEN
   ASM_MESON_TAC[PSUBSET_TRANS; SUBSET_PSUBSET_TRANS; PSUBSET]);;
 
+let FINITE_SUBSET_UNIONS = prove
+ (`!f s:A->bool.
+        FINITE s /\ s SUBSET UNIONS f
+        ==> ?f'. FINITE f' /\ f' SUBSET f /\ s SUBSET UNIONS f'`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
+   [IN_UNIONS; RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `u:A->A->bool` THEN DISCH_TAC THEN
+  EXISTS_TAC `IMAGE (u:A->A->bool) s` THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; UNIONS_IMAGE] THEN ASM SET_TAC[]);;
+
+let UNIONS_IN_CHAIN = prove
+ (`!f:(A->bool)->bool.
+        FINITE f /\ ~(f = {}) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> UNIONS f IN f`,
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; FORALL_IN_INSERT; UNIONS_INSERT] THEN
+  REWRITE_TAC[FORALL_AND_THM; TAUT `p ==> q /\ r <=> (p ==> q) /\ (p ==> r)`;
+              NOT_INSERT_EMPTY] THEN
+  MAP_EVERY X_GEN_TAC [`s:A->bool`; `f:(A->bool)->bool`] THEN
+  ASM_CASES_TAC `f:(A->bool)->bool = {}` THEN
+  ASM_REWRITE_TAC[UNIONS_0; IN_INSERT; UNION_EMPTY] THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[]
+   `s UNION t = s \/ s UNION t = t
+    ==> t IN f ==> s UNION t = s \/ s UNION t IN f`) THEN
+  ASM SET_TAC[]);;
+
+let INTERS_IN_CHAIN = prove
+ (`!f:(A->bool)->bool.
+        FINITE f /\ ~(f = {}) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> INTERS f IN f`,
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; FORALL_IN_INSERT; INTERS_INSERT] THEN
+  REWRITE_TAC[FORALL_AND_THM; TAUT `p ==> q /\ r <=> (p ==> q) /\ (p ==> r)`;
+              NOT_INSERT_EMPTY] THEN
+  MAP_EVERY X_GEN_TAC [`s:A->bool`; `f:(A->bool)->bool`] THEN
+  ASM_CASES_TAC `f:(A->bool)->bool = {}` THEN
+  ASM_REWRITE_TAC[INTERS_0; IN_INSERT; INTER_UNIV] THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[]
+   `s INTER t = s \/ s INTER t = t
+    ==> t IN f ==> s INTER t = s \/ s INTER t IN f`) THEN
+  ASM SET_TAC[]);;
+
+let FINITE_SUBSET_UNIONS_CHAIN = prove
+ (`!f s:A->bool.
+        FINITE s /\ s SUBSET UNIONS f /\ ~(f = {}) /\
+        (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t)
+        ==> ?t. t IN f /\ s SUBSET t`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:(A->bool)->bool`; `s:A->bool`]
+        FINITE_SUBSET_UNIONS) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `t:(A->bool)->bool` THEN
+  ASM_CASES_TAC `t:(A->bool)->bool = {}` THENL
+   [ASM_SIMP_TAC[UNIONS_0] THEN ASM SET_TAC[]; STRIP_TAC] THEN
+  EXISTS_TAC `UNIONS t:A->bool` THEN
+  ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o REWRITE_RULE[SUBSET]) THEN
+  MATCH_MP_TAC UNIONS_IN_CHAIN THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Recursion over finite sets; based on Ching-Tsun's code (archive 713).     *)
 (* ------------------------------------------------------------------------- *)
@@ -2200,6 +2266,14 @@ let CHOOSE_SUBSET_STRONG = prove
   GEN_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[SUC_SUB1] THEN
   ASM SET_TAC[]);;
 
+let CHOOSE_SUBSET_EQ = prove
+ (`!n s:A->bool.
+     (FINITE s ==> n <= CARD s) <=> (?t. t SUBSET s /\ t HAS_SIZE n)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[CHOOSE_SUBSET_STRONG] THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:A->bool` STRIP_ASSUME_TAC) THEN DISCH_TAC THEN
+  TRANS_TAC LE_TRANS `CARD(t:A->bool)` THEN
+  ASM_MESON_TAC[CARD_SUBSET; HAS_SIZE; LE_REFL]);;
+
 let CHOOSE_SUBSET = prove
  (`!s:A->bool. FINITE s ==> !n. n <= CARD s ==> ?t. t SUBSET s /\ t HAS_SIZE n`,
   MESON_TAC[CHOOSE_SUBSET_STRONG]);;
@@ -2224,6 +2298,24 @@ let CHOOSE_SUBSET_BETWEEN = prove
      [ASM_ARITH_TAC;
       MATCH_MP_TAC HAS_SIZE_UNION] THEN
       ASM_REWRITE_TAC[] THEN ASM_REWRITE_TAC[HAS_SIZE] THEN ASM SET_TAC[]]);;
+
+let CARD_LE_UNIONS_CHAIN = prove
+ (`!(f:(A->bool)->bool) n.
+        (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t) /\
+        (!t. t IN f ==> FINITE t /\ CARD t <= n)
+        ==> FINITE(UNIONS f) /\ CARD(UNIONS f) <= n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `f:(A->bool)->bool = {}` THEN
+  ASM_REWRITE_TAC[UNIONS_0; FINITE_EMPTY; CARD_CLAUSES; LE_0] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; TAUT `~(p /\ q) <=> p ==> ~q`] THEN
+  REWRITE_TAC[ARITH_RULE `~(x <= n) <=> SUC n <= x`] THEN
+  REWRITE_TAC[CHOOSE_SUBSET_EQ] THEN REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `s:A->bool` THEN
+  REWRITE_TAC[HAS_SIZE] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC FINITE_SUBSET_UNIONS_CHAIN THEN
+  ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of product.                                                   *)
