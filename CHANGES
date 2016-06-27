@@ -8,6 +8,57 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 24th Jun 2016       lists.ml
+
+Added a definition of "list_of_seq" mapping a sequence s and length n
+to the list [s_0,...,s_{n-1}], and various basic list theorems:
+
+
+  APPEND_LCANCEL = 
+    |- !l1 l2 l3. APPEND l1 l2 = APPEND l1 l3 <=> l2 = l3
+
+  APPEND_RCANCEL = 
+    |- !l1 l2 l3. APPEND l1 l3 = APPEND l2 l3 <=> l1 = l2
+
+  BUTLAST_APPEND =
+    |- !l m.
+         BUTLAST (APPEND l m) =
+         (if m = [] then BUTLAST l else APPEND l (BUTLAST m))
+
+  EL_LIST_OF_SEQ = 
+    |- !s m n. m < n ==> EL m (list_of_seq s n) = s m
+
+  LENGTH_LIST_OF_SEQ = 
+    |- !s n. LENGTH (list_of_seq s n) = n
+
+  LIST_EQ =
+    |- !l1 l2.
+         l1 = l2 <=>
+         LENGTH l1 = LENGTH l2 /\ (!n. n < LENGTH l2 ==> EL n l1 = EL n l2)
+
+  LIST_OF_SEQ_EQ_NIL = 
+    |- !s n. list_of_seq s n = [] <=> n = 0
+
+  list_of_seq =
+    |- list_of_seq s 0 = [] /\
+       list_of_seq s (SUC n) = APPEND (list_of_seq s n) [s n]
+
+Fri 24th Jun 2016       sets.ml
+
+Added a few more handy set lemmas
+
+  INTER_INTERS =
+   |- (!f s. s INTER INTERS f =
+             if f = {} then s else INTERS {s INTER t | t IN f}) /\
+      (!f s. INTERS f INTER s =
+             if f = {} then s else INTERS {t INTER s | t IN f})
+
+  FINITE_UNIV_PAIR =
+   |- FINITE(:A#A) <=> FINITE(:A)
+
+  INFINITE_UNIV_PAIR =
+   |- INFINITE(:A#A) <=> INFINITE(:A)
+
 Tue 14th Jun 2016       sets.ml
 
 Added a few handy set theory lemmas, mainly on a theme of finite subsets

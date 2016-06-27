@@ -7308,6 +7308,72 @@ let LIMIT_POINT_OF_IMAGE = prove
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A continuous function distributes over nested compact intersection.       *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_IMAGE_NESTED_INTERS = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s 0 /\
+        (!n. compact(s n)) /\
+        (!n. s(SUC n) SUBSET s n)
+        ==> IMAGE f (INTERS {s n | n IN (:num)}) =
+            INTERS {IMAGE f (s n) | n IN (:num)}`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[EXTENSION] THEN X_GEN_TAC `y:real^N` THEN
+  REWRITE_TAC[INTERS_GSPEC; IN_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
+  EQ_TAC THENL [MESON_TAC[]; REWRITE_TAC[SKOLEM_THM; FORALL_AND_THM]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `x:num->real^M` (STRIP_ASSUME_TAC o GSYM)) THEN
+  SUBGOAL_THEN `compact(s 0:real^M->bool)` MP_TAC THENL
+   [ASM_REWRITE_TAC[]; REWRITE_TAC[compact]] THEN
+  DISCH_THEN(MP_TAC o SPEC `x:num->real^M`) THEN
+  SUBGOAL_THEN
+   `!m n. m <= n ==> (s:num->real^M->bool) n SUBSET s m`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `!n. (x:num->real^M) n IN s 0` ASSUME_TAC THENL
+   [ASM_MESON_TAC[LE_0; SUBSET]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `z:real^M` THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:num->num` STRIP_ASSUME_TAC) THEN CONJ_TAC THENL
+   [MATCH_MP_TAC(ISPEC `sequentially` LIM_UNIQUE) THEN
+    EXISTS_TAC `(f:real^M->real^N) o x o (r:num->num)` THEN
+    REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN CONJ_TAC THENL
+     [ASM_REWRITE_TAC[o_DEF; LIM_CONST]; ALL_TAC] THEN
+    FIRST_ASSUM(MATCH_MP_TAC o REWRITE_RULE[CONTINUOUS_ON_SEQUENTIALLY]) THEN
+    ASM_REWRITE_TAC[o_THM];
+    X_GEN_TAC `n:num` THEN
+    SUBGOAL_THEN `closed((s:num->real^M->bool) n)` MP_TAC THENL
+     [ASM_SIMP_TAC[COMPACT_IMP_CLOSED];
+      REWRITE_TAC[CLOSED_SEQUENTIAL_LIMITS]] THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    EXISTS_TAC `(x:num->real^M) o (r:num->num) o (\i. n + i)` THEN
+    ASM_SIMP_TAC[o_ASSOC; LIM_SUBSEQUENCE; LT_ADD_LCANCEL] THEN
+    X_GEN_TAC `m:num` THEN REWRITE_TAC[o_THM] THEN
+    MATCH_MP_TAC(SET_RULE `!s. s SUBSET t /\ x IN s ==> x IN t`) THEN
+    EXISTS_TAC `(s:num->real^M->bool)(r(n + m:num))` THEN
+    ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    MATCH_MP_TAC(ARITH_RULE `n + m:num <= r(n + m) ==> n <= r(n + m)`) THEN
+    ASM_MESON_TAC[MONOTONE_BIGGER]]);;
+
+let CONTINUOUS_IMAGE_NESTED_INTERS_GEN = prove
+ (`!f:real^M->real^N s m.
+        f continuous_on s m /\
+        (!n. m <= n ==> compact(s n)) /\
+        (!n. m <= n ==> s(SUC n) SUBSET s n)
+        ==> IMAGE f (INTERS {s n | m <= n}) =
+            INTERS {IMAGE f (s n) | m <= n}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^M->real^N`; `(s:num->real^M->bool) o (\i. m + i)`]
+        CONTINUOUS_IMAGE_NESTED_INTERS) THEN
+  ASM_SIMP_TAC[o_THM; ADD_CLAUSES; LE_ADD] THEN
+  SUBGOAL_THEN
+   `!n. m <= n <=> n IN IMAGE (\i. m + i) (:num)`
+   (fun th -> REWRITE_TAC[th])
+  THENL
+   [REWRITE_TAC[IN_IMAGE; IN_UNIV] THEN MESON_TAC[LE_ADD; LE_EXISTS];
+    REWRITE_TAC[INTERS_GSPEC; FORALL_IN_IMAGE]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -29694,6 +29760,23 @@ let HOMEOMORPHISM_FSIGMANESS = prove
   FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
           HOMEOMORPHISM_OF_SUBSETS)) THEN
   RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
+let FSIGMA_FSIGMA_PROJECTION = prove
+ (`!s:real^M->bool t:real^(M,N)finite_sum->bool.
+      IMAGE fstcart t SUBSET s /\ fsigma t
+      ==> fsigma {y | ?x. x IN s /\ pastecart x y IN t}`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `{y:real^N | ?x:real^M. x IN s /\ pastecart x y IN t} =
+    IMAGE sndcart t`
+  SUBST1_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
+    REWRITE_TAC[EXTENSION; SUBSET; IN_IMAGE; FORALL_PASTECART;
+                EXISTS_PASTECART; FSTCART_PASTECART; PASTECART_IN_PCROSS;
+                IN_ELIM_THM; SNDCART_PASTECART] THEN
+    MESON_TAC[];
+    MATCH_MP_TAC FSIGMA_CONTINUOUS_IMAGE THEN
+    ASM_SIMP_TAC[LINEAR_SNDCART; LINEAR_CONTINUOUS_ON]]);;
 
 let CONTINUOUS_FSIGMA_PREIMAGE = prove
  (`!f:real^M->real^N s t.

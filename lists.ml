@@ -133,6 +133,10 @@ let PAIRWISE = new_recursive_definition list_RECURSION
   `(PAIRWISE (r:A->A->bool) [] <=> T) /\
    (PAIRWISE (r:A->A->bool) (CONS h t) <=> ALL (r h) t /\ PAIRWISE r t)`;;
 
+let list_of_seq = new_recursive_definition num_RECURSION        
+ `list_of_seq (s:num->A) 0 = [] /\                                
+  list_of_seq s (SUC n) = APPEND (list_of_seq s n) [s n]`;;           
+
 (* ------------------------------------------------------------------------- *)
 (* Various trivial theorems.                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -171,6 +175,17 @@ let list_CASES = prove
  (`!l:(A)list. (l = []) \/ ?h t. l = CONS h t`,
   LIST_INDUCT_TAC THEN REWRITE_TAC[CONS_11; NOT_CONS_NIL] THEN
   MESON_TAC[]);;
+
+let LIST_EQ = prove
+ (`!l1 l2:A list.
+        l1 = l2 <=>
+        LENGTH l1 = LENGTH l2 /\ !n. n < LENGTH l2 ==> EL n l1 = EL n l2`,
+  REPEAT LIST_INDUCT_TAC THEN
+  REWRITE_TAC[NOT_CONS_NIL; CONS_11; LENGTH; CONJUNCT1 LT; NOT_SUC] THEN
+  ASM_REWRITE_TAC[SUC_INJ] THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV)
+   [MESON[num_CASES] `(!n. P n) <=> P 0 /\ (!n. P(SUC n))`] THEN
+  REWRITE_TAC[EL; HD; TL; LT_0; LT_SUC; CONJ_ACI]);;
 
 let LENGTH_APPEND = prove
  (`!(l:A list) m. LENGTH(APPEND l m) = LENGTH l + LENGTH m`,
@@ -389,6 +404,16 @@ let APPEND_EQ_NIL = prove
  (`!l m. (APPEND l m = []) <=> (l = []) /\ (m = [])`,
   REWRITE_TAC[GSYM LENGTH_EQ_NIL; LENGTH_APPEND; ADD_EQ_0]);;
 
+let APPEND_LCANCEL = prove                              
+ (`!l1 l2 l3:A list. APPEND l1 l2 = APPEND l1 l3 <=> l2 = l3`,     
+  LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[APPEND; CONS_11]);;      
+                                                                             
+let APPEND_RCANCEL = prove                                                
+ (`!l1 l2 l3:A list. APPEND l1 l3 = APPEND l2 l3 <=> l1 = l2`,   
+  ONCE_REWRITE_TAC[MESON[REVERSE_REVERSE]                      
+   `l = l' <=> REVERSE l = REVERSE l'`] THEN                                 
+  REWRITE_TAC[REVERSE_APPEND; APPEND_LCANCEL]);;                             
+
 let LENGTH_MAP2 = prove
  (`!f l m. (LENGTH l = LENGTH m) ==> (LENGTH(MAP2 f l m) = LENGTH m)`,
   GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
@@ -424,6 +449,13 @@ let MAP_ID = prove
 let MAP_I = prove
  (`MAP I = I`,
   REWRITE_TAC[FUN_EQ_THM; I_DEF; MAP_ID]);;
+
+let BUTLAST_APPEND = prove                          
+ (`!l m:A list. BUTLAST(APPEND l m) =           
+                if m = [] then BUTLAST l else APPEND l (BUTLAST m)`,
+  SIMP_TAC[COND_RAND; APPEND_NIL; MESON[]               
+   `(if p then T else q) <=> ~p ==> q`] THEN                   
+  LIST_INDUCT_TAC THEN ASM_SIMP_TAC[APPEND; BUTLAST; APPEND_EQ_NIL]);;   
 
 let APPEND_BUTLAST_LAST = prove
  (`!l. ~(l = []) ==> APPEND (BUTLAST l) [LAST l] = l`,
@@ -534,6 +566,22 @@ let PAIRWISE_TRANSITIVE = prove
                     p /\ s ==> r ==> q`] THEN
   STRIP_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] ALL_IMP) THEN
   ASM_MESON_TAC[]);;
+
+let LENGTH_LIST_OF_SEQ = prove
+ (`!s:num->A n. LENGTH(list_of_seq s n) = n`,
+  GEN_TAC THEN INDUCT_TAC THEN
+  ASM_REWRITE_TAC[list_of_seq; LENGTH; LENGTH_APPEND; ADD_CLAUSES]);;
+
+let EL_LIST_OF_SEQ = prove
+ (`!s:num->A m n. m < n ==> EL m (list_of_seq s n) = s m`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  INDUCT_TAC THEN
+  REWRITE_TAC[list_of_seq; LT; EL_APPEND; LENGTH_LIST_OF_SEQ] THEN
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SUB_REFL; EL; HD; LT_REFL]);;
+
+let LIST_OF_SEQ_EQ_NIL = prove
+ (`!s:num->A n. list_of_seq s n = [] <=> n = 0`,
+  REWRITE_TAC[GSYM LENGTH_EQ_NIL; LENGTH_LIST_OF_SEQ; LENGTH]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax.                                                                   *)

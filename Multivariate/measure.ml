@@ -8916,6 +8916,16 @@ let BABY_SARD = prove
       FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
        HAS_DERIVATIVE_WITHIN_SUBSET)) THEN SET_TAC[]]]);;
 
+let BABY_SARD_ALT = prove
+ (`!f:real^M->real^N s.
+         dimindex(:M) <= dimindex(:N) /\
+         (!x. x IN s
+              ==> ?f'. (f has_derivative f') (at x within s) /\
+                       rank(matrix f') < dimindex (:N))
+         ==> negligible(IMAGE f s)`,
+  REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC BABY_SARD THEN ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Also negligibility of BV low-dimensional image.                           *)
 (* ------------------------------------------------------------------------- *)
@@ -10358,6 +10368,14 @@ let MEASURABLE_MEASURABLE_INTER_LEBESGUE_MEASURABLE = prove
  (`!s t:real^N->bool.
         measurable s /\ lebesgue_measurable t ==> measurable(s INTER t)`,
   MESON_TAC[INTER_COMM; MEASURABLE_LEBESGUE_MEASURABLE_INTER_MEASURABLE]);;
+
+let LEBESGUE_MEASURABLE_MEASURABLE_INTER_EQ = prove
+ (`!s:real^N->bool.
+        lebesgue_measurable s <=>
+        !t. measurable t ==> measurable(s INTER t)`,
+  MESON_TAC[LEBESGUE_MEASURABLE_MEASURABLE_ON_SUBINTERVALS;
+            MEASURABLE_INTERVAL;
+            MEASURABLE_LEBESGUE_MEASURABLE_INTER_MEASURABLE]);;
 
 let MEASURABLE_INTER_HALFSPACE_LE = prove
  (`!s a i. measurable s ==> measurable(s INTER {x:real^N | x$i <= a})`,

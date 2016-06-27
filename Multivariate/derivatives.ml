@@ -1556,6 +1556,21 @@ let DIFFERENTIABLE_FINITE_PREIMAGES = prove
   MATCH_MP_TAC EQ_IMP THEN MATCH_MP_TAC DISCRETE_EQ_FINITE_COMPACT THEN
   ASM_REWRITE_TAC[SUBSET_RESTRICT]);;
 
+let DIFFERENTIABLE_FINITE_PREIMAGES_GEN = prove
+ (`!f:real^N->real^N f' s y.
+         compact {x | x IN s /\ f x = y} /\
+         (!x. x IN s /\ f x = y ==> (f has_derivative f' x) (at x within s)) /\
+         (!x. x IN s /\ f x = y ==> ~(det (matrix (f' x)) = &0))
+         ==> FINITE {x | x IN s /\ f x = y}`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[SET_RULE
+   `{x | x IN s /\ f x = y} =
+    {x | x IN {x | x IN s /\ f x = y} /\ f x = y}`] THEN
+  MATCH_MP_TAC DIFFERENTIABLE_FINITE_PREIMAGES THEN
+  EXISTS_TAC `f':real^N->real^N->real^N` THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; GSYM CONJ_ASSOC] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_DERIVATIVE_WITHIN_SUBSET THEN
+  EXISTS_TAC `s:real^N->bool` THEN ASM_SIMP_TAC[SUBSET_RESTRICT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Differentiability of inverse function (most basic form).                  *)
 (* ------------------------------------------------------------------------- *)

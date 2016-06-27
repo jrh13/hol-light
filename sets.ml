@@ -1059,6 +1059,15 @@ let INTERS_OVER_UNIONS = prove
   X_GEN_TAC `b:B` THEN REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN
   MESON_TAC[]);;
 
+let INTER_INTERS = prove
+ (`(!f s:A->bool. s INTER INTERS f =
+           if f = {} then s else INTERS {s INTER t | t IN f}) /\
+   (!f s:A->bool. INTERS f INTER s =
+           if f = {} then s else INTERS {t INTER s | t IN f})`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[INTERS_0; INTER_UNIV; INTERS_GSPEC] THEN
+  ASM SET_TAC[]);;
+
 let UNIONS_OVER_INTERS = prove
  (`!f:A->(B->bool)->bool s.
         UNIONS { INTERS(f x) | x IN s} =
@@ -2445,6 +2454,15 @@ let FINITE_CROSS_EQ = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
   REWRITE_TAC[SUBSET; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS] THEN
   ASM SET_TAC[]);;
+
+let FINITE_UNIV_PAIR = prove
+ (`FINITE(:A#A) <=> FINITE(:A)`,
+  MP_TAC(ISPECL [`(:A)`; `(:A)`] FINITE_CROSS_EQ) THEN
+  REWRITE_TAC[CROSS_UNIV; UNIV_NOT_EMPTY]);;
+
+let INFINITE_UNIV_PAIR = prove
+ (`INFINITE(:A#A) <=> INFINITE(:A)`,
+  REWRITE_TAC[INFINITE; FINITE_UNIV_PAIR]);;
 
 let FORALL_IN_CROSS = prove
  (`!P s t. (!z. z IN s CROSS t ==> P z) <=>
