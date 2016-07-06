@@ -946,6 +946,57 @@ let SUSLIN_MONO = prove
         (!t. C t ==> D t) /\ suslin C s ==> suslin D s`,
   REWRITE_TAC[suslin] THEN SET_TAC[]);;
 
+let SUSLIN_REGULAR = prove
+ (`!u:(A->bool)->bool.
+        (!c. FINITE c /\ ~(c = {}) /\ c SUBSET u ==> INTERS c IN u)
+        ==> (suslin u =
+             {suslin_operation f | (!l. ~(l = []) ==> f l IN u) /\
+                                   !s m n. 1 <= m /\ m <= n
+                                           ==> f(list_of_seq s n) SUBSET
+                                               f(list_of_seq s m)})`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[suslin; GSYM SUBSET_ANTISYM_EQ] THEN
+  CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `f:num list->A->bool` THEN DISCH_TAC THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  EXISTS_TAC `\l. INTERS {(f:num list->A->bool)(list_of_seq (\i. EL i l) n) |n|
+                          1 <= n /\ n <= LENGTH l}` THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    REWRITE_TAC[] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+    SIMP_TAC[GSYM numseg; FINITE_NUMSEG; FINITE_IMAGE; IMAGE_EQ_EMPTY] THEN
+    ASM_SIMP_TAC[NUMSEG_EMPTY; NOT_LT; LENGTH_EQ_NIL; LE_1] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_NUMSEG] THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[GSYM LENGTH_EQ_NIL; LENGTH_LIST_OF_SEQ; LE_1];
+    REWRITE_TAC[IN_INTERS; FORALL_IN_GSPEC; LENGTH_LIST_OF_SEQ] THEN
+    MAP_EVERY X_GEN_TAC [`s:num->num`; `m:num`; `n:num`] THEN
+    DISCH_TAC THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    X_GEN_TAC `p:num` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `p:num`) THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+    AP_TERM_TAC THEN REWRITE_TAC[LIST_EQ] THEN
+    SIMP_TAC[LENGTH_LIST_OF_SEQ; EL_LIST_OF_SEQ] THEN
+    X_GEN_TAC `q:num` THEN DISCH_TAC THEN
+    ASM_MESON_TAC[EL_LIST_OF_SEQ; LT_TRANS; LTE_TRANS];
+    REWRITE_TAC[suslin_operation] THEN AP_TERM_TAC THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN MATCH_MP_TAC(SET_RULE
+     `(!x. f x = g x) ==> IMAGE f UNIV = IMAGE g UNIV`) THEN
+    X_GEN_TAC `s:num->num` THEN
+    REWRITE_TAC[EXTENSION] THEN
+    X_GEN_TAC `a:A` THEN REWRITE_TAC[INTERS_GSPEC; IN_ELIM_THM] THEN
+    REWRITE_TAC[IN_UNIV; LENGTH_LIST_OF_SEQ] THEN
+    SUBGOAL_THEN
+     `!m n. 1 <= m /\ m <= n
+            ==> list_of_seq (\i. EL i (list_of_seq s n)) m :num list =
+                list_of_seq s m`
+     (fun th -> SIMP_TAC[th])
+    THENL
+     [SIMP_TAC[LIST_EQ; LENGTH_LIST_OF_SEQ; EL_LIST_OF_SEQ] THEN
+      MESON_TAC[EL_LIST_OF_SEQ; LTE_TRANS];
+      ASM_MESON_TAC[LE_TRANS; LE_REFL]]]);;
+
 let SUSLIN_SUSLIN = prove
  (`!u:(A->bool)->bool. suslin (suslin u) = suslin u`,
   GEN_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUSLIN_SUPERSET] THEN
@@ -1317,3 +1368,10 @@ let CARD_SUSLIN_LE = prove
   REWRITE_TAC[GSYM CARD_EXP_UNIV] THEN
   MATCH_MP_TAC CARD_EXP_CONG THEN REWRITE_TAC[CARD_EQ_REFL] THEN
   ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN REWRITE_TAC[CARD_SQUARE_NUM]);;
+
+let CARD_SUSLIN_EQ = prove
+ (`!C:(A->bool)->bool. C =_c (:real) ==> suslin C =_c (:real)`,
+  GEN_TAC THEN SIMP_TAC[GSYM CARD_LE_ANTISYM] THEN
+  MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[CARD_SUSLIN_LE] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_TRANS) THEN
+  MATCH_MP_TAC CARD_LE_SUBSET THEN REWRITE_TAC[SUSLIN_SUPERSET]);;
