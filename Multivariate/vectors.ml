@@ -4225,6 +4225,30 @@ let DROP_BASIS = prove
   MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Indicator (characteristic) functions into real^1.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let indicator = new_definition
+  `indicator s :real^M->real^1 = \x. if x IN s then vec 1 else vec 0`;;
+
+let DROP_INDICATOR = prove
+ (`!s x. drop(indicator s x) = if x IN s then &1 else &0`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[indicator] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[DROP_VEC]);;
+
+let DROP_INDICATOR_POS_LE = prove
+ (`!s x. &0 <= drop(indicator s x)`,
+  REWRITE_TAC[DROP_INDICATOR] THEN REAL_ARITH_TAC);;
+
+let DROP_INDICATOR_LE_1 = prove
+ (`!s x. drop(indicator s x) <= &1`,
+  REWRITE_TAC[DROP_INDICATOR] THEN REAL_ARITH_TAC);;
+
+let DROP_INDICATOR_ABS_LE_1 = prove
+ (`!s x. abs(drop(indicator s x)) <= &1`,
+  REWRITE_TAC[DROP_INDICATOR] THEN REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
 (* ------------------------------------------------------------------------- *)
 

@@ -12420,6 +12420,19 @@ let MEASURABLE_ON_DIFFERENTIABLE_IMAGE = prove
   ASM_MESON_TAC[DIFFERENTIABLE_ON_SUBSET;
                 NEGLIGIBLE_IMP_LEBESGUE_MEASURABLE]);;
 
+let BOREL_MEASURABLE_IMP_MEASURABLE_ON = prove
+ (`!f:real^M->real^N s.
+       f borel_measurable_on s /\ lebesgue_measurable s ==> f measurable_on s`,
+  REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC borel_measurable_INDUCT THEN CONJ_TAC THENL
+   [MESON_TAC[CONTINUOUS_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET];
+    REPEAT GEN_TAC THEN
+    ASM_CASES_TAC `lebesgue_measurable(s:real^M->bool)` THEN
+    ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+    MATCH_MP_TAC MEASURABLE_ON_LIMIT THEN
+    MAP_EVERY EXISTS_TAC [`f:num->real^M->real^N`; `{}:real^M->bool`] THEN
+    ASM_REWRITE_TAC[NEGLIGIBLE_EMPTY; DIFF_EMPTY]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Versions of the Lebesgue density theorem, both integral and measure       *)
 (* forms. Later we have cosmetically nicer ones using real limits.           *)

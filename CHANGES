@@ -8,16 +8,73 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  9th Jul 2016       Makefile
+
+Added yet another disjunct to the OCaml and camlp5 version case split
+for 4.03 and 6.15 respectively (Flemming Andersen pointed out that
+this combination failed).
+
+Sun  3rd Jul 2016       cart.ml
+
+Added a finite-forcing Cartesian product for type indices (a natural thing to
+have by analogy with finite_sum and finite_diff, and also requested on
+hol-info by Abid Rauf):
+
+  finite_prod_tybij =
+    |- (!a. mk_finite_prod(dest_finite_prod a) = a) /\
+       (!r. r IN 1..dimindex(:A) * dimindex(:B) <=>
+            dest_finite_prod(mk_finite_prod r) = r)
+
+  FINITE_PROD_IMAGE =
+    |- (:(A,B)finite_prod) =
+       IMAGE mk_finite_prod (1..dimindex(:A) * dimindex(:B))
+
+  DIMINDEX_HAS_SIZE_FINITE_PROD =
+    |- (:(M,N)finite_prod) HAS_SIZE dimindex(:M) * dimindex(:N)
+
+  DIMINDEX_FINITE_PROD =
+    |- dimindex(:(M,N)finite_prod) = dimindex(:M) * dimindex(:N)
+
+Sun  3rd Jul 2016       sets.ml, cart.ml
+
+Added analogous theorems about distributing intersections over
+Cartesian products, in two forms:
+
+  CROSS_INTERS =
+   |- (!s f. s CROSS (INTERS f) =
+             if f = {} then s CROSS UNIV else INTERS {s CROSS t | t IN f}) /\
+      (!f t. (INTERS f) CROSS t =
+             if f = {} then UNIV CROSS t else INTERS {s CROSS t | s IN f})
+
+  CROSS_INTERS_INTERS =
+    |- !f g. (INTERS f) CROSS (INTERS g) =
+             if f = {} then INTERS {UNIV CROSS t | t IN g}
+             else if g = {} then INTERS {s CROSS UNIV | s IN f}
+             else INTERS {s CROSS t | s IN f /\ t IN g}
+
+  PCROSS_INTERS =
+    |- (!s f. s PCROSS (INTERS f) =
+              if f = {} then s PCROSS UNIV
+              else INTERS {s PCROSS t | t IN f}) /\
+       (!f t. (INTERS f) PCROSS t =
+              if f = {} then UNIV PCROSS t else INTERS {s PCROSS t | s IN f})
+
+  PCROSS_INTERS_INTERS =
+    |- !f g. (INTERS f) PCROSS (INTERS g) =
+             if f = {} then INTERS {UNIV PCROSS t | t IN g}
+             else if g = {} then INTERS {s PCROSS UNIV | s IN f}
+             else INTERS {s PCROSS t | s IN f /\ t IN g}
+
 Fri 24th Jun 2016       lists.ml
 
 Added a definition of "list_of_seq" mapping a sequence s and length n
 to the list [s_0,...,s_{n-1}], and various basic list theorems:
 
 
-  APPEND_LCANCEL = 
+  APPEND_LCANCEL =
     |- !l1 l2 l3. APPEND l1 l2 = APPEND l1 l3 <=> l2 = l3
 
-  APPEND_RCANCEL = 
+  APPEND_RCANCEL =
     |- !l1 l2 l3. APPEND l1 l3 = APPEND l2 l3 <=> l1 = l2
 
   BUTLAST_APPEND =
@@ -25,10 +82,10 @@ to the list [s_0,...,s_{n-1}], and various basic list theorems:
          BUTLAST (APPEND l m) =
          (if m = [] then BUTLAST l else APPEND l (BUTLAST m))
 
-  EL_LIST_OF_SEQ = 
+  EL_LIST_OF_SEQ =
     |- !s m n. m < n ==> EL m (list_of_seq s n) = s m
 
-  LENGTH_LIST_OF_SEQ = 
+  LENGTH_LIST_OF_SEQ =
     |- !s n. LENGTH (list_of_seq s n) = n
 
   LIST_EQ =
@@ -36,7 +93,7 @@ to the list [s_0,...,s_{n-1}], and various basic list theorems:
          l1 = l2 <=>
          LENGTH l1 = LENGTH l2 /\ (!n. n < LENGTH l2 ==> EL n l1 = EL n l2)
 
-  LIST_OF_SEQ_EQ_NIL = 
+  LIST_OF_SEQ_EQ_NIL =
     |- !s n. list_of_seq s n = [] <=> n = 0
 
   list_of_seq =

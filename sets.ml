@@ -2539,6 +2539,20 @@ let CROSS_UNIONS_UNIONS,CROSS_UNIONS = (CONJ_PAIR o prove)
               IN_CROSS] THEN
   SET_TAC[]);;
 
+let CROSS_INTERS_INTERS,CROSS_INTERS = (CONJ_PAIR o prove)
+ (`(!f g. (INTERS f) CROSS (INTERS g) =
+          if f = {} then INTERS {UNIV CROSS t | t IN g}
+          else if g = {} then INTERS {s CROSS UNIV | s IN f}
+          else INTERS {s CROSS t | s IN f /\ t IN g}) /\
+   (!s f. s CROSS (INTERS f) =
+          if f = {} then s CROSS UNIV else INTERS {s CROSS t | t IN f}) /\
+   (!f t. (INTERS f) CROSS t =
+          if f = {} then UNIV CROSS t else INTERS {s CROSS t | s IN f})`,
+  REPEAT STRIP_TAC THEN REPEAT (COND_CASES_TAC THEN REWRITE_TAC[]) THEN
+  ASM_REWRITE_TAC[INTERS_GSPEC; EXTENSION; FORALL_PAIR_THM; IN_ELIM_THM;
+                  IN_CROSS; NOT_IN_EMPTY] THEN
+  ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
 (* ------------------------------------------------------------------------- *)

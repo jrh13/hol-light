@@ -3961,26 +3961,6 @@ let INTEGRABLE_UNIFORM_LIMIT = prove
 (* Negligible sets.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let indicator = new_definition
-  `indicator s :real^M->real^1 = \x. if x IN s then vec 1 else vec 0`;;
-
-let DROP_INDICATOR = prove
- (`!s x. drop(indicator s x) = if x IN s then &1 else &0`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[indicator] THEN
-  COND_CASES_TAC THEN ASM_REWRITE_TAC[DROP_VEC]);;
-
-let DROP_INDICATOR_POS_LE = prove
- (`!s x. &0 <= drop(indicator s x)`,
-  REWRITE_TAC[DROP_INDICATOR] THEN REAL_ARITH_TAC);;
-
-let DROP_INDICATOR_LE_1 = prove
- (`!s x. drop(indicator s x) <= &1`,
-  REWRITE_TAC[DROP_INDICATOR] THEN REAL_ARITH_TAC);;
-
-let DROP_INDICATOR_ABS_LE_1 = prove
- (`!s x. abs(drop(indicator s x)) <= &1`,
-  REWRITE_TAC[DROP_INDICATOR] THEN REAL_ARITH_TAC);;
-
 let negligible = new_definition
  `negligible s <=> !a b. (indicator s has_integral (vec 0)) (interval[a,b])`;;
 
@@ -9597,11 +9577,11 @@ let ABSOLUTELY_INTEGRABLE_NEG = prove
          ==> (\x. --f(x)) absolutely_integrable_on s`,
   SIMP_TAC[absolutely_integrable_on; INTEGRABLE_NEG; NORM_NEG]);;
 
-let ABSOLUTELY_INTEGRABLE_NEG_EQ = prove                                       
- (`!f:real^M->real^N s.                                                        
-        (\x. --f x) absolutely_integrable_on s <=>                          
-        f absolutely_integrable_on s`,                                     
-  REWRITE_TAC[absolutely_integrable_on; NORM_NEG; INTEGRABLE_NEG_EQ]);;       
+let ABSOLUTELY_INTEGRABLE_NEG_EQ = prove
+ (`!f:real^M->real^N s.
+        (\x. --f x) absolutely_integrable_on s <=>
+        f absolutely_integrable_on s`,
+  REWRITE_TAC[absolutely_integrable_on; NORM_NEG; INTEGRABLE_NEG_EQ]);;
 
 let ABSOLUTELY_INTEGRABLE_NORM = prove
  (`!f s. f absolutely_integrable_on s
