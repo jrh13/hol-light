@@ -4578,6 +4578,26 @@ let SEQ_OFFSET_EQ = prove
         ((\i. f (i + k)) --> l) sequentially <=> (f --> l) sequentially`,
   REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[SEQ_OFFSET_REV; SEQ_OFFSET]);;
 
+let CONVERGENT_OFFSET = prove
+ (`!f:num->real^N k.
+     (?l. (f --> l) sequentially)
+     ==> (?l. ((\i. f(i + k)) --> l) sequentially)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[SEQ_OFFSET]);;
+
+let CONVERGENT_OFFSET_EQ = prove
+ (`!f:num->real^N k.
+        (?l. ((\i. f(i + k)) --> l) sequentially) <=>
+        (?l. (f --> l) sequentially)`,
+  REPEAT GEN_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+  REWRITE_TAC[SEQ_OFFSET_EQ]);;
+
+let CONVERGENT_OFFSET_REV = prove
+ (`!f:num->real^N k.
+        (?l. ((\i. f(i + k)) --> l) sequentially)
+        ==> (?l. (f --> l) sequentially)`,
+  REWRITE_TAC[CONVERGENT_OFFSET_EQ]);;
+
 let SEQ_HARMONIC_OFFSET = prove
  (`!a. ((\n. lift(inv(&n + a))) --> vec 0) sequentially`,
   GEN_TAC THEN REWRITE_TAC[LIM_SEQUENTIALLY] THEN
@@ -7431,6 +7451,26 @@ let CONTINUOUS_MIN = prove
         ==> (\x. (lambda i. min (f(x)$i) (g(x)$i)):real^N) continuous net`,
   REWRITE_TAC[continuous; LIM_MIN]);;
 
+let CONTINUOUS_MAX_1 = prove
+ (`!net:A net f g.
+        (\x. lift(f x)) continuous net /\ (\x. lift(g x)) continuous net
+        ==> (\x. lift(max (f x) (g x))) continuous net`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_MAX) THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+  SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN
+  REWRITE_TAC[DIMINDEX_1; FORALL_1; GSYM drop; LIFT_DROP]);;
+
+let CONTINUOUS_MIN_1 = prove
+ (`!net:A net f g.
+        (\x. lift(f x)) continuous net /\ (\x. lift(g x)) continuous net
+        ==> (\x. lift(min (f x) (g x))) continuous net`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_MIN) THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+  SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN
+  REWRITE_TAC[DIMINDEX_1; FORALL_1; GSYM drop; LIFT_DROP]);;
+
 let CONTINUOUS_VSUM = prove
  (`!net f s. FINITE s /\ (!a. a IN s ==> (f a) continuous net)
              ==> (\x. vsum s (\a. f a x)) continuous net`,
@@ -7498,6 +7538,26 @@ let CONTINUOUS_ON_MIN = prove
         ==> (\x. (lambda i. min (f(x)$i) (g(x)$i)):real^N)
             continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_MIN]);;
+
+let CONTINUOUS_ON_MAX_1 = prove
+ (`!f:real^N->real g s.
+        (\x. lift(f x)) continuous_on s /\ (\x. lift(g x)) continuous_on s
+        ==> (\x. lift(max (f x) (g x))) continuous_on s`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_ON_MAX) THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+  SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN
+  REWRITE_TAC[DIMINDEX_1; FORALL_1; GSYM drop; LIFT_DROP]);;
+
+let CONTINUOUS_ON_MIN_1 = prove
+ (`!f:real^N->real g s.
+        (\x. lift(f x)) continuous_on s /\ (\x. lift(g x)) continuous_on s
+        ==> (\x. lift(min (f x) (g x))) continuous_on s`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_ON_MIN) THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+  SIMP_TAC[CART_EQ; LAMBDA_BETA] THEN
+  REWRITE_TAC[DIMINDEX_1; FORALL_1; GSYM drop; LIFT_DROP]);;
 
 let CONTINUOUS_ON_VSUM = prove
  (`!t f s. FINITE s /\ (!a. a IN s ==> (f a) continuous_on t)
@@ -15359,6 +15419,20 @@ let IS_INTERVAL_1_CASES = prove
   REWRITE_TAC[GSYM REAL_NOT_LE] THEN
   ASM_MESON_TAC[REAL_LE_TRANS; REAL_LE_TOTAL; REAL_LE_ANTISYM]);;
 
+let IS_INTERVAL_1_CLAUSES = prove
+ (`is_interval({}:real^1->bool) /\
+   is_interval (:real^1) /\
+   (!a. is_interval {x | a < drop x}) /\
+   (!a. is_interval {x | a <= drop x}) /\
+   (!b. is_interval {x | drop x < b}) /\
+   (!b. is_interval {x | drop x <= b}) /\
+   (!a b. is_interval {x | a < drop x /\ drop x < b}) /\
+   (!a b. is_interval {x | a < drop x /\ drop x <= b}) /\
+   (!a b. is_interval {x | a <= drop x /\ drop x < b}) /\
+   (!a b. is_interval {x | a <= drop x /\ drop x <= b})`,
+  REWRITE_TAC[IS_INTERVAL_1; IN_ELIM_THM; IN_UNIV; NOT_IN_EMPTY] THEN
+  REAL_ARITH_TAC);;
+
 let IS_INTERVAL_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.
         is_interval s /\ is_interval t ==> is_interval(s PCROSS t)`,
@@ -21381,7 +21455,6 @@ let HADAMARD_INEQUALITY_PSD = prove
   REWRITE_TAC[NORM_POW_2; dot; matrix_vector_mul; transp; column] THEN
   ASM_SIMP_TAC[LAMBDA_BETA]);;
 
-
 let POSITIVE_DEFINITE_NEARBY = prove
  (`!A:real^N^N.
         positive_definite A
@@ -21426,6 +21499,74 @@ let POSITIVE_DEFINITE_NEARBY = prove
     MATCH_MP_TAC(REWRITE_RULE[RIGHT_IMP_FORALL_THM]
       EIGENVALUE_LOWERBOUND_DOT) THEN
     ASM_MESON_TAC[positive_definite]]);;
+
+let POSITIVE_SEMIDEFINITE_HADAMARD_PRODUCT,
+    POSITIVE_DEFINITE_HADAMARD_PRODUCT = (CONJ_PAIR o prove)
+ (`(!A:real^N^N B:real^N^N.
+        positive_semidefinite A /\ positive_semidefinite B
+        ==> positive_semidefinite((lambda i j. A$i$j * B$i$j):real^N^N)) /\
+   (!A:real^N^N B:real^N^N.
+        positive_definite A /\ positive_definite B
+        ==> positive_definite((lambda i j. A$i$j * B$i$j):real^N^N))`,
+  REPEAT STRIP_TAC THEN
+ (SUBGOAL_THEN `transp(A:real^N^N) = A /\ transp(B:real^N^N) = B`
+  STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[positive_semidefinite; positive_definite];
+    REWRITE_TAC[positive_semidefinite; positive_definite]] THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[CART_EQ; TRANSP_COMPONENT; LAMBDA_BETA] THEN
+    REPEAT STRIP_TAC THEN BINOP_TAC THEN
+    ASM_MESON_TAC[TRANSP_COMPONENT];
+    ALL_TAC] THEN
+  X_GEN_TAC `x:real^N` THEN REPEAT DISCH_TAC THEN
+  ABBREV_TAC
+     `D:real^N^N = (lambda i j. if i = j then (x:real^N)$i else &0)` THEN
+  SUBGOAL_THEN
+   `(?A':real^N^N. transp A' = A' /\  A' ** A' = A) /\
+    (?B':real^N^N. transp B' = B' /\  B' ** B' = B)`
+  STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[POSITIVE_SEMIDEFINITE_SQRT_EQ; positive_semidefinite;
+                  POSITIVE_DEFINITE_POSITIVE_SEMIDEFINITE];
+    ALL_TAC])
+  THENL [MATCH_MP_TAC REAL_LE_TRANS; MATCH_MP_TAC REAL_LTE_TRANS] THEN
+  EXISTS_TAC
+    `trace(transp(A' ** D ** B') **
+           ((A':real^N^N) ** D ** (B':real^N^N)))` THEN
+ (CONJ_TAC THENL
+   [ASM_REWRITE_TAC[TRACE_COVARIANCE_POS_LT; TRACE_COVARIANCE_POS_LE];
+    MATCH_MP_TAC REAL_EQ_IMP_LE THEN
+    REWRITE_TAC[MATRIX_TRANSP_MUL] THEN
+    REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
+    ONCE_REWRITE_TAC[TRACE_MUL_SYM] THEN
+    ASM_REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
+    ONCE_REWRITE_TAC[TRACE_MUL_SYM] THEN
+    ASM_REWRITE_TAC[GSYM MATRIX_MUL_ASSOC] THEN
+    EXPAND_TAC "D" THEN
+    SIMP_TAC[trace; dot; MATRIX_MUL_COMPONENT; LAMBDA_BETA;
+             TRANSP_COMPONENT; MATRIX_VECTOR_MUL_COMPONENT] THEN
+    REWRITE_TAC[COND_RAND; COND_RATOR; REAL_MUL_LZERO; REAL_MUL_RZERO] THEN
+    SIMP_TAC[SUM_DELTA] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
+    SIMP_TAC[SUM_DELTA; GSYM SUM_LMUL; GSYM SUM_RMUL] THEN
+    GEN_REWRITE_TAC RAND_CONV [SUM_SWAP_NUMSEG] THEN
+    REWRITE_TAC[] THEN
+    MATCH_MP_TAC SUM_EQ_NUMSEG THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    REWRITE_TAC[] THEN
+    MATCH_MP_TAC SUM_EQ_NUMSEG THEN X_GEN_TAC `j:num` THEN STRIP_TAC THEN
+    REWRITE_TAC[] THEN
+    SUBGOAL_THEN `(B:real^N^N)$j$i = B$i$j`
+     (fun th -> REWRITE_TAC[th; REAL_MUL_AC]) THEN
+    ASM_MESON_TAC[TRANSP_COMPONENT]]) THEN
+  SUBGOAL_THEN `invertible(A':real^N^N) /\ invertible(B':real^N^N)`
+  STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[INVERTIBLE_MATRIX_MUL; POSITIVE_DEFINITE_IMP_INVERTIBLE];
+    ASM_SIMP_TAC[MATRIX_ENTIRE]] THEN
+  EXPAND_TAC "D" THEN SIMP_TAC[CART_EQ; LAMBDA_BETA; MAT_COMPONENT] THEN
+  REWRITE_TAC[MESON[]
+   `(if p then a else z) = (if p then b else z) <=> p ==> a = b`] THEN
+  ONCE_REWRITE_TAC[TAUT `p ==> q ==> r <=> q ==> p ==> r`] THEN
+  UNDISCH_TAC `~(x:real^N = vec 0)` THEN
+  SIMP_TAC[FORALL_UNWIND_THM1; CART_EQ; VEC_COMPONENT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Polar decomposition.                                                      *)
@@ -29606,6 +29747,14 @@ let CLOSED_IMP_GDELTA = prove
  (`!s:real^N->bool. closed s ==> gdelta s`,
   REWRITE_TAC[closed; GSYM FSIGMA_COMPLEMENT; OPEN_IMP_FSIGMA]);;
 
+let FSIGMA_SING = prove
+ (`!x:real^N. fsigma {x}`,
+  SIMP_TAC[CLOSED_IMP_FSIGMA; CLOSED_SING]);;
+
+let GDELTA_SING = prove
+ (`!x:real^N. gdelta {x}`,
+  SIMP_TAC[CLOSED_IMP_GDELTA; CLOSED_SING]);;
+
 let OPEN_IMP_GDELTA = prove
  (`!s:real^N->bool. open s ==> gdelta s`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[gdelta] THEN
@@ -29652,6 +29801,14 @@ let FSIGMA_UNIONS = prove
   MATCH_MP_TAC GDELTA_INTERS THEN
   ASM_SIMP_TAC[SIMPLE_IMAGE; GDELTA_COMPLEMENT; FORALL_IN_IMAGE;
                COUNTABLE_IMAGE]);;
+
+let COUNTABLE_IMP_FSIGMA = prove
+ (`!s:real^N->bool. COUNTABLE s ==> fsigma s`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `s = UNIONS {{x:real^N} | x IN s}` SUBST1_TAC THENL
+   [REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]; MATCH_MP_TAC FSIGMA_UNIONS] THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[FSIGMA_SING]);;
 
 let GDELTA_INTER = prove
  (`!s t:real^N->bool. gdelta s /\ gdelta t ==> gdelta(s INTER t)`,

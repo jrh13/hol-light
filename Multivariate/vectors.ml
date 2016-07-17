@@ -4248,6 +4248,12 @@ let DROP_INDICATOR_ABS_LE_1 = prove
  (`!s x. abs(drop(indicator s x)) <= &1`,
   REWRITE_TAC[DROP_INDICATOR] THEN REAL_ARITH_TAC);;
 
+let INDICATOR_COMPLEMENT = prove
+ (`!s. indicator((:real^N) DIFF s) = \x. vec 1 - indicator s x`,
+  GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM; indicator] THEN
+  X_GEN_TAC `x:real^N` THEN ASM_CASES_TAC `(x:real^N) IN s` THEN
+  ASM_REWRITE_TAC[IN_UNIV; IN_DIFF; VECTOR_SUB_REFL; VECTOR_SUB_RZERO]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
 (* ------------------------------------------------------------------------- *)
