@@ -31935,6 +31935,172 @@ let CARD_EQ_BOREL_SETS = prove
     REWRITE_TAC[SUBSET; IN_ELIM_THM; COMPACT_IMP_BOREL]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Some Borel variants of the measurability of the Banach indicatrix.        *)
+(* ------------------------------------------------------------------------- *)
+
+let FSIGMA_PREIMAGE_CARD_GE = prove
+ (`!f:real^M->real^N s n.
+        f continuous_on s /\ fsigma s
+        ==> fsigma {y | FINITE {x | x IN s /\ f x = y}
+                        ==> n <= CARD {x | x IN s /\ f x = y}}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CHOOSE_SUBSET_EQ] THEN
+  REWRITE_TAC[SET_RULE
+   `t SUBSET {x | x IN s /\ P x} /\ Q t <=>
+    t SUBSET s /\ Q t /\ (!x. x IN t ==> P x)`] THEN
+  SUBGOAL_THEN
+   `{y | ?t. t SUBSET s /\ t HAS_SIZE n /\ (!x. x IN t ==> f x = y)} =
+    UNIONS (IMAGE (\b. INTERS (IMAGE (IMAGE (f:real^M->real^N)) b))
+     {b | b SUBSET {s INTER ball(a,r) |
+                    (!i. 1 <= i /\ i <= dimindex(:M) ==> rational(a$i)) /\
+                    rational r} /\
+          b HAS_SIZE n /\ pairwise DISJOINT b})`
+  SUBST1_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC FSIGMA_UNIONS THEN CONJ_TAC THENL
+     [MATCH_MP_TAC COUNTABLE_IMAGE THEN REWRITE_TAC[HAS_SIZE] THEN
+      REWRITE_TAC[SET_RULE
+       `b SUBSET s /\ (FINITE b /\ Q b) /\ R b <=>
+        b IN {c | c SUBSET s /\ FINITE c} /\ Q b /\ R b`] THEN
+      MATCH_MP_TAC COUNTABLE_RESTRICT THEN
+      MATCH_MP_TAC COUNTABLE_FINITE_SUBSETS THEN
+      ONCE_REWRITE_TAC[SET_RULE
+      `{f x y | P x /\ Q y} =
+       {f x y | x IN {z | P z} /\ y IN Q}`] THEN
+      MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT THEN
+      REWRITE_TAC[COUNTABLE_RATIONAL_COORDINATES; COUNTABLE_RATIONAL];
+      REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_GSPEC; HAS_SIZE] THEN
+      X_GEN_TAC `b:(real^M->bool)->bool` THEN STRIP_TAC THEN
+      MATCH_MP_TAC FSIGMA_INTERS THEN ASM_SIMP_TAC[FINITE_IMAGE] THEN
+      REWRITE_TAC[FORALL_IN_IMAGE] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+       (SET_RULE
+         `b SUBSET c ==> (!x. x IN c ==> P x) ==> (!x. x IN b ==> P x)`)) THEN
+      REWRITE_TAC[FORALL_IN_GSPEC] THEN
+      MAP_EVERY X_GEN_TAC [`a:real^M`; `r:real`] THEN
+      DISCH_THEN(K ALL_TAC) THEN
+      MATCH_MP_TAC FSIGMA_CONTINUOUS_IMAGE THEN
+      ASM_SIMP_TAC[FSIGMA_INTER; OPEN_IMP_FSIGMA; OPEN_BALL] THEN
+      ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; INTER_SUBSET]]] THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `y:real^N` THEN
+  REWRITE_TAC[UNIONS_IMAGE; IN_ELIM_THM; INTERS_IMAGE] THEN EQ_TAC THENL
+   [ALL_TAC;
+    DISCH_THEN(X_CHOOSE_THEN `b:(real^M->bool)->bool` MP_TAC) THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC)) THEN
+    REWRITE_TAC[IN_IMAGE] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `p:(real^M->bool)->real^M` THEN DISCH_TAC THEN
+    EXISTS_TAC `IMAGE (p:(real^M->bool)->real^M) b` THEN
+    ASM_SIMP_TAC[FORALL_IN_IMAGE; SUBSET] THEN CONJ_TAC THENL
+     [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+       (SET_RULE
+         `(!x. x IN b ==> Q x) ==> (!x. x IN b ==> Q x ==> P x)
+          ==> (!x. x IN b ==> P x)`)) THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+       (SET_RULE
+         `b SUBSET c ==> (!x. x IN c ==> P x) ==> (!x. x IN b ==> P x)`)) THEN
+      REWRITE_TAC[FORALL_IN_GSPEC] THEN SET_TAC[];
+      MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN ASM_REWRITE_TAC[] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[pairwise]) THEN ASM SET_TAC[]]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:real^M->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPEC `t:real^M->bool` FINITE_EQ_BOUNDED_DISCRETE) THEN
+  ASM_CASES_TAC `FINITE(t:real^M->bool)` THENL
+   [ASM_REWRITE_TAC[]; ASM_MESON_TAC[HAS_SIZE]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `r:real` STRIP_ASSUME_TAC o CONJUNCT2) THEN
+  MP_TAC(ISPECL [`&0`; `r / &4`] RATIONAL_BETWEEN) THEN
+  ANTS_TAC THENL [ASM_REAL_ARITH_TAC; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `q:real` THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!x. x IN t
+        ==> ?a. (!i. 1 <= i /\ i <= dimindex(:M) ==> rational(a$i)) /\
+                x IN ball(a:real^M,q)`
+  MP_TAC THENL
+   [X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`x:real^M`;
+     `{a:real^M | !i. 1 <= i /\ i <= dimindex(:M) ==> rational(a$i)}`]
+        CLOSURE_APPROACHABLE) THEN
+    REWRITE_TAC[CLOSURE_RATIONAL_COORDINATES; IN_UNIV; IN_BALL] THEN
+    DISCH_THEN(MP_TAC o SPEC `q:real`) THEN
+    ASM_REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[DIST_SYM];
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `a:real^M->real^M` THEN DISCH_TAC THEN
+    EXISTS_TAC `IMAGE (\x. s INTER ball((a:real^M->real^M) x,q)) t` THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; GSYM CONJ_ASSOC] THEN CONJ_TAC THENL
+     [REWRITE_TAC[IN_ELIM_THM] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC(TAUT `r /\ (r ==> p /\ q) ==> p /\ q /\ r`) THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(ASSUME_TAC o MATCH_MP (SET_RULE
+     `(!s. P s ==> y IN IMAGE f (g s))
+      ==> (!s. P s ==> ~(g s = {}))`)) THEN
+    SUBGOAL_THEN
+     `pairwise (\x y. DISJOINT (s INTER ball ((a:real^M->real^M) x,q))
+                               (s INTER ball(a y,q))) t`
+    MP_TAC THENL
+     [REWRITE_TAC[pairwise] THEN
+      MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN STRIP_TAC THEN
+      MATCH_MP_TAC(SET_RULE
+       `(!x. ~(x IN t /\ x IN u)) ==> DISJOINT (s INTER t) (s INTER u)`) THEN
+      SUBGOAL_THEN `x IN ball(a x,q) /\ y IN ball(a y:real^M,q)` MP_TAC THENL
+       [ASM_SIMP_TAC[]; ALL_TAC] THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^M`; `y:real^M`]) THEN
+      ASM_REWRITE_TAC[IN_BALL] THEN UNDISCH_TAC `q < r / &4` THEN
+      CONV_TAC NORM_ARITH;
+      REWRITE_TAC[PAIRWISE_IMAGE] THEN SIMP_TAC[pairwise] THEN DISCH_TAC THEN
+      MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN ASM_REWRITE_TAC[] THEN
+      ASM_MESON_TAC[SET_RULE
+       `~(s = {}) /\ ~(t = {}) /\ DISJOINT s t ==> ~(s = t)`]]]);;
+
+let GDELTA_PREIMAGE_CARD_LE = prove
+ (`!f:real^M->real^N s n.
+        f continuous_on s /\ fsigma s
+        ==> gdelta {y | FINITE {x | x IN s /\ f x = y} /\
+                        CARD {x | x IN s /\ f x = y} <= n}`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[SET_RULE
+   `{x | P x /\ Q x} = UNIV DIFF {x | P x ==> ~Q x}`] THEN
+  REWRITE_TAC[GDELTA_COMPLEMENT; ARITH_RULE `~(m <= n) <=> SUC n <= m`] THEN
+  ASM_SIMP_TAC[FSIGMA_PREIMAGE_CARD_GE]);;
+
+let BOREL_PREIMAGE_HAS_SIZE = prove
+ (`!f:real^M->real^N s n.
+        f continuous_on s /\ fsigma s
+        ==> borel {y | {x | x IN s /\ f x = y} HAS_SIZE n}`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_REWRITE_TAC[HAS_SIZE_0; SET_RULE
+     `{y | {x | x IN s /\ f x = y} = {}} = UNIV DIFF IMAGE f s`] THEN
+    REWRITE_TAC[BOREL_COMPLEMENT] THEN MATCH_MP_TAC FSIGMA_IMP_BOREL THEN
+    ASM_MESON_TAC[FSIGMA_CONTINUOUS_IMAGE];
+    REWRITE_TAC[HAS_SIZE] THEN FIRST_ASSUM(fun th -> REWRITE_TAC
+     [MATCH_MP(ARITH_RULE `~(n = 0) ==> (x = n <=> x <= n /\ ~(x <= n - 1))`)
+        th])] THEN
+  REWRITE_TAC[SET_RULE
+   `{x | P x /\ Q x /\ ~R x} = {x | P x /\ Q x} DIFF {x | P x /\ R x}`] THEN
+  MATCH_MP_TAC BOREL_DIFF THEN CONJ_TAC THEN
+  MATCH_MP_TAC GDELTA_IMP_BOREL THEN MATCH_MP_TAC GDELTA_PREIMAGE_CARD_LE THEN
+  ASM_REWRITE_TAC[]);;
+
+let BOREL_PREIMAGE_FINITE = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s /\ fsigma s
+        ==> borel {y | FINITE {x | x IN s /\ f x = y}}`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `{y | FINITE {x | x IN s /\ (f:real^M->real^N) x = y}} =
+    UNIONS {{y | {x | x IN s /\ f x = y} HAS_SIZE n} | n IN (:num)}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[UNIONS_GSPEC; EXTENSION; IN_ELIM_THM; IN_UNIV] THEN
+    MESON_TAC[HAS_SIZE];
+    MATCH_MP_TAC BOREL_UNIONS THEN
+    ASM_SIMP_TAC[FORALL_IN_GSPEC; BOREL_PREIMAGE_HAS_SIZE] THEN
+    SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; NUM_COUNTABLE]]);;
+
+let BOREL_PREIMAGE_INFINITE = prove
+ (`!f:real^M->real^N s.
+        f continuous_on s /\ fsigma s
+        ==> borel {y | INFINITE {x | x IN s /\ f x = y}}`,
+  REWRITE_TAC[INFINITE; SET_RULE `{x | ~P x} = UNIV DIFF {x | P x}`] THEN
+  REWRITE_TAC[BOREL_COMPLEMENT; BOREL_PREIMAGE_FINITE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Forms of the Baire property of dense sets.                                *)
 (* ------------------------------------------------------------------------- *)
 
