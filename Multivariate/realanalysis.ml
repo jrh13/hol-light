@@ -3312,6 +3312,20 @@ let IS_REAL_INTERVAL_CASES = prove
   REWRITE_TAC[EXTENSION; IN_IMAGE_LIFT_DROP; IN_ELIM_THM] THEN
   REWRITE_TAC[GSYM FORALL_DROP; IN_UNIV; NOT_IN_EMPTY]);;
 
+let IS_REALINTERVAL_CLAUSES = prove
+ (`is_realinterval {} /\
+   is_realinterval (:real) /\
+   (!a. is_realinterval {x | a < x}) /\
+   (!a. is_realinterval {x | a <= x}) /\
+   (!b. is_realinterval {x | x < b}) /\
+   (!b. is_realinterval {x | x <= b}) /\
+   (!a b. is_realinterval {x | a < x /\ x < b}) /\
+   (!a b. is_realinterval {x | a < x /\ x <= b}) /\
+   (!a b. is_realinterval {x | a <= x /\ x < b}) /\
+   (!a b. is_realinterval {x | a <= x /\ x <= b})`,
+  REWRITE_TAC[is_realinterval; IN_ELIM_THM; IN_UNIV; NOT_IN_EMPTY] THEN
+  REAL_ARITH_TAC);;
+
 let REAL_CONVEX = prove
  (`!s. is_realinterval s <=>
        !x y u v. x IN s /\ y IN s /\ &0 <= u /\ &0 <= v /\ u + v = &1

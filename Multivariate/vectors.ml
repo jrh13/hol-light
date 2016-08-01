@@ -3883,6 +3883,14 @@ let ONORM_I = prove
  (`onorm(I:real^N->real^N) = &1`,
   REWRITE_TAC[I_DEF; ONORM_ID]);;
 
+let ONORM_INVERSE_FUNCTION_BOUND = prove
+ (`!f g:real^M->real^N.
+        linear f /\ linear g /\ f o g = I ==> &1 <= onorm f * onorm g`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o AP_TERM `onorm:(real^M->real^M)->real`) THEN
+  REWRITE_TAC[ONORM_I] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  MATCH_MP_TAC ONORM_COMPOSE THEN ASM_REWRITE_TAC[]);;
+
 let ONORM_ADJOINT = prove
  (`!f:real^N->real^N. linear f ==> onorm(adjoint f) = onorm f`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[ONORM_DOT] THEN

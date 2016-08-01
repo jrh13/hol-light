@@ -28833,6 +28833,23 @@ let LOCALLY_CONSTANT = prove
   FIRST_X_ASSUM(MP_TAC o SPECL [`s:real^N->bool`; `x:real^N`]) THEN
   ASM_REWRITE_TAC[OPEN_IN_REFL] THEN MESON_TAC[SUBSET]);;
 
+let LOCALLY_CONTINUOUS_ON,LOCALLY_CONTINUOUS_ON_EXPLICIT = (CONJ_PAIR o prove)
+ (`(!f:real^M->real^N s.
+        locally (\u. f continuous_on u) s <=> f continuous_on s) /\
+   (!f:real^M->real^N s.
+        f continuous_on s <=>
+        !x. x IN s ==> ?u. open_in (subtopology euclidean s) u /\
+                           x IN u /\ f continuous_on u)`,
+  REWRITE_TAC[AND_FORALL_THM; locally] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(TAUT
+   `(p ==> q) /\ (q ==> r) /\ (r ==> p)
+    ==> (q <=> p) /\ (p <=> r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [MESON_TAC[OPEN_IN_IMP_SUBSET; SUBSET_REFL; CONTINUOUS_ON_SUBSET];
+    MESON_TAC[OPEN_IN_REFL; CONTINUOUS_ON_SUBSET];
+    REWRITE_TAC[CONTINUOUS_ON] THEN
+    MATCH_MP_TAC MONO_FORALL THEN MESON_TAC[LIM_WITHIN_OPEN_IN]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Local compactness.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -29702,10 +29719,67 @@ let GDELTA_COMPLEMENT = prove
   ASM_REWRITE_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`;
                   SET_RULE `{x | x IN s} = s`]);;
 
+let FSIGMA_ASCENDING = prove
+ (`!s:real^N->bool.
+        fsigma s <=>
+        ?c. (!n. compact(c n)) /\ (!n. c n SUBSET c(SUC n)) /\
+            UNIONS {c n | n IN (:num)} = s`,
+  GEN_TAC THEN REWRITE_TAC[FSIGMA_UNIONS_COMPACT] THEN
+  EQ_TAC THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
+   [X_GEN_TAC `g:(real^N->bool)->bool` THEN
+    ASM_CASES_TAC `g:(real^N->bool)->bool = {}` THENL
+     [ASM_REWRITE_TAC[UNIONS_0] THEN DISCH_THEN(ASSUME_TAC o GSYM) THEN
+      EXISTS_TAC `(\n. {}):num->real^N->bool` THEN
+      ASM_REWRITE_TAC[COMPACT_EMPTY; SUBSET_REFL; EMPTY_UNIONS] THEN
+      REWRITE_TAC[FORALL_IN_GSPEC];
+      DISCH_TAC THEN
+      MP_TAC(ISPEC `g:(real^N->bool)->bool` COUNTABLE_AS_IMAGE) THEN
+      ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      X_GEN_TAC `c:num->real^N->bool` THEN
+      DISCH_THEN SUBST_ALL_TAC THEN
+      EXISTS_TAC `(\n. UNIONS {c m | m <= n}):num->real^N->bool` THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[FORALL_IN_IMAGE; IN_UNIV]) THEN
+      REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+       [GEN_TAC THEN MATCH_MP_TAC COMPACT_UNIONS THEN
+        ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+        ASM_SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG_LE; FORALL_IN_IMAGE];
+        REWRITE_TAC[UNIONS_GSPEC; LE] THEN SET_TAC[];
+        REWRITE_TAC[UNIONS_GSPEC; IN_ELIM_THM; IN_UNIV] THEN
+        FIRST_X_ASSUM(SUBST1_TAC o SYM o last o CONJUNCTS) THEN
+        GEN_REWRITE_TAC I [EXTENSION] THEN
+        REWRITE_TAC[UNIONS_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
+        MESON_TAC[LE_REFL]]];
+    X_GEN_TAC `c:num->real^N->bool` THEN STRIP_TAC THEN
+    EXISTS_TAC `{c n | n IN (:num)}:(real^N->bool)->bool` THEN
+    ASM_REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+    ASM_SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_SUBSET_NUM]]);;
+
 let FSIGMA_COMPLEMENT = prove
  (`!s. fsigma((:real^N) DIFF s) <=> gdelta s`,
   ONCE_REWRITE_TAC[GSYM GDELTA_COMPLEMENT] THEN
   REWRITE_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`]);;
+
+let GDELTA_DESCENDING = prove
+ (`!s:real^N->bool.
+        gdelta s <=>
+        ?u. (!n. open(u n)) /\ (!n. u(SUC n) SUBSET u n) /\
+            INTERS {u n | n IN (:num)} = s`,
+  GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[GSYM FSIGMA_COMPLEMENT; FSIGMA_ASCENDING] THEN
+    DISCH_THEN(X_CHOOSE_THEN `u:num->real^N->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `\n:num. (:real^N) DIFF u n` THEN
+    ASM_SIMP_TAC[GSYM closed; COMPACT_IMP_CLOSED; SET_RULE
+     `UNIV DIFF t SUBSET UNIV DIFF s <=> s SUBSET t`] THEN
+    REWRITE_TAC[INTERS_UNIONS; SET_RULE
+     `{g y | y IN {f x | x IN UNIV}} = {g(f x) | x IN UNIV}`] THEN
+    ASM_REWRITE_TAC[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`];
+    DISCH_THEN(X_CHOOSE_THEN `u:num->real^N->bool` STRIP_ASSUME_TAC) THEN
+    REWRITE_TAC[gdelta] THEN
+    EXISTS_TAC `{u n | n IN (:num)}:(real^N->bool)->bool` THEN
+    ASM_REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+    ASM_SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_SUBSET_NUM]]);;
 
 let GDELTA_TRANSLATION = prove
  (`!a:real^N s. gdelta (IMAGE (\x. a + x) s) <=> gdelta s`,
@@ -31040,6 +31114,24 @@ let BOREL_MEASURABLE_VSUM = prove
   SIMP_TAC[VSUM_CLAUSES; BOREL_MEASURABLE_CONST; BOREL_MEASURABLE_ADD;
            FORALL_IN_INSERT; ETA_AX]);;
 
+let BOREL_MEASURABLE_MUL = prove
+ (`!f g:real^M->real^N s.
+        (\x. lift(f x)) borel_measurable_on s /\ g borel_measurable_on s
+        ==> (\x. f x % g x) borel_measurable_on s`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[BILINEAR_DROP_MUL]
+    (ISPEC `\x y:real^N. drop x % y` BOREL_MEASURABLE_BILINEAR))) THEN
+  REWRITE_TAC[LIFT_DROP]);;
+
+let BOREL_MEASURABLE_PRODUCT = prove
+ (`!f:A->real^N->real s t.
+        FINITE t /\ (!i. i IN t ==> (\x. lift(f i x)) borel_measurable_on s)
+        ==> (\x. lift(product t (\i. f i x))) borel_measurable_on s`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[PRODUCT_CLAUSES; BOREL_MEASURABLE_CONST; LIFT_CMUL;
+           BOREL_MEASURABLE_MUL; FORALL_IN_INSERT; ETA_AX]);;
+
 let BOREL_MEASURABLE_COMPONENTWISE = prove
  (`!f:real^M->real^N s.
         f borel_measurable_on s <=>
@@ -31619,6 +31711,41 @@ let BOREL_MEASURABLE_COMPOSE = prove
     MATCH_MP_TAC(CONJUNCT2 borel_measurable_RULES) THEN
     EXISTS_TAC `\n. (g:num->real^N->real^P) n  o (f:real^M->real^N)` THEN
     ASM_SIMP_TAC[o_THM] THEN ASM SET_TAC[]]);;
+
+let BOREL_MEASURABLE_CASES = prove
+ (`!f g:real^M->real^N s t.
+        f borel_measurable_on s /\ g borel_measurable_on (t DIFF s) /\ borel s
+        ==> (\x. if x IN s then f x else g x) borel_measurable_on t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN DISCH_TAC THEN
+  DISCH_THEN(MP_TAC o SPEC `(:real^N)` o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] BOREL_MEASURABLE_EXTENSION)) THEN
+  FIRST_ASSUM(MP_TAC o SPEC `(:real^N)` o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] BOREL_MEASURABLE_EXTENSION)) THEN
+  ASM_REWRITE_TAC[SUBSET_UNIV; BOREL_UNIV; IN_DIFF; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `f':real^M->real^N` THEN STRIP_TAC THEN
+  X_GEN_TAC `g':real^M->real^N` THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC BOREL_MEASURABLE_EQ THEN
+  EXISTS_TAC
+   `(\x. drop(indicator s x) % f' x + (&1 - drop(indicator s x)) % g' x)
+    :real^M->real^N` THEN
+  REWRITE_TAC[] THEN CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN REWRITE_TAC[indicator] THEN
+    COND_CASES_TAC THEN
+    ASM_SIMP_TAC[DROP_VEC; REAL_SUB_REFL; REAL_SUB_RZERO] THEN
+    CONV_TAC VECTOR_ARITH;
+    MATCH_MP_TAC BOREL_MEASURABLE_ON_SUBSET THEN EXISTS_TAC `(:real^M)` THEN
+    REWRITE_TAC[SUBSET_UNIV] THEN
+    MATCH_MP_TAC BOREL_MEASURABLE_ADD THEN CONJ_TAC THEN
+    MATCH_MP_TAC BOREL_MEASURABLE_MUL THEN
+    ASM_SIMP_TAC[LIFT_DROP; ETA_AX; BOREL_MEASURABLE_INDICATOR; LIFT_SUB;
+                 BOREL_MEASURABLE_CONST; BOREL_MEASURABLE_SUB]]);;
+
+let BOREL_MEASURABLE_RESTRICT = prove
+ (`!f:real^M->real^N s.
+        f borel_measurable_on s /\ borel s
+        ==> (\x. if x IN s then f x else vec 0) borel_measurable_on (:real^M)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC BOREL_MEASURABLE_CASES THEN
+  ASM_REWRITE_TAC[BOREL_MEASURABLE_CONST]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Analytic sets.                                                            *)
