@@ -3110,6 +3110,21 @@ let PSUBSET_UNIONS_PAIRWISE_DISJOINT = prove
   REWRITE_TAC[IN_DELETE; IN_DIFF] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Useful idioms for being a suitable union/intersection of somethings.      *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("UNION_OF",(20,"right"));;
+parse_as_infix("INTERSECTION_OF",(20,"right"));;
+
+let UNION_OF = new_definition
+ `P UNION_OF Q =
+   \s:A->bool. ?u. P u /\ (!c. c IN u ==> Q c) /\ UNIONS u = s`;;
+
+let INTERSECTION_OF = new_definition
+ `P INTERSECTION_OF Q =
+   \s:A->bool. ?u. P u /\ (!c. c IN u ==> Q c) /\ INTERS u = s`;;
+
+(* ------------------------------------------------------------------------- *)
 (* Some additional properties of "set_of_list".                              *)
 (* ------------------------------------------------------------------------- *)
 

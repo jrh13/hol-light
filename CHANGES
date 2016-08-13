@@ -8,6 +8,13 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 12th Aug 2016       sets.ml
+
+Added two natural infix constants "UNION_OF" and "INTERSECTION_OF" for the
+useful and otherwise longwinded idiom that a set is a suitable (e.g. finite or
+countable or pairwise disjoint) union/intersection of "somethings". Typical
+examples are topological: `fsigma = COUNTABLE UNION_OF closed` etc.
+
 Sat  9th Jul 2016       Makefile
 
 Added yet another disjunct to the OCaml and camlp5 version case split

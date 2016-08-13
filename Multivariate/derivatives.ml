@@ -3243,7 +3243,7 @@ let INVERSE_FUNCTION_THEOREM = prove
               dist(lift(hausdist ((k:num->real^N->bool) (q n),c)),vec 0) < de)
          sequentially`
       MP_TAC THENL
-       [ASM_REWRITE_TAC[EVENTUALLY_AND; EVENTUALLY_INV1_LT; REAL_HALF] THEN
+       [ASM_REWRITE_TAC[EVENTUALLY_AND; ARCH_EVENTUALLY_INV1; REAL_HALF] THEN
         UNDISCH_TAC `&0 < de` THEN SPEC_TAC(`de:real`,`e:real`) THEN
         ASM_REWRITE_TAC[GSYM tendsto];
         REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; LEFT_IMP_EXISTS_THM]] THEN
