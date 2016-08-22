@@ -8,12 +8,45 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 19th Aug 2016       sets.ml
+
+Added a few basic theorems, one trivial but very useful fact that
+complementation is an involution, and a few basic general properties
+of the "UNION_OF" and "INTERSECTION_OF" constructs:
+
+  COMPL_COMPL = 
+    |- !s. (:A) DIFF ((:A) DIFF s) = s
+
+  INTERSECTION_OF_INC = 
+    |- !P Q s:A->bool. P {s} /\ Q s ==> (P INTERSECTION_OF Q) s
+
+  INTERSECTION_OF_MONO = 
+    |- !P Q Q' s:A->bool.
+         (P INTERSECTION_OF Q) s /\ (!x. Q x ==> Q' x)
+         ==> (P INTERSECTION_OF Q') s
+
+  UNION_OF_INC = 
+    |- !P Q s:A->bool. P {s} /\ Q s ==> (P UNION_OF Q) s
+
+  UNION_OF_MONO = 
+    |- !P Q Q' s:A->bool.
+        (P UNION_OF Q) s /\ (!x. Q x ==> Q' x) ==> (P UNION_OF Q') s
+ 
+
 Fri 12th Aug 2016       sets.ml
 
 Added two natural infix constants "UNION_OF" and "INTERSECTION_OF" for the
 useful and otherwise longwinded idiom that a set is a suitable (e.g. finite or
 countable or pairwise disjoint) union/intersection of "somethings". Typical
 examples are topological: `fsigma = COUNTABLE UNION_OF closed` etc.
+
+        UNION_OF =
+          |- !P Q. P UNION_OF Q =
+                   (\s. ?u. P u /\ (!c. c IN u ==> Q c) /\ UNIONS u = s)
+
+        INTERSECTION_OF =
+          |- !P Q. P INTERSECTION_OF Q =
+                   (\s. ?u. P u /\ (!c. c IN u ==> Q c) /\ INTERS u = s)
 
 Sat  9th Jul 2016       Makefile
 

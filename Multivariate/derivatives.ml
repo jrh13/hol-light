@@ -2495,6 +2495,122 @@ let DIFFERENTIABLE_ON_SQNORM = prove
             DIFFERENTIABLE_SQNORM_AT]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Partial derivatives and jacobians are Baire functions.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let BAIRE1_PARTIAL_DERIVATIVES = prove
+ (`!f:real^M->real^N f' s i j.
+        (!x. x IN s ==> (f has_derivative f'(x)) (at x)) /\
+        open s /\
+        1 <= i /\ i <= dimindex(:N) /\
+        1 <= j /\ j <= dimindex(:M)
+        ==> baire 1 s (\x. lift(matrix(f' x)$i$j))`,
+  REPEAT STRIP_TAC THEN
+  ABBREV_TAC
+   `d = \n x. (if s = UNIV then &1 else setdist({x},(:real^M) DIFF s)) /
+              (&n + &2)` THEN
+  SUBGOAL_THEN `!n x. x IN s ==> &0 < (d:num->real^M->real) n x`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN EXPAND_TAC "d" THEN
+    REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LT_DIV THEN
+    REWRITE_TAC[REAL_ARITH `&0 < &n + &2`] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_LT_01; SETDIST_POS_LT] THEN
+    ASM_SIMP_TAC[SETDIST_EQ_0_SING; CLOSURE_CLOSED; GSYM OPEN_CLOSED] THEN
+    ASM SET_TAC[];
+    REWRITE_TAC[num_CONV `1`; baire]] THEN
+  SUBGOAL_THEN `(f:real^M->real^N) continuous_on s` ASSUME_TAC THENL
+   [ASM_MESON_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_ON; differentiable;
+                  DIFFERENTIABLE_ON_EQ_DIFFERENTIABLE_AT];
+    ALL_TAC] THEN
+  EXISTS_TAC
+   `\n:num x.
+        inv(d n x) % lift((f(x + d n x % basis j) -
+                          (f:real^M->real^N) x)$i)` THEN
+  REWRITE_TAC[] THEN CONJ_TAC THENL
+   [X_GEN_TAC `n:num` THEN MATCH_MP_TAC CONTINUOUS_ON_MUL THEN
+    REWRITE_TAC[o_DEF] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC(REWRITE_RULE[o_DEF] CONTINUOUS_ON_INV) THEN
+      ASM_SIMP_TAC[REAL_LT_IMP_NZ];
+      MATCH_MP_TAC CONTINUOUS_ON_LIFT_COMPONENT_COMPOSE THEN
+      MATCH_MP_TAC CONTINUOUS_ON_SUB THEN ASM_REWRITE_TAC[] THEN
+      GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
+       [MATCH_MP_TAC CONTINUOUS_ON_ADD THEN
+        REWRITE_TAC[CONTINUOUS_ON_ID] THEN
+        MATCH_MP_TAC CONTINUOUS_ON_VMUL THEN REWRITE_TAC[o_DEF];
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CONTINUOUS_ON_SUBSET)) THEN
+        REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+        X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN EXPAND_TAC "d" THEN
+        COND_CASES_TAC THEN ASM_REWRITE_TAC[IN_UNIV] THEN
+        ONCE_REWRITE_TAC[SET_RULE `x IN s <=> ~(x IN UNIV DIFF s)`] THEN
+        DISCH_THEN(MP_TAC o SPECL [`{x:real^M}`; `x:real^M`] o MATCH_MP
+         (REWRITE_RULE[IMP_CONJ_ALT] SETDIST_LE_DIST)) THEN
+        REWRITE_TAC[IN_SING; NORM_ARITH `dist(x:real^N,x + y) = norm y`] THEN
+        ASM_SIMP_TAC[NORM_MUL; REAL_ABS_DIV; NORM_BASIS; REAL_MUL_RID] THEN
+        REWRITE_TAC[REAL_ARITH `abs(&n + &2) = &n + &2`] THEN
+        MATCH_MP_TAC(REAL_ARITH
+         `&0 <= x /\ x * inv n < x * &1 ==> ~(x <= abs x / n)`) THEN
+        REWRITE_TAC[SETDIST_POS_LE] THEN MATCH_MP_TAC REAL_LT_LMUL THEN
+        SIMP_TAC[REAL_INV_LT_1; REAL_ARITH `&1 < &n + &2`] THEN
+        REWRITE_TAC[SETDIST_POS_LT] THEN
+        ASM_SIMP_TAC[SETDIST_EQ_0_SING; CLOSURE_CLOSED;
+                     GSYM OPEN_CLOSED] THEN
+        ASM SET_TAC[]]] THEN
+    EXPAND_TAC "d" THEN REWRITE_TAC[real_div; LIFT_CMUL] THEN
+    ASM_CASES_TAC `s = (:real^M)` THEN
+    ASM_REWRITE_TAC[CONTINUOUS_ON_CONST] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_VMUL THEN REWRITE_TAC[o_DEF] THEN
+    REWRITE_TAC[CONTINUOUS_ON_LIFT_SETDIST];
+    X_GEN_TAC `x:real^M` THEN DISCH_TAC THEN
+    REWRITE_TAC[GSYM VECTOR_MUL_COMPONENT; GSYM LIFT_CMUL] THEN
+    ONCE_REWRITE_TAC[GSYM TRANSP_COMPONENT] THEN
+    MATCH_MP_TAC LIM_COMPONENT THEN
+    ASM_SIMP_TAC[LAMBDA_BETA; MATRIX_COMPONENT; transp; LAMBDA_ETA] THEN
+    ONCE_REWRITE_TAC[LIM_NULL] THEN REWRITE_TAC[] THEN
+    SUBGOAL_THEN
+     `(\n. inv(d n x) % (f (x + d n x % basis j) - f x) - f' x (basis j)) =
+      (\y. inv(norm(y - x)) % ((f:real^M->real^N) y -
+                               (f x + f' x (y - x)))) o
+      (\n:num. x + d n x % basis j)`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[o_DEF; VECTOR_ADD_SUB; NORM_MUL] THEN
+      ASM_SIMP_TAC[real_abs; REAL_LT_IMP_LE; NORM_BASIS] THEN
+      SUBGOAL_THEN
+       `!a y. (f':real^M->real^M->real^N) x (a % y) = a % f' x y`
+      (fun th -> REWRITE_TAC[th]) THENL
+       [REPEAT GEN_TAC THEN MATCH_MP_TAC LINEAR_CMUL THEN
+        ASM_MESON_TAC[has_derivative];
+        REWRITE_TAC[VECTOR_ARITH `x - (y + z):real^N = x - y - z`] THEN
+        REWRITE_TAC[REAL_MUL_RID; VECTOR_SUB_LDISTRIB] THEN
+        ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; REAL_LT_IMP_NZ] THEN
+        REWRITE_TAC[VECTOR_MUL_LID]];
+      MATCH_MP_TAC LIM_COMPOSE_AT THEN EXISTS_TAC `x:real^M` THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[has_derivative_at]) THEN
+      ASM_SIMP_TAC[VECTOR_SUB_REFL] THEN
+      REWRITE_TAC[NORM_0; REAL_INV_0; VECTOR_MUL_LZERO; EVENTUALLY_TRUE] THEN
+      GEN_REWRITE_TAC LAND_CONV [GSYM VECTOR_ADD_RID] THEN
+      MATCH_MP_TAC LIM_ADD THEN REWRITE_TAC[LIM_CONST] THEN
+      MATCH_MP_TAC LIM_NULL_VMUL THEN EXPAND_TAC "d" THEN
+      REWRITE_TAC[LIFT_CMUL; real_div] THEN MATCH_MP_TAC LIM_NULL_CMUL THEN
+      REWRITE_TAC[SEQ_HARMONIC_OFFSET]]]);;
+
+let BAIRE1_DET_JACOBIAN = prove
+ (`!f:real^N->real^N f' s.
+        (!x. x IN s ==> (f has_derivative f'(x)) (at x)) /\ open s
+        ==> baire 1 s (\x. lift(det(matrix(f' x))))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[det; LIFT_SUM; o_DEF] THEN
+  MATCH_MP_TAC BAIRE_VSUM THEN
+  SIMP_TAC[FINITE_PERMUTATIONS; FINITE_NUMSEG; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `p:num->num` THEN DISCH_TAC THEN REWRITE_TAC[LIFT_CMUL] THEN
+  MATCH_MP_TAC BAIRE_CMUL THEN MATCH_MP_TAC BAIRE_PRODUCT THEN
+  REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC BAIRE1_PARTIAL_DERIVATIVES THEN
+  EXISTS_TAC `f:real^N->real^N` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP PERMUTES_IMAGE) THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG] THEN ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A Frechet derivative is also a Gateaux derivative, and if the function    *)
 (* is Lipschitz then the converse also holds.                                *)
 (* ------------------------------------------------------------------------- *)
@@ -5323,6 +5439,26 @@ let HAS_VECTOR_DERIVATIVE_AT_1D = prove
       ((\y. inv(drop(y - x)) % (f y - f x)) --> f') (at x)`,
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[HAS_VECTOR_DERIVATIVE_WITHIN_1D]);;
+
+let BAIRE1_VECTOR_DERIVATIVE = prove
+ (`!f:real^1->real^N f' s.
+        (!x. x IN s ==> (f has_vector_derivative f'(x)) (at x)) /\ open s
+        ==> baire 1 s f'`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[BAIRE_COMPONENTWISE] THEN
+  REWRITE_TAC[has_vector_derivative] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP
+   (ONCE_REWRITE_RULE[TAUT `p /\ q /\ r ==> s <=> p /\ q ==> r ==> s`]
+        BAIRE1_PARTIAL_DERIVATIVES)) THEN
+  MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[DIMINDEX_1; FORALL_1] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] BAIRE_EQ) THEN
+  X_GEN_TAC `x:real^1` THEN DISCH_TAC THEN
+  REWRITE_TAC[GSYM drop; LIFT_DROP; matrix] THEN
+  ASM_SIMP_TAC[LAMBDA_BETA; VECTOR_MUL_COMPONENT; CART_EQ;
+               FORALL_1; DIMINDEX_1; DROP_BASIS] THEN
+  REWRITE_TAC[GSYM drop; LIFT_DROP; REAL_MUL_LID]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bounds on derivatives from function properties.                           *)

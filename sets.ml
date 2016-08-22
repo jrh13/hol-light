@@ -555,6 +555,10 @@ let SUBSET_DIFF = prove
  (`!s t. (s DIFF t) SUBSET s`,
   SET_TAC[]);;
 
+let COMPL_COMPL = prove
+ (`!s. (:A) DIFF ((:A) DIFF s) = s`,
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Insertion and deletion.                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -3123,6 +3127,27 @@ let UNION_OF = new_definition
 let INTERSECTION_OF = new_definition
  `P INTERSECTION_OF Q =
    \s:A->bool. ?u. P u /\ (!c. c IN u ==> Q c) /\ INTERS u = s`;;
+
+let UNION_OF_INC = prove
+ (`!P Q s:A->bool. P {s} /\ Q s ==> (P UNION_OF Q) s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[UNION_OF] THEN
+  EXISTS_TAC `{s:A->bool}` THEN ASM_SIMP_TAC[UNIONS_1; IN_SING]);;
+
+let INTERSECTION_OF_INC = prove
+ (`!P Q s:A->bool. P {s} /\ Q s ==> (P INTERSECTION_OF Q) s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INTERSECTION_OF] THEN
+  EXISTS_TAC `{s:A->bool}` THEN ASM_SIMP_TAC[INTERS_1; IN_SING]);;
+
+let UNION_OF_MONO = prove
+ (`!P Q Q' s:A->bool.
+        (P UNION_OF Q) s /\ (!x. Q x ==> Q' x) ==> (P UNION_OF Q') s`,
+  REWRITE_TAC[UNION_OF] THEN MESON_TAC[]);;
+
+let INTERSECTION_OF_MONO = prove
+ (`!P Q Q' s:A->bool.
+        (P INTERSECTION_OF Q) s /\ (!x. Q x ==> Q' x)
+        ==> (P INTERSECTION_OF Q') s`,
+  REWRITE_TAC[INTERSECTION_OF] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some additional properties of "set_of_list".                              *)

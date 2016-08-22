@@ -23,9 +23,13 @@ let EQ_TRANS_TAC tm =
 (* Miscellaneous lemmas.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
+let FORALL_DIFF = prove
+ (`(!s:A->bool. P(UNIV DIFF s)) <=> (!s. P s)`,
+  MESON_TAC[COMPL_COMPL]);;
+
 let EXISTS_DIFF = prove
  (`(?s:A->bool. P(UNIV DIFF s)) <=> (?s. P s)`,
-  MESON_TAC[prove(`UNIV DIFF (UNIV DIFF s) = s`,SET_TAC[])]);;
+  MESON_TAC[COMPL_COMPL]);;
 
 let GE_REFL = prove
  (`!n:num. n >= n`,
