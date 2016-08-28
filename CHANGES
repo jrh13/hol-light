@@ -8,30 +8,106 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 25th Aug 2016       Library/sets.ml
+
+Added a number of simple results about the COUNTABLE case of the new
+constructs "UNION_OF" and "INTERSECTION_OF". This is the immediately
+most useful case in topology, but one could of course reasonably
+add "FINITE" or more general variants too.
+
+  COUNTABLE_INTERSECTION_OF_COMPLEMENT =
+    |- !P s. (COUNTABLE INTERSECTION_OF P) s <=>
+             (COUNTABLE UNION_OF (\s. P((:A) DIFF s))) ((:A) DIFF s)
+
+  COUNTABLE_INTERSECTION_OF_IDEMPOT =
+    |- !P:(A->bool)->bool.
+          COUNTABLE INTERSECTION_OF COUNTABLE INTERSECTION_OF P =
+          COUNTABLE INTERSECTION_OF P
+
+  COUNTABLE_INTERSECTION_OF_INC =
+    |- !P s:A->bool. P s ==> (COUNTABLE INTERSECTION_OF P) s
+
+  COUNTABLE_INTERSECTION_OF_INTER =
+    |- !P s t. (COUNTABLE INTERSECTION_OF P) s /\
+               (COUNTABLE INTERSECTION_OF P) t
+               ==> (COUNTABLE INTERSECTION_OF P) (s INTER t)
+
+  COUNTABLE_INTERSECTION_OF_INTERS =
+    |- !P u:(A->bool)->bool.
+          COUNTABLE u /\ (!s. s IN u ==> (COUNTABLE INTERSECTION_OF P) s)
+          ==> (COUNTABLE INTERSECTION_OF P) (INTERS u)
+
+  COUNTABLE_INTERSECTION_OF_UNION =
+    |- !P:(A->bool)->bool.
+          (!s t. P s /\ P t ==> P(s UNION t))
+          ==> (!s t. (COUNTABLE INTERSECTION_OF P) s /\
+                     (COUNTABLE INTERSECTION_OF P) t
+                     ==> (COUNTABLE INTERSECTION_OF P) (s UNION t))
+
+  COUNTABLE_UNION_OF_ASCENDING =
+    |- !P s:A->bool.
+          P {} /\ (!t u. P t /\ P u ==> P(t UNION u))
+          ==> ((COUNTABLE UNION_OF P) s <=>
+               ?t. (!n. P(t n)) /\
+                   (!n. t n SUBSET t(SUC n)) /\
+                   UNIONS {t n | n IN (:num)} = s)
+
+  COUNTABLE_UNION_OF_COMPLEMENT =
+    |- !P s. (COUNTABLE UNION_OF P) s <=>
+             (COUNTABLE INTERSECTION_OF (\s. P((:A) DIFF s))) ((:A) DIFF s)
+
+  COUNTABLE_UNION_OF_EXPLICIT =
+    |- !P s:A->bool.
+          P {}
+          ==> ((COUNTABLE UNION_OF P) s <=>
+               ?t. (!n. P(t n)) /\ UNIONS {t n | n IN (:num)} = s)
+
+  COUNTABLE_UNION_OF_IDEMPOT =
+    |- !P:(A->bool)->bool.
+          COUNTABLE UNION_OF COUNTABLE UNION_OF P = COUNTABLE UNION_OF P
+
+  COUNTABLE_UNION_OF_INC =
+    |- !P s:A->bool. P s ==> (COUNTABLE UNION_OF P) s
+
+  COUNTABLE_UNION_OF_INTER =
+    |- !P:(A->bool)->bool.
+          (!s t. P s /\ P t ==> P(s INTER t))
+          ==> (!s t. (COUNTABLE UNION_OF P) s /\ (COUNTABLE UNION_OF P) t
+                     ==> (COUNTABLE UNION_OF P) (s INTER t))
+
+  COUNTABLE_UNION_OF_UNION =
+    |- !P s t. (COUNTABLE UNION_OF P) s /\ (COUNTABLE UNION_OF P) t
+             ==> (COUNTABLE UNION_OF P) (s UNION t)
+
+  COUNTABLE_UNION_OF_UNIONS =
+    |- !P u:(A->bool)->bool.
+          COUNTABLE u /\ (!s. s IN u ==> (COUNTABLE UNION_OF P) s)
+          ==> (COUNTABLE UNION_OF P) (UNIONS u)
+
 Fri 19th Aug 2016       sets.ml
 
 Added a few basic theorems, one trivial but very useful fact that
 complementation is an involution, and a few basic general properties
 of the "UNION_OF" and "INTERSECTION_OF" constructs:
 
-  COMPL_COMPL = 
+  COMPL_COMPL =
     |- !s. (:A) DIFF ((:A) DIFF s) = s
 
-  INTERSECTION_OF_INC = 
+  INTERSECTION_OF_INC =
     |- !P Q s:A->bool. P {s} /\ Q s ==> (P INTERSECTION_OF Q) s
 
-  INTERSECTION_OF_MONO = 
+  INTERSECTION_OF_MONO =
     |- !P Q Q' s:A->bool.
          (P INTERSECTION_OF Q) s /\ (!x. Q x ==> Q' x)
          ==> (P INTERSECTION_OF Q') s
 
-  UNION_OF_INC = 
+  UNION_OF_INC =
     |- !P Q s:A->bool. P {s} /\ Q s ==> (P UNION_OF Q) s
 
-  UNION_OF_MONO = 
+  UNION_OF_MONO =
     |- !P Q Q' s:A->bool.
         (P UNION_OF Q) s /\ (!x. Q x ==> Q' x) ==> (P UNION_OF Q') s
- 
+
 
 Fri 12th Aug 2016       sets.ml
 
@@ -233,7 +309,7 @@ omega-indexed chain:
         ==> ?u. (!n. u(n) IN f) /\ (!n. u(n) SUBSET u(SUC n)) /\
                 UNIONS {u n | n IN (:num)} = UNIONS f
 
- COUNTABLE_DESCENDING_CHAIN = prove
+ COUNTABLE_DESCENDING_CHAIN =
    |- !f:(A->bool)->bool.
         COUNTABLE f /\ ~(f = {}) /\
         (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)

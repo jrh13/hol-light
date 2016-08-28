@@ -29712,36 +29712,8 @@ let FSIGMA_ASCENDING = prove
         fsigma s <=>
         ?c. (!n. compact(c n)) /\ (!n. c n SUBSET c(SUC n)) /\
             UNIONS {c n | n IN (:num)} = s`,
-  GEN_TAC THEN REWRITE_TAC[FSIGMA_UNIONS_COMPACT; UNION_OF] THEN
-  EQ_TAC THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
-   [X_GEN_TAC `g:(real^N->bool)->bool` THEN
-    ASM_CASES_TAC `g:(real^N->bool)->bool = {}` THENL
-     [ASM_REWRITE_TAC[UNIONS_0] THEN DISCH_THEN(ASSUME_TAC o GSYM) THEN
-      EXISTS_TAC `(\n. {}):num->real^N->bool` THEN
-      ASM_REWRITE_TAC[COMPACT_EMPTY; SUBSET_REFL; EMPTY_UNIONS] THEN
-      REWRITE_TAC[FORALL_IN_GSPEC];
-      DISCH_TAC THEN
-      MP_TAC(ISPEC `g:(real^N->bool)->bool` COUNTABLE_AS_IMAGE) THEN
-      ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-      X_GEN_TAC `c:num->real^N->bool` THEN
-      DISCH_THEN SUBST_ALL_TAC THEN
-      EXISTS_TAC `(\n. UNIONS {c m | m <= n}):num->real^N->bool` THEN
-      RULE_ASSUM_TAC(REWRITE_RULE[FORALL_IN_IMAGE; IN_UNIV]) THEN
-      REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
-       [GEN_TAC THEN MATCH_MP_TAC COMPACT_UNIONS THEN
-        ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
-        ASM_SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG_LE; FORALL_IN_IMAGE];
-        REWRITE_TAC[UNIONS_GSPEC; LE] THEN SET_TAC[];
-        REWRITE_TAC[UNIONS_GSPEC; IN_ELIM_THM; IN_UNIV] THEN
-        FIRST_X_ASSUM(SUBST1_TAC o SYM o last o CONJUNCTS) THEN
-        GEN_REWRITE_TAC I [EXTENSION] THEN
-        REWRITE_TAC[UNIONS_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
-        MESON_TAC[LE_REFL]]];
-    X_GEN_TAC `c:num->real^N->bool` THEN STRIP_TAC THEN
-    EXISTS_TAC `{c n | n IN (:num)}:(real^N->bool)->bool` THEN
-    ASM_REWRITE_TAC[FORALL_IN_GSPEC] THEN
-    ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
-    ASM_SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_SUBSET_NUM]]);;
+  REWRITE_TAC[FSIGMA_UNIONS_COMPACT] THEN
+  SIMP_TAC[COUNTABLE_UNION_OF_ASCENDING; COMPACT_EMPTY; COMPACT_UNION]);;
 
 let FSIGMA_COMPLEMENT = prove
  (`!s. fsigma((:real^N) DIFF s) <=> gdelta s`,
@@ -29856,6 +29828,18 @@ let GDELTA_INTERS = prove
     REWRITE_TAC[FORALL_IN_UNIONS] THEN ASM SET_TAC[];
     ASM SET_TAC[]]);;
 
+let GDELTA_INTER = prove
+ (`!s t:real^N->bool. gdelta s /\ gdelta t ==> gdelta(s INTER t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM INTERS_2] THEN
+  MATCH_MP_TAC GDELTA_INTERS THEN
+  REWRITE_TAC[COUNTABLE_INSERT; COUNTABLE_EMPTY] THEN
+  ASM_REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY]);;
+
+let GDELTA_DIFF = prove
+ (`!s t:real^N->bool. gdelta s /\ fsigma t ==> gdelta(s DIFF t)`,
+  ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
+  SIMP_TAC[GDELTA_INTER; GDELTA_COMPLEMENT]);;
+
 let FSIGMA_UNIONS = prove
  (`!g:(real^N->bool)->bool.
         COUNTABLE g /\ (!u. u IN g ==> fsigma u) ==> fsigma(UNIONS g)`,
@@ -29871,13 +29855,6 @@ let COUNTABLE_IMP_FSIGMA = prove
    [REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]; MATCH_MP_TAC FSIGMA_UNIONS] THEN
   ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
   REWRITE_TAC[FSIGMA_SING]);;
-
-let GDELTA_INTER = prove
- (`!s t:real^N->bool. gdelta s /\ gdelta t ==> gdelta(s INTER t)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM INTERS_2] THEN
-  MATCH_MP_TAC GDELTA_INTERS THEN
-  REWRITE_TAC[COUNTABLE_INSERT; COUNTABLE_EMPTY] THEN
-  ASM_REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY]);;
 
 let FSIGMA_UNION = prove
  (`!s t:real^N->bool. fsigma s /\ fsigma t ==> fsigma(s UNION t)`,
@@ -29904,6 +29881,11 @@ let FSIGMA_INTER = prove
   REWRITE_TAC[GSYM GDELTA_COMPLEMENT;
      SET_RULE `s INTER t = UNIV DIFF ((UNIV DIFF s) UNION (UNIV DIFF t))`] THEN
   REWRITE_TAC[COMPL_COMPL; GDELTA_UNION]);;
+
+let FSIGMA_DIFF = prove
+ (`!s t:real^N->bool. fsigma s /\ gdelta t ==> fsigma(s DIFF t)`,
+  ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
+  SIMP_TAC[FSIGMA_INTER; FSIGMA_COMPLEMENT]);;
 
 let GDELTA_UNIONS = prove
  (`!g:(real^N->bool)->bool.
@@ -30527,6 +30509,306 @@ let HOMEOMORPHISM_GDELTANESS = prove
   FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
           HOMEOMORPHISM_OF_SUBSETS)) THEN
   RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Effective countability of closed or open chains.                          *)
+(* ------------------------------------------------------------------------- *)
+
+let EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS = prove
+ (`!f v:real^N->bool.
+        (!s. s IN f ==> closed_in (subtopology euclidean v) s \/
+                        open_in (subtopology euclidean v) s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?f'. COUNTABLE f' /\ f' SUBSET f /\ UNIONS f' = UNIONS f`,
+  let lemma = prove
+   (`!f v:real^N->bool.
+          (!s. s IN f ==> closed_in (subtopology euclidean v) s) /\
+          (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+          ==> ?f'. COUNTABLE f' /\ f' SUBSET f /\ UNIONS f' = UNIONS f`,
+    REPEAT STRIP_TAC THEN
+    ASM_CASES_TAC `?s:real^N->bool. s IN f /\ !s'. s' IN f ==> s' SUBSET s`
+    THENL
+     [FIRST_X_ASSUM(X_CHOOSE_THEN `s:real^N->bool` STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC `{s:real^N->bool}` THEN
+      ASM_REWRITE_TAC[COUNTABLE_SING; SING_SUBSET; UNIONS_1] THEN
+      ASM SET_TAC[];
+      ALL_TAC] THEN
+    MP_TAC(ISPEC `\(s:real^N->bool,t). s IN f /\ t IN f /\ s SUBSET t`
+          TOSET_COFINAL_WOSET) THEN
+    SUBGOAL_THEN
+     `fl(\(s:real^N->bool,t). s IN f /\ t IN f /\ s SUBSET t) = f`
+    ASSUME_TAC THENL
+     [REWRITE_TAC[fl; FUN_EQ_THM] THEN ASM_MESON_TAC[IN]; ALL_TAC] THEN
+    ASM_REWRITE_TAC[toset; poset] THEN ANTS_TAC THENL
+     [ASM_MESON_TAC[IN; SUBSET_REFL; SUBSET_TRANS; SUBSET_ANTISYM];
+      DISCH_THEN(X_CHOOSE_THEN `w:((real^N->bool)#(real^N->bool)->bool)`
+          STRIP_ASSUME_TAC)] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP FL_SUBSET) THEN ASM_REWRITE_TAC[] THEN
+    ABBREV_TAC `f':(real^N->bool)->bool = fl w` THEN DISCH_TAC THEN
+    EXISTS_TAC `f':(real^N->bool)->bool` THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MP_TAC(ISPEC `v:real^N->bool` SUBSET_SECOND_COUNTABLE) THEN
+    DISCH_THEN(X_CHOOSE_THEN `b:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          CARD_LE_COUNTABLE)) THEN
+    MATCH_MP_TAC CARD_LE_RELATIONAL_FULL THEN
+    EXISTS_TAC `\b c:real^N->bool.
+                    DISJOINT b c /\
+                    !c'. c' IN f' /\ c PSUBSET c' ==> ~(DISJOINT b c')` THEN
+    REWRITE_TAC[] THEN CONJ_TAC THENL
+     [ALL_TAC;
+      REPEAT STRIP_TAC THEN
+      MATCH_MP_TAC(SET_RULE
+       `(s SUBSET t \/ t SUBSET s) /\ ~(s PSUBSET t) /\ ~(t PSUBSET s)
+        ==> s = t`) THEN
+      ASM_MESON_TAC[SUBSET]] THEN
+    X_GEN_TAC `c:real^N->bool` THEN DISCH_TAC THEN
+    FIRST_ASSUM(MP_TAC o SPEC `\c':real^N->bool. c' IN f' /\ c PSUBSET c'` o
+      last o CONJUNCTS o GEN_REWRITE_RULE I [woset]) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+      SUBGOAL_THEN `?c':real^N->bool. c' IN f /\ ~(c' SUBSET c)`
+      STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+      SUBGOAL_THEN `c PSUBSET (c':real^N->bool)` ASSUME_TAC THENL
+       [ASM SET_TAC[]; ALL_TAC] THEN
+      SUBGOAL_THEN `?c'':real^N->bool. c'' IN f' /\ c' SUBSET c''` MP_TAC THENL
+       [ASM SET_TAC[]; ALL_TAC] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[];
+      DISCH_THEN(X_CHOOSE_THEN `c':real^N->bool` STRIP_ASSUME_TAC)] THEN
+    SUBGOAL_THEN `?p:real^N. p IN c' /\ ~(p IN c)` STRIP_ASSUME_TAC THENL
+     [ASM SET_TAC[]; ALL_TAC] THEN
+    SUBGOAL_THEN `open_in (subtopology euclidean v) (v DIFF c:real^N->bool)`
+    (ANTE_RES_THEN MP_TAC) THENL
+     [MATCH_MP_TAC OPEN_IN_DIFF THEN REWRITE_TAC[OPEN_IN_REFL] THEN ASM
+      SET_TAC[];
+      DISCH_THEN(X_CHOOSE_THEN `bb:(real^N->bool)->bool`
+        STRIP_ASSUME_TAC)] THEN
+    SUBGOAL_THEN `(p:real^N) IN v DIFF c` MP_TAC THENL
+     [ASM_MESON_TAC[SUBSET; IN_DIFF; CLOSED_IN_IMP_SUBSET];
+      ASM_REWRITE_TAC[IN_UNIONS]] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `t:real^N->bool` THEN
+    STRIP_TAC THEN REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+    X_GEN_TAC `d:real^N->bool` THEN STRIP_TAC THEN
+    UNDISCH_TAC
+     `w SUBSET (\(s:real^N->bool,t). s IN f /\ t IN f /\ s SUBSET t)` THEN
+    GEN_REWRITE_TAC LAND_CONV [SUBSET] THEN
+    DISCH_THEN(MP_TAC o SPEC `(c':real^N->bool),(d:real^N->bool)`) THEN
+    ASM_SIMP_TAC[IN] THEN ASM SET_TAC[]) in
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`{s:real^N->bool | s IN f /\ closed_in (subtopology euclidean v) s}`;
+    `v:real^N->bool`] lemma) THEN
+  MP_TAC(ISPECL
+   [`{s:real^N->bool | s IN f /\ open_in (subtopology euclidean v) s}`;
+    `v:real^N->bool`] LINDELOF_OPEN_IN) THEN
+  ASM_SIMP_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `fo:(real^N->bool)->bool` THEN STRIP_TAC THEN
+  X_GEN_TAC `fc:(real^N->bool)->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `fo UNION fc:(real^N->bool)->bool` THEN
+  ASM_REWRITE_TAC[COUNTABLE_UNION] THEN ASM SET_TAC[]);;
+
+let COUNTABLE_ASCENDING_CLOPEN_IN_CHAIN = prove
+ (`!f v:real^N->bool.
+        ~(f = {}) /\
+        (!s. s IN f ==> closed_in (subtopology euclidean v) s \/
+                        open_in (subtopology euclidean v) s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(n) SUBSET u(SUC n)) /\
+                UNIONS {u n | n IN (:num)} = UNIONS f`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `UNIONS f:real^N->bool = {}` THENL
+   [EXISTS_TAC `(\n. {}):num->real^N->bool` THEN
+    ASM_REWRITE_TAC[SUBSET_REFL; EMPTY_UNIONS; FORALL_IN_GSPEC] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [EMPTY_UNIONS]) THEN
+    ASM_MESON_TAC[MEMBER_NOT_EMPTY];
+    MP_TAC(ISPECL [`f:(real^N->bool)->bool`; `v:real^N->bool`]
+        EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f':(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPEC `f':(real^N->bool)->bool` COUNTABLE_ASCENDING_CHAIN) THEN
+    ASM_REWRITE_TAC[] THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[UNIONS_0; SUBSET]; ALL_TAC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]]);;
+
+let EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS = prove
+ (`!f v:real^N->bool.
+        (!s. s IN f ==> closed_in (subtopology euclidean v) s \/
+                        open_in (subtopology euclidean v) s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?f'. COUNTABLE f' /\ f' SUBSET f /\ INTERS f' = INTERS f`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `f SUBSET {v:real^N->bool}` THENL
+   [EXISTS_TAC `f:(real^N->bool)->bool` THEN
+    ASM_MESON_TAC[COUNTABLE_SUBSET; COUNTABLE_SING; SUBSET_REFL];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`IMAGE (\s:real^N->bool. v DIFF s) f`; `v:real^N->bool`]
+   EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS) THEN
+  ASM_REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_IMAGE_2] THEN ANTS_TAC THENL
+   [ASM_MESON_TAC[SET_RULE `s SUBSET t ==> v DIFF t SUBSET v DIFF s`;
+                  OPEN_IN_REFL; CLOSED_IN_REFL; CLOSED_IN_DIFF; OPEN_IN_DIFF];
+    REWRITE_TAC[EXISTS_COUNTABLE_SUBSET_IMAGE] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `g:(real^N->bool)->bool` THEN
+    ASM_CASES_TAC `g:(real^N->bool)->bool = {}` THENL
+     [DISCH_THEN(MP_TAC o SYM o last o CONJUNCTS) THEN
+      ASM_REWRITE_TAC[EMPTY_UNIONS; IMAGE_CLAUSES; UNIONS_0] THEN
+      ASM_REWRITE_TAC[FORALL_IN_IMAGE] THEN
+      DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+       `(!u. u IN f ==> v DIFF u = {})
+        ==> (!u. u IN f ==> u SUBSET v)
+            ==> !u. u IN f ==> u = v`)) THEN
+      ANTS_TAC THENL
+       [ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; CLOSED_IN_IMP_SUBSET];
+        ASM_REWRITE_TAC[GSYM IN_SING; GSYM SUBSET]];
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(SET_RULE
+     `!v. s SUBSET v /\ t SUBSET v /\ v DIFF s = v DIFF t ==> s = t`) THEN
+    EXISTS_TAC `v:real^N->bool` THEN
+    ASM_REWRITE_TAC[DIFF_INTERS; SIMPLE_IMAGE] THEN
+    CONJ_TAC THEN MATCH_MP_TAC INTERS_SUBSET THEN
+    (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+    ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; CLOSED_IN_IMP_SUBSET; SUBSET]]]);;
+
+let COUNTABLE_DESCENDING_CLOPEN_IN_CHAIN = prove
+ (`!f v:real^N->bool.
+        ~(f = {}) /\
+        (!s. s IN f ==> closed_in (subtopology euclidean v) s \/
+                        open_in (subtopology euclidean v) s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(SUC n) SUBSET u n) /\
+                INTERS {u n | n IN (:num)} = INTERS f`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `INTERS f = (:real^N)` THENL
+   [FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [INTERS_EQ_UNIV]) THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [GSYM IN_SING] THEN
+    ASM_SIMP_TAC[GSYM SUBSET; SET_RULE
+     `~(f = {}) ==> (f SUBSET {a} <=> f = {a})`] THEN
+    DISCH_TAC THEN EXISTS_TAC `(\n. UNIV):num->real^N->bool` THEN
+    REWRITE_TAC[IN_SING; SUBSET_REFL; INTERS_EQ_UNIV; FORALL_IN_GSPEC];
+    MP_TAC(ISPECL [`f:(real^N->bool)->bool`; `v:real^N->bool`]
+      EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS) THEN
+    ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f':(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPEC `f':(real^N->bool)->bool` COUNTABLE_DESCENDING_CHAIN) THEN
+    ANTS_TAC THENL
+     [ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+      ASM_MESON_TAC[INTERS_0];
+      MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]]]);;
+
+let EFFECTIVELY_COUNTABLE_CLOPEN_CHAIN_UNIONS = prove
+ (`!f:(real^N->bool)->bool.
+        (!s. s IN f ==> closed s \/ open s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?f'. COUNTABLE f' /\ f' SUBSET f /\ UNIONS f' = UNIONS f`,
+  REWRITE_TAC[CLOSED_IN; OPEN_IN] THEN
+  ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
+  REWRITE_TAC[EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS]);;
+
+let COUNTABLE_ASCENDING_CLOPEN_CHAIN = prove
+ (`!f:(real^N->bool)->bool.
+        ~(f = {}) /\
+        (!s. s IN f ==> closed s \/ open s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(n) SUBSET u(SUC n)) /\
+                UNIONS {u n | n IN (:num)} = UNIONS f`,
+  REWRITE_TAC[CLOSED_IN; OPEN_IN] THEN
+  ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
+  REWRITE_TAC[COUNTABLE_ASCENDING_CLOPEN_IN_CHAIN]);;
+
+let EFFECTIVELY_COUNTABLE_CLOPEN_CHAIN_INTERS = prove
+ (`!f:(real^N->bool)->bool.
+        (!s. s IN f ==> closed s \/ open s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?f'. COUNTABLE f' /\ f' SUBSET f /\ INTERS f' = INTERS f`,
+  REWRITE_TAC[CLOSED_IN; OPEN_IN] THEN
+  ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
+  REWRITE_TAC[EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS]);;
+
+let COUNTABLE_DESCENDING_CLOPEN_CHAIN = prove
+ (`!f:(real^N->bool)->bool.
+        ~(f = {}) /\
+        (!s. s IN f ==> closed s \/ open s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> ?u. (!n. u(n) IN f) /\ (!n. u(SUC n) SUBSET u n) /\
+                INTERS {u n | n IN (:num)} = INTERS f`,
+  REWRITE_TAC[CLOSED_IN; OPEN_IN] THEN
+  ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
+  REWRITE_TAC[COUNTABLE_DESCENDING_CLOPEN_IN_CHAIN]);;
+
+let FSIGMA_UNIONS_CLOPEN_CHAIN = prove
+ (`!f:(real^N->bool)->bool.
+        (!s. s IN f ==> closed s \/ open s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> fsigma(UNIONS f)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP EFFECTIVELY_COUNTABLE_CLOPEN_CHAIN_UNIONS) THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  MATCH_MP_TAC FSIGMA_UNIONS THEN
+  ASM_MESON_TAC[SUBSET; CLOSED_IMP_FSIGMA; OPEN_IMP_FSIGMA]);;
+
+let GDELTA_INTERS_CLOPEN_CHAIN = prove
+ (`!f:(real^N->bool)->bool.
+        (!s. s IN f ==> closed s \/ open s) /\
+        (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
+        ==> gdelta(INTERS f)`,
+  GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP EFFECTIVELY_COUNTABLE_CLOPEN_CHAIN_INTERS) THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:(real^N->bool)->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  MATCH_MP_TAC GDELTA_INTERS THEN
+  ASM_MESON_TAC[SUBSET; CLOSED_IMP_GDELTA; OPEN_IMP_GDELTA]);;
+
+let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
+ (`!f:A->real^N->bool v w.
+        woset w /\ ~COUNTABLE w /\
+        (!v. v inseg w /\ ~(v = w) ==> COUNTABLE v) /\
+        (!i. i IN fl w ==> closed_in (subtopology euclidean v) (f i) \/
+                           open_in (subtopology euclidean v) (f i)) /\
+        (!i j. w(i,j) ==> f j SUBSET f i)
+        ==> ?k. k IN fl w /\ !i. w(k,i) ==> f i = f k`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`IMAGE (f:A->real^N->bool) (fl w)`; `v:real^N->bool`]
+        EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS) THEN
+  ASM_REWRITE_TAC[FORALL_IN_IMAGE_2; FORALL_IN_IMAGE] THEN ANTS_TAC THENL
+   [UNDISCH_TAC `woset(w:A#A->bool)` THEN
+    REWRITE_TAC[woset; IN] THEN ASM_MESON_TAC[];
+    REWRITE_TAC[EXISTS_COUNTABLE_SUBSET_IMAGE] THEN
+    DISCH_THEN(X_CHOOSE_THEN `k:A->bool` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPECL
+     [`w:A#A->bool`; `UNIONS {linseg w (a:A) | a IN k}`]
+        INSEG_LINSEG) THEN
+    ASM_SIMP_TAC[] THEN MATCH_MP_TAC(TAUT
+     `p /\ ~q /\ (r ==> s) ==> (p <=> q \/ r) ==> s`) THEN
+    REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC UNION_INSEG THEN
+      GEN_REWRITE_TAC (BINDER_CONV o LAND_CONV) [GSYM IN] THEN
+      REWRITE_TAC[FORALL_IN_GSPEC] THEN ASM_SIMP_TAC[LINSEG_INSEG];
+      DISCH_THEN(MP_TAC o AP_TERM `COUNTABLE:(A#A->bool)->bool`) THEN
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC COUNTABLE_UNIONS THEN
+      ASM_SIMP_TAC[COUNTABLE_IMAGE; SIMPLE_IMAGE; FORALL_IN_IMAGE] THEN
+      X_GEN_TAC `a:A` THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_SIMP_TAC[LINSEG_INSEG] THEN
+      REWRITE_TAC[FUN_EQ_THM] THEN DISCH_THEN(MP_TAC o SPEC `(a:A,a)`) THEN
+      REWRITE_TAC[linseg; less] THEN UNDISCH_TAC `woset(w:A#A->bool)` THEN
+      REWRITE_TAC[woset] THEN ASM SET_TAC[];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:A` THEN STRIP_TAC THEN
+      MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+       [ASM SET_TAC[]; DISCH_TAC] THEN
+      X_GEN_TAC `b:A` THEN DISCH_TAC THEN
+      ASM_SIMP_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP (SET_RULE
+       `s = INTERS f ==> !x. x IN f ==> s SUBSET x`)) THEN
+      REWRITE_TAC[FORALL_IN_IMAGE] THEN
+      DISCH_THEN(MP_TAC o SPEC `b:A`) THEN REWRITE_TAC[fl; IN] THEN
+      ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUBSET_TRANS) THEN
+      REWRITE_TAC[SUBSET_INTERS; FORALL_IN_IMAGE] THEN
+      X_GEN_TAC `c:A` THEN DISCH_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE LAND_CONV [UNIONS_GSPEC]) THEN
+      DISCH_THEN(MP_TAC o C AP_THM `(a,a):A#A`) THEN
+      REWRITE_TAC[linseg; IN_ELIM_THM] THEN
+      REWRITE_TAC[IN; less; NOT_EXISTS_THM] THEN
+      DISCH_THEN(MP_TAC o SPEC `c:A`) THEN
+      UNDISCH_TAC `woset(w:A#A->bool)` THEN
+      REWRITE_TAC[woset; IN] THEN ASM_MESON_TAC[IN; SUBSET]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Very basics about Borel sets.                                             *)
