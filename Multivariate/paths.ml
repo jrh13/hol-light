@@ -16747,6 +16747,24 @@ let FRONTIER_WITH_OUTSIDE_SUBSET = prove
   REWRITE_TAC[FRONTIER_UNION_SUBSET; UNION_SUBSET] THEN
   ASM_SIMP_TAC[FRONTIER_OUTSIDE_SUBSET; FRONTIER_SUBSET_CLOSED]);;
 
+let CLOSED_WITH_INSIDE = prove
+ (`!s:real^N->bool. closed s ==> closed(s UNION inside s)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `s UNION inside s:real^N->bool = s UNION closure(inside s)`
+  SUBST1_TAC THENL
+   [FIRST_ASSUM(MP_TAC o MATCH_MP CLOSURE_INSIDE_SUBSET) THEN
+    MP_TAC(ISPEC `inside s:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[];
+    ASM_SIMP_TAC[CLOSED_UNION; CLOSED_CLOSURE]]);;
+
+let BOUNDED_WITH_INSIDE = prove
+ (`!s:real^N->bool. bounded s ==> bounded(s UNION inside s)`,
+  SIMP_TAC[BOUNDED_UNION; BOUNDED_INSIDE]);;
+
+let COMPACT_WITH_INSIDE = prove
+ (`!s:real^N->bool. compact s ==> compact(s UNION inside s)`,
+  SIMP_TAC[COMPACT_EQ_BOUNDED_CLOSED; BOUNDED_WITH_INSIDE;
+           CLOSED_WITH_INSIDE]);;
+
 let INSIDE_COMPLEMENT_UNBOUNDED_CONNECTED_EMPTY = prove
  (`!s. connected((:real^N) DIFF s) /\ ~bounded((:real^N) DIFF s)
        ==> inside s = {}`,

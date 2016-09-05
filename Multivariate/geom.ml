@@ -1128,3 +1128,122 @@ let AREA_TRIANGLE_SIN = prove
     ==> b pow 2 * c pow 2 * (&1 - (d / (b * c)) pow 2) =
         b pow 2 * c pow 2 - d pow 2`] THEN
   REWRITE_TAC[NORM_POW_2; DOT_2] THEN CONV_TAC REAL_RING);;
+
+(* ------------------------------------------------------------------------- *)
+(* Angles satisfy the triangle law and hence vector_angle defines a metric.  *)
+(* ------------------------------------------------------------------------- *)
+
+let ANGLE_TRIANGLE_LAW = prove
+ (`!p u v w:real^N. angle(u,p,w) <= angle(u,p,v) + angle(v,p,w)`,
+  let lemma0 = prove
+   (`x1 * x1 + y1 * y1 + z1 * z1 = &1 /\ x2 * x2 + y2 * y2 + z2 * z2 = &1
+     ==> (x2 * x1 - (x2 * x1 + y2 * y1 + z2 * z1)) pow 2 <=
+         (&1 - x2 pow 2) * (&1 - x1 pow 2)`,
+    REPEAT STRIP_TAC THEN
+    REWRITE_TAC[REAL_ARITH
+     `(x2 * x1 - (x2 * x1 + y2 * y1 + z2 * z1)) pow 2 <=
+      (&1 - x2 pow 2) * (&1 - x1 pow 2)
+      <=> &0 <= --(y1 pow 2 + z1 pow 2) *
+                ((x2 * x2 + y2 * y2 + z2 * z2) - &1) +
+                (x2 pow 2 - &1) * ((x1 * x1 + y1 * y1 + z1 * z1) - &1) +
+                (y2 * z1 - y1 * z2) pow 2`] THEN
+    ASM_REWRITE_TAC[REAL_SUB_REFL; REAL_MUL_RZERO; REAL_ADD_LID] THEN
+    REWRITE_TAC[REAL_POW_2; REAL_LE_SQUARE]) in
+  let lemma1 = prove
+   (`!p u v w:real^3.
+          norm(u - p) = &1 /\ norm(v - p) = &1 /\ norm(w - p) = &1
+          ==> angle(u,p,w) <= angle(u,p,v) + angle(v,p,w)`,
+    GEOM_ORIGIN_TAC `p:real^3` THEN
+    REWRITE_TAC[angle; VECTOR_SUB_RZERO] THEN
+    GEOM_BASIS_MULTIPLE_TAC 1 `v:real^3` THEN
+    X_GEN_TAC `vb:real` THEN
+    SIMP_TAC[NORM_MUL; NORM_BASIS; DIMINDEX_GE_1; LE_REFL] THEN
+    SIMP_TAC[REAL_ARITH `&0 <= vb ==> (abs(vb) * &1 = &1 <=> vb = &1)`] THEN
+    DISCH_THEN(K ALL_TAC) THEN ASM_CASES_TAC `vb = &1` THEN
+    ASM_REWRITE_TAC[VECTOR_MUL_LID] THEN POP_ASSUM(K ALL_TAC) THEN
+    REPEAT GEN_TAC THEN
+    SUBGOAL_THEN `~(basis 1:real^3 = vec 0)` ASSUME_TAC THENL
+     [ASM_SIMP_TAC[BASIS_NONZERO; DIMINDEX_GE_1; LE_REFL]; ALL_TAC] THEN
+    MAP_EVERY ASM_CASES_TAC
+     [`u:real^3 = vec 0`; `w:real^3 = vec 0`] THEN
+    ASM_REWRITE_TAC[NORM_0; REAL_OF_NUM_EQ; ARITH_EQ] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC(REAL_ARITH
+     `&0 <= x /\ x <= pi /\ &0 <= y /\ y <= pi /\ &0 <= z /\ z <= pi /\
+      (&0 <= y + z /\ y + z <= pi ==> x <= y + z)
+      ==> x <= y + z`) THEN
+    REWRITE_TAC[VECTOR_ANGLE_RANGE] THEN STRIP_TAC THEN
+    W(MP_TAC o PART_MATCH (rand o rand) COS_MONO_LE_EQ o snd) THEN
+    ASM_REWRITE_TAC[VECTOR_ANGLE_RANGE] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+    ASM_SIMP_TAC[COS_ADD; COS_VECTOR_ANGLE; VECTOR_SUB_RZERO] THEN
+    REWRITE_TAC[REAL_MUL_LID; REAL_DIV_1] THEN
+    MATCH_MP_TAC(REAL_ARITH
+     `abs(x - z) <= abs(y) /\ &0 <= y ==> x - y <= z`) THEN
+    ASM_SIMP_TAC[SIN_VECTOR_ANGLE_POS; REAL_LE_MUL; REAL_LE_SQUARE_ABS] THEN
+    ASM_REWRITE_TAC[REAL_POW_MUL; SIN_SQUARED_VECTOR_ANGLE] THEN
+    ASM_REWRITE_TAC[VECTOR_SUB_RZERO; REAL_MUL_LID; REAL_DIV_1] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [NORM_EQ_1])) THEN
+    MAP_EVERY (fun t -> SPEC_TAC(t,t)) [`u:real^3`; `w:real^3`] THEN
+    POP_ASSUM_LIST(K ALL_TAC) THEN REWRITE_TAC[FORALL_VECTOR_3] THEN
+    SIMP_TAC[DOT_BASIS; DIMINDEX_GE_1; LE_REFL; NORM_BASIS] THEN
+    REWRITE_TAC[REAL_MUL_LID; REAL_DIV_1] THEN
+    REWRITE_TAC[DOT_3; VECTOR_3] THEN SIMP_TAC[lemma0]) in
+  let lemma2 = prove
+   (`!p u v w:real^3. angle(u,p,w) <= angle(u,p,v) + angle(v,p,w)`,
+    GEOM_ORIGIN_TAC `p:real^3` THEN REPEAT GEN_TAC THEN
+    ASM_CASES_TAC `u:real^3 = vec 0` THENL
+     [MATCH_MP_TAC(REAL_ARITH `x = pi / &2 /\ y = pi / &2 /\ &0 <= z
+                               ==> x <= y + z`) THEN
+      REWRITE_TAC[angle; VECTOR_ANGLE_RANGE] THEN
+      ASM_REWRITE_TAC[vector_angle; VECTOR_SUB_RZERO];
+      ALL_TAC] THEN
+    ASM_CASES_TAC `v:real^3 = vec 0` THENL
+     [MATCH_MP_TAC(REAL_ARITH `x <= pi /\ y = pi / &2 /\ z = pi / &2
+                               ==> x <= y + z`) THEN
+      REWRITE_TAC[angle; VECTOR_ANGLE_RANGE] THEN
+      ASM_REWRITE_TAC[vector_angle; VECTOR_SUB_RZERO];
+      ALL_TAC] THEN
+    ASM_CASES_TAC `w:real^3 = vec 0` THENL
+     [MATCH_MP_TAC(REAL_ARITH `x = pi / &2 /\ &0 <= y /\ z = pi / &2
+                               ==> x <= y + z`) THEN
+      REWRITE_TAC[angle; VECTOR_ANGLE_RANGE] THEN
+      ASM_REWRITE_TAC[vector_angle; VECTOR_SUB_RZERO];
+      ALL_TAC] THEN
+    MP_TAC(ISPECL [`vec 0:real^3`; `inv(norm u) % u:real^3`;
+                   `inv(norm v) % v:real^3`; `inv(norm w) % w:real^3`]
+          lemma1) THEN
+    ASM_SIMP_TAC[angle; VECTOR_SUB_RZERO; NORM_MUL] THEN
+    ASM_SIMP_TAC[REAL_ABS_INV; REAL_ABS_NORM; REAL_MUL_LINV; NORM_EQ_0] THEN
+    ASM_REWRITE_TAC[VECTOR_ANGLE_LMUL; VECTOR_ANGLE_RMUL] THEN
+    ASM_REWRITE_TAC[REAL_INV_EQ_0; NORM_EQ_0; REAL_LE_INV_EQ; NORM_POS_LE]) in
+  DISJ_CASES_TAC(ARITH_RULE
+    `dimindex(:3) <= dimindex(:N) \/ dimindex(:N) <= dimindex(:3)`)
+  THENL
+   [ALL_TAC;
+    FIRST_ASSUM(ACCEPT_TAC o C GEOM_DROP_DIMENSION_RULE
+      lemma2)] THEN
+  GEOM_ORIGIN_TAC `p:real^N` THEN REPEAT GEN_TAC THEN
+  SUBGOAL_THEN `subspace(span{u:real^N,v,w}) /\
+                dim(span{u,v,w}) <= dimindex(:3) /\
+                dimindex(:3) <= dimindex(:N)`
+  MP_TAC THENL
+   [ASM_REWRITE_TAC[SUBSPACE_SPAN; DIM_SPAN] THEN
+    MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC `CARD{u:real^N,v,w}` THEN
+    SIMP_TAC[DIM_LE_CARD; FINITE_INSERT; FINITE_EMPTY] THEN
+    SIMP_TAC[DIMINDEX_3; CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
+    ARITH_TAC;
+    ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP ISOMETRY_UNIV_SUPERSET_SUBSPACE) THEN
+  DISCH_THEN(X_CHOOSE_THEN `f:real^3->real^N` STRIP_ASSUME_TAC) THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP LINEAR_0) THEN
+  SUBGOAL_THEN `{u:real^N,v,w} SUBSET IMAGE f (:real^3)` MP_TAC THENL
+   [ASM_MESON_TAC[SUBSET; SPAN_INC]; ALL_TAC] THEN
+  REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; IN_IMAGE; IN_UNIV] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MP_TAC(end_itlist CONJ
+   (mapfilter (ISPEC `f:real^3->real^N`) (!invariant_under_linear))) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+  REWRITE_TAC[lemma2]);;
+
+let VECTOR_ANGLE_TRIANGLE_LAW = prove
+ (`!u v w:real^N. vector_angle u w <= vector_angle u v + vector_angle v w`,
+  REWRITE_TAC[VECTOR_ANGLE_ANGLE; ANGLE_TRIANGLE_LAW]);;

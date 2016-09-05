@@ -8,6 +8,17 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  2nd Sep 2016       Library/card.ml
+
+Added a couple more lemmas about bounding cardinalities of "sequences"
+(expressed via cardinal exponentiation for maximum generality):
+
+  CARD_EXP_LE_REAL =
+    |- !s t. s <=_c (:real) /\ COUNTABLE t ==> s ^_c t <=_c (:real)
+
+  CARD_EXP_EQ_REAL =
+    |- !s. COUNTABLE s /\ ~(s = {}) ==> (:real) ^_c s =_c (:real)
+
 Thu 25th Aug 2016       Library/sets.ml
 
 Added a number of simple results about the COUNTABLE case of the new

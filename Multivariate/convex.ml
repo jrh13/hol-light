@@ -2338,6 +2338,94 @@ let FRONTIER_OF_COMPONENTS_CLOSED_COMPLEMENT = prove
   REWRITE_TAC[FRONTIER_COMPLEMENT] THEN
   ASM_MESON_TAC[FRONTIER_SUBSET_EQ; SUBSET_TRANS]);;
 
+let CONTAINS_COMPONENT_OF_COMPACT_FRONTIER = prove
+ (`!s:real^N->bool c.
+        compact s /\ c IN components s
+        ==> ?d. d IN components(frontier s) /\ d SUBSET c`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+    `~(UNIONS(components(frontier s)) INTER c:real^N->bool = {})`
+   MP_TAC THENL
+    [REWRITE_TAC[GSYM UNIONS_COMPONENTS] THEN
+     FIRST_ASSUM(MP_TAC o MATCH_MP FRONTIER_OF_COMPONENTS_SUBSET) THEN
+     MATCH_MP_TAC(SET_RULE
+      `f SUBSET c /\ ~(f = {}) ==> f SUBSET s ==> ~(s INTER c = {})`) THEN
+     REWRITE_TAC[FRONTIER_SUBSET_EQ; FRONTIER_EQ_EMPTY; DE_MORGAN_THM] THEN
+     MP_TAC(ISPECL [`s:real^N->bool`; `c:real^N->bool`]
+       COMPACT_COMPONENTS) THEN
+     ASM_REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED] THEN REPEAT STRIP_TAC THEN
+     ASM_REWRITE_TAC[] THENL
+      [ASM_MESON_TAC[IN_COMPONENTS_NONEMPTY];
+       ASM_MESON_TAC[NOT_BOUNDED_UNIV]];
+     REWRITE_TAC[INTER_UNIONS; EMPTY_UNIONS; FORALL_IN_GSPEC] THEN
+     REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN MATCH_MP_TAC MONO_EXISTS THEN
+     X_GEN_TAC `d:real^N->bool` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC COMPONENTS_MAXIMAL THEN
+     EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+     ONCE_REWRITE_TAC[INTER_COMM] THEN ASM_REWRITE_TAC[] THEN
+     CONJ_TAC THENL [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED]; ALL_TAC] THEN
+     TRANS_TAC SUBSET_TRANS `frontier s:real^N->bool` THEN
+     ASM_SIMP_TAC[FRONTIER_SUBSET_EQ; COMPACT_IMP_CLOSED] THEN
+     ASM_MESON_TAC[IN_COMPONENTS_SUBSET]]);;
+
+let CARD_LE_COMPONENTS_FRONTIER = prove
+ (`!s:real^N->bool. compact s ==> components s <=_c components(frontier s)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC CARD_LE_RELATIONAL_FULL THEN
+  EXISTS_TAC `\s t:real^N->bool. s SUBSET t` THEN
+  ASM_SIMP_TAC[CONTAINS_COMPONENT_OF_COMPACT_FRONTIER] THEN
+  MAP_EVERY X_GEN_TAC
+   [`c:real^N->bool`; `d:real^N->bool`; `e:real^N->bool`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  DISCH_THEN(SUBST1_TAC o MATCH_MP COMPONENTS_EQ) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY) THEN
+  SET_TAC[]);;
+
+let CONTAINS_COMPONENT_OF_CLOSURE_FRONTIER = prove
+ (`!s:real^N->bool c.
+        bounded s /\ c IN components(closure s)
+        ==> ?d. d IN components(frontier s) /\ d SUBSET c`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`closure s:real^N->bool`; `c:real^N->bool`]
+        CONTAINS_COMPONENT_OF_COMPACT_FRONTIER) THEN
+  ASM_REWRITE_TAC[COMPACT_CLOSURE] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `~(UNIONS(components(frontier s)) INTER c:real^N->bool = {})`
+  MP_TAC THENL
+   [REWRITE_TAC[GSYM UNIONS_COMPONENTS] THEN
+    MP_TAC(ISPEC `s:real^N->bool` FRONTIER_CLOSURE_SUBSET) THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `(?d. P d) ==> (!d. P d ==> ~(d = {}) /\ d SUBSET f /\ d SUBSET c)
+      ==> f SUBSET g ==> ~(g INTER c = {})`)) THEN
+    MESON_TAC[IN_COMPONENTS_SUBSET; IN_COMPONENTS_NONEMPTY];
+    REWRITE_TAC[INTER_UNIONS; EMPTY_UNIONS; FORALL_IN_GSPEC] THEN
+     REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN MATCH_MP_TAC MONO_EXISTS THEN
+     X_GEN_TAC `d:real^N->bool` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC COMPONENTS_MAXIMAL THEN
+     EXISTS_TAC `closure s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
+     ONCE_REWRITE_TAC[INTER_COMM] THEN ASM_REWRITE_TAC[] THEN
+     CONJ_TAC THENL [ASM_MESON_TAC[IN_COMPONENTS_CONNECTED]; ALL_TAC] THEN
+     TRANS_TAC SUBSET_TRANS `frontier s:real^N->bool` THEN
+     CONJ_TAC THENL
+      [ASM_MESON_TAC[IN_COMPONENTS_SUBSET];
+       REWRITE_TAC[frontier] THEN SET_TAC[]]]);;
+
+let CARD_LE_COMPONENTS_CLOSURE_FRONTIER = prove
+ (`!s:real^N->bool.
+        bounded s ==> components(closure s) <=_c components(frontier s)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC CARD_LE_RELATIONAL_FULL THEN
+  EXISTS_TAC `\s t:real^N->bool. s SUBSET t` THEN
+  ASM_SIMP_TAC[CONTAINS_COMPONENT_OF_CLOSURE_FRONTIER] THEN
+  MAP_EVERY X_GEN_TAC
+   [`c:real^N->bool`; `d:real^N->bool`; `e:real^N->bool`] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  DISCH_THEN(SUBST1_TAC o MATCH_MP COMPONENTS_EQ) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_COMPONENTS_NONEMPTY) THEN
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A couple of lemmas about components (see Newman IV, 3.3 and 3.4).         *)
 (* ------------------------------------------------------------------------- *)
@@ -4166,38 +4254,36 @@ let AFFINE_INDEPENDENT_CARD_DIM_DIFFS = prove
     SIMP_TAC[VECTOR_ARITH `x - a:real^N = y - a <=> x = y`] THEN
     ASM_SIMP_TAC[HAS_SIZE; FINITE_DELETE; CARD_DELETE]]);;
 
-let AFF_DIM_DIM_AFFINE_DIFFS = prove
- (`!a:real^N s. affine s /\ a IN s ==> aff_dim s = &(dim {x - a | x IN s})`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPEC `s:real^N->bool` AFF_DIM) THEN
-  DISCH_THEN(X_CHOOSE_THEN `b:real^N->bool` MP_TAC) THEN
-  ASM_CASES_TAC `b:real^N->bool = {}` THENL
-   [ASM_MESON_TAC[AFFINE_HULL_EQ_EMPTY; NOT_IN_EMPTY]; ALL_TAC] THEN
-  STRIP_TAC THEN
-  ASM_REWRITE_TAC[INT_EQ_SUB_RADD; INT_OF_NUM_ADD; INT_OF_NUM_EQ] THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
-  DISCH_THEN(X_CHOOSE_TAC `c:real^N`) THEN MATCH_MP_TAC EQ_TRANS THEN
-  EXISTS_TAC `dim {x - c:real^N | x IN b} + 1` THEN CONJ_TAC THENL
-   [MATCH_MP_TAC AFFINE_INDEPENDENT_CARD_DIM_DIFFS THEN ASM_REWRITE_TAC[];
-    ALL_TAC] THEN
-  MATCH_MP_TAC EQ_TRANS THEN
-  EXISTS_TAC `dim {x - c:real^N | x IN affine hull b} + 1` THEN CONJ_TAC THENL
-   [ASM_SIMP_TAC[DIFFS_AFFINE_HULL_SPAN; DIM_SPAN]; ALL_TAC] THEN
-  ASM_REWRITE_TAC[] THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
-  SUBGOAL_THEN `affine hull s:real^N->bool = s` SUBST1_TAC THENL
-   [ASM_MESON_TAC[AFFINE_HULL_EQ]; ALL_TAC] THEN
-  SUBGOAL_THEN `(c:real^N) IN s` ASSUME_TAC THENL
-   [ASM_MESON_TAC[AFFINE_HULL_EQ; HULL_INC]; ALL_TAC] THEN
-  MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
-  REWRITE_TAC[IN_ELIM_THM] THEN
-  SIMP_TAC[VECTOR_ARITH `x - c:real^N = y - a <=> y = x + &1 % (a - c)`] THEN
-  ASM_MESON_TAC[IN_AFFINE_ADD_MUL_DIFF]);;
-
 let AFF_DIM_DIM_0 = prove
  (`!s:real^N->bool. vec 0 IN affine hull s ==> aff_dim s = &(dim s)`,
+  let lemma = prove
+   (`!a:real^N s. affine s /\ a IN s ==> aff_dim s = &(dim {x - a | x IN s})`,
+    REPEAT STRIP_TAC THEN
+    MP_TAC(ISPEC `s:real^N->bool` AFF_DIM) THEN
+    DISCH_THEN(X_CHOOSE_THEN `b:real^N->bool` MP_TAC) THEN
+    ASM_CASES_TAC `b:real^N->bool = {}` THENL
+     [ASM_MESON_TAC[AFFINE_HULL_EQ_EMPTY; NOT_IN_EMPTY]; ALL_TAC] THEN
+    STRIP_TAC THEN
+    ASM_REWRITE_TAC[INT_EQ_SUB_RADD; INT_OF_NUM_ADD; INT_OF_NUM_EQ] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `c:real^N`) THEN MATCH_MP_TAC EQ_TRANS THEN
+    EXISTS_TAC `dim {x - c:real^N | x IN b} + 1` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC AFFINE_INDEPENDENT_CARD_DIM_DIFFS THEN ASM_REWRITE_TAC[];
+      ALL_TAC] THEN
+    MATCH_MP_TAC EQ_TRANS THEN
+    EXISTS_TAC `dim {x - c:real^N | x IN affine hull b} + 1` THEN CONJ_TAC THENL
+     [ASM_SIMP_TAC[DIFFS_AFFINE_HULL_SPAN; DIM_SPAN]; ALL_TAC] THEN
+    ASM_REWRITE_TAC[] THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+    SUBGOAL_THEN `affine hull s:real^N->bool = s` SUBST1_TAC THENL
+     [ASM_MESON_TAC[AFFINE_HULL_EQ]; ALL_TAC] THEN
+    SUBGOAL_THEN `(c:real^N) IN s` ASSUME_TAC THENL
+     [ASM_MESON_TAC[AFFINE_HULL_EQ; HULL_INC]; ALL_TAC] THEN
+    MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN
+    SIMP_TAC[VECTOR_ARITH `x - c:real^N = y - a <=> y = x + &1 % (a - c)`] THEN
+    ASM_MESON_TAC[IN_AFFINE_ADD_MUL_DIFF]) in
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`vec 0:real^N`; `affine hull s:real^N->bool`]
-    AFF_DIM_DIM_AFFINE_DIFFS) THEN
+  MP_TAC(ISPECL [`vec 0:real^N`; `affine hull s:real^N->bool`] lemma) THEN
   ASM_REWRITE_TAC[AFFINE_AFFINE_HULL; VECTOR_SUB_RZERO] THEN
   REWRITE_TAC[AFF_DIM_AFFINE_HULL; SET_RULE `{x | x IN s} = s`] THEN
   ASM_SIMP_TAC[AFFINE_HULL_EQ_SPAN; DIM_SPAN]);;
@@ -4205,6 +4291,16 @@ let AFF_DIM_DIM_0 = prove
 let AFF_DIM_DIM_SUBSPACE = prove
  (`!s:real^N->bool. subspace s ==> aff_dim s = &(dim s)`,
   MESON_TAC[AFF_DIM_DIM_0; SUBSPACE_0; HULL_INC]);;
+
+let AFF_DIM_DIM_AFFINE_DIFFS_STRONG = prove
+ (`!a:real^N s. a IN affine hull s ==> aff_dim s = &(dim {x - a | x IN s})`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `a:real^N` THEN
+  REWRITE_TAC[VECTOR_SUB_RZERO; SET_RULE `{x | x IN s} = s`] THEN
+  REWRITE_TAC[AFF_DIM_DIM_0]);;
+
+let AFF_DIM_DIM_AFFINE_DIFFS = prove
+ (`!a:real^N s. a IN s ==> aff_dim s = &(dim {x - a | x IN s})`,
+ SIMP_TAC[AFF_DIM_DIM_AFFINE_DIFFS_STRONG; HULL_INC]);;
 
 let AFF_DIM_LINEAR_IMAGE_LE = prove
  (`!f:real^M->real^N s. linear f ==> aff_dim(IMAGE f s) <= aff_dim s`,
@@ -4663,6 +4759,27 @@ let COLLINEAR_AFF_DIM = prove
     REWRITE_TAC[INT_ARITH `x - &1:int <= &1 <=> x <= &2`; INT_OF_NUM_LE] THEN
     ASM_SIMP_TAC[COLLINEAR_SMALL]]);;
 
+let COPLANAR_AFF_DIM = prove
+ (`!s:real^N->bool. coplanar s <=> aff_dim s <= &2`,
+  GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[coplanar; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`; `c:real^N`] THEN
+    DISCH_TAC THEN
+    TRANS_TAC INT_LE_TRANS `aff_dim(affine hull {a:real^N,b,c})` THEN
+    ASM_SIMP_TAC[AFF_DIM_SUBSET] THEN
+    REWRITE_TAC[AFF_DIM_AFFINE_HULL; AFF_DIM_INSERT] THEN
+    REWRITE_TAC[AFFINE_HULL_EMPTY; NOT_IN_EMPTY; AFF_DIM_EMPTY] THEN
+    INT_ARITH_TAC;
+    DISCH_TAC THEN ONCE_REWRITE_TAC[GSYM COPLANAR_AFFINE_HULL_COPLANAR] THEN
+    MP_TAC(ISPEC `s:real^N->bool` AFF_DIM) THEN
+    DISCH_THEN(X_CHOOSE_THEN `b:real^N->bool` MP_TAC) THEN
+    DISCH_THEN(CONJUNCTS_THEN2 (SUBST1_TAC o SYM) MP_TAC) THEN
+    DISCH_THEN(CONJUNCTS_THEN2 (ASSUME_TAC o MATCH_MP
+      AFFINE_INDEPENDENT_IMP_FINITE) SUBST_ALL_TAC) THEN
+    REWRITE_TAC[COPLANAR_AFFINE_HULL_COPLANAR] THEN
+    MATCH_MP_TAC COPLANAR_SMALL THEN
+    ASM_REWRITE_TAC[GSYM INT_OF_NUM_LE] THEN ASM_INT_ARITH_TAC]);;
+
 let HOMEOMORPHIC_AFFINE_SETS = prove
  (`!s:real^M->bool t:real^N->bool.
         affine s /\ affine t /\ aff_dim s = aff_dim t ==> s homeomorphic t`,
@@ -4883,6 +5000,24 @@ let AFF_DIM_UNION = prove
                HULL_INC; IN_INTER; IN_UNION] THEN
   REWRITE_TAC[INT_ARITH `a:int = b - c <=> a + c = b`] THEN
   REWRITE_TAC[INT_OF_NUM_ADD; INT_OF_NUM_EQ; DIM_UNION_INTER]);;
+
+let COPLANAR_INTERSECTING_LINES = prove
+ (`!a b c d z:real^N.
+        collinear {a,z,b} /\ collinear {c,z,d} ==> coplanar {z,a,b,c,d}`,
+  REWRITE_TAC[COPLANAR_AFF_DIM] THEN REPEAT STRIP_TAC THEN
+  TRANS_TAC INT_LE_TRANS
+   `aff_dim(affine hull {a:real^N,z,b} UNION affine hull {c,z,d})` THEN
+  SIMP_TAC[AFF_DIM_SUBSET; INSERT_SUBSET; EMPTY_SUBSET; IN_UNION;
+           HULL_INC; IN_INSERT] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) AFF_DIM_UNION o lhand o snd) THEN
+  REWRITE_TAC[AFFINE_AFFINE_HULL; AFF_DIM_AFFINE_HULL] THEN
+  SUBGOAL_THEN
+   `z IN affine hull {a:real^N,z,b} /\ z IN affine hull {c,z,d}`
+  STRIP_ASSUME_TAC THENL [SIMP_TAC[HULL_INC; IN_INSERT]; ALL_TAC] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  MATCH_MP_TAC(INT_ARITH
+   `a:int <= &1 /\ b <= &1 /\ &0 <= c ==> (a + b) - c <= &2`) THEN
+  ASM_REWRITE_TAC[GSYM COLLINEAR_AFF_DIM; AFF_DIM_POS_LE] THEN ASM SET_TAC[]);;
 
 let ISOMETRIC_HOMEOMORPHISM_AFFINE = prove
  (`!s:real^M->bool t:real^N->bool.
@@ -15045,6 +15180,133 @@ let AFF_DIM_INTERVAL = prove
     SIMP_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC; BASIS_INJ_EQ;
              HAS_SIZE] THEN
     SIMP_TAC[CONJ_ASSOC; GSYM IN_NUMSEG; FINITE_RESTRICT; FINITE_NUMSEG]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A complete graph of |R|-many vertices can be embedded in R^3 with the     *)
+(* edges as straight-line segments that intersect only at common endpoints.  *)
+(* Basically, you just scatter the points onto the twisted cubic.            *)
+(* ------------------------------------------------------------------------- *)
+
+let GRAPH_EMBEDS_IN_R3 = prove
+ (`!s:A->bool.
+        s <=_c (:real)
+        ==> ?v:A->real^3.
+                (!a b. a IN s /\ b IN s ==> (v a = v b <=> a = b)) /\
+                (!a b c d. ~({v a,v b} = {v c,v d})
+                           ==> segment[v a,v b] INTER segment[v c,v d]
+                               SUBSET {v a,v b} INTER {v c,v d})`,
+  SUBGOAL_THEN
+   `?v:real->real^3.
+        (!a b. v a = v b <=> a = b) /\
+        (!a b c d. ~({v a,v b} = {v c,v d})
+                   ==> segment[v a,v b] INTER segment[v c,v d]
+                       SUBSET {v a,v b} INTER {v c,v d})`
+  STRIP_ASSUME_TAC THENL
+   [ALL_TAC;
+    X_GEN_TAC `s:A->bool` THEN
+    REWRITE_TAC[le_c; IN_UNIV; INJECTIVE_ON_ALT] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:A->real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(v:real->real^3) o (f:A->real)` THEN
+    ASM_REWRITE_TAC[o_THM]] THEN
+  ABBREV_TAC `v:real->real^3 = \x. vector[x; x pow 2; x pow 3]` THEN
+  EXISTS_TAC `v:real->real^3` THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[GSYM INJECTIVE_ALT] THEN EXPAND_TAC "v" THEN
+    SIMP_TAC[CART_EQ; FORALL_3; DIMINDEX_3; VECTOR_3];
+    DISCH_TAC] THEN
+  SUBGOAL_THEN
+   `!a b c d. PAIRWISE (\x y. ~(x = y)) [a;b;c;d]
+              ==> aff_dim (IMAGE (v:real->real^3) {a,b,c,d}) = &3`
+   (LABEL_TAC "COPLANAR")
+  THENL
+   [REPEAT STRIP_TAC THEN
+    MP_TAC(ISPECL
+     [`(v:real->real^3) a`;
+      `IMAGE (v:real->real^3) {a,b,c,d}`] AFF_DIM_DIM_AFFINE_DIFFS) THEN
+    SIMP_TAC[FUN_IN_IMAGE; IN_INSERT] THEN DISCH_THEN SUBST1_TAC THEN
+    REWRITE_TAC[SIMPLE_IMAGE; IMAGE_CLAUSES; INT_OF_NUM_EQ] THEN
+    REWRITE_TAC[VECTOR_SUB_REFL; DIM_INSERT_0] THEN
+    W(MP_TAC o PART_MATCH (lhand o rand o rand) INDEPENDENT_EQ_DIM_EQ_CARD o
+      lhand o snd) THEN
+    REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY] THEN
+    SUBGOAL_THEN
+     `~(det(vector[(v:real->real^3) b - (v:real->real^3) a;
+                   (v:real->real^3) c - (v:real->real^3) a;
+                   (v:real->real^3) d - (v:real->real^3) a]:real^3^3) = &0)`
+    MP_TAC THENL
+     [EXPAND_TAC "v" THEN
+      REWRITE_TAC[DET_3; VECTOR_3; VECTOR_SUB_COMPONENT] THEN
+      POP_ASSUM MP_TAC THEN REWRITE_TAC[PAIRWISE; ALL] THEN CONV_TAC REAL_RING;
+      DISCH_THEN(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[GSYM CONTRAPOS_THM]
+          DET_DEPENDENT_ROWS))] THEN
+    REWRITE_TAC[rows] THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+    REWRITE_TAC[GSYM numseg; DIMINDEX_3; NUMSEG_CONV `1..3`] THEN
+    SIMP_TAC[row; IMAGE_CLAUSES; DIMINDEX_3; LAMBDA_ETA; VECTOR_3] THEN
+    DISCH_TAC THEN ASM_REWRITE_TAC[independent] THEN DISCH_THEN SUBST1_TAC THEN
+    SIMP_TAC[CARD_CLAUSES; FINITE_INSERT; FINITE_EMPTY] THEN
+    REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+    ASM_REWRITE_TAC[VECTOR_ARITH `x - z:real^3 = y - z <=> x = y`] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[PAIRWISE; ALL]) THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV;
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!a b c. collinear(IMAGE (v:real->real^3) {a,b,c})
+            ==> ~PAIRWISE (\x y. ~(x = y)) [a;b;c]`
+   (LABEL_TAC "COLLINEAR")
+  THENL
+   [MAP_EVERY X_GEN_TAC [`a:real`; `b:real`; `c:real`] THEN
+    GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[] THEN REPEAT DISCH_TAC THEN
+    REMOVE_THEN "COPLANAR" (MP_TAC o SPECL
+     [`abs a + abs b + abs c + &1:real`; `a:real`; `b:real`; `c:real`]) THEN
+    REWRITE_TAC[NOT_IMP] THEN ONCE_REWRITE_TAC[PAIRWISE] THEN
+    ASM_REWRITE_TAC[ALL] THEN CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+    ONCE_REWRITE_TAC[IMAGE_CLAUSES] THEN REWRITE_TAC[AFF_DIM_INSERT] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[COLLINEAR_AFF_DIM]) THEN ASM_INT_ARITH_TAC;
+    ALL_TAC] THEN
+  MATCH_MP_TAC(METIS[]
+   `(!a b c d. P a b c d ==> P c d a b /\ P b a c d /\ P a b d c) /\
+    (!a b c d. ~(a = b) /\ ~(a = c) /\ ~(a = d) /\
+               ~(b = c) /\ ~(b = d) /\ ~(c = d)
+               ==> P a b c d) /\
+    (!a b c. P a b c c) /\
+    (!a b c. ~(a = b) ==> P a b b c)
+    ==> !a b c d. P a b c d`) THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[SET_RULE `{a,b} = {b,a}`; SEGMENT_SYM; INTER_ACI] THEN
+    MESON_TAC[];
+    MAP_EVERY X_GEN_TAC [`a:real`; `b:real`; `c:real`; `d:real`] THEN
+    STRIP_TAC THEN DISCH_TAC THEN
+    REWRITE_TAC[SUBSET; IN_INTER] THEN X_GEN_TAC `z:real^3` THEN STRIP_TAC THEN
+    REMOVE_THEN "COPLANAR" (MP_TAC o
+      SPECL [`a:real`; `b:real`; `c:real`; `d:real`]) THEN
+    ASM_REWRITE_TAC[PAIRWISE; ALL] THEN
+    MATCH_MP_TAC(TAUT `~p ==> p ==> q`) THEN
+    MATCH_MP_TAC(INT_ARITH `!y:int. x <= y /\ y <= &2 ==> ~(x = &3)`) THEN
+    EXISTS_TAC `aff_dim(z INSERT IMAGE (v:real->real^3) {a,b,c,d})` THEN
+    SIMP_TAC[AFF_DIM_SUBSET; SET_RULE `s SUBSET a INSERT s`] THEN
+    REWRITE_TAC[IMAGE_CLAUSES; GSYM COPLANAR_AFF_DIM] THEN
+    MATCH_MP_TAC COPLANAR_INTERSECTING_LINES THEN
+    ASM_SIMP_TAC[BETWEEN_IMP_COLLINEAR; BETWEEN_IN_SEGMENT];
+    REWRITE_TAC[SET_RULE `{a,a} = {a}`; SEGMENT_REFL] THEN
+    MAP_EVERY X_GEN_TAC [`a:real`; `b:real`; `c:real`] THEN
+    DISCH_THEN(K ALL_TAC) THEN REWRITE_TAC[SET_RULE
+     `s INTER {a} SUBSET t INTER {a} <=> a IN s ==> a IN t`] THEN
+    ASM_CASES_TAC `b:real = a` THEN
+    ASM_SIMP_TAC[SEGMENT_REFL; IN_INSERT; NOT_IN_EMPTY] THEN
+    STRIP_TAC THEN REMOVE_THEN "COLLINEAR" (MP_TAC o SPECL
+     [`a:real`; `c:real`; `b:real`]) THEN
+    ASM_SIMP_TAC[IMAGE_CLAUSES; BETWEEN_IMP_COLLINEAR; BETWEEN_IN_SEGMENT] THEN
+    REWRITE_TAC[PAIRWISE; ALL] THEN ASM_MESON_TAC[];
+    MAP_EVERY X_GEN_TAC [`a:real`; `b:real`; `c:real`] THEN DISCH_TAC THEN
+    ASM_CASES_TAC `collinear {(v:real->real^3) a,v b,v c}` THENL
+     [ALL_TAC; ASM_SIMP_TAC[INTER_SEGMENT] THEN SET_TAC[]] THEN
+    ASM_CASES_TAC `c:real = a` THENL
+     [ASM SET_TAC[]; DISCH_THEN(K ALL_TAC)] THEN
+    REMOVE_THEN "COLLINEAR" (MP_TAC o SPECL
+     [`a:real`; `b:real`; `c:real`]) THEN
+    ASM_REWRITE_TAC[IMAGE_CLAUSES; PAIRWISE; ALL] THEN
+    DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[SEGMENT_REFL] THEN SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Deducing convexity from midpoint convexity in common cases.               *)
