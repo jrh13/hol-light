@@ -113,14 +113,14 @@ let mizarate_term =
 (* ------------------------------------------------------------------------- *)
 (* The following is occasionally useful as a hack.                           *)
 (* ------------------------------------------------------------------------- *)
-                                
+
 let LIMITED_REWRITE_CONV =
-  let LIMITED_ONCE_REWRITE_CONV ths =                  
+  let LIMITED_ONCE_REWRITE_CONV ths =
     GEN_REWRITE_CONV ONCE_DEPTH_CONV ths THENC
-    GENERAL_REWRITE_CONV true TOP_DEPTH_CONV (basic_net()) [] in               
-  fun n ths tm ->                                                              
-        funpow n (CONV_RULE(RAND_CONV(LIMITED_ONCE_REWRITE_CONV ths)))         
-                 (REFL tm);;                                                   
+    GENERAL_REWRITE_CONV true TOP_DEPTH_CONV (basic_net()) [] in
+  fun n ths tm ->
+        funpow n (CONV_RULE(RAND_CONV(LIMITED_ONCE_REWRITE_CONV ths)))
+                 (REFL tm);;
 
 (* ------------------------------------------------------------------------- *)
 (* The default prover.                                                       *)
@@ -165,7 +165,7 @@ let prover_list = ref
 let default_assumptions = ref false;;
 
 let mklabel s =
-  if s = "" & !default_assumptions then "*"
+  if s = "" && !default_assumptions then "*"
   else s;;
 
 (* ------------------------------------------------------------------------- *)
@@ -437,7 +437,7 @@ let MIZAR_SUPPOSE_TAC =
        let asm1 = subtract hyp1 ghyps
        and asm2 = subtract hyp2 ghyps in
        if asm1 = [] then th1 else if asm2 = [] then th2
-       else if tl asm1 = [] & tl asm2 = [] then
+       else if tl asm1 = [] && tl asm2 = [] then
          DISJ_CASES (ASSUME(mk_disj(hd asm1,hd asm2))) th1 th2
        else failwith "MIZAR_SUPPOSE_TAC: Too many suppositions"
      | _ -> fail());;
@@ -507,7 +507,7 @@ let parse_just tlink l =
   match (hd l) with
     Resword "by" ->
         let pot,rem = parse_string (tl l) in
-        if rem = [] or hd rem <> Ident "," & hd rem <> Ident "with" then
+        if rem = [] || hd rem <> Ident "," && hd rem <> Ident "with" then
           if can (assoc pot) (!prover_list) then
             (pot,if tlink then [L""] else []),rem
           else
@@ -531,57 +531,57 @@ let parse_just tlink l =
 let rec parse_step tlink l =
    (a (Resword "assume") ++ parse_lforms ""
       >> (by o MIZAR_ASSUME_TAC o snd)
- || a (Resword "let") ++ (parse_preterm >> split_ppair) ++
-    possibly (a (Resword "be") ++ parse_fulltype >> snd)
-    >> (fun ((_,vnames),ty) -> by (MIZAR_LET_TAC (vnames,ty)))
- || a (Resword "take") ++ parse_preterm
-    >> (by o MIZAR_TAKE_TAC o snd)
- || a (Resword "set") ++ parse_lforms ""
-    >> (itlist (by o MIZAR_SET_TAC) o snd)
- || a (Resword "consider") ++
-    (parse_preterm >> split_ppair) ++
-    a (Resword "such") ++
-    a (Resword "that") ++
-    parse_lforms "" ++
-    parse_just tlink
-    >> (fun (((((_,vars),_),_),lf),jst) -> by (MIZAR_CONSIDER_TAC vars lf jst))
- || a (Resword "given") ++
-    (parse_preterm >> split_ppair) ++
-    a (Resword "such") ++
-    a (Resword "that") ++
-    parse_lforms ""
-    >> (fun ((((_,vars),_),_),lf) -> by (MIZAR_GIVEN_TAC vars lf))
- || a (Resword "suffices") ++
-    a (Resword "to") ++
-    a (Resword "show") ++
-    parse_lforms "" ++
-    parse_just tlink
-    >> (fun ((((_,_),_),lf),jst) -> by (MIZAR_SUFFICES_TAC (map snd lf) jst))
- || a (Resword "per") ++
-    a (Resword "cases") ++
-    parse_just tlink
-    >> (fun ((_,_),jst) -> by (MIZAR_PER_CASES_TAC jst))
- || a (Resword "suppose") ++
-    parse_lforms ""
-    >> (fun (_,lf) -> MIZAR_SUPPOSE_REF lf)
- || a (Resword "endcase")
-    >> K MIZAR_ENDCASE_REF
- || a (Resword "end")
-    >> K (by MIZAR_END_TAC)
- || a (Resword "then") ++ parse_step true
-    >> snd
- || a (Resword "so") ++ parse_step true
-    >> snd
- || a (Resword "hence") ++
-    parse_lforms "" ++
-    parse_just true
-    >> (fun ((_,lf),jst) -> by (MIZAR_STEP_TAC true lf jst))
- || a (Resword "thus") ++
-    parse_lforms "" ++
-    parse_just tlink
-    >> (fun ((_,lf),jst) -> by (MIZAR_STEP_TAC true lf jst))
- || parse_lforms "" ++ parse_just tlink
-    >> (fun (lf,jst) -> by (MIZAR_STEP_TAC false lf jst))) l;;
+ ||| (a (Resword "let") ++ (parse_preterm >> split_ppair) ++
+      possibly (a (Resword "be") ++ parse_fulltype >> snd)
+      >> (fun ((_,vnames),ty) -> by (MIZAR_LET_TAC (vnames,ty))))
+ ||| (a (Resword "take") ++ parse_preterm
+      >> (by o MIZAR_TAKE_TAC o snd))
+ ||| (a (Resword "set") ++ parse_lforms ""
+      >> (itlist (by o MIZAR_SET_TAC) o snd))
+ ||| (a (Resword "consider") ++
+      (parse_preterm >> split_ppair) ++
+      a (Resword "such") ++
+      a (Resword "that") ++
+      parse_lforms "" ++
+      parse_just tlink
+      >> (fun (((((_,vars),_),_),lf),jst) -> by (MIZAR_CONSIDER_TAC vars lf jst)))
+ ||| (a (Resword "given") ++
+      (parse_preterm >> split_ppair) ++
+      a (Resword "such") ++
+      a (Resword "that") ++
+      parse_lforms ""
+      >> (fun ((((_,vars),_),_),lf) -> by (MIZAR_GIVEN_TAC vars lf)))
+ ||| (a (Resword "suffices") ++
+      a (Resword "to") ++
+      a (Resword "show") ++
+      parse_lforms "" ++
+      parse_just tlink
+      >> (fun ((((_,_),_),lf),jst) -> by (MIZAR_SUFFICES_TAC (map snd lf) jst)))
+ ||| (a (Resword "per") ++
+      a (Resword "cases") ++
+      parse_just tlink
+      >> (fun ((_,_),jst) -> by (MIZAR_PER_CASES_TAC jst)))
+ ||| (a (Resword "suppose") ++
+      parse_lforms ""
+      >> (fun (_,lf) -> MIZAR_SUPPOSE_REF lf))
+ ||| (a (Resword "endcase")
+      >> K MIZAR_ENDCASE_REF)
+ ||| (a (Resword "end")
+      >> K (by MIZAR_END_TAC))
+ ||| (a (Resword "then") ++ parse_step true
+      >> snd)
+ ||| (a (Resword "so") ++ parse_step true
+      >> snd)
+ ||| (a (Resword "hence") ++
+      parse_lforms "" ++
+      parse_just true
+      >> (fun ((_,lf),jst) -> by (MIZAR_STEP_TAC true lf jst)))
+ ||| (a (Resword "thus") ++
+      parse_lforms "" ++
+      parse_just tlink
+      >> (fun ((_,lf),jst) -> by (MIZAR_STEP_TAC true lf jst)))
+ ||| (parse_lforms "" ++ parse_just tlink
+      >> (fun (lf,jst) -> by (MIZAR_STEP_TAC false lf jst)))) l;;
 
 (* ------------------------------------------------------------------------- *)
 (* From now on, quotations evaluate to preterms.                             *)
@@ -592,7 +592,7 @@ let run_steps lexemes =
     if lexemes = [] then gs else
     let rf,rest = parse_step false lexemes in
     let gs' = rf gs in
-    if rest <> [] & hd rest = Resword ";" then compose_steps (tl rest) gs'
+    if rest <> [] && hd rest = Resword ";" then compose_steps (tl rest) gs'
     else compose_steps rest gs' in
   refine (compose_steps lexemes);;
 

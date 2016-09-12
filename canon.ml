@@ -480,7 +480,7 @@ let ASSOC_CONV th =
   let y = lhand yopz and z = rand yopz in
   let rec distrib tm =
     match tm with
-      Comb(Comb(op',Comb(Comb(op'',p),q)),r) when op' = op & op'' = op ->
+      Comb(Comb(op',Comb(Comb(op'',p),q)),r) when op' = op && op'' = op ->
           let th1 = INST [p,x; q,y; r,z] th' in
           let l,r' = dest_comb(rand(concl th1)) in
           let th2 = AP_TERM l (distrib r') in
@@ -507,7 +507,7 @@ let SELECT_ELIM_TAC =
         REWRITE_TAC[EXISTS_THM] THEN BETA_TAC THEN REFL_TAC)
       and ptm = `P:A->bool` in
       fun tm -> let stm,atm = dest_comb tm in
-                if is_const stm & fst(dest_const stm) = "@" then
+                if is_const stm && fst(dest_const stm) = "@" then
                  CONV_RULE(LAND_CONV BETA_CONV)
                    (PINST [type_of(bndvar atm),aty] [atm,ptm] pth)
                 else failwith "SELECT_ELIM_THM: not a select-term" in
@@ -518,7 +518,7 @@ let SELECT_ELIM_TAC =
       let pth = ISPEC `P:A->bool` SELECT_AX
       and ptm = `P:A->bool` in
       fun tm -> let stm,atm = dest_comb tm in
-                if is_const stm & fst(dest_const stm) = "@" then
+                if is_const stm && fst(dest_const stm) = "@" then
                   let fvs = frees atm in
                   let th1 = PINST [type_of(bndvar atm),aty] [atm,ptm] pth in
                   let th2 = CONV_RULE(BINDER_CONV (BINOP_CONV BETA_CONV)) th1 in
@@ -563,17 +563,17 @@ let LAMBDA_ELIM_CONV =
     conv in
   let rec find_lambda tm =
     if is_abs tm then tm
-    else if is_var tm or is_const tm then failwith "find_lambda"
+    else if is_var tm || is_const tm then failwith "find_lambda"
     else if is_abs tm then tm else
-    if is_forall tm or is_exists tm or is_uexists tm
+    if is_forall tm || is_exists tm || is_uexists tm
     then find_lambda (body(rand tm)) else
     let l,r = dest_comb tm in
     try find_lambda l with Failure _ -> find_lambda r in
   let rec ELIM_LAMBDA conv tm =
     try conv tm with Failure _ ->
     if is_abs tm then ABS_CONV (ELIM_LAMBDA conv) tm
-    else if is_var tm or is_const tm then REFL tm else
-    if is_forall tm or is_exists tm or is_uexists tm
+    else if is_var tm || is_const tm then REFL tm else
+    if is_forall tm || is_exists tm || is_uexists tm
     then BINDER_CONV (ELIM_LAMBDA conv) tm
     else COMB_CONV (ELIM_LAMBDA conv) tm in
   let APPLY_PTH =
@@ -622,7 +622,7 @@ let CONDS_ELIM_CONV,CONDS_CELIM_CONV =
   let rec find_conditional fvs tm =
     match tm with
       Comb(s,t) ->
-        if is_cond tm & intersect (frees(lhand s)) fvs = [] then tm
+        if is_cond tm && intersect (frees(lhand s)) fvs = [] then tm
         else (try (find_conditional fvs s)
               with Failure _ -> find_conditional fvs t)
     | Abs(x,t) -> find_conditional (x::fvs) t
@@ -631,7 +631,7 @@ let CONDS_ELIM_CONV,CONDS_CELIM_CONV =
     try let t = find_conditional [] tm in
         let p = lhand(rator t) in
         let th_new =
-          if p = false_tm or p = true_tm then propsimp_conv tm else
+          if p = false_tm || p = true_tm then propsimp_conv tm else
           let asm_0 = mk_eq(p,false_tm) and asm_1 = mk_eq(p,true_tm) in
           let simp_0 = net_of_thm false (ASSUME asm_0) propsimps
           and simp_1 = net_of_thm false (ASSUME asm_1) propsimps in
@@ -644,14 +644,14 @@ let CONDS_ELIM_CONV,CONDS_CELIM_CONV =
     with Failure _ ->
     if is_neg tm then
        RAND_CONV (CONDS_ELIM_CONV (not dfl)) tm
-    else if is_conj tm or is_disj tm then
+    else if is_conj tm || is_disj tm then
        BINOP_CONV (CONDS_ELIM_CONV dfl) tm
-    else if is_imp tm or is_iff tm then
+    else if is_imp tm || is_iff tm then
        COMB2_CONV (RAND_CONV (CONDS_ELIM_CONV (not dfl)))
                   (CONDS_ELIM_CONV dfl) tm
     else if is_forall tm then
          BINDER_CONV (CONDS_ELIM_CONV false) tm
-    else if is_exists tm or is_uexists tm then
+    else if is_exists tm || is_uexists tm then
          BINDER_CONV (CONDS_ELIM_CONV true) tm
     else REFL tm in
   CONDS_ELIM_CONV true,CONDS_ELIM_CONV false;;
@@ -675,7 +675,7 @@ let ASM_FOL_TAC =
         let hop,args = strip_comb tm in
         let len = length args in
         let newheads =
-          if is_const hop or mem hop lconsts
+          if is_const hop || mem hop lconsts
           then (insert (hop,len) cheads,vheads)
           else if len > 0 then (cheads,insert (hop,len) vheads) else sofar in
         itlist (get_heads lconsts) args newheads in
@@ -691,7 +691,7 @@ let ASM_FOL_TAC =
     else (RATOR_CONV (APP_N_CONV (n - 1)) THENC APP_CONV) tm in
   let rec FOL_CONV hddata tm =
     if is_forall tm then BINDER_CONV (FOL_CONV hddata) tm
-    else if is_conj tm or is_disj tm then BINOP_CONV (FOL_CONV hddata) tm else
+    else if is_conj tm || is_disj tm then BINOP_CONV (FOL_CONV hddata) tm else
     let op,args = strip_comb tm in
     let th = rev_itlist (C (curry MK_COMB))
                         (map (FOL_CONV hddata) args) (REFL op) in
@@ -709,7 +709,7 @@ let ASM_FOL_TAC =
           if length ns < 2 then fail() else h,end_itlist min ns in
         mapfilter getmin hops
       else
-        map (fun t -> if is_const t & fst(dest_const t) = "="
+        map (fun t -> if is_const t && fst(dest_const t) = "="
                       then t,2 else t,0)
             (setify (map fst (vheads @ cheads))) in
     FOL_CONV hddata in

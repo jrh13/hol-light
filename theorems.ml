@@ -470,7 +470,7 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC =
       let pa_rename =
         let oname = possibly (a(Ident "/") ++ pa_var >> snd) in
         (a(Resword "[") ++ pa_var >> snd) ++ oname ++ a(Resword "]") >> fst in
-      many (pa_rename >> fix_rename || pa_var >> fix_var) >> EVERY
+      many ((pa_rename >> fix_rename) ||| (pa_var >> fix_var)) >> EVERY
     and star = possibly (a (Ident "*") >> K ()) in
     vars ++ star >> function tac,[] -> tac | tac,_ -> tac THEN REPEAT GEN_TAC
   and destruct_tac =
@@ -494,7 +494,7 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC =
                | _ -> raise Noparse
       and paren =
         (a(Resword "(") ++ destruct >> snd) ++ a(Resword ")") >> fst in
-      (obtain || label || paren) inp in
+      (obtain ||| label ||| paren) inp in
     destruct in
   let intro_tac =
     let number = function
@@ -505,10 +505,10 @@ let DESTRUCT_TAC,FIX_TAC,INTRO_TAC,HYP_TAC =
     and pa_fix = a(Ident "!") ++ fix_tac >> snd
     and pa_dest = destruct_tac >> DISCH_THEN in
     let pa_prefix =
-      elistof (pa_fix || pa_dest) (a(Resword ";")) "Prefix intro pattern" in
+      elistof (pa_fix ||| pa_dest) (a(Resword ";")) "Prefix intro pattern" in
     let rec pa_intro toks =
       (pa_prefix ++ possibly pa_postfix >> uncurry (@) >> EVERY) toks
-    and pa_postfix toks = (pa_conj || pa_disj) toks
+    and pa_postfix toks = (pa_conj ||| pa_disj) toks
     and pa_conj toks =
       let conjs =
         listof pa_intro (a(Ident "&")) "Intro pattern" >> CONJ_LIST_TAC in

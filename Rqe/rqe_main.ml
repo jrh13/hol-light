@@ -351,7 +351,7 @@ let UNFACTOR_ISIGN vars xsign_thm pol isign_thm =
       else failwith "bad sign" in
       let ret = BETA_RULE(MATCH_MPL[mp_thm;xsign_thm;isign_thm;k_thm]) in
         MATCH_MP ret fact_thm
-  else if xsign = sneg_tm & parity = even_tm then
+  else if xsign = sneg_tm && parity = even_tm then
     let k_thm = prove(mk_neg(mk_eq(mk_small_numeral k,nzero)),ARITH_TAC) in
     let mp_thm = 
       if psign = spos_tm then factor_neg_even_pos
@@ -360,7 +360,7 @@ let UNFACTOR_ISIGN vars xsign_thm pol isign_thm =
       else failwith "bad sign" in
       let ret = BETA_RULE(MATCH_MPL[mp_thm;xsign_thm;isign_thm;par_thm;k_thm]) in
         MATCH_MP ret fact_thm
-  else if xsign = sneg_tm & parity = odd_tm then
+  else if xsign = sneg_tm && parity = odd_tm then
     let k_thm = prove(mk_neg(mk_eq(mk_small_numeral k,nzero)),ARITH_TAC) in
     let mp_thm = 
       if psign = spos_tm then factor_neg_odd_pos
@@ -496,7 +496,7 @@ let rec MATRIX vars pols cont sgns ex_thms fm =
       MATRIX vars pols' cont' sgns ex_thms fm
   else   
     let kqs = map (weakfactor (hd vars)) pols in 
-      if exists (fun (k,q) -> k <> 0 & not(is_constant vars q)) kqs then 
+      if exists (fun (k,q) -> k <> 0 && not(is_constant vars q)) kqs then 
         let pols' = poly_var(hd vars) :: map snd kqs in 
         let ks = map fst kqs in  
         let cont' mat_thm ex_thms = cont (UNFACTOR_MAT vars pols mat_thm) ex_thms in 
@@ -626,16 +626,16 @@ let pols = [`&1 + x * (&2 + x * &3)`;`&2 + x * (&4 + x * &6)`;`&3 + x * (&6 + x 
 
 let polynomials tm = 
   let rec polynomials tm = 
-    if tm = t_tm or tm = f_tm then []
-    else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+    if tm = t_tm || tm = f_tm then []
+    else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
       let _,l,r = get_binop tm in polynomials l @ polynomials r 
     else if is_neg tm then polynomials (dest_neg tm)
     else if 
-      can (dest_binop rlt) tm or 
-      can (dest_binop rgt) tm or 
-      can (dest_binop rle) tm or 
-      can (dest_binop rge) tm or 
-      can (dest_binop req) tm or 
+      can (dest_binop rlt) tm || 
+      can (dest_binop rgt) tm || 
+      can (dest_binop rle) tm || 
+      can (dest_binop rge) tm || 
+      can (dest_binop req) tm || 
       can (dest_binop rneq) tm then 
         let _,l,_ = get_binop tm in [l]
     else failwith "not a fol atom" in

@@ -8,17 +8,17 @@ let rec testform pmat fm =
       Atom(R(a,[p;Fn("0",[])])) -> 
         let s = assoc p pmat in 
           if a = "=" then s = Zero 
-          else if a = "<=" then s = Zero or s = Negative 
-          else if a = ">=" then s = Zero or s = Positive 
+          else if a = "<=" then s = Zero || s = Negative 
+          else if a = ">=" then s = Zero || s = Positive 
           else if a = "<" then s = Negative 
           else if a = ">" then s = Positive 
           else failwith "testform: unknown literal" 
     | False -> false 
     | True -> true 
     | Not(p) -> not(testform pmat p) 
-    | And(p,q) -> testform pmat p & testform pmat q 
-    | Or(p,q) -> testform pmat p or testform pmat q 
-    | Imp(p,q) -> not(testform pmat p) or testform pmat q 
+    | And(p,q) -> testform pmat p && testform pmat q 
+    | Or(p,q) -> testform pmat p || testform pmat q 
+    | Imp(p,q) -> not(testform pmat p) || testform pmat q 
     | Iff(p,q) -> (testform pmat p = testform pmat q) 
     | _ -> failwith "testform: non-propositional formula";; 
 

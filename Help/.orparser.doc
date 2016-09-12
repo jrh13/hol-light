@@ -1,12 +1,12 @@
-\DOC ||
+\DOC |||
 
-\TYPE {(||) : ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b}
+\TYPE {(|||) : ('a -> 'b) -> ('a -> 'b) -> 'a -> 'b}
 
 \SYNOPSIS
 Produce alternative composition of two parsers.
 
 \DESCRIBE
-If {p1} and {p2} are two parsers, {p1 || p2} is a new parser that first tries
+If {p1} and {p2} are two parsers, {p1 ||| p2} is a new parser that first tries
 to parse the input using {p1}, and if that fails with exception {Noparse},
 tries {p2} instead. The output is whatever parse result was achieved together
 with the unparsed input.

@@ -77,7 +77,7 @@ let INDUCT_TAC_ thm = MATCH_MP_TAC thm THEN
 
 let rec distinct x = 
      if (x = []) then true
-     else not (mem (hd x) (tl x)) & distinct (tl x);;
+     else not (mem (hd x) (tl x)) && distinct (tl x);;
 
 
 (*----------------------------------------------------------------------------*)
@@ -206,7 +206,7 @@ let find_bm_terms p tm =
 (*----------------------------------------------------------------------------*)
 
 let rec remove_el n l =
-   if ((l = []) or (n < 1))
+   if ((l = []) || (n < 1))
    then failwith "remove_el"
    else if (n = 1)
         then (hd l,tl l)

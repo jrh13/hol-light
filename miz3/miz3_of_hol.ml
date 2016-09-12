@@ -19,7 +19,7 @@ let read_script filename lemmaname =
   let n = String.length lemma_string in
   let rec read_script1 () =
     let s = input_line file in
-    if String.length s >= n & String.sub s 0 n = lemma_string
+    if String.length s >= n && String.sub s 0 n = lemma_string
       then (explode s)@"\n"::read_script2 () else read_script1 ()
   and read_script2 () =
     let l = explode (input_line file) in
@@ -46,10 +46,10 @@ let parse_script l =
     match l with
     | ("\\",y)::l' when not b -> parse_tactic b n (s^y'^"\\\\") y l'
     | (x,y)::l' ->
-        if n = 0 & (x = "THEN" or x = "THENL" or x = ";" or x = "]" or x = ")")
+        if n = 0 && (x = "THEN" || x = "THENL" || x = ";" || x = "]" || x = ")")
         then (Tac(s,exec_tactic s)),l else
-          let n' = if x = "[" or x = "(" then n + 1 else
-            if x = "]" or x = ")" then n - 1 else n in
+          let n' = if x = "[" || x = "(" then n + 1 else
+            if x = "]" || x = ")" then n - 1 else n in
           let x',b' =
             if x = "`" then
               if b then "(parse_term \"",(not b) else "\")",(not b)
@@ -168,7 +168,7 @@ let rec step_of_prooftree prefix n context t =
             steps_of_prooftrees prefix n context g tl' in
           steps,Label lab::labs,n',context'
         with Failure "find" ->
-          if vars = [] & ass = [] then
+          if vars = [] && ass = [] then
             let steps,just,n',context' =
               steps_of_prooftree prefix n context t' in
             try

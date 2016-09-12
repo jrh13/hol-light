@@ -7085,7 +7085,7 @@ let bcs =
     ==> (((\x. f x) --> l) (at a) <=> (g --> l) (at a))`;
    `(!x. ~(x = a) ==> f x = g x)
     ==> (((\x. f x) --> l) (at a within s) <=> (g --> l) (at a within s))`]
-and equiv t1 t2 = can (term_match [] t1) t2 & can (term_match [] t2) t1 in
+and equiv t1 t2 = can (term_match [] t1) t2 && can (term_match [] t2) t1 in
 let congs' =
   filter (fun th -> exists (equiv (concl th)) bcs) (basic_congs()) in
 set_basic_congs congs';;

@@ -921,7 +921,7 @@ let m_verify_raw (report_start, total_size) n pp fs certificate domain_th0 th_li
     let verify_mono mono domain_th certificate =
       let domain, _, _ = (dest_m_cell_domain o concl) domain_th in
       let xx, zz = dest_pair domain in
-      let df0_flags = itlist (fun m b -> m.df0_flag & b) mono true in
+      let df0_flags = itlist (fun m b -> m.df0_flag && b) mono true in
       let _ = !info_print_level < 2 or (report (sprintf "df0_flags = %b" df0_flags); true) in
       let taylor_th, diff2_th =
         if df0_flags then
@@ -1106,7 +1106,7 @@ let m_p_verify_raw (report_start, total_size) n p_split fs certificate domain_th
     let verify_mono p_stat mono domain_th certificate =
       let domain, _, _ = (dest_m_cell_domain o concl) domain_th in
       let xx, zz = dest_pair domain in
-      let df0_flags = itlist (fun m b -> m.df0_flag & b) mono true in
+      let df0_flags = itlist (fun m b -> m.df0_flag && b) mono true in
       let _ = !info_print_level < 2 or (report (sprintf "df0_flags = %b" df0_flags); true) in
       let taylor_th, diff2_th =
         if df0_flags then

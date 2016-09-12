@@ -28,8 +28,8 @@
 
 let is_explicit_value_template tm =
    let rec is_explicit_value_template' constructors tm =
-      (is_T tm) or (is_F tm) or ((is_const tm) & (type_of tm = `:num`)) or
-      (is_var tm) or (is_numeral tm) or
+      (is_T tm) || (is_F tm) || ((is_const tm) && (type_of tm = `:num`)) ||
+      (is_var tm) || (is_numeral tm) ||
       (let (f,args) = strip_comb tm
        in  (try(mem (fst (dest_const f)) constructors) with Failure _ -> false) &
            (forall (is_explicit_value_template' constructors) args))
@@ -75,7 +75,7 @@ let use_equality_subst right cross_fert th tm =
           (if right
            then RAND_CONV (subst_conv th) tm
            else RATOR_CONV (RAND_CONV (subst_conv th)) tm)
-       else if ((is_neg tm) & (try(is_eq (rand tm)) with Failure _ -> false)) then subst_conv th tm
+       else if ((is_neg tm) && (try(is_eq (rand tm)) with Failure _ -> false)) then subst_conv th tm
        else (* ALL_CONV tm *) subst_conv th tm
   else subst_conv th tm
  ) with Failure _ -> failwith "use_equality_subst";;
@@ -137,7 +137,7 @@ try
 let use_equality_heuristic (tm,(ind:bool)) =
 try (let checkx (tml1,tml2) t' =
      (not (is_explicit_value_template t')) &
-     ((exists (is_subterm t') tml1) or (exists (is_subterm t') tml2))
+     ((exists (is_subterm t') tml1) || (exists (is_subterm t') tml2))
   in  let rec split_disjuncts side prevl tml =
          if (can (check (checkx (prevl,tl tml)) o side o dest_neg) (hd tml))
          then (prevl,tml)
@@ -153,9 +153,9 @@ try (let checkx (tml1,tml2) t' =
   in  let neq = rhs (concl flipth)
   in  let eq = dest_neg neq
   in  let (s',t') = dest_eq eq
-  in  let delete = ind & (not (is_explicit_value s'))
+  in  let delete = ind && (not (is_explicit_value s'))
   in  let cross_fert = delete &
-                       ((exists (is_subterm_of_side side t') overs) or
+                       ((exists (is_subterm_of_side side t') overs) ||
                         (exists (is_subterm_of_side side t') unders))
   in  let sym_eq = mk_eq (t',s')
   in  let sym_neq = mk_neg sym_eq

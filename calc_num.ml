@@ -893,7 +893,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
                  EQ_MP (INST [mtm,m_tm; ntm,n_tm] pth_even) th1)
       | Comb(Const("BIT1",_),mtm) ->
             if mtm = zero_tm then pth_1 else
-            if (w < 100 or z < 20) & w + z < 150 then
+            if (w < 100 || z < 20) && w + z < 150 then
               match mtm with
                 Comb(Const("BIT1",_),Comb(Const("BIT1",_),ntm)) ->
                     let th1 = NUM_ADD_RULE ntm one_tm in
@@ -1036,8 +1036,8 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
              [tm,m_tm; ntm,n_tm; rand(concl th0),p_tm] pth_evenr in
             EQ_MP th1 th0
       | (Comb(Const("BIT1",_),mtm),Comb(Const("BIT1",_),ntm)) ->
-          if k <= 50 or l <= 50 or
-             Int k */ Int k <=/ Int l or
+          if k <= 50 || l <= 50 ||
+             Int k */ Int k <=/ Int l ||
              Int l */ Int l <= Int k then
             match (mtm,ntm) with
               (Comb(Const("BIT1",_),Comb(Const("BIT1",_),_)),_) ->
@@ -1141,7 +1141,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
       match tm with
         Comb(Comb(Const("+",_),Comb(Const("NUMERAL",_),mtm)),
           Comb(Const("NUMERAL",_),ntm))
-        when wellformed mtm & wellformed ntm ->
+        when wellformed mtm && wellformed ntm ->
         let th1 = NUM_ADD_RULE mtm ntm in
         let ptm = rand(concl th1) in
         let th2 = INST [mtm,m_tm; ntm,n_tm; ptm,p_tm] topthm_add in
@@ -1208,7 +1208,7 @@ let NUM_SUC_CONV,NUM_ADD_CONV,NUM_MULT_CONV,NUM_EXP_CONV,
     fun tm -> try let th = tconv tm in
                   let lop,r = dest_comb (rand(concl th)) in
                   let _,l = dest_comb lop in
-                  if not (wellformed l & wellformed r) then failwith "" else
+                  if not (wellformed l && wellformed r) then failwith "" else
                   let th' = NUM_EXP_CONV l r in
                   let tm' = rand(concl th') in
                   TRANS (TRANS th th') (INST [tm',m_tm] fth)

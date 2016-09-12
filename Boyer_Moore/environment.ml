@@ -78,7 +78,7 @@ try
      in  let (f,args) = strip_comb tm
      in  let name = fst (dest_const f)
      in  let bools = number_list (map is_var args)
-     in  let i = itlist (fun (b,i) n -> if ((not b) & (n = 0)) then i
+     in  let i = itlist (fun (b,i) n -> if ((not b) && (n = 0)) then i
                                    else if b then n else failwith "") bools 0
      in  if (i = 0)
          then ((name,i),"")
@@ -247,8 +247,8 @@ let gen_lemmas () = !system_gen_lemmas;;
 let rec max_var_depth tm =
   if (is_var tm) then 1
   else if ((is_numeral tm) 
-	     or (is_const tm) 
-	     or (is_T tm) or (is_F tm)) then 0
+             || (is_const tm) 
+             || (is_T tm) || (is_F tm)) then 0
   else try 
     let (f,args) = strip_comb tm in
     let fn = (fst o dest_const) f in

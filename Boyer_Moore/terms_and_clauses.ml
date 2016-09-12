@@ -1,4 +1,3 @@
-
 (******************************************************************************)
 (* FILE          : terms_and_clauses.ml                                       *)
 (* DESCRIPTION   : Rewriting terms and simplifying clauses.                   *)
@@ -602,7 +601,7 @@ try (let negate tm = if (is_neg tm) then (rand tm) else (mk_neg tm)
          then NEGATE (rewrite_term y [] [] (overs' @ unders') (rand y))
          else rewrite_term y [] [] (overs' @ unders') y
   in  let tm1 = rhs (concl th1)
-  in  if ((is_T tm1) or (is_F tm1))
+  in  if ((is_T tm1) || (is_F tm1))
       then (MULTI_DISJ_DISCH (overs',unders') th1,
             if (unders = []) then 0 else (-1))
       else let th2 = TRANS th1 (MOVE_COND_UP_CONV tm1)
@@ -748,7 +747,7 @@ let NOT_EQ_F =
 (*----------------------------------------------------------------------------*)
 
 let subst_heuristic (tm,(ind:bool)) =
-try (let checkx (v,t) = (is_var v) & (not (mem v (frees t)))
+try (let checkx (v,t) = (is_var v) && (not (mem v (frees t)))
   in  let rec split_disjuncts tml =
          if (can (check (checkx o dest_eq o dest_neg)) (hd tml))
          then ([],tml)

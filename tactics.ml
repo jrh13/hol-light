@@ -25,7 +25,7 @@ let null_meta = (([]:term list),null_inst);;
 type goal = (string * thm) list * term;;
 
 let equals_goal ((a,w):goal) ((a',w'):goal) =
-  forall2 (fun (s,th) (s',th') -> s = s' & equals_thm th th') a a' & w = w';;
+  forall2 (fun (s,th) (s',th') -> s = s' && equals_thm th th') a a' && w = w';;
 
 (* ------------------------------------------------------------------------- *)
 (* A justification function for a goalstate [A1 ?- g1; ...; An ?- gn],       *)
@@ -197,7 +197,7 @@ let MAP_FIRST tacf lst =
 let (CHANGED_TAC: tactic -> tactic) =
   fun tac g ->
     let (meta,gl,_ as gstate) = tac g in
-    if meta = null_meta & length gl = 1 & equals_goal (hd gl) g
+    if meta = null_meta && length gl = 1 && equals_goal (hd gl) g
     then failwith "CHANGED_TAC" else gstate;;
 
 let rec REPLICATE_TAC n tac =
@@ -403,9 +403,9 @@ let SUBST_VAR_TAC th =
       let l,r = dest_eq eq in
       if aconv l r then ALL_TAC
       else if not (subset (frees eq) (freesl asm)) then fail()
-      else if (is_const l or is_var l) & not(free_in l r)
+      else if (is_const l || is_var l) && not(free_in l r)
            then SUBST_ALL_TAC th
-      else if (is_const r or is_var r) & not(free_in r l)
+      else if (is_const r || is_var r) && not(free_in r l)
            then SUBST_ALL_TAC(SYM th)
       else fail()
   with Failure _ -> failwith "SUBST_VAR_TAC";;
@@ -564,7 +564,7 @@ let (MATCH_MP_TAC :thm_tactic) =
           let ant,con = dest_imp bod in
           let th1 = SPECL avs (ASSUME tm) in
           let th2 = UNDISCH th1 in
-          let evs = filter (fun v -> vfree_in v ant & not (vfree_in v con))
+          let evs = filter (fun v -> vfree_in v ant && not (vfree_in v con))
                            avs in
           let th3 = itlist SIMPLE_CHOOSE evs (DISCH tm th2) in
           let tm3 = hd(hyp th3) in

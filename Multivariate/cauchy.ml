@@ -6525,7 +6525,7 @@ let SIMPLE_CLOSED_PATH_WINDING_NUMBER_INSIDE = prove
        `?z. z IN inside(path_image q) /\ norm(winding_number(q,z)) = &1`
        (fun th -> MESON_TAC[th]) THEN
       POP_ASSUM_LIST(MP_TAC o end_itlist CONJ o rev o
-          filter (fun tm -> not(free_in `t:real^1` (concl tm) or
+          filter (fun tm -> not(free_in `t:real^1` (concl tm) ||
                                 free_in `p:real^1->complex` (concl tm)))) THEN
       STRIP_TAC] THEN
     SUBGOAL_THEN

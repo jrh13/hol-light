@@ -40,11 +40,11 @@ and f_tm = `F`;;
 
 let LIFT_QELIM_CONV afn_conv nfn_conv qfn_conv =
   let rec qelift_conv vars fm =
-    if fm = t_tm or fm = f_tm then REFL fm
+    if fm = t_tm || fm = f_tm then REFL fm
     else if is_neg fm then
       let thm1 = qelift_conv vars (dest_neg fm) in
         MK_COMB(REFL not_tm,thm1)
-    else if is_conj fm or is_disj fm or is_imp fm or is_iff fm then
+    else if is_conj fm || is_disj fm || is_imp fm || is_iff fm then
       let (op,p,q) = get_binop fm in
       let thm1 = qelift_conv vars p in
       let thm2 = qelift_conv vars q in

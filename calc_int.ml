@@ -17,7 +17,7 @@ let is_realintconst tm =
   match tm with
     Comb(Const("real_of_num",_),n) -> is_numeral n
   | Comb(Const("real_neg",_),Comb(Const("real_of_num",_),n)) ->
-      is_numeral n & not(dest_numeral n = num_0)
+      is_numeral n && not(dest_numeral n = num_0)
   | _ -> false;;
 
 let dest_realintconst tm =
@@ -38,16 +38,16 @@ let mk_realintconst =
 let is_ratconst tm =
   match tm with
     Comb(Comb(Const("real_div",_),p),q) ->
-        is_realintconst p & is_realintconst q &
+        is_realintconst p && is_realintconst q &
         (let m = dest_realintconst p and n = dest_realintconst q in
-         n >/ num_1 & gcd_num m n =/ num_1)
+         n >/ num_1 && gcd_num m n =/ num_1)
   | _ -> is_realintconst tm;;
 
 let rat_of_term tm =
   match tm with
     Comb(Comb(Const("real_div",_),p),q) ->
         let m = dest_realintconst p and n = dest_realintconst q in
-        if n >/ num_1 & gcd_num m n =/ num_1 then m // n
+        if n >/ num_1 && gcd_num m n =/ num_1 then m // n
         else failwith "rat_of_term"
   | _ -> dest_realintconst tm;;
 

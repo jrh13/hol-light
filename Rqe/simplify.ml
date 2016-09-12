@@ -39,13 +39,13 @@ let PSIMPLIFY1_CONV =
       else if fm = nf then t
       else if is_conj fm then
         let l,r = dest_conj fm in
-          if l = f or r = f then f
+          if l = f || r = f then f
           else if l = t then r
           else if r = t then l
           else fm
       else if is_disj fm then
         let l,r = dest_disj fm in
-          if l = t or r = t then t
+          if l = t || r = t then t
           else if l = f then r 
           else if r = f then l 
           else fm
@@ -80,7 +80,7 @@ let simplify1 fm =
 *)
 
 let SIMPLIFY1_CONV fm =
-  if is_forall fm or is_exists fm then
+  if is_forall fm || is_exists fm then
     let x,p = dest_forall fm in
       if mem x (frees p) then REFL fm 
       else  prove(mk_eq(fm,p),REWRITE_TAC[])
@@ -109,7 +109,7 @@ let rec SIMPLIFY_CONV =
     let l,r = dest_eq (concl thm2) in
     let thm3 = SIMPLIFY1_CONV r in
       TRANS thm2 thm3
-  else if is_conj fm or is_disj fm or is_imp fm or is_iff fm then
+  else if is_conj fm || is_disj fm || is_imp fm || is_iff fm then
     let op,l,r = get_binop fm in
     let l_thm = SIMPLIFY_CONV l in
     let r_thm = SIMPLIFY_CONV r in
@@ -117,7 +117,7 @@ let rec SIMPLIFY_CONV =
     let al,ar = dest_eq (concl a_thm) in
     let thm = SIMPLIFY1_CONV ar in
       TRANS a_thm thm
-  else if is_forall fm or is_exists fm then
+  else if is_forall fm || is_exists fm then
     let x,bod = dest_quant fm in
     let bod_thm = SIMPLIFY_CONV bod in
     let lam_thm = ABS x bod_thm in

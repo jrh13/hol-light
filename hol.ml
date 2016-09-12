@@ -49,7 +49,7 @@ let use_file s =
         Format.print_newline());;
 
 let hol_expand_directory s =
-  if s = "$" or s = "$/" then !hol_dir
+  if s = "$" || s = "$/" then !hol_dir
   else if s = "$$" then "$"
   else if String.length s <= 2 then s
   else if String.sub s 0 2 = "$$" then (String.sub s 1 (String.length s - 1))

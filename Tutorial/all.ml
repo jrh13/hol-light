@@ -1676,7 +1676,7 @@ let ortho =
 
 let opairs = filter ortho (allpairs (fun a b -> a,b) points points);;
 
-let otrips = filter (fun (a,b,c) -> ortho(a,b) & ortho(a,c))
+let otrips = filter (fun (a,b,c) -> ortho(a,b) && ortho(a,c))
                     (allpairs (fun a (b,c) -> a,b,c) points opairs);;
 
 let hol_of_value =
@@ -1719,11 +1719,11 @@ let rec KOCHEN_SPECKER_TAC set_0 set_1 =
     ACCEPT_TAC(EQ_MP (EQF_INTRO th1) th2)
   else
     let prf_1 = filter (fun (a,b) -> mem a set_0) opairs
-    and prf_0 = filter (fun (a,b,c) -> mem a set_1 & mem b set_1) otrips in
+    and prf_0 = filter (fun (a,b,c) -> mem a set_1 && mem b set_1) otrips in
     let new_1 = map snd prf_1 and new_0 = map (fun (a,b,c) -> c) prf_0 in
     let set_0' = union new_0 set_0 and set_1' = union new_1 set_1 in
     let del_0 = subtract set_0' set_0 and del_1 = subtract set_1' set_1 in
-    if del_0 <> [] or del_1 <> [] then
+    if del_0 <> [] || del_1 <> [] then
        let prv_0 x =
          let a,b,_ = find (fun (a,b,c) -> c = x) prf_0 in DEDUCE_POINT_TAC [a;b]
        and prv_1 x =
@@ -1735,7 +1735,7 @@ let rec KOCHEN_SPECKER_TAC set_0 set_1 =
        [REPEAT CONJ_TAC THENL tacs; ALL_TAC] THEN
       KOCHEN_SPECKER_TAC set_0' set_1'
     else
-      let v = find (fun i -> not(mem i set_0) & not(mem i set_1)) points in
+      let v = find (fun i -> not(mem i set_0) && not(mem i set_1)) points in
       ASM_CASES_TAC (ppoint v) THENL
        [KOCHEN_SPECKER_TAC set_0 (v::set_1);
         KOCHEN_SPECKER_TAC (v::set_0) set_1];;
@@ -1919,7 +1919,7 @@ MESON[]
   ==> !a. 0 * a = 0`;;
  ****)
 
-let is_realvar w x = is_var x & not(mem x w);;
+let is_realvar w x = is_var x && not(mem x w);;
 
 let rec real_strip w tm =
   if mem tm w then tm,[] else
@@ -1928,29 +1928,29 @@ let rec real_strip w tm =
 
 let weight lis (f,n) (g,m) =
   let i = index f lis and j = index g lis in
-  i > j or i = j & n > m;;
+  i > j || i = j && n > m;;
 
 let rec lexord ord l1 l2 =
   match (l1,l2) with
     (h1::t1,h2::t2) -> if ord h1 h2 then length t1 = length t2
-                       else h1 = h2 & lexord ord t1 t2
+                       else h1 = h2 && lexord ord t1 t2
   | _ -> false;;
 
 let rec lpo_gt w s t =
-  if is_realvar w t then not(s = t) & mem t (frees s)
-  else if is_realvar w s or is_abs s or is_abs t then false else
+  if is_realvar w t then not(s = t) && mem t (frees s)
+  else if is_realvar w s || is_abs s || is_abs t then false else
   let f,fargs = real_strip w s and g,gargs = real_strip w t in
-  exists (fun si -> lpo_ge w si t) fargs or
+  exists (fun si -> lpo_ge w si t) fargs ||
         forall (lpo_gt w s) gargs &
-        (f = g & lexord (lpo_gt w) fargs gargs or
+        (f = g && lexord (lpo_gt w) fargs gargs ||
          weight w (f,length fargs) (g,length gargs))
-and lpo_ge w s t = (s = t) or lpo_gt w s t;;
+and lpo_ge w s t = (s = t) || lpo_gt w s t;;
 
 let rec istriv w env x t =
-  if is_realvar w t then t = x or defined env t & istriv w env x (apply env t)
+  if is_realvar w t then t = x || defined env t && istriv w env x (apply env t)
   else if is_const t then false else
   let f,args = strip_comb t in
-  exists (istriv w env x) args & failwith "cyclic";;
+  exists (istriv w env x) args && failwith "cyclic";;
 
 let rec unify w env tp =
   match tp with
@@ -2006,7 +2006,7 @@ let normalize_and_orient w eqs th =
   else failwith "Can't orient equation";;
 
 let status(eqs,crs) eqs0 =
-  if eqs = eqs0 & (length crs) mod 1000 <> 0 then () else
+  if eqs = eqs0 && (length crs) mod 1000 <> 0 then () else
   (print_string(string_of_int(length eqs)^" equations and "^
                 string_of_int(length crs)^" pending critical pairs");
    print_newline());;
@@ -2134,7 +2134,7 @@ let rec parse_ginfix op opup sof prs inp =
 
 let parse_general_infix op =
   let opcon = if op = "^" then mk_pow else mk_binop (assoc op maxima_ops) in
-  let constr = if op <> "^" & snd(get_infix_status op) = "right"
+  let constr = if op <> "^" && snd(get_infix_status op) = "right"
                then fun f e1 e2 -> f(opcon e1 e2)
                else fun f e1 e2 -> opcon(f e1) e2 in
   parse_ginfix op constr (fun x -> x);;

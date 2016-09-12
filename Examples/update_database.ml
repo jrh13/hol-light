@@ -116,7 +116,7 @@ let update_database =
     and new_ths =
       rev_itlist (fun (ident,val_descr) ->
         let n = Ident.name ident in
-        if type_to_str val_descr.Types.val_type = "thm" & n <> "it"
+        if type_to_str val_descr.Types.val_type = "thm" && n <> "it"
         then (n |-> ()) else undefine n) new_bnds old_ths in
     value_bindings_checked := new_count;
     if new_ths = old_ths then () else
@@ -147,12 +147,12 @@ let search =
     match (l1,l2) with
       [],_ -> true
     | _,[] -> false
-    | (h1::t1,h2::t2) -> h1 = h2 & immediatesublist t1 t2 in
+    | (h1::t1,h2::t2) -> h1 = h2 && immediatesublist t1 t2 in
   let rec sublist l1 l2 =
     match (l1,l2) with
       [],_ -> true
     | _,[] -> false
-    | (h1::t1,h2::t2) -> immediatesublist l1 l2 or sublist l1 t2 in
+    | (h1::t1,h2::t2) -> immediatesublist l1 l2 || sublist l1 t2 in
   let exists_subterm_satisfying p (n,th) = can (find_term p) (concl th)
   and name_contains s (n,th) = sublist (explode s) (explode n) in
   let rec filterpred tm =
@@ -169,7 +169,7 @@ let search =
          ("Ignoring plain variables in search: "^
           end_itlist (fun s t -> s^", "^t) (map (fst o dest_var) triv))
      else ());
-    (if nontriv = [] & triv <> [] then []
+    (if nontriv = [] && triv <> [] then []
      else itlist (filter o filterpred) pats (!theorems));;
 
 (* ------------------------------------------------------------------------- *)

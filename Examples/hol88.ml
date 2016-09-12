@@ -5,7 +5,7 @@
 let (upto) = (--);;
 
 let is_neg_imp tm =
-  is_neg tm or is_imp tm;;
+  is_neg tm || is_imp tm;;
 
 let dest_neg_imp tm =
   try dest_imp tm with Failure _ ->
@@ -674,13 +674,13 @@ let (CHECK_ASSUME_TAC: thm_tactic) =
 
 let (FILTER_GEN_TAC: term -> tactic) =
   fun tm (asl,w) ->
-    if is_forall w & not (tm = fst(dest_forall w)) then
+    if is_forall w && not (tm = fst(dest_forall w)) then
         GEN_TAC (asl,w)
     else failwith "FILTER_GEN_TAC";;
 
 let (FILTER_DISCH_THEN: thm_tactic -> term -> tactic) =
   fun ttac tm (asl,w) ->
-    if is_neg_imp w & not (free_in tm (fst(dest_neg_imp w))) then
+    if is_neg_imp w && not (free_in tm (fst(dest_neg_imp w))) then
       DISCH_THEN ttac (asl,w)
     else failwith "FILTER_DISCH_THEN";;
 
@@ -702,7 +702,7 @@ let RES_CANON =
        let w = concl th in
        if (is_conj w) then
           let (th1,th2) = CONJ_PAIR th in (canon fl th1) @ (canon fl th2) else
-       if ((is_imp w) & not(is_neg w)) then
+       if ((is_imp w) && not(is_neg w)) then
           let ante,conc = dest_neg_imp w in
           if (is_conj ante) then
              let a,b = dest_conj ante in
@@ -722,7 +722,7 @@ let RES_CANON =
              let th1 = NOT_MP th (EXISTS (ante, newv) (ASSUME newa)) in
                  canon true (DISCH newa th1) else
              map (GEN_ALL o (DISCH ante)) (canon true (UNDISCH th)) else
-       if (is_eq w & (type_of (rand w) = `:bool`)) then
+       if (is_eq w && (type_of (rand w) = `:bool`)) then
           let (th1,th2) = EQ_IMP_RULE th in
           (if fl then [GEN_ALL th] else []) @
                        (canon true th1) @ (canon true th2) else
@@ -896,7 +896,7 @@ let (COND_CASES_TAC :tactic) =
       try not(is_const(fst(dest_cond tm)))
       with Failure _ -> false in
     fun (asl,w) ->
-      let cond = find_term (fun tm -> is_good_cond tm & free_in tm w) w in
+      let cond = find_term (fun tm -> is_good_cond tm && free_in tm w) w in
       let p,(t,u) = dest_cond cond in
       let inst = INST_TYPE [type_of t, `:A`] COND_CLAUSES in
       let (ct,cf) = CONJ_PAIR (SPEC u (SPEC t inst)) in

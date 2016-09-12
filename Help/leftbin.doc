@@ -6,18 +6,18 @@
 Parses iterated left-associated binary operator.
 
 \DESCRIBE
-If {p} is a parser for ``items'' of some kind, {s} is a parser for some 
-``separator'', {c} is a `constructor' function taking an element as parsed by 
-{s} and two other elements as parsed by {p} and giving a new such element, and 
-{e} is an error message, then {leftbin p s c e} will parse an iterated sequence 
-of items by {p} and separated by something parsed with {s}. It will repeatedly 
-apply the constructor function {c} to compose these elements into one, 
+If {p} is a parser for ``items'' of some kind, {s} is a parser for some
+``separator'', {c} is a `constructor' function taking an element as parsed by
+{s} and two other elements as parsed by {p} and giving a new such element, and
+{e} is an error message, then {leftbin p s c e} will parse an iterated sequence
+of items by {p} and separated by something parsed with {s}. It will repeatedly
+apply the constructor function {c} to compose these elements into one,
 associating to the left. For example, the input:
 {
   <p1> <s1> <p2> <s2> <p3> <s3> <p4>
 }
 meaning successive segments {pi} that are parsed by {p} and {sj} that are
-parsed by {s}, will result in 
+parsed by {s}, will result in
 {
   c (c s2 (c s1 p1 p2) p3) p4
 }
@@ -35,7 +35,7 @@ left to right, and return a pair consisting of the object derived from parsing
 processed.
 
 \SEEALSO
-++, ||, >>, a, atleast, elistof, finished, fix, listof, many, nothing,
+++, |||, >>, a, atleast, elistof, finished, fix, listof, many, nothing,
 possibly, rightbin, some.
 
 \ENDDOC

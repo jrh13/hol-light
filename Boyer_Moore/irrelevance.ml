@@ -129,7 +129,7 @@ let rec merge_numbered_lists xnl1 xnl2 =
 let find_irrelevant_literals tm =
    let can_be_falsified tmnl =
       let tml = map fst tmnl
-      in  (not (contains_recursive_fun tml)) or (is_singleton_rec_app tml)
+      in  (not (contains_recursive_fun tml)) || (is_singleton_rec_app tml)
    and tmnll = partition_literals (number_list (disj_list tm))
    in  let (irrels,rels) = partition can_be_falsified tmnll
    in  (itlist merge_numbered_lists irrels [],

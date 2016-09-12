@@ -194,7 +194,7 @@ let getChain = function
 let rec mk_sk cl ca ci =
     let ch = List.fold_left
         (fun ch (v,cci) ->
-          if (Array.get ca cci) or (isRootClauseIdx cl cci)
+          if (Array.get ca cci) || (isRootClauseIdx cl cci)
           then ch
           else (mk_sk cl ca cci)::ch)
         [] (getChain (Array.get cl ci)) in

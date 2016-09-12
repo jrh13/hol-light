@@ -51,7 +51,7 @@ let rec parse_ginfix op opup sof prs inp =
 
 let parse_general_infix op =
   let opcon = if op = "^" then mk_pow else mk_binop (assoc op maxima_ops) in
-  let constr = if op <> "^" & snd(get_infix_status op) = "right"
+  let constr = if op <> "^" && snd(get_infix_status op) = "right"
                then fun f e1 e2 -> f(opcon e1 e2)
                else fun f e1 e2 -> opcon(f e1) e2 in
   parse_ginfix op constr (fun x -> x);;

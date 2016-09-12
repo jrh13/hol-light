@@ -203,7 +203,7 @@ let BERNOULLIS =
 let BERNOULLI_CONV =
   let b_tm = `bernoulli` in
   fun tm -> let op,n = dest_comb tm in
-            if op <> b_tm or not(is_numeral n) then failwith "BERNOULLI_CONV"
+            if op <> b_tm || not(is_numeral n) then failwith "BERNOULLI_CONV"
             else hd(BERNOULLIS(dest_small_numeral n));;
 
 let BERNPOLY_CONV =

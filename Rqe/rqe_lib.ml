@@ -127,7 +127,7 @@ let can_match t1 t2 =
   try 
     let n1,_ = dest_var_or_const t1 in
     let n2,_ = dest_var_or_const t2 in
-      n1 = n2 & can (term_match [] t1) t2
+      n1 = n2 && can (term_match [] t1) t2
   with Failure _ -> false;;
 
 let dest_quant tm =

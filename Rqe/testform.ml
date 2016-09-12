@@ -165,7 +165,7 @@ let COMBINE_TESTFORMS =
       let ret = CHOOSE (nv,ord_thm) exists_thm in
         EQT_INTRO ret
   else 
-    if length ord_thms = 1 & snd(dest_exists(concl (hd ord_thms))) = t_tm then
+    if length ord_thms = 1 && snd(dest_exists(concl (hd ord_thms))) = t_tm then
       PURE_REWRITE_RULE[lem2] (EQF_INTRO (hd ex_thms)) else
     let ex_thms' = map (MATCH_MP NOT_EXISTS_CONJ_THM) ex_thms in
     let len = length ex_thms' in

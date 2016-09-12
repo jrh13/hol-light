@@ -440,7 +440,7 @@ module Proofobjects : Proofobject_primitives = struct
       | _ -> false;;
 
 
-  let do_share p = references p > 1 & not (trivial p);;
+  let do_share p = references p > 1 && not (trivial p);;
 
 
   (****** Types and terms modification ******)

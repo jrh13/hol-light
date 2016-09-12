@@ -2184,7 +2184,7 @@ let EXPAND_SUM_CONV =
   let rec conv tm =
     let smn,ftm = dest_comb tm in
     let s,mn = dest_comb smn in
-    if not(is_const s & fst(dest_const s) = "sum")
+    if not(is_const s && fst(dest_const s) = "sum")
     then failwith "EXPAND_SUM_CONV" else
     let mtm,ntm = dest_binop ns_tm mn in
     let m = dest_numeral mtm and n = dest_numeral ntm in

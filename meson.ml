@@ -132,7 +132,7 @@ module Meson = struct
     reset_consts,fol_of_const,hol_of_const
 
   let rec fol_of_term env consts tm =
-    if is_var tm & not (mem tm consts) then
+    if is_var tm && not (mem tm consts) then
       Fvar(fol_of_var tm)
     else
       let f,args = strip_comb tm in
@@ -229,10 +229,10 @@ module Meson = struct
 
   let rec istriv env x t =
     match t with
-      Fvar y -> y = x or
+      Fvar y -> y = x ||
                 (try let t' = rev_assoc y env in istriv env x t'
                  with Failure "find" -> false)
-    | Fnapp(f,args) -> exists (istriv env x) args & failwith "cyclic"
+    | Fnapp(f,args) -> exists (istriv env x) args && failwith "cyclic"
 
   let rec fol_unify offset tm1 tm2 sofar =
     match tm1,tm2 with
@@ -259,10 +259,10 @@ module Meson = struct
   (* ----------------------------------------------------------------------- *)
 
   let rec fol_eq insts tm1 tm2 =
-    tm1 == tm2 or
+    tm1 == tm2 ||
     match tm1,tm2 with
       Fnapp(f,fargs),Fnapp(g,gargs) ->
-          f = g & forall2 (fol_eq insts) fargs gargs
+          f = g && forall2 (fol_eq insts) fargs gargs
     | _,Fvar(x) ->
          (try let tm2' = rev_assoc x insts in
               fol_eq insts tm1 tm2'
@@ -275,7 +275,7 @@ module Meson = struct
           try istriv insts x tm2 with Failure _ -> false)
 
   let fol_atom_eq insts (p1,args1) (p2,args2) =
-    p1 = p2 & forall2 (fol_eq insts) args1 args2
+    p1 = p2 && forall2 (fol_eq insts) args1 args2
 
   (* ----------------------------------------------------------------------- *)
   (* Cacheing continuations. Very crude, but it works remarkably well.       *)
@@ -285,7 +285,7 @@ module Meson = struct
     let memory = ref [] in
     fun (gg,(insts,offset,size) as input) ->
       if exists (fun (_,(insts',_,size')) ->
-                     insts = insts' & (size <= size' or !meson_depth))
+                     insts = insts' && (size <= size' || !meson_depth))
           (!memory)
       then failwith "cachecont"
       else memory := input::(!memory); f input
@@ -374,7 +374,7 @@ module Meson = struct
     let pr = fst g in
     let newancestors = insertan insts g ancestors in
     let newstate = (g,newancestors),tup in
-    try if !meson_prefine & pr > 0 then failwith "meson_expand" else
+    try if !meson_prefine && pr > 0 then failwith "meson_expand" else
         let arules = assoc pr ancestors in
         meson_expand_cont 0 arules newstate cont
     with Cut -> failwith "meson_expand" | Failure _ ->
@@ -397,7 +397,7 @@ module Meson = struct
               (cacheconts(fun (gs,(newinsts,newoffset,newsize)) ->
                  let locin,globin = separate_insts offset pinsts newinsts in
                  let g' = Subgoal(g,gs,apprule,offset,locin) in
-                 if globin = insts & gs = [] then
+                 if globin = insts && gs = [] then
                    try cont(g',(globin,newoffset,size))
                    with Failure _ -> raise Cut
                  else
@@ -444,7 +444,7 @@ module Meson = struct
   let solve_goal rules incdepth min max incsize =
     let rec solve n g =
       if n > max then failwith "solve_goal: Too deep" else
-      (if !meson_chatty & !verbose then
+      (if !meson_chatty && !verbose then
         (Format.print_string
           ((string_of_int (!inferences))^" inferences so far. "^
               "Searching with maximum size "^(string_of_int n)^".");
@@ -456,7 +456,7 @@ module Meson = struct
       try let gi =
             if incdepth then expand_goal rules g n 100000 (fun x -> x)
             else expand_goal rules g 100000 n (fun x -> x) in
-          (if !meson_chatty & !verbose then
+          (if !meson_chatty && !verbose then
             (Format.print_string
               ("Goal solved with "^(string_of_int (!inferences))^
                " inferences.");
@@ -477,7 +477,7 @@ module Meson = struct
 
   let fol_of_hol_clauses =
     let eqt (a1,(b1,c1)) (a2, (b2,c2)) =
-     ((a1 = a2) & (b1 = b2) & (equals_thm c1 c2)) in
+     ((a1 = a2) && (b1 = b2) && (equals_thm c1 c2)) in
     let rec mk_contraposes n th used unused sofar =
       match unused with
         [] -> sofar
@@ -629,14 +629,14 @@ module Meson = struct
       itlist (fun e th -> CONV_RULE imp_elim_CONV (DISCH e th)) (hyp th2) th2 in
     fun tms -> let preds,funs = itlist fm_consts tms ([],[]) in
                let eqs0,noneqs = partition
-                  (fun (t,_) -> is_const t & fst(dest_const t) = "=") preds in
+                  (fun (t,_) -> is_const t && fst(dest_const t) = "=") preds in
                if eqs0 = [] then [] else
                let pcongs = map (create_congruence_axiom true) noneqs
                and fcongs = map (create_congruence_axiom false) funs in
                let preds1,_ =
                  itlist fm_consts (map concl (pcongs @ fcongs)) ([],[]) in
                let eqs1 = filter
-                 (fun (t,_) -> is_const t & fst(dest_const t) = "=") preds1 in
+                 (fun (t,_) -> is_const t && fst(dest_const t) = "=") preds1 in
                let eqs = union eqs0 eqs1 in
                let equivs =
                  itlist (union' equals_thm o create_equivalence_axioms)
@@ -649,7 +649,7 @@ module Meson = struct
 
   let perform_brand_modification =
     let rec subterms_irrefl lconsts tm acc =
-      if is_var tm or is_const tm then acc else
+      if is_var tm || is_const tm then acc else
       let fn,args = strip_comb tm in
       itlist (subterms_refl lconsts) args acc
     and subterms_refl lconsts tm acc =
@@ -732,8 +732,8 @@ module Meson = struct
         | _ -> l in
     let setify' le eq s = uniq' eq (sort le s) in
     let rec grab_constants tm acc =
-      if is_forall tm or is_exists tm then grab_constants (body(rand tm)) acc
-      else if is_iff tm or is_imp tm or is_conj tm or is_disj tm then
+      if is_forall tm || is_exists tm then grab_constants (body(rand tm)) acc
+      else if is_iff tm || is_imp tm || is_conj tm || is_disj tm then
         grab_constants (rand tm) (grab_constants (lhand tm) acc)
       else if is_neg tm then grab_constants (rand tm) acc
       else union (find_terms is_const tm) acc in

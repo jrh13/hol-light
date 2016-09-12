@@ -92,21 +92,21 @@ set_jrh_lexer;;
 let rawtoken =
   let collect (h,t) = end_itlist (^) (h::t) in
   let stringof p = atleast 1 p >> end_itlist (^) in
-  let simple_ident = stringof(some isalnum) || stringof(some issymb) in
+  let simple_ident = stringof(some isalnum) ||| stringof(some issymb) in
   let undertail = stringof (a "_") ++ possibly simple_ident >> collect in
-  let ident = (undertail || simple_ident) ++ many undertail >> collect in
+  let ident = (undertail ||| simple_ident) ++ many undertail >> collect in
   let septok = stringof(some issep) in
   let stringchar =
-      some (fun i -> i <> "\\" & i <> "\"")
-  || (a "\\" ++ some (fun _ -> true) >> fun (_,x) -> "\\"^x) in
-  let string = a "\"" ++ many stringchar ++ ((a "\"" >> K 0) || finished) >>
+      some (fun i -> i <> "\\" && i <> "\"")
+  ||| (a "\\" ++ some (fun _ -> true) >> fun (_,x) -> "\\"^x) in
+  let string = a "\"" ++ many stringchar ++ ((a "\"" >> K 0) ||| finished) >>
         (fun ((_,s),_) -> "\""^implode s^"\"") in
-  (string || some isbra || septok || ident || a "`");;
+  (string ||| some isbra ||| septok ||| ident ||| a "`");;
 
 let rec whitespace e i =
   let non_newline i =
-    if i <> [] & hd i <> "\n" then hd i,tl i else raise Noparse in
-  let rest_of_line = many non_newline ++ (a "\n" || (finished >> K "")) >>
+    if i <> [] && hd i <> "\n" then hd i,tl i else raise Noparse in
+  let rest_of_line = many non_newline ++ (a "\n" ||| (finished >> K "")) >>
     fun x,y -> itlist (^) x y in
   let comment_string =
     match !comment_token with
@@ -159,7 +159,7 @@ let ident' toks =
   | _ -> raise Noparse;;
 
 let unident' s =
-  if parses_as_binder s or can get_infix_status s or is_prefix s
+  if parses_as_binder s || can get_infix_status s || is_prefix s
     then ["",Resword "(",""; "",Ident s,""; "",Resword ")",""]
     else ["",Ident s,""];;
 
@@ -169,9 +169,9 @@ let rec cut_to b n c l toks =
   | tok::rst ->
      (match tok with
       | _,Resword s,_ | _,Ident s,_ ->
-          let x = not (n > 0 & mem s mizar_skip_bracketed) in
-          if mem s c & x then [tok],rst else
-          if b & mem s l & x then [],toks else
+          let x = not (n > 0 && mem s mizar_skip_bracketed) in
+          if mem s c && x then [tok],rst else
+          if b && mem s l && x then [],toks else
           let stp1,rst1 =
            (match s with
             | "(" | "[" -> cut_to true (n + 1) c l rst
@@ -229,7 +229,7 @@ let exec_thm s =
   try
     let ok,rst = exec_phrase false
       ("exec_thm_out := (("^s^") : thm);;") in
-    if not ok or rst <> "" then raise Noparse;
+    if not ok || rst <> "" then raise Noparse;
     !exec_thm_out
   with _ -> raise Noparse;;
 
@@ -239,7 +239,7 @@ let exec_thmlist_tactic s =
   try
     let ok,rst = exec_phrase false
       ("exec_thmlist_tactic_out := (("^s^") : thm list -> tactic);;") in
-    if not ok or rst <> "" then raise Noparse;
+    if not ok || rst <> "" then raise Noparse;
     !exec_thmlist_tactic_out
   with _ -> raise Noparse;;
 
@@ -249,7 +249,7 @@ let exec_thmtactic s =
   try
     let ok,rst = exec_phrase false
       ("exec_thmtactic_out := (("^s^") : thm -> tactic);;") in
-    if not ok or rst <> "" then raise Noparse;
+    if not ok || rst <> "" then raise Noparse;
     !exec_thmtactic_out
   with _ -> raise Noparse;;
 
@@ -259,7 +259,7 @@ let exec_tactic s =
   try
     let ok,rst = exec_phrase false
       ("exec_tactic_out := (("^s^") : tactic);;") in
-    if not ok or rst <> "" then raise Noparse;
+    if not ok || rst <> "" then raise Noparse;
     !exec_tactic_out
   with _ -> raise Noparse;;
 
@@ -269,7 +269,7 @@ let exec_conv s =
   try
     let ok,rst = exec_phrase false
       ("exec_conv_out := (("^s^") : conv);;") in
-    if not ok or rst <> "" then raise Noparse;
+    if not ok || rst <> "" then raise Noparse;
     !exec_conv_out
   with _ -> raise Noparse;;
 
@@ -316,12 +316,12 @@ let parse_by =
      ((a' "by" ++ many (parse_by_item ++ a' "," >> fst) >> snd) ++
        parse_by_item) >>
           (fun (x,y) -> x@[y])
-  || (nothing >> K [])
+  ||| (nothing >> K [])
   and parse_from_part =
      ((a' "from" ++ many (parse_by_item ++ a' "," >> fst) >> snd) ++
        parse_by_item) >>
           (fun (x,y) -> (x@[y]),true)
-  || (nothing >> K ([],false)) in
+  ||| (nothing >> K ([],false)) in
   let rec will_grow l =
     match l with
     | [] -> false
@@ -333,8 +333,8 @@ let parse_by =
         fun (((x,(y,z)),_),_) ->
           let x' = map by_item_of_toks x in
           let y' = map by_item_of_toks y in
-          By(x',y',z or will_grow (x'@y')))
-  || (finished >> K (Proof_expected true));;
+          By(x',y',z || will_grow (x'@y')))
+  ||| (finished >> K (Proof_expected true));;
 
 let rec parse_labels toks =
   match toks with
@@ -438,7 +438,7 @@ let split_step toks =
   let toks2,by_part = cut_by_part [] toks1 in
   let toks3,labs_part = cut_labs toks2 [] in
   let front_part,hol_part = cut_front toks3 [] in
-  if front_part <> [] & middle (hd front_part) = Resword "exec" then
+  if front_part <> [] && middle (hd front_part) = Resword "exec" then
     let ml_tok = tok_of_toks ((tl front_part)@hol_part@labs_part@by_part) in
     [[hd front_part]; [ml_tok]; []; []; semi_part]
   else
@@ -463,10 +463,10 @@ let parse_step env toks =
         | (_,Resword key,_)::_ ->
            (match key,(tl front_part),(string_of_toks semi_part) with
             | "now",[],"" ->
-                if hol_part <> [] or by_part <> [] then raise Noparse else
+                if hol_part <> [] || by_part <> [] then raise Noparse else
                 -1,src,Now(labs,Proof_expected false)
             | "let",rst,";" ->
-                if labs_part <> [] or by_part <> [] then raise Noparse else
+                if labs_part <> [] || by_part <> [] then raise Noparse else
                 let x = (fst o fst o fst o
                   many ident' ++ a' "be" ++ finished) rst in
                 let n,t = type_of_hol hol_part in
@@ -482,18 +482,18 @@ let parse_step env toks =
                 if n <> 0 then n,src,Error(string_of_toks toks,just) else
                 -1,src,Thus(t,labs,just)
             | "qed",[],_ ->
-                if hol_part <> [] or labs_part <> [] then raise Noparse else
+                if hol_part <> [] || labs_part <> [] then raise Noparse else
                 -1,src,Qed just
             | "proof",[],"" ->
-                if hol_part <> [] or labs_part <> [] or by_part <> [] then
+                if hol_part <> [] || labs_part <> [] || by_part <> [] then
                   raise Noparse else
                 -1,src,Bracket_proof
             | "end",[],";" ->
-                if hol_part <> [] or labs_part <> [] or by_part <> [] then
+                if hol_part <> [] || labs_part <> [] || by_part <> [] then
                   raise Noparse else
                 -1,src,Bracket_end
             | "take",[],";" ->
-                if labs_part <> [] or by_part <> [] then raise Noparse else
+                if labs_part <> [] || by_part <> [] then raise Noparse else
                 let n,t = term_of_hol false env hol_part in
                 if n <> 0 then n,src,Error(string_of_toks toks,No_steps) else
                 -1,src,Take t
@@ -532,10 +532,10 @@ let parse_step env toks =
                 if n <> 0 then n,src,Error(string_of_toks toks,No_steps) else
                 -1,src,Set(mk_eq(mk_var(w,type_of t),t),labs)
             | "cases",[],_ ->
-                if hol_part <> [] or labs_part <> [] then raise Noparse else
+                if hol_part <> [] || labs_part <> [] then raise Noparse else
                 -1,src,Cases(just,[])
             | "case",[],";" ->
-                if hol_part <> [] or labs_part <> [] or by_part <> [] then
+                if hol_part <> [] || labs_part <> [] || by_part <> [] then
                   raise Noparse else
                 -1,src,Bracket_case
             | "suppose",[],";" ->
@@ -870,7 +870,7 @@ let step_of_obligation prefix lab tl ass tm =
     | t::_ -> let l',l'' = partition ((=) (type_of t) o type_of) l in
         step_of_substep prefix' (Let l')::lets l'' in
   step_of_substep prefix
-    (if tl = [] & ass = [] then Have(tm,[lab],hole) else
+    (if tl = [] && ass = [] then Have(tm,[lab],hole) else
     let ll = lets tl in
     let intros = ll@(map (fun a ->
          step_of_substep prefix' (Assume(a,[]))) ass) in
@@ -1179,15 +1179,15 @@ let tactic_of_by fake l l' b =
     let thms' = find_thms l' true in
     let thms'' = thms@thms' in
     let (name,tac),grow = find_tactic (l@l') in
-    if fake & (mem Hole l or mem Hole l') or not (!growth_mode) & grow then
+    if fake && (mem Hole l || mem Hole l') || not (!growth_mode) && grow then
       -2,FAKE_TAC fake thms'' g else
     let labs = find_labs l in
-    let full_asl = hor < 0 or mem "*" labs in
+    let full_asl = hor < 0 || mem "*" labs in
    (try
       0,((FILTER_ASSUMS (fun _,(x,_) -> x <> "=") THEN
         FILTER_ASSUMS
          (fun n,(x,_) ->
-            mem x labs or n < hor or (n = 0 & mem "-" labs) or full_asl) THEN
+            mem x labs || n < hor || (n = 0 && mem "-" labs) || full_asl) THEN
         MAP_ASSUMS (fun l,th -> l,PURE_REWRITE_RULE sets th) THEN
         MIZAR_NEXT' (PURE_REWRITE_TAC sets) THEN
        (fun (asl',w' as g') ->
@@ -1511,7 +1511,7 @@ let ee s =
   let l,t = top_goal() in
   let env = itlist union (map frees l) (frees t) in
   let proof,step1,rst = steps_of_toks1 true false env toks in
-  if rst <> [] or step1 <> None then failwith "ee" else
+  if rst <> [] || step1 <> None then failwith "ee" else
   (e o EVERY o map (fun step -> snd o tactic_of_step false step)) proof;;
 
 let check_proof steps =
@@ -1530,7 +1530,7 @@ let check_proof steps =
   let _,gl,j = gs in
   if length gl <> 1 then failwith "thm" else
   let (asl,w) = hd gl in
-  if length asl <> 1 or w <> thesis_var then failwith "thm" else
+  if length asl <> 1 || w <> thesis_var then failwith "thm" else
   let a = (concl o snd o hd) asl in
   let src' = src_of_steps steps' in
   steps',count_errors src',j ([],[a,thesis_var],[]) [ASSUME a];;
@@ -1591,8 +1591,8 @@ let rec number_labels n labels =
   | [] -> []
   | (oldlabs,count)::rst ->
       let newlabs,n' =
-       (if !extra_labels > 1 or !count > 0 or
-          (!extra_labels > 0 & exists isnumber oldlabs)
+       (if !extra_labels > 1 || !count > 0 ||
+          (!extra_labels > 0 && exists isnumber oldlabs)
         then [string_of_int n],(n + 1) else [],n) in
       (oldlabs,newlabs)::(number_labels n' rst);;
 
@@ -1788,7 +1788,7 @@ let last_thm () =
 
 let check_file_verbose name lemma =
   let l = String.length name in
-  if l >= 3 & String.sub name (l - 3) 3 = ".ml" then
+  if l >= 3 && String.sub name (l - 3) 3 = ".ml" then
    (let _ = exec_phrase false ("loadt \""^name^"\";;") in
     (0,0,0),TRUTH)
   else
@@ -1819,7 +1819,7 @@ let check_file_verbose name lemma =
     last_thm_internal' := Some y';
    (match lemma with
     | Some s ->
-        let _ = exec_phrase (!silent_server < 2 & n1 + n2 + n3 = 0)
+        let _ = exec_phrase (!silent_server < 2 && n1 + n2 + n3 = 0)
          ("let "^s^" = "^
           "match !last_thm_internal' with Some y -> y | None -> TRUTH;;") in
         by_item_cache := undefined;

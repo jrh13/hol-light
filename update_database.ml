@@ -124,7 +124,7 @@ exec (
  (if String.sub Sys.ocaml_version 0 1 = "4"
   then "values: ((path_t * value_description) * bool ref) tbl;\n"
   else "values: (path_t * value_description) tbl;\n") ^
- (if (let v = String.sub Sys.ocaml_version 0 4 in v = "3.09" or v = "3.10")
+ (if (let v = String.sub Sys.ocaml_version 0 4 in v = "3.09" || v = "3.10")
   then ""
   else "annotations: dummy;\n") ^
 " constrs: dummy;
@@ -242,12 +242,12 @@ let search =
     match (l1,l2) with
       [],_ -> true
     | _,[] -> false
-    | (h1::t1,h2::t2) -> h1 = h2 & immediatesublist t1 t2 in
+    | (h1::t1,h2::t2) -> h1 = h2 && immediatesublist t1 t2 in
   let rec sublist l1 l2 =
     match (l1,l2) with
       [],_ -> true
     | _,[] -> false
-    | (h1::t1,h2::t2) -> immediatesublist l1 l2 or sublist l1 t2 in
+    | (h1::t1,h2::t2) -> immediatesublist l1 l2 || sublist l1 t2 in
   let exists_subterm_satisfying p (n,th) = can (find_term p) (concl th)
   and name_contains s (n,th) = sublist (explode s) (explode n) in
   let rec filterpred tm =
@@ -264,7 +264,7 @@ let search =
          ("Ignoring plain variables in search: "^
           end_itlist (fun s t -> s^", "^t) (map (fst o dest_var) triv))
      else ());
-    (if nontriv = [] & triv <> [] then []
+    (if nontriv = [] && triv <> [] then []
      else sort (increasing fst)
                (itlist (filter o filterpred) pats (!theorems)));;
 

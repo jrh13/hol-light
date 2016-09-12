@@ -74,7 +74,7 @@ let rec localdefs tm (n,defs,lfn) =
     let n2 = n1 + 1 in
     let v2 = propvar n2 in
     n2,v2,(tm' |-> v2) defs1,(v2 |-> tm) lfn1
-  else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+  else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
     let n1,v1,defs1,lfn1 = localdefs (lhand tm) (n,defs,lfn) in
     let n2,v2,defs2,lfn2 = localdefs (rand tm) (n1,defs1,lfn1) in
     let tm' = mk_comb(mk_comb(rator(rator tm),v1),v2) in
@@ -95,7 +95,7 @@ let rec transvar (n,tm,vdefs,lfn) =
   if is_neg tm then
     let n1,tm1,vdefs1,lfn1 = transvar (n,rand tm,vdefs,lfn) in
     n1,mk_comb(rator tm,tm1),vdefs1,lfn1
-  else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+  else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
     let n1,tm1,vdefs1,lfn1 = transvar (n,lhand tm,vdefs,lfn) in
     let n2,tm2,vdefs2,lfn2 = transvar (n1,rand tm,vdefs1,lfn1) in
     n2,mk_comb(mk_comb(rator(rator tm),tm1),tm2),vdefs2,lfn2
@@ -114,11 +114,11 @@ let exploit_conjunctive_structure = ref true;;
 (* Check if something is clausal (slightly stupid).                          *)
 (* ------------------------------------------------------------------------- *)
 
-let is_literal tm = is_var tm or is_neg tm & is_var(rand tm);;
+let is_literal tm = is_var tm || is_neg tm && is_var(rand tm);;
 
 let is_clausal tm =
   let djs = disjuncts tm in
-  forall is_literal djs & list_mk_disj djs = tm;;
+  forall is_literal djs && list_mk_disj djs = tm;;
 
 (* ------------------------------------------------------------------------- *)
 (* Now do the definitional arrangement but not wastefully at the top.        *)

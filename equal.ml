@@ -31,7 +31,7 @@ let rhs = snd o dest_eq;;
 
 let mk_primed_var =
   let rec svariant avoid s =
-    if mem s avoid or (can get_const_type s & not(is_hidden s)) then
+    if mem s avoid || (can get_const_type s && not(is_hidden s)) then
       svariant avoid (s^"'")
     else s in
   fun avoid v ->

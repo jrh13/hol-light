@@ -310,7 +310,7 @@ module Hol : Hol_kernel = struct
       Var(_,_) -> mem tm acc
     | Const(_,_) -> true
     | Abs(bv,bod) -> freesin (bv::acc) bod
-    | Comb(s,t) -> freesin acc s & freesin acc t
+    | Comb(s,t) -> freesin acc s && freesin acc t
 
 (* ------------------------------------------------------------------------- *)
 (* Whether a variable (or constant in fact) is free in a term.               *)
@@ -318,8 +318,8 @@ module Hol : Hol_kernel = struct
 
   let rec vfree_in v tm =
     match tm with
-      Abs(bv,bod) -> v <> bv & vfree_in v bod
-    | Comb(s,t) -> vfree_in v s or vfree_in v t
+      Abs(bv,bod) -> v <> bv && vfree_in v bod
+    | Comb(s,t) -> vfree_in v s || vfree_in v t
     | _ -> Pervasives.compare tm v = 0
 
 (* ------------------------------------------------------------------------- *)
@@ -353,12 +353,12 @@ module Hol : Hol_kernel = struct
         Var(_,_) -> rev_assocd tm ilist tm
       | Const(_,_) -> tm
       | Comb(s,t) -> let s' = vsubst ilist s and t' = vsubst ilist t in
-                     if s' == s & t' == t then tm else Comb(s',t')
+                     if s' == s && t' == t then tm else Comb(s',t')
       | Abs(v,s) -> let ilist' = filter (fun (t,x) -> x <> v) ilist in
                     if ilist' = [] then tm else
                     let s' = vsubst ilist' s in
                     if s' == s then tm else
-                    if exists (fun (t,x) -> vfree_in v t & vfree_in x s) ilist'
+                    if exists (fun (t,x) -> vfree_in v t && vfree_in x s) ilist'
                     then let v' = variant [s'] v in
                          Abs(v',vsubst ((v',v)::ilist') s)
                     else Abs(v,s') in
@@ -385,11 +385,11 @@ module Hol : Hol_kernel = struct
       | Const(c,ty) -> let ty' = type_subst tyin ty in
                        if ty' == ty then tm else Const(c,ty')
       | Comb(f,x)   -> let f' = inst env tyin f and x' = inst env tyin x in
-                       if f' == f & x' == x then tm else Comb(f',x')
+                       if f' == f && x' == x then tm else Comb(f',x')
       | Abs(y,t)    -> let y' = inst [] tyin y in
                        let env' = (y,y')::env in
                        try let t' = inst env' tyin t in
-                           if y' == y & t' == t then tm else Abs(y',t')
+                           if y' == y && t' == t then tm else Abs(y',t')
                        with (Clash(w') as ex) ->
                        if w' <> y' then raise ex else
                        let ifrees = map (inst [] tyin) (frees t) in
@@ -439,7 +439,7 @@ module Hol : Hol_kernel = struct
                        else ordav oenv x1 x2
 
   let rec orda env tm1 tm2 =
-    if tm1 == tm2 & forall (fun (x,y) -> x = y) env then 0 else
+    if tm1 == tm2 && forall (fun (x,y) -> x = y) env then 0 else
     match (tm1,tm2) with
       Var(x1,ty1),Var(x2,ty2) -> ordav env tm1 tm2
     | Const(x1,ty1),Const(x2,ty2) -> Pervasives.compare tm1 tm2
@@ -478,7 +478,7 @@ module Hol : Hol_kernel = struct
   let rec term_image f l =
     match l with
       h::t -> let h' = f h and t' = term_image f t in
-              if h' == h & t' == t then l else term_union [h'] t'
+              if h' == h && t' == t then l else term_union [h'] t'
     | [] -> l
 
 (* ------------------------------------------------------------------------- *)

@@ -153,7 +153,7 @@ let SEMIRING_NORMALIZERS_CONV =
 
     let POWVAR_MUL_CONV tm =
       let l,r = dest_mul tm in
-      if is_semiring_constant l & is_semiring_constant r
+      if is_semiring_constant l && is_semiring_constant r
       then SEMIRING_MUL_CONV tm else
       try let lx,ln = dest_pow l in
           try let rx,rn = dest_pow r in
@@ -192,7 +192,7 @@ let SEMIRING_NORMALIZERS_CONV =
         let lop,r = dest_comb bod in
         if not(is_comb lop) then REFL tm else
         let op,l = dest_comb lop in
-        if op = pow_tm & is_numeral r then
+        if op = pow_tm && is_numeral r then
           let th1 = INST [l,x_tm; r,p_tm; ntm,q_tm] pthm_34 in
           let l,r = dest_comb(rand(concl th1)) in
           TRANS th1 (AP_TERM l (NUM_MULT_CONV r))
@@ -207,7 +207,7 @@ let SEMIRING_NORMALIZERS_CONV =
       fun tm ->
         let lop,r = dest_comb tm in
         let op,l = dest_comb lop in
-        if op <> pow_tm or not(is_numeral r) then failwith "MONOMIAL_POW_CONV"
+        if op <> pow_tm || not(is_numeral r) then failwith "MONOMIAL_POW_CONV"
         else if r = zeron_tm then INST [l,x_tm] pthm_35
         else if r = onen_tm then INST [l,x_tm] pthm_36
         else MONOMIAL_DEONE(MONOMIAL_POW tm l r) in
@@ -221,7 +221,7 @@ let SEMIRING_NORMALIZERS_CONV =
         if is_semiring_constant tm then one_tm else
         try let lop,r = dest_comb tm in
             let op,l = dest_comb lop in
-            if op = pow_tm & is_numeral r then l else failwith ""
+            if op = pow_tm && is_numeral r then l else failwith ""
         with Failure _ -> tm in
       let vorder x y =
         if x = y then 0
@@ -314,16 +314,16 @@ let SEMIRING_NORMALIZERS_CONV =
 
     let MONOMIAL_ADD_CONV tm =
       let l,r = dest_add tm in
-      if is_semiring_constant l & is_semiring_constant r
+      if is_semiring_constant l && is_semiring_constant r
       then SEMIRING_ADD_CONV tm else
       let th1 =
-        if is_mul l & is_semiring_constant(lhand l) then
-          if is_mul r & is_semiring_constant(lhand r) then
+        if is_mul l && is_semiring_constant(lhand l) then
+          if is_mul r && is_semiring_constant(lhand r) then
             INST [lhand l,a_tm; lhand r,b_tm; rand r,m_tm] pthm_02
           else
             INST [lhand l,a_tm; r,m_tm] pthm_03
         else
-          if is_mul r & is_semiring_constant(lhand r) then
+          if is_mul r && is_semiring_constant(lhand r) then
             INST [lhand r,a_tm; l,m_tm] pthm_04
           else
             INST [r,m_tm] pthm_05 in
@@ -512,18 +512,18 @@ let SEMIRING_NORMALIZERS_CONV =
 (* ------------------------------------------------------------------------- *)
 
     let rec POLYNOMIAL_CONV tm =
-      if not(is_comb tm) or is_semiring_constant tm then REFL tm else
+      if not(is_comb tm) || is_semiring_constant tm then REFL tm else
       let lop,r = dest_comb tm in
       if lop = neg_tm then
          let th1 = AP_TERM lop (POLYNOMIAL_CONV r) in
          TRANS th1 (POLYNOMIAL_NEG_CONV (rand(concl th1)))
       else if not(is_comb lop) then REFL tm else
          let op,l = dest_comb lop in
-         if op = pow_tm & is_numeral r then
+         if op = pow_tm && is_numeral r then
            let th1 = AP_THM (AP_TERM op (POLYNOMIAL_CONV l)) r in
            TRANS th1 (POLYNOMIAL_POW_CONV (rand(concl th1)))
          else
-           if op = add_tm or op = mul_tm or op = sub_tm then
+           if op = add_tm || op = mul_tm || op = sub_tm then
              let th1 = MK_COMB(AP_TERM op (POLYNOMIAL_CONV l),
                                POLYNOMIAL_CONV r) in
              let fn = if op = add_tm then POLYNOMIAL_ADD_CONV

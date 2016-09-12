@@ -377,7 +377,7 @@ let ABS' v =
 
 let ALPHA_EQ' s' t' =
   fun (Lazy((s,t),f) as inp) ->
-        if s' = s & t' = t then inp else
+        if s' = s && t' = t then inp else
         Lazy((s',t'),
              cache(fun () -> EQ_MP (ALPHA (mk_eq(s,t)) (mk_eq(s',t')))
                                    (f ())));;
@@ -385,11 +385,11 @@ let ALPHA_EQ' s' t' =
 let rec PROVE_EQUAL eqv (tm1,tm2 as tmp) =
   if tm1 = tm2 then REFL' tm1 else
   try prove_equal eqv tmp with Failure _ ->
-  if is_comb tm1 & is_comb tm2 then
+  if is_comb tm1 && is_comb tm2 then
     let f1,x1 = dest_comb tm1
     and f2,x2 = dest_comb tm2 in
     MK_COMB'(PROVE_EQUAL eqv (f1,f2),PROVE_EQUAL eqv (x1,x2))
-  else if is_abs tm1 & is_abs tm2 then
+  else if is_abs tm1 && is_abs tm2 then
     let x1,bod1 = dest_abs tm1
     and x2,bod2 = dest_abs tm2 in
     let gv = genvar(type_of x1) in
@@ -418,16 +418,16 @@ let PROVE_COMPLEMENTARY eqv th1 th2 =
 (* ------------------------------------------------------------------------- *)
 
 let rec test_eq eqv (tm1,tm2) env =
-  if is_comb tm1 & is_comb tm2 then
+  if is_comb tm1 && is_comb tm2 then
     let f1,x1 = dest_comb tm1
     and f2,x2 = dest_comb tm2 in
-    test_eq eqv (f1,f2) env & test_eq eqv (x1,x2) env
-  else if is_abs tm1 & is_abs tm2 then
+    test_eq eqv (f1,f2) env && test_eq eqv (x1,x2) env
+  else if is_abs tm1 && is_abs tm2 then
     let x1,bod1 = dest_abs tm1
     and x2,bod2 = dest_abs tm2 in
     let gv = genvar(type_of x1) in
     test_eq eqv (vsubst[gv,x1] bod1,vsubst[gv,x2] bod2) env
-  else if is_var tm1 & can (rev_assoc tm1) env then
+  else if is_var tm1 && can (rev_assoc tm1) env then
     test_eq eqv (rev_assoc tm1 env,tm2) []
   else can (prove_equal eqv) (tm1,tm2);;
 
@@ -478,11 +478,11 @@ let rec term_fmatch vars vtm ctm env =
     if can (rev_assoc vtm) env then
       term_fmatch vars (rev_assoc vtm env) ctm env
     else if aconv vtm ctm then env else (ctm,vtm)::env
-  else if is_comb vtm & is_comb ctm then
+  else if is_comb vtm && is_comb ctm then
     let fv,xv = dest_comb vtm
     and fc,xc = dest_comb ctm in
     term_fmatch vars fv fc (term_fmatch vars xv xc env)
-  else if is_abs vtm & is_abs ctm then
+  else if is_abs vtm && is_abs ctm then
     let xv,bodv = dest_abs vtm
     and xc,bodc = dest_abs ctm in
     let gv = genvar(type_of xv) and gc = genvar(type_of xc) in
@@ -495,7 +495,7 @@ let rec term_fmatch vars vtm ctm env =
 let rec check_consistency env =
   match env with
     [] -> true
-  | (c,v)::es -> forall (fun (c',v') -> v' <> v or c' = c) es;;
+  | (c,v)::es -> forall (fun (c',v') -> v' <> v || c' = c) es;;
 
 let separate_insts env =
   let tyin = itlist (fun (c,v) -> type_match (type_of v) (type_of c))
@@ -568,7 +568,7 @@ let rec DISEQUALITIES ths =
         let t1,t2 = dest_eq (rand(concl th)) in
         let f1,args1 = strip_comb t1
         and f2,args2 = strip_comb t2 in
-        if f1 <> f2 or length args1 <> length args2
+        if f1 <> f2 || length args1 <> length args2
         then th::(GSYM th)::(DISEQUALITIES oths) else
         let zargs = zip args1 args2 in
         let diffs = filter (fun (a1,a2) -> a1 <> a2) zargs in
@@ -589,7 +589,7 @@ let ATOMINEQUALITIES th1 th2 =
   let t2 = dest_neg t2' in
   let f1,args1 = strip_comb t1
   and f2,args2 = strip_comb t2 in
-  if f1 <> f2 or length args1 <> length args2 then [] else
+  if f1 <> f2 || length args1 <> length args2 then [] else
   let zargs = zip args1 args2 in
   let diffs = filter (fun (a1,a2) -> a1 <> a2) zargs in
   if length diffs <> 1 then [] else

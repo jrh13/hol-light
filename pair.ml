@@ -402,7 +402,7 @@ let let_CONV =
     TRANS th1 th2 in
   fun tm ->
     let ltm,pargs = strip_comb tm in
-    if fst(dest_const ltm) <> "LET" or pargs = [] then failwith "let_CONV" else
+    if fst(dest_const ltm) <> "LET" || pargs = [] then failwith "let_CONV" else
     let abstm = hd pargs in
     let vs,bod = strip_gabs abstm in
     let es = tl pargs in

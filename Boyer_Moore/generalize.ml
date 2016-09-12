@@ -26,9 +26,9 @@
 (*----------------------------------------------------------------------------*)
 
 let is_generalizable accessors tm =
-   not ((is_var tm) or
-        (is_explicit_value_template tm) or
-        (is_eq tm) or
+   not ((is_var tm) ||
+        (is_explicit_value_template tm) ||
+        (is_eq tm) ||
         (try(mem ((fst o dest_const o fst o strip_comb) tm) accessors) 
 with Failure _ -> false));;
 
@@ -54,7 +54,7 @@ let generalizable_subterms accessors tm =
 let minimal_common_subterms tml =
    let tml' = setify tml
    in  filter
-        (fun tm ->  not (exists (fun tm' -> (is_subterm tm' tm) & (not (tm' = tm))) tml'))
+        (fun tm ->  not (exists (fun tm' -> (is_subterm tm' tm) && (not (tm' = tm))) tml'))
          tml';;
 
 (*----------------------------------------------------------------------------*)
@@ -70,11 +70,11 @@ let minimal_common_subterms tml =
 
 let to_be_generalized tm tml gen =
  try (let (l,r) = dest_eq (dest_neg tm)
-  in  if ((is_subterm gen l) & (is_subterm gen r))
+  in  if ((is_subterm gen l) && (is_subterm gen r))
       then true
       else failwith "") with Failure _ ->
  try (let (l,r) = dest_eq tm
-  in  if ((is_subterm gen l) & (is_subterm gen r))
+  in  if ((is_subterm gen l) && (is_subterm gen r))
       then true
       else failwith "") with Failure _ ->
  (exists (is_subterm gen) tml);;
@@ -169,7 +169,7 @@ try
   in  let ([],conc) = dest_thm th
   in  let conc_vars = frees conc
   in  let good_subterm subtm =
-         ((can (term_match [] subtm) tm) & ((subtract conc_vars (frees subtm)) = []))
+         ((can (term_match [] subtm) tm) && ((subtract conc_vars (frees subtm)) = []))
   in  let subtms = rev (find_terms good_subterm conc)
   in  tryfind apply_gen_lemma' subtms
  ) with Failure _ -> failwith "apply_gen_lemma";;
@@ -379,15 +379,15 @@ let rec contains_any tm args =
       contains_any v args
     else
       let l,r = dest_comb tm in
-      (contains_any l args) or (contains_any r args);;
+      (contains_any l args) || (contains_any r args);;
 
 let is_rec_type tm = try( mem ((fst o dest_type o type_of) tm) (shells()) ) with Failure _ -> false;;
 
 let is_generalizable_subterm bad tm =
     (is_rec_type tm) &
-    not ( (is_var tm) or 
-          (is_const tm) or
-          (is_numeral tm) or
+    not ( (is_var tm) || 
+          (is_const tm) ||
+          (is_numeral tm) ||
           (contains_any tm bad) );; 
 
 (*----------------------------------------------------------------------------*)
@@ -401,7 +401,7 @@ let is_generalizable_subterm bad tm =
 (*----------------------------------------------------------------------------*)
 
 let is_suitable_proposal s phi gens =
-    ( forall (fun tm -> mem tm gens) s ) & (exists (fun tm -> lcount tm gens > 1) s);;
+    ( forall (fun tm -> mem tm gens) s ) && (exists (fun tm -> lcount tm gens > 1) s);;
 
 
 let checksuitableeq = ref true;; (* equation criterion *)
@@ -411,7 +411,7 @@ let is_eq_suitable t eq =
     if (not !checksuitableeq) then true
     else if (not (is_eq eq)) then false
     else let l,r = dest_eq eq in
-    if ((is_subterm t r) & (is_subterm t l)) then true 
+    if ((is_subterm t r) && (is_subterm t l)) then true 
     else length(find_bm_terms ((=) t) eq) > 1;;
        
 
@@ -478,8 +478,8 @@ let rec separate f v v' allrpos tm =
     in if (is_comb tm) then ( 
          let (op,args) = strip_comb tm
          in let recpos = get_rec_pos_of_fun op
-         in if ((allrpos) & not (op = `(=)`)) 
-            then (list_mk_comb (op,(map (fun (t,i) -> replace t v v' ((i = recpos) or (recpos = 0))) (number_list args))))
+         in if ((allrpos) && not (op = `(=)`)) 
+            then (list_mk_comb (op,(map (fun (t,i) -> replace t v v' ((i = recpos) || (recpos = 0))) (number_list args))))
             else if (op = `(=)`) 
                  then (list_mk_comb(op,[replace (hd args) v v' true;replace ((hd o tl) args) v v' true]))
             else if (op = f) 
@@ -494,18 +494,18 @@ let rec generalized_apart_successfully v v' tm tm' =
     else if (is_eq tm) then ( let (tm1,tm2) = dest_eq tm 
                            in let (tm1',tm2') = dest_eq tm'
                            in (generalized_apart_successfully v v' tm1 tm1') 
-                            & (generalized_apart_successfully v v' tm2 tm2') )           
+                            && (generalized_apart_successfully v v' tm2 tm2') )           
     else ( let av = all_variables tm
            in let av' = all_variables tm'
            in let varsub = List.combine av av'
-           in ((mem (v,v') varsub) & (mem v av'))  );;
+           in ((mem (v,v') varsub) && (mem v av'))  );;
 
 let useful_apart_generalization v v' tm gen =
     let eqssub = List.combine (all_equations tm) (all_equations gen)
-    in let eqsok = forall (fun (x,y) -> (x=y) or (generalized_apart_successfully v v' x y)) eqssub
+    in let eqsok = forall (fun (x,y) -> (x=y) || (generalized_apart_successfully v v' x y)) eqssub
     in let countercheck = try counter_check 5 gen with Failure s -> 
     warn true ("Could not generate counter example: " ^ s) ; true
-    in eqsok & (generalized_apart_successfully v v' tm gen) & countercheck;;
+    in eqsok && (generalized_apart_successfully v v' tm gen) && countercheck;;
 
 let generalize_Apart tm =
     let is_fun tm = (try( mem ((fst o dest_const o fst o strip_comb) tm) (defs_names ()) ) with Failure _ -> false)
@@ -515,9 +515,9 @@ let generalize_Apart tm =
            let r = get_rec_pos_of_fun op
            in let arg_filter args args' = 
                  (let v = el (r-1) args
-                  in (is_var v) & (mem v (snd (remove_el r args'))))
+                  in (is_var v) && (mem v (snd (remove_el r args'))))
            in let match_filter (op',args') =
-                  ((op' = op) & (arg_filter args args'))
+                  ((op' = op) && (arg_filter args args'))
            in can (find match_filter) dfs )
     in let (f,args) = try( find (fun (op,args) -> find_f (op,args) dfs) dfs ) with Failure _ -> failwith ""
     in let v = el ((get_rec_pos_of_fun f) -1) args
@@ -528,7 +528,7 @@ let generalize_Apart tm =
             in let restpcs = subtract pcs [f]
             in let recposs = map get_rec_pos_of_fun restpcs
             in let recpos = try (find ((<) 0) recposs) with Failure _ -> 0
-            in let gen = if (forall (fun x -> (x = 0) or (x = recpos)) recposs) 
+            in let gen = if (forall (fun x -> (x = 0) || (x = recpos)) recposs) 
                          then separate f v v' true tm
                          else failwith "not same recpos for all functions"
             in if (useful_apart_generalization v v' tm gen) then (gen,[v',v])
@@ -541,7 +541,7 @@ let generalize_Apart tm =
 let checkgen = ref true;;
 
 let generalize_heuristic_ext (tm,(ind:bool)) =
-if (mem tm !my_gen_terms & !checkgen) then failwith ""
+if (mem tm !my_gen_terms && !checkgen) then failwith ""
 else 
 try
  (let ELIM_LEMMA lemma th =

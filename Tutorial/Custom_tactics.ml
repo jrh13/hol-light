@@ -28,7 +28,7 @@ let ortho =
 
 let opairs = filter ortho (allpairs (fun a b -> a,b) points points);;
 
-let otrips = filter (fun (a,b,c) -> ortho(a,b) & ortho(a,c))
+let otrips = filter (fun (a,b,c) -> ortho(a,b) && ortho(a,c))
                     (allpairs (fun a (b,c) -> a,b,c) points opairs);;
 
 let hol_of_value =
@@ -71,11 +71,11 @@ let rec KOCHEN_SPECKER_TAC set_0 set_1 =
     ACCEPT_TAC(EQ_MP (EQF_INTRO th1) th2)
   else
     let prf_1 = filter (fun (a,b) -> mem a set_0) opairs
-    and prf_0 = filter (fun (a,b,c) -> mem a set_1 & mem b set_1) otrips in
+    and prf_0 = filter (fun (a,b,c) -> mem a set_1 && mem b set_1) otrips in
     let new_1 = map snd prf_1 and new_0 = map (fun (a,b,c) -> c) prf_0 in
     let set_0' = union new_0 set_0 and set_1' = union new_1 set_1 in
     let del_0 = subtract set_0' set_0 and del_1 = subtract set_1' set_1 in
-    if del_0 <> [] or del_1 <> [] then
+    if del_0 <> [] || del_1 <> [] then
        let prv_0 x =
          let a,b,_ = find (fun (a,b,c) -> c = x) prf_0 in DEDUCE_POINT_TAC [a;b]
        and prv_1 x =
@@ -87,7 +87,7 @@ let rec KOCHEN_SPECKER_TAC set_0 set_1 =
        [REPEAT CONJ_TAC THENL tacs; ALL_TAC] THEN
       KOCHEN_SPECKER_TAC set_0' set_1'
     else
-      let v = find (fun i -> not(mem i set_0) & not(mem i set_1)) points in
+      let v = find (fun i -> not(mem i set_0) && not(mem i set_1)) points in
       ASM_CASES_TAC (ppoint v) THENL
        [KOCHEN_SPECKER_TAC set_0 (v::set_1);
         KOCHEN_SPECKER_TAC (v::set_0) set_1];;

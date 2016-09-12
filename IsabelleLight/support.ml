@@ -133,7 +133,7 @@ let print_varandtype fmt tm =
   let hop,args = strip_comb tm in
   let s = name_of hop
   and ty = type_of hop in
-  if is_var hop & args = [] then
+  if is_var hop && args = [] then
    (pp_print_string fmt "(";
     pp_print_string fmt s;
     pp_print_string fmt ":";

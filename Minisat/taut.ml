@@ -7781,7 +7781,7 @@ let all_taut =  [
 
 let TEST_TAUT TAUTCHECKER p =
   try let th = time TAUTCHECKER p in
-      if hyp th = [] & concl th = p
+      if hyp th = [] && concl th = p
       then true else failwith "Wrong theorem"
   with Sat_counterexample th ->
       if rand(rand(concl th)) = p then false

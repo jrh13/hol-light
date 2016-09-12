@@ -374,8 +374,8 @@ let REAL_LINEAR_PROVER =
   and linear_cmul c = mapf (fun x -> c */ x)
   and one_tm = `&1` in
   let contradictory p (e,_) =
-    (is_undefined e & not(p num_0)) or
-    (dom e = [one_tm] & not(p(apply e one_tm))) in
+    (is_undefined e && not(p num_0)) ||
+    (dom e = [one_tm] && not(p(apply e one_tm))) in
   let rec linear_ineqs vars (les,lts) =
     try find (contradictory (fun x -> x >/ num_0)) lts with Failure _ ->
     try find (contradictory (fun x -> x >=/ num_0)) les with Failure _ ->
@@ -442,7 +442,7 @@ let REAL_LINEAR_PROVER =
       if not (is_comb lop) then (tm |=> Int 1) else
       let op,l = dest_comb lop in
       if op = add_tm then linear_add (lin_of_hol l) (lin_of_hol r)
-      else if op = mul_tm & is_ratconst l then (r |=> rat_of_term l)
+      else if op = mul_tm && is_ratconst l then (r |=> rat_of_term l)
       else (tm |=> Int 1) in
     lin_of_hol in
   let is_alien tm =
@@ -595,9 +595,9 @@ let GEN_REAL_ARITH =
     and y_tm = `y:real` in
     let is_max = is_binop `real_max`
     and is_min = is_binop `real_min`
-    and is_abs t = is_comb t & rator t = abs_tm in
+    and is_abs t = is_comb t && rator t = abs_tm in
     let eliminate_construct p c tm =
-      let t = find_term (fun t -> p t & free_in t tm) tm in
+      let t = find_term (fun t -> p t && free_in t tm) tm in
       let v = genvar(type_of t) in
       let th0 = SYM(BETA_CONV(mk_comb(mk_abs(v,subst[v,t] tm),t))) in
       let p,ax = dest_comb(rand(concl th0)) in

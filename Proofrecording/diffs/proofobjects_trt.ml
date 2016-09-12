@@ -384,7 +384,7 @@ let trivial p =
       | Poracle _ -> true
       | _ -> false;;
 
-let do_share p = references p > 1 & not (trivial p);;
+let do_share p = references p > 1 && not (trivial p);;
 
 exception Err of string*string;;
 

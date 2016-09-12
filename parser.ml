@@ -21,7 +21,7 @@ parse_as_infix (",",(14,"right"));;
 
 exception Noparse;;
 
-let (||) parser1 parser2 input =
+let (|||) parser1 parser2 input =
   try parser1 input
   with Noparse -> parser2 input;;
 
@@ -50,7 +50,7 @@ let rec listof prs sep err =
 let nothing input = [],input;;
 
 let elistof prs sep err =
-  listof prs sep err || nothing;;
+  listof prs sep err ||| nothing;;
 
 let leftbin prs sep cons err =
   prs ++ many (sep ++ fix err prs) >>
@@ -106,9 +106,9 @@ let lex =
             if is_reserved_word n then Resword(n) else tok
       | t -> t in
   let stringof p = atleast 1 p >> end_itlist (^) in
-  let simple_ident = stringof(some isalnum) || stringof(some issymb) in
+  let simple_ident = stringof(some isalnum) ||| stringof(some issymb) in
   let undertail = stringof (a "_") ++ possibly simple_ident >> collect in
-  let ident = (undertail || simple_ident) ++ many undertail >> collect in
+  let ident = (undertail ||| simple_ident) ++ many undertail >> collect in
   let septok = stringof(some issep) in
   let escapecode i =
     match i with
@@ -126,17 +126,17 @@ let lex =
          String.make 1 (Char.chr(int_of_string(a^b^c))),rst
     | _ -> failwith "lex:unrecognized OCaml-style escape in string" in
   let stringchar =
-      some (fun i -> i <> "\\" & i <> "\"")
-  || (a "\\" ++ escapecode >> snd) in
+      some (fun i -> i <> "\\" && i <> "\"")
+  ||| (a "\\" ++ escapecode >> snd) in
   let string = a "\"" ++ many stringchar ++ a "\"" >>
         (fun ((_,s),_) -> "\""^implode s^"\"") in
-  let rawtoken = (string || some isbra || septok || ident) >>
+  let rawtoken = (string ||| some isbra ||| septok ||| ident) >>
     (fun x -> Ident x) in
   let simptoken = many (some isspace) ++ rawtoken >> (reserve o snd) in
   let rec tokens i =
     try let (t,rst) = simptoken i in
         if t = !comment_token then
-          (many (fun i -> if i <> [] & hd i <> "\n" then 1,tl i
+          (many (fun i -> if i <> [] && hd i <> "\n" then 1,tl i
                           else raise Noparse) ++ tokens >> snd) rst
         else
           let toks,rst1 = tokens rst in t::toks,rst1
@@ -201,10 +201,10 @@ let parse_pretype =
   and prodtype i = rightbin carttype (a (Ident "#")) (btyop "prod") "type" i
   and carttype i = leftbin apptype (a (Ident "^")) (btyop "cart") "type" i
   and apptype i = (atomictypes ++ (type_constructor >> (fun x -> [x])
-                                || nothing) >> mk_apptype) i
+                                ||| nothing) >> mk_apptype) i
   and atomictypes i =
         (((a (Resword "(")) ++ typelist ++ a (Resword ")") >> (snd o fst))
-      || type_atom >> (fun x -> [x])) i
+      ||| (type_atom >> (fun x -> [x]))) i
   and typelist i = listof pretype (a (Ident ",")) "type" i in
   pretype;;
 
@@ -262,13 +262,13 @@ let parse_preterm =
   let rec pairwise r l =
     match l with
       [] -> true
-    | h::t -> forall (r h) t & pairwise r t in
+    | h::t -> forall (r h) t && pairwise r t in
   let rec pfrees ptm acc =
     match ptm with
       Varp(v,pty) ->
-        if v = "" & pty = dpty then acc
-        else if can get_const_type v or can num_of_string v
-                or exists (fun (w,_) -> v = w) (!the_interface) then acc
+        if v = "" && pty = dpty then acc
+        else if can get_const_type v || can num_of_string v
+                || exists (fun (w,_) -> v = w) (!the_interface) then acc
         else insert ptm acc
     | Constp(_,_) -> acc
     | Combp(p1,p2) -> pfrees p1 (pfrees p2 acc)
@@ -320,7 +320,7 @@ let parse_preterm =
     let evs =
       let fvs = pfrees fabs []
       and bvs = pfrees babs [] in
-      if length fvs <= 1 or bvs = [] then fvs
+      if length fvs <= 1 || bvs = [] then fvs
       else intersect fvs bvs in
     pmk_setcompr (fabs,evs,babs) in
   let rec mk_precedence infxs prs inp =
@@ -329,7 +329,7 @@ let parse_preterm =
           let topins,rest = partition (fun (s',pat') -> pat' = (p,at)) infxs in
           (if at = "right" then rightbin else leftbin)
           (mk_precedence rest prs)
-          (end_itlist (||) (map (fun (s,_) -> a (Ident s)) topins))
+          (end_itlist (|||) (map (fun (s,_) -> a (Ident s)) topins))
           (fun (Ident op) x y -> Combp(Combp(Varp(op,dpty),x),y))
           ("term after binary operator")
           inp
@@ -384,7 +384,7 @@ let parse_preterm =
   and identifier =
     function
        ((Ident s):: rest) ->
-        if can get_infix_status s or is_prefix s or parses_as_binder s
+        if can get_infix_status s || is_prefix s || parses_as_binder s
         then raise Noparse else s,rest
       | _ -> raise Noparse
   and binder =
@@ -409,68 +409,66 @@ let parse_preterm =
   and appl_preterm i =
     (pre_fix ++ appl_preterm
     >> (fun (x,y) -> Combp(Varp(x,dpty),y))
-  || binder_preterm ++ many binder_preterm >>
-        (fun (h,t) -> itlist (fun x y -> Combp(y,x)) (rev t) h)) i
+  ||| (binder_preterm ++ many binder_preterm >>
+        (fun (h,t) -> itlist (fun x y -> Combp(y,x)) (rev t) h))) i
   and binder_preterm i =
-    (a (Resword "let") ++
+   ((a (Resword "let") ++
      leftbin (preterm >> singleton1) (a (Resword "and")) (K (@)) "binding" ++
      a (Resword "in") ++
      preterm
-    >> lmk_let
-  || binder ++
-     typed_apreterm ++
-     many typed_apreterm ++
-     a (Resword ".") ++
-     preterm
-    >> lmk_binder
-  || atomic_preterm) i
+    >> lmk_let)
+  ||| (binder ++
+       typed_apreterm ++
+       many typed_apreterm ++
+       a (Resword ".") ++
+       preterm
+       >> lmk_binder)
+  ||| atomic_preterm) i
   and typed_apreterm i =
     (atomic_preterm ++
      possibly (a (Resword ":") ++ pretype >> snd)
     >> lmk_typed) i
   and atomic_preterm i =
     (try_user_parser
-  || (a (Resword "(") ++ a (Resword ":")) ++ pretype ++ a (Resword ")")
-    >> lmk_univ
-  || string
-     >> pmk_string
-  || a (Resword "(") ++
-     (any_identifier >> (fun s -> Varp(s,dpty))) ++
-     a (Resword ")")
-    >> (snd o fst)
-  || a (Resword "(") ++
-     preterm ++
-     a (Resword ")")
-    >> (snd o fst)
-  || a (Resword "if") ++
-     preterm ++
-     a (Resword "then") ++
-     preterm ++
-     a (Resword "else") ++
-     preterm
-     >> lmk_ite
-  || a (Resword "[") ++
-     elistof preterm (a (Resword ";")) "term" ++
-     a (Resword "]")
-    >> (pmk_list o snd o fst)
-  || a (Resword "{") ++
-     (elistof nocommapreterm (a (Ident ",")) "term" ++  a (Resword "}")
-            >> lmk_setenum
-      || preterm ++ a (Resword "|") ++ preterm ++ a (Resword "}")
-            >> lmk_setabs
-      || preterm ++ a (Resword "|") ++ preterm ++
-         a (Resword "|") ++ preterm ++ a (Resword "}")
-            >> lmk_setcompr)
-    >> snd
-  || a (Resword "match") ++ preterm ++ a (Resword "with") ++ clauses
-     >> (fun (((_,e),_),c) -> Combp(Combp(Varp("_MATCH",dpty),e),c))
-  || a (Resword "function") ++ clauses
-     >> (fun (_,c) -> Combp(Varp("_FUNCTION",dpty),c))
-  || a (Ident "#") ++ identifier ++
-     possibly (a (Resword ".") ++ identifier >> snd)
-    >> lmk_decimal
-  || identifier
-    >> (fun s -> Varp(s,dpty))) i
+  ||| ((a (Resword "(") ++ a (Resword ":")) ++ pretype ++ a (Resword ")")
+       >> lmk_univ)
+  ||| (string >> pmk_string)
+  ||| (a (Resword "(") ++
+       (any_identifier >> (fun s -> Varp(s,dpty))) ++
+       a (Resword ")")
+       >> (snd o fst))
+  ||| (a (Resword "(") ++
+       preterm ++
+       a (Resword ")")
+      >> (snd o fst))
+  ||| (a (Resword "if") ++
+       preterm ++
+       a (Resword "then") ++
+       preterm ++
+       a (Resword "else") ++
+       preterm
+       >> lmk_ite)
+  ||| (a (Resword "[") ++
+       elistof preterm (a (Resword ";")) "term" ++
+       a (Resword "]")
+       >> (pmk_list o snd o fst))
+  ||| (a (Resword "{") ++
+       (elistof nocommapreterm (a (Ident ",")) "term" ++  a (Resword "}")
+              >> lmk_setenum
+        ||| (preterm ++ a (Resword "|") ++ preterm ++ a (Resword "}")
+              >> lmk_setabs)
+        ||| (preterm ++ a (Resword "|") ++ preterm ++
+             a (Resword "|") ++ preterm ++ a (Resword "}")
+             >> lmk_setcompr))
+      >> snd)
+  ||| (a (Resword "match") ++ preterm ++ a (Resword "with") ++ clauses
+       >> (fun (((_,e),_),c) -> Combp(Combp(Varp("_MATCH",dpty),e),c)))
+  ||| (a (Resword "function") ++ clauses
+       >> (fun (_,c) -> Combp(Varp("_FUNCTION",dpty),c)))
+  ||| (a (Ident "#") ++ identifier ++
+       possibly (a (Resword ".") ++ identifier >> snd)
+       >> lmk_decimal)
+  ||| (identifier >> (fun s -> Varp(s,dpty)))) i
   and pattern i =
     (preterm ++ possibly (a (Resword "when") ++ preterm >> snd)) i
   and clause i =
@@ -479,14 +477,14 @@ let parse_preterm =
    ((possibly (a (Resword "|")) ++
      listof clause (a (Resword "|")) "pattern-match clause" >> snd)
     >> end_itlist (fun s t -> Combp(Combp(Varp("_SEQPATTERN",dpty),s),t))) i in
-  (fun inp ->           
-    match inp with                            
+  (fun inp ->
+    match inp with
       [Ident s] when
         not(String.length s >= 2 &
-            String.sub s 0 1 = "\"" &                  
+            String.sub s 0 1 = "\"" &
             String.sub s (String.length s - 1) 1 = "\"")
-      -> Varp(s,dpty),[]      
-    | _ -> preterm inp);;                         
+      -> Varp(s,dpty),[]
+    | _ -> preterm inp);;
 
 (* ------------------------------------------------------------------------- *)
 (* Type and term parsers.                                                    *)

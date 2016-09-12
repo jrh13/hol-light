@@ -1,4 +1,3 @@
-
 (* ------------------------------------------------------------------ *)
 (* MORE RECENT ADDITIONS *)
 (* ------------------------------------------------------------------ *)
@@ -274,21 +273,21 @@ let net_of_thm_ord ord rep force th =
   let lconsts = freesl (hyp th) in
   let matchable = can o term_match lconsts in
   try let l,r = dest_eq t in
-      if rep & free_in l r then
+      if rep && free_in l r then
        let th' = EQT_INTRO th in
        enter lconsts (l,(1,REWR_CONV th'))
-      else if rep & matchable l r & matchable r l then
+      else if rep && matchable l r && matchable r l then
         enter lconsts (l,(1,ORDERED_REWR_CONV ord th))
       else if force then
         enter lconsts (l,(1,ORDERED_REWR_CONV ord th))
       else enter lconsts (l,(1,REWR_CONV th))
   with Failure _ ->
       let l,r = dest_eq(rand t) in
-      if rep & free_in l r then
+      if rep && free_in l r then
        let tm = lhand t in
        let th' = DISCH tm (EQT_INTRO(UNDISCH th)) in
        enter lconsts (l,(3,IMP_REWR_CONV th'))
-      else if rep &  matchable l r & matchable r l then
+      else if rep &&  matchable l r && matchable r l then
         enter lconsts (l,(3,ORDERED_IMP_REWR_CONV ord th))
       else enter lconsts(l,(3,IMP_REWR_CONV th));;
 
@@ -329,7 +328,7 @@ let REWRITE_ORD_TAC ord force thl = CONV_TAC(REWRITE_ORD_CONV ord force thl);;
 let new_factor_order t1 t2 =
   try let t1v = fst(dest_binop `( *. )` t1) in
       let t2v = fst(dest_binop `( *. )` t2) in
-  if (is_var t1v) & (is_var t2v) then term_order t1v t2v
+  if (is_var t1v) && (is_var t2v) then term_order t1v t2v
   else if (is_var t2v) then true else false
   with Failure _  -> false ;;
 
@@ -339,14 +338,14 @@ let rec is_arith_const tm =
   if is_abs tm then false else
   if is_comb tm then
      let (a,b) = (dest_comb tm) in
-     is_arith_const (a) & is_arith_const (b)
+     is_arith_const (a) && is_arith_const (b)
   else true;;
 
 (* const leftward *)
 let new_factor_order2 t1 t2 =
   try let t1v = fst(dest_binop `( *. )` t1) in
       let t2v = fst(dest_binop `( *. )` t2) in
-  if (is_var t1v) & (is_var t2v) then term_order t1v t2v
+  if (is_var t1v) && (is_var t2v) then term_order t1v t2v
   else if (is_arith_const t2v) then true else false
   with Failure _  -> false ;;
 
@@ -484,7 +483,7 @@ let is_x_prod_le tm =
   with Failure _ -> false;;
 
 let switch_lemma_le_order t1 t2 =
-  if (is_x_prod_le t1) & (is_x_prod_le t2) then
+  if (is_x_prod_le t1) && (is_x_prod_le t2) then
   term_order t1 t2 else
   if (is_x_prod_le t2) then true else false;;
 
@@ -496,7 +495,7 @@ let is_x_prod_lt tm =
   with Failure _ -> false;;
 
 let switch_lemma_lt_order t1 t2 =
-  if (is_x_prod_lt t1) & (is_x_prod_lt t2) then
+  if (is_x_prod_lt t1) && (is_x_prod_lt t2) then
   term_order t1 t2 else
   if (is_x_prod_lt t2) then true else false;;
 
@@ -613,7 +612,7 @@ let test_ineq_tac  = prove_by_refinement(
 
 let tagb = new_definition `TAGB (x:bool) = x`;;
 
-let is_quant tm = (is_forall tm) or (is_exists tm);;
+let is_quant tm = (is_forall tm) || (is_exists tm);;
 
 (*** JRH replaced Comb and Abs with abstract type constructors ***)
 
@@ -1035,7 +1034,7 @@ EXPAND: int -> tactic.
     exists/goal-forall -> choose.
     goal-if-then -> discharge
 EXPAND_TERM: int -> term -> tactic.
-    constant -> expand definition or other rewrites associated.
+    constant -> expand definition || other rewrites associated.
 ADD: term -> tactic.
 
 SIMPLIFY: int -> tactic.  Apply simplification rules.

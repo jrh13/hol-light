@@ -268,7 +268,7 @@ try
 
 let rec CONJ_LINEAR_CONV tm =
 try
- (if ((is_conj tm) & (is_conj (rand (rator tm))))
+ (if ((is_conj tm) && (is_conj (rand (rator tm))))
   then (CONJ_ASSOC_NORM_CONV THENC
         (RAND_CONV (TRY_CONV CONJ_LINEAR_CONV)) THENC
         (TRY_CONV CONJ_LINEAR_CONV)) tm
@@ -342,7 +342,7 @@ try
 let CLAUSAL_FORM_CONV tm =
 try (
  let is_atom tm =
-    (not (has_boolean_args_and_result tm)) or (is_var tm) or (is_const tm)
+    (not (has_boolean_args_and_result tm)) || (is_var tm) || (is_const tm)
  in
  ((EQ_IMP_COND_ELIM_CONV is_atom) THENC
   (MOVE_NOT_DOWN_CONV is_atom ALL_CONV) THENC

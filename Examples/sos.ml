@@ -184,11 +184,11 @@ let monomial_pow (m:monomial) k =
   else mapf (fun x -> k * x) m;;
 
 let monomial_divides (m1:monomial) (m2:monomial) =
-  foldl (fun a x k -> tryapplyd m2 x 0 >= k & a) true m1;;
+  foldl (fun a x k -> tryapplyd m2 x 0 >= k && a) true m1;;
 
 let monomial_div (m1:monomial) (m2:monomial) =
   let m = combine (+) (fun x -> x = 0) m1 (mapf (fun x -> -x) m2) in
-  if foldl (fun a x k -> k >= 0 & a) true m then m
+  if foldl (fun a x k -> k >= 0 && a) true m then m
   else failwith "monomial_div: non-divisible";;
 
 let monomial_degree x (m:monomial) = tryapplyd m x 0;;
@@ -210,7 +210,7 @@ let eval assig (p:poly) =
 
 let poly_0 = (undefined:poly);;
 
-let poly_isconst (p:poly) = foldl (fun a m c -> m = monomial_1 & a) true p;;
+let poly_isconst (p:poly) = foldl (fun a m c -> m = monomial_1 && a) true p;;
 
 let poly_var x = ((monomial_var x) |=> Int 1 :poly);;
 
@@ -266,14 +266,14 @@ let poly_variables (p:poly) =
 (* Order monomials for human presentation.                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 or x1 = x2 & k1 > k2;;
+let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 || x1 = x2 && k1 > k2;;
 
 let humanorder_monomial =
   let rec ord l1 l2 = match (l1,l2) with
     _,[] -> true
   | [],_ -> false
-  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 or h1 = h2 & ord t1 t2 in
-  fun m1 m2 -> m1 = m2 or
+  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 || h1 = h2 && ord t1 t2 in
+  fun m1 m2 -> m1 = m2 ||
                ord (sort humanorder_varpow (graph m1))
                    (sort humanorder_varpow (graph m2));;
 
@@ -378,7 +378,7 @@ let poly_of_term =
       else failwith "poly_of_term: inverse of non-constant polyomial"
     else if not(is_comb lop) then poly_var tm else
     let op,l = dest_comb lop in
-    if op = pow_tm & is_numeral r then
+    if op = pow_tm && is_numeral r then
         poly_pow (poly_of_term l) (dest_small_numeral r)
     else if op = add_tm then poly_add (poly_of_term l) (poly_of_term r)
     else if op = sub_tm then poly_sub (poly_of_term l) (poly_of_term r)
@@ -465,9 +465,9 @@ let decimal =
     >> (function (h,[]) -> h | (h,[x]) -> h +/ x) in
   let signed prs =
        a "-" ++ prs >> (minus_num o snd)
-    || a "+" ++ prs >> snd
-    || prs in
-  let exponent = (a "e" || a "E") ++ signed decimalint >> snd in
+    ||| (a "+" ++ prs >> snd)
+    ||| prs in
+  let exponent = (a "e" ||| a "E") ++ signed decimalint >> snd in
     signed decimalsig ++ possibly exponent
     >> (function (h,[]) -> h | (h,[x]) -> h */ power_num (Int 10) x);;
 
@@ -488,7 +488,7 @@ let parse_sdpaoutput,parse_csdpoutput =
   let parse_vector = mkparser vector in
   let rec skipupto dscr prs inp =
       (dscr ++ prs >> snd
-    || some (fun c -> true) ++ skipupto dscr prs >> snd) inp in
+    ||| (some (fun c -> true) ++ skipupto dscr prs >> snd)) inp in
   let ignore inp = (),[] in
   let sdpaoutput =
     skipupto (word "xVec" ++ token "=")
@@ -505,10 +505,10 @@ let parse_sdpaoutput,parse_csdpoutput =
 let sdpa_run_succeeded =
    let rec skipupto dscr prs inp =
       (dscr ++ prs >> snd
-    || some (fun c -> true) ++ skipupto dscr prs >> snd) inp in
+    ||| (some (fun c -> true) ++ skipupto dscr prs >> snd)) inp in
   let prs = skipupto (word "phase.value" ++ token "=")
                      (possibly (a "p") ++ possibly (a "d") ++
-                      (word "OPT" || word "FEAS")) in
+                      (word "OPT" ||| word "FEAS")) in
   fun s -> try prs (explode s); true with Noparse -> false;;
 
 (* ------------------------------------------------------------------------- *)
@@ -616,7 +616,7 @@ let run_csdp dbg obj mats =
 
 let csdp obj mats =
   let rv,res = run_csdp (!debugging) obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
    else if rv = 3 then
     (Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline())
@@ -667,7 +667,7 @@ let linear_program_basic a =
   let mats =  map (fun j -> diagonal (column j a)) (1--n)
   and obj = vec_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
-  if rv = 1 or rv = 2 then false
+  if rv = 1 || rv = 2 then false
   else if rv = 0 then true
   else failwith "linear_program: An error occurred in the SDP solver";;
 
@@ -681,7 +681,7 @@ let linear_program a b =
   let mats = diagonal b :: map (fun j -> diagonal (column j a)) (1--n)
   and obj = vec_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
-  if rv = 1 or rv = 2 then false
+  if rv = 1 || rv = 2 then false
   else if rv = 0 then true
   else failwith "linear_program: An error occurred in the SDP solver";;
 
@@ -976,7 +976,7 @@ let run_csdp dbg nblocks blocksizes obj mats =
 
 let csdp nblocks blocksizes obj mats =
   let rv,res = run_csdp (!debugging) nblocks blocksizes obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
    else if rv = 3 then
     (Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline())
@@ -1061,7 +1061,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
                                 ((b,j,i) |-> c) (((b,i,j) |-> c) m))
           undefined allassig in
   let diagents = foldl
-    (fun a (b,i,j) e -> if b > 0 & i = j then equation_add e a else a)
+    (fun a (b,i,j) e -> if b > 0 && i = j then equation_add e a else a)
     undefined allassig in
   let mats = map mk_matrix qvars
   and obj = length pvs,
@@ -1250,7 +1250,7 @@ let REAL_NONLINEAR_SUBST_PROVER =
     match tm with
       Var(_,Tyapp("real",[])) when not (mem tm fvs) -> Int 1,tm
     | Comb(Comb(Const("real_mul",_),c),(Var(_,_) as t))
-         when is_ratconst c & not (mem t fvs)
+         when is_ratconst c && not (mem t fvs)
           -> rat_of_term c,t
     | Comb(Comb(Const("real_add",_),s),t) ->
          (try substitutable_monomial (union (frees t) fvs) s
@@ -1306,10 +1306,10 @@ let REAL_SOSFIELD =
     with Failure _ -> REAL_SOS t
   and is_inv =
     let is_div = is_binop `(/):real->real->real` in
-    fun tm -> (is_div tm or (is_comb tm & rator tm = inv_tm)) &
+    fun tm -> (is_div tm || (is_comb tm && rator tm = inv_tm)) &
               not(is_ratconst(rand tm)) in
   let BASIC_REAL_FIELD tm =
-    let is_freeinv t = is_inv t & free_in t tm in
+    let is_freeinv t = is_inv t && free_in t tm in
     let itms = setify(map rand (find_terms is_freeinv tm)) in
     let hyps = map (fun t -> SPEC t REAL_MUL_RINV) itms in
     let tm' = itlist (fun th t -> mk_imp(concl th,t)) hyps tm in
@@ -1472,7 +1472,7 @@ let run_csdp dbg obj mats =
 
 let csdp obj mats =
   let rv,res = run_csdp (!debugging) obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
    else if rv = 3 then
     (Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline())

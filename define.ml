@@ -570,7 +570,7 @@ let instantiate_casewise_recursion,
       let conv i =
         let name = "x"^string_of_int i in
         let cnv = ALPHA_CONV (mk_var(name,mk_vartype(mkname i))) in
-        fun tm -> if is_abs tm & name_of(bndvar tm) <> name
+        fun tm -> if is_abs tm && name_of(bndvar tm) <> name
                   then cnv tm else failwith "conv" in
       let convs = FIRST_CONV (map conv (1--n)) in
       let th1 = INST_TYPE [ty,`:P`] th in
@@ -585,7 +585,7 @@ let instantiate_casewise_recursion,
       let conv i =
         let name = "t"^string_of_int i in
         let cnv = ALPHA_CONV (mk_var(name,mk_vartype(mkname i))) in
-        fun tm -> if is_abs tm & name_of(bndvar tm) <> name
+        fun tm -> if is_abs tm && name_of(bndvar tm) <> name
                   then cnv tm else failwith "conv" in
       let convs = FIRST_CONV (map conv (1--n)) in
       let th1 = INST_TYPE [ty,`:Q`] th in
@@ -606,7 +606,7 @@ let instantiate_casewise_recursion,
 
   let is_pattern p n tm =
     try let f,args = strip_comb(snd(strip_exists (body(body tm)))) in
-        is_const f & name_of f = p & length args = n
+        is_const f && name_of f = p && length args = n
     with Failure _ -> false in
 
   let SIMPLIFY_MATCH_WELLDEFINED_TAC =
@@ -623,7 +623,7 @@ let instantiate_casewise_recursion,
 
   let rec headonly f tm =
     match tm with
-      Comb(s,t) -> headonly f s & headonly f t & not(t = f)
+      Comb(s,t) -> headonly f s && headonly f t && not(t = f)
     | Abs(x,t) -> headonly f t
     | _ -> true in
 
@@ -652,7 +652,7 @@ let instantiate_casewise_recursion,
              let th = EACK_PROFORMA n SUPERADMISSIBLE_MATCH_GUARDED_PATTERN in
              (APPLY_PROFORMA_TAC th THEN CONJ_TAC THENL
                [SIMPLIFY_MATCH_WELLDEFINED_TAC; ALL_TAC]) gl
-    | "superadmissible",_ when is_comb bod & rator bod = f
+    | "superadmissible",_ when is_comb bod && rator bod = f
           -> APPLY_PROFORMA_TAC SUPERADMISSIBLE_TAIL gl
     | "admissible","sum"
           -> APPLY_PROFORMA_TAC ADMISSIBLE_SUM gl
@@ -672,12 +672,12 @@ let instantiate_casewise_recursion,
           -> APPLY_PROFORMA_TAC ADMISSIBLE_GUARDED_PATTERN gl
     | "admissible",_ when is_abs bod
           -> APPLY_PROFORMA_TAC ADMISSIBLE_LAMBDA gl
-    | "admissible",_ when is_comb bod & rator bod = f
+    | "admissible",_ when is_comb bod && rator bod = f
           -> if free_in f (rand bod) then
                APPLY_PROFORMA_TAC ADMISSIBLE_NEST gl
              else
                APPLY_PROFORMA_TAC ADMISSIBLE_BASE gl
-    | "admissible",_ when is_comb bod & headonly f bod
+    | "admissible",_ when is_comb bod && headonly f bod
           -> APPLY_PROFORMA_TAC ADMISSIBLE_COMB gl
     | _ -> failwith "MAIN_ADMISS_TAC" in
 

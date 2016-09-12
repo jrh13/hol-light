@@ -435,7 +435,7 @@ let rec earlier vars x y =
 let is_num_const =
   let ptm = `&` in
   fun tm -> try let l,r = dest_comb tm in
-                l = ptm & is_numeral r
+                l = ptm && is_numeral r
             with Failure _ -> false;;
 
 let mk_num_const,dest_num_const =
@@ -448,9 +448,9 @@ let mk_num_const,dest_num_const =
 let is_int_const =
   let ptm = `(--)` in
   fun tm ->
-    is_num_const tm or
+    is_num_const tm ||
     try let l,r = dest_comb tm in
-        l = ptm & is_num_const r
+        l = ptm && is_num_const r
     with Failure _ -> false;;
 
 let mk_int_const,dest_int_const =
@@ -751,13 +751,13 @@ let LINEARIZE_CONV =
   and true_tm = `T` and false_tm = `F` in
   let rec conv vars tm =
     try (rew_conv THENC RAND_CONV(POLYNOMIAL_CONV vars)) tm with Failure _ ->
-    if is_exists tm or is_forall tm then
+    if is_exists tm || is_forall tm then
       let x = bndvar(rand tm) in BINDER_CONV (conv (x::vars)) tm
     else if is_neg tm then
       RAND_CONV (conv vars) tm
-    else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+    else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
       BINOP_CONV (conv vars) tm
-    else if tm = true_tm or tm = false_tm then REFL tm
+    else if tm = true_tm || tm = false_tm then REFL tm
     else failwith "LINEARIZE_CONV: Unexpected term type" in
   conv;;
 
@@ -783,9 +783,9 @@ let lcm_num x y = abs_num((x */ y) // gcd_num x y);;
 
 let rec formlcm x tm =
   if is_neg tm then formlcm x (rand tm)
-  else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+  else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
      lcm_num (formlcm x (lhand tm)) (formlcm x (rand tm))
-  else if is_forall tm or is_exists tm then
+  else if is_forall tm || is_exists tm then
      formlcm x (body(rand tm))
   else if not(mem x (frees tm)) then Int 1
   else let c = coefficient x (rand tm) in
@@ -801,7 +801,7 @@ let MULTIPLY_1_CONV =
   fun vars tm ->
     let x = hd vars in
     if tm = x then conv_0 tm
-    else if is_add tm & lhand tm = x then conv_1 tm
+    else if is_add tm && lhand tm = x then conv_1 tm
     else REFL tm;;
 
 (* ------------------------------------------------------------------------- *)
@@ -842,12 +842,12 @@ let ADJUSTCOEFF_CONV =
     REWRITE_TAC[INT_ARITH `&0 < d * e <=> &0 > --d * e`;
                 INT_ARITH `d < &0 <=> &0 < --d`; pth_gt_pos]) in
   let rec ADJUSTCOEFF_CONV vars l tm =
-    if tm = true_tm or tm = false_tm then REFL tm
-    else if is_exists tm or is_forall tm then
+    if tm = true_tm || tm = false_tm then REFL tm
+    else if is_exists tm || is_forall tm then
       BINDER_CONV (ADJUSTCOEFF_CONV vars l) tm
     else if is_neg tm then
       RAND_CONV (ADJUSTCOEFF_CONV vars l) tm
-    else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+    else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
       BINOP_CONV (ADJUSTCOEFF_CONV vars l) tm
     else
       let lop,t = dest_comb tm in
@@ -939,7 +939,7 @@ let SHADOW_CONV =
   let rec SHADOW_CONV x tm =
     if not (mem x (frees tm)) then
        INST [tm,p_tm; x,x_tm] pth_trivial
-    else if is_conj tm or is_disj tm then
+    else if is_conj tm || is_disj tm then
       let l,r = try dest_conj tm with Failure _ -> dest_disj tm in
       let thl = SHADOW_CONV x l and thr = SHADOW_CONV x r in
       let th1 = MK_COMB(AP_TERM (rator(rator tm)) thl,thr) in
@@ -960,8 +960,8 @@ let dplcm =
   and or_tm = `Or` in
   let rec dplcm tm =
     let hop,args = strip_comb tm in
-    if hop = divides_tm or hop = ndivides_tm then dest_int_const (hd args)
-    else if hop = and_tm or hop = or_tm
+    if hop = divides_tm || hop = ndivides_tm then dest_int_const (hd args)
+    else if hop = and_tm || hop = or_tm
     then end_itlist lcm_num (map dplcm args)
     else Int 1 in
   dplcm;;
@@ -1261,7 +1261,7 @@ let COOPER_CONV =
    [prove(`(!x. P x) <=> ~(?x. ~(P x))`,MESON_TAC[])]
   and not_tm = `(~)` in
   let rec conv vars tm =
-    if is_conj tm or is_disj tm then
+    if is_conj tm || is_disj tm then
       let lop,r = dest_comb tm in
       let op,l = dest_comb lop in
       MK_COMB(AP_TERM op (conv vars l),conv vars r)

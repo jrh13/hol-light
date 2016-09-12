@@ -8,6 +8,20 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  9th Sep 2016       passim
+
+Changed all (?) instances of "&" to "&&" and "or" to "||" to avoid any
+OCaml "deprecated" warnings which will presumably soon enough become
+actual errors.
+
+Fri  9th Sep 2016       parser.ml, theorems.ml, help.ml, Examples/mizar.ml, Examples/sos.ml, miz3/miz3.ml, Help/*.doc
+
+Renamed the parser "or" combinator from "||" to "|||", which is a bit of
+a mouthful but still quite intuitive. This seemed worth doing in principle
+given that "||" is overwriting an OCaml builtin, and I was more motivated
+because the word "or" is now depracated in favour of "||" for the logical
+"or" operation.
+
 Fri  2nd Sep 2016       Library/card.ml
 
 Added a couple more lemmas about bounding cardinalities of "sequences"

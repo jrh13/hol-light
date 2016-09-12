@@ -6881,7 +6881,7 @@ let HAS_VECTOR_DERIVATIVE_INDEFINITE_INTEGRAL = prove
    `!f:real^1->real^N a b.
         f integrable_on interval[a,b]
         ==> ?k. negligible k /\
-                !x e. x IN interval[a,b] DIFF k /\ & 0 < e
+                !x e. x IN interval[a,b] DIFF k /\ &0 < e
                       ==> ?d. &0 < d /\
                               !x'. x' IN interval[a,b] /\
                                    drop x < drop x' /\ drop x' < drop x + d

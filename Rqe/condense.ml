@@ -111,7 +111,7 @@ let combine_interpsigns ord_thm thm1 thm2 thm3 =
   let _,_,s1 = dest_interpsigns thm1 in
   let _,_,s2 = dest_interpsigns thm2 in
   let _,_,s3 = dest_interpsigns thm3 in
-  if not (s1 = s2) or not (s1 = s3) then failwith "combine_interpsigns: signs not equal" else
+  if not (s1 = s2) || not (s1 = s3) then failwith "combine_interpsigns: signs not equal" else
   try
     let thms1 = CONJUNCTS(PURE_REWRITE_RULE[interpsigns;ALL2] thm1) in
     let thms2 = CONJUNCTS(PURE_REWRITE_RULE[interpsigns;ALL2] thm2) in

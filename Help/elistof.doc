@@ -6,7 +6,7 @@
 Parses a possibly empty separated list of items.
 
 \DESCRIBE
-If {p} is a parser for ``items'' of some kind, {s} is a parser for a 
+If {p} is a parser for ``items'' of some kind, {s} is a parser for a
 ``separator'', and {e} is an error message, then {elistof p s e} parses a
 possibly empty list of successive items using {p}, where adjacent items are
 separated by something parseable by {s}. If a separator is parsed successfully
@@ -27,7 +27,7 @@ left to right, and return a pair consisting of the object derived from parsing
 processed.
 
 \SEEALSO
-++, ||, >>, a, atleast, finished, fix, leftbin, listof, many, nothing,
+++, |||, >>, a, atleast, finished, fix, leftbin, listof, many, nothing,
 possibly, rightbin, some.
 
 \ENDDOC

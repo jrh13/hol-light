@@ -6,7 +6,7 @@
 Parser that requires a specific item.
 
 \DESCRIBE
-The call {a x} gives a parser that parses a single item that is exactly {x}, 
+The call {a x} gives a parser that parses a single item that is exactly {x},
 raising {Noparse} if the first item is something different.
 
 \FAILURE
@@ -22,7 +22,7 @@ left to right, and return a pair consisting of the object derived from parsing
 processed.
 
 \SEEALSO
-++, ||, >>, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
+++, |||, >>, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
 possibly, rightbin, some.
 
 \ENDDOC

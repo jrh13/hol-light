@@ -1347,8 +1347,8 @@ let rec INT_OF_REAL_CONV_helper t =
       let expr = mk_comb (mk_comb (`int_pow`,expr1),exponent) in
       (expr,lst,lst2)
     else if (   ((rator (rator t)) = `real_add`)
-             or ((rator (rator t)) = `real_mul`)
-             or ((rator (rator t)) = `real_sub`)  ) then
+             || ((rator (rator t)) = `real_mul`)
+             || ((rator (rator t)) = `real_sub`)  ) then
       let int_op = real_op_2_int_op (rator (rator t)) in
       let rand1 = rand (rator t) in
       let rand2 = rand t in

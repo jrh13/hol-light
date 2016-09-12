@@ -1137,7 +1137,7 @@ let define_type_raw =
       let f1,ctm1 = dest_comb (lhs cl1) in
       let c1 = fst(dest_const(fst(strip_comb ctm1))) in
       let dty1,rty1 = dest_fun_ty (type_of f1) in
-      c0 = c1 & dty0 = rty1 & rty0 = dty1 in
+      c0 = c1 && dty0 = rty1 && rty0 = dty1 in
 
   let prove_inductive_types_isomorphic n k (ith0,rth0) (ith1,rth1) =
     let sth0 = SPEC_ALL rth0
@@ -1169,10 +1169,10 @@ let define_type_raw =
       let vc0,wargs0 = strip_comb r0 in
       let con0,vargs0 = strip_comb(rand l0) in
       let gargs0 = map (genvar o type_of) wargs0 in
-      let nestf0 = map (fun a -> can (find (fun t -> is_comb t & rand t = a))
+      let nestf0 = map (fun a -> can (find (fun t -> is_comb t && rand t = a))
         wargs0) vargs0 in
       let targs0 = map2 (fun a f ->
-        if f then find (fun t -> is_comb t & rand t = a) wargs0 else a)
+        if f then find (fun t -> is_comb t && rand t = a) wargs0 else a)
          vargs0 nestf0 in
       let gvlist0 = zip wargs0 gargs0 in
       let xargs = map (fun v -> assoc v gvlist0) targs0 in
@@ -1183,7 +1183,7 @@ let define_type_raw =
       let gargs1 = map (genvar o type_of) wargs1 in
       let targs1 = map2
         (fun a f -> if f then
-                    find (fun t -> is_comb t & rand t = a) wargs1
+                    find (fun t -> is_comb t && rand t = a) wargs1
                     else a) vargs1 nestf0 in
       let gvlist1 = zip wargs1 gargs1 in
       let xargs = map (fun v -> assoc v gvlist1) targs1 in
@@ -1264,7 +1264,7 @@ let define_type_raw =
     CONV_RULE o GENERAL_REWRITE_CONV true TOP_DEPTH_CONV net in
 
   let is_nested vs ty =
-    not (is_vartype ty) & not (intersect (tyvars ty) vs = []) in
+    not (is_vartype ty) && not (intersect (tyvars ty) vs = []) in
   let rec modify_type alist ty =
     try rev_assoc ty alist
     with Failure _ -> try
@@ -1458,10 +1458,10 @@ let UNWIND_CONV,MATCH_CONV =
       try let eq = find
            (fun tm -> is_eq tm &
                       let l,r = dest_eq tm in
-                      (mem l evs & not (free_in l r)) or
-                      (mem r evs & not (free_in r l))) eqs in
+                      (mem l evs && not (free_in l r)) ||
+                      (mem r evs && not (free_in r l))) eqs in
           let l,r = dest_eq eq in
-          let v = if mem l evs & not (free_in l r) then l else r in
+          let v = if mem l evs && not (free_in l r) then l else r in
           let cjs' = eq::(subtract eqs [eq]) in
           let n = length evs - (1 + index v (rev evs)) in
           let th1 = CONJ_ACI_RULE(mk_eq(bod,list_mk_conj cjs')) in
@@ -1539,10 +1539,10 @@ let FORALL_UNWIND_CONV =
         let eq = find (fun tm ->
           is_eq tm &
           let l,r = dest_eq tm in
-          (mem l avs & not (free_in l r)) or
-          (mem r avs & not (free_in r l))) eqs in
+          (mem l avs && not (free_in l r)) ||
+          (mem r avs && not (free_in r l))) eqs in
         let l,r = dest_eq eq in
-        let v = if mem l avs & not (free_in l r) then l else r in
+        let v = if mem l avs && not (free_in l r) then l else r in
         let cjs' = eq::(subtract eqs [eq]) in
         let n = length avs - (1 + index v (rev avs)) in
         let th1 = CONJ_ACI_RULE(mk_eq(ant,list_mk_conj cjs')) in

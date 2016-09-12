@@ -27,7 +27,7 @@ let NORM_ELIM_CONV =
     else v in
   let is_norm = can dest_norm in
   fun tm ->
-    let t = find_term (fun t -> is_norm t & free_in t tm) tm in
+    let t = find_term (fun t -> is_norm t && free_in t tm) tm in
     let v = dest_norm t in
     let w = genvar(type_of t) in
     let th1 = ISPECL [mk_abs(w,subst[w,t] tm); v] NORM_ELIM_THM in

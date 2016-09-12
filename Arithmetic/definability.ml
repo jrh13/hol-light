@@ -398,7 +398,7 @@ let OBJECTIFY =
       else if is_numeral tm then mk_comb(numeral_tm,tm)
       else if is_add tm then objectify2 objectify_term oadd_tm env tm
       else if is_mul tm then objectify2 objectify_term omul_tm env tm
-      else if is_comb tm & rator tm = suc_tm
+      else if is_comb tm && rator tm = suc_tm
         then objectify1 objectify_term osuc_tm env tm
       else
         let f,args = strip_comb tm in

@@ -651,7 +651,7 @@ let is_complex_const =
   let cx_tm = `Cx` in
   fun tm ->
     is_comb tm &
-    let l,r = dest_comb tm in l = cx_tm & is_ratconst r;;
+    let l,r = dest_comb tm in l = cx_tm && is_ratconst r;;
 
 let dest_complex_const =
   let cx_tm = `Cx` in
@@ -732,7 +732,7 @@ let COMPLEX_POLY_CONV =
   and pow_tm = `(pow):complex->num->complex`
   and div_conv = REWR_CONV complex_div in
   let rec COMPLEX_POLY_CONV tm =
-    if not(is_comb tm) or is_complex_const tm then REFL tm else
+    if not(is_comb tm) || is_complex_const tm then REFL tm else
     let lop,r = dest_comb tm in
     if lop = neg_tm then
       let th1 = AP_TERM lop (COMPLEX_POLY_CONV r) in
@@ -745,7 +745,7 @@ let COMPLEX_POLY_CONV =
     if op = pow_tm then
       let th1 = AP_THM (AP_TERM op (COMPLEX_POLY_CONV l)) r in
       TRANS th1 (TRY_CONV COMPLEX_POLY_POW_CONV (rand(concl th1)))
-    else if op = add_tm or op = mul_tm or op = sub_tm then
+    else if op = add_tm || op = mul_tm || op = sub_tm then
       let th1 = MK_COMB(AP_TERM op (COMPLEX_POLY_CONV l),
                         COMPLEX_POLY_CONV r) in
       let fn = if op = add_tm then COMPLEX_POLY_ADD_CONV
@@ -851,14 +851,14 @@ let COMPLEX_FIELD =
   and is_inv =
     let inv_tm = `inv:complex->complex`
     and is_div = is_binop `(/):complex->complex->complex` in
-    fun tm -> (is_div tm or (is_comb tm & rator tm = inv_tm)) &
+    fun tm -> (is_div tm || (is_comb tm && rator tm = inv_tm)) &
               not(is_complex_const(rand tm))
   and lemma_inv = MESON[COMPLEX_MUL_RINV]
     `!x. x = Cx(&0) \/ x * inv(x) = Cx(&1)`
   and dcases = MATCH_MP(TAUT `(p \/ q) /\ (r \/ s) ==> (p \/ r) \/ q /\ s`) in
   let cases_rule th1 th2 = dcases (CONJ th1 th2) in
   let BASIC_COMPLEX_FIELD tm =
-    let is_freeinv t = is_inv t & free_in t tm in
+    let is_freeinv t = is_inv t && free_in t tm in
     let itms = setify(map rand (find_terms is_freeinv tm)) in
     let dth = if itms = [] then TRUTH
               else end_itlist cases_rule (map (C SPEC lemma_inv) itms) in

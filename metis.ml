@@ -1096,7 +1096,7 @@ let rec treeSubsetDomain compareKey tree1 tree2 =
       | Tree node2 -> nodeSubsetDomain compareKey node1 node2
 
 and nodeSubsetDomain compareKey node1 node2 =
-    pointerEqual (node1,node2) or
+    pointerEqual (node1,node2) ||
       let {size=size;left=left;key=key;right=right} = node1
     in
       size <= nodeSize node2 &&
@@ -1613,7 +1613,7 @@ let compare compareValue (m1,m2) =
       | Greater -> Greater;;
 
 let equal equalValue m1 m2 =
-    pointerEqual (m1,m2) or
+    pointerEqual (m1,m2) ||
     (size m1 = size m2 &&
        let Map (compareKey,_) = m1
 
@@ -2267,7 +2267,7 @@ let variantPrime avoid =
     in variant;;
 
 let variantNum avoid n =
-  let isDigitOrPrime c = c = '\'' or isDigit c
+  let isDigitOrPrime c = c = '\'' || isDigit c
   in if not (avoid n) then n
       else
         let n = stripSuffix isDigitOrPrime n in
@@ -2562,7 +2562,7 @@ let find pred =
 let freeIn v tm =
   let rec free v = function
       [] -> false
-    | (Var w :: tms) -> Name.equal v w or free v tms
+    | (Var w :: tms) -> Name.equal v w || free v tms
     | (Fn (_,args) :: tms) -> free v (args @ tms);
   in free v [tm];;
 
@@ -3068,7 +3068,7 @@ let subst sub ((p,tms) as atm) : atom =
 
 let matchAtoms sub (p1,tms1) (p2,tms2) =
   let matchArg ((tm1,tm2),sub) = Substitute.matchTerms sub tm1 tm2 in
-        let _ = (Name.equal p1 p2 && length tms1 = length tms2) or
+        let _ = (Name.equal p1 p2 && length tms1 = length tms2) ||
                 raise (Error "Atom.match")
       in
         Mlist.foldl matchArg sub (zip tms1 tms2)
@@ -3080,7 +3080,7 @@ let matchAtoms sub (p1,tms1) (p2,tms2) =
 
 let unify sub (p1,tms1) (p2,tms2) =
   let unifyArg ((tm1,tm2),sub) = Substitute.unify sub tm1 tm2 in
-        let _ = (Name.equal p1 p2 && length tms1 = length tms2) or
+        let _ = (Name.equal p1 p2 && length tms1 = length tms2) ||
                 raise (Error "Atom.unify")
       in
         Mlist.foldl unifyArg sub (zip tms1 tms2)
@@ -3106,7 +3106,7 @@ let mkRefl tm = mkEq (tm,tm);;
 
 let destRefl atm =
     let (l,r) = destEq atm
-    in let _ = Term.equal l r or raise (Error "Atom.destRefl")
+    in let _ = Term.equal l r || raise (Error "Atom.destRefl")
     in
       l
     ;;
@@ -3115,7 +3115,7 @@ let isRefl x = can destRefl x;;
 
 let sym atm =
     let (l,r) = destEq atm
-    in let _ = not (Term.equal l r) or raise (Error "Atom.sym: refl")
+    in let _ = not (Term.equal l r) || raise (Error "Atom.sym: refl")
     in
       mkEq (r,l)
     ;;
@@ -3496,7 +3496,7 @@ let freeIn v =
           [] -> false
         | (True :: fms) -> f fms
         | (False :: fms) -> f fms
-        | (Atom atm :: fms) -> Atom.freeIn v atm or f fms
+        | (Atom atm :: fms) -> Atom.freeIn v atm || f fms
         | (Not p :: fms) -> f (p :: fms)
         | (And (p,q) :: fms) -> f (p :: q :: fms)
         | (Or (p,q) :: fms) -> f (p :: q :: fms)
@@ -3826,7 +3826,7 @@ let subst sub ((pol,atm) as lit) : literal =
 (* ------------------------------------------------------------------------- *)
 
 let matchLiterals sub ((pol1,atm1) : literal) (pol2,atm2) =
-      let _ = pol1 = pol2 or raise (Error "Literal.match")
+      let _ = pol1 = pol2 || raise (Error "Literal.match")
     in
       Atom.matchAtoms sub atm1 atm2
     ;;
@@ -3836,7 +3836,7 @@ let matchLiterals sub ((pol1,atm1) : literal) (pol2,atm2) =
 (* ------------------------------------------------------------------------- *)
 
 let unify sub ((pol1,atm1) : literal) (pol2,atm2) =
-      let _ = pol1 = pol2 or raise (Error "Literal.unify")
+      let _ = pol1 = pol2 || raise (Error "Literal.unify")
     in
       Atom.unify sub atm1 atm2
     ;;
@@ -4028,7 +4028,7 @@ let isTautology th =
   let chk = function
       (_,None) -> None
     | ((pol,atm), Some set) ->
-      if (pol && Atom.isRefl atm) or Atom.Set.member atm set then None
+      if (pol && Atom.isRefl atm) || Atom.Set.member atm set then None
       else Some (Atom.Set.add set atm)
   in
       match Literal.Set.foldl chk (Some Atom.Set.empty) (clause th) with
@@ -4484,7 +4484,7 @@ let freeIn v =
           | (_, Resolve _) -> false
           | (_, Refl tm) -> Term.freeIn v tm
           | (_, Equality (lit,_,tm)) ->
-            Literal.freeIn v lit or Term.freeIn v tm
+            Literal.freeIn v lit || Term.freeIn v tm
     in
       List.exists free
     ;;
@@ -5052,9 +5052,9 @@ in
 let rec expandAbbrevs th =
   let expand lit =
         let (x,y) = Literal.destNeq lit
-        in let _ = Term.isTypedVar x or Term.isTypedVar y or
+        in let _ = Term.isTypedVar x || Term.isTypedVar y ||
                 raise (Error "Rule.expandAbbrevs: no vars")
-        in let _ = not (Term.equal x y) or
+        in let _ = not (Term.equal x y) ||
                 raise (Error "Rule.expandAbbrevs: equal vars")
       in
         Substitute.unify Substitute.empty x y
@@ -5508,10 +5508,10 @@ and projectionMax = 9;;
 let projectionList = minMaxInterval projectionMin projectionMax;;
 
 let projectionName i =
-      let _ = projectionMin <= i or
+      let _ = projectionMin <= i ||
               raise (Bug "Model.projectionName: less than projectionMin")
 
-      in let _ = i <= projectionMax or
+      in let _ = i <= projectionMax ||
               raise (Bug "Model.projectionName: greater than projectionMax")
     in
       Name.fromString ("project" ^ Int.toString i)
@@ -5545,10 +5545,10 @@ and numeralMax = 100;;
 let numeralList = minMaxInterval numeralMin numeralMax;;
 
 let numeralName i =
-      let _ = numeralMin <= i or
+      let _ = numeralMin <= i ||
               raise (Bug "Model.numeralName: less than numeralMin")
 
-      in let _ = i <= numeralMax or
+      in let _ = i <= numeralMax ||
               raise (Bug "Model.numeralName: greater than numeralMax")
 
       in let s = if i < 0 then "negative" ^ Int.toString (-i) else Int.toString i
@@ -5679,7 +5679,7 @@ and sucName = Name.fromString "suc";;
   let expFn sz x y = Some (exp (multN sz) x y (oneN sz));;
 
   let modFn {size = n} x y =
-      if y = 0 or x = n - 1 then None else Some (x mod y);;
+      if y = 0 || x = n - 1 then None else Some (x mod y);;
 
   let multFn sz x y = Some (multN sz (x,y));;
 
@@ -5689,7 +5689,7 @@ and sucName = Name.fromString "suc";;
 
   let subFn {size = n} x y =
       if y = 0 then Some x
-      else if x = n - 1 or x < y then None
+      else if x = n - 1 || x < y then None
       else Some (x - y);;
 
   let sucFn sz x = Some (cutN sz (x + 1));;
@@ -5697,7 +5697,7 @@ and sucName = Name.fromString "suc";;
   (* Relations *)
 
   let dividesRel {size = n} x y =
-      if x = 1 or y = 0 then Some true
+      if x = 1 || y = 0 then Some true
       else if x = 0 then Some false
       else if y = n - 1 then None
       else Some (divides x y);;
@@ -6192,7 +6192,7 @@ let interpretFormula vM =
           | Formula.False -> false
           | Formula.Atom atm -> interpretAtom vM vV atm
           | Formula.Not p -> not (interpret vV p)
-          | Formula.Or (p,q) -> interpret vV p or interpret vV q
+          | Formula.Or (p,q) -> interpret vV p || interpret vV q
           | Formula.And (p,q) -> interpret vV p && interpret vV q
           | Formula.Imp (p,q) -> interpret vV (Formula.Or (Formula.Not p, q))
           | Formula.Iff (p,q) -> interpret vV p = interpret vV q
@@ -6201,7 +6201,7 @@ let interpretFormula vM =
             interpret vV (Formula.Not (Formula.Forall (v, Formula.Not p)))
 
       and interpret' vV fm v i =
-          i = 0 or
+          i = 0 ||
             let i = i - 1
             in let vV' = insertValuation vV (v,i)
           in
@@ -6483,7 +6483,7 @@ let rec termToQterm = function
       (Var, x) -> x
     | (x, Var) -> x
     | (Fn (f,a), Fn (g,b)) ->
-        let _ = Name_arity.equal f g or raise (Error "Term_net.qv")
+        let _ = Name_arity.equal f g || raise (Error "Term_net.qv")
       in
         Fn (f, zipWith qv a b)
       ;;
@@ -7583,10 +7583,10 @@ let termReducible order known id =
 
       in let knownRed tm (eqnId,(eqn,ort)) =
           eqnId <> id &&
-          ((ort <> Some Right_to_left && eqnRed eqn tm) or
+          ((ort <> Some Right_to_left && eqnRed eqn tm) ||
            (ort <> Some Left_to_right && eqnRed (Rule.symEqn eqn) tm))
 
-      in let rec termRed tm = Intmap.exists (knownRed tm) known or subtermRed tm
+      in let rec termRed tm = Intmap.exists (knownRed tm) known || subtermRed tm
       and subtermRed = function
           (Term.Var _) -> false
         | (Term.Fn (_,tms)) -> List.exists termRed tms
@@ -7673,14 +7673,14 @@ let orientedEquation dir eqn = match dir with
 
 let rewrIdConv' order known redexes id tm =
       let rewr (id',lr) =
-            let _ = id <> id' or raise (Error "same theorem")
+            let _ = id <> id' || raise (Error "same theorem")
             in let (eqn,ort) = Intmap.get known id'
-            in let _ = wellOriented ort lr or raise (Error "orientation")
+            in let _ = wellOriented ort lr || raise (Error "orientation")
             in let (l,r) = redexResidue lr eqn
             in let sub = Substitute.normalize (Substitute.matchTerms Substitute.empty l tm)
             in let tm' = Substitute.subst sub r
-            in let _ = Option.isSome ort or
-                    order (tm,tm') = Some Greater or
+            in let _ = Option.isSome ort ||
+                    order (tm,tm') = Some Greater ||
                     raise (Error "order")
             in let (_,th) = orientedEquation lr eqn
           in
@@ -7819,7 +7819,7 @@ let rewriteIdRule' = fun order -> fun known -> fun redexes -> fun id -> fun th -
 (*MetisTrace6
       let () = Print.trace Thm.pp "Rewrite.rewriteIdRule': result" result
 *)
-      let _ = not (thmReducible order known id result) or
+      let _ = not (thmReducible order known id result) ||
               raise Bug "rewriteIdRule: should be normalized"
     in
       result
@@ -7906,9 +7906,9 @@ let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
             and (l,r) = eq
           in
             Term.equal l l0 && Term.equal r r0
-      in let same_redexes = identical or sameRedexes ort0 eq0 eq
+      in let same_redexes = identical || sameRedexes ort0 eq0 eq
       in let rpl = if same_redexes then rpl else Intset.add rpl id
-      in let spl = if newx or identical then spl else Intset.add spl id
+      in let spl = if newx || identical then spl else Intset.add spl id
       in let changed =
           if not newx && identical then changed else Intset.add changed id
       in let ort =
@@ -7935,7 +7935,7 @@ let reduce1 newx id (eqn0,ort0) (rpl,spl,todo,rw,changed) =
               if same_redexes then redexes
               else addRedexes id (eqn,ort) redexes
           in let subterms =
-              if newx or not identical then addSubterms id eqn subterms
+              if newx || not identical then addSubterms id eqn subterms
               else subterms
           in let rw =
               Rewrite
@@ -8043,7 +8043,7 @@ let reduce' = fun rw ->
 *)
       let ths = List.map (fun (id,((_,th),_)) -> (id,th)) (Intmap.toList known')
       let _ =
-          not (List.exists (uncurry (thmReducible order known')) ths) or
+          not (List.exists (uncurry (thmReducible order known')) ths) ||
           raise Bug "Rewrite.reduce': not fully reduced"
     in
       result
@@ -8256,7 +8256,7 @@ let strictlyLess ordering x_y =
     | _ -> false;;
 
 let isLargerTerm ({ordering=ordering;orderTerms=orderTerms} : parameters) l_r =
-    not orderTerms or not (strictlyLess ordering l_r);;
+    not orderTerms || not (strictlyLess ordering l_r);;
 
   let atomToTerms atm =
       match total Atom.destEq atm with
@@ -8430,14 +8430,14 @@ let resolve (cl1,lit1) (cl2,lit2) =
       in let lit2 = Literal.negate lit1
       in let th1 = Thm.subst sub th1
       and th2 = Thm.subst sub th2
-      in let _ = isLargerLiteral parameters (Thm.clause th1) lit1 or
+      in let _ = isLargerLiteral parameters (Thm.clause th1) lit1 ||
 (*MetisTrace5
-              (trace "Clause.resolve: th1 violates ordering\n";; false) or
+              (trace "Clause.resolve: th1 violates ordering\n";; false) ||
 *)
               raise (Error "resolve: clause1: ordering constraints")
-      in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 or
+      in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 ||
 (*MetisTrace5
-              (trace "Clause.resolve: th2 violates ordering\n";; false) or
+              (trace "Clause.resolve: th2 violates ordering\n";; false) ||
 *)
               raise (Error "resolve: clause2: ordering constraints")
       in let th = Thm.resolve lit1 th1 th2
@@ -8471,9 +8471,9 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
       and th1 = Thm.subst sub th1
       and th2 = Thm.subst sub th2
 
-      in let _ = isLargerLiteral parameters (Thm.clause th1) lit1 or
+      in let _ = isLargerLiteral parameters (Thm.clause th1) lit1 ||
               raise (Error "Clause.paramodulate: with clause: ordering")
-      in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 or
+      in let _ = isLargerLiteral parameters (Thm.clause th2) lit2 ||
               raise (Error "Clause.paramodulate: into clause: ordering")
 
       in let eqn = (Literal.destEq lit1, th1)
@@ -8484,7 +8484,7 @@ let paramodulate (cl1,lit1,ort1,tm1) (cl2,lit2,path2,tm2) =
 (*MetisTrace6
       let () = Print.trace Rule.ppEquation "Clause.paramodulate: eqn" eqn
 *)
-      in let _ = isLargerTerm parameters l_r or
+      in let _ = isLargerTerm parameters l_r ||
               raise (Error "Clause.paramodulate: equation: ordering constraints")
       in let th = Rule.rewrRule eqn lit2 path2 th2
 (*MetisTrace5
@@ -8545,7 +8545,7 @@ local
   let allFactors red =
       let
         let allClause cl =
-            List.all red (cl :: Clause.factor cl) or
+            List.all red (cl :: Clause.factor cl) ||
             let
               let () = Print.trace Clause.pp
                          "Active.isSaturated.allFactors: cl" cl
@@ -8566,7 +8566,7 @@ local
                   | Some cl -> allFactors red [cl]
             in
               Literal.Set.all allLiteral2 (Clause.literals cl)
-            end or
+            end ||
             let
               let () = Print.trace Clause.pp
                          "Active.isSaturated.allResolutions: cl2" cl
@@ -8581,7 +8581,7 @@ local
               let allLiteral1 lit = List.all (allClause2 (cl,lit)) allCls
             in
               Literal.Set.all allLiteral1 (Clause.literals cl)
-            end or
+            end ||
             let
               let () = Print.trace Clause.pp
                          "Active.isSaturated.allResolutions: cl1" cl
@@ -8609,7 +8609,7 @@ local
                         | Some cl -> allFactors red [cl]
                   in
                     List.all allSubterms (Literal.nonVarTypedSubterms lit)
-                  end or
+                  end ||
                   let
                     let () = Print.trace Literal.pp
                                "Active.isSaturated.allParamodulations: lit2" lit
@@ -8618,7 +8618,7 @@ local
                   end
             in
               Literal.Set.all allLiteral2 (Clause.literals cl)
-            end or
+            end ||
             let
               let () = Print.trace Clause.pp
                          "Active.isSaturated.allParamodulations: cl2" cl
@@ -8642,7 +8642,7 @@ local
                     | Some (l,r) ->
                       allCl2 (cl,lit,Rewrite.Left_to_right,l) &&
                       allCl2 (cl,lit,Rewrite.Right_to_left,r)
-                  end or
+                  end ||
                   let
                     let () = Print.trace Literal.pp
                                "Active.isSaturated.allParamodulations: lit1" lit
@@ -8651,7 +8651,7 @@ local
                   end
             in
               Literal.Set.all allLiteral1 (Clause.literals cl)
-            end or
+            end ||
             let
               let () = Print.trace Clause.pp
                          "Active.isSaturated.allParamodulations: cl1" cl
@@ -8668,14 +8668,14 @@ local
             match Clause.simplify cl with
               None -> true
             | Some cl ->
-              Subsume.isStrictlySubsumed subsume (Clause.literals cl) or
+              Subsume.isStrictlySubsumed subsume (Clause.literals cl) ||
               let
                 let cl' = cl
                 let cl' = Clause.reduce reduce cl'
                 let cl' = Clause.rewrite rewrite cl'
               in
                 not (Clause.equalThms cl cl') &&
-                (simp cl' or
+                (simp cl' ||
                  let
                    let () = Print.trace Clause.pp
                               "Active.isSaturated.redundant: cl'" cl'
@@ -8685,7 +8685,7 @@ local
               end
       in
         fun cl ->
-           simp cl or
+           simp cl ||
            let
              let () = Print.trace Clause.pp
                         "Active.isSaturated.redundant: cl" cl
@@ -8702,7 +8702,7 @@ in
       in
         (allFactors red cls &&
          allResolutions red cls &&
-         allParamodulations red cls) or
+         allParamodulations red cls) ||
         let
           let () = Print.trace Rewrite.pp "Active.isSaturated: rw" rw
           let () = Print.trace (Print.ppList Clause.pp)
@@ -9088,7 +9088,7 @@ let deduce active cl =
                   match total (Substitute.matchTerms Substitute.empty l) tm with
                     None -> false
                   | Some sub ->
-                    ord or
+                    ord ||
                       let tm' = Substitute.subst (Substitute.normalize sub) r
                     in
                       order (tm,tm') = Some Greater
@@ -9536,10 +9536,10 @@ let add' waiting dist mcls cls =
       in let {modelsP = modelParameters} = parameters
 
 (*MetisDebug
-      let _ = not (Mlist.null cls) or
+      let _ = not (Mlist.null cls) ||
               raise Bug "Waiting.add': null"
 
-      let _ = length mcls = length cls or
+      let _ = length mcls = length cls ||
               raise Bug "Waiting.add': different lengths"
 *)
 
@@ -9771,7 +9771,7 @@ module Metis_generate = struct
 let metis_name = string_of_int
 
 let rec metis_of_term env consts tm =
-  if is_var tm & not (mem tm consts) then
+  if is_var tm && not (mem tm consts) then
     (Term.Var(metis_name (Meson.fol_of_var tm)))
   else (
     let f,args = strip_comb tm in
@@ -9780,7 +9780,7 @@ let rec metis_of_term env consts tm =
     Term.Fn (metis_name ff, map (metis_of_term env consts) args))
 
 let rec metis_of_term env consts tm =
-  if is_var tm & not (mem tm consts) then
+  if is_var tm && not (mem tm consts) then
     (Term.Var(metis_name (Meson.fol_of_var tm)))
   else (
     let f,args = strip_comb tm in

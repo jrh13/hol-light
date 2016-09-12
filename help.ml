@@ -18,7 +18,7 @@ let help_path = ref ["$/Help"];;
 let help s =
   let funny_filenames =
    ["++", ".joinparsers";
-    "||", ".orparser";
+    "|||", ".orparser";
     ">>", ".pipeparser";
     "|=>", ".singlefun";
     "--", ".upto";
@@ -113,12 +113,12 @@ let search =
     match (l1,l2) with
       [],_ -> true
     | _,[] -> false
-    | (h1::t1,h2::t2) -> h1 = h2 & immediatesublist t1 t2 in
+    | (h1::t1,h2::t2) -> h1 = h2 && immediatesublist t1 t2 in
   let rec sublist l1 l2 =
     match (l1,l2) with
       [],_ -> true
     | _,[] -> false
-    | (h1::t1,h2::t2) -> immediatesublist l1 l2 or sublist l1 t2 in
+    | (h1::t1,h2::t2) -> immediatesublist l1 l2 || sublist l1 t2 in
   let exists_subterm_satisfying p (n,th) = can (find_term p) (concl th)
   and name_contains s (n,th) = sublist (explode s) (explode n) in
   let rec filterpred tm =
@@ -134,5 +134,5 @@ let search =
          ("Ignoring plain variables in search: "^
           end_itlist (fun s t -> s^", "^t) (map (fst o dest_var) triv))
      else ());
-    (if nontriv = [] & triv <> [] then []
+    (if nontriv = [] && triv <> [] then []
      else itlist (filter o filterpred) pats (!theorems));;

@@ -57,7 +57,7 @@ let mk_eq =
                              else ordav oenv x1 x2
 
   let rec orda env tm1 tm2 =
-    if tm1 == tm2 & env = [] then 0 else
+    if tm1 == tm2 && env = [] then 0 else
     match (tm1,tm2) with
       Var(x1,ty1),Var(x2,ty2) -> ordav env tm1 tm2
     | Const(x1,ty1),Const(x2,ty2) -> Pervasives.compare tm1 tm2
@@ -96,7 +96,7 @@ let mk_eq =
   let rec term_image f l =
     match l with
       h::t -> let h' = f h and t' = term_image f t in
-              if h' == h & t' == t then l else term_union [h'] t'
+              if h' == h && t' == t then l else term_union [h'] t'
     | [] -> l
 
 (* ------------------------------------------------------------------------- *)
@@ -318,7 +318,7 @@ module Hol : Hol_thm_primitives = struct
       fun th p -> th;;
 
   let equals_thm (Sequent (p1,c1,_)) (Sequent (p2,c2,_)) =
-    (p1 = p2) & (c1 = c2)
+    (p1 = p2) && (c1 = c2)
 
   let le_thm (Sequent (p1,c1,_)) (Sequent (p2,c2,_)) = (p1, c1) <= (p2, c2)
 

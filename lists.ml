@@ -650,7 +650,7 @@ let dest_char,mk_char,dest_string,mk_string,CHAR_EQ_CONV,STRING_EQ_CONV =
   let code_of_term t =
     let f,tms = strip_comb t in
     if not(is_const f && fst(dest_const f) = "ASCII")
-       or not(length tms = 8) then failwith "code_of_term"
+       || not(length tms = 8) then failwith "code_of_term"
     else
        itlist (fun b f -> if b then 1 + 2 * f else 2 * f)
               (map bool_of_term (rev tms)) 0 in

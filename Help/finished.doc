@@ -6,14 +6,14 @@
 Parser that checks emptiness of the input.
 
 \DESCRIBE
-The function {finished} tests if its input is the empty list, and if so returns 
-a pair of zero and that input. Otherwise it fails. 
+The function {finished} tests if its input is the empty list, and if so returns
+a pair of zero and that input. Otherwise it fails.
 
 \FAILURE
 Fails on nonempty input.
 
 \USES
-This function is intended to check that some parsing operation has absorbed all 
+This function is intended to check that some parsing operation has absorbed all
 the input.
 
 \COMMENTS
@@ -26,7 +26,7 @@ left to right, and return a pair consisting of the object derived from parsing
 processed.
 
 \SEEALSO
-++, ||, >>, a, atleast, elistof, fix, leftbin, listof, many, nothing, possibly,
+++, |||, >>, a, atleast, elistof, fix, leftbin, listof, many, nothing, possibly,
 rightbin, some.
 
 \ENDDOC

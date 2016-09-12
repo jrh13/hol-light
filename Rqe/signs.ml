@@ -95,21 +95,21 @@ let ASSERTSIGN vars sgns sgn_thm =
   let c_thm = SIGN_CONST c in  
   let c_op,_,_ = get_binop (concl c_thm) in  
   let sgn_thm' =
-    if c_op = rlt & op = rlt then 
+    if c_op = rlt && op = rlt then 
       MATCH_MPL[signs_lem01;c_thm;sgn_thm;p_thm]
-    else if c_op = rgt & op = rlt then
+    else if c_op = rgt && op = rlt then
       MATCH_MPL[signs_lem02;c_thm;sgn_thm;p_thm]
-    else if c_op = rlt & op = rgt then
+    else if c_op = rlt && op = rgt then
       MATCH_MPL[signs_lem03;c_thm;sgn_thm;p_thm]
-    else if c_op = rgt & op = rgt then
+    else if c_op = rgt && op = rgt then
       MATCH_MPL[signs_lem04;c_thm;sgn_thm;p_thm]
-    else if c_op = rlt & op = req then 
+    else if c_op = rlt && op = req then 
       MATCH_MPL[signs_lem05;c_thm;sgn_thm;p_thm]
-    else if c_op = rgt & op = req then
+    else if c_op = rgt && op = req then
       MATCH_MPL[signs_lem06;c_thm;sgn_thm;p_thm]
-    else if c_op = rlt & op = rneq then
+    else if c_op = rlt && op = rneq then
       MATCH_MPL[signs_lem07;c_thm;sgn_thm;p_thm]
-    else if c_op = rgt & op = rneq then
+    else if c_op = rgt && op = rneq then
       MATCH_MPL[signs_lem08;c_thm;sgn_thm;p_thm]
     else failwith "ASSERTSIGN : 0" in
   try 
@@ -117,7 +117,7 @@ let ASSERTSIGN vars sgns sgn_thm =
     let op1,l1,r1 = get_binop (concl sgn_thm') in
     let op2,l2,r2 = get_binop (concl sgn_thm'') in
       if (concl sgn_thm') = (concl sgn_thm'') then sgns 
-      else if op2 = rneq & (op1 = rlt or op1 = rgt) then sgn_thm'::snd (remove ((=) sgn_thm'') sgns) 
+      else if op2 = rneq && (op1 = rlt || op1 = rgt) then sgn_thm'::snd (remove ((=) sgn_thm'') sgns) 
       else failwith "ASSERTSIGN : 1"
   with Failure "find" -> sgn_thm'::sgns;; 
       

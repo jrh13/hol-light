@@ -807,7 +807,7 @@ let COMPLEX_QUELIM_CONV =
             let th5 = COMPLEX_QUELIM_CONV asm avs (rand tm4) in
             TRANS th4 (AP_TERM (rator tm4) th5)
     with Failure _ ->
-    if eqs = [] or
+    if eqs = [] ||
        (length eqs = 1 &
         (let ceq = mk_eq(last(dest_list(lhand(lhs(hd eqs)))),zero_tm) in
          try concl(RESOLVE_EQ asm ceq) = mk_neg ceq with Failure _ -> false) &
@@ -898,7 +898,7 @@ let FULL_COMPLEX_QUELIM_CONV =
         TRANS th1 th2
      else if is_neg tm then
         AP_TERM (rator tm) (FULL_COMPLEX_QUELIM_CONV avs (rand tm))
-     else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+     else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
         let lop,r = dest_comb tm in
         let op,l = dest_comb lop in
         let thl = FULL_COMPLEX_QUELIM_CONV avs l

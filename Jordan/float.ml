@@ -1561,7 +1561,7 @@ let is_bits_format  =
     let rec format x =
     if (x = `_0`) then true
     else let (h,t) = dest_comb x  in
-      (((h = `BIT1`) or (h = `BIT0`)) && (format t))
+      (((h = `BIT1`) || (h = `BIT0`)) && (format t))
     in falsify_ex format;;
 
 let is_numeral_format =
@@ -1589,7 +1589,7 @@ let is_neg_int_format =
       falsify_ex fn;;
 
 let is_int_format x =
-  (is_neg_int_format x) or (is_pos_int_format x);;
+  (is_neg_int_format x) || (is_pos_int_format x);;
 
 let is_float_format =
     let fn x =
@@ -1628,7 +1628,7 @@ let is_comb_of t u =
 let rec heron_sqrt depth A x eps =
     let half = (Int 1)//(Int 2) in
     if (depth <= 0) then raise (Failure "sqrt recursion depth exceeded") else
-    if (Num.abs_num (x -/ (A//x) ) </ eps) & (x*/ x >=/ A)  then (A//x) else
+    if (Num.abs_num (x -/ (A//x) ) </ eps) && (x*/ x >=/ A)  then (A//x) else
     let x' = half */ (x +/ (A//x)) in
     heron_sqrt (depth -1) A x' eps;;
 

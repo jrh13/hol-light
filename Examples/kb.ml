@@ -16,7 +16,7 @@
 (* thesis: "An Implementation of Higher Order Logic", U Calgary 1991.        *)
 (* ========================================================================= *)
 
-let is_realvar w x = is_var x & not(mem x w);;
+let is_realvar w x = is_var x && not(mem x w);;
 
 let rec real_strip w tm =
   if mem tm w then tm,[] else
@@ -29,7 +29,7 @@ let rec real_strip w tm =
 
 let weight lis (f,n) (g,m) =
   let i = index f lis and j = index g lis in
-  i > j or i = j & n > m;;
+  i > j || i = j && n > m;;
 
 (* ------------------------------------------------------------------------- *)
 (* Generic lexicographic ordering function.                                  *)
@@ -38,7 +38,7 @@ let weight lis (f,n) (g,m) =
 let rec lexord ord l1 l2 =
   match (l1,l2) with
     (h1::t1,h2::t2) -> if ord h1 h2 then length t1 = length t2
-                       else h1 = h2 & lexord ord t1 t2
+                       else h1 = h2 && lexord ord t1 t2
   | _ -> false;;
 
 (* ------------------------------------------------------------------------- *)
@@ -48,24 +48,24 @@ let rec lexord ord l1 l2 =
 (* ------------------------------------------------------------------------- *)
 
 let rec lpo_gt w s t =
-  if is_realvar w t then not(s = t) & mem t (frees s)
-  else if is_realvar w s or is_abs s or is_abs t then false else
+  if is_realvar w t then not(s = t) && mem t (frees s)
+  else if is_realvar w s || is_abs s || is_abs t then false else
   let f,fargs = real_strip w s and g,gargs = real_strip w t in
-  exists (fun si -> lpo_ge w si t) fargs or
+  exists (fun si -> lpo_ge w si t) fargs ||
         forall (lpo_gt w s) gargs &
-        (f = g & lexord (lpo_gt w) fargs gargs or
+        (f = g && lexord (lpo_gt w) fargs gargs ||
          weight w (f,length fargs) (g,length gargs))
-and lpo_ge w s t = (s = t) or lpo_gt w s t;;
+and lpo_ge w s t = (s = t) || lpo_gt w s t;;
 
 (* ------------------------------------------------------------------------- *)
 (* Unification. Again we have the weights "w" fixing the set of constants.   *)
 (* ------------------------------------------------------------------------- *)
 
 let rec istriv w env x t =
-  if is_realvar w t then t = x or defined env t & istriv w env x (apply env t)
+  if is_realvar w t then t = x || defined env t && istriv w env x (apply env t)
   else if is_const t then false else
   let f,args = strip_comb t in
-  exists (istriv w env x) args & failwith "cyclic";;
+  exists (istriv w env x) args && failwith "cyclic";;
 
 let rec unify w env tp =
   match tp with
@@ -155,7 +155,7 @@ let normalize_and_orient w eqs th =
 (* ------------------------------------------------------------------------- *)
 
 let status(eqs,crs) eqs0 =
-  if eqs = eqs0 & (length crs) mod 1000 <> 0 then () else
+  if eqs = eqs0 && (length crs) mod 1000 <> 0 then () else
   (print_string(string_of_int(length eqs)^" equations and "^
                 string_of_int(length crs)^" pending critical pairs");
    print_newline());;

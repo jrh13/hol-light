@@ -291,13 +291,13 @@ let new_specification =
     if not (frees c = []) then
       failwith "new_specification: Free variables in predicate" else
     let avs = fst(strip_exists c) in
-    if length names = 0 or length names > length avs then
+    if length names = 0 || length names > length avs then
       failwith "new_specification: Unsuitable number of constant names" else
     if not (check_distinct names) then
       failwith "new_specification: Constant names not distinct"
     else
       try let sth = snd(find (fun ((names',th'),sth') ->
-                               names' = names & aconv (concl th') (concl th))
+                               names' = names && aconv (concl th') (concl th))
                              (!the_specifications)) in
           warn true ("Benign respecification"); sth
       with Failure _ ->

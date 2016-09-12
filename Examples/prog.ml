@@ -534,35 +534,35 @@ let parse_program,parse_program_assertion =
       function ((Ident n)::rest) -> n,rest
         | _ -> raise Noparse in
   let variant s =
-     a (Ident "variant") ++ parse_preterm
-     >> snd
-  || a (Ident "measure") ++ expression s
-     >> fun (_,m) -> Combp(Varp("MEASURE",dpty),m) in
+     (a (Ident "variant") ++ parse_preterm
+      >> snd)
+  ||| (a (Ident "measure") ++ expression s
+       >> fun (_,m) -> Combp(Varp("MEASURE",dpty),m)) in
   let annotation s =
       a (Resword "[") ++ a (Ident "invariant") ++ expression s ++
       a (Resword ";") ++ variant s ++ a (Resword "]")
   >> fun (((((_,_),i),_),v),_) -> (i,v) in
   let rec command s i =
-      (a (Resword "(") ++ commands s ++ a (Resword ")")
-       >> (fun ((_,c),_) -> c)
-    || a (Resword "skip")
-       >> lmk_skip
-    || a (Resword "abort")
-       >> lmk_abort
-    || a (Resword "if") ++ expression s ++ a (Resword "then") ++ command s ++
-       possibly (a (Resword "else") ++ command s >> snd)
-       >> (fun ((((_,e),_),c),cs) -> if cs = [] then lmk_if e c
-                                     else lmk_ite e c (hd cs))
-    || a (Resword "while") ++ expression s ++ a (Resword "do") ++
-                              possibly (annotation s) ++ command s
-       >> (fun ((((_,e),_),al),c) -> lmk_gwhile al e c)
-    || a (Resword "do") ++ possibly (annotation s) ++
-                           command s ++ a (Resword "while") ++ expression s
-       >> (fun ((((_,al),c),_),e) -> lmk_gdo al c e)
-    || a (Resword "{") ++ expression s ++ a (Resword "}")
-       >> (fun ((_,e),_) -> lmk_assert e)
-    || identifier ++ a (Resword ":=") ++ parse_preterm
-       >> (fun ((v,_),e) -> lmk_assign s v e)) i
+   (   (a (Resword "(") ++ commands s ++ a (Resword ")")
+       >> (fun ((_,c),_) -> c))
+    ||| (a (Resword "skip")
+         >> lmk_skip)
+    ||| (a (Resword "abort")
+         >> lmk_abort)
+    ||| (a (Resword "if") ++ expression s ++ a (Resword "then") ++ command s ++
+         possibly (a (Resword "else") ++ command s >> snd)
+         >> (fun ((((_,e),_),c),cs) -> if cs = [] then lmk_if e c
+                                       else lmk_ite e c (hd cs)))
+    ||| (a (Resword "while") ++ expression s ++ a (Resword "do") ++
+                                possibly (annotation s) ++ command s
+         >> (fun ((((_,e),_),al),c) -> lmk_gwhile al e c))
+    ||| (a (Resword "do") ++ possibly (annotation s) ++
+                             command s ++ a (Resword "while") ++ expression s
+         >> (fun ((((_,al),c),_),e) -> lmk_gdo al c e))
+    ||| (a (Resword "{") ++ expression s ++ a (Resword "}")
+         >> (fun ((_,e),_) -> lmk_assert e))
+    ||| (identifier ++ a (Resword ":=") ++ parse_preterm
+         >> (fun ((v,_),e) -> lmk_assign s v e))) i
   and commands s i =
       (command s ++ possibly (a (Resword ";") ++ commands s >> snd)
        >> (fun (c,cs) -> lmk_seq c cs)) i in
@@ -593,7 +593,7 @@ let STATE_GEN_TAC =
         TRANS th (MK_COMB(AP_TERM (rator rtm) lth,rth)),acc2
     with Failure _ -> REFL v,((v,vs)::acc) in
   fun (asl,w) ->
-    let abstm = find_term (fun t -> not (is_abs t) & is_gabs t) w in
+    let abstm = find_term (fun t -> not (is_abs t) && is_gabs t) w in
     let vs = fst(dest_gabs abstm) in
     let v = genvar(type_of(fst(dest_forall w))) in
     let th,gens = repair vs v [] in
@@ -612,7 +612,7 @@ let STATE_GEN_TAC' =
         TRANS th (MK_COMB(AP_TERM (rator rtm) lth,rth)),acc2
     with Failure _ -> REFL v,((v,vs)::acc) in
   fun (asl,w) ->
-    let abstm = find_term (fun t -> not (is_abs t) & is_gabs t) w in
+    let abstm = find_term (fun t -> not (is_abs t) && is_gabs t) w in
     let vs0 = fst(dest_gabs abstm) in
     let vl0 = striplist dest_pair vs0 in
     let vl = map (variant (variables (list_mk_conj(w::map (concl o snd) asl))))

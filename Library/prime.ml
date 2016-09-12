@@ -1983,7 +1983,7 @@ let COPRIME_CONV =
    if pop <> coprime_tm then failwith "COPRIME_CONV" else
    let l,r = dest_pair ptm in
    let m = dest_numeral l and n = dest_numeral r in
-   if m =/ Int 0 & n =/ Int 0 then pth_oo else
+   if m =/ Int 0 && n =/ Int 0 then pth_oo else
    let (x,y) = bezout(m,n) in
    let d = x */ m +/ y */ n in
    let th =
@@ -2029,7 +2029,7 @@ let GCD_CONV =
             if gt <> gcd_tm then failwith "GCD_CONV" else
             let mtm,ntm = dest_pair lr in
             let m = dest_numeral mtm and n = dest_numeral ntm in
-            if m =/ Int 0 & n =/ Int 0 then pth0 else
+            if m =/ Int 0 && n =/ Int 0 then pth0 else
             let x0,y0 = bezout(m,n) in
             let x = abs_num x0 and y = abs_num y0 in
             let xtm = mk_numeral x and ytm = mk_numeral y in

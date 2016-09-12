@@ -99,7 +99,7 @@ let rec simp_horn_conv =
         let f = filter (not o C mem facts) in
         let hs' = f hs in
         let cs' = filter (not o C mem hs') (f cs) in
-        if not (hs' = hs) or not (cs' = cs) then fixpoint := false;
+        if not (hs' = hs) || not (cs' = cs) then fixpoint := false;
         if (cs' = [] && cs <> [])
         then (dones,tl todos)
         else ((hs',cs')::dones),tl todos)

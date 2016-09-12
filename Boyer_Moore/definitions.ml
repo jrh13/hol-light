@@ -41,7 +41,7 @@ let rec recursive_calls name tm =
 let rec is_subterm subterm tm =
 try(   if (tm = subterm)
    then true
-   else ((is_subterm subterm (rator tm)) or (is_subterm subterm (rand tm)))
+   else ((is_subterm subterm (rator tm)) || (is_subterm subterm (rand tm)))
   )with Failure _ -> false;;
 
 (*----------------------------------------------------------------------------*)
@@ -54,7 +54,7 @@ try(   if (tm = subterm)
 let no_new_terms app tm =
 try
  (let args = snd (strip_comb app)
-  in  itlist (fun x y -> x & y) (map (fun arg -> is_subterm arg tm) args) true
+  in  itlist (fun x y -> x && y) (map (fun arg -> is_subterm arg tm) args) true
  ) with Failure _ -> failwith "no_new_terms";;
 
 (*----------------------------------------------------------------------------*)
@@ -81,7 +81,7 @@ let hide_fun_call app tm =
 
 let is_explicit_value tm =
    let rec is_explicit_value' constructors tm =
-      (is_T tm) or (is_F tm) or ((is_const tm) & (type_of tm = `:num`)) or
+      (is_T tm) || (is_F tm) || ((is_const tm) && (type_of tm = `:num`)) ||
       (let (f,args) = strip_comb tm
        in  (try(mem (fst (dest_const f)) constructors) with Failure _ -> false) &
            (forall (is_explicit_value' constructors) args))
@@ -128,10 +128,10 @@ let good_properties assumps call body_of_call tm =
  (let name = fst (dest_const (fst (strip_comb call)))
   and body_less_call = hide_fun_call call tm
   in  let rec_calls = recursive_calls name body_of_call
-  in  let bools = map (fun rc -> (no_new_terms rc body_less_call) or
-                            (in_assumps rc assumps) or
+  in  let bools = map (fun rc -> (no_new_terms rc body_less_call) ||
+                            (in_assumps rc assumps) ||
                             (more_explicit_values call rc)) rec_calls
-  in  itlist (fun x y -> x & y) bools true
+  in  itlist (fun x y -> x && y) bools true
  ) with Failure _ -> failwith "good_properties";;
 >*)
 

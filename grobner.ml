@@ -35,11 +35,11 @@ let RING_AND_IDEAL_CONV =
     let rec lexorder l1 l2 =
       match (l1,l2) with
           [],[] -> false
-        | (x1::o1,x2::o2) -> x1 > x2 or x1 = x2 & lexorder o1 o2
+        | (x1::o1,x2::o2) -> x1 > x2 || x1 = x2 && lexorder o1 o2
         | _ -> failwith "morder: inconsistent monomial lengths" in
     fun m1 m2 -> let n1 = itlist (+) m1 0
                  and n2 = itlist (+) m2 0 in
-                 n1 < n2 or n1 = n2 & lexorder m1 m2 in
+                 n1 < n2 || n1 = n2 && lexorder m1 m2 in
 
   (* ----------------------------------------------------------------------- *)
   (* Arithmetic on canonical polynomials.                                    *)
@@ -179,17 +179,17 @@ let RING_AND_IDEAL_CONV =
       p,[] -> false
     | [],q -> true
     | (c1,m1)::o1,(c2,m2)::o2 ->
-          c1 </ c2 or
-          c1 =/ c2 & (m1 < m2 or m1 = m2 & poly_lt o1 o2) in
+          c1 </ c2 ||
+          c1 =/ c2 && (m1 < m2 || m1 = m2 && poly_lt o1 o2) in
 
   let align ((p,hp),(q,hq)) =
     if poly_lt p q then ((p,hp),(q,hq)) else ((q,hq),(p,hp)) in
 
   let poly_eq p1 p2 =
-    forall2 (fun (c1,m1) (c2,m2) -> c1 =/ c2 & m1 = m2) p1 p2 in
+    forall2 (fun (c1,m1) (c2,m2) -> c1 =/ c2 && m1 = m2) p1 p2 in
 
   let memx ((p1,h1),(p2,h2)) ppairs =
-    not (exists (fun ((q1,_),(q2,_)) -> poly_eq p1 q1 & poly_eq p2 q2)
+    not (exists (fun ((q1,_),(q2,_)) -> poly_eq p1 q1 && poly_eq p2 q2)
                 ppairs) in
 
   (* ----------------------------------------------------------------------- *)
@@ -197,7 +197,7 @@ let RING_AND_IDEAL_CONV =
   (* ----------------------------------------------------------------------- *)
 
   let criterion2 basis (lcm,((p1,h1),(p2,h2))) opairs =
-    exists (fun g -> not(poly_eq (fst g) p1) & not(poly_eq (fst g) p2) &
+    exists (fun g -> not(poly_eq (fst g) p1) && not(poly_eq (fst g) p2) &
                      can (mdiv lcm) (hd(fst g)) &
                      not(memx (align(g,(p1,h1))) (map snd opairs)) &
                      not(memx (align(g,(p2,h2))) (map snd opairs))) basis in
@@ -207,7 +207,7 @@ let RING_AND_IDEAL_CONV =
   (* ----------------------------------------------------------------------- *)
 
   let constant_poly p =
-    length p = 1 & forall ((=) 0) (snd(hd p)) in
+    length p = 1 && forall ((=) 0) (snd(hd p)) in
 
   (* ----------------------------------------------------------------------- *)
   (* Grobner basis algorithm.                                                *)
@@ -221,7 +221,7 @@ let RING_AND_IDEAL_CONV =
       [] -> basis
     | (l,(p1,p2))::opairs ->
           let (sp,hist as sph) = monic (reduce basis (spoly l p1 p2)) in
-          if sp = [] or criterion2 basis (l,(p1,p2)) opairs
+          if sp = [] || criterion2 basis (l,(p1,p2)) opairs
           then grobner_basis basis opairs else
           if constant_poly sp then grobner_basis (sph::basis) [] else
           let rawcps =
@@ -263,7 +263,7 @@ let RING_AND_IDEAL_CONV =
 
   let grobner_refute pols =
     let gb = grobner pols in
-    snd(find (fun (p,h) -> length p = 1 & forall ((=)0) (snd(hd p))) gb) in
+    snd(find (fun (p,h) -> length p = 1 && forall ((=)0) (snd(hd p))) gb) in
 
   (* ----------------------------------------------------------------------- *)
   (* Turn proof into a certificate as sum of multipliers.                    *)
@@ -397,10 +397,10 @@ let RING_AND_IDEAL_CONV =
     let rec grobvars tm acc =
       if can ring_dest_const tm then acc
       else if can ring_dest_neg tm then grobvars (rand tm) acc
-      else if can ring_dest_pow tm & is_numeral (rand tm)
+      else if can ring_dest_pow tm && is_numeral (rand tm)
            then grobvars (lhand tm) acc
-      else if can ring_dest_add tm or can ring_dest_sub tm
-           or can ring_dest_mul tm
+      else if can ring_dest_add tm || can ring_dest_sub tm
+           || can ring_dest_mul tm
            then grobvars (lhand tm) (grobvars (rand tm) acc)
       else if can ring_dest_inv tm then
            let gvs = grobvars (rand tm) [] in
@@ -436,7 +436,7 @@ let RING_AND_IDEAL_CONV =
           let l,r = ring_dest_pow tm in
           grob_pow vars (grobify_term vars l) (dest_small_numeral r)
       with Failure _ ->
-            failwith "grobify_term: unknown or invalid term" in
+            failwith "grobify_term: unknown || invalid term" in
     let grobify_equation vars tm =
       let l,r = dest_eq tm in
       grob_sub (grobify_term vars l) (grobify_term vars r) in
@@ -506,7 +506,7 @@ let RING_AND_IDEAL_CONV =
         let th2 = CONV_RULE(RAND_CONV(BINOP_CONV RING_NORMALIZE_CONV)) th1 in
         let l,r = dest_eq(rand(concl th2)) in
         EQ_MP (EQF_INTRO th2) (REFL l)
-      else if nths = [] & not(is_var ring_neg_tm) then
+      else if nths = [] && not(is_var ring_neg_tm) then
         let vars,pols = grobify_equations(list_mk_conj(map concl eths)) in
         execute_proof vars eths (grobner_refute pols)
       else
@@ -591,13 +591,13 @@ let NUM_SIMPLIFY_CONV =
   and mod_tm = `(MOD):num->num->num`
   and p_tm = `P:num->bool` and n_tm = `n:num` and m_tm = `m:num`
   and q_tm = `P:num->num->bool` and a_tm = `a:num` and b_tm = `b:num` in
-  let is_pre tm = is_comb tm & rator tm = pre_tm
+  let is_pre tm = is_comb tm && rator tm = pre_tm
   and is_sub = is_binop `(-):num->num->num`
   and is_divmod =
     let is_div = is_binop div_tm and is_mod = is_binop mod_tm in
-    fun tm -> is_div tm or is_mod tm
+    fun tm -> is_div tm || is_mod tm
   and contains_quantifier =
-    can (find_term (fun t -> is_forall t or is_exists t or is_uexists t))
+    can (find_term (fun t -> is_forall t || is_exists t || is_uexists t))
   and BETA2_CONV = RATOR_CONV BETA_CONV THENC BETA_CONV
   and PRE_ELIM_THM'' = CONV_RULE (RAND_CONV NNF_CONV) PRE_ELIM_THM
   and SUB_ELIM_THM'' = CONV_RULE (RAND_CONV NNF_CONV) SUB_ELIM_THM
@@ -610,18 +610,18 @@ let NUM_SIMPLIFY_CONV =
     REWRITE_TAC[GSYM NOT_EXISTS_THM; GSYM EVEN_EXISTS; GSYM ODD_EXISTS] THEN
     REWRITE_TAC[NOT_EVEN; NOT_ODD]) in
   let rec NUM_MULTIPLY_CONV pos tm =
-    if is_forall tm or is_exists tm or is_uexists tm then
+    if is_forall tm || is_exists tm || is_uexists tm then
        BINDER_CONV (NUM_MULTIPLY_CONV pos) tm
-    else if is_imp tm & contains_quantifier tm then
+    else if is_imp tm && contains_quantifier tm then
         COMB2_CONV (RAND_CONV(NUM_MULTIPLY_CONV(not pos)))
                    (NUM_MULTIPLY_CONV pos) tm
-    else if (is_conj tm or is_disj tm or is_iff tm) &
+    else if (is_conj tm || is_disj tm || is_iff tm) &
             contains_quantifier tm
          then BINOP_CONV (NUM_MULTIPLY_CONV pos) tm
-    else if is_neg tm & not pos & contains_quantifier tm then
+    else if is_neg tm && not pos && contains_quantifier tm then
        RAND_CONV (NUM_MULTIPLY_CONV (not pos)) tm
     else
-       try let t = find_term (fun t -> is_pre t & free_in t tm) tm in
+       try let t = find_term (fun t -> is_pre t && free_in t tm) tm in
            let ty = type_of t in
            let v = genvar ty in
            let p = mk_abs(v,subst [v,t] tm) in
@@ -631,7 +631,7 @@ let NUM_SIMPLIFY_CONV =
                       (BINDER_CONV(RAND_CONV BETA_CONV))) th1 in
            CONV_RULE(RAND_CONV (NUM_MULTIPLY_CONV pos)) th2
        with Failure _ -> try
-           let t = find_term (fun t -> is_sub t & free_in t tm) tm in
+           let t = find_term (fun t -> is_sub t && free_in t tm) tm in
            let ty = type_of t in
            let v = genvar ty in
            let p = mk_abs(v,subst [v,t] tm) in
@@ -641,7 +641,7 @@ let NUM_SIMPLIFY_CONV =
                       (BINDER_CONV(RAND_CONV BETA_CONV))) th1 in
            CONV_RULE(RAND_CONV (NUM_MULTIPLY_CONV pos)) th2
        with Failure _ -> try
-           let t = find_term (fun t -> is_divmod t & free_in t tm) tm in
+           let t = find_term (fun t -> is_divmod t && free_in t tm) tm in
            let x = lhand t and y = rand t in
            let dtm = mk_comb(mk_comb(div_tm,x),y)
            and mtm = mk_comb(mk_comb(mod_tm,x),y) in

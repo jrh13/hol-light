@@ -2127,7 +2127,7 @@ let REAL_SUM_CONV =
     let sn,bod = dest_comb tm in
     let s,ntm = dest_comb sn in
     let _,htm = dest_pair ntm in
-    if s = sum_tm & is_numeral htm
+    if s = sum_tm && is_numeral htm
     then sum_conv tm
     else failwith "REAL_SUM_CONV";;
 
@@ -2147,7 +2147,7 @@ let REAL_HORNER_SUM_CONV =
     let sn,bod = dest_comb tm in
     let s,ntm = dest_comb sn in
     let _,htm = dest_pair ntm in
-    if s = sum_tm & is_numeral htm
+    if s = sum_tm && is_numeral htm
     then sum_conv tm
     else failwith "REAL_HORNER_SUM_CONV";;
 
@@ -2890,7 +2890,7 @@ let NET_CONV_IBOUNDED = prove(
   MAP_EVERY EXISTS_TAC [`&2 / abs(x0)`; `N:A`] THEN
   ASM_REWRITE_TAC[] THEN X_GEN_TAC `n:A` THEN
   DISCH_THEN(ANTE_RES_THEN ASSUME_TAC) THEN
-  SUBGOAL_THEN `(abs(x0) / & 2) < abs(x(n:A))` ASSUME_TAC THENL
+  SUBGOAL_THEN `(abs(x0) / &2) < abs(x(n:A))` ASSUME_TAC THENL
    [SUBST1_TAC(SYM(SPECL [`abs(x0) / &2`; `abs(x0) / &2`; `abs(x(n:A))`]
       REAL_LT_LADD)) THEN
     REWRITE_TAC[REAL_HALF_DOUBLE] THEN

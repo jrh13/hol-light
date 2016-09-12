@@ -28,7 +28,7 @@ let dest_fun_ty ty =
 
 let rec occurs_in ty bigty =
   bigty = ty or
-  is_type bigty & exists (occurs_in ty) (snd(dest_type bigty));;
+  is_type bigty && exists (occurs_in ty) (snd(dest_type bigty));;
 
 let rec tysubst alist ty =
   try rev_assoc ty alist with Failure _ ->
@@ -111,7 +111,7 @@ let subst =
     try fst (find ((aconv tm) o snd) ilist) with Failure _ ->
     match tm with
       Comb(f,x) -> let f' = ssubst ilist f and x' = ssubst ilist x in
-                   if f' == f & x' == x then tm else mk_comb(f',x')
+                   if f' == f && x' == x then tm else mk_comb(f',x')
     | Abs(v,bod) ->
           let ilist' = filter (not o (vfree_in v) o snd) ilist in
           mk_abs(v,ssubst ilist' bod)
@@ -133,7 +133,7 @@ let alpha v tm =
   let v0,bod = try dest_abs tm
                with Failure _ -> failwith "alpha: Not an abstraction"in
   if v = v0 then tm else
-  if type_of v = type_of v0 & not (vfree_in v bod) then
+  if type_of v = type_of v0 && not (vfree_in v bod) then
     mk_abs(v,vsubst[v,v0]bod)
   else failwith "alpha: Invalid new variable";;
 
@@ -197,7 +197,7 @@ let rec free_in tm1 tm2 =
     let l,r = dest_comb tm2 in free_in tm1 l or free_in tm1 r
   else if is_abs tm2 then
     let bv,bod = dest_abs tm2 in
-    not (vfree_in bv tm1) & free_in tm1 bod
+    not (vfree_in bv tm1) && free_in tm1 bod
   else false;;
 
 (* ------------------------------------------------------------------------- *)

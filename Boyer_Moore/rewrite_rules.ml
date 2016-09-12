@@ -67,8 +67,8 @@ try
      (if (is_comb tm2)
       then let (rator1,rand1) = dest_comb tm1
            and (rator2,rand2) = dest_comb tm2
-           in  (lex_smaller_term rator1 rator2) or
-               ((rator1 = rator2) & (lex_smaller_term rand1 rand2))
+           in  (lex_smaller_term rator1 rator2) ||
+               ((rator1 = rator2) && (lex_smaller_term rand1 rand2))
       else false)
   else failwith ""
  ) with Failure _ -> failwith "lex_smaller_term";;

@@ -91,7 +91,7 @@ let invokeSat sat_solver fname t vc =
   let _          = (sat_command := run_cmd) in
   let code       = Sys.command run_cmd in
   let _          =
-    if ((name = "minisat") or (name = "minisatp") or (code = good_exit))
+    if ((name = "minisat") || (name = "minisatp") || (code = good_exit))
     then ()
     else print_string("Warning:\n Failure signalled by\n " ^ run_cmd ^ "\n") in
   let ins        = Pervasives.open_in outfile in

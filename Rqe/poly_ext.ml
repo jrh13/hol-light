@@ -205,10 +205,10 @@ let POLY_ADD_CONV =
   let rec POLY_ADD_CONV vars tm =
     let pol1,pol2 = dest_add tm in
     let x = polyvar pol1 and y = polyvar pol2 in
-    if not(is_var x) & not(is_var y) then REAL_RAT_REDUCE_CONV tm else
-    if not(is_var y) or earlier vars x y then
+    if not(is_var x) && not(is_var y) then REAL_RAT_REDUCE_CONV tm else
+    if not(is_var y) || earlier vars x y then
       (cnv_l THENC LAND_CONV (POLY_ADD_CONV vars)) tm
-    else if not(is_var x) or earlier vars y x then
+    else if not(is_var x) || earlier vars y x then
       (cnv_r THENC LAND_CONV (POLY_ADD_CONV vars)) tm
     else
       (cnv_2 THENC COMB_CONV(RAND_CONV(POLY_ADD_CONV vars)) THENC
@@ -264,11 +264,11 @@ let POLY_MUL_CONV =
     let pol1,pol2 = dest_mul tm in
     if pol1 = zero_tm then cnv_l0 tm
     else if pol2 = zero_tm then cnv_r0 tm
-    else if is_ratconst pol1 & is_ratconst pol2 then REAL_RAT_MUL_CONV tm else
+    else if is_ratconst pol1 && is_ratconst pol2 then REAL_RAT_MUL_CONV tm else
     let x = polyvar pol1 and y = polyvar pol2 in
-    if not(is_var y) or earlier vars x y then
+    if not(is_var y) || earlier vars x y then
       (cnv_r1 THENC COMB_CONV(RAND_CONV(POLY_MUL_CONV vars))) tm
-    else if not(is_var x) or earlier vars y x then
+    else if not(is_var x) || earlier vars y x then
       (cnv_l1 THENC COMB_CONV(RAND_CONV(POLY_MUL_CONV vars))) tm
     else
       (cnv_2 THENC COMB2_CONV (RAND_CONV(POLY_MUL_CONV vars))

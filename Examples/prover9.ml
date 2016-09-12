@@ -40,9 +40,9 @@ let rec functions fvs tm (vacc,facc,racc as acc) =
 
 let rec signature fvs tm (vacc,facc,racc as acc) =
   if is_neg tm then signature fvs (rand tm) acc
-  else if is_conj tm or is_disj tm or is_imp tm or is_iff tm then
+  else if is_conj tm || is_disj tm || is_imp tm || is_iff tm then
     signature fvs (lhand tm) (signature fvs (rand tm) acc)
-  else if is_forall tm or is_exists tm or is_uexists tm then
+  else if is_forall tm || is_exists tm || is_uexists tm then
     signature fvs (body(rand tm)) acc
   else if is_eq tm then
     functions fvs (lhand tm) (functions fvs (rand tm) acc)
@@ -132,7 +132,7 @@ let atom inp =
 
 let rec sexpression inp =
   ( atom
- || (a (Resword "(") ++ many sexpression ++ a (Resword ")") >>
+ ||| (a (Resword "(") ++ many sexpression ++ a (Resword ")") >>
      (fun ((_,l),_) -> List l)))
   inp;;
 
@@ -217,7 +217,7 @@ let hol_of_folliteral (btrans_fun,btrans_rel as trp) lit =
         let ptm = list_mk_comb(r,map2 (hol_of_folterm trp) tys args) in
         if s then ptm else mk_neg ptm;;
 
-let is_truevar (bf,_) tm = is_var tm & not(mem tm (ran bf));;
+let is_truevar (bf,_) tm = is_var tm && not(mem tm (ran bf));;
 
 let rec hol_of_folclause trp cls =
   match cls with
@@ -228,9 +228,9 @@ let rec hol_of_folclause trp cls =
                                  not(mem tm (ran(fst trp))) &
                                  not(mem tm (ran(snd trp))) in
              let und,dec = partition
-               (fun t -> is_eq t & is_truevar(lhs t) & is_truevar(rhs t))
+               (fun t -> is_eq t && is_truevar(lhs t) && is_truevar(rhs t))
                rawcls in
-             if und = [] or dec = [] then list_mk_disj rawcls else
+             if und = [] || dec = [] then list_mk_disj rawcls else
              let cxt = map dest_var (filter is_truevar (freesl dec)) in
              let correct t =
                try let l,r = dest_eq t in
@@ -350,7 +350,7 @@ let process_proofstep ths trp asms (lab,just,fm) =
   let tm = hol_of_clause trp fm in
   match just with
     List[Atom "input"] ->
-        if is_eq tm & lhs tm = rhs tm then REFL(rand tm) else
+        if is_eq tm && lhs tm = rhs tm then REFL(rand tm) else
         tryfind (fun th -> PART_MATCH I th tm) ths
   |  List[Atom "flip"; Atom n; List path] ->
         let th = apply asms n in
@@ -365,7 +365,7 @@ let process_proofstep ths trp asms (lab,just,fm) =
         let th = apply asms n
         and ilist = map (fun (List[Atom x;Atom"."; y]) -> (y,x)) i in
         let xs = map
-         (fun (y,x) -> find_term (fun v -> is_var v & fst(dest_var v) = x)
+         (fun (y,x) -> find_term (fun v -> is_var v && fst(dest_var v) = x)
                                  (concl th)) ilist in
         let ys = map2
           (fun (y,x) v -> hol_of_term trp (type_of v) y) ilist xs in
@@ -569,9 +569,9 @@ let DOUBLE_DISTRIB = time PROVER9
 
 let MOORE_PENROSE_PSEUDOINVERSE_UNIQUE = time PROVER9
  `X * A * X = X /\ transpose(A * X) = A * X /\
-  A * X * A = A /\ transpose(X * A) = X * A /\                     
-  Y * A * Y = Y /\ transpose(A * Y) = A * Y /\                             
-  A * Y * A = A /\ transpose(Y * A) = Y * A /\                       
-  (!x y z. (x * y) * z = x * (y * z)) /\                           
-  (!x y. transpose(x * y) = transpose(y) * transpose(x))      
+  A * X * A = A /\ transpose(X * A) = X * A /\
+  Y * A * Y = Y /\ transpose(A * Y) = A * Y /\
+  A * Y * A = A /\ transpose(Y * A) = Y * A /\
+  (!x y z. (x * y) * z = x * (y * z)) /\
+  (!x y. transpose(x * y) = transpose(y) * transpose(x))
   ==> X = Y`;;

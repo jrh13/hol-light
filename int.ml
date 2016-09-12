@@ -226,7 +226,7 @@ let is_intconst tm =
   match tm with
     Comb(Const("int_of_num",_),n) -> is_numeral n
   | Comb(Const("int_neg",_),Comb(Const("int_of_num",_),n)) ->
-      is_numeral n & not(dest_numeral n = num_0)
+      is_numeral n && not(dest_numeral n = num_0)
   | _ -> false;;
 
 let dest_intconst tm =
@@ -1148,7 +1148,7 @@ let INTEGER_TAC =
     let pth = INT_ARITH `!a x. a = &0 <=> x = x + a` in
     let is_defined v t =
       let mons = striplist(dest_binary "int_add") t in
-      mem v mons & forall (fun m -> v = m or not(free_in v m)) mons in
+      mem v mons && forall (fun m -> v = m || not(free_in v m)) mons in
     fun vars tm ->
       let th = INT_POLYEQ_CONV tm
       and th' = (SYM_CONV THENC INT_POLYEQ_CONV) tm in

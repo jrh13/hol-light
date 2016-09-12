@@ -406,7 +406,7 @@ let REALCALC_INV_LEMMA = prove
           MATCH_MP_TAC lemma4 THEN EXISTS_TAC `&1` THEN
           ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
           EXISTS_TAC `abs(a)` THEN CONJ_TAC THENL
-           [UNDISCH_TAC `?m. (a = & m) \/ (a = -- (& m))` THEN
+           [UNDISCH_TAC `?m. (a = &m) \/ (a = -- (&m))` THEN
             DISCH_THEN(CHOOSE_THEN(DISJ_CASES_THEN SUBST_ALL_TAC)) THEN
             ASM_REWRITE_TAC[REAL_ABS_NEG; REAL_ABS_NUM] THEN
             REWRITE_TAC[REAL_OF_NUM_LE] THEN
@@ -1514,7 +1514,7 @@ let TAYLOR_EXP = prove
 
 let TAYLOR_LN = prove
  (`&0 <= x /\ x <= inv(&2 pow k) ==>
-   abs(ln(&1 + x) - sum(0,m) (\i. --(&1) pow i * x pow SUC i / & (SUC i)))
+   abs(ln(&1 + x) - sum(0,m) (\i. --(&1) pow i * x pow SUC i / &(SUC i)))
    < inv(&2 pow (k * SUC m) * &(SUC m))`,
   let lemma = INST [`1`,`k:num`] (SYM(SPEC_ALL SUM_REINDEX)) in
   STRIP_TAC THEN
@@ -2170,7 +2170,7 @@ let REALCALC_CONV,thm_eval,raw_eval,thm_wrap =
         and q = log2(abs_num(raw_eval rfn2 s)) in
         let k = q +/ r +/ Int 1
         and l = p +/ s +/ Int 1 in
-        if p =/ Int 0 & q = Int 0 then
+        if p =/ Int 0 && q = Int 0 then
           if k </ l then k +/ Int 1,l else k,l +/ Int 1
         else k,l in
       let raw_fn acc =

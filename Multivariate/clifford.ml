@@ -789,7 +789,7 @@ let MBASIS_SPLIT_CONV,MBASIS_MERGE_CONV =
     TRANS th th' in
   (fun tm ->
     try let op,se = dest_comb tm in
-        if fst(dest_const op) = "mbasis" & forall is_numeral (dest_setenum se)
+        if fst(dest_const op) = "mbasis" && forall is_numeral (dest_setenum se)
         then (RAND_CONV SETENUM_NORM_CONV THENC conv) tm
         else fail()
     with Failure _ -> failwith "MBASIS_SPLIT_CONV"),

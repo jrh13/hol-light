@@ -186,18 +186,18 @@ let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
 let rec forall p l =
   match l with
     [] -> true
-  | h::t -> p(h) & forall p t;;
+  | h::t -> p(h) && forall p t;;
 
 let rec forall2 p l1 l2 =
   match (l1,l2) with
     [],[] -> true
-  | (h1::t1,h2::t2) -> p h1 h2 & forall2 p t1 t2
+  | (h1::t1,h2::t2) -> p h1 h2 && forall2 p t1 t2
   | _ -> false;;
 
 let rec exists p l =
   match l with
     [] -> false
-  | h::t -> p(h) or exists p t;;
+  | h::t -> p(h) || exists p t;;
 
 let length =
   let rec len k l =
@@ -261,7 +261,7 @@ let index x =
 let rec mem x lis =
   match lis with
     [] -> false
-  | (h::t) -> Pervasives.compare x h = 0 or mem x t;;
+  | (h::t) -> Pervasives.compare x h = 0 || mem x t;;
 
 let insert x l =
   if mem x l then l else x::l;;
@@ -276,7 +276,7 @@ let subtract l1 l2 = filter (fun x -> not (mem x l2)) l1;;
 
 let subset l1 l2 = forall (fun t -> mem t l2) l1;;
 
-let set_eq l1 l2 = subset l1 l2 & subset l2 l1;;
+let set_eq l1 l2 = subset l1 l2 && subset l2 l1;;
 
 (* ------------------------------------------------------------------------- *)
 (* Association lists.                                                        *)
@@ -399,7 +399,7 @@ let gcd_num n1 n2 =
   num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
 
 let lcm_num x y =
-  if x =/ num_0 & y =/ num_0 then num_0
+  if x =/ num_0 && y =/ num_0 then num_0
   else abs_num((x */ y) // gcd_num x y);;
 
 (* ------------------------------------------------------------------------- *)
@@ -477,7 +477,7 @@ let rec rev_assocd a l d =
 let rec qmap f l =
   match l with
     h::t -> let h' = f h and t' = qmap f t in
-            if h' == h & t' == t then l else h'::t'
+            if h' == h && t' == t then l else h'::t'
   | _ -> l;;
 
 (* ------------------------------------------------------------------------- *)
@@ -780,7 +780,7 @@ let rec mem' eq =
   let rec mem x lis =
     match lis with
       [] -> false
-    | (h::t) -> eq x h or mem x t
+    | (h::t) -> eq x h || mem x t
   in mem;;
 
 let insert' eq x l =

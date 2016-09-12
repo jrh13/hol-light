@@ -22,7 +22,7 @@ let lin_of_hol =
         if not (is_comb lop) then (tm |=> Int 1) else
           let op,l = dest_comb lop in
             if op = add_tm then lin_add (lin_of_hol l) (lin_of_hol r)
-            else if op = mul_tm & is_ratconst l then (r |=> rat_of_term l)
+            else if op = mul_tm && is_ratconst l then (r |=> rat_of_term l)
             else (tm |=> Int 1) in
     lin_of_hol;;
 

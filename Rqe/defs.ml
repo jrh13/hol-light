@@ -279,7 +279,7 @@ let is_interval set =
     let x,bod = dest_abs set in
     if is_conj bod then
       let l,r = dest_conj bod in
-        can (dest_binop rlt) l & can (dest_binop rlt) r
+        can (dest_binop rlt) l && can (dest_binop rlt) r
     else can (dest_binop rlt) bod
   with _ -> false;;
 

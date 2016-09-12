@@ -66,13 +66,13 @@ let morder_lt =
   let rec lexorder l1 l2 =
     match (l1,l2) with
         [],[] -> false
-      | (x1::o1,x2::o2) -> x1 > x2 or x1 = x2 & lexorder o1 o2
+      | (x1::o1,x2::o2) -> x1 > x2 || x1 = x2 && lexorder o1 o2
       | _ -> failwith "morder: inconsistent monomial lengths" in
   fun m1 m2 -> let n1 = itlist (+) m1 0
                and n2 = itlist (+) m2 0 in
-               n1 < n2 or n1 = n2 & lexorder m1 m2;;
+               n1 < n2 || n1 = n2 && lexorder m1 m2;;
 
-let morder_le m1 m2 = morder_lt m1 m2 or (m1 = m2);;
+let morder_le m1 m2 = morder_lt m1 m2 || (m1 = m2);;
 
 let morder_gt m1 m2 = morder_lt m2 m1;;
 
@@ -200,24 +200,24 @@ let rec poly_lt p q =
     p,[] -> false
   | [],q -> true
   | (c1,m1)::o1,(c2,m2)::o2 ->
-        c1 </ c2 or
-        c1 =/ c2 & (m1 < m2 or m1 = m2 & poly_lt o1 o2);;
+        c1 </ c2 ||
+        c1 =/ c2 && (m1 < m2 || m1 = m2 && poly_lt o1 o2);;
 
 let align ((p,hp),(q,hq)) =
   if poly_lt p q then ((p,hp),(q,hq)) else ((q,hq),(p,hp));;
 
 let poly_eq p1 p2 =
-  forall2 (fun (c1,m1) (c2,m2) -> c1 =/ c2 & m1 = m2) p1 p2;;
+  forall2 (fun (c1,m1) (c2,m2) -> c1 =/ c2 && m1 = m2) p1 p2;;
 
 let memx ((p1,h1),(p2,h2)) ppairs =
-  not (exists (fun ((q1,_),(q2,_)) -> poly_eq p1 q1 & poly_eq p2 q2) ppairs);;
+  not (exists (fun ((q1,_),(q2,_)) -> poly_eq p1 q1 && poly_eq p2 q2) ppairs);;
 
 (* ------------------------------------------------------------------------- *)
 (* Buchberger's second criterion.                                            *)
 (* ------------------------------------------------------------------------- *)
 
 let criterion2 basis (lcm,((p1,h1),(p2,h2))) opairs =
-  exists (fun g -> not(poly_eq (fst g) p1) & not(poly_eq (fst g) p2) &
+  exists (fun g -> not(poly_eq (fst g) p1) && not(poly_eq (fst g) p2) &
                    can (mdiv lcm) (hd(fst g)) &
                    not(memx (align(g,(p1,h1))) (map snd opairs)) &
                    not(memx (align(g,(p2,h2))) (map snd opairs))) basis;;
@@ -227,7 +227,7 @@ let criterion2 basis (lcm,((p1,h1),(p2,h2))) opairs =
 (* ------------------------------------------------------------------------- *)
 
 let constant_poly p =
-  length p = 1 & forall ((=) 0) (snd(hd p));;
+  length p = 1 && forall ((=) 0) (snd(hd p));;
 
 (* ------------------------------------------------------------------------- *)
 (* Grobner basis algorithm.                                                  *)
@@ -241,7 +241,7 @@ let rec grobner histories basis pairs =
     [] -> rev histories,basis
   | (l,(p1,p2))::opairs ->
         let (sp,hist) = monic (reduce basis (spoly l p1 p2)) in
-        if sp = [] or criterion2 basis (l,(p1,p2)) opairs
+        if sp = [] || criterion2 basis (l,(p1,p2)) opairs
         then grobner histories basis opairs else
         let sph = sp,Start(length histories) in
         if constant_poly sp
@@ -314,7 +314,7 @@ let grobvars =
     else if not (is_comb lop) then tm::acc else
     let op,l = dest_comb lop in
     if op = pow_tm then grobvars l acc
-    else if op = mul_tm or op = sub_tm or op = add_tm
+    else if op = mul_tm || op = sub_tm || op = add_tm
     then grobvars l (grobvars r acc)
     else tm::acc in
   fun tm -> setify(grobvars tm []);;
@@ -438,7 +438,7 @@ let GROBNER_REFUTE =
     let vars,pols = grobify_equations tm in
     let (prfs,gb) = groebner pols in
     let (_,prf) =
-      find (fun (p,h) -> length p = 1 & forall ((=)0) (snd(hd p))) gb in
+      find (fun (p,h) -> length p = 1 && forall ((=)0) (snd(hd p))) gb in
     let deps = map (dependencies o snd) prfs
     and depl = dependencies prf in
     let need = involved deps [] depl in

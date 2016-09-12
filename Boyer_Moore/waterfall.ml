@@ -32,7 +32,7 @@
 
 let proves th tm =
    (let (hyp,concl) = dest_thm th
-    in  (hyp = []) & (concl = tm));;
+    in  (hyp = []) && (concl = tm));;
 
 (*----------------------------------------------------------------------------*)
 (* apply_proof : proof -> term list -> proof                                  *)
@@ -44,7 +44,7 @@ let proves th tm =
 
 let apply_proof f tms ths =
 try
-   (if (itlist (fun (tm,th) b -> (proves th tm) & b) (List.combine tms ths) true)
+   (if (itlist (fun (tm,th) b -> (proves th tm) && b) (List.combine tms ths) true)
     then (f ths)
     else failwith ""
    ) with Failure _ -> failwith "apply_proof";;
@@ -548,7 +548,7 @@ let rec FILTERED_WATERFALL heuristics induction warehouse (tm,(ind:bool)) =
       let warehouse = (if (heurn > 0) then (List.remove_assoc tm warehouse) else (warehouse)) in
       if (heurn > length heuristics) then ( warn true "Induction loop detected."; failwith "cannot prove" )
       else
-	proof_print_string "Doing induction on:" ();  bm_steps :=  hash ((+) 1) ((+) 1) !bm_steps ;
+        proof_print_string "Doing induction on:" ();  bm_steps :=  hash ((+) 1) ((+) 1) !bm_steps ;
       let void = proof_print_term tm ; proof_print_newline () in
       let (tmil,proof) = induction (tm,false)
       in  dec_print_depth
@@ -610,19 +610,19 @@ let refl_heuristic (tm,(i:bool)) =
 
 let clausal_form_heuristic (tm,(i:bool)) =
 try (let is_atom tm =
-     (not (has_boolean_args_and_result tm)) or (is_var tm) or (is_const tm)
+     (not (has_boolean_args_and_result tm)) || (is_var tm) || (is_const tm)
   in  let is_literal tm =
-         (is_atom tm) or ((is_neg tm) & (try (is_atom (rand tm)) with Failure _ -> false))
+         (is_atom tm) || ((is_neg tm) && (try (is_atom (rand tm)) with Failure _ -> false))
   in  let is_clause tm = forall is_literal (disj_list tm)
   in let result_string = fun tms -> let s = length tms 
     in let plural = if (s=1) then "" else "s" 
     in ("-> Clausal Form Heuristic (" ^ string_of_int(s) ^ " clause" ^ plural ^ ")")
   in  if (forall is_clause (conj_list tm)) &
-         (not (free_in `T` tm)) & (not (free_in `F` tm))
+         (not (free_in `T` tm)) && (not (free_in `F` tm))
       then if (is_conj tm)
            then let tms = conj_list tm
                 in  (proof_print_string_l (result_string tms) () ;
-		     (map (fun tm -> (tm,i)) tms,apply_proof LIST_CONJ tms))
+                     (map (fun tm -> (tm,i)) tms,apply_proof LIST_CONJ tms))
           else failwith ""
       else let th = CLAUSAL_FORM_CONV tm
            in  let tm' = rhs (concl th)
@@ -630,7 +630,7 @@ try (let is_atom tm =
                then  (proof_print_string_l "-> Clausal Form Heuristic" () ; ([],apply_proof (fun _ -> EQT_ELIM th) []))
                else let tms = conj_list tm'
                     in   (proof_print_string_l (result_string tms) () ; 
-			  (map (fun tm -> (tm,i)) tms,
+                          (map (fun tm -> (tm,i)) tms,
                          apply_proof ((EQ_MP (SYM th)) o LIST_CONJ) tms))
  ) with Failure _ -> failwith "clausal_form_heuristic";;
 

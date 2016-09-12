@@ -129,7 +129,7 @@ let DIST_LE_CASES,DIST_ADDBOUND,DIST_TRIANGLE,DIST_ADD2,DIST_ADD2_REV =
     CONV_TAC conv THEN TRY GEN_TAC THEN CONJ_TAC THEN
     DISCH_THEN(fun th -> SUBST_ALL_TAC th THEN
                          (let l,r = dest_eq (concl th) in
-                          if is_var l & not (vfree_in l r) then ALL_TAC
+                          if is_var l && not (vfree_in l r) then ALL_TAC
                           else ASSUME_TAC th)) in
   let DIST_ELIM_TAC' =
     REPEAT STRIP_TAC THEN REPEAT DIST_ELIM_TAC THEN
@@ -1697,7 +1697,7 @@ let TREAL_INV_WELLDEF = prove
         GEN_REWRITE_TAC RAND_CONV [GSYM HREAL_ADD_LID] THEN
         REWRITE_TAC[HREAL_LE_ADD];
         DISCH_THEN SUBST_ALL_TAC THEN
-        UNDISCH_TAC `x1 + & 0 = x2` THEN
+        UNDISCH_TAC `x1 + &0 = x2` THEN
         ASM_REWRITE_TAC[HREAL_ADD_RID]];
       GEN_REWRITE_TAC (funpow 3 RAND_CONV o BINDER_CONV o LAND_CONV)
         [HREAL_ADD_SYM] THEN

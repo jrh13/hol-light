@@ -72,7 +72,7 @@ let (instantiate :instantiation->term->term) =
     let args,lam = funpow n (fun (l,t) -> (rand t)::l,rator t) ([],tm) in
     rev_itlist (fun a l -> let v,b = dest_abs l in vsubst[a,v] b) args lam in
   let rec ho_betas bcs pat tm =
-    if is_var pat or is_const pat then fail() else
+    if is_var pat || is_const pat then fail() else
     try let bv,bod = dest_abs tm in
         mk_abs(bv,ho_betas bcs (body pat) bod)
     with Failure _ ->
@@ -103,7 +103,7 @@ let (INSTANTIATE : instantiation->thm->thm) =
     (RATOR_CONV (BETAS_CONV (n-1)) THENC
      TRY_CONV BETA_CONV) tm in
   let rec HO_BETAS bcs pat tm =
-    if is_var pat or is_const pat then fail() else
+    if is_var pat || is_const pat then fail() else
     try let bv,bod = dest_abs tm in
         ABS bv (HO_BETAS bcs (body pat) bod)
     with Failure _ ->
@@ -130,11 +130,11 @@ let (INSTANTIATE : instantiation->thm->thm) =
       try let eth = HO_BETAS bcs (concl ith) (concl tth) in
           EQ_MP eth tth
       with Failure _ -> tth
-    else failwith "INSTANTIATE: term or type var free in assumptions";;
+    else failwith "INSTANTIATE: term || type var free in assumptions";;
 
 let (INSTANTIATE_ALL : instantiation->thm->thm) =
   fun ((_,tmin,tyin) as i) th ->
-    if tmin = [] & tyin = [] then th else
+    if tmin = [] && tyin = [] then th else
     let hyps = hyp th in
     if hyps = [] then INSTANTIATE i th else
     let tyrel,tyiirel =
@@ -198,7 +198,7 @@ let (term_match:term list -> term -> term -> instantiation) =
         term_pmatch lconsts ((cv,vv)::env) vbod cbod sofar'
     | _ ->
       let vhop = repeat rator vtm in
-      if is_var vhop & not (mem vhop lconsts) &
+      if is_var vhop && not (mem vhop lconsts) &
                        not (can (rev_assoc vhop) env) then
         let vty = type_of vtm and cty = type_of ctm in
         let insts' =
@@ -287,7 +287,7 @@ let (term_match:term list -> term -> term -> instantiation) =
 let (term_unify:term list -> term -> term -> instantiation) =
   let augment1 sofar (s,x) =
     let s' = subst sofar s in
-    if vfree_in x s & not (s = x) then failwith "augment_insts"
+    if vfree_in x s && not (s = x) then failwith "augment_insts"
     else (s',x) in
   let raw_augment_insts p insts =
     p::(map (augment1 [p]) insts) in
@@ -298,12 +298,12 @@ let (term_unify:term list -> term -> term -> instantiation) =
     else raw_augment_insts (t',v) insts in
   let rec unify vars tm1 tm2 sofar =
     if tm1 = tm2 then sofar
-    else if is_var tm1 & mem tm1 vars then
+    else if is_var tm1 && mem tm1 vars then
       try let tm1' = rev_assoc tm1 sofar in
           unify vars tm1' tm2 sofar
       with Failure "find" ->
           augment_insts (tm2,tm1) sofar
-    else if is_var tm2 & mem tm2 vars then
+    else if is_var tm2 && mem tm2 vars then
        try let tm2' = rev_assoc tm2 sofar in
           unify vars tm1 tm2' sofar
       with Failure "find" ->
@@ -457,7 +457,7 @@ let HIGHER_REWRITE_CONV =
       mapfilter (fun p -> if can (term_match [] p) t then p else fail())
                 (lookup t mnet) in
     fun top tm ->
-      let pred t = not (look_fn t = []) & free_in t tm in
+      let pred t = not (look_fn t = []) && free_in t tm in
       let stm = if top then find_term pred tm
                 else hd(sort free_in (find_terms pred tm)) in
       let pat = hd(look_fn stm) in

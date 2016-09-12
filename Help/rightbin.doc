@@ -35,7 +35,7 @@ left to right, and return a pair consisting of the object derived from parsing
 processed.
 
 \SEEALSO
-++, ||, >>, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
+++, |||, >>, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
 possibly, some.
 
 \ENDDOC
