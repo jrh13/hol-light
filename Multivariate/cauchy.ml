@@ -11126,6 +11126,74 @@ let CAUCHY_THEOREM_GLOBAL_OUTSIDE = prove
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Basic residue integrals.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_RESIDUE_INTEGRAL = prove
+ (`!g z n. valid_path g /\ ~(z IN path_image g) /\ pathfinish g = pathstart g
+           ==> ((\w. inv(w - z) pow n) has_path_integral
+                (if n = 1 then Cx(&2) * Cx pi * ii * winding_number(g,z)
+                 else Cx(&0))) g`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THENL
+   [MP_TAC(ISPECL
+     [`\w:complex. Cx(&1)`; `(:complex)`; `g:real^1->complex`; `z:complex`]
+     CAUCHY_INTEGRAL_FORMULA_GLOBAL) THEN
+    ASM_REWRITE_TAC[COMPLEX_MUL_LID; complex_div; IN_UNIV; OPEN_UNIV] THEN
+    REWRITE_TAC[COMPLEX_POW_1; COMPLEX_MUL_RID] THEN
+    DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[HOLOMORPHIC_ON_CONST] THEN
+    ASM SET_TAC[];
+    MATCH_MP_TAC CAUCHY_THEOREM_PRIMITIVE THEN
+    ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+    EXISTS_TAC `(:complex) DELETE z` THEN
+    ASM_REWRITE_TAC[IN_UNIV; IN_DELETE; LEFT_EXISTS_AND_THM] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN ASM_CASES_TAC `n = 0` THENL
+     [EXISTS_TAC `\w:complex. w`;
+      EXISTS_TAC `\w. --inv(Cx(&(n - 1))) * inv(w - z) pow (n - 1)`] THEN
+    X_GEN_TAC `w:complex` THEN DISCH_TAC THEN
+    ASM_REWRITE_TAC[complex_pow; HAS_COMPLEX_DERIVATIVE_ID] THEN
+    COMPLEX_DIFF_TAC THEN
+    ASM_SIMP_TAC[COMPLEX_SUB_0; GSYM REAL_OF_NUM_SUB; LE_1; CX_SUB] THEN
+    ASM_SIMP_TAC[ARITH_RULE `~(n = 0) /\ ~(n = 1) ==> n - 1 - 1 = n - 2`;
+                 ARITH_RULE `2 <= n <=> ~(n = 0) /\ ~(n = 1)`; ARITH_EQ;
+                 COMPLEX_DIV_POW; COMPLEX_SUB_0; COMPLEX_INV_EQ_0] THEN
+    MATCH_MP_TAC(COMPLEX_FIELD
+     `~(n1 = Cx(&0)) /\ ~(wz = Cx(&0))
+      ==> --inv n1 * n1 * ip / inv wz pow 2 * --(Cx(&1) - Cx(&0)) / wz pow 2 =
+        ip`) THEN
+    ASM_REWRITE_TAC[COMPLEX_SUB_0; CX_INJ; REAL_OF_NUM_EQ]]);;
+
+let HAS_RESIDUE_INTEGRAL_INTEGER = prove
+ (`!g z n. valid_path g /\ ~(z IN path_image g) /\
+           pathfinish g = pathstart g /\ complex_integer n
+           ==> ((\w. (w - z) cpow n) has_path_integral
+                (if n = --Cx(&1) then Cx(&2) * Cx pi * ii * winding_number(g,z)
+                 else Cx(&0))) g`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [COMPLEX_INTEGER]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:real` STRIP_ASSUME_TAC) THEN
+  UNDISCH_THEN `n = Cx m` SUBST_ALL_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [is_int]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `n:num` (DISJ_CASES_THEN SUBST_ALL_TAC)) THEN
+  ASM_REWRITE_TAC[CX_INJ; GSYM CX_NEG; CPOW_NEG] THENL
+   [REWRITE_TAC[REAL_ARITH `~(&n = -- &1)`] THEN
+    MATCH_MP_TAC HAS_PATH_INTEGRAL_EQ THEN
+    EXISTS_TAC `\w:complex. (w - z) pow n` THEN
+    REWRITE_TAC[CPOW_N; COMPLEX_SUB_0] THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC CAUCHY_THEOREM_PRIMITIVE THEN
+    EXISTS_TAC `\w. inv(Cx(&(n + 1))) * (w - z) pow (n + 1)` THEN
+    EXISTS_TAC `(:complex)` THEN ASM_REWRITE_TAC[SUBSET_UNIV; IN_UNIV] THEN
+    X_GEN_TAC `w:complex` THEN COMPLEX_DIFF_TAC THEN
+    REWRITE_TAC[COMPLEX_SUB_RZERO; COMPLEX_MUL_RID; ADD_SUB] THEN
+    MATCH_MP_TAC(COMPLEX_FIELD `~(n = Cx(&0)) ==> inv n * n * w = w`) THEN
+    REWRITE_TAC[CX_INJ; REAL_OF_NUM_EQ] THEN ARITH_TAC;
+    REWRITE_TAC[REAL_EQ_NEG2; REAL_OF_NUM_EQ; CX_NEG; CPOW_NEG] THEN
+    MATCH_MP_TAC HAS_PATH_INTEGRAL_EQ THEN
+    EXISTS_TAC `\w:complex. inv(w - z) pow n` THEN
+    ASM_SIMP_TAC[HAS_RESIDUE_INTEGRAL; CPOW_N; COMPLEX_SUB_0] THEN
+    ASM_MESON_TAC[COMPLEX_POW_INV]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* First Cartan Theorem.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
