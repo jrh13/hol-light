@@ -6369,6 +6369,10 @@ let IS_INTERVAL_IMP_GDELTA = prove
  (`!s:real^N->bool. is_interval s ==> gdelta s`,
   SIMP_TAC[IS_INTERVAL_IMP_ENR; ENR_IMP_GDELTA]);;
 
+let IS_INTERVAL_IMP_BAIRE1_INDICATOR = prove
+ (`!s. is_interval s ==> baire 1 (:real^N) (indicator s)`,
+  SIMP_TAC[BAIRE1_INDICATOR; IS_INTERVAL_IMP_FSIGMA; IS_INTERVAL_IMP_GDELTA]);;
+
 let ANR_COMPONENTWISE = prove
  (`!s:real^N->bool.
         ANR s <=>
