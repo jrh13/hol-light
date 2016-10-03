@@ -9072,6 +9072,17 @@ let NEGLIGIBLE_INFINITE_PREIMAGES_MOSTLY_DIFFERENTIABLE = prove
   MATCH_MP_TAC CONTINUOUS_CLOSED_IN_PREIMAGE THEN
   ASM_REWRITE_TAC[CLOSED_SING]);;
 
+let NEGLIGIBLE_INFINITE_PREIMAGES_DIFFERENTIABLE = prove
+ (`!f:real^N->real^N s.
+        compact s /\ f differentiable_on s
+        ==> negligible {y | INFINITE {x | x IN s /\ f(x) = y}}`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC NEGLIGIBLE_INFINITE_PREIMAGES_MOSTLY_DIFFERENTIABLE THEN
+  ASM_SIMP_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_ON] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[differentiable_on]) THEN
+  REWRITE_TAC[TAUT `p /\ ~q <=> ~(p ==> q)`] THEN
+  ASM_REWRITE_TAC[EMPTY_GSPEC; IMAGE_CLAUSES; NEGLIGIBLE_EMPTY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Also negligibility of BV low-dimensional image.                           *)
 (* ------------------------------------------------------------------------- *)
@@ -22766,6 +22777,48 @@ let LEBESGUE_DIFFERENTIATION_THEOREM_GEN = prove
   REWRITE_TAC[IS_INTERVAL_CONNECTED_1] THEN
   ASM_MESON_TAC[IN_COMPONENTS_CONNECTED; IN_COMPONENTS_SUBSET;
                 HAS_BOUNDED_VARIATION_ON_SUBSET]);;
+
+let LEBESGUE_DIFFERENTIATION_THEOREM_INCREASING = prove
+ (`!f s.
+      is_interval s /\
+      (!x y. x IN s /\ y IN s /\ drop x <= drop y ==> drop(f x) <= drop(f y))
+      ==> negligible {x | x IN s /\ ~(f differentiable at x)}`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[LOCALLY_NEGLIGIBLE_ALT] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN X_GEN_TAC `x:real^1` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP IS_INTERVAL_LOCALLY_COMPACT_INTERVAL) THEN
+  REWRITE_TAC[locally] THEN
+  DISCH_THEN(MP_TAC o SPECL [`s:real^1->bool`; `x:real^1`]) THEN
+  ASM_REWRITE_TAC[OPEN_IN_REFL] THEN ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  REWRITE_TAC[OPEN_IN_OPEN; MESON[]
+   `(?u. (?t. open t /\ u = s INTER t) /\ P u) <=>
+    ?t. open t /\ P(s INTER t)`] THEN
+  ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:real^1->bool` THEN
+  ASM_REWRITE_TAC[IN_INTER; LEFT_IMP_EXISTS_THM; IMP_CONJ; IN_ELIM_THM] THEN
+  X_GEN_TAC `i:real^1->bool` THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`a:real^1`; `b:real^1`] THEN
+  DISCH_THEN SUBST1_TAC THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `{x | x IN interval[a,b] /\
+                   ~((f:real^1->real^1) differentiable at x)}` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  MATCH_MP_TAC LEBESGUE_DIFFERENTIATION_THEOREM_COMPACT THEN
+  MATCH_MP_TAC INCREASING_BOUNDED_VARIATION THEN ASM SET_TAC[]);;
+
+let LEBESGUE_DIFFERENTIATION_THEOREM_DECREASING = prove
+ (`!f s.
+      is_interval s /\
+      (!x y. x IN s /\ y IN s /\ drop x <= drop y ==> drop(f y) <= drop(f x))
+      ==> negligible {x | x IN s /\ ~(f differentiable at x)}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`(--) o (f:real^1->real^1)`; `s:real^1->bool`]
+        LEBESGUE_DIFFERENTIATION_THEOREM_INCREASING) THEN
+  ASM_REWRITE_TAC[o_THM; DROP_NEG; REAL_LE_NEG2] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+  REPEAT(STRIP_TAC THEN ASM_REWRITE_TAC[]) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP DIFFERENTIABLE_NEG) THEN
+  ASM_REWRITE_TAC[o_THM; VECTOR_NEG_NEG; ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Forms of absolute continuity of the indefinite (absolute) integral.       *)

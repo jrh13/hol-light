@@ -8,6 +8,28 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 27th Sep 2016       Library/floor.ml
+
+Added a few more theorems about the "floor" function:
+
+  REAL_FLOOR_FLOOR_DIV =
+    |- !x n. floor (floor x / &n) = floor (x / &n)
+
+  REAL_FLOOR_LT =
+    |- !x n. integer n ==> (floor x < n <=> x < n)
+
+  REAL_FLOOR_TRIANGLE =
+    |- !x y.
+           floor x + floor y <= floor (x + y) /\
+           floor (x + y) <= (floor x + floor y) + &1
+
+  REAL_LT_FLOOR =
+    |- !x n. integer n ==> (n < floor x <=> n <= x - &1)
+
+and renamed the existing REAL_FLOOR_LT to REAL_FLOOR_LT_REFL:
+
+  |- !x. floor x < x <=> ~integer x
+
 Fri  9th Sep 2016       passim
 
 Changed all (?) instances of "&" to "&&" and "or" to "||" to avoid any

@@ -9968,6 +9968,48 @@ let invariant_under_translation = ref([]:thm list);;
 let scaling_theorems = ref([]:thm list);;
 
 (* ------------------------------------------------------------------------- *)
+(* Some building-blocks for "union/intersection of" invariance theorems.     *)
+(* ------------------------------------------------------------------------- *)
+
+let COUNTABLE_UNION_OF_BIJECTIVE_IMAGE = prove
+ (`!(f:A->B) P P'.
+        (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y) /\
+        (!s. P' (IMAGE f s) <=> P s)
+        ==> (!s. (COUNTABLE UNION_OF P') (IMAGE f s) <=>
+                 (COUNTABLE UNION_OF P) s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[UNION_OF] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `u:(B->bool)->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `IMAGE (\s. {x | (f:A->B) x IN s}) u` THEN
+    ASM_SIMP_TAC[UNIONS_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    GEN_TAC THEN DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN
+    FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [GSYM th]) THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN ASM SET_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `u:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `IMAGE (IMAGE (f:A->B)) u` THEN
+    ASM_SIMP_TAC[UNIONS_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+    ASM SET_TAC[]]);;
+
+let COUNTABLE_INTERSECTION_OF_BIJECTIVE_IMAGE = prove
+ (`!(f:A->B) P P'.
+        (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y) /\
+        (!s. P' (IMAGE f s) <=> P s)
+        ==> (!s. (COUNTABLE INTERSECTION_OF P') (IMAGE f s) <=>
+                 (COUNTABLE INTERSECTION_OF P) s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INTERSECTION_OF] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `u:(B->bool)->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `IMAGE (\s. {x | (f:A->B) x IN s}) u` THEN
+    ASM_SIMP_TAC[INTERS_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    GEN_TAC THEN DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN
+    FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [GSYM th]) THEN
+    MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN ASM SET_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `u:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `IMAGE (IMAGE (f:A->B)) u` THEN
+    ASM_SIMP_TAC[INTERS_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+    ASM SET_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Scaling theorems and derivation from linear invariance.                   *)
 (* ------------------------------------------------------------------------- *)
 

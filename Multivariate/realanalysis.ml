@@ -11593,7 +11593,7 @@ let REAL_CONTINUOUS_FLOOR = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[real_continuous_atreal] THEN
   X_GEN_TAC `e:real` THEN DISCH_TAC THEN
   EXISTS_TAC `min (x - floor x) ((floor x + &1) - x)` THEN
-  ASM_REWRITE_TAC[REAL_LT_MIN; REAL_SUB_LT; REAL_FLOOR_LT; FLOOR] THEN
+  ASM_REWRITE_TAC[REAL_LT_MIN; REAL_SUB_LT; REAL_FLOOR_LT_REFL; FLOOR] THEN
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(REAL_ARITH `&0 < e /\ x = y ==> abs(x - y) < e`) THEN
   ASM_REWRITE_TAC[GSYM FLOOR_UNIQUE; FLOOR] THEN
@@ -16551,6 +16551,34 @@ let REAL_LEBESGUE_DIFFERENTIATION_THEOREM_ALT = prove
   EXISTS_TAC `{x | x IN s /\ ~(f real_differentiable atreal x)}` THEN
   ASM_SIMP_TAC[REAL_LEBESGUE_DIFFERENTIATION_THEOREM; SUBSET_RESTRICT] THEN
   REWRITE_TAC[IN_DIFF; IN_ELIM_THM] THEN CONV_TAC TAUT);;
+
+let REAL_LEBESGUE_DIFFERENTIATION_THEOREM_INCREASING = prove
+ (`!f s. is_realinterval s /\
+         (!x y. x IN s /\ y IN s /\ x <= y ==> f x <= f y)
+         ==> real_negligible
+                 {x | x IN s /\ ~(f real_differentiable atreal x)}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `IMAGE lift s`]
+        LEBESGUE_DIFFERENTIATION_THEOREM_INCREASING) THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  ASM_SIMP_TAC[GSYM IS_REALINTERVAL_IS_INTERVAL; o_THM; LIFT_DROP] THEN
+  REWRITE_TAC[real_negligible] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+  REWRITE_TAC[REAL_DIFFERENTIABLE_AT] THEN SET_TAC[]);;
+
+let REAL_LEBESGUE_DIFFERENTIATION_THEOREM_DECREASING = prove
+ (`!f s. is_realinterval s /\
+         (!x y. x IN s /\ y IN s /\ x <= y ==> f y <= f x)
+         ==> real_negligible
+                 {x | x IN s /\ ~(f real_differentiable atreal x)}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`lift o f o drop`; `IMAGE lift s`]
+        LEBESGUE_DIFFERENTIATION_THEOREM_DECREASING) THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  ASM_SIMP_TAC[GSYM IS_REALINTERVAL_IS_INTERVAL; o_THM; LIFT_DROP] THEN
+  REWRITE_TAC[real_negligible] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
+  REWRITE_TAC[REAL_DIFFERENTIABLE_AT] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lebesgue density theorem. This isn't about R specifically, but it's most  *)

@@ -3176,6 +3176,12 @@ let EVENTUALLY_AT_REFLECT = prove
   GEN_REWRITE_TAC RAND_CONV [GSYM EVENTUALLY_WITHIN_REFLECT] THEN
   REWRITE_TAC[REFLECT_UNIV]);;
 
+let EVENTUALLY_WITHIN_DELETE = prove
+ (`!P:real^N->bool s a.
+        eventually P (at a within (s DELETE a)) <=>
+        eventually P (at a within s)`,
+  REWRITE_TAC[EVENTUALLY_WITHIN; GSYM DIST_NZ; IN_DELETE] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)
 (* ------------------------------------------------------------------------- *)
@@ -3263,6 +3269,12 @@ let LIM_WITHIN_ZERO = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[tendsto] THEN
   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [EVENTUALLY_WITHIN_ZERO] THEN
   REWRITE_TAC[]);;
+
+let LIM_WITHIN_DELETE = prove
+ (`!f:real^M->real^N l s a.
+        (f --> l) (at a within (s DELETE a)) <=>
+        (f --> l) (at a within s)`,
+  REWRITE_TAC[tendsto; EVENTUALLY_WITHIN_DELETE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Show that they yield usual definitions in the various cases.              *)
@@ -31939,6 +31951,33 @@ let BAIRE_INDICATOR_UNION = prove
   ASM_REWRITE_TAC[DROP_VEC; VECTOR_SUB_RZERO; VECTOR_ADD_RID; VECTOR_ADD_LID;
                   VECTOR_ADD_SUB]);;
 
+let BAIRE_INDICATOR_DIFF = prove
+ (`!u s t:real^N->bool n.
+        baire n u (indicator s) /\ baire n u (indicator t)
+        ==> baire n u (indicator(s DIFF t))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC BAIRE_EQ THEN
+  EXISTS_TAC `indicator(s INTER (u DIFF t):real^N->bool)` THEN
+  ASM_SIMP_TAC[BAIRE_INDICATOR_INTER; BAIRE_INDICATOR_COMPLEMENT] THEN
+  SIMP_TAC[indicator; IN_INTER; IN_DIFF; IN_UNIV; IN_UNIV]);;
+
+let BAIRE_INDICATOR_INTERS = prove
+ (`!f n. FINITE f /\
+         (!s. s IN f ==> baire n u (indicator s))
+         ==> baire n u (indicator(INTERS f))`,
+  GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[FORALL_IN_INSERT; INTERS_0; INTERS_INSERT] THEN
+  ASM_SIMP_TAC[BAIRE_INDICATOR_UNIV; BAIRE_INDICATOR_INTER]);;
+
+let BAIRE_INDICATOR_UNIONS = prove
+ (`!f n. FINITE f /\
+         (!s. s IN f ==> baire n u (indicator s))
+         ==> baire n u (indicator(UNIONS f))`,
+  GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[FORALL_IN_INSERT; UNIONS_0; UNIONS_INSERT] THEN
+  ASM_SIMP_TAC[BAIRE_INDICATOR_EMPTY; BAIRE_INDICATOR_UNION]);;
+
 let BAIRE0_INDICATOR = prove
  (`!s. baire 0 (:real^N) (indicator s) <=> s = {} \/ s = (:real^N)`,
   GEN_TAC THEN REWRITE_TAC[baire] THEN EQ_TAC THENL
@@ -32130,8 +32169,64 @@ add_translation_invariants [BAIRE_INDICATOR_TRANSLATION];;
 
 add_linear_invariants [BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE];;
 
+let COUNTABLE_UNION_OF_BAIRE_INDICATOR_TRANSLATION = prove
+ (`!a s k. (COUNTABLE UNION_OF baire k (:real^N) o indicator)
+           (IMAGE (\x. a + x) s) <=>
+           (COUNTABLE UNION_OF baire k (:real^N) o indicator) s`,
+  GEN_TAC THEN GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN GEN_TAC THEN
+  MATCH_MP_TAC COUNTABLE_UNION_OF_BIJECTIVE_IMAGE THEN
+  REWRITE_TAC[o_THM; BAIRE_INDICATOR_TRANSLATION] THEN
+  REWRITE_TAC[VECTOR_ARITH `a + x:real^N = y <=> x = y - a`; EXISTS_REFL] THEN
+  REWRITE_TAC[VECTOR_ADD_SUB]);;
+
+add_translation_invariants [COUNTABLE_UNION_OF_BAIRE_INDICATOR_TRANSLATION];;
+
+let COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR_TRANSLATION = prove
+ (`!a s k. (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator)
+           (IMAGE (\x. a + x) s) <=>
+           (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator) s`,
+  GEN_TAC THEN GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN GEN_TAC THEN
+  MATCH_MP_TAC COUNTABLE_INTERSECTION_OF_BIJECTIVE_IMAGE THEN
+  REWRITE_TAC[o_THM; BAIRE_INDICATOR_TRANSLATION] THEN
+  REWRITE_TAC[VECTOR_ARITH `a + x:real^N = y <=> x = y - a`; EXISTS_REFL] THEN
+  REWRITE_TAC[VECTOR_ADD_SUB]);;
+
+add_translation_invariants
+  [COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR_TRANSLATION];;
+
+let COUNTABLE_UNION_OF_BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE = prove
+ (`!f s k.
+        linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+        ==> ((COUNTABLE UNION_OF baire k (:real^N) o indicator) (IMAGE f s) <=>
+             (COUNTABLE UNION_OF baire k (:real^M) o indicator) s)`,
+  GEN_TAC THEN GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN GEN_TAC THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
+  MATCH_MP_TAC COUNTABLE_UNION_OF_BIJECTIVE_IMAGE THEN
+  ASM_REWRITE_TAC[o_THM] THEN GEN_TAC THEN
+  MATCH_MP_TAC BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE THEN
+  ASM_REWRITE_TAC[]);;
+
+add_linear_invariants
+ [COUNTABLE_UNION_OF_BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE];;
+
+let COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE = prove
+ (`!f s k.
+        linear f /\ (!x y. f x = f y ==> x = y) /\ (!y. ?x. f x = y)
+        ==> ((COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator)
+             (IMAGE f s) <=>
+             (COUNTABLE INTERSECTION_OF baire k (:real^M) o indicator) s)`,
+  GEN_TAC THEN GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN GEN_TAC THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
+  MATCH_MP_TAC COUNTABLE_INTERSECTION_OF_BIJECTIVE_IMAGE THEN
+  ASM_REWRITE_TAC[o_THM] THEN GEN_TAC THEN
+  MATCH_MP_TAC BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE THEN
+  ASM_REWRITE_TAC[]);;
+
+add_linear_invariants
+ [COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE];;
+
 (* ------------------------------------------------------------------------- *)
-(* The reduction theorem for Sigma_n sets.                                   *)
+(* The reduction theorem for Sigma_n sets and consequences.                  *)
 (* ------------------------------------------------------------------------- *)
 
 let FSIGMA_REDUCTION_GEN_ALT = prove
@@ -32141,29 +32236,6 @@ let FSIGMA_REDUCTION_GEN_ALT = prove
              (!n. t n SUBSET s n) /\
              pairwise (\m n. DISJOINT (t m) (t n)) (:num) /\
              UNIONS {t n | n IN (:num)} = UNIONS {s n | n IN (:num)}`,
-  let lemma = prove
-   (`!u. FINITE u /\
-         (!s. s IN u ==> baire n (:real^N) (indicator s))
-         ==> baire n (:real^N) (indicator(INTERS u))`,
-    GEN_TAC THEN
-    GEN_REWRITE_TAC
-     (LAND_CONV o RAND_CONV o BINDER_CONV o RAND_CONV o RAND_CONV)
-     [GSYM ETA_AX] THEN
-    ONCE_REWRITE_TAC[MESON[LIFT_DROP]
-     `indicator s x = lift(drop(indicator s x))`] THEN
-    DISCH_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP BAIRE_PRODUCT) THEN
-    MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o CONJUNCT1) THEN
-    SPEC_TAC(`u:(real^N->bool)->bool`,`u:(real^N->bool)->bool`) THEN
-    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-    SIMP_TAC[PRODUCT_CLAUSES; INTERS_0; INTERS_INSERT] THEN
-    SIMP_TAC[FUN_EQ_THM; LIFT_CMUL] THEN REPEAT STRIP_TAC THEN
-    REWRITE_TAC[indicator; IN_UNIV; LIFT_NUM; IN_INTER] THEN
-    REWRITE_TAC[MESON[]
-     `(if p /\ q then a else b) = if p then if q then a else b else b`] THEN
-    REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
-    REWRITE_TAC[DROP_VEC; VECTOR_MUL_LID; VECTOR_MUL_LZERO;
-                VECTOR_MUL_RZERO]) in
   REWRITE_TAC[UNION_OF; o_THM] THEN REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
    `?c:num->num->real^N->bool.
@@ -32209,7 +32281,7 @@ let FSIGMA_REDUCTION_GEN_ALT = prove
       MAP_EVERY X_GEN_TAC [`i:num`; `j:num`] THEN STRIP_TAC THEN
       EXPAND_TAC "d" THEN REWRITE_TAC[UNIONS_INTERS; GSYM INTERS_INSERT;
         SET_RULE `s DIFF (UNIV DIFF t) = s INTER t`] THEN
-      MATCH_MP_TAC lemma THEN CONJ_TAC THENL
+      MATCH_MP_TAC BAIRE_INDICATOR_INTERS THEN CONJ_TAC THENL
        [REWRITE_TAC[FINITE_INSERT; SIMPLE_IMAGE] THEN
         MATCH_MP_TAC FINITE_IMAGE THEN
         SUBGOAL_THEN
@@ -32308,6 +32380,343 @@ let FSIGMA_REDUCTION = prove
                 pairwise (\m n. DISJOINT (t m) (t n)) (:num) /\
                 UNIONS {t n | n IN (:num)} = UNIONS {s n | n IN (:num)}`,
   REWRITE_TAC[FSIGMA_BAIRE; FSIGMA_REDUCTION_GEN_ALT]);;
+
+let BAIRE_INDICATOR_SUC,BAIRE_INDICATOR_DELTA,FGSIGMA_BAIRE_PREIMAGE_OPEN_ALT,
+    FSIGMA_REDUCTION_GEN,GDELTA_SEPARATION_GEN =
+  let clemma = MESON[BAIRE_INDICATOR_COMPLEMENT; o_THM]
+     `(baire k (:real^N) o indicator) ((:real^N) DIFF s) =
+      (baire k (:real^N) o indicator) s` in
+  let slemma = prove
+   (`!s t k.
+      (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator) s /\
+      (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator) t /\
+      DISJOINT s t
+      ==> ?u. (COUNTABLE UNION_OF baire k (:real^N) o indicator) u /\
+              (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator) u /\
+              s SUBSET u /\ DISJOINT u t`,
+    GEN_REWRITE_TAC (funpow 3 BINDER_CONV o LAND_CONV o ONCE_DEPTH_CONV)
+     [COUNTABLE_INTERSECTION_OF_COMPLEMENT] THEN
+    REWRITE_TAC[clemma] THEN
+    REWRITE_TAC[SET_RULE
+     `DISJOINT s t <=> (UNIV DIFF s) UNION (UNIV DIFF t) = UNIV`] THEN
+    ONCE_REWRITE_TAC[SET_RULE
+     `s SUBSET t <=> UNIV DIFF t SUBSET UNIV DIFF s`] THEN
+    REWRITE_TAC[MESON[SET_RULE `UNIV DIFF (UNIV DIFF s) = s`]
+     `((!s. P(UNIV DIFF s)) <=> (!s. P s)) /\
+      ((?s. P(UNIV DIFF s)) <=> (?s. P s))`] THEN
+    REPEAT GEN_TAC THEN REWRITE_TAC[ETA_AX; CONJ_ASSOC] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+    DISCH_THEN(MP_TAC o MATCH_MP FSIGMA_REDUCTION_GEN_2) THEN
+    ASM_REWRITE_TAC[SET_RULE
+      `DISJOINT s t /\ s UNION t = UNIV <=> s = UNIV DIFF t`] THEN
+    ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `u:real^N->bool` THEN
+    DISCH_THEN(X_CHOOSE_THEN `v:real^N->bool`
+     (STRIP_ASSUME_TAC o GSYM)) THEN
+    ASM_REWRITE_TAC[GSYM CONJ_ASSOC] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    ONCE_REWRITE_TAC[COUNTABLE_INTERSECTION_OF_COMPLEMENT] THEN
+    ASM_REWRITE_TAC[clemma; ETA_AX]) in
+  let [BAIRE_INDICATOR_SUC; BAIRE_INDICATOR_DELTA;
+       FGSIGMA_BAIRE_PREIMAGE_OPEN_ALT] = (CONJUNCTS o prove)
+   (`(!s n. 1 <= n
+            ==> ((COUNTABLE UNION_OF
+                  COUNTABLE INTERSECTION_OF baire n (:real^N) o indicator) s /\
+                 (COUNTABLE INTERSECTION_OF
+                  COUNTABLE UNION_OF baire n (:real^N) o indicator) s <=>
+                 baire (n + 1) (:real^N) (indicator s))) /\
+     (!s n. (COUNTABLE UNION_OF baire n (:real^N) o indicator) s /\
+            (COUNTABLE INTERSECTION_OF baire n (:real^N) o indicator) s <=>
+            baire n (:real^N) (indicator s)) /\
+     (!f u n. 1 <= n /\ baire (n + 1) (:real^N) (f:real^N->real^1) /\ open u
+              ==> (COUNTABLE UNION_OF
+                   COUNTABLE INTERSECTION_OF baire n (:real^N) o indicator)
+                  {x | f x IN u})`,
+    GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o BINDER_CONV)
+     [METIS[num_CASES] `(!n. P n) <=> P 0 /\ (!n. P(SUC n))`] THEN
+    REWRITE_TAC[BAIRE0_INDICATOR; COUNTABLE_INTERSECTION_OF_BAIRE0_INDICATOR;
+                COUNTABLE_UNION_OF_BAIRE0_INDICATOR] THEN
+    REWRITE_TAC[GSYM ADD1] THEN
+    ONCE_REWRITE_TAC[MESON[] `(!f u n. P f u n) <=> (!f n u. P f u n)`] THEN
+    ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN REWRITE_TAC[AND_FORALL_THM] THEN
+    MATCH_MP_TAC num_INDUCTION THEN CONV_TAC NUM_REDUCE_CONV THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[GSYM FSIGMA_BAIRE; GSYM GDELTA_BAIRE] THEN
+      REWRITE_TAC[GSYM BAIRE1_INDICATOR];
+      REWRITE_TAC[ARITH_RULE `1 <= SUC n`]] THEN
+    X_GEN_TAC `k:num` THEN
+    SUBST1_TAC(ARITH_RULE `1 <= k <=> 2 <= SUC k`) THEN
+    ABBREV_TAC `k1 = SUC k` THEN DISCH_THEN
+     (CONJUNCTS_THEN2 (LABEL_TAC "Lk")
+       (CONJUNCTS_THEN2 (LABEL_TAC "L0") (LABEL_TAC "L2"))) THEN
+    SUBGOAL_THEN
+     `!s. (COUNTABLE UNION_OF
+           COUNTABLE INTERSECTION_OF (baire k1 (:real^N) o indicator)) s /\
+          (COUNTABLE INTERSECTION_OF
+           COUNTABLE UNION_OF (baire k1 (:real^N) o indicator)) s
+          ==> baire (SUC k1) (:real^N) (indicator s)`
+    (LABEL_TAC "L1") THENL
+     [GEN_TAC THEN
+      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o ONCE_DEPTH_CONV)
+       [COUNTABLE_INTERSECTION_OF_COMPLEMENT] THEN
+      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o LAND_CONV o ONCE_DEPTH_CONV)
+       [COUNTABLE_UNION_OF_COMPLEMENT] THEN
+      REWRITE_TAC[COMPL_COMPL; clemma; ETA_AX] THEN
+      W(MP_TAC o PART_MATCH (lhand o rand) COUNTABLE_UNION_OF_ASCENDING o
+        lhand o lhand o snd) THEN
+      W(MP_TAC o PART_MATCH (lhand o rand) COUNTABLE_UNION_OF_ASCENDING o
+        rand o lhand o rand o snd) THEN
+      REPLICATE_TAC 2
+       (ANTS_TAC THENL
+        [CONJ_TAC THENL
+          [MATCH_MP_TAC COUNTABLE_INTERSECTION_OF_INC THEN
+           REWRITE_TAC[o_THM; BAIRE_INDICATOR_EMPTY];
+           MATCH_MP_TAC COUNTABLE_INTERSECTION_OF_UNION THEN
+           REWRITE_TAC[BAIRE_INDICATOR_UNION; o_THM]];
+         DISCH_THEN SUBST1_TAC]) THEN
+      DISCH_THEN(CONJUNCTS_THEN2
+       (X_CHOOSE_THEN `t:num->real^N->bool` STRIP_ASSUME_TAC)
+       (X_CHOOSE_THEN `u:num->real^N->bool` STRIP_ASSUME_TAC)) THEN
+      MP_TAC(GEN `m:num` (ISPECL
+       [`(t:num->real^N->bool) m`; `(u:num->real^N->bool) m`; `k1:num`]
+       slemma)) THEN
+      DISCH_THEN(MP_TAC o MATCH_MP MONO_FORALL) THEN
+      ASM_REWRITE_TAC[CONJ_ASSOC; SKOLEM_THM] THEN
+      ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[FORALL_AND_THM]] THEN
+      DISCH_THEN(X_CHOOSE_THEN `v:num->real^N->bool` STRIP_ASSUME_TAC) THEN
+      REWRITE_TAC[baire] THEN
+      EXISTS_TAC `indicator o (v:num->real^N->bool)` THEN
+      ASM_REWRITE_TAC[o_THM; IN_UNIV] THEN X_GEN_TAC `x:real^N` THEN
+      ASM_CASES_TAC `(x:real^N) IN s` THEN ASM_REWRITE_TAC[indicator] THEN
+      MATCH_MP_TAC LIM_EVENTUALLY THENL
+       [SUBGOAL_THEN `(x:real^N) IN UNIONS {t n | n IN (:num)}` MP_TAC THENL
+         [ASM_REWRITE_TAC[]; ALL_TAC];
+        SUBGOAL_THEN `(x:real^N) IN UNIONS {u n | n IN (:num)}` MP_TAC THENL
+         [ASM_REWRITE_TAC[IN_DIFF; IN_UNIV]; ALL_TAC]] THEN
+      SIMP_TAC[UNIONS_GSPEC; IN_ELIM_THM; EVENTUALLY_SEQUENTIALLY;
+               IN_UNIV] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `N:num` THEN STRIP_TAC THEN
+      X_GEN_TAC `m:num` THEN DISCH_TAC THEN COND_CASES_TAC THEN
+      REWRITE_TAC[] THENL
+       [SUBGOAL_THEN `(t:num->real^N->bool) N SUBSET t m` MP_TAC THENL
+         [ALL_TAC; ASM SET_TAC[]];
+        SUBGOAL_THEN `(u:num->real^N->bool) N SUBSET u m` MP_TAC THENL
+         [ALL_TAC; ASM SET_TAC[]]] THEN
+      UNDISCH_TAC `N:num <= m` THEN
+      MAP_EVERY (fun t -> SPEC_TAC(t,t)) [`m:num`; `N:num`] THEN
+      MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
+      ASM_REWRITE_TAC[] THEN SET_TAC[];
+      ALL_TAC] THEN
+    MATCH_MP_TAC(TAUT `r /\ (r ==> p /\ q) ==> p /\ q /\ r`) THEN
+    CONJ_TAC THENL
+     [MAP_EVERY X_GEN_TAC [`f:real^N->real^1`; `v:real^1->bool`] THEN
+      DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+      REWRITE_TAC[baire; LEFT_IMP_EXISTS_THM] THEN
+      REWRITE_TAC[IN_UNIV; ARITH] THEN
+      X_GEN_TAC `g:num->real^N->real^1` THEN STRIP_TAC THEN
+      ASM_CASES_TAC `v = (:real^1)` THENL
+       [ASM_REWRITE_TAC[IN_UNIV; UNIV_GSPEC] THEN
+        MATCH_MP_TAC COUNTABLE_UNION_OF_INC THEN
+        MATCH_MP_TAC COUNTABLE_INTERSECTION_OF_INC THEN
+        REWRITE_TAC[o_THM; BAIRE_INDICATOR_UNIV];
+        REWRITE_TAC[UNION_OF]] THEN
+      EXISTS_TAC
+       `{INTERS
+           {{x | x IN (:real^N) /\
+                 lift(setdist({(g:num->real^N->real^1) n x},
+                              (:real^1) DIFF v)) IN
+                 {x | drop x >= e}} |n|
+            N <= n} |N,e| N IN (:num) /\ e IN {r | rational r /\ &0 < r}}` THEN
+      REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT THEN
+        REWRITE_TAC[NUM_COUNTABLE] THEN
+        SIMP_TAC[REWRITE_RULE[IN] COUNTABLE_RESTRICT; COUNTABLE_RATIONAL];
+        REWRITE_TAC[FORALL_IN_GSPEC] THEN
+        MAP_EVERY X_GEN_TAC [`N:num`; `e:real`] THEN
+        GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
+         [IN_UNIV; IN_ELIM_THM] THEN
+        REWRITE_TAC[] THEN STRIP_TAC THEN REWRITE_TAC[o_THM] THEN
+        MATCH_MP_TAC COUNTABLE_INTERSECTION_OF_INTERS THEN
+        ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+        SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_SUBSET_NUM] THEN
+        REWRITE_TAC[FORALL_IN_IMAGE] THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+        ONCE_REWRITE_TAC[COUNTABLE_INTERSECTION_OF_COMPLEMENT] THEN
+        REWRITE_TAC[SET_RULE
+         `UNIV DIFF {x | x IN UNIV /\ f x IN {y | P y}} =
+          {x | x IN UNIV /\ f x IN {y | ~P y}}`] THEN
+        REWRITE_TAC[real_ge; REAL_NOT_LE] THEN
+        REWRITE_TAC[clemma; ETA_AX] THEN ASM_CASES_TAC `k = 0` THENL
+         [SUBGOAL_THEN `k1 = 1` SUBST_ALL_TAC THENL
+           [ASM_ARITH_TAC; ALL_TAC] THEN
+          REWRITE_TAC[GSYM FSIGMA_BAIRE] THEN
+          MATCH_MP_TAC FSIGMA_BAIRE1_PREIMAGE_OPEN THEN
+          REWRITE_TAC[drop; OPEN_HALFSPACE_COMPONENT_LT; FSIGMA_UNIV] THEN
+          SUBGOAL_THEN
+           `(\x. lift(setdist({g n x},(:real^1) DIFF v))) =
+            (\y. lift(setdist({y},(:real^1) DIFF v))) o
+            (g:num->real^N->real^1) n`
+          SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+          MATCH_MP_TAC BAIRE_CONTINUOUS_COMPOSE_UNIV THEN
+          ASM_REWRITE_TAC[CONTINUOUS_ON_LIFT_SETDIST];
+          REMOVE_THEN "L2" (MP_TAC o SPECL
+           [`(\y. lift(setdist({y},(:real^1) DIFF v))) o
+             (g:num->real^N->real^1) n`;
+            `{x | drop x < e}`]) THEN
+          REWRITE_TAC[] THEN ANTS_TAC THENL
+           [REWRITE_TAC[drop; OPEN_HALFSPACE_COMPONENT_LT] THEN
+            CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+            MATCH_MP_TAC BAIRE_CONTINUOUS_COMPOSE_UNIV THEN
+            ASM_REWRITE_TAC[CONTINUOUS_ON_LIFT_SETDIST];
+            REWRITE_TAC[o_THM; IN_UNIV] THEN REMOVE_THEN "Lk" MP_TAC THEN
+            REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+            ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+            REWRITE_TAC[o_DEF] THEN
+            DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+            REWRITE_TAC[] THEN
+            MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] UNION_OF_MONO) THEN
+            X_GEN_TAC `s:real^N->bool` THEN
+            SIMP_TAC[COUNTABLE_UNION_OF_INC] THEN
+            MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INTERSECTION_OF_MONO) THEN
+            REWRITE_TAC[COUNTABLE_UNION_OF_INC]]];
+        GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `x:real^N` THEN
+        REWRITE_TAC[UNIONS_GSPEC; INTERS_GSPEC; IN_ELIM_THM] THEN
+        REWRITE_TAC[IN_UNIV; LIFT_DROP; real_ge] THEN
+        TRANS_TAC EQ_TRANS
+         `&0 < setdist({(f:real^N->real^1) x},(:real^1) DIFF v)` THEN
+        CONJ_TAC THENL
+         [GEN_REWRITE_TAC RAND_CONV [GSYM RATIONAL_BETWEEN_EQ];
+          REWRITE_TAC[SETDIST_POS_LT; SETDIST_EQ_0_SING] THEN
+          ASM_SIMP_TAC[CLOSURE_CLOSED; GSYM OPEN_CLOSED] THEN
+          ASM SET_TAC[]] THEN
+        GEN_REWRITE_TAC LAND_CONV [SWAP_EXISTS_THM] THEN
+        REWRITE_TAC[RIGHT_EXISTS_AND_THM; GSYM EVENTUALLY_SEQUENTIALLY] THEN
+        REWRITE_TAC[GSYM CONJ_ASSOC] THEN MATCH_MP_TAC(MESON
+         [RATIONAL_CLOSED]
+         `(!x. Q x ==> P(x / &2)) /\ (!x. P x ==> Q(x / &2))
+          ==> ((?x. rational x /\ P x) <=> (?y. rational y /\ Q y))`) THEN
+        CONJ_TAC THEN X_GEN_TAC `q:real` THEN
+        DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+        FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+        ASM_REWRITE_TAC[tendsto] THEN
+        DISCH_THEN(MP_TAC o SPEC `q / &2`) THEN
+        ASM_REWRITE_TAC[REAL_HALF; IMP_IMP] THENL
+         [DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+          MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+          X_GEN_TAC `n:num` THEN REWRITE_TAC[] THEN FIRST_X_ASSUM
+           (MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+           `q < d2 ==> abs(d1 - d2) <= x ==> x < q / &2 ==> q / &2 <= d1`));
+          REWRITE_TAC[GSYM EVENTUALLY_AND] THEN
+          REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+          DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
+          REWRITE_TAC[LE_REFL] THEN MATCH_MP_TAC(REAL_ARITH
+           `abs(d1 - d2) <= x ==> x < q / &2 /\ q <= d1 ==> q / &2 < d2`)] THEN
+        REWRITE_TAC[SETDIST_SING_TRIANGLE]];
+      DISCH_THEN(LABEL_TAC "L3")] THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [GEN_TAC THEN EQ_TAC THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+      CONJ_TAC THENL
+       [SUBGOAL_THEN `s = {x:real^N | indicator s x IN (UNIV DIFF {vec 0})}`
+        SUBST1_TAC THENL
+         [REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_DIFF; IN_UNIV; IN_SING] THEN
+          REPEAT GEN_TAC THEN REWRITE_TAC[indicator] THEN
+          COND_CASES_TAC THEN ASM_REWRITE_TAC[VEC_EQ; ARITH_EQ];
+          REMOVE_THEN "L3" MATCH_MP_TAC THEN
+          ASM_SIMP_TAC[ETA_AX; OPEN_DIFF; CLOSED_SING; OPEN_UNIV]];
+        ONCE_REWRITE_TAC[COUNTABLE_INTERSECTION_OF_COMPLEMENT] THEN
+        GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+         [COUNTABLE_UNION_OF_COMPLEMENT] THEN
+        REWRITE_TAC[COMPL_COMPL; ETA_AX; clemma] THEN
+        SUBGOAL_THEN
+         `(:real^N) DIFF s = {x | indicator s x IN (UNIV DIFF {vec 1})}`
+        SUBST1_TAC THENL
+         [REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_DIFF; IN_UNIV; IN_SING] THEN
+          REPEAT GEN_TAC THEN REWRITE_TAC[indicator] THEN
+          COND_CASES_TAC THEN ASM_REWRITE_TAC[VEC_EQ; ARITH_EQ];
+          REMOVE_THEN "L3" MATCH_MP_TAC THEN
+          ASM_SIMP_TAC[ETA_AX; OPEN_DIFF; CLOSED_SING; OPEN_UNIV]]];
+      DISCH_THEN(LABEL_TAC "L4")] THEN
+    GEN_TAC THEN EQ_TAC THEN
+    SIMP_TAC[COUNTABLE_UNION_OF_INC; COUNTABLE_INTERSECTION_OF_INC; o_THM] THEN
+    USE_THEN "L4" (fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+     MATCH_MP_TAC MONO_AND THEN CONJ_TAC THENL
+     [GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+       [GSYM COUNTABLE_UNION_OF_IDEMPOT] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] UNION_OF_MONO);
+      GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+       [GSYM COUNTABLE_INTERSECTION_OF_IDEMPOT] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INTERSECTION_OF_MONO)] THEN
+    REWRITE_TAC[o_THM] THEN
+    USE_THEN "L4" (fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN SIMP_TAC[]) in
+  let FSIGMA_REDUCTION_GEN = prove
+   (`!s k. (!n. (COUNTABLE UNION_OF baire k (:real^N) o indicator) (s n)) /\
+           UNIONS {s n | n IN (:num)} = (:real^N)
+           ==> ?t. (!n. baire k (:real^N) (indicator(t n))) /\
+                   (!n. t n SUBSET s n) /\
+                   pairwise (\m n. DISJOINT (t m) (t n)) (:num) /\
+                   UNIONS {t n | n IN (:num)} = (:real^N)`,
+    REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP FSIGMA_REDUCTION_GEN_ALT) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `v:num->real^N->bool` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `n:num` THEN
+    ONCE_REWRITE_TAC[GSYM BAIRE_INDICATOR_DELTA] THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[COUNTABLE_INTERSECTION_OF_COMPLEMENT] THEN
+    SUBGOAL_THEN
+     `(:real^N) DIFF v n =
+      UNIONS(IMAGE v (:num) DIFF {v n})`
+    SUBST1_TAC THENL
+     [W(MP_TAC o PART_MATCH (rand o rand) DIFF_UNIONS_PAIRWISE_DISJOINT o
+        rand o snd) THEN
+      REWRITE_TAC[PAIRWISE_IMAGE; UNIONS_1] THEN ANTS_TAC THENL
+       [CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          PAIRWISE_IMP)) THEN
+        SIMP_TAC[];
+        DISCH_THEN(SUBST1_TAC o SYM) THEN
+        ASM_REWRITE_TAC[GSYM SIMPLE_IMAGE]];
+      MATCH_MP_TAC COUNTABLE_UNION_OF_UNIONS THEN
+      ASM_REWRITE_TAC[clemma; IN_DIFF; IMP_CONJ; FORALL_IN_IMAGE; ETA_AX] THEN
+      MATCH_MP_TAC COUNTABLE_SUBSET THEN
+      EXISTS_TAC `IMAGE (v:num->real^N->bool) (:num)` THEN
+      ASM_SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_SUBSET_NUM] THEN SET_TAC[]]) in
+  let GDELTA_SEPARATION_GEN = prove
+   (`!s t k.
+          (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator) s /\
+          (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator) t /\
+          DISJOINT s t
+          ==> ?u. baire k (:real^N) (indicator u) /\
+                  s SUBSET u /\ DISJOINT u t`,
+    REWRITE_TAC[GSYM BAIRE_INDICATOR_DELTA; GSYM CONJ_ASSOC] THEN
+    REWRITE_TAC[slemma]) in
+  BAIRE_INDICATOR_SUC,BAIRE_INDICATOR_DELTA,FGSIGMA_BAIRE_PREIMAGE_OPEN_ALT,
+  FSIGMA_REDUCTION_GEN,GDELTA_SEPARATION_GEN;;
+
+let COUNTABLE_UNION_OF_BAIRE_INDICATOR = prove
+ (`!s k. (COUNTABLE UNION_OF baire k (:real^N) o indicator) s
+         ==> baire (k + 1) (:real^N) (indicator s)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `k = 0` THENL
+   [ASM_REWRITE_TAC[COUNTABLE_UNION_OF_BAIRE0_INDICATOR] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[BAIRE_INDICATOR_UNIV; BAIRE_INDICATOR_EMPTY];
+    ASM_SIMP_TAC[LE_1; GSYM BAIRE_INDICATOR_SUC] THEN
+    SIMP_TAC[COUNTABLE_INTERSECTION_OF_INC] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] UNION_OF_MONO) THEN
+    REWRITE_TAC[COUNTABLE_INTERSECTION_OF_INC]]);;
+
+let COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR = prove
+ (`!s k. (COUNTABLE INTERSECTION_OF baire k (:real^N) o indicator) s
+         ==> baire (k + 1) (:real^N) (indicator s)`,
+  ONCE_REWRITE_TAC[GSYM BAIRE_INDICATOR_COMPLEMENT] THEN
+  REWRITE_TAC[COUNTABLE_INTERSECTION_OF_COMPLEMENT; FORALL_DIFF] THEN
+  REWRITE_TAC[o_DEF; BAIRE_INDICATOR_COMPLEMENT] THEN
+  REWRITE_TAC[REWRITE_RULE[o_DEF] COUNTABLE_UNION_OF_BAIRE_INDICATOR]);;
+
+let GDELTA_SEPARATION = prove
+ (`!s t:real^N->bool.
+        gdelta s /\ gdelta t /\ DISJOINT s t
+        ==> ?u. fsigma u /\ gdelta u /\ s SUBSET u /\ DISJOINT u t`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[IMP_IMP; GDELTA_BAIRE] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP GDELTA_SEPARATION_GEN) THEN
+  REWRITE_TAC[GSYM GDELTA_BAIRE; BAIRE1_INDICATOR; CONJ_ASSOC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basics on Borel measurability. We define it as "Baire function" and later *)

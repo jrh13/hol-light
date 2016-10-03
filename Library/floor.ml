@@ -375,6 +375,14 @@ let REAL_FLOOR_LE = prove
   ASM_SIMP_TAC[REAL_NOT_LT; REAL_LE_FLOOR; INTEGER_CLOSED] THEN
   REAL_ARITH_TAC);;
 
+let REAL_FLOOR_LT = prove
+ (`!x n. integer n ==> (floor x < n <=> x < n)`,
+  SIMP_TAC[GSYM REAL_NOT_LE; REAL_LE_FLOOR]);;
+
+let REAL_LT_FLOOR = prove
+ (`!x n. integer n ==> (n < floor x <=> n <= x - &1)`,
+  SIMP_TAC[GSYM REAL_NOT_LE; REAL_FLOOR_LE]);;
+
 let FLOOR_POS = prove
  (`!x. &0 <= x ==> ?n. floor(x) = &n`,
   REPEAT STRIP_TAC THEN MP_TAC(CONJUNCT1(SPEC `x:real` FLOOR)) THEN
@@ -398,7 +406,7 @@ let REAL_FLOOR_EQ = prove
  (`!x. floor x = x <=> integer x`,
   REWRITE_TAC[GSYM FLOOR_UNIQUE; REAL_LE_REFL; REAL_ARITH `x < x + &1`]);;
 
-let REAL_FLOOR_LT = prove
+let REAL_FLOOR_LT_REFL = prove
  (`!x. floor x < x <=> ~(integer x)`,
   MESON_TAC[REAL_LT_LE; REAL_FLOOR_EQ; FLOOR]);;
 
@@ -408,7 +416,7 @@ let REAL_FRAC_EQ_0 = prove
 
 let REAL_FRAC_POS_LT = prove
  (`!x. &0 < frac x <=> ~(integer x)`,
-  REWRITE_TAC[FRAC_FLOOR; REAL_SUB_LT; REAL_FLOOR_LT]);;
+  REWRITE_TAC[FRAC_FLOOR; REAL_SUB_LT; REAL_FLOOR_LT_REFL]);;
 
 let FRAC_NUM = prove
  (`!n. frac(&n) = &0`,
@@ -429,6 +437,12 @@ let REAL_FLOOR_ADD = prove
   CONJ_TAC THENL [ASM_MESON_TAC[INTEGER_CLOSED; FLOOR]; ALL_TAC] THEN
   MAP_EVERY (MP_TAC o C SPEC FLOOR_FRAC)[`x:real`; `y:real`; `x + y:real`] THEN
   REAL_ARITH_TAC);;
+
+let REAL_FLOOR_TRIANGLE = prove
+ (`!x y. floor(x) + floor(y) <= floor(x + y) /\
+         floor(x + y) <= (floor x + floor y) + &1`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_FLOOR_ADD] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
 
 let REAL_FLOOR_NEG = prove
  (`!x. floor(--x) = if integer x then --x else --(floor x + &1)`,
@@ -480,6 +494,16 @@ let FRAC_NEG = prove
  (`!x. frac(--x) = if integer x then &0 else &1 - frac x`,
   GEN_TAC THEN REWRITE_TAC[FRAC_FLOOR; REAL_FLOOR_NEG] THEN
   COND_CASES_TAC THEN REAL_ARITH_TAC);;
+
+let REAL_FLOOR_FLOOR_DIV = prove
+ (`!x n. floor(floor x / &n) = floor(x / &n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO] THEN
+  REWRITE_TAC[GSYM real_div; GSYM FLOOR_UNIQUE; FLOOR] THEN
+  ASM_SIMP_TAC[REAL_LT_LDIV_EQ; REAL_LE_RDIV_EQ; REAL_OF_NUM_LT; LE_1] THEN
+  SIMP_TAC[REAL_FLOOR_LT; REAL_LE_FLOOR; FLOOR; INTEGER_CLOSED] THEN
+  ASM_SIMP_TAC[GSYM REAL_LT_LDIV_EQ; GSYM REAL_LE_RDIV_EQ;
+               REAL_OF_NUM_LT; LE_1; FLOOR]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Assertions that there are integers between well-spaced reals.             *)
