@@ -8,6 +8,41 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu  6th Oct 2016       preterm.ml, bool.ml, impconv.ml, nums.ml
+
+Removed a few bindings that generate "unused variable" warnings from OCaml.
+
+Thu  6th Oct 2016       calc_rat.ml, Multivariate/complexes.ml
+
+Improved REAL_FIELD so that it does a somewhat better job of handling
+denominators of the form "c pow n" where c is a rational number and
+n is non-constant (actually the new version marginally improves the
+case where c is variable too, e.g. REAL_FIELD `&n pow n / &n pow n = &1`).
+The main differences are that prenormalization does not distribute
+"inv" through "pow" in the case of a non-constant power, and then the
+nonzeroness-proving logic uses obvious facts like ~(x = 0) ==> ~(x^n = 0).
+For instance things like this now just work:
+
+  REAL_FIELD `&2 pow m * x / &2 pow (n + m) * &2 pow n = x`;;
+
+Also made a completely analogous change to COMPLEX_FIELD so for example
+
+   COMPLEX_FIELD `Cx(&2) pow n / Cx(&2) pow n = Cx(&1)`;;
+
+Tue  4th Oct 2016       int.ml
+
+Added the trivial but convenient theorem:
+
+  INTEGER_REAL_OF_INT = |- !x. integer(real_of_int x)
+
+Tue  4th Oct 2016       Minisat/minisat_prove.ml
+
+Fixed a long-standing and trivial bug in the preprocessing into clause form,
+where definitionalization was missing a "mk_neg" in the code processing
+implications, meaning they were partly confused with disjunctions. This must
+have been able to lurk for such a long time because most of the tests are
+already in clausal form.
+
 Tue 27th Sep 2016       Library/floor.ml
 
 Added a few more theorems about the "floor" function:

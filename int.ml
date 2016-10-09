@@ -40,6 +40,10 @@ let dest_int_rep = prove
  (`!i. ?n. (real_of_int i = &n) \/ (real_of_int i = --(&n))`,
   REWRITE_TAC[GSYM is_int; int_rep; int_abstr]);;
 
+let INTEGER_REAL_OF_INT = prove
+ (`!x. integer(real_of_int x)`,
+  MESON_TAC[int_tybij]);;
+
 (* ------------------------------------------------------------------------- *)
 (* We want the following too.                                                *)
 (* ------------------------------------------------------------------------- *)

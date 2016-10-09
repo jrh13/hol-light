@@ -392,9 +392,6 @@ let GEN_PART_MATCH_ALL =
       try SUBS[ALPHA tm' tm] fth
       with Failure _ -> failwith "PART_MATCH: Sanity check failure" in
 
-let exists_subterm p t =
-  try ignore (find_term p t);true with Failure _ -> false in
-
 let module Fo_nets =
   struct
     type term_label =

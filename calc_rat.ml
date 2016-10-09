@@ -551,10 +551,25 @@ let REAL_LE_TRANS_LT = prove
 (* ------------------------------------------------------------------------- *)
 
 let REAL_FIELD =
+  let norm_net =
+    itlist (net_of_thm false o SPEC_ALL)
+     [FORALL_SIMP; EXISTS_SIMP; real_div; REAL_INV_INV; REAL_INV_MUL;
+      REAL_POW_ADD]
+    (net_of_conv
+      `inv((x:real) pow n)`
+      (REWR_CONV(GSYM REAL_POW_INV) o check (is_numeral o rand o rand))
+      empty_net)
+  and easy_nz_conv =
+    LAND_CONV
+     (GEN_REWRITE_CONV TRY_CONV [MESON[REAL_POW_EQ_0; REAL_OF_NUM_EQ]
+       `~(x pow n = &0) <=>
+        ~((x:real) = &0) \/ (&n = &0) \/ ~(x pow n = &0)`]) THENC
+    TRY_CONV(LAND_CONV REAL_RAT_REDUCE_CONV THENC
+             GEN_REWRITE_CONV I [TAUT `(T ==> p) <=> p`]) in
   let prenex_conv =
     TOP_DEPTH_CONV BETA_CONV THENC
-    PURE_REWRITE_CONV[FORALL_SIMP; EXISTS_SIMP; real_div;
-                      REAL_INV_INV; REAL_INV_MUL; GSYM REAL_POW_INV] THENC
+    NUM_REDUCE_CONV THENC
+    TOP_DEPTH_CONV(REWRITES_CONV norm_net) THENC
     NNFC_CONV THENC DEPTH_BINOP_CONV `(/\)` CONDS_CELIM_CONV THENC
     PRENEX_CONV THENC
     ONCE_REWRITE_CONV[REAL_ARITH `x < y <=> x < y /\ ~(x = y)`]
@@ -568,7 +583,8 @@ let REAL_FIELD =
   let BASIC_REAL_FIELD tm =
     let is_freeinv t = is_inv t && free_in t tm in
     let itms = setify(map rand (find_terms is_freeinv tm)) in
-    let hyps = map (fun t -> SPEC t REAL_MUL_RINV) itms in
+    let hyps = map
+     (fun t -> CONV_RULE easy_nz_conv (SPEC t REAL_MUL_RINV)) itms in
     let tm' = itlist (fun th t -> mk_imp(concl th,t)) hyps tm in
     let th1 = setup_conv tm' in
     let cjs = conjuncts(rand(concl th1)) in

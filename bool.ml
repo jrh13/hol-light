@@ -160,23 +160,23 @@ let IMP_DEF = new_basic_definition
 
 let mk_imp = mk_binary "==>";;
 
-let MP = 
+let MP =
   let p = `p:bool` and q = `q:bool` in
-  let pth = 
-    let th1 = BETA_RULE (AP_THM (AP_THM IMP_DEF p) q)                        
-    and th2 = CONJ (ASSUME p) (ASSUME q)        
+  let pth =
+    let th1 = BETA_RULE (AP_THM (AP_THM IMP_DEF p) q)
+    and th2 = CONJ (ASSUME p) (ASSUME q)
     and th3 = CONJUNCT1(ASSUME(mk_conj(p,q))) in
     EQ_MP (SYM th1) (DEDUCT_ANTISYM_RULE th2 th3)
-  and qth = 
+  and qth =
     let th1 = BETA_RULE (AP_THM (AP_THM IMP_DEF p) q) in
     let th2 = EQ_MP th1 (ASSUME(mk_imp(p,q))) in
     CONJUNCT2 (EQ_MP (SYM th2) (ASSUME p)) in
   let rth = DEDUCT_ANTISYM_RULE pth qth in
-  fun ith th ->                           
+  fun ith th ->
     let ant,con = dest_imp (concl ith) in
     if aconv ant (concl th) then
       EQ_MP (PROVE_HYP th (INST [ant,p; con,q] rth)) ith
-    else failwith "MP: theorems do not agree";;      
+    else failwith "MP: theorems do not agree";;
 
 let DISCH =
   let p = `p:bool`
@@ -211,7 +211,7 @@ let IMP_ANTISYM_RULE =
                   (EQ_MP (SYM(AP_TERM (mk_comb(imp_tm,q)) pth5)) pth4) in
   let pth = DEDUCT_ANTISYM_RULE pth6 pth3 in
   fun th1 th2 ->
-    let p1,q1 = dest_imp(concl th1) and p2,q2 = dest_imp(concl th2) in
+    let p1,q1 = dest_imp(concl th1) in
     EQ_MP (INST [p1,p; q1,q] pth) (CONJ th1 th2);;
 
 let ADD_ASSUM tm th = MP (DISCH tm th) (ASSUME tm);;

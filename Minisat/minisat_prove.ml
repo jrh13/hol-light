@@ -161,7 +161,7 @@ let definitionalize =
     else if is_imp t then
       let n1,v1,defs1,lfn1 = localdefs (lhand t) (n,defs,lfn) in
       let n2,v2,defs2,lfn2 = localdefs (rand t) (n1,defs1,lfn1) in
-      (n2,(mk_disj(v1,v2),transform_imp th)::tops,defs2,lfn2)
+      (n2,(mk_disj(mk_neg v1,v2),transform_imp th)::tops,defs2,lfn2)
     else if is_iff t then
       let n1,v1,defs1,lfn1 = localdefs (lhand t) (n,defs,lfn) in
       let n2,v2,defs2,lfn2 = localdefs (rand t) (n1,defs1,lfn1) in
