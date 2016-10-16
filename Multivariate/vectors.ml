@@ -8514,7 +8514,7 @@ let MATRIX_INVERTIBLE_RIGHT_GEN = prove
   MATCH_MP_TAC LINEAR_SURJECTIVE_DIMINDEX_LE THEN
   ASM_MESON_TAC[]);;
 
-let MATRIX_INVERTIBLE_RIGHT_GEN = prove
+let MATRIX_INVERTIBLE_RIGHT = prove
  (`!f:real^N->real^N.
         linear f
         ==> (invertible(matrix f) <=> ?g. linear g /\ f o g = I)`,

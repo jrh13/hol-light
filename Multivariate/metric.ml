@@ -296,6 +296,14 @@ let CLOSED_IN_SUBTOPOLOGY = prove
                OPEN_IN_TOPSPACE] THEN
   ASM SET_TAC[]);;
 
+let SUBTOPOLOGY_SUBTOPOLOGY = prove
+ (`!top s t:A->bool.
+        subtopology (subtopology top s) t = subtopology top (s INTER t)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[subtopology] THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[SET_RULE `{f x | ?y. P y /\ x = g y} = {f(g y) | P y}`] THEN
+  REWRITE_TAC[INTER_ASSOC]);;
+
 let OPEN_IN_SUBTOPOLOGY_EMPTY = prove
  (`!top s. open_in (subtopology top {}) s <=> s = {}`,
   REWRITE_TAC[OPEN_IN_SUBTOPOLOGY; INTER_EMPTY] THEN
@@ -371,6 +379,14 @@ let CLOSED_IN_SUBTOPOLOGY_UNION = prove
    (X_CHOOSE_THEN `s':A->bool` STRIP_ASSUME_TAC)
    (X_CHOOSE_THEN `t':A->bool` STRIP_ASSUME_TAC)) THEN
   EXISTS_TAC `s' INTER t':A->bool` THEN ASM_SIMP_TAC[CLOSED_IN_INTER] THEN
+  ASM SET_TAC[]);;
+
+let OPEN_IN_SUBTOPOLOGY_INTER_SUBSET = prove
+ (`!top s u v:A->bool.
+        open_in (subtopology top u) (u INTER s) /\ v SUBSET u
+        ==> open_in (subtopology top v) (v INTER s)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY] THEN MATCH_MP_TAC MONO_EXISTS THEN
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -1778,6 +1794,18 @@ let DERIVED_SET_OF_SUBSET_TOPSPACE = prove
  (`!top s:A->bool. top derived_set_of s SUBSET topspace top`,
   REWRITE_TAC[derived_set_of] THEN SET_TAC[]);;
 
+let DERIVED_SET_OF_SUBTOPOLOGY = prove
+ (`!top u s:A->bool.
+        (subtopology top u) derived_set_of s =
+        u INTER top derived_set_of (u INTER s)`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[derived_set_of; OPEN_IN_SUBTOPOLOGY; TOPSPACE_SUBTOPOLOGY] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM; IN_ELIM_THM] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN ONCE_REWRITE_TAC[TAUT
+   `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`] THEN
+  REWRITE_TAC[FORALL_UNWIND_THM2; IN_INTER; IN_ELIM_THM] THEN
+  ASM SET_TAC[]);;
+
 let METRIC_DERIVED_SET_OF = prove
   (`!m s.
       mtopology m derived_set_of s =
@@ -1822,6 +1850,26 @@ let IN_CLOSURE_OF = prove
      (!t. x IN t /\ open_in top t ==> ?y. y IN s /\ y IN t)`,
   REWRITE_TAC[closure_of; IN_ELIM_THM]);;
 
+let CLOSURE_OF = prove
+ (`!top s:A->bool.
+     top closure_of s =
+     topspace top INTER (s UNION top derived_set_of s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[EXTENSION] THEN FIX_TAC "[x]" THEN
+  REWRITE_TAC[IN_CLOSURE_OF; IN_DERIVED_SET_OF; IN_UNION; IN_INTER] THEN
+  ASM_CASES_TAC `x:A IN topspace top` THEN ASM_REWRITE_TAC[] THEN
+  POP_ASSUM(LABEL_TAC "x_ok") THEN MESON_TAC[]);;
+
+let DERIVED_SET_OF_SUBSET_CLOSURE_OF = prove
+ (`!top s:A->bool. top derived_set_of s SUBSET top closure_of s`,
+  REWRITE_TAC[CLOSURE_OF; SUBSET_INTER; DERIVED_SET_OF_SUBSET_TOPSPACE] THEN
+  SIMP_TAC[SUBSET_UNION]);;
+
+let CLOSURE_OF_SUBTOPOLOGY = prove
+ (`!top u s:A->bool.
+      (subtopology top u) closure_of s = u INTER (top closure_of (u INTER s))`,
+  SIMP_TAC[CLOSURE_OF; TOPSPACE_SUBTOPOLOGY; DERIVED_SET_OF_SUBTOPOLOGY] THEN
+  SET_TAC[]);;
+
 let CLOSURE_OF_EMPTY = prove
  (`!top. top closure_of {}:A->bool = {}`,
   REWRITE_TAC[EXTENSION; IN_CLOSURE_OF; NOT_IN_EMPTY] THEN
@@ -1838,6 +1886,110 @@ let CLOSURE_OF_UNIV = prove
 let CLOSURE_OF_SUBSET_TOPSPACE = prove
  (`!top s:A->bool. top closure_of s SUBSET topspace top`,
   REWRITE_TAC[closure_of] THEN SET_TAC[]);;
+
+let CLOSURE_OF_SUBSET_SUBTOPOLOGY = prove
+ (`!top s t:A->bool. (subtopology top s) closure_of t SUBSET s`,
+  REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; closure_of] THEN SET_TAC[]);;
+
+let CLOSURE_OF_MONO = prove
+ (`!top s t:A->bool.
+        s SUBSET t ==> top closure_of s SUBSET top closure_of t`,
+  REWRITE_TAC[closure_of] THEN SET_TAC[]);;
+
+let CLOSURE_OF_SUBSET = prove
+ (`!top s:A->bool. s SUBSET topspace top ==> s SUBSET top closure_of s`,
+  REWRITE_TAC[CLOSURE_OF] THEN SET_TAC[]);;
+
+let CLOSURE_OF_SUBSET_INTER = prove
+ (`!top s:A->bool. topspace top INTER s SUBSET top closure_of s`,
+  REWRITE_TAC[CLOSURE_OF] THEN SET_TAC[]);;
+
+let CLOSURE_OF_SUBSET_EQ = prove
+ (`!top s:A->bool.
+     s SUBSET topspace top /\ top closure_of s SUBSET s <=> closed_in top s`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `(s:A->bool) SUBSET topspace top` THEN
+  ASM_REWRITE_TAC[closed_in; SUBSET; closure_of; IN_ELIM_THM] THEN
+  GEN_REWRITE_TAC RAND_CONV [OPEN_IN_SUBOPEN] THEN
+  MP_TAC(ISPEC `top:A topology` OPEN_IN_SUBSET) THEN ASM SET_TAC[]);;
+
+let CLOSURE_OF_EQ = prove
+ (`!top s:A->bool. top closure_of s = s <=> closed_in top s`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `(s:A->bool) SUBSET topspace top` THENL
+   [ASM_MESON_TAC[SUBSET_ANTISYM_EQ; CLOSURE_OF_SUBSET; CLOSURE_OF_SUBSET_EQ];
+    ASM_MESON_TAC[CLOSED_IN_SUBSET; CLOSURE_OF_SUBSET_TOPSPACE]]);;
+
+let CLOSURE_OF_CLOSED_IN = prove
+ (`!top s:A->bool. closed_in top s ==> top closure_of s = s`,
+  REWRITE_TAC[CLOSURE_OF_EQ]);;
+
+let CLOSED_IN_CLOSURE_OF = prove
+ (`!top s:A->bool. closed_in top (top closure_of s)`,
+   REPEAT GEN_TAC THEN
+  SUBGOAL_THEN
+   `top closure_of (s:A->bool) =
+    topspace top DIFF
+    UNIONS {t | open_in top t /\ DISJOINT s t}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[closure_of; UNIONS_GSPEC] THEN SET_TAC[];
+    MATCH_MP_TAC CLOSED_IN_DIFF THEN REWRITE_TAC[CLOSED_IN_TOPSPACE] THEN
+    SIMP_TAC[OPEN_IN_UNIONS; FORALL_IN_GSPEC]]);;
+
+let CLOSURE_OF_CLOSURE_OF = prove
+ (`!top s:A->bool. top closure_of (top closure_of s) = top closure_of s`,
+  REWRITE_TAC[CLOSURE_OF_EQ; CLOSED_IN_CLOSURE_OF]);;
+
+let CLOSURE_OF_HULL = prove
+ (`!top s:A->bool.
+        s SUBSET topspace top ==> top closure_of s = (closed_in top) hull s`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC HULL_UNIQUE THEN
+  ASM_SIMP_TAC[CLOSURE_OF_SUBSET; CLOSED_IN_CLOSURE_OF] THEN
+  ASM_MESON_TAC[CLOSURE_OF_EQ; CLOSURE_OF_MONO]);;
+
+let CLOSURE_OF_MINIMAL = prove
+ (`!top s t:A->bool.
+        s SUBSET t /\ closed_in top t ==> (top closure_of s) SUBSET t`,
+  ASM_MESON_TAC[CLOSURE_OF_EQ; CLOSURE_OF_MONO]);;
+
+let CLOSURE_OF_MINIMAL_EQ = prove
+ (`!top s t:A->bool.
+        s SUBSET topspace top /\ closed_in top t
+        ==> ((top closure_of s) SUBSET t <=> s SUBSET t)`,
+  MESON_TAC[SUBSET_TRANS; CLOSURE_OF_SUBSET; CLOSURE_OF_MINIMAL]);;
+
+let CLOSURE_OF_UNIQUE = prove
+ (`!top s t. s SUBSET t /\ closed_in top t /\
+             (!t'. s SUBSET t' /\ closed_in top t' ==> t SUBSET t')
+             ==> top closure_of s = t`,
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) CLOSURE_OF_HULL o lhand o snd) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[CLOSED_IN_SUBSET; SUBSET_TRANS];
+    DISCH_THEN SUBST1_TAC] THEN
+  MATCH_MP_TAC HULL_UNIQUE THEN ASM_REWRITE_TAC[]);;
+
+let DENSE_INTERSECTS_OPEN = prove
+ (`!top s:A->bool.
+     s SUBSET topspace top
+     ==> (top closure_of s = topspace top <=>
+          (!t. open_in top t /\ ~(t = {}) ==> ~(s INTER t = {})))`,
+  INTRO_TAC "!top s; s" THEN EQ_TAC THENL
+  [INTRO_TAC "dense; !t; t ne" THEN
+   HYP_TAC "ne: @x0. x0" (REWRITE_RULE[GSYM MEMBER_NOT_EMPTY]) THEN
+   CLAIM_TAC "1" `x0:A IN topspace top` THENL
+   [CUT_TAC `t:A->bool SUBSET topspace top` THENL
+    [HYP SET_TAC "x0" []; HYP SIMP_TAC "t" [OPEN_IN_SUBSET]];
+    ALL_TAC] THEN
+   CLAIM_TAC "2" `x0:A IN top closure_of s` THENL
+   [HYP REWRITE_TAC "dense 1" []; ALL_TAC] THEN
+   HYP_TAC "2: +" (REWRITE_RULE[IN_CLOSURE_OF]) THEN
+   HYP REWRITE_TAC "1" [] THEN DISCH_THEN (MP_TAC o SPEC `t:A->bool`) THEN
+   HYP REWRITE_TAC "x0 t" [] THEN SET_TAC[];
+   INTRO_TAC "hp" THEN REWRITE_TAC[EXTENSION; IN_CLOSURE_OF] THEN
+   GEN_TAC THEN ASM_CASES_TAC `x:A IN topspace top` THEN ASM_REWRITE_TAC[] THEN
+   POP_ASSUM (LABEL_TAC "x") THEN INTRO_TAC "!t; x' t" THEN
+   REMOVE_THEN "hp" (MP_TAC o SPEC `t:A->bool`) THEN
+   HYP REWRITE_TAC "t" [] THEN HYP SET_TAC "x'" []]);;
 
 let METRIC_CLOSURE_OF = prove
   (`!m s.
@@ -1865,42 +2017,27 @@ let METRIC_CLOSURE_OF = prove
    EXISTS_TAC `y:A` THEN HYP REWRITE_TAC "y" [] THEN
    ASM SET_TAC[]]);;
 
-let CLOSURE_OF = prove
- (`!top s:A->bool.
-     top closure_of s =
-     topspace top INTER (s UNION top derived_set_of s)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[EXTENSION] THEN FIX_TAC "[x]" THEN
-  REWRITE_TAC[IN_CLOSURE_OF; IN_DERIVED_SET_OF; IN_UNION; IN_INTER] THEN
-  ASM_CASES_TAC `x:A IN topspace top` THEN ASM_REWRITE_TAC[] THEN
-  POP_ASSUM(LABEL_TAC "x_ok") THEN MESON_TAC[]);;
+(* ------------------------------------------------------------------------- *)
+(* Frontier with respect to topological space.                               *)
+(* ------------------------------------------------------------------------- *)
 
-let DERIVED_SET_OF_SUBSET_CLOSURE_OF = prove
- (`!top s:A->bool. top derived_set_of s SUBSET top closure_of s`,
-  REWRITE_TAC[CLOSURE_OF; SUBSET_INTER; DERIVED_SET_OF_SUBSET_TOPSPACE] THEN
-  SIMP_TAC[SUBSET_UNION]);;
+parse_as_infix("frontier_of",(21,"left"));;
 
-let DENSE_INTERSECTS_OPEN = prove
- (`!top s:A->bool.
-     s SUBSET topspace top
-     ==> (top closure_of s = topspace top <=>
-          (!t. open_in top t /\ ~(t = {}) ==> ~(s INTER t = {})))`,
-  INTRO_TAC "!top s; s" THEN EQ_TAC THENL
-  [INTRO_TAC "dense; !t; t ne" THEN
-   HYP_TAC "ne: @x0. x0" (REWRITE_RULE[GSYM MEMBER_NOT_EMPTY]) THEN
-   CLAIM_TAC "1" `x0:A IN topspace top` THENL
-   [CUT_TAC `t:A->bool SUBSET topspace top` THENL
-    [HYP SET_TAC "x0" []; HYP SIMP_TAC "t" [OPEN_IN_SUBSET]];
-    ALL_TAC] THEN
-   CLAIM_TAC "2" `x0:A IN top closure_of s` THENL
-   [HYP REWRITE_TAC "dense 1" []; ALL_TAC] THEN
-   HYP_TAC "2: +" (REWRITE_RULE[IN_CLOSURE_OF]) THEN
-   HYP REWRITE_TAC "1" [] THEN DISCH_THEN (MP_TAC o SPEC `t:A->bool`) THEN
-   HYP REWRITE_TAC "x0 t" [] THEN SET_TAC[];
-   INTRO_TAC "hp" THEN REWRITE_TAC[EXTENSION; IN_CLOSURE_OF] THEN
-   GEN_TAC THEN ASM_CASES_TAC `x:A IN topspace top` THEN ASM_REWRITE_TAC[] THEN
-   POP_ASSUM (LABEL_TAC "x") THEN INTRO_TAC "!t; x' t" THEN
-   REMOVE_THEN "hp" (MP_TAC o SPEC `t:A->bool`) THEN
-   HYP REWRITE_TAC "t" [] THEN HYP SET_TAC "x'" []]);;
+let frontier_of = new_definition
+ `top frontier_of s =
+  top closure_of s INTER top closure_of (topspace top DIFF s)`;;
+
+let CLOSED_IN_FRONTIER_OF = prove
+ (`!top s:A->bool. closed_in top (top frontier_of s)`,
+  SIMP_TAC[frontier_of; CLOSED_IN_INTER; CLOSED_IN_CLOSURE_OF]);;
+
+let FRONTIER_OF_SUBSET_TOPSPACE = prove
+ (`!top s:A->bool. top frontier_of s SUBSET topspace top`,
+  SIMP_TAC[CLOSED_IN_SUBSET; CLOSED_IN_FRONTIER_OF]);;
+
+let FRONTIER_OF_SUBSET_SUBTOPOLOGY = prove
+ (`!top s t:A->bool. (subtopology top s) frontier_of t SUBSET s`,
+  MESON_TAC[TOPSPACE_SUBTOPOLOGY; FRONTIER_OF_SUBSET_TOPSPACE; SUBSET_INTER]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cauchy sequences and complete metric spaces.                              *)
