@@ -4953,6 +4953,27 @@ let CHOOSE_AFFINE_SUBSET = prove
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `t:real^N->bool` THEN
   ASM_SIMP_TAC[AFF_DIM_DIM_SUBSPACE; SUBSPACE_IMP_AFFINE]);;
 
+let NONEMPTY_AFFINE_EXISTS = prove
+ (`!n a:real^N.
+        &0 <= n /\ n <= &(dimindex(:N))
+        ==> ?s. affine s /\ a IN s /\ aff_dim s = n`,
+  REPEAT GEN_TAC THEN GEOM_ORIGIN_TAC `a:real^N` THEN
+  X_GEN_TAC `n:int` THEN REWRITE_TAC[IMP_CONJ; GSYM INT_OF_NUM_EXISTS] THEN
+  DISCH_THEN(X_CHOOSE_THEN `m:num` SUBST1_TAC) THEN
+  REWRITE_TAC[INT_OF_NUM_LE] THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?s:real^N->bool. subspace s /\ dim s = m` MP_TAC THENL
+   [ASM_SIMP_TAC[SUBSPACE_EXISTS]; MATCH_MP_TAC MONO_EXISTS] THEN
+  SIMP_TAC[AFF_DIM_DIM_SUBSPACE; SUBSPACE_IMP_AFFINE; SUBSPACE_0]);;
+
+let AFFINE_EXISTS = prove
+ (`!n. -- &1 <= n /\ n <= &(dimindex(:N))
+       ==> ?s:real^N->bool. affine s /\ aff_dim s = n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `&0:int <= n` THENL
+   [ASM_MESON_TAC[NONEMPTY_AFFINE_EXISTS]; ALL_TAC] THEN
+  STRIP_TAC THEN EXISTS_TAC `{}:real^N->bool` THEN
+  REWRITE_TAC[AFFINE_EMPTY; AFF_DIM_EMPTY] THEN
+  ASM_INT_ARITH_TAC);;
+
 let AFF_DIM_CONIC_HULL = prove
  (`!s:real^N->bool.
         aff_dim(conic hull s) =
@@ -4966,14 +4987,18 @@ let AFF_DIM_CONIC_HULL = prove
 
 let AFF_DIM_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.
-        affine s /\ affine t /\ ~(s = {}) /\ ~(t = {})
+        ~(s = {}) /\ ~(t = {})
         ==> aff_dim(s PCROSS t) = aff_dim s + aff_dim t`,
+  REPEAT GEN_TAC THEN
   REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN
-  REPEAT GEN_TAC THEN REWRITE_TAC[RIGHT_IMP_FORALL_THM] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM] THEN
   MAP_EVERY X_GEN_TAC [`a:real^M`; `b:real^N`] THEN
   GEOM_ORIGIN_TAC `a:real^M` THEN GEOM_ORIGIN_TAC `b:real^N` THEN
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[AFF_DIM_DIM_0; HULL_INC] THEN
-  ASM_SIMP_TAC[INT_OF_NUM_ADD; GSYM DIM_PCROSS; GSYM AFFINE_EQ_SUBSPACE] THEN
+  ASM_REWRITE_TAC[INT_OF_NUM_ADD] THEN
+  W(MP_TAC o PART_MATCH (rand o rand)
+     DIM_PCROSS_STRONG o rand o rand o snd) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
   TRANS_TAC EQ_TRANS
    `aff_dim(IMAGE (\z. pastecart (a:real^M) (b:real^N) + z) (s PCROSS t))` THEN
   CONJ_TAC THENL

@@ -15,7 +15,7 @@ Never fails.
 
 \COMMENTS
 This is one of a suite of combinators for manipulating ``parsers''. A parser is
-simply a function whose OCaml type is some instance of 
+simply a function whose OCaml type is some instance of
 {:('a)list -> 'b * ('a)list}. The function should take a list of objects of
 type {:'a} (e.g. characters or tokens), parse as much of it as possible from
 left to right, and return a pair consisting of the object derived from parsing
@@ -23,7 +23,7 @@ left to right, and return a pair consisting of the object derived from parsing
 processed.
 
 \SEEALSO
-++, ||, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
+++, |||, a, atleast, elistof, finished, fix, leftbin, listof, many, nothing,
 possibly, rightbin, some.
 
 \ENDDOC

@@ -5666,6 +5666,12 @@ let CHOOSE_SUBSPACE_OF_SUBSPACE = prove
         ASM_REWRITE_TAC[SUBSPACE_SPAN] THEN ASM SET_TAC[];
         ASM_REWRITE_TAC[DIM_SPAN; DIM_INSERT; ADD1]]]]);;
 
+let SUBSPACE_EXISTS = prove
+ (`!n. n <= dimindex(:N) ==> ?s:real^N->bool. subspace s /\ dim s = n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CHOOSE_SUBSPACE_OF_SUBSPACE) THEN
+  MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Relation between bases and injectivity/surjectivity of map.               *)
 (* ------------------------------------------------------------------------- *)

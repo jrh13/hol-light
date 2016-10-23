@@ -915,6 +915,162 @@ let RESTRICTION_IDEMP = prove
   REWRITE_TAC[RESTRICTION_FIXPOINT; RESTRICTION_IN_EXTENSIONAL]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Reduction theorem used for sigma-sets doesn't really depend on much.      *)
+(* Besides, our formulation of "Delta" via "baire" doesn't work for          *)
+(* n = 0 so we want to avoid a separate proof for clopen sets.               *)
+(* ------------------------------------------------------------------------- *)
+
+let GENERAL_REDUCTION_THEOREM = prove
+ (`!P. P {} /\
+       (!s t. P s /\ P t ==> P(s UNION t)) /\
+       (!s t. P s /\ P t ==> P(s DIFF t))
+       ==> !s:num->A->bool.
+              (!n. (COUNTABLE UNION_OF P) (s n))
+              ==> ?t. (!n. (COUNTABLE UNION_OF P) (t n)) /\
+                      (!n. t n SUBSET s n) /\
+                      pairwise (\m n. DISJOINT (t m) (t n)) (:num) /\
+                      UNIONS {t n | n IN (:num)} = UNIONS {s n | n IN (:num)}`,
+  REWRITE_TAC[UNION_OF; o_THM] THEN REPEAT STRIP_TAC THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!k:(A->bool)->bool. FINITE k /\ (!i. i IN k ==> P i) ==> P(UNIONS k)`
+  ASSUME_TAC THENL
+   [REWRITE_TAC[IMP_CONJ] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    ASM_SIMP_TAC[UNIONS_0; UNIONS_INSERT; FORALL_IN_INSERT];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?c:num->num->A->bool.
+        (!n m. P (c n m)) /\
+        (!n. UNIONS {c n m | m IN (:num)} = s n)`
+  MP_TAC THENL
+   [REWRITE_TAC[AND_FORALL_THM; GSYM SKOLEM_THM] THEN
+    X_GEN_TAC `n:num` THEN FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN
+    DISCH_THEN(X_CHOOSE_THEN `u:(A->bool)->bool` MP_TAC) THEN
+    ASM_CASES_TAC `u:(A->bool)->bool = {}` THENL
+     [ASM_REWRITE_TAC[UNIONS_0] THEN
+      DISCH_THEN(SUBST1_TAC o SYM o last o CONJUNCTS) THEN
+      EXISTS_TAC `(\n. {}):num->A->bool` THEN
+      ASM_REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[];
+      STRIP_TAC] THEN
+    MP_TAC(ISPEC `u:(A->bool)->bool` COUNTABLE_AS_IMAGE) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[];
+    FIRST_X_ASSUM(K ALL_TAC o GEN_REWRITE_RULE I [SKOLEM_THM])] THEN
+  DISCH_THEN(X_CHOOSE_THEN `c:num->num->A->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC CARD_SQUARE_NUM THEN
+  REWRITE_TAC[EQ_C_BIJECTIONS; LEFT_IMP_EXISTS_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[mul_c; IN_ELIM_PAIR_THM] THEN
+  MAP_EVERY X_GEN_TAC [`p:num#num->num`; `q:num->num#num`] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [IN_UNIV] THEN
+  REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC THEN
+  ABBREV_TAC `d:num->num->A->bool =
+        \m n. c m n DIFF UNIONS {c i j | (p:num#num->num)(i,j) < p(m,n)}` THEN
+  EXISTS_TAC `\n. UNIONS { d i j | i,j |
+                           (d:num->num->A->bool) i j SUBSET s n /\
+                           !m:num. m < n ==> ~(d i j SUBSET s m)}` THEN
+  REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [X_GEN_TAC `n:num` THEN
+    EXISTS_TAC `{ d i j | i,j |
+                  (d:num->num->A->bool) i j SUBSET s n /\
+                  !m:num. m < n ==> ~(d i j SUBSET s m)}` THEN
+    REWRITE_TAC[] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC
+       `{(d:num->num->A->bool) i j | i IN (:num) /\ j IN (:num)}` THEN
+      SIMP_TAC[COUNTABLE_PRODUCT_DEPENDENT; COUNTABLE_SUBSET_NUM] THEN
+      SET_TAC[];
+
+      REWRITE_TAC[FORALL_IN_GSPEC] THEN
+      MAP_EVERY X_GEN_TAC [`i:num`; `j:num`] THEN STRIP_TAC THEN
+      EXPAND_TAC "d" THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[FORALL_IN_GSPEC] THEN
+      SUBGOAL_THEN
+       `{(c:num->num->A->bool) k l | (p(k,l):num) < p(i,j)} =
+        IMAGE (\r. c (FST(q r)) (SND(q r))) {r | r < p(i,j)}`
+       (fun th -> SIMP_TAC[th; FINITE_IMAGE; FINITE_NUMSEG_LT]) THEN
+      GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `v:A->bool` THEN
+      REWRITE_TAC[IN_ELIM_THM; IN_IMAGE] THEN EQ_TAC THEN
+      SIMP_TAC[LEFT_IMP_EXISTS_THM] THENL
+       [MAP_EVERY X_GEN_TAC [`a:num`; `b:num`] THEN STRIP_TAC THEN
+        EXISTS_TAC `(p:num#num->num)(a,b)` THEN ASM_REWRITE_TAC[];
+        X_GEN_TAC `c:num` THEN STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+         [`FST((q:num->num#num) c)`; `SND((q:num->num#num) c)`] THEN
+        ASM_REWRITE_TAC[]]];
+    ASM SET_TAC[];
+    REWRITE_TAC[pairwise] THEN MATCH_MP_TAC WLOG_LT THEN
+    REWRITE_TAC[] THEN CONJ_TAC THENL
+     [MAP_EVERY X_GEN_TAC [`a:num`; `b:num`] THEN REWRITE_TAC[IN_UNIV] THEN
+      BINOP_TAC THENL [MESON_TAC[]; MATCH_ACCEPT_TAC DISJOINT_SYM];
+      REWRITE_TAC[IN_UNIV; DISJOINT; INTER_UNIONS]] THEN
+    REWRITE_TAC[EMPTY_UNIONS; FORALL_IN_GSPEC] THEN
+    MAP_EVERY X_GEN_TAC [`i:num`; `j:num`] THEN REPEAT DISCH_TAC THEN
+    MAP_EVERY X_GEN_TAC [`a:num`; `b:num`] THEN STRIP_TAC THEN
+    MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN STRIP_TAC THEN
+    EXPAND_TAC "d" THEN REWRITE_TAC[] THEN
+    SUBGOAL_THEN `(p:num#num->num)(a,b) < p(m,n) \/ p(m,n) < p(a,b)`
+    MP_TAC THENL
+     [REWRITE_TAC[ARITH_RULE `m < n \/ n < m <=> ~(m:num = n)`] THEN
+      DISCH_THEN(MP_TAC o AP_TERM `q:num->num#num`) THEN
+      ASM_REWRITE_TAC[PAIR_EQ] THEN ASM SET_TAC[];
+      REWRITE_TAC[EXTENSION; IN_DIFF; IN_INTER; UNIONS_GSPEC] THEN
+      SET_TAC[]];
+     GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `x:A` THEN
+     REWRITE_TAC[UNIONS_GSPEC; IN_UNIV; IN_ELIM_THM] THEN
+     ONCE_REWRITE_TAC[MESON[] `(?n i j. P n i j) <=> (?i j n. P n i j)`] THEN
+     REWRITE_TAC[LEFT_EXISTS_AND_THM; GSYM num_WOP] THEN
+     TRANS_TAC EQ_TRANS `?i j. x IN (d:num->num->A->bool) i j` THEN
+     CONJ_TAC THENL
+      [REPEAT(AP_TERM_TAC THEN ABS_TAC) THEN
+       MATCH_MP_TAC(TAUT `p ==> (p /\ q <=> q)`) THEN
+       EXPAND_TAC "d" THEN REWRITE_TAC[] THEN ASM SET_TAC[];
+       ALL_TAC] THEN
+     FIRST_ASSUM(fun t -> GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o RAND_CONV)
+        [GSYM t]) THEN
+     REWRITE_TAC[UNIONS_GSPEC; IN_ELIM_THM; IN_UNIV] THEN MATCH_MP_TAC(MESON[]
+      `!p:num#num->num.
+           (P <=> ?n i j. p(i,j) = n /\ Q i j) ==> (P <=> ?i j. Q i j)`) THEN
+     EXISTS_TAC `p:num#num->num` THEN
+     GEN_REWRITE_TAC RAND_CONV [num_WOP] THEN
+     EXPAND_TAC "d" THEN REWRITE_TAC[IN_DIFF; UNIONS_GSPEC; IN_ELIM_THM] THEN
+     MESON_TAC[]]);;
+
+let GENERAL_REDUCTION_THEOREM_2 = prove
+ (`!P. P {} /\
+       (!s t:A->bool. P s /\ P t ==> P(s UNION t)) /\
+       (!s t. P s /\ P t ==> P(s DIFF t))
+       ==> !s t. (COUNTABLE UNION_OF P) s /\ (COUNTABLE UNION_OF P) t
+                 ==> ?s' t'. (COUNTABLE UNION_OF P) s' /\
+                             (COUNTABLE UNION_OF P) t' /\
+                             s' SUBSET s /\ t' SUBSET t /\ DISJOINT s' t' /\
+                             s' UNION t' = s UNION t`,
+  GEN_TAC THEN DISCH_TAC THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o
+   ISPEC `\n. if n = 0 then s:A->bool else if n = 1 then t else {}` o
+   MATCH_MP GENERAL_REDUCTION_THEOREM) THEN
+  REWRITE_TAC[] THEN ANTS_TAC THENL
+   [GEN_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+    ASM_SIMP_TAC[COUNTABLE_UNION_OF_INC];
+    ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `v:num->A->bool` MP_TAC) THEN
+  REWRITE_TAC[IMP_CONJ] THEN DISCH_THEN(STRIP_ASSUME_TAC o MATCH_MP
+   (MESON[] `(!n. P n) ==> P 0 /\ P 1`)) THEN
+  ONCE_REWRITE_TAC[MESON[]
+   `(!n. P n) <=> P 0 /\ P 1 /\ (!n. ~(n = 0) /\ ~(n = 1) ==> P n)`] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN SIMP_TAC[SUBSET_EMPTY] THEN
+  STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `(:num) = 0 INSERT 1 INSERT ((:num) DIFF {0,1})`] THEN
+  SIMP_TAC[SIMPLE_IMAGE; IMAGE_CLAUSES; UNIONS_INSERT; PAIRWISE_INSERT] THEN
+  DISCH_THEN(MP_TAC o SPEC `1` o CONJUNCT1) THEN
+  CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[IN_INSERT] THEN STRIP_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+   `s UNION t UNION u = s' UNION t' UNION u'
+    ==> u = {} /\ u' = {} ==> s UNION t = s' UNION t'`)) THEN
+  REWRITE_TAC[EMPTY_UNIONS; FORALL_IN_IMAGE; IN_UNIV; IN_DIFF] THEN
+  ASM_SIMP_TAC[IN_INSERT; NOT_IN_EMPTY; DE_MORGAN_THM] THEN
+  ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* The Suslin operation. The proof of the only non-trivial result,           *)
 (* idempotence, is taken from Fremlin's "Measure Theory" volume 4.           *)
 (* ------------------------------------------------------------------------- *)
