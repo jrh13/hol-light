@@ -215,6 +215,11 @@ let INT_SUB_POW_R1 = prove
  (`!x n. 1 <= n ==> x pow n - &1 = (x - &1) * isum (0..n - 1) (\i. x pow i)`,
   SIMP_TAC[INT_OF_REAL_THM REAL_SUB_POW_R1; ETA_AX]);;
 
+let ISUM_UNIV = prove
+ (`!f:A->int s. support (+) f (:A) SUBSET s ==> isum s f = isum (:A) f`,
+  REWRITE_TAC[isum] THEN MATCH_MP_TAC ITERATE_UNIV THEN
+  REWRITE_TAC[MONOIDAL_INT_ADD]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Extend the congruences.                                                   *)
 (* ------------------------------------------------------------------------- *)

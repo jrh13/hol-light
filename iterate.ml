@@ -666,12 +666,21 @@ let ITERATE_OP = prove
 let ITERATE_SUPERSET = prove
  (`!op. monoidal op
         ==> !f:A->B u v.
-            u SUBSET v /\
-            (!x. x IN v /\ ~(x IN u) ==> f(x) = neutral op)
-            ==> iterate op v f = iterate op u f`,
+                u SUBSET v /\
+                (!x. x IN v /\ ~(x IN u) ==> f(x) = neutral op)
+                ==> iterate op v f = iterate op u f`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN
   AP_THM_TAC THEN AP_TERM_TAC THEN
   REWRITE_TAC[support; EXTENSION; IN_ELIM_THM] THEN ASM_MESON_TAC[SUBSET]);;
+
+let ITERATE_UNIV = prove
+ (`!op. monoidal op
+        ==> !f:A->B s. support op f UNIV SUBSET s
+                  ==> iterate op s f = iterate op UNIV f`,
+  REWRITE_TAC[support; SUBSET; IN_ELIM_THM] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_SUPERSET) THEN
+  ASM SET_TAC[]);;
 
 let ITERATE_IMAGE_NONZERO = prove
  (`!op. monoidal op
@@ -974,6 +983,20 @@ let NSUM_SUPERSET = prove
         u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = 0))
         ==> (nsum v f = nsum u f)`,
   SIMP_TAC[nsum; GSYM NEUTRAL_ADD; ITERATE_SUPERSET; MONOIDAL_ADD]);;
+
+let NSUM_UNIV = prove
+ (`!f:A->num s. support (+) f (:A) SUBSET s ==> nsum s f = nsum (:A) f`,
+  REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_UNIV THEN
+  REWRITE_TAC[MONOIDAL_ADD]);;
+
+let ITERATE_UNIV = prove
+ (`!op. monoidal op
+        ==> !f s. support op f UNIV SUBSET s
+                  ==> iterate op s f = iterate op UNIV f`,
+  REWRITE_TAC[support; SUBSET; IN_ELIM_THM] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_SUPERSET) THEN
+  ASM SET_TAC[]);;
 
 let NSUM_UNION_RZERO = prove
  (`!f:A->num u v.
@@ -1647,6 +1670,11 @@ let SUM_SUPERSET = prove
         u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = &0))
         ==> (sum v f = sum u f)`,
   SIMP_TAC[sum; GSYM NEUTRAL_REAL_ADD; ITERATE_SUPERSET; MONOIDAL_REAL_ADD]);;
+
+let SUM_UNIV = prove
+ (`!f:A->real s. support (+) f (:A) SUBSET s ==> sum s f = sum (:A) f`,
+  REWRITE_TAC[sum] THEN MATCH_MP_TAC ITERATE_UNIV THEN
+  REWRITE_TAC[MONOIDAL_REAL_ADD]);;
 
 let SUM_UNION_RZERO = prove
  (`!f:A->real u v.

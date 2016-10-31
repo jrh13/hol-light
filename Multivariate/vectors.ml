@@ -1578,6 +1578,13 @@ let VSUM_SUPPORT = prove
   REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC VSUM_SUPERSET THEN
   SET_TAC[]);;
 
+let VSUM_UNIV = prove
+ (`!f:A->real^N s.
+     support (+) f (:A) SUBSET s ==> vsum s f = vsum (:A) f`,
+  REWRITE_TAC[support; NEUTRAL_VECTOR_ADD] THEN REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM VSUM_SUPPORT] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
+
 let VSUM_EQ_SUPERSET = prove
  (`!f s t:A->bool.
         FINITE t /\ t SUBSET s /\
@@ -5125,6 +5132,18 @@ let INDEPENDENT_STDBASIS = prove
   REWRITE_TAC[IN_SPAN_IMAGE_BASIS] THEN DISCH_THEN(MP_TAC o SPEC `k:num`) THEN
   ASM_SIMP_TAC[IN_DELETE; BASIS_COMPONENT; REAL_OF_NUM_EQ; ARITH]);;
 
+let INDEPENDENT_BASIS_IMAGE = prove
+ (`!k. independent(IMAGE basis k:real^N->bool) <=> k SUBSET 1..dimindex(:N) `,
+  REPEAT(STRIP_TAC ORELSE EQ_TAC) THENL
+   [FIRST_X_ASSUM(MP_TAC o MATCH_MP INDEPENDENT_NONZERO) THEN
+    REWRITE_TAC[SET_RULE `~(a IN IMAGE f s) <=> !x. x IN s ==> ~(f x = a)`;
+                BASIS_EQ_0; GSYM SUBSET];
+    MATCH_MP_TAC INDEPENDENT_MONO THEN
+    EXISTS_TAC `{basis i:real^N | 1 <= i /\ i <= dimindex(:N)}` THEN
+    REWRITE_TAC[INDEPENDENT_STDBASIS] THEN
+    ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN MATCH_MP_TAC IMAGE_SUBSET THEN
+    ASM_REWRITE_TAC[GSYM numseg]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* This is useful for building a basis step-by-step.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -7200,6 +7219,23 @@ let SPAN_DELETE_0 = prove
   EXISTS_TAC `span((vec 0:real^N) INSERT (s DELETE vec 0))` THEN CONJ_TAC THENL
    [MATCH_MP_TAC SPAN_MONO THEN SET_TAC[];
     SIMP_TAC[SUBSET; SPAN_BREAKDOWN_EQ; VECTOR_MUL_RZERO; VECTOR_SUB_RZERO]]);;
+
+let DIM_BASIS_IMAGE = prove
+ (`!k. dim(IMAGE basis k:real^N->bool) = CARD((1..dimindex(:N)) INTER k)`,
+  GEN_TAC THEN TRANS_TAC EQ_TRANS
+   `dim(IMAGE basis ((1..dimindex(:N)) INTER k):real^N->bool)` THEN
+  CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN
+    ONCE_REWRITE_TAC[GSYM SPAN_DELETE_0] THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC(SET_RULE
+     `(!x. ~(f x = a) <=> x IN k)
+      ==> IMAGE f s DELETE a = IMAGE f (k INTER s) DELETE a`) THEN
+    REWRITE_TAC[BASIS_EQ_0];
+    W(MP_TAC o PART_MATCH (lhand o rand) DIM_EQ_CARD o lhand o snd) THEN
+    REWRITE_TAC[INDEPENDENT_BASIS_IMAGE; INTER_SUBSET] THEN
+    DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC CARD_IMAGE_INJ THEN
+    SIMP_TAC[FINITE_INTER; FINITE_NUMSEG; IN_INTER; IN_NUMSEG] THEN
+    MESON_TAC[BASIS_INJ]]);;
 
 let SPAN_IMAGE_SCALE = prove
  (`!c s. FINITE s /\ (!x. x IN s ==> ~(c x = &0))

@@ -150,6 +150,27 @@ let WF_EREC = prove
   MESON_TAC[WF_REC; WF_UREC]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Defining a recursive function via an existence condition.                 *)
+(* ------------------------------------------------------------------------- *)
+
+let WF_REC_EXISTS = prove
+ (`WF((<<):A->A->bool)
+   ==> !P. (!f g x y. (!z. z << x ==> f z = g z) ==> (P f x y <=> P g x y)) /\
+           (!f x. (!z. z << x ==> P f z (f z)) ==> ?y. P f x y)
+           ==> ?f:A->B. !x. P f x (f x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?f:A->B. !x. f x = @y. P f x y` MP_TAC THENL
+   [FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP WF_REC) THEN
+    REPEAT STRIP_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:A->B` THEN
+    DISCH_THEN(fun th ->
+      ONCE_REWRITE_TAC[th] THEN ASSUME_TAC(GSYM th)) THEN
+    CONV_TAC(BINDER_CONV SELECT_CONV) THEN
+    FIRST_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [WF_IND]) THEN
+    ASM_MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Some preservation theorems for wellfoundedness.                           *)
 (* ------------------------------------------------------------------------- *)
 

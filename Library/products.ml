@@ -176,6 +176,12 @@ let NPRODUCT_SUPERSET = prove
         ==> nproduct v f = nproduct u f`,
   SIMP_TAC[nproduct; GSYM NEUTRAL_MUL; ITERATE_SUPERSET; MONOIDAL_MUL]);;
 
+let NPRODUCT_UNIV = prove
+ (`!f:A->num s.
+        support ( * ) f (:A) SUBSET s ==> nproduct s f = nproduct (:A) f`,
+  REWRITE_TAC[nproduct] THEN MATCH_MP_TAC ITERATE_UNIV THEN
+  REWRITE_TAC[MONOIDAL_MUL]);;
+
 let NPRODUCT_PAIR = prove
  (`!f m n. nproduct(2*m..2*n+1) f = nproduct(m..n) (\i. f(2*i) * f(2*i+1))`,
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_MUL) THEN
@@ -520,6 +526,12 @@ let PRODUCT_SUPERSET = prove
         ==> product v f = product u f`,
   SIMP_TAC[product; GSYM NEUTRAL_REAL_MUL;
            ITERATE_SUPERSET; MONOIDAL_REAL_MUL]);;
+
+let PRODUCT_UNIV = prove
+ (`!f:A->real s.
+        support ( * ) f (:A) SUBSET s ==> product s f = product (:A) f`,
+  REWRITE_TAC[product] THEN MATCH_MP_TAC ITERATE_UNIV THEN
+  REWRITE_TAC[MONOIDAL_REAL_MUL]);;
 
 let PRODUCT_PAIR = prove
  (`!f m n. product(2*m..2*n+1) f = product(m..n) (\i. f(2*i) * f(2*i+1))`,

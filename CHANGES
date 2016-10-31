@@ -8,6 +8,45 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 24th Oct 2016       wf.ml
+
+Added the following theorem about defining recursive functions based on an
+existential condition, after finally getting tired of effectively proving
+special cases using the same reasoning:
+
+  WF_REC_EXISTS : thm =
+    |- WF (<<)
+       ==> (!P. (!f g x y.
+                     (!z. z << x ==> f z = g z) ==> (P f x y <=> P g x y)) /\
+                (!f x. (!z. z << x ==> P f z (f z)) ==> (?y. P f x y))
+                ==> (?f. !x. P f x (f x)))
+
+Sun 23rd Oct 2016       sets.ml, Library/isum.ml, Library/products.ml
+
+Added the following occasionally handy manipulative theorem for iterated
+operations, the generic one and various instances:
+
+  ITERATE_UNIV =
+    |- !op. monoidal op
+            ==> (!f s.
+                     support op f (:A) SUBSET s
+                     ==> iterate op s f = iterate op (:A) f)
+
+  NSUM_UNIV =
+    |- !f s. support (+) f (:A) SUBSET s ==> nsum s f = nsum (:A) f
+
+  SUM_UNIV =
+    |- !f s. support (+) f (:A) SUBSET s ==> sum s f = sum (:A) f
+
+  ISUM_UNIV =
+    |- !f s. support (+) f (:A) SUBSET s ==> isum s f = isum (:A) f
+
+  NPRODUCT_UNIV =
+    |- !f s. support (*) f (:A) SUBSET s ==> nproduct s f = nproduct (:A) f
+
+  PRODUCT_UNIV =
+    |- !f s. support (*) f (:A) SUBSET s ==> product s f = product (:A) f
+
 Thu  6th Oct 2016       preterm.ml, bool.ml, impconv.ml, nums.ml
 
 Removed a few bindings that generate "unused variable" warnings from OCaml.
