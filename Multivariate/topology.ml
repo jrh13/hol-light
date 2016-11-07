@@ -67,6 +67,12 @@ let OPEN_IN = prove
   REWRITE_TAC[OPEN_EMPTY; OPEN_INTER; SUBSET] THEN
   MESON_TAC[IN; OPEN_UNIONS]);;
 
+let OPEN_RELATIVE_TO = prove
+ (`!s t:real^N->bool.
+        (open relative_to s) t <=> open_in (subtopology euclidean s) t`,
+  REWRITE_TAC[GSYM OPEN_IN_RELATIVE_TO] THEN
+  REWRITE_TAC[relative_to; OPEN_IN]);;
+
 let TOPSPACE_EUCLIDEAN = prove
  (`topspace euclidean = (:real^N)`,
   REWRITE_TAC[topspace; EXTENSION; IN_UNIV; IN_UNIONS; IN_ELIM_THM] THEN
@@ -87,6 +93,12 @@ let CLOSED_IN_REFL = prove
 let CLOSED_IN = prove
  (`!s:real^N->bool. closed s <=> closed_in euclidean s`,
   REWRITE_TAC[closed; closed_in; TOPSPACE_EUCLIDEAN; OPEN_IN; SUBSET_UNIV]);;
+
+let CLOSED_RELATIVE_TO = prove
+ (`!s t:real^N->bool.
+        (closed relative_to s) t <=> closed_in (subtopology euclidean s) t`,
+  REWRITE_TAC[GSYM CLOSED_IN_RELATIVE_TO] THEN
+  REWRITE_TAC[relative_to; CLOSED_IN]);;
 
 let OPEN_UNION = prove
  (`!s t. open s /\ open t ==> open(s UNION t)`,
@@ -449,8 +461,7 @@ let OPEN_OPEN_IN_TRANS = prove
 let OPEN_SUBSET = prove
  (`!s t:real^N->bool.
         s SUBSET t /\ open s ==> open_in (subtopology euclidean t) s`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[OPEN_IN_OPEN] THEN
-  EXISTS_TAC `s:real^N->bool` THEN ASM SET_TAC[]);;
+  REWRITE_TAC[GSYM OPEN_RELATIVE_TO; RELATIVE_TO_SUBSET]);;
 
 let CLOSED_IN_DIFF_OPEN = prove
  (`!s t. open t ==> closed_in (subtopology euclidean s) (s DIFF t)`,
@@ -486,8 +497,7 @@ let CLOSED_IN_CLOSED_INTER = prove
 let CLOSED_SUBSET = prove
  (`!s t:real^N->bool.
         s SUBSET t /\ closed s ==> closed_in (subtopology euclidean t) s`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[CLOSED_IN_CLOSED] THEN
-  EXISTS_TAC `s:real^N->bool` THEN ASM SET_TAC[]);;
+  REWRITE_TAC[GSYM CLOSED_RELATIVE_TO; RELATIVE_TO_SUBSET]);;
 
 let OPEN_IN_DIFF_CLOSED = prove
  (`!s t. closed t ==> open_in (subtopology euclidean s) (s DIFF t)`,
@@ -498,15 +508,13 @@ let OPEN_IN_SUBSET_TRANS = prove
  (`!s t u:real^N->bool.
         open_in (subtopology euclidean u) s /\ s SUBSET t /\ t SUBSET u
         ==> open_in (subtopology euclidean t) s`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_OPEN; LEFT_AND_EXISTS_THM] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
+  REWRITE_TAC[GSYM OPEN_RELATIVE_TO; RELATIVE_TO_SUBSET_TRANS]);;
 
 let CLOSED_IN_SUBSET_TRANS = prove
  (`!s t u:real^N->bool.
         closed_in (subtopology euclidean u) s /\ s SUBSET t /\ t SUBSET u
         ==> closed_in (subtopology euclidean t) s`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_CLOSED; LEFT_AND_EXISTS_THM] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
+  REWRITE_TAC[GSYM CLOSED_RELATIVE_TO; RELATIVE_TO_SUBSET_TRANS]);;
 
 let open_in = prove
  (`!u s:real^N->bool.
@@ -2113,20 +2121,9 @@ let CLOSURE_OPEN_INTER_CLOSURE = prove
   ASM_REWRITE_TAC[SUBSET_UNIV; GSYM OPEN_IN; SUBTOPOLOGY_UNIV]);;
 
 let OPEN_INTER_CLOSURE_SUBSET = prove
- (`!s t:real^N->bool.
+ (`!s t:real^N->bool.                                                        
         open s ==> (s INTER (closure t)) SUBSET closure(s INTER t)`,
-  REPEAT STRIP_TAC THEN
-  SIMP_TAC[SUBSET; IN_INTER; closure; IN_UNION; IN_ELIM_THM] THEN
-  X_GEN_TAC `x:real^N` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  DISJ2_TAC THEN REWRITE_TAC[LIMPT_APPROACHABLE] THEN
-  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [open_def]) THEN
-  DISCH_THEN(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LIMPT_APPROACHABLE]) THEN
-  DISCH_THEN(MP_TAC o SPEC `min d e`) THEN
-  ASM_REWRITE_TAC[REAL_LT_MIN; IN_INTER] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN ASM_MESON_TAC[]);;
+  MESON_TAC[CLOSURE_OPEN_INTER_CLOSURE; CLOSURE_SUBSET]);;
 
 let OPEN_INTER_CLOSURE_EQ = prove
  (`!s t:real^N->bool.

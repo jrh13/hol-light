@@ -3623,8 +3623,8 @@ let MATRIX_VECTOR_COLUMN = prove
   REWRITE_TAC[REAL_MUL_AC]);;
 
 let MATRIX_MUL_COMPONENT = prove
- (`!i. 1 <= i /\ i <= dimindex(:N)
-       ==> ((A:real^N^N) ** (B:real^N^N))$i = transp B ** A$i`,
+ (`!i. 1 <= i /\ i <= dimindex(:P)
+       ==> ((A:real^N^P) ** (B:real^M^N))$i = transp B ** A$i`,
   SIMP_TAC[matrix_mul; LAMBDA_BETA; matrix_vector_mul; vector_matrix_mul;
        transp; CART_EQ] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUM_EQ_NUMSEG THEN

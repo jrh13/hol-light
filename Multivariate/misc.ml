@@ -915,6 +915,73 @@ let RESTRICTION_IDEMP = prove
   REWRITE_TAC[RESTRICTION_FIXPOINT; RESTRICTION_IN_EXTENSIONAL]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A somewhat cheap but handy way of getting localized forms of various      *)
+(* topological concepts (open, closed, borel, fsigma, gdelta etc.)           *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("relative_to",(12,"right"));;
+
+let relative_to = define
+ `(P relative_to s) t <=> ?u. P u /\ s INTER u = t`;;
+
+let RELATIVE_TO_UNIV = prove
+ (`!P s. (P relative_to (:A)) s <=> P s`,
+  REWRITE_TAC[relative_to; INTER_UNIV] THEN MESON_TAC[]);;
+
+let RELATIVE_TO_IMP_SUBSET = prove
+ (`!P s t. (P relative_to s) t ==> t SUBSET s`,
+  REWRITE_TAC[relative_to] THEN SET_TAC[]);;
+
+let RELATIVE_TO_COMPL = prove
+ (`!P u s:A->bool.
+        s SUBSET u
+        ==> ((P relative_to u) (u DIFF s) <=>
+             ((\c. P(UNIV DIFF c)) relative_to u) s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[relative_to] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM EXISTS_DIFF] THEN
+  REWRITE_TAC[COMPL_COMPL] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN ASM SET_TAC[]);;
+
+let RELATIVE_TO_SUBSET = prove
+ (`!P s t:A->bool. s SUBSET t /\ P s ==> (P relative_to t) s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[relative_to] THEN
+  EXISTS_TAC `s:A->bool` THEN ASM SET_TAC[]);;
+
+let RELATIVE_TO_SUBSET_TRANS = prove
+ (`!P u s t:A->bool.
+      (P relative_to u) s /\ s SUBSET t /\ t SUBSET u ==> (P relative_to t) s`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[relative_to] THEN MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]);;
+
+let RELATIVE_TO_MONO = prove
+ (`!P Q.
+     (!s. P s ==> Q s) ==> !u. (P relative_to u) s ==> (Q relative_to u) s`,
+  REWRITE_TAC[relative_to] THEN MESON_TAC[]);;
+
+let COUNTABLE_UNION_OF_RELATIVE_TO = prove
+ (`!P u s:A->bool.
+        ((COUNTABLE UNION_OF P) relative_to u) s <=>
+        (COUNTABLE UNION_OF (P relative_to u)) s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[UNION_OF; relative_to] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `t:A->bool`
+     (CONJUNCTS_THEN2 MP_TAC (SUBST1_TAC o SYM))) THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:(A->bool)->bool`
+     (STRIP_ASSUME_TAC o GSYM)) THEN
+    EXISTS_TAC `{u INTER c | (c:A->bool) IN f}` THEN
+    ASM_REWRITE_TAC[INTER_UNIONS] THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+    ASM_MESON_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `f:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o
+      GEN_REWRITE_RULE BINDER_CONV [RIGHT_IMP_EXISTS_THM]) THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `g:(A->bool)->(A->bool)` THEN STRIP_TAC THEN
+    EXISTS_TAC `UNIONS (IMAGE (g:(A->bool)->(A->bool)) f)` THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    EXISTS_TAC `IMAGE (g:(A->bool)->(A->bool)) f` THEN
+    ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Reduction theorem used for sigma-sets doesn't really depend on much.      *)
 (* Besides, our formulation of "Delta" via "baire" doesn't work for          *)
 (* n = 0 so we want to avoid a separate proof for clopen sets.               *)

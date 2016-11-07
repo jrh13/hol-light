@@ -44,7 +44,7 @@ let TRACE_NEG = prove
   REWRITE_TAC[trace; MATRIX_NEG_COMPONENT; SUM_NEG]);;
 
 let TRACE_MUL_SYM = prove
- (`!A B:real^N^N. trace(A ** B) = trace(B ** A)`,
+ (`!A B:real^N^M. trace(A ** B) = trace(B ** A)`,
   REPEAT GEN_TAC THEN SIMP_TAC[trace; matrix_mul; LAMBDA_BETA] THEN
   GEN_REWRITE_TAC RAND_CONV [SUM_SWAP_NUMSEG] THEN REWRITE_TAC[REAL_MUL_SYM]);;
 
@@ -59,8 +59,10 @@ let TRACE_SIMILAR = prove
   ASM_SIMP_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_INV; MATRIX_MUL_RID]);;
 
 let TRACE_MUL_CYCLIC = prove
- (`!A:real^N^N B C:real^N^N. trace(A ** B ** C) = trace(B ** C ** A)`,
-  MESON_TAC[MATRIX_MUL_ASSOC; TRACE_MUL_SYM]);;
+ (`!A:real^P^M B C:real^M^N. trace(A ** B ** C) = trace(B ** C ** A)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
+  GEN_REWRITE_TAC RAND_CONV [TRACE_MUL_SYM] THEN
+  REWRITE_TAC[MATRIX_MUL_ASSOC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition of determinant.                                                *)
@@ -2190,7 +2192,6 @@ let TRACE_COVARIANCE_CAUCHY_SCHWARZ_SQUARE = prove
         <= trace(transp A ** A) * trace(transp B ** B)`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_POW2_ABS] THEN
   MATCH_MP_TAC REAL_RSQRT_LE THEN
-
   SIMP_TAC[REAL_ABS_POS; REAL_LE_MUL; TRACE_COVARIANCE_POS_LE] THEN
   REWRITE_TAC[TRACE_COVARIANCE_CAUCHY_SCHWARZ_ABS; SQRT_MUL]);;
 

@@ -278,6 +278,12 @@ let OPEN_IN_SUBTOPOLOGY = prove
   SIMP_TAC[REWRITE_RULE[CONJUNCT2 topology_tybij] ISTOPLOGY_SUBTOPOLOGY] THEN
   REWRITE_TAC[EXTENSION; IN_ELIM_THM]);;
 
+let OPEN_IN_RELATIVE_TO = prove
+ (`!top s t:A->bool.
+        (open_in top relative_to s) t <=>
+        open_in (subtopology top s) t`,
+  REWRITE_TAC[relative_to; OPEN_IN_SUBTOPOLOGY] THEN MESON_TAC[INTER_COMM]);;
+
 let TOPSPACE_SUBTOPOLOGY = prove
  (`!top u. topspace(subtopology top u) = topspace top INTER u`,
   REWRITE_TAC[topspace; OPEN_IN_SUBTOPOLOGY; INTER_UNIONS] THEN
@@ -295,6 +301,12 @@ let CLOSED_IN_SUBTOPOLOGY = prove
   ASM_SIMP_TAC[CLOSED_IN_TOPSPACE; OPEN_IN_DIFF; CLOSED_IN_DIFF;
                OPEN_IN_TOPSPACE] THEN
   ASM SET_TAC[]);;
+
+let CLOSED_IN_RELATIVE_TO = prove
+ (`!top s t:A->bool.
+        (closed_in top relative_to s) t <=>
+        closed_in (subtopology top s) t`,
+  REWRITE_TAC[relative_to; CLOSED_IN_SUBTOPOLOGY] THEN MESON_TAC[INTER_COMM]);;
 
 let SUBTOPOLOGY_SUBTOPOLOGY = prove
  (`!top s t:A->bool.
