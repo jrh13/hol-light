@@ -8,6 +8,39 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 17th Nov 2016       arith.ml, real.ml, int.ml, iterate.ml
+
+Added a miscellany of trivial but handy theorems:
+
+  INTER_NUMSEG =
+    |- !m n p q. (m..n) INTER (p..q) = MAX m p..MIN n q
+  
+  INT_SGNS_EQ =
+    |- !x y.
+           int_sgn x = int_sgn y <=>
+           (x = &0 <=> y = &0) /\ (x > &0 <=> y > &0) /\ (x < &0 <=> y < &0)
+  
+  INT_SGNS_EQ_ALT =
+    |- !x y.
+           int_sgn x = int_sgn y <=>
+           (x = &0 ==> y = &0) /\ (x > &0 ==> y > &0) /\ (x < &0 ==> y < &0)
+  
+  LDIV_LT_EQ =
+    |- !a b n. ~(a = 0) ==> (n < b DIV a <=> a * (n + 1) <= b)
+  
+  RDIV_LT_EQ =
+    |- !a b n. ~(a = 0) ==> (b DIV a < n <=> b < a * n)
+  
+  REAL_SGNS_EQ =
+    |- !x y.
+           real_sgn x = real_sgn y <=>
+           (x = &0 <=> y = &0) /\ (x > &0 <=> y > &0) /\ (x < &0 <=> y < &0)
+  
+  REAL_SGNS_EQ_ALT =
+    |- !x y.
+           real_sgn x = real_sgn y <=>
+           (x = &0 ==> y = &0) /\ (x > &0 ==> y > &0) /\ (x < &0 ==> y < &0)
+
 Mon 24th Oct 2016       wf.ml
 
 Added the following theorem about defining recursive functions based on an

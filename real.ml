@@ -1483,6 +1483,20 @@ let REAL_SGN_EQ_INEQ = prove
          x = y \/ abs(x - y) < max (abs x) (abs y)`,
   REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
 
+let REAL_SGNS_EQ = prove
+ (`!x y. real_sgn x = real_sgn y <=>
+         (x = &0 <=> y = &0) /\
+         (x > &0 <=> y > &0) /\
+         (x < &0 <=> y < &0)`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
+let REAL_SGNS_EQ_ALT = prove
+ (`!x y. real_sgn x = real_sgn y <=>
+         (x = &0 ==> y = &0) /\
+         (x > &0 ==> y > &0) /\
+         (x < &0 ==> y < &0)`,
+  REWRITE_TAC[real_sgn] THEN REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Useful "without loss of generality" lemmas.                               *)
 (* ------------------------------------------------------------------------- *)

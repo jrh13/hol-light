@@ -3731,6 +3731,13 @@ let SYMMETRIC_MATRIX_ORTHOGONAL_EIGENVECTORS = prove
         SELF_ADJOINT_ORTHOGONAL_EIGENVECTORS)) THEN
   REWRITE_TAC[MATRIX_VECTOR_MUL_LINEAR]);;
 
+let MATRIX_INJECTIVE_0 = prove
+ (`!m:real^M^N.
+        (!x y:real^M. m ** x = m ** y ==> x = y) <=>
+        (!x:real^M. m ** x = vec 0 ==> x = vec 0)`,
+  GEN_TAC THEN MATCH_MP_TAC LINEAR_INJECTIVE_0 THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_LINEAR]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Operator norm.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -4626,6 +4633,10 @@ let SUBSPACE_SPAN = prove
  (`!s. subspace(span s)`,
   GEN_TAC THEN REWRITE_TAC[span] THEN MATCH_MP_TAC P_HULL THEN
   SIMP_TAC[subspace; IN_INTERS]);;
+
+let NONEMPTY_SPAN = prove
+ (`!s:real^N->bool. ~(span s = {})`,
+  SIMP_TAC[SUBSPACE_IMP_NONEMPTY; SUBSPACE_SPAN]);;
 
 let SPAN_CLAUSES = prove
  (`(!a s. a IN s ==> a IN span s) /\
@@ -6527,6 +6538,19 @@ let MATRIX_INVERTIBLE = prove
     EXISTS_TAC `matrix(g:real^N->real^M)` THEN
     ASM_SIMP_TAC[GSYM MATRIX_VECTOR_MUL_ASSOC; MATRIX_WORKS]]);;
 
+let INVERTIBLE_EQ_INJECTIVE_AND_SURJECTIVE = prove
+ (`!m:real^M^N.
+        invertible m <=>
+        (!x y:real^M. m ** x = m ** y ==> x = y) /\
+        IMAGE (\x. m ** x) (:real^M) = (:real^N)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPEC `\x:real^M. (m:real^M^N) ** x` MATRIX_INVERTIBLE) THEN
+  REWRITE_TAC[MATRIX_OF_MATRIX_VECTOR_MUL; MATRIX_VECTOR_MUL_LINEAR] THEN
+  DISCH_THEN SUBST1_TAC THEN
+  SIMP_TAC[GSYM LINEAR_BIJECTIVE_LEFT_RIGHT_INVERSE_EQ;
+           MATRIX_VECTOR_MUL_LINEAR] THEN
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Left-invertible linear transformation has a lower bound.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -7154,6 +7178,20 @@ let ADJOINT_INJECTIVE_INJECTIVE_0 = prove
   FIRST_ASSUM(ASSUME_TAC o MATCH_MP ADJOINT_LINEAR) THEN
   ASM_MESON_TAC[LINEAR_INJECTIVE_0]);;
 
+let TRANSP_INJECTIVE = prove
+ (`!m:real^M^N.
+        (!x y:real^N. transp m ** x = transp m ** y ==> x = y) <=>
+        IMAGE (\x. m ** x) (:real^M) = (:real^N)`,
+  GEN_TAC THEN
+  MP_TAC(ISPEC `\x:real^M. (m:real^M^N) ** x` ADJOINT_INJECTIVE) THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_LINEAR; ADJOINT_MATRIX] THEN SET_TAC[]);;
+
+let TRANSP_SURJECTIVE = prove
+ (`!m:real^M^N.
+        IMAGE (\x. transp m ** x) (:real^N) = (:real^M) <=>
+        (!x y:real^M. m ** x = m ** y ==> x = y)`,
+  REWRITE_TAC[GSYM TRANSP_INJECTIVE; TRANSP_TRANSP]);;
+
 let LINEAR_SINGULAR_INTO_HYPERPLANE = prove
  (`!f:real^N->real^N.
         linear f
@@ -7238,17 +7276,17 @@ let DIM_BASIS_IMAGE = prove
     MESON_TAC[BASIS_INJ]]);;
 
 let SPAN_IMAGE_SCALE = prove
- (`!c s. FINITE s /\ (!x. x IN s ==> ~(c x = &0))
+ (`!c s. (!x. x IN s ==> ~(c x = &0))
          ==> span (IMAGE (\x:real^N. c(x) % x) s) = span s`,
-  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[IMAGE_CLAUSES; SPAN_BREAKDOWN_EQ; EXTENSION; FORALL_IN_INSERT] THEN
-  MAP_EVERY X_GEN_TAC [`x:real^N`; `t:real^N->bool`] THEN
-  STRIP_TAC THEN STRIP_TAC THEN X_GEN_TAC `y:real^N` THEN
-  REWRITE_TAC[VECTOR_MUL_ASSOC] THEN EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
-  DISCH_THEN(X_CHOOSE_TAC `k:real`) THEN
-  EXISTS_TAC `k / (c:real^N->real) x` THEN
-  ASM_SIMP_TAC[REAL_DIV_RMUL]);;
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  CONJ_TAC THEN MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN
+  REWRITE_TAC[SUBSPACE_SPAN; SUBSET; FORALL_IN_IMAGE] THEN
+  ASM_SIMP_TAC[SPAN_MUL; SPAN_SUPERSET] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `x:real^N = inv(c x) % c x % x` SUBST1_TAC THENL
+   [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID];
+    MATCH_MP_TAC SPAN_MUL THEN MATCH_MP_TAC SPAN_SUPERSET THEN
+    ASM SET_TAC[]]);;
 
 let PAIRWISE_ORTHOGONAL_INDEPENDENT = prove
  (`!s:real^N->bool.
@@ -9558,6 +9596,10 @@ let COLLINEAR_LEMMA = prove
 let COLLINEAR_LEMMA_ALT = prove
  (`!x y. collinear {vec 0,x,y} <=> x = vec 0 \/ ?c. y = c % x`,
   REWRITE_TAC[COLLINEAR_LEMMA] THEN MESON_TAC[VECTOR_MUL_LZERO]);;
+
+let COLLINEAR_SPAN = prove
+ (`!a b:real^N. collinear{vec 0,a,b} <=> a = vec 0 \/ b IN span {a}`,
+  REWRITE_TAC[SPAN_SING; COLLINEAR_LEMMA_ALT] THEN SET_TAC[]);;
 
 let NORM_CAUCHY_SCHWARZ_EQUAL = prove
  (`!x y:real^N. abs(x dot y) = norm(x) * norm(y) <=> collinear {vec 0,x,y}`,

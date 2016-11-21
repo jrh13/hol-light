@@ -494,6 +494,38 @@ let POW_2_SQRT_ABS = prove
   REWRITE_TAC[real_abs; REAL_LE_SQUARE]);;
 
 (* ------------------------------------------------------------------------- *)
+(* A slightly sharper indexing lemma.                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let FINITE_INDEX_NUMSEG_SPECIAL = prove
+ (`!s a:A.
+        FINITE s /\ a IN s
+        ==> ?f. (!i j. i IN 1..CARD s /\ j IN 1..CARD s /\ f i = f j
+                       ==> i = j) /\
+                s = IMAGE f (1..CARD s) /\
+                f 1 = a`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [FINITE_INDEX_NUMSEG]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `f:num->A` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `?k. k IN 1..CARD(s:A->bool) /\ (a:A) = f k`
+  STRIP_ASSUME_TAC THENL[ASM SET_TAC[]; ALL_TAC] THEN
+  EXISTS_TAC
+   `(f:num->A) o (\j. if j = 1 then k else if j = k then 1 else j)` THEN
+  SUBGOAL_THEN `1 IN 1..CARD(s:A->bool)` ASSUME_TAC THENL
+   [REWRITE_TAC[IN_NUMSEG; LE_REFL; ARITH_RULE `1 <= x <=> ~(x = 0)`] THEN
+    ASM_SIMP_TAC[CARD_EQ_0; ARITH_EQ] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[o_THM] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  UNDISCH_THEN `s = IMAGE (f:num->A) (1..CARD(s:A->bool))`
+   (fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; o_THM] THEN
+  X_GEN_TAC `b:A` THEN EQ_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `i:num` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `if i = 1 then k else if i = k then 1 else i` THEN
+  ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Geometric progression.                                                    *)
 (* ------------------------------------------------------------------------- *)
 

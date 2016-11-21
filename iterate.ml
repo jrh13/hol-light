@@ -136,11 +136,13 @@ let FINITE_INDEX_NUMBERS = prove
                          FINITE k /\ (s = IMAGE f k)`,
   MESON_TAC[FINITE_INDEX_NUMSEG; FINITE_NUMSEG; FINITE_IMAGE]);;
 
+let INTER_NUMSEG = prove
+ (`!m n p q. (m..n) INTER (p..q) = (MAX m p)..(MIN n q)`,
+  REWRITE_TAC[EXTENSION; IN_INTER; IN_NUMSEG] THEN ARITH_TAC);;
+
 let DISJOINT_NUMSEG = prove
  (`!m n p q. DISJOINT (m..n) (p..q) <=> n < p \/ q < m \/ n < m \/ q < p`,
-  REWRITE_TAC[DISJOINT; IN_NUMSEG; EXTENSION; IN_INTER; NOT_IN_EMPTY] THEN
-  REPEAT GEN_TAC THEN REWRITE_TAC[DE_MORGAN_THM; NOT_LE] THEN
-  EQ_TAC THENL [MESON_TAC[LT_ANTISYM]; ARITH_TAC]);;
+  REWRITE_TAC[DISJOINT; NUMSEG_EMPTY; INTER_NUMSEG] THEN ARITH_TAC);;
 
 let NUMSEG_ADD_SPLIT = prove
  (`!m n p. m <= n + 1 ==> (m..(n+p) = (m..n) UNION (n+1..n+p))`,

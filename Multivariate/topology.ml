@@ -2180,6 +2180,18 @@ let LIMPT_OF_CLOSURE = prove
   REPEAT GEN_TAC THEN MATCH_MP_TAC(TAUT `(q ==> p) ==> (p \/ q <=> p)`) THEN
   REWRITE_TAC[LIMPT_OF_LIMPTS]);;
 
+let PERFECT_FROM_CLOSURE = prove
+ (`!s:real^N->bool.
+        (!x. x IN closure s ==> x limit_point_of closure s)
+        ==> !x. x IN s ==> x limit_point_of s`,
+  REWRITE_TAC[LIMPT_OF_CLOSURE] THEN
+  MESON_TAC[REWRITE_RULE[SUBSET] CLOSURE_SUBSET]);;
+
+let DENSE_IMP_PERFECT = prove
+ (`!s. closure s = (:real^N) ==> !x. x IN s ==> x limit_point_of s`,
+  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC PERFECT_FROM_CLOSURE THEN
+  ASM_REWRITE_TAC[LIMPT_OF_UNIV]);;
+
 let CLOSED_IN_LIMPT = prove
  (`!s t. closed_in (subtopology euclidean t) s <=>
          s SUBSET t /\ !x:real^N. x limit_point_of s /\ x IN t ==> x IN s`,
@@ -4482,23 +4494,6 @@ let CLOSED_APPROACHABLE = prove
 let IN_CLOSURE_DELETE = prove
  (`!s x:real^N. x IN closure(s DELETE x) <=> x limit_point_of s`,
   SIMP_TAC[CLOSURE_APPROACHABLE; LIMPT_APPROACHABLE; IN_DELETE; CONJ_ASSOC]);;
-
-let DENSE_IMP_PERFECT = prove
- (`!s. closure s = (:real^N) ==> !x. x IN s ==> x limit_point_of s`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[LIMPT_APPROACHABLE] THEN
-  X_GEN_TAC `e:real` THEN DISCH_TAC THEN REWRITE_TAC[MESON[]
-   `(?x. P x /\ Q x /\ R x) <=> ~(!x. Q x /\ R x ==> ~P x)`] THEN
-  DISCH_TAC THEN MP_TAC(ISPECL [`x:real^N`; `e / &2`] VECTOR_CHOOSE_DIST) THEN
-  ASM_SIMP_TAC[REAL_LT_IMP_LE; REAL_HALF] THEN
-  DISCH_THEN(X_CHOOSE_TAC `y:real^N`) THEN
-  FIRST_ASSUM(MP_TAC o SPEC `y:real^N` o MATCH_MP (SET_RULE
-   `s = UNIV ==> !x. x IN s`)) THEN
-  REWRITE_TAC[CLOSURE_APPROACHABLE] THEN
-  DISCH_THEN(MP_TAC o SPEC `e / &2`) THEN
-  ASM_REWRITE_TAC[REAL_HALF; NOT_EXISTS_THM] THEN
-  X_GEN_TAC `z:real^N` THEN FIRST_X_ASSUM(MP_TAC o SPEC `z:real^N`) THEN
-  ASM_CASES_TAC `(z:real^N) IN s` THEN ASM_REWRITE_TAC[] THEN
-  UNDISCH_TAC `dist(x:real^N,y) = e / &2` THEN CONV_TAC NORM_ARITH);;
 
 let DENSE_LIMIT_POINTS = prove
  (`!x. {x | x limit_point_of s} = (:real^N) <=> closure s = (:real^N)`,
@@ -34273,21 +34268,46 @@ let BAIRE_ALT = prove
       MP_TAC(ISPECL [`x:real^N`; `e:real`] CENTRE_IN_BALL) THEN
       ASM_MESON_TAC[DIST_SYM; EXTENSION; IN_INTER; NOT_IN_EMPTY]]]);;
 
+let NOWHERE_DENSE_COUNTABLE_UNIONS_CLOSED_IN = prove
+ (`!u g:(real^N->bool)->bool.
+        locally compact u /\
+        COUNTABLE g /\
+        (!s. s IN g
+             ==> closed_in (subtopology euclidean u) s /\
+                 (subtopology euclidean u) interior_of s = {})
+        ==> (subtopology euclidean u) interior_of (UNIONS g) = {}`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `g:(real^N->bool)->bool = {}` THEN
+  ASM_REWRITE_TAC[INTERIOR_OF_EMPTY; UNIONS_0] THEN
+  MP_TAC(ISPECL [`{u DIFF s:real^N->bool | s IN g}`; `u:real^N->bool`]
+        BAIRE) THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_REFL] THEN
+    X_GEN_TAC `s:real^N->bool` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `s:real^N->bool`) THEN
+    ASM_REWRITE_TAC[INTERIOR_OF_CLOSURE_OF] THEN
+    REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+    MATCH_MP_TAC(SET_RULE
+     `c SUBSET d ==> P /\ u DIFF c = {} ==> u SUBSET d`) THEN
+    REWRITE_TAC[CLOSURE_OF_SUBTOPOLOGY; EUCLIDEAN_CLOSURE_OF] THEN
+    REWRITE_TAC[SET_RULE `u INTER (u DIFF s) = u DIFF s`] THEN SET_TAC[];
+    REWRITE_TAC[INTERIOR_OF_CLOSURE_OF; CLOSURE_OF_SUBTOPOLOGY] THEN
+    REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; EUCLIDEAN_CLOSURE_OF] THEN
+    MATCH_MP_TAC(SET_RULE
+     `c SUBSET d ==> u SUBSET c ==> u DIFF u INTER d = {}`) THEN
+    MATCH_MP_TAC SUBSET_CLOSURE THEN
+    REWRITE_TAC[DIFF_UNIONS; SIMPLE_IMAGE; SUBSET_INTER; SUBSET_REFL] THEN
+    MATCH_MP_TAC INTERS_SUBSET THEN
+    REWRITE_TAC[IMAGE_EQ_EMPTY; FORALL_IN_IMAGE] THEN ASM SET_TAC[]]);;
+
 let NOWHERE_DENSE_COUNTABLE_UNIONS_CLOSED = prove
  (`!g:(real^N->bool)->bool.
         COUNTABLE g /\ (!s. s IN g ==> closed s /\ interior s = {})
         ==> interior(UNIONS g) = {}`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`{(:real^N) DIFF s | s IN g}`; `(:real^N)`]
-        BAIRE) THEN
-  REWRITE_TAC[LOCALLY_COMPACT_UNIV; GSYM OPEN_IN; SUBTOPOLOGY_UNIV] THEN
-  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
-  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
-  ASM_SIMP_TAC[GSYM closed; SET_RULE
-   `UNIV SUBSET s <=> UNIV DIFF s = {}`] THEN
-  REWRITE_TAC[GSYM INTERIOR_COMPLEMENT] THEN
-  REWRITE_TAC[GSYM SIMPLE_IMAGE; GSYM UNIONS_INTERS] THEN
-  ASM_SIMP_TAC[COMPL_COMPL]);;
+  MP_TAC(ISPEC `(:real^N)` NOWHERE_DENSE_COUNTABLE_UNIONS_CLOSED_IN) THEN
+  REWRITE_TAC[SUBTOPOLOGY_UNIV; EUCLIDEAN_INTERIOR_OF; GSYM CLOSED_IN] THEN
+  REWRITE_TAC[LOCALLY_COMPACT_UNIV]);;
 
 let NOWHERE_DENSE_COUNTABLE_UNIONS = prove
  (`!g:(real^N->bool)->bool.

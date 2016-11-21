@@ -10572,6 +10572,23 @@ let relative_interior = new_definition
 let relative_frontier = new_definition
  `relative_frontier s = closure s DIFF relative_interior s`;;
 
+let RELATIVE_INTERIOR_INTERIOR_OF = prove
+ (`!s:real^N->bool.
+        relative_interior s =
+        subtopology euclidean (affine hull s) interior_of s`,
+  REWRITE_TAC[interior_of; relative_interior]);;
+
+let RELATIVE_FRONTIER_FRONTIER_OF = prove
+ (`!s:real^N->bool.
+        relative_frontier s =
+        subtopology euclidean (affine hull s) frontier_of s`,
+  GEN_TAC THEN REWRITE_TAC[relative_frontier] THEN
+  REWRITE_TAC[frontier_of; RELATIVE_INTERIOR_INTERIOR_OF] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[CLOSURE_OF_SUBTOPOLOGY; EUCLIDEAN_CLOSURE_OF] THEN
+  SIMP_TAC[HULL_SUBSET; SET_RULE `s SUBSET t ==> t INTER s = s`;
+           CLOSURE_SUBSET_AFFINE_HULL]);;
+
 let RELATIVE_INTERIOR = prove
  (`!s. relative_interior s =
           {x | x IN s /\

@@ -1226,11 +1226,19 @@ let LE_RDIV_EQ = prove
       ASM_MESON_TAC[DIVISION];
       ASM_REWRITE_TAC[LT_MULT_LCANCEL; GSYM ADD1; LT_SUC_LE]]]);;
 
+let RDIV_LT_EQ = prove
+ (`!a b n. ~(a = 0) ==> (b DIV a < n <=> b < a * n)`,
+  SIMP_TAC[GSYM NOT_LE; LE_RDIV_EQ]);;
+
 let LE_LDIV_EQ = prove
  (`!a b n. ~(a = 0) ==> (b DIV a <= n <=> b < a * (n + 1))`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM NOT_LT] THEN
   GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM LE_SUC_LT] THEN
   ASM_SIMP_TAC[LE_RDIV_EQ] THEN REWRITE_TAC[NOT_LT; NOT_LE; ADD1]);;
+
+let LDIV_LT_EQ = prove
+ (`!a b n. ~(a = 0) ==> (n < b DIV a <=> a * (n + 1) <= b)`,
+  SIMP_TAC[GSYM NOT_LE; LE_LDIV_EQ]);;
 
 let LE_LDIV = prove
  (`!a b n. ~(a = 0) /\ b <= a * n ==> b DIV a <= n`,
