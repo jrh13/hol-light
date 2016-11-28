@@ -7288,6 +7288,11 @@ let SPAN_IMAGE_SCALE = prove
     MATCH_MP_TAC SPAN_MUL THEN MATCH_MP_TAC SPAN_SUPERSET THEN
     ASM SET_TAC[]]);;
 
+let DIM_IMAGE_SCALE = prove
+ (`!c s:real^N->bool.
+        (!x. x IN s ==> ~(c x = &0)) ==> dim(IMAGE (\x. c x % x) s) = dim s`,
+  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN SIMP_TAC[SPAN_IMAGE_SCALE]);;
+
 let PAIRWISE_ORTHOGONAL_INDEPENDENT = prove
  (`!s:real^N->bool.
         pairwise orthogonal s /\ ~(vec 0 IN s) ==> independent s`,
@@ -7748,8 +7753,53 @@ let ORTHONORMAL_BASIS_EXPAND_NORM = prove
   ASM_SIMP_TAC[REAL_POW_2; ORTHONORMAL_BASIS_EXPAND_DOT; NORM_POW_2]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Decomposing a vector into parts in orthogonal subspaces.                  *)
+(* Independent and orthogonal subspaces.                                     *)
 (* ------------------------------------------------------------------------- *)
+
+let ORTHOGONAL_IMP_INDEPENDENT_SUBSPACES = prove
+ (`!s t:real^N->bool.
+        (!a b. a IN s /\ b IN t ==> orthogonal a b)
+        ==> s INTER t SUBSET {vec 0}`,
+  REWRITE_TAC[SUBSET; IN_INTER; IN_SING] THEN
+  MESON_TAC[ORTHOGONAL_REFL]);;
+
+let INDEPENDENT_SUBSPACES_ALT = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t
+        ==> (s INTER t SUBSET {vec 0} <=> s INTER t = {vec 0})`,
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  SIMP_TAC[SING_SUBSET; IN_INTER; SUBSPACE_0]);;
+
+let INDEPENDENT_SUBSPACES_0 = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t
+        ==> (s INTER t SUBSET {vec 0} <=>
+             !x y. x IN s /\ y IN t /\ x + y = vec 0
+                   ==> x = vec 0 /\ y = vec 0)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[SUBSET; IN_INTER; IN_SING] THEN
+  ONCE_REWRITE_TAC[MESON[VECTOR_NEG_NEG]
+   `(!x y:real^N. P x y) <=> (!x y. P x (--y))`] THEN
+  ASM_SIMP_TAC[MESON[SUBSPACE_NEG; VECTOR_NEG_NEG]
+   `subspace t ==> ((--x:real^N) IN t <=> x IN t)`] THEN
+  REWRITE_TAC[VECTOR_NEG_EQ_0; VECTOR_ARITH
+   `x + --y:real^N = vec 0 <=> x = y`] THEN
+  MESON_TAC[]);;
+
+let INDEPENDENT_SUBSPACES = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t
+        ==> (s INTER t SUBSET {vec 0} <=>
+             !x y x' y'. x IN s /\ x' IN s /\ y IN t /\ y' IN t /\
+                         x + y = x' + y'
+                         ==> x = x' /\ y = y')`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[INDEPENDENT_SUBSPACES_0] THEN
+  EQ_TAC THEN DISCH_TAC THEN REPEAT GEN_TAC THEN STRIP_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM VECTOR_SUB_EQ] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC[SUBSPACE_SUB] THEN
+    FIRST_X_ASSUM(MP_TAC o SYM) THEN CONV_TAC VECTOR_ARITH;
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[SUBSPACE_0; VECTOR_ADD_RID]]);;
 
 let ORTHOGONAL_SUBSPACE_DECOMP_UNIQUE = prove
  (`!s t x y x' y':real^N.

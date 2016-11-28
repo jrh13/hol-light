@@ -2592,6 +2592,14 @@ let ORTHOGONAL_MATRIX_ALT = prove
  (`!A:real^N^N. orthogonal_matrix A <=> A ** transp A = mat 1`,
   MESON_TAC[MATRIX_LEFT_RIGHT_INVERSE; orthogonal_matrix]);;
 
+let ORTHOGONAL_MATRIX_TRANSP_LMUL = prove
+ (`!P:real^N^N. orthogonal_matrix P ==> transp P ** P = mat 1`,
+  REWRITE_TAC[ORTHOGONAL_MATRIX]);;
+
+let ORTHOGONAL_MATRIX_TRANSP_RMUL = prove
+ (`!P:real^N^N. orthogonal_matrix P ==> P ** transp P = mat 1`,
+  REWRITE_TAC[ORTHOGONAL_MATRIX_ALT]);;
+
 let ORTHOGONAL_MATRIX_ID = prove
  (`orthogonal_matrix(mat 1)`,
   REWRITE_TAC[orthogonal_matrix; TRANSP_MAT; MATRIX_MUL_LID]);;

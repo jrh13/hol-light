@@ -290,6 +290,10 @@ let TOPSPACE_SUBTOPOLOGY = prove
   REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
   GEN_REWRITE_TAC I [EXTENSION] THEN REWRITE_TAC[IN_ELIM_THM]);;
 
+let TOPSPACE_SUBTOPOLOGY_SUBSET = prove
+ (`!top s:A->bool. topspace(subtopology top s) SUBSET s`,
+  REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; INTER_SUBSET]);;
+
 let CLOSED_IN_SUBTOPOLOGY = prove
  (`!top u s. closed_in (subtopology top u) s <=>
                 ?t:A->bool. closed_in top t /\ s = t INTER u`,
@@ -746,6 +750,14 @@ let CLOSURE_OF_OPEN_IN_SUBTOPOLOGY_INTER_CLOSURE_OF = prove
     FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
     REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN SET_TAC[]]);;
 
+let CLOSURE_OF_SUBTOPOLOGY_OPEN = prove
+ (`!top u s:A->bool.
+        open_in top u \/ s SUBSET u
+        ==> (subtopology top u) closure_of s = u INTER top closure_of s`,
+  REWRITE_TAC[SET_RULE `s SUBSET u <=> u INTER s = s`] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CLOSURE_OF_SUBTOPOLOGY] THEN
+  ASM_MESON_TAC[OPEN_IN_INTER_CLOSURE_OF_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Interior with respect to a topological space.                             *)
 (* ------------------------------------------------------------------------- *)
@@ -906,6 +918,16 @@ let CLOSURE_OF_COMPLEMENT = prove
   REWRITE_TAC[interior_of; closure_of] THEN
   REWRITE_TAC[EXTENSION; IN_DIFF; IN_ELIM_THM; SUBSET] THEN
   MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]);;
+
+let INTERIOR_OF_SUBTOPOLOGY_OPEN = prove
+ (`!top u s:A->bool.
+        open_in top u
+        ==> (subtopology top u) interior_of s = u INTER top interior_of s`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INTERIOR_OF_CLOSURE_OF] THEN
+  ASM_SIMP_TAC[CLOSURE_OF_SUBTOPOLOGY_OPEN] THEN
+  REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN
+  REWRITE_TAC[SET_RULE `s INTER t DIFF u = t INTER (s DIFF u)`] THEN
+  ASM_SIMP_TAC[GSYM OPEN_IN_INTER_CLOSURE_OF_EQ] THEN SET_TAC[]);;
 
 let DENSE_INTERSECTS_OPEN = prove
  (`!top s:A->bool.
@@ -1128,6 +1150,14 @@ let FRONTIER_OF_FRONTIER_OF_SUBSET = prove
     top frontier_of (top frontier_of s) SUBSET top frontier_of s`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC FRONTIER_OF_SUBSET_CLOSED_IN THEN
   REWRITE_TAC[CLOSED_IN_FRONTIER_OF]);;
+
+let FRONTIER_OF_SUBTOPOLOGY_OPEN = prove
+ (`!top u s:A->bool.
+        open_in top u
+        ==> (subtopology top u) frontier_of s = u INTER top frontier_of s`,
+  SIMP_TAC[frontier_of; CLOSURE_OF_SUBTOPOLOGY_OPEN;
+           INTERIOR_OF_SUBTOPOLOGY_OPEN] THEN
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A variant of nets (slightly non-standard but good for our purposes).      *)

@@ -1254,6 +1254,10 @@ let CONIC_LINEAR_IMAGE_EQ = prove
 
 add_linear_invariants [CONIC_LINEAR_IMAGE_EQ];;
 
+let CONIC_MUL = prove
+ (`!s c x:real^N. conic s /\ x IN s /\ &0 <= c ==> (c % x) IN s`,
+  REWRITE_TAC[conic] THEN MESON_TAC[]);;
+
 let CONIC_CONIC_HULL = prove
  (`!s. conic(conic hull s)`,
   SIMP_TAC[P_HULL; CONIC_INTERS]);;
@@ -1321,6 +1325,22 @@ let CONIC_HULL_LINEAR_IMAGE = prove
   DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP LINEAR_CMUL th]));;
 
 add_linear_invariants [CONIC_HULL_LINEAR_IMAGE];;
+
+let CONIC_HULL_IMAGE_SCALE = prove
+ (`!c s:real^N->bool.
+        (!x. x IN s ==> &0 < c x)
+        ==> conic hull (IMAGE (\x. c x % x) s) = conic hull s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  CONJ_TAC THEN MATCH_MP_TAC HULL_MINIMAL THEN
+  REWRITE_TAC[CONIC_CONIC_HULL; SUBSET; FORALL_IN_IMAGE] THEN
+  ASM_SIMP_TAC[HULL_INC; CONIC_MUL; CONIC_CONIC_HULL; REAL_LT_IMP_LE] THEN
+  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `x:real^N = inv(c x) % c x % x` SUBST1_TAC THENL
+   [REWRITE_TAC[VECTOR_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; VECTOR_MUL_LID; REAL_LT_IMP_NZ];
+    MATCH_MP_TAC CONIC_MUL THEN
+    ASM_SIMP_TAC[CONIC_CONIC_HULL; REAL_LE_INV_EQ; REAL_LT_IMP_LE] THEN
+    MATCH_MP_TAC HULL_INC THEN ASM SET_TAC[]]);;
 
 let CONVEX_CONIC_HULL = prove
  (`!s:real^N->bool. convex s ==> convex (conic hull s)`,
@@ -4635,15 +4655,29 @@ let AFFINE_HULL_AFFINE_INTER_OPEN_IN = prove
         AFFINE_HULL_CONVEX_INTER_OPEN_IN) THEN
   ASM_SIMP_TAC[HULL_HULL; AFFINE_IMP_CONVEX; AFFINE_AFFINE_HULL; HULL_P]);;
 
+let AFFINE_HULL_OPEN_IN_CONVEX = prove
+ (`!s t:real^N->bool.
+        convex s /\ open_in (subtopology euclidean s) t /\ ~(t = {})
+        ==> affine hull t = affine hull s`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_OPEN]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC AFFINE_HULL_CONVEX_INTER_OPEN THEN
+  REWRITE_TAC[AFFINE_AFFINE_HULL] THEN ASM SET_TAC[]);;
+
 let AFFINE_HULL_OPEN_IN = prove
  (`!s t:real^N->bool.
         open_in (subtopology euclidean (affine hull t)) s /\ ~(s = {})
         ==> affine hull s = affine hull t`,
-  REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_OPEN]) THEN
-  DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
-  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC AFFINE_HULL_AFFINE_INTER_OPEN THEN
-  REWRITE_TAC[AFFINE_AFFINE_HULL] THEN ASM SET_TAC[]);;
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM HULL_HULL] THEN
+  MATCH_MP_TAC AFFINE_HULL_OPEN_IN_CONVEX THEN
+  ASM_SIMP_TAC[AFFINE_IMP_CONVEX; AFFINE_AFFINE_HULL]);;
+
+let AFFINE_HULL_OPEN_IN_AFFINE = prove
+ (`!u s:real^N->bool.
+        affine u /\ open_in (subtopology euclidean u) s /\ ~(s = {})
+        ==> affine hull s = u`,
+  MESON_TAC[AFFINE_HULL_OPEN_IN; AFFINE_HULL_EQ]);;
 
 let AFFINE_HULL_OPEN = prove
  (`!s. open s /\ ~(s = {}) ==> affine hull s = (:real^N)`,
@@ -10918,6 +10952,13 @@ let RELATIVE_FRONTIER_FRONTIER = prove
  (`!s. affine hull s = (:real^N) ==> relative_frontier s = frontier s`,
   SIMP_TAC[relative_frontier; frontier; RELATIVE_INTERIOR_INTERIOR]);;
 
+let RELATIVE_FRONTIER_OPEN = prove
+ (`!s:real^N->bool. open s ==> relative_frontier s = frontier s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[FRONTIER_EMPTY; RELATIVE_FRONTIER_EMPTY] THEN
+  MATCH_MP_TAC RELATIVE_FRONTIER_NONEMPTY_INTERIOR THEN
+  ASM_SIMP_TAC[INTERIOR_OPEN]);;
+
 let AFFINE_HULL_CONVEX_HULL = prove
  (`!s. affine hull (convex hull s) = affine hull s`,
   GEN_TAC THEN MATCH_MP_TAC HULL_UNIQUE THEN
@@ -12853,6 +12894,19 @@ let CONVEX_CLOSURE_RELATIVE_INTERIOR = prove
       ASM_REAL_ARITH_TAC]] THEN
   ASM_SIMP_TAC[REAL_LT_DIV; NORM_POS_LT; REAL_OF_NUM_LT;
                  VECTOR_SUB_EQ; ARITH]);;
+
+let OPEN_IN_CONVEX_MEETS_RELATIVE_INTERIOR = prove
+ (`!u s:real^N->bool.
+        convex u /\ open_in (subtopology euclidean u) s /\ ~(s = {})
+        ==> ~(s INTER relative_interior u = {})`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `v:real^N->bool` STRIP_ASSUME_TAC o GSYM o
+    REWRITE_RULE[OPEN_IN_OPEN]) THEN
+  MP_TAC(ISPECL [`v:real^N->bool`; `relative_interior u:real^N->bool`]
+        OPEN_INTER_CLOSURE_EQ_EMPTY) THEN
+  ASM_SIMP_TAC[CONVEX_CLOSURE_RELATIVE_INTERIOR] THEN
+  MP_TAC(ISPEC `u:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
+  MP_TAC(ISPEC `u:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]);;
 
 let SETDIST_RELATIVE_INTERIOR = prove
  (`(!s t. convex s ==> setdist(relative_interior s,t) = setdist(s,t)) /\

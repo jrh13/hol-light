@@ -4932,6 +4932,12 @@ let FINITE_IMP_BOUNDED = prove
   ASM_MESON_TAC[NORM_POS_LE; REAL_ARITH
    `(y <= b /\ &0 <= x ==> y <= x + abs b) /\ x <= x + abs b`]);;
 
+let BOUNDED_NORM_IMAGE = prove
+ (`!s:real^N->bool.
+        bounded s <=> bounded(IMAGE (lift o norm) s)`,
+  REWRITE_TAC[bounded; FORALL_IN_IMAGE; o_THM] THEN
+  REWRITE_TAC[NORM_LIFT; REAL_ABS_NORM]);;
+
 let BOUNDED_UNION = prove
  (`!s t. bounded (s UNION t) <=> bounded s /\ bounded t`,
   REWRITE_TAC[bounded; IN_UNION] THEN MESON_TAC[REAL_LE_MAX]);;
@@ -6787,6 +6793,36 @@ let CONTINUOUS_WITHIN_COMPARISON = prove
         ==> f continuous (at a within s)`,
   ONCE_REWRITE_TAC[DIST_SYM] THEN
   REWRITE_TAC[continuous_within] THEN MESON_TAC[REAL_LET_TRANS]);;
+
+let CONTINUOUS_EQ_CAUCHY_WITHIN = prove
+ (`!f:real^M->real^N s a.
+        f continuous (at a within s) <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !x x'. x IN a INSERT s /\ dist(x,a) < d /\
+                           x' IN a INSERT s /\ dist(x',a) < d
+                           ==> dist(f x,f x') < e`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[continuous_within; IN_INSERT] THEN
+  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[DIST_REFL]] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[DIST_REFL] THEN
+  ASM_SIMP_TAC[NORM_ARITH `dist(x:real^N,a) < e / &2 ==> dist(a,x) < e`] THEN
+  ASM_SIMP_TAC[NORM_ARITH `dist(x:real^N,a) < e / &2 ==> dist(x,a) < e`] THEN
+  ASM_MESON_TAC[NORM_ARITH
+   `dist(x:real^N,a) < e / &2 /\ dist(y,a) < e / &2 ==> dist(x,y) < e`]);;
+
+let CONTINUOUS_EQ_CAUCHY_AT = prove
+ (`!f:real^M->real^N a.
+        f continuous (at a) <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !x x'. dist(x,a) < d /\ dist(x',a) < d
+                           ==> dist(f x,f x') < e`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[CONTINUOUS_EQ_CAUCHY_WITHIN; IN_INSERT; IN_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Versions in terms of open balls.                                          *)
@@ -16564,6 +16600,18 @@ let HOMEOMORPHISM_OF_SUBSETS = prove
   REPEAT STRIP_TAC THEN
   TRY(MATCH_MP_TAC CONTINUOUS_ON_SUBSET) THEN ASM SET_TAC[]);;
 
+let HOMEOMORPHISM_OF_SUBSETS_ALT = prove
+ (`!f:real^M->real^N g s t s' t'.
+        homeomorphism (s,t) (f,g) /\
+        s' SUBSET s /\
+        t' SUBSET t /\
+        (!x. x IN s ==> (f x IN t' <=> x IN s'))
+        ==> homeomorphism (s',t') (f,g)`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ] HOMEOMORPHISM_OF_SUBSETS)) THEN
+  FIRST_ASSUM(MP_TAC o el 1 o CONJUNCTS o REWRITE_RULE[homeomorphism]) THEN
+  ASM SET_TAC[]);;
+
 let HOMEOMORPHISM_ID = prove
  (`!s:real^N->bool. homeomorphism (s,s) ((\x. x),(\x. x))`,
   REWRITE_TAC[homeomorphism; IMAGE_ID; CONTINUOUS_ON_ID]);;
@@ -16728,6 +16776,28 @@ let HOMEOMORPHIC_TRANSLATION_RIGHT_EQ = prove
 add_translation_invariants
   [HOMEOMORPHIC_TRANSLATION_LEFT_EQ;
    HOMEOMORPHIC_TRANSLATION_RIGHT_EQ];;
+
+let INVOLUTION_IMP_HOMEOMORPHISM_GEN = prove
+ (`!f:real^N->real^N u s.
+        f continuous_on u /\
+        s UNION IMAGE f s SUBSET u /\
+        (!x. x IN s ==> f(f x) = x)
+        ==> homeomorphism(s,IMAGE f s) (f,f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[HOMEOMORPHISM; SUBSET_REFL] THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE; CONJ_ASSOC] THEN CONJ_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
+    EXISTS_TAC `u:real^N->bool` THEN ASM SET_TAC[];
+    ASM SET_TAC[]]);;
+
+let INVOLUTION_IMP_HOMEOMORPHISM = prove
+ (`!f:real^N->real^N s.
+        f continuous_on s /\ IMAGE f s SUBSET s /\ (!x. x IN s ==> f(f x) = x)
+        ==> homeomorphism(s,s) (f,f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^N->real^N`; `s:real^N->bool`; `s:real^N->bool`]
+        INVOLUTION_IMP_HOMEOMORPHISM_GEN) THEN
+  ASM_REWRITE_TAC[UNION_SUBSET; SUBSET_REFL] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
 
 let HOMEOMORPHISM_IMP_QUOTIENT_MAP = prove
  (`!f:real^M->real^N g s t.
@@ -17143,6 +17213,10 @@ let INJECTIVE_MAP_OPEN_IFF_CLOSED = prove
     MATCH_MP_TAC HOMEOMORPHISM_INJECTIVE_CLOSED_MAP_EQ] THEN
   ASM_REWRITE_TAC[]);;
 
+(* ------------------------------------------------------------------------- *)
+(* Transformation theorems for open, interior etc. under homeomorphism.      *)
+(* ------------------------------------------------------------------------- *)
+
 let HOMEOMORPHISM_OPEN_IN_EQ = prove
  (`!f:real^M->real^N g s t u v.
         homeomorphism (s,t) (f,g) /\ u SUBSET s /\ v SUBSET s
@@ -17197,37 +17271,55 @@ let HOMEOMORPHISM_CLOSEDNESS = prove
    [`g:real^N->real^M`; `s:real^M->bool`; `t:real^N->bool`] THEN
   ASM_REWRITE_TAC[homeomorphism] THEN ASM SET_TAC[]);;
 
+let HOMEOMORPHISM_DERIVED_SET_OF = prove
+ (`!f:real^M->real^N g s t u.
+           homeomorphism (s,t) (f,g) /\ u SUBSET s
+           ==> IMAGE f ((subtopology euclidean s) derived_set_of u) =
+               (subtopology euclidean t) derived_set_of (IMAGE f u)`,
+  REWRITE_TAC[derived_set_of; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(SET_RULE
+   `IMAGE f s = t /\ (!x. x IN s ==> (Q(f x) <=> P x))
+    ==> IMAGE f {x | x IN s /\ P x} = {y | y IN t /\ Q y}`) THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[homeomorphism]; DISCH_TAC] THEN
+  ONCE_REWRITE_TAC[CONJ_SYM] THEN REWRITE_TAC[GSYM CONJ_ASSOC] THEN
+  ONCE_REWRITE_TAC[MESON[OPEN_IN_IMP_SUBSET]
+   `open_in (subtopology euclidean t) s <=>
+    s SUBSET t /\ open_in (subtopology euclidean t) s`] THEN
+  EXPAND_TAC "t" THEN REWRITE_TAC[FORALL_SUBSET_IMAGE; IMP_CONJ] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HOMEOMORPHISM_OPENNESS)) THEN
+  ASM_SIMP_TAC[EXISTS_IN_IMAGE] THEN DISCH_THEN(K ALL_TAC) THEN
+  GEN_TAC THEN DISCH_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN ASM SET_TAC[]);;
+
 let HOMEOMORPHISM_CLOSURE_OF = prove
  (`!f:real^M->real^N g s t u.
            homeomorphism (s,t) (f,g) /\ u SUBSET s
            ==> IMAGE f ((subtopology euclidean s) closure_of u) =
                (subtopology euclidean t) closure_of (IMAGE f u)`,
-  let lemma = prove
-   (`!f:real^M->real^N g s t u.
-             homeomorphism (s,t) (f,g) /\ u SUBSET s
-             ==> (subtopology euclidean t) closure_of (IMAGE f u) SUBSET
-                 IMAGE f ((subtopology euclidean s) closure_of u)`,
-    REPEAT STRIP_TAC THEN MATCH_MP_TAC CLOSURE_OF_MINIMAL THEN CONJ_TAC THENL
-     [MATCH_MP_TAC IMAGE_SUBSET THEN MATCH_MP_TAC CLOSURE_OF_SUBSET THEN
-      ASM_REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY];
-      MATCH_MP_TAC HOMEOMORPHISM_IMP_CLOSED_MAP THEN
-      MAP_EVERY EXISTS_TAC [`g:real^N->real^M`; `s:real^M->bool`] THEN
-      ASM_REWRITE_TAC[CLOSED_IN_CLOSURE_OF]]) in
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
-   [ALL_TAC; ASM_MESON_TAC[lemma]] THEN
-  MP_TAC(ISPECL [`g:real^N->real^M`; `f:real^M->real^N`;
-                 `t:real^N->bool`; `s:real^M->bool`;
-                 `IMAGE (f:real^M->real^N) u`] lemma) THEN
-  FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [HOMEOMORPHISM]) THEN
-  ASM_REWRITE_TAC[HOMEOMORPHISM] THEN
-  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
-  DISCH_THEN(MP_TAC o ISPEC `f:real^M->real^N` o MATCH_MP IMAGE_SUBSET) THEN
-  MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THENL
-   [AP_TERM_TAC THEN AP_TERM_TAC; ALL_TAC] THEN
-  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
-   `(!x. x IN s ==> f(g x) = x)
-    ==> c SUBSET s ==> IMAGE f (IMAGE g c) = c`)) THEN
-  ASM_REWRITE_TAC[CLOSURE_OF_SUBSET_SUBTOPOLOGY]);;
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[CLOSURE_OF_ALT; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; IMAGE_UNION] THEN
+  BINOP_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN ASM SET_TAC[];
+    MATCH_MP_TAC HOMEOMORPHISM_DERIVED_SET_OF THEN ASM_MESON_TAC[]]);;
+
+let HOMEOMORPHISM_INTERIOR_OF = prove
+ (`!f:real^M->real^N g s t u.
+           homeomorphism (s,t) (f,g) /\ u SUBSET s
+           ==> IMAGE f ((subtopology euclidean s) interior_of u) =
+               (subtopology euclidean t) interior_of (IMAGE f u)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[INTERIOR_OF_CLOSURE_OF; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) IMAGE_DIFF_INJ_ALT o lhand o snd) THEN
+  REWRITE_TAC[CLOSURE_OF_SUBSET_SUBTOPOLOGY] THEN ANTS_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN ASM SET_TAC[];
+    DISCH_THEN SUBST1_TAC] THEN
+  BINOP_TAC THENL [ASM_MESON_TAC[homeomorphism]; ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+     HOMEOMORPHISM_CLOSURE_OF)) THEN
+  SIMP_TAC[SUBSET_DIFF] THEN DISCH_THEN(K ALL_TAC) THEN AP_TERM_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHISM]) THEN ASM SET_TAC[]);;
 
 let HOMEOMORPHISM_FRONTIER_OF = prove
  (`!f:real^M->real^N g s t u.
@@ -17327,6 +17419,138 @@ let LOCAL_HOMEOMORPHISM_IMP_OPEN_MAP = prove
   MATCH_MP_TAC OPEN_IN_SUBTOPOLOGY_INTER_SUBSET THEN
   EXISTS_TAC `s:real^M->bool` THEN
   ASM_MESON_TAC[OPEN_IN_INTER; OPEN_IN_REFL; OPEN_IN_IMP_SUBSET]);;
+
+let DERIVED_SET_OF_TRANSLATION = prove
+ (`!a:real^N u s.
+        (subtopology euclidean (IMAGE (\x. a + x) u)) derived_set_of
+        (IMAGE (\x. a + x) s) =
+        IMAGE (\x. a + x) (subtopology euclidean u derived_set_of s)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  ONCE_REWRITE_TAC[DERIVED_SET_OF_RESTRICT] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  SIMP_TAC[GSYM IMAGE_INTER_INJ;
+           VECTOR_ARITH `a + x:real^N = a + y <=> x = y`] THEN
+  MATCH_MP_TAC HOMEOMORPHISM_DERIVED_SET_OF THEN
+  EXISTS_TAC `\x:real^N. --a + x` THEN
+  REWRITE_TAC[INTER_SUBSET] THEN REWRITE_TAC[HOMEOMORPHISM] THEN
+  SIMP_TAC[FORALL_IN_IMAGE; SUBSET] THEN
+  REWRITE_TAC[VECTOR_ARITH `--a + a + x:real^N = x`] THEN
+  SIMP_TAC[CONTINUOUS_ON_ADD; CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID] THEN
+  SET_TAC[]);;
+
+add_translation_invariants [DERIVED_SET_OF_TRANSLATION];;
+
+let CLOSURE_OF_TRANSLATION = prove
+ (`!a:real^N u s.
+        (subtopology euclidean (IMAGE (\x. a + x) u)) closure_of
+        (IMAGE (\x. a + x) s) =
+        IMAGE (\x. a + x) (subtopology euclidean u closure_of s)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  ONCE_REWRITE_TAC[CLOSURE_OF_RESTRICT] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  SIMP_TAC[GSYM IMAGE_INTER_INJ;
+           VECTOR_ARITH `a + x:real^N = a + y <=> x = y`] THEN
+  MATCH_MP_TAC HOMEOMORPHISM_CLOSURE_OF THEN
+  EXISTS_TAC `\x:real^N. --a + x` THEN
+  REWRITE_TAC[INTER_SUBSET] THEN REWRITE_TAC[HOMEOMORPHISM] THEN
+  SIMP_TAC[FORALL_IN_IMAGE; SUBSET] THEN
+  REWRITE_TAC[VECTOR_ARITH `--a + a + x:real^N = x`] THEN
+  SIMP_TAC[CONTINUOUS_ON_ADD; CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID] THEN
+  SET_TAC[]);;
+
+add_translation_invariants [CLOSURE_OF_TRANSLATION];;
+
+let INTERIOR_OF_TRANSLATION = prove
+ (`!a:real^N u s.
+        (subtopology euclidean (IMAGE (\x. a + x) u)) interior_of
+        (IMAGE (\x. a + x) s) =
+        IMAGE (\x. a + x) (subtopology euclidean u interior_of s)`,
+  REWRITE_TAC[INTERIOR_OF_CLOSURE_OF; CLOSURE_OF_TRANSLATION;
+              TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; GSYM TRANSLATION_DIFF]);;
+
+add_translation_invariants [INTERIOR_OF_TRANSLATION];;
+
+let FRONTIER_OF_TRANSLATION = prove
+ (`!a:real^N u s.
+        (subtopology euclidean (IMAGE (\x. a + x) u)) frontier_of
+        (IMAGE (\x. a + x) s) =
+        IMAGE (\x. a + x) (subtopology euclidean u frontier_of s)`,
+  REWRITE_TAC[frontier_of; CLOSURE_OF_TRANSLATION; INTERIOR_OF_TRANSLATION;
+              GSYM TRANSLATION_DIFF]);;
+
+add_translation_invariants [FRONTIER_OF_TRANSLATION];;
+
+let DERIVED_SET_OF_INJECTIVE_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N u s.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> (subtopology euclidean (IMAGE f u)) derived_set_of (IMAGE f s) =
+            IMAGE f (subtopology euclidean u derived_set_of s)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  ONCE_REWRITE_TAC[DERIVED_SET_OF_RESTRICT] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[GSYM(MATCH_MP IMAGE_INTER_INJ th)]) THEN
+  MATCH_MP_TAC HOMEOMORPHISM_DERIVED_SET_OF THEN
+  MP_TAC(ISPEC `f:real^M->real^N` LINEAR_INJECTIVE_LEFT_INVERSE) THEN
+  ASM_REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN STRIP_TAC THEN
+  STRIP_TAC THEN REWRITE_TAC[HOMEOMORPHISM] THEN
+  ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON] THEN ASM SET_TAC[]);;
+
+add_linear_invariants [DERIVED_SET_OF_INJECTIVE_LINEAR_IMAGE];;
+
+let CLOSURE_OF_INJECTIVE_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N u s.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> (subtopology euclidean (IMAGE f u)) closure_of (IMAGE f s) =
+            IMAGE f (subtopology euclidean u closure_of s)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  ONCE_REWRITE_TAC[CLOSURE_OF_RESTRICT] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[GSYM(MATCH_MP IMAGE_INTER_INJ th)]) THEN
+  MATCH_MP_TAC HOMEOMORPHISM_CLOSURE_OF THEN
+  MP_TAC(ISPEC `f:real^M->real^N` LINEAR_INJECTIVE_LEFT_INVERSE) THEN
+  ASM_REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN STRIP_TAC THEN
+  STRIP_TAC THEN REWRITE_TAC[HOMEOMORPHISM] THEN
+  ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON] THEN ASM SET_TAC[]);;
+
+add_linear_invariants [CLOSURE_OF_INJECTIVE_LINEAR_IMAGE];;
+
+let FRONTIER_OF_INJECTIVE_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N u s.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> (subtopology euclidean (IMAGE f u)) frontier_of (IMAGE f s) =
+            IMAGE f (subtopology euclidean u frontier_of s)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  ONCE_REWRITE_TAC[FRONTIER_OF_RESTRICT] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[GSYM(MATCH_MP IMAGE_INTER_INJ th)]) THEN
+  MATCH_MP_TAC HOMEOMORPHISM_FRONTIER_OF THEN
+  MP_TAC(ISPEC `f:real^M->real^N` LINEAR_INJECTIVE_LEFT_INVERSE) THEN
+  ASM_REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN STRIP_TAC THEN
+  STRIP_TAC THEN REWRITE_TAC[HOMEOMORPHISM] THEN
+  ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON] THEN ASM SET_TAC[]);;
+
+add_linear_invariants [FRONTIER_OF_INJECTIVE_LINEAR_IMAGE];;
+
+let INTERIOR_OF_INJECTIVE_LINEAR_IMAGE = prove
+ (`!f:real^M->real^N u s.
+        linear f /\ (!x y. f x = f y ==> x = y)
+        ==> (subtopology euclidean (IMAGE f u)) interior_of (IMAGE f s) =
+            IMAGE f (subtopology euclidean u interior_of s)`,
+  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+  ONCE_REWRITE_TAC[INTERIOR_OF_RESTRICT] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  FIRST_ASSUM(fun th -> REWRITE_TAC[GSYM(MATCH_MP IMAGE_INTER_INJ th)]) THEN
+  MATCH_MP_TAC HOMEOMORPHISM_INTERIOR_OF THEN
+  MP_TAC(ISPEC `f:real^M->real^N` LINEAR_INJECTIVE_LEFT_INVERSE) THEN
+  ASM_REWRITE_TAC[FUN_EQ_THM; o_THM; I_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN STRIP_TAC THEN
+  STRIP_TAC THEN REWRITE_TAC[HOMEOMORPHISM] THEN
+  ASM_SIMP_TAC[LINEAR_CONTINUOUS_ON] THEN ASM SET_TAC[]);;
+
+add_linear_invariants [INTERIOR_OF_INJECTIVE_LINEAR_IMAGE];;
 
 (* ------------------------------------------------------------------------- *)
 (* Relatively weak hypotheses if the domain of the function is compact.      *)

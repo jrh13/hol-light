@@ -9416,7 +9416,7 @@ let HIGHER_COMPLEX_DERIVATIVE_POWER_SERIES = prove
             (if i IN k then c i else vec 0) = Cx(&0)`
   MP_TAC THENL [ALL_TAC; ASM_MESON_TAC[IN_UNIV; COMPLEX_SUB_0]] THEN
   MATCH_MP_TAC POWER_SERIES_LIMIT_POINT_OF_ZEROS THEN MAP_EVERY EXISTS_TAC
-   [`\w:complex. Cx(&0)`; `r:real`; `ball(z:complex,r)`] THEN
+   [`\w:complex. Cx(&0)`; `z:complex`; `r:real`; `ball(z:complex,r)`] THEN
   ASM_SIMP_TAC[LIMPT_BALL; CENTRE_IN_CBALL; REAL_LT_IMP_LE] THEN
   X_GEN_TAC `w:complex` THEN DISCH_TAC THEN
   REWRITE_TAC[COMPLEX_SUB_RDISTRIB] THEN
