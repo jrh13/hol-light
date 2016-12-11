@@ -39,7 +39,7 @@ CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -c1-6`
 
 pa_j.cmo: pa_j.ml; if test ${OCAML_BINARY_VERSION} = "3.0" ; \
                    then ocamlc -c -pp "camlp4r pa_extend.cmo q_MLast.cmo" -I `camlp4 -where` pa_j.ml ; \
-                   else if test ${OCAML_BINARY_VERSION} = "3.1" -o ${OCAML_VERSION} = "4.00" -o ${OCAML_VERSION} = "4.01"  -o ${OCAML_VERSION} = "4.02" -o ${OCAML_VERSION} = "4.03" ; \
+                   else if test ${OCAML_BINARY_VERSION} = "3.1" -o ${OCAML_VERSION} = "4.00" -o ${OCAML_VERSION} = "4.01"  -o ${OCAML_VERSION} = "4.02" -o ${OCAML_VERSION} = "4.03" -o ${OCAML_VERSION} = "4.04" ; \
                         then  ocamlc -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` pa_j.ml ; \
                         else ocamlc -safe-string -c -pp "camlp5r pa_lexer.cmo pa_extend.cmo q_MLast.cmo" -I `camlp5 -where` pa_j.ml ; \
                         fi \
@@ -62,7 +62,7 @@ pa_j.ml: pa_j_3.07.ml pa_j_3.08.ml pa_j_3.09.ml pa_j_3.1x_5.xx.ml pa_j_3.1x_6.xx
              then cp pa_j_3.1x_6.02.1.ml pa_j.ml; \
              else if test ${CAMLP5_VERSION} = "6.02.2" -o ${CAMLP5_VERSION} = "6.02.3" -o ${CAMLP5_VERSION} = "6.03" -o ${CAMLP5_VERSION} = "6.04" -o ${CAMLP5_VERSION} = "6.05" -o ${CAMLP5_VERSION} = "6.06" ; \
                   then cp pa_j_3.1x_6.02.2.ml pa_j.ml; \
-                  else if test ${CAMLP5_VERSION} = "6.06" -o ${CAMLP5_VERSION} = "6.07" -o ${CAMLP5_VERSION} = "6.08" -o ${CAMLP5_VERSION} = "6.09" -o ${CAMLP5_VERSION} = "6.10" -o ${CAMLP5_VERSION} = "6.11" -o ${CAMLP5_VERSION} = "6.12" -o ${CAMLP5_VERSION} = "6.13" -o ${CAMLP5_VERSION} = "6.14" -o ${CAMLP5_VERSION} = "6.15" -o ${CAMLP5_VERSION} = "6.16" ; \
+                  else if test ${CAMLP5_VERSION} = "6.06" -o ${CAMLP5_VERSION} = "6.07" -o ${CAMLP5_VERSION} = "6.08" -o ${CAMLP5_VERSION} = "6.09" -o ${CAMLP5_VERSION} = "6.10" -o ${CAMLP5_VERSION} = "6.11" -o ${CAMLP5_VERSION} = "6.12" -o ${CAMLP5_VERSION} = "6.13" -o ${CAMLP5_VERSION} = "6.14" -o ${CAMLP5_VERSION} = "6.15" -o ${CAMLP5_VERSION} = "6.16" -o ${CAMLP5_VERSION} = "6.17" ; \
                        then cp pa_j_3.1x_6.11.ml pa_j.ml; \
                        else cp pa_j_3.1x_${CAMLP5_BINARY_VERSION}.xx.ml pa_j.ml; \
                        fi \
