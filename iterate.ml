@@ -684,6 +684,18 @@ let ITERATE_UNIV = prove
   FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_SUPERSET) THEN
   ASM SET_TAC[]);;
 
+let ITERATE_SWAP = prove
+ (`!op. monoidal op
+        ==> !f:A->B->C s t.
+                FINITE s /\ FINITE t
+                ==> iterate op s (\i. iterate op t (f i)) =
+                    iterate op t (\j. iterate op s (\i. f i j))`,
+  GEN_TAC THEN DISCH_TAC THEN
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES] THEN
+  ASM_SIMP_TAC[ITERATE_EQ_NEUTRAL; GSYM ITERATE_OP]);;
+
 let ITERATE_IMAGE_NONZERO = prove
  (`!op. monoidal op
         ==> !g:B->C f:A->B s.

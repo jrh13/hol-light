@@ -4486,6 +4486,150 @@ let LINEAR_PASTECART_EQ = prove
   REWRITE_TAC[PASTECART_INJ] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Drop the k'th coordinate, or insert t at the k'th coordinate.             *)
+(* ------------------------------------------------------------------------- *)
+
+let dropout = new_definition
+ `(dropout:num->real^N->real^M) k x =
+        lambda i. if i < k then x$i else x$(i + 1)`;;
+
+let pushin = new_definition
+ `pushin k t x = lambda i. if i < k then x$i
+                           else if i = k then t
+                           else x$(i - 1)`;;
+
+let DROPOUT_PUSHIN = prove
+ (`!k t x.
+        dimindex(:M) + 1 = dimindex(:N)
+        ==> (dropout k:real^N->real^M) (pushin k t x) = x`,
+  REPEAT GEN_TAC THEN DISCH_THEN(ASSUME_TAC o SYM) THEN
+  ASM_SIMP_TAC[CART_EQ; dropout; pushin; LAMBDA_BETA;
+               ARITH_RULE `1 <= n + 1`; ADD_SUB;
+               ARITH_RULE `m <= n ==> m <= n + 1 /\ m + 1 <= n + 1`] THEN
+  ARITH_TAC);;
+
+let PUSHIN_DROPOUT = prove
+ (`!k x.
+        dimindex(:M) + 1 = dimindex(:N) /\ 1 <= k /\ k <= dimindex(:N)
+        ==> pushin k (x$k) ((dropout k:real^N->real^M) x) = x`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN(ASSUME_TAC o GSYM)) THEN
+  ASM_SIMP_TAC[CART_EQ; dropout; pushin; LAMBDA_BETA;
+               ARITH_RULE `i <= n + 1 ==> i - 1 <= n`] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  ASM_CASES_TAC `i:num = k` THEN ASM_REWRITE_TAC[LT_REFL] THEN
+  FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP (ARITH_RULE
+   `~(i:num = k) ==> i < k \/ k < i`)) THEN
+  ASM_SIMP_TAC[ARITH_RULE `i:num < k ==> ~(k < i)`] THEN
+  W(MP_TAC o PART_MATCH (lhs o rand) LAMBDA_BETA o lhand o snd) THEN
+  (ANTS_TAC THENL [ASM_ARITH_TAC; DISCH_THEN SUBST1_TAC]) THEN
+  ASM_SIMP_TAC[ARITH_RULE `k < i ==> ~(i - 1 < k)`] THEN
+  AP_TERM_TAC THEN ASM_ARITH_TAC);;
+
+let DROPOUT_GALOIS = prove
+ (`!k x:real^N y:real^M.
+        dimindex(:M) + 1 = dimindex(:N) /\ 1 <= k /\ k <= dimindex(:N)
+        ==> (y = dropout k x <=> (?t. x = pushin k t y))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_THEN SUBST1_TAC THEN
+    EXISTS_TAC `(x:real^N)$k` THEN ASM_SIMP_TAC[PUSHIN_DROPOUT];
+    DISCH_THEN(X_CHOOSE_THEN `t:real` SUBST1_TAC) THEN
+    ASM_SIMP_TAC[DROPOUT_PUSHIN]]);;
+
+let IN_IMAGE_DROPOUT = prove
+ (`!x s.
+        dimindex(:M) + 1 = dimindex(:N) /\ 1 <= k /\ k <= dimindex(:N)
+        ==> (x IN IMAGE (dropout k:real^N->real^M) s <=>
+             ?t. (pushin k t x) IN s)`,
+  SIMP_TAC[IN_IMAGE; DROPOUT_GALOIS] THEN MESON_TAC[]);;
+
+let DROPOUT_EQ = prove
+ (`!x y k. dimindex(:M) + 1 = dimindex(:N) /\ 1 <= k /\ k <= dimindex(:N) /\
+           x$k = y$k /\ (dropout k:real^N->real^M) x = dropout k y
+           ==> x = y`,
+  SIMP_TAC[CART_EQ; dropout; VEC_COMPONENT; LAMBDA_BETA; IN_ELIM_THM] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`; `k:num`] THEN
+  STRIP_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  ASM_CASES_TAC `i:num = k` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(DISJ_CASES_TAC o MATCH_MP (ARITH_RULE
+   `~(i:num = k) ==> i < k \/ k < i`))
+  THENL
+   [FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_SIMP_TAC[];
+    FIRST_X_ASSUM(MP_TAC o SPEC `i - 1`) THEN
+    ASM_SIMP_TAC[SUB_ADD; ARITH_RULE `k < i ==> ~(i - 1 < k)`]] THEN
+  DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC);;
+
+let DROPOUT_0 = prove
+ (`dropout k (vec 0:real^N) = vec 0`,
+  SIMP_TAC[dropout; VEC_COMPONENT; CART_EQ; COND_ID; LAMBDA_BETA]);;
+
+let DOT_DROPOUT = prove
+ (`!k x y:real^N.
+        dimindex(:M) + 1 = dimindex(:N) /\ 1 <= k /\ k <= dimindex(:N)
+        ==> (dropout k x:real^M) dot (dropout k y) = x dot y - x$k * y$k`,
+  REPEAT STRIP_TAC THEN SIMP_TAC[dot; dropout; LAMBDA_BETA] THEN
+  REWRITE_TAC[TAUT `(if p then x else y:real) * (if p then a else b) =
+                    (if p then x * a else y * b)`] THEN
+  SIMP_TAC[SUM_CASES; FINITE_NUMSEG] THEN
+  SUBGOAL_THEN
+   `(!i. i IN 1..dimindex(:M) /\ i < k <=> i IN 1..k-1) /\
+    (!i.  i IN 1..dimindex(:M) /\ ~(i < k) <=> i IN k..dimindex(:M))`
+  (fun th -> REWRITE_TAC[th])
+  THENL [REWRITE_TAC[IN_NUMSEG] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[SIMPLE_IMAGE; IMAGE_ID] THEN
+  REWRITE_TAC[GSYM(SPEC `1` SUM_OFFSET)] THEN
+  W(MP_TAC o PART_MATCH (rhs o rand) SUM_UNION o lhs o snd) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[FINITE_NUMSEG; DISJOINT_NUMSEG] THEN ARITH_TAC;
+    DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  MP_TAC(ISPECL [`\i. (x:real^N)$i * (y:real^N)$i`;
+                 `1..dimindex(:N)`;
+                 `k:num`] SUM_DELETE) THEN
+  ASM_REWRITE_TAC[IN_NUMSEG; FINITE_NUMSEG] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_NUMSEG; IN_UNION; IN_DELETE] THEN ASM_ARITH_TAC);;
+
+let DOT_PUSHIN = prove
+ (`!k a b x y:real^M.
+        dimindex(:M) + 1 = dimindex(:N) /\ 1 <= k /\ k <= dimindex(:N)
+        ==> (pushin k a x:real^N) dot (pushin k b y) = x dot y + a * b`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC EQ_TRANS THEN
+  EXISTS_TAC `(dropout k (pushin k a (x:real^M):real^N):real^M) dot
+              (dropout k (pushin k b (y:real^M):real^N):real^M) +
+              a * b` THEN
+  CONJ_TAC THENL [ALL_TAC; ASM_SIMP_TAC[DROPOUT_PUSHIN]] THEN
+  ASM_SIMP_TAC[DOT_DROPOUT] THEN
+  MATCH_MP_TAC(REAL_RING
+   `a':real = a /\ b' = b ==> x = x - a' * b' + a * b`) THEN
+  ASM_SIMP_TAC[pushin; LAMBDA_BETA; LT_REFL]);;
+
+let DROPOUT_ADD = prove
+ (`!k x y:real^N. dropout k (x + y) = dropout k x + dropout k y`,
+  SIMP_TAC[dropout; VECTOR_ADD_COMPONENT; CART_EQ; LAMBDA_BETA] THEN
+  MESON_TAC[]);;
+
+let DROPOUT_SUB = prove
+ (`!k x y:real^N. dropout k (x - y) = dropout k x - dropout k y`,
+  SIMP_TAC[dropout; VECTOR_SUB_COMPONENT; CART_EQ; LAMBDA_BETA] THEN
+  MESON_TAC[]);;
+
+let DROPOUT_MUL = prove
+ (`!k c x:real^N. dropout k (c % x) = c % dropout k x`,
+  SIMP_TAC[dropout; VECTOR_MUL_COMPONENT; CART_EQ; LAMBDA_BETA] THEN
+  MESON_TAC[]);;
+
+let LINEAR_DROPOUT = prove
+ (`!k. linear(dropout k :real^N->real^M)`,
+  REWRITE_TAC[linear; DROPOUT_ADD; DROPOUT_MUL]);;
+
+let LINEAR_PUSHIN = prove
+ (`!k. linear(pushin k (&0))`,
+  SIMP_TAC[linear; pushin; CART_EQ; LAMBDA_BETA; VECTOR_MUL_COMPONENT;
+           VECTOR_ADD_COMPONENT] THEN
+  REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* A bit of linear algebra.                                                  *)
 (* ------------------------------------------------------------------------- *)
 

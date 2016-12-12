@@ -1735,6 +1735,13 @@ let CLOSED_IN_SING = prove
  (`!u x:real^N. closed_in (subtopology euclidean u) {x} <=> x IN u`,
   SIMP_TAC[CLOSED_SUBSET_EQ; CLOSED_SING] THEN SET_TAC[]);;
 
+let CLOSED_IN_INSERT = prove
+ (`!u s a:real^N.
+        closed_in (subtopology euclidean u) s /\ a IN u
+        ==> closed_in (subtopology euclidean u) (a INSERT s)`,
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  SIMP_TAC[CLOSED_IN_UNION; CLOSED_IN_SING]);;
+
 let LIMIT_POINT_OF_LOCAL_IMP = prove
  (`!u s t x:real^N.
         s SUBSET u /\ x limit_point_of s /\
@@ -3866,8 +3873,8 @@ let LIM_NULL_COMPARISON = prove
   REWRITE_TAC[dist; VECTOR_SUB_RZERO; NORM_LIFT] THEN REAL_ARITH_TAC);;
 
 let LIM_COMPONENT = prove
- (`!net f i l:real^N. (f --> l) net /\ 1 <= i /\ i <= dimindex(:N)
-                      ==> ((\a. lift(f(a)$i)) --> lift(l$i)) net`,
+ (`!net f i l:real^N.
+     (f --> l) net ==> ((\a. lift(f(a)$i)) --> lift(l$i)) net`,
   REWRITE_TAC[LIM; dist; GSYM LIFT_SUB; NORM_LIFT] THEN
   SIMP_TAC[GSYM VECTOR_SUB_COMPONENT] THEN
   MESON_TAC[COMPONENT_LE_NORM; REAL_LET_TRANS]);;
@@ -14877,6 +14884,44 @@ let COMPACT_INTERVAL_EQ = prove
   REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED; BOUNDED_INTERVAL] THEN
   REWRITE_TAC[CLOSED_INTERVAL_EQ]);;
 
+let CLOSED_INTERVAL_DROPOUT = prove
+ (`!k a b. dimindex(:M) + 1 = dimindex(:N) /\
+           1 <= k /\ k <= dimindex(:N) /\
+           a$k <= b$k
+           ==> interval[dropout k a,dropout k b] =
+               IMAGE (dropout k:real^N->real^M) (interval[a,b])`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[EXTENSION; IN_IMAGE_DROPOUT; IN_INTERVAL] THEN
+  X_GEN_TAC `x:real^M` THEN
+  SIMP_TAC[pushin; dropout; LAMBDA_BETA] THEN EQ_TAC THENL
+   [DISCH_TAC THEN EXISTS_TAC `(a:real^N)$k` THEN X_GEN_TAC `i:num` THEN
+    STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+     [FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+      DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_LE_REFL] THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `i - 1`) THEN
+      COND_CASES_TAC THENL [ASM_ARITH_TAC; ASM_REWRITE_TAC[]] THEN
+      ANTS_TAC THENL [ASM_ARITH_TAC; ASM_SIMP_TAC[SUB_ADD]]];
+    DISCH_THEN(X_CHOOSE_TAC `t:real`) THEN X_GEN_TAC `i:num` THEN
+    STRIP_TAC THEN COND_CASES_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+      DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;
+      FIRST_X_ASSUM(MP_TAC o SPEC `i + 1`) THEN
+      ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+      ASM_REWRITE_TAC[ADD_SUB]]]);;
+
+let IMAGE_DROPOUT_CLOSED_INTERVAL = prove
+ (`!k a b. dimindex(:M) + 1 = dimindex(:N) /\
+           1 <= k /\ k <= dimindex(:N)
+           ==> IMAGE (dropout k:real^N->real^M) (interval[a,b]) =
+                  if a$k <= b$k then interval[dropout k a,dropout k b]
+                  else {}`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[CLOSED_INTERVAL_DROPOUT; IMAGE_EQ_EMPTY] THEN
+  REWRITE_TAC[INTERVAL_EQ_EMPTY; GSYM REAL_NOT_LE] THEN ASM_MESON_TAC[]);;
+
 let EQ_BALLS = prove
  (`(!a a':real^N r r'.
       ball(a,r) = ball(a',r') <=> a = a' /\ r = r' \/ r <= &0 /\ r' <= &0) /\
@@ -16659,10 +16704,28 @@ let HOMEOMORPHISM_EQ = prove
     ASM_MESON_TAC[CONTINUOUS_ON_EQ];
     ASM SET_TAC[]; ASM SET_TAC[]; ASM SET_TAC[]]);;
 
+let LINEAR_IMP_HOMEOMORPHISM = prove
+ (`!f:real^M->real^N g:real^N->real^M s t.
+        linear f /\ linear g /\ g o f = I /\ IMAGE f s = t
+        ==> homeomorphism (s,t) (f,g)`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC
+   (LAND_CONV o RAND_CONV o RAND_CONV o LAND_CONV) [FUN_EQ_THM] THEN
+  REWRITE_TAC[o_THM; I_THM] THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[homeomorphism; LINEAR_CONTINUOUS_ON] THEN ASM SET_TAC[]);;
+
+let ORTHOGONAL_TRANSFORMATION_IMP_HOMEOMORPHISM = prove
+ (`!f:real^N->real^N s t.
+        orthogonal_transformation f /\ IMAGE f s = t
+        ==> ?g. orthogonal_transformation g /\
+                homeomorphism (s,t) (f,g)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP ORTHOGONAL_TRANSFORMATION_INVERSE_o) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_MESON_TAC[ORTHOGONAL_TRANSFORMATION_LINEAR; LINEAR_IMP_HOMEOMORPHISM]);;
+
 let HOMEOMORPHIC_SELF_IMAGE = prove
  (`!f:real^M->real^N g s t u.
         homeomorphism (s,t) (f,g) /\ u SUBSET s
-
         ==> IMAGE f u homeomorphic u`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
   REWRITE_TAC[homeomorphic] THEN
@@ -16688,6 +16751,35 @@ let HOMEOMORPHISM_FINITENESS = prove
         homeomorphism (s,t) (f,g) /\ k SUBSET s
         ==> (FINITE(IMAGE f k) <=> FINITE k)`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_FINITENESS THEN
+  ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]);;
+
+let HOMEOMORPHIC_INFINITENESS = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t ==> (INFINITE s <=> INFINITE t)`,
+  REWRITE_TAC[INFINITE] THEN MESON_TAC[HOMEOMORPHIC_FINITENESS]);;
+
+let HOMEOMORPHISM_INFINITENESS = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (INFINITE(IMAGE f k) <=> INFINITE k)`,
+  REWRITE_TAC[INFINITE] THEN MESON_TAC[HOMEOMORPHISM_FINITENESS]);;
+
+let HOMEOMORPHIC_COUNTABILITY = prove
+ (`!s:real^M->bool t:real^N->bool.
+        s homeomorphic t ==> (COUNTABLE s <=> COUNTABLE t)`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP HOMEOMORPHIC_IMP_CARD_EQ) THEN
+  DISCH_THEN(ACCEPT_TAC o MATCH_MP CARD_COUNTABLE_CONG));;
+
+let HOMEOMORPHISM_COUNTABILITY = prove
+ (`!f:real^M->real^N g s t k.
+        homeomorphism (s,t) (f,g) /\ k SUBSET s
+        ==> (COUNTABLE(IMAGE f k) <=> COUNTABLE k)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMEOMORPHIC_COUNTABILITY THEN
   ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
   MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
   FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
@@ -19426,7 +19518,7 @@ let LIM_COFACTOR = prove
   ASM_REWRITE_TAC[LIM_CONST] THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `basis l:real^N`) THEN
   ASM_SIMP_TAC[MATRIX_VECTOR_MUL_BASIS; column] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] LIM_COMPONENT)) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP LIM_COMPONENT) THEN
   DISCH_THEN(MP_TAC o SPEC `k:num`) THEN ASM_SIMP_TAC[LAMBDA_BETA]);;
 
 let LIM_MATRIX_TRANSP = prove
