@@ -4490,8 +4490,10 @@ let LINEAR_PASTECART_EQ = prove
 (* ------------------------------------------------------------------------- *)
 
 let dropout = new_definition
- `(dropout:num->real^N->real^M) k x =
-        lambda i. if i < k then x$i else x$(i + 1)`;;
+  `(dropout k:real^M->real^N) x =
+        lambda i. if i < k /\ i <= dimindex(:M) then x$i
+                  else if i + 1 <= dimindex(:M) then x$(i + 1)
+                  else &0`;;
 
 let pushin = new_definition
  `pushin k t x = lambda i. if i < k then x$i
@@ -4523,7 +4525,8 @@ let PUSHIN_DROPOUT = prove
   W(MP_TAC o PART_MATCH (lhs o rand) LAMBDA_BETA o lhand o snd) THEN
   (ANTS_TAC THENL [ASM_ARITH_TAC; DISCH_THEN SUBST1_TAC]) THEN
   ASM_SIMP_TAC[ARITH_RULE `k < i ==> ~(i - 1 < k)`] THEN
-  AP_TERM_TAC THEN ASM_ARITH_TAC);;
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  TRY AP_TERM_TAC THEN ASM_ARITH_TAC);;
 
 let DROPOUT_GALOIS = prove
  (`!k x:real^N y:real^M.
@@ -4569,10 +4572,13 @@ let DOT_DROPOUT = prove
   REPEAT STRIP_TAC THEN SIMP_TAC[dot; dropout; LAMBDA_BETA] THEN
   REWRITE_TAC[TAUT `(if p then x else y:real) * (if p then a else b) =
                     (if p then x * a else y * b)`] THEN
-  SIMP_TAC[SUM_CASES; FINITE_NUMSEG] THEN
+  SIMP_TAC[SUM_CASES; FINITE_NUMSEG; FINITE_RESTRICT] THEN
+  REWRITE_TAC[REAL_MUL_LZERO; SUM_0; REAL_ADD_RID; IN_ELIM_THM] THEN
   SUBGOAL_THEN
-   `(!i. i IN 1..dimindex(:M) /\ i < k <=> i IN 1..k-1) /\
-    (!i.  i IN 1..dimindex(:M) /\ ~(i < k) <=> i IN k..dimindex(:M))`
+   `(!i. i IN 1..dimindex(:M) /\ i < k /\ i <= dimindex(:N) <=> i IN 1..k-1) /\
+    (!i. (i IN 1..dimindex(:M) /\ ~(i < k /\ i <= dimindex(:N))) /\
+          i + 1 <= dimindex(:N) <=>
+          i IN k..dimindex(:M))`
   (fun th -> REWRITE_TAC[th])
   THENL [REWRITE_TAC[IN_NUMSEG] THEN ASM_ARITH_TAC; ALL_TAC] THEN
   REWRITE_TAC[SIMPLE_IMAGE; IMAGE_ID] THEN
@@ -4607,17 +4613,20 @@ let DOT_PUSHIN = prove
 let DROPOUT_ADD = prove
  (`!k x y:real^N. dropout k (x + y) = dropout k x + dropout k y`,
   SIMP_TAC[dropout; VECTOR_ADD_COMPONENT; CART_EQ; LAMBDA_BETA] THEN
-  MESON_TAC[]);;
+  REPEAT STRIP_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_ADD_LID]));;
 
 let DROPOUT_SUB = prove
  (`!k x y:real^N. dropout k (x - y) = dropout k x - dropout k y`,
   SIMP_TAC[dropout; VECTOR_SUB_COMPONENT; CART_EQ; LAMBDA_BETA] THEN
-  MESON_TAC[]);;
+  REPEAT STRIP_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_SUB_RZERO]));;
 
 let DROPOUT_MUL = prove
  (`!k c x:real^N. dropout k (c % x) = c % dropout k x`,
   SIMP_TAC[dropout; VECTOR_MUL_COMPONENT; CART_EQ; LAMBDA_BETA] THEN
-  MESON_TAC[]);;
+  REPEAT STRIP_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_MUL_RZERO]));;
 
 let LINEAR_DROPOUT = prove
  (`!k. linear(dropout k :real^N->real^M)`,
@@ -8667,6 +8676,30 @@ let DIM_SPECIAL_SUBSPACE = prove
       SET_RULE `~(a IN IMAGE f s) <=> (!x. x IN s ==> ~(f x = a))`] THEN
     SIMP_TAC[FORALL_IN_IMAGE; ORTHOGONAL_BASIS_BASIS; BASIS_INJ_EQ;
              IN_DIFF; IN_NUMSEG; BASIS_NONZERO]]);;
+
+let INDEPENDENT_UNION = prove
+ (`!s t:real^N->bool.
+        independent s /\ independent t /\
+        (span s) INTER (span t) SUBSET {vec 0}
+        ==> independent(s UNION t)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `(vec 0:real^N) IN s` THENL
+   [ASM_MESON_TAC[INDEPENDENT_NONZERO]; ALL_TAC]  THEN
+  SIMP_TAC[INDEPENDENT_EQ_DIM_EQ_CARD; FINITE_UNION] THEN
+  ONCE_REWRITE_TAC[GSYM DIM_SPAN] THEN
+  REWRITE_TAC[span] THEN ONCE_REWRITE_TAC[HULL_UNION] THEN
+  REWRITE_TAC[GSYM span; DIM_SPAN] THEN
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`span s:real^N->bool`; `span t:real^N->bool`]
+        DIM_UNION_INTER) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP DIM_SUBSET) THEN
+  SIMP_TAC[DIM_SING; SUBSPACE_SPAN; LE; ADD_CLAUSES] THEN
+  REPEAT(DISCH_THEN(K ALL_TAC)) THEN CONV_TAC SYM_CONV THEN
+  ASM_REWRITE_TAC[DIM_SPAN] THEN MATCH_MP_TAC CARD_UNION THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+   `s' INTER t' SUBSET {z}
+    ==> s SUBSET s' /\ t SUBSET t' /\ ~(z IN s) ==> s INTER t = {}`)) THEN
+  ASM_REWRITE_TAC[SPAN_INC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More injective/surjective versus dimension variants.                      *)

@@ -1824,6 +1824,11 @@ let INTERIOR_UNIQUE = prove
   MESON_TAC[SUBSET_ANTISYM; INTERIOR_MAXIMAL; INTERIOR_SUBSET;
             OPEN_INTERIOR]);;
 
+let INTERIOR_EQ_UNIV = prove
+ (`!s. interior s = (:real^N) <=> s = (:real^N)`,
+  SIMP_TAC[SET_RULE `s = UNIV <=> UNIV SUBSET s`; OPEN_UNIV;
+           INTERIOR_MAXIMAL_EQ]);;
+
 let IN_INTERIOR = prove
  (`!x s. x IN interior s <=> ?e. &0 < e /\ ball(x,e) SUBSET s`,
   REWRITE_TAC[interior; IN_ELIM_THM] THEN
@@ -2921,6 +2926,15 @@ let EVENTUALLY_AT_TOPOLOGICAL = prove
         ?t. open t /\ a IN t /\ !x. x IN t DELETE a ==> P x`,
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[EVENTUALLY_WITHIN_TOPOLOGICAL; IN_INTER; IN_UNIV]);;
+
+let EVENTUALLY_HAPPENS_AT = prove
+ (`!P a:real^N. eventually P (at a) ==> ?b. ~(b = a) /\ P b`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `eventually (\b:real^N. ~(b = a) /\ P b) (at a)` MP_TAC THENL
+   [POP_ASSUM MP_TAC THEN REWRITE_TAC[EVENTUALLY_AT] THEN
+    MESON_TAC[DIST_NZ; DIST_SYM];
+    DISCH_THEN(MP_TAC o MATCH_MP EVENTUALLY_HAPPENS) THEN
+    SIMP_TAC[TRIVIAL_LIMIT_AT]]);;
 
 let EVENTUALLY_AT_INFINITY = prove
  (`!p. eventually p at_infinity <=> ?b. !x. norm(x) >= b ==> p x`,
@@ -6942,6 +6956,24 @@ let UNIFORMLY_CONTINUOUS_ON_EQ = prove
         (!x. x IN s ==> f x = g x) /\ f uniformly_continuous_on s
         ==> g uniformly_continuous_on s`,
   SIMP_TAC[uniformly_continuous_on; IMP_CONJ]);;
+
+let CONTINUOUS_ON_RESTRICT = prove
+ (`!P f g:real^M->real^N s.
+        (!x. x IN s ==> P x)
+        ==> ((\x. if P x then f x else g x) continuous_on s <=>
+             f continuous_on s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] CONTINUOUS_ON_EQ) THEN
+  ASM_MESON_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_ON_RESTRICT = prove
+ (`!P f g:real^M->real^N s.
+        (!x. x IN s ==> P x)
+        ==> ((\x. if P x then f x else g x) uniformly_continuous_on s <=>
+             f uniformly_continuous_on s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] UNIFORMLY_CONTINUOUS_ON_EQ) THEN
+  ASM_MESON_TAC[]);;
 
 let CONTINUOUS_ON_SING = prove
  (`!f:real^M->real^N a. f continuous_on {a}`,
@@ -11843,6 +11875,15 @@ let IN_COMPONENTS = prove
   THENL [SET_TAC[];STRIP_TAC THEN ASM_SIMP_TAC[] THEN
   UNDISCH_TAC `x:real^N IN u` THEN SET_TAC[]]);;
 
+let CONNECTED_COMPONENTS = prove
+ (`!s a b:real^N.
+        connected_component s a b <=>
+        ?c. c IN components s /\ a IN c /\ b IN c`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPEC `s:real^N->bool` CONNECTED_COMPONENT_SUBSET) THEN
+  REWRITE_TAC[components; EXISTS_IN_GSPEC; SUBSET] THEN REWRITE_TAC[IN] THEN
+  MESON_TAC[CONNECTED_COMPONENT_TRANS; CONNECTED_COMPONENT_SYM]);;
+
 let UNIONS_COMPONENTS = prove
  (`!u:real^N->bool. u = UNIONS (components u)`,
   REWRITE_TAC[EXTENSION] THEN REPEAT GEN_TAC THEN EQ_TAC
@@ -12144,6 +12185,27 @@ let COMPONENTS_UNIQUE_EQ = prove
     ASM_MESON_TAC[IN_COMPONENTS_NONEMPTY];
     RULE_ASSUM_TAC(REWRITE_RULE[IN_COMPONENTS_MAXIMAL]) THEN
     ASM_MESON_TAC[SUBSET_EMPTY]]);;
+
+let COMPONENTS_UNIQUE_2 = prove
+ (`!s c1 c2:real^N->bool.
+        connected c1 /\ connected c2 /\ c1 UNION c2 = s /\ ~connected s
+        ==> components s = {c1,c2}`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `c1:real^N->bool = {}` THENL
+   [ASM_MESON_TAC[UNION_EMPTY]; ALL_TAC] THEN
+  ASM_CASES_TAC `c2:real^N->bool = {}` THENL
+   [ASM_MESON_TAC[UNION_EMPTY]; ALL_TAC] THEN
+  STRIP_TAC THEN MATCH_MP_TAC COMPONENTS_UNIQUE THEN
+  ASM_REWRITE_TAC[UNIONS_2; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+  CONJ_TAC THEN X_GEN_TAC `c:real^N->bool` THEN STRIP_TAC THENL
+   [MP_TAC(ISPECL [`c:real^N->bool`; `c2:real^N->bool`]
+        CONNECTED_UNION) THEN
+    SUBGOAL_THEN `c UNION c2:real^N->bool = s` SUBST1_TAC THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+    MP_TAC(ISPECL [`c1:real^N->bool`; `c:real^N->bool`]
+        CONNECTED_UNION) THEN
+    SUBGOAL_THEN `c1 UNION c:real^N->bool = s` SUBST1_TAC THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[]]);;
 
 let EXISTS_COMPONENT_SUPERSET = prove
  (`!s t:real^N->bool.
@@ -14910,7 +14972,7 @@ let CLOSED_INTERVAL_DROPOUT = prove
       ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL [ASM_ARITH_TAC; ALL_TAC] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL [ASM_ARITH_TAC; ALL_TAC] THEN
-      ASM_REWRITE_TAC[ADD_SUB]]]);;
+      COND_CASES_TAC THEN REWRITE_TAC[ADD_SUB] THEN ASM_ARITH_TAC]]);;
 
 let IMAGE_DROPOUT_CLOSED_INTERVAL = prove
  (`!k a b. dimindex(:M) + 1 = dimindex(:N) /\
@@ -19375,6 +19437,51 @@ let BASIS_COORDINATES_LIPSCHITZ = prove
       `j:num`] COMPONENT_LE_NORM) THEN
     SUBGOAL_THEN `1 <= j /\ j <= dimindex(:N)` MP_TAC THENL
      [ASM_ARITH_TAC; SIMP_TAC[LAMBDA_BETA] THEN ASM_REWRITE_TAC[]]]);;
+
+let COMPLEMENTARY_SUM_COMPONENTS_LIPSCHITZ = prove
+ (`!s t:real^N->bool.
+        subspace s /\ subspace t /\ s INTER t SUBSET {vec 0}
+        ==> ?B. &0 < B /\
+                !x y. x IN s /\ y IN t ==> norm(x) <= B * norm(x + y)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `t:real^N->bool` BASIS_SUBSPACE_EXISTS) THEN
+  MP_TAC(ISPEC `s:real^N->bool` BASIS_SUBSPACE_EXISTS) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:real^N->bool` THEN STRIP_TAC THEN
+  X_GEN_TAC `c:real^N->bool` THEN STRIP_TAC THEN
+  MP_TAC(ISPEC `b UNION c:real^N->bool` BASIS_COORDINATES_LIPSCHITZ) THEN
+  ASM_SIMP_TAC[INDEPENDENT_UNION] THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `(sum (b:real^N->bool) norm + &1) * B` THEN
+  ASM_SIMP_TAC[REAL_LT_MUL; REAL_ARITH `&0 <= x ==> &0 < x + &1`;
+               SUM_POS_LE; NORM_POS_LE] THEN
+  SUBGOAL_THEN `DISJOINT (b:real^N->bool) c` ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `s INTER t SUBSET {z}
+      ==> b SUBSET s /\ c SUBSET t /\ ~(z IN b) ==> DISJOINT b c`)) THEN
+    ASM_MESON_TAC[SPAN_INC; INDEPENDENT_NONZERO];
+    ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
+  MP_TAC(ISPEC `c:real^N->bool` SPAN_FINITE) THEN
+  MP_TAC(ISPEC `b:real^N->bool` SPAN_FINITE) THEN
+  ASM_REWRITE_TAC[] THEN REPEAT(DISCH_THEN SUBST1_TAC) THEN
+  REWRITE_TAC[IN_ELIM_THM; IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `a:real^N->real` THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  X_GEN_TAC `a':real^N->real` THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+   `\x. if x IN b then (a:real^N->real) x else a' x`) THEN
+  ASM_SIMP_TAC[VSUM_UNION] THEN REWRITE_TAC[FORALL_IN_UNION] THEN
+  DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (SET_RULE
+   `DISJOINT b c ==> !x. x IN c ==> ~(x IN b)`)) THEN
+  SIMP_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN DISCH_TAC THEN
+  MATCH_MP_TAC VSUM_NORM_TRIANGLE THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `&0 <= b * y /\ x <= s * b * y ==> x <= ((s + &1) * b) * y`) THEN
+  ASM_SIMP_TAC[REAL_LE_MUL; NORM_POS_LE; REAL_LT_IMP_LE; GSYM SUM_RMUL] THEN
+  MATCH_MP_TAC SUM_LE THEN
+  ASM_REWRITE_TAC[ONCE_REWRITE_RULE[REAL_MUL_SYM] NORM_MUL] THEN
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[REAL_LE_LMUL; NORM_POS_LE]);;
 
 let BASIS_COORDINATES_CONTINUOUS = prove
  (`!b:real^N->bool e.

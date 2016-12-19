@@ -2854,6 +2854,16 @@ let ORTHOGONAL_TRANSFORMATION_1_GEN = prove
   MATCH_MP_TAC MONO_OR THEN SIMP_TAC[FUN_EQ_THM] THEN
   REPEAT STRIP_TAC THEN CONV_TAC VECTOR_ARITH);;
 
+let ORTHOGONAL_MATRIX_1 = prove
+ (`!m:real^N^N.
+        dimindex(:N) = 1
+        ==> (orthogonal_matrix m <=> m = mat 1 \/ m = --mat 1)`,
+  REWRITE_TAC[ORTHOGONAL_MATRIX_TRANSFORMATION] THEN
+  SIMP_TAC[ORTHOGONAL_TRANSFORMATION_1_GEN] THEN
+  REWRITE_TAC[MATRIX_EQ; FUN_EQ_THM] THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_LID; MATRIX_VECTOR_MUL_LNEG] THEN
+  REWRITE_TAC[I_THM]);;
+
 let MATRIX_INV_ORTHOGONAL_LMUL = prove
  (`!U A:real^M^N.
         orthogonal_matrix U
@@ -3357,6 +3367,26 @@ let rotoinversion_matrix = new_definition
 let ORTHOGONAL_ROTATION_OR_ROTOINVERSION = prove
  (`!Q. orthogonal_matrix Q <=> rotation_matrix Q \/ rotoinversion_matrix Q`,
   MESON_TAC[rotation_matrix; rotoinversion_matrix; DET_ORTHOGONAL_MATRIX]);;
+
+let ROTATION_MATRIX_1 = prove
+ (`!m:real^N^N.
+        dimindex(:N) = 1 ==> (rotation_matrix m <=> m = mat 1)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[ORTHOGONAL_MATRIX_1; rotation_matrix] THEN
+  ASM_CASES_TAC `m:real^N^N = mat 1` THEN ASM_REWRITE_TAC[DET_I] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_REWRITE_TAC[DET_NEG; REAL_POW_ONE; DET_I] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+let ROTOINVERSION_MATRIX_1 = prove
+ (`!m:real^N^N.
+        dimindex(:N) = 1 ==> (rotoinversion_matrix m <=> m = --mat 1)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[ORTHOGONAL_MATRIX_1; rotoinversion_matrix] THEN
+  ASM_CASES_TAC `m:real^N^N = --mat 1` THEN
+  ASM_REWRITE_TAC[DET_NEG; DET_I; REAL_POW_ONE] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_REWRITE_TAC[DET_I] THEN CONV_TAC REAL_RAT_REDUCE_CONV);;
 
 let ROTATION_MATRIX_2 = prove
  (`!A:real^2^2. rotation_matrix A <=>
