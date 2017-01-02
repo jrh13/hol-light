@@ -1254,6 +1254,98 @@ let FRONTIER_OF_SUBTOPOLOGY_OPEN = prove
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Iteration of interior and closure.                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let INTERIOR_OF_CLOSURE_OF_IDEMP = prove
+ (`!top s:A->bool.
+        top interior_of top closure_of top interior_of top closure_of s =
+        top interior_of top closure_of s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INTERIOR_OF_UNIQUE THEN
+  REWRITE_TAC[OPEN_IN_INTERIOR_OF] THEN
+  SIMP_TAC[CLOSURE_OF_SUBSET; INTERIOR_OF_SUBSET_TOPSPACE] THEN
+  SIMP_TAC[INTERIOR_OF_MAXIMAL_EQ] THEN
+  X_GEN_TAC `t:A->bool` THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS) THEN
+  MATCH_MP_TAC CLOSURE_OF_MINIMAL THEN
+  REWRITE_TAC[CLOSED_IN_CLOSURE_OF; INTERIOR_OF_SUBSET]);;
+
+let CLOSURE_OF_INTERIOR_OF_IDEMP = prove
+ (`!top s:A->bool.
+        top closure_of top interior_of top closure_of top interior_of s =
+        top closure_of top interior_of s`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`top:A topology`; `topspace top DIFF s:A->bool`]
+        INTERIOR_OF_CLOSURE_OF_IDEMP) THEN
+  REWRITE_TAC[CLOSURE_OF_COMPLEMENT; INTERIOR_OF_COMPLEMENT] THEN
+  MATCH_MP_TAC(SET_RULE
+   `s SUBSET u /\ t SUBSET u ==> u DIFF s = u DIFF t ==> s = t`) THEN
+  REWRITE_TAC[CLOSURE_OF_SUBSET_TOPSPACE; INTERIOR_OF_SUBSET_TOPSPACE]);;
+
+let INTERIOR_OF_FRONTIER_OF = prove
+ (`!top s:A->bool.
+        top interior_of (top frontier_of s) =
+        top interior_of (top closure_of s) DIFF
+        top closure_of (top interior_of s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[FRONTIER_OF_CLOSURES; INTERIOR_OF_INTER] THEN
+  REWRITE_TAC[CLOSURE_OF_COMPLEMENT; INTERIOR_OF_COMPLEMENT] THEN
+  MP_TAC(ISPECL [`top:A topology`; `top closure_of s:A->bool`]
+        INTERIOR_OF_SUBSET_TOPSPACE) THEN
+  SET_TAC[]);;
+
+let THIN_FRONTIER_OF_SUBSET = prove
+ (`!top s:A->bool.
+        top interior_of (top frontier_of s) = {} <=>
+        top interior_of (top closure_of s) SUBSET
+        top closure_of (top interior_of s)`,
+  REWRITE_TAC[INTERIOR_OF_FRONTIER_OF] THEN SET_TAC[]);;
+
+let THIN_FRONTIER_OF_CIC = prove
+ (`!top s:A->bool.
+        top interior_of (top frontier_of s) = {} <=>
+        top closure_of (top interior_of (top closure_of s)) =
+        top closure_of (top interior_of s)`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[THIN_FRONTIER_OF_SUBSET] THEN
+  MATCH_MP_TAC(TAUT `(p <=> q) /\ r==> (p <=> q /\ r)`) THEN CONJ_TAC THENL
+   [SIMP_TAC[CLOSURE_OF_MINIMAL_EQ; CLOSED_IN_CLOSURE_OF;
+             INTERIOR_OF_SUBSET_TOPSPACE];
+    GEN_REWRITE_TAC LAND_CONV [GSYM CLOSURE_OF_INTERIOR_OF_IDEMP] THEN
+    SIMP_TAC[CLOSURE_OF_MONO; INTERIOR_OF_MONO; INTERIOR_OF_SUBSET]]);;
+
+let THIN_FRONTIER_OF_ICI = prove
+ (`!s:A->bool.
+        top interior_of (top frontier_of s) = {} <=>
+        top interior_of (top closure_of (top interior_of s)) =
+        top interior_of (top closure_of  s)`,
+  GEN_TAC THEN REWRITE_TAC[THIN_FRONTIER_OF_CIC] THEN
+  MESON_TAC[INTERIOR_OF_CLOSURE_OF_IDEMP; CLOSURE_OF_INTERIOR_OF_IDEMP]);;
+
+let INTERIOR_OF_FRONTIER_OF_EMPTY = prove
+ (`!top s:A->bool.
+        open_in top s \/ closed_in top s
+        ==> top interior_of (top frontier_of s) = {}`,
+  REPEAT STRIP_TAC THENL
+   [REWRITE_TAC[THIN_FRONTIER_OF_ICI]; REWRITE_TAC[THIN_FRONTIER_OF_CIC]] THEN
+  ASM_SIMP_TAC[INTERIOR_OF_OPEN_IN; CLOSURE_OF_CLOSED_IN]);;
+
+let FRONTIER_OF_FRONTIER_OF = prove
+ (`!top s:A->bool.
+        open_in top s \/ closed_in top s
+        ==> top frontier_of (top frontier_of s) = top frontier_of s`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [frontier_of] THEN
+  SIMP_TAC[INTERIOR_OF_FRONTIER_OF_EMPTY; CLOSURE_OF_CLOSED_IN;
+          CLOSED_IN_FRONTIER_OF; DIFF_EMPTY]);;
+
+let FRONTIER_OF_FRONTIER_OF_FRONTIER_OF = prove
+ (`!top s:A->bool.
+        top frontier_of top frontier_of top frontier_of s =
+        top frontier_of top frontier_of s`,
+  SIMP_TAC[FRONTIER_OF_FRONTIER_OF; CLOSED_IN_FRONTIER_OF]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A variant of nets (slightly non-standard but good for our purposes).      *)
 (* ------------------------------------------------------------------------- *)
 

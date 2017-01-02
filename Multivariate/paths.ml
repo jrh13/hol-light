@@ -4669,12 +4669,6 @@ let COCOUNTABLE_APPROXIMATION = prove
   MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
   REWRITE_TAC[CARD_EQ_REAL]);;
 
-let IRRATIONAL_APPROXIMATION = prove
- (`!x e. &0 < e ==> ?y. ~(rational y) /\ abs(y - x) < e`,
-  REWRITE_TAC[SET_RULE `~rational y <=> y IN UNIV DIFF rational`] THEN
-  MATCH_MP_TAC COCOUNTABLE_APPROXIMATION THEN
-  REWRITE_TAC[COMPL_COMPL; COUNTABLE_RATIONAL]);;
-
 let OPEN_SET_COSMALL_COORDINATES = prove
  (`!P. (!i. 1 <= i /\ i <= dimindex(:N)
             ==> (:real) DIFF {x | P i x} <_c (:real))
@@ -20903,6 +20897,46 @@ let HOMOTOPY_EQUIVALENT_TRANS = prove
   MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
   EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[]);;
 
+let HOMOTOPY_EQUIVALENT_PCROSS = prove
+ (`!s:real^M->bool t:real^N->bool s':real^P->bool t':real^Q->bool.
+         s homotopy_equivalent s' /\ t homotopy_equivalent t'
+         ==> s PCROSS t homotopy_equivalent s' PCROSS t'`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homotopy_equivalent] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC
+   [`f1:real^M->real^P`; `g1:real^P->real^M`;
+    `f2:real^N->real^Q`; `g2:real^Q->real^N`] THEN
+  DISCH_TAC THEN
+  EXISTS_TAC `\z. pastecart ((f1:real^M->real^P) (fstcart z))
+                            ((f2:real^N->real^Q) (sndcart z))` THEN
+  EXISTS_TAC `\z. pastecart ((g1:real^P->real^M) (fstcart z))
+                            ((g2:real^Q->real^N) (sndcart z))` THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN
+   (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC o
+    GEN_REWRITE_RULE I [TAUT
+      `p /\ q /\ r /\ s /\ t <=> (p /\ q /\ r /\ s) /\ t`])) THEN
+  ONCE_REWRITE_TAC[TAUT
+   `p /\ q ==> p' /\ q' ==> r <=> (p' /\ p) /\ (q' /\ q) ==> r`] THEN
+  DISCH_THEN(CONJUNCTS_THEN(MP_TAC o
+    MATCH_MP(MESON[] `(!x. p x) ==> (!x. p(\a. T))`) o
+    MATCH_MP (ONCE_REWRITE_RULE[TAUT
+     `p /\ q /\ r ==> s <=> p /\ q ==> r ==> s`] HOMOTOPIC_WITH_PCROSS))) THEN
+  REWRITE_TAC[I_DEF; PASTECART_FST_SND; o_DEF] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART] THEN
+  DISCH_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r /\ s <=> (p /\ r) /\ (q /\ s)`] THEN
+  CONJ_TAC THENL
+   [CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_PASTECART THEN CONJ_TAC THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
+    SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART; LINEAR_SNDCART] THEN
+    REWRITE_TAC[IMAGE_FSTCART_PCROSS; IMAGE_SNDCART_PCROSS] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[CONTINUOUS_ON_EMPTY];
+    CONJ_TAC THEN REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_PCROSS] THEN
+    REWRITE_TAC[PASTECART_IN_PCROSS; FSTCART_PASTECART; SNDCART_PASTECART] THEN
+    ASM SET_TAC[]]);;
+
 let HOMOTOPY_EQUIVALENT_INJECTIVE_LINEAR_IMAGE_SELF = prove
  (`!f:real^M->real^N s.
         linear f /\ (!x y. f x = f y ==> x = y)
@@ -24527,6 +24561,124 @@ let TINY_INDUCTIVE_DIMENSION = prove
        MATCH_MP_TAC(SET_RULE
         `s SUBSET t ==> (x IN k /\ x IN s) /\ P ==> x IN t`) THEN
        MATCH_MP_TAC SUBSET_CLOSURE THEN REWRITE_TAC[INTER_SUBSET]]]);;
+
+let DIMENSION_LE_RATIONAL_COORDINATES = prove
+ (`!n. dimension {x:real^N | {i | i IN 1..dimindex(:N) /\ rational(x$i)}
+                             HAS_SIZE n} <= &0`,
+  GEN_TAC THEN MATCH_MP_TAC(MESON[]
+   `(!x. t = x ==> dimension x <= &0) ==> dimension t <= &0`) THEN
+  X_GEN_TAC `s:real^N->bool` THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `s =
+    UNIONS {s INTER h |
+            h IN  { INTERS {{x:real^N | x$i = q$i} | i IN k} |
+       k IN {l | l SUBSET 1..dimindex(:N) /\ l HAS_SIZE n} /\
+       q IN {y:real^N | !i. 1 <= i /\ i <= dimindex(:N) ==> rational(y$i)}}}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[UNIONS_GSPEC; INTERS_GSPEC; EXISTS_IN_GSPEC] THEN
+    EXPAND_TAC "s" THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+    X_GEN_TAC `x:real^N` THEN REWRITE_TAC[IN_ELIM_THM; IN_INTER] THEN
+    ABBREV_TAC `k = {i | i IN 1..dimindex(:N) /\ rational((x:real^N)$i)}` THEN
+    EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    EXISTS_TAC `k:num->bool` THEN ASM_REWRITE_TAC[] THEN
+    EXISTS_TAC `(lambda i. if i IN k then (x:real^N)$i else &0):real^N` THEN
+    SIMP_TAC[LAMBDA_BETA] THEN EXPAND_TAC "k" THEN
+    REWRITE_TAC[IN_ELIM_THM; SUBSET_RESTRICT] THEN
+    SIMP_TAC[IN_NUMSEG; LAMBDA_BETA] THEN MESON_TAC[RATIONAL_NUM];
+    ALL_TAC] THEN
+  MATCH_MP_TAC DIMENSION_LE_CLOSED_IN_UNIONS THEN
+  EXISTS_TAC `s:real^N->bool` THEN CONV_TAC INT_REDUCE_CONV THEN CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SIMPLE_IMAGE] THEN MATCH_MP_TAC COUNTABLE_IMAGE THEN
+    MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT THEN
+    REWRITE_TAC[COUNTABLE_RATIONAL_COORDINATES] THEN
+    MATCH_MP_TAC COUNTABLE_SUBSET THEN
+    EXISTS_TAC `{k | k SUBSET (:num) /\ FINITE k}` THEN
+    SIMP_TAC[COUNTABLE_FINITE_SUBSETS; NUM_COUNTABLE] THEN
+    REWRITE_TAC[HAS_SIZE] THEN SET_TAC[];
+    ALL_TAC] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  MAP_EVERY X_GEN_TAC [`k:num->bool`; `q:real^N`] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN REPEAT STRIP_TAC THENL
+   [MATCH_MP_TAC CLOSED_IN_CLOSED_INTER THEN MATCH_MP_TAC CLOSED_INTERS THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; CLOSED_STANDARD_HYPERPLANE];
+    ALL_TAC] THEN
+  TRANS_TAC INT_LE_TRANS
+   `dimension {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
+                              ==> (rational(x$i) <=> i IN k)}` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC DIMENSION_SUBSET THEN
+    REWRITE_TAC[SUBSET; INTERS_GSPEC; IN_ELIM_THM; IN_INTER] THEN
+    X_GEN_TAC `x:real^N` THEN STRIP_TAC THEN
+    MP_TAC(ISPECL [`k:num->bool`;
+                   `{i | i IN 1..dimindex(:N) /\ rational((x:real^N)$i)}`]
+      CARD_SUBSET_LE) THEN
+    ANTS_TAC THENL [ALL_TAC; REWRITE_TAC[IN_NUMSEG] THEN SET_TAC[]] THEN
+    SIMP_TAC[FINITE_RESTRICT; FINITE_NUMSEG] THEN CONJ_TAC THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE[GSYM IN_NUMSEG]) THEN ASM SET_TAC[];
+      UNDISCH_TAC `(x:real^N) IN s` THEN EXPAND_TAC "s" THEN
+      UNDISCH_TAC `(k:num->bool) HAS_SIZE n` THEN
+      SIMP_TAC[IN_ELIM_THM; HAS_SIZE; LE_REFL]];
+    ALL_TAC] THEN
+  GEN_REWRITE_TAC I [DIMENSION_LE_EQ] THEN CONV_TAC INT_REDUCE_CONV THEN
+  MAP_EVERY X_GEN_TAC [`v:real^N->bool`; `a:real^N`] THEN
+  REWRITE_TAC[DIMENSION_LE_MINUS1; IN_ELIM_THM] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `a:real^N` o
+    GEN_REWRITE_RULE I [OPEN_CONTAINS_INTERVAL]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`l:real^N`; `r:real^N`] THEN
+  REWRITE_TAC[IN_INTERVAL] THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `!i. 1 <= i /\ i <= dimindex(:N)
+        ==> ?u v. (rational u <=> ~(i IN k)) /\
+                  (rational v <=> ~(i IN k)) /\
+                  u < (a:real^N)$i /\ a$i < v /\
+                  abs(v - u) < min ((r:real^N)$i - a$i) (a$i - (l:real^N)$i)`
+  MP_TAC THENL
+   [X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    ASM_CASES_TAC `(i:num) IN k` THEN ASM_REWRITE_TAC[] THENL
+     [MATCH_MP_TAC IRRATIONAL_APPROXIMATION_STRADDLE;
+      MATCH_MP_TAC RATIONAL_APPROXIMATION_STRADDLE] THEN
+    ASM_SIMP_TAC[REAL_LT_MIN; REAL_SUB_LT];
+    REWRITE_TAC[LAMBDA_SKOLEM; LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
+  EXISTS_TAC `interval(x:real^N,y)` THEN
+  ASM_SIMP_TAC[IN_INTERVAL; OPEN_INTERVAL] THEN CONJ_TAC THENL
+   [TRANS_TAC SUBSET_TRANS `interval[l:real^N,r]` THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[SUBSET_INTERVAL] THEN DISCH_THEN(K ALL_TAC) THEN
+    X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+    ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  REWRITE_TAC[FRONTIER_OPEN_INTERVAL; INTERVAL_EQ_EMPTY] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[INTER_EMPTY] THEN
+  REWRITE_TAC[EXTENSION; IN_DIFF; IN_INTER; NOT_IN_EMPTY; IN_ELIM_THM] THEN
+  X_GEN_TAC `z:real^N` THEN REWRITE_TAC[IN_INTERVAL] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!x. ~R x ==> ~(P x /\ Q x))
+    ==> ~((!x. P x) /\ (!x. Q x) /\ ~(!x. R x))`) THEN
+  X_GEN_TAC `i:num` THEN REWRITE_TAC[NOT_IMP] THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[REAL_LE_LT]);;
+
+let DIMENSION_EXACTLY_RATIONAL_COORDINATES = prove
+ (`!n. 1 <= n /\ n <= dimindex(:N)
+       ==> dimension {x:real^N | {i | i IN 1..dimindex(:N) /\ rational(x$i)}
+                                 HAS_SIZE n} = &0`,
+  GEN_TAC THEN REWRITE_TAC[GSYM INT_LE_ANTISYM] THEN
+  REWRITE_TAC[DIMENSION_POS_LE; DIMENSION_LE_RATIONAL_COORDINATES] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN `?q r. rational q /\ ~rational r` STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[RATIONAL_APPROXIMATION; IRRATIONAL_APPROXIMATION;
+                  REAL_LT_01];
+    REWRITE_TAC[EXTENSION; NOT_FORALL_THM; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+    EXISTS_TAC `(lambda i. if i <= n then q else r):real^N` THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ q <=> ~(p ==> ~q)`] THEN
+    SIMP_TAC[IN_NUMSEG; LAMBDA_BETA] THEN ONCE_REWRITE_TAC[COND_RAND] THEN
+    ASM_REWRITE_TAC[TAUT `(if p then T else F) <=> p`; NOT_IMP] THEN
+    ASM_SIMP_TAC[ARITH_RULE
+     `n <= m ==> ((1 <= i /\ i <= m) /\ i <= n <=> 1 <= i /\ i <= n)`] THEN
+    REWRITE_TAC[GSYM numseg; HAS_SIZE_NUMSEG_1]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Covering spaces and lifting results for them.                             *)

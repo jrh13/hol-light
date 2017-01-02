@@ -6665,34 +6665,6 @@ let SIMPLEX_EXTREMAL_LE_EXISTS = prove
                                   norm(x - y) <= norm(u - v)`,
   MESON_TAC[NOT_IN_EMPTY; CONVEX_HULL_EMPTY; SIMPLEX_EXTREMAL_LE]);;
 
-let DIAMETER_CONVEX_HULL = prove
- (`!s:real^N->bool. diameter(convex hull s) = diameter s`,
-  let lemma = prove
-   (`!a b s. (!x. x IN s ==> dist(a,x) <= b)
-             ==> (!x. x IN convex hull s ==> dist(a,x) <= b)`,
-    REPEAT GEN_TAC THEN DISCH_TAC THEN
-    MATCH_MP_TAC HULL_INDUCT THEN ASM_REWRITE_TAC[GSYM cball; CONVEX_CBALL]) in
-  GEN_TAC THEN REWRITE_TAC[diameter; CONVEX_HULL_EQ_EMPTY] THEN
-  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC SUP_EQ THEN
-  REWRITE_TAC[FORALL_IN_GSPEC] THEN X_GEN_TAC `b:real` THEN
-  EQ_TAC THENL [MESON_TAC[SUBSET; HULL_SUBSET]; ALL_TAC] THEN
-  MATCH_MP_TAC(TAUT `!b. (a ==> b) /\ (b ==> c) ==> a ==> c`) THEN
-  EXISTS_TAC `!x:real^N y. x IN s /\ y IN convex hull s ==> norm(x - y) <= b`
-  THEN CONJ_TAC THENL
-   [MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:real^N` THEN
-    ASM_CASES_TAC `(x:real^N) IN s` THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[GSYM dist; lemma];
-    ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `y:real^N` THEN
-    ASM_CASES_TAC `(y:real^N) IN convex hull s` THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[GSYM(ONCE_REWRITE_RULE[DIST_SYM] dist); lemma]]);;
-
-let DIAMETER_SIMPLEX = prove
- (`!s:real^N->bool.
-        ~(s = {})
-        ==> diameter(convex hull s) = sup { dist(x,y) | x IN s /\ y IN s}`,
-  REWRITE_TAC[DIAMETER_CONVEX_HULL] THEN SIMP_TAC[diameter; dist]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Closest point of a convex set is unique, with a continuous projection.    *)
 (* ------------------------------------------------------------------------- *)
@@ -10136,6 +10108,38 @@ let CONVEX_ON_CONVEX_HULL_BOUND = prove
   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[SUM_LMUL] THEN
   ASM_MESON_TAC[REAL_LE_REFL; REAL_MUL_RID]);;
 
+let CONVEX_ON_CONVEX_HULL_BOUND_EQ = prove
+ (`!f s:real^N->bool b.
+       f convex_on convex hull s
+       ==> ((!x. x IN convex hull s ==> f x <= b) <=>
+            (!x. x IN s ==> f x <= b))`,
+ MESON_TAC[CONVEX_ON_CONVEX_HULL_BOUND; HULL_INC]);;
+
+let DIST_CONVEX_HULL_BOUND_EQ = prove
+ (`!s a:real^N d.
+        (!x. x IN convex hull s ==> dist(a,x) <= d) <=>
+        (!x. x IN s ==> dist(a,x) <= d)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONVEX_ON_CONVEX_HULL_BOUND_EQ THEN
+  REWRITE_TAC[CONVEX_DISTANCE]);;
+
+let DIST_CONVEX_HULL_BOUND_2 = prove
+ (`!s:real^N->bool d.
+        (!x y. x IN convex hull s /\ y IN convex hull s ==> dist(x,y) <= d) <=>
+        (!x y. x IN s /\ y IN s ==> dist(x,y) <= d)`,
+  MESON_TAC[DIST_CONVEX_HULL_BOUND_EQ; DIST_SYM]);;
+
+let DIAMETER_CONVEX_HULL = prove
+ (`!s:real^N->bool. diameter(convex hull s) = diameter s`,
+  GEN_TAC THEN REWRITE_TAC[diameter; CONVEX_HULL_EQ_EMPTY] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC SUP_EQ THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; GSYM dist; DIST_CONVEX_HULL_BOUND_2]);;
+
+let DIAMETER_SIMPLEX = prove
+ (`!s:real^N->bool.
+        ~(s = {})
+        ==> diameter(convex hull s) = sup { dist(x,y) | x IN s /\ y IN s}`,
+  REWRITE_TAC[DIAMETER_CONVEX_HULL] THEN SIMP_TAC[diameter; dist]);;
+
 let UNIT_INTERVAL_CONVEX_HULL = prove
  (`interval [vec 0,vec 1:real^N] =
      convex hull
@@ -12113,6 +12117,20 @@ let SUBSET_CONVEX_HULL_FRONTIER = prove
   REWRITE_TAC[SEGMENT_CONVEX_HULL] THEN MATCH_MP_TAC HULL_MINIMAL THEN
   ASM_REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; CONVEX_CONVEX_HULL] THEN
   ASM_SIMP_TAC[HULL_INC]);;
+
+let AFFINE_HULL_RELATIVE_FRONTIER_BOUNDED = prove
+ (`!s:real^N->bool.                                                
+        bounded s /\ ~(?a. s = {a})                                
+        ==> affine hull (relative_frontier s) = affine hull s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [GEN_REWRITE_TAC RAND_CONV [GSYM AFFINE_HULL_CLOSURE] THEN
+    MATCH_MP_TAC HULL_MONO THEN REWRITE_TAC[relative_frontier] THEN SET_TAC[]; 
+    MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[AFFINE_AFFINE_HULL] THEN        
+    TRANS_TAC SUBSET_TRANS                                                     
+     `convex hull (relative_frontier s):real^N->bool` THEN                     
+    REWRITE_TAC[CONVEX_HULL_SUBSET_AFFINE_HULL] THEN
+    MATCH_MP_TAC SUBSET_CONVEX_HULL_RELATIVE_FRONTIER THEN
+    ASM_REWRITE_TAC[]]);;
 
 let KREIN_MILMAN_RELATIVE_FRONTIER = prove
  (`!s:real^N->bool.

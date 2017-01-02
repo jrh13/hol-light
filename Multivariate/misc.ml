@@ -819,6 +819,83 @@ let COUNTABLE_RATIONAL_COORDINATES = prove
   REWRITE_TAC[SET_RULE `{x | P x} = P`; COUNTABLE_RATIONAL]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Natural "irrational" variants of rational approximations.                 *)
+(* ------------------------------------------------------------------------- *)
+
+let IRRATIONAL_APPROXIMATION = prove
+ (`!x e. &0 < e ==> ?y. ~(rational y) /\ abs(y - x) < e`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN `?z. ~rational z` STRIP_ASSUME_TAC THENL
+   [MATCH_MP_TAC(SET_RULE `~(s = (:real)) ==> ?z. ~s z`) THEN
+    MESON_TAC[COUNTABLE_RATIONAL; UNCOUNTABLE_REAL];
+    MP_TAC(ISPECL [`z + x:real`; `e:real`] RATIONAL_APPROXIMATION) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `q:real` THEN STRIP_TAC THEN EXISTS_TAC `q - z:real` THEN
+    ASM_REWRITE_TAC[REAL_ARITH `q - z - x:real = q - (z + x)`] THEN
+    DISCH_TAC THEN UNDISCH_TAC `~rational z` THEN REWRITE_TAC[] THEN
+    ASM_MESON_TAC[RATIONAL_CLOSED; REAL_ARITH `z:real = q - (q - z)`]]);;
+
+let IRRATIONAL_BETWEEN = prove
+ (`!a b. a < b ==> ?q. ~rational q /\ a < q /\ q < b`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`(a + b) / &2`; `(b - a) / &4`] IRRATIONAL_APPROXIMATION) THEN
+  ANTS_TAC THENL [ALL_TAC; MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[]] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let IRRATIONAL_BETWEEN_EQ = prove
+ (`!a b. (?q. ~rational q /\ a < q /\ q < b) <=> a < b`,
+  MESON_TAC[IRRATIONAL_BETWEEN; REAL_LT_TRANS]);;
+
+let IRRATIONAL_APPROXIMATION_STRADDLE = prove
+ (`!x e. &0 < e
+         ==> ?a b. ~rational a /\ ~rational b /\
+                   a < x /\ x < b /\ abs(b - a) < e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`x - e / &4`; `e / &4`] IRRATIONAL_APPROXIMATION) THEN
+  ANTS_TAC THENL
+   [ASM_REAL_ARITH_TAC;
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC] THEN
+  MP_TAC(ISPECL [`x + e / &4`; `e / &4`] IRRATIONAL_APPROXIMATION) THEN
+  ANTS_TAC THENL
+   [ASM_REAL_ARITH_TAC;
+    MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC] THEN
+  ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let IRRATIONAL_APPROXIMATION_ABOVE = prove
+ (`!x e. &0 < e ==> ?q. ~rational q /\ x < q /\ q < x + e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`x:real`; `e:real`] IRRATIONAL_APPROXIMATION_STRADDLE) THEN
+  ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let IRRATIONAL_APPROXIMATION_BELOW = prove
+ (`!x e. &0 < e ==> ?q. ~rational q /\ x - e < q /\ q < x`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`x:real`; `e:real`] IRRATIONAL_APPROXIMATION_STRADDLE) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  GEN_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let INFINITE_IRRATIONAL_IN_RANGE = prove
+ (`!a b. a < b ==> INFINITE {q | ~rational q /\ a < q /\ q < b}`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?q. (!n. ~rational(q n) /\ a < q n /\ q n < b) /\ (!n. q(SUC n) < q n)`
+  STRIP_ASSUME_TAC THENL
+   [MATCH_MP_TAC DEPENDENT_CHOICE THEN
+    REWRITE_TAC[GSYM CONJ_ASSOC; GSYM REAL_LT_MIN] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC IRRATIONAL_BETWEEN THEN
+    ASM_REWRITE_TAC[REAL_LT_MIN];
+    MATCH_MP_TAC INFINITE_SUPERSET THEN
+    EXISTS_TAC `IMAGE (q:num->real) (:num)` THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC INFINITE_IMAGE THEN REWRITE_TAC[num_INFINITE; IN_UNIV] THEN
+    SUBGOAL_THEN `!m n. m < n ==> (q:num->real) n < q m`
+     (fun th -> MESON_TAC[LT_CASES; th; REAL_LT_REFL]) THEN
+    MATCH_MP_TAC TRANSITIVE_STEPWISE_LT THEN
+    ASM_MESON_TAC[REAL_LT_TRANS]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Countability of extrema for arbitrary function R->R.                      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -963,6 +1040,32 @@ let RESTRICTION_FIXPOINT = prove
 let RESTRICTION_IDEMP = prove
  (`!s f:A->B. RESTRICTION s (RESTRICTION s f) = RESTRICTION s f`,
   REWRITE_TAC[RESTRICTION_FIXPOINT; RESTRICTION_IN_EXTENSIONAL]);;
+
+let IMAGE_RESTRICTION = prove
+ (`!f:A->B s t. s SUBSET t ==> IMAGE (RESTRICTION t f) s = IMAGE f s`,
+  REWRITE_TAC[EXTENSION; IN_IMAGE; RESTRICTION] THEN SET_TAC[]);;
+
+let RESTRICTION_COMPOSE_RIGHT = prove
+ (`!f:A->B g:B->C s.
+        RESTRICTION s (g o RESTRICTION s f) =
+        RESTRICTION s (g o f)`,
+  REWRITE_TAC[FUN_EQ_THM; o_DEF; RESTRICTION] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE] THEN SET_TAC[]);;
+
+let RESTRICTION_COMPOSE_LEFT = prove
+ (`!f:A->B g:B->C s t.
+        IMAGE f s SUBSET t
+        ==> RESTRICTION s (RESTRICTION t g o f) =
+            RESTRICTION s (g o f)`,
+  REWRITE_TAC[FUN_EQ_THM; o_DEF; RESTRICTION] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE] THEN SET_TAC[]);;
+
+let RESTRICTION_COMPOSE = prove
+ (`!f:A->B g:B->C s t.
+        IMAGE f s SUBSET t
+        ==> RESTRICTION s (RESTRICTION t g o RESTRICTION s f) =
+            RESTRICTION s (g o f)`,
+  SIMP_TAC[RESTRICTION_COMPOSE_LEFT; RESTRICTION_COMPOSE_RIGHT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A somewhat cheap but handy way of getting localized forms of various      *)

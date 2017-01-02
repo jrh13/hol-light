@@ -2223,17 +2223,14 @@ let CLOSED_IN_INTER_CLOSURE = prove
 let INTERIOR_CLOSURE_IDEMP = prove
  (`!s:real^N->bool.
         interior(closure(interior(closure s))) = interior(closure s)`,
-  GEN_TAC THEN MATCH_MP_TAC INTERIOR_UNIQUE THEN
-  ASM_MESON_TAC[OPEN_INTERIOR; CLOSURE_SUBSET; CLOSURE_CLOSURE; SUBSET_TRANS;
-                INTERIOR_MAXIMAL_EQ;SUBSET_CLOSURE; INTERIOR_SUBSET]);;
+  REWRITE_TAC[GSYM EUCLIDEAN_INTERIOR_OF; GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  REWRITE_TAC[INTERIOR_OF_CLOSURE_OF_IDEMP]);;
 
 let CLOSURE_INTERIOR_IDEMP = prove
  (`!s:real^N->bool.
         closure(interior(closure(interior s))) = closure(interior s)`,
-  GEN_TAC THEN
-  ONCE_REWRITE_TAC[SET_RULE `s = t <=> UNIV DIFF s = UNIV DIFF t`] THEN
-  REWRITE_TAC[GSYM INTERIOR_COMPLEMENT; GSYM CLOSURE_COMPLEMENT] THEN
-  REWRITE_TAC[INTERIOR_CLOSURE_IDEMP]);;
+  REWRITE_TAC[GSYM EUCLIDEAN_INTERIOR_OF; GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  REWRITE_TAC[CLOSURE_OF_INTERIOR_OF_IDEMP]);;
 
 let NOWHERE_DENSE_UNION = prove
  (`!s t:real^N->bool.
@@ -2551,22 +2548,38 @@ let FRONTIER_FRONTIER_SUBSET = prove
 let INTERIOR_FRONTIER = prove
  (`!s:real^N->bool.
         interior(frontier s) = interior(closure s) DIFF closure(interior s)`,
-  ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s INTER (UNIV DIFF t)`] THEN
-  REWRITE_TAC[GSYM INTERIOR_COMPLEMENT; GSYM INTERIOR_INTER; frontier] THEN
-  GEN_TAC THEN AP_TERM_TAC THEN SET_TAC[]);;
+  REWRITE_TAC[GSYM EUCLIDEAN_INTERIOR_OF; GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  REWRITE_TAC[GSYM EUCLIDEAN_FRONTIER_OF; INTERIOR_OF_FRONTIER_OF]);;
+
+let THIN_FRONTIER_SUBSET = prove
+ (`!s:real^N->bool.
+        interior(frontier s) = {} <=>
+        interior(closure s) SUBSET closure(interior s)`,
+  REWRITE_TAC[INTERIOR_FRONTIER] THEN SET_TAC[]);;
+
+let THIN_FRONTIER_CIC = prove
+ (`!s:real^N->bool.
+        interior(frontier s) = {} <=>
+        closure(interior(closure s)) = closure(interior s)`,
+  REWRITE_TAC[GSYM EUCLIDEAN_INTERIOR_OF; GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  REWRITE_TAC[GSYM EUCLIDEAN_FRONTIER_OF; THIN_FRONTIER_OF_CIC]);;
+
+let THIN_FRONTIER_ICI = prove
+ (`!s:real^N->bool.
+        interior(frontier s) = {} <=>
+        interior(closure(interior s)) = interior(closure s)`,
+  REWRITE_TAC[GSYM EUCLIDEAN_INTERIOR_OF; GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  REWRITE_TAC[GSYM EUCLIDEAN_FRONTIER_OF; THIN_FRONTIER_OF_ICI]);;
 
 let INTERIOR_FRONTIER_EMPTY = prove
  (`!s:real^N->bool. open s \/ closed s ==> interior(frontier s) = {}`,
-  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[INTERIOR_FRONTIER] THEN
-  ASM_SIMP_TAC[CLOSURE_CLOSED; INTERIOR_OPEN] THEN
-  REWRITE_TAC[SET_RULE `s DIFF t = {} <=> s SUBSET t`] THEN
-  REWRITE_TAC[INTERIOR_SUBSET; CLOSURE_SUBSET]);;
+  REWRITE_TAC[OPEN_IN; CLOSED_IN; GSYM EUCLIDEAN_INTERIOR_OF] THEN
+  REWRITE_TAC[GSYM EUCLIDEAN_FRONTIER_OF; INTERIOR_OF_FRONTIER_OF_EMPTY]);;
 
 let FRONTIER_FRONTIER = prove
  (`!s:real^N->bool. open s \/ closed s ==> frontier(frontier s) = frontier s`,
-  GEN_TAC THEN GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [frontier] THEN
-  SIMP_TAC[INTERIOR_FRONTIER_EMPTY; CLOSURE_CLOSED; FRONTIER_CLOSED] THEN
-  REWRITE_TAC[DIFF_EMPTY]);;
+  REWRITE_TAC[OPEN_IN; CLOSED_IN; GSYM EUCLIDEAN_FRONTIER_OF] THEN
+  REWRITE_TAC[FRONTIER_OF_FRONTIER_OF]);;
 
 let FRONTIER_FRONTIER_FRONTIER = prove
  (`!s:real^N->bool. frontier(frontier(frontier s)) = frontier(frontier s)`,
@@ -16478,6 +16491,26 @@ let LIM_MATRIX_COMPONENTWISE = prove
   REWRITE_TAC[GSYM LIFT_SUB; GSYM MATRIX_SUB_COMPONENT] THEN
   REWRITE_TAC[GSYM LIM_NULL_MATRIX_ONORM] THEN
   REWRITE_TAC[LIM_NULL_MATRIX_ONORM_COMPONENTWISE]);;
+
+let CONTINUOUS_MATRIX_COMPONENTWISE = prove
+ (`!net (A:A->real^M^N).
+        (!x. (\a. A a ** x) continuous net) <=>
+        !i j. 1 <= i /\ i <= dimindex(:N) /\ 1 <= j /\ j <= dimindex(:M)
+              ==> (\a. lift (A a$i$j)) continuous net`,
+  REWRITE_TAC[continuous; LIM_MATRIX_COMPONENTWISE]);;
+
+let CONTINUOUS_ON_MATRIX_COMPONENTWISE = prove
+ (`!A:real^P->real^M^N s.
+        (!x. (\a. A a ** x) continuous_on s) <=>
+        !i j. 1 <= i /\ i <= dimindex(:N) /\ 1 <= j /\ j <= dimindex (:M)
+              ==> (\a. lift (A a$i$j)) continuous_on s`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+  GEN_REWRITE_TAC LAND_CONV [SWAP_FORALL_THM] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+   [CONTINUOUS_MATRIX_COMPONENTWISE] THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some more convenient intermediate-value theorem formulations.             *)
