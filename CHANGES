@@ -8,6 +8,24 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  6th Jan 2017       iterate.ml, 100/cayley_hamilton.ml
+
+Added two more generic "iterate" theorems that were already there in
+specific instances, and re-derived the special cases from them:
+
+  ITERATE_RESTRICT_SET =
+    |- !op. monoidal op                                                      
+            ==> !P s f. iterate op {x | x IN s /\ P x} f =
+                        iterate op s (\x. if P x then f x else neutral op)
+
+
+  ITERATE_IMAGE_GEN =
+    |- !op. monoidal op                      
+            ==> !f g. FINITE s
+                      ==> iterate op s g =         
+                          iterate op (IMAGE f s)
+                             (\y. iterate op {x | x IN s /\ f x = y} g)
+
 Sun  4th Dec 2016       iterate.ml
 
 Added a generic "iterate" version of a theorem already present in various

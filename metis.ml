@@ -12,6 +12,8 @@
 (*                (c) Copyright, Joe Hurd, 2001                              *)
 (*             (c) Copyright, Joe Leslie-Hurd, 2004                          *)
 (*   (c) Copyright, Michael Färber and Cezary Kaliszyk, 2014-2016.           *)
+(*                                                                           *)
+(*            Distributed under the same license as HOL Light.               *)
 (* ========================================================================= *)
 
 needs "meson.ml";;
@@ -9624,7 +9626,6 @@ end
 
 (* ========================================================================= *)
 (* THE RESOLUTION PROOF PROCEDURE                                            *)
-(* Copyright (c) 2001 Joe Leslie-Hurd, distributed under the MIT license     *)
 (* ========================================================================= *)
 
 module Resolution = struct

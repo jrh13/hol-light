@@ -9,6 +9,8 @@
 (*                  Concordia University                                     *)
 (*                                                                           *)
 (*           Contact: <vincent.aravantinos@fortiss.org>                      *)
+(*                                                                           *)
+(*            Distributed under the same license as HOL Light.               *)
 (* ========================================================================= *)
 
 let IMP_REWRITE_TAC,TARGET_REWRITE_TAC,HINT_EXISTS_TAC,

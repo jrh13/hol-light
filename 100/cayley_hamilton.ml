@@ -88,11 +88,8 @@ let MSUM_EQ = prove
 let MSUM_RESTRICT_SET = prove
  (`!P s f. msum {x:A | x IN s /\ P x} f =
            msum s (\x. if P x then f(x) else mat 0)`,
-  ONCE_REWRITE_TAC[GSYM MSUM_SUPPORT] THEN
-  REWRITE_TAC[support; NEUTRAL_MATRIX_ADD; IN_ELIM_THM] THEN
-  REWRITE_TAC[MESON[] `~((if P x then f x else a) = a) <=> P x /\ ~(f x = a)`;
-              GSYM CONJ_ASSOC] THEN
-  REPEAT GEN_TAC THEN MATCH_MP_TAC MSUM_EQ THEN SIMP_TAC[IN_ELIM_THM]);;
+  REWRITE_TAC[msum; GSYM NEUTRAL_MATRIX_ADD] THEN
+  MATCH_MP_TAC ITERATE_RESTRICT_SET THEN REWRITE_TAC[MONOIDAL_MATRIX_ADD]);;
 
 let MSUM_SING = prove
  (`!f x. msum {x} f = f(x)`,

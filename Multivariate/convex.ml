@@ -12119,15 +12119,15 @@ let SUBSET_CONVEX_HULL_FRONTIER = prove
   ASM_SIMP_TAC[HULL_INC]);;
 
 let AFFINE_HULL_RELATIVE_FRONTIER_BOUNDED = prove
- (`!s:real^N->bool.                                                
-        bounded s /\ ~(?a. s = {a})                                
+ (`!s:real^N->bool.
+        bounded s /\ ~(?a. s = {a})
         ==> affine hull (relative_frontier s) = affine hull s`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
    [GEN_REWRITE_TAC RAND_CONV [GSYM AFFINE_HULL_CLOSURE] THEN
-    MATCH_MP_TAC HULL_MONO THEN REWRITE_TAC[relative_frontier] THEN SET_TAC[]; 
-    MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[AFFINE_AFFINE_HULL] THEN        
-    TRANS_TAC SUBSET_TRANS                                                     
-     `convex hull (relative_frontier s):real^N->bool` THEN                     
+    MATCH_MP_TAC HULL_MONO THEN REWRITE_TAC[relative_frontier] THEN SET_TAC[];
+    MATCH_MP_TAC HULL_MINIMAL THEN REWRITE_TAC[AFFINE_AFFINE_HULL] THEN
+    TRANS_TAC SUBSET_TRANS
+     `convex hull (relative_frontier s):real^N->bool` THEN
     REWRITE_TAC[CONVEX_HULL_SUBSET_AFFINE_HULL] THEN
     MATCH_MP_TAC SUBSET_CONVEX_HULL_RELATIVE_FRONTIER THEN
     ASM_REWRITE_TAC[]]);;
@@ -13743,6 +13743,62 @@ let RELATIVE_INTERIOR_CONVEX_INTER_AFFINE = prove
     ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_LT_DIV; NORM_POS_LT; VECTOR_MUL_LID;
                  REAL_LT_INV_EQ; REAL_MUL_LINV; REAL_INV_LT_1; REAL_ARITH
                  `&0 < x ==> &1 < &1 + x /\ &0 < &1 + x /\ ~(&1 + x = &0)`]]);;
+
+let CONNECTED_WITH_RELATIVE_INTERIOR_OPEN_IN_CONVEX = prove
+ (`!c s:real^N->bool.
+        convex c /\ connected s /\ open_in (subtopology euclidean c) s
+        ==> connected(relative_interior c INTER s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CONNECTED; NOT_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^N->bool`; `v:real^N->bool`] THEN
+  STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_CLOSED]) THEN
+  REWRITE_TAC[] THEN MAP_EVERY EXISTS_TAC
+   [`closure(relative_interior c INTER u):real^N->bool`;
+    `closure(relative_interior c INTER v):real^N->bool`] THEN
+  REWRITE_TAC[CLOSED_CLOSURE] THEN REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[GSYM CLOSURE_UNION] THEN TRANS_TAC SUBSET_TRANS
+     `closure(relative_interior c INTER s):real^N->bool` THEN
+    CONJ_TAC THENL
+     [ONCE_REWRITE_TAC[INTER_COMM] THEN
+      MP_TAC(ISPECL [`s:real^N->bool`; `relative_interior c:real^N->bool`;
+                     `c:real^N->bool`] CLOSURE_OPEN_IN_INTER_CLOSURE) THEN
+      REWRITE_TAC[RELATIVE_INTERIOR_SUBSET] THEN
+      ASM_SIMP_TAC[CONVEX_CLOSURE_RELATIVE_INTERIOR] THEN
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      TRANS_TAC SUBSET_TRANS `closure s:real^N->bool` THEN
+      REWRITE_TAC[CLOSURE_SUBSET] THEN MATCH_MP_TAC SUBSET_CLOSURE THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN
+      MP_TAC(ISPEC `c:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[];
+      MATCH_MP_TAC SUBSET_CLOSURE THEN
+      ASM SET_TAC[]];
+    ALL_TAC;
+    MP_TAC(ISPEC`relative_interior c INTER u:real^N->bool` CLOSURE_SUBSET) THEN
+    ASM SET_TAC[];
+    MP_TAC(ISPEC`relative_interior c INTER v:real^N->bool` CLOSURE_SUBSET) THEN
+    ASM SET_TAC[]] THEN
+  REWRITE_TAC[EXTENSION; IN_INTER; NOT_IN_EMPTY] THEN
+  X_GEN_TAC `x:real^N` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_CONTAINS_BALL]) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC `x:real^N`)) THEN
+  ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN X_GEN_TAC `r:real` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `connected(ball(x:real^N,r) INTER relative_interior c)`
+  MP_TAC THENL
+   [ASM_SIMP_TAC[CONVEX_CONNECTED; CONVEX_INTER; CONVEX_BALL;
+                 CONVEX_RELATIVE_INTERIOR];
+    REWRITE_TAC[connected]] THEN
+  MAP_EVERY EXISTS_TAC [`u:real^N->bool`; `v:real^N->bool`] THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [MP_TAC(ISPEC `c:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
+    ASM SET_TAC[];
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]] THEN
+  ONCE_REWRITE_TAC[SET_RULE `u INTER b INTER i = b INTER u INTER i`] THEN
+  MP_TAC(ISPEC `ball(x:real^N,r)` OPEN_INTER_CLOSURE_EQ_EMPTY) THEN
+  REWRITE_TAC[OPEN_BALL] THEN
+  DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_INTER] THEN
+  CONJ_TAC THEN EXISTS_TAC `x:real^N` THEN
+  ASM_REWRITE_TAC[CENTRE_IN_BALL] THEN
+  ONCE_REWRITE_TAC[INTER_COMM] THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lemmas about extending nondecreasing functions.                           *)

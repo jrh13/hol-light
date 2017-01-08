@@ -11860,6 +11860,39 @@ let CONNECTED_COMPONENT_SEPARATED_UNION = prove
   ONCE_REWRITE_TAC[UNION_COMM] THEN
   ASM_SIMP_TAC[NOT_CONNECTED_COMPONENT_SEPARATED_UNION]);;
 
+let CONNECTED_CONNECTED_DIFF = prove
+ (`!s t:real^N->bool.
+        connected s /\ s SUBSET closure(s DIFF t) /\
+        (!x. x IN s
+             ==> ?u. x IN u /\ open_in (subtopology euclidean s) u /\
+                     connected(u DIFF t))
+        ==> connected(s DIFF t)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[CONNECTED_IFF_CONNECTED_COMPONENT; IN_DIFF] THEN
+  REWRITE_TAC[TAUT `(p /\ q) /\ (r /\ s) <=> p /\ r /\ q /\ s`] THEN
+  MATCH_MP_TAC CONNECTED_EQUIVALENCE_RELATION_GEN THEN
+  ASM_REWRITE_TAC[CONNECTED_COMPONENT_SYM; CONNECTED_COMPONENT_TRANS] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[OPEN_IN_OPEN; LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`v:real^N->bool`; `x:real^N`; `u:real^N->bool`] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+    ASM_REWRITE_TAC[IN_INTER] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N` o GEN_REWRITE_RULE I [SUBSET]) THEN
+    ASM_REWRITE_TAC[CLOSURE_NONEMPTY_OPEN_INTER] THEN
+    DISCH_THEN(MP_TAC o SPEC `u:real^N->bool`) THEN ASM SET_TAC[];
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `u:real^N->bool` THEN
+    ONCE_REWRITE_TAC[CONNECTED_IFF_CONNECTED_COMPONENT] THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ASM_REWRITE_TAC[IN_DIFF] THEN
+    REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+    MATCH_MP_TAC MONO_IMP THEN SIMP_TAC[] THEN MATCH_MP_TAC(SET_RULE
+     `P SUBSET Q ==> P x ==> Q x`) THEN REWRITE_TAC[ETA_AX] THEN
+    MATCH_MP_TAC CONNECTED_COMPONENT_MONO THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The set of connected components of a set.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -13769,6 +13802,30 @@ let LEBESGUE_COVERING_LEMMA = prove
   REWRITE_TAC[SUBSET; IN_CBALL; IN_BALL] THEN
   MAP_EVERY UNDISCH_TAC [`&0 < e`; `diameter(t:real^N->bool) <= e / &2`] THEN
   NORM_ARITH_TAC);;
+
+let LEBESGUE_COVERING_LEMMA_GEN = prove
+ (`!u s c:(real^N->bool)->bool.
+         compact s /\
+         ~(c = {}) /\
+         s SUBSET UNIONS c /\
+         (!b. b IN c ==> open_in (subtopology euclidean u) b)
+         ==> ?d. &0 < d /\
+                 !t. t SUBSET s /\ diameter t <= d
+                     ==> ?b. b IN c /\ t SUBSET b`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE (BINDER_CONV o RAND_CONV)
+   [OPEN_IN_OPEN]) THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `t:(real^N->bool)->(real^N->bool)` THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+  MP_TAC(ISPECL[`s:real^N->bool`; `IMAGE (t:(real^N->bool)->(real^N->bool)) c`]
+        LEBESGUE_COVERING_LEMMA) THEN
+  ASM_SIMP_TAC[IMAGE_EQ_EMPTY; FORALL_IN_IMAGE; EXISTS_IN_IMAGE] THEN
+  REWRITE_TAC[UNIONS_IMAGE] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; MATCH_MP_TAC MONO_EXISTS] THEN
+  GEN_TAC THEN MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_FORALL THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Related results with closure as the conclusion.                           *)

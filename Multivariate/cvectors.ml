@@ -13,6 +13,8 @@
 (* - Harsh Singhal: n-dimensional dot product, utility theorems              *)
 (*                                                                           *)
 (* Updated for the latest version of HOL Light (JULY 2014)                   *)
+(*                                                                           *)
+(*            Distributed under the same license as HOL Light.               *)
 (* ========================================================================= *)
 
 needs "Multivariate/complexes.ml";;
