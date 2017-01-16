@@ -83,7 +83,7 @@ let is_explicit_value tm =
    let rec is_explicit_value' constructors tm =
       (is_T tm) || (is_F tm) || ((is_const tm) && (type_of tm = `:num`)) ||
       (let (f,args) = strip_comb tm
-       in  (try(mem (fst (dest_const f)) constructors) with Failure _ -> false) &
+       in  (try(mem (fst (dest_const f)) constructors) with Failure _ -> false) &&
            (forall (is_explicit_value' constructors) args))
    in  is_explicit_value' (all_constructors ()) tm;;
 

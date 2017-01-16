@@ -650,7 +650,7 @@ let CNJ_POW = prove
 let is_complex_const =
   let cx_tm = `Cx` in
   fun tm ->
-    is_comb tm &
+    is_comb tm &&
     let l,r = dest_comb tm in l = cx_tm && is_ratconst r;;
 
 let dest_complex_const =
@@ -851,7 +851,7 @@ let COMPLEX_FIELD =
   and is_inv =
     let inv_tm = `inv:complex->complex`
     and is_div = is_binop `(/):complex->complex->complex` in
-    fun tm -> (is_div tm || (is_comb tm && rator tm = inv_tm)) &
+    fun tm -> (is_div tm || (is_comb tm && rator tm = inv_tm)) &&
               not(is_complex_const(rand tm))
   and lemma_inv = MESON[COMPLEX_MUL_RINV]
     `!x. x = Cx(&0) \/ x * inv(x) = Cx(&1)`

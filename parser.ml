@@ -350,8 +350,8 @@ let parse_preterm =
   let pretype = parse_pretype
   and string inp =
     match inp with
-      Ident s::rst when String.length s >= 2 &
-                        String.sub s 0 1 = "\"" &
+      Ident s::rst when String.length s >= 2 &&
+                        String.sub s 0 1 = "\"" &&
                         String.sub s (String.length s - 1) 1 = "\""
        -> String.sub s 1 (String.length s - 2),rst
     | _ -> raise Noparse
@@ -480,8 +480,8 @@ let parse_preterm =
   (fun inp ->
     match inp with
       [Ident s] when
-        not(String.length s >= 2 &
-            String.sub s 0 1 = "\"" &
+        not(String.length s >= 2 &&
+            String.sub s 0 1 = "\"" &&
             String.sub s (String.length s - 1) 1 = "\"")
       -> Varp(s,dpty),[]
     | _ -> preterm inp);;

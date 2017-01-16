@@ -800,8 +800,8 @@ type certificate =
 
 let find_primitive_root =
   let rec find_primitive_root a m ms n =
-    if gcd_num a n =/ num_1 &
-       powermod a m n =/ num_1 &
+    if gcd_num a n =/ num_1 &&
+       powermod a m n =/ num_1 &&
        forall (fun k -> powermod a k n <>/ num_1) ms
     then a
     else find_primitive_root (a +/ num_1) m ms n in

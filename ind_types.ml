@@ -1456,7 +1456,7 @@ let UNWIND_CONV,MATCH_CONV =
       let evs,bod = strip_exists tm in
       let eqs = conjuncts bod in
       try let eq = find
-           (fun tm -> is_eq tm &
+           (fun tm -> is_eq tm &&
                       let l,r = dest_eq tm in
                       (mem l evs && not (free_in l r)) ||
                       (mem r evs && not (free_in r l))) eqs in
@@ -1537,7 +1537,7 @@ let FORALL_UNWIND_CONV =
         let ant,con = dest_imp bod in
         let eqs = conjuncts ant in
         let eq = find (fun tm ->
-          is_eq tm &
+          is_eq tm &&
           let l,r = dest_eq tm in
           (mem l avs && not (free_in l r)) ||
           (mem r avs && not (free_in r l))) eqs in

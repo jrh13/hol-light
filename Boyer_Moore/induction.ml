@@ -40,7 +40,7 @@ let RIGHT_IMP_FORALL_CONV = CONV_OF_THM RIGHT_IMP_FORALL_THM;;
 let is_rec_const_app tm =
 try (let (f,args) = strip_comb tm
   in  let (n,defs) = (get_def o fst o dest_const) f
-  in  (n > 0) &
+  in  (n > 0) &&
       ((length o snd o strip_comb o lhs o concl o snd o hd) defs = length args)
  ) with Failure _ -> false;;
 

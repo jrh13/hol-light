@@ -86,7 +86,7 @@ let SELECT_CONV =
    (`(P:A->bool)((@) P) = (?) P`,
     REWRITE_TAC[EXISTS_THM] THEN BETA_TAC THEN REFL_TAC) in
    fun tm ->
-     try let is_epsok t = is_select t &
+     try let is_epsok t = is_select t &&
                           let bv,bod = dest_select t in
                           aconv tm (vsubst [t,bv] bod) in
          let pickeps = find_term is_epsok tm in

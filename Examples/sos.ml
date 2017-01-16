@@ -1306,7 +1306,7 @@ let REAL_SOSFIELD =
     with Failure _ -> REAL_SOS t
   and is_inv =
     let is_div = is_binop `(/):real->real->real` in
-    fun tm -> (is_div tm || (is_comb tm && rator tm = inv_tm)) &
+    fun tm -> (is_div tm || (is_comb tm && rator tm = inv_tm)) &&
               not(is_ratconst(rand tm)) in
   let BASIC_REAL_FIELD tm =
     let is_freeinv t = is_inv t && free_in t tm in

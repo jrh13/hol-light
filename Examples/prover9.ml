@@ -224,8 +224,8 @@ let rec hol_of_folclause trp cls =
     [] -> mk_const("F",[])
   | [c] -> hol_of_folliteral trp c
   | c::cs -> let rawcls = map (hol_of_folliteral trp) cls in
-             let is_truevar tm = is_var tm &
-                                 not(mem tm (ran(fst trp))) &
+             let is_truevar tm = is_var tm &&
+                                 not(mem tm (ran(fst trp))) &&
                                  not(mem tm (ran(snd trp))) in
              let und,dec = partition
                (fun t -> is_eq t && is_truevar(lhs t) && is_truevar(rhs t))

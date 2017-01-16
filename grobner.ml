@@ -197,9 +197,9 @@ let RING_AND_IDEAL_CONV =
   (* ----------------------------------------------------------------------- *)
 
   let criterion2 basis (lcm,((p1,h1),(p2,h2))) opairs =
-    exists (fun g -> not(poly_eq (fst g) p1) && not(poly_eq (fst g) p2) &
-                     can (mdiv lcm) (hd(fst g)) &
-                     not(memx (align(g,(p1,h1))) (map snd opairs)) &
+    exists (fun g -> not(poly_eq (fst g) p1) && not(poly_eq (fst g) p2) &&
+                     can (mdiv lcm) (hd(fst g)) &&
+                     not(memx (align(g,(p1,h1))) (map snd opairs)) &&
                      not(memx (align(g,(p2,h2))) (map snd opairs))) basis in
 
   (* ----------------------------------------------------------------------- *)
@@ -615,7 +615,7 @@ let NUM_SIMPLIFY_CONV =
     else if is_imp tm && contains_quantifier tm then
         COMB2_CONV (RAND_CONV(NUM_MULTIPLY_CONV(not pos)))
                    (NUM_MULTIPLY_CONV pos) tm
-    else if (is_conj tm || is_disj tm || is_iff tm) &
+    else if (is_conj tm || is_disj tm || is_iff tm) &&
             contains_quantifier tm
          then BINOP_CONV (NUM_MULTIPLY_CONV pos) tm
     else if is_neg tm && not pos && contains_quantifier tm then

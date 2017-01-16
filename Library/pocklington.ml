@@ -915,9 +915,9 @@ let LUCAS = prove
 let order = new_definition
  `order n a = @d. !k. (a EXP k == 1) (mod n) <=> d divides k`;;
 
-let EXP_ITER = prove                                              
- (`!x n. x EXP n = ITER n (\y. x * y) (1)`,            
-  GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[ITER; EXP]);;     
+let EXP_ITER = prove
+ (`!x n. x EXP n = ITER n (\y. x * y) (1)`,
+  GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[ITER; EXP]);;
 
 let ORDER_DIVIDES = prove
  (`!n a d. (a EXP d == 1) (mod n) <=> order(n) a divides d`,
@@ -1451,8 +1451,8 @@ type certificate =
 
 let find_primitive_root =
   let rec find_primitive_root a m ms n =
-    if gcd_num a n =/ num_1 &
-       powermod a m n =/ num_1 &
+    if gcd_num a n =/ num_1 &&
+       powermod a m n =/ num_1 &&
        forall (fun k -> powermod a k n <>/ num_1) ms
     then a
     else find_primitive_root (a +/ num_1) m ms n in

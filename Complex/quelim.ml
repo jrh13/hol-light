@@ -808,9 +808,9 @@ let COMPLEX_QUELIM_CONV =
             TRANS th4 (AP_TERM (rator tm4) th5)
     with Failure _ ->
     if eqs = [] ||
-       (length eqs = 1 &
+       (length eqs = 1 &&
         (let ceq = mk_eq(last(dest_list(lhand(lhs(hd eqs)))),zero_tm) in
-         try concl(RESOLVE_EQ asm ceq) = mk_neg ceq with Failure _ -> false) &
+         try concl(RESOLVE_EQ asm ceq) = mk_neg ceq with Failure _ -> false) &&
         (let h = hd lens in forall (fun n -> n < h) nens))
     then
       CORE_QUELIM_CONV asm avs tm

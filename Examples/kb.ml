@@ -52,7 +52,7 @@ let rec lpo_gt w s t =
   else if is_realvar w s || is_abs s || is_abs t then false else
   let f,fargs = real_strip w s and g,gargs = real_strip w t in
   exists (fun si -> lpo_ge w si t) fargs ||
-        forall (lpo_gt w s) gargs &
+        forall (lpo_gt w s) gargs &&
         (f = g && lexord (lpo_gt w) fargs gargs ||
          weight w (f,length fargs) (g,length gargs))
 and lpo_ge w s t = (s = t) || lpo_gt w s t;;

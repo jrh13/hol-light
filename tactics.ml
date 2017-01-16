@@ -122,7 +122,7 @@ let (VALID:tactic->tactic) =
     let asl'',w'' = inst_goal i (asl,w) in
     let maxasms =
       itlist (fun (_,th) -> union (insert (concl th) (hyp th))) asl'' [] in
-    if aconv w' w'' &
+    if aconv w' w'' &&
        forall (fun t -> exists (aconv t) maxasms) (subtract asl' [false_tm])
     then res else failwith "VALID: Invalid tactic";;
 

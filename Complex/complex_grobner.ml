@@ -217,9 +217,9 @@ let memx ((p1,h1),(p2,h2)) ppairs =
 (* ------------------------------------------------------------------------- *)
 
 let criterion2 basis (lcm,((p1,h1),(p2,h2))) opairs =
-  exists (fun g -> not(poly_eq (fst g) p1) && not(poly_eq (fst g) p2) &
-                   can (mdiv lcm) (hd(fst g)) &
-                   not(memx (align(g,(p1,h1))) (map snd opairs)) &
+  exists (fun g -> not(poly_eq (fst g) p1) && not(poly_eq (fst g) p2) &&
+                   can (mdiv lcm) (hd(fst g)) &&
+                   not(memx (align(g,(p1,h1))) (map snd opairs)) &&
                    not(memx (align(g,(p2,h2))) (map snd opairs))) basis;;
 
 (* ------------------------------------------------------------------------- *)

@@ -31,9 +31,9 @@ let is_explicit_value_template tm =
       (is_T tm) || (is_F tm) || ((is_const tm) && (type_of tm = `:num`)) ||
       (is_var tm) || (is_numeral tm) ||
       (let (f,args) = strip_comb tm
-       in  (try(mem (fst (dest_const f)) constructors) with Failure _ -> false) &
+       in  (try(mem (fst (dest_const f)) constructors) with Failure _ -> false) &&
            (forall (is_explicit_value_template' constructors) args))
-   in (not (is_var tm)) &
+   in (not (is_var tm)) &&
       (is_explicit_value_template' (all_constructors ()) tm);;
 
 (*----------------------------------------------------------------------------*)
@@ -136,7 +136,7 @@ try
 
 let use_equality_heuristic (tm,(ind:bool)) =
 try (let checkx (tml1,tml2) t' =
-     (not (is_explicit_value_template t')) &
+     (not (is_explicit_value_template t')) &&
      ((exists (is_subterm t') tml1) || (exists (is_subterm t') tml2))
   in  let rec split_disjuncts side prevl tml =
          if (can (check (checkx (prevl,tl tml)) o side o dest_neg) (hd tml))
@@ -154,7 +154,7 @@ try (let checkx (tml1,tml2) t' =
   in  let eq = dest_neg neq
   in  let (s',t') = dest_eq eq
   in  let delete = ind && (not (is_explicit_value s'))
-  in  let cross_fert = delete &
+  in  let cross_fert = delete &&
                        ((exists (is_subterm_of_side side t') overs) ||
                         (exists (is_subterm_of_side side t') unders))
   in  let sym_eq = mk_eq (t',s')

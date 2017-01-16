@@ -586,7 +586,7 @@ let ATN_ADD_CONV =
        (COMB2_CONV REAL_RAT_REDUCE_CONV
          (RAND_CONV REAL_RAT_REDUCE_CONV)) o
     match_fn in
-  fun tm -> if is_ratconst(rand(rand tm)) &
+  fun tm -> if is_ratconst(rand(rand tm)) &&
                is_ratconst(rand(lhand tm))
             then overall_fn tm
             else failwith "ATN_ADD_CONV: Atn of nonconstant";;

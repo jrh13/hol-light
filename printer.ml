@@ -197,7 +197,7 @@ let pp_print_term =
     try let il,r = dest_comb tm in
         let i,l = dest_comb il in
         if i = c ||
-           (is_const i && is_const c &
+           (is_const i && is_const c &&
             reverse_interface(dest_const i) = reverse_interface(dest_const c))
         then l,r else fail()
     with Failure _ -> failwith "DEST_BINARY"
@@ -281,7 +281,7 @@ let pp_print_term =
           print_term 0 fabs;
           pp_print_string fmt " | ";
           (let fvs = frees fabs and bvs = frees babs in
-           if not(!print_unambiguous_comprehensions) &
+           if not(!print_unambiguous_comprehensions) &&
               set_eq evs
                (if (length fvs <= 1 || bvs = []) then fvs
                 else intersect fvs bvs)
@@ -354,8 +354,8 @@ let pp_print_term =
         (if prec = 1000 then pp_print_string fmt "(" else ();
          pp_print_string fmt s;
          (if isalnum s ||
-           s = "--" &
-           length args = 1 &
+           s = "--" &&
+           length args = 1 &&
            (try let l,r = dest_comb(hd args) in
                 let s0 = name_of l and ty0 = type_of l in
                 reverse_interface (s0,ty0) = "--" ||
