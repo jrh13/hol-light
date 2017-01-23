@@ -202,6 +202,101 @@ let EPSILON_DELTA_MINIMAL = prove
       EXISTS_TAC `(d:A->real) a` THEN ASM_SIMP_TAC[]]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Converting between matrices/arrays and flattened vectors. We can consider *)
+(* these as curry and uncurry for Cartesian powers.                          *)
+(* ------------------------------------------------------------------------- *)
+
+let flatten = new_definition
+ `(flatten:A^N^M->A^(M,N)finite_prod) =
+        \x. lambda i. x$(1 + (i - 1) DIV dimindex(:N))
+                       $(1 + (i - 1) MOD dimindex(:N))`;;
+
+let matrify = new_definition
+ `(matrify:A^(M,N)finite_prod->A^N^M) =
+        \x. lambda i j. x$((i - 1) * dimindex(:N) + j)`;;
+
+let FLATTEN_COMPONENT = prove
+ (`!m:A^N^M i.
+        1 <= i /\ i <= dimindex(:M) * dimindex(:N)
+        ==> (flatten m)$i = m$(1 + (i - 1) DIV dimindex(:N))
+                             $(1 + (i - 1) MOD dimindex(:N))`,
+  SIMP_TAC[flatten; LAMBDA_BETA; DIMINDEX_FINITE_PROD]);;
+
+let MATRIFY_COMPONENT = prove
+ (`!v:A^(M,N)finite_prod i j.
+        1 <= i /\ i <= dimindex(:M) /\ 1 <= j /\ j <= dimindex(:N)
+        ==> (matrify v)$i$j = v$((i - 1) * dimindex(:N) + j)`,
+  SIMP_TAC[matrify; LAMBDA_BETA]);;
+
+let FLATTEN_MATRIFY = prove
+ (`!a:A^(M,N)finite_prod. flatten(matrify a) = a`,
+  GEN_TAC THEN SIMP_TAC[CART_EQ; flatten; matrify; LAMBDA_BETA] THEN
+  REWRITE_TAC[DIMINDEX_FINITE_PROD] THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) LAMBDA_BETA o lhand o lhand o snd) THEN
+  REWRITE_TAC[ARITH_RULE `1 <= 1 + x /\ 1 + y <= z <=> y < z`] THEN
+  SIMP_TAC[RDIV_LT_EQ; DIMINDEX_GE_1; LE_1] THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; DISCH_THEN SUBST1_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) LAMBDA_BETA o lhand o snd) THEN
+  REWRITE_TAC[ARITH_RULE `1 <= 1 + x /\ 1 + y <= z <=> y < z`] THEN
+  SIMP_TAC[DIVISION; DIMINDEX_GE_1; LE_1] THEN DISCH_THEN SUBST1_TAC THEN
+  AP_TERM_TAC THEN REWRITE_TAC[ADD_SUB2] THEN
+  MATCH_MP_TAC(ARITH_RULE
+   `1 <= i /\ i - 1 = d * n + m /\ m < n
+     ==> d * n + 1 + m = i`) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC DIVISION THEN
+  SIMP_TAC[DIMINDEX_GE_1; LE_1]);;
+
+let MATRIFY_FLATTEN = prove
+ (`!m:A^N^M. matrify(flatten m) = m`,
+  GEN_TAC THEN SIMP_TAC[CART_EQ; flatten; matrify; LAMBDA_BETA] THEN
+  X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  X_GEN_TAC `j:num` THEN STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) LAMBDA_BETA o lhand o snd) THEN
+  ANTS_TAC THENL
+   [CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    TRANS_TAC LE_TRANS `(i - 1) * dimindex(:N) + dimindex(:N)` THEN
+    ASM_REWRITE_TAC[LE_ADD_LCANCEL] THEN
+    REWRITE_TAC[ARITH_RULE `x * n + n = (x + 1) * n`] THEN
+    ASM_SIMP_TAC[SUB_ADD; DIMINDEX_FINITE_PROD] THEN
+    ASM_SIMP_TAC[LE_MULT_RCANCEL; DIMINDEX_GE_1];
+    DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[] THEN BINOP_TAC THENL
+   [AP_TERM_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC(ARITH_RULE `1 <= i /\ j = i - 1 ==> 1 + j = i`) THEN
+  ASM_REWRITE_TAC[] THENL
+   [MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `j - 1` THEN ASM_ARITH_TAC;
+    MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC `i - 1` THEN ASM_ARITH_TAC]);;
+
+let FORALL_FLATTEN = prove
+ (`!P. (!x. P x) <=> (!x. P(flatten x))`,
+  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+
+let FORALL_MATRIFY = prove
+ (`!P. (!x. P x) <=> (!x. P(matrify x))`,
+  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+
+let EXISTS_FLATTEN = prove
+ (`!P. (?x. P x) <=> (?x. P(flatten x))`,
+  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+
+let EXISTS_MATRIFY = prove
+ (`!P. (?x. P x) <=> (?x. P(matrify x))`,
+  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+
+let FLATTEN_GSPEC = prove
+ (`!P:A^N^M->bool. {flatten m | P m} = {v | P(matrify v)}`,
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+  MESON_TAC[FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+
+let FLATTEN_EQ = prove
+ (`!m1 m2:real^N^M. flatten m1 = flatten m2 <=> m1 = m2`,
+  MESON_TAC[MATRIFY_FLATTEN]);;
+
+let MATRIFY_EQ = prove
+ (`!m1 m2:real^(M,N)finite_prod. matrify m1 = matrify m2 <=> m1 = m2`,
+  MESON_TAC[FLATTEN_MATRIFY]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A generic notion of "hull" (convex, affine, conic hull and closure).      *)
 (* ------------------------------------------------------------------------- *)
 

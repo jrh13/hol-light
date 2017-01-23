@@ -4277,6 +4277,57 @@ let INDICATOR_COMPLEMENT = prove
   ASM_REWRITE_TAC[IN_UNIV; IN_DIFF; VECTOR_SUB_REFL; VECTOR_SUB_RZERO]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Flattening and matrifying of arithmetic operations.                       *)
+(* ------------------------------------------------------------------------- *)
+
+let FLATTEN_ADD = prove
+ (`!m1 m2:real^N^M. flatten(m1 + m2) = flatten m1 + flatten m2`,
+  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_ADD_COMPONENT] THEN
+  REWRITE_TAC[MATRIX_ADD_COMPONENT]);;
+
+let FLATTEN_CMUL = prove
+ (`!c m:real^N^M. flatten(c %% m) = c % flatten m`,
+  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_MUL_COMPONENT] THEN
+  REWRITE_TAC[MATRIX_CMUL_COMPONENT]);;
+
+let FLATTEN_SUB = prove
+ (`!m1 m2:real^N^M. flatten(m1 - m2) = flatten m1 - flatten m2`,
+  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_SUB_COMPONENT] THEN
+  REWRITE_TAC[MATRIX_SUB_COMPONENT]);;
+
+let FLATTEN_0 = prove
+ (`flatten(mat 0:real^N^M) = vec 0`,
+  SIMP_TAC[CART_EQ; FLATTEN_COMPONENT; DIMINDEX_FINITE_PROD] THEN
+  REWRITE_TAC[VEC_COMPONENT; MAT_0_COMPONENT]);;
+
+let MATRIFY_0 = prove
+ (`matrify(vec 0) = mat 0`,
+  MESON_TAC[FLATTEN_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+
+let FLATTEN_EQ_0 = prove
+ (`!m:real^N^M. flatten m = vec 0 <=> m = mat 0`,
+  MESON_TAC[FLATTEN_0; MATRIFY_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+
+let MATRIFY_ADD = prove
+ (`!x y:real^(M,N)finite_prod. matrify(x + y) = matrify x + matrify y`,
+  SIMP_TAC[CART_EQ; matrify; LAMBDA_BETA; MATRIX_ADD_COMPONENT;
+           VECTOR_ADD_COMPONENT]);;
+
+let MATRIFY_CMUL = prove
+ (`!c x:real^(M,N)finite_prod. matrify(c % x) = c %% matrify x`,
+  SIMP_TAC[CART_EQ; matrify; LAMBDA_BETA; MATRIX_CMUL_COMPONENT;
+           VECTOR_MUL_COMPONENT]);;
+
+let MATRIFY_SUB = prove
+ (`!x y:real^(M,N)finite_prod. matrify(x - y) = matrify x - matrify y`,
+  SIMP_TAC[CART_EQ; matrify; LAMBDA_BETA; MATRIX_SUB_COMPONENT;
+           VECTOR_SUB_COMPONENT]);;
+
+let MATRIFY_EQ_0 = prove
+ (`!m:real^(M,N)finite_prod. matrify m = mat 0 <=> m = vec 0`,
+  MESON_TAC[FLATTEN_0; MATRIFY_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
