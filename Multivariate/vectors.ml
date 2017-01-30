@@ -4327,6 +4327,22 @@ let MATRIFY_EQ_0 = prove
  (`!m:real^(M,N)finite_prod. matrify m = mat 0 <=> m = vec 0`,
   MESON_TAC[FLATTEN_0; MATRIFY_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
 
+let BILINEAR_MATRIX_VECTOR_MUL = prove
+ (`bilinear (\(m:real^(M,N)finite_prod) x:real^N. matrify m ** x)`,
+  REWRITE_TAC[bilinear; linear] THEN
+  REWRITE_TAC[MATRIFY_ADD; MATRIFY_CMUL] THEN
+  REWRITE_TAC[MATRIX_VECTOR_MUL_ADD_LDISTRIB; MATRIX_VECTOR_MUL_ADD_RDISTRIB;
+              MATRIX_VECTOR_MUL_RMUL; MATRIX_VECTOR_LMUL]);;
+
+let BILINEAR_MATRIX_MUL = prove
+ (`bilinear (\(m1:real^(M,N)finite_prod) (m2:real^(N,P)finite_prod).
+                   flatten(matrify m1 ** matrify m2))`,
+  REWRITE_TAC[bilinear; linear] THEN
+  REWRITE_TAC[MATRIFY_ADD; MATRIFY_CMUL] THEN
+  REWRITE_TAC[MATRIX_ADD_LDISTRIB; MATRIX_ADD_RDISTRIB;
+              MATRIX_MUL_RMUL; MATRIX_MUL_LMUL;
+              FLATTEN_ADD; FLATTEN_CMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
 (* ------------------------------------------------------------------------- *)

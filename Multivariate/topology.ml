@@ -16554,6 +16554,118 @@ let CONTINUOUS_ON_MATRIX_COMPONENTWISE = prove
   MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Limits and continuity of matrices as flattened vectors.                   *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_MATRIX_VECTOR_MUL = prove
+ (`!net m:A->real^N^M v:A->real^N.
+        (flatten o A) continuous net /\ v continuous net
+        ==> (\x. (A x) ** (v x)) continuous net`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+   BILINEAR_CONTINUOUS_COMPOSE) BILINEAR_MATRIX_VECTOR_MUL)) THEN
+  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+
+let CONTINUOUS_ON_MATRIX_VECTOR_MUL = prove
+ (`!m:real^P->real^N^M v:real^P->real^N s.
+        (flatten o A) continuous_on s /\ v continuous_on s
+        ==> (\x. (A x) ** (v x)) continuous_on s`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+   BILINEAR_CONTINUOUS_ON_COMPOSE) BILINEAR_MATRIX_VECTOR_MUL)) THEN
+  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+
+let CONTINUOUS_MATRIX_MUL = prove
+ (`!net A:A->real^N^M B:A->real^P^N.
+        (flatten o A) continuous net /\ (flatten o B) continuous net
+        ==> (\x. flatten((A x) ** (B x))) continuous net`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+   BILINEAR_CONTINUOUS_COMPOSE) BILINEAR_MATRIX_MUL)) THEN
+  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+
+let CONTINUOUS_ON_MATRIX_MUL = prove
+ (`!A:real^Q->real^N^M B:real^Q->real^P^N s.
+        (flatten o A) continuous_on s /\ (flatten o B) continuous_on s
+        ==> (\x. flatten((A x) ** (B x))) continuous_on s`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
+   [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
+   BILINEAR_CONTINUOUS_ON_COMPOSE) BILINEAR_MATRIX_MUL)) THEN
+  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+
+let LIM_FLATTEN_COMPONENTWISE = prove
+ (`!net (A:A->real^N^M) B.
+        ((\a. flatten(A a)) --> flatten B) net <=>
+        !i j. 1 <= i /\ i <= dimindex (:M) /\ 1 <= j /\ j <= dimindex (:N)
+              ==> ((\a. lift (A a$i$j)) --> lift (B$i$j)) net`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [LIM_COMPONENTWISE_LIFT] THEN
+  REWRITE_TAC[] THEN EQ_TAC THEN DISCH_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM MATRIFY_FLATTEN] THEN
+    SIMP_TAC[MATRIFY_COMPONENT] THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    CONJ_TAC THENL [ASM_ARITH_TAC; REWRITE_TAC[DIMINDEX_FINITE_PROD]] THEN
+    TRANS_TAC LE_TRANS `((i - 1) + 1) * dimindex(:N)` THEN
+    CONJ_TAC THENL [ASM_ARITH_TAC; REWRITE_TAC[GSYM RIGHT_ADD_DISTRIB]] THEN
+    REWRITE_TAC[LE_MULT_RCANCEL] THEN ASM_ARITH_TAC;
+    SIMP_TAC[FLATTEN_COMPONENT; DIMINDEX_FINITE_PROD] THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    REWRITE_TAC[LE_ADD] THEN CONJ_TAC THEN
+    MATCH_MP_TAC(ARITH_RULE `a < b ==> 1 + a <= b`) THEN
+    SIMP_TAC[DIVISION; LE_1; DIMINDEX_GE_1; RDIV_LT_EQ] THEN
+    ASM_ARITH_TAC]);;
+
+let CONTINUOUS_FLATTEN_COMPONENTWISE = prove
+ (`!net (A:A->real^N^M).
+        (\a. flatten(A a)) continuous net <=>
+        !i j. 1 <= i /\ i <= dimindex (:M) /\ 1 <= j /\ j <= dimindex (:N)
+              ==> (\a. lift (A a$i$j)) continuous net`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[continuous] THEN
+  GEN_REWRITE_TAC LAND_CONV [LIM_FLATTEN_COMPONENTWISE] THEN
+  REWRITE_TAC[]);;
+
+let CONTINUOUS_ON_FLATTEN_COMPONENTWISE = prove
+ (`!(A:real^P->real^N^M) s.
+        (\a. flatten(A a)) continuous_on s <=>
+        !i j. 1 <= i /\ i <= dimindex (:M) /\ 1 <= j /\ j <= dimindex (:N)
+              ==> (\a. lift (A a$i$j)) continuous_on s`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+   [CONTINUOUS_FLATTEN_COMPONENTWISE] THEN
+  MESON_TAC[]);;
+
+let LINEAR_TRANSP = prove
+ (`linear(flatten o (transp:real^N^M->real^M^N) o matrify)`,
+  REWRITE_TAC[linear; o_THM; MATRIFY_ADD; MATRIFY_CMUL] THEN
+  REWRITE_TAC[TRANSP_MATRIX_ADD; TRANSP_MATRIX_CMUL] THEN
+  REWRITE_TAC[FLATTEN_ADD; FLATTEN_CMUL]);;
+
+let LIM_MATRIX_FLATTEN = prove
+ (`!net A:A->real^M^N B.
+        (!x. ((\a. A a ** x) --> B ** x) net) <=>
+        ((\a. flatten (A a)) --> flatten B) net`,
+  REWRITE_TAC[LIM_MATRIX_COMPONENTWISE; LIM_FLATTEN_COMPONENTWISE]);;
+
+let CONTINUOUS_MATRIX_FLATTEN = prove
+ (`!net (A:A->real^N^M).
+        (!x. (\a. A a ** x) continuous net) <=>
+        (\a. flatten(A a)) continuous net`,
+  REWRITE_TAC[continuous; LIM_MATRIX_FLATTEN]);;
+
+let CONTINUOUS_ON_MATRIX_FLATTEN = prove
+ (`!A:real^P->real^N^M s.
+        (!x. (\a. A a ** x) continuous_on s) <=>
+        (\a. flatten(A a)) continuous_on s`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
+  GEN_REWRITE_TAC LAND_CONV [SWAP_FORALL_THM] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+   [CONTINUOUS_MATRIX_FLATTEN] THEN
+  MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Some more convenient intermediate-value theorem formulations.             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -19594,6 +19706,73 @@ let BASIS_COORDINATES_CONTINUOUS = prove
   ASM_SIMP_TAC[] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
   ASM_SIMP_TAC[GSYM REAL_LT_RDIV_EQ]);;
 
+let COMPLEMENTARY_SUM_HOMEOMORPHIC_PCROSS = prove
+ (`!s t:real^N->bool.
+        span s INTER span t SUBSET {vec 0}
+        ==> {x + y | x IN s /\ y IN t} homeomorphic (s PCROSS t)`,
+  REPEAT STRIP_TAC THEN
+  ABBREV_TAC `add = \z:real^(N,N)finite_sum. fstcart z + sndcart z` THEN
+  SUBGOAL_THEN
+   `?g. homeomorphism (span s PCROSS span t,
+                       {x + y:real^N | x IN span s /\ y IN span t})
+                      (add,g)`
+  STRIP_ASSUME_TAC THENL
+   [ALL_TAC;
+    ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN REWRITE_TAC[homeomorphic] THEN
+    EXISTS_TAC `add:real^(N,N)finite_sum->real^N` THEN
+    EXISTS_TAC `g:real^N->real^(N,N)finite_sum` THEN
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+          HOMEOMORPHISM_OF_SUBSETS)) THEN
+    REWRITE_TAC[SUBSET_PCROSS; SPAN_INC] THEN EXPAND_TAC "add" THEN
+    REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART] THEN
+    REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; PASTECART_IN_PCROSS] THEN
+    MP_TAC(ISPEC `s:real^N->bool` SPAN_INC) THEN
+    MP_TAC(ISPEC `t:real^N->bool` SPAN_INC) THEN SET_TAC[]] THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC HOMEOMORPHISM_INJECTIVE_CLOSED_MAP THEN
+  SIMP_TAC[CONTINUOUS_ON_ADD; LINEAR_CONTINUOUS_ON; LINEAR_FSTCART;
+           LINEAR_SNDCART] THEN
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PASTECART] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; PASTECART_IN_PCROSS] THEN
+  CONJ_TAC THENL [SET_TAC[]; REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM]] THEN
+  REWRITE_TAC[FORALL_PASTECART; PASTECART_IN_PCROSS] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; PASTECART_INJ] THEN
+  CONJ_TAC THENL
+   [ASM_MESON_TAC[INDEPENDENT_SUBSPACES; SUBSPACE_SPAN]; ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand o rand) PROPER_MAP o snd) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_PCROSS] THEN
+    REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART] THEN SET_TAC[];
+    MATCH_MP_TAC(TAUT `p ==> (p <=> q /\ r) ==> q`)] THEN
+  X_GEN_TAC `k:real^N->bool` THEN STRIP_TAC THEN
+  REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o MATCH_MP COMPACT_IMP_BOUNDED) THEN
+    REWRITE_TAC[BOUNDED_POS] THEN
+    DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+    MP_TAC(ISPECL [`span t:real^N->bool`; `span s:real^N->bool`]
+      COMPLEMENTARY_SUM_COMPONENTS_LIPSCHITZ) THEN
+    MP_TAC(ISPECL [`span s:real^N->bool`; `span t:real^N->bool`]
+      COMPLEMENTARY_SUM_COMPONENTS_LIPSCHITZ) THEN
+    ASM_REWRITE_TAC[SUBSPACE_SPAN] THEN
+    DISCH_THEN(X_CHOOSE_THEN `C:real` STRIP_ASSUME_TAC) THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+    X_GEN_TAC `D:real` THEN STRIP_TAC THEN EXISTS_TAC `B * (C + D):real` THEN
+    ASM_SIMP_TAC[REAL_LT_ADD; REAL_LT_MUL] THEN
+    REWRITE_TAC[FORALL_PASTECART; IN_ELIM_THM; PASTECART_IN_PCROSS] THEN
+    REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART] THEN
+    MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
+    W(MP_TAC o PART_MATCH lhand NORM_PASTECART_LE o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+    GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN
+    TRANS_TAC REAL_LE_TRANS `(C + D) * norm(x + y:real^N)` THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL_EQ; REAL_LT_ADD] THEN
+    REWRITE_TAC[REAL_ADD_RDISTRIB] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN
+    ASM_MESON_TAC[VECTOR_ADD_SYM];
+    MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE THEN
+    ASM_SIMP_TAC[COMPACT_IMP_CLOSED; CLOSED_PCROSS; CLOSED_SPAN] THEN
+    SIMP_TAC[CONTINUOUS_ON_ADD; LINEAR_CONTINUOUS_ON; LINEAR_FSTCART;
+           LINEAR_SNDCART]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Affine transformations of intervals.                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -19770,6 +19949,20 @@ let CONTINUOUS_ON_LIFT_DET = prove
                ==> (\x. lift(A x$i$j)) continuous_on s)
         ==> (\x. lift(det(A x))) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_LIFT_DET]);;
+
+let CONTINUOUS_DET_FLATTEN = prove
+ (`!net A:A->real^N^N.
+        (\a. flatten(A a)) continuous net
+        ==> (\a. lift(det(A a))) continuous net`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_LIFT_DET THEN
+  ASM_REWRITE_TAC[GSYM CONTINUOUS_FLATTEN_COMPONENTWISE]);;
+
+let CONTINUOUS_ON_DET_FLATTEN = prove
+ (`!A:real^M->real^N^N.
+        (\a. flatten(A a)) continuous_on s
+        ==> (\a. lift(det(A a))) continuous_on s`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_LIFT_DET THEN
+  ASM_REWRITE_TAC[GSYM CONTINUOUS_ON_FLATTEN_COMPONENTWISE]);;
 
 let CONTINUOUS_DET_EXPLICIT = prove
  (`!A:real^N^N e.
