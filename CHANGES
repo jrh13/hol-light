@@ -8,6 +8,235 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  4th Feb 2017       sets.ml, Library/card.ml
+
+Added quite a number of theorems about the UNION_OF and INTERSECTION_OF
+constructs in three common cases, one of which uses a new constant 
+"ARBITRARY".
+
+  ARBITRARY =
+    |- !s. ARBITRARY s <=> T
+
+  ARBITRARY_INTERSECTION_OF_COMPLEMENT =
+    |- !P s.
+           (ARBITRARY INTERSECTION_OF P) s <=>
+           (ARBITRARY UNION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  ARBITRARY_INTERSECTION_OF_EMPTY =
+    |- !P. (ARBITRARY INTERSECTION_OF P) (:A)
+
+  ARBITRARY_INTERSECTION_OF_IDEMPOT =
+    |- !P. ARBITRARY INTERSECTION_OF ARBITRARY INTERSECTION_OF P =
+           ARBITRARY INTERSECTION_OF P
+
+  ARBITRARY_INTERSECTION_OF_INC =
+    |- !P s. P s ==> (ARBITRARY INTERSECTION_OF P) s
+
+  ARBITRARY_INTERSECTION_OF_INTER =
+    |- !P s t.
+           (ARBITRARY INTERSECTION_OF P) s /\ (ARBITRARY INTERSECTION_OF P) t
+           ==> (ARBITRARY INTERSECTION_OF P) (s INTER t)
+
+  ARBITRARY_INTERSECTION_OF_INTERS =
+    |- !P u.
+           (!s. s IN u ==> (ARBITRARY INTERSECTION_OF P) s)
+           ==> (ARBITRARY INTERSECTION_OF P) (INTERS u)
+
+  ARBITRARY_INTERSECTION_OF_UNION =
+    |- !P. (!s t. P s /\ P t ==> P (s UNION t))
+           ==> (!s t.
+                    (ARBITRARY INTERSECTION_OF P) s /\
+                    (ARBITRARY INTERSECTION_OF P) t
+                    ==> (ARBITRARY INTERSECTION_OF P) (s UNION t))
+
+  ARBITRARY_INTERSECTION_OF_UNION_EQ =
+    |- !P. (!s t.
+                (ARBITRARY INTERSECTION_OF P) s /\
+                (ARBITRARY INTERSECTION_OF P) t
+                ==> (ARBITRARY INTERSECTION_OF P) (s UNION t)) <=>
+           (!s t. P s /\ P t ==> (ARBITRARY INTERSECTION_OF P) (s UNION t))
+
+  ARBITRARY_UNION_OF_COMPLEMENT =
+    |- !P s.
+           (ARBITRARY UNION_OF P) s <=>
+           (ARBITRARY INTERSECTION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  ARBITRARY_UNION_OF_EMPTY =
+    |- !P. (ARBITRARY UNION_OF P) {}
+
+  ARBITRARY_UNION_OF_IDEMPOT =
+    |- !P. ARBITRARY UNION_OF ARBITRARY UNION_OF P = ARBITRARY UNION_OF P
+
+  ARBITRARY_UNION_OF_INC =
+    |- !P s. P s ==> (ARBITRARY UNION_OF P) s
+
+  ARBITRARY_UNION_OF_INTER =
+    |- !P. (!s t. P s /\ P t ==> P (s INTER t))
+           ==> (!s t.
+                    (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+                    ==> (ARBITRARY UNION_OF P) (s INTER t))
+
+  ARBITRARY_UNION_OF_INTER_EQ =
+    |- !P. (!s t.
+                (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+                ==> (ARBITRARY UNION_OF P) (s INTER t)) <=>
+           (!s t. P s /\ P t ==> (ARBITRARY UNION_OF P) (s INTER t))
+
+  ARBITRARY_UNION_OF_UNION =
+    |- !P s t.
+           (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+           ==> (ARBITRARY UNION_OF P) (s UNION t)
+
+  ARBITRARY_UNION_OF_UNIONS =
+    |- !P u.
+           (!s. s IN u ==> (ARBITRARY UNION_OF P) s)
+           ==> (ARBITRARY UNION_OF P) (UNIONS u)
+
+  FINITE_INTERSECTION_OF_COMPLEMENT =
+    |- !P s.
+           (FINITE INTERSECTION_OF P) s <=>
+           (FINITE UNION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  FINITE_INTERSECTION_OF_EMPTY =
+    |- !P. (FINITE INTERSECTION_OF P) (:A)
+
+  FINITE_INTERSECTION_OF_IDEMPOT =
+    |- !P. FINITE INTERSECTION_OF FINITE INTERSECTION_OF P =
+           FINITE INTERSECTION_OF P
+
+  FINITE_INTERSECTION_OF_INC =
+    |- !P s. P s ==> (FINITE INTERSECTION_OF P) s
+
+  FINITE_INTERSECTION_OF_INTER =
+    |- !P s t.
+           (FINITE INTERSECTION_OF P) s /\ (FINITE INTERSECTION_OF P) t
+           ==> (FINITE INTERSECTION_OF P) (s INTER t)
+
+  FINITE_INTERSECTION_OF_INTERS =
+    |- !P u.
+           FINITE u /\ (!s. s IN u ==> (FINITE INTERSECTION_OF P) s)
+           ==> (FINITE INTERSECTION_OF P) (INTERS u)
+
+  FINITE_INTERSECTION_OF_UNION =
+    |- !P. (!s t. P s /\ P t ==> P (s UNION t))
+           ==> (!s t.
+                    (FINITE INTERSECTION_OF P) s /\ (FINITE INTERSECTION_OF P) t
+                    ==> (FINITE INTERSECTION_OF P) (s UNION t))
+
+  FINITE_INTERSECTION_OF_UNION_EQ =
+    |- !P. (!s t.
+                (FINITE INTERSECTION_OF P) s /\ (FINITE INTERSECTION_OF P) t
+                ==> (FINITE INTERSECTION_OF P) (s UNION t)) <=>
+           (!s t. P s /\ P t ==> (FINITE INTERSECTION_OF P) (s UNION t))
+
+  FINITE_UNION_OF_COMPLEMENT =
+    |- !P s.
+           (FINITE UNION_OF P) s <=>
+           (FINITE INTERSECTION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  FINITE_UNION_OF_EMPTY =
+    |- !P. (FINITE UNION_OF P) {}
+
+  FINITE_UNION_OF_IDEMPOT =
+    |- !P. FINITE UNION_OF FINITE UNION_OF P = FINITE UNION_OF P
+
+  FINITE_UNION_OF_INC =
+    |- !P s. P s ==> (FINITE UNION_OF P) s
+
+  FINITE_UNION_OF_INTER =
+    |- !P. (!s t. P s /\ P t ==> P (s INTER t))
+           ==> (!s t.
+                    (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+                    ==> (FINITE UNION_OF P) (s INTER t))
+
+  FINITE_UNION_OF_INTER_EQ =
+    |- !P. (!s t.
+                (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+                ==> (FINITE UNION_OF P) (s INTER t)) <=>
+           (!s t. P s /\ P t ==> (FINITE UNION_OF P) (s INTER t))
+
+  FINITE_UNION_OF_UNION =
+    |- !P s t.
+           (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+           ==> (FINITE UNION_OF P) (s UNION t)
+
+  FINITE_UNION_OF_UNIONS =
+    |- !P u.
+           FINITE u /\ (!s. s IN u ==> (FINITE UNION_OF P) s)
+           ==> (FINITE UNION_OF P) (UNIONS u)
+
+  FORALL_INTERSECTION_OF =
+    |- (!s. (P INTERSECTION_OF Q) s ==> R s) <=>
+       (!t. P t /\ (!c. c IN t ==> Q c) ==> R (INTERS t))
+
+  FORALL_UNION_OF =
+    |- (!s. (P UNION_OF Q) s ==> R s) <=>
+       (!t. P t /\ (!c. c IN t ==> Q c) ==> R (UNIONS t))
+
+  INTERSECTION_OF_EMPTY =
+    |- !P Q. P {} ==> (P INTERSECTION_OF Q) (:A)
+
+  UNION_OF_EMPTY =
+    |- !P Q. P {} ==> (P UNION_OF Q) {}
+
+
+
+  COUNTABLE_DISJOINT_UNION_OF_IDEMPOT =
+    |- !P. (COUNTABLE INTER pairwise DISJOINT) UNION_OF
+           (COUNTABLE INTER pairwise DISJOINT) UNION_OF P =
+           (COUNTABLE INTER pairwise DISJOINT) UNION_OF P
+
+  COUNTABLE_INTERSECTION_OF_EMPTY =
+    |- !P. (COUNTABLE INTERSECTION_OF P) (:A)
+
+  COUNTABLE_INTERSECTION_OF_UNIONS =
+    |- !P u.
+           (COUNTABLE INTERSECTION_OF P) {} /\
+           (!s t. P s /\ P t ==> P (s UNION t)) /\
+           FINITE u /\
+           (!s. s IN u ==> (COUNTABLE INTERSECTION_OF P) s)
+           ==> (COUNTABLE INTERSECTION_OF P) (UNIONS u)
+
+  COUNTABLE_INTERSECTION_OF_UNIONS_NONEMPTY =
+    |- !P u.
+           (!s t. P s /\ P t ==> P (s UNION t)) /\
+           FINITE u /\
+           ~(u = {}) /\
+           (!s. s IN u ==> (COUNTABLE INTERSECTION_OF P) s)
+           ==> (COUNTABLE INTERSECTION_OF P) (UNIONS u)
+
+  COUNTABLE_INTERSECTION_OF_UNION_EQ =
+    |- !P. (!s t.
+                (COUNTABLE INTERSECTION_OF P) s /\
+                (COUNTABLE INTERSECTION_OF P) t
+                ==> (COUNTABLE INTERSECTION_OF P) (s UNION t)) <=>
+           (!s t. P s /\ P t ==> (COUNTABLE INTERSECTION_OF P) (s UNION t))
+
+  COUNTABLE_UNION_OF_EMPTY =
+    |- !P. (COUNTABLE UNION_OF P) {}
+
+  COUNTABLE_UNION_OF_INTERS =
+    |- !P u.
+           (COUNTABLE UNION_OF P) (:A) /\
+           (!s t. P s /\ P t ==> P (s INTER t)) /\
+           FINITE u /\
+           (!s. s IN u ==> (COUNTABLE UNION_OF P) s)
+           ==> (COUNTABLE UNION_OF P) (INTERS u)
+
+  COUNTABLE_UNION_OF_INTERS_NONEMPTY =
+    |- !P u.
+           (!s t. P s /\ P t ==> P (s INTER t)) /\
+           FINITE u /\
+           ~(u = {}) /\
+           (!s. s IN u ==> (COUNTABLE UNION_OF P) s)
+           ==> (COUNTABLE UNION_OF P) (INTERS u)
+
+  COUNTABLE_UNION_OF_INTER_EQ =
+    |- !P. (!s t.
+                (COUNTABLE UNION_OF P) s /\ (COUNTABLE UNION_OF P) t
+                ==> (COUNTABLE UNION_OF P) (s INTER t)) <=>
+           (!s t. P s /\ P t ==> (COUNTABLE UNION_OF P) (s INTER t))
+
 Sat 14th Jan 2017       passim
 
 Switched quite a few more instances of the deprecated "&" to "&&" (these got
