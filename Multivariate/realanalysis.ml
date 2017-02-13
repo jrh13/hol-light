@@ -13,116 +13,6 @@ needs "Multivariate/transcendentals.ml";;
 (* Open-ness and closedness of a set of reals.                               *)
 (* ------------------------------------------------------------------------- *)
 
-let real_open = new_definition
-  `real_open s <=>
-      !x. x IN s ==> ?e. &0 < e /\ !x'. abs(x' - x) < e ==> x' IN s`;;
-
-let real_closed = new_definition
- `real_closed s <=> real_open((:real) DIFF s)`;;
-
-let euclideanreal = new_definition
- `euclideanreal = topology real_open`;;
-
-let REAL_OPEN_EMPTY = prove
- (`real_open {}`,
-  REWRITE_TAC[real_open; NOT_IN_EMPTY]);;
-
-let REAL_OPEN_UNIV = prove
- (`real_open(:real)`,
-  REWRITE_TAC[real_open; IN_UNIV] THEN MESON_TAC[REAL_LT_01]);;
-
-let REAL_OPEN_INTER = prove
- (`!s t. real_open s /\ real_open t ==> real_open (s INTER t)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[real_open; AND_FORALL_THM; IN_INTER] THEN
-  MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
-  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_THEN(CONJUNCTS_THEN2
-   (X_CHOOSE_TAC `d1:real`) (X_CHOOSE_TAC `d2:real`)) THEN
-  MP_TAC(SPECL [`d1:real`; `d2:real`] REAL_DOWN2) THEN
-  ASM_MESON_TAC[REAL_LT_TRANS]);;
-
-let REAL_OPEN_UNIONS = prove
- (`(!s. s IN f ==> real_open s) ==> real_open(UNIONS f)`,
-  REWRITE_TAC[real_open; IN_UNIONS] THEN MESON_TAC[]);;
-
-let REAL_OPEN_IN = prove
- (`!s. real_open s <=> open_in euclideanreal s`,
-  GEN_TAC THEN REWRITE_TAC[euclideanreal] THEN CONV_TAC SYM_CONV THEN
-  AP_THM_TAC THEN REWRITE_TAC[GSYM(CONJUNCT2 topology_tybij)] THEN
-  REWRITE_TAC[REWRITE_RULE[IN] istopology] THEN
-  REWRITE_TAC[REAL_OPEN_EMPTY; REAL_OPEN_INTER; SUBSET] THEN
-  MESON_TAC[IN; REAL_OPEN_UNIONS]);;
-
-let TOPSPACE_EUCLIDEANREAL = prove
- (`topspace euclideanreal = (:real)`,
-  REWRITE_TAC[topspace; EXTENSION; IN_UNIV; IN_UNIONS; IN_ELIM_THM] THEN
-  MESON_TAC[REAL_OPEN_UNIV; IN_UNIV; REAL_OPEN_IN]);;
-
-let TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY = prove
- (`!s. topspace (subtopology euclideanreal s) = s`,
-  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL; TOPSPACE_SUBTOPOLOGY; INTER_UNIV]);;
-
-let REAL_CLOSED_IN = prove
- (`!s. real_closed s <=> closed_in euclideanreal s`,
-  REWRITE_TAC[real_closed; closed_in; TOPSPACE_EUCLIDEANREAL;
-              REAL_OPEN_IN; SUBSET_UNIV]);;
-
-let REAL_OPEN_UNION = prove
- (`!s t. real_open s /\ real_open t ==> real_open(s UNION t)`,
-  REWRITE_TAC[REAL_OPEN_IN; OPEN_IN_UNION]);;
-
-let REAL_OPEN_SUBREAL_OPEN = prove
- (`!s. real_open s <=> !x. x IN s ==> ?t. real_open t /\ x IN t /\ t SUBSET s`,
-  REWRITE_TAC[REAL_OPEN_IN; GSYM OPEN_IN_SUBOPEN]);;
-
-let REAL_CLOSED_EMPTY = prove
- (`real_closed {}`,
-  REWRITE_TAC[REAL_CLOSED_IN; CLOSED_IN_EMPTY]);;
-
-let REAL_CLOSED_UNIV = prove
- (`real_closed(:real)`,
-  REWRITE_TAC[REAL_CLOSED_IN; GSYM TOPSPACE_EUCLIDEANREAL; CLOSED_IN_TOPSPACE]);;
-
-let REAL_CLOSED_UNION = prove
- (`!s t. real_closed s /\ real_closed t ==> real_closed(s UNION t)`,
-  REWRITE_TAC[REAL_CLOSED_IN; CLOSED_IN_UNION]);;
-
-let REAL_CLOSED_INTER = prove
- (`!s t. real_closed s /\ real_closed t ==> real_closed(s INTER t)`,
-  REWRITE_TAC[REAL_CLOSED_IN; CLOSED_IN_INTER]);;
-
-let REAL_CLOSED_INTERS = prove
- (`!f. (!s. s IN f ==> real_closed s) ==> real_closed(INTERS f)`,
-  REWRITE_TAC[REAL_CLOSED_IN] THEN REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC `f:(real->bool)->bool = {}` THEN
-  ASM_SIMP_TAC[CLOSED_IN_INTERS; INTERS_0] THEN
-  REWRITE_TAC[GSYM TOPSPACE_EUCLIDEANREAL; CLOSED_IN_TOPSPACE]);;
-
-let REAL_OPEN_REAL_CLOSED = prove
- (`!s. real_open s <=> real_closed(UNIV DIFF s)`,
-  SIMP_TAC[REAL_OPEN_IN; REAL_CLOSED_IN; TOPSPACE_EUCLIDEANREAL; SUBSET_UNIV;
-           OPEN_IN_CLOSED_IN_EQ]);;
-
-let REAL_OPEN_DIFF = prove
- (`!s t. real_open s /\ real_closed t ==> real_open(s DIFF t)`,
-  REWRITE_TAC[REAL_OPEN_IN; REAL_CLOSED_IN; OPEN_IN_DIFF]);;
-
-let REAL_CLOSED_DIFF = prove
- (`!s t. real_closed s /\ real_open t ==> real_closed(s DIFF t)`,
-  REWRITE_TAC[REAL_OPEN_IN; REAL_CLOSED_IN; CLOSED_IN_DIFF]);;
-
-let REAL_OPEN_INTERS = prove
- (`!s. FINITE s /\ (!t. t IN s ==> real_open t) ==> real_open(INTERS s)`,
-  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  REWRITE_TAC[INTERS_INSERT; INTERS_0; REAL_OPEN_UNIV; IN_INSERT] THEN
-  MESON_TAC[REAL_OPEN_INTER]);;
-
-let REAL_CLOSED_UNIONS = prove
- (`!s. FINITE s /\ (!t. t IN s ==> real_closed t) ==> real_closed(UNIONS s)`,
-  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  REWRITE_TAC[UNIONS_INSERT; UNIONS_0; REAL_CLOSED_EMPTY; IN_INSERT] THEN
-  MESON_TAC[REAL_CLOSED_UNION]);;
-
 let REAL_OPEN = prove
  (`!s. real_open s <=> open(IMAGE lift s)`,
   REWRITE_TAC[real_open; open_def; FORALL_IN_IMAGE; FORALL_LIFT; DIST_LIFT;
@@ -133,68 +23,6 @@ let REAL_CLOSED = prove
   GEN_TAC THEN REWRITE_TAC[real_closed; REAL_OPEN; closed] THEN
   AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_IMAGE; IN_DIFF; IN_UNIV] THEN
   MESON_TAC[LIFT_DROP]);;
-
-let REAL_CLOSED_HALFSPACE_LE = prove
- (`!a. real_closed {x | x <= a}`,
-  GEN_TAC THEN SUBGOAL_THEN `closed {x | drop x <= a}` MP_TAC THENL
-   [REWRITE_TAC[drop; CLOSED_HALFSPACE_COMPONENT_LE]; ALL_TAC] THEN
-  MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC[REAL_CLOSED] THEN AP_TERM_TAC THEN
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[LIFT_DROP]);;
-
-let REAL_CLOSED_HALFSPACE_GE = prove
- (`!a. real_closed {x | x >= a}`,
-  GEN_TAC THEN SUBGOAL_THEN `closed {x | drop x >= a}` MP_TAC THENL
-   [REWRITE_TAC[drop; CLOSED_HALFSPACE_COMPONENT_GE]; ALL_TAC] THEN
-  MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC[REAL_CLOSED] THEN AP_TERM_TAC THEN
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[LIFT_DROP]);;
-
-let REAL_OPEN_HALFSPACE_LT = prove
- (`!a. real_open {x | x < a}`,
-  GEN_TAC THEN SUBGOAL_THEN `open {x | drop x < a}` MP_TAC THENL
-   [REWRITE_TAC[drop; OPEN_HALFSPACE_COMPONENT_LT]; ALL_TAC] THEN
-  MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC[REAL_OPEN] THEN AP_TERM_TAC THEN
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[LIFT_DROP]);;
-
-let REAL_OPEN_HALFSPACE_GT = prove
- (`!a. real_open {x | x > a}`,
-  GEN_TAC THEN SUBGOAL_THEN `open {x | drop x > a}` MP_TAC THENL
-   [REWRITE_TAC[drop; OPEN_HALFSPACE_COMPONENT_GT]; ALL_TAC] THEN
-  MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC[REAL_OPEN] THEN AP_TERM_TAC THEN
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_ELIM_THM] THEN MESON_TAC[LIFT_DROP]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Euclidean metric on real numbers.                                         *)
-(* ------------------------------------------------------------------------- *)
-
-let real_euclidean_metric = new_definition
-  `real_euclidean_metric = metric ((:real),\(x,y). abs(y-x))`;;
-
-let REAL_EUCLIDEAN_METRIC = prove
- (`mspace real_euclidean_metric = (:real) /\
-   (!x y. mdist real_euclidean_metric (x,y) = abs(y-x))`,
-  SUBGOAL_THEN `is_metric_space((:real),\ (x,y). abs(y-x))` MP_TAC THENL
-  [REWRITE_TAC[is_metric_space; IN_UNIV] THEN REAL_ARITH_TAC;
-   SIMP_TAC[real_euclidean_metric; metric_tybij; mspace; mdist]]);;
-
-let MTOPOLOGY_REAL_EUCLIDEAN_METRIC = prove
- (`mtopology real_euclidean_metric = euclideanreal`,
-  REWRITE_TAC[TOPOLOGY_EQ; OPEN_IN_MTOPOLOGY; REAL_EUCLIDEAN_METRIC;
-    GSYM REAL_OPEN_IN; real_open; IN_MBALL; REAL_EUCLIDEAN_METRIC;
-    SUBSET; IN_UNIV]);;
-
-let CONTINUOUS_ON_MDIST = prove
- (`!m a. a:A IN mspace m
-         ==> topcontinuous (mtopology m) euclideanreal (\x. mdist m (a,x))`,
-  INTRO_TAC "!m a; a" THEN
-  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC; METRIC_TOPCONTINUOUS;
-              REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
-  INTRO_TAC "![b] e; epos b" THEN EXISTS_TAC `e:real` THEN
-  ASM_REWRITE_TAC[] THEN INTRO_TAC "!x; x dist" THEN
-  REWRITE_TAC[topcontinuous; TOPSPACE_EUCLIDEANREAL; IN_UNIV;
-              TOPSPACE_MTOPOLOGY; GSYM REAL_OPEN_IN; OPEN_IN_MTOPOLOGY] THEN
-  TRANS_TAC REAL_LET_TRANS `mdist m (b:A,x)` THEN
-  HYP REWRITE_TAC "dist" [] THEN
-  ASM_MESON_TAC[MDIST_REVERSE_TRIANGLE; MDIST_SYM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Compactness of a set of reals.                                            *)
@@ -3253,10 +3081,6 @@ let REAL_DIFFERENTIABLE_CARATHEODORY_WITHINREAL = prove
 (* Property of being an interval (equivalent to convex or connected).        *)
 (* ------------------------------------------------------------------------- *)
 
-let is_realinterval = new_definition
- `is_realinterval s <=>
-        !a b c. a IN s /\ b IN s /\ a <= c /\ c <= b ==> c IN s`;;
-
 let IS_REALINTERVAL_IS_INTERVAL = prove
  (`!s. is_realinterval s <=> is_interval(IMAGE lift s)`,
   REWRITE_TAC[IS_INTERVAL_1; is_realinterval] THEN
@@ -3280,21 +3104,6 @@ let TRIVIAL_LIMIT_WITHIN_REALINTERVAL = prove
   SIMP_TAC[TRIVIAL_LIMIT_WITHIN_CONVEX] THEN REPEAT STRIP_TAC THEN
   REWRITE_TAC[EXTENSION; IN_IMAGE_LIFT_DROP; IN_SING] THEN
   MESON_TAC[LIFT_DROP]);;
-
-let IS_REALINTERVAL_EMPTY = prove
- (`is_realinterval {}`,
-  REWRITE_TAC[is_realinterval; NOT_IN_EMPTY]);;
-
-let IS_REALINTERVAL_UNION = prove
- (`!s t. is_realinterval s /\ is_realinterval t /\ ~(s INTER t = {})
-         ==> is_realinterval(s UNION t)`,
-  REWRITE_TAC[is_realinterval; IN_UNION; IN_INTER;
-              NOT_IN_EMPTY; EXTENSION] THEN
-  MESON_TAC[REAL_LE_TRANS; REAL_LE_TOTAL]);;
-
-let IS_REALINTERVAL_UNIV = prove
- (`is_realinterval (:real)`,
-  REWRITE_TAC[is_realinterval; IN_UNIV]);;
 
 let IS_REAL_INTERVAL_CASES = prove
  (`!s. is_realinterval s <=>
@@ -3349,10 +3158,6 @@ let REAL_MIDPOINT_IN_CONVEX = prove
   FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [REAL_CONVEX]) THEN
   CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_REWRITE_TAC[]);;
 
-(* ------------------------------------------------------------------------- *)
-(* Some relations with the complex numbers can also be useful.               *)
-(* ------------------------------------------------------------------------- *)
-
 let IS_REALINTERVAL_CONVEX_COMPLEX = prove
  (`!s. is_realinterval s <=> convex {z | real z /\ Re z IN s}`,
   GEN_TAC THEN
@@ -3372,31 +3177,6 @@ let IS_REALINTERVAL_CONVEX_COMPLEX = prove
     DISCH_THEN MATCH_MP_TAC THEN
     REWRITE_TAC[linear; o_THM; RE_CMUL;
                 RE_ADD; RE_MUL_CX; LIFT_ADD; LIFT_CMUL]]);;
-
-(* ------------------------------------------------------------------------- *)
-(* The same tricks to define closed and open intervals.                      *)
-(* ------------------------------------------------------------------------- *)
-
-let open_real_interval = new_definition
-  `open_real_interval(a:real,b:real) = {x:real | a < x /\ x < b}`;;
-
-let closed_real_interval = define
-  `closed_real_interval[a:real,b:real] = {x:real | a <= x /\ x <= b}`;;
-
-make_overloadable "real_interval" `:A`;;
-
-overload_interface("real_interval",`open_real_interval`);;
-overload_interface("real_interval",`closed_real_interval`);;
-
-let real_interval = prove
- (`real_interval(a,b) = {x | a < x /\ x < b} /\
-   real_interval[a,b] = {x | a <= x /\ x <= b}`,
-  REWRITE_TAC[open_real_interval; closed_real_interval]);;
-
-let IN_REAL_INTERVAL = prove
- (`!a b x. (x IN real_interval[a,b] <=> a <= x /\ x <= b) /\
-           (x IN real_interval(a,b) <=> a < x /\ x < b)`,
-  REWRITE_TAC[real_interval; IN_ELIM_THM]);;
 
 let REAL_INTERVAL_INTERVAL = prove
  (`real_interval[a,b] = IMAGE drop (interval[lift a,lift b]) /\
@@ -3419,11 +3199,6 @@ let LIFT_IN_INTERVAL = prove
  (`(!a b x. lift x IN interval[a,b] <=> x IN real_interval[drop a,drop b]) /\
    (!a b x. lift x IN interval(a,b) <=> x IN real_interval(drop a,drop b))`,
   REWRITE_TAC[FORALL_DROP; DROP_IN_REAL_INTERVAL; LIFT_DROP]);;
-
-let EMPTY_AS_REAL_INTERVAL = prove
- (`{} = real_interval[&1,&0]`,
-  REWRITE_TAC[REAL_INTERVAL_INTERVAL; LIFT_NUM; GSYM EMPTY_AS_INTERVAL] THEN
-  REWRITE_TAC[IMAGE_CLAUSES]);;
 
 let IMAGE_LIFT_REAL_INTERVAL = prove
  (`IMAGE lift (real_interval[a,b]) = interval[lift a,lift b] /\
@@ -3453,21 +3228,6 @@ let SUBSET_REAL_INTERVAL = prove
   REWRITE_TAC[REAL_INTERVAL_INTERVAL; lemma; SUBSET_INTERVAL_1] THEN
   REWRITE_TAC[LIFT_DROP]);;
 
-let REAL_INTERVAL_OPEN_SUBSET_CLOSED = prove
- (`!a b. real_interval(a,b) SUBSET real_interval[a,b]`,
-  REWRITE_TAC[SUBSET; IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
-
-let REAL_INTERVAL_EQ_EMPTY = prove
- (`(!a b. real_interval[a,b] = {} <=> b < a) /\
-   (!a b. real_interval(a,b) = {} <=> b <= a)`,
-  REWRITE_TAC[REAL_INTERVAL_INTERVAL; IMAGE_EQ_EMPTY] THEN
-  REWRITE_TAC[INTERVAL_EQ_EMPTY_1; LIFT_DROP]);;
-
-let REAL_INTERVAL_NE_EMPTY = prove
- (`(!a b. ~(real_interval[a,b] = {}) <=> a <= b) /\
-   (!a b. ~(real_interval(a,b) = {}) <=> a < b)`,
-  REWRITE_TAC[REAL_INTERVAL_EQ_EMPTY; REAL_NOT_LE; REAL_NOT_LT]);;
-
 let REAL_OPEN_CLOSED_INTERVAL = prove
  (`!a b. real_interval(a,b) = real_interval[a,b] DIFF {a,b}`,
   SIMP_TAC[EXTENSION; IN_DIFF; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
@@ -3486,32 +3246,15 @@ let REAL_OPEN_REAL_INTERVAL = prove
  (`!a b. real_open(real_interval(a,b))`,
   REWRITE_TAC[REAL_OPEN; IMAGE_LIFT_REAL_INTERVAL; OPEN_INTERVAL]);;
 
-let REAL_INTERVAL_SING = prove
- (`!a. real_interval[a,a] = {a} /\ real_interval(a,a) = {}`,
-  REWRITE_TAC[EXTENSION; IN_SING; NOT_IN_EMPTY; IN_REAL_INTERVAL] THEN
-  REAL_ARITH_TAC);;
-
 let REAL_COMPACT_INTERVAL = prove
  (`!a b. real_compact(real_interval[a,b])`,
   REWRITE_TAC[REAL_INTERVAL_INTERVAL; real_compact] THEN
   REWRITE_TAC[GSYM IMAGE_o; o_DEF; LIFT_DROP; IMAGE_ID; COMPACT_INTERVAL]);;
 
-let IS_REALINTERVAL_INTERVAL = prove
- (`!a b. is_realinterval(real_interval(a,b)) /\
-         is_realinterval(real_interval[a,b])`,
-  REWRITE_TAC[is_realinterval; IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
-
 let REAL_BOUNDED_REAL_INTERVAL = prove
  (`(!a b. real_bounded(real_interval[a,b])) /\
    (!a b. real_bounded(real_interval(a,b)))`,
   REWRITE_TAC[IMAGE_LIFT_REAL_INTERVAL; REAL_BOUNDED; BOUNDED_INTERVAL]);;
-
-let ENDS_IN_REAL_INTERVAL = prove
- (`(!a b. a IN real_interval[a,b] <=> ~(real_interval[a,b] = {})) /\
-   (!a b. b IN real_interval[a,b] <=> ~(real_interval[a,b] = {})) /\
-   (!a b. ~(a IN real_interval(a,b))) /\
-   (!a b. ~(b IN real_interval(a,b)))`,
-  REWRITE_TAC[IN_REAL_INTERVAL; REAL_INTERVAL_EQ_EMPTY] THEN REAL_ARITH_TAC);;
 
 let IMAGE_AFFINITY_REAL_INTERVAL = prove
  (`!a b m c.
@@ -3547,18 +3290,6 @@ let REAL_INTERVAL_TRANSLATION = prove
   MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
   REWRITE_TAC[REAL_ARITH `c + x:real = y <=> x = y - c`; EXISTS_REFL] THEN
   REWRITE_TAC[IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
-
-let IN_REAL_INTERVAL_REFLECT = prove
- (`(!a b x. --x IN real_interval[--b,--a] <=> x IN real_interval[a,b]) /\
-   (!a b x. --x IN real_interval(--b,--a) <=> x IN real_interval(a,b))`,
-  REWRITE_TAC[IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
-
-let REFLECT_REAL_INTERVAL = prove
- (`(!a b. IMAGE (--) (real_interval[a,b]) = real_interval[--b,--a]) /\
-   (!a b. IMAGE (--) (real_interval(a,b)) = real_interval(--b,--a))`,
-  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_IMAGE; IN_REAL_INTERVAL] THEN
-  ONCE_REWRITE_TAC[REAL_ARITH `x:real = --y <=> --x = y`] THEN
-  REWRITE_TAC[UNWIND_THM1] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Real continuity and differentiability.                                    *)
