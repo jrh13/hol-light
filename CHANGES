@@ -8,10 +8,81 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 15th Feb 2017       sets.ml
+
+Added a definition of "extensional" functions, all the material lifted from
+Multivariate/misc.ml (except for the renaming of UNDEFINED -> ARB, which helps
+to emphasize that these are not truly partial functions). Used that to define a
+natural space of general Cartesian products of sets (or, viewed differently, a
+dependent function space), with a few lemmas. New definitions:
+
+  ARB =
+    |- ARB = (@x. F)
+
+  EXTENSIONAL =
+    |- !s. EXTENSIONAL s = {f | !x. ~(x IN s) ==> f x = ARB}
+
+  cartesian_product =
+    |- !k s.
+         cartesian_product k s =
+         {f | EXTENSIONAL k f /\ (!i. i IN k ==> f i IN s i)}
+
+and theorems:
+
+  CARTESIAN_PRODUCT =
+    |- !k s.
+           cartesian_product k s =
+           {f | !i. f i IN (if i IN k then s i else {ARB})}
+
+  CARTESIAN_PRODUCT_EQ =
+    |- !k s t.
+           cartesian_product k s = cartesian_product k t <=>
+           cartesian_product k s = {} /\ cartesian_product k t = {} \/
+           (!i. i IN k ==> s i = t i)
+
+  CARTESIAN_PRODUCT_EQ_EMPTY =
+    |- !k s. cartesian_product k s = {} <=> (?i. i IN k /\ s i = {})
+
+  EXTENSIONAL_EMPTY =
+    |- EXTENSIONAL {} = {(\x. ARB)}
+
+  EXTENSIONAL_EQ =
+    |- !s f g.
+           f IN EXTENSIONAL s /\
+           g IN EXTENSIONAL s /\
+           (!x. x IN s ==> f x = g x)
+           ==> f = g
+
+  EXTENSIONAL_UNIV =
+    |- !f. EXTENSIONAL (:A) f
+
+  IMAGE_PROJECTION_CARTESIAN_PRODUCT =
+    |- !k s i.
+           IMAGE (\x. x i) (cartesian_product k s) =
+           (if cartesian_product k s = {}
+            then {}
+            else if i IN k then s i else {ARB})
+
+  INTER_CARTESIAN_PRODUCT =
+    |- !k s t.
+           cartesian_product k s INTER cartesian_product k t =
+           cartesian_product k (\i. s i INTER t i)
+
+  IN_EXTENSIONAL =
+    |- !s f. f IN EXTENSIONAL s <=> (!x. ~(x IN s) ==> f x = ARB)
+
+  IN_EXTENSIONAL_UNDEFINED =
+    |- !s f x. f IN EXTENSIONAL s /\ ~(x IN s) ==> f x = ARB
+
+  SUBSET_CARTESIAN_PRODUCT =
+    |- !k s t.
+           cartesian_product k s SUBSET cartesian_product k t <=>
+           cartesian_product k s = {} \/ (!i. i IN k ==> s i SUBSET t i)
+
 Sat  4th Feb 2017       sets.ml, Library/card.ml
 
 Added quite a number of theorems about the UNION_OF and INTERSECTION_OF
-constructs in three common cases, one of which uses a new constant 
+constructs in three common cases, one of which uses a new constant
 "ARBITRARY".
 
   ARBITRARY =

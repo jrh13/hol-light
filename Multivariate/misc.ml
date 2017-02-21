@@ -1164,49 +1164,18 @@ let COUNTABLE_STRICT_LOCAL_MINIMA = prove
   MATCH_MP_TAC COUNTABLE_IMAGE_INJ_EQ THEN SIMP_TAC[REAL_EQ_NEG2]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Extensional functions over a set.                                         *)
-(* ------------------------------------------------------------------------- *)
-
-let UNDEFINED = new_definition
-  `UNDEFINED = (@x:A. F)`;;
-
-let EXTENSIONAL = new_definition
-  `EXTENSIONAL s = {f:A->B | !x. ~(x IN s) ==> f x = UNDEFINED}`;;
-
-let IN_EXTENSIONAL = prove
- (`!s f:A->B. f IN EXTENSIONAL s <=> (!x. ~(x IN s) ==> f x = UNDEFINED)`,
-  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM]);;
-
-let IN_EXTENSIONAL_UNDEFINED = prove
- (`!s f:A->B x. f IN EXTENSIONAL s /\ ~(x IN s) ==> f x = UNDEFINED`,
-  SIMP_TAC[IN_EXTENSIONAL]);;
-
-let EXTENSIONAL_EMPTY = prove
- (`EXTENSIONAL {} = {\x:A. UNDEFINED:B}`,
-  REWRITE_TAC[EXTENSION; IN_EXTENSIONAL; IN_SING; NOT_IN_EMPTY] THEN
-  REWRITE_TAC[FUN_EQ_THM]);;
-
-let EXTENSIONAL_EQ = prove
- (`!s f g:A->B.
-     f IN EXTENSIONAL s /\ g IN EXTENSIONAL s /\ (!x. x IN s ==> f x = g x)
-     ==> f = g`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
-  ASM_CASES_TAC `x:A IN s` THENL
-  [ASM_SIMP_TAC[]; ASM_MESON_TAC[IN_EXTENSIONAL_UNDEFINED]]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Restriction of a function on a set.                                       *)
 (* ------------------------------------------------------------------------- *)
 
 let RESTRICTION = new_definition
-  `RESTRICTION s (f:A->B) x = if x IN s then f x else UNDEFINED`;;
+  `RESTRICTION s (f:A->B) x = if x IN s then f x else ARB`;;
 
 let RESTRICTION_DEFINED = prove
  (`!s f:A->B x. x IN s ==> RESTRICTION s f x = f x`,
   SIMP_TAC[RESTRICTION]);;
 
 let RESTRICTION_UNDEFINED = prove
- (`!s f:A->B x. ~(x IN s) ==> RESTRICTION s f x = UNDEFINED`,
+ (`!s f:A->B x. ~(x IN s) ==> RESTRICTION s f x = ARB`,
   SIMP_TAC[RESTRICTION]);;
 
 let RESTRICTION_EQ = prove
@@ -1261,7 +1230,7 @@ let RESTRICTION_COMPOSE = prove
 (* topological concepts (open, closed, borel, fsigma, gdelta etc.)           *)
 (* ------------------------------------------------------------------------- *)
 
-parse_as_infix("relative_to",(12,"right"));;
+parse_as_infix("relative_to",(14,"left"));;
 
 let relative_to = define
  `(P relative_to s) t <=> ?u. P u /\ s INTER u = t`;;
@@ -1287,6 +1256,13 @@ let RELATIVE_TO = prove
  (`(P relative_to u) = {u INTER s | P s}`,
   REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_INTER] THEN
   REWRITE_TAC[relative_to; IN] THEN SET_TAC[]);;
+
+let RELATIVE_TO_RELATIVE_TO = prove
+ (`!P:(A->bool)->bool s t.
+        P relative_to s relative_to t = P relative_to (s INTER t)`,
+  REWRITE_TAC[RELATIVE_TO] THEN
+  REWRITE_TAC[SET_RULE `{f x | {g y | P y} x} = {f(g y) | P y}`] THEN
+  REWRITE_TAC[SET_RULE `(s INTER t) INTER s' = t INTER s INTER s'`]);;
 
 let RELATIVE_TO_COMPL = prove
  (`!P u s:A->bool.

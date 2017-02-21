@@ -3238,14 +3238,6 @@ let REAL_CLOSED_OPEN_INTERVAL = prove
   SIMP_TAC[EXTENSION; IN_UNION; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
   REAL_ARITH_TAC);;
 
-let REAL_CLOSED_REAL_INTERVAL = prove
- (`!a b. real_closed(real_interval[a,b])`,
-  REWRITE_TAC[REAL_CLOSED; IMAGE_LIFT_REAL_INTERVAL; CLOSED_INTERVAL]);;
-
-let REAL_OPEN_REAL_INTERVAL = prove
- (`!a b. real_open(real_interval(a,b))`,
-  REWRITE_TAC[REAL_OPEN; IMAGE_LIFT_REAL_INTERVAL; OPEN_INTERVAL]);;
-
 let REAL_COMPACT_INTERVAL = prove
  (`!a b. real_compact(real_interval[a,b])`,
   REWRITE_TAC[REAL_INTERVAL_INTERVAL; real_compact] THEN

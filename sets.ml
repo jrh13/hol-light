@@ -2558,6 +2558,134 @@ let CROSS_INTERS_INTERS,CROSS_INTERS = (CONJ_PAIR o prove)
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* "Extensional" functions, mapping to a fixed value ARB outside the domain. *)
+(* Even though these are still total, they're a conveniently better model    *)
+(* of the partial function space (e.g. the space has the right cardinality). *)
+(* ------------------------------------------------------------------------- *)
+
+let ARB = new_definition
+  `ARB = (@x:A. F)`;;
+
+let EXTENSIONAL = new_definition
+  `EXTENSIONAL s = {f:A->B | !x. ~(x IN s) ==> f x = ARB}`;;
+
+let IN_EXTENSIONAL = prove
+ (`!s f:A->B. f IN EXTENSIONAL s <=> (!x. ~(x IN s) ==> f x = ARB)`,
+  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM]);;
+
+let IN_EXTENSIONAL_UNDEFINED = prove
+ (`!s f:A->B x. f IN EXTENSIONAL s /\ ~(x IN s) ==> f x = ARB`,
+  SIMP_TAC[IN_EXTENSIONAL]);;
+
+let EXTENSIONAL_EMPTY = prove
+ (`EXTENSIONAL {} = {\x:A. ARB:B}`,
+  REWRITE_TAC[EXTENSION; IN_EXTENSIONAL; IN_SING; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[FUN_EQ_THM]);;
+
+let EXTENSIONAL_UNIV = prove
+ (`!f. EXTENSIONAL (:A) f`,
+  REWRITE_TAC[EXTENSIONAL; IN_UNIV; IN_ELIM_THM]);;
+
+let EXTENSIONAL_EQ = prove
+ (`!s f g:A->B.
+     f IN EXTENSIONAL s /\ g IN EXTENSIONAL s /\ (!x. x IN s ==> f x = g x)
+     ==> f = g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+  ASM_CASES_TAC `x:A IN s` THENL
+  [ASM_SIMP_TAC[]; ASM_MESON_TAC[IN_EXTENSIONAL_UNDEFINED]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* General Cartesian product / dependent function space.                     *)
+(* ------------------------------------------------------------------------- *)
+
+let cartesian_product = new_definition
+ `cartesian_product k s =
+        {f:K->A | EXTENSIONAL k f /\ !i. i IN k ==> f i IN s i}`;;
+
+let CARTESIAN_PRODUCT = prove
+ (`!k s. cartesian_product k s =
+         {f:K->A | !i. f i IN (if i IN k then s i else {ARB})}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[cartesian_product; IN_ELIM_THM; EXTENSIONAL] THEN
+  MESON_TAC[IN_SING]);;
+
+let CARTESIAN_PRODUCT_EQ_EMPTY = prove
+ (`!k s:K->A->bool.
+        cartesian_product k s = {} <=> ?i. i IN k /\ s i = {}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [EXTENSION] THEN
+  REWRITE_TAC[SET_RULE
+   `(?i. i IN k /\ s i = {}) <=> ~(!i. ?a. i IN k ==> a IN s i)`] THEN
+  REWRITE_TAC[SKOLEM_THM; NOT_EXISTS_THM; cartesian_product] THEN
+  REWRITE_TAC[IN_ELIM_THM; NOT_IN_EMPTY] THEN EQ_TAC THEN
+  DISCH_TAC THEN X_GEN_TAC `f:K->A` THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `\i. if i IN k then (f:K->A) i else ARB`) THEN
+  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN SIMP_TAC[]);;
+
+let SUBSET_CARTESIAN_PRODUCT = prove
+ (`!k s t:K->A->bool.
+        cartesian_product k s SUBSET cartesian_product k t <=>
+        cartesian_product k s = {} \/ !i. i IN k ==> s i SUBSET t i`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+  ASM_REWRITE_TAC[EMPTY_SUBSET] THEN
+  REWRITE_TAC[SUBSET; cartesian_product; IN_ELIM_THM] THEN
+  EQ_TAC THENL [ALL_TAC; MESON_TAC[]] THEN FIRST_X_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE RAND_CONV [CARTESIAN_PRODUCT_EQ_EMPTY]) THEN
+  REWRITE_TAC[SET_RULE
+   `~(?i. i IN k /\ s i = {}) <=> (!i. ?a. i IN k ==> a IN s i)`] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `z:K->A` THEN DISCH_TAC THEN DISCH_TAC THEN
+  X_GEN_TAC `i:K` THEN DISCH_TAC THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+   `(\j. if j IN k then if j = i then x else z j else ARB):K->A`) THEN
+  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN SIMP_TAC[] THEN
+  ASM_MESON_TAC[]);;
+
+let CARTESIAN_PRODUCT_EQ = prove
+ (`!k s t:K->A->bool.
+        cartesian_product k s = cartesian_product k t <=>
+        cartesian_product k s = {} /\ cartesian_product k t = {} \/
+        !i. i IN k ==> s i = t i`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `!i. i IN k ==> (s:K->A->bool) i = t i` THEN
+  ASM_REWRITE_TAC[] THENL
+   [ASM_SIMP_TAC[cartesian_product; EXTENSION; IN_ELIM_THM];
+    ASM_CASES_TAC `cartesian_product k (t:K->A->bool) = {}` THEN
+    ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+    ASM_REWRITE_TAC[] THEN
+    ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_CARTESIAN_PRODUCT] THEN
+    ASM SET_TAC[]]);;
+
+let INTER_CARTESIAN_PRODUCT = prove
+ (`!k s t:K->A->bool.
+        (cartesian_product k s) INTER (cartesian_product k t) =
+        cartesian_product k (\i. s i INTER t i)`,
+  REWRITE_TAC[EXTENSION; cartesian_product; IN_INTER; IN_ELIM_THM] THEN
+  SET_TAC[]);;
+
+let IMAGE_PROJECTION_CARTESIAN_PRODUCT = prove
+ (`!k s:K->A->bool i.
+        IMAGE (\x. x i) (cartesian_product k s) =
+        if cartesian_product k s = {} then {}
+        else if i IN k then s i else {ARB}`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES] THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET; FORALL_IN_IMAGE] THEN
+  SIMP_TAC[CARTESIAN_PRODUCT; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE RAND_CONV [CARTESIAN_PRODUCT_EQ_EMPTY]) THEN
+  REWRITE_TAC[SET_RULE
+   `~(?i. i IN k /\ s i = {}) <=> (!i. ?a. i IN k ==> a IN s i)`] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `z:K->A` THEN DISCH_TAC THEN
+  REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+  EXISTS_TAC
+   `\j. if j = i then x else if j IN k then (z:K->A) j else ARB` THEN
+  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[IN_SING]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
 (* ------------------------------------------------------------------------- *)
 

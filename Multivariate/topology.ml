@@ -559,12 +559,6 @@ let OPEN_IN_CONTAINS_CBALL = prove
 (* These "transitivity" results are handy too.                               *)
 (* ------------------------------------------------------------------------- *)
 
-let OPEN_IN_TRANS = prove
- (`!s t u. open_in (subtopology euclidean t) s /\
-           open_in (subtopology euclidean u) t
-           ==> open_in (subtopology euclidean u) s`,
-  ASM_MESON_TAC[OPEN_IN_OPEN; OPEN_IN; OPEN_INTER; INTER_ASSOC]);;
-
 let OPEN_IN_TRANS_EQ = prove
  (`!s t:real^N->bool.
         (!u. open_in (subtopology euclidean t) u
@@ -576,12 +570,6 @@ let OPEN_IN_OPEN_TRANS = prove
  (`!s t. open_in (subtopology euclidean t) s /\ open t ==> open s`,
   REWRITE_TAC[ONCE_REWRITE_RULE[GSYM SUBTOPOLOGY_UNIV] OPEN_IN] THEN
   REWRITE_TAC[OPEN_IN_TRANS]);;
-
-let CLOSED_IN_TRANS = prove
- (`!s t u. closed_in (subtopology euclidean t) s /\
-           closed_in (subtopology euclidean u) t
-           ==> closed_in (subtopology euclidean u) s`,
-  ASM_MESON_TAC[CLOSED_IN_CLOSED; CLOSED_IN; CLOSED_INTER; INTER_ASSOC]);;
 
 let CLOSED_IN_TRANS_EQ = prove
  (`!s t:real^N->bool.
@@ -999,10 +987,10 @@ let connected = new_definition
                 (e1 INTER e2 INTER s = {}) /\
                 ~(e1 INTER s = {}) /\ ~(e2 INTER s = {}))`;;
 
-let CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN = prove
- (`!s:real^N->bool. connected_space(subtopology euclidean s) <=> connected s`,
-  REWRITE_TAC[CONNECTED_SPACE_SUBTOPOLOGY; connected] THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN; GSYM OPEN_IN; INTER_UNIV]);;
+let CONNECTED_IN_EUCLIDEAN = prove
+ (`!s:real^N->bool. connected_in euclidean s <=> connected s`,
+  REWRITE_TAC[CONNECTED_IN; connected] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; GSYM OPEN_IN; SUBSET_UNIV; INTER_UNIV]);;
 
 let CONNECTED_CLOSED = prove
  (`!s:real^N->bool.
@@ -1010,9 +998,9 @@ let CONNECTED_CLOSED = prove
         ~(?e1 e2. closed e1 /\ closed e2 /\ s SUBSET (e1 UNION e2) /\
                   (e1 INTER e2 INTER s = {}) /\
                   ~(e1 INTER s = {}) /\ ~(e2 INTER s = {}))`,
-  REWRITE_TAC[GSYM CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN] THEN
-  REWRITE_TAC[CONNECTED_SPACE_SUBTOPOLOGY_CLOSED_IN; CLOSED_IN] THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN; INTER_UNIV; INTER_ACI]);;
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN] THEN
+  REWRITE_TAC[CONNECTED_IN_CLOSED_IN; CLOSED_IN] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; INTER_UNIV; SUBSET_UNIV; INTER_ACI]);;
 
 let CONNECTED_OPEN_IN = prove
  (`!s. connected s <=>
@@ -1023,7 +1011,8 @@ let CONNECTED_OPEN_IN = prove
                  e1 INTER e2 = {} /\
                  ~(e1 = {}) /\
                  ~(e2 = {}))`,
-  REWRITE_TAC[GSYM CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN] THEN
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; connected_in] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
   REWRITE_TAC[connected_space; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
 let CONNECTED_OPEN_IN_EQ = prove
@@ -1033,7 +1022,8 @@ let CONNECTED_OPEN_IN_EQ = prove
                  open_in (subtopology euclidean s) e2 /\
                  e1 UNION e2 = s /\ e1 INTER e2 = {} /\
                  ~(e1 = {}) /\ ~(e2 = {}))`,
-  REWRITE_TAC[GSYM CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN] THEN
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; connected_in] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
   REWRITE_TAC[CONNECTED_SPACE_EQ; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
 let CONNECTED_CLOSED_IN = prove
@@ -1045,7 +1035,8 @@ let CONNECTED_CLOSED_IN = prove
                  e1 INTER e2 = {} /\
                  ~(e1 = {}) /\
                  ~(e2 = {}))`,
-  REWRITE_TAC[GSYM CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN] THEN
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; connected_in] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
   REWRITE_TAC[CONNECTED_SPACE_CLOSED_IN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
 let CONNECTED_CLOSED_IN_EQ = prove
@@ -1055,14 +1046,16 @@ let CONNECTED_CLOSED_IN_EQ = prove
                  closed_in (subtopology euclidean s) e2 /\
                  e1 UNION e2 = s /\ e1 INTER e2 = {} /\
                  ~(e1 = {}) /\ ~(e2 = {}))`,
-  REWRITE_TAC[GSYM CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN] THEN
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; connected_in] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
   REWRITE_TAC[CONNECTED_SPACE_CLOSED_IN_EQ; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
 let CONNECTED_CLOPEN = prove
  (`!s. connected s <=>
         !t. open_in (subtopology euclidean s) t /\
             closed_in (subtopology euclidean s) t ==> t = {} \/ t = s`,
-  REWRITE_TAC[GSYM CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN] THEN
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; connected_in] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
   REWRITE_TAC[CONNECTED_SPACE_CLOPEN_IN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
 let CONNECTED_CLOSED_SET = prove
