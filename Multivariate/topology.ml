@@ -1602,14 +1602,7 @@ let LIMPT_SING = prove
 let LIMIT_POINT_UNION = prove
  (`!s t x:real^N. x limit_point_of (s UNION t) <=>
                   x limit_point_of s \/ x limit_point_of t`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL
-   [ALL_TAC; MESON_TAC[LIMPT_SUBSET; SUBSET_UNION]] THEN
-  REWRITE_TAC[LIMPT_APPROACHABLE; IN_UNION] THEN DISCH_TAC THEN
-  MATCH_MP_TAC(TAUT `(~a ==> b) ==> a \/ b`) THEN
-  REWRITE_TAC[NOT_FORALL_THM; LEFT_IMP_EXISTS_THM; NOT_IMP] THEN
-  X_GEN_TAC `e:real` THEN STRIP_TAC THEN X_GEN_TAC `d:real` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `min d e`) THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
-  ASM_MESON_TAC[]);;
+  REWRITE_TAC[LIMIT_POINT_IN_DERIVED_SET; DERIVED_SET_OF_UNION; IN_UNION]);;
 
 let LIMPT_INSERT = prove
  (`!s x y:real^N. x limit_point_of (y INSERT s) <=> x limit_point_of s`,
@@ -2101,20 +2094,8 @@ let CLOSURE_LOCALLY_FINITE_UNIONS = prove
 let CONNECTED_INTERMEDIATE_CLOSURE = prove
  (`!s t:real^N->bool.
         connected s /\ s SUBSET t /\ t SUBSET closure s ==> connected t`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[connected; NOT_EXISTS_THM] THEN
-  STRIP_TAC THEN
-  MAP_EVERY X_GEN_TAC [`u:real^N->bool`; `v:real^N->bool`] THEN STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPECL [`u:real^N->bool`; `v:real^N->bool`]) THEN
-  ASM_REWRITE_TAC[] THEN ASSUME_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN
-  REPLICATE_TAC 2 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
-  REWRITE_TAC[GSYM DE_MORGAN_THM] THEN STRIP_TAC THENL
-   [SUBGOAL_THEN `(closure s) SUBSET ((:real^N) DIFF u)` MP_TAC THENL
-     [MATCH_MP_TAC CLOSURE_MINIMAL THEN ASM_REWRITE_TAC[GSYM OPEN_CLOSED];
-      ALL_TAC];
-    SUBGOAL_THEN `(closure s) SUBSET ((:real^N) DIFF v)` MP_TAC THENL
-     [MATCH_MP_TAC CLOSURE_MINIMAL THEN ASM_REWRITE_TAC[GSYM OPEN_CLOSED];
-      ALL_TAC]] THEN
-  ASM SET_TAC[]);;
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; GSYM EUCLIDEAN_CLOSURE_OF;
+              CONNECTED_IN_INTERMEDIATE_CLOSURE_OF]);;
 
 let CONNECTED_CLOSURE = prove
  (`!s:real^N->bool. connected s ==> connected(closure s)`,
@@ -2180,18 +2161,13 @@ let DENSE_IMP_PERFECT = prove
 let CLOSED_IN_LIMPT = prove
  (`!s t. closed_in (subtopology euclidean t) s <=>
          s SUBSET t /\ !x:real^N. x limit_point_of s /\ x IN t ==> x IN s`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_CLOSED] THEN EQ_TAC THENL
-   [DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
-    ASM_SIMP_TAC[IN_INTER] THEN
-    ASM_MESON_TAC[CLOSED_LIMPT; LIMPT_SUBSET; INTER_SUBSET];
-    STRIP_TAC THEN EXISTS_TAC `closure s :real^N->bool` THEN
-    REWRITE_TAC[CLOSED_CLOSURE] THEN REWRITE_TAC[closure] THEN
-    ASM SET_TAC[]]);;
+  REWRITE_TAC[CLOSED_IN_DERIVED_SET; TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
+  REWRITE_TAC[LIMIT_POINT_IN_DERIVED_SET]);;
 
 let CLOSED_IN_INTER_CLOSURE = prove
  (`!s t:real^N->bool.
         closed_in (subtopology euclidean s) t <=> s INTER closure t = t`,
-  REWRITE_TAC[closure; CLOSED_IN_LIMPT] THEN SET_TAC[]);;
+  REWRITE_TAC[CLOSED_IN_INTER_CLOSURE_OF; EUCLIDEAN_CLOSURE_OF]);;
 
 let INTERIOR_CLOSURE_IDEMP = prove
  (`!s:real^N->bool.
@@ -2348,29 +2324,25 @@ let DENSE_OPEN_INTERS = prove
   DISCH_THEN(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET o CONJUNCT1) THEN
   ASM SET_TAC[]);;
 
-let SEPARATION_CLOSED_IN_UNION = prove
- (`!s t:real^N->bool.
-        s INTER closure t = {} /\ t INTER closure s = {} <=>
-        DISJOINT s t /\
-        closed_in (subtopology euclidean (s UNION t)) s /\
+let SEPARATION_CLOSED_IN_UNION = prove                                      
+ (`!s t:real^N->bool.                                                   
+        s INTER closure t = {} /\ t INTER closure s = {} <=>        
+        DISJOINT s t /\                                    
+        closed_in (subtopology euclidean (s UNION t)) s /\          
         closed_in (subtopology euclidean (s UNION t)) t`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_INTER_CLOSURE] THEN
-  MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN
-  MP_TAC(ISPEC `t:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[]);;
-
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM EUCLIDEAN_CLOSURE_OF] THEN       
+  MATCH_MP_TAC SEPARATION_CLOSED_IN_UNION_GEN THEN   
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;                
+                                            
 let SEPARATION_OPEN_IN_UNION = prove
  (`!s t:real^N->bool.
         s INTER closure t = {} /\ t INTER closure s = {} <=>
         DISJOINT s t /\
         open_in (subtopology euclidean (s UNION t)) s /\
         open_in (subtopology euclidean (s UNION t)) t`,
-  REPEAT GEN_TAC THEN
-  REWRITE_TAC[OPEN_IN_CLOSED_IN_EQ] THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; SUBSET_UNION] THEN
-  REWRITE_TAC[SEPARATION_CLOSED_IN_UNION] THEN
-  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
-  DISCH_TAC THEN GEN_REWRITE_TAC RAND_CONV[CONJ_SYM] THEN BINOP_TAC THEN
-  AP_TERM_TAC THEN ASM SET_TAC[]);;
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  MATCH_MP_TAC SEPARATION_OPEN_IN_UNION_GEN THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
 
 let CONNECTED_SEPARATION,CONNECTED_SEPARATION_ALT = (CONJ_PAIR o prove)
  (`(!s:real^N->bool.
@@ -2382,25 +2354,10 @@ let CONNECTED_SEPARATION,CONNECTED_SEPARATION_ALT = (CONJ_PAIR o prove)
         ~(?c1 c2.
             s SUBSET c1 UNION c2 /\ ~(c1 INTER s = {}) /\ ~(c2 INTER s = {}) /\
             c1 INTER closure c2 = {} /\ c2 INTER closure c1 = {}))`,
-  REWRITE_TAC[AND_FORALL_THM] THEN X_GEN_TAC `s:real^N->bool` THEN
-  MATCH_MP_TAC(TAUT
-   `(q ==> r) /\ (~q ==> p) /\ (r ==> ~p)
-    ==> (p <=> ~q) /\ (p <=> ~r)`) THEN
-  REPEAT CONJ_TAC THENL
-   [REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN SET_TAC[];
-    REWRITE_TAC[CONNECTED_CLOSED_IN_EQ; CONTRAPOS_THM] THEN
-    REWRITE_TAC[CLOSED_IN_INTER_CLOSURE] THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c1:real^N->bool` THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c2:real^N->bool` THEN
-    SET_TAC[];
-    REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-    MAP_EVERY X_GEN_TAC [`c1:real^N->bool`; `c2:real^N->bool`] THEN
-    STRIP_TAC THEN REWRITE_TAC[CONNECTED_CLOSED] THEN
-    MAP_EVERY EXISTS_TAC
-     [`closure c1:real^N->bool`; `closure c2:real^N->bool`] THEN
-    REWRITE_TAC[CLOSED_CLOSURE] THEN
-    MP_TAC(ISPEC `c1:real^N->bool` CLOSURE_SUBSET) THEN
-    MP_TAC(ISPEC `c2:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]]);;
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN] THEN CONJ_TAC THENL
+   [REWRITE_TAC[CONNECTED_IN_SEPARATION];
+    REWRITE_TAC[CONNECTED_IN_SEPARATION_ALT]] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV; EUCLIDEAN_CLOSURE_OF]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Frontier (aka boundary).                                                  *)
@@ -26090,14 +26047,17 @@ let SEPARATION_NORMAL_COMPACT = prove
   MATCH_MP_TAC BOUNDED_SUBSET THEN EXISTS_TAC `ball(vec 0:real^N,r)` THEN
   REWRITE_TAC[BOUNDED_BALL] THEN ASM SET_TAC[]);;
 
+let HAUSDORFF_SPACE_EUCLIDEAN = prove
+ (`hausdorff_space euclidean`,
+  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC; HAUSDORFF_SPACE_MTOPOLOGY]);;
+
 let SEPARATION_HAUSDORFF = prove
  (`!x:real^N y.
       ~(x = y)
       ==> ?u v. open u /\ open v /\ x IN u /\ y IN v /\ (u INTER v = {})`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(SPECL [`{x:real^N}`; `{y:real^N}`] SEPARATION_NORMAL) THEN
-  REWRITE_TAC[SING_SUBSET; CLOSED_SING] THEN
-  DISCH_THEN MATCH_MP_TAC THEN ASM SET_TAC[]);;
+  MATCH_ACCEPT_TAC(REWRITE_RULE
+   [GSYM OPEN_IN; hausdorff_space; TOPSPACE_EUCLIDEAN; IN_UNIV; DISJOINT]
+     HAUSDORFF_SPACE_EUCLIDEAN));;
 
 let SEPARATION_T2 = prove
  (`!x:real^N y.

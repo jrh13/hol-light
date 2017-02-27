@@ -2664,6 +2664,11 @@ let INTER_CARTESIAN_PRODUCT = prove
   REWRITE_TAC[EXTENSION; cartesian_product; IN_INTER; IN_ELIM_THM] THEN
   SET_TAC[]);;
 
+let CARTESIAN_PRODUCT_UNIV = prove
+ (`cartesian_product (:K) (\i. (:A)) = (:K->A)`,
+  REWRITE_TAC[EXTENSION; IN_UNIV; cartesian_product; IN_ELIM_THM] THEN
+  REWRITE_TAC[EXTENSIONAL_UNIV]);;
+
 let IMAGE_PROJECTION_CARTESIAN_PRODUCT = prove
  (`!k s:K->A->bool i.
         IMAGE (\x. x i) (cartesian_product k s) =

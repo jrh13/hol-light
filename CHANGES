@@ -8,6 +8,12 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 25th Feb 2017       sets.ml
+
+Added one more trivial but handy theorems about Cartesian products:
+
+  CARTESIAN_PRODUCT_UNIV = |- cartesian_product (:K) (\i. (:A)) = (:K->A)
+
 Wed 15th Feb 2017       sets.ml
 
 Added a definition of "extensional" functions, all the material lifted from
