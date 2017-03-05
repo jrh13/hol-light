@@ -3178,40 +3178,6 @@ let IS_REALINTERVAL_CONVEX_COMPLEX = prove
     REWRITE_TAC[linear; o_THM; RE_CMUL;
                 RE_ADD; RE_MUL_CX; LIFT_ADD; LIFT_CMUL]]);;
 
-let REAL_INTERVAL_INTERVAL = prove
- (`real_interval[a,b] = IMAGE drop (interval[lift a,lift b]) /\
-   real_interval(a,b) = IMAGE drop (interval(lift a,lift b))`,
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_INTERVAL_1; IN_REAL_INTERVAL] THEN
-  REWRITE_TAC[EXISTS_LIFT; LIFT_DROP; UNWIND_THM1]);;
-
-let INTERVAL_REAL_INTERVAL = prove
- (`interval[a,b] = IMAGE lift (real_interval[drop a,drop b]) /\
-   interval(a,b) = IMAGE lift (real_interval(drop a,drop b))`,
-  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_INTERVAL_1; IN_REAL_INTERVAL] THEN
-  REWRITE_TAC[EXISTS_DROP; LIFT_DROP; UNWIND_THM1]);;
-
-let DROP_IN_REAL_INTERVAL = prove
- (`(!a b x. drop x IN real_interval[a,b] <=> x IN interval[lift a,lift b]) /\
-   (!a b x. drop x IN real_interval(a,b) <=> x IN interval(lift a,lift b))`,
-  REWRITE_TAC[REAL_INTERVAL_INTERVAL; IN_IMAGE] THEN MESON_TAC[LIFT_DROP]);;
-
-let LIFT_IN_INTERVAL = prove
- (`(!a b x. lift x IN interval[a,b] <=> x IN real_interval[drop a,drop b]) /\
-   (!a b x. lift x IN interval(a,b) <=> x IN real_interval(drop a,drop b))`,
-  REWRITE_TAC[FORALL_DROP; DROP_IN_REAL_INTERVAL; LIFT_DROP]);;
-
-let IMAGE_LIFT_REAL_INTERVAL = prove
- (`IMAGE lift (real_interval[a,b]) = interval[lift a,lift b] /\
-   IMAGE lift (real_interval(a,b)) = interval(lift a,lift b)`,
-  REWRITE_TAC[REAL_INTERVAL_INTERVAL; GSYM IMAGE_o; o_DEF; LIFT_DROP] THEN
-  SET_TAC[]);;
-
-let IMAGE_DROP_INTERVAL = prove
- (`IMAGE drop (interval[a,b]) = real_interval[drop a,drop b] /\
-   IMAGE drop (interval(a,b)) = real_interval(drop a,drop b)`,
-  REWRITE_TAC[INTERVAL_REAL_INTERVAL; GSYM IMAGE_o; o_DEF; LIFT_DROP] THEN
-  SET_TAC[]);;
-
 let SUBSET_REAL_INTERVAL = prove
  (`!a b c d.
         (real_interval[a,b] SUBSET real_interval[c,d] <=>
@@ -5856,6 +5822,14 @@ let REAL_SEGMENT_INTERVAL = prove
   REWRITE_TAC[REAL_INTERVAL_INTERVAL] THEN
   CONJ_TAC THEN REPEAT GEN_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[]);;
 
+let REAL_INTERVAL_SUBSET_REAL_SEGMENT = prove
+ (`(!a b. real_interval[a,b] SUBSET real_segment[a,b]) /\
+   (!a b. real_interval(a,b) SUBSET real_segment(a,b))`,
+  REWRITE_TAC[REAL_SEGMENT_INTERVAL] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
+  MATCH_MP_TAC(SET_RULE `s = {} ==> s SUBSET t`) THEN
+  REWRITE_TAC[REAL_INTERVAL_EQ_EMPTY] THEN ASM_REAL_ARITH_TAC);;
+
 let REAL_CONTINUOUS_INJECTIVE_IFF_MONOTONIC = prove
  (`!f s.
         f real_continuous_on s /\ is_realinterval s
@@ -5975,6 +5949,10 @@ let REAL_CONVEX_ON_SUBSET = prove
   REWRITE_TAC[REAL_CONVEX_ON] THEN
   MESON_TAC[CONVEX_ON_SUBSET; IMAGE_SUBSET]);;
 
+let REAL_CONVEX_ON_CONST = prove
+ (`!s c. (\x. c) real_convex_on s`,
+  REWRITE_TAC[REAL_CONVEX_ON; o_DEF; CONVEX_ON_CONST]);;
+
 let REAL_CONVEX_ADD = prove
  (`!s f g. f real_convex_on s /\ g real_convex_on s
            ==> (\x. f(x) + g(x)) real_convex_on s`,
@@ -6003,10 +5981,11 @@ let REAL_CONVEX_CONVEX_COMPOSE = prove
   ASM_MESON_TAC[REAL_LE_TRANS]);;
 
 let REAL_CONVEX_COMPOSE = prove
- (`!f g. f real_convex_on s /\ g real_convex_on t /\
-         is_realinterval s /\ is_realinterval t /\ IMAGE f s SUBSET t /\
-         (!x y. x IN t /\ y IN t /\ x <= y ==> g x <= g y)
-        ==> (g o f) real_convex_on s`,
+ (`!f g s t.
+        f real_convex_on s /\ g real_convex_on t /\
+        is_realinterval s /\ is_realinterval t /\ IMAGE f s SUBSET t /\
+        (!x y. x IN t /\ y IN t /\ x <= y ==> g x <= g y)
+       ==> (g o f) real_convex_on s`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_CONVEX_ON; GSYM o_ASSOC] THEN
   MATCH_MP_TAC REAL_CONVEX_CONVEX_COMPOSE THEN EXISTS_TAC `t:real->bool` THEN
   ASM_REWRITE_TAC[GSYM REAL_CONVEX_ON; GSYM IMAGE_o; o_DEF; LIFT_DROP;
@@ -6020,6 +5999,24 @@ let REAL_CONVEX_LOWER = prove
   REWRITE_TAC[FORALL_DROP; GSYM IN_IMAGE_LIFT_DROP] THEN
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP CONVEX_LOWER) THEN
   REWRITE_TAC[o_THM; DROP_ADD; DROP_CMUL]);;
+
+let REAL_CONVEX_LOWER_REAL_SEGMENT = prove
+ (`!f s a b x.
+        f real_convex_on s /\ a IN s /\ b IN s /\ x IN real_segment[a,b]
+        ==> f x <= max (f a) (f b)`,
+  REWRITE_TAC[REAL_CONVEX_ON; REAL_SEGMENT_SEGMENT] THEN
+  REWRITE_TAC[FORALL_DROP; LIFT_DROP; DROP_IN_IMAGE_DROP] THEN
+  REWRITE_TAC[GSYM IN_IMAGE_LIFT_DROP; o_DEF] THEN
+  REWRITE_TAC[CONVEX_LOWER_SEGMENT]);;
+
+let REAL_CONVEX_LOWER_REAL_INTERVAL = prove
+ (`!f a b x.
+        f real_convex_on real_interval[a,b] /\ x IN real_interval[a,b]
+        ==> f x <= max (f a) (f b)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_CONVEX_LOWER_REAL_SEGMENT THEN
+  EXISTS_TAC `real_segment[a,b]` THEN REWRITE_TAC[ENDS_IN_REAL_SEGMENT] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (SET_RULE `a IN s ==> ~(s = {})`)) THEN
+  ASM_SIMP_TAC[REAL_SEGMENT_INTERVAL; REAL_INTERVAL_NE_EMPTY]);;
 
 let REAL_CONVEX_LOCAL_GLOBAL_MINIMUM = prove
  (`!f s t x.
@@ -6409,6 +6406,74 @@ let REAL_CONVEX_ON_RPOW = prove
         MATCH_MP_TAC REAL_INV_1_LE THEN ASM_REAL_ARITH_TAC;
         ASM_SIMP_TAC[REAL_MUL_LID; EXP_LOG; REAL_LT_LE; REAL_LE_REFL]];
       ASM_MESON_TAC[REAL_LT_LE; REAL_LET_TRANS]]]);;
+
+let REAL_CONVEX_ON_RPOW_INTEGER = prove
+ (`!s t. s SUBSET {x | &0 < x} /\ integer t
+         ==> (\x. x rpow t) real_convex_on s`,
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ_ALT] REAL_CONVEX_ON_SUBSET)) THEN
+  MP_TAC(ISPECL
+   [`\v. v rpow t`;
+    `\v. t * v rpow (t - &1)`;
+    `\v. t * (t - &1) * v rpow (t - &2)`;
+    `{x | &0 < x}`] REAL_CONVEX_ON_SECOND_DERIVATIVE) THEN
+  REWRITE_TAC[IN_ELIM_THM; IS_REALINTERVAL_CLAUSES; NOT_EXISTS_THM] THEN
+  MATCH_MP_TAC(TAUT `r /\ p ==> (p ==> (q <=> r)) ==> q`) THEN
+  REPEAT CONJ_TAC THEN X_GEN_TAC `x:real` THEN DISCH_TAC THENL
+   [REWRITE_TAC[REAL_MUL_ASSOC] THEN MATCH_MP_TAC REAL_LE_MUL THEN
+    ASM_SIMP_TAC[RPOW_POS_LE; REAL_LT_IMP_LE] THEN
+    REWRITE_TAC[REAL_MUL_POS_LE] THEN
+    ASM_SIMP_TAC[REAL_LT_INTEGERS; INTEGER_CLOSED] THEN
+    MP_TAC(ISPECL [`&0`; `t:real`] REAL_LT_INTEGERS) THEN
+    MP_TAC(ISPECL [`&1`; `t:real`] REAL_LT_INTEGERS) THEN
+    MP_TAC(ISPECL [`-- &1`; `t:real`] REAL_LT_INTEGERS) THEN
+    ASM_REWRITE_TAC[INTEGER_CLOSED; INTEGER_NEG] THEN REAL_ARITH_TAC;
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `s = {x} ==> !a b. ~(a = b) /\ a IN s /\ b IN s ==> F`)) THEN
+    MAP_EVERY EXISTS_TAC [`&1:real`; `&2:real`] THEN
+    REWRITE_TAC[IN_ELIM_THM] THEN CONV_TAC REAL_RAT_REDUCE_CONV;
+    REAL_DIFF_TAC THEN ASM_REAL_ARITH_TAC;
+    REAL_DIFF_TAC THEN REWRITE_TAC[REAL_ARITH `t - &1 - &1 = t - &2`] THEN
+    ASM_REAL_ARITH_TAC]);;
+
+let REAL_CONVEX_ON_REAL_INV = prove
+ (`!s. s SUBSET {x | &0 < x} ==> inv real_convex_on s`,
+  REPEAT STRIP_TAC THEN MP_TAC
+   (ISPECL [`s:real->bool`; `-- &1:real`] REAL_CONVEX_ON_RPOW_INTEGER) THEN
+  ASM_REWRITE_TAC[INTEGER_NEG; INTEGER_CLOSED; RPOW_NEG; RPOW_POW] THEN
+  REWRITE_TAC[REAL_POW_1; ETA_AX]);;
+
+let CONVEX_ON_REAL_POW = prove
+ (`!f:real^N->real s n.
+        f convex_on s /\ convex s /\ (!x. x IN s ==> &0 <= f x)
+        ==> (\x. (f x) pow n) convex_on s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[real_pow; CONVEX_ON_CONST] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[o_DEF] (ONCE_REWRITE_RULE[IMP_CONJ]
+        REAL_CONVEX_CONVEX_COMPOSE))) THEN
+  EXISTS_TAC `{x:real | &0 <= x}` THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; REAL_POW_LE2; IN_ELIM_THM] THEN
+  REWRITE_TAC[IS_REALINTERVAL_CLAUSES] THEN
+  REWRITE_TAC[GSYM RPOW_POW] THEN
+  MATCH_MP_TAC REAL_CONVEX_ON_RPOW THEN
+  REWRITE_TAC[REAL_OF_NUM_LE; SUBSET_REFL] THEN ASM_ARITH_TAC);;
+
+let REAL_CONVEX_ON_REAL_POW = prove
+ (`!f s n.
+        f real_convex_on s /\ is_realinterval s /\ (!x. x IN s ==> &0 <= f x)
+        ==> (\x. (f x) pow n) real_convex_on s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[real_pow; REAL_CONVEX_ON_CONST] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[o_DEF] (ONCE_REWRITE_RULE[IMP_CONJ]
+        REAL_CONVEX_COMPOSE))) THEN
+  EXISTS_TAC `{x:real | &0 <= x}` THEN
+  ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; REAL_POW_LE2; IN_ELIM_THM] THEN
+  REWRITE_TAC[IS_REALINTERVAL_CLAUSES] THEN
+  REWRITE_TAC[GSYM RPOW_POW] THEN
+  MATCH_MP_TAC REAL_CONVEX_ON_RPOW THEN
+  REWRITE_TAC[REAL_OF_NUM_LE; SUBSET_REFL] THEN ASM_ARITH_TAC);;
 
 let REAL_CONVEX_ON_LOG = prove
  (`!s. s SUBSET {x | &0 < x} ==> (\x. --log x) real_convex_on s`,

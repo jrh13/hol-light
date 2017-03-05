@@ -47,6 +47,40 @@ let arc = new_definition
               ==> x = y`;;
 
 (* ------------------------------------------------------------------------- *)
+(* Relate to topological general case.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let PATH_IN_EUCLIDEAN = prove
+ (`!s:real^N->bool g.
+        path_in (subtopology euclidean s) g <=>
+        path (g o drop) /\ path_image (g o drop) SUBSET s`,
+  REWRITE_TAC[path_in; path; GSYM CONTINUOUS_MAP_EQ_CONTINUOUS_ON] THEN
+  REWRITE_TAC[path_image; INTERVAL_REAL_INTERVAL; DROP_VEC] THEN
+  REWRITE_TAC[GSYM IMAGE_o; GSYM o_ASSOC] THEN
+  ONCE_REWRITE_TAC[IMAGE_o] THEN
+  REWRITE_TAC[IMAGE_LIFT_DROP; CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [ALL_TAC;
+    SUBGOAL_THEN `g:real->real^N = (g o drop) o lift` SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_THM; LIFT_DROP]; ALL_TAC]] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+    CONTINUOUS_MAP_COMPOSE)) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+  SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY;
+           CONTINUOUS_MAP_LIFT; CONTINUOUS_MAP_DROP] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; SUBSET_REFL;
+              TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; o_DEF; LIFT_DROP]);;
+
+let PATH_EUCLIDEAN = prove
+ (`!s g:real^1->real^N.
+        path g /\ path_image g SUBSET s <=>
+        path_in (subtopology euclidean s) (g o lift)`,
+  REWRITE_TAC[PATH_IN_EUCLIDEAN] THEN
+  REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Invariance theorems.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -2558,6 +2592,21 @@ let path_connected = new_definition
         !x y. x IN s /\ y IN s
               ==> ?g. path g /\ (path_image g) SUBSET s /\
                       pathstart g = x /\ pathfinish g = y`;;
+
+let PATH_CONNECTED_IN_EUCLIDEAN = prove
+ (`!s:real^N->bool. path_connected_in euclidean s <=> path_connected s`,
+  GEN_TAC THEN REWRITE_TAC[path_connected; path_connected_in] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV; path_connected_space] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; PATH_IN_EUCLIDEAN] THEN
+  REWRITE_TAC[pathstart; pathfinish; GSYM DROP_VEC] THEN
+  EQ_TAC THEN DISCH_TAC THEN MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^N`; `y:real^N`]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
+   [X_GEN_TAC `g:real->real^N` THEN STRIP_TAC THEN
+    EXISTS_TAC `(g:real->real^N) o drop` THEN ASM_REWRITE_TAC[o_THM];
+    X_GEN_TAC `g:real^1->real^N` THEN STRIP_TAC THEN
+    EXISTS_TAC `(g:real^1->real^N) o lift` THEN
+    ASM_REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]]);;
 
 let PATH_CONNECTED_IFF_PATH_COMPONENT = prove
  (`!s. path_connected s <=> !x y. x IN s /\ y IN s ==> path_component s x y`,

@@ -8,6 +8,21 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu  2nd Mar 2017       sets.ml, cart.ml
+
+Added one more triviality about products of sets, both in the real product and
+the "cart" variant:
+
+  DISJOINT_CROSS =
+   |- !s t s' t'.
+        DISJOINT (s CROSS t) (s' CROSS t') <=>
+        DISJOINT s s' \/ DISJOINT t t'
+
+  DISJOINT_PCROSS =
+   |- !s t s' t'.
+        DISJOINT (s PCROSS t) (s' PCROSS t') <=>
+        DISJOINT s s' \/ DISJOINT t t'
+
 Sat 25th Feb 2017       sets.ml
 
 Added one more trivial but handy theorems about Cartesian products:

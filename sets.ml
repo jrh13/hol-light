@@ -2557,6 +2557,12 @@ let CROSS_INTERS_INTERS,CROSS_INTERS = (CONJ_PAIR o prove)
                   IN_CROSS; NOT_IN_EMPTY] THEN
   ASM SET_TAC[]);;
 
+let DISJOINT_CROSS = prove
+ (`!s:A->bool t:B->bool s' t'.
+        DISJOINT (s CROSS t) (s' CROSS t') <=>
+        DISJOINT s s' \/ DISJOINT t t'`,
+  REWRITE_TAC[DISJOINT; INTER_CROSS; CROSS_EQ_EMPTY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* "Extensional" functions, mapping to a fixed value ARB outside the domain. *)
 (* Even though these are still total, they're a conveniently better model    *)

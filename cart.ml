@@ -268,9 +268,9 @@ let DIMINDEX_FINITE_DIFF = prove
 (* ------------------------------------------------------------------------- *)
 (* And a finite-forcing "multiplication" on type indices.                    *)
 (* ------------------------------------------------------------------------- *)
-                         
-let finite_prod_tybij =                               
-  let th = prove                                         
+
+let finite_prod_tybij =
+  let th = prove
    (`?x. x IN 1..(dimindex(:A) * dimindex(:B))`,
      EXISTS_TAC `1` THEN REWRITE_TAC[IN_NUMSEG; LE_REFL] THEN
      MESON_TAC[LE_1; DIMINDEX_GE_1; MULT_EQ_0]) in
@@ -280,20 +280,20 @@ let FINITE_PROD_IMAGE = prove
  (`UNIV:(A,B)finite_prod->bool =
        IMAGE mk_finite_prod (1..(dimindex(:A)*dimindex(:B)))`,
   REWRITE_TAC[EXTENSION; IN_UNIV; IN_IMAGE] THEN
-  MESON_TAC[finite_prod_tybij]);;                                               
+  MESON_TAC[finite_prod_tybij]);;
 
-let DIMINDEX_HAS_SIZE_FINITE_PROD = prove                          
+let DIMINDEX_HAS_SIZE_FINITE_PROD = prove
  (`(UNIV:(M,N)finite_prod->bool) HAS_SIZE (dimindex(:M) * dimindex(:N))`,
   SIMP_TAC[FINITE_PROD_IMAGE] THEN
-  MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN                                         
-  ONCE_REWRITE_TAC[DIMINDEX_UNIV] THEN REWRITE_TAC[HAS_SIZE_NUMSEG_1] THEN     
-  MESON_TAC[finite_prod_tybij]);;                                              
+  MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+  ONCE_REWRITE_TAC[DIMINDEX_UNIV] THEN REWRITE_TAC[HAS_SIZE_NUMSEG_1] THEN
+  MESON_TAC[finite_prod_tybij]);;
 
-let DIMINDEX_FINITE_PROD = prove                
+let DIMINDEX_FINITE_PROD = prove
  (`dimindex(:(M,N)finite_prod) = dimindex(:M) * dimindex(:N)`,
   GEN_REWRITE_TAC LAND_CONV [dimindex] THEN
   REWRITE_TAC[REWRITE_RULE[HAS_SIZE] DIMINDEX_HAS_SIZE_FINITE_PROD]);;
-                                                  
+
 (* ------------------------------------------------------------------------- *)
 (* Automatically define a type of size n.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -573,3 +573,9 @@ let PCROSS_INTERS_INTERS,PCROSS_INTERS = (CONJ_PAIR o prove)
   ASM_REWRITE_TAC[INTERS_GSPEC; EXTENSION; FORALL_PASTECART; IN_ELIM_THM;
                   PASTECART_IN_PCROSS; NOT_IN_EMPTY] THEN
   ASM SET_TAC[]);;
+
+let DISJOINT_PCROSS = prove
+ (`!s:A^M->bool t:A^N->bool s' t'.
+        DISJOINT (s PCROSS t) (s' PCROSS t') <=>
+        DISJOINT s s' \/ DISJOINT t t'`,
+  REWRITE_TAC[DISJOINT; INTER_PCROSS; PCROSS_EQ_EMPTY]);;

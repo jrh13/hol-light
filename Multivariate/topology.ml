@@ -2324,16 +2324,16 @@ let DENSE_OPEN_INTERS = prove
   DISCH_THEN(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET o CONJUNCT1) THEN
   ASM SET_TAC[]);;
 
-let SEPARATION_CLOSED_IN_UNION = prove                                      
- (`!s t:real^N->bool.                                                   
-        s INTER closure t = {} /\ t INTER closure s = {} <=>        
-        DISJOINT s t /\                                    
-        closed_in (subtopology euclidean (s UNION t)) s /\          
+let SEPARATION_CLOSED_IN_UNION = prove
+ (`!s t:real^N->bool.
+        s INTER closure t = {} /\ t INTER closure s = {} <=>
+        DISJOINT s t /\
+        closed_in (subtopology euclidean (s UNION t)) s /\
         closed_in (subtopology euclidean (s UNION t)) t`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM EUCLIDEAN_CLOSURE_OF] THEN       
-  MATCH_MP_TAC SEPARATION_CLOSED_IN_UNION_GEN THEN   
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;                
-                                            
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  MATCH_MP_TAC SEPARATION_CLOSED_IN_UNION_GEN THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
+
 let SEPARATION_OPEN_IN_UNION = prove
  (`!s t:real^N->bool.
         s INTER closure t = {} /\ t INTER closure s = {} <=>
@@ -6813,16 +6813,49 @@ let uniformly_continuous_on = new_definition
                     !x x'. x IN s /\ x' IN s /\ dist(x',x) < d
                            ==> dist(f(x'),f(x)) < e`;;
 
+(* ------------------------------------------------------------------------- *)
+(* Relate to the general topological case and connect to reals.              *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_MAP_EQ_CONTINUOUS_ON = prove
+ (`!f:real^N->real^M s.
+     continuous_map (subtopology euclidean s,euclidean) f <=>
+     f continuous_on s`,
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              GSYM  MTOPOLOGY_EUCLIDEAN_METRIC;
+              GSYM MTOPOLOGY_SUBMETRIC] THEN
+  REWRITE_TAC[METRIC_CONTINUOUS_MAP; continuous_on] THEN
+  REWRITE_TAC[SUBMETRIC; EUCLIDEAN_METRIC; IN_UNIV; IN_INTER] THEN
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [DIST_SYM] THEN
+  MESON_TAC[]);;
+
+let CONTINUOUS_MAP_LIFT = prove
+ (`continuous_map (euclideanreal,euclidean) lift`,
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              GSYM  MTOPOLOGY_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[METRIC_CONTINUOUS_MAP] THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC; EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_UNIV; DIST_LIFT] THEN MESON_TAC[REAL_ABS_SUB]);;
+
+let CONTINUOUS_MAP_DROP = prove
+ (`continuous_map (euclidean,euclideanreal) drop`,
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              GSYM  MTOPOLOGY_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[METRIC_CONTINUOUS_MAP] THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC; EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_UNIV; DIST_1] THEN MESON_TAC[REAL_ABS_SUB]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some simple consequential lemmas.                                         *)
+(* ------------------------------------------------------------------------- *)
+
 let CONTINUOUS_ON_COMPARISON = prove
  (`!f:real^M->real^N g:real^M->real^P s.
         g continuous_on s /\
         (!x y. x IN s /\ y IN s ==> dist(f x,f y) <= dist(g x,g y))
         ==> f continuous_on s`,
   REWRITE_TAC[continuous_on] THEN MESON_TAC[REAL_LET_TRANS]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Some simple consequential lemmas.                                         *)
-(* ------------------------------------------------------------------------- *)
 
 let UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS = prove
  (`!f s. f uniformly_continuous_on s ==> f continuous_on s`,
@@ -7959,15 +7992,6 @@ let CONTINUOUS_CLOSED_IN_PREIMAGE_EQ = prove
   DISCH_THEN(X_CHOOSE_THEN `u:real^N->bool` STRIP_ASSUME_TAC) THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `u:real^N->bool`) THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN SET_TAC[]);;
-
-let CONTINUOUS_MAP_EQ_CONTINUOUS_ON = prove
- (`!f:real^N->real^M.
-     continuous_map (subtopology euclidean s,euclidean) f <=>
-     f continuous_on s`,
-  GEN_TAC THEN
-  REWRITE_TAC[continuous_map; CONTINUOUS_OPEN_IN_PREIMAGE_EQ;
-    TOPSPACE_SUBTOPOLOGY; TOPSPACE_EUCLIDEAN;
-    GSYM OPEN_IN; IN_UNIV; IN_INTER]);;
 
 let RESTRICTION_CONTINUOUS_ON = prove
  (`!s t f:real^M->real^N.
@@ -14995,16 +15019,50 @@ let EQ_BALLS = prove
 (* Some special cases for intervals in R^1.                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let INTERVAL_CASES_1 = prove
- (`!x:real^1. x IN interval[a,b] ==> x IN interval(a,b) \/ (x = a) \/ (x = b)`,
-  REWRITE_TAC[CART_EQ; IN_INTERVAL; FORALL_DIMINDEX_1] THEN REAL_ARITH_TAC);;
-
 let IN_INTERVAL_1 = prove
  (`!a b x:real^1.
         (x IN interval[a,b] <=> drop a <= drop x /\ drop x <= drop b) /\
         (x IN interval(a,b) <=> drop a < drop x /\ drop x < drop b)`,
   REWRITE_TAC[IN_INTERVAL; drop; CONJ_ASSOC; DIMINDEX_1; LE_ANTISYM] THEN
   MESON_TAC[]);;
+
+let REAL_INTERVAL_INTERVAL = prove
+ (`real_interval[a,b] = IMAGE drop (interval[lift a,lift b]) /\
+   real_interval(a,b) = IMAGE drop (interval(lift a,lift b))`,
+  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_INTERVAL_1; IN_REAL_INTERVAL] THEN
+  REWRITE_TAC[EXISTS_LIFT; LIFT_DROP; UNWIND_THM1]);;
+
+let INTERVAL_REAL_INTERVAL = prove
+ (`interval[a,b] = IMAGE lift (real_interval[drop a,drop b]) /\
+   interval(a,b) = IMAGE lift (real_interval(drop a,drop b))`,
+  REWRITE_TAC[EXTENSION; IN_IMAGE; IN_INTERVAL_1; IN_REAL_INTERVAL] THEN
+  REWRITE_TAC[EXISTS_DROP; LIFT_DROP; UNWIND_THM1]);;
+
+let DROP_IN_REAL_INTERVAL = prove
+ (`(!a b x. drop x IN real_interval[a,b] <=> x IN interval[lift a,lift b]) /\
+   (!a b x. drop x IN real_interval(a,b) <=> x IN interval(lift a,lift b))`,
+  REWRITE_TAC[REAL_INTERVAL_INTERVAL; IN_IMAGE] THEN MESON_TAC[LIFT_DROP]);;
+
+let LIFT_IN_INTERVAL = prove
+ (`(!a b x. lift x IN interval[a,b] <=> x IN real_interval[drop a,drop b]) /\
+   (!a b x. lift x IN interval(a,b) <=> x IN real_interval(drop a,drop b))`,
+  REWRITE_TAC[FORALL_DROP; DROP_IN_REAL_INTERVAL; LIFT_DROP]);;
+
+let IMAGE_LIFT_REAL_INTERVAL = prove
+ (`IMAGE lift (real_interval[a,b]) = interval[lift a,lift b] /\
+   IMAGE lift (real_interval(a,b)) = interval(lift a,lift b)`,
+  REWRITE_TAC[REAL_INTERVAL_INTERVAL; GSYM IMAGE_o; o_DEF; LIFT_DROP] THEN
+  SET_TAC[]);;
+
+let IMAGE_DROP_INTERVAL = prove
+ (`IMAGE drop (interval[a,b]) = real_interval[drop a,drop b] /\
+   IMAGE drop (interval(a,b)) = real_interval(drop a,drop b)`,
+  REWRITE_TAC[INTERVAL_REAL_INTERVAL; GSYM IMAGE_o; o_DEF; LIFT_DROP] THEN
+  SET_TAC[]);;
+
+let INTERVAL_CASES_1 = prove
+ (`!x:real^1. x IN interval[a,b] ==> x IN interval(a,b) \/ (x = a) \/ (x = b)`,
+  REWRITE_TAC[CART_EQ; IN_INTERVAL; FORALL_DIMINDEX_1] THEN REAL_ARITH_TAC);;
 
 let INTERVAL_EQ_EMPTY_1 = prove
  (`!a b:real^1.
@@ -15180,8 +15238,12 @@ let OPEN_SEGMENT_1 = prove
   COND_CASES_TAC THEN REWRITE_TAC[OPEN_INTERVAL]);;
 
 let INTERVAL_SUBSET_SEGMENT_1 = prove
- (`!a b:real^1. interval[a,b] SUBSET segment[a,b]`,
-  REWRITE_TAC[SEGMENT_1; GSYM INTERVAL_NE_EMPTY_1] THEN SET_TAC[]);;
+ (`(!a b:real^1. interval[a,b] SUBSET segment[a,b]) /\
+   (!a b:real^1. interval(a,b) SUBSET segment(a,b))`,
+  REWRITE_TAC[SEGMENT_1] THEN REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[SUBSET_REFL] THEN
+  MATCH_MP_TAC(SET_RULE `s = {} ==> s SUBSET t`) THEN
+  REWRITE_TAC[INTERVAL_EQ_EMPTY_1] THEN ASM_REAL_ARITH_TAC);;
 
 let SEGMENT_SCALAR_MULTIPLE = prove
  (`(!a b v. segment[a % v,b % v] =
