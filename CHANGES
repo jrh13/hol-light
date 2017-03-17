@@ -8,6 +8,139 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 16th Mar 2017       Makefile
+
+Added yet another disjunct to the camlp5 version cases after a report from
+Vu Khac Ky of a failure with camlp5 6.17 (currently the latest version).
+
+Wed 15th Mar 2017       real.ml, Library/transc.ml, 100/sqrt.ml, Jordan/metric_spaces.ml, Jordan/jordan_curve_theorem.ml
+
+Added a definition and basic properties of square roots to the core system,
+mainly lifted from the existing Multivariate code. The proof that the
+definition works is laborious without any analytical machinery but it seemed
+artificial to make such a basic and well-known function dependent on such
+machinery. Note that the definition is totalized to be sign-preserving,
+which makes various theorems work nicely without side-conditions while not
+affecting its value for nonnegative arguments where it is usually considered
+to be defined. New definitions and theorems:
+
+  sqrt = |- !x. sqrt x = (@y. real_sgn y = real_sgn x /\ y pow 2 = abs x)
+
+  POW_2_SQRT =
+     |- !x. &0 <= x ==> sqrt (x pow 2) = x
+
+  POW_2_SQRT_ABS =
+     |- !x. sqrt (x pow 2) = abs x
+
+  REAL_DIV_SQRT =
+     |- !x. &0 <= x ==> x / sqrt x = sqrt x
+
+  REAL_LE_LSQRT =
+     |- !x y. &0 <= y /\ x <= y pow 2 ==> sqrt x <= y
+
+  REAL_LE_RSQRT =
+     |- !x y. x pow 2 <= y ==> x <= sqrt y
+
+  REAL_LSQRT_LE =
+     |- !x y. &0 <= x /\ sqrt x <= y ==> x <= y pow 2
+
+  REAL_LT_LSQRT =
+     |- !x y. &0 <= y /\ x < y pow 2 ==> sqrt x < y
+
+  REAL_LT_RSQRT =
+     |- !x y. x pow 2 < y ==> x < sqrt y
+
+  REAL_RSQRT_LE =
+     |- !x y. &0 <= x /\ &0 <= y /\ x <= sqrt y ==> x pow 2 <= y
+
+  REAL_SGN_SQRT =
+     |- !x. real_sgn (sqrt x) = real_sgn x
+
+  REAL_SQRT_POW_2 =
+     |- !x. sqrt x pow 2 = abs x
+
+  SQRT_0 =
+     |- sqrt (&0) = &0
+
+  SQRT_1 =
+     |- sqrt (&1) = &1
+
+  SQRT_DIV =
+     |- !x y. sqrt (x / y) = sqrt x / sqrt y
+
+  SQRT_EQ_0 =
+     |- !x. sqrt x = &0 <=> x = &0
+
+  SQRT_EVEN_POW2 =
+     |- !n. EVEN n ==> sqrt (&2 pow n) = &2 pow (n DIV 2)
+
+  SQRT_INJ =
+     |- !x y. sqrt x = sqrt y <=> x = y
+
+  SQRT_INV =
+     |- !x. sqrt (inv x) = inv (sqrt x)
+
+  SQRT_LE_0 =
+     |- !x. &0 <= sqrt x <=> &0 <= x
+
+  SQRT_LT_0 =
+     |- !x. &0 < sqrt x <=> &0 < x
+
+  SQRT_MONO_LE =
+     |- !x y. x <= y ==> sqrt x <= sqrt y
+
+  SQRT_MONO_LE_EQ =
+     |- !x y. sqrt x <= sqrt y <=> x <= y
+
+  SQRT_MONO_LT =
+     |- !x y. x < y ==> sqrt x < sqrt y
+
+  SQRT_MONO_LT_EQ =
+     |- !x y. sqrt x < sqrt y <=> x < y
+
+  SQRT_MUL =
+     |- !x y. sqrt (x * y) = sqrt x * sqrt y
+
+  SQRT_NEG =
+     |- !x. sqrt (--x) = --sqrt x
+
+  SQRT_POS_LE =
+     |- !x. &0 <= x ==> &0 <= sqrt x
+
+  SQRT_POS_LT =
+     |- !x. &0 < x ==> &0 < sqrt x
+
+  SQRT_POW2 =
+     |- !x. sqrt x pow 2 = x <=> &0 <= x
+
+  SQRT_POW_2 =
+     |- !x. &0 <= x ==> sqrt x pow 2 = x
+
+  SQRT_UNIQUE =
+     |- !x y. &0 <= y /\ y pow 2 = x ==> sqrt x = y
+
+  SQRT_UNIQUE_GEN =
+      |- !x y. real_sgn y = real_sgn x /\ y pow 2 = abs x ==> sqrt x = y
+
+  SQRT_WORKS =
+     |- !x. &0 <= x ==> &0 <= sqrt x /\ sqrt x pow 2 = x
+
+  SQRT_WORKS_GEN =
+     |- !x. real_sgn (sqrt x) = real_sgn x /\ sqrt x pow 2 = abs x
+
+Also removed either duplicates or weaker theorems (with more hypotheses)
+sharing the same names from "Library/transc.ml", removed a dependency in
+"100/sqrt.ml", and fixed some consequentially broken proofs in Jordan.
+
+Sun  5th Mar 2017       sets.ml
+
+Added a kind of infinite pigeonhole principle:
+
+  FINITE_IMAGE_INFINITE =
+    |- !f:A->B s.
+          INFINITE s /\ FINITE(IMAGE f s)
+          ==> ?a. a IN s /\ INFINITE {x | x IN s /\ f x = f a}
+
 Thu  2nd Mar 2017       sets.ml, cart.ml
 
 Added one more triviality about products of sets, both in the real product and

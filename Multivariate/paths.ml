@@ -54,7 +54,7 @@ let PATH_IN_EUCLIDEAN = prove
  (`!s:real^N->bool g.
         path_in (subtopology euclidean s) g <=>
         path (g o drop) /\ path_image (g o drop) SUBSET s`,
-  REWRITE_TAC[path_in; path; GSYM CONTINUOUS_MAP_EQ_CONTINUOUS_ON] THEN
+  REWRITE_TAC[path_in; path; GSYM CONTINUOUS_MAP_EUCLIDEAN] THEN
   REWRITE_TAC[path_image; INTERVAL_REAL_INTERVAL; DROP_VEC] THEN
   REWRITE_TAC[GSYM IMAGE_o; GSYM o_ASSOC] THEN
   ONCE_REWRITE_TAC[IMAGE_o] THEN
@@ -4075,7 +4075,7 @@ let DARBOUX_AND_REGULATED_IMP_CONTINUOUS = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `a:real^1`) THEN ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN
   DISCH_THEN(X_CHOOSE_THEN `m:real^1` MP_TAC) THEN
-  MATCH_MP_TAC(MESON[LIM]
+  MATCH_MP_TAC(MESON[LIM_TRIVIAL]
    `(~trivial_limit net /\ (f --> l) net ==> m = l)
     ==> (f --> l) net ==> (f --> m) net`) THEN
   REWRITE_TAC[TRIVIAL_LIMIT_WITHIN] THEN STRIP_TAC THEN
@@ -23108,6 +23108,26 @@ let DIMENSION_SUBSET = prove
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[INT_LE_TRANS_LE] THEN
   REWRITE_TAC[DIMENSION_DIMENSION_LE] THEN
   ASM_MESON_TAC[DIMENSION_LE_SUBTOPOLOGIES]);;
+
+let DIMENSION_LE_DISCRETE = prove
+ (`!s:real^N->bool.
+        {x | x limit_point_of s} = {} ==> dimension s <= &0`,
+  GEN_TAC THEN REWRITE_TAC[DIMENSION_DIMENSION_LE] THEN
+  REWRITE_TAC[GSYM EUCLIDEAN_DERIVED_SET_OF_IFF_LIMIT_POINT_OF] THEN
+  SIMP_TAC[SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY; INTER_EMPTY;
+           TOPSPACE_EUCLIDEAN; SUBSET_UNIV; DIMENSION_LE_DISCRETE_TOPOLOGY]);;
+
+let DIMENSION_EQ_ZERO_DISCRETE = prove
+ (`!s:real^N->bool.
+        ~(s = {}) /\ {x | x limit_point_of s} = {} ==> dimension s = &0`,
+  SIMP_TAC[GSYM INT_LE_ANTISYM; DIMENSION_POS_LE; DIMENSION_LE_DISCRETE]);;
+
+let DIMENSION_EQ_DISCRETE = prove
+ (`!s:real^N->bool.
+        {x | x limit_point_of s} = {}
+        ==> dimension s = if s = {} then --(&1) else &0`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[DIMENSION_EMPTY; DIMENSION_EQ_ZERO_DISCRETE]);;
 
 let DIMENSION_LE_EQ_ALT = prove
  (`!s:real^N->bool n.

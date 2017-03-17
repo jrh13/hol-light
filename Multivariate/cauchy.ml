@@ -418,7 +418,7 @@ let VECTOR_DERIVATIVE_WITHIN_INTERIOR = prove
         ==> vector_derivative f (at x within interval[a,b]) =
             vector_derivative f (at x)`,
   SIMP_TAC[vector_derivative; has_vector_derivative; has_derivative;
-           LIM_WITHIN_INTERIOR; NETLIMIT_WITHIN_INTERIOR; NETLIMIT_AT]);;
+           LIM_WITHIN_INTERIOR; NETLIMIT_WITHIN; NETLIMIT_AT]);;
 
 let HAS_INTEGRAL_LOCALIZED_VECTOR_DERIVATIVE = prove
  (`((\x. f' (g x) * vector_derivative g (at x within interval [a,b]))

@@ -4,7 +4,6 @@
 
 needs "Library/prime.ml";;              (* For number-theoretic lemmas       *)
 needs "Library/floor.ml";;              (* For definition of rationals       *)
-needs "Multivariate/vectors.ml";;       (* For square roots                  *)
 
 (* ------------------------------------------------------------------------- *)
 (* Most general irrationality of square root result.                         *)

@@ -2345,7 +2345,6 @@ let CFUN_SUM_ADD = prove
         (cfun_sum s (\x. f(x) + g(x)) = cfun_sum s f + cfun_sum s g)`,
   SIMP_TAC[cfun_sum; ITERATE_OP; MONOIDAL_CFUN_ADD]);;
 
-
 let CFUN_SUM_SMUL = prove
  (`!f a s. FINITE s ==> (cfun_sum s (\x. a % f(x) ) = a % cfun_sum s f)`,
    ONCE_REWRITE_TAC[MESON[] `a % (y:cfun) = (\x. a%x) y`] THEN
@@ -2396,14 +2395,6 @@ let SCALAR_BOUNDED = prove
                  IMP_REWRITE_TAC[COMPLEX_NORM_NZ;REAL_LE_REFL;GSYM cfun_norm;
                  CFUN_NORM_SMUL]]);;
 
-let CFUN_LIM = prove
- (`cfun_lim1 (s,inprod) f l net  <=>
-    is_inner_space (s,inprod) /\ l IN s /\ (!x. (f x) IN s) /\
-        (trivial_limit net \/
-        !e. &0 < e ==> ?y. (?x. netord(net) x y) /\
-                           !x. netord(net) x y ==> cfun_dist inprod (f x) l < e)`,
-  REWRITE_TAC[cfun_lim; eventually] THEN MESON_TAC[]);;
-
 let CFUN_LIM_ULINEAR = prove
  (`!net:(A)net h s1 f l s inprod.
         cfun_lim1 (s,inprod) f l net /\ is_unbounded_linear_cop s1 h
@@ -2412,20 +2403,18 @@ let CFUN_LIM_ULINEAR = prove
                   is_bounded1 (s,inprod) h
                 ==> cfun_lim1 (s,inprod) (\x.h (f x)) (h l) net`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN
-  REPEAT GEN_TAC THEN REWRITE_TAC[CFUN_LIM] THEN
-  ASM_CASES_TAC `trivial_limit (net:(A)net)` THEN
-  ASM_SIMP_TAC[is_bounded;is_closed_by] THEN
-  STRIP_TAC THEN  FIRST_ASSUM(fun thm -> FIRST_ASSUM (ASSUME_TAC o MP thm)) THEN
-  FIRST_ASSUM STRIP_ASSUME_TAC  THEN REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o Pa.SPEC `e / B:`) THEN
-  ASM_SIMP_TAC[REAL_LT_DIV;cfun_dist;REAL_LT_RDIV_EQ] THEN
+  REPEAT GEN_TAC THEN SIMP_TAC[cfun_lim] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [is_bounded]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `B:real` THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o  Pa.SPEC `e / B:`) THEN
+   ASM_SIMP_TAC[REAL_LT_DIV;cfun_dist;REAL_LT_RDIV_EQ] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  REWRITE_TAC[] THEN Pa.X_GEN_TAC `x:` THEN
   IMP_REWRITE_TAC[GSYM (Pa.SPEC "s1" ULINCOP_SUB);ULINCOP_SUBSPACE] THEN
-  REPEAT STRIP_TAC THEN Pa.EXISTS_TAC "y" THEN CONJ_TAC THENL[ASM_MESON_TAC[];ALL_TAC]
-  THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
-  Pa.EXISTS_TAC "sqrt (real_of_complex (inprod (f x' - l) (f x' - l))) * B" THEN ASM_SIMP_TAC[]
-  THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN IMP_REWRITE_TAC[INNER_SPACE_SUB]
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LET_TRANS) THEN
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN IMP_REWRITE_TAC[INNER_SPACE_SUB]
   THEN ASM_MESON_TAC[ULINCOP_SUB;INNER_SPACE_SUB]);;
-
 
 let cfun_sums = new_definition
  `cfun_sums innerspc f l s <=>
@@ -2482,32 +2471,33 @@ let CFUN_LIM_NEG = prove
  (`!net f l innerspc.  cfun_lim1 innerspc f l net
      ==> cfun_lim1 innerspc (\x. --(f x)) (--l) net`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN REPEAT GEN_TAC THEN
-  REWRITE_TAC[CFUN_LIM;cfun_dist] THEN
+  REWRITE_TAC[cfun_lim;cfun_dist] THEN
   IMP_REWRITE_TAC[CFUN_ARITH `--(x:cfun) - --y = --(x - y)`;
-  INPROD_NEG;CFUN_SUBSPACE_SUB;CFUN_SUBSPACE_NEG]
-  THEN MESON_TAC[INNER_SPACE_IS_SUBSPACE]);;
-
+        INPROD_NEG;CFUN_SUBSPACE_SUB;CFUN_SUBSPACE_NEG;
+        INNER_SPACE_IS_SUBSPACE] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN
+  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[] THEN
+  IMP_REWRITE_TAC[CFUN_ARITH `--(x:cfun) - --y = --(x - y)`;
+        INPROD_NEG;CFUN_SUBSPACE_SUB;CFUN_SUBSPACE_NEG;
+        INNER_SPACE_IS_SUBSPACE]);;
 
 let CFUN_LIM_ADD = prove
  (`!net f g l m innerspc.
     cfun_lim1 innerspc f l net /\ cfun_lim1 innerspc g m net
         ==> cfun_lim1 innerspc (\x. f(x) + g(x)) (l+m) net`,
   REWRITE_TAC[FORALL_INNER_SPACE_THM] THEN REPEAT GEN_TAC
-  THEN REWRITE_TAC[CFUN_LIM;CONJ_ACI] THEN
-  Pa.ASM_CASES_TAC `trivial_limit net:` THEN
-  IMP_REWRITE_TAC[INNER_SPACE_ADD] THEN
-  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2` o REWRITE_RULE[MESON[]
-  `!A B C D E F.A /\ B /\ C /\ D /\ (!x. E x) /\ (!x. F x)  /\ G
-   <=> !x.   A  /\ B /\ C /\D   /\ G /\E x /\ F x `]) THEN
-  REPEAT STRIP_TAC THEN
-  POP_ASSUM( fun thm1 -> POP_ASSUM (fun thm2 -> MP_TAC (CONJS[thm1;thm2]))) THEN
-  ASM_REWRITE_TAC[REAL_HALF] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[CONJ_ACI] NET_DILEMMA))
-  THEN MATCH_MP_TAC MONO_EXISTS THEN
-  REPEAT STRIP_TAC THENL[  MATCH_MP_TAC REAL_LET_TRANS THEN
-  Pa.EXISTS_TAC `cfun_dist inprod (f x') l + cfun_dist inprod (g x') m:` THEN
-  ASM_MESON_TAC[REAL_HALF;CFUN_DIST_TRIANGLE_ADD;REAL_LT_ADD2];ASM_MESON_TAC[]]);;
+  THEN REWRITE_TAC[cfun_lim;CONJ_ACI] THEN
+  IMP_REWRITE_TAC[INNER_SPACE_ADD] THEN STRIP_TAC THEN
+  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`)) THEN
+  ASM_REWRITE_TAC[REAL_HALF; IMP_IMP; GSYM EVENTUALLY_AND] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  GEN_TAC THEN REWRITE_TAC[] THEN MATCH_MP_TAC(REAL_ARITH
+   `z <= x + y ==> x < e / &2 /\ y < e / &2 ==> z < e`) THEN
+  ASM_MESON_TAC[CFUN_DIST_TRIANGLE_ADD]);;
 
 let CFUN_LIM_SUB = prove
  (`!net f g l m innerspc.
@@ -2518,7 +2508,7 @@ let CFUN_LIM_SUB = prove
 let CFUN_LIM_CONST = prove
  (`!net s inprod y. y IN s /\ is_inner_space (s,inprod)
      ==> cfun_lim1 (s,inprod) (\x. y) y net`,
-  IMP_REWRITE_TAC[CFUN_LIM; CFUN_DIST_REFL; trivial_limit] THEN MESON_TAC[]);;
+  IMP_REWRITE_TAC[cfun_lim; CFUN_DIST_REFL; EVENTUALLY_TRUE]);;
 
 let CFUN_LIM_SMUL = prove
  (`!a net f l  innerspc.
@@ -2545,14 +2535,15 @@ let CFUN_LIM_NORM_UBOUND = prove
     ==> cfun_norm inprod l <= cfun_norm inprod (f-l) + b \/
          ~(cfun_norm inprod f <= b)` in
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[CFUN_LIM] THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)
-  THEN ASM_REWRITE_TAC[eventually] THEN
-  STRIP_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN
-  ONCE_REWRITE_TAC[GSYM REAL_SUB_LT] THEN DISCH_TAC THEN
-  Pa.SUBGOAL_THEN
-   `?x:A. cfun_dist inprod (f x) l <
-          cfun_norm inprod l - b /\ cfun_norm inprod(f x) <= b:`
-  (CHOOSE_THEN MP_TAC) THENL [ASM_MESON_TAC[NET]; ALL_TAC] THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[REAL_ARITH `~(l <= b) <=> &0 < l - b`] THEN DISCH_TAC THEN
+  REWRITE_TAC[cfun_lim] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+  FIRST_X_ASSUM(ANTE_RES_THEN MP_TAC) THEN
+  REWRITE_TAC[TAUT `p ==> q ==> F <=> ~(p /\ q)`; GSYM EVENTUALLY_AND] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP EVENTUALLY_HAPPENS) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `x:A` MP_TAC) THEN
   REWRITE_TAC[REAL_NOT_LT; REAL_LE_SUB_RADD; DE_MORGAN_THM;
   cfun_dist;GSYM cfun_norm] THEN MATCH_MP_TAC STEP THEN ASM_REWRITE_TAC[]
   );;

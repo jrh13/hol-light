@@ -2839,6 +2839,18 @@ let POWERSET_CLAUSES = prove
   STRIP_TAC THEN DISJ2_TAC THEN EXISTS_TAC `s DELETE (a:A)` THEN
   ASM SET_TAC[]);;
 
+let FINITE_IMAGE_INFINITE = prove
+ (`!f:A->B s.
+        INFINITE s /\ FINITE(IMAGE f s)
+        ==> ?a. a IN s /\ INFINITE {x | x IN s /\ f x = f a}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ_ALT] THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[NOT_EXISTS_THM; INFINITE; TAUT `~(p /\ q) <=> p ==> ~q`] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `s = UNIONS {{x | x IN s /\ (f:A->B) x = y} |y| y IN IMAGE f s}`
+  SUBST1_TAC THENL [REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[FINITE_UNIONS; SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Set of numbers is infinite.                                               *)
 (* ------------------------------------------------------------------------- *)

@@ -665,42 +665,6 @@ let REAL_MIN_INF = prove
   REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[REAL_LE_TOTAL]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Define square root here to decouple it from the existing analysis theory. *)
-(* We totalize by making sqrt(-x) = -sqrt(x), which looks rather unnatural   *)
-(* but allows many convenient properties to be used without sideconditions.  *)
-(* ------------------------------------------------------------------------- *)
-
-let sqrt = new_definition
- `sqrt(x) = @y. real_sgn y = real_sgn x /\ y pow 2 = abs x`;;
-
-let SQRT_UNIQUE = prove
- (`!x y. &0 <= y /\ y pow 2 = x ==> sqrt(x) = y`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[sqrt] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
-  REWRITE_TAC[REAL_SGN_POW_2; REAL_ABS_POW] THEN
-  X_GEN_TAC `z:real` THEN ASM_REWRITE_TAC[real_abs] THEN
-  REWRITE_TAC[REAL_RING `x pow 2 = y pow 2 <=> x:real = y \/ x = --y`] THEN
-  REWRITE_TAC[real_sgn] THEN ASM_REAL_ARITH_TAC);;
-
-let POW_2_SQRT = prove
- (`!x. &0 <= x ==> sqrt(x pow 2) = x`,
-  MESON_TAC[SQRT_UNIQUE]);;
-
-let SQRT_0 = prove
- (`sqrt(&0) = &0`,
-  MESON_TAC[SQRT_UNIQUE; REAL_POW_2; REAL_MUL_LZERO; REAL_POS]);;
-
-let SQRT_1 = prove
- (`sqrt(&1) = &1`,
-   MESON_TAC[SQRT_UNIQUE; REAL_POW_2; REAL_MUL_LID; REAL_POS]);;
-
-let POW_2_SQRT_ABS = prove
- (`!x. sqrt(x pow 2) = abs(x)`,
-  GEN_TAC THEN MATCH_MP_TAC SQRT_UNIQUE THEN
-  REWRITE_TAC[REAL_ABS_POS; REAL_POW_2; GSYM REAL_ABS_MUL] THEN
-  REWRITE_TAC[real_abs; REAL_LE_SQUARE]);;
-
-(* ------------------------------------------------------------------------- *)
 (* A slightly sharper indexing lemma.                                        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -814,6 +778,11 @@ let FINITE_INTER_NUMSEG = prove
  (`!s m n. FINITE(s INTER (m..n))`,
   MESON_TAC[FINITE_SUBSET; FINITE_NUMSEG; INTER_SUBSET]);;
 
+let FROM_NONEMPTY = prove
+ (`!n. ~(from n = {})`,
+  GEN_TAC THEN REWRITE_TAC[EXTENSION; IN_FROM; NOT_IN_EMPTY] THEN
+  MESON_TAC[LE_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Make a Horner-style evaluation of sum(m..n) (\k. a(k) * x pow k).         *)
 (* ------------------------------------------------------------------------- *)
@@ -843,6 +812,12 @@ let HORNER_SUM_CONV =
 (* ------------------------------------------------------------------------- *)
 (* Some general lemmas about subsequences.                                   *)
 (* ------------------------------------------------------------------------- *)
+
+let SUBSEQUENCE_STEPWISE = prove
+ (`!r:num->num. (!m n. m < n ==> r m < r n) <=> (!n. r n < r(SUC n))`,
+  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[ARITH_RULE `n < SUC n`] THEN
+  DISCH_TAC THEN MATCH_MP_TAC TRANSITIVE_STEPWISE_LT THEN
+  ASM_REWRITE_TAC[] THEN ARITH_TAC);;
 
 let SUBSEQUENCE_IMP_INJECTIVE = prove
  (`!r:num->num. (!m n. m < n ==> r m < r n) ==> (!m n. r m = r n <=> m = n)`,
@@ -962,6 +937,84 @@ let REAL_NON_MONOTONE = prove
   ASM_CASES_TAC `v:real = w` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
   ASM_CASES_TAC `v:real = z` THEN ASM_REWRITE_TAC[REAL_LT_REFL] THEN
   REPEAT(FIRST_X_ASSUM SUBST_ALL_TAC) THEN ASM_REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* A generic form of the argument "pick a subsequence satisfying P_0,        *)
+(* then a subsequence of that satisfying P_1, then a subsequece of that..."  *)
+(* ------------------------------------------------------------------------- *)
+
+let SUBSEQUENCE_DIAGONALIZATION_LEMMA = prove
+ (`!P:num->(num->A)->bool.
+    (!i r:num->A. ?k. (!m n. m < n ==> k m < k n) /\ P i (r o k)) /\
+    (!i r:num->A k1 k2 N.
+        P i (r o k1) /\ (!j. N <= j ==> ?j'. j <= j' /\ k2 j = k1 j')
+        ==> P i (r o k2))
+    ==> !r:num->A. ?k. (!m n. m < n ==> k m < k n) /\ (!i. P i (r o k))`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [SKOLEM_THM] THEN
+  REWRITE_TAC[FORALL_AND_THM; TAUT
+   `(p ==> q /\ r) <=> (p ==> q) /\ (p ==> r)`] THEN
+  DISCH_THEN(X_CHOOSE_THEN
+   `kk:num->(num->A)->num->num` STRIP_ASSUME_TAC) THEN
+  X_GEN_TAC `r:num->A` THEN
+  (STRIP_ASSUME_TAC o prove_recursive_functions_exist num_RECURSION)
+    `(rr 0 = (kk:num->(num->A)->num->num) 0 r) /\
+     (!n. rr(SUC n) = rr n o kk (SUC n) (r o rr n))` THEN
+  EXISTS_TAC `\n. (rr:num->num->num) n n` THEN REWRITE_TAC[ETA_AX] THEN
+  SUBGOAL_THEN
+   `(!i. (!m n. m < n ==> (rr:num->num->num) i m < rr i n)) /\
+    (!i. (P:num->(num->A)->bool) i (r o rr i))`
+  STRIP_ASSUME_TAC THENL
+   [REWRITE_TAC[AND_FORALL_THM] THEN
+    INDUCT_TAC THEN ASM_REWRITE_TAC[o_ASSOC] THEN
+    REWRITE_TAC[o_THM] THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `!i j n. i <= j ==> (rr:num->num->num) i n <= rr j n`
+  ASSUME_TAC THENL
+   [REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [LE_EXISTS] THEN
+    SIMP_TAC[LEFT_IMP_EXISTS_THM] THEN SPEC_TAC(`j:num`,`j:num`) THEN
+    ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN SIMP_TAC[FORALL_UNWIND_THM2] THEN
+    INDUCT_TAC THEN REWRITE_TAC[ADD_CLAUSES; LE_REFL] THEN
+    ASM_REWRITE_TAC[] THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+     (REWRITE_RULE[IMP_CONJ] LE_TRANS)) THEN REWRITE_TAC[o_THM] THEN
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+     (MESON[LE_LT]
+       `!f:num->num.
+        (!m n. m < n ==> f m < f n) ==> (!m n. m <= n ==> f m <= f n)`) o
+       SPEC `i + d:num`) THEN
+    SPEC_TAC(`n:num`,`n:num`) THEN MATCH_MP_TAC MONOTONE_BIGGER THEN
+    ASM_SIMP_TAC[];
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN DISCH_TAC THEN
+    MATCH_MP_TAC LET_TRANS THEN
+    EXISTS_TAC `(rr:num->num->num) n m` THEN
+    ASM_MESON_TAC[LT_IMP_LE];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!m n i. n <= m ==> ?j. i <= j /\ (rr:num->num->num) m i = rr n j`
+  ASSUME_TAC THENL
+   [ALL_TAC;
+    X_GEN_TAC `i:num` THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    EXISTS_TAC `(rr:num->num->num) i` THEN ASM_REWRITE_TAC[] THEN
+    EXISTS_TAC `i:num` THEN ASM_MESON_TAC[]] THEN
+  SUBGOAL_THEN
+   `!p d i. ?j. i <= j /\ (rr:num->num->num) (p + d) i = rr p j`
+   (fun th -> MESON_TAC[LE_EXISTS; th]) THEN
+  X_GEN_TAC `p:num` THEN  MATCH_MP_TAC num_INDUCTION THEN
+  ASM_REWRITE_TAC[ADD_CLAUSES] THEN CONJ_TAC THENL
+   [MESON_TAC[LE_REFL]; ALL_TAC] THEN
+  X_GEN_TAC `d:num` THEN DISCH_THEN(LABEL_TAC "+") THEN
+  X_GEN_TAC `i:num` THEN ASM_REWRITE_TAC[o_THM] THEN
+  REMOVE_THEN "+" (MP_TAC o SPEC
+   `(kk:num->(num->A)->num->num) (SUC(p + d))
+        ((r:num->A) o (rr:num->num->num) (p + d)) i`) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `j:num` THEN
+  MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LE_TRANS) THEN
+  SPEC_TAC(`i:num`,`i:num`) THEN MATCH_MP_TAC MONOTONE_BIGGER THEN
+  ASM_REWRITE_TAC[o_THM] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Countability of some relevant sets.                                       *)

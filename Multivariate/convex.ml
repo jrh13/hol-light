@@ -1951,26 +1951,10 @@ let COLLINEAR_3_EXPLICIT = prove
 
 let CONVEX_CONNECTED = prove
  (`!s:real^N->bool. convex s ==> connected s`,
-  REWRITE_TAC[CONVEX_ALT; connected; SUBSET; EXTENSION; IN_INTER;
-              IN_UNION; NOT_IN_EMPTY; NOT_FORALL_THM; NOT_EXISTS_THM] THEN
-  GEN_TAC THEN DISCH_TAC THEN REPEAT GEN_TAC THEN
-  MAP_EVERY (K(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC))) (1--4) THEN
-  DISCH_THEN(CONJUNCTS_THEN2 (X_CHOOSE_THEN `x1:real^N` STRIP_ASSUME_TAC)
-                         (X_CHOOSE_THEN `x2:real^N` STRIP_ASSUME_TAC)) THEN
-  MP_TAC(ISPECL [`\u. (&1 - u) % x1 + u % (x2:real^N)`;
-                 `&0`; `&1`; `e1:real^N->bool`; `e2:real^N->bool`]
-         (REWRITE_RULE[GSYM open_def] CONNECTED_REAL_LEMMA)) THEN
-  ASM_REWRITE_TAC[NOT_IMP; REAL_SUB_RZERO; VECTOR_MUL_LID; VECTOR_MUL_LZERO;
-                  REAL_SUB_REFL; VECTOR_ADD_RID; VECTOR_ADD_LID; REAL_POS] THEN
-  REPEAT(CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]]) THEN
-  REPEAT STRIP_TAC THEN REWRITE_TAC[dist] THEN
-  REWRITE_TAC[NORM_MUL; VECTOR_ARITH
-   `((&1 - a) % x + a % y) - ((&1 - b) % x + b % y) = (a - b) % (y - x)`] THEN
-  MP_TAC(ISPEC `(x2 - x1):real^N` NORM_POS_LE) THEN
-  REWRITE_TAC[REAL_LE_LT] THEN STRIP_TAC THENL
-   [ALL_TAC; ASM_MESON_TAC[REAL_MUL_RZERO; REAL_LT_01]] THEN
-  EXISTS_TAC `e / norm((x2 - x1):real^N)` THEN
-  ASM_SIMP_TAC[REAL_LT_RDIV_EQ; REAL_LT_DIV]);;
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[CONNECTED_IFF_CONNECTABLE_POINTS] THEN
+  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN STRIP_TAC THEN
+  EXISTS_TAC `segment[a:real^N,b]` THEN
+  ASM_SIMP_TAC[CONNECTED_SEGMENT; ENDS_IN_SEGMENT; SEGMENT_SUBSET_CONVEX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convex functions into the reals.                                          *)
@@ -2043,6 +2027,15 @@ let CONVEX_MAX = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
   MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THEN
   MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC);;
+
+let CONVEX_ON_SUM = prove
+ (`!t f:A->real^N->real s.
+         FINITE s /\ (!a. a IN s ==> f a convex_on t)
+         ==> (\x. sum s (\a. f a x)) convex_on t`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; CONVEX_ON_CONST; FORALL_IN_INSERT] THEN
+  SIMP_TAC[CONVEX_ADD; ETA_AX]);;
 
 let CONVEX_ON_IMP_MIDPOINT_CONVEX = prove
  (`!f s x y:real^N.

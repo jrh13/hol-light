@@ -455,7 +455,7 @@ let CONTINUOUS_ON_HX_DROP = prove
 
 let CONTINUOUS_HX_LIFT = prove
  (`!f. (\x:A. Hx(f x)) continuous net <=> (\x. lift(f x)) continuous net`,
-  REWRITE_TAC[continuous; LIM; dist; GSYM HX_SUB; GSYM LIFT_SUB] THEN
+  REWRITE_TAC[continuous; tendsto; dist; GSYM HX_SUB; GSYM LIFT_SUB] THEN
   REWRITE_TAC[NORM_HX; NORM_LIFT]);;
 
 let CONTINUOUS_ON_HX_LIFT = prove
