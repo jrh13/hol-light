@@ -2735,6 +2735,12 @@ let INTEGRAL_OPEN_INTERVAL = prove
  (`!f a b. integral(interval(a,b)) f = integral(interval[a,b]) f`,
   REWRITE_TAC[integral; HAS_INTEGRAL_OPEN_INTERVAL]);;
 
+let ABSOLUTELY_INTEGRABLE_ON_OPEN_INTERVAL = prove
+ (`!f:real^M->real^N a b.
+        f absolutely_integrable_on interval(a,b) <=>
+        f absolutely_integrable_on interval[a,b]`,
+  REWRITE_TAC[absolutely_integrable_on; INTEGRABLE_ON_OPEN_INTERVAL]);;
+
 let MEASURABLE_SEGMENT = prove
  (`(!a b:real^N. measurable(segment[a,b])) /\
    (!a b:real^N. measurable(segment(a,b)))`,
@@ -7736,6 +7742,19 @@ let MEASURABLE_ON_CONST_EQ = prove
       MATCH_MP MEASURABLE_ON_CMUL) THEN
     REWRITE_TAC[GSYM LIFT_NUM; GSYM LIFT_CMUL; REAL_MUL_RID]]);;
 
+let MEASURABLE_ON_LIFT_POW = prove
+ (`!f:real^M->real s n.
+        (\x. lift(f x)) measurable_on s /\ (n = 0 ==> lebesgue_measurable s)
+        ==> (\x. lift(f x pow n)) measurable_on s`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MATCH_MP_TAC num_INDUCTION THEN
+  SIMP_TAC[MEASURABLE_ON_CONST_EQ; CONJUNCT1 real_pow] THEN
+  X_GEN_TAC `n:num` THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_CASES_TAC `lebesgue_measurable(s:real^M->bool)` THEN
+  ASM_REWRITE_TAC[NOT_SUC; real_pow; REAL_MUL_RID] THEN
+  ASM_SIMP_TAC[MEASURABLE_ON_LIFT_MUL]);;
+
 let MEASURABLE_ON_LIFT_PRODUCT = prove
  (`!f:A->real^N->real s t.
          FINITE t /\ (t = {} ==> lebesgue_measurable s) /\
@@ -7779,6 +7798,13 @@ let MEASURABLE_ON_SPIKE_SET = prove
   MAP_EVERY ASM_CASES_TAC [`(x:real^M) IN s`; `(x:real^M) IN t`] THEN
   ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
 
+let MEASURABLE_ON_SPIKE_SET_EQ = prove
+ (`!f:real^M->real^N s t.
+        negligible (s DIFF t UNION t DIFF s)
+        ==> (f measurable_on s <=> f measurable_on t)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN MATCH_MP_TAC MEASURABLE_ON_SPIKE_SET THEN
+  POP_ASSUM MP_TAC THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN SET_TAC[]);;
+
 let MEASURABLE_ON_EQ = prove
  (`!f g:real^M->real^N s.
         (!x. x IN s ==> f x = g x) /\ f measurable_on s
@@ -7811,6 +7837,16 @@ let MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET = prove
   DISCH_THEN(MP_TAC o MATCH_MP MEASURABLE_ON_RESTRICT) THEN
   MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
   REWRITE_TAC[FUN_EQ_THM] THEN ASM SET_TAC[]);;
+
+let MEASURABLE_ON_OPEN_INTERVAL = prove
+ (`!f:real^M->real^N a b.
+        f measurable_on interval(a,b) <=> f measurable_on interval[a,b]`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC MEASURABLE_ON_SPIKE_SET_EQ THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `interval[a:real^M,b] DIFF interval(a,b)` THEN
+  REWRITE_TAC[NEGLIGIBLE_FRONTIER_INTERVAL] THEN
+  MP_TAC(ISPECL [`a:real^M`; `b:real^M`] INTERVAL_OPEN_SUBSET_CLOSED) THEN
+  SET_TAC[]);;
 
 let MEASURABLE_ON_CASES = prove
  (`!P f g:real^M->real^N s.
@@ -19176,6 +19212,62 @@ let INTEGRAL_CHANGE_OF_VARIABLES = prove
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   DISCH_THEN(MP_TAC o MATCH_MP HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES) THEN
   ASM_MESON_TAC[]);;
+
+let HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1 = prove
+ (`!f:real^1->real^N g:real^1->real^1 g' s b.
+        lebesgue_measurable s /\
+         (!x y. x IN s /\ y IN s /\ g x = g y ==> x = y) /\
+         (!x. x IN s
+              ==> (g has_vector_derivative lift (g' (drop x)))
+                  (at x within s))
+         ==> ((\x. abs (g' (drop x)) % f (g x)) absolutely_integrable_on s /\
+              integral s (\x. abs (g' (drop x)) % f (g x)) = b <=>
+              f absolutely_integrable_on IMAGE g s /\
+              integral (IMAGE g s) f = b)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[MESON[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE;
+                   HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+   `f absolutely_integrable_on s /\ integral s f = b <=>
+    f absolutely_integrable_on s /\ (f has_integral b) s`] THEN
+  ONCE_REWRITE_TAC[HAS_INTEGRAL_COMPONENTWISE;
+                   ABSOLUTELY_INTEGRABLE_COMPONENTWISE] THEN
+  REWRITE_TAC[AND_FORALL_THM] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `i:num` THEN
+  ASM_CASES_TAC `1 <= i /\ i <= dimindex(:N)` THEN
+  ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[MESON[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE;
+                    HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+    `f absolutely_integrable_on s /\ (f has_integral b) s <=>
+     f absolutely_integrable_on s /\ integral s f = b`] THEN
+  MP_TAC(ISPECL
+   [`\x. lift((f:real^1->real^N) x$i)`;
+    `g:real^1->real^1`;
+    `(\x h. g'(drop x) % h) :real^1->real^1->real^1`;
+    `s:real^1->bool`;
+    `lift((b:real^N)$i)`] HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [X_GEN_TAC `x:real^1` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [has_vector_derivative] o
+      SPEC `x:real^1`) THEN
+    ASM_REWRITE_TAC[GSYM LIFT_CMUL] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+    REWRITE_TAC[LIFT_CMUL; LIFT_DROP];
+    DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  SIMP_TAC[MATRIX_CMUL; LINEAR_ID; MATRIX_ID; DET_CMUL] THEN
+  REWRITE_TAC[DET_I; DIMINDEX_1; REAL_POW_1; REAL_MUL_RID] THEN
+  REWRITE_TAC[LIFT_CMUL; VECTOR_MUL_COMPONENT]);;
+
+let ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_1 = prove
+ (`!f:real^1->real^N g:real^1->real^1 g' s b.
+        lebesgue_measurable s /\
+        (!x y. x IN s /\ y IN s /\ g x = g y ==> x = y) /\
+        (!x. x IN s
+             ==> (g has_vector_derivative lift (g' (drop x)))
+                 (at x within s))
+        ==> (f absolutely_integrable_on IMAGE g s <=>
+             (\x. abs(g'(drop x)) % f(g x)) absolutely_integrable_on s)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o
+    MATCH_MP HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1) THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Change of variable for measure.                                           *)

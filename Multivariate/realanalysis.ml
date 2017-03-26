@@ -54,6 +54,28 @@ let REAL_BOUNDED_UNION = prove
  (`!s t. real_bounded(s UNION t) <=> real_bounded s /\ real_bounded t`,
   REWRITE_TAC[REAL_BOUNDED; IMAGE_UNION; BOUNDED_UNION]);;
 
+let REAL_BOUNDED_SUBSET_OPEN_INTERVAL_SYMMETRIC = prove
+ (`!s. real_bounded s ==> ?a. s SUBSET real_interval(--a,a)`,
+  REWRITE_TAC[REAL_BOUNDED_POS; LEFT_IMP_EXISTS_THM; SUBSET] THEN
+  MAP_EVERY X_GEN_TAC [`s:real->bool`; `b:real`] THEN STRIP_TAC THEN
+  EXISTS_TAC `b + &1` THEN X_GEN_TAC `x:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real`) THEN
+  ASM_REWRITE_TAC[IN_REAL_INTERVAL] THEN ASM_REAL_ARITH_TAC);;
+
+let REAL_BOUNDED_SUBSET_OPEN_INTERVAL = prove
+ (`!s. real_bounded s ==> ?a b. s SUBSET real_interval(a,b)`,
+  MESON_TAC[REAL_BOUNDED_SUBSET_OPEN_INTERVAL_SYMMETRIC]);;
+
+let REAL_BOUNDED_SUBSET_CLOSED_INTERVAL_SYMMETRIC = prove
+ (`!s. real_bounded s ==> ?a. s SUBSET real_interval[--a,a]`,
+  MESON_TAC[REAL_INTERVAL_OPEN_SUBSET_CLOSED; SUBSET_TRANS;
+            REAL_BOUNDED_SUBSET_OPEN_INTERVAL_SYMMETRIC]);;
+
+let REAL_BOUNDED_SUBSET_CLOSED_INTERVAL = prove
+ (`!s. real_bounded s ==> ?a b. s SUBSET real_interval[a,b]`,
+  MESON_TAC[REAL_INTERVAL_OPEN_SUBSET_CLOSED; SUBSET_TRANS;
+            REAL_BOUNDED_SUBSET_OPEN_INTERVAL]);;
+
 let real_compact = new_definition
  `real_compact s <=> compact(IMAGE lift s)`;;
 
@@ -2835,6 +2857,13 @@ let REAL_DIFFERENTIABLE_WITHIN = prove
   REWRITE_TAC[differentiable; has_derivative; LINEAR_SCALING] THEN
   REWRITE_TAC[LINEAR_1; LEFT_AND_EXISTS_THM] THEN
   ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN REWRITE_TAC[UNWIND_THM2]);;
+
+let REAL_DIFFERENTIABLE_ON = prove
+ (`!f s. f real_differentiable_on s <=>
+         (lift o f o drop) differentiable_on (IMAGE lift s)`,
+  REWRITE_TAC[real_differentiable_on; differentiable_on; GSYM
+              real_differentiable] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; REAL_DIFFERENTIABLE_WITHIN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relation to complex derivative.                                           *)
@@ -5653,6 +5682,39 @@ let REAL_SUM_INTEGRAL_BOUNDS_DECREASING = prove
   RULE_ASSUM_TAC(REWRITE_RULE[GSYM REAL_OF_NUM_LE]) THEN ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Some variants with real derivatives.                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1_ALT = prove
+ (`!f:real^1->real^N g:real^1->real^1 g' s b.
+        lebesgue_measurable s /\
+        (!x y. x IN s /\ y IN s /\ g x = g y ==> x = y) /\
+        (!x. x IN IMAGE drop s
+             ==> ((drop o g o lift) has_real_derivative g' x)
+                 (atreal x within IMAGE drop s))
+        ==> ((\x. abs(g'(drop x)) % f(g x)) absolutely_integrable_on s /\
+             integral s (\x. abs(g'(drop x)) % f(g x)) = b <=>
+             f absolutely_integrable_on IMAGE g s /\
+             integral (IMAGE g s) f = b)`,
+  REWRITE_TAC[HAS_REAL_VECTOR_DERIVATIVE_WITHIN] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; GSYM IMAGE_o] THEN
+  REWRITE_TAC[o_DEF; LIFT_DROP; IMAGE_ID; ETA_AX] THEN
+  REWRITE_TAC[HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1]);;
+
+let ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_1_ALT = prove
+ (`!f:real^1->real^N g:real^1->real^1 g' s b.
+        lebesgue_measurable s /\
+        (!x y. x IN s /\ y IN s /\ g x = g y ==> x = y) /\
+        (!x. x IN IMAGE drop s
+             ==> ((drop o g o lift) has_real_derivative g' x)
+                 (atreal x within IMAGE drop s))
+        ==> (f absolutely_integrable_on IMAGE g s <=>
+             (\x. abs(g'(drop x)) % f(g x)) absolutely_integrable_on s)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o
+    MATCH_MP HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1_ALT) THEN
+  MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Relating different kinds of real limits.                                  *)
 (* ------------------------------------------------------------------------- *)
 
@@ -7743,6 +7805,11 @@ let REAL_NEGLIGIBLE_UNIONS = prove
   REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   REWRITE_TAC[UNIONS_0; UNIONS_INSERT; REAL_NEGLIGIBLE_EMPTY; IN_INSERT] THEN
   SIMP_TAC[REAL_NEGLIGIBLE_UNION]);;
+
+let REAL_OPEN_NOT_REAL_NEGLIGIBLE = prove
+ (`!s. real_open s /\ ~(s = {}) ==> ~real_negligible s`,
+  GEN_TAC THEN REWRITE_TAC[REAL_OPEN; real_negligible] THEN
+  MESON_TAC[OPEN_NOT_NEGLIGIBLE; IMAGE_EQ_EMPTY]);;
 
 let HAS_REAL_INTEGRAL_SPIKE_FINITE = prove
  (`!f:real->real g s t y.
@@ -12270,6 +12337,27 @@ let REAL_POLYNOMIAL_FUNCTION_POW = prove
   GEN_TAC THEN DISCH_TAC THEN
   INDUCT_TAC THEN ASM_SIMP_TAC[real_polynomial_function_RULES; real_pow]);;
 
+let POLYNOMIAL_FUNCTION_LIFT,POLYNOMIAL_FUNCTION_DROP =
+ (CONJ_PAIR o prove)
+ (`(!p. polynomial_function (p o lift) <=> real_polynomial_function p) /\
+   (!p. real_polynomial_function(p o drop) <=> polynomial_function p)`,
+  SUBGOAL_THEN
+   `!p. polynomial_function p ==> real_polynomial_function(p o drop)`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC POLYNOMIAL_FUNCTION_INDUCT THEN
+    SIMP_TAC[o_DEF; real_polynomial_function_RULES; drop; DIMINDEX_1; LE_REFL];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!p. real_polynomial_function p ==> polynomial_function(p o lift)`
+  ASSUME_TAC THENL
+   [MATCH_MP_TAC real_polynomial_function_INDUCT THEN
+    SIMP_TAC[o_DEF; POLYNOMIAL_FUNCTION_ADD; DIMINDEX_1; FORALL_1] THEN
+    REWRITE_TAC[GSYM drop; LIFT_DROP; POLYNOMIAL_FUNCTION_ID] THEN
+    SIMP_TAC[POLYNOMIAL_FUNCTION_MUL; POLYNOMIAL_FUNCTION_CONST];
+    ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN
+  ASM_REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
+
 let REAL_POLYNOMIAL_FUNCTION_EXPLICIT,
     REAL_POLYNOMIAL_FUNCTION_EXPLICIT_NZ,
     REAL_POLYNOMIAL_FUNCTION_EXPLICIT_UNIV =
@@ -12457,6 +12545,19 @@ let STONE_WEIERSTRASS_REAL_POLYNOMIAL_FUNCTION = prove
   REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; LEFT_IMP_EXISTS_THM] THEN
   X_GEN_TAC `i:num` THEN STRIP_TAC THEN EXISTS_TAC `\x:real^N. x$i` THEN
   ASM_SIMP_TAC[real_polynomial_function_RULES]);;
+
+let REAL_STONE_WEIERSTRASS_POLYNOMIAL_FUNCTION = prove
+ (`!f s e.
+        real_compact s /\ f real_continuous_on s /\ &0 < e
+        ==> ?g. polynomial_function g /\
+                !x. x IN s ==> abs(f x - g x) < e`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_IMP; RIGHT_IMP_FORALL_THM]
+   REAL_STONE_WEIERSTRASS) THEN
+  ASM_REWRITE_TAC[REAL_CONTINUOUS_ON_POLYNOMIAL_FUNCTION] THEN
+  REWRITE_TAC[POLYNOMIAL_FUNCTION_CONST; POLYNOMIAL_FUNCTION_ADD] THEN
+  REWRITE_TAC[POLYNOMIAL_FUNCTION_MUL] THEN REPEAT STRIP_TAC THEN
+  EXISTS_TAC `\x:real. x` THEN ASM_REWRITE_TAC[POLYNOMIAL_FUNCTION_ID]);;
 
 (* ------------------------------------------------------------------------- *)
 (*  Stone-Weierstrass for real^M->real^N polynomials.                        *)

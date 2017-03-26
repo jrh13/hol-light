@@ -8,6 +8,30 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 25th Mar 2017       Minisat/minisat_parse.ml
+
+Replaced the use of int32 literals "0x...l" with "Int32.of_int 0x...".
+The former seems to have recently started to be problematic with the
+camlp5 preprocessing; really the underlying problem should be investigated and
+fixed but as this is the only instance, I just made this change for now.
+
+Fri 24th Mar 2017       holtest, holtest.ml
+
+Added "Multivariate/lpspaces.ml" to the test suite (formerly missing its
+own individual entry, though it's called in 100/fourier.ml anyway).
+
+Wed 22nd Mar 2017       Library/card.ml
+
+Added another variant of relational cardinal equality, as well as simplifying
+the proof of the Schroeder-Bernstein theorem using a formulation in the
+relational style (following a paper by Chad Brown, perhaps actually following
+Knaster?)
+
+  EQ_C_ALT =
+   |- s =_c t <=>
+      ?R:A#B->bool. (!x. x IN s ==> ?!y. y IN t /\ R(x,y)) /\
+                    (!y. y IN t ==> ?!x. x IN s /\ R(x,y))
+
 Thu 16th Mar 2017       Makefile
 
 Added yet another disjunct to the camlp5 version cases after a report from

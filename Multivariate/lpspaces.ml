@@ -192,18 +192,30 @@ let LSPACE_MIN = prove
     ASM_SIMP_TAC[COMPONENT_LE_NORM]]);;
 
 let LSPACE_BOUNDED_MEASURABLE = prove
- (`!s p f:real^M->real^N g:real^M->real^N.
+ (`!s p f:real^M->real^N g:real^M->real^P.
         &0 < p /\ f measurable_on s /\ g IN lspace s p /\
         (!x. x IN s ==> norm(f x) <= norm(g x))
         ==> f IN lspace s p`,
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[lspace; IN_ELIM_THM] THEN
   MATCH_MP_TAC MEASURABLE_BOUNDED_BY_INTEGRABLE_IMP_INTEGRABLE THEN
-  EXISTS_TAC `\x. lift(norm((g:real^M->real^N) x) rpow p)` THEN
+  EXISTS_TAC `\x. lift(norm((g:real^M->real^P) x) rpow p)` THEN
   ASM_SIMP_TAC[LSPACE_IMP_INTEGRABLE] THEN
   ASM_SIMP_TAC[MEASURABLE_ON_LIFT_RPOW; MEASURABLE_ON_NORM] THEN
   REPEAT STRIP_TAC THEN REWRITE_TAC[NORM_LIFT; LIFT_DROP] THEN
   REWRITE_TAC[REAL_ABS_RPOW; REAL_ABS_NORM] THEN
   ASM_SIMP_TAC[RPOW_LE2; REAL_LT_IMP_LE; NORM_POS_LE]);;
+
+let LSPACE_BOUNDED_MEASURABLE_SIMPLE = prove
+ (`!s p f:real^M->real^N.
+        &0 < p /\ f measurable_on s /\ measurable s /\ bounded(IMAGE f s)
+        ==> f IN lspace s p`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(INST_TYPE [`:1`,`:P`] LSPACE_BOUNDED_MEASURABLE) THEN
+  MATCH_MP_TAC(MESON[] `(?x. P(\a. lift x)) ==> (?x. P x)`) THEN
+  ASM_SIMP_TAC[LSPACE_CONST; NORM_LIFT] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [BOUNDED_POS]) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN REWRITE_TAC[FORALL_IN_IMAGE] THEN
+  SIMP_TAC[real_abs; REAL_LT_IMP_LE]);;
 
 let LSPACE_INTEGRABLE_PRODUCT = prove
  (`!s p q f:real^M->real^N g:real^M->real^N.
@@ -278,6 +290,26 @@ let LNORM_0 = prove
   REPEAT STRIP_TAC THEN
   ASM_REWRITE_TAC[lnorm; NORM_0; RPOW_ZERO] THEN
   ASM_REWRITE_TAC[LIFT_NUM; INTEGRAL_0; DROP_VEC; RPOW_ZERO; REAL_INV_EQ_0]);;
+
+let LNORM_CONST = prove
+  (`!s p c:real^N.
+      measurable s /\ &0 < p
+      ==> lnorm s p (\x:real^M. c) = measure s rpow (inv p) * norm c`,
+  SIMP_TAC[lnorm; INTEGRAL_CONST_GEN; DROP_CMUL; LIFT_DROP] THEN
+  SIMP_TAC[RPOW_RPOW; NORM_POS_LE; RPOW_MUL] THEN
+  SIMP_TAC[REAL_MUL_RINV; REAL_LT_IMP_NZ; RPOW_POW; REAL_POW_1]);;
+
+let LNORM_MONO = prove
+ (`!f:real^M->real^N g:real^M->real^P s t p.
+        &0 <= p /\ f IN lspace s p /\ g IN lspace s p /\
+        negligible t /\ (!x. x IN s DIFF t ==> norm(f x) <= norm(g x))
+        ==> lnorm s p f <= lnorm s p g`,
+  REWRITE_TAC[lspace; lnorm; IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC RPOW_LE2 THEN ASM_REWRITE_TAC[REAL_LE_INV_EQ] THEN
+  ASM_SIMP_TAC[INTEGRAL_DROP_POS; LIFT_DROP; RPOW_POS_LE; NORM_POS_LE] THEN
+  MATCH_MP_TAC INTEGRAL_DROP_LE_AE THEN
+  EXISTS_TAC `t:real^M->bool` THEN ASM_REWRITE_TAC[LIFT_DROP] THEN
+  ASM_SIMP_TAC[RPOW_LE2; NORM_POS_LE]);;
 
 let LNORM_NEG = prove
  (`!s p f:real^M->real^N. lnorm s p (\x. --(f x)) = lnorm s p f`,
@@ -1035,7 +1067,8 @@ let LSPACE_DOMINATED_CONVERGENCE = prove
           NEGLIGIBLE_SUBSET)) THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Approximation of functions in L_p by bounded ones and continuous ones.    *)
+(* Approximation of functions in L_p by bounded ones and continuous ones,    *)
+(* and (for bounded domain sets) by purely polynomial ones.                  *)
 (* ------------------------------------------------------------------------- *)
 
 let LSPACE_APPROXIMATE_BOUNDED = prove
@@ -1179,7 +1212,7 @@ let LSPACE_APPROXIMATE_CONTINUOUS =  prove
     ALL_TAC] THEN
   SUBGOAL_THEN `!n. ((g:num->real^M->real^N) n) IN lspace s p` ASSUME_TAC THENL
    [X_GEN_TAC `n:num` THEN
-    MATCH_MP_TAC LSPACE_BOUNDED_MEASURABLE THEN
+    MATCH_MP_TAC(INST_TYPE [`:N`,`:P`] LSPACE_BOUNDED_MEASURABLE) THEN
     EXISTS_TAC `(\x. B % vec 1):real^M->real^N` THEN
     ASM_SIMP_TAC[LSPACE_CONST] THEN
     ONCE_REWRITE_TAC[GSYM MEASURABLE_ON_UNIV] THEN
@@ -1210,3 +1243,69 @@ let LSPACE_APPROXIMATE_CONTINUOUS =  prove
   MATCH_MP_TAC(REAL_ARITH
    `y < e / &2 /\ z < e / &2 ==> x <= y + z ==> x < e`) THEN
   ASM_SIMP_TAC[LNORM_NEG; REAL_ARITH `abs x < e ==> x < e`]);;
+
+let LSPACE_APPROXIMATE_VECTOR_POLYNOMIAL_FUNCTION = prove
+ (`!f:real^M->real^N s p e.
+        &1 <= p /\ bounded s /\ measurable s /\ f IN lspace s p /\ &0 < e
+        ==> ?g. vector_polynomial_function g /\
+                g IN lspace s p /\
+                lnorm s p (\x. f x - g x) < e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`f:real^M->real^N`; `s:real^M->bool`; `p:real`; `e / &2`]
+        LSPACE_APPROXIMATE_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM; REAL_HALF] THEN
+  X_GEN_TAC `g:real^M->real^N` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`g:real^M->real^N`; `closure s:real^M->bool`;
+                 `e / &2 / (measure(s:real^M->bool) rpow (inv p) + &1)`]
+        STONE_WEIERSTRASS_VECTOR_POLYNOMIAL_FUNCTION) THEN
+  ASM_REWRITE_TAC[REAL_HALF; COMPACT_CLOSURE] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL
+     [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; SUBSET_UNIV];
+      MATCH_MP_TAC REAL_LT_DIV THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+      MATCH_MP_TAC(REAL_ARITH `&0 <= x ==> &0 < x + &1`) THEN
+      ASM_SIMP_TAC[RPOW_POS_LE; MEASURE_POS_LE]];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `h:real^M->real^N` THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[]] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [MATCH_MP_TAC LSPACE_BOUNDED_MEASURABLE_SIMPLE THEN
+    CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ASM_REWRITE_TAC[]] THEN
+    ASM_SIMP_TAC[CONTINUOUS_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET;
+                 MEASURABLE_IMP_LEBESGUE_MEASURABLE;
+                 CONTINUOUS_ON_VECTOR_POLYNOMIAL_FUNCTION] THEN
+    MATCH_MP_TAC BOUNDED_SUBSET THEN
+    EXISTS_TAC `IMAGE (h:real^M->real^N) (closure s)` THEN
+    SIMP_TAC[IMAGE_SUBSET; CLOSURE_SUBSET] THEN
+    MATCH_MP_TAC COMPACT_IMP_BOUNDED THEN
+    MATCH_MP_TAC COMPACT_CONTINUOUS_IMAGE THEN
+    ASM_SIMP_TAC[CONTINUOUS_ON_VECTOR_POLYNOMIAL_FUNCTION; COMPACT_CLOSURE];
+    DISCH_TAC] THEN
+  TRANS_TAC REAL_LET_TRANS
+   `lnorm s p (\x. (f:real^M->real^N) x - g x) +
+    lnorm s p (\x. g x - h x)` THEN
+  CONJ_TAC THENL
+   [W(MP_TAC o PART_MATCH (rand o rand) LNORM_TRIANGLE o rand o snd) THEN
+    ASM_SIMP_TAC[LSPACE_SUB; REAL_ARITH `&1 <= p ==> &0 <= p`] THEN
+    REWRITE_TAC[VECTOR_ARITH `(f - g) + (g - h):real^N = f - h`];
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
+     `x < e / &2 ==> y <= e / &2 ==> x + y < e`))] THEN
+  TRANS_TAC REAL_LE_TRANS
+   `lnorm (s:real^M->bool) p
+          (\x. lift(e / &2 / (measure s rpow inv p + &1)))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC LNORM_MONO THEN EXISTS_TAC `{}:real^M->bool` THEN
+    REWRITE_TAC[NEGLIGIBLE_EMPTY; DIFF_EMPTY] THEN
+    CONJ_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+    ASM_SIMP_TAC[LSPACE_SUB; LSPACE_CONST; REAL_ARITH `&1 <= p ==> &0 <= p`;
+                 NORM_LIFT; REAL_ARITH `x < y ==> x <= abs y`;
+                 REWRITE_RULE[SUBSET] CLOSURE_SUBSET];
+    ASM_SIMP_TAC[LNORM_CONST; REAL_ARITH `&1 <= p ==> &0 < p`] THEN
+    REWRITE_TAC[NORM_LIFT; REAL_ABS_DIV; REAL_ABS_NUM] THEN
+    ASM_SIMP_TAC[REAL_ARITH
+      `&0 < e ==> x * abs e / &2 / y = (x * e / &2) / y`] THEN
+    ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 4)
+     [MEASURE_POS_LE; RPOW_POS_LE; REAL_LE_LDIV_EQ;
+      REAL_ARITH `abs x = if &0 < x then x else --x`;
+      REAL_ARITH `&0 <= x ==> &0 < x + &1`] THEN
+    REWRITE_TAC[REAL_ARITH `m * e / &2 <= e / &2 * n <=> e * m <= e * n`] THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL_EQ] THEN REAL_ARITH_TAC]);;
