@@ -323,6 +323,10 @@ let DIVIDES_EXP2 = prove(
   `!n x y. ~(n = 0) /\ (x EXP n) divides y ==> x divides y`,
   INDUCT_TAC THEN REWRITE_TAC[NOT_SUC; EXP] THEN NUMBER_TAC);;
 
+let DIVIDES_EXP_LE_IMP = prove
+ (`!p m n. m <= n ==> (p EXP m) divides (p EXP n)`,
+  SIMP_TAC[LE_EXISTS; LEFT_IMP_EXISTS_THM; EXP_ADD] THEN NUMBER_TAC);;
+
 let DIVIDES_EXP_LE = prove
  (`!p m n. 2 <= p ==> ((p EXP m) divides (p EXP n) <=> m <= n)`,
   REPEAT STRIP_TAC THEN EQ_TAC THENL
@@ -1529,6 +1533,10 @@ let LE_INDEX = prove
   ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[] THEN
   REWRITE_TAC[index_def; ARITH; CONJUNCT1 LE]);;
 
+let EXP_INDEX_DIVIDES = prove
+ (`!p n. p EXP (index p n) divides n`,
+  MESON_TAC[LE_INDEX; LE_REFL]);;
+
 let INDEX_1 = prove
  (`!p. index p 1 = 0`,
   GEN_TAC THEN REWRITE_TAC[index_def; ARITH] THEN COND_CASES_TAC THEN
@@ -1669,6 +1677,29 @@ let INDEX_DECOMPOSITION_PRIME = prove
   ASM_CASES_TAC `p = 1` THENL [ASM_MESON_TAC[PRIME_1]; ASM_REWRITE_TAC[]] THEN
   ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[] THEN
   ASM_MESON_TAC[PRIME_COPRIME_STRONG]);;
+
+let INDEX_ADD_MIN = prove
+ (`!p m n. MIN (index p m) (index p n) <= index p (m + n)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `p = 1` THENL
+   [ASM_SIMP_TAC[index_def] THEN ARITH_TAC; REWRITE_TAC[LE_INDEX]] THEN
+  ASM_SIMP_TAC[ADD_EQ_0; INDEX_EQ_0; ARITH_RULE
+   `MIN a b = 0 <=> a = 0 \/ b = 0`] THEN
+  MATCH_MP_TAC DIVIDES_ADD THEN CONJ_TAC THEN MATCH_MP_TAC DIVIDES_TRANS THENL
+   [EXISTS_TAC `p EXP (index p m)`; EXISTS_TAC `p EXP (index p n)`] THEN
+  REWRITE_TAC[EXP_INDEX_DIVIDES] THEN
+  MATCH_MP_TAC DIVIDES_EXP_LE_IMP THEN ARITH_TAC);;
+
+let INDEX_SUB_MIN = prove
+ (`!p m n. n < m ==> MIN (index p m) (index p n) <= index p (m - n)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `p = 1` THENL
+   [ASM_SIMP_TAC[index_def] THEN ARITH_TAC; REWRITE_TAC[LE_INDEX]] THEN
+  ASM_SIMP_TAC[SUB_EQ_0; GSYM NOT_LT] THEN
+  MATCH_MP_TAC DIVIDES_ADD_REVL THEN EXISTS_TAC `n:num` THEN
+  ASM_SIMP_TAC[SUB_ADD; LT_IMP_LE] THEN
+  CONJ_TAC THEN MATCH_MP_TAC DIVIDES_TRANS THENL
+   [EXISTS_TAC `p EXP (index p n)`; EXISTS_TAC `p EXP (index p m)`] THEN
+  REWRITE_TAC[EXP_INDEX_DIVIDES] THEN
+  MATCH_MP_TAC DIVIDES_EXP_LE_IMP THEN ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Least common multiples.                                                   *)

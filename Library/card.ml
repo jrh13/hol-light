@@ -2214,6 +2214,12 @@ let exp_c = new_definition
   `s ^_c t = {f:B->A | (!x. x IN t ==> f x IN s) /\
                        (!x. ~(x IN t) ==> f x = @y. F)}`;;
 
+let EXP_C = prove
+ (`!(s:A->bool) (t:B->bool).
+        s ^_c t = {f:B->A | IMAGE f t SUBSET s /\ EXTENSIONAL t f}`,
+  REWRITE_TAC[EXTENSIONAL; ARB; IN_ELIM_THM; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[exp_c]);;
+
 let CARD_EXP_UNIV = prove
  (`(:A) ^_c (:B) = (:B->A)`,
   REWRITE_TAC[exp_c; IN_UNIV] THEN SET_TAC[]);;

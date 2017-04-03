@@ -300,8 +300,8 @@ let IS_REALINTERVAL_INTERVAL = prove
 (* these as curry and uncurry for Cartesian powers.                          *)
 (* ------------------------------------------------------------------------- *)
 
-let flatten = new_definition
- `(flatten:A^N^M->A^(M,N)finite_prod) =
+let vectorize = new_definition
+ `(vectorize:A^N^M->A^(M,N)finite_prod) =
         \x. lambda i. x$(1 + (i - 1) DIV dimindex(:N))
                        $(1 + (i - 1) MOD dimindex(:N))`;;
 
@@ -309,12 +309,12 @@ let matrify = new_definition
  `(matrify:A^(M,N)finite_prod->A^N^M) =
         \x. lambda i j. x$((i - 1) * dimindex(:N) + j)`;;
 
-let FLATTEN_COMPONENT = prove
+let VECTORIZE_COMPONENT = prove
  (`!m:A^N^M i.
         1 <= i /\ i <= dimindex(:M) * dimindex(:N)
-        ==> (flatten m)$i = m$(1 + (i - 1) DIV dimindex(:N))
-                             $(1 + (i - 1) MOD dimindex(:N))`,
-  SIMP_TAC[flatten; LAMBDA_BETA; DIMINDEX_FINITE_PROD]);;
+        ==> (vectorize m)$i = m$(1 + (i - 1) DIV dimindex(:N))
+                              $(1 + (i - 1) MOD dimindex(:N))`,
+  SIMP_TAC[vectorize; LAMBDA_BETA; DIMINDEX_FINITE_PROD]);;
 
 let MATRIFY_COMPONENT = prove
  (`!v:A^(M,N)finite_prod i j.
@@ -322,9 +322,9 @@ let MATRIFY_COMPONENT = prove
         ==> (matrify v)$i$j = v$((i - 1) * dimindex(:N) + j)`,
   SIMP_TAC[matrify; LAMBDA_BETA]);;
 
-let FLATTEN_MATRIFY = prove
- (`!a:A^(M,N)finite_prod. flatten(matrify a) = a`,
-  GEN_TAC THEN SIMP_TAC[CART_EQ; flatten; matrify; LAMBDA_BETA] THEN
+let VECTORIZE_MATRIFY = prove
+ (`!a:A^(M,N)finite_prod. vectorize(matrify a) = a`,
+  GEN_TAC THEN SIMP_TAC[CART_EQ; vectorize; matrify; LAMBDA_BETA] THEN
   REWRITE_TAC[DIMINDEX_FINITE_PROD] THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
   W(MP_TAC o PART_MATCH (lhand o rand) LAMBDA_BETA o lhand o lhand o snd) THEN
   REWRITE_TAC[ARITH_RULE `1 <= 1 + x /\ 1 + y <= z <=> y < z`] THEN
@@ -340,9 +340,9 @@ let FLATTEN_MATRIFY = prove
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC DIVISION THEN
   SIMP_TAC[DIMINDEX_GE_1; LE_1]);;
 
-let MATRIFY_FLATTEN = prove
- (`!m:A^N^M. matrify(flatten m) = m`,
-  GEN_TAC THEN SIMP_TAC[CART_EQ; flatten; matrify; LAMBDA_BETA] THEN
+let MATRIFY_VECTORIZE = prove
+ (`!m:A^N^M. matrify(vectorize m) = m`,
+  GEN_TAC THEN SIMP_TAC[CART_EQ; vectorize; matrify; LAMBDA_BETA] THEN
   X_GEN_TAC `i:num` THEN STRIP_TAC THEN
   X_GEN_TAC `j:num` THEN STRIP_TAC THEN
   W(MP_TAC o PART_MATCH (lhand o rand) LAMBDA_BETA o lhand o snd) THEN
@@ -361,34 +361,34 @@ let MATRIFY_FLATTEN = prove
    [MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `j - 1` THEN ASM_ARITH_TAC;
     MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC `i - 1` THEN ASM_ARITH_TAC]);;
 
-let FORALL_FLATTEN = prove
- (`!P. (!x. P x) <=> (!x. P(flatten x))`,
-  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+let FORALL_VECTORIZE = prove
+ (`!P. (!x. P x) <=> (!x. P(vectorize x))`,
+  MESON_TAC[MATRIFY_VECTORIZE; VECTORIZE_MATRIFY]);;
 
 let FORALL_MATRIFY = prove
  (`!P. (!x. P x) <=> (!x. P(matrify x))`,
-  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+  MESON_TAC[MATRIFY_VECTORIZE; VECTORIZE_MATRIFY]);;
 
-let EXISTS_FLATTEN = prove
- (`!P. (?x. P x) <=> (?x. P(flatten x))`,
-  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+let EXISTS_VECTORIZE = prove
+ (`!P. (?x. P x) <=> (?x. P(vectorize x))`,
+  MESON_TAC[MATRIFY_VECTORIZE; VECTORIZE_MATRIFY]);;
 
 let EXISTS_MATRIFY = prove
  (`!P. (?x. P x) <=> (?x. P(matrify x))`,
-  MESON_TAC[MATRIFY_FLATTEN; FLATTEN_MATRIFY]);;
+  MESON_TAC[MATRIFY_VECTORIZE; VECTORIZE_MATRIFY]);;
 
-let FLATTEN_GSPEC = prove
- (`!P:A^N^M->bool. {flatten m | P m} = {v | P(matrify v)}`,
+let VECTORIZE_GSPEC = prove
+ (`!P:A^N^M->bool. {vectorize m | P m} = {v | P(matrify v)}`,
   REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
-  MESON_TAC[FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+  MESON_TAC[VECTORIZE_MATRIFY; MATRIFY_VECTORIZE]);;
 
-let FLATTEN_EQ = prove
- (`!m1 m2:real^N^M. flatten m1 = flatten m2 <=> m1 = m2`,
-  MESON_TAC[MATRIFY_FLATTEN]);;
+let VECTORIZE_EQ = prove
+ (`!m1 m2:real^N^M. vectorize m1 = vectorize m2 <=> m1 = m2`,
+  MESON_TAC[MATRIFY_VECTORIZE]);;
 
 let MATRIFY_EQ = prove
  (`!m1 m2:real^(M,N)finite_prod. matrify m1 = matrify m2 <=> m1 = m2`,
-  MESON_TAC[FLATTEN_MATRIFY]);;
+  MESON_TAC[VECTORIZE_MATRIFY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A generic notion of "hull" (convex, affine, conic hull and closure).      *)

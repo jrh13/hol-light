@@ -8,6 +8,47 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 29th Mar 2017       arith.ml
+
+Added some natural theorems that were missing:
+
+  DIV_EXP =
+    |- m n p. ~(m = 0)
+              ==> (m EXP n) DIV (m EXP p) =
+                  if p <= n then m EXP (n - p)
+                  else if m = 1 then 1 else 0)
+
+  MOD_EXP =
+    |- !m n p. ~(m = 0)
+               ==> (m EXP n) MOD (m EXP p) =
+                   if p <= n \/ m = 1 then 0 else m EXP n)
+
+Tue 28th Mar 2017       Library/card.ml
+
+Added a small but more compact reformulation of cardinal exponentiation:
+
+  EXP_C =
+   |- !s t. s ^_c t = {f | IMAGE f t SUBSET s /\ EXTENSIONAL t f}
+
+Mon 27th Mar 2018       Library/floor.ml, Library/prime.ml
+
+Added a few handy lemmas:
+
+  RATIONAL_ABS_EQ = prove
+    |- !x. rational(abs x) <=> rational x
+
+  DIVIDES_EXP_LE_IMP = prove
+    |- !p m n. m <= n ==> (p EXP m) divides (p EXP n)
+
+  EXP_INDEX_DIVIDES = prove
+    |- !p n. p EXP (index p n) divides n
+
+  INDEX_ADD_MIN = prove
+    |- !p m n. MIN (index p m) (index p n) <= index p (m + n)
+
+  INDEX_SUB_MIN = prove
+    |- !p m n. n < m ==> MIN (index p m) (index p n) <= index p (m - n)
+
 Sat 25th Mar 2017       Minisat/minisat_parse.ml
 
 Replaced the use of int32 literals "0x...l" with "Int32.of_int 0x...".

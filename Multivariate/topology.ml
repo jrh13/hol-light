@@ -231,9 +231,7 @@ let CONTINUOUS_MAP_EQ_LIFT = prove
  (`!top f:A->real.
         continuous_map(top,euclideanreal) f <=>
         continuous_map(top,euclidean) (lift o f)`,
-  REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF; TOPSPACE_EUCLIDEAN] THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL; SUBSET_UNIV] THEN
-  REWRITE_TAC[LIMIT_EQ_LIFT; o_THM]);;
+  REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF; LIMIT_EQ_LIFT; o_THM]);;
 
 let CONTINUOUS_MAP_EQ_DROP = prove
  (`!top f:A->real^1.
@@ -275,8 +273,7 @@ let CONTINUOUS_MAP_COMPONENTWISE_REAL = prove
         continuous_map (top,euclidean) f <=>
         !i. 1 <= i /\ i <= dimindex(:N)
             ==> continuous_map (top,euclideanreal) (\x. f x$i)`,
-  REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF; TOPSPACE_EUCLIDEAN] THEN
-  SIMP_TAC[TOPSPACE_EUCLIDEANREAL; SUBSET_UNIV; LIMIT_COMPONENTWISE_REAL] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF; LIMIT_COMPONENTWISE_REAL] THEN
   MESON_TAC[]);;
 
 let CONTINUOUS_MAP_LIFT = prove
@@ -561,8 +558,7 @@ let OPEN_IN_INTER_OPEN = prove
  (`!s t u:real^N->bool.
         open_in (subtopology euclidean u) s /\ open t
         ==> open_in (subtopology euclidean u) (s INTER t)`,
-  REWRITE_TAC[OPEN_IN_OPEN] THEN REPEAT STRIP_TAC THEN
-  ASM_REWRITE_TAC[INTER_ASSOC] THEN ASM_MESON_TAC[OPEN_INTER]);;
+  REWRITE_TAC[OPEN_IN; OPEN_IN_SUBTOPOLOGY_INTER_OPEN_IN]);;
 
 let OPEN_IN_OPEN_INTER = prove
  (`!u s. open s ==> open_in (subtopology euclidean u) (u INTER s)`,
@@ -602,8 +598,7 @@ let CLOSED_IN_INTER_CLOSED = prove
  (`!s t u:real^N->bool.
         closed_in (subtopology euclidean u) s /\ closed t
         ==> closed_in (subtopology euclidean u) (s INTER t)`,
-  REWRITE_TAC[CLOSED_IN_CLOSED] THEN REPEAT STRIP_TAC THEN
-  ASM_REWRITE_TAC[INTER_ASSOC] THEN ASM_MESON_TAC[CLOSED_INTER]);;
+  REWRITE_TAC[CLOSED_IN; CLOSED_IN_SUBTOPOLOGY_INTER_CLOSED_IN]);;
 
 let CLOSED_IN_CLOSED_INTER = prove
  (`!u s. closed s ==> closed_in (subtopology euclidean u) (u INTER s)`,
@@ -697,13 +692,6 @@ let CLOSED_IN_CLOSED_TRANS = prove
  (`!s t. closed_in (subtopology euclidean t) s /\ closed t ==> closed s`,
   REWRITE_TAC[ONCE_REWRITE_RULE[GSYM SUBTOPOLOGY_UNIV] CLOSED_IN] THEN
   REWRITE_TAC[CLOSED_IN_TRANS]);;
-
-let CLOSED_IN_SUBTOPOLOGY_INTER_SUBSET = prove
- (`!s u v:real^N->bool.
-           closed_in (subtopology euclidean u) (u INTER s) /\ v SUBSET u
-           ==> closed_in (subtopology euclidean v) (v INTER s)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_CLOSED; LEFT_AND_EXISTS_THM] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
 
 let OPEN_IN_OPEN_EQ = prove
  (`!s t. open s
@@ -15900,110 +15888,110 @@ let CONTINUOUS_ON_MATRIX_COMPONENTWISE = prove
 
 let CONTINUOUS_MATRIX_VECTOR_MUL = prove
  (`!net m:A->real^N^M v:A->real^N.
-        (flatten o A) continuous net /\ v continuous net
+        (vectorize o A) continuous net /\ v continuous net
         ==> (\x. (A x) ** (v x)) continuous net`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
    [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
    BILINEAR_CONTINUOUS_COMPOSE) BILINEAR_MATRIX_VECTOR_MUL)) THEN
-  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+  REWRITE_TAC[o_THM; MATRIFY_VECTORIZE]);;
 
 let CONTINUOUS_ON_MATRIX_VECTOR_MUL = prove
  (`!m:real^P->real^N^M v:real^P->real^N s.
-        (flatten o A) continuous_on s /\ v continuous_on s
+        (vectorize o A) continuous_on s /\ v continuous_on s
         ==> (\x. (A x) ** (v x)) continuous_on s`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
    [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
    BILINEAR_CONTINUOUS_ON_COMPOSE) BILINEAR_MATRIX_VECTOR_MUL)) THEN
-  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+  REWRITE_TAC[o_THM; MATRIFY_VECTORIZE]);;
 
 let CONTINUOUS_MATRIX_MUL = prove
  (`!net A:A->real^N^M B:A->real^P^N.
-        (flatten o A) continuous net /\ (flatten o B) continuous net
-        ==> (\x. flatten((A x) ** (B x))) continuous net`,
+        (vectorize o A) continuous net /\ (vectorize o B) continuous net
+        ==> (\x. vectorize((A x) ** (B x))) continuous net`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
    [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
    BILINEAR_CONTINUOUS_COMPOSE) BILINEAR_MATRIX_MUL)) THEN
-  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+  REWRITE_TAC[o_THM; MATRIFY_VECTORIZE]);;
 
 let CONTINUOUS_ON_MATRIX_MUL = prove
  (`!A:real^Q->real^N^M B:real^Q->real^P^N s.
-        (flatten o A) continuous_on s /\ (flatten o B) continuous_on s
-        ==> (\x. flatten((A x) ** (B x))) continuous_on s`,
+        (vectorize o A) continuous_on s /\ (vectorize o B) continuous_on s
+        ==> (\x. vectorize((A x) ** (B x))) continuous_on s`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
    [TAUT `p /\ q /\ r ==> s <=> r ==> p /\ q ==> s`]
    BILINEAR_CONTINUOUS_ON_COMPOSE) BILINEAR_MATRIX_MUL)) THEN
-  REWRITE_TAC[o_THM; MATRIFY_FLATTEN]);;
+  REWRITE_TAC[o_THM; MATRIFY_VECTORIZE]);;
 
-let LIM_FLATTEN_COMPONENTWISE = prove
+let LIM_VECTORIZE_COMPONENTWISE = prove
  (`!net (A:A->real^N^M) B.
-        ((\a. flatten(A a)) --> flatten B) net <=>
+        ((\a. vectorize(A a)) --> vectorize B) net <=>
         !i j. 1 <= i /\ i <= dimindex (:M) /\ 1 <= j /\ j <= dimindex (:N)
               ==> ((\a. lift (A a$i$j)) --> lift (B$i$j)) net`,
   REPEAT GEN_TAC THEN
   GEN_REWRITE_TAC LAND_CONV [LIM_COMPONENTWISE_LIFT] THEN
   REWRITE_TAC[] THEN EQ_TAC THEN DISCH_TAC THENL
-   [ONCE_REWRITE_TAC[GSYM MATRIFY_FLATTEN] THEN
+   [ONCE_REWRITE_TAC[GSYM MATRIFY_VECTORIZE] THEN
     SIMP_TAC[MATRIFY_COMPONENT] THEN
     REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
     CONJ_TAC THENL [ASM_ARITH_TAC; REWRITE_TAC[DIMINDEX_FINITE_PROD]] THEN
     TRANS_TAC LE_TRANS `((i - 1) + 1) * dimindex(:N)` THEN
     CONJ_TAC THENL [ASM_ARITH_TAC; REWRITE_TAC[GSYM RIGHT_ADD_DISTRIB]] THEN
     REWRITE_TAC[LE_MULT_RCANCEL] THEN ASM_ARITH_TAC;
-    SIMP_TAC[FLATTEN_COMPONENT; DIMINDEX_FINITE_PROD] THEN
+    SIMP_TAC[VECTORIZE_COMPONENT; DIMINDEX_FINITE_PROD] THEN
     REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
     REWRITE_TAC[LE_ADD] THEN CONJ_TAC THEN
     MATCH_MP_TAC(ARITH_RULE `a < b ==> 1 + a <= b`) THEN
     SIMP_TAC[DIVISION; LE_1; DIMINDEX_GE_1; RDIV_LT_EQ] THEN
     ASM_ARITH_TAC]);;
 
-let CONTINUOUS_FLATTEN_COMPONENTWISE = prove
+let CONTINUOUS_VECTORIZE_COMPONENTWISE = prove
  (`!net (A:A->real^N^M).
-        (\a. flatten(A a)) continuous net <=>
+        (\a. vectorize(A a)) continuous net <=>
         !i j. 1 <= i /\ i <= dimindex (:M) /\ 1 <= j /\ j <= dimindex (:N)
               ==> (\a. lift (A a$i$j)) continuous net`,
   REPEAT GEN_TAC THEN REWRITE_TAC[continuous] THEN
-  GEN_REWRITE_TAC LAND_CONV [LIM_FLATTEN_COMPONENTWISE] THEN
+  GEN_REWRITE_TAC LAND_CONV [LIM_VECTORIZE_COMPONENTWISE] THEN
   REWRITE_TAC[]);;
 
-let CONTINUOUS_ON_FLATTEN_COMPONENTWISE = prove
+let CONTINUOUS_ON_VECTORIZE_COMPONENTWISE = prove
  (`!(A:real^P->real^N^M) s.
-        (\a. flatten(A a)) continuous_on s <=>
+        (\a. vectorize(A a)) continuous_on s <=>
         !i j. 1 <= i /\ i <= dimindex (:M) /\ 1 <= j /\ j <= dimindex (:N)
               ==> (\a. lift (A a$i$j)) continuous_on s`,
   REPEAT GEN_TAC THEN
   REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
-   [CONTINUOUS_FLATTEN_COMPONENTWISE] THEN
+   [CONTINUOUS_VECTORIZE_COMPONENTWISE] THEN
   MESON_TAC[]);;
 
 let LINEAR_TRANSP = prove
- (`linear(flatten o (transp:real^N^M->real^M^N) o matrify)`,
+ (`linear(vectorize o (transp:real^N^M->real^M^N) o matrify)`,
   REWRITE_TAC[linear; o_THM; MATRIFY_ADD; MATRIFY_CMUL] THEN
   REWRITE_TAC[TRANSP_MATRIX_ADD; TRANSP_MATRIX_CMUL] THEN
-  REWRITE_TAC[FLATTEN_ADD; FLATTEN_CMUL]);;
+  REWRITE_TAC[VECTORIZE_ADD; VECTORIZE_CMUL]);;
 
-let LIM_MATRIX_FLATTEN = prove
+let LIM_MATRIX_VECTORIZE = prove
  (`!net A:A->real^M^N B.
         (!x. ((\a. A a ** x) --> B ** x) net) <=>
-        ((\a. flatten (A a)) --> flatten B) net`,
-  REWRITE_TAC[LIM_MATRIX_COMPONENTWISE; LIM_FLATTEN_COMPONENTWISE]);;
+        ((\a. vectorize (A a)) --> vectorize B) net`,
+  REWRITE_TAC[LIM_MATRIX_COMPONENTWISE; LIM_VECTORIZE_COMPONENTWISE]);;
 
-let CONTINUOUS_MATRIX_FLATTEN = prove
+let CONTINUOUS_MATRIX_VECTORIZE = prove
  (`!net (A:A->real^N^M).
         (!x. (\a. A a ** x) continuous net) <=>
-        (\a. flatten(A a)) continuous net`,
-  REWRITE_TAC[continuous; LIM_MATRIX_FLATTEN]);;
+        (\a. vectorize(A a)) continuous net`,
+  REWRITE_TAC[continuous; LIM_MATRIX_VECTORIZE]);;
 
-let CONTINUOUS_ON_MATRIX_FLATTEN = prove
+let CONTINUOUS_ON_MATRIX_VECTORIZE = prove
  (`!A:real^P->real^N^M s.
         (!x. (\a. A a ** x) continuous_on s) <=>
-        (\a. flatten(A a)) continuous_on s`,
+        (\a. vectorize(A a)) continuous_on s`,
   REPEAT GEN_TAC THEN
   REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   GEN_REWRITE_TAC LAND_CONV [SWAP_FORALL_THM] THEN
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
-   [CONTINUOUS_MATRIX_FLATTEN] THEN
+   [CONTINUOUS_MATRIX_VECTORIZE] THEN
   MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -19291,19 +19279,19 @@ let CONTINUOUS_ON_LIFT_DET = prove
         ==> (\x. lift(det(A x))) continuous_on s`,
   SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_LIFT_DET]);;
 
-let CONTINUOUS_DET_FLATTEN = prove
+let CONTINUOUS_DET_VECTORIZE = prove
  (`!net A:A->real^N^N.
-        (\a. flatten(A a)) continuous net
+        (\a. vectorize(A a)) continuous net
         ==> (\a. lift(det(A a))) continuous net`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_LIFT_DET THEN
-  ASM_REWRITE_TAC[GSYM CONTINUOUS_FLATTEN_COMPONENTWISE]);;
+  ASM_REWRITE_TAC[GSYM CONTINUOUS_VECTORIZE_COMPONENTWISE]);;
 
-let CONTINUOUS_ON_DET_FLATTEN = prove
+let CONTINUOUS_ON_DET_VECTORIZE = prove
  (`!A:real^M->real^N^N.
-        (\a. flatten(A a)) continuous_on s
+        (\a. vectorize(A a)) continuous_on s
         ==> (\a. lift(det(A a))) continuous_on s`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_ON_LIFT_DET THEN
-  ASM_REWRITE_TAC[GSYM CONTINUOUS_ON_FLATTEN_COMPONENTWISE]);;
+  ASM_REWRITE_TAC[GSYM CONTINUOUS_ON_VECTORIZE_COMPONENTWISE]);;
 
 let CONTINUOUS_DET_EXPLICIT = prove
  (`!A:real^N^N e.

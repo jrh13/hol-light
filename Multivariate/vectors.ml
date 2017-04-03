@@ -4029,33 +4029,33 @@ let INDICATOR_COMPLEMENT = prove
 (* Flattening and matrifying of arithmetic operations.                       *)
 (* ------------------------------------------------------------------------- *)
 
-let FLATTEN_ADD = prove
- (`!m1 m2:real^N^M. flatten(m1 + m2) = flatten m1 + flatten m2`,
-  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_ADD_COMPONENT] THEN
+let VECTORIZE_ADD = prove
+ (`!m1 m2:real^N^M. vectorize(m1 + m2) = vectorize m1 + vectorize m2`,
+  SIMP_TAC[CART_EQ; vectorize; LAMBDA_BETA; VECTOR_ADD_COMPONENT] THEN
   REWRITE_TAC[MATRIX_ADD_COMPONENT]);;
 
-let FLATTEN_CMUL = prove
- (`!c m:real^N^M. flatten(c %% m) = c % flatten m`,
-  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_MUL_COMPONENT] THEN
+let VECTORIZE_CMUL = prove
+ (`!c m:real^N^M. vectorize(c %% m) = c % vectorize m`,
+  SIMP_TAC[CART_EQ; vectorize; LAMBDA_BETA; VECTOR_MUL_COMPONENT] THEN
   REWRITE_TAC[MATRIX_CMUL_COMPONENT]);;
 
-let FLATTEN_SUB = prove
- (`!m1 m2:real^N^M. flatten(m1 - m2) = flatten m1 - flatten m2`,
-  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_SUB_COMPONENT] THEN
+let VECTORIZE_SUB = prove
+ (`!m1 m2:real^N^M. vectorize(m1 - m2) = vectorize m1 - vectorize m2`,
+  SIMP_TAC[CART_EQ; vectorize; LAMBDA_BETA; VECTOR_SUB_COMPONENT] THEN
   REWRITE_TAC[MATRIX_SUB_COMPONENT]);;
 
-let FLATTEN_0 = prove
- (`flatten(mat 0:real^N^M) = vec 0`,
-  SIMP_TAC[CART_EQ; FLATTEN_COMPONENT; DIMINDEX_FINITE_PROD] THEN
+let VECTORIZE_0 = prove
+ (`vectorize(mat 0:real^N^M) = vec 0`,
+  SIMP_TAC[CART_EQ; VECTORIZE_COMPONENT; DIMINDEX_FINITE_PROD] THEN
   REWRITE_TAC[VEC_COMPONENT; MAT_0_COMPONENT]);;
 
 let MATRIFY_0 = prove
  (`matrify(vec 0) = mat 0`,
-  MESON_TAC[FLATTEN_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+  MESON_TAC[VECTORIZE_0; VECTORIZE_MATRIFY; MATRIFY_VECTORIZE]);;
 
-let FLATTEN_EQ_0 = prove
- (`!m:real^N^M. flatten m = vec 0 <=> m = mat 0`,
-  MESON_TAC[FLATTEN_0; MATRIFY_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+let VECTORIZE_EQ_0 = prove
+ (`!m:real^N^M. vectorize m = vec 0 <=> m = mat 0`,
+  MESON_TAC[VECTORIZE_0; MATRIFY_0; VECTORIZE_MATRIFY; MATRIFY_VECTORIZE]);;
 
 let MATRIFY_ADD = prove
  (`!x y:real^(M,N)finite_prod. matrify(x + y) = matrify x + matrify y`,
@@ -4074,7 +4074,7 @@ let MATRIFY_SUB = prove
 
 let MATRIFY_EQ_0 = prove
  (`!m:real^(M,N)finite_prod. matrify m = mat 0 <=> m = vec 0`,
-  MESON_TAC[FLATTEN_0; MATRIFY_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+  MESON_TAC[VECTORIZE_0; MATRIFY_0; VECTORIZE_MATRIFY; MATRIFY_VECTORIZE]);;
 
 let BILINEAR_MATRIX_VECTOR_MUL = prove
  (`bilinear (\(m:real^(M,N)finite_prod) x:real^N. matrify m ** x)`,
@@ -4085,12 +4085,12 @@ let BILINEAR_MATRIX_VECTOR_MUL = prove
 
 let BILINEAR_MATRIX_MUL = prove
  (`bilinear (\(m1:real^(M,N)finite_prod) (m2:real^(N,P)finite_prod).
-                   flatten(matrify m1 ** matrify m2))`,
+                   vectorize(matrify m1 ** matrify m2))`,
   REWRITE_TAC[bilinear; linear] THEN
   REWRITE_TAC[MATRIFY_ADD; MATRIFY_CMUL] THEN
   REWRITE_TAC[MATRIX_ADD_LDISTRIB; MATRIX_ADD_RDISTRIB;
               MATRIX_MUL_RMUL; MATRIX_MUL_LMUL;
-              FLATTEN_ADD; FLATTEN_CMUL]);;
+              VECTORIZE_ADD; VECTORIZE_CMUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)

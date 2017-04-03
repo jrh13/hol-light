@@ -2225,6 +2225,18 @@ let CX_PRODUCT = prove
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[CPRODUCT_CLAUSES; PRODUCT_CLAUSES; GSYM CX_MUL]);;
 
+let CPRODUCT_SUPERSET = prove
+ (`!f:A->complex u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f(x) = Cx(&1))
+        ==> cproduct v f = cproduct u f`,
+  REWRITE_TAC[cproduct; GSYM NEUTRAL_COMPLEX_MUL] THEN
+  REWRITE_TAC[MATCH_MP ITERATE_SUPERSET MONOIDAL_COMPLEX_MUL]);;
+
+let CPRODUCT_UNION = prove
+ (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
+           ==> (cproduct (s UNION t) f = cproduct s f * cproduct t f)`,
+  SIMP_TAC[cproduct; ITERATE_UNION; MONOIDAL_COMPLEX_MUL]);;
+
 let th = prove
  (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
               ==> cproduct s (\i. f(i)) = cproduct s g) /\
