@@ -229,7 +229,7 @@ let EXISTS_PASTECART = prove
   MESON_TAC[PASTECART_FST_SND; FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 let PASTECART_INJ = prove
- (`!x:real^M y:real^N w z. pastecart x y = pastecart w z <=> x = w /\ y = z`,
+ (`!x:A^M y:A^N w z. pastecart x y = pastecart w z <=> x = w /\ y = z`,
   REWRITE_TAC[PASTECART_EQ; FSTCART_PASTECART; SNDCART_PASTECART]);;
 
 (* ------------------------------------------------------------------------- *)

@@ -4,8 +4,9 @@
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
-(*              (c) Copyright, John Harrison 1998-2007                       *)
-(*              (c) Copyright, Marco Maggesi 2012-2015                       *)
+(*              (c) Copyright, John Harrison 1998-2016                       *)
+(*              (c) Copyright, Marco Maggesi 2012-2017                       *)
+(*             (c) Copyright, Andrea Gabrielli 2012-2017                     *)
 (* ========================================================================= *)
 
 needs "int.ml";;
@@ -4054,6 +4055,17 @@ let ELEMENT_LE_SUP = prove
  (`!s a. (?b. !x. x IN s ==> x <= b) /\ a IN s ==> a <= sup s`,
   MESON_TAC[REAL_LE_SUP; REAL_LE_REFL]);;
 
+let SUP_APPROACH = prove
+ (`!s c. ~(s = {}) /\ (?b. !x. x IN s ==> x <= b) /\ c < sup s
+         ==> ?x. x IN s /\ c < x`,
+  INTRO_TAC "!s c; npty bound lt" THEN
+  REFUTE_THEN (LABEL_TAC "hp" o
+    REWRITE_RULE[NOT_EXISTS_THM; DE_MORGAN_THM; REAL_NOT_LT]) THEN
+  REMOVE_THEN "lt" MP_TAC THEN REWRITE_TAC[REAL_NOT_LT] THEN
+  HYP (MP_TAC o MATCH_MP SUP o end_itlist CONJ) "npty bound" [] THEN
+  INTRO_TAC "_ sup" THEN REMOVE_THEN "sup" MATCH_MP_TAC THEN
+  ASM_MESON_TAC[]);;
+
 let inf = new_definition
   `inf s = @a:real. (!x. x IN s ==> a <= x) /\
                     !b. (!x. x IN s ==> b <= x) ==> b <= a`;;
@@ -4207,6 +4219,173 @@ let INF_UNION = prove
 let INF_LE_ELEMENT = prove
  (`!s a. (?b. !x. x IN s ==> b <= x) /\ a IN s ==> inf s <= a`,
   MESON_TAC[REAL_INF_LE; REAL_LE_REFL]);;
+
+let INF_APPROACH = prove
+ (`!s c. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x) /\ inf s < c
+         ==> ?x. x IN s /\ x < c`,
+  INTRO_TAC "!s c; npty bound lt" THEN
+  REFUTE_THEN (LABEL_TAC "hp" o
+    REWRITE_RULE[NOT_EXISTS_THM; DE_MORGAN_THM; REAL_NOT_LT]) THEN
+  REMOVE_THEN "lt" MP_TAC THEN REWRITE_TAC[REAL_NOT_LT] THEN
+  HYP (MP_TAC o MATCH_MP INF o end_itlist CONJ) "npty bound" [] THEN
+  INTRO_TAC "_ inf" THEN REMOVE_THEN "inf" MATCH_MP_TAC THEN
+  ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relational counterparts of sup and inf.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix ("has_inf",(12,"right"));;
+parse_as_infix ("has_sup",(12,"right"));;
+
+let has_inf = new_definition
+  `s has_inf b <=> (!c. (!x:real. x IN s ==> c <= x) <=> c <= b)`;;
+
+let has_sup = new_definition
+  `s has_sup b <=> (!c. (!x:real. x IN s ==> x <= c) <=> b <= c)`;;
+
+let HAS_INF_LBOUND = prove
+ (`!s b x. s has_inf b /\ x IN s ==> b <= x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[has_inf] THEN MESON_TAC[REAL_LE_REFL]);;
+
+let HAS_SUP_UBOUND = prove
+ (`!s b x. s has_sup b /\ x IN s ==> x <= b`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[has_sup] THEN MESON_TAC[REAL_LE_REFL]);;
+
+let HAS_INF_INF = prove
+ (`!s l. s has_inf l <=>
+         ~(s = {}) /\
+         (?b. !x. x IN s ==> b <= x) /\
+         inf s = l`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[has_inf] THEN
+  EQ_TAC THEN STRIP_TAC THENL
+  [CONJ_TAC THENL
+   [REFUTE_THEN SUBST_ALL_TAC THEN
+    POP_ASSUM MP_TAC THEN REWRITE_TAC[NOT_IN_EMPTY; NOT_FORALL_THM] THEN
+    EXISTS_TAC `l + &1:real` THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_REWRITE_TAC[] THEN MESON_TAC[REAL_LE_REFL]; ALL_TAC] THEN
+   MATCH_MP_TAC INF_UNIQUE THEN ASM_REWRITE_TAC[];
+   GEN_TAC THEN MP_TAC (SPEC `s:real->bool` INF) THEN ANTS_TAC THENL
+   [ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+   POP_ASSUM SUBST_ALL_TAC THEN STRIP_TAC THEN EQ_TAC THEN
+   ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+   TRANS_TAC REAL_LE_TRANS `l:real` THEN ASM_SIMP_TAC[]]);;
+
+let HAS_SUP_SUP = prove
+ (`!s l. s has_sup l <=>
+         ~(s = {}) /\
+         (?b. !x. x IN s ==> x <= b) /\
+         sup s = l`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[has_sup] THEN
+  EQ_TAC THEN STRIP_TAC THENL
+  [CONJ_TAC THENL
+   [REFUTE_THEN SUBST_ALL_TAC THEN
+    POP_ASSUM MP_TAC THEN REWRITE_TAC[NOT_IN_EMPTY; NOT_FORALL_THM] THEN
+    EXISTS_TAC `l - &1:real` THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_REWRITE_TAC[] THEN MESON_TAC[REAL_LE_REFL]; ALL_TAC] THEN
+   MATCH_MP_TAC SUP_UNIQUE THEN ASM_REWRITE_TAC[];
+   GEN_TAC THEN MP_TAC (SPEC `s:real->bool` SUP) THEN ANTS_TAC THENL
+   [ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+   POP_ASSUM SUBST_ALL_TAC THEN STRIP_TAC THEN EQ_TAC THEN
+   ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+   TRANS_TAC REAL_LE_TRANS `l:real` THEN ASM_SIMP_TAC[]]);;
+
+let INF_EXISTS = prove
+ (`!s. (?l. s has_inf l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)`,
+  MESON_TAC[HAS_INF_INF]);;
+
+let SUP_EXISTS = prove
+ (`!s. (?l. s has_sup l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)`,
+  MESON_TAC[HAS_SUP_SUP]);;
+
+let HAS_INF_APPROACH = prove
+ (`!s l c. s has_inf l /\ l < c ==> ?x. x IN s /\ x < c`,
+  REWRITE_TAC[HAS_INF_INF] THEN MESON_TAC[INF_APPROACH]);;
+
+let HAS_SUP_APPROACH = prove
+ (`!s l c. s has_sup l /\ c < l ==> ?x. x IN s /\ c < x`,
+  REWRITE_TAC[HAS_SUP_SUP] THEN MESON_TAC[SUP_APPROACH]);;
+
+let HAS_INF = prove
+ (`!s l. s has_inf l <=>
+         ~(s = {}) /\
+         (!x. x IN s ==> l <= x) /\
+         (!c. l < c ==> ?x. x IN s /\ x < c)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN CONJ_TAC THENL
+   [HYP_TAC "hp" (REWRITE_RULE[HAS_INF_INF]) THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_MESON_TAC[HAS_INF_LBOUND]; ASM_MESON_TAC[HAS_INF_APPROACH]];
+   ALL_TAC] THEN
+  INTRO_TAC "ne bound approach" THEN ASM_REWRITE_TAC[has_inf] THEN
+  GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN INTRO_TAC "lc" THEN
+   REMOVE_THEN "approach" (MP_TAC o SPEC `(l + c) / &2`) THEN
+   ANTS_TAC THENL [ASM_REAL_ARITH_TAC; INTRO_TAC "@x0. x0 +"] THEN
+   USE_THEN "x0" (HYP_TAC "hp" o C MATCH_MP) THEN ASM_REAL_ARITH_TAC;
+   INTRO_TAC "hp; !x; x" THEN TRANS_TAC REAL_LE_TRANS `l:real` THEN
+   ASM_SIMP_TAC[]]);;
+
+let HAS_SUP = prove
+ (`!s l. s has_sup l <=>
+         ~(s = {}) /\
+         (!x. x IN s ==> x <= l) /\
+         (!c. c < l ==> ?x. x IN s /\ c < x)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN CONJ_TAC THENL
+   [HYP_TAC "hp" (REWRITE_RULE[HAS_SUP_SUP]) THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_MESON_TAC[HAS_SUP_UBOUND]; ASM_MESON_TAC[HAS_SUP_APPROACH]];
+   ALL_TAC] THEN
+  INTRO_TAC "ne bound approach" THEN ASM_REWRITE_TAC[has_sup] THEN
+  GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN INTRO_TAC "lc" THEN
+   REMOVE_THEN "approach" (MP_TAC o SPEC `(l + c) / &2`) THEN
+   ANTS_TAC THENL [ASM_REAL_ARITH_TAC; INTRO_TAC "@x0. x0 +"] THEN
+   USE_THEN "x0" (HYP_TAC "hp" o C MATCH_MP) THEN ASM_REAL_ARITH_TAC;
+   INTRO_TAC "hp; !x; x" THEN TRANS_TAC REAL_LE_TRANS `l:real` THEN
+   ASM_SIMP_TAC[]]);;
+
+let HAS_INF_LE = prove
+ (`!s t l m. s has_inf l /\ t has_inf m /\
+             (!y. y IN t ==> ?x. x IN s /\ x <= y)
+             ==> l <= m`,
+  INTRO_TAC "!s t l m; l m le" THEN
+  HYP_TAC "l: s l1 l2" (REWRITE_RULE[HAS_INF]) THEN
+  HYP_TAC "m: t m1 m2" (REWRITE_RULE[HAS_INF]) THEN
+  REFUTE_THEN (LABEL_TAC "lt" o REWRITE_RULE[REAL_NOT_LE]) THEN
+  CLAIM_TAC "@c. c1 c2" `?c:real. m < c /\ c < l` THENL
+  [EXISTS_TAC `(l + m) / &2` THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  HYP_TAC "m2: +" (SPEC `c:real`) THEN ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN
+  INTRO_TAC "!x; x xc" THEN
+  CLAIM_TAC "@y. y yx" `?y:real. y IN s /\ y <= x` THENL
+  [HYP MESON_TAC "le x" []; ALL_TAC] THEN
+  HYP_TAC "l1: +" (SPEC `y:real`) THEN ASM_REWRITE_TAC[] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let HAS_SUP_LE = prove
+ (`!s t l m. s has_sup l /\ t has_sup m /\
+             (!y. y IN t ==> ?x. x IN s /\ y <= x)
+             ==> m <= l`,
+  INTRO_TAC "!s t l m; l m le" THEN
+  HYP_TAC "l: s l1 l2" (REWRITE_RULE[HAS_SUP]) THEN
+  HYP_TAC "m: t m1 m2" (REWRITE_RULE[HAS_SUP]) THEN
+  REFUTE_THEN (LABEL_TAC "lt" o REWRITE_RULE[REAL_NOT_LE]) THEN
+  CLAIM_TAC "@c. c1 c2" `?c:real. l < c /\ c < m` THENL
+  [EXISTS_TAC `(l + m) / &2` THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  HYP_TAC "m2: +" (SPEC `c:real`) THEN ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN
+  INTRO_TAC "!x; x xc" THEN
+  CLAIM_TAC "@y. y yx" `?y:real. y IN s /\ x <= y` THENL
+  [HYP MESON_TAC "le x" []; ALL_TAC] THEN
+  HYP_TAC "l1: +" (SPEC `y:real`) THEN ASM_REWRITE_TAC[] THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Inductive definition of sets, by reducing them to inductive relations.    *)

@@ -1,9 +1,10 @@
 (* ========================================================================= *)
 (* Elementary topology in Euclidean space.                                   *)
 (*                                                                           *)
-(*              (c) Copyright, John Harrison 1998-2008                       *)
-(*              (c) Copyright, Valentina Bruno 2010                          *)
-(*               (c) Copyright, Marco Maggesi 2014                           *)
+(*              (c) Copyright, John Harrison 1998-2017                       *)
+(*                (c) Copyright, Valentina Bruno 2010                        *)
+(*               (c) Copyright, Marco Maggesi 2014-2017                      *)
+(*             (c) Copyright, Andrea Gabrielli 2016-2017                     *)
 (* ========================================================================= *)
 
 needs "Library/card.ml";;
@@ -13621,6 +13622,55 @@ let DIAMETER_LT_SUMS_LEFT = prove
   ONCE_REWRITE_TAC[SUMS_SYM] THEN SIMP_TAC[DIAMETER_LT_SUMS_RIGHT]);;
 
 (* ------------------------------------------------------------------------- *)
+(* It is always possible to shrink a ball containing a compact set.          *)
+(* ------------------------------------------------------------------------- *)
+
+let COMPACT_SHRINK_ENCLOSING_BALL = prove
+ (`!s x:real^N r. &0 < r /\ compact s /\ s SUBSET ball(x,r)
+                  ==> ?r'. &0 < r' /\ r' < r /\ s SUBSET ball(x,r')`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THENL
+  [POP_ASSUM SUBST1_TAC THEN INTRO_TAC "r _ _" THEN EXISTS_TAC `r / &2` THEN
+   REWRITE_TAC[EMPTY_SUBSET] THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  REWRITE_TAC[SUBSET; IN_BALL] THEN REPEAT STRIP_TAC THEN
+  MP_TAC (ISPECL[`s:real^N->bool`;`x:real^N`] DISTANCE_ATTAINS_SUP) THEN
+  ASM_REWRITE_TAC[] THEN INTRO_TAC "@y. y le" THEN
+  EXISTS_TAC `(dist (x:real^N,y) + r) / &2` THEN
+  CLAIM_TAC "rlt" `dist(x:real^N,y) < r` THENL [ASM_SIMP_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_ARITH `a <= b /\ b < c ==> a < (b + c) / &2`] THEN
+  ASM_NORM_ARITH_TAC);;
+
+let COMPACT_SHRINK_ENCLOSING_BALL_INFTY = prove
+ (`!s b. compact s /\ (!x:real^N. x IN s ==> b * norm x < &1)
+         ==> ?r. &0 < r /\ b * r < &1 /\ !x. x IN s ==> norm x < r`,
+  INTRO_TAC "!s b; cpt sub" THEN ASM_CASES_TAC `&0 < b` THENL
+  [MP_TAC (ISPECL [`s:real^N->bool`;`vec 0:real^N`; `inv b`]
+                  COMPACT_SHRINK_ENCLOSING_BALL) THEN
+   ASM_REWRITE_TAC[REAL_LT_INV_EQ; SUBSET; IN_BALL_0] THEN
+   ANTS_TAC THENL
+   [GEN_TAC THEN DISCH_TAC THEN
+    MATCH_MP_TAC (SPEC `b:real` REAL_LT_LCANCEL_IMP) THEN
+    ASM_SIMP_TAC[REAL_POS_NZ; REAL_MUL_RINV];
+    ALL_TAC] THEN
+   INTRO_TAC "@r. rpos rlt sub" THEN EXISTS_TAC `r:real` THEN
+   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC (SPEC `inv b` REAL_LT_LCANCEL_IMP) THEN
+   ASM_REWRITE_TAC[REAL_LT_INV_EQ; REAL_MUL_RID] THEN
+   ASM_SIMP_TAC[REAL_FIELD `&0 < b ==> inv b * b * r = r`];
+   POP_ASSUM (LABEL_TAC "bneg" o REWRITE_RULE[REAL_NOT_LT])] THEN
+  ASM_CASES_TAC `s:real^N->bool = {}` THENL
+  [POP_ASSUM SUBST1_TAC THEN EXISTS_TAC `&1` THEN
+   REWRITE_TAC[REAL_LT_01; NOT_IN_EMPTY] THEN ASM_REAL_ARITH_TAC;
+   ALL_TAC] THEN
+  MP_TAC (ISPECL [`s:real^N->bool`; `vec 0:real^N`] DISTANCE_ATTAINS_SUP) THEN
+  ASM_REWRITE_TAC[DIST_0] THEN INTRO_TAC "@x. x le" THEN
+  EXISTS_TAC `norm (x:real^N) + &1` THEN
+  CONJ_TAC THENL [ASM_NORM_ARITH_TAC; ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_ARITH `x <= y ==> x < y + &1`] THEN
+  TRANS_TAC REAL_LET_TRANS `&0` THEN
+  REWRITE_TAC[REAL_LT_01; GSYM REAL_NOT_LT; REAL_MUL_POS_LT] THEN
+  ASM_NORM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
 (* Separation between points and sets.                                       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -22470,6 +22520,10 @@ let SUMMABLE_IFF = prove
 let SUMMABLE_EQ = prove
  (`!f g k. (!x. x IN k ==> f x = g x) /\ summable k f ==> summable k g`,
   REWRITE_TAC[summable] THEN MESON_TAC[SUMS_EQ]);;
+
+let SUMMABLE_FINITE = prove
+ (`!k f:num->real^N. FINITE k ==> summable k f`,
+  REWRITE_TAC[summable] THEN MESON_TAC[SERIES_FINITE]);;
 
 let SUMMABLE_COMPONENT = prove
  (`!f:num->real^N s k.

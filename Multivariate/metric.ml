@@ -1,8 +1,9 @@
 (* ========================================================================= *)
 (* Formalization of general topological and metric spaces in HOL Light       *)
 (*                                                                           *)
-(*              (c) Copyright, John Harrison 1998-2008                       *)
-(*                (c) Copyright, Marco Maggesi 2014                          *)
+(*              (c) Copyright, John Harrison 1998-2017                       *)
+(*                (c) Copyright, Marco Maggesi 2014-2017                     *)
+(*             (c) Copyright, Andrea Gabrielli  2016-2017                    *)
 (* ========================================================================= *)
 
 needs "Multivariate/misc.ml";;
@@ -1711,6 +1712,23 @@ let EVENTUALLY_MP = prove
   REWRITE_TAC[GSYM EVENTUALLY_AND] THEN
   REWRITE_TAC[eventually] THEN MESON_TAC[]);;
 
+let EVENTUALLY_EQ_MP = prove
+ (`!net P Q. eventually (\x:A. P x <=> Q x) net /\ eventually P net
+             ==> eventually Q net`,
+  INTRO_TAC "!net P Q; PQ P" THEN REMOVE_THEN "P" MP_TAC THEN
+  MATCH_MP_TAC (REWRITE_RULE[IMP_CONJ] EVENTUALLY_MP) THEN
+  POP_ASSUM MP_TAC THEN
+  MATCH_MP_TAC (REWRITE_RULE[IMP_CONJ] EVENTUALLY_MP) THEN
+  MATCH_MP_TAC ALWAYS_EVENTUALLY THEN SIMP_TAC[]);;
+
+let EVENTUALLY_IFF = prove
+ (`!net P Q. eventually (\x:A. P x <=> Q x) net
+             ==> (eventually P net <=> eventually Q net)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  (MATCH_MP_TAC o REWRITE_RULE[IMP_CONJ]) EVENTUALLY_EQ_MP THEN
+  ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN
+  ASM_REWRITE_TAC[]);;
+
 let EVENTUALLY_FALSE = prove
  (`!net. eventually (\x. F) net <=> trivial_limit net`,
   REWRITE_TAC[trivial_limit]);;
@@ -1779,6 +1797,29 @@ let TRIVIAL_LIMIT_SEQUENTIALLY = prove
  (`~(trivial_limit sequentially)`,
   REWRITE_TAC[trivial_limit; EVENTUALLY_SEQUENTIALLY] THEN
   MESON_TAC[LE_REFL]);;
+
+let EVENTUALLY_SEQUENTIALLY_WITHIN = prove
+ (`!k p. eventually p (sequentially within k) <=>
+         FINITE k \/ (?N. !n. n IN k /\ N <= n ==> p n)`,
+  GEN_TAC THEN GEN_TAC THEN
+  REWRITE_TAC[EVENTUALLY_WITHIN_IMP; EVENTUALLY_SEQUENTIALLY] THEN
+  ASM_CASES_TAC `FINITE (k:num->bool)` THEN ASM_REWRITE_TAC[] THENL
+  [POP_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE[num_FINITE]) THEN
+   EXISTS_TAC `a + 1` THEN
+   REWRITE_TAC[ARITH_RULE `a + 1 <= n <=> a < n`] THEN
+   ASM_MESON_TAC[NOT_LE];
+   POP_ASSUM MP_TAC THEN
+   REWRITE_TAC[GSYM INFINITE; num_INFINITE_EQ] THEN
+   MESON_TAC[]]);;
+
+let TRIVIAL_LIMIT_SEQUENTIALLY_WITHIN = prove
+ (`!k. trivial_limit (sequentially within k) <=> FINITE k`,
+  GEN_TAC THEN REWRITE_TAC[trivial_limit] THEN
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY_WITHIN] THEN
+  ASM_CASES_TAC `FINITE (k:num->bool)` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[NOT_EXISTS_THM; NOT_FORALL_THM] THEN GEN_TAC THEN
+  POP_ASSUM (MP_TAC o REWRITE_RULE[GSYM INFINITE; num_INFINITE_EQ]) THEN
+  MESON_TAC[]);;
 
 let EVENTUALLY_SUBSEQUENCE = prove
  (`!P r. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
@@ -1867,6 +1908,64 @@ let EVENTUALLY_NO_SUBSEQUENCE = prove
   ONCE_REWRITE_TAC[TAUT `(p <=> ~q) <=> (~p <=> q)`] THEN
   REWRITE_TAC[GSYM INFINITE; INFINITE_ENUMERATE_EQ_ALT] THEN
   REWRITE_TAC[IN_ELIM_THM]);;
+
+let EVENTUALLY_UBOUND_LE_SEQUENTIALLY = prove
+ (`!f. (?b. eventually (\n. f n <= b) sequentially) <=> (?b. !n. f n <= b)`,
+  GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THENL
+  [ALL_TAC;
+   INTRO_TAC "@b. b" THEN EXISTS_TAC `b:real` THEN ASM_REWRITE_TAC[]] THEN
+  INTRO_TAC "@b N. b" THEN ASM_CASES_TAC `N = 0` THENL
+  [POP_ASSUM SUBST_ALL_TAC THEN POP_ASSUM MP_TAC THEN
+   REWRITE_TAC[LE_0] THEN MESON_TAC[];
+   ALL_TAC] THEN
+  EXISTS_TAC `max b (sup {f m | m:num < N})` THEN INTRO_TAC "![m]" THEN
+  REWRITE_TAC[REAL_LE_MAX] THEN ASM_CASES_TAC `m < N:num` THENL
+  [ALL_TAC; DISJ1_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC] THEN
+  DISJ2_TAC THEN
+  CLAIM_TAC "fin" `FINITE {f m:real | m:num < N}` THENL
+  [SUBST1_TAC (SET_RULE
+     `{f m:real | m:num < N} = IMAGE f {m:num | m < N}`) THEN
+   MATCH_MP_TAC FINITE_IMAGE THEN
+   REWRITE_TAC[num_FINITE; FORALL_IN_GSPEC] THEN
+   EXISTS_TAC `N:num` THEN ARITH_TAC;
+   ALL_TAC] THEN
+  CLAIM_TAC "ne" `~({f m:real | m:num < N} = {})` THENL
+  [REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN EXISTS_TAC `f 0:real` THEN
+   REWRITE_TAC[IN_ELIM_THM] THEN EXISTS_TAC `0` THEN
+   CONJ_TAC THENL [ASM_ARITH_TAC; REFL_TAC];
+   ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_LE_SUP_FINITE] THEN EXISTS_TAC `f (m:num):real` THEN
+  REWRITE_TAC[IN_ELIM_THM; REAL_LE_REFL] THEN EXISTS_TAC `m:num` THEN
+  ASM_REWRITE_TAC[]);;
+
+let EVENTUALLY_LBOUND_LE_SEQUENTIALLY = prove
+ (`!f. (?b. eventually (\n. b <= f n) sequentially) <=> (?b. !n. b <= f n)`,
+  GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THENL
+  [ALL_TAC;
+   INTRO_TAC "@b. b" THEN EXISTS_TAC `b:real` THEN ASM_REWRITE_TAC[]] THEN
+  INTRO_TAC "@b N. b" THEN ASM_CASES_TAC `N = 0` THENL
+  [POP_ASSUM SUBST_ALL_TAC THEN POP_ASSUM MP_TAC THEN
+   REWRITE_TAC[LE_0] THEN MESON_TAC[];
+   ALL_TAC] THEN
+  EXISTS_TAC `min b (inf {f m | m:num < N})` THEN INTRO_TAC "![m]" THEN
+  REWRITE_TAC[REAL_MIN_LE] THEN ASM_CASES_TAC `m < N:num` THENL
+  [ALL_TAC; DISJ1_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC] THEN
+  DISJ2_TAC THEN
+  CLAIM_TAC "fin" `FINITE {f m:real | m:num < N}` THENL
+  [SUBST1_TAC (SET_RULE
+     `{f m:real | m:num < N} = IMAGE f {m:num | m < N}`) THEN
+   MATCH_MP_TAC FINITE_IMAGE THEN
+   REWRITE_TAC[num_FINITE; FORALL_IN_GSPEC] THEN
+   EXISTS_TAC `N:num` THEN ARITH_TAC;
+   ALL_TAC] THEN
+  CLAIM_TAC "ne" `~({f m:real | m:num < N} = {})` THENL
+  [REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN EXISTS_TAC `f 0:real` THEN
+   REWRITE_TAC[IN_ELIM_THM] THEN EXISTS_TAC `0` THEN
+   CONJ_TAC THENL [ASM_ARITH_TAC; REFL_TAC];
+   ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_INF_LE_FINITE] THEN EXISTS_TAC `f (m:num):real` THEN
+  REWRITE_TAC[IN_ELIM_THM; REAL_LE_REFL] THEN EXISTS_TAC `m:num` THEN
+  ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Metric spaces.                                                            *)

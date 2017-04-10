@@ -8,6 +8,88 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  8th Apr 2017       cart.ml
+
+Type-generalized PASTECART_INJ which had a pointless restriction to ":real".
+
+Sat  8th Apr 2017       sets.ml
+
+Added a number of new theorems from Andrea Gabrielli and Marco Maggesi, giving
+some additional properties of sup and inf and using useful relational versions
+"has_sup" and "has_inf" to express some properties more nicely:
+
+  has_inf =
+    |- !s b. s has_inf b <=> (!c. (!x. x IN s ==> c <= x) <=> c <= b)
+
+  has_sup =
+    |- !s b. s has_sup b <=> (!c. (!x. x IN s ==> x <= c) <=> b <= c)
+
+  HAS_INF =
+    |- !s l.
+           s has_inf l <=>
+           ~(s = {}) /\
+           (!x. x IN s ==> l <= x) /\
+           (!c. l < c ==> (?x. x IN s /\ x < c))
+
+  HAS_INF_APPROACH =
+    |- !s l c. s has_inf l /\ l < c ==> (?x. x IN s /\ x < c)
+
+  HAS_INF_INF =
+    |- !s l.
+           s has_inf l <=>
+           ~(s = {}) /\ (?b. !x. x IN s ==> b <= x) /\ inf s = l
+
+  HAS_INF_LBOUND =
+    |- !s b x. s has_inf b /\ x IN s ==> b <= x
+
+  HAS_INF_LE =
+    |- !s t l m.
+           s has_inf l /\
+           t has_inf m /\
+           (!y. y IN t ==> (?x. x IN s /\ x <= y))
+           ==> l <= m
+
+  HAS_SUP =
+    |- !s l.
+           s has_sup l <=>
+           ~(s = {}) /\
+           (!x. x IN s ==> x <= l) /\
+           (!c. c < l ==> (?x. x IN s /\ c < x))
+
+  HAS_SUP_APPROACH =
+    |- !s l c. s has_sup l /\ c < l ==> (?x. x IN s /\ c < x)
+
+  HAS_SUP_LE =
+    |- !s t l m.
+           s has_sup l /\
+           t has_sup m /\
+           (!y. y IN t ==> (?x. x IN s /\ y <= x))
+           ==> m <= l
+
+  HAS_SUP_SUP =
+    |- !s l.
+           s has_sup l <=>
+           ~(s = {}) /\ (?b. !x. x IN s ==> x <= b) /\ sup s = l
+
+  HAS_SUP_UBOUND =
+    |- !s b x. s has_sup b /\ x IN s ==> x <= b
+
+  INF_APPROACH =
+    |- !s c.
+           ~(s = {}) /\ (?b. !x. x IN s ==> b <= x) /\ inf s < c
+           ==> (?x. x IN s /\ x < c)
+
+  INF_EXISTS =
+    |- !s. (?l. s has_inf l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
+
+  SUP_APPROACH =
+    |- !s c.
+           ~(s = {}) /\ (?b. !x. x IN s ==> x <= b) /\ c < sup s
+           ==> (?x. x IN s /\ c < x)
+
+  SUP_EXISTS =
+    |- !s. (?l. s has_sup l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)
+
 Wed 29th Mar 2017       arith.ml
 
 Added some natural theorems that were missing:
