@@ -341,6 +341,17 @@ let EXISTS_UNPAIR_THM = prove
  (`!P. (?x y. P x y) <=> ?z. P (FST z) (SND z)`,
   REWRITE_TAC[EXISTS_PAIR_THM; FST; SND] THEN MESON_TAC[]);;
 
+let FORALL_PAIR_FUN_THM = prove
+ (`!P. (!f:A->B#C. P f) <=> (!g h. P(\a. g a,h a))`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+  GEN_REWRITE_TAC BINDER_CONV [GSYM PAIR] THEN PURE_ASM_REWRITE_TAC[]);;
+
+let EXISTS_PAIR_FUN_THM = prove
+ (`!P. (?f:A->B#C. P f) <=> (?g h. P(\a. g a,h a))`,
+  REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[FORALL_PAIR_FUN_THM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Related theorems for explicitly paired quantifiers.                       *)
 (* ------------------------------------------------------------------------- *)

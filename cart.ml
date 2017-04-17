@@ -459,6 +459,11 @@ let PCROSS_EMPTY = prove
  (`(!s. s PCROSS {} = {}) /\ (!t. {} PCROSS t = {})`,
   REWRITE_TAC[PCROSS_EQ_EMPTY]);;
 
+let PCROSS_SING = prove
+ (`!x y:A^N. {x} PCROSS {y} = {pastecart x y}`,
+  REWRITE_TAC[EXTENSION; FORALL_PASTECART; IN_SING; PASTECART_IN_PCROSS;
+              PASTECART_INJ]);;
+
 let SUBSET_PCROSS = prove
  (`!s t s' t'. s PCROSS t SUBSET s' PCROSS t' <=>
                 s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'`,

@@ -29,17 +29,9 @@ let REAL_CLOSED = prove
 (* Compactness of a set of reals.                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let real_bounded = new_definition
- `real_bounded s <=> ?B. !x. x IN s ==> abs(x) <= B`;;
-
 let REAL_BOUNDED = prove
  (`real_bounded s <=> bounded(IMAGE lift s)`,
   REWRITE_TAC[BOUNDED_LIFT; real_bounded]);;
-
-let REAL_BOUNDED_POS = prove
- (`!s. real_bounded s <=> ?B. &0 < B /\ !x. x IN s ==> abs(x) <= B`,
-  REWRITE_TAC[real_bounded] THEN
-  MESON_TAC[REAL_ARITH `&0 < &1 + abs B /\ (x <= B ==> x <= &1 + abs B)`]);;
 
 let REAL_BOUNDED_POS_LT = prove
  (`!s. real_bounded s <=> ?b. &0 < b /\ !x. x IN s ==> abs(x) < b`,

@@ -2441,6 +2441,10 @@ let CROSS_EMPTY = prove
  (`(!s:A->bool. s CROSS {} = {}) /\ (!t:B->bool. {} CROSS t = {})`,
   REWRITE_TAC[CROSS_EQ_EMPTY]);;
 
+let CROSS_SING = prove
+ (`!x:A y:B. {x} CROSS {y} = {(x,y)}`,
+  REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_SING; IN_CROSS; PAIR_EQ]);;
+
 let CROSS_UNIV = prove
  (`(:A) CROSS (:B) = (:A#B)`,
   REWRITE_TAC[CROSS; EXTENSION; IN_ELIM_PAIR_THM; FORALL_PAIR_THM; IN_UNIV]);;

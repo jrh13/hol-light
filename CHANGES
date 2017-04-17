@@ -8,6 +8,22 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 11th Apr 2017       pair.ml, sets.ml, cart.ml
+
+Added a few more trivial but nice-to-have rewrites:
+
+  EXISTS_PAIR_FUN_THM =
+    |- !P. (?f. P f) <=> (?g h. P (\a. g a,h a))
+
+  FORALL_PAIR_FUN_THM =
+    |- !P. (!f. P f) <=> (!g h. P (\a. g a,h a))
+
+  CROSS_SING =
+    |- !x y. {x} CROSS {y} = {(x,y)}
+
+  PCROSS_SING =
+     |- !x y. {x} PCROSS {y} = {pastecart x y}
+
 Sat  8th Apr 2017       cart.ml
 
 Type-generalized PASTECART_INJ which had a pointless restriction to ":real".
