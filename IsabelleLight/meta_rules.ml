@@ -5,7 +5,7 @@
 (*                   Petros Papapanagiotou, Jacques Fleuriot                 *)
 (*              Center of Intelligent Systems and their Applications         *)
 (*                          University of Edinburgh                          *)
-(*                                 2009-2012                                 *)
+(*                                 2009-2015                                 *)
 (* ========================================================================= *)
 (* FILE         : meta_rules.ml                                              *)
 (* DESCRIPTION  : Meta rules is a formalisation used to accommodate          *)
@@ -17,7 +17,6 @@
 (*                allI and exE. We also make use of metavariables which are  *)
 (*                restricted by the limitations of term_unify                *)
 (*                (ie. no HO unification and no type instantiation).         *)
-(* LAST MODIFIED: October 2012                                               *)
 (* ========================================================================= *)
 
 (* ------------------------------------------------------------------------- *)
@@ -76,6 +75,24 @@ let MTAUT tm =
 
 let MIMP_THM = MTAUT `(p==>q) <=> (p===>q)`;;
 let MIMP_RULE = PURE_REWRITE_RULE[MIMP_THM];;
+
+
+(* ------------------------------------------------------------------------- *)
+(* DISCH and DISCH_TAC for meta-level implication.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let MDISCH a th =
+  let mth = MATCH_MP EQ_IMP MIMP_THM in
+  MATCH_MP mth (DISCH a th);;
+
+let (MDISCH_TAC: tactic) =
+  fun (asl,w) ->
+    try let ant,c = dest_mimp w in
+        let th1 = ASSUME ant in
+        null_meta,[("",th1)::asl,c],
+        fun i [th] -> MDISCH (instantiate i ant) th
+    with Failure _ -> failwith "MISCH_TAC";;
+
 
 
 (* ------------------------------------------------------------------------- *)
@@ -210,7 +227,7 @@ let gmm t =
 (* well. This will be fixed when gmm is fixed.                               *)
 (* ------------------------------------------------------------------------- *)
 
-let gm t = g t ; e (MIMP_TAC THEN REPEAT DISCH_TAC);;
+let gm t = ignore( g t ) ; e (REPEAT MDISCH_TAC);;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -307,6 +324,21 @@ let inst_meta_rule:instantiation->meta_rule->meta_rule =
     instantiate inst c,
     map (inst_goal inst) glist,
     INSTANTIATE_ALL inst j;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* REWRITE_META_RULE: thm list -> meta_rule -> meta_rule                     *)
+(* ------------------------------------------------------------------------- *)
+(* Rewrites all parts of meta_rules using a list of theorems.                *)
+(* ------------------------------------------------------------------------- *)
+
+let REWRITE_META_RULE:thm list->meta_rule->meta_rule =
+  fun thl (c,glist,j) ->
+    let rewr = rhs o concl o (REWRITE_CONV thl) 
+    and rewrg = (hd o snd3 o (REWRITE_ASM_TAC thl THEN REWRITE_TAC thl)) in
+    rewr c,
+    map (rewrg) glist,
+    REWRITE_RULE thl j;;(* Theorem's hyp is not being rewritten! :/ *)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -407,11 +439,11 @@ let inst_meta_rule_vars: (term * term) list -> meta_rule -> term list -> meta_ru
     
     let mcheck_var = fun tm ->
       if (not (is_var tm)) then failwith ("inst_meta_rule_vars: `" ^ string_of_term tm ^ "` is not a variable")
-      else try list_match_first (match_var tm) rfrees 
+      else try tryfind (match_var tm) rfrees 
       with Failure _ -> failwith ("inst_meta_rule_vars: `" ^ string_of_term tm ^ "` could not be found in the meta_rule") in
 
     let mcheck_gvar = fun var ->
-      try let mvar = list_match_first (match_var var) gfrees in
+      try let mvar = tryfind (match_var var) gfrees in
       term_match [] var mvar
       with Failure _ ->  
 	warn true ("inst_meta_rule_vars: `" ^ string_of_term var ^ "` could not be found in the goal") ;
@@ -477,77 +509,6 @@ let (mk_meta_rule: thm -> meta_rule) =
     
 
 (* ------------------------------------------------------------------------- *)
-(* mk_meta_rule_old: thm -> meta_rule                                        *)
-(* Creates a meta_rule out of a theorem. === DEPRECATED ===                  *)
-(* Theorem must be of the form H1,H2,...,Hn |- C                             *)
-(* If Hi is of the form Hi1==>Hi2==>...==>Hik==>HiC then it is treated as    *)
-(* Hi1,Hi2,...,Hik ?- HiC (or "meta-level" implication                       *)
-(* [|Hi1;Hi2;...;Hik|] ==> HiC in Isabelle) and the corresponding            *)
-(* meta_subgoal is created.                                                  *)
-(* ------------------------------------------------------------------------- *)
-(* --As a result you CANNOT have rules with implication in their premises!-- *)
-(*  (You'll have to use mk_elim_meta_rule or build the meta_rule yourself.)  *)
-(* ------------------------------------------------------------------------- *)
-(* (+) The theorem is destroyed to its hypothesis list and its conclusion.   *)
-(* The conclusion is the first part of the meta_rule.                        *)
-(* (+) "mk_meta_subgoal" creates a meta_subgoal from a term. If the term is  *)
-(* an implication, the lhs is added as an assumption/premise of the          *)
-(* meta_subgoal and mk_meta_subgoal is called recursively for the rhs.       *)
-(* (+) The theorem itself is used as the justification theorem.              *)
-(* ------------------------------------------------------------------------- *)
-(* Deprecated. New mk_meta_rule uses meta-level implication.                 *)
-(* Kept until new mk_meta_rule is tested and stable.                         *)
-(* ------------------------------------------------------------------------- *)
-
-let (mk_meta_rule_old: thm -> meta_rule) =
-  fun thm ->
-    let (hyps,concl) = dest_thm thm in
-    let rec mk_meta_subgoal tm = (
-      if (is_imp(tm)) then 
-	let (a,c) = dest_imp tm in
-	let (prems,concl) = mk_meta_subgoal c in
-	("",ASSUME a)::prems,concl
-     else [],tm
-     ) in
-    concl,map mk_meta_subgoal hyps,thm;;
-
-
-
-(* ------------------------------------------------------------------------- *)
-(* mk_elim_meta_rule_old: thm -> meta_rule                                   *)
-(* Creates a meta_rule out of a theorem. === DEPRECATED ===                  *)
-(* Works like mk_meta_rule but acommodates elimination/destruction rules     *)
-(* a little bit better by not breaking the major premise. This effectively   *)
-(* allows the major premise to be an implication.                            *)
-(* ------------------------------------------------------------------------- *)
-(* In an elimination or destruction rule, the first or major premise is      *)
-(* matched against one of the assumptions. Therefore, you cannot have a      *)
-(* meta_subgoal for a major premise. If there is an implication there we     *)
-(* shall leave it intact and not treat it as "meta-level" implication.       *)
-(* This still disallows the use of implication in the rest of the premises   *)
-(* (by treating it as "meta-level" implication).                             *)
-(* ------------------------------------------------------------------------- *)
-(* Deprecated. New mk_meta_rule uses meta-level implication.                 *)
-(* Kept until new mk_meta_rule is tested and stable.                         *)
-(* ------------------------------------------------------------------------- *)
-
-let (mk_elim_meta_rule_old: thm -> meta_rule) =
-  fun thm ->
-    let (hyps,concl) = dest_thm thm in
-    if (hyps = []) then failwith "mk_elim_meta_rule: Invalid rule - no premises!"
-	else let major_prem,hyps = ([],hd hyps),tl hyps in
-    let rec mk_meta_subgoal tm = (
-      if (is_imp(tm)) then 
-	let (a,c) = dest_imp tm in
-	let (prems,concl) = mk_meta_subgoal c in
-	("",ASSUME a)::prems,concl
-     else [],tm
-     ) in
-    concl,major_prem :: (map mk_meta_subgoal hyps),thm;;
-
-
-
-(* ------------------------------------------------------------------------- *)
 (* Isabelle's natural deduction inference rules as meta_rules.               *)
 (* ------------------------------------------------------------------------- *)
 (* The trailing 'm' indicates they are represented as meta_rules as opposed  *)
@@ -558,7 +519,8 @@ let (mk_elim_meta_rule_old: thm -> meta_rule) =
 (* ------------------------------------------------------------------------- *)
 (* Deprecated. New mk_meta_rule uses meta-level implication so now ALL of    *)
 (* these can be represented at the object-level and turned into meta_rules   *)
-(* using mk_meta_rule.                                                       *)
+(* using mk_meta_rule. They are left here for historical reasons and as      *)
+(* examples of raw meta rules.                                               *)
 (* ------------------------------------------------------------------------- *)
 
 let conjIm:meta_rule =
@@ -705,18 +667,30 @@ let (rulem_tac: (term*term) list->meta_rule->tactic) =
   fun instlist r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let ins = try ( term_match [] c w ) with Failure _ -> failwith "Rule doesn't match!" in
+    let ins = try ( term_match (gl_frees g) c w ) with Failure _ -> failwith "Rule doesn't match!" in
 
     let new_hyps = map (inst_goal ins) hyps in
-    let create_goal = fun asms (hs,gl) -> (hs@asms,gl) in
-    let new_goals = map (create_goal asl) new_hyps in
-    let rec create_dischl = fun (asms,g) -> if (asms = []) then [] else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
+    let new_goals = map (fun (hs,gl) -> (hs@asl,gl)) new_hyps in
+    let rec create_dischl (asms,g) =
+      if (asms = []) then [] else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     let dischls = map create_dischl new_hyps in
     let disch_pair = fun i (dischl,thm) -> DISCHL (map (instantiate i) dischl) thm in
+    
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
-    (mvs,null_inst),new_goals,fun i l ->  
-      List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL (compose_insts ins i) thm) (map (disch_pair i) (List.combine dischls l));;
+    (mvs,null_inst),new_goals,fun i l ->
+     List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL (compose_insts ins i) thm) (map (disch_pair i) (zip dischls l));;
+
+(* Debugging prints:
+    print_string "i:" ; print_thm (INSTANTIATE_ALL i thm) ; print_newline();
+     print_string "---" ; print_newline ();
+     print_thl (map (disch_pair i) (zip dischls l)) ; print_string "----" ;
+     print_int (length l) ; print_newline();
+
+      print_string "r:" ; print_thm res ; print_newline(); res;;
+ *)
+
+
 
 
 (* ------------------------------------------------------------------------- *)
@@ -749,7 +723,7 @@ let (erulem_tac: (term * term) list -> meta_rule->tactic) =
   fun instlist r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let ins = try ( term_match [] c w ) 
+    let ins = try ( term_match (gl_frees g) c w ) 
     with Failure _ -> failwith "Rule doesn't match!" in
     let new_hyps = map (inst_goal ins) hyps in
 
@@ -779,7 +753,7 @@ let (erulem_tac: (term * term) list -> meta_rule->tactic) =
     (mvs,null_inst),new_goals,fun i l ->  
       let major_thmi = INSTANTIATE_ALL i prim_thm in
       List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL (compose_insts ins i) thm) 
-	(major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (List.combine dischls l)));;
+	(major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (zip dischls l)));;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -832,7 +806,7 @@ let (drulem_tac: (term * term) list -> meta_rule->tactic) =
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
     (mvs,null_inst),new_goals,fun i l ->  
       let major_thmi = INSTANTIATE_ALL i major_thm in
-      let l = (major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (List.combine dischls l))) in
+      let l = (major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (zip dischls l))) in
       PROVE_HYP (List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL i thm) ((butlast) l)) (last l);;
 
 
@@ -874,7 +848,7 @@ let (frulem_tac: (term * term) list -> meta_rule->tactic) =
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
     (mvs,null_inst),new_goals,fun i l ->  
       let major_thmi = INSTANTIATE_ALL i major_thm in
-      let l = (major_thmi :: ((map (disch_pair i)) o (List.combine dischls)) l) in
+      let l = (major_thmi :: ((map (disch_pair i)) o (zip dischls)) l) in
       PROVE_HYP (List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL i thm) ((butlast) l)) (last l);;
 
 
@@ -1079,3 +1053,29 @@ let drulen: (int -> thm -> tactic) = drulen_tac [];;
 let frulen: (int -> thm -> tactic) = frulen_tac [];;
 
 let ERULEN,DRULEN,FRULEN = erulen,drulen,frulen;;
+
+
+
+(* ------------------------------------------------------------------------- *)
+(* The following are extensions of the assumption tactics found in           *)
+(* new_tactics.ml.                                                           *)
+(* These treat meta-level implication in the assumption as a subgoal and     *)
+(* perform 1 backwards inference step to try and match its                   *)
+(* (meta-)assumptions.                                                       *)
+(* ------------------------------------------------------------------------- *)
+(* Jacques Fleuriot pointed out this is Isabelle's behaviour.                *)
+(* ------------------------------------------------------------------------- *)
+
+let assumption =
+  let const_rule thm = (* we don't want to refresh any variables in the theorem *)
+    let fs = thm_frees thm in
+    rule_tac (zip fs fs) thm THEN assumption in
+  assumption ORELSE (FIRST_ASSUM const_rule);;
+
+let meta_assumption mvs =
+  let const_rule thm = (* we don't want to refresh any variables in the theorem *)
+    let fs = thm_frees thm in
+    rule_tac (zip fs fs) thm THEN meta_assumption mvs in
+  meta_assumption mvs ORELSE (FIRST_ASSUM const_rule);;
+
+let ema () = (e o meta_assumption o top_metas o p) ()  ;;
