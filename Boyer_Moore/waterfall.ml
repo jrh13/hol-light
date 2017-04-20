@@ -34,6 +34,20 @@ let proves th tm =
    (let (hyp,concl) = dest_thm th
     in  (hyp = []) && (concl = tm));;
 
+
+(*----------------------------------------------------------------------------*)
+(* fproves : thm -> term -> bool                                              *)
+(*                                                                            *)
+(* Returns true if and only if the theorem proves the term without making any *)
+(* assumptions except _FALSITY_.                                              *)
+(* This alternative is used for the HOL Light tactic validation.              *)
+(*----------------------------------------------------------------------------*)
+
+let fproves th tm =
+   (let (hyp,concl) = dest_thm th
+    in  ((subtract hyp [`_FALSITY_`]) = []) && (concl = tm));;
+
+
 (*----------------------------------------------------------------------------*)
 (* apply_proof : proof -> term list -> proof                                  *)
 (*                                                                            *)
@@ -44,10 +58,34 @@ let proves th tm =
 
 let apply_proof f tms ths =
 try
-   (if (itlist (fun (tm,th) b -> (proves th tm) && b) (List.combine tms ths) true)
+   (if (itlist (fun (tm,th) b -> (fproves th tm) && b) (List.combine tms ths) true)
     then (f ths)
     else failwith ""
    ) with Failure _ -> failwith "apply_proof";;
+
+
+(*----------------------------------------------------------------------------*)
+(* apply_fproof : proof -> term list -> proof                                 *)
+(*                                                                            *)
+(* Converts a proof into a new proof that checks that the theorems it is      *)
+(* given have no hypotheses and have conclusions equal to the specified       *)
+(* terms. Used to make a proof robust.                                        *)
+(* Ignores _FALSITY_ assumptions so as to be used in the validation of the    *)
+(* HOL Light tactics.                                                         *)
+(*----------------------------------------------------------------------------*)
+
+let apply_fproof s f tms ths =
+  try (
+(*    print_string "Terms:" ; print_newline() ; 
+    ignore (map (fun x -> (print_term x ; print_newline())) tms);
+    print_string "Theorems:"; print_newline();
+    ignore (map (fun x -> (print_thm x ; print_newline())) ths);
+    print_string "===" ; print_newline();*)
+    if (itlist (fun (tm,th) b -> (fproves th tm) && b) (List.combine tms ths) true)
+    then (f ths)
+    else failwith ""
+  ) with Failure _ -> failwith ("apply_fproof: " ^ s);;
+
 
 (*============================================================================*)
 (* The `waterfall' for heuristics                                             *)
@@ -130,7 +168,7 @@ let proof_print_tmi (tm,i) =
 let proof_print_clause cl =
    if !proof_printing
    then (
-         match cl with
+         match cl with  
          | Clause_proved thm -> (print_thm thm; print_newline (); cl)
          | _ -> cl
         )
@@ -196,10 +234,10 @@ let rec proof_print_clausetree cl =
 (* is passed to ALL of the heuristics.                                        *)
 (*----------------------------------------------------------------------------*)
 
-let nth_tail n l = if (n > length l) then []
-                   else let rec repeattl l i =
-                                   if ( i = 0 ) then l
-                                   else tl (repeattl l (i-1))
+let nth_tail n l = if (n > length l) then [] 
+                   else let rec repeattl l i = 
+                                   if ( i = 0 ) then l 
+                                   else tl (repeattl l (i-1)) 
                         in repeattl l n;;
 
 
@@ -226,30 +264,35 @@ let rec waterfall heuristics tmi =
 
 let rec filtered_waterfall heuristics warehouse tmi =
    bm_steps :=  hashI ((+) 1) !bm_steps;
-   if (max_var_depth (fst tmi) > 12) then let void = (warn true "Reached maximum depth!") in failwith "cannot prove"
+   if (max_var_depth (fst tmi) > 12) then (warn true "Reached maximum depth!" ; Clause tmi) (*failwith "cannot prove"*)
    else
    let heurn = try (assoc (fst tmi) warehouse) with Failure _ -> 0 in
-   let warehouse = (if (heurn > 0) then
-     let void = proof_print_string ("Warehouse kicking in! Skipping " ^ string_of_int(heurn) ^ " heuristic(s)") () ; in
-     let void = proof_print_newline () in
-     (List.remove_assoc (fst tmi) warehouse) else (warehouse)) in
+   let warehouse = (if (heurn > 0) then 
+       ( proof_print_string ("Warehouse kicking in! Skipping " ^ string_of_int(heurn) ^ " heuristic(s)") () ;
+	 proof_print_newline () ;
+	 List.remove_assoc (fst tmi) warehouse) else (warehouse)) in
    let rec flow_on_down rest_of_heuristics tmi it =
       if (is_F (fst tmi)) then (failwith "cannot prove")
       else let rest_of_heuristics = nth_tail heurn rest_of_heuristics in
          if (rest_of_heuristics = []) then (Clause tmi)
-         else try (let (tms,f) = hd rest_of_heuristics tmi
-              in if (tms = []) then (proof_print_string "Proven:" (); proof_print_thm (f []) ; Clause_proved (f []))
-                 else if ((tl tms) = []) then Clause_split ([filtered_waterfall heuristics (((fst tmi),it)::warehouse) (hd tms)],f)
-                                    else Clause_split
-                                           ((dec_print_depth o
-                                             map (filtered_waterfall heuristics (((fst tmi),it)::warehouse) o proof_print_newline) o
-                                             inc_print_depth) tms,
-                                             f)
-             )with Failure s -> (
-                  if (s = "cannot prove")
-                  then failwith s
-                  else (flow_on_down (tl rest_of_heuristics) tmi (it+1))
-           )
+         else try (
+	   let (tms,f) = hd rest_of_heuristics tmi in
+           if (tms = []) then (proof_print_string "Proven:" (); proof_print_thm (f []) ; Clause_proved (f []))
+           else if ((tl tms) = []) then
+	     Clause_split ([filtered_waterfall heuristics (((fst tmi),it)::warehouse) (hd tms)],f)
+           else
+	     ( proof_print_string (string_of_int(length tms) ^ " new clauses") () ;
+	       proof_print_newline () ;
+	       Clause_split
+		 ((dec_print_depth o
+                     map (filtered_waterfall heuristics (((fst tmi),it)::warehouse) o proof_print_newline) o
+                     inc_print_depth) tms,
+		  f))
+         )with Failure s -> (
+           if (s = "cannot prove")
+           then failwith s
+           else (flow_on_down (tl rest_of_heuristics) tmi (it+1))
+         )
    in flow_on_down heuristics ((hashI proof_print_term) tmi) 1;;
 
 (* in
@@ -291,7 +334,7 @@ try(
       match tree with
        | (Clause (tm,_)) ->
             (let th = hd ths
-             in  if (proves th tm)
+             in  if (fproves th tm)
                  then (th,tl ths)
                  else failwith "prove_clause_tree")
        | (Clause_proved th) -> (th,ths)
@@ -300,6 +343,28 @@ try(
              in  (f thl,ths'))
    in (let (th,[]) = (prove_clause_tree' tree ths) in th)
     ) with Failure _ -> failwith "prove_clause_tree";;
+
+
+let fprove_clause_tree tree ths =
+try(
+   let rec prove_clause_trees trees ths =
+      if (trees = []) then ([],ths)
+      else let (th,ths') = prove_clause_tree' (hd trees) ths
+           in  let (thl,ths'') = prove_clause_trees (tl trees) ths'
+           in  (th::thl,ths'')
+   and prove_clause_tree' tree ths =
+      match tree with
+       | (Clause (tm,_)) ->
+            (let th = hd ths
+             in  if (fproves th tm)
+                 then (th,tl ths)
+                 else failwith "fprove_clause_tree")
+       | (Clause_proved th) -> (th,ths)
+       | (Clause_split (trees,f)) ->
+            (let (thl,ths') = prove_clause_trees trees ths
+             in  (f thl,ths'))
+   in (let (th,[]) = (prove_clause_tree' tree ths) in th)
+    ) with Failure s -> failwith ("fprove_clause_tree: " ^ s);;
 
 (*============================================================================*)
 (* Eliminating instances in the `pool' of clauses remaining to be proved      *)
@@ -323,15 +388,12 @@ try(
    (let (_,tm_bind,ty_bind) = term_match [] patt tm
     in  let (insts,vars) = List.split tm_bind
     in  let f = (SPECL insts) o (GENL vars) o (INST_TYPE ty_bind)
-    in  fun th -> apply_proof (f o hd) [patt] [th]
+    in  fun th -> apply_fproof "inst_of" (f o hd) [patt] [th] 
    )) with Failure _ -> failwith "inst_of";;
 
 (*----------------------------------------------------------------------------*)
 (* Recursive datatype for a partial ordering of terms using the               *)
-(* `is an instance of' relation.                                              *)let proof_print_thm thm =
-   if !proof_printing
-   then ( print_thm thm; print_newline (); print_newline());;
-
+(* `is an instance of' relation.                                              *)
 (*                                                                            *)
 (* The leaf nodes of the tree are terms that have no instances. The other     *)
 (* nodes have a list of instance trees and proofs of each instance from the   *)
@@ -389,7 +451,7 @@ let rec insert_into_inst_tree (tm,n) tree =
     | (No_insts (tm',n')) ->
          (try ( (let f = inst_of tm' tm
             in  Insts (tm,n,[No_insts (tm',n'),f]))
-         ) with Failure _ -> try( let f = inst_of tm tm'
+         ) with Failure _ -> try( let f = inst_of tm tm' 
             in  Insts (tm',n',[No_insts (tm,n),f])) with Failure _ -> failwith "insert_into_inst_tree"
          )
     | (Insts (tm',n',insts)) ->
@@ -472,9 +534,9 @@ let rec roots_of_inst_trees trees =
 let rec prove_inst_tree tree th =
    match tree with
     | (No_insts (tm,n)) ->
-         (if (proves th tm) then [(th,n)] else failwith "prove_inst_tree")
+         (if (fproves th tm) then [(th,n)] else failwith "prove_inst_tree")
     | (Insts (tm,n,insts)) ->
-         (if (proves th tm)
+         (if (fproves th tm)
           then (th,n)::(flat (map (fun (tr,f) -> prove_inst_tree tr (f th)) insts))
           else failwith "prove_inst_tree");;
 
@@ -525,12 +587,12 @@ let prove_pool conv tml =
 
 let rec WATERFALL heuristics induction  (tm,(ind:bool)) =
    let conv tm =
-      proof_print_string "Doing induction on:" () ;  bm_steps :=  hash ((+) 1) ((+) 1) !bm_steps ;
+      proof_print_string "Doing induction on:" () ;  bm_steps :=  hash ((+) 1) ((+) 1) !bm_steps ; 
       let void = proof_print_term tm ; proof_print_newline ()
       in let (tmil,proof) = induction (tm,false)
       in  dec_print_depth
              (proof
-                 (map (WATERFALL heuristics induction) (inc_print_depth tmil)))
+                 (map (WATERFALL heuristics induction) (inc_print_depth tmil))) 
    in  let void = proof_print_newline ()
    in  let tree = waterfall heuristics (tm,ind)
    in  let tmil = fringe_of_clause_tree tree
@@ -548,12 +610,12 @@ let rec FILTERED_WATERFALL heuristics induction warehouse (tm,(ind:bool)) =
       let warehouse = (if (heurn > 0) then (List.remove_assoc tm warehouse) else (warehouse)) in
       if (heurn > length heuristics) then ( warn true "Induction loop detected."; failwith "cannot prove" )
       else
-        proof_print_string "Doing induction on:" ();  bm_steps :=  hash ((+) 1) ((+) 1) !bm_steps ;
+	proof_print_string "Doing induction on:" ();  bm_steps :=  hash ((+) 1) ((+) 1) !bm_steps ;
       let void = proof_print_term tm ; proof_print_newline () in
       let (tmil,proof) = induction (tm,false)
       in  dec_print_depth
         (proof
-           (map (FILTERED_WATERFALL heuristics induction ((tm,(length heuristics) + 1)::warehouse)) (inc_print_depth tmil)))
+           (map (FILTERED_WATERFALL heuristics induction ((tm,(length heuristics) + 1)::warehouse)) (inc_print_depth tmil))) 
   in  let void = proof_print_newline ()
   in  let tree = filtered_waterfall heuristics [] (tm,ind)
 (*   in  let void = proof_print_clausetree tree *)
@@ -577,7 +639,7 @@ let conjuncts_heuristic (tm,(i:bool)) =
    let tms = conj_list tm
    in  if (length tms = 1)
        then failwith "conjuncts_heuristic"
-       else (map (fun tm -> (tm,i)) tms,apply_proof LIST_CONJ tms);;
+       else (map (fun tm -> (tm,i)) tms,apply_fproof "conjuncts_heuristic" LIST_CONJ tms);;
 
 (*----------------------------------------------------------------------------*)
 (* refl_heuristic : (term # bool) -> ((term # bool) list # proof)             *)
@@ -589,7 +651,7 @@ let conjuncts_heuristic (tm,(i:bool)) =
 
 let refl_heuristic (tm,(i:bool)) =
    try(if (lhs tm = rhs tm)
-    then (([]:(term * bool) list),apply_proof (fun ths -> REFL (lhs tm)) [])
+    then (([]:(term * bool) list),apply_fproof "refl_heuristic" (fun ths -> REFL (lhs tm)) [])
     else failwith ""
    ) with Failure _ -> failwith "refl_heuristic";;
 
@@ -612,36 +674,36 @@ let clausal_form_heuristic (tm,(i:bool)) =
 try (let is_atom tm =
      (not (has_boolean_args_and_result tm)) || (is_var tm) || (is_const tm)
   in  let is_literal tm =
-         (is_atom tm) || ((is_neg tm) && (try (is_atom (rand tm)) with Failure _ -> false))
+         (is_atom tm) or ((is_neg tm) && (try (is_atom (rand tm)) with Failure _ -> false))
   in  let is_clause tm = forall is_literal (disj_list tm)
-  in let result_string = fun tms -> let s = length tms
-    in let plural = if (s=1) then "" else "s"
+  in let result_string = fun tms -> let s = length tms 
+    in let plural = if (s=1) then "" else "s" 
     in ("-> Clausal Form Heuristic (" ^ string_of_int(s) ^ " clause" ^ plural ^ ")")
   in  if (forall is_clause (conj_list tm)) &&
          (not (free_in `T` tm)) && (not (free_in `F` tm))
       then if (is_conj tm)
            then let tms = conj_list tm
                 in  (proof_print_string_l (result_string tms) () ;
-                     (map (fun tm -> (tm,i)) tms,apply_proof LIST_CONJ tms))
+		     (map (fun tm -> (tm,i)) tms,apply_fproof "clausal_form_heuristic" LIST_CONJ tms))
           else failwith ""
       else let th = CLAUSAL_FORM_CONV tm
            in  let tm' = rhs (concl th)
            in  if (is_T tm')
-               then  (proof_print_string_l "-> Clausal Form Heuristic" () ; ([],apply_proof (fun _ -> EQT_ELIM th) []))
+               then  (proof_print_string_l "-> Clausal Form Heuristic" () ; ([],apply_fproof "clausal_form_heuristic" (fun _ -> EQT_ELIM th) []))
                else let tms = conj_list tm'
-                    in   (proof_print_string_l (result_string tms) () ;
-                          (map (fun tm -> (tm,i)) tms,
-                         apply_proof ((EQ_MP (SYM th)) o LIST_CONJ) tms))
+                    in   (proof_print_string_l (result_string tms) () ; 
+			  (map (fun tm -> (tm,i)) tms,
+                         apply_fproof "clausal_form_heuristic" ((EQ_MP (SYM th)) o LIST_CONJ) tms))
  ) with Failure _ -> failwith "clausal_form_heuristic";;
 
-let meson_heuristic (tm,(i:bool)) =
-   try( let meth = MESON (rewrite_rules()) tm in
-    (([]:(term * bool) list),apply_proof (fun ths -> meth) [])
+let meson_heuristic l (tm,(i:bool)) =
+   try( let meth = MESON (l @ rewrite_rules()) tm in
+    (([]:(term * bool) list),apply_fproof "meson_heuristic" (fun ths -> meth) [])
    ) with Failure _ -> failwith "meson_heuristic";;
 
 let taut_heuristic (tm,(i:bool)) =
    try( let tautthm = TAUT tm in  (proof_print_string_l "-> Tautology Heuristic" () ;
-    (([]:(term * bool) list),apply_proof (fun ths -> tautthm) []))
+    (([]:(term * bool) list),apply_fproof "taut_heuristic" (fun ths -> tautthm) []))
    ) with Failure _ -> failwith "taut_heuristic";;
 
 let setify_heuristic (tm,(i:bool)) =
@@ -654,7 +716,7 @@ try (
   in  if ((length tms) = (length tms')) then failwith ""
       else let th = TAUT (mk_imp (tm',tm))
       in (proof_print_string_l "-> Setify Heuristic" () ;
-      ([tm',i],apply_proof ((MP th) o hd) [tm']))
+      ([tm',i],apply_fproof "setify_heuristic" ((MP th) o hd) [tm']))
  )
  with Failure _ -> failwith "setify_heuristic";;
 

@@ -15,7 +15,7 @@
 (* Set to 0 to turn off counterexample checker.                               *)
 (*----------------------------------------------------------------------------*)
 
-let counter_check_num = ref 5;;
+let counter_check_num = ref 500;;
 
 let counter_checks t =
   counter_check_num := t;;

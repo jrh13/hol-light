@@ -16,11 +16,13 @@ loads "Boyer_Moore/boyer-moore.ml";;
 
 let BM = BOYER_MOORE;; (* Pure re-implementation of R.Boulton's work. *)
 let BME = BOYER_MOORE_EXT;; (* Extended with early termination heuristics and HOL Light features. *)
-let BMG = BOYER_MOORE_GEN;; (* Further extended with M.Aderhold's generalization techniques. *)
+let BMR = BOYER_MOORE_RE [];;  
+let BMG = BOYER_MOORE_GEN [];; (* Further extended with M.Aderhold's generalization techniques. *)
+let BMF = BOYER_MOORE_FINAL [];;
 
 let RBM = new_rewrite_rule o BOYER_MOORE;;
 let RBME = new_rewrite_rule o BOYER_MOORE_EXT;;
-let RBMG = new_rewrite_rule o BOYER_MOORE_GEN;;
+let RBMG = new_rewrite_rule o BOYER_MOORE_GEN [];;
 
 (* ------------------------------------------------------------------------- *)
 (* Add a theorem as a new function definition and rewrite rule.              *)
@@ -64,6 +66,8 @@ new_stuff EVEN;
 new_rewrite_rule NOT_SUC;
 new_rewrite_rule SUC_INJ;
 new_rewrite_rule PRE;
+new_rewrite_rule (prove (`!n. ~(SUC n = n)`, INDUCT_TAC THEN ASM_REWRITE_TAC[SUC_INJ;NOT_SUC]));
+new_rewrite_rule (prove (`!a b. a + SUC b = SUC (a + b)`,REPEAT GEN_TAC THEN BMF_TAC[]));
 
 new_stuff HD;
 new_stuff TL;

@@ -1,3 +1,4 @@
+
 (******************************************************************************)
 (* FILE          : terms_and_clauses.ml                                       *)
 (* DESCRIPTION   : Rewriting terms and simplifying clauses.                   *)
@@ -647,13 +648,13 @@ let rec simplify_clause n tm =
 try (let (th,change_flag) = simplify_one_literal n tm
   in  let tm' = rhs (concl th)
   in  if (is_T tm')
-      then ([],apply_proof ( fun ths -> EQT_ELIM th) [])
+      then ([],apply_fproof "simplify_clause" ( fun ths -> EQT_ELIM th) [])
       else let (tms,proof) =
               if (change_flag < 0) then simplify_clause n tm'
               else if (change_flag = 0) then simplify_clause (n + 1) tm'
               else simplify_clauses (n + 1) tm'
            in  (tms,(fun ths -> EQ_MP (SYM th) (proof ths))))
- with Failure _ -> ([tm],apply_proof hd [tm])
+ with Failure _ -> ([tm],apply_fproof "simplify_clause" hd [tm])
 
 and simplify_clauses n tm =
 try (let (tm1,tm2) = dest_conj tm
@@ -665,17 +666,17 @@ try (let (tm1,tm2) = dest_conj tm
  with Failure _ -> (simplify_clause n tm);;
 
 
-let HL_simplify_clause tm =
+let HL_simplify_clause l tm =
 try (
-  let rules = itlist union [rewrite_rules();flat (defs());all_accessor_thms()] [] in
+  let rules = itlist union [l;rewrite_rules();flat (defs());all_accessor_thms()] [] in
   let th = SIMP_CONV rules tm
   in  let tm' = rhs (concl th)
   in  let tmc = try (rand o concl o COND_ELIM_CONV) tm' with Failure _ -> tm' in
       if (is_T tm')
-      then ([],apply_proof ( fun ths -> EQT_ELIM th ) [])
-      else ([tm'],apply_proof ((EQ_MP (SYM th)) o hd) [tm'])
+      then ([],apply_fproof "HL_simplify_clause" ( fun ths -> EQT_ELIM th ) [])
+      else ([tm'],apply_fproof "HL_simplify_clause" ((EQ_MP (SYM th)) o hd) [tm'])
  )
- with Failure _ -> ([tm],apply_proof hd [tm])
+ with Failure _ -> ([tm],apply_fproof "HL_simplify_clause" hd [tm])
 
 (*----------------------------------------------------------------------------*)
 (* simplify_heuristic : (term # bool) -> ((term # bool) list # proof)         *)
@@ -693,8 +694,8 @@ try (let (tms,proof) = simplify_clause 0 tm
       else  (proof_print_string_l "-> Simplify Heuristic" () ;  (map (fun tm -> (tm,ind)) tms,proof))
  ) with Failure _ -> failwith "simplify_heuristic";;
 
-let HL_simplify_heuristic (tm,(ind:bool)) =
-try (let (tms,proof) = HL_simplify_clause tm
+let HL_simplify_heuristic l (tm,(ind:bool)) =
+try (let (tms,proof) = HL_simplify_clause l tm
   in  if (tms = [tm])
       then failwith ""
       else  (proof_print_string_l "-> HL Simplify Heuristic" () ;  (map (fun tm -> (tm,ind)) tms,proof))
@@ -761,5 +762,6 @@ try (let checkx (v,t) = (is_var v) && (not (mem v (frees t)))
       and th3 = SPEC eq EXCLUDED_MIDDLE
   in  let tm' = rhs (concl th2)
   in  let proof th = DISJ_CASES th3 (EQ_MP (SYM th2) th) th1
-  in   (proof_print_string_l "-> Subst Heuristic" () ;  ([(tm',ind)],apply_proof (proof o hd) [tm']))
+      in   (proof_print_string_l "-> Subst Heuristic" () ;
+	    ([(tm',ind)],apply_fproof "subst_heuristic" (proof o hd) [tm']))
  ) with Failure _ -> failwith "subst_heuristic";;

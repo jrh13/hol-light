@@ -149,5 +149,5 @@ try
          in  let thl'' = map (fun (eq,th) -> EQ_MP (SYM eq) th) (lcombinep (ths,thl'))
          in  SPEC var (MP th2 (LIST_CONJ thl''))
   in  (map (fun tm -> (tm,((is_imp tm) && (not (is_neg tm))))) tml,
-       apply_proof proof tml)
+       apply_fproof "induction_heuristic" proof tml)
  ) with Failure _ -> failwith "induction_heuristic";;
