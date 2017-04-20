@@ -506,7 +506,7 @@ let useful_apart_generalization v v' tm gen =
     in let eqsok = forall (fun (x,y) -> (x=y) || (generalized_apart_successfully v v' x y)) eqssub
     in let countercheck = try counter_check 5 gen with Failure s -> 
     warn true ("Could not generate counter example: " ^ s) ; true
-    in eqsok & (generalized_apart_successfully v v' tm gen) && countercheck;;
+    in eqsok && (generalized_apart_successfully v v' tm gen) && countercheck;;
 
 let generalize_apart tm =
     let is_fun tm = (try( mem ((fst o dest_const o fst o strip_comb) tm) (defs_names ()) ) with Failure _ -> false)
@@ -543,7 +543,7 @@ let generalize_apart tm =
 let checkgen = ref true;;
 
 let generalize_heuristic_aderhold (tm,(ind:bool)) =
-if (mem tm !my_gen_terms & !checkgen) then failwith ""
+if (mem tm !my_gen_terms && !checkgen) then failwith ""
 else 
 try
  (let ELIM_LEMMA lemma th =
@@ -568,7 +568,7 @@ try
 
 
 let generalize_heuristic_ext (tm,(ind:bool)) =
-if (mem tm !my_gen_terms & !checkgen) then failwith ""
+if (mem tm !my_gen_terms && !checkgen) then failwith ""
 else 
 try
  (let ELIM_LEMMA lemma th =

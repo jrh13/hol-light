@@ -674,7 +674,7 @@ let clausal_form_heuristic (tm,(i:bool)) =
 try (let is_atom tm =
      (not (has_boolean_args_and_result tm)) || (is_var tm) || (is_const tm)
   in  let is_literal tm =
-         (is_atom tm) or ((is_neg tm) && (try (is_atom (rand tm)) with Failure _ -> false))
+         (is_atom tm) || ((is_neg tm) && (try (is_atom (rand tm)) with Failure _ -> false))
   in  let is_clause tm = forall is_literal (disj_list tm)
   in let result_string = fun tms -> let s = length tms 
     in let plural = if (s=1) then "" else "s" 
