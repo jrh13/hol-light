@@ -1425,7 +1425,6 @@ let norm_nonneg = prove_by_refinement(
    GEN_TAC;
    MATCH_MP_TAC SQRT_MONO_LE;
    REWRITE_TAC[dot_nonneg];
-   REAL_ARITH_TAC;
    ]);;
 (* }}} *)
 

@@ -34,6 +34,21 @@
 
 *)
 
+(* ------------------------------------------------------------------------- *)
+(* Weaken a few built-in theorems about sqrt for compatibility               *)
+(* ------------------------------------------------------------------------- *)
+
+let SQRT_MONO_LE' = prove
+ (`!x y. &0 <= x /\ x <= y ==> sqrt x <= sqrt y`,
+  MESON_TAC[SQRT_MONO_LE]);;
+
+let SQRT_MONO_LT' = prove
+ (`!x y. &0 <= x /\ x < y ==> sqrt x < sqrt y`,
+  MESON_TAC[SQRT_MONO_LT]);;
+
+let REAL_PROP_LT_SQRT' = prove
+ (`!x y. &0 <= x /\ &0 <= y ==> (sqrt x < sqrt y <=> x < y)`,
+  MESON_TAC[REAL_PROP_LT_SQRT]);;
 
 let jordan_def = local_definition "jordan";;
 mk_local_interface "jordan";;
@@ -21765,10 +21780,7 @@ let norm2_scale = prove_by_refinement(
   REDUCE_TAC;
   REWRITE_TAC[POW_MUL;GSYM REAL_LDISTRIB];
   REWRITE_TAC[GSYM POW_2_SQRT_ABS];
-  IMATCH_MP_TAC  SQRT_MUL;
-  REWRITE_TAC[REAL_LE_SQUARE_POW];
-  IMATCH_MP_TAC  (REAL_ARITH `&0 <= x /\ &0 <= y ==> &0 <= x + y`);
-  REWRITE_TAC[REAL_LE_SQUARE_POW];
+  REWRITE_TAC[SQRT_MUL];
 
   ]);;
   (* }}} *)
@@ -33330,6 +33342,7 @@ let v_translate_cont = prove_by_refinement(
   ]);;
   (* }}} *)
 
+
 let r_scale_cont = prove_by_refinement(
   `!r. (&0 < r) ==> (continuous (r_scale r) top2 top2)`,
   (* {{{ proof *)
@@ -33388,13 +33401,13 @@ let r_scale_cont = prove_by_refinement(
   IMATCH_MP_TAC  REAL_LE_MUL;
   UND 7 THEN UND 1 THEN REAL_ARITH_TAC;
   UND 9 THEN DISCH_THEN (fun t-> ONCE_REWRITE_TAC [GSYM t]);
-  IMATCH_MP_TAC SQRT_MONO_LT;
+  IMATCH_MP_TAC SQRT_MONO_LT';
   REWRITE_TAC[GSYM REAL_POW_MUL;REAL_ADD_LDISTRIB ];
   REWRITE_TAC[REAL_POW_MUL;GSYM REAL_ADD_LDISTRIB ];
   IMATCH_MP_TAC  REAL_LT_LMUL;
   CONJ_TAC;
   IMATCH_MP_TAC  REAL_PROP_POS_POW;
-  TH_INTRO_TAC [`(FST p' - FST p) pow 2 + (SND p' - SND p) pow 2`;`epsilon' pow 2`] (GSYM REAL_PROP_LT_SQRT);
+  TH_INTRO_TAC [`(FST p' - FST p) pow 2 + (SND p' - SND p) pow 2`;`epsilon' pow 2`] (GSYM REAL_PROP_LT_SQRT');
   TYPE_THEN `sqrt(epsilon' pow 2) = epsilon'` SUBAGOAL_TAC;
   IMATCH_MP_TAC  POW_2_SQRT;
   UND 7 THEN REAL_ARITH_TAC;
@@ -33406,7 +33419,7 @@ let r_scale_cont = prove_by_refinement(
   REWRITE_TAC[r_scale];
   COND_CASES_TAC THEN COND_CASES_TAC;
   UND 4 THEN  REWRITE_TAC[d_euclid_point];
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   (*  IMATCH_MP_TAC  REAL_LET_TRANS; *)
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
@@ -33416,7 +33429,7 @@ let r_scale_cont = prove_by_refinement(
   TYPE_THEN `FST p = -- u` SUBAGOAL_TAC;
   UND 12 THEN REAL_ARITH_TAC;
   REWRITE_TAC[REAL_ARITH `x - --. y = x + y`];
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
   FIRST_ASSUM IMATCH_MP_TAC ;
@@ -33427,14 +33440,14 @@ let r_scale_cont = prove_by_refinement(
   TYPE_THEN `FST p' = -- u` SUBAGOAL_TAC;
   UND 12 THEN REAL_ARITH_TAC;
   REWRITE_TAC[REAL_ARITH `-- x -  v = -- (v + x)`;REAL_POW_NEG;EVEN2 ];
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
   FIRST_ASSUM IMATCH_MP_TAC ;
   UND 10 THEN UND 13 THEN UND 11 THEN REAL_ARITH_TAC;
   (* 1 LEFT *)
   UND 4 THEN (REWRITE_TAC [d_euclid_point]);
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
   (* Tue Sep  7 15:33:59 EDT 2004 *)
@@ -33500,13 +33513,13 @@ let u_scale_cont = prove_by_refinement(
   IMATCH_MP_TAC  REAL_LE_MUL;
   UND 7 THEN UND 1 THEN REAL_ARITH_TAC;
   UND 9 THEN DISCH_THEN (fun t-> ONCE_REWRITE_TAC [GSYM t]);
-  IMATCH_MP_TAC SQRT_MONO_LT;
+  IMATCH_MP_TAC SQRT_MONO_LT';
   REWRITE_TAC[GSYM REAL_POW_MUL;REAL_ADD_LDISTRIB ];
   REWRITE_TAC[REAL_POW_MUL;GSYM REAL_ADD_LDISTRIB ];
   IMATCH_MP_TAC  REAL_LT_LMUL;
   CONJ_TAC;
   IMATCH_MP_TAC  REAL_PROP_POS_POW;
-  TH_INTRO_TAC [`(FST p' - FST p) pow 2 + (SND p' - SND p) pow 2`;`epsilon' pow 2`] (GSYM REAL_PROP_LT_SQRT);
+  TH_INTRO_TAC [`(FST p' - FST p) pow 2 + (SND p' - SND p) pow 2`;`epsilon' pow 2`] (GSYM REAL_PROP_LT_SQRT');
   TYPE_THEN `sqrt(epsilon' pow 2) = epsilon'` SUBAGOAL_TAC;
   IMATCH_MP_TAC  POW_2_SQRT;
   UND 7 THEN REAL_ARITH_TAC;
@@ -33518,7 +33531,7 @@ let u_scale_cont = prove_by_refinement(
   REWRITE_TAC[u_scale];
   COND_CASES_TAC THEN COND_CASES_TAC;
   UND 4 THEN  REWRITE_TAC[d_euclid_point];
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   (*  IMATCH_MP_TAC  REAL_LET_TRANS; *)
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
@@ -33528,7 +33541,7 @@ let u_scale_cont = prove_by_refinement(
   TYPE_THEN `SND p = -- u` SUBAGOAL_TAC;
   UND 12 THEN REAL_ARITH_TAC;
   REWRITE_TAC[REAL_ARITH `x - --. y = x + y`];
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
   FIRST_ASSUM IMATCH_MP_TAC ;
@@ -33539,14 +33552,14 @@ let u_scale_cont = prove_by_refinement(
   TYPE_THEN `SND p' = -- u` SUBAGOAL_TAC;
   UND 12 THEN REAL_ARITH_TAC;
   REWRITE_TAC[REAL_ARITH `-- x -  v = -- (v + x)`;REAL_POW_NEG;EVEN2 ];
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
   FIRST_ASSUM IMATCH_MP_TAC ;
   UND 10 THEN UND 13 THEN UND 11 THEN REAL_ARITH_TAC;
   (* 1 LEFT *)
   UND 4 THEN (REWRITE_TAC [d_euclid_point]);
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   REWRITE_TAC[REAL_LDISTRIB];
   IMATCH_MP_TAC  REAL_LE_ADD2;
   (* Tue Sep  7 15:40:34 EDT 2004 *)
@@ -46610,7 +46623,7 @@ let h_edge_closed_ball = prove_by_refinement(
   UND 0 THEN REWRITE_TAC[];
   TYPE_THEN `!x. (&1/ &2 < x) <=> sqrt((&1/ &2) pow 2) < x` SUBAGOAL_TAC;
   REWRITE_TAC[sqrt_frac];
-  IMATCH_MP_TAC  SQRT_MONO_LT;
+  IMATCH_MP_TAC  SQRT_MONO_LT';
   IMATCH_MP_TAC (REAL_ARITH  `(x <= u /\ &0 < v) ==> x < u + v` );
   (* -- *)
   CONJ_TAC;
@@ -46646,7 +46659,7 @@ let h_edge_closed_ball = prove_by_refinement(
   UND 0 THEN REWRITE_TAC[];
   TYPE_THEN `!x. (&1/ &2 < x) <=> sqrt((&1/ &2) pow 2) < x` SUBAGOAL_TAC;
   REWRITE_TAC[sqrt_frac];
-  IMATCH_MP_TAC  SQRT_MONO_LT;
+  IMATCH_MP_TAC  SQRT_MONO_LT';
   (* - *)
   FIRST_ASSUM DISJ_CASES_TAC;
   IMATCH_MP_TAC (REAL_ARITH  `(x < u /\ &0 <= v) ==> x < u + v` );
@@ -46737,7 +46750,7 @@ let v_edge_closed_ball = prove_by_refinement(
   UND 0 THEN REWRITE_TAC[];
   TYPE_THEN `!x. (&1/ &2 < x) <=> sqrt((&1/ &2) pow 2) < x` SUBAGOAL_TAC;
   REWRITE_TAC[sqrt_frac];
-  IMATCH_MP_TAC  SQRT_MONO_LT;
+  IMATCH_MP_TAC  SQRT_MONO_LT';
   IMATCH_MP_TAC (REAL_ARITH  `(x <= v /\ &0 < u) ==> x < u + v` );
   (* -- *)
   CONJ_TAC;
@@ -46773,7 +46786,7 @@ let v_edge_closed_ball = prove_by_refinement(
   UND 0 THEN REWRITE_TAC[];
   TYPE_THEN `!x. (&1/ &2 < x) <=> sqrt((&1/ &2) pow 2) < x` SUBAGOAL_TAC;
   REWRITE_TAC[sqrt_frac];
-  IMATCH_MP_TAC  SQRT_MONO_LT;
+  IMATCH_MP_TAC  SQRT_MONO_LT';
   (* - *)
   USE 3 (MATCH_MP (TAUT `a \/ b ==> b \/ a`));
   FIRST_ASSUM DISJ_CASES_TAC;
@@ -47013,10 +47026,10 @@ let d_euclid_pointI_pos = prove_by_refinement(
   UND 0 THEN REWRITE_TAC[];
   TYPE_THEN `&1 = sqrt(&1)` SUBAGOAL_TAC;
   ONCE_REWRITE_TAC [EQ_SYM_EQ];
-  IMATCH_MP_TAC  SQRT_POS_UNIQ;
+  IMATCH_MP_TAC  SQRT_UNIQUE;
   REDUCE_TAC;
   UND 0 THEN DISCH_THEN (fun t-> ONCE_REWRITE_TAC [t]);
-  IMATCH_MP_TAC  SQRT_MONO_LE;
+  IMATCH_MP_TAC  SQRT_MONO_LE';
   REDUCE_TAC;
   FULL_REWRITE_TAC[GSYM int_sub_th];
   USE 1 (ONCE_REWRITE_RULE[ONCE_REWRITE_RULE[EQ_SYM_EQ] INT_SUB_0]);

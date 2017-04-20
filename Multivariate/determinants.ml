@@ -2129,12 +2129,12 @@ let POSITIVE_SEMIDEFINITE_SUBMATRIX_2 = prove
 (* usual Euclidean versions modulo flattening.                               *)
 (* ------------------------------------------------------------------------- *)
 
-let DOT_FLATTEN = prove
- (`!A B:real^N^M. flatten A dot flatten B = trace(transp A ** B)`,
+let DOT_VECTORIZE = prove
+ (`!A B:real^N^M. vectorize A dot vectorize B = trace(transp A ** B)`,
   REPEAT GEN_TAC THEN
   SIMP_TAC[dot; trace; matrix_mul; transp; LAMBDA_BETA] THEN
   SIMP_TAC[SUM_SUM_PRODUCT; FINITE_NUMSEG] THEN
-  SIMP_TAC[FLATTEN_COMPONENT; DIMINDEX_FINITE_PROD] THEN
+  SIMP_TAC[VECTORIZE_COMPONENT; DIMINDEX_FINITE_PROD] THEN
   MATCH_MP_TAC SUM_EQ_GENERAL_INVERSES THEN
   REWRITE_TAC[FORALL_IN_GSPEC] THEN
   EXISTS_TAC
@@ -2161,14 +2161,14 @@ let DOT_FLATTEN = prove
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC DIVISION THEN
     SIMP_TAC[DIMINDEX_GE_1; LE_1]]);;
 
-let NORM_FLATTEN_TRANSP = prove
- (`!A:real^N^M. norm(flatten(transp A)) = norm(flatten A)`,
+let NORM_VECTORIZE_TRANSP = prove
+ (`!A:real^N^M. norm(vectorize(transp A)) = norm(vectorize A)`,
   REPEAT STRIP_TAC THEN
-  REWRITE_TAC[NORM_EQ; DOT_FLATTEN; TRANSP_TRANSP] THEN
+  REWRITE_TAC[NORM_EQ; DOT_VECTORIZE; TRANSP_TRANSP] THEN
   MATCH_ACCEPT_TAC TRACE_MUL_SYM);;
 
-let COMPATIBLE_NORM_FLATTEN = prove
- (`!A:real^N^M x. norm(A ** x) <= norm(flatten A) * norm x`,
+let COMPATIBLE_NORM_VECTORIZE = prove
+ (`!A:real^N^M x. norm(A ** x) <= norm(vectorize A) * norm x`,
   REPEAT GEN_TAC THEN
   SIMP_TAC[NORM_LE_SQUARE; REAL_LE_MUL; NORM_POS_LE] THEN
   REWRITE_TAC[dot] THEN SIMP_TAC[MATRIX_MUL_DOT; LAMBDA_BETA] THEN
@@ -2181,46 +2181,46 @@ let COMPATIBLE_NORM_FLATTEN = prove
     REWRITE_TAC[GSYM REAL_LE_SQUARE_ABS; REAL_ABS_MUL; REAL_ABS_NORM] THEN
     REWRITE_TAC[NORM_CAUCHY_SCHWARZ_ABS];
     REWRITE_TAC[SUM_RMUL; REAL_POW_MUL] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
-    REWRITE_TAC[REAL_LE_POW_2; NORM_POW_2; DOT_FLATTEN] THEN
+    REWRITE_TAC[REAL_LE_POW_2; NORM_POW_2; DOT_VECTORIZE] THEN
     ONCE_REWRITE_TAC[TRACE_MUL_SYM] THEN
     REWRITE_TAC[trace] THEN MATCH_MP_TAC SUM_LE_NUMSEG THEN
     SIMP_TAC[transp; matrix_mul; LAMBDA_BETA; dot; REAL_LE_REFL]]);;
 
-let ONORM_LE_NORM_FLATTEN = prove
- (`!A:real^M^N. onorm(\x. A ** x) <= norm(flatten A)`,
+let ONORM_LE_NORM_VECTORIZE = prove
+ (`!A:real^M^N. onorm(\x. A ** x) <= norm(vectorize A)`,
   GEN_TAC THEN MATCH_MP_TAC
    (CONJUNCT2(MATCH_MP ONORM (SPEC_ALL MATRIX_VECTOR_MUL_LINEAR))) THEN
-  REWRITE_TAC[COMPATIBLE_NORM_FLATTEN]);;
+  REWRITE_TAC[COMPATIBLE_NORM_VECTORIZE]);;
 
-let NORM_FLATTEN_POW_2 = prove
+let NORM_VECTORIZE_POW_2 = prove
  (`!A:real^N^M.
-    norm(flatten A) pow 2 = sum(1..dimindex(:M)) (\i. norm(A$i) pow 2)`,
+    norm(vectorize A) pow 2 = sum(1..dimindex(:M)) (\i. norm(A$i) pow 2)`,
   GEN_TAC THEN
-  REWRITE_TAC[NORM_POW_2; DOT_FLATTEN] THEN
+  REWRITE_TAC[NORM_POW_2; DOT_VECTORIZE] THEN
   SIMP_TAC[trace; transp; matrix_mul; dot; LAMBDA_BETA] THEN
   GEN_REWRITE_TAC LAND_CONV [SUM_SWAP_NUMSEG] THEN REWRITE_TAC[]);;
 
-let NORM_FLATTEN_MUL_LE = prove
+let NORM_VECTORIZE_MUL_LE = prove
  (`!A:real^N^P B:real^M^N.
-    norm(flatten(A ** B)) <= norm(flatten A) * norm(flatten B)`,
+    norm(vectorize(A ** B)) <= norm(vectorize A) * norm(vectorize B)`,
   REPEAT GEN_TAC THEN
   SIMP_TAC[NORM_LE_SQUARE; REAL_LE_MUL; NORM_POS_LE] THEN
-  REWRITE_TAC[GSYM NORM_POW_2; NORM_FLATTEN_POW_2] THEN
+  REWRITE_TAC[GSYM NORM_POW_2; NORM_VECTORIZE_POW_2] THEN
   SIMP_TAC[MATRIX_MUL_COMPONENT; REAL_POW_MUL] THEN
-  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [NORM_FLATTEN_POW_2] THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [NORM_VECTORIZE_POW_2] THEN
   REWRITE_TAC[GSYM SUM_RMUL] THEN
   MATCH_MP_TAC SUM_LE_NUMSEG THEN X_GEN_TAC `i:num` THEN
   STRIP_TAC THEN REWRITE_TAC[GSYM REAL_POW_MUL] THEN
   REWRITE_TAC[GSYM REAL_LE_SQUARE_ABS; REAL_ABS_MUL; REAL_ABS_NORM] THEN
-  MESON_TAC[COMPATIBLE_NORM_FLATTEN; NORM_FLATTEN_TRANSP; REAL_MUL_SYM]);;
+  MESON_TAC[COMPATIBLE_NORM_VECTORIZE; NORM_VECTORIZE_TRANSP; REAL_MUL_SYM]);;
 
-let NORM_FLATTEN_HADAMARD_LE = prove
+let NORM_VECTORIZE_HADAMARD_LE = prove
  (`!A:real^N^M B:real^N^M.
-        norm(flatten((lambda i j. A$i$j * B$i$j):real^N^M))
-        <= norm(flatten A) * norm(flatten B)`,
+        norm(vectorize((lambda i j. A$i$j * B$i$j):real^N^M))
+        <= norm(vectorize A) * norm(vectorize B)`,
   REPEAT GEN_TAC THEN
   SIMP_TAC[NORM_LE_SQUARE; REAL_LE_MUL; NORM_POS_LE] THEN
-  REWRITE_TAC[DOT_FLATTEN; REAL_POW_MUL; NORM_POW_2] THEN
+  REWRITE_TAC[DOT_VECTORIZE; REAL_POW_MUL; NORM_POW_2] THEN
   SIMP_TAC[transp; matrix_mul; trace; LAMBDA_BETA] THEN
   SIMP_TAC[SUM_SUM_PRODUCT; FINITE_NUMSEG] THEN
   W(MP_TAC o PART_MATCH (rand o rand) SUM_MUL_BOUND o rand o snd) THEN
@@ -2236,7 +2236,7 @@ let TRACE_COVARIANCE_POS_LE = prove
 
 let TRACE_COVARIANCE_EQ_0 = prove
  (`!A:real^M^N. trace(transp A ** A) = &0 <=> A = mat 0`,
-  REWRITE_TAC[GSYM DOT_FLATTEN; DOT_EQ_0; FLATTEN_EQ_0]);;
+  REWRITE_TAC[GSYM DOT_VECTORIZE; DOT_EQ_0; VECTORIZE_EQ_0]);;
 
 let TRACE_COVARIANCE_POS_LT = prove
  (`!A:real^M^N. &0 < trace(transp A ** A) <=> ~(A = mat 0)`,
@@ -2246,13 +2246,13 @@ let TRACE_COVARIANCE_CAUCHY_SCHWARZ = prove
  (`!A B:real^M^N.
         trace(transp A ** B)
          <= sqrt(trace(transp A ** A)) * sqrt(trace(transp B ** B))`,
-  REWRITE_TAC[GSYM DOT_FLATTEN; GSYM vector_norm; NORM_CAUCHY_SCHWARZ]);;
+  REWRITE_TAC[GSYM DOT_VECTORIZE; GSYM vector_norm; NORM_CAUCHY_SCHWARZ]);;
 
 let TRACE_COVARIANCE_CAUCHY_SCHWARZ_ABS = prove
  (`!A B:real^M^N.
         abs(trace(transp A ** B))
          <= sqrt(trace(transp A ** A)) * sqrt(trace(transp B ** B))`,
-  REWRITE_TAC[GSYM DOT_FLATTEN; GSYM vector_norm; NORM_CAUCHY_SCHWARZ_ABS]);;
+  REWRITE_TAC[GSYM DOT_VECTORIZE; GSYM vector_norm; NORM_CAUCHY_SCHWARZ_ABS]);;
 
 let TRACE_COVARIANCE_CAUCHY_SCHWARZ_SQUARE = prove
  (`!A B:real^M^N.
@@ -2672,11 +2672,11 @@ let ORTHOGONAL_MATRIX_TRANSP_RMUL = prove
  (`!P:real^N^N. orthogonal_matrix P ==> P ** transp P = mat 1`,
   REWRITE_TAC[ORTHOGONAL_MATRIX_ALT]);;
 
-let NORM_FLATTEN_ORTHOGONAL_MATRIX_RMUL = prove
+let NORM_VECTORIZE_ORTHOGONAL_MATRIX_RMUL = prove
  (`!A:real^N^N P:real^N^N.
-       orthogonal_matrix P ==> norm(flatten(A ** P)) = norm(flatten A)`,
+       orthogonal_matrix P ==> norm(vectorize(A ** P)) = norm(vectorize A)`,
   REPEAT STRIP_TAC THEN
-  REWRITE_TAC[NORM_EQ; DOT_FLATTEN; MATRIX_TRANSP_MUL] THEN
+  REWRITE_TAC[NORM_EQ; DOT_VECTORIZE; MATRIX_TRANSP_MUL] THEN
   GEN_REWRITE_TAC LAND_CONV [TRACE_MUL_SYM] THEN
   ONCE_REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
   GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o LAND_CONV)
@@ -2684,12 +2684,12 @@ let NORM_FLATTEN_ORTHOGONAL_MATRIX_RMUL = prove
   ASM_SIMP_TAC[ORTHOGONAL_MATRIX_TRANSP_RMUL; MATRIX_MUL_RID] THEN
   MATCH_ACCEPT_TAC TRACE_MUL_SYM);;
 
-let NORM_FLATTEN_ORTHOGONAL_MATRIX_LMUL = prove
+let NORM_VECTORIZE_ORTHOGONAL_MATRIX_LMUL = prove
  (`!A:real^N^N P:real^N^N.
-       orthogonal_matrix P ==> norm(flatten(P ** A)) = norm(flatten A)`,
-  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM NORM_FLATTEN_TRANSP] THEN
+       orthogonal_matrix P ==> norm(vectorize(P ** A)) = norm(vectorize A)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM NORM_VECTORIZE_TRANSP] THEN
   REWRITE_TAC[MATRIX_TRANSP_MUL] THEN
-  MATCH_MP_TAC NORM_FLATTEN_ORTHOGONAL_MATRIX_RMUL THEN
+  MATCH_MP_TAC NORM_VECTORIZE_ORTHOGONAL_MATRIX_RMUL THEN
   ASM_REWRITE_TAC[ORTHOGONAL_MATRIX_TRANSP]);;
 
 let ORTHOGONAL_MATRIX_ID = prove

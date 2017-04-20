@@ -1618,17 +1618,6 @@ let DIFF_LN = prove(
 let root = new_definition
   `root(n) x = @u. (&0 < x ==> &0 < u) /\ (u pow n = x)`;;
 
-let sqrt_def = new_definition
-  `sqrt(x) = @y. &0 <= y /\ (y pow 2 = x)`;;
-
-let sqrt = prove
- (`sqrt(x) = root(2) x`,
-  REWRITE_TAC[root; sqrt_def] THEN
-  AP_TERM_TAC THEN REWRITE_TAC[BETA_THM; FUN_EQ_THM] THEN
-  X_GEN_TAC `y:real` THEN  ASM_CASES_TAC `x = y pow 2` THEN
-  ASM_REWRITE_TAC[] THEN
-  REWRITE_TAC[REAL_POW_2; REAL_LT_SQUARE] THEN REAL_ARITH_TAC);;
-
 let ROOT_LT_LEMMA = prove(
   `!n x. &0 < x ==> (exp(ln(x) / &(SUC n)) pow (SUC n) = x)`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN
@@ -1770,122 +1759,28 @@ let ROOT_INJ = prove
   SIMP_TAC[GSYM REAL_LE_ANTISYM; ROOT_MONO_LE_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Special case of square roots.                                             *)
+(* Special case of square roots, a few theorems not already present.         *)
 (* ------------------------------------------------------------------------- *)
-
-let SQRT_0 = prove(
-  `sqrt(&0) = &0`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_0]);;
-
-let SQRT_1 = prove(
-  `sqrt(&1) = &1`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_1]);;
-
-let SQRT_POS_LT = prove
- (`!x. &0 < x ==> &0 < sqrt(x)`,
-  SIMP_TAC[sqrt; num_CONV `2`; ROOT_LN; REAL_EXP_POS_LT]);;
-
-let SQRT_POS_LE = prove
- (`!x. &0 <= x ==> &0 <= sqrt(x)`,
-  REWRITE_TAC[REAL_LE_LT] THEN MESON_TAC[SQRT_POS_LT; SQRT_0]);;
-
-let SQRT_POW2 = prove(
-  `!x. (sqrt(x) pow 2 = x) <=> &0 <= x`,
-  GEN_TAC THEN EQ_TAC THENL
-   [DISCH_THEN(SUBST1_TAC o SYM) THEN MATCH_ACCEPT_TAC REAL_LE_SQUARE_POW;
-    REWRITE_TAC[sqrt; num_CONV `2`; ROOT_POW_POS]]);;
-
-let SQRT_POW_2 = prove
- (`!x. &0 <= x ==> (sqrt(x) pow 2 = x)`,
-  REWRITE_TAC[SQRT_POW2]);;
-
-let POW_2_SQRT = prove
- (`&0 <= x ==> (sqrt(x pow 2) = x)`,
-  SIMP_TAC[sqrt; num_CONV `2`; POW_ROOT_POS]);;
-
-let SQRT_POS_UNIQ = prove
- (`!x y. &0 <= x /\ &0 <= y /\ (y pow 2 = x)
-           ==> (sqrt x = y)`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_POS_UNIQ]);;
-
-let SQRT_MUL = prove
- (`!x y. &0 <= x /\ &0 <= y
-           ==> (sqrt(x * y) = sqrt x * sqrt y)`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_MUL]);;
-
-let SQRT_INV = prove
- (`!x. &0 <= x ==> (sqrt (inv x) = inv(sqrt x))`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_INV]);;
-
-let SQRT_DIV = prove
- (`!x y. &0 <= x /\ &0 <= y
-           ==> (sqrt (x / y) = sqrt x / sqrt y)`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_DIV]);;
-
-let SQRT_MONO_LT = prove
- (`!x y. &0 <= x /\ x < y ==> sqrt(x) < sqrt(y)`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_MONO_LT]);;
-
-let SQRT_MONO_LE = prove
- (`!x y. &0 <= x /\ x <= y ==> sqrt(x) <= sqrt(y)`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_MONO_LE]);;
-
-let SQRT_MONO_LT_EQ = prove
- (`!x y. &0 <= x /\ &0 <= y ==> (sqrt(x) < sqrt(y) <=> x < y)`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_MONO_LT_EQ]);;
-
-let SQRT_MONO_LE_EQ = prove
- (`!x y. &0 <= x /\ &0 <= y ==> (sqrt(x) <= sqrt(y) <=> x <= y)`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_MONO_LE_EQ]);;
-
-let SQRT_INJ = prove
- (`!x y. &0 <= x /\ &0 <= y ==> ((sqrt(x) = sqrt(y)) <=> (x = y))`,
-  REWRITE_TAC[sqrt; num_CONV `2`; ROOT_INJ]);;
 
 let SQRT_EVEN_POW2 = prove
  (`!n. EVEN n ==> (sqrt(&2 pow n) = &2 pow (n DIV 2))`,
   GEN_TAC THEN REWRITE_TAC[EVEN_MOD] THEN DISCH_TAC THEN
-  MATCH_MP_TAC SQRT_POS_UNIQ THEN
+  MATCH_MP_TAC SQRT_UNIQUE THEN
   SIMP_TAC[REAL_POW_LE; REAL_POS; REAL_POW_POW] THEN
   AP_TERM_TAC THEN
   GEN_REWRITE_TAC RAND_CONV [MATCH_MP DIVISION (ARITH_RULE `~(2 = 0)`)] THEN
   ASM_REWRITE_TAC[ADD_CLAUSES]);;
 
 let REAL_DIV_SQRT = prove
- (`!x. &0 <= x ==> (x / sqrt(x) = sqrt(x))`,
+ (`!x. &0 <= x ==> x / sqrt(x) = sqrt(x)`,
   GEN_TAC THEN ASM_CASES_TAC `x = &0` THENL
    [ASM_REWRITE_TAC[SQRT_0; real_div; REAL_MUL_LZERO]; ALL_TAC] THEN
-  DISCH_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC SQRT_POS_UNIQ THEN
+  DISCH_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC SQRT_UNIQUE THEN
   ASM_SIMP_TAC[SQRT_POS_LE; REAL_LE_DIV] THEN
   REWRITE_TAC[real_div; REAL_POW_MUL; REAL_POW_INV] THEN
   ASM_SIMP_TAC[SQRT_POW_2] THEN
   REWRITE_TAC[REAL_POW_2; GSYM REAL_MUL_ASSOC] THEN
   ASM_SIMP_TAC[REAL_MUL_RINV; REAL_MUL_RID]);;
-
-let POW_2_SQRT_ABS = prove
- (`!x. sqrt(x pow 2) = abs(x)`,
-  GEN_TAC THEN DISJ_CASES_TAC(SPEC `x:real` REAL_LE_NEGTOTAL) THENL
-   [ASM_SIMP_TAC[real_abs; POW_2_SQRT];
-    SUBST1_TAC(SYM(SPEC `x:real` REAL_NEG_NEG)) THEN
-    ONCE_REWRITE_TAC[REAL_ABS_NEG; REAL_POW_NEG] THEN
-    ASM_SIMP_TAC[POW_2_SQRT; real_abs; ARITH_EVEN]]);;
-
-let SQRT_EQ_0 = prove
- (`!x. &0 <= x ==> ((sqrt x = &0) <=> (x = &0))`,
-  MESON_TAC[SQRT_INJ; SQRT_0; REAL_LE_REFL]);;
-
-let REAL_LE_LSQRT = prove
- (`!x y. &0 <= x /\ &0 <= y /\ x <= y pow 2 ==> sqrt(x) <= y`,
-  MESON_TAC[SQRT_MONO_LE; REAL_POW_LE; POW_2_SQRT]);;
-
-let REAL_LE_POW_2 = prove
- (`!x. &0 <= x pow 2`,
-  REWRITE_TAC[REAL_POW_2; REAL_LE_SQUARE]);;
-
-let REAL_LE_RSQRT = prove
- (`!x y. x pow 2 <= y ==> x <= sqrt(y)`,
-  MESON_TAC[REAL_LE_TOTAL; SQRT_MONO_LE; SQRT_POS_LE;
-            REAL_LE_POW_2; REAL_LE_TRANS; POW_2_SQRT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Derivative of sqrt (could do the other roots with a bit more care).       *)
@@ -3265,8 +3160,7 @@ let COS_SIN_SQRT = prove(
   MP_TAC (ONCE_REWRITE_RULE[REAL_ADD_SYM] (SPEC `x:real` SIN_CIRCLE)) THEN
   REWRITE_TAC[GSYM REAL_EQ_SUB_LADD] THEN
   DISCH_THEN(SUBST1_TAC o SYM) THEN
-  REWRITE_TAC[sqrt; num_CONV `2`] THEN
-  CONV_TAC SYM_CONV THEN MATCH_MP_TAC POW_ROOT_POS THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC SQRT_UNIQUE THEN
   ASM_REWRITE_TAC[]);;
 
 let COS_ASN_NZ = prove(
@@ -3342,8 +3236,7 @@ let SIN_COS_SQRT = prove(
   MP_TAC (SPEC `x:real` SIN_CIRCLE) THEN
   REWRITE_TAC[GSYM REAL_EQ_SUB_LADD] THEN
   DISCH_THEN(SUBST1_TAC o SYM) THEN
-  REWRITE_TAC[sqrt; num_CONV `2`] THEN
-  CONV_TAC SYM_CONV THEN MATCH_MP_TAC POW_ROOT_POS THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC SQRT_UNIQUE THEN
   ASM_REWRITE_TAC[]);;
 
 let SIN_ACS_NZ = prove(

@@ -378,16 +378,6 @@ let IN_TRANSLATION_GALOIS_ALT = prove
   REWRITE_TAC[IMAGE_CLAUSES; VECTOR_NEG_NEG]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Introduce norms, but defer many properties till we get square roots.      *)
-(* ------------------------------------------------------------------------- *)
-
-make_overloadable "norm" `:A->real`;;
-overload_interface("norm",`vector_norm:real^N->real`);;
-
-let vector_norm = new_definition
-  `norm x = sqrt(x dot x)`;;
-
-(* ------------------------------------------------------------------------- *)
 (* Useful for the special cases of 1 dimension.                              *)
 (* ------------------------------------------------------------------------- *)
 
@@ -409,270 +399,29 @@ let FORALL_REAL_ONE = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `(x:real^1)$1`) THEN
   REWRITE_TAC[GSYM VECTOR_ONE]);;
 
-let NORM_REAL = prove
- (`!x:real^1. norm(x) = abs(x$1)`,
-  REWRITE_TAC[vector_norm; dot; DIMINDEX_1; SUM_SING_NUMSEG;
-              GSYM REAL_POW_2; POW_2_SQRT_ABS]);;
+(* ------------------------------------------------------------------------- *)
+(* The usual Euclidean norm and metric on R^n.                               *)
+(* ------------------------------------------------------------------------- *)
 
-(* ------------------------------------------------------------------------- *)
-(* Metric function.                                                          *)
-(* ------------------------------------------------------------------------- *)
+make_overloadable "norm" `:A->real`;;
+overload_interface("norm",`vector_norm:real^N->real`);;
+
+let vector_norm = new_definition
+  `norm x = sqrt(x dot x)`;;
 
 override_interface("dist",`distance:real^N#real^N->real`);;
 
 let dist = new_definition
   `dist(x,y) = norm(x - y)`;;
 
+let NORM_REAL = prove
+ (`!x:real^1. norm(x) = abs(x$1)`,
+  REWRITE_TAC[vector_norm; dot; DIMINDEX_1; SUM_SING_NUMSEG;
+              GSYM REAL_POW_2; POW_2_SQRT_ABS]);;
+
 let DIST_REAL = prove
  (`!x:real^1 y. dist(x,y) = abs(x$1 - y$1)`,
   SIMP_TAC[dist; NORM_REAL; vector_sub; LAMBDA_BETA; LE_REFL; DIMINDEX_1]);;
-
-(* ------------------------------------------------------------------------- *)
-(* A connectedness or intermediate value lemma with several applications.    *)
-(* ------------------------------------------------------------------------- *)
-
-let CONNECTED_REAL_LEMMA = prove
- (`!f:real->real^N a b e1 e2.
-        a <= b /\ f(a) IN e1 /\ f(b) IN e2 /\
-        (!e x. a <= x /\ x <= b /\ &0 < e
-               ==> ?d. &0 < d /\
-                       !y. abs(y - x) < d ==> dist(f(y),f(x)) < e) /\
-        (!y. y IN e1 ==> ?e. &0 < e /\ !y'. dist(y',y) < e ==> y' IN e1) /\
-        (!y. y IN e2 ==> ?e. &0 < e /\ !y'. dist(y',y) < e ==> y' IN e2) /\
-        ~(?x. a <= x /\ x <= b /\ f(x) IN e1 /\ f(x) IN e2)
-        ==> ?x. a <= x /\ x <= b /\ ~(f(x) IN e1) /\ ~(f(x) IN e2)`,
-  let tac = ASM_MESON_TAC[REAL_LT_IMP_LE; REAL_LE_TOTAL; REAL_LE_ANTISYM] in
-  REWRITE_TAC[EXTENSION; NOT_IN_EMPTY] THEN REPEAT STRIP_TAC THEN
-  MP_TAC(SPEC `\c. !x. a <= x /\ x <= c ==> (f(x):real^N) IN e1`
-              REAL_COMPLETE) THEN
-  REWRITE_TAC[] THEN ANTS_TAC THENL [tac; ALL_TAC] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:real` THEN STRIP_TAC THEN
-  SUBGOAL_THEN `a <= x /\ x <= b` STRIP_ASSUME_TAC THENL [tac; ALL_TAC] THEN
-  ASM_REWRITE_TAC[] THEN
-  SUBGOAL_THEN `!z. a <= z /\ z < x ==> (f(z):real^N) IN e1` ASSUME_TAC THENL
-   [ASM_MESON_TAC[REAL_NOT_LT; REAL_LT_IMP_LE]; ALL_TAC] THEN
-  REPEAT STRIP_TAC THENL
-   [SUBGOAL_THEN
-     `?d. &0 < d /\ !y. abs(y - x) < d ==> (f(y):real^N) IN e1`
-    STRIP_ASSUME_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
-    ASM_MESON_TAC[REAL_ARITH `z <= x + e /\ e < d ==> z < x \/ abs(z - x) < d`;
-                  REAL_ARITH `&0 < e ==> ~(x + e <= x)`; REAL_DOWN];
-    SUBGOAL_THEN
-     `?d. &0 < d /\ !y. abs(y - x) < d ==> (f(y):real^N) IN e2`
-    STRIP_ASSUME_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
-    MP_TAC(SPECL [`x - a`; `d:real`] REAL_DOWN2) THEN ANTS_TAC THENL
-     [ASM_MESON_TAC[REAL_LT_LE; REAL_SUB_LT]; ALL_TAC] THEN
-    ASM_MESON_TAC[REAL_ARITH `e < x - a ==> a <= x - e`;
-                  REAL_ARITH `&0 < e /\ x <= b ==> x - e <= b`;
-      REAL_ARITH `&0 < e /\ e < d ==> x - e < x /\ abs((x - e) - x) < d`]]);;
-
-(* ------------------------------------------------------------------------- *)
-(* One immediately useful corollary is the existence of square roots!        *)
-(* ------------------------------------------------------------------------- *)
-
-let SQUARE_BOUND_LEMMA = prove
- (`!x. x < (&1 + x) * (&1 + x)`,
-  GEN_TAC THEN REWRITE_TAC[REAL_POW_2] THEN
-  MAP_EVERY (fun t -> MP_TAC(SPEC t REAL_LE_SQUARE)) [`x:real`; `&1 + x`] THEN
-  REAL_ARITH_TAC);;
-
-let SQUARE_CONTINUOUS = prove
- (`!x e. &0 < e
-         ==> ?d. &0 < d /\ !y. abs(y - x) < d ==> abs(y * y - x * x) < e`,
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `x = &0` THENL
-   [ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_SUB_RZERO] THEN
-    EXISTS_TAC `inv(&1 + inv(e))` THEN
-    ASM_SIMP_TAC[REAL_LT_INV_EQ; REAL_LT_ADD; REAL_LT_01] THEN
-    REPEAT STRIP_TAC THEN MATCH_MP_TAC  REAL_LTE_TRANS THEN
-    EXISTS_TAC `inv(&1 + inv(e)) * inv(&1 + inv(e))` THEN
-    ASM_SIMP_TAC[REAL_ABS_MUL; REAL_LT_MUL2; REAL_ABS_POS] THEN
-    REWRITE_TAC[GSYM REAL_INV_MUL] THEN
-    GEN_REWRITE_TAC RAND_CONV [GSYM REAL_INV_INV] THEN
-    MATCH_MP_TAC REAL_LE_INV2 THEN
-    ASM_SIMP_TAC[REAL_LT_IMP_LE; SQUARE_BOUND_LEMMA; REAL_LT_INV_EQ];
-    MP_TAC(SPECL [`abs(x)`; `e / (&3 * abs(x))`] REAL_DOWN2)THEN
-    ASM_SIMP_TAC[GSYM REAL_ABS_NZ; REAL_LT_DIV; REAL_LT_MUL; REAL_OF_NUM_LT;
-                 ARITH; REAL_LT_RDIV_EQ] THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN
-    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC `y:real` THEN
-    REWRITE_TAC[REAL_ARITH `x * x - y * y = (x - y) * (x + y)`] THEN
-    DISCH_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
-    EXISTS_TAC `d * &3 * abs(x)` THEN ASM_REWRITE_TAC[REAL_ABS_MUL] THEN
-    MATCH_MP_TAC REAL_LE_MUL2 THEN
-    ASM_SIMP_TAC[REAL_ABS_POS; REAL_LT_IMP_LE] THEN
-    MAP_EVERY UNDISCH_TAC [`abs (y - x) < d`; `d < abs(x)`] THEN
-    REAL_ARITH_TAC]);;
-
-let SQRT_WORKS_GEN = prove
- (`!x. real_sgn(sqrt x) = real_sgn x /\ sqrt(x) pow 2 = abs x`,
-  GEN_TAC THEN REWRITE_TAC[sqrt] THEN CONV_TAC SELECT_CONV THEN
-  SUBGOAL_THEN `!x. &0 < x ==> ?y. &0 < y /\ y pow 2 = x` ASSUME_TAC THENL
-   [REPEAT STRIP_TAC THEN
-    MP_TAC(ISPECL [`(\u. lambda i. u):real->real^1`; `&0`; `&1 + x`;
-            `{u:real^1 | u$1 * u$1 < x}`; `{u:real^1 | u$1 * u$1 > x}`]
-         CONNECTED_REAL_LEMMA) THEN
-    SIMP_TAC[LAMBDA_BETA; LE_REFL; DIMINDEX_1; DIST_REAL; IN_ELIM_THM] THEN
-    REWRITE_TAC[REAL_POW_2; REAL_ARITH `~(x < y) /\ ~(x > y) <=> x = y`] THEN
-    ANTS_TAC THENL [ALL_TAC; ASM_MESON_TAC[REAL_LT_LE; REAL_ENTIRE]] THEN
-    ASM_REWRITE_TAC[real_gt; SQUARE_BOUND_LEMMA; REAL_MUL_LZERO] THEN
-    CONJ_TAC THENL [ASM_REAL_ARITH_TAC; REWRITE_TAC[REAL_LT_ANTISYM]] THEN
-    MESON_TAC[SQUARE_CONTINUOUS; REAL_SUB_LT;
-              REAL_ARITH `abs(z2 - x2) < y - x2 ==> z2 < y`;
-              REAL_ARITH `abs(z2 - x2) < x2 - y ==> y < z2`];
-    ASM_CASES_TAC `x = &0` THEN
-    ASM_REWRITE_TAC[REAL_SGN_0; REAL_SGN_EQ; UNWIND_THM2] THEN
-    CONV_TAC REAL_RAT_REDUCE_CONV THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `abs x`) THEN
-    ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN
-    DISCH_THEN(X_CHOOSE_THEN `y:real` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `real_sgn x * y` THEN
-    ASM_REWRITE_TAC[REAL_POW_MUL; GSYM REAL_SGN_POW; REAL_SGN_POW_2] THEN
-    REWRITE_TAC[REAL_SGN_MUL; REAL_SGN_REAL_SGN] THEN
-    ASM_SIMP_TAC[real_sgn; REAL_ARITH `&0 < abs x <=> ~(x = &0)`] THEN
-    REWRITE_TAC[REAL_MUL_LID; REAL_MUL_RID]]);;
-
-let SQRT_UNIQUE_GEN = prove
- (`!x y. real_sgn y = real_sgn x /\ y pow 2 = abs x ==> sqrt x = y`,
-  REPEAT GEN_TAC THEN
-  MP_TAC(GSYM(SPEC `x:real` SQRT_WORKS_GEN)) THEN
-  SIMP_TAC[REAL_RING `x pow 2 = y pow 2 <=> x:real = y \/ x = --y`] THEN
-  DISCH_THEN(K ALL_TAC) THEN REWRITE_TAC[IMP_CONJ_ALT] THEN
-  STRIP_TAC THEN ASM_REWRITE_TAC[REAL_SGN_NEG] THEN
-  SIMP_TAC[REAL_ARITH `--x = x <=> x = &0`; REAL_SGN_EQ; REAL_NEG_0; SQRT_0]);;
-
-let SQRT_NEG = prove
- (`!x. sqrt(--x) = --sqrt(x)`,
-  GEN_TAC THEN MATCH_MP_TAC SQRT_UNIQUE_GEN THEN
-  REWRITE_TAC[REAL_SGN_NEG; REAL_POW_NEG; REAL_ABS_NEG; ARITH] THEN
-  REWRITE_TAC[SQRT_WORKS_GEN]);;
-
-let REAL_SGN_SQRT = prove
- (`!x. real_sgn(sqrt x) = real_sgn x`,
-  REWRITE_TAC[SQRT_WORKS_GEN]);;
-
-let SQRT_WORKS = prove
- (`!x. &0 <= x ==> &0 <= sqrt(x) /\ sqrt(x) pow 2 = x`,
-  REPEAT STRIP_TAC THEN MP_TAC(SPEC `x:real` SQRT_WORKS_GEN) THEN
-  REWRITE_TAC[real_sgn] THEN ASM_REAL_ARITH_TAC);;
-
-let SQRT_POS_LE = prove
- (`!x. &0 <= x ==> &0 <= sqrt(x)`,
-  MESON_TAC[SQRT_WORKS]);;
-
-let SQRT_POW_2 = prove
- (`!x. &0 <= x ==> sqrt(x) pow 2 = x`,
-  MESON_TAC[SQRT_WORKS]);;
-
-let SQRT_POW2 = prove
- (`!x. sqrt(x) pow 2 = x <=> &0 <= x`,
-  MESON_TAC[REAL_POW_2; REAL_LE_SQUARE; SQRT_POW_2]);;
-
-let SQRT_MUL = prove
- (`!x y. sqrt(x * y) = sqrt x * sqrt y`,
-  REPEAT GEN_TAC THEN MATCH_MP_TAC SQRT_UNIQUE_GEN THEN
-  REWRITE_TAC[REAL_SGN_MUL; REAL_POW_MUL; SQRT_WORKS_GEN; REAL_ABS_MUL]);;
-
-let SQRT_INV = prove
- (`!x. sqrt (inv x) = inv(sqrt x)`,
-  GEN_TAC THEN MATCH_MP_TAC SQRT_UNIQUE_GEN THEN
-  REWRITE_TAC[REAL_SGN_INV; REAL_POW_INV; REAL_ABS_INV; SQRT_WORKS_GEN]);;
-
-let SQRT_DIV = prove
- (`!x y. sqrt (x / y) = sqrt x / sqrt y`,
-  REWRITE_TAC[real_div; SQRT_MUL; SQRT_INV]);;
-
-let SQRT_LT_0 = prove
- (`!x. &0 < sqrt x <=> &0 < x`,
-  REWRITE_TAC[GSYM real_gt; GSYM REAL_SGN_EQ; REAL_SGN_SQRT]);;
-
-let SQRT_EQ_0 = prove
- (`!x. sqrt x = &0 <=> x = &0`,
-  ONCE_REWRITE_TAC[GSYM REAL_SGN_EQ] THEN REWRITE_TAC[REAL_SGN_SQRT]);;
-
-let SQRT_LE_0 = prove
- (`!x. &0 <= sqrt x <=> &0 <= x`,
-  REWRITE_TAC[REAL_ARITH `&0 <= x <=> &0 < x \/ x = &0`] THEN
-  REWRITE_TAC[SQRT_LT_0; SQRT_EQ_0]);;
-
-let SQRT_MONO_LT = prove
- (`!x y. x < y ==> sqrt(x) < sqrt(y)`,
-  SUBGOAL_THEN `!x y. &0 <= x /\ x < y ==> sqrt x < sqrt y` ASSUME_TAC THENL
-   [REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_POW_LT2_REV THEN
-    EXISTS_TAC `2` THEN ASM_REWRITE_TAC[SQRT_WORKS_GEN; SQRT_LE_0] THEN
-    ASM_REAL_ARITH_TAC;
-    REPEAT STRIP_TAC THEN ASM_CASES_TAC `&0 <= x` THEN ASM_SIMP_TAC[] THEN
-    ASM_CASES_TAC `&0 <= y` THENL
-     [MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `&0` THEN
-      ASM_REWRITE_TAC[GSYM REAL_NOT_LE; SQRT_LE_0];
-      FIRST_X_ASSUM(MP_TAC o SPECL [`--y:real`; `--x:real`]) THEN
-      REWRITE_TAC[SQRT_NEG] THEN ASM_REAL_ARITH_TAC]]);;
-
-let SQRT_MONO_LE = prove
- (`!x y. x <= y ==> sqrt(x) <= sqrt(y)`,
-  MESON_TAC[REAL_LE_LT; SQRT_MONO_LT]);;
-
-let SQRT_MONO_LT_EQ = prove
- (`!x y. sqrt(x) < sqrt(y) <=> x < y`,
-  MESON_TAC[REAL_NOT_LT; SQRT_MONO_LT; SQRT_MONO_LE]);;
-
-let SQRT_MONO_LE_EQ = prove
- (`!x y. sqrt(x) <= sqrt(y) <=> x <= y`,
-  MESON_TAC[REAL_NOT_LT; SQRT_MONO_LT; SQRT_MONO_LE]);;
-
-let SQRT_INJ = prove
- (`!x y. sqrt(x) = sqrt(y) <=> x = y`,
-  SIMP_TAC[GSYM REAL_LE_ANTISYM; SQRT_MONO_LE_EQ]);;
-
-let SQRT_POS_LT = prove
- (`!x. &0 < x ==> &0 < sqrt(x)`,
-  MESON_TAC[REAL_LT_LE; SQRT_POS_LE; SQRT_EQ_0]);;
-
-let REAL_LE_LSQRT = prove
- (`!x y. &0 <= y /\ x <= y pow 2 ==> sqrt(x) <= y`,
-  MESON_TAC[SQRT_MONO_LE; REAL_POW_LE; POW_2_SQRT]);;
-
-let REAL_LE_RSQRT = prove
- (`!x y. x pow 2 <= y ==> x <= sqrt(y)`,
-  MESON_TAC[REAL_LE_TOTAL; SQRT_MONO_LE; SQRT_POS_LE; REAL_POW_2;
-            REAL_LE_SQUARE; REAL_LE_TRANS; POW_2_SQRT]);;
-
-let REAL_LT_LSQRT = prove
- (`!x y. &0 <= y /\ x < y pow 2 ==> sqrt x < y`,
-  MESON_TAC[SQRT_MONO_LT; REAL_POW_LE; POW_2_SQRT]);;
-
-let REAL_LT_RSQRT = prove
- (`!x y. x pow 2 < y ==> x < sqrt(y)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC(REAL_ARITH `abs x < a ==> x < a`) THEN
-  REWRITE_TAC[GSYM POW_2_SQRT_ABS] THEN MATCH_MP_TAC SQRT_MONO_LT THEN
-  ASM_REWRITE_TAC[REAL_POW_2; REAL_LE_SQUARE]);;
-
-let SQRT_EVEN_POW2 = prove
- (`!n. EVEN n ==> (sqrt(&2 pow n) = &2 pow (n DIV 2))`,
-  SIMP_TAC[EVEN_EXISTS; LEFT_IMP_EXISTS_THM; DIV_MULT; ARITH_EQ] THEN
-  MESON_TAC[SQRT_UNIQUE; REAL_POW_POW; MULT_SYM; REAL_POW_LE; REAL_POS]);;
-
-let REAL_DIV_SQRT = prove
- (`!x. &0 <= x ==> x / sqrt(x) = sqrt(x)`,
-  REWRITE_TAC[REAL_LE_LT] THEN REPEAT STRIP_TAC THENL
-   [ALL_TAC; ASM_MESON_TAC[SQRT_0; real_div; REAL_MUL_LZERO]] THEN
-  ASM_SIMP_TAC[REAL_EQ_LDIV_EQ; SQRT_POS_LT; GSYM REAL_POW_2] THEN
-  ASM_SIMP_TAC[SQRT_POW_2; REAL_LT_IMP_LE]);;
-
-let REAL_RSQRT_LE = prove
- (`!x y. &0 <= x /\ &0 <= y /\ x <= sqrt y ==> x pow 2 <= y`,
-  MESON_TAC[REAL_POW_LE2; SQRT_POW_2]);;
-
-let REAL_LSQRT_LE = prove
- (`!x y. &0 <= x /\ sqrt x <= y ==> x <= y pow 2`,
-  MESON_TAC[REAL_POW_LE2; SQRT_POS_LE; REAL_LE_TRANS; SQRT_POW_2]);;
-
-let REAL_SQRT_POW_2 = prove
- (`!x. sqrt x pow 2 = abs x`,
-  REWRITE_TAC[SQRT_WORKS_GEN]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Hence derive more interesting properties of the norm.                     *)
-(* ------------------------------------------------------------------------- *)
 
 let NORM_0 = prove
  (`norm(vec 0) = &0`,
@@ -4280,33 +4029,33 @@ let INDICATOR_COMPLEMENT = prove
 (* Flattening and matrifying of arithmetic operations.                       *)
 (* ------------------------------------------------------------------------- *)
 
-let FLATTEN_ADD = prove
- (`!m1 m2:real^N^M. flatten(m1 + m2) = flatten m1 + flatten m2`,
-  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_ADD_COMPONENT] THEN
+let VECTORIZE_ADD = prove
+ (`!m1 m2:real^N^M. vectorize(m1 + m2) = vectorize m1 + vectorize m2`,
+  SIMP_TAC[CART_EQ; vectorize; LAMBDA_BETA; VECTOR_ADD_COMPONENT] THEN
   REWRITE_TAC[MATRIX_ADD_COMPONENT]);;
 
-let FLATTEN_CMUL = prove
- (`!c m:real^N^M. flatten(c %% m) = c % flatten m`,
-  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_MUL_COMPONENT] THEN
+let VECTORIZE_CMUL = prove
+ (`!c m:real^N^M. vectorize(c %% m) = c % vectorize m`,
+  SIMP_TAC[CART_EQ; vectorize; LAMBDA_BETA; VECTOR_MUL_COMPONENT] THEN
   REWRITE_TAC[MATRIX_CMUL_COMPONENT]);;
 
-let FLATTEN_SUB = prove
- (`!m1 m2:real^N^M. flatten(m1 - m2) = flatten m1 - flatten m2`,
-  SIMP_TAC[CART_EQ; flatten; LAMBDA_BETA; VECTOR_SUB_COMPONENT] THEN
+let VECTORIZE_SUB = prove
+ (`!m1 m2:real^N^M. vectorize(m1 - m2) = vectorize m1 - vectorize m2`,
+  SIMP_TAC[CART_EQ; vectorize; LAMBDA_BETA; VECTOR_SUB_COMPONENT] THEN
   REWRITE_TAC[MATRIX_SUB_COMPONENT]);;
 
-let FLATTEN_0 = prove
- (`flatten(mat 0:real^N^M) = vec 0`,
-  SIMP_TAC[CART_EQ; FLATTEN_COMPONENT; DIMINDEX_FINITE_PROD] THEN
+let VECTORIZE_0 = prove
+ (`vectorize(mat 0:real^N^M) = vec 0`,
+  SIMP_TAC[CART_EQ; VECTORIZE_COMPONENT; DIMINDEX_FINITE_PROD] THEN
   REWRITE_TAC[VEC_COMPONENT; MAT_0_COMPONENT]);;
 
 let MATRIFY_0 = prove
  (`matrify(vec 0) = mat 0`,
-  MESON_TAC[FLATTEN_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+  MESON_TAC[VECTORIZE_0; VECTORIZE_MATRIFY; MATRIFY_VECTORIZE]);;
 
-let FLATTEN_EQ_0 = prove
- (`!m:real^N^M. flatten m = vec 0 <=> m = mat 0`,
-  MESON_TAC[FLATTEN_0; MATRIFY_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+let VECTORIZE_EQ_0 = prove
+ (`!m:real^N^M. vectorize m = vec 0 <=> m = mat 0`,
+  MESON_TAC[VECTORIZE_0; MATRIFY_0; VECTORIZE_MATRIFY; MATRIFY_VECTORIZE]);;
 
 let MATRIFY_ADD = prove
  (`!x y:real^(M,N)finite_prod. matrify(x + y) = matrify x + matrify y`,
@@ -4325,7 +4074,7 @@ let MATRIFY_SUB = prove
 
 let MATRIFY_EQ_0 = prove
  (`!m:real^(M,N)finite_prod. matrify m = mat 0 <=> m = vec 0`,
-  MESON_TAC[FLATTEN_0; MATRIFY_0; FLATTEN_MATRIFY; MATRIFY_FLATTEN]);;
+  MESON_TAC[VECTORIZE_0; MATRIFY_0; VECTORIZE_MATRIFY; MATRIFY_VECTORIZE]);;
 
 let BILINEAR_MATRIX_VECTOR_MUL = prove
  (`bilinear (\(m:real^(M,N)finite_prod) x:real^N. matrify m ** x)`,
@@ -4336,12 +4085,12 @@ let BILINEAR_MATRIX_VECTOR_MUL = prove
 
 let BILINEAR_MATRIX_MUL = prove
  (`bilinear (\(m1:real^(M,N)finite_prod) (m2:real^(N,P)finite_prod).
-                   flatten(matrify m1 ** matrify m2))`,
+                   vectorize(matrify m1 ** matrify m2))`,
   REWRITE_TAC[bilinear; linear] THEN
   REWRITE_TAC[MATRIFY_ADD; MATRIFY_CMUL] THEN
   REWRITE_TAC[MATRIX_ADD_LDISTRIB; MATRIX_ADD_RDISTRIB;
               MATRIX_MUL_RMUL; MATRIX_MUL_LMUL;
-              FLATTEN_ADD; FLATTEN_CMUL]);;
+              VECTORIZE_ADD; VECTORIZE_CMUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Pasting vectors.                                                          *)
@@ -10260,6 +10009,210 @@ let MIDPOINT_BETWEEN = prove
 let DROP_MIDPOINT = prove
  (`!x y. drop(midpoint(x,y)) = (drop x + drop y) / &2`,
   REWRITE_TAC[midpoint; DROP_ADD; DROP_CMUL] THEN REAL_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Intervals, overloaded for standard-ish notation [a,b] and (a,b)           *)
+(* ------------------------------------------------------------------------- *)
+
+let open_interval = new_definition
+  `open_interval(a:real^N,b:real^N) =
+        {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
+                        ==> a$i < x$i /\ x$i < b$i}`;;
+
+let closed_interval = new_definition
+  `closed_interval(l:(real^N#real^N)list) =
+         {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
+                         ==> FST(HD l)$i <= x$i /\ x$i <= SND(HD l)$i}`;;
+
+make_overloadable "interval" `:A`;;
+
+overload_interface("interval",`open_interval`);;
+overload_interface("interval",`closed_interval`);;
+
+let interval = prove
+ (`(interval (a,b) = {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
+                                     ==> a$i < x$i /\ x$i < b$i}) /\
+   (interval [a,b] = {x:real^N | !i. 1 <= i /\ i <= dimindex(:N)
+                                     ==> a$i <= x$i /\ x$i <= b$i})`,
+  REWRITE_TAC[open_interval; closed_interval; HD; FST; SND]);;
+
+let IN_INTERVAL = prove
+ (`(!x:real^N.
+        x IN interval (a,b) <=>
+                !i. 1 <= i /\ i <= dimindex(:N)
+                    ==> a$i < x$i /\ x$i < b$i) /\
+   (!x:real^N.
+        x IN interval [a,b] <=>
+                !i. 1 <= i /\ i <= dimindex(:N)
+                    ==> a$i <= x$i /\ x$i <= b$i)`,
+  REWRITE_TAC[interval; IN_ELIM_THM]);;
+
+let IN_INTERVAL_REFLECT = prove
+ (`(!a b x. (--x) IN interval[--b,--a] <=> x IN interval[a,b]) /\
+   (!a b x. (--x) IN interval(--b,--a) <=> x IN interval(a,b))`,
+  SIMP_TAC[IN_INTERVAL; REAL_LT_NEG2; REAL_LE_NEG2; VECTOR_NEG_COMPONENT] THEN
+  MESON_TAC[]);;
+
+let REFLECT_INTERVAL = prove
+ (`(!a b:real^N. IMAGE (--) (interval[a,b]) = interval[--b,--a]) /\
+   (!a b:real^N. IMAGE (--) (interval(a,b)) = interval(--b,--a))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+  REWRITE_TAC[IN_INTERVAL_REFLECT] THEN MESON_TAC[VECTOR_NEG_NEG]);;
+
+let INTERVAL_EQ_EMPTY = prove
+ (`((interval [a:real^N,b] = {}) <=>
+    ?i. 1 <= i /\ i <= dimindex(:N) /\ b$i < a$i) /\
+   ((interval (a:real^N,b) = {}) <=>
+    ?i. 1 <= i /\ i <= dimindex(:N) /\ b$i <= a$i)`,
+  REWRITE_TAC[EXTENSION; IN_INTERVAL; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; GSYM CONJ_ASSOC] THEN
+  CONJ_TAC THEN EQ_TAC THENL
+   [MESON_TAC[REAL_LE_REFL; REAL_NOT_LE];
+    MESON_TAC[REAL_LE_TRANS; REAL_NOT_LE];
+    ALL_TAC;
+    MESON_TAC[REAL_LT_TRANS; REAL_NOT_LT]] THEN
+  SUBGOAL_THEN `!a b. ?c. a < b ==> a < c /\ c < b`
+  (MP_TAC o REWRITE_RULE[SKOLEM_THM]) THENL
+   [MESON_TAC[REAL_LT_BETWEEN]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_TAC `mid:real->real->real`) THEN
+  DISCH_THEN(MP_TAC o SPEC
+   `(lambda i. mid ((a:real^N)$i) ((b:real^N)$i)):real^N`) THEN
+  ONCE_REWRITE_TAC[TAUT `a /\ b /\ c <=> ~(a /\ b ==> ~c)`] THEN
+  SIMP_TAC[LAMBDA_BETA] THEN ASM_MESON_TAC[REAL_NOT_LT]);;
+
+let INTERVAL_NE_EMPTY = prove
+ (`(~(interval [a:real^N,b] = {}) <=>
+    !i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= b$i) /\
+   (~(interval (a:real^N,b) = {}) <=>
+    !i. 1 <= i /\ i <= dimindex(:N) ==> a$i < b$i)`,
+  REWRITE_TAC[INTERVAL_EQ_EMPTY] THEN MESON_TAC[REAL_NOT_LE]);;
+
+let SUBSET_INTERVAL_IMP = prove
+ (`((!i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= c$i /\ d$i <= b$i)
+    ==> interval[c,d] SUBSET interval[a:real^N,b]) /\
+   ((!i. 1 <= i /\ i <= dimindex(:N) ==> a$i < c$i /\ d$i < b$i)
+    ==> interval[c,d] SUBSET interval(a:real^N,b)) /\
+   ((!i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= c$i /\ d$i <= b$i)
+    ==> interval(c,d) SUBSET interval[a:real^N,b]) /\
+   ((!i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= c$i /\ d$i <= b$i)
+    ==> interval(c,d) SUBSET interval(a:real^N,b))`,
+  REWRITE_TAC[SUBSET; IN_INTERVAL] THEN REPEAT CONJ_TAC THEN
+  DISCH_TAC THEN GEN_TAC THEN POP_ASSUM MP_TAC THEN
+  REWRITE_TAC[IMP_IMP; AND_FORALL_THM] THEN MATCH_MP_TAC MONO_FORALL THEN
+  GEN_TAC THEN DISCH_THEN(fun th -> DISCH_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let INTERVAL_SING = prove
+ (`interval[a,a] = {a} /\ interval(a,a) = {}`,
+  REWRITE_TAC[EXTENSION; IN_SING; NOT_IN_EMPTY; IN_INTERVAL] THEN
+  REWRITE_TAC[REAL_LE_ANTISYM; REAL_LT_ANTISYM; CART_EQ; EQ_SYM_EQ] THEN
+  MESON_TAC[DIMINDEX_GE_1; LE_REFL]);;
+
+let SUBSET_INTERVAL = prove
+ (`(interval[c,d] SUBSET interval[a:real^N,b] <=>
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> c$i <= d$i)
+        ==> (!i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= c$i /\ d$i <= b$i)) /\
+   (interval[c,d] SUBSET interval(a:real^N,b) <=>
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> c$i <= d$i)
+        ==> (!i. 1 <= i /\ i <= dimindex(:N) ==> a$i < c$i /\ d$i < b$i)) /\
+   (interval(c,d) SUBSET interval[a:real^N,b] <=>
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> c$i < d$i)
+        ==> (!i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= c$i /\ d$i <= b$i)) /\
+   (interval(c,d) SUBSET interval(a:real^N,b) <=>
+        (!i. 1 <= i /\ i <= dimindex(:N) ==> c$i < d$i)
+        ==> (!i. 1 <= i /\ i <= dimindex(:N) ==> a$i <= c$i /\ d$i <= b$i))`,
+  let lemma = prove
+   (`(!x:real^N. (!i. 1 <= i /\ i <= dimindex(:N) ==> Q i (x$i))
+                 ==> (!i. 1 <= i /\ i <= dimindex(:N) ==> R i (x$i)))
+     ==> (!i. 1 <= i /\ i <= dimindex(:N) ==> ?y. Q i y)
+         ==> !i y. 1 <= i /\ i <= dimindex(:N) /\ Q i y ==> R i y`,
+    DISCH_TAC THEN REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `f:num->real` STRIP_ASSUME_TAC) THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o
+     SPEC `(lambda j. if j = i then y else f j):real^N`) THEN
+    SIMP_TAC[LAMBDA_BETA] THEN ASM_MESON_TAC[]) in
+  REPEAT STRIP_TAC THEN
+  (MATCH_MP_TAC(TAUT
+    `(~q ==> p) /\ (q ==> (p <=> r)) ==> (p <=> q ==> r)`) THEN
+   CONJ_TAC THENL
+    [DISCH_TAC THEN MATCH_MP_TAC(SET_RULE `s = {} ==> s SUBSET t`) THEN
+     REWRITE_TAC[INTERVAL_EQ_EMPTY] THEN ASM_MESON_TAC[REAL_NOT_LT];
+     ALL_TAC] THEN
+   DISCH_TAC THEN EQ_TAC THEN REWRITE_TAC[SUBSET_INTERVAL_IMP] THEN
+   REWRITE_TAC[SUBSET; IN_INTERVAL] THEN
+   DISCH_THEN(MP_TAC o MATCH_MP lemma) THEN ANTS_TAC THENL
+    [ASM_MESON_TAC[REAL_LT_BETWEEN; REAL_LE_BETWEEN]; ALL_TAC] THEN
+   MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:num` THEN
+   DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC[] THEN
+   FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN
+   ASM_REWRITE_TAC[] THEN POP_ASSUM_LIST(K ALL_TAC) THEN STRIP_TAC)
+  THENL
+   [ASM_MESON_TAC[REAL_LE_TRANS; REAL_LE_REFL];
+    ASM_MESON_TAC[REAL_LE_TRANS; REAL_LE_REFL];
+    ALL_TAC; ALL_TAC] THEN
+  (REPEAT STRIP_TAC THENL
+    [FIRST_X_ASSUM(MP_TAC o SPEC
+      `((c:real^N)$i + min ((a:real^N)$i) ((d:real^N)$i)) / &2`) THEN
+     POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+     FIRST_X_ASSUM(MP_TAC o SPEC
+      `(max ((b:real^N)$i) ((c:real^N)$i) + (d:real^N)$i) / &2`) THEN
+     POP_ASSUM MP_TAC THEN REAL_ARITH_TAC]));;
+
+let DISJOINT_INTERVAL = prove
+ (`!a b c d:real^N.
+        (interval[a,b] INTER interval[c,d] = {} <=>
+          ?i. 1 <= i /\ i <= dimindex(:N) /\
+              (b$i < a$i \/ d$i < c$i \/ b$i < c$i \/ d$i < a$i)) /\
+        (interval[a,b] INTER interval(c,d) = {} <=>
+          ?i. 1 <= i /\ i <= dimindex(:N) /\
+              (b$i < a$i \/ d$i <= c$i \/ b$i <= c$i \/ d$i <= a$i)) /\
+        (interval(a,b) INTER interval[c,d] = {} <=>
+          ?i. 1 <= i /\ i <= dimindex(:N) /\
+              (b$i <= a$i \/ d$i < c$i \/ b$i <= c$i \/ d$i <= a$i)) /\
+        (interval(a,b) INTER interval(c,d) = {} <=>
+          ?i. 1 <= i /\ i <= dimindex(:N) /\
+              (b$i <= a$i \/ d$i <= c$i \/ b$i <= c$i \/ d$i <= a$i))`,
+  REWRITE_TAC[EXTENSION; IN_INTER; IN_INTERVAL; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[AND_FORALL_THM; NOT_FORALL_THM] THEN
+  REWRITE_TAC[TAUT `~((p ==> q) /\ (p ==> r)) <=> p /\ (~q \/ ~r)`] THEN
+  REWRITE_TAC[DE_MORGAN_THM] THEN REPEAT STRIP_TAC THEN
+  (EQ_TAC THENL
+    [DISCH_THEN(MP_TAC o SPEC
+      `(lambda i. (max ((a:real^N)$i) ((c:real^N)$i) +
+                   min ((b:real^N)$i) ((d:real^N)$i)) / &2):real^N`) THEN
+     MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+     DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+     ASM_SIMP_TAC[LAMBDA_BETA] THEN REAL_ARITH_TAC;
+     DISCH_THEN(fun th -> GEN_TAC THEN MP_TAC th) THEN
+     MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN SIMP_TAC[] THEN
+     REAL_ARITH_TAC]));;
+
+let ENDS_IN_INTERVAL = prove
+ (`(!a b. a IN interval[a,b] <=> ~(interval[a,b] = {})) /\
+   (!a b. b IN interval[a,b] <=> ~(interval[a,b] = {})) /\
+   (!a b. ~(a IN interval(a,b))) /\
+   (!a b. ~(b IN interval(a,b)))`,
+  REWRITE_TAC[IN_INTERVAL; INTERVAL_NE_EMPTY] THEN
+  REWRITE_TAC[REAL_LE_REFL; REAL_LT_REFL] THEN
+  MESON_TAC[DIMINDEX_GE_1; LE_REFL]);;
+
+let ENDS_IN_UNIT_INTERVAL = prove
+ (`vec 0 IN interval[vec 0,vec 1] /\
+   vec 1 IN interval[vec 0,vec 1] /\
+   ~(vec 0 IN interval(vec 0,vec 1)) /\
+   ~(vec 1 IN interval(vec 0,vec 1))`,
+  REWRITE_TAC[ENDS_IN_INTERVAL; INTERVAL_NE_EMPTY; VEC_COMPONENT] THEN
+  REWRITE_TAC[REAL_POS]);;
+
+let INTER_INTERVAL = prove
+ (`interval[a,b] INTER interval[c,d] =
+        interval[(lambda i. max (a$i) (c$i)),(lambda i. min (b$i) (d$i))]`,
+  REWRITE_TAC[EXTENSION; IN_INTER; IN_INTERVAL] THEN
+  SIMP_TAC[LAMBDA_BETA; REAL_MAX_LE; REAL_LE_MIN] THEN MESON_TAC[]);;
+
+let INTERVAL_OPEN_SUBSET_CLOSED = prove
+ (`!a b. interval(a,b) SUBSET interval[a,b]`,
+  REWRITE_TAC[SUBSET; IN_INTERVAL] THEN MESON_TAC[REAL_LT_IMP_LE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* General "one way" lemma for properties preserved by injective map.        *)

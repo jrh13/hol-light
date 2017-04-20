@@ -1431,6 +1431,24 @@ let MOD_MOD_EXP_MIN = prove
      [ASM_MESON_TAC[LE_CASES; LE_EXISTS];
       ASM_SIMP_TAC[EXP_ADD; MOD_MOD; MULT_EQ_0; EXP_EQ_0]]]);;
 
+let DIV_EXP,MOD_EXP = (CONJ_PAIR o prove)
+ (`(!m n p. ~(m = 0)
+            ==> (m EXP n) DIV (m EXP p) =
+                if p <= n then m EXP (n - p)
+                else if m = 1 then 1 else 0) /\
+   (!m n p. ~(m = 0)
+            ==> (m EXP n) MOD (m EXP p) =
+                if p <= n \/ m = 1 then 0 else m EXP n)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC DIVMOD_UNIQ THEN
+  ASM_CASES_TAC `p:num <= n` THEN
+  ASM_SIMP_TAC[GSYM EXP_ADD; EXP_LT_0; SUB_ADD; ADD_CLAUSES] THEN
+  ASM_CASES_TAC `m = 1` THEN
+  ASM_REWRITE_TAC[EXP_ONE; ADD_CLAUSES; MULT_CLAUSES; LT_EXP] THEN
+  REWRITE_TAC[LT; GSYM NOT_LT; ONE; TWO] THEN
+  ASM_REWRITE_TAC[SYM ONE; GSYM NOT_LE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Theorems for eliminating cutoff subtraction, predecessor, DIV and MOD.    *)
 (* We have versions that introduce universal or existential quantifiers.     *)

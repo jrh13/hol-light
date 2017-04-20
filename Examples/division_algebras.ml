@@ -195,9 +195,7 @@ let COMMUTATIVE_DIVISION_ALGEBRA_GEN = prove
         CONJ_TAC THENL
          [DISCH_TAC THEN MATCH_MP_TAC LINEAR_COMPOSE_CMUL THEN
           RULE_ASSUM_TAC(REWRITE_RULE[bilinear]) THEN ASM_REWRITE_TAC[];
-          ALL_TAC] THEN
-        ASM_CASES_TAC `trivial_limit(at (x:real^N) within s)` THENL
-         [ASM_REWRITE_TAC[LIM]; ASM_SIMP_TAC[NETLIMIT_WITHIN]] THEN
+          REWRITE_TAC[NETLIMIT_WITHIN]] THEN
         MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LIM_TRANSFORM_EVENTUALLY) THEN
         REWRITE_TAC[EVENTUALLY_WITHIN] THEN EXISTS_TAC `&1` THEN
         REWRITE_TAC[REAL_LT_01] THEN X_GEN_TAC `z:real^N` THEN
@@ -269,16 +267,16 @@ let COMMUTATIVE_DIVISION_ALGEBRA = prove
   ASM_REWRITE_TAC[SUBSPACE_UNIV; IN_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Frobenius's theorem that there is no associative division algebra except  *)
-(* in dimensions 1, 2 and 4. This has a more elementary purely algebraic     *)
-(* proof, but since we have the commutative case proved above, we can make   *)
-(* good use of it.                                                           *)
+(* First some proofs that associative, even alternative, division algebras   *)
+(* have an identity and are quadratic. The latter essentially involves       *)
+(* proving the Moufang identities.                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let ASSOCIATIVE_DIVISION_ALGEBRA_HAS_IDENTITY = prove
+let ALTERNATIVE_DIVISION_ALGEBRA_HAS_IDENTITY = prove
  (`!m:real^N->real^N->real^N.
         bilinear m /\
-        (!x y z. m (m x y) z = m x (m y z)) /\
+        (!x y. m (m x x) y = m x (m x y)) /\
+        (!x y. m (m x y) y = m x (m y y)) /\
         (!x y. m x y = vec 0 ==> x = vec 0 \/ y = vec 0)
         ==> ?e. (!x. m e x = x) /\ (!x. m x e = x)`,
   REPEAT STRIP_TAC THEN
@@ -315,6 +313,186 @@ let ASSOCIATIVE_DIVISION_ALGEBRA_HAS_IDENTITY = prove
   GEN_TAC THEN CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
   ONCE_REWRITE_TAC[VECTOR_ARITH `x - y:real^N = x + --(&1) % y`] THEN
   ASM_MESON_TAC[VECTOR_ARITH `x + --(&1) % x:real^N = vec 0`]);;
+
+let ASSOCIATIVE_DIVISION_ALGEBRA_HAS_IDENTITY = prove
+ (`!m:real^N->real^N->real^N.
+        bilinear m /\
+        (!x y z. m (m x y) z = m x (m y z)) /\
+        (!x y. m x y = vec 0 ==> x = vec 0 \/ y = vec 0)
+        ==> ?e. (!x. m e x = x) /\ (!x. m x e = x)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC ALTERNATIVE_DIVISION_ALGEBRA_HAS_IDENTITY THEN
+  ASM_REWRITE_TAC[]);;
+
+let ALTERNATIVE_DIVISION_ALGEBRA_IS_QUADRATIC = prove
+ (`!m:real^N->real^N->real^N.
+        bilinear m /\
+        (!x y. m (m x x) y = m x (m x y)) /\
+        (!x y. m (m x y) y = m x (m y y)) /\
+        (!x y. m x y = vec 0 ==> x = vec 0 \/ y = vec 0)
+        ==> ?e. (!x. m e x = x) /\ (!x. m x e = x) /\
+                (!x. m x x IN span {e,x})`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPEC `m:real^N->real^N->real^N`
+    ALTERNATIVE_DIVISION_ALGEBRA_HAS_IDENTITY) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [bilinear]) THEN
+  REWRITE_TAC[linear; FORALL_AND_THM] THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `e:real^N` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `!x y:real^N. m (m x y) x = m x (m y x)` ASSUME_TAC THENL
+   [REPEAT GEN_TAC THEN
+    UNDISCH_THEN `!x y:real^N. m (m x y) y = m x (m y y)`
+     (fun th -> MP_TAC(SPECL [`x:real^N`; `x + y:real^N`] th) THEN
+                ASM_REWRITE_TAC[] THEN REWRITE_TAC[th]) THEN
+    CONV_TAC VECTOR_ARITH;
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!x y z:real^N. m (m z x) (m y z) = m z (m (m x y) z)`
+  ASSUME_TAC THENL
+   [ABBREV_TAC `A = \(x:real^N,y,z). m x (m y z) - m (m x y) z` THEN
+    SUBGOAL_THEN
+     `(!x y. (A:real^N#real^N#real^N->real^N)(x,x,y) = vec 0) /\
+      (!x y. (A:real^N#real^N#real^N->real^N)(x,y,y) = vec 0) /\
+      (!x y. (A:real^N#real^N#real^N->real^N)(x,y,x) = vec 0) /\
+      (!w x y z. (A:real^N#real^N#real^N->real^N)(w + x,y,z) =
+                 A(w,y,z) + A(x,y,z)) /\
+      (!w x y z. A(w,x + y,z) = A(w,x,z) + A(w,y,z)) /\
+      (!w x y z. A(w,x,y + z) = A(w,x,y) + A(w,x,z))`
+    STRIP_ASSUME_TAC THENL
+     [EXPAND_TAC "A" THEN REWRITE_TAC[] THEN ASM_REWRITE_TAC[] THEN
+      CONV_TAC VECTOR_ARITH;
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `!x y z. --(A:real^N#real^N#real^N->real^N)(x,y,z) = A(y,x,z)`
+    ASSUME_TAC THENL
+     [REPEAT GEN_TAC THEN
+      SUBGOAL_THEN `(A:real^N#real^N#real^N->real^N)(x + y,x + y,z) = vec 0`
+      MP_TAC THENL
+       [EXPAND_TAC "A" THEN REWRITE_TAC[VECTOR_SUB_EQ] THEN ASM_MESON_TAC[];
+        ASM_REWRITE_TAC[] THEN CONV_TAC VECTOR_ARITH];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `!x y z. (A:real^N#real^N#real^N->real^N)(x,y,z) = A(y,z,x)`
+     (LABEL_TAC "C")
+    THENL
+     [REPEAT GEN_TAC THEN TRANS_TAC EQ_TRANS
+       `--(A:real^N#real^N#real^N->real^N)(z,y,x)` THEN
+      CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[]] THEN
+      SUBGOAL_THEN `(A:real^N#real^N#real^N->real^N)(x + z,y,x + z) = vec 0`
+      MP_TAC THENL
+       [EXPAND_TAC "A" THEN REWRITE_TAC[VECTOR_SUB_EQ] THEN ASM_MESON_TAC[];
+        REWRITE_TAC[VECTOR_ARITH `x:real^N = --y <=> x + y = vec 0`] THEN
+        ASM_REWRITE_TAC[] THEN CONV_TAC VECTOR_ARITH];
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     `!x:real^N y:real^N z:real^N. A(m z x,y,z) = m (A(x,y,z)) z`
+    MP_TAC THENL
+     [REPEAT GEN_TAC THEN
+      FIRST_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      TRANS_TAC EQ_TRANS
+       `(A:real^N#real^N#real^N->real^N)(y,m z z,x) - A(m y z,z,x)` THEN
+      CONJ_TAC THENL
+       [EXPAND_TAC "A" THEN REWRITE_TAC[] THEN
+        ASM_REWRITE_TAC[] THEN CONV_TAC VECTOR_ARITH;
+        ALL_TAC] THEN
+      USE_THEN "C"
+       (fun th -> GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM th]) THEN
+      TRANS_TAC EQ_TRANS
+       `(A:real^N#real^N#real^N->real^N)(y,m z z,x) +
+        m (A(x,y,z)) z - A(x,y,m z z)` THEN
+      CONJ_TAC THENL
+       [EXPAND_TAC "A" THEN REWRITE_TAC[] THEN
+        ASM_REWRITE_TAC[VECTOR_ARITH `x - y:real^N = x + --(&1) % y`] THEN
+        CONV_TAC VECTOR_ARITH;
+        REWRITE_TAC[VECTOR_ARITH `x + y - z:real^N = y <=> z = x`] THEN
+        ASM_MESON_TAC[]];
+      REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+      USE_THEN "C" (fun th -> GEN_REWRITE_TAC
+       (LAND_CONV o RAND_CONV o LAND_CONV) [GSYM th]) THEN
+      EXPAND_TAC "A" THEN REWRITE_TAC[] THEN
+      ASM_REWRITE_TAC[VECTOR_ARITH `x - y:real^N = x + --(&1) % y`] THEN
+      CONV_TAC VECTOR_ARITH];
+    ALL_TAC] THEN
+  X_GEN_TAC `i:real^N` THEN
+  ASM_CASES_TAC `i IN span {e:real^N}` THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [SPAN_SING]) THEN
+    SIMP_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
+    ASM_REWRITE_TAC[] THEN
+    SIMP_TAC[SPAN_MUL; SPAN_SUPERSET; IN_INSERT];
+    ONCE_REWRITE_TAC[SET_RULE `{e,i} = {i,e}`]] THEN
+  (X_CHOOSE_THEN `C:real^N->bool` MP_TAC o prove_inductive_relations_exist)
+    `(!x:real^N. x IN {e} ==> C x) /\
+     (!x. C x ==> C(m i x)) /\
+     (!x. C x ==> C(m x i)) /\
+     (!c x. C x ==> C(c % x)) /\
+     (!x y. C x /\ C y ==> C(x + y))` THEN
+  REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+  MP_TAC(SET_RULE `!x:real^N. C x <=> x IN C`) THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC (MP_TAC o CONJUNCT1)) THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `(i:real^N) IN C` ASSUME_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MP_TAC(ISPECL [`m:real^N->real^N->real^N`; `C:real^N->bool`]
+        COMMUTATIVE_DIVISION_ALGEBRA_GEN) THEN
+  ASM_REWRITE_TAC[subspace] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ASM_MESON_TAC[VECTOR_MUL_LZERO]; ALL_TAC] THEN
+    SUBGOAL_THEN
+     `!x. x IN C ==> (m:real^N->real^N->real^N) i x = m x i`
+    ASSUME_TAC THENL
+     [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN SIMP_TAC[] THEN
+      ASM_MESON_TAC[];
+      ALL_TAC] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+    ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
+    CONJ_TAC THENL [REWRITE_TAC[AND_FORALL_THM]; ASM_MESON_TAC[]] THEN
+    X_GEN_TAC `x:real^N` THEN
+    REWRITE_TAC[TAUT `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN `(x:real^N) IN C` ASSUME_TAC THENL
+     [ASM_MESON_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC(TAUT `(p ==> q) /\ p ==> p /\ q`) THEN CONJ_TAC THENL
+     [MATCH_MP_TAC MONO_FORALL THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+    ONCE_REWRITE_TAC[TAUT `p ==> q <=> p ==> p /\ q`] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    MATCH_MP_TAC(TAUT `(r /\ s) /\ (p ==> q) /\ p ==> p /\ q /\ r /\ s`) THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `y:real^N` THEN
+      MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p ==> q) ==> (p ==> r)`) THEN
+      STRIP_TAC THEN
+      SUBGOAL_THEN `(m:real^N->real^N->real^N) i x = m x i /\ m i y = m y i`
+      MP_TAC THENL [ASM_MESON_TAC[]; SIMP_TAC[]];
+      ALL_TAC] THEN
+    X_GEN_TAC `y:real^N` THEN STRIP_TAC THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    SUBGOAL_THEN
+     `!w z:real^N. w IN C /\ z IN C ==> m (m i w) (m i z) = m i (m (m w z) i)`
+    MP_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN DISCH_THEN(fun th ->
+      MP_TAC(ISPECL [`y:real^N`; `x:real^N`] th) THEN
+      MP_TAC(ISPECL [`x:real^N`; `y:real^N`] th)) THEN
+    REPEAT(ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN SUBST1_TAC]) THEN
+    ASM_MESON_TAC[];
+    SUBGOAL_THEN `~(e:real^N = vec 0)` ASSUME_TAC THENL
+     [SUBGOAL_THEN `~(basis 1:real^N = vec 0)` ASSUME_TAC THENL
+       [SIMP_TAC[BASIS_NONZERO; LE_REFL; DIMINDEX_GE_1];
+        ASM_MESON_TAC[VECTOR_MUL_LZERO]];
+      ALL_TAC] THEN
+    GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
+    REWRITE_TAC[NOT_LE] THEN MATCH_MP_TAC LTE_TRANS THEN
+    EXISTS_TAC `dim{m i i:real^N,i,e}` THEN CONJ_TAC THENL
+     [ASM_REWRITE_TAC[DIM_INSERT; SPAN_EMPTY; IN_SING; DIM_EMPTY] THEN
+      CONV_TAC NUM_REDUCE_CONV;
+      MATCH_MP_TAC DIM_SUBSET THEN
+      REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET] THEN ASM_MESON_TAC[]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Frobenius's theorem that there is no associative division algebra except  *)
+(* in dimensions 1, 2 and 4. This has a more elementary purely algebraic     *)
+(* proof, but since we have the commutative case proved above, we can make   *)
+(* good use of it.                                                           *)
+(* ------------------------------------------------------------------------- *)
 
 let ASSOCIATIVE_DIVISION_ALGEBRA = prove
  (`!m:real^N->real^N->real^N.

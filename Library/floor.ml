@@ -252,6 +252,10 @@ let RATIONAL_NEG_EQ = prove
  (`!x. rational(--x) <=> rational x`,
   MESON_TAC[REAL_NEG_NEG; RATIONAL_NEG]);;
 
+let RATIONAL_ABS_EQ = prove
+ (`!x. rational(abs x) <=> rational x`,
+  REWRITE_TAC[real_abs] THEN MESON_TAC[RATIONAL_NEG_EQ; RATIONAL_NUM]);;
+
 let RATIONAL_INV_EQ = prove
  (`!x. rational(inv x) <=> rational x`,
   MESON_TAC[REAL_INV_INV; RATIONAL_INV]);;

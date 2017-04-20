@@ -213,18 +213,11 @@ let NORM_PASTECART_GE2 = prove
   (`!x y. norm y <= norm (pastecart x y)`,
   MESON_TAC[SNDCART_PASTECART;NORM_SNDCART]);;
 
-let LIM_PASTECART_EQ = prove
-  (`!net a b f:A->real^M g:A->real^N. (f --> a) net /\ (g --> b) net
-    <=> ((\x. pastecart (f x) (g x)) --> pastecart a b) net`,
-  REWRITE_TAC[MESON[] `(a <=> b) <=> (a ==> b) /\ (b ==> a)`;LIM_PASTECART;LIM;
-    MESON[]`(p\/q ==> (p \/ r) /\ (p \/ s)) <=> (~p /\ q ==> r /\ s)`;dist;
-    PASTECART_SUB]
-  THEN ASM_MESON_TAC[REAL_LET_TRANS;NORM_PASTECART_GE1;NORM_PASTECART_GE2]);;
-
 let SUMS_PASTECART = prove
   (`!s f1:num->real^N f2:num->real^M l1 l2. (f1 sums l1) s /\ (f2 sums l2) s
     <=> ((\x. pastecart (f1 x) (f2 x)) sums (pastecart l1 l2)) s`,
-  SIMP_TAC[sums;FINITE_INTER_ENUM;GSYM PASTECART_VSUM;LIM_PASTECART_EQ]);;
+  SIMP_TAC[sums;FINITE_INTER_ENUM;GSYM PASTECART_VSUM;
+           GSYM LIM_PASTECART_EQ]);;
 
 let LINEAR_SUMS = prove(
   `!s f l g. linear g ==> ((f sums l) s ==> ((g o f) sums (g l)) s)`,

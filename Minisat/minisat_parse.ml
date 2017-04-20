@@ -31,22 +31,22 @@ let sat_getint is =
   let (lsl) = Int32.shift_left in
   let (lsr) = Int32.shift_right in
   let byte0 = sat_getChar is in
-  if ((byte0 land (0x80l))=(0x0l)) (* 8 *)
+  if ((byte0 land (Int32.of_int 0x80))=(Int32.of_int 0x0)) (* 8 *)
   then Int32.to_int(byte0)
   else
-    match Int32.to_int((byte0 land (0x60l)) lsr 5) with
+    match Int32.to_int((byte0 land (Int32.of_int 0x60)) lsr 5) with
       0 ->
         let byte1 = sat_getChar is in
-        Int32.to_int(((byte0 land (0x1Fl)) lsl 8) lor byte1) (* 16 *)
+        Int32.to_int(((byte0 land (Int32.of_int 0x1F)) lsl 8) lor byte1) (* 16 *)
     | 1 ->
         let byte1 = sat_getChar is in
         let byte2 = sat_getChar is in
-        Int32.to_int( (((byte0 land (0x1Fl)) lsl 16) lor (byte1 lsl 8)) lor byte2)
+        Int32.to_int( (((byte0 land (Int32.of_int 0x1F)) lsl 16) lor (byte1 lsl 8)) lor byte2)
     | 2 ->
         let byte1 = sat_getChar is in
         let byte2 = sat_getChar is in
         let byte3 = sat_getChar is in
-        Int32.to_int(((((byte0 land (0x1Fl)) lsl 24) lor (byte1 lsl 16))
+        Int32.to_int(((((byte0 land (Int32.of_int 0x1F)) lsl 24) lor (byte1 lsl 16))
                  lor (byte2 lsl 8)) lor byte3)
     (* default case is only where int64 is needed since we do a lsl 32*)
     | _ ->

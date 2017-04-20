@@ -353,7 +353,7 @@ let LIM_COMPLEX_RMUL = prove
 let LIM_CX_LIFT = prove
  (`!net f l.
      ((\x. Cx(f x)) --> Cx l) net <=> ((\x. lift(f x)) --> lift l) net`,
-  REWRITE_TAC[LIM; DIST_LIFT; DIST_CX]);;
+  REWRITE_TAC[tendsto; DIST_LIFT; DIST_CX]);;
 
 let SERIES_CX_LIFT = prove
  (`!f s x.
@@ -694,7 +694,7 @@ let CONTINUOUS_COMPLEX_POW = prove
   SIMP_TAC[continuous; LIM_COMPLEX_POW]);;
 
 let CONTINUOUS_CPRODUCT = prove
- (`!(net:B net) f k:A->bool.
+ (`!(net:(real^N)net) f k:A->bool.
         FINITE k /\
         (!i. i IN k ==> f i continuous net)
         ==> (\z. cproduct k (\i. f i z)) continuous net`,
@@ -898,7 +898,7 @@ let CONTINUOUS_ON_CX_DROP = prove
 
 let CONTINUOUS_CX_LIFT = prove
  (`!f. (\x. Cx(f x)) continuous net <=> (\x. lift(f x)) continuous net`,
-  REWRITE_TAC[continuous; LIM; dist; GSYM CX_SUB; GSYM LIFT_SUB] THEN
+  REWRITE_TAC[continuous; tendsto; dist; GSYM CX_SUB; GSYM LIFT_SUB] THEN
   REWRITE_TAC[COMPLEX_NORM_CX; NORM_LIFT]);;
 
 let CONTINUOUS_ON_CX_LIFT = prove
@@ -2713,7 +2713,7 @@ let COMPLEX_TAYLOR_MVT = prove
 
 let LIM_CNJ = prove
  (`!net f l. ((\x. cnj(f x)) --> cnj l) net <=> (f --> l) net`,
-  REWRITE_TAC[LIM; dist; GSYM CNJ_SUB; COMPLEX_NORM_CNJ]);;
+  REWRITE_TAC[tendsto; dist; GSYM CNJ_SUB; COMPLEX_NORM_CNJ]);;
 
 let SUMS_CNJ = prove
  (`!net f l. ((\x. cnj(f x)) sums cnj l) net <=> (f sums l) net`,
@@ -2738,18 +2738,19 @@ let CONTINUOUS_ON_CNJ = prove
 let REAL_LIM = prove
  (`!net:(A)net f l.
         (f --> l) net /\ ~(trivial_limit net) /\
-        (?b. (?a. netord net a b) /\ !a. netord net a b ==> real(f a))
+        eventually (\a. real(f a)) net
         ==> real l`,
   REWRITE_TAC[IM_DEF; real] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC LIM_COMPONENT_EQ THEN
-  REWRITE_TAC[eventually; DIMINDEX_2; ARITH] THEN ASM_MESON_TAC[]);;
+  REWRITE_TAC[DIMINDEX_2; ARITH] THEN ASM_MESON_TAC[]);;
 
 let REAL_LIM_SEQUENTIALLY = prove
  (`!f l. (f --> l) sequentially /\ (?N. !n. n >= N ==> real(f n))
          ==> real l`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC(ISPEC `sequentially` REAL_LIM) THEN
-  REWRITE_TAC[SEQUENTIALLY; TRIVIAL_LIMIT_SEQUENTIALLY] THEN
-  ASM_MESON_TAC[GE_REFL]);;
+  REWRITE_TAC[SEQUENTIALLY; EVENTUALLY_SEQUENTIALLY; 
+             TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+  ASM_MESON_TAC[GE]);;
 
 let REAL_SERIES = prove
  (`!f l s. (f sums l) s /\ (!n. real(f n)) ==> real l`,

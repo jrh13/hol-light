@@ -79,6 +79,7 @@ EXTENDED_EXAMPLES:=\
 	Multivariate/flyspeck \
 	Multivariate/gamma \
 	Multivariate/geom \
+	Multivariate/lpspaces \
 	Multivariate/tarski \
 	RichterHilbertAxiomGeometry/Topology \
 	RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read \

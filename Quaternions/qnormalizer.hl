@@ -1,7 +1,7 @@
 (* ========================================================================= *)
 (* Canonical polynomial form for quaternionic expressions.                   *)
 (*                                                                           *)
-(* Copyright (c) 2014 Marco Maggesi                                          *)
+(* Copyright (c) 2014-2016 Marco Maggesi                                     *)
 (* ========================================================================= *)
 
 let QUAT_MUL_HX_MUL_SYM = prove
@@ -151,13 +151,12 @@ let QUAT_POLY_CONV : conv =
   (* ---------------------------------------------------------------------- *)
 
   let insert_term_th = prove
-   (`!p q r. p + (q + r) = q + (p + r)`,
+   (`!p q r:quat. p + (q + r) = q + (p + r)`,
     REWRITE_TAC[QUAT_ADD_AC]) in
 
   let rec INSERT_TERM tm tms : thm =
     let ptm = mk_quat_add tm tms in
-    try
-      REWR_CONV QUAT_ADD_LID ptm
+    try (REWR_CONV QUAT_ADD_LID ORELSEC REWR_CONV QUAT_ADD_RID) ptm
     with Failure _ ->
     try
       let tm1,tms = dest_quat_add tms in
@@ -264,14 +263,14 @@ let QUAT_POLY_CONV : conv =
 
   let PRE_POW_CONV : conv =
     let QUAT_POW_DENUMERAL = prove
-     (`x pow NUMERAL n = x pow n`,
+     (`x:quat pow NUMERAL n = x pow n`,
       REWRITE_TAC[NUMERAL])
     and QUAT_POW_BIT0 = prove
-     (`!x n. x pow BIT0 n = (x * x) pow n`,
+     (`!x n. x:quat pow BIT0 n = (x * x) pow n`,
       REPEAT GEN_TAC THEN REWRITE_TAC[BIT0; QUAT_POW_ADD] THEN
       REWRITE_TAC[GSYM QUAT_POW_2; QUAT_POW_POW; MULT_SYM])
     and QUAT_POW_BIT1 = prove
-     (`!x n. x pow BIT1 n = x * (x * x) pow n`,
+     (`!x n. x:quat pow BIT1 n = x * (x * x) pow n`,
       REPEAT GEN_TAC THEN REWRITE_TAC[BIT1; quat_pow; QUAT_POW_ADD] THEN
       REWRITE_TAC[GSYM QUAT_POW_2; QUAT_POW_POW; MULT_SYM])
     and QUAT_POW_0 = prove
@@ -317,10 +316,10 @@ let QUAT_POLY_CONV : conv =
          (!x. Hx (&0) * x = Hx (&0)) /\
          (!x. x * Hx (&0) = Hx (&0)) /\
          (!x. x pow 0 = Hx (&1)) /\
-         (!x y. cnj (x + y) = cnj x + cnj y) /\
-         (!x y. cnj (x * y) = cnj y * cnj x) /\
-         (!x. cnj (inv x) = inv (cnj x)) /\
-         (!x n. cnj (x pow n) = cnj x pow n) /\
+         (!x y:quat. cnj (x + y) = cnj x + cnj y) /\
+         (!x y:quat. cnj (x * y) = cnj y * cnj x) /\
+         (!x:quat. cnj (inv x) = inv (cnj x)) /\
+         (!x:quat n. cnj (x pow n) = cnj x pow n) /\
          (!a. cnj (Hx a) = Hx a) /\
          cnj ii =  Hx(-- &1) * ii /\
          cnj jj =  Hx(-- &1) * jj /\

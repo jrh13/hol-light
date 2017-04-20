@@ -8,6 +8,623 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 11th Apr 2017       pair.ml, sets.ml, cart.ml
+
+Added a few more trivial but nice-to-have rewrites:
+
+  EXISTS_PAIR_FUN_THM =
+    |- !P. (?f. P f) <=> (?g h. P (\a. g a,h a))
+
+  FORALL_PAIR_FUN_THM =
+    |- !P. (!f. P f) <=> (!g h. P (\a. g a,h a))
+
+  CROSS_SING =
+    |- !x y. {x} CROSS {y} = {(x,y)}
+
+  PCROSS_SING =
+     |- !x y. {x} PCROSS {y} = {pastecart x y}
+
+Sat  8th Apr 2017       cart.ml
+
+Type-generalized PASTECART_INJ which had a pointless restriction to ":real".
+
+Sat  8th Apr 2017       sets.ml
+
+Added a number of new theorems from Andrea Gabrielli and Marco Maggesi, giving
+some additional properties of sup and inf and using useful relational versions
+"has_sup" and "has_inf" to express some properties more nicely:
+
+  has_inf =
+    |- !s b. s has_inf b <=> (!c. (!x. x IN s ==> c <= x) <=> c <= b)
+
+  has_sup =
+    |- !s b. s has_sup b <=> (!c. (!x. x IN s ==> x <= c) <=> b <= c)
+
+  HAS_INF =
+    |- !s l.
+           s has_inf l <=>
+           ~(s = {}) /\
+           (!x. x IN s ==> l <= x) /\
+           (!c. l < c ==> (?x. x IN s /\ x < c))
+
+  HAS_INF_APPROACH =
+    |- !s l c. s has_inf l /\ l < c ==> (?x. x IN s /\ x < c)
+
+  HAS_INF_INF =
+    |- !s l.
+           s has_inf l <=>
+           ~(s = {}) /\ (?b. !x. x IN s ==> b <= x) /\ inf s = l
+
+  HAS_INF_LBOUND =
+    |- !s b x. s has_inf b /\ x IN s ==> b <= x
+
+  HAS_INF_LE =
+    |- !s t l m.
+           s has_inf l /\
+           t has_inf m /\
+           (!y. y IN t ==> (?x. x IN s /\ x <= y))
+           ==> l <= m
+
+  HAS_SUP =
+    |- !s l.
+           s has_sup l <=>
+           ~(s = {}) /\
+           (!x. x IN s ==> x <= l) /\
+           (!c. c < l ==> (?x. x IN s /\ c < x))
+
+  HAS_SUP_APPROACH =
+    |- !s l c. s has_sup l /\ c < l ==> (?x. x IN s /\ c < x)
+
+  HAS_SUP_LE =
+    |- !s t l m.
+           s has_sup l /\
+           t has_sup m /\
+           (!y. y IN t ==> (?x. x IN s /\ y <= x))
+           ==> m <= l
+
+  HAS_SUP_SUP =
+    |- !s l.
+           s has_sup l <=>
+           ~(s = {}) /\ (?b. !x. x IN s ==> x <= b) /\ sup s = l
+
+  HAS_SUP_UBOUND =
+    |- !s b x. s has_sup b /\ x IN s ==> x <= b
+
+  INF_APPROACH =
+    |- !s c.
+           ~(s = {}) /\ (?b. !x. x IN s ==> b <= x) /\ inf s < c
+           ==> (?x. x IN s /\ x < c)
+
+  INF_EXISTS =
+    |- !s. (?l. s has_inf l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
+
+  SUP_APPROACH =
+    |- !s c.
+           ~(s = {}) /\ (?b. !x. x IN s ==> x <= b) /\ c < sup s
+           ==> (?x. x IN s /\ c < x)
+
+  SUP_EXISTS =
+    |- !s. (?l. s has_sup l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)
+
+Wed 29th Mar 2017       arith.ml
+
+Added some natural theorems that were missing:
+
+  DIV_EXP =
+    |- m n p. ~(m = 0)
+              ==> (m EXP n) DIV (m EXP p) =
+                  if p <= n then m EXP (n - p)
+                  else if m = 1 then 1 else 0)
+
+  MOD_EXP =
+    |- !m n p. ~(m = 0)
+               ==> (m EXP n) MOD (m EXP p) =
+                   if p <= n \/ m = 1 then 0 else m EXP n)
+
+Tue 28th Mar 2017       Library/card.ml
+
+Added a small but more compact reformulation of cardinal exponentiation:
+
+  EXP_C =
+   |- !s t. s ^_c t = {f | IMAGE f t SUBSET s /\ EXTENSIONAL t f}
+
+Mon 27th Mar 2018       Library/floor.ml, Library/prime.ml
+
+Added a few handy lemmas:
+
+  RATIONAL_ABS_EQ = prove
+    |- !x. rational(abs x) <=> rational x
+
+  DIVIDES_EXP_LE_IMP = prove
+    |- !p m n. m <= n ==> (p EXP m) divides (p EXP n)
+
+  EXP_INDEX_DIVIDES = prove
+    |- !p n. p EXP (index p n) divides n
+
+  INDEX_ADD_MIN = prove
+    |- !p m n. MIN (index p m) (index p n) <= index p (m + n)
+
+  INDEX_SUB_MIN = prove
+    |- !p m n. n < m ==> MIN (index p m) (index p n) <= index p (m - n)
+
+Sat 25th Mar 2017       Minisat/minisat_parse.ml
+
+Replaced the use of int32 literals "0x...l" with "Int32.of_int 0x...".
+The former seems to have recently started to be problematic with the
+camlp5 preprocessing; really the underlying problem should be investigated and
+fixed but as this is the only instance, I just made this change for now.
+
+Fri 24th Mar 2017       holtest, holtest.ml
+
+Added "Multivariate/lpspaces.ml" to the test suite (formerly missing its
+own individual entry, though it's called in 100/fourier.ml anyway).
+
+Wed 22nd Mar 2017       Library/card.ml
+
+Added another variant of relational cardinal equality, as well as simplifying
+the proof of the Schroeder-Bernstein theorem using a formulation in the
+relational style (following a paper by Chad Brown, perhaps actually following
+Knaster?)
+
+  EQ_C_ALT =
+   |- s =_c t <=>
+      ?R:A#B->bool. (!x. x IN s ==> ?!y. y IN t /\ R(x,y)) /\
+                    (!y. y IN t ==> ?!x. x IN s /\ R(x,y))
+
+Thu 16th Mar 2017       Makefile
+
+Added yet another disjunct to the camlp5 version cases after a report from
+Vu Khac Ky of a failure with camlp5 6.17 (currently the latest version).
+
+Wed 15th Mar 2017       real.ml, Library/transc.ml, 100/sqrt.ml, Jordan/metric_spaces.ml, Jordan/jordan_curve_theorem.ml
+
+Added a definition and basic properties of square roots to the core system,
+mainly lifted from the existing Multivariate code. The proof that the
+definition works is laborious without any analytical machinery but it seemed
+artificial to make such a basic and well-known function dependent on such
+machinery. Note that the definition is totalized to be sign-preserving,
+which makes various theorems work nicely without side-conditions while not
+affecting its value for nonnegative arguments where it is usually considered
+to be defined. New definitions and theorems:
+
+  sqrt = |- !x. sqrt x = (@y. real_sgn y = real_sgn x /\ y pow 2 = abs x)
+
+  POW_2_SQRT =
+     |- !x. &0 <= x ==> sqrt (x pow 2) = x
+
+  POW_2_SQRT_ABS =
+     |- !x. sqrt (x pow 2) = abs x
+
+  REAL_DIV_SQRT =
+     |- !x. &0 <= x ==> x / sqrt x = sqrt x
+
+  REAL_LE_LSQRT =
+     |- !x y. &0 <= y /\ x <= y pow 2 ==> sqrt x <= y
+
+  REAL_LE_RSQRT =
+     |- !x y. x pow 2 <= y ==> x <= sqrt y
+
+  REAL_LSQRT_LE =
+     |- !x y. &0 <= x /\ sqrt x <= y ==> x <= y pow 2
+
+  REAL_LT_LSQRT =
+     |- !x y. &0 <= y /\ x < y pow 2 ==> sqrt x < y
+
+  REAL_LT_RSQRT =
+     |- !x y. x pow 2 < y ==> x < sqrt y
+
+  REAL_RSQRT_LE =
+     |- !x y. &0 <= x /\ &0 <= y /\ x <= sqrt y ==> x pow 2 <= y
+
+  REAL_SGN_SQRT =
+     |- !x. real_sgn (sqrt x) = real_sgn x
+
+  REAL_SQRT_POW_2 =
+     |- !x. sqrt x pow 2 = abs x
+
+  SQRT_0 =
+     |- sqrt (&0) = &0
+
+  SQRT_1 =
+     |- sqrt (&1) = &1
+
+  SQRT_DIV =
+     |- !x y. sqrt (x / y) = sqrt x / sqrt y
+
+  SQRT_EQ_0 =
+     |- !x. sqrt x = &0 <=> x = &0
+
+  SQRT_EVEN_POW2 =
+     |- !n. EVEN n ==> sqrt (&2 pow n) = &2 pow (n DIV 2)
+
+  SQRT_INJ =
+     |- !x y. sqrt x = sqrt y <=> x = y
+
+  SQRT_INV =
+     |- !x. sqrt (inv x) = inv (sqrt x)
+
+  SQRT_LE_0 =
+     |- !x. &0 <= sqrt x <=> &0 <= x
+
+  SQRT_LT_0 =
+     |- !x. &0 < sqrt x <=> &0 < x
+
+  SQRT_MONO_LE =
+     |- !x y. x <= y ==> sqrt x <= sqrt y
+
+  SQRT_MONO_LE_EQ =
+     |- !x y. sqrt x <= sqrt y <=> x <= y
+
+  SQRT_MONO_LT =
+     |- !x y. x < y ==> sqrt x < sqrt y
+
+  SQRT_MONO_LT_EQ =
+     |- !x y. sqrt x < sqrt y <=> x < y
+
+  SQRT_MUL =
+     |- !x y. sqrt (x * y) = sqrt x * sqrt y
+
+  SQRT_NEG =
+     |- !x. sqrt (--x) = --sqrt x
+
+  SQRT_POS_LE =
+     |- !x. &0 <= x ==> &0 <= sqrt x
+
+  SQRT_POS_LT =
+     |- !x. &0 < x ==> &0 < sqrt x
+
+  SQRT_POW2 =
+     |- !x. sqrt x pow 2 = x <=> &0 <= x
+
+  SQRT_POW_2 =
+     |- !x. &0 <= x ==> sqrt x pow 2 = x
+
+  SQRT_UNIQUE =
+     |- !x y. &0 <= y /\ y pow 2 = x ==> sqrt x = y
+
+  SQRT_UNIQUE_GEN =
+      |- !x y. real_sgn y = real_sgn x /\ y pow 2 = abs x ==> sqrt x = y
+
+  SQRT_WORKS =
+     |- !x. &0 <= x ==> &0 <= sqrt x /\ sqrt x pow 2 = x
+
+  SQRT_WORKS_GEN =
+     |- !x. real_sgn (sqrt x) = real_sgn x /\ sqrt x pow 2 = abs x
+
+Also removed either duplicates or weaker theorems (with more hypotheses)
+sharing the same names from "Library/transc.ml", removed a dependency in
+"100/sqrt.ml", and fixed some consequentially broken proofs in Jordan.
+
+Sun  5th Mar 2017       sets.ml
+
+Added a kind of infinite pigeonhole principle:
+
+  FINITE_IMAGE_INFINITE =
+    |- !f:A->B s.
+          INFINITE s /\ FINITE(IMAGE f s)
+          ==> ?a. a IN s /\ INFINITE {x | x IN s /\ f x = f a}
+
+Thu  2nd Mar 2017       sets.ml, cart.ml
+
+Added one more triviality about products of sets, both in the real product and
+the "cart" variant:
+
+  DISJOINT_CROSS =
+   |- !s t s' t'.
+        DISJOINT (s CROSS t) (s' CROSS t') <=>
+        DISJOINT s s' \/ DISJOINT t t'
+
+  DISJOINT_PCROSS =
+   |- !s t s' t'.
+        DISJOINT (s PCROSS t) (s' PCROSS t') <=>
+        DISJOINT s s' \/ DISJOINT t t'
+
+Sat 25th Feb 2017       sets.ml
+
+Added one more trivial but handy theorems about Cartesian products:
+
+  CARTESIAN_PRODUCT_UNIV = |- cartesian_product (:K) (\i. (:A)) = (:K->A)
+
+Wed 15th Feb 2017       sets.ml
+
+Added a definition of "extensional" functions, all the material lifted from
+Multivariate/misc.ml (except for the renaming of UNDEFINED -> ARB, which helps
+to emphasize that these are not truly partial functions). Used that to define a
+natural space of general Cartesian products of sets (or, viewed differently, a
+dependent function space), with a few lemmas. New definitions:
+
+  ARB =
+    |- ARB = (@x. F)
+
+  EXTENSIONAL =
+    |- !s. EXTENSIONAL s = {f | !x. ~(x IN s) ==> f x = ARB}
+
+  cartesian_product =
+    |- !k s.
+         cartesian_product k s =
+         {f | EXTENSIONAL k f /\ (!i. i IN k ==> f i IN s i)}
+
+and theorems:
+
+  CARTESIAN_PRODUCT =
+    |- !k s.
+           cartesian_product k s =
+           {f | !i. f i IN (if i IN k then s i else {ARB})}
+
+  CARTESIAN_PRODUCT_EQ =
+    |- !k s t.
+           cartesian_product k s = cartesian_product k t <=>
+           cartesian_product k s = {} /\ cartesian_product k t = {} \/
+           (!i. i IN k ==> s i = t i)
+
+  CARTESIAN_PRODUCT_EQ_EMPTY =
+    |- !k s. cartesian_product k s = {} <=> (?i. i IN k /\ s i = {})
+
+  EXTENSIONAL_EMPTY =
+    |- EXTENSIONAL {} = {(\x. ARB)}
+
+  EXTENSIONAL_EQ =
+    |- !s f g.
+           f IN EXTENSIONAL s /\
+           g IN EXTENSIONAL s /\
+           (!x. x IN s ==> f x = g x)
+           ==> f = g
+
+  EXTENSIONAL_UNIV =
+    |- !f. EXTENSIONAL (:A) f
+
+  IMAGE_PROJECTION_CARTESIAN_PRODUCT =
+    |- !k s i.
+           IMAGE (\x. x i) (cartesian_product k s) =
+           (if cartesian_product k s = {}
+            then {}
+            else if i IN k then s i else {ARB})
+
+  INTER_CARTESIAN_PRODUCT =
+    |- !k s t.
+           cartesian_product k s INTER cartesian_product k t =
+           cartesian_product k (\i. s i INTER t i)
+
+  IN_EXTENSIONAL =
+    |- !s f. f IN EXTENSIONAL s <=> (!x. ~(x IN s) ==> f x = ARB)
+
+  IN_EXTENSIONAL_UNDEFINED =
+    |- !s f x. f IN EXTENSIONAL s /\ ~(x IN s) ==> f x = ARB
+
+  SUBSET_CARTESIAN_PRODUCT =
+    |- !k s t.
+           cartesian_product k s SUBSET cartesian_product k t <=>
+           cartesian_product k s = {} \/ (!i. i IN k ==> s i SUBSET t i)
+
+Sat  4th Feb 2017       sets.ml, Library/card.ml
+
+Added quite a number of theorems about the UNION_OF and INTERSECTION_OF
+constructs in three common cases, one of which uses a new constant
+"ARBITRARY".
+
+  ARBITRARY =
+    |- !s. ARBITRARY s <=> T
+
+  ARBITRARY_INTERSECTION_OF_COMPLEMENT =
+    |- !P s.
+           (ARBITRARY INTERSECTION_OF P) s <=>
+           (ARBITRARY UNION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  ARBITRARY_INTERSECTION_OF_EMPTY =
+    |- !P. (ARBITRARY INTERSECTION_OF P) (:A)
+
+  ARBITRARY_INTERSECTION_OF_IDEMPOT =
+    |- !P. ARBITRARY INTERSECTION_OF ARBITRARY INTERSECTION_OF P =
+           ARBITRARY INTERSECTION_OF P
+
+  ARBITRARY_INTERSECTION_OF_INC =
+    |- !P s. P s ==> (ARBITRARY INTERSECTION_OF P) s
+
+  ARBITRARY_INTERSECTION_OF_INTER =
+    |- !P s t.
+           (ARBITRARY INTERSECTION_OF P) s /\ (ARBITRARY INTERSECTION_OF P) t
+           ==> (ARBITRARY INTERSECTION_OF P) (s INTER t)
+
+  ARBITRARY_INTERSECTION_OF_INTERS =
+    |- !P u.
+           (!s. s IN u ==> (ARBITRARY INTERSECTION_OF P) s)
+           ==> (ARBITRARY INTERSECTION_OF P) (INTERS u)
+
+  ARBITRARY_INTERSECTION_OF_UNION =
+    |- !P. (!s t. P s /\ P t ==> P (s UNION t))
+           ==> (!s t.
+                    (ARBITRARY INTERSECTION_OF P) s /\
+                    (ARBITRARY INTERSECTION_OF P) t
+                    ==> (ARBITRARY INTERSECTION_OF P) (s UNION t))
+
+  ARBITRARY_INTERSECTION_OF_UNION_EQ =
+    |- !P. (!s t.
+                (ARBITRARY INTERSECTION_OF P) s /\
+                (ARBITRARY INTERSECTION_OF P) t
+                ==> (ARBITRARY INTERSECTION_OF P) (s UNION t)) <=>
+           (!s t. P s /\ P t ==> (ARBITRARY INTERSECTION_OF P) (s UNION t))
+
+  ARBITRARY_UNION_OF_COMPLEMENT =
+    |- !P s.
+           (ARBITRARY UNION_OF P) s <=>
+           (ARBITRARY INTERSECTION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  ARBITRARY_UNION_OF_EMPTY =
+    |- !P. (ARBITRARY UNION_OF P) {}
+
+  ARBITRARY_UNION_OF_IDEMPOT =
+    |- !P. ARBITRARY UNION_OF ARBITRARY UNION_OF P = ARBITRARY UNION_OF P
+
+  ARBITRARY_UNION_OF_INC =
+    |- !P s. P s ==> (ARBITRARY UNION_OF P) s
+
+  ARBITRARY_UNION_OF_INTER =
+    |- !P. (!s t. P s /\ P t ==> P (s INTER t))
+           ==> (!s t.
+                    (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+                    ==> (ARBITRARY UNION_OF P) (s INTER t))
+
+  ARBITRARY_UNION_OF_INTER_EQ =
+    |- !P. (!s t.
+                (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+                ==> (ARBITRARY UNION_OF P) (s INTER t)) <=>
+           (!s t. P s /\ P t ==> (ARBITRARY UNION_OF P) (s INTER t))
+
+  ARBITRARY_UNION_OF_UNION =
+    |- !P s t.
+           (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+           ==> (ARBITRARY UNION_OF P) (s UNION t)
+
+  ARBITRARY_UNION_OF_UNIONS =
+    |- !P u.
+           (!s. s IN u ==> (ARBITRARY UNION_OF P) s)
+           ==> (ARBITRARY UNION_OF P) (UNIONS u)
+
+  FINITE_INTERSECTION_OF_COMPLEMENT =
+    |- !P s.
+           (FINITE INTERSECTION_OF P) s <=>
+           (FINITE UNION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  FINITE_INTERSECTION_OF_EMPTY =
+    |- !P. (FINITE INTERSECTION_OF P) (:A)
+
+  FINITE_INTERSECTION_OF_IDEMPOT =
+    |- !P. FINITE INTERSECTION_OF FINITE INTERSECTION_OF P =
+           FINITE INTERSECTION_OF P
+
+  FINITE_INTERSECTION_OF_INC =
+    |- !P s. P s ==> (FINITE INTERSECTION_OF P) s
+
+  FINITE_INTERSECTION_OF_INTER =
+    |- !P s t.
+           (FINITE INTERSECTION_OF P) s /\ (FINITE INTERSECTION_OF P) t
+           ==> (FINITE INTERSECTION_OF P) (s INTER t)
+
+  FINITE_INTERSECTION_OF_INTERS =
+    |- !P u.
+           FINITE u /\ (!s. s IN u ==> (FINITE INTERSECTION_OF P) s)
+           ==> (FINITE INTERSECTION_OF P) (INTERS u)
+
+  FINITE_INTERSECTION_OF_UNION =
+    |- !P. (!s t. P s /\ P t ==> P (s UNION t))
+           ==> (!s t.
+                    (FINITE INTERSECTION_OF P) s /\ (FINITE INTERSECTION_OF P) t
+                    ==> (FINITE INTERSECTION_OF P) (s UNION t))
+
+  FINITE_INTERSECTION_OF_UNION_EQ =
+    |- !P. (!s t.
+                (FINITE INTERSECTION_OF P) s /\ (FINITE INTERSECTION_OF P) t
+                ==> (FINITE INTERSECTION_OF P) (s UNION t)) <=>
+           (!s t. P s /\ P t ==> (FINITE INTERSECTION_OF P) (s UNION t))
+
+  FINITE_UNION_OF_COMPLEMENT =
+    |- !P s.
+           (FINITE UNION_OF P) s <=>
+           (FINITE INTERSECTION_OF (\s. P ((:A) DIFF s))) ((:A) DIFF s)
+
+  FINITE_UNION_OF_EMPTY =
+    |- !P. (FINITE UNION_OF P) {}
+
+  FINITE_UNION_OF_IDEMPOT =
+    |- !P. FINITE UNION_OF FINITE UNION_OF P = FINITE UNION_OF P
+
+  FINITE_UNION_OF_INC =
+    |- !P s. P s ==> (FINITE UNION_OF P) s
+
+  FINITE_UNION_OF_INTER =
+    |- !P. (!s t. P s /\ P t ==> P (s INTER t))
+           ==> (!s t.
+                    (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+                    ==> (FINITE UNION_OF P) (s INTER t))
+
+  FINITE_UNION_OF_INTER_EQ =
+    |- !P. (!s t.
+                (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+                ==> (FINITE UNION_OF P) (s INTER t)) <=>
+           (!s t. P s /\ P t ==> (FINITE UNION_OF P) (s INTER t))
+
+  FINITE_UNION_OF_UNION =
+    |- !P s t.
+           (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+           ==> (FINITE UNION_OF P) (s UNION t)
+
+  FINITE_UNION_OF_UNIONS =
+    |- !P u.
+           FINITE u /\ (!s. s IN u ==> (FINITE UNION_OF P) s)
+           ==> (FINITE UNION_OF P) (UNIONS u)
+
+  FORALL_INTERSECTION_OF =
+    |- (!s. (P INTERSECTION_OF Q) s ==> R s) <=>
+       (!t. P t /\ (!c. c IN t ==> Q c) ==> R (INTERS t))
+
+  FORALL_UNION_OF =
+    |- (!s. (P UNION_OF Q) s ==> R s) <=>
+       (!t. P t /\ (!c. c IN t ==> Q c) ==> R (UNIONS t))
+
+  INTERSECTION_OF_EMPTY =
+    |- !P Q. P {} ==> (P INTERSECTION_OF Q) (:A)
+
+  UNION_OF_EMPTY =
+    |- !P Q. P {} ==> (P UNION_OF Q) {}
+
+
+
+  COUNTABLE_DISJOINT_UNION_OF_IDEMPOT =
+    |- !P. (COUNTABLE INTER pairwise DISJOINT) UNION_OF
+           (COUNTABLE INTER pairwise DISJOINT) UNION_OF P =
+           (COUNTABLE INTER pairwise DISJOINT) UNION_OF P
+
+  COUNTABLE_INTERSECTION_OF_EMPTY =
+    |- !P. (COUNTABLE INTERSECTION_OF P) (:A)
+
+  COUNTABLE_INTERSECTION_OF_UNIONS =
+    |- !P u.
+           (COUNTABLE INTERSECTION_OF P) {} /\
+           (!s t. P s /\ P t ==> P (s UNION t)) /\
+           FINITE u /\
+           (!s. s IN u ==> (COUNTABLE INTERSECTION_OF P) s)
+           ==> (COUNTABLE INTERSECTION_OF P) (UNIONS u)
+
+  COUNTABLE_INTERSECTION_OF_UNIONS_NONEMPTY =
+    |- !P u.
+           (!s t. P s /\ P t ==> P (s UNION t)) /\
+           FINITE u /\
+           ~(u = {}) /\
+           (!s. s IN u ==> (COUNTABLE INTERSECTION_OF P) s)
+           ==> (COUNTABLE INTERSECTION_OF P) (UNIONS u)
+
+  COUNTABLE_INTERSECTION_OF_UNION_EQ =
+    |- !P. (!s t.
+                (COUNTABLE INTERSECTION_OF P) s /\
+                (COUNTABLE INTERSECTION_OF P) t
+                ==> (COUNTABLE INTERSECTION_OF P) (s UNION t)) <=>
+           (!s t. P s /\ P t ==> (COUNTABLE INTERSECTION_OF P) (s UNION t))
+
+  COUNTABLE_UNION_OF_EMPTY =
+    |- !P. (COUNTABLE UNION_OF P) {}
+
+  COUNTABLE_UNION_OF_INTERS =
+    |- !P u.
+           (COUNTABLE UNION_OF P) (:A) /\
+           (!s t. P s /\ P t ==> P (s INTER t)) /\
+           FINITE u /\
+           (!s. s IN u ==> (COUNTABLE UNION_OF P) s)
+           ==> (COUNTABLE UNION_OF P) (INTERS u)
+
+  COUNTABLE_UNION_OF_INTERS_NONEMPTY =
+    |- !P u.
+           (!s t. P s /\ P t ==> P (s INTER t)) /\
+           FINITE u /\
+           ~(u = {}) /\
+           (!s. s IN u ==> (COUNTABLE UNION_OF P) s)
+           ==> (COUNTABLE UNION_OF P) (INTERS u)
+
+  COUNTABLE_UNION_OF_INTER_EQ =
+    |- !P. (!s t.
+                (COUNTABLE UNION_OF P) s /\ (COUNTABLE UNION_OF P) t
+                ==> (COUNTABLE UNION_OF P) (s INTER t)) <=>
+           (!s t. P s /\ P t ==> (COUNTABLE UNION_OF P) (s INTER t))
+
 Sat 14th Jan 2017       passim
 
 Switched quite a few more instances of the deprecated "&" to "&&" (these got

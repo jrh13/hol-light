@@ -4,8 +4,9 @@
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
-(*              (c) Copyright, John Harrison 1998-2007                       *)
-(*              (c) Copyright, Marco Maggesi 2012-2015                       *)
+(*              (c) Copyright, John Harrison 1998-2016                       *)
+(*              (c) Copyright, Marco Maggesi 2012-2017                       *)
+(*             (c) Copyright, Andrea Gabrielli 2012-2017                     *)
 (* ========================================================================= *)
 
 needs "int.ml";;
@@ -2440,6 +2441,10 @@ let CROSS_EMPTY = prove
  (`(!s:A->bool. s CROSS {} = {}) /\ (!t:B->bool. {} CROSS t = {})`,
   REWRITE_TAC[CROSS_EQ_EMPTY]);;
 
+let CROSS_SING = prove
+ (`!x:A y:B. {x} CROSS {y} = {(x,y)}`,
+  REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_SING; IN_CROSS; PAIR_EQ]);;
+
 let CROSS_UNIV = prove
  (`(:A) CROSS (:B) = (:A#B)`,
   REWRITE_TAC[CROSS; EXTENSION; IN_ELIM_PAIR_THM; FORALL_PAIR_THM; IN_UNIV]);;
@@ -2556,6 +2561,145 @@ let CROSS_INTERS_INTERS,CROSS_INTERS = (CONJ_PAIR o prove)
   ASM_REWRITE_TAC[INTERS_GSPEC; EXTENSION; FORALL_PAIR_THM; IN_ELIM_THM;
                   IN_CROSS; NOT_IN_EMPTY] THEN
   ASM SET_TAC[]);;
+
+let DISJOINT_CROSS = prove
+ (`!s:A->bool t:B->bool s' t'.
+        DISJOINT (s CROSS t) (s' CROSS t') <=>
+        DISJOINT s s' \/ DISJOINT t t'`,
+  REWRITE_TAC[DISJOINT; INTER_CROSS; CROSS_EQ_EMPTY]);;
+
+(* ------------------------------------------------------------------------- *)
+(* "Extensional" functions, mapping to a fixed value ARB outside the domain. *)
+(* Even though these are still total, they're a conveniently better model    *)
+(* of the partial function space (e.g. the space has the right cardinality). *)
+(* ------------------------------------------------------------------------- *)
+
+let ARB = new_definition
+  `ARB = (@x:A. F)`;;
+
+let EXTENSIONAL = new_definition
+  `EXTENSIONAL s = {f:A->B | !x. ~(x IN s) ==> f x = ARB}`;;
+
+let IN_EXTENSIONAL = prove
+ (`!s f:A->B. f IN EXTENSIONAL s <=> (!x. ~(x IN s) ==> f x = ARB)`,
+  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM]);;
+
+let IN_EXTENSIONAL_UNDEFINED = prove
+ (`!s f:A->B x. f IN EXTENSIONAL s /\ ~(x IN s) ==> f x = ARB`,
+  SIMP_TAC[IN_EXTENSIONAL]);;
+
+let EXTENSIONAL_EMPTY = prove
+ (`EXTENSIONAL {} = {\x:A. ARB:B}`,
+  REWRITE_TAC[EXTENSION; IN_EXTENSIONAL; IN_SING; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[FUN_EQ_THM]);;
+
+let EXTENSIONAL_UNIV = prove
+ (`!f. EXTENSIONAL (:A) f`,
+  REWRITE_TAC[EXTENSIONAL; IN_UNIV; IN_ELIM_THM]);;
+
+let EXTENSIONAL_EQ = prove
+ (`!s f g:A->B.
+     f IN EXTENSIONAL s /\ g IN EXTENSIONAL s /\ (!x. x IN s ==> f x = g x)
+     ==> f = g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+  ASM_CASES_TAC `x:A IN s` THENL
+  [ASM_SIMP_TAC[]; ASM_MESON_TAC[IN_EXTENSIONAL_UNDEFINED]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* General Cartesian product / dependent function space.                     *)
+(* ------------------------------------------------------------------------- *)
+
+let cartesian_product = new_definition
+ `cartesian_product k s =
+        {f:K->A | EXTENSIONAL k f /\ !i. i IN k ==> f i IN s i}`;;
+
+let CARTESIAN_PRODUCT = prove
+ (`!k s. cartesian_product k s =
+         {f:K->A | !i. f i IN (if i IN k then s i else {ARB})}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[cartesian_product; IN_ELIM_THM; EXTENSIONAL] THEN
+  MESON_TAC[IN_SING]);;
+
+let CARTESIAN_PRODUCT_EQ_EMPTY = prove
+ (`!k s:K->A->bool.
+        cartesian_product k s = {} <=> ?i. i IN k /\ s i = {}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [EXTENSION] THEN
+  REWRITE_TAC[SET_RULE
+   `(?i. i IN k /\ s i = {}) <=> ~(!i. ?a. i IN k ==> a IN s i)`] THEN
+  REWRITE_TAC[SKOLEM_THM; NOT_EXISTS_THM; cartesian_product] THEN
+  REWRITE_TAC[IN_ELIM_THM; NOT_IN_EMPTY] THEN EQ_TAC THEN
+  DISCH_TAC THEN X_GEN_TAC `f:K->A` THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `\i. if i IN k then (f:K->A) i else ARB`) THEN
+  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN SIMP_TAC[]);;
+
+let SUBSET_CARTESIAN_PRODUCT = prove
+ (`!k s t:K->A->bool.
+        cartesian_product k s SUBSET cartesian_product k t <=>
+        cartesian_product k s = {} \/ !i. i IN k ==> s i SUBSET t i`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+  ASM_REWRITE_TAC[EMPTY_SUBSET] THEN
+  REWRITE_TAC[SUBSET; cartesian_product; IN_ELIM_THM] THEN
+  EQ_TAC THENL [ALL_TAC; MESON_TAC[]] THEN FIRST_X_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE RAND_CONV [CARTESIAN_PRODUCT_EQ_EMPTY]) THEN
+  REWRITE_TAC[SET_RULE
+   `~(?i. i IN k /\ s i = {}) <=> (!i. ?a. i IN k ==> a IN s i)`] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `z:K->A` THEN DISCH_TAC THEN DISCH_TAC THEN
+  X_GEN_TAC `i:K` THEN DISCH_TAC THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+   `(\j. if j IN k then if j = i then x else z j else ARB):K->A`) THEN
+  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN SIMP_TAC[] THEN
+  ASM_MESON_TAC[]);;
+
+let CARTESIAN_PRODUCT_EQ = prove
+ (`!k s t:K->A->bool.
+        cartesian_product k s = cartesian_product k t <=>
+        cartesian_product k s = {} /\ cartesian_product k t = {} \/
+        !i. i IN k ==> s i = t i`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `!i. i IN k ==> (s:K->A->bool) i = t i` THEN
+  ASM_REWRITE_TAC[] THENL
+   [ASM_SIMP_TAC[cartesian_product; EXTENSION; IN_ELIM_THM];
+    ASM_CASES_TAC `cartesian_product k (t:K->A->bool) = {}` THEN
+    ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+    ASM_REWRITE_TAC[] THEN
+    ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_CARTESIAN_PRODUCT] THEN
+    ASM SET_TAC[]]);;
+
+let INTER_CARTESIAN_PRODUCT = prove
+ (`!k s t:K->A->bool.
+        (cartesian_product k s) INTER (cartesian_product k t) =
+        cartesian_product k (\i. s i INTER t i)`,
+  REWRITE_TAC[EXTENSION; cartesian_product; IN_INTER; IN_ELIM_THM] THEN
+  SET_TAC[]);;
+
+let CARTESIAN_PRODUCT_UNIV = prove
+ (`cartesian_product (:K) (\i. (:A)) = (:K->A)`,
+  REWRITE_TAC[EXTENSION; IN_UNIV; cartesian_product; IN_ELIM_THM] THEN
+  REWRITE_TAC[EXTENSIONAL_UNIV]);;
+
+let IMAGE_PROJECTION_CARTESIAN_PRODUCT = prove
+ (`!k s:K->A->bool i.
+        IMAGE (\x. x i) (cartesian_product k s) =
+        if cartesian_product k s = {} then {}
+        else if i IN k then s i else {ARB}`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES] THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET; FORALL_IN_IMAGE] THEN
+  SIMP_TAC[CARTESIAN_PRODUCT; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE RAND_CONV [CARTESIAN_PRODUCT_EQ_EMPTY]) THEN
+  REWRITE_TAC[SET_RULE
+   `~(?i. i IN k /\ s i = {}) <=> (!i. ?a. i IN k ==> a IN s i)`] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `z:K->A` THEN DISCH_TAC THEN
+  REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+  EXISTS_TAC
+   `\j. if j = i then x else if j IN k then (z:K->A) j else ARB` THEN
+  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[IN_SING]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
@@ -2699,6 +2843,18 @@ let POWERSET_CLAUSES = prove
   ASM_CASES_TAC `(a:A) IN s` THENL [ALL_TAC; ASM SET_TAC[]] THEN
   STRIP_TAC THEN DISJ2_TAC THEN EXISTS_TAC `s DELETE (a:A)` THEN
   ASM SET_TAC[]);;
+
+let FINITE_IMAGE_INFINITE = prove
+ (`!f:A->B s.
+        INFINITE s /\ FINITE(IMAGE f s)
+        ==> ?a. a IN s /\ INFINITE {x | x IN s /\ f x = f a}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ_ALT] THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[NOT_EXISTS_THM; INFINITE; TAUT `~(p /\ q) <=> p ==> ~q`] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `s = UNIONS {{x | x IN s /\ (f:A->B) x = y} |y| y IN IMAGE f s}`
+  SUBST1_TAC THENL [REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[FINITE_UNIONS; SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Set of numbers is infinite.                                               *)
@@ -3149,6 +3305,321 @@ let INTERSECTION_OF_MONO = prove
         ==> (P INTERSECTION_OF Q') s`,
   REWRITE_TAC[INTERSECTION_OF] THEN MESON_TAC[]);;
 
+let FORALL_UNION_OF = prove
+ (`(!s. (P UNION_OF Q) s ==> R s) <=>
+   (!t. P t /\ (!c. c IN t ==> Q c) ==> R(UNIONS t))`,
+  REWRITE_TAC[UNION_OF] THEN MESON_TAC[]);;
+
+let FORALL_INTERSECTION_OF = prove
+ (`(!s. (P INTERSECTION_OF Q) s ==> R s) <=>
+   (!t. P t /\ (!c. c IN t ==> Q c) ==> R(INTERS t))`,
+  REWRITE_TAC[INTERSECTION_OF] THEN MESON_TAC[]);;
+
+let UNION_OF_EMPTY = prove
+ (`!P Q:(A->bool)->bool. P {} ==> (P UNION_OF Q) {}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[UNION_OF] THEN
+  EXISTS_TAC `{}:(A->bool)->bool` THEN
+  ASM_REWRITE_TAC[UNIONS_0; NOT_IN_EMPTY]);;
+
+let INTERSECTION_OF_EMPTY = prove
+ (`!P Q:(A->bool)->bool. P {} ==> (P INTERSECTION_OF Q) UNIV`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INTERSECTION_OF] THEN
+  EXISTS_TAC `{}:(A->bool)->bool` THEN
+  ASM_REWRITE_TAC[INTERS_0; NOT_IN_EMPTY]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The ARBITRARY and FINITE cases of UNION_OF / INTERSECTION_OF              *)
+(* ------------------------------------------------------------------------- *)
+
+let ARBITRARY = new_definition
+ `ARBITRARY (s:(A->bool)->bool) <=> T`;;
+
+let ARBITRARY_UNION_OF_EMPTY = prove
+ (`!P:(A->bool)->bool. (ARBITRARY UNION_OF P) {}`,
+  SIMP_TAC[UNION_OF_EMPTY; ARBITRARY]);;
+
+let ARBITRARY_INTERSECTION_OF_EMPTY = prove
+ (`!P:(A->bool)->bool. (ARBITRARY INTERSECTION_OF P) UNIV`,
+  SIMP_TAC[INTERSECTION_OF_EMPTY; ARBITRARY]);;
+
+let ARBITRARY_UNION_OF_INC = prove
+ (`!P s:A->bool. P s ==> (ARBITRARY UNION_OF P) s`,
+  SIMP_TAC[UNION_OF_INC; ARBITRARY]);;
+
+let ARBITRARY_INTERSECTION_OF_INC = prove
+ (`!P s:A->bool. P s ==> (ARBITRARY INTERSECTION_OF P) s`,
+  SIMP_TAC[INTERSECTION_OF_INC; ARBITRARY]);;
+
+let ARBITRARY_UNION_OF_COMPLEMENT = prove
+ (`!P s. (ARBITRARY UNION_OF P) s <=>
+         (ARBITRARY INTERSECTION_OF (\s. P((:A) DIFF s))) ((:A) DIFF s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[UNION_OF; INTERSECTION_OF] THEN
+  EQ_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `IMAGE (\c. (:A) DIFF c) u` THEN
+  ASM_SIMP_TAC[ARBITRARY; FORALL_IN_IMAGE; COMPL_COMPL] THEN
+  ONCE_REWRITE_TAC[UNIONS_INTERS; INTERS_UNIONS] THEN
+  REWRITE_TAC[SET_RULE `{f y | y IN IMAGE g s} = IMAGE (\x. f(g x)) s`] THEN
+  ASM_REWRITE_TAC[IMAGE_ID; COMPL_COMPL]);;
+
+let ARBITRARY_INTERSECTION_OF_COMPLEMENT = prove
+ (`!P s. (ARBITRARY INTERSECTION_OF P) s <=>
+         (ARBITRARY UNION_OF (\s. P((:A) DIFF s))) ((:A) DIFF s)`,
+  REWRITE_TAC[ARBITRARY_UNION_OF_COMPLEMENT] THEN
+  REWRITE_TAC[ETA_AX; COMPL_COMPL]);;
+
+let ARBITRARY_UNION_OF_IDEMPOT = prove
+ (`!P:(A->bool)->bool.
+        ARBITRARY UNION_OF ARBITRARY UNION_OF P = ARBITRARY UNION_OF P`,
+  GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `s:A->bool` THEN
+  EQ_TAC THEN REWRITE_TAC[ARBITRARY_UNION_OF_INC] THEN
+  REWRITE_TAC[UNION_OF; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `u:(A->bool)->bool` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC (SUBST1_TAC o SYM)) THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `f:(A->bool)->(A->bool)->bool` THEN DISCH_TAC THEN
+  EXISTS_TAC
+    `IMAGE SND {s,t | s IN u /\ t IN (f:(A->bool)->(A->bool)->bool) s}` THEN
+  ASM_SIMP_TAC[ARBITRARY] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[UNIONS_IMAGE]] THEN
+  REWRITE_TAC[EXISTS_IN_GSPEC] THEN ASM SET_TAC[]);;
+
+let ARBITRARY_INTERSECTION_OF_IDEMPOT = prove
+ (`!P:(A->bool)->bool.
+        ARBITRARY INTERSECTION_OF ARBITRARY INTERSECTION_OF P =
+        ARBITRARY INTERSECTION_OF P`,
+  REWRITE_TAC[COMPL_COMPL; ETA_AX; REWRITE_RULE[GSYM FUN_EQ_THM; ETA_AX]
+              ARBITRARY_INTERSECTION_OF_COMPLEMENT] THEN
+  REWRITE_TAC[ARBITRARY_UNION_OF_IDEMPOT]);;
+
+let ARBITRARY_UNION_OF_UNIONS = prove
+ (`!P u:(A->bool)->bool.
+        (!s. s IN u ==> (ARBITRARY UNION_OF P) s)
+        ==> (ARBITRARY UNION_OF P) (UNIONS u)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM ARBITRARY_UNION_OF_IDEMPOT] THEN
+  ONCE_REWRITE_TAC[UNION_OF] THEN REWRITE_TAC[] THEN
+  EXISTS_TAC `u:(A->bool)->bool` THEN ASM_REWRITE_TAC[ARBITRARY]);;
+
+let ARBITRARY_UNION_OF_UNION = prove
+ (`!P s t. (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+           ==> (ARBITRARY UNION_OF P) (s UNION t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM UNIONS_2] THEN
+  MATCH_MP_TAC ARBITRARY_UNION_OF_UNIONS THEN
+  ASM_REWRITE_TAC[ARBITRARY; FORALL_IN_INSERT] THEN
+  REWRITE_TAC[ARBITRARY; NOT_IN_EMPTY]);;
+
+let ARBITRARY_INTERSECTION_OF_INTERS = prove
+ (`!P u:(A->bool)->bool.
+        (!s. s IN u ==> (ARBITRARY INTERSECTION_OF P) s)
+        ==> (ARBITRARY INTERSECTION_OF P) (INTERS u)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM ARBITRARY_INTERSECTION_OF_IDEMPOT] THEN
+  ONCE_REWRITE_TAC[INTERSECTION_OF] THEN REWRITE_TAC[] THEN
+  EXISTS_TAC `u:(A->bool)->bool` THEN ASM_REWRITE_TAC[ARBITRARY]);;
+
+let ARBITRARY_INTERSECTION_OF_INTER = prove
+ (`!P s t. (ARBITRARY INTERSECTION_OF P) s /\ (ARBITRARY INTERSECTION_OF P) t
+           ==> (ARBITRARY INTERSECTION_OF P) (s INTER t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM INTERS_2] THEN
+  MATCH_MP_TAC ARBITRARY_INTERSECTION_OF_INTERS THEN
+  ASM_REWRITE_TAC[ARBITRARY; FORALL_IN_INSERT] THEN
+  REWRITE_TAC[ARBITRARY; NOT_IN_EMPTY]);;
+
+let ARBITRARY_UNION_OF_INTER_EQ = prove
+ (`!P:(A->bool)->bool.
+        (!s t. (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+               ==> (ARBITRARY UNION_OF P) (s INTER t)) <=>
+        (!s t. P s /\ P t ==> (ARBITRARY UNION_OF P) (s INTER t))`,
+  GEN_TAC THEN
+  EQ_TAC THENL [MESON_TAC[ARBITRARY_UNION_OF_INC]; DISCH_TAC] THEN
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [UNION_OF] THEN
+  REWRITE_TAC[] THEN DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+  ASM_REWRITE_TAC[INTER_UNIONS] THEN
+  REPLICATE_TAC 2
+   (MATCH_MP_TAC ARBITRARY_UNION_OF_UNIONS THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; ARBITRARY; FORALL_IN_IMAGE] THEN
+    REPEAT STRIP_TAC));;
+
+let ARBITRARY_UNION_OF_INTER = prove
+ (`!P:(A->bool)->bool.
+        (!s t. P s /\ P t ==> P(s INTER t))
+        ==> (!s t. (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+                   ==> (ARBITRARY UNION_OF P) (s INTER t))`,
+  REWRITE_TAC[ARBITRARY_UNION_OF_INTER_EQ] THEN
+  MESON_TAC[ARBITRARY_UNION_OF_INC]);;
+
+let ARBITRARY_INTERSECTION_OF_UNION_EQ = prove
+ (`!P:(A->bool)->bool.
+        (!s t. (ARBITRARY INTERSECTION_OF P) s /\
+               (ARBITRARY INTERSECTION_OF P) t
+               ==> (ARBITRARY INTERSECTION_OF P) (s UNION t)) <=>
+        (!s t. P s /\ P t ==> (ARBITRARY INTERSECTION_OF P) (s UNION t))`,
+  ONCE_REWRITE_TAC[ARBITRARY_INTERSECTION_OF_COMPLEMENT] THEN
+  REWRITE_TAC[SET_RULE
+    `UNIV DIFF (s UNION t) = (UNIV DIFF s) INTER (UNIV DIFF t)`] THEN
+  REWRITE_TAC[MESON[COMPL_COMPL] `(!s. P(UNIV DIFF s)) <=> (!s. P s)`] THEN
+  REWRITE_TAC[ARBITRARY_UNION_OF_INTER_EQ] THEN
+  REWRITE_TAC[SET_RULE
+   `s INTER t = UNIV DIFF ((UNIV DIFF s) UNION (UNIV DIFF t))`] THEN
+  REWRITE_TAC[MESON[COMPL_COMPL] `(!s. P(UNIV DIFF s)) <=> (!s. P s)`] THEN
+  REWRITE_TAC[COMPL_COMPL]);;
+
+let ARBITRARY_INTERSECTION_OF_UNION = prove
+ (`!P:(A->bool)->bool.
+        (!s t. P s /\ P t ==> P(s UNION t))
+        ==> (!s t. (ARBITRARY INTERSECTION_OF P) s /\
+                   (ARBITRARY INTERSECTION_OF P) t
+                   ==> (ARBITRARY INTERSECTION_OF P) (s UNION t))`,
+  REWRITE_TAC[ARBITRARY_INTERSECTION_OF_UNION_EQ] THEN
+  MESON_TAC[ARBITRARY_INTERSECTION_OF_INC]);;
+
+let FINITE_UNION_OF_EMPTY = prove
+ (`!P:(A->bool)->bool. (FINITE UNION_OF P) {}`,
+  SIMP_TAC[UNION_OF_EMPTY; FINITE_EMPTY]);;
+
+let FINITE_INTERSECTION_OF_EMPTY = prove
+ (`!P:(A->bool)->bool. (FINITE INTERSECTION_OF P) UNIV`,
+  SIMP_TAC[INTERSECTION_OF_EMPTY; FINITE_EMPTY]);;
+
+let FINITE_UNION_OF_INC = prove
+ (`!P s:A->bool. P s ==> (FINITE UNION_OF P) s`,
+  SIMP_TAC[UNION_OF_INC; FINITE_SING]);;
+
+let FINITE_INTERSECTION_OF_INC = prove
+ (`!P s:A->bool. P s ==> (FINITE INTERSECTION_OF P) s`,
+  SIMP_TAC[INTERSECTION_OF_INC; FINITE_SING]);;
+
+let FINITE_UNION_OF_COMPLEMENT = prove
+ (`!P s. (FINITE UNION_OF P) s <=>
+         (FINITE INTERSECTION_OF (\s. P((:A) DIFF s))) ((:A) DIFF s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[UNION_OF; INTERSECTION_OF] THEN
+  EQ_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `IMAGE (\c. (:A) DIFF c) u` THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE; COMPL_COMPL] THEN
+  ONCE_REWRITE_TAC[UNIONS_INTERS; INTERS_UNIONS] THEN
+  REWRITE_TAC[SET_RULE `{f y | y IN IMAGE g s} = IMAGE (\x. f(g x)) s`] THEN
+  ASM_REWRITE_TAC[IMAGE_ID; COMPL_COMPL]);;
+
+let FINITE_INTERSECTION_OF_COMPLEMENT = prove
+ (`!P s. (FINITE INTERSECTION_OF P) s <=>
+         (FINITE UNION_OF (\s. P((:A) DIFF s))) ((:A) DIFF s)`,
+  REWRITE_TAC[FINITE_UNION_OF_COMPLEMENT] THEN
+  REWRITE_TAC[ETA_AX; COMPL_COMPL]);;
+
+let FINITE_UNION_OF_IDEMPOT = prove
+ (`!P:(A->bool)->bool.
+        FINITE UNION_OF FINITE UNION_OF P = FINITE UNION_OF P`,
+  GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `s:A->bool` THEN
+  EQ_TAC THEN REWRITE_TAC[FINITE_UNION_OF_INC] THEN
+  REWRITE_TAC[UNION_OF; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `u:(A->bool)->bool` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC (SUBST1_TAC o SYM)) THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `f:(A->bool)->(A->bool)->bool` THEN DISCH_TAC THEN
+  EXISTS_TAC
+    `IMAGE SND {s,t | s IN u /\ t IN (f:(A->bool)->(A->bool)->bool) s}` THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FINITE_PRODUCT_DEPENDENT] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[UNIONS_IMAGE]] THEN
+  REWRITE_TAC[EXISTS_IN_GSPEC] THEN ASM SET_TAC[]);;
+
+let FINITE_INTERSECTION_OF_IDEMPOT = prove
+ (`!P:(A->bool)->bool.
+        FINITE INTERSECTION_OF FINITE INTERSECTION_OF P =
+        FINITE INTERSECTION_OF P`,
+  REWRITE_TAC[COMPL_COMPL; ETA_AX; REWRITE_RULE[GSYM FUN_EQ_THM; ETA_AX]
+              FINITE_INTERSECTION_OF_COMPLEMENT] THEN
+  REWRITE_TAC[FINITE_UNION_OF_IDEMPOT]);;
+
+let FINITE_UNION_OF_UNIONS = prove
+ (`!P u:(A->bool)->bool.
+        FINITE u /\ (!s. s IN u ==> (FINITE UNION_OF P) s)
+        ==> (FINITE UNION_OF P) (UNIONS u)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM FINITE_UNION_OF_IDEMPOT] THEN
+  ONCE_REWRITE_TAC[UNION_OF] THEN REWRITE_TAC[] THEN
+  EXISTS_TAC `u:(A->bool)->bool` THEN ASM_REWRITE_TAC[]);;
+
+let FINITE_UNION_OF_UNION = prove
+ (`!P s t. (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+           ==> (FINITE UNION_OF P) (s UNION t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM UNIONS_2] THEN
+  MATCH_MP_TAC FINITE_UNION_OF_UNIONS THEN
+  ASM_REWRITE_TAC[FINITE_INSERT; FORALL_IN_INSERT] THEN
+  REWRITE_TAC[FINITE_EMPTY; NOT_IN_EMPTY]);;
+
+let FINITE_INTERSECTION_OF_INTERS = prove
+ (`!P u:(A->bool)->bool.
+        FINITE u /\ (!s. s IN u ==> (FINITE INTERSECTION_OF P) s)
+        ==> (FINITE INTERSECTION_OF P) (INTERS u)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[GSYM FINITE_INTERSECTION_OF_IDEMPOT] THEN
+  ONCE_REWRITE_TAC[INTERSECTION_OF] THEN REWRITE_TAC[] THEN
+  EXISTS_TAC `u:(A->bool)->bool` THEN ASM_REWRITE_TAC[]);;
+
+let FINITE_INTERSECTION_OF_INTER = prove
+ (`!P s t. (FINITE INTERSECTION_OF P) s /\ (FINITE INTERSECTION_OF P) t
+           ==> (FINITE INTERSECTION_OF P) (s INTER t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM INTERS_2] THEN
+  MATCH_MP_TAC FINITE_INTERSECTION_OF_INTERS THEN
+  ASM_REWRITE_TAC[FINITE_INSERT; FORALL_IN_INSERT] THEN
+  REWRITE_TAC[FINITE_EMPTY; NOT_IN_EMPTY]);;
+
+let FINITE_UNION_OF_INTER_EQ = prove
+ (`!P:(A->bool)->bool.
+        (!s t. (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+                   ==> (FINITE UNION_OF P) (s INTER t)) <=>
+        (!s t. P s /\ P t ==> (FINITE UNION_OF P) (s INTER t))`,
+  GEN_TAC THEN
+  EQ_TAC THENL [MESON_TAC[FINITE_UNION_OF_INC]; DISCH_TAC] THEN
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [UNION_OF] THEN
+  REWRITE_TAC[] THEN DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+  ASM_REWRITE_TAC[INTER_UNIONS] THEN
+  REPLICATE_TAC 2
+   (MATCH_MP_TAC FINITE_UNION_OF_UNIONS THEN
+    ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+    REPEAT STRIP_TAC));;
+
+let FINITE_UNION_OF_INTER = prove
+ (`!P:(A->bool)->bool.
+        (!s t. P s /\ P t ==> P(s INTER t))
+        ==> (!s t. (FINITE UNION_OF P) s /\ (FINITE UNION_OF P) t
+                   ==> (FINITE UNION_OF P) (s INTER t))`,
+  REWRITE_TAC[FINITE_UNION_OF_INTER_EQ] THEN
+  MESON_TAC[FINITE_UNION_OF_INC]);;
+
+let FINITE_INTERSECTION_OF_UNION_EQ = prove
+ (`!P:(A->bool)->bool.
+        (!s t. (FINITE INTERSECTION_OF P) s /\
+               (FINITE INTERSECTION_OF P) t
+               ==> (FINITE INTERSECTION_OF P) (s UNION t)) <=>
+        (!s t. P s /\ P t ==> (FINITE INTERSECTION_OF P) (s UNION t))`,
+  ONCE_REWRITE_TAC[FINITE_INTERSECTION_OF_COMPLEMENT] THEN
+  REWRITE_TAC[SET_RULE
+    `UNIV DIFF (s UNION t) = (UNIV DIFF s) INTER (UNIV DIFF t)`] THEN
+  REWRITE_TAC[MESON[COMPL_COMPL] `(!s. P(UNIV DIFF s)) <=> (!s. P s)`] THEN
+  REWRITE_TAC[FINITE_UNION_OF_INTER_EQ] THEN
+  REWRITE_TAC[SET_RULE
+   `s INTER t = UNIV DIFF ((UNIV DIFF s) UNION (UNIV DIFF t))`] THEN
+  REWRITE_TAC[MESON[COMPL_COMPL] `(!s. P(UNIV DIFF s)) <=> (!s. P s)`] THEN
+  REWRITE_TAC[COMPL_COMPL]);;
+
+let FINITE_INTERSECTION_OF_UNION = prove
+ (`!P:(A->bool)->bool.
+        (!s t. P s /\ P t ==> P(s UNION t))
+        ==> (!s t. (FINITE INTERSECTION_OF P) s /\
+                   (FINITE INTERSECTION_OF P) t
+                   ==> (FINITE INTERSECTION_OF P) (s UNION t))`,
+  REWRITE_TAC[FINITE_INTERSECTION_OF_UNION_EQ] THEN
+  MESON_TAC[FINITE_INTERSECTION_OF_INC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some additional properties of "set_of_list".                              *)
 (* ------------------------------------------------------------------------- *)
@@ -3588,6 +4059,17 @@ let ELEMENT_LE_SUP = prove
  (`!s a. (?b. !x. x IN s ==> x <= b) /\ a IN s ==> a <= sup s`,
   MESON_TAC[REAL_LE_SUP; REAL_LE_REFL]);;
 
+let SUP_APPROACH = prove
+ (`!s c. ~(s = {}) /\ (?b. !x. x IN s ==> x <= b) /\ c < sup s
+         ==> ?x. x IN s /\ c < x`,
+  INTRO_TAC "!s c; npty bound lt" THEN
+  REFUTE_THEN (LABEL_TAC "hp" o
+    REWRITE_RULE[NOT_EXISTS_THM; DE_MORGAN_THM; REAL_NOT_LT]) THEN
+  REMOVE_THEN "lt" MP_TAC THEN REWRITE_TAC[REAL_NOT_LT] THEN
+  HYP (MP_TAC o MATCH_MP SUP o end_itlist CONJ) "npty bound" [] THEN
+  INTRO_TAC "_ sup" THEN REMOVE_THEN "sup" MATCH_MP_TAC THEN
+  ASM_MESON_TAC[]);;
+
 let inf = new_definition
   `inf s = @a:real. (!x. x IN s ==> a <= x) /\
                     !b. (!x. x IN s ==> b <= x) ==> b <= a`;;
@@ -3741,6 +4223,173 @@ let INF_UNION = prove
 let INF_LE_ELEMENT = prove
  (`!s a. (?b. !x. x IN s ==> b <= x) /\ a IN s ==> inf s <= a`,
   MESON_TAC[REAL_INF_LE; REAL_LE_REFL]);;
+
+let INF_APPROACH = prove
+ (`!s c. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x) /\ inf s < c
+         ==> ?x. x IN s /\ x < c`,
+  INTRO_TAC "!s c; npty bound lt" THEN
+  REFUTE_THEN (LABEL_TAC "hp" o
+    REWRITE_RULE[NOT_EXISTS_THM; DE_MORGAN_THM; REAL_NOT_LT]) THEN
+  REMOVE_THEN "lt" MP_TAC THEN REWRITE_TAC[REAL_NOT_LT] THEN
+  HYP (MP_TAC o MATCH_MP INF o end_itlist CONJ) "npty bound" [] THEN
+  INTRO_TAC "_ inf" THEN REMOVE_THEN "inf" MATCH_MP_TAC THEN
+  ASM_MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Relational counterparts of sup and inf.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix ("has_inf",(12,"right"));;
+parse_as_infix ("has_sup",(12,"right"));;
+
+let has_inf = new_definition
+  `s has_inf b <=> (!c. (!x:real. x IN s ==> c <= x) <=> c <= b)`;;
+
+let has_sup = new_definition
+  `s has_sup b <=> (!c. (!x:real. x IN s ==> x <= c) <=> b <= c)`;;
+
+let HAS_INF_LBOUND = prove
+ (`!s b x. s has_inf b /\ x IN s ==> b <= x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[has_inf] THEN MESON_TAC[REAL_LE_REFL]);;
+
+let HAS_SUP_UBOUND = prove
+ (`!s b x. s has_sup b /\ x IN s ==> x <= b`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[has_sup] THEN MESON_TAC[REAL_LE_REFL]);;
+
+let HAS_INF_INF = prove
+ (`!s l. s has_inf l <=>
+         ~(s = {}) /\
+         (?b. !x. x IN s ==> b <= x) /\
+         inf s = l`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[has_inf] THEN
+  EQ_TAC THEN STRIP_TAC THENL
+  [CONJ_TAC THENL
+   [REFUTE_THEN SUBST_ALL_TAC THEN
+    POP_ASSUM MP_TAC THEN REWRITE_TAC[NOT_IN_EMPTY; NOT_FORALL_THM] THEN
+    EXISTS_TAC `l + &1:real` THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_REWRITE_TAC[] THEN MESON_TAC[REAL_LE_REFL]; ALL_TAC] THEN
+   MATCH_MP_TAC INF_UNIQUE THEN ASM_REWRITE_TAC[];
+   GEN_TAC THEN MP_TAC (SPEC `s:real->bool` INF) THEN ANTS_TAC THENL
+   [ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+   POP_ASSUM SUBST_ALL_TAC THEN STRIP_TAC THEN EQ_TAC THEN
+   ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+   TRANS_TAC REAL_LE_TRANS `l:real` THEN ASM_SIMP_TAC[]]);;
+
+let HAS_SUP_SUP = prove
+ (`!s l. s has_sup l <=>
+         ~(s = {}) /\
+         (?b. !x. x IN s ==> x <= b) /\
+         sup s = l`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[has_sup] THEN
+  EQ_TAC THEN STRIP_TAC THENL
+  [CONJ_TAC THENL
+   [REFUTE_THEN SUBST_ALL_TAC THEN
+    POP_ASSUM MP_TAC THEN REWRITE_TAC[NOT_IN_EMPTY; NOT_FORALL_THM] THEN
+    EXISTS_TAC `l - &1:real` THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_REWRITE_TAC[] THEN MESON_TAC[REAL_LE_REFL]; ALL_TAC] THEN
+   MATCH_MP_TAC SUP_UNIQUE THEN ASM_REWRITE_TAC[];
+   GEN_TAC THEN MP_TAC (SPEC `s:real->bool` SUP) THEN ANTS_TAC THENL
+   [ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+   POP_ASSUM SUBST_ALL_TAC THEN STRIP_TAC THEN EQ_TAC THEN
+   ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+   TRANS_TAC REAL_LE_TRANS `l:real` THEN ASM_SIMP_TAC[]]);;
+
+let INF_EXISTS = prove
+ (`!s. (?l. s has_inf l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)`,
+  MESON_TAC[HAS_INF_INF]);;
+
+let SUP_EXISTS = prove
+ (`!s. (?l. s has_sup l) <=> ~(s = {}) /\ (?b. !x. x IN s ==> x <= b)`,
+  MESON_TAC[HAS_SUP_SUP]);;
+
+let HAS_INF_APPROACH = prove
+ (`!s l c. s has_inf l /\ l < c ==> ?x. x IN s /\ x < c`,
+  REWRITE_TAC[HAS_INF_INF] THEN MESON_TAC[INF_APPROACH]);;
+
+let HAS_SUP_APPROACH = prove
+ (`!s l c. s has_sup l /\ c < l ==> ?x. x IN s /\ c < x`,
+  REWRITE_TAC[HAS_SUP_SUP] THEN MESON_TAC[SUP_APPROACH]);;
+
+let HAS_INF = prove
+ (`!s l. s has_inf l <=>
+         ~(s = {}) /\
+         (!x. x IN s ==> l <= x) /\
+         (!c. l < c ==> ?x. x IN s /\ x < c)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN CONJ_TAC THENL
+   [HYP_TAC "hp" (REWRITE_RULE[HAS_INF_INF]) THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_MESON_TAC[HAS_INF_LBOUND]; ASM_MESON_TAC[HAS_INF_APPROACH]];
+   ALL_TAC] THEN
+  INTRO_TAC "ne bound approach" THEN ASM_REWRITE_TAC[has_inf] THEN
+  GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN INTRO_TAC "lc" THEN
+   REMOVE_THEN "approach" (MP_TAC o SPEC `(l + c) / &2`) THEN
+   ANTS_TAC THENL [ASM_REAL_ARITH_TAC; INTRO_TAC "@x0. x0 +"] THEN
+   USE_THEN "x0" (HYP_TAC "hp" o C MATCH_MP) THEN ASM_REAL_ARITH_TAC;
+   INTRO_TAC "hp; !x; x" THEN TRANS_TAC REAL_LE_TRANS `l:real` THEN
+   ASM_SIMP_TAC[]]);;
+
+let HAS_SUP = prove
+ (`!s l. s has_sup l <=>
+         ~(s = {}) /\
+         (!x. x IN s ==> x <= l) /\
+         (!c. c < l ==> ?x. x IN s /\ c < x)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN CONJ_TAC THENL
+   [HYP_TAC "hp" (REWRITE_RULE[HAS_SUP_SUP]) THEN ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+   CONJ_TAC THENL
+   [ASM_MESON_TAC[HAS_SUP_UBOUND]; ASM_MESON_TAC[HAS_SUP_APPROACH]];
+   ALL_TAC] THEN
+  INTRO_TAC "ne bound approach" THEN ASM_REWRITE_TAC[has_sup] THEN
+  GEN_TAC THEN EQ_TAC THENL
+  [INTRO_TAC "hp" THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN INTRO_TAC "lc" THEN
+   REMOVE_THEN "approach" (MP_TAC o SPEC `(l + c) / &2`) THEN
+   ANTS_TAC THENL [ASM_REAL_ARITH_TAC; INTRO_TAC "@x0. x0 +"] THEN
+   USE_THEN "x0" (HYP_TAC "hp" o C MATCH_MP) THEN ASM_REAL_ARITH_TAC;
+   INTRO_TAC "hp; !x; x" THEN TRANS_TAC REAL_LE_TRANS `l:real` THEN
+   ASM_SIMP_TAC[]]);;
+
+let HAS_INF_LE = prove
+ (`!s t l m. s has_inf l /\ t has_inf m /\
+             (!y. y IN t ==> ?x. x IN s /\ x <= y)
+             ==> l <= m`,
+  INTRO_TAC "!s t l m; l m le" THEN
+  HYP_TAC "l: s l1 l2" (REWRITE_RULE[HAS_INF]) THEN
+  HYP_TAC "m: t m1 m2" (REWRITE_RULE[HAS_INF]) THEN
+  REFUTE_THEN (LABEL_TAC "lt" o REWRITE_RULE[REAL_NOT_LE]) THEN
+  CLAIM_TAC "@c. c1 c2" `?c:real. m < c /\ c < l` THENL
+  [EXISTS_TAC `(l + m) / &2` THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  HYP_TAC "m2: +" (SPEC `c:real`) THEN ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN
+  INTRO_TAC "!x; x xc" THEN
+  CLAIM_TAC "@y. y yx" `?y:real. y IN s /\ y <= x` THENL
+  [HYP MESON_TAC "le x" []; ALL_TAC] THEN
+  HYP_TAC "l1: +" (SPEC `y:real`) THEN ASM_REWRITE_TAC[] THEN
+  ASM_REAL_ARITH_TAC);;
+
+let HAS_SUP_LE = prove
+ (`!s t l m. s has_sup l /\ t has_sup m /\
+             (!y. y IN t ==> ?x. x IN s /\ y <= x)
+             ==> m <= l`,
+  INTRO_TAC "!s t l m; l m le" THEN
+  HYP_TAC "l: s l1 l2" (REWRITE_RULE[HAS_SUP]) THEN
+  HYP_TAC "m: t m1 m2" (REWRITE_RULE[HAS_SUP]) THEN
+  REFUTE_THEN (LABEL_TAC "lt" o REWRITE_RULE[REAL_NOT_LE]) THEN
+  CLAIM_TAC "@c. c1 c2" `?c:real. l < c /\ c < m` THENL
+  [EXISTS_TAC `(l + m) / &2` THEN ASM_REAL_ARITH_TAC; ALL_TAC] THEN
+  HYP_TAC "m2: +" (SPEC `c:real`) THEN ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN
+  INTRO_TAC "!x; x xc" THEN
+  CLAIM_TAC "@y. y yx" `?y:real. y IN s /\ x <= y` THENL
+  [HYP MESON_TAC "le x" []; ALL_TAC] THEN
+  HYP_TAC "l1: +" (SPEC `y:real`) THEN ASM_REWRITE_TAC[] THEN
+  ASM_REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Inductive definition of sets, by reducing them to inductive relations.    *)
