@@ -1327,6 +1327,15 @@ let FINITE_IMP_COUNTABLE = prove
  (`!s. FINITE s ==> COUNTABLE s`,
   SIMP_TAC[FINITE_CARD_LT; lt_c; COUNTABLE; ge_c]);;
 
+let CARD_LE_COUNTABLE_INFINITE = prove
+ (`!(s:A->bool) (t:B->bool). COUNTABLE s /\ INFINITE t ==> s <=_c t`,
+  REWRITE_TAC[COUNTABLE; ge_c; INFINITE_CARD_LE; CARD_LE_TRANS]);;
+
+let CARD_LT_COUNTABLE_UNCOUNTABLE = prove
+ (`!(s:A->bool) (t:B->bool).
+        COUNTABLE s /\ ~COUNTABLE t ==> s <_c t`,
+  REWRITE_TAC[COUNTABLE; ge_c; CARD_NOT_LE; CARD_LET_TRANS]);;
+
 let COUNTABLE_IMAGE = prove
  (`!f:A->B s. COUNTABLE s ==> COUNTABLE (IMAGE f s)`,
   REWRITE_TAC[COUNTABLE; ge_c] THEN REPEAT STRIP_TAC THEN
@@ -1633,6 +1642,22 @@ let COUNTABLE_SUBSET_IMAGE = prove
    [ALL_TAC; ASM_MESON_TAC[COUNTABLE_IMAGE; IMAGE_SUBSET]] THEN
   SPEC_TAC(`t:B->bool`,`t:B->bool`) THEN
   REWRITE_TAC[FORALL_COUNTABLE_SUBSET_IMAGE] THEN MESON_TAC[]);;
+
+let COUNTABLE_IMAGE_EQ = prove
+ (`!(f:A->B) s. COUNTABLE(IMAGE f s) <=>
+                ?t. COUNTABLE t /\ t SUBSET s /\ IMAGE f s = IMAGE f t`,
+  MESON_TAC[COUNTABLE_SUBSET_IMAGE; COUNTABLE_IMAGE; SUBSET_REFL]);;
+
+let COUNTABLE_IMAGE_EQ_INJ = prove
+ (`!(f:A->B) s. COUNTABLE(IMAGE f s) <=>
+                ?t. COUNTABLE t /\ t SUBSET s /\ IMAGE f s = IMAGE f t /\
+                    (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[COUNTABLE_IMAGE]] THEN
+  DISCH_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `IMAGE (f:A->B) s`; `s:A->bool`]
+        SUBSET_IMAGE_INJ) THEN
+  REWRITE_TAC[SUBSET_REFL] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_METIS_TAC[COUNTABLE_IMAGE_INJ_EQ]);;
 
 let COUNTABLE_FL = prove
  (`!l:A#A->bool. COUNTABLE(fl l) <=> COUNTABLE l`,
@@ -2203,6 +2228,10 @@ let COUNTABLE_IMP_CARD_LT_REAL = prove
  (`!s:A->bool. COUNTABLE s ==> s <_c (:real)`,
   REWRITE_TAC[GSYM CARD_NOT_LE] THEN
   ASM_MESON_TAC[CARD_LE_COUNTABLE; UNCOUNTABLE_REAL]);;
+
+let CARD_LT_NUM_REAL = prove
+ (`(:num) <_c (:real)`,
+  SIMP_TAC[COUNTABLE_IMP_CARD_LT_REAL; NUM_COUNTABLE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinal exponentiation.                                                  *)

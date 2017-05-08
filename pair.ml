@@ -352,6 +352,14 @@ let EXISTS_PAIR_FUN_THM = prove
   REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
   REWRITE_TAC[FORALL_PAIR_FUN_THM]);;
 
+let FORALL_UNPAIR_FUN_THM = prove
+ (`!P. (!f g. P f g) <=> (!h. P (FST o h) (SND o h))`,
+  REWRITE_TAC[FORALL_PAIR_FUN_THM; o_DEF; ETA_AX]);;
+
+let EXISTS_UNPAIR_FUN_THM = prove
+ (`!P. (?f g. P f g) <=> (?h. P (FST o h) (SND o h))`,
+  REWRITE_TAC[EXISTS_PAIR_FUN_THM; o_DEF; ETA_AX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Related theorems for explicitly paired quantifiers.                       *)
 (* ------------------------------------------------------------------------- *)

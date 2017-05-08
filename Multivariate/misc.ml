@@ -751,6 +751,10 @@ let IN_FROM = prove
  (`!m n. m IN from n <=> n <= m`,
   REWRITE_TAC[from; IN_ELIM_THM]);;
 
+let FROM_MONO = prove
+ (`!m n. from m SUBSET from n <=> n <= m`,
+  REWRITE_TAC[SUBSET; IN_FROM] THEN MESON_TAC[LE_TRANS; LE_REFL]);;
+
 let FROM_INTER_NUMSEG_GEN = prove
  (`!k m n. (from k) INTER (m..n) = (if m < k then k..n else m..n)`,
   REPEAT GEN_TAC THEN COND_CASES_TAC THEN POP_ASSUM MP_TAC THEN

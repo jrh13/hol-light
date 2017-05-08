@@ -7288,6 +7288,15 @@ let REAL_CONVEX_RMUL = prove
  (`!s c f. &0 <= c /\ f real_convex_on s ==> (\x. f(x) * c) real_convex_on s`,
   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[REAL_CONVEX_LMUL]);;
 
+let REAL_CONVEX_ON_SUM = prove
+ (`!t f:A->real->real s.
+         FINITE s /\ (!a. a IN s ==> f a real_convex_on t)
+         ==> (\x. sum s (\a. f a x)) real_convex_on t`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; REAL_CONVEX_ON_CONST; FORALL_IN_INSERT] THEN
+  SIMP_TAC[REAL_CONVEX_ADD; ETA_AX]);;
+
 let REAL_CONVEX_CONVEX_COMPOSE = prove
  (`!f g s:real^N->bool t.
         f convex_on s /\ g real_convex_on t /\

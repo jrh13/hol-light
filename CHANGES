@@ -8,6 +8,75 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  6th May 2017       sets.ml, Library/card.ml
+
+Added four theorems that are rather easy special cases of existing
+ones (FORALL_COUNTABLE_SUBSET_IMAGE_INJ etc.), but awkward enough
+to derive by 1-liners that they are worth having for themselves:
+
+  FINITE_IMAGE_EQ =
+    |- !f s.
+         FINITE (IMAGE f s) <=>
+         (?t. FINITE t /\ t SUBSET s /\ IMAGE f s = IMAGE f t)
+
+  FINITE_IMAGE_EQ_INJ =
+    |- !f s.
+         FINITE (IMAGE f s) <=>
+         (?t. FINITE t /\
+              t SUBSET s /\
+              IMAGE f s = IMAGE f t /\
+              (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)))
+
+  COUNTABLE_IMAGE_EQ =
+    |- !f s.
+         COUNTABLE (IMAGE f s) <=>
+         (?t. COUNTABLE t /\ t SUBSET s /\ IMAGE f s = IMAGE f t)
+
+  COUNTABLE_IMAGE_EQ_INJ =
+    |- !f s.
+         COUNTABLE (IMAGE f s) <=>
+         (?t. COUNTABLE t /\
+              t SUBSET s /\
+              IMAGE f s = IMAGE f t /\
+              (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)))
+
+Sat 30th Apr 2017       pair.ml, sets.ml, Library/card.ml
+
+Added various simple lemmas, the only one that isn't completely trivial
+being FORALL_CARTESIAN_PRODUCT_ELEMENTS:
+
+  CARD_LE_COUNTABLE_INFINITE =
+    |- !s t. COUNTABLE s /\ INFINITE t ==> s <=_c t
+
+  CARD_LT_COUNTABLE_UNCOUNTABLE =
+    |- !s t. COUNTABLE s /\ ~COUNTABLE t ==> s <_c t
+
+  CARD_LT_NUM_REAL =
+    |- (:num) <_c (:real)
+
+  EXISTS_UNPAIR_FUN_THM =
+    |- !P. (?f g. P f g) <=> (?h. P (FST o h) (SND o h))
+
+  FORALL_CARTESIAN_PRODUCT_ELEMENTS =
+    |- !P k s.
+         (!z i. z IN cartesian_product k s /\ i IN k ==> P i (z i)) <=>
+         cartesian_product k s = {} \/ (!i x. i IN k /\ x IN s i ==> P i x)
+
+  FORALL_UNPAIR_FUN_THM =
+    |- !P. (!f g. P f g) <=> (!h. P (FST o h) (SND o h))
+
+  INTERS_ANTIMONO =
+    |- !f g. g SUBSET f ==> INTERS f SUBSET INTERS g
+
+  IN_GSPEC =
+    |- !s. {x | x IN s} = s
+
+  UNIONS_SINGS =
+    |- !s. UNIONS {{x} | x IN s} = s
+
+  UNIONS_SINGS_GEN =
+    |- !P. UNIONS {{x} | P x} = {x | P x}
+
 Wed 11th Apr 2017       pair.ml, sets.ml, cart.ml
 
 Added a few more trivial but nice-to-have rewrites:

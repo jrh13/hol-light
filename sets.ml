@@ -800,10 +800,6 @@ let UNIONS_DELETE_EMPTY = prove
   ONCE_REWRITE_TAC[EXTENSION] THEN
   REWRITE_TAC[IN_UNIONS; IN_DELETE] THEN MESON_TAC[NOT_IN_EMPTY]);;
 
-let INTERS_EQ_UNIV = prove
- (`!f. INTERS f = (:A) <=> !s. s IN f ==> s = (:A)`,
-  SET_TAC[]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Multiple intersection.                                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -835,6 +831,14 @@ let INTERS_SUBSET = prove
 
 let INTERS_SUBSET_STRONG = prove
  (`!u s:A->bool. (?t. t IN u /\ t SUBSET s) ==> INTERS u SUBSET s`,
+  SET_TAC[]);;
+
+let INTERS_ANTIMONO = prove
+ (`!f g. g SUBSET f ==> INTERS f SUBSET INTERS g`,
+  SET_TAC[]);;
+
+let INTERS_EQ_UNIV = prove
+ (`!f. INTERS f = (:A) <=> !s. s IN f ==> s = (:A)`,
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -962,6 +966,10 @@ let SING_GSPEC = prove
    (!a. {x | a = x} = {a})`,
   SET_TAC[]);;
 
+let IN_GSPEC = prove
+ (`!s:A->bool. {x | x IN s} = s`,
+  SET_TAC[]);;
+
 let IN_ELIM_PAIR_THM = prove
  (`!P a b. (a,b) IN {(x,y) | P x y} <=> P a b`,
   REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[PAIR_EQ]);;
@@ -1021,6 +1029,14 @@ let INTERS_GSPEC = prove
                 {a | !x y z. P x y z ==> a IN (f x y z)})`,
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
   REWRITE_TAC[IN_INTERS; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let UNIONS_SINGS_GEN = prove
+ (`!P:A->bool. UNIONS {{x} | P x} = {x | P x}`,
+  REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]);;
+
+let UNIONS_SINGS = prove
+ (`!s:A->bool. UNIONS {{x} | x IN s} = s`,
+  REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]);;
 
 let IMAGE_INTERS = prove
  (`!f s. ~(s = {}) /\
@@ -1540,6 +1556,22 @@ let FINITE_SUBSET_IMAGE_IMP = prove
         FINITE(t) /\ t SUBSET (IMAGE f s)
         ==> ?s'. FINITE s' /\ s' SUBSET s /\ t SUBSET (IMAGE f s')`,
   MESON_TAC[SUBSET_REFL; FINITE_SUBSET_IMAGE]);;
+
+let FINITE_IMAGE_EQ = prove
+ (`!(f:A->B) s. FINITE(IMAGE f s) <=>
+                ?t. FINITE t /\ t SUBSET s /\ IMAGE f s = IMAGE f t`,
+  MESON_TAC[FINITE_SUBSET_IMAGE; FINITE_IMAGE; SUBSET_REFL]);;
+
+let FINITE_IMAGE_EQ_INJ = prove
+ (`!(f:A->B) s. FINITE(IMAGE f s) <=>
+                ?t. FINITE t /\ t SUBSET s /\ IMAGE f s = IMAGE f t /\
+                    (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[FINITE_IMAGE]] THEN
+  DISCH_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `IMAGE (f:A->B) s`; `s:A->bool`]
+        SUBSET_IMAGE_INJ) THEN
+  REWRITE_TAC[SUBSET_REFL] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_METIS_TAC[FINITE_IMAGE_INJ_EQ]);;
 
 let FINITE_DIFF = prove
  (`!s t. FINITE s ==> FINITE(s DIFF t)`,
@@ -2700,6 +2732,26 @@ let IMAGE_PROJECTION_CARTESIAN_PRODUCT = prove
   EXISTS_TAC
    `\j. if j = i then x else if j IN k then (z:K->A) j else ARB` THEN
   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[IN_SING]);;
+
+let FORALL_CARTESIAN_PRODUCT_ELEMENTS = prove
+ (`!P k s:K->A->bool.
+        (!z i. z IN cartesian_product k s /\ i IN k ==> P i (z i)) <=>
+        cartesian_product k s = {} \/
+        (!i x. i IN k /\ x IN s i ==> P i x)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+  ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
+  REWRITE_TAC[cartesian_product; IN_ELIM_THM] THEN EQ_TAC THENL
+   [DISCH_TAC; MESON_TAC[]] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV
+   [CARTESIAN_PRODUCT_EQ_EMPTY]) THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; SET_RULE
+     `~(?i. i IN k /\ s i = {}) <=> (!i. ?x. i IN k ==> x IN s i)`] THEN
+  X_GEN_TAC `z:K->A` THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`i:K`; `x:A`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`\j. if j = i then x else if j IN k then (z:K->A) j else ARB`; `i:K`]) THEN
+  ASM_REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN ASM_MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
