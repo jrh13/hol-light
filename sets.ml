@@ -3386,6 +3386,18 @@ let INTERSECTION_OF_EMPTY = prove
 let ARBITRARY = new_definition
  `ARBITRARY (s:(A->bool)->bool) <=> T`;;
 
+let ARBITRARY_UNION_OF_ALT = prove
+ (`!B s:A->bool.
+        (ARBITRARY UNION_OF B) s <=>
+        !x. x IN s ==>  ?u. u IN B /\ x IN u /\ u SUBSET s`,
+  GEN_TAC THEN REWRITE_TAC[FORALL_AND_THM; TAUT
+   `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+  REWRITE_TAC[FORALL_UNION_OF; ARBITRARY] THEN
+  CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+  X_GEN_TAC `s:A->bool` THEN DISCH_TAC THEN
+  REWRITE_TAC[ARBITRARY; UNION_OF] THEN
+  EXISTS_TAC `{u:A->bool | u IN B /\ u SUBSET s}` THEN ASM SET_TAC[]);;
+
 let ARBITRARY_UNION_OF_EMPTY = prove
  (`!P:(A->bool)->bool. (ARBITRARY UNION_OF P) {}`,
   SIMP_TAC[UNION_OF_EMPTY; ARBITRARY]);;

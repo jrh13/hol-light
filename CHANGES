@@ -8,6 +8,30 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 13th May 2017       printer.ml
+
+Added a patch to the prettyprinter from Marco Maggesi that ensures better
+printing of set enumerations and lists by inserting split hints in a correct
+way. A typical example where this helps is the following term, which now prints
+as shown, but was formerly broken up irregularly and hence was much less
+readable.
+
+  `{[a 1 2 3 4 5 6 7 8; b 1 2 3 4 5 6 7 8 9; c 1 2 3 4 5; d 1 2 3 4 5 6 7],
+    [e 1 2 3 4 5 6; f 1 2 3 4 5 6 7 8; g 1 2 3 4 5],
+    [h 1 2 3 4 5 6 7 8 9 10 11; i 1 2 3 4 5 6 7 8 9 10; j 1 2 3 4 5 6 7 8 9;
+     k 1 2 3 4 5],
+    [l 1 2 3 4 5 6 7 8 9; m 1 2 3 4 5 6 7 8; n 1 2 3 4 5 6 7 8 9;
+     p 2 3 4 5 6 7 8 9]}`
+
+Thu 11th May 2017       sets.ml
+
+Added one more handy little theorem about arbitrary unions:
+
+  ARBITRARY_UNION_OF_ALT =
+    |- !B s.
+         (ARBITRARY UNION_OF B) s <=>
+         (!x. x IN s ==> (?u. u IN B /\ x IN u /\ u SUBSET s))
+
 Sat  6th May 2017       sets.ml, Library/card.ml
 
 Added four theorems that are rather easy special cases of existing

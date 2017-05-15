@@ -51,6 +51,11 @@ let MTOPOLOGY_EUCLIDEAN_METRIC = prove
  (`mtopology euclidean_metric = euclidean:(real^N)topology`,
   REWRITE_TAC[TOPOLOGY_EQ; OPEN_IN_EUCLIDEAN_METRIC; OPEN_IN]);;
 
+let METRIZABLE_SPACE_EUCLIDEAN = prove
+ (`metrizable_space euclidean`,
+  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC;
+              METRIZABLE_SPACE_MTOPOLOGY]);;
+
 let OPEN_EMPTY = prove
  (`open {}`,
   REWRITE_TAC[open_def; NOT_IN_EMPTY]);;
@@ -614,18 +619,6 @@ let OPEN_IN_DIFF_CLOSED = prove
  (`!s t. closed t ==> open_in (subtopology euclidean s) (s DIFF t)`,
   ONCE_REWRITE_TAC[SET_RULE `s DIFF t = s DIFF (s INTER t)`] THEN
   SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_REFL; CLOSED_IN_CLOSED_INTER]);;
-
-let OPEN_IN_SUBSET_TRANS = prove
- (`!s t u:real^N->bool.
-        open_in (subtopology euclidean u) s /\ s SUBSET t /\ t SUBSET u
-        ==> open_in (subtopology euclidean t) s`,
-  REWRITE_TAC[GSYM OPEN_RELATIVE_TO; RELATIVE_TO_SUBSET_TRANS]);;
-
-let CLOSED_IN_SUBSET_TRANS = prove
- (`!s t u:real^N->bool.
-        closed_in (subtopology euclidean u) s /\ s SUBSET t /\ t SUBSET u
-        ==> closed_in (subtopology euclidean t) s`,
-  REWRITE_TAC[GSYM CLOSED_RELATIVE_TO; RELATIVE_TO_SUBSET_TRANS]);;
 
 let open_in = prove
  (`!u s:real^N->bool.
@@ -15461,7 +15454,6 @@ let CONTINUOUS_ON_CLOSURE_COMPONENT_GE = prove
 let CONTINUOUS_MAP_CLOSURES_GEN = prove
  (`!f:real^M->real^N s.
         f continuous_on s <=>
-
         !t. t SUBSET s
             ==> IMAGE f (s INTER closure t) SUBSET closure(IMAGE f t)`,
   REWRITE_TAC[SET_RULE
@@ -25481,6 +25473,10 @@ let HAUSDORFF_SPACE_EUCLIDEAN = prove
  (`hausdorff_space euclidean`,
   REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC; HAUSDORFF_SPACE_MTOPOLOGY]);;
 
+let REGULAR_SPACE_EUCLIDEAN = prove
+ (`regular_space euclidean`,
+  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC; REGULAR_SPACE_MTOPOLOGY]);;
+
 let SEPARATION_HAUSDORFF = prove
  (`!x:real^N y.
       ~(x = y)
@@ -28946,6 +28942,11 @@ let locally = new_definition
         !w x. open_in (subtopology euclidean s) w /\ x IN w
               ==> ?u v. open_in (subtopology euclidean s) u /\ P v /\
                         x IN u /\ u SUBSET v /\ v SUBSET w`;;
+
+let NEIGHBOURHOOD_BASE_OF_EUCLIDEAN = prove
+ (`!P s:real^N->bool.
+        neighbourhood_base_of P (subtopology euclidean s) <=> locally P s`,
+  REWRITE_TAC[NEIGHBOURHOOD_BASE_OF; locally]);;
 
 let LOCALLY_MONO = prove
  (`!P Q s. (!t. P t ==> Q t) /\ locally P s ==> locally Q s`,

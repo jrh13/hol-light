@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                 (c) Copyright, Marco Maggesi 2017                         *)
 (* ========================================================================= *)
 
 needs "nets.ml";;
@@ -236,7 +237,8 @@ let pp_print_term =
   fun fmt ->
     let rec print_term prec tm =
       try try_user_printer fmt tm with Failure _ ->
-      try pp_print_string fmt (string_of_num(dest_numeral tm)) with Failure _ ->
+      try pp_print_string fmt (string_of_num(dest_numeral tm))
+      with Failure _ ->
       try (let tms = dest_list tm in
            try if fst(dest_type(hd(snd(dest_type(type_of tm))))) <> "char"
                then fail() else
@@ -244,9 +246,10 @@ let pp_print_term =
                let s = "\"" ^ String.escaped (implode ccs) ^ "\"" in
                pp_print_string fmt s
            with Failure _ ->
-               pp_print_string fmt "[";
-               print_term_sequence "; " 0 tms;
-               pp_print_string fmt "]")
+               pp_open_box fmt 0; pp_print_string fmt "[";
+               pp_open_box fmt 0; print_term_sequence true ";" 0 tms;
+               pp_close_box fmt (); pp_print_string fmt "]";
+               pp_close_box fmt ())
       with Failure _ ->
       if is_gabs tm then print_binder prec tm else
       let hop,args = strip_comb tm in
@@ -256,7 +259,8 @@ let pp_print_term =
       try if s = "EMPTY" && is_const tm && args = [] then
           pp_print_string fmt "{}" else fail()
       with Failure _ ->
-      try if s = "UNIV" && !typify_universal_set && is_const tm && args = [] then
+      try if s = "UNIV" && !typify_universal_set && is_const tm && args = []
+          then
             let ty = fst(dest_fun_ty(type_of tm)) in
             (pp_print_string fmt "(:";
              pp_print_type fmt ty;
@@ -266,9 +270,9 @@ let pp_print_term =
       try if s <> "INSERT" then fail() else
           let mems,oth = splitlist (dest_binary "INSERT") tm in
           if is_const oth && fst(dest_const oth) = "EMPTY" then
-            (pp_print_string fmt "{";
-             print_term_sequence ", " 14 mems;
-             pp_print_string fmt "}")
+            (pp_open_box fmt 0; pp_print_string fmt "{"; pp_open_box fmt 0;
+             print_term_sequence true "," 14 mems;
+             pp_close_box fmt (); pp_print_string fmt "}"; pp_close_box fmt ())
           else fail()
       with Failure _ ->
       try if not (s = "GSPEC") then fail() else
@@ -286,7 +290,7 @@ let pp_print_term =
                (if (length fvs <= 1 || bvs = []) then fvs
                 else intersect fvs bvs)
            then ()
-           else (print_term_sequence "," 14 evs;
+           else (print_term_sequence false "," 14 evs;
                  pp_print_string fmt " | "));
           print_term 0 babs;
           pp_print_string fmt "}"
@@ -313,7 +317,8 @@ let pp_print_term =
         let s_num = string_of_num(quo_num n_num n_den) in
         let s_den = implode(tl(explode(string_of_num
                         (n_den +/ (mod_num n_num n_den))))) in
-        pp_print_string fmt("#"^s_num^(if n_den = Int 1 then "" else ".")^s_den)
+        pp_print_string fmt
+         ("#"^s_num^(if n_den = Int 1 then "" else ".")^s_den)
       with Failure _ -> try
         if s <> "_MATCH" || length args <> 2 then failwith "" else
         let cls = dest_clauses(hd(tl args)) in
@@ -407,12 +412,14 @@ let pp_print_term =
          if prec = 1000 then pp_print_string fmt ")" else ();
          pp_close_box fmt ())
 
-    and print_term_sequence sep prec tms =
+    and print_term_sequence break sep prec tms =
       if tms = [] then () else
       (print_term prec (hd tms);
        let ttms = tl tms in
-       if ttms = [] then ()
-       else (pp_print_string fmt sep; print_term_sequence sep prec ttms))
+       if ttms = [] then () else
+       (pp_print_string fmt sep;
+        (if break then pp_print_space fmt ());
+        print_term_sequence break sep prec ttms))
 
     and print_binder prec tm =
       let absf = is_gabs tm in

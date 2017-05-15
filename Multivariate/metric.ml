@@ -374,6 +374,12 @@ let OPEN_IN_SUBTOPOLOGY_ALT = prove
        open_in (subtopology top u) s <=> s IN {u INTER t | open_in top t}`,
   REWRITE_TAC[OPEN_IN_SUBTOPOLOGY; IN_ELIM_THM] THEN SET_TAC[]);;
 
+let OPEN_IN_SUBSET_TRANS = prove
+ (`!top s t u:A->bool.
+         open_in (subtopology top u) s /\ s SUBSET t /\ t SUBSET u
+         ==> open_in (subtopology top t) s`,
+   REWRITE_TAC[GSYM OPEN_IN_RELATIVE_TO; RELATIVE_TO_SUBSET_TRANS]);;
+
 let OPEN_IN_SUBTOPOLOGY_INTER_SUBSET = prove
  (`!top s u v:A->bool.
         open_in (subtopology top u) (u INTER s) /\ v SUBSET u
@@ -430,6 +436,12 @@ let CLOSED_IN_SUBTOPOLOGY_ALT = prove
  (`!top u s:A->bool.
        closed_in (subtopology top u) s <=> s IN {u INTER t | closed_in top t}`,
   REWRITE_TAC[CLOSED_IN_SUBTOPOLOGY; IN_ELIM_THM] THEN SET_TAC[]);;
+
+let CLOSED_IN_SUBSET_TRANS = prove
+ (`!top s t u:A->bool.
+         closed_in (subtopology top u) s /\ s SUBSET t /\ t SUBSET u
+         ==> closed_in (subtopology top t) s`,
+   REWRITE_TAC[GSYM CLOSED_IN_RELATIVE_TO; RELATIVE_TO_SUBSET_TRANS]);;
 
 let CLOSED_IN_SUBTOPOLOGY_INTER_SUBSET = prove
  (`!top s u v:A->bool.
@@ -3910,6 +3922,415 @@ let CONNECTED_SPACE_CLOSURES = prove
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Topology bases and sub-bases including Alexander sub-base theorem.        *)
+(* ------------------------------------------------------------------------- *)
+
+let ISTOPOLOGY_BASE_ALT = prove
+ (`!P:(A->bool)->bool.
+        istopology (ARBITRARY UNION_OF P) <=>
+        (!s t. (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
+               ==> (ARBITRARY UNION_OF P) (s INTER t))`,
+  GEN_TAC THEN REWRITE_TAC[REWRITE_RULE[IN] istopology] THEN
+  REWRITE_TAC[ARBITRARY_UNION_OF_EMPTY] THEN
+  MATCH_MP_TAC(TAUT `q ==> (p /\ q <=> p)`) THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ARBITRARY_UNION_OF_UNIONS THEN
+  ASM SET_TAC[]);;
+
+let ISTOPOLOGY_BASE_EQ = prove
+ (`!P:(A->bool)->bool.
+        istopology (ARBITRARY UNION_OF P) <=>
+        (!s t. P s /\ P t ==> (ARBITRARY UNION_OF P) (s INTER t))`,
+  REWRITE_TAC[ISTOPOLOGY_BASE_ALT; ARBITRARY_UNION_OF_INTER_EQ]);;
+
+let ISTOPOLOGY_BASE = prove
+ (`!P:(A->bool)->bool.
+        (!s t. P s /\ P t ==> P(s INTER t))
+        ==> istopology (ARBITRARY UNION_OF P)`,
+  REWRITE_TAC[ISTOPOLOGY_BASE_EQ] THEN
+  MESON_TAC[ARBITRARY_UNION_OF_INC]);;
+
+let MINIMAL_TOPOLOGY_BASE = prove
+ (`!top:A topology P.
+        (!s. P s ==> open_in top s) /\
+        (!s t. P s /\ P t ==> P(s INTER t))
+        ==> !s. open_in(topology(ARBITRARY UNION_OF P)) s ==> open_in top s`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP ISTOPOLOGY_BASE) THEN
+  SIMP_TAC[topology_tybij] THEN DISCH_THEN(K ALL_TAC) THEN
+  ASM_SIMP_TAC[FORALL_UNION_OF; OPEN_IN_UNIONS]);;
+
+let OPEN_IN_TOPOLOGY_BASE_UNIQUE = prove
+ (`!top:A topology B.
+        open_in top = ARBITRARY UNION_OF B <=>
+        (!v. v IN B ==> open_in top v) /\
+        (!u x. open_in top u /\ x IN u
+               ==> ?v. v IN B /\ x IN v /\ v SUBSET u)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THEN REPEAT CONJ_TAC THENL
+   [ASM_REWRITE_TAC[ARBITRARY_UNION_OF_INC; IN];
+    ASM_REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[FORALL_UNION_OF; ARBITRARY; SUBSET; IN_UNIONS] THEN SET_TAC[];
+    REWRITE_TAC[FUN_EQ_THM; TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+    ASM_REWRITE_TAC[FORALL_UNION_OF; ARBITRARY; FORALL_AND_THM] THEN
+    CONJ_TAC THENL
+     [X_GEN_TAC `u:A->bool` THEN DISCH_TAC THEN
+      REWRITE_TAC[UNION_OF; ARBITRARY] THEN
+      EXISTS_TAC `{v:A->bool | v IN B /\ v SUBSET u}` THEN
+      REWRITE_TAC[UNIONS_GSPEC; IN_ELIM_THM] THEN ASM SET_TAC[];
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC OPEN_IN_UNIONS THEN ASM SET_TAC[]]]);;
+
+let TOPOLOGY_BASE_UNIQUE = prove
+ (`!top:A topology P.
+        (!s. P s ==> open_in top s) /\
+        (!u x. open_in top u /\ x IN u ==> ?b. P b /\ x IN b /\ b SUBSET u)
+        ==> topology(ARBITRARY UNION_OF P) = top`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(MESON[topology_tybij]
+   `open_in top = P ==> topology P = top`) THEN
+  REWRITE_TAC[OPEN_IN_TOPOLOGY_BASE_UNIQUE] THEN ASM SET_TAC[]);;
+
+let ISTOPOLOGY_SUBBASE = prove
+ (`!P s:A->bool.
+     istopology (ARBITRARY UNION_OF (FINITE INTERSECTION_OF P relative_to s))`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC ISTOPOLOGY_BASE THEN
+  MATCH_MP_TAC RELATIVE_TO_INTER THEN
+  REWRITE_TAC[FINITE_INTERSECTION_OF_INTER]);;
+
+let OPEN_IN_SUBBASE = prove
+ (`!B u s:A->bool.
+        open_in (topology
+           (ARBITRARY UNION_OF (FINITE INTERSECTION_OF B relative_to u))) s <=>
+        (ARBITRARY UNION_OF (FINITE INTERSECTION_OF B relative_to u)) s`,
+  GEN_TAC THEN GEN_TAC THEN
+  REWRITE_TAC[GSYM(CONJUNCT2 topology_tybij); GSYM FUN_EQ_THM; ETA_AX] THEN
+  REWRITE_TAC[ISTOPOLOGY_SUBBASE]);;
+
+let TOPSPACE_SUBBASE = prove
+ (`!B u:A->bool.
+        topspace(topology
+           (ARBITRARY UNION_OF (FINITE INTERSECTION_OF B relative_to u))) = u`,
+  REWRITE_TAC[OPEN_IN_SUBBASE; topspace; GSYM SUBSET_ANTISYM_EQ] THEN
+  REPEAT STRIP_TAC THENL
+   [REWRITE_TAC[UNIONS_SUBSET; IN_ELIM_THM; FORALL_UNION_OF] THEN
+    GEN_TAC THEN REWRITE_TAC[ARBITRARY] THEN MATCH_MP_TAC(MESON[]
+     `(!x. Q x ==> R x) ==> (!x. P x ==> Q x) ==> (!x. P x ==> R x)`) THEN
+    REWRITE_TAC[FORALL_RELATIVE_TO; INTER_SUBSET];
+    MATCH_MP_TAC(SET_RULE `x IN s ==> x SUBSET UNIONS s`) THEN
+    REWRITE_TAC[UNION_OF; ARBITRARY; IN_ELIM_THM] THEN
+    EXISTS_TAC `{u:A->bool}` THEN REWRITE_TAC[UNIONS_1] THEN
+    REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; relative_to] THEN
+    EXISTS_TAC `(:A)` THEN REWRITE_TAC[INTER_UNIV] THEN
+    REWRITE_TAC[INTERSECTION_OF] THEN EXISTS_TAC `{}:(A->bool)->bool` THEN
+    REWRITE_TAC[FINITE_EMPTY; NOT_IN_EMPTY; INTERS_0]]);;
+
+let MINIMAL_TOPOLOGY_SUBBASE = prove
+ (`!top:A topology u P.
+        (!s. P s ==> open_in top s) /\ open_in top u
+        ==> !s. open_in(topology(ARBITRARY UNION_OF
+                       (FINITE INTERSECTION_OF P relative_to u))) s
+                ==> open_in top s`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SIMP_TAC[REWRITE_RULE[topology_tybij] ISTOPOLOGY_SUBBASE] THEN
+  REWRITE_TAC[FORALL_UNION_OF; ARBITRARY] THEN
+  X_GEN_TAC `v:(A->bool)->bool` THEN DISCH_TAC THEN
+  MATCH_MP_TAC OPEN_IN_UNIONS THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (SET_RULE `(!x. P x ==> Q x)
+              ==> (!x. Q x ==> R x) ==> (!x. P x ==> R x)`)) THEN
+  REWRITE_TAC[FORALL_RELATIVE_TO; FORALL_INTERSECTION_OF] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM INTERS_INSERT] THEN
+  MATCH_MP_TAC OPEN_IN_INTERS THEN
+  ASM_REWRITE_TAC[FORALL_IN_INSERT; FINITE_INSERT; NOT_INSERT_EMPTY] THEN
+  ASM_MESON_TAC[]);;
+
+let ISTOPOLOGY_SUBBASE_UNIV = prove
+ (`!P:(A->bool)->bool.
+       istopology (ARBITRARY UNION_OF (FINITE INTERSECTION_OF P))`,
+  GEN_TAC THEN MATCH_MP_TAC ISTOPOLOGY_BASE THEN
+  REWRITE_TAC[FINITE_INTERSECTION_OF_INTER]);;
+
+let ALEXANDER_SUBBASE_THEOREM = prove
+ (`!top:A topology B.
+        topology
+          (ARBITRARY UNION_OF
+               (FINITE INTERSECTION_OF B relative_to UNIONS B)) = top /\
+        (!C. C SUBSET B /\ UNIONS C = topspace top
+             ==> ?C'. FINITE C' /\ C' SUBSET C /\ UNIONS C' = topspace top)
+        ==> compact_space top`,
+  REPEAT GEN_TAC THEN INTRO_TAC "top fin" THEN
+  SUBGOAL_THEN `UNIONS B:A->bool = topspace top` ASSUME_TAC THENL
+   [EXPAND_TAC "top" THEN REWRITE_TAC[TOPSPACE_SUBBASE]; ALL_TAC] THEN
+  REWRITE_TAC[compact_space; compact_in; SUBSET_REFL] THEN
+  MP_TAC(ISPEC
+   `\C. (!u:A->bool. u IN C ==> open_in top u) /\
+        topspace top SUBSET UNIONS C /\
+        !C'. FINITE C' /\ C' SUBSET C ==> ~(topspace top SUBSET UNIONS C')`
+    ZL_SUBSETS_UNIONS_NONEMPTY) THEN
+  REWRITE_TAC[] THEN
+  MATCH_MP_TAC(TAUT `(~p' ==> p) /\ q /\ ~r ==> (p /\ q ==> r) ==> p'`) THEN
+  CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN CONJ_TAC THENL
+   [X_GEN_TAC `c:((A->bool)->bool)->bool` THEN
+    REWRITE_TAC[MEMBER_NOT_EMPTY] THEN STRIP_TAC THEN
+    REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+    X_GEN_TAC `c':(A->bool)->bool` THEN STRIP_TAC THEN
+    MP_TAC(ISPECL [`c:((A->bool)->bool)->bool`; `c':(A->bool)->bool`]
+     FINITE_SUBSET_UNIONS_CHAIN) THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `C:(A->bool)->bool` MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC (LABEL_TAC "*")) THEN
+  SUBGOAL_THEN
+   `?x:A. x IN topspace top /\ ~(x IN UNIONS(B INTER C))`
+  STRIP_ASSUME_TAC THENL
+   [MATCH_MP_TAC(SET_RULE
+     `s SUBSET t /\ ~(s = t) ==> ?x. x IN t /\ ~(x IN s)`) THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[UNIONS_SUBSET; IN_INTER] THEN ASM_MESON_TAC[OPEN_IN_SUBSET];
+      DISCH_TAC] THEN
+    REMOVE_THEN "fin" (MP_TAC o SPEC `B INTER C:(A->bool)->bool`) THEN
+    ASM_REWRITE_TAC[INTER_SUBSET; SUBSET_INTER] THEN
+    ASM_MESON_TAC[SUBSET_REFL];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?c B'. c IN C /\ open_in top c /\ ~(c = topspace top) /\
+           FINITE B' /\ B' SUBSET B /\ ~(B' = {}) /\ (x:A) IN INTERS B' /\
+           INTERS B' SUBSET c`
+  STRIP_ASSUME_TAC THENL
+   [SUBGOAL_THEN `?u:A->bool. open_in top u /\ u IN C /\ x IN u`
+    MP_TAC THENL [ASM SET_TAC[]; MATCH_MP_TAC MONO_EXISTS] THEN
+    X_GEN_TAC `c:A->bool` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [ASM_MESON_TAC[SING_SUBSET; FINITE_SING; UNIONS_1; SUBSET_REFL];
+      UNDISCH_TAC `(x:A) IN c`] THEN
+    UNDISCH_TAC `open_in top (c:A->bool)` THEN EXPAND_TAC "top" THEN
+    REWRITE_TAC[REWRITE_RULE[topology_tybij] ISTOPOLOGY_SUBBASE] THEN
+    SPEC_TAC(`c:A->bool`,`d:A->bool`) THEN
+    ASM_REWRITE_TAC[FORALL_UNION_OF; ARBITRARY] THEN
+    X_GEN_TAC `v:(A->bool)->bool` THEN
+    DISCH_THEN(LABEL_TAC "+") THEN
+    ONCE_REWRITE_TAC[TAUT `p ==> q ==> r <=> q ==> p ==> r`] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `~(UNIONS v = u) ==> UNIONS v SUBSET u ==> ~(u IN v)`)) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[UNIONS_SUBSET] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+       (SET_RULE `(!x. P x ==> Q x)
+                  ==> (!x. Q x ==> R x) ==> (!x. P x ==> R x)`)) THEN
+      REWRITE_TAC[FORALL_RELATIVE_TO; INTER_SUBSET];
+      DISCH_TAC] THEN
+    REWRITE_TAC[IN_UNIONS; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `w:A->bool` THEN STRIP_TAC THEN
+    REMOVE_THEN "+" (MP_TAC o SPEC `w:A->bool`) THEN
+    ASM_REWRITE_TAC[relative_to; LEFT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[IMP_CONJ; FORALL_INTERSECTION_OF] THEN
+    REWRITE_TAC[IMP_IMP; LEFT_FORALL_IMP_THM] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B':(A->bool)->bool` THEN
+    ASM_CASES_TAC `B':(A->bool)->bool = {}` THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    ASM_REWRITE_TAC[INTERS_0; INTER_UNIV; FINITE_EMPTY; NOT_IN_EMPTY] THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!b. (b:A->bool) IN B'
+        ==> ?C'. FINITE C' /\ C' SUBSET C /\
+                 topspace top SUBSET UNIONS(b INSERT C')`
+  MP_TAC THENL
+   [X_GEN_TAC `b:A->bool` THEN DISCH_TAC THEN
+    REMOVE_THEN "*" (MP_TAC o SPEC `(b:A->bool) INSERT C`) THEN
+    ASM_REWRITE_TAC[FORALL_IN_INSERT; SET_RULE `s SUBSET a INSERT s`] THEN
+    MATCH_MP_TAC(TAUT
+     `q /\ ~s /\ p /\ (~r ==> t) ==> (p /\ q /\ r ==> s) ==> t`) THEN
+    REPLICATE_TAC 2 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+    CONJ_TAC THENL
+     [EXPAND_TAC "top" THEN REWRITE_TAC[OPEN_IN_SUBBASE] THEN
+      MATCH_MP_TAC UNION_OF_INC THEN REWRITE_TAC[ARBITRARY] THEN
+      REWRITE_TAC[INTERSECTION_OF; relative_to] THEN
+      EXISTS_TAC `b:A->bool` THEN
+      CONJ_TAC THENL [EXISTS_TAC `{b:A->bool}`; ASM SET_TAC[]] THEN
+      REWRITE_TAC[FINITE_SING; FORALL_IN_INSERT; INTERS_1; NOT_IN_EMPTY] THEN
+      ASM SET_TAC[];
+      REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN
+      DISCH_THEN(X_CHOOSE_THEN `C':(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC `C' DELETE (b:A->bool)` THEN
+      ASM_REWRITE_TAC[FINITE_DELETE] THEN ASM SET_TAC[]];
+    REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM]] THEN
+  DISCH_THEN(X_CHOOSE_TAC `cc:(A->bool)->(A->bool)->bool`) THEN
+  SUBGOAL_THEN
+   `topspace top SUBSET
+    UNIONS(c INSERT UNIONS(IMAGE (cc:(A->bool)->(A->bool)->bool) B'))`
+  MP_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[]] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[FINITE_INSERT; FINITE_UNIONS] THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
+
+let ALEXANDER_SUBBASE_THEOREM_ALT = prove
+ (`!top:A topology B u.
+        u SUBSET UNIONS B /\
+        topology
+          (ARBITRARY UNION_OF
+               (FINITE INTERSECTION_OF B relative_to u)) = top /\
+        (!C. C SUBSET B /\ u SUBSET UNIONS C
+             ==> ?C'. FINITE C' /\ C' SUBSET C /\ u SUBSET UNIONS C')
+        ==> compact_space top`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `topspace top:A->bool = u` ASSUME_TAC THENL
+   [ASM_MESON_TAC[TOPSPACE_SUBBASE]; ALL_TAC] THEN
+  MATCH_MP_TAC ALEXANDER_SUBBASE_THEOREM THEN
+  EXISTS_TAC `B relative_to (topspace top:A->bool)` THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [SYM th]) THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN
+    GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+     [FINITE_INTERSECTION_OF_RELATIVE_TO] THEN
+    ASM_REWRITE_TAC[] THEN AP_TERM_TAC THEN REWRITE_TAC[RELATIVE_TO] THEN
+    ONCE_REWRITE_TAC[SET_RULE `{f x | s x} = {f x | x IN s}`] THEN
+    REWRITE_TAC[GSYM INTER_UNIONS] THEN ASM SET_TAC[];
+    REWRITE_TAC[RELATIVE_TO; IMP_CONJ] THEN
+    ONCE_REWRITE_TAC[SET_RULE `{f x | s x} = IMAGE f s`] THEN
+    REWRITE_TAC[FORALL_SUBSET_IMAGE; EXISTS_FINITE_SUBSET_IMAGE] THEN
+    REWRITE_TAC[GSYM SIMPLE_IMAGE; GSYM INTER_UNIONS] THEN
+    REWRITE_TAC[SET_RULE `s INTER t = s <=> s SUBSET t`] THEN
+    ASM_MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Neigbourhood bases (useful for "local" properties of various kind).       *)
+(* ------------------------------------------------------------------------- *)
+
+let neighbourhood_base_at = new_definition
+ `neighbourhood_base_at (x:A) P top <=>
+        !w. open_in top w /\ x IN w
+            ==>  ?u v. open_in top u /\ P v /\
+                     x IN u /\ u SUBSET v /\ v SUBSET w`;;
+
+let neighbourhood_base_of = new_definition
+ `neighbourhood_base_of P top <=>
+        !x. x IN topspace top ==> neighbourhood_base_at x P top`;;
+
+let NEIGHBOURHOOD_BASE_OF = prove
+ (`!(top:A topology) P.
+        neighbourhood_base_of P top <=>
+        !w x. open_in top w /\ x IN w
+              ==> ?u v. open_in top u /\ P v /\
+                        x IN u /\ u SUBSET v /\ v SUBSET w`,
+  REWRITE_TAC[neighbourhood_base_at; neighbourhood_base_of] THEN
+  MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]);;
+
+let NEIGHBOURHOOD_BASE_AT_MONO = prove
+ (`!top P Q x:A.
+        (!s. P s /\ x IN s ==> Q s) /\ neighbourhood_base_at x P top
+        ==> neighbourhood_base_at x Q top`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[neighbourhood_base_at] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  MATCH_MP_TAC MONO_FORALL THEN ASM SET_TAC[]);;
+
+let NEIGHBOURHOOD_BASE_OF_MONO = prove
+ (`!top P Q:(A->bool)->bool.
+        (!s. P s ==> Q s) /\ neighbourhood_base_of P top
+        ==> neighbourhood_base_of Q top`,
+  REWRITE_TAC[neighbourhood_base_of] THEN
+  MESON_TAC[NEIGHBOURHOOD_BASE_AT_MONO]);;
+
+let OPEN_NEIGHBOURHOOD_BASE_AT = prove
+ (`!top P x:A.
+        (!s. P s /\ x IN s ==> open_in top s)
+        ==> (neighbourhood_base_at x P top <=>
+             !w. open_in top w /\ x IN w ==> ?u. P u /\ x IN u /\ u SUBSET w)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[neighbourhood_base_at] THEN
+  ASM_MESON_TAC[SUBSET; OPEN_IN_SUBSET]);;
+
+let OPEN_NEIGHBOURHOOD_BASE_OF = prove
+ (`!top P:(A->bool)->bool.
+      (!s. P s ==> open_in top s)
+      ==> (neighbourhood_base_of P top <=>
+           !w x. open_in top w /\ x IN w ==> ?u. P u /\ x IN u /\ u SUBSET w)`,
+  REWRITE_TAC[neighbourhood_base_of] THEN
+  SIMP_TAC[OPEN_NEIGHBOURHOOD_BASE_AT] THEN
+  MESON_TAC[SUBSET; OPEN_IN_SUBSET]);;
+
+let OPEN_IN_TOPOLOGY_NEIGHBOURHOOD_BASE_UNIQUE = prove
+ (`!top b:(A->bool)->bool.
+        open_in top = ARBITRARY UNION_OF b <=>
+        (!u. u IN b ==> open_in top u) /\ neighbourhood_base_of b top`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_TOPOLOGY_BASE_UNIQUE] THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+  REWRITE_TAC[IN] THEN SIMP_TAC[OPEN_NEIGHBOURHOOD_BASE_OF] THEN
+  REWRITE_TAC[IN]);;
+
+let NEIGHBOURHOOD_BASE_OF_OPEN_SUBSET = prove
+ (`!top P s:A->bool.
+        neighbourhood_base_of P top /\ open_in top s
+        ==> neighbourhood_base_of P (subtopology top s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[NEIGHBOURHOOD_BASE_OF] THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_ALT; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[RIGHT_EXISTS_AND_THM; FORALL_IN_GSPEC; EXISTS_IN_GSPEC] THEN
+  REWRITE_TAC[IMP_IMP] THEN STRIP_TAC THEN
+  X_GEN_TAC `v:A->bool` THEN DISCH_TAC THEN
+  X_GEN_TAC `x:A` THEN REWRITE_TAC[IN_INTER] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `s INTER v:A->bool`) THEN
+  ASM_SIMP_TAC[OPEN_IN_INTER; IN_INTER] THEN
+  DISCH_THEN(MP_TAC o SPEC `x:A`) THEN ASM_REWRITE_TAC[SUBSET_INTER] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]);;
+
+let NEIGHBOURHOOD_BASE_AT_TOPOLOGY_BASE = prove
+ (`!P top b x:A.
+        open_in top = ARBITRARY UNION_OF b
+        ==> (neighbourhood_base_at x P top <=>
+             !w. w IN b /\ x IN w
+                 ==> ?u v. open_in top u /\
+                           P v /\
+                           x IN u /\
+                           u SUBSET v /\
+                           v SUBSET w)`,
+  REWRITE_TAC[OPEN_IN_TOPOLOGY_BASE_UNIQUE; neighbourhood_base_at] THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[] THEN
+  DISCH_TAC THEN X_GEN_TAC `w:A->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`w:A->bool`; `x:A`]) THEN
+  ASM_MESON_TAC[SUBSET_TRANS]);;
+
+let NEIGHBOURHOOD_BASE_OF_TOPOLOGY_BASE = prove
+ (`!P top b:(A->bool)->bool.
+        open_in top = ARBITRARY UNION_OF b
+        ==> (neighbourhood_base_of P top <=>
+             !w x. w IN b /\ x IN w
+                   ==> ?u v. open_in top u /\
+                             P v /\
+                             x IN u /\
+                             u SUBSET v /\
+                             v SUBSET w)`,
+  REWRITE_TAC[OPEN_IN_TOPOLOGY_BASE_UNIQUE; NEIGHBOURHOOD_BASE_OF] THEN
+  REPEAT GEN_TAC THEN STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[] THEN
+  GEN_REWRITE_TAC LAND_CONV [SWAP_FORALL_THM] THEN DISCH_TAC THEN
+  MAP_EVERY X_GEN_TAC [`w:A->bool`; `x:A`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`w:A->bool`; `x:A`]) THEN
+  ASM_MESON_TAC[SUBSET_TRANS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Metrizable spaces.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let metrizable_space = new_definition
+ `metrizable_space top <=> ?m. top = mtopology m`;;
+
+let METRIZABLE_SPACE_MTOPOLOGY = prove
+ (`!m. metrizable_space (mtopology m)`,
+  REWRITE_TAC[metrizable_space] THEN MESON_TAC[]);;
+
+let FORALL_METRIC_TOPOLOGY = prove
+ (`!P. (!m:A metric. P (mtopology m) (mspace m)) <=>
+       !top. metrizable_space top ==> P top (topspace top)`,
+  SIMP_TAC[metrizable_space; LEFT_IMP_EXISTS_THM; TOPSPACE_MTOPOLOGY] THEN
+  MESON_TAC[]);;
+
+let FORALL_METRIZABLE_SPACE = prove
+ (`!P. (!top. metrizable_space top ==> P top (topspace top)) <=>
+       (!m:A metric. P (mtopology m) (mspace m))`,
+  REWRITE_TAC[FORALL_METRIC_TOPOLOGY]);;
+
+let METRIZABLE_SPACE_DISCRETE_TOPOLOGY = prove
+ (`!u:A->bool. metrizable_space(discrete_topology u)`,
+  REWRITE_TAC[metrizable_space] THEN MESON_TAC[MTOPOLOGY_DISCRETE_METRIC]);;
+
+let METRIZABLE_SPACE_SUBTOPOLOGY = prove
+ (`!top s:A->bool.
+    metrizable_space top ==> metrizable_space(subtopology top s)`,
+  REWRITE_TAC[metrizable_space] THEN MESON_TAC[MTOPOLOGY_SUBMETRIC]);;
+
+(* ------------------------------------------------------------------------- *)
 (* T_1 spaces with equivalences to many naturally "nice" properties.         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -4134,6 +4555,14 @@ let T1_SPACE_MTOPOLOGY = prove
  (`!m:A metric. t1_space(mtopology m)`,
   SIMP_TAC[HAUSDORFF_IMP_T1_SPACE; HAUSDORFF_SPACE_MTOPOLOGY]);;
 
+let METRIZABLE_IMP_HAUSDORFF_SPACE = prove
+ (`!top. metrizable_space top ==> hausdorff_space top`,
+  MESON_TAC[metrizable_space; HAUSDORFF_SPACE_MTOPOLOGY]);;
+
+let METRIZABLE_IMP_T1_SPACE = prove
+ (`!top. metrizable_space top ==> t1_space top`,
+  MESON_TAC[HAUSDORFF_IMP_T1_SPACE; METRIZABLE_IMP_HAUSDORFF_SPACE]);;
+
 let HAUSDORFF_SPACE_SING_INTERS_OPENS = prove
  (`!top a:A.
         hausdorff_space top /\ a IN topspace top
@@ -4146,8 +4575,8 @@ let HAUSDORFF_SPACE_COMPACT_SEPARATION = prove
  (`!top s t:A->bool.
         hausdorff_space top /\
         compact_in top s /\ compact_in top t /\ DISJOINT s t
-        ==> ?u v. open_in top u /\ open_in top v /\ DISJOINT u v /\
-                  s SUBSET u /\ t SUBSET v`,
+        ==> ?u v. open_in top u /\ open_in top v /\
+                  s SUBSET u /\ t SUBSET v /\ DISJOINT u v`,
   let lemma = prove
    (`!top s a:A.
         hausdorff_space top /\ compact_in top s /\
@@ -4213,8 +4642,8 @@ let HAUSDORFF_SPACE_COMPACT_SETS = prove
  (`!top:A topology.
         hausdorff_space top <=>
         !s t. compact_in top s /\ compact_in top t /\ DISJOINT s t
-              ==> ?u v. open_in top u /\ open_in top v /\ DISJOINT u v /\
-                        s SUBSET u /\ t SUBSET v`,
+              ==> ?u v. open_in top u /\ open_in top v /\
+                        s SUBSET u /\ t SUBSET v /\ DISJOINT u v`,
   GEN_TAC THEN EQ_TAC THEN SIMP_TAC[HAUSDORFF_SPACE_COMPACT_SEPARATION] THEN
   DISCH_TAC THEN REWRITE_TAC[hausdorff_space] THEN
   MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
@@ -4383,267 +4812,130 @@ let DERIVED_SET_OF_DERIVED_SET_SUBSET = prove
            HAUSDORFF_IMP_T1_SPACE]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Topology bases and sub-bases including Alexander sub-base theorem.        *)
+(* Regular spaces. These are *not* a priori assumed to be Hausdorff/T_1.     *)
 (* ------------------------------------------------------------------------- *)
 
-let ISTOPOLOGY_BASE_ALT = prove
- (`!P:(A->bool)->bool.
-        istopology (ARBITRARY UNION_OF P) <=>
-        (!s t. (ARBITRARY UNION_OF P) s /\ (ARBITRARY UNION_OF P) t
-               ==> (ARBITRARY UNION_OF P) (s INTER t))`,
-  GEN_TAC THEN REWRITE_TAC[REWRITE_RULE[IN] istopology] THEN
-  REWRITE_TAC[ARBITRARY_UNION_OF_EMPTY] THEN
-  MATCH_MP_TAC(TAUT `q ==> (p /\ q <=> p)`) THEN
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC ARBITRARY_UNION_OF_UNIONS THEN
+let regular_space = new_definition
+ `regular_space top <=>
+        !c a:A. closed_in top c /\ a IN topspace top DIFF c
+                ==> ?u v. open_in top u /\ open_in top v /\
+                          a IN u /\ c SUBSET v /\ DISJOINT u v`;;
+
+let REGULAR_SPACE = prove
+ (`!top:A topology.
+        regular_space top <=>
+        !c a. closed_in top c /\ a IN topspace top DIFF c
+              ==> ?u. open_in top u /\ a IN u /\
+                      DISJOINT c (top closure_of u)`,
+  GEN_TAC THEN REWRITE_TAC[regular_space] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `s:A->bool` THEN REWRITE_TAC[] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `a:A` THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC(TAUT
+   `(p ==> (q <=> r)) ==> (p ==> q <=> p ==> r)`) THEN STRIP_TAC THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `u:A->bool` THEN REWRITE_TAC[] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `v:A->bool` STRIP_ASSUME_TAC) THEN
+    ASM_REWRITE_TAC[] THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `t SUBSET v ==> v INTER c = {} ==> DISJOINT t c`)) THEN
+    ASM_SIMP_TAC[OPEN_IN_INTER_CLOSURE_OF_EQ_EMPTY] THEN ASM SET_TAC[];
+    STRIP_TAC THEN EXISTS_TAC `topspace top DIFF top closure_of u:A->bool` THEN
+    ASM_SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_TOPSPACE; CLOSED_IN_CLOSURE_OF] THEN
+    MP_TAC(ISPECL [`top:A topology`; `u:A->bool`] CLOSURE_OF_SUBSET) THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_SUBSET)) THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN ASM SET_TAC[]]);;
+
+let NEIGHBOURHOOD_BASE_OF_CLOSED_IN = prove
+ (`!top:A topology.
+      neighbourhood_base_of (closed_in top) top <=> regular_space top`,
+  GEN_TAC THEN REWRITE_TAC[NEIGHBOURHOOD_BASE_OF; regular_space] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  REWRITE_TAC[IMP_CONJ; FORALL_OPEN_IN] THEN
+  REPEAT(AP_TERM_TAC THEN ABS_TAC) THEN REPEAT
+   (MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> ((p ==> q) <=> (p ==> r))`) THEN
+    DISCH_TAC) THEN
+  FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP CLOSED_IN_SUBSET) THEN
+  REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN REWRITE_TAC[EXISTS_CLOSED_IN] THEN
+  REPEAT(AP_TERM_TAC THEN ABS_TAC THEN
+   MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+   DISCH_THEN(ASSUME_TAC o MATCH_MP OPEN_IN_SUBSET)) THEN
   ASM SET_TAC[]);;
 
-let ISTOPOLOGY_BASE_EQ = prove
- (`!P:(A->bool)->bool.
-        istopology (ARBITRARY UNION_OF P) <=>
-        (!s t. P s /\ P t ==> (ARBITRARY UNION_OF P) (s INTER t))`,
-  REWRITE_TAC[ISTOPOLOGY_BASE_ALT; ARBITRARY_UNION_OF_INTER_EQ]);;
+let REGULAR_SPACE_DISCRETE_TOPOLOGY = prove
+ (`!s:A->bool. regular_space(discrete_topology s)`,
+  GEN_TAC THEN
+  REWRITE_TAC[regular_space; CLOSED_IN_DISCRETE_TOPOLOGY] THEN
+  REWRITE_TAC[OPEN_IN_DISCRETE_TOPOLOGY; TOPSPACE_DISCRETE_TOPOLOGY] THEN
+  MAP_EVERY X_GEN_TAC [`c:A->bool`; `a:A`] THEN STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC [`{a:A}`; `c:A->bool`] THEN ASM SET_TAC[]);;
 
-let ISTOPOLOGY_BASE = prove
- (`!P:(A->bool)->bool.
-        (!s t. P s /\ P t ==> P(s INTER t))
-        ==> istopology (ARBITRARY UNION_OF P)`,
-  REWRITE_TAC[ISTOPOLOGY_BASE_EQ] THEN
-  MESON_TAC[ARBITRARY_UNION_OF_INC]);;
+let REGULAR_SPACE_SUBTOPOLOGY = prove
+ (`!top s:A->bool.
+        regular_space top ==> regular_space(subtopology top s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[regular_space] THEN DISCH_TAC THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ; RIGHT_EXISTS_AND_THM] THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_ALT; CLOSED_IN_SUBTOPOLOGY_ALT] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; EXISTS_IN_GSPEC; TOPSPACE_SUBTOPOLOGY] THEN
+  X_GEN_TAC `c:A->bool` THEN DISCH_TAC THEN REWRITE_TAC[IN_DIFF; IN_INTER] THEN
+  X_GEN_TAC `a:A` THEN STRIP_TAC THEN REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`c:A->bool`; `a:A`]) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN ASM SET_TAC[]);;
 
-let MINIMAL_TOPOLOGY_BASE = prove
- (`!top:A topology P.
-        (!s. P s ==> open_in top s) /\
-        (!s t. P s /\ P t ==> P(s INTER t))
-        ==> !s. open_in(topology(ARBITRARY UNION_OF P)) s ==> open_in top s`,
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP ISTOPOLOGY_BASE) THEN
-  SIMP_TAC[topology_tybij] THEN DISCH_THEN(K ALL_TAC) THEN
-  ASM_SIMP_TAC[FORALL_UNION_OF; OPEN_IN_UNIONS]);;
+let REGULAR_T1_IMP_HAUSDORFF_SPACE = prove
+ (`!top:A topology.
+        regular_space top /\ t1_space top ==> hausdorff_space top`,
+  REWRITE_TAC[T1_SPACE_CLOSED_IN_SING; regular_space; hausdorff_space] THEN
+  GEN_TAC THEN STRIP_TAC THEN MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN
+  STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`{y:A}`; `x:A`]) THEN
+  ASM_SIMP_TAC[IN_DIFF; IN_SING; SING_SUBSET]);;
 
-let OPEN_IN_TOPOLOGY_BASE_UNIQUE = prove
- (`!top:A topology P.
-        (!s. P s ==> open_in top s) /\
-        (!s t. P s /\ P t ==> P(s INTER t)) /\
-        (!u x. open_in top u /\ x IN u ==> ?b. P b /\ x IN b /\ b SUBSET u)
-        ==> open_in top = ARBITRARY UNION_OF P`,
-  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
-  REWRITE_TAC[FORALL_AND_THM; TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
-  ASM_SIMP_TAC[FORALL_UNION_OF; OPEN_IN_UNIONS] THEN
-  X_GEN_TAC `u:A->bool` THEN DISCH_TAC THEN
-  REWRITE_TAC[UNION_OF; ARBITRARY] THEN
-  EXISTS_TAC `{b:A->bool | P b /\ b SUBSET u}` THEN
-  SIMP_TAC[FORALL_IN_GSPEC; GSYM SUBSET_ANTISYM_EQ] THEN
-  SIMP_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC] THEN ASM SET_TAC[]);;
+let REGULAR_T1_EQ_HAUSDORFF_SPACE = prove
+ (`!top:A topology.
+        regular_space top ==> (t1_space top <=> hausdorff_space top)`,
+  MESON_TAC[REGULAR_T1_IMP_HAUSDORFF_SPACE; HAUSDORFF_IMP_T1_SPACE]);;
 
-let TOPOLOGY_BASE_UNIQUE = prove
- (`!top:A topology P.
-        (!s. P s ==> open_in top s) /\
-        (!s t. P s /\ P t ==> P(s INTER t)) /\
-        (!u x. open_in top u /\ x IN u ==> ?b. P b /\ x IN b /\ b SUBSET u)
-        ==> topology(ARBITRARY UNION_OF P) = top`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC(MESON[topology_tybij]
-   `open_in top = P ==> topology P = top`) THEN
-  MATCH_MP_TAC OPEN_IN_TOPOLOGY_BASE_UNIQUE THEN ASM_REWRITE_TAC[]);;
+let COMPACT_HAUSDORFF_IMP_REGULAR_SPACE = prove
+ (`!top:A topology.
+        compact_space top /\ hausdorff_space top ==> regular_space top`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[regular_space; IN_DIFF] THEN
+  MAP_EVERY X_GEN_TAC [`s:A->bool`; `a:A`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HAUSDORFF_SPACE_COMPACT_SETS]) THEN
+  DISCH_THEN(MP_TAC o SPECL [`{a:A}`; `s:A->bool`]) THEN
+  ASM_SIMP_TAC[CLOSED_IN_COMPACT_SPACE; COMPACT_IN_SING] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN ASM SET_TAC[]);;
 
-let ISTOPOLOGY_SUBBASE = prove
- (`!P s:A->bool.
-     istopology (ARBITRARY UNION_OF (FINITE INTERSECTION_OF P relative_to s))`,
-  REPEAT GEN_TAC THEN MATCH_MP_TAC ISTOPOLOGY_BASE THEN
-  MATCH_MP_TAC RELATIVE_TO_INTER THEN
-  REWRITE_TAC[FINITE_INTERSECTION_OF_INTER]);;
-
-let OPEN_IN_SUBBASE = prove
- (`!B u s:A->bool.
-        open_in (topology
-           (ARBITRARY UNION_OF (FINITE INTERSECTION_OF B relative_to u))) s <=>
-        (ARBITRARY UNION_OF (FINITE INTERSECTION_OF B relative_to u)) s`,
-  GEN_TAC THEN GEN_TAC THEN
-  REWRITE_TAC[GSYM(CONJUNCT2 topology_tybij); GSYM FUN_EQ_THM; ETA_AX] THEN
-  REWRITE_TAC[ISTOPOLOGY_SUBBASE]);;
-
-let TOPSPACE_SUBBASE = prove
- (`!B u:A->bool.
-        topspace(topology
-           (ARBITRARY UNION_OF (FINITE INTERSECTION_OF B relative_to u))) = u`,
-  REWRITE_TAC[OPEN_IN_SUBBASE; topspace; GSYM SUBSET_ANTISYM_EQ] THEN
-  REPEAT STRIP_TAC THENL
-   [REWRITE_TAC[UNIONS_SUBSET; IN_ELIM_THM; FORALL_UNION_OF] THEN
-    GEN_TAC THEN REWRITE_TAC[ARBITRARY] THEN MATCH_MP_TAC(MESON[]
-     `(!x. Q x ==> R x) ==> (!x. P x ==> Q x) ==> (!x. P x ==> R x)`) THEN
-    REWRITE_TAC[FORALL_RELATIVE_TO; INTER_SUBSET];
-    MATCH_MP_TAC(SET_RULE `x IN s ==> x SUBSET UNIONS s`) THEN
-    REWRITE_TAC[UNION_OF; ARBITRARY; IN_ELIM_THM] THEN
-    EXISTS_TAC `{u:A->bool}` THEN REWRITE_TAC[UNIONS_1] THEN
-    REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; relative_to] THEN
-    EXISTS_TAC `(:A)` THEN REWRITE_TAC[INTER_UNIV] THEN
-    REWRITE_TAC[INTERSECTION_OF] THEN EXISTS_TAC `{}:(A->bool)->bool` THEN
-    REWRITE_TAC[FINITE_EMPTY; NOT_IN_EMPTY; INTERS_0]]);;
-
-let MINIMAL_TOPOLOGY_SUBBASE = prove
- (`!top:A topology u P.
-        (!s. P s ==> open_in top s) /\ open_in top u
-        ==> !s. open_in(topology(ARBITRARY UNION_OF
-                       (FINITE INTERSECTION_OF P relative_to u))) s
-                ==> open_in top s`,
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
-  SIMP_TAC[REWRITE_RULE[topology_tybij] ISTOPOLOGY_SUBBASE] THEN
-  REWRITE_TAC[FORALL_UNION_OF; ARBITRARY] THEN
-  X_GEN_TAC `v:(A->bool)->bool` THEN DISCH_TAC THEN
-  MATCH_MP_TAC OPEN_IN_UNIONS THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
-   (SET_RULE `(!x. P x ==> Q x)
-              ==> (!x. Q x ==> R x) ==> (!x. P x ==> R x)`)) THEN
-  REWRITE_TAC[FORALL_RELATIVE_TO; FORALL_INTERSECTION_OF] THEN
-  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM INTERS_INSERT] THEN
-  MATCH_MP_TAC OPEN_IN_INTERS THEN
-  ASM_REWRITE_TAC[FORALL_IN_INSERT; FINITE_INSERT; NOT_INSERT_EMPTY] THEN
-  ASM_MESON_TAC[]);;
-
-let ISTOPOLOGY_SUBBASE_UNIV = prove
- (`!P:(A->bool)->bool.
-       istopology (ARBITRARY UNION_OF (FINITE INTERSECTION_OF P))`,
-  GEN_TAC THEN MATCH_MP_TAC ISTOPOLOGY_BASE THEN
-  REWRITE_TAC[FINITE_INTERSECTION_OF_INTER]);;
-
-let ALEXANDER_SUBBASE_THEOREM = prove
- (`!top:A topology B.
-        topology
-          (ARBITRARY UNION_OF
-               (FINITE INTERSECTION_OF B relative_to UNIONS B)) = top /\
-        (!C. C SUBSET B /\ UNIONS C = topspace top
-             ==> ?C'. FINITE C' /\ C' SUBSET C /\ UNIONS C' = topspace top)
-        ==> compact_space top`,
-  REPEAT GEN_TAC THEN INTRO_TAC "top fin" THEN
-  SUBGOAL_THEN `UNIONS B:A->bool = topspace top` ASSUME_TAC THENL
-   [EXPAND_TAC "top" THEN REWRITE_TAC[TOPSPACE_SUBBASE]; ALL_TAC] THEN
-  REWRITE_TAC[compact_space; compact_in; SUBSET_REFL] THEN
-  MP_TAC(ISPEC
-   `\C. (!u:A->bool. u IN C ==> open_in top u) /\
-        topspace top SUBSET UNIONS C /\
-        !C'. FINITE C' /\ C' SUBSET C ==> ~(topspace top SUBSET UNIONS C')`
-    ZL_SUBSETS_UNIONS_NONEMPTY) THEN
-  REWRITE_TAC[] THEN
-  MATCH_MP_TAC(TAUT `(~p' ==> p) /\ q /\ ~r ==> (p /\ q ==> r) ==> p'`) THEN
-  CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN CONJ_TAC THENL
-   [X_GEN_TAC `c:((A->bool)->bool)->bool` THEN
-    REWRITE_TAC[MEMBER_NOT_EMPTY] THEN STRIP_TAC THEN
-    REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
-    X_GEN_TAC `c':(A->bool)->bool` THEN STRIP_TAC THEN
-    MP_TAC(ISPECL [`c:((A->bool)->bool)->bool`; `c':(A->bool)->bool`]
-     FINITE_SUBSET_UNIONS_CHAIN) THEN
-    ASM SET_TAC[];
-    ALL_TAC] THEN
-  DISCH_THEN(X_CHOOSE_THEN `C:(A->bool)->bool` MP_TAC) THEN
-  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC (LABEL_TAC "*")) THEN
-  SUBGOAL_THEN
-   `?x:A. x IN topspace top /\ ~(x IN UNIONS(B INTER C))`
-  STRIP_ASSUME_TAC THENL
-   [MATCH_MP_TAC(SET_RULE
-     `s SUBSET t /\ ~(s = t) ==> ?x. x IN t /\ ~(x IN s)`) THEN
+let REGULAR_SPACE_MTOPOLOGY = prove
+ (`!m:A metric. regular_space(mtopology m)`,
+  GEN_TAC THEN REWRITE_TAC[regular_space] THEN
+  MAP_EVERY X_GEN_TAC [`c:A->bool`; `a:A`] THEN STRIP_TAC THEN
+  SUBGOAL_THEN `open_in (mtopology m) (topspace(mtopology m) DIFF c:A->bool)`
+  MP_TAC THENL [ASM_SIMP_TAC[OPEN_IN_DIFF; OPEN_IN_TOPSPACE]; ALL_TAC] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [OPEN_IN_MTOPOLOGY] THEN
+  DISCH_THEN(MP_TAC o SPEC `a:A` o CONJUNCT2) THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; TOPSPACE_MTOPOLOGY] THEN
+  X_GEN_TAC `r:real` THEN STRIP_TAC THEN
+  EXISTS_TAC `mball m (a:A,r / &2)` THEN
+  EXISTS_TAC `topspace(mtopology m) DIFF mcball m (a:A,r / &2)` THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[IN_DIFF; TOPSPACE_MTOPOLOGY]) THEN
+  ASM_SIMP_TAC[OPEN_IN_DIFF; CLOSED_IN_MCBALL; OPEN_IN_MBALL; OPEN_IN_TOPSPACE;
+               CENTRE_IN_MBALL; REAL_HALF] THEN
+  REWRITE_TAC[TOPSPACE_MTOPOLOGY] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `b SUBSET m DIFF c
+      ==> c SUBSET m /\ b' SUBSET b  ==> c SUBSET m DIFF b'`)) THEN
     CONJ_TAC THENL
-     [REWRITE_TAC[UNIONS_SUBSET; IN_INTER] THEN ASM_MESON_TAC[OPEN_IN_SUBSET];
-      DISCH_TAC] THEN
-    REMOVE_THEN "fin" (MP_TAC o SPEC `B INTER C:(A->bool)->bool`) THEN
-    ASM_REWRITE_TAC[INTER_SUBSET; SUBSET_INTER] THEN
-    ASM_MESON_TAC[SUBSET_REFL];
-    ALL_TAC] THEN
-  SUBGOAL_THEN
-   `?c B'. c IN C /\ open_in top c /\ ~(c = topspace top) /\
-           FINITE B' /\ B' SUBSET B /\ ~(B' = {}) /\ (x:A) IN INTERS B' /\
-           INTERS B' SUBSET c`
-  STRIP_ASSUME_TAC THENL
-   [SUBGOAL_THEN `?u:A->bool. open_in top u /\ u IN C /\ x IN u`
-    MP_TAC THENL [ASM SET_TAC[]; MATCH_MP_TAC MONO_EXISTS] THEN
-    X_GEN_TAC `c:A->bool` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN
-    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
-     [ASM_MESON_TAC[SING_SUBSET; FINITE_SING; UNIONS_1; SUBSET_REFL];
-      UNDISCH_TAC `(x:A) IN c`] THEN
-    UNDISCH_TAC `open_in top (c:A->bool)` THEN EXPAND_TAC "top" THEN
-    REWRITE_TAC[REWRITE_RULE[topology_tybij] ISTOPOLOGY_SUBBASE] THEN
-    SPEC_TAC(`c:A->bool`,`d:A->bool`) THEN
-    ASM_REWRITE_TAC[FORALL_UNION_OF; ARBITRARY] THEN
-    X_GEN_TAC `v:(A->bool)->bool` THEN
-    DISCH_THEN(LABEL_TAC "+") THEN
-    ONCE_REWRITE_TAC[TAUT `p ==> q ==> r <=> q ==> p ==> r`] THEN
-    DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
-     `~(UNIONS v = u) ==> UNIONS v SUBSET u ==> ~(u IN v)`)) THEN
-    ANTS_TAC THENL
-     [REWRITE_TAC[UNIONS_SUBSET] THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
-       (SET_RULE `(!x. P x ==> Q x)
-                  ==> (!x. Q x ==> R x) ==> (!x. P x ==> R x)`)) THEN
-      REWRITE_TAC[FORALL_RELATIVE_TO; INTER_SUBSET];
-      DISCH_TAC] THEN
-    REWRITE_TAC[IN_UNIONS; LEFT_IMP_EXISTS_THM] THEN
-    X_GEN_TAC `w:A->bool` THEN STRIP_TAC THEN
-    REMOVE_THEN "+" (MP_TAC o SPEC `w:A->bool`) THEN
-    ASM_REWRITE_TAC[relative_to; LEFT_IMP_EXISTS_THM] THEN
-    REWRITE_TAC[IMP_CONJ; FORALL_INTERSECTION_OF] THEN
-    REWRITE_TAC[IMP_IMP; LEFT_FORALL_IMP_THM] THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `B':(A->bool)->bool` THEN
-    ASM_CASES_TAC `B':(A->bool)->bool = {}` THENL [ALL_TAC; ASM SET_TAC[]] THEN
-    ASM_REWRITE_TAC[INTERS_0; INTER_UNIV; FINITE_EMPTY; NOT_IN_EMPTY] THEN
-    ASM_MESON_TAC[];
-    ALL_TAC] THEN
-  SUBGOAL_THEN
-   `!b. (b:A->bool) IN B'
-        ==> ?C'. FINITE C' /\ C' SUBSET C /\
-                 topspace top SUBSET UNIONS(b INSERT C')`
-  MP_TAC THENL
-   [X_GEN_TAC `b:A->bool` THEN DISCH_TAC THEN
-    REMOVE_THEN "*" (MP_TAC o SPEC `(b:A->bool) INSERT C`) THEN
-    ASM_REWRITE_TAC[FORALL_IN_INSERT; SET_RULE `s SUBSET a INSERT s`] THEN
-    MATCH_MP_TAC(TAUT
-     `q /\ ~s /\ p /\ (~r ==> t) ==> (p /\ q /\ r ==> s) ==> t`) THEN
-    REPLICATE_TAC 2 (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
-    CONJ_TAC THENL
-     [EXPAND_TAC "top" THEN REWRITE_TAC[OPEN_IN_SUBBASE] THEN
-      MATCH_MP_TAC UNION_OF_INC THEN REWRITE_TAC[ARBITRARY] THEN
-      REWRITE_TAC[INTERSECTION_OF; relative_to] THEN
-      EXISTS_TAC `b:A->bool` THEN
-      CONJ_TAC THENL [EXISTS_TAC `{b:A->bool}`; ASM SET_TAC[]] THEN
-      REWRITE_TAC[FINITE_SING; FORALL_IN_INSERT; INTERS_1; NOT_IN_EMPTY] THEN
-      ASM SET_TAC[];
-      REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN
-      DISCH_THEN(X_CHOOSE_THEN `C':(A->bool)->bool` STRIP_ASSUME_TAC) THEN
-      EXISTS_TAC `C' DELETE (b:A->bool)` THEN
-      ASM_REWRITE_TAC[FINITE_DELETE] THEN ASM SET_TAC[]];
-    REWRITE_TAC[RIGHT_IMP_EXISTS_THM; SKOLEM_THM]] THEN
-  DISCH_THEN(X_CHOOSE_TAC `cc:(A->bool)->(A->bool)->bool`) THEN
-  SUBGOAL_THEN
-   `topspace top SUBSET
-    UNIONS(c INSERT UNIONS(IMAGE (cc:(A->bool)->(A->bool)->bool) B'))`
-  MP_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[]] THEN
-  FIRST_X_ASSUM MATCH_MP_TAC THEN
-  ASM_REWRITE_TAC[FINITE_INSERT; FINITE_UNIONS] THEN
-  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
+     [ASM_MESON_TAC[CLOSED_IN_SUBSET; TOPSPACE_MTOPOLOGY];
+      ASM_SIMP_TAC[SUBSET; IN_MBALL; IN_MCBALL] THEN ASM_REAL_ARITH_TAC];
+    MATCH_MP_TAC(SET_RULE
+     `(!x. x IN s ==> x IN t) ==> DISJOINT s (u DIFF t)`) THEN
+    ASM_SIMP_TAC[SUBSET; IN_MBALL; IN_MCBALL] THEN ASM_REAL_ARITH_TAC]);;
 
-let ALEXANDER_SUBBASE_THEOREM_ALT = prove
- (`!top:A topology B u.
-        u SUBSET UNIONS B /\
-        topology
-          (ARBITRARY UNION_OF
-               (FINITE INTERSECTION_OF B relative_to u)) = top /\
-        (!C. C SUBSET B /\ u SUBSET UNIONS C
-             ==> ?C'. FINITE C' /\ C' SUBSET C /\ u SUBSET UNIONS C')
-        ==> compact_space top`,
-  REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `topspace top:A->bool = u` ASSUME_TAC THENL
-   [ASM_MESON_TAC[TOPSPACE_SUBBASE]; ALL_TAC] THEN
-  MATCH_MP_TAC ALEXANDER_SUBBASE_THEOREM THEN
-  EXISTS_TAC `B relative_to (topspace top:A->bool)` THEN CONJ_TAC THENL
-   [FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [SYM th]) THEN
-    AP_TERM_TAC THEN AP_TERM_TAC THEN
-    GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
-     [FINITE_INTERSECTION_OF_RELATIVE_TO] THEN
-    ASM_REWRITE_TAC[] THEN AP_TERM_TAC THEN REWRITE_TAC[RELATIVE_TO] THEN
-    ONCE_REWRITE_TAC[SET_RULE `{f x | s x} = {f x | x IN s}`] THEN
-    REWRITE_TAC[GSYM INTER_UNIONS] THEN ASM SET_TAC[];
-    REWRITE_TAC[RELATIVE_TO; IMP_CONJ] THEN
-    ONCE_REWRITE_TAC[SET_RULE `{f x | s x} = IMAGE f s`] THEN
-    REWRITE_TAC[FORALL_SUBSET_IMAGE; EXISTS_FINITE_SUBSET_IMAGE] THEN
-    REWRITE_TAC[GSYM SIMPLE_IMAGE; GSYM INTER_UNIONS] THEN
-    REWRITE_TAC[SET_RULE `s INTER t = s <=> s SUBSET t`] THEN
-    ASM_MESON_TAC[]]);;
+let METRIZABLE_IMP_REGULAR_SPACE = prove
+ (`!top:A topology. metrizable_space top ==> regular_space top`,
+  MESON_TAC[metrizable_space; REGULAR_SPACE_MTOPOLOGY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The most basic facts about usual topology and metric on R.                *)
@@ -4820,10 +5112,19 @@ let MTOPOLOGY_REAL_EUCLIDEAN_METRIC = prove
     GSYM REAL_OPEN_IN; real_open; IN_MBALL; REAL_EUCLIDEAN_METRIC;
     SUBSET; IN_UNIV]);;
 
+let METRIZABLE_SPACE_EUCLIDEANREAL = prove
+ (`metrizable_space euclideanreal`,
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              METRIZABLE_SPACE_MTOPOLOGY]);;
+
 let HAUSDORFF_SPACE_EUCLIDEANREAL = prove
  (`hausdorff_space euclideanreal`,
   REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
               HAUSDORFF_SPACE_MTOPOLOGY]);;
+
+let REGULAR_SPACE_EUCLIDEANREAL = prove
+ (`regular_space euclideanreal`,
+  MESON_TAC[METRIZABLE_IMP_REGULAR_SPACE; METRIZABLE_SPACE_EUCLIDEANREAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Boundedness in R.                                                         *)
@@ -4936,10 +5237,10 @@ let COMPACT_IN_EUCLIDEANREAL_INTERVAL = prove
     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [INTER_COMM] THEN
     ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN AP_TERM_TAC THEN
     GEN_REWRITE_TAC I [EXTENSION] THEN REWRITE_TAC[IN_ELIM_THM] THEN
-    X_GEN_TAC `s:real->bool` THEN AP_THM_TAC THEN
-    CONV_TAC SYM_CONV THEN MATCH_MP_TAC OPEN_IN_TOPOLOGY_BASE_UNIQUE THEN
-    REWRITE_TAC[FINITE_INTERSECTION_OF_INTER] THEN CONJ_TAC THENL
-     [REWRITE_TAC[FORALL_INTERSECTION_OF] THEN
+    X_GEN_TAC `s:real->bool` THEN AP_THM_TAC THEN CONV_TAC SYM_CONV THEN
+    REWRITE_TAC[OPEN_IN_TOPOLOGY_BASE_UNIQUE] THEN CONJ_TAC THENL
+     [GEN_REWRITE_TAC ONCE_DEPTH_CONV [IN] THEN
+      REWRITE_TAC[FORALL_INTERSECTION_OF] THEN
       X_GEN_TAC `t:(real->bool)->bool` THEN
       ASM_CASES_TAC `t:(real->bool)->bool = {}` THENL
        [ASM_MESON_TAC[TOPSPACE_EUCLIDEANREAL; INTERS_0; OPEN_IN_TOPSPACE];
@@ -4961,7 +5262,8 @@ let COMPACT_IN_EUCLIDEANREAL_INTERVAL = prove
       X_GEN_TAC `d:real` THEN STRIP_TAC THEN
       EXISTS_TAC `{y:real | y > x - d} INTER {y | y < x + d}` THEN
       CONJ_TAC THENL
-       [MATCH_MP_TAC FINITE_INTERSECTION_OF_INTER THEN CONJ_TAC THEN
+       [GEN_REWRITE_TAC I [IN] THEN
+        MATCH_MP_TAC FINITE_INTERSECTION_OF_INTER THEN CONJ_TAC THEN
         MATCH_MP_TAC FINITE_INTERSECTION_OF_INC THEN
         GEN_REWRITE_TAC I [GSYM IN] THEN
         REWRITE_TAC[IN_UNION; IN_ELIM_THM] THENL
@@ -7829,6 +8131,100 @@ let PRODUCT_TOPOLOGY_SUBBASE_ALT = prove
   RULE_ASSUM_TAC(REWRITE_RULE[TOPSPACE_PRODUCT_TOPOLOGY_ALT]) THEN
   ASM SET_TAC[]);;
 
+let PRODUCT_TOPOLOGY_BASE_ALT = prove
+ (`!(tops:K->A topology) k.
+        FINITE INTERSECTION_OF {{x | x i IN u} | i IN k /\ open_in (tops i) u}
+        relative_to topspace(product_topology k tops) =
+        { cartesian_product k u | u |
+          FINITE {i | i IN k /\ ~(u i = topspace(tops i))} /\
+          !i. i IN k ==> open_in (tops i) (u i)}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  GEN_REWRITE_TAC (BINDER_CONV o LAND_CONV) [IN] THEN
+  REWRITE_TAC[FORALL_AND_THM; TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[FORALL_RELATIVE_TO; FORALL_INTERSECTION_OF] THEN
+    REWRITE_TAC[IMP_CONJ; IN_ELIM_THM; GSYM CONJ_ASSOC] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN CONJ_TAC THENL
+     [DISCH_THEN(K ALL_TAC) THEN
+      EXISTS_TAC `(\i. topspace(tops i)):K->A->bool` THEN
+      REWRITE_TAC[EMPTY_GSPEC; INTERS_0; INTER_UNIV] THEN
+      REWRITE_TAC[FINITE_EMPTY; OPEN_IN_TOPSPACE] THEN
+      REWRITE_TAC[TOPSPACE_PRODUCT_TOPOLOGY; o_DEF];
+      MAP_EVERY X_GEN_TAC [`v:(K->A)->bool`; `ovs:((K->A)->bool)->bool`] THEN
+      REWRITE_TAC[FORALL_IN_INSERT] THEN
+      DISCH_THEN(fun th -> DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
+        CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC th) THEN
+      ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      X_GEN_TAC `u:K->(A->bool)` THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(X_CHOOSE_THEN `i:K` (X_CHOOSE_THEN `v:A->bool`
+        (STRIP_ASSUME_TAC o GSYM))) THEN
+      EXISTS_TAC
+       `\j. (u:K->(A->bool)) j INTER
+            (if j = i then v else topspace(tops j))` THEN
+      REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC
+        `i INSERT {i | i IN k /\ ~((u:K->A->bool) i = topspace (tops i))}` THEN
+        ASM_REWRITE_TAC[FINITE_INSERT] THEN SET_TAC[];
+        REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+        ASM_SIMP_TAC[OPEN_IN_INTER; OPEN_IN_TOPSPACE];
+        ASM_REWRITE_TAC[INTERS_INSERT; SET_RULE
+         `s INTER (t INTER u) = (s INTER u) INTER t`] THEN
+        REWRITE_TAC[GSYM INTER_CARTESIAN_PRODUCT] THEN EXPAND_TAC "v" THEN
+        REWRITE_TAC[EXTENSION; cartesian_product; IN_ELIM_THM; IN_INTER] THEN
+        X_GEN_TAC `f:K->A` THEN MATCH_MP_TAC(TAUT
+         `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+        STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+        EQ_TAC THENL [DISCH_TAC; ASM_MESON_TAC[]] THEN
+        X_GEN_TAC `j:K` THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+        ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]]];
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN X_GEN_TAC `u:K->A->bool` THEN
+    STRIP_TAC THEN REWRITE_TAC[relative_to] THEN
+    EXISTS_TAC
+     `INTERS (IMAGE (\i. {x | x i IN u i})
+             {i | i IN k /\ ~(u i = topspace((tops:K->A topology) i))})` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC FINITE_INTERSECTION_OF_INTERS THEN
+      ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN
+      X_GEN_TAC `i:K` THEN REWRITE_TAC[IN_ELIM_THM] THEN STRIP_TAC THEN
+      MATCH_MP_TAC FINITE_INTERSECTION_OF_INC THEN
+      REWRITE_TAC[IN_ELIM_THM] THEN
+      MAP_EVERY EXISTS_TAC [`i:K`; `(u:K->A->bool) i`] THEN
+      ASM_MESON_TAC[];
+      REWRITE_TAC[TOPSPACE_PRODUCT_TOPOLOGY; o_DEF] THEN
+      GEN_REWRITE_TAC I [EXTENSION] THEN
+      REWRITE_TAC[cartesian_product; IN_ELIM_THM; IN_INTER; INTERS_IMAGE] THEN
+      ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]]]);;
+
+let OPEN_IN_PRODUCT_TOPOLOGY_ALT = prove
+ (`!k (tops:K->A topology) s.
+         open_in (product_topology k tops) s <=>
+         !x. x IN s
+             ==> ?u. FINITE {i | i IN k /\ ~(u i = topspace(tops i))} /\
+                     (!i. i IN k ==> open_in (tops i) (u i)) /\
+                     x IN cartesian_product k u /\
+                     cartesian_product k u SUBSET s`,
+  REWRITE_TAC[OPEN_IN_PRODUCT_TOPOLOGY; ARBITRARY_UNION_OF_ALT] THEN
+  REWRITE_TAC[PRODUCT_TOPOLOGY_BASE_ALT; EXISTS_IN_GSPEC; GSYM CONJ_ASSOC]);;
+
+let OPEN_IN_PRODUCT_TOPOLOGY_ALT_EXPAND = prove
+ (`!k (tops:K->A topology) s.
+        open_in (product_topology k tops) s <=>
+        s SUBSET topspace(product_topology k tops) /\
+        !x. x IN s
+            ==> ?u. FINITE {i | i IN k /\ ~(u i = topspace(tops i))} /\
+                    (!i. i IN k ==> open_in (tops i) (u i) /\ x i IN u i) /\
+                    cartesian_product k u SUBSET s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_PRODUCT_TOPOLOGY_ALT] THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [SUBSET] THEN
+  REWRITE_TAC[AND_FORALL_THM] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `x:K->A` THEN
+  ASM_CASES_TAC `(x:K->A) IN s` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; TOPSPACE_PRODUCT_TOPOLOGY] THEN
+  REWRITE_TAC[cartesian_product; IN_ELIM_THM; o_THM] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[] THEN
+  ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]);;
+
 let LIMIT_COMPONENTWISE = prove
  (`!(net:C net) (tops:K->A topology) t f l.
         limit (product_topology t tops) f l net <=>
@@ -8045,6 +8441,51 @@ let OPEN_MAP_PRODUCT_PROJECTION = prove
     REWRITE_TAC[IN_ELIM_THM] THEN
     MAP_EVERY EXISTS_TAC [`i:K`; `v:A->bool`] THEN
     ASM_REWRITE_TAC[]]);;
+
+let OPEN_IN_CARTESIAN_PRODUCT_GEN = prove
+ (`!(tops:K->A topology) s k.
+        open_in (product_topology k tops) (cartesian_product k s) <=>
+        cartesian_product k s = {} \/
+        FINITE {i | i IN k /\ ~(s i = topspace(tops i))} /\
+        (!i. i IN k ==> open_in (tops i) (s i))`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
+  ASM_REWRITE_TAC[OPEN_IN_EMPTY] THEN EQ_TAC THENL
+   [ALL_TAC;
+    STRIP_TAC THEN REWRITE_TAC[OPEN_IN_PRODUCT_TOPOLOGY] THEN
+    MATCH_MP_TAC ARBITRARY_UNION_OF_INC THEN
+    REWRITE_TAC[PRODUCT_TOPOLOGY_BASE_ALT; IN_ELIM_THM] THEN
+    EXISTS_TAC `s:K->A->bool` THEN ASM_REWRITE_TAC[]] THEN
+  DISCH_TAC THEN CONJ_TAC THENL
+   [ALL_TAC;
+    X_GEN_TAC `i:K` THEN DISCH_TAC THEN
+    MP_TAC(ISPECL [`tops:K->A topology`; `k:K->bool`; `i:K`]
+        OPEN_MAP_PRODUCT_PROJECTION) THEN
+    ASM_REWRITE_TAC[open_map] THEN
+    DISCH_THEN(MP_TAC o SPEC `cartesian_product k (s:K->A->bool)`) THEN
+    ASM_REWRITE_TAC[IMAGE_PROJECTION_CARTESIAN_PRODUCT]] THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_PRODUCT_TOPOLOGY_ALT]) THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `z:K->A`) THEN
+  DISCH_THEN(MP_TAC o SPEC `z:K->A`) THEN
+  ASM_REWRITE_TAC[SUBSET_CARTESIAN_PRODUCT] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:K->A->bool` STRIP_ASSUME_TAC) THENL
+   [ASM SET_TAC[]; ALL_TAC] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] FINITE_SUBSET)) THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `i:K` THEN
+  ASM_CASES_TAC `(i:K) IN k` THEN ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(SET_RULE
+   `t SUBSET s /\ s SUBSET u ==> ~(s = u) ==> ~(t = u)`) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
+  ASM_SIMP_TAC[TOPSPACE_PRODUCT_TOPOLOGY; SUBSET_CARTESIAN_PRODUCT; o_DEF]);;
+
+let OPEN_IN_CARTESIAN_PRODUCT = prove
+ (`!(tops:K->A topology) (s:K->A->bool) k.
+        FINITE k
+        ==> (open_in (product_topology k tops) (cartesian_product k s) <=>
+             cartesian_product k s = {} \/
+             (!i. i IN k ==> open_in (tops i) (s i)))`,
+  SIMP_TAC[OPEN_IN_CARTESIAN_PRODUCT_GEN; FINITE_RESTRICT]);;
 
 let PRODUCT_TOPOLOGY_EMPTY,OPEN_IN_PRODUCT_TOPOLOGY_EMPTY = (CONJ_PAIR o prove)
  (`(!tops:K->A topology.
@@ -8274,39 +8715,6 @@ let CLOSED_IN_CARTESIAN_PRODUCT = prove
   ASM_REWRITE_TAC[] THEN DISJ1_TAC THEN POP_ASSUM MP_TAC THEN
   REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY] THEN
   MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[CLOSURE_OF_EMPTY]);;
-
-let OPEN_IN_CARTESIAN_PRODUCT = prove
- (`!(tops:K->A topology) (s:K->A->bool) k.
-        FINITE k
-        ==> (open_in (product_topology k tops) (cartesian_product k s) <=>
-             cartesian_product k s = {} \/
-             (!i. i IN k ==> open_in (tops i) (s i)))`,
-  REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
-  ASM_REWRITE_TAC[OPEN_IN_EMPTY] THEN EQ_TAC THENL
-   [DISCH_TAC THEN X_GEN_TAC `i:K` THEN DISCH_TAC THEN
-    MP_TAC(ISPECL [`tops:K->A topology`; `k:K->bool`; `i:K`]
-        OPEN_MAP_PRODUCT_PROJECTION) THEN
-    ASM_REWRITE_TAC[open_map] THEN
-    DISCH_THEN(MP_TAC o SPEC `cartesian_product k (s:K->A->bool)`) THEN
-    ASM_REWRITE_TAC[IMAGE_PROJECTION_CARTESIAN_PRODUCT];
-    DISCH_TAC THEN
-    SUBGOAL_THEN
-     `cartesian_product k s =
-      topspace(product_topology k tops) INTER
-      INTERS {{x:K->A | x i IN s i} | i IN k}`
-    SUBST1_TAC THENL
-     [REWRITE_TAC[EXTENSION; TOPSPACE_PRODUCT_TOPOLOGY; IN_INTER] THEN
-      REWRITE_TAC[cartesian_product; o_DEF; INTERS_GSPEC; IN_ELIM_THM] THEN
-      ASM_MESON_TAC[OPEN_IN_SUBSET; SUBSET];
-      REWRITE_TAC[OPEN_IN_PRODUCT_TOPOLOGY] THEN
-      MATCH_MP_TAC ARBITRARY_UNION_OF_INC THEN
-      MATCH_MP_TAC RELATIVE_TO_INC THEN
-      MATCH_MP_TAC FINITE_INTERSECTION_OF_INTERS THEN
-      ASM_SIMP_TAC[SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE] THEN
-      X_GEN_TAC `i:K` THEN DISCH_TAC THEN
-      MATCH_MP_TAC FINITE_INTERSECTION_OF_INC THEN
-      REWRITE_TAC[IN_ELIM_THM] THEN ASM SET_TAC[]]]);;
 
 let INTERIOR_IN_CARTESIAN_PRODUCT = prove
  (`!k tops s:K->A->bool.
@@ -8717,6 +9125,126 @@ let HAUSDORFF_SPACE_PRODUCT_TOPOLOGY = prove
      [EXISTS_TAC `u:A->bool`; EXISTS_TAC `v:A->bool`] THEN
     ASM_REWRITE_TAC[]]);;
 
+let REGULAR_SPACE_PRODUCT_TOPOLOGY = prove
+ (`!(tops:K->A topology) k.
+        regular_space (product_topology k tops) <=>
+        topspace (product_topology k tops) = {} \/
+        !i. i IN k ==> regular_space (tops i)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC
+   `cartesian_product k (topspace o (tops:K->A topology)) = {}` THEN
+  ASM_REWRITE_TAC[TOPSPACE_PRODUCT_TOPOLOGY] THENL
+   [ASM_REWRITE_TAC[regular_space; TOPSPACE_PRODUCT_TOPOLOGY;
+                    IN_DIFF; NOT_IN_EMPTY];
+    ALL_TAC] THEN
+  EQ_TAC THENL
+   [DISCH_TAC THEN X_GEN_TAC `m:K` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `z:K->A`) THEN
+    FIRST_ASSUM(MP_TAC o SPEC
+     `cartesian_product k
+        (\i. if i = m then topspace(tops m) else {(z:K->A) i})` o
+     MATCH_MP REGULAR_SPACE_SUBTOPOLOGY) THEN
+    REWRITE_TAC[SUBTOPOLOGY_CARTESIAN_PRODUCT] THEN
+    SIMP_TAC[COND_RAND; SUBTOPOLOGY_TOPSPACE] THEN
+    REWRITE_TAC[regular_space; IN_DIFF] THEN DISCH_TAC THEN
+    MAP_EVERY X_GEN_TAC [`c:A->bool`; `x:A`] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL
+     [`cartesian_product k (\i. if i = m then c else {z i}):(K->A)->bool`;
+      `(\i. if i = m then x else z i):K->A`]) THEN
+    REWRITE_TAC[CLOSED_IN_CARTESIAN_PRODUCT] THEN ANTS_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM] THEN UNDISCH_TAC
+       `z IN cartesian_product k (topspace o (tops:K->A topology))` THEN
+      REWRITE_TAC[TOPSPACE_PRODUCT_TOPOLOGY; cartesian_product] THEN
+      REWRITE_TAC[IN_ELIM_THM; o_THM; EXTENSIONAL] THEN STRIP_TAC THEN
+      CONJ_TAC THENL
+       [DISJ2_TAC THEN X_GEN_TAC `i:K` THEN DISCH_TAC THEN COND_CASES_TAC THEN
+        ASM_SIMP_TAC[MESON[CLOSED_IN_TOPSPACE; TOPSPACE_SUBTOPOLOGY;
+                     SET_RULE `x IN u ==> u INTER {x} = {x}`]
+          `b IN topspace top ==> closed_in (subtopology top {b}) {b}`];
+        REPEAT CONJ_TAC THEN REPEAT GEN_TAC THEN
+        REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[TOPSPACE_SUBTOPOLOGY]) THEN
+        ASM SET_TAC[]];
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+    MAP_EVERY X_GEN_TAC [`u:(K->A)->bool`; `v:(K->A)->bool`] THEN
+    STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+     [`IMAGE (\x:K->A. x m) u`; `IMAGE (\x:K->A. x m) v`] THEN
+    GEN_REWRITE_TAC I [CONJ_ASSOC] THEN CONJ_TAC THENL
+     [SUBGOAL_THEN
+       `(tops:K->A topology) m =
+        (\i. if i = m then tops m else subtopology (tops i) {z i}) m`
+      SUBST1_TAC THENL [REWRITE_TAC[]; ALL_TAC] THEN CONJ_TAC THEN
+      MATCH_MP_TAC(REWRITE_RULE[open_map; RIGHT_IMP_FORALL_THM; IMP_IMP]
+        OPEN_MAP_PRODUCT_PROJECTION) THEN
+      ASM_MESON_TAC[];
+      CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN CONJ_TAC THENL
+       [FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+         `s SUBSET u ==> t SUBSET IMAGE f s ==> t SUBSET IMAGE f u`)) THEN
+        REWRITE_TAC[IMAGE_PROJECTION_CARTESIAN_PRODUCT] THEN
+        ASM_REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY] THEN
+        COND_CASES_TAC THEN REWRITE_TAC[SUBSET_REFL] THEN
+        FIRST_X_ASSUM(X_CHOOSE_THEN `i:K` MP_TAC) THEN
+        COND_CASES_TAC THEN ASM_REWRITE_TAC[NOT_INSERT_EMPTY] THEN
+        SIMP_TAC[SUBSET_REFL];
+        ALL_TAC] THEN
+      REWRITE_TAC[SET_RULE `DISJOINT (IMAGE f s) (IMAGE f t) <=>
+       !x y. x IN s /\ y IN t ==> ~(f x = f y)`] THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+       `DISJOINT u v ==> (!x. x IN u ==> !y. y IN v /\ p x = p y ==> x = y)
+        ==> !x y. x IN u /\ y IN v ==> ~(p x = p y)`)) THEN
+      REPLICATE_TAC 2
+      (FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+        `open_in top u
+         ==> (open_in top u ==> u SUBSET topspace top) /\
+             (!x. x IN topspace top ==> P x)
+             ==> !x. x IN u ==> P x`)) THEN
+       REWRITE_TAC[OPEN_IN_SUBSET] THEN
+       REWRITE_TAC[TOPSPACE_PRODUCT_TOPOLOGY; cartesian_product] THEN
+       REWRITE_TAC[IN_ELIM_THM; EXTENSIONAL; o_DEF; COND_RATOR; COND_RAND] THEN
+       REWRITE_TAC[TAUT
+        `(if p then q else r) <=> (p ==> q) /\ (~p ==> r)`]THEN
+       REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; IN_INTER; FORALL_AND_THM] THEN
+       ASM_REWRITE_TAC[FORALL_UNWIND_THM2; IN_SING; IMP_IMP] THEN
+       GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[IMP_CONJ]) THEN
+      REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `j:K` THEN
+      ASM_CASES_TAC `j:K = m` THEN ASM_REWRITE_TAC[] THEN
+      ASM_CASES_TAC `(j:K) IN k` THEN ASM_SIMP_TAC[]];
+      REWRITE_TAC[GSYM NEIGHBOURHOOD_BASE_OF_CLOSED_IN] THEN DISCH_TAC THEN
+      REWRITE_TAC[MATCH_MP NEIGHBOURHOOD_BASE_OF_TOPOLOGY_BASE
+       (SPEC_ALL OPEN_IN_PRODUCT_TOPOLOGY)] THEN
+      REWRITE_TAC[PRODUCT_TOPOLOGY_BASE_ALT] THEN
+      REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+      REWRITE_TAC[FORALL_IN_GSPEC] THEN
+      X_GEN_TAC `w:K->A->bool` THEN STRIP_TAC THEN
+      X_GEN_TAC `x:K->A` THEN DISCH_TAC THEN
+      RULE_ASSUM_TAC(REWRITE_RULE
+       [NEIGHBOURHOOD_BASE_OF; RIGHT_IMP_FORALL_THM; IMP_IMP]) THEN
+      FIRST_X_ASSUM(MP_TAC o GEN `i:K` o SPECL
+       [`i:K`; `(w:K->A->bool) i`; `(x:K->A) i`]) THEN
+      FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [cartesian_product]) THEN
+      ASM_SIMP_TAC[IN_ELIM_THM; IMP_CONJ] THEN DISCH_TAC THEN DISCH_TAC THEN
+      GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+      REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [`u:K->A->bool`; `c:K->A->bool`] THEN DISCH_TAC THEN
+      MAP_EVERY EXISTS_TAC
+       [`cartesian_product k
+          (\i. if w i = topspace(tops i) then topspace(tops i)
+               else (u:K->A->bool) i)`;
+        `cartesian_product k
+          (\i. if w i = topspace(tops i) then topspace(tops i)
+               else (c:K->A->bool) i)`] THEN
+      REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+       [REWRITE_TAC[OPEN_IN_CARTESIAN_PRODUCT_GEN] THEN DISJ2_TAC THEN
+        CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[OPEN_IN_TOPSPACE]] THEN
+        FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+         (REWRITE_RULE[IMP_CONJ] FINITE_SUBSET)) THEN
+        SET_TAC[];
+        REWRITE_TAC[CLOSED_IN_CARTESIAN_PRODUCT] THEN DISJ2_TAC THEN
+        ASM_MESON_TAC[CLOSED_IN_TOPSPACE];
+        ASM_REWRITE_TAC[IN_ELIM_THM; cartesian_product] THEN
+        ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET];
+        REWRITE_TAC[SUBSET_CARTESIAN_PRODUCT] THEN ASM SET_TAC[];
+        REWRITE_TAC[SUBSET_CARTESIAN_PRODUCT] THEN ASM SET_TAC[]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A binary product topology where the two types can be different.           *)
 (* ------------------------------------------------------------------------- *)
@@ -8797,24 +9325,9 @@ let OPEN_IN_PROD_TOPOLOGY_ALT = prove
         !x y. (x,y) IN s
               ==> ?u v. open_in top1 u /\ open_in top2 v /\
                         x IN u /\ y IN v /\ u CROSS v SUBSET s`,
-  REPEAT GEN_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL
-   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RATOR_CONV
-     [OPEN_IN_PROD_TOPOLOGY]) THEN
-    REWRITE_TAC[UNION_OF; ARBITRARY; LEFT_IMP_EXISTS_THM] THEN
-    X_GEN_TAC `w:(A#B->bool)->bool` THEN DISCH_THEN(MP_TAC o SPEC `x:A,y:B` o
-      MATCH_MP (SET_RULE
-      `(!c. c IN u ==> t c) /\ UNIONS u = s
-       ==> !x. x IN s ==> ?c. c IN t /\ c SUBSET s /\ x IN c`)) THEN
-    ASM_REWRITE_TAC[IN_CROSS; ETA_AX; LEFT_IMP_EXISTS_THM] THEN
-    REWRITE_TAC[IMP_CONJ; FORALL_IN_GSPEC; IN_CROSS] THEN ASM_MESON_TAC[];
-    GEN_REWRITE_TAC I [OPEN_IN_SUBOPEN] THEN REWRITE_TAC[FORALL_PAIR_THM] THEN
-    MAP_EVERY X_GEN_TAC [`x:A`; `y:B`] THEN STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPECL [`x:A`; `y:B`]) THEN
-    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-    MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:B->bool`] THEN STRIP_TAC THEN
-    EXISTS_TAC `(u:A->bool) CROSS (v:B->bool)` THEN
-    ASM_REWRITE_TAC[IN_CROSS; OPEN_IN_PROD_TOPOLOGY] THEN
-    MATCH_MP_TAC ARBITRARY_UNION_OF_INC THEN ASM SET_TAC[]]);;
+  REWRITE_TAC[OPEN_IN_PROD_TOPOLOGY] THEN
+  REWRITE_TAC[ARBITRARY_UNION_OF_ALT; EXISTS_IN_GSPEC] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; GSYM CONJ_ASSOC]);;
 
 let OPEN_MAP_FST,OPEN_MAP_SND = (CONJ_PAIR o prove)
  (`(!top1:A topology top2:B topology.
@@ -8983,6 +9496,22 @@ let CONTINUOUS_MAP_SND_OF = prove
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
   ASM_MESON_TAC[CONTINUOUS_MAP_COMPOSE; CONTINUOUS_MAP_SND]);;
 
+let CONTINUOUS_MAP_OF_FST = prove
+ (`!top:C topology top1:A topology top2:B topology f.
+           continuous_map (top1,top) f
+           ==> continuous_map (prod_topology top1 top2,top) (\x. f(FST x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  ASM_MESON_TAC[CONTINUOUS_MAP_FST]);;
+
+let CONTINUOUS_MAP_OF_SND = prove
+ (`!top:C topology top1:A topology top2:B topology f.
+           continuous_map (top2,top) f
+           ==> continuous_map (prod_topology top1 top2,top) (\x. f(SND x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  ASM_MESON_TAC[CONTINUOUS_MAP_SND]);;
+
 let INTERIOR_OF_CROSS = prove
  (`!top1:A topology top2:B topology s t.
         (prod_topology top1 top2) interior_of (s CROSS t) =
@@ -9089,6 +9618,94 @@ let HAUSDORFF_SPACE_PROD_TOPOLOGY = prove
       EXISTS_TAC `(topspace top1 CROSS v):A#B->bool`] THEN
     ASM_REWRITE_TAC[OPEN_IN_CROSS; OPEN_IN_TOPSPACE; IN_CROSS] THEN
     ASM_REWRITE_TAC[DISJOINT_CROSS]]);;
+
+let REGULAR_SPACE_PROD_TOPOLOGY = prove
+ (`!(top1:A topology) (top2:B topology).
+        regular_space (prod_topology top1 top2) <=>
+        topspace (prod_topology top1 top2) = {} \/
+        regular_space top1 /\ regular_space top2`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `(topspace top1 CROSS topspace top2):A#B->bool = {}` THEN
+  ASM_REWRITE_TAC[TOPSPACE_PROD_TOPOLOGY] THENL
+   [ASM_REWRITE_TAC[regular_space; TOPSPACE_PROD_TOPOLOGY; IN_DIFF;
+                    NOT_IN_EMPTY];
+    FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[CROSS_EQ_EMPTY]) THEN
+    REWRITE_TAC[DE_MORGAN_THM] THEN STRIP_TAC] THEN
+  EQ_TAC THENL
+   [REPEAT STRIP_TAC THENL
+     [UNDISCH_TAC `~(topspace top2:B->bool = {})`;
+      UNDISCH_TAC `~(topspace top1:A->bool = {})`] THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THENL
+     [X_GEN_TAC `b:B`; X_GEN_TAC `a:A`] THEN
+    DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP REGULAR_SPACE_SUBTOPOLOGY) THENL
+     [DISCH_THEN(MP_TAC o SPEC `(topspace top1 CROSS {b}):A#B->bool`);
+      DISCH_THEN(MP_TAC o SPEC `({a} CROSS topspace top2):A#B->bool`)] THEN
+    REWRITE_TAC[SUBTOPOLOGY_CROSS; SUBTOPOLOGY_TOPSPACE] THEN
+    REWRITE_TAC[regular_space; IN_DIFF; TOPSPACE_PROD_TOPOLOGY] THEN
+    REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS] THEN
+    REWRITE_TAC[GSYM CONJ_ASSOC; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; SET_RULE
+     `b IN s INTER {a} <=> b = a /\ a IN s`] THEN
+    ASM_REWRITE_TAC[IMP_CONJ; FORALL_UNWIND_THM2; PAIR_EQ] THEN
+    DISCH_TAC THENL
+     [X_GEN_TAC `c:A->bool` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `(c:A->bool) CROSS {b:B}`);
+      X_GEN_TAC `c:B->bool` THEN DISCH_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `{a:A} CROSS (c:B->bool)`)] THEN
+    ASM_REWRITE_TAC[CLOSED_IN_CROSS; IN_CROSS; IN_SING] THEN
+    ASM_SIMP_TAC[MESON[CLOSED_IN_TOPSPACE; TOPSPACE_SUBTOPOLOGY;
+                SET_RULE `x IN u ==> u INTER {x} = {x}`]
+        `b IN topspace top ==> closed_in (subtopology top {b}) {b}`] THEN
+    MATCH_MP_TAC MONO_FORALL THENL [X_GEN_TAC `x:A`; X_GEN_TAC `x:B`] THEN
+    DISCH_THEN(fun th -> REPEAT STRIP_TAC THEN MP_TAC th) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:A#B->bool`; `v:A#B->bool`] THEN STRIP_TAC THENL
+     [MAP_EVERY EXISTS_TAC
+       [`IMAGE FST (u:A#B->bool)`; `IMAGE FST (v:A#B->bool)`];
+      MAP_EVERY EXISTS_TAC
+       [`IMAGE SND (u:A#B->bool)`; `IMAGE SND (v:A#B->bool)`]] THEN
+    ONCE_REWRITE_TAC[TAUT
+     `p /\ q /\ r /\ s /\ t <=> (p /\ q) /\ r /\ s /\ t`] THEN
+    (CONJ_TAC THENL
+      [CONJ_TAC THEN
+       (MATCH_MP_TAC(REWRITE_RULE[open_map] OPEN_MAP_FST) ORELSE
+        MATCH_MP_TAC(REWRITE_RULE[open_map] OPEN_MAP_SND)) THEN
+       ASM_MESON_TAC[];
+       ALL_TAC]) THEN
+    REWRITE_TAC[IN_IMAGE; EXISTS_PAIR_THM] THEN
+    (REPEAT CONJ_TAC THENL
+      [ASM_MESON_TAC[];
+       FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+        `s SUBSET u ==> t SUBSET IMAGE f s ==> t SUBSET IMAGE f u`)) THEN
+       REWRITE_TAC[IMAGE_FST_CROSS; IMAGE_SND_CROSS;
+                   NOT_INSERT_EMPTY; SUBSET_REFL];
+       MATCH_MP_TAC(SET_RULE
+        `DISJOINT u v /\ (!x y. x IN u /\ y IN v /\ f x = f y ==> x = y)
+         ==> DISJOINT (IMAGE f u) (IMAGE f v)`) THEN
+       ASM_REWRITE_TAC[] THEN
+       REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET)) THEN
+       REWRITE_TAC[SUBSET; FORALL_PAIR_THM; TOPSPACE_PROD_TOPOLOGY; IN_CROSS;
+                   TOPSPACE_SUBTOPOLOGY; IN_INTER; IN_SING] THEN
+       MESON_TAC[]]);
+    REWRITE_TAC[GSYM NEIGHBOURHOOD_BASE_OF_CLOSED_IN] THEN
+    REWRITE_TAC[NEIGHBOURHOOD_BASE_OF; FORALL_PAIR_THM] THEN STRIP_TAC THEN
+    MAP_EVERY X_GEN_TAC [`w:A#B->bool`; `x:A`; `y:B`] THEN STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_PROD_TOPOLOGY_ALT]) THEN
+    DISCH_THEN(MP_TAC o SPECL [`x:A`; `y:B`]) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:B->bool`] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`v:B->bool`; `y:B`]) THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`u:A->bool`; `x:A`]) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`d1:A->bool`; `c1:A->bool`] THEN STRIP_TAC THEN
+    MAP_EVERY X_GEN_TAC [`d2:B->bool`; `c2:B->bool`] THEN STRIP_TAC THEN
+    EXISTS_TAC `(d1:A->bool) CROSS (d2:B->bool)` THEN
+    EXISTS_TAC `(c1:A->bool) CROSS (c2:B->bool)` THEN
+    ASM_SIMP_TAC[SUBSET_CROSS; OPEN_IN_CROSS; CLOSED_IN_CROSS; IN_CROSS] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        SUBSET_TRANS)) THEN
+    ASM_REWRITE_TAC[SUBSET_CROSS]]);;
 
 let COMPACT_SPACE_PROD_TOPOLOGY = prove
  (`!top1:A topology top2:B topology.
