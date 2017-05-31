@@ -1510,6 +1510,12 @@ let REAL_WLOG_LT = prove
    ==> !x y. P x y`,
   MESON_TAC[REAL_LT_TOTAL]);;
 
+let REAL_WLOG_LE_3 = prove                                                     
+ (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\      
+       (!x y z:real. x <= y /\ y <= z ==> P x y z)                          
+       ==> !x y z. P x y z`,                              
+  MESON_TAC[REAL_LE_TOTAL]);;             
+
 (* ------------------------------------------------------------------------- *)
 (* Square roots. The existence derivation is laborious but independent of    *)
 (* any analytic or topological machinery, just using completeness directly.  *)

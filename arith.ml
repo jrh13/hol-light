@@ -634,6 +634,12 @@ let WLOG_LT = prove
    ==> !m y. P m y`,
   MESON_TAC[LT_CASES]);;
 
+let WLOG_LE_3 = prove                                                          
+ (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\                           
+       (!x y z. x <= y /\ y <= z ==> P x y z)                             
+       ==> !x y z. P x y z`,                            
+  MESON_TAC[LE_CASES]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Existence of least and greatest elements of (finite) set.                 *)
 (* ------------------------------------------------------------------------- *)

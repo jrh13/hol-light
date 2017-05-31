@@ -8,6 +8,33 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 21st May 2017       arith.ml
+
+Added ternary versions of the basic "WLOG" lemma for naturals, reals and 
+integers, as well as adding missing binary versions for integers:
+
+  INT_WLOG_LE =
+    |- (!x y. P x y <=> P y x) /\ (!x y. x <= y ==> P x y) ==> (!x y. P x y)
+  
+  INT_WLOG_LT =
+    |- (!x. P x x) /\ (!x y. P x y <=> P y x) /\ (!x y. x < y ==> P x y)
+       ==> (!x y. P x y)
+  
+  INT_WLOG_LE_3 =
+    |- !P. (!x y z. P x y z ==> P y x z /\ P x z y) /\
+           (!x y z. x <= y /\ y <= z ==> P x y z)
+           ==> (!x y z. P x y z)
+  
+  REAL_WLOG_LE_3 =
+    |- !P. (!x y z. P x y z ==> P y x z /\ P x z y) /\
+           (!x y z. x <= y /\ y <= z ==> P x y z)
+           ==> (!x y z. P x y z)
+  
+  WLOG_LE_3 =
+    |- !P. (!x y z. P x y z ==> P y x z /\ P x z y) /\
+           (!x y z. x <= y /\ y <= z ==> P x y z)
+           ==> (!x y z. P x y z)
+
 Sat 13th May 2017       printer.ml
 
 Added a patch to the prettyprinter from Marco Maggesi that ensures better

@@ -2594,15 +2594,8 @@ let CONNECTED_INTER_FRONTIER = prove
  (`!s t:real^N->bool.
         connected s /\ ~(s INTER t = {}) /\ ~(s DIFF t = {})
         ==> ~(s INTER frontier t = {})`,
-  REWRITE_TAC[FRONTIER_INTERIORS] THEN REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CONNECTED_OPEN_IN]) THEN
-  REWRITE_TAC[] THEN MAP_EVERY EXISTS_TAC
-   [`s INTER interior t:real^N->bool`;
-    `s INTER (interior((:real^N) DIFF t))`] THEN
-  SIMP_TAC[OPEN_IN_OPEN_INTER; OPEN_INTERIOR] THEN
-  MAP_EVERY (MP_TAC o C ISPEC INTERIOR_SUBSET)
-   [`t:real^N->bool`; `(:real^N) DIFF t`] THEN
-  ASM SET_TAC[]);;
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; GSYM EUCLIDEAN_FRONTIER_OF;
+              CONNECTED_IN_INTER_FRONTIER_OF]);;
 
 let FRONTIER_NOT_EMPTY = prove
  (`!s. ~(s = {}) /\ ~(s = (:real^N)) ==> ~(frontier s = {})`,

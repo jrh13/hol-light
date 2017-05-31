@@ -69,33 +69,16 @@ let REAL_BOUNDED_SUBSET_CLOSED_INTERVAL = prove
   MESON_TAC[REAL_INTERVAL_OPEN_SUBSET_CLOSED; SUBSET_TRANS;
             REAL_BOUNDED_SUBSET_OPEN_INTERVAL]);;
 
-let real_compact = new_definition
- `real_compact s <=> compact(IMAGE lift s)`;;
-
-let REAL_COMPACT_IMP_BOUNDED = prove
- (`!s. real_compact s ==> real_bounded s`,
-  REWRITE_TAC[real_compact; REAL_BOUNDED; COMPACT_IMP_BOUNDED]);;
-
-let REAL_COMPACT_IMP_CLOSED = prove
- (`!s. real_compact s ==> real_closed s`,
-  REWRITE_TAC[real_compact; REAL_CLOSED; COMPACT_IMP_CLOSED]);;
-
-let REAL_COMPACT_EQ_BOUNDED_CLOSED = prove
- (`!s. real_compact s <=> real_bounded s /\ real_closed s`,
-  REWRITE_TAC[real_compact; REAL_BOUNDED; REAL_CLOSED] THEN
-  REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED]);;
-
-let REAL_COMPACT_UNION = prove
- (`!s t. real_compact s /\ real_compact t ==> real_compact(s UNION t)`,
-  REWRITE_TAC[real_compact; IMAGE_UNION; COMPACT_UNION]);;
-
-let REAL_COMPACT_ATTAINS_INF = prove
- (`!s. real_compact s /\ ~(s = {}) ==> ?x. x IN s /\ !y. y IN s ==> x <= y`,
-  REWRITE_TAC[real_compact; COMPACT_ATTAINS_INF]);;
-
-let REAL_COMPACT_ATTAINS_SUP = prove
- (`!s. real_compact s /\ ~(s = {}) ==> ?x. x IN s /\ !y. y IN s ==> y <= x`,
-  REWRITE_TAC[real_compact; COMPACT_ATTAINS_SUP]);;
+let real_compact = prove
+ (`!s. real_compact s <=> compact(IMAGE lift s)`,
+  GEN_TAC THEN REWRITE_TAC[real_compact_def; GSYM COMPACT_IN_EUCLIDEAN] THEN
+  EQ_TAC THEN DISCH_TAC THENL
+   [MATCH_MP_TAC IMAGE_COMPACT_IN THEN EXISTS_TAC `euclideanreal` THEN
+    ASM_REWRITE_TAC[CONTINUOUS_MAP_LIFT];
+    GEN_REWRITE_TAC RAND_CONV [GSYM IMAGE_LIFT_DROP] THEN
+    REWRITE_TAC[IMAGE_o] THEN MATCH_MP_TAC IMAGE_COMPACT_IN THEN
+    EXISTS_TAC `euclidean:(real^1)topology` THEN
+    ASM_REWRITE_TAC[CONTINUOUS_MAP_DROP]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Limits of functions with real range.                                      *)
@@ -3137,21 +3120,6 @@ let SUBSET_REAL_INTERVAL = prove
     SET_TAC[LIFT_DROP]) in
   REWRITE_TAC[REAL_INTERVAL_INTERVAL; lemma; SUBSET_INTERVAL_1] THEN
   REWRITE_TAC[LIFT_DROP]);;
-
-let REAL_OPEN_CLOSED_INTERVAL = prove
- (`!a b. real_interval(a,b) = real_interval[a,b] DIFF {a,b}`,
-  SIMP_TAC[EXTENSION; IN_DIFF; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
-  REAL_ARITH_TAC);;
-
-let REAL_CLOSED_OPEN_INTERVAL = prove
- (`!a b. a <= b ==> real_interval[a,b] = real_interval(a,b) UNION {a,b}`,
-  SIMP_TAC[EXTENSION; IN_UNION; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
-  REAL_ARITH_TAC);;
-
-let REAL_COMPACT_INTERVAL = prove
- (`!a b. real_compact(real_interval[a,b])`,
-  REWRITE_TAC[REAL_INTERVAL_INTERVAL; real_compact] THEN
-  REWRITE_TAC[GSYM IMAGE_o; o_DEF; LIFT_DROP; IMAGE_ID; COMPACT_INTERVAL]);;
 
 let REAL_BOUNDED_REAL_INTERVAL = prove
  (`(!a b. real_bounded(real_interval[a,b])) /\

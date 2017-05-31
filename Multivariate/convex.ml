@@ -13335,6 +13335,14 @@ let OPEN_IN_CONVEX_MEETS_RELATIVE_INTERIOR = prove
   MP_TAC(ISPEC `u:real^N->bool` RELATIVE_INTERIOR_SUBSET) THEN
   MP_TAC(ISPEC `u:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[]);;
 
+let OPEN_SUBSET_CLOSURE_CONVEX = prove
+ (`!u s:real^N->bool.
+        open u /\ convex s ==> (u SUBSET closure s <=> u SUBSET interior s)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ALL_TAC; MESON_TAC[INTERIOR_SUBSET; CLOSURE_SUBSET; SUBSET]] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP SUBSET_INTERIOR) THEN
+  ASM_SIMP_TAC[CONVEX_INTERIOR_CLOSURE; INTERIOR_OPEN]);;
+
 let SETDIST_RELATIVE_INTERIOR = prove
  (`(!s t. convex s ==> setdist(relative_interior s,t) = setdist(s,t)) /\
    (!s t. convex t ==> setdist(s,relative_interior t) = setdist(s,t))`,

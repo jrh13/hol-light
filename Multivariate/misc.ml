@@ -31,6 +31,24 @@ let EXISTS_DIFF = prove
  (`(?s:A->bool. P(UNIV DIFF s)) <=> (?s. P s)`,
   MESON_TAC[COMPL_COMPL]);;
 
+let FORALL_DIFF_ALT = prove
+ (`!u:A->bool.
+    (!s. s SUBSET u ==> P(u DIFF s)) <=> (!s. s SUBSET u ==> P s)`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THEN
+  X_GEN_TAC `s:A->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `u DIFF s:A->bool`) THEN
+  REWRITE_TAC[SUBSET_DIFF] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_TERM_TAC THEN ASM SET_TAC[]);;
+
+let FORALL_DIFF_GEN = prove
+ (`!u:A->bool.
+    (!s. P(u DIFF s)) <=> (!s. s SUBSET u ==> P s)`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THEN
+  X_GEN_TAC `s:A->bool` THEN TRY DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `u DIFF s:A->bool`) THEN
+  REWRITE_TAC[SUBSET_DIFF] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_TERM_TAC THEN ASM SET_TAC[]);;
+
 let GE_REFL = prove
  (`!n:num. n >= n`,
   REWRITE_TAC[GE; LE_REFL]);;
@@ -294,6 +312,27 @@ let IS_REALINTERVAL_INTERVAL = prove
  (`!a b. is_realinterval(real_interval(a,b)) /\
          is_realinterval(real_interval[a,b])`,
   REWRITE_TAC[is_realinterval; IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
+
+let ENDS_IN_UNIT_REAL_INTERVAL = prove
+ (`&0 IN real_interval[&0,&1] /\ &1 IN real_interval[&0,&1]`,
+  REWRITE_TAC[IN_REAL_INTERVAL; REAL_POS; REAL_LE_REFL]);;
+
+let INTER_REAL_INTERVAL = prove
+ (`!a b c d.
+        real_interval[a,b] INTER real_interval[c,d] =
+        real_interval[max a c,min b d]`,
+  REWRITE_TAC[EXTENSION; IN_INTER; IN_REAL_INTERVAL] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_OPEN_CLOSED_INTERVAL = prove
+ (`!a b. real_interval(a,b) = real_interval[a,b] DIFF {a,b}`,
+  SIMP_TAC[EXTENSION; IN_DIFF; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_CLOSED_OPEN_INTERVAL = prove
+ (`!a b. a <= b ==> real_interval[a,b] = real_interval(a,b) UNION {a,b}`,
+  SIMP_TAC[EXTENSION; IN_UNION; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
+  REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Converting between matrices/arrays and flattened vectors. We can consider *)

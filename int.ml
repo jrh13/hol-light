@@ -535,6 +535,21 @@ let INT_SUB_SUB = INT_OF_REAL_THM REAL_SUB_SUB;;
 let INT_SUB_SUB2 = INT_OF_REAL_THM REAL_SUB_SUB2;;
 let INT_SUB_TRIANGLE = INT_OF_REAL_THM REAL_SUB_TRIANGLE;;
 
+let INT_WLOG_LE = prove                                                        
+ (`(!x y:int. P x y <=> P y x) /\ (!x y. x <= y ==> P x y) ==> !x y. P x y`,   
+  MESON_TAC[INT_LE_TOTAL]);;                                                   
+                                                      
+let INT_WLOG_LT = prove                                                      
+ (`(!x:int. P x x) /\ (!x y. P x y <=> P y x) /\ (!x y. x < y ==> P x y)
+   ==> !x y. P x y`,                                            
+  MESON_TAC[INT_LT_TOTAL]);;                           
+                                                        
+let INT_WLOG_LE_3 = prove                          
+ (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\              
+       (!x y z:int. x <= y /\ y <= z ==> P x y z)                       
+       ==> !x y z. P x y z`,                                              
+  MESON_TAC[INT_LE_TOTAL]);;                                                   
+
 (* ------------------------------------------------------------------------- *)
 (* More useful "image" theorems.                                             *)
 (* ------------------------------------------------------------------------- *)
