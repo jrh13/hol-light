@@ -345,7 +345,7 @@ let Y_DEGENERATE = prove
   MATCH_MP_TAC PELL_INDUCTION THEN SIMP_TAC[Y_CLAUSES] THEN
   REPEAT STRIP_TAC THEN ARITH_TAC);;
 
-let REAL_ARCH_POW = prove
+let REAL_ARCH_POW_MINIMAL = prove
  (`!x y. &1 < x /\ &1 < y
          ==> ?n. x pow n <= y /\ y < x pow (SUC n)`,
   REPEAT STRIP_TAC THEN

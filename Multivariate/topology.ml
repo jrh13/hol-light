@@ -12242,33 +12242,12 @@ let CONTINUOUS_UNIFORM_LIMIT = prove
         (!e. &0 < e
              ==> eventually (\n. !x. x IN s ==> norm(f n x - g x) < e) net)
         ==> g continuous_on s`,
-  REWRITE_TAC[continuous_on] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
-  X_GEN_TAC `x:real^M` THEN STRIP_TAC THEN
-  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `e / &3`) THEN
-  ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; ARITH] THEN
-  FIRST_X_ASSUM(fun th -> MP_TAC th THEN REWRITE_TAC[IMP_IMP] THEN
-        GEN_REWRITE_TAC LAND_CONV [GSYM EVENTUALLY_AND]) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP EVENTUALLY_HAPPENS) THEN
-  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `a:A` THEN
-  DISCH_THEN(CONJUNCTS_THEN2 (MP_TAC o SPEC `x:real^M`) ASSUME_TAC) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `e / &3`) THEN
-  ASM_SIMP_TAC[REAL_LT_DIV; REAL_OF_NUM_LT; ARITH] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN
-  MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
-  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `y:real^M` THEN
-  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC[] THEN
-  FIRST_X_ASSUM(fun th ->
-   MP_TAC(SPEC `x:real^M` th) THEN MP_TAC(SPEC `y:real^M` th)) THEN
-  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(REAL_ARITH
-   `w <= x + y + z
-    ==> x < e / &3 ==> y < e / &3 ==> z < e / &3 ==> w < e`) THEN
-  REWRITE_TAC[dist] THEN
-  SUBST1_TAC(VECTOR_ARITH
-   `(g:real^M->real^N) y - g x =
-    --(f (a:A) y - g y) + (f a x - g x) + (f a y - f a x)`) THEN
-  MATCH_MP_TAC NORM_TRIANGLE_LE THEN REWRITE_TAC[NORM_NEG; REAL_LE_LADD] THEN
-  MATCH_MP_TAC NORM_TRIANGLE_LE THEN REWRITE_TAC[NORM_NEG; REAL_LE_REFL]);;
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`net:A net`; `subtopology euclidean (s:real^M->bool)`;
+                 `euclidean_metric:(real^N)metric`; `f:A->real^M->real^N`;
+                 `g:real^M->real^N`] CONTINUOUS_MAP_UNIFORM_LIMIT) THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; MTOPOLOGY_EUCLIDEAN_METRIC; dist;
+                  EUCLIDEAN_METRIC; IN_UNIV; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
 let CONTINUOUS_UNIFORMLY_CAUCHY_LIMIT = prove
  (`!f:num->real^M->real^N s.

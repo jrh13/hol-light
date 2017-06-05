@@ -1377,6 +1377,51 @@ let REAL_ARCH = prove
  (`!x. &0 < x ==> !y. ?n. y < &n * x`,
   MESON_TAC[REAL_ARCH_LT; REAL_LT_LDIV_EQ]);;
 
+let REAL_ARCH_INV = prove
+ (`!e. &0 < e <=> ?n. ~(n = 0) /\ &0 < inv(&n) /\ inv(&n) < e`,
+  GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[REAL_LT_TRANS]] THEN
+  DISCH_TAC THEN MP_TAC(SPEC `inv(e)` REAL_ARCH_LT) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_MESON_TAC[REAL_LT_INV2; REAL_INV_INV; REAL_LT_INV_EQ; REAL_LT_TRANS;
+                REAL_LT_ANTISYM]);;
+
+let REAL_POW_LBOUND = prove
+ (`!x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n`,
+  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
+  INDUCT_TAC THEN
+  REWRITE_TAC[real_pow; REAL_MUL_LZERO; REAL_ADD_RID; REAL_LE_REFL] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(&1 + x) * (&1 + &n * x)` THEN
+  ASM_SIMP_TAC[REAL_LE_LMUL; REAL_ARITH `&0 <= x ==> &0 <= &1 + x`] THEN
+  ASM_SIMP_TAC[REAL_LE_MUL; REAL_POS; REAL_ARITH
+   `&1 + (n + &1) * x <= (&1 + x) * (&1 + n * x) <=> &0 <= n * x * x`]);;
+
+let REAL_ARCH_POW = prove
+ (`!x y. &1 < x ==> ?n. y < x pow n`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC `x - &1` REAL_ARCH) THEN ASM_REWRITE_TAC[REAL_SUB_LT] THEN
+  DISCH_THEN(MP_TAC o SPEC `y:real`) THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `n:num` THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+  EXISTS_TAC `&1 + &n * (x - &1)` THEN
+  ASM_SIMP_TAC[REAL_ARITH `x < y ==> x < &1 + y`] THEN
+  ASM_MESON_TAC[REAL_POW_LBOUND; REAL_SUB_ADD2; REAL_ARITH
+    `&1 < x ==> &0 <= x - &1`]);;
+
+let REAL_ARCH_POW2 = prove
+ (`!x. ?n. x < &2 pow n`,
+  SIMP_TAC[REAL_ARCH_POW; REAL_OF_NUM_LT; ARITH]);;
+
+let REAL_ARCH_POW_INV = prove
+ (`!x y. &0 < y /\ x < &1 ==> ?n. x pow n < y`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `&0 < x` THENL
+   [ALL_TAC; ASM_MESON_TAC[REAL_POW_1; REAL_LET_TRANS; REAL_NOT_LT]] THEN
+  SUBGOAL_THEN `inv(&1) < inv(x)` MP_TAC THENL
+   [ASM_SIMP_TAC[REAL_LT_INV2]; REWRITE_TAC[REAL_INV_1]] THEN
+  DISCH_THEN(MP_TAC o SPEC `inv(y)` o MATCH_MP REAL_ARCH_POW) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC BINOP_CONV [GSYM REAL_INV_INV] THEN
+  ASM_SIMP_TAC[GSYM REAL_POW_INV; REAL_LT_INV; REAL_LT_INV2]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The sign of a real number, as a real number.                              *)
 (* ------------------------------------------------------------------------- *)
@@ -1510,11 +1555,11 @@ let REAL_WLOG_LT = prove
    ==> !x y. P x y`,
   MESON_TAC[REAL_LT_TOTAL]);;
 
-let REAL_WLOG_LE_3 = prove                                                     
- (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\      
-       (!x y z:real. x <= y /\ y <= z ==> P x y z)                          
-       ==> !x y z. P x y z`,                              
-  MESON_TAC[REAL_LE_TOTAL]);;             
+let REAL_WLOG_LE_3 = prove
+ (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\
+       (!x y z:real. x <= y /\ y <= z ==> P x y z)
+       ==> !x y z. P x y z`,
+  MESON_TAC[REAL_LE_TOTAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Square roots. The existence derivation is laborious but independent of    *)

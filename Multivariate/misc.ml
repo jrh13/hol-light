@@ -606,53 +606,8 @@ let HULL_INTER_SUBSET = prove
   REWRITE_TAC[hull; INTERS_GSPEC] THEN SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* More variants of the Archimedian property and useful consequences.        *)
+(* Handy lemmas switching between versions of limit arguments.               *)
 (* ------------------------------------------------------------------------- *)
-
-let REAL_ARCH_INV = prove
- (`!e. &0 < e <=> ?n. ~(n = 0) /\ &0 < inv(&n) /\ inv(&n) < e`,
-  GEN_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[REAL_LT_TRANS]] THEN
-  DISCH_TAC THEN MP_TAC(SPEC `inv(e)` REAL_ARCH_LT) THEN
-  MATCH_MP_TAC MONO_EXISTS THEN
-  ASM_MESON_TAC[REAL_LT_INV2; REAL_INV_INV; REAL_LT_INV_EQ; REAL_LT_TRANS;
-                REAL_LT_ANTISYM]);;
-
-let REAL_POW_LBOUND = prove
- (`!x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n`,
-  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
-  INDUCT_TAC THEN
-  REWRITE_TAC[real_pow; REAL_MUL_LZERO; REAL_ADD_RID; REAL_LE_REFL] THEN
-  REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
-  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(&1 + x) * (&1 + &n * x)` THEN
-  ASM_SIMP_TAC[REAL_LE_LMUL; REAL_ARITH `&0 <= x ==> &0 <= &1 + x`] THEN
-  ASM_SIMP_TAC[REAL_LE_MUL; REAL_POS; REAL_ARITH
-   `&1 + (n + &1) * x <= (&1 + x) * (&1 + n * x) <=> &0 <= n * x * x`]);;
-
-let REAL_ARCH_POW = prove
- (`!x y. &1 < x ==> ?n. y < x pow n`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(SPEC `x - &1` REAL_ARCH) THEN ASM_REWRITE_TAC[REAL_SUB_LT] THEN
-  DISCH_THEN(MP_TAC o SPEC `y:real`) THEN MATCH_MP_TAC MONO_EXISTS THEN
-  X_GEN_TAC `n:num` THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
-  EXISTS_TAC `&1 + &n * (x - &1)` THEN
-  ASM_SIMP_TAC[REAL_ARITH `x < y ==> x < &1 + y`] THEN
-  ASM_MESON_TAC[REAL_POW_LBOUND; REAL_SUB_ADD2; REAL_ARITH
-    `&1 < x ==> &0 <= x - &1`]);;
-
-let REAL_ARCH_POW2 = prove
- (`!x. ?n. x < &2 pow n`,
-  SIMP_TAC[REAL_ARCH_POW; REAL_OF_NUM_LT; ARITH]);;
-
-let REAL_ARCH_POW_INV = prove
- (`!x y. &0 < y /\ x < &1 ==> ?n. x pow n < y`,
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `&0 < x` THENL
-   [ALL_TAC; ASM_MESON_TAC[REAL_POW_1; REAL_LET_TRANS; REAL_NOT_LT]] THEN
-  SUBGOAL_THEN `inv(&1) < inv(x)` MP_TAC THENL
-   [ASM_SIMP_TAC[REAL_LT_INV2]; REWRITE_TAC[REAL_INV_1]] THEN
-  DISCH_THEN(MP_TAC o SPEC `inv(y)` o MATCH_MP REAL_ARCH_POW) THEN
-  MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN DISCH_TAC THEN
-  GEN_REWRITE_TAC BINOP_CONV [GSYM REAL_INV_INV] THEN
-  ASM_SIMP_TAC[GSYM REAL_POW_INV; REAL_LT_INV; REAL_LT_INV2]);;
 
 let FORALL_POS_MONO = prove
  (`!P. (!d e. d < e /\ P d ==> P e) /\ (!n. ~(n = 0) ==> P(inv(&n)))
@@ -686,22 +641,6 @@ let REAL_ARCH_RDIV_EQ_0 = prove
     RULE_ASSUM_TAC (REWRITE_RULE [REAL_MUL_LZERO]) THEN
     ASM_MESON_TAC [REAL_LET_ANTISYM];
     ASM_MESON_TAC [REAL_LET_ANTISYM; REAL_MUL_SYM; LT_NZ]]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Relate max and min to sup and inf.                                        *)
-(* ------------------------------------------------------------------------- *)
-
-let REAL_MAX_SUP = prove
- (`!x y. max x y = sup {x,y}`,
-  SIMP_TAC[GSYM REAL_LE_ANTISYM; REAL_SUP_LE_FINITE; REAL_LE_SUP_FINITE;
-           FINITE_RULES; NOT_INSERT_EMPTY; REAL_MAX_LE; REAL_LE_MAX] THEN
-  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[REAL_LE_TOTAL]);;
-
-let REAL_MIN_INF = prove
- (`!x y. min x y = inf {x,y}`,
-  SIMP_TAC[GSYM REAL_LE_ANTISYM; REAL_INF_LE_FINITE; REAL_LE_INF_FINITE;
-           FINITE_RULES; NOT_INSERT_EMPTY; REAL_MIN_LE; REAL_LE_MIN] THEN
-  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[REAL_LE_TOTAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A slightly sharper indexing lemma.                                        *)
@@ -1936,6 +1875,121 @@ let BACK_AND_FORTH_2 = prove
    [CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]; ALL_TAC] THEN
   EXPAND_TAC "t'" THEN REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_IMAGE_2] THEN
   ASM_SIMP_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Definition by recursion on dyadic rationals in [0,1].                     *)
+(* ------------------------------------------------------------------------- *)
+
+let RECURSION_ON_DYADIC_FRACTIONS = prove
+ (`!R a b:A.
+        (!x y z. R x y /\ R y z ==> R x z) /\
+        R a b /\ (!x y. R x y ==> ?z. R x z /\ R z y)
+        ==> ?f. f(&0) = a /\ f(&1) = b /\
+                !x y. x IN {&k / &2 pow n | k <= 2 EXP n} /\
+                      y IN {&k / &2 pow n | k <= 2 EXP n} /\
+                      x < y
+                      ==> R (f x) (f y)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?f. (f 0 = \k. if k = 0 then a else b) /\
+        (!n. f(SUC n) = \k.
+                if EVEN k then f n (k DIV 2)
+                else @z:A. R (f n ((k - 1) DIV 2)) z /\
+                           R z (f n ((k + 1) DIV 2)))`
+  MP_TAC THENL [REWRITE_TAC[num_RECURSION]; ALL_TAC] THEN
+  REWRITE_TAC[FUN_EQ_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:num->num->A` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?f. !k n. f(&k / &2 pow n):A = g n k` MP_TAC THENL
+   [ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN MP_TAC(ISPECL
+     [`\(k,n). (g:num->num->A) n k`; `\(k,n). &k / &2 pow n`]
+     FUNCTION_FACTORS_LEFT) THEN
+    REWRITE_TAC[FORALL_PAIR_THM; FUN_EQ_THM; o_THM] THEN
+    DISCH_THEN (SUBST1_TAC o SYM) THEN ONCE_REWRITE_TAC[MESON[]
+      `(!a b c d. P a b c d) <=> (!b d a c. P a b c d)`] THEN
+    MATCH_MP_TAC WLOG_LE THEN REPEAT CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+    SIMP_TAC[REAL_FIELD `~(y = &0) /\ ~(y' = &0)
+                         ==> (x / y = x' / y' <=> y' / y * x = x')`;
+       REAL_POW_EQ_0; REAL_OF_NUM_EQ; REAL_DIV_POW2; ARITH_EQ] THEN
+    SIMP_TAC[LE_EXISTS; LEFT_IMP_EXISTS_THM] THEN
+    SIMP_TAC[ADD_SUB2; REAL_OF_NUM_MUL; REAL_OF_NUM_EQ; REAL_OF_NUM_POW] THEN
+    REWRITE_TAC[MESON[]
+     `(!n n' d. n' = f d n ==> !m m'. g d m = m' ==> P m m' n d) <=>
+      (!d m n. P m (g d m) n d)`] THEN
+    ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN
+    INDUCT_TAC THEN SIMP_TAC[EXP; MULT_CLAUSES; ADD_CLAUSES] THEN
+    ASM_REWRITE_TAC[EVEN_MULT; ARITH_EVEN; GSYM MULT_ASSOC] THEN
+    ASM_REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n`];
+    MATCH_MP_TAC MONO_EXISTS] THEN
+  X_GEN_TAC `f:real->A` THEN STRIP_TAC THEN REPEAT CONJ_TAC THENL
+   [SUBST1_TAC(REAL_ARITH `&0 = &0 / &2 pow 0`) THEN
+    ASM_REWRITE_TAC[];
+    SUBST1_TAC(REAL_ARITH `&1 = &1 / &2 pow 0`) THEN
+    ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV;
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC] THEN
+    MAP_EVERY X_GEN_TAC [`k1:num`; `n1:num`] THEN DISCH_TAC THEN
+    MAP_EVERY X_GEN_TAC [`k2:num`; `n2:num`] THEN DISCH_TAC THEN
+    CONJUNCTS_THEN SUBST1_TAC (REAL_FIELD
+     `&k1 / &2 pow n1 = (&2 pow n2 * &k1) / &2 pow (n1 + n2) /\
+      &k2 / &2 pow n2 = (&2 pow n1 * &k2) / &2 pow (n1 + n2)`) THEN
+    SIMP_TAC[REAL_LT_DIV2_EQ; REAL_LT_POW2;
+        MESON[REAL_OF_NUM_MUL; REAL_OF_NUM_POW]
+         `&2 pow n * &k = &(2 EXP n * k)`] THEN
+    SUBGOAL_THEN `&(2 EXP n1 * k2) <= &2 pow (n1 + n2)` MP_TAC THENL
+     [REWRITE_TAC[REAL_OF_NUM_POW; REAL_OF_NUM_LE; EXP_ADD] THEN
+      ASM_REWRITE_TAC[LE_MULT_LCANCEL];
+      SPEC_TAC(`2 EXP n1 * k2`,`j2:num`) THEN
+      SPEC_TAC(`2 EXP n2 * k1`,`j1:num`) THEN
+      SPEC_TAC(`n1 + n2:num`,`n:num`)] THEN
+    ASM_REWRITE_TAC[] THEN REWRITE_TAC[REAL_OF_NUM_POW; GSYM IMP_CONJ_ALT] THEN
+    REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN
+    REPEAT(FIRST_X_ASSUM(K ALL_TAC o GEN_REWRITE_RULE I [GSYM NOT_LT]))] THEN
+  MATCH_MP_TAC num_INDUCTION THEN CONJ_TAC THENL
+   [ASM_SIMP_TAC[ARITH_RULE `j1 < j2 /\ j2 <= 2 EXP 0 <=> j1 = 0 /\ j2 = 1`;
+                 ARITH_EQ];
+    X_GEN_TAC `n:num` THEN DISCH_TAC THEN X_GEN_TAC `j:num`] THEN
+  X_GEN_TAC `k:num` THEN REWRITE_TAC[EXP] THEN STRIP_TAC THEN
+  DISJ_CASES_THEN MP_TAC (SPEC `j:num` EVEN_OR_ODD) THEN
+  DISJ_CASES_THEN MP_TAC (SPEC `k:num` EVEN_OR_ODD) THEN
+  REWRITE_TAC[EVEN_EXISTS; ODD_EXISTS; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:num` THEN DISCH_THEN SUBST_ALL_TAC THEN
+  X_GEN_TAC `a:num` THEN DISCH_THEN SUBST_ALL_TAC THEN
+  ASM_REWRITE_TAC[ADD1; ADD_SUB; EVEN_ADD; EVEN_MULT; ARITH_EVEN;
+                  ARITH_RULE `(2 * a) DIV 2 = a`;
+                  ARITH_RULE `((2 * a + 1) + 1) DIV 2 = a + 1`]
+  THENL
+   [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+    ALL_TAC; ALL_TAC; ALL_TAC] THEN
+  (ABBREV_TAC `w = @z. R ((g:num->num->A) n a) z /\  R z (g n (a + 1))` THEN
+   SUBGOAL_THEN `R ((g:num->num->A) n a) w /\ R w (g n (a + 1))`
+   STRIP_ASSUME_TAC THENL
+    [EXPAND_TAC "w" THEN CONV_TAC SELECT_CONV THEN
+     FIRST_X_ASSUM MATCH_MP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+     ASM_ARITH_TAC;
+     ALL_TAC])
+  THENL
+   [ALL_TAC;
+    ASM_CASES_TAC `b:num = a + 1` THEN ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    EXISTS_TAC `(g:num->num->A) n (a + 1)` THEN
+    ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  (ABBREV_TAC `z = @z. R ((g:num->num->A) n b) z /\ R z (g n (b + 1))` THEN
+   SUBGOAL_THEN `R ((g:num->num->A) n b) z /\ R z (g n (b + 1))`
+   STRIP_ASSUME_TAC THENL
+    [EXPAND_TAC "z" THEN CONV_TAC SELECT_CONV THEN
+     FIRST_X_ASSUM MATCH_MP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+     ASM_ARITH_TAC;
+     ALL_TAC])
+  THENL
+   [ASM_CASES_TAC `a:num = b` THEN ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN EXISTS_TAC `(g:num->num->A) n b` THEN
+    ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_ARITH_TAC;
+    ASM_CASES_TAC `a + 1 = b` THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    FIRST_ASSUM MATCH_MP_TAC THEN EXISTS_TAC `(g:num->num->A) n (a + 1)` THEN
+    ASM_REWRITE_TAC[] THEN
+    FIRST_ASSUM MATCH_MP_TAC THEN EXISTS_TAC `(g:num->num->A) n b`] THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* The Suslin operation. The proof of the only non-trivial result,           *)

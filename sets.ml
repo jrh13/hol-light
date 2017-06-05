@@ -4134,6 +4134,12 @@ let SUP_APPROACH = prove
   INTRO_TAC "_ sup" THEN REMOVE_THEN "sup" MATCH_MP_TAC THEN
   ASM_MESON_TAC[]);;
 
+let REAL_MAX_SUP = prove
+ (`!x y. max x y = sup {x,y}`,
+  SIMP_TAC[GSYM REAL_LE_ANTISYM; REAL_SUP_LE_FINITE; REAL_LE_SUP_FINITE;
+           FINITE_RULES; NOT_INSERT_EMPTY; REAL_MAX_LE; REAL_LE_MAX] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[REAL_LE_TOTAL]);;
+
 let inf = new_definition
   `inf s = @a:real. (!x. x IN s ==> a <= x) /\
                     !b. (!x. x IN s ==> b <= x) ==> b <= a`;;
@@ -4298,6 +4304,12 @@ let INF_APPROACH = prove
   HYP (MP_TAC o MATCH_MP INF o end_itlist CONJ) "npty bound" [] THEN
   INTRO_TAC "_ inf" THEN REMOVE_THEN "inf" MATCH_MP_TAC THEN
   ASM_MESON_TAC[]);;
+
+let REAL_MIN_INF = prove
+ (`!x y. min x y = inf {x,y}`,
+  SIMP_TAC[GSYM REAL_LE_ANTISYM; REAL_INF_LE_FINITE; REAL_LE_INF_FINITE;
+           FINITE_RULES; NOT_INSERT_EMPTY; REAL_MIN_LE; REAL_LE_MIN] THEN
+  REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN MESON_TAC[REAL_LE_TOTAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relational counterparts of sup and inf.                                   *)
