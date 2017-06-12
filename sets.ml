@@ -2363,6 +2363,12 @@ let CARD_LE_UNIONS_CHAIN = prove
   MATCH_MP_TAC FINITE_SUBSET_UNIONS_CHAIN THEN
   ASM_REWRITE_TAC[]);;
 
+let CARD_LE_1 = prove
+ (`!s:A->bool. FINITE s /\ CARD s <= 1 <=> ?a. s SUBSET {a}`,
+  GEN_TAC THEN REWRITE_TAC[ARITH_RULE `c <= 1 <=> c = 0 \/ c = 1`] THEN
+  REWRITE_TAC[LEFT_OR_DISTRIB; GSYM HAS_SIZE] THEN
+  CONV_TAC(ONCE_DEPTH_CONV HAS_SIZE_CONV) THEN SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of product.                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -2664,6 +2670,15 @@ let CARTESIAN_PRODUCT_EQ_EMPTY = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `\i. if i IN k then (f:K->A) i else ARB`) THEN
   REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN SIMP_TAC[]);;
 
+let CARTESIAN_PRODUCT_EQ_MEMBERS = prove
+ (`!k s x y:K->A.
+        x IN cartesian_product k s /\ y IN cartesian_product k s /\
+        (!i. i IN k ==> x i = y i)
+        ==> x = y`,
+  REWRITE_TAC[cartesian_product; IN_ELIM_THM] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC EXTENSIONAL_EQ THEN
+  EXISTS_TAC `k:K->bool` THEN ASM_REWRITE_TAC[IN]);;
+
 let SUBSET_CARTESIAN_PRODUCT = prove
  (`!k s t:K->A->bool.
         cartesian_product k s SUBSET cartesian_product k t <=>
@@ -2871,6 +2886,16 @@ let FINITE_POWERSET = prove
  (`!s:A->bool. FINITE s ==> FINITE {t | t SUBSET s}`,
   MESON_TAC[HAS_SIZE_POWERSET; HAS_SIZE]);;
 
+let FINITE_POWERSET_EQ = prove
+ (`!s:A->bool. FINITE {t | t SUBSET s} <=> FINITE s`,
+  GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[FINITE_POWERSET] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `FINITE(IMAGE (\x:A. {x}) s)` MP_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        FINITE_SUBSET)) THEN
+    SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; IN_SING];
+    MATCH_MP_TAC EQ_IMP THEN MATCH_MP_TAC FINITE_IMAGE_INJ_EQ THEN
+    SET_TAC[]]);;
+
 let FINITE_UNIONS = prove
  (`!s:(A->bool)->bool.
         FINITE(UNIONS s) <=> FINITE s /\ (!t. t IN s ==> FINITE t)`,
@@ -2907,6 +2932,28 @@ let FINITE_IMAGE_INFINITE = prove
   SUBGOAL_THEN `s = UNIONS {{x | x IN s /\ (f:A->B) x = y} |y| y IN IMAGE f s}`
   SUBST1_TAC THENL [REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]; ALL_TAC] THEN
   ASM_SIMP_TAC[FINITE_UNIONS; SIMPLE_IMAGE; FINITE_IMAGE; FORALL_IN_IMAGE]);;
+
+let FINITE_RESTRICTED_FUNSPACE = prove
+ (`!s:A->bool t:B->bool k.
+        FINITE s /\ FINITE t
+        ==> FINITE {f | IMAGE f s SUBSET t /\ {x | ~(f x = k x)} SUBSET s}`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+  EXISTS_TAC
+   `IMAGE (\u:(A#B)->bool x. if ?y. (x,y) IN u then @y. (x,y) IN u else k x)
+          {u | u SUBSET (s CROSS t)}` THEN
+  ASM_SIMP_TAC[FINITE_POWERSET; FINITE_CROSS; FINITE_IMAGE] THEN
+  GEN_REWRITE_TAC I [SUBSET] THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `f:A->B` THEN STRIP_TAC THEN
+  REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+  EXISTS_TAC `IMAGE (\x. x,(f:A->B) x) {x | ~(f x = k x)}` THEN
+  ASM_SIMP_TAC[FINITE_IMAGE] THEN CONJ_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; IN_CROSS] THEN
+    ASM SET_TAC[]] THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `x:A` THEN
+  REWRITE_TAC[IN_IMAGE; IN_ELIM_THM; PAIR_EQ] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC; UNWIND_THM1; UNWIND_THM2] THEN
+  ASM_CASES_TAC `(f:A->B) x = k x` THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Set of numbers is infinite.                                               *)

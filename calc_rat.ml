@@ -598,3 +598,63 @@ let REAL_FIELD =
     let th1 = setup_conv bod in
     let ths = map BASIC_REAL_FIELD (conjuncts(rand(concl th1))) in
     EQ_MP (SYM th0) (GENL avs (EQ_MP (SYM th1) (end_itlist CONJ ths)));;
+
+(* ------------------------------------------------------------------------- *)
+(* Useful monotone mappings between R and (-1,1)                             *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_SHRINK_RANGE = prove
+ (`!x. abs(x / (&1 + abs x)) < &1`,
+  GEN_TAC THEN
+  REWRITE_TAC[REAL_ABS_DIV; REAL_ARITH `abs(&1 + abs x) = &1 + abs x`] THEN
+  SIMP_TAC[REAL_LT_LDIV_EQ; REAL_ARITH `&0 < &1 + abs x`] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_SHRINK_LT = prove
+ (`!x y. x / (&1 + abs x) < y / (&1 + abs y) <=> x < y`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC(REAL_ARITH
+   `(&0 < x' <=> &0 < x) /\ (&0 < y' <=> &0 < y) /\
+    (abs x' < abs y' <=> abs x < abs y) /\ (abs y' < abs x' <=> abs y < abs x)
+    ==> (x' < y' <=> x < y)`) THEN
+  SIMP_TAC[REAL_LT_RDIV_EQ; REAL_ARITH `&0 < &1 + abs x`; REAL_MUL_LZERO] THEN
+  MAP_EVERY (fun t -> SPEC_TAC(t,t)) [`y:real`; `x:real`] THEN
+  REWRITE_TAC[MESON[] `(!x y. P x y /\ P y x) <=> (!x y. P x y)`] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_ABS_DIV; REAL_ARITH `abs(&1 + abs x) = &1 + abs x`] THEN
+  SIMP_TAC[REAL_LT_RDIV_EQ; REAL_ARITH `&0 < &1 + abs x`] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `a / b * c:real = (a * c) / b`] THEN
+  SIMP_TAC[REAL_LT_LDIV_EQ; REAL_ARITH `&0 < &1 + abs x`] THEN
+  REAL_ARITH_TAC);;
+
+let REAL_SHRINK_LE = prove
+ (`!x y. x / (&1 + abs x) <= y / (&1 + abs y) <=> x <= y`,
+  REWRITE_TAC[GSYM REAL_NOT_LT; REAL_SHRINK_LT]);;
+
+let REAL_SHRINK_EQ = prove
+ (`!x y. x / (&1 + abs x) = y / (&1 + abs y) <=> x = y`,
+  REWRITE_TAC[GSYM REAL_LE_ANTISYM; REAL_SHRINK_LE]);;
+
+let REAL_SHRINK_GALOIS = prove
+ (`!x y. x / (&1 + abs x) = y <=> abs y < &1 /\ y / (&1 - abs y) = x`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  ASM_REWRITE_TAC[REAL_SHRINK_RANGE] THEN
+  ASM_SIMP_TAC[REAL_ABS_DIV; REAL_ARITH `abs(&1 + abs x) = &1 + abs x`;
+               REAL_ARITH `abs y < &1 ==> abs(&1 - abs y) = &1 - abs y`] THEN
+  MATCH_MP_TAC(REAL_ARITH `x * inv y * inv z = x * &1 ==> x / y / z = x`) THEN
+  AP_TERM_TAC THEN
+  MATCH_MP_TAC(REAL_FIELD `x * y = &1 ==> inv x * inv y = &1`) THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD);;
+
+let REAL_GROW_SHRINK = prove
+ (`!x y. x / (&1 + abs x) / (&1 - abs(x / (&1 + abs x))) = x`,
+  MESON_TAC[REAL_SHRINK_GALOIS; REAL_SHRINK_RANGE]);;
+
+let REAL_SHRINK_GROW_EQ = prove
+ (`!x y. x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x <=> abs x < &1`,
+  MESON_TAC[REAL_SHRINK_GALOIS; REAL_SHRINK_RANGE]);;
+
+let REAL_SHRINK_GROW = prove
+ (`!x y. abs x < &1
+         ==> x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x`,
+  REWRITE_TAC[REAL_SHRINK_GROW_EQ]);;

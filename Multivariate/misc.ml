@@ -334,6 +334,40 @@ let REAL_CLOSED_OPEN_INTERVAL = prove
   SIMP_TAC[EXTENSION; IN_UNION; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
   REAL_ARITH_TAC);;
 
+let IS_REALINTERVAL_SHRINK = prove
+ (`!s. is_realinterval (IMAGE (\x. x / (&1 + abs x)) s) <=>
+       is_realinterval s`,
+  REWRITE_TAC[is_realinterval; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REWRITE_TAC[FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+  REWRITE_TAC[SET_RULE `y IN IMAGE f s <=> ?x. f x = y /\ x IN s`] THEN
+  REWRITE_TAC[MESON[REAL_SHRINK_GALOIS]
+   `(?x. x / (&1 + abs x) = c /\ x IN s) <=>
+    (?x. x / (&1 + abs x) = c) /\ (!x. x / (&1 + abs x) = c ==> x IN s)`] THEN
+  REWRITE_TAC[TAUT `(p ==> q /\ r) <=> (p ==> q) /\ (p ==> r)`] THEN
+  REWRITE_TAC[FORALL_AND_THM; RIGHT_IMP_FORALL_THM] THEN
+  MATCH_MP_TAC(TAUT `(q <=> r) /\ p ==> (p /\ q <=> r)`) THEN
+  CONJ_TAC THENL [MESON_TAC[REAL_SHRINK_LE]; ALL_TAC] THEN
+  MESON_TAC[REAL_SHRINK_RANGE; REAL_SHRINK_GROW; REAL_ARITH
+   `a <= x /\ x <= b /\ abs a < &1 /\ abs b < &1 ==> abs x < &1`]);;
+
+let SUBSET_REAL_INTERVAL = prove
+ (`!a b c d.
+        (real_interval[a,b] SUBSET real_interval[c,d] <=>
+                b < a \/ c <= a /\ a <= b /\ b <= d) /\
+        (real_interval[a,b] SUBSET real_interval(c,d) <=>
+                b < a \/ c < a /\ a <= b /\ b < d) /\
+        (real_interval(a,b) SUBSET real_interval[c,d] <=>
+                b <= a \/ c <= a /\ a < b /\ b <= d) /\
+        (real_interval(a,b) SUBSET real_interval(c,d) <=>
+                b <= a \/ c <= a /\ a < b /\ b <= d)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[SUBSET; IN_REAL_INTERVAL] THEN
+  REPEAT CONJ_TAC THEN (EQ_TAC THENL [ALL_TAC; REAL_ARITH_TAC]) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(SPEC `(a + min b c) / &2` th) THEN
+    MP_TAC(SPEC `(max d a + b) / &2` th)) THEN
+  REAL_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Converting between matrices/arrays and flattened vectors. We can consider *)
 (* these as curry and uncurry for Cartesian powers.                          *)
@@ -1229,6 +1263,11 @@ let RESTRICTION_EXTENSION = prove
 let RESTRICTION_FIXPOINT = prove
  (`!s f:A->B. RESTRICTION s f = f <=> f IN EXTENSIONAL s`,
   REWRITE_TAC[IN_EXTENSIONAL; FUN_EQ_THM; RESTRICTION] THEN MESON_TAC[]);;
+
+let RESTRICTION_RESTRICTION = prove
+ (`!s t f:A->B.
+        s SUBSET t ==> RESTRICTION s (RESTRICTION t f) = RESTRICTION s f`,
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN SET_TAC[]);;
 
 let RESTRICTION_IDEMP = prove
  (`!s f:A->B. RESTRICTION s (RESTRICTION s f) = RESTRICTION s f`,

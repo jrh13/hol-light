@@ -8,6 +8,168 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed  7th Jun 2017       arith.ml, sets.ml, Library/card.ml
+
+Added a few miscellaneous theorems including some basics about
+cardinality of Cartesian products:
+
+  CARD_DIFF_CONG =
+    |- !s s' t t'.
+         s' SUBSET s /\
+         t' SUBSET t /\
+         s =_c t /\
+         s' =_c t' /\
+         (INFINITE s ==> s' <_c s)
+         ==> s DIFF s' =_c t DIFF t'
+
+  CARD_EQ_REAL_SUBSET =
+    |- !s a b. a < b /\ (!x. a < x /\ x < b ==> x IN s) ==> s =_c (:real)
+
+  CARD_LE_1 = 
+    |- !s. FINITE s /\ CARD s <= 1 <=> (?a. s SUBSET {a})
+
+  CARD_LE_CARTESIAN_PRODUCT =
+    |- !s t k.
+         (!i. i IN k ==> s i <=_c t i)
+         ==> cartesian_product k s <=_c cartesian_product k t
+
+  CARD_LE_CARTESIAN_PRODUCT_SUBINDEX =
+    |- !s k l.
+         k SUBSET l /\ ~(cartesian_product l s = {})
+         ==> cartesian_product k s <=_c cartesian_product l s
+
+  CARD_LE_EQ_SUBSET_UNIV = 
+    |- !s. (?t. t =_c s) <=> s <=_c (:B)
+
+  CARD_LE_SING = 
+    |- !c s. s <=_c {c} <=> (?a. s SUBSET {a})
+
+  CARTESIAN_PRODUCT_CONST = 
+    |- !s t. cartesian_product t (\i. s) = s ^_c t
+
+  CARTESIAN_PRODUCT_EQ_MEMBERS =
+    |- !k s x y.
+         x IN cartesian_product k s /\
+         y IN cartesian_product k s /\
+         (!i. i IN k ==> x i = y i)
+         ==> x = y
+
+  COUNTABLE_CARTESIAN_PRODUCT =
+    |- !s k.
+         COUNTABLE (cartesian_product k s) <=>
+         cartesian_product k s = {} \/
+         FINITE {i | i IN k /\ ~(?a. s i SUBSET {a})} /\
+         (!i. i IN k ==> COUNTABLE (s i))
+
+  COUNTABLE_RESTRICTED_FUNSPACE =
+    |- !s t k.
+         COUNTABLE s /\ COUNTABLE t
+         ==> COUNTABLE
+             {f | IMAGE f s SUBSET t /\
+                  {x | ~(f x = k x)} SUBSET s /\
+                  FINITE {x | ~(f x = k x)}}
+
+  EQ_C_BIJECTIONS_DISJOINT =
+    |- !s s' t t'.
+         DISJOINT s s' /\ DISJOINT t t'
+         ==> (s =_c t /\ s' =_c t' <=>
+              (?f g.
+                   (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+                   (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
+                   (!x. x IN s' ==> f x IN t' /\ g (f x) = x) /\
+                   (!y. y IN t' ==> g y IN s' /\ f (g y) = y)))
+
+  EQ_C_BIJECTIONS_EXTEND =
+    |- !f g s s' t t'.
+         s SUBSET s' /\
+         t SUBSET t' /\
+         s' DIFF s =_c t' DIFF t /\
+         (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+         (!y. y IN t ==> g y IN s /\ f (g y) = y)
+         ==> (?f' g'.
+                  (!x. x IN s' ==> f' x IN t' /\ g' (f' x) = x) /\
+                  (!y. y IN t' ==> g' y IN s' /\ f' (g' y) = y) /\
+                  (!x. x IN s ==> f' x = f x) /\
+                  (!y. y IN t ==> g' y = g y))
+
+  EQ_C_BIJECTIONS_SUBSETS =
+    |- !s s' t t'.
+         s' SUBSET s /\ t' SUBSET t
+         ==> (s' =_c t' /\ s DIFF s' =_c t DIFF t' <=>
+              (?f g.
+                   (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+                   (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
+                   IMAGE f s' = t' /\
+                   IMAGE g t' = s'))
+
+  EQ_C_BIJECTIONS_SUBSETS_LT =
+    |- !s s' t t'.
+         s' SUBSET s /\ t' SUBSET t /\ (INFINITE s ==> s' <_c s)
+         ==> (s =_c t /\ s' =_c t' <=>
+              (?f g.
+                   (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+                   (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
+                   IMAGE f s' = t' /\
+                   IMAGE g t' = s'))
+
+  EQ_C_INVOLUTION =
+    |- !f s t.
+         (!x. x IN s ==> f x IN t) /\
+         (!x. x IN t ==> f x IN s) /\
+         (!x. x IN s \/ x IN t ==> f (f x) = x)
+         ==> s =_c t
+
+  FINITE_CARTESIAN_PRODUCT =
+    |- !s k.
+         FINITE (cartesian_product k s) <=>
+         cartesian_product k s = {} \/
+         FINITE {i | i IN k /\ ~(?a. s i SUBSET {a})} /\
+         (!i. i IN k ==> FINITE (s i))
+
+  FINITE_POWERSET_EQ = 
+    |- !s. FINITE {t | t SUBSET s} <=> FINITE s
+
+  FINITE_RESTRICTED_FUNSPACE =
+    |- !s t k.
+         FINITE s /\ FINITE t
+         ==> FINITE {f | IMAGE f s SUBSET t /\ {x | ~(f x = k x)} SUBSET s}
+
+  LT_IMP_NE = 
+    |- !m n. m < n ==> ~(m = n)
+
+Tue  6th Jun 2017       calc_rat.ml
+
+Added some basic properties of the "shrinking" mapping x |-> x / (1 + |x|)
+and its inverse. These have natural generalizations to R^n (see
+CONVEXITY_PRESERVING_SHRINK_0 in "Multivariate/convex.ml") but these simple
+forms are nice to have too:
+
+  REAL_GROW_SHRINK =
+    |- !x y. x / (&1 + abs x) / (&1 - abs (x / (&1 + abs x))) = x
+
+  REAL_SHRINK_EQ =
+    |- !x y. x / (&1 + abs x) = y / (&1 + abs y) <=> x = y
+
+  REAL_SHRINK_GALOIS =
+    |- !x y. x / (&1 + abs x) = y <=> abs y < &1 /\ y / (&1 - abs y) = x
+
+  REAL_SHRINK_GROW =
+    |- !x y. abs x < &1
+             ==> x / (&1 - abs x) / (&1 + abs (x / (&1 - abs x))) = x
+
+  REAL_SHRINK_GROW_EQ =
+    |- !x y. x / (&1 - abs x) / (&1 + abs (x / (&1 - abs x))) = x <=>
+             abs x < &1
+
+  REAL_SHRINK_LE =
+    |- !x y. x / (&1 + abs x) <= y / (&1 + abs y) <=> x <= y
+
+  REAL_SHRINK_LT =
+    |- !x y. x / (&1 + abs x) < y / (&1 + abs y) <=> x < y
+
+  REAL_SHRINK_RANGE =
+    |- !x. abs (x / (&1 + abs x)) < &1
+
 Sat  3rd Jun 2017       Library/floor.ml
 
 Added some more specific versions of rational approximation where we

@@ -333,6 +333,10 @@ let LT_REFL = prove
  (`!n. ~(n < n)`,
   INDUCT_TAC THEN ASM_REWRITE_TAC[LT_SUC] THEN REWRITE_TAC[LT]);;
 
+let LT_IMP_NE = prove
+ (`!m n:num. m < n ==> ~(m = n)`,
+  MESON_TAC[LT_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Antisymmetry.                                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -634,10 +638,10 @@ let WLOG_LT = prove
    ==> !m y. P m y`,
   MESON_TAC[LT_CASES]);;
 
-let WLOG_LE_3 = prove                                                          
- (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\                           
-       (!x y z. x <= y /\ y <= z ==> P x y z)                             
-       ==> !x y z. P x y z`,                            
+let WLOG_LE_3 = prove
+ (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\
+       (!x y z. x <= y /\ y <= z ==> P x y z)
+       ==> !x y z. P x y z`,
   MESON_TAC[LE_CASES]);;
 
 (* ------------------------------------------------------------------------- *)

@@ -3105,27 +3105,6 @@ let IS_REALINTERVAL_CONVEX_COMPLEX = prove
     REWRITE_TAC[linear; o_THM; RE_CMUL;
                 RE_ADD; RE_MUL_CX; LIFT_ADD; LIFT_CMUL]]);;
 
-let SUBSET_REAL_INTERVAL = prove
- (`!a b c d.
-        (real_interval[a,b] SUBSET real_interval[c,d] <=>
-                b < a \/ c <= a /\ a <= b /\ b <= d) /\
-        (real_interval[a,b] SUBSET real_interval(c,d) <=>
-                b < a \/ c < a /\ a <= b /\ b < d) /\
-        (real_interval(a,b) SUBSET real_interval[c,d] <=>
-                b <= a \/ c <= a /\ a < b /\ b <= d) /\
-        (real_interval(a,b) SUBSET real_interval(c,d) <=>
-                b <= a \/ c <= a /\ a < b /\ b <= d)`,
-  let lemma = prove
-   (`IMAGE drop s SUBSET IMAGE drop t <=> s SUBSET t`,
-    SET_TAC[LIFT_DROP]) in
-  REWRITE_TAC[REAL_INTERVAL_INTERVAL; lemma; SUBSET_INTERVAL_1] THEN
-  REWRITE_TAC[LIFT_DROP]);;
-
-let REAL_BOUNDED_REAL_INTERVAL = prove
- (`(!a b. real_bounded(real_interval[a,b])) /\
-   (!a b. real_bounded(real_interval(a,b)))`,
-  REWRITE_TAC[IMAGE_LIFT_REAL_INTERVAL; REAL_BOUNDED; BOUNDED_INTERVAL]);;
-
 let IMAGE_AFFINITY_REAL_INTERVAL = prove
  (`!a b m c.
          IMAGE (\x. m * x + c) (real_interval[a,b]) =
