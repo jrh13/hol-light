@@ -118,6 +118,74 @@ let REAL_CONVEX_BOUND_LE = prove
   CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[REAL_LE_REFL; REAL_MUL_LID]] THEN
   ASM_SIMP_TAC[REAL_ADD_RDISTRIB; REAL_LE_ADD2; REAL_LE_LMUL]);;
 
+let REAL_CONVEX_SUM_BOUND_LE = prove
+ (`!s d a b x:A->real.
+        (!i. i IN s ==> &0 <= x i) /\ sum s x = &1 /\
+        (!i. i IN s ==> abs(a i - b) <= d)
+        ==> abs(sum s (\i. a i * x i) - b) <= d`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sum] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[GSYM sum; NEUTRAL_REAL_ADD; support; REAL_ENTIRE] THEN
+  REWRITE_TAC[SET_RULE
+   `{x | x IN s /\ ~(P x \/ Q x)} =
+    {x | x IN {y | y IN s /\ ~Q y} /\ ~P x}`] THEN
+  ABBREV_TAC `t = {i | i IN s /\ ~((x:A->real) i = &0)}` THEN
+  ASM_CASES_TAC `FINITE(t:A->bool)` THEN ASM_SIMP_TAC[FINITE_RESTRICT] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(!i. i IN t ==> &0 <= (x:A->real) i) /\
+    (!i. i IN t ==> abs(a i - b) <= d)`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[SUM_RESTRICT_SET; MESON[REAL_MUL_LZERO]
+   `(if ~(a = &0) then a * x else &0) = a * x`] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `a - b = a - b * &1`] THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[GSYM SUM_LMUL] THEN
+  ASM_SIMP_TAC[GSYM SUM_SUB] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) SUM_ABS o lhand o snd) THEN
+  ASM_REWRITE_TAC[GSYM REAL_SUB_RDISTRIB] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  ASM_SIMP_TAC[REAL_ABS_MUL; REAL_ARITH `&0 <= x ==> abs x = x`] THEN
+  TRANS_TAC REAL_LE_TRANS `sum t (\i:A. d * x i)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_LE THEN ASM_SIMP_TAC[REAL_LE_RMUL];
+    ASM_REWRITE_TAC[SUM_LMUL; REAL_MUL_RID; REAL_LE_REFL]]);;
+
+let REAL_CONVEX_SUM_BOUND_LT = prove
+ (`!s d a b x:A->real.
+        (!i. i IN s ==> &0 <= x i) /\ sum s x = &1 /\
+        (!i. i IN s ==> abs(a i - b) < d)
+        ==> abs(sum s (\i. a i * x i) - b) < d`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sum] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[GSYM sum; NEUTRAL_REAL_ADD; support; REAL_ENTIRE] THEN
+  REWRITE_TAC[SET_RULE
+   `{x | x IN s /\ ~(P x \/ Q x)} =
+    {x | x IN {y | y IN s /\ ~Q y} /\ ~P x}`] THEN
+  ABBREV_TAC `t = {i | i IN s /\ ~((x:A->real) i = &0)}` THEN
+  ASM_CASES_TAC `FINITE(t:A->bool)` THEN ASM_SIMP_TAC[FINITE_RESTRICT] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(!i. i IN t ==> &0 < (x:A->real) i) /\
+    (!i. i IN t ==> abs(a i - b) < d)`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "t" THEN
+    SIMP_TAC[IN_ELIM_THM; REAL_ARITH `&0 < x <=> &0 <= x /\ ~(x = &0)`] THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  REWRITE_TAC[SUM_RESTRICT_SET; MESON[REAL_MUL_LZERO]
+   `(if ~(a = &0) then a * x else &0) = a * x`] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `a - b = a - b * &1`] THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[GSYM SUM_LMUL] THEN
+  ASM_SIMP_TAC[GSYM SUM_SUB] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) SUM_ABS o lhand o snd) THEN
+  ASM_REWRITE_TAC[GSYM REAL_SUB_RDISTRIB] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LET_TRANS) THEN
+  ASM_SIMP_TAC[REAL_ABS_MUL; REAL_ARITH `&0 < x ==> abs x = x`] THEN
+  TRANS_TAC REAL_LTE_TRANS `sum t (\i:A. d * x i)` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC SUM_LT_ALL THEN ASM_SIMP_TAC[REAL_LT_RMUL_EQ] THEN
+    DISCH_THEN SUBST_ALL_TAC THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[SUM_CLAUSES]) THEN ASM_REAL_ARITH_TAC;
+    ASM_REWRITE_TAC[SUM_LMUL; REAL_MUL_RID; REAL_LE_REFL]]);;
+
 let APPROACHABLE_LT_LE = prove
  (`!P f. (?d. &0 < d /\ !x. f(x) < d ==> P x) =
          (?d. &0 < d /\ !x. f(x) <= d ==> P x)`,

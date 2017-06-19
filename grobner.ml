@@ -436,7 +436,7 @@ let RING_AND_IDEAL_CONV =
           let l,r = ring_dest_pow tm in
           grob_pow vars (grobify_term vars l) (dest_small_numeral r)
       with Failure _ ->
-            failwith "grobify_term: unknown || invalid term" in
+            failwith "grobify_term: unknown or invalid term" in
     let grobify_equation vars tm =
       let l,r = dest_eq tm in
       grob_sub (grobify_term vars l) (grobify_term vars r) in

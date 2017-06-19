@@ -8,6 +8,11 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tuw 13th Jun 2017       drule.ml, grobner.ml
+
+Fixed a couple of cases where "||" was used instead of "or" in error
+strings, as a result of overenthusiastic search-and-replace.
+
 Wed  7th Jun 2017       arith.ml, sets.ml, Library/card.ml
 
 Added a few miscellaneous theorems including some basics about
@@ -25,7 +30,7 @@ cardinality of Cartesian products:
   CARD_EQ_REAL_SUBSET =
     |- !s a b. a < b /\ (!x. a < x /\ x < b ==> x IN s) ==> s =_c (:real)
 
-  CARD_LE_1 = 
+  CARD_LE_1 =
     |- !s. FINITE s /\ CARD s <= 1 <=> (?a. s SUBSET {a})
 
   CARD_LE_CARTESIAN_PRODUCT =
@@ -38,13 +43,13 @@ cardinality of Cartesian products:
          k SUBSET l /\ ~(cartesian_product l s = {})
          ==> cartesian_product k s <=_c cartesian_product l s
 
-  CARD_LE_EQ_SUBSET_UNIV = 
+  CARD_LE_EQ_SUBSET_UNIV =
     |- !s. (?t. t =_c s) <=> s <=_c (:B)
 
-  CARD_LE_SING = 
+  CARD_LE_SING =
     |- !c s. s <=_c {c} <=> (?a. s SUBSET {a})
 
-  CARTESIAN_PRODUCT_CONST = 
+  CARTESIAN_PRODUCT_CONST =
     |- !s t. cartesian_product t (\i. s) = s ^_c t
 
   CARTESIAN_PRODUCT_EQ_MEMBERS =
@@ -126,7 +131,7 @@ cardinality of Cartesian products:
          FINITE {i | i IN k /\ ~(?a. s i SUBSET {a})} /\
          (!i. i IN k ==> FINITE (s i))
 
-  FINITE_POWERSET_EQ = 
+  FINITE_POWERSET_EQ =
     |- !s. FINITE {t | t SUBSET s} <=> FINITE s
 
   FINITE_RESTRICTED_FUNSPACE =
@@ -134,7 +139,7 @@ cardinality of Cartesian products:
          FINITE s /\ FINITE t
          ==> FINITE {f | IMAGE f s SUBSET t /\ {x | ~(f x = k x)} SUBSET s}
 
-  LT_IMP_NE = 
+  LT_IMP_NE =
     |- !m n. m < n ==> ~(m = n)
 
 Tue  6th Jun 2017       calc_rat.ml
