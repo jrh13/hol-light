@@ -6517,6 +6517,18 @@ let CONTINUOUS_MAP_EUCLIDEAN = prove
   GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [DIST_SYM] THEN
   MESON_TAC[]);;
 
+let CONTINUOUS_MAP_EUCLIDEAN_EUCLIDEAN = prove
+ (`!(f:real^M->real^N).
+        continuous_map (euclidean,euclidean) f <=> f continuous_on (:real^M)`,
+  MESON_TAC[SUBTOPOLOGY_UNIV; CONTINUOUS_MAP_EUCLIDEAN; SUBSET_UNIV]);;
+
+let CONTINUOUS_MAP_EUCLIDEAN2 = prove
+ (`!(f:real^M->real^N) s t.
+        continuous_map (subtopology euclidean s,subtopology euclidean t) f <=>
+        f continuous_on s /\ IMAGE f s SUBSET t`,
+  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_EUCLIDEAN] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some simple consequential lemmas.                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -12594,6 +12606,16 @@ let CONTINUOUS_ON_INV = prove
 (* ------------------------------------------------------------------------- *)
 (* More preservation properties for pasted sets (Cartesian products).        *)
 (* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_MAP_PASTECART = prove
+ (`continuous_map
+     (prod_topology (euclidean:(real^M)topology) (euclidean:(real^N)topology),
+      euclidean)
+     (\(x,y). pastecart x y)`,
+  REWRITE_TAC[GSYM MTOPOLOGY_PROD_METRIC; GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[METRIC_CONTINUOUS_MAP; PROD_METRIC; EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; IN_UNIV] THEN
+  REWRITE_TAC[dist; NORM_PASTECART; PASTECART_SUB] THEN MESON_TAC[]);;
 
 let LIM_PASTECART = prove
  (`!net f:A->real^M g:A->real^N.

@@ -7119,6 +7119,14 @@ let MCOMPLETE = prove
       REWRITE_TAC[LIMIT_SEQUENTIALLY_OFFSET_REV]];
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[EVENTUALLY_TRUE]]);;
 
+let MCOMPLETE_EMPTY_MSPACE = prove
+ (`!m:A metric. mspace m = {} ==> mcomplete m`,
+  SIMP_TAC[mcomplete; cauchy_in; NOT_IN_EMPTY]);;
+
+let MCOMPLETE_SUBMETRIC_EMPTY = prove
+ (`!m:A metric. mcomplete(submetric m {})`,
+  SIMP_TAC[MCOMPLETE_EMPTY_MSPACE; SUBMETRIC; INTER_EMPTY]);;
+
 let CAUCHY_IN_SUBMETRIC = prove
  (`!m s x:num->A.
     cauchy_in (submetric m s) x <=> (!n. x n IN s) /\ cauchy_in m x`,
@@ -11290,7 +11298,7 @@ let COMPACT_IN_CARTESIAN_PRODUCT = prove
   REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY; o_DEF; TOPSPACE_SUBTOPOLOGY] THEN
   SET_TAC[]);;
 
-let CLOSURE_IN_CARTESIAN_PRODUCT = prove
+let CLOSURE_OF_CARTESIAN_PRODUCT = prove
  (`!k tops s:K->A->bool.
         (product_topology k tops) closure_of (cartesian_product k s) =
         cartesian_product k (\i. (tops i) closure_of (s i))`,
@@ -11384,7 +11392,7 @@ let CLOSED_IN_CARTESIAN_PRODUCT = prove
         cartesian_product k s = {} \/
         (!i. i IN k ==> closed_in (tops i) (s i))`,
   REPEAT GEN_TAC THEN
-  REWRITE_TAC[GSYM CLOSURE_OF_EQ; CLOSURE_IN_CARTESIAN_PRODUCT] THEN
+  REWRITE_TAC[GSYM CLOSURE_OF_EQ; CLOSURE_OF_CARTESIAN_PRODUCT] THEN
   REWRITE_TAC[CARTESIAN_PRODUCT_EQ] THEN
   ASM_CASES_TAC `cartesian_product k (s:K->A->bool) = {}` THEN
   ASM_REWRITE_TAC[] THEN DISJ1_TAC THEN POP_ASSUM MP_TAC THEN
@@ -13015,6 +13023,354 @@ let CONTINUOUS_ON_MDIST = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_MAP_MDIST THEN
   ASM_REWRITE_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST] THEN
   ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Product metric. For the nicest fit with the main Euclidean theories, we   *)
+(* make this the Euclidean product, though others would work topologically.  *)
+(* ------------------------------------------------------------------------- *)
+
+let prod_metric = new_definition
+ `prod_metric m1 m2 =
+  metric((mspace m1 CROSS mspace m2):A#B->bool,
+         \((x,y),(x',y')).
+            sqrt(mdist m1 (x,x') pow 2 + mdist m2 (y,y') pow 2))`;;
+
+let PROD_METRIC = prove
+ (`(!(m1:A metric) (m2:B metric).
+      mspace(prod_metric m1 m2) = mspace m1 CROSS mspace m2) /\
+   (!(m1:A metric) (m2:B metric).
+        mdist(prod_metric m1 m2) =
+        \((x,y),(x',y')).
+            sqrt(mdist m1 (x,x') pow 2 + mdist m2 (y,y') pow 2))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [mspace] THEN
+  GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [mdist] THEN
+  REWRITE_TAC[PAIR; GSYM PAIR_EQ] THEN REWRITE_TAC[prod_metric] THEN
+  REWRITE_TAC[GSYM(CONJUNCT2 metric_tybij)] THEN
+  REWRITE_TAC[is_metric_space; FORALL_PAIR_THM; IN_CROSS] THEN
+  REPEAT CONJ_TAC THENL
+   [SIMP_TAC[SQRT_POS_LE; REAL_LE_ADD; REAL_LE_POW_2];
+    REWRITE_TAC[PAIR_EQ; SQRT_EQ_0] THEN SIMP_TAC[REAL_LE_POW_2; REAL_ARITH
+     `&0 <= x /\ &0 <= y ==> (x + y = &0 <=> x = &0 /\ y = &0)`] THEN
+    SIMP_TAC[REAL_POW_EQ_0; MDIST_0] THEN CONV_TAC NUM_REDUCE_CONV;
+    SIMP_TAC[MDIST_SYM];
+    MAP_EVERY X_GEN_TAC [`x1:A`; `y1:B`; `x2:A`; `y2:B`; `x3:A`; `y3:B`] THEN
+    STRIP_TAC THEN MATCH_MP_TAC REAL_LE_LSQRT THEN
+    ASM_SIMP_TAC[REAL_LE_ADD; SQRT_POS_LE; REAL_LE_POW_2] THEN
+    REWRITE_TAC[REAL_ARITH
+     `(a + b:real) pow 2 = (a pow 2 + b pow 2) + &2 * a * b`] THEN
+    SIMP_TAC[SQRT_POW_2; REAL_LE_ADD; REAL_LE_POW_2] THEN
+    TRANS_TAC REAL_LE_TRANS
+     `(mdist m1 (x1:A,x2) + mdist m1 (x2,x3)) pow 2 +
+      (mdist m2 (y1:B,y2) + mdist m2 (y2,y3)) pow 2` THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THEN
+      MATCH_MP_TAC REAL_POW_LE2 THEN
+      ASM_MESON_TAC[MDIST_POS_LE; MDIST_TRIANGLE];
+      REWRITE_TAC[REAL_ARITH
+       `(x1 + x2) pow 2 + (y1 + y2) pow 2 <=
+        ((x1 pow 2 + y1 pow 2) + (x2 pow 2 + y2 pow 2)) + &2 * b <=>
+        x1 * x2 + y1 * y2 <= b`] THEN
+      REWRITE_TAC[GSYM SQRT_MUL] THEN MATCH_MP_TAC REAL_LE_RSQRT THEN
+      REWRITE_TAC[REAL_LE_POW_2; REAL_ARITH
+        `(x1 * x2 + y1 * y2) pow 2 <=
+         (x1 pow 2 + y1 pow 2) * (x2 pow 2 + y2 pow 2) <=>
+         &0 <= (x1 * y2 - x2 * y1) pow 2`]]]);;
+
+let COMPONENT_LE_PROD_METRIC = prove
+ (`!m1 m2 x1 y1 x2:A y2:B.
+        mdist m1 (x1,x2) <= mdist (prod_metric m1 m2) ((x1,y1),(x2,y2)) /\
+        mdist m2 (y1,y2) <= mdist (prod_metric m1 m2) ((x1,y1),(x2,y2))`,
+  REPEAT GEN_TAC THEN CONJ_TAC THEN REWRITE_TAC[PROD_METRIC] THEN
+  MATCH_MP_TAC REAL_LE_RSQRT THEN REWRITE_TAC[REAL_LE_ADDR; REAL_LE_ADDL] THEN
+  REWRITE_TAC[REAL_LE_POW_2]);;
+
+let PROD_METRIC_LE_COMPONENTS = prove
+ (`!m1 m2 x1 y1 x2:A y2:B.
+        x1 IN mspace m1 /\ x2 IN mspace m1 /\
+        y1 IN mspace m2 /\ y2 IN mspace m2
+        ==> mdist (prod_metric m1 m2) ((x1,y1),(x2,y2))
+            <= mdist m1 (x1,x2) + mdist m2 (y1,y2)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[PROD_METRIC] THEN
+  MATCH_MP_TAC REAL_LE_LSQRT THEN ASM_SIMP_TAC[REAL_LE_ADD; MDIST_POS_LE;
+   REAL_ARITH `x pow 2 + y pow 2 <= (x + y) pow 2 <=> &0 <= x * y`] THEN
+  ASM_SIMP_TAC[REAL_LE_MUL; MDIST_POS_LE]);;
+
+let MBALL_PROD_METRIC_SUBSET = prove
+ (`!m1 m2 x:A y:B r.
+        mball (prod_metric m1 m2) ((x,y),r) SUBSET
+        mball m1 (x,r) CROSS mball m2 (y,r)`,
+  REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_MBALL; IN_CROSS;
+              CONJUNCT1 PROD_METRIC] THEN
+  MESON_TAC[COMPONENT_LE_PROD_METRIC; REAL_LET_TRANS]);;
+
+let MCBALL_PROD_METRIC_SUBSET = prove
+ (`!m1 m2 x:A y:B r.
+        mcball (prod_metric m1 m2) ((x,y),r) SUBSET
+        mcball m1 (x,r) CROSS mcball m2 (y,r)`,
+  REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_MCBALL; IN_CROSS;
+              CONJUNCT1 PROD_METRIC] THEN
+  MESON_TAC[COMPONENT_LE_PROD_METRIC; REAL_LE_TRANS]);;
+
+let MBALL_SUBSET_PROD_METRIC = prove
+ (`!m1 m2 x:A y:B r r'.
+        mball m1 (x,r) CROSS mball m2 (y,r')
+        SUBSET mball (prod_metric m1 m2) ((x,y),r + r')`,
+  REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_MBALL; IN_CROSS;
+              CONJUNCT1 PROD_METRIC] THEN
+  MESON_TAC[REAL_ARITH `x <= y + z /\ y < a /\ z < b ==> x < a + b`;
+            PROD_METRIC_LE_COMPONENTS]);;
+
+let MCBALL_SUBSET_PROD_METRIC = prove
+ (`!m1 m2 x:A y:B r r'.
+        mcball m1 (x,r) CROSS mcball m2 (y,r')
+        SUBSET mcball (prod_metric m1 m2) ((x,y),r + r')`,
+  REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_MCBALL; IN_CROSS;
+              CONJUNCT1 PROD_METRIC] THEN
+  MESON_TAC[REAL_ARITH `x <= y + z /\ y <= a /\ z <= b ==> x <= a + b`;
+            PROD_METRIC_LE_COMPONENTS]);;
+
+let MTOPOLOGY_PROD_METRIC = prove
+ (`!(m1:A metric) (m2:B metric).
+        mtopology(prod_metric m1 m2) =
+        prod_topology (mtopology m1) (mtopology m2)`,
+  REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN REWRITE_TAC[prod_topology] THEN
+  MATCH_MP_TAC TOPOLOGY_BASE_UNIQUE THEN
+  REWRITE_TAC[SET_RULE `GSPEC a x <=> x IN GSPEC a`] THEN REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[FORALL_IN_GSPEC; OPEN_IN_MTOPOLOGY; PROD_METRIC] THEN
+    MAP_EVERY X_GEN_TAC [`s:A->bool`; `t:B->bool`] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[SUBSET_CROSS; FORALL_PAIR_THM; IN_CROSS] THEN
+    MAP_EVERY X_GEN_TAC [`x:A`; `y:B`] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `y:B`) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `r1:real` THEN STRIP_TAC THEN
+    X_GEN_TAC `r2:real` THEN STRIP_TAC THEN
+    EXISTS_TAC `min r1 r2:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+    W(MP_TAC o PART_MATCH lhand MBALL_PROD_METRIC_SUBSET o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS) THEN
+    REWRITE_TAC[SUBSET_CROSS] THEN REPEAT DISJ2_TAC THEN CONJ_TAC;
+    REWRITE_TAC[FORALL_PAIR_THM; EXISTS_IN_GSPEC] THEN
+    MAP_EVERY X_GEN_TAC [`u:A#B->bool`; `x:A`; `y:B`] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [OPEN_IN_MTOPOLOGY] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC
+     (MP_TAC o SPEC `(x,y):A#B`)) ASSUME_TAC) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `r:real` THEN STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+     [`mball m1 (x:A,r / &2)`; `mball m2 (y:B,r / &2)`] THEN
+    FIRST_ASSUM(MP_TAC o SPEC `(x,y):A#B` o REWRITE_RULE[SUBSET] o
+     GEN_REWRITE_RULE RAND_CONV [CONJUNCT1 PROD_METRIC]) THEN
+    ASM_REWRITE_TAC[IN_CROSS] THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[OPEN_IN_MBALL; IN_CROSS; CENTRE_IN_MBALL; REAL_HALF] THEN
+    W(MP_TAC o PART_MATCH lhand MBALL_SUBSET_PROD_METRIC o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS)] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS)) THEN
+  MATCH_MP_TAC MBALL_SUBSET_CONCENTRIC THEN REAL_ARITH_TAC);;
+
+let SUBMETRIC_PROD_METRIC = prove
+ (`!m1 m2 s:A->bool t:B->bool.
+        submetric (prod_metric m1 m2) (s CROSS t) =
+        prod_metric (submetric m1 s) (submetric m2 t)`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC RAND_CONV [prod_metric] THEN
+  GEN_REWRITE_TAC LAND_CONV [submetric] THEN
+  REWRITE_TAC[SUBMETRIC; PROD_METRIC; INTER_CROSS]);;
+
+let METRIZABLE_SPACE_PROD_TOPOLOGY = prove
+ (`!top1:A topology top2:A topology.
+        metrizable_space top1 /\ metrizable_space top2
+        ==> metrizable_space (prod_topology top1 top2)`,
+  REWRITE_TAC[metrizable_space] THEN MESON_TAC[MTOPOLOGY_PROD_METRIC]);;
+
+let CAUCHY_IN_PROD_METRIC = prove
+ (`!m1 m2 x:num->A#B.
+        cauchy_in (prod_metric m1 m2) x <=>
+        cauchy_in m1 (FST o x) /\ cauchy_in m2 (SND o x)`,
+  REWRITE_TAC[FORALL_PAIR_FUN_THM] THEN MAP_EVERY X_GEN_TAC
+   [`m1:A metric`; `m2:B metric`; `a:num->A`; `b:num->B`] THEN
+  REWRITE_TAC[cauchy_in; CONJUNCT1 PROD_METRIC; IN_CROSS; o_DEF] THEN
+  ASM_CASES_TAC `!n. (a:num->A) n IN mspace m1` THEN
+  ASM_REWRITE_TAC[FORALL_AND_THM] THEN
+  ASM_CASES_TAC `!n. (b:num->B) n IN mspace m2` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THENL
+   [ASM_MESON_TAC[COMPONENT_LE_PROD_METRIC; REAL_LET_TRANS];
+    DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC] THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN (MP_TAC o SPEC `e / &2`)) THEN
+  ASM_REWRITE_TAC[REAL_HALF; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `M:num` THEN DISCH_TAC THEN X_GEN_TAC `N:num` THEN DISCH_TAC THEN
+  EXISTS_TAC `MAX M N` THEN
+  REWRITE_TAC[ARITH_RULE `MAX M N <= n <=> M <= n /\ N <= n`] THEN
+  MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN STRIP_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [`m:num`; `n:num`])) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(REAL_ARITH
+   `z <= x + y ==> x < e / &2 ==> y < e / &2 ==> z < e`) THEN
+  ASM_MESON_TAC[PROD_METRIC_LE_COMPONENTS; REAL_ADD_SYM]);;
+
+let MCOMPLETE_PROD_METRIC = prove
+ (`!(m1:A metric) (m2:B metric).
+        mcomplete (prod_metric m1 m2) <=>
+        mspace m1 = {} \/ mspace m2 = {} \/ mcomplete m1 /\ mcomplete m2`,
+  REPEAT STRIP_TAC THEN MAP_EVERY ASM_CASES_TAC
+   [`mspace m1:A->bool = {}`; `mspace m2:B->bool = {}`] THEN
+  ASM_SIMP_TAC[MCOMPLETE_EMPTY_MSPACE; CONJUNCT1 PROD_METRIC; CROSS_EMPTY] THEN
+  REWRITE_TAC[mcomplete; CAUCHY_IN_PROD_METRIC] THEN
+  REWRITE_TAC[MTOPOLOGY_PROD_METRIC; LIMIT_PAIRWISE; EXISTS_PAIR_THM] THEN
+  EQ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN DISCH_TAC THEN CONJ_TAC THENL
+   [X_GEN_TAC `x:num->A` THEN DISCH_TAC THEN
+    UNDISCH_TAC `~(mspace m2:B->bool = {})` THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `y:B` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(\n. (x n,y)):num->A#B`);
+    X_GEN_TAC `y:num->B` THEN DISCH_TAC THEN
+    UNDISCH_TAC `~(mspace m1:A->bool = {})` THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(\n. (x,y n)):num->A#B`)] THEN
+  ASM_REWRITE_TAC[o_DEF; ETA_AX; CAUCHY_IN_CONST] THEN MESON_TAC[]);;
+
+let COMPLETELY_METRIZABLE_SPACE_PROD_TOPOLOGY = prove
+ (`!top1:A topology top2:A topology.
+        completely_metrizable_space top1 /\ completely_metrizable_space top2
+        ==> completely_metrizable_space (prod_topology top1 top2)`,
+  REWRITE_TAC[completely_metrizable_space] THEN
+  METIS_TAC[MCOMPLETE_PROD_METRIC; MTOPOLOGY_PROD_METRIC]);;
+
+let MBOUNDED_CROSS = prove
+ (`!(m1:A metric) (m2:B metric) s t.
+        mbounded (prod_metric m1 m2) (s CROSS t) <=>
+        s = {} \/ t = {} \/ mbounded m1 s /\ mbounded m2 t`,
+  REPEAT GEN_TAC THEN MAP_EVERY ASM_CASES_TAC
+   [`s:A->bool = {}`; `t:B->bool = {}`] THEN
+  ASM_REWRITE_TAC[MBOUNDED_EMPTY; CROSS_EMPTY] THEN
+  REWRITE_TAC[mbounded; EXISTS_PAIR_THM] THEN MATCH_MP_TAC(MESON[]
+   `(!x y. P x y <=> Q x /\ R y)
+    ==> ((?x y. P x y) <=> (?x. Q x) /\ (?y. R y))`) THEN
+  MAP_EVERY X_GEN_TAC [`x:A`; `y:B`] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_TAC `r:real`) THEN
+    REWRITE_TAC[LEFT_AND_EXISTS_THM; RIGHT_AND_EXISTS_THM] THEN
+    REPEAT(EXISTS_TAC `r:real`) THEN
+    MATCH_MP_TAC(MESON[SUBSET_CROSS]
+     `s CROSS t SUBSET u CROSS v /\ ~(s = {}) /\ ~(t = {})
+      ==> s SUBSET u /\ t SUBSET v`) THEN
+    ASM_MESON_TAC[SUBSET_TRANS; MCBALL_PROD_METRIC_SUBSET];
+    DISCH_THEN(CONJUNCTS_THEN2
+     (X_CHOOSE_TAC `r1:real`) (X_CHOOSE_TAC `r2:real`)) THEN
+    EXISTS_TAC `r1 + r2:real` THEN
+    W(MP_TAC o PART_MATCH rand MCBALL_SUBSET_PROD_METRIC o rand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUBSET_TRANS) THEN
+    ASM_REWRITE_TAC[SUBSET_CROSS]]);;
+
+let MBOUNDED_PROD_METRIC = prove
+ (`!(m1:A metric) (m2:B metric) u.
+        mbounded (prod_metric m1 m2) u <=>
+        mbounded m1 (IMAGE FST u) /\ mbounded m2 (IMAGE SND u)`,
+  REPEAT GEN_TAC THEN  EQ_TAC THENL
+   [REWRITE_TAC[mbounded; SUBSET; FORALL_IN_IMAGE; FORALL_PAIR_THM] THEN
+    REWRITE_TAC[EXISTS_PAIR_THM] THEN MATCH_MP_TAC(MESON[]
+     `(!r x y. R x y r ==> P x r /\ Q y r)
+      ==> (?x y r. R x y r) ==> (?x r. P x r) /\ (?y r. Q y r)`) THEN
+    MAP_EVERY X_GEN_TAC [`r:real`; `x:A`; `y:B`] THEN
+    MP_TAC(ISPECL [`m1:A metric`; `m2:B metric`; `x:A`; `y:B`; `r:real`]
+        MCBALL_PROD_METRIC_SUBSET) THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_CROSS] THEN MESON_TAC[];
+    STRIP_TAC THEN MATCH_MP_TAC MBOUNDED_SUBSET THEN
+    EXISTS_TAC `((IMAGE FST u) CROSS (IMAGE SND u)):A#B->bool` THEN
+    ASM_REWRITE_TAC[MBOUNDED_CROSS; IMAGE_EQ_EMPTY] THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_CROSS] THEN
+    REWRITE_TAC[IN_IMAGE; EXISTS_PAIR_THM] THEN MESON_TAC[]]);;
+
+let TOTALLY_BOUNDED_IN_CROSS = prove
+ (`!(m1:A metric) (m2:B metric) s t.
+       totally_bounded_in (prod_metric m1 m2) (s CROSS t) <=>
+       s = {} \/ t = {} \/ totally_bounded_in m1 s /\ totally_bounded_in m2 t`,
+  REPEAT GEN_TAC THEN MAP_EVERY ASM_CASES_TAC
+   [`s:A->bool = {}`; `t:B->bool = {}`] THEN
+  ASM_REWRITE_TAC[CROSS_EMPTY; TOTALLY_BOUNDED_IN_EMPTY] THEN
+  REWRITE_TAC[TOTALLY_BOUNDED_IN_SEQUENTIALLY] THEN
+  ASM_REWRITE_TAC[CONJUNCT1 PROD_METRIC; SUBSET_CROSS] THEN
+  ASM_CASES_TAC `(s:A->bool) SUBSET mspace m1` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `(t:B->bool) SUBSET mspace m2` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THEN STRIP_TAC THEN TRY CONJ_TAC THENL
+   [X_GEN_TAC `x:num->A` THEN DISCH_TAC THEN
+    UNDISCH_TAC `~(t:B->bool = {})` THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `y:B` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(\n. (x n,y)):num->A#B`) THEN
+    ASM_REWRITE_TAC[IN_CROSS; CAUCHY_IN_PROD_METRIC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[o_DEF];
+    X_GEN_TAC `y:num->B` THEN DISCH_TAC THEN
+    UNDISCH_TAC `~(s:A->bool = {})` THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(\n. (x,y n)):num->A#B`) THEN
+    ASM_REWRITE_TAC[IN_CROSS; CAUCHY_IN_PROD_METRIC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[o_DEF];
+    REWRITE_TAC[FORALL_PAIR_FUN_THM; IN_CROSS; FORALL_AND_THM] THEN
+    MAP_EVERY X_GEN_TAC [`x:num->A`; `y:num->B`] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `x:num->A`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(X_CHOOSE_THEN `r1:num->num` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(y:num->B) o (r1:num->num)`) THEN
+    ASM_REWRITE_TAC[o_THM] THEN
+    DISCH_THEN(X_CHOOSE_THEN `r2:num->num` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(r1:num->num) o (r2:num->num)` THEN
+    ASM_SIMP_TAC[o_THM; CAUCHY_IN_PROD_METRIC; o_ASSOC] THEN
+    ONCE_REWRITE_TAC[o_ASSOC] THEN GEN_REWRITE_TAC
+     (BINOP_CONV o RAND_CONV o LAND_CONV o LAND_CONV) [o_DEF] THEN
+    ASM_REWRITE_TAC[ETA_AX] THEN ASM_SIMP_TAC[CAUCHY_IN_SUBSEQUENCE]]);;
+
+let TOTALLY_BOUNDED_IN_PROD_METRIC = prove
+ (`!(m1:A metric) (m2:B metric) u.
+        totally_bounded_in (prod_metric m1 m2) u <=>
+        totally_bounded_in m1 (IMAGE FST u) /\
+        totally_bounded_in m2 (IMAGE SND u)`,
+  REPEAT GEN_TAC THEN  EQ_TAC THENL
+   [REWRITE_TAC[TOTALLY_BOUNDED_IN_SEQUENTIALLY] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_PAIR_THM] THEN
+    REWRITE_TAC[CONJUNCT1 PROD_METRIC; IN_CROSS] THEN STRIP_TAC THEN
+    CONJ_TAC THEN (CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC]) THEN
+    SIMP_TAC[IN_IMAGE; SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+    GEN_TAC THEN X_GEN_TAC `z:num->A#B` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `z:num->A#B`) THEN
+    ASM_REWRITE_TAC[CAUCHY_IN_PROD_METRIC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN ASM_SIMP_TAC[o_DEF];
+    STRIP_TAC THEN MATCH_MP_TAC TOTALLY_BOUNDED_IN_SUBSET THEN
+    EXISTS_TAC `((IMAGE FST u) CROSS (IMAGE SND u)):A#B->bool` THEN
+    ASM_REWRITE_TAC[TOTALLY_BOUNDED_IN_CROSS; IMAGE_EQ_EMPTY] THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_CROSS] THEN
+    REWRITE_TAC[IN_IMAGE; EXISTS_PAIR_THM] THEN MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Homotopy of maps p,q : X->Y with property P of all intermediate maps.     *)
+(* We often just want to require that it fixes some subset, but to take in   *)
+(* the case of loop homotopy it's convenient to have a general property P.   *)
+(* ------------------------------------------------------------------------- *)
+
+let homotopic_with = new_definition
+  `homotopic_with P (X,Y) p q <=>
+   ?h. continuous_map
+       (prod_topology (subtopology euclideanreal (real_interval[&0,&1])) X,
+        Y) h /\
+       (!x. h(&0,x) = p x) /\ (!x. h(&1,x) = q x) /\
+       (!t. t IN real_interval[&0,&1] ==> P(\x. h(t,x)))`;;
+
+let HOMOTOPIC_WITH_IMP_CONTINUOUS_MAPS = prove
+ (`!P X Y p q:A->B.
+        homotopic_with P (X,Y) p q
+        ==> continuous_map (X,Y) p /\ continuous_map (X,Y) q`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[homotopic_with; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `h:real#A->B` THEN REPEAT STRIP_TAC THENL
+   [SUBGOAL_THEN `p = (h:real#A->B) o (\x. (&0,x))` SUBST1_TAC THENL
+     [ASM_REWRITE_TAC[FUN_EQ_THM; o_THM]; ALL_TAC];
+    SUBGOAL_THEN `q = (h:real#A->B) o (\x. (&1,x))` SUBST1_TAC THENL
+     [ASM_REWRITE_TAC[FUN_EQ_THM; o_THM]; ALL_TAC]] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        CONTINUOUS_MAP_COMPOSE)) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST] THEN DISJ2_TAC THEN
+  REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; TOPSPACE_EUCLIDEANREAL; INTER_UNIV] THEN
+  REWRITE_TAC[IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lipschitz functions.                                                      *)

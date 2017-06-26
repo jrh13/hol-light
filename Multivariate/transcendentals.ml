@@ -2621,7 +2621,9 @@ let ROTATION_MATRIX_ROTATE2D_EQ = prove
 let NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION = prove
  (`!f:real^N->real^N.
        orthogonal_transformation f /\ det(matrix f) = &1
-       ==> homotopic_with orthogonal_transformation ((:real^N),(:real^N)) f I`,
+       ==> homotopic_with orthogonal_transformation
+            (subtopology euclidean (:real^N),subtopology euclidean (:real^N))
+            f I`,
   let lemma0 = prove
    (`!a x:real^N.
           2 <= dimindex(:N) /\ a IN span {basis 1,basis 2}
@@ -2649,8 +2651,10 @@ let NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION = prove
   let lemma1 = prove
    (`!a b:real^2 r.
           ~(a = vec 0) /\ ~(b = vec 0)
-          ==> homotopic_with orthogonal_transformation ((:real^2),(:real^2))
-                             (reflect_along a o reflect_along b) I`,
+          ==> homotopic_with orthogonal_transformation
+                (subtopology euclidean (:real^2),
+                 subtopology euclidean (:real^2))
+                (reflect_along a o reflect_along b) I`,
     REPEAT STRIP_TAC THEN
     MP_TAC(SPEC `reflect_along (a:real^2) o reflect_along b`
           ROTATION_ROTATE2D) THEN
@@ -2665,7 +2669,7 @@ let NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION = prove
       CONV_TAC REAL_RAT_REDUCE_CONV;
       DISCH_THEN(X_CHOOSE_THEN `t:real` STRIP_ASSUME_TAC) THEN
       ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN
-      ASM_REWRITE_TAC[homotopic_with] THEN
+      ASM_REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
       EXISTS_TAC `\z. rotate2d (drop(fstcart z) * t) (sndcart z)` THEN
       SIMP_TAC[ORTHOGONAL_TRANSFORMATION_ROTATE2D; SNDCART_PASTECART;
                ETA_AX; FSTCART_PASTECART; DROP_VEC; I_THM; NORM_ROTATE2D;
@@ -2686,12 +2690,14 @@ let NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION = prove
           2 <= dimindex(:N) /\
           ~(a = vec 0) /\ ~(b = vec 0) /\
           {a,b} SUBSET span {basis 1,basis 2}
-          ==> homotopic_with orthogonal_transformation ((:real^N),(:real^N))
-                             (reflect_along a o reflect_along b) I`,
+          ==> homotopic_with orthogonal_transformation
+                (subtopology euclidean (:real^N),
+                 subtopology euclidean (:real^N))
+                (reflect_along a o reflect_along b) I`,
     REPEAT STRIP_TAC THEN
     SUBGOAL_THEN
       `homotopic_with orthogonal_transformation
-        ((:real^N),(:real^N))
+        (subtopology euclidean (:real^N),subtopology euclidean (:real^N))
         ((\z. (lambda i. if i <= 2 then (fstcart z)$i
                          else (sndcart z)$i):real^N) o
          (\z. pastecart
@@ -2802,8 +2808,10 @@ let NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION = prove
   let lemma3 = prove
    (`!a b:real^N r.
           ~(a = vec 0) /\ ~(b = vec 0)
-          ==> homotopic_with orthogonal_transformation ((:real^N),(:real^N))
-                             (reflect_along a o reflect_along b) I`,
+          ==> homotopic_with orthogonal_transformation
+                (subtopology euclidean (:real^N),
+                 subtopology euclidean (:real^N))
+                (reflect_along a o reflect_along b) I`,
     REPEAT STRIP_TAC THEN ASM_CASES_TAC `dimindex(:N) = 1` THENL
      [ASM_SIMP_TAC[o_DEF; I_DEF; REFLECT_ALONG_1D; VECTOR_NEG_NEG] THEN
       REWRITE_TAC[HOMOTOPIC_WITH_REFL; SUBSET_UNIV; CONTINUOUS_ON_ID] THEN
@@ -2830,7 +2838,9 @@ let NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION = prove
       ASM_REWRITE_TAC[] THEN
       DISCH_THEN(X_CHOOSE_THEN `g:real^N->real^N` STRIP_ASSUME_TAC)] THEN
     SUBGOAL_THEN
-     `homotopic_with orthogonal_transformation ((:real^N),(:real^N))
+     `homotopic_with orthogonal_transformation
+       (subtopology euclidean (:real^N),
+        subtopology euclidean (:real^N))
        (g o (f o (reflect_along a o reflect_along b) o (g:real^N->real^N)) o f)
        (g o (f o I o (g:real^N->real^N)) o f)`
     MP_TAC THENL
@@ -2934,10 +2944,15 @@ let HOMOTOPIC_SPECIAL_ORTHOGONAL_TRANSFORMATIONS,
     HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS = (CONJ_PAIR o prove)
  (`(!f g. homotopic_with
             (\h. orthogonal_transformation h /\ det(matrix h) = det(matrix f))
-            ((:real^N),(:real^N)) f g <=>
+            (subtopology euclidean (:real^N),subtopology euclidean (:real^N))
+            f g <=>
           homotopic_with
-            orthogonal_transformation ((:real^N),(:real^N)) f g) /\
-   !f g. homotopic_with orthogonal_transformation ((:real^N),(:real^N)) f g <=>
+            orthogonal_transformation
+             (subtopology euclidean (:real^N),
+              subtopology euclidean (:real^N)) f g) /\
+   !f g. homotopic_with orthogonal_transformation
+          (subtopology euclidean (:real^N),
+           subtopology euclidean (:real^N)) f g <=>
          orthogonal_transformation f /\ orthogonal_transformation g /\
          det(matrix f) = det(matrix g)`,
   REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN MATCH_MP_TAC(TAUT
@@ -2972,7 +2987,7 @@ let HOMOTOPIC_SPECIAL_ORTHOGONAL_TRANSFORMATIONS,
       ASM_SIMP_TAC[MATRIX_COMPOSE; ORTHOGONAL_TRANSFORMATION_LINEAR;
                    ORTHOGONAL_TRANSFORMATION_COMPOSE; DET_MUL;
                    MATRIX_I; DET_I]];
-    REWRITE_TAC[homotopic_with] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN MATCH_MP_TAC MONO_EXISTS THEN
     X_GEN_TAC `k:real^(1,N)finite_sum->real^N` THEN
     STRIP_TAC THEN ASM_SIMP_TAC[] THEN MP_TAC(ISPECL
      [`\t. lift(
@@ -3015,16 +3030,18 @@ let HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_SPHERE = prove
  (`!f g r.
         &0 < r
         ==> (homotopic_with orthogonal_transformation
-                            (sphere(vec 0,r),sphere(vec 0,r)) f g <=>
+              (subtopology euclidean (sphere(vec 0,r)),
+               subtopology euclidean (sphere(vec 0,r))) f g <=>
              homotopic_with orthogonal_transformation
-                            ((:real^N),(:real^N)) f g)`,
+              (subtopology euclidean (:real^N),
+               subtopology euclidean (:real^N)) f g)`,
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [ALL_TAC;
     DISCH_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_RESTRICT THEN
     REPEAT(EXISTS_TAC `(:real^N)`) THEN ASM_REWRITE_TAC[SUBSET_UNIV] THEN
     REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_SPHERE; DIST_0] THEN
     MESON_TAC[ORTHOGONAL_TRANSFORMATION]] THEN
-  REWRITE_TAC[homotopic_with] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN MATCH_MP_TAC MONO_EXISTS THEN
   X_GEN_TAC `h:real^(1,N)finite_sum->real^N` THEN STRIP_TAC THEN
   ASM_REWRITE_TAC[SUBSET_UNIV] THEN
   MATCH_MP_TAC CONTINUOUS_ON_EQ THEN EXISTS_TAC
@@ -3117,10 +3134,12 @@ let HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_SPHERE = prove
       ASM_SIMP_TAC[GSYM real_div; REAL_DIV_RMUL; NORM_EQ_0; REAL_LT_REFL]]]);;
 
 let HOMOTOPIC_LINEAR_MAPS = prove
- (`!f g. homotopic_with linear ((:real^M),(:real^N)) f g <=>
+ (`!f g. homotopic_with linear
+          (subtopology euclidean (:real^M),subtopology euclidean (:real^N))
+          f g <=>
          linear f /\ linear g`,
   REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_IMP_PROPERTY] THEN
-  STRIP_TAC THEN REWRITE_TAC[homotopic_with] THEN
+  STRIP_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   EXISTS_TAC `\z. (&1 - drop(fstcart z)) % (f:real^M->real^N) (sndcart z) +
                   drop(fstcart z) % (g:real^M->real^N) (sndcart z)` THEN
   REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; DROP_VEC; SUBSET_UNIV;
@@ -3139,13 +3158,14 @@ let HOMOTOPIC_LINEAR_MAPS = prove
 
 let HOMOTOPIC_LINEAR_POSITIVE_SEMIDEFINITE_MAPS = prove
  (`!f g. homotopic_with (\f. linear f /\ positive_semidefinite(matrix f))
-                        ((:real^N),(:real^N)) f g <=>
+          (subtopology euclidean (:real^N),
+           subtopology euclidean (:real^N)) f g <=>
            linear f /\ linear g /\
            positive_semidefinite(matrix f) /\
            positive_semidefinite(matrix g)`,
   REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
    [FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_PROPERTY) THEN SIMP_TAC[];
-    REWRITE_TAC[homotopic_with]] THEN
+    REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN]] THEN
   EXISTS_TAC `\z. (&1 - drop(fstcart z)) % (f:real^N->real^N) (sndcart z) +
                   drop(fstcart z) % (g:real^N->real^N) (sndcart z)` THEN
   REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; DROP_VEC; SUBSET_UNIV;
@@ -3168,13 +3188,14 @@ let HOMOTOPIC_LINEAR_POSITIVE_SEMIDEFINITE_MAPS = prove
 
 let HOMOTOPIC_LINEAR_POSITIVE_DEFINITE_MAPS = prove
  (`!f g. homotopic_with (\f. linear f /\ positive_definite(matrix f))
-                        ((:real^N),(:real^N)) f g <=>
+           (subtopology euclidean (:real^N),
+            subtopology euclidean (:real^N)) f g <=>
            linear f /\ linear g /\
            positive_definite(matrix f) /\
            positive_definite(matrix g)`,
   REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
    [FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_PROPERTY) THEN SIMP_TAC[];
-    REWRITE_TAC[homotopic_with]] THEN
+    REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN]] THEN
   EXISTS_TAC `\z. (&1 - drop(fstcart z)) % (f:real^N->real^N) (sndcart z) +
                   drop(fstcart z) % (g:real^N->real^N) (sndcart z)` THEN
   REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; DROP_VEC; SUBSET_UNIV;
@@ -3203,7 +3224,8 @@ let HOMOTOPIC_LINEAR_POSITIVE_DEFINITE_MAPS = prove
 
 let HOMOTOPIC_RESTRICTED_LINEAR_MAPS = prove
  (`!f g b. homotopic_with (\f. linear f /\ real_sgn(det(matrix f)) = b)
-                          ((:real^N),(:real^N)) f g <=>
+            (subtopology euclidean (:real^N),
+             subtopology euclidean (:real^N)) f g <=>
            linear f /\ linear g /\
            real_sgn(det(matrix f)) = b /\
            real_sgn(det(matrix g)) = b`,
@@ -3215,7 +3237,7 @@ let HOMOTOPIC_RESTRICTED_LINEAR_MAPS = prove
     MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
     EXISTS_TAC `(\x. vec 0):real^N->real^N` THEN
     GEN_REWRITE_TAC LAND_CONV [HOMOTOPIC_WITH_SYM] THEN
-    REWRITE_TAC[homotopic_with] THEN CONJ_TAC THENL
+    REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN CONJ_TAC THENL
      [EXISTS_TAC `\z. drop(fstcart z) % (f:real^N->real^N) (sndcart z)`;
       EXISTS_TAC `\z. drop(fstcart z) % (g:real^N->real^N) (sndcart z)`] THEN
     REWRITE_TAC[SUBSET_UNIV; FSTCART_PASTECART; SNDCART_PASTECART;
@@ -3287,7 +3309,8 @@ let HOMOTOPIC_RESTRICTED_LINEAR_MAPS = prove
 
 let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT = prove
  (`!f g. homotopic_with (\h. linear h /\ invertible(matrix h))
-                        ((:real^N),(:real^N)) f g <=>
+          (subtopology euclidean (:real^N),
+           subtopology euclidean (:real^N)) f g <=>
          linear f /\ linear g /\
          &0 < real_sgn(det(matrix f)) * real_sgn(det(matrix g))`,
   REPEAT GEN_TAC THEN
@@ -3308,7 +3331,8 @@ let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT = prove
   ASM_REWRITE_TAC[] THEN TRANS_TAC EQ_TRANS
    `homotopic_with (\h. linear h /\
                         real_sgn(det(matrix h)) = real_sgn(det(matrix f)))
-         ((:real^N),(:real^N)) f g` THEN
+      (subtopology euclidean (:real^N),
+       subtopology euclidean (:real^N)) f g` THEN
   CONJ_TAC THENL
    [ALL_TAC;
     ASM_REWRITE_TAC[HOMOTOPIC_RESTRICTED_LINEAR_MAPS] THEN
@@ -3318,7 +3342,7 @@ let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT = prove
     MP_TAC(ISPEC `det(matrix(g:real^N->real^N))` REAL_SGN_CASES) THEN
     STRIP_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
     CONV_TAC REAL_RAT_REDUCE_CONV] THEN
-  REWRITE_TAC[homotopic_with] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   GEN_REWRITE_TAC
     (LAND_CONV o ONCE_DEPTH_CONV) [GSYM(CONJUNCT1 REAL_SGN_EQ)] THEN
   EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[] THEN
@@ -3364,7 +3388,8 @@ let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT = prove
 
 let HOMOTOPIC_INVERTIBLE_LINEAR_MAPS = prove
  (`!f g. homotopic_with (\h. linear h /\ invertible(matrix h))
-                        ((:real^N),(:real^N)) f g <=>
+          (subtopology euclidean (:real^N),
+           subtopology euclidean (:real^N)) f g <=>
          linear f /\ linear g /\ &0 < det(matrix f) * det(matrix g)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT] THEN
   REWRITE_TAC[GSYM REAL_SGN_MUL; REAL_SGN_INEQS]);;
@@ -3377,13 +3402,14 @@ let HOMOTOPIC_LINEAR_MAPS_EQ = prove
  (`!f g:real^N->real^N.
         linear f /\ linear g
         ==> (homotopic_with (\x. T)
-               ((:real^N) DELETE vec 0,(:real^N) DELETE vec 0) f g <=>
+               (subtopology euclidean ((:real^N) DELETE vec 0),
+                subtopology euclidean ((:real^N) DELETE vec 0)) f g <=>
              &0 < det(matrix f) * det(matrix g))`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN
   ASM_SIMP_TAC[HOMOTOPIC_LINEAR_MAPS_ALT] THEN STRIP_TAC THEN
   MP_TAC(ISPECL [`f:real^N->real^N`; `g:real^N->real^N`]
       HOMOTOPIC_INVERTIBLE_LINEAR_MAPS) THEN
-  ASM_REWRITE_TAC[homotopic_with] THEN
+  ASM_REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   MATCH_MP_TAC MONO_EXISTS THEN
   X_GEN_TAC `h:real^(1,N)finite_sum->real^N` THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
@@ -3405,8 +3431,9 @@ let HOMOTOPIC_LINEAR_MAPS_EQ = prove
 let HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ = prove
  (`!f g:real^N->real^N.
         orthogonal_transformation f /\ orthogonal_transformation g
-        ==> (homotopic_with
-                (\x. T) (sphere (vec 0,&1),sphere (vec 0,&1)) f g <=>
+        ==> (homotopic_with (\x. T)
+              (subtopology euclidean (sphere (vec 0,&1)),
+               subtopology euclidean (sphere (vec 0,&1))) f g <=>
              det(matrix f) = det(matrix g))`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
    [MATCH_MP_TAC HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_IMP THEN
@@ -3417,7 +3444,9 @@ let HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ = prove
     ASM_REWRITE_TAC[HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS]]);;
 
 let HOMOTOPIC_ANTIPODAL_IDENTITY_MAP = prove
- (`homotopic_with (\x. T) (sphere(vec 0,&1),sphere(vec 0,&1))
+ (`homotopic_with (\x. T)
+      (subtopology euclidean (sphere(vec 0,&1)),
+       subtopology euclidean (sphere(vec 0,&1)))
                   (\x:real^N. --x) (\x. x) <=>
    EVEN(dimindex(:N))`,
   SIMP_TAC[HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ;
@@ -7335,7 +7364,9 @@ let SUMMABLE_ZETA_INTEGER = prove
 
 let HOMOTOPIC_CIRCLEMAPS_IMP_HOMOTOPIC_LOOPS = prove
  (`!f:complex->real^N g s.
-        homotopic_with (\h. T) (sphere(vec 0,&1),s) f g
+        homotopic_with (\h. T)
+          (subtopology euclidean (sphere(vec 0,&1)),subtopology euclidean s)
+          f g
         ==> homotopic_loops s (f o cexp o (\t. Cx(&2 * pi * drop t) * ii))
                               (g o cexp o (\t. Cx(&2 * pi * drop t) * ii))`,
   REWRITE_TAC[homotopic_loops; sphere; DIST_0] THEN REPEAT STRIP_TAC THEN
@@ -7355,7 +7386,8 @@ let HOMOTOPIC_CIRCLEMAPS_IMP_HOMOTOPIC_LOOPS = prove
 let HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS = prove
  (`!p q s:real^N->bool.
         homotopic_loops s p q
-        ==> homotopic_with (\h. T) (sphere(vec 0,&1),s)
+        ==> homotopic_with (\h. T)
+             (subtopology euclidean (sphere(vec 0,&1)),subtopology euclidean s)
                                    (p o (\z. lift(Arg z / (&2 * pi))))
                                    (q o (\z. lift(Arg z / (&2 * pi))))`,
  let ulemma = prove
@@ -7365,7 +7397,7 @@ let HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS = prove
                  PASTECART_IN_PCROSS] THEN
     SET_TAC[REAL_LE_TOTAL]) in
   REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_loops; sphere; DIST_0] THEN
-  GEN_REWRITE_TAC LAND_CONV [homotopic_with] THEN
+  GEN_REWRITE_TAC LAND_CONV [HOMOTOPIC_WITH_EUCLIDEAN] THEN
   SIMP_TAC[pathstart; pathfinish; LEFT_IMP_EXISTS_THM; HOMOTOPIC_WITH] THEN
   X_GEN_TAC `h:real^(1,1)finite_sum->real^N` THEN STRIP_TAC THEN
   EXISTS_TAC `\w. (h:real^(1,1)finite_sum->real^N)
@@ -7485,14 +7517,18 @@ let SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS,
               IMAGE f (sphere(vec 0,&1)) SUBSET s /\
               g continuous_on sphere(vec 0,&1) /\
               IMAGE g (sphere(vec 0,&1)) SUBSET s
-              ==> homotopic_with (\h. T) (sphere(vec 0,&1),s) f g) /\
+              ==> homotopic_with (\h. T)
+                   (subtopology euclidean (sphere(vec 0,&1)),
+                    subtopology euclidean s) f g) /\
    (!s:real^N->bool.
       simply_connected s <=>
       path_connected s /\
       !f:real^2->real^N.
               f continuous_on sphere(vec 0,&1) /\
               IMAGE f (sphere(vec 0,&1)) SUBSET s
-              ==> ?a. homotopic_with (\h. T) (sphere(vec 0,&1),s) f (\x. a))`,
+              ==> ?a. homotopic_with (\h. T)
+                       (subtopology euclidean (sphere(vec 0,&1)),
+                        subtopology euclidean s) f (\x. a))`,
   REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN MATCH_MP_TAC(TAUT
    `(p ==> q) /\ (q ==> r) /\ (r ==> p) ==> (p <=> q) /\ (p <=> r)`) THEN
   REPEAT CONJ_TAC THENL

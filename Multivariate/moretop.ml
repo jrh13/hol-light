@@ -79,7 +79,8 @@ let INESSENTIAL_SPHEREMAP_LOWDIM_GEN = prove
      f continuous_on relative_frontier s /\
      IMAGE f (relative_frontier s) SUBSET (relative_frontier t)
      ==> ?c. homotopic_with (\z. T)
-                (relative_frontier s,relative_frontier t) f (\x. c)`,
+                (subtopology euclidean (relative_frontier s),
+                 subtopology euclidean (relative_frontier t)) f (\x. c)`,
   let lemma1 = prove
    (`!f:real^N->real^N s t.
         subspace s /\ subspace t /\ dim s < dim t /\ s SUBSET t /\
@@ -244,8 +245,9 @@ let INESSENTIAL_SPHEREMAP_LOWDIM_GEN = prove
           f continuous_on sphere(vec 0,&1) INTER s /\
           IMAGE f (sphere(vec 0,&1) INTER s) SUBSET sphere(vec 0,&1) INTER t
           ==> ?c. homotopic_with (\x. T)
-                          (sphere(vec 0,&1) INTER s,sphere(vec 0,&1) INTER t)
-                          f (\x. c)`,
+                    (subtopology euclidean (sphere(vec 0,&1) INTER s),
+                     subtopology euclidean (sphere(vec 0,&1) INTER t))
+                     f (\x. c)`,
     REPEAT STRIP_TAC THEN
     MP_TAC(ISPECL [`f:real^N->real^N`; `sphere(vec 0:real^N,&1) INTER s`;
                    `&1 / &2`; `t:real^N->bool`;]
@@ -308,7 +310,8 @@ let INESSENTIAL_SPHEREMAP_LOWDIM_GEN = prove
       ALL_TAC] THEN
     SUBGOAL_THEN
      `?c. homotopic_with (\z. T)
-             (sphere(vec 0,&1) INTER s,sphere(vec 0,&1) INTER t)
+             (subtopology euclidean (sphere(vec 0,&1) INTER s),
+              subtopology euclidean (sphere(vec 0,&1) INTER t))
              (h:real^N->real^N) (\x. c)`
     MP_TAC THENL
      [ALL_TAC;
@@ -316,8 +319,9 @@ let INESSENTIAL_SPHEREMAP_LOWDIM_GEN = prove
       MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] HOMOTOPIC_WITH_TRANS) THEN
       SUBGOAL_THEN
        `homotopic_with (\z. T)
-                       (sphere(vec 0:real^N,&1) INTER s,t DELETE (vec 0:real^N))
-                       f g`
+         (subtopology euclidean (sphere(vec 0:real^N,&1) INTER s),
+          subtopology euclidean (t DELETE (vec 0:real^N)))
+         f g`
       MP_TAC THENL
        [MATCH_MP_TAC HOMOTOPIC_WITH_LINEAR THEN
         ASM_SIMP_TAC[CONTINUOUS_ON_VECTOR_POLYNOMIAL_FUNCTION] THEN
@@ -345,7 +349,8 @@ let INESSENTIAL_SPHEREMAP_LOWDIM_GEN = prove
             SIMP_TAC[IN_DELETE; NORM_EQ_0] THEN
             REWRITE_TAC[REWRITE_RULE[o_DEF] CONTINUOUS_ON_LIFT_NORM];
             REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_DELETE; IN_INTER] THEN
-            ASM_SIMP_TAC[SUBSPACE_MUL; IN_SPHERE_0; NORM_MUL; REAL_ABS_MUL] THEN
+            ASM_SIMP_TAC[SUBSPACE_MUL; IN_SPHERE_0; NORM_MUL;
+                         REAL_ABS_MUL] THEN
             SIMP_TAC[REAL_ABS_INV; REAL_ABS_NORM; REAL_MUL_LINV; NORM_EQ_0]];
           MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT] HOMOTOPIC_WITH_EQ) THEN
           RULE_ASSUM_TAC(REWRITE_RULE
@@ -368,8 +373,9 @@ let INESSENTIAL_SPHEREMAP_LOWDIM_GEN = prove
     EXISTS_TAC `--c:real^N` THEN
     SUBGOAL_THEN
      `homotopic_with (\z. T)
-                     (sphere(vec 0:real^N,&1) INTER s,t DELETE (vec 0:real^N))
-                     h (\x. --c)`
+       (subtopology euclidean (sphere(vec 0:real^N,&1) INTER s),
+        subtopology euclidean (t DELETE (vec 0:real^N)))
+       h (\x. --c)`
     MP_TAC THENL
      [MATCH_MP_TAC HOMOTOPIC_WITH_LINEAR THEN
       ASM_SIMP_TAC[DIFFERENTIABLE_IMP_CONTINUOUS_ON; CONTINUOUS_ON_CONST] THEN
@@ -487,7 +493,9 @@ let INESSENTIAL_SPHEREMAP_LOWDIM = prove
         dimindex(:M) < dimindex(:N) /\
         f continuous_on sphere(a,r) /\
         IMAGE f (sphere(a,r)) SUBSET (sphere(b,s))
-        ==> ?c. homotopic_with (\z. T) (sphere(a,r),sphere(b,s)) f (\x. c)`,
+        ==> ?c. homotopic_with (\z. T)
+                 (subtopology euclidean (sphere(a,r)),
+                  subtopology euclidean (sphere(b,s))) f (\x. c)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `s <= &0` THEN
   ASM_SIMP_TAC[NULLHOMOTOPIC_INTO_CONTRACTIBLE; CONTRACTIBLE_SPHERE] THEN
   ASM_CASES_TAC `r <= &0` THEN
@@ -540,10 +548,17 @@ let HOMEOMORPHIC_SPHERES_EQ,HOMOTOPY_EQUIVALENT_SPHERES_EQ =
                          HOMOTOPIC_WITH_IMP_SUBSET) th THEN
                   MP_TAC th) THEN
       MATCH_MP_TAC(MESON[HOMOTOPIC_WITH_TRANS; HOMOTOPIC_WITH_SYM]
-          `homotopic_with p (s,t) c d
-            ==> homotopic_with p (s,t) f c /\
-                homotopic_with p (s,t) g d
-                ==> homotopic_with p (s,t) f g`) THEN
+          `homotopic_with p
+            (subtopology euclidean s,subtopology euclidean t) c d
+            ==> homotopic_with p
+                 (subtopology euclidean s,
+                  subtopology euclidean t) f c /\
+                homotopic_with p
+                 (subtopology euclidean s,
+                  subtopology euclidean t) g d
+                ==> homotopic_with p
+                     (subtopology euclidean s,
+                      subtopology euclidean t) f g`) THEN
       REWRITE_TAC[HOMOTOPIC_CONSTANT_MAPS] THEN DISJ2_TAC THEN
       MP_TAC(ISPECL [`b:real^N`; `s:real`] PATH_CONNECTED_SPHERE) THEN
       ANTS_TAC THENL
@@ -2839,7 +2854,9 @@ let BORSUK_MAP_INTO_SPHERE = prove
 
 let BORSUK_MAPS_HOMOTOPIC_IN_PATH_COMPONENT = prove
  (`!s a b. path_component ((:real^N) DIFF s) a b
-           ==> homotopic_with (\x. T) (s,sphere(vec 0,&1))
+           ==> homotopic_with (\x. T)
+                   (subtopology euclidean s,
+                    subtopology euclidean (sphere(vec 0,&1)))
                    (\x. inv(norm(x - a)) % (x - a))
                    (\x. inv(norm(x - b)) % (x - b))`,
   REPEAT GEN_TAC THEN REWRITE_TAC[path_component; LEFT_IMP_EXISTS_THM] THEN
@@ -2942,8 +2959,10 @@ let NON_EXTENSIBLE_BORSUK_MAP = prove
 let BORSUK_MAP_ESSENTIAL_BOUNDED_COMPONENT = prove
  (`!s a. compact s /\ ~(a IN s)
          ==> (bounded(connected_component ((:real^N) DIFF s) a) <=>
-              ~(?c. homotopic_with (\x. T) (s,sphere(vec 0:real^N,&1))
-                                   (\x. inv(norm(x - a)) % (x - a)) (\x. c)))`,
+              ~(?c. homotopic_with (\x. T)
+                      (subtopology euclidean s,
+                       subtopology euclidean (sphere(vec 0:real^N,&1)))
+                      (\x. inv(norm(x - a)) % (x - a)) (\x. c)))`,
   REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THENL
    [ASM_SIMP_TAC[DIFF_EMPTY; CONNECTED_COMPONENT_UNIV; NOT_BOUNDED_UNIV] THEN
     SIMP_TAC[HOMOTOPIC_WITH; NOT_IN_EMPTY; PCROSS_EMPTY; IMAGE_CLAUSES;
@@ -2981,7 +3000,9 @@ let BORSUK_MAP_ESSENTIAL_BOUNDED_COMPONENT = prove
       ASM_MESON_TAC[BOUNDED_SUBSET; BOUNDED_BALL];
       DISCH_THEN(X_CHOOSE_THEN `b:real^N` STRIP_ASSUME_TAC)] THEN
     SUBGOAL_THEN
-     `?c. homotopic_with (\x. T) (ball(vec 0:real^N,r),sphere (vec 0,&1))
+     `?c. homotopic_with (\x. T)
+           (subtopology euclidean (ball(vec 0:real^N,r)),
+            subtopology euclidean (sphere(vec 0,&1)))
                          (\x. inv (norm (x - b)) % (x - b)) (\x. c)`
     MP_TAC THENL
      [MATCH_MP_TAC NULLHOMOTOPIC_FROM_CONTRACTIBLE THEN
@@ -2999,9 +3020,11 @@ let HOMOTOPIC_BORSUK_MAPS_IN_BOUNDED_COMPONENT = prove
  (`!s a b.
         compact s /\ ~(a IN s) /\ ~(b IN s) /\
         bounded (connected_component ((:real^N) DIFF s) a) /\
-        homotopic_with (\x. T) (s,sphere(vec 0,&1))
-                               (\x. inv(norm(x - a)) % (x - a))
-                               (\x. inv(norm(x - b)) % (x - b))
+        homotopic_with (\x. T)
+          (subtopology euclidean s,
+           subtopology euclidean (sphere(vec 0,&1)))
+          (\x. inv(norm(x - a)) % (x - a))
+          (\x. inv(norm(x - b)) % (x - b))
         ==> connected_component ((:real^N) DIFF s) a b`,
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [GSYM IN] THEN
   MP_TAC(ISPECL
@@ -3026,7 +3049,9 @@ let HOMOTOPIC_BORSUK_MAPS_IN_BOUNDED_COMPONENT = prove
 
 let BORSUK_MAPS_HOMOTOPIC_IN_CONNECTED_COMPONENT_EQ = prove
  (`!s a b. 2 <= dimindex(:N) /\ compact s /\ ~(a IN s) /\ ~(b IN s)
-           ==> (homotopic_with (\x. T) (s,sphere(vec 0,&1))
+           ==> (homotopic_with (\x. T)
+                   (subtopology euclidean s,
+                    subtopology euclidean (sphere(vec 0,&1)))
                    (\x. inv(norm(x - a)) % (x - a))
                    (\x. inv(norm(x - b)) % (x - b)) <=>
                 connected_component ((:real^N) DIFF s) a b)`,
@@ -3056,7 +3081,9 @@ let BORSUK_SEPARATION_THEOREM_GEN = prove
     compact s
     ==> ((!c. c IN components((:real^N) DIFF s) ==> ~bounded c) <=>
          (!f. f continuous_on s /\ IMAGE f s SUBSET sphere(vec 0:real^N,&1)
-              ==> ?c. homotopic_with (\x. T) (s,sphere(vec 0,&1)) f (\x. c)))`,
+              ==> ?c. homotopic_with (\x. T)
+                       (subtopology euclidean s,
+                        subtopology euclidean (sphere(vec 0,&1))) f (\x. c)))`,
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [ALL_TAC;
     ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
@@ -3089,7 +3116,9 @@ let BORSUK_SEPARATION_THEOREM = prove
       2 <= dimindex(:N) /\ compact s
       ==> (connected((:real^N) DIFF s) <=>
            !f. f continuous_on s /\ IMAGE f s SUBSET sphere(vec 0:real^N,&1)
-               ==> ?c. homotopic_with (\x. T) (s,sphere(vec 0,&1)) f (\x. c))`,
+               ==> ?c. homotopic_with (\x. T)
+                        (subtopology euclidean s,
+                         subtopology euclidean (sphere(vec 0,&1))) f (\x. c))`,
   SIMP_TAC[GSYM BORSUK_SEPARATION_THEOREM_GEN] THEN
   X_GEN_TAC `s:real^N->bool` THEN STRIP_TAC THEN EQ_TAC THENL
    [DISCH_TAC THEN
@@ -5116,7 +5145,9 @@ let COVERING_SPACE_CEXP_PUNCTURED_PLANE = prove
 
 let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM = prove
  (`!f:real^N->complex s.
-      (?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)}) f (\t. a)) <=>
+      (?a. homotopic_with (\h. T)
+             (subtopology euclidean s,
+              subtopology euclidean ((:complex) DIFF {Cx(&0)})) f (\t. a)) <=>
       (?g. g continuous_on s /\ (!x. x IN s ==> f x = cexp(g x)))`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
    [DISCH_THEN(CHOOSE_THEN
@@ -5125,7 +5156,9 @@ let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM = prove
     REWRITE_TAC[SUBSET_UNIV] THEN MESON_TAC[];
     DISCH_THEN(X_CHOOSE_THEN `g:real^N->complex` STRIP_ASSUME_TAC) THEN
     SUBGOAL_THEN
-     `?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)})
+     `?a. homotopic_with (\h. T)
+              (subtopology euclidean s,
+               subtopology euclidean ((:complex) DIFF {Cx(&0)}))
               (cexp o g) (\x:real^N. a)`
     MP_TAC THENL
      [MATCH_MP_TAC NULLHOMOTOPIC_THROUGH_CONTRACTIBLE THEN
@@ -5139,12 +5172,14 @@ let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM = prove
 
 let INESSENTIAL_IMP_CONTINUOUS_LOGARITHM_CIRCLE = prove
  (`!f:real^N->complex s.
-        (?a. homotopic_with (\h. T) (s,sphere(vec 0,&1)) f (\t. a))
+        (?a. homotopic_with (\h. T)
+              (subtopology euclidean s,
+               subtopology euclidean (sphere(vec 0,&1))) f (\t. a))
         ==> ?g. g continuous_on s /\ !x. x IN s ==> f x = cexp(g x)`,
   REPEAT GEN_TAC THEN
   SIMP_TAC[sphere; GSYM INESSENTIAL_EQ_CONTINUOUS_LOGARITHM] THEN
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:complex` THEN
-  REWRITE_TAC[homotopic_with] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN MATCH_MP_TAC MONO_EXISTS THEN
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
     (REWRITE_RULE[IMP_CONJ] SUBSET_TRANS)) THEN
@@ -5154,7 +5189,9 @@ let INESSENTIAL_IMP_CONTINUOUS_LOGARITHM_CIRCLE = prove
 
 let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE = prove
  (`!f:real^N->complex s.
-        (?a. homotopic_with (\h. T) (s,sphere(vec 0,&1)) f (\t. a)) <=>
+        (?a. homotopic_with (\h. T)
+              (subtopology euclidean s,
+               subtopology euclidean (sphere(vec 0,&1))) f (\t. a)) <=>
         (?g. (Cx o g) continuous_on s /\
              !x. x IN s ==> f x = cexp(ii * Cx(g x)))`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
@@ -5171,8 +5208,10 @@ let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE = prove
       SIMP_TAC[RE_CX; IM_CX; REAL_NEG_0; REAL_EXP_0]];
     DISCH_THEN(X_CHOOSE_THEN `g:real^N->real` STRIP_ASSUME_TAC) THEN
     SUBGOAL_THEN
-     `?a. homotopic_with (\h. T) (s,sphere(vec 0,&1))
-              ((cexp o (\z. ii * z)) o (Cx o g)) (\x:real^N. a)`
+     `?a. homotopic_with (\h. T)
+            (subtopology euclidean s,
+             subtopology euclidean (sphere(vec 0,&1)))
+             ((cexp o (\z. ii * z)) o (Cx o g)) (\x:real^N. a)`
     MP_TAC THENL
      [MATCH_MP_TAC NULLHOMOTOPIC_THROUGH_CONTRACTIBLE THEN
       EXISTS_TAC `{z | Im z = &0}` THEN ASM_REWRITE_TAC[] THEN
@@ -5193,23 +5232,37 @@ let INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE = prove
 
 let HOMOTOPIC_CIRCLEMAPS_DIV,HOMOTOPIC_CIRCLEMAPS_DIV_1 = (CONJ_PAIR o prove)
  (`(!f g:real^N->real^2 s.
-    homotopic_with (\x. T) (s,sphere(vec 0,&1)) f g <=>
+    homotopic_with (\x. T)
+     (subtopology euclidean s,
+      subtopology euclidean (sphere(vec 0,&1))) f g <=>
     f continuous_on s /\ IMAGE f s SUBSET sphere(vec 0,&1) /\
     g continuous_on s /\ IMAGE g s SUBSET sphere(vec 0,&1) /\
-    ?c. homotopic_with (\x. T) (s,sphere(vec 0,&1)) (\x. f x / g x) (\x. c)) /\
+    ?c. homotopic_with (\x. T)
+         (subtopology euclidean s,
+          subtopology euclidean (sphere(vec 0,&1)))
+         (\x. f x / g x) (\x. c)) /\
    (!f g:real^N->real^2 s.
-    homotopic_with (\x. T) (s,sphere(vec 0,&1)) f g <=>
+    homotopic_with (\x. T)
+     (subtopology euclidean s,
+      subtopology euclidean (sphere(vec 0,&1))) f g <=>
     f continuous_on s /\ IMAGE f s SUBSET sphere(vec 0,&1) /\
     g continuous_on s /\ IMAGE g s SUBSET sphere(vec 0,&1) /\
-    homotopic_with (\x. T) (s,sphere(vec 0,&1)) (\x. f x / g x) (\x. Cx(&1)))`,
+    homotopic_with (\x. T)
+     (subtopology euclidean s,
+      subtopology euclidean (sphere(vec 0,&1)))
+     (\x. f x / g x) (\x. Cx(&1)))`,
   let lemma = prove
    (`!f g h:real^N->real^2 s.
-          homotopic_with (\x. T) (s,sphere(vec 0,&1)) f g
+          homotopic_with (\x. T)
+            (subtopology euclidean s,
+             subtopology euclidean (sphere(vec 0,&1))) f g
           ==> h continuous_on s /\ (!x. x IN s ==> h(x) IN sphere(vec 0,&1))
-               ==> homotopic_with (\x. T) (s,sphere(vec 0,&1))
-                                          (\x. f x * h x) (\x. g x * h x)`,
+               ==> homotopic_with (\x. T)
+                    (subtopology euclidean s,
+                     subtopology euclidean (sphere(vec 0,&1)))
+                    (\x. f x * h x) (\x. g x * h x)`,
     REWRITE_TAC[IN_SPHERE_0] THEN REPEAT STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopic_with]) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMOTOPIC_WITH_EUCLIDEAN]) THEN
     ASM_SIMP_TAC[HOMOTOPIC_WITH; LEFT_IMP_EXISTS_THM] THEN
     REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_SPHERE_0; FORALL_IN_PCROSS] THEN
     X_GEN_TAC `k:real^((1,N)finite_sum)->real^2` THEN STRIP_TAC THEN
@@ -5384,7 +5437,8 @@ let CONTRACTIBLE_IMP_HOLOMORPHIC_LOG,SIMPLY_CONNECTED_IMP_HOLOMORPHIC_LOG =
    [SUBGOAL_THEN
      `(\x. if g x = g z then cexp(g z)
            else (cexp(g x) - cexp(g(z:complex))) / (g x - g z)) =
-      (\y. if y = g z then cexp(g z) else (cexp y - cexp(g z)) / (y - g z)) o g`
+      (\y. if y = g z then cexp(g z)
+           else (cexp y - cexp(g z)) / (y - g z)) o g`
     SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
     MATCH_MP_TAC LIM_COMPOSE_AT THEN
     EXISTS_TAC `(g:complex->complex) z` THEN REPEAT CONJ_TAC THENL
@@ -5704,7 +5758,9 @@ let INESSENTIAL_NEIGHBOURHOOD_EXTENSION_LOGARITHM = prove
 let borsukian = new_definition
  `borsukian(s:real^N->bool) <=>
         !f. f continuous_on s /\ IMAGE f s SUBSET ((:real^2) DIFF {Cx(&0)})
-            ==> ?a. homotopic_with (\h. T) (s,(:real^2) DIFF {Cx(&0)})
+            ==> ?a. homotopic_with (\h. T)
+                     (subtopology euclidean s,
+                      subtopology euclidean ((:real^2) DIFF {Cx(&0)}))
                                    f (\x. a)`;;
 
 let BORSUKIAN_RETRACTION_GEN = prove
@@ -5787,7 +5843,9 @@ let BORSUKIAN_ALT = prove
         !f g:real^N->real^2.
            f continuous_on s /\ IMAGE f s SUBSET ((:real^2) DIFF {Cx(&0)}) /\
            g continuous_on s /\ IMAGE g s SUBSET ((:real^2) DIFF {Cx(&0)})
-           ==> homotopic_with (\h. T) (s,(:real^2) DIFF {Cx (&0)}) f g`,
+           ==> homotopic_with (\h. T)
+                (subtopology euclidean s,
+                 subtopology euclidean ((:real^2) DIFF {Cx (&0)})) f g`,
   REWRITE_TAC[borsukian; HOMOTOPIC_TRIVIALITY] THEN
   SIMP_TAC[PATH_CONNECTED_PUNCTURED_UNIVERSE; DIMINDEX_2; LE_REFL]);;
 
@@ -5862,8 +5920,10 @@ let BORSUKIAN_CIRCLE = prove
  (`!s:real^N->bool.
         borsukian s <=>
             !f. f continuous_on s /\ IMAGE f s SUBSET sphere(Cx(&0),&1)
-                ==> ?a. homotopic_with (\h. T) (s,sphere(Cx(&0),&1))
-                                               f (\x. a)`,
+                ==> ?a. homotopic_with (\h. T)
+                         (subtopology euclidean s,
+                          subtopology euclidean (sphere(Cx(&0),&1)))
+                         f (\x. a)`,
   REWRITE_TAC[GSYM COMPLEX_VEC_0] THEN
   REWRITE_TAC[INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE] THEN
   REWRITE_TAC[BORSUKIAN_CONTINUOUS_LOGARITHM_CIRCLE_CX] THEN
@@ -5875,7 +5935,9 @@ let BORSUKIAN_CIRCLE_ALT = prove
         !f g:real^N->real^2.
            f continuous_on s /\ IMAGE f s SUBSET sphere(Cx(&0),&1) /\
            g continuous_on s /\ IMAGE g s SUBSET sphere(Cx(&0),&1)
-           ==> homotopic_with (\h. T) (s,sphere(Cx(&0),&1)) f g`,
+           ==> homotopic_with (\h. T)
+                (subtopology euclidean s,
+                 subtopology euclidean (sphere(Cx(&0),&1))) f g`,
   REWRITE_TAC[BORSUKIAN_CIRCLE; HOMOTOPIC_TRIVIALITY] THEN
   SIMP_TAC[PATH_CONNECTED_SPHERE; DIMINDEX_2; LE_REFL]);;
 
@@ -6133,7 +6195,7 @@ let BORSUKIAN_MONOTONE_IMAGE_COMPACT = prove
     {p | ?x. x IN s /\ pastecart x p IN
                        {z | z IN s PCROSS UNIV /\
                             (sndcart z - pastecart (f(fstcart z))
-                                                   (h(fstcart z))) IN {vec 0}}}`
+                                                  (h(fstcart z))) IN {vec 0}}}`
   SUBST1_TAC THENL
    [ALL_TAC;
     MATCH_MP_TAC CLOSED_COMPACT_PROJECTION THEN ASM_REWRITE_TAC[] THEN
@@ -6345,7 +6407,9 @@ let BORSUKIAN_IMP_UNICOHERENT = prove
   SUBGOAL_THEN
    `!f. f continuous_on u /\ IMAGE f u SUBSET sphere(vec 0,&1)
              ==> ?a. homotopic_with (\h. T)
-                     (u,(:complex) DIFF {Cx (&0)}) (f:real^N->complex) (\t. a)`
+                      (subtopology euclidean u,
+                       subtopology euclidean ((:complex) DIFF {Cx (&0)}))
+                      (f:real^N->complex) (\t. a)`
   MP_TAC THENL
    [FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I
      [BORSUKIAN_CIRCLE]) THEN
@@ -6741,7 +6805,8 @@ let SEPARATION_BY_COMPONENT_OPEN = prove
         MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS) THEN
         ASM_SIMP_TAC[FRONTIER_SUBSET_EQ; CLOSED_UNION]];
       MATCH_MP_TAC(SET_RULE
-       `c UNION d SUBSET UNIV DIFF (s UNION t) /\ s INTER t = {} /\ DISJOINT c d
+       `c UNION d SUBSET UNIV DIFF (s UNION t) /\ s INTER t = {} /\
+        DISJOINT c d
         ==> (s UNION c) INTER (t UNION d) INTER u = {}`) THEN
       ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
        [REWRITE_TAC[GSYM UNIONS_UNION] THEN
@@ -7454,7 +7519,10 @@ let LOCALLY_CONNECTED_FRONTIER_ANR = prove
 let INESSENTIAL_EQ_EXTENSIBLE = prove
  (`!f s.
    closed s
-   ==> ((?a. homotopic_with (\h. T) (s,(:complex) DIFF {Cx(&0)}) f (\t. a)) <=>
+   ==> ((?a. homotopic_with (\h. T)
+              (subtopology euclidean s,
+               subtopology euclidean ((:complex) DIFF {Cx(&0)}))
+              f (\t. a)) <=>
         (?g. g continuous_on (:real^N) /\
              (!x. x IN s ==> g x = f x) /\ (!x. ~(g x = Cx(&0)))))`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL
@@ -7501,19 +7569,24 @@ let INESSENTIAL_SPHEREMAP_2 = prove
         2 < dimindex(:M) /\ dimindex(:N) = 2 /\
         f continuous_on sphere(a,r) /\
         IMAGE f (sphere(a,r)) SUBSET (sphere(b,s))
-        ==> ?c. homotopic_with (\z. T) (sphere(a,r),sphere(b,s)) f (\x. c)`,
+        ==> ?c. homotopic_with (\z. T)
+                  (subtopology euclidean (sphere(a,r)),
+                   subtopology euclidean (sphere(b,s))) f (\x. c)`,
   let lemma = prove
    (`!f:real^N->real^2 a r.
           2 < dimindex(:N) /\
           f continuous_on sphere(a,r) /\
           IMAGE f (sphere(a,r)) SUBSET (sphere(vec 0,&1))
-          ==> ?c. homotopic_with (\z. T) (sphere(a,r),sphere(vec 0,&1))
-                                 f (\x. c)`,
+          ==> ?c. homotopic_with (\z. T)
+                   (subtopology euclidean (sphere(a,r)),
+                    subtopology euclidean (sphere(vec 0,&1)))
+                   f (\x. c)`,
     REPEAT STRIP_TAC THEN
     REWRITE_TAC[INESSENTIAL_EQ_CONTINUOUS_LOGARITHM_CIRCLE] THEN
     MP_TAC(ISPECL [`f:real^N->real^2`; `sphere(a:real^N,r)`]
           CONTINUOUS_LOGARITHM_ON_SIMPLY_CONNECTED) THEN
-    ASM_SIMP_TAC[SIMPLY_CONNECTED_SPHERE_EQ; LOCALLY_PATH_CONNECTED_SPHERE] THEN
+    ASM_SIMP_TAC[SIMPLY_CONNECTED_SPHERE_EQ;
+                 LOCALLY_PATH_CONNECTED_SPHERE] THEN
     ANTS_TAC THENL
      [ASM_REWRITE_TAC[ARITH_RULE `3 <= n <=> 2 < n`] THEN FIRST_X_ASSUM
        (MATCH_MP_TAC o MATCH_MP (SET_RULE
@@ -7584,7 +7657,8 @@ let JANISZEWSKI = prove
     REPEAT GEN_TAC THEN
     REPLICATE_TAC 3 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     DISCH_THEN(fun th -> ASSUME_TAC th THEN MP_TAC th) THEN
-    FIRST_X_ASSUM(CONJUNCTS_THEN(MP_TAC o MATCH_MP CONNECTED_COMPONENT_IN)) THEN
+    FIRST_X_ASSUM(CONJUNCTS_THEN(MP_TAC o
+      MATCH_MP CONNECTED_COMPONENT_IN)) THEN
     REWRITE_TAC[IN_DIFF; IN_UNIV] THEN STRIP_TAC THEN STRIP_TAC THEN
     ASM_SIMP_TAC[GSYM BORSUK_MAPS_HOMOTOPIC_IN_CONNECTED_COMPONENT_EQ;
                  DIMINDEX_2; LE_REFL; COMPACT_UNION; IN_UNION] THEN

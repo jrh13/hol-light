@@ -8,7 +8,69 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Tuw 13th Jun 2017       drule.ml, grobner.ml
+Thu 22nd Jun 2017       sets.ml, Multivariate/misc.ml
+
+Added three new theorems about Cartesian product as well as moving the
+definition of and lemmas about RESTRICTION into the main sets.ml file,
+so overall we have these new theorems in the core:
+
+  CARTESIAN_PRODUCT_SINGS =
+    |- !k x. EXTENSIONAL k x ==> cartesian_product k (\i. {x i}) = {x}
+
+  CARTESIAN_PRODUCT_SINGS_GEN =
+    |- !k x. cartesian_product k (\i. {x i}) = {RESTRICTION k x}
+
+  FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ =
+    |- !P k s.
+         ~(cartesian_product k s = {})
+         ==> ((!i x. i IN k /\ x IN s i ==> P i x) <=>
+              (!z i. z IN cartesian_product k s /\ i IN k ==> P i (z i)))
+
+  IMAGE_RESTRICTION =
+    |- !f s t. s SUBSET t ==> IMAGE (RESTRICTION t f) s = IMAGE f s
+
+  RESTRICTION =
+    |- !s f x. RESTRICTION s f x = (if x IN s then f x else ARB)
+
+  RESTRICTION_COMPOSE =
+    |- !f g s t.
+         IMAGE f s SUBSET t
+         ==> RESTRICTION s (RESTRICTION t g o RESTRICTION s f) =
+             RESTRICTION s (g o f)
+
+  RESTRICTION_COMPOSE_LEFT =
+    |- !f g s t.
+         IMAGE f s SUBSET t
+         ==> RESTRICTION s (RESTRICTION t g o f) = RESTRICTION s (g o f)
+
+  RESTRICTION_COMPOSE_RIGHT =
+    |- !f g s. RESTRICTION s (g o RESTRICTION s f) = RESTRICTION s (g o f)
+
+  RESTRICTION_DEFINED =
+    |- !s f x. x IN s ==> RESTRICTION s f x = f x
+
+  RESTRICTION_EQ =
+    |- !s f x y. x IN s /\ f x = y ==> RESTRICTION s f x = y
+
+  RESTRICTION_EXTENSION =
+    |- !s f g. RESTRICTION s f = RESTRICTION s g <=> (!x. x IN s ==> f x = g x)
+
+  RESTRICTION_FIXPOINT =
+    |- !s f. RESTRICTION s f = f <=> f IN EXTENSIONAL s
+
+  RESTRICTION_IDEMP =
+    |- !s f. RESTRICTION s (RESTRICTION s f) = RESTRICTION s f
+
+  RESTRICTION_IN_EXTENSIONAL =
+    |- !s f. RESTRICTION s f IN EXTENSIONAL s
+
+  RESTRICTION_RESTRICTION =
+    |- !s t f. s SUBSET t ==> RESTRICTION s (RESTRICTION t f) = RESTRICTION s f
+
+  RESTRICTION_UNDEFINED =
+    |- !s f x. ~(x IN s) ==> RESTRICTION s f x = ARB
+
+Tue 13th Jun 2017       drule.ml, grobner.ml
 
 Fixed a couple of cases where "||" was used instead of "or" in error
 strings, as a result of overenthusiastic search-and-replace.

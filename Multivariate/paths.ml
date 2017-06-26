@@ -17601,19 +17601,65 @@ let EMPTY_INSIDE_PSUBSET_CONVEX_FRONTIER = prove
   RULE_ASSUM_TAC(REWRITE_RULE[frontier]) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Homotopy of maps p,q : X->Y with property P of all intermediate maps.     *)
-(* We often just want to require that it fixes some subset, but to take in   *)
-(* the case of loop homotopy it's convenient to have a general property P.   *)
+(* A Euclidean-centric formulation of homotopy.                              *)
 (* ------------------------------------------------------------------------- *)
 
-let homotopic_with = new_definition
- `homotopic_with P (X,Y) p q <=>
-   ?h:real^(1,M)finite_sum->real^N.
-     h continuous_on (interval[vec 0,vec 1] PCROSS X) /\
-     IMAGE h (interval[vec 0,vec 1] PCROSS X) SUBSET Y /\
-     (!x. h(pastecart (vec 0) x) = p x) /\
-     (!x. h(pastecart (vec 1) x) = q x) /\
-     (!t. t IN interval[vec 0,vec 1] ==> P(\x. h(pastecart t x)))`;;
+let HOMOTOPIC_WITH_EUCLIDEAN = prove
+ (`!P X Y (p:real^M->real^N) q.
+    homotopic_with P (subtopology euclidean X,subtopology euclidean Y) p q <=>
+        ?h:real^(1,M)finite_sum->real^N.
+                h continuous_on (interval[vec 0,vec 1] PCROSS X) /\
+                IMAGE h (interval[vec 0,vec 1] PCROSS X) SUBSET Y /\
+                (!x. h(pastecart (vec 0) x) = p x) /\
+                (!x. h(pastecart (vec 1) x) = q x) /\
+                (!t. t IN interval[vec 0,vec 1] ==> P(\x. h(pastecart t x)))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with] THEN
+  REWRITE_TAC[CONJ_ASSOC; GSYM CONTINUOUS_MAP_EUCLIDEAN2] THEN
+  REWRITE_TAC[INTERVAL_REAL_INTERVAL; FORALL_IN_IMAGE; DROP_VEC] THEN
+  EQ_TAC THEN REWRITE_TAC[GSYM CONJ_ASSOC; LEFT_IMP_EXISTS_THM] THENL
+   [X_GEN_TAC `h:real#real^M->real^N` THEN STRIP_TAC THEN
+    EXISTS_TAC `(h:real#real^M->real^N) o (\z. drop(fstcart z),sndcart z)` THEN
+    ASM_REWRITE_TAC[o_THM; FSTCART_PASTECART; SNDCART_PASTECART] THEN
+    ASM_REWRITE_TAC[LIFT_DROP; DROP_VEC] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        CONTINUOUS_MAP_COMPOSE)) THEN
+    REWRITE_TAC[CONTINUOUS_MAP_PAIRWISE; o_DEF] THEN
+    REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+    REWRITE_TAC[SUBSET; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; FORALL_IN_PCROSS;
+                FORALL_IN_IMAGE; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    SIMP_TAC[FSTCART_PASTECART; SNDCART_PASTECART; LIFT_DROP] THEN
+    CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
+    REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN_EUCLIDEAN] THEN
+    SIMP_TAC[CONTINUOUS_ON_SNDCART; CONTINUOUS_ON_ID] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+    EXISTS_TAC `euclidean:(real^1)topology` THEN
+    REWRITE_TAC[CONTINUOUS_MAP_DROP] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+    REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN_EUCLIDEAN] THEN
+    SIMP_TAC[CONTINUOUS_ON_FSTCART; CONTINUOUS_ON_ID];
+    X_GEN_TAC `h:real^(1,M)finite_sum->real^N` THEN STRIP_TAC THEN EXISTS_TAC
+     `(h:real^(1,M)finite_sum->real^N) o
+      (\(x,y). pastecart x y) o (\z. lift(FST z),SND z)` THEN
+    ASM_REWRITE_TAC[o_THM; LIFT_NUM] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        CONTINUOUS_MAP_COMPOSE)) THEN
+    REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; TOPSPACE_PROD_TOPOLOGY;
+                FORALL_PAIR_THM; IN_CROSS; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+                PASTECART_IN_PCROSS; TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+    SIMP_TAC[FUN_IN_IMAGE; o_THM; PASTECART_IN_PCROSS] THEN
+    REWRITE_TAC[GSYM SUBTOPOLOGY_CROSS] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+    EXISTS_TAC `prod_topology (euclidean:(real^1)topology)
+                              (euclidean:(real^M)topology)` THEN
+    REWRITE_TAC[CONTINUOUS_MAP_PASTECART] THEN
+    REWRITE_TAC[CONTINUOUS_MAP_PAIRWISE; o_DEF] THEN CONJ_TAC THENL
+     [GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+      MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+      MESON_TAC[CONTINUOUS_MAP_LIFT; CONTINUOUS_MAP_FST];
+      REWRITE_TAC[CONTINUOUS_MAP_SND; ETA_AX]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* We often want to just localize the ending function equality or whatever.  *)
@@ -17621,7 +17667,8 @@ let homotopic_with = new_definition
 
 let HOMOTOPIC_WITH = prove
  (`(!h k. (!x. x IN X ==> h x = k x) ==> (P h <=> P k))
-   ==> (homotopic_with P (X,Y) p q <=>
+   ==> (homotopic_with P
+           (subtopology euclidean X,subtopology euclidean Y) p q <=>
         ?h:real^(1,M)finite_sum->real^N.
           h continuous_on (interval[vec 0,vec 1] PCROSS X) /\
           IMAGE h (interval[vec 0,vec 1] PCROSS X) SUBSET Y /\
@@ -17629,9 +17676,9 @@ let HOMOTOPIC_WITH = prove
           (!x. x IN X ==> h(pastecart (vec 1) x) = q x) /\
           (!t. t IN interval[vec 0,vec 1] ==> P(\x. h(pastecart t x))))`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL
-   [REWRITE_TAC[homotopic_with; PCROSS] THEN
+   [REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
     MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[];
-    REWRITE_TAC[homotopic_with; PCROSS] THEN
+    REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
      DISCH_THEN(X_CHOOSE_THEN `h:real^(1,M)finite_sum->real^N`
       (fun th -> EXISTS_TAC
         `\y. if sndcart(y) IN X then (h:real^(1,M)finite_sum->real^N) y
@@ -17653,13 +17700,15 @@ let HOMOTOPIC_WITH = prove
 
 let HOMOTOPIC_WITH_EQ = prove
  (`!P X Y f g f' g':real^M->real^N.
-        homotopic_with P (X,Y) f g /\
+        homotopic_with P
+          (subtopology euclidean X,subtopology euclidean Y) f g /\
         (!x. x IN X ==> f' x = f x /\ g' x = g x) /\
         (!h k. (!x. x IN X ==> h x = k x) ==> (P h <=> P k))
-        ==>  homotopic_with P (X,Y) f' g'`,
+        ==>  homotopic_with P
+               (subtopology euclidean X,subtopology euclidean Y) f' g'`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_with] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,M)finite_sum->real^N`
    (fun th -> EXISTS_TAC
      `\y. if sndcart(y) IN X then (h:real^(1,M)finite_sum->real^N) y
@@ -17684,8 +17733,9 @@ let HOMOTOPIC_WITH_EQUAL = prove
         P f /\ P g /\
         f continuous_on s /\ IMAGE f s SUBSET t /\
         (!x. x IN s ==> g x = f x)
-        ==> homotopic_with P (s,t) f g`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[homotopic_with] THEN
+        ==> homotopic_with P
+             (subtopology euclidean s,subtopology euclidean t) f g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   EXISTS_TAC `\z:real^(1,M)finite_sum.
     if fstcart z = vec 1 then g(sndcart z):real^N else f(sndcart z)` THEN
   REWRITE_TAC[VEC_EQ; ARITH_EQ; SNDCART_PASTECART; FSTCART_PASTECART] THEN
@@ -17705,7 +17755,8 @@ let HOMOTOPIC_WITH_EQUAL = prove
 
 let HOMOTOPIC_CONSTANT_MAPS = prove
  (`!s:real^M->bool t:real^N->bool a b.
-        homotopic_with (\x. T) (s,t) (\x. a) (\x. b) <=>
+        homotopic_with (\x. T)
+         (subtopology euclidean s,subtopology euclidean t) (\x. a) (\x. b) <=>
         s = {} \/ path_component t a b`,
   REPEAT GEN_TAC THEN SIMP_TAC[HOMOTOPIC_WITH; path_component] THEN
   ASM_CASES_TAC `s:real^M->bool = {}` THEN
@@ -17746,12 +17797,15 @@ let HOMOTOPIC_CONSTANT_MAPS = prove
 
 let HOMOTOPIC_WITH_RESTRICT = prove
  (`!P s t s' t' f g:real^M->real^N.
-        homotopic_with P (s,t) f g /\ s' SUBSET s /\
+        homotopic_with P
+         (subtopology euclidean s,subtopology euclidean t) f g /\
+        s' SUBSET s /\
         (!h. P h /\ IMAGE h s SUBSET t ==> IMAGE h s' SUBSET t')
-        ==> homotopic_with P (s',t') f g`,
+        ==> homotopic_with P
+             (subtopology euclidean s',subtopology euclidean t') f g`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_with] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN MATCH_MP_TAC MONO_EXISTS THEN
   GEN_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
    [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         CONTINUOUS_ON_SUBSET)) THEN
@@ -17766,8 +17820,10 @@ let HOMOTOPIC_WITH_RESTRICT = prove
     ASM_SIMP_TAC[]]);;
 
 let HOMOTOPIC_WITH_IMP_PROPERTY = prove
- (`!P X Y (f:real^M->real^N) g. homotopic_with P (X,Y) f g ==> P f /\ P g`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with] THEN
+ (`!P X Y (f:real^M->real^N) g.
+    homotopic_with P (subtopology euclidean X,subtopology euclidean Y) f g
+    ==> P f /\ P g`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,M)finite_sum->real^N` MP_TAC) THEN
   REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN DISCH_THEN
    (fun th -> MP_TAC(SPEC `vec 0:real^1` th) THEN
@@ -17776,8 +17832,9 @@ let HOMOTOPIC_WITH_IMP_PROPERTY = prove
 
 let HOMOTOPIC_WITH_IMP_CONTINUOUS = prove
  (`!P X Y (f:real^M->real^N) g.
-      homotopic_with P (X,Y) f g ==> f continuous_on X /\ g continuous_on X`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with] THEN
+      homotopic_with P (subtopology euclidean X,subtopology euclidean Y) f g
+      ==> f continuous_on X /\ g continuous_on X`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,M)finite_sum->real^N` MP_TAC) THEN
   STRIP_TAC THEN
   SUBGOAL_THEN
@@ -17798,8 +17855,9 @@ let HOMOTOPIC_WITH_IMP_CONTINUOUS = prove
 
 let HOMOTOPIC_WITH_IMP_SUBSET = prove
  (`!P X Y (f:real^M->real^N) g.
-      homotopic_with P (X,Y) f g ==> IMAGE f X SUBSET Y /\ IMAGE g X SUBSET Y`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with] THEN
+      homotopic_with P (subtopology euclidean X,subtopology euclidean Y) f g
+      ==> IMAGE f X SUBSET Y /\ IMAGE g X SUBSET Y`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,M)finite_sum->real^N` MP_TAC) THEN
   STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
   REWRITE_TAC[FORALL_IN_IMAGE; FORALL_IN_PCROSS; SUBSET] THEN DISCH_THEN
@@ -17809,11 +17867,13 @@ let HOMOTOPIC_WITH_IMP_SUBSET = prove
 
 let HOMOTOPIC_WITH_MONO = prove
  (`!P Q X Y f g:real^M->real^N.
-        homotopic_with P (X,Y) f g /\
+        homotopic_with P
+          (subtopology euclidean X,subtopology euclidean Y) f g /\
         (!h. h continuous_on X /\ IMAGE h X SUBSET Y /\ P h ==> Q h)
-        ==> homotopic_with Q (X,Y) f g`,
+        ==> homotopic_with Q
+             (subtopology euclidean X,subtopology euclidean Y) f g`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_with; PCROSS] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC[] THEN CONJ_TAC THENL
    [GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
@@ -17827,10 +17887,13 @@ let HOMOTOPIC_WITH_MONO = prove
 
 let HOMOTOPIC_WITH_SUBSET_LEFT = prove
  (`!P X Y Z f g.
-        homotopic_with P (X,Y) f g /\ Z SUBSET X
-        ==> homotopic_with P (Z,Y) f g`,
+        homotopic_with P
+         (subtopology euclidean X,subtopology euclidean Y) f g /\
+        Z SUBSET X
+        ==> homotopic_with P
+             (subtopology euclidean Z,subtopology euclidean Y) f g`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_with; PCROSS] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
   STRIP_TAC THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
    [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
@@ -17840,22 +17903,27 @@ let HOMOTOPIC_WITH_SUBSET_LEFT = prove
 
 let HOMOTOPIC_WITH_SUBSET_RIGHT = prove
  (`!P X Y Z (f:real^M->real^N) g h.
-        homotopic_with P (X,Y) f g /\ Y SUBSET Z
-        ==> homotopic_with P (X,Z) f g`,
+        homotopic_with P
+         (subtopology euclidean X,subtopology euclidean Y) f g /\
+        Y SUBSET Z
+        ==> homotopic_with P
+             (subtopology euclidean X,subtopology euclidean Z) f g`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_with] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[] THEN
   ASM_MESON_TAC[SUBSET_TRANS]);;
 
 let HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT = prove
  (`!p f:real^N->real^P g h:real^M->real^N W X Y.
-        homotopic_with (\f. p(f o h)) (X,Y) f g /\
+        homotopic_with (\f. p(f o h))
+         (subtopology euclidean X,subtopology euclidean Y) f g /\
         h continuous_on W /\ IMAGE h W SUBSET X
-        ==> homotopic_with p (W,Y) (f o h) (g o h)`,
+        ==> homotopic_with p
+             (subtopology euclidean W,subtopology euclidean Y) (f o h) (g o h)`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_with; o_DEF; PCROSS] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; o_DEF; PCROSS] THEN
   DISCH_THEN(X_CHOOSE_THEN `k:real^(1,N)finite_sum->real^P`
     STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `\y:real^(1,M)finite_sum.
@@ -17880,21 +17948,25 @@ let HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT = prove
 
 let HOMOTOPIC_COMPOSE_CONTINUOUS_RIGHT = prove
  (`!f:real^N->real^P g h:real^M->real^N W X Y.
-        homotopic_with (\f. T) (X,Y) f g /\
+        homotopic_with (\f. T)
+         (subtopology euclidean X,subtopology euclidean Y) f g /\
         h continuous_on W /\ IMAGE h W SUBSET X
-        ==> homotopic_with (\f. T) (W,Y) (f o h) (g o h)`,
+        ==> homotopic_with (\f. T)
+            (subtopology euclidean W,subtopology euclidean Y) (f o h) (g o h)`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
   EXISTS_TAC `X:real^N->bool` THEN ASM_REWRITE_TAC[]);;
 
 let HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT = prove
  (`!p f:real^M->real^N g h:real^N->real^P X Y Z.
-        homotopic_with (\f. p(h o f)) (X,Y) f g /\
+        homotopic_with (\f. p(h o f))
+         (subtopology euclidean X,subtopology euclidean Y) f g /\
         h continuous_on Y /\ IMAGE h Y SUBSET Z
-        ==> homotopic_with p (X,Z) (h o f) (h o g)`,
+        ==> homotopic_with p
+             (subtopology euclidean X,subtopology euclidean Z) (h o f) (h o g)`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_with; o_DEF] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; o_DEF] THEN
   DISCH_THEN(X_CHOOSE_THEN `k:real^(1,M)finite_sum->real^N`
     STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `(h:real^N->real^P) o (k:real^(1,M)finite_sum->real^N)` THEN
@@ -17907,22 +17979,29 @@ let HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT = prove
 
 let HOMOTOPIC_COMPOSE_CONTINUOUS_LEFT = prove
  (`!f:real^M->real^N g h:real^N->real^P X Y Z.
-        homotopic_with (\f. T) (X,Y) f g /\
+        homotopic_with (\f. T)
+         (subtopology euclidean X,subtopology euclidean Y) f g /\
         h continuous_on Y /\ IMAGE h Y SUBSET Z
-        ==> homotopic_with (\f. T) (X,Z) (h o f) (h o g)`,
+        ==> homotopic_with (\f. T)
+             (subtopology euclidean X,subtopology euclidean Z)
+             (h o f) (h o g)`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT THEN
   EXISTS_TAC `Y:real^N->bool` THEN ASM_REWRITE_TAC[]);;
 
 let HOMOTOPIC_WITH_PCROSS = prove
  (`!f:real^M->real^N f':real^P->real^Q g g' p p' q s s' t t'.
-     homotopic_with p (s,t) f g /\
-     homotopic_with p' (s',t') f' g' /\
+     homotopic_with p
+       (subtopology euclidean s,subtopology euclidean t) f g /\
+     homotopic_with p'
+       (subtopology euclidean s',subtopology euclidean t') f' g' /\
      (!f g. p f /\ p' g ==> q(\x. pastecart (f(fstcart x)) (g(sndcart x))))
-     ==> homotopic_with q (s PCROSS s',t PCROSS t')
+     ==> homotopic_with q
+          (subtopology euclidean (s PCROSS s'),
+           subtopology euclidean (t PCROSS t'))
           (\z. pastecart (f(fstcart z)) (f'(sndcart z)))
           (\z. pastecart (g(fstcart z)) (g'(sndcart z)))`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   REWRITE_TAC[CONJ_ASSOC] THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   REWRITE_TAC[GSYM CONJ_ASSOC] THEN
@@ -17955,7 +18034,8 @@ let HOMOTOPIC_WITH_PCROSS = prove
                   PASTECART_IN_PCROSS]]));;
 
 let HOMOTOPIC_ON_EMPTY = prove
- (`!t f g. homotopic_with (\x. T) ({},t) f g`,
+ (`!t f g. homotopic_with (\x. T)
+            (subtopology euclidean {},subtopology euclidean t) f g`,
   SIMP_TAC[HOMOTOPIC_WITH; NOT_IN_EMPTY; PCROSS_EMPTY] THEN
   REWRITE_TAC[CONTINUOUS_ON_EMPTY; IMAGE_CLAUSES; EMPTY_SUBSET]);;
 
@@ -17966,12 +18046,12 @@ let HOMOTOPIC_ON_EMPTY = prove
 
 let HOMOTOPIC_WITH_REFL = prove
  (`!P X Y (f:real^M->real^N).
-      homotopic_with P (X,Y) f f <=>
+      homotopic_with P (subtopology euclidean X,subtopology euclidean Y) f f <=>
       f continuous_on X /\ IMAGE f X SUBSET Y /\ P f`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
    [MESON_TAC[HOMOTOPIC_WITH_IMP_PROPERTY; HOMOTOPIC_WITH_IMP_CONTINUOUS;
               HOMOTOPIC_WITH_IMP_SUBSET];
-    STRIP_TAC THEN REWRITE_TAC[homotopic_with; PCROSS]] THEN
+    STRIP_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS]] THEN
   EXISTS_TAC `\y:real^(1,M)finite_sum. (f:real^M->real^N) (sndcart y)` THEN
   RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; FORALL_IN_IMAGE]) THEN
   ASM_SIMP_TAC[SNDCART_PASTECART; ETA_AX; SUBSET; FORALL_IN_IMAGE;
@@ -17985,10 +18065,11 @@ let HOMOTOPIC_WITH_REFL = prove
 
 let HOMOTOPIC_WITH_SYM = prove
  (`!P X Y (f:real^M->real^N) g.
-      homotopic_with P (X,Y) f g <=> homotopic_with P (X,Y) g f`,
+     homotopic_with P (subtopology euclidean X,subtopology euclidean Y) f g <=>
+     homotopic_with P (subtopology euclidean X,subtopology euclidean Y) g f`,
   REPLICATE_TAC 3 GEN_TAC THEN MATCH_MP_TAC(MESON[]
    `(!x y. P x y ==> P y x) ==> (!x y. P x y <=> P y x)`) THEN
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with; PCROSS] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,M)finite_sum->real^N`
     STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `\y:real^(1,M)finite_sum.
@@ -18019,9 +18100,11 @@ let HOMOTOPIC_WITH_SYM = prove
 
 let HOMOTOPIC_WITH_TRANS = prove
  (`!P X Y (f:real^M->real^N) g h.
-      homotopic_with P (X,Y) f g /\ homotopic_with P (X,Y) g h
-      ==> homotopic_with P (X,Y) f h`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with; PCROSS] THEN
+      homotopic_with P (subtopology euclidean X,subtopology euclidean Y) f g /\
+      homotopic_with P (subtopology euclidean X,subtopology euclidean Y) g h
+      ==> homotopic_with P
+           (subtopology euclidean X,subtopology euclidean Y) f h`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   DISCH_THEN(CONJUNCTS_THEN2
    (X_CHOOSE_THEN `k1:real^(1,M)finite_sum->real^N` STRIP_ASSUME_TAC)
    (X_CHOOSE_THEN `k2:real^(1,M)finite_sum->real^N` STRIP_ASSUME_TAC)) THEN
@@ -18107,9 +18190,13 @@ let HOMOTOPIC_WITH_COMPOSE = prove
            (!f g. f continuous_on s /\ IMAGE f s SUBSET t /\ P f /\
                   g continuous_on t /\ IMAGE g t SUBSET u /\ Q g
                   ==> R(g o f)) /\
-           homotopic_with P (s,t) f f' /\
-           homotopic_with Q (t,u) g g'
-           ==> homotopic_with R (s,u) (g o f) (g' o f')`,
+           homotopic_with P
+            (subtopology euclidean s,subtopology euclidean t) f f' /\
+           homotopic_with Q
+            (subtopology euclidean t,subtopology euclidean u) g g'
+           ==> homotopic_with R
+                (subtopology euclidean s,subtopology euclidean u)
+                (g o f) (g' o f')`,
   REPEAT STRIP_TAC THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
   EXISTS_TAC `(g:real^N->real^P) o (f':real^M->real^N)` THEN
@@ -18129,9 +18216,13 @@ let HOMOTOPIC_WITH_COMPOSE = prove
 
 let HOMOTOPIC_COMPOSE = prove
  (`!f f':real^M->real^N g g':real^N->real^P s t u.
-        homotopic_with (\x. T) (s,t) f f' /\
-        homotopic_with (\x. T) (t,u) g g'
-        ==> homotopic_with (\x. T) (s,u) (g o f) (g' o f')`,
+        homotopic_with (\x. T)
+          (subtopology euclidean s,subtopology euclidean t) f f' /\
+        homotopic_with (\x. T)
+          (subtopology euclidean t,subtopology euclidean u) g g'
+        ==> homotopic_with (\x. T)
+             (subtopology euclidean s,subtopology euclidean u)
+             (g o f) (g' o f')`,
   REPEAT GEN_TAC THEN
   MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ] HOMOTOPIC_WITH_COMPOSE) THEN
   REWRITE_TAC[]);;
@@ -18145,10 +18236,13 @@ let HOMOTOPIC_TRIVIALITY = prove
  (`!s:real^M->bool t:real^N->bool.
         (!f g. f continuous_on s /\ IMAGE f s SUBSET t /\
                g continuous_on s /\ IMAGE g s SUBSET t
-               ==> homotopic_with (\x. T) (s,t) f g) <=>
+               ==> homotopic_with (\x. T)
+                    (subtopology euclidean s,subtopology euclidean t) f g) <=>
         (s = {} \/ path_connected t) /\
         (!f. f continuous_on s /\ IMAGE f s SUBSET t
-             ==> ?c. homotopic_with (\x. T) (s,t) f (\x. c))`,
+             ==> ?c. homotopic_with (\x. T)
+                      (subtopology euclidean s,subtopology euclidean t)
+                      f (\x. c))`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THENL
    [ASM_SIMP_TAC[CONTINUOUS_ON_EMPTY; HOMOTOPIC_WITH; NOT_IN_EMPTY;
                  PCROSS_EMPTY; IMAGE_CLAUSES; EMPTY_SUBSET];
@@ -18190,8 +18284,10 @@ let HOMOTOPIC_ON_CLOPEN_UNIONS = prove
         (!s. s IN u
              ==> closed_in (subtopology euclidean (UNIONS u)) s /\
                  open_in (subtopology euclidean (UNIONS u)) s /\
-                 homotopic_with (\x. T) (s,t) f g)
-        ==> homotopic_with (\x. T) (UNIONS u,t) f g`,
+                 homotopic_with (\x. T)
+                  (subtopology euclidean s,subtopology euclidean t) f g)
+        ==> homotopic_with (\x. T)
+             (subtopology euclidean (UNIONS u),subtopology euclidean t) f g`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
    `?v. v SUBSET u /\ COUNTABLE v /\ UNIONS v :real^M->bool = UNIONS u`
@@ -18207,7 +18303,7 @@ let HOMOTOPIC_ON_CLOPEN_UNIONS = prove
   DISCH_THEN(MP_TAC o MATCH_MP MONO_FORALL) THEN
   ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[FORALL_AND_THM]] THEN
   REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [homotopic_with] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [HOMOTOPIC_WITH_EUCLIDEAN] THEN
   SIMP_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; HOMOTOPIC_WITH] THEN
   X_GEN_TAC `h:num->real^(1,M)finite_sum->real^N` THEN
   REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC THEN
@@ -18268,8 +18364,11 @@ let INESSENTIAL_ON_CLOPEN_UNIONS = prove
         (!s. s IN u
              ==> closed_in (subtopology euclidean (UNIONS u)) s /\
                  open_in (subtopology euclidean (UNIONS u)) s /\
-                 ?a. homotopic_with (\x. T) (s,t) f (\x. a))
-        ==> ?a. homotopic_with (\x. T) (UNIONS u,t) f (\x. a)`,
+                 ?a. homotopic_with (\x. T)
+                      (subtopology euclidean s,subtopology euclidean t) f (\x. a))
+        ==> ?a. homotopic_with (\x. T)
+                 (subtopology euclidean (UNIONS u),subtopology euclidean t)
+                 f (\x. a)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `UNIONS u:real^M->bool = {}` THEN
   ASM_REWRITE_TAC[UNIONS_0; HOMOTOPIC_ON_EMPTY] THEN STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [EMPTY_UNIONS]) THEN
@@ -18307,7 +18406,8 @@ let homotopic_paths = new_definition
  `homotopic_paths s p q =
      homotopic_with
        (\r. pathstart r = pathstart p /\ pathfinish r = pathfinish p)
-       (interval[vec 0:real^1,vec 1],s)
+       (subtopology euclidean (interval[vec 0:real^1,vec 1]),
+        subtopology euclidean s)
        p q`;;
 
 let HOMOTOPIC_PATHS = prove
@@ -18412,7 +18512,7 @@ let HOMOTOPIC_PATHS_REPARAMETRIZE = prove
       ASM_SIMP_TAC[o_THM] THEN MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
       ASM_MESON_TAC[CONTINUOUS_ON_SUBSET];
       ASM SET_TAC[]];
-    REWRITE_TAC[homotopic_paths; homotopic_with; PCROSS] THEN
+    REWRITE_TAC[homotopic_paths; HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
     EXISTS_TAC `(p:real^1->real^N) o
                 (\y. (&1 - drop(fstcart y)) % f(sndcart y) +
                      drop(fstcart y) % sndcart y)` THEN
@@ -18512,8 +18612,9 @@ let HOMOTOPIC_PATHS_REVERSEPATH = prove
     ==> !a b. homotopic_paths s (f a) (f b) <=>
               homotopic_paths s a b`) THEN
   REWRITE_TAC[REVERSEPATH_REVERSEPATH] THEN REPEAT GEN_TAC THEN
-  REWRITE_TAC[homotopic_paths; homotopic_with; PCROSS; o_DEF] THEN DISCH_THEN
-   (X_CHOOSE_THEN `h:real^(1,1)finite_sum->real^N` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[homotopic_paths; HOMOTOPIC_WITH_EUCLIDEAN; PCROSS; o_DEF] THEN
+  DISCH_THEN(X_CHOOSE_THEN `h:real^(1,1)finite_sum->real^N`
+    STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `\y:real^(1,1)finite_sum.
                  (h:real^(1,1)finite_sum->real^N)
                  (pastecart(fstcart y) (vec 1 - sndcart y))` THEN
@@ -18547,7 +18648,7 @@ let HOMOTOPIC_PATHS_JOIN = prove
      ==> homotopic_paths s (p ++ q) (p' ++ q')`,
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  REWRITE_TAC[homotopic_paths; homotopic_with; PCROSS] THEN
+  REWRITE_TAC[homotopic_paths; HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   DISCH_THEN(CONJUNCTS_THEN2
    (X_CHOOSE_THEN `k1:real^(1,1)finite_sum->real^N` STRIP_ASSUME_TAC)
    (X_CHOOSE_THEN `k2:real^(1,1)finite_sum->real^N` STRIP_ASSUME_TAC)) THEN
@@ -18688,7 +18789,7 @@ let HOMOTOPIC_PATHS_RINV = prove
         ==> homotopic_paths s
               (p ++ reversepath p) (linepath(pathstart p,pathstart p))`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[HOMOTOPIC_PATHS_SYM] THEN
-  REWRITE_TAC[homotopic_paths; homotopic_with; PCROSS] THEN
+  REWRITE_TAC[homotopic_paths; HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   EXISTS_TAC `(\y. (subpath (vec 0) (fstcart y) p ++
                     reversepath(subpath (vec 0) (fstcart y) p)) (sndcart y))
               : real^(1,1)finite_sum->real^N` THEN
@@ -18885,7 +18986,8 @@ let homotopic_loops = new_definition
  `homotopic_loops s p q =
      homotopic_with
        (\r. pathfinish r = pathstart r)
-       (interval[vec 0:real^1,vec 1],s)
+       (subtopology euclidean (interval[vec 0:real^1,vec 1]),
+        subtopology euclidean s)
        p q`;;
 
 let HOMOTOPIC_LOOPS = prove
@@ -19068,7 +19170,7 @@ let HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_PATHS_NULL = prove
   FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_PATH) THEN
   FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP HOMOTOPIC_LOOPS_IMP_SUBSET) THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopic_loops]) THEN
-  REWRITE_TAC[homotopic_with; PCROSS; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS; LEFT_IMP_EXISTS_THM] THEN
   X_GEN_TAC `h:real^(1,1)finite_sum->real^N` THEN STRIP_TAC THEN
   MATCH_MP_TAC HOMOTOPIC_PATHS_TRANS THEN EXISTS_TAC
    `(p:real^1->real^N) ++ linepath(pathfinish p,pathfinish p)` THEN
@@ -19124,7 +19226,7 @@ let HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_PATHS_NULL = prove
       REWRITE_TAC[IMAGE_o] THEN MATCH_MP_TAC IMAGE_SUBSET THEN
       SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_PASTECART_THM;
                ENDS_IN_UNIT_INTERVAL]]] THEN
-  REWRITE_TAC[homotopic_paths; homotopic_with; PCROSS] THEN
+  REWRITE_TAC[homotopic_paths; HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   EXISTS_TAC
    `\y:real^(1,1)finite_sum.
         (subpath (vec 0) (fstcart y) (\u. h(pastecart u (vec 0))) ++
@@ -19215,7 +19317,7 @@ let HOMOTOPIC_LOOPS_CONJUGATE = prove
      [ASM_MESON_TAC[PATHSTART_IN_PATH_IMAGE; SUBSET]; ALL_TAC] THEN
     MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] HOMOTOPIC_PATHS_TRANS) THEN
     ASM_MESON_TAC[HOMOTOPIC_PATHS_RID]] THEN
-  REWRITE_TAC[homotopic_loops; homotopic_with; PCROSS] THEN
+  REWRITE_TAC[homotopic_loops; HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   EXISTS_TAC
    `(\y. (subpath (fstcart y) (vec 1) p ++ q ++ subpath (vec 1) (fstcart y) p)
          (sndcart y)):real^(1,1)finite_sum->real^N` THEN
@@ -19295,7 +19397,8 @@ let PATH_COMPONENT_IMP_HOMOTOPIC_POINTS = prove
  (`!s a b:real^N.
         path_component s a b
         ==> homotopic_loops s (linepath(a,a)) (linepath(b,b))`,
-  REWRITE_TAC[path_component; homotopic_loops; homotopic_with; PCROSS] THEN
+  REWRITE_TAC[path_component; homotopic_loops;
+              HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   REPEAT GEN_TAC THEN REWRITE_TAC[pathstart; pathfinish; path_image; path] THEN
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
   DISCH_THEN(X_CHOOSE_THEN `g:real^1->real^N` STRIP_ASSUME_TAC) THEN
@@ -19313,7 +19416,8 @@ let HOMOTOPIC_LOOPS_IMP_PATH_COMPONENT_VALUE = prove
         homotopic_loops s p q /\ t IN interval[vec 0,vec 1]
         ==> path_component s (p t) (q t)`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-  REWRITE_TAC[path_component; homotopic_loops; homotopic_with; PCROSS] THEN
+  REWRITE_TAC[path_component; homotopic_loops;
+              HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,1)finite_sum->real^N` MP_TAC) THEN
   STRIP_TAC THEN
   EXISTS_TAC `\u. (h:real^(1,1)finite_sum->real^N) (pastecart u t)` THEN
@@ -19356,8 +19460,9 @@ let HOMOTOPIC_WITH_LINEAR = prove
  (`!f g:real^M->real^N s t.
         f continuous_on s /\ g continuous_on s /\
         (!x. x IN s ==> segment[f x,g x] SUBSET t)
-        ==> homotopic_with (\z. T) (s,t) f g`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[homotopic_with] THEN
+        ==> homotopic_with (\z. T)
+             (subtopology euclidean s,subtopology euclidean t) f g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN] THEN
   EXISTS_TAC
     `\y. ((&1 - drop(fstcart y)) % (f:real^M->real^N)(sndcart y) +
          drop(fstcart y) % g(sndcart y):real^N)` THEN
@@ -19400,7 +19505,8 @@ let HOMOTOPIC_PATHS_LINEAR,HOMOTOPIC_LOOPS_LINEAR = (CONJ_PAIR o prove)
   CONJ_TAC THEN
  (REWRITE_TAC[pathstart; pathfinish] THEN
   REWRITE_TAC[SUBSET; RIGHT_IMP_FORALL_THM; IMP_IMP] THEN REPEAT STRIP_TAC THEN
-  REWRITE_TAC[homotopic_paths; homotopic_loops; homotopic_with; PCROSS] THEN
+  REWRITE_TAC[homotopic_paths; homotopic_loops;
+              HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   EXISTS_TAC
    `\y:real^(1,1)finite_sum.
       ((&1 - drop(fstcart y)) % g(sndcart y) +
@@ -19502,7 +19608,8 @@ let HOMOTOPIC_NON_MIDPOINT_SPHEREMAPS = prove
         f continuous_on s /\ IMAGE f s SUBSET sphere(a,r) /\
         g continuous_on s /\ IMAGE g s SUBSET sphere(a,r) /\
         (!x. x IN s ==> ~(midpoint(f x,g x) = a))
-    ==> homotopic_with (\x. T) (s,sphere(a,r)) f g`,
+    ==> homotopic_with (\x. T)
+         (subtopology euclidean s,subtopology euclidean (sphere(a,r))) f g`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `r <= &0` THENL
    [REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_EQ THEN
     REPEAT(EXISTS_TAC `g:real^M->real^N`) THEN
@@ -19514,7 +19621,9 @@ let HOMOTOPIC_NON_MIDPOINT_SPHEREMAPS = prove
     MESON_TAC[SUBSET_REFL; EMPTY_SUBSET];
     RULE_ASSUM_TAC(REWRITE_RULE[REAL_NOT_LE]) THEN STRIP_TAC] THEN
   SUBGOAL_THEN
-   `homotopic_with (\z. T) (s:real^M->bool,(:real^N) DELETE a) f g`
+   `homotopic_with (\z. T)
+     (subtopology euclidean (s:real^M->bool),
+      subtopology euclidean ((:real^N) DELETE a)) f g`
   MP_TAC THENL
    [MATCH_MP_TAC HOMOTOPIC_WITH_LINEAR THEN
     ASM_REWRITE_TAC[SET_RULE `s SUBSET UNIV DELETE a <=> ~(a IN s)`] THEN
@@ -19558,7 +19667,8 @@ let HOMOTOPIC_NON_ANTIPODAL_SPHEREMAPS = prove
         f continuous_on s /\ IMAGE f s SUBSET sphere(vec 0,r) /\
         g continuous_on s /\ IMAGE g s SUBSET sphere(vec 0,r) /\
         (!x. x IN s ==> ~(f x = --g x))
-    ==> homotopic_with (\x. T) (s,sphere(vec 0,r)) f g`,
+    ==> homotopic_with (\x. T)
+         (subtopology euclidean s,subtopology euclidean (sphere(vec 0,r))) f g`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMOTOPIC_NON_MIDPOINT_SPHEREMAPS THEN
   ASM_REWRITE_TAC[midpoint; VECTOR_ARITH
    `inv(&2) % (a + b):real^N = vec 0 <=> a = --b`]);;
@@ -19577,10 +19687,12 @@ let HOMOTOPICALLY_TRIVIAL_RETRACTION_GEN = prove
          (!h k. (!x. x IN u ==> h x = k x) ==> (Q h <=> Q k))) /\
         (!f g. f continuous_on u /\ IMAGE f u SUBSET s /\ P f /\
                g continuous_on u /\ IMAGE g u SUBSET s /\ P g
-               ==> homotopic_with P (u,s)  f g)
+               ==> homotopic_with P
+                    (subtopology euclidean u,subtopology euclidean s)  f g)
         ==> (!f g. f continuous_on u /\ IMAGE f u SUBSET t /\ Q f /\
                    g continuous_on u /\ IMAGE g u SUBSET t /\ Q g
-                   ==> homotopic_with Q (u,t) f g)`,
+                   ==> homotopic_with Q
+                        (subtopology euclidean u,subtopology euclidean t) f g)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MAP_EVERY X_GEN_TAC [`p:real^P->real^N`; `q:real^P->real^N`] THEN
   STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
@@ -19612,9 +19724,13 @@ let HOMOTOPICALLY_TRIVIAL_RETRACTION_NULL_GEN = prove
          (!f. f continuous_on u /\ IMAGE f u SUBSET s /\ P f ==> Q(h o f)) /\
          (!h k. (!x. x IN u ==> h x = k x) ==> (Q h <=> Q k))) /\
         (!f. f continuous_on u /\ IMAGE f u SUBSET s /\ P f
-             ==> ?c. homotopic_with P (u,s) f (\x. c))
+             ==> ?c. homotopic_with P
+                      (subtopology euclidean u,subtopology euclidean s)
+                      f (\x. c))
         ==> (!f. f continuous_on u /\ IMAGE f u SUBSET t /\ Q f
-                 ==> ?c. homotopic_with Q (u,t) f (\x. c))`,
+                 ==> ?c. homotopic_with Q
+                          (subtopology euclidean u,subtopology euclidean t)
+                          f (\x. c))`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN X_GEN_TAC `p:real^P->real^N` THEN
   STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC
     `(k:real^N->real^M) o (p:real^P->real^N)`) THEN
@@ -19646,10 +19762,13 @@ let COHOMOTOPICALLY_TRIVIAL_RETRACTION_GEN = prove
          (!h k. (!x. x IN t ==> h x = k x) ==> (Q h <=> Q k))) /\
         (!f g. f continuous_on s /\ IMAGE f s SUBSET u /\ P f /\
                g continuous_on s /\ IMAGE g s SUBSET u /\ P g
-               ==> homotopic_with P (s,u) f g)
+               ==> homotopic_with P
+                    (subtopology euclidean s,
+                     subtopology euclidean u) f g)
         ==> (!f g. f continuous_on t /\ IMAGE f t SUBSET u /\ Q f /\
                    g continuous_on t /\ IMAGE g t SUBSET u /\ Q g
-                   ==> homotopic_with Q (t,u) f g)`,
+                   ==> homotopic_with Q
+                       (subtopology euclidean t,subtopology euclidean u) f g)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MAP_EVERY X_GEN_TAC [`p:real^N->real^P`; `q:real^N->real^P`] THEN
   STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
@@ -19681,9 +19800,13 @@ let COHOMOTOPICALLY_TRIVIAL_RETRACTION_NULL_GEN = prove
          (!f. f continuous_on s /\ IMAGE f s SUBSET u /\ P f ==> Q(f o k)) /\
          (!h k. (!x. x IN t ==> h x = k x) ==> (Q h <=> Q k))) /\
         (!f. f continuous_on s /\ IMAGE f s SUBSET u /\ P f
-             ==> ?c. homotopic_with P (s,u) f (\x. c))
+             ==> ?c. homotopic_with P
+                      (subtopology euclidean s,subtopology euclidean u)
+                      f (\x. c))
         ==> (!f. f continuous_on t /\ IMAGE f t SUBSET u /\ Q f
-                 ==> ?c. homotopic_with Q (t,u) f (\x. c))`,
+                 ==> ?c. homotopic_with Q
+                           (subtopology euclidean t,subtopology euclidean u)
+                           f (\x. c))`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN X_GEN_TAC `p:real^N->real^P` THEN
   STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC
     `(p:real^N->real^P) o (h:real^M->real^N)`) THEN
@@ -19859,7 +19982,8 @@ let HOMOTOPIC_LOOPS_SHIFTPATH = prove
  (`!s:real^N->bool p q u.
         homotopic_loops s p q /\ u IN interval[vec 0,vec 1]
         ==> homotopic_loops s (shiftpath u p) (shiftpath u q)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_loops; homotopic_with; PCROSS] THEN
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[homotopic_loops; HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN DISCH_THEN(
    (X_CHOOSE_THEN `h:real^(1,1)finite_sum->real^N` STRIP_ASSUME_TAC)) THEN
   EXISTS_TAC
@@ -20254,7 +20378,7 @@ let SIMPLY_CONNECTED_PCROSS = prove
    (MP_TAC o SPECL [`sndcart o (p:real^1->real^(M,N)finite_sum)`;
                     `b:real^N`])) THEN
   ASM_SIMP_TAC[CONTINUOUS_ON_COMPOSE; LINEAR_FSTCART; LINEAR_SNDCART;
-               LINEAR_CONTINUOUS_ON; homotopic_loops; homotopic_with;
+               LINEAR_CONTINUOUS_ON; homotopic_loops; HOMOTOPIC_WITH_EUCLIDEAN;
                pathfinish; pathstart; IMAGE_o; o_THM] THEN
   ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE] THEN ANTS_TAC THENL
    [RULE_ASSUM_TAC(REWRITE_RULE[PCROSS; IN_ELIM_THM]) THEN
@@ -20493,7 +20617,9 @@ let FUNDAMENTAL_GROUP_SIMPLY_CONNECTED = prove
 
 let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
  (`!f:real^M->real^N s a r.
-        (?c. homotopic_with (\x. T) (sphere(a,r),s) f (\x. c)) <=>
+        (?c. homotopic_with (\x. T)
+              (subtopology euclidean (sphere(a,r)),
+               subtopology euclidean s) f (\x. c)) <=>
         (?g. g continuous_on cball(a,r) /\ IMAGE g (cball(a,r)) SUBSET s /\
              !x. x IN sphere(a,r) ==> g x = f x)`,
   let lemma = prove
@@ -20583,7 +20709,7 @@ let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
     MESON_TAC[REAL_LE_REFL; NORM_SUB];
     STRIP_TAC] THEN
   ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN EQ_TAC THENL
-   [REWRITE_TAC[homotopic_with; PCROSS; LEFT_IMP_EXISTS_THM] THEN
+   [REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS; LEFT_IMP_EXISTS_THM] THEN
     MAP_EVERY X_GEN_TAC [`c:real^N`; `h:real^(1,M)finite_sum->real^N`] THEN
     STRIP_TAC THEN
     EXISTS_TAC `\x. (h:real^(1,M)finite_sum->real^N)
@@ -20720,8 +20846,10 @@ let homotopy_equivalent = new_definition
  `(s:real^M->bool) homotopy_equivalent (t:real^N->bool) <=>
         ?f g. f continuous_on s /\ IMAGE f s SUBSET t /\
               g continuous_on t /\ IMAGE g t SUBSET s /\
-              homotopic_with (\x. T) (s,s) (g o f) I /\
-              homotopic_with (\x. T) (t,t) (f o g) I`;;
+              homotopic_with (\x. T)
+               (subtopology euclidean s,subtopology euclidean s) (g o f) I /\
+              homotopic_with (\x. T)
+               (subtopology euclidean t,subtopology euclidean t) (f o g) I`;;
 
 let HOMOTOPY_EQUIVALENT = prove
  (`!s:real^M->bool t:real^N->bool.
@@ -20729,8 +20857,10 @@ let HOMOTOPY_EQUIVALENT = prove
         ?f g h. f continuous_on s /\ IMAGE f s SUBSET t /\
                 g continuous_on t /\ IMAGE g t SUBSET s /\
                 h continuous_on t /\ IMAGE h t SUBSET s /\
-                homotopic_with (\x. T) (s,s) (g o f) I /\
-                homotopic_with (\x. T) (t,t) (f o h) I`,
+                homotopic_with (\x. T)
+                 (subtopology euclidean s,subtopology euclidean s) (g o f) I /\
+                homotopic_with (\x. T)
+                 (subtopology euclidean t,subtopology euclidean t) (f o h) I`,
   REPEAT GEN_TAC THEN REWRITE_TAC[homotopy_equivalent] THEN
   MATCH_MP_TAC(MESON[] `(!x. P x <=> Q x) ==> ((?x. P x) <=> (?x. Q x))`) THEN
   X_GEN_TAC `f:real^M->real^N` THEN
@@ -20904,25 +21034,33 @@ let HOMOTOPY_EQUIVALENT_HOMOTOPIC_TRIVIALITY = prove
         s homotopy_equivalent t
         ==> ((!f g. f continuous_on u /\ IMAGE f u SUBSET s /\
                     g continuous_on u /\ IMAGE g u SUBSET s
-                    ==> homotopic_with (\x. T) (u,s) f g) <=>
+                    ==> homotopic_with (\x. T)
+                         (subtopology euclidean u,subtopology euclidean s)
+                         f g) <=>
              (!f g. f continuous_on u /\ IMAGE f u SUBSET t /\
                     g continuous_on u /\ IMAGE g u SUBSET t
-                    ==> homotopic_with (\x. T) (u,t) f g))`,
+                    ==> homotopic_with (\x. T)
+                         (subtopology euclidean u,subtopology euclidean t)
+                         f g))`,
   let lemma = prove
    (`!s:real^M->bool t:real^N->bool u:real^P->bool.
           s homotopy_equivalent t /\
           (!f g. f continuous_on u /\ IMAGE f u SUBSET s /\
                  g continuous_on u /\ IMAGE g u SUBSET s
-                 ==> homotopic_with (\x. T) (u,s) f g)
+                 ==> homotopic_with (\x. T)
+                      (subtopology euclidean u,subtopology euclidean s) f g)
           ==> (!f g. f continuous_on u /\ IMAGE f u SUBSET t /\
                      g continuous_on u /\ IMAGE g u SUBSET t
-                     ==> homotopic_with (\x. T) (u,t) f g)`,
+                     ==> homotopic_with (\x. T)
+                          (subtopology euclidean u,subtopology euclidean t)
+                          f g)`,
     REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopy_equivalent]) THEN
     DISCH_THEN(X_CHOOSE_THEN `h:real^M->real^N`
      (X_CHOOSE_THEN `k:real^N->real^M` STRIP_ASSUME_TAC)) THEN
     SUBGOAL_THEN
-     `homotopic_with (\x. T) (u,t)
+     `homotopic_with (\x. T)
+          (subtopology euclidean u,subtopology euclidean t)
           ((h:real^M->real^N) o (k:real^N->real^M) o (f:real^P->real^N))
           (h o k o g)`
     MP_TAC THENL
@@ -20935,8 +21073,13 @@ let HOMOTOPY_EQUIVALENT_HOMOTOPIC_TRIVIALITY = prove
         CONTINUOUS_ON_SUBSET))) THEN
       ASM SET_TAC[];
       MATCH_MP_TAC(MESON[HOMOTOPIC_WITH_TRANS; HOMOTOPIC_WITH_SYM]
-       `homotopic_with P (u,t) f f' /\ homotopic_with P (u,t) g g'
-        ==> homotopic_with P (u,t) f g ==> homotopic_with P (u,t) f' g'`) THEN
+       `homotopic_with P
+         (subtopology euclidean u,subtopology euclidean t) f f' /\
+        homotopic_with P (subtopology euclidean u,subtopology euclidean t) g g'
+        ==> homotopic_with P
+             (subtopology euclidean u,subtopology euclidean t) f g
+            ==> homotopic_with P
+                 (subtopology euclidean u,subtopology euclidean t) f' g'`) THEN
       CONJ_TAC THEN
       GEN_REWRITE_TAC RAND_CONV [GSYM(CONJUNCT1(SPEC_ALL I_O_ID))] THEN
       REWRITE_TAC[o_ASSOC] THEN
@@ -20951,25 +21094,32 @@ let HOMOTOPY_EQUIVALENT_COHOMOTOPIC_TRIVIALITY = prove
         s homotopy_equivalent t
         ==> ((!f g. f continuous_on s /\ IMAGE f s SUBSET u /\
                     g continuous_on s /\ IMAGE g s SUBSET u
-                    ==> homotopic_with (\x. T) (s,u) f g) <=>
+                    ==> homotopic_with (\x. T)
+                         (subtopology euclidean s,subtopology euclidean u)
+                         f g) <=>
              (!f g. f continuous_on t /\ IMAGE f t SUBSET u /\
                     g continuous_on t /\ IMAGE g t SUBSET u
-                    ==> homotopic_with (\x. T) (t,u) f g))`,
+                    ==> homotopic_with (\x. T)
+                         (subtopology euclidean t,subtopology euclidean u)
+                         f g))`,
   let lemma = prove
    (`!s:real^M->bool t:real^N->bool u:real^P->bool.
           s homotopy_equivalent t /\
           (!f g. f continuous_on s /\ IMAGE f s SUBSET u /\
                  g continuous_on s /\ IMAGE g s SUBSET u
-                 ==> homotopic_with (\x. T) (s,u) f g)
+                 ==> homotopic_with (\x. T)
+                      (subtopology euclidean s,subtopology euclidean u) f g)
            ==> (!f g. f continuous_on t /\ IMAGE f t SUBSET u /\
                       g continuous_on t /\ IMAGE g t SUBSET u
-                      ==> homotopic_with (\x. T) (t,u) f g)`,
+                      ==> homotopic_with (\x. T)
+                           (subtopology euclidean t,subtopology euclidean u)
+                           f g)`,
     REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopy_equivalent]) THEN
     DISCH_THEN(X_CHOOSE_THEN `h:real^M->real^N`
      (X_CHOOSE_THEN `k:real^N->real^M` STRIP_ASSUME_TAC)) THEN
     SUBGOAL_THEN
-     `homotopic_with (\x. T) (t,u)
+     `homotopic_with (\x. T) (subtopology euclidean t,subtopology euclidean u)
           (((f:real^N->real^P) o h) o (k:real^N->real^M)) ((g o h) o k)`
     MP_TAC THENL
      [MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
@@ -20981,8 +21131,13 @@ let HOMOTOPY_EQUIVALENT_COHOMOTOPIC_TRIVIALITY = prove
         CONTINUOUS_ON_SUBSET))) THEN
       ASM SET_TAC[];
       MATCH_MP_TAC(MESON[HOMOTOPIC_WITH_TRANS; HOMOTOPIC_WITH_SYM]
-       `homotopic_with P (u,t) f f' /\ homotopic_with P (u,t) g g'
-        ==> homotopic_with P (u,t) f g ==> homotopic_with P (u,t) f' g'`) THEN
+       `homotopic_with P
+         (subtopology euclidean u,subtopology euclidean t) f f' /\
+        homotopic_with P (subtopology euclidean u,subtopology euclidean t) g g'
+        ==> homotopic_with P
+              (subtopology euclidean u,subtopology euclidean t) f g
+            ==> homotopic_with P
+                 (subtopology euclidean u,subtopology euclidean t) f' g'`) THEN
       CONJ_TAC THEN
       GEN_REWRITE_TAC RAND_CONV [GSYM(CONJUNCT2(SPEC_ALL I_O_ID))] THEN
       REWRITE_TAC[GSYM o_ASSOC] THEN
@@ -20996,16 +21151,24 @@ let HOMOTOPY_EQUIVALENT_HOMOTOPIC_TRIVIALITY_NULL = prove
   (`!s:real^M->bool t:real^N->bool u:real^P->bool.
         s homotopy_equivalent t
         ==> ((!f. f continuous_on u /\ IMAGE f u SUBSET s
-                  ==> ?c. homotopic_with (\x. T) (u,s) f (\x. c)) <=>
+                  ==> ?c. homotopic_with (\x. T)
+                           (subtopology euclidean u,subtopology euclidean s)
+                           f (\x. c)) <=>
              (!f. f continuous_on u /\ IMAGE f u SUBSET t
-                  ==> ?c. homotopic_with (\x. T) (u,t) f (\x. c)))`,
+                  ==> ?c. homotopic_with (\x. T)
+                           (subtopology euclidean u,subtopology euclidean t)
+                           f (\x. c)))`,
   let lemma = prove
    (`!s:real^M->bool t:real^N->bool u:real^P->bool.
           s homotopy_equivalent t /\
           (!f. f continuous_on u /\ IMAGE f u SUBSET s
-               ==> ?c. homotopic_with (\x. T) (u,s) f (\x. c))
+               ==> ?c. homotopic_with (\x. T)
+                        (subtopology euclidean u,subtopology euclidean s)
+                        f (\x. c))
           ==> (!f. f continuous_on u /\ IMAGE f u SUBSET t
-                   ==> ?c. homotopic_with (\x. T) (u,t) f (\x. c))`,
+                   ==> ?c. homotopic_with (\x. T)
+                            (subtopology euclidean u,subtopology euclidean t)
+                            f (\x. c))`,
     REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopy_equivalent]) THEN
     DISCH_THEN(X_CHOOSE_THEN `h:real^M->real^N`
@@ -21017,7 +21180,8 @@ let HOMOTOPY_EQUIVALENT_HOMOTOPIC_TRIVIALITY_NULL = prove
       DISCH_THEN(X_CHOOSE_TAC `c:real^M`) THEN
       EXISTS_TAC `(h:real^M->real^N) c`] THEN
     SUBGOAL_THEN
-     `homotopic_with (\x. T) (u,t)
+     `homotopic_with (\x. T)
+          (subtopology euclidean u,subtopology euclidean t)
           ((h:real^M->real^N) o (k:real^N->real^M) o (f:real^P->real^N))
           (h o (\x. c))`
     MP_TAC THENL
@@ -21039,16 +21203,24 @@ let HOMOTOPY_EQUIVALENT_COHOMOTOPIC_TRIVIALITY_NULL = prove
  (`!s:real^M->bool t:real^N->bool u:real^P->bool.
         s homotopy_equivalent t
         ==> ((!f. f continuous_on s /\ IMAGE f s SUBSET u
-                  ==> ?c. homotopic_with (\x. T) (s,u) f (\x. c)) <=>
+                  ==> ?c. homotopic_with (\x. T)
+                            (subtopology euclidean s,subtopology euclidean u)
+                            f (\x. c)) <=>
              (!f. f continuous_on t /\ IMAGE f t SUBSET u
-                  ==> ?c. homotopic_with (\x. T) (t,u) f (\x. c)))`,
+                  ==> ?c. homotopic_with (\x. T)
+                           (subtopology euclidean t,subtopology euclidean u)
+                           f (\x. c)))`,
   let lemma = prove
    (`!s:real^M->bool t:real^N->bool u:real^P->bool.
           s homotopy_equivalent t /\
           (!f. f continuous_on s /\ IMAGE f s SUBSET u
-               ==> ?c. homotopic_with (\x. T) (s,u) f (\x. c))
+               ==> ?c. homotopic_with (\x. T)
+                        (subtopology euclidean s,subtopology euclidean u)
+                        f (\x. c))
           ==> (!f. f continuous_on t /\ IMAGE f t SUBSET u
-                   ==> ?c. homotopic_with (\x. T) (t,u) f (\x. c))`,
+                   ==> ?c. homotopic_with (\x. T)
+                            (subtopology euclidean t,subtopology euclidean u)
+                            f (\x. c))`,
     REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopy_equivalent]) THEN
     DISCH_THEN(X_CHOOSE_THEN `h:real^M->real^N`
@@ -21059,7 +21231,7 @@ let HOMOTOPY_EQUIVALENT_COHOMOTOPIC_TRIVIALITY_NULL = prove
       ASM_MESON_TAC[CONTINUOUS_ON_SUBSET];
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `c:real^P` THEN DISCH_TAC] THEN
     SUBGOAL_THEN
-     `homotopic_with (\x. T) (t,u)
+     `homotopic_with (\x. T) (subtopology euclidean t,subtopology euclidean u)
           (((f:real^N->real^P) o h) o (k:real^N->real^M)) ((\x. c) o k)`
     MP_TAC THENL
      [MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
@@ -21078,10 +21250,12 @@ let HOMOTOPY_EQUIVALENT_COHOMOTOPIC_TRIVIALITY_NULL = prove
 
 let HOMOTOPIC_WITH_IMP_PATH_COMPONENT = prove
  (`!f g:real^M->real^N s t a.
-        homotopic_with (\x. T) (s,t) f g /\ a IN s
+        homotopic_with (\x. T)
+         (subtopology euclidean s,subtopology euclidean t) f g /\
+        a IN s
         ==> path_component t (f a) (g a)`,
   REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopic_with]) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMOTOPIC_WITH_EUCLIDEAN]) THEN
   REWRITE_TAC[o_THM; I_THM] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,M)finite_sum->real^N`
         STRIP_ASSUME_TAC) THEN
@@ -21110,7 +21284,8 @@ let HOMOTOPY_INVARIANT_CARD_COMPONENTS = prove
  (`!f:real^M->real^N g s t.
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on t /\ IMAGE g t SUBSET s /\
-        homotopic_with (\x. T) (t,t) (f o g) I
+        homotopic_with (\x. T)
+         (subtopology euclidean t,subtopology euclidean t) (f o g) I
         ==> components t <=_c components s`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THEN
   ASM_SIMP_TAC[SUBSET_EMPTY; IMAGE_EQ_EMPTY; COMPONENTS_EMPTY] THEN
@@ -21160,7 +21335,8 @@ let HOMOTOPY_INVARIANT_CONNECTEDNESS = prove
  (`!f:real^M->real^N g s t.
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on t /\ IMAGE g t SUBSET s /\
-        homotopic_with (\x. T) (t,t) (f o g) I /\
+        homotopic_with (\x. T)
+         (subtopology euclidean t,subtopology euclidean t) (f o g) I /\
         connected s
         ==> connected t`,
   REPEAT GEN_TAC THEN
@@ -21202,7 +21378,8 @@ let HOMOTOPY_INVARIANT_CARD_PATH_COMPONENTS = prove
  (`!f:real^M->real^N g s t.
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on t /\ IMAGE g t SUBSET s /\
-        homotopic_with (\x. T) (t,t) (f o g) I
+        homotopic_with (\x. T)
+         (subtopology euclidean t,subtopology euclidean t) (f o g) I
         ==> {path_component t x | x | x IN t}
             <=_c {path_component s x | x | x IN s}`,
   REPEAT STRIP_TAC THEN
@@ -21255,7 +21432,8 @@ let HOMOTOPY_INVARIANT_PATH_CONNECTEDNESS = prove
  (`!f:real^M->real^N g s t.
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on t /\ IMAGE g t SUBSET s /\
-        homotopic_with (\x. T) (t,t) (f o g) I /\
+        homotopic_with (\x. T)
+         (subtopology euclidean t,subtopology euclidean t) (f o g) I /\
         path_connected s
         ==> path_connected t`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THEN
@@ -21319,7 +21497,9 @@ let HOMEOMORPHIC_CARD_EQ_PATH_COMPONENTS = prove
 (* ------------------------------------------------------------------------- *)
 
 let contractible = new_definition
- `contractible s <=> ?a. homotopic_with (\x. T) (s,s) (\x. x) (\x. a)`;;
+ `contractible s <=>
+    ?a. homotopic_with (\x. T)
+         (subtopology euclidean s,subtopology euclidean s) (\x. x) (\x. a)`;;
 
 let CONTRACTIBLE_IMP_SIMPLY_CONNECTED = prove
  (`!s:real^N->bool. contractible s ==> simply_connected s`,
@@ -21335,8 +21515,8 @@ let CONTRACTIBLE_IMP_SIMPLY_CONNECTED = prove
   X_GEN_TAC `p:real^1->real^N` THEN
   REWRITE_TAC[path; path_image; pathfinish; pathstart] THEN
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopic_with]) THEN
-  REWRITE_TAC[homotopic_with; SUBSET; FORALL_IN_IMAGE; PCROSS] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMOTOPIC_WITH_EUCLIDEAN]) THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; SUBSET; FORALL_IN_IMAGE; PCROSS] THEN
   REWRITE_TAC[FORALL_IN_GSPEC] THEN
   DISCH_THEN(X_CHOOSE_THEN `h:real^(1,N)finite_sum->real^N`
     STRIP_ASSUME_TAC) THEN
@@ -21371,7 +21551,9 @@ let NULLHOMOTOPIC_THROUGH_CONTRACTIBLE = prove
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on t /\ IMAGE g t SUBSET u /\
         contractible t
-        ==> ?c. homotopic_with (\h. T) (s,u) (g o f) (\x. c)`,
+        ==> ?c. homotopic_with (\h. T)
+                 (subtopology euclidean s,subtopology euclidean u)
+                 (g o f) (\x. c)`,
   REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [contractible]) THEN
   DISCH_THEN(X_CHOOSE_THEN `b:real^N` MP_TAC) THEN
@@ -21386,7 +21568,8 @@ let NULLHOMOTOPIC_THROUGH_CONTRACTIBLE = prove
 let NULLHOMOTOPIC_INTO_CONTRACTIBLE = prove
  (`!f:real^M->real^N s t.
         f continuous_on s /\ IMAGE f s SUBSET t /\ contractible t
-        ==> ?c. homotopic_with (\h. T) (s,t) f (\x. c)`,
+        ==> ?c. homotopic_with (\h. T)
+                 (subtopology euclidean s,subtopology euclidean t) f (\x. c)`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `(f:real^M->real^N) = (\x. x) o f` SUBST1_TAC THENL
    [REWRITE_TAC[o_THM; FUN_EQ_THM];
@@ -21397,7 +21580,8 @@ let NULLHOMOTOPIC_INTO_CONTRACTIBLE = prove
 let NULLHOMOTOPIC_FROM_CONTRACTIBLE = prove
  (`!f:real^M->real^N s t.
         f continuous_on s /\ IMAGE f s SUBSET t /\ contractible s
-        ==> ?c. homotopic_with (\h. T) (s,t) f (\x. c)`,
+        ==> ?c. homotopic_with (\h. T)
+                 (subtopology euclidean s,subtopology euclidean t) f (\x. c)`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN `(f:real^M->real^N) = f o (\x. x)` SUBST1_TAC THENL
    [REWRITE_TAC[o_THM; FUN_EQ_THM];
@@ -21412,7 +21596,9 @@ let HOMOTOPIC_THROUGH_CONTRACTIBLE = prove
         f2 continuous_on s /\ IMAGE f2 s SUBSET t /\
         g2 continuous_on t /\ IMAGE g2 t SUBSET u /\
         contractible t /\ path_connected u
-        ==> homotopic_with (\h. T) (s,u) (g1 o f1) (g2 o f2)`,
+        ==> homotopic_with (\h. T)
+             (subtopology euclidean s,subtopology euclidean u)
+             (g1 o f1) (g2 o f2)`,
   REPEAT STRIP_TAC THEN MP_TAC(ISPECL
    [`f1:real^M->real^N`; `g1:real^N->real^P`; `s:real^M->bool`;
     `t:real^N->bool`; `u:real^P->bool`]
@@ -21438,7 +21624,8 @@ let HOMOTOPIC_INTO_CONTRACTIBLE = prove
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on s /\ IMAGE g s SUBSET t /\
         contractible t
-        ==> homotopic_with (\h. T) (s,t) f g`,
+        ==> homotopic_with (\h. T)
+             (subtopology euclidean s,subtopology euclidean t) f g`,
   REPEAT STRIP_TAC THEN SUBGOAL_THEN
    `(f:real^M->real^N) = (\x. x) o f /\ (g:real^M->real^N) = (\x. x) o g`
    (CONJUNCTS_THEN SUBST1_TAC)
@@ -21452,7 +21639,8 @@ let HOMOTOPIC_FROM_CONTRACTIBLE = prove
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on s /\ IMAGE g s SUBSET t /\
         contractible s /\ path_connected t
-        ==> homotopic_with (\h. T) (s,t) f g`,
+        ==> homotopic_with (\h. T)
+             (subtopology euclidean s,subtopology euclidean t) f g`,
   REPEAT STRIP_TAC THEN
   REPEAT STRIP_TAC THEN SUBGOAL_THEN
    `(f:real^M->real^N) = f o (\x. x) /\ (g:real^M->real^N) = g o (\x. x)`
@@ -21486,12 +21674,13 @@ let STARLIKE_IMP_CONTRACTIBLE_GEN = prove
  (`!P s.
         (!a t. a IN s /\ &0 <= t /\ t <= &1 ==> P(\x. (&1 - t) % x + t % a)) /\
         starlike s
-        ==> ?a:real^N. homotopic_with P (s,s) (\x. x) (\x. a)`,
+        ==> ?a:real^N. homotopic_with P
+            (subtopology euclidean s,subtopology euclidean s) (\x. x) (\x. a)`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   REWRITE_TAC[starlike] THEN ONCE_REWRITE_TAC[SEGMENT_SYM] THEN
   REWRITE_TAC[segment; SUBSET; FORALL_IN_GSPEC] THEN
   MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:real^N` THEN STRIP_TAC THEN
-  REWRITE_TAC[homotopic_with; PCROSS] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; PCROSS] THEN
   EXISTS_TAC `\y:real^(1,N)finite_sum.
              (&1 - drop(fstcart y)) % sndcart y +
              drop(fstcart y) % a` THEN
@@ -21589,7 +21778,7 @@ let IS_INTERVAL_CONTRACTIBLE_1 = prove
 let CONTRACTIBLE_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.
         contractible s /\ contractible t ==> contractible(s PCROSS t)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[contractible; homotopic_with] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[contractible; HOMOTOPIC_WITH_EUCLIDEAN] THEN
   REWRITE_TAC[IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_PCROSS] THEN
   MAP_EVERY X_GEN_TAC [`a:real^M`; `h:real^(1,M)finite_sum->real^M`] THEN
@@ -21625,7 +21814,7 @@ let CONTRACTIBLE_PCROSS_EQ = prove
   ASM_CASES_TAC `t:real^N->bool = {}` THEN
   ASM_REWRITE_TAC[PCROSS_EMPTY; CONTRACTIBLE_EMPTY] THEN
   EQ_TAC THEN REWRITE_TAC[CONTRACTIBLE_PCROSS] THEN
-  REWRITE_TAC[contractible; homotopic_with; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[contractible; HOMOTOPIC_WITH_EUCLIDEAN; LEFT_IMP_EXISTS_THM] THEN
   SIMP_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_PASTECART; PASTECART_IN_PCROSS] THEN
   MAP_EVERY X_GEN_TAC
    [`a:real^M`; `b:real^N`;
@@ -21674,7 +21863,8 @@ let HOMOTOPY_DOMINATED_CONTRACTIBILITY = prove
         IMAGE f s SUBSET t /\
         g continuous_on t /\
         IMAGE g t SUBSET s /\
-        homotopic_with (\x. T) (t,t) (f o g) I /\
+        homotopic_with (\x. T)
+         (subtopology euclidean t,subtopology euclidean t) (f o g) I /\
         contractible s
         ==> contractible t`,
   REPEAT GEN_TAC THEN SIMP_TAC[contractible; I_DEF] THEN STRIP_TAC THEN
@@ -25502,12 +25692,13 @@ let COVERING_SPACE_LIFT_HOMOTOPIC_FUNCTION = prove
         covering_space (c,p) s /\
         g continuous_on u /\ IMAGE g u SUBSET c /\
         (!y. y IN u ==> p(g y) = f y) /\
-        homotopic_with (\x. T) (u,s) f f'
+        homotopic_with (\x. T)
+         (subtopology euclidean u,subtopology euclidean s) f f'
         ==> ?g'. g' continuous_on u /\ IMAGE g' u SUBSET c /\
                  (!y. y IN u ==> p(g' y) = f' y)`,
   REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(X_CHOOSE_THEN `h:real^(1,P)finite_sum->real^N`
-    STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [homotopic_with]) THEN
+    STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [HOMOTOPIC_WITH_EUCLIDEAN]) THEN
   FIRST_ASSUM(MP_TAC o
     ISPECL [`h:real^(1,P)finite_sum->real^N`;
             `g:real^P->real^M`; `u:real^P->bool`] o
@@ -25533,7 +25724,9 @@ let COVERING_SPACE_LIFT_HOMOTOPIC_FUNCTION = prove
 
 let COVERING_SPACE_LIFT_INESSENTIAL_FUNCTION = prove
  (`!p:real^M->real^N c s f a u:real^P->bool.
-        covering_space (c,p) s /\ homotopic_with (\x. T) (u,s) f (\x. a)
+        covering_space (c,p) s /\
+        homotopic_with (\x. T)
+         (subtopology euclidean u,subtopology euclidean s) f (\x. a)
         ==> ?g. g continuous_on u /\ IMAGE g u SUBSET c /\
                 (!y. y IN u ==> p(g y) = f y)`,
   ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
@@ -25672,7 +25865,7 @@ let COVERING_SPACE_LIFT_HOMOTOPIC_PATHS = prove
      ==> homotopic_paths c h1 h2`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[HOMOTOPIC_PATHS] THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homotopic_paths]) THEN
-  REWRITE_TAC[homotopic_with; pathstart; pathfinish] THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; pathstart; pathfinish] THEN
   DISCH_THEN(X_CHOOSE_THEN
    `h:real^(1,1)finite_sum->real^N` STRIP_ASSUME_TAC) THEN
   FIRST_ASSUM(MP_TAC o ISPECL

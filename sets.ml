@@ -2644,6 +2644,73 @@ let EXTENSIONAL_EQ = prove
   [ASM_SIMP_TAC[]; ASM_MESON_TAC[IN_EXTENSIONAL_UNDEFINED]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Restriction of a function to an EXTENSIONAL one on a subset.              *)
+(* ------------------------------------------------------------------------- *)
+
+let RESTRICTION = new_definition
+  `RESTRICTION s (f:A->B) x = if x IN s then f x else ARB`;;
+
+let RESTRICTION_DEFINED = prove
+ (`!s f:A->B x. x IN s ==> RESTRICTION s f x = f x`,
+  SIMP_TAC[RESTRICTION]);;
+
+let RESTRICTION_UNDEFINED = prove
+ (`!s f:A->B x. ~(x IN s) ==> RESTRICTION s f x = ARB`,
+  SIMP_TAC[RESTRICTION]);;
+
+let RESTRICTION_EQ = prove
+ (`!s f:A->B x y. x IN s /\ f x = y ==> RESTRICTION s f x = y`,
+  SIMP_TAC[RESTRICTION_DEFINED]);;
+
+let RESTRICTION_IN_EXTENSIONAL = prove
+ (`!s f:A->B. RESTRICTION s f IN EXTENSIONAL s`,
+  SIMP_TAC[IN_EXTENSIONAL; RESTRICTION]);;
+
+let RESTRICTION_EXTENSION = prove
+ (`!s f g:A->B. RESTRICTION s f = RESTRICTION s g <=>
+                (!x. x IN s ==> f x = g x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[RESTRICTION; FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let RESTRICTION_FIXPOINT = prove
+ (`!s f:A->B. RESTRICTION s f = f <=> f IN EXTENSIONAL s`,
+  REWRITE_TAC[IN_EXTENSIONAL; FUN_EQ_THM; RESTRICTION] THEN MESON_TAC[]);;
+
+let RESTRICTION_RESTRICTION = prove
+ (`!s t f:A->B.
+        s SUBSET t ==> RESTRICTION s (RESTRICTION t f) = RESTRICTION s f`,
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN SET_TAC[]);;
+
+let RESTRICTION_IDEMP = prove
+ (`!s f:A->B. RESTRICTION s (RESTRICTION s f) = RESTRICTION s f`,
+  REWRITE_TAC[RESTRICTION_FIXPOINT; RESTRICTION_IN_EXTENSIONAL]);;
+
+let IMAGE_RESTRICTION = prove
+ (`!f:A->B s t. s SUBSET t ==> IMAGE (RESTRICTION t f) s = IMAGE f s`,
+  REWRITE_TAC[EXTENSION; IN_IMAGE; RESTRICTION] THEN SET_TAC[]);;
+
+let RESTRICTION_COMPOSE_RIGHT = prove
+ (`!f:A->B g:B->C s.
+        RESTRICTION s (g o RESTRICTION s f) =
+        RESTRICTION s (g o f)`,
+  REWRITE_TAC[FUN_EQ_THM; o_DEF; RESTRICTION] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE] THEN SET_TAC[]);;
+
+let RESTRICTION_COMPOSE_LEFT = prove
+ (`!f:A->B g:B->C s t.
+        IMAGE f s SUBSET t
+        ==> RESTRICTION s (RESTRICTION t g o f) =
+            RESTRICTION s (g o f)`,
+  REWRITE_TAC[FUN_EQ_THM; o_DEF; RESTRICTION] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE] THEN SET_TAC[]);;
+
+let RESTRICTION_COMPOSE = prove
+ (`!f:A->B g:B->C s t.
+        IMAGE f s SUBSET t
+        ==> RESTRICTION s (RESTRICTION t g o RESTRICTION s f) =
+            RESTRICTION s (g o f)`,
+  SIMP_TAC[RESTRICTION_COMPOSE_LEFT; RESTRICTION_COMPOSE_RIGHT]);;
+
+(* ------------------------------------------------------------------------- *)
 (* General Cartesian product / dependent function space.                     *)
 (* ------------------------------------------------------------------------- *)
 
@@ -2727,6 +2794,18 @@ let CARTESIAN_PRODUCT_UNIV = prove
   REWRITE_TAC[EXTENSION; IN_UNIV; cartesian_product; IN_ELIM_THM] THEN
   REWRITE_TAC[EXTENSIONAL_UNIV]);;
 
+let CARTESIAN_PRODUCT_SINGS = prove
+ (`!k x:K->A. EXTENSIONAL k x ==> cartesian_product k (\i. {x i}) = {x}`,
+  REWRITE_TAC[cartesian_product; IN_SING] THEN
+  REWRITE_TAC[EXTENSION; EXTENSIONAL; IN_ELIM_THM; IN_SING] THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let CARTESIAN_PRODUCT_SINGS_GEN = prove
+ (`!k x. cartesian_product k (\i. {x i}) = {RESTRICTION k x}`,
+  REWRITE_TAC[cartesian_product; IN_SING] THEN
+  REWRITE_TAC[EXTENSION; EXTENSIONAL; IN_ELIM_THM; IN_SING] THEN
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN MESON_TAC[]);;
+
 let IMAGE_PROJECTION_CARTESIAN_PRODUCT = prove
  (`!k s:K->A->bool i.
         IMAGE (\x. x i) (cartesian_product k s) =
@@ -2767,6 +2846,13 @@ let FORALL_CARTESIAN_PRODUCT_ELEMENTS = prove
   FIRST_X_ASSUM(MP_TAC o SPECL
    [`\j. if j = i then x else if j IN k then (z:K->A) j else ARB`; `i:K`]) THEN
   ASM_REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN ASM_MESON_TAC[]);;
+
+let FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ = prove
+ (`!P k s.
+        ~(cartesian_product k s = {})
+        ==> ((!i x. i IN k /\ x IN s i ==> P i x) <=>
+             !z i. z IN cartesian_product k s /\ i IN k ==> P i (z i))`,
+  SIMP_TAC[FORALL_CARTESIAN_PRODUCT_ELEMENTS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
