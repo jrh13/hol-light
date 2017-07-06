@@ -12347,6 +12347,12 @@ let CONTINUOUS_MAP_PAIRWISE = prove
     RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; FORALL_PAIR_THM; IN_CROSS]) THEN
     ASM SET_TAC[]]);;
 
+let CONTINUOUS_MAP_PAIRED = prove
+ (`!top top1 top2 (f:A->B) (g:A->C).
+        continuous_map (top,prod_topology top1 top2) (\x. f x,g x) <=>
+        continuous_map(top,top1) f /\ continuous_map(top,top2) g`,
+  REWRITE_TAC[CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
 let CONTINUOUS_MAP_FST,CONTINUOUS_MAP_SND = (CONJ_PAIR o prove)
  (`(!top1:A topology top2:B topology.
         continuous_map (prod_topology top1 top2,top1) FST) /\
@@ -13373,8 +13379,589 @@ let HOMOTOPIC_WITH_IMP_CONTINUOUS_MAPS = prove
   REWRITE_TAC[IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
-(* Lipschitz functions.                                                      *)
+(* Three more restrictive notions of continuity for metric spaces.           *)
 (* ------------------------------------------------------------------------- *)
+
+let lipschitz_continuous_map = new_definition
+ `lipschitz_continuous_map (m1,m2) f <=>
+        IMAGE f (mspace m1) SUBSET mspace m2 /\
+        ?B. !x y. x IN mspace m1 /\ y IN mspace m1
+                  ==> mdist m2 (f x,f y) <= B * mdist m1 (x,y)`;;
+
+let LIPSCHITZ_CONTINUOUS_MAP_POS = prove
+ (`!m1 m2 f:A->B.
+        lipschitz_continuous_map (m1,m2) f <=>
+        IMAGE f (mspace m1) SUBSET mspace m2 /\
+        ?B. &0 < B /\
+            !x y. x IN mspace m1 /\ y IN mspace m1
+                  ==> mdist m2 (f x,f y) <= B * mdist m1 (x,y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[lipschitz_continuous_map] THEN
+  AP_TERM_TAC THEN EQ_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `abs B + &1` THEN CONJ_TAC THENL [REAL_ARITH_TAC; ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
+  TRANS_TAC REAL_LE_TRANS `B * mdist m1 (x:A,y)` THEN
+  ASM_SIMP_TAC[] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+  ASM_SIMP_TAC[MDIST_POS_LE] THEN REAL_ARITH_TAC);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_EQ = prove
+ (`!m1 m2 f g.
+      (!x. x IN mspace m1 ==> f x = g x) /\ lipschitz_continuous_map (m1,m2) f
+      ==> lipschitz_continuous_map (m1,m2) g`,
+  REWRITE_TAC[lipschitz_continuous_map] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IMP_CONJ] THEN SIMP_TAC[]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_FROM_SUBMETRIC = prove
+ (`!m1 m2 s f:A->B.
+        lipschitz_continuous_map (m1,m2) f
+        ==> lipschitz_continuous_map (submetric m1 s,m2) f`,
+  REWRITE_TAC[lipschitz_continuous_map; SUBMETRIC] THEN SET_TAC[]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_FROM_SUBMETRIC_MONO = prove
+ (`!m1 m2 f s t.
+           lipschitz_continuous_map (submetric m1 t,m2) f /\ s SUBSET t
+           ==> lipschitz_continuous_map (submetric m1 s,m2) f`,
+  MESON_TAC[LIPSCHITZ_CONTINUOUS_MAP_FROM_SUBMETRIC; SUBMETRIC_SUBMETRIC;
+            SET_RULE `s SUBSET t ==> t INTER s = s`]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_INTO_SUBMETRIC = prove
+ (`!m1 m2 s f:A->B.
+        lipschitz_continuous_map (m1,submetric m2 s) f <=>
+        IMAGE f (mspace m1) SUBSET s /\
+        lipschitz_continuous_map (m1,m2) f`,
+  REWRITE_TAC[lipschitz_continuous_map; SUBMETRIC] THEN SET_TAC[]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_CONST = prove
+ (`!m1:A metric m2:B metric c.
+        lipschitz_continuous_map (m1,m2) (\x. c) <=>
+        mspace m1 = {} \/ c IN mspace m2`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[lipschitz_continuous_map] THEN
+  ASM_CASES_TAC `mspace m1:A->bool = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES; EMPTY_SUBSET; NOT_IN_EMPTY] THEN
+  ASM_CASES_TAC `(c:B) IN mspace m2` THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  EXISTS_TAC `&1` THEN ASM_SIMP_TAC[MDIST_REFL; MDIST_POS_LE; REAL_MUL_LID]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_ID = prove
+ (`!m1:A metric. lipschitz_continuous_map (m1,m1) (\x. x)`,
+  REWRITE_TAC[lipschitz_continuous_map; IMAGE_ID; SUBSET_REFL] THEN
+  GEN_TAC THEN EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LE_REFL; REAL_MUL_LID]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_COMPOSE = prove
+ (`!m1 m2 m3 f:A->B g:B->C.
+      lipschitz_continuous_map (m1,m2) f /\ lipschitz_continuous_map (m2,m3) g
+      ==> lipschitz_continuous_map (m1,m3) (g o f)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_POS] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN
+  DISCH_TAC THEN X_GEN_TAC `B:real` THEN REPEAT DISCH_TAC THEN
+  X_GEN_TAC `C:real` THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC[o_THM] THEN
+  EXISTS_TAC `C * B:real` THEN ASM_SIMP_TAC[REAL_LT_MUL] THEN
+  MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN REPEAT DISCH_TAC THEN
+  TRANS_TAC REAL_LE_TRANS `C * mdist m2 ((f:A->B) x,f y)` THEN
+  ASM_SIMP_TAC[GSYM REAL_MUL_ASSOC; REAL_LE_LMUL_EQ]);;
+
+let uniformly_continuous_map = new_definition
+ `uniformly_continuous_map (m1,m2) f <=>
+        IMAGE f (mspace m1) SUBSET mspace m2 /\
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !x x'. x IN mspace m1 /\ x' IN mspace m1 /\
+                           mdist m1 (x',x) < d
+                           ==> mdist m2 (f x',f x) < e`;;
+
+let UNIFORMLY_CONTINUOUS_MAP_SEQUENTIALLY,
+    UNIFORMLY_CONTINUOUS_MAP_SEQUENTIALLY_ALT = (CONJ_PAIR o prove)
+ (`(!m1 m2 f:A->B.
+        uniformly_continuous_map (m1,m2) f <=>
+        IMAGE f (mspace m1) SUBSET mspace m2 /\
+        !x y. (!n. x n IN mspace m1) /\ (!n. y n IN mspace m1) /\
+              limit euclideanreal (\n. mdist m1 (x n,y n)) (&0) sequentially
+              ==> limit euclideanreal
+                    (\n. mdist m2 (f(x n),f(y n))) (&0) sequentially) /\
+   (!m1 m2 f:A->B.
+        uniformly_continuous_map (m1,m2) f <=>
+        IMAGE f (mspace m1) SUBSET mspace m2 /\
+        !e x y. &0 < e /\ (!n. x n IN mspace m1) /\ (!n. y n IN mspace m1) /\
+                limit euclideanreal (\n. mdist m1 (x n,y n)) (&0) sequentially
+                ==> ?n. mdist m2 (f(x n),f(y n)) < e)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(TAUT
+   `(p ==> q) /\ (q ==> r) /\ (r ==> p)
+    ==> (p <=> q) /\ (p <=> r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[uniformly_continuous_map; SUBSET; FORALL_IN_IMAGE] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+    REWRITE_TAC[LIMIT_METRIC; EVENTUALLY_SEQUENTIALLY] THEN
+    REWRITE_TAC[REAL_EUCLIDEAN_METRIC; IN_UNIV; IMP_CONJ] THEN
+    ASM_SIMP_TAC[MDIST_POS_LE; REAL_ARITH `&0 <= x ==> abs(&0 - x) = x`] THEN
+    ASM_MESON_TAC[];
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MAP_EVERY X_GEN_TAC [`e:real`; `x:num->A`; `y:num->A`] THEN
+    STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL [`x:num->A`; `y:num->A`]) THEN
+    ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+    REWRITE_TAC[LIMIT_METRIC] THEN
+    DISCH_THEN(MP_TAC o SPEC `e:real` o CONJUNCT2) THEN
+    ASM_REWRITE_TAC[REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP EVENTUALLY_HAPPENS) THEN
+    REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+    ASM_SIMP_TAC[MDIST_POS_LE; REAL_ARITH `&0 <= x ==> abs(&0 - x) = x`];
+    REWRITE_TAC[uniformly_continuous_map; SUBSET; FORALL_IN_IMAGE] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN
+    ONCE_REWRITE_TAC[TAUT `p ==> q ==> r <=> q ==> ~r ==> ~p`] THEN
+    DISCH_TAC THEN REWRITE_TAC[NOT_EXISTS_THM] THEN
+    DISCH_THEN(MP_TAC o GEN `n:num` o SPEC `inv(&n + &1)`) THEN
+    REWRITE_TAC[REAL_LT_INV_EQ; REAL_ARITH `&0 < &n + &1`] THEN
+    REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; SKOLEM_THM] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:num->A` THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `y:num->A` THEN
+    REWRITE_TAC[AND_FORALL_THM; REAL_NOT_LT] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN CONJ_TAC THENL
+     [ALL_TAC; ASM_MESON_TAC[MDIST_SYM; REAL_NOT_LT]] THEN
+    MATCH_MP_TAC LIMIT_NULL_REAL_COMPARISON THEN
+    EXISTS_TAC `\n. inv(&n + &1)` THEN
+    REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; LIMIT_NULL_REAL_HARMONIC_OFFSET] THEN
+    EXISTS_TAC `0` THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+    ASM_SIMP_TAC[REAL_ABS_INV; REAL_ARITH `abs(&n + &1) = &n + &1`;
+      METRIC_ARITH `x IN mspace m /\ y IN mspace m
+                    ==> abs(mdist m (x,y)) = mdist m (y,x)`] THEN
+    ASM_SIMP_TAC[REAL_LT_IMP_LE]]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_EQ = prove
+ (`!m1 m2 f g.
+      (!x. x IN mspace m1 ==> f x = g x) /\ uniformly_continuous_map (m1,m2) f
+      ==> uniformly_continuous_map (m1,m2) g`,
+  REWRITE_TAC[uniformly_continuous_map] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IMP_CONJ] THEN SIMP_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_FROM_SUBMETRIC = prove
+ (`!m1 m2 s f:A->B.
+        uniformly_continuous_map (m1,m2) f
+        ==> uniformly_continuous_map (submetric m1 s,m2) f`,
+  REWRITE_TAC[uniformly_continuous_map; SUBMETRIC] THEN SET_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_FROM_SUBMETRIC_MONO = prove
+ (`!m1 m2 f s t.
+           uniformly_continuous_map (submetric m1 t,m2) f /\ s SUBSET t
+           ==> uniformly_continuous_map (submetric m1 s,m2) f`,
+  MESON_TAC[UNIFORMLY_CONTINUOUS_MAP_FROM_SUBMETRIC; SUBMETRIC_SUBMETRIC;
+            SET_RULE `s SUBSET t ==> t INTER s = s`]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_INTO_SUBMETRIC = prove
+ (`!m1 m2 s f:A->B.
+        uniformly_continuous_map (m1,submetric m2 s) f <=>
+        IMAGE f (mspace m1) SUBSET s /\
+        uniformly_continuous_map (m1,m2) f`,
+  REWRITE_TAC[uniformly_continuous_map; SUBMETRIC] THEN SET_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_CONST = prove
+ (`!m1:A metric m2:B metric c.
+        uniformly_continuous_map (m1,m2) (\x. c) <=>
+        mspace m1 = {} \/ c IN mspace m2`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[uniformly_continuous_map] THEN
+  ASM_CASES_TAC `mspace m1:A->bool = {}` THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES; EMPTY_SUBSET; NOT_IN_EMPTY] THENL
+   [MESON_TAC[]; ALL_TAC] THEN
+  ASM_CASES_TAC `(c:B) IN mspace m2` THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  ASM_SIMP_TAC[MDIST_REFL] THEN MESON_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_ID = prove
+ (`!m1:A metric. uniformly_continuous_map (m1,m1) (\x. x)`,
+  REWRITE_TAC[uniformly_continuous_map; IMAGE_ID; SUBSET_REFL] THEN
+  MESON_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_COMPOSE = prove
+ (`!m1 m2 f:A->B g:B->C.
+    uniformly_continuous_map (m1,m2) f /\ uniformly_continuous_map (m2,m3) g
+    ==> uniformly_continuous_map (m1,m3) (g o f)`,
+  REWRITE_TAC[uniformly_continuous_map; o_DEF; SUBSET; FORALL_IN_IMAGE] THEN
+  REPEAT GEN_TAC THEN SIMP_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN ASM_MESON_TAC[]);;
+
+let cauchy_continuous_map = new_definition
+ `cauchy_continuous_map (m1,m2) f <=>
+        !x. cauchy_in m1 x ==> cauchy_in m2 (f o x)`;;
+
+let CAUCHY_CONTINUOUS_MAP_IMAGE = prove
+ (`!m1 m2 f:A->B.
+        cauchy_continuous_map (m1,m2) f
+        ==> IMAGE f (mspace m1) SUBSET mspace m2`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `(\n. a):num->A` o
+    REWRITE_RULE[cauchy_continuous_map]) THEN
+  ASM_REWRITE_TAC[o_DEF; CAUCHY_IN_CONST]);;
+
+let CAUCHY_CONTINUOUS_MAP_EQ = prove
+ (`!m1 m2 f g.
+      (!x. x IN mspace m1 ==> f x = g x) /\ cauchy_continuous_map (m1,m2) f
+      ==> cauchy_continuous_map (m1,m2) g`,
+  REWRITE_TAC[cauchy_continuous_map; cauchy_in; o_DEF; IMP_CONJ] THEN
+  SIMP_TAC[]);;
+
+let CAUCHY_CONTINUOUS_MAP_FROM_SUBMETRIC = prove
+ (`!m1 m2 s f:A->B.
+        cauchy_continuous_map (m1,m2) f
+        ==> cauchy_continuous_map (submetric m1 s,m2) f`,
+  SIMP_TAC[cauchy_continuous_map; CAUCHY_IN_SUBMETRIC]);;
+
+let CAUCHY_CONTINUOUS_MAP_FROM_SUBMETRIC_MONO = prove
+ (`!m1 m2 f s t.
+           cauchy_continuous_map (submetric m1 t,m2) f /\ s SUBSET t
+           ==> cauchy_continuous_map (submetric m1 s,m2) f`,
+  MESON_TAC[CAUCHY_CONTINUOUS_MAP_FROM_SUBMETRIC; SUBMETRIC_SUBMETRIC;
+            SET_RULE `s SUBSET t ==> t INTER s = s`]);;
+
+let CAUCHY_CONTINUOUS_MAP_INTO_SUBMETRIC = prove
+ (`!m1 m2 s f:A->B.
+        cauchy_continuous_map (m1,submetric m2 s) f <=>
+        IMAGE f (mspace m1) SUBSET s /\
+        cauchy_continuous_map (m1,m2) f`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [CONJ_TAC THENL
+     [FIRST_ASSUM(MP_TAC o MATCH_MP CAUCHY_CONTINUOUS_MAP_IMAGE) THEN
+      REWRITE_TAC[SUBMETRIC] THEN SET_TAC[];
+      POP_ASSUM MP_TAC THEN
+      SIMP_TAC[cauchy_continuous_map; CAUCHY_IN_SUBMETRIC; o_THM]];
+    REPEAT(POP_ASSUM MP_TAC) THEN
+    SIMP_TAC[cauchy_continuous_map; CAUCHY_IN_SUBMETRIC; o_THM] THEN
+    REWRITE_TAC[cauchy_in] THEN SET_TAC[]]);;
+
+let CAUCHY_CONTINUOUS_MAP_CONST = prove
+ (`!m1:A metric m2:B metric c.
+        cauchy_continuous_map (m1,m2) (\x. c) <=>
+        mspace m1 = {} \/ c IN mspace m2`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[cauchy_continuous_map] THEN
+  REWRITE_TAC[o_DEF; CAUCHY_IN_CONST] THEN
+  ASM_CASES_TAC `(c:B) IN mspace m2` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THENL [ALL_TAC; SIMP_TAC[cauchy_in; NOT_IN_EMPTY]] THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+  DISCH_THEN(MP_TAC o SPEC `(\n. a):num->A`) THEN
+  ASM_REWRITE_TAC[CAUCHY_IN_CONST]);;
+
+let CAUCHY_CONTINUOUS_MAP_ID = prove
+ (`!m1:A metric. cauchy_continuous_map (m1,m1) (\x. x)`,
+  REWRITE_TAC[cauchy_continuous_map; o_DEF; ETA_AX]);;
+
+let CAUCHY_CONTINUOUS_MAP_COMPOSE = prove
+ (`!m1 m2 f:A->B g:B->C.
+    cauchy_continuous_map (m1,m2) f /\ cauchy_continuous_map (m2,m3) g
+    ==> cauchy_continuous_map (m1,m3) (g o f)`,
+  REWRITE_TAC[cauchy_continuous_map; o_DEF; SUBSET; FORALL_IN_IMAGE] THEN
+  REPEAT GEN_TAC THEN SIMP_TAC[CONJ_ASSOC] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
+  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `e:real` THEN ASM_MESON_TAC[]);;
+
+let LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        lipschitz_continuous_map (m1,m2) f
+        ==> uniformly_continuous_map (m1,m2) f`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_POS; uniformly_continuous_map] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+   (X_CHOOSE_THEN `B:real` STRIP_ASSUME_TAC)) THEN
+  ASM_REWRITE_TAC[] THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  EXISTS_TAC `e / B:real` THEN
+  ASM_SIMP_TAC[REAL_LT_RDIV_EQ; REAL_MUL_LZERO] THEN
+  ASM_MESON_TAC[REAL_LET_TRANS; REAL_MUL_SYM]);;
+
+let UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        uniformly_continuous_map (m1,m2) f
+        ==> cauchy_continuous_map (m1,m2) f`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[uniformly_continuous_map; cauchy_continuous_map] THEN
+  STRIP_TAC THEN X_GEN_TAC `x:num->A` THEN REWRITE_TAC[cauchy_in] THEN
+  STRIP_TAC THEN REWRITE_TAC[o_THM] THEN ASM SET_TAC[]);;
+
+let LOCALLY_CAUCHY_CONTINUOUS_MAP = prove
+ (`!m1 m2 e f:A->B.
+        &0 < e /\
+        (!x. x IN mspace m1
+             ==> cauchy_continuous_map (submetric m1 (mball m1 (x,e)),m2) f)
+        ==> cauchy_continuous_map (m1,m2) f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[cauchy_continuous_map] THEN
+  X_GEN_TAC `x:num->A` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [cauchy_in]) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC `e:real`)) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `M:num` THEN STRIP_TAC THEN
+  MATCH_MP_TAC CAUCHY_IN_OFFSET THEN EXISTS_TAC `M:num` THEN CONJ_TAC THENL
+   [X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(x:num->A) n`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP CAUCHY_CONTINUOUS_MAP_IMAGE) THEN
+    ASM_SIMP_TAC[SUBSET; FORALL_IN_IMAGE; SUBMETRIC; SUBMETRIC; o_THM;
+                 IN_INTER; CENTRE_IN_MBALL];
+    FIRST_X_ASSUM(MP_TAC o SPEC `(x:num->A) M`) THEN
+    ASM_REWRITE_TAC[cauchy_continuous_map; o_DEF] THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[CAUCHY_IN_SUBMETRIC; IN_MBALL] THEN
+    ASM_SIMP_TAC[LE_ADD; LE_REFL] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CAUCHY_IN_SUBSEQUENCE THEN
+    ASM_REWRITE_TAC[LT_ADD_LCANCEL]]);;
+
+let CAUCHY_CONTINUOUS_IMP_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        cauchy_continuous_map (m1,m2) f
+        ==> continuous_map (mtopology m1,mtopology m2) f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF] THEN
+  X_GEN_TAC `a:A` THEN REWRITE_TAC[TOPSPACE_MTOPOLOGY] THEN DISCH_TAC THEN
+  REWRITE_TAC[LIMIT_ATPOINTOF_SEQUENTIALLY] THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP CAUCHY_CONTINUOUS_MAP_IMAGE) THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  X_GEN_TAC `x:num->A` THEN REWRITE_TAC[IN_DELETE; FORALL_AND_THM] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC
+   `\n. if EVEN n then x(n DIV 2) else a:A` o
+   REWRITE_RULE[cauchy_continuous_map]) THEN
+  ASM_SIMP_TAC[o_DEF; COND_RAND; CAUCHY_IN_INTERLEAVING]);;
+
+let UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        uniformly_continuous_map (m1,m2) f
+        ==> continuous_map (mtopology m1,mtopology m2) f`,
+  MESON_TAC[UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP;
+            CAUCHY_CONTINUOUS_IMP_CONTINUOUS_MAP]);;
+
+let LIPSCHITZ_CONTINUOUS_IMP_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        lipschitz_continuous_map(m1,m2) f
+        ==> continuous_map (mtopology m1,mtopology m2) f`,
+  SIMP_TAC[UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS_MAP;
+           LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP]);;
+
+let LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        lipschitz_continuous_map(m1,m2) f
+        ==> cauchy_continuous_map(m1,m2) f`,
+  SIMP_TAC[LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP;
+           UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP]);;
+
+let CONTINUOUS_IMP_CAUCHY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        mcomplete m1 /\
+        continuous_map (mtopology m1,mtopology m2) f
+        ==> cauchy_continuous_map (m1,m2) f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[cauchy_continuous_map] THEN
+  X_GEN_TAC `x:num->A` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `x:num->A` o REWRITE_RULE[mcomplete]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `y:A` THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] (ISPEC `sequentially` CONTINUOUS_MAP_LIMIT))) THEN
+  DISCH_THEN(MP_TAC o SPECL [`x:num->A`; `y:A`]) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+        CONVERGENT_IMP_CAUCHY_IN)) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [continuous_map; TOPSPACE_MTOPOLOGY; cauchy_in]) THEN
+  REWRITE_TAC[o_DEF] THEN ASM SET_TAC[]);;
+
+let CAUCHY_IMP_UNIFORMLY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        totally_bounded_in m1 (mspace m1) /\
+        cauchy_continuous_map (m1,m2) f
+        ==> uniformly_continuous_map (m1,m2) f`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_SEQUENTIALLY_ALT] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CAUCHY_CONTINUOUS_MAP_IMAGE) THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  MAP_EVERY X_GEN_TAC [`e:real`; `x:num->A`; `y:num->A`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `x:num->A` o CONJUNCT2 o
+   REWRITE_RULE[TOTALLY_BOUNDED_IN_SEQUENTIALLY]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `r1:num->num` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `(y:num->A) o (r1:num->num)` o CONJUNCT2 o
+   REWRITE_RULE[TOTALLY_BOUNDED_IN_SEQUENTIALLY]) THEN
+  ASM_REWRITE_TAC[o_THM; GSYM o_ASSOC; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `r2:num->num` THEN STRIP_TAC THEN
+  ABBREV_TAC `r = (r1:num->num) o (r2:num->num)` THEN
+  SUBGOAL_THEN `!m n. m < n ==> (r:num->num) m < r n` ASSUME_TAC THENL
+   [EXPAND_TAC "r" THEN REWRITE_TAC[o_DEF] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o
+   SPEC `\n. if EVEN n then (x o r) (n DIV 2):A
+             else (y o (r:num->num)) (n DIV 2)` o
+   REWRITE_RULE[cauchy_continuous_map]) THEN
+  ASM_REWRITE_TAC[CAUCHY_IN_INTERLEAVING_GEN; ETA_AX] THEN ANTS_TAC THENL
+   [EXPAND_TAC "r" THEN REWRITE_TAC[o_ASSOC] THEN
+    ASM_SIMP_TAC[CAUCHY_IN_SUBSEQUENCE] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `r:num->num` o
+      MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] LIMIT_SUBSEQUENCE)) THEN
+    ASM_REWRITE_TAC[GSYM o_ASSOC] THEN REWRITE_TAC[o_DEF];
+    ONCE_REWRITE_TAC[o_DEF] THEN
+    REWRITE_TAC[COND_RAND; CAUCHY_IN_INTERLEAVING_GEN] THEN
+    DISCH_THEN(MP_TAC o CONJUNCT2 o CONJUNCT2) THEN
+    REWRITE_TAC[LIMIT_NULL_REAL] THEN
+    DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP EVENTUALLY_HAPPENS) THEN
+    REWRITE_TAC[o_DEF; TRIVIAL_LIMIT_SEQUENTIALLY] THEN
+    ASM_SIMP_TAC[real_abs; MDIST_POS_LE] THEN MESON_TAC[]]);;
+
+let CONTINUOUS_IMP_UNIFORMLY_CONTINUOUS_MAP = prove
+(`!m1 m2 f:A->B.
+        compact_space (mtopology m1) /\
+        continuous_map (mtopology m1,mtopology m2) f
+        ==> uniformly_continuous_map (m1,m2) f`,
+  REWRITE_TAC[COMPACT_SPACE_EQ_MCOMPLETE_TOTALLY_BOUNDED_IN] THEN
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC CAUCHY_IMP_UNIFORMLY_CONTINUOUS_MAP THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC CONTINUOUS_IMP_CAUCHY_CONTINUOUS_MAP THEN
+  ASM_REWRITE_TAC[]);;
+
+let CONTINUOUS_EQ_CAUCHY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        mcomplete m1
+        ==> (continuous_map (mtopology m1,mtopology m2) f <=>
+             cauchy_continuous_map (m1,m2) f)`,
+  MESON_TAC[CONTINUOUS_IMP_CAUCHY_CONTINUOUS_MAP;
+            CAUCHY_CONTINUOUS_IMP_CONTINUOUS_MAP]);;
+
+let CONTINUOUS_EQ_UNIFORMLY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        compact_space (mtopology m1)
+        ==> (continuous_map (mtopology m1,mtopology m2) f <=>
+             uniformly_continuous_map (m1,m2) f)`,
+  MESON_TAC[CONTINUOUS_IMP_UNIFORMLY_CONTINUOUS_MAP;
+            UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS_MAP]);;
+
+let CAUCHY_EQ_UNIFORMLY_CONTINUOUS_MAP = prove
+ (`!m1 m2 f:A->B.
+        totally_bounded_in m1 (mspace m1)
+        ==> (cauchy_continuous_map (m1,m2) f <=>
+             uniformly_continuous_map (m1,m2) f)`,
+  MESON_TAC[CAUCHY_IMP_UNIFORMLY_CONTINUOUS_MAP;
+            UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_PROJECTIONS = prove
+ (`(!m1:A metric m2:B metric.
+        lipschitz_continuous_map (prod_metric m1 m2,m1) FST) /\
+   (!m1:A metric m2:B metric.
+        lipschitz_continuous_map (prod_metric m1 m2,m2) SND)`,
+  CONJ_TAC THEN REPEAT GEN_TAC THEN REWRITE_TAC[lipschitz_continuous_map] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; CONJUNCT1 PROD_METRIC] THEN
+  SIMP_TAC[FORALL_PAIR_THM; IN_CROSS] THEN EXISTS_TAC `&1` THEN
+  REWRITE_TAC[REAL_MUL_LID; COMPONENT_LE_PROD_METRIC]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE = prove
+ (`!m m1 m2 (f:A->B#C).
+        lipschitz_continuous_map(m,prod_metric m1 m2) f <=>
+        lipschitz_continuous_map(m,m1) (FST o f) /\
+        lipschitz_continuous_map(m,m2) (SND o f)`,
+  REWRITE_TAC[FORALL_AND_THM; TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+  CONJ_TAC THENL
+   [MESON_TAC[LIPSCHITZ_CONTINUOUS_MAP_COMPOSE;
+              LIPSCHITZ_CONTINUOUS_MAP_PROJECTIONS];
+    REPLICATE_TAC 3 GEN_TAC THEN
+    REWRITE_TAC[FORALL_PAIR_FUN_THM; o_DEF; ETA_AX] THEN
+    MAP_EVERY X_GEN_TAC [`x:A->B`; `y:A->C`] THEN
+    REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_POS] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; CONJUNCT1 PROD_METRIC] THEN
+    DISCH_THEN(CONJUNCTS_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ASM_SIMP_TAC[IN_CROSS; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `B:real` THEN STRIP_TAC THEN
+    X_GEN_TAC `C:real` THEN STRIP_TAC THEN EXISTS_TAC `B + C:real` THEN
+    ASM_SIMP_TAC[REAL_LT_ADD] THEN REPEAT STRIP_TAC THEN
+    W(MP_TAC o PART_MATCH (lhand o rand) PROD_METRIC_LE_COMPONENTS o
+      lhand o snd) THEN
+    ASM_SIMP_TAC[] THEN MATCH_MP_TAC(REAL_ARITH
+     `y <= c * m /\ z <= b * m ==> x <= y + z ==> x <= (b + c) * m`) THEN
+    ASM_SIMP_TAC[]]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_PAIRWISE = prove
+ (`!m m1 m2 (f:A->B#C).
+        uniformly_continuous_map(m,prod_metric m1 m2) f <=>
+        uniformly_continuous_map(m,m1) (FST o f) /\
+        uniformly_continuous_map(m,m2) (SND o f)`,
+  REWRITE_TAC[FORALL_AND_THM; TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+  CONJ_TAC THENL
+   [MESON_TAC[UNIFORMLY_CONTINUOUS_MAP_COMPOSE;
+              LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP;
+              LIPSCHITZ_CONTINUOUS_MAP_PROJECTIONS];
+    REPLICATE_TAC 3 GEN_TAC THEN
+    REWRITE_TAC[FORALL_PAIR_FUN_THM; o_DEF; ETA_AX] THEN
+    MAP_EVERY X_GEN_TAC [`x:A->B`; `y:A->C`] THEN
+    REWRITE_TAC[uniformly_continuous_map] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; CONJUNCT1 PROD_METRIC] THEN
+    DISCH_THEN(CONJUNCTS_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ASM_SIMP_TAC[IN_CROSS; IMP_IMP] THEN DISCH_TAC THEN
+    X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(CONJUNCTS_THEN(MP_TAC o SPEC `e / &2`)) THEN
+    ASM_REWRITE_TAC[REAL_HALF; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `d1:real` THEN STRIP_TAC THEN
+    X_GEN_TAC `d2:real` THEN STRIP_TAC THEN
+    EXISTS_TAC `min d1 d2:real` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+    REPEAT STRIP_TAC THEN
+    W(MP_TAC o PART_MATCH (lhand o rand) PROD_METRIC_LE_COMPONENTS o
+      lhand o snd) THEN
+    ASM_SIMP_TAC[] THEN MATCH_MP_TAC(REAL_ARITH
+     `x < e / &2 /\ y < e / &2 ==> z <= x + y ==> z < e`) THEN
+    ASM_SIMP_TAC[]]);;
+
+let CAUCHY_CONTINUOUS_MAP_PAIRWISE = prove
+ (`!m m1 m2 (f:A->B#C).
+        cauchy_continuous_map(m,prod_metric m1 m2) f <=>
+        cauchy_continuous_map(m,m1) (FST o f) /\
+        cauchy_continuous_map(m,m2) (SND o f)`,
+  REWRITE_TAC[cauchy_continuous_map; CAUCHY_IN_PROD_METRIC; o_ASSOC] THEN
+  MESON_TAC[]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_PAIRED = prove
+ (`!m m1 m2 (f:A->B) (g:A->C).
+        lipschitz_continuous_map (m,prod_metric m1 m2) (\x. f x,g x) <=>
+        lipschitz_continuous_map(m,m1) f /\ lipschitz_continuous_map(m,m2) g`,
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_PAIRED = prove
+ (`!m m1 m2 (f:A->B) (g:A->C).
+        uniformly_continuous_map (m,prod_metric m1 m2) (\x. f x,g x) <=>
+        uniformly_continuous_map(m,m1) f /\ uniformly_continuous_map(m,m2) g`,
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let CAUCHY_CONTINUOUS_MAP_PAIRED = prove
+ (`!m m1 m2 (f:A->B) (g:A->C).
+        cauchy_continuous_map (m,prod_metric m1 m2) (\x. f x,g x) <=>
+        cauchy_continuous_map(m,m1) f /\ cauchy_continuous_map(m,m2) g`,
+  REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let MBOUNDED_LIPSCHITZ_CONTINUOUS_IMAGE = prove
+ (`!m1 m2 (f:A->B) s.
+        lipschitz_continuous_map (m1,m2) f /\ mbounded m1 s
+        ==> mbounded m2 (IMAGE f s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[MBOUNDED_ALT_POS; LIPSCHITZ_CONTINUOUS_MAP_POS] THEN
+  REWRITE_TAC[IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN DISCH_TAC THEN
+  X_GEN_TAC `B:real` THEN DISCH_TAC THEN REWRITE_TAC[IMP_IMP] THEN
+  STRIP_TAC THEN X_GEN_TAC `C:real` THEN STRIP_TAC THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[FORALL_IN_IMAGE_2]] THEN
+  EXISTS_TAC `B * C:real` THEN ASM_SIMP_TAC[REAL_LT_MUL] THEN
+  MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
+  TRANS_TAC REAL_LE_TRANS `B * mdist m1 (x:A,y)` THEN
+  ASM_SIMP_TAC[REAL_LE_LMUL_EQ] THEN ASM SET_TAC[]);;
+
+let TOTALLY_BOUNDED_IN_CAUCHY_CONTINUOUS_IMAGE = prove
+ (`!m1 m2 (f:A->B) s.
+        cauchy_continuous_map (m1,m2) f /\ totally_bounded_in m1 s
+        ==> totally_bounded_in m2 (IMAGE f s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[TOTALLY_BOUNDED_IN_SEQUENTIALLY] THEN STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP CAUCHY_CONTINUOUS_MAP_IMAGE) THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[IN_IMAGE]] THEN
+  X_GEN_TAC `y:num->B` THEN REWRITE_TAC[SKOLEM_THM; FORALL_AND_THM]THEN
+  DISCH_THEN(X_CHOOSE_THEN `x:num->A` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:num->A`) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `r:num->num` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [cauchy_continuous_map]) THEN
+  DISCH_THEN(MP_TAC o SPEC `(x:num->A) o (r:num->num)`) THEN
+  ASM_REWRITE_TAC[] THEN ASM_REWRITE_TAC[o_DEF]);;
 
 let LIPSCHITZ_COEFFICIENT_POS = prove
  (`!m m' f:A->B k.
@@ -13387,28 +13974,6 @@ let LIPSCHITZ_COEFFICIENT_POS = prove
   CLAIM_TAC "neq" `~(x:A = y)` THENL [HYP MESON_TAC "fneq" []; ALL_TAC] THEN
   TRANS_TAC REAL_LTE_TRANS `mdist m' (f x:B,f y) / mdist m (x:A,y)` THEN
   ASM_SIMP_TAC[REAL_LT_DIV; MDIST_POS_LT; REAL_LE_LDIV_EQ]);;
-
-let LIPSCHITZ_CONTINUOUS_IMP_CONTINUOUS_MAP = prove
- (`!m m' (f:A->B) k.
-     (!x. x IN mspace m ==> f x IN mspace m') /\
-     (!x y. x IN mspace m /\ y IN mspace m
-            ==> mdist m' (f x,f y) <= k * mdist m (x,y))
-     ==> continuous_map (mtopology m,mtopology m') f`,
-  SIMP_TAC[METRIC_CONTINUOUS_MAP] THEN INTRO_TAC "! *; f lip; !a e; e a" THEN
-  ASM_CASES_TAC `?y:A. y IN mspace m /\ ~(f a:B = f y)` THENL
-  [EXISTS_TAC `e / k` THEN POP_ASSUM (DESTRUCT_TAC "@y. y neq") THEN
-   CLAIM_TAC "kpos" `&0 < k` THENL
-   [(MATCH_MP_TAC o ISPECL[`m:A metric`; `m':B metric`; `f:A->B`])
-      LIPSCHITZ_COEFFICIENT_POS THEN ASM_MESON_TAC[];
-    ASM_SIMP_TAC[REAL_LT_DIV] THEN INTRO_TAC "!x; x lt" THEN
-    TRANS_TAC REAL_LET_TRANS `k * mdist m (a:A,x)` THEN ASM_SIMP_TAC[] THEN
-    REMOVE_THEN "lt" MP_TAC THEN ASM_SIMP_TAC[REAL_LT_RDIV_EQ] THEN
-    REWRITE_TAC[REAL_MUL_SYM]];
-   POP_ASSUM
-     (LABEL_TAC "eq" o REWRITE_RULE[NOT_EXISTS_THM; DE_MORGAN_THM]) THEN
-   EXISTS_TAC `&1` THEN ASM_REWRITE_TAC[REAL_LT_01] THEN
-   INTRO_TAC "![y]; y d" THEN REMOVE_THEN "eq" (MP_TAC o SPEC `y:A`) THEN
-   ASM_SIMP_TAC[MDIST_REFL]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Contractions.                                                             *)
@@ -13476,6 +14041,7 @@ let BANACH_FIXPOINT_THM = prove
    MATCH_MP_TAC CONTINUOUS_MAP_LIMIT THEN
    EXISTS_TAC `mtopology (m:A metric)` THEN ASM_REWRITE_TAC[] THEN
    MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_IMP_CONTINUOUS_MAP THEN
+   ASM_REWRITE_TAC[lipschitz_continuous_map; SUBSET; FORALL_IN_IMAGE] THEN
    EXISTS_TAC `k:real` THEN ASM_REWRITE_TAC[];
    ALL_TAC] THEN
   CLAIM_TAC "k1'" `&0 < &1 - k` THENL [ASM_REAL_ARITH_TAC; ALL_TAC] THEN

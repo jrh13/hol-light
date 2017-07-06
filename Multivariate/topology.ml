@@ -6529,6 +6529,14 @@ let CONTINUOUS_MAP_EUCLIDEAN2 = prove
   REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_EUCLIDEAN] THEN
   REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
+let UNIFORMLY_CONTINUOUS_MAP_EUCLIDEAN = prove
+ (`!f:real^N->real^M s.
+     uniformly_continuous_map
+      (submetric euclidean_metric s,euclidean_metric) f <=>
+     f uniformly_continuous_on s`,
+  REWRITE_TAC[uniformly_continuous_map; uniformly_continuous_on] THEN
+  REWRITE_TAC[EUCLIDEAN_METRIC; SUBMETRIC; INTER_UNIV; SUBSET_UNIV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some simple consequential lemmas.                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -8030,6 +8038,157 @@ let INTERIOR_PCROSS = prove
     ASM_MESON_TAC[NOT_IN_EMPTY; INTERIOR_MAXIMAL; SUBSET];
     MATCH_MP_TAC INTERIOR_MAXIMAL THEN
     SIMP_TAC[OPEN_PCROSS; OPEN_INTERIOR; PCROSS_MONO; INTERIOR_SUBSET]]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_PASTING = prove
+ (`lipschitz_continuous_map
+      (prod_metric euclidean_metric euclidean_metric,euclidean_metric)
+      (\(x:real^M,y:real^N). pastecart x y)`,
+  REWRITE_TAC[lipschitz_continuous_map; PROD_METRIC; EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[CROSS_UNIV; IN_UNIV; SUBSET_UNIV; FORALL_PAIR_THM] THEN
+  EXISTS_TAC `&1:real` THEN
+  SIMP_TAC[dist; PASTECART_SUB; REAL_MUL_LID; NORM_PASTECART; REAL_LE_REFL]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_CART_PROJECTIONS = prove
+ (`lipschitz_continuous_map (euclidean_metric,euclidean_metric)
+                            (fstcart:real^(M,N)finite_sum->real^M) /\
+   lipschitz_continuous_map(euclidean_metric,euclidean_metric)
+                            (sndcart:real^(M,N)finite_sum->real^N)`,
+  REWRITE_TAC[lipschitz_continuous_map; EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_UNIV; SUBSET_UNIV; REAL_MUL_LID] THEN
+  CONJ_TAC THEN EXISTS_TAC `&1` THEN
+  REWRITE_TAC[REAL_MUL_LID; DIST_FSTCART; DIST_SNDCART]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_PASTEWISE = prove
+ (`!m (f:A->real^(M,N)finite_sum).
+        lipschitz_continuous_map(m,euclidean_metric) f <=>
+        lipschitz_continuous_map(m,euclidean_metric) (fstcart o f) /\
+        lipschitz_continuous_map(m,euclidean_metric) (sndcart o f)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN CONJ_TAC THEN
+    MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+    ASM_MESON_TAC[LIPSCHITZ_CONTINUOUS_MAP_CART_PROJECTIONS];
+    REWRITE_TAC[o_DEF] THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     `(f:A->real^(M,N)finite_sum) =
+      (\(x,y). pastecart x y) o (\a. fstcart(f a),sndcart(f a))`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_DEF; PASTECART_FST_SND];
+      MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+       `prod_metric euclidean_metric euclidean_metric
+        :(real^M#real^N)metric` THEN
+      REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PASTING] THEN
+      ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF]]]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_PASTED = prove
+ (`!m (f:A->real^M) (g:A->real^N).
+        lipschitz_continuous_map (m,euclidean_metric)
+                                 (\x. pastecart (f x) (g x)) <=>
+        lipschitz_continuous_map(m,euclidean_metric) f /\
+        lipschitz_continuous_map(m,euclidean_metric) g`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PASTEWISE; o_DEF] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; ETA_AX]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_PASTEWISE = prove
+ (`!m (f:A->real^(M,N)finite_sum).
+        uniformly_continuous_map(m,euclidean_metric) f <=>
+        uniformly_continuous_map(m,euclidean_metric) (fstcart o f) /\
+        uniformly_continuous_map(m,euclidean_metric) (sndcart o f)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN CONJ_TAC THEN
+    MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+    ASM_MESON_TAC[LIPSCHITZ_CONTINUOUS_MAP_CART_PROJECTIONS;
+                  LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP];
+    REWRITE_TAC[o_DEF] THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     `(f:A->real^(M,N)finite_sum) =
+      (\(x,y). pastecart x y) o (\a. fstcart(f a),sndcart(f a))`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_DEF; PASTECART_FST_SND];
+      MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+       `prod_metric euclidean_metric euclidean_metric
+        :(real^M#real^N)metric` THEN
+      SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_PASTING;
+               LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP] THEN
+      ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF]]]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_PASTED = prove
+ (`!m (f:A->real^M) (g:A->real^N).
+        uniformly_continuous_map (m,euclidean_metric)
+                                 (\x. pastecart (f x) (g x)) <=>
+        uniformly_continuous_map(m,euclidean_metric) f /\
+        uniformly_continuous_map(m,euclidean_metric) g`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PASTEWISE; o_DEF] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; ETA_AX]);;
+
+let CAUCHY_CONTINUOUS_MAP_PASTEWISE = prove
+ (`!m (f:A->real^(M,N)finite_sum).
+        cauchy_continuous_map(m,euclidean_metric) f <=>
+        cauchy_continuous_map(m,euclidean_metric) (fstcart o f) /\
+        cauchy_continuous_map(m,euclidean_metric) (sndcart o f)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN CONJ_TAC THEN
+    MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
+    ASM_MESON_TAC[LIPSCHITZ_CONTINUOUS_MAP_CART_PROJECTIONS;
+                  LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP];
+    REWRITE_TAC[o_DEF] THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     `(f:A->real^(M,N)finite_sum) =
+      (\(x,y). pastecart x y) o (\a. fstcart(f a),sndcart(f a))`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_DEF; PASTECART_FST_SND];
+      MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+       `prod_metric euclidean_metric euclidean_metric
+        :(real^M#real^N)metric` THEN
+      SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_PASTING;
+               LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP] THEN
+      ASM_REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF]]]);;
+
+let CAUCHY_CONTINUOUS_MAP_PASTED = prove
+ (`!m (f:A->real^M) (g:A->real^N).
+        cauchy_continuous_map (m,euclidean_metric)
+                                 (\x. pastecart (f x) (g x)) <=>
+        cauchy_continuous_map(m,euclidean_metric) f /\
+        cauchy_continuous_map(m,euclidean_metric) g`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PASTEWISE; o_DEF] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; ETA_AX]);;
+
+let CONTINUOUS_MAP_PASTEWISE = prove
+ (`!top (f:A->real^(M,N)finite_sum).
+        continuous_map(top,euclidean) f <=>
+        continuous_map(top,euclidean) (fstcart o f) /\
+        continuous_map(top,euclidean) (sndcart o f)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN CONJ_TAC THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CONTINUOUS_MAP_COMPOSE)) THEN
+    REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN
+    MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_IMP_CONTINUOUS_MAP THEN
+    REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_CART_PROJECTIONS];
+    REWRITE_TAC[o_DEF] THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     `(f:A->real^(M,N)finite_sum) =
+      (\(x,y). pastecart x y) o (\a. fstcart(f a),sndcart(f a))`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_DEF; PASTECART_FST_SND];
+      MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+       `prod_topology euclidean euclidean :(real^M#real^N)topology` THEN
+      ASM_REWRITE_TAC[CONTINUOUS_MAP_PAIRED] THEN
+      REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC;
+                  GSYM MTOPOLOGY_PROD_METRIC] THEN
+      MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_IMP_CONTINUOUS_MAP THEN
+      REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PASTING]]]);;
+
+let CONTINUOUS_MAP_PASTED = prove
+ (`!top (f:A->real^M) (g:A->real^N).
+        continuous_map (top,euclidean) (\x. pastecart (f x) (g x)) <=>
+        continuous_map(top,euclidean) f /\
+        continuous_map(top,euclidean) g`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CONTINUOUS_MAP_PASTEWISE; o_DEF] THEN
+  REWRITE_TAC[FSTCART_PASTECART; SNDCART_PASTECART; ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Quotient maps are occasionally useful.                                    *)
