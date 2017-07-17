@@ -12988,48 +12988,6 @@ let FORALL_IN_CLOSURE_OF_EQ = prove
     ASM_REWRITE_TAC[GSYM HAUSDORFF_SPACE_CLOSED_IN_DIAGONAL] THEN
     ASM_REWRITE_TAC[CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]]);;
 
-let CONTINUOUS_MAP_MDIST_PROD_TOPOLOGY = prove
- (`!m:A metric.
-        continuous_map (prod_topology (mtopology m) (mtopology m),
-                        euclideanreal)
-                       (mdist m)`,
-  GEN_TAC THEN REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
-  REWRITE_TAC[CONTINUOUS_MAP_TO_METRIC] THEN
-  REWRITE_TAC[FORALL_PAIR_THM; TOPSPACE_PROD_TOPOLOGY; IN_CROSS] THEN
-  MAP_EVERY X_GEN_TAC [`a1:A`; `a2:A`] THEN STRIP_TAC THEN
-  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  EXISTS_TAC `mball m (a1:A,e / &2) CROSS mball m (a2,e / &2)` THEN
-  REWRITE_TAC[OPEN_IN_CROSS; OPEN_IN_MBALL; IN_CROSS] THEN
-  ASM_SIMP_TAC[CENTRE_IN_MBALL; REAL_HALF; GSYM TOPSPACE_MTOPOLOGY] THEN
-  REWRITE_TAC[IN_MBALL; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
-  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC METRIC_ARITH);;
-
-let CONTINUOUS_MAP_MDIST_ALT = prove
- (`!m f:A->B#B.
-        continuous_map (top,prod_topology (mtopology m) (mtopology m)) f
-        ==> continuous_map (top,euclideanreal) (\x. mdist m (f x))`,
-  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
-  ASM_MESON_TAC[CONTINUOUS_MAP_MDIST_PROD_TOPOLOGY;
-                CONTINUOUS_MAP_COMPOSE]);;
-
-let CONTINUOUS_MAP_MDIST = prove
- (`!top m f g:A->B.
-        continuous_map (top,mtopology m) f /\
-        continuous_map (top,mtopology m) g
-        ==> continuous_map (top,euclideanreal) (\x. mdist m (f x,g x))`,
-  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
-  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
-  EXISTS_TAC `prod_topology (mtopology m:B topology) (mtopology m)` THEN
-  REWRITE_TAC[CONTINUOUS_MAP_MDIST_PROD_TOPOLOGY; CONTINUOUS_MAP_PAIRWISE] THEN
-  ASM_REWRITE_TAC[o_DEF; ETA_AX]);;
-
-let CONTINUOUS_ON_MDIST = prove
- (`!m a. a:A IN mspace m
-         ==> continuous_map (mtopology m,euclideanreal) (\x. mdist m (a,x))`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_MAP_MDIST THEN
-  ASM_REWRITE_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST] THEN
-  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Product metric. For the nicest fit with the main Euclidean theories, we   *)
 (* make this the Euclidean product, though others would work topologically.  *)
@@ -13377,6 +13335,43 @@ let HOMOTOPIC_WITH_IMP_CONTINUOUS_MAPS = prove
   REWRITE_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST] THEN DISJ2_TAC THEN
   REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; TOPSPACE_EUCLIDEANREAL; INTER_UNIV] THEN
   REWRITE_TAC[IN_REAL_INTERVAL] THEN REAL_ARITH_TAC);;
+
+let HOMOTOPIC_WITH_IMP_PROPERTY = prove
+ (`!P X Y f g:A->B. homotopic_with P (X,Y) f g ==> P f /\ P g`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with] THEN
+  DISCH_THEN(X_CHOOSE_THEN `h:real#A->B` MP_TAC) THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN DISCH_THEN
+   (fun th -> MP_TAC(SPEC `&0:real` th) THEN
+              MP_TAC(SPEC `&1:real` th)) THEN
+  ASM_SIMP_TAC[ENDS_IN_UNIT_REAL_INTERVAL; ETA_AX]);;
+
+let HOMOTOPIC_WITH_SYM = prove
+ (`!P X Y f g:A->B.
+     homotopic_with P (X,Y) f g <=> homotopic_with P (X,Y) g f`,
+  REPLICATE_TAC 3 GEN_TAC THEN MATCH_MP_TAC(MESON[]
+   `(!x y. P x y ==> P y x) ==> (!x y. P x y <=> P y x)`) THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_with] THEN
+  DISCH_THEN(X_CHOOSE_THEN `h:real#A->B` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `\(t,x). (h:real#A->B) (&1 - t,x)` THEN
+  ASM_REWRITE_TAC[REAL_SUB_REFL; REAL_SUB_RZERO] THEN CONJ_TAC THENL
+   [REWRITE_TAC[LAMBDA_UNPAIR_THM] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+      `prod_topology (subtopology euclideanreal (real_interval [&0,&1]))
+                     (X:A topology)` THEN
+    ASM_REWRITE_TAC[CONTINUOUS_MAP_PAIRED; CONTINUOUS_MAP_SND] THEN
+    REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; SUBSET; FORALL_IN_IMAGE] THEN
+    REWRITE_TAC[TOPSPACE_PROD_TOPOLOGY; TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY;
+                FORALL_PAIR_THM; IN_CROSS; IN_REAL_INTERVAL] THEN
+    CONJ_TAC THENL [ALL_TAC; REAL_ARITH_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_REAL_SUB THEN
+    REWRITE_TAC[CONTINUOUS_MAP_CONST; TOPSPACE_EUCLIDEANREAL; IN_UNIV] THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_OF_FST THEN
+    SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_ID];
+    REWRITE_TAC[IN_REAL_INTERVAL] THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[IN_REAL_INTERVAL] THEN
+    ASM_REAL_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Three more restrictive notions of continuity for metric spaces.           *)
@@ -13974,6 +13969,757 @@ let LIPSCHITZ_COEFFICIENT_POS = prove
   CLAIM_TAC "neq" `~(x:A = y)` THENL [HYP MESON_TAC "fneq" []; ALL_TAC] THEN
   TRANS_TAC REAL_LTE_TRANS `mdist m' (f x:B,f y) / mdist m (x:A,y)` THEN
   ASM_SIMP_TAC[REAL_LT_DIV; MDIST_POS_LT; REAL_LE_LDIV_EQ]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_METRIC = prove
+ (`!m:A metric.
+        lipschitz_continuous_map
+          (prod_metric m m,real_euclidean_metric)
+          (mdist m)`,
+  SIMP_TAC[lipschitz_continuous_map; CONJUNCT1 PROD_METRIC;
+           REAL_EUCLIDEAN_METRIC] THEN
+  GEN_TAC THEN REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; SUBSET_UNIV] THEN
+  EXISTS_TAC `&2` THEN
+  MAP_EVERY X_GEN_TAC [`x1:A`; `y1:A`; `x2:A`; `y2:A`] THEN STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (rand o rand) COMPONENT_LE_PROD_METRIC o
+    rand o rand o snd) THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `x <= y + z ==> y <= p /\ z <= p ==> x <= &2 * p`) THEN
+  REWRITE_TAC[REAL_ABS_BOUNDS] THEN CONJ_TAC THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC METRIC_ARITH);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_MDIST = prove
+ (`!m m' (f:A->B) g.
+      lipschitz_continuous_map (m,m') f /\
+      lipschitz_continuous_map (m,m') g
+      ==> lipschitz_continuous_map (m,real_euclidean_metric)
+             (\x. mdist m' (f x,g x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric (m':B metric) m'` THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_METRIC] THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRED]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_MDIST = prove
+ (`!m m' (f:A->B) g.
+      uniformly_continuous_map (m,m') f /\
+      uniformly_continuous_map (m,m') g
+      ==> uniformly_continuous_map (m,real_euclidean_metric)
+             (\x. mdist m' (f x,g x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric (m':B metric) m'` THEN
+  SIMP_TAC[LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP;
+           LIPSCHITZ_CONTINUOUS_MAP_METRIC] THEN
+  ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRED]);;
+
+let CAUCHY_CONTINUOUS_MAP_MDIST = prove
+ (`!m m' (f:A->B) g.
+      cauchy_continuous_map (m,m') f /\
+      cauchy_continuous_map (m,m') g
+      ==> cauchy_continuous_map (m,real_euclidean_metric)
+             (\x. mdist m' (f x,g x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric (m':B metric) m'` THEN
+  SIMP_TAC[LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP;
+           LIPSCHITZ_CONTINUOUS_MAP_METRIC] THEN
+  ASM_REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PAIRED]);;
+
+let CONTINUOUS_MAP_METRIC = prove
+ (`!m:A metric.
+        continuous_map (prod_topology (mtopology m) (mtopology m),
+                        euclideanreal)
+                       (mdist m)`,
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              GSYM MTOPOLOGY_PROD_METRIC] THEN
+  GEN_TAC THEN MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_IMP_CONTINUOUS_MAP THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_METRIC]);;
+
+let CONTINUOUS_MAP_MDIST_ALT = prove
+ (`!m f:A->B#B.
+        continuous_map (top,prod_topology (mtopology m) (mtopology m)) f
+        ==> continuous_map (top,euclideanreal) (\x. mdist m (f x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  ASM_MESON_TAC[CONTINUOUS_MAP_METRIC; CONTINUOUS_MAP_COMPOSE]);;
+
+let CONTINUOUS_MAP_MDIST = prove
+ (`!top m f g:A->B.
+        continuous_map (top,mtopology m) f /\
+        continuous_map (top,mtopology m) g
+        ==> continuous_map (top,euclideanreal) (\x. mdist m (f x,g x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_topology (mtopology m:B topology) (mtopology m)` THEN
+  REWRITE_TAC[CONTINUOUS_MAP_METRIC; CONTINUOUS_MAP_PAIRWISE] THEN
+  ASM_REWRITE_TAC[o_DEF; ETA_AX]);;
+
+let CONTINUOUS_ON_MDIST = prove
+ (`!m a. a:A IN mspace m
+         ==> continuous_map (mtopology m,euclideanreal) (\x. mdist m (a,x))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_MAP_MDIST THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST] THEN
+  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_LEFT_MULTIPLICATION = prove
+ (`!c. lipschitz_continuous_map(real_euclidean_metric,real_euclidean_metric)
+         (\x. c * x)`,
+  GEN_TAC THEN REWRITE_TAC[lipschitz_continuous_map] THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC; IN_UNIV; SUBSET_UNIV] THEN
+  REWRITE_TAC[GSYM REAL_SUB_LDISTRIB; REAL_ABS_MUL] THEN
+  MESON_TAC[REAL_LE_REFL]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_RIGHT_MULTIPLICATION = prove
+ (`!c. lipschitz_continuous_map(real_euclidean_metric,real_euclidean_metric)
+         (\x. x * c)`,
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_LEFT_MULTIPLICATION]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_NEGATION = prove
+ (`lipschitz_continuous_map(real_euclidean_metric,real_euclidean_metric) (--)`,
+  GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_LEFT_MULTIPLICATION]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_ABSOLUTE_VALUE = prove
+ (`lipschitz_continuous_map(real_euclidean_metric,real_euclidean_metric) abs`,
+  SIMP_TAC[lipschitz_continuous_map; REAL_EUCLIDEAN_METRIC; SUBSET_UNIV] THEN
+  EXISTS_TAC `&1` THEN REAL_ARITH_TAC);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_ADDITION = prove
+ (`lipschitz_continuous_map
+    (prod_metric real_euclidean_metric real_euclidean_metric,
+     real_euclidean_metric)
+    (\(x,y). x + y)`,
+  REWRITE_TAC[lipschitz_continuous_map; CONJUNCT1 PROD_METRIC] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_UNIV; SUBSET_UNIV; IN_CROSS] THEN
+  EXISTS_TAC `&2` THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_ARITH `x <= &2 * y <=> x / &2 <= y`] THEN
+  W(MP_TAC o PART_MATCH (rand o rand)
+        COMPONENT_LE_PROD_METRIC o rand o snd) THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC] THEN REAL_ARITH_TAC);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_SUBTRACTION = prove
+ (`lipschitz_continuous_map
+    (prod_metric real_euclidean_metric real_euclidean_metric,
+     real_euclidean_metric)
+    (\(x,y). x - y)`,
+  REWRITE_TAC[lipschitz_continuous_map; CONJUNCT1 PROD_METRIC] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_UNIV; SUBSET_UNIV; IN_CROSS] THEN
+  EXISTS_TAC `&2` THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[REAL_ARITH `x <= &2 * y <=> x / &2 <= y`] THEN
+  W(MP_TAC o PART_MATCH (rand o rand)
+        COMPONENT_LE_PROD_METRIC o rand o snd) THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC] THEN REAL_ARITH_TAC);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_MAXIMUM = prove
+ (`lipschitz_continuous_map
+    (prod_metric real_euclidean_metric real_euclidean_metric,
+     real_euclidean_metric)
+    (\(x,y). max x y)`,
+  REWRITE_TAC[lipschitz_continuous_map; CONJUNCT1 PROD_METRIC] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_UNIV; SUBSET_UNIV; IN_CROSS] THEN
+  EXISTS_TAC `&1` THEN REPEAT GEN_TAC THEN REWRITE_TAC[REAL_MUL_LID] THEN
+  W(MP_TAC o PART_MATCH (rand o rand)
+        COMPONENT_LE_PROD_METRIC o rand o snd) THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC] THEN REAL_ARITH_TAC);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_MINIMUM = prove
+ (`lipschitz_continuous_map
+    (prod_metric real_euclidean_metric real_euclidean_metric,
+     real_euclidean_metric)
+    (\(x,y). min x y)`,
+  REWRITE_TAC[lipschitz_continuous_map; CONJUNCT1 PROD_METRIC] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_UNIV; SUBSET_UNIV; IN_CROSS] THEN
+  EXISTS_TAC `&1` THEN REPEAT GEN_TAC THEN REWRITE_TAC[REAL_MUL_LID] THEN
+  W(MP_TAC o PART_MATCH (rand o rand)
+        COMPONENT_LE_PROD_METRIC o rand o snd) THEN
+  REWRITE_TAC[REAL_EUCLIDEAN_METRIC] THEN REAL_ARITH_TAC);;
+
+let LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_MULTIPLICATION = prove
+ (`!s. mbounded (prod_metric real_euclidean_metric real_euclidean_metric) s
+       ==> lipschitz_continuous_map
+            (submetric
+              (prod_metric real_euclidean_metric real_euclidean_metric) s,
+             real_euclidean_metric)
+            (\(x,y). x * y)`,
+  GEN_TAC THEN REWRITE_TAC[MBOUNDED_PROD_METRIC] THEN
+  REWRITE_TAC[MBOUNDED_REAL_EUCLIDEAN_METRIC; REAL_BOUNDED_POS] THEN
+  REWRITE_TAC[IMP_CONJ; FORALL_IN_IMAGE; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `B:real` THEN REWRITE_TAC[FORALL_PAIR_THM] THEN
+  REPEAT DISCH_TAC THEN X_GEN_TAC `C:real` THEN REPEAT DISCH_TAC THEN
+  SIMP_TAC[lipschitz_continuous_map; REAL_EUCLIDEAN_METRIC; SUBSET_UNIV] THEN
+  EXISTS_TAC `B + C:real` THEN
+  REWRITE_TAC[FORALL_PAIR_THM; SUBMETRIC; IN_INTER; CONJUNCT1 PROD_METRIC] THEN
+  MAP_EVERY X_GEN_TAC [`x1:real`; `y1:real`; `x2:real`; `y2:real`] THEN
+  REWRITE_TAC[IN_CROSS; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN STRIP_TAC THEN
+  TRANS_TAC REAL_LE_TRANS
+   `B * mdist real_euclidean_metric (y1,y2) +
+    C * mdist real_euclidean_metric (x1,x2)` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[REAL_EUCLIDEAN_METRIC];
+    MATCH_MP_TAC(REAL_ARITH
+     `x <= b * d /\ y <= c * d ==> x + y <= (b + c) * d`) THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL_EQ; COMPONENT_LE_PROD_METRIC]] THEN
+  ONCE_REWRITE_TAC[REAL_ARITH
+   `x2 * y2 - x1 * y1:real = x2 * (y2 - y1) + y1 * (x2 - x1)`] THEN
+  MATCH_MP_TAC(REAL_ARITH
+   `abs x <= a /\ abs y <= b ==> abs(x + y) <= a + b`) THEN
+  REWRITE_TAC[REAL_ABS_MUL] THEN CONJ_TAC THEN
+  MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[REAL_ABS_POS] THEN
+  ASM_MESON_TAC[]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_MULTIPLICATION = prove
+ (`cauchy_continuous_map
+    (prod_metric real_euclidean_metric real_euclidean_metric,
+     real_euclidean_metric)
+    (\(x,y). x * y)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LOCALLY_CAUCHY_CONTINUOUS_MAP THEN
+  EXISTS_TAC `&1` THEN REWRITE_TAC[REAL_LT_01] THEN
+  GEN_TAC THEN DISCH_TAC THEN
+  MATCH_MP_TAC LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP THEN
+  MATCH_MP_TAC LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_MULTIPLICATION THEN
+  REWRITE_TAC[MBOUNDED_MBALL]);;
+
+let LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_INVERSION = prove
+ (`!s. ~(&0 IN euclideanreal closure_of s)
+       ==> lipschitz_continuous_map
+             (submetric real_euclidean_metric s,real_euclidean_metric)
+             inv`,
+  X_GEN_TAC `s:real->bool` THEN
+  REWRITE_TAC[CLOSURE_OF_INTERIOR_OF; IN_DIFF; TOPSPACE_EUCLIDEANREAL] THEN
+  REWRITE_TAC[IN_UNIV; GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_INTERIOR_OF_MBALL] THEN
+  REWRITE_TAC[SUBSET; IN_MBALL; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  REWRITE_TAC[REAL_SUB_RZERO; REAL_NOT_LT; SET_RULE
+   `(!x. P x ==> x IN UNIV DIFF s) <=> (!x. x IN s ==> ~P x)`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `b:real` STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[lipschitz_continuous_map; REAL_EUCLIDEAN_METRIC; SUBSET_UNIV;
+              SUBMETRIC; INTER_UNIV] THEN
+  EXISTS_TAC `inv(b pow 2):real` THEN
+  MAP_EVERY X_GEN_TAC [`x:real`; `y:real`] THEN
+  STRIP_TAC THEN
+  ASM_CASES_TAC `x = &0` THENL
+   [FIRST_X_ASSUM(MP_TAC o SPEC `x:real`) THEN ASM_REWRITE_TAC[] THEN
+    ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_CASES_TAC `y = &0` THENL
+   [FIRST_X_ASSUM(MP_TAC o SPEC `y:real`) THEN ASM_REWRITE_TAC[] THEN
+    ASM_REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[REAL_FIELD
+   `~(x = &0) /\ ~(y = &0) ==> inv y - inv x = --inv(x * y) * (y - x)`] THEN
+  REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_NEG; REAL_ABS_INV] THEN
+  MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[REAL_ABS_POS] THEN
+  MATCH_MP_TAC REAL_LE_INV2 THEN ASM_SIMP_TAC[REAL_POW_LT] THEN
+  REWRITE_TAC[REAL_POW_2] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_FST = prove
+ (`!m m1 m2 f:A->B#C.
+        lipschitz_continuous_map(m,prod_metric m1 m2) f
+        ==> lipschitz_continuous_map(m,m1) (\x. FST(f x))`,
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_SND = prove
+ (`!m m1 m2 f:A->B#C.
+        lipschitz_continuous_map(m,prod_metric m1 m2) f
+        ==> lipschitz_continuous_map(m,m2) (\x. SND(f x))`,
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_LMUL = prove
+ (`!m c f:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. c * f x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. c * f x) = (\y. c * y) o (f:A->real)`
+  SUBST1_TAC THENL [REWRITE_TAC[FUN_EQ_THM; o_DEF]; ALL_TAC] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `real_euclidean_metric` THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_LEFT_MULTIPLICATION]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_RMUL = prove
+ (`!m c f:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. f x * c)`,
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_LMUL]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_NEG = prove
+ (`!m f:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. --(f x))`,
+  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_LMUL]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_ABS = prove
+ (`!m f:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. abs(f x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `real_euclidean_metric` THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_ABSOLUTE_VALUE]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_INV = prove
+ (`!m f:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f /\
+      ~(&0 IN euclideanreal closure_of (IMAGE f (mspace m)))
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. inv(f x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+   `submetric real_euclidean_metric (IMAGE f (mspace m:A->bool))` THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_INTO_SUBMETRIC; SUBSET_REFL] THEN
+  MATCH_MP_TAC LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_INVERSION THEN
+  ASM_REWRITE_TAC[]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_ADD = prove
+ (`!m f g:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f /\
+      lipschitz_continuous_map (m,real_euclidean_metric) g
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. f x + g x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. f x + g x) = (\(x,y). x + y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_ADDITION] THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_SUB = prove
+ (`!m f g:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f /\
+      lipschitz_continuous_map (m,real_euclidean_metric) g
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. f x - g x)`,
+  REWRITE_TAC[real_sub] THEN
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_ADD;
+           LIPSCHITZ_CONTINUOUS_MAP_REAL_NEG]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_MAX = prove
+ (`!m f g:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f /\
+      lipschitz_continuous_map (m,real_euclidean_metric) g
+      ==> lipschitz_continuous_map (m,real_euclidean_metric)
+            (\x. max (f x) (g x))`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. max (f x) (g x)) = (\(x,y). max x y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_MAXIMUM] THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_MIN = prove
+ (`!m f g:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f /\
+      lipschitz_continuous_map (m,real_euclidean_metric) g
+      ==> lipschitz_continuous_map (m,real_euclidean_metric)
+            (\x. min (f x) (g x))`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. min (f x) (g x)) = (\(x,y). min x y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_MINIMUM] THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_MUL = prove
+ (`!m f g:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f /\
+      lipschitz_continuous_map (m,real_euclidean_metric) g /\
+      real_bounded (IMAGE f (mspace m)) /\ real_bounded (IMAGE g (mspace m))
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. f x * g x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. f x * g x) = (\(x,y). x * y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC
+   `submetric (prod_metric real_euclidean_metric real_euclidean_metric)
+              (IMAGE (f:A->real) (mspace m) CROSS IMAGE g (mspace m))` THEN
+  ASM_REWRITE_TAC[LIPSCHITZ_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX;
+                  LIPSCHITZ_CONTINUOUS_MAP_INTO_SUBMETRIC] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_CROSS; FUN_IN_IMAGE] THEN
+  MATCH_MP_TAC LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_MULTIPLICATION THEN
+  ASM_REWRITE_TAC[MBOUNDED_CROSS; MBOUNDED_REAL_EUCLIDEAN_METRIC]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_REAL_DIV = prove
+ (`!m f g:A->real.
+      lipschitz_continuous_map (m,real_euclidean_metric) f /\
+      lipschitz_continuous_map (m,real_euclidean_metric) g /\
+      real_bounded (IMAGE f (mspace m)) /\
+      ~(&0 IN euclideanreal closure_of (IMAGE g (mspace m)))
+      ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. f x / g x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[real_div] THEN
+  MATCH_MP_TAC LIPSCHITZ_CONTINUOUS_MAP_REAL_MUL THEN
+  ASM_SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_INV] THEN
+  FIRST_X_ASSUM(MP_TAC o check (is_neg o concl)) THEN
+  REWRITE_TAC[CLOSURE_OF_INTERIOR_OF; IN_DIFF; TOPSPACE_EUCLIDEANREAL] THEN
+  REWRITE_TAC[IN_UNIV; GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_INTERIOR_OF_MBALL] THEN
+  REWRITE_TAC[SUBSET; IN_MBALL; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  REWRITE_TAC[REAL_SUB_RZERO; REAL_NOT_LT; SET_RULE
+   `(!x. P x ==> x IN UNIV DIFF s) <=> (!x. x IN s ==> ~P x)`] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `b:real` THEN STRIP_TAC THEN
+  REWRITE_TAC[real_bounded; FORALL_IN_IMAGE; REAL_ABS_INV] THEN
+  EXISTS_TAC `inv b:real` THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  MATCH_MP_TAC REAL_LE_INV2 THEN ASM_SIMP_TAC[]);;
+
+let LIPSCHITZ_CONTINUOUS_MAP_SUM = prove
+ (`!m f:K->A->real k.
+      FINITE k /\
+      (!i. i IN k
+          ==> lipschitz_continuous_map (m,real_euclidean_metric) (\x. f x i))
+      ==> lipschitz_continuous_map (m,real_euclidean_metric)
+                (\x. sum k (f x))`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; LIPSCHITZ_CONTINUOUS_MAP_CONST; REAL_EUCLIDEAN_METRIC;
+    FORALL_IN_INSERT; LIPSCHITZ_CONTINUOUS_MAP_REAL_ADD; ETA_AX; IN_UNIV]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_FST = prove
+ (`!m m1 m2 f:A->B#C.
+        uniformly_continuous_map(m,prod_metric m1 m2) f
+        ==> uniformly_continuous_map(m,m1) (\x. FST(f x))`,
+  SIMP_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_SND = prove
+ (`!m m1 m2 f:A->B#C.
+        uniformly_continuous_map(m,prod_metric m1 m2) f
+        ==> uniformly_continuous_map(m,m2) (\x. SND(f x))`,
+  SIMP_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_LMUL = prove
+ (`!m c f:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. c * f x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. c * f x) = (\y. c * y) o (f:A->real)`
+  SUBST1_TAC THENL [REWRITE_TAC[FUN_EQ_THM; o_DEF]; ALL_TAC] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `real_euclidean_metric` THEN
+  ASM_SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_LEFT_MULTIPLICATION;
+               LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_RMUL = prove
+ (`!m c f:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. f x * c)`,
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_REAL_LMUL]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_NEG = prove
+ (`!m f:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. --(f x))`,
+  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_REAL_LMUL]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_ABS = prove
+ (`!m f:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. abs(f x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `real_euclidean_metric` THEN
+  ASM_SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_ABSOLUTE_VALUE;
+               LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_INV = prove
+ (`!m f:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f /\
+      ~(&0 IN euclideanreal closure_of (IMAGE f (mspace m)))
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. inv(f x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+   `submetric real_euclidean_metric (IMAGE f (mspace m:A->bool))` THEN
+  ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_INTO_SUBMETRIC; SUBSET_REFL] THEN
+  MATCH_MP_TAC LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP THEN
+  MATCH_MP_TAC LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_INVERSION THEN
+  ASM_REWRITE_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_ADD = prove
+ (`!m f g:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f /\
+      uniformly_continuous_map (m,real_euclidean_metric) g
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. f x + g x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. f x + g x) = (\(x,y). x + y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_ADDITION;
+           LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP] THEN
+  ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_SUB = prove
+ (`!m f g:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f /\
+      uniformly_continuous_map (m,real_euclidean_metric) g
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. f x - g x)`,
+  REWRITE_TAC[real_sub] THEN
+  SIMP_TAC[UNIFORMLY_CONTINUOUS_MAP_REAL_ADD;
+           UNIFORMLY_CONTINUOUS_MAP_REAL_NEG]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_MAX = prove
+ (`!m f g:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f /\
+      uniformly_continuous_map (m,real_euclidean_metric) g
+     ==> uniformly_continuous_map (m,real_euclidean_metric)
+            (\x. max (f x) (g x))`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. max (f x) (g x)) = (\(x,y). max x y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_MAXIMUM;
+           LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP] THEN
+  ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_MIN = prove
+ (`!m f g:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f /\
+      uniformly_continuous_map (m,real_euclidean_metric) g
+     ==> uniformly_continuous_map (m,real_euclidean_metric)
+            (\x. min (f x) (g x))`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. min (f x) (g x)) = (\(x,y). min x y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_MINIMUM;
+           LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP] THEN
+  ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_MUL = prove
+ (`!m f g:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f /\
+      uniformly_continuous_map (m,real_euclidean_metric) g /\
+      real_bounded (IMAGE f (mspace m)) /\ real_bounded (IMAGE g (mspace m))
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. f x * g x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. f x * g x) = (\(x,y). x * y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC
+   `submetric (prod_metric real_euclidean_metric real_euclidean_metric)
+              (IMAGE (f:A->real) (mspace m) CROSS IMAGE g (mspace m))` THEN
+  ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX;
+                  UNIFORMLY_CONTINUOUS_MAP_INTO_SUBMETRIC] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_CROSS; FUN_IN_IMAGE] THEN
+  MATCH_MP_TAC LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP THEN
+  MATCH_MP_TAC LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_MULTIPLICATION THEN
+  ASM_REWRITE_TAC[MBOUNDED_CROSS; MBOUNDED_REAL_EUCLIDEAN_METRIC]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_REAL_DIV = prove
+ (`!m f g:A->real.
+      uniformly_continuous_map (m,real_euclidean_metric) f /\
+      uniformly_continuous_map (m,real_euclidean_metric) g /\
+      real_bounded (IMAGE f (mspace m)) /\
+      ~(&0 IN euclideanreal closure_of (IMAGE g (mspace m)))
+      ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. f x / g x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[real_div] THEN
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_REAL_MUL THEN
+  ASM_SIMP_TAC[UNIFORMLY_CONTINUOUS_MAP_REAL_INV] THEN
+  FIRST_X_ASSUM(MP_TAC o check (is_neg o concl)) THEN
+  REWRITE_TAC[CLOSURE_OF_INTERIOR_OF; IN_DIFF; TOPSPACE_EUCLIDEANREAL] THEN
+  REWRITE_TAC[IN_UNIV; GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_INTERIOR_OF_MBALL] THEN
+  REWRITE_TAC[SUBSET; IN_MBALL; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  REWRITE_TAC[REAL_SUB_RZERO; REAL_NOT_LT; SET_RULE
+   `(!x. P x ==> x IN UNIV DIFF s) <=> (!x. x IN s ==> ~P x)`] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `b:real` THEN STRIP_TAC THEN
+  REWRITE_TAC[real_bounded; FORALL_IN_IMAGE; REAL_ABS_INV] THEN
+  EXISTS_TAC `inv b:real` THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  MATCH_MP_TAC REAL_LE_INV2 THEN ASM_SIMP_TAC[]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_SUM = prove
+ (`!m f:K->A->real k.
+      FINITE k /\
+      (!i. i IN k
+          ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. f x i))
+      ==> uniformly_continuous_map (m,real_euclidean_metric)
+                (\x. sum k (f x))`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; UNIFORMLY_CONTINUOUS_MAP_CONST; REAL_EUCLIDEAN_METRIC;
+    FORALL_IN_INSERT; UNIFORMLY_CONTINUOUS_MAP_REAL_ADD; ETA_AX; IN_UNIV]);;
+
+let CAUCHY_CONTINUOUS_MAP_FST = prove
+ (`!m m1 m2 f:A->B#C.
+        cauchy_continuous_map(m,prod_metric m1 m2) f
+        ==> cauchy_continuous_map(m,m1) (\x. FST(f x))`,
+  SIMP_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF]);;
+
+let CAUCHY_CONTINUOUS_MAP_SND = prove
+ (`!m m1 m2 f:A->B#C.
+        cauchy_continuous_map(m,prod_metric m1 m2) f
+        ==> cauchy_continuous_map(m,m2) (\x. SND(f x))`,
+  SIMP_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_INV = prove
+ (`!m f:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f /\
+      ~(&0 IN euclideanreal closure_of (IMAGE f (mspace m)))
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. inv(f x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+   `submetric real_euclidean_metric (IMAGE f (mspace m:A->bool))` THEN
+  ASM_REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_INTO_SUBMETRIC; SUBSET_REFL] THEN
+  MATCH_MP_TAC LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP THEN
+  MATCH_MP_TAC LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_INVERSION THEN
+  ASM_REWRITE_TAC[]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_ADD = prove
+ (`!m f g:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f /\
+      cauchy_continuous_map (m,real_euclidean_metric) g
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. f x + g x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. f x + g x) = (\(x,y). x + y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_ADDITION;
+           LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP] THEN
+  ASM_REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_MUL = prove
+ (`!m f g:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f /\
+      cauchy_continuous_map (m,real_euclidean_metric) g
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. f x * g x)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(\x. f x * g x) = (\(x,y). x * y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC
+   `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_REAL_MULTIPLICATION] THEN
+  ASM_REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_LMUL = prove
+ (`!m c f:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. c * f x)`,
+  SIMP_TAC[CAUCHY_CONTINUOUS_MAP_REAL_MUL; CAUCHY_CONTINUOUS_MAP_CONST;
+           REAL_EUCLIDEAN_METRIC; IN_UNIV]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_RMUL = prove
+ (`!m c f:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. f x * c)`,
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_REAL_LMUL]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_NEG = prove
+ (`!m f:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. --(f x))`,
+  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN
+  REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_REAL_LMUL]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_ABS = prove
+ (`!m f:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. abs(f x))`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `real_euclidean_metric` THEN
+  ASM_SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_ABSOLUTE_VALUE;
+               LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_SUB = prove
+ (`!m f g:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f /\
+      cauchy_continuous_map (m,real_euclidean_metric) g
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. f x - g x)`,
+  REWRITE_TAC[real_sub] THEN
+  SIMP_TAC[CAUCHY_CONTINUOUS_MAP_REAL_ADD;
+           CAUCHY_CONTINUOUS_MAP_REAL_NEG]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_MAX = prove
+ (`!m f g:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f /\
+      cauchy_continuous_map (m,real_euclidean_metric) g
+    ==> cauchy_continuous_map (m,real_euclidean_metric)
+            (\x. max (f x) (g x))`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. max (f x) (g x)) = (\(x,y). max x y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_MAXIMUM;
+           LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP] THEN
+  ASM_REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_MIN = prove
+ (`!m f g:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f /\
+      cauchy_continuous_map (m,real_euclidean_metric) g
+    ==> cauchy_continuous_map (m,real_euclidean_metric)
+            (\x. min (f x) (g x))`,
+  REPEAT STRIP_TAC THEN SUBGOAL_THEN
+   `(\x. min (f x) (g x)) = (\(x,y). min x y) o (\z. (f:A->real) z,g z)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_DEF; FORALL_PAIR_THM]; ALL_TAC] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `prod_metric real_euclidean_metric real_euclidean_metric` THEN
+  SIMP_TAC[LIPSCHITZ_CONTINUOUS_MAP_REAL_MINIMUM;
+           LIPSCHITZ_IMP_CAUCHY_CONTINUOUS_MAP] THEN
+  ASM_REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX]);;
+
+let CAUCHY_CONTINUOUS_MAP_REAL_DIV = prove
+ (`!m f g:A->real.
+      cauchy_continuous_map (m,real_euclidean_metric) f /\
+      cauchy_continuous_map (m,real_euclidean_metric) g /\
+      ~(&0 IN euclideanreal closure_of (IMAGE g (mspace m)))
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. f x / g x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[real_div] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_REAL_MUL THEN
+  ASM_SIMP_TAC[CAUCHY_CONTINUOUS_MAP_REAL_INV] THEN
+  FIRST_X_ASSUM(MP_TAC o check (is_neg o concl)) THEN
+  REWRITE_TAC[CLOSURE_OF_INTERIOR_OF; IN_DIFF; TOPSPACE_EUCLIDEANREAL] THEN
+  REWRITE_TAC[IN_UNIV; GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_INTERIOR_OF_MBALL] THEN
+  REWRITE_TAC[SUBSET; IN_MBALL; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  REWRITE_TAC[REAL_SUB_RZERO; REAL_NOT_LT; SET_RULE
+   `(!x. P x ==> x IN UNIV DIFF s) <=> (!x. x IN s ==> ~P x)`] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `b:real` THEN STRIP_TAC THEN
+  REWRITE_TAC[real_bounded; FORALL_IN_IMAGE; REAL_ABS_INV] THEN
+  EXISTS_TAC `inv b:real` THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  MATCH_MP_TAC REAL_LE_INV2 THEN ASM_SIMP_TAC[]);;
+
+let CAUCHY_CONTINUOUS_MAP_SUM = prove
+ (`!m f:K->A->real k.
+      FINITE k /\
+      (!i. i IN k
+          ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. f x i))
+      ==> cauchy_continuous_map (m,real_euclidean_metric)
+                (\x. sum k (f x))`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[SUM_CLAUSES; CAUCHY_CONTINUOUS_MAP_CONST; REAL_EUCLIDEAN_METRIC;
+    FORALL_IN_INSERT; CAUCHY_CONTINUOUS_MAP_REAL_ADD; ETA_AX; IN_UNIV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Contractions.                                                             *)
