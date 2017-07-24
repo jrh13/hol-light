@@ -10698,6 +10698,18 @@ let CHOOSE_LARGE_COMPACT_SUBSET = prove
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
    [ASM SET_TAC[]; ASM_REAL_ARITH_TAC]);;
 
+let CHOOSE_LARGE_COMPACT_SUBSET_ALT = prove
+ (`!(s:real^N->bool) B.
+        lebesgue_measurable s /\ B < measure s
+        ==> ?t. compact t /\ t SUBSET s /\ B < measure t`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `measurable(s:real^N->bool)` THENL
+   [MP_TAC(ISPECL [`s:real^N->bool`; `measure(s:real^N->bool) - B`]
+        MEASURABLE_INNER_COMPACT);
+    MP_TAC(ISPECL [`s:real^N->bool`; `B + &1:real`]
+        CHOOSE_LARGE_COMPACT_SUBSET)] THEN
+  ASM_REWRITE_TAC[REAL_SUB_LT] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  SIMP_TAC[] THEN REAL_ARITH_TAC);;
+
 let OUTER_LEBESGUE_MEASURE = prove
  (`!s:real^N->bool.
      ?t. s SUBSET t /\ lebesgue_measurable t /\
