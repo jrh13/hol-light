@@ -29,7 +29,7 @@ type shell_info =
    {arg_types : hol_type list;     (* Argument types for type constructor *)
     constructors :
        constructor_info list;      (* Constructors for the type           *)
-    axiom : thm;                   (* Type axiom                          *)
+   (* axiom : thm;                   (* Type axiom                          *)*)
     induct : thm;                  (* Induction theorem                   *)
     cases : thm;                   (* Cases theorem                       *)
     distinct : thm list;           (* Constructors distinct               *)
@@ -147,8 +147,8 @@ let all_accessor_thms () =
 (*----------------------------------------------------------------------------*)
 
 let num_shell =
-     let axiom = num_Axiom
-         and induct = num_INDUCTION
+     let (*axiom = num_Axiom
+         and*) induct = num_INDUCTION
          and cases = num_CASES
          and distinct = [NOT_SUC]
          and one_one = [SUC_INJ]
@@ -158,7 +158,7 @@ let num_shell =
              {arg_types = [];
               constructors =
                  [("0",[],[]);("SUC",[`:num`],[("PRE",CONJUNCT2 PRE)])];
-              axiom = axiom;
+              (*axiom = axiom;*)
               induct = induct;
               cases = cases;
               distinct = distinct;
@@ -171,9 +171,9 @@ let num_shell =
 (*----------------------------------------------------------------------------*)
 
 let list_shell =
-   let axiom = new_axiom `!x f. ?!fn1. (fn1 [] = x) /\ (!h t. fn1 (CONS h t) = f (fn1 t) h t)`
+   let (*axiom = new_axiom `!x f. ?!fn1. (fn1 [] = x) /\ (!h t. fn1 (CONS h t) = f (fn1 t) h t)`
 (* |- !x f. ?!fn1. (fn1 [] = x) /\ (!h t. fn1 (CONS h t) = f (fn1 t) h t) *)
-       and induct = list_INDUCT
+       and *) induct = list_INDUCT
        and cases = list_CASES
        and distinct = [NOT_CONS_NIL]
        and one_one = [CONS_11]
@@ -184,7 +184,7 @@ let list_shell =
                [("NIL",[],[]);
                 ("CONS",
                  [`:'a`;`:('a)list`],[("HD",HD);("TL",TL)])];
-            axiom = axiom;
+            (* axiom = axiom; *)
             induct = induct;
             cases = cases;
             distinct = distinct;

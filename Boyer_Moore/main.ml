@@ -22,7 +22,26 @@
 (* Given a term "tm", attempts to prove |- tm.                                *)
 (*----------------------------------------------------------------------------*)
 
-let BOYER_MOORE_MESON tm =
+let BOYER_MOORE_FINAL l tm =
+my_gen_terms := []; 
+counterexamples := 0; 
+ proof_print_depth := 0;
+bm_steps := (0,0);
+try  (proof_print_newline
+     (FILTERED_WATERFALL
+         [taut_heuristic;
+          clausal_form_heuristic;
+          setify_heuristic;
+          subst_heuristic;
+          HL_simplify_heuristic l;
+          use_equality_heuristic;
+          generalize_heuristic_ext;
+          irrelevance_heuristic]
+         induction_heuristic []
+         (tm,false))
+ ) with Failure _ -> failwith "BOYER_MOORE";;
+
+let BOYER_MOORE_MESON l tm =
 my_gen_terms := []; 
 counterexamples := 0; 
 proof_print_depth := 0;
@@ -32,17 +51,17 @@ try  (proof_print_newline
          [taut_heuristic;
           clausal_form_heuristic;
           setify_heuristic;
-          meson_heuristic;
           subst_heuristic;
-          HL_simplify_heuristic;
+          HL_simplify_heuristic l;
+          meson_heuristic l;
           use_equality_heuristic;
-          generalize_heuristic_ext;
+          generalize_heuristic_aderhold;
           irrelevance_heuristic]
          induction_heuristic []
          (tm,false))
  ) with Failure _ -> failwith "BOYER_MOORE";;
 
-let BOYER_MOORE_GEN tm =
+let BOYER_MOORE_GEN l tm =
 my_gen_terms := []; 
 counterexamples := 0; 
  proof_print_depth := 0;
@@ -53,9 +72,9 @@ try  (proof_print_newline
           clausal_form_heuristic;
           setify_heuristic;
           subst_heuristic;
-          HL_simplify_heuristic;
+          HL_simplify_heuristic l;
           use_equality_heuristic;
-          generalize_heuristic_ext;
+          generalize_heuristic_aderhold;
           irrelevance_heuristic]
          induction_heuristic []
          (tm,false))
@@ -64,7 +83,7 @@ try  (proof_print_newline
 let BOYER_MOORE_EXT tm =
 my_gen_terms := []; 
 counterexamples := 0; 
- proof_print_depth := 0;
+proof_print_depth := 0;
 bm_steps := (0,0);
 try  (proof_print_newline
      (FILTERED_WATERFALL
@@ -73,7 +92,28 @@ try  (proof_print_newline
           setify_heuristic;
           subst_heuristic;
           use_equality_heuristic;
-          HL_simplify_heuristic;
+          simplify_heuristic;
+(*          meson_heuristic; *)
+          generalize_heuristic;
+          irrelevance_heuristic]
+         induction_heuristic []
+         (tm,false))
+ ) with Failure _ -> failwith "BOYER_MOORE";;
+
+
+let BOYER_MOORE_RE l tm =
+my_gen_terms := []; 
+counterexamples := 0; 
+proof_print_depth := 0;
+bm_steps := (0,0);
+try  (proof_print_newline
+     (FILTERED_WATERFALL
+         [taut_heuristic;
+          clausal_form_heuristic;
+          setify_heuristic;
+          subst_heuristic;
+          use_equality_heuristic;
+          HL_simplify_heuristic l;
 (*          meson_heuristic; *)
           generalize_heuristic;
           irrelevance_heuristic]
@@ -136,24 +176,26 @@ try (EQT_INTRO (BOYER_MOORE tm)) with Failure _ -> failwith "BOYER_MOORE_CONV";;
 (*----------------------------------------------------------------------------*)
 
 let HEURISTIC_TAC heuristics (asl,w) =
- proof_print_depth := 0; try
- (let negate tm = if (is_neg tm) then (rand tm) else (mk_neg tm)
-  and NEG_DISJ_DISCH tm th =
+  proof_print_depth := 0; try
+ (let asl = map (concl o snd) asl in
+   let negate tm = if (is_neg tm) then (rand tm) else (mk_neg tm)
+   and NEG_DISJ_DISCH tm th =
      if (is_neg tm)
      then DISJ_DISCH (rand tm) th
      else CONV_RULE (REWR_CONV IMP_DISJ_THM) (DISCH tm th)
   in  let tm = list_mk_imp (asl,w)
   in  let tree = proof_print_newline
-                    (waterfall (clausal_form_heuristic::heuristics) (tm,false))
+                    (filtered_waterfall (clausal_form_heuristic::heuristics) [] (tm,false))
   in  let tml = map fst (fringe_of_clause_tree tree)
   in  let disjsl = map disj_list tml
   in  let goals = map (fun disjs -> (map negate (butlast disjs),last disjs)) disjsl
-  in  let proof thl =
+  in  let HL_goals = map (fun (asmtms,g) -> (map (fun tm -> ("",ASSUME tm)) asmtms),g) goals
+  in  let proof _ thl =
          let thl' = map (fun (th,goal)-> itlist NEG_DISJ_DISCH (fst goal) th)
                            (lcombinep (thl,goals))
-         in  funpow (length asl) UNDISCH (prove_clause_tree tree thl')
-  in  (goals,proof)
- ) with Failure _ -> failwith "HEURISTIC_TAC";;
+         in  funpow (length asl) UNDISCH (fprove_clause_tree tree thl')
+  in  (null_meta,HL_goals,proof)
+ ) with Failure s -> failwith ("HEURISTIC_TAC: " ^ s);;
 
 (*----------------------------------------------------------------------------*)
 (* BOYER_MOORE_TAC : tactic                                                   *)
@@ -163,16 +205,72 @@ let HEURISTIC_TAC heuristics (asl,w) =
 (* prove the goal, or return as subgoals the conjectures it couldn't handle.  *)
 (*----------------------------------------------------------------------------*)
 
-let BOYER_MOORE_TAC aslw =
-try (HEURISTIC_TAC
-     [subst_heuristic;
-      simplify_heuristic;
-      use_equality_heuristic;
-      generalize_heuristic;
-      irrelevance_heuristic;
-      induction_heuristic]
-    aslw
- ) with Failure _ -> failwith "BOYER_MOORE_TAC";;
+let (BOYER_MOORE_TAC:tactic) =
+  fun aslw  ->
+    try (HEURISTIC_TAC
+	   [subst_heuristic;
+	    simplify_heuristic;
+	    use_equality_heuristic;
+	    generalize_heuristic;
+	    irrelevance_heuristic;
+	    induction_heuristic]
+	   aslw
+    ) with Failure s -> failwith ("BOYER_MOORE_TAC: " ^ s);;
+
+
+let (BM_SAFE_TAC:thm list -> tactic) =
+  fun l aslw ->
+    try (HEURISTIC_TAC
+	   [taut_heuristic;
+	    setify_heuristic;
+	    subst_heuristic;
+	    HL_simplify_heuristic l;
+(*	    use_equality_heuristic;*)
+	    induction_heuristic]
+	   aslw
+    ) with Failure s -> failwith ("BM_SAFE_TAC: " ^ s);;
+
+let (BMG_TAC:thm list -> tactic) =
+  fun l aslw ->
+    try (HEURISTIC_TAC
+	   [taut_heuristic;
+	    setify_heuristic;
+	    subst_heuristic;
+	    HL_simplify_heuristic l;
+	    use_equality_heuristic;
+	    generalize_heuristic_aderhold;
+	    irrelevance_heuristic;
+	    induction_heuristic]
+	   aslw
+    ) with Failure s -> failwith ("BMG_TAC: " ^ s);;
+
+let (BMF_TAC:thm list -> tactic) =
+  fun l aslw ->
+    try (HEURISTIC_TAC
+	   [taut_heuristic;
+	    setify_heuristic;
+	    subst_heuristic;
+	    HL_simplify_heuristic l;
+	    use_equality_heuristic; 
+	    generalize_heuristic_ext;
+	    irrelevance_heuristic; 
+	    induction_heuristic]
+	   aslw
+    ) with Failure s -> failwith ("BMF_TAC: " ^ s);;
+
+let (BMF_NOEQ_TAC:thm list -> tactic) =
+  fun l aslw ->
+    try (HEURISTIC_TAC
+	   [taut_heuristic;
+	    setify_heuristic;
+	    subst_heuristic;
+	    HL_simplify_heuristic l;
+	    generalize_heuristic_ext;
+	    irrelevance_heuristic;
+	    induction_heuristic]
+	   aslw
+    ) with Failure s -> failwith ("BMF_NOEQ_TAC: " ^ s);;
+
 
 (*----------------------------------------------------------------------------*)
 (* BM_SIMPLIFY_TAC : tactic                                                   *)

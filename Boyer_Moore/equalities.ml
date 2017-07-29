@@ -175,5 +175,6 @@ try (let checkx (tml1,tml2) t' =
       and th3 = SPEC sym_eq EXCLUDED_MIDDLE
   in  let tm' = rhs (concl th2)
   in  let proof th = DISJ_CASES th3 (EQ_MP (SYM th2) th) th1
-  in  (proof_print_string_l "-> Use Equality Heuristic" () ; ([(tm',ind)],apply_proof (proof o hd) [tm']))
+      in  (proof_print_string_l "-> Use Equality Heuristic" () ;
+	   ([(tm',ind)],apply_fproof "use_equality_heuristic" (proof o hd) [tm']))
  ) with Failure _ -> failwith "use_equality_heuristic`";

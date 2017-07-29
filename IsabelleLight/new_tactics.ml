@@ -5,109 +5,18 @@
 (*                   Petros Papapanagiotou, Jacques Fleuriot                 *)
 (*              Center of Intelligent Systems and their Applications         *)
 (*                          University of Edinburgh                          *)
-(*                                 2009-2010                                 *)
+(*                                 2009-2015                                 *)
 (* ========================================================================= *)
 (* FILE         : new_tactics.ml                                             *)
 (* DESCRIPTION  : Various tactics to facilitate procedural-style users.      *)
 (*                Mostly inspired by Isabelle's similar tactics.             *)
-(* LAST MODIFIED: October 2012                                               *)
 (* ========================================================================= *)
 
 (* ------------------------------------------------------------------------- *)
-(* e_all : tactic -> goalstack                                               *) 
-(* Same as "e" but applies tactic to ALL subgoals.                           *)
+(* Small shortcut that I use quite often.                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let e_all tac =
-  let c = (count_goals()) in
-  let rec f i = ( 
-    if (i = 0) 
-    then (!current_goalstack) 
-    else let _ = e tac in let _ = r 1 in f (i-1) 
-   ) in f c;;
-
-
-(* ------------------------------------------------------------------------- *)
-(* ROTATE_N_TAC:                                                             *)
-(* Rotates assumptions N times.                                              *)
-(* ------------------------------------------------------------------------- *)
-(* Pops the entire assumption list doing nothing (K ALL_TAC) then maps       *)
-(* LABEL_TAC to the rotated list of assumptions. The list is reversed so as  *)
-(* to match the external order. The result is applied to (asl,w) so as to    *)
-(* obtain the resulting goalstate as required by the tactic type.            *)
-(* ------------------------------------------------------------------------- *)
-
-let (ROTATE_N_TAC :int->tactic) = 
-  fun n (asl,w) ->
-    let rotateasm = fun (asl) -> (tl asl)@[hd asl] in
-    (POP_ASSUM_LIST(K ALL_TAC) THEN 
-       MAP_EVERY (fun (s,th) -> LABEL_TAC s th) (funpow n rotateasm (rev asl))) 
-      (asl,w);;
-
-
-(* ------------------------------------------------------------------------- *)
-(* ROTATE_TAC:                                                               *)
-(* Rotates assumptions once.                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let (ROTATE_TAC :tactic) = (ROTATE_N_TAC 1);;
-
-
-
-(* ------------------------------------------------------------------------- *)
-(* DRULE_N_TAC:                                                              *)
-(* Applies an inference rule to Nth assumption only.                         *)
-(* Like drule for HOL Light's inference rules without matching.              *)
-(* ------------------------------------------------------------------------- *)
-(* Works like RULE_ASSUM_TAC except it numbers the assumption list with      *)
-(* num_list and only applies the rule to the Nth assumption.                 *)
-(* ------------------------------------------------------------------------- *)
-
-let (DRULE_N_TAC :int->(thm->thm)->tactic) =
-  fun n rule (asl,w) -> (POP_ASSUM_LIST(K ALL_TAC) THEN 
-			   MAP_EVERY (fun (i,(s,th)) -> LABEL_TAC s (if (i=n) then (rule th) else th))
-                           (num_list(rev asl))) (asl,w);;
-
-
-
-(* ------------------------------------------------------------------------- *)
-(* FRULE_N_TAC:                                                              *)
-(* Applies an inference rule to Nth assumption only then adds the result as  *)
-(* a new assumption.                                                         *)
-(* Like frule for HOL Light's inference rules without matching.              *)
-(* ------------------------------------------------------------------------- *)
-(* Works like DRULE_N_TAC except it leaves the assumption intact and         *)
-(* adds the result as a new assumption.                                      *)
-(* ------------------------------------------------------------------------- *)
-
-let (FRULE_N_TAC :int->(thm->thm)->tactic) =
-  fun n rule (asl,w) -> (
-    let asmlist = num_list(rev asl) in
-    let (_,asm_n) = try assoc n asmlist with Failure _ ->
-      failwith("FRULE_N_TAC: didn't find assumption "^string_of_int(n)) in
-    ASSUME_TAC (rule asm_n)) (asl,w);;
-
-
-
-(* ------------------------------------------------------------------------- *)
-(* FRULE_MN_TAC:                                                       *)
-(* Applies an inference rule (such as MP) to the Mth and Nth assumptions and *)
-(* adds the result as a new assumption.                                      *)
-(* ------------------------------------------------------------------------- *)
-(* Numbers the assumption list, finds the Mth and Nth assumptions, applies   *)
-(* the rule to them and adds the result as a new assumption.                 *)
-(* ------------------------------------------------------------------------- *)
-
-let (FRULE_MN_TAC :int->int->(thm->thm->thm)->tactic) =
-fun  m n rule (asl,w) -> ( 
-  let asmlist = num_list(rev asl) in
-  let (_,asm_m) = try assoc m asmlist with Failure _ ->
-    failwith("FRULE_MN_TAC: didn't find assumption "^string_of_int(m)) in
-  let (_,asm_n) = try assoc n asmlist with Failure _ ->
-    failwith("FRULE_MN_TAC: didn't find assumption "^string_of_int(n)) in
-  ASSUME_TAC (rule asm_m asm_n)) (asl,w);;
-
-
+let GEN_ALL_TAC = REPEAT GEN_TAC;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -120,20 +29,24 @@ fun  m n rule (asl,w) -> (
 (* Each assumption is rewritten using the rest of the assumptions and the    *)
 (* given list of theorems.                                                   *)
 (* ------------------------------------------------------------------------- *)
-(* A filter is applied to ensure that the assumption is not used to rewrite  *)
-(* itself.                                                                   *)
-(* ------------------------------------------------------------------------- *)
 
-let GENERAL_ASM_TAC = fun rule thl (asl,w) ->
-  let asm = map snd asl in
+let (GENERAL_ASM_TAC:(thm list -> thm -> thm) -> thm list -> tactic) =
+  let map_asms l = (* Pairs each assumption with all the rest. *)
+    let chop_map ls n =
+      let l,r = chop_list n ls in
+      last l,map snd (butlast l @ r) in
+    map (chop_map l) (1--(length l)) in
+  
+  fun rule thl -> 
+  let apply_rule (s,th),asm = LABEL_TAC s (rule (asm @ thl) th) in
+
+  fun asl,w ->
   (POP_ASSUM_LIST(K ALL_TAC) THEN 
-     MAP_EVERY (fun (s,th) -> LABEL_TAC s 
-	 (rule ((filter (fun x -> not (th = x)) asm) @ thl) th)
-	       ) (rev asl)) (asl,w);;
+     MAP_EVERY apply_rule (map_asms (rev asl))) (asl,w);; (* rev ensures correct order *)
 
 (* ------------------------------------------------------------------------- *)
 (* Using the above GENERAL_ASSUM_TAC, we define 4 tactics to rewrite         *)
-(* assumptions based on the 4 rewrite rules available in HOL Light.          *)
+(* assumptions based on the 4 rewriting rules available in HOL Light.        *)
 (* ------------------------------------------------------------------------- *)
 
 let REWRITE_ASM_TAC,ONCE_REWRITE_ASM_TAC,PURE_REWRITE_ASM_TAC,
@@ -206,12 +119,13 @@ let ALL_UNIFY_ACCEPT_TAC mvs th (asl,w) =
 (* ------------------------------------------------------------------------- *)
 (* Invalid instantiations may be produced.                                   *)
 (* eg g `!x:num. (?a:num. R a x) ==> (?y. R y x)`;;                          *)
-(*    e GEN_TAC;;                                                            *)
-(*    e (rule impI);;                                                        *)
-(*    e (rule exI);;                                                         *)
+(*    e (GEN_TAC THEN DISCH_TAC);;                                           *)
+(*    e (X_META_EXISTS_TAC `c:num`);;                                        *)
 (*    e (FIRST_X_ASSUM (X_CHOOSE_TAC `b:num`));;                             *)
-(*    e (meta_assumption [`a:num`]);;                                        *)
+(*    e (meta_assumption [`c:num`]);;                                        *)
 (* This succeeds but top_thm() is unable to reconstruct the theorem.         *)
+(* b is not free in the goal when X_CHOOSE_TAC is applied but it is during   *)
+(* justification because the free c has been instantiated to b.              *)
 (* ------------------------------------------------------------------------- *)
 
 let meta_assumption mvs = (FIRST_ASSUM MATCH_ACCEPT_TAC) ORELSE 
@@ -227,34 +141,59 @@ let ema () = (e o meta_assumption o top_metas o p) ()  ;;
 
 
 (* ------------------------------------------------------------------------- *)
-(* X_MATCH_CHOOSE_TAC : (term -> tactic)                                     *)
-(* Version of X_CHOOSE_TAC with type matching.                               *)
+(* X_MATCH_GEN_TAC : (term -> tactic)                                        *)
+(* X_MATCH_CHOOSE_TAC : (term -> thm_tactic)                                 *)
+(* MATCH_EXISTS_TAC : (term -> tactic)                                       *)
+(* Versions of X_GEN_TAC, X_CHOOSE_TAC, and EXISTS_TAC with type matching.   *)
 (* ------------------------------------------------------------------------- *)
 (* If the variable given as an argument has a vartype then its type is       *)
 (* instantiated to the type of the existentially quantified variable.        *)
-(* Usefull so that the user need not specify the type for his variable.      *)
+(* Usefull so that the user need not specify the type for the given variable.*)
 (* It is still acceptable if the user does specify it.                       *)
 (* ------------------------------------------------------------------------- *)
 
-let (X_MATCH_CHOOSE_TAC: term -> thm_tactic) =
-  fun x' xth ->
-    try let xtm = concl xth in
-        let x,bod = dest_exists xtm in
-	let x'type = type_of x' in
-	let x'' = if (is_vartype x'type) then
-	  inst (type_match x'type (type_of x) []) x'
-	else x' in
-        let pat = vsubst[x'',x] bod in
-        let xth' = ASSUME pat in
-        fun (asl,w) ->
-          let avoids = itlist (union o frees o concl o snd) asl
-                              (union (frees w) (thm_frees xth)) in
-          if mem x' avoids then failwith "X_CHOOSE_TAC" else
-          null_meta,[("",xth')::asl,w],
-          fun i [th] -> CHOOSE(x'',INSTANTIATE_ALL i xth) th
-    with Failure _ -> failwith "X_CHOOSE_TAC";;
 
-
+let (X_MATCH_GEN_TAC: term -> tactic),
+  (X_MATCH_CHOOSE_TAC: term -> thm_tactic),
+  (MATCH_EXISTS_TAC: term -> tactic) =
+  let tactic_type_compatibility_check pfx e g =
+    let et = type_of e in
+    let g' = try_type et g in
+    let gt = type_of g' in
+    if et = gt then g'
+    else failwith(pfx ^ ": expected type :"^string_of_type et^" but got :"^
+		    string_of_type gt) in
+  let X_MATCH_GEN_TAC x' =
+    if not(is_var x') then failwith "X_GEN_TAC: not a variable" else
+      fun (asl,w) ->
+        let x,bod = try dest_forall w
+          with Failure _ -> failwith "X_GEN_TAC: Not universally quantified" in
+        let x'' = tactic_type_compatibility_check "X_GEN_TAC" x x' in
+        let avoids = itlist (union o thm_frees o snd) asl (frees w) in
+        if mem x'' avoids then failwith "X_GEN_TAC: invalid variable" else
+          let afn = CONV_RULE(GEN_ALPHA_CONV x) in
+          null_meta,[asl,vsubst[x'',x] bod],
+          fun i [th] -> afn (GEN x'' th)
+  and X_MATCH_CHOOSE_TAC x' xth =
+    let xtm = concl xth in
+    let x,bod = try dest_exists xtm
+      with Failure _ -> failwith "X_CHOOSE_TAC: not existential" in
+    let x'' = tactic_type_compatibility_check "X_CHOOSE_TAC" x x' in
+    let pat = vsubst[x'',x] bod in
+    let xth' = ASSUME pat in
+    fun (asl,w) ->
+      let avoids = itlist (union o frees o concl o snd) asl
+        (union (frees w) (thm_frees xth)) in
+      if mem x'' avoids then failwith "X_CHOOSE_TAC: invalid variable" else
+        null_meta,[("",xth')::asl,w],
+        fun i [th] -> CHOOSE(x'',INSTANTIATE_ALL i xth) th
+  and MATCH_EXISTS_TAC t (asl,w) =
+    let v,bod = try dest_exists w with Failure _ ->
+      failwith "EXISTS_TAC: Goal not existentially quantified" in
+    let t' = tactic_type_compatibility_check "EXISTS_TAC" v t in
+    null_meta,[asl,vsubst[t',v] bod],
+    fun i [th] -> EXISTS (instantiate i w,instantiate i t') th in
+  X_MATCH_GEN_TAC,X_MATCH_CHOOSE_TAC,MATCH_EXISTS_TAC;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -273,7 +212,7 @@ let exE = FIRST_X_ASSUM o X_MATCH_CHOOSE_TAC;;
 (* rule allI with the current meta_rule system because of lack of meta-level *)
 (* quantification).                                                          *)
 (* ------------------------------------------------------------------------- *)
-(* (+) We can use X_GEN_TAC to allow the user to give his own term, but      *)
+(* (+) We can use X_GEN_TAC to allow the user to give their own term, but    *)
 (* this is rarely useful in procedural style proofs.                         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -298,6 +237,9 @@ let qed = top_thm;;
 (* Replacement/fix of STRUCT_CASES_TAC where each case is added as an        *)
 (* assumption like ASM_CASES_TAC does for booleans.                          *)
 (* ------------------------------------------------------------------------- *)
+(* John Harrison adapted the HOL Light version as well now so this is        *)
+(* redundant, but left here for historical reasons.                          *)
+(* ------------------------------------------------------------------------- *)
 
 let ASM_STRUCT_CASES_TAC =
     REPEAT_TCL STRIP_THM_THEN ASSUME_TAC;;
@@ -306,19 +248,22 @@ let ASM_STRUCT_CASES_TAC =
 (* case_tac : (term -> tactic)                                               *)
 (* Isabelle's case_tac for splitting cases.                                  *)
 (* ------------------------------------------------------------------------- *)
+(* We instantiate type variables in the given term in an attempt to match    *)
+(* free variables in the term with free variables of the same name in the    *)
+(* goal. This helps so that the user does not need to give explicit types.   *)
+(* ------------------------------------------------------------------------- *)
 
 let (case_tac:term->tactic) =
+  let trymatch = fun v1 v2 ->
+    match (term_match [v2] v1 v2) with
+	[],[],ti -> ti
+      | _  -> failwith "" in
+  
   fun tm ((_,w) as g) ->
-    let trymatch = fun tm1 tm2 ->
-      try ( let inst = term_match (gl_frees g) tm1 tm2 in
-	    if (is_var tm1) 
-	    then match inst with
-		[],[],_ -> true
-	      | _  -> false
-	    else true )
-      with Failure _ -> false in		
-    let tm' = try (find_term (trymatch tm) w)
-      with Failure _ -> tm in
+    let gvs = gl_frees g
+    and tvs = frees tm in
+    let subs = mapfilter (fun x -> tryfind (trymatch x) gvs) tvs in
+    let tm' = inst (flat subs) tm in
     let ty = (fst o dest_type o type_of) tm' in
     let thm = try (cases ty) 
       with Failure _ -> failwith ("case_tac: Failed to find cases theorem for type \"" ^ ty ^ "\".") in
@@ -333,6 +278,26 @@ let (case_tac:term->tactic) =
 let (gen_case_tac:tactic) =
   fun ((_,w) as g) ->
     case_tac ((fst o dest_forall) w) g;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* induct_tac : tactic                                                       *)
+(* Induction over any inductive type.                                        *)
+(* ------------------------------------------------------------------------- *)
+(* John Harrison introduces custom induction tactics for each type (such as  *)
+(* LIST_INDUCT_TAC). This is because of the inconvenient, automated naming   *)
+(* of variables in the induction theorems generated by define_type and       *)
+(* because you can select to get rid of universal quantifiers of constructor *)
+(* parameters automatically. This function is useful if such a custom tactic *)
+(* does not exist.                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let (induct_tac:tactic) =
+  fun ((_,w) as g) ->
+    let tyname = (fst o dest_type o type_of o fst o dest_forall) w in
+    let thm = try (snd3 (assoc tyname (!inductive_type_store)))
+	      with Failure _ -> failwith ("induct_tac: Type " ^ tyname ^ " is not inductive.") in
+    (MATCH_MP_TAC thm THEN REPEAT CONJ_TAC) g;;
 
 
 (* ------------------------------------------------------------------------- *)

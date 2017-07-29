@@ -1,27 +1,25 @@
- ========================================================================= 
-                              Isabelle Light                               
-   Isabelle/Procedural style additions and other user-friendly shortcuts.  
-                                                                           
-                   Petros Papapanagiotou, Jacques Fleuriot                 
-              Center of Intelligent Systems and their Applications         
-                          University of Edinburgh                          
-                                 2009-2012                                 
- ========================================================================= 
+# Isabelle Light
+## Isabelle/Procedural style additions for [HOL Light](https://code.google.com/p/hol-light/)
+
+### Petros Papapanagiotou, Jacques Fleuriot                 
+Centre of Intelligent Systems and their Applications         
+University of Edinburgh                          
+2009-2015                               
+- - - -
 
 This README contains some brief information on the usage of this system.
 Please refer to the paper [1] for a general description as well as the comments 
 in the code for details on each available function. 
 
+- - - -
 
-HOW TO LOAD:
-------------
+### HOW TO LOAD:
 
 loads "IsabelleLight/make.ml";;
 
+- - - -
 
-
-LIST OF FILES:
---------------
+### LIST OF FILES:
 
 make.ml        : HOL Light style makefile with some examples.
 isalight.ml    : Main loader.
@@ -29,42 +27,34 @@ support.ml     : Support functions and various shortcuts.
 new_tactics.ml : Various tactics to facilitate procedural-style users.
 meta_rules.ml  : Main emulation of Isabelle's natural deduction rules and tactics.
 
+- - - -
 
-
-BRIEF DESCRIPTION OF AVAILABLE FUNCTIONS AND TACTICS:
+### BRIEF DESCRIPTION OF AVAILABLE FUNCTIONS AND TACTICS:
 (refer to the comments in the files for more information)
----------------------------------------------------------------------------
 
-e_all tac             : Same as "e" but applies tactic tac to all subgoals.
-ROTATE_TAC            : Rotates the assumptions once.
-ROTATE_N_TAC n        : Rotates the assumptions n times.
-
-
-DRULE_N_TAC n rule    : Applies rule to nth assumption and deletes it.
-FRULE_N_TAC n rule    : Applies rule to nth assumption and adds result as a new
-                        assumption.
-FRULE_MN_TAC m n rule : Applies rule (such as MP) on mth and nth assumptions.
-
+GEN_ALL_TAC           : Eliminates all universal quantifiers.
 
 REWRITE_ASM_TAC thl   : Rewrites assumptions. PURE_, ONCE_ and PURE_ONCE_
                         versions also available.
 FULL_REWRITE_TAC thl  : Rewrites assumptions then goal.
 FULL_SIMP_TAC thl     : SIMP_TAC then FULL_REWRITE_TAC.
 
-
-X_MATCH_CHOOSE_TAC tm : X_CHOOSE_TAC with type matching.
+X_MATCH_GEN_TAC tm    : X_GEN_TAC, X_CHOOSE_TAC, EXISTS_TAC with
+X_MATCH_CHOOSE_TAC tm   type matching
+MATCH_EXISTS_TAC tm   
 
 gen_case_tac          : Applies case_tac to leading universally quantified 
                         variable in the goal.
 
+induct_tac            : Induction with any inductive datatype.
+						
+- - - -
 
-
-LIST OF ISABELLE STYLE TACTICS AND RULES:
+### LIST OF ISABELLE STYLE TACTICS AND RULES:
 (refer to the comments in the files and the paper [1] for more information)
----------------------------------------------------------------------------
 
-TACTICS:
---------
+#### TACTICS:
+
 simp
 assumption
 case_tac
@@ -82,8 +72,8 @@ drule_tac
 frule_tac
 
 
-RULES:
-------
+#### RULES:
+
 conjI
 conjunct1
 conjunct2
@@ -102,8 +92,8 @@ notI
 notE
 
 
-EXTRAS:
--------
+#### EXTRAS:
+
 meta_assumption mvs  : Use this for assumption matching with meta-variables.
 exE                  : Use this tactic for existential elimination.
 allI                 : Use this tactic for forall introduction.
@@ -117,7 +107,7 @@ erulen_tac
 drulen_tac
 frulen_tac
 
-
+- - - -
 
 [1] Papapanagiotou, P. and Fleuriot, J.:  
 An Isabelle-Like Procedural Mode for HOL Light. 
