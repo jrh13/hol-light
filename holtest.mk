@@ -151,69 +151,82 @@ GREAT_100_THEOREMS:= \
 
 TESTS:=$(STANDALONE_EXAMPLES) $(EXTENDED_EXAMPLES) $(GREAT_100_THEOREMS)
 
-LOGDIR:=/tmp/hollog_$(shell date '+%Y%m%d_%H%M')
+LOGDIR:=/tmp/hol-light-test
 
 LOGS:=$(patsubst %,$(LOGDIR)/%,$(TESTS))
 
-all: $(TESTS)
+READY:=$(patsubst %,%.ready,$(LOGS))
+
+all: $(READY)
 	cat $(LOGS) > $(LOGDIR)/holtest.log
 
-
-Library/analysis-transc:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
+$(LOGDIR)/Library/analysis-transc.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Library/analysis-transc)
 	@echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml'
-	@echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml' > $(LOGDIR)/$@
+	@echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml' > $(LOGDIR)/Library/analysis-transc
 	@(echo 'loadt "Library/analysis.ml";;'; echo 'loadt "Library/transc.ml";;'; \
 		echo 'loadt "Library/calc_real.ml";;'; echo 'loadt "Examples/machin.ml";;'; \
-		echo 'loadt "Examples/polylog.ml";;'; echo 'loadt "Library/poly.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+		echo 'loadt "Examples/polylog.ml";;'; echo 'loadt "Library/poly.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Library/analysis-transc 2>&1
+	@touch $(LOGDIR)/Library/analysis-transc.ready
 
-Library/prime-pratt:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
+$(LOGDIR)/Library/prime-pratt.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Library/prime-pratt)
 	@echo '### Loading Library/prime.ml,pratt.ml'
-	@echo '### Loading Library/prime.ml,pratt.ml' > $(LOGDIR)/$@
-	@(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pratt.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+	@echo '### Loading Library/prime.ml,pratt.ml' > $(LOGDIR)/Library/prime-pratt
+	@(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pratt.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Library/prime-pratt 2>&1
+	@touch $(LOGDIR)/Library/prime-pratt.ready
 
-Library/prime-pocklington:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
+$(LOGDIR)/Library/prime-pocklington.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Library/prime-pocklington)
 	@echo '### Loading Library/prime.ml,pocklington.ml'
-	@echo '### Loading Library/prime.ml,pocklington.ml' > $(LOGDIR)/$@
-	@(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pocklington.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+	@echo '### Loading Library/prime.ml,pocklington.ml' > $(LOGDIR)/Library/prime-pocklington
+	@(echo 'loadt "Library/prime.ml";;'; echo 'loadt "Library/pocklington.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Library/prime-pocklington 2>&1
+	@touch $(LOGDIR)/Library/prime-pocklington.ready
 
-Library/rstc-reduct:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
+$(LOGDIR)/Library/rstc-reduct.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Library/rstc-reduct)
 	@echo '### Loading Library/rstc.ml,reduct.ml'
-	@echo '### Loading Library/rstc.ml,reduct.ml' > $(LOGDIR)/$@
-	@(echo 'loadt "Library/rstc.ml";;'; echo 'loadt "Examples/reduct.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+	@echo '### Loading Library/rstc.ml,reduct.ml' > $(LOGDIR)/Library/rstc-reduct
+	@(echo 'loadt "Library/rstc.ml";;'; echo 'loadt "Examples/reduct.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Library/rstc-reduct 2>&1
+	@touch $(LOGDIR)/Library/rstc-reduct.ready
 
-miz3/make-test:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
+$(LOGDIR)/miz3/make-test.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname miz3/make-test)
 	@echo '### Loading miz3/make.ml, miz3/test.ml (twice)'
-	@echo '### Loading miz3/make.ml, miz3/test.ml (twice)' > $(LOGDIR)/$@
-	@(echo 'loadt "miz3/make.ml";;'; echo 'loadt "miz3/test.ml";;'; echo 'loadt "miz3/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+	@echo '### Loading miz3/make.ml, miz3/test.ml (twice)' > $(LOGDIR)/miz3/make-test
+	@(echo 'loadt "miz3/make.ml";;'; echo 'loadt "miz3/test.ml";;'; echo 'loadt "miz3/test.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/miz3/make-test 2>&1
+	@touch $(LOGDIR)/miz3/make-test.ready
 
-Minisat/make-taut:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
+$(LOGDIR)/Minisat/make-taut.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Minisat/make-taut)
 	@echo '### Loading Minisat/make.ml,Minisat/taut.ml'
 	if which zchaff > /dev/null ; then \
-		echo '### Loading Minisat/make.ml,Minisat/taut.ml' > $(LOGDIR)/$@ ; \
-		(echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1 ; \
+		echo '### Loading Minisat/make.ml,Minisat/taut.ml' > $(LOGDIR)/Minisat/make-taut ; \
+		(echo 'loadt "Minisat/make.ml";;'; echo 'loadt "Minisat/taut.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Minisat/make-taut 2>&1 ; \
 	else \
-		echo '### Error: skip Minisat/make.ml, Minisat/taut.ml because zchaff is not available' > $(LOGDIR)/$@ ; \
+		echo '### Error: skip Minisat/make.ml, Minisat/taut.ml because zchaff is not available' > $(LOGDIR)/Minisat/make-taut ; \
 	fi
+	@touch $(LOGDIR)/Minisat/make-taut.ready
 
-Formal_ineqs/make-ineqs:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
-	@echo '### Loading Formal_ineqs/make.ml, examples.hl, examples_poly.hl, examples_flyspeck.hl' > $(LOGDIR)/$@
-	@(echo 'loadt "Formal_ineqs/make.ml";;'; echo 'loadt "Formal_ineqs/examples.hl";;'; echo 'loadt "Formal_ineqs/examples_poly.hl";;'; echo 'loadt "Formal_ineqs/examples_flyspeck.hl";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+$(LOGDIR)/Formal_ineqs/make-ineqs.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname Formal_ineqs/make-ineqs)
+	@echo '### Loading Formal_ineqs/make.ml, examples.hl, examples_poly.hl, examples_flyspeck.hl' > $(LOGDIR)/Formal_ineqs/make-ineqs
+	@(echo 'loadt "Formal_ineqs/make.ml";;'; echo 'loadt "Formal_ineqs/examples.hl";;'; echo 'loadt "Formal_ineqs/examples_poly.hl";;'; echo 'loadt "Formal_ineqs/examples_flyspeck.hl";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/Formal_ineqs/make-ineqs 2>&1
+	@touch $(LOGDIR)/Formal_ineqs/make-ineqs.ready
 
-100/bertrand-primerecip:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
+$(LOGDIR)/100/bertrand-primerecip.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname 100/bertrand-primerecip)
 	@echo '### Loading 100/bertrand.ml,100/primerecip.ml'
-	@echo '### Loading 100/bertrand.ml,100/primerecip.ml' > $(LOGDIR)/$@
-	@(echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+	@echo '### Loading 100/bertrand.ml,100/primerecip.ml' > $(LOGDIR)/100/bertrand-primerecip
+	@(echo 'loadt "100/bertrand.ml";;'; echo 'loadt "100/primerecip.ml";;') | (time $(HOLLIGHT)) >> $(LOGDIR)/100/bertrand-primerecip 2>&1
+	@touch $(LOGDIR)/100/bertrand-primerecip.ready
 
-%:
-	@mkdir -p $(LOGDIR)/$$(dirname $@)
-	@echo '### Loading $@.ml'
-	@echo '### Loading $@.ml' > $(LOGDIR)/$@
-	@echo 'loadt "$@.ml";;' | (time $(HOLLIGHT)) >> $(LOGDIR)/$@ 2>&1
+
+
+# Recall that $* is the stem matched by the %
+$(LOGDIR)/%.ready:
+	@mkdir -p $(LOGDIR)/$$(dirname $*)
+	@echo '### Loading $*.ml'
+	@echo '### Loading $*.ml' > $(LOGDIR)/$*
+	@echo 'loadt "$*.ml";;' | (time $(HOLLIGHT)) >> $(LOGDIR)/$* 2>&1
+	@touch $(LOGDIR)/$*.ready
