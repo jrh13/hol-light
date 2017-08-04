@@ -15879,11 +15879,17 @@ let LUZIN_SIGMA_NESTED = prove
     ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
     ASM_SIMP_TAC[FORALL_IN_IMAGE; FINITE_NUMSEG_LE; FINITE_IMAGE];
     ASM_REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC];
-    X_GEN_TAC `k:num` THEN
-    MP_TAC(ISPEC `\n:num. (f:real^M->real^N)`
-      PASTING_LEMMA_LOCALLY_FINITE) THEN
-    DISCH_THEN MATCH_MP_TAC THEN
-    MAP_EVERY EXISTS_TAC [`c:num->real^M->bool`; `{n:num | n <= k}`] THEN
+    X_GEN_TAC `k:num` THEN MP_TAC(ISPECL
+     [`subtopology euclidean (UNIONS {c m | m:num <= k}:real^M->bool)`;
+      `euclidean:(real^N)topology`;
+      `\n:num. (f:real^M->real^N)`] PASTING_LEMMA_LOCALLY_FINITE) THEN
+    REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+                SUBTOPOLOGY_SUBTOPOLOGY] THEN
+    ONCE_REWRITE_TAC[TAUT`closed_in a b /\ c <=> ~(closed_in a b ==> ~c)`] THEN
+    SIMP_TAC[ISPEC `euclidean` CLOSED_IN_IMP_SUBSET;                 
+             SET_RULE `s SUBSET u ==> u INTER s = s`] THEN               
+    REWRITE_TAC[NOT_IMP] THEN DISCH_THEN MATCH_MP_TAC THEN MAP_EVERY EXISTS_TAC
+     [`c:num->real^M->bool`; `{n:num | n <= k}`] THEN
     REWRITE_TAC[FORALL_IN_UNIONS] THEN
     REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
     REWRITE_TAC[FORALL_IN_GSPEC] THEN

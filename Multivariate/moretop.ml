@@ -1873,14 +1873,21 @@ let EXTEND_MAP_AFFINE_TO_SPHERE_COFINITE_GEN = prove
     MAP_EVERY X_GEN_TAC
      [`a:(real^M->bool)->real^M`; `h:(real^M->bool)->real^M->real^N`] THEN
     DISCH_TAC THEN MP_TAC(ISPECL
-     [`h:(real^M->bool)->real^M->real^N`;
+     [`subtopology euclidean
+        (s UNION UNIONS
+         { c DELETE (a c) |
+           c IN components ((u:real^M->bool) DIFF s) /\ ~(c INTER k = {})})`;
+      `euclidean:(real^N)topology`;
+      `h:(real^M->bool)->real^M->real^N`;
       `\c:real^M->bool. s UNION (c DELETE (a c))`;
-      `s UNION UNIONS
-       { c DELETE (a c) |
-         c IN components ((u:real^M->bool) DIFF s) /\ ~(c INTER k = {})}`;
-      `{c | c IN components ((u:real^M->bool) DIFF s) /\ ~(c INTER k = {})}`;
-       `(:real^N)`]
+      `{c | c IN components ((u:real^M->bool) DIFF s) /\ ~(c INTER k = {})}`]
      PASTING_LEMMA_EXISTS_CLOSED) THEN
+    REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+                SUBTOPOLOGY_SUBTOPOLOGY] THEN
+    ONCE_REWRITE_TAC[TAUT`closed_in a b /\ c <=> ~(closed_in a b ==> ~c)`] THEN
+    SIMP_TAC[ISPEC `euclidean` CLOSED_IN_IMP_SUBSET;
+             SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+    REWRITE_TAC[NOT_IMP] THEN
     SUBGOAL_THEN
      `FINITE {c | c IN components((u:real^M->bool) DIFF s) /\
                   ~(c INTER k = {})}`
@@ -5656,11 +5663,18 @@ let INESSENTIAL_NEIGHBOURHOOD_EXTENSION_LOGARITHM = prove
     SIMP_TAC[COMPLEX_DIV_LMUL; COMPLEX_DIV_EQ_0; DE_MORGAN_THM];
     ALL_TAC] THEN
   MP_TAC(ISPECL
-   [`g:real^N->real^N->complex`;
+   [`subtopology euclidean (UNIONS {(u:real^N->real^N->bool) x | x IN t})`;
+    `euclidean:(complex)topology`;
+    `g:real^N->real^N->complex`;
     `u:real^N->real^N->bool`;
-    `UNIONS {(u:real^N->real^N->bool) x | x IN t}`;
-    `t:real^N->bool`; `(:complex)`]
+     `t:real^N->bool`]
     PASTING_LEMMA_EXISTS) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+              SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  ONCE_REWRITE_TAC[TAUT `open_in a b /\ c <=> ~(open_in a b ==> ~c)`] THEN
+  SIMP_TAC[ISPEC `euclidean` OPEN_IN_IMP_SUBSET;
+           SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+  REWRITE_TAC[NOT_IMP] THEN
   REWRITE_TAC[SUBSET_REFL; SUBSET_UNIV;] THEN ANTS_TAC THENL
    [CONJ_TAC THENL
      [X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN CONJ_TAC THENL

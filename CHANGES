@@ -8,6 +8,22 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  4th Aug 2017       IsabelleLight/new_tactics.ml
+
+Made a tiny tweak of adding parens where very old versions of OCaml
+expect them.
+
+Thu  3rd Aug 2017       Makefile, pa_j_4.xx_7.xx.ml [new file]
+
+Made some changes suggested by Hendrik Tews to support the latest OCaml (4.05)
+and camlp5 (7.01).
+
+Sat 29th Jul 2017       passim
+
+Merged in three github pull requests from asr (Makefile), Hendrik Tews
+(parallel tests) and Petros Papapanagiotou (Isabelle Light and
+Boyer-Moore improvements).
+
 Thu 22nd Jun 2017       sets.ml, Multivariate/misc.ml
 
 Added three new theorems about Cartesian product as well as moving the

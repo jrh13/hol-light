@@ -8918,6 +8918,139 @@ let HAUSDORFF_SPACE_INJECTIVE_PREIMAGE = prove
   ASM_SIMP_TAC[] THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* "Pasting lemma" variants and continuity from casewise definitions.        *)
+(* ------------------------------------------------------------------------- *)
+
+let PASTING_LEMMA = prove
+ (`!top top' (f:K->A->B) g t k.
+        (!i. i IN k
+             ==> open_in top (t i) /\
+                 continuous_map(subtopology top (t i),top') (f i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN topspace top INTER t i INTER t j
+                 ==> f i x = f j x) /\
+        (!x. x IN topspace top ==> ?j. j IN k /\ x IN t j /\ g x = f j x)
+        ==> continuous_map(top,top') g`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[continuous_map; TOPSPACE_SUBTOPOLOGY] THEN
+  ASM_CASES_TAC `!i. i IN k ==> (t:K->A->bool) i SUBSET topspace top` THENL
+   [ALL_TAC; ASM_MESON_TAC[OPEN_IN_SUBSET]] THEN
+  ASM_SIMP_TAC[SET_RULE `s SUBSET t ==> t INTER s = s`] THEN STRIP_TAC THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; X_GEN_TAC `u:B->bool` THEN DISCH_TAC] THEN
+  SUBGOAL_THEN
+   `{x | x IN topspace top /\ g x IN u} =
+    UNIONS {{x | x IN (t i) /\ ((f:K->A->B) i x) IN u} |
+            i IN k}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[UNIONS_GSPEC] THEN ASM SET_TAC[];
+    MATCH_MP_TAC OPEN_IN_UNIONS THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    ASM_MESON_TAC[OPEN_IN_TRANS_FULL]]);;
+
+let PASTING_LEMMA_EXISTS = prove
+ (`!top top' (f:K->A->B) t k.
+        topspace top SUBSET UNIONS {t i | i IN k} /\
+        (!i. i IN k
+             ==> open_in top (t i) /\
+                 continuous_map(subtopology top (t i),top') (f i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN topspace top INTER t i INTER t j
+                 ==> f i x = f j x)
+        ==> ?g. continuous_map(top,top') g /\
+                !x i. i IN k /\ x IN topspace top INTER t i ==> g x = f i x`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `\x. (f:K->A->B)(@i. i IN k /\ x IN t i) x` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC PASTING_LEMMA THEN
+    MAP_EVERY EXISTS_TAC [`f:K->A->B`; `t:K->A->bool`; `k:K->bool`] THEN
+    ASM SET_TAC[];
+    RULE_ASSUM_TAC(REWRITE_RULE[OPEN_IN_CLOSED_IN_EQ]) THEN ASM SET_TAC[]]);;
+
+let PASTING_LEMMA_LOCALLY_FINITE = prove
+ (`!top top' (f:K->A->B) g t k.
+        (!x. x IN topspace top
+             ==> ?v. open_in top v /\ x IN v /\
+                     FINITE {i | i IN k /\ ~(t i INTER v = {})}) /\
+        (!i. i IN k
+             ==> closed_in top (t i) /\
+                 continuous_map(subtopology top (t i),top') (f i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN topspace top INTER t i INTER t j
+                 ==> f i x = f j x) /\
+        (!x. x IN topspace top ==> ?j. j IN k /\ x IN t j /\ g x = f j x)
+        ==> continuous_map(top,top') g`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CONTINUOUS_MAP_CLOSED_IN; TOPSPACE_SUBTOPOLOGY] THEN
+  ASM_CASES_TAC `!i. i IN k ==> (t:K->A->bool) i SUBSET topspace top` THENL
+   [ALL_TAC; ASM_MESON_TAC[CLOSED_IN_SUBSET]] THEN
+  ASM_SIMP_TAC[SET_RULE `s SUBSET t ==> t INTER s = s`] THEN STRIP_TAC THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; X_GEN_TAC `u:B->bool` THEN DISCH_TAC] THEN
+  SUBGOAL_THEN
+   `{x | x IN topspace top /\ g x IN u} =
+    UNIONS {{x | x IN (t i) /\ ((f:K->A->B) i x) IN u} |
+            i IN k}`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[UNIONS_GSPEC] THEN ASM SET_TAC[];
+    MATCH_MP_TAC CLOSED_IN_LOCALLY_FINITE_UNIONS THEN
+    REWRITE_TAC[FORALL_IN_GSPEC] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[CLOSED_IN_TRANS_FULL]; ALL_TAC] THEN
+    REWRITE_TAC[SET_RULE
+     `{y | y IN {f x | x IN s} /\ P y} = IMAGE f {x | x IN s /\ P(f x)}`] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(fun th -> MP_TAC(SPEC `x:A` th) THEN
+        ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS) THEN
+    X_GEN_TAC `v:A->bool` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC FINITE_IMAGE THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        FINITE_SUBSET)) THEN
+    SET_TAC[]]);;
+
+let PASTING_LEMMA_EXISTS_LOCALLY_FINITE = prove
+ (`!top top' (f:K->A->B) t k.
+        (!x. x IN topspace top
+             ==> ?v. open_in top v /\ x IN v /\
+                     FINITE {i | i IN k /\ ~(t i INTER v = {})}) /\
+        topspace top SUBSET UNIONS {t i | i IN k} /\
+        (!i. i IN k
+             ==> closed_in top (t i) /\
+                 continuous_map(subtopology top (t i),top') (f i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN topspace top INTER t i INTER t j
+                 ==> f i x = f j x)
+        ==> ?g. continuous_map(top,top') g /\
+                !x i. i IN k /\ x IN topspace top INTER t i ==> g x = f i x`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `\x. (f:K->A->B)(@i. i IN k /\ x IN t i) x` THEN CONJ_TAC THENL
+   [MATCH_MP_TAC PASTING_LEMMA_LOCALLY_FINITE THEN
+    MAP_EVERY EXISTS_TAC [`f:K->A->B`; `t:K->A->bool`; `k:K->bool`] THEN
+    ASM SET_TAC[];
+    RULE_ASSUM_TAC(REWRITE_RULE[closed_in]) THEN ASM SET_TAC[]]);;
+
+let PASTING_LEMMA_CLOSED = prove
+ (`!top top' (f:K->A->B) g t k.
+        FINITE k /\
+        (!i. i IN k
+             ==> closed_in top (t i) /\
+                 continuous_map(subtopology top (t i),top') (f i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN topspace top INTER t i INTER t j
+                 ==> f i x = f j x) /\
+        (!x. x IN topspace top ==> ?j. j IN k /\ x IN t j /\ g x = f j x)
+        ==> continuous_map(top,top') g`,
+  MP_TAC PASTING_LEMMA_LOCALLY_FINITE THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  MATCH_MP_TAC MONO_IMP THEN SIMP_TAC[FINITE_RESTRICT] THEN
+  MESON_TAC[OPEN_IN_TOPSPACE]);;
+
+let PASTING_LEMMA_EXISTS_CLOSED = prove
+ (`!top top' (f:K->A->B) t k.
+        FINITE k /\
+        topspace top SUBSET UNIONS {t i | i IN k} /\
+        (!i. i IN k
+             ==> closed_in top (t i) /\
+                 continuous_map(subtopology top (t i),top') (f i)) /\
+        (!i j x. i IN k /\ j IN k /\ x IN topspace top INTER t i INTER t j
+                 ==> f i x = f j x)
+        ==> ?g. continuous_map(top,top') g /\
+                !x i. i IN k /\ x IN topspace top INTER t i ==> g x = f i x`,
+  MP_TAC PASTING_LEMMA_EXISTS_LOCALLY_FINITE THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  MATCH_MP_TAC MONO_IMP THEN SIMP_TAC[FINITE_RESTRICT] THEN
+  MESON_TAC[OPEN_IN_TOPSPACE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Continuity via bases/subbases, hence upper and lower semicontinuity.      *)
 (* ------------------------------------------------------------------------- *)
 

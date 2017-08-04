@@ -36,12 +36,12 @@ let (GENERAL_ASM_TAC:(thm list -> thm -> thm) -> thm list -> tactic) =
       let l,r = chop_list n ls in
       last l,map snd (butlast l @ r) in
     map (chop_map l) (1--(length l)) in
-  
-  fun rule thl -> 
-  let apply_rule (s,th),asm = LABEL_TAC s (rule (asm @ thl) th) in
+
+  fun rule thl ->
+  let apply_rule ((s,th),asm) = LABEL_TAC s (rule (asm @ thl) th) in
 
   fun asl,w ->
-  (POP_ASSUM_LIST(K ALL_TAC) THEN 
+  (POP_ASSUM_LIST(K ALL_TAC) THEN
      MAP_EVERY apply_rule (map_asms (rev asl))) (asl,w);; (* rev ensures correct order *)
 
 (* ------------------------------------------------------------------------- *)
@@ -60,7 +60,7 @@ let REWRITE_ASM_TAC,ONCE_REWRITE_ASM_TAC,PURE_REWRITE_ASM_TAC,
 (* And for simplification.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let SIMP_ASM_TAC,ONCE_SIMP_ASM_TAC,PURE_SIMP_ASM_TAC =  
+let SIMP_ASM_TAC,ONCE_SIMP_ASM_TAC,PURE_SIMP_ASM_TAC =
   GENERAL_ASM_TAC SIMP_RULE,
   GENERAL_ASM_TAC ONCE_SIMP_RULE,
   GENERAL_ASM_TAC PURE_SIMP_RULE;;
@@ -72,7 +72,7 @@ let SIMP_ASM_TAC,ONCE_SIMP_ASM_TAC,PURE_SIMP_ASM_TAC =
 (* using the assumptions.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let FULL_REWRITE_TAC thl = 
+let FULL_REWRITE_TAC thl =
   REWRITE_ASM_TAC thl THEN ASM_SIMP_TAC thl;;
 
 let simp = FULL_REWRITE_TAC;;
@@ -82,7 +82,7 @@ let simp = FULL_REWRITE_TAC;;
 (* Hybrid simplifier. Uses HOL Light's SIMP_TAC then FULL_REWRITE_TAC.       *)
 (* ------------------------------------------------------------------------- *)
 
-let FULL_SIMP_TAC thl = 
+let FULL_SIMP_TAC thl =
   SIMP_TAC thl THEN REWRITE_ASM_TAC thl THEN ASM_REWRITE_TAC thl;;
 
 
@@ -128,7 +128,7 @@ let ALL_UNIFY_ACCEPT_TAC mvs th (asl,w) =
 (* justification because the free c has been instantiated to b.              *)
 (* ------------------------------------------------------------------------- *)
 
-let meta_assumption mvs = (FIRST_ASSUM MATCH_ACCEPT_TAC) ORELSE 
+let meta_assumption mvs = (FIRST_ASSUM MATCH_ACCEPT_TAC) ORELSE
                       (FIRST_ASSUM (ALL_UNIFY_ACCEPT_TAC mvs));;
 
 
@@ -162,7 +162,7 @@ let (X_MATCH_GEN_TAC: term -> tactic),
     let gt = type_of g' in
     if et = gt then g'
     else failwith(pfx ^ ": expected type :"^string_of_type et^" but got :"^
-		    string_of_type gt) in
+                    string_of_type gt) in
   let X_MATCH_GEN_TAC x' =
     if not(is_var x') then failwith "X_GEN_TAC: not a variable" else
       fun (asl,w) ->
@@ -256,16 +256,16 @@ let ASM_STRUCT_CASES_TAC =
 let (case_tac:term->tactic) =
   let trymatch = fun v1 v2 ->
     match (term_match [v2] v1 v2) with
-	[],[],ti -> ti
+        [],[],ti -> ti
       | _  -> failwith "" in
-  
+
   fun tm ((_,w) as g) ->
     let gvs = gl_frees g
     and tvs = frees tm in
     let subs = mapfilter (fun x -> tryfind (trymatch x) gvs) tvs in
     let tm' = inst (flat subs) tm in
     let ty = (fst o dest_type o type_of) tm' in
-    let thm = try (cases ty) 
+    let thm = try (cases ty)
       with Failure _ -> failwith ("case_tac: Failed to find cases theorem for type \"" ^ ty ^ "\".") in
     ASM_STRUCT_CASES_TAC (ISPEC tm' thm) g;;
 
@@ -296,7 +296,7 @@ let (induct_tac:tactic) =
   fun ((_,w) as g) ->
     let tyname = (fst o dest_type o type_of o fst o dest_forall) w in
     let thm = try (snd3 (assoc tyname (!inductive_type_store)))
-	      with Failure _ -> failwith ("induct_tac: Type " ^ tyname ^ " is not inductive.") in
+              with Failure _ -> failwith ("induct_tac: Type " ^ tyname ^ " is not inductive.") in
     (MATCH_MP_TAC thm THEN REPEAT CONJ_TAC) g;;
 
 

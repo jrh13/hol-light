@@ -18262,12 +18262,20 @@ let HOMOTOPIC_ON_CLOPEN_UNIONS = prove
   X_GEN_TAC `h:num->real^(1,M)finite_sum->real^N` THEN
   REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC THEN
   MP_TAC(ISPECL
-   [`h:num->real^(1,M)finite_sum->real^N`;
+   [`subtopology euclidean
+       ((interval[vec 0,vec 1] PCROSS UNIONS(IMAGE f (:num)))
+        :real^(1,M)finite_sum->bool)`;
+    `euclidean:(real^N)topology`;
+    `h:num->real^(1,M)finite_sum->real^N`;
     `(\n. interval[vec 0,vec 1] PCROSS (f n DIFF UNIONS {f m | m < n}))
      :num->real^(1,M)finite_sum->bool`;
-    `(interval[vec 0,vec 1] PCROSS UNIONS(IMAGE f (:num)))
-     :real^(1,M)finite_sum->bool`;
-    `(:num)`; `(:real^N)`] PASTING_LEMMA_EXISTS) THEN
+    `(:num)`] PASTING_LEMMA_EXISTS) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+              SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  ONCE_REWRITE_TAC[TAUT `open_in a b /\ c <=> ~(open_in a b ==> ~c)`] THEN
+  SIMP_TAC[ISPEC `euclidean` OPEN_IN_IMP_SUBSET;
+           SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+  REWRITE_TAC[NOT_IMP] THEN
   REWRITE_TAC[IN_UNIV; FORALL_AND_THM; SUBSET_UNIV; INTER_PCROSS] THEN
   ANTS_TAC THENL
    [REPEAT CONJ_TAC THENL
@@ -25195,12 +25203,19 @@ let COVERING_SPACE_LIFT_HOMOTOPY = prove
      [`v:real^P->real^P->bool`; `fs:real^P->real^(1,P)finite_sum->real^M`] THEN
     DISCH_THEN(LABEL_TAC "*") THEN
     MP_TAC(ISPECL
-     [`fs:real^P->real^(1,P)finite_sum->real^M`;
+     [`subtopology euclidean
+        ((interval[vec 0,vec 1] PCROSS u):real^(1,P)finite_sum->bool)`;
+      `euclidean:(real^M)topology`;
+      `fs:real^P->real^(1,P)finite_sum->real^M`;
       `(\x. interval[vec 0,vec 1] PCROSS (v x))
-        :real^P->real^(1,P)finite_sum->bool`;
-      `(interval[vec 0,vec 1] PCROSS u):real^(1,P)finite_sum->bool`;
-      `u:real^P->bool`; `(:real^M)`]
-      PASTING_LEMMA_EXISTS) THEN
+          :real^P->real^(1,P)finite_sum->bool`;
+      `u:real^P->bool`] PASTING_LEMMA_EXISTS) THEN
+    REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+                SUBTOPOLOGY_SUBTOPOLOGY] THEN
+    ONCE_REWRITE_TAC[TAUT `open_in a b /\ c <=> ~(open_in a b ==> ~c)`] THEN
+    SIMP_TAC[ISPEC `euclidean` OPEN_IN_IMP_SUBSET;
+             SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+    REWRITE_TAC[NOT_IMP] THEN
     ASM_SIMP_TAC[SUBSET_UNIV] THEN ANTS_TAC THENL
      [ALL_TAC;
       MATCH_MP_TAC MONO_EXISTS THEN

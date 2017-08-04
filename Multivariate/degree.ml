@@ -6360,16 +6360,23 @@ let ANR_UNION_EXTENSION_LEMMA = prove
   SUBGOAL_THEN `k INTER t:real^M->bool = {}` ASSUME_TAC THENL
    [ASM SET_TAC[]; ALL_TAC] THEN
   MP_TAC(ISPECL
-   [`\i. if i = 0 then (f:real^M->real^N) else h`;
+   [`subtopology euclidean ((t INTER s2) UNION v':real^M->bool)`;
+    `euclidean:(real^N)topology`;
+    `\i. if i = 0 then (f:real^M->real^N) else h`;
     `\i. if i = 0 then t INTER s2:real^M->bool else v'`;
-    `(t INTER s2) UNION v':real^M->bool`; `{0,1}`; `(:real^N)`]
-        PASTING_LEMMA_EXISTS_CLOSED) THEN
+    `{0,1}`] PASTING_LEMMA_EXISTS_CLOSED) THEN
   MP_TAC(ISPECL
-   [`\i. if i = 0 then (f:real^M->real^N) else h`;
+   [`subtopology euclidean ((t INTER s1) UNION v':real^M->bool)`;
+    `euclidean:(real^N)topology`;
+    `\i. if i = 0 then (f:real^M->real^N) else h`;
     `\i. if i = 0 then t INTER s1:real^M->bool else v'`;
-    `(t INTER s1) UNION v':real^M->bool`; `{0,1}`; `(:real^N)`]
-        PASTING_LEMMA_EXISTS_CLOSED) THEN
-  REWRITE_TAC[SUBSET_UNIV] THEN
+    `{0,1}`] PASTING_LEMMA_EXISTS_CLOSED) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+              SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  ONCE_REWRITE_TAC[TAUT `closed_in a b /\ c <=> ~(closed_in a b ==> ~c)`] THEN
+  SIMP_TAC[ISPEC `euclidean` CLOSED_IN_IMP_SUBSET;
+           SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+  REWRITE_TAC[NOT_IMP] THEN REWRITE_TAC[SUBSET_UNIV] THEN
   MAP_EVERY (fun x ->
     REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY] THEN ANTS_TAC THENL
      [REWRITE_TAC[SIMPLE_IMAGE; IMAGE_CLAUSES; UNIONS_2] THEN
@@ -6379,6 +6386,8 @@ let ANR_UNION_EXTENSION_LEMMA = prove
        [ONCE_REWRITE_TAC[TAUT `(p /\ q) /\ r <=> q /\ p /\ r`] THEN
         CONJ_TAC THENL
          [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET; INTER_SUBSET]; ALL_TAC] THEN
+        ASM_REWRITE_TAC[SET_RULE `(s UNION t) INTER t = t`] THEN
+
         CONJ_TAC THEN
         MATCH_MP_TAC(MESON[]
          `u INTER s = s /\ closed_in (subtopology top u) (u INTER s)
@@ -6456,10 +6465,17 @@ let ANR_UNION_EXTENSION_LEMMA = prove
     ASM_SIMP_TAC[OPEN_IN_REFL; CLOSED_IN_UNION];
     DISCH_TAC] THEN
   MP_TAC(ISPECL
-   [`\i. if i = 0 then (g1:real^M->real^N) else g2`;
+   [`subtopology euclidean (n:real^M->bool)`;
+    `euclidean:(real^N)topology`;
+    `\i. if i = 0 then (g1:real^M->real^N) else g2`;
     `\i. if i = 0 then s1 INTER n:real^M->bool else s2 INTER n`;
-    `n:real^M->bool`; `{0,1}`; `(:real^N)`]
-        PASTING_LEMMA_EXISTS_CLOSED) THEN
+    `{0,1}`] PASTING_LEMMA_EXISTS_CLOSED) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+              SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  ONCE_REWRITE_TAC[TAUT `closed_in a b /\ c <=> ~(closed_in a b ==> ~c)`] THEN
+  SIMP_TAC[ISPEC `euclidean` CLOSED_IN_IMP_SUBSET;
+           SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+  REWRITE_TAC[NOT_IMP] THEN
   REWRITE_TAC[FINITE_INSERT; FINITE_EMPTY; SUBSET_UNIV] THEN
   REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; IMP_CONJ] THEN
   REWRITE_TAC[ARITH_EQ; IMP_IMP; FORALL_AND_THM] THEN
@@ -7045,13 +7061,21 @@ let ANR_OPEN_UNIONS = prove
     REWRITE_TAC[TAUT `p ==> q /\ r <=> (p ==> q) /\ (p ==> r)`] THEN
     REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC THEN
     MP_TAC(ISPECL
-     [`h:(real^N->bool)->real^(N,1)finite_sum->real^N`;
-      `\u. v u INTER (w:(real^N->bool)->real^(N,1)finite_sum->bool) u`;
-      `UNIONS(IMAGE (\u. v u INTER
+     [`subtopology euclidean
+        (UNIONS(IMAGE (\u. v u INTER
                          (w:(real^N->bool)->real^(N,1)finite_sum->bool) u)
-                    f)`;
-      `f:(real^N->bool)->bool`; `(:real^N)`]
-      PASTING_LEMMA_EXISTS) THEN
+                    f))`;
+      `euclidean:(real^N)topology`;
+      `h:(real^N->bool)->real^(N,1)finite_sum->real^N`;
+      `\u. v u INTER (w:(real^N->bool)->real^(N,1)finite_sum->bool) u`;
+      `f:(real^N->bool)->bool`]
+    PASTING_LEMMA_EXISTS) THEN
+    REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+                SUBTOPOLOGY_SUBTOPOLOGY] THEN
+    ONCE_REWRITE_TAC[TAUT `open_in a b /\ c <=> ~(open_in a b ==> ~c)`] THEN
+    SIMP_TAC[ISPEC `euclidean` OPEN_IN_IMP_SUBSET;
+             SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+    REWRITE_TAC[NOT_IMP] THEN
     REWRITE_TAC[SIMPLE_IMAGE; SUBSET_REFL; SUBSET_UNIV] THEN ANTS_TAC THENL
      [CONJ_TAC THEN X_GEN_TAC `u:real^N->bool` THENL
        [DISCH_TAC THEN CONJ_TAC THENL
@@ -11321,11 +11345,17 @@ let ACCESSIBLE_FRONTIER_ANR_INTER_COMPLEMENT_COMPONENT = prove
     REWRITE_TAC[SKOLEM_THM; FORALL_AND_THM] THEN
     DISCH_THEN(X_CHOOSE_THEN `f:num->real^1->real^N` STRIP_ASSUME_TAC)] THEN
   MP_TAC(ISPECL
-   [`f:num->real^1->real^N`;
+   [`subtopology euclidean (interval[vec 0:real^1,vec 1] DELETE (vec 0))`;
+    `subtopology euclidean (c:real^N->bool)`;
+    `f:num->real^1->real^N`;
     `\n. interval[lift(inv(&2 pow (SUC n))),lift(inv(&2 pow n))]`;
-    `interval[vec 0:real^1,vec 1] DELETE (vec 0)`;
-    `(:num)`; `c:real^N->bool`]
-   PASTING_LEMMA_EXISTS_LOCALLY_FINITE) THEN
+    `(:num)`] PASTING_LEMMA_EXISTS_LOCALLY_FINITE) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN2; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+              SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  ONCE_REWRITE_TAC[TAUT `closed_in a b /\ c <=> ~(closed_in a b ==> ~c)`] THEN
+  SIMP_TAC[ISPEC `euclidean` CLOSED_IN_IMP_SUBSET;
+           SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+  REWRITE_TAC[NOT_IMP] THEN
   REWRITE_TAC[IN_UNIV] THEN ANTS_TAC THENL
    [REPEAT CONJ_TAC THENL
      [X_GEN_TAC `x:real^1` THEN REWRITE_TAC[IN_INTERVAL_1; IN_DELETE] THEN
