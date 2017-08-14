@@ -4,7 +4,7 @@
   * Multivariate theories are excluded, simply because there are    *
   * so many of them that tracking them would be tedious. For more   *
   * detailed update lists, consult the git logs ("git log" if you   *
-  * have the system downloaed) or the list of commits on the Web    *
+  * have the system downloaded) or the list of commits on the Web   *
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
