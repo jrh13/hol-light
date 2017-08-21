@@ -8,6 +8,72 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 18th Aug 2017       real.ml
+
+Added quite a few new and fairly basic real number theorems (some of the convex
+bounds ones were moved out of Multivariate/misc.ml).
+  
+  REAL_ABS_LE_SQRT =
+   |- !x y. abs (sqrt x - sqrt y) <= sqrt (&2 * abs (x - y))
+  
+  REAL_ABS_LE_SQRT_POS =
+    |- !x y. &0 <= x /\ &0 <= y ==> abs (sqrt x - sqrt y) <= sqrt (abs (x - y))
+  
+  REAL_ABS_SQRT =
+    |- !x. abs (sqrt x) = sqrt (abs x)
+  
+  REAL_CONVEX_BOUND2_LE =
+    |- !x y a u v.
+           x <= a /\ y <= b /\ &0 <= u /\ &0 <= v /\ u + v = &1
+           ==> u * x + v * y <= u * a + v * b
+  
+  REAL_CONVEX_BOUND2_LT =
+    |- !x y a u v.
+           x < a /\ y < b /\ &0 <= u /\ &0 <= v /\ u + v = &1
+           ==> u * x + v * y < u * a + v * b
+  
+  REAL_CONVEX_BOUNDS_LE =
+    |- !x y a b u v.
+           a <= x /\
+           x <= b /\
+           a <= y /\
+           y <= b /\
+           &0 <= u /\
+           &0 <= v /\
+           u + v = &1
+           ==> a <= u * x + v * y /\ u * x + v * y <= b
+  
+  REAL_CONVEX_BOUNDS_LT =
+    |- !x y a b u v.
+           a < x /\ x < b /\ a < y /\ y < b /\ &0 <= u /\ &0 <= v /\ u + v = &1
+           ==> a < u * x + v * y /\ u * x + v * y < b
+  
+  REAL_CONVEX_BOUND_GE =
+    |- !x y a u v.
+           a <= x /\ a <= y /\ &0 <= u /\ &0 <= v /\ u + v = &1
+           ==> a <= u * x + v * y
+  
+  REAL_CONVEX_BOUND_GT =
+    |- !x y a u v.
+           a < x /\ a < y /\ &0 <= u /\ &0 <= v /\ u + v = &1
+           ==> a < u * x + v * y
+  
+  REAL_CONVEX_BOUND_LE =
+    |- !x y a u v.
+           x <= a /\ y <= a /\ &0 <= u /\ &0 <= v /\ u + v = &1
+           ==> u * x + v * y <= a
+  
+  REAL_CONVEX_BOUND_LT =
+    |- !x y a u v.
+           x < a /\ y < a /\ &0 <= u /\ &0 <= v /\ u + v = &1
+           ==> u * x + v * y < a
+  
+  REAL_DIV_EQ_1 =
+    |- !x y. x / y = &1 <=> x = y /\ ~(x = &0) /\ ~(y = &0)
+  
+  SQRT_EQ_1 =
+    |- !x. sqrt x = &1 <=> x = &1
+
 Fri  4th Aug 2017       IsabelleLight/new_tactics.ml
 
 Made a tiny tweak of adding parens where very old versions of OCaml

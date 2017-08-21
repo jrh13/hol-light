@@ -60,6 +60,10 @@ let HAUSDORFF_SPACE_EUCLIDEAN = prove
  (`hausdorff_space euclidean`,
   REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC; HAUSDORFF_SPACE_MTOPOLOGY]);;
 
+let T1_SPACE_EUCLIDEAN = prove
+ (`t1_space euclidean`,
+  SIMP_TAC[HAUSDORFF_SPACE_EUCLIDEAN; HAUSDORFF_IMP_T1_SPACE]);;
+
 let REGULAR_SPACE_EUCLIDEAN = prove
  (`regular_space euclidean`,
   REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC; REGULAR_SPACE_MTOPOLOGY]);;
@@ -297,6 +301,23 @@ let CONTINUOUS_MAP_LIFT = prove
 let CONTINUOUS_MAP_DROP = prove
  (`continuous_map (euclidean,euclideanreal) drop`,
   REWRITE_TAC[CONTINUOUS_MAP_EQ_LIFT; o_DEF; LIFT_DROP; CONTINUOUS_MAP_ID]);;
+
+let CONTINUOUS_MAP_LIFT_EQ = prove
+ (`!top f:real^1->A.
+        continuous_map(euclidean,top) f <=>
+        continuous_map(euclideanreal,top) (f o lift)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[CONTINUOUS_MAP_COMPOSE; CONTINUOUS_MAP_LIFT]; ALL_TAC] THEN
+  DISCH_TAC THEN
+  SUBGOAL_THEN `f:real^1->A = (f o lift) o drop` SUBST1_TAC THENL
+   [REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX];
+    ASM_MESON_TAC[CONTINUOUS_MAP_COMPOSE; CONTINUOUS_MAP_DROP]]);;
+
+let CONTINUOUS_MAP_DROP_EQ = prove
+ (`!top f:real->A.
+        continuous_map(euclideanreal,top) f <=>
+        continuous_map(euclidean,top) (f o drop)`,
+  REWRITE_TAC[CONTINUOUS_MAP_LIFT_EQ; o_DEF; LIFT_DROP; ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Open and closed balls and spheres.                                        *)
@@ -6545,6 +6566,55 @@ let UNIFORMLY_CONTINUOUS_MAP_EUCLIDEAN = prove
   REWRITE_TAC[uniformly_continuous_map; uniformly_continuous_on] THEN
   REWRITE_TAC[EUCLIDEAN_METRIC; SUBMETRIC; INTER_UNIV; SUBSET_UNIV]);;
 
+let UNIFORMLY_CONTINUOUS_MAP_LIFT = prove
+ (`uniformly_continuous_map (real_euclidean_metric,euclidean_metric) lift`,
+  REWRITE_TAC[uniformly_continuous_map; REAL_EUCLIDEAN_METRIC;
+              EUCLIDEAN_METRIC; IN_UNIV; SUBSET_UNIV; DIST_LIFT] THEN
+  MESON_TAC[REAL_ABS_SUB]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_DROP = prove
+ (`uniformly_continuous_map (euclidean_metric,real_euclidean_metric) drop`,
+  REWRITE_TAC[uniformly_continuous_map; REAL_EUCLIDEAN_METRIC;
+              EUCLIDEAN_METRIC; IN_UNIV; SUBSET_UNIV] THEN
+  REWRITE_TAC[GSYM DROP_SUB; GSYM NORM_1; dist] THEN
+  MESON_TAC[NORM_SUB]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_EQ_LIFT = prove
+ (`!m f:A->real.
+        uniformly_continuous_map(m,real_euclidean_metric) f <=>
+        uniformly_continuous_map(m,euclidean_metric) (lift o f)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[UNIFORMLY_CONTINUOUS_MAP_COMPOSE; UNIFORMLY_CONTINUOUS_MAP_LIFT];
+    DISCH_TAC] THEN
+  SUBGOAL_THEN `f:A->real = drop o lift o f` SUBST1_TAC THENL
+   [REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX];
+    ASM_MESON_TAC[UNIFORMLY_CONTINUOUS_MAP_COMPOSE;
+                  UNIFORMLY_CONTINUOUS_MAP_DROP]]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_EQ_DROP = prove
+ (`!m f:A->real^1.
+        uniformly_continuous_map(m,euclidean_metric) f <=>
+        uniformly_continuous_map(m,real_euclidean_metric) (drop o f)`,
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_EQ_LIFT; o_DEF; LIFT_DROP; ETA_AX]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_LIFT_EQ = prove
+ (`!m f:real^1->A.
+        uniformly_continuous_map(euclidean_metric,m) f <=>
+        uniformly_continuous_map(real_euclidean_metric,m) (f o lift)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[UNIFORMLY_CONTINUOUS_MAP_COMPOSE; UNIFORMLY_CONTINUOUS_MAP_LIFT];
+    DISCH_TAC] THEN
+  SUBGOAL_THEN `f:real^1->A = (f o lift) o drop` SUBST1_TAC THENL
+   [REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX];
+    ASM_MESON_TAC[UNIFORMLY_CONTINUOUS_MAP_COMPOSE;
+                  UNIFORMLY_CONTINUOUS_MAP_DROP]]);;
+
+let UNIFORMLY_CONTINUOUS_MAP_DROP_EQ = prove
+ (`!m f:real->A.
+        uniformly_continuous_map(real_euclidean_metric,m) f <=>
+        uniformly_continuous_map(euclidean_metric,m) (f o drop)`,
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_LIFT_EQ; o_DEF; LIFT_DROP; ETA_AX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some simple consequential lemmas.                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -7376,6 +7446,15 @@ let UNIFORMLY_CONTINUOUS_ON_VSUM = prove
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; VSUM_CLAUSES;
        UNIFORMLY_CONTINUOUS_ON_CONST; UNIFORMLY_CONTINUOUS_ON_ADD; ETA_AX]);;
+
+let UNIFORMLY_CONTINUOUS_ON_SQRT = prove
+ (`!f:real^N->real s.
+        (lift o f) uniformly_continuous_on s
+        ==> (\x. lift(sqrt(f x))) uniformly_continuous_on s`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM UNIFORMLY_CONTINUOUS_MAP_EUCLIDEAN] THEN
+  REWRITE_TAC[GSYM o_DEF; GSYM UNIFORMLY_CONTINUOUS_MAP_EQ_LIFT] THEN
+  REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_SQRT; o_DEF]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Identity function is continuous in every sense.                           *)
@@ -10168,91 +10247,47 @@ let UNIFORMLY_CONTINUOUS_ON_CLOSURE = prove
 (* them around earlier.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
+let CONTINUOUS_ON_LIFT_SQRT = prove
+ (`!s. (lift o sqrt o drop) continuous_on s`,
+  GEN_TAC THEN REWRITE_TAC[GSYM CONTINUOUS_MAP_EUCLIDEAN] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
+  REWRITE_TAC[GSYM CONTINUOUS_MAP_EQ_LIFT;
+              GSYM CONTINUOUS_MAP_DROP_EQ] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_SQUARE_ROOT]);;
+
 let CONTINUOUS_AT_SQRT = prove
- (`!a s. &0 < drop a ==>  (lift o sqrt o drop) continuous (at a)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[continuous_at; o_THM; DIST_LIFT] THEN
-  X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  EXISTS_TAC `min (drop a) (e * sqrt(drop a))` THEN
-  ASM_SIMP_TAC[REAL_LT_MIN; SQRT_POS_LT; REAL_LT_MUL; DIST_REAL] THEN
-  X_GEN_TAC `b:real^1` THEN REWRITE_TAC[GSYM drop] THEN STRIP_TAC THEN
-  FIRST_ASSUM(ASSUME_TAC o MATCH_MP (REAL_ARITH
-   `abs(b - a) < a ==> &0 < b`)) THEN
-  SUBGOAL_THEN
-   `sqrt(drop b) - sqrt(drop a) =
-    (drop b - drop a) / (sqrt(drop a) + sqrt(drop b))`
-  SUBST1_TAC THENL
-   [MATCH_MP_TAC(REAL_FIELD
-     `sa pow 2 = a /\ sb pow 2 = b /\ &0 < sa /\ &0 < sb
-      ==> sb - sa = (b - a) / (sa + sb)`) THEN
-    ASM_SIMP_TAC[SQRT_POS_LT; SQRT_POW_2; REAL_LT_IMP_LE];
-    ASM_SIMP_TAC[REAL_ABS_DIV; SQRT_POS_LT; REAL_LT_ADD; REAL_LT_LDIV_EQ;
-                 REAL_ARITH `&0 < x ==> abs x = x`] THEN
-    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-        REAL_LTE_TRANS)) THEN
-    ASM_SIMP_TAC[REAL_LE_LMUL_EQ; REAL_LE_ADDR; SQRT_POS_LE;
-                 REAL_LT_IMP_LE]]);;
+ (`!a. (lift o sqrt o drop) continuous (at a)`,
+  GEN_TAC THEN MP_TAC(SPEC `(:real^1)` CONTINUOUS_ON_LIFT_SQRT) THEN
+  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_AT; OPEN_UNIV; IN_UNIV]);;
 
 let CONTINUOUS_WITHIN_LIFT_SQRT = prove
- (`!a s. (!x. x IN s ==> &0 <= drop x)
-         ==> (lift o sqrt o drop) continuous (at a within s)`,
-  REPEAT STRIP_TAC THEN
-  REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
-   (REAL_ARITH `drop a < &0 \/ drop a = &0 \/ &0 < drop a`)
-  THENL
-   [MATCH_MP_TAC CONTINUOUS_WITHIN_SUBSET THEN
-    EXISTS_TAC `{x | &0 <= drop x}` THEN
-    ASM_SIMP_TAC[SUBSET; IN_ELIM_THM] THEN
-    MATCH_MP_TAC CONTINUOUS_WITHIN_CLOSED_NONTRIVIAL THEN
-    ASM_REWRITE_TAC[IN_ELIM_THM; REAL_NOT_LE] THEN
-    REWRITE_TAC[drop; REWRITE_RULE[real_ge] CLOSED_HALFSPACE_COMPONENT_GE];
-    RULE_ASSUM_TAC(REWRITE_RULE[GSYM LIFT_EQ; LIFT_DROP; LIFT_NUM]) THEN
-    ASM_REWRITE_TAC[continuous_within; o_THM; DROP_VEC; SQRT_0; LIFT_NUM] THEN
-    REWRITE_TAC[DIST_0; NORM_LIFT; NORM_REAL; GSYM drop] THEN
-    X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-    EXISTS_TAC `(e:real) pow 2` THEN ASM_SIMP_TAC[REAL_POW_LT] THEN
-    X_GEN_TAC `x:real^1` THEN STRIP_TAC THEN
-    ASM_SIMP_TAC[real_abs; SQRT_POS_LE] THEN
-    SUBGOAL_THEN `e = sqrt(e pow 2)` SUBST1_TAC THENL
-     [ASM_SIMP_TAC[POW_2_SQRT; REAL_LT_IMP_LE];
-      MATCH_MP_TAC SQRT_MONO_LT THEN ASM_SIMP_TAC[] THEN ASM_REAL_ARITH_TAC];
-    MATCH_MP_TAC CONTINUOUS_AT_WITHIN THEN
-    MATCH_MP_TAC CONTINUOUS_AT_SQRT THEN ASM_REWRITE_TAC[]]);;
+ (`!a s. (lift o sqrt o drop) continuous (at a within s)`,
+  SIMP_TAC[CONTINUOUS_AT_WITHIN; CONTINUOUS_AT_SQRT]);;
 
 let CONTINUOUS_WITHIN_SQRT_COMPOSE = prove
  (`!f s a:real^N.
-        (\x. lift(f x)) continuous (at a within s) /\
-        (&0 < f a \/ !x. x IN s ==> &0 <= f x)
+        (\x. lift(f x)) continuous (at a within s)
         ==> (\x. lift(sqrt(f x))) continuous (at a within s)`,
-  REPEAT GEN_TAC THEN
+  REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
    `(\x:real^N. lift(sqrt(f x))) = (lift o sqrt o drop) o (lift o f)`
   SUBST1_TAC THENL [REWRITE_TAC[o_DEF; LIFT_DROP]; ALL_TAC] THEN
-  REPEAT STRIP_TAC THEN
-  (MATCH_MP_TAC CONTINUOUS_WITHIN_COMPOSE THEN
-   CONJ_TAC THENL [ASM_REWRITE_TAC[o_DEF]; ALL_TAC])
-  THENL
-   [MATCH_MP_TAC CONTINUOUS_AT_WITHIN THEN
-    MATCH_MP_TAC CONTINUOUS_AT_SQRT THEN ASM_REWRITE_TAC[o_DEF; LIFT_DROP];
-    MATCH_MP_TAC CONTINUOUS_WITHIN_LIFT_SQRT THEN
-    ASM_REWRITE_TAC[FORALL_IN_IMAGE; o_DEF; LIFT_DROP]]);;
+  MATCH_MP_TAC CONTINUOUS_WITHIN_COMPOSE THEN
+  REWRITE_TAC[CONTINUOUS_WITHIN_LIFT_SQRT] THEN
+  ASM_REWRITE_TAC[o_DEF]);;
 
 let CONTINUOUS_AT_SQRT_COMPOSE = prove
  (`!f a:real^N.
-        (\x. lift(f x)) continuous (at a) /\ (&0 < f a \/ !x. &0 <= f x)
+        (\x. lift(f x)) continuous (at a)
         ==> (\x. lift(sqrt(f x))) continuous (at a)`,
   REPEAT GEN_TAC THEN
   MP_TAC(ISPECL [`f:real^N->real`; `(:real^N)`; `a:real^N`]
         CONTINUOUS_WITHIN_SQRT_COMPOSE) THEN
   REWRITE_TAC[WITHIN_UNIV; IN_UNIV]);;
 
-let CONTINUOUS_ON_LIFT_SQRT = prove
- (`!s. (!x. x IN s ==> &0 <= drop x)
-       ==> (lift o sqrt o drop) continuous_on s`,
-  SIMP_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN; CONTINUOUS_WITHIN_LIFT_SQRT]);;
-
 let CONTINUOUS_ON_LIFT_SQRT_COMPOSE = prove
  (`!f:real^N->real s.
-        (lift o f) continuous_on s /\ (!x. x IN s ==> &0 <= f x)
+        (lift o f) continuous_on s
         ==> (\x. lift(sqrt(f x))) continuous_on s`,
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
@@ -10260,8 +10295,7 @@ let CONTINUOUS_ON_LIFT_SQRT_COMPOSE = prove
   SUBST1_TAC THENL
    [REWRITE_TAC[o_DEF; LIFT_DROP];
     MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
-    MATCH_MP_TAC CONTINUOUS_ON_LIFT_SQRT THEN
-    ASM_REWRITE_TAC[FORALL_IN_IMAGE; o_THM; LIFT_DROP]]);;
+    ASM_REWRITE_TAC[CONTINUOUS_ON_LIFT_SQRT]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cauchy continuity, and the extension of functions to closures.            *)

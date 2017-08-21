@@ -4053,61 +4053,60 @@ let REAL_DIFFERENTIABLE_WITHIN_SQRT = prove
             REAL_DIFFERENTIABLE_AT_SQRT]);;
 
 let REAL_CONTINUOUS_AT_SQRT = prove
- (`!x. &0 < x ==> sqrt real_continuous (atreal x)`,
-  MESON_TAC[HAS_REAL_DERIVATIVE_SQRT;
-            HAS_REAL_DERIVATIVE_IMP_CONTINUOUS_ATREAL]);;
+ (`!x. sqrt real_continuous (atreal x)`,
+  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS_ATREAL; CONTINUOUS_AT_SQRT]);;
 
 let REAL_CONTINUOUS_WITHIN_SQRT = prove
- (`!s x. &0 < x ==> sqrt real_continuous (atreal x within s)`,
+ (`!s x. sqrt real_continuous (atreal x within s)`,
   MESON_TAC[REAL_CONTINUOUS_ATREAL_WITHINREAL;
             REAL_CONTINUOUS_AT_SQRT]);;
+                                                                               
+let REAL_CONTINUOUS_WITHIN_SQRT_COMPOSE = prove                                
+ (`!f s a:real^N.                                                              
+        f real_continuous (at a within s)                                
+        ==> (\x. sqrt(f x)) real_continuous (at a within s)`,           
+  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN                         
+  REWRITE_TAC[CONTINUOUS_WITHIN_SQRT_COMPOSE]);;                               
+                                                                               
+let REAL_CONTINUOUS_AT_SQRT_COMPOSE = prove                                    
+ (`!f a:real^N.                                           
+        f real_continuous (at a)                                          
+        ==> (\x. sqrt(f x)) real_continuous (at a)`,                 
+  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN                      
+  REWRITE_TAC[CONTINUOUS_AT_SQRT_COMPOSE]);;                               
+                                                                               
+let CONTINUOUS_WITHINREAL_SQRT_COMPOSE = prove                                 
+ (`!f s a. (\x. lift(f x)) continuous (atreal a within s)                      
+           ==> (\x. lift(sqrt(f x))) continuous (atreal a within s)`,          
+  REWRITE_TAC[CONTINUOUS_CONTINUOUS_WITHINREAL] THEN                           
+  REWRITE_TAC[o_DEF] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN                   
+  MATCH_MP_TAC CONTINUOUS_WITHIN_SQRT_COMPOSE THEN                         
+  ASM_REWRITE_TAC[FORALL_IN_IMAGE; LIFT_DROP]);;                          
+                                                                           
+let CONTINUOUS_ATREAL_SQRT_COMPOSE = prove                                
+ (`!f a. (\x. lift(f x)) continuous (atreal a)                              
+         ==> (\x. lift(sqrt(f x))) continuous (atreal a)`,             
+  REPEAT GEN_TAC THEN                                                      
+  MP_TAC(ISPECL [`f:real->real`; `(:real)`; `a:real`]                          
+        CONTINUOUS_WITHINREAL_SQRT_COMPOSE) THEN                               
+  REWRITE_TAC[WITHINREAL_UNIV; IN_UNIV]);;                                     
+                                                                        
+let REAL_CONTINUOUS_WITHINREAL_SQRT_COMPOSE = prove                           
+ (`!f s a. f real_continuous (atreal a within s)                               
+           ==> (\x. sqrt(f x)) real_continuous (atreal a within s)`,           
+  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN                         
+  REWRITE_TAC[CONTINUOUS_WITHINREAL_SQRT_COMPOSE]);;                         
+                                                                               
+let REAL_CONTINUOUS_ATREAL_SQRT_COMPOSE = prove                                
+ (`!f a. f real_continuous (atreal a)                                          
+         ==> (\x. sqrt(f x)) real_continuous (atreal a)`,                      
+  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN                         
+  REWRITE_TAC[CONTINUOUS_ATREAL_SQRT_COMPOSE]);;                               
 
-let REAL_CONTINUOUS_WITHIN_SQRT_COMPOSE = prove
- (`!f s a:real^N.
-        f real_continuous (at a within s) /\
-        (&0 < f a \/ !x. x IN s ==> &0 <= f x)
-        ==> (\x. sqrt(f x)) real_continuous (at a within s)`,
-  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN
-  REWRITE_TAC[CONTINUOUS_WITHIN_SQRT_COMPOSE]);;
-
-let REAL_CONTINUOUS_AT_SQRT_COMPOSE = prove
- (`!f a:real^N.
-        f real_continuous (at a) /\
-        (&0 < f a \/ !x. &0 <= f x)
-        ==> (\x. sqrt(f x)) real_continuous (at a)`,
-  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN
-  REWRITE_TAC[CONTINUOUS_AT_SQRT_COMPOSE]);;
-
-let CONTINUOUS_WITHINREAL_SQRT_COMPOSE = prove
- (`!f s a. (\x. lift(f x)) continuous (atreal a within s) /\
-           (&0 < f a \/ !x. x IN s ==> &0 <= f x)
-           ==> (\x. lift(sqrt(f x))) continuous (atreal a within s)`,
-  REWRITE_TAC[CONTINUOUS_CONTINUOUS_WITHINREAL] THEN
-  REWRITE_TAC[o_DEF] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
-  MATCH_MP_TAC CONTINUOUS_WITHIN_SQRT_COMPOSE THEN
-  ASM_REWRITE_TAC[FORALL_IN_IMAGE; LIFT_DROP]);;
-
-let CONTINUOUS_ATREAL_SQRT_COMPOSE = prove
- (`!f a. (\x. lift(f x)) continuous (atreal a) /\ (&0 < f a \/ !x. &0 <= f x)
-         ==> (\x. lift(sqrt(f x))) continuous (atreal a)`,
-  REPEAT GEN_TAC THEN
-  MP_TAC(ISPECL [`f:real->real`; `(:real)`; `a:real`]
-        CONTINUOUS_WITHINREAL_SQRT_COMPOSE) THEN
-  REWRITE_TAC[WITHINREAL_UNIV; IN_UNIV]);;
-
-let REAL_CONTINUOUS_WITHINREAL_SQRT_COMPOSE = prove
- (`!f s a. f real_continuous (atreal a within s) /\
-           (&0 < f a \/ !x. x IN s ==> &0 <= f x)
-           ==> (\x. sqrt(f x)) real_continuous (atreal a within s)`,
-  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN
-  REWRITE_TAC[CONTINUOUS_WITHINREAL_SQRT_COMPOSE]);;
-
-let REAL_CONTINUOUS_ATREAL_SQRT_COMPOSE = prove
- (`!f a. f real_continuous (atreal a) /\
-         (&0 < f a \/ !x. &0 <= f x)
-         ==> (\x. sqrt(f x)) real_continuous (atreal a)`,
-  REWRITE_TAC[REAL_CONTINUOUS_CONTINUOUS1; o_DEF] THEN
-  REWRITE_TAC[CONTINUOUS_ATREAL_SQRT_COMPOSE]);;
+let REAL_CONTINUOUS_ON_SQRT = prove                                     
+ (`!s. sqrt real_continuous_on s`,                                        
+  REWRITE_TAC[REAL_CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN;                       
+              REAL_CONTINUOUS_WITHIN_SQRT]);;                        
 
 let HAS_REAL_DERIVATIVE_ATN = prove
  (`!x. (atn has_real_derivative inv(&1 + x pow 2)) (atreal x)`,
@@ -4246,37 +4245,6 @@ let DIFFERENTIABLE_ON_NORM = prove
 (* ------------------------------------------------------------------------- *)
 (* Some somewhat sharper continuity theorems including endpoints.            *)
 (* ------------------------------------------------------------------------- *)
-
-let REAL_CONTINUOUS_WITHIN_SQRT_STRONG = prove
- (`!x. sqrt real_continuous (atreal x within {t | &0 <= t})`,
-  GEN_TAC THEN REWRITE_TAC[REAL_COMPLEX_CONTINUOUS_WITHINREAL] THEN
-  ASM_CASES_TAC `x IN {t | &0 <= t}` THENL
-   [MATCH_MP_TAC CONTINUOUS_TRANSFORM_WITHIN THEN
-    MAP_EVERY EXISTS_TAC [`csqrt`; `&1`] THEN
-    REWRITE_TAC[IMAGE_CX; IN_ELIM_THM; REAL_LT_01;
-      CONTINUOUS_WITHIN_CSQRT_POSREAL;
-      SET_RULE `real INTER {z | real z /\ P z} = {z | real z /\ P z}`] THEN
-    RULE_ASSUM_TAC(REWRITE_RULE[IN_ELIM_THM]) THEN
-    ASM_REWRITE_TAC[REAL_CX; RE_CX; IMP_CONJ; FORALL_REAL; o_THM] THEN
-    SIMP_TAC[CX_SQRT];
-    MATCH_MP_TAC CONTINUOUS_WITHIN_CLOSED_NONTRIVIAL THEN CONJ_TAC THENL
-     [SUBGOAL_THEN `real INTER IMAGE Cx {t | &0 <= t} =
-                    real INTER {t | Re t >= &0}`
-       (fun th -> SIMP_TAC[th; CLOSED_INTER; CLOSED_REAL;
-                           CLOSED_HALFSPACE_RE_GE]) THEN
-     REWRITE_TAC[EXTENSION; IMAGE_CX; IN_ELIM_THM; IN_CBALL; IN_INTER] THEN
-     REWRITE_TAC[real_ge; IN; CONJ_ACI];
-      MATCH_MP_TAC(SET_RULE
-       `(!x y. f x = f y ==> x = y) /\ ~(x IN s)
-        ==> ~(f x IN t INTER IMAGE f s)`) THEN
-      ASM_REWRITE_TAC[CX_INJ]]]);;
-
-let REAL_CONTINUOUS_ON_SQRT = prove
- (`!s. (!x. x IN s ==> &0 <= x) ==> sqrt real_continuous_on s`,
-  REWRITE_TAC[REAL_CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_CONTINUOUS_WITHINREAL_SUBSET THEN
-  EXISTS_TAC `{x | &0 <= x}` THEN
-  ASM_REWRITE_TAC[SUBSET; IN_ELIM_THM; REAL_CONTINUOUS_WITHIN_SQRT_STRONG]);;
 
 let REAL_CONTINUOUS_WITHIN_ASN_STRONG = prove
  (`!x. asn real_continuous (atreal x within {t | abs(t) <= &1})`,

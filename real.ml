@@ -765,6 +765,16 @@ let REAL_DIV_LMUL = prove
  (`!x y. ~(y = &0) ==> (y * (x / y) = x)`,
   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN REWRITE_TAC[REAL_DIV_RMUL]);;
 
+let REAL_DIV_EQ_1 = prove
+ (`!x y:real. x / y = &1 <=> x = y /\ ~(x = &0) /\ ~(y = &0)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[real_div] THEN
+  ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[REAL_MUL_LZERO] THEN
+  ASM_CASES_TAC `y = &0` THEN ASM_REWRITE_TAC[REAL_INV_0; REAL_MUL_RZERO] THEN
+  REWRITE_TAC[REAL_OF_NUM_EQ; ARITH] THEN
+  EQ_TAC THEN ASM_SIMP_TAC[GSYM real_div; REAL_DIV_REFL] THEN
+  DISCH_THEN(MP_TAC o AP_TERM `( * ) (y:real)`) THEN
+  ASM_SIMP_TAC[REAL_DIV_LMUL; REAL_MUL_RID]);;
+
 let REAL_ABS_INV = prove
  (`!x. abs(inv x) = inv(abs x)`,
   GEN_TAC THEN CONV_TAC SYM_CONV THEN
@@ -1358,6 +1368,69 @@ let REAL_POW_EQ_EQ = prove
     REWRITE_RULE[EVEN_EXISTS]) THEN ASM_REWRITE_TAC[GSYM REAL_POW_POW]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Bounds on convex combinations.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let REAL_CONVEX_BOUND2_LT = prove
+ (`!x y a u v. x < a /\ y < b /\ &0 <= u /\ &0 <= v /\ u + v = &1
+               ==> u * x + v * y < u * a + v * b`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `u = &0` THENL
+   [ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_ADD_LID] THEN REPEAT STRIP_TAC;
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LTE_ADD2 THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL; REAL_LT_IMP_LE]] THEN
+  MATCH_MP_TAC REAL_LT_LMUL THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;
+
+let REAL_CONVEX_BOUND2_LE = prove
+ (`!x y a u v. x <= a /\ y <= b /\ &0 <= u /\ &0 <= v /\ u + v = &1
+               ==> u * x + v * y <= u * a + v * b`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_ADD2 THEN
+  CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;
+
+let REAL_CONVEX_BOUND_LT = prove
+ (`!x y a u v. x < a /\ y < a /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
+               ==> u * x + v * y < a`,
+  MESON_TAC[REAL_CONVEX_BOUND2_LT; MESON[REAL_MUL_LID; REAL_ADD_RDISTRIB]
+   `u + v = &1 ==> u * a + v * a = a`]);;
+
+let REAL_CONVEX_BOUND_LE = prove
+ (`!x y a u v. x <= a /\ y <= a /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
+               ==> u * x + v * y <= a`,
+  MESON_TAC[REAL_CONVEX_BOUND2_LE; MESON[REAL_MUL_LID; REAL_ADD_RDISTRIB]
+   `u + v = &1 ==> u * a + v * a = a`]);;
+
+let REAL_CONVEX_BOUND_GT = prove
+ (`!x y a u v.
+        a < x /\ a < y /\ &0 <= u /\ &0 <= v /\ u + v = &1
+        ==> a < u * x + v * y`,
+  MESON_TAC[REAL_CONVEX_BOUND2_LT; MESON[REAL_MUL_LID; REAL_ADD_RDISTRIB]
+   `u + v = &1 ==> u * a + v * a = a`]);;
+
+let REAL_CONVEX_BOUND_GE = prove
+ (`!x y a u v.
+        a <= x /\ a <= y /\ &0 <= u /\ &0 <= v /\ u + v = &1
+        ==> a <= u * x + v * y`,
+  MESON_TAC[REAL_CONVEX_BOUND2_LE; MESON[REAL_MUL_LID; REAL_ADD_RDISTRIB]
+   `u + v = &1 ==> u * a + v * a = a`]);;
+
+let REAL_CONVEX_BOUNDS_LE = prove
+ (`!x y a b u v.
+        a <= x /\ x <= b /\ a <= y /\ y <= b /\
+        &0 <= u /\ &0 <= v /\ u + v = &1
+        ==> a <= u * x + v * y /\ u * x + v * y <= b`,
+  MESON_TAC[REAL_CONVEX_BOUND2_LE; MESON[REAL_MUL_LID; REAL_ADD_RDISTRIB]
+   `u + v = &1 ==> u * a + v * a = a`]);;
+
+let REAL_CONVEX_BOUNDS_LT = prove
+ (`!x y a b u v.
+        a < x /\ x < b /\ a < y /\ y < b /\
+        &0 <= u /\ &0 <= v /\ u + v = &1
+        ==> a < u * x + v * y /\ u * x + v * y < b`,
+  MESON_TAC[REAL_CONVEX_BOUND2_LT; MESON[REAL_MUL_LID; REAL_ADD_RDISTRIB]
+   `u + v = &1 ==> u * a + v * a = a`]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Some basic forms of the Archimedian property.                             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1769,6 +1842,11 @@ let SQRT_LE_0 = prove
   REWRITE_TAC[REAL_ARITH `&0 <= x <=> &0 < x \/ x = &0`] THEN
   REWRITE_TAC[SQRT_LT_0; SQRT_EQ_0]);;
 
+let REAL_ABS_SQRT = prove
+ (`!x. abs(sqrt x) = sqrt(abs x)`,
+  GEN_TAC THEN REWRITE_TAC[real_abs; SQRT_LE_0] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[SQRT_NEG]);;
+
 let SQRT_MONO_LT = prove
  (`!x y. x < y ==> sqrt(x) < sqrt(y)`,
   SUBGOAL_THEN `!x y. &0 <= x /\ x < y ==> sqrt x < sqrt y` ASSUME_TAC THENL
@@ -1797,6 +1875,10 @@ let SQRT_MONO_LE_EQ = prove
 let SQRT_INJ = prove
  (`!x y. sqrt(x) = sqrt(y) <=> x = y`,
   SIMP_TAC[GSYM REAL_LE_ANTISYM; SQRT_MONO_LE_EQ]);;
+
+let SQRT_EQ_1 = prove
+ (`!x. sqrt x = &1 <=> x = &1`,
+  MESON_TAC[SQRT_INJ; SQRT_1]);;
 
 let SQRT_POS_LT = prove
  (`!x. &0 < x ==> &0 < sqrt(x)`,
@@ -1844,3 +1926,45 @@ let REAL_LSQRT_LE = prove
 let REAL_SQRT_POW_2 = prove
  (`!x. sqrt x pow 2 = abs x`,
   REWRITE_TAC[SQRT_WORKS_GEN]);;
+
+let REAL_ABS_LE_SQRT_POS = prove
+ (`!x y. &0 <= x /\ &0 <= y ==> abs(sqrt x - sqrt y) <= sqrt(abs(x - y))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_RSQRT THEN
+  REWRITE_TAC[REAL_POW_2] THEN
+  TRANS_TAC REAL_LE_TRANS `abs(sqrt x - sqrt y) * abs(sqrt x + sqrt y)` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[REAL_ABS_POS] THEN
+    MATCH_MP_TAC(REAL_ARITH
+     `&0 <= x /\ &0 <= y ==> abs(x - y) <= abs(x + y)`) THEN
+    ASM_SIMP_TAC[SQRT_POS_LE];
+    REWRITE_TAC[GSYM REAL_ABS_MUL; REAL_ARITH
+     `(x - y:real) * (x + y) = x pow 2 - y pow 2`] THEN
+    ASM_SIMP_TAC[SQRT_POW_2; REAL_LE_REFL]]);;
+
+let REAL_ABS_LE_SQRT = prove
+ (`!x y. abs(sqrt x - sqrt y) <= sqrt(&2 * abs(x - y))`,
+  MATCH_MP_TAC REAL_WLOG_LE THEN
+  CONJ_TAC THENL [REWRITE_TAC[REAL_ABS_SUB]; ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`x:real`; `y:real`] THEN DISCH_TAC THEN
+  ASM_CASES_TAC `&0 <= x` THENL
+   [TRANS_TAC REAL_LE_TRANS `sqrt(abs(x - y))` THEN
+    REWRITE_TAC[SQRT_MONO_LE_EQ; REAL_ARITH `abs x <= &2 * abs x`] THEN
+    MATCH_MP_TAC REAL_ABS_LE_SQRT_POS THEN
+    REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+    ALL_TAC] THEN
+  ASM_CASES_TAC `&0 <= y` THENL
+   [ALL_TAC;
+    ONCE_REWRITE_TAC[REAL_ARITH `abs(x - y) = abs(--x - --y)`] THEN
+    REWRITE_TAC[GSYM SQRT_NEG] THEN
+    TRANS_TAC REAL_LE_TRANS `sqrt(abs(--x - --y))` THEN
+    REWRITE_TAC[SQRT_MONO_LE_EQ; REAL_ARITH `abs x <= &2 * abs x`] THEN
+    MATCH_MP_TAC REAL_ABS_LE_SQRT_POS THEN
+    REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC] THEN
+  ASM_SIMP_TAC[SQRT_LE_0; REAL_ARITH
+   `~(&0 <= x) /\ &0 <= y ==> abs(x - y) = y - x`] THEN
+  MATCH_MP_TAC REAL_LE_RSQRT THEN
+  MP_TAC(SPEC `sqrt(--x) - sqrt y` REAL_LE_POW_2) THEN
+  REWRITE_TAC[REAL_ARITH
+   `(x - y:real) pow 2 = (x pow 2 + y pow 2) - &2 * x * y`] THEN
+  REWRITE_TAC[REAL_SQRT_POW_2] THEN REWRITE_TAC[SQRT_NEG; REAL_ABS_NEG] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;

@@ -92,32 +92,6 @@ let LOWER_BOUND_FINITE_SET_REAL = prove
   REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
   METIS_TAC[REAL_LE_TOTAL; REAL_LE_REFL; REAL_LE_TRANS]);;
 
-let REAL_CONVEX_BOUND2_LT = prove
- (`!x y a u v. x < a /\ y < b /\ &0 <= u /\ &0 <= v /\ u + v = &1
-               ==> u * x + v * y < u * a + v * b`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `u = &0` THENL
-   [ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_ADD_LID] THEN REPEAT STRIP_TAC;
-    REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LTE_ADD2 THEN
-    ASM_SIMP_TAC[REAL_LE_LMUL; REAL_LT_IMP_LE]] THEN
-  MATCH_MP_TAC REAL_LT_LMUL THEN ASM_REAL_ARITH_TAC);;
-
-let REAL_CONVEX_BOUND_LT = prove
- (`!x y a u v. x < a /\ y < a /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
-               ==> u * x + v * y < a`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
-  EXISTS_TAC `u * a + v * a:real` THEN CONJ_TAC THENL
-   [ASM_SIMP_TAC[REAL_CONVEX_BOUND2_LT];
-    MATCH_MP_TAC REAL_EQ_IMP_LE THEN
-    UNDISCH_TAC `u + v = &1` THEN CONV_TAC REAL_RING]);;
-
-let REAL_CONVEX_BOUND_LE = prove
- (`!x y a u v. x <= a /\ y <= a /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
-               ==> u * x + v * y <= a`,
-  REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(u + v) * a` THEN
-  CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[REAL_LE_REFL; REAL_MUL_LID]] THEN
-  ASM_SIMP_TAC[REAL_ADD_RDISTRIB; REAL_LE_ADD2; REAL_LE_LMUL]);;
-
 let REAL_CONVEX_SUM_BOUND_LE = prove
  (`!s d a b x:A->real.
         (!i. i IN s ==> &0 <= x i) /\ sum s x = &1 /\

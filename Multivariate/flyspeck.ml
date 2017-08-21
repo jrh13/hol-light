@@ -4479,11 +4479,7 @@ let AREA_UNIT_CBALL = prove
     MATCH_MP_TAC REAL_CONTINUOUS_ON_COMPOSE THEN
     SIMP_TAC[REAL_CONTINUOUS_ON_SUB; REAL_CONTINUOUS_ON_POW;
              REAL_CONTINUOUS_ON_ID; REAL_CONTINUOUS_ON_CONST] THEN
-    MATCH_MP_TAC REAL_CONTINUOUS_ON_SQRT THEN
-    REWRITE_TAC[FORALL_IN_IMAGE; IN_REAL_INTERVAL] THEN
-    REWRITE_TAC[REAL_ARITH `&0 <= &1 - x <=> x <= &1 pow 2`] THEN
-    REWRITE_TAC[GSYM REAL_LE_SQUARE_ABS; REAL_ABS_NUM] THEN
-    REAL_ARITH_TAC;
+    REWRITE_TAC[REAL_CONTINUOUS_ON_SQRT];
     REWRITE_TAC[IN_REAL_INTERVAL; REAL_BOUNDS_LT] THEN REPEAT STRIP_TAC THEN
     REAL_DIFF_TAC THEN
     CONV_TAC NUM_REDUCE_CONV THEN
@@ -7052,6 +7048,11 @@ let REAL_LE_LSQRT = prove
 let REAL_LT_LSQRT = prove
  (`!x y. &0 <= x /\ &0 <= y /\ x < y pow 2 ==> sqrt x < y`,
   MESON_TAC[REAL_LT_LSQRT]);;
+
+let CONTINUOUS_WITHIN_LIFT_SQRT = prove
+ (`!a s. (!x. x IN s ==> &0 <= drop x)
+         ==> (lift o sqrt o drop) continuous (at a within s)`,
+  MESON_TAC[CONTINUOUS_WITHIN_LIFT_SQRT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Fix the congruence rules as expected in Flyspeck.                         *)
