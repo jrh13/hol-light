@@ -745,7 +745,7 @@ let INVERTIBLE_NEARBY_ONORM = prove
     REWRITE_TAC[MATRIX_ADD_RNEG; MATRIX_ADD_ASSOC; MATRIX_ADD_LID] THEN
     REWRITE_TAC[MATRIX_NEG_NEG];
     ASM_REWRITE_TAC[INVERTIBLE_MATRIX_MUL]] THEN
-  REWRITE_TAC[INVERTIBLE_LEFT_INVERSE; MATRIX_LEFT_INVERTIBLE_NULLSPACE] THEN
+  REWRITE_TAC[INVERTIBLE_LEFT_INVERSE; MATRIX_LEFT_INVERTIBLE_KER] THEN
   X_GEN_TAC `x:real^N` THEN
   REWRITE_TAC[MATRIX_VECTOR_MUL_SUB_RDISTRIB; VECTOR_SUB_EQ] THEN
   CONV_TAC(LAND_CONV SYM_CONV) THEN REWRITE_TAC[MATRIX_VECTOR_MUL_LID] THEN
@@ -1734,7 +1734,7 @@ let DIAGONAL_MATRIX_CMUL = prove
         diagonal_matrix A ==> diagonal_matrix(c %% A)`,
   SIMP_TAC[diagonal_matrix; MATRIX_CMUL_COMPONENT; REAL_MUL_RZERO]);;
 
-let DIAGONAL_MATRIX_MUL_EXPLICIT = prove
+let MATRIX_MUL_DIAGONAL = prove
  (`!A:real^N^N B:real^N^N.
         diagonal_matrix A /\ diagonal_matrix B
         ==> A ** B = lambda i j. A$i$j * B$i$j`,
@@ -1752,13 +1752,7 @@ let DIAGONAL_MATRIX_MUL_COMPONENT = prove
         1 <= i /\ i <= dimindex(:N) /\
         1 <= j /\ j <= dimindex(:N)
         ==> (A ** B)$i$j = A$i$j * B$i$j`,
-  ASM_SIMP_TAC[DIAGONAL_MATRIX_MUL_EXPLICIT; LAMBDA_BETA]);;
-
-let MATRIX_MUL_DIAGONAL = prove
- (`!A:real^N^N B:real^N^N.
-        diagonal_matrix A /\ diagonal_matrix B
-        ==> A ** B = lambda i j. A$i$j * B$i$j`,
-  SIMP_TAC[CART_EQ; LAMBDA_BETA; DIAGONAL_MATRIX_MUL_COMPONENT]);;
+  ASM_SIMP_TAC[MATRIX_MUL_DIAGONAL; LAMBDA_BETA]);;
 
 let DIAGONAL_MATRIX_MUL = prove
  (`!A:real^N^N B:real^N^N.
@@ -3050,7 +3044,7 @@ let SCALING_LINEAR = prove
    [FIRST_ASSUM(MP_TAC o GEN `v:real^M` o
       SPECL [`v:real^M`; `vec 0 :real^M`]) THEN
     REWRITE_TAC[dist] THEN ASM_REWRITE_TAC[VECTOR_SUB_RZERO] THEN
-    DISCH_TAC THEN ASM_REWRITE_TAC[DOT_NORM_NEG; GSYM dist] THEN
+    DISCH_TAC THEN ASM_REWRITE_TAC[DOT_NORM_SUB; GSYM dist] THEN
     REAL_ARITH_TAC;
     ALL_TAC] THEN
   REWRITE_TAC[linear; VECTOR_EQ] THEN

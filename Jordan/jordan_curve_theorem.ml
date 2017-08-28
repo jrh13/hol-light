@@ -19892,7 +19892,7 @@ let compact_distance = prove_by_refinement(
   REP_BASIC_TAC;
   TYPE_THEN `twopow (--: (&:(ss(SUC n'+SUC n)))) < twopow(--: (&:(SUC n)))` SUBGOAL_TAC;
   IMATCH_MP_TAC  twopow_lt;
-  REWRITE_TAC[INT_LT_NEG;INT_OF_NUM_LT;];
+  REWRITE_TAC[INT_LT_NEG2;INT_OF_NUM_LT;];
   IMATCH_MP_TAC (ARITH_RULE `(?t. (a <= t /\ t <| b)) ==> (a <| b)`);
   TYPE_THEN `ss (SUC n)` EXISTS_TAC;
   ASM_SIMP_TAC[SEQ_SUBLE;subseq];
@@ -19988,7 +19988,7 @@ let compact_distance = prove_by_refinement(
   TSPEC `ss' (SUC n + SUC n')` 25;
   TYPE_THEN `twopow (--: (&:(ss' (SUC  n +| SUC n')))) < twopow (--: (&:(SUC n)))` SUBGOAL_TAC;
   IMATCH_MP_TAC  twopow_lt;
-  REWRITE_TAC[INT_LT_NEG;INT_OF_NUM_LT ];
+  REWRITE_TAC[INT_LT_NEG2;INT_OF_NUM_LT ];
   IMATCH_MP_TAC  (ARITH_RULE  `(?t. (a <=| t /\ (t <| b)))    ==> (a <| b)`);
   TYPE_THEN `(ss' (SUC n) )` EXISTS_TAC;
   ASM_SIMP_TAC[SEQ_SUBLE];

@@ -795,7 +795,7 @@ let FIXED_FULP_DISTANCE =
           REWRITE_TAC[ARITH_RULE `((x:real) + &1) * y = x * y + &1 * y`] THEN
           REWRITE_TAC[ARITH_RULE `(x:real) <= y + z <=> x - z <= y`] THEN
           REWRITE_TAC[ARITH_RULE `(x:real) * z - &1 * z = (x - &1) * z`] THEN
-          ONCE_REWRITE_TAC[GSYM REAL_LE_NEG] THEN
+          ONCE_REWRITE_TAC[GSYM REAL_LE_NEG2] THEN
           REWRITE_TAC[ARITH_RULE `--((a:real) * b) = (--a) * b`] THEN
           USE_THEN "fgt0" (fun fgt0 -> REWRITE_TAC[MATCH_MP
           REAL_OF_NUM_SUB (MATCH_MP (ARITH_RULE `0 < n ==> 1 <= n`) fgt0)]) THEN

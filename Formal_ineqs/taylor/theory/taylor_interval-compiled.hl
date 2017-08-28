@@ -1104,7 +1104,7 @@ let continuous_leq_segment = section_proof ["f";"c";"a";"b"]
    ((fun arg_tac -> arg_tac (Arg_term (`\x. f (--x)`))) (term_tac (set_tac "g")));
    ((THENL_FIRST) ((fun arg_tac -> arg_tac (Arg_term (`!x. f x = g (--x)`))) (term_tac (have_gen_tac [](move ["fg"])))) (((((use_arg_then "g_def")(gsym_then (thm_tac (new_rewrite [] []))))) THEN (simp_tac) THEN (((use_arg_then "REAL_NEG_NEG")(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
    ((((use_arg_then "fg")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "continuous_leq") (disch_tac [])) THEN (clear_assumption "continuous_leq") THEN (DISCH_THEN apply_tac)) THEN (split_tac));
-   (((fun arg_tac -> arg_tac (Arg_term (`--a`))) (term_tac exists_tac)) THEN (((((use_arg_then "REAL_LT_NEG")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "ab")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "andTb")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "IN_REAL_INTERVAL")(thm_tac (new_rewrite [] []))))) THEN (move ["y"])));
+   (((fun arg_tac -> arg_tac (Arg_term (`--a`))) (term_tac exists_tac)) THEN (((((use_arg_then "REAL_LT_NEG2")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "ab")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "andTb")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "IN_REAL_INTERVAL")(thm_tac (new_rewrite [] []))))) THEN (move ["y"])));
    ((((fun arg_tac -> (use_arg_then "ineq") (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`--y`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN ((((use_arg_then "IN_REAL_INTERVAL")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "fg")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "REAL_NEG_NEG")(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac));
    (((((use_arg_then "g_def")(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "continuous_reflection")(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
 ];;
@@ -1607,7 +1607,7 @@ let second_derivative_atn_eq = section_proof ["x"]
    ((((fun arg_tac -> (use_arg_then "REAL_ADD_LID") (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`&2 * x`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then "HAS_REAL_DERIVATIVE_ADD")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "HAS_REAL_DERIVATIVE_CONST")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "andTb")(thm_tac (new_rewrite [] [])))));
    ((((use_arg_then "REAL_POW_2")(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> arg_tac (Arg_theorem (REAL_ARITH `&2 * x = x * &1 + &1 * x`)))(thm_tac (new_rewrite [] [])))));
    (((((use_arg_then "HAS_REAL_DERIVATIVE_MUL_ATREAL")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "HAS_REAL_DERIVATIVE_ID")(thm_tac (new_rewrite [] []))))) THEN (done_tac));
-   (((((use_arg_then "REAL_POS_NZ")(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then "REAL_ADD_SYM")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "REAL_LT_ADD1")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "REAL_LE_POW_2")(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   (((((use_arg_then "REAL_LT_IMP_NZ")(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then "REAL_ADD_SYM")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "REAL_LT_ADD1")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "REAL_LE_POW_2")(thm_tac (new_rewrite [] []))))) THEN (done_tac));
 ];;
 
 (* Lemma second_derivative_atn *)
@@ -1934,7 +1934,7 @@ let second_derivative_compose_sqrt = section_proof []
    (((((use_arg_then "SQRT_POW")(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then "REAL_LT_IMP_LE")(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `3 = SUC 2`)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "real_powS")(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then "SQRT_POW_2")(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then "REAL_LT_IMP_LE")(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
    (repeat_tactic 1 9 (((use_arg_then "REAL_INV_MUL")(thm_tac (new_rewrite [] [])))));
    (((fun arg_tac -> arg_tac (Arg_theorem (REAL_ARITH `!a b c d. (&2 * a * b) * inv (&4) * c * d = (inv (&2) * c) * a * (b * d)`)))(thm_tac (new_rewrite [] []))));
-   (((((use_arg_then "REAL_MUL_RINV")(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then "REAL_POS_NZ")(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then "REAL_MUL_RID")(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   (((((use_arg_then "REAL_MUL_RINV")(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then "REAL_LT_IMP_NZ")(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then "REAL_MUL_RID")(thm_tac (new_rewrite [] []))))) THEN (done_tac));
 ];;
 
 (* Lemma second_derivative_compose_acs *)

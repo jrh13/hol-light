@@ -363,7 +363,6 @@ let INT_LE_MAX = INT_OF_REAL_THM REAL_LE_MAX;;
 let INT_LE_MIN = INT_OF_REAL_THM REAL_LE_MIN;;
 let INT_LE_MUL = INT_OF_REAL_THM REAL_LE_MUL;;
 let INT_LE_MUL_EQ = INT_OF_REAL_THM REAL_LE_MUL_EQ;;
-let INT_LE_NEG = INT_OF_REAL_THM REAL_LE_NEG;;
 let INT_LE_NEG2 = INT_OF_REAL_THM REAL_LE_NEG2;;
 let INT_LE_NEGL = INT_OF_REAL_THM REAL_LE_NEGL;;
 let INT_LE_NEGR = INT_OF_REAL_THM REAL_LE_NEGR;;
@@ -405,7 +404,6 @@ let INT_LT_MAX = INT_OF_REAL_THM REAL_LT_MAX;;
 let INT_LT_MIN = INT_OF_REAL_THM REAL_LT_MIN;;
 let INT_LT_MUL = INT_OF_REAL_THM REAL_LT_MUL;;
 let INT_LT_MUL_EQ = INT_OF_REAL_THM REAL_LT_MUL_EQ;;
-let INT_LT_NEG = INT_OF_REAL_THM REAL_LT_NEG;;
 let INT_LT_NEG2 = INT_OF_REAL_THM REAL_LT_NEG2;;
 let INT_LT_NEGTOTAL = INT_OF_REAL_THM REAL_LT_NEGTOTAL;;
 let INT_LT_POW2 = INT_OF_REAL_THM REAL_LT_POW2;;
@@ -442,7 +440,6 @@ let INT_MUL_RID = INT_OF_REAL_THM REAL_MUL_RID;;
 let INT_MUL_RNEG = INT_OF_REAL_THM REAL_MUL_RNEG;;
 let INT_MUL_RZERO = INT_OF_REAL_THM REAL_MUL_RZERO;;
 let INT_MUL_SYM = INT_OF_REAL_THM REAL_MUL_SYM;;
-let INT_NEGNEG = INT_OF_REAL_THM REAL_NEGNEG;;
 let INT_NEG_0 = INT_OF_REAL_THM REAL_NEG_0;;
 let INT_NEG_ADD = INT_OF_REAL_THM REAL_NEG_ADD;;
 let INT_NEG_EQ = INT_OF_REAL_THM REAL_NEG_EQ;;
@@ -473,7 +470,7 @@ let INT_OF_NUM_POW = INT_OF_REAL_THM REAL_OF_NUM_POW;;
 let INT_OF_NUM_SUB = INT_OF_REAL_THM REAL_OF_NUM_SUB;;
 let INT_OF_NUM_SUC = INT_OF_REAL_THM REAL_OF_NUM_SUC;;
 let INT_POS = INT_OF_REAL_THM REAL_POS;;
-let INT_POS_NZ = INT_OF_REAL_THM REAL_POS_NZ;;
+let INT_POS_NZ = INT_OF_REAL_THM REAL_LT_IMP_NZ;;
 let INT_POW2_ABS = INT_OF_REAL_THM REAL_POW2_ABS;;
 let INT_POW_1 = INT_OF_REAL_THM REAL_POW_1;;
 let INT_POW_1_LE = INT_OF_REAL_THM REAL_POW_1_LE;;
@@ -535,20 +532,20 @@ let INT_SUB_SUB = INT_OF_REAL_THM REAL_SUB_SUB;;
 let INT_SUB_SUB2 = INT_OF_REAL_THM REAL_SUB_SUB2;;
 let INT_SUB_TRIANGLE = INT_OF_REAL_THM REAL_SUB_TRIANGLE;;
 
-let INT_WLOG_LE = prove                                                        
- (`(!x y:int. P x y <=> P y x) /\ (!x y. x <= y ==> P x y) ==> !x y. P x y`,   
-  MESON_TAC[INT_LE_TOTAL]);;                                                   
-                                                      
-let INT_WLOG_LT = prove                                                      
+let INT_WLOG_LE = prove
+ (`(!x y:int. P x y <=> P y x) /\ (!x y. x <= y ==> P x y) ==> !x y. P x y`,
+  MESON_TAC[INT_LE_TOTAL]);;
+
+let INT_WLOG_LT = prove
  (`(!x:int. P x x) /\ (!x y. P x y <=> P y x) /\ (!x y. x < y ==> P x y)
-   ==> !x y. P x y`,                                            
-  MESON_TAC[INT_LT_TOTAL]);;                           
-                                                        
-let INT_WLOG_LE_3 = prove                          
- (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\              
-       (!x y z:int. x <= y /\ y <= z ==> P x y z)                       
-       ==> !x y z. P x y z`,                                              
-  MESON_TAC[INT_LE_TOTAL]);;                                                   
+   ==> !x y. P x y`,
+  MESON_TAC[INT_LT_TOTAL]);;
+
+let INT_WLOG_LE_3 = prove
+ (`!P. (!x y z. P x y z ==> P y x z /\ P x z y) /\
+       (!x y z:int. x <= y /\ y <= z ==> P x y z)
+       ==> !x y z. P x y z`,
+  MESON_TAC[INT_LE_TOTAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More useful "image" theorems.                                             *)

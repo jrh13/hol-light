@@ -551,12 +551,8 @@ let INTEGER_EXISTS_BETWEEN_ABS_LT = prove
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A couple more theorems about real_of_int.                                 *)
+(* One more trivial theorem about real_of_int.                               *)
 (* ------------------------------------------------------------------------- *)
-
-let INT_OF_REAL_OF_INT = prove
- (`!i. int_of_real(real_of_int i) = i`,
-  REWRITE_TAC[int_abstr]);;
 
 let REAL_OF_INT_OF_REAL = prove
  (`!x. integer(x) ==> real_of_int(int_of_real x) = x`,

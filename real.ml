@@ -117,10 +117,6 @@ let REAL_NEG_RMUL = prove
  (`!x y. --(x * y) = x * (--y)`,
   REAL_ARITH_TAC);;
 
-let REAL_NEGNEG = prove
- (`!x. --(--x) = x`,
-  REAL_ARITH_TAC);;
-
 let REAL_NEG_MUL2 = prove
  (`!x y. (--x) * (--y) = x * y`,
   REAL_ARITH_TAC);;
@@ -305,14 +301,6 @@ let REAL_LE_SUB_RADD = prove
  (`!x y z. (x - y) <= z <=> x <= z + y`,
   REAL_ARITH_TAC);;
 
-let REAL_LT_NEG = prove
- (`!x y. --x < --y <=> y < x`,
-  REAL_ARITH_TAC);;
-
-let REAL_LE_NEG = prove
- (`!x y. --x <= --y <=> y <= x`,
-  REAL_ARITH_TAC);;
-
 let REAL_ADD2_SUB2 = prove
  (`!a b c d. (a + b) - (c + d) = (a - c) + (b - d)`,
   REAL_ARITH_TAC);;
@@ -369,7 +357,7 @@ let REAL_EQ_IMP_LE = prove
  (`!x y. (x = y) ==> x <= y`,
   REAL_ARITH_TAC);;
 
-let REAL_POS_NZ = prove
+let REAL_LT_IMP_NZ = prove
  (`!x. &0 < x ==> ~(x = &0)`,
   REAL_ARITH_TAC);;
 
@@ -848,10 +836,6 @@ let REAL_POW_SUB = prove
   REWRITE_TAC[REAL_MUL_ASSOC] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_MUL_LINV THEN
   MATCH_MP_TAC REAL_POW_NZ THEN ASM_REWRITE_TAC[]);;
-
-let REAL_LT_IMP_NZ = prove
- (`!x. &0 < x ==> ~(x = &0)`,
-  REAL_ARITH_TAC);;
 
 let REAL_LT_LCANCEL_IMP = prove
  (`!x y z. &0 < x /\ x * y < x * z ==> y < z`,

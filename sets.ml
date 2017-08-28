@@ -698,10 +698,6 @@ let PSUBSET_INSERT_SUBSET = prove
  (`!s t. s PSUBSET t <=> ?x:A. ~(x IN s) /\ (x INSERT s) SUBSET t`,
   SET_TAC[]);;
 
-let PSUBSET_MEMBER = prove
- (`!s:A->bool. !t. s PSUBSET t <=> (s SUBSET t /\ ?y. y IN t /\ ~(y IN s))`,
-  SET_TAC[]);;
-
 let DELETE_INSERT = prove
  (`!x:A. !y s.
       (x INSERT s) DELETE y =

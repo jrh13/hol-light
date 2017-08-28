@@ -226,11 +226,6 @@ let LAMBDA_SKOLEM = prove
     DISCH_THEN(X_CHOOSE_TAC `x:A^N`) THEN
     EXISTS_TAC `\i. (x:A^N)$i` THEN ASM_REWRITE_TAC[]]);;
 
-let LAMBDA_PAIR = prove
- (`(\(x,y). P x y) = (\p. P (FST p) (SND p))`,
-  REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM] THEN
-  CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN REWRITE_TAC[]);;
-
 let EPSILON_DELTA_MINIMAL = prove
  (`!P:real->A->bool Q.
         FINITE {x | Q x} /\

@@ -902,7 +902,7 @@ let IVT_INCREASING_RE = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_AT_COMPOSE THEN
   ASM_SIMP_TAC[o_THM] THEN REWRITE_TAC[continuous_at; o_THM] THEN
   REWRITE_TAC[dist; GSYM CX_SUB; GSYM DROP_SUB; COMPLEX_NORM_CX] THEN
-  REWRITE_TAC[GSYM ABS_DROP] THEN MESON_TAC[]);;
+  REWRITE_TAC[GSYM NORM_1] THEN MESON_TAC[]);;
 
 let IVT_DECREASING_RE = prove
  (`!f a b y.
@@ -5505,11 +5505,11 @@ let CACS_RANGE_LEMMA = prove
 
 let RE_CASN = prove
  (`!z. Re(casn z) = Im(clog(ii * z + csqrt(Cx(&1) - z pow 2)))`,
-  REWRITE_TAC[casn; COMPLEX_MUL_LNEG; RE_NEG; RE_MUL_II; REAL_NEGNEG]);;
+  REWRITE_TAC[casn; COMPLEX_MUL_LNEG; RE_NEG; RE_MUL_II; REAL_NEG_NEG]);;
 
 let RE_CACS = prove
  (`!z. Re(cacs z) = Im(clog(z + ii * csqrt(Cx(&1) - z pow 2)))`,
-  REWRITE_TAC[cacs; COMPLEX_MUL_LNEG; RE_NEG; RE_MUL_II; REAL_NEGNEG]);;
+  REWRITE_TAC[cacs; COMPLEX_MUL_LNEG; RE_NEG; RE_MUL_II; REAL_NEG_NEG]);;
 
 let CASN_BOUNDS = prove
  (`!z. abs(Re z) < &1 ==> abs(Re(casn z)) < pi / &2`,
@@ -6169,7 +6169,7 @@ let LIM_LOG_OVER_N = prove
 let LIM_1_OVER_POWER = prove
  (`!s. &0 < Re s
        ==> ((\n. Cx(&1) / Cx(&n) cpow s) --> Cx(&0)) sequentially`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_NULL_COMPLEX_BOUND THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_NULL_COMPARISON_COMPLEX THEN
   EXISTS_TAC `\n. clog(Cx(&n)) / Cx(&n) cpow s` THEN
   ASM_SIMP_TAC[LIM_LOG_OVER_POWER_N] THEN
   REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN

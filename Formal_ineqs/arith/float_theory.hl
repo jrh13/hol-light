@@ -80,7 +80,7 @@ let FLOAT_F_bound = (GEN_ALL o prove)(`num_exp n1 e1 <= num_exp n2 e2
 
 let FLOAT_T_bound = (GEN_ALL o prove)(`num_exp n1 e1 <= num_exp n2 e2
                                         ==> float_num T n2 e2 <= float_num T n1 e1`,
-                      REWRITE_TAC[FLOAT_NEG_T; REAL_LE_NEG; FLOAT_F_bound]);;
+                      REWRITE_TAC[FLOAT_NEG_T; REAL_LE_NEG2; FLOAT_F_bound]);;
 
 
 

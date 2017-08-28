@@ -8354,7 +8354,7 @@ let CONVEX_CONNECTED_1_GEN = prove
 
 let CONNECTED_CONVEX_1_GEN = prove
  (`!s:real^N->bool.
-        dimindex(:N) = 1 ==> (convex s <=> connected s)`,
+        dimindex(:N) = 1 ==> (connected s <=> convex s)`,
   SIMP_TAC[CONVEX_CONNECTED_1_GEN]);;
 
 let COMPACT_CONVEX_COLLINEAR_SEGMENT_ALT = prove
@@ -9315,7 +9315,7 @@ let KIRSZBRAUN = prove
                            x * y * (&2 * a * z + b * w)`] THEN
     REWRITE_TAC[REAL_ARITH `&2 * q pow 2 * x = &2 * q * q * x`] THEN
     ONCE_REWRITE_TAC[GSYM DOT_RMUL] THEN ONCE_REWRITE_TAC[GSYM DOT_LMUL] THEN
-    REWRITE_TAC[DOT_NORM_NEG; REAL_ARITH `&2 * x / &2 = x`] THEN
+    REWRITE_TAC[DOT_NORM_SUB; REAL_ARITH `&2 * x / &2 = x`] THEN
     REWRITE_TAC[VECTOR_ARITH
      `q % (x - y) - q % (x' - y):real^N = q % (x - x')`] THEN
     REWRITE_TAC[NORM_MUL; REAL_POW_MUL; REAL_POW2_ABS] THEN
@@ -9348,7 +9348,7 @@ let KIRSZBRAUN = prove
     DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
     ONCE_REWRITE_TAC[REAL_ARITH
      `(x * y) * (a - b) = &2 * (x * y * (a - b) / &2)`] THEN
-    REWRITE_TAC[GSYM DOT_NORM_NEG] THEN
+    REWRITE_TAC[GSYM DOT_NORM_SUB] THEN
     ONCE_REWRITE_TAC[GSYM DOT_RMUL] THEN ONCE_REWRITE_TAC[GSYM DOT_LMUL] THEN
     REWRITE_TAC[SUM_LMUL] THEN
     MATCH_MP_TAC(REAL_ARITH `x = &0 ==> &2 * x <= &0`) THEN
@@ -16848,7 +16848,7 @@ let FRONTIER_CONVEX_HULL_EXPLICIT = prove
     EXISTS_TAC `affine hull s:real^N->bool` THEN
     ASM_SIMP_TAC[AFFINE_INDEPENDENT_SPAN_GT; HULL_MONO; HULL_SUBSET]]);;
 
-let RELATIVE_FRONTIER_CONVEX_HULL_CASES = prove
+let RELATIVE_FRONTIER_OF_CONVEX_HULL = prove
  (`!s:real^N->bool.
         ~(affine_dependent s)
         ==> relative_frontier(convex hull s) =
@@ -16885,7 +16885,7 @@ let FRONTIER_CONVEX_HULL_CASES = prove
   ASM_SIMP_TAC[frontier; CLOSURE_CONVEX_HULL; FINITE_IMP_COMPACT] THEN
   COND_CASES_TAC THENL
    [ASM_SIMP_TAC[INTERIOR_CONVEX_HULL_EXPLICIT; DIFF_EMPTY]; ALL_TAC] THEN
-  ASM_SIMP_TAC[GSYM RELATIVE_FRONTIER_CONVEX_HULL_CASES] THEN
+  ASM_SIMP_TAC[GSYM RELATIVE_FRONTIER_OF_CONVEX_HULL] THEN
   ASM_SIMP_TAC[relative_frontier; frontier;
                CLOSURE_CONVEX_HULL; FINITE_IMP_COMPACT] THEN
   AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN

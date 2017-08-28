@@ -90,7 +90,7 @@ let NABS_NEG = prove(`!n. (nabs (-- (int_of_num n))) = n`,
         THEN (REWRITE_TAC[REAL_OF_NUM_ADD;REAL_OF_NUM_EQ])
         THEN (MESON_TAC[ADD_EQ_0]) in
         [branch1;(REWRITE_TAC[int_eq;INT_NUM_REAL])])
-        THEN (REWRITE_TAC[INT_NUM_REAL;int_neg_th;REAL_NEG_EQ;REAL_NEGNEG])
+        THEN (REWRITE_TAC[INT_NUM_REAL;int_neg_th;REAL_NEG_EQ;REAL_NEG_NEG])
         THEN (MESON_TAC[REAL_OF_NUM_EQ]));;
 
 

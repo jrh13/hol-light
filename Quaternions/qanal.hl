@@ -447,7 +447,7 @@ let CONTINUOUS_HX_DROP = prove
  (`!net f. f continuous net ==> (\x:A. Hx(drop(f x))) continuous net`,
   REWRITE_TAC[continuous; tendsto] THEN
   REWRITE_TAC[dist; GSYM HX_SUB; NORM_HX; GSYM DROP_SUB] THEN
-  REWRITE_TAC[GSYM ABS_DROP]);;
+  REWRITE_TAC[GSYM NORM_1]);;
 
 let CONTINUOUS_ON_HX_DROP = prove
  (`!f s. f continuous_on s ==> (\x:real^N. Hx(drop(f x))) continuous_on s`,

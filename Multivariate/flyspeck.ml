@@ -5286,7 +5286,7 @@ let MEASURE_CLOSED_SECTOR_LE = prove
              REAL_FIELD `&0 < p ==> t / (&2 * p) * &2 * p = t`] THEN
     DISCH_THEN MATCH_MP_TAC THEN MP_TAC PI_POS THEN ASM_REAL_ARITH_TAC] THEN
   REWRITE_TAC[] THEN REPEAT STRIP_TAC THENL
-   [MATCH_MP_TAC REALLIM_TRANSFORM_BOUND THEN
+   [MATCH_MP_TAC REALLIM_NULL_COMPARISON THEN
     EXISTS_TAC `\t. r pow 2 * sin(t)` THEN REWRITE_TAC[] THEN CONJ_TAC THENL
      [REWRITE_TAC[EVENTUALLY_WITHINREAL] THEN EXISTS_TAC `pi / &2` THEN
       SIMP_TAC[PI_POS; REAL_LT_DIV; IN_ELIM_THM; REAL_OF_NUM_LT; ARITH] THEN
@@ -6995,6 +6995,47 @@ let RELATIVE_FRONTIER_OF_POLYHEDRON = RELATIVE_BOUNDARY_OF_POLYHEDRON;;
 let SUM_POS_LE = prove
  (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x)) ==> &0 <= sum s f`,
   REWRITE_TAC[REWRITE_RULE[SUM_0] (ISPEC `\x. &0` SUM_LE)]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Some synonyms that were removed.                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let INT_LE_NEG = prove
+ (`!x y:int. --x <= --y <=> y <= x`,
+  MATCH_ACCEPT_TAC INT_LE_NEG2);;
+
+let INT_LT_NEG = prove
+ (`!x y:int. --x < --y <=> y < x`,
+  MATCH_ACCEPT_TAC INT_LT_NEG2);;
+
+let INT_NEGNEG = prove
+ (`!x:int. --(--x) = x`,
+  MATCH_ACCEPT_TAC INT_NEG_NEG);;
+
+let PSUBSET_MEMBER = prove
+ (`!s:A->bool. !t. s PSUBSET t <=> (s SUBSET t /\ ?y. y IN t /\ ~(y IN s))`,
+  MATCH_ACCEPT_TAC PSUBSET_ALT);;
+
+let REAL_LE_NEG = prove
+ (`!x y:real. --x <= --y <=> y <= x`,
+  MATCH_ACCEPT_TAC REAL_LE_NEG2);;
+
+let REAL_LT_NEG = prove
+ (`!x y:real. --x < --y <=> y < x`,
+  MATCH_ACCEPT_TAC REAL_LT_NEG2);;
+
+let REAL_NEGNEG = prove
+ (`!x:real. --(--x) = x`,
+  MATCH_ACCEPT_TAC REAL_NEG_NEG);;
+
+let REAL_POS_NZ = prove
+ (`!x:real. &0 < x ==> ~(x = &0)`,
+  MATCH_ACCEPT_TAC REAL_LT_IMP_NZ);;
+
+let DOT_NORM_NEG = prove
+ (`!x y:real^N.
+        x dot y = ((norm(x) pow 2 + norm(y) pow 2) - norm(x - y) pow 2) / &2`,
+  MATCH_ACCEPT_TAC DOT_NORM_SUB);;
 
 (* ------------------------------------------------------------------------- *)
 (* Also, the definition of sqrt was totalized, so keep old theorems          *)

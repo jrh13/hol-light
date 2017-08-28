@@ -182,14 +182,8 @@ let num_CASES = prove
 (* Augmenting inductive type store.                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let num_RECURSION_STD = prove
- (`!e:Z f. ?fn. (fn 0 = e) /\ (!n. fn (SUC n) = f n (fn n))`,
-  REPEAT GEN_TAC THEN
-  MP_TAC(ISPECL [`e:Z`; `(\z n. (f:num->Z->Z) n z)`] num_RECURSION) THEN
-  REWRITE_TAC[]);;
-
 inductive_type_store :=
- ("num",(2,num_INDUCTION,num_RECURSION_STD))::(!inductive_type_store);;
+ ("num",(2,num_INDUCTION,num_RECURSION))::(!inductive_type_store);;
 
 (* ------------------------------------------------------------------------- *)
 (* "Bitwise" binary representation of numerals.                              *)

@@ -6427,12 +6427,12 @@ let complete_compact = prove_by_refinement(
   COPY 9;
   JOIN 12 13;
   LEFT 12 "i";
-  USE 12 (REWRITE_RULE [GSYM PSUBSET ;PSUBSET_MEMBER;IN  ]);
-  LEFT 12 "y";
-  LEFT 12 "y";
+  USE 12 (REWRITE_RULE [GSYM PSUBSET ;PSUBSET_ALT;IN  ]);
+  LEFT 12 "a";
+  LEFT 12 "a";
   CHO 12;
   ALL_TAC ; (* "sv2" *)
-  TYPE_THEN `(?ss. subseq ss /\ converge (X,d) (y o ss))` SUBGOAL_TAC;
+  TYPE_THEN `(?ss. subseq ss /\ converge (X,d) (a o ss))` SUBGOAL_TAC;
   IMATCH_MP_TAC  convergent_subseq ;
   ASM_REWRITE_TAC[sequence];
   REWRITE_TAC[SUBSET;UNIV;IN_IMAGE  ];
@@ -6488,9 +6488,9 @@ let complete_compact = prove_by_refinement(
   TYPE_THEN `n +| (j)` (USE 13 o SPEC);
   USE 13 (REWRITE_RULE[ARITH_RULE `n<=| (n+| a)`]);
   AND 19;
-  TYPE_THEN `u ((y o ss) (n +| j) )` SUBGOAL_TAC;
+  TYPE_THEN `u ((a o ss) (n +| j) )` SUBGOAL_TAC;
   USE 19 (REWRITE_RULE[SUBSET;open_ball;IN ;IN_ELIM_THM' ]);
-  TYPE_THEN `((y o ss) (n +| j))` (USE 19 o SPEC);
+  TYPE_THEN `((a o ss) (n +| j))` (USE 19 o SPEC);
   ASM_REWRITE_TAC[];
   UND 19;
   DISCH_THEN IMATCH_MP_TAC  ;
@@ -6498,8 +6498,8 @@ let complete_compact = prove_by_refinement(
   TYPE_THEN `(ss (n +| j))` (USE 12 o SPEC);
   ASM_REWRITE_TAC[o_DEF ];
   DISCH_TAC;
-  TYPE_THEN `z = ((y o ss) (n +| j))` ABBREV_TAC;
-  TYPE_THEN `UNIONS (B (ss (n+| j))) ((y o ss) (n +| j))` SUBGOAL_TAC;
+  TYPE_THEN `z = ((a o ss) (n +| j))` ABBREV_TAC;
+  TYPE_THEN `UNIONS (B (ss (n+| j))) ((a o ss) (n +| j))` SUBGOAL_TAC;
   EXPAND_TAC "B";
   ASM_REWRITE_TAC[];
   REWRITE_TAC[UNIONS;IN_IMAGE];

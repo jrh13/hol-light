@@ -5188,7 +5188,7 @@ let VECTOR_DERIVATIVE_UNIQUE_AT = prove
   REWRITE_TAC[FUN_EQ_THM] THEN DISCH_THEN(MP_TAC o SPEC `vec 1:real^1`) THEN
   SIMP_TAC[VEC_COMPONENT; DIMINDEX_1; ARITH; VECTOR_MUL_LID]);;
 
-let HAS_VECTOR_DERIVATIVE_UNIQUE_AT = prove
+let VECTOR_DERIVATIVE_AT = prove
  (`!f:real^1->real^N f' x.
         (f has_vector_derivative f') (at x)
         ==> vector_derivative f (at x) = f'`,
@@ -5214,11 +5214,6 @@ let VECTOR_DERIVATIVE_UNIQUE_WITHIN_CLOSED_INTERVAL = prove
   DISCH_THEN(MP_TAC o SPEC `vec 1:real^1`) THEN
   SIMP_TAC[VEC_COMPONENT; DIMINDEX_1; ARITH; VECTOR_MUL_LID]);;
 
-let VECTOR_DERIVATIVE_AT = prove
- (`(f has_vector_derivative f') (at x) ==> vector_derivative f (at x) = f'`,
-  ASM_MESON_TAC[VECTOR_DERIVATIVE_UNIQUE_AT;
-  VECTOR_DERIVATIVE_WORKS; differentiable; has_vector_derivative]);;
-
 let VECTOR_DERIVATIVE_WITHIN_CLOSED_INTERVAL = prove
  (`!f:real^1->real^N f' x a b.
          drop a < drop b /\ x IN interval[a,b] /\
@@ -5239,7 +5234,7 @@ let HAS_VECTOR_DERIVATIVE_CONST = prove
 
 let VECTOR_DERIVATIVE_CONST_AT = prove
  (`!c:real^N a. vector_derivative (\x. c) (at a) = vec 0`,
-  REPEAT GEN_TAC THEN MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_UNIQUE_AT THEN
+  REPEAT GEN_TAC THEN MATCH_MP_TAC VECTOR_DERIVATIVE_AT THEN
   REWRITE_TAC[HAS_VECTOR_DERIVATIVE_CONST]);;
 
 let HAS_VECTOR_DERIVATIVE_ID = prove

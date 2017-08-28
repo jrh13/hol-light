@@ -675,7 +675,7 @@ let eq_eq_false_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   STRIP_TAC;
   STRIP_TAC;
-  ASM_MESON_TAC[REAL_ENTIRE;REAL_POS_NZ];
+  ASM_MESON_TAC[REAL_ENTIRE;REAL_LT_IMP_NZ];
 ]);;
 
 (* }}} *)

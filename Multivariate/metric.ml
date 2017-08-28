@@ -2853,7 +2853,7 @@ let MBOUNDED_ALT = prove
  (`!m s:A->bool.
         mbounded m s <=>
         s SUBSET mspace m /\
-        ?B. !x y. x IN s /\ y IN s ==> mdist m (x,y) <= B`,
+        ?b. !x y. x IN s /\ y IN s ==> mdist m (x,y) <= b`,
   REPEAT GEN_TAC THEN REWRITE_TAC[mbounded] THEN EQ_TAC THENL
    [REWRITE_TAC[LEFT_IMP_EXISTS_THM; SUBSET; IN_MCBALL] THEN
     MAP_EVERY X_GEN_TAC [`a:A`; `b:real`] THEN
@@ -2977,27 +2977,10 @@ let MBOUNDED_CLOSURE_OF_EQ = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] MBOUNDED_SUBSET) THEN
   ASM_SIMP_TAC[CLOSURE_OF_SUBSET; TOPSPACE_MTOPOLOGY]);;
 
-let MBOUNDED_IFF_FINITE_DIAMETER = prove
- (`!m:A metric s. mbounded m s <=>
-                  s SUBSET mspace m /\
-                  (?b. !x y. x IN s /\ y IN s ==> mdist m (x,y) <= b)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[mbounded; SUBSET; IN_MCBALL] THEN
-  EQ_TAC THENL
-  [INTRO_TAC "@c b. hp" THEN CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
-   EXISTS_TAC `b + b:real` THEN INTRO_TAC "!x y; x y" THEN
-   TRANS_TAC REAL_LE_TRANS `mdist m (x:A,c) + mdist m (c,y)` THEN
-   CONJ_TAC THENL
-   [ASM_MESON_TAC[MDIST_TRIANGLE];
-    MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_MESON_TAC[MDIST_SYM]];
-   ASM_CASES_TAC `s:A->bool = {}` THEN ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
-   POP_ASSUM (DESTRUCT_TAC "@a. a" o REWRITE_RULE[GSYM MEMBER_NOT_EMPTY]) THEN
-   INTRO_TAC "inc (@b. bound)" THEN
-   MAP_EVERY EXISTS_TAC [`a:A`; `b:real`] THEN ASM_SIMP_TAC[]]);;
-
 let MBOUNDED_SUBMETRIC = prove
  (`!m:A metric s.
      mbounded (submetric m s) t <=> mbounded m (s INTER t) /\ t SUBSET s`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[MBOUNDED_IFF_FINITE_DIAMETER; SUBMETRIC] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[MBOUNDED_ALT; SUBMETRIC] THEN
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -3527,18 +3510,6 @@ let COMPACT_IMP_COMPACT_IN_SUBTOPOLOGY = prove
    HYP_TAC "open" (REWRITE_RULE[SUBSET; IN_ELIM_THM]) THEN
    REMOVE_THEN "v" (HYP_TAC "open: v @u. u ueq" o C MATCH_MP) THEN
    REMOVE_THEN "ueq" SUBST_VAR_TAC THEN ASM_REWRITE_TAC[]);;
-
-let COMPACT_IN_SUBTOPOLOGY_EQ = prove
- (`!top k s:A->bool.
-     compact_in (subtopology top s) k <=> compact_in top k /\ k SUBSET s`,
-  REPEAT GEN_TAC THEN
-  CUT_TAC `compact_in (subtopology top s) (k:A->bool) ==> k SUBSET s` THENL
-  [MESON_TAC[COMPACT_IMP_COMPACT_IN_SUBTOPOLOGY;
-     COMPACT_IN_SUBTOPOLOGY_IMP_COMPACT];
-   ALL_TAC] THEN
-  DISCH_TAC THEN TRANS_TAC SUBSET_TRANS `topspace top INTER s:A->bool` THEN
-  REWRITE_TAC[INTER_SUBSET] THEN
-  ASM_SIMP_TAC[GSYM TOPSPACE_SUBTOPOLOGY; COMPACT_IN_SUBSET_TOPSPACE]);;
 
 let COMPACT_SPACE_FIP = prove
  (`!top:A topology.
@@ -6243,7 +6214,7 @@ let LIMIT_CONST = prove
 (`!net:A net l:B. limit top (\a. l) l net <=> l IN topspace top`,
   SIMP_TAC[limit; EVENTUALLY_TRUE]);;
 
-let LIMIT_REAL_CONST = prove                                                    
+let LIMIT_REAL_CONST = prove
 (`!net:A net l. limit euclideanreal (\a. l) l net`,
   REWRITE_TAC[LIMIT_CONST; TOPSPACE_EUCLIDEANREAL; IN_UNIV]);;
 
@@ -9402,9 +9373,9 @@ let CONTINUOUS_MAP_REAL_MUL = prove
         ==> continuous_map (top,euclideanreal) (\x. f x * g x)`,
   SIMP_TAC[CONTINUOUS_MAP_ATPOINTOF; LIMIT_REAL_MUL]);;
 
-let CONTINUOUS_MAP_REAL_POW = prove                           
- (`!top (f:A->real) n.                                
-        continuous_map (top,euclideanreal) f    
+let CONTINUOUS_MAP_REAL_POW = prove
+ (`!top (f:A->real) n.
+        continuous_map (top,euclideanreal) f
         ==> continuous_map (top,euclideanreal) (\x. f x pow n)`,
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
   INDUCT_TAC THEN
@@ -13109,7 +13080,7 @@ let COMPLETELY_REGULAR_SPACE_PROD_TOPOLOGY = prove
     EXISTS_TAC `\(x,y). &1 - (&1 - (f:A->real) x) * (&1 - (g:B->real) y)` THEN
     ASM_REWRITE_TAC[FORALL_PAIR_THM; TOPSPACE_PROD_TOPOLOGY; IN_CROSS] THEN
     CONV_TAC REAL_RAT_REDUCE_CONV THEN CONJ_TAC THENL
-     [REWRITE_TAC[LAMBDA_UNPAIR_THM] THEN
+     [REWRITE_TAC[LAMBDA_PAIR] THEN
       REPEAT((MATCH_MP_TAC CONTINUOUS_MAP_REAL_SUB ORELSE
               MATCH_MP_TAC CONTINUOUS_MAP_REAL_MUL) THEN CONJ_TAC) THEN
       REWRITE_TAC[CONTINUOUS_MAP_CONST; TOPSPACE_EUCLIDEANREAL; IN_UNIV] THENL
@@ -13521,7 +13492,7 @@ let HOMOTOPIC_WITH_SYM = prove
   DISCH_THEN(X_CHOOSE_THEN `h:real#A->B` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `\(t,x). (h:real#A->B) (&1 - t,x)` THEN
   ASM_REWRITE_TAC[REAL_SUB_REFL; REAL_SUB_RZERO] THEN CONJ_TAC THENL
-   [REWRITE_TAC[LAMBDA_UNPAIR_THM] THEN
+   [REWRITE_TAC[LAMBDA_PAIR] THEN
     GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
     MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
       `prod_topology (subtopology euclideanreal (real_interval [&0,&1]))
@@ -13812,7 +13783,7 @@ let CAUCHY_CONTINUOUS_MAP_CONST = prove
   DISCH_THEN(MP_TAC o SPEC `(\n. a):num->A`) THEN
   ASM_REWRITE_TAC[CAUCHY_IN_CONST]);;
 
-let CAUCHY_CONTINUOUS_MAP_REAL_CONST = prove                     
+let CAUCHY_CONTINUOUS_MAP_REAL_CONST = prove
  (`!m. cauchy_continuous_map (m,real_euclidean_metric) (\x:A. c)`,
   REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_CONST; REAL_EUCLIDEAN_METRIC; IN_UNIV]);;
 
@@ -14802,12 +14773,12 @@ let CAUCHY_CONTINUOUS_MAP_REAL_RMUL = prove
   ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
   REWRITE_TAC[CAUCHY_CONTINUOUS_MAP_REAL_LMUL]);;
 
-let CAUCHY_CONTINUOUS_MAP_REAL_POW = prove     
- (`!m (f:A->real) n.                                                
-        cauchy_continuous_map (m,real_euclidean_metric) f        
+let CAUCHY_CONTINUOUS_MAP_REAL_POW = prove
+ (`!m (f:A->real) n.
+        cauchy_continuous_map (m,real_euclidean_metric) f
         ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. f x pow n)`,
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
-  INDUCT_TAC THEN                                         
+  INDUCT_TAC THEN
   ASM_SIMP_TAC[real_pow; CAUCHY_CONTINUOUS_MAP_REAL_CONST;
                CAUCHY_CONTINUOUS_MAP_REAL_MUL]);;
 
@@ -14901,7 +14872,7 @@ let CAUCHY_CONTINUOUS_MAP_SUM = prove
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[SUM_CLAUSES; CAUCHY_CONTINUOUS_MAP_REAL_CONST; 
+  SIMP_TAC[SUM_CLAUSES; CAUCHY_CONTINUOUS_MAP_REAL_CONST;
     FORALL_IN_INSERT; CAUCHY_CONTINUOUS_MAP_REAL_ADD; ETA_AX]);;
 
 let UNIFORMLY_CONTINUOUS_MAP_SQUARE_ROOT = prove
@@ -14912,12 +14883,12 @@ let UNIFORMLY_CONTINUOUS_MAP_SQUARE_ROOT = prove
   MAP_EVERY X_GEN_TAC [`x:real`; `y:real`] THEN DISCH_TAC THEN
   TRANS_TAC REAL_LET_TRANS `sqrt(&2 * abs(x - y))` THEN
   REWRITE_TAC[REAL_ABS_LE_SQRT] THEN MATCH_MP_TAC REAL_LT_LSQRT THEN
-  ASM_REAL_ARITH_TAC);;                               
+  ASM_REAL_ARITH_TAC);;
 
-let CONTINUOUS_MAP_SQUARE_ROOT = prove                               
+let CONTINUOUS_MAP_SQUARE_ROOT = prove
  (`continuous_map(euclideanreal,euclideanreal) sqrt`,
   REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
-  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS_MAP THEN              
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS_MAP THEN
   REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_SQUARE_ROOT]);;
 
 let UNIFORMLY_CONTINUOUS_MAP_SQRT = prove
@@ -14925,22 +14896,22 @@ let UNIFORMLY_CONTINUOUS_MAP_SQRT = prove
       uniformly_continuous_map (m,real_euclidean_metric) f
       ==> uniformly_continuous_map (m,real_euclidean_metric) (\x. sqrt(f x))`,
    REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
-  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN      
+  MATCH_MP_TAC UNIFORMLY_CONTINUOUS_MAP_COMPOSE THEN
   EXISTS_TAC `real_euclidean_metric` THEN
   ASM_REWRITE_TAC[UNIFORMLY_CONTINUOUS_MAP_SQUARE_ROOT]);;
-              
+
 let CAUCHY_CONTINUOUS_MAP_SQRT = prove
- (`!m f:A->real.                                         
+ (`!m f:A->real.
       cauchy_continuous_map (m,real_euclidean_metric) f
-      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. sqrt(f x))`,    
-   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN           
-  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN                              
+      ==> cauchy_continuous_map (m,real_euclidean_metric) (\x. sqrt(f x))`,
+   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CAUCHY_CONTINUOUS_MAP_COMPOSE THEN
   EXISTS_TAC `real_euclidean_metric` THEN
   ASM_SIMP_TAC[UNIFORMLY_CONTINUOUS_MAP_SQUARE_ROOT;
-               UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP]);;                   
+               UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP]);;
 
-let CONTINUOUS_MAP_SQRT = prove                                           
- (`!top f:A->real.                                                     
+let CONTINUOUS_MAP_SQRT = prove
+ (`!top f:A->real.
         continuous_map (top,euclideanreal) f
         ==> continuous_map (top,euclideanreal) (\x. sqrt(f x))`,
   REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
@@ -15658,7 +15629,7 @@ let FUNSPACE = (REWRITE_RULE[GSYM FORALL_AND_THM] o prove)
   [REMOVE_THEN "fspace" (SUBST_ALL_TAC o GSYM) THEN
    REWRITE_TAC[IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
    CUT_TAC `mbounded m (IMAGE (f:A->B) s UNION IMAGE g s)` THENL
-   [REWRITE_TAC[MBOUNDED_IFF_FINITE_DIAMETER; SUBSET; IN_UNION] THEN
+   [REWRITE_TAC[MBOUNDED_ALT; SUBSET; IN_UNION] THEN
     STRIP_TAC THEN EXISTS_TAC `b:real` THEN ASM SET_TAC [];
     ASM_REWRITE_TAC[MBOUNDED_UNION]];
    ALL_TAC] THEN
@@ -15749,7 +15720,7 @@ let FUNSPACE_IMP_BOUNDED2 = prove
                   ==> (?b. !x. x IN s ==> mdist m (f x,g x) <= b)`,
   REWRITE_TAC[FUNSPACE; IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
   CUT_TAC `mbounded m (IMAGE (f:A->B) s UNION IMAGE g s)` THENL
-  [REWRITE_TAC[MBOUNDED_IFF_FINITE_DIAMETER; SUBSET; IN_UNION] THEN
+  [REWRITE_TAC[MBOUNDED_ALT; SUBSET; IN_UNION] THEN
    STRIP_TAC THEN EXISTS_TAC `b:real` THEN ASM SET_TAC [];
    ASM_REWRITE_TAC[MBOUNDED_UNION]]);;
 
@@ -16198,7 +16169,7 @@ let METRIC_BAIRE_CATEGORY = prove
     ALL_TAC] THEN
    USE_THEN "b1" (fun b1 -> GEN_REWRITE_TAC RAND_CONV [b1]) THEN
    MATCH_MP_TAC CHOICE_PAIRED_THM THEN REWRITE_TAC[] THEN
-   HYP_TAC "ind_n: rpos rlt x subn" (REWRITE_RULE[LAMBDA_UNPAIR_THM]) THEN
+   HYP_TAC "ind_n: rpos rlt x subn" (REWRITE_RULE[LAMBDA_PAIR]) THEN
    USE_THEN "u_dense" (MP_TAC o SPEC `SUC n` o
      REWRITE_RULE[GSYM TOPSPACE_MTOPOLOGY]) THEN
    REWRITE_TAC[DENSE_INTERSECTS_OPEN] THEN

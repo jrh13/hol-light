@@ -304,9 +304,9 @@ let LAMBDA_PAIR_THM = prove
  (`!t. (\p. t p) = (\(x,y). t(x,y))`,
   REWRITE_TAC[FORALL_PAIR_THM; FUN_EQ_THM]);;
 
-let LAMBDA_UNPAIR_THM = prove
- (`!f:A->B->C. (\ (x:A,y:B). f x y) = (\p. f (FST p) (SND p))`,
-  REWRITE_TAC[LAMBDA_PAIR_THM]);;
+let LAMBDA_PAIR = prove                                                        
+ (`!f:A->B->C. (\(x,y). f x y) = (\p. f (FST p) (SND p))`,
+  REWRITE_TAC[LAMBDA_PAIR_THM]);;      
 
 let PAIRED_ETA_THM = prove
  (`(!f. (\(x,y). f (x,y)) = f) /\
@@ -394,7 +394,7 @@ let EXISTS_TRIPLED_THM = prove
 
 let CHOICE_UNPAIR_THM = prove
  (`!P. (@(x:A,y:B). P x y) = (@p. P (FST p) (SND p))`,
-  REWRITE_TAC[LAMBDA_UNPAIR_THM]);;
+  REWRITE_TAC[LAMBDA_PAIR]);;
 
 let CHOICE_PAIRED_THM = prove
  (`!P Q. (?x:A y:B. P x y) /\ (!x y. P x y ==> Q(x,y)) ==> Q (@(x,y). P x y)`,

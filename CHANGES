@@ -8,30 +8,73 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 24th Aug 2017       passim
+
+Eliminated a number of duplicated theorems (often exact duplicates,
+otherwise differing at most in their outer universal quantifiers or
+bound variable names):
+
+        BOREL_INDUCT_OPEN_UNIONS_INTERS -> BOREL_INDUCT_UNIONS_INTERS
+        CLOSED_SIMPLEX -> SIMPLEX_IMP_CLOSED
+        COMPACT_IN_SUBTOPOLOGY_EQ -> COMPACT_IN_SUBTOPOLOGY
+        COMPACT_SIMPLEX -> SIMPLEX_IMP_COMPACT
+        COMPLEX_DIFFERENTIABLE_COMPOSE -> COMPLEX_DIFFERENTIABLE_COMPOSE_AT
+        CONVEX_SIMPLEX -> SIMPLEX_IMP_CONVEX
+        DIAGONAL_MATRIX_MUL_EXPLICIT -> MATRIX_MUL_DIAGONAL
+        DOT_NORM_NEG -> DOT_NORM_SUB
+        FINITE_EMPTY_INTERIOR -> EMPTY_INTERIOR_FINITE
+        HAS_VECTOR_DERIVATIVE_UNIQUE_AT -> VECTOR_DERIVATIVE_AT
+        HAUSDIST_TRANS -> HAUSDIST_TRIANGLE
+        INT_LE_NEG -> INT_LE_NEG2
+        INT_LT_NEG -> INT_LT_NEG2
+        INT_NEGNEG -> INT_NEG_NEG
+        INT_OF_REAL_OF_INT -> int_abstr
+        LAMBDA_UNPAIR_THM -> LAMBDA_PAIR
+        LIM_NULL_COMPLEX_BOUND -> LIM_NULL_COMPARISON_COMPLEX
+        MATRIX_LEFT_INVERTIBLE_NULLSPACE -> MATRIX_LEFT_INVERTIBLE_KER
+        MBOUNDED_IFF_FINITE_DIAMETER -> MBOUNDED_ALT
+        PSUBSET_MEMBER -> PSUBSET_ALT
+        REALLIM_TRANSFORM_BOUND -> REALLIM_NULL_COMPARISON
+        REAL_LE_NEG -> REAL_LE_NEG2
+        REAL_LT_NEG -> REAL_LT_NEG2
+        REAL_NEGNEG -> REAL_NEG_NEG
+        REAL_POS_NZ -> REAL_LT_IMP_NZ
+        RELATIVE_FRONTIER_CONVEX_HULL_CASES -> RELATIVE_FRONTIER_OF_CONVEX_HULL
+        SETDIST_LIPSCHITZ -> SETDIST_SING_TRIANGLE
+        num_RECURSION_STD -> num_RECURSION
+
+Also changed the following to be the genuinely distinct theorems that were
+presumably intended:
+
+  ABS_DROP (was same as NORM_1)
+  ANGLE_EQ_PI_RIGHT (was same as ANGLE_EQ_PI_LEFT)
+  CLOSURE_RATIONALS_IN_OPEN_SET (was same as CLOSURE_DYADIC_RATIONALS_IN_OPEN_SET)
+  CONNECTED_CONVEX_1_GEN (was same as CONVEX_CONNECTED_1_GEN)
+
 Fri 18th Aug 2017       real.ml
 
 Added quite a few new and fairly basic real number theorems (some of the convex
 bounds ones were moved out of Multivariate/misc.ml).
-  
+
   REAL_ABS_LE_SQRT =
    |- !x y. abs (sqrt x - sqrt y) <= sqrt (&2 * abs (x - y))
-  
+
   REAL_ABS_LE_SQRT_POS =
     |- !x y. &0 <= x /\ &0 <= y ==> abs (sqrt x - sqrt y) <= sqrt (abs (x - y))
-  
+
   REAL_ABS_SQRT =
     |- !x. abs (sqrt x) = sqrt (abs x)
-  
+
   REAL_CONVEX_BOUND2_LE =
     |- !x y a u v.
            x <= a /\ y <= b /\ &0 <= u /\ &0 <= v /\ u + v = &1
            ==> u * x + v * y <= u * a + v * b
-  
+
   REAL_CONVEX_BOUND2_LT =
     |- !x y a u v.
            x < a /\ y < b /\ &0 <= u /\ &0 <= v /\ u + v = &1
            ==> u * x + v * y < u * a + v * b
-  
+
   REAL_CONVEX_BOUNDS_LE =
     |- !x y a b u v.
            a <= x /\
@@ -42,35 +85,35 @@ bounds ones were moved out of Multivariate/misc.ml).
            &0 <= v /\
            u + v = &1
            ==> a <= u * x + v * y /\ u * x + v * y <= b
-  
+
   REAL_CONVEX_BOUNDS_LT =
     |- !x y a b u v.
            a < x /\ x < b /\ a < y /\ y < b /\ &0 <= u /\ &0 <= v /\ u + v = &1
            ==> a < u * x + v * y /\ u * x + v * y < b
-  
+
   REAL_CONVEX_BOUND_GE =
     |- !x y a u v.
            a <= x /\ a <= y /\ &0 <= u /\ &0 <= v /\ u + v = &1
            ==> a <= u * x + v * y
-  
+
   REAL_CONVEX_BOUND_GT =
     |- !x y a u v.
            a < x /\ a < y /\ &0 <= u /\ &0 <= v /\ u + v = &1
            ==> a < u * x + v * y
-  
+
   REAL_CONVEX_BOUND_LE =
     |- !x y a u v.
            x <= a /\ y <= a /\ &0 <= u /\ &0 <= v /\ u + v = &1
            ==> u * x + v * y <= a
-  
+
   REAL_CONVEX_BOUND_LT =
     |- !x y a u v.
            x < a /\ y < a /\ &0 <= u /\ &0 <= v /\ u + v = &1
            ==> u * x + v * y < a
-  
+
   REAL_DIV_EQ_1 =
     |- !x y. x / y = &1 <=> x = y /\ ~(x = &0) /\ ~(y = &0)
-  
+
   SQRT_EQ_1 =
     |- !x. sqrt x = &1 <=> x = &1
 

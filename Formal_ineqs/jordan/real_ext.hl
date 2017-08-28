@@ -212,7 +212,7 @@ let REAL_PROP_POS_ATN = ATN_POS_LT;; (* |- &0 < atn x = &0 < x *)
 (* ------------------------------------------------------------------ *)
 
 (* renamed from REAL_MK_NZ_OF_POS *)
-let REAL_MK_NZ_POS = REAL_POS_NZ (* |- !x. &0 < x ==> ~(x = &0) *);;
+let REAL_MK_NZ_POS = REAL_LT_IMP_NZ (* |- !x. &0 < x ==> ~(x = &0) *);;
 let REAL_MK_NZ_EXP = REAL_EXP_NZ;; (*  |- !x. ~(exp x = &0) *)
 
 (* ------------------------------------------------------------------ *)

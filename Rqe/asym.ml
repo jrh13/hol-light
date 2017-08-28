@@ -444,7 +444,7 @@ let mua_quotient_limit = prove_by_refinement(
   ASM_MESON_TAC[REAL_LT_INV];
   ONCE_REWRITE_TAC[ARITH_RULE `a * (b * c) * d = c * b * (d * a)`];
   CLAIM `g n * inv (g n) = &1`;
-  POP_ASSUM MP_TAC THEN ASM_MESON_TAC[REAL_MUL_RINV;REAL_POS_NZ];
+  POP_ASSUM MP_TAC THEN ASM_MESON_TAC[REAL_MUL_RINV;REAL_LT_IMP_NZ];
   DISCH_THEN SUBST1_TAC;
   ASM_MESON_TAC[REAL_MUL_RID;REAL_MUL_SYM];
   STRIP_TAC;
@@ -461,7 +461,7 @@ let mua_quotient_limit = prove_by_refinement(
   LABEL_ALL_TAC;
   ONCE_REWRITE_TAC[ARITH_RULE `(a * b) * c = b * (a * c)`];
   CLAIM `k * inv k = &1`;
-  ASM_MESON_TAC[REAL_MUL_RINV;REAL_POS_NZ];
+  ASM_MESON_TAC[REAL_MUL_RINV;REAL_LT_IMP_NZ];
   DISCH_THEN SUBST1_TAC;
   REAL_ARITH_TAC;
   STRIP_TAC;
