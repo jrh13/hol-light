@@ -1,0 +1,712 @@
+needs "trig/series.hl";;
+
+module Matan = struct
+
+open Series;;
+
+prioritize_real();;
+
+(* matan *)
+
+let matan = new_definition `matan x = 
+  if (x = &0) then &1
+  else if (x > &0) then atn (sqrt x) / (sqrt x) 
+  else  (log ((&1 + sqrt( -- x))/(&1 - sqrt( -- x)))) / (&2 * sqrt (-- x))`;;
+
+(* Auxiliary definitions for matan derivatives *)
+
+let dmatan = new_definition `dmatan = real_derivative matan`;;
+
+let ddmatan = new_definition `ddmatan = real_derivative (real_derivative matan)`;;
+
+
+let log_matan_series = prove(`!x. abs x < &1 /\ ~(x = &0)
+			       ==> ((\k. x pow (2 * k) / &(2 * k + 1))
+				      real_sums log ((&1 + x) / (&1 - x)) / (&2 * x)) (:num)`,
+   REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_SUMS_EQ THEN REWRITE_TAC[IN_UNIV] THEN
+     EXISTS_TAC `\k. x pow (2 * k + 1) / &(2 * k + 1) * inv x` THEN
+     CONJ_TAC THENL [
+       X_GEN_TAC `k:num` THEN REWRITE_TAC[REAL_POW_ADD; REAL_POW_1] THEN
+	 ONCE_REWRITE_TAC[REAL_ARITH `(a * x) / b * inv x = (x * inv x) * a / b:real`] THEN
+	 ASM_SIMP_TAC[REAL_MUL_RINV; REAL_MUL_LID];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[real_div; REAL_INV_MUL; REAL_MUL_ASSOC] THEN
+     MATCH_MP_TAC REAL_SERIES_RMUL THEN REWRITE_TAC[GSYM real_div] THEN
+     ABBREV_TAC `f = \x:real. log ((&1 + x) / (&1 - x)) / &2` THEN
+     MP_TAC (SPECL[`f:real->real`; `\x:real. inv (&1 - x pow 2)`; `\i. if EVEN i then &1 else &0`; `(:num)`; `&1`] power_series_integral2) THEN
+     ANTS_TAC THENL [
+       CONJ_TAC THEN X_GEN_TAC `t:real` THEN DISCH_TAC THEN REWRITE_TAC[] THENL [
+	 EXPAND_TAC "f" THEN REAL_DIFF_TAC THEN
+	   CONJ_TAC THENL [
+	     ASM_SIMP_TAC[REAL_ARITH `abs t < &1 ==> ~(&1 - t = &0)`] THEN
+	       MATCH_MP_TAC REAL_LT_DIV THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+	     ALL_TAC
+	   ] THEN
+	   POP_ASSUM MP_TAC THEN CONV_TAC REAL_FIELD;
+	 ALL_TAC
+       ] THEN
+	 REWRITE_TAC[COND_RAND; COND_RATOR; REAL_MUL_LZERO; real_sums_image_even; FROM_0] THEN
+	 MP_TAC (SPECL[`0`; `t:real pow 2`] REAL_SUMS_GP) THEN
+	 ANTS_TAC THENL [
+	   REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_POW; REAL_ARITH `abs (-- &1) = &1`; REAL_MUL_LID] THEN
+	     ASM_REWRITE_TAC[ABS_SQUARE_LT_1; REAL_ABS_ABS];
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[real_pow; real_div; REAL_MUL_LID; REAL_POW_POW; FROM_0; MULT_0];
+       ALL_TAC
+     ] THEN
+     DISCH_THEN (MP_TAC o SPEC `x:real`) THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[COND_RAND; COND_RATOR; REAL_MUL_LZERO; real_sums_image_even; REAL_MUL_LID] THEN
+     SUBGOAL_THEN `f (&0) = &0` (fun th -> REWRITE_TAC[th; REAL_SUB_RZERO]) THENL [
+       EXPAND_TAC "f" THEN REWRITE_TAC[REAL_ADD_RID; REAL_SUB_RZERO; real_div; REAL_MUL_LID; REAL_INV_1; LOG_1; REAL_MUL_LZERO];
+       ALL_TAC
+     ] THEN
+     EXPAND_TAC "f" THEN REWRITE_TAC[]);;
+
+
+(* matan power series *)
+
+let matan_power_series = prove(`!x. abs x < &1
+			       ==> ((\k. ((-- &1) pow k / &(2 * k + 1)) * x pow k)
+				      real_sums matan x) (:num)`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[matan] THEN
+     ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[] THENL [
+       ABBREV_TAC `h = \k. -- &1 pow k / &(2 * k + 1) * &0 pow k` THEN
+	 SUBGOAL_THEN `h 0 = &1 /\ (!i. 1 <= i ==> h i = &0)` ASSUME_TAC THENL [
+	   EXPAND_TAC "h" THEN REWRITE_TAC[REAL_POW_ZERO; real_pow; MULT_0; ADD] THEN
+	     CONJ_TAC THENL [ REAL_ARITH_TAC; ALL_TAC ] THEN
+	     GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC[ARITH_RULE `1 <= i ==> ~(i = 0)`; ARITH_RULE `~(1 <= 0)`; REAL_MUL_RZERO];
+	   ALL_TAC
+	 ] THEN
+	 SUBGOAL_THEN `&1 = &0 + sum(0..1 - 1) h` (fun th -> REWRITE_TAC[th]) THENL [
+	   ASM_REWRITE_TAC[SUB_REFL; SUM_SING_NUMSEG; REAL_ADD_LID];
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[GSYM FROM_0] THEN MATCH_MP_TAC REAL_SUMS_OFFSET_REV THEN
+	 REWRITE_TAC[ARITH_RULE `0 < 1`] THEN
+	 MATCH_MP_TAC REAL_SUMS_EQ THEN
+	 EXISTS_TAC `\i:num. &0` THEN
+	 ASM_SIMP_TAC[REAL_SERIES_0; IN_FROM];
+       ALL_TAC
+     ] THEN
+     ASM_CASES_TAC `x > &0` THENL [
+       ASM_REWRITE_TAC[] THEN
+	 SUBGOAL_THEN `!y. y > &0 /\ y < &1 ==> ((\k. -- &1 pow k / &(2 * k + 1) * (y pow 2) pow k) real_sums atn y / y) (:num)` MP_TAC THENL [
+	   REPEAT STRIP_TAC THEN
+	     MATCH_MP_TAC REAL_SUMS_EQ THEN REWRITE_TAC[IN_UNIV] THEN
+	     EXISTS_TAC `\k. (-- &1 pow k / &(2 * k + 1) * y pow (2 * k + 1)) * inv y` THEN
+	     CONJ_TAC THENL [
+	       X_GEN_TAC `k:num` THEN REWRITE_TAC[REAL_POW_ADD; REAL_POW_1; GSYM REAL_MUL_ASSOC; REAL_POW_POW] THEN
+		 ASM_SIMP_TAC[REAL_ARITH `y > &0 ==> ~(y = &0)`; REAL_MUL_RINV; REAL_MUL_RID];
+	       ALL_TAC
+	     ] THEN
+	     REWRITE_TAC[real_div] THEN
+	     MATCH_MP_TAC REAL_SERIES_RMUL THEN REWRITE_TAC[GSYM real_div] THEN
+	     MATCH_MP_TAC atn_series THEN POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 DISCH_THEN (MP_TAC o SPEC `sqrt x`) THEN ANTS_TAC THENL [
+	   ASM_REWRITE_TAC[real_gt; SQRT_LT_0; REAL_ARITH `&0 < x <=> x > &0`] THEN
+	     MATCH_MP_TAC REAL_LT_LSQRT THEN
+	     REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+         SUBGOAL_THEN `sqrt x pow 2 = x` (fun th -> REWRITE_TAC[th]) THEN
+	 ASM_REWRITE_TAC[SQRT_POW2] THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN
+     MP_TAC (SPEC `sqrt (--x:real)` log_matan_series) THEN ANTS_TAC THENL [
+       ASM_REWRITE_TAC[SQRT_EQ_0; REAL_NEG_EQ_0] THEN
+	 ONCE_REWRITE_TAC[REAL_ARITH `&1 = abs(&1)`] THEN REWRITE_TAC[REAL_LT_SQUARE_ABS] THEN
+	 REWRITE_TAC[REAL_SQRT_POW_2] THEN REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[GSYM REAL_POW_POW; REAL_SQRT_POW_2] THEN
+       ASM_SIMP_TAC[REAL_ARITH `~(x > &0) ==> abs (--x) = --x`] THEN
+       ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN 
+       REWRITE_TAC[REAL_POW_MUL; REAL_POW_ONE; REAL_MUL_RID; real_div; REAL_MUL_AC]);;
+
+
+(* matan bounds *)
+
+let matan_abs1_bound = prove(`!m x. abs x < &1 ==>
+		       abs (matan x - sum (0..m) (\k. ((-- &1) pow k / &(2 * k + 1)) * x pow k))
+			     <= abs x pow (SUC m) / (&(2 * m + 3) * (&1 - abs x))`,
+   REPEAT STRIP_TAC THEN
+     REWRITE_TAC[real_div; REAL_INV_MUL; REAL_ARITH `a * inv(c) * b = inv(c) * (a * b)`] THEN
+     REWRITE_TAC[GSYM real_div] THEN
+     SUBGOAL_THEN `!f. sum (0..m) f = sum (0..SUC m - 1) f` (fun th -> ONCE_REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[ARITH_RULE `SUC m - 1 = m`];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `inv (&(2 * m + 3)) = abs ((\k. ((-- &1) pow k / &(2 * k + 1))) (SUC m))` (fun th -> ONCE_REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[real_div; REAL_ABS_MUL; REAL_POW_NEG; REAL_POW_ONE] THEN
+	 REWRITE_TAC[COND_RAND; REAL_ARITH `abs (-- &1) = &1`; REAL_ABS_NUM; COND_ID] THEN
+	 REWRITE_TAC[REAL_MUL_LID; REAL_ABS_INV; REAL_ABS_NUM; ARITH_RULE `2 * SUC m + 1 = 2 * m + 3`];
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`\k. -- &1 pow k / &(2 * k + 1)`; `matan x`; `x:real`; `0`; `SUC m`] real_sums_simple_bound2) THEN
+     ASM_REWRITE_TAC[ARITH_RULE `0 < SUC m`] THEN
+     DISCH_THEN MATCH_MP_TAC THEN
+     CONJ_TAC THENL [
+       ASM_SIMP_TAC[matan_power_series; FROM_0];
+       ALL_TAC
+     ] THEN
+     REPEAT STRIP_TAC THEN
+     REWRITE_TAC[real_div; REAL_ABS_MUL; REAL_POW_NEG; REAL_POW_ONE] THEN
+     REWRITE_TAC[COND_RAND; REAL_ARITH `abs (-- &1) = &1`; REAL_ABS_NUM; COND_ID] THEN
+     REWRITE_TAC[REAL_MUL_LID; REAL_ABS_INV; REAL_ABS_NUM; ARITH_RULE `2 * SUC m + 1 = 2 * m + 3`] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN
+     REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN
+     ARITH_TAC);;
+
+
+(* matan first derivative *)
+
+let matan_has_derivative_gt0 = prove(`!x. &0 < x ==>
+       (matan has_real_derivative (inv (&2 * x * (x + &1)) - atn(sqrt(x)) / (&2 * x * sqrt(x))))
+       (atreal x)`,
+   REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC HAS_REAL_DERIVATIVE_TRANSFORM_ATREAL THEN
+     MAP_EVERY EXISTS_TAC [`\x. atn(sqrt(x)) / sqrt(x)`; `x:real`] THEN
+     REPEAT CONJ_TAC THEN ASM_REWRITE_TAC[] THENL [
+       REPEAT STRIP_TAC THEN
+	 SUBGOAL_THEN `~(x' = &0) /\ x' > &0` ASSUME_TAC THENL [
+	   REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_REWRITE_TAC[matan];
+       ALL_TAC
+     ] THEN
+     REAL_DIFF_TAC THEN 
+     SUBGOAL_THEN `~(sqrt x = &0)` ASSUME_TAC THENL [
+       ASM_SIMP_TAC[SQRT_EQ_0; REAL_ARITH `&0 < x ==> ~(x = &0)`];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[SQRT_POW_2; REAL_ARITH `&0 < x ==> &0 <= x`] THEN
+     REPEAT (POP_ASSUM MP_TAC) THEN
+     CONV_TAC REAL_FIELD);;
+
+
+let matan_real_derivative_gt0 = prove(`!x. &0 < x ==>
+	real_derivative matan x = inv (&2 * x * (x + &1)) - atn(sqrt(x)) / (&2 * x * sqrt(x))`,
+   REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC HAS_REAL_DERIVATIVE_DERIVATIVE THEN
+     ASM_SIMP_TAC[matan_has_derivative_gt0]);;
+
+
+let matan_real_derivative_abs1 = prove(`!x. abs x < &1 ==>
+	matan real_differentiable atreal x
+	/\ ((\i. ((-- &1) pow (SUC i) * &(SUC i) / &(2 * i + 3)) * x pow i) 
+	      real_sums (real_derivative matan x)) (from 0)`,
+   GEN_TAC THEN DISCH_TAC THEN
+     MP_TAC (MATCH_MP power_series_has_derivative2 matan_power_series) THEN
+     STRIP_TAC THEN POP_ASSUM (MP_TAC o SPEC `x:real`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+     CONJ_TAC THENL [
+       REWRITE_TAC[real_differentiable] THEN
+	 EXISTS_TAC `(f':real->real) x` THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `real_derivative matan x = f' x` (fun th -> REWRITE_TAC[th]) THENL [
+       MATCH_MP_TAC HAS_REAL_DERIVATIVE_DERIVATIVE THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[FROM_0; ARITH_RULE `2 * i + 3 = 2 * SUC i + 1`] THEN
+     ONCE_REWRITE_TAC[REAL_ARITH `a * b / c = b * a / c`] THEN
+     ASM_REWRITE_TAC[]);;
+
+
+let matan_real_derivative_abs1_bound = prove(`!x m. abs x < &1 ==>
+	abs (real_derivative matan x 
+	     - sum (0..m) (\i. ((-- &1) pow (SUC i) * &(SUC i) / &(2 * i + 3)) * x pow i))
+	<= abs x pow (SUC m) / (&2 * (&1 - abs x))`,
+   REPEAT STRIP_TAC THEN
+     REWRITE_TAC[real_div; REAL_INV_MUL; REAL_ARITH `a * inv(&2) * b = inv(&2) * (a * b)`] THEN
+     REWRITE_TAC[GSYM real_div] THEN
+     SUBGOAL_THEN `!f. sum (0..m) f = sum (0..SUC m - 1) f` (fun th -> ONCE_REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[ARITH_RULE `SUC m - 1 = m`];
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC real_sums_simple_bound THEN
+     ASM_REWRITE_TAC[ARITH_RULE `0 < SUC m`] THEN CONJ_TAC THENL [
+       ASM_SIMP_TAC[matan_real_derivative_abs1];
+       ALL_TAC
+     ] THEN
+     REPEAT STRIP_TAC THEN
+     REWRITE_TAC[REAL_ABS_MUL; REAL_POW_NEG; REAL_POW_ONE; COND_RAND; REAL_ABS_DIV] THEN
+     REWRITE_TAC[REAL_ARITH `abs (-- &1) = &1 /\ abs (&1) = &1`; COND_ID; REAL_MUL_LID] THEN
+     SUBGOAL_THEN `&0 < abs (&(2 * i + 3))` ASSUME_TAC THENL [
+       REWRITE_TAC[REAL_ABS_NUM; REAL_OF_NUM_LT] THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_ABS_NUM; GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_MUL] THEN
+     REWRITE_TAC[REAL_FIELD `inv (&2) * (&2 * a + b) = a + inv(&2) * b`] THEN
+     REWRITE_TAC[ADD1; GSYM REAL_OF_NUM_ADD; REAL_LE_LADD] THEN
+     REAL_ARITH_TAC);;
+     
+
+(* matan second derivative *)
+
+let matan_has_derivative2_gt0 = prove(`!x. &0 < x ==>
+       ((\x. inv (&2 * x * (x + &1)) - atn(sqrt(x)) / (&2 * x * sqrt(x))) has_real_derivative 
+	  (&3 / &4) * (atn(sqrt(x)) / (x pow 2 * sqrt(x))) 
+	- (&3 / &4) * inv(x pow 2 * (x + &1))
+	- (&1 / &2) * inv(x * (x + &1) pow 2)) (atreal x)`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (REAL_ARITH `&0 < x ==> ~(x = &0)`) THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+     REAL_DIFF_TAC THEN
+     SUBGOAL_THEN `~(sqrt x = &0)` ASSUME_TAC THENL [ ASM_SIMP_TAC[SQRT_EQ_0]; ALL_TAC ] THEN
+     ASM_SIMP_TAC[SQRT_POW_2; REAL_ARITH `&0 < x ==> &0 <= x`; REAL_POW_MUL] THEN
+     REPEAT CONJ_TAC THEN ASM_REWRITE_TAC[REAL_ENTIRE] THENL [
+       REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ADD_RID; REAL_MUL_LID; REAL_MUL_RID] THEN
+     SUBGOAL_THEN `x * inv (&2 * sqrt x) + sqrt x = (&3 / &2) * x / sqrt x` (fun th -> REWRITE_TAC[th]) THENL [
+       MATCH_MP_TAC REAL_EQ_LCANCEL_IMP THEN EXISTS_TAC `sqrt x` THEN
+	 ASM_REWRITE_TAC[REAL_ARITH `s * (x * inv t + s) = s * x * inv t + s pow 2`] THEN
+	 ASM_SIMP_TAC[SQRT_POW_2; REAL_ARITH `&0 < x ==> &0 <= x`] THEN
+	 REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD;
+       ALL_TAC
+     ] THEN
+     REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD);;
+
+let matan_second_derivative_gt0 = prove(`!x. &0 < x ==>
+	real_derivative (real_derivative matan) x =
+					    (&3 / &4) * (atn(sqrt(x)) / (x pow 2 * sqrt(x))) 
+					    - (&3 / &4) * inv(x pow 2 * (x + &1))
+					    - (&1 / &2) * inv(x * (x + &1) pow 2)`,
+   REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC HAS_REAL_DERIVATIVE_DERIVATIVE THEN
+     MATCH_MP_TAC HAS_REAL_DERIVATIVE_TRANSFORM_ATREAL THEN
+     MAP_EVERY EXISTS_TAC [`\x. inv (&2 * x * (x + &1)) - atn(sqrt(x)) / (&2 * x * sqrt(x))`; `x:real`] THEN
+     REPEAT CONJ_TAC THEN ASM_REWRITE_TAC[] THENL [
+       REPEAT STRIP_TAC THEN
+	 SUBGOAL_THEN `&0 < x'` ASSUME_TAC THENL [
+	   REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_SIMP_TAC[matan_real_derivative_gt0];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[matan_has_derivative2_gt0]);;
+
+
+let matan_second_derivative_abs1 = prove(`!x. abs x < &1 ==>
+	(real_derivative matan) real_differentiable atreal x
+	/\ ((\i. ((-- &1) pow (i + 2) * &((i + 1) * (i + 2)) / &(2 * i + 5)) * x pow i)
+	      real_sums (real_derivative (real_derivative matan) x)) (from 0)`,
+   GEN_TAC THEN DISCH_TAC THEN
+     MP_TAC (SPECL[`real_derivative matan`; `\i. -- &1 pow SUC i * &(SUC i) / &(2 * i + 3)`; `&1`] power_series_has_derivative2) THEN
+     ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN
+	 MP_TAC (SPECL[`x':real`] matan_real_derivative_abs1) THEN
+	 ASM_SIMP_TAC[FROM_0];
+       ALL_TAC
+     ] THEN
+     STRIP_TAC THEN POP_ASSUM (MP_TAC o SPEC `x:real`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+     CONJ_TAC THENL [
+       REWRITE_TAC[real_differentiable] THEN
+	 EXISTS_TAC `(f':real->real) x` THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `real_derivative (real_derivative matan) x = f' x` (fun th -> REWRITE_TAC[th]) THENL [
+       MATCH_MP_TAC HAS_REAL_DERIVATIVE_DERIVATIVE THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[FROM_0; ARITH_RULE `i + 2 = SUC (SUC i) /\ 2 * i + 5 = 2 * SUC i + 3 /\ i + 1 = SUC i`] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_MUL] THEN
+     ONCE_REWRITE_TAC[REAL_ARITH `a * (b * d) / c = b * a * d / c`] THEN
+     ASM_REWRITE_TAC[]);;
+
+
+let matan_second_derivative_abs1_alt = prove(`!x. abs x < &1 ==>
+	real_derivative (real_derivative matan) x = (&1 - x) / (&4 * (&1 + x) pow 2)
+			+ (&3 / &4) * real_infsum (:num) (\i. ((-- &1) pow i / &(2 * i + 5)) * x pow i)
+			/\ real_summable (:num) (\i. ((-- &1) pow i / &(2 * i + 5)) * x pow i)`,
+   GEN_TAC THEN DISCH_TAC THEN
+     FIRST_ASSUM (MP_TAC o MATCH_MP matan_second_derivative_abs1) THEN STRIP_TAC THEN
+     FIRST_ASSUM ((fun th -> REWRITE_TAC[GSYM th; FROM_0]) o MATCH_MP REAL_INFSUM_UNIQUE) THEN
+     SUBGOAL_THEN `!i. -- &1 pow (i + 2) = -- &1 pow i` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[REAL_POW_ADD; REAL_ARITH `-- &1 pow 2 = &1`; REAL_MUL_RID];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[REAL_FIELD `abs x < &1 ==> (&1 - x) / (&4 * (&1 + x) pow 2) = (&1 / &4) * (&1 / (&1 + x)) - (&1 / &2) * (x / (&1 + x) pow 2)`] THEN
+     ABBREV_TAC `f = \i. -- &1 pow i * x pow i` THEN
+     ABBREV_TAC `g = \i. (-- &1 pow i * &i) * x pow i` THEN
+     ABBREV_TAC `h = \i. (-- &1 pow i * (&1 / &(2 * i + 5))) * x pow i` THEN
+     SUBGOAL_THEN `!i. (-- &1 pow i * &((i + 1) * (i + 2)) / &(2 * i + 5)) * x pow i = &1 / &4 * f i + &1 / &2 * g i + &3 / &4 * h i` (fun th -> REWRITE_TAC[th]) THENL [
+       GEN_TAC THEN MAP_EVERY EXPAND_TAC ["f"; "g"; "h"] THEN
+	 REWRITE_TAC[GSYM REAL_OF_NUM_MUL; GSYM REAL_OF_NUM_ADD] THEN
+	 CONV_TAC REAL_FIELD;
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `!i. -- &1 pow i / &(2 * i + 5) * x pow i = h i` (fun th -> REWRITE_TAC[th]) THENL [
+       EXPAND_TAC "h" THEN REWRITE_TAC[real_div; REAL_MUL_LID];
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPEC `x:real` real_sums_neg_xi) THEN
+     MP_TAC (SPEC `x:real` real_sums_neg_i_xi) THEN
+     ASM_REWRITE_TAC[] THEN DISCH_THEN (LABEL_TAC "a") THEN DISCH_THEN (LABEL_TAC "b") THEN
+     SUBGOAL_THEN `real_summable (:num) f /\ real_summable (:num) g /\ real_summable (:num) h` STRIP_ASSUME_TAC THENL [
+       REPEAT STRIP_TAC THEN REWRITE_TAC[real_summable] THENL [
+	 EXISTS_TAC `&1 / (&1 + x)` THEN ASM_REWRITE_TAC[];
+	 EXISTS_TAC `--(x / (&1 + x) pow 2)` THEN ASM_REWRITE_TAC[];
+	 ALL_TAC
+       ] THEN
+	 REWRITE_TAC[GSYM real_summable] THEN EXPAND_TAC "h" THEN
+	 MATCH_MP_TAC REAL_SUMMABLE_COMPARISON THEN
+	 EXISTS_TAC `\i. abs x pow i` THEN
+	 CONJ_TAC THENL [
+	   MATCH_MP_TAC REAL_SUMMABLE_GP THEN ASM_REWRITE_TAC[REAL_ABS_ABS];
+	   ALL_TAC
+	 ] THEN
+	 EXISTS_TAC `0` THEN REPEAT STRIP_TAC THEN
+	 REWRITE_TAC[REAL_ABS_MUL; abs_neg_one_pow; REAL_ABS_POW; REAL_MUL_LID] THEN
+	 ONCE_REWRITE_TAC[REAL_ARITH `a <= b <=> a <= &1 * b`] THEN
+	 MATCH_MP_TAC REAL_LE_RMUL THEN
+	 CONJ_TAC THENL [ ALL_TAC; MATCH_MP_TAC REAL_POW_LE THEN REAL_ARITH_TAC ] THEN
+	 REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_1] THEN
+	 REWRITE_TAC[REAL_ARITH `&1 / a <= &1 <=> inv a <= inv (&1)`] THEN
+	 MATCH_MP_TAC REAL_LE_INV2 THEN
+	 REWRITE_TAC[GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_MUL] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[REAL_INFSUM_ADD; REAL_SUMMABLE_ADD; REAL_SUMMABLE_LMUL; ETA_AX] THEN
+     ASM_SIMP_TAC[REAL_INFSUM_LMUL] THEN
+     REMOVE_THEN "a" (MP_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
+     REMOVE_THEN "b" (MP_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
+     ASM_SIMP_TAC[] THEN REAL_ARITH_TAC);;
+     
+       
+
+(* matan second derivative bound *)
+
+let matan_d2_bound_ge1_high = prove(`!x. &1 <= x ==>
+		      real_derivative (real_derivative matan) x <= #0.65`,
+   REPEAT STRIP_TAC THEN 
+     ASM_SIMP_TAC[REAL_ARITH `&1 <= x ==> &0 < x`; matan_second_derivative_gt0] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN
+     EXISTS_TAC `(&3 / &4) * atn(sqrt x) / (x pow 2 * sqrt x)` THEN
+     CONJ_TAC THENL [
+       REWRITE_TAC[REAL_ARITH `a - b - c <= a <=> &0 <= b + c`] THEN
+	 MATCH_MP_TAC REAL_LE_ADD THEN
+	 CONJ_TAC THEN MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THEN TRY REAL_ARITH_TAC THENL [
+	   MATCH_MP_TAC REAL_LE_INV THEN MATCH_MP_TAC REAL_LE_MUL THEN
+	     REWRITE_TAC[REAL_LE_POW_2] THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+	   MATCH_MP_TAC REAL_LE_INV THEN MATCH_MP_TAC REAL_LE_MUL THEN
+	     REWRITE_TAC[REAL_LE_POW_2] THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+	 ];
+       ALL_TAC
+     ] THEN
+     ABBREV_TAC `y = sqrt x` THEN
+     SUBGOAL_THEN `x pow 2 * y = y pow 5` (fun th -> REWRITE_TAC[th]) THENL [
+       MP_TAC (SPEC `x:real` SQRT_POW_2) THEN
+	 ASM_SIMP_TAC[REAL_ARITH `&1 <= x ==> &0 <= x`] THEN
+	 CONV_TAC REAL_RING;
+       ALL_TAC
+     ] THEN
+     ONCE_REWRITE_TAC[REAL_ARITH `#0.65 = (&3 / &4) * (#0.65 * &4 / &3)`] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL [ REAL_ARITH_TAC; ALL_TAC ] THEN
+     SUBGOAL_THEN `&1 <= y` ASSUME_TAC THENL [
+       EXPAND_TAC "y" THEN MATCH_MP_TAC REAL_LE_RSQRT THEN ASM_REWRITE_TAC[REAL_POW_ONE];
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN 
+     EXISTS_TAC `atn (&1) / (&1 pow 5)` THEN CONJ_TAC THENL [
+       ONCE_REWRITE_TAC[GSYM REAL_LE_NEG2] THEN
+	 ABBREV_TAC `f = \y. --(atn y / y pow 5)` THEN
+	 SUBGOAL_THEN `!x. --(atn x / x pow 5) = f x` (fun th -> REWRITE_TAC[th]) THENL [
+	   EXPAND_TAC "f" THEN REWRITE_TAC[];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC HAS_REAL_DERIVATIVE_INCREASING_IMP THEN
+	 EXISTS_TAC `\y. &5 * atn(y) / y pow 6 - inv(y pow 5 * (y pow 2 + &1))` THEN
+	 EXISTS_TAC `real_interval [&1, y]` THEN
+	 ASM_REWRITE_TAC[IS_REALINTERVAL_INTERVAL; IN_REAL_INTERVAL; REAL_LE_REFL] THEN
+	 CONJ_TAC THENL [
+	   REPEAT STRIP_TAC THEN
+	     MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+	     EXPAND_TAC "f" THEN REAL_DIFF_TAC THEN
+	     ASM_SIMP_TAC[REAL_ARITH `&1 <= x' ==> ~(x' = &0)`; REAL_POW_NZ] THEN
+	     REWRITE_TAC[ARITH_RULE `5 - 1 = 4 /\ 5 * 2 = 10`; REAL_POW_POW] THEN
+	     SUBGOAL_THEN `!n. ~(x' pow n = &0)` ASSUME_TAC THENL [ 
+	       GEN_TAC THEN MATCH_MP_TAC REAL_POW_NZ THEN
+		 UNDISCH_TAC `&1 <= x'` THEN REAL_ARITH_TAC;
+	       ALL_TAC
+	     ] THEN
+	     MATCH_MP_TAC REAL_EQ_RCANCEL_IMP THEN EXISTS_TAC `x' pow 10` THEN
+	     ASM_REWRITE_TAC[real_div; GSYM REAL_MUL_LNEG; GSYM REAL_MUL_ASSOC] THEN
+	     ASM_SIMP_TAC[REAL_MUL_LINV; REAL_INV_MUL; REAL_INV_POW] THEN
+	     REWRITE_TAC[REAL_ARITH `(&5 * a * p6 - ip5 * t) * p10 = &5 * a * (p6 * p10) - (ip5 * p10) * t`] THEN
+	     REWRITE_TAC[REAL_FIELD `inv x' pow 6 * x' pow 10 = x' pow 4`] THEN
+	     REWRITE_TAC[REAL_FIELD `inv x' pow 5 * x' pow 10 = x' pow 5`] THEN
+	     REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 X_GEN_TAC `t:real` THEN REPEAT STRIP_TAC THEN
+	 REWRITE_TAC[REAL_ARITH `&0 <= a - b <=> b <= a`] THEN
+	 SUBGOAL_THEN `!n. &0 < t pow n` ASSUME_TAC THENL [
+	   GEN_TAC THEN MATCH_MP_TAC REAL_POW_LT THEN
+	     ASM_SIMP_TAC[REAL_ARITH `&1 <= t ==> &0 < t`];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC REAL_LE_RCANCEL_IMP THEN
+	 EXISTS_TAC `t pow 6` THEN ASM_REWRITE_TAC[] THEN
+	 REWRITE_TAC[real_div; REAL_INV_MUL; GSYM REAL_MUL_ASSOC] THEN
+	 ASM_SIMP_TAC[REAL_MUL_LINV; REAL_ARITH `&0 < a ==> ~(a = &0)`; REAL_MUL_RID] THEN
+	 ONCE_REWRITE_TAC[REAL_ARITH `a * b * c = (a * c) * b:real`] THEN
+	 REWRITE_TAC[REAL_FIELD `inv (t pow 5) * t pow 6 = t`] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1` THEN CONJ_TAC THENL [
+	   SUBGOAL_THEN `&0 < t pow 2 + &1` ASSUME_TAC THENL [
+	     MATCH_MP_TAC REAL_LT_ADD THEN REWRITE_TAC[REAL_LT_POW_2] THEN
+	       UNDISCH_TAC `&1 <= t` THEN REAL_ARITH_TAC;
+	     ALL_TAC
+	   ] THEN
+	     ASM_SIMP_TAC[REAL_LE_LDIV_EQ; GSYM real_div; REAL_MUL_LID] THEN
+	     MATCH_MP_TAC (REAL_ARITH `&1 <= t /\ &0 <= (t - &1) pow 2 ==> t <= t pow 2 + &1`) THEN
+	     ASM_REWRITE_TAC[REAL_LE_POW_2];
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[REAL_ARITH `&1 <= &5 * x <=> (&1 / &5) <= x`] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `pi / &4` THEN
+	 CONJ_TAC THENL [ MP_TAC PI_APPROX_32 THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+	 ASM_REWRITE_TAC[GSYM ATN_1; ATN_MONO_LE_EQ];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[ATN_1] THEN MP_TAC PI_APPROX_32 THEN
+     REAL_ARITH_TAC);;
+
+
+let matan_d2_bound_ge1_low = prove(`!x. &1 <= x ==>
+		      -- #0.65 <= real_derivative (real_derivative matan) x`,
+   REPEAT STRIP_TAC THEN 
+     ASM_SIMP_TAC[REAL_ARITH `&1 <= x ==> &0 < x`; matan_second_derivative_gt0] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN
+     EXISTS_TAC `-- (&3 / &4) * inv (x pow 2 * (x + &1)) - (&1 / &2) * inv (x * (x + &1) pow 2)` THEN
+     CONJ_TAC THENL [
+       REWRITE_TAC[REAL_ARITH `-- #0.65 <= --(&3 / &4) * a - (&1 / &2) * b <=>  &3 * a + &2 * b <= #2.6`] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&3 * inv(&2) + &2 * inv(&2)` THEN
+	 CONJ_TAC THENL [ ALL_TAC; REAL_ARITH_TAC ] THEN
+	 MATCH_MP_TAC REAL_LE_ADD2 THEN 
+	 CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[REAL_POS] THEN MATCH_MP_TAC REAL_LE_INV2 THEN REWRITE_TAC[REAL_ARITH `&0 < &2`] THEN ONCE_REWRITE_TAC[REAL_ARITH `&2 = &1 * &2`] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_POS] THENL [
+	   ASM_SIMP_TAC[REAL_POW_LE_1] THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ONCE_REWRITE_TAC[REAL_ARITH `&2 = &2 * &1`] THEN REWRITE_TAC[REAL_POW_2] THEN
+	 MATCH_MP_TAC REAL_LE_MUL2 THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ARITH `--(&3 / &4) * a - b <= c - (&3 / &4) * a - b <=> &0 <= c`] THEN
+     MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [ REAL_ARITH_TAC; ALL_TAC ] THEN
+     MATCH_MP_TAC REAL_LE_DIV THEN 
+     ASM_SIMP_TAC[ATN_POS_LE; SQRT_POS_LE; REAL_ARITH `&1 <= x ==> &0 <= x`] THEN
+     MATCH_MP_TAC REAL_LE_MUL THEN
+     ASM_SIMP_TAC[REAL_LE_POW_2; SQRT_POS_LE; REAL_ARITH `&1 <= x ==> &0 <= x`]);;
+
+
+let matan_d2_bound_01 = prove(`!x. &0 <= x /\ x < &1 ==>
+	abs (real_derivative (real_derivative matan) x) <= #0.65`,
+   GEN_TAC THEN DISCH_TAC THEN
+     MP_TAC (SPEC `x:real` matan_second_derivative_abs1_alt) THEN ANTS_TAC THENL [
+       POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 / &4 + &3 / &20` THEN
+     CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
+     ABBREV_TAC `f = (&1 - x) / (&4 * (&1 + x) pow 2)` THEN 
+     ABBREV_TAC `r = real_infsum (:num) (\i. -- &1 pow i / &(2 * i + 5) * x pow i)` THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs f + abs (&3 / &4 * r)` THEN
+     REWRITE_TAC[REAL_ABS_TRIANGLE] THEN
+     MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL [
+      EXPAND_TAC "f" THEN REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_MUL; REAL_ABS_NUM] THEN 
+	SUBGOAL_THEN `&0 < &4 /\ &0 < &4 * abs ((&1 + x) pow 2)` ASSUME_TAC THENL [
+	  CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
+	    MATCH_MP_TAC REAL_LT_MUL THEN CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
+	    MATCH_MP_TAC (REAL_ARITH `&0 < x ==> &0 < abs x`) THEN
+	    REWRITE_TAC[REAL_LT_POW_2] THEN
+	    UNDISCH_TAC `&0 <= x /\ x < &1` THEN REAL_ARITH_TAC;
+	  ALL_TAC
+	] THEN
+	ASM_SIMP_TAC[RAT_LEMMA4; REAL_MUL_LID] THEN
+	REWRITE_TAC[REAL_MUL_AC] THEN
+	MATCH_MP_TAC REAL_LE_RMUL THEN CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
+	MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1` THEN
+	UNDISCH_TAC `&0 <= x /\ x < &1` THEN DISCH_THEN (LABEL_TAC "h") THEN
+	CONJ_TAC THENL [ POP_ASSUM MP_TAC THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+	MATCH_MP_TAC (REAL_ARITH `&1 <= a ==> &1 <= abs a`) THEN
+	MATCH_MP_TAC REAL_LSQRT_LE THEN REWRITE_TAC[SQRT_1] THEN
+	POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ABS_MUL; REAL_ARITH `&3 / &20 = abs (&3 / &4) * (&1 / &5)`] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THENL [ REAL_ARITH_TAC; ALL_TAC ] THEN
+     EXPAND_TAC "r" THEN
+     SUBGOAL_THEN `&1 / &5 = abs ((\i. -- &1 pow i / &(2 * i + 5) * x pow i) 0)` (fun th -> ONCE_REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[real_pow; MULT_0; ADD; REAL_ABS_DIV; REAL_ABS_NUM; REAL_MUL_RID];
+       ALL_TAC
+     ] THEN
+     PURE_REWRITE_TAC[GSYM FROM_0] THEN
+     MATCH_MP_TAC alt_sign_bound THEN
+     CONJ_TAC THENL [
+       REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_DIV; abs_neg_one_pow; real_div; REAL_MUL_LID] THEN
+	 REPEAT STRIP_TAC THENL [
+	   MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_ABS_POS] THEN
+	     CONJ_TAC THENL [
+	       REWRITE_TAC[REAL_ABS_INV] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+		 REWRITE_TAC[REAL_ABS_NUM; REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN
+		 ARITH_TAC;
+	       ALL_TAC
+	     ] THEN
+	     REWRITE_TAC[GSYM ADD1; real_pow; REAL_ABS_MUL] THEN
+	     ONCE_REWRITE_TAC[REAL_ARITH `x * y <= y <=> x * y <= &1 * y`] THEN
+	     MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC[REAL_ABS_POS] THEN
+	     UNDISCH_TAC `&0 <= x /\ x < &1` THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[REAL_ARITH `((a * b) * c) * (d * e) * f = (a * d) * ((c * f) * b * e)`] THEN
+	 REWRITE_TAC[REAL_ARITH `a * b <= &0 <=> &0 <= (-- &1 * a) * b`] THEN
+	 REWRITE_TAC[GSYM REAL_POW_ADD; GSYM real_pow] THEN
+	 MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+	   REWRITE_TAC[ARITH_RULE `SUC ((n + 1) + n) = 2 * (n + 1)`] THEN
+	     REWRITE_TAC[real_pow; REAL_POW_NEG; EVEN_DOUBLE; REAL_POW_ONE; REAL_LE_01];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+	   MATCH_MP_TAC REAL_POW_LE THEN ASM_REWRITE_TAC[];
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[GSYM REAL_INV_MUL] THEN MATCH_MP_TAC REAL_LE_INV THEN
+	 REWRITE_TAC[REAL_OF_NUM_MUL; REAL_OF_NUM_LE; LE_0];
+       ALL_TAC
+     ] THEN
+     ONCE_REWRITE_TAC[GSYM REALLIM_NULL_ABS] THEN
+     REWRITE_TAC[REAL_ABS_MUL; real_div; REAL_ABS_INV; abs_neg_one_pow; REAL_ABS_NUM; REAL_MUL_LID] THEN
+     MATCH_MP_TAC REALLIM_NULL_COMPARISON THEN
+     EXISTS_TAC `\n. inv (&n)` THEN CONJ_TAC THENL [
+       REWRITE_TAC[EVENTUALLY_SEQUENTIALLY] THEN
+	 EXISTS_TAC `1` THEN REPEAT STRIP_TAC THEN
+	 ONCE_REWRITE_TAC[REAL_ARITH `inv (&n) = inv (&n) * &1`] THEN
+	 REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_ABS] THEN
+	 MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_ABS_POS; REAL_ABS_1; REAL_MUL_RID] THEN
+	 CONJ_TAC THENL [
+	   REWRITE_TAC[REAL_ABS_INV; REAL_ABS_NUM] THEN
+	     MATCH_MP_TAC REAL_LE_INV2 THEN
+	     REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN
+	     POP_ASSUM MP_TAC THEN ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[REAL_ABS_POW] THEN
+	 MATCH_MP_TAC REAL_POW_1_LE THEN
+	 UNDISCH_TAC `&0 <= x /\ x < &1` THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REALLIM_1_OVER_N]);;
+	 
+
+let matan_d2_bound_neg_low = prove(`!x. -- &1 < x /\ x < &0 ==>
+				     &0 <= real_derivative (real_derivative matan) x`,
+   GEN_TAC THEN DISCH_THEN (LABEL_TAC "x") THEN
+     MP_TAC (SPEC `x:real` matan_second_derivative_abs1) THEN ANTS_TAC THENL [
+       POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     STRIP_TAC THEN
+     MATCH_MP_TAC REAL_SERIES_POS THEN
+     MAP_EVERY EXISTS_TAC [`\i. (-- &1 pow (i + 2) * &((i + 1) * (i + 2)) / &(2 * i + 5)) * x pow i`; `from 0`] THEN
+     ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+     REWRITE_TAC[REAL_ARITH `(a * b) * x pow i = (a * x pow i) * b`] THEN
+     MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+       SUBGOAL_THEN `x pow i = (-- &1) pow i * (--x) pow i` (fun th -> REWRITE_TAC[th]) THENL [
+	 REWRITE_TAC[GSYM REAL_POW_MUL; REAL_ARITH `-- &1 * --x = x`];
+	 ALL_TAC
+       ] THEN
+	 REWRITE_TAC[REAL_MUL_ASSOC; GSYM REAL_POW_ADD; ARITH_RULE `(i + 2) + i = 2 * (i + 1)`] THEN
+	 MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+	   REWRITE_TAC[REAL_POW_NEG; EVEN_DOUBLE; REAL_POW_ONE; REAL_LE_01];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC REAL_POW_LE THEN REMOVE_THEN "x" MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_POS]);;
+
+
+let matan_d2_bound_neg_high = prove(`!x. -- #0.2 <= x /\ x < &0 ==>
+				     real_derivative (real_derivative matan) x <= #0.65`,
+   GEN_TAC THEN DISCH_THEN (LABEL_TAC "x") THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `real_derivative (real_derivative matan) (-- #0.2)` THEN
+     CONJ_TAC THENL [
+       MATCH_MP_TAC REAL_SERIES_LE THEN
+	 MAP_EVERY EXISTS_TAC [`\i. (-- &1 pow (i + 2) * &((i + 1) * (i + 2)) / &(2 * i + 5)) * x pow i`; `\i. (-- &1 pow (i + 2) * &((i + 1) * (i + 2)) / &(2 * i + 5)) * (-- #0.2) pow i`; `from 0`] THEN
+	 ASM_SIMP_TAC[matan_second_derivative_abs1; REAL_ARITH `-- #0.2 <= x /\ x < &0 ==> abs x < &1`; REAL_ARITH `abs (-- #0.2) < &1`] THEN
+	 REPEAT STRIP_TAC THEN
+	 REWRITE_TAC[REAL_ARITH `(a * b) * x pow i = (a * x pow i) * b`] THEN
+	 SUBGOAL_THEN `!y. -- &1 pow (i + 2) * y pow i = (-- y) pow i` (fun th -> REWRITE_TAC[th]) THENL [
+	   REWRITE_TAC[REAL_POW_ADD; REAL_ARITH `-- &1 pow 2 = &1`; REAL_MUL_RID] THEN
+	     REWRITE_TAC[GSYM REAL_POW_MUL; REAL_ARITH `-- &1 * y = --y`];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC REAL_LE_MUL2 THEN REPEAT STRIP_TAC THENL [
+	   MATCH_MP_TAC REAL_POW_LE THEN REMOVE_THEN "x" MP_TAC THEN REAL_ARITH_TAC;
+	   MATCH_MP_TAC REAL_POW_LE2 THEN REMOVE_THEN "x" MP_TAC THEN REAL_ARITH_TAC;
+	   MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_OF_NUM_LE] THEN ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[REAL_LE_REFL];
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPEC `-- #0.2` matan_second_derivative_abs1_alt) THEN ANTS_TAC THENL [
+       REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC (REAL_ARITH `a <= &15 / &32 /\ b <= (&1 / &5 + &1 / &28) ==> a + (&3 / &4) * b <= #0.65`) THEN
+     CONJ_TAC THENL [ REAL_ARITH_TAC; ALL_TAC ] THEN
+     MP_TAC (SPECL[`0`; `1`; `\i. -- &1 pow i / &(2 * i + 5) * -- #0.2 pow i`] real_infsum_offset_alt) THEN
+     ASM_REWRITE_TAC[ARITH_RULE `0 < 1`; FROM_0] THEN
+     DISCH_THEN (fun th -> REWRITE_TAC[th; SUB_REFL; SUM_SING_NUMSEG]) THEN
+     REWRITE_TAC[real_pow; MULT_0; ADD; REAL_MUL_RID; REAL_LE_LADD] THEN
+     MP_TAC (SPECL[`\i. -- &1 pow i / &(2 * i + 5)`; `-- #0.2`; `1`] power_series_simple_bound2) THEN
+     ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN REWRITE_TAC[] THENL [
+	 MATCH_MP_TAC REAL_SUMMABLE_FROM_ELSEWHERE THEN
+	   EXISTS_TAC `0` THEN ASM_REWRITE_TAC[FROM_0];
+	 REWRITE_TAC[REAL_ABS_MUL; abs_neg_one_pow; real_div; REAL_MUL_LID; REAL_ABS_INV] THEN
+	   MATCH_MP_TAC REAL_LE_INV2 THEN REWRITE_TAC[REAL_ABS_NUM] THEN
+	   REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[ARITH_RULE `2 * 1 + 5 = 7`] THEN
+     REAL_ARITH_TAC);;
+    
+(* The main bound result *)
+ 
+let matan_d2_bound = prove(`!x. -- #0.2 <= x ==>
+			     abs (real_derivative (real_derivative matan) x) <= #0.65`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `x < &0` THENL [
+       MP_TAC (SPEC `x:real` matan_d2_bound_neg_low) THEN
+	 MP_TAC (SPEC `x:real` matan_d2_bound_neg_high) THEN
+	 REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_CASES_TAC `x < &1` THENL [
+       MP_TAC (SPEC `x:real` matan_d2_bound_01) THEN
+	 REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPEC `x:real` matan_d2_bound_ge1_low) THEN
+     MP_TAC (SPEC `x:real` matan_d2_bound_ge1_high) THEN
+     REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;
+
+end;;

@@ -4,25 +4,29 @@
 (* Date: 2012-10-27                                            *)
 (* =========================================================== *)
 
-needs "misc/vars.hl";;
+needs "misc/misc_vars.hl";;
 
 module Interval_arith = struct
 
+prioritize_real();;
+
 (*******************************)
 (* The main definition *)
-let interval_arith =
-        new_definition `interval_arith (x:real) (lo, hi) <=> lo <= x /\ x <= hi`;;
+let interval_arith = 
+	new_definition `interval_arith (x:real) (lo, hi) <=> lo <= x /\ x <= hi`;;
 
 (* Additional definitions *)
 let bounded_on = new_definition `bounded_on f s f_bounds <=>
-        !x. x IN s ==> interval_arith (f x) f_bounds`;;
+	!x. x IN s ==> interval_arith (f x) f_bounds`;;
 
 let bounded_on_int = new_definition `bounded_on_int f int f_bounds <=>
-        !x. interval_arith x int ==> interval_arith (f x) f_bounds`;;
-
+	!x. interval_arith x int ==> interval_arith (f x) f_bounds`;;
+	
 let iabs = new_definition `iabs (x_lo, x_hi) = max x_hi (-- x_lo)`;;
 let interval_not_zero = new_definition `interval_not_zero (lo, hi) <=> &0 < lo \/ hi < &0`;;
 let interval_pos = new_definition `interval_pos (lo, hi) <=> &0 < lo`;;
+let interval_neg = new_definition `interval_neg (lo, hi) <=> hi < &0`;;
+let interval_gt = new_definition `interval_gt f (lo, hi) <=> f < lo`;;
 
 
 (********************************)
@@ -38,11 +42,16 @@ let INTERVAL_NEG = (GEN_ALL o prove)(`interval_arith x (a, b) ==>
                            interval_arith (--x) (--b, --a)`,
                          REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC);;
 
+let INTERVAL_NEG_EQ = prove(`!x a b. interval_arith (--x) (--b, --a) <=>
+			      interval_arith x (a, b)`,
+			    REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC);;
+					
+						 
 
 (**************************************)
-(* Conversions *)
+(* Conversions *)		
 open Misc_vars;;
-
+				 
 let interval_tm = `interval_arith`;;
 
 let dest_interval_arith tm =
@@ -50,10 +59,10 @@ let dest_interval_arith tm =
     rand lhs, int_tm;;
 
 let mk_interval tm bounds =
-        mk_comb (mk_comb (interval_tm, tm), bounds);;
-
+	mk_comb (mk_comb (interval_tm, tm), bounds);;
+	
 let mk_const_interval =
-        let lemma = SPEC_ALL CONST_INTERVAL in
-                fun tm -> INST[tm, x_var_real] lemma;;
+	let lemma = SPEC_ALL CONST_INTERVAL in
+		fun tm -> INST[tm, x_var_real] lemma;;
 
 end;;

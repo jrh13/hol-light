@@ -1,0 +1,76 @@
+module type Log_sig =
+  sig
+    val get_dir : string -> string
+    val open_log : string -> unit
+    val close_log : string -> unit
+    val close_all_logs : unit -> unit
+    val append_to_log : string -> string -> unit
+    val log_fmt : string -> formatter option
+  end;;
+
+module Log : Log_sig = struct
+
+(* Creates a directory if it doesn't exist and returns its name *)
+let get_dir dir_name =
+  let _ = 
+    if Sys.file_exists dir_name then ()
+    else Unix.mkdir dir_name 0o777 in
+  dir_name;;
+
+(* Operations with logs *)
+let open_log, close_log, close_all_logs, append_to_log, log_fmt =
+  (* [name, (channel, formatter)] *)
+  let logs = ref [] in
+  let log_for_name name = 
+    try
+      Some (assoc name !logs)
+    with Failure _ ->
+      None
+  in
+  let add_log name (c, fmt) =
+    logs := (name, (c, fmt)) :: !logs
+  in
+  let delete_log name =
+    logs := filter (fun (n, _) -> n <> name) !logs
+  in
+  let close_log name =
+    match log_for_name name with
+      | None -> ()
+      | Some (c, _) ->
+	  close_out c;
+	  delete_log name
+  in
+  let close_all_logs () =
+    let names = map fst !logs in
+    let _ = map close_log names in
+      ()
+  in
+  let open_log name =
+    match log_for_name name with
+      | Some _ -> ()
+      | None ->
+	  let _ = get_dir "log" in
+	  let log_name = Filename.concat "log" (Filename.basename name ^ ".log") in
+	  let c = open_out log_name in
+	  let fmt = formatter_of_out_channel c in
+	    add_log name (c, fmt)
+  in
+  let append_to_log name str =
+    match log_for_name name with
+      | None -> ()
+      | Some (_, fmt) ->
+	pp_print_string fmt str;
+	pp_print_newline fmt ()
+  in
+  let log_fmt name =
+    match log_for_name name with
+      | None -> None
+      | Some (_, fmt) -> Some fmt
+  in
+  open_log,
+  close_log,
+  close_all_logs,
+  append_to_log,
+  log_fmt;;
+
+end;;

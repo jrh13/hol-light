@@ -1,0 +1,169 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: asn, acs                    *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-10-01                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "informal/informal_atn.hl";;
+
+module type Informal_asn_acs_sig =
+  sig
+    val asn_float_lo : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val asn_float_hi : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val asn_interval : int -> Informal_interval.interval -> Informal_interval.interval
+
+    val acs_float_lo : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val acs_float_hi : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val acs_interval : int -> Informal_interval.interval -> Informal_interval.interval
+  end;;
+
+module Informal_asn_acs : Informal_asn_acs_sig = struct
+
+open Informal_float;;
+open Informal_interval;;
+open Informal_atn;;
+
+let neg_one = mk_float (-1) 0;;
+
+let asn_float_hi pp x =
+  if not (sign_float x) then
+    let b = pow_float_hi pp 2 x in
+    let c = sub_float_lo pp float1 b in
+    let r = sqrt_float_lo pp c in
+    let t = div_float_hi pp x r in
+    let hi = atn_float_hi pp t in
+      if not (gt0_float r) then
+	failwith "asn_float_hi: r <= 0"
+      else
+	hi
+  else
+    let b = pow_float_lo pp 2 x in
+    let c = sub_float_hi pp float1 b in
+    let r = sqrt_float_hi pp c in
+    let t = div_float_hi pp x r in
+    let hi = atn_float_hi pp t in
+      if not (lt_float neg_one x) then
+	failwith "asn_float_hi: x <= -1"
+      else
+	hi;;
+
+let asn_float_lo pp x =
+  if sign_float x then
+    let b = pow_float_hi pp 2 x in
+    let c = sub_float_lo pp float1 b in
+    let r = sqrt_float_lo pp c in
+    let t = div_float_lo pp x r in
+    let lo = atn_float_lo pp t in
+      if not (gt0_float r) then
+	failwith "asn_float_lo: r <= 0"
+      else
+	lo
+  else
+    let b = pow_float_lo pp 2 x in
+    let c = sub_float_hi pp float1 b in
+    let r = sqrt_float_hi pp c in
+    let t = div_float_lo pp x r in
+    let lo = atn_float_lo pp t in
+      if not (lt_float x float1) then
+	failwith "asn_float_lo: 1 <= x"
+      else
+	lo;;
+
+let acs_float_hi pp x =
+  let flag1 = le_float x float1 in
+  let flag2 = le_float neg_one x in
+    if flag1 && flag2 then
+      let _, b = dest_interval pi2_approx_array.(pp) in
+      let c = asn_float_lo pp x in
+      let hi = sub_float_hi pp b c in
+	hi
+    else
+      failwith "acs_float_hi: x < -1 || x > 1";;
+
+let acs_float_lo pp x =
+  let flag1 = le_float x float1 in
+  let flag2 = le_float neg_one x in
+    if flag1 && flag2 then
+      let a, _ = dest_interval pi2_approx_array.(pp) in
+      let c = asn_float_hi pp x in
+      let lo = sub_float_lo pp a c in
+	lo
+    else
+      failwith "acs_float_lo: x < -1 || x > 1";;
+
+let asn_interval pp i =
+  let a, b = dest_interval i in
+  let flag1 = le_float neg_one a in
+  let flag2 = le_float b float1 in
+    if flag1 && flag2 then
+      let lo = asn_float_lo pp a and
+	  hi = asn_float_hi pp b in
+	mk_interval (lo, hi)
+    else
+      failwith "asn_interval: x < -1 || x > 1";;
+
+let acs_interval pp i =
+  let a, b = dest_interval i in
+  let flag1 = le_float neg_one a in
+  let flag2 = le_float b float1 in
+    if flag1 && flag2 then
+      let lo = acs_float_lo pp b and
+	  hi = acs_float_hi pp a in
+	mk_interval (lo, hi)
+    else
+      failwith "acs_interval: x < -1 || x > 1";;
+
+end;;
+
+(*************************)
+
+(*
+
+needs "trig/asn_acs_eval.hl";;
+
+open Informal_asn_acs;;
+
+#install_printer print_ifloat;;
+#install_printer print_interval;;
+
+let x = mk_float 1 (-1) and
+    y = mk_float (-1) (-1);;
+
+let i1 = mk_interval (y, x) and
+    i2 = mk_interval (x, x) and
+    i3 = mk_interval (y, y);;
+
+let x_tm, y_tm =
+  let mk = Arith_float.mk_float in
+    mk 1 (-1), mk (-1) (-1);;
+
+Interval_arith.mk_interval;;
+
+let i1_th, i2_th, i3_th =
+  let mk a b =  ASSUME (Interval_arith.mk_interval `z:real` (mk_pair (a, b))) in
+    mk y_tm x_tm,
+    mk x_tm x_tm,
+    mk y_tm y_tm;;
+
+let pp = 10;;
+
+asn_interval pp i1;;
+Asn_acs_eval.float_interval_asn pp i1_th;;
+
+asn_interval pp i2;;
+Asn_acs_eval.float_interval_asn pp i2_th;;
+
+asn_interval pp i3;;
+Asn_acs_eval.float_interval_asn pp i3_th;;
+
+acs_interval pp i1;;
+Asn_acs_eval.float_interval_acs pp i1_th;;
+
+acs_interval pp i2;;
+Asn_acs_eval.float_interval_acs pp i2_th;;
+
+acs_interval pp i3;;
+Asn_acs_eval.float_interval_acs pp i3_th;;
+
+*)

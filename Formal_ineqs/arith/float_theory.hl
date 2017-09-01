@@ -6,13 +6,15 @@
 
 
 (* Dependencies *)
-needs "arith/nat.hl";;
+needs "arith/arith_nat.hl";;
 needs "arith/num_exp_theory.hl";;
+needs "arith/interval_arith.hl";;
 
 module Float_theory = struct
 
 open Num_exp_theory;;
 open Arith_nat;;
+open Interval_arith;;
 
 (* Fix the minimal exponent *)
 let min_exp = !Arith_options.min_exp;;
@@ -25,6 +27,21 @@ let min_exp_def = new_definition (mk_eq(`min_exp:num`, min_exp_const));;
 
 let float_tm = `float_num s n e = (if s then (-- &1) else &1) * &(num_exp n e) / &(num_exp 1 min_exp)`;;
 let float = new_definition float_tm;;
+
+let arith_base_def = new_definition
+  (mk_eq (`arith_base:num`, mk_small_numeral Arith_num.arith_base));;
+
+let arith_base_neq0 = prove
+  (`~(arith_base = 0)`,
+   REWRITE_TAC[arith_base_def] THEN ARITH_TAC);;
+
+let float_alt = prove
+  (`!s n e. float_num s n e = (if s then -- &1 else &1) * &n *
+      if (min_exp <= e) then &arith_base pow (e - min_exp) else inv (&arith_base pow (min_exp - e))`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[float; num_exp; GSYM arith_base_def] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_MUL; GSYM REAL_OF_NUM_POW; REAL_MUL_LID] THEN
+     REWRITE_TAC[REAL_ARITH `(&n * b) / c = &n * (b / c)`] THEN
+     SIMP_TAC[arith_base_neq0; REAL_OF_NUM_EQ; REAL_DIV_POW2]);;
 
 let FLOAT_OF_NUM = (GEN_ALL o prove)(`&n = float_num F n min_exp`,
                          REWRITE_TAC[float; num_exp; REAL_MUL_LID] THEN
@@ -67,7 +84,7 @@ let FLOAT_EQ_0 = prove(`!s n e. float_num s n e = &0 <=> n = 0`,
                              ];
 
                            DISCH_TAC THEN
-                             DISJ2_TAC THEN DISJ1_TAC THEN
+			     DISJ2_TAC THEN DISJ1_TAC THEN
                              ASM_REWRITE_TAC[REAL_OF_NUM_EQ; NUM_EXP_EQ_0]
                          ]);;
 
@@ -83,5 +100,20 @@ let FLOAT_T_bound = (GEN_ALL o prove)(`num_exp n1 e1 <= num_exp n2 e2
                       REWRITE_TAC[FLOAT_NEG_T; REAL_LE_NEG2; FLOAT_F_bound]);;
 
 
+let FLOAT_INTERVAL_FT_IMP_0 = prove
+  (`interval_arith x (float_num F n1 e1, float_num T n2 e2) ==> x = &0`,
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN
+     REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN
+     CONJ_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THENL [
+       EXISTS_TAC `float_num T n2 e2` THEN ASM_REWRITE_TAC[FLOAT_T_NEG];
+       EXISTS_TAC `float_num F n1 e1` THEN ASM_REWRITE_TAC[FLOAT_F_POS]
+     ]);;
+
+let FLOAT_0 = prove(`!s e. float_num s 0 e = &0`, REWRITE_TAC[FLOAT_EQ_0]);;
+
+let FLOAT_ABS = prove(`abs (float_num s n e) = float_num F n e`,
+   BOOL_CASES_TAC `s:bool` THEN
+     REWRITE_TAC[FLOAT_NEG_T; REAL_ABS_NEG; REAL_ABS_REFL; FLOAT_F_POS]);;
+				  
 
 end;;

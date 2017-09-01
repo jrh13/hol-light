@@ -1,0 +1,228 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: atn                         *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-09-26                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "informal/informal_interval.hl";;
+needs "informal/informal_poly.hl";;
+
+module type Informal_atn_sig =
+  sig
+    val atn_float_lo : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val atn_float_hi : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val atn_interval : int -> Informal_interval.interval -> Informal_interval.interval
+    val pi_approx_array : Informal_interval.interval array
+    val pi2_approx_array : Informal_interval.interval array
+  end;;
+
+
+module Informal_atn : Informal_atn_sig = struct
+
+open Num;;
+open Informal_float;;
+open Informal_interval;;
+open Informal_poly;;
+
+let halfatn_pos_hi pp t =
+  let a = mul_float_lo pp t t in
+  let b = add_float_lo pp float1 a in
+  let c = sqrt_float_lo pp b in
+  let x1 = add_float_lo pp c float1 in
+  let _ = assert (sign_float x1 = false) in
+  let hi = div_float_hi pp t x1 in
+    hi;;
+
+let halfatn_pos_lo pp t =
+  let a = mul_float_hi pp t t in
+  let b = add_float_hi pp float1 a in
+  let c = sqrt_float_hi pp b in
+  let r = add_float_hi pp c float1 in
+  let lo = div_float_lo pp t r in
+  let _ = assert (sign_float lo = false) in
+    lo;;
+
+let halfatn4_pos_hi pp t =
+  let _ = assert (sign_float t = false) in
+  let f = halfatn_pos_hi pp in
+    f (f (f (f t)));;
+
+let halfatn4_pos_lo pp t =
+  let _ = assert (sign_float t = false) in
+  let f = halfatn_pos_lo pp in
+    f (f (f (f t)));;
+
+let rec fact n =
+  if sign_num n <= 0 then Int 1 else
+    n */ fact (pred_num n);;
+
+let atn_tables pp n =
+  let t1 = map (fun i -> 4 * i + 1) (0 -- (n / 2)) and
+      t2 = map (fun i -> 4 * i + 3) (0 -- ((n + 1) / 2 - 1)) in
+  let f n = if n = 1 then mk_num_interval (Int n) else inv_interval pp (mk_num_interval (Int n)) in
+    map f t1, map f t2;;
+
+(* Computes x^k / k! *)
+let rec x_pow_over_fact x k =
+  if k <= 0 then 1. else
+    x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
+
+(* Computes i such that x^(2 * i + 1) / (2 * i + 1) <= base^(-(p + 1)) and cond(i) *)
+let n_of_p_atn x pp cond = 
+  let t = (float_of_int Informal_nat.arith_base) ** (float_of_int (-pp - 1)) in
+  let rec try_i i =
+    let _ = if i > 50 then failwith "n_of_p_atn: cannot find i" else () in
+      if cond i then
+	let d = float_of_int (2 * i + 1) in
+	let r = (x ** d) /. d in
+	  if r <= t then i else try_i (i + 1) 
+      else
+	try_i (i + 1)
+  in
+    try_i 0;;
+
+let mk_atn_upper pp =
+  let n = n_of_p_atn 0.125 pp (fun i -> i land 1 = 0) in
+    atn_tables (pp + 1) n;;
+
+let mk_atn_lower pp =
+  let n = n_of_p_atn 0.125 pp (fun i -> i land 1 = 1) in
+    atn_tables (pp + 1) n;;
+
+let atn_float_pos_high =
+  let tables = Array.init 21 mk_atn_upper and
+      float16 = mk_float 16 0 in
+    fun pp x ->
+      let cs1, cs2 = tables.(pp) in
+      let pp = pp + 1 in
+      let t = halfatn4_pos_hi pp x in
+      let t4_high = eval_pow4_high pp t in
+      let m, t4_low = eval_pow2_pow4_low pp t in
+      let a = eval_high_poly_f_pos_pos pp cs1 t4_high in
+      let b = eval_low_poly_f_pos_pos pp cs2 t4_low in
+      let n = mul_float_lo pp m b in
+      let c = sub_float_hi pp a n in
+      let r = mul_float_hi pp t c in
+      let hi = mul_float_hi pp float16 r in
+	if not (lt_float t float1) then
+	  failwith "Informal.atn_float_pos_high: t >= 1"
+	else
+	  hi;;
+
+let atn_float_pos_low =
+  let tables = Array.init 21 mk_atn_lower and
+      float16 = mk_float 16 0 in
+    fun pp x ->
+      let cs1, cs2 = tables.(pp) in
+      let pp = pp + 1 in
+      let t = halfatn4_pos_lo pp x in
+      let t4_low = eval_pow4_low pp t in
+      let m, t4_high = eval_pow2_pow4_high pp t in
+      let a = eval_low_poly_f_pos_pos pp cs1 t4_low in
+      let b = eval_high_poly_f_pos_pos pp cs2 t4_high in
+      let n = mul_float_hi pp m b in
+      let c = sub_float_lo pp a n in
+      let r = mul_float_lo pp t c in
+      let lo = mul_float_lo pp float16 r in
+	if sign_float lo then
+	  float0
+	else
+	  if not (lt_float t float1) then
+	    failwith "Informal.atn_float_pos_low: t >= 1"
+	  else
+	    lo;;
+
+
+let atn_float_hi pp x =
+  if not (sign_float x) then
+    atn_float_pos_high pp x
+  else
+    let lo = atn_float_pos_low pp (abs_float x) in
+      neg_float lo;;
+
+let atn_float_lo pp x =
+  if not (sign_float x) then
+    atn_float_pos_low pp x
+  else
+    let hi = atn_float_pos_high pp (abs_float x) in
+      neg_float hi;;
+
+
+let atn_interval pp i =
+  let a, b = dest_interval i in
+  let lo = atn_float_lo pp a and
+      hi = atn_float_hi pp b in
+    mk_interval (lo, hi);;
+
+
+let pi_approx_array, pi2_approx_array =
+  let pp = 20 in
+  let x = one_interval in
+  let r1 = atn_interval pp x in
+  let r2 = mul_interval pp (mk_small_num_interval 4) r1 in
+  let float_pi = r2 in
+  let float_pi2 = div_interval pp float_pi two_interval in
+  let pi_int0 = mk_small_num_interval 0 in
+  let pi2_int0 = pi_int0 in
+  let pi = Array.init 19 (fun i -> if i = 0 then pi_int0 else round_interval i float_pi) and
+      pi2 = Array.init 19 (fun i -> if i = 0 then pi2_int0 else round_interval i float_pi2) in
+    pi, pi2;;
+
+end;;
+
+(******************)
+
+(*
+
+needs "trig/atn_eval.hl";;
+
+#install_printer print_ifloat;;
+#install_printer print_interval;;
+
+let x = mk_float 0 0 and
+    y = mk_float (-1) 0;;
+
+let i1 = mk_interval (y, x) and
+    i2 = mk_interval (x, x) and
+    i3 = mk_interval (y, y);;
+
+let x_tm, y_tm =
+  let mk = Arith_float.mk_float in
+    mk 0 0, mk (-1) 0;;
+
+let i1_th, i2_th, i3_th =
+  let mk = (PURE_REWRITE_RULE[GSYM Float_theory.FLOAT_NEG_T] o More_float.RULE o ASSUME) in
+    mk `interval_arith y (-- &1, &0)`,
+    mk `interval_arith z (&0, &0)`,
+    mk `interval_arith u (-- &1, -- &1)`;;
+
+let pp = 10;;
+
+atn_float_pos_high pp x;;
+atn_float_hi pp x;;
+Atn_eval.float_atn_hi pp x_tm;;
+
+atn_float_pos_low pp x;;
+atn_float_lo pp x;;
+Atn_eval.float_atn_lo pp x_tm;;
+
+atn_float_hi pp y;;
+Atn_eval.float_atn_hi pp y_tm;;
+
+atn_float_lo pp y;;
+Atn_eval.float_atn_lo pp y_tm;;
+
+atn_interval pp i1;;
+Atn_eval.float_interval_atn pp i1_th;;
+
+atn_interval pp i2;;
+Atn_eval.float_interval_atn pp i2_th;;
+
+atn_interval pp i3;;
+Atn_eval.float_interval_atn pp i3_th;;
+
+pi_approx_array.(18);;
+Atn_eval.pi_approx_array.(18);;
+
+*)

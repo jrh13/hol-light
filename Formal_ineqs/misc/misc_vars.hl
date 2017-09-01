@@ -1,0 +1,159 @@
+(* =========================================================== *)
+(* Commonly used variables and constants                       *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+module Misc_vars = struct
+
+(* bool variables *)
+let s_var_bool = `s:bool` and
+	s1_var_bool = `s1:bool` and
+	s2_var_bool = `s2:bool`;;
+
+(* num variables *)
+let n_var_num = `n:num` and
+    m_var_num = `m:num` and
+    t_var_num = `t:num` and
+    p_var_num = `p:num` and
+    q_var_num = `q:num` and
+    k_var_num = `k:num` and
+    e_var_num = `e:num` and
+    e1_var_num = `e1:num` and
+    e2_var_num = `e2:num` and
+    r_var_num = `r:num` and
+    r1_var_num = `r1:num` and
+    r2_var_num = `r2:num` and
+    n1_var_num = `n1:num` and
+    n2_var_num = `n2:num` and
+    m1_var_num = `m1:num` and
+    m2_var_num = `m2:num` and
+    x_var_num = `x:num` and
+    y_var_num = `y:num` and
+    i_var_num = `i:num` and
+    j_var_num = `j:num`;;
+
+(* real variables *)
+let x_var_real = `x : real` and
+    y_var_real = `y : real` and
+    z_var_real = `z : real` and
+    w_var_real = `w : real` and
+    a_var_real = `a : real` and
+    b_var_real = `b : real` and
+    a1_var_real = `a1 : real` and
+    a2_var_real = `a2 : real` and
+    b1_var_real = `b1 : real` and
+    b2_var_real = `b2 : real` and
+    c_var_real = `c : real` and
+    d_var_real = `d : real` and
+    h_var_real = `h : real` and
+    m_var_real = `m : real` and
+    n_var_real = `n : real` and
+    r_var_real = `r : real` and
+    x1_var_real = `x1 : real` and
+    x2_var_real = `x2 : real` and
+    y1_var_real = `y1 : real` and
+    y2_var_real = `y2 : real` and
+    f1_var_real = `f1 : real` and
+    f2_var_real = `f2 : real` and
+    f_var_fun = `f : real->real` and
+    g_var_fun = `g : real->real` and
+    f1_var_fun = `f1 : real->real` and
+    f2_var_fun = `f2 : real->real` and
+    int_var = `int : real#real` and
+    f_bounds_var = `f_bounds : real#real` and
+    df_bounds_var = `df_bounds : real#real` and
+    dd_bounds_var = `dd_bounds : real#real` and
+    x_lo_var = `x_lo : real` and
+    x_hi_var = `x_hi : real` and
+    low_var_real = `low : real` and
+    high_var_real = `high : real` and
+    lo_var_real = `lo : real` and
+    hi_var_real = `hi : real` and
+    dd_var_real = `dd : real` and
+    df_lo_var = `df_lo : real` and
+    df_hi_var = `df_hi : real` and
+    df_var_real = `df : real` and
+    f_lo_var = `f_lo : real` and
+    f_hi_var = `f_hi : real` and
+    w1_var_real = `w1 : real` and
+    w2_var_real = `w2 : real` and
+    t_var_real = `t : real` and
+    g_bounds_var = `g_bounds : real#real` and
+    dg_bounds_var = `dg_bounds : real#real` and
+    bounds_var = `bounds : real#real` and
+    d_bounds_var = `d_bounds : real#real` and
+    x0_var_real = `x0 : real` and
+    z0_var_real = `z0 : real` and
+    w0_var_real = `w0 : real` and
+    error_var = `error : real` and
+    d_bounds_list_var = `d_bounds_list : (real#real)list` and
+    dd_bounds_list_var = `dd_bounds_list : ((real#real)list)list` and
+    df_bounds_list_var = `df_bounds_list : (real#real)list` and
+    dd_list_var = `dd_list : (real#real)list` and
+    t_var_real_list = `t:(real)list` and
+    x_var_real_list = `x:(real)list` and
+    y_var_real_list = `y:(real)list` and
+    z_var_real_list = `z:(real)list` and
+    w_var_real_list = `w:(real)list` and
+    yw_var = `yw : (real#real)list` and
+    xz_var = `xz : (real#real)list` and
+    xz_pair_var = `xz : real#real` and
+    yw_pair_var = `yw : real#real` and
+    list_var_real_pair = `list : (real#real)list`;;
+
+(* bool constants *)
+let t_const = `T` and
+    f_const = `F`;;
+	
+(* num constants *)
+let zero_const = `_0` and
+    zero_num = `0`;;
+	
+(* num operations *)
+let add_op_num = `(+) : num->num->num` and
+    sub_op_num = `(-) : num->num->num` and
+    mul_op_num = `( * ) : num->num->num` and
+    eq_op_num = `(=) : num->num->bool` and
+    le_op_num = `(<=) : num->num->bool` and
+    lt_op_num = `(<) : num->num->bool` and
+    div_op_num = `(DIV): num->num->num` and
+    pre_op_num = `PRE: num->num` and
+    suc_op_num = `SUC : num->num`;;
+
+
+(* real constants *)
+let real_empty_list = `[]:(real)list`;;	
+
+(* real operations *)
+let add_op_real = `(+) : real->real->real` and
+    mul_op_real = `( * ) : real->real->real` and
+    sub_op_real = `(-) : real->real->real` and
+    div_op_real = `(/) :real->real->real` and
+    inv_op_real = `inv : real->real` and
+    neg_op_real = `(--) : real->real` and
+    eq_op_real = `(=) : real->real->bool` and
+    lt_op_real = `(<) : real->real->bool` and
+    le_op_real = `(<=):real->real->bool` and
+    ge_op_real = `(>=):real->real->bool` and
+    amp_op_real = `(&) : num->real` and
+    pow_op_real = `(pow) : real->num->real`;;
+
+(* types *)
+let real_ty = `:real` and
+    real_list_ty = `:(real)list` and
+    real_pair_ty = `:real#real` and
+    real_pair_list_ty = `:(real#real)list` and
+    num_type = `:num` and
+    nty = `:N`;;
+
+
+(* Simple operations *)
+let mk_real_list tms = mk_list (tms, real_ty);;
+
+let mk_names n prefix = map (fun i -> prefix^(string_of_int i)) (1--n);;
+
+let mk_real_vars n prefix = map (C (curry mk_var) real_ty) (mk_names n prefix);;
+
+ 
+end;;

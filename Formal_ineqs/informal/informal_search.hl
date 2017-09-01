@@ -1,0 +1,298 @@
+(* =========================================================== *)
+(* Informal certificate search                                 *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-07-31                                            *)
+(* =========================================================== *)
+
+needs "informal/informal_taylor.hl";;
+needs "verifier/certificate.hl";;
+needs "verifier_options.hl";;
+
+module Informal_search = struct
+
+open List;;
+open Informal_float;;
+open Informal_interval;;
+open Informal_taylor;;
+open Certificate;;
+open Verifier_options;;
+
+type search_options = {
+  raw_intervals0 : bool;
+  max_width : float;
+  max_depth : int;
+  mono_depth : int;
+  pp : int;
+};;
+
+
+(* Returns the maximum element of s and its index *)
+let find_max s =
+  let rec find m mi i s =
+    match s with
+      | [] -> m, mi
+      | x :: t ->
+	  if x > m then
+	    find x i (i + 1) t
+	  else
+	    find m mi (i + 1) t in
+    find (hd s) 0 1 (tl s);;
+
+(* split_domain *)
+let split_domain pp j domain = 
+  let n = length domain.w in
+  let t = nth domain.y (j - 1) in
+  let vv = map (fun i -> if i = j then t else nth domain.hi (i - 1)) (1--n) in
+  let uu = map (fun i -> if i = j then t else nth domain.lo (i - 1)) (1--n) in
+    mk_m_center_domain pp domain.lo vv, mk_m_center_domain pp uu domain.hi;;
+
+
+(* restrict_domain *)
+let restrict_domain j left_flag domain =
+  let replace list j v = map (fun i -> if i = j then v else nth list (i - 1)) (1--length list) in
+  let t = nth (if left_flag then domain.lo else domain.hi) (j - 1) in
+  let lo = if left_flag then domain.lo else replace domain.lo j t in
+  let hi = if left_flag then replace domain.hi j t else domain.hi in
+  let w = replace domain.w j float_0 in
+  let y = replace domain.y j t in
+    {lo = lo; hi = hi; w = w; y = y};;
+
+
+type function_info = {
+  eval0 : int -> ifloat list -> ifloat list -> interval;
+  taylor : int -> int -> m_cell_domain -> m_taylor_interval;
+  index : int;
+};;
+
+type result = 
+  | Cell_inconclusive
+  | Cell_false
+  | Cell_result of result_tree
+  | Cell_pass of bool * function_info;;
+
+
+
+exception Construction_error of string * m_cell_domain * function_info list;;
+
+let error msg dom fs = raise (Construction_error (msg, dom, fs));;
+
+let init_vol, update_verified_vol =
+  let compute_vol dom =
+    let fw = map float_of_ifloat dom.w in
+      itlist ( *. ) fw 1.0 in
+  let total_vol = ref 0.0 and
+      verified_vol = ref 0.0 and
+      last_report = ref 0 in
+  let init_vol dom =
+    total_vol := compute_vol dom;
+    verified_vol := 0.0;
+    last_report := 0 in
+  let update_verified_vol dom =
+    if !info_print_level > 0 && !total_vol > 0.0 then
+      let _ = verified_vol := !verified_vol +. compute_vol dom in
+      let verified = int_of_float (!verified_vol /. !total_vol *. 100.5) in
+	if verified > !last_report then
+	  let _ = last_report := verified in report0 (Printf.sprintf "%d " !last_report)
+	else ()
+    else () in
+    init_vol, update_verified_vol;;
+
+
+(* Checks one cell *)
+let rec check_cell opt dom =
+  let pp = opt.pp in
+  let rec check flag fs =
+    match fs with
+      | [] ->
+	  if not flag then Cell_false else Cell_inconclusive
+      | f :: rest ->
+	  begin
+	    try
+	      let raw_fail, raw_pass =
+		if opt.raw_intervals0 then
+		  begin
+		    try
+		      let interval = f.eval0 pp dom.lo dom.hi in
+		      let lo, hi = dest_interval interval in
+			ge0_float lo, lt0_float hi
+		    with Failure _ | Division_by_zero ->
+		      false, false
+		  end
+		else
+		  false, false in
+		if raw_pass then
+		  Cell_pass (true, f)
+		else if raw_fail then
+		  check flag rest
+		else
+		  let ti = f.taylor pp pp dom in
+		  let upper = eval_m_taylor_upper_bound pp ti in
+		    if lt0_float upper then
+		      Cell_pass (false, f)
+		    else
+		      let lower = eval_m_taylor_lower_bound pp ti in
+			if ge0_float lower then
+			  check flag rest
+			else 
+			  (if opt.mono_depth > 0 then
+			     try
+			       try_mono {opt with max_depth = opt.mono_depth} dom f ti
+			     with Failure _ | Division_by_zero | Construction_error _ ->
+			       check true rest
+			   else
+			     check true rest)
+	    with Failure _ | Division_by_zero ->
+	      check true rest
+	  end
+  in
+    fun fs ->
+      check false fs
+(* Tries monotonicity for a single function *)
+and try_mono opt dom f ti =
+  let pp = opt.pp in
+  let rec mono acc indices_ws =
+    match indices_ws with
+      | [] -> acc
+      | (i, w) :: rest ->
+	  if gt0_float w then
+	    let upper = eval_m_taylor_partial_upper pp i ti in
+	      if lt0_float upper then
+		let status = {variable = i; decr_flag = true; df0_flag = false; ti_flag = true} in
+		  mono (status :: acc) rest
+	      else
+		let lower = eval_m_taylor_partial_lower pp i ti in
+		  if ge0_float lower then
+		    let status = {variable = i; decr_flag = false; df0_flag = false; ti_flag = true} in
+		      mono (status :: acc) rest
+		  else
+		    mono acc rest
+	  else
+	    mono acc rest in
+  let restrict status dom =
+    restrict_domain status.variable status.decr_flag dom in
+  let st = mono [] (zip (1--ti.n) dom.w) in
+    if length st = 0 then
+      failwith "Not monotonic"
+    else
+      let dom2 = itlist (fun st d -> restrict st d) st dom in
+      let result = construct_certificate0 opt dom2 [f] in
+	Cell_result (Result_mono (st, result))
+(* Splits the domain if necessary *)
+and construct_certificate0 opt =
+  let pp = opt.pp in
+  let rec construct depth dom fs =
+    if depth >= opt.max_depth then
+      error (Printf.sprintf "depth (%d) > max_depth (%d)" depth opt.max_depth) dom fs
+    else
+      let result = check_cell opt dom fs in
+	match result with
+	  | Cell_false -> 
+	      error "False result" dom fs
+	  | Cell_result r -> r
+	  | Cell_pass (raw_flag, f) -> 
+	      let _ = update_verified_vol dom in
+		Result_pass (f.index, raw_flag)
+	  | Cell_inconclusive ->
+	      let ws = map float_of_ifloat dom.w in
+	      let _, j = find_max ws in
+	      let dom1, dom2 = split_domain pp (j + 1) dom in
+	      let r1 = construct (depth + 1) dom1 fs and
+		  r2 = construct (depth + 1) dom2 fs in
+		Result_glue (j, false, r1, r2)
+  in
+    fun dom fs ->
+      let _ = init_vol dom in
+	construct 0 dom fs;;
+
+let construct_certificate opt dom fs_informal =
+  let mk_f (f0, ft) i = {
+    eval0 = f0;
+    taylor = ft; 
+    index = i
+  } in
+  let fs = map2 mk_f fs_informal (0--(length fs_informal - 1)) in
+    construct_certificate0 opt dom fs;;
+
+end;;
+
+
+
+(*
+(*******************)
+
+needs "informal/informal_taylor.hl";;
+needs "verifier/m_verifier_build.hl";;
+open M_verifier_build;;
+
+#install_printer Informal_float.print_ifloat;;
+#install_printer Informal_interval.print_interval;;
+
+open M_taylor_arith2;;
+open M_taylor;;
+open More_float;;
+open Informal_search;;
+
+let opt = {
+  mono_depth = 0;
+  max_depth = 100;
+  max_width = 1e-10;
+  pp = 8;
+};;
+
+
+let x_list = mk_list ([mk_float (-10) 0; mk_float (-10) 0; mk_float (-10) 0], `:real`);;
+let z_list = mk_list ([mk_float 10 0; mk_float 10 0; mk_float 10 0], `:real`);;
+
+let x_inf = [Informal_float.mk_float (Int (-10)) 0; Informal_float.mk_float (Int (-10)) 0; Informal_float.mk_float (Int (-10)) 0];;
+let z_inf = [Informal_float.mk_float (Int 10) 0; Informal_float.mk_float (Int 10) 0; Informal_float.mk_float (Int 10) 0];;
+
+let dom_th = mk_m_center_domain 3 5 x_list z_list;;
+let dom_inf = Informal_taylor.mk_m_center_domain 5 x_inf z_inf;;
+
+let schwefel_poly = `\x:real^3. -- #0.0000001 - ((x$1 - x$2 pow 2) pow 2 + (x$2 - &1) pow 2 + 
+  (x$1 - x$3 pow 2) pow 2 + (x$3 - &1) pow 2)`;;
+
+let f1, f2 = mk_verification_functions_poly 5 schwefel_poly;;
+(*
+let _, _, f3 = mk_verification_functions_poly 5 `\x:real^2. #1.5 - x$1`;;
+let fs0 = [f2.Informal_verifier.taylor; f3.Informal_verifier.taylor];;
+*)
+
+let fs0 = [f2.Informal_verifier.taylor];;
+
+let mk_f f i = {taylor = f; index = i};;
+let fs = map2 mk_f fs0 (0--(length fs0 - 1));;
+
+let c = construct_certificate {opt with pp = 5; mono_depth = 200} dom_inf fs0;;
+result_stats c;;
+
+(***)
+
+let x_inf = [Informal_float.mk_float (Int 1) 0];;
+let y_inf = [Informal_float.mk_float (Int 3) 0];;
+
+let dom_inf = Informal_taylor.mk_m_center_domain 5 x_inf y_inf;;
+
+let f1, _, f2 = mk_verification_functions_poly 5 `\x:real^1. x$1 - &2`;;
+let _, _, f3 = mk_verification_functions_poly 5 `\x:real^1. #1.5 - x$1`;;
+let fs0 = [f2.Informal_verifier.taylor; f3.Informal_verifier.taylor];;
+
+let mk_f f i = {taylor = f; index = i};;
+let fs = map2 mk_f fs0 (0--(length fs0 - 1));;
+
+construct_certificate {opt with pp = 3} dom_inf fs0;;
+
+
+0 <= 100 || (1 / 0 = 0);;
+100 <= 0 && (1 / 0 = 0);;
+
+let t_th = f1.taylor 5 5 dom_th;;
+let t_inf = f2.Informal_verifier.taylor 5 5 dom_inf;;
+
+let pp = 5;;
+Informal_taylor.eval_m_taylor_lower_bound pp t_inf;;
+
+let ws = map float_of_ifloat dom_inf.w;;
+let _, j = find_max ws;;
+let dom1, dom2 = split_domain pp j dom_inf;;
+*)

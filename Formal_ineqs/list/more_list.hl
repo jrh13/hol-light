@@ -8,8 +8,8 @@ module More_list = struct
 
 (* definitions *)
 let REVERSE_TABLE  = define `(REVERSE_TABLE (f:num->A) 0 = []) /\
-   (REVERSE_TABLE f (SUC i) = CONS (f i)  ( REVERSE_TABLE f i))`;;
-
+   (REVERSE_TABLE f (SUC i) = CONS (f i)  ( REVERSE_TABLE f i))`;; 
+  
 let TABLE = new_definition `!(f:num->A) k. TABLE f k = REVERSE (REVERSE_TABLE f k)`;;
 
 let l_seq = new_definition `l_seq n m = TABLE (\i. n + i) ((m + 1) - n)`;;
@@ -40,12 +40,18 @@ let EL_TABLE = prove(`!(f:num->A) n i. i < n ==> EL i (TABLE f n) = f i`,
      SUBGOAL_THEN `i = n:num` (fun th -> REWRITE_TAC[th]) THENL
      [
        POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN
-         ARITH_TAC;
+	 ARITH_TAC;
        ALL_TAC
      ] THEN
      REWRITE_TAC[ARITH_RULE `n - n = 0`; EL; HD]);;
 
-let LIST_EL_EQ = prove(`!ul vl:(A)list. ul = vl <=>
+let TABLE_0 = prove(`!(f:num->A). TABLE f 0 = []`,
+		    REWRITE_TAC[TABLE; REVERSE_TABLE; REVERSE]);;
+
+let TABLE_SUC = prove(`!(f:num->A) n. TABLE f (SUC n) = APPEND (TABLE f n) [f n]`,
+   GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC[TABLE; REVERSE_TABLE; REVERSE]);;
+
+let LIST_EL_EQ = prove(`!ul vl:(A)list. ul = vl <=> 
                (LENGTH ul = LENGTH vl /\ (!j. j < LENGTH ul ==> EL j ul = EL j vl))`,
    REPEAT STRIP_TAC THEN
      EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
@@ -60,8 +66,8 @@ let LIST_EL_EQ = prove(`!ul vl:(A)list. ul = vl <=>
      ANTS_TAC THENL
      [
        REPEAT STRIP_TAC THEN
-         FIRST_X_ASSUM (MP_TAC o SPEC `SUC j`) THEN
-         ASM_REWRITE_TAC[ARITH_RULE `SUC a < SUC b <=> a < b`; EL; TL];
+	 FIRST_X_ASSUM (MP_TAC o SPEC `SUC j`) THEN
+	 ASM_REWRITE_TAC[ARITH_RULE `SUC a < SUC b <=> a < b`; EL; TL];
        ALL_TAC
      ] THEN
      DISCH_TAC THEN
@@ -73,10 +79,10 @@ let LENGTH_L_SEQ = prove(`LENGTH (l_seq n m) = (m + 1) - n`, REWRITE_TAC[l_seq; 
 
 let EL_L_SEQ = prove(`!i m n. i < (m + 1) - n ==> EL i (l_seq n m) = n + i`,
   REWRITE_TAC[l_seq] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC EL_TABLE THEN ASM_REWRITE_TAC[]);;
-
+  
 let L_SEQ_NIL = prove(`!n m. l_seq n m = [] <=> (m < n)`,
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[GSYM LENGTH_EQ_NIL; LENGTH_L_SEQ] THEN ARITH_TAC);;
-
+  
 let L_SEQ_NN = prove(`!n. l_seq n n = [n]`,
   GEN_TAC THEN REWRITE_TAC[l_seq; ARITH_RULE `(n + 1) - n = 1`; ONE; TABLE; REVERSE_TABLE; REVERSE] THEN
     REWRITE_TAC[APPEND; ADD_0]);;
@@ -92,13 +98,13 @@ let L_SEQ_CONS = prove(`!n m. n <= m ==> l_seq n m = CONS n (l_seq (n + 1) m)`,
     [
       ASM_SIMP_TAC[EL_L_SEQ] THEN ASM_REWRITE_TAC[EL; HD] THEN ARITH_TAC;
       DISCH_TAC THEN
-        ASM_SIMP_TAC[EL_L_SEQ] THEN ASM_REWRITE_TAC[EL; TL] THEN
-        MP_TAC (SPECL [`j:num`; `m:num`; `n + 1`] EL_L_SEQ) THEN ANTS_TAC THENL
-        [
-          ASM_ARITH_TAC;
-          ALL_TAC
-        ] THEN
-        DISCH_THEN (fun th -> REWRITE_TAC[th]) THEN ARITH_TAC
+	ASM_SIMP_TAC[EL_L_SEQ] THEN ASM_REWRITE_TAC[EL; TL] THEN
+	MP_TAC (SPECL [`j:num`; `m:num`; `n + 1`] EL_L_SEQ) THEN ANTS_TAC THENL
+	[
+	  ASM_ARITH_TAC;
+	  ALL_TAC
+	] THEN
+	DISCH_THEN (fun th -> REWRITE_TAC[th]) THEN ARITH_TAC
     ]);;
 
 
@@ -113,7 +119,7 @@ let EL_BUTLAST = prove(`!(l:(A)list) i. i < LENGTH l - 1 ==> EL i (BUTLAST l) = 
      COND_CASES_TAC THENL
      [
        UNDISCH_TAC `i < SUC (LENGTH (a1:(A)list)) - 1` THEN
-         ASM_REWRITE_TAC[LENGTH] THEN ARITH_TAC;
+	 ASM_REWRITE_TAC[LENGTH] THEN ARITH_TAC;
        ALL_TAC
      ] THEN
      REWRITE_TAC[EL_CONS] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN

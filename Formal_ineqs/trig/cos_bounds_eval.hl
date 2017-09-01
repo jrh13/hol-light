@@ -1,0 +1,196 @@
+needs "trig/sin_cos.hl";;
+needs "trig/poly_eval.hl";;
+
+module type Cos_bounds_eval_sig =
+  sig
+    val float_cos_high_raw : int -> term -> thm
+    val float_cos_low_raw : int -> term -> thm
+  end;;
+
+module Cos_bounds_eval : Cos_bounds_eval_sig = struct
+
+open Misc_functions;;
+open Sin_cos;;
+open More_list;;
+open Poly;;
+open Poly_eval;;
+open Interval_arith;;
+open Float_theory;;
+open Arith_float;;
+open More_float;;
+open Misc_vars;;
+
+prioritize_real();;
+
+let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL;;
+let case_rule = PURE_REWRITE_RULE[NOT_CLAUSES; GSYM float1_eq; FLOAT_NEG] o th_rule;;
+
+let cos_high_trivial = (case_rule o prove)
+  (`cos x <= &1`,
+   REWRITE_TAC[COS_BOUNDS]);;
+
+let cos_low_trivial = (case_rule o prove)
+  (`-- &1 <= cos x`,
+   REWRITE_TAC[COS_BOUNDS]);;
+
+let bound_high_transformation = prove(`!c x p1 p2 a b m n r. c <= p1 - x * p2 ==>
+					interval_arith p1 (&0, a) /\
+					interval_arith b (&0, p2) /\
+					interval_arith m (&0, x) /\
+					n <= m * b /\
+					a - n <= r
+					==> c <= r`, 
+   REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[real_sub] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `m * b:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[]);;
+
+let bound_low_transformation = prove(`!c x p1 p2 a b m n r. p1 - x * p2 <= c ==>
+				       interval_arith a (&0, p1) /\
+				       interval_arith p2 (&0, b) /\
+				       interval_arith x (&0, m) /\
+				       m * b <= n /\
+				       r <= a - n
+				       ==> r <= c`, 
+   REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[real_sub] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `m * b:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[]);;
+
+
+let mk_cos_bound_tables cos_bound_th =
+  let cos_bound = (SPEC_ALL o 
+		     REWRITE_RULE[poly_f_even; poly_f_odd; GSYM REAL_POW_2; REAL_POW_POW] o
+		     REWRITE_RULE[alt_sum_eq_poly_f_even; real_div]) cos_bound_th in
+    (* This rule does not simplify factorials *)
+  let reduce_rule = CONV_RULE (DEPTH_CONV (FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_MULT_CONV])) in
+  let find_poly_f = rev o find_terms (fun tm -> 
+				   try (rator o rator) tm = `poly_f` with Failure _ -> false) in
+    fun pp n ->
+      let n_tm = mk_small_numeral n in
+      let th0 = INST[n_tm, n_var_num] cos_bound in
+      let th1 = CONV_RULE NUM_REDUCE_CONV th0 in
+      let poly_tms0 = find_poly_f (concl th1) in
+      let ns_th = map (REDEPTH_CONV num_CONV o rand o rand o rator) poly_tms0 in
+      let th2 = REWRITE_RULE(ns_th @ [TABLE_SUC; TABLE_0; APPEND]) th1 in
+      let bound_th = reduce_rule th2 in
+      let poly_tms = find_poly_f (concl bound_th) in
+      let cs_tms = map (rand o rator) poly_tms in
+      let cs_lists = map (mk_poly_coeffs pp) cs_tms in
+	bound_th, zip cs_tms cs_lists;;
+
+
+(* Computes x^k / k! *)
+let rec x_pow_over_fact x k =
+  if k <= 0 then 1. else
+    x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
+
+
+(* Computes i such that x^(2(i + 1))/(2(i + 1))! <= base^(-(p + 1)) and cond(i) *)
+let n_of_p_cos x pp cond = 
+  let t = (float_of_int Arith_num.arith_base) ** (float_of_int (-pp - 1)) in
+  let rec try_i i =
+    let _ = if i > 50 then failwith "n_of_p_cos: cannot find i" else () in
+      if cond i then
+	let r = x_pow_over_fact x (2 * (i + 1)) in
+	  if r <= t then i else try_i (i + 1) 
+      else
+	try_i (i + 1)
+  in
+    try_i 0;;
+
+(* Makes the table of cosine coefficients assuming the interval [-pi/2, pi/2] *)
+(* TODO: restrict cos to [-pi/4, pi/4] *)
+let mk_cos_upper pp =
+  let n = n_of_p_cos (2.0 *. atan 1.0) pp (fun i -> i land 1 = 0) in
+  let bound_th0, css = mk_cos_bound_tables cos_poly_upper_bound (pp + 1) n in
+  let cs1, cs2 = pair_of_list css in
+  let RULE2 = UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL in
+  let bound_th = (RULE2 o MATCH_MP bound_high_transformation) bound_th0 in
+    bound_th, cs1, cs2;;
+
+(* Makes the table of cosine coefficients assuming the interval [-pi/2, pi/2] *)
+(* TODO: restrict cos to [-pi/4, pi/4] *)
+let mk_cos_lower pp =
+  let n = n_of_p_cos (2.0 *. atan 1.0) pp (fun i -> i land 1 = 1) in
+  let bound_th0, css = mk_cos_bound_tables cos_poly_lower_bound (pp + 1) n in
+  let cs1, cs2 = pair_of_list css in
+  let RULE2 = UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL in
+  let bound_th = (RULE2 o MATCH_MP bound_low_transformation) bound_th0 in
+    bound_th, cs1, cs2;;
+
+(* Computes an upper bound of cosine at the given floating-point number.            *)
+(* The given number should be relatively small (|x| <= pi/2) to get a good results. *)
+let float_cos_high_raw =
+  let cos_upper_table = Array.init 21 mk_cos_upper in
+    fun pp x_tm ->
+      let bound_th, cs1, cs2 = cos_upper_table.(pp) in
+      let pp = pp + 1 in
+      let x_pow4_high = eval_pow4_high pp x_tm in
+      let x_pow2_low, x_pow4_low = eval_pow2_pow4_low pp x_tm in
+      let p1_high_th = eval_high_poly_f_pos_pos pp cs1 x_pow4_high in
+      let p2_low_th = eval_low_poly_f_pos_pos pp cs2 x_pow4_low in
+      let a_tm = (rand o rand o concl) p1_high_th in
+      let b_tm = (rand o rator o concl) p2_low_th in
+      let m_tm = (rand o rator o concl) x_pow2_low in
+      let n_le_mb_th = float_mul_lo pp m_tm b_tm in
+      let n_tm = (rand o rator o concl) n_le_mb_th in
+      let an_le_r_th = float_sub_hi pp a_tm n_tm in
+      let r_tm = (rand o concl) an_le_r_th in
+      let cmp_1 = float_le r_tm one_float in
+	if (fst o dest_const o rand o concl) cmp_1 = "F" then 
+	  INST[x_tm, x_var_real] cos_high_trivial
+	else 
+	  let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; m_tm, m_var_real; 
+			 n_tm, n_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
+	    itlist MY_PROVE_HYP [p1_high_th; p2_low_th; x_pow2_low; n_le_mb_th; an_le_r_th] th0;;
+
+(* Computes a lower bound of cosine at the given floating-point number.            *)
+(* The given number should be relatively small (|x| <= pi/2) to get a good results. *)
+let float_cos_low_raw =
+  let cos_lower_table = Array.init 21 mk_cos_lower in
+  let neg_one_tm = mk_float (-1) 0 in
+    fun pp x_tm ->
+      let bound_th, cs1, cs2 = cos_lower_table.(pp) in
+      let pp = pp + 1 in
+      let x_pow2_high, x_pow4_high = eval_pow2_pow4_high pp x_tm and
+	  x_pow4_low = eval_pow4_low pp x_tm in
+      let p1_low_th = eval_low_poly_f_pos_pos pp cs1 x_pow4_low and
+	  p2_high_th = eval_high_poly_f_pos_pos pp cs2 x_pow4_high in
+      let a_tm = (rand o rator o concl) p1_low_th in
+      let b_tm = (rand o rand o concl) p2_high_th in
+      let m_tm = (rand o rand o concl) x_pow2_high in
+      let mb_le_n = float_mul_hi pp m_tm b_tm in
+      let n_tm = (rand o concl) mb_le_n in
+      let r_le_an = float_sub_lo pp a_tm n_tm in
+      let r_tm = (rand o rator o concl) r_le_an in
+      let cmp_1 = float_le neg_one_tm r_tm in
+	if (fst o dest_const o rand o concl) cmp_1 = "F" then 
+	  INST[x_tm, x_var_real] cos_low_trivial
+	else 
+	  let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; m_tm, m_var_real; 
+			 n_tm, n_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
+	    itlist MY_PROVE_HYP [p1_low_th; p2_high_th; x_pow2_high; mb_le_n; r_le_an] th0;;
+
+
+end;;
+
+(*
+let pp = 10;;
+let x_tm = (rand o rand o concl o float_interval_const pp) `#3.1415926 / &2`;;
+let x_tm = (rand o rand o concl o float_interval_const pp) `&1`;;
+
+float_cos_high_raw 10 x_tm;;
+float_cos_low_raw 10 x_tm;;
+(* 0.492, 54030230603, real = 0.54030230586 *)
+test 100 (float_cos_high_raw 10) x_tm;;
+
+let x_th = Float_atn.pi_approx_array.(10);;
+Float_atn.float_interval_atn 10 x_th;;
+
+test 100 (Float_atn.float_interval_atn 10) x_th;;
+*)

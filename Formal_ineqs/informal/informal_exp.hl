@@ -1,0 +1,241 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: exp                         *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-12-10                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "informal/informal_interval.hl";;
+needs "informal/informal_poly.hl";;
+
+module type Informal_exp_sig =
+  sig
+    val exp_float_lo : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val exp_float_hi : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val exp_interval : int -> Informal_interval.interval -> Informal_interval.interval
+  end;;
+
+
+module Informal_exp : Informal_exp_sig = struct
+
+open Num;;
+open Informal_float;;
+open Informal_interval;;
+open Informal_poly;;
+
+(* TODO: Make sure that this constant is the same as in trig/exp_eval.hl *)
+let exp_max_x = 1.0;;
+
+let rec fact n =
+  if sign_num n <= 0 then Int 1 else
+    n */ fact (pred_num n);;
+
+let exp_pos_tables pp n =
+  let t1 = map (fun i -> fact (Int i)) (0 -- n) in
+  let f n = inv_interval pp (mk_num_interval n) in
+    map f t1;;
+
+let exp_neg_tables pp n =
+  let t1 = map (fun i -> fact (Int (2 * i))) (0 -- (n / 2)) and
+      t2 = map (fun i -> fact (Int (2 * i + 1))) (0 -- ((n + 1) / 2 - 1)) in
+  let f n = inv_interval pp (mk_num_interval n) in
+    map f t1, map f t2;;
+
+(* Computes x^k / k! *)
+let rec x_pow_over_fact x k =
+  if k <= 0 then 1. else
+    x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
+
+(* Computes i such that x^i / i! <= base^(-(p + 1)) and cond(i) *)
+let n_of_p_exp x pp cond = 
+  let t = (float_of_int Informal_nat.arith_base) ** (float_of_int (-pp - 1)) in
+  let rec try_i i =
+    let _ = if i > 50 then failwith "n_of_p_exp: cannot find i" else () in
+      if cond i then
+	let r = x_pow_over_fact x i in
+	  if r <= t then i else try_i (i + 1) 
+      else
+	try_i (i + 1)
+  in
+    try_i 0;;
+
+let mk_exp_pos_lower pp =
+  let n = n_of_p_exp exp_max_x pp (fun i -> true) in
+    exp_pos_tables (pp + 1) n;;
+
+let mk_exp_neg_lower pp =
+  let n = n_of_p_exp exp_max_x pp (fun i -> i land 1 = 1) in
+    exp_neg_tables (pp + 1) n;;
+
+let mk_exp_neg_upper pp =
+  let n = n_of_p_exp exp_max_x pp (fun i -> i land 1 = 0) in
+    exp_neg_tables (pp + 1) n;;
+
+let exp_pos_low_raw =
+  let table = Array.init 21 mk_exp_pos_lower in
+    fun pp x ->
+      let cs1 = table.(pp) in
+      let pp = pp + 1 in
+	if not (ge0_float x) then
+	  failwith "Informal.exp_pos_low_raw: x < 0"
+	else
+	  let r = eval_low_poly_f_pos_pos pp cs1 x in
+	    r;;
+
+let exp_neg_low_raw =
+  let table = Array.init 21 mk_exp_neg_lower in
+    fun pp x ->
+      let cs1, cs2 = table.(pp) in
+      let pp = pp + 1 in
+      let x2_high = eval_pow2_high pp x and
+	  x2_low = eval_pow2_low pp x in
+      let a = eval_low_poly_f_pos_pos pp cs1 x2_low and
+	  b = eval_high_poly_f_pos_pos pp cs2 x2_high in
+      let n = mul_float_hi pp x b in
+      let r = sub_float_lo pp a n in
+	if le_float x float1 && ge0_float x then
+	  r
+	else
+	  failwith "Informal.exp_neg_low_raw: bad x";;
+
+let exp_neg_high_raw =
+  let table = Array.init 21 mk_exp_neg_upper in
+    fun pp x ->
+      let cs1, cs2 = table.(pp) in
+      let pp = pp + 1 in
+      let x2_high = eval_pow2_high pp x and
+	  x2_low = eval_pow2_low pp x in
+      let a = eval_high_poly_f_pos_pos pp cs1 x2_high and
+	  b = eval_low_poly_f_pos_pos pp cs2 x2_low in
+      let n = mul_float_lo pp x b in
+      let r = sub_float_hi pp a n in
+	if le_float x float1 && ge0_float x then
+	  r
+	else
+	  failwith "Informal.exp_neg_high_raw: bad x";;
+
+let exp_low_raw pp x =
+  let s = sign_float x in
+    if not s then
+      exp_pos_low_raw pp x
+    else
+      exp_neg_low_raw pp (abs_float x);;
+
+let exp_high_raw pp x =
+  let s = sign_float x in
+    if not s then
+      let t = exp_neg_low_raw pp x in
+	inv_float_hi pp t
+    else
+      exp_neg_high_raw pp (abs_float x);;
+
+let reduce_float x =
+  let f = Pervasives.abs_float (float_of_ifloat x) in
+    if f <= exp_max_x then
+      false, 0
+    else
+      let k = int_of_float (floor (f /. exp_max_x)) + 1 in
+	true, k;;
+
+let exp_float_hi pp x =
+  let flag, k = reduce_float x in
+    if not flag then
+      exp_high_raw pp x
+    else
+      let t = mk_float k 0 in
+      let y = div_float_hi (pp + 1) x t in
+      let hi = exp_high_raw (pp + 1) y in
+	pow_float_hi pp k hi;;
+
+let exp_float_lo pp x =
+  let flag, k = reduce_float x in
+    if not flag then
+      exp_low_raw pp x
+    else
+      let t = mk_float k 0 in
+      let y = div_float_lo (pp + 1) x t in
+      let lo = exp_low_raw (pp + 1) y in
+	if ge0_float lo then
+	  pow_float_lo pp k lo
+	else
+	  failwith "Informal.exp_float_lo: lo < 0";;
+
+let exp_interval pp i =
+  let a, b = dest_interval i in
+  let lo = exp_float_lo pp a and
+      hi = exp_float_hi pp b in
+    mk_interval (lo, hi);;
+
+end;;
+
+(******************)
+
+(*
+
+needs "trig/exp_eval.hl";;
+
+open Informal_float;;
+open Informal_interval;;
+open Informal_poly;;
+open Informal_exp;;
+
+#install_printer print_ifloat;;
+#install_printer print_interval;;
+
+let x = mk_float 1 0 and
+    y = mk_float (-1) 0 and
+    z = mk_float 2345 (-1) and
+    r = mk_float 100 0;;
+
+let i1 = mk_interval (y, x) and
+    i2 = mk_interval (x, x) and
+    i3 = mk_interval (y, y) and
+    i4 = mk_interval (z, z);;
+
+let x_tm, y_tm, z_tm, r_tm =
+  let mk = Arith_float.mk_float in
+    mk 1 0, mk (-1) 0, mk 2345 (-1), mk 100 0;;
+
+let i1_th, i2_th, i3_th =
+  let mk = (PURE_REWRITE_RULE[GSYM Float_theory.FLOAT_NEG_T] o More_float.RULE o ASSUME) in
+    mk `interval_arith y (-- &1, &1)`,
+    mk `interval_arith z (&1, &1)`,
+    mk `interval_arith u (-- &1, -- &1)`;;
+
+
+let pp = 10;;
+
+exp_float_hi pp x;;
+Exp_eval.float_exp_hi pp x_tm;;
+
+exp_float_lo pp x;;
+Exp_eval.float_exp_lo pp x_tm;;
+
+exp_float_hi pp y;;
+Exp_eval.float_exp_hi pp y_tm;;
+
+exp_float_lo pp y;;
+Exp_eval.float_exp_lo pp y_tm;;
+
+exp_float_hi pp z;;
+Exp_eval.float_exp_hi pp z_tm;;
+
+exp_float_lo pp z;;
+Exp_eval.float_exp_lo pp z_tm;;
+
+exp_float_hi pp r;;
+Exp_eval.float_exp_hi pp r_tm;;
+
+exp_float_lo pp r;;
+Exp_eval.float_exp_lo pp r_tm;;
+
+exp_interval pp i1;;
+Exp_eval.float_interval_exp pp i1_th;;
+
+exp_interval pp i2;;
+Exp_eval.float_interval_exp pp i2_th;;
+
+exp_interval pp i3;;
+Exp_eval.float_interval_exp pp i3_th;;
+
+*)

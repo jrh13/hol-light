@@ -1,0 +1,309 @@
+needs "trig/series.hl";;
+
+module Atn = struct
+
+open Series;;
+
+prioritize_real();;
+
+let halfatn = new_definition `halfatn x = x / (sqrt (&1 + x pow 2) + &1)`;;
+
+let halfatn4 = new_definition `halfatn4 = halfatn o halfatn o halfatn o halfatn`;;
+
+let abs_lemma = prove(`&0 < a ==> abs a = a`, REAL_ARITH_TAC);;
+
+let pos_lemma = prove
+  (`!x. &0 < &1 + x pow 2`,
+   GEN_TAC THEN MATCH_MP_TAC (REAL_ARITH `&0 <= a ==> &0 < &1 + a`) THEN
+     REWRITE_TAC[REAL_LE_POW_2]);;
+
+let pos_lemma2 = prove
+  (`!x. &0 < sqrt (&1 + x pow 2) + &1`,
+   GEN_TAC THEN MATCH_MP_TAC (REAL_ARITH `&0 <= a ==> &0 < a + &1`) THEN
+     SIMP_TAC[SQRT_LE_0; REAL_LT_IMP_LE; pos_lemma]);;
+
+let eq_lemma = prove
+  (`!x. &1 - halfatn x pow 2 = &2 / (sqrt (&1 + x pow 2) + &1)`,
+   GEN_TAC THEN REWRITE_TAC[halfatn; REAL_POW_DIV] THEN
+     SUBGOAL_THEN `sqrt (&1 + x pow 2) pow 2 = &1 + x pow 2` MP_TAC THENL [
+       SIMP_TAC[REAL_SQRT_POW_2; abs_lemma; pos_lemma2; pos_lemma];
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPEC `x:real` pos_lemma2) THEN
+     CONV_TAC REAL_FIELD);;
+
+let halfatn_bounds_abs = prove
+  (`!x. abs (halfatn x) < &1`,
+   GEN_TAC THEN REWRITE_TAC[halfatn; REAL_ABS_DIV] THEN
+     SIMP_TAC[abs_lemma; pos_lemma2; REAL_LT_LDIV_EQ] THEN
+     MATCH_MP_TAC (REAL_ARITH `x < y ==> x < &1 * (y + &1)`) THEN
+     MATCH_MP_TAC REAL_LT_RSQRT THEN
+     REWRITE_TAC[REAL_POW2_ABS] THEN REAL_ARITH_TAC);;
+
+let halfatn_half = prove
+  (`!x t. abs x < t ==> abs (halfatn x) < t / &2`,
+   REWRITE_TAC[halfatn; REAL_ABS_DIV] THEN REPEAT STRIP_TAC THEN
+     SIMP_TAC[abs_lemma; pos_lemma2; REAL_LT_LDIV_EQ] THEN
+     MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `t:real` THEN 
+     ASM_REWRITE_TAC[REAL_ARITH `t / &2 * a = t * (a / &2)`] THEN
+     MATCH_MP_TAC (REAL_ARITH `t * (&1 + &1) <= t * a ==> t <= t * (a / &2)`) THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN
+     CONJ_TAC THENL [ POP_ASSUM MP_TAC THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+     REWRITE_TAC[REAL_LE_RADD] THEN
+     MATCH_MP_TAC REAL_LE_RSQRT THEN
+     MP_TAC (SPEC `x:real` REAL_LE_POW_2) THEN REAL_ARITH_TAC);;
+
+let atn_half = prove
+  (`!x. atn x = &2 * atn (halfatn x)`,
+   GEN_TAC THEN REWRITE_TAC[REAL_MUL_2] THEN
+     SUBGOAL_THEN `abs (halfatn x * halfatn x) < &1` ASSUME_TAC THENL [
+       REWRITE_TAC[GSYM REAL_POW_2; REAL_ABS_POW; REAL_POW2_ABS] THEN
+	 REWRITE_TAC[ABS_SQUARE_LT_1; halfatn_bounds_abs];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ATN_ADD_SMALL; GSYM REAL_MUL_2; GSYM REAL_POW_2] THEN
+     AP_TERM_TAC THEN REWRITE_TAC[eq_lemma; halfatn] THEN
+     MP_TAC (SPEC `x:real` pos_lemma2) THEN
+     CONV_TAC REAL_FIELD);;
+
+let rat_lemma4_lt = prove
+  (`!x1 y1 x2 y2. &0 < y1 /\ &0 < y2 ==> (x1 / y1 < x2 / y2 <=> x1 * y2 < x2 * y1)`,
+   REPEAT STRIP_TAC THEN
+     ASM_SIMP_TAC[REAL_LT_LDIV_EQ] THEN
+     ASM_SIMP_TAC[GSYM (SPECL[`x1:real`; `x2 / y2 * y1`; `y2:real`] REAL_LT_RMUL_EQ)] THEN
+     REWRITE_TAC[REAL_ARITH `(x2 / y2 * y1) * y2 = x2 * y1 * (y2 / y2)`] THEN
+     ASM_SIMP_TAC[REAL_DIV_REFL; REAL_ARITH `&0 < y2 ==> ~(y2 = &0)`; REAL_MUL_RID]);;
+
+let halfatn_odd = prove
+  (`!x. halfatn (--x) = --halfatn x`,
+   REWRITE_TAC[halfatn; REAL_POW_NEG; TWO; EVEN; ONE; REAL_ARITH `--(a / b) = --a / b`]);;
+
+let real_sgn_imp = prove
+  (`(!x. &0 < x ==> real_sgn x = &1) /\
+    (!x. x < &0 ==> real_sgn x = -- &1) /\
+    (!x. x = &0 ==> real_sgn x = &0)`,
+   REWRITE_TAC[REAL_SGN_EQ; real_gt]);;
+
+let real_sgn_eq_pos = prove
+  (`!a b. (real_sgn a = real_sgn b) ==> (&0 <= a <=> &0 <= b)`,
+   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_SGN_INEQS] THEN ASM_REWRITE_TAC[]);;
+
+let real_sgn_eq_pos_lt = prove
+  (`!a b. (real_sgn a = real_sgn b) ==> (&0 < a <=> &0 < b)`,
+   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_SGN_INEQS] THEN ASM_REWRITE_TAC[]);;
+
+let halfatn_sgn = prove
+  (`!x. real_sgn (halfatn x) = real_sgn x`,
+   GEN_TAC THEN REWRITE_TAC[halfatn; REAL_SGN_DIV] THEN
+     SIMP_TAC[pos_lemma2; real_sgn_imp; REAL_DIV_1]);;
+
+let halfatn_pos_eq = prove
+  (`!x. &0 <= halfatn x <=> &0 <= x`,
+   GEN_TAC THEN MATCH_MP_TAC real_sgn_eq_pos THEN REWRITE_TAC[halfatn_sgn]);;
+
+let halfatn_pos_lt_eq = prove
+  (`!x. &0 < halfatn x <=> &0 < x`,
+   GEN_TAC THEN MATCH_MP_TAC real_sgn_eq_pos_lt THEN REWRITE_TAC[halfatn_sgn]);;
+
+let halfatn_pos = prove
+  (`!x. &0 <= x ==> &0 <= halfatn x`,
+   GEN_TAC THEN REWRITE_TAC[halfatn] THEN DISCH_TAC THEN
+     MATCH_MP_TAC REAL_LE_DIV THEN ASM_SIMP_TAC[REAL_LT_IMP_LE; pos_lemma2]);;
+
+let halfatn_neg = prove
+  (`!x. x < &0 ==> halfatn x < &0`,
+   GEN_TAC THEN ONCE_REWRITE_TAC[REAL_ARITH `a < &0 <=> &0 < --a`] THEN DISCH_TAC THEN
+     REWRITE_TAC[halfatn; REAL_ARITH `--(a / b) = --a / b`] THEN
+     MATCH_MP_TAC REAL_LT_DIV THEN ASM_SIMP_TAC[pos_lemma2]);;
+
+let halfatn4_pos = prove
+  (`!x. &0 <= x ==> &0 <= halfatn4 x`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[halfatn4; o_THM] THEN
+     REPEAT (MATCH_MP_TAC halfatn_pos) THEN ASM_REWRITE_TAC[]);;
+
+let halfatn4_pos_eq = prove
+  (`!x. &0 <= halfatn4 x <=> &0 <= x`,
+   REWRITE_TAC[halfatn4; o_THM; halfatn_pos_eq]);;
+
+let halfatn4_pos_lt_eq = prove
+  (`!x. &0 < halfatn4 x <=> &0 < x`,
+   REWRITE_TAC[halfatn4; o_THM; halfatn_pos_lt_eq]);;
+
+let halfatn_mono_lt = prove
+  (`!x y. x < y ==> halfatn x < halfatn y`,
+   SUBGOAL_THEN `!x y. &0 <= x /\ x < y ==> halfatn x < halfatn y` ASSUME_TAC THENL [
+     REWRITE_TAC[halfatn] THEN REPEAT STRIP_TAC THEN
+       SIMP_TAC[rat_lemma4_lt; pos_lemma2] THEN
+       REWRITE_TAC[REAL_ADD_LDISTRIB; REAL_MUL_RID] THEN
+       MATCH_MP_TAC REAL_LET_ADD2 THEN ASM_REWRITE_TAC[] THEN
+       SUBGOAL_THEN `!a. sqrt (&1 + a pow 2) = abs (sqrt (&1 + a pow 2))` (fun th -> ONCE_REWRITE_TAC[th]) THENL [
+	 SIMP_TAC[abs_lemma; pos_lemma; SQRT_POS_LT];
+	 ALL_TAC
+       ] THEN
+       SUBGOAL_THEN `abs y = y /\ abs x = x` ASSUME_TAC THENL [
+	 ASM_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       FIRST_ASSUM (fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+       REWRITE_TAC[GSYM REAL_ABS_MUL; REAL_LE_SQUARE_ABS; REAL_POW_MUL] THEN
+       ASM_SIMP_TAC[SQRT_POW_2; REAL_LT_IMP_LE; pos_lemma; REAL_ADD_LDISTRIB] THEN
+       REWRITE_TAC[REAL_MUL_LID; REAL_MUL_SYM; REAL_LE_RADD; GSYM REAL_LE_SQUARE_ABS] THEN
+       ASM_ARITH_TAC;
+     ALL_TAC
+   ] THEN
+   REPEAT STRIP_TAC THEN 
+   ASM_CASES_TAC `y < &0` THENL [
+     ONCE_REWRITE_TAC[REAL_ARITH `a < b <=> --b < --a`] THEN REWRITE_TAC[GSYM halfatn_odd] THEN
+       FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+     ALL_TAC
+   ] THEN
+   ASM_CASES_TAC `x < &0` THENL [
+     MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `&0` THEN
+       ASM_SIMP_TAC[halfatn_pos; halfatn_neg; REAL_ARITH `~(y < &0) ==> &0 <= y`];
+     ALL_TAC
+   ] THEN
+   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC);;
+     
+let halfatn_mono = prove
+  (`!x y. x <= y ==> halfatn x <= halfatn y`,
+   REWRITE_TAC[REAL_LE_LT] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[halfatn_mono_lt]);;
+
+let atn_halfatn4 = prove
+  (`!x. atn x = &16 * atn(halfatn4 x)`,
+   ONCE_REWRITE_TAC[REAL_ARITH `&16 * x = &2 * &2 * &2 * &2 * x`] THEN
+     REWRITE_TAC[halfatn4; o_THM; GSYM atn_half]);;
+
+let halfatn4_bound = prove
+  (`!x. abs (halfatn4 x) < inv (&8)`,
+   GEN_TAC THEN REWRITE_TAC[halfatn4; o_THM; REAL_ARITH `inv (&8) = &1 / &2 / &2 / &2`] THEN
+     REPEAT (MATCH_MP_TAC halfatn_half) THEN REWRITE_TAC[halfatn_bounds_abs]);;
+
+let atn_series_alt_sign = prove
+  (`!x. abs x < &1 ==>
+     let f = (\i. (-- &1) pow i / &(2 * i + 1) * x pow (2 * i + 1)) in
+       (!n. abs (f (n + 1)) <= abs (f n) /\ f (n + 1) * f n <= &0) /\
+	 ((f ---> &0) sequentially)`,
+   REPEAT STRIP_TAC THEN CONV_TAC let_CONV THEN 
+     REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_DIV] THEN
+     REWRITE_TAC[abs_neg_one_pow; ARITH_RULE `2 * (n + 1) + 1 = 2 * n + 3`] THEN
+     REWRITE_TAC[REAL_ABS_POW; REAL_ARITH `&1 / a * b = b / a`; REAL_ABS_NUM] THEN
+     SUBGOAL_THEN `!n. &0 < &(2 * n + 3) /\ &0 < &(2 * n + 1)` ASSUME_TAC THENL [
+       REWRITE_TAC[REAL_OF_NUM_LT] THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REPEAT STRIP_TAC THENL [
+       ASM_SIMP_TAC[RAT_LEMMA4] THEN
+	 MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_POS] THEN
+	 CONJ_TAC THENL [ MATCH_MP_TAC REAL_POW_LE THEN REWRITE_TAC[REAL_ABS_POS]; ALL_TAC ] THEN
+	 REWRITE_TAC[REAL_OF_NUM_LE] THEN CONJ_TAC THENL [ ALL_TAC; ARITH_TAC ] THEN
+	 MATCH_MP_TAC REAL_POW_MONO_INV THEN
+	 ASM_SIMP_TAC[REAL_LT_IMP_LE; REAL_ABS_POS] THEN ARITH_TAC;
+       REWRITE_TAC[REAL_ARITH `((a / b) * c) * (d / e) * f = (a * d) * (c * f) / b / e`] THEN
+	 REWRITE_TAC[GSYM REAL_POW_ADD; ARITH_RULE `(n + 1) + n = 2 * n + 1`] THEN
+	 REWRITE_TAC[ARITH_RULE `(2 * n + 3) + 2 * n + 1 = (2 * n + 2) * 2`] THEN
+	 REWRITE_TAC[REAL_POW_ADD; REAL_POW_1] THEN REWRITE_TAC[GSYM REAL_POW_POW] THEN
+	 REWRITE_TAC[REAL_ARITH `-- &1 pow 2 = &1`; REAL_POW_ONE; REAL_MUL_LID] THEN
+	 REWRITE_TAC[REAL_ARITH `-- &1 * x <= &0 <=> &0 <= x`] THEN
+	 REPEAT (MATCH_MP_TAC REAL_LE_DIV THEN ASM_SIMP_TAC[REAL_LT_IMP_LE]) THEN
+	 REWRITE_TAC[REAL_LE_POW_2];
+       MATCH_MP_TAC REAL_SERIES_TERMS_TOZERO THEN
+	 MAP_EVERY EXISTS_TAC [`atn x`; `0`] THEN
+	 ASM_SIMP_TAC[FROM_0; atn_series]
+     ]);;
+     
+let atn_poly_bound = prove
+  (`!n x. abs x < &1
+     ==> abs (atn x - sum (0..n) (\i. (-- &1 pow i / &(2 * i + 1)) * x pow (2 * i + 1)))
+           <= abs x pow (2 * n + 3) / &(2 * n + 3)`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`\i. (-- &1) pow i / &(2 * i + 1) * x pow (2 * i + 1)`; `0`; `n + 1`] alt_sign_abs_bound) THEN
+     ANTS_TAC THENL [
+       ASM_SIMP_TAC[CONV_RULE (DEPTH_CONV let_CONV) atn_series_alt_sign] THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[atn_infsum; ARITH_RULE `(n + 1) - 1 = n`] THEN
+     REWRITE_TAC[REAL_ABS_MUL; REAL_ABS_DIV] THEN
+     REWRITE_TAC[abs_neg_one_pow; ARITH_RULE `2 * (n + 1) + 1 = 2 * n + 3`] THEN
+     REWRITE_TAC[REAL_ABS_POW; REAL_ARITH `&1 / a * b = b / a`; REAL_ABS_NUM]);;
+
+let atn_poly_pos_upper_bound = prove
+  (`!x n. EVEN n /\ &0 <= x /\ x < &1
+     ==> atn x <= sum (0..n) (\i. ((-- &1) pow i / &(2 * i + 1)) * x pow (2 * i + 1))`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `abs x < &1` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+     ASM_CASES_TAC `n = 0` THENL [
+       MP_TAC (SPECL[`\i. (-- &1) pow i / &(2 * i + 1) * x pow (2 * i + 1)`; `0`] alt_sign_bound) THEN
+	 ASM_SIMP_TAC[CONV_RULE (DEPTH_CONV let_CONV) atn_series_alt_sign] THEN
+	 ASM_SIMP_TAC[atn_infsum; NUMSEG_SING; SUM_SING] THEN
+	 REWRITE_TAC[real_pow; ARITH_RULE `2 * 0 + 1 = 1`; REAL_POW_1; REAL_ARITH `&1 / &1 * x = x`] THEN
+	 ASM_SIMP_TAC[REAL_ARITH `&0 <= x ==> abs x = x`; ATN_POS_LE];
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`n - 1`; `x:real`] atn_poly_bound) THEN ASM_REWRITE_TAC[] THEN
+     ASM_SIMP_TAC[SUM_CLAUSES_RIGHT; ARITH_RULE `~(n = 0) ==> 0 < n`; ARITH_RULE `0 <= n`] THEN
+     SUBGOAL_THEN `-- &1 pow n / &(2 * n + 1) * x pow (2 * n + 1) = abs x pow (2 * (n - 1) + 3) / &(2 * (n - 1) + 3)` ASSUME_TAC THENL [
+       ASM_REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE] THEN
+	 ASM_SIMP_TAC[REAL_ARITH `&0 <= x ==> abs x = x`] THEN
+	 ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 2 * (n - 1) + 3 = 2 * n + 1`] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let atn_poly_pos_lower_bound = prove
+  (`!x n. ODD n /\ &0 <= x /\ x < &1
+     ==> sum (0..n) (\i. ((-- &1) pow i / &(2 * i + 1)) * x pow (2 * i + 1)) <= atn x`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `abs x < &1` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+     ASM_CASES_TAC `n = 0` THENL [
+       UNDISCH_TAC `ODD n` THEN ASM_REWRITE_TAC[ODD];
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`n - 1`; `x:real`] atn_poly_bound) THEN ASM_REWRITE_TAC[] THEN
+     ASM_SIMP_TAC[SUM_CLAUSES_RIGHT; ARITH_RULE `~(n = 0) ==> 0 < n`; ARITH_RULE `0 <= n`] THEN
+     SUBGOAL_THEN `-- &1 pow n / &(2 * n + 1) * x pow (2 * n + 1) = --(abs x pow (2 * (n - 1) + 3) / &(2 * (n - 1) + 3))` ASSUME_TAC THENL [
+       ASM_REWRITE_TAC[REAL_POW_NEG; GSYM NOT_ODD; REAL_POW_ONE] THEN
+	 ASM_SIMP_TAC[REAL_ARITH `&0 <= x ==> abs x = x`] THEN
+	 ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 2 * (n - 1) + 3 = 2 * n + 1`] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let atn_halfatn4_pos_upper_bound = prove
+  (`!x n. EVEN n /\ &0 <= x
+     ==> atn (halfatn4 x) 
+          <= sum (0..n) (\i. ((-- &1) pow i / &(2 * i + 1)) * (halfatn4 x) pow (2 * i + 1))`,
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC atn_poly_pos_upper_bound THEN
+     ASM_SIMP_TAC[halfatn4_pos; halfatn4_bound; REAL_ARITH `abs x < inv (&8) ==> x < &1`]);;
+
+let atn_halfatn4_pos_lower_bound = prove
+  (`!x n. ODD n /\ &0 <= x
+     ==> sum (0..n) (\i. ((-- &1) pow i / &(2 * i + 1)) * (halfatn4 x) pow (2 * i + 1))
+            <= atn (halfatn4 x)`,
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC atn_poly_pos_lower_bound THEN
+     ASM_SIMP_TAC[halfatn4_pos; halfatn4_bound; REAL_ARITH `abs x < inv (&8) ==> x < &1`]);;
+
+let real_taylor_atn_halfatn4 = prove
+  (`!n x. abs (atn(halfatn4 x) - 
+		 sum (0..n) (\j. (-- &1 pow j) * halfatn4 x pow (2 * j + 1) / &(2 * j+ 1))) 
+   <= inv (&8 pow (2 * n + 3) * &(2 * n + 3))`,
+   REPEAT GEN_TAC THEN ABBREV_TAC `y = halfatn4 x` THEN
+     SUBGOAL_THEN `abs y < inv (&8)` ASSUME_TAC THENL [
+       EXPAND_TAC "y" THEN REWRITE_TAC[halfatn4_bound];
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs y pow (2 * n + 3) / &(2 * n + 3)` THEN
+     CONJ_TAC THENL [
+       SUBGOAL_THEN `abs y < &1` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	 MP_TAC (SPECL[`n:num`; `y:real`] atn_poly_bound) THEN ASM_REWRITE_TAC[] THEN
+	 REWRITE_TAC[REAL_ARITH `a * b / c = a / c * b`];
+       REWRITE_TAC[REAL_INV_MUL; real_div] THEN
+	 MATCH_MP_TAC REAL_LE_RMUL THEN CONJ_TAC THENL [
+	   REWRITE_TAC[REAL_INV_POW] THEN
+	     MATCH_MP_TAC REAL_POW_LE2 THEN ASM_SIMP_TAC[REAL_ABS_POS; REAL_LT_IMP_LE];
+	   MATCH_MP_TAC REAL_LE_INV THEN REWRITE_TAC[REAL_OF_NUM_LE] THEN ARITH_TAC
+	 ]
+     ]);;
+
+end;;

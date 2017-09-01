@@ -4,17 +4,31 @@
 (* Date: 2012-10-27                                            *)
 (* =========================================================== *)
 
+needs "arith/float_pow.hl";;
 needs "arith/more_float.hl";;
-needs "arith/float_atn.hl";;
-needs "misc/vars.hl";;
-
+needs "trig/exp_eval.hl";;
+needs "trig/log_eval.hl";;
+needs "trig/atn_eval.hl";;
+needs "trig/asn_acs_eval.hl";;
+needs "trig/cos_eval.hl";;
+needs "trig/sin_eval.hl";;
+needs "trig/matan_eval.hl";;
+needs "misc/misc_functions.hl";;
+needs "misc/misc_vars.hl";;
 
 module Eval_interval = struct
 
-open Arith_misc;;
+open Misc_functions;;
 open Interval_arith;;
 open Arith_float;;
-open Float_atn;;
+open Float_pow;;
+open Exp_eval;;
+open Log_eval;;
+open Atn_eval;;
+open Asn_acs_eval;;
+open Cos_eval;;
+open Sin_eval;;
+open Matan_eval;;
 open More_float;;
 open Misc_vars;;
 
@@ -27,23 +41,32 @@ let mk_float_interval_decimal =
       let n_int, d_int = mk_float_interval_num n, mk_float_interval_num d in
       let int = float_interval_div pp n_int d_int in
       let eq_th = INST[n_tm, x_var_num; d_tm, y_var_num] DECIMAL' in
-        norm_interval int eq_th;;
+	norm_interval int eq_th;;
 
 
 (* Unary interval operations *)
-let unary_interval_operations =
+let unary_interval_operations = 
   let table = Hashtbl.create 10 in
   let add = Hashtbl.add in
     add table `--` (fun pp -> float_interval_neg);
+    add table `abs` (fun pp -> float_interval_abs);
     add table `inv` float_interval_inv;
     add table `sqrt` float_interval_sqrt;
+    add table `exp` float_interval_exp;
+    add table `log` float_interval_log;
     add table `atn` float_interval_atn;
     add table `acs` float_interval_acs;
+    add table `asn` float_interval_asn;
+    add table `sin` float_interval_sin;
+    add table `cos` float_interval_cos;
+    add table `matan` float_interval_matan;
+    add table `dmatan` float_interval_dmatan;
+    add table `ddmatan` float_interval_ddmatan;
     table;;
 
 
 (* Binary interval operations *)
-let binary_interval_operations =
+let binary_interval_operations = 
   let table = Hashtbl.create 10 in
   let add = Hashtbl.add in
     add table `+` float_interval_add;
@@ -87,7 +110,7 @@ let eval_interval_fun pp ifun vars refs =
       | Int_const th -> th
       | Int_decimal_const tm -> mk_float_interval_decimal pp tm
       | Int_named_const tm -> c_find tm pp
-      | Int_pow (n,f1) -> float_interval_pow_simple pp n (rec_eval f1)
+      | Int_pow (n,f1) -> float_interval_pow pp n (rec_eval f1)
       | Int_unary (tm,f1) -> u_find tm pp (rec_eval f1)
       | Int_binary (tm,f1,f2) -> b_find tm pp (rec_eval f1) (rec_eval f2) in
     rec_eval ifun;;
@@ -102,25 +125,25 @@ let eval_constants pp ifun =
     match f with
       | Int_decimal_const tm -> Int_const (mk_float_interval_decimal pp tm)
       | Int_named_const tm -> Int_const (c_find tm pp)
-      | Int_pow (n,f1) ->
-          (let f1_val = rec_eval f1 in
-             match f1_val with
-               | Int_const th -> Int_const (float_interval_pow_simple pp n th)
-               | _ -> Int_pow (n,f1_val))
+      | Int_pow (n,f1) -> 
+	  (let f1_val = rec_eval f1 in
+	     match f1_val with
+	       | Int_const th -> Int_const (float_interval_pow pp n th)
+	       | _ -> Int_pow (n,f1_val))
       | Int_unary (tm,f1) ->
-          (let f1_val = rec_eval f1 in
-             match f1_val with
-               | Int_const th -> Int_const (u_find tm pp th)
-               | _ -> Int_unary (tm, f1_val))
+	  (let f1_val = rec_eval f1 in
+	     match f1_val with
+	       | Int_const th -> Int_const (u_find tm pp th)
+	       | _ -> Int_unary (tm, f1_val))
       | Int_binary (tm,f1,f2) ->
-          (let f1_val, f2_val = rec_eval f1, rec_eval f2 in
-             match f1_val with
-               | Int_const th1 ->
-                   (match f2_val with
-                      | Int_const th2 -> Int_const (b_find tm pp th1 th2)
-                      | _ -> Int_binary (tm, f1_val, f2_val))
-               | _ -> Int_binary (tm, f1_val, f2_val))
-          | _ -> f in
+	  (let f1_val, f2_val = rec_eval f1, rec_eval f2 in
+	     match f1_val with
+	       | Int_const th1 ->
+		   (match f2_val with
+		      | Int_const th2 -> Int_const (b_find tm pp th1 th2)
+		      | _ -> Int_binary (tm, f1_val, f2_val))
+	       | _ -> Int_binary (tm, f1_val, f2_val))
+	  | _ -> f in
     rec_eval ifun;;
 
 
@@ -139,31 +162,31 @@ let rec build_interval_fun expr_tm =
     let ltm, r_tm = dest_comb expr_tm in
       (* Unary operations *)
       if is_const ltm then
-        (* & *)
-        if ltm = amp_op_real then
-          let n = dest_numeral r_tm in
-            Int_const (mk_float_interval_num n)
-        else
-          let r_fun = build_interval_fun r_tm in
-            Int_unary (ltm, r_fun)
+	(* & *)
+	if ltm = amp_op_real then
+	  let n = dest_numeral r_tm in
+	    Int_const (mk_float_interval_num n)
+	else 
+	  let r_fun = build_interval_fun r_tm in
+	    Int_unary (ltm, r_fun)
       else
-        (* Binary operations *)
-        let op, l_tm = dest_comb ltm in
-        let name = (fst o dest_const) op in
-          if name = "DECIMAL" then
-            (* DECIMAL *)
-            Int_decimal_const expr_tm
-          else if name = "real_pow" then
-            (* pow *)
-            let n = dest_small_numeral r_tm in
-              Int_pow (n, build_interval_fun l_tm)
-          else if name = "$" then
-            (* $ *)
-            Int_var expr_tm
-          else
-            let lhs = build_interval_fun l_tm and
-                rhs = build_interval_fun r_tm in
-              Int_binary (op, lhs, rhs);;
+	(* Binary operations *)
+	let op, l_tm = dest_comb ltm in
+	let name = (fst o dest_const) op in
+	  if name = "DECIMAL" then
+	    (* DECIMAL *)
+	    Int_decimal_const expr_tm
+	  else if name = "real_pow" then
+	    (* pow *)
+	    let n = dest_small_numeral r_tm in
+	      Int_pow (n, build_interval_fun l_tm)
+	  else if name = "$" then
+	    (* $ *)
+	    Int_var expr_tm
+	  else
+	    let lhs = build_interval_fun l_tm and
+		rhs = build_interval_fun r_tm in
+	      Int_binary (op, lhs, rhs);;
 
 
 (********************************)
@@ -177,22 +200,22 @@ let replace_subexpr expr expr_index f_list =
       1, Int_ref expr_index
     else
       match f with
-        | Int_pow (k, f1) ->
-            let c, f1' = replace f1 in
-              c, Int_pow (k, f1')
-        | Int_unary (tm, f1) ->
-            let c, f1' = replace f1 in
-              c, Int_unary (tm, f1')
-        | Int_binary (tm, f1, f2) ->
-            let c1, f1' = replace f1 in
-            let c2, f2' = replace f2 in
-              c1 + c2, Int_binary (tm, f1', f2')
-        | _ -> 0, f in
+	| Int_pow (k, f1) ->
+	    let c, f1' = replace f1 in
+	      c, Int_pow (k, f1')
+	| Int_unary (tm, f1) ->
+	    let c, f1' = replace f1 in
+	      c, Int_unary (tm, f1')
+	| Int_binary (tm, f1, f2) ->
+	    let c1, f1' = replace f1 in
+	    let c2, f2' = replace f2 in
+	      c1 + c2, Int_binary (tm, f1', f2')
+	| _ -> 0, f in
   let cs, fs = unzip (map replace f_list) in
     itlist (+) cs 0, fs;;
 
 
-
+		
 let is_leaf f =
   match f with
     | Int_pow _ -> false
@@ -206,15 +229,15 @@ let find_and_replace_all f_list acc =
       f, (0, f_list)
     else
       let expr, (c, fs) =
-        match f with
-          | Int_pow (k, f1) -> find_and_replace f1 i f_list
-          | Int_unary (tm, f1) -> find_and_replace f1 i f_list
-          | Int_binary (tm, f1, f2) ->
-              let expr, (c1, fs) = find_and_replace f1 i f_list in
-                if c1 > 1 then expr, (c1, fs) else find_and_replace f2 i f_list
-          | _ -> f, (0, f_list) in
-        if c > 1 then expr, (c, fs) else f, replace_subexpr f i f_list in
-
+	match f with
+	  | Int_pow (k, f1) -> find_and_replace f1 i f_list
+	  | Int_unary (tm, f1) -> find_and_replace f1 i f_list
+	  | Int_binary (tm, f1, f2) ->
+	      let expr, (c1, fs) = find_and_replace f1 i f_list in
+		if c1 > 1 then expr, (c1, fs) else find_and_replace f2 i f_list
+	  | _ -> f, (0, f_list) in
+	if c > 1 then expr, (c, fs) else f, replace_subexpr f i f_list in
+    
   let rec iterate fs acc =
     let i = length acc in
     let expr, (c, fs') = find_and_replace (hd fs) i fs in
@@ -224,8 +247,8 @@ let find_and_replace_all f_list acc =
     match f_list with
       | [] -> f_acc, ref_acc
       | f :: fs ->
-          let fs', acc' = iterate f_list ref_acc in
-            iterate_all (tl fs') acc' (f_acc @ [hd fs']) in
+	  let fs', acc' = iterate f_list ref_acc in
+	    iterate_all (tl fs') acc' (f_acc @ [hd fs']) in
 
     iterate_all f_list acc [];;
 
@@ -235,8 +258,8 @@ let eval_interval_fun_list pp (f_list, refs) vars =
     match refs with
       | [] -> acc
       | r :: rs ->
-          let v = eval_interval_fun pp r vars acc in
-            eval_refs rs (acc @ [v]) in
+	  let v = eval_interval_fun pp r vars acc in
+	    eval_refs rs (acc @ [v]) in
   let rs = eval_refs refs [] in
     map (fun f -> eval_interval_fun pp f vars rs) f_list;;
 
@@ -245,34 +268,32 @@ let eval_interval_fun_list pp (f_list, refs) vars =
 
 (* Approximate the bounds of the given interval with floating point numbers *)
 let interval_to_float_interval =
-  let th = (UNDISCH_ALL o prove)(`interval_arith x (lo, hi) ==>
-                                   interval_arith lo (a, y) ==>
-                                   interval_arith hi (z, b)
-                                   ==> interval_arith x (a, b)`,
-                                 REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let th = (UNDISCH_ALL o prove)(`interval_arith x (lo, hi) ==> 
+				   interval_arith lo (a, y) ==>
+				   interval_arith hi (z, b)
+				   ==> interval_arith x (a, b)`,
+				 REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
     fun pp int_th ->
       let x_tm, bounds = dest_interval_arith (concl int_th) in
       let lo, hi = dest_pair bounds in
       let f_lo = build_interval_fun lo and
-          f_hi = build_interval_fun hi in
+	  f_hi = build_interval_fun hi in
       let th_lo = eval_interval_fun pp f_lo [] [] and
-          th_hi = eval_interval_fun pp f_hi [] [] in
+	  th_hi = eval_interval_fun pp f_hi [] [] in
       let a_tm, y_tm = (dest_pair o rand o concl) th_lo and
-          z_tm, b_tm = (dest_pair o rand o concl) th_hi in
+	  z_tm, b_tm = (dest_pair o rand o concl) th_hi in
       let th1 = INST[x_tm, x_var_real; lo, lo_var_real; hi, hi_var_real;
-                     a_tm, a_var_real; y_tm, y_var_real;
-                     z_tm, z_var_real; b_tm, b_var_real] th in
-        (MY_PROVE_HYP int_th o MY_PROVE_HYP th_lo o MY_PROVE_HYP th_hi) th1;;
-
+		     a_tm, a_var_real; y_tm, y_var_real;
+		     z_tm, z_var_real; b_tm, b_var_real] th in
+	(MY_PROVE_HYP int_th o MY_PROVE_HYP th_lo o MY_PROVE_HYP th_hi) th1;;
+		     
 
 (* Adds a new constant approximation to the table of constants *)
 let add_constant_interval int_th =
   let c_tm, _ = dest_interval_arith (concl int_th) in
-  let _ = is_const c_tm or failwith "add_constant_interval: not a constant" in
+  let _ = assert_msg (is_const c_tm, "add_constant_interval: not a constant") in
   let th = interval_to_float_interval 20 int_th in
   let approx_array = Array.init 20 (fun i -> float_interval_round i th) in
     Hashtbl.add interval_constants c_tm (fun pp -> approx_array.(pp));;
-
-
 
 end;;

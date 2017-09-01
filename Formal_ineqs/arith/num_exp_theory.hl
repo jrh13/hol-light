@@ -5,12 +5,12 @@
 (* =========================================================== *)
 
 (* Dependencies *)
-needs "arith/nat.hl";;
+needs "arith/arith_nat.hl";;
 
 
 module Num_exp_theory = struct
 
-let base_const = mk_small_numeral Arith_hash.arith_base;;
+let base_const = mk_small_numeral Arith_num.arith_base;;
 
 (* num_exp definition *)
 let num_exp_tm = mk_eq (`(num_exp:num->num->num) n e`,
@@ -61,7 +61,7 @@ let NUM_EXP_ADD = prove(`!n1 e1 n2 e2. e1 <= e2 ==>
      ASM_SIMP_TAC[ARITH_RULE `e1 <= e2 ==> e2 - e1 + e1 = e2:num`]);;
 
 let NUM_EXP_SUB2 = prove(`!n1 e1 n2 e2 r. e1 <= e2 /\ e2 - e1 = r ==>
-                           num_exp n1 e1 - num_exp n2 e2 = num_exp (n1 - num_exp n2 r) e1`,
+			   num_exp n1 e1 - num_exp n2 e2 = num_exp (n1 - num_exp n2 r) e1`,
    REPEAT STRIP_TAC THEN
      POP_ASSUM (fun th -> REWRITE_TAC[SYM th]) THEN
      REWRITE_TAC[num_exp] THEN
@@ -72,7 +72,7 @@ let NUM_EXP_SUB2 = prove(`!n1 e1 n2 e2 r. e1 <= e2 /\ e2 - e1 = r ==>
      REWRITE_TAC[GSYM RIGHT_SUB_DISTRIB]);;
 
 let NUM_EXP_SUB1 = prove(`!n1 e1 n2 e2 r. e2 <= e1 /\ e1 - e2 = r ==>
-                           num_exp n1 e1 - num_exp n2 e2 = num_exp (num_exp n1 r - n2) e2`,
+			   num_exp n1 e1 - num_exp n2 e2 = num_exp (num_exp n1 r - n2) e2`,
    REPEAT STRIP_TAC THEN
      POP_ASSUM (fun th -> REWRITE_TAC[SYM th]) THEN
      REWRITE_TAC[num_exp] THEN
@@ -85,7 +85,7 @@ let NUM_EXP_SUB1 = prove(`!n1 e1 n2 e2 r. e2 <= e1 /\ e1 - e2 = r ==>
 (* NUM_EXP_LE *)
 
 let NUM_EXP_LE1 = prove(`!n1 e1 n2 e2 r. e2 <= e1 /\ e1 - e2 = r /\ n2 <= num_exp n1 r
-                              ==> num_exp n2 e2 <= num_exp n1 e1`,
+			      ==> num_exp n2 e2 <= num_exp n1 e1`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      POP_ASSUM MP_TAC THEN POP_ASSUM (fun th -> REWRITE_TAC[SYM th]) THEN DISCH_TAC THEN
@@ -96,7 +96,7 @@ let NUM_EXP_LE1 = prove(`!n1 e1 n2 e2 r. e2 <= e1 /\ e1 - e2 = r /\ n2 <= num_ex
      ASM_REWRITE_TAC[LE_MULT_RCANCEL]);;
 
 let NUM_EXP_LE2 = prove(`!n1 e1 n2 e2 r. e1 <= e2 /\ e2 - e1 = r /\ num_exp n2 r <= n1
-                              ==> num_exp n2 e2 <= num_exp n1 e1`,
+			      ==> num_exp n2 e2 <= num_exp n1 e1`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      POP_ASSUM MP_TAC THEN POP_ASSUM (fun th -> REWRITE_TAC[SYM th]) THEN DISCH_TAC THEN
@@ -107,7 +107,7 @@ let NUM_EXP_LE2 = prove(`!n1 e1 n2 e2 r. e1 <= e2 /\ e2 - e1 = r /\ num_exp n2 r
      ASM_REWRITE_TAC[LE_MULT_RCANCEL]);;
 
 let NUM_EXP_LE1_EQ = prove(`!n1 e1 n2 e2 r x. e2 <= e1 /\ e1 - e2 = r /\ num_exp n1 r = x ==>
-                               (num_exp n1 e1 <= num_exp n2 e2 <=> x <= n2)`,
+			       (num_exp n1 e1 <= num_exp n2 e2 <=> x <= n2)`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      REPLICATE_TAC 2 (POP_ASSUM (fun th -> REWRITE_TAC[SYM th])) THEN
@@ -118,7 +118,7 @@ let NUM_EXP_LE1_EQ = prove(`!n1 e1 n2 e2 r x. e2 <= e1 /\ e1 - e2 = r /\ num_exp
      ASM_REWRITE_TAC[LE_MULT_RCANCEL; EXP_EQ_0; ARITH_EQ]);;
 
 let NUM_EXP_LE2_EQ = prove(`!n1 e1 n2 e2 r x. e1 <= e2 /\ e2 - e1 = r /\ num_exp n2 r = x ==>
-                               (num_exp n1 e1 <= num_exp n2 e2 <=> n1 <= x)`,
+			       (num_exp n1 e1 <= num_exp n2 e2 <=> n1 <= x)`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      REPLICATE_TAC 2 (POP_ASSUM (fun th -> REWRITE_TAC[SYM th])) THEN
@@ -131,7 +131,7 @@ let NUM_EXP_LE2_EQ = prove(`!n1 e1 n2 e2 r x. e1 <= e2 /\ e2 - e1 = r /\ num_exp
 (* NUM_EXP_LT *)
 
 let NUM_EXP_LT1 = prove(`!n1 e1 n2 e2 r. e2 <= e1 /\ e1 - e2 = r /\ n2 < num_exp n1 r
-                            ==> num_exp n2 e2 < num_exp n1 e1`,
+			    ==> num_exp n2 e2 < num_exp n1 e1`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      POP_ASSUM MP_TAC THEN POP_ASSUM (fun th -> REWRITE_TAC[SYM th]) THEN DISCH_TAC THEN
@@ -142,7 +142,7 @@ let NUM_EXP_LT1 = prove(`!n1 e1 n2 e2 r. e2 <= e1 /\ e1 - e2 = r /\ n2 < num_exp
      ASM_REWRITE_TAC[LT_MULT_RCANCEL; EXP_EQ_0; ARITH_EQ]);;
 
 let NUM_EXP_LT2 = prove(`!n1 e1 n2 e2 r. e1 <= e2 /\ e2 - e1 = r /\ num_exp n2 r < n1
-                            ==> num_exp n2 e2 < num_exp n1 e1`,
+			    ==> num_exp n2 e2 < num_exp n1 e1`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      POP_ASSUM MP_TAC THEN POP_ASSUM (fun th -> REWRITE_TAC[SYM th]) THEN DISCH_TAC THEN
@@ -153,7 +153,7 @@ let NUM_EXP_LT2 = prove(`!n1 e1 n2 e2 r. e1 <= e2 /\ e2 - e1 = r /\ num_exp n2 r
      ASM_REWRITE_TAC[LT_MULT_RCANCEL; EXP_EQ_0; ARITH_EQ]);;
 
 let NUM_EXP_LT1_EQ = prove(`!n1 e1 n2 e2 r x. e2 <= e1 /\ e1 - e2 = r /\ num_exp n1 r = x ==>
-                               (num_exp n1 e1 < num_exp n2 e2 <=> x < n2)`,
+			       (num_exp n1 e1 < num_exp n2 e2 <=> x < n2)`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      REPLICATE_TAC 2 (POP_ASSUM (fun th -> REWRITE_TAC[SYM th])) THEN
@@ -164,7 +164,7 @@ let NUM_EXP_LT1_EQ = prove(`!n1 e1 n2 e2 r x. e2 <= e1 /\ e1 - e2 = r /\ num_exp
      ASM_REWRITE_TAC[LT_MULT_RCANCEL; EXP_EQ_0; ARITH_EQ]);;
 
 let NUM_EXP_LT2_EQ = prove(`!n1 e1 n2 e2 r x. e1 <= e2 /\ e2 - e1 = r /\ num_exp n2 r = x ==>
-                               (num_exp n1 e1 < num_exp n2 e2 <=> n1 < x)`,
+			       (num_exp n1 e1 < num_exp n2 e2 <=> n1 < x)`,
    REPEAT GEN_TAC THEN REWRITE_TAC[num_exp] THEN
      STRIP_TAC THEN
      REPLICATE_TAC 2 (POP_ASSUM (fun th -> REWRITE_TAC[SYM th])) THEN
@@ -200,7 +200,7 @@ let NUM_EXP_DIV1 = prove(`~(n2 = 0) /\ e2 <= e1 ==>
      MATCH_MP_TAC DIV_MULT2 THEN
      ASM_REWRITE_TAC[MULT_EQ_0; DE_MORGAN_THM; EXP_EQ_0] THEN
      ARITH_TAC);;
-
+	 
 let NUM_EXP_DIV2 = prove(`~(n2 = 0) /\ e1 <= e2 ==>
                            num_exp n1 e1 DIV num_exp n2 e2 = n1 DIV num_exp n2 (e2 - e1)`,
    STRIP_TAC THEN
@@ -224,7 +224,7 @@ let NUM_EXP_DIV2 = prove(`~(n2 = 0) /\ e1 <= e2 ==>
      ASM_REWRITE_TAC[num_exp; MULT_EQ_0; DE_MORGAN_THM; EXP_EQ_0] THEN
      ARITH_TAC);;
 
-
+	 
 let EXP_INV_lemma = prove(`!n e1 e2. ~(n = 0) /\ e2 <= e1 ==> &(n EXP (e1 - e2)) =
                               &(n EXP e1) * inv(&(n EXP e2))`,
    REPEAT STRIP_TAC THEN
@@ -247,5 +247,5 @@ let NUM_EXP_SUB_lemma = prove(`!n e1 e2. e2 <= e1 ==> &(num_exp n (e1 - e2)) =
      REAL_ARITH_TAC);;
 
 
-
+	 
 end;;

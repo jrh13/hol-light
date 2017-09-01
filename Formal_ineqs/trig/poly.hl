@@ -1,0 +1,231 @@
+needs "list/more_list.hl";;
+needs "arith/interval_arith.hl";;
+
+module Poly = struct
+
+open More_list;;
+open Interval_arith;;
+
+prioritize_real();;
+
+(* Auxiliary definition: sometimes we want to change numerals in a theorem to
+ * floatint-point values but at the same time &0 should not be converted *)
+let real_zero = new_definition `real_zero = &0`;;
+
+(* Polynomial functions *)
+let poly_f = new_definition `poly_f cs x = ITLIST (\c s. c + x * s) cs (&0)`;;
+
+(* Even function *)
+let poly_f_even = new_definition `poly_f_even cs x = poly_f cs (x * x)`;;
+
+(* Odd function *)
+let poly_f_odd = new_definition `poly_f_odd cs x = x * poly_f_even cs x`;;
+
+
+let poly_f_empty = prove(`!x. poly_f [] x = &0`, 
+			 REWRITE_TAC[poly_f; ITLIST]);;
+
+let poly_f_cons = prove(`!x h t. poly_f (CONS h t) x = h + x * poly_f t x`, 
+			REWRITE_TAC[poly_f; ITLIST]);;
+
+let poly_f_even_empty = prove(`!x. poly_f_even [] x = &0`,
+			      REWRITE_TAC[poly_f_even; poly_f_empty]);;
+
+let poly_f_even_cons = prove(`!x h t. poly_f_even (CONS h t) x = h + (x * x) * poly_f_even t x`, 
+			     REWRITE_TAC[poly_f_even; poly_f_cons]);;
+
+let poly_f_odd_empty = prove(`!x. poly_f_odd [] x = &0`,
+			     REWRITE_TAC[poly_f_odd; poly_f_even_empty; REAL_MUL_RZERO]);;
+
+let poly_f_append = prove(`!x b a. poly_f (APPEND a b) x = poly_f a x + x pow (LENGTH a) * poly_f b x`,
+   GEN_TAC THEN GEN_TAC THEN
+     MATCH_MP_TAC list_INDUCT THEN
+     REPEAT STRIP_TAC THENL
+     [
+       REWRITE_TAC[APPEND; poly_f; ITLIST; LENGTH] THEN
+	 REWRITE_TAC[real_pow; REAL_MUL_LID; REAL_ADD_LID];
+       ALL_TAC
+     ] THEN
+     
+     REWRITE_TAC[APPEND; poly_f; ITLIST] THEN
+     ASM_REWRITE_TAC[GSYM poly_f] THEN
+     REWRITE_TAC[LENGTH; real_pow] THEN
+     REAL_ARITH_TAC);;
+
+let poly_f_even_append = prove(`!x b a. poly_f_even (APPEND a b) x 
+			       = poly_f_even a x + x pow (2 * LENGTH a) * poly_f_even b x`,
+   REWRITE_TAC[poly_f_even; poly_f_append] THEN 
+     REWRITE_TAC[GSYM REAL_POW_2; REAL_POW_POW]);;
+
+let poly_f_odd_append = prove(`!x b a. poly_f_odd (APPEND a b) x 
+			      = poly_f_odd a x + x pow (2 * LENGTH a) * poly_f_odd b x`,
+   REPEAT GEN_TAC THEN
+     REWRITE_TAC[poly_f_odd] THEN
+     REWRITE_TAC[poly_f_even_append] THEN
+     REAL_ARITH_TAC);;
+
+let poly_f_empty_interval = prove(`!x. interval_arith (poly_f [] x) (&0, &0)`,
+				  REWRITE_TAC[interval_arith; poly_f_empty; REAL_LE_REFL]);;
+
+let poly_f_sing = prove(`!c x. poly_f [c] x = c`,
+   REWRITE_TAC[poly_f; ITLIST; REAL_MUL_RZERO; REAL_ADD_RID]);;
+
+let poly_f_even_sing = prove(`!c x. poly_f_even [c] x = c`,
+			     REWRITE_TAC[poly_f_even; poly_f_sing]);;
+
+let poly_f_odd_sing = prove(`!c x. poly_f_odd [c] x = c * x`,
+			    REWRITE_TAC[poly_f_odd; poly_f_even_sing; REAL_MUL_AC]);;
+
+(* bounds *)
+
+let poly_f_empty_high_pos = prove(`!x. interval_arith (poly_f [] x) (real_zero, &0)`, 
+			      REWRITE_TAC[real_zero; interval_arith; poly_f_empty; REAL_LE_REFL]);;
+
+let poly_f_sing_high_pos = prove(`!c x bounds. interval_arith c bounds
+				 ==> interval_arith (poly_f [c] x) bounds`,
+				 SIMP_TAC[poly_f_sing]);;
+
+let poly_f_cons_high_pos_pos = prove(`!x h t a b c m r.  
+				       interval_arith (poly_f t x) (real_zero, a) /\
+				       interval_arith h (real_zero, b) /\
+				       interval_arith x (real_zero, c) /\
+				       c * a <= m /\
+				       b + m <= r
+				       ==> interval_arith (poly_f (CONS h t) x) (real_zero, r)`,
+   REWRITE_TAC[poly_f_cons; interval_arith; real_zero] THEN REPEAT STRIP_TAC THENL [
+     MATCH_MP_TAC REAL_LE_ADD THEN ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC REAL_LE_MUL THEN ASM_REWRITE_TAC[];
+     ALL_TAC
+   ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `b + m:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `c * a:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[]);;
+
+let poly_f_empty_low_pos = prove(`!x. interval_arith (&0) (real_zero, poly_f [] x)`, 
+			      REWRITE_TAC[real_zero; interval_arith; poly_f_empty; REAL_LE_REFL]);;
+
+let poly_f_sing_low_pos = prove(`!c b x. interval_arith b (real_zero, c)
+				==> interval_arith b (real_zero, poly_f [c] x)`,
+				SIMP_TAC[poly_f_sing]);;
+
+let poly_f_cons_low_pos_pos = prove(`!x h t a b c m r.  
+				      interval_arith a (real_zero, poly_f t x) /\
+				      interval_arith b (real_zero, h) /\
+				      interval_arith c (real_zero, x) /\
+				      m <= c * a /\
+				      r <= b + m /\
+				      real_zero <= r
+				       ==> interval_arith r (real_zero, poly_f (CONS h t) x)`,
+   REWRITE_TAC[poly_f_cons; interval_arith; real_zero] THEN 
+     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `b + m:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `c * a:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[]);;
+
+
+(* sum to poly *)
+
+let sum_eq_poly_f = prove(`!a x n. sum (0..n) (\i. a i * x pow i) = poly_f (TABLE a (SUC n)) x`,
+   GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THENL [
+     REWRITE_TAC[SUM_CLAUSES_NUMSEG; TABLE_SUC; TABLE_0; APPEND; poly_f_sing; real_pow; REAL_MUL_RID];
+     ALL_TAC
+   ] THEN
+     ONCE_REWRITE_TAC[TABLE_SUC] THEN
+     ASM_REWRITE_TAC[poly_f_append; LENGTH_TABLE; poly_f_sing; REAL_MUL_AC]);;
+
+let sum_eq_poly_f_even = prove(`!a x n. sum (0..n) (\i. a i * x pow (2 * i)) 
+			       = poly_f_even (TABLE a (SUC n)) x`,
+   REWRITE_TAC[GSYM REAL_POW_POW; sum_eq_poly_f; poly_f_even; REAL_POW_2]);;
+
+let sum_eq_poly_f_odd = prove(`!a x n. sum (0..n) (\i. a i * x pow (2 * i + 1)) 
+			       = poly_f_odd (TABLE a (SUC n)) x`,
+   REWRITE_TAC[REAL_POW_ADD; REAL_MUL_ASSOC; SUM_RMUL; REAL_POW_1] THEN
+     REWRITE_TAC[GSYM REAL_POW_POW; sum_eq_poly_f; poly_f_odd; poly_f_even] THEN
+     REWRITE_TAC[REAL_POW_2; REAL_MUL_AC]);;
+
+let two_induct = prove(`!P. P 0 /\ P 1 /\ (!k. P k /\ P (k + 1) ==> P (k + 2)) ==> (!k. P k)`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `!k. P k /\ P (k + 1)` (fun th -> REWRITE_TAC[th]) THEN
+     INDUCT_TAC THEN CONV_TAC NUM_REDUCE_CONV THEN ASM_REWRITE_TAC[ADD1] THEN
+     ASM_SIMP_TAC[ARITH_RULE `(k + 1) + 1 = k + 2`]);;
+       
+
+let alt_sum_eq_poly_f = prove(`!a x n. sum (0..n) (\i. ((-- &1) pow i * a i) * x pow i)
+				= poly_f_even (TABLE (\i. a (2 * i)) (n DIV 2 + 1)) x
+                                   - poly_f_odd (TABLE (\i. a (2 * i + 1)) (SUC n DIV 2)) x`,
+   GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC two_induct THEN REPEAT STRIP_TAC THENL [
+     REWRITE_TAC[SUM_SING_NUMSEG] THEN CONV_TAC NUM_REDUCE_CONV THEN
+       REWRITE_TAC[TABLE_0; ONE; TABLE_SUC; APPEND; poly_f_even; poly_f_odd_empty; poly_f_sing] THEN
+       REWRITE_TAC[MULT_0] THEN REAL_ARITH_TAC;
+     REWRITE_TAC[ONE; SUM_CLAUSES_NUMSEG; LE_0] THEN
+       CONV_TAC NUM_REDUCE_CONV THEN
+       REWRITE_TAC[ONE; TABLE_0; TABLE_SUC; APPEND] THEN
+       REWRITE_TAC[poly_f_even; poly_f_sing; poly_f_odd] THEN
+       CONV_TAC NUM_REDUCE_CONV THEN REAL_ARITH_TAC;
+     ALL_TAC
+   ] THEN
+     REWRITE_TAC[ARITH_RULE `n + 2 = SUC (SUC n)`] THEN
+     ASM_REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN
+     SUBGOAL_THEN `SUC (SUC n) DIV 2 + 1 = SUC (n DIV 2 + 1)` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[ARITH_RULE `SUC (SUC n) = 1 * 2 + n`] THEN
+	 ASM_SIMP_TAC[DIV_MULT_ADD; ARITH_RULE `~(2 = 0)`] THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `SUC (SUC (SUC n)) DIV 2 = SUC (SUC n DIV 2)` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[ARITH_RULE `SUC (SUC (SUC n)) = 1 * 2 + SUC n`] THEN
+	 ASM_SIMP_TAC[DIV_MULT_ADD; ARITH_RULE `~(2 = 0)`] THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[TABLE_SUC; poly_f_even_append; poly_f_odd_append; LENGTH_TABLE] THEN
+     REWRITE_TAC[poly_f_even_sing; poly_f_odd_sing] THEN
+     SUBGOAL_THEN `~(2 = 0) /\ (!m. (2 * m) DIV 2 = m) /\ (!m. (2 * m + 1) DIV 2 = m)` ASSUME_TAC THENL [
+       SUBGOAL_THEN `~(2 = 0)` ASSUME_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+	 ASM_SIMP_TAC[DIV_MULT; ARITH_RULE `2 * m = m * 2`; DIV_MULT_ADD] THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_CASES_TAC `EVEN n` THENL [
+       POP_ASSUM MP_TAC THEN REWRITE_TAC[EVEN_EXISTS] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+	 ASM_REWRITE_TAC[ADD1] THEN
+	 REWRITE_TAC[REAL_POW_NEG] THEN
+	 SUBGOAL_THEN `EVEN ((2 * m + 1) + 1) /\ ~(EVEN (2 * m + 1))` (fun th -> REWRITE_TAC[th]) THENL [
+	   CONJ_TAC THENL [
+	     REWRITE_TAC[EVEN_EXISTS] THEN EXISTS_TAC `m + 1` THEN ARITH_TAC;
+	     ALL_TAC
+	   ] THEN
+	     REWRITE_TAC[NOT_EVEN; ODD_EXISTS] THEN EXISTS_TAC `m:num` THEN ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[REAL_POW_ONE; ARITH_RULE `(2 * m + 1) + 1 = 2 * (m + 1)`] THEN
+	 REWRITE_TAC[REAL_ARITH `x pow (2 * m) * a * x = (x pow (2 * m) * x pow 1) * a`] THEN
+	 REWRITE_TAC[GSYM REAL_POW_ADD] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     POP_ASSUM MP_TAC THEN REWRITE_TAC[NOT_EVEN; ODD_EXISTS] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     ASM_REWRITE_TAC[ADD1; ARITH_RULE `(2 * m + 1) + 1 = 2 * (m + 1)`] THEN
+     REWRITE_TAC[REAL_POW_NEG; EVEN_DOUBLE] THEN
+     SUBGOAL_THEN `~EVEN (2 * (m + 1) + 1)` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[NOT_EVEN; ODD_EXISTS] THEN EXISTS_TAC `m + 1` THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_POW_ONE] THEN
+     REWRITE_TAC[REAL_ARITH `x pow (2 * (m + 1)) * a * x = (x pow (2 * (m + 1)) * x pow 1) * a`] THEN
+     REWRITE_TAC[GSYM REAL_POW_ADD] THEN
+     REAL_ARITH_TAC);;
+
+
+let alt_sum_eq_poly_f_even = prove(`!a x n. sum (0..n) (\i. ((-- &1) pow i * a i) * x pow (2 * i))
+				= poly_f_even (TABLE (\i. a (2 * i)) (n DIV 2 + 1)) (x * x)
+                                   - poly_f_odd (TABLE (\i. a (2 * i + 1)) (SUC n DIV 2)) (x * x)`,
+   REWRITE_TAC[GSYM REAL_POW_POW; alt_sum_eq_poly_f; REAL_POW_2]);;
+
+
+let alt_sum_eq_poly_f_odd = prove(`!a x n. sum (0..n) (\i. ((-- &1) pow i * a i) * x pow (2 * i + 1))
+				= x * (poly_f_even (TABLE (\i. a (2 * i)) (n DIV 2 + 1)) (x * x)
+                                   - poly_f_odd (TABLE (\i. a (2 * i + 1)) (SUC n DIV 2)) (x * x))`,
+   REWRITE_TAC[REAL_POW_ADD; REAL_MUL_ASSOC; SUM_RMUL; alt_sum_eq_poly_f_even] THEN
+     REAL_ARITH_TAC);;
+
+end;;

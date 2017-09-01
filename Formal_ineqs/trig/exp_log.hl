@@ -1,0 +1,313 @@
+needs "trig/series.hl";;
+
+module Exp_log = struct
+
+open Series;;
+
+prioritize_real();;
+
+(* --------------------- *)
+(* exp                   *)
+(* --------------------- *)
+
+let exp_pos_poly_lower_bound = prove
+  (`!x n. &0 <= x ==> 
+     sum (0..n) (\k. inv (&(FACT k)) * x pow k) <= exp x`,
+   REPEAT STRIP_TAC THEN
+     REWRITE_TAC[GSYM exp_infsum] THEN
+     MP_TAC (SPECL[`0`; `n:num`; `\k. &1 / &(FACT k) * x pow k`] real_infsum_offset) THEN
+     MP_TAC (MATCH_MP REAL_SUMS_SUMMABLE (SPEC `x:real` exp_series)) THEN
+     REWRITE_TAC[GSYM FROM_0; LE_0] THEN DISCH_TAC THEN
+     ASM_REWRITE_TAC[] THEN DISCH_THEN (fun th -> REWRITE_TAC[th]) THEN
+     REWRITE_TAC[REAL_ARITH `inv a = &1 / a`; REAL_ARITH `a <= a + b <=> &0 <= b`] THEN
+     MATCH_MP_TAC REAL_SERIES_POS THEN
+     MAP_EVERY EXISTS_TAC [`\k. &1 / &(FACT k) * x pow k`; `from (n + 1)`] THEN
+     ASM_REWRITE_TAC[REAL_SUMS_INFSUM] THEN CONJ_TAC THENL [
+       MATCH_MP_TAC REAL_SUMMABLE_FROM_ELSEWHERE THEN
+	 EXISTS_TAC `0` THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_MUL THEN ASM_SIMP_TAC[REAL_POW_LE] THEN 
+     MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_POS]);;
+
+let exp_ge1 = prove
+  (`!x. &0 <= x ==> &1 <= exp x`,
+   REPEAT STRIP_TAC THEN MP_TAC (SPECL[`x:real`; `0`] exp_pos_poly_lower_bound) THEN
+     ASM_REWRITE_TAC[SUM_CLAUSES_NUMSEG; real_pow; FACT; REAL_INV_1; REAL_MUL_LID]);;
+
+let neg_exp_le1 = prove
+  (`!x. &0 <= x ==> exp (--x) <= &1`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_EXP_NEG] THEN
+     MATCH_MP_TAC REAL_INV_LE_1 THEN ASM_SIMP_TAC[exp_ge1]);;
+
+let neg_exp_series = prove
+  (`!x. ((\k. (-- &1) pow k / &(FACT k) * x pow k) real_sums exp (--x)) (from 0)`,
+   GEN_TAC THEN MP_TAC (SPEC `--x:real` exp_series) THEN
+     SUBGOAL_THEN `!k. &1 / &(FACT k) * --x pow k = (-- &1) pow k / &(FACT k) * x pow k` ASSUME_TAC THENL [
+       GEN_TAC THEN ONCE_REWRITE_TAC[REAL_ARITH `--x = -- &1 * x`] THEN
+	 REWRITE_TAC[REAL_POW_MUL; REAL_POW_ONE] THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[FROM_0]);;
+
+let neg_exp_infsum = prove
+  (`!x. real_infsum (from 0) (\k. (-- &1) pow k / &(FACT k) * x pow k) = exp (--x)`,
+   GEN_TAC THEN MP_TAC (MATCH_MP REAL_INFSUM_UNIQUE (SPEC_ALL neg_exp_series)) THEN
+     REWRITE_TAC[]);;
+
+let n_le_fact = prove
+  (`!n. n <= FACT n`,
+   INDUCT_TAC THEN REWRITE_TAC[FACT; ARITH_LE] THEN
+     ONCE_REWRITE_TAC[ARITH_RULE `a <= b <=> a * 1 <= b`] THEN
+     MATCH_MP_TAC LE_MULT2 THEN REWRITE_TAC[LE_REFL; FACT_LE]);;
+
+let exp_alt_sign_lemma = prove
+  (`!x. &0 <= x /\ x <= &1
+     ==> (!k. abs ((-- &1) pow (k + 1) / &(FACT (k + 1)) * x pow (k + 1)) 
+ 	        <= abs ((-- &1) pow k / &(FACT k) * x pow k) /\
+              ((-- &1) pow (k + 1) / &(FACT (k + 1)) * x pow (k + 1)) * 
+	         ((-- &1) pow k / &(FACT k) * x pow k) <= &0) /\
+         ((\k. (-- &1) pow k / &(FACT k) * x pow k) ---> &0) sequentially`,
+   REPEAT STRIP_TAC THENL [
+     REWRITE_TAC[REAL_ABS_MUL] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
+       REWRITE_TAC[REAL_ABS_POS] THEN CONJ_TAC THENL [
+	 REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_NUM] THEN
+	   REWRITE_TAC[REAL_ABS_POW; REAL_ABS_NEG; REAL_ABS_NUM; REAL_POW_ONE] THEN
+	   REWRITE_TAC[REAL_ARITH `&1 / a = inv a`] THEN
+	   MATCH_MP_TAC REAL_LE_INV2 THEN
+	   REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE; FACT_LT] THEN
+	   MATCH_MP_TAC FACT_MONO THEN ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       REWRITE_TAC[REAL_ABS_POW] THEN 
+       MATCH_MP_TAC REAL_POW_MONO_INV THEN ASM_ARITH_TAC;
+     REWRITE_TAC[REAL_ARITH `(a / b * r) * (c / d * t) <= &0 
+		 <=> &0 <= ((-- &1 pow 1 * a * c) * (r * t)) / b / d`] THEN
+       MATCH_MP_TAC REAL_LE_DIV THEN SIMP_TAC[REAL_OF_NUM_LE; FACT_LT; LT_IMP_LE] THEN
+       MATCH_MP_TAC REAL_LE_DIV THEN SIMP_TAC[REAL_OF_NUM_LE; FACT_LT; LT_IMP_LE] THEN
+       REWRITE_TAC[GSYM REAL_POW_ADD; ARITH_RULE `1 + (k + 1) + k = 2 * (k + 1)`] THEN
+       REWRITE_TAC[REAL_POW_NEG; EVEN_DOUBLE; REAL_POW_ONE; REAL_MUL_LID] THEN
+       MATCH_MP_TAC REAL_POW_LE THEN ASM_REWRITE_TAC[];
+     MATCH_MP_TAC REALLIM_NULL_COMPARISON THEN
+       EXISTS_TAC `\k. inv (&k)` THEN
+       REWRITE_TAC[REALLIM_1_OVER_N; EVENTUALLY_SEQUENTIALLY] THEN
+       EXISTS_TAC `1` THEN REPEAT STRIP_TAC THEN
+       REWRITE_TAC[REAL_ABS_MUL] THEN ONCE_REWRITE_TAC[REAL_ARITH `a <= b <=> a <= b * &1`] THEN
+       MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_ABS_POS] THEN
+       CONJ_TAC THENL [
+	 REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_POW; REAL_ABS_NEG] THEN
+	   REWRITE_TAC[REAL_POW_ONE; REAL_ARITH `&1 / a = inv a`; REAL_ABS_NUM] THEN
+	   MATCH_MP_TAC REAL_LE_INV2 THEN
+	   REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE; n_le_fact] THEN
+	   ASM_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       REWRITE_TAC[REAL_ABS_POW] THEN MATCH_MP_TAC REAL_POW_1_LE THEN
+       ASM_ARITH_TAC
+   ]);;
+
+let exp_neg_poly_upper_bound = prove
+  (`!x n. &0 <= x /\ x <= &1 /\ EVEN n ==>
+     exp (--x) <= sum (0..n) (\k. (-- &1) pow k / &(FACT k) * x pow k)`,
+   REWRITE_TAC[EVEN_EXISTS] THEN REPEAT STRIP_TAC THEN
+     ABBREV_TAC `f = \k. (-- &1) pow k / &(FACT k) * x pow k` THEN
+     ASM_CASES_TAC `n = 0` THENL [
+       POP_ASSUM (fun th -> REWRITE_TAC[th; SUM_CLAUSES_NUMSEG]) THEN
+	 EXPAND_TAC "f" THEN REWRITE_TAC[real_pow; FACT] THEN
+	 ASM_SIMP_TAC[REAL_ARITH `&1 / &1 * &1 = &1`; neg_exp_le1];
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`f:num->real`; `0`; `n:num`] alt_sign_upper_bound) THEN
+     ANTS_TAC THENL [
+       ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 0 < n`] THEN
+	 EXPAND_TAC "f" THEN ASM_SIMP_TAC[exp_alt_sign_lemma];
+       ALL_TAC
+     ] THEN
+     EXPAND_TAC "f" THEN ASM_REWRITE_TAC[neg_exp_infsum] THEN
+     SUBGOAL_THEN `SUC (2 * m - 1) = 2 * m` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+     SUBGOAL_THEN `sum (0..2 * m) f = sum (0..SUC (2 * m - 1)) f` ASSUME_TAC THENL [
+       ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN
+     SUBGOAL_THEN `abs (-- &1 pow (2 * m) / &(FACT (2 * m)) * x pow (2 * m)) = f (2 * m)` ASSUME_TAC THENL [
+       EXPAND_TAC "f" THEN REWRITE_TAC[REAL_ABS_MUL] THEN
+	 REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_POW; REAL_ABS_NEG; REAL_ABS_NUM] THEN
+	 REWRITE_TAC[REAL_POW_NEG; EVEN_DOUBLE; REAL_POW_ONE] THEN
+	 ASM_SIMP_TAC[REAL_ARITH `&0 <= x ==> abs x = x`];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let exp_neg_poly_lower_bound = prove
+  (`!x n. &0 <= x /\ x <= &1 /\ ODD n ==>
+     sum (0..n) (\k. (-- &1) pow k / &(FACT k) * x pow k) <= exp (--x)`,
+   REWRITE_TAC[ODD_EXISTS] THEN REPEAT STRIP_TAC THEN
+     ABBREV_TAC `f = \k. (-- &1) pow k / &(FACT k) * x pow k` THEN
+     MP_TAC (SPECL[`f:num->real`; `0`; `n:num`] alt_sign_lower_bound) THEN
+     ANTS_TAC THENL [
+       EXPAND_TAC "f" THEN ASM_SIMP_TAC[exp_alt_sign_lemma] THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     EXPAND_TAC "f" THEN ASM_REWRITE_TAC[neg_exp_infsum] THEN
+     REWRITE_TAC[ARITH_RULE `SUC a - 1 = a`; SUM_CLAUSES_NUMSEG; LE_0] THEN
+     SUBGOAL_THEN `abs (-- &1 pow (SUC (2 * m)) / &(FACT (SUC (2 * m))) * x pow SUC (2 * m)) = 
+	 --f (SUC (2 * m))` ASSUME_TAC THENL [
+       EXPAND_TAC "f" THEN REWRITE_TAC[REAL_ABS_MUL] THEN
+	 REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_POW; REAL_ABS_NEG; REAL_ABS_NUM] THEN
+	 REWRITE_TAC[REAL_POW_NEG; EVEN; EVEN_DOUBLE; REAL_POW_ONE] THEN
+	 ASM_SIMP_TAC[REAL_ARITH `&0 <= x ==> abs x = x`] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+     
+let exp_reduce = prove
+  (`!x k. 0 < k ==> exp (x / &k) pow k = exp x`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM REAL_EXP_N; REAL_ARITH `a * b / a = b * (a / a)`] THEN
+     SUBGOAL_THEN `~(&k = &0)` ASSUME_TAC THENL [
+       REWRITE_TAC[REAL_OF_NUM_EQ] THEN ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[REAL_DIV_REFL; REAL_MUL_RID]);;
+
+let exp_full_reduce = prove
+  (`!x k. 0 < k ==> inv (exp (--x / &k) pow k) = exp x`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[exp_reduce] THEN
+     REWRITE_TAC[GSYM REAL_EXP_NEG; REAL_NEG_NEG]);;
+
+(* --------------------- *)
+(* log                   *)
+(* --------------------- *)
+
+let log_alt_sign_lemma = prove
+  (`!x. &0 <= x /\ x <= &1
+     ==> let f = (\k. (-- &1) pow k / &(k + 1) * x pow (k + 1)) in
+       (!k. abs (f (k + 1)) <= abs (f k) /\ f (k + 1) * f k <= &0) /\
+       (f ---> &0) sequentially`,
+   REPEAT STRIP_TAC THEN CONV_TAC let_CONV THEN REPEAT STRIP_TAC THENL [
+     REWRITE_TAC[REAL_ABS_MUL] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
+       REWRITE_TAC[REAL_ABS_POS] THEN CONJ_TAC THENL [
+	 REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_NUM] THEN
+	   REWRITE_TAC[REAL_ABS_POW; REAL_ABS_NEG; REAL_ABS_NUM; REAL_POW_ONE] THEN
+	   REWRITE_TAC[REAL_ARITH `&1 / a = inv a`] THEN
+	   MATCH_MP_TAC REAL_LE_INV2 THEN
+	   REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       REWRITE_TAC[REAL_ABS_POW] THEN
+       MATCH_MP_TAC REAL_POW_MONO_INV THEN ASM_ARITH_TAC;
+     REWRITE_TAC[REAL_ARITH `(a / b * r) * (c / d * t) <= &0 
+		 <=> &0 <= ((-- &1 pow 1 * a * c) * (r * t)) / b / d`] THEN
+       MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_OF_NUM_LE; ARITH_RULE `0 <= t + 1`] THEN
+       MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_OF_NUM_LE; ARITH_RULE `0 <= t + 1`] THEN
+       REWRITE_TAC[GSYM REAL_POW_ADD; ARITH_RULE `1 + (k + 1) + k = 2 * (k + 1)`] THEN
+       REWRITE_TAC[REAL_POW_NEG; EVEN_DOUBLE; REAL_POW_ONE; REAL_MUL_LID] THEN
+       MATCH_MP_TAC REAL_POW_LE THEN ASM_REWRITE_TAC[];
+     MATCH_MP_TAC REALLIM_NULL_COMPARISON THEN
+       EXISTS_TAC `\k. inv (&k)` THEN
+       REWRITE_TAC[REALLIM_1_OVER_N; EVENTUALLY_SEQUENTIALLY] THEN
+       EXISTS_TAC `1` THEN REPEAT STRIP_TAC THEN
+       REWRITE_TAC[REAL_ABS_MUL] THEN ONCE_REWRITE_TAC[REAL_ARITH `a <= b <=> a <= b * &1`] THEN
+       MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_ABS_POS] THEN
+       CONJ_TAC THENL [
+	 REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_POW; REAL_ABS_NEG] THEN
+	   REWRITE_TAC[REAL_POW_ONE; REAL_ARITH `&1 / a = inv a`; REAL_ABS_NUM] THEN
+	   MATCH_MP_TAC REAL_LE_INV2 THEN
+	   REWRITE_TAC[REAL_OF_NUM_LT; REAL_OF_NUM_LE] THEN ASM_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       REWRITE_TAC[REAL_ABS_POW] THEN MATCH_MP_TAC REAL_POW_1_LE THEN
+       ASM_ARITH_TAC
+   ]);;
+
+let log_poly_upper_bound = prove
+  (`!x n. &0 <= x /\ x < &1 /\ EVEN n /\ 0 < n ==>
+     log (&1 + x) <= x * sum (0..n) (\k. (-- &1) pow k / &(k + 1) * x pow k)`,
+   REWRITE_TAC[EVEN_EXISTS] THEN REPEAT STRIP_TAC THEN
+     ABBREV_TAC `f = \k. (-- &1) pow k / &(k + 1) * x pow (k + 1)` THEN
+     SUBGOAL_THEN `x * sum (0..n) (\k. -- &1 pow k / &(k + 1) * x pow k) 
+	                = sum (0..n) f` ASSUME_TAC THENL [
+       REWRITE_TAC[GSYM SUM_LMUL; REAL_ARITH `a * b / c * d = b / c * (a * d)`] THEN
+	 REWRITE_TAC[GSYM real_pow; ARITH_RULE `SUC k = k + 1`] THEN
+	 ASM_REWRITE_TAC[real_pow];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN
+     MP_TAC (SPECL[`f:num->real`; `0`; `n:num`] alt_sign_upper_bound) THEN
+     ANTS_TAC THENL [
+       ASM_REWRITE_TAC[] THEN
+	 MP_TAC (SPEC_ALL (CONV_RULE (DEPTH_CONV let_CONV) log_alt_sign_lemma)) THEN
+	 ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+	 EXPAND_TAC "f" THEN SIMP_TAC[];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `real_infsum (from 0) f = log (&1 + x)` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_SIMP_TAC[REAL_ARITH `&0 <= x /\ x < &1 ==> abs x < &1`; GSYM log_infsum];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `SUC (2 * m - 1) = 2 * m` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+     SUBGOAL_THEN `sum (0..2 * m) f = sum (0..SUC (2 * m - 1)) f` ASSUME_TAC THENL [
+       ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[SUM_CLAUSES_NUMSEG; LE_0] THEN
+     SUBGOAL_THEN `abs (f (2 * m)) = f (2 * m)` (fun th -> REWRITE_TAC[th]) THEN
+     MATCH_MP_TAC (REAL_ARITH `&0 <= x ==> abs x = x`) THEN
+     EXPAND_TAC "f" THEN REWRITE_TAC[REAL_POW_NEG; EVEN_DOUBLE; REAL_POW_ONE] THEN
+     MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+       MATCH_MP_TAC REAL_LE_DIV THEN REWRITE_TAC[REAL_OF_NUM_LE] THEN ARITH_TAC;
+       MATCH_MP_TAC REAL_POW_LE THEN ASM_REWRITE_TAC[]
+     ]);;
+
+let log_poly_lower_bound = prove
+  (`!x n. &0 <= x /\ x < &1 /\ ODD n ==>
+     x * sum (0..n) (\k. (-- &1) pow k / &(k + 1) * x pow k) <= log (&1 + x)`,
+   REWRITE_TAC[ODD_EXISTS] THEN REPEAT STRIP_TAC THEN
+     ABBREV_TAC `f = \k. (-- &1) pow k / &(k + 1) * x pow (k + 1)` THEN
+     SUBGOAL_THEN `x * sum (0..n) (\k. -- &1 pow k / &(k + 1) * x pow k) 
+	                = sum (0..n) f` ASSUME_TAC THENL [
+       REWRITE_TAC[GSYM SUM_LMUL; REAL_ARITH `a * b / c * d = b / c * (a * d)`] THEN
+	 REWRITE_TAC[GSYM real_pow; ARITH_RULE `SUC k = k + 1`] THEN
+	 ASM_REWRITE_TAC[real_pow];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN
+     MP_TAC (SPECL[`f:num->real`; `0`; `n:num`] alt_sign_lower_bound) THEN
+     ANTS_TAC THENL [
+       ASM_REWRITE_TAC[ARITH_RULE `0 < SUC (2 * m)`] THEN
+	 MP_TAC (SPEC_ALL (CONV_RULE (DEPTH_CONV let_CONV) log_alt_sign_lemma)) THEN
+	 ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+	 EXPAND_TAC "f" THEN SIMP_TAC[];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `real_infsum (from 0) f = log (&1 + x)` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_SIMP_TAC[REAL_ARITH `&0 <= x /\ x < &1 ==> abs x < &1`; GSYM log_infsum];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[ARITH_RULE `SUC a - 1 = a`; SUM_CLAUSES_NUMSEG; LE_0] THEN
+     SUBGOAL_THEN `abs (f (SUC (2 * m))) = --f (SUC (2 * m))` (fun th -> REWRITE_TAC[th]) THENL [
+       MATCH_MP_TAC (REAL_ARITH `&0 <= --x ==> abs x = --x`) THEN
+	 EXPAND_TAC "f" THEN REWRITE_TAC[REAL_POW_NEG; EVEN; EVEN_DOUBLE; REAL_POW_ONE] THEN
+	 REWRITE_TAC[REAL_ARITH `--(-- &1 / b * c) = inv b * c`] THEN
+	 MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+	   MATCH_MP_TAC REAL_LE_INV THEN REWRITE_TAC[REAL_OF_NUM_LE] THEN ARITH_TAC;
+	   MATCH_MP_TAC REAL_POW_LE THEN ASM_REWRITE_TAC[]
+	 ];
+       ALL_TAC
+     ] THEN
+     REAL_ARITH_TAC);;
+
+let log_reduce_pos_pow = prove
+  (`!k y. &0 < y ==> log (&2 pow k * y) = &k * log (&2) + log y`,
+   REPEAT STRIP_TAC THEN
+     ASM_SIMP_TAC[LOG_MUL; REAL_LT_POW2] THEN
+     ASM_SIMP_TAC[LOG_POW; REAL_ARITH `&0 < &2`]);;
+
+let log_reduce_neg_pow = prove
+  (`!k y. &0 < y ==> log (y / (&2 pow k)) = log y - &k * log (&2)`,
+   REPEAT STRIP_TAC THEN
+     ASM_SIMP_TAC[LOG_DIV; REAL_LT_POW2] THEN
+     ASM_SIMP_TAC[LOG_POW; REAL_ARITH `&0 < &2`]);;
+
+end;;

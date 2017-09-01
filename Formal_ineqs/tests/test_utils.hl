@@ -1,0 +1,185 @@
+(* Run hol_test *)
+
+needs "arith/arith_nat.hl";;
+needs "new_arith/nat_arith.hl";;
+needs "arith/arith_float.hl";;
+
+#load "nums.cma";;
+#load "unix.cma";;
+
+(* Creates all missing directories *)
+let rec create_dirs path =
+  let dirname = Filename.dirname path in
+  if Sys.file_exists dirname then
+    if not (Sys.is_directory dirname) then
+      failwith (Printf.sprintf "%s exists and it is not a directory" dirname)
+    else
+      ()
+  else
+    let _ = create_dirs dirname in
+    let _ = Unix.mkdir dirname 0o777 in
+    ();;
+
+(* Reads all lines from a file *)
+let read_file fname =
+  let ic = Pervasives.open_in fname in
+  let rec read acc =
+    try
+      let line = input_line ic in
+      read (line :: acc)
+    with End_of_file -> acc in
+  let lines = read [] in
+  let _ = close_in ic in
+  rev lines;;
+
+(* Writes all lines to a file *)
+let write_file path buf =
+  let _ = create_dirs path in
+  let oc = open_out path in
+  let rec write = function
+    | [] -> ()
+    | line :: rest ->
+      let _ = output_string oc (line ^ "\n") in
+      write rest in
+  let _ = write buf in
+  let _ = close_out oc in
+  ();;
+
+(* Splits a string into two substrings separated by a given character. *)
+(* The separator is not included in returned substrings.               *)
+let split_at str ch = 
+  let n = String.length str in
+  let i = try String.index str ch with Not_found -> -1 in
+    if i < 0 || i >= n then
+      str, ""
+    else
+      String.sub str 0 i,
+      String.sub str (i + 1) (n - i - 1);;
+
+(* Returns n first elements of a list *)    
+let rec take n = function
+  | [] -> []
+  | h :: t ->
+      if n <= 0 then [] else h :: take (n - 1) t;;
+
+(* Removes n first elements from a list *)
+let rec drop n = function
+  | [] -> []
+  | (h :: t) as s ->
+      if n <= 0 then s else drop (n - 1) t;;
+
+let uncurry3 f (a, b, c) = f a b c;;
+
+let mk_nums = map Num.num_of_string;;
+
+(* Combines consecutive elements into pairs *)
+let rec data_to_pairs = function
+  | [] -> []
+  | [h] -> [(h, h)]
+  | (h1 :: h2 :: t) -> (h1, h2) :: data_to_pairs t;;
+
+let create_binop op pairs =
+  map (uncurry (mk_binop op)) pairs;;
+
+let create_op op data =
+  map (curry mk_comb op) data;;
+
+(* Runs a test.                                                           *)
+(* n:         number of repetitions                                       *)
+(* data:      input data                                                  *)
+(* f:         test function                                               *)
+(* result:    if true, then results of f on the data are returned         *)
+let run_tests_raw =
+  let run data f =
+    let start = Unix.gettimeofday() in
+    let result = map f data in
+    let finish = Unix.gettimeofday() in
+      finish -. start, result 
+  in
+  let rec repeat n data f ((ts, r) as acc) =
+    if n <= 0 then acc else
+      let time, result = run data f in
+	repeat (n - 1) data f (time :: ts, result) 
+  in
+  let mean n s =
+    let sum = itlist (+.) s 0.0 in
+      sum /. (float_of_int n)
+  in
+  let var n s = 
+    let m = mean n s in
+    let m2 = mean n (map (fun x -> x *. x) s) in
+      m2 -. m *. m 
+  in
+    fun n data ?(result = true) f ->
+      let time, r = repeat n data f ([], []) in
+      let r = if result then r else [] in
+      let total = itlist (+.) time 0.0 and
+	  m = mean n time and
+	  std = Pervasives.sqrt (var n time) in
+	(m, std, total), r;;
+
+let load_data data_file pre mk post =
+  let strs = read_file data_file in
+    post (map mk (pre strs));;
+
+(* Runs a test.                                                           *)
+(* n:         number of repetitions                                       *)
+(* data_file: input data file                                             *)
+(* pre:       function which is applied to the raw data first             *)
+(* mk:        function which is applied to all elements of the data       *)
+(* post:      function which is applied to the transformed data           *)
+(* f:         test function                                               *)
+(* result:    if true, then results of f on the data are returned         *)
+let run_tests n data_file pre mk post ?(result = true) f =
+  run_tests_raw n (load_data data_file pre mk post) ~result:result f;;
+
+(*********************************************************)
+(* Data conversions                                      *)
+(*********************************************************)
+
+let mk_float_num m e =
+  let m, s = if Num.sign_num m < 0 then Num.minus_num m, "T" else m, "F" in
+  let m_tm = rand (Arith_nat.mk_numeral_array m) in
+  let e_tm = rand (Arith_nat.mk_small_numeral_array (e + Float_theory.min_exp)) in
+    Arith_float.make_float s m_tm e_tm;;
+
+let decode_float str =
+  let m_str, e_str = split_at str ',' in
+    mk_float_num (Num.num_of_string m_str) (int_of_string e_str);;
+
+let convert_float_binop_data str =
+  let p_str, str = split_at str ':' in
+  let f1_str, f2_str = split_at str ';' in
+    int_of_string p_str, decode_float f1_str, decode_float f2_str;;
+
+(*********************************************************)
+(* Test operations                                       *)
+(*********************************************************)
+
+let show_result = ref true;;
+
+let ntest1 n data op f =
+  run_tests n data mk_nums (rand o Arith_nat.mk_numeral_array) 
+    (create_op op) ~result:!show_result f;;
+
+let ntest2 n data op f =
+  run_tests n data mk_nums (rand o Arith_nat.mk_numeral_array)
+    (create_binop op o data_to_pairs) ~result:!show_result f;;
+
+let ntest1_new n data f =
+  run_tests n data mk_nums Nat_arith.mk_nat 
+    I ~result:!show_result f;;
+
+let ntest2_new n data f =
+  run_tests n data mk_nums Nat_arith.mk_nat data_to_pairs 
+    ~result:!show_result (uncurry f);;
+
+let ftest2 n data f =
+  run_tests n data I convert_float_binop_data I
+    ~result:!show_result (uncurry3 f);;
+
+let ftest2_raw n data f =
+  run_tests_raw n data
+    ~result:!show_result (uncurry3 f);;
+
+

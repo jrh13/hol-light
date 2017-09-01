@@ -1,0 +1,102 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: polynomials                 *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-07-16                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "informal/informal_interval.hl";;
+
+(* poly *)
+module type Informal_poly_sig =
+  sig
+    val eval_interval_poly_f : int -> Informal_interval.interval list -> Informal_interval.interval -> Informal_interval.interval
+    val eval_high_poly_f_pos_pos : int -> Informal_interval.interval list -> Informal_float.ifloat -> Informal_float.ifloat
+    val eval_low_poly_f_pos_pos : int -> Informal_interval.interval list -> Informal_float.ifloat -> Informal_float.ifloat
+    val eval_pow2_high : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val eval_pow2_low : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val eval_pow4_high : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val eval_pow4_low : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val eval_pow2_pow4_high : int -> Informal_float.ifloat -> Informal_float.ifloat * Informal_float.ifloat
+    val eval_pow2_pow4_low : int -> Informal_float.ifloat -> Informal_float.ifloat * Informal_float.ifloat
+  end;;
+
+
+module Informal_poly : Informal_poly_sig = struct
+
+open Informal_float;;
+open Informal_interval;;
+
+let rec eval_interval_poly_f pp cs x_int =
+  match cs with
+    | [] -> zero_interval
+    | [first] -> first
+    | first :: rest ->
+	let r = eval_interval_poly_f pp rest x_int in
+	  add_interval pp first (mul_interval pp x_int r);;
+
+let rec eval_high_poly_f_pos_pos = 
+  let zero = mk_small_num_float 0 in
+  let check_pos c = 
+    if le_interval zero c then () 
+    else failwith "Informal_poly.eval_high_poly_f_pos_pos: negative coefficient" in
+    fun pp cs x ->
+      let _ = check_pos (mk_interval (x, x)) in
+      let rec eval cs =
+	match cs with
+	  | [] -> zero
+	  | [first] ->
+	      let _ = check_pos first in
+		snd (dest_interval first)
+	  | first :: rest ->
+	      let _ = check_pos first in
+	      let _, b = dest_interval first in
+	      let r = eval rest in
+	      let m = mul_float_hi pp x r in
+		add_float_hi pp b m in
+	eval cs;;
+
+let rec eval_low_poly_f_pos_pos =
+  let zero = mk_small_num_float 0 in
+  let check_pos c =
+    if le_interval zero c then () 
+    else failwith "Informal_poly.eval_high_poly_f_pos_pos: negative coefficient" in
+    fun pp cs x ->
+      let _ = check_pos (mk_interval (x, x)) in
+      let rec eval cs =
+	match cs with
+	  | [] -> zero
+	  | [first] -> 
+	      let _ = check_pos first in
+		fst (dest_interval first)
+	  | first :: rest ->
+	      let _ = check_pos first in
+	      let b, _ = dest_interval first in
+	      let r = eval rest in
+	      let m = mul_float_lo pp x r in
+		add_float_lo pp b m in
+      eval cs;;
+
+
+let eval_pow2_high pp x = mul_float_hi pp x x;;
+
+let eval_pow2_low pp x = mul_float_lo pp x x;;
+
+let eval_pow4_high pp x =
+  let a = mul_float_hi pp x x in
+    mul_float_hi pp a a;;
+
+let eval_pow4_low pp x =
+  let a = mul_float_lo pp x x in
+    mul_float_lo pp a a;;
+
+let eval_pow2_pow4_high pp x =
+  let a = mul_float_hi pp x x in
+    a, mul_float_hi pp a a;;
+
+let eval_pow2_pow4_low pp x =
+  let a = mul_float_lo pp x x in
+    a, mul_float_lo pp a a;;
+
+
+end;;

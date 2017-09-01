@@ -47,19 +47,26 @@ let test3 () =
 let test4 () =
   let ineq1 = `&0 <= x /\ x <= &1 ==> atn x - x / (&1 + #0.28 * x * x) < #0.005` in
   let ineq2 = `&0 <= x /\ x <= &1 ==> -- #0.005 < atn x - x / (&1 + #0.28 * x * x)` in
+  let ineq_abs = `&0 <= x /\ x <= &1 ==> abs (atn x - x / (&1 + #0.28 * x * x)) < #0.005` in
     [verify_ineq default_params 5 ineq1;
-     verify_ineq default_params 6 ineq2];;
+     verify_ineq default_params 6 ineq2;
+     verify_ineq default_params 5 ineq_abs];;
 
 (* A polynomial approximation of atn *)
 (* Taken from: *)
-(* Marc Daumas, David Lester, and César Muñoz,
-   Verified real number calculations: A library for interval arithmetic,
+(* Marc Daumas, David Lester, and César Muñoz, 
+   Verified real number calculations: A library for interval arithmetic, 
    IEEE Transactions on Computers, Volume 58, Number 2, 2009. *)
 let test5 () =
   let ineq1 = `-- &1 / &30 <= x /\ x <= &1 / &30 ==> x * (&1 - (x * x) * (&11184811 / &33554432 - (x * x) * (&13421773 / &67108864))) - atn x < #0.1 pow 7` in
   let ineq2 = `-- &1 / &30 <= x /\ x <= &1 / &30 ==> -- (#0.1 pow 7) < x * (&1 - (x * x) * (&11184811 / &33554432 - (x * x) * (&13421773 / &67108864))) - atn x` in
     [verify_ineq default_params 5 ineq1;
      verify_ineq default_params 5 ineq2];;
+
+let test5_abs () =
+  let ineq_abs = `-- &1 / &30 <= x /\ x <= &1 / &30 
+    ==> abs (x * (&1 - (x * x) * (&11184811 / &33554432 - (x * x) * (&13421773 / &67108864))) - atn x) < #0.1 pow 7` in
+     [verify_ineq default_params 10 ineq_abs];;
 
 
 (* Returns a list of theorems with verification information *)
@@ -72,3 +79,9 @@ let results () =
 
 
 results();;
+
+(*
+(* 100: simple abs: 1453 (total) *)
+test5_abs();;
+
+*)

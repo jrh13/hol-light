@@ -36,17 +36,20 @@
 \pagebreak
 % References
 \begin{thebibliography}{9}
-\bibitem{HOL} HOL Light home page\\
-        \url{http://www.cl.cam.ac.uk/~jrh13/hol-light}
+\bibitem{HOL} HOL Light home page\\ 
+  \url{http://www.cl.cam.ac.uk/~jrh13/hol-light}
+
+\bibitem{HOL-repo} HOL Light repository\\
+  \url{https://github.com/jrh13/hol-light}
 
 \bibitem{HOL-tutorial} HOL Light tutorial\\
-        \url{http://www.cl.cam.ac.uk/~jrh13/hol-light/tutorial_220.pdf}
+	\url{http://www.cl.cam.ac.uk/~jrh13/hol-light/tutorial_220.pdf}
 
 \bibitem{flyspeck} The Flyspeck project\\
-        \url{https://github.com/flyspeck/flyspeck}
+	\url{https://github.com/flyspeck/flyspeck}
 
 \bibitem{bernstein}C\'esar Mu\~noz and Anthony Narkawicz, {\it Formalization of a Representation of Bernstein Polynomials and Applications to Global Optimization}, Journal of Automated Reasoning, DOI: 10.1007/s10817-012-9256-3\\
-        \url{http://shemesh.larc.nasa.gov/people/cam/Bernstein/}
+	\url{http://shemesh.larc.nasa.gov/people/cam/Bernstein/}
 \end{thebibliography}
 
 % Introduction
@@ -106,9 +109,9 @@ can be verified with the following script
 needs "verifier/m_verifier_main.hl";;
 open M_verifier_main;;
 
-let ineq =
-  `-- &1 / sqrt(&3) <= x /\ x <= sqrt(&2) /\
-   -- sqrt(pi) <= y /\ y <= 1
+let ineq = 
+  `-- &1 / sqrt(&3) <= x /\ x <= sqrt(&2) /\ 
+   -- sqrt(pi) <= y /\ y <= &1
    ==> x pow 2 * y - x * y pow 4 + y pow 6 - &7 + x pow 4 > -- #7.17995`;;
 
 let th, stats = verify_ineq default_params 5 ineq;;
@@ -120,7 +123,7 @@ The second parameter specifies the precision of formal floating point operations
 
 The third parameter is the inequality itself given as a HOL Light term. The format of this term is simple: it is an implication with bounds of variables in the antecedent and an inequality in the consequent. The bounds of all variables should be in the form $\text{\it a constant expression} <= x$ or $x <= \text{\it a constant expression}$. For each variable, upper and lower bounds must be given. The inequality must be a strict inequality ($<$ or $>$). The inequality may include \verb|sqrt|, \verb|atn|, and \verb|acs| functions. The constant \verb|pi| ($\pi$) is also allowed.
 
-The verification function returns a HOL Light theorem and a record with some verification information which include verification time.
+The verification function returns a HOL Light theorem and a record with some verification information which includes verification time.
 
 
 % Verification Functions
@@ -181,9 +184,9 @@ The field \verb|total_time| contains total verification time. The field \verb|fo
 
 The conclusion of the returned theorem is not exactly the same as the third parameter of the verification function: the order of bounds of variables may be altered and variables which are not used in the inequality are eliminated. For example, commands
 \begin{verbatim}
-let th1, _ = verify_ineq default_params 3
+let th1, _ = verify_ineq default_params 3 
   `&1 <= y /\ y <= &2 /\ &1 <= x /\ x <= &3 ==> x + y < &6`;;
-let th2, _ = verify_ineq default_params 3
+let th2, _ = verify_ineq default_params 3 
   `&1 <= y /\ y <= &2 /\ &1 <= x /\ x <= &3 ==> y < &3`;;
 \end{verbatim}
 return
@@ -200,7 +203,7 @@ The options which affect the arithmetic operations with natural and floating poi
 
 \begin{enumerate}
 % base
-\item[\bf base] Determines the base for representing natural numbers. Default HOL Light
+\item[\bf base] Determines the base for representing natural numbers. Default HOL Light 
 representation of natural numbers is binary (i.e., its base is 2). A higher base increases speed of arithmetic operations but it also requires more memory to remember additional theorems. The default value of the base is \verb|100|. To set a new base, use the command
 
 \verb|Arith_options.base := 200;;|
@@ -271,7 +274,7 @@ Here is the list of all examples.
 \end{eqnarray*}
 
 % rd
-\item[\bf rd]
+\item[\bf rd] 
 \begin{eqnarray*}
 &-36.7126907 < -x_1 + 2 x_2 - x_3 - 0.835634534\, x_2 (1 + x_2)\\
 &(x_1, x_2, x_3) \in [(-5,-5,-5),(5,5,5)]
@@ -352,7 +355,7 @@ Some Flyspeck inequalities are listed below.
 \begin{eqnarray*}
 &\begin{split}
 0 < &\dih_y (y_1, \ldots, y_6) - 1.629 + 0.414 (y_2 + y_3 + y_5 + y_6 - 8.0)\\
-        &- 0.763 (y_4 - 2.52) - 0.315 (y_1 - 2.0),
+	&- 0.763 (y_4 - 2.52) - 0.315 (y_1 - 2.0),
 \end{split}\\
 &2 \le y_i \le 2.52
 \end{eqnarray*}
@@ -375,13 +378,13 @@ Polynomial inequalities
 \multicolumn{1}{l}{\phantom{x}total time (s)}&
 \multicolumn{1}{l}{\phantom{x}formal verification (s)}\\
 \hline\rule{0pt}{12pt}%
-schwefel        & 3     & 5             & 26.329 &      19.145 \\
-rd                      & 3 & 5         & 1.593 &       0.017 \\
-caprasse        & 4 & 5         & 8.057 &       1.286 \\
-lv                      & 4     & 5             & 1.875 &       0.030 \\
-butcher         & 6 & 5         & 3.609 &       0.035 \\
-magnetism       & 7 & 5         & 7.007 &       1.347 \\
-heart           & 8 & 5         & 17.298 &      1.277 \\
+schwefel	& 3	& 5		& 26.329 &	19.145 \\
+rd			& 3 & 5		& 1.593 &	0.017 \\
+caprasse	& 4 & 5		& 8.057	&	1.286 \\
+lv			& 4	& 5		& 1.875 &	0.030 \\
+butcher		& 6 & 5		& 3.609 &	0.035 \\
+magnetism	& 7 & 5		& 7.007 &	1.347 \\
+heart		& 8 & 5		& 17.298 &	1.277 \\
 \hline
 \end{tabular}
 \end{center}
@@ -397,7 +400,7 @@ Flyspeck inequalities
 \multicolumn{1}{l}{\phantom{x}total time (s)}&
 \multicolumn{1}{l}{\phantom{x}formal verification (s)}\\
 \hline\rule{0pt}{12pt}%
-2485876245a     & 4 & 5.530 & 0.058 \\
+2485876245a	& 4 & 5.530 & 0.058 \\
 4559601669b & 4 & 4.679 & 0.048 \\
 4717061266  & 4 & 27.1 & 0.250 \\
 5512912661  & 4 & 8.860 & 0.086 \\
