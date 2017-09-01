@@ -1,5 +1,5 @@
 (* Some inequalities from the Flyspeck project *)
-(* http://code.google.com/p/flyspeck/ *)
+(* https://github.com/flyspeck/flyspeck *)
 
 (* Set up the loading path:
 load_path := "path to the formal_ineqs directory" :: !load_path;;
