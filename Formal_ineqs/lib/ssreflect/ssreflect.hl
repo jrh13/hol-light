@@ -1,9 +1,4 @@
-(* =========================================================== *)
-(* SSReflect/HOL Light support library                         *)
-(* See http://code.google.com/p/flyspeck/downloads/list        *)
-(* Author: Alexey Solovyev                                     *)
-(* Date: 2012-10-27                                            *)
-(* =========================================================== *)
+module Ssreflect = struct
 
 (* A special definition for introducing equalities with the construction move eq: a => b *)
 let ssreflect_eq_def = new_definition `!v P. ssreflect_eq (v:A) (P:bool) = P`;;
@@ -20,11 +15,11 @@ let gen_variables binders tm =
     let find_type name = assoc name f_vars in
     let gen_variable var_name tm =
       let var =
-        try mk_var (var_name, find_type var_name)
-        with Failure _ ->
-          failwith ("gen_variables: variable "^var_name
-                    ^" is not free in the term "^(string_of_term tm)) in
-        mk_forall (var, tm) in
+	try mk_var (var_name, find_type var_name)
+	with Failure _ ->
+	  failwith ("gen_variables: variable "^var_name
+		    ^" is not free in the term "^(string_of_term tm)) in
+	mk_forall (var, tm) in
       itlist gen_variable binders tm;;
 
 
@@ -86,17 +81,17 @@ let (THENL_FIRST),(THENL_LAST) =
   let (thenl_first: tactic -> tactic -> tactic) =
     fun tac1 tac2 g ->
       let _,gls,_ as gstate = tac1 g in
-        if gls = [] then failwith "No subgoals"
-        else
-          let tac_list = tac2 :: (replicate ALL_TAC (length gls - 1)) in
-            tacsequence gstate tac_list
+	if gls = [] then failwith "No subgoals"
+	else 
+	  let tac_list = tac2 :: (replicate ALL_TAC (length gls - 1)) in
+	    tacsequence gstate tac_list
   and (thenl_last: tactic -> tactic -> tactic) =
     fun tac1 tac2 g ->
       let _,gls,_ as gstate = tac1 g in
-        if gls = [] then failwith "No subgoals"
-        else
-          let tac_list = (replicate ALL_TAC (length gls - 1)) @ [tac2] in
-            tacsequence gstate tac_list in
+	if gls = [] then failwith "No subgoals"
+	else 
+	  let tac_list = (replicate ALL_TAC (length gls - 1)) @ [tac2] in
+	    tacsequence gstate tac_list in
     thenl_first, thenl_last;;
 
 
@@ -135,38 +130,38 @@ let move labels =
     let g_tm = snd g in
     let tac =
       try
-        let eq_tm = (rator o fst o dest_imp) g_tm in
-          if (fst o dest_const o rator) eq_tm = "ssreflect_eq" then
-            let label = (fst o dest_var o rand) eq_tm in
-              DISCH_THEN (LABEL_TAC label o PURE_ONCE_REWRITE_RULE[ssreflect_eq_def])
-          else
-            ALL_TAC
+	let eq_tm = (rator o fst o dest_imp) g_tm in
+	  if (fst o dest_const o rator) eq_tm = "ssreflect_eq" then
+	    let label = (fst o dest_var o rand) eq_tm in
+	      DISCH_THEN (LABEL_TAC label o PURE_ONCE_REWRITE_RULE[ssreflect_eq_def])
+	  else
+	    ALL_TAC
       with Failure _ -> ALL_TAC in
       tac g in
-
+    
   let move1 name (g:goal) =
     let g_tm = snd g in
     let tac =
       if is_forall g_tm then
-        let tm0, g_tm1 = dest_forall g_tm in
-        let tm = mk_var (name, type_of tm0) in
-          if name = "_" then
-            GEN_TAC
-          else
-            X_GEN_TAC tm
+	let tm0, g_tm1 = dest_forall g_tm in
+	let tm = mk_var (name, type_of tm0) in
+	  if name = "_" then
+	    GEN_TAC
+	  else
+	    X_GEN_TAC tm
       else
-        if is_imp g_tm then
-          if name = "_" then
-            DISCH_THEN (fun th -> ALL_TAC)
-          else
-            DISCH_THEN (LABEL_TAC name)
-        else
-          failwith "move: not (!) or (==>)" in
+	if is_imp g_tm then
+	  if name = "_" then
+	    DISCH_THEN (fun th -> ALL_TAC)
+	  else
+	    DISCH_THEN (LABEL_TAC name)
+	else
+	  failwith "move: not (!) or (==>)" in
       tac g in
     fun g ->
-      let tac = itlist
-        (fun name tac -> move_eq THEN move1 name THEN tac) labels ALL_TAC in
-        tac g;;
+      let tac = itlist 
+	(fun name tac -> move_eq THEN move1 name THEN tac) labels ALL_TAC in
+	tac g;;
 
 
 (* Localization tactical *)
@@ -176,15 +171,15 @@ let in_tac a_list in_goal tac (g:goal) =
   let tmp_goal_var = mk_var (tmp_goal_name, bool_ty) in
   let tmp_goal = mk_eq (tmp_goal_var, goal_tm) in
   let tmp_goal_sym = mk_eq (goal_tm, tmp_goal_var) in
-  let disch_tac =
+  let disch_tac = 
     rev_itlist (fun name tac -> REMOVE_THEN name MP_TAC THEN tac) a_list ALL_TAC in
   let intro_tac = move a_list in
-  let hide_goal, unfold_goal =
-    if in_goal then
+  let hide_goal, unfold_goal = 
+    if in_goal then 
       ALL_TAC, ALL_TAC
     else
-      ABBREV_TAC tmp_goal,
-    EXPAND_TAC tmp_goal_name THEN
+      ABBREV_TAC tmp_goal, 
+    EXPAND_TAC tmp_goal_name THEN 
       UNDISCH_TAC tmp_goal_sym THEN DISCH_THEN (fun th -> ALL_TAC)
   in
     (hide_goal THEN disch_tac THEN tac THEN TRY intro_tac THEN unfold_goal) g;;
@@ -192,24 +187,24 @@ let in_tac a_list in_goal tac (g:goal) =
 
 
 (* Finds a subterm in the given term which matches against the given
-   pattern; local_consts is a list of variable which must be fixed in
+   pattern; local_consts is a list of variable which must be fixed in 
    the pattern.
    This function returns the path to the first matched subterm *)
 let match_subterm local_consts pat tm =
   let rec find tm path =
     try
       let inst = term_match local_consts pat tm in
-        if instantiate inst pat = tm then path else failwith "Bad instantiation"
+	if instantiate inst pat = tm then path else failwith "Bad instantiation"
     with x ->
-      try
-        match tm with
-          | Abs(_, b_tm) -> find b_tm (path^"b")
-          | Comb(l_tm, r_tm) ->
-              try find l_tm (path^"l")
-              with Failure _ -> find r_tm (path^"r")
-          | _ -> failwith "match_subterm: no match"
+      try 
+	match tm with
+	  | Abs(_, b_tm) -> find b_tm (path^"b")
+	  | Comb(l_tm, r_tm) ->
+	      try find l_tm (path^"l")
+	      with Failure _ -> find r_tm (path^"r")
+  	  | _ -> failwith "match_subterm: no match"
       with x ->
-        failwith ("match_subterm: no match: "^string_of_term pat) in
+	failwith ("match_subterm: no match: "^string_of_term pat) in
     find tm "";;
 
 
@@ -219,23 +214,23 @@ let find_all_paths p tm =
   let rec find_path p tm path =
     let paths =
       match tm with
-        | Abs(_, b_tm) ->
-            find_path p b_tm (path ^ "b")
-        | Comb(l_tm, r_tm) ->
-            (find_path p l_tm (path ^ "l")) @ (find_path p r_tm (path ^ "r"))
-        | _ -> [] in
+	| Abs(_, b_tm) ->
+	    find_path p b_tm (path ^ "b")
+	| Comb(l_tm, r_tm) ->
+	    (find_path p l_tm (path ^ "l")) @ (find_path p r_tm (path ^ "r"))
+	| _ -> [] in
       if p tm then path :: paths else paths in
     find_path p tm "";;
 
 
 (* Instantiates types of the given context variables in the given term.*)
-let inst_context_vars vars tm_vars tm =
+let inst_context_vars vars tm_vars tm = 
   let find_type var =
     let name, ty = dest_var var in
       try
-        (ty, type_of (assoc name vars))
-      with Failure _ ->
-        failwith (name^" is free in the term `"^(string_of_term tm)^"` and in the context") in
+	(ty, type_of (assoc name vars))
+      with Failure _ -> 
+	failwith (name^" is free in the term `"^(string_of_term tm)^"` and in the context") in
   let ty_src, ty_dst = unzip (map find_type tm_vars) in
   let ty_inst = itlist2 type_match ty_src ty_dst [] in
     inst ty_inst tm;;
@@ -266,26 +261,26 @@ let match_subterm_in_context pat tm (g : goal) =
 let rec break_conjuncts th : thm list =
   (* Convert P ==> (!x. Q x) to !x. P ==> Q x and P ==> Q ==> R to P /\ Q ==> R *)
   let th0 = PURE_REWRITE_RULE[GSYM RIGHT_FORALL_IMP_THM; IMP_IMP] th in
-  let th1 = SPEC_ALL th0 in
+  let th1 = SPEC_ALL th0 in  
   (* Break top level conjunctions *)
   let th_list = CONJUNCTS th1 in
     if length th_list > 1 then
       List.concat (map break_conjuncts th_list)
     else
       let th_tm = concl th1 in
-        (* Deal with assumptions *)
-        if is_imp th_tm then
-          let a_tm = lhand th_tm in
-          let th_list = break_conjuncts (UNDISCH th1) in
-            map (DISCH a_tm) th_list
-        else
-          if is_eq th_tm then [th1]
-          else
-            if is_neg th_tm then
-              [PURE_ONCE_REWRITE_RULE[TAUT `~P <=> (P <=> F)`] th1]
-            else
-              [EQT_INTRO th1];;
-
+	(* Deal with assumptions *)
+	if is_imp th_tm then
+	  let a_tm = lhand th_tm in
+	  let th_list = break_conjuncts (UNDISCH th1) in
+	    map (DISCH a_tm) th_list
+	else
+	  if is_eq th_tm then [th1]
+	  else
+	    if is_neg th_tm then
+	      [PURE_ONCE_REWRITE_RULE[TAUT `~P <=> (P <=> F)`] th1]
+	    else
+	      [EQT_INTRO th1];;
+	    
 
 (* Finds an instantination for the given term inside another term *)
 let rec find_term_inst local_consts tm src_tm path =
@@ -293,12 +288,12 @@ let rec find_term_inst local_consts tm src_tm path =
   with Failure _ ->
     match src_tm with
       | Comb(l_tm, r_tm) ->
-          let r_inst, flag, s = find_term_inst local_consts tm l_tm (path ^ "l") in
-            if flag then (r_inst, flag, s)
-            else
-              find_term_inst local_consts tm r_tm (path ^ "r")
+	  let r_inst, flag, s = find_term_inst local_consts tm l_tm (path ^ "l") in
+	    if flag then (r_inst, flag, s)
+	    else
+	      find_term_inst local_consts tm r_tm (path ^ "r")
       | Abs(_, b_tm) ->
-          find_term_inst local_consts tm b_tm (path ^ "b")
+	  find_term_inst local_consts tm b_tm (path ^ "b")
       | _ -> (([],[],[]), false, path);;
 
 
@@ -308,30 +303,30 @@ let path_rewrite path th tm =
   let rec build path tm =
     let n = String.length path in
       if n = 0 then
-        th
+	th
       else
-        let ch = path.[0] in
-        let path' = String.sub path 1 (n - 1) in
-          if ch = 'l' then
-            let lhs, rhs = dest_comb tm in
-            let th0 = build path' lhs in
-              AP_THM th0 rhs
-          else if ch = 'r' then
-            let lhs, rhs = dest_comb tm in
-            let th0 = build path' rhs in
-              AP_TERM lhs th0
-          else if ch = 'b' then
-            let var, body = dest_abs tm in
-            let th0 = build path' body in
-              try ABS var th0
-              with Failure _ -> failwith ("ABS failed: (" ^ string_of_term var ^ ", " ^ string_of_thm th0)
-          else
-            failwith ("Bad path symbol: "^path) in
+	let ch = path.[0] in
+	let path' = String.sub path 1 (n - 1) in
+	  if ch = 'l' then
+	    let lhs, rhs = dest_comb tm in
+	    let th0 = build path' lhs in
+	      AP_THM th0 rhs
+	  else if ch = 'r' then
+	    let lhs, rhs = dest_comb tm in
+	    let th0 = build path' rhs in
+	      AP_TERM lhs th0
+	  else if ch = 'b' then
+	    let var, body = dest_abs tm in
+	    let th0 = build path' body in
+	      try ABS var th0
+	      with Failure _ -> failwith ("ABS failed: (" ^ string_of_term var ^ ", " ^ string_of_thm th0)
+	  else
+	    failwith ("Bad path symbol: "^path) in
   let res = build path tm in
   let lhs = (lhand o concl) res in
     if not (aconv lhs tm) then failwith ("path_rewrite: incorrect result [required: "^
-                                  (string_of_term tm)^"; obtained: "^
-                                  (string_of_term lhs))
+				  (string_of_term tm)^"; obtained: "^
+				  (string_of_term lhs))
     else
       res;;
 
@@ -341,7 +336,7 @@ let new_rewrite occ pat th g =
   (* Free variables in the given theorem will not be matched *)
   let local_consts = frees (concl th) in
   (* Apply the pattern *)
-  let goal_subterm_path =
+  let goal_subterm_path = 
     if pat = [] then "" else match_subterm_in_context (hd pat) goal_tm g in
   let goal_subterm = follow_path goal_subterm_path goal_tm in
 
@@ -355,39 +350,39 @@ let new_rewrite occ pat th g =
     let lhs_tm = match_fun concl_th in
     let ii, flag, path = find_term_inst local_consts lhs_tm goal_subterm goal_subterm_path in
       if not flag then
-        failwith (string_of_term lhs_tm ^ " does not match any subterm in the goal")
+	failwith (string_of_term lhs_tm ^ " does not match any subterm in the goal")
       else
-        let matched_th = INSTANTIATE ii th in
-        let matched_tm = (match_fun o concl) matched_th in
+	let matched_th = INSTANTIATE ii th in
+	let matched_tm = (match_fun o concl) matched_th in
+	
+	(* Find all matched subterms *)
+	let paths = find_all_paths (fun x -> aconv x matched_tm) goal_tm in
+	let paths = if occ = [] then paths else
+	  map (fun i -> List.nth paths (i - 1)) occ in
 
-        (* Find all matched subterms *)
-        let paths = find_all_paths (fun x -> aconv x matched_tm) goal_tm in
-        let paths = if occ = [] then paths else
-          map (fun i -> List.nth paths (i - 1)) occ in
-
-        (* Find all free variables in the matched theorem which do not correspond to free variables in
-           the matched subterm *)
-        let tm_frees = frees matched_tm in
-        let mth_frees = frees (concl matched_th) in
-        let vars = subtract mth_frees (union local_consts tm_frees) in
-          if vars = [] then
-            (* Construct the tactic for rewriting *)
-            let r_tac = fun th -> MAP_EVERY (fun path -> CONV_TAC (path_rewrite path th)) paths in
-              if cond_flag then
-                MP_TAC matched_th THEN ANTS_TAC THENL [ALL_TAC; DISCH_THEN r_tac]
-              else
-                r_tac matched_th
-          else
-            let rec gen_vars vars th =
-              match vars with
-                | v :: vs -> gen_vars vs (GEN v th)
-                | [] -> th in
-            let th2 = gen_vars vars matched_th in
-              MP_TAC th2 THEN PURE_REWRITE_TAC[LEFT_IMP_FORALL_THM] in
+	(* Find all free variables in the matched theorem which do not correspond to free variables in
+	   the matched subterm *)
+	let tm_frees = frees matched_tm in
+	let mth_frees = frees (concl matched_th) in
+	let vars = subtract mth_frees (union local_consts tm_frees) in
+	  if vars = [] then
+	    (* Construct the tactic for rewriting *)
+	    let r_tac = fun th -> MAP_EVERY (fun path -> CONV_TAC (path_rewrite path th)) paths in
+	      if cond_flag then
+		MP_TAC matched_th THEN ANTS_TAC THENL [ALL_TAC; DISCH_THEN r_tac]
+	      else
+		r_tac matched_th
+	  else
+	    let rec gen_vars vars th =
+	      match vars with
+		| v :: vs -> gen_vars vs (GEN v th)
+		| [] -> th in
+	    let th2 = gen_vars vars matched_th in
+	      MP_TAC th2 THEN PURE_REWRITE_TAC[LEFT_IMP_FORALL_THM] in
 
   (* Try to rewrite with all given theorems *)
   let th_list = break_conjuncts th in
-  let rec my_first th_list =
+  let rec my_first th_list = 
     if length th_list = 1 then
       rewrite (hd th_list) g
     else
@@ -424,14 +419,14 @@ let rewrite occ pat th g =
     try (PART_MATCH ffun th tm, true, str)
     with Failure _ ->
       match tm with
-        | Comb(l_tm, r_tm) ->
-            let r_th, flag, s = match_theorem ffun th l_tm (str ^ "l") in
-              if flag then (r_th, flag, s)
-              else
-                match_theorem ffun th r_tm (str ^ "r")
-        | Abs(_, b_tm) ->
-            match_theorem ffun th b_tm (str ^ "b")
-        | _ -> (th, false, str) in
+	| Comb(l_tm, r_tm) ->
+	    let r_th, flag, s = match_theorem ffun th l_tm (str ^ "l") in
+	      if flag then (r_th, flag, s)
+	      else
+		match_theorem ffun th r_tm (str ^ "r")
+	| Abs(_, b_tm) ->
+	    match_theorem ffun th b_tm (str ^ "b")
+	| _ -> (th, false, str) in
   (* Initialize auxiliary variables *)
   let goal_tm = snd g in
   let th0 = PURE_REWRITE_RULE[IMP_IMP] th in
@@ -441,7 +436,7 @@ let rewrite occ pat th g =
   let match_fun = (if is_eq eq_tm then lhand else I) o (if cond_flag then rand else I) in
 
   (* Apply the pattern *)
-  let goal_subterm_path =
+  let goal_subterm_path = 
     if pat = [] then "" else match_subterm_in_context (hd pat) goal_tm g in
   let goal_subterm = follow_path goal_subterm_path goal_tm in
 
@@ -462,18 +457,18 @@ let rewrite occ pat th g =
     let mth_frees = frees (concl matched_th) in
     let vars = subtract mth_frees (union th_frees tm_frees) in
       if vars = [] then
-        let r_tac = fun th -> MAP_EVERY (fun path -> GEN_REWRITE_TAC (PATH_CONV path) [th]) paths in
-          if cond_flag then
-            (MP_TAC matched_th THEN ANTS_TAC THENL [ALL_TAC; DISCH_THEN r_tac]) g
-          else
-            (r_tac matched_th) g
+	let r_tac = fun th -> MAP_EVERY (fun path -> GEN_REWRITE_TAC (PATH_CONV path) [th]) paths in
+	  if cond_flag then
+	    (MP_TAC matched_th THEN ANTS_TAC THENL [ALL_TAC; DISCH_THEN r_tac]) g
+	  else
+	    (r_tac matched_th) g
       else
-        let rec gen_vars vars th =
-          match vars with
-            | v :: vs -> gen_vars vs (GEN v th)
-            | [] -> th in
-        let th2 = gen_vars vars matched_th in
-          (MP_TAC th2 THEN REWRITE_TAC[LEFT_IMP_FORALL_THM]) g;;
+	let rec gen_vars vars th =
+	  match vars with
+	    | v :: vs -> gen_vars vs (GEN v th)
+	    | [] -> th in
+	let th2 = gen_vars vars matched_th in
+	  (MP_TAC th2 THEN REWRITE_TAC[LEFT_IMP_FORALL_THM]) g;;
 
 
 
@@ -497,8 +492,8 @@ let split_tac = FIRST [CONJ_TAC; EQ_TAC];;
 (* Creates an abbreviation for the given term with the given name *)
 let set_tac name tm (g : goal) =
   let goal_tm = snd g in
-  let tm0 =
-    try
+  let tm0 = 
+    try 
       follow_path (match_subterm_in_context tm goal_tm g) goal_tm
     with Failure _ -> tm in
   let tm1 = inst_all_free_vars tm0 g in
@@ -508,7 +503,7 @@ let set_tac name tm (g : goal) =
 (* Generates a fresh name for the given term *)
 (* taking into account names of the provided variables *)
 let generate_fresh_name names tm =
-  let rec find_name prefix n =
+  let rec find_name prefix n =  
     let name = prefix ^ (if n = 0 then "" else string_of_int n) in
     if can (find (fun str -> str = name)) names then
       find_name prefix (n + 1)
@@ -538,12 +533,12 @@ let disch_tm_tac occs tm (g : goal) =
   let tm0 = prepare_term tm g in
   let name = generate_fresh_name ((fst o unzip) (get_context_vars g)) tm in
   let new_tm = mk_var (name, type_of tm0) in
-  let new_tm1 =
-    if occs = [] && is_var tm then
+  let new_tm1 = 
+    if occs = [] && is_var tm then 
       mk_var ((fst o dest_var) tm, type_of tm0)
-    else new_tm in
+    else new_tm in 
   let abbrev_tm = mk_eq (new_tm, tm0) in
-    (ABBREV_TAC abbrev_tm THEN
+    (ABBREV_TAC abbrev_tm THEN 
        EXPAND_TAC name THEN
        POP_ASSUM (fun th -> TRY (new_rewrite occs [] th)) THEN
        SPEC_TAC (new_tm, new_tm1)) g;;
@@ -564,30 +559,30 @@ let process_thm =
   let dummy_tm = `F` in
     fun local_consts ->
       let rec process th =
-        let ctm = concl th in
-          (* forall *)
-          if is_forall ctm then
-            let (var_tm, _) = dest_forall ctm in
-            let var = get_fresh_var var_tm (thm_frees th @ local_consts) in
-            let th1 = SPEC var th in
-            let list, th0 = process th1 in
-              ("spec", var) :: list, th0
-                (* P ==> Q *)
-          else if is_imp ctm then
-            let ant_tm, _ = dest_imp ctm in
-              (* P /\ R ==> Q *)
-              if is_conj ant_tm then
-                let th1 = MATCH_MP conj_imp th in
-                let list, th0 = process th1 in
-                  ("conj", dummy_tm) :: list, th0
-                    (* P ==> Q *)
-              else
-                let th1 = UNDISCH th in
-                let list, th0 = process th1 in
-                  ("undisch", ant_tm) :: list, th0
-          else
-            [], th in
-        process;;
+	let ctm = concl th in
+	  (* forall *)
+	  if is_forall ctm then
+	    let (var_tm, _) = dest_forall ctm in
+	    let var = get_fresh_var var_tm (thm_frees th @ local_consts) in
+	    let th1 = SPEC var th in
+	    let list, th0 = process th1 in
+	      ("spec", var) :: list, th0
+		(* P ==> Q *)
+	  else if is_imp ctm then
+	    let ant_tm, _ = dest_imp ctm in
+	      (* P /\ R ==> Q *)
+	      if is_conj ant_tm then
+		let th1 = MATCH_MP conj_imp th in
+		let list, th0 = process th1 in
+		  ("conj", dummy_tm) :: list, th0
+		    (* P ==> Q *)
+	      else
+		let th1 = UNDISCH th in
+		let list, th0 = process th1 in
+		  ("undisch", ant_tm) :: list, th0
+	  else
+	    [], th in
+	process;;
 
 
 
@@ -599,17 +594,17 @@ let reconstruct_thm =
     match list with
       | [] -> th
       | cmd :: t ->
-          let th1 =
-            match cmd with
-              | ("spec", (_ as tm)) -> GEN tm th
-              | ("conj", _) -> MATCH_MP imp_conj th
-              | ("undisch", (_ as tm)) -> DISCH tm th
-              | _ -> failwith ("Unknown command: " ^ fst cmd) in
-            reconstruct t th1 in
+	  let th1 =
+	    match cmd with
+	      | ("spec", (_ as tm)) -> GEN tm th
+	      | ("conj", _) -> MATCH_MP imp_conj th
+	      | ("undisch", (_ as tm)) -> DISCH tm th
+	      | _ -> failwith ("Unknown command: " ^ fst cmd) in
+	    reconstruct t th1 in
 
     fun (cmd_list, th) ->
       let th1 = reconstruct (rev cmd_list) th in
-        PURE_REWRITE_RULE[triv_ths] th1;;
+	PURE_REWRITE_RULE[triv_ths] th1;;
 
 
 (* spec_var_th *)
@@ -619,18 +614,18 @@ let spec_var_th th n tm =
   let rec spec n list head =
     match list with
       | ("spec", (_ as var_tm)) :: t ->
-          (try
-             let ty_ii = type_match (type_of var_tm) ty [] in
-               if n <= 1 then
-                 let th1 = reconstruct_thm (list, th0) in
-                 let th2 = ISPEC tm th1 in
-                 let tail, th0 = process_thm [] th2 in
-                 let head1 = map (fun s, tm -> s, inst ty_ii tm) head in
-                   head1 @ tail, th0
-               else
-                 spec (n - 1) t (head @ [hd list])
-           with Failure _ ->
-             spec n t (head @ [hd list]))
+	  (try
+	     let ty_ii = type_match (type_of var_tm) ty [] in
+	       if n <= 1 then
+		 let th1 = reconstruct_thm (list, th0) in
+		 let th2 = ISPEC tm th1 in
+		 let tail, th0 = process_thm [] th2 in
+		 let head1 = map (fun s, tm -> s, inst ty_ii tm) head in
+		   head1 @ tail, th0
+	       else
+		 spec (n - 1) t (head @ [hd list])
+	   with Failure _ ->
+	     spec n t (head @ [hd list]))
       | h :: t -> spec n t (head @ [h])
       | [] -> failwith ("spec_var_th") in
     reconstruct_thm (spec n cmd []);;
@@ -644,21 +639,21 @@ let match_mp_th ith n th =
   let rec rec_match n list head =
     match list with
       | ("undisch", (_ as tm0)) :: t ->
-          (try
-             let ii = term_match lconsts tm0 tm in
-               if n <= 1 then
-                 let th1 = INSTANTIATE_ALL ii th0 in
-                 let th2 = PROVE_HYP th th1 in
-                 let list0 = head @ (("undisch", `T`) :: t) in
-                 let f_vars = frees tm0 in
-                 let list1 = filter
-                   (fun s, tm -> not (s = "spec" && mem tm f_vars)) list0 in
-                 let list = map (fun s, tm -> s, instantiate ii tm) list1 in
-                   list, th2
-               else
-                 rec_match (n - 1) t (head @ [hd list])
-           with Failure _ ->
-             rec_match n t (head @ [hd list]))
+	  (try 
+	     let ii = term_match lconsts tm0 tm in
+	       if n <= 1 then
+		 let th1 = INSTANTIATE_ALL ii th0 in
+		 let th2 = PROVE_HYP th th1 in
+		 let list0 = head @ (("undisch", `T`) :: t) in
+		 let f_vars = frees tm0 in
+		 let list1 = filter 
+		   (fun s, tm -> not (s = "spec" && mem tm f_vars)) list0 in
+		 let list = map (fun s, tm -> s, instantiate ii tm) list1 in
+		   list, th2
+	       else
+		 rec_match (n - 1) t (head @ [hd list])
+	   with Failure _ ->
+	     rec_match n t (head @ [hd list]))
       | h :: t -> rec_match n t (head @ [h])
       | [] -> failwith "match_mp_th: no match" in
   let r = rec_match n cmd [] in
@@ -713,36 +708,71 @@ let combine_args arg1 arg2 =
   let th1 = get_arg_thm arg1 in
   let th0 =
     match arg2 with
-      | Arg_theorem th2 ->
-          (try MATCH_MP th1 th2 with Failure _ -> match_mp_th th1 1 th2)
+      | Arg_theorem th2 -> 
+	  (try MATCH_MP th1 th2 with Failure _ -> match_mp_th th1 1 th2)
       | Arg_term tm2 ->
-          (try ISPEC tm2 th1 with Failure _ -> spec_var_th th1 1 tm2)
+	  (try ISPEC tm2 th1 with Failure _ -> spec_var_th th1 1 tm2)
       | Arg_type ty2 -> inst_first_type th1 ty2 in
     Arg_theorem th0;;
 
 
+(* A temporary variable *)
 let use_arg_then_result = ref TRUTH;;
 
+(*
+(* Tests if the given id defines a theorem *)
+let test_id_thm id =
+  let lexbuf = 
+    Lexing.from_string ("use_arg_then_result := " ^ id ^ ";;") in
+  let ast = (!Toploop.parse_toplevel_phrase) lexbuf in
+    try
+      let _ = Toploop.execute_phrase false Format.std_formatter ast in
+	true
+    with _ -> false;;
+
+
+(* For a given id (string) finds an assumption or an existing theorem with the same name
+   and then applies the given tactic *)
 let use_arg_then id (arg_tac:arg_type->tactic) (g:goal) =
   let list = fst g in
   let arg =
     try
       let assumption = assoc id list in
-        Arg_theorem assumption
+	Arg_theorem assumption
     with Failure _ ->
       try
-        let vars = get_context_vars g in
-        let var = assoc id vars in
-          Arg_term var
+	let vars = get_context_vars g in
+	let var = assoc id vars in
+	  Arg_term var
       with Failure _ ->
-        let lexbuf =
-          Lexing.from_string ("use_arg_then_result := " ^ id ^ ";;") in
-        let ast = (!Toploop.parse_toplevel_phrase) lexbuf in
-        let _ =
-          try
-            Toploop.execute_phrase false Format.std_formatter ast
-          with _ -> failwith ("Bad identifier: " ^ id) in
-          Arg_theorem !use_arg_then_result in
+	let lexbuf = 
+	  Lexing.from_string ("use_arg_then_result := " ^ id ^ ";;") in
+	let ast = (!Toploop.parse_toplevel_phrase) lexbuf in
+	let _ =
+	  try
+	    Toploop.execute_phrase false Format.std_formatter ast
+	  with _ -> failwith ("Bad identifier: " ^ id) in
+	  Arg_theorem !use_arg_then_result in
+    arg_tac arg g;;
+*)
+
+(* The same effect as use_arg_then but the theorem is given explicitly*)
+let use_arg_then2 (id, opt_thm) (arg_tac:arg_type->tactic) (g:goal) =
+  let list = fst g in
+  let arg =
+    try
+      let assumption = assoc id list in
+	Arg_theorem assumption
+    with Failure _ ->
+      try
+	let vars = get_context_vars g in
+	let var = assoc id vars in
+	  Arg_term var
+      with Failure _ ->
+	if opt_thm <> [] then
+	  Arg_theorem (hd opt_thm)
+	else
+	  failwith ("Assumption is not found: " ^ id) in
     arg_tac arg g;;
 
 
@@ -750,15 +780,15 @@ let combine_args_then (tac:arg_type->tactic) arg1 arg2 (g:goal) =
   let th1 = get_arg_thm arg1 in
   let th0 =
     match arg2 with
-      | Arg_theorem th2 ->
-          (try MATCH_MP th1 th2 with Failure _ -> match_mp_th th1 1 th2)
+      | Arg_theorem th2 -> 
+	  (try MATCH_MP th1 th2 with Failure _ -> match_mp_th th1 1 th2)
       | Arg_term tm2 ->
-          let tm0 = prepare_term tm2 g in
-            (try ISPEC tm0 th1 with Failure _ -> spec_var_th th1 1 tm0)
+	  let tm0 = prepare_term tm2 g in
+	    (try ISPEC tm0 th1 with Failure _ -> spec_var_th th1 1 tm0)
       | Arg_type ty2 -> inst_first_type th1 ty2 in
     tac (Arg_theorem th0) g;;
-
-
+  
+	  
 
 
 (* Specializes a variable and applies the next tactic *)
@@ -801,24 +831,24 @@ let apply_tac th g =
       let th0 = PURE_ONCE_REWRITE_RULE[IMP_IMP] th in
       if th = th0 then failwith "apply_tac: no match"
       else
-        try_match th0 in
-
+	try_match th0 in
+      
       try MATCH_ACCEPT_TAC th g with Failure _ ->
-        try_match th;;
+	try_match th;;
 
-(*let apply_tac th =
+(*let apply_tac th = 
   FIRST [MATCH_ACCEPT_TAC th; MATCH_MP_TAC th];; *)
 
 
 (* The 'exact' tactic *)
-(* TODO: do [done | by move => top; apply top], here apply top
+(* TODO: do [done | by move => top; apply top], here apply top 
    works as ACCEPT_TAC with matching (rewriting) in some cases *)
 let exact_tac = FIRST [done_tac; DISCH_THEN (fun th -> apply_tac th) THEN done_tac];;
 
 
 
 (* Specializes the theorem using the given set of variables *)
-let spec0 names vars =
+let spec0 names vars = 
   let find name =
     try (assoc name vars, true)
     with Failure _ -> (parse_term name, false) in
@@ -826,9 +856,9 @@ let spec0 names vars =
     let name, ty = dest_var var in
     let t, flag = find name in
       if flag then
-        (ty, type_of t)
-      else
-        (`:bool`, `:bool`) in
+	(ty, type_of t)
+      else 
+	(`:bool`, `:bool`) in
   let inst_term tm =
     let ty_src, ty_dst = unzip (map find_type (frees tm)) in
     let ty_inst = itlist2 type_match ty_src ty_dst [] in
@@ -847,13 +877,13 @@ let spec_mp names th g = MP_TAC (spec0 names (get_context_vars g) th) g;;
 (* Case theorems *)
 let bool_cases = ONCE_REWRITE_RULE[CONJ_ACI] bool_INDUCT;;
 let list_cases = prove(`!P. P [] /\ (!(h:A) t. P (CONS h t)) ==> (!l. P l)`,
-  REPEAT STRIP_TAC THEN
+  REPEAT STRIP_TAC THEN 
     MP_TAC (SPEC `l:(A)list` list_CASES) THEN DISCH_THEN DISJ_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
     FIRST_X_ASSUM (CHOOSE_THEN MP_TAC) THEN DISCH_THEN (CHOOSE_THEN MP_TAC) THEN
     DISCH_THEN (fun th -> ASM_REWRITE_TAC[th]));;
 let pair_cases = pair_INDUCT;;
 let num_cases = prove(`!P. P 0 /\ (!n. P (SUC n)) ==> (!m. P m)`,
-  REPEAT STRIP_TAC THEN
+  REPEAT STRIP_TAC THEN  
     MP_TAC (SPEC `m:num` num_CASES) THEN DISCH_THEN DISJ_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
     FIRST_X_ASSUM (CHOOSE_THEN (fun th -> ASM_REWRITE_TAC[th])));;
 let option_cases = option_INDUCT;;
@@ -884,47 +914,47 @@ Hashtbl.add elim_table "option" option_elim;;
 
 
 (* case: works only for (A /\ B) -> C; (A \/ B) -> C; (?x. P) -> Q; !(n:num). P; !(l:list(A)). P *)
-let case (g:goal) =
+let case (g:goal) = 
   let goal_tm = snd g in
     if not (is_imp goal_tm) then
       (* !a. P *)
       if is_forall goal_tm then
-        let var, _ = dest_forall goal_tm in
-        let ty_name = (fst o dest_type o type_of) var in
-        let case_th = Hashtbl.find cases_table ty_name in
-          (MATCH_MP_TAC case_th THEN REPEAT CONJ_TAC) g
+	let var, _ = dest_forall goal_tm in
+	let ty_name = (fst o dest_type o type_of) var in
+	let case_th = Hashtbl.find cases_table ty_name in
+	  (MATCH_MP_TAC case_th THEN REPEAT CONJ_TAC) g
       else
-        failwith "case: not imp or forall"
+	failwith "case: not imp or forall"
     else
       let tm = lhand goal_tm in
-        (* A /\ B *)
-        if is_conj tm then
-          (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN POP_ASSUM MP_TAC) g
-        (* A \/ B *)
-        else if is_disj tm then
-          (DISCH_THEN DISJ_CASES_TAC THEN POP_ASSUM MP_TAC) g
+	(* A /\ B *)
+	if is_conj tm then
+	  (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN POP_ASSUM MP_TAC) g
+	(* A \/ B *)
+	else if is_disj tm then
+	  (DISCH_THEN DISJ_CASES_TAC THEN POP_ASSUM MP_TAC) g
         (* ?x. P *)
-        else if is_exists tm then
-          (ONCE_REWRITE_TAC[GSYM LEFT_FORALL_IMP_THM]) g
-        else
-          failwith "case: not implemented";;
+	else if is_exists tm then
+	  (ONCE_REWRITE_TAC[GSYM LEFT_FORALL_IMP_THM]) g
+	else
+	  failwith "case: not implemented";;
 
 
 
 (* elim: works only for num and list *)
-let elim (g:goal) =
+let elim (g:goal) = 
   let goal_tm = snd g in
     (* !a. P *)
     if is_forall goal_tm then
       let var, _ = dest_forall goal_tm in
       let ty_name = (fst o dest_type o type_of) var in
       let induct_th = Hashtbl.find elim_table ty_name in
-        (MATCH_MP_TAC induct_th THEN REPEAT CONJ_TAC) g
+	(MATCH_MP_TAC induct_th THEN REPEAT CONJ_TAC) g
     else
       failwith "elim: not forall";;
 
 
-
+	  
 (* Instantiates the first type variable in the given theorem *)
 let INST_FIRST_TYPE_THEN ty (then_tac:thm_tactic) th =
   let ty_vars = type_vars_in_term (concl th) in
@@ -939,15 +969,15 @@ let transform_pattern pat_tm =
   let names = ref (map (fst o dest_var) (frees pat_tm)) in
   let rec transform tm =
     match tm with
-      | Abs(x_tm, b_tm) ->
-          let _ = names := (fst o dest_var) x_tm :: !names in
-            mk_abs (x_tm, transform b_tm)
-      | Comb(l_tm, r_tm) ->
-          mk_comb (transform l_tm, transform r_tm)
+      | Abs(x_tm, b_tm) -> 
+	  let _ = names := (fst o dest_var) x_tm :: !names in
+	    mk_abs (x_tm, transform b_tm)
+      | Comb(l_tm, r_tm) -> 
+	  mk_comb (transform l_tm, transform r_tm)
       | Var ("_", ty) ->
-          let name = generate_fresh_name !names tm in
-          let _ = names := name :: !names in
-            mk_var (name, ty)
+	  let name = generate_fresh_name !names tm in
+	  let _ = names := name :: !names in
+	    mk_var (name, ty)
       | _ -> tm in
     transform pat_tm;;
 
@@ -972,7 +1002,7 @@ let congr_tac pat_tm goal =
   let lhs, rhs = dest_eq goal_tm in
   let lm, rm =
     term_match const_pat pattern lhs, term_match const_pat pattern rhs in
-  let eq_tms = map
+  let eq_tms = map 
     (fun tm -> mk_eq (instantiate lm tm, instantiate rm tm)) wild_pat in
   let eq_tm = itlist (curry mk_imp) eq_tms goal_tm in
   let eq_thm = EQT_ELIM (SIMP_CONV[] eq_tm) in
@@ -990,7 +1020,7 @@ let elim_fst_ants_tac =
     fun (g:goal) ->
       let goal_tm = snd g in
       let elim_th = gen_elim_thm goal_tm in
-        MATCH_MP_TAC elim_th g;;
+	MATCH_MP_TAC elim_th g;;
 
 
 (* If a goal has the form ssreflect_eq ==> P then the equality is introduced as
@@ -1002,13 +1032,13 @@ let process_fst_eq_tac (g:goal) =
     try
       let eq_tm = (rator o fst o dest_imp) g_tm in
       let label = (fst o dest_var o rand) eq_tm in
-        if (fst o dest_const o rator) eq_tm = "ssreflect_eq" then
-          if length vars = 0 then
-            DISCH_THEN (LABEL_TAC label o PURE_ONCE_REWRITE_RULE[ssreflect_eq_def])
-          else
-            elim_fst_ants_tac
+	if (fst o dest_const o rator) eq_tm = "ssreflect_eq" then
+	  if length vars = 0 then
+	    DISCH_THEN (LABEL_TAC label o PURE_ONCE_REWRITE_RULE[ssreflect_eq_def])
+	  else
+	    elim_fst_ants_tac
       else
-        ALL_TAC
+	ALL_TAC
     with Failure _ -> ALL_TAC in
     tac g;;
 
@@ -1020,7 +1050,7 @@ let disch_tm_eq_tac eq_name occs tm (g : goal) =
   let eq_var = mk_var (eq_name, aty) in
   let new_tm = mk_var (name, type_of tm0) in
   let abbrev_tm = mk_eq (new_tm, tm0) in
-    (ABBREV_TAC abbrev_tm THEN
+    (ABBREV_TAC abbrev_tm THEN 
        EXPAND_TAC name THEN
        FIRST_ASSUM (fun th -> TRY (new_rewrite occs [] th)) THEN
        POP_ASSUM (MP_TAC o PURE_ONCE_REWRITE_RULE[GSYM (SPEC eq_var ssreflect_eq_def)]) THEN
@@ -1030,3 +1060,6 @@ let disch_tm_eq_tac eq_name occs tm (g : goal) =
 (* Discharges a term and generates an equality *)
 let disch_eq_tac eq_name occs arg =
   disch_tm_eq_tac eq_name occs (get_arg_term arg);;
+
+
+end;;

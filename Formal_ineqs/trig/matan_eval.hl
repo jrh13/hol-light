@@ -1,0 +1,379 @@
+needs "arith/more_float.hl";;
+needs "trig/matan.hl";;
+needs "trig/atn_eval.hl";;
+
+module type Matan_eval_sig =
+  sig
+    val float_interval_matan : int -> thm -> thm
+    val float_interval_dmatan : int -> thm -> thm
+    val float_interval_ddmatan : int -> thm -> thm
+  end;;
+
+
+module Matan_eval : Matan_eval_sig = struct
+
+open Misc_functions;;
+open Float_theory;;
+open Interval_arith;;
+open More_float;;
+open Arith_float;;
+open Atn_eval;;
+open Matan;;
+open Misc_vars;;
+
+prioritize_real();;
+
+(* Creates an interval approximation of the given decimal term *)
+let mk_float_interval_decimal =
+  let DECIMAL' = SPEC_ALL DECIMAL in
+    fun pp decimal_tm ->
+      let n_tm, d_tm = dest_binary "DECIMAL" decimal_tm in
+      let n, d = dest_numeral n_tm, dest_numeral d_tm in
+      let n_int, d_int = mk_float_interval_num n, mk_float_interval_num d in
+      let int = float_interval_div pp n_int d_int in
+      let eq_th = INST[n_tm, x_var_num; d_tm, y_var_num] DECIMAL' in
+	norm_interval int eq_th;;
+
+
+(* -------------------------------- *)
+(* Theorems for computations        *)
+(* -------------------------------- *)
+
+let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL;;
+
+let one_interval = mk_float_interval_small_num 1 and
+    three_interval = mk_float_interval_small_num 3 and
+    five_interval = mk_float_interval_small_num 5 and
+    seven_float = mk_float 7 0 and
+    two_float = mk_float 2 0 and
+    one_float = mk_float 1 0;;
+
+let interval_neg_02 = float_interval_neg (mk_float_interval_decimal 10 `#0.2`);;
+let interval_09 = mk_float_interval_decimal 10 `#0.9`;;
+let interval_1e8 = mk_float_interval_decimal 10 `#0.00000001`;;
+let float_1e8 = (fst o dest_pair o snd o dest_interval_arith o concl) interval_1e8;;
+
+(* matan *)
+
+let matan_gt0 = (th_rule o prove)(
+  `!x. interval_arith x (lo, hi) /\ (&0 < lo <=> T) /\
+    interval_arith (atn (sqrt x) / sqrt x) bounds
+    ==> interval_arith (matan x) bounds`,
+  REWRITE_TAC[interval_arith; matan] THEN REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN `~(x = &0) /\ x > &0` ASSUME_TAC THENL [
+      REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+      ALL_TAC
+    ] THEN
+    ASM_REWRITE_TAC[]);;
+
+
+let matan_abs1 = 
+  let aux_th = (REWRITE_CONV[FLOAT_OF_NUM; min_exp_def] THENC 
+		  DEPTH_CONV Arith_nat.NUMERAL_TO_NUM_CONV THENC 
+		  REWRITE_CONV[Arith_num.NUM_THM]) `r1 <= &1 - u` in
+    (th_rule o PURE_REWRITE_RULE[SYM (FLOAT_TO_NUM_CONV seven_float); aux_th] o prove)(
+  `!x. 
+    interval_arith x (lo, hi) /\
+    interval_arith ((&1 - x / &3) + (x * x) / &5) (a, b) /\
+    iabs (lo, hi) = u /\
+    u <= #0.9 /\
+    u * u <= u2 /\
+    u2 * u <= u3 /\
+    r1 <= &1 - u /\
+    r2 <= &7 * r1 /\ (&0 < r2 <=> T) /\
+    u3 / r2 <= e /\
+    low <= a - e /\
+    b + e <= high 
+    ==> interval_arith (matan x) (low, high)`,
+   REWRITE_TAC[interval_arith; GSYM IMP_IMP; iabs] THEN GEN_TAC THEN REPEAT DISCH_TAC THEN
+     SUBGOAL_THEN `abs x <= u` (LABEL_TAC "u") THENL [
+       REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`2`; `x:real`] matan_abs1_bound) THEN ANTS_TAC THENL [
+       REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[TWO; ONE; SUM_CLAUSES_NUMSEG] THEN
+     CONV_TAC NUM_REDUCE_CONV THEN
+     REWRITE_TAC[real_pow; REAL_POW_1; REAL_POW_2] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+     MATCH_MP_TAC (REAL_ARITH `low <= s - r /\ s + r <= high ==> (abs (m - s) <= r ==> low <= m /\ m <= high)`) THEN
+     ABBREV_TAC `e2 = abs x pow 3 / (&7 * (&1 - abs x))` THEN
+     REWRITE_TAC[REAL_ARITH `(&1 + -- &1 / &3 * x) + &1 / &5 * x * x = &1 - x / &3 + (x * x) / &5`] THEN
+     SUBGOAL_THEN `e2 <= e:real` ASSUME_TAC THENL [
+       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `u3 / r2:real` THEN ASM_REWRITE_TAC[] THEN
+	 EXPAND_TAC "e2" THEN
+	 SUBGOAL_THEN `&0 < &7 * (&1 - abs x)` ASSUME_TAC THENL [
+	   MATCH_MP_TAC REAL_LT_MUL THEN
+	     REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_SIMP_TAC[RAT_LEMMA4] THEN
+	 MATCH_MP_TAC REAL_LE_MUL2 THEN REPEAT CONJ_TAC THENL [
+	   MATCH_MP_TAC REAL_POW_LE THEN REAL_ARITH_TAC;
+	   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `u2 * u:real` THEN ASM_REWRITE_TAC[] THEN
+	     REWRITE_TAC[ARITH_RULE `3 = SUC 2`; real_pow; REAL_ARITH `u2 * u = u * u2`] THEN
+	     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_ABS_POS; REAL_LE_POW_2] THEN
+	     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `u * u:real` THEN ASM_REWRITE_TAC[] THEN
+	     REWRITE_TAC[GSYM REAL_POW_2; GSYM REAL_LE_SQUARE_ABS] THEN
+	     REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+	   MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&7 * r1` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 - u` THEN ASM_REWRITE_TAC[] THEN
+	 ASM_REWRITE_TAC[REAL_ARITH `&1 - u <= &1 - x <=> x <= u`];
+       ALL_TAC
+     ] THEN
+     REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;
+
+
+(* dmatan *)
+
+let dmatan_gt0 = (th_rule o prove)(
+  `!x. interval_arith x (lo, hi) /\ (&0 < lo <=> T) /\
+    interval_arith (inv ((&2 * x) * (x + &1)) - atn (sqrt x) / ((&2 * x) * sqrt x)) bounds
+  ==> interval_arith (dmatan x) bounds`,
+  REWRITE_TAC[interval_arith; dmatan] THEN REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN `&0 < x` ASSUME_TAC THENL [
+      REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+      ALL_TAC
+    ] THEN
+    ASM_SIMP_TAC[matan_real_derivative_gt0; REAL_MUL_ASSOC]);;
+
+
+let dmatan_abs1 = 
+  let aux_conv = (REWRITE_CONV[FLOAT_OF_NUM; min_exp_def] THENC 
+		    DEPTH_CONV Arith_nat.NUMERAL_TO_NUM_CONV THENC 
+		    REWRITE_CONV[Arith_num.NUM_THM]) in
+  let aux1 = aux_conv `r1 <= &1 - u` and
+      aux2 = aux_conv `r2 <= &2 * r1` in
+    (th_rule o PURE_REWRITE_RULE[aux1; aux2] o prove)(
+      `!x. 
+	interval_arith x (lo, hi) /\
+	interval_arith (&2 * (x / &5) - &1 / &3) (a, b) /\
+	iabs (lo, hi) = u /\
+	u <= #0.9 /\
+	u * u <= u2 /\
+	r1 <= &1 - u /\
+	r2 <= &2 * r1 /\ (&0 < r2 <=> T) /\
+	u2 / r2 <= e /\
+	low <= a - e /\
+	b + e <= high 
+	==> interval_arith (dmatan x) (low, high)`,
+   REWRITE_TAC[interval_arith; GSYM IMP_IMP; iabs; dmatan] THEN GEN_TAC THEN REPEAT DISCH_TAC THEN
+     SUBGOAL_THEN `abs x <= u` (LABEL_TAC "u") THENL [
+       REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`x:real`; `1`] matan_real_derivative_abs1_bound) THEN ANTS_TAC THENL [
+       REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[ONE; SUM_CLAUSES_NUMSEG] THEN CONV_TAC NUM_REDUCE_CONV THEN
+     REWRITE_TAC[real_pow; REAL_POW_1; REAL_POW_2] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+     MATCH_MP_TAC (REAL_ARITH `low <= s - r /\ s + r <= high ==> (abs (m - s) <= r ==> low <= m /\ m <= high)`) THEN
+     ABBREV_TAC `e2 = (abs x * abs x) / (&2 * (&1 - abs x))` THEN
+     REWRITE_TAC[REAL_ARITH `-- &1 / &3 + &2 / &5 * x = &2 * x / &5 - &1 / &3`] THEN
+     SUBGOAL_THEN `e2 <= e:real` ASSUME_TAC THENL [
+       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `u2 / r2:real` THEN ASM_REWRITE_TAC[] THEN
+	 EXPAND_TAC "e2" THEN
+	 SUBGOAL_THEN `&0 < &2 * (&1 - abs x)` ASSUME_TAC THENL [
+	   MATCH_MP_TAC REAL_LT_MUL THEN
+	     REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_SIMP_TAC[RAT_LEMMA4] THEN
+	 MATCH_MP_TAC REAL_LE_MUL2 THEN REPEAT CONJ_TAC THENL [
+	   MATCH_MP_TAC REAL_LE_MUL THEN REAL_ARITH_TAC;
+	   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `u * u:real` THEN ASM_REWRITE_TAC[] THEN
+	     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_ABS_POS];
+	   MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&2 * r1` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC REAL_LE_LMUL THEN CONJ_TAC THEN TRY REAL_ARITH_TAC THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 - u` THEN ASM_REWRITE_TAC[] THEN
+	 ASM_REWRITE_TAC[REAL_ARITH `&1 - u <= &1 - x <=> x <= u`];
+       ALL_TAC
+     ] THEN
+     REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;
+
+
+(* ddmatan *)
+
+let ddmatan_ge_neg02 = (th_rule o prove)(
+  `!x. interval_arith x (lo, hi) /\ 
+    -- #0.2 <= lo /\
+    interval_arith (#0.65) (a, b) /\
+    b2 = --b
+    ==> interval_arith (ddmatan x) (b2, b)`,
+  REWRITE_TAC[interval_arith; ddmatan] THEN GEN_TAC THEN STRIP_TAC THEN
+    SUBGOAL_THEN `-- #0.2 <= x` ASSUME_TAC THENL [
+      REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+      ALL_TAC
+    ] THEN
+    MP_TAC (SPEC `x:real` matan_d2_bound) THEN ASM_REWRITE_TAC[] THEN
+    REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;
+
+
+(* -------------------------------- *)
+(* Procedures                       *)
+(* -------------------------------- *)
+
+(* matan *)
+
+let float_interval_matan =
+  let e_var_real = `e:real` and
+      u_var_real = `u:real` and
+      u2_var_real = `u2:real` and
+      u3_var_real = `u3:real` and
+      r1_var_real = `r1:real` and
+      r2_var_real = `r2:real` in
+  fun pp x_th ->
+    let x_tm, bounds = dest_interval_arith (concl x_th) in
+    let ltm, hi_tm = dest_comb bounds in
+    let lo_tm = rand ltm in
+    let flag, _ = float_prove_le lo_tm float_1e8 in
+      if flag then
+	(* Use series *)
+	let u_eq = float_iabs bounds in
+	let u_tm = rand (concl u_eq) in
+	let flag, u_le_09 = float_prove_le_interval u_tm interval_09 in
+	  if not flag then
+	    failwith "float_interval_matan: the argument is out of range"
+	  else
+	    let s_th = 
+	      let ( * ) = float_interval_mul pp and
+		  ( / ) = float_interval_div pp and
+		  ( + ) = float_interval_add pp and
+		  ( - ) = float_interval_sub pp in
+		(one_interval - x_th / three_interval) + (x_th * x_th) / five_interval in
+	    let a_tm, b_tm = dest_pair (rand (concl s_th)) in
+	    let uu_le_u2 = float_mul_hi pp u_tm u_tm in
+	    let u2_tm = rand (concl uu_le_u2) in
+	    let u2u_le_u3 = float_mul_hi pp u2_tm u_tm in
+	    let u3_tm = rand (concl u2u_le_u3) in
+	    let r1_le_1u = float_sub_lo pp one_float u_tm in
+	    let r1_tm = rand (rator (concl r1_le_1u)) in
+	    let r2_le_7r1 = float_mul_lo pp seven_float r1_tm in
+	    let r2_tm = rand (rator (concl r2_le_7r1)) in
+	    let u3r2_le_e = float_div_hi pp u3_tm r2_tm in
+	    let e_tm = rand (concl u3r2_le_e) in
+	    let low_le = float_sub_lo pp a_tm e_tm and
+		high_ge = float_add_hi pp b_tm e_tm in
+	    let low_tm = rand (rator (concl low_le)) and
+		high_tm = rand (concl high_ge) in
+	    let r2_gt0 = float_gt0 r2_tm in
+	    let th0 = INST[x_tm, x_var_real; lo_tm, lo_var_real; hi_tm, hi_var_real;
+			   a_tm, a_var_real; b_tm, b_var_real; e_tm, e_var_real;
+			   u_tm, u_var_real; u2_tm, u2_var_real; u3_tm, u3_var_real;
+			   r1_tm, r1_var_real; r2_tm, r2_var_real;
+			   low_tm, low_var_real; high_tm, high_var_real] matan_abs1 in
+	      itlist MY_PROVE_HYP [x_th; s_th; u_eq; u_le_09; uu_le_u2; u2u_le_u3;
+				   r1_le_1u; r2_le_7r1; u3r2_le_e;
+				   low_le; high_ge; r2_gt0] th0
+      else
+	(* atn (sqrt x) / (sqrt x) *)
+	let lo_gt0 = float_gt0 lo_tm in
+	let r = float_interval_sqrt pp x_th in
+	let atn_r = float_interval_atn pp r in
+	let th1 = float_interval_div pp atn_r r in
+	let bounds_tm = rand (concl th1) in
+	let th0 = INST[x_tm, x_var_real; lo_tm, lo_var_real; hi_tm, hi_var_real;
+		       bounds_tm, bounds_var] matan_gt0 in
+	  itlist MY_PROVE_HYP [x_th; lo_gt0; th1] th0;;
+
+
+(* dmatan *)  
+
+let float_interval_dmatan =
+  let e_var_real = `e:real` and
+      u_var_real = `u:real` and
+      u2_var_real = `u2:real` and
+      r1_var_real = `r1:real` and
+      r2_var_real = `r2:real` in
+  fun pp x_th ->
+    let x_tm, bounds = dest_interval_arith (concl x_th) in
+    let ltm, hi_tm = dest_comb bounds in
+    let lo_tm = rand ltm in
+    let flag, _ = float_prove_le lo_tm float_1e8 in
+      if flag then
+	(* Use series *)
+	let u_eq = float_iabs bounds in
+	let u_tm = rand (concl u_eq) in
+	let flag, u_le_09 = float_prove_le_interval u_tm interval_09 in
+	  if not flag then
+	    failwith "float_interval_dmatan: the argument is out of range"
+	  else
+	    let s_th = 
+	      let ( * ) = float_interval_mul pp and
+		  ( / ) = float_interval_div pp and
+		  ( - ) = float_interval_sub pp in
+		(two_interval * (x_th / five_interval) - one_interval / three_interval) in
+	    let a_tm, b_tm = dest_pair (rand (concl s_th)) in
+	    let uu_le_u2 = float_mul_hi pp u_tm u_tm in
+	    let u2_tm = rand (concl uu_le_u2) in
+	    let r1_le_1u = float_sub_lo pp one_float u_tm in
+	    let r1_tm = rand (rator (concl r1_le_1u)) in
+	    let r2_le_2r1 = float_mul_lo pp two_float r1_tm in
+	    let r2_tm = rand (rator (concl r2_le_2r1)) in
+	    let u2r2_le_e = float_div_hi pp u2_tm r2_tm in
+	    let e_tm = rand (concl u2r2_le_e) in
+	    let low_le = float_sub_lo pp a_tm e_tm and
+		high_ge = float_add_hi pp b_tm e_tm in
+	    let low_tm = rand (rator (concl low_le)) and
+		high_tm = rand (concl high_ge) in
+	    let r2_gt0 = float_gt0 r2_tm in
+	    let th0 = INST[x_tm, x_var_real; lo_tm, lo_var_real; hi_tm, hi_var_real;
+			   a_tm, a_var_real; b_tm, b_var_real; e_tm, e_var_real;
+			   u_tm, u_var_real; u2_tm, u2_var_real;
+			   r1_tm, r1_var_real; r2_tm, r2_var_real;
+			   low_tm, low_var_real; high_tm, high_var_real] dmatan_abs1 in
+	      itlist MY_PROVE_HYP [x_th; s_th; u_eq; u_le_09; uu_le_u2;
+				   r1_le_1u; r2_le_2r1; u2r2_le_e;
+				   low_le; high_ge; r2_gt0] th0
+      else
+	(* inv ((2 * x) * (x + 1)) - atn (sqrt x) / ((2 * x) * (sqrt x)) *)
+	let lo_gt0 = float_gt0 lo_tm in
+	let r = float_interval_sqrt pp x_th in
+	let th1 = 
+	  let ( * ) = float_interval_mul pp and
+	      ( / ) = float_interval_div pp and
+	      ( + ) = float_interval_add pp and
+	      ( - ) = float_interval_sub pp and
+	      atn = float_interval_atn pp and
+	      inv = float_interval_inv pp in
+	  let two_x = two_interval * x_th in
+	    inv (two_x * (x_th + one_interval)) - (atn r / (two_x * r)) in
+	let bounds_tm = rand (concl th1) in
+	let th0 = INST[x_tm, x_var_real; lo_tm, lo_var_real; hi_tm, hi_var_real;
+		       bounds_tm, bounds_var] dmatan_gt0 in
+	  itlist MY_PROVE_HYP [x_th; lo_gt0; th1] th0;;
+
+
+(* ddmatan *)
+
+let array_065 =
+  let interval = mk_float_interval_decimal 20 `#0.65` in
+    Array.init 20 (fun i -> float_interval_round i interval);;
+
+let float_interval_ddmatan pp x_th =
+  let x_tm, bounds = dest_interval_arith (concl x_th) in
+  let ltm, hi_tm = dest_comb bounds in
+  let lo_tm = rand ltm in
+  let flag, lo_ge = float_prove_ge_interval lo_tm interval_neg_02 in
+    if not flag then
+      failwith "float_interval_ddmatan: the argument is out of range"
+    else
+      let int065 = array_065.(pp) in
+      let a_tm, b_tm = dest_pair (rand (concl int065)) in
+      let b2_eq = float_neg b_tm in
+      let b2_tm = rand (rator (concl b2_eq)) in
+      let th0 = INST[x_tm, x_var_real; lo_tm, lo_var_real; hi_tm, hi_var_real;
+		     a_tm, a_var_real; b_tm, b_var_real; b2_tm, b2_var_real] ddmatan_ge_neg02 in
+	itlist MY_PROVE_HYP [x_th; lo_ge; int065; b2_eq] th0;;
+
+
+end;;

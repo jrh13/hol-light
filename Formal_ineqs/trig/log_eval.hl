@@ -1,0 +1,205 @@
+(* =========================================================== *)
+(* Formal interval evaluation of log                           *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-12-11                                            *)
+(* =========================================================== *)
+
+needs "trig/exp_log.hl";;
+needs "trig/poly_eval.hl";;
+needs "trig/exp_eval.hl";;
+
+module type Log_eval_sig =
+  sig
+    val float_log_hi : int -> term -> thm
+    val float_log_lo : int -> term -> thm
+    val float_interval_log : int -> thm -> thm
+  end;;
+
+module Log_eval : Log_eval_sig = struct
+
+open Misc_functions;;
+open Exp_log;;
+open More_list;;
+open Poly;;
+open Poly_eval;;
+open Interval_arith;;
+open Float_theory;;
+open Arith_float;;
+open More_float;;
+open Exp_eval;;
+open Misc_vars;;
+
+prioritize_real();;
+
+(*
+(* Defines the maximum x for which a poly approximation is computed directly. *)
+(* Should be in (0, 1).                                                       *)
+let log_max_x = 0.01;;
+*)
+
+let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL;;
+
+(* ----------------- *)
+(* Theorems          *)
+(* ----------------- *)
+
+let log_interval = (th_rule o prove)
+  (`interval_arith x (a, b) /\
+     &0 < a /\
+     lo <= log a /\
+     log b <= hi
+     ==> interval_arith (log x) (lo, hi)`,
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN
+     SUBGOAL_THEN `&0 < b /\ &0 < x` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+     CONJ_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THENL [
+       EXISTS_TAC `log a` THEN ASM_SIMP_TAC[LOG_MONO_LE];
+       EXISTS_TAC `log b` THEN ASM_SIMP_TAC[LOG_MONO_LE]
+     ]);;
+
+(* Argument reduction *)
+
+let log_reduce = prove
+  (`!x k. &0 < x ==> log x = log (&1 + (x / exp k - &1)) + k`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_ARITH `a + (b - a) = b`] THEN
+     ASM_SIMP_TAC[LOG_DIV; REAL_EXP_POS_LT; LOG_EXP] THEN REAL_ARITH_TAC);;
+
+let log_reduce_exp_high = prove
+  (`t <= exp k /\ x / t <= r /\ r - &1 <= a /\ 
+     &0 < x /\ &0 < t /\
+     log (&1 + a) <= hi /\ hi + k <= high
+     ==> log x <= high`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[log_reduce] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `hi + k` THEN
+     ASM_REWRITE_TAC[REAL_LE_RADD] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `log (&1 + a)` THEN
+     ASM_REWRITE_TAC[] THEN
+     SUBGOAL_THEN `&0 < &1 + a /\ &0 < &1 + x / exp k - &1` ASSUME_TAC THENL [
+       CONJ_TAC THENL [
+	 SUBGOAL_THEN `&0 < r` MP_TAC THENL [
+	   MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `x / t` THEN
+	     ASM_SIMP_TAC[REAL_LT_DIV];
+	   ALL_TAC
+	 ] THEN
+	   ASM_ARITH_TAC;
+	 REWRITE_TAC[REAL_ARITH `a + b - a = b`] THEN
+	   ASM_SIMP_TAC[REAL_LT_DIV; REAL_EXP_POS_LT]
+       ];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[LOG_MONO_LE; REAL_LE_LADD] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `r - &1` THEN
+     ASM_REWRITE_TAC[real_sub; REAL_LE_RADD] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x / t` THEN
+     ASM_SIMP_TAC[real_div; REAL_LE_LMUL_EQ] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[]);;
+
+let log_reduce_exp_low = prove
+  (`exp k <= t /\ r <= x / t /\ a <= r - &1 /\ 
+     &0 < x /\ -- &1 < a /\
+     lo <= log (&1 + a) /\ low <= lo + k
+     ==> low <= log x`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[log_reduce] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `lo + k` THEN
+     ASM_REWRITE_TAC[REAL_LE_RADD] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `log (&1 + a)` THEN
+     ASM_REWRITE_TAC[] THEN
+     SUBGOAL_THEN `&0 < &1 + a /\ &0 < &1 + x / exp k - &1` ASSUME_TAC THENL [
+       CONJ_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	 REWRITE_TAC[REAL_ARITH `a + b - a = b`] THEN
+	 ASM_SIMP_TAC[REAL_LT_DIV; REAL_EXP_POS_LT];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[LOG_MONO_LE; REAL_LE_LADD] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `r - &1` THEN
+     ASM_REWRITE_TAC[real_sub; REAL_LE_RADD] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x / t` THEN
+     ASM_SIMP_TAC[real_div; REAL_LE_LMUL_EQ] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[REAL_EXP_POS_LT]);;
+
+let log_reduce_simple_high = (th_rule o REWRITE_RULE[GSYM float1_eq] o prove)
+  (`t <= exp b /\ x / t <= r /\ r - &1 <= a /\ 
+     &0 < x /\ &0 < t /\
+     a + b <= high
+     ==> log x <= high`,
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC (GEN_ALL log_reduce_exp_high) THEN
+     MAP_EVERY EXISTS_TAC [`r:real`; `t:real`; `a:real`; `a:real`; `b:real`] THEN
+     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC LOG_LE_STRONG THEN
+     SUBGOAL_THEN `&0 < r` MP_TAC THENL [
+       MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC `x / t` THEN
+	 ASM_SIMP_TAC[REAL_LT_DIV];
+       ALL_TAC
+     ] THEN
+     ASM_ARITH_TAC);;
+
+let log_reduce_simple_low = (th_rule o prove)
+  (`inv x <= t /\ log t <= r /\ 
+     low = --r /\ &0 < x
+       ==> low <= log x`,
+   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[REAL_ARITH `a <= b <=> --b <= --a`] THEN
+     ASM_SIMP_TAC[GSYM LOG_INV; REAL_NEG_NEG] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `log t` THEN
+     SUBGOAL_THEN `&0 < inv x /\ &0 < t` ASSUME_TAC THENL [
+       MP_TAC (SPEC `x:real` REAL_LT_INV) THEN ASM_SIMP_TAC[] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[LOG_MONO_LE]);;
+
+
+(* ----------------- *)
+(* Functions         *)
+(* ----------------- *)
+
+let float_log_hi pp x_tm =
+  let pp = pp + 1 in
+  let x_gt0 = EQT_ELIM (float_gt0 x_tm) in
+  let f = log (float_of_float_tm x_tm) in
+  let b_tm = float_tm_of_float pp f in
+  let exp_lo = float_exp_lo pp b_tm in
+  let t_tm = rand (rator (concl exp_lo)) in
+  let t_gt0 = EQT_ELIM (float_gt0 t_tm) in
+  let xt_le_r = float_div_hi pp x_tm t_tm in
+  let r_tm = rand (concl xt_le_r) in
+  let r1_le_a = float_sub_hi pp r_tm one_float in
+  let a_tm = rand (concl r1_le_a) in
+  let ab_le_high = float_add_hi pp a_tm b_tm in
+  let high_tm = rand (concl ab_le_high) in
+  let th0 = INST[x_tm, x_var_real; x_tm, x_var_real;
+		 t_tm, t_var_real; r_tm, r_var_real; b_tm, b_var_real;
+		 a_tm, a_var_real; high_tm, high_var_real] log_reduce_simple_high in
+    itlist MY_PROVE_HYP [exp_lo; xt_le_r; r1_le_a; ab_le_high; x_gt0; t_gt0] th0;;
+
+let float_log_lo pp x_tm =
+  let x_gt0 = EQT_ELIM (float_gt0 x_tm) in
+  let inv_x = float_inv_hi (pp + 1) x_tm in
+  let t_tm = rand (concl inv_x) in
+  let log_t = float_log_hi pp t_tm in
+  let r_tm = rand (concl log_t) in
+  let low_eq = float_neg r_tm in
+  let low_tm = rand (rator (concl low_eq)) in
+  let th0 = INST[x_tm, x_var_real; t_tm, t_var_real;
+		 r_tm, r_var_real; low_tm, low_var_real] log_reduce_simple_low in
+    itlist MY_PROVE_HYP [inv_x; log_t; low_eq; x_gt0] th0;;
+
+(* log interval *)
+let float_interval_log pp x_th =
+  let x_tm, a_tm, b_tm = dest_float_interval (concl x_th) in
+  let a_gt0 = EQT_ELIM (float_gt0 a_tm) in
+  let log_lo = float_log_lo pp a_tm and
+      log_hi = float_log_hi pp b_tm in
+  let lo_tm = rand (rator (concl log_lo)) and
+      hi_tm = rand (concl log_hi) in
+  let th0 = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		 lo_tm, lo_var_real; hi_tm, hi_var_real] log_interval in
+    itlist MY_PROVE_HYP [x_th; log_lo; log_hi; a_gt0] th0;;
+
+end;;
+
+(*
+
+let x_th = float_interval_const 4 `&100000`;;
+float_interval_exp 20 x_th;;
+float_interval_log 18 x_th;;
+float_interval_exp 20 x_th;;
+
+*)

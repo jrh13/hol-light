@@ -1,0 +1,123 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: log                         *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-12-12                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "informal/informal_interval.hl";;
+needs "informal/informal_exp.hl";;
+
+module type Informal_log_sig =
+  sig
+    val log_float_lo : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val log_float_hi : int -> Informal_float.ifloat -> Informal_float.ifloat
+    val log_interval : int -> Informal_interval.interval -> Informal_interval.interval
+  end;;
+
+module Informal_log : Informal_log_sig = struct
+
+open Num;;
+open Informal_float;;
+open Informal_interval;;
+open Informal_exp;;
+open Misc_functions;;
+
+let log_float_hi pp x =
+  let pp = pp + 1 in
+  let _ = assert_msg (gt0_float x, "Informal.log_float_hi: x <= 0") in
+  let f = log (float_of_ifloat x) in
+  let b = ifloat_of_float pp f in
+  let t = exp_float_lo pp b in
+  let _ = assert_msg (gt0_float t, "Informal.log_float_hi: t <= 0") in
+  let r = div_float_hi pp x t in
+  let a = sub_float_hi pp r float1 in
+  let high = add_float_hi pp a b in
+    high;;
+
+let log_float_lo pp x =
+  let _ = assert_msg (gt0_float x, "Informal.log_float_lo: x <= 0") in
+  let t = inv_float_hi (pp + 1) x in
+  let r = log_float_hi pp t in
+  let low = neg_float r in
+    low;;
+
+let log_interval pp i =
+  let a, b = dest_interval i in
+  let _ = assert_msg (gt0_float a, "Informal.log_interval: a <= 0") in
+  let lo = log_float_lo pp a and
+      hi = log_float_hi pp b in
+    mk_interval (lo, hi);;
+
+end;;
+
+(******************)
+
+(*
+
+needs "trig/log_eval.hl";;
+
+open Informal_float;;
+open Informal_interval;;
+open Informal_poly;;
+open Informal_log;;
+
+#install_printer print_ifloat;;
+#install_printer print_interval;;
+
+let x = mk_float 1 0 and
+    y = mk_float 3 (-2) and
+    z = mk_float 2345 (-1) and
+    r = mk_float 100 0;;
+
+let i1 = mk_interval (mk_float 10 0, mk_float 20 0) and
+    i2 = mk_interval (mk_float 13 0, mk_float 14 0) and
+    i3 = mk_interval (mk_float (-1) 0, mk_float 1 0);;
+
+let x_tm, y_tm, z_tm, r_tm =
+  let mk = Arith_float.mk_float in
+    mk 1 0, mk 3 (-2), mk 2345 (-1), mk 100 0;;
+
+let i1_th, i2_th, i3_th =
+  let mk = (PURE_REWRITE_RULE[GSYM Float_theory.FLOAT_NEG_T] o More_float.RULE o ASSUME) in
+    mk `interval_arith y (&10, &20)`,
+    mk `interval_arith z (&13, &14)`,
+    mk `interval_arith u (-- &1, &1)`;;
+
+
+let pp = 3;;
+
+log_float_hi pp x;;
+Log_eval.float_log_hi pp x_tm;;
+
+log_float_lo pp x;;
+Log_eval.float_log_lo pp x_tm;;
+
+log_float_hi pp y;;
+Log_eval.float_log_hi pp y_tm;;
+
+log_float_lo pp y;;
+Log_eval.float_log_lo pp y_tm;;
+
+log_float_hi pp z;;
+Log_eval.float_log_hi pp z_tm;;
+
+log_float_lo pp z;;
+Log_eval.float_log_lo pp z_tm;;
+
+log_float_hi pp r;;
+Log_eval.float_log_hi pp r_tm;;
+
+log_float_lo pp r;;
+Log_eval.float_log_lo pp r_tm;;
+
+log_interval pp i1;;
+Log_eval.float_interval_log pp i1_th;;
+
+log_interval pp i2;;
+Log_eval.float_interval_log pp i2_th;;
+
+log_interval pp i3;;
+Log_eval.float_interval_log pp i3_th;;
+
+*)

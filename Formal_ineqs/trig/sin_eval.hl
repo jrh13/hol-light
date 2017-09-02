@@ -1,0 +1,87 @@
+needs "misc/misc_functions.hl";;
+needs "misc/misc_vars.hl";;
+needs "arith/interval_arith.hl";;
+needs "trig/atn_eval.hl";;
+needs "trig/cos_eval.hl";;
+
+module type Sin_eval_sig =
+  sig
+    val float_interval_sin : int -> thm -> thm
+  end;;
+
+module Sin_eval : Sin_eval_sig = struct
+
+open Misc_functions;;
+open Float_theory;;
+open Interval_arith;;
+open More_float;;
+open Arith_float;;
+open Atn_eval;;
+open Cos_eval;;
+open Misc_vars;;
+
+prioritize_real();;
+
+(* TODO: compute sin directly? *)
+
+(* Reduce sin to cos *)
+
+let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP];;
+
+let cos_pi2_eq_sin = prove(`cos (x - pi / &2) = sin x`,
+   REWRITE_TAC[SIN_COS; REAL_ARITH `pi / &2 - x = --(x - pi / &2)`; COS_NEG]);;
+
+let sin_reduce_th = (th_rule o prove)(`interval_arith (cos (x - pi / &2)) (low, high)
+				      ==> interval_arith (sin x) (low, high)`,
+				      REWRITE_TAC[cos_pi2_eq_sin]);;
+
+let translate_interval_const = (th_rule o prove)(`interval_arith x (a, b) /\
+						   interval_arith c (lo, hi) /\
+						   a1 <= a - hi /\ b - lo <= b1
+						   ==> interval_arith (x - c) (a1, b1)`,
+					   REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC);;
+
+
+(* Transforms |- interval_arith x (a,b) into |- interval_arith (x - pi / &2) (a1, b1) *)
+let translate_pi2 =
+  let c_tm = `pi / &2` in
+    fun pp x_th ->
+      let x_tm, bounds = dest_interval_arith (concl x_th) in
+      let ltm, b_tm = dest_comb bounds in
+      let a_tm = rand ltm in
+      let pi2_th = pi2_approx_array.(pp) in
+      let bounds = rand (concl pi2_th) in
+      let ltm, hi_tm = dest_comb bounds in
+      let lo_tm = rand ltm in
+      let a_sub_hi = float_sub_lo pp a_tm hi_tm and
+	  b_sub_lo = float_sub_hi pp b_tm lo_tm in
+      let a1_tm = rand (rator (concl a_sub_hi)) and
+	  b1_tm = rand (concl b_sub_lo) in
+      let th0 = INST[x_tm, x_var_real; c_tm, c_var_real;
+		     lo_tm, lo_var_real; hi_tm, hi_var_real;
+		     a_tm, a_var_real; b_tm, b_var_real;
+		     a1_tm, a1_var_real; b1_tm, b1_var_real] translate_interval_const in
+	itlist MY_PROVE_HYP [pi2_th; x_th; a_sub_hi; b_sub_lo] th0;;
+
+let float_interval_sin pp x_th =
+  let x_tm, _ = dest_interval_arith (concl x_th) in
+  let x_pi2_th = translate_pi2 pp x_th in
+  let cos_x_pi2 = float_interval_cos pp x_pi2_th in
+  let bounds = rand (concl cos_x_pi2) in
+  let ltm, high_tm = dest_comb bounds in
+  let low_tm = rand ltm in
+  let th0 = INST[x_tm, x_var_real; low_tm, low_var_real; 
+		 high_tm, high_var_real] sin_reduce_th in
+    MY_PROVE_HYP cos_x_pi2 th0;;
+
+
+end;;			    
+
+
+(*
+let x_int = pi2_approx_array.(10);;
+float_interval_sin 8 x_int;;
+
+test 100 (float_interval_cos 6) x_int;;
+test 100 (float_interval_sin 6) x_int;;
+*)

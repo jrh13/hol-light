@@ -1,0 +1,375 @@
+needs "lib/ssreflect/ssreflect.hl";;
+needs "lib/ssreflect/sections.hl";;
+
+(* Module Ssrfun*)
+module Ssrfun = struct
+
+open Ssreflect;;
+
+let oapp = define `!f x y. oapp f x (SOME y) = f y /\ oapp f x NONE = x`;;
+let odflt = new_definition `odflt = oapp I`;;
+let obind = new_definition `obind f = oapp f NONE`;;
+let omap = new_definition `omap f = obind (\x. SOME (f x))`;;
+let pcomp = new_definition `pcomp f g x = obind f (g x)`;;
+
+(* Lemma odflt_alt *)
+let odflt_alt = Sections.section_proof ["x"]
+`(!y. odflt x (SOME y) = y) /\ odflt x NONE = x`
+[
+   (((((use_arg_then2 ("odflt", [odflt]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("oapp", [oapp]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("I_THM", [I_THM]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma obind_alt *)
+let obind_alt = Sections.section_proof ["f"]
+`obind f NONE = NONE /\ (!x. obind f (SOME x) = f x)`
+[
+   (((((use_arg_then2 ("obind", [obind]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("oapp", [oapp]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma omap_alt *)
+let omap_alt = Sections.section_proof ["f"]
+`omap f NONE = NONE /\ (!x. omap f (SOME x) = SOME (f x))`
+[
+   (((((use_arg_then2 ("omap", [omap]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("obind", [obind]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("oapp", [oapp]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma eq_sym *)
+let eq_sym = Sections.section_proof ["x";"y"]
+`x = y ==> y = x`
+[
+   ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eq_trans *)
+let eq_trans = Sections.section_proof ["x";"y";"z"]
+`x = y ==> y = z ==> x = z`
+[
+   ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] [])))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma f_equal *)
+let f_equal = Sections.section_proof ["f";"x";"y"]
+`x = y ==> f x = f y`
+[
+   ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma f_equal2 *)
+let f_equal2 = Sections.section_proof ["f";"x1";"y1";"x2";"y2"]
+`x1 = y1 ==> x2 = y2 ==> f x1 x2 = f y1 y2`
+[
+   ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] [])))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+let erefl = eq_sym;;
+let esym = eq_sym;;
+let etrans = eq_trans;;
+let congr1 = f_equal;;
+let congr2 = f_equal2;;
+
+(* Lemma eq_ext *)
+let eq_ext = Sections.section_proof ["f";"g"]
+`(!x. f x = g x) <=> f = g`
+[
+   (((THENL) (split_tac) [(DISCH_THEN (fun snd_th -> (use_arg_then2 ("EQ_EXT", [EQ_EXT])) (thm_tac (match_mp_then snd_th MP_TAC)))); (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))]) THEN (done_tac));
+];;
+
+(* Section Injections *)
+Sections.begin_section "Injections";;
+(Sections.add_section_var (mk_var ("f", (`:A -> R`))));;
+let injective = new_definition `injective f <=> (!x1 x2. f x1 = f x2 ==> x1 = x2)`;;
+let cancel = new_definition `cancel f g <=> !x. g (f x) = x`;;
+let pcancel = new_definition `pcancel f g <=> !x. g (f x) = SOME x`;;
+let ocancel = new_definition `ocancel g h <=> !x. oapp h x (g x) = x`;;
+
+(* Lemma can_pcan *)
+let can_pcan = Sections.section_proof ["g"]
+`cancel f g ==> pcancel f (\y. SOME (g y))`
+[
+   (((((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("pcancel", [pcancel]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma pcan_inj *)
+let pcan_inj = Sections.section_proof ["g"]
+`pcancel f g ==> injective f`
+[
+   (((((use_arg_then2 ("pcancel", [pcancel]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("injective", [injective]))(thm_tac (new_rewrite [] []))))) THEN (move ["can"]) THEN (move ["x1"]) THEN (move ["x2"]) THEN (move ["f_eq"]));
+   ((((fun arg_tac -> (use_arg_then2 ("can", [])) (fun fst_arg -> (use_arg_then2 ("x2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN ((fun arg_tac -> (use_arg_then2 ("can", [])) (fun fst_arg -> (use_arg_then2 ("x1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN ((((use_arg_then2 ("f_eq", []))(thm_tac (new_rewrite [] [])))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (((fun arg_tac -> arg_tac (Arg_theorem (injectivity "option")))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma can_inj *)
+let can_inj = Sections.section_proof ["g"]
+`cancel f g ==> injective f`
+[
+   (((((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("injective", [injective]))(thm_tac (new_rewrite [] []))))) THEN (move ["can"]) THEN (move ["x1"]) THEN (move ["x2"]) THEN (move ["f_eq"]));
+   (((((fun arg_tac -> (use_arg_then2 ("can", [])) (fun fst_arg -> (use_arg_then2 ("x1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((fun arg_tac -> (use_arg_then2 ("can", [])) (fun fst_arg -> (use_arg_then2 ("x2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("f_eq", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma canLR *)
+let canLR = Sections.section_proof ["g";"x";"y"]
+`cancel f g ==> x = f y ==> g x = y`
+[
+   (((((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] [])))) THEN (move ["can"]) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma canRL *)
+let canRL = Sections.section_proof ["g";"x";"y"]
+`cancel f g ==> f x = y ==> x = g y`
+[
+   (((((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] [])))) THEN (move ["can"]) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Finalization of the section Injections *)
+let can_pcan = Sections.finalize_theorem can_pcan;;
+let pcan_inj = Sections.finalize_theorem pcan_inj;;
+let can_inj = Sections.finalize_theorem can_inj;;
+let canLR = Sections.finalize_theorem canLR;;
+let canRL = Sections.finalize_theorem canRL;;
+Sections.end_section "Injections";;
+
+(* Lemma some_inj *)
+let some_inj = Sections.section_proof []
+`injective SOME`
+[
+   (((((use_arg_then2 ("injective", [injective]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> arg_tac (Arg_theorem (injectivity "option")))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Section InjectionsTheory *)
+Sections.begin_section "InjectionsTheory";;
+(Sections.add_section_var (mk_var ("f", (`:B -> A`))); Sections.add_section_var (mk_var ("g", (`:B -> A`))));;
+(Sections.add_section_var (mk_var ("h", (`:C -> B`))));;
+
+(* Lemma inj_id *)
+let inj_id = Sections.section_proof []
+`injective I`
+[
+   (((((use_arg_then2 ("injective", [injective]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("I_THM", [I_THM]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma inj_can_sym *)
+let inj_can_sym = Sections.section_proof ["f'"]
+`cancel f f' ==> injective f' ==> cancel f' f`
+[
+   (((repeat_tactic 2 0 (((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("injective", [injective]))(thm_tac (new_rewrite [] []))))) THEN (move ["can1"]) THEN (move ["inj"]) THEN (move ["x"]));
+   ((((use_arg_then2 ("inj", [])) (disch_tac [])) THEN (clear_assumption "inj") THEN (DISCH_THEN apply_tac)) THEN (((use_arg_then2 ("can1", []))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma inj_comp *)
+let inj_comp = Sections.section_proof []
+`injective f ==> injective h ==> injective (f o h)`
+[
+   (((repeat_tactic 3 0 (((use_arg_then2 ("injective", [injective]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 2 0 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] [])))))) THEN (move ["inj_f"]) THEN (move ["inj_h"]) THEN (move ["x1"]) THEN (move ["x2"]));
+   ((BETA_TAC THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("inj_f", [])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("inj_h", [])) (thm_tac (match_mp_then snd_th MP_TAC))))) THEN (done_tac));
+];;
+
+(* Lemma can_comp *)
+let can_comp = Sections.section_proof ["f'";"h'"]
+`cancel f f' ==> cancel h h' ==> cancel (f o h) (h' o f')`
+[
+   ((((repeat_tactic 3 0 (((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 2 0 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] [])))))) THEN (move ["f_can"]) THEN (move ["h_can"]) THEN (move ["x"])) THEN (done_tac));
+];;
+
+(* Lemma pcan_pcomp *)
+let pcan_pcomp = Sections.section_proof ["f'";"h'"]
+`pcancel f f' ==> pcancel h h' ==> pcancel (f o h) (pcomp h' f')`
+[
+   ((((repeat_tactic 3 0 (((use_arg_then2 ("pcancel", [pcancel]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("pcomp", [pcomp]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN ((((use_arg_then2 ("obind", [obind]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("oapp", [oapp]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eq_inj *)
+let eq_inj = Sections.section_proof []
+`injective f ==> (!x. f x = g x) ==> injective g`
+[
+   (((((use_arg_then2 ("eq_ext", [eq_ext]))(thm_tac (new_rewrite [] [])))) THEN (move ["inj"]) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma eq_can *)
+let eq_can = Sections.section_proof ["f'";"g'"]
+`cancel f f' ==> (!x. f x = g x) ==> (!x. f' x = g' x) ==> cancel g g'`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("eq_ext", [eq_ext]))(thm_tac (new_rewrite [] []))))) THEN (move ["can"]) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma inj_can_eq *)
+let inj_can_eq = Sections.section_proof ["f'"]
+`cancel f f' ==> injective f' ==> cancel g f' ==> f = g`
+[
+   ((((repeat_tactic 2 0 (((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("injective", [injective]))(thm_tac (new_rewrite [] []))))) THEN (move ["f_can"]) THEN (move ["inj"]) THEN (move ["g_can"])) THEN ((((use_arg_then2 ("eq_ext", [eq_ext]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (move ["x"])));
+   ((((use_arg_then2 ("inj", [])) (disch_tac [])) THEN (clear_assumption "inj") THEN (DISCH_THEN apply_tac)) THEN (done_tac));
+];;
+
+(* Finalization of the section InjectionsTheory *)
+let inj_id = Sections.finalize_theorem inj_id;;
+let inj_can_sym = Sections.finalize_theorem inj_can_sym;;
+let inj_comp = Sections.finalize_theorem inj_comp;;
+let can_comp = Sections.finalize_theorem can_comp;;
+let pcan_pcomp = Sections.finalize_theorem pcan_pcomp;;
+let eq_inj = Sections.finalize_theorem eq_inj;;
+let eq_can = Sections.finalize_theorem eq_can;;
+let inj_can_eq = Sections.finalize_theorem inj_can_eq;;
+Sections.end_section "InjectionsTheory";;
+
+(* Section Bijections *)
+Sections.begin_section "Bijections";;
+(Sections.add_section_var (mk_var ("f", (`:B -> A`))));;
+let bijective = new_definition `bijective f <=> ?g. cancel f g /\ cancel g f`;;
+(Sections.add_section_hyp "bijf" (`bijective f`));;
+
+(* Lemma bij_inj *)
+let bij_inj = Sections.section_proof []
+`injective f`
+[
+   ((((use_arg_then2 ("bijf", [])) (disch_tac [])) THEN (clear_assumption "bijf") THEN BETA_TAC) THEN ((((use_arg_then2 ("bijective", [bijective]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN (move ["g"])) THEN (case THEN ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("can_inj", [can_inj])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))))) THEN (done_tac));
+];;
+
+(* Lemma bij_can_sym *)
+let bij_can_sym = Sections.section_proof ["f'"]
+`cancel f' f <=> cancel f f'`
+[
+   ((THENL_FIRST) (split_tac) (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("inj_can_sym", [inj_can_sym])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN ((fun arg_tac ->  (conv_thm_tac DISCH_THEN)  (fun fst_arg -> (use_arg_then2 ("bij_inj", [bij_inj])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac MP_TAC))) THEN (done_tac)));
+   ((((use_arg_then2 ("bijf", [])) (disch_tac [])) THEN (clear_assumption "bijf") THEN BETA_TAC) THEN ((((use_arg_then2 ("bijective", [bijective]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN (move ["g"])) THEN (case THEN ALL_TAC)) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("cancel", [cancel]))(thm_tac (new_rewrite [] []))))) THEN (move ["gf"]) THEN (move ["fg"]) THEN (move ["f'f"]) THEN (move ["x"])));
+   (((((fun arg_tac -> (use_arg_then2 ("fg", [])) (fun fst_arg -> (use_arg_then2 ("x", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("f'f", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma bij_can_eq *)
+let bij_can_eq = Sections.section_proof ["f'";"f''"]
+`cancel f f' ==> cancel f f'' ==> f' = f''`
+[
+   (((((fun arg_tac -> (use_arg_then2 ("bij_can_sym", [bij_can_sym])) (fun fst_arg -> (use_arg_then2 ("f''", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("bij_can_sym", [bij_can_sym]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (move ["can1"]) THEN (move ["can2"]));
+   ((((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("inj_can_eq", [inj_can_eq])) (fun fst_arg -> (use_arg_then2 ("can1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("bij_inj", [bij_inj])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("can2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (done_tac));
+];;
+
+(* Finalization of the section Bijections *)
+let bij_inj = Sections.finalize_theorem bij_inj;;
+let bij_can_sym = Sections.finalize_theorem bij_can_sym;;
+let bij_can_eq = Sections.finalize_theorem bij_can_eq;;
+Sections.end_section "Bijections";;
+
+(* Section BijectionsTheory *)
+Sections.begin_section "BijectionsTheory";;
+(Sections.add_section_var (mk_var ("f", (`:BB -> AA`))));;
+(Sections.add_section_var (mk_var ("h", (`:CC -> BB`))));;
+
+(* Lemma eq_bij *)
+let eq_bij = Sections.section_proof []
+`bijective f ==> !g. (!x. f x = g x) ==> bijective g`
+[
+   (((((use_arg_then2 ("eq_ext", [eq_ext]))(thm_tac (new_rewrite [] [])))) THEN (move ["bij"]) THEN (move ["g"]) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma bij_comp *)
+let bij_comp = Sections.section_proof []
+`bijective f ==> bijective h ==> bijective (f o h)`
+[
+   ((repeat_tactic 3 0 (((use_arg_then2 ("bijective", [bijective]))(thm_tac (new_rewrite [] []))))) THEN ALL_TAC THEN (case THEN (move ["g"])) THEN (case THEN ((move ["can_fg"]) THEN (move ["can_gf"]))) THEN (case THEN ((move ["r"]) THEN (case THEN ((move ["can_hr"]) THEN (move ["can_rh"]))))));
+   (((fun arg_tac -> arg_tac (Arg_term (`r o g`))) (term_tac exists_tac)) THEN (split_tac));
+   (((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("can_comp", [can_comp])) (fun fst_arg -> (use_arg_then2 ("f", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("h", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("g", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("r", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC);
+   ((((fun arg_tac ->  (conv_thm_tac DISCH_THEN)  (fun fst_arg -> (use_arg_then2 ("can_fg", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac MP_TAC)) THEN BETA_TAC) THEN (DISCH_THEN apply_tac) THEN (done_tac));
+   (((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("can_comp", [can_comp])) (fun fst_arg -> (use_arg_then2 ("r", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("g", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("h", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("f", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC);
+   ((((fun arg_tac ->  (conv_thm_tac DISCH_THEN)  (fun fst_arg -> (use_arg_then2 ("can_rh", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac MP_TAC)) THEN BETA_TAC) THEN (DISCH_THEN apply_tac) THEN (done_tac));
+];;
+
+(* Lemma bij_can_bij *)
+let bij_can_bij = Sections.section_proof []
+`bijective f ==> !f'. cancel f f' ==> bijective f'`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("bij_can_sym", [bij_can_sym])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (move ["can_sym"]) THEN (move ["f'"]) THEN (move ["can_ff'"])) THEN (((use_arg_then2 ("bijective", [bijective]))(thm_tac (new_rewrite [] [])))));
+   (((use_arg_then2 ("f", [])) (term_tac exists_tac)) THEN (((use_arg_then2 ("can_sym", []))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Finalization of the section BijectionsTheory *)
+let eq_bij = Sections.finalize_theorem eq_bij;;
+let bij_comp = Sections.finalize_theorem bij_comp;;
+let bij_can_bij = Sections.finalize_theorem bij_can_bij;;
+Sections.end_section "BijectionsTheory";;
+
+(* Section Involutions *)
+Sections.begin_section "Involutions";;
+(Sections.add_section_var (mk_var ("f", (`:A -> A`))));;
+let involutive = new_definition `involutive f <=> cancel f f`;;
+(Sections.add_section_hyp "Hf" (`involutive f`));;
+
+(* Lemma inv_inj *)
+let inv_inj = Sections.section_proof []
+`injective f`
+[
+   ((((use_arg_then2 ("Hf", [])) (disch_tac [])) THEN (clear_assumption "Hf") THEN BETA_TAC) THEN ((((use_arg_then2 ("involutive", [involutive]))(thm_tac (new_rewrite [] [])))) THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("can_inj", [can_inj])) (thm_tac (match_mp_then snd_th MP_TAC))))) THEN (done_tac));
+];;
+
+(* Lemma inv_bij *)
+let inv_bij = Sections.section_proof []
+`bijective f`
+[
+   ((((use_arg_then2 ("bijective", [bijective]))(thm_tac (new_rewrite [] [])))) THEN ((use_arg_then2 ("f", [])) (term_tac exists_tac)) THEN (((use_arg_then2 ("Hf", [])) (disch_tac [])) THEN (clear_assumption "Hf") THEN BETA_TAC) THEN (((use_arg_then2 ("involutive", [involutive]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Finalization of the section Involutions *)
+let inv_inj = Sections.finalize_theorem inv_inj;;
+let inv_bij = Sections.finalize_theorem inv_bij;;
+Sections.end_section "Involutions";;
+
+(* Section OperationProperties *)
+Sections.begin_section "OperationProperties";;
+
+(* Section SopTisR *)
+Sections.begin_section "SopTisR";;
+let left_inverse = new_definition `left_inverse e inv op = !x. op (inv x) x = e`;;
+let right_inverse = new_definition `right_inverse e inv op = !x. op x (inv x) = e`;;
+let left_injective = new_definition `left_injective op = !x. injective (\y. op y x)`;;
+let right_injective = new_definition `right_injective op = !y. injective (op y)`;;
+
+(* Finalization of the section SopTisR *)
+Sections.end_section "SopTisR";;
+
+(* Section SopTisS *)
+Sections.begin_section "SopTisS";;
+let right_id = new_definition `right_id e op = !x. op x e = x`;;
+let left_zero = new_definition `left_zero z op = !x. op z x = z`;;
+let right_commutative = new_definition 
+	`right_commutative op = !x y z. op (op x y) z = op (op x z) y`;;
+let left_distributive = new_definition
+	`left_distributive op add = !x y z. op (add x y) z = add (op x z) (op y z)`;;
+let right_loop = new_definition
+	`right_loop inv op = !y. cancel (\x. op x y) (\x. op x (inv y))`;;
+let rev_right_loop = new_definition
+	`rev_right_loop inv op = !y. cancel (\x. op x (inv y)) (\x. op x y)`;;
+
+(* Finalization of the section SopTisS *)
+Sections.end_section "SopTisS";;
+
+(* Section SopTisT *)
+Sections.begin_section "SopTisT";;
+let left_id = new_definition `left_id e op = !x. op e x = x`;;
+let right_zero = new_definition `right_zero z op = !x. op x z = z`;;
+let left_commutative = new_definition 
+	`left_commutative op = !x y z. op x (op y z) = op y (op x z)`;;
+let right_distributive = new_definition
+	`right_distributive op add = !x y z. op x (add y z) = add (op x y) (op x z)`;;
+let left_loop = new_definition 
+	`left_loop inv op = !x. cancel (op x) (op (inv x))`;;
+let rev_left_loop = new_definition 
+	`rev_left_loop inv op = !x. cancel (op (inv x)) (op x)`;;
+
+(* Finalization of the section SopTisT *)
+Sections.end_section "SopTisT";;
+
+(* Section SopSisT *)
+Sections.begin_section "SopSisT";;
+let self_inverse = new_definition `self_inverse e op = !x. op x x = e`;;
+let commutative = new_definition `commutative op = !x y. op x y = op y x`;;
+
+(* Finalization of the section SopSisT *)
+Sections.end_section "SopSisT";;
+
+(* Section SopSisS *)
+Sections.begin_section "SopSisS";;
+let idempotent = new_definition `idempotent op = !x. op x x = x`;;
+let associative = new_definition `associative op = !x y z. op x (op y z) = op (op x y) z`;;
+
+(* Finalization of the section SopSisS *)
+Sections.end_section "SopSisS";;
+
+(* Finalization of the section OperationProperties *)
+Sections.end_section "OperationProperties";;
+
+(* Close the module *)
+end;;

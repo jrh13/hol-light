@@ -1,0 +1,240 @@
+let float_interval_1 = mk_float_interval_small_num 1;;
+
+let HALFATN' = (SYM o SPEC_ALL o REWRITE_RULE[REAL_POW_2]) halfatn;;
+let HALFATN4' = prove(`halfatn(halfatn(halfatn(halfatn x))) = halfatn4 x`,
+		      REWRITE_TAC[halfatn4; o_THM]);;
+
+let float_interval_halfatn pp x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let xx_th = float_interval_mul pp x_th x_th in
+  let one_xx_th = float_interval_add pp float_interval_1 xx_th in
+  let sqrt_th = float_interval_sqrt pp one_xx_th in
+  let one_sqrt_th = float_interval_add pp sqrt_th float_interval_1 in
+  let r_th = float_interval_div pp x_th one_sqrt_th in
+  let th0 = INST[x_tm, x_var_real] HALFATN' in
+  let ltm, rtm = dest_comb(concl r_th) in
+    EQ_MP (AP_THM (AP_TERM (rator ltm) th0) rtm) r_th;;
+
+let float_interval_halfatn4 pp x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let r_th = float_interval_halfatn pp 
+    (float_interval_halfatn pp
+       (float_interval_halfatn pp (float_interval_halfatn pp x_th))) in
+  let th0 = INST[x_tm, x_var_real] HALFATN4' in
+  let ltm, rtm = dest_comb(concl r_th) in
+    EQ_MP (AP_THM (AP_TERM (rator ltm) th0) rtm) r_th;;
+
+(************************)
+
+let reduce_float_lemma = (th_rule o NUMERALS_TO_NUM o prove)
+  (`k <= e /\ e - k = m /\ num_exp 1 k = t /\ t = r
+       ==> float_num s n m = float_num s n e / &r`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[float; real_div] THEN
+     ONCE_REWRITE_TAC[REAL_ARITH `(a * b * c) * d = a * (b * d) * c`] THEN
+     REPEAT (FIRST [AP_TERM_TAC; AP_THM_TAC]) THEN
+     EXPAND_TAC "m" THEN ASM_SIMP_TAC[NUM_EXP_SUB_lemma]);;
+
+
+let comb_size =
+  let rec size n tm =
+    match tm with
+      | Comb (_, rtm) -> size (n + 1) rtm
+      | _ -> n in
+    size 0;;
+
+let reduce_float =
+  let one_num = rand (mk_small_numeral_array 1) in
+    fun x_tm ->
+      let ltm, e_tm = dest_comb x_tm in
+      let ltm, n_tm = dest_comb ltm in
+      let s_tm = rand ltm in
+      let exp = Num.int_of_num (raw_dest_hash e_tm) - min_exp in
+      let k = comb_size n_tm + exp + 1 in
+	if k <= 0 then
+	  false, TRUTH, k
+	else
+	  let k_tm = rand (mk_small_numeral_array k) in
+	  let sub_th, le_th = raw_sub_and_le_hash_conv e_tm k_tm in
+	  let m_tm = rand (concl sub_th) in
+	  let eq_th = denormalize (mk_num_exp one_num k_tm) in
+	  let t_tm = rand (concl eq_th) in
+	  let eq2_th = raw_num_to_numeral t_tm in
+	  let r_tm = rand (concl eq2_th) in
+	  let th0 = INST[s_tm, s_var_bool; n_tm, n_var_num; e_tm, e_var_num;
+			 k_tm, k_var_num; m_tm, m_var_num;
+			 t_tm, t_var_num; r_tm, r_var_num] reduce_float_lemma in
+	  let th1 = itlist MY_PROVE_HYP [le_th; sub_th; eq_th; eq2_th] th0 in
+	    if hyp th1 <> [] then
+	      error "reduce_float" [x_tm] [sub_th; le_th; eq_th]
+	    else
+	      true, th1, Num.int_of_num (raw_dest_hash t_tm);;
+
+(* log experiments *)
+
+let bound_low_trans = prove
+  (`x * (p1 - x * p2) <= e ==>
+     interval_arith a (&0, p1) /\
+     interval_arith p2 (&0, b) /\
+     &0 <= x /\
+     x * b <= n /\
+     t <= a - n /\
+     r <= x * t
+     ==> r <= e`, 
+   REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (p1 - x * p2)` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (a - n)` THEN CONJ_TAC THENL [
+       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * t` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[real_sub] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * b:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[]);;
+	 
+let bound_high_trans = prove
+  (`e <= x * (p1 - x * p2) ==>
+     interval_arith p1 (&0, a) /\
+     interval_arith b (&0, p2) /\
+     &0 <= x /\
+     n <= x * b /\
+     a - n <= t /\
+     x * t <= r
+     ==> e <= r`, 
+   REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (p1 - x * p2)` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * (a - n)` THEN CONJ_TAC THENL [
+       MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+	 REWRITE_TAC[real_sub] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * b:real` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[];
+       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * t` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[]
+     ]);;
+
+let mk_log_bound_tables log_bound_th =
+  let log_bound = (SPEC_ALL o 
+		     REWRITE_RULE[poly_f_even; poly_f_odd; GSYM REAL_POW_2; REAL_POW_POW] o
+		     REWRITE_RULE[sum_eq_poly_f] o
+		     REWRITE_RULE[alt_sum_eq_poly_f; real_div]) log_bound_th in
+  let reduce_rule = CONV_RULE (DEPTH_CONV 
+				 (FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_MULT_CONV])) in
+  let find_poly_f = rev o find_terms (fun tm -> try (rator o rator) tm = `poly_f` 
+				                with Failure _ -> false) in
+    fun pp n ->
+      let n_tm = mk_small_numeral n in
+      let th0 = INST[n_tm, n_var_num] log_bound in
+      let th1 = CONV_RULE NUM_REDUCE_CONV th0 in
+      let poly_tms0 = find_poly_f (concl th1) in
+      let ns_th = map (REDEPTH_CONV num_CONV o rand o rand o rator) poly_tms0 in
+      let th2 = REWRITE_RULE(ns_th @ [TABLE_SUC; TABLE_0; APPEND]) th1 in
+      let bound_th = (REWRITE_RULE[REAL_INV_1] o reduce_rule) th2 in
+      let poly_tms = find_poly_f (concl bound_th) in
+      let cs_tms = map (rand o rator) poly_tms in
+      let cs_lists = map (mk_poly_coeffs pp) cs_tms in
+	bound_th, zip cs_tms cs_lists;;
+
+(* Computes i such that x^i / i <= base^(-(p + 1)) and cond(i) *)
+let n_of_p_log x pp cond = 
+  let t = (float_of_int Arith_num.arith_base) ** (float_of_int (-pp - 1)) in
+  let rec try_i i =
+    let _ = if i > 50 then failwith "n_of_p_exp: cannot find i" else () in
+      if cond i then
+(*	let d = float_of_int (2 * i + 1) in *)
+	let d = float_of_int i in
+	let r = (x ** d) /. d in
+	  if r <= t then i else try_i (i + 1) 
+      else
+	try_i (i + 1)
+  in
+    try_i 0;;
+
+(*
+
+let sq = Pervasives.sqrt;;
+let t = sq (1.0 -. 1.0 /. 3.0) -. 1.0;;
+let t = Pervasives.sqrt 2.0 -. 1.0;;
+let t = Pervasives.sqrt 2.0 /. 2.0 -. 1.0;;
+t /. (2.0 +. t);;
+
+n_of_p_log 0.11 20 (fun i -> true);;
+
+*)
+
+(* Makes the table of exp coefficients assuming the interval [0, exp_max_x] *)
+let mk_log_lower pp =
+  let n = n_of_p_log log_max_x pp (fun i -> i land 1 = 1) in
+  let bound_th0, css = mk_log_bound_tables log_poly_lower_bound (pp + 1) n in
+  let cs1, cs2 = pair_of_list css in
+  let RULE2 = UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL in
+  let bound_th = (RULE2 o MATCH_MP bound_low_trans o th_rule o
+		 GEN_REWRITE_RULE (LAND_CONV o ONCE_DEPTH_CONV) [GSYM float1_eq]) bound_th0 in
+    bound_th, cs1, cs2;;
+
+(* Makes the table of exp coefficients assuming the interval [0, exp_max_x] *)
+let mk_log_upper pp =
+  let n = n_of_p_log log_max_x pp (fun i -> i land 1 = 0) in
+  let bound_th0, css = mk_log_bound_tables log_poly_upper_bound (pp + 1) n in
+  let cs1, cs2 = pair_of_list css in
+  let RULE2 = UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL in
+  let bound_th = (RULE2 o MATCH_MP bound_high_trans o th_rule o
+		 GEN_REWRITE_RULE (LAND_CONV o ONCE_DEPTH_CONV) [GSYM float1_eq]) bound_th0 in
+    bound_th, cs1, cs2;;
+
+let th, _, _ = mk_log_upper 1;;
+
+(* Computes a lower bound of log(1 + x) for the given floating-point number 0 <= x < 1.  *)
+(* The given number should be relatively small (|x| <= log_max_x) to get a good results. *)
+let log1_pos_low =
+  let table = Array.init 21 mk_log_lower in
+    fun pp x_tm ->
+      let bound_th, cs1, cs2 = table.(pp) in
+      let pp = pp + 1 in
+      let x_pow2_high = eval_pow2_high pp x_tm and
+	  x_pow2_low = eval_pow2_low pp x_tm in
+      let p1_low_th = eval_low_poly_f_pos_pos pp cs1 x_pow2_low and
+	  p2_high_th = eval_high_poly_f_pos_pos pp cs2 x_pow2_high in
+      let a_tm = (rand o rator o concl) p1_low_th in
+      let b_tm = (rand o rand o concl) p2_high_th in
+      let xb_le_n = float_mul_hi pp x_tm b_tm in
+      let n_tm = (rand o concl) xb_le_n in
+      let t_le_an = float_sub_lo pp a_tm n_tm in
+      let t_tm = (rand o rator o concl) t_le_an in
+      let r_le_xt = float_mul_lo pp x_tm t_tm in
+      let r_tm = rand (rator (concl r_le_xt)) in
+      let cmp_1 = EQT_ELIM (float_lt x_tm one_float) in
+      let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
+		     t_tm, t_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
+	itlist MY_PROVE_HYP [p1_low_th; p2_high_th; xb_le_n; t_le_an; r_le_xt; cmp_0; cmp_1] th0;;
+
+(* Computes an upper bound of log(1 + x) for the given floating-point number 0 <= x < 1. *)
+(* The given number should be relatively small (|x| <= log_max_x) to get a good results. *)
+let log1_pos_high =
+  let table = Array.init 21 mk_log_upper in
+    fun pp x_tm ->
+      let bound_th, cs1, cs2 = table.(pp) in
+      let pp = pp + 1 in
+      let x_pow2_high = eval_pow2_high pp x_tm and
+	  x_pow2_low = eval_pow2_low pp x_tm in
+      let p1_high_th = eval_high_poly_f_pos_pos pp cs1 x_pow2_high in
+      let p2_low_th = eval_low_poly_f_pos_pos pp cs2 x_pow2_low in
+      let a_tm = (rand o rand o concl) p1_high_th in
+      let b_tm = (rand o rator o concl) p2_low_th in
+      let n_le_xb = float_mul_lo pp x_tm b_tm in
+      let n_tm = (rand o rator o concl) n_le_xb in
+      let an_le_t = float_sub_hi pp a_tm n_tm in
+      let t_tm = (rand o concl) an_le_t in
+      let xt_le_r = float_mul_hi pp x_tm t_tm in
+      let r_tm = rand (concl xt_le_r) in
+      let cmp_1 = EQT_ELIM (float_lt x_tm one_float) in
+      let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
+		     t_tm, t_var_real; r_tm, r_var_real; x_tm, x_var_real] bound_th in
+	itlist MY_PROVE_HYP [p1_high_th; p2_low_th; n_le_xb; an_le_t; xt_le_r; cmp_1; cmp_0] th0;;
+
+let log2_eq = prove
+  (`log (&2) = &2 * log (&1 + &1 / &4) + log (&1 + &7 / &25)`,
+   SIMP_TAC[GSYM LOG_POW; REAL_ARITH `&0 < &1 + &1 / &4`] THEN
+     SIMP_TAC[GSYM LOG_MUL; REAL_ARITH `&0 < (&1 + &1 / &4) pow 2 /\ &0 < &1 + &7 / &25`] THEN
+     AP_TERM_TAC THEN REAL_ARITH_TAC);;

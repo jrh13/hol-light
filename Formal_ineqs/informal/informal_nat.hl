@@ -1,0 +1,167 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: natural numbers             *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "misc/misc_functions.hl";;
+needs "misc/misc_vars.hl";;
+needs "arith_options.hl";;
+
+
+(* Natural numbers *)
+
+module type Informal_nat_sig =
+  sig
+    type nat
+    val arith_base : int
+    val mk_nat : num -> nat
+    val mk_small_nat : int -> nat
+    val dest_nat : nat -> num
+    val eq_nat : nat -> nat -> bool
+    val suc_nat : nat -> nat
+    val pre_nat : nat -> nat
+    val eq0_nat : nat -> bool
+    val gt0_nat : nat -> bool
+    val lt_nat : nat -> nat -> bool
+    val le_nat : nat -> nat -> bool
+    val add_nat : nat -> nat -> nat
+    val sub_nat : nat -> nat -> nat
+    (* If sub_and_le_nat m n = (m - n, true) if n <= m; (n - m, false) if m < n *)
+    val sub_and_le_nat : nat -> nat -> nat * bool
+    val mul_nat : nat -> nat -> nat
+    val div_nat : nat -> nat -> nat
+    val even_nat : nat -> bool
+    val odd_nat : nat -> bool
+
+    (* normalize_nat m = (n, e) s.t. m = n * base^e, e >= 0 *)
+    val normalize_nat : nat -> nat * int
+    val denormalize_nat : nat * int -> nat
+    (* hi_nat p m = (n, e) s.t. m <= n * base^e and n contains at most p "digits" *)
+    val hi_nat : int -> nat -> nat * int
+    val hi_lt_nat : int -> nat -> nat * int
+    (* lo_nat p m = (n, e) s.t. n * base^e <= m and n contains at most p "digits" *)
+    val lo_nat : int -> nat -> nat * int
+  end;;
+
+
+
+module Informal_nat : Informal_nat_sig = struct
+
+open Misc_functions;;
+open Big_int;;
+
+type nat = big_int;;
+
+let arith_base = !Arith_options.base;;
+
+let mk_nat n = 
+  let result = big_int_of_num n in
+    if sign_big_int result < 0 then zero_big_int else result;;
+
+let mk_small_nat n = 
+  if n < 0 then zero_big_int else big_int_of_int n;;
+
+let dest_nat = num_of_big_int;;
+
+let eq_nat = eq_big_int;;
+
+let suc_nat = succ_big_int;;
+
+let pre_nat n = 
+  let result = pred_big_int n in
+    if sign_big_int result < 0 then zero_big_int else result;;
+
+let eq0_nat n = sign_big_int n = 0;;
+
+let gt0_nat n = sign_big_int n > 0;;
+
+let lt_nat = lt_big_int;;
+
+let le_nat = le_big_int;;
+
+let add_nat = add_big_int;;
+
+let sub_nat m n =
+  let result = sub_big_int m n in
+    if sign_big_int result < 0 then zero_big_int else result;;
+
+let sub_and_le_nat m n =
+  let result = sub_big_int m n in
+    if sign_big_int result >= 0 then (result, true) else (abs_big_int result, false);;
+
+let mul_nat = mult_big_int;;
+
+let div_nat = div_big_int;;
+
+let two_big_int = big_int_of_int 2;;
+
+let even_nat n = sign_big_int (mod_big_int n two_big_int) = 0;;
+
+let odd_nat n = sign_big_int (mod_big_int n two_big_int) > 0;;
+
+(*******************************)
+(* num_exp *)
+
+let base_nat = mk_small_nat arith_base;;
+
+(* normalize_nat m = (n, e) s.t. m = n * base^e, e >= 0 *)
+let normalize_nat =
+  let rec normalize n e =
+    let q, r = quomod_big_int n base_nat in
+      if sign_big_int r > 0 then
+	(n, e)
+      else
+	normalize q (succ e) in
+    fun n -> 
+      if sign_big_int n = 0 then (n, 0) else normalize n 0;;
+
+
+let denormalize_nat (n, e) =
+  mult_big_int n (power_int_positive_int arith_base e);;
+
+
+let lo_nat pp =
+  let max = power_int_positive_int arith_base pp in
+  let rec lo m e =
+    if lt_big_int m max then 
+      (m, e)
+    else
+      let q = div_big_int m base_nat in
+	lo q (succ e) in
+    fun m ->
+      if sign_big_int m = 0 then
+	(m, 0)
+      else
+	let n1, e1 = lo m 0 in
+	let n, e2 = normalize_nat n1 in
+	  n, e1 + e2;;
+
+
+let hi_nat pp =
+  if pp <= 0 then failwith "hi_nat: pp <= 0" else
+    let max = power_int_positive_int arith_base pp in
+    let rec hi m e =
+      if lt_big_int m max then
+	(m, e)
+      else
+	let q, r = quomod_big_int m base_nat in
+	  if sign_big_int r = 0 then
+	    hi q (succ e)
+	  else
+	    hi (succ_big_int q) (succ e) in
+      fun m ->
+	if sign_big_int m = 0 then
+	  (m, 0)
+	else
+	  let n1, e1 = hi m 0 in
+	  let n, e2 = normalize_nat n1 in
+	    n, e1 + e2;;
+
+
+let hi_lt_nat pp m =
+  hi_nat pp (succ_big_int m);;
+
+
+end;;

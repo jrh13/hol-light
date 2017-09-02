@@ -1,0 +1,298 @@
+module Sin_cos = struct
+
+prioritize_real();;
+
+(* cos *)
+
+let cos_pi_2 = prove(`!x. cos (x + pi / &2) = --sin x`,
+     REWRITE_TAC[COS_SIN; REAL_ARITH `a - (b + a) = --b:real`; SIN_NEG]);;
+
+let cos_derivatives = prove(`!x n. ((\x. cos (x + &n * pi / &2)) 
+				      has_real_derivative cos (x + &(n + 1) * pi / &2)) (atreal x)`,
+   REPEAT GEN_TAC THEN REAL_DIFF_TAC THEN
+     REWRITE_TAC[REAL_ARITH `(&1 + &0) * --a = --a`] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
+     REWRITE_TAC[REAL_ARITH `x + (a + &1) * t = (x + a * t) + t`] THEN
+     REWRITE_TAC[cos_pi_2]);;
+
+let taylor_cos_raw = prove(`!x n. 
+   abs (cos x - sum (0..n) (\k. if (EVEN k) then ((-- &1) pow (k DIV 2) * x pow k) / &(FACT k) else &0)) 
+				<=  abs x pow (n + 1) / &(FACT (n + 1))`,
+   REPEAT GEN_TAC THEN
+     MP_TAC (SPECL [`(\i x. cos (x + &i * pi / &2))`; `n:num`; `(:real)`; `&1`] REAL_TAYLOR) THEN
+     ANTS_TAC THENL
+     [
+       REWRITE_TAC[is_realinterval; IN_UNIV; WITHINREAL_UNIV; cos_derivatives; COS_BOUND];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[IN_UNIV] THEN
+     DISCH_THEN (MP_TAC o SPECL [`&0`; `x:real`]) THEN
+     REWRITE_TAC[REAL_MUL_LZERO; REAL_ADD_RID; REAL_ADD_LID; REAL_SUB_RZERO; REAL_MUL_LID] THEN
+     SUBGOAL_THEN `!i. cos (&i * pi / &2) * x pow i / &(FACT i) = if EVEN i then (-- &1 pow (i DIV 2) * x pow i) / &(FACT i) else &0` (fun th -> SIMP_TAC[th]) THEN
+     GEN_TAC THEN
+     ASM_CASES_TAC `EVEN i` THEN ASM_REWRITE_TAC[] THENL
+     [
+       POP_ASSUM MP_TAC THEN
+	 REWRITE_TAC[EVEN_EXISTS] THEN
+	 STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+	 SUBGOAL_THEN `(2 * m) DIV 2 = m` (fun th -> REWRITE_TAC[th]) THENL
+	 [
+	   MATCH_MP_TAC DIV_MULT THEN
+	     ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[GSYM REAL_OF_NUM_MUL] THEN
+	 REWRITE_TAC[REAL_ARITH `(&2 * a) * b / &2 = a * b`] THEN
+	 REWRITE_TAC[COS_NPI] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `cos (&i * pi / &2) = &0` (fun th -> REWRITE_TAC[th]) THENL
+     [
+       REWRITE_TAC[COS_ZERO] THEN
+	 DISJ1_TAC THEN EXISTS_TAC `i:num` THEN
+	 ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_MUL_LZERO]);;
+
+
+let sum_pair_from_0 = prove(`!f n. sum (0..2 * n + 1) f = sum(0..n) (\i. f (2 * i) + f (2 * i + 1))`,
+			    REPEAT GEN_TAC THEN
+			      MP_TAC (SPECL [`f:num->real`; `0`; `n:num`] SUM_PAIR) THEN
+			      REWRITE_TAC[ARITH_RULE `2 * 0 = 0`]);;
+
+let taylor_cos = prove(`!x n. abs (cos x - 
+		sum (0..n) (\i. ((-- &1) pow i / &(FACT (2 * i))) * x pow (2 * i))) 
+		       <= abs x pow (2*n + 2) / &(FACT (2*n + 2))`,
+   REPEAT GEN_TAC THEN
+     MP_TAC (SPECL [`x:real`; `2 * n + 1`] taylor_cos_raw) THEN
+     REWRITE_TAC[sum_pair_from_0; EVEN_DOUBLE; ARITH_RULE `(2 * n + 1) + 1 = 2 *n + 2`] THEN
+     SUBGOAL_THEN `!i. ~(EVEN (2 * i + 1))` MP_TAC THENL
+     [
+       GEN_TAC THEN REWRITE_TAC[NOT_EVEN] THEN
+	 REWRITE_TAC[ARITH_ODD; ODD_ADD; ODD_MULT];
+       ALL_TAC
+     ] THEN
+     DISCH_THEN (fun th -> SIMP_TAC[th]) THEN
+     SUBGOAL_THEN `!i. (2 * i) DIV 2 = i` MP_TAC THENL
+     [
+       GEN_TAC THEN
+	 MATCH_MP_TAC DIV_MULT THEN
+	 REWRITE_TAC[ARITH];
+       ALL_TAC
+     ] THEN
+     DISCH_THEN (fun th -> REWRITE_TAC[th; REAL_ADD_RID]) THEN
+     REWRITE_TAC[REAL_ARITH `(a * b) / c = (a / c) * b:real`]);;
+
+
+let cos_poly_upper_bound = prove(`!x n. EVEN n ==>
+		cos x <= sum(0..n) (\i. ((-- &1) pow i / &(FACT (2 * i))) * x pow (2 * i))`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `n = 0` THENL [
+       ASM_REWRITE_TAC[SUM_SING_NUMSEG] THEN
+	 CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[real_pow] THEN
+	 CONV_TAC REAL_RAT_REDUCE_CONV THEN REWRITE_TAC[COS_BOUNDS];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 0 < n`; ARITH_RULE `0 <= n`; SUM_CLAUSES_RIGHT] THEN
+     MP_TAC (SPECL[`x:real`; `n - 1`] taylor_cos) THEN
+     SUBGOAL_THEN `-- &1 pow n = &1` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 2 * (n - 1) + 2 = 2 * n`] THEN
+     REWRITE_TAC[REAL_ARITH `&1 / a * b = b / a`] THEN
+     SUBGOAL_THEN `abs x pow (2 * n) = x pow (2 * n)` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[REAL_POW_EQ_EQ; EVEN_DOUBLE; REAL_ABS_ABS];
+       ALL_TAC
+     ] THEN
+     REAL_ARITH_TAC);;
+
+
+let cos_poly_lower_bound = prove(`!x n. ODD n ==>
+		sum(0..n) (\i. ((-- &1) pow i / &(FACT (2 * i))) * x pow (2 * i)) <= cos x`,
+   REWRITE_TAC[GSYM NOT_EVEN] THEN REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `n = 0` THENL [
+       UNDISCH_TAC `~EVEN n` THEN ASM_REWRITE_TAC[EVEN];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 0 < n`; ARITH_RULE `0 <= n`; SUM_CLAUSES_RIGHT] THEN
+     MP_TAC (SPECL[`x:real`; `n - 1`] taylor_cos) THEN
+     SUBGOAL_THEN `-- &1 pow n = -- &1` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 2 * (n - 1) + 2 = 2 * n`] THEN
+     REWRITE_TAC[REAL_ARITH `-- &1 / a * b = -- b / a`] THEN
+     SUBGOAL_THEN `abs x pow (2 * n) = x pow (2 * n)` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[REAL_POW_EQ_EQ; EVEN_DOUBLE; REAL_ABS_ABS];
+       ALL_TAC
+     ] THEN
+     REAL_ARITH_TAC);;
+
+
+(* sin *)
+
+let sin_pi_2 = prove(`!x. sin (x + pi / &2) = cos x`,
+     REWRITE_TAC[SIN_COS; REAL_ARITH `a - (b + a) = --b:real`; COS_NEG]);;
+
+let sin_derivatives = prove(`!x n. ((\x. sin (x + &n * pi / &2)) 
+				      has_real_derivative sin (x + &(n + 1) * pi / &2)) (atreal x)`,
+   REPEAT GEN_TAC THEN REAL_DIFF_TAC THEN
+     REWRITE_TAC[REAL_ARITH `(&1 + &0) * a = a`] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
+     REWRITE_TAC[REAL_ARITH `x + (a + &1) * t = (x + a * t) + t`] THEN
+     REWRITE_TAC[sin_pi_2]);;
+
+let taylor_sin_raw = prove(`!x n. 
+   abs (sin x - sum (0..n) (\k. if (ODD k) then ((-- &1) pow (k DIV 2) * x pow k) / &(FACT k) else &0)) 
+				<=  abs x pow (n + 1) / &(FACT (n + 1))`,
+   REPEAT GEN_TAC THEN
+     MP_TAC (SPECL [`(\i x. sin (x + &i * pi / &2))`; `n:num`; `(:real)`; `&1`] REAL_TAYLOR) THEN
+     ANTS_TAC THENL
+     [
+       REWRITE_TAC[is_realinterval; IN_UNIV; WITHINREAL_UNIV; sin_derivatives; SIN_BOUND];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[IN_UNIV] THEN
+     DISCH_THEN (MP_TAC o SPECL [`&0`; `x:real`]) THEN
+     REWRITE_TAC[REAL_MUL_LZERO; REAL_ADD_RID; REAL_ADD_LID; REAL_SUB_RZERO; REAL_MUL_LID] THEN
+     SUBGOAL_THEN `!i. sin (&i * pi / &2) * x pow i / &(FACT i) = if ODD i then (-- &1 pow (i DIV 2) * x pow i) / &(FACT i) else &0` (fun th -> SIMP_TAC[th]) THEN
+     GEN_TAC THEN
+     ASM_CASES_TAC `ODD i` THEN ASM_REWRITE_TAC[] THENL
+     [
+       POP_ASSUM MP_TAC THEN
+	 REWRITE_TAC[ODD_EXISTS] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+	 SUBGOAL_THEN `(SUC (2 * m)) DIV 2 = m` (fun th -> REWRITE_TAC[th]) THENL [
+	   REWRITE_TAC[ADD1; ARITH_RULE `2 * m = m * 2`] THEN
+	     SIMP_TAC[DIV_MULT_ADD; ARITH_RULE `~(2 = 0)`; DIV_LT; ARITH_RULE `1 < 2`; ADD_0];
+           ALL_TAC
+	 ] THEN
+	 REWRITE_TAC[GSYM REAL_OF_NUM_MUL; GSYM REAL_OF_NUM_SUC] THEN
+	 REWRITE_TAC[REAL_ARITH `(&2 * a + &1) * b / &2 = a * b + b / &2`; sin_pi_2] THEN
+	 REWRITE_TAC[COS_NPI] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `sin (&i * pi / &2) = &0` (fun th -> REWRITE_TAC[th]) THENL
+     [
+       REWRITE_TAC[SIN_ZERO] THEN
+	 DISJ1_TAC THEN EXISTS_TAC `i:num` THEN
+	 ASM_REWRITE_TAC[GSYM NOT_ODD];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_MUL_LZERO]);;
+
+
+let taylor_sin = prove(`!x n. abs (sin x - 
+		sum (0..n) (\i. ((-- &1) pow i / &(FACT (2 * i + 1))) * x pow (2 * i + 1))) 
+		       <= abs x pow (2 * n + 3) / &(FACT (2 * n + 3))`,
+   REPEAT GEN_TAC THEN
+     MP_TAC (SPECL [`x:real`; `2 * n + 2`] taylor_sin_raw) THEN
+     SUBGOAL_THEN `!f. sum (0..2 * n + 2) (\k. if ODD k then f k else &0) = sum (0..2 * n + 1) (\k. if ODD k then f k else &0)` (fun th -> REWRITE_TAC[th]) THENL [
+       GEN_TAC THEN REWRITE_TAC[ARITH_RULE `a + 2 = SUC (a + 1)`] THEN
+	 REWRITE_TAC[SUM_CLAUSES_NUMSEG; ARITH_RULE `0 <= SUC k`] THEN
+	 SUBGOAL_THEN `~(ODD (SUC (2 * n + 1)))` (fun th -> REWRITE_TAC[th; REAL_ADD_RID]) THEN
+	 REWRITE_TAC[ODD; ODD_EXISTS] THEN
+	 EXISTS_TAC `n:num` THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[sum_pair_from_0; ARITH_RULE `2 * i + 1 = SUC (2 * i)`; ODD_DOUBLE] THEN
+     SUBGOAL_THEN `!i. ~(ODD (2 * i))` (fun th -> SIMP_TAC[th]) THENL [
+       REWRITE_TAC[NOT_ODD; EVEN_DOUBLE];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `!i. SUC (2 * i) DIV 2 = i` MP_TAC THENL
+     [
+       REWRITE_TAC[ADD1; ARITH_RULE `2 * m = m * 2`] THEN
+	 SIMP_TAC[DIV_MULT_ADD; ARITH_RULE `~(2 = 0)`; DIV_LT; ARITH_RULE `1 < 2`; ADD_0];
+       ALL_TAC
+     ] THEN
+     DISCH_THEN (fun th -> REWRITE_TAC[th; REAL_ADD_LID]) THEN
+     REWRITE_TAC[REAL_ARITH `(a * b) / c = (a / c) * b:real`] THEN
+     REWRITE_TAC[ARITH_RULE `(2 * n + 2) + 1 = 2 * n + 3`]);;
+
+
+let sin_pos_poly_upper_bound = prove(`!x n. &0 <= x /\ EVEN n ==>
+		sin x <= sum(0..n) (\i. ((-- &1) pow i / &(FACT (2 * i + 1))) * x pow (2 * i + 1))`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `n = 0` THENL [
+       MP_TAC (SPECL[`x:real`; `0`] taylor_sin_raw) THEN
+	 ASM_REWRITE_TAC[SUM_SING_NUMSEG; ODD] THEN
+	 CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[real_pow; REAL_POW_1] THEN
+	 CONV_TAC REAL_RAT_REDUCE_CONV THEN REWRITE_TAC[REAL_MUL_LID; REAL_DIV_1] THEN
+	 UNDISCH_TAC `&0 <= x` THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 0 < n`; ARITH_RULE `0 <= n`; SUM_CLAUSES_RIGHT] THEN
+     MP_TAC (SPECL[`x:real`; `n - 1`] taylor_sin) THEN
+     SUBGOAL_THEN `-- &1 pow n = &1` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 2 * (n - 1) + 3 = 2 * n + 1`] THEN
+     REWRITE_TAC[REAL_ARITH `&1 / a * b = b / a`] THEN
+     SUBGOAL_THEN `abs x pow (2 * n + 1) = x pow (2 * n + 1)` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_REWRITE_TAC[REAL_POW_EQ_EQ; GSYM ADD1; EVEN; EVEN_DOUBLE; REAL_ABS_REFL];
+       ALL_TAC
+     ] THEN
+     REAL_ARITH_TAC);;
+
+
+let sin_pos_poly_lower_bound = prove(`!x n. &0 <= x /\ ODD n ==>
+		sum(0..n) (\i. ((-- &1) pow i / &(FACT (2 * i + 1))) * x pow (2 * i + 1)) <= sin x`,
+   REWRITE_TAC[GSYM NOT_EVEN] THEN REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `n = 0` THENL [
+       UNDISCH_TAC `~EVEN n` THEN ASM_REWRITE_TAC[EVEN];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 0 < n`; ARITH_RULE `0 <= n`; SUM_CLAUSES_RIGHT] THEN
+     MP_TAC (SPECL[`x:real`; `n - 1`] taylor_sin) THEN
+     SUBGOAL_THEN `-- &1 pow n = -- &1` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> 2 * (n - 1) + 3 = 2 * n + 1`] THEN
+     REWRITE_TAC[REAL_ARITH `-- &1 / a * b = -- b / a`] THEN
+     SUBGOAL_THEN `abs x pow (2 * n + 1) = x pow (2 * n + 1)` (fun th -> REWRITE_TAC[th]) THENL [
+       ASM_REWRITE_TAC[REAL_POW_EQ_EQ; GSYM ADD1; EVEN; EVEN_DOUBLE; REAL_ABS_REFL];
+       ALL_TAC
+     ] THEN
+     REAL_ARITH_TAC);;
+
+
+let sin_neg_poly_upper_bound = prove(`!x n. x <= &0 /\ ODD n ==>
+		sin x <= sum(0..n) (\i. ((-- &1) pow i / &(FACT (2 * i + 1))) * x pow (2 * i + 1))`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `&0 <= --x` ASSUME_TAC THENL [
+       POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`--x`; `n:num`] sin_pos_poly_lower_bound) THEN
+     ASM_REWRITE_TAC[SIN_NEG] THEN
+     SUBGOAL_THEN `!x i. --x pow (2 * i + 1) = --(x pow (2 * i + 1))` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[REAL_POW_NEG; GSYM ADD1; EVEN; EVEN_DOUBLE];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ARITH `a * (--b) = --(a * b)`] THEN
+     REWRITE_TAC[SUM_NEG; REAL_LE_NEG2]);;
+
+
+let sin_neg_poly_lower_bound = prove(`!x n. x <= &0 /\ EVEN n ==>
+		sum(0..n) (\i. ((-- &1) pow i / &(FACT (2 * i + 1))) * x pow (2 * i + 1)) <= sin x`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `&0 <= --x` ASSUME_TAC THENL [
+       POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`--x`; `n:num`] sin_pos_poly_upper_bound) THEN
+     ASM_REWRITE_TAC[SIN_NEG] THEN
+     SUBGOAL_THEN `!x i. --x pow (2 * i + 1) = --(x pow (2 * i + 1))` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[REAL_POW_NEG; GSYM ADD1; EVEN; EVEN_DOUBLE];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ARITH `a * (--b) = --(a * b)`] THEN
+     REWRITE_TAC[SUM_NEG; REAL_LE_NEG2]);;
+
+end;;

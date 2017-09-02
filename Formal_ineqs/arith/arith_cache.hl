@@ -16,7 +16,7 @@ let cache_size = if !Arith_options.cached then !Arith_options.init_cache_size el
 (* Hash tables *)
 let my_add h key v =
   if Hashtbl.length h >= !Arith_options.max_cache_size then
-        Hashtbl.clear h
+	Hashtbl.clear h
 (*    let _ = Hashtbl.clear h in
       print_string "Clearing a nat hash table" *)
   else ();
@@ -45,7 +45,7 @@ let suc_counter = ref 0 and
     odd_counter = ref 0;;
 
 
-(* Clears all cached results *)
+(* Clears all cached results *)	
 let reset_cache () =
   let clear = Hashtbl.clear in
     clear le_table;
@@ -55,7 +55,7 @@ let reset_cache () =
     clear mul_table;
     clear div_table;;
 
-
+	
 (* Resets all counters *)
 let reset_stat () =
   suc_counter := 0;
@@ -86,9 +86,9 @@ let print_stat () =
   let mul_str = sprintf "mul = %d (mul_hash = %d)\n" !mul_counter (len mul_table) in
   let div_str = sprintf "div = %d (div_hash = %d)\n" !div_counter (len div_table) in
     print_string (suc_pre_str ^ cmp0_str ^ lt_str ^ even_odd_str ^
-                    le_str ^ add_str ^ sub_str ^ sub_le_str ^ mul_str ^ div_str);;
+		    le_str ^ add_str ^ sub_str ^ sub_le_str ^ mul_str ^ div_str);;
 
-
+	
 (* Note: the standard Hashtbl.hash function works very purely on terms *)
 let rec num_tm_hash tm =
   if is_comb tm then
@@ -109,104 +109,104 @@ let tm1_tm2_hash tm1 tm2 =
 
 
 (* SUC *)
-let raw_suc_conv_hash tm =
+let raw_suc_conv_hash tm = 
   let _ = suc_counter := !suc_counter + 1 in
 (*  let _ = suc_list := tm :: !suc_list in *)
-    Arith_hash.raw_suc_conv_hash tm;;
+    Arith_num.raw_suc_conv_hash tm;;
 
 (* x = 0 *)
-let raw_eq0_hash_conv tm =
+let raw_eq0_hash_conv tm = 
   let _ = eq0_counter := !eq0_counter + 1 in
 (*  let _ = eq0_list := tm :: !eq0_list in *)
-    Arith_hash.raw_eq0_hash_conv tm;;
+    Arith_num.raw_eq0_hash_conv tm;;
 
 (* PRE *)
-let raw_pre_hash_conv tm =
+let raw_pre_hash_conv tm = 
   let _ = pre_counter := !pre_counter + 1 in
-    Arith_hash.raw_pre_hash_conv tm;;
+    Arith_num.raw_pre_hash_conv tm;;
 
 (* x > 0 *)
-let raw_gt0_hash_conv tm =
+let raw_gt0_hash_conv tm = 
   let _ = gt0_counter := !gt0_counter + 1 in
-    Arith_hash.raw_gt0_hash_conv tm;;
+    Arith_num.raw_gt0_hash_conv tm;;
 
 (* x < y *)
-let raw_lt_hash_conv tm =
+let raw_lt_hash_conv tm = 
   let _ = lt_counter := !lt_counter + 1 in
-    Arith_hash.raw_lt_hash_conv tm;;
+    Arith_num.raw_lt_hash_conv tm;;
 
 (* x <= y *)
-let raw_le_hash_conv tm =
+let raw_le_hash_conv tm = 
   let _ = le_counter := !le_counter + 1 in
   let hash = op_tm_hash tm in
     try
       Hashtbl.find le_table hash
     with Not_found ->
-      let result = Arith_hash.raw_le_hash_conv tm in
+      let result = Arith_num.raw_le_hash_conv tm in
       let _ = my_add le_table hash result in
-        result;;
+	result;;
 
 (* x + y *)
-let raw_add_conv_hash tm =
+let raw_add_conv_hash tm = 
   let _ = add_counter := !add_counter + 1 in
   let hash = op_tm_hash tm in
     try
       Hashtbl.find add_table hash
     with Not_found ->
-      let result = Arith_hash.raw_add_conv_hash tm in
+      let result = Arith_num.raw_add_conv_hash tm in
       let _ = my_add add_table hash result in
-        result;;
+	result;;
 
 (* x - y *)
-let raw_sub_hash_conv tm =
+let raw_sub_hash_conv tm = 
   let _ = sub_counter := !sub_counter + 1 in
   let hash = op_tm_hash tm in
     try
       Hashtbl.find sub_table hash
     with Not_found ->
-      let result = Arith_hash.raw_sub_hash_conv tm in
+      let result = Arith_num.raw_sub_hash_conv tm in
       let _ = my_add sub_table hash result in
-        result;;
+	result;;
 
-let raw_sub_and_le_hash_conv tm1 tm2 =
+let raw_sub_and_le_hash_conv tm1 tm2 = 
   let _ = sub_le_counter := !sub_le_counter + 1 in
   let hash = tm1_tm2_hash tm1 tm2 in
     try
       Hashtbl.find sub_le_table hash
     with Not_found ->
-      let result = Arith_hash.raw_sub_and_le_hash_conv tm1 tm2 in
+      let result = Arith_num.raw_sub_and_le_hash_conv tm1 tm2 in
       let _ = my_add sub_le_table hash result in
-        result;;
+	result;;
 
 (* x * y *)
-let raw_mul_conv_hash tm =
+let raw_mul_conv_hash tm = 
   let _ = mul_counter := !mul_counter + 1 in
   let hash = op_tm_hash tm in
     try
       Hashtbl.find mul_table hash
     with Not_found ->
-      let result = Arith_hash.raw_mul_conv_hash tm in
+      let result = Arith_num.raw_mul_conv_hash tm in
       let _ = my_add mul_table hash result in
-        result;;
+	result;;
 
 (* x / y *)
-let raw_div_hash_conv tm =
+let raw_div_hash_conv tm = 
   let _ = div_counter := !div_counter + 1 in
   let hash = op_tm_hash tm in
     try
       Hashtbl.find div_table hash
     with Not_found ->
-      let result = Arith_hash.raw_div_hash_conv tm in
+      let result = Arith_num.raw_div_hash_conv tm in
       let _ = my_add div_table hash result in
-        result;;
+	result;;
 
 (* EVEN, ODD *)
-let raw_even_hash_conv tm =
+let raw_even_hash_conv tm = 
   let _ = even_counter := !even_counter + 1 in
-    Arith_hash.raw_even_hash_conv tm;;
+    Arith_num.raw_even_hash_conv tm;;
 
-let raw_odd_hash_conv tm =
+let raw_odd_hash_conv tm = 
   let _ = odd_counter := !odd_counter + 1 in
-    Arith_hash.raw_odd_hash_conv tm;;
+    Arith_num.raw_odd_hash_conv tm;;
 
 end;;

@@ -1,0 +1,447 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Integer powers of real numbers                                             *)
+(* -------------------------------------------------------------------------- *)
+
+
+module Ipow = struct
+
+prioritize_real();;
+
+unparse_as_infix("ipow");;
+
+let ipow = new_definition
+  `ipow (x:real) (e:int) = 
+  (if (&0 <= e)
+   then (x pow (num_of_int e))
+   else (inv (x pow (num_of_int (--e)))))`;;
+
+parse_as_infix("ipow",(24,"left"));;
+
+let IPOW_LT_0 = prove
+  (`!(r:real) (i:int). &0 < r ==> &0 < r ipow i`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[ipow] THEN
+     COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_POW_LT; REAL_LT_INV]);;
+
+let IPOW_LE_0 = prove
+  (`!(r:real) (i:int). &0 <= r ==> &0 <= r ipow i`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[ipow] THEN
+     COND_CASES_TAC THEN ASM_SIMP_TAC[REAL_POW_LE; REAL_LE_INV]);;
+
+let IPOW_NUM = prove
+  (`!x n. x ipow (&n) = x pow n`,
+   REWRITE_TAC[ipow; INT_POS; NUM_OF_INT_OF_NUM]);;
+
+let IPOW_0 = prove
+  (`!x. x ipow &0 = &1`,
+   REWRITE_TAC[IPOW_NUM; real_pow]);;
+
+let IPOW_1 = prove
+  (`!x. x ipow &1 = x`,
+   REWRITE_TAC[IPOW_NUM; REAL_POW_1]);;
+
+let IPOW_2 = prove
+  (`!x. x ipow &2 = x * x`,
+   REWRITE_TAC[IPOW_NUM; REAL_POW_2]);;
+
+let IPOW_INV = prove
+  (`!x i. (inv x) ipow i = inv (x ipow i)`,
+   REPEAT STRIP_TAC THEN ASM_CASES_TAC `i:int = &0` THENL [
+     ASM_REWRITE_TAC[IPOW_0; INT_NEG_0; REAL_INV_1];
+     ALL_TAC
+   ] THEN
+      REWRITE_TAC[ipow] THEN REPEAT COND_CASES_TAC THEN 
+     REWRITE_TAC[REAL_INV_POW; REAL_INV_INV] THEN ASM_ARITH_TAC);;
+
+let INV_IPOW = prove
+  (`!x i. inv (x ipow i) = (inv x) ipow i`,
+   REWRITE_TAC[IPOW_INV]);;
+
+let IPOW_NEG = prove
+  (`!x i. x ipow (--i) = inv (x ipow i)`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `i:int = &0` THENL [
+       ASM_REWRITE_TAC[IPOW_0; INT_NEG_0; REAL_INV_1];
+       ALL_TAC
+     ] THEN
+      REWRITE_TAC[ipow] THEN REPEAT COND_CASES_TAC THEN 
+       ASM_REWRITE_TAC[INT_NEG_NEG; REAL_INV_INV] THEN ASM_ARITH_TAC);;
+
+let IPOW_NEG_NUM = prove
+  (`!x n. x ipow (-- &n) = inv x pow n`,
+   REWRITE_TAC[IPOW_NEG; INV_IPOW; IPOW_NUM]);;
+
+let IPOW_NEG_1 = prove
+  (`!x. x ipow (-- &1) = inv x`,
+   REWRITE_TAC[IPOW_NEG_NUM; REAL_POW_1]);;
+
+let NUM_OF_INT_ADD = prove
+  (`!n m. num_of_int (&n + &m) = n + m`,
+   REWRITE_TAC[INT_OF_NUM_ADD; NUM_OF_INT_OF_NUM]);;
+
+let NUM_OF_INT_MUL = prove
+  (`!n m. num_of_int (&n * &m) = n * m`,
+   REWRITE_TAC[INT_OF_NUM_MUL; NUM_OF_INT_OF_NUM]);;
+
+let NUM_OF_INT_SUB = prove
+  (`!n m. m <= n ==> num_of_int (&n - &m) = n - m`,
+   SIMP_TAC[INT_OF_NUM_SUB; NUM_OF_INT_OF_NUM]);;
+
+let IPOW_SUB_NUM = prove
+  (`!x n m. ~(x = &0) ==> x ipow (&n - &m) = x pow n * inv x pow m`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `!n m. m <= n ==> x ipow (&n - &m) = x pow n * inv x pow m` ASSUME_TAC THENL [
+       REPEAT STRIP_TAC THEN ASM_SIMP_TAC[INT_OF_NUM_SUB; IPOW_NUM] THEN
+	 ASM_SIMP_TAC[REAL_POW_SUB; real_div; REAL_INV_POW];
+       ALL_TAC
+     ] THEN
+     DISJ_CASES_TAC (ARITH_RULE `m <= n \/ n <= m:num`) THEN ASM_SIMP_TAC[] THEN
+     ONCE_REWRITE_TAC[INT_ARITH `&n - &m = --(&m - &n):int`] THEN
+     ASM_SIMP_TAC[IPOW_NEG; REAL_INV_MUL; REAL_INV_POW; REAL_INV_INV; REAL_MUL_AC]);;
+
+let INT_EQ_NUM_SUB = prove
+  (`!i:int. ?n m. i = &n - &m`,
+   GEN_TAC THEN ASM_CASES_TAC `&0 <= i:int` THENL [
+     MAP_EVERY EXISTS_TAC [`num_of_int i`; `0`] THEN
+       POP_ASSUM MP_TAC THEN REWRITE_TAC[NUM_OF_INT] THEN INT_ARITH_TAC;
+     MAP_EVERY EXISTS_TAC [`0`; `num_of_int (-- i)`] THEN
+       SUBGOAL_THEN `&0 <= --i:int` MP_TAC THENL [ ASM_INT_ARITH_TAC; ALL_TAC ] THEN
+       REWRITE_TAC[NUM_OF_INT] THEN INT_ARITH_TAC
+   ]);;
+
+let IPOW_ADD = prove
+  (`!x u v. ~(x = &0) ==> x ipow (u + v) = x ipow u * x ipow v`,
+   REPEAT STRIP_TAC THEN
+     MAP_EVERY (fun tm -> STRIP_ASSUME_TAC (SPEC tm INT_EQ_NUM_SUB)) [`u:int`; `v:int`] THEN
+     ASM_REWRITE_TAC[INT_ARITH `a - b + c - d:int = (a + c) - (b + d)`; INT_OF_NUM_ADD] THEN
+     ASM_SIMP_TAC[IPOW_SUB_NUM; REAL_POW_ADD] THEN
+     REAL_ARITH_TAC);;
+
+let IPOW_MUL = prove
+  (`!x y u. (x * y) ipow u = x ipow u * y ipow u`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN 
+     COND_CASES_TAC THEN REWRITE_TAC[REAL_POW_MUL; REAL_INV_MUL]);;
+
+let IPOW_ZERO = prove
+  (`!u. &0 ipow u = (if u = &0 then &1 else &0)`,
+   GEN_TAC THEN STRIP_ASSUME_TAC (SPEC `u:int` INT_EQ_NUM_SUB) THEN REWRITE_TAC[ipow] THEN
+     ASM_REWRITE_TAC[REAL_POW_ZERO; INT_SUB_LE; INT_OF_NUM_LE; INT_SUB_0; INT_OF_NUM_EQ] THEN
+     COND_CASES_TAC THENL [
+       ASM_SIMP_TAC[NUM_OF_INT_SUB; ARITH_RULE `m <= n ==> (n - m = 0 <=> n = m:num)`];
+       ASM_SIMP_TAC[ARITH_RULE `~(m <= n) ==> ~(n = m:num)`; INT_ARITH `--(a - b) = b - a:int`] THEN
+	 SUBGOAL_THEN `num_of_int (&m - &n) = m - n` ASSUME_TAC THENL [
+	   MATCH_MP_TAC NUM_OF_INT_SUB THEN ASM_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_SIMP_TAC[ARITH_RULE `~(m <= n) ==> ~(m - n = 0)`; REAL_INV_0]
+     ]);;
+
+let IPOW_ONE = prove
+  (`!u. &1 ipow u = &1`,
+   REWRITE_TAC[ipow; REAL_POW_ONE; REAL_INV_1; COND_ID]);;
+
+let IPOW_IPOW = prove
+  (`!x u v. (x ipow u) ipow v = x ipow (u * v)`,
+   REPEAT STRIP_TAC THEN ASM_CASES_TAC `x = &0` THENL [
+     ASM_REWRITE_TAC[IPOW_ZERO] THEN 
+       COND_CASES_TAC THEN ASM_REWRITE_TAC[INT_MUL_LZERO; IPOW_ONE] THEN
+       REWRITE_TAC[IPOW_ZERO] THEN 
+       COND_CASES_TAC THEN ASM_REWRITE_TAC[INT_ENTIRE; INT_MUL_RZERO];
+     ALL_TAC
+   ] THEN
+     MAP_EVERY (fun tm -> STRIP_ASSUME_TAC (SPEC tm INT_EQ_NUM_SUB)) [`u:int`; `v:int`] THEN
+     ASM_REWRITE_TAC[INT_ARITH `(a - b) * (c - d) = (a * c + b * d) - (b * c + a * d:int)`] THEN
+     REWRITE_TAC[INT_OF_NUM_ADD; INT_OF_NUM_MUL] THEN
+     SUBGOAL_THEN `~(x pow n * inv x pow m = &0)` ASSUME_TAC THENL [
+     REWRITE_TAC[REAL_ENTIRE; DE_MORGAN_THM] THEN
+       ASM_SIMP_TAC[REAL_POW_NZ; REAL_INV_EQ_0];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[IPOW_SUB_NUM] THEN
+     REWRITE_TAC[REAL_POW_MUL; REAL_POW_POW; REAL_INV_MUL; REAL_INV_POW; REAL_INV_INV] THEN
+     REWRITE_TAC[REAL_POW_ADD] THEN REAL_ARITH_TAC);;
+
+let IPOW_ADD_1 = prove
+  (`!x i. ~(x = &0) ==> x ipow (i + &1) = x * x ipow i`,
+   SIMP_TAC[IPOW_ADD; IPOW_1; REAL_MUL_AC]);;
+
+let IPOW_MONO = prove
+  (`!x u v. &1 <= x /\ u <= v ==> x ipow u <= x ipow v`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `~(x = &0) /\ &0 < x` ASSUME_TAC THENL [
+       ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MAP_EVERY (fun tm -> STRIP_ASSUME_TAC (SPEC tm INT_EQ_NUM_SUB)) [`u:int`; `v:int`] THEN
+     ASM_SIMP_TAC[IPOW_SUB_NUM] THEN ONCE_REWRITE_TAC[REAL_MUL_AC] THEN
+     MATCH_MP_TAC (SPEC `x pow m'` REAL_LE_LCANCEL_IMP) THEN
+     ASM_SIMP_TAC[REAL_POW_LT; REAL_POW_INV; REAL_POW_NZ; REAL_MUL_ASSOC; REAL_MUL_RINV] THEN
+     ONCE_REWRITE_TAC[REAL_ARITH `(a * b) * c = b * (a * c):real`] THEN
+     MATCH_MP_TAC (SPEC `x pow m` REAL_LE_LCANCEL_IMP) THEN
+     ASM_SIMP_TAC[REAL_POW_LT; REAL_POW_INV; REAL_POW_NZ; REAL_MUL_ASSOC; REAL_MUL_RINV] THEN
+     REWRITE_TAC[REAL_MUL_LID; REAL_MUL_RID; GSYM REAL_POW_ADD] THEN
+     MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[GSYM INT_OF_NUM_LE; GSYM INT_OF_NUM_ADD] THEN ASM_INT_ARITH_TAC);;
+
+let IPOW_MONO_LT = prove
+  (`!x u v. &1 < x /\ u < v ==> x ipow u < x ipow v`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `~(x = &0) /\ &0 < x` ASSUME_TAC THENL [
+       ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MAP_EVERY (fun tm -> STRIP_ASSUME_TAC (SPEC tm INT_EQ_NUM_SUB)) [`u:int`; `v:int`] THEN
+     ASM_SIMP_TAC[IPOW_SUB_NUM] THEN ONCE_REWRITE_TAC[REAL_MUL_AC] THEN
+     MATCH_MP_TAC (SPEC `x pow m'` REAL_LT_LCANCEL_IMP) THEN
+     ASM_SIMP_TAC[REAL_POW_LT; REAL_POW_INV; REAL_POW_NZ; REAL_MUL_ASSOC; REAL_MUL_RINV] THEN
+     ONCE_REWRITE_TAC[REAL_ARITH `(a * b) * c = b * (a * c):real`] THEN
+     MATCH_MP_TAC (SPEC `x pow m` REAL_LT_LCANCEL_IMP) THEN
+     ASM_SIMP_TAC[REAL_POW_LT; REAL_POW_INV; REAL_POW_NZ; REAL_MUL_ASSOC; REAL_MUL_RINV] THEN
+     REWRITE_TAC[REAL_MUL_LID; REAL_MUL_RID; GSYM REAL_POW_ADD] THEN
+     MATCH_MP_TAC REAL_POW_MONO_LT THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[GSYM INT_OF_NUM_LT; GSYM INT_OF_NUM_ADD] THEN ASM_INT_ARITH_TAC);;
+
+let IPOW_MONO_INV = prove
+  (`!x u v. &0 < x /\ x <= &1 /\ u <= v ==> x ipow v <= x ipow u`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`inv x`; `--v:int`; `--u:int`] IPOW_MONO) THEN
+     REWRITE_TAC[IPOW_NEG; IPOW_INV; REAL_INV_INV] THEN
+     DISCH_THEN MATCH_MP_TAC THEN
+     ASM_SIMP_TAC[REAL_INV_1_LE] THEN ASM_ARITH_TAC);;
+
+let IPOW_MONO_INV_LT = prove
+  (`!x u v. &0 < x /\ x < &1 /\ u < v ==> x ipow v < x ipow u`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`inv x`; `--v:int`; `--u:int`] IPOW_MONO_LT) THEN
+     REWRITE_TAC[IPOW_NEG; IPOW_INV; REAL_INV_INV] THEN
+     DISCH_THEN MATCH_MP_TAC THEN
+     ASM_SIMP_TAC[REAL_INV_1_LT] THEN ASM_ARITH_TAC);;
+
+let ABS_IPOW = prove
+  (`!x u. abs (x ipow u) = abs x ipow u`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN COND_CASES_TAC THEN
+     REWRITE_TAC[REAL_ABS_INV; REAL_ABS_POW]);;
+
+let IPOW_DIV = prove
+  (`!x y u. (x / y) ipow u = (x ipow u) * (y ipow --u)`,
+   REWRITE_TAC[real_div; IPOW_MUL; IPOW_NEG; INV_IPOW]);;
+
+let IPOW_NZ = prove
+  (`!x u. ~(x = &0) ==> ~(x ipow u = &0)`,
+   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[ipow] THEN COND_CASES_TAC THEN
+     ASM_SIMP_TAC[REAL_INV_EQ_0; REAL_POW_NZ]);;
+
+let IPOW_SUB = prove
+  (`!x u v. ~(x = &0) ==> x ipow (u - v) = x ipow u * x ipow (--v)`,
+   SIMP_TAC[INT_SUB; IPOW_ADD]);;
+
+let IPOW_EQ_0 = prove
+  (`!x u. (x ipow u = &0) <=> (x = &0) /\ ~(u = &0)`,
+   REPEAT GEN_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL [
+     POP_ASSUM MP_TAC THEN ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+       MATCH_ACCEPT_TAC IPOW_NZ;
+     UNDISCH_TAC `x ipow u = &0` THEN ASM_REWRITE_TAC[IPOW_0] THEN REAL_ARITH_TAC;
+     ASM_REWRITE_TAC[IPOW_ZERO]
+   ]);;
+
+let IPOW_POS_NUM_OF_INT = prove
+  (`!u x. &0 <= u ==> x ipow u = x pow (num_of_int u)`,
+   SIMP_TAC[ipow]);;
+
+let IPOW_NEG_NUM_OF_INT = prove
+  (`!u x. u <= &0 ==> x ipow u = inv x pow (num_of_int (--u))`,
+   REPEAT STRIP_TAC THEN
+     ONCE_REWRITE_TAC[GSYM (SPEC `u:int` INT_NEG_NEG)] THEN
+     ONCE_REWRITE_TAC[IPOW_NEG] THEN
+     ASM_SIMP_TAC[IPOW_POS_NUM_OF_INT; INT_ARITH `u <= &0 ==> &0 <= --u:int`] THEN
+     REWRITE_TAC[INT_NEG_NEG; REAL_INV_POW]);;
+
+let IPOW_LE_1 = prove
+  (`!u x. &1 <= x /\ &0 <= u ==> &1 <= x ipow u`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_POS_NUM_OF_INT; REAL_POW_LE_1]);;
+
+let IPOW_LE_1_NEG = prove
+  (`!u x. &1 <= x /\ u <= &0 ==> x ipow u <= &1`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_NEG_NUM_OF_INT] THEN
+     MATCH_MP_TAC REAL_POW_1_LE THEN
+     ASM_SIMP_TAC[REAL_LE_INV; REAL_INV_LE_1; REAL_ARITH `&1 <= x ==> &0 <= x`]);;
+
+let IPOW_1_LE = prove
+  (`!u x. &0 <= x /\ x <= &1 /\ &0 <= u ==> x ipow u <= &1`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_POS_NUM_OF_INT; REAL_POW_1_LE]);;
+
+let IPOW_1_LE_NEG = prove
+  (`!u x. &0 < x /\ x <= &1 /\ u <= &0 ==> &1 <= x ipow u`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_NEG_NUM_OF_INT] THEN
+     MATCH_MP_TAC REAL_POW_LE_1 THEN ASM_SIMP_TAC[REAL_INV_1_LE]);;
+
+let IPOW_LT_1 = prove
+  (`!u x. &1 < x /\ &0 < u ==> &1 < x ipow u`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_POS_NUM_OF_INT; INT_LT_IMP_LE] THEN
+     MATCH_MP_TAC REAL_POW_LT_1 THEN
+     ASM_SIMP_TAC[GSYM INT_OF_NUM_EQ; INT_OF_NUM_OF_INT; INT_LT_IMP_LE] THEN
+     POP_ASSUM MP_TAC THEN INT_ARITH_TAC);;
+
+let IPOW_LT_1_NEG = prove
+  (`!u x. &1 < x /\ u < &0 ==> x ipow u < &1`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_NEG_NUM_OF_INT; INT_LT_IMP_LE] THEN
+     MATCH_MP_TAC REAL_POW_1_LT THEN
+     ASM_SIMP_TAC[REAL_LE_INV; REAL_INV_LT_1; REAL_ARITH `&1 < x ==> &0 <= x`] THEN
+     ASM_SIMP_TAC[GSYM INT_OF_NUM_EQ; INT_OF_NUM_OF_INT; INT_ARITH `u < &0 ==> &0 <= --u:int`] THEN
+     POP_ASSUM MP_TAC THEN INT_ARITH_TAC);;
+
+let IPOW_1_LT = prove
+  (`!u x. &0 <= x /\ x < &1 /\ &0 < u ==> x ipow u < &1`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_POS_NUM_OF_INT; INT_LT_IMP_LE] THEN
+     MATCH_MP_TAC REAL_POW_1_LT THEN
+     ASM_SIMP_TAC[GSYM INT_OF_NUM_EQ; INT_OF_NUM_OF_INT; INT_LT_IMP_LE] THEN
+     POP_ASSUM MP_TAC THEN INT_ARITH_TAC);;
+
+let IPOW_1_LT_NEG = prove
+  (`!u x. &0 < x /\ x < &1 /\ u < &0 ==> &1 < x ipow u`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[IPOW_NEG_NUM_OF_INT; INT_LT_IMP_LE] THEN
+     MATCH_MP_TAC REAL_POW_LT_1 THEN ASM_SIMP_TAC[REAL_INV_1_LT] THEN
+     ASM_SIMP_TAC[GSYM INT_OF_NUM_EQ; INT_OF_NUM_OF_INT; INT_ARITH `u < &0 ==> &0 <= --u:int`] THEN
+     POP_ASSUM MP_TAC THEN INT_ARITH_TAC);;
+
+let DIV_IPOW2 = prove
+  (`!x u v. ~(x = &0) ==> x ipow u / x ipow v = x ipow (u - v)`,
+   SIMP_TAC[real_div; IPOW_SUB; IPOW_NEG]);;
+
+let IPOW_EQ = prove
+  (`!u x y. ~(u = &0) /\ &0 <= x /\ &0 <= y /\ x ipow u = y ipow u ==> x = y`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN COND_CASES_TAC THEN STRIP_TAC THENL [
+     MATCH_MP_TAC REAL_POW_EQ THEN EXISTS_TAC `num_of_int u` THEN
+       ASM_SIMP_TAC[GSYM INT_OF_NUM_EQ; INT_OF_NUM_OF_INT];
+     ONCE_REWRITE_TAC[GSYM REAL_EQ_INV2] THEN REWRITE_TAC[GSYM REAL_ABS_INV] THEN
+       MATCH_MP_TAC REAL_POW_EQ THEN EXISTS_TAC `num_of_int (--u)` THEN
+       ASM_SIMP_TAC[REAL_POW_INV; GSYM INT_OF_NUM_EQ; REAL_LE_INV] THEN
+       ASM_SIMP_TAC[INT_OF_NUM_OF_INT; INT_ARITH `~(&0 <= u) ==> &0 <= --u:int /\ ~(--u = &0)`]
+   ]);;
+
+let IPOW_EQ_ABS = prove
+  (`!u x y. ~(u = &0) /\ x ipow u = y ipow u ==> abs x = abs y`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN COND_CASES_TAC THEN STRIP_TAC THENL [
+     MATCH_MP_TAC REAL_POW_EQ_ABS THEN EXISTS_TAC `num_of_int u` THEN
+       ASM_SIMP_TAC[GSYM INT_OF_NUM_EQ; INT_OF_NUM_OF_INT];
+     ONCE_REWRITE_TAC[GSYM REAL_EQ_INV2] THEN REWRITE_TAC[GSYM REAL_ABS_INV] THEN
+       MATCH_MP_TAC REAL_POW_EQ_ABS THEN EXISTS_TAC `num_of_int (--u)` THEN
+       ASM_SIMP_TAC[REAL_POW_INV; GSYM INT_OF_NUM_EQ] THEN
+       ASM_SIMP_TAC[INT_OF_NUM_OF_INT; INT_ARITH `~(&0 <= u) ==> &0 <= --u:int /\ ~(--u = &0)`]
+   ]);;
+
+let IPOW_EQ_1_IMP = prove
+  (`!x u. ~(u = &0) /\ x ipow u = &1 ==> abs x = &1`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN COND_CASES_TAC THEN STRIP_TAC THENL [
+     MATCH_MP_TAC REAL_POW_EQ_1_IMP THEN EXISTS_TAC `num_of_int u` THEN
+       ASM_SIMP_TAC[GSYM INT_OF_NUM_EQ; INT_OF_NUM_OF_INT];
+     ONCE_REWRITE_TAC[GSYM REAL_EQ_INV2] THEN REWRITE_TAC[GSYM REAL_ABS_INV; REAL_INV_1] THEN
+       MATCH_MP_TAC REAL_POW_EQ_1_IMP THEN EXISTS_TAC `num_of_int (--u)` THEN
+       ASM_SIMP_TAC[REAL_POW_INV; GSYM INT_OF_NUM_EQ] THEN
+       ASM_SIMP_TAC[INT_OF_NUM_OF_INT; INT_ARITH `~(&0 <= u) ==> &0 <= --u:int /\ ~(--u = &0)`]
+   ]);;
+
+let IPOW_OF_NUM = prove
+  (`!x i. &x ipow i = 
+      if &0 <= i then &(x EXP (num_of_int i)) else inv (&(x EXP (num_of_int (--i))))`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[ipow] THEN 
+     COND_CASES_TAC THEN REWRITE_TAC[REAL_OF_NUM_POW]);;
+
+let IPOW_EQ_EXP = prove
+  (`!(r:num) (i:int). &0 <= i ==> ?m. m = num_of_int i /\ &r ipow i = &(r EXP m)`,
+   REPEAT STRIP_TAC THEN EXISTS_TAC `num_of_int i` THEN ASM_REWRITE_TAC[IPOW_OF_NUM]);;
+
+let IPOW_EQ_EXP_P = prove
+  (`!(r:num) (p:num). 0 < p ==> &r ipow (&p - &1) = &(r EXP (p - 1))`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[IPOW_OF_NUM] THEN
+     ASM_SIMP_TAC[INT_OF_NUM_SUB; ARITH_RULE `0 < p ==> 1 <= p`; INT_POS] THEN
+     REWRITE_TAC[NUM_OF_INT_OF_NUM]);;
+
+let IPOW_BETWEEN = prove
+  (`!(x:real) (y:num) (z:num) (e:int). 
+	  &0 < x /\ &y * x ipow e <= &z * x ipow e /\
+	  &z * x ipow e <= (&y + &1) * x ipow e ==>
+	  z = y \/ z = y + 1`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`&y:real`; `&z:real`; `x ipow e`] REAL_LE_RCANCEL_IMP) THEN
+     MP_TAC (SPECL[`&z:real`; `&y + &1:real`; `x ipow e`] REAL_LE_RCANCEL_IMP) THEN
+     ASM_SIMP_TAC[IPOW_LT_0; REAL_OF_NUM_ADD; REAL_OF_NUM_LE] THEN
+     ARITH_TAC);;
+
+let EXP_LE_NUM = prove
+  (`!r n. 2 <= r ==> n <= r EXP n`,
+   GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC[EXP; LE_0] THEN
+     ASM_CASES_TAC `n = 0` THENL [ ASM_REWRITE_TAC[] THEN ARITH_TAC; ALL_TAC ] THEN
+     DISCH_TAC THEN MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC `r * n:num` THEN
+     ASM_SIMP_TAC[LE_MULT_LCANCEL; ARITH_RULE `2 <= r ==> ~(r = 0)`] THEN
+     MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC `2 * n` THEN
+     ASM_REWRITE_TAC[LE_MULT_RCANCEL] THEN ASM_ARITH_TAC);;
+
+let IPOW_LE_NUM = prove
+  (`!(r:num) (n:num). 2 <= r ==> ?e. &n <= &r ipow e`,
+   REPEAT STRIP_TAC THEN EXISTS_TAC `&n:int` THEN
+     REWRITE_TAC[IPOW_OF_NUM; INT_POS; NUM_OF_INT_OF_NUM; REAL_OF_NUM_LE] THEN
+     ASM_SIMP_TAC[EXP_LE_NUM]);;
+
+let IPOW_LE_REAL = prove
+  (`!(r:num) (z:real). 2 <= r ==> ?e. z <= &r ipow e`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPEC `z:real` REAL_ARCH_SIMPLE) THEN STRIP_TAC THEN
+     MP_TAC (SPECL[`r:num`; `n:num`] IPOW_LE_NUM) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+     EXISTS_TAC `e:int` THEN ASM_ARITH_TAC);;
+
+let IPOW_LE_REAL_2 = prove
+  (`!(r:num) (z:real). &0 < z /\ 2 <= r ==> ?e. &r ipow e <= z`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`r:num`; `inv z`] IPOW_LE_REAL) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+     EXISTS_TAC `--e:int` THEN REWRITE_TAC[IPOW_NEG] THEN
+     SUBGOAL_THEN `z = inv (inv z)` (fun th -> ONCE_REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[REAL_INV_INV];
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN
+     ASM_SIMP_TAC[REAL_LT_INV]);;
+
+let IPOW_EXP_MONO = prove
+  (`!x e1 e2. &1 < x /\ x ipow e1 <= x ipow e2 ==> e1 <= e2`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `e1 <= e2:int` THEN ASM_REWRITE_TAC[] THEN
+     UNDISCH_TAC `x ipow e1 <= x ipow e2` THEN REWRITE_TAC[REAL_NOT_LE] THEN
+     MATCH_MP_TAC IPOW_MONO_LT THEN ASM_ARITH_TAC);;
+
+let IPOW_EXP_MONO_INV = prove
+  (`!x e1 e2. &0 < x /\ x < &1 /\ x ipow e2 <= x ipow e1 ==> e1 <= e2`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `e1 <= e2:int` THEN ASM_REWRITE_TAC[] THEN
+     UNDISCH_TAC `x ipow e2 <= x ipow e1` THEN REWRITE_TAC[REAL_NOT_LE] THEN
+     MATCH_MP_TAC IPOW_MONO_INV_LT THEN ASM_ARITH_TAC);;
+
+let IPOW_EXP_MONO_LT = prove
+  (`!x e1 e2. &1 <= x /\ x ipow e1 < x ipow e2 ==> e1 < e2`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `e1 < e2:int` THEN ASM_REWRITE_TAC[] THEN
+     UNDISCH_TAC `x ipow e1 < x ipow e2` THEN REWRITE_TAC[REAL_NOT_LT] THEN
+     MATCH_MP_TAC IPOW_MONO THEN ASM_ARITH_TAC);;
+
+let IPOW_EXP_MONO_INV_LT = prove
+  (`!x e1 e2. &0 < x /\ x <= &1 /\ x ipow e2 < x ipow e1 ==> e1 < e2`,
+   REPEAT STRIP_TAC THEN
+     ASM_CASES_TAC `e1 < e2:int` THEN ASM_REWRITE_TAC[] THEN
+     UNDISCH_TAC `x ipow e2 < x ipow e1` THEN REWRITE_TAC[REAL_NOT_LT] THEN
+     MATCH_MP_TAC IPOW_MONO_INV THEN ASM_ARITH_TAC);;
+
+let IPOW_MONOTONE = prove
+  (`!(x:num) (e1:int) (e2:int). 
+     2 <= x /\ &x ipow e1 <= &x ipow e2 ==> e1 <= e2`,
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC IPOW_EXP_MONO THEN
+     EXISTS_TAC `&x:real` THEN ASM_REWRITE_TAC[REAL_OF_NUM_LT] THEN
+     ASM_ARITH_TAC);;
+
+end;;

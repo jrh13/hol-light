@@ -1,0 +1,89 @@
+needs "trig/atn_eval.hl";;
+needs "arith/float_atn.hl";;
+
+open Misc_functions;;
+open Arith_float;;
+open More_float;;
+open Poly;;
+
+let x_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith x (&2, &3)`;;
+
+
+let th1 = Float_atn.float_interval_atn 5 x_th;;
+let th2 = Atn_eval.float_interval_atn 5 x_th;;
+
+(* 10: 3.243 *)
+test 100 (Float_atn.float_interval_atn 5) x_th;;
+(* 10: 4.626 *)
+test 100 (Atn_eval.float_interval_atn 5) x_th;;
+
+
+
+
+(*****************************)
+
+let float_interval_1 = mk_float_interval_small_num 1;;
+
+let HALFATN' = (SYM o SPEC_ALL o REWRITE_RULE[REAL_POW_2]) halfatn;;
+let HALFATN4' = prove(`halfatn(halfatn(halfatn(halfatn x))) = halfatn4 x`,
+		      REWRITE_TAC[halfatn4; o_THM]);;
+
+let float_interval_halfatn pp x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let xx_th = float_interval_mul pp x_th x_th in
+  let one_xx_th = float_interval_add pp float_interval_1 xx_th in
+  let sqrt_th = float_interval_sqrt pp one_xx_th in
+  let one_sqrt_th = float_interval_add pp sqrt_th float_interval_1 in
+  let r_th = float_interval_div pp x_th one_sqrt_th in
+  let th0 = INST[x_tm, x_var_real] HALFATN' in
+  let ltm, rtm = dest_comb(concl r_th) in
+    EQ_MP (AP_THM (AP_TERM (rator ltm) th0) rtm) r_th;;
+
+let float_interval_halfatn4 pp x_th =
+  let x_tm = (rand o rator o concl) x_th in
+  let r_th = float_interval_halfatn pp 
+    (float_interval_halfatn pp
+       (float_interval_halfatn pp (float_interval_halfatn pp x_th))) in
+  let th0 = INST[x_tm, x_var_real] HALFATN4' in
+  let ltm, rtm = dest_comb(concl r_th) in
+    EQ_MP (AP_THM (AP_TERM (rator ltm) th0) rtm) r_th;;
+
+
+(****************************)
+
+let y_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith y (real_zero, &3)`;;
+let z_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith (&2) (real_zero, z)`;;
+let x_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith x (&2, &3)`;;
+
+(* 0.4805, 0.92708 *)
+float_interval_halfatn 5 x_th;;
+(* 0.61802 *)
+eval_halfatn_pos_lo 5 z_th;;
+(* 0.72078 *)
+eval_halfatn_pos_hi 5 y_th;;
+
+
+
+(* 10: 2.171 *)
+test 1000 (eval_halfatn_pos_hi 5) y_th;;
+(* 10: 2.109 *)
+test 1000 (eval_halfatn_pos_lo 5) z_th;;
+(* 10: 4.140 *)
+test 1000 (float_interval_halfatn 5) x_th;;
+
+
+(* 0.048011, 0.10853 *)
+float_interval_halfatn4 5 x_th;;
+(* 0.069298 *)
+eval_halfatn4_pos_lo 5 z_th;;
+(* 0.078238 *)
+eval_halfatn4_pos_hi 5 y_th;;
+
+(* 10: 1.202 *)
+test 100 (eval_halfatn4_pos_lo 5) z_th;;
+(* 10: 1.194 *)
+test 100 (eval_halfatn4_pos_hi 5) y_th;;
+(* 10: 2.308 *)
+test 100 (float_interval_halfatn4 5) x_th;;
+
+

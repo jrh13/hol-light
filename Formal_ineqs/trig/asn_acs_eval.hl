@@ -1,0 +1,413 @@
+needs "arith/float_pow.hl";;
+needs "trig/atn_eval.hl";;
+
+module type Asn_acs_eval_sig =
+  sig
+    val float_asn_lo : int -> term -> thm
+    val float_asn_hi : int -> term -> thm
+    val float_interval_asn : int -> thm -> thm
+
+    val float_acs_lo : int -> term -> thm
+    val float_acs_hi : int -> term -> thm
+    val float_interval_acs : int -> thm -> thm
+  end;;
+
+module Asn_acs_eval : Asn_acs_eval_sig = struct
+
+open Misc_functions;;
+open Interval_arith;;
+open Arith_nat;;
+open Float_theory;;
+open Arith_float;;
+open Float_pow;;
+open More_float;;
+open Poly;;
+open Atn_eval;;
+open Misc_vars;;
+
+prioritize_real();;
+
+let neg_one_float = lhand (concl (float_neg one_float));;
+let float_neg1_eq = FLOAT_TO_NUM_CONV neg_one_float;;
+
+let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[real_zero] o
+  PURE_REWRITE_RULE[GSYM IMP_IMP; GSYM float1_eq; GSYM float_neg1_eq] o SPEC_ALL;;
+
+let asn_pos_hi_th = (th_rule o prove)
+  (`float_num F n e pow 2 <= b /\
+     c <= &1 - b /\
+     r <= sqrt c /\
+     (real_zero < r <=> T) /\
+     (float_num F n e) / r <= t /\
+     atn t <= hi
+     ==> asn (float_num F n e) <= hi`,
+   REWRITE_TAC[real_zero] THEN STRIP_TAC THEN
+     ASSUME_TAC (SPECL[`n:num`; `e:num`] FLOAT_F_POS) THEN
+     ABBREV_TAC `x = float_num F n e` THEN
+     SUBGOAL_THEN `-- &1 < x /\ x < &1` ASSUME_TAC THENL [
+       REWRITE_TAC[REAL_ARITH `(-- &1 < x /\ x < &1) <=> (abs x < abs (&1))`] THEN
+	 REWRITE_TAC[REAL_LT_SQUARE_ABS; REAL_ARITH `&1 pow 2 = &1`] THEN
+	 MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `b:real` THEN ASM_REWRITE_TAC[] THEN
+	 SUBGOAL_THEN `&0 < c` MP_TAC THENL [
+	   ONCE_REWRITE_TAC[GSYM SQRT_LT_0] THEN ASM_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ASN_ATN] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `atn t` THEN ASM_REWRITE_TAC[ATN_MONO_LE_EQ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x / r` THEN ASM_REWRITE_TAC[real_div] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `sqrt c` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC SQRT_MONO_LE THEN ASM_ARITH_TAC);;
+
+let asn_pos_lo_th = (th_rule o prove)
+  (`b <= float_num F n e pow 2 /\
+     &1 - b <= c /\
+     sqrt c <= r /\
+     (float_num F n e < &1 <=> T) /\
+     t <= (float_num F n e) / r /\
+     lo <= atn t
+     ==> lo <= asn (float_num F n e)`,
+   REWRITE_TAC[] THEN STRIP_TAC THEN
+     ASSUME_TAC (SPECL[`n:num`; `e:num`] FLOAT_F_POS) THEN
+     ABBREV_TAC `x = float_num F n e` THEN
+     SUBGOAL_THEN `-- &1 < x /\ x < &1` ASSUME_TAC THENL [
+       ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ASN_ATN; REAL_ARITH `&0 <= x /\ x < &1 ==> -- &1 < x /\ x < &1`] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `atn t` THEN ASM_REWRITE_TAC[ATN_MONO_LE_EQ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x / r` THEN ASM_REWRITE_TAC[real_div] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[SQRT_LT_0] THEN 
+     CONJ_TAC THENL [
+       REWRITE_TAC[REAL_ARITH `&0 < &1 - a <=> a < &1`; ABS_SQUARE_LT_1] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `sqrt c` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC SQRT_MONO_LE THEN ASM_ARITH_TAC);;
+
+let asn_neg_hi_th = (th_rule o prove)
+  (`b <= float_num T n e pow 2 /\
+     &1 - b <= c /\
+     sqrt c <= r /\
+     (-- &1 < float_num T n e <=> T) /\
+     (float_num T n e) / r <= t /\
+     atn t <= hi
+     ==> asn (float_num T n e) <= hi`,
+   REWRITE_TAC[interval_arith; FLOAT_NEG_T; REAL_POW_NEG; ARITH_RULE `EVEN 2`] THEN STRIP_TAC THEN
+     ASSUME_TAC (SPECL[`n:num`; `e:num`] FLOAT_F_POS) THEN
+     ABBREV_TAC `x = float_num F n e` THEN
+     ASM_SIMP_TAC[ASN_ATN; REAL_ARITH `&0 <= x /\ -- &1 < --x ==> -- &1 < --x /\ --x < &1`] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `atn t` THEN ASM_REWRITE_TAC[ATN_MONO_LE_EQ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `--x / r` THEN ASM_REWRITE_TAC[real_div] THEN
+     REWRITE_TAC[REAL_MUL_LNEG; REAL_LE_NEG2; REAL_POW_NEG; ARITH_RULE `EVEN 2`] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[SQRT_LT_0] THEN 
+     CONJ_TAC THENL [
+       REWRITE_TAC[REAL_ARITH `&0 < &1 - a <=> a < &1`; ABS_SQUARE_LT_1] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `sqrt c` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC SQRT_MONO_LE THEN ASM_ARITH_TAC);;
+
+let asn_neg_lo_th = (th_rule o prove)
+  (`float_num T n e pow 2 <= b /\
+     c <= &1 - b /\
+     r <= sqrt c /\
+     (real_zero < r <=> T) /\
+     t <= (float_num T n e) / r /\
+     lo <= atn t
+     ==> lo <= asn (float_num T n e)`,
+   REWRITE_TAC[real_zero; FLOAT_NEG_T; REAL_POW_NEG; ARITH_RULE `EVEN 2`] THEN STRIP_TAC THEN
+     ASSUME_TAC (SPECL[`n:num`; `e:num`] FLOAT_F_POS) THEN
+     ABBREV_TAC `x = float_num F n e` THEN
+     SUBGOAL_THEN `-- &1 < --x /\ --x < &1` ASSUME_TAC THENL [
+       REWRITE_TAC[REAL_ARITH `(-- &1 < --x /\ --x < &1) <=> (abs x < abs (&1))`] THEN
+	 REWRITE_TAC[REAL_LT_SQUARE_ABS; REAL_ARITH `&1 pow 2 = &1`] THEN
+	 MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC `b:real` THEN ASM_REWRITE_TAC[] THEN
+	 SUBGOAL_THEN `&0 < c` MP_TAC THENL [
+	   ONCE_REWRITE_TAC[GSYM SQRT_LT_0] THEN ASM_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ASN_ATN] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `atn t` THEN ASM_REWRITE_TAC[ATN_MONO_LE_EQ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `--x / r` THEN ASM_REWRITE_TAC[real_div] THEN
+     REWRITE_TAC[REAL_MUL_LNEG; REAL_LE_NEG2; REAL_POW_NEG; ARITH_RULE `EVEN 2`] THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `sqrt c` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC SQRT_MONO_LE THEN ASM_ARITH_TAC);;
+
+let acs_hi_th = (th_rule o prove)
+  (`(x <= &1 <=> T) /\
+     (-- &1 <= x <=> T) /\
+     interval_arith (pi / &2) (a, b) /\
+     c <= asn x /\
+     b - c <= hi
+     ==> acs x <= hi`,
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN 
+     ASM_SIMP_TAC[ACS_ASN] THEN ASM_ARITH_TAC);;
+
+let acs_lo_th = (th_rule o prove)
+  (`(x <= &1 <=> T) /\
+     (-- &1 <= x <=> T) /\
+     interval_arith (pi / &2) (a, b) /\
+     asn x <= c /\
+     lo <= a - c
+     ==> lo <= acs x`,
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN 
+     ASM_SIMP_TAC[ACS_ASN] THEN ASM_ARITH_TAC);;
+
+let asn_interval = (th_rule o prove)
+  (`interval_arith x (a, b) /\ 
+     (-- &1 <= a <=> T) /\
+     (b <= &1 <=> T) /\
+     lo <= asn a /\
+     asn b <= hi
+     ==> interval_arith (asn x) (lo, hi)`,
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN CONJ_TAC THENL [
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `asn a` THEN ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC ASN_MONO_LE THEN ASM_ARITH_TAC;
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `asn b` THEN ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC ASN_MONO_LE THEN ASM_ARITH_TAC;
+   ]);;
+
+let acs_interval = (th_rule o prove)
+  (`interval_arith x (a, b) /\ 
+     (-- &1 <= a <=> T) /\
+     (b <= &1 <=> T) /\
+     lo <= acs b /\
+     acs a <= hi
+     ==> interval_arith (acs x) (lo, hi)`,
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN CONJ_TAC THENL [
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `acs b` THEN ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC ACS_MONO_LE THEN ASM_ARITH_TAC;
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `acs a` THEN ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC ACS_MONO_LE THEN ASM_ARITH_TAC;
+   ]);;
+
+let acs_interval2 = (th_rule o prove)
+  (`interval_arith x (a, b) /\ 
+     (-- &1 <= a <=> T) /\
+     (b <= &1 <=> T) /\
+     interval_arith (pi / &2) (low, high) /\
+     asn b <= t /\
+     lo <= low - t /\
+     r <= asn a /\
+     high - r <= hi
+     ==> interval_arith (acs x) (lo, hi)`,
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN
+     SUBGOAL_THEN `-- &1 <= x /\ x <= &1` ASSUME_TAC THENL [
+       ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[ACS_ASN] THEN CONJ_TAC THENL [
+       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `low - t` THEN ASM_REWRITE_TAC[real_sub] THEN
+	 MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `asn b` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC ASN_MONO_LE THEN ASM_REWRITE_TAC[];
+       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `high - r` THEN ASM_REWRITE_TAC[real_sub] THEN
+	 MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `asn a` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC ASN_MONO_LE THEN ASM_REWRITE_TAC[];
+     ]);;
+
+(* ---------------------------- *)
+(* asn, acs of a float          *)
+(* ---------------------------- *)
+
+let float_asn_hi pp x_tm =
+  let s, n_tm, e_tm = dest_float x_tm in
+    if s = "F" then
+      let x_pow2 = float_pow_hi pp 2 x_tm in
+      let b_tm = rand (concl x_pow2) in
+      let b1 = float_sub_lo pp one_float b_tm in
+      let c_tm = lhand (concl b1) in
+      let sqrt_c = float_sqrt_lo pp c_tm in
+      let r_tm = lhand (concl sqrt_c) in
+      let x_div_r = float_div_hi pp x_tm r_tm in
+      let t_tm = rand (concl x_div_r) in
+      let atn_t = float_atn_hi pp t_tm in
+      let hi_tm = rand (concl atn_t) in
+      let cmp = float_gt0 r_tm in
+	if fst (dest_const (rand (concl cmp))) = "F" then
+	  failwith ("float_asn_hi: r <= 0: " ^ string_of_term x_tm)
+	else
+	  let th0 = INST[n_tm, n_var_num; e_tm, e_var_num; hi_tm, hi_var_real;
+			 b_tm, b_var_real; c_tm, c_var_real; r_tm, r_var_real;
+			 t_tm, t_var_real] asn_pos_hi_th in
+	    itlist MY_PROVE_HYP [x_pow2; b1; sqrt_c; x_div_r; atn_t; cmp] th0
+    else
+      let x_pow2 = float_pow_lo pp 2 x_tm in
+      let b_tm = lhand (concl x_pow2) in
+      let b1 = float_sub_hi pp one_float b_tm in
+      let c_tm = rand (concl b1) in
+      let sqrt_c = float_sqrt_hi pp c_tm in
+      let r_tm = rand (concl sqrt_c) in
+      let x_div_r = float_div_hi pp x_tm r_tm in
+      let t_tm = rand (concl x_div_r) in
+      let atn_t = float_atn_hi pp t_tm in
+      let hi_tm = rand (concl atn_t) in
+      let cmp = float_lt neg_one_float x_tm in
+	if fst (dest_const (rand (concl cmp))) = "F" then
+	  failwith ("float_asn_hi: x <= -1: " ^ string_of_term x_tm)
+	else
+	  let th0 = INST[n_tm, n_var_num; e_tm, e_var_num; hi_tm, hi_var_real;
+			 b_tm, b_var_real; c_tm, c_var_real; r_tm, r_var_real;
+			 t_tm, t_var_real] asn_neg_hi_th in
+	    itlist MY_PROVE_HYP [x_pow2; b1; sqrt_c; x_div_r; atn_t; cmp] th0;;
+
+let float_asn_lo pp x_tm =
+  let s, n_tm, e_tm = dest_float x_tm in
+    if s = "T" then
+      let x_pow2 = float_pow_hi pp 2 x_tm in
+      let b_tm = rand (concl x_pow2) in
+      let b1 = float_sub_lo pp one_float b_tm in
+      let c_tm = lhand (concl b1) in
+      let sqrt_c = float_sqrt_lo pp c_tm in
+      let r_tm = lhand (concl sqrt_c) in
+      let x_div_r = float_div_lo pp x_tm r_tm in
+      let t_tm = lhand (concl x_div_r) in
+      let atn_t = float_atn_lo pp t_tm in
+      let lo_tm = lhand (concl atn_t) in
+      let cmp = float_gt0 r_tm in
+	if fst (dest_const (rand (concl cmp))) = "F" then
+	  failwith ("float_asn_lo: r <= 0: " ^ string_of_term x_tm)
+	else
+	  let th0 = INST[n_tm, n_var_num; e_tm, e_var_num; lo_tm, lo_var_real;
+			 b_tm, b_var_real; c_tm, c_var_real; r_tm, r_var_real;
+			 t_tm, t_var_real] asn_neg_lo_th in
+	    itlist MY_PROVE_HYP [x_pow2; b1; sqrt_c; x_div_r; atn_t; cmp] th0
+    else
+      let x_pow2 = float_pow_lo pp 2 x_tm in
+      let b_tm = lhand (concl x_pow2) in
+      let b1 = float_sub_hi pp one_float b_tm in
+      let c_tm = rand (concl b1) in
+      let sqrt_c = float_sqrt_hi pp c_tm in
+      let r_tm = rand (concl sqrt_c) in
+      let x_div_r = float_div_lo pp x_tm r_tm in
+      let t_tm = lhand (concl x_div_r) in
+      let atn_t = float_atn_lo pp t_tm in
+      let lo_tm = lhand (concl atn_t) in
+      let cmp = float_lt x_tm one_float in
+	if fst (dest_const (rand (concl cmp))) = "F" then
+	  failwith ("float_asn_hi: 1 <= x: " ^ string_of_term x_tm)
+	else
+	  let th0 = INST[n_tm, n_var_num; e_tm, e_var_num; lo_tm, lo_var_real;
+			 b_tm, b_var_real; c_tm, c_var_real; r_tm, r_var_real;
+			 t_tm, t_var_real] asn_pos_lo_th in
+	    itlist MY_PROVE_HYP [x_pow2; b1; sqrt_c; x_div_r; atn_t; cmp] th0;;
+
+let float_acs_hi pp x_tm =
+  let flag1, cmp1 = float_prove_le x_tm one_float in
+  let flag2, cmp2 = float_prove_le neg_one_float x_tm in
+    if flag1 && flag2 then
+      let pi2 = pi2_approx_array.(pp) in
+      let bounds = rand (concl pi2) in
+      let ltm, b_tm = dest_comb bounds in
+      let a_tm = rand ltm in
+      let asn_x = float_asn_lo pp x_tm in
+      let c_tm = lhand (concl asn_x) in
+      let sub = float_sub_hi pp b_tm c_tm in
+      let hi_tm = rand (concl sub) in
+      let th0 = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		     c_tm, c_var_real; hi_tm, hi_var_real] acs_hi_th in
+	itlist MY_PROVE_HYP [cmp1; cmp2; pi2; asn_x; sub] th0
+    else
+      failwith ("float_acs_hi: x < -1 or x > 1: " ^ string_of_term x_tm);;
+
+let float_acs_lo pp x_tm =
+  let flag1, cmp1 = float_prove_le x_tm one_float in
+  let flag2, cmp2 = float_prove_le neg_one_float x_tm in
+    if flag1 && flag2 then
+      let pi2 = pi2_approx_array.(pp) in
+      let bounds = rand (concl pi2) in
+      let ltm, b_tm = dest_comb bounds in
+      let a_tm = rand ltm in
+      let asn_x = float_asn_hi pp x_tm in
+      let c_tm = rand (concl asn_x) in
+      let sub = float_sub_lo pp a_tm c_tm in
+      let lo_tm = lhand (concl sub) in
+      let th0 = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		     c_tm, c_var_real; lo_tm, lo_var_real] acs_lo_th in
+	itlist MY_PROVE_HYP [cmp1; cmp2; pi2; asn_x; sub] th0
+    else
+      failwith ("float_acs_lo: x < -1 or x > 1: " ^ string_of_term x_tm);;
+
+
+(* ---------------------------- *)
+(* asn, acs of an interval      *)
+(* ---------------------------- *)
+
+let float_interval_asn pp x_th =
+  let x_tm, bounds = dest_interval_arith (concl x_th) in
+  let ltm, b_tm = dest_comb bounds in
+  let a_tm = rand ltm in
+  let flag1, cmp1 = float_prove_le neg_one_float a_tm in
+  let flag2, cmp2 = float_prove_le b_tm one_float in
+    if flag1 && flag2 then
+      let asn_a = float_asn_lo pp a_tm and
+	  asn_b = float_asn_hi pp b_tm in
+      let lo_tm = lhand (concl asn_a) and
+	  hi_tm = rand (concl asn_b) in
+      let th0 = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		     lo_tm, lo_var_real; hi_tm, hi_var_real] asn_interval in
+	itlist MY_PROVE_HYP [x_th; cmp1; cmp2; asn_a; asn_b] th0
+    else
+      failwith ("float_interval_asn: x < -1 or x > 1: " ^ string_of_term (concl x_th));;
+
+let float_interval_acs pp x_th =
+  let x_tm, bounds = dest_interval_arith (concl x_th) in
+  let ltm, b_tm = dest_comb bounds in
+  let a_tm = rand ltm in
+  let flag1, cmp1 = float_prove_le neg_one_float a_tm in
+  let flag2, cmp2 = float_prove_le b_tm one_float in
+    if flag1 && flag2 then
+      let acs_a = float_acs_hi pp a_tm and
+	  acs_b = float_acs_lo pp b_tm in
+      let lo_tm = lhand (concl acs_b) and
+	  hi_tm = rand (concl acs_a) in
+      let th0 = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		     lo_tm, lo_var_real; hi_tm, hi_var_real] acs_interval in
+	itlist MY_PROVE_HYP [x_th; cmp1; cmp2; acs_a; acs_b] th0
+    else
+      failwith ("float_interval_acs: x < -1 or x > 1: " ^ string_of_term (concl x_th));;
+
+(* UNUSED *)
+let float_interval_acs2 pp x_th =
+  let x_tm, bounds = dest_interval_arith (concl x_th) in
+  let ltm, b_tm = dest_comb bounds in
+  let a_tm = rand ltm in
+  let flag1, cmp1 = float_prove_le neg_one_float a_tm in
+  let flag2, cmp2 = float_prove_le b_tm one_float in
+    if flag1 && flag2 then
+      let asn_a = float_asn_lo pp a_tm and
+	  asn_b = float_asn_hi pp b_tm and
+	  pi2 = pi2_approx_array.(pp) in
+      let bounds = rand (concl pi2) in
+      let ltm, high_tm = dest_comb bounds in
+      let low_tm = rand ltm in
+      let t_tm = rand (concl asn_b) and
+	  r_tm = lhand (concl asn_a) in
+      let sub_lo = float_sub_lo pp low_tm t_tm and
+	  sub_hi = float_sub_hi pp high_tm r_tm in
+      let lo_tm = lhand (concl sub_lo) and
+	  hi_tm = rand (concl sub_hi) in
+      let th0 = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		     low_tm, low_var_real; high_tm, high_var_real;
+		     t_tm, t_var_real; r_tm, r_var_real;
+		     lo_tm, lo_var_real; hi_tm, hi_var_real] acs_interval2 in
+	itlist MY_PROVE_HYP [x_th; cmp1; cmp2; pi2; asn_a; asn_b; sub_lo; sub_hi] th0
+    else
+      failwith ("float_interval_acs: x < -1 or x > 1: " ^ string_of_term (concl x_th));;
+
+end;;

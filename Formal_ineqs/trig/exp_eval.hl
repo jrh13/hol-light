@@ -1,0 +1,414 @@
+(* =========================================================== *)
+(* Formal interval evaluation of exp                           *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-12-10                                            *)
+(* =========================================================== *)
+
+needs "trig/exp_log.hl";;
+needs "trig/poly_eval.hl";;
+needs "arith/float_pow.hl";;
+
+module type Exp_eval_sig =
+  sig
+    val float_exp_hi : int -> term -> thm
+    val float_exp_lo : int -> term -> thm
+    val float_interval_exp : int -> thm -> thm
+  end;;
+
+module Exp_eval : Exp_eval_sig = struct
+
+open Misc_functions;;
+open Exp_log;;
+open More_list;;
+open Poly;;
+open Poly_eval;;
+open Interval_arith;;
+open Float_theory;;
+open Arith_nat;;
+open Arith_float;;
+open More_float;;
+open Float_pow;;
+open Misc_vars;;
+
+prioritize_real();;
+
+(* Defines the maximum x for which a poly approximation is computed directly. *)
+(* Should be in (0, 1].                                                       *)
+let exp_max_x = 1.0;;
+
+let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL;;
+
+(* ----------------- *)
+(* Theorems          *)
+(* ----------------- *)
+
+let exp_interval = (th_rule o prove)
+  (`interval_arith x (a, b) /\
+     lo <= exp a /\
+     exp b <= hi
+     ==> interval_arith (exp x) (lo, hi)`,
+   REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THENL [
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `exp a` THEN
+       ASM_REWRITE_TAC[REAL_EXP_MONO_LE];
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `exp b` THEN
+       ASM_REWRITE_TAC[REAL_EXP_MONO_LE]
+   ]);;
+
+let bound_pos_low_trans = prove
+  (`a <= e ==> 
+     interval_arith r (&0, a) ==>
+     r <= e`,
+   REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC);;
+
+let bound_neg_low_trans = prove(`p1 - x * p2 <= e ==>
+				  interval_arith a (&0, p1) /\
+				  interval_arith p2 (&0, b) /\
+				  &0 <= x /\
+				  x * b <= n /\
+				  r <= a - n
+				  ==> r <= e`, 
+   REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[real_sub] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * b:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_REFL]);;
+
+let bound_neg_high_trans = prove(`e <= p1 - x * p2 ==>
+				   interval_arith p1 (&0, a) /\
+				   interval_arith b (&0, p2) /\
+				   &0 <= x /\
+				   n <= x * b /\
+				   a - n <= r
+				   ==> e <= r`, 
+   REWRITE_TAC[interval_arith] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a - n:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `p1 - x * p2:real` THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[real_sub] THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_REWRITE_TAC[REAL_LE_NEG2] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x * b:real` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_REFL]);;
+
+(* Argument reduction *)
+
+let exp_neg_low = (th_rule o prove)
+  (`r <= exp (-- float_num F n e) 
+   ==> r <= exp (float_num T n e)`,
+   REWRITE_TAC[FLOAT_NEG]);;
+
+let exp_neg_high = (th_rule o prove)
+  (`exp (-- float_num F n e) <= r 
+   ==> exp (float_num T n e) <= r`,
+   REWRITE_TAC[FLOAT_NEG]);;
+
+let exp_pos_high = (th_rule o prove)
+  (`&0 < t /\ t <= exp (--x) /\ inv t <= r 
+   ==> exp x <= r`,
+   REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `inv t` THEN ASM_REWRITE_TAC[] THEN
+     GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM REAL_NEG_NEG] THEN
+     ONCE_REWRITE_TAC[REAL_EXP_NEG] THEN
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[]);;
+
+let exp_reduce_low = (th_rule o prove)
+  (`&0 < t /\ t = &k /\ y <= x / t /\ lo <= exp y /\ low <= lo pow k /\ &0 <= lo
+      ==> low <= exp x`,
+   REPEAT STRIP_TAC THEN
+     UNDISCH_TAC `t = &k` THEN DISCH_THEN (ASSUME_TAC o SYM) THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `lo pow k` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `exp (x / t) pow k` THEN
+     CONJ_TAC THENL [
+       MATCH_MP_TAC REAL_POW_LE2 THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `exp y` THEN
+	 ASM_REWRITE_TAC[REAL_EXP_MONO_LE];
+       ASM_REWRITE_TAC[GSYM REAL_EXP_N; REAL_ARITH `a * b / a = b * (a / a)`] THEN
+	 SUBGOAL_THEN `~(t = &0)` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	 ASM_SIMP_TAC[REAL_DIV_REFL; REAL_MUL_RID; REAL_LE_REFL]
+     ]);;
+
+let exp_reduce_high = (th_rule o prove)
+  (`&0 < t /\ t = &k /\ x / t <= y /\ exp y <= hi /\ hi pow k <= high
+      ==> exp x <= high`,
+   REPEAT STRIP_TAC THEN
+     UNDISCH_TAC `t = &k` THEN DISCH_THEN (ASSUME_TAC o SYM) THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `hi pow k` THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `exp (x / t) pow k` THEN
+     CONJ_TAC THENL [
+       ASM_REWRITE_TAC[GSYM REAL_EXP_N; REAL_ARITH `a * b / a = b * (a / a)`] THEN
+	 SUBGOAL_THEN `~(t = &0)` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	 ASM_SIMP_TAC[REAL_DIV_REFL; REAL_MUL_RID; REAL_LE_REFL];
+       MATCH_MP_TAC REAL_POW_LE2 THEN REWRITE_TAC[REAL_EXP_POS_LE] THEN
+	 MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `exp y` THEN
+	 ASM_REWRITE_TAC[REAL_EXP_MONO_LE]
+     ]);;
+
+
+(* ----------------- *)
+(* Functions         *)
+(* ----------------- *)
+
+let mk_exp_bound_tables exp_bound_th =
+  let exp_bound = (SPEC_ALL o 
+		     REWRITE_RULE[poly_f_even; poly_f_odd; GSYM REAL_POW_2; REAL_POW_POW] o
+		     REWRITE_RULE[sum_eq_poly_f] o
+		     REWRITE_RULE[alt_sum_eq_poly_f; real_div]) exp_bound_th in
+  let reduce_rule = CONV_RULE (DEPTH_CONV 
+				 (FIRST_CONV [NUM_SUC_CONV; NUM_ADD_CONV; NUM_MULT_CONV])) in
+  let find_poly_f = rev o find_terms (fun tm -> try (rator o rator) tm = `poly_f` 
+				                with Failure _ -> false) in
+    fun pp n ->
+      let n_tm = mk_small_numeral n in
+      let th0 = INST[n_tm, n_var_num] exp_bound in
+      let th1 = CONV_RULE NUM_REDUCE_CONV th0 in
+      let poly_tms0 = find_poly_f (concl th1) in
+      let ns_th = map (REDEPTH_CONV num_CONV o rand o rand o rator) poly_tms0 in
+      let th2 = REWRITE_RULE(ns_th @ [TABLE_SUC; TABLE_0; APPEND]) th1 in
+      let bound_th = reduce_rule th2 in
+      let poly_tms = find_poly_f (concl bound_th) in
+      let cs_tms = map (rand o rator) poly_tms in
+      let cs_lists = map (mk_poly_coeffs pp) cs_tms in
+	bound_th, zip cs_tms cs_lists;;
+
+
+(* Computes x^k / k! *)
+let rec x_pow_over_fact x k =
+  if k <= 0 then 1. else
+    x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
+
+(* Computes i such that x^i / i! <= base^(-(p + 1)) and cond(i) *)
+let n_of_p_exp x pp cond = 
+  let t = (float_of_int Arith_num.arith_base) ** (float_of_int (-pp - 1)) in
+  let rec try_i i =
+    let _ = if i > 50 then failwith "n_of_p_exp: cannot find i" else () in
+      if cond i then
+	let r = x_pow_over_fact x i in
+	  if r <= t then i else try_i (i + 1) 
+      else
+	try_i (i + 1)
+  in
+    try_i 0;;
+
+(* Makes the table of exp coefficients assuming the interval [0, exp_max_x] *)
+let mk_exp_pos_lower pp =
+  let n = n_of_p_exp exp_max_x pp (fun i -> true) in
+  let bound_th0, css = mk_exp_bound_tables exp_pos_poly_lower_bound (pp + 1) n in
+  let cs1 = hd css in
+  let RULE2 = UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL in
+  let bound_th = (RULE2 o MATCH_MP bound_pos_low_trans o UNDISCH_ALL) bound_th0 in
+    bound_th, cs1;;
+
+(* Makes the table of exp coefficients assuming the interval [0, exp_max_x] *)
+let mk_exp_neg_lower pp =
+  let n = n_of_p_exp exp_max_x pp (fun i -> i land 1 = 1) in
+  let bound_th0, css = mk_exp_bound_tables exp_neg_poly_lower_bound (pp + 1) n in
+  let cs1, cs2 = pair_of_list css in
+  let RULE2 = UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL in
+  let bound_th = (RULE2 o MATCH_MP bound_neg_low_trans o th_rule o
+		 PURE_REWRITE_RULE[GSYM float1_eq]) bound_th0 in
+    bound_th, cs1, cs2;;
+
+(* Makes the table of exp coefficients assuming the interval [0, exp_max_x] *)
+let mk_exp_neg_upper pp =
+  let n = n_of_p_exp exp_max_x pp (fun i -> i land 1 = 0) in
+  let bound_th0, css = mk_exp_bound_tables exp_neg_poly_upper_bound (pp + 1) n in
+  let cs1, cs2 = pair_of_list css in
+  let RULE2 = UNDISCH_ALL o REWRITE_RULE[GSYM IMP_IMP] o SPEC_ALL in
+  let bound_th = (RULE2 o MATCH_MP bound_neg_high_trans o th_rule o
+		 PURE_REWRITE_RULE[GSYM float1_eq]) bound_th0 in
+    bound_th, cs1, cs2;;
+
+(* Computes a lower bound of exp at the given non-negative floating-point number.        *)
+(* The given number should be relatively small (|x| <= exp_max_x) to get a good results. *)
+let float_exp_pos_low_raw =
+  let exp_table = Array.init 21 mk_exp_pos_lower in
+  let pos_lemma = (th_rule o prove)
+    (`&0 <= x ==> interval_arith x (&0, x)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+    fun pp x_tm ->
+      let bound_th, cs1 = exp_table.(pp) in
+      let pp = pp + 1 in
+      let x_pos = EQT_ELIM (float_ge0 x_tm) in
+      let pos_th = MY_PROVE_HYP x_pos (INST[x_tm, x_var_real] pos_lemma) in
+      let p1_low_th = eval_low_poly_f_pos_pos pp cs1 pos_th in
+      let r_tm = rand (rator (concl p1_low_th)) in
+      let th0 = INST[r_tm, r_var_real; x_tm, x_var_real] bound_th in
+	MY_PROVE_HYP x_pos (MY_PROVE_HYP p1_low_th th0);;
+
+(* Computes a lower bound of exp(-x) for the given floating-point number 0 <= x <= 1.    *)
+(* The given number should be relatively small (|x| <= exp_max_x) to get a good results. *)
+let float_exp_neg_low_raw =
+  let exp_table = Array.init 21 mk_exp_neg_lower in
+    fun pp x_tm ->
+      let bound_th, cs1, cs2 = exp_table.(pp) in
+      let pp = pp + 1 in
+      let x_pow2_high = eval_pow2_high pp x_tm and
+	  x_pow2_low = eval_pow2_low pp x_tm in
+      let p1_low_th = eval_low_poly_f_pos_pos pp cs1 x_pow2_low and
+	  p2_high_th = eval_high_poly_f_pos_pos pp cs2 x_pow2_high in
+      let a_tm = (rand o rator o concl) p1_low_th in
+      let b_tm = (rand o rand o concl) p2_high_th in
+      let xb_le_n = float_mul_hi pp x_tm b_tm in
+      let n_tm = (rand o concl) xb_le_n in
+      let r_le_an = float_sub_lo pp a_tm n_tm in
+      let r_tm = (rand o rator o concl) r_le_an in
+      let cmp_1 = EQT_ELIM (float_le x_tm one_float) in
+      let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
+		     r_tm, r_var_real; x_tm, x_var_real] bound_th in
+	itlist MY_PROVE_HYP [p1_low_th; p2_high_th; xb_le_n; r_le_an; cmp_0; cmp_1] th0;;
+
+(* Computes an upper bound of exp(-x) for the given floating-point number 0 <= x <= 1.   *)
+(* The given number should be relatively small (|x| <= exp_max_x) to get a good results. *)
+let float_exp_neg_high_raw =
+  let exp_table = Array.init 21 mk_exp_neg_upper in
+    fun pp x_tm ->
+      let bound_th, cs1, cs2 = exp_table.(pp) in
+      let pp = pp + 1 in
+      let x_pow2_high = eval_pow2_high pp x_tm and
+	  x_pow2_low = eval_pow2_low pp x_tm in
+      let p1_high_th = eval_high_poly_f_pos_pos pp cs1 x_pow2_high in
+      let p2_low_th = eval_low_poly_f_pos_pos pp cs2 x_pow2_low in
+      let a_tm = (rand o rand o concl) p1_high_th in
+      let b_tm = (rand o rator o concl) p2_low_th in
+      let n_le_xb = float_mul_lo pp x_tm b_tm in
+      let n_tm = (rand o rator o concl) n_le_xb in
+      let an_le_r = float_sub_hi pp a_tm n_tm in
+      let r_tm = (rand o concl) an_le_r in
+      let cmp_1 = EQT_ELIM (float_le x_tm one_float) in
+      let cmp_0 = EQT_ELIM (float_ge0 x_tm) in
+      let th0 = INST[a_tm, a_var_real; b_tm, b_var_real; n_tm, n_var_real; 
+		     r_tm, r_var_real; x_tm, x_var_real] bound_th in
+	itlist MY_PROVE_HYP [p1_high_th; p2_low_th; n_le_xb; an_le_r; cmp_1; cmp_0] th0;;
+
+(* TODO: move to arith_float.hl *)
+let float_inv_hi =
+  let div_lemma = (th_rule o PURE_REWRITE_RULE[GSYM float1_eq] o prove)
+    (`&1 / x <= hi ==> inv x <= hi`,
+     REWRITE_TAC[real_div; REAL_MUL_LID]) in
+    fun pp tm ->
+      let div_th = float_div_hi pp one_float tm in
+      let hi_tm = rand (concl div_th) in
+      let th0 = INST[tm, x_var_real; hi_tm, hi_var_real] div_lemma in
+	MY_PROVE_HYP div_th th0;;
+
+(* x should be in [-1, infty), |x| should be small to get a good result *)
+let float_exp_low_raw pp x_tm =
+  try
+    let s, n_tm, e_tm = dest_float x_tm in
+      if s = "F" then
+	float_exp_pos_low_raw pp x_tm
+      else
+	let x_pos = make_float "F" n_tm e_tm in
+	let low_th = float_exp_neg_low_raw pp x_pos in
+	let r_tm = rand (rator (concl low_th)) in
+	let th0 = INST[r_tm, r_var_real; n_tm, n_var_num; e_tm, e_var_num] exp_neg_low in
+	  MY_PROVE_HYP low_th th0
+  with Failure msg ->
+    error ("float_exp_low_raw: " ^ msg) [x_tm] [];;
+
+(* x should be in [-1, 1], |x| should be small to get a good result *)
+let float_exp_high_raw pp x_tm =
+  try
+    let s, n_tm, e_tm = dest_float x_tm in
+      if s = "F" then
+	let low_th = float_exp_neg_low_raw pp x_tm in
+	let t_tm = rand (rator (concl low_th)) in
+	let t_pos = EQT_ELIM (float_gt0 t_tm) in
+	let inv_t = float_inv_hi pp t_tm in
+	let r_tm = rand (concl inv_t) in
+	let th0 = INST[t_tm, t_var_real; r_tm, r_var_real; x_tm, x_var_real] exp_pos_high in
+	  MY_PROVE_HYP t_pos (MY_PROVE_HYP low_th (MY_PROVE_HYP inv_t th0))
+      else
+	let x_pos = make_float "F" n_tm e_tm in
+	let high_th = float_exp_neg_high_raw pp x_pos in
+	let r_tm = rand (concl high_th) in
+	let th0 = INST[r_tm, r_var_real; n_tm, n_var_num; e_tm, e_var_num] exp_neg_high in
+	  MY_PROVE_HYP high_th th0
+  with Failure msg ->
+    error ("float_exp_high_raw: " ^ msg) [x_tm] [];;
+
+let raw_num_to_numeral tm =
+  let th0 = INST[tm, n_var_num] (SYM Arith_num.NUM_THM) in
+  let th1 = NUM_TO_NUMERAL_CONV (mk_comb (Arith_num.num_const, tm)) in
+    TRANS th0 th1;;
+
+(* Returns the theorem |- ##n = &n where the rhs is a HOL Light numeral *)
+let mk_float_eq =
+  let eq_lemma = (SYM o NUMERALS_TO_NUM o REWRITE_RULE[min_exp_def] o SPEC_ALL) FLOAT_OF_NUM in
+  let inj = `(&):num->real` in
+    fun n ->
+      let th0 = INST[rand (mk_small_numeral_array n), n_var_num] eq_lemma in
+      let th1 = raw_num_to_numeral (rand (rand (concl th0))) in
+	TRANS th0 (AP_TERM inj th1);;
+
+(* Finds an integer k such that x / k <= exp_max_x *)
+let reduce_float x_tm =
+  let f = abs_float (float_of_float_tm x_tm) in
+    if f <= exp_max_x then
+      false, 0, TRUTH
+    else
+      let k = int_of_float (floor (f /. exp_max_x)) + 1 in
+	true, k, mk_float_eq k;;
+
+(* exp upper bound *)
+let float_exp_hi pp x_tm =
+  let flag, k, k_eq = reduce_float x_tm in
+    if not flag then
+      float_exp_high_raw pp x_tm
+    else
+      let ltm, rtm = dest_comb (concl k_eq) in
+      let k_tm = rand rtm and
+	  t_tm = rand ltm in
+      let t_gt0 = EQT_ELIM (float_gt0 t_tm) in
+      let div_th = float_div_hi (pp + 1) x_tm t_tm in
+      let y_tm = rand (concl div_th) in
+      let exp_y = float_exp_high_raw (pp + 1) y_tm in
+      let hi_tm = rand (concl exp_y) in
+      let hi_pow = float_pow_hi pp k hi_tm in
+      let high_tm = rand (concl hi_pow) in
+      let th0 = INST[t_tm, t_var_real; k_tm, k_var_num; 
+		     y_tm, y_var_real; hi_tm, hi_var_real; 
+		     high_tm, high_var_real; x_tm, x_var_real] exp_reduce_high in
+	itlist MY_PROVE_HYP [t_gt0; k_eq; div_th; exp_y; hi_pow] th0;;
+
+(* exp lower bound *)
+let float_exp_lo pp x_tm =
+  let flag, k, k_eq = reduce_float x_tm in
+    if not flag then
+      float_exp_low_raw pp x_tm
+    else
+      let ltm, rtm = dest_comb (concl k_eq) in
+      let k_tm = rand rtm and
+	  t_tm = rand ltm in
+      let t_gt0 = EQT_ELIM (float_gt0 t_tm) in
+      let div_th = float_div_lo (pp + 1) x_tm t_tm in
+      let y_tm = rand (rator (concl div_th)) in
+      let exp_y = float_exp_low_raw (pp + 1) y_tm in
+      let lo_tm = rand (rator (concl exp_y)) in
+      let lo_pow = float_pow_lo pp k lo_tm in
+      let low_tm = rand (rator (concl lo_pow)) in
+      let lo_ge0 = EQT_ELIM (float_ge0 lo_tm) in
+      let th0 = INST[t_tm, t_var_real; k_tm, k_var_num; 
+		     y_tm, y_var_real; lo_tm, lo_var_real; 
+		     low_tm, low_var_real; x_tm, x_var_real] exp_reduce_low in
+	itlist MY_PROVE_HYP [t_gt0; k_eq; div_th; exp_y; lo_pow; lo_ge0] th0;;
+
+(* exp interval *)
+let float_interval_exp pp x_th =
+  let x_tm, a_tm, b_tm = dest_float_interval (concl x_th) in
+  let exp_lo = float_exp_lo pp a_tm and
+      exp_hi = float_exp_hi pp b_tm in
+  let lo_tm = rand (rator (concl exp_lo)) and
+      hi_tm = rand (concl exp_hi) in
+  let th0 = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		 lo_tm, lo_var_real; hi_tm, hi_var_real] exp_interval in
+    MY_PROVE_HYP x_th (MY_PROVE_HYP exp_lo (MY_PROVE_HYP exp_hi th0));;
+
+end;;
+
+
+(*
+let x_th = float_interval_const 4 `&1`;;
+float_interval_exp 4 x_th;;
+float_interval_exp 20 x_th;;
+*)
+

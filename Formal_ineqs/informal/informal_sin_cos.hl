@@ -1,0 +1,412 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: sin, cos                    *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2014-07-16                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "informal/informal_poly.hl";;
+needs "informal/informal_atn.hl";;
+
+(* sin, cos *)
+module type Informal_sin_cos_sig =
+  sig
+    val cos_interval : int -> Informal_interval.interval -> Informal_interval.interval
+    val sin_interval : int -> Informal_interval.interval -> Informal_interval.interval
+  end;;
+
+module Informal_sin_cos : Informal_sin_cos_sig = struct
+
+open Num;;
+open Informal_float;;
+open Informal_interval;;
+open Informal_poly;;
+open Informal_atn;;
+
+let rec fact n =
+  if sign_num n <= 0 then Int 1 else
+    n */ fact (pred_num n);;
+
+let one = mk_small_num_float 1 and
+    neg_one = neg_float (mk_small_num_float 1);;
+
+let cos_tables pp n =
+  let t1 = map (fun i -> fact (Int (4 * i))) (0 -- (n / 2)) and
+      t2 = map (fun i -> fact (Int (4 * i + 2))) (0 -- ((n + 1) / 2 - 1)) in
+  let f n = inv_interval pp (mk_num_interval n) in
+    map f t1, map f t2;;
+
+(* Computes x^k / k! *)
+let rec x_pow_over_fact x k =
+  if k <= 0 then 1. else
+    x /. (float_of_int k) *. x_pow_over_fact x (k - 1);;
+
+(* Computes i such that x^(2(i + 1))/(2(i + 1))! <= base^(-(p + 1)) and cond(i) *)
+let n_of_p_cos x pp cond = 
+  let t = (float_of_int Informal_nat.arith_base) ** (float_of_int (-pp - 1)) in
+  let rec try_i i =
+    let _ = if i > 50 then failwith "n_of_p_cos: cannot find i" else () in
+      if cond i then
+	let r = x_pow_over_fact x (2 * (i + 1)) in
+	  if r <= t then i else try_i (i + 1) 
+      else
+	try_i (i + 1)
+  in
+    try_i 0;;
+
+let mk_cos_upper pp =
+  let n = n_of_p_cos (2.0 *. atan 1.0) pp (fun i -> i land 1 = 0) in
+    cos_tables (pp + 1) n;;
+
+let mk_cos_lower pp =
+  let n = n_of_p_cos (2.0 *. atan 1.0) pp (fun i -> i land 1 = 1) in
+    cos_tables (pp + 1) n;;
+
+let cos_high_raw =
+  let tables = Array.init 21 mk_cos_upper in
+  let one = mk_small_num_float 1 in
+    fun pp x ->
+      let cs1, cs2 = tables.(pp) in
+      let pp = pp + 1 in
+      let x4_high = eval_pow4_high pp x in
+      let m, x4_low = eval_pow2_pow4_low pp x in
+      let a = eval_high_poly_f_pos_pos pp cs1 x4_high in
+      let b = eval_low_poly_f_pos_pos pp cs2 x4_low in
+      let n = mul_float_lo pp m b in
+      let r = sub_float_hi pp a n in
+	if le_float r one then r else one;;
+
+let cos_low_raw =
+  let tables = Array.init 21 mk_cos_lower in
+  let neg_one = neg_float (mk_small_num_float 1) in
+    fun pp x ->
+      let cs1, cs2 = tables.(pp) in
+      let pp = pp + 1 in
+      let m, x4_high = eval_pow2_pow4_high pp x in
+      let x4_low = eval_pow4_low pp x in
+      let a = eval_low_poly_f_pos_pos pp cs1 x4_low in
+      let b = eval_high_poly_f_pos_pos pp cs2 x4_high in
+      let n = mul_float_hi pp m b in
+      let r = sub_float_lo pp a n in
+	if le_float neg_one r then r else neg_one;;
+
+(* 2 * pi *)
+let two_pi_array =
+  let n = Array.length pi_approx_array in
+  let pi = pi_approx_array.(n - 1) in
+  let two_pi = mul_interval n (mk_small_num_interval 2) pi in
+    Array.init (n - 1) (fun i -> if i = 0 then zero_interval else round_interval i two_pi);;
+	
+(* (3 * pi) / 2 *)
+let pi32_array =
+  let n = Array.length pi_approx_array in
+  let pi = pi_approx_array.(n - 1) in
+  let three = mk_small_num_interval 3 in
+  let two = mk_small_num_interval 2 in
+  let pi32 = div_interval n (mul_interval n three pi) two in
+    Array.init (n - 1) (fun i -> if i = 0 then zero_interval else round_interval i pi32);;
+
+(* -pi *)
+let neg_pi_array = 
+  let n = Array.length pi_approx_array in
+    Array.init n (fun i -> neg_interval pi_approx_array.(i));;
+
+
+(* ------------------------------ *)
+(* Reduction procedures           *)
+(* ------------------------------ *)
+
+let eval_high_0_pi pp x =
+  let pi2 = pi2_approx_array.(pp) in
+    if not (ge_interval x pi2) then
+      cos_high_raw pp x
+    else
+      let pi = pi_approx_array.(pp) in
+      let hi = snd (dest_interval pi) in
+      let t = sub_float_hi pp hi x in
+	if not (le_interval t pi) then
+	  one
+	else
+	  let r = cos_low_raw pp t in
+	    neg_float r;;
+
+let eval_low_0_pi pp x =
+  let pi2 = pi2_approx_array.(pp) in
+    if not (ge_interval x pi2) then
+      cos_low_raw pp x
+    else
+      let pi = pi_approx_array.(pp) in
+      let lo = fst (dest_interval pi) in
+      let t = sub_float_lo pp lo x in
+	if not (ge0_float t) then
+	  neg_one
+	else
+	  let r = cos_high_raw pp t in
+	    neg_float r;;
+
+let eval_high_neg_pi_0 pp x =
+  let y = neg_float x in
+    eval_high_0_pi pp y;;
+
+let eval_low_neg_pi_0 pp x =
+  let y = neg_float x in
+    eval_low_0_pi pp y;;
+	  
+let eval_high_pi_2pi pp x =
+  let pi32_lo = fst (dest_interval pi32_array.(pp)) in
+    if le_float x pi32_lo then
+      let pi = pi_approx_array.(pp) in
+      let lo = fst (dest_interval pi) in
+      let t = sub_float_hi pp x lo in
+	if not (le_interval t pi) then
+	  one
+	else
+	  let r = cos_low_raw pp t in
+	    neg_float r
+    else
+      let two_pi = two_pi_array.(pp) in
+      let lo = fst (dest_interval two_pi) in
+      let t = sub_float_hi pp lo x in
+	if not (ge0_float t) then
+	  one
+	else
+	  cos_high_raw pp t;;
+
+let eval_low_pi_2pi pp x =
+  let pi = pi_approx_array.(pp) in
+  let pi32_lo = fst (dest_interval pi32_array.(pp)) in
+    if le_float x pi32_lo then
+      let hi = snd (dest_interval pi) in
+      let t = sub_float_lo pp x hi in
+	if not (ge0_float t) then
+	  neg_one
+	else
+	  let r = cos_high_raw pp t in
+	    neg_float r
+    else
+      let two_pi = two_pi_array.(pp) in
+      let hi = snd (dest_interval two_pi) in
+      let t = sub_float_hi pp hi x in
+	if not (le_interval t pi) then
+	  neg_one
+	else
+	  cos_low_raw pp t;;
+
+
+(* ------------------------------ *)
+(* Interval reduction             *)
+(* ------------------------------ *)
+
+exception Correction_failed;;
+
+let get_i =
+  let f_pi = 3.14159265358979323846 and
+      f_2_pi = 6.28318530717958647693 in
+    fun f ->
+      let x = float_of_ifloat f in
+      let k0 = -int_of_float (x /. f_2_pi) in
+      let y = x +. float_of_int k0 *. f_2_pi in
+	if y < -.f_pi then k0 + 1
+	else if y > f_pi then k0 - 1 
+	else k0;;
+
+let reduction_zero a b = a, b;;
+
+let reduction_neg pp i a b =
+  let _ = assert (i < 0) in
+  let z = mk_small_num_float (-i) in
+  let lo, hi = dest_interval two_pi_array.(pp) in
+  let m = mul_float_hi pp z hi in
+  let n = mul_float_lo pp z lo in
+  let a1 = sub_float_lo pp a m in
+  let b1 = sub_float_hi pp b n in
+    a1, b1;;
+
+let reduction_pos pp i a b =
+  let _ = assert (i >= 0) in
+  let z = mk_small_num_float i in
+  let lo, hi = dest_interval two_pi_array.(pp) in
+  let m = mul_float_lo pp z lo in
+  let n = mul_float_hi pp z hi in
+  let a1 = add_float_lo pp a m in
+  let b1 = add_float_hi pp b n in
+    a1, b1;;
+
+let correct_neg_pi pp a1 b1 =
+  let lo, hi = dest_interval two_pi_array.(pp) in
+  let a2 = add_float_lo pp a1 lo in
+  let b2 = add_float_hi pp b1 hi in
+    a2, b2;;
+
+let correct_pi pp a1 =
+  let pi = pi_approx_array.(pp) in
+    if le_interval a1 pi then
+      a1
+    else
+      fst (dest_interval pi);;
+
+let correct_ab_sum pp a1 b1 =
+  let lo, hi = dest_interval two_pi_array.(pp) in
+  let n = add_float_hi pp a1 b1 in
+    if le_float n lo then
+      -1, b1
+    else
+      let m = add_float_lo pp a1 b1 in
+	if le_float hi m then
+	  1, b1
+	else
+	  let t = sub_float_hi pp hi lo in
+	  let r = sub_float_hi pp n m in
+	  let z = add_float_hi pp r t in
+	    1, add_float_hi pp b1 z;;
+
+(* ----------------------------------- *)
+(* The main evaluation function        *)
+(* ----------------------------------- *)
+
+let cos_interval pp x_int =
+  let a, b = dest_interval x_int in
+    try
+      (* Reduce the interval of x *)
+      let i = get_i a in
+      let a1, b1 =
+	if i = 0 then reduction_zero a b
+	else if i < 0 then reduction_neg pp i a b
+	else reduction_pos pp i a b in
+
+      (* Correct the value of a1 if a1 < -pi *)
+      let neg_pi = neg_pi_array.(pp) in
+      let a1, b1 =
+	if ge_interval a1 neg_pi then
+	  a1, b1
+	else
+	  let a1', b1' = correct_neg_pi pp a1 b1 in
+	    if not (ge_interval a1' neg_pi) then
+	      raise Correction_failed
+	    else
+	      a1', b1' in
+
+      (* Make sure that a1 <= pi *)
+      let a1 = correct_pi pp a1 in
+      let a1_case = if ge0_float a1 then 1 else -1 in
+	if a1_case > 0 then
+	  (* a1 in [0, pi] *)
+	  let ab_sum_case, b1 = correct_ab_sum pp a1 b1 in
+	  let flag_b_pi = le_interval b1 pi_approx_array.(pp) in
+	  let flag_b_2pi = le_interval b1 two_pi_array.(pp) in
+	    if flag_b_pi then
+	      (* b1 in [0, pi] *)
+	      let low = eval_low_0_pi pp b1 and
+		  high = eval_high_0_pi pp a1 in
+		mk_interval (low, high)
+	    else if ab_sum_case < 0 then
+	      (* a1 + b1 <= 2 * pi *)
+	      let high = eval_high_0_pi pp a1 in
+		mk_interval (neg_one, high)
+	    else if ab_sum_case > 0 && flag_b_2pi then
+	      (* a1 + b1 >= 2 * pi /\ b1 <= 2 * pi *)
+	      let high = eval_high_pi_2pi pp b1 in
+		mk_interval (neg_one, high)
+	    else
+	      mk_interval (neg_one, one)
+	else
+	  (* a1 in [-pi, 0] *)
+	  if le0_float b1 then
+	    (* b1 <= 0 *)
+	    let low = eval_low_neg_pi_0 pp a1 and
+		high = eval_high_neg_pi_0 pp b1 in
+	      mk_interval (low, high)
+	  else
+	    (* b1 >= 0 *)
+	    let b2 = neg_float b1 in
+	      if le_float a1 b2 then
+		(* a1 <= -b1 *)
+		let low = eval_low_neg_pi_0 pp a1 in
+		  mk_interval (low, one)
+	      else
+		(* a1 >= -b1 *)
+		if le_interval b1 pi_approx_array.(pp) then
+		  (* b1 <= pi *)
+		  let low = eval_low_0_pi pp b1 in
+		    mk_interval (low, one)
+		else
+		  mk_interval (neg_one, one)
+    with Correction_failed -> 
+      let _ = warn true (Printf.sprintf "cos_interval: reduction failed") in
+	mk_interval (neg_one, one);;
+
+(* ---------------------------- *)
+(* sin evaluation               *)
+(* ---------------------------- *)
+
+let translate_pi2 pp x_int =
+  let a, b = dest_interval x_int in
+  let lo, hi = dest_interval pi2_approx_array.(pp) in
+  let a1 = sub_float_lo pp a hi in
+  let b1 = sub_float_hi pp b lo in
+    mk_interval (a1, b1);;
+
+let sin_interval pp x_int =
+  let x_pi2 = translate_pi2 pp x_int in
+    cos_interval pp x_pi2;;
+
+end;;
+
+
+(*
+(*****)
+
+open Informal_float;;
+open Informal_interval;;
+
+let pp = 8;;
+
+let n = -10000;;
+
+let a = 3 and
+    b = 5;;
+
+let x = mk_interval (mk_float (Int a) 0, mk_float (Int b) 0);;
+let y = mk_interval (mk_float (Int (-a)) 0, mk_float (Int b) 0);;
+let z = mk_interval (mk_float (Int (-b)) 0, mk_float (Int a) 0);;
+let u = mk_interval (mk_float (Int (-3)) 0, mk_float (Int (-2)) 0);;
+
+abs_interval x;;
+abs_interval y;;
+abs_interval z;;
+abs_interval u;;
+
+let x = mk_interval (mk_float (Int a) 0, mk_float (Int b) 0);;
+let x_th = (ASSUME o Interval_arith.mk_interval `x:real` o mk_pair)
+  (More_float.mk_float a 0, More_float.mk_float b 0);;
+
+
+Sin_eval.float_interval_sin pp x_th;;
+sin_interval pp x;;
+
+Sin_eval.float_interval_sin 10 Float_atn.pi_approx_array.(10);;
+sin_interval 10 pi_approx_array.(10);;
+
+
+Cos_bounds_eval.float_cos_high_raw pp x_tm;;
+cos_high_raw pp x;;
+
+Cos_bounds_eval.float_cos_low_raw pp x_tm;;
+cos_low_raw pp x;;
+
+
+let t1, t2 = cos_tables 3 3;;
+
+#install_printer print_ifloat;;
+#install_printer print_interval;;
+t1;;
+t2;;
+
+
+let dest i =
+  let lo, hi = dest_interval i in
+    dest_float lo, dest_float hi;;
+
+map dest t1;;
+map dest t2;;
+*)

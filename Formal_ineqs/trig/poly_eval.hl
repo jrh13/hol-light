@@ -1,0 +1,372 @@
+needs "trig/poly.hl";;
+needs "misc/misc_functions.hl";;
+needs "misc/misc_vars.hl";;
+needs "arith/more_float.hl";;
+
+module Poly_eval = struct
+
+open Poly;;
+open Misc_functions;;
+open Interval_arith;;
+open Float_theory;;
+open Arith_float;;
+open More_list;;
+open More_float;;
+open Misc_vars;;
+
+prioritize_real();;
+
+(* Creates an interval approximation of the given decimal term *)
+let mk_float_interval_decimal =
+  let DECIMAL' = SPEC_ALL DECIMAL in
+    fun pp decimal_tm ->
+      let n_tm, d_tm = dest_binary "DECIMAL" decimal_tm in
+      let n, d = dest_numeral n_tm, dest_numeral d_tm in
+      let n_int, d_int = mk_float_interval_num n, mk_float_interval_num d in
+      let int = float_interval_div pp n_int d_int in
+      let eq_th = INST[n_tm, x_var_num; d_tm, y_var_num] DECIMAL' in
+	norm_interval int eq_th;;
+
+
+(* A simple interval evaluation function *)
+let rec float_interval_calc pp expr_tm x_th =
+  if is_var expr_tm then
+    x_th
+  else
+    let ltm, r_tm = dest_comb expr_tm in
+      if is_comb ltm then
+	let op, l_tm = dest_comb ltm in
+	let name = (fst o dest_const) op in
+	  match name with
+	    | "DECIMAL" -> mk_float_interval_decimal pp expr_tm
+	    | _ ->
+		let l_th = float_interval_calc pp l_tm x_th in
+		let r_th = float_interval_calc pp r_tm x_th in
+		  if op = add_op_real then
+		    float_interval_add pp l_th r_th
+		  else if op = mul_op_real then
+		    float_interval_mul pp l_th r_th
+		  else if op = div_op_real then
+		    float_interval_div pp l_th r_th
+		  else if op = sub_op_real then
+		    float_interval_sub pp l_th r_th
+		  else
+		    failwith ("Unknown operation: " ^ name)
+      else
+	if ltm = neg_op_real then
+	  let r_th = float_interval_calc pp r_tm x_th in
+	    float_interval_neg r_th
+	else if ltm = inv_op_real then
+	  let r_th = float_interval_calc pp r_tm x_th in
+	    float_interval_inv pp r_th
+	else
+	  mk_float_interval_num (dest_numeral r_tm);;
+
+let float_interval_const pp expr_tm =
+  float_interval_calc pp expr_tm TRUTH;;
+
+(* Data structure for a polynomial coefficient *)
+type poly_coeff = {
+  c_tm : term;
+  bounds_tm : term;
+  interval_th : thm;
+(*  high_th : thm;
+  low_th : thm;
+*)
+  sign : int;
+  sign_high_th : thm;
+  sign_low_th : thm;
+};;
+
+(* Creates polynomial coefficients from the given list of constant expressions *)
+let mk_poly_coeffs = 
+  let interval_pos = prove(`interval_arith x (float_num F n e, f) 
+			   ==> interval_arith x (&0, f) /\ interval_arith (float_num F n e) (&0, x)`,
+			   REWRITE_TAC[interval_arith] THEN 
+			     MP_TAC (SPECL[`n:num`; `e:num`] FLOAT_F_POS) THEN
+			     REAL_ARITH_TAC) and
+      interval_neg = prove(`interval_arith x (f, float_num T n e) 
+			   ==> interval_arith x (f, &0) /\ interval_arith (float_num T n e) (x, &0)`,
+			   REWRITE_TAC[interval_arith] THEN 
+			     MP_TAC (SPECL[`n:num`; `e:num`] FLOAT_T_NEG) THEN
+			     REAL_ARITH_TAC) in
+  let mk_poly_coeff pp cs_tm =
+    let eq_th = NUM_REDUCE_CONV cs_tm in
+    let expr_tm = (rand o concl) eq_th in
+    let int_th = REWRITE_RULE[GSYM eq_th] (float_interval_const pp expr_tm) in
+(*    let bounds_th = REWRITE_RULE[interval_arith] int_th in *)
+(*    let low_th, high_th = pair_of_list (CONJUNCTS bounds_th) in *)
+    let c_tm, bounds = dest_interval_arith (concl int_th) in
+    let a, b = dest_pair bounds in
+    let s1, _, _ = dest_float a in
+    let s2, _, _ = dest_float b in
+    let sign, sign_th =
+      match (s1, s2) with
+	| "F", _ -> 1, MATCH_MP interval_pos int_th
+	| _, "T" -> -1, MATCH_MP interval_neg int_th
+	| _ -> 0, TRUTH in 
+    let sign_high, sign_low = pair_of_list (CONJUNCTS sign_th) in
+      {
+	c_tm = c_tm;
+	bounds_tm = bounds;
+	interval_th = int_th;
+(*	high_th = high_th;
+	low_th = low_th;
+*)
+	sign = sign;
+	sign_high_th = sign_high;
+	sign_low_th = sign_low;
+      } in
+    fun pp list_tm ->
+      map (mk_poly_coeff pp) (dest_list list_tm);;
+
+(* Evaluates a polynomial on a given interval *)
+let eval_interval_poly_f =
+  let poly_f_empty' = RULE poly_f_empty_interval and
+      poly_f_sing' = RULE poly_f_sing and
+      poly_f_cons' = RULE poly_f_cons and
+      interval_const = `interval_arith` in
+    fun pp (cs_tm, cs_list) x_th ->
+      let rec eval cs_tm cs_list x_tm x_th =
+	match cs_list with
+	  | [] -> 
+	      INST[x_tm, x_var_real] poly_f_empty'
+	  | [first] ->
+	      let th0 = INST[first.c_tm, c_var_real; x_tm, x_var_real] poly_f_sing' in
+		EQ_MP (SYM (AP_THM (AP_TERM interval_const th0) first.bounds_tm)) first.interval_th
+	  | first :: rest ->
+	      let ltm, t_tm = dest_comb cs_tm in
+	      let h_tm = rand ltm in
+	      let th0 = INST[h_tm, h_var_real; t_tm, t_var_real_list; x_tm, x_var_real] poly_f_cons' in
+	      let r_th = eval t_tm rest x_tm x_th in
+	      let th1 = float_interval_add pp first.interval_th
+		(float_interval_mul pp x_th r_th) in
+	      let bounds = rand (concl th1) in
+		EQ_MP (SYM (AP_THM (AP_TERM interval_const th0) bounds)) th1
+      in
+      let x_tm = rand (rator (concl x_th)) in
+	eval cs_tm cs_list x_tm x_th;;
+
+(* Evaluates an upper bound of a polynomial on a given non-negative number.
+ * All coefficients of the polynomial must be non-negative.
+ * The argument x should be in the form: |- interval_arith x (&0, f) *)
+let eval_high_poly_f_pos_pos =
+  let RULE' = (UNDISCH_ALL o REWRITE_RULE[real_zero] o DISCH_ALL o RULE) in
+  let poly_f_empty_high' = RULE' poly_f_empty_high_pos and
+      poly_f_sing_high' = RULE' poly_f_sing_high_pos and
+      poly_f_cons_high' = RULE' poly_f_cons_high_pos_pos in
+  let check_pos c =
+    if c.sign = 1 then () else
+      failwith (Printf.sprintf "eval_high_poly_f_pos_pos: non-positive coefficient: %s, %s" 
+		  (string_of_term c.c_tm) 
+		  (string_of_term c.bounds_tm)) in
+    fun pp (cs_tm, cs_list) x_th ->
+      let rec eval cs_tm cs_list x_tm x_th =
+	match cs_list with
+	  | [] -> INST[x_tm, x_var_real] poly_f_empty_high'
+	  | [first] ->
+	      let _ = check_pos first in
+	      let bounds_tm = rand (concl first.sign_high_th) in
+	      let th0 = INST[first.c_tm, c_var_real; bounds_tm, bounds_var; x_tm, x_var_real] 
+		poly_f_sing_high' in
+		MY_PROVE_HYP first.sign_high_th th0
+	  | first :: rest ->
+	      let _ = check_pos first in
+	      let ltm, t_tm = dest_comb cs_tm in
+	      let h_tm = rand ltm in
+	      let rest_th = eval t_tm rest x_tm x_th in
+	      let a_tm = (rand o rand o concl) rest_th in
+	      let b_tm = (rand o rand o concl) first.sign_high_th in
+	      let c_tm = (rand o rand o concl) x_th in
+	      let m_bound_th = float_mul_hi pp c_tm a_tm in
+	      let m_tm = (rand o concl) m_bound_th in
+	      let r_bound_th = float_add_hi pp b_tm m_tm in
+	      let r_tm = (rand o concl) r_bound_th in
+	      let th0 = INST[h_tm, h_var_real; t_tm, t_var_real_list; x_tm, x_var_real;
+			     a_tm, a_var_real; b_tm, b_var_real; c_tm, c_var_real;
+			     m_tm, m_var_real; r_tm, r_var_real] poly_f_cons_high' in
+		MY_PROVE_HYP r_bound_th 
+		  (MY_PROVE_HYP m_bound_th 
+		     (MY_PROVE_HYP first.sign_high_th 
+			(MY_PROVE_HYP rest_th (MY_PROVE_HYP x_th th0))))
+      in
+      let x_tm = rand (rator (concl x_th)) in
+	eval cs_tm cs_list x_tm x_th;;
+
+
+(* Evaluates a lower bound of a polynomial on a given non-negative number.
+ * All coefficients of the polynomial must be non-negative.
+ * The argument x should be in the form: |- interval_arith f (&0, x) *)
+let eval_low_poly_f_pos_pos = 
+  let RULE' = (UNDISCH_ALL o REWRITE_RULE[real_zero] o DISCH_ALL o RULE) in
+  let poly_f_empty_low' = RULE' poly_f_empty_low_pos and
+      poly_f_sing_low' = RULE' poly_f_sing_low_pos and
+      poly_f_cons_low' = RULE' poly_f_cons_low_pos_pos in
+  let check_pos c =
+    if c.sign = 1 then () else
+      failwith (Printf.sprintf "eval_low_poly_f_pos_pos: non-positive coefficient: %s, %s" 
+		  (string_of_term c.c_tm) 
+		  (string_of_term c.bounds_tm)) in
+    fun pp (cs_tm, cs_list) x_th ->
+      let rec eval cs_tm cs_list x_tm x_th =
+	match cs_list with
+	  | [] -> INST[x_tm, x_var_real] poly_f_empty_low'
+	  | [first] ->
+	      let _ = check_pos first in
+	      let b_tm = (rand o rator o concl) first.sign_low_th in
+	      let th0 = INST[first.c_tm, c_var_real; b_tm, b_var_real; x_tm, x_var_real] 
+		poly_f_sing_low' in
+		MY_PROVE_HYP first.sign_low_th th0
+	  | first :: rest ->
+	      let _ = check_pos first in
+	      let ltm, t_tm = dest_comb cs_tm in
+	      let h_tm = rand ltm in
+	      let rest_th = eval t_tm rest x_tm x_th in
+	      let a_tm = (rand o rator o concl) rest_th in
+	      let b_tm = (rand o rator o concl) first.sign_low_th in
+	      let c_tm = (rand o rator o concl) x_th in
+	      let m_bound_th = float_mul_lo pp c_tm a_tm in
+	      let m_tm = (rand o rator o concl) m_bound_th in
+	      let r_bound_th = float_add_lo pp b_tm m_tm in
+	      let r_tm = (rand o rator o concl) r_bound_th in
+	      let r_ge0_th = EQT_ELIM (float_ge0 r_tm) in
+	      let th0 = INST[h_tm, h_var_real; t_tm, t_var_real_list; x_tm, x_var_real;
+			     a_tm, a_var_real; b_tm, b_var_real; c_tm, c_var_real;
+			     m_tm, m_var_real; r_tm, r_var_real] poly_f_cons_low' in
+		MY_PROVE_HYP r_ge0_th
+		  (MY_PROVE_HYP r_bound_th 
+		     (MY_PROVE_HYP m_bound_th 
+			(MY_PROVE_HYP first.sign_low_th 
+			   (MY_PROVE_HYP rest_th (MY_PROVE_HYP x_th th0)))))
+      in
+      let x_tm = rand (rand (concl x_th)) in
+	eval cs_tm cs_list x_tm x_th;;
+
+
+let eval_pow2_high =
+  let pow2_th = (UNDISCH_ALL o prove)(`x * x <= a ==> interval_arith (x pow 2) (&0, a)`,
+			REWRITE_TAC[interval_arith; REAL_POW_2; REAL_LE_SQUARE]) in
+    fun pp f_tm ->
+      let mul_th = float_mul_hi pp f_tm f_tm in
+      let a_tm = (rand o concl) mul_th in
+      let th0 = INST[f_tm, x_var_real; a_tm, a_var_real] pow2_th in
+	MY_PROVE_HYP mul_th th0;;
+
+let eval_pow2_low =
+  let pow2_th = (UNDISCH_ALL o prove)(`(&0 <= a <=> T) ==> a <= x * x 
+				      ==> interval_arith a (&0, x pow 2)`,
+			SIMP_TAC[interval_arith; REAL_POW_2]) in
+    fun pp f_tm ->
+      let mul_th = float_mul_lo pp f_tm f_tm in
+      let a_tm = (rand o rator o concl) mul_th in
+      let a_ge0_th = float_ge0 a_tm in
+      let th0 = INST[f_tm, x_var_real; a_tm, a_var_real] pow2_th in
+	MY_PROVE_HYP mul_th (MY_PROVE_HYP a_ge0_th th0);;
+
+let eval_pow4_high =
+  let pow4_th = (UNDISCH_ALL o prove)(`x * x <= a ==>
+					a * a <= b ==>
+					interval_arith (x pow 4) (&0, b)`,
+		      REWRITE_TAC[interval_arith; ARITH_RULE `4 = 2 + 2`; REAL_POW_ADD] THEN
+			REPEAT STRIP_TAC THENL [
+			  MATCH_MP_TAC REAL_LE_MUL THEN REWRITE_TAC[REAL_LE_POW_2];
+			  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a * a:real` THEN
+			    ASM_REWRITE_TAC[] THEN
+			    MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_POW_2; REAL_POW_2]
+			]) in
+    fun pp f_tm ->
+      let mul1_th = float_mul_hi pp f_tm f_tm in
+      let a_tm = (rand o concl) mul1_th in
+      let mul2_th = float_mul_hi pp a_tm a_tm in
+      let b_tm = (rand o concl) mul2_th in
+      let th0 = INST[f_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real] pow4_th in
+	MY_PROVE_HYP mul1_th (MY_PROVE_HYP mul2_th th0);;
+
+let eval_pow4_low =
+  let pow4_th = (UNDISCH_ALL o prove)(`a <= x * x ==>
+					b <= a * a ==>
+					(&0 <= a <=> T) ==>
+					(&0 <= b <=> T) ==>
+					interval_arith b (&0, x pow 4)`,
+		      REWRITE_TAC[interval_arith; ARITH_RULE `4 = 2 + 2`; REAL_POW_ADD] THEN
+			REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+			MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a * a:real` THEN
+			ASM_REWRITE_TAC[] THEN
+  		        MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_POW_2; REAL_POW_2]) 
+  in
+    fun pp f_tm ->
+      let mul1_th = float_mul_lo pp f_tm f_tm in
+      let a_tm = (rand o rator o concl) mul1_th in
+      let mul2_th = float_mul_lo pp a_tm a_tm in
+      let b_tm = (rand o rator o concl) mul2_th in
+      let a_ge0 = float_ge0 a_tm in
+      let b_ge0 = float_ge0 b_tm in
+      let th0 = INST[f_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real] pow4_th in
+	itlist MY_PROVE_HYP [mul1_th; mul2_th; a_ge0; b_ge0] th0;;
+
+let eval_pow2_pow4_high =
+  let pow4_th = (UNDISCH_ALL o prove)(`interval_arith (x pow 2) (&0, a) ==>
+					a * a <= b ==> 
+					interval_arith (x pow 4) (&0, b)`,
+		      REWRITE_TAC[interval_arith; ARITH_RULE `4 = 2 + 2`; REAL_POW_ADD] THEN
+			REPEAT STRIP_TAC THENL [
+			  MATCH_MP_TAC REAL_LE_MUL THEN REWRITE_TAC[REAL_LE_POW_2];
+			  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a * a:real` THEN
+			    ASM_REWRITE_TAC[] THEN
+			    MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_POW_2]
+			]) in
+    fun pp f_tm ->
+      let pow2_th = eval_pow2_high pp f_tm in
+      let a_tm = (rand o rand o concl) pow2_th in
+      let mul_th = float_mul_hi pp a_tm a_tm in
+      let b_tm = (rand o concl) mul_th in
+      let th0 = INST[f_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real] pow4_th in
+	pow2_th, MY_PROVE_HYP mul_th (MY_PROVE_HYP pow2_th th0);;
+
+let eval_pow2_pow4_low =
+  let pow4_th = (UNDISCH_ALL o prove)(`interval_arith a (&0, x pow 2) ==>
+					b <= a * a ==> 
+					(&0 <= b <=> T) ==> 
+					interval_arith b (&0, x pow 4)`,
+		      REWRITE_TAC[interval_arith; ARITH_RULE `4 = 2 + 2`; REAL_POW_ADD] THEN
+			REPEAT STRIP_TAC THENL [
+			  ASM_REWRITE_TAC[];
+			  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a * a:real` THEN
+			    ASM_REWRITE_TAC[] THEN
+			    MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_POW_2]
+			]) in
+    fun pp f_tm ->
+      let pow2_th = eval_pow2_low pp f_tm in
+      let a_tm = (rand o rator o concl) pow2_th in
+      let mul_th = float_mul_lo pp a_tm a_tm in
+      let b_tm = (rand o rator o concl) mul_th in
+      let b_ge0_th = float_ge0 b_tm in
+      let th0 = INST[f_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real] pow4_th in
+	pow2_th, MY_PROVE_HYP b_ge0_th (MY_PROVE_HYP mul_th (MY_PROVE_HYP pow2_th th0));;
+
+
+end;;	
+
+
+(*
+let pp = 5;;
+let cs_tm = `[&1 / &3; #0.1]`;;
+let cs_list = mk_poly_coeffs pp cs_tm;;
+let x_tm = `pi:real`;;
+let x_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith (&3) (real_zero, pi)`;;
+let x_th = float_interval_const pp x_tm;;
+let x_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith x (real_zero, &3)`;;
+	
+	
+	
+;;
+let pp = 10;;
+let cs_tm = `[&1 / &3; &1 / &10; #2.1]`;;
+let cs_list = mk_poly_coeffs pp cs_tm;;
+let x_th = (RULE o ASSUME) `interval_arith x (&3, &3)`;;
+let y_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith y (real_zero, &3)`;;
+let z_th = (REWRITE_RULE[real_zero] o RULE o ASSUME) `interval_arith (&3) (real_zero, z)`;;
+test 1000 (eval_interval_poly_f pp (cs_tm, cs_list)) x_th;;
+test 1000 (eval_high_poly_f_pos_pos pp (cs_tm, cs_list)) y_th;;
+test 1000 (eval_low_poly_f_pos_pos pp (cs_tm, cs_list)) z_th;;
+*)

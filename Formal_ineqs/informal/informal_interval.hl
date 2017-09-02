@@ -1,0 +1,248 @@
+(* =========================================================== *)
+(* Informal arithmetic procedures: interval arithmetic         *)
+(* Author: Alexey Solovyev                                     *)
+(* Date: 2012-10-27                                            *)
+(* =========================================================== *)
+
+(* Dependencies *)
+needs "informal/informal_float.hl";;
+
+(* Interval arithmetic *)
+
+module type Informal_interval_sig =
+  sig
+    type interval
+    val print_interval_fmt : Format.formatter -> interval -> unit
+    val print_interval : interval -> unit
+    val zero_interval : interval
+    val one_interval : interval
+    val two_interval : interval
+    val mk_interval : Informal_float.ifloat * Informal_float.ifloat -> interval
+    val mk_num_interval : num -> interval
+    val mk_small_num_interval : int -> interval
+    val dest_interval : interval -> Informal_float.ifloat * Informal_float.ifloat
+    val round_interval : int -> interval -> interval
+    val abs_interval : interval -> interval
+    val neg_interval : interval -> interval
+    val mul_interval : int -> interval -> interval -> interval
+    val div_interval : int -> interval -> interval -> interval
+    val add_interval : int -> interval -> interval -> interval
+    val sub_interval : int -> interval -> interval -> interval
+    val sqrt_interval : int -> interval -> interval
+    val inv_interval : int -> interval -> interval
+    val pow_interval : int -> int -> interval -> interval
+      (* Computes max(-lo, hi) *)
+    val iabs_interval : interval -> Informal_float.ifloat
+      (* Compares a floating-point value and an interval *)
+    val le_interval : Informal_float.ifloat -> interval -> bool
+    val ge_interval : Informal_float.ifloat -> interval -> bool
+    val compare_interval : Informal_float.ifloat -> interval -> int
+      (* Returns -1 if the interval is negative, 1 if it is positive, and
+	 0 if it contains 0 *)
+    val compare0_interval : interval -> int
+  end;;
+
+module Informal_interval : Informal_interval_sig = struct
+
+open Informal_float;;
+
+
+type interval = ifloat * ifloat;;
+
+let print_interval_fmt fmt (lo, hi) =
+  pp_print_string fmt "(";
+  print_ifloat_fmt fmt lo;
+  pp_print_string fmt ",";
+  print_ifloat_fmt fmt hi;
+  pp_print_string fmt ")";;
+
+let print_interval = print_interval_fmt Format.std_formatter;;
+
+let mk_interval (lo,hi) =
+  if lt_float hi lo then failwith "mk_interval: hi < lo" else (lo,hi);;
+
+let mk_num_interval n =
+  let f = mk_num_float n in (f, f);;
+
+let mk_small_num_interval n =
+  let f = mk_small_num_float n in (f, f);;
+
+let zero_float = mk_small_num_float 0;;
+let zero_interval = mk_small_num_interval 0;;
+let one_interval = mk_small_num_interval 1;;
+let two_interval = mk_small_num_interval 2;;
+
+let dest_interval ((lo,hi) : interval) = (lo,hi);;
+
+let round_interval pp (lo,hi) = (lo_float pp lo, hi_float pp hi);;
+
+let abs_interval (lo,hi) =
+  let s1 = sign_float lo and
+      s2 = sign_float hi in
+    if s1 = s2 then
+      if not s1 then
+	(lo,hi)
+      else
+	(neg_float hi, neg_float lo)
+    else
+      if not s1 then
+	zero_interval
+      else
+	(zero_float, max_float (neg_float lo) hi);;
+
+let neg_interval (lo,hi) = (neg_float hi, neg_float lo);;
+
+let iabs_interval (lo,hi) = max_float hi (neg_float lo);;
+
+let add_interval pp (lo1,hi1) (lo2,hi2) =
+  (add_float_lo pp lo1 lo2, add_float_hi pp hi1 hi2);;
+
+let sub_interval pp (lo1,hi1) (lo2,hi2) =
+  (sub_float_lo pp lo1 hi2, sub_float_hi pp hi1 lo2);;
+
+let sqrt_interval pp (lo,hi) =
+  if sign_float lo then
+    failwith "sqrt_interval: negative lower bound"
+  else
+    (sqrt_float_lo pp lo, sqrt_float_hi pp hi);;
+
+(* mul *)
+let mul_interval pp (l_lo,l_hi) (r_lo,r_hi) = 
+  let s1 = sign_float l_lo and
+      s2 = sign_float l_hi and
+      s3 = sign_float r_lo and
+      s4 = sign_float r_hi in
+    if s1 <> s2 && not s1 then
+      zero_interval
+    else if s3 <> s4 && not s3 then
+      zero_interval
+    else
+      if s1 <> s2 && s3 <> s4 then
+	let lo1, lo2 = mul_float_lo pp l_lo r_hi, mul_float_lo pp l_hi r_lo and
+	    hi1, hi2 = mul_float_hi pp l_lo r_lo, mul_float_hi pp l_hi r_hi in
+	  (min_float lo1 lo2, max_float hi1 hi2)
+      else
+	let lo1, lo2, hi1, hi2 =
+	  if s1 <> s2 then
+	    if not s3 then
+	      l_lo, r_hi, l_hi, r_hi
+	    else
+	      l_hi, r_lo, l_lo, r_lo
+	  else
+	    if s3 <> s4 then
+	      if not s1 then
+		l_hi, r_lo, l_hi, r_hi
+	      else
+		l_lo, r_hi, l_lo, r_lo
+	    else
+	      if not s1 then
+		if not s3 then
+		  l_lo, r_lo, l_hi, r_hi
+		else
+		  l_hi, r_lo, l_lo, r_hi
+	      else
+		if not s3 then
+		  l_lo, r_hi, l_hi, r_lo
+		else
+		  l_hi, r_hi, l_lo, r_lo in
+	  (mul_float_lo pp lo1 lo2, mul_float_hi pp hi1 hi2);;
+
+(* div *)
+let div_interval pp (l_lo,l_hi) (r_lo,r_hi) = 
+  let s1 = sign_float l_lo and
+      s2 = sign_float l_hi and
+      s3 = sign_float r_lo and
+      s4 = sign_float r_hi in
+    if s1 <> s2 && not s1 then
+      zero_interval
+    else if s3 <> s4 then
+      failwith "div_interval: division by an interval containing 0"
+    else
+      let lo1, lo2, hi1, hi2 =
+	if s1 = s2 then
+	  if not s1 then
+	    if not s3 then
+	      l_lo, r_hi, l_hi, r_lo
+	    else
+	      l_hi, r_hi, l_lo, r_lo
+	  else
+	    if not s3 then
+	      l_lo, r_lo, l_hi, r_hi
+	    else
+	      l_hi, r_lo, l_lo, r_hi
+	else
+	  if not s3 then
+	    l_lo, r_lo, l_hi, r_lo
+	  else
+	    l_hi, r_hi, l_lo, r_hi in
+	(div_float_lo pp lo1 lo2, div_float_hi pp hi1 hi2);;
+
+(* inv *)
+let inv_interval pp int =
+  div_interval pp one_interval int;;
+
+(* pow *)
+let pow_interval pp n (lo, hi) =
+  match n with
+    | 0 -> one_interval
+    | 1 -> (lo, hi)
+    | _ ->
+	let _ = assert (n > 1) in
+	  if (n land 1) = 1 then
+	    (pow_float_lo pp n lo, pow_float_hi pp n hi)
+	  else
+	    let s1 = sign_float lo and
+		s2 = sign_float hi in
+	      if s1 = s2 then
+		if not s1 then
+		  (* FF *)
+		  (pow_float_lo pp n lo, pow_float_hi pp n hi)
+		else
+		  (* TT *)
+		  (pow_float_lo pp n (abs_float hi), pow_float_hi pp n (abs_float lo))
+	      else
+		if not s1 then
+		  (* FT *)
+		  zero_interval
+		else
+		  (* TF *)
+		  let m = max_float (abs_float lo) hi in
+		    (float0, pow_float_hi pp n m);;
+
+(* le_interval *)
+let le_interval x (lo, hi) = le_float x lo;;
+
+(* ge_interval *)
+let ge_interval x (lo, hi) = le_float hi x;;
+
+(* compare_interval *)
+let compare_interval x (lo, hi) = 
+  if le_float x lo then -1
+  else if le_float hi x then 1
+  else 0;;
+
+(* compare0_interval *)
+let compare0_interval (lo, hi) =
+  if gt0_float lo then 1
+  else if lt0_float hi then -1
+  else 0;;
+
+end;;
+
+(*
+open Informal_float;;
+open Informal_interval;;
+
+#install_printer print_float;;
+#install_printer print_interval;;
+  
+let pp = 3;;
+let n = 41;;
+let mk_test a b = mk_interval (mk_float a 0, mk_float b 0);;
+
+pow_interval pp n (mk_test 1 2);;
+pow_interval pp n (mk_test (-1) 2);;
+pow_interval pp n (mk_test (-3) (-2));;
+pow_interval pp n (mk_test 0 1);;
+pow_interval pp n (mk_test (-2) 1);;
+*)

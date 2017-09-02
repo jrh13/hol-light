@@ -1,0 +1,109 @@
+(* hol_test *)
+
+needs "tests/test_utils.hl";;
+
+show_result := true;;
+let rep = 1;;
+
+show_result := false;;
+let rep = 10;;
+
+(* sin_cos *)
+ftest2 rep "log_sin_cos/add_hi.log" Arith_float.float_add_hi;;
+ftest2 rep "log_sin_cos/add_lo.log" Arith_float.float_add_lo;;
+ftest2 rep "log_sin_cos/sub_hi.log" Arith_float.float_sub_hi;;
+ftest2 rep "log_sin_cos/sub_lo.log" Arith_float.float_sub_lo;;
+ftest2 rep "log_sin_cos/mul_hi.log" Arith_float.float_mul_hi;;
+ftest2 rep "log_sin_cos/mul_lo.log" Arith_float.float_mul_lo;;
+
+
+(* poly *)
+ftest2 rep "log_poly/add_hi.log" Arith_float.float_add_hi;;
+ftest2 rep "log_poly/add_lo.log" Arith_float.float_add_lo;;
+ftest2 rep "log_poly/sub_hi.log" Arith_float.float_sub_hi;;
+ftest2 rep "log_poly/sub_lo.log" Arith_float.float_sub_lo;;
+ftest2 rep "log_poly/mul_hi.log" Arith_float.float_mul_hi;;
+ftest2 rep "log_poly/mul_lo.log" Arith_float.float_mul_lo;;
+
+(* big *)
+let rep = 1;;
+(* 100: 262.728 *)
+ftest2 rep "log_big/add_hi.log" Arith_float.float_add_hi;;
+(* 100: 102.499 *)
+ftest2 rep "log_big/add_lo.log" Arith_float.float_add_lo;;
+(* 100: 6.178 *)
+ftest2 rep "log_big/sub_hi.log" Arith_float.float_sub_hi;;
+(* 100: 14.629 *)
+ftest2 rep "log_big/sub_lo.log" Arith_float.float_sub_lo;;
+(* 100: 439.638 *)
+ftest2 rep "log_big/mul_hi.log" Arith_float.float_mul_hi;;
+(* 100: 183.269 *)
+ftest2 rep "log_big/mul_lo.log" Arith_float.float_mul_lo;;
+(* 100: 4.667 *)
+ftest2 rep "log_big/div_hi.log" Arith_float.float_div_hi;;
+(* 100: 4.103 *)
+ftest2 rep "log_big/div_lo.log" Arith_float.float_div_lo;;
+
+
+arith_test1d rep "data/nat15.txt" 
+  `SUC`  Arith_nat.raw_suc_conv_hash;;
+
+new_arith_test1d rep "data/nat15.txt"
+  Nat_arith.nsuc;;
+
+
+(* Addition *)
+
+(* 100: 2.189 +/- 0.053 *)
+arith_test2d rep "data/nat10.txt" 
+  `(+):num->num->num`
+  Arith_nat.raw_add_conv_hash;;
+
+(* 100: 2.041 +/- 0.024 *)
+new_arith_test2d rep "data/nat10.txt"
+  Nat_arith.nadd;;
+
+
+(* Subtraction *)
+
+(* 100: 3.482 +/- 0.043 *)
+arith_test2d rep "data/nat10.txt" 
+  `(-):num->num->num`
+  Arith_nat.raw_sub_hash_conv;;
+
+(* 100: 3.217 +/- 0.065 *)
+new_arith_test2d rep "data/nat10.txt"
+  Nat_arith.nsub;;
+
+
+(* Multiplication *)
+
+(* 100: 36.875 +/- 0.184 *)
+arith_test2d rep "data/nat10.txt" 
+  `( * ):num->num->num`
+  Arith_nat.raw_mul_conv_hash;;
+
+(* 100: 35.060 +/- 0.432 *)
+new_arith_test2d rep "data/nat10.txt"
+  Nat_arith.nmul;;
+
+
+(* Division *)
+
+(* 100:  +/-  *)
+arith_test2d rep "data/nat10_small.txt" 
+  `DIV:num->num->num`
+  Arith_nat.raw_div_hash_conv;;
+
+(* 100:  +/-  *)
+new_arith_test2d rep "data/nat10_small.txt"
+  Nat_arith.ndiv;;
+
+show_result := true;;
+
+let data = read_file "data/nat8.txt";;
+
+let mk_arith_term = Arith_nat.mk_numeral_array;;
+
+let mk_new_arith_term = Nat_arith.mk_nat;;
+

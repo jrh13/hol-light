@@ -1,0 +1,2222 @@
+needs "lib/ssrbool.hl";;
+
+(* Module Ssrnat*)
+module Ssrnat = struct
+
+open Ssreflect;;
+open Ssrbool;;
+overload_interface("+", `XOR`);;
+prioritize_num();;
+
+(* Lemma succnK *)
+let succnK = Sections.section_proof ["n"]
+`SUC n - 1 = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma succn_inj *)
+let succn_inj = Sections.section_proof ["n";"m"]
+`SUC n = SUC m ==> n = m`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma eqSS *)
+let eqSS = Sections.section_proof ["m";"n"]
+`(SUC m = SUC n) = (m = n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma add0n *)
+let add0n = Sections.section_proof ["n"]
+`0 + n = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addSn *)
+let addSn = Sections.section_proof ["m";"n"]
+`SUC m + n = SUC (m + n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma add1n *)
+let add1n = Sections.section_proof ["n"]
+`1 + n = SUC n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addn0 *)
+let addn0 = Sections.section_proof ["n"]
+`n + 0 = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addnS *)
+let addnS = Sections.section_proof ["m";"n"]
+`m + SUC n = SUC (m + n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addSnnS *)
+let addSnnS = Sections.section_proof ["m";"n"]
+`SUC m + n = m + SUC n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addnCA *)
+let addnCA = Sections.section_proof ["m";"n";"p"]
+`m + (n + p) = n + (m + p)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addnC *)
+let addnC = Sections.section_proof ["m";"n"]
+`m + n = n + m`
+[
+   (((((fun arg_tac -> (use_arg_then2 ("addn0", [addn0])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [1] []))))) THEN (((use_arg_then2 ("addnCA", [addnCA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addn0", [addn0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addn1 *)
+let addn1 = Sections.section_proof ["n"]
+`n + 1 = SUC n`
+[
+   (((((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addnA *)
+let addnA = Sections.section_proof ["n";"m";"p"]
+`n + (m + p) = (n + m) + p`
+[
+   (((((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [(`m + p`)])))) THEN (((use_arg_then2 ("addnCA", [addnCA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addnAC *)
+let addnAC = Sections.section_proof ["m";"n";"p"]
+`(n + m) + p = (n + p) + m`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [(`p + m`)]))))) THEN (done_tac));
+];;
+
+(* Lemma addn_eq0 *)
+let addn_eq0 = Sections.section_proof ["m";"n"]
+`(m + n = 0) <=> (m = 0) /\ (n = 0)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma eqn_addl *)
+let eqn_addl = Sections.section_proof ["p";"m";"n"]
+`(p + m = p + n) <=> (m = n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma eqn_addr *)
+let eqn_addr = Sections.section_proof ["p";"m";"n"]
+`(m + p = n + p) = (m = n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addnI *)
+let addnI = Sections.section_proof ["m";"n1";"n2"]
+`m + n1 = m + n2 ==> n1 = n2`
+[
+   ((BETA_TAC THEN (move ["Heq"])) THEN (((fun arg_tac -> (use_arg_then2 ("eqn_addl", [eqn_addl])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addIn *)
+let addIn = Sections.section_proof ["m";"n1";"n2"]
+`n1 + m = n2 + m ==> n1 = n2`
+[
+   ((repeat_tactic 1 9 (((use_arg_then2 ("addnC", [addnC]))(gsym_then (thm_tac (new_rewrite [] [(`_1 + m`)])))))) THEN (move ["Heq"]));
+   ((((fun arg_tac -> (use_arg_then2 ("addnI", [addnI])) (fun fst_arg -> (use_arg_then2 ("Heq", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (done_tac));
+];;
+
+(* Lemma sub0n *)
+let sub0n = Sections.section_proof ["n"]
+`0 - n = 0`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subn0 *)
+let subn0 = Sections.section_proof ["n"]
+`n - 0 = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subnn *)
+let subnn = Sections.section_proof []
+`!n. n - n = 0`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subSS *)
+let subSS = Sections.section_proof []
+`!n m. SUC m - SUC n = m - n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subn_add2l *)
+let subn_add2l = Sections.section_proof []
+`!p m n. (p + m) - (p + n) = m - n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subn_add2r *)
+let subn_add2r = Sections.section_proof []
+`!p m n. (m + p) - (n + p) = m - n`
+[
+   (BETA_TAC THEN (move ["p"]) THEN (move ["m"]) THEN (move ["n"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("addnC", [addnC]))(gsym_then (thm_tac (new_rewrite [] [(`_1 + p`)])))))) THEN (((use_arg_then2 ("subn_add2l", [subn_add2l]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addKn *)
+let addKn = Sections.section_proof ["n"]
+`!x. (n + x) - n = x`
+[
+   ((BETA_TAC THEN (move ["m"])) THEN ((((use_arg_then2 ("addn0", [addn0]))(gsym_then (thm_tac (new_rewrite [2] [(`n`)]))))) THEN (((use_arg_then2 ("subn_add2l", [subn_add2l]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("subn0", [subn0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addnK *)
+let addnK = Sections.section_proof []
+`!n x. (x + n) - n = x`
+[
+   ((BETA_TAC THEN (move ["n"]) THEN (move ["m"])) THEN ((((fun arg_tac -> (use_arg_then2 ("addnC", [addnC])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addKn", [addKn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma subSnn *)
+let subSnn = Sections.section_proof ["n"]
+`SUC n - n = 1`
+[
+   (((((use_arg_then2 ("add1n", [add1n]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnK", [addnK]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma subn_sub *)
+let subn_sub = Sections.section_proof ["m";"n";"p"]
+`(n - m) - p = n - (m + p)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subnAC *)
+let subnAC = Sections.section_proof []
+`!m n p. (m - n) - p = (m - p) - n`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("subn_sub", [subn_sub]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma predn_sub *)
+let predn_sub = Sections.section_proof []
+`!m n. (m - n) - 1 = m - SUC n`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"])) THEN ((((use_arg_then2 ("subn_sub", [subn_sub]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addn1", [addn1]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma predn_subS *)
+let predn_subS = Sections.section_proof []
+`!m n. (SUC m - n) - 1 = m - n`
+[
+   (((((use_arg_then2 ("predn_sub", [predn_sub]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("subSS", [subSS]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltnS *)
+let ltnS = Sections.section_proof []
+`!m n. (m < SUC n) = (m <= n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq0n *)
+let leq0n = Sections.section_proof []
+`!n. 0 <= n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn0Sn *)
+let ltn0Sn = Sections.section_proof []
+`!n. 0 < SUC n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn0 *)
+let ltn0 = Sections.section_proof []
+`!n. n < 0 <=> F`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leqnn *)
+let leqnn = Sections.section_proof []
+`!n. n <= n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltnSn *)
+let ltnSn = Sections.section_proof []
+`!n. n < SUC n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma eq_leq *)
+let eq_leq = Sections.section_proof []
+`!m n. m = n ==> m <= n`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma leqnSn *)
+let leqnSn = Sections.section_proof []
+`!n. n <= SUC n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_pred *)
+let leq_pred = Sections.section_proof []
+`!n. n - 1 <= n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leqSpred *)
+let leqSpred = Sections.section_proof []
+`!n. n <= SUC (n - 1)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn_predK *)
+let ltn_predK = Sections.section_proof []
+`!m n. m < n ==> SUC (n - 1) = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma prednK *)
+let prednK = Sections.section_proof []
+`!n. 0 < n ==> SUC (n - 1) = n`
+[
+   ((BETA_TAC THEN (move ["n"]) THEN (move ["H"])) THEN (((fun arg_tac -> (use_arg_then2 ("ltn_predK", [ltn_predK])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`0`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN (exact_tac)));
+];;
+
+(* Lemma leqNgt *)
+let leqNgt = Sections.section_proof []
+`!m n. (m <= n) <=> ~(n < m)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltnNge *)
+let ltnNge = Sections.section_proof []
+`!m n. (m < n) = ~(n <= m)`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"])) THEN (((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma ltnn *)
+let ltnn = Sections.section_proof []
+`!n. n < n <=> F`
+[
+   ((BETA_TAC THEN (move ["n"])) THEN ((((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leqn0 *)
+let leqn0 = Sections.section_proof []
+`!n. (n <= 0) = (n = 0)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma lt0n *)
+let lt0n = Sections.section_proof []
+`!n. (0 < n) = ~(n = 0)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma lt0n_neq0 *)
+let lt0n_neq0 = Sections.section_proof []
+`!n. 0 < n ==> ~(n = 0)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma eqn0Ngt *)
+let eqn0Ngt = Sections.section_proof []
+`!n. (n = 0) = ~(0 < n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma neq0_lt0n *)
+let neq0_lt0n = Sections.section_proof []
+`!n. (n = 0) = F ==> 0 < n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma eqn_leq *)
+let eqn_leq = Sections.section_proof []
+`!m n. (m = n) = (m <= n /\ n <= m)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma anti_leq *)
+let anti_leq = Sections.section_proof []
+`!m n. m <= n /\ n <= m ==> m = n`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"])) THEN (((use_arg_then2 ("eqn_leq", [eqn_leq]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma neq_ltn *)
+let neq_ltn = Sections.section_proof []
+`!m n. ~(m = n) <=> (m < n) \/ (n < m)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("negb_and", [negb_and]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("orbC", [orbC]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(gsym_then (thm_tac (new_rewrite [] []))))))) THEN (done_tac));
+];;
+
+(* Lemma leq_eqVlt *)
+let leq_eqVlt = Sections.section_proof ["m";"n"]
+`(m <= n) <=> (m = n) \/ (m < n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma eq_sym *)
+let eq_sym = Sections.section_proof []
+`!x y:A. x = y <=> y = x`
+[
+   ((((use_arg_then2 ("EQ_SYM_EQ", [EQ_SYM_EQ])) (disch_tac [])) THEN (clear_assumption "EQ_SYM_EQ") THEN BETA_TAC) THEN (done_tac));
+];;
+
+(* Lemma ltn_neqAle *)
+let ltn_neqAle = Sections.section_proof []
+`!m n. (m < n) <=> ~(m = n) /\ (m <= n)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_eqVlt", [leq_eqVlt]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("negb_or", [negb_or]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqNgt", [leqNgt]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eq_sym", [eq_sym]))(thm_tac (new_rewrite [] [(`n = m`)]))))) THEN (done_tac));
+];;
+
+(* Lemma leq_trans *)
+let leq_trans = Sections.section_proof []
+`!n m p. m <= n ==> n <= p ==> m <= p`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltE *)
+let ltE = Sections.section_proof []
+`!n m. n < m <=> SUC n <= m`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leqSS *)
+let leqSS = Sections.section_proof []
+`!n m. SUC n <= SUC m <=> n <= m`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_ltn_trans *)
+let leq_ltn_trans = Sections.section_proof []
+`!n m p. m <= n ==> n < p ==> m < p`
+[
+   (BETA_TAC THEN (move ["n"]) THEN (move ["m"]) THEN (move ["p"]) THEN (move ["Hmn"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_trans", [leq_trans])) (disch_tac [])) THEN (clear_assumption "leq_trans") THEN (DISCH_THEN apply_tac)) THEN (((use_arg_then2 ("leqSS", [leqSS]))(thm_tac (new_rewrite [] [])))) THEN (done_tac)) THEN (done_tac));
+];;
+
+(* Lemma ltn_leq_trans *)
+let ltn_leq_trans = Sections.section_proof ["n";"m";"p"]
+`m < n ==> n <= p ==> m < p`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltnW *)
+let ltnW = Sections.section_proof []
+`!m n. m < n ==> m <= n`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"])) THEN (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_trans", [leq_trans])) (disch_tac [])) THEN (clear_assumption "leq_trans") THEN (DISCH_THEN apply_tac)) THEN (((use_arg_then2 ("leqnSn", [leqnSn]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma leqW *)
+let leqW = Sections.section_proof []
+`!m n. m <= n ==> m <= SUC n`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["le_mn"])) THEN (((use_arg_then2 ("ltnW", [ltnW])) (disch_tac [])) THEN (clear_assumption "ltnW") THEN (DISCH_THEN apply_tac)) THEN ((((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqSS", [leqSS]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_trans *)
+let ltn_trans = Sections.section_proof []
+`!n m p. m < n ==> n < p ==> m < p`
+[
+   (BETA_TAC THEN (move ["n"]) THEN (move ["m"]) THEN (move ["p"]) THEN (move ["lt_mn"]));
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("ltnW", [ltnW])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))));
+   ((((use_arg_then2 ("leq_trans", [leq_trans])) (disch_tac [])) THEN (clear_assumption "leq_trans") THEN (DISCH_THEN apply_tac)) THEN (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma geqE *)
+let geqE = Sections.section_proof []
+`!m n. m >= n <=> n <= m`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma gtE *)
+let gtE = Sections.section_proof ["m";"n"]
+`m > n <=> n < m`
+[
+   (arith_tac);
+];;
+
+(* Lemma leq_total *)
+let leq_total = Sections.section_proof ["m";"n"]
+`(m <= n) \/ (n <= m)`
+[
+   ((((((use_arg_then2 ("implyNb", [implyNb]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("ltnNge", [ltnNge]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (move ["lt_nm"])) THEN (((use_arg_then2 ("ltnW", [ltnW])) (disch_tac [])) THEN (clear_assumption "ltnW") THEN (exact_tac)) THEN (done_tac));
+];;
+
+(* Lemma leqP *)
+let leqP = Sections.section_proof ["m";"n"]
+`m <= n \/ n < m`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltnP *)
+let ltnP = Sections.section_proof ["m";"n"]
+`m < n \/ n <= m`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma posnP *)
+let posnP = Sections.section_proof ["n"]
+`n = 0 \/ 0 < n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltngtP *)
+let ltngtP = Sections.section_proof ["m";"n"]
+`m < n \/ n < m \/ m = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_add2l *)
+let leq_add2l = Sections.section_proof []
+`!p m n. (p + m <= p + n) = (m <= n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn_add2l *)
+let ltn_add2l = Sections.section_proof []
+`!p m n. (p + m < p + n) = (m < n)`
+[
+   (BETA_TAC THEN (move ["p"]) THEN (move ["m"]) THEN (move ["n"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnS", [addnS]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_add2l", [leq_add2l]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_add2r *)
+let leq_add2r = Sections.section_proof ["p";"m";"n"]
+`(m + p <= n + p) = (m <= n)`
+[
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("addnC", [addnC])) (fun fst_arg -> (use_arg_then2 ("p", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("leq_add2l", [leq_add2l]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_add2r *)
+let ltn_add2r = Sections.section_proof []
+`!p m n. (m + p < n + p) = (m < n)`
+[
+   (BETA_TAC THEN (move ["p"]) THEN (move ["m"]) THEN (move ["n"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addSn", [addSn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_add2r", [leq_add2r]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_add *)
+let leq_add = Sections.section_proof []
+`!m1 m2 n1 n2. m1 <= n1 ==> m2 <= n2 ==> m1 + m2 <= n1 + n2`
+[
+   (BETA_TAC THEN (move ["m1"]) THEN (move ["m2"]) THEN (move ["n1"]) THEN (move ["n2"]) THEN (move ["le_mn1"]) THEN (move ["le_mn2"]));
+   (((((fun arg_tac -> (use_arg_then2 ("leq_trans", [leq_trans])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m1 + n2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_add2l", [leq_add2l]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_add2r", [leq_add2r]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_addr *)
+let leq_addr = Sections.section_proof []
+`!m n. n <= n + m`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((((use_arg_then2 ("addn0", [addn0]))(gsym_then (thm_tac (new_rewrite [1] [(`n`)]))))) THEN (((use_arg_then2 ("leq_add2l", [leq_add2l]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq0n", [leq0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_addl *)
+let leq_addl = Sections.section_proof []
+`!m n. n <= m + n`
+[
+   (((((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_addr", [leq_addr]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_addr *)
+let ltn_addr = Sections.section_proof ["m";"n";"p"]
+`m < n ==> m < n + p`
+[
+   ((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("leq_trans", [leq_trans])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_addr", [leq_addr]))(thm_tac (new_rewrite [] [])))));
+];;
+
+(* Lemma ltn_addl *)
+let ltn_addl = Sections.section_proof []
+`!m n p. m < n ==> m < p + n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma addn_gt0 *)
+let addn_gt0 = Sections.section_proof []
+`!m n. (0 < m + n) <=> (0 < m) \/ (0 < n)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("lt0n", [lt0n]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("negb_and", [negb_and]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addn_eq0", [addn_eq0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma subn_gt0 *)
+let subn_gt0 = Sections.section_proof ["m";"n"]
+`(0 < n - m) = (m < n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subn_eq0 *)
+let subn_eq0 = Sections.section_proof []
+`!m n. (m - n = 0) = (m <= n)`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leqE *)
+let leqE = Sections.section_proof []
+`!m n. m <= n <=> m - n = 0`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_sub_add *)
+let leq_sub_add = Sections.section_proof []
+`!m n p. (m - n <= p) = (m <= n + p)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"]));
+   (((((use_arg_then2 ("subn_eq0", [subn_eq0]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subn_sub", [subn_sub]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqE", [leqE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma leq_subr *)
+let leq_subr = Sections.section_proof []
+`!m n. n - m <= n`
+[
+   (((((use_arg_then2 ("leq_sub_add", [leq_sub_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_addl", [leq_addl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma subnKC *)
+let subnKC = Sections.section_proof []
+`!m n. m <= n ==> m + (n - m) = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma subnK *)
+let subnK = Sections.section_proof []
+`!m n. m <= n ==> (n - m) + m = n`
+[
+   ((((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("subnKC", [subnKC])) (disch_tac [])) THEN (clear_assumption "subnKC") THEN (exact_tac)) THEN (done_tac));
+];;
+
+(* Lemma addn_subA *)
+let addn_subA = Sections.section_proof []
+`!m n p. p <= n ==> m + (n - p) = (m + n) - p`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"]) THEN (move ["le_pn"]));
+   (((((fun arg_tac -> (use_arg_then2 ("subnK", [subnK])) (fun fst_arg -> (use_arg_then2 ("le_pn", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [2] []))))) THEN (((use_arg_then2 ("addnA", [addnA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnK", [addnK]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma subn_subA *)
+let subn_subA = Sections.section_proof []
+`!m n p. p <= n ==> m - (n - p) = (m + p) - n`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"]) THEN (move ["le_pn"]));
+   (((((fun arg_tac -> (use_arg_then2 ("subnK", [subnK])) (fun fst_arg -> (use_arg_then2 ("le_pn", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [2] []))))) THEN (((use_arg_then2 ("subn_add2r", [subn_add2r]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma subKn *)
+let subKn = Sections.section_proof []
+`!m n. m <= n ==> n - (n - m) = m`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("subn_subA", [subn_subA])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addKn", [addKn]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma leq_subS *)
+let leq_subS = Sections.section_proof []
+`!m n. m <= n ==> SUC n - m = SUC (n - m)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   ((((use_arg_then2 ("add1n", [add1n]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN ((DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("addn_subA", [addn_subA])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`1`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))));
+   ((((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma ltn_subS *)
+let ltn_subS = Sections.section_proof []
+`!m n. m < n ==> n - m = SUC (n - SUC m)`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["lt_mn"])) THEN ((((use_arg_then2 ("leq_subS", [leq_subS]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("subSS", [subSS]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma leq_sub2r *)
+let leq_sub2r = Sections.section_proof []
+`!p m n. m <= n ==> m - p <= n - p`
+[
+   (BETA_TAC THEN (move ["p"]) THEN (move ["m"]) THEN (move ["n"]) THEN (move ["le_mn"]));
+   (((((use_arg_then2 ("leq_sub_add", [leq_sub_add]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (use_arg_then2 ("leq_trans", [leq_trans])) (fun fst_arg -> (use_arg_then2 ("le_mn", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_sub_add", [leq_sub_add]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_sub2l *)
+let leq_sub2l = Sections.section_proof []
+`!p m n. m <= n ==> p - n <= p - m`
+[
+   ((BETA_TAC THEN (move ["p"]) THEN (move ["m"]) THEN (move ["n"])) THEN ((((fun arg_tac -> (use_arg_then2 ("leq_add2r", [leq_add2r])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`p - m`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_sub_add", [leq_sub_add]))(thm_tac (new_rewrite [] []))))));
+   ((((use_arg_then2 ("leq_trans", [leq_trans])) (disch_tac [])) THEN (clear_assumption "leq_trans") THEN (DISCH_THEN apply_tac)) THEN ((((use_arg_then2 ("leq_sub_add", [leq_sub_add]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_sub2 *)
+let leq_sub2 = Sections.section_proof []
+`!m1 m2 n1 n2. m1 <= m2 ==> n2 <= n1 ==> m1 - n1 <= m2 - n2`
+[
+   (BETA_TAC THEN (move ["m1"]) THEN (move ["m2"]) THEN (move ["n1"]) THEN (move ["n2"]));
+   (((DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("leq_sub2r", [leq_sub2r])) (fun fst_arg -> (use_arg_then2 ("n1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (move ["le_m12"])) THEN ((DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("leq_sub2l", [leq_sub2l])) (fun fst_arg -> (use_arg_then2 ("m2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN (((use_arg_then2 ("leq_trans", [leq_trans])) (disch_tac [])) THEN (clear_assumption "leq_trans") THEN (exact_tac)));
+];;
+
+(* Lemma ltn_sub2r *)
+let ltn_sub2r = Sections.section_proof []
+`!p m n. p < n ==> m < n ==> m - p < n - p`
+[
+   (BETA_TAC THEN (move ["p"]) THEN (move ["m"]) THEN (move ["n"]));
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("ltn_subS", [ltn_subS])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leqSS", [leqSS]))(thm_tac (new_rewrite [] []))))));
+   (((DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("leq_sub2r", [leq_sub2r])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`SUC p`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN (((use_arg_then2 ("subSS", [subSS]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma ltn_sub2l *)
+let ltn_sub2l = Sections.section_proof []
+`!p m n. m < p ==> m < n ==> p - n < p - m`
+[
+   (BETA_TAC THEN (move ["p"]) THEN (move ["m"]) THEN (move ["n"]));
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("ltn_subS", [ltn_subS])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leqSS", [leqSS]))(thm_tac (new_rewrite [] []))))));
+   (((DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("leq_sub2l", [leq_sub2l])) (fun fst_arg -> (use_arg_then2 ("p", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN (done_tac));
+];;
+
+(* Lemma ltn_add_sub *)
+let ltn_add_sub = Sections.section_proof []
+`!m n p. (m + n < p) = (n < p - m)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_sub_add", [leq_sub_add]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+let maxn = new_definition `maxn m n = if m < n then n else m`;;
+let minn = new_definition `minn m n = if m < n then m else n`;;
+
+(* Lemma max0n *)
+let max0n = Sections.section_proof []
+`!n. maxn 0 n = n`
+[
+   ((((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma maxn0 *)
+let maxn0 = Sections.section_proof []
+`!n. maxn n 0 = n`
+[
+   ((((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma maxnC *)
+let maxnC = Sections.section_proof []
+`!m n. maxn m n = maxn n m`
+[
+   ((repeat_tactic 1 9 (((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma maxnl *)
+let maxnl = Sections.section_proof []
+`!m n. n <= m ==> maxn m n = m`
+[
+   ((((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma maxnr *)
+let maxnr = Sections.section_proof []
+`!m n. m <= n ==> maxn m n = n`
+[
+   ((((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma add_sub_maxn *)
+let add_sub_maxn = Sections.section_proof []
+`!m n. m + (n - m) = maxn m n`
+[
+   ((((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma maxnAC *)
+let maxnAC = Sections.section_proof []
+`!m n p. maxn (maxn m n) p = maxn (maxn m p) n`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("add_sub_maxn", [add_sub_maxn]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("subn_sub", [subn_sub]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("add_sub_maxn", [add_sub_maxn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma maxnA *)
+let maxnA = Sections.section_proof []
+`!m n p. maxn m (maxn n p) = maxn (maxn m n) p`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [(`maxn m _1`)]))))) THEN (((use_arg_then2 ("maxnAC", [maxnAC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma maxnCA *)
+let maxnCA = Sections.section_proof []
+`!m n p. maxn m (maxn n p) = maxn n (maxn m p)`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("maxnA", [maxnA]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [(`maxn m _1`)]))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_maxr *)
+let eqn_maxr = Sections.section_proof []
+`!m n. (maxn m n = n) = (m <= n)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addn0", [addn0]))(gsym_then (thm_tac (new_rewrite [2] [(`n`)]))))) THEN (((use_arg_then2 ("add_sub_maxn", [add_sub_maxn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eqn_addl", [eqn_addl]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqE", [leqE]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_maxl *)
+let eqn_maxl = Sections.section_proof []
+`!m n. (maxn m n = m) = (n <= m)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((((use_arg_then2 ("addn0", [addn0]))(gsym_then (thm_tac (new_rewrite [2] [(`m`)]))))) THEN (((use_arg_then2 ("add_sub_maxn", [add_sub_maxn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eqn_addl", [eqn_addl]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqE", [leqE]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma maxnn *)
+let maxnn = Sections.section_proof []
+`!n. maxn n n = n`
+[
+   (BETA_TAC THEN (move ["n"]));
+   (((((use_arg_then2 ("maxnl", [maxnl]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_maxr *)
+let leq_maxr = Sections.section_proof ["m";"n1";"n2"]
+`(m <= maxn n1 n2) <=> (m <= n1) \/ (m <= n2)`
+[
+   ((fun arg_tac -> arg_tac (Arg_term (`n2 <= n1`))) (term_tac (wlog_tac (move ["le_n21"])[`n1`; `n2`])));
+   (((THENL_LAST) (((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leq_total", [leq_total])) (fun fst_arg -> (use_arg_then2 ("n2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("n1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case THEN (move ["le_n12"])) ((((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("orbC", [orbC]))(thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("le_n21", []))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+   (BETA_TAC THEN (move ["le_n21"]));
+   (((((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("le_n21", []))(thm_tac (new_rewrite [] [])))) THEN (simp_tac)) THEN (((fun arg_tac -> (use_arg_then2 ("EXCLUDED_MIDDLE", [EXCLUDED_MIDDLE])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m <= n1`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case THEN (simp_tac)));
+   ((((use_arg_then2 ("contra", [contra])) (disch_tac [])) THEN (clear_assumption "contra") THEN (DISCH_THEN apply_tac)) THEN ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("leq_trans", [leq_trans])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN ((fun arg_tac ->  (conv_thm_tac DISCH_THEN)  (fun fst_arg -> (use_arg_then2 ("n1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac MP_TAC))) THEN (done_tac));
+];;
+
+(* Lemma leq_maxl *)
+let leq_maxl = Sections.section_proof ["m";"n1";"n2"]
+`(maxn n1 n2 <= m) <=> (n1 <= m) /\ (n2 <= m)`
+[
+   (((((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_maxr", [leq_maxr]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("negb_or", [negb_or]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leqNgt", [leqNgt]))(gsym_then (thm_tac (new_rewrite [] []))))))) THEN (done_tac));
+];;
+
+(* Lemma addn_maxl *)
+let addn_maxl = Sections.section_proof []
+`!m1 m2 n. (maxn m1 m2) + n = maxn (m1 + n) (m2 + n)`
+[
+   ((BETA_TAC THEN (move ["m1"]) THEN (move ["m2"]) THEN (move ["n"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("add_sub_maxn", [add_sub_maxn]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("subn_add2r", [subn_add2r]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnAC", [addnAC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addn_maxr *)
+let addn_maxr = Sections.section_proof []
+`!m n1 n2. m + maxn n1 n2 = maxn (m + n1) (m + n2)`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n1"]) THEN (move ["n2"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [(`m + _1`)]))))) THEN (((use_arg_then2 ("addn_maxl", [addn_maxl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma min0n *)
+let min0n = Sections.section_proof ["n"]
+`minn 0 n = 0`
+[
+   ((((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma minn0 *)
+let minn0 = Sections.section_proof ["n"]
+`minn n 0 = 0`
+[
+   ((((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma minnC *)
+let minnC = Sections.section_proof ["m";"n"]
+`minn m n = minn n m`
+[
+   ((repeat_tactic 1 9 (((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma minnr *)
+let minnr = Sections.section_proof ["m";"n"]
+`n <= m ==> minn m n = n`
+[
+   ((((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma minnl *)
+let minnl = Sections.section_proof ["m";"n"]
+`m <= n ==> minn m n = m`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("minnr", [minnr])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN (((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma addn_min_max *)
+let addn_min_max = Sections.section_proof ["m";"n"]
+`minn m n + maxn m n = m + n`
+[
+   (((((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma minn_to_maxn *)
+let minn_to_maxn = Sections.section_proof ["m";"n"]
+`minn m n = (m + n) - maxn m n`
+[
+   (((((use_arg_then2 ("addn_min_max", [addn_min_max]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnK", [addnK]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma sub_sub_minn *)
+let sub_sub_minn = Sections.section_proof ["m";"n"]
+`m - (m - n) = minn m n`
+[
+   (((((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("minn_to_maxn", [minn_to_maxn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add_sub_maxn", [add_sub_maxn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subn_add2l", [subn_add2l]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma minnCA *)
+let minnCA = Sections.section_proof []
+`!m1 m2 m3. minn m1 (minn m2 m3) = minn m2 (minn m1 m3)`
+[
+   ((BETA_TAC THEN (move ["m1"]) THEN (move ["m2"]) THEN (move ["m3"])) THEN (repeat_tactic 1 9 (((use_arg_then2 ("minn_to_maxn", [minn_to_maxn]))(thm_tac (new_rewrite [] [(`minn _1 (minn _2 _3)`)]))))));
+   ((((fun arg_tac -> (use_arg_then2 ("subn_add2r", [subn_add2r])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`maxn m2 m3`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((fun arg_tac -> (use_arg_then2 ("subn_add2r", [subn_add2r])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`maxn m1 m3`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [(`(m2 + _1) - _2`)]))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] [])))))));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("addn_maxl", [addn_maxl]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addn_min_max", [addn_min_max]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addn_maxr", [addn_maxr]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnCA", [addnCA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("maxnAC", [maxnAC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [(`m2 + m1`)]))))) THEN (done_tac));
+];;
+
+(* Lemma minnA *)
+let minnA = Sections.section_proof []
+`!m1 m2 m3. minn m1 (minn m2 m3) = minn (minn m1 m2) m3`
+[
+   (BETA_TAC THEN (move ["m1"]) THEN (move ["m2"]) THEN (move ["m3"]));
+   (((((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] [(`minn m2 _1`)])))) THEN (((use_arg_then2 ("minnCA", [minnCA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma minnAC *)
+let minnAC = Sections.section_proof ["m1";"m2";"m3"]
+`minn (minn m1 m2) m3 = minn (minn m1 m3) m2`
+[
+   (((((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("minnCA", [minnCA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("minnA", [minnA]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_minr *)
+let eqn_minr = Sections.section_proof ["m";"n"]
+`(minn m n = n) = (n <= m)`
+[
+   (((fun arg_tac -> (use_arg_then2 ("eqn_addr", [eqn_addr])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [])))));
+   (((((use_arg_then2 ("addn_min_max", [addn_min_max]))(gsym_then (thm_tac (new_rewrite [] [(`n + m`)]))))) THEN (((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("eqn_addl", [eqn_addl]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("eq_sym", [eq_sym]))(thm_tac (new_rewrite [] [(`m = _1`)])))) THEN (((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("eqn_maxl", [eqn_maxl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_minl *)
+let eqn_minl = Sections.section_proof ["m";"n"]
+`(minn m n = m) = (m <= n)`
+[
+   (((((fun arg_tac -> (use_arg_then2 ("eqn_addr", [eqn_addr])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eq_sym", [eq_sym]))(thm_tac (new_rewrite [] [(`_1 = m + n`)])))) THEN (((use_arg_then2 ("addn_min_max", [addn_min_max]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eqn_addl", [eqn_addl]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("eqn_maxr", [eqn_maxr]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma minnn *)
+let minnn = Sections.section_proof ["n"]
+`minn n n = n`
+[
+   (((((use_arg_then2 ("minnr", [minnr]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_minr *)
+let leq_minr = Sections.section_proof ["m";"n1";"n2"]
+`(m <= minn n1 n2) <=> (m <= n1) /\ (m <= n2)`
+[
+   ((((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_minl *)
+let leq_minl = Sections.section_proof ["m";"n1";"n2"]
+`(minn n1 n2 <= m) <=> (n1 <= m) \/ (n2 <= m)`
+[
+   (((((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_minr", [leq_minr]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("negb_and", [negb_and]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leqNgt", [leqNgt]))(gsym_then (thm_tac (new_rewrite [] []))))))) THEN (done_tac));
+];;
+
+(* Lemma addn_minl *)
+let addn_minl = Sections.section_proof []
+`!m1 m2 n. (minn m1 m2) + n = minn (m1 + n) (m2 + n)`
+[
+   ((BETA_TAC THEN (move ["m1"]) THEN (move ["m2"]) THEN (move ["n"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("minn_to_maxn", [minn_to_maxn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addn_maxl", [addn_maxl]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnA", [addnA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("subn_add2r", [subn_add2r]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnAC", [addnAC]))(thm_tac (new_rewrite [] []))))));
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("addnC", [addnC])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [(`_1 + n`)])))))) THEN (((use_arg_then2 ("addn_subA", [addn_subA]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("addn_min_max", [addn_min_max]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_addl", [leq_addl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma addn_minr *)
+let addn_minr = Sections.section_proof []
+`!m n1 n2. m + minn n1 n2 = minn (m + n1) (m + n2)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n1"]) THEN (move ["n2"]));
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("addnC", [addnC])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [(`m + _1`)]))))) THEN (((use_arg_then2 ("addn_minl", [addn_minl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma maxnK *)
+let maxnK = Sections.section_proof ["m";"n"]
+`minn (maxn m n) m = m`
+[
+   (((((use_arg_then2 ("minnr", [minnr]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("leq_maxr", [leq_maxr]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma maxKn *)
+let maxKn = Sections.section_proof ["m";"n"]
+`minn n (maxn m n) = n`
+[
+   (((((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("maxnK", [maxnK]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma minnK *)
+let minnK = Sections.section_proof ["m";"n"]
+`maxn (minn m n) m = m`
+[
+   (((((use_arg_then2 ("maxnr", [maxnr]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("leq_minl", [leq_minl]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma minKn *)
+let minKn = Sections.section_proof ["m";"n"]
+`maxn n (minn m n) = n`
+[
+   (((((use_arg_then2 ("minnC", [minnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("minnK", [minnK]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma maxn_minl *)
+let maxn_minl = Sections.section_proof ["m1";"m2";"n"]
+`maxn (minn m1 m2) n = minn (maxn m1 n) (maxn m2 n)`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] [])))))) THEN (arith_tac));
+];;
+
+(* Lemma maxn_minr *)
+let maxn_minr = Sections.section_proof ["m";"n1";"n2"]
+`maxn m (minn n1 n2) = minn (maxn m n1) (maxn m n2)`
+[
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("maxnC", [maxnC])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [(`maxn m _1`)]))))) THEN (((use_arg_then2 ("maxn_minl", [maxn_minl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma minn_maxl *)
+let minn_maxl = Sections.section_proof []
+`!m1 m2 n. minn (maxn m1 m2) n = maxn (minn m1 n) (minn m2 n)`
+[
+   ((BETA_TAC THEN (move ["m1"]) THEN (move ["m2"]) THEN (move ["n"])) THEN ((((use_arg_then2 ("maxn_minr", [maxn_minr]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("maxn_minl", [maxn_minl]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("minnA", [minnA]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("maxnn", [maxnn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("maxnC", [maxnC]))(thm_tac (new_rewrite [] [(`maxn _1 n`)])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("maxnK", [maxnK]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma minn_maxr *)
+let minn_maxr = Sections.section_proof []
+`!m n1 n2. minn m (maxn n1 n2) = maxn (minn m n1) (minn m n2)`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n1"]) THEN (move ["n2"]));
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("minnC", [minnC])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [(`minn m _1`)]))))) THEN (((use_arg_then2 ("minn_maxl", [minn_maxl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Section Iteration *)
+Sections.begin_section "Iteration";;
+(Sections.add_section_var (mk_var ("m", (`:num`))); Sections.add_section_var (mk_var ("n", (`:num`))));;
+(Sections.add_section_var (mk_var ("x", (`:A`))); Sections.add_section_var (mk_var ("y", (`:A`))));;
+let iter = define `iter (SUC n) f (x:A) = f (iter n f x) /\ iter 0 f x = x`;;
+let iteri = define `iteri (SUC n) f (x:A) = f n (iteri n f x) /\ iteri 0 f x = x`;;
+
+(* Lemma iterSr *)
+let iterSr = Sections.section_proof ["n";"f";"x"]
+`iter (SUC n) f (x : A) = iter n f (f x)`
+[
+   ((((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("iter", [iter]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (move ["n"]) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma iterS *)
+let iterS = Sections.section_proof ["n";"f";"x"]
+`iter (SUC n) f (x:A) = f (iter n f x)`
+[
+   ((((use_arg_then2 ("iter", [iter]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma iter_add *)
+let iter_add = Sections.section_proof ["n";"m";"f";"x"]
+`iter (n + m) f (x:A) = iter n f (iter m f x)`
+[
+   ((((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) THEN (((repeat_tactic 1 9 (((use_arg_then2 ("iter", [iter]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (((use_arg_then2 ("add0n", [add0n]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("addSn", [addSn]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (move ["n"]) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("iterS", [iterS]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma iteriS *)
+let iteriS = Sections.section_proof ["n";"f";"x"]
+`iteri (SUC n) f x = f n (iteri n f (x:A))`
+[
+   ((((use_arg_then2 ("iteri", [iteri]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Finalization of the section Iteration *)
+let iterSr = Sections.finalize_theorem iterSr;;
+let iterS = Sections.finalize_theorem iterS;;
+let iter_add = Sections.finalize_theorem iter_add;;
+let iteriS = Sections.finalize_theorem iteriS;;
+Sections.end_section "Iteration";;
+
+(* Lemma mul0n *)
+let mul0n = Sections.section_proof ["n"]
+`0 * n = 0`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma muln0 *)
+let muln0 = Sections.section_proof ["n"]
+`n * 0 = 0`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma mul1n *)
+let mul1n = Sections.section_proof ["n"]
+`1 * n = n`
+[
+   ((arith_tac) THEN (done_tac));
+];;
+
+(* Lemma mulSn *)
+let mulSn = Sections.section_proof ["m";"n"]
+`SUC m * n = n + m * n`
+[
+   (arith_tac);
+];;
+
+(* Lemma mulSnr *)
+let mulSnr = Sections.section_proof ["m";"n"]
+`SUC m * n = m * n + n`
+[
+   (arith_tac);
+];;
+
+(* Lemma mulnS *)
+let mulnS = Sections.section_proof ["m";"n"]
+`m * SUC n = m + m * n`
+[
+   ((((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN elim) THEN (((repeat_tactic 0 10 (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("addn0", [addn0]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac))) THEN (move ["m"])));
+   ((((repeat_tactic 1 9 (((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addSn", [addSn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnCA", [addnCA]))(thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma mulnSr *)
+let mulnSr = Sections.section_proof ["m";"n"]
+`m * SUC n = m * n + m`
+[
+   (((((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulnS", [mulnS]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma muln1 *)
+let muln1 = Sections.section_proof ["n"]
+`n * 1 = n`
+[
+   (((((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `1 = SUC 0`)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulnSr", [mulnSr]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("muln0", [muln0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma mulnC *)
+let mulnC = Sections.section_proof []
+`!m n. m * n = n * m`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   (((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN elim) [ALL_TAC; (move ["m"])]) THEN (((repeat_tactic 0 10 (((use_arg_then2 ("muln0", [muln0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("mulnS", [mulnS]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma muln_addl *)
+let muln_addl = Sections.section_proof ["m1";"m2";"n"]
+`(m1 + m2) * n = m1 * n + m2 * n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("m1", [])) (disch_tac [])) THEN (clear_assumption "m1") THEN elim) [ALL_TAC; ((move ["m1"]) THEN (move ["IHm"]))]) (((((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac)));
+   (((((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("IHm", []))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("mulSn", [mulSn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addSn", [addSn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma muln_addr *)
+let muln_addr = Sections.section_proof ["m";"n1";"n2"]
+`m * (n1 + n2) = m * n1 + m * n2`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [(`m * _1`)]))))) THEN (((use_arg_then2 ("muln_addl", [muln_addl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma muln_subl *)
+let muln_subl = Sections.section_proof []
+`!m n p. (m - n) * p = m * p - n * p`
+[
+   ((THENL_FIRST) (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN ((THENL) case [ALL_TAC; (move ["n'"])])) (((repeat_tactic 1 9 (((use_arg_then2 ("muln0", [muln0]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subn0", [subn0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN ((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN elim) [ALL_TAC; ((move ["m"]) THEN (move ["IHm"]))]) THEN ((THENL) case [ALL_TAC; (move ["n"])])) THEN ((repeat_tactic 0 10 (((fun arg_tac ->(use_arg_then2 ("mul0n", [mul0n]))(fun tmp_arg1 -> (fun arg_tac ->(use_arg_then2 ("sub0n", [sub0n]))(fun tmp_arg1 -> (use_arg_then2 ("subn0", [subn0]))(fun tmp_arg2 -> arg_tac (Arg_theorem (CONJ (get_arg_thm tmp_arg1) (get_arg_thm tmp_arg2))))))(fun tmp_arg2 -> arg_tac (Arg_theorem (CONJ (get_arg_thm tmp_arg1) (get_arg_thm tmp_arg2))))))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (repeat_tactic 1 9 (((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subn_add2l", [subn_add2l]))(thm_tac (new_rewrite [] []))))));
+   (((((use_arg_then2 ("IHm", []))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subSS", [subSS]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma muln_subr *)
+let muln_subr = Sections.section_proof []
+`!m n p. m * (n - p) = m * n - m * p`
+[
+   ((BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [(`m * _1`)]))))) THEN (((use_arg_then2 ("muln_subl", [muln_subl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma mulnA *)
+let mulnA = Sections.section_proof []
+`!m n p. m * (n * p) = (m * n) * p`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]) THEN (move ["p"]));
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN elim) [ALL_TAC; (move ["m"])]) ((repeat_tactic 1 9 (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((((repeat_tactic 1 9 (((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("muln_addl", [muln_addl]))(thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma mulnCA *)
+let mulnCA = Sections.section_proof ["m";"n1";"n2"]
+`m * (n1 * n2) = n1 * (m * n2)`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("mulnA", [mulnA]))(thm_tac (new_rewrite [] []))))) THEN (((fun arg_tac -> (use_arg_then2 ("mulnC", [mulnC])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [(`m * _1`)]))))) THEN (done_tac));
+];;
+
+(* Lemma mulnAC *)
+let mulnAC = Sections.section_proof ["m";"n";"p"]
+`(n * m) * p = (n * p) * m`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("mulnA", [mulnA]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [(`p * _1`)]))))) THEN (done_tac));
+];;
+
+(* Lemma muln_eq0 *)
+let muln_eq0 = Sections.section_proof ["m";"n"]
+`(m * n = 0) <=> (m = 0) \/ (n = 0)`
+[
+   ((((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN ((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; (move ["m"])]) THEN ((THENL) case [ALL_TAC; (move ["n"])])) THEN ((repeat_tactic 0 10 (((fun arg_tac ->(use_arg_then2 ("muln0", [muln0]))(fun tmp_arg1 -> (use_arg_then2 ("mul0n", [mul0n]))(fun tmp_arg2 -> arg_tac (Arg_theorem (CONJ (get_arg_thm tmp_arg1) (get_arg_thm tmp_arg2))))))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac))) THEN (arith_tac));
+];;
+
+(* Lemma eqn_mul1 *)
+let eqn_mul1 = Sections.section_proof ["m";"n"]
+`(m * n = 1) <=> (m = 1) /\ (n = 1)`
+[
+   ((((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN ((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; ((THENL) case [ALL_TAC; (move ["m"])])]) THEN ((THENL) case [ALL_TAC; ((THENL) case [ALL_TAC; (move ["n"])])])) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma muln_gt0 *)
+let muln_gt0 = Sections.section_proof ["m";"n"]
+`(0 < m * n) <=> (0 < m) /\ (0 < n)`
+[
+   ((((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN ((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; (move ["m"])]) THEN ((THENL) case [ALL_TAC; (move ["n"])])) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_pmull *)
+let leq_pmull = Sections.section_proof ["m";"n"]
+`0 < n ==> m <= n * m`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("prednK", [prednK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN ((((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_addr", [leq_addr]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_pmulr *)
+let leq_pmulr = Sections.section_proof ["m";"n"]
+`0 < n ==> m <= m * n`
+[
+   (((DISCH_THEN (fun snd_th -> (fun arg_tac -> (use_arg_then2 ("leq_pmull", [leq_pmull])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN (((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma leq_mul2l *)
+let leq_mul2l = Sections.section_proof ["m";"n1";"n2"]
+`(m * n1 <= m * n2) <=> (m = 0) \/ (n1 <= n2)`
+[
+   (((((use_arg_then2 ("leqE", [leqE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("muln_subr", [muln_subr]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("muln_eq0", [muln_eq0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqE", [leqE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma leq_mul2r *)
+let leq_mul2r = Sections.section_proof ["m";"n1";"n2"]
+`(n1 * m <= n2 * m) <=> (m = 0) \/ (n1 <= n2)`
+[
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("mulnC", [mulnC])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [(`_1 * m`)])))))) THEN (((use_arg_then2 ("leq_mul2l", [leq_mul2l]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_mul *)
+let leq_mul = Sections.section_proof ["m1";"m2";"n1";"n2"]
+`m1 <= n1 ==> m2 <= n2 ==> m1 * m2 <= n1 * n2`
+[
+   (BETA_TAC THEN (move ["le_mn1"]) THEN (move ["le_mn2"]));
+   (((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leq_trans", [leq_trans])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m1 * n2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m1 * m2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`n1 * n2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC);
+   ((THENL_FIRST) (ANTS_TAC) (((((use_arg_then2 ("leq_mul2l", [leq_mul2l]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("le_mn2", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (DISCH_THEN apply_tac);
+   (((((use_arg_then2 ("leq_mul2r", [leq_mul2r]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("le_mn1", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_mul2l *)
+let eqn_mul2l = Sections.section_proof ["m";"n1";"n2"]
+`(m * n1 = m * n2) <=> (m = 0) \/ (n1 = n2)`
+[
+   (((((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leq_mul2l", [leq_mul2l]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("orb_andr", [orb_andr]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eqn_leq", [eqn_leq]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_mul2r *)
+let eqn_mul2r = Sections.section_proof ["m";"n1";"n2"]
+`(n1 * m = n2 * m) <=> (m = 0) \/ (n1 = n2)`
+[
+   (((((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leq_mul2r", [leq_mul2r]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("orb_andr", [orb_andr]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eqn_leq", [eqn_leq]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma leq_pmul2l *)
+let leq_pmul2l = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> ((m * n1 <= m * n2) <=> (n1 <= n2))`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("prednK", [prednK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("leq_mul2l", [leq_mul2l]))(thm_tac (new_rewrite [] [])))) THEN ((((use_arg_then2 ("NOT_SUC", [NOT_SUC]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("orFb", [orFb]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma leq_pmul2r *)
+let leq_pmul2r = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> ((n1 * m <= n2 * m) <=> (n1 <= n2))`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("prednK", [prednK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("leq_mul2r", [leq_mul2r]))(thm_tac (new_rewrite [] [])))) THEN ((((use_arg_then2 ("NOT_SUC", [NOT_SUC]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("orFb", [orFb]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma eqn_pmul2l *)
+let eqn_pmul2l = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> ((m * n1 = m * n2) <=> (n1 = n2))`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("prednK", [prednK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("eqn_mul2l", [eqn_mul2l]))(thm_tac (new_rewrite [] [])))) THEN ((((use_arg_then2 ("NOT_SUC", [NOT_SUC]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("orFb", [orFb]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma eqn_pmul2r *)
+let eqn_pmul2r = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> ((n1 * m = n2 * m) <=> (n1 = n2))`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("prednK", [prednK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("eqn_mul2r", [eqn_mul2r]))(thm_tac (new_rewrite [] [])))) THEN ((((use_arg_then2 ("NOT_SUC", [NOT_SUC]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("orFb", [orFb]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma ltn_mul2l *)
+let ltn_mul2l = Sections.section_proof ["m";"n1";"n2"]
+`(m * n1 < m * n2) <=> (0 < m) /\ (n1 < n2)`
+[
+   (((((use_arg_then2 ("lt0n", [lt0n]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_mul2l", [leq_mul2l]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("negb_or", [negb_or]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_mul2r *)
+let ltn_mul2r = Sections.section_proof ["m";"n1";"n2"]
+`(n1 * m < n2 * m) <=> (0 < m) /\ (n1 < n2)`
+[
+   (((((use_arg_then2 ("lt0n", [lt0n]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_mul2r", [leq_mul2r]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("negb_or", [negb_or]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_pmul2l *)
+let ltn_pmul2l = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> ((m * n1 < m * n2) <=> (n1 < n2))`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("prednK", [prednK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN ((((use_arg_then2 ("ltn_mul2l", [ltn_mul2l]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("LT_0", [LT_0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("andTb", [andTb]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_pmul2r *)
+let ltn_pmul2r = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> (n1 * m < n2 * m <=> n1 < n2)`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("prednK", [prednK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN ((((use_arg_then2 ("ltn_mul2r", [ltn_mul2r]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("LT_0", [LT_0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_Pmull *)
+let ltn_Pmull = Sections.section_proof ["m";"n"]
+`1 < n ==> 0 < m ==> m < n * m`
+[
+   ((BETA_TAC THEN (move ["lt1n"]) THEN (move ["m_gt0"])) THEN ((((use_arg_then2 ("mul1n", [mul1n]))(gsym_then (thm_tac (new_rewrite [1] [(`m`)]))))) THEN (((use_arg_then2 ("ltn_pmul2r", [ltn_pmul2r]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_Pmulr *)
+let ltn_Pmulr = Sections.section_proof ["m";"n"]
+`1 < n ==> 0 < m ==> m < m * n`
+[
+   ((BETA_TAC THEN (move ["lt1n"]) THEN (move ["m_gt0"])) THEN ((((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltn_Pmull", [ltn_Pmull]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_mul *)
+let ltn_mul = Sections.section_proof ["m1";"m2";"n1";"n2"]
+`m1 < n1 ==> m2 < n2 ==> m1 * m2 < n1 * n2`
+[
+   (BETA_TAC THEN (move ["lt_mn1"]) THEN (move ["lt_mn2"]));
+   (((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leq_ltn_trans", [leq_ltn_trans])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m1 * n2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m1 * m2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`n1 * n2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC);
+   (ANTS_TAC);
+   (((((use_arg_then2 ("leq_mul2l", [leq_mul2l]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("orbC", [orbC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltnW", [ltnW]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   (DISCH_THEN apply_tac);
+   ((((use_arg_then2 ("ltn_pmul2r", [ltn_pmul2r]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)));
+   ((((use_arg_then2 ("lt_mn2", [])) (disch_tac [])) THEN (clear_assumption "lt_mn2") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma maxn_mulr *)
+let maxn_mulr = Sections.section_proof ["m";"n1";"n2"]
+`m * maxn n1 n2 = maxn (m * n1) (m * n2)`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; (move ["n"])]) (((repeat_tactic 1 9 (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("maxnn", [maxnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("maxn", [maxn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("fun_if", [fun_if]))(thm_tac (new_rewrite [] [(`SUC n * _1`)])))) THEN (((use_arg_then2 ("ltn_pmul2l", [ltn_pmul2l]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("LT_0", [LT_0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma maxn_mull *)
+let maxn_mull = Sections.section_proof ["m1";"m2";"n"]
+`maxn m1 m2 * n = maxn (m1 * n) (m2 * n)`
+[
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("mulnC", [mulnC])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [(`_1 * n`)])))))) THEN (((use_arg_then2 ("maxn_mulr", [maxn_mulr]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma minn_mulr *)
+let minn_mulr = Sections.section_proof ["m";"n1";"n2"]
+`m * minn n1 n2 = minn (m * n1) (m * n2)`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; (move ["n"])]) (((repeat_tactic 1 9 (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("if_same", [if_same]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((repeat_tactic 1 9 (((use_arg_then2 ("minn", [minn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("fun_if", [fun_if]))(thm_tac (new_rewrite [] [(`SUC n * _1`)])))) THEN (((use_arg_then2 ("ltn_pmul2l", [ltn_pmul2l]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("LT_0", [LT_0]))(thm_tac (new_rewrite [] [])))));
+];;
+
+(* Lemma minn_mull *)
+let minn_mull = Sections.section_proof ["m1";"m2";"n"]
+`minn m1 m2 * n = minn (m1 * n) (m2 * n)`
+[
+   (((repeat_tactic 1 9 (((fun arg_tac -> (use_arg_then2 ("mulnC", [mulnC])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [(`_1 * n`)])))))) THEN (((use_arg_then2 ("minn_mulr", [minn_mulr]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+parse_as_infix("^", (24, "left"));;
+override_interface("^", `EXP`);;
+
+(* Lemma expn0 *)
+let expn0 = Sections.section_proof ["m"]
+`m ^ 0 = 1`
+[
+   ((((use_arg_then2 ("EXP", [EXP]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma expn1 *)
+let expn1 = Sections.section_proof ["m"]
+`m ^ 1 = m`
+[
+   ((((use_arg_then2 ("EXP_1", [EXP_1]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma expnS *)
+let expnS = Sections.section_proof ["m";"n"]
+`m ^ SUC n = m * m ^ n`
+[
+   ((((use_arg_then2 ("EXP", [EXP]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma expnSr *)
+let expnSr = Sections.section_proof ["m";"n"]
+`m ^ SUC n = m ^ n * m`
+[
+   (((((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma exp0n *)
+let exp0n = Sections.section_proof ["n"]
+`0 < n ==> 0 ^ n = 0`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN case) [ALL_TAC; (move ["n"])]) ((((use_arg_then2 ("LT_REFL", [LT_REFL]))(thm_tac (new_rewrite [] [])))) THEN (done_tac)));
+   (((((use_arg_then2 ("EXP", [EXP]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma exp1n *)
+let exp1n = Sections.section_proof ["n"]
+`1 ^ n = 1`
+[
+   (((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [(((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))); ((((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mul1n", [mul1n]))(thm_tac (new_rewrite [] [])))))]) THEN (done_tac));
+];;
+
+(* Lemma expn_add *)
+let expn_add = Sections.section_proof ["m";"n1";"n2"]
+`m ^ (n1 + n2) = m ^ n1 * m ^ n2`
+[
+   (((THENL) (((use_arg_then2 ("n1", [])) (disch_tac [])) THEN (clear_assumption "n1") THEN elim) [ALL_TAC; ((move ["n1"]) THEN (move ["IHn"]))]) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("mul1n", [mul1n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("addSn", [addSn]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] [])))))));
+   (((((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulnA", [mulnA]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma expn_mull *)
+let expn_mull = Sections.section_proof ["m1";"m2";"n"]
+`(m1 * m2) ^ n = m1 ^ n * m2 ^ n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; ((move ["n"]) THEN (move ["IHn"]))]) (((repeat_tactic 1 9 (((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("muln1", [muln1]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("mulnA", [mulnA]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("mulnCA", [mulnCA]))(thm_tac (new_rewrite [] [(`m2 * _1`)]))))) THEN (done_tac));
+];;
+
+(* Lemma expn_mulr *)
+let expn_mulr = Sections.section_proof ["m";"n1";"n2"]
+`m ^ (n1 * n2) = (m ^ n1) ^ n2`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n1", [])) (disch_tac [])) THEN (clear_assumption "n1") THEN elim) [ALL_TAC; ((move ["n1"]) THEN (move ["IHn"]))]) (((repeat_tactic 1 9 (((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("exp1n", [exp1n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (((((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("expn_add", [expn_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("expn_mull", [expn_mull]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma expn_gt0 *)
+let expn_gt0 = Sections.section_proof ["m";"n"]
+`(0 < m ^ n) <=> (0 < m) \/ (n = 0)`
+[
+   ((THENL_FIRST) (((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; (move ["m"])]) THEN ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; ((move ["n"]) THEN (move ["IHn"]))])) ((((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac)));
+   (((((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac));
+   ((((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+   (((((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addn_gt0", [addn_gt0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma expn_eq0 *)
+let expn_eq0 = Sections.section_proof ["m";"e"]
+`(m ^ e = 0) <=> (m = 0) /\ (0 < e)`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("eqn0Ngt", [eqn0Ngt]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("expn_gt0", [expn_gt0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("negb_or", [negb_or]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("lt0n", [lt0n]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_expl *)
+let ltn_expl = Sections.section_proof ["m";"n"]
+`1 < m ==> n < m ^ n`
+[
+   ((THENL_FIRST) ((BETA_TAC THEN (move ["m_gt1"])) THEN ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; (move ["n"])])) ((((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac)));
+   ((((fun arg_tac -> (use_arg_then2 ("ltnW", [ltnW])) (fun fst_arg -> (use_arg_then2 ("m_gt1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN ((((use_arg_then2 ("ONE", [ONE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("leq_pmul2l", [leq_pmul2l])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] []))))));
+   ((((use_arg_then2 ("leq_trans", [leq_trans])) (disch_tac [])) THEN (clear_assumption "leq_trans") THEN (DISCH_THEN apply_tac)) THEN (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] []))))));
+   ((((fun arg_tac -> (use_arg_then2 ("ltn_Pmull", [ltn_Pmull])) (fun fst_arg -> (use_arg_then2 ("m_gt1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN (DISCH_THEN apply_tac)) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_exp2l *)
+let leq_exp2l = Sections.section_proof ["m";"n1";"n2"]
+`1 < m ==> (m ^ n1 <= m ^ n2 <=> n1 <= n2)`
+[
+   ((THENL_ROT (-1)) ((BETA_TAC THEN (move ["m_gt1"])) THEN ((THENL) (((use_arg_then2 ("n2", [])) (disch_tac [])) THEN (clear_assumption "n2") THEN ((use_arg_then2 ("n1", [])) (disch_tac [])) THEN (clear_assumption "n1") THEN elim) [ALL_TAC; ((move ["n1"]) THEN (move ["IHn"]))]) THEN (BETA_TAC THEN ((THENL) case [ALL_TAC; (move ["q"])])) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)))));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_pmul2l", [leq_pmul2l]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("leqSS", [leqSS]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltnW", [ltnW]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ONE", [ONE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+   (((((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ONE", [ONE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("expn_gt0", [expn_gt0]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("m_gt1", [])) (disch_tac [])) THEN (clear_assumption "m_gt1") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
+   ((((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))));
+   ((((use_arg_then2 ("m_gt1", [])) (disch_tac [])) THEN (clear_assumption "m_gt1") THEN BETA_TAC) THEN ((((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))) THEN (move ["m_gt1"])));
+   ((((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (use_arg_then2 ("leq_trans", [leq_trans])) (fun fst_arg -> (use_arg_then2 ("m_gt1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("ltE", [ltE]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("ltn0", [ltn0]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_pmulr", [leq_pmulr]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("expn_gt0", [expn_gt0]))(thm_tac (new_rewrite [] [])))));
+   ((((use_arg_then2 ("m_gt1", [])) (disch_tac [])) THEN (clear_assumption "m_gt1") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn_exp2l *)
+let ltn_exp2l = Sections.section_proof ["m";"n1";"n2"]
+`1 < m ==> (m ^ n1 < m ^ n2 <=> n1 < n2)`
+[
+   ((BETA_TAC THEN (move ["m_gt1"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_exp2l", [leq_exp2l]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_exp2l *)
+let eqn_exp2l = Sections.section_proof ["m";"n1";"n2"]
+`1 < m ==> (m ^ n1 = m ^ n2 <=> n1 = n2)`
+[
+   ((BETA_TAC THEN (move ["m_gt1"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leq_exp2l", [leq_exp2l]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma expnI *)
+let expnI = Sections.section_proof ["m"]
+`1 < m ==> !e1 e2. m ^ e1 = m ^ e2 ==> e1 = e2`
+[
+   ((BETA_TAC THEN (move ["m_gt1"]) THEN (move ["e1"]) THEN (move ["e2"])) THEN (((use_arg_then2 ("eqn_exp2l", [eqn_exp2l]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma leq_pexp2l *)
+let leq_pexp2l = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> n1 <= n2 ==> m ^ n1 <= m ^ n2`
+[
+   (((THENL) (((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; ((THENL) case [ALL_TAC; (move ["m"])])]) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("ltn0", [ltn0]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)))) [((((use_arg_then2 ("ONE", [ONE]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("exp1n", [exp1n]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))); ((((use_arg_then2 ("leq_exp2l", [leq_exp2l]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)))]) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn_pexp2l *)
+let ltn_pexp2l = Sections.section_proof ["m";"n1";"n2"]
+`0 < m ==> m ^ n1 < m ^ n2 ==> n1 < n2`
+[
+   (((THENL) (((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN case) [ALL_TAC; ((THENL) case [ALL_TAC; (move ["m"])])]) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("ltn0", [ltn0]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)))) [((((use_arg_then2 ("ONE", [ONE]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("exp1n", [exp1n]))(thm_tac (new_rewrite [] [])))))); (((use_arg_then2 ("ltn_exp2l", [ltn_exp2l]))(thm_tac (new_rewrite [] []))))]) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn_exp2r *)
+let ltn_exp2r = Sections.section_proof ["m";"n";"e"]
+`0 < e ==> (m ^ e < n ^ e <=> m < n)`
+[
+   ((BETA_TAC THEN (move ["e_gt0"])) THEN ((THENL) (split_tac) [ALL_TAC; (move ["ltmn"])]));
+   ((repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("contra", [contra])) (disch_tac [])) THEN (clear_assumption "contra") THEN (DISCH_THEN apply_tac) THEN (move ["lemn"])));
+   (((THENL) (((use_arg_then2 ("e", [])) (disch_tac [])) THEN (clear_assumption "e") THEN elim) [ALL_TAC; ((move ["e'"]) THEN (move ["IHe"]))]) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (repeat_tactic 1 9 (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_mul", [leq_mul]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   ((THENL_FIRST) (((use_arg_then2 ("e_gt0", [])) (disch_tac [])) THEN (clear_assumption "e_gt0") THEN ((use_arg_then2 ("e", [])) (disch_tac [])) THEN (clear_assumption "e") THEN elim) ((((use_arg_then2 ("ltnn", [ltnn]))(thm_tac (new_rewrite [] [])))) THEN (done_tac)));
+   ((THENL_FIRST) (BETA_TAC THEN ((THENL) case [ALL_TAC; ((move ["e"]) THEN (move ["IHe"]))])) (((((use_arg_then2 ("ONE", [ONE]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("expn1", [expn1]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac)));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("ltn_mul", [ltn_mul]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (repeat_tactic 1 9 (((use_arg_then2 ("expnS", [expnS]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("IHe", []))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac))) THEN (arith_tac));
+];;
+
+(* Lemma leq_exp2r *)
+let leq_exp2r = Sections.section_proof ["m";"n";"e"]
+`0 < e ==> (m ^ e <= n ^ e <=> m <= n)`
+[
+   ((BETA_TAC THEN (move ["e_gt0"])) THEN ((((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltn_exp2r", [ltn_exp2r]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("leqNgt", [leqNgt]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_exp2r *)
+let eqn_exp2r = Sections.section_proof ["m";"n";"e"]
+`0 < e ==> (m ^ e = n ^ e <=> m = n)`
+[
+   ((BETA_TAC THEN (move ["e_gt0"])) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leq_exp2r", [leq_exp2r]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma expIn *)
+let expIn = Sections.section_proof ["e"]
+`0 < e ==> !m n. m ^ e = n ^ e ==> m = n`
+[
+   ((BETA_TAC THEN (move ["e_gt0"]) THEN (move ["m"]) THEN (move ["n"])) THEN (((use_arg_then2 ("eqn_exp2r", [eqn_exp2r]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma fact0 *)
+let fact0 = Sections.section_proof []
+`FACT 0 = 1`
+[
+   ((((use_arg_then2 ("FACT", [FACT]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma factS *)
+let factS = Sections.section_proof ["n"]
+`FACT (SUC n)  = (SUC n) * FACT n`
+[
+   ((((use_arg_then2 ("FACT", [FACT]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma fact_gt0 *)
+let fact_gt0 = Sections.section_proof ["n"]
+`0 < FACT n`
+[
+   (((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; (move ["n"])]) THEN ((((use_arg_then2 ("FACT", [FACT]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("muln_gt0", [muln_gt0]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))))) THEN (arith_tac) THEN (done_tac));
+];;
+let odd = new_basic_definition `odd = ODD`;;
+
+(* Lemma odd0 *)
+let odd0 = Sections.section_proof []
+`odd 0 = F`
+[
+   ((((use_arg_then2 ("odd", [odd]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 2 0 (((use_arg_then2 ("ODD", [ODD]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma oddS *)
+let oddS = Sections.section_proof ["n"]
+`odd (SUC n) = ~odd n`
+[
+   (((((use_arg_then2 ("odd", [odd]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("ODD", [ODD]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma odd1 *)
+let odd1 = Sections.section_proof []
+`odd 1 = T`
+[
+   (((((use_arg_then2 ("ONE", [ONE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("oddS", [oddS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd0", [odd0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma odd_add *)
+let odd_add = Sections.section_proof ["m";"n"]
+`odd (m + n) = odd m + odd n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN elim) [ALL_TAC; ((move ["m"]) THEN (move ["IHn"]))]) (((((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd0", [odd0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addFb", [addFb]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (((((use_arg_then2 ("addSn", [addSn]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("oddS", [oddS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addTb", [addTb]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addbA", [addbA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addTb", [addTb]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma odd_sub *)
+let odd_sub = Sections.section_proof ["m";"n"]
+`n <= m ==> odd (m - n) = odd m + odd n`
+[
+   ((BETA_TAC THEN (move ["le_nm"])) THEN (((fun arg_tac -> (use_arg_then2 ("addIb", [addIb])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`odd n`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN (DISCH_THEN apply_tac)) THEN ((((use_arg_then2 ("odd_add", [odd_add]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subnK", [subnK]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("addbK", [addbK]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma odd_opp *)
+let odd_opp = Sections.section_proof ["i";"m"]
+`odd m = F ==> i < m ==> odd (m - i) = odd i`
+[
+   (BETA_TAC THEN (move ["oddm"]) THEN (move ["lt_im"]));
+   (((((fun arg_tac -> (use_arg_then2 ("odd_sub", [odd_sub])) (fun fst_arg -> (fun arg_tac -> (use_arg_then2 ("ltnW", [ltnW])) (fun fst_arg -> (use_arg_then2 ("lt_im", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("oddm", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addFb", [addFb]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma odd_mul *)
+let odd_mul = Sections.section_proof ["m";"n"]
+`odd (m * n) <=> odd m /\ odd n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN elim) [ALL_TAC; ((move ["m"]) THEN (move ["IHm"]))]) (((((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd0", [odd0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("andFb", [andFb]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (((((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd_add", [odd_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("oddS", [oddS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addTb", [addTb]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("andb_addl", [andb_addl]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("IHm", []))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("andTb", [andTb]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma odd_exp *)
+let odd_exp = Sections.section_proof ["m";"n"]
+`odd (m ^ n) <=> (n = 0) \/ odd m`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; ((move ["n"]) THEN (move ["IHn"]))]) (((((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd1", [odd1]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd_mul", [odd_mul]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("orbC", [orbC]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `SUC n = 0 <=> F`)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("orFb", [orFb]))(thm_tac (new_rewrite [] [])))));
+   ((fun arg_tac -> arg_tac (Arg_term (`odd m`))) (term_tac (set_tac "b")));
+   (((use_arg_then2 ("IHn", [])) (disch_tac [])) THEN (clear_assumption "IHn") THEN ((use_arg_then2 ("b_def", [])) (disch_tac [])) THEN (clear_assumption "b_def") THEN BETA_TAC THEN (move ["_"]) THEN (move ["_"]));
+   ((((use_arg_then2 ("b", [])) (disch_tac [])) THEN (clear_assumption "b") THEN case THEN (simp_tac)) THEN (done_tac));
+];;
+let double = define `double 0 = 0 /\ (!n. double (SUC n) = SUC (SUC (double n)))`;;
+
+(* Lemma double0 *)
+let double0 = Sections.section_proof []
+`double 0 = 0`
+[
+   ((((use_arg_then2 ("double", [double]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma doubleS *)
+let doubleS = Sections.section_proof ["n"]
+`double (SUC n) = SUC (SUC (double n))`
+[
+   ((((use_arg_then2 ("double", [double]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (done_tac));
+];;
+
+(* Lemma addnn *)
+let addnn = Sections.section_proof ["n"]
+`n + n = double n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; ((move ["n"]) THEN (move ["IHn"]))]) (((((use_arg_then2 ("addn0", [addn0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (((((use_arg_then2 ("addnS", [addnS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addSn", [addSn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("doubleS", [doubleS]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma mul2n *)
+let mul2n = Sections.section_proof ["m"]
+`2 * m = double m`
+[
+   (((((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `2 = SUC 1`)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulSn", [mulSn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mul1n", [mul1n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnn", [addnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma muln2 *)
+let muln2 = Sections.section_proof ["m"]
+`m * 2 = double m`
+[
+   (((((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mul2n", [mul2n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma double_add *)
+let double_add = Sections.section_proof ["m";"n"]
+`double (m + n) = double m + double n`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("addnn", [addnn]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((fun arg_tac -> (use_arg_then2 ("addnCA", [addnCA])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [(`n + _1`)]))))) THEN (done_tac));
+];;
+
+(* Lemma double_sub *)
+let double_sub = Sections.section_proof ["m";"n"]
+`double (m - n) = double m - double n`
+[
+   ((((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN ((use_arg_then2 ("m", [])) (disch_tac [])) THEN (clear_assumption "m") THEN elim) [ALL_TAC; ((move ["m"]) THEN (move ["IHm"]))]) THEN ((THENL) case [ALL_TAC; (move ["n"])])) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("sub0n", [sub0n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("subn0", [subn0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("subn0", [subn0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("sub0n", [sub0n]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac))));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("doubleS", [doubleS]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("subSS", [subSS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("IHm", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_double *)
+let leq_double = Sections.section_proof ["m";"n"]
+`(double m <= double n <=> m <= n)`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("leqE", [leqE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("double_sub", [double_sub]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN ((THENL) (((fun arg_tac -> arg_tac (Arg_term (`m - n`))) (disch_tac [])) THEN case) [ALL_TAC; (move ["n"])]) THEN (((use_arg_then2 ("double", [double]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma ltn_double *)
+let ltn_double = Sections.section_proof ["m";"n"]
+`(double m < double n) = (m < n)`
+[
+   (((repeat_tactic 2 0 (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_double", [leq_double]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_Sdouble *)
+let ltn_Sdouble = Sections.section_proof ["m";"n"]
+`(SUC (double m) < double n) = (m < n)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then2 ("muln2", [muln2]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_Sdouble *)
+let leq_Sdouble = Sections.section_proof ["m";"n"]
+`(double m <= SUC (double n)) = (m <= n)`
+[
+   (((((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltn_Sdouble", [ltn_Sdouble]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqNgt", [leqNgt]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma odd_double *)
+let odd_double = Sections.section_proof ["n"]
+`odd (double n) = F`
+[
+   (((((use_arg_then2 ("addnn", [addnn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("odd_add", [odd_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addbb", [addbb]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma double_gt0 *)
+let double_gt0 = Sections.section_proof ["n"]
+`(0 < double n) = (0 < n)`
+[
+   (((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN case) [ALL_TAC; (move ["n"])]) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("doubleS", [doubleS]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac));
+];;
+
+(* Lemma double_eq0 *)
+let double_eq0 = Sections.section_proof ["n"]
+`(double n = 0) = (n = 0)`
+[
+   (((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN case) [ALL_TAC; (move ["n"])]) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("doubleS", [doubleS]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac));
+];;
+
+(* Lemma double_mull *)
+let double_mull = Sections.section_proof ["m";"n"]
+`double (m * n) = double m * n`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("mul2n", [mul2n]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("mulnA", [mulnA]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma double_mulr *)
+let double_mulr = Sections.section_proof ["m";"n"]
+`double (m * n) = m * double n`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("muln2", [muln2]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("mulnA", [mulnA]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+let half_def = define `HALF 0 = (0, 0) /\
+        !n. HALF (SUC n) = (SND (HALF n), SUC (FST (HALF n)))`;;
+let half = new_basic_definition `half = FST o HALF`;;
+let uphalf = new_basic_definition `uphalf = SND o HALF`;;
+
+(* Lemma half0 *)
+let half0 = Sections.section_proof []
+`half 0 = 0`
+[
+   (((((use_arg_then2 ("half", [half]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("o_DEF", [o_DEF]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (simp_tac) THEN (((use_arg_then2 ("half_def", [half_def]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma uphalf0 *)
+let uphalf0 = Sections.section_proof []
+`uphalf 0 = 0`
+[
+   (((((use_arg_then2 ("uphalf", [uphalf]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("o_DEF", [o_DEF]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (simp_tac) THEN (((use_arg_then2 ("half_def", [half_def]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma halfS *)
+let halfS = Sections.section_proof ["n"]
+`half (SUC n) = uphalf n`
+[
+   (((((use_arg_then2 ("half", [half]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("uphalf", [uphalf]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("o_DEF", [o_DEF]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (simp_tac) THEN (((use_arg_then2 ("half_def", [half_def]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma uphalfS *)
+let uphalfS = Sections.section_proof ["n"]
+`uphalf (SUC n) = SUC (half n)`
+[
+   (((((use_arg_then2 ("half", [half]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("uphalf", [uphalf]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (((use_arg_then2 ("o_DEF", [o_DEF]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (simp_tac) THEN (((use_arg_then2 ("half_def", [half_def]))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg])))) THEN (done_tac));
+];;
+
+(* Lemma doubleK *)
+let doubleK = Sections.section_proof ["x"]
+`half (double x) = x`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("x", [])) (disch_tac [])) THEN (clear_assumption "x") THEN elim) [ALL_TAC; (move ["n"])]) (((((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("half0", [half0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((((((use_arg_then2 ("doubleS", [doubleS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("halfS", [halfS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("uphalfS", [uphalfS]))(thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+let half_double = doubleK;;
+
+(* Lemma double_inj *)
+let double_inj = Sections.section_proof []
+`!m n. double m = double n ==> m = n`
+[
+   (BETA_TAC THEN (move ["m"]) THEN (move ["n"]));
+   ((((((use_arg_then2 ("doubleK", [doubleK]))(gsym_then (thm_tac (new_rewrite [2] [(`m`)]))))) THEN (((use_arg_then2 ("doubleK", [doubleK]))(gsym_then (thm_tac (new_rewrite [2] [(`n`)])))))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma uphalf_double *)
+let uphalf_double = Sections.section_proof ["n"]
+`uphalf (double n) = n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; (move ["n"])]) (((((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("uphalf0", [uphalf0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((((((use_arg_then2 ("doubleS", [doubleS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("uphalfS", [uphalfS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("halfS", [halfS]))(thm_tac (new_rewrite [] []))))) THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma uphalf_half *)
+let uphalf_half = Sections.section_proof ["n"]
+`uphalf n = (if odd n then 1 else 0) + half n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; ((move ["n"]) THEN (move ["IHn"]))]) (((((use_arg_then2 ("uphalf0", [uphalf0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("half0", [half0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd0", [odd0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addn0", [addn0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((((use_arg_then2 ("halfS", [halfS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("IHn", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnA", [addnA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("oddS", [oddS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("uphalfS", [uphalfS]))(thm_tac (new_rewrite [] [])))));
+   ((((fun arg_tac -> arg_tac (Arg_term (`odd n`))) (disch_tac [])) THEN case THEN (simp_tac)) THEN ((((fun arg_tac ->(use_arg_then2 ("add0n", [add0n]))(fun tmp_arg1 -> (use_arg_then2 ("addn0", [addn0]))(fun tmp_arg2 -> arg_tac (Arg_theorem (CONJ (get_arg_thm tmp_arg1) (get_arg_thm tmp_arg2))))))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma odd_double_half *)
+let odd_double_half = Sections.section_proof ["n"]
+`(if odd n then 1 else 0) + double (half n) = n`
+[
+   ((THENL_FIRST) ((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN elim) [ALL_TAC; ((move ["n"]) THEN (move ["IHn"]))]) (((((use_arg_then2 ("odd0", [odd0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("half0", [half0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("addn0", [addn0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   ((((use_arg_then2 ("IHn", []))(gsym_then (thm_tac (new_rewrite [3] []))))) THEN (((use_arg_then2 ("halfS", [halfS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("uphalf_half", [uphalf_half]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("double_add", [double_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("oddS", [oddS]))(thm_tac (new_rewrite [] [])))));
+   (((use_arg_then2 ("IHn", [])) (disch_tac [])) THEN (clear_assumption "IHn") THEN BETA_TAC THEN (move ["_"]));
+   ((((fun arg_tac -> arg_tac (Arg_term (`odd n`))) (disch_tac [])) THEN case THEN (simp_tac)) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("ONE", [ONE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("doubleS", [doubleS]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addSn", [addSn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("double0", [double0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma half_bit_double *)
+let half_bit_double = Sections.section_proof ["n";"b"]
+`half ((if b then 1 else 0) + double n) = n`
+[
+   ((((use_arg_then2 ("b", [])) (disch_tac [])) THEN (clear_assumption "b") THEN case) THEN ((simp_tac) THEN (repeat_tactic 0 10 (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("halfS", [halfS]))(thm_tac (new_rewrite [] []))))) THEN (((fun arg_tac ->(use_arg_then2 ("half_double", [half_double]))(fun tmp_arg1 -> (use_arg_then2 ("uphalf_double", [uphalf_double]))(fun tmp_arg2 -> arg_tac (Arg_theorem (CONJ (get_arg_thm tmp_arg1) (get_arg_thm tmp_arg2))))))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma half_add *)
+let half_add = Sections.section_proof ["m";"n"]
+`half (m + n) = (if odd m /\ odd n then 1 else 0) + (half m + half n)`
+[
+   ((((use_arg_then2 ("odd_double_half", [odd_double_half]))(gsym_then (thm_tac (new_rewrite [1] [(`n`)]))))) THEN (((use_arg_then2 ("addnCA", [addnCA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("odd_double_half", [odd_double_half]))(gsym_then (thm_tac (new_rewrite [1] [(`m`)]))))) THEN (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("double_add", [double_add]))(gsym_then (thm_tac (new_rewrite [] []))))));
+   ((repeat_tactic 2 0 ((((fun arg_tac -> arg_tac (Arg_term (`odd _`))) (disch_tac [])) THEN case))) THEN ((simp_tac) THEN (repeat_tactic 0 10 (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("half_double", [half_double]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("halfS", [halfS]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("uphalfS", [uphalfS]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("uphalf_double", [uphalf_double]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac))));
+   ((((use_arg_then2 ("half_double", [half_double]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma half_leq *)
+let half_leq = Sections.section_proof ["m";"n"]
+`m <= n ==> half m <= half n`
+[
+   (((DISCH_THEN (fun snd_th -> (use_arg_then2 ("subnK", [subnK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN ((((use_arg_then2 ("half_add", [half_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnA", [addnA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leq_addl", [leq_addl]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma half_gt0 *)
+let half_gt0 = Sections.section_proof ["n"]
+`(0 < half n) = (1 < n)`
+[
+   (((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN case) [ALL_TAC; (case THEN ALL_TAC)]) THEN ((repeat_tactic 0 10 (((use_arg_then2 ("halfS", [halfS]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("uphalfS", [uphalfS]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("uphalf0", [uphalf0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("half0", [half0]))(thm_tac (new_rewrite [] [])))))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma mulnn *)
+let mulnn = Sections.section_proof ["m"]
+`m * m = m ^ 2`
+[
+   (((((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `2 = SUC (SUC 0)`)))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("expnS", [expnS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("expn0", [expn0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("muln1", [muln1]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma sqrn_add *)
+let sqrn_add = Sections.section_proof ["m";"n"]
+`(m + n) ^ 2 = (m ^ 2 + n ^ 2) + 2 * (m * n)`
+[
+   ((repeat_tactic 1 9 (((use_arg_then2 ("mulnn", [mulnn]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("mul2n", [mul2n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("muln_addr", [muln_addr]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("muln_addl", [muln_addl]))(thm_tac (new_rewrite [] []))))) THEN (((fun arg_tac -> (use_arg_then2 ("mulnC", [mulnC])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] [])))))));
+   (((((use_arg_then2 ("EQ_ADD_LCANCEL", [EQ_ADD_LCANCEL]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnA", [addnA]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnn", [addnn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma sqrn_sub *)
+let sqrn_sub = Sections.section_proof ["m";"n"]
+`n <= m ==> (m - n) ^ 2 = (m ^ 2 + n ^ 2) - 2 * (m * n)`
+[
+   ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("subnK", [subnK])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (move ["def_m"]));
+   ((((use_arg_then2 ("def_m", []))(gsym_then (thm_tac (new_rewrite [2] []))))) THEN (((use_arg_then2 ("sqrn_add", [sqrn_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnAC", [addnAC]))(thm_tac (new_rewrite [] [])))));
+   (((repeat_tactic 2 0 (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (((use_arg_then2 ("addnn", [addnn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mul2n", [mul2n]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("muln_addr", [muln_addr]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("mulnn", [mulnn]))(gsym_then (thm_tac (new_rewrite [] [(`n EXP 2`)]))))) THEN (((use_arg_then2 ("muln_addl", [muln_addl]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("def_m", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnK", [addnK]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma sqrn_add_sub *)
+let sqrn_add_sub = Sections.section_proof ["m";"n"]
+`n <= m ==> (m + n) ^ 2 - 4 * (m * n) = (m - n) ^ 2`
+[
+   ((BETA_TAC THEN (move ["le_nm"])) THEN ((((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `4 = 2 * 2`)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulnA", [mulnA]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("mul2n", [mul2n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnn", [addnn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subn_sub", [subn_sub]))(gsym_then (thm_tac (new_rewrite [] [])))))));
+   (((((use_arg_then2 ("sqrn_add", [sqrn_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnK", [addnK]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("sqrn_sub", [sqrn_sub]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma subn_sqr *)
+let subn_sqr = Sections.section_proof ["m";"n"]
+`m ^ 2 - n ^ 2 = (m - n) * (m + n)`
+[
+   (((((use_arg_then2 ("muln_subl", [muln_subl]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("muln_addr", [muln_addr]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (use_arg_then2 ("mulnC", [mulnC])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("subn_add2l", [subn_add2l]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("mulnn", [mulnn]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma ltn_sqr *)
+let ltn_sqr = Sections.section_proof ["m";"n"]
+`(m ^ 2 < n ^ 2) = (m < n)`
+[
+   (((((use_arg_then2 ("ltn_exp2r", [ltn_exp2r]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma leq_sqr *)
+let leq_sqr = Sections.section_proof ["m";"n"]
+`(m ^ 2 <= n ^ 2) = (m <= n)`
+[
+   (((((use_arg_then2 ("leq_exp2r", [leq_exp2r]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma sqrn_gt0 *)
+let sqrn_gt0 = Sections.section_proof ["n"]
+`(0 < n ^ 2) = (0 < n)`
+[
+   ((THENL_FIRST) ((((fun arg_tac -> (use_arg_then2 ("ltn_sqr", [ltn_sqr])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`0`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (((use_arg_then2 ("exp0n", [exp0n]))(thm_tac (new_rewrite [] []))))) ((arith_tac) THEN (done_tac)));
+   ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma eqn_sqr *)
+let eqn_sqr = Sections.section_proof ["m";"n"]
+`(m ^ 2 = n ^ 2) = (m = n)`
+[
+   (((((use_arg_then2 ("eqn_exp2r", [eqn_exp2r]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac))) THEN (arith_tac) THEN (done_tac));
+];;
+
+(* Lemma sqrn_inj *)
+let sqrn_inj = Sections.section_proof ["m";"n"]
+`m ^ 2 = n ^ 2 ==> m = n`
+[
+   (BETA_TAC THEN (move ["eq"]));
+   (((fun arg_tac -> (use_arg_then2 ("expIn", [expIn])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `0 < 2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC THEN (move ["inj"]));
+   ((((fun arg_tac -> (use_arg_then2 ("inj", [])) (fun fst_arg -> (use_arg_then2 ("eq", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+let leqif = new_definition `!m n c. leqif m n c <=> (m <= n /\ ((m = n) <=> c))`;;
+
+(* Lemma leqifP *)
+let leqifP = Sections.section_proof ["m";"n";"c"]
+`leqif m n c <=> if c then m = n else m < n`
+[
+   ((THENL_FIRST) (((((use_arg_then2 ("ltn_neqAle", [ltn_neqAle]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] []))))) THEN (split_tac)) ((((use_arg_then2 ("c", [])) (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (done_tac)));
+   ((((use_arg_then2 ("c", [])) (disch_tac [])) THEN (clear_assumption "c") THEN case THEN (simp_tac)) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma leqif_imp_le *)
+let leqif_imp_le = Sections.section_proof ["m";"n";"c"]
+`leqif m n c ==> m <= n`
+[
+   (((((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma leqif_imp_eq *)
+let leqif_imp_eq = Sections.section_proof ["m";"n";"c"]
+`leqif m n c ==> (m = n <=> c)`
+[
+   (((((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma leqif_refl *)
+let leqif_refl = Sections.section_proof ["m";"c"]
+`(leqif m m c) <=> c`
+[
+   (((((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leqif_trans *)
+let leqif_trans = Sections.section_proof ["m1";"m2";"m3";"c1";"c2"]
+`leqif m1 m2 c1 ==> leqif m2 m3 c2 ==> leqif m1 m3 (c1 /\ c2)`
+[
+   (repeat_tactic 1 9 (((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] [])))));
+   ((THENL_FIRST) ((((use_arg_then2 ("c1", [])) (disch_tac [])) THEN (clear_assumption "c1") THEN case) THEN (((use_arg_then2 ("c2", [])) (disch_tac [])) THEN (clear_assumption "c2") THEN case THEN (simp_tac) THEN (move ["lt12"]))) ((BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac)));
+   ((repeat_tactic 1 9 (((use_arg_then2 ("ltE", [ltE]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("leq_trans", [leq_trans])) (disch_tac [])) THEN (clear_assumption "leq_trans") THEN (DISCH_THEN apply_tac)) THEN (((use_arg_then2 ("leqSS", [leqSS]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltnW", [ltnW])) (disch_tac [])) THEN (clear_assumption "ltnW") THEN (exact_tac)) THEN (done_tac));
+];;
+
+(* Lemma monotone_leqif *)
+let monotone_leqif = Sections.section_proof ["f"]
+`(!m n. f m <= f n <=> m <= n) ==>
+  !m n c. (leqif (f m) (f n) c) <=> (leqif m n c)`
+[
+   (BETA_TAC THEN (move ["f_mono"]) THEN (move ["m"]) THEN (move ["n"]) THEN (move ["c"]));
+   (((repeat_tactic 1 9 (((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("f_mono", []))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma leqif_geq *)
+let leqif_geq = Sections.section_proof ["m";"n"]
+`m <= n ==> leqif m n (n <= m)`
+[
+   ((BETA_TAC THEN (move ["lemn"])) THEN (((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] [])))) THEN ((split_tac) THEN ((TRY done_tac))) THEN (((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] [])))));
+   ((((use_arg_then2 ("lemn", []))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma leqif_eq *)
+let leqif_eq = Sections.section_proof ["m";"n"]
+`m <= n ==> leqif m n (m = n)`
+[
+   ((((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma geq_leqif *)
+let geq_leqif = Sections.section_proof ["a";"b";"C"]
+`leqif a b C ==> ((b <= a) <=> C)`
+[
+   ((((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] [])))) THEN (case THEN (move ["le_ab"])) THEN (((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] [])))));
+   ((((use_arg_then2 ("le_ab", []))(thm_tac (new_rewrite [] [])))) THEN (done_tac));
+];;
+
+(* Lemma ltn_leqif *)
+let ltn_leqif = Sections.section_proof ["a";"b";"C"]
+`leqif a b C ==> (a < b <=> ~ C)`
+[
+   (BETA_TAC THEN (move ["le_ab"]));
+   (((((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (use_arg_then2 ("geq_leqif", [geq_leqif])) (fun fst_arg -> (use_arg_then2 ("le_ab", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leqif_add *)
+let leqif_add = Sections.section_proof ["m1";"n1";"c1";"m2";"n2";"c2"]
+`leqif m1 n1 c1 ==> leqif m2 n2 c2 ==> leqif (m1 + m2) (n1 + n2) (c1 /\ c2)`
+[
+   ((((fun arg_tac -> (use_arg_then2 ("monotone_leqif", [monotone_leqif])) (fun fst_arg -> (fun arg_tac -> (use_arg_then2 ("leq_add2r", [leq_add2r])) (fun fst_arg -> (use_arg_then2 ("m2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (move ["le1"]));
+   (((fun arg_tac -> (use_arg_then2 ("monotone_leqif", [monotone_leqif])) (fun fst_arg -> (fun arg_tac -> (use_arg_then2 ("leq_add2l", [leq_add2l])) (fun fst_arg -> (use_arg_then2 ("n1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] [])))));
+   (((use_arg_then2 ("leqif_trans", [leqif_trans])) (disch_tac [])) THEN (clear_assumption "leqif_trans") THEN (exact_tac));
+];;
+
+(* Lemma leqif_mul *)
+let leqif_mul = Sections.section_proof ["m1";"n1";"c1";"m2";"n2";"c2"]
+`leqif m1 n1 c1 ==> leqif m2 n2 c2 ==>
+          leqif (m1 * m2) (n1 * n2) (n1 * n2 = 0 \/ (c1 /\ c2))`
+[
+   (BETA_TAC THEN (move ["le1"]) THEN (move ["le2"]));
+   ((THENL) (((fun arg_tac -> (use_arg_then2 ("posnP", [posnP])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`n1 * n2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case) [(move ["n12_0"]); ALL_TAC]);
+   ((((use_arg_then2 ("n12_0", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("le2", [])) (disch_tac [])) THEN (clear_assumption "le2") THEN ((use_arg_then2 ("le1", [])) (disch_tac [])) THEN (clear_assumption "le1") THEN ((use_arg_then2 ("n12_0", [])) (disch_tac [])) THEN (clear_assumption "n12_0") THEN BETA_TAC) THEN (((use_arg_then2 ("muln_eq0", [muln_eq0]))(thm_tac (new_rewrite [] [])))));
+   ((case THEN (((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] []))))) THEN ((THENL) (((use_arg_then2 ("m2", [])) (disch_tac [])) THEN (clear_assumption "m2") THEN ((use_arg_then2 ("m1", [])) (disch_tac [])) THEN (clear_assumption "m1") THEN case) [ALL_TAC; (move ["m"])]) THEN ((THENL) case [ALL_TAC; (move ["m'"])]) THEN ((repeat_tactic 1 9 (((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("muln0", [muln0]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("mul0n", [mul0n]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("leqnn", [leqnn]))(thm_tac (new_rewrite [] []))))) THEN (simp_tac)) THEN (arith_tac));
+   ((((use_arg_then2 ("muln_gt0", [muln_gt0]))(thm_tac (new_rewrite [] [])))) THEN (BETA_TAC THEN (case THEN ((move ["n1_gt0"]) THEN (move ["n2_gt0"])))));
+   (((fun arg_tac -> (use_arg_then2 ("posnP", [posnP])) (fun fst_arg -> (use_arg_then2 ("m2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC THEN ((THENL) case [(move ["m2_0"]); (move ["m2_gt0"])]));
+   ((((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("le2", [])) (disch_tac [])) THEN BETA_TAC) THEN ((((use_arg_then2 ("leqif", [leqif]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN ((move ["_"]) THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] [])))))))));
+   (((((use_arg_then2 ("andbC", [andbC]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("m2_0", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("muln0", [muln0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("muln_gt0", [muln_gt0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("n1_gt0", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("n2_gt0", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   ((((use_arg_then2 ("n1_gt0", [])) (disch_tac [])) THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("leq_pmul2l", [leq_pmul2l])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("monotone_leqif", [monotone_leqif])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (move ["Mn1"])));
+   (((use_arg_then2 ("le2", [])) (disch_tac [])) THEN (clear_assumption "le2") THEN ((use_arg_then2 ("Mn1", [])) (disch_tac [])) THEN (clear_assumption "Mn1") THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] []))))));
+   ((((use_arg_then2 ("m2_gt0", [])) (disch_tac [])) THEN (clear_assumption "m2_gt0") THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("leq_pmul2r", [leq_pmul2r])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC) THEN ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("monotone_leqif", [monotone_leqif])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC THEN (move ["Mm2"])));
+   (((use_arg_then2 ("le1", [])) (disch_tac [])) THEN (clear_assumption "le1") THEN ((use_arg_then2 ("Mm2", [])) (disch_tac [])) THEN (clear_assumption "Mm2") THEN BETA_TAC THEN (((conv_thm_tac DISCH_THEN)(gsym_then (thm_tac (new_rewrite [] []))))));
+   (BETA_TAC THEN (move ["leq1"]) THEN (move ["leq2"]));
+   ((((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leqif_trans", [leqif_trans])) (fun fst_arg -> (use_arg_then2 ("leq1", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("leq2", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] []))))));
+   (((fun arg_tac -> arg_tac (Arg_term (`c1 /\ c2`))) (disch_tac [])) THEN case THEN (simp_tac));
+   (((((use_arg_then2 ("eqn_leq", [eqn_leq]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("muln_gt0", [muln_gt0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("n1_gt0", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("n2_gt0", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma nat_Cauchy *)
+let nat_Cauchy = Sections.section_proof ["m";"n"]
+`leqif (2 * (m * n)) (m ^ 2 + n ^ 2) (m = n)`
+[
+   ((fun arg_tac -> arg_tac (Arg_term (`n <= m`))) (term_tac (wlog_tac (move ["le_nm"])[`m`; `n`])));
+   ((((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leqP", [leqP])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case THEN ((TRY done_tac))) THEN (((((use_arg_then2 ("eq_sym", [eq_sym]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulnC", [mulnC]))(thm_tac (new_rewrite [] [(`m * _1`)]))))) THEN (move ["mn"])));
+   ((((use_arg_then2 ("le_nm", [])) (disch_tac [])) THEN (clear_assumption "le_nm") THEN (DISCH_THEN apply_tac)) THEN (((fun arg_tac -> (use_arg_then2 ("ltnW", [ltnW])) (fun fst_arg -> (use_arg_then2 ("mn", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (done_tac));
+   (BETA_TAC THEN (move ["le_nm"]));
+   (((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] []))));
+   ((THENL_FIRST) ((THENL) (((fun arg_tac -> (use_arg_then2 ("EXCLUDED_MIDDLE", [EXCLUDED_MIDDLE])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m = n`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case) [(((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] [])))); (move ["ne_mn"])]) (((((use_arg_then2 ("mulnn", [mulnn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnn", [addnn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mul2n", [mul2n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac)));
+   (((((use_arg_then2 ("ne_mn", []))(fun arg -> ONCE_REWRITE_TAC[get_arg_thm arg]))) THEN (simp_tac)) THEN ((((use_arg_then2 ("subn_gt0", [subn_gt0]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("sqrn_sub", [sqrn_sub]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("sqrn_gt0", [sqrn_gt0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("subn_gt0", [subn_gt0]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltn_neqAle", [ltn_neqAle]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("eq_sym", [eq_sym]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma nat_AGM2 *)
+let nat_AGM2 = Sections.section_proof ["m";"n"]
+`leqif (4 * (m * n)) ((m + n) ^ 2) (m = n)`
+[
+   ((((fun arg_tac -> arg_tac (Arg_theorem (ARITH_RULE `4 = 2 * 2`)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("mulnA", [mulnA]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("mul2n", [mul2n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addnn", [addnn]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("sqrn_add", [sqrn_add]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] [])))));
+   ((((use_arg_then2 ("ltn_add2r", [ltn_add2r]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("eqn_addr", [eqn_addr]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltn_neqAle", [ltn_neqAle]))(thm_tac (new_rewrite [] [])))));
+   (((((fun arg_tac -> (use_arg_then2 ("leqif_imp_eq", [leqif_imp_eq])) (fun fst_arg -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("nat_Cauchy", [nat_Cauchy])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (use_arg_then2 ("leqif_imp_le", [leqif_imp_le])) (fun fst_arg -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("nat_Cauchy", [nat_Cauchy])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("if_same", [if_same]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+let distn = new_definition `!m n. distn m n = (m - n) + (n - m)`;;
+
+(* Lemma distnC *)
+let distnC = Sections.section_proof ["m";"n"]
+`distn m n = distn n m`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("distn", [distn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma distn_add2l *)
+let distn_add2l = Sections.section_proof ["d";"m";"n"]
+`distn (d + m) (d + n) = distn m n`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("distn", [distn]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("subn_add2l", [subn_add2l]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma distn_add2r *)
+let distn_add2r = Sections.section_proof ["d";"m";"n"]
+`distn (m + d) (n + d) = distn m n`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("distn", [distn]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("subn_add2r", [subn_add2r]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma distnEr *)
+let distnEr = Sections.section_proof ["m";"n"]
+`m <= n ==> distn m n = n - m`
+[
+   (BETA_TAC THEN (move ["le_m_n"]));
+   (((((use_arg_then2 ("distn", [distn]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("EQ_IMP", [EQ_IMP])) (fun fst_arg -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leqE", [leqE])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("le_m_n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma distnEl *)
+let distnEl = Sections.section_proof ["m";"n"]
+`n <= m ==> distn m n = m - n`
+[
+   ((BETA_TAC THEN (move ["le_n_m"])) THEN ((((use_arg_then2 ("distnC", [distnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("distnEr", [distnEr]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma dist0n *)
+let dist0n = Sections.section_proof ["n"]
+`distn 0 n = n`
+[
+   (((THENL) (((use_arg_then2 ("n", [])) (disch_tac [])) THEN (clear_assumption "n") THEN case) [ALL_TAC; (move ["m"])]) THEN ((((use_arg_then2 ("distn", [distn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("sub0n", [sub0n]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("subn0", [subn0]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma distn0 *)
+let distn0 = Sections.section_proof ["n"]
+`distn n 0 = n`
+[
+   (((((use_arg_then2 ("distnC", [distnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("dist0n", [dist0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma distnn *)
+let distnn = Sections.section_proof ["m"]
+`distn m m = 0`
+[
+   (((repeat_tactic 1 9 (((use_arg_then2 ("distn", [distn]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("subnn", [subnn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addn0", [addn0]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma distn_eq0 *)
+let distn_eq0 = Sections.section_proof ["m";"n"]
+`(distn m n = 0) <=> (m = n)`
+[
+   (((((use_arg_then2 ("distn", [distn]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("addn_eq0", [addn_eq0]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("subn_eq0", [subn_eq0]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("eqn_leq", [eqn_leq]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+];;
+
+(* Lemma distnS *)
+let distnS = Sections.section_proof ["m"]
+`distn m (SUC m) = 1`
+[
+   ((((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("distn_add2r", [distn_add2r])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`0`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`1`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN ((((use_arg_then2 ("add0n", [add0n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("dist0n", [dist0n]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma distSn *)
+let distSn = Sections.section_proof ["m"]
+`distn (SUC m) m = 1`
+[
+   (((((use_arg_then2 ("distnC", [distnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("distnS", [distnS]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma distn_eq1 *)
+let distn_eq1 = Sections.section_proof ["m";"n"]
+`(distn m n = 1) <=> (if m < n then SUC m = n else m = SUC n)`
+[
+   ((THENL) (((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("ltnP", [ltnP])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case) [(move ["lt_mn"]); (move ["le_mn"])]);
+   (((((use_arg_then2 ("eq_sym", [eq_sym]))(thm_tac (new_rewrite [] [(`_ = 1`)])))) THEN (((fun arg_tac -> (use_arg_then2 ("eqn_addr", [eqn_addr])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("distnEr", [distnEr]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("subnK", [subnK]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("ltnW", [ltnW]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   (((((fun arg_tac -> (use_arg_then2 ("eqn_addr", [eqn_addr])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("distnEl", [distnEl]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("subnK", [subnK]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("add1n", [add1n]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ltnNge", [ltnNge]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("le_mn", []))(thm_tac (new_rewrite [] [])))) THEN (simp_tac)) THEN (done_tac));
+];;
+
+(* Lemma leqif_add_distn *)
+let leqif_add_distn = Sections.section_proof ["m";"n";"p"]
+`leqif (distn m p) (distn m n + distn n p) ((m <= n /\ n <= p) \/ (p <= n /\ n <= m))`
+[
+   (((THENL_ROT 1)) ((fun arg_tac -> arg_tac (Arg_term (`!m p. m <= p ==> leqif (distn m p) (distn m n + distn n p) (m <= n /\ n <= p \/ p <= n /\ n <= m)`))) (term_tac (have_gen_tac [](move ["IH"])))));
+   ((((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leq_total", [leq_total])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("p", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case THEN ((TRY done_tac))) THEN ((DISCH_THEN (fun snd_th -> (use_arg_then2 ("IH", [])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN BETA_TAC));
+   (((((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("orbC", [orbC]))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (use_arg_then2 ("distnC", [distnC])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [(`distn n _`)])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("distnC", [distnC]))(thm_tac (new_rewrite [] [(`distn p _`)])))))) THEN (done_tac));
+   (BETA_TAC THEN (move ["m"]) THEN (move ["p"]) THEN (move ["le_mp"]));
+   ((((use_arg_then2 ("distnEr", [distnEr]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)));
+   ((THENL) (((fun arg_tac -> (use_arg_then2 ("EXCLUDED_MIDDLE", [EXCLUDED_MIDDLE])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`m <= n /\ n <= p`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case) [((case THEN ((move ["le_mn"]) THEN (move ["le_np"]))) THEN ((simp_tac THEN TRY done_tac))); ALL_TAC]);
+   (((repeat_tactic 1 9 (((use_arg_then2 ("distnEr", [distnEr]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("addnC", [addnC]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((fun arg_tac -> (use_arg_then2 ("eqn_addr", [eqn_addr])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("addnA", [addnA]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("subnK", [subnK]))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
+   (((((use_arg_then2 ("negb_and", [negb_and]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("ltnNge", [ltnNge]))(gsym_then (thm_tac (new_rewrite [] []))))))) THEN ALL_TAC THEN ((THENL) case [(move ["lt_nm"]); (move ["lt_pn"])]));
+   (((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("ltn_leq_trans", [ltn_leq_trans])) (fun fst_arg -> (use_arg_then2 ("lt_nm", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("le_mp", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC THEN (move ["lt_np"]));
+   (((((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("lt_nm", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("lt_np", []))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("ltn_addl", [ltn_addl]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("distnEr", [distnEr]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("ltnW", [ltnW]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("ltn_sub2l", [ltn_sub2l]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   (((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leq_ltn_trans", [leq_ltn_trans])) (fun fst_arg -> (use_arg_then2 ("le_mp", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("lt_pn", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC THEN (move ["lt_mn"]));
+   (((((use_arg_then2 ("leqifP", [leqifP]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("leqNgt", [leqNgt]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("lt_mn", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("lt_pn", []))(thm_tac (new_rewrite [] [])))) THEN (simp_tac) THEN (((use_arg_then2 ("ltn_addr", [ltn_addr]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("distnEr", [distnEr]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("ltn_sub2r", [ltn_sub2r]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("ltnW", [ltnW]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Lemma leq_add_distn *)
+let leq_add_distn = Sections.section_proof ["m";"n";"p"]
+`distn m p <= distn m n + distn n p`
+[
+   ((((fun arg_tac -> (use_arg_then2 ("leqif_imp_le", [leqif_imp_le])) (fun fst_arg -> (fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leqif_add_distn", [leqif_add_distn])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("p", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (done_tac));
+];;
+
+(* Lemma sqrn_distn *)
+let sqrn_distn = Sections.section_proof ["m";"n"]
+`(distn m n) ^ 2 + 2 * (m * n) = m ^ 2 + n ^ 2`
+[
+   ((fun arg_tac -> arg_tac (Arg_term (`n <= m`))) (term_tac (wlog_tac (move ["le_nm"])[`m`; `n`])));
+   (((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("leq_total", [leq_total])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN case THEN (DISCH_THEN (fun snd_th -> (use_arg_then2 ("le_nm", [])) (thm_tac (match_mp_then snd_th MP_TAC)))) THEN ((TRY done_tac)));
+   (((((fun arg_tac -> (use_arg_then2 ("addnC", [addnC])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`n EXP 2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> (use_arg_then2 ("mulnC", [mulnC])) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("distnC", [distnC]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+   ((BETA_TAC THEN (move ["le_nm"])) THEN ((((use_arg_then2 ("distnEl", [distnEl]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("sqrn_sub", [sqrn_sub]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("subnK", [subnK]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((fun arg_tac -> (use_arg_then2 ("leqif_imp_le", [leqif_imp_le])) (fun fst_arg -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("nat_Cauchy", [nat_Cauchy])) (fun fst_arg -> (use_arg_then2 ("m", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("n", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
+];;
+
+(* Close the module *)
+end;;

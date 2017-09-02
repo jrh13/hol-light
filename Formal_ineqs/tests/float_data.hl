@@ -1,0 +1,40 @@
+(* hol_log *)
+
+needs "verifier/m_verifier_main.hl";;
+needs "examples_flyspeck.hl";;
+
+open M_verifier_main;;
+
+let start () =
+  Arith_float.init_logs();
+  Arith_float.reset_cache();;
+
+let finish () =
+  Log.close_all_logs();;
+
+start();;
+verify_ineq default_params 5 `&1 <= x /\ x <= &5 ==> #0.999 < sin x pow 2 + cos x pow 2`;;
+finish();;
+Sys.rename "log" "log_sin_cos";;
+
+start();;
+run_example "TSKAJXY-TADIAMB";;
+finish();;
+Sys.rename "log" "log_poly";;
+
+start();;
+run_example "7067938795";;
+finish();;
+Sys.rename "log" "log_big";;
+
+
+
+
+
+
+
+
+
+
+
+
