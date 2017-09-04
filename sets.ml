@@ -2549,6 +2549,13 @@ let IMAGE_SND_CROSS = prove
   REWRITE_TAC[EXTENSION; IN_IMAGE] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
   REWRITE_TAC[EXISTS_IN_CROSS; SND] THEN ASM SET_TAC[]);;
 
+let IMAGE_PAIRED_CROSS = prove
+ (`!(f:A->B) (g:C->D) s t.
+         IMAGE (\(x,y). f x,g y) (s CROSS t) = (IMAGE f s) CROSS (IMAGE g t)`,
+  REWRITE_TAC[EXTENSION; IN_IMAGE; EXISTS_PAIR_THM; IN_CROSS; FORALL_PAIR_THM;
+              PAIR_EQ] THEN
+  MESON_TAC[]);;
+
 let CROSS_INTER = prove
  (`(!s t u. s CROSS (t INTER u) = (s CROSS t) INTER (s CROSS u)) /\
    (!s t u. (s INTER t) CROSS u = (s CROSS u) INTER (t CROSS u))`,

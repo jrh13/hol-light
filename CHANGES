@@ -8,6 +8,14 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  1st Sep 2017       sets.ml
+
+Added a simple theorem about the image of a Cartesian product:
+
+  IMAGE_PAIRED_CROSS =
+    |- !f g s t.
+           IMAGE (\(x,y). f x,g y) (s CROSS t) = IMAGE f s CROSS IMAGE g t
+
 Thu 24th Aug 2017       passim
 
 Eliminated a number of duplicated theorems (often exact duplicates,
