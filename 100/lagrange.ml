@@ -1,5 +1,6 @@
 (* ========================================================================= *)
 (* Very trivial group theory, just to reach Lagrange theorem.                *)
+(* NB: "Library/grouptheory.ml" has a more serious development of groups.    *)
 (* ========================================================================= *)
 
 loadt "Library/prime.ml";;

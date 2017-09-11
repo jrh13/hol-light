@@ -16,6 +16,7 @@ STANDALONE_EXAMPLES:=\
 	Library/floor \
 	Examples/forster \
 	Examples/gcdrecurrence \
+	Library/grouptheory \
 	Examples/harmonicsum \
 	Examples/hol88 \
 	Examples/holby \

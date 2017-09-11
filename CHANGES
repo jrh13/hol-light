@@ -8,6 +8,12 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 10th Sep 2017       Library/grouptheory.ml [new file]
+
+Added a new file with a basic development of group theory, using a type of
+":(A)group" for a group on a (subset of a) type ":A". So far this is all pretty
+elementary but it's good to have some standard version of groups.
+
 Fri  1st Sep 2017       sets.ml
 
 Added a simple theorem about the image of a Cartesian product:

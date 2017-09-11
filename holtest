@@ -45,6 +45,7 @@ echo '### Loading Examples/dlo.ml'; echo 'loadt "Examples/dlo.ml";;' | (time $ho
 echo '### Loading Library/floor.ml'; echo 'loadt "Library/floor.ml";;' | (time $hollight)
 echo '### Loading Examples/forster.ml'; echo 'loadt "Examples/forster.ml";;' | (time $hollight)
 echo '### Loading Examples/gcdrecurrence.ml'; echo 'loadt "Examples/gcdrecurrence.ml";;' | (time $hollight)
+echo '### Loading Library/grouptheory.ml'; echo 'loadt "Library/grouptheory.ml";;' | (time $hollight)
 echo '### Loading Examples/harmonicsum.ml'; echo 'loadt "Examples/harmonicsum.ml";;' | (time $hollight)
 echo '### Loading Examples/hol88.ml'; echo 'loadt "Examples/hol88.ml";;' | (time $hollight)
 echo '### Loading Examples/holby.ml'; echo 'loadt "Examples/holby.ml";;' | (time $hollight)
