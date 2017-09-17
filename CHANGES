@@ -8,6 +8,15 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 16th Sep 2017       Library/frag.ml [new file], Library/grouptheory.ml
+
+Added another file "Library/frag.ml" with a type constructor for defining the
+free Abelian group on a given type. Incorporated this into the general group
+theory. In that "Library/grouptheory.ml" file, systematically adopted a
+multiplicative terminology (changing various names from "op/OP" to "mul/MUL")
+as well as adding new material: powers (natural number and integer), trivial
+homomorphisms, Abelian groups, cyclic groups and the group of integers.
+
 Sun 10th Sep 2017       Library/grouptheory.ml [new file]
 
 Added a new file with a basic development of group theory, using a type of
