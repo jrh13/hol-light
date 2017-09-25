@@ -8,6 +8,27 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 24th Sep 2017       Ntrie/ntrie.ml
+
+Added a complete revision from Marco Maggesi of the "Ntrie" library for
+manipulation of concrete numeral sets using a trie-like representation. Among
+other improvements, the conversions have been made cleaner (always failing
+predictably on non-minimal ntries) and much more efficient (typically 5x-15x as
+fast), and a syntax extension for ntries has been added.
+
+Wed 20th Sep 2017       int.ml, Library/prime.ml
+
+Moved a few existing things (theorems DIVIDES_ANTISYM, DIVIDES_LE_STRONG,
+DIVIDES_ONE and the definition of "prime") from "Library/prime.ml" into the
+core, to avoid loading all that file for a few more simple facts, and also
+added two new (and trivial) theorems:
+
+  ONE_OR_PRIME =
+    |- !p. p = 1 \/ prime p <=> (!n. n divides p ==> n = 1 \/ n = p)
+
+  FORALL_INT_CASES =
+    |- !P:int->bool. (!x. P x) <=> (!n. P(&n)) /\ (!n. P(-- &n))
+
 Sat 16th Sep 2017       Library/frag.ml [new file], Library/grouptheory.ml
 
 Added another file "Library/frag.ml" with a type constructor for defining the

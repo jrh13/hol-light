@@ -195,13 +195,6 @@ let DIVIDES_1 = prove
  (`!x. 1 divides x`,
   NUMBER_TAC);;
 
-let DIVIDES_ONE = prove(
-  `!x. (x divides 1) <=> (x = 1)`,
-  GEN_TAC THEN REWRITE_TAC[divides] THEN
-  CONV_TAC(LAND_CONV(ONCE_DEPTH_CONV SYM_CONV)) THEN
-  REWRITE_TAC[MULT_EQ_1] THEN EQ_TAC THEN STRIP_TAC THEN
-  ASM_REWRITE_TAC[] THEN EXISTS_TAC `1` THEN REFL_TAC);;
-
 let DIVIDES_REFL = prove
  (`!x. x divides x`,
   NUMBER_TAC);;
@@ -209,17 +202,6 @@ let DIVIDES_REFL = prove
 let DIVIDES_TRANS = prove
  (`!a b c. a divides b /\ b divides c ==> a divides c`,
   NUMBER_TAC);;
-
-let DIVIDES_ANTISYM = prove
- (`!x y. x divides y /\ y divides x <=> (x = y)`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL
-   [REWRITE_TAC[divides] THEN
-    DISCH_THEN(CONJUNCTS_THEN2 MP_TAC (CHOOSE_THEN SUBST1_TAC)) THEN
-    DISCH_THEN(CHOOSE_THEN MP_TAC) THEN
-    CONV_TAC(LAND_CONV SYM_CONV) THEN
-    REWRITE_TAC[GSYM MULT_ASSOC; MULT_FIX; MULT_EQ_1] THEN
-    STRIP_TAC THEN ASM_REWRITE_TAC[];
-    DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[DIVIDES_REFL]]);;
 
 let DIVIDES_ADD = prove
  (`!d a b. d divides a /\ d divides b ==> d divides (a + b)`,
@@ -291,13 +273,6 @@ let DIVIDES_CASES = prove
   SIMP_TAC[ARITH_RULE `m = n \/ 2 * n <= m <=> m = n * 1 \/ n * 2 <= m`] THEN
   SIMP_TAC[divides; LEFT_IMP_EXISTS_THM] THEN
   REWRITE_TAC[MULT_EQ_0; EQ_MULT_LCANCEL; LE_MULT_LCANCEL] THEN ARITH_TAC);;
-
-let DIVIDES_LE_STRONG = prove
- (`!m n. m divides n ==> 1 <= m /\ m <= n \/ n = 0`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `m = 0` THEN
-  ASM_REWRITE_TAC[DIVIDES_ZERO; ARITH] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP DIVIDES_LE) THEN
-  POP_ASSUM MP_TAC THEN ARITH_TAC);;
 
 let DIVIDES_DIV_NOT = prove(
   `!n x q r. (x = (q * n) + r) /\ 0 < r /\ r < n ==> ~(n divides x)`,
@@ -969,13 +944,6 @@ let CHINESE_REMAINDER = prove
     SUBST1_TAC(ASSUME `a * x1 = b * y1 + 1`)] THEN
   REWRITE_TAC[LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB; MULT_CLAUSES] THEN
   REWRITE_TAC[MULT_AC] THEN REWRITE_TAC[ADD_AC]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Primality                                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let prime = new_definition
-  `prime(p) <=> ~(p = 1) /\ !x. x divides p ==> (x = 1) \/ (x = p)`;;
 
 (* ------------------------------------------------------------------------- *)
 (* A few useful theorems about primes                                        *)

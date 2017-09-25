@@ -185,7 +185,7 @@ let int_pow_th = prove
     ASM_REWRITE_TAC[GSYM int_mul; int_mul_th]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A couple of theorems peculiar to the integers.                            *)
+(* A few convenient theorems about the integer type.                         *)
 (* ------------------------------------------------------------------------- *)
 
 let INT_IMAGE = prove
@@ -197,6 +197,10 @@ let INT_IMAGE = prove
    [DISJ1_TAC; DISJ2_TAC] THEN
   EXISTS_TAC `n:num` THEN REWRITE_TAC[int_abstr] THEN
   REWRITE_TAC[GSYM int_of_num; int_of_num_th]);;
+
+let FORALL_INT_CASES = prove
+ (`!P:int->bool. (!x. P x) <=> (!n. P(&n)) /\ (!n. P(-- &n))`,
+  MESON_TAC[INT_IMAGE]);;
 
 let INT_LT_DISCRETE = prove
  (`!x y. x < y <=> (x + &1) <= y`,
@@ -1467,6 +1471,34 @@ let DIVIDES_LE = prove
   REWRITE_TAC[LE_MULT_LCANCEL; MULT_EQ_0; ARITH_RULE
    `m <= m * n <=> m * 1 <= m * n`] THEN
   ASM_ARITH_TAC);;
+
+let DIVIDES_LE_STRONG = prove
+ (`!m n. m divides n ==> 1 <= m /\ m <= n \/ n = 0`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `m = 0` THEN
+  ASM_REWRITE_TAC[NUMBER_RULE `0 divides n <=> n = 0`] THEN
+  ASM_MESON_TAC[DIVIDES_LE; LE_1]);;
+
+let DIVIDES_ANTISYM = prove
+ (`!m n. m divides n /\ n divides m <=> m = n`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [ALL_TAC; NUMBER_TAC] THEN
+  DISCH_THEN(CONJUNCTS_THEN(MP_TAC o MATCH_MP DIVIDES_LE_STRONG)) THEN
+  ARITH_TAC);;
+
+let DIVIDES_ONE = prove
+ (`!n. n divides 1 <=> n = 1`,
+  REWRITE_TAC[divides] THEN MESON_TAC[MULT_EQ_1; MULT_CLAUSES]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Definition (and not much more) of primality.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let prime = new_definition
+  `prime(p) <=> ~(p = 1) /\ !x. x divides p ==> x = 1 \/ x = p`;;
+
+let ONE_OR_PRIME = prove
+ (`!p. p = 1 \/ prime p <=> !n. n divides p ==> n = 1 \/ n = p`,
+  GEN_TAC THEN REWRITE_TAC[prime] THEN
+  ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[DIVIDES_ONE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Make sure we give priority to N.                                          *)
