@@ -8,6 +8,10 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 30th Sep 2017       Multivariate/homology.ml [new file]
+
+Added a new file with an initial development of singular homology.
+
 Sun 24th Sep 2017       Ntrie/ntrie.ml
 
 Added a complete revision from Marco Maggesi of the "Ntrie" library for

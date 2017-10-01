@@ -121,6 +121,7 @@ echo '### Loading Multivariate/cvectors.ml'; echo 'loadt "Multivariate/cvectors.
 echo '### Loading Multivariate/flyspeck.ml'; echo 'loadt "Multivariate/flyspeck.ml";;' | (time $hollight)
 echo '### Loading Multivariate/gamma.ml'; echo 'loadt "Multivariate/gamma.ml";;' | (time $hollight)
 echo '### Loading Multivariate/geom.ml'; echo 'loadt "Multivariate/geom.ml";;' | (time $hollight)
+echo '### Loading Multivariate/homology.ml'; echo 'loadt "Multivariate/homology.ml";;' | (time $hollight)
 echo '### Loading Multivariate/lpspaces.ml'; echo 'loadt "Multivariate/lpspaces.ml";;' | (time $hollight)
 echo '### Loading Multivariate/tarski.ml'; echo 'loadt "Multivariate/tarski.ml";;' | (time $hollight)
 echo '### Loading RichterHilbertAxiomGeometry/Topology.ml'; echo 'loadt "RichterHilbertAxiomGeometry/Topology.ml";;' | (time $hollight)

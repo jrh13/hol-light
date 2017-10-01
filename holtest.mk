@@ -80,6 +80,7 @@ EXTENDED_EXAMPLES:=\
 	Multivariate/flyspeck \
 	Multivariate/gamma \
 	Multivariate/geom \
+	Multivariate/homology \
 	Multivariate/lpspaces \
 	Multivariate/tarski \
 	RichterHilbertAxiomGeometry/Topology \
