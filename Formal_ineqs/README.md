@@ -7,6 +7,12 @@ The most recent version of the tool is available
 Part of the Flyspeck project:
 https://github.com/flyspeck/flyspeck
 
-Distributed under the same license as HOL Light.
-
 See [docs/FormalVerifier.pdf](docs/FormalVerifier.pdf) for additional information.
+
+
+Copyright / License
+-------------------
+
+Except lib/ipow.hl, all files in this directory are copyright Alexey Solovyev 2014-2017. The file lib/ipow.hl is copyright Alexey Solovyev and the University of Utah 2014-2017.
+
+Distributed under the same license as HOL Light (BSD-2-clause).
