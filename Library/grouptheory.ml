@@ -2583,7 +2583,7 @@ let ABELIAN_GROUP_NORMAL_SUBGROUP = prove
   REWRITE_TAC[normal_subgroup_of; left_coset; right_coset; subgroup_of] THEN
   MESON_TAC[GROUP_SETMUL_SYM; SING_SUBSET]);;
 
-let ABELIAN_GROUP_QUOTIENT_GROUP = prove
+let ABELIAN_QUOTIENT_GROUP = prove
  (`!G n:A->bool.
      abelian_group G /\ n subgroup_of G ==> abelian_group(quotient_group G n)`,
   REPEAT STRIP_TAC THEN
@@ -3035,3 +3035,12 @@ let ABELIAN_FREE_ABELIAN_GROUP = prove
  (`!s:A->bool. abelian_group(free_abelian_group s)`,
   REWRITE_TAC[abelian_group; FREE_ABELIAN_GROUP] THEN
   REPEAT STRIP_TAC THEN CONV_TAC FRAG_MODULE);;
+
+(* ------------------------------------------------------------------------- *)
+(* Basic things about exact sequences.                                       *)
+(* ------------------------------------------------------------------------- *)
+                        
+let group_exactness = new_definition                                   
+ `group_exactness (G,H,K) ((f:A->B),(g:B->C)) <=>
+        group_homomorphism (G,H) f /\ group_homomorphism (H,K) g /\
+        group_image (G,H) f = group_kernel (H,K) g`;;     
