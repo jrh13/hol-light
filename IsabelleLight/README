@@ -1,10 +1,11 @@
 # Isabelle Light
 ## Isabelle/Procedural style additions for [HOL Light](https://code.google.com/p/hol-light/)
 
-### Petros Papapanagiotou, Jacques Fleuriot                 
-Centre of Intelligent Systems and their Applications         
-University of Edinburgh                          
-2009-2015                               
+### (c) Copyright Petros Papapanagiotou and Jacques Fleuriot,
+Centre of Intelligent Systems and their Applications
+University of Edinburgh, 2009-2017
+
+This directory is distributed under the same license as HOL-Light (BSD-2-Clause).
 - - - -
 
 This README contains some brief information on the usage of this system.
