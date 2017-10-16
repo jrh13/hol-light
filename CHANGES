@@ -8,9 +8,27 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 11th Oct 2017       sets.ml
+
+Added three more simple lemmas about the "cartesian_product" construct:
+
+  CARTESIAN_PRODUCT_EMPTY = 
+    |- !s. cartesian_product {} s = {(\i. ARB)}
+  
+  CARTESIAN_PRODUCT_EQ_MEMBERS_EQ =
+    |- !k s x y.
+          x IN cartesian_product k s /\
+          y IN cartesian_product k s
+          ==> (x = y <=> !i. i IN k ==> x i = y i)
+  
+  RESTRICTION_IN_CARTESIAN_PRODUCT =
+    |- !k s (f:K->A).
+          RESTRICTION k f IN cartesian_product k s <=>
+          !i. i IN k ==> (f i) IN (s i)
+
 Mon  2nd Oct 2017       parser.ml
 
-Fixed an amazingly stupid and longstanding bug arising from mis-use of an 
+Fixed an amazingly stupid and longstanding bug arising from mis-use of an
 accumulator variable in preterm parsing. As a consequence "pfrees" could be
 wrong in situations where the same variable appears both free and bound, which
 can have consequences for determining the relevant variables in a set

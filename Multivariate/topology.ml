@@ -16148,6 +16148,18 @@ let HOMEOMORPHISM = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[homeomorphism] THEN
   EQ_TAC THEN SIMP_TAC[] THEN SET_TAC[]);;
 
+let HOMEOMORPHIC_MAPS_EUCLIDEAN_SUBTOPOLOGY = prove
+ (`!f:real^M->real^N g s t.
+        homeomorphic_maps
+          (subtopology euclidean s,subtopology euclidean t)
+          (f,g) <=>
+        homeomorphism (s,t) (f,g)`,
+  REWRITE_TAC[homeomorphic_maps; homeomorphism] THEN
+  REWRITE_TAC[GSYM CONTINUOUS_MAP_EUCLIDEAN] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  SET_TAC[]);;
+
 let HOMEOMORPHISM_IMP_HOMEOMORPHIC = prove
  (`!f:real^M->real^N g s t. homeomorphism (s,t) (f,g) ==> s homeomorphic t`,
   REWRITE_TAC[homeomorphic] THEN MESON_TAC[]);;
@@ -34518,7 +34530,7 @@ let FSIGMA_GDELTA_DISJOINT = prove
     SIMP_TAC[COUNTABLE_IMAGE; PAIRWISE_IMAGE] THEN
     REWRITE_TAC[pairwise] THEN SET_TAC[]]);;
 
-let [LOCALLY_BAIRE;LOCALLY_BAIRE_ALT;LOCALLY_BAIRE_EXPLICIT] =                 
+let [LOCALLY_BAIRE;LOCALLY_BAIRE_ALT;LOCALLY_BAIRE_EXPLICIT] =
  (CONJUNCTS o prove)
  (`(!f:real^M->real^N s k. locally (\u. baire k u f) s <=> baire k s f) /\
    (!f:real^M->real^N s k.

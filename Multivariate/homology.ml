@@ -1253,6 +1253,201 @@ let SINGULAR_BOUNDARY_EQ_CYCLE_SING = prove
   METIS_TAC[LE_1; SINGULAR_CYCLE_SING; SINGULAR_BOUNDARY_SING]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Simplicial chains, effectively those resulting from linear maps.          *)
+(* We still allow the map to be singular, so the name is questionable.       *)
+(* These are intended as building-blocks for singular subdivision, rather    *)
+(* than as a basis for simplicial homology.                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let oriented_simplex = new_definition
+ `oriented_simplex p l =
+    RESTRICTION (standard_simplex p)
+                (\x i:num. sum(0..p) (\j. l j i * x j))`;;
+
+let ORIENTED_SIMPLEX_EQ = prove
+ (`(!i. i <= p ==> l i = m i)
+   ==> oriented_simplex p l = oriented_simplex p m`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[oriented_simplex] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN ABS_TAC THEN
+  MATCH_MP_TAC SUM_EQ_NUMSEG THEN ASM_SIMP_TAC[]);;
+
+let simplicial_simplex = new_definition
+ `simplicial_simplex (p,s) f <=>
+        singular_simplex
+         (p,subtopology (product_topology (:num) (\i. euclideanreal)) s) f /\
+        ?l. f = oriented_simplex p l`;;
+
+let SIMPLICIAL_SIMPLEX = prove
+ (`!p s f.
+        simplicial_simplex (p,s) f <=>
+        IMAGE f (standard_simplex p) SUBSET s /\
+        ?l. f = oriented_simplex p l`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[simplicial_simplex; SINGULAR_SIMPLEX_SUBTOPOLOGY] THEN
+  MATCH_MP_TAC(TAUT `(r ==> p) ==> ((p /\ q) /\ r <=> q /\ r)`) THEN
+  SIMP_TAC[LEFT_IMP_EXISTS_THM; singular_simplex; oriented_simplex] THEN
+  SIMP_TAC[RESTRICTION_CONTINUOUS_MAP; TOPSPACE_SUBTOPOLOGY; INTER_SUBSET] THEN
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[REWRITE_RULE[IN] RESTRICTION_IN_EXTENSIONAL] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE; IN_UNIV] THEN
+  REWRITE_TAC[SUBSET; IN; EXTENSIONAL_UNIV] THEN X_GEN_TAC `k:num` THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_SUM THEN
+  REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN X_GEN_TAC `n:num` THEN
+  STRIP_TAC THEN MATCH_MP_TAC CONTINUOUS_MAP_REAL_LMUL THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
+  SIMP_TAC[CONTINUOUS_MAP_PRODUCT_PROJECTION; IN_UNIV]);;
+
+let SIMPLICIAL_SIMPLEX_EMPTY = prove
+ (`!p s f. ~(simplicial_simplex (p,{}) f)`,
+  SIMP_TAC[simplicial_simplex; TOPSPACE_SUBTOPOLOGY; INTER_EMPTY;
+           SINGULAR_SIMPLEX_EMPTY]);;
+
+let simplicial_chain = new_definition
+ `simplicial_chain (p,s) c <=>
+  frag_support c SUBSET simplicial_simplex (p,s)`;;
+
+let SIMPLICIAL_CHAIN_0 = prove
+ (`!p s. simplicial_chain (p,s) frag_0`,
+  REWRITE_TAC[simplicial_chain; FRAG_SUPPORT_0; EMPTY_SUBSET]);;
+
+let SIMPLICIAL_CHAIN_OF = prove
+ (`!p s c. simplicial_chain (p,s) (frag_of c) <=> simplicial_simplex (p,s) c`,
+  REWRITE_TAC[simplicial_chain; FRAG_SUPPORT_OF] THEN SET_TAC[]);;
+
+let SIMPLICIAL_CHAIN_CMUL = prove
+ (`!p s a c. simplicial_chain (p,s) c
+             ==> simplicial_chain (p,s) (frag_cmul a c)`,
+  REWRITE_TAC[simplicial_chain] THEN
+  MESON_TAC[FRAG_SUPPORT_CMUL; SUBSET_TRANS]);;
+
+let SIMPLICIAL_CHAIN_SUB = prove
+ (`!p s c1 c2.
+        simplicial_chain (p,s) c1 /\ simplicial_chain (p,s) c2
+        ==> simplicial_chain (p,s) (frag_sub c1 c2)`,
+  REWRITE_TAC[simplicial_chain] THEN
+  MESON_TAC[FRAG_SUPPORT_SUB; SUBSET_TRANS; UNION_SUBSET]);;
+
+let SIMPLICIAL_CHAIN_SUM = prove
+ (`!p s f k. (!c. c IN k ==> simplicial_chain (p,s) (f c))
+             ==> simplicial_chain (p,s) (iterate frag_add k f)`,
+  REWRITE_TAC[simplicial_chain] THEN REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH lhand FRAG_SUPPORT_SUM o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS) THEN
+  ASM_REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC]);;
+
+let SIMPLICIAL_SIMPLEX_ORIENTED_SIMPLEX = prove
+ (`!p s l. simplicial_simplex (p,s) (oriented_simplex p l) <=>
+           IMAGE (\x i. sum (0..p) (\j. l j i * x j)) (standard_simplex p)
+           SUBSET s`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[SIMPLICIAL_SIMPLEX] THEN
+  MATCH_MP_TAC(TAUT `q /\ (p <=> p') ==> (p /\ q <=> p')`) THEN
+  CONJ_TAC THENL [MESON_TAC[]; REWRITE_TAC[oriented_simplex]] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE; RESTRICTION]);;
+
+let SIMPLICIAL_IMP_SINGULAR_SIMPLEX = prove
+ (`!p s f.
+      simplicial_simplex (p,s) f
+      ==> singular_simplex
+            (p,subtopology (product_topology (:num) (\i. euclideanreal)) s) f`,
+  SIMP_TAC[simplicial_simplex]);;
+
+let SIMPLICIAL_IMP_SINGULAR_CHAIN = prove
+ (`!p s c. simplicial_chain (p,s) c
+         ==> singular_chain
+            (p,subtopology (product_topology (:num) (\i. euclideanreal)) s) c`,
+  REWRITE_TAC[simplicial_chain; singular_chain] THEN
+  SIMP_TAC[SUBSET; IN; SIMPLICIAL_IMP_SINGULAR_SIMPLEX]);;
+
+let ORIENTED_SIMPLEX_EQ = prove
+ (`!p l l'. oriented_simplex p l = oriented_simplex p l' <=>
+            !i. i <= p ==> l i = l' i`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[oriented_simplex] THEN EQ_TAC THENL
+   [DISCH_TAC THEN X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o C AP_THM `(\j:num. if j = i then &1 else &0)`) THEN
+    ASM_REWRITE_TAC[BASIS_IN_STANDARD_SIMPLEX; RESTRICTION] THEN
+    SIMP_TAC[COND_RAND; REAL_MUL_RZERO; SUM_DELTA] THEN
+    ASM_REWRITE_TAC[IN_NUMSEG; LE_0; REAL_MUL_RID; ETA_AX];
+    DISCH_TAC THEN AP_TERM_TAC THEN REPEAT ABS_TAC THEN
+    MATCH_MP_TAC SUM_EQ THEN ASM_SIMP_TAC[IN_NUMSEG; LE_0]]);;
+
+let SINGULAR_FACE_ORIENTED_SIMPLEX = prove
+ (`!p k l.
+        1 <= p /\ k <= p
+        ==> singular_face p k (oriented_simplex p l) =
+            oriented_simplex (p - 1)
+                             (\j. if j < k then l j else l (j + 1))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[singular_face; oriented_simplex] THEN
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN
+  MAP_EVERY X_GEN_TAC [`x:num->real`; `j:num`] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC[RESTRICTION; o_DEF; FACE_MAP_IN_STANDARD_SIMPLEX] THEN
+  REWRITE_TAC[face_map] THEN REPLICATE_TAC 2
+   (REWRITE_TAC[COND_RATOR] THEN ONCE_REWRITE_TAC[COND_RAND]) THEN
+  SIMP_TAC[SUM_CASES; FINITE_NUMSEG; FINITE_RESTRICT] THEN
+  REWRITE_TAC[REAL_MUL_RZERO; REAL_ADD_LID; SUM_0] THEN
+  SIMP_TAC[SUM_CASES; FINITE_NUMSEG; FINITE_RESTRICT] THEN
+  REWRITE_TAC[REAL_MUL_RZERO; REAL_ADD_LID; SUM_0] THEN
+  REWRITE_TAC[IN_NUMSEG; LE_0; IN_ELIM_THM] THEN
+  SUBGOAL_THEN `!i. i <= p - 1 /\ i < k <=> i <= p /\ i < k`
+   (fun th -> REWRITE_TAC[th]) THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  AP_TERM_TAC THEN
+  SUBGOAL_THEN
+   `!i. (i <= p /\ ~(i < k)) /\ ~(i = k) <=>
+         k + 1 <= i /\ i <= (p - 1) + 1`
+   (fun th -> REWRITE_TAC[th]) THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[GSYM numseg; NOT_LT; SUM_OFFSET; ADD_SUB] THEN
+  BINOP_TAC THEN REWRITE_TAC[] THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_NUMSEG] THEN ASM_ARITH_TAC);;
+
+let SIMPLICIAL_SIMPLEX_SINGULAR_FACE = prove
+ (`!p s k f.
+      simplicial_simplex (p,s) f /\ 1 <= p /\ k <= p
+      ==> simplicial_simplex (p - 1,s) (singular_face p k f)`,
+  SIMP_TAC[simplicial_simplex; SINGULAR_SIMPLEX_SINGULAR_FACE] THEN
+  REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `m:num->num->real` SUBST_ALL_TAC) THEN
+  ASM_REWRITE_TAC[singular_face; oriented_simplex] THEN
+  ASM_SIMP_TAC[RESTRICTION_COMPOSE_LEFT; SUBSET; FORALL_IN_IMAGE;
+               FACE_MAP_IN_STANDARD_SIMPLEX] THEN
+  EXISTS_TAC `\i. if i < k then (m:num->num->real) i else m (i + 1)` THEN
+  REWRITE_TAC[face_map; o_DEF] THEN AP_TERM_TAC THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN
+  MAP_EVERY X_GEN_TAC [`x:num->real`; `i:num`] THEN
+  REPLICATE_TAC 2
+   (ONCE_REWRITE_TAC[COND_RAND] THEN
+    GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [COND_RATOR]) THEN
+  SIMP_TAC[SUM_CASES; FINITE_NUMSEG] THEN
+  ASM_SIMP_TAC[IN_NUMSEG; LE_0; ARITH_RULE
+   `k <= p ==> (j <= p - 1 /\ j < k <=> j <= p /\ j < k)`] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[REAL_MUL_RZERO; NOT_LT] THEN
+  REWRITE_TAC[ARITH_RULE `j:num <= p /\ k <= j <=> k <= j /\ j <= p`] THEN
+  SIMP_TAC[SUM_CASES; FINITE_NUMSEG; GSYM numseg] THEN
+  REWRITE_TAC[SUM_0; REAL_ADD_LID; IN_NUMSEG] THEN ASM_SIMP_TAC[ARITH_RULE
+   `1 <= p ==> ((k <= j /\ j <= p) /\ ~(j = k) <=>
+                k + 1 <= j /\ j <= (p - 1) + 1)`] THEN
+  REWRITE_TAC[GSYM numseg; SUM_OFFSET; ADD_SUB]);;
+
+let SIMPLICIAL_CHAIN_BOUNDARY = prove
+ (`!p s c. simplicial_chain (p,s) c
+           ==> simplicial_chain (p - 1,s) (chain_boundary p c)`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[simplicial_chain] THEN
+  MATCH_MP_TAC FRAG_INDUCTION THEN
+  REWRITE_TAC[CHAIN_BOUNDARY_0; FRAG_SUPPORT_0; EMPTY_SUBSET] THEN
+  REWRITE_TAC[CHAIN_BOUNDARY_SUB; GSYM UNION_SUBSET] THEN CONJ_TAC THENL
+   [REWRITE_TAC[IN]; MESON_TAC[SUBSET; FRAG_SUPPORT_SUB]] THEN
+  X_GEN_TAC `f:(num->real)->(num->real)` THEN DISCH_TAC THEN
+  REWRITE_TAC[GSYM simplicial_chain] THEN
+  REWRITE_TAC[chain_boundary; FRAG_EXTEND_OF] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[SIMPLICIAL_CHAIN_0] THEN
+  MATCH_MP_TAC SIMPLICIAL_CHAIN_SUM THEN X_GEN_TAC `i:num` THEN
+  REWRITE_TAC[IN_NUMSEG; LE_0] THEN DISCH_TAC THEN
+  MATCH_MP_TAC SIMPLICIAL_CHAIN_CMUL THEN
+  REWRITE_TAC[SIMPLICIAL_CHAIN_OF; simplicial_simplex] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [simplicial_simplex]) THEN
+  ASM_SIMP_TAC[SINGULAR_SIMPLEX_SINGULAR_FACE; LE_1] THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[SINGULAR_FACE_ORIENTED_SIMPLEX; LE_1] THEN MESON_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Now actually connect to group theory and set up homology groups. Note     *)
 (* that we define homomogy groups for all *integers* p, since this seems to  *)
 (* avoid some special-case reasoning, though they are trivial for p < 0.     *)
@@ -1777,24 +1972,45 @@ let HOM_INDUCED_CHAIN_MAP = prove
   ASM SET_TAC[]);;
 
 let HOM_INDUCED_EQ = prove
- (`!p top s top' t (f:A->B) g c.
-        continuous_map(top,top') f /\
-        IMAGE f s SUBSET t /\
-        continuous_map(top,top') g /\
-        IMAGE g s SUBSET t /\
-        (!x. x IN topspace top ==> f x = g x) /\
-        c IN group_carrier(relative_homology_group(p,top,s))
-        ==> hom_induced p (top,s) (top',t) f c =
-            hom_induced p (top,s) (top',t) g c`,
+ (`!p top s top' t (f:A->B) g.
+        (!x. x IN topspace top ==> f x = g x)
+        ==> hom_induced p (top,s) (top',t) f =
+            hom_induced p (top,s) (top',t) g`,
   MATCH_MP_TAC(MESON[INT_OF_NUM_OF_INT; INT_NOT_LT]
    `(!x. x < &0 ==> P x) /\ (!p. P(&p)) ==> !x:int. P x`) THEN
   CONJ_TAC THENL [SIMP_TAC[HOM_INDUCED_TRIVIAL]; ALL_TAC] THEN
-  REPLICATE_TAC 7 GEN_TAC THEN
-  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
-  REPEAT DISCH_TAC THEN
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `c:((num->real)->A)frag->bool` THEN
+  SUBGOAL_THEN
+   `continuous_map (top,top') (f:A->B) /\
+    IMAGE f (topspace top INTER s) SUBSET t /\
+    c IN group_carrier (relative_homology_group (&p,top,s)) <=>
+    continuous_map (top,top') (g:A->B) /\
+    IMAGE g (topspace top INTER s) SUBSET t /\
+    c IN group_carrier (relative_homology_group (&p,top,s))`
+  MP_TAC THENL
+   [BINOP_TAC THENL [ASM_MESON_TAC[CONTINUOUS_MAP_EQ]; ASM SET_TAC[]];
+    ALL_TAC] THEN
+  REWRITE_TAC[TAUT `(p <=> q) <=> ~p /\ ~q \/ p /\ q`] THEN STRIP_TAC THENL
+   [ASM_MESON_TAC[HOM_INDUCED_DEFAULT]; ALL_TAC] THEN
+  UNDISCH_TAC
+   `c IN group_carrier (relative_homology_group (&p,top,s:A->bool))` THEN
+  SPEC_TAC(`c:((num->real)->A)frag->bool`,`c:((num->real)->A)frag->bool`) THEN
   REWRITE_TAC[RELATIVE_HOMOLOGY_GROUP; FORALL_IN_GSPEC] THEN
-  ASM_SIMP_TAC[HOM_INDUCED_CHAIN_MAP] THEN
-  ASM_MESON_TAC[singular_relcycle; CHAIN_MAP_EQ]);;
+  ONCE_REWRITE_TAC[HOMOLOGOUS_REL_RESTRICT; SINGULAR_RELCYCLE_RESTRICT] THEN
+  ONCE_REWRITE_TAC[HOM_INDUCED_RESTRICT] THEN REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand)
+    HOM_INDUCED_CHAIN_MAP o lhand o snd) THEN
+  ASM_REWRITE_TAC[SUBSET_INTER] THEN ANTS_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[continuous_map]) THEN ASM SET_TAC[];
+    DISCH_THEN SUBST1_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand)
+    HOM_INDUCED_CHAIN_MAP o rand o snd) THEN
+  ASM_REWRITE_TAC[SUBSET_INTER] THEN ANTS_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[continuous_map]) THEN ASM SET_TAC[];
+    DISCH_THEN SUBST1_TAC] THEN
+  AP_TERM_TAC THEN MATCH_MP_TAC CHAIN_MAP_EQ THEN
+  ASM_MESON_TAC[singular_relcycle; SINGULAR_RELCYCLE_RESTRICT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Functoriality, naturality and easier Eilenberg-Steenrod axioms.           *)
