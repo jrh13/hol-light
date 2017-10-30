@@ -2787,6 +2787,553 @@ let HOMOLOGOUS_REL_SINGULAR_SUBDIVISION = prove
   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[SUB_ADD; LE_1]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Excision argument that we keep doing singular subdivision                 *)
+(* ------------------------------------------------------------------------- *)
+
+let ITERATED_SINGULAR_SUBDIVISION = prove
+ (`!p s n c.
+        singular_chain(p,s) c
+        ==> ITER n (singular_subdivision p) c =
+            frag_extend
+             (\f:(num->real)->A.
+                  chain_map p f
+                       (ITER n (simplicial_subdivision p)
+                         (frag_of(RESTRICTION (standard_simplex p) I)))) c`,
+  GEN_TAC THEN GEN_TAC THEN
+  CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN MATCH_MP_TAC num_INDUCTION THEN
+  REWRITE_TAC[ITER] THEN CONJ_TAC THENL
+   [ALL_TAC; X_GEN_TAC `n:num` THEN DISCH_TAC] THEN
+  REWRITE_TAC[singular_chain] THEN MATCH_MP_TAC FRAG_INDUCTION THEN
+  REWRITE_TAC[GSYM singular_chain] THENL
+   [SIMP_TAC[FRAG_EXTEND_0; FRAG_EXTEND_SUB; FRAG_EXTEND_OF] THEN
+    REWRITE_TAC[IN; SINGULAR_SIMPLEX_CHAIN_MAP_I];
+    ALL_TAC] THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[singular_subdivision; FRAG_EXTEND_0] THEN
+    MATCH_MP_TAC(MESON[FRAG_EXTEND_0]
+     `c = frag_0 ==> frag_0 = frag_extend f c`) THEN
+    SPEC_TAC(`n:num`,`n:num`) THEN
+    INDUCT_TAC THEN ASM_REWRITE_TAC[ITER; FRAG_EXTEND_0];
+    ALL_TAC;
+    REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[FRAG_EXTEND_SUB] THEN
+    SPEC_TAC(`n:num`,`n:num`) THEN MATCH_MP_TAC num_INDUCTION THEN
+    SIMP_TAC[ITER; singular_subdivision; GSYM FRAG_EXTEND_SUB]] THEN
+  X_GEN_TAC `f:(num->real)->A` THEN GEN_REWRITE_TAC LAND_CONV [IN] THEN
+  DISCH_TAC THEN REWRITE_TAC[FRAG_EXTEND_OF] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `frag_of(f:(num->real)->A)`) THEN
+  ASM_REWRITE_TAC[SINGULAR_CHAIN_OF; FRAG_EXTEND_OF] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  MP_TAC(ISPECL [`p:num`;
+                `subtopology (product_topology (:num) (\i. euclideanreal))
+                              (standard_simplex p)`;
+                 `f:(num->real)->A`] NATURALITY_SINGULAR_SUBDIVISION) THEN
+  DISCH_THEN(fun th ->
+    W(MP_TAC o PART_MATCH (lhand o rand) th o rand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [MATCH_MP_TAC SIMPLICIAL_IMP_SINGULAR_CHAIN THEN
+    SPEC_TAC(`n:num`,`n:num`) THEN
+    INDUCT_TAC THEN REWRITE_TAC[ITER] THEN
+    ASM_SIMP_TAC[SIMPLICIAL_CHAIN_OF; SIMPLICIAL_SIMPLEX_I; SUBSET_REFL] THEN
+    MATCH_MP_TAC SIMPLICIAL_CHAIN_SIMPLICIAL_SUBDIVISION THEN
+    ASM_REWRITE_TAC[];
+    DISCH_THEN SUBST1_TAC] THEN
+  AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC SINGULAR_SUBDIVISION_SIMPLICIAL_SIMPLEX THEN
+  ASM_REWRITE_TAC[] THEN EXISTS_TAC `standard_simplex p` THEN
+  SPEC_TAC(`n:num`,`n:num`) THEN INDUCT_TAC THEN
+  SIMP_TAC[ITER; SIMPLICIAL_CHAIN_OF; SIMPLICIAL_SIMPLEX_I; SUBSET_REFL] THEN
+  MATCH_MP_TAC SIMPLICIAL_CHAIN_SIMPLICIAL_SUBDIVISION THEN
+  ASM_REWRITE_TAC[]);;
+
+let CHAIN_HOMOTOPIC_ITERATED_SINGULAR_SUBDIVISION = prove
+ (`!n. ?h:num->((num->real)->A)frag->((num->real)->A)frag.
+        (!p. h p frag_0 = frag_0) /\
+        (!p c1 c2. h p (frag_sub c1 c2) = frag_sub (h p c1) (h p c2)) /\
+        (!p top c. singular_chain (p,top) c
+                   ==> singular_chain (p + 1,top) (h p c)) /\
+        (!p top c. singular_chain (p,top) c
+                   ==> frag_add (chain_boundary (p + 1) (h p c))
+                                (h (p - 1) (chain_boundary p c)) =
+                       frag_sub (ITER n (singular_subdivision p) c) c)`,
+  INDUCT_TAC THEN REWRITE_TAC[ITER] THENL
+   [EXISTS_TAC
+     `(\p x. frag_0):num->((num->real)->A)frag->((num->real)->A)frag` THEN
+    REWRITE_TAC[SINGULAR_CHAIN_0; CHAIN_BOUNDARY_0] THEN
+    REPEAT STRIP_TAC THEN CONV_TAC FRAG_MODULE;
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN
+   `k:num->((num->real)->A)frag->((num->real)->A)frag`
+   STRIP_ASSUME_TAC) THEN
+  X_CHOOSE_THEN
+   `h:num->((num->real)->A)frag->((num->real)->A)frag`
+   STRIP_ASSUME_TAC
+   CHAIN_HOMOTOPIC_SINGULAR_SUBDIVISION THEN
+  EXISTS_TAC
+   `(\p c. frag_add (singular_subdivision (p + 1) (k p c)) (h p c))
+    :num->((num->real)->A)frag->((num->real)->A)frag` THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [REWRITE_TAC[SINGULAR_SUBDIVISION_0] THEN
+    REPEAT STRIP_TAC THEN CONV_TAC FRAG_MODULE;
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[SINGULAR_SUBDIVISION_SUB] THEN
+    REPEAT STRIP_TAC THEN CONV_TAC FRAG_MODULE;
+    ALL_TAC] THEN
+  REWRITE_TAC[AND_FORALL_THM] THEN
+  MAP_EVERY X_GEN_TAC
+   [`p:num`; `top:A topology`; `c:((num->real)->A)frag`] THEN
+  ASM_SIMP_TAC[SINGULAR_CHAIN_ADD; SINGULAR_CHAIN_SINGULAR_SUBDIVISION] THEN
+  DISCH_TAC THEN ONCE_REWRITE_TAC[FRAG_MODULE
+   `frag_sub (singular_subdivision p (ITER n (singular_subdivision p) c)) c =
+    frag_add
+     (frag_sub (singular_subdivision p (ITER n (singular_subdivision p) c))
+               (singular_subdivision p c))
+     (frag_sub (singular_subdivision p c) c)`] THEN
+  FIRST_X_ASSUM(fun th ->
+   W(MP_TAC o PART_MATCH (rand o rand) th o rand o rand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[GSYM SINGULAR_SUBDIVISION_SUB] THEN
+  FIRST_X_ASSUM(fun th ->
+   W(MP_TAC o PART_MATCH (rand o rand) th o rand o lhand o rand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  SUBGOAL_THEN
+   `singular_subdivision (p - 1 + 1) (k (p - 1) (chain_boundary p c)) =
+    singular_subdivision p
+      ((k:num->((num->real)->A)frag->((num->real)->A)frag) (p - 1)
+      (chain_boundary p c))`
+  SUBST1_TAC THENL
+   [ASM_CASES_TAC `p = 0` THEN ASM_SIMP_TAC[SUB_ADD; LE_1] THEN
+    ASM_REWRITE_TAC[chain_boundary; SINGULAR_SUBDIVISION_0];
+    ALL_TAC] THEN
+  REWRITE_TAC[CHAIN_BOUNDARY_ADD; SINGULAR_SUBDIVISION_ADD] THEN
+  MP_TAC(ISPECL [`p + 1`; `top:A topology`]
+    CHAIN_BOUNDARY_SINGULAR_SUBDIVISION) THEN
+  ASM_SIMP_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN
+  ASM_REWRITE_TAC[ADD_SUB] THEN
+  REPEAT STRIP_TAC THEN CONV_TAC FRAG_MODULE);;
+
+let SUFFICIENT_ITERATED_SINGULAR_SUBDIVISION_EXISTS = prove
+ (`!p top u c:((num->real)->A)frag.
+        (!v. v IN u ==> open_in top v) /\
+        topspace top SUBSET UNIONS u /\
+        singular_chain (p,top) c
+        ==> ?n. !m f. n <= m /\
+                      f IN frag_support (ITER m (singular_subdivision p) c)
+                      ==> ?v. v IN u /\ IMAGE f (standard_simplex p) SUBSET v`,
+  let llemma = prove
+   (`!p c. standard_simplex p SUBSET UNIONS c /\
+           (!u. u IN c
+                ==> open_in (product_topology (:num) (\i. euclideanreal)) u)
+           ==> ?d. &0 < d /\
+                   !k. k SUBSET standard_simplex p /\
+                       (!x y i.
+                          x IN k /\ y IN k /\ i <= p ==> abs (x i - y i) <= d)
+                       ==> ?u. u IN c /\ k SUBSET u`,
+    REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     `!x. x IN standard_simplex p
+          ==> ?e u. &0 < e /\ u IN c /\ x IN u /\
+                    !y. (!i. i <= p ==> abs(y i - x i) <= &2 * e) /\
+                        (!i. p < i ==> y i = &0)
+                        ==> y IN u`
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [SWAP_EXISTS_THM] THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `x:num->real` o REWRITE_RULE[SUBSET]) THEN
+      ASM_REWRITE_TAC[IN_UNIONS] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      X_GEN_TAC `u:(num->real)->bool` THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `u:(num->real)->bool`) THEN
+      ASM_REWRITE_TAC[OPEN_IN_PRODUCT_TOPOLOGY_ALT] THEN
+      DISCH_THEN(MP_TAC o SPEC `x:num->real`) THEN
+      ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      REWRITE_TAC[TOPSPACE_EUCLIDEANREAL; cartesian_product; IN_UNIV] THEN
+      REWRITE_TAC[EXTENSIONAL_UNIV; IN_ELIM_THM] THEN
+      X_GEN_TAC `v:num->(real->bool)` THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o
+        GEN_REWRITE_RULE BINDER_CONV [GSYM REAL_OPEN_IN]) THEN
+      REWRITE_TAC[real_open] THEN
+      DISCH_THEN(MP_TAC o GEN `i:num` o SPECL [`i:num`; `(x:num->real) i`]) THEN
+      ASM_REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; FORALL_AND_THM] THEN
+      X_GEN_TAC `d:num->real` THEN STRIP_TAC THEN EXISTS_TAC
+       `inf ((&1) INSERT IMAGE (d:num->real) {i | ~(v i = (:real))}) / &3` THEN
+      REWRITE_TAC[REAL_ARITH `&0 < x / &3 <=> &0 < x`] THEN
+      REWRITE_TAC[REAL_ARITH `x <= &2 * y / &3 <=> &3 / &2 * x <= y`] THEN
+      ASM_SIMP_TAC[REAL_LT_INF_FINITE; REAL_LE_INF_FINITE; NOT_INSERT_EMPTY;
+                   FINITE_IMAGE; FINITE_INSERT] THEN
+      ASM_SIMP_TAC[FORALL_IN_IMAGE; FORALL_IN_INSERT; REAL_LT_01] THEN
+      X_GEN_TAC `y:num->real` THEN REWRITE_TAC[IN_ELIM_THM] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [SUBSET]) THEN
+      MP_TAC(ASSUME `x IN standard_simplex p`) THEN
+      REWRITE_TAC[IN_ELIM_THM; standard_simplex] THEN STRIP_TAC THEN
+      X_GEN_TAC `i:num` THEN
+      ASM_CASES_TAC `p:num < i` THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[NOT_LT]) THEN
+      ASM_CASES_TAC `(v:num->real->bool) i = UNIV` THEN
+      ASM_REWRITE_TAC[IN_UNIV] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      MATCH_MP_TAC(REAL_ARITH `&3 / &2 * x <= y /\ &0 < y ==> x < y`) THEN
+      ASM_SIMP_TAC[];
+      GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM]] THEN
+    REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC
+     [`e:(num->real)->real`; `v:(num->real)->(num->real)->bool`] THEN
+    DISCH_TAC THEN MP_TAC(SPEC `p:num` COMPACT_IN_STANDARD_SIMPLEX) THEN
+    REWRITE_TAC[compact_in] THEN DISCH_THEN(MP_TAC o
+      SPEC `{cartesian_product (:num)
+              (\i. if i <= p then real_interval(x i - e x,x i + e x)
+                   else (:real)) | x | x IN standard_simplex p}` o
+      CONJUNCT2) THEN
+    REWRITE_TAC[SIMPLE_IMAGE; FORALL_IN_IMAGE; EXISTS_FINITE_SUBSET_IMAGE] THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[SUBSET; UNIONS_IMAGE; IN_ELIM_THM] THEN
+      CONJ_TAC THEN X_GEN_TAC `x:num->real` THEN DISCH_TAC THENL
+       [REWRITE_TAC[OPEN_IN_CARTESIAN_PRODUCT_GEN] THEN DISJ2_TAC THEN
+        REWRITE_TAC[TOPSPACE_EUCLIDEANREAL; IN_UNIV] THEN CONJ_TAC THENL
+         [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{i:num | i <= p}` THEN
+          REWRITE_TAC[FINITE_NUMSEG_LE; SUBSET; IN_ELIM_THM] THEN MESON_TAC[];
+          GEN_TAC THEN REWRITE_TAC[GSYM REAL_OPEN_IN] THEN
+          MESON_TAC[REAL_OPEN_REAL_INTERVAL; REAL_OPEN_UNIV]];
+        EXISTS_TAC `x:num->real` THEN
+        ASM_REWRITE_TAC[cartesian_product; IN_ELIM_THM; EXTENSIONAL_UNIV] THEN
+        GEN_TAC THEN COND_CASES_TAC THEN REWRITE_TAC[IN_UNIV] THEN
+        ASM_SIMP_TAC[IN_REAL_INTERVAL; REAL_ARITH
+         `x - e < x /\ x < x + e <=> &0 < e`]];
+      DISCH_THEN(X_CHOOSE_THEN `s:(num->real)->bool` MP_TAC)] THEN
+    ASM_CASES_TAC `s:(num->real)->bool = {}` THEN
+    ASM_REWRITE_TAC[IMAGE_CLAUSES; UNIONS_0; SUBSET_EMPTY] THEN
+    REWRITE_TAC[NONEMPTY_STANDARD_SIMPLEX] THEN STRIP_TAC THEN
+    EXISTS_TAC `inf(IMAGE (e:(num->real)->real) s)` THEN
+    ASM_SIMP_TAC[REAL_LT_INF_FINITE; REAL_LE_INF_FINITE;
+                 FINITE_IMAGE; IMAGE_EQ_EMPTY] THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    X_GEN_TAC `k:(num->real)->bool` THEN
+    REWRITE_TAC[FORALL_IN_IMAGE] THEN STRIP_TAC THEN
+    ASM_CASES_TAC `k:(num->real)->bool = {}` THENL
+     [ASM_REWRITE_TAC[EMPTY_SUBSET] THEN
+      ASM_MESON_TAC[MEMBER_NOT_EMPTY; NONEMPTY_STANDARD_SIMPLEX];
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY])] THEN
+    DISCH_THEN(X_CHOOSE_THEN `x:num->real` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `x IN standard_simplex p` ASSUME_TAC THENL
+     [ASM SET_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [UNIONS_IMAGE]) THEN
+    GEN_REWRITE_TAC LAND_CONV [SUBSET] THEN
+    DISCH_THEN(MP_TAC o SPEC `x:num->real`) THEN
+    ASM_REWRITE_TAC[IN_ELIM_THM; cartesian_product; EXTENSIONAL_UNIV] THEN
+    DISCH_THEN(X_CHOOSE_THEN `a:num->real`
+     (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    REWRITE_TAC[IN_UNIV] THEN ONCE_REWRITE_TAC[COND_RAND] THEN
+    REWRITE_TAC[COND_EXPAND; FORALL_AND_THM; IN_UNIV] THEN
+    REWRITE_TAC[TAUT `~p \/ q <=> p ==> q`; IN_REAL_INTERVAL] THEN
+    REWRITE_TAC[REAL_ARITH `a - e < x /\ x < a + e <=> abs(x - a) < e`] THEN
+    DISCH_TAC THEN EXISTS_TAC `(v:(num->real)->(num->real)->bool) a` THEN
+    SUBGOAL_THEN `a IN standard_simplex p` (fun th -> ASSUME_TAC th THEN
+      FIRST_X_ASSUM(MP_TAC o C MATCH_MP th))
+    THENL [ASM SET_TAC[]; STRIP_TAC THEN ASM_REWRITE_TAC[]] THEN
+    REWRITE_TAC[SUBSET] THEN X_GEN_TAC `y:num->real` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    SUBGOAL_THEN `y IN standard_simplex p`
+     (fun th -> ASSUME_TAC th THEN MP_TAC th)
+    THENL [ASM SET_TAC[]; SIMP_TAC[standard_simplex; IN_ELIM_THM]] THEN
+    DISCH_THEN(K ALL_TAC) THEN X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`x:num->real`; `y:num->real`; `i:num`]) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `a:num->real`) THEN
+    ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN
+    ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC) in
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `c:((num->real)->A)frag = frag_0` THENL
+   [STRIP_TAC THEN EXISTS_TAC `0` THEN
+    SUBGOAL_THEN
+     `!k. ITER k (singular_subdivision p) frag_0:((num->real)->A)frag =
+          frag_0`
+     (fun th -> ASM_REWRITE_TAC[th; FRAG_SUPPORT_0; NOT_IN_EMPTY]) THEN
+    INDUCT_TAC THEN ASM_REWRITE_TAC[ITER; SINGULAR_SUBDIVISION_0];
+    ALL_TAC] THEN
+  ASM_CASES_TAC `topspace top:A->bool = {}` THENL
+   [ASM_MESON_TAC[SINGULAR_CHAIN_EMPTY]; ALL_TAC] THEN
+  ASM_CASES_TAC `u:(A->bool)->bool = {}` THEN
+  ASM_REWRITE_TAC[UNIONS_0; SUBSET_EMPTY] THEN STRIP_TAC THEN
+  SUBGOAL_THEN
+   `?d. &0 < d /\
+        !f k. f IN frag_support c /\ k SUBSET standard_simplex p /\
+             (!x y i. x IN k /\ y IN k /\ i <= p ==> abs(x i - y i) <= d)
+             ==> ?v. v IN u /\ IMAGE (f:(num->real)->A) k SUBSET v`
+  STRIP_ASSUME_TAC THENL
+   [SUBGOAL_THEN
+     `!f:(num->real)->A.
+          f IN frag_support c
+          ==> ?e. &0 < e /\
+                  !k. k SUBSET standard_simplex p /\
+                      (!x y i. x IN k /\ y IN k /\ i <= p
+                               ==> abs(x i - y i) <= e)
+                      ==> ?v. v IN u /\ IMAGE f k SUBSET v`
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      SUBGOAL_THEN
+       `!v. v IN u
+            ==> ?t. open_in (product_topology (:num) (\i. euclideanreal)) t /\
+                    {x | x IN standard_simplex p /\ (f:(num->real)->A) x IN v}
+                    = t INTER standard_simplex p`
+      MP_TAC THENL
+       [REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM OPEN_IN_SUBTOPOLOGY] THEN
+        FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [singular_chain]) THEN
+        REWRITE_TAC[SUBSET] THEN
+        DISCH_THEN(MP_TAC o SPEC `f:(num->real)->A`) THEN
+        ASM_REWRITE_TAC[singular_simplex; IN; continuous_map] THEN
+        DISCH_THEN(MP_TAC o SPEC `v:A->bool` o CONJUNCT2 o CONJUNCT1) THEN
+        REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; TOPSPACE_PRODUCT_TOPOLOGY] THEN
+        REWRITE_TAC[o_DEF; TOPSPACE_EUCLIDEANREAL; CARTESIAN_PRODUCT_UNIV] THEN
+        ASM_SIMP_TAC[INTER_UNIV];
+        GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [RIGHT_IMP_EXISTS_THM]] THEN
+      REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+      X_GEN_TAC `g:(A->bool)->((num->real)->bool)` THEN DISCH_TAC THEN
+      MP_TAC(SPECL
+       [`p:num`; `IMAGE (g:(A->bool)->((num->real)->bool)) u`]
+        llemma) THEN
+      REWRITE_TAC[FORALL_IN_IMAGE; EXISTS_IN_IMAGE] THEN
+      ASM_SIMP_TAC[UNIONS_IMAGE] THEN
+      FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [singular_chain]) THEN
+       REWRITE_TAC[SUBSET] THEN
+      DISCH_THEN(MP_TAC o SPEC `f:(num->real)->A`) THEN
+      ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC LAND_CONV [IN] THEN
+      REWRITE_TAC[singular_simplex] THEN
+      DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE o
+                 CONJUNCT1) THEN
+      REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; TOPSPACE_PRODUCT_TOPOLOGY] THEN
+      REWRITE_TAC[o_DEF; TOPSPACE_EUCLIDEANREAL; CARTESIAN_PRODUCT_UNIV] THEN
+      REWRITE_TAC[INTER_UNIV] THEN DISCH_TAC THEN
+      ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN
+      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `k:(num->real)->bool` THEN
+      DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[];
+      GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+      REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+      X_GEN_TAC `e:((num->real)->A)->real` THEN DISCH_TAC THEN
+      EXISTS_TAC `inf {e f | (f:(num->real)->A) IN frag_support c}` THEN
+      REWRITE_TAC[SIMPLE_IMAGE] THEN
+      ASM_SIMP_TAC[REAL_LT_INF_FINITE; FINITE_FRAG_SUPPORT;
+                   FRAG_SUPPORT_EQ_EMPTY; FINITE_IMAGE; IMAGE_EQ_EMPTY;
+                   REAL_LE_INF_FINITE] THEN
+      ASM_SIMP_TAC[FORALL_IN_IMAGE]];
+    ALL_TAC] THEN
+  MP_TAC(SPECL [`&p / (&p + &1)`; `d:real`] REAL_ARCH_POW_INV) THEN
+  SIMP_TAC[REAL_LT_LDIV_EQ; REAL_LT_RDIV_EQ; REAL_POS;
+           REAL_ARITH `&0 <= x ==> &0 < x + &1`; REAL_ABS_POS] THEN
+  ASM_REWRITE_TAC[REAL_MUL_LZERO] THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  X_GEN_TAC `m:num` THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  DISCH_TAC THEN
+  ABBREV_TAC `c':((num->real)->A)frag = ITER m (singular_subdivision p) c` THEN
+  MP_TAC(ISPECL
+   [`p:num`; `top:A topology`; `m:num`;
+    `c:((num->real)->A)frag`] ITERATED_SINGULAR_SUBDIVISION) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+  W(MP_TAC o PART_MATCH lhand FRAG_SUPPORT_FRAG_EXTEND o
+    rand o lhand o snd o dest_forall o snd) THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> P x) ==> top SUBSET s ==> (!x. x IN top ==> P x)`) THEN
+  REWRITE_TAC[FORALL_IN_UNIONS] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `f:(num->real)->A` THEN DISCH_TAC THEN
+  REWRITE_TAC[chain_map] THEN
+  W(MP_TAC o PART_MATCH lhand FRAG_SUPPORT_FRAG_EXTEND o
+    rand o lhand o snd o dest_forall o snd) THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> P x) ==> top SUBSET s ==> (!x. x IN top ==> P x)`) THEN
+  REWRITE_TAC[FORALL_IN_UNIONS] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[FRAG_SUPPORT_OF; o_THM; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+  SIMP_TAC[simplex_map; IMAGE_RESTRICTION; SUBSET_REFL] THEN
+  X_GEN_TAC `d:(num->real)->(num->real)` THEN DISCH_THEN(LABEL_TAC "*") THEN
+  REWRITE_TAC[IMAGE_o] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[MESON[]
+   `P /\ (!x y i. Q x y i) <=> !i. P /\ (!x y. Q x y i)`] THEN
+  X_GEN_TAC `i:num` THEN
+  SUBGOAL_THEN
+   `!n. simplicial_chain (p,standard_simplex p)
+         (ITER n (simplicial_subdivision p)
+                        (frag_of (RESTRICTION (standard_simplex p) I))) /\
+        !f x y.
+          f IN frag_support(ITER n (simplicial_subdivision p)
+                        (frag_of (RESTRICTION (standard_simplex p) I))) /\
+          x IN standard_simplex p /\
+          y IN standard_simplex p
+          ==> abs (f x i - f y i) <= (&p / (&p + &1)) pow n`
+  MP_TAC THENL
+   [MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC[ITER] THEN CONJ_TAC THENL
+     [REWRITE_TAC[SIMPLICIAL_CHAIN_OF; SIMPLICIAL_SIMPLEX_I; SUBSET_REFL] THEN
+      SIMP_TAC[FRAG_SUPPORT_OF; IN_SING; RESTRICTION; real_pow; I_THM] THEN
+      REWRITE_TAC[standard_simplex; IN_ELIM_THM] THEN
+      MESON_TAC[REAL_ARITH
+       `&0 <= x /\ &0 <= y /\ x <= &1 /\ y <= &1 ==> abs(x - y) <= &1`];
+      GEN_TAC THEN STRIP_TAC THEN
+      ASM_SIMP_TAC[SIMPLICIAL_CHAIN_SIMPLICIAL_SUBDIVISION] THEN
+      REWRITE_TAC[real_pow] THEN
+      MATCH_MP_TAC SIMPLICIAL_SUBDIVISION_SHRINKS THEN ASM_MESON_TAC[]];
+    DISCH_THEN(MP_TAC o SPEC `m:num`)] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  REWRITE_TAC[simplicial_chain] THEN
+  GEN_REWRITE_TAC LAND_CONV [SUBSET] THEN
+  DISCH_THEN(MP_TAC o SPEC `d:(num->real)->(num->real)`) THEN
+  ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC LAND_CONV [IN] THEN
+  SIMP_TAC[SIMPLICIAL_SIMPLEX] THEN DISCH_THEN(K ALL_TAC) THEN
+  ASM_CASES_TAC `i:num <= p` THEN ASM_REWRITE_TAC[FORALL_IN_IMAGE_2] THEN
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC REAL_LE_TRANS `(&p / (&p + &1)) pow n` THEN
+  ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+  TRANS_TAC REAL_LE_TRANS `(&p / (&p + &1)) pow m` THEN
+  ASM_SIMP_TAC[] THEN MATCH_MP_TAC REAL_POW_MONO_INV THEN
+  ASM_SIMP_TAC[REAL_LE_LDIV_EQ; REAL_LE_RDIV_EQ;
+               REAL_ARITH `&0 < &p + &1`] THEN
+  REAL_ARITH_TAC);;
+
+let SMALL_HOMOLOGOUS_REL_RELCYCLE_EXISTS = prove
+ (`!p top s u c:((num->real)->A)frag.
+        (!v. v IN u ==> open_in top v) /\ topspace top SUBSET UNIONS u /\
+        singular_relcycle (p,top,s) c
+        ==> ?c'. singular_relcycle (p,top,s) c' /\
+                 homologous_rel (p,top,s) c c' /\
+                 !f. f IN frag_support c'
+                      ==> ?v. v IN u /\ IMAGE f (standard_simplex p) SUBSET v`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o CONJUNCT1 o REWRITE_RULE[singular_relcycle]) THEN
+  MP_TAC(ISPECL
+   [`p:num`; `top:A topology`; `u:(A->bool)->bool`; `c:((num->real)->A)frag`]
+   SUFFICIENT_ITERATED_SINGULAR_SUBDIVISION_EXISTS) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
+  ABBREV_TAC `c':((num->real)->A)frag = ITER n (singular_subdivision p) c` THEN
+  REWRITE_TAC[LE_REFL] THEN DISCH_TAC THEN
+  EXISTS_TAC `c':((num->real)->A)frag` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(TAUT `(q ==> p) /\ q ==> p /\ q`) THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[HOMOLOGOUS_REL_SINGULAR_RELCYCLE]; ALL_TAC] THEN
+  EXPAND_TAC "c'" THEN SPEC_TAC(`n:num`,`m:num`) THEN
+  INDUCT_TAC THEN ASM_REWRITE_TAC[ITER; HOMOLOGOUS_REL_REFL] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+      HOMOLOGOUS_REL_TRANS)) THEN
+  ONCE_REWRITE_TAC[HOMOLOGOUS_REL_SYM] THEN
+  MATCH_MP_TAC HOMOLOGOUS_REL_SINGULAR_SUBDIVISION THEN
+  ASM_MESON_TAC[HOMOLOGOUS_REL_SINGULAR_RELCYCLE]);;
+
+let EXCISED_CHAIN_EXISTS = prove
+ (`!p top s t u c:((num->real)->A)frag.
+      top closure_of u SUBSET top interior_of t /\ t SUBSET s /\
+      singular_chain(p,subtopology top s) c
+      ==> ?n d e. singular_chain(p,subtopology top (s DIFF u)) d /\
+                  singular_chain(p,subtopology top t) e /\
+                  ITER n (singular_subdivision p) c = frag_add d e`,
+  SUBGOAL_THEN
+   `!p top s t u c:((num->real)->A)frag.
+      top closure_of u SUBSET top interior_of t /\
+      u SUBSET topspace top /\ t SUBSET s /\ s SUBSET topspace top /\
+      singular_chain(p,subtopology top s) c
+      ==> ?n d e. singular_chain(p,subtopology top (s DIFF u)) d /\
+                  singular_chain(p,subtopology top t) e /\
+                  ITER n (singular_subdivision p) c = frag_add d e`
+  MP_TAC THENL
+   [REPEAT STRIP_TAC;
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL
+     [`p:num`; `top:A topology`; `topspace top INTER s:A->bool`;
+      `topspace top INTER t:A->bool`; `topspace top INTER u:A->bool`;
+      `c:((num->real)->A)frag`]) THEN
+    REWRITE_TAC[SET_RULE `s INTER t DIFF s INTER u = s INTER (t DIFF u)`] THEN
+    REWRITE_TAC[GSYM SUBTOPOLOGY_RESTRICT; INTER_SUBSET] THEN
+    ASM_REWRITE_TAC[GSYM INTERIOR_OF_RESTRICT; GSYM CLOSURE_OF_RESTRICT] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM SET_TAC[]] THEN
+  MP_TAC(ISPECL
+   [`p:num`; `subtopology top (s:A->bool)`;
+    `{s INTER top interior_of t:A->bool,s DIFF top closure_of u}`;
+    `c:((num->real)->A)frag`]
+   SUFFICIENT_ITERATED_SINGULAR_SUBDIVISION_EXISTS) THEN
+  ASM_REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
+  ANTS_TAC THENL
+   [SIMP_TAC[OPEN_IN_SUBTOPOLOGY_INTER_OPEN; OPEN_IN_INTERIOR_OF] THEN
+    ASM_SIMP_TAC[OPEN_IN_SUBTOPOLOGY_DIFF_CLOSED; CLOSED_IN_CLOSURE_OF] THEN
+    REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; UNIONS_2] THEN ASM SET_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `n:num`] THEN
+  DISCH_THEN(MP_TAC o SPEC `n:num`) THEN REWRITE_TAC[LE_REFL] THEN
+  ABBREV_TAC `c':((num->real)->A)frag = ITER n (singular_subdivision p) c` THEN
+  REWRITE_TAC[EXISTS_IN_INSERT; NOT_IN_EMPTY] THEN DISCH_TAC THEN
+  ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN REWRITE_TAC[singular_chain] THEN
+  MATCH_MP_TAC FRAG_SPLIT THEN REWRITE_TAC[SUBSET; IN_UNION] THEN
+  X_GEN_TAC `f:(num->real)->A` THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC I [DISJ_SYM] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `f:(num->real)->A`) THEN
+  SUBGOAL_THEN `singular_chain(p,subtopology top s:A topology) c'`
+  (MP_TAC o REWRITE_RULE[singular_chain; SUBSET]) THENL
+   [EXPAND_TAC "c'" THEN SPEC_TAC(`n:num`,`m:num`) THEN
+    INDUCT_TAC THEN ASM_SIMP_TAC[ITER; SINGULAR_CHAIN_0] THEN
+    ASM_SIMP_TAC[SINGULAR_CHAIN_SINGULAR_SUBDIVISION];
+    DISCH_THEN(MP_TAC o SPEC `f:(num->real)->A`) THEN
+    ASM_SIMP_TAC[IN; SINGULAR_SIMPLEX_SUBTOPOLOGY; SUBSET_INTER] THEN
+    STRIP_TAC THEN MATCH_MP_TAC MONO_OR THEN CONJ_TAC THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] SUBSET_TRANS) THEN
+    REWRITE_TAC[INTERIOR_OF_SUBSET] THEN
+    MP_TAC(ISPECL [`top:A topology`; `u:A->bool`] CLOSURE_OF_SUBSET) THEN
+    ASM SET_TAC[]]);;
+
+let EXCISED_RELCYCLE_EXISTS = prove
+ (`!p top s t u c:((num->real)->A)frag.
+      top closure_of u SUBSET top interior_of t /\ t SUBSET s /\
+      singular_relcycle (p,subtopology top s,t) c
+      ==> ?c'. singular_relcycle (p,subtopology top (s DIFF u),t DIFF u) c' /\
+               homologous_rel (p,subtopology top s,t) c c'`,
+  REWRITE_TAC[singular_relcycle; cong; mod_subset] THEN
+  REWRITE_TAC[IMP_CONJ; FRAG_MODULE `frag_sub x frag_0 = x`] THEN
+  SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+   `t SUBSET s
+    ==> s INTER t = t /\ (s DIFF u) INTER (t DIFF u) = t DIFF u`] THEN
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`p:num`; `top:A topology`; `s:A->bool`; `t:A->bool`; `u:A->bool`;
+    `c:((num->real)->A)frag`]
+   EXCISED_CHAIN_EXISTS) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC
+   [`n:num`; `d:((num->real)->A)frag`; `e:((num->real)->A)frag`] THEN
+  STRIP_TAC THEN EXISTS_TAC `d:((num->real)->A)frag` THEN
+  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+   [SUBGOAL_THEN
+     `singular_chain(p - 1,subtopology top (t:A->bool)) (chain_boundary p d) /\
+      singular_chain(p - 1,subtopology top (s DIFF u)) (chain_boundary p d)`
+    MP_TAC THENL
+     [ASM_SIMP_TAC[SINGULAR_CHAIN_BOUNDARY] THEN
+      FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP (FRAG_MODULE
+       `c' = frag_add d e ==> d = frag_sub c' e`)) THEN
+      REWRITE_TAC[CHAIN_BOUNDARY_SUB] THEN
+      MATCH_MP_TAC SINGULAR_CHAIN_SUB THEN
+      ASM_SIMP_TAC[SINGULAR_CHAIN_BOUNDARY] THEN
+      SPEC_TAC(`n:num`,`m:num`) THEN INDUCT_TAC THEN
+      ASM_REWRITE_TAC[ITER] THEN
+      MP_TAC(ISPECL [`p:num`; `subtopology top s:A topology`;
+                     `ITER m (singular_subdivision p) c:((num->real)->A)frag`]
+        CHAIN_BOUNDARY_SINGULAR_SUBDIVISION) THEN
+      ANTS_TAC THENL
+       [SPEC_TAC(`m:num`,`r:num`) THEN
+        INDUCT_TAC THEN ASM_SIMP_TAC[SINGULAR_CHAIN_0; ITER] THEN
+        ASM_SIMP_TAC[SINGULAR_CHAIN_SINGULAR_SUBDIVISION];
+        DISCH_THEN SUBST1_TAC] THEN
+      ASM_SIMP_TAC[SINGULAR_CHAIN_SINGULAR_SUBDIVISION];
+      REWRITE_TAC[SINGULAR_CHAIN_SUBTOPOLOGY] THEN ASM SET_TAC[]];
+    FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP (FRAG_MODULE
+       `c' = frag_add d e ==> d = frag_sub c' e`)) THEN
+    GEN_REWRITE_TAC LAND_CONV [FRAG_MODULE `x = frag_sub x frag_0`] THEN
+    MATCH_MP_TAC HOMOLOGOUS_REL_SUB THEN CONJ_TAC THENL
+     [SPEC_TAC(`n:num`,`m:num`) THEN INDUCT_TAC THEN
+      ASM_REWRITE_TAC[ITER; HOMOLOGOUS_REL_REFL] THEN
+      FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        HOMOLOGOUS_REL_TRANS)) THEN
+      ONCE_REWRITE_TAC[HOMOLOGOUS_REL_SYM] THEN
+      MATCH_MP_TAC HOMOLOGOUS_REL_SINGULAR_SUBDIVISION THEN
+      FIRST_ASSUM(SUBST1_TAC o SYM o
+       MATCH_MP HOMOLOGOUS_REL_SINGULAR_RELCYCLE) THEN
+      REWRITE_TAC[singular_relcycle; cong; mod_subset] THEN
+      ASM_REWRITE_TAC[FRAG_MODULE `frag_sub x frag_0 = x`];
+      REWRITE_TAC[homologous_rel] THEN
+      MATCH_MP_TAC SINGULAR_RELBOUNDARY_SUB THEN
+      REWRITE_TAC[SINGULAR_RELBOUNDARY_0] THEN
+      MATCH_MP_TAC SINGULAR_CHAIN_IMP_RELBOUNDARY] THEN
+    ASM_SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+       `t SUBSET s ==> s INTER t = t`]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Now actually connect to group theory and set up homology groups. Note     *)
 (* that we define homomogy groups for all *integers* p, since this seems to  *)
 (* avoid some special-case reasoning, though they are trivial for p < 0.     *)
@@ -3352,7 +3899,7 @@ let HOM_INDUCED_EQ = prove
   ASM_MESON_TAC[singular_relcycle; SINGULAR_RELCYCLE_RESTRICT]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Functoriality, naturality and easier Eilenberg-Steenrod axioms.           *)
+(* Functoriality, naturality and some of the Eilenberg-Steenrod axioms.      *)
 (* ------------------------------------------------------------------------- *)
 
 let ABELIAN_RELATIVE_HOMOLOGY_GROUP = prove
@@ -3737,6 +4284,145 @@ let HOMOLOGY_DIMENSION_AXIOM = prove
   REWRITE_TAC[GROUP_ID] THEN REWRITE_TAC[RELATIVE_HOMOLOGY_GROUP] THEN
   REWRITE_TAC[FORALL_IN_GSPEC; HOMOLOGOUS_REL_EQ_RELBOUNDARY] THEN
   ASM_MESON_TAC[SINGULAR_BOUNDARY_EQ_CYCLE_SING; LE_1]);;
+
+let HOMOLOGY_EXCISION_AXIOM = prove
+ (`!p top s t (u:A->bool).
+        top closure_of u SUBSET top interior_of t /\ t SUBSET s
+        ==> group_isomorphism
+             (relative_homology_group(p,subtopology top (s DIFF u),t DIFF u),
+              relative_homology_group(p,subtopology top s,t))
+             (hom_induced p (subtopology top (s DIFF u),t DIFF u)
+                            (subtopology top s,t) (\x. x))`,
+  MATCH_MP_TAC(MESON[INT_OF_NUM_OF_INT; INT_NOT_LT]
+   `(!x. x < &0 ==> P x) /\ (!p. P(&p)) ==> !x:int. P x`) THEN
+  CONJ_TAC THENL
+   [SIMP_TAC[relative_homology_group; HOM_INDUCED_TRIVIAL] THEN
+    REWRITE_TAC[GROUP_ISOMORPHISM; group_homomorphism; SINGLETON_GROUP] THEN
+    SET_TAC[];
+    ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GROUP_ISOMORPHISM] THEN
+  REWRITE_TAC[group_homomorphism; SET_RULE
+   `(IMAGE f s SUBSET t /\ P) /\ IMAGE f s = t /\ Q <=>
+    (IMAGE f s SUBSET t /\ P) /\ t SUBSET IMAGE f s /\ Q`] THEN
+  REWRITE_TAC[GSYM group_homomorphism] THEN
+  SUBGOAL_THEN
+   `continuous_map (subtopology top (s DIFF u),subtopology top s) (\x. x) /\
+    IMAGE (\x:A. x) (t DIFF u) SUBSET t`
+  STRIP_ASSUME_TAC THENL
+   [CONJ_TAC THENL [ALL_TAC; SET_TAC[]] THEN
+    ONCE_REWRITE_TAC[SET_RULE `s DIFF u = s INTER (s DIFF u)`] THEN
+    SIMP_TAC[GSYM SUBTOPOLOGY_SUBTOPOLOGY; CONTINUOUS_MAP_FROM_SUBTOPOLOGY;
+             CONTINUOUS_MAP_ID];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[GROUP_HOMOMORPHISM_HOM_INDUCED] THEN CONJ_TAC THENL
+   [GEN_REWRITE_TAC I [SUBSET] THEN
+    REWRITE_TAC[NONTRIVIAL_RELATIVE_HOMOLOGY_GROUP] THEN
+    SIMP_TAC[QUOTIENT_GROUP;
+             NORMAL_SUBGROUP_SINGULAR_RELBOUNDARY_RELCYCLE] THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; RIGHT_COSET_SINGULAR_RELBOUNDARY] THEN
+    X_GEN_TAC `c:((num->real)->A)frag` THEN
+    GEN_REWRITE_TAC LAND_CONV [IN] THEN
+    REWRITE_TAC[RELCYCLE_GROUP] THEN DISCH_TAC THEN
+    REWRITE_TAC[IN_IMAGE] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+    REWRITE_TAC[EXISTS_IN_GSPEC] THEN MP_TAC(ISPECL
+     [`p:num`; `top:A topology`; `s:A->bool`; `t:A->bool`; `u:A->bool`;
+      `c:((num->real)->A)frag`] EXCISED_RELCYCLE_EXISTS) THEN
+    ASM_REWRITE_TAC[IN] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `d:((num->real)->A)frag` THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[HOM_INDUCED_CHAIN_MAP] THEN
+    FIRST_X_ASSUM(SUBST1_TAC o
+      GEN_REWRITE_RULE I [GSYM HOMOLOGOUS_REL_EQ]) THEN
+    AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC CHAIN_MAP_ID THEN ASM_MESON_TAC[singular_relcycle];
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[NONTRIVIAL_RELATIVE_HOMOLOGY_GROUP] THEN
+    SIMP_TAC[QUOTIENT_GROUP;
+             NORMAL_SUBGROUP_SINGULAR_RELBOUNDARY_RELCYCLE] THEN
+    REWRITE_TAC[FORALL_IN_GSPEC; RIGHT_COSET_SINGULAR_RELBOUNDARY] THEN
+    REWRITE_TAC[RELCYCLE_GROUP; IN] THEN
+    X_GEN_TAC `c:((num->real)->A)frag` THEN DISCH_TAC THEN
+    X_GEN_TAC `d:((num->real)->A)frag` THEN DISCH_TAC THEN
+    ASM_SIMP_TAC[HOM_INDUCED_CHAIN_MAP] THEN
+    SUBGOAL_THEN
+     `singular_chain(p,subtopology top (s DIFF u:A->bool)) c /\
+      singular_chain(p,subtopology top (s DIFF u)) d`
+    MP_TAC THENL [ASM_MESON_TAC[singular_relcycle]; ALL_TAC] THEN
+    DISCH_THEN(CONJUNCTS_THEN(SUBST1_TAC o MATCH_MP CHAIN_MAP_ID)) THEN
+    REWRITE_TAC[HOMOLOGOUS_REL_EQ] THEN
+    REWRITE_TAC[homologous_rel] THEN MAP_EVERY UNDISCH_TAC
+     [`singular_relcycle (p,subtopology top (s DIFF u:A->bool),t DIFF u) d`;
+      `singular_relcycle
+        (p,subtopology top (s DIFF u:A->bool),t DIFF u) c`] THEN
+    GEN_REWRITE_TAC I [IMP_IMP] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP SINGULAR_RELCYCLE_SUB) THEN
+    SPEC_TAC(`frag_sub c d:((num->real)->A)frag`,
+             `c:((num->real)->A)frag`) THEN
+    X_GEN_TAC `c:((num->real)->A)frag` THEN
+    REWRITE_TAC[singular_relcycle; cong; mod_subset] THEN
+    REWRITE_TAC[FRAG_MODULE `frag_sub x frag_0 = x`] THEN
+    ASM_SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+     `t SUBSET s ==> (s DIFF u) INTER (t DIFF u) = t DIFF u`] THEN
+    STRIP_TAC THEN GEN_REWRITE_TAC LAND_CONV [SINGULAR_RELBOUNDARY_ALT] THEN
+    ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM; SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+     `t SUBSET s ==> s INTER t = t`] THEN
+    MAP_EVERY X_GEN_TAC
+     [`d:((num->real)->A)frag`; `e:((num->real)->A)frag`] THEN STRIP_TAC THEN
+    MP_TAC(ISPECL
+     [`p + 1`; `top:A topology`; `s:A->bool`; `t:A->bool`; `u:A->bool`;
+      `d:((num->real)->A)frag`] EXCISED_CHAIN_EXISTS) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC
+     [`n:num`; `f:((num->real)->A)frag`; `g:((num->real)->A)frag`] THEN
+    STRIP_TAC THEN
+    X_CHOOSE_THEN `h:num->((num->real)->A)frag->((num->real)->A)frag` MP_TAC
+     (SPEC `n:num` CHAIN_HOMOTOPIC_ITERATED_SINGULAR_SUBDIVISION) THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    DISCH_THEN(MP_TAC o SPECL
+     [`p + 1`; `subtopology top (s:A->bool)`; `d:((num->real)->A)frag`]) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o AP_TERM
+     `chain_boundary (p + 1):((num->real)->A)frag->((num->real)->A)frag`) THEN
+    REWRITE_TAC[CHAIN_BOUNDARY_ADD; CHAIN_BOUNDARY_SUB] THEN
+    MP_TAC(ISPECL [`p + 1`; `subtopology top s:A topology`]
+        CHAIN_BOUNDARY_BOUNDARY_ALT) THEN
+    ASM_SIMP_TAC[FRAG_MODULE `frag_add frag_0 c = c`; ADD_SUB] THEN
+    DISCH_THEN(K ALL_TAC) THEN
+    SUBST1_TAC(FRAG_MODULE
+     `frag_add c e:((num->real)->A)frag = frag_sub c (frag_sub frag_0 e)`) THEN
+    ASM_REWRITE_TAC[CHAIN_BOUNDARY_SUB; CHAIN_BOUNDARY_0] THEN
+    REWRITE_TAC[FRAG_MODULE
+     `frag_sub x (frag_sub frag_0 y) = frag_add x y`] THEN
+    REWRITE_TAC[FRAG_MODULE
+     `frag_add c' e' = frag_sub (frag_add f g) (frag_add c e) <=>
+      c = frag_add (frag_sub f c') (frag_sub (frag_sub g e) e')`] THEN
+    REWRITE_TAC[GSYM CHAIN_BOUNDARY_SUB] THEN
+    ONCE_REWRITE_TAC[FRAG_MODULE
+     `c = frag_add c1 (frag_sub c2 c3) <=>
+      c1 = frag_add c (frag_sub c3 c2)`] THEN
+    REWRITE_TAC[SINGULAR_RELBOUNDARY_ALT] THEN
+    MAP_EVERY ABBREV_TAC
+     [`c1 =
+       frag_sub f ((h:num->((num->real)->A)frag->((num->real)->A)frag) p c)`;
+      `c2:((num->real)->A)frag =
+       frag_sub (chain_boundary (p + 1) (h p e))
+                (frag_sub (chain_boundary (p + 1) g) e)`] THEN
+    DISCH_TAC THEN REWRITE_TAC[SINGULAR_RELBOUNDARY_ALT] THEN
+    MAP_EVERY EXISTS_TAC
+     [`c1:((num->real)->A)frag`; `c2:((num->real)->A)frag`] THEN
+    ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [ASM_MESON_TAC[SINGULAR_CHAIN_SUB]; DISCH_TAC] THEN
+    SUBGOAL_THEN
+     `singular_chain (p,subtopology top (s DIFF u:A->bool)) c2 /\
+      singular_chain (p,subtopology top t) c2`
+    MP_TAC THENL
+     [CONJ_TAC THENL
+       [FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP (FRAG_MODULE
+         `c1 = frag_add c c2 ==> c2 = frag_sub c1 c`)) THEN
+        MATCH_MP_TAC SINGULAR_CHAIN_SUB THEN ASM_REWRITE_TAC[] THEN
+        ASM_MESON_TAC[SINGULAR_CHAIN_BOUNDARY; ADD_SUB];
+        EXPAND_TAC "c2" THEN
+        REPEAT(MATCH_MP_TAC SINGULAR_CHAIN_SUB THEN CONJ_TAC) THEN
+        ASM_MESON_TAC[SINGULAR_CHAIN_BOUNDARY; ADD_SUB]];
+      REWRITE_TAC[SINGULAR_CHAIN_SUBTOPOLOGY] THEN ASM SET_TAC[]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Fact that our coefficient group is the integers.                          *)
