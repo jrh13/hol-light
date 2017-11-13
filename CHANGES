@@ -8,19 +8,24 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 29th Oct 2017       iter.ml
+
+Fixed a weird fumble in ITERATE_CLAUSES_GEN where there was a
+redundant instance of the "monoidal" hypothesis.
+
 Wed 11th Oct 2017       sets.ml
 
 Added three more simple lemmas about the "cartesian_product" construct:
 
-  CARTESIAN_PRODUCT_EMPTY = 
+  CARTESIAN_PRODUCT_EMPTY =
     |- !s. cartesian_product {} s = {(\i. ARB)}
-  
+
   CARTESIAN_PRODUCT_EQ_MEMBERS_EQ =
     |- !k s x y.
           x IN cartesian_product k s /\
           y IN cartesian_product k s
           ==> (x = y <=> !i. i IN k ==> x i = y i)
-  
+
   RESTRICTION_IN_CARTESIAN_PRODUCT =
     |- !k s (f:K->A).
           RESTRICTION k f IN cartesian_product k s <=>

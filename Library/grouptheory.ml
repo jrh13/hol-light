@@ -784,6 +784,19 @@ let MONOIDAL_GROUP_ADD = prove
   REWRITE_TAC[monoidal; GROUP_ADD_ASSOC; NEUTRAL_GROUP_ADD; GROUP_ADD_LID;
               GSYM GROUP_ADD_SYM_EQ]);;
 
+let ABELIAN_GROUP_SUM = prove
+ (`!G (x:K->A) k.
+        abelian_group G /\
+        (!i. i IN k ==> x i IN group_carrier G) /\
+        FINITE {i | i IN k /\ ~(x i = group_id G)}
+        ==> iterate (group_add G) k x IN group_carrier G`,
+  REWRITE_TAC[GSYM MONOIDAL_GROUP_ADD] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MATCH_MP_TAC o
+   REWRITE_RULE[NEUTRAL_GROUP_ADD; GROUP_ID; GROUP_ADD] o
+   ISPEC `\x:A. x IN group_carrier G` o MATCH_MP
+    (INST_TYPE [`:K`,`:A`; `:A`,`:B`] ITERATE_CLOSED)) THEN
+  ASM_SIMP_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Procedure for equations s = t or equivalences s = t <=> s' = t' in        *)
 (* the theory of groups, which will generate carrier membership              *)
@@ -1176,6 +1189,13 @@ let GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET = prove
   MATCH_MP_TAC(SET_RULE `a IN s ==> INTERS s SUBSET a`) THEN
   REWRITE_TAC[IN_ELIM_THM; CARRIER_SUBGROUP_OF; INTER_SUBSET]);;
 
+let SUBGROUP_OF_SUBGROUP_GENERATED_EQ = prove
+ (`!G h k:A->bool.
+        h subgroup_of (subgroup_generated G k) <=>
+        h subgroup_of G /\ h SUBSET group_carrier(subgroup_generated G k)`,
+  REWRITE_TAC[subgroup_of; CONJUNCT2 SUBGROUP_GENERATED] THEN
+  MESON_TAC[GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET; SUBSET_TRANS]);;
+
 let FINITE_SUBGROUP_GENERATED = prove
  (`!G s:A->bool.
         FINITE(group_carrier G)
@@ -1196,6 +1216,14 @@ let CARRIER_SUBGROUP_GENERATED_SUBGROUP = prove
   CONJ_TAC THENL [GEN_REWRITE_TAC I [SUBSET]; ASM SET_TAC[]] THEN
   X_GEN_TAC `x:A` THEN REWRITE_TAC[IN_ELIM_THM] THEN
   DISCH_THEN(MP_TAC o SPEC `h:A->bool`) THEN ASM_REWRITE_TAC[SUBSET_REFL]);;
+
+let SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ = prove
+ (`!G h k:A->bool.
+        k subgroup_of G
+        ==> (h subgroup_of (subgroup_generated G k) <=>
+             h subgroup_of G /\ h SUBSET k)`,
+  REWRITE_TAC[SUBGROUP_OF_SUBGROUP_GENERATED_EQ] THEN
+  SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP]);;
 
 let SUBGROUP_GENERATED_GROUP_CARRIER = prove
  (`!G:A group. subgroup_generated G (group_carrier G) = G`,
@@ -1270,6 +1298,16 @@ let SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED = prove
     MATCH_MP_TAC SUBGROUP_GENERATED_SUBSET_CARRIER_SUBSET THEN
     REWRITE_TAC[GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET]]);;
 
+let SUBGROUP_GENERATED_INSERT_ID = prove
+ (`!G s:A->bool.
+        subgroup_generated G (group_id G INSERT s) = subgroup_generated G s`,
+  REWRITE_TAC[GROUPS_EQ; SUBGROUP_GENERATED] THEN
+  REWRITE_TAC[EXTENSION; INTERS_GSPEC; IN_ELIM_THM] THEN
+  REWRITE_TAC[SUBSET; IN_INTER; IN_INSERT; TAUT
+   `p /\ (q \/ r) ==> s <=> (q ==> p ==> s) /\ (p /\ r ==> s)`] THEN
+  REWRITE_TAC[FORALL_AND_THM; FORALL_UNWIND_THM2; GROUP_ID] THEN
+  MESON_TAC[subgroup_of]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Direct products and sums.                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -1325,6 +1363,23 @@ let ABELIAN_PROD_GROUP = prove
   MAP_EVERY (MP_TAC o C ISPEC GROUP_CARRIER_NONEMPTY)
    [`G:A group`; `H:B group`] THEN SET_TAC[]);;
 
+let CROSS_SUBGROUP_OF_PROD_GROUP = prove
+ (`!(G1:A group) (G2:B group) h1 h2.
+        (h1 CROSS h2) subgroup_of (prod_group G1 G2) <=>
+        h1 subgroup_of G1 /\ h2 subgroup_of G2`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[subgroup_of; FORALL_PAIR_THM; PROD_GROUP; IN_CROSS] THEN
+  REWRITE_TAC[SUBSET_CROSS] THEN SET_TAC[]);;
+
+let PROD_GROUP_SUBGROUP_GENERATED = prove
+ (`!(G1:A group) (G2:B group) h1 h2.
+        h1 subgroup_of G1 /\ h2 subgroup_of G2
+        ==> (prod_group (subgroup_generated G1 h1) (subgroup_generated G2 h2) =
+             subgroup_generated (prod_group G1 G2) (h1 CROSS h2))`,
+  SIMP_TAC[GROUPS_EQ; CONJUNCT2 PROD_GROUP; CONJUNCT2 SUBGROUP_GENERATED] THEN
+  SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP;
+           CROSS_SUBGROUP_OF_PROD_GROUP; PROD_GROUP]);;
+
 let product_group = new_definition
  `product_group k (G:K->A group) =
         group(cartesian_product k (\i. group_carrier(G i)),
@@ -1367,6 +1422,33 @@ let TRIVIAL_PRODUCT_GROUP = prove
   REWRITE_TAC[SUBSET_CARTESIAN_PRODUCT] THEN
   REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY; GROUP_CARRIER_NONEMPTY]);;
 
+let CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP = prove
+ (`!k h G:K->A group.
+        (cartesian_product k h) subgroup_of (product_group k G) <=>
+        !i. i IN k ==> (h i) subgroup_of (G i)`,
+  REWRITE_TAC[subgroup_of; PRODUCT_GROUP; RESTRICTION_IN_CARTESIAN_PRODUCT;
+              SUBSET_CARTESIAN_PRODUCT] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  ASM_CASES_TAC `cartesian_product k (h:K->A->bool) = {}` THEN
+  ASM_REWRITE_TAC[] THENL
+   [FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [CARTESIAN_PRODUCT_EQ_EMPTY]) THEN
+    SET_TAC[];
+    ASM_REWRITE_TAC[REWRITE_RULE[IMP_CONJ; RIGHT_FORALL_IMP_THM]
+          FORALL_CARTESIAN_PRODUCT_ELEMENTS] THEN
+    MESON_TAC[]]);;
+
+let PRODUCT_GROUP_SUBGROUP_GENERATED = prove
+ (`!k G (h:K->A->bool).
+        (!i. i IN k ==> (h i) subgroup_of (G i))
+        ==> product_group k (\i. subgroup_generated (G i) (h i)) =
+            subgroup_generated (product_group k G) (cartesian_product k h)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GROUPS_EQ] THEN
+  REWRITE_TAC[CONJUNCT2 PRODUCT_GROUP; CONJUNCT2 SUBGROUP_GENERATED] THEN
+  ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP; PRODUCT_GROUP;
+               CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_EQ] THEN
+  ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP]);;
+
 let ABELIAN_PRODUCT_GROUP = prove
  (`!k (G:K->A group).
         abelian_group(product_group k G) <=>
@@ -1383,6 +1465,13 @@ let ABELIAN_PRODUCT_GROUP = prove
   SIMP_TAC[IMP_IMP; FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ;
            CARTESIAN_PRODUCT_EQ_EMPTY; GROUP_CARRIER_NONEMPTY] THEN
   MESON_TAC[]);;
+
+let sum_group = new_definition
+  `sum_group k (G:K->A group) =
+        subgroup_generated
+         (product_group k G)
+         {x | x IN cartesian_product k (\i. group_carrier(G i)) /\
+              FINITE {i | i IN k /\ ~(x i = group_id(G i))}}`;;
 
 let SUBGROUP_SUM_GROUP = prove
  (`!k (G:K->A group).
@@ -1403,13 +1492,6 @@ let SUBGROUP_SUM_GROUP = prove
   REWRITE_TAC[TAUT `~p \/ q <=> p ==> q`] THEN
   ASM_SIMP_TAC[GROUP_MUL_LID; GROUP_ID]);;
 
-let sum_group = new_definition
-  `sum_group k (G:K->A group) =
-        subgroup_generated
-         (product_group k G)
-         {x | x IN cartesian_product k (\i. group_carrier(G i)) /\
-              FINITE {i | i IN k /\ ~(x i = group_id(G i))}}`;;
-
 let SUM_GROUP = prove
  (`(!k (G:K->A group).
         group_carrier(sum_group k G) =
@@ -1427,6 +1509,76 @@ let SUM_GROUP = prove
   SIMP_TAC[sum_group; SUBGROUP_SUM_GROUP;
            CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
   REWRITE_TAC[SUBGROUP_GENERATED; PRODUCT_GROUP]);;
+
+let TRIVIAL_SUM_GROUP = prove
+ (`!k (G:K->A group).
+        trivial_group(sum_group k G) <=> !i. i IN k ==> trivial_group(G i)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[NOT_FORALL_THM; NOT_IMP; LEFT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[TRIVIAL_GROUP_SUBSET] THEN X_GEN_TAC `i:K` THEN
+    REWRITE_TAC[SET_RULE `~(s SUBSET {a}) <=> ?x. x IN s /\ ~(x = a)`] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+     (X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC)) THEN
+    EXISTS_TAC
+     `RESTRICTION k (\j. if j = i then a else group_id (G j)):K->A` THEN
+    REWRITE_TAC[SUM_GROUP; RESTRICTION_IN_CARTESIAN_PRODUCT; IN_ELIM_THM] THEN
+    REPEAT CONJ_TAC THENL
+     [ASM_MESON_TAC[GROUP_ID];
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{i:K}` THEN
+      REWRITE_TAC[FINITE_SING; SUBSET; IN_ELIM_THM; IN_SING; RESTRICTION] THEN
+      MESON_TAC[];
+      DISCH_THEN(MP_TAC o C AP_THM `i:K`) THEN
+      ASM_REWRITE_TAC[RESTRICTION]];
+    DISCH_TAC THEN REWRITE_TAC[sum_group] THEN
+    MATCH_MP_TAC TRIVIAL_GROUP_SUBGROUP_GENERATED THEN
+    ASM_REWRITE_TAC[TRIVIAL_PRODUCT_GROUP]]);;
+
+let CARTESIAN_PRODUCT_SUBGROUP_OF_SUM_GROUP = prove
+ (`!k h G:K->A group.
+        (cartesian_product k h) subgroup_of (sum_group k G) <=>
+        (!i. i IN k ==> (h i) subgroup_of (G i)) /\
+        (!z. z IN cartesian_product k h
+             ==> FINITE {i | i IN k /\ ~(z i = group_id(G i))})`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[sum_group; SUBGROUP_OF_SUBGROUP_GENERATED_EQ] THEN
+  REWRITE_TAC[GSYM sum_group; SUM_GROUP] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP] THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+  DISCH_TAC THEN MATCH_MP_TAC(SET_RULE
+   `s SUBSET t
+    ==> ((!x. x IN s ==> x IN t /\ P x) <=> (!x. x IN s ==> P x))`) THEN
+  REWRITE_TAC[SUBSET_CARTESIAN_PRODUCT] THEN
+  ASM_MESON_TAC[subgroup_of]);;
+
+let SUM_GROUP_SUBGROUP_GENERATED = prove
+ (`!k G (h:K->A->bool).
+        (!i. i IN k ==> (h i) subgroup_of (G i))
+        ==> sum_group k (\i. subgroup_generated (G i) (h i)) =
+            subgroup_generated (sum_group k G) (cartesian_product k h)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GROUPS_EQ] THEN
+  REWRITE_TAC[CONJUNCT2 SUM_GROUP; CONJUNCT2 SUBGROUP_GENERATED] THEN
+  REWRITE_TAC[SUM_GROUP; CONJUNCT2 SUBGROUP_GENERATED] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+   [SUBGROUP_GENERATED_RESTRICT] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) CARRIER_SUBGROUP_GENERATED_SUBGROUP o
+    rand o snd) THEN
+  ANTS_TAC THENL
+   [GEN_REWRITE_TAC RAND_CONV [sum_group] THEN
+    REWRITE_TAC[SUBGROUP_OF_SUBGROUP_GENERATED_EQ] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC SUBGROUP_OF_INTER THEN
+      ASM_SIMP_TAC[CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP] THEN
+      REWRITE_TAC[SUM_GROUP; SUBGROUP_SUM_GROUP];
+      SIMP_TAC[SUBGROUP_SUM_GROUP; CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+      REWRITE_TAC[SUM_GROUP] THEN SET_TAC[]];
+    DISCH_THEN SUBST1_TAC] THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN
+  REWRITE_TAC[SUM_GROUP; IN_INTER; IN_ELIM_THM; cartesian_product] THEN
+  ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[subgroup_of]) THEN ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Homomorphisms etc.                                                        *)
@@ -1708,6 +1860,28 @@ let GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED = prove
         GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET) THEN
   SIMP_TAC[SUBSET; SUBGROUP_GENERATED] THEN SET_TAC[]);;
 
+let GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS = prove
+ (`!G H g h (f:A->B).
+      group_homomorphism(G,H) f /\ IMAGE f g SUBSET h
+      ==> group_homomorphism(subgroup_generated G g,subgroup_generated H h) f`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ_GEN] THEN
+  ASM_SIMP_TAC[GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  ONCE_REWRITE_TAC[TAUT `p ==> q <=> p ==> p /\ q`] THEN
+  MATCH_MP_TAC SUBGROUP_GENERATED_INDUCT THEN RULE_ASSUM_TAC
+   (REWRITE_RULE[group_homomorphism; SUBSET; FORALL_IN_IMAGE]) THEN
+  MP_TAC(REWRITE_RULE[SUBSET] (ISPECL [`G:A group`; `g:A->bool`]
+        GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET)) THEN
+  ASM_SIMP_TAC[] THEN DISCH_THEN(K ALL_TAC) THEN REPEAT CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC(REWRITE_RULE[SUBSET] SUBGROUP_GENERATED_SUBSET_CARRIER) THEN
+    ASM SET_TAC[];
+    ASM_MESON_TAC[GROUP_ID; SUBGROUP_GENERATED];
+    ASM_MESON_TAC[GROUP_ID; SUBGROUP_GENERATED];
+    ASM_MESON_TAC[GROUP_INV; SUBGROUP_GENERATED];
+    ASM_MESON_TAC[GROUP_MUL; SUBGROUP_GENERATED]]);;
+
 let GROUP_ISOMORPHISM = prove
  (`!G G' f:A->B.
       group_isomorphism (G,G') (f:A->B) <=>
@@ -1754,6 +1928,33 @@ let GROUP_EPIMORPHISM_IMP_HOMOMORPHISM = prove
 let GROUP_ISOMORPHISM_IMP_HOMOMORPHISM = prove
  (`!(f:A->B) G H. group_isomorphism(G,H) f ==> group_homomorphism(G,H) f`,
   SIMP_TAC[GROUP_ISOMORPHISM]);;
+
+let GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS = prove
+ (`!G H g h (f:A->B) f'.
+      group_isomorphisms(G,H) (f,f') /\
+      IMAGE f g SUBSET h /\ IMAGE f' h SUBSET g
+      ==> group_isomorphisms (subgroup_generated G g,subgroup_generated H h)
+                             (f,f')`,
+  SIMP_TAC[group_isomorphisms; GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS] THEN
+  MESON_TAC[SUBSET; GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET]);;
+
+let GROUP_ISOMORPHISM_BETWEEN_SUBGROUPS = prove
+ (`!G H g h (f:A->B).
+      group_isomorphism(G,H) f /\ g SUBSET group_carrier G /\ IMAGE f g = h
+      ==> group_isomorphism(subgroup_generated G g,subgroup_generated H h) f`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  REWRITE_TAC[group_isomorphism] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `f':B->A` THEN
+  REWRITE_TAC[group_isomorphisms] THEN REPEAT STRIP_TAC THENL
+   [ASM_SIMP_TAC[GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS; SUBSET_REFL];
+    ALL_TAC;
+    ASM_MESON_TAC[GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET; SUBSET];
+    ASM_MESON_TAC[GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET; SUBSET]] THEN
+  GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [SUBGROUP_GENERATED_RESTRICT] THEN
+  MATCH_MP_TAC GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS THEN
+  ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN
+  ASM SET_TAC[]);;
 
 let GROUP_ISOMORPHISMS_COMPOSE = prove
  (`!G1 G2 G3 (f1:A->B) (f2:B->C) g1 g2.
@@ -1948,6 +2149,14 @@ let GROUP_HOMOMORPHISM_OF_SND = prove
   REWRITE_TAC[group_homomorphism; SUBSET; FORALL_IN_IMAGE; PROD_GROUP] THEN
   REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; o_DEF] THEN MESON_TAC[GROUP_ID]);;
 
+let ABELIAN_GROUP_EPIMORPHIC_IMAGE = prove
+ (`!G H (f:A->B).
+     group_epimorphism(G,H) f /\ abelian_group G ==> abelian_group H`,
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[group_epimorphism; group_homomorphism; abelian_group] THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+  ASM_REWRITE_TAC[FORALL_IN_IMAGE_2] THEN ASM SET_TAC[]);;
+
 let ABELIAN_GROUP_HOMOMORPHISM_GROUP_MUL = prove
  (`!(f:A->B) g A B.
         abelian_group B /\
@@ -1957,13 +2166,48 @@ let ABELIAN_GROUP_HOMOMORPHISM_GROUP_MUL = prove
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
   SIMP_TAC[GROUP_MUL_LID; GROUP_ID; GROUP_MUL; GROUP_INV_MUL; GROUP_INV]);;
 
-let ABELIAN_GROUP_EPIMORPHIC_IMAGE = prove
- (`!G H (f:A->B).
-     group_epimorphism(G,H) f /\ abelian_group G ==> abelian_group H`,
-  REPEAT GEN_TAC THEN
-  SIMP_TAC[group_epimorphism; group_homomorphism; abelian_group] THEN
-  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
-  ASM_REWRITE_TAC[FORALL_IN_IMAGE_2] THEN ASM SET_TAC[]);;
+let ABELIAN_GROUP_HOMOMORPHISM_GROUP_SUM = prove
+ (`!(f:K->A->B) k A B.
+        abelian_group B /\
+        (!i. i IN k ==> group_homomorphism (A i,B) (f i))
+        ==> group_homomorphism
+              (sum_group k A,B)
+              (\x. iterate (group_add B) k (\i. (f i) (x i)))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GROUP_HOMOMORPHISM] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; SUM_GROUP; IN_ELIM_THM] THEN
+    REWRITE_TAC[cartesian_product; IN_ELIM_THM] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC ABELIAN_GROUP_SUM THEN
+    ASM_REWRITE_TAC[] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN
+    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        FINITE_SUBSET)) THEN
+    ASM SET_TAC[];
+    DISCH_TAC THEN ASM_SIMP_TAC[GSYM GROUP_ADD_EQ_MUL] THEN
+    REPEAT STRIP_TAC THEN
+    W(MP_TAC o PART_MATCH (rand o rand)
+       (REWRITE_RULE[RIGHT_IMP_FORALL_THM; IMP_IMP] ITERATE_OP_GEN) o
+       rand o snd) THEN
+    ASM_REWRITE_TAC[MONOIDAL_GROUP_ADD] THEN ANTS_TAC THENL
+     [CONJ_TAC THENL
+       [UNDISCH_TAC `(x:K->A) IN group_carrier (sum_group k A)`;
+        UNDISCH_TAC `(y:K->A) IN group_carrier (sum_group k A)`] THEN
+      REWRITE_TAC[SUM_GROUP; IN_ELIM_THM] THEN
+      DISCH_THEN(MP_TAC o CONJUNCT2) THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+      REWRITE_TAC[support; NEUTRAL_GROUP_ADD] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[];
+      DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    W(MP_TAC o PART_MATCH rand
+       (REWRITE_RULE[RIGHT_IMP_FORALL_THM; IMP_IMP] ITERATE_EQ) o snd) THEN
+    ASM_SIMP_TAC[GROUP_ADD_EQ_MUL; SUM_GROUP; MONOIDAL_GROUP_ADD] THEN
+    DISCH_THEN MATCH_MP_TAC THEN SIMP_TAC[RESTRICTION] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE
+     [SUM_GROUP; IN_ELIM_THM; cartesian_product;
+      group_homomorphism; SUBSET; FORALL_IN_IMAGE]) THEN
+    ASM_SIMP_TAC[GROUP_ADD_EQ_MUL]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Relation of isomorphism.                                                  *)
@@ -2043,6 +2287,62 @@ let ISOMORPHIC_GROUP_PROD_GROUPS = prove
   REWRITE_TAC[isomorphic_group; group_isomorphism; RIGHT_AND_EXISTS_THM] THEN
   REWRITE_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
   REWRITE_TAC[GSYM GROUP_ISOMORPHISMS_PAIRED2] THEN MESON_TAC[]);;
+
+let ISOMORPHIC_GROUP_PRODUCT_GROUP,ISOMORPHIC_GROUP_SUM_GROUP =
+ (CONJ_PAIR o prove)
+ (`(!(G:K->A group) (H:K->B group) k.
+        (!i. i IN k ==> (G i) isomorphic_group (H i))
+        ==> (product_group k G) isomorphic_group (product_group k H)) /\
+   (!(G:K->A group) (H:K->B group) k.
+        (!i. i IN k ==> (G i) isomorphic_group (H i))
+        ==> (sum_group k G) isomorphic_group (sum_group k H))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  REWRITE_TAC[TAUT `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+  REWRITE_TAC[isomorphic_group; group_isomorphism] THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; group_isomorphisms] THEN
+  MAP_EVERY X_GEN_TAC [`f:K->A->B`; `g:K->B->A`] THEN DISCH_TAC THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!x y. Q x y ==> S x y) /\ (?x y. Q x y /\ P x y /\ (P x y ==> R x y))
+    ==> (?x y. P x y /\ Q x y ) /\ (?x y. R x y /\ S x y)`) THEN
+  REWRITE_TAC[sum_group] THEN CONJ_TAC THENL
+   [MESON_TAC[REWRITE_RULE[SUBSET] GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET];
+    ALL_TAC] THEN
+  MAP_EVERY EXISTS_TAC
+   [`\x. RESTRICTION k (\i. (f:K->A->B) i (x i))`;
+    `\y. RESTRICTION k (\i. (g:K->B->A) i (y i))`] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN
+    SIMP_TAC[PRODUCT_GROUP; RESTRICTION; cartesian_product;
+             IN_ELIM_THM; EXTENSIONAL] THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[GROUP_HOMOMORPHISM; PRODUCT_GROUP;
+                cartesian_product; IN_ELIM_THM; EXTENSIONAL;
+                SUBSET; FORALL_IN_IMAGE] THEN
+    REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN SIMP_TAC[] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE
+     [GROUP_HOMOMORPHISM; SUBSET; FORALL_IN_IMAGE]) THEN
+    ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN
+  DISCH_THEN(fun th -> ASSUME_TAC th THEN MP_TAC th) THEN
+  FIRST_ASSUM(MP_TAC o CONJUNCT1 o
+    GEN_REWRITE_RULE I [group_homomorphism]) THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; PRODUCT_GROUP] THEN
+  DISCH_TAC THEN MATCH_MP_TAC
+   (REWRITE_RULE[IMP_CONJ_ALT] GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS) THEN
+  GEN_REWRITE_TAC I [SUBSET] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; IN_ELIM_THM] THEN
+  GEN_TAC THEN MATCH_MP_TAC MONO_AND THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+  GEN_REWRITE_TAC I [SUBSET] THEN X_GEN_TAC `i:K` THEN
+  ASM_CASES_TAC `(i:K) IN k` THEN ASM_REWRITE_TAC[IN_ELIM_THM] THEN
+  ASM_REWRITE_TAC[RESTRICTION] THEN RULE_ASSUM_TAC(REWRITE_RULE
+   [group_homomorphism; SUBSET; FORALL_IN_IMAGE]) THEN
+  ASM SET_TAC[]);;
 
 let ISOMORPHIC_GROUP_CARD_EQ = prove
  (`!(G:A group) (H:B group).
@@ -3048,6 +3348,12 @@ let SUBGROUP_GROUP_IMAGE = prove
            FORALL_IN_IMAGE; FORALL_IN_IMAGE_2; IN_IMAGE] THEN
   MESON_TAC[GROUP_MUL; GROUP_INV; GROUP_ID]);;
 
+let SUBGROUP_OF_HOMOMORPHIC_IMAGE = prove
+ (`!G G' (f:A->B).
+        group_homomorphism (G,G') f /\ h subgroup_of G
+        ==> IMAGE f h subgroup_of G'`,
+  REWRITE_TAC[group_homomorphism; subgroup_of] THEN SET_TAC[]);;
+
 let GROUP_KERNEL_TO_SUBGROUP_GENERATED = prove
  (`!G H s (f:A->B).
         group_kernel (G,subgroup_generated H s) f = group_kernel(G,H) f`,
@@ -3248,7 +3554,7 @@ let GROUP_ISOMORPHISM_TRIVIAL = prove
 (* ------------------------------------------------------------------------- *)
 (* The order of a group element. This is defined as 0 for the infinite case. *)
 (* This keeps theorems uniform and is analogous to "characteristic zero".    *)
-(* That is, x^n = 0 iff n is divisible by the order of x, in all cases.      *)
+(* That is, x^n = 1 iff n is divisible by the order of x, in all cases.      *)
 (* ------------------------------------------------------------------------- *)
 
 let group_element_order = new_definition
@@ -4246,6 +4552,23 @@ let INTEGER_GROUP = prove
   ANTS_TAC THENL [INT_ARITH_TAC; ALL_TAC] THEN
   SIMP_TAC[group_carrier; group_id; group_inv; group_mul]);;
 
+let ABELIAN_INTEGER_GROUP = prove
+ (`abelian_group integer_group`,
+  REWRITE_TAC[abelian_group; INTEGER_GROUP; INT_ADD_SYM]);;
+
+let GROUP_POW_INTEGER_GROUP = prove
+ (`!x n. group_pow integer_group x n = &n * x`,
+  GEN_TAC THEN INDUCT_TAC THEN
+  ASM_REWRITE_TAC[group_pow; INTEGER_GROUP; GSYM INT_OF_NUM_SUC] THEN
+  INT_ARITH_TAC);;
+
+let GROUP_ZPOW_INTEGER_GROUP = prove
+ (`!x n. group_zpow integer_group x n = n * x`,
+  GEN_TAC THEN
+  SIMP_TAC[FORALL_INT_CASES; GROUP_ZPOW_NEG; GROUP_NPOW;
+           INTEGER_GROUP; GROUP_POW_INTEGER_GROUP; IN_UNIV] THEN
+  INT_ARITH_TAC);;
+
 let GROUP_ENDOMORPHISM_INTEGER_GROUP_MUL = prove
  (`!c. group_endomorphism integer_group (\x. c * x)`,
   REWRITE_TAC[group_endomorphism; group_homomorphism; INTEGER_GROUP] THEN
@@ -4431,6 +4754,164 @@ let FREE_ABELIAN_GROUP_UNIVERSAL = prove
         GEN_REWRITE_RULE I [GSYM MONOIDAL_GROUP_ADD]) THEN
   ASM_SIMP_TAC[GROUP_ADD_EQ_MUL; FREE_ABELIAN_GROUP; DEST_FRAG_ADD;
                GROUP_ZPOW_ADD; GROUP_ZPOW]);;
+
+let ISOMORPHIC_GROUP_INTEGER_FREE_ABELIAN_GROUP_SING = prove
+ (`!x:A. integer_group isomorphic_group free_abelian_group {x}`,
+  GEN_TAC THEN REWRITE_TAC[isomorphic_group] THEN
+  EXISTS_TAC `\n. frag_cmul n (frag_of(x:A))` THEN
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM; GROUP_MONOMORPHISM_ALT;
+              GROUP_EPIMORPHISM_ALT; group_image] THEN
+  REWRITE_TAC[group_homomorphism; INTEGER_GROUP; FREE_ABELIAN_GROUP] THEN
+  REWRITE_TAC[IN_UNIV; FRAG_OF_NONZERO;
+   FRAG_MODULE `frag_cmul (--n) x = frag_neg(frag_cmul n x)`;
+   FRAG_MODULE `frag_cmul(a + b) c = frag_add (frag_cmul a c) (frag_cmul b c)`;
+   FRAG_MODULE `frag_cmul c x = frag_0 <=> c = &0 \/ x = frag_0`] THEN
+  ONCE_REWRITE_TAC[SUBSET] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
+  REWRITE_TAC[TAUT `p /\ p /\ q <=> p /\ q`] THEN CONJ_TAC THENL
+   [MESON_TAC[FRAG_SUPPORT_CMUL; FRAG_SUPPORT_OF]; ALL_TAC] THEN
+  MATCH_MP_TAC FRAG_INDUCTION THEN
+  REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; IN_IMAGE; IN_UNIV] THEN
+  MESON_TAC[FRAG_MODULE `frag_cmul (&0) x = frag_0`;
+    FRAG_MODULE  `frag_cmul (&1) x = x`;
+    FRAG_MODULE `frag_sub (frag_cmul a c) (frag_cmul b c) =
+                 frag_cmul (a - b) c`]);;
+
+let GROUP_HOMOMORPHISM_FREE_ABELIAN_GROUPS_ID = prove
+ (`!k k':A->bool.
+    group_homomorphism (free_abelian_group k,free_abelian_group k') (\x. x) <=>
+    k SUBSET k'`,
+  REWRITE_TAC[group_homomorphism; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[FREE_ABELIAN_GROUP; IN_ELIM_THM] THEN REPEAT GEN_TAC THEN
+  EQ_TAC THENL [DISCH_TAC; SET_TAC[]] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `frag_of(x:A)`) THEN
+  ASM_REWRITE_TAC[FRAG_SUPPORT_OF; SING_SUBSET]);;
+
+let GROUP_ISOMORPHISM_FREE_ABELIAN_GROUP_SUM = prove
+ (`!k (f:K->A->bool).
+        pairwise (\i j. DISJOINT (f i) (f j)) k
+        ==> group_isomorphism (sum_group k (\i. free_abelian_group(f i)),
+                               free_abelian_group(UNIONS {f i | i IN k}))
+                              (iterate frag_add k)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM;
+              GROUP_EPIMORPHISM_ALT; GROUP_MONOMORPHISM_ALT] THEN
+  MATCH_MP_TAC(TAUT `p /\ q /\ (p ==> r) ==> (p /\ q) /\ (p /\ r)`) THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[GROUP_HOMOMORPHISM; SUBSET; FORALL_IN_IMAGE] THEN
+    REWRITE_TAC[SUM_GROUP; FREE_ABELIAN_GROUP; IN_ELIM_THM] THEN
+    REWRITE_TAC[cartesian_product; IN_ELIM_THM] THEN REPEAT STRIP_TAC THENL
+     [W(MP_TAC o PART_MATCH lhand FRAG_SUPPORT_SUM o lhand o snd) THEN
+      ASM SET_TAC[];
+      W(MP_TAC o PART_MATCH (rand o rand)
+        (MATCH_MP ITERATE_OP_GEN MONOIDAL_FRAG_ADD) o rand o snd) THEN
+      ASM_REWRITE_TAC[support; NEUTRAL_FRAG_ADD] THEN
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      MATCH_MP_TAC(MATCH_MP ITERATE_EQ MONOIDAL_FRAG_ADD) THEN
+      SIMP_TAC[RESTRICTION]];
+    ONCE_REWRITE_TAC[SUBSET]] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[FREE_ABELIAN_GROUP; SUM_GROUP; IN_ELIM_THM] THEN
+    REWRITE_TAC[cartesian_product; IN_ELIM_THM; EXTENSIONAL] THEN
+    X_GEN_TAC `x:K->A frag` THEN STRIP_TAC THEN
+    GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `i:K` THEN
+    ASM_CASES_TAC `(i:K) IN k` THEN ASM_SIMP_TAC[RESTRICTION] THEN
+    REWRITE_TAC[GSYM FRAG_SUPPORT_EQ_EMPTY] THEN
+    SUBGOAL_THEN
+     `iterate frag_add (i INSERT (k DELETE i)) (x:K->A frag) = frag_0`
+    MP_TAC THENL
+     [ASM_SIMP_TAC[SET_RULE `x IN s ==> x INSERT (s DELETE x) = s`];
+      W(MP_TAC o PART_MATCH (lhand o rand)
+       (CONJUNCT2(MATCH_MP ITERATE_CLAUSES_GEN MONOIDAL_FRAG_ADD)) o
+       lhand o lhand o snd)] THEN
+    REWRITE_TAC[IN_DELETE] THEN ANTS_TAC THENL
+     [REWRITE_TAC[support; NEUTRAL_FRAG_ADD] THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        FINITE_SUBSET)) THEN SET_TAC[];
+      DISCH_THEN SUBST1_TAC] THEN
+    REWRITE_TAC[FREE_ABELIAN_GROUP; FRAG_MODULE
+     `frag_add x y = frag_0 <=> y = frag_neg x`] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP(MESON[FRAG_SUPPORT_NEG]
+     `x = frag_neg y ==> frag_support x = frag_support y`)) THEN
+    MATCH_MP_TAC(SET_RULE
+     `!u. s SUBSET u /\ DISJOINT t u ==> s = t ==> t = {}`) THEN
+    EXISTS_TAC `UNIONS {(f:K->A->bool) j | j IN (k DELETE i)}` THEN
+    CONJ_TAC THENL
+     [W(MP_TAC o PART_MATCH lhand FRAG_SUPPORT_SUM o lhand o snd) THEN
+      ASM SET_TAC[];
+      FIRST_X_ASSUM(MP_TAC o SPEC `i:K`) THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC(SET_RULE
+       `DISJOINT t u ==> s SUBSET t ==> DISJOINT s u`) THEN
+      REWRITE_TAC[SET_RULE
+       `DISJOINT a (UNIONS {f i | i IN s}) <=>
+        !i. i IN s ==> DISJOINT a (f i)`] THEN
+      X_GEN_TAC `j:K` THEN REWRITE_TAC[IN_DELETE] THEN STRIP_TAC THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[pairwise]) THEN ASM_MESON_TAC[]];
+    DISCH_THEN(ASSUME_TAC o MATCH_MP SUBGROUP_GROUP_IMAGE) THEN
+    REWRITE_TAC[FREE_ABELIAN_GROUP; IN_ELIM_THM] THEN
+    MATCH_MP_TAC FRAG_INDUCTION THEN REPEAT CONJ_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o MATCH_MP IN_SUBGROUP_ID) THEN
+      REWRITE_TAC[FREE_ABELIAN_GROUP];
+      ALL_TAC;
+      FIRST_X_ASSUM(MP_TAC o MATCH_MP
+       (REWRITE_RULE[IMP_CONJ; RIGHT_FORALL_IMP_THM] IN_SUBGROUP_DIV)) THEN
+      REWRITE_TAC[FREE_ABELIAN_GROUP; group_div] THEN
+      SIMP_TAC[FRAG_MODULE `frag_add x (frag_neg y) = frag_sub x y`]] THEN
+    REWRITE_TAC[FORALL_IN_UNIONS] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC] THEN
+    X_GEN_TAC `i:K` THEN DISCH_TAC THEN X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+    REWRITE_TAC[group_image; IN_IMAGE] THEN EXISTS_TAC
+     `RESTRICTION k (\j:K. if j = i then frag_of(a:A) else frag_0)` THEN
+    REWRITE_TAC[SUM_GROUP; IN_ELIM_THM; RESTRICTION_IN_CARTESIAN_PRODUCT] THEN
+    REWRITE_TAC[FREE_ABELIAN_GROUP] THEN REPEAT CONJ_TAC THENL
+     [TRANS_TAC EQ_TRANS
+       `iterate frag_add {i}
+         (RESTRICTION k (\j:K. if j = i then frag_of(a:A) else frag_0))` THEN
+      CONJ_TAC THENL
+       [SIMP_TAC[MATCH_MP ITERATE_SING MONOIDAL_FRAG_ADD] THEN
+        ASM_REWRITE_TAC[RESTRICTION];
+        CONV_TAC SYM_CONV THEN MATCH_MP_TAC(REWRITE_RULE
+         [IMP_IMP; RIGHT_IMP_FORALL_THM] ITERATE_SUPERSET) THEN
+        REWRITE_TAC[MONOIDAL_FRAG_ADD] THEN
+        ASM_REWRITE_TAC[SING_SUBSET; IN_SING; NEUTRAL_FRAG_ADD] THEN
+        SIMP_TAC[RESTRICTION; IN_ELIM_THM]];
+      REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+      ASM_REWRITE_TAC[IN_ELIM_THM; FRAG_SUPPORT_OF; SING_SUBSET] THEN
+      REWRITE_TAC[FRAG_SUPPORT_0; EMPTY_SUBSET];
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{i:K}` THEN
+      REWRITE_TAC[FINITE_SING; SUBSET; IN_ELIM_THM] THEN
+      X_GEN_TAC `j:K` THEN
+      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+      ASM_REWRITE_TAC[RESTRICTION; IN_SING] THEN
+      MESON_TAC[]]]);;
+
+let ISOMORPHIC_FREE_ABELIAN_GROUP_UNIONS = prove
+ (`!k:(A->bool)->bool.
+        pairwise DISJOINT k
+        ==> free_abelian_group(UNIONS k) isomorphic_group
+            sum_group k free_abelian_group`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+  MP_TAC(ISPECL [`k:(A->bool)->bool`; `\x:A->bool. x`]
+        GROUP_ISOMORPHISM_FREE_ABELIAN_GROUP_SUM) THEN
+  ASM_REWRITE_TAC[ETA_AX] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP GROUP_ISOMORPHISM_IMP_ISOMORPHIC) THEN
+  REWRITE_TAC[IN_GSPEC]);;
+
+let ISOMORPHIC_SUM_INTEGER_GROUP = prove
+ (`!k:A->bool.
+        sum_group k (\i. integer_group) isomorphic_group free_abelian_group k`,
+  GEN_TAC THEN
+  TRANS_TAC ISOMORPHIC_GROUP_TRANS
+    `sum_group k (\i:A. free_abelian_group {i})` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC ISOMORPHIC_GROUP_SUM_GROUP THEN
+    REWRITE_TAC[ISOMORPHIC_GROUP_INTEGER_FREE_ABELIAN_GROUP_SING];
+    MP_TAC(ISPECL [`k:A->bool`; `\x:A. {x}`]
+        GROUP_ISOMORPHISM_FREE_ABELIAN_GROUP_SUM) THEN
+    REWRITE_TAC[pairwise; UNIONS_SINGS] THEN
+    ANTS_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+    MESON_TAC[isomorphic_group]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic things about exact sequences.                                       *)
