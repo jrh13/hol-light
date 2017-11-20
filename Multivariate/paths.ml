@@ -80,6 +80,12 @@ let PATH_EUCLIDEAN = prove
   REWRITE_TAC[PATH_IN_EUCLIDEAN] THEN
   REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
 
+let PATH_PATH_IN = prove
+ (`!g:real^1->real^N. path g <=> path_in euclidean (g o lift)`,
+  GEN_TAC THEN
+  ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_UNIV] THEN
+  REWRITE_TAC[GSYM PATH_EUCLIDEAN; SUBSET_UNIV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Invariance theorems.                                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -2491,45 +2497,44 @@ let path_component = new_definition
         ?g. path g /\ path_image g SUBSET s /\
             pathstart g = x /\ pathfinish g = y`;;
 
+let PATH_COMPONENT_OF_EUCLIDEAN = prove
+ (`!s:real^N->bool.
+        path_component_of (subtopology euclidean s) = path_component s`,
+  REWRITE_TAC[FUN_EQ_THM; path_component; path_component_of] THEN
+  REWRITE_TAC[PATH_IN_EUCLIDEAN; pathstart; pathfinish; GSYM DROP_VEC] THEN
+  REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[o_THM]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `g:real^1->real^N` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `(g:real^1->real^N) o lift` THEN
+  ASM_REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
+
 let PATH_COMPONENT_IN = prove
  (`!s x y. path_component s x y ==> x IN s /\ y IN s`,
-  REWRITE_TAC[path_component; path_image; pathstart; pathfinish] THEN
-  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN REPEAT STRIP_TAC THEN
-  REPEAT(FIRST_X_ASSUM(SUBST1_TAC o SYM)) THEN
-  FIRST_X_ASSUM MATCH_MP_TAC THEN
-  REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; REAL_LE_REFL; REAL_POS]);;
-
-let PATH_COMPONENT_REFL = prove
- (`!s x:real^N. x IN s ==> path_component s x x`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[path_component] THEN
-  EXISTS_TAC `(\u. x):real^1->real^N` THEN
-  REWRITE_TAC[pathstart; pathfinish; path_image; path;
-              CONTINUOUS_ON_CONST; IMAGE; FORALL_IN_IMAGE] THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_MESON_TAC[]);;
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM PATH_COMPONENT_OF_EUCLIDEAN] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP PATH_COMPONENT_IN_TOPSPACE) THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
 let PATH_COMPONENT_REFL_EQ = prove
  (`!s x:real^N. path_component s x x <=> x IN s`,
-  MESON_TAC[PATH_COMPONENT_IN; PATH_COMPONENT_REFL]);;
+  REWRITE_TAC[GSYM PATH_COMPONENT_OF_EUCLIDEAN; PATH_COMPONENT_OF_REFL] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
 
-let PATH_COMPONENT_SYM = prove
- (`!s x y:real^N. path_component s x y ==> path_component s y x`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[path_component] THEN
-  MESON_TAC[PATH_REVERSEPATH; PATH_IMAGE_REVERSEPATH;
-            PATHSTART_REVERSEPATH; PATHFINISH_REVERSEPATH]);;
+let PATH_COMPONENT_REFL = prove
+ (`!s x:real^N. x IN s ==> path_component s x x`,
+  REWRITE_TAC[PATH_COMPONENT_REFL_EQ]);;
 
 let PATH_COMPONENT_SYM_EQ = prove
  (`!s x y. path_component s x y <=> path_component s y x`,
-  MESON_TAC[PATH_COMPONENT_SYM]);;
+  REWRITE_TAC[GSYM PATH_COMPONENT_OF_EUCLIDEAN] THEN
+  MATCH_ACCEPT_TAC PATH_COMPONENT_OF_SYM);;
+
+let PATH_COMPONENT_SYM = prove
+ (`!s x y:real^N. path_component s x y ==> path_component s y x`,
+  MESON_TAC[PATH_COMPONENT_SYM_EQ]);;
 
 let PATH_COMPONENT_TRANS = prove
  (`!s x y:real^N.
-    path_component s x y /\ path_component s y z ==> path_component s x z`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[path_component] THEN
-  DISCH_THEN(CONJUNCTS_THEN2
-   (X_CHOOSE_TAC `g1:real^1->real^N`) (X_CHOOSE_TAC `g2:real^1->real^N`)) THEN
-  EXISTS_TAC `g1 ++ g2 :real^1->real^N` THEN
-  ASM_SIMP_TAC[PATH_JOIN; PATH_IMAGE_JOIN; UNION_SUBSET;
-               PATHSTART_JOIN; PATHFINISH_JOIN]);;
+      path_component s x y /\ path_component s y z ==> path_component s x z`,
+  REWRITE_TAC[GSYM PATH_COMPONENT_OF_EUCLIDEAN; PATH_COMPONENT_OF_TRANS]);;
 
 let PATH_COMPONENT_OF_SUBSET = prove
  (`!s t x. s SUBSET t /\ path_component s x y ==> path_component t x y`,
@@ -2560,12 +2565,11 @@ let PATH_COMPONENT_EMPTY = prove
 
 let UNIONS_PATH_COMPONENT = prove
  (`!s:real^N->bool. UNIONS {path_component s x |x| x IN s} = s`,
-  GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
-  REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC; PATH_COMPONENT_SUBSET] THEN
-  REWRITE_TAC[SUBSET; UNIONS_GSPEC; IN_ELIM_THM] THEN
-  X_GEN_TAC `x:real^N` THEN DISCH_TAC THEN EXISTS_TAC `x:real^N` THEN
-  ASM_REWRITE_TAC[] THEN REWRITE_TAC[IN] THEN
-  ASM_REWRITE_TAC[PATH_COMPONENT_REFL_EQ]);;
+  GEN_TAC THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[GSYM UNIONS_PATH_COMPONENTS_OF] THEN
+  REWRITE_TAC[path_components_of; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[PATH_COMPONENT_OF_EUCLIDEAN]);;
 
 let PATH_COMPONENT_TRANSLATION = prove
  (`!a s x. path_component (IMAGE (\x. a + x) s) (a + x) =
@@ -2593,24 +2597,16 @@ let path_connected = new_definition
               ==> ?g. path g /\ (path_image g) SUBSET s /\
                       pathstart g = x /\ pathfinish g = y`;;
 
-let PATH_CONNECTED_IN_EUCLIDEAN = prove
- (`!s:real^N->bool. path_connected_in euclidean s <=> path_connected s`,
-  GEN_TAC THEN REWRITE_TAC[path_connected; path_connected_in] THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV; path_connected_space] THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; PATH_IN_EUCLIDEAN] THEN
-  REWRITE_TAC[pathstart; pathfinish; GSYM DROP_VEC] THEN
-  EQ_TAC THEN DISCH_TAC THEN MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
-  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL [`x:real^N`; `y:real^N`]) THEN
-  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THENL
-   [X_GEN_TAC `g:real->real^N` THEN STRIP_TAC THEN
-    EXISTS_TAC `(g:real->real^N) o drop` THEN ASM_REWRITE_TAC[o_THM];
-    X_GEN_TAC `g:real^1->real^N` THEN STRIP_TAC THEN
-    EXISTS_TAC `(g:real^1->real^N) o lift` THEN
-    ASM_REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]]);;
-
 let PATH_CONNECTED_IFF_PATH_COMPONENT = prove
  (`!s. path_connected s <=> !x y. x IN s /\ y IN s ==> path_component s x y`,
   REWRITE_TAC[path_connected; path_component]);;
+
+let PATH_CONNECTED_IN_EUCLIDEAN = prove
+ (`!s:real^N->bool. path_connected_in euclidean s <=> path_connected s`,
+  REWRITE_TAC[path_connected_in; PATH_CONNECTED_SPACE_IFF_PATH_COMPONENT] THEN
+  REWRITE_TAC[PATH_COMPONENT_OF_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[GSYM PATH_CONNECTED_IFF_PATH_COMPONENT] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
 
 let PATH_CONNECTED_IMP_PATH_COMPONENT = prove
  (`!s a b:real^N.
@@ -2638,59 +2634,30 @@ let PATH_COMPONENT_EQ = prove
   REWRITE_TAC[EXTENSION; IN] THEN
   MESON_TAC[PATH_COMPONENT_SYM; PATH_COMPONENT_TRANS]);;
 
+let PATH_CONNECTED_PATH_IMAGE = prove
+ (`!p:real^1->real^N. path p ==> path_connected(path_image p)`,
+  GEN_TAC THEN REWRITE_TAC[PATH_PATH_IN] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP PATH_CONNECTED_IN_PATH_IMAGE) THEN
+  REWRITE_TAC[IMAGE_o; IMAGE_LIFT_REAL_INTERVAL; LIFT_NUM] THEN
+  REWRITE_TAC[PATH_CONNECTED_IN_EUCLIDEAN; path_image]);;
+
 let PATH_COMPONENT_PATH_IMAGE_PATHSTART = prove
  (`!p x:real^N.
         path p /\ x IN path_image p
         ==> path_component (path_image p) (pathstart p) x`,
-  REWRITE_TAC[path_image; IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `x:real^1 = vec 0` THENL
-   [ASM_REWRITE_TAC[pathstart] THEN MATCH_MP_TAC PATH_COMPONENT_REFL THEN
-    MATCH_MP_TAC FUN_IN_IMAGE THEN REWRITE_TAC[IN_INTERVAL_1] THEN
-    REWRITE_TAC[DROP_VEC; REAL_POS];
-    ALL_TAC] THEN
-  REWRITE_TAC[path_component] THEN
-  EXISTS_TAC `\y. (p:real^1->real^N)(drop x % y)` THEN
-  ASM_REWRITE_TAC[path; path_image; pathstart; pathfinish] THEN
-  REWRITE_TAC[VECTOR_MUL_RZERO] THEN REPEAT CONJ_TAC THENL
-   [MATCH_MP_TAC(REWRITE_RULE[o_DEF] CONTINUOUS_ON_COMPOSE) THEN
-    ASM_SIMP_TAC[CONTINUOUS_ON_CMUL; CONTINUOUS_ON_ID] THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [path]) THEN
-    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CONTINUOUS_ON_SUBSET);
-    ONCE_REWRITE_TAC[GSYM o_DEF] THEN REWRITE_TAC[IMAGE_o] THEN
-    MATCH_MP_TAC IMAGE_SUBSET;
-    AP_TERM_TAC THEN REWRITE_TAC[GSYM DROP_EQ; DROP_CMUL; DROP_VEC] THEN
-    REWRITE_TAC[REAL_MUL_RID]] THEN
-  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INTERVAL_1]) THEN
-  SIMP_TAC[IN_INTERVAL_1; DROP_CMUL; DROP_VEC; REAL_LE_MUL] THEN
-  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_LID] THEN
-  MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[]);;
-
-let PATH_CONNECTED_PATH_IMAGE = prove
- (`!p:real^1->real^N. path p ==> path_connected(path_image p)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[PATH_CONNECTED_IFF_PATH_COMPONENT] THEN
-  MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN STRIP_TAC THEN
-  MATCH_MP_TAC PATH_COMPONENT_TRANS THEN
-  EXISTS_TAC `pathstart p :real^N` THEN
-  ASM_MESON_TAC[PATH_COMPONENT_PATH_IMAGE_PATHSTART; PATH_COMPONENT_SYM]);;
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP PATH_CONNECTED_PATH_IMAGE) THEN
+  REWRITE_TAC[PATH_CONNECTED_IFF_PATH_COMPONENT] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[PATHSTART_IN_PATH_IMAGE]);;
 
 let PATH_CONNECTED_PATH_COMPONENT = prove
  (`!s x:real^N. path_connected(path_component s x)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[path_connected; IN] THEN
-  MAP_EVERY X_GEN_TAC [`y:real^N`; `z:real^N`] THEN STRIP_TAC THEN
-  SUBGOAL_THEN `path_component s y (z:real^N)` MP_TAC THENL
-   [ASM_MESON_TAC[PATH_COMPONENT_SYM; PATH_COMPONENT_TRANS]; ALL_TAC] THEN
-  REWRITE_TAC[path_component] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `p:real^1->real^N` THEN
-  STRIP_TAC THEN ASM_REWRITE_TAC[SUBSET] THEN
-  X_GEN_TAC `w:real^N` THEN DISCH_TAC THEN
-  SUBGOAL_THEN `path_component s (x:real^N) = path_component s y`
-  SUBST1_TAC THENL [ASM_MESON_TAC[PATH_COMPONENT_EQ; IN]; ALL_TAC] THEN
-  MP_TAC(ISPECL [`p:real^1->real^N`; `w:real^N`]
-     PATH_COMPONENT_PATH_IMAGE_PATHSTART) THEN
-  ASM_REWRITE_TAC[] THEN REWRITE_TAC[IN] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP PATH_COMPONENT_MONO) THEN
-  REWRITE_TAC[SUBSET; IN] THEN MESON_TAC[]);;
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`subtopology euclidean (s:real^N->bool)`; `x:real^N`]
+        PATH_CONNECTED_IN_PATH_COMPONENT_OF) THEN
+  REWRITE_TAC[PATH_CONNECTED_IN_SUBTOPOLOGY; PATH_CONNECTED_IN_EUCLIDEAN] THEN
+  SIMP_TAC[PATH_COMPONENT_OF_EUCLIDEAN]);;
 
 let PATH_COMPONENT = prove
  (`!s x y:real^N.

@@ -5504,38 +5504,201 @@ let HOMOLOGY_ADDITIVITY_AXIOM = prove
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Fact that our coefficient group is the integers.                          *)
+(* Special properties of singular homology, in particular the fact that the  *)
+(* zeroth homology group is isomorphic to the free abelian group generated   *)
+(* by the path components, and so the "coefficient group" is the integers.   *)
 (* ------------------------------------------------------------------------- *)
+
+let GROUP_ISOMORPHISM_INTEGER_ZEROTH_HOMOLOGY_GROUP = prove
+ (`!(top:A topology) f.
+        path_connected_space top /\ singular_simplex(0,top) f
+        ==> group_isomorphism (integer_group,homology_group(&0,top))
+              (group_zpow (homology_group(&0,top))
+                          (homologous_rel(0,top,{}) (frag_of f)))`,
+  let lemma = prove
+   (`!(top:A topology) f f'.
+          path_connected_space top /\
+          singular_simplex (0,top) f /\ singular_simplex (0,top) f'
+          ==> homologous_rel (0,top,{}) (frag_of f) (frag_of f')`,
+    REPEAT GEN_TAC THEN REWRITE_TAC[singular_simplex; STANDARD_SIMPLEX_0] THEN
+    ABBREV_TAC `p:num->real = \j. if j = 0 then &1 else &0` THEN STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o SPECL
+     [`(f:(num->real)->A) p`; `(f':(num->real)->A) p`] o
+     GEN_REWRITE_RULE I [path_connected_space]) THEN
+    ANTS_TAC THENL
+     [REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [continuous_map])) THEN
+      REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; TOPSPACE_PRODUCT_TOPOLOGY] THEN
+      REWRITE_TAC[o_DEF; TOPSPACE_EUCLIDEANREAL; CARTESIAN_PRODUCT_UNIV] THEN
+      SET_TAC[];
+      REWRITE_TAC[path_in; LEFT_IMP_EXISTS_THM]] THEN
+    X_GEN_TAC `g:real->A` THEN STRIP_TAC THEN
+    REWRITE_TAC[homologous_rel; SINGULAR_BOUNDARY] THEN
+    EXISTS_TAC `frag_of(RESTRICTION (standard_simplex 1)
+                   ((g:real->A) o (\x:num->real. x 0)))` THEN
+    REWRITE_TAC[SINGULAR_CHAIN_OF; CHAIN_BOUNDARY_OF] THEN
+    CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[NUMSEG_CONV `0..1`] THEN
+    SIMP_TAC[ITERATE_CLAUSES; MONOIDAL_FRAG_ADD; FINITE_INSERT; FINITE_EMPTY;
+             NOT_IN_EMPTY; IN_INSERT; NEUTRAL_FRAG_ADD] THEN
+    CONV_TAC NUM_REDUCE_CONV THEN CONJ_TAC THENL
+     [REWRITE_TAC[singular_simplex] THEN
+      REWRITE_TAC[REWRITE_RULE[IN] RESTRICTION_IN_EXTENSIONAL] THEN
+      SIMP_TAC[RESTRICTION_CONTINUOUS_MAP; TOPSPACE_SUBTOPOLOGY;
+               INTER_SUBSET] THEN
+      MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+      EXISTS_TAC `subtopology euclideanreal (real_interval [&0,&1])` THEN
+      ASM_REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+      SIMP_TAC[CONTINUOUS_MAP_PRODUCT_PROJECTION; IN_UNIV;
+               CONTINUOUS_MAP_FROM_SUBTOPOLOGY; TOPSPACE_SUBTOPOLOGY] THEN
+      MATCH_MP_TAC(SET_RULE
+       `(!x. x IN s ==> f x IN t) ==> IMAGE f (u INTER s) SUBSET t`) THEN
+      SIMP_TAC[standard_simplex; IN_REAL_INTERVAL; IN_ELIM_THM];
+      CONV_TAC INT_REDUCE_CONV THEN MATCH_MP_TAC(FRAG_MODULE
+       `x = x' /\ y = y'
+        ==> frag_add (frag_cmul (&1) x)
+                     (frag_add (frag_cmul (-- &1) y) frag_0) =
+            frag_sub x' y'`) THEN
+      CONJ_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[singular_face] THEN
+      ASM_REWRITE_TAC[SUB_REFL; STANDARD_SIMPLEX_0] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[EXTENSIONAL; IN_ELIM_THM; IN_SING]) THEN
+      GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `x:num->real` THEN
+      ASM_CASES_TAC `x:num->real = p` THEN
+      ASM_SIMP_TAC[RESTRICTION; IN_SING; o_THM] THEN
+      REWRITE_TAC[face_map; CONJUNCT1 LT] THEN CONV_TAC NUM_REDUCE_CONV THEN
+      ASM_REWRITE_TAC[standard_simplex; IN_ELIM_THM] THEN
+      UNDISCH_THEN `x:num->real = p` SUBST1_TAC THEN
+      REWRITE_TAC[num_CONV `1`; SUM_CLAUSES_NUMSEG] THEN
+      EXPAND_TAC "p" THEN REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV THEN
+      CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_REWRITE_TAC[] THEN
+      MATCH_MP_TAC(MESON[] `p ==> (if p then x else y) = x`) THEN
+      REPEAT STRIP_TAC THEN
+      REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+      CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_ARITH_TAC]) in
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `singular_relcycle(0,top:A topology,{}) (frag_of f)`
+  ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[SINGULAR_CYCLE; SINGULAR_CHAIN_OF] THEN
+    REWRITE_TAC[chain_boundary];
+    ALL_TAC] THEN
+  ABBREV_TAC `q = homologous_rel(0,top:A topology,{}) (frag_of f)` THEN
+  SUBGOAL_THEN `q IN group_carrier (homology_group (&0,top:A topology))`
+  ASSUME_TAC THENL
+   [REWRITE_TAC[homology_group; RELATIVE_HOMOLOGY_GROUP] THEN
+    EXPAND_TAC "q" THEN ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+    REWRITE_TAC[ETA_AX] THEN MATCH_MP_TAC FUN_IN_IMAGE THEN
+    ASM_REWRITE_TAC[IN_ELIM_THM];
+    ALL_TAC] THEN
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM;
+              GROUP_EPIMORPHISM_ALT; GROUP_MONOMORPHISM_ALT] THEN
+  ASM_SIMP_TAC[GROUP_HOMOMORPHISM_GROUP_ZPOW] THEN
+  SUBGOAL_THEN
+   `group_zpow (homology_group (&0,top)) q =
+    \n. homologous_rel(0,top:A topology,{}) (frag_cmul n (frag_of f))`
+  SUBST1_TAC THENL
+   [GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `n:int` THEN
+    EXPAND_TAC "q" THEN SIMP_TAC[GSYM RIGHT_COSET_SINGULAR_RELBOUNDARY] THEN
+    SIMP_TAC[homology_group; relative_homology_group; INT_LT_REFL;
+             NUM_OF_INT_OF_NUM] THEN
+    ASM_SIMP_TAC[QUOTIENT_GROUP_ZPOW; CONJUNCT1 RELCYCLE_GROUP; IN;
+                 NORMAL_SUBGROUP_SINGULAR_RELBOUNDARY_RELCYCLE] THEN
+    AP_TERM_TAC THEN
+    REWRITE_TAC[GROUP_ZPOW_SUBGROUP_GENERATED; relcycle_group] THEN
+    REWRITE_TAC[FREE_ABELIAN_GROUP_ZPOW; chain_group];
+    ALL_TAC] THEN
+  REWRITE_TAC[INTEGER_GROUP; IN_UNIV; homology_group] THEN
+  REWRITE_TAC[group_image; SUBSET; RELATIVE_HOMOLOGY_GROUP] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; INTEGER_GROUP; IN_UNIV] THEN
+  REWRITE_TAC[HOMOLOGOUS_REL_EQ_RELBOUNDARY] THEN CONJ_TAC THENL
+   [X_GEN_TAC `n:int` THEN REWRITE_TAC[SINGULAR_BOUNDARY; ADD_CLAUSES] THEN
+    SUBGOAL_THEN
+     `!d. singular_chain (1,top:A topology) d
+          ==> frag_extend (\x. frag_of(f:(num->real)->A))
+                          (chain_boundary 1 d) = frag_0`
+    MP_TAC THENL
+     [REWRITE_TAC[singular_chain] THEN MATCH_MP_TAC FRAG_INDUCTION THEN
+      REWRITE_TAC[GSYM singular_chain] THEN
+      REWRITE_TAC[FRAG_EXTEND_0; CHAIN_BOUNDARY_0] THEN
+      SIMP_TAC[FRAG_EXTEND_SUB; CHAIN_BOUNDARY_SUB] THEN
+      REWRITE_TAC[FRAG_MODULE `frag_sub x frag_0 = x`; IN] THEN
+      X_GEN_TAC `g:(num->real)->A` THEN DISCH_TAC THEN
+      REWRITE_TAC[CHAIN_BOUNDARY_OF] THEN CONV_TAC NUM_REDUCE_CONV THEN
+      SIMP_TAC[MATCH_MP ITERATE_CLAUSES_NUMSEG MONOIDAL_FRAG_ADD; num_CONV `1`;
+               LE_0; FRAG_EXTEND_ADD; FRAG_EXTEND_CMUL; FRAG_EXTEND_OF] THEN
+      CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC INT_REDUCE_CONV THEN
+      CONV_TAC FRAG_MODULE;
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN MATCH_MP_TAC MONO_FORALL THEN
+      GEN_TAC THEN DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+      ASM_REWRITE_TAC[FRAG_EXTEND_OF; FRAG_EXTEND_CMUL; FRAG_MODULE
+       `frag_cmul n t = frag_0 <=> n = &0 \/ t = frag_0`] THEN
+      REWRITE_TAC[FRAG_OF_NONZERO]];
+    REWRITE_TAC[SINGULAR_CYCLE; IN_IMAGE; IN_UNIV; HOMOLOGOUS_REL_EQ] THEN
+    MATCH_MP_TAC(MESON[] `(!x. P x ==> R x) ==> (!x. P x /\ Q x ==> R x)`) THEN
+    REWRITE_TAC[singular_chain] THEN MATCH_MP_TAC FRAG_INDUCTION THEN
+    REPEAT CONJ_TAC THENL
+     [EXISTS_TAC `&0:int` THEN REWRITE_TAC[HOMOLOGOUS_REL_REFL;
+        FRAG_MODULE `frag_cmul (&0) x = frag_0`];
+      ALL_TAC;
+      REWRITE_TAC[LEFT_AND_EXISTS_THM; RIGHT_AND_EXISTS_THM] THEN
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN REPEAT GEN_TAC THEN
+      DISCH_THEN(MP_TAC o MATCH_MP HOMOLOGOUS_REL_SUB) THEN
+      REWRITE_TAC[FRAG_MODULE
+       `frag_sub (frag_cmul a c) (frag_cmul b c) = frag_cmul (a - b) c`] THEN
+      MESON_TAC[]] THEN
+    REWRITE_TAC[IN] THEN X_GEN_TAC `f':(num->real)->A` THEN DISCH_TAC THEN
+    EXISTS_TAC `&1:int` THEN
+    REWRITE_TAC[FRAG_MODULE `frag_cmul (&1) x = x`] THEN
+    ASM_MESON_TAC[lemma]]);;
+
+let ISOMORPHIC_GROUP_INTEGER_ZEROTH_HOMOLOGY_GROUP = prove
+ (`!top:A topology.
+        path_connected_space top /\ ~(topspace top = {})
+        ==> homology_group(&0,top) isomorphic_group integer_group`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?f. singular_simplex(0,top:A topology) f`
+  STRIP_ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `a:A`) THEN
+    EXISTS_TAC `RESTRICTION (standard_simplex 0) (\x. (a:A))` THEN
+    SIMP_TAC[singular_simplex; RESTRICTION_CONTINUOUS_MAP;
+             TOPSPACE_SUBTOPOLOGY; INTER_SUBSET; CONTINUOUS_MAP_CONST;
+             REWRITE_RULE[IN] RESTRICTION_IN_EXTENSIONAL] THEN
+    ASM_REWRITE_TAC[];
+    ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+    REWRITE_TAC[isomorphic_group] THEN
+    ASM_MESON_TAC[GROUP_ISOMORPHISM_INTEGER_ZEROTH_HOMOLOGY_GROUP]]);;
 
 let HOMOLOGY_COEFFICIENTS = prove
  (`!top (a:A).
         topspace top = {a}
         ==> homology_group(&0,top) isomorphic_group integer_group`,
   REPEAT STRIP_TAC THEN
-  REWRITE_TAC[relative_homology_group; homology_group] THEN
-  REWRITE_TAC[INT_LT_REFL; NUM_OF_INT_OF_NUM] THEN
-  SUBGOAL_THEN
-   `singular_relboundary (0,top:A topology,{}) =
-    {group_id(relcycle_group(0,top,{}))}`
-  SUBST1_TAC THENL
-   [REWRITE_TAC[RELCYCLE_GROUP; FUN_EQ_THM] THEN
-    FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP SINGULAR_BOUNDARY_SING th]) THEN
-    X_GEN_TAC `c:((num->real)->A)frag` THEN CONV_TAC NUM_REDUCE_CONV THEN
-    REWRITE_TAC[INSERT; IN_ELIM_THM; NOT_IN_EMPTY] THEN
-    MESON_TAC[SINGULAR_CHAIN_0];
-    W(MP_TAC o PART_MATCH lhand QUOTIENT_GROUP_TRIVIAL o lhand o snd)] THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] ISOMORPHIC_GROUP_TRANS) THEN
-  ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
-  REWRITE_TAC[isomorphic_group] THEN EXISTS_TAC
-    `\b. frag_cmul b
-           (frag_of (RESTRICTION (standard_simplex 0) (\x. (a:A))))` THEN
-  REWRITE_TAC[GROUP_ISOMORPHISM_ALT; RELCYCLE_GROUP; INTEGER_GROUP] THEN
-  REWRITE_TAC[IN_UNIV; FRAG_MODULE
-   `frag_cmul (x + y) c = frag_add (frag_cmul x c) (frag_cmul y c)`] THEN
-  REWRITE_TAC[FRAG_OF_NONZERO; FRAG_MODULE
-   `frag_cmul a b = frag_0 <=> a = &0 \/ b = frag_0`] THEN
-  TRANS_TAC EQ_TRANS `singular_chain(0,top:A topology)` THEN CONJ_TAC THENL
-   [FIRST_ASSUM(MP_TAC o SPEC `0` o MATCH_MP SINGULAR_CHAIN_SING) THEN
-    SET_TAC[];
-    REWRITE_TAC[FUN_EQ_THM] THEN
-    FIRST_ASSUM(fun th -> REWRITE_TAC[MATCH_MP SINGULAR_CYCLE_SING th])]);;
+  MATCH_MP_TAC ISOMORPHIC_GROUP_INTEGER_ZEROTH_HOMOLOGY_GROUP THEN
+  ASM_REWRITE_TAC[GSYM PATH_CONNECTED_IN_TOPSPACE; NOT_INSERT_EMPTY] THEN
+  ASM_REWRITE_TAC[PATH_CONNECTED_IN_SING; IN_SING]);;
+
+let ZEROTH_HOMOLOGY_GROUP = prove
+ (`!top:A topology.
+        homology_group(&0,top) isomorphic_group
+        free_abelian_group (path_components_of top)`,
+  GEN_TAC THEN TRANS_TAC ISOMORPHIC_GROUP_TRANS
+   `sum_group (path_components_of top)
+       (\s:A->bool. homology_group(&0,subtopology top s))` THEN
+  CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+    MP_TAC(ISPECL [`&0:int`; `top:A topology`;
+                   `path_components_of(top:A topology)`]
+      HOMOLOGY_ADDITIVITY_AXIOM_GEN) THEN
+    REWRITE_TAC[isomorphic_group] THEN
+    ANTS_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+    REWRITE_TAC[PAIRWISE_DISJOINT_PATH_COMPONENTS_OF] THEN
+    REWRITE_TAC[UNIONS_PATH_COMPONENTS_OF] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC PATH_COMPONENTS_OF_MAXIMAL THEN
+    EXISTS_TAC `top:A topology` THEN ASM SET_TAC[];
+    TRANS_TAC ISOMORPHIC_GROUP_TRANS
+     `sum_group (path_components_of (top:A topology)) (\i. integer_group)` THEN
+    REWRITE_TAC[ISOMORPHIC_SUM_INTEGER_GROUP] THEN
+    MATCH_MP_TAC ISOMORPHIC_GROUP_SUM_GROUP THEN
+    REWRITE_TAC[] THEN X_GEN_TAC `s:A->bool` THEN DISCH_TAC THEN
+    MATCH_MP_TAC ISOMORPHIC_GROUP_INTEGER_ZEROTH_HOMOLOGY_GROUP THEN
+    ASM_SIMP_TAC[TOPSPACE_SUBTOPOLOGY_SUBSET; PATH_COMPONENTS_OF_SUBSET;
+     REWRITE_RULE[path_connected_in] PATH_CONNECTED_IN_PATH_COMPONENTS_OF] THEN
+    ASM_MESON_TAC[NONEMPTY_PATH_COMPONENTS_OF]]);;

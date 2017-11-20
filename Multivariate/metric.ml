@@ -10682,6 +10682,12 @@ let PATH_IN_SUBTOPOLOGY = prove
   SIMP_TAC[continuous_map; TOPSPACE_SUBTOPOLOGY; TOPSPACE_EUCLIDEANREAL] THEN
   SET_TAC[]);;
 
+let PATH_IN_CONST = prove
+ (`!top a:A. path_in top (\x. a) <=> a IN topspace top`,
+  REWRITE_TAC[path_in; CONTINUOUS_MAP_CONST] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; REAL_INTERVAL_EQ_EMPTY] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
+
 let path_connected_space = new_definition
  `path_connected_space top <=>
         !x y:A. x IN topspace top /\ y IN topspace top
@@ -10761,6 +10767,13 @@ let PATH_CONNECTED_IN_EMPTY = prove
  (`!top:A topology. path_connected_in top {}`,
   SIMP_TAC[path_connected_in; PATH_CONNECTED_SPACE_TOPSPACE_EMPTY;
            EMPTY_SUBSET; TOPSPACE_SUBTOPOLOGY; INTER_EMPTY]);;
+
+let PATH_CONNECTED_IN_SING = prove
+ (`!top a:A. path_connected_in top {a} <=> a IN topspace top`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[PATH_CONNECTED_IN; SING_SUBSET] THEN
+  ASM_CASES_TAC `(a:A) IN topspace top` THEN ASM_REWRITE_TAC[IN_SING] THEN
+  REPEAT STRIP_TAC THEN EXISTS_TAC `(\x. a):real->A` THEN
+  ASM_REWRITE_TAC[path_in; CONTINUOUS_MAP_CONST] THEN SET_TAC[]);;
 
 let PATH_CONNECTED_IN_CONTINUOUS_MAP_IMAGE = prove
  (`!f:A->B top top' s.
@@ -10909,6 +10922,242 @@ let PATH_CONNECTED_IN_EUCLIDEANREAL = prove
   MAP_EVERY EXISTS_TAC [`min x y:real`; `max x y:real`] THEN
   ASM_REWRITE_TAC[] THEN REWRITE_TAC[real_min; real_max] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Path components.                                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let path_component_of = new_definition
+ `path_component_of top x y <=>
+        ?g. path_in top g /\ g(&0) = x /\ g(&1) = y`;;
+
+let path_components_of = new_definition
+ `path_components_of top = {path_component_of top x |x| x IN topspace top}`;;
+
+let PATH_COMPONENT_IN_TOPSPACE = prove
+ (`!top x y:A.
+        path_component_of top x y ==> x IN topspace top /\ y IN topspace top`,
+  REWRITE_TAC[path_component_of; path_in; continuous_map] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+  REPEAT STRIP_TAC THEN REPEAT(FIRST_X_ASSUM(SUBST1_TAC o SYM)) THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[IN_REAL_INTERVAL] THEN
+  REAL_ARITH_TAC);;
+
+let PATH_COMPONENT_OF_REFL = prove
+ (`!top x:A. path_component_of top x x <=> x IN topspace top`,
+  REPEAT GEN_TAC THEN
+  EQ_TAC THENL [MESON_TAC[PATH_COMPONENT_IN_TOPSPACE]; DISCH_TAC] THEN
+  REWRITE_TAC[path_component_of] THEN
+  EXISTS_TAC `(\t. x):real->A` THEN ASM_REWRITE_TAC[PATH_IN_CONST]);;
+
+let PATH_COMPONENT_OF_SYM = prove
+ (`!top x y:A. path_component_of top x y <=> path_component_of top y x`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[path_component_of; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:real->A` THEN REWRITE_TAC[path_in] THEN STRIP_TAC THEN
+  EXISTS_TAC `(g:real->A) o (\t. &1 - t)` THEN
+  REWRITE_TAC[o_THM] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `subtopology euclideanreal (real_interval [&0,&1])` THEN
+  ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[IN_REAL_INTERVAL] THEN
+  (CONJ_TAC THENL [ALL_TAC; REAL_ARITH_TAC]) THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_REAL_SUB THEN
+  REWRITE_TAC[CONTINUOUS_MAP_REAL_CONST; CONTINUOUS_MAP_ID]);;
+
+let PATH_COMPONENT_OF_TRANS = prove
+ (`!top x y z:A.
+        path_component_of top x y /\ path_component_of top y z
+        ==> path_component_of top x z`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[path_component_of; path_in] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (X_CHOOSE_THEN `g1:real->A` STRIP_ASSUME_TAC)
+   (X_CHOOSE_THEN `g2:real->A` STRIP_ASSUME_TAC)) THEN
+  EXISTS_TAC
+   `\x. if x <= &1 / &2 then ((g1:real->A) o (\t. &2 * t)) x
+        else (g2 o (\t. &2 * t - &1)) x` THEN
+  REWRITE_TAC[o_THM] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONTINUOUS_MAP_CASES_LE THEN
+  REWRITE_TAC[CONTINUOUS_MAP_REAL_CONST] THEN
+  SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_ID] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+  EXISTS_TAC `subtopology euclideanreal (real_interval [&0,&1])` THEN
+  ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; SUBTOPOLOGY_SUBTOPOLOGY;
+        TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; SUBSET; FORALL_IN_IMAGE; IN_INTER;
+        IN_REAL_INTERVAL; IN_ELIM_THM] THEN
+  (CONJ_TAC THENL [ALL_TAC; REAL_ARITH_TAC]) THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
+  REPEAT(MATCH_MP_TAC CONTINUOUS_MAP_REAL_SUB) THEN REPEAT CONJ_TAC THEN
+  REPEAT(MATCH_MP_TAC CONTINUOUS_MAP_REAL_MUL) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_REAL_CONST; CONTINUOUS_MAP_ID]);;
+
+let PATH_COMPONENT_OF_SET = prove
+ (`!top x:A.
+        path_component_of top x =
+        {y | ?g. path_in top g /\ g(&0) = x /\ g(&1) = y}`,
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+  REWRITE_TAC[IN; path_component_of]);;
+
+let PATH_COMPONENT_OF_SUBSET = prove
+ (`!top x. (path_component_of top x) SUBSET topspace top`,
+  REWRITE_TAC[SUBSET; IN] THEN MESON_TAC[PATH_COMPONENT_IN_TOPSPACE; IN]);;
+
+let PATH_COMPONENT_OF_EQ_EMPTY = prove
+ (`!top x. path_component_of top x = {} <=> ~(x IN topspace top)`,
+  REWRITE_TAC[EXTENSION; NOT_IN_EMPTY] THEN
+  MESON_TAC[IN; PATH_COMPONENT_OF_REFL; PATH_COMPONENT_IN_TOPSPACE]);;
+
+let PATH_CONNECTED_SPACE_IFF_PATH_COMPONENT = prove
+ (`!top:A topology.
+        path_connected_space top <=>
+        !x y. x IN topspace top /\ y IN topspace top
+              ==> path_component_of top x y`,
+  REWRITE_TAC[path_connected_space; path_component_of]);;
+
+let PATH_CONNECTED_SPACE_IMP_PATH_COMPONENT_OF = prove
+ (`!top a b:A.
+        path_connected_space top /\ a IN topspace top /\ b IN topspace top
+        ==> path_component_of top a b`,
+  MESON_TAC[PATH_CONNECTED_SPACE_IFF_PATH_COMPONENT]);;
+
+let PATH_CONNECTED_SPACE_PATH_COMPONENT_SET = prove
+ (`!top. path_connected_space top <=>
+         !x:A. x IN topspace top ==> path_component_of top x = topspace top`,
+  REWRITE_TAC[PATH_CONNECTED_SPACE_IFF_PATH_COMPONENT;
+              GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[PATH_COMPONENT_OF_SUBSET] THEN SET_TAC[]);;
+
+let PATH_COMPONENT_OF_MAXIMAL = prove
+ (`!top s x:A.
+     path_connected_in top s /\ x IN s ==> s SUBSET (path_component_of top x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[PATH_CONNECTED_IN] THEN STRIP_TAC THEN
+  REWRITE_TAC[SUBSET; PATH_COMPONENT_OF_SET; IN_ELIM_THM] THEN
+  ASM_MESON_TAC[]);;
+
+let PATH_COMPONENT_OF_EQUIV = prove
+ (`!top x y:A.
+        path_component_of top x y <=>
+        x IN topspace top /\ y IN topspace top /\
+        path_component_of top x = path_component_of top y`,
+  REWRITE_TAC[FUN_EQ_THM] THEN
+  MESON_TAC[PATH_COMPONENT_OF_REFL; PATH_COMPONENT_OF_TRANS;
+            PATH_COMPONENT_OF_SYM]);;
+
+let PATH_COMPONENT_OF_DISJOINT = prove
+ (`!top x y:A.
+        DISJOINT (path_component_of top x) (path_component_of top y) <=>
+        ~(path_component_of top x y)`,
+  REWRITE_TAC[DISJOINT; EXTENSION; IN_INTER; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[IN] THEN
+  MESON_TAC[PATH_COMPONENT_OF_SYM; PATH_COMPONENT_OF_TRANS]);;
+
+let PATH_COMPONENT_OF_EQ = prove
+ (`!top x y:A.
+        path_component_of top x = path_component_of top y <=>
+        ~(x IN topspace top) /\ ~(y IN topspace top) \/
+        x IN topspace top /\ y IN topspace top /\ path_component_of top x y`,
+  MESON_TAC[PATH_COMPONENT_OF_REFL; PATH_COMPONENT_OF_EQUIV;
+            PATH_COMPONENT_OF_EQ_EMPTY]);;
+
+let PATH_CONNECTED_IN_PATH_IMAGE = prove
+ (`!top g:real->A.
+     path_in top g ==> path_connected_in top (IMAGE g (real_interval[&0,&1]))`,
+  REWRITE_TAC[path_in] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[PATH_CONNECTED_SPACE_IFF_PATH_COMPONENT; path_connected_in] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE) THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+  SIMP_TAC[TOPSPACE_SUBTOPOLOGY_SUBSET] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `!x. x IN IMAGE g (real_interval[&0,&1])
+        ==> path_component_of
+             (subtopology top (IMAGE g (real_interval[&0,&1])))
+             (g(&0)) (x:A)`
+  MP_TAC THENL
+   [REWRITE_TAC[FORALL_IN_IMAGE; IN_REAL_INTERVAL];
+    MESON_TAC[PATH_COMPONENT_OF_SYM; PATH_COMPONENT_OF_TRANS]] THEN
+  X_GEN_TAC `a:real` THEN DISCH_TAC THEN
+  REWRITE_TAC[path_component_of] THEN
+  EXISTS_TAC `(g:real->A) o (\x. a * x)` THEN
+  REWRITE_TAC[path_in; o_THM; REAL_MUL_RZERO; REAL_MUL_RID] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; IMAGE_o] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+    EXISTS_TAC `subtopology euclideanreal (real_interval [&0,&1])` THEN
+    ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; SUBSET; FORALL_IN_IMAGE;
+                TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; IN_REAL_INTERVAL] THEN
+    ASM_SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_REAL_LMUL;
+                 CONTINUOUS_MAP_ID];
+    MATCH_MP_TAC IMAGE_SUBSET THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE;
+                TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; IN_REAL_INTERVAL]] THEN
+  ASM_SIMP_TAC[REAL_LE_MUL] THEN REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM REAL_MUL_RID] THEN
+  MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[]);;
+
+let PATH_CONNECTED_IN_PATH_COMPONENT_OF = prove
+ (`!top x:A. path_connected_in top (path_component_of top x)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[path_connected_in; PATH_COMPONENT_OF_SUBSET] THEN
+  REWRITE_TAC[PATH_CONNECTED_SPACE_IFF_PATH_COMPONENT] THEN
+  SIMP_TAC[TOPSPACE_SUBTOPOLOGY_SUBSET; PATH_COMPONENT_OF_SUBSET] THEN
+  SUBGOAL_THEN
+   `!y. y IN path_component_of top (x:A)
+        ==> path_component_of (subtopology top (path_component_of top x)) x y`
+  MP_TAC THENL
+   [X_GEN_TAC `y:A` THEN REWRITE_TAC[IN];
+    MESON_TAC[PATH_COMPONENT_OF_SYM; PATH_COMPONENT_OF_TRANS]] THEN
+  REWRITE_TAC[path_component_of] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `g:real->A` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[PATH_IN_SUBTOPOLOGY; SET_RULE
+   `(!x. x IN s ==> f x IN t) <=> IMAGE f s SUBSET t`] THEN
+  MATCH_MP_TAC PATH_COMPONENT_OF_MAXIMAL THEN
+  ASM_SIMP_TAC[PATH_CONNECTED_IN_PATH_IMAGE; IN_IMAGE] THEN
+  EXISTS_TAC `&0:real` THEN ASM_REWRITE_TAC[IN_REAL_INTERVAL] THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+let UNIONS_PATH_COMPONENTS_OF = prove
+ (`!top:A topology. UNIONS (path_components_of top) = topspace top`,
+  GEN_TAC THEN REWRITE_TAC[path_components_of] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN
+  REWRITE_TAC[UNIONS_SUBSET; FORALL_IN_GSPEC; PATH_COMPONENT_OF_SUBSET] THEN
+  REWRITE_TAC[SUBSET; UNIONS_GSPEC; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN EXISTS_TAC `x:A` THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[IN] THEN
+  ASM_REWRITE_TAC[PATH_COMPONENT_OF_REFL]);;
+
+let PATH_COMPONENTS_OF_MAXIMAL = prove
+ (`!top s c:A->bool.
+        c IN path_components_of top /\ path_connected_in top s /\ ~DISJOINT c s
+        ==> s SUBSET c`,
+  REWRITE_TAC[path_components_of; IMP_CONJ; FORALL_IN_GSPEC;
+    LEFT_IMP_EXISTS_THM; SET_RULE `~DISJOINT P t <=> ?x. P x /\ x IN t`] THEN
+  SIMP_TAC[PATH_COMPONENT_OF_EQUIV] THEN
+  MESON_TAC[PATH_COMPONENT_OF_MAXIMAL]);;
+
+let PAIRWISE_DISJOINT_PATH_COMPONENTS_OF = prove
+ (`!top:A topology. pairwise DISJOINT (path_components_of top)`,
+  SIMP_TAC[pairwise; IMP_CONJ; path_components_of; RIGHT_IMP_FORALL_THM] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; RIGHT_FORALL_IMP_THM] THEN
+  SIMP_TAC[PATH_COMPONENT_OF_EQ; PATH_COMPONENT_OF_DISJOINT]);;
+
+let NONEMPTY_PATH_COMPONENTS_OF = prove
+ (`!top c:A->bool. c IN path_components_of top ==> ~(c = {})`,
+  SIMP_TAC[path_components_of; FORALL_IN_GSPEC; PATH_COMPONENT_OF_EQ_EMPTY]);;
+
+let PATH_COMPONENTS_OF_SUBSET = prove
+ (`!top c:A->bool. c IN path_components_of top ==> c SUBSET topspace top`,
+  SIMP_TAC[path_components_of; FORALL_IN_GSPEC; PATH_COMPONENT_OF_SUBSET]);;
+
+let PATH_CONNECTED_IN_PATH_COMPONENTS_OF = prove
+ (`!top c:A->bool. c IN path_components_of top ==> path_connected_in top c`,
+  REWRITE_TAC[path_components_of; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[PATH_CONNECTED_IN_PATH_COMPONENT_OF]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Normal spaces including Urysohn's lemma and the Tietze extension theorem. *)

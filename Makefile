@@ -32,8 +32,17 @@ HOLSRC=system.ml lib.ml fusion.ml basics.ml nets.ml preterm.ml          \
 
 OCAML_VERSION=`ocamlc -version | cut -c1-4`
 OCAML_BINARY_VERSION=`ocamlc -version | cut -c1-3`
+OCAML_UNARY_VERSION=`ocamlc -version | cut -c1`
 CAMLP5_BINARY_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -c1`
 CAMLP5_VERSION=`camlp5 -v 2>&1 | cut -f3 -d' ' | cut -f1-3 -d'.' | cut -c1-6`
+
+# Main target
+
+default: update_database.ml pa_j.cmo;
+
+# Choose an appropriate "update_database.ml" file
+
+update_database.ml:; cp update_database_${OCAML_UNARY_VERSION}.ml update_database.ml
 
 # Build the camlp4 syntax extension file (camlp5 for OCaml >= 3.10)
 
@@ -131,4 +140,4 @@ install: hol hol.multivariate hol.sosa hol.card hol.complex; cp hol hol.multivar
 
 # Clean up all compiled files
 
-clean:; rm -f pa_j.ml pa_j.cmi pa_j.cmo hol hol.multivariate hol.sosa hol.card hol.complex;
+clean:; rm -f update_database.ml pa_j.ml pa_j.cmi pa_j.cmo hol hol.multivariate hol.sosa hol.card hol.complex;

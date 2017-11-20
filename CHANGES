@@ -8,6 +8,15 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 18th Nov 2017       Makefile, update_database_3.ml, update_database_4.ml [new file]
+
+Incorporated an improved "update_database.ml" file from Michael Färber which 
+handles theorems inside modules; this had otherwise started failing in more 
+recent versions of OCaml. Rather than add yet more version-dependent logic into 
+the files themselves, renamed the old "update_database.ml" file as
+"update_database_3.ml", called the new one "update_database_4.ml" and modified
+the Makefile to copy the appropriate one to "update_database.ml".
+
 Mon 29th Oct 2017       iter.ml
 
 Fixed a weird fumble in ITERATE_CLAUSES_GEN where there was a
