@@ -147,6 +147,10 @@ let FRAG_SUPPORT_EQ_EMPTY = prove
   REWRITE_TAC[MESON[frag_tybij] `c = d <=> dest_frag c = dest_frag d`] THEN
   REWRITE_TAC[DEST_FRAG_0; FUN_EQ_THM; frag_support; IN_ELIM_THM]);;
 
+let FRAG_OF_EQ = prove
+ (`!x y:A. frag_of x = frag_of y <=> x = y`,
+  MESON_TAC[FRAG_SUPPORT_OF; SET_RULE `{x} = {y} <=> x = y`]);;
+
 let FRAG_ADD_EQ_0 = prove
  (`!c1 c2:A frag.
         DISJOINT (frag_support c1) (frag_support c2) /\

@@ -4700,6 +4700,26 @@ let FREE_ABELIAN_GROUP_ZPOW = prove
   REWRITE_TAC[GROUP_ZPOW_POW; FREE_ABELIAN_GROUP_POW; FREE_ABELIAN_GROUP] THEN
   CONV_TAC FRAG_MODULE);;
 
+let FRAG_OF_IN_FREE_ABELIAN_GROUP = prove
+ (`!s x:A. frag_of x IN group_carrier(free_abelian_group s) <=> x IN s`,
+  REWRITE_TAC[FREE_ABELIAN_GROUP; FRAG_SUPPORT_OF; SING_SUBSET; IN_ELIM_THM]);;
+
+let FREE_ABELIAN_GROUP_INDUCT = prove
+ (`!P s:A->bool.
+        P(frag_0) /\
+        (!x y. x IN group_carrier(free_abelian_group s) /\
+               y IN group_carrier(free_abelian_group s) /\
+               P x /\ P y
+               ==> P(frag_sub x y)) /\
+        (!a. a IN s ==> P(frag_of a))
+        ==> !x. x IN group_carrier(free_abelian_group s) ==> P x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[FREE_ABELIAN_GROUP; IN_ELIM_THM] THEN
+  STRIP_TAC THEN
+  ONCE_REWRITE_TAC[TAUT `p ==> q <=> p ==> p /\ q`] THEN
+  MATCH_MP_TAC FRAG_INDUCTION THEN
+  ASM_SIMP_TAC[FRAG_SUPPORT_OF; FRAG_SUPPORT_0; EMPTY_SUBSET; SING_SUBSET] THEN
+  ASM_MESON_TAC[FRAG_SUPPORT_SUB; SUBSET_TRANS; UNION_SUBSET]);;
+
 let FREE_ABELIAN_GROUP_UNIVERSAL = prove
  (`!(f:A->B) s G.
         IMAGE f s SUBSET group_carrier G /\ abelian_group G
@@ -4921,3 +4941,675 @@ let group_exactness = new_definition
  `group_exactness (G,H,K) ((f:A->B),(g:B->C)) <=>
         group_homomorphism (G,H) f /\ group_homomorphism (H,K) g /\
         group_image (G,H) f = group_kernel (H,K) g`;;
+
+let short_exact_sequence = new_definition
+ `short_exact_sequence(A,B,C) (f:A->B,g:B->C) <=>
+        group_monomorphism (A,B) f /\
+        group_exactness (A,B,C) (f,g) /\
+        group_epimorphism (B,C) g`;;
+
+let GROUP_EXACTNESS_MONOMORPHISM = prove
+ (`!f:(A->B) (g:B->C) A B C.
+        trivial_group A
+        ==> (group_exactness (A,B,C) (f,g) <=>
+             group_homomorphism(A,B) f /\ group_monomorphism (B,C) g)`,
+  SIMP_TAC[GROUP_MONOMORPHISM; group_exactness; trivial_group; group_image;
+           IMAGE_CLAUSES; group_homomorphism] THEN
+  MESON_TAC[]);;
+
+let GROUP_EXACTNESS_EPIMORPHISM = prove
+ (`!f:(A->B) (g:B->C) A B C.
+        trivial_group C
+        ==> (group_exactness (A,B,C) (f,g) <=>
+             group_epimorphism(A,B) f /\ group_homomorphism (B,C) g)`,
+  SIMP_TAC[GROUP_EPIMORPHISM; group_exactness; trivial_group] THEN
+  SIMP_TAC[group_homomorphism; group_kernel] THEN SET_TAC[]);;
+
+let EXTREMELY_SHORT_EXACT_SEQUENCE = prove
+ (`!f:(A->B) (g:B->C) A B C.
+        group_exactness (A,B,C) (f,g) /\
+        trivial_group A /\ trivial_group C
+        ==> trivial_group B`,
+  REWRITE_TAC[group_exactness] THEN
+  MESON_TAC[GROUP_KERNEL_TO_TRIVIAL_GROUP; GROUP_IMAGE_FROM_TRIVIAL_GROUP;
+            trivial_group]);;
+
+let GROUP_EXACTNESS_EPIMORPHISM_EQ_TRIVIALITY = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) A B C D.
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,D) (g,h)
+        ==> (group_epimorphism (A,B) f <=> trivial_homomorphism(B,C) g)`,
+  REWRITE_TAC[group_exactness; GROUP_EPIMORPHISM] THEN
+  SIMP_TAC[TRIVIAL_HOMOMORPHISM_GROUP_KERNEL]);;
+
+let GROUP_EXACTNESS_MONOMORPHISM_EQ_TRIVIALITY = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) A B C D.
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,D) (g,h)
+        ==> (group_monomorphism (C,D) h <=>  trivial_homomorphism(B,C) g)`,
+  REWRITE_TAC[group_exactness; GROUP_MONOMORPHISM] THEN
+  SIMP_TAC[TRIVIAL_HOMOMORPHISM_GROUP_IMAGE]);;
+
+let VERY_SHORT_EXACT_SEQUENCE = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) A B C D.
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,D) (g,h) /\
+        trivial_group A /\ trivial_group D
+        ==> group_isomorphism (B,C) g`,
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM] THEN
+  SIMP_TAC[GROUP_MONOMORPHISM; GROUP_EPIMORPHISM; group_exactness] THEN
+  MESON_TAC[GROUP_IMAGE_FROM_TRIVIAL_GROUP;
+            GROUP_KERNEL_TO_TRIVIAL_GROUP]);;
+
+let GROUP_EXACTNESS_EQ_TRIVIALITY = prove
+ (`!f:(A->B) (g:B->C) (h:C->D) (k:D->E) A B C D E.
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,D) (g,h) /\
+        group_exactness (C,D,E) (h,k)
+        ==> (trivial_group C <=>
+             group_epimorphism (A,B) f /\
+             group_monomorphism (D,E) k)`,
+  REWRITE_TAC[group_exactness; GROUP_EPIMORPHISM;
+              GROUP_MONOMORPHISM] THEN
+  ASM_MESON_TAC[trivial_group; GROUP_IMAGE_FROM_TRIVIAL_GROUP;
+                GROUP_KERNEL_IMAGE_TRIVIAL]);;
+
+let GROUP_EXACTNESS_IMP_TRIVIALITY = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) (k:D->E) A B C D E.
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,D) (g,h) /\
+        group_exactness (C,D,E) (h,k) /\
+        group_isomorphism (A,B) f /\
+        group_isomorphism (D,E) k
+        ==> trivial_group C`,
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM] THEN
+  MESON_TAC[GROUP_EXACTNESS_EQ_TRIVIALITY]);;
+
+let GROUP_EXACTNESS_ISOMORPHISM_EQ_TRIVIALITY = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) (j:D->E) (k:E->G) A B C D E G.
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,D) (g,h) /\
+        group_exactness (C,D,E) (h,j) /\
+        group_exactness (D,E,G) (j,k)
+        ==> (group_isomorphism (C,D) h <=>
+             trivial_homomorphism(B,C) g /\ trivial_homomorphism(D,E) j)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM] THEN
+  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(CONJUNCTS_THEN2
+   (MP_TAC o MATCH_MP GROUP_EXACTNESS_MONOMORPHISM_EQ_TRIVIALITY)
+   (MP_TAC o MATCH_MP GROUP_EXACTNESS_EPIMORPHISM_EQ_TRIVIALITY)) THEN
+  MESON_TAC[]);;
+
+let GROUP_EXACTNESS_ISOMORPHISM_EQ_MONO_EPI = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) (j:D->E) (k:E->G) A B C D E G.
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,D) (g,h) /\
+        group_exactness (C,D,E) (h,j) /\
+        group_exactness (D,E,G) (j,k)
+        ==> (group_isomorphism (C,D) h <=>
+             group_epimorphism(A,B) f /\ group_monomorphism(E,G) k)`,
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM;
+              GROUP_EPIMORPHISM; GROUP_MONOMORPHISM] THEN
+  REWRITE_TAC[group_exactness] THEN MESON_TAC[GROUP_KERNEL_IMAGE_TRIVIAL]);;
+
+let EXACT_SEQUENCE_SUM_LEMMA = prove
+ (`!(f:X->C) (g:X->D) (h:A->C) (i:A->X) (j:B->X) (k:B->D) A B C D X.
+        abelian_group X /\
+        group_isomorphism(A,C) h /\
+        group_isomorphism(B,D) k /\
+        group_exactness(A,X,D) (i,g) /\
+        group_exactness(B,X,C) (j,f) /\
+        (!x. x IN group_carrier A ==> f(i x) = h x) /\
+        (!x. x IN group_carrier B ==> g(j x) = k x)
+        ==> group_isomorphism (prod_group A B,X)
+                              (\(x,y). group_mul X (i x) (j y)) /\
+            group_isomorphism (X,prod_group C D) (\z. f z,g z)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[group_exactness] THEN STRIP_TAC THEN
+  ABBREV_TAC `ij:A#B->X = \(x,y). group_mul X (i x) (j y)` THEN
+  ABBREV_TAC `gf:X->C#D = \z. f z,g z` THEN
+  MATCH_MP_TAC GROUP_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV THEN
+  SUBGOAL_THEN `group_homomorphism (prod_group A B,X) (ij:A#B->X)`
+  ASSUME_TAC THENL
+   [EXPAND_TAC "ij" THEN REWRITE_TAC[LAMBDA_PAIR] THEN
+    MATCH_MP_TAC ABELIAN_GROUP_HOMOMORPHISM_GROUP_MUL THEN
+    ASM_REWRITE_TAC[] THEN CONJ_TAC THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+    ASM_REWRITE_TAC[GROUP_HOMOMORPHISM_OF_FST; GROUP_HOMOMORPHISM_OF_SND];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `group_homomorphism (X,prod_group C D) (gf:X->C#D)`
+  ASSUME_TAC THENL
+   [EXPAND_TAC "gf" THEN REWRITE_TAC[GROUP_HOMOMORPHISM_PAIRED] THEN
+    ASM_REWRITE_TAC[];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[GROUP_EPIMORPHISM_ALT] THEN CONJ_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC GROUP_ISOMORPHISM_EQ THEN
+    EXISTS_TAC `(\(x,y). h x,k y):A#B->C#D` THEN
+    ASM_REWRITE_TAC[GROUP_ISOMORPHISM_PAIRED2] THEN
+    MAP_EVERY EXPAND_TAC ["gf"; "ij"] THEN
+    REWRITE_TAC[PROD_GROUP; o_DEF; PAIR_EQ; IN_CROSS; FORALL_PAIR_THM] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE
+     [GROUP_ISOMORPHISM; group_homomorphism; SUBSET; FORALL_IN_IMAGE]) THEN
+    ASM_SIMP_TAC[GROUP_LID_EQ; GROUP_RID_EQ] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[group_image; group_kernel]) THEN
+    ASM SET_TAC[]] THEN
+  REWRITE_TAC[SUBSET] THEN X_GEN_TAC `x:X` THEN DISCH_TAC THEN
+  UNDISCH_TAC `group_image (B,X) (j:B->X) = group_kernel (X,C) (f:X->C)` THEN
+  MP_TAC(ASSUME `group_isomorphism (A,C) (h:A->C)`) THEN
+  REWRITE_TAC[group_isomorphism; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `h':C->A` THEN REWRITE_TAC[group_isomorphisms] THEN STRIP_TAC THEN
+  REWRITE_TAC[EXTENSION] THEN DISCH_THEN(MP_TAC o snd o EQ_IMP_RULE o
+    SPEC `group_div X x ((i:A->X)((h':C->A)(f x)))`) THEN
+  REWRITE_TAC[group_kernel; group_image; IN_ELIM_THM] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [group_homomorphism; GROUP_ISOMORPHISM; SUBSET; FORALL_IN_IMAGE]) THEN
+  ANTS_TAC THENL
+   [ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 5)
+     [group_div; GROUP_INV; GROUP_MUL; GROUP_MUL_RINV];
+    EXPAND_TAC "ij" THEN REWRITE_TAC[IN_IMAGE; EXISTS_PAIR_THM] THEN
+    ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `y:B` THEN SIMP_TAC[PROD_GROUP; IN_CROSS] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 (SUBST1_TAC o SYM) ASSUME_TAC) THEN
+    EXISTS_TAC `(h':C->A)(f(x:X))` THEN ASM_SIMP_TAC[] THEN
+    FIRST_X_ASSUM(fun th ->
+        W(MP_TAC o PART_MATCH (lhand o rand)
+              (GEN_REWRITE_RULE I [abelian_group] th) o rand o snd)) THEN
+    ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 5)
+     [group_div; GROUP_INV; GROUP_MUL; GSYM GROUP_MUL_ASSOC;
+      GROUP_MUL_LINV; GROUP_MUL_RID]]);;
+
+let SHORT_EXACT_SEQUENCE = prove
+ (`!(f:A->B) (g:B->C) A B C.
+        short_exact_sequence(A,B,C) (f,g) <=>
+        group_monomorphism (A,B) f /\
+        group_epimorphism (B,C) g /\
+        group_image (A,B) f = group_kernel (B,C) g`,
+  REWRITE_TAC[short_exact_sequence; group_monomorphism;
+              group_exactness; group_epimorphism] THEN
+  MESON_TAC[]);;
+
+let SHORT_EXACT_SEQUENCE_QUOTIENT = prove
+ (`!(f:A->B) (g:B->C) A B C.
+        short_exact_sequence(A,B,C) (f,g)
+        ==> subgroup_generated B (group_image(A,B) f) isomorphic_group A /\
+            quotient_group B (group_image(A,B) f) isomorphic_group C`,
+  REWRITE_TAC[short_exact_sequence] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THENL
+   [ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+    REWRITE_TAC[isomorphic_group] THEN EXISTS_TAC `f:A->B` THEN
+    ASM_REWRITE_TAC[GROUP_ISOMORPHISM_ONTO_IMAGE];
+    MP_TAC(ISPECL
+     [`B:B group`; `C:C group`; `g:B->C`]
+     FIRST_GROUP_ISOMORPHISM_THEOREM) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[GROUP_EPIMORPHISM; group_exactness]) THEN
+    ASM_REWRITE_TAC[SUBGROUP_GENERATED_GROUP_CARRIER]]);;
+
+let TRIVIAL_GROUPS_IMP_SHORT_EXACT_SEQUENCE = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) (k:D->E) A B C D E.
+        trivial_group A /\ trivial_group E /\
+        group_exactness(A,B,C) (f,g) /\
+        group_exactness(B,C,D) (g,h) /\
+        group_exactness(C,D,E) (h,k)
+        ==> short_exact_sequence(B,C,D) (g,h)`,
+  SIMP_TAC[IMP_CONJ; GROUP_EXACTNESS_MONOMORPHISM; GROUP_EXACTNESS_EPIMORPHISM;
+           short_exact_sequence]);;
+
+let SHORT_EXACT_SEQUENCE_TRIVIAL_GROUPS = prove
+ (`!(g:B->C) h B C D.
+        short_exact_sequence(B,C,D) (g,h) <=>
+        ?f:(A->B) (k:D->E) A E.
+                trivial_group A /\ trivial_group E /\
+                group_exactness(A,B,C) (f,g) /\
+                group_exactness(B,C,D) (g,h) /\
+                group_exactness(C,D,E) (h,k)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[TRIVIAL_GROUPS_IMP_SHORT_EXACT_SEQUENCE] THEN
+  REWRITE_TAC[short_exact_sequence] THEN STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+   [`(\x. group_id B):A->B`; `(\x. ARB):D->E`;
+    `singleton_group (ARB:A)`; `singleton_group (ARB:E)`] THEN
+  ASM_SIMP_TAC[TRIVIAL_GROUP_SINGLETON_GROUP;
+               GROUP_EXACTNESS_MONOMORPHISM; GROUP_EXACTNESS_EPIMORPHISM] THEN
+  REWRITE_TAC[group_homomorphism; SINGLETON_GROUP] THEN
+  SIMP_TAC[GROUP_INV_ID; GROUP_MUL_LID; GROUP_ID; SUBSET; FORALL_IN_IMAGE;
+           IN_SING]);;
+
+let SPLITTING_SUBLEMMA_GEN = prove
+ (`!(f:A->B) (g:B->C) A B C h k.
+        group_exactness(A,B,C) (f,g) /\
+        group_image(A,B) f = h /\ k subgroup_of B /\
+        h INTER k SUBSET {group_id B} /\ group_setmul B h k = group_carrier B
+        ==> group_isomorphism(subgroup_generated B k,
+                              subgroup_generated C (group_image(B,C) g)) g`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[group_exactness] THEN
+  ASM_CASES_TAC `group_image(A,B) (f:A->B) = h` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `group_kernel(B,C) (g:B->C) = h` THEN ASM_REWRITE_TAC[] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN `(h:B->bool) subgroup_of B` ASSUME_TAC THENL
+   [ASM_MESON_TAC[SUBGROUP_GROUP_KERNEL]; ALL_TAC] THEN
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM; GROUP_MONOMORPHISM;
+              GROUP_EPIMORPHISM_ALT] THEN
+  REWRITE_TAC[TAUT `(p /\ q) /\ (p /\ r) <=> p /\ q /\ r`] THEN
+  REPEAT CONJ_TAC THENL
+   [ASM_SIMP_TAC[GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ_GEN;
+                 CARRIER_SUBGROUP_GENERATED_SUBGROUP;
+                 SUBGROUP_GROUP_IMAGE;
+                 GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED] THEN
+    ASM_SIMP_TAC[group_image; SUBGROUP_OF_IMP_SUBSET; IMAGE_SUBSET];
+    ASM_SIMP_TAC[GROUP_KERNEL_FROM_SUBGROUP_GENERATED;
+                 GROUP_KERNEL_TO_SUBGROUP_GENERATED] THEN
+    ASM_SIMP_TAC[SUBGROUP_GENERATED; GSYM GROUP_DISJOINT_SUM_ALT];
+    ASM_SIMP_TAC[SUBSET; CARRIER_SUBGROUP_GENERATED_SUBGROUP;
+                 SUBGROUP_GROUP_IMAGE] THEN
+    REWRITE_TAC[group_image; FORALL_IN_IMAGE] THEN
+    ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+    SUBST1_TAC(SYM(ASSUME
+     `group_setmul B (h:B->bool) k = group_carrier B`)) THEN
+    REWRITE_TAC[group_setmul; FORALL_IN_GSPEC] THEN
+    MAP_EVERY X_GEN_TAC [`x:B`; `y:B`] THEN STRIP_TAC THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[group_epimorphism; group_homomorphism;
+                                subgroup_of; SUBSET; FORALL_IN_IMAGE]) THEN
+    ASM_SIMP_TAC[IN_IMAGE] THEN EXISTS_TAC `y:B` THEN
+    UNDISCH_TAC `(x:B) IN h` THEN SUBST1_TAC(SYM(ASSUME
+       `group_kernel (B,C) (g:B->C) = h`)) THEN
+    SIMP_TAC[group_kernel; IN_ELIM_THM] THEN
+    ASM_SIMP_TAC[GROUP_MUL_LID]]);;
+
+let SPLITTING_SUBLEMMA = prove
+ (`!(f:A->B) (g:B->C) A B C h k.
+        short_exact_sequence(A,B,C) (f,g) /\
+        group_image(A,B) f = h /\ k subgroup_of B /\
+        h INTER k SUBSET {group_id B} /\ group_setmul B h k = group_carrier B
+        ==> group_isomorphism(A,subgroup_generated B h) f /\
+            group_isomorphism(subgroup_generated B k,C) g`,
+  REWRITE_TAC[short_exact_sequence] THEN REPEAT STRIP_TAC THENL
+   [ASM_MESON_TAC[GROUP_ISOMORPHISM_ONTO_IMAGE]; ALL_TAC] THEN
+  SUBGOAL_THEN
+   `C = subgroup_generated C (group_image(B,C) (g:B->C))`
+  SUBST1_TAC THENL
+   [ASM_MESON_TAC[group_epimorphism; group_image;
+                  SUBGROUP_GENERATED_GROUP_CARRIER];
+    MATCH_MP_TAC SPLITTING_SUBLEMMA_GEN THEN ASM_MESON_TAC[]]);;
+
+let SPLITTING_LEMMA_LEFT_GEN = prove
+ (`!(f:A->B) f' (g:B->C) A B C.
+        short_exact_sequence(A,B,C) (f,g) /\
+        group_homomorphism(B,A) f' /\
+        group_isomorphism(A,A) (f' o f)
+        ==> ?h k. h normal_subgroup_of B /\ k normal_subgroup_of B /\
+                  h INTER k SUBSET {group_id B} /\
+                  group_setmul B h k = group_carrier B /\
+                  group_isomorphism(A,subgroup_generated B h) f /\
+                  group_isomorphism(subgroup_generated B k,C) g`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `f':B->A`; `A:A group`; `B:B group`; `A:A group`]
+        GROUP_SEMIDIRECT_SUM_IM_KER) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[short_exact_sequence; group_exactness]; ALL_TAC] THEN
+  MAP_EVERY ABBREV_TAC
+   [`h = group_image(A,B) (f:A->B)`; `k = group_kernel(B,A) (f':B->A)`] THEN
+  STRIP_TAC THEN MAP_EVERY EXISTS_TAC [`h:B->bool`; `k:B->bool`] THEN
+  ASM_REWRITE_TAC[SUBSET_REFL] THEN MATCH_MP_TAC(TAUT
+   `(p /\ q) /\ (p /\ q ==> r) ==> p /\ q /\ r`) THEN
+  CONJ_TAC THENL
+   [ASM_MESON_TAC[NORMAL_SUBGROUP_GROUP_KERNEL;
+                  short_exact_sequence; group_exactness];
+    REWRITE_TAC[normal_subgroup_of] THEN STRIP_TAC THEN
+    MATCH_MP_TAC SPLITTING_SUBLEMMA THEN ASM_REWRITE_TAC[SUBSET_REFL]]);;
+
+let SPLITTING_LEMMA_LEFT = prove
+ (`!(f:A->B) f' (g:B->C) A B C.
+        short_exact_sequence(A,B,C) (f,g) /\
+        group_homomorphism(B,A) f' /\
+        (!x. x IN group_carrier A ==> f'(f x) = x)
+        ==> ?h k. h normal_subgroup_of B /\ k normal_subgroup_of B /\
+                  h INTER k SUBSET {group_id B} /\
+                  group_setmul B h k = group_carrier B /\
+                  group_isomorphism(A,subgroup_generated B h) f /\
+                  group_isomorphism(subgroup_generated B k,C) g`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SPLITTING_LEMMA_LEFT_GEN THEN
+  EXISTS_TAC `f':B->A` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC GROUP_ISOMORPHISM_EQ THEN EXISTS_TAC `\x:A. x` THEN
+  ASM_REWRITE_TAC[o_THM; GROUP_ISOMORPHISM_ID]);;
+
+let SPLITTING_LEMMA_LEFT_PROD_GROUP = prove
+ (`!(f:A->B) f' (g:B->C) A B C.
+        short_exact_sequence(A,B,C) (f,g) /\
+        abelian_group B /\
+        group_homomorphism(B,A) f' /\
+        (!x. x IN group_carrier A ==> f'(f x) = x)
+        ==> B isomorphic_group prod_group A C`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `f':B->A`; `g:B->C`;
+        `A:A group`; `B:B group`; `C:C group`]
+        SPLITTING_LEMMA_LEFT) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`h:B->bool`; `k:B->bool`] THEN STRIP_TAC THEN
+  TRANS_TAC ISOMORPHIC_GROUP_TRANS
+   `prod_group (subgroup_generated B h)
+               (subgroup_generated B (k:B->bool))` THEN
+  CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+    REWRITE_TAC[isomorphic_group] THEN
+    EXISTS_TAC `\(x:B,y). group_mul B x y` THEN
+    ASM_SIMP_TAC[GROUP_ISOMORPHISM_GROUP_MUL; NORMAL_SUBGROUP_IMP_SUBGROUP];
+    MATCH_MP_TAC ISOMORPHIC_GROUP_PROD_GROUPS THEN
+    GEN_REWRITE_TAC LAND_CONV [ISOMORPHIC_GROUP_SYM] THEN
+    REWRITE_TAC[isomorphic_group] THEN ASM_MESON_TAC[]]);;
+
+let SPLITTING_LEMMA_RIGHT_GEN = prove
+ (`!(f:A->B) (g:B->C) g' A B C.
+        short_exact_sequence(A,B,C) (f,g) /\
+        group_homomorphism(C,B) g' /\
+        group_isomorphism(C,C) (g o g')
+        ==> ?h k. h normal_subgroup_of B /\ k subgroup_of B /\
+                  h INTER k SUBSET {group_id B} /\
+                  group_setmul B h k = group_carrier B /\
+                  group_isomorphism(A,subgroup_generated B h) f /\
+                  group_isomorphism(subgroup_generated B k,C) g`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`g':C->B`; `g:B->C`; `C:C group`; `B:B group`; `C:C group`]
+        GROUP_SEMIDIRECT_SUM_KER_IM) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[short_exact_sequence; group_exactness]; ALL_TAC] THEN
+  MAP_EVERY ABBREV_TAC
+   [`k = group_image(C,B) (g':C->B)`; `h = group_kernel(B,C) (g:B->C)`] THEN
+  STRIP_TAC THEN MAP_EVERY EXISTS_TAC [`h:B->bool`; `k:B->bool`] THEN
+  ASM_REWRITE_TAC[SUBSET_REFL] THEN MATCH_MP_TAC(TAUT
+   `(p /\ q) /\ (p /\ q ==> r) ==> p /\ q /\ r`) THEN
+  CONJ_TAC THENL
+   [ASM_MESON_TAC[SUBGROUP_GROUP_IMAGE; NORMAL_SUBGROUP_GROUP_KERNEL;
+                  short_exact_sequence; group_exactness];
+    REWRITE_TAC[normal_subgroup_of] THEN STRIP_TAC THEN
+    MATCH_MP_TAC SPLITTING_SUBLEMMA THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
+    ASM_MESON_TAC[short_exact_sequence; group_exactness]]);;
+
+let SPLITTING_LEMMA_RIGHT = prove
+ (`!(f:A->B) (g:B->C) g' A B C.
+        short_exact_sequence(A,B,C) (f,g) /\
+        group_homomorphism(C,B) g' /\
+        (!z. z IN group_carrier C ==> g(g' z) = z)
+        ==> ?h k. h normal_subgroup_of B /\ k subgroup_of B /\
+                  h INTER k SUBSET {group_id B} /\
+                  group_setmul B h k = group_carrier B /\
+                  group_isomorphism(A,subgroup_generated B h) f /\
+                  group_isomorphism(subgroup_generated B k,C) g`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SPLITTING_LEMMA_RIGHT_GEN THEN
+  EXISTS_TAC `g':C->B` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC GROUP_ISOMORPHISM_EQ THEN EXISTS_TAC `\x:C. x` THEN
+  ASM_REWRITE_TAC[o_THM; GROUP_ISOMORPHISM_ID]);;
+
+let SPLITTING_LEMMA_RIGHT_PROD_GROUP = prove
+ (`!(f:A->B) (g:B->C) g' A B C.
+        short_exact_sequence(A,B,C) (f,g) /\
+        abelian_group B /\
+        group_homomorphism(C,B) g' /\
+        (!z. z IN group_carrier C ==> g(g' z) = z)
+        ==> B isomorphic_group prod_group A C`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `g:B->C`; `g':C->B`;
+        `A:A group`; `B:B group`; `C:C group`]
+        SPLITTING_LEMMA_RIGHT) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`h:B->bool`; `k:B->bool`] THEN STRIP_TAC THEN
+  TRANS_TAC ISOMORPHIC_GROUP_TRANS
+   `prod_group (subgroup_generated B h)
+               (subgroup_generated B (k:B->bool))` THEN
+  CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+    REWRITE_TAC[isomorphic_group] THEN
+    EXISTS_TAC `\(x:B,y). group_mul B x y` THEN
+    ASM_SIMP_TAC[GROUP_ISOMORPHISM_GROUP_MUL; NORMAL_SUBGROUP_IMP_SUBGROUP];
+    MATCH_MP_TAC ISOMORPHIC_GROUP_PROD_GROUPS THEN
+    GEN_REWRITE_TAC LAND_CONV [ISOMORPHIC_GROUP_SYM] THEN
+    REWRITE_TAC[isomorphic_group] THEN ASM_MESON_TAC[]]);;
+
+let SPLITTING_LEMMA_FREE_ABELIAN_GROUP = prove
+ (`!(f:A->B) (g:B->C) A B C (s:D->bool).
+        short_exact_sequence (A,B,C) (f,g) /\
+        abelian_group B /\ C isomorphic_group free_abelian_group s
+        ==> B isomorphic_group prod_group A C`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SPLITTING_LEMMA_RIGHT_PROD_GROUP THEN
+  MAP_EVERY EXISTS_TAC [`f:A->B`; `g:B->C`] THEN
+  ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o
+    GEN_REWRITE_RULE I [short_exact_sequence]) THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [group_epimorphism]) THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (SET_RULE
+   `IMAGE f s = t ==> !y. ?x. y IN t ==> x IN s /\ f x = y`)) THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g':C->B` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [isomorphic_group]) THEN
+  REWRITE_TAC[isomorphic_group; group_isomorphism; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`h:C->D frag`; `h':D frag->C`] THEN
+  REWRITE_TAC[group_isomorphisms] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`(g':C->B) o (h':D frag->C) o frag_of`; `s:D->bool`; `B:B group`]
+        FREE_ABELIAN_GROUP_UNIVERSAL) THEN
+  ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; o_THM] THEN ANTS_TAC THENL
+   [GEN_REWRITE_TAC (BINDER_CONV o LAND_CONV)
+     [GSYM FRAG_OF_IN_FREE_ABELIAN_GROUP] THEN
+    RULE_ASSUM_TAC( REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `k:D frag->B` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `(k:D frag->B) o (h:C->D frag)` THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[GROUP_HOMOMORPHISM_COMPOSE]; ALL_TAC] THEN
+    X_GEN_TAC `c:C` THEN DISCH_TAC THEN
+    SUBGOAL_THEN
+     `c = (h':D frag->C) (h c) /\
+      h c IN group_carrier(free_abelian_group s)`
+    (CONJUNCTS_THEN2 SUBST1_TAC MP_TAC) THENL
+     [RULE_ASSUM_TAC( REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[];
+      SPEC_TAC(`(h:C->D frag) c`,`d:D frag`)] THEN
+    ASM_SIMP_TAC[o_THM] THEN
+    MATCH_MP_TAC FREE_ABELIAN_GROUP_INDUCT THEN
+    ASM_SIMP_TAC[] THEN
+    REPEAT(FIRST_X_ASSUM(fun th ->
+      MP_TAC(MATCH_MP GROUP_HOMOMORPHISM_DIV th) THEN
+      MP_TAC(REWRITE_RULE[group_homomorphism; SUBSET] th))) THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; group_div] THEN
+    REWRITE_TAC[CONJUNCT2 FREE_ABELIAN_GROUP; FRAG_MODULE
+     `frag_add x (frag_neg y) = frag_sub x y`] THEN
+    REPEAT STRIP_TAC THEN ASM_SIMP_TAC[] THEN
+    ASM_MESON_TAC[FRAG_OF_IN_FREE_ABELIAN_GROUP]]);;
+
+let FOUR_LEMMA_MONO = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) (f':A'->B') (g':B'->C') (h':C'->D') a b c d
+     A B C D A' B' C' D'.
+      group_epimorphism(A,A') a /\
+      group_monomorphism(B,B') b /\
+      group_homomorphism(C,C') c /\
+      group_monomorphism(D,D') d /\
+      group_exactness(A,B,C) (f,g) /\ group_exactness(B,C,D) (g,h) /\
+      group_exactness(A',B',C') (f',g') /\ group_exactness(B',C',D') (g',h') /\
+      (!x. x IN group_carrier A ==> f'(a x) = b(f x)) /\
+      (!y. y IN group_carrier B ==> g'(b y) = c(g y)) /\
+      (!z. z IN group_carrier C ==> h'(c z) = d(h z))
+      ==> group_monomorphism(C,C') c`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC RAND_CONV [GROUP_MONOMORPHISM_ALT] THEN
+  REWRITE_TAC[group_epimorphism; group_monomorphism; group_exactness] THEN
+  REWRITE_TAC[group_homomorphism; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[group_image; group_kernel] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `x:C` THEN STRIP_TAC THEN
+  MAP_EVERY (ASSUME_TAC o C ISPEC GROUP_ID)
+   [`A:A group`; `B:B group`; `C:C group`; `D:D group`;
+    `A':A' group`; `B':B' group`; `C':C' group`; `D':D' group`] THEN
+  SUBGOAL_THEN `(h:C->D) x = group_id D`
+  ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `?y. y IN group_carrier B /\ (g:B->C) y = x`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `?w. w IN group_carrier A' /\ (f':A'->B') w = (b:B->B') y`
+  STRIP_ASSUME_TAC THEN ASM SET_TAC[]);;
+
+let FOUR_LEMMA_EPI = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) (f':A'->B') (g':B'->C') (h':C'->D') a b c d
+     A B C D A' B' C' D'.
+      group_epimorphism(A,A') a /\
+      group_homomorphism(B,B') b /\
+      group_epimorphism(C,C') c /\
+      group_monomorphism(D,D') d /\
+      group_exactness(A,B,C) (f,g) /\ group_exactness(B,C,D) (g,h) /\
+      group_exactness(A',B',C') (f',g') /\ group_exactness(B',C',D') (g',h') /\
+      (!x. x IN group_carrier A ==> f'(a x) = b(f x)) /\
+      (!y. y IN group_carrier B ==> g'(b y) = c(g y)) /\
+      (!z. z IN group_carrier C ==> h'(c z) = d(h z))
+      ==> group_epimorphism(B,B') b`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC RAND_CONV [GROUP_EPIMORPHISM_ALT] THEN
+  REWRITE_TAC[group_epimorphism; group_monomorphism; group_exactness] THEN
+  REWRITE_TAC[group_homomorphism; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[group_image; group_kernel] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `x:B'` THEN DISCH_TAC THEN
+  MAP_EVERY (ASSUME_TAC o C ISPEC GROUP_ID)
+   [`A:A group`; `B:B group`; `C:C group`; `D:D group`;
+    `A':A' group`; `B':B' group`; `C':C' group`; `D':D' group`] THEN
+  SUBGOAL_THEN `?y. y IN group_carrier C /\ (c:C->C') y = (g':B'->C') x`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `(h:C->D) y = group_id D`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `?z. z IN group_carrier B /\ (g:B->C) z = y`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  ABBREV_TAC `w =  group_mul B' x (group_inv B' ((b:B->B') z))` THEN
+  SUBGOAL_THEN `(w:B') IN group_carrier B'`
+  STRIP_ASSUME_TAC THENL [ASM_MESON_TAC[GROUP_MUL; GROUP_INV]; ALL_TAC] THEN
+  SUBGOAL_THEN `(g':B'->C') w = group_id C'`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "w" THEN ASM_SIMP_TAC[GROUP_INV; GROUP_MUL_RINV];
+    ALL_TAC] THEN
+  SUBGOAL_THEN `?v. v IN group_carrier A' /\ (f':A'->B') v = w`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN `?u. u IN group_carrier A /\ (a:A->A') u = v`
+  STRIP_ASSUME_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[IN_IMAGE] THEN
+  EXISTS_TAC `group_mul B ((f:A->B) u) z` THEN ASM_SIMP_TAC[GROUP_MUL] THEN
+  SUBGOAL_THEN `(b:B->B') ((f:A->B) u) = w`
+  SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBST1_TAC(SYM(ASSUME
+   `group_mul B' x (group_inv B' ((b:B->B') z)) = w`)) THEN
+  ASM_SIMP_TAC[GSYM GROUP_MUL_ASSOC; GROUP_INV;
+               GROUP_MUL_LINV; GROUP_MUL_RID]);;
+
+let FIVE_LEMMA = prove
+ (`!(f:A->B) (g:B->C) (h:C->D) (k:D->E)
+    (f':A'->B') (g':B'->C') (h':C'->D') (k':D'->E') a b c d e
+     A B C D E A' B' C' D' E'.
+      group_epimorphism(A,A') a /\
+      group_isomorphism(B,B') b /\
+      group_homomorphism(C,C') c /\
+      group_isomorphism(D,D') d /\
+      group_monomorphism(E,E') e /\
+      group_exactness(A,B,C) (f,g) /\
+      group_exactness(B,C,D) (g,h) /\
+      group_exactness(C,D,E) (h,k) /\
+      group_exactness(A',B',C') (f',g') /\
+      group_exactness(B',C',D') (g',h') /\
+      group_exactness(C',D',E') (h',k') /\
+      (!x. x IN group_carrier A ==> f'(a x) = b(f x)) /\
+      (!y. y IN group_carrier B ==> g'(b y) = c(g y)) /\
+      (!z. z IN group_carrier C ==> h'(c z) = d(h z)) /\
+      (!w. w IN group_carrier D ==> k'(d w) = e(k w))
+      ==> group_isomorphism(C,C') c`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (TAUT
+   `a /\ (b /\ b') /\ c /\ (d /\ d') /\ e /\
+    fg /\ gh /\ hk /\ fg' /\ gh' /\ hk' /\
+    ca /\ cb /\ cc /\ cd
+    ==> (a /\ b /\ c /\ d /\ fg /\ gh /\ fg' /\ gh' /\ ca /\ cb /\ cc) /\
+        (b' /\ c /\ d' /\ e /\ gh /\ hk /\ gh' /\ hk' /\ cb /\ cc /\ cd)`)) THEN
+  MATCH_MP_TAC MONO_AND THEN
+  REWRITE_TAC[FOUR_LEMMA_MONO; FOUR_LEMMA_EPI]);;
+
+let SHORT_FIVE_LEMMA_MONO = prove
+ (`!(f:A->B) (g:B->C) (f':A'->B') (g':B'->C') a b c A B C A' B' C'.
+        group_monomorphism(A,A') a /\
+        group_homomorphism(B,B') b /\
+        group_monomorphism(C,C') c /\
+        short_exact_sequence(A,B,C) (f,g) /\
+        short_exact_sequence(A',B',C') (f',g') /\
+        (!x. x IN group_carrier A ==> f'(a x) = b(f x)) /\
+        (!y. y IN group_carrier B ==> g'(b y) = c(g y))
+        ==> group_monomorphism(B,B') b`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(?(w:Z->A) (z:C->Z) W Z.
+        trivial_group W /\ trivial_group Z /\
+        group_exactness (W,A,B) (w,f:A->B) /\
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,Z) (g:B->C,z)) /\
+    (?(w':Z->A') (z':C'->Z) W' Z'.
+        trivial_group W' /\ trivial_group Z' /\
+        group_exactness (W',A',B') (w',f':A'->B') /\
+        group_exactness (A',B',C') (f',g') /\
+        group_exactness (B',C',Z') (g':B'->C',z'))`
+  STRIP_ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[GSYM SHORT_EXACT_SEQUENCE_TRIVIAL_GROUPS]; ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`w:Z->A`; `f:A->B`; `g:B->C`; `w':Z->A'`; `f':A'->B'`; `g':B'->C'`;
+    `(\x. group_id W'):Z->Z`; `a:A->A'`; `b:B->B'`; `c:C->C'`;
+    `W:Z group`; `A:A group`; `B:B group`; `C:C group`;
+    `W':Z group`; `A':A' group`; `B':B' group`; `C':C' group`]
+        FOUR_LEMMA_MONO) THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[GROUP_EPIMORPHISM_TO_TRIVIAL_GROUP] THEN
+  ASM_REWRITE_TAC[GROUP_HOMOMORPHISM_TRIVIAL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_exactness; group_monomorphism;
+    trivial_group; group_homomorphism]) THEN
+  ASM SET_TAC[]);;
+
+let SHORT_FIVE_LEMMA_EPI = prove
+ (`!(f:A->B) (g:B->C) (f':A'->B') (g':B'->C') a b c A B C A' B' C'.
+        group_epimorphism(A,A') a /\
+        group_homomorphism(B,B') b /\
+        group_epimorphism(C,C') c /\
+        short_exact_sequence(A,B,C) (f,g) /\
+        short_exact_sequence(A',B',C') (f',g') /\
+        (!x. x IN group_carrier A ==> f'(a x) = b(f x)) /\
+        (!y. y IN group_carrier B ==> g'(b y) = c(g y))
+        ==> group_epimorphism(B,B') b`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(?(w:Z->A) (z:C->Z) W Z.
+        trivial_group W /\ trivial_group Z /\
+        group_exactness (W,A,B) (w,f:A->B) /\
+        group_exactness (A,B,C) (f,g) /\
+        group_exactness (B,C,Z) (g:B->C,z)) /\
+    (?(w':Z->A') (z':C'->Z) W' Z'.
+        trivial_group W' /\ trivial_group Z' /\
+        group_exactness (W',A',B') (w',f':A'->B') /\
+        group_exactness (A',B',C') (f',g') /\
+        group_exactness (B',C',Z') (g':B'->C',z'))`
+  STRIP_ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[GSYM SHORT_EXACT_SEQUENCE_TRIVIAL_GROUPS]; ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`f:A->B`; `g:B->C`; `z:C->Z`;  `f':A'->B'`; `g':B'->C'`; `z':C'->Z`;
+    `a:A->A'`; `b:B->B'`; `c:C->C'`; `(\x. group_id Z'):Z->Z`;
+    `A:A group`; `B:B group`; `C:C group`; `Z:Z group`;
+    `A':A' group`; `B':B' group`; `C':C' group`; `Z':Z group`]
+        FOUR_LEMMA_EPI) THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[GROUP_MONOMORPHISM_TO_TRIVIAL_GROUP] THEN
+  ASM_REWRITE_TAC[GROUP_HOMOMORPHISM_TRIVIAL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_exactness; group_epimorphism;
+    trivial_group; group_homomorphism]) THEN
+  ASM SET_TAC[]);;
+
+let SHORT_FIVE_LEMMA = prove
+ (`!(f:A->B) (g:B->C) (f':A'->B') (g':B'->C') a b c A B C A' B' C'.
+        group_isomorphism(A,A') a /\
+        group_homomorphism(B,B') b /\
+        group_isomorphism(C,C') c /\
+        short_exact_sequence(A,B,C) (f,g) /\
+        short_exact_sequence(A',B',C') (f',g') /\
+        (!x. x IN group_carrier A ==> f'(a x) = b(f x)) /\
+        (!y. y IN group_carrier B ==> g'(b y) = c(g y))
+        ==> group_isomorphism(B,B') b`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM GROUP_MONOMORPHISM_EPIMORPHISM] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (TAUT
+   `(a /\ a') /\ b /\ (c /\ c') /\ d /\ e /\ f /\ g
+    ==> (a /\ b /\ c /\ d /\ e /\ f /\ g) /\
+        (a' /\ b /\ c' /\ d /\ e /\ f /\ g)`)) THEN
+  MATCH_MP_TAC MONO_AND THEN
+  REWRITE_TAC[SHORT_FIVE_LEMMA_MONO; SHORT_FIVE_LEMMA_EPI]);;
