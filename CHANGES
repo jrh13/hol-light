@@ -8,11 +8,50 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  2nd Dec 2017       real.ml, sets.ml
+
+Added a couple of somewhat random but useful theorems:
+
+  CARTESIAN_PRODUCT_AS_RESTRICTIONS =
+    |- !k s.
+         cartesian_product k s =                                                  
+         {RESTRICTION k f |f| !i. i IN k ==> f i IN s i}
+
+  REAL_POS_EQ_SQUARE = 
+    |- !x. &0 <= x <=> ?y. y pow 2 = x
+
+Sat  2nd Dec 2017       Library/card.ml
+
+Added a few elementary cardinality theorems, some of them surprising gaps:
+
+  CARD_EQ_INT_NUM = |- (:int) =_c (:num)
+  
+  CARD_EXP_FINITE_EQ = 
+   |- !s t. FINITE(s ^_c t) <=>
+          (?a. s SUBSET {a}) \/ t = {} \/ FINITE s /\ FINITE t
+  
+  CARD_LE_RESTRICTED_FUNSPACE =
+   |- !s t k.
+           {f | IMAGE f s SUBSET t /\                                          
+               {x | ~(f x = k x)} SUBSET s /\                  
+               FINITE {x | ~(f x = k x)}}                                      
+          <=_c {u | u SUBSET (s CROSS t) /\ FINITE u}
+
+  INT_COUNTABLE = |- COUNTABLE (:int)
+  
+  int_INFINITE = |- INFINITE (:int)
+  
+Sat  2nd Dec 2017       README
+
+Updated the build instructions, in particular taking into account the fact 
+(pointed out by John O'Leary) that OCaml >= 4.06 no longer includes the
+"num" library by default.
+
 Sat 18th Nov 2017       Makefile, update_database_3.ml, update_database_4.ml [new file]
 
-Incorporated an improved "update_database.ml" file from Michael Färber which 
-handles theorems inside modules; this had otherwise started failing in more 
-recent versions of OCaml. Rather than add yet more version-dependent logic into 
+Incorporated an improved "update_database.ml" file from Michael Färber which
+handles theorems inside modules; this had otherwise started failing in more
+recent versions of OCaml. Rather than add yet more version-dependent logic into
 the files themselves, renamed the old "update_database.ml" file as
 "update_database_3.ml", called the new one "update_database_4.ml" and modified
 the Makefile to copy the appropriate one to "update_database.ml".

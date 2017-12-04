@@ -20,11 +20,6 @@ Refer to the reference manual for more details of individual functions:
         http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.html (HTML files)
         http://www.cl.cam.ac.uk/~jrh13/hol-light/reference.pdf (one PDF file)
 
-For information on using HOL Light with the native OCaml toplevel
-(which generally leads to something like a 4x improvement in runtime
-at the cost of much longer load times), see (or run) INSTALL_OCAMLNAT.
-
-
         *       *       *       *       *       *       *       *
 
                              INSTALLATION
@@ -57,18 +52,37 @@ difficult, depending on the platform.
 
         http://caml.inria.fr/ocaml/index.en.html
 
+    The HOL Light system uses the OCaml "Num" library for rational
+    arithmetic. As of OCaml 4.06, this is no longer included in
+    the core system and will need to be added separately. You can
+    do this using the OCaml package manager "opam" if you use it by
+
+        opam install num
+
+    Alternatively you can download the sources from here
+
+        https://github.com/ocaml/num
+
+    and build and install them following the instructions on that
+    page, for example
+
+        git clone https://github.com/ocaml/num mynums
+        cd mynums
+        make all
+        sudo make install [assuming no earlier errors]
+
  2. camlp5: this is needed to run HOL Light under any OCaml >= 3.10.
     Somtimes you need a recent version of camlp5 to be compatible with
     your OCaml. I recommend downloading the sources for a recent
     version from
 
-        http://pauillac.inria.fr/~ddr/camlp5/
+        https://camlp5.github.io/
 
     and building it in "strict" mode before installing it, thus:
 
-        cd software/camlp5-6.06 [or wherever you unpacked sources to]
+        cd software/camlp5-rel701 [or wherever you unpacked sources to]
         ./configure --strict
-        make world.opt
+        make
         sudo make install       [assuming no earlier errors]
 
     There are also packages for camlp5, so you may be able to get away
@@ -78,26 +92,6 @@ difficult, depending on the platform.
 
     However, you may get a version in "transitional" instead of
     "strict" mode (do "camlp5 -pmode" to check which you have).
-
-I encountered a couple of problems when building with OCaml 4.00: if
-you hit the same issues, you may like to try the same fix, or suggest
-better ones.
-
-    1. The "toploop.cmi" file has moved down into a subdirectory
-       "compiler-libs". You can fix this by adding
-
-            -I +compiler-libs
-
-        to your "ocaml" invocation, though I found it easier simply to
-        make a link like to the old location like this:
-
-            cd /usr/local/lib/ocaml [or wherever your lib directory is]
-            sudo ln -s compiler-libs/toploop.cmi .
-
-    2. For some reason, I did not get the "dllnums.so" file so I
-       copied it manually after building:
-
-            sudo cp <...>/ocaml-4.00.0/otherlibs/num/dllnums.so /usr/local/lib/ocaml
 
 Now for HOL Light itself. The instructions below assume a Unix-like
 environment such as Linux [or Cygwin (see www.cygwin.com) under
@@ -153,11 +147,13 @@ be available for some platforms. First the basic approach:
     all the core HOL Light theories, and terminate after a few minutes
     with the usual OCaml prompt, something like:
 
-        val define : term -> thm = <fun>
+        val search : term list -> (string * thm) list = <fun>
         - : unit = ()
-        val help : string -> unit = <fun>
+        File "help.ml" already loaded
         - : unit = ()
-                Camlp5 Parsing version 3.10
+        - : unit = ()
+        - : unit = ()
+                Camlp5 parsing version 7.03
 
         #
 
@@ -282,7 +278,6 @@ rationals. On many platforms, including Linux and native Windows, this
 will be loaded automatically by the HOL root file 'hol.ml'. However,
 OCaml on some platforms (notably Cygwin) does not support dynamic
 loading, hence the need to use 'ocamlnum', a toplevel with the 'num'
-library already installed. This is normally created as part of the
-OCaml build, but if not, you can make your own with:
+library already installed. You can make your own with:
 
     ocamlmktop -o ocamlnum nums.cma

@@ -1662,6 +1662,24 @@ let COUNTABLE_PCROSS = prove
         COUNTABLE s /\ COUNTABLE t ==> COUNTABLE(s PCROSS t)`,
   SIMP_TAC[COUNTABLE_PCROSS_EQ]);;
 
+let INT_COUNTABLE = prove
+ (`COUNTABLE (:int)`,
+  MATCH_MP_TAC COUNTABLE_SUBSET THEN
+  EXISTS_TAC `IMAGE (\n. (&n:int)) (:num) UNION IMAGE (\n. --(&n)) (:num)` THEN
+  SIMP_TAC[COUNTABLE_UNION; COUNTABLE_IMAGE; NUM_COUNTABLE] THEN
+  REWRITE_TAC[SUBSET; FORALL_INT_CASES] THEN SET_TAC[]);;
+
+let CARD_EQ_INT_NUM = prove
+ (`(:int) =_c (:num)`,
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM; GSYM COUNTABLE_ALT; INT_COUNTABLE] THEN
+  REWRITE_TAC[le_c] THEN EXISTS_TAC `int_of_num` THEN
+  SIMP_TAC[INT_OF_NUM_EQ; IN_UNIV]);;
+
+let int_INFINITE = prove
+ (`INFINITE (:int)`,
+  SUBST1_TAC(MATCH_MP CARD_INFINITE_CONG CARD_EQ_INT_NUM) THEN
+  REWRITE_TAC[num_INFINITE]);;
+
 let COUNTABLE_CART = prove
  (`!P. (!i. 1 <= i /\ i <= dimindex(:N) ==> COUNTABLE {x | P i x})
        ==> COUNTABLE {v:A^N | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)}`,
@@ -2870,17 +2888,19 @@ let CARD_EQ_COUNTABLE_SUBSETS_REAL = prove
   MP_TAC(ISPEC `(:real)` CARD_EQ_COUNTABLE_SUBSETS_SUBREAL) THEN
   REWRITE_TAC[SUBSET_UNIV; CARD_LE_REFL; real_INFINITE]);;
 
-let COUNTABLE_RESTRICTED_FUNSPACE = prove
+let CARD_LE_RESTRICTED_FUNSPACE = prove
  (`!s:A->bool t:B->bool k.
-        COUNTABLE s /\ COUNTABLE t
-        ==> COUNTABLE {f | IMAGE f s SUBSET t /\
-                           {x | ~(f x = k x)} SUBSET s /\
-                           FINITE {x | ~(f x = k x)}}`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC COUNTABLE_SUBSET THEN
-  EXISTS_TAC
-   `IMAGE (\u:(A#B)->bool x. if ?y. (x,y) IN u then @y. (x,y) IN u else k x)
-          {u | u SUBSET (s CROSS t) /\ FINITE u}` THEN
-  ASM_SIMP_TAC[COUNTABLE_FINITE_SUBSETS; COUNTABLE_CROSS; COUNTABLE_IMAGE] THEN
+        {f | IMAGE f s SUBSET t /\
+             {x | ~(f x = k x)} SUBSET s /\
+             FINITE {x | ~(f x = k x)}}
+        <=_c {u | u SUBSET (s CROSS t) /\ FINITE u}`,
+  let lemma = prove
+   (`!(f:A->B) s t. t SUBSET IMAGE f s ==> t <=_c s`,
+    REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP CARD_LE_SUBSET) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_TRANS) THEN
+    REWRITE_TAC[CARD_LE_IMAGE]) in
+  REPEAT GEN_TAC THEN MATCH_MP_TAC lemma THEN EXISTS_TAC
+   `\u:(A#B)->bool x. if ?y. (x,y) IN u then @y. (x,y) IN u else k x` THEN
   GEN_REWRITE_TAC I [SUBSET] THEN REWRITE_TAC[FORALL_IN_GSPEC] THEN
   X_GEN_TAC `f:A->B` THEN STRIP_TAC THEN
   REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
@@ -2893,6 +2913,17 @@ let COUNTABLE_RESTRICTED_FUNSPACE = prove
   REWRITE_TAC[IN_IMAGE; IN_ELIM_THM; PAIR_EQ] THEN
   REWRITE_TAC[GSYM CONJ_ASSOC; UNWIND_THM1; UNWIND_THM2] THEN
   ASM_CASES_TAC `(f:A->B) x = k x` THEN ASM_REWRITE_TAC[]);;
+
+let COUNTABLE_RESTRICTED_FUNSPACE = prove
+ (`!s:A->bool t:B->bool k.
+        COUNTABLE s /\ COUNTABLE t
+        ==> COUNTABLE {f | IMAGE f s SUBSET t /\
+                           {x | ~(f x = k x)} SUBSET s /\
+                           FINITE {x | ~(f x = k x)}}`,
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH lhand CARD_LE_RESTRICTED_FUNSPACE o rand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] CARD_LE_COUNTABLE) THEN
+  ASM_SIMP_TAC[COUNTABLE_FINITE_SUBSETS; COUNTABLE_CROSS; COUNTABLE_IMAGE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality properties of Cartesian products.                             *)
@@ -3085,3 +3116,18 @@ let COUNTABLE_CARTESIAN_PRODUCT = prove
         ASM_SIMP_TAC[MESON[FINITE_SUBSET]
          `FINITE t ==> (s SUBSET t /\ FINITE s <=> s SUBSET t)`] THEN
         ASM SET_TAC[]]]]);;
+
+let CARD_EXP_FINITE_EQ = prove
+ (`!(s:A->bool) (t:B->bool).
+        FINITE(s ^_c t) <=>
+        (?a. s SUBSET {a}) \/ t = {} \/ FINITE s /\ FINITE t`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM CARTESIAN_PRODUCT_CONST; FINITE_CARTESIAN_PRODUCT] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY] THEN
+  ASM_CASES_TAC `t:B->bool = {}` THEN
+  ASM_REWRITE_TAC[NOT_IN_EMPTY; EMPTY_GSPEC; FINITE_EMPTY] THEN
+  ASM_CASES_TAC `?a:A. s SUBSET {a}` THEN
+  ASM_REWRITE_TAC[EMPTY_GSPEC; FINITE_EMPTY; IN_GSPEC] THEN
+  REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  ASM_SIMP_TAC[SET_RULE `~(t = {}) ==> ((!a. a IN t ==> P) <=> P)`] THEN
+  ASM_MESON_TAC[FINITE_SUBSET; FINITE_SING; EMPTY_SUBSET]);;

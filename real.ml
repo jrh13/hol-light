@@ -1787,6 +1787,10 @@ let SQRT_WORKS = prove
   REPEAT STRIP_TAC THEN MP_TAC(SPEC `x:real` SQRT_WORKS_GEN) THEN
   REWRITE_TAC[real_sgn] THEN REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);;
 
+let REAL_POS_EQ_SQUARE = prove
+ (`!x. &0 <= x <=> ?y. y pow 2 = x`,
+  MESON_TAC[REAL_LE_POW_2; SQRT_WORKS]);;
+
 let SQRT_POS_LE = prove
  (`!x. &0 <= x ==> &0 <= sqrt(x)`,
   MESON_TAC[SQRT_WORKS]);;

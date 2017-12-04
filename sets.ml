@@ -2728,12 +2728,24 @@ let CARTESIAN_PRODUCT = prove
   REWRITE_TAC[cartesian_product; IN_ELIM_THM; EXTENSIONAL] THEN
   MESON_TAC[IN_SING]);;
 
-let RESTRICTION_IN_CARTESIAN_PRODUCT = prove                                   
- (`!k s (f:K->A).                                                              
+let RESTRICTION_IN_CARTESIAN_PRODUCT = prove
+ (`!k s (f:K->A).
         RESTRICTION k f IN cartesian_product k s <=>
-        !i. i IN k ==> (f i) IN (s i)`,                                      
+        !i. i IN k ==> (f i) IN (s i)`,
   REWRITE_TAC[RESTRICTION; cartesian_product; EXTENSIONAL; IN_ELIM_THM] THEN
-  SET_TAC[]);;                                                   
+  SET_TAC[]);;
+
+let CARTESIAN_PRODUCT_AS_RESTRICTIONS = prove
+ (`!k (s:K->A->bool).
+      cartesian_product k s =
+      {RESTRICTION k f |f| !i. i IN k ==> f i IN s i}`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[RESTRICTION_IN_CARTESIAN_PRODUCT] THEN
+  X_GEN_TAC `x:K->A` THEN
+  REWRITE_TAC[cartesian_product; IN_ELIM_THM; EXTENSIONAL] THEN
+  STRIP_TAC THEN EXISTS_TAC `x:K->A` THEN
+  ASM_REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN ASM_MESON_TAC[]);;
 
 let CARTESIAN_PRODUCT_EQ_EMPTY = prove
  (`!k s:K->A->bool.
@@ -2747,10 +2759,10 @@ let CARTESIAN_PRODUCT_EQ_EMPTY = prove
   FIRST_X_ASSUM(MP_TAC o SPEC `\i. if i IN k then (f:K->A) i else ARB`) THEN
   REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN SIMP_TAC[]);;
 
-let CARTESIAN_PRODUCT_EMPTY = prove                
- (`!s. cartesian_product {} s = {(\i. ARB)}`,        
+let CARTESIAN_PRODUCT_EMPTY = prove
+ (`!s. cartesian_product {} s = {(\i. ARB)}`,
   REWRITE_TAC[CARTESIAN_PRODUCT; NOT_IN_EMPTY; EXTENSION] THEN
-  REWRITE_TAC[IN_ELIM_THM; IN_SING] THEN REWRITE_TAC[FUN_EQ_THM]);;           
+  REWRITE_TAC[IN_ELIM_THM; IN_SING] THEN REWRITE_TAC[FUN_EQ_THM]);;
 
 let CARTESIAN_PRODUCT_EQ_MEMBERS = prove
  (`!k s x y:K->A.
@@ -2761,11 +2773,11 @@ let CARTESIAN_PRODUCT_EQ_MEMBERS = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC EXTENSIONAL_EQ THEN
   EXISTS_TAC `k:K->bool` THEN ASM_REWRITE_TAC[IN]);;
 
-let CARTESIAN_PRODUCT_EQ_MEMBERS_EQ = prove                                    
- (`!k s x y.            
-        x IN cartesian_product k s /\                                    
-        y IN cartesian_product k s                                   
-        ==> (x = y <=> !i. i IN k ==> x i = y i)`, 
+let CARTESIAN_PRODUCT_EQ_MEMBERS_EQ = prove
+ (`!k s x y.
+        x IN cartesian_product k s /\
+        y IN cartesian_product k s
+        ==> (x = y <=> !i. i IN k ==> x i = y i)`,
   MESON_TAC[CARTESIAN_PRODUCT_EQ_MEMBERS]);;
 
 let SUBSET_CARTESIAN_PRODUCT = prove
