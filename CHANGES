@@ -8,16 +8,79 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 31 Dec 2017         Examples/padics.ml [new file]
+
+Added a construction of the p-adic numbers. This is mostly meant as an example
+of using metric space completion, but some effort is made to create a usable
+theory, with the p-adics for each p occupying the whole type ":padic" and with
+the embeddings of naturals overlaid in the same way for all p.
+
+Tue  5 Dec 2017         int.ml
+
+Beefed up the previously minimal set of theorems about integer division and
+remainder with the following:
+
+  INT_ADD_REM =
+    |- !m n p. (m rem p + n rem p) rem p = (m + n) rem p
+
+  INT_DIVISION_DECOMP =
+    |- !m n. m div n * n + m rem n = m
+
+  INT_DIV_0 =
+    |- !m. m div &0 = &0
+
+  INT_DIV_LT =
+    |- !m n. (~(n = &0) ==> &0 <= m) /\ m < n ==> m div n = &0
+
+  INT_DIV_RNEG =
+    |- !m n. m div --n = --(m div n)
+
+  INT_DIV_UNIQ =
+    |- !m n q r. m = q * n + r /\ &0 <= r /\ r < abs n ==> m div n = q
+
+  INT_DIV_ZERO =
+    |- !n. &0 div n = &0
+
+  INT_MUL_REM =
+    |- !m n p. (m rem p * n rem p) rem p = (m * n) rem p
+
+  INT_REM_0 =
+    |- !m. m rem &0 = m
+
+  INT_REM_EQ =
+    |- !m n p. m rem p = n rem p <=> (m == n) (mod p)
+
+  INT_REM_EQ_0 =
+    |- !m n. m rem n = &0 <=> n divides m
+
+  INT_REM_LT =
+    |- !m n. (~(n = &0) ==> &0 <= m) /\ m < n ==> m rem n = m
+
+  INT_REM_MOD_SELF =
+    |- !m n. (m rem n == m) (mod n)
+
+  INT_REM_REM =
+    |- !m n. m rem n rem n = m rem n
+
+  INT_REM_RNEG =
+    |- !m n. m rem --n = m rem n
+
+  INT_REM_UNIQ =
+    |- !m n q r. m = q * n + r /\ &0 <= r /\ r < abs n ==> m rem n = r
+
+  INT_REM_ZERO =
+    |- !n. &0 rem n = &0
+
 Sat  2nd Dec 2017       real.ml, sets.ml
 
 Added a couple of somewhat random but useful theorems:
 
   CARTESIAN_PRODUCT_AS_RESTRICTIONS =
     |- !k s.
-         cartesian_product k s =                                                  
+         cartesian_product k s =
          {RESTRICTION k f |f| !i. i IN k ==> f i IN s i}
 
-  REAL_POS_EQ_SQUARE = 
+  REAL_POS_EQ_SQUARE =
     |- !x. &0 <= x <=> ?y. y pow 2 = x
 
 Sat  2nd Dec 2017       Library/card.ml
@@ -25,25 +88,25 @@ Sat  2nd Dec 2017       Library/card.ml
 Added a few elementary cardinality theorems, some of them surprising gaps:
 
   CARD_EQ_INT_NUM = |- (:int) =_c (:num)
-  
-  CARD_EXP_FINITE_EQ = 
+
+  CARD_EXP_FINITE_EQ =
    |- !s t. FINITE(s ^_c t) <=>
           (?a. s SUBSET {a}) \/ t = {} \/ FINITE s /\ FINITE t
-  
+
   CARD_LE_RESTRICTED_FUNSPACE =
    |- !s t k.
-           {f | IMAGE f s SUBSET t /\                                          
-               {x | ~(f x = k x)} SUBSET s /\                  
-               FINITE {x | ~(f x = k x)}}                                      
+           {f | IMAGE f s SUBSET t /\
+               {x | ~(f x = k x)} SUBSET s /\
+               FINITE {x | ~(f x = k x)}}
           <=_c {u | u SUBSET (s CROSS t) /\ FINITE u}
 
   INT_COUNTABLE = |- COUNTABLE (:int)
-  
+
   int_INFINITE = |- INFINITE (:int)
-  
+
 Sat  2nd Dec 2017       README
 
-Updated the build instructions, in particular taking into account the fact 
+Updated the build instructions, in particular taking into account the fact
 (pointed out by John O'Leary) that OCaml >= 4.06 no longer includes the
 "num" library by default.
 

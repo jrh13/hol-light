@@ -34,6 +34,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/mizar \
 	Library/multiplicative \
 	Examples/multiwf \
+	Examples/padics \
 	Examples/pell \
 	Library/permutations \
 	Library/primitive \
