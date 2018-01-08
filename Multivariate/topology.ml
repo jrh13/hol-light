@@ -8456,7 +8456,7 @@ let LIFT_TO_QUOTIENT_SPACE = prove
     CONTINUOUS_ON_EQ)) THEN
   ASM_REWRITE_TAC[o_THM]);;
 
-let QUOTIENT_MAP_COMPOSE = prove
+let QUOTIENT_MAP_COMPOSE_EXPLICIT = prove
  (`!f:real^M->real^N g:real^N->real^P s t u.
         IMAGE f s SUBSET t /\
         (!v. v SUBSET t
