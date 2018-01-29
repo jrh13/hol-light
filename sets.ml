@@ -837,6 +837,11 @@ let INTERS_EQ_UNIV = prove
  (`!f. INTERS f = (:A) <=> !s. s IN f ==> s = (:A)`,
   SET_TAC[]);;
 
+let INTERS_ANTIMONO_GEN = prove
+ (`!s t. (!y. y IN t ==> ?x. x IN s /\ x SUBSET y)
+         ==> INTERS s SUBSET INTERS t`,
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Image.                                                                    *)
 (* ------------------------------------------------------------------------- *)

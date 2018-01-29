@@ -766,6 +766,15 @@ let INT_REM_0 = prove
  (`!m. m rem &0 = m`,
   MESON_TAC[INT_DIVISION_0]);;
 
+let INT_REM_DIV = prove
+ (`!m n. m rem n = m - m div n * n`,
+  REWRITE_TAC[INT_ARITH `a:int = b - c <=> c + a = b`] THEN
+  REWRITE_TAC[INT_DIVISION_DECOMP]);;
+
+let INT_LT_REM = prove
+ (`!x n. &0 < n ==> x rem n < n`,
+  MESON_TAC[INT_DIVISION; INT_LT_REFL; INT_ARITH `&0:int < n ==> abs n = n`]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic operations on integers. Essentially a clone of stuff for reals *)
 (* in the file "calc_int.ml", except for div and rem, which are more like N. *)

@@ -8,14 +8,53 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Sun 31 Dec 2017         Examples/padics.ml [new file]
+Sat 27th Jan 2018         int.ml, sets.ml
+
+Added a few trivial theorems, two about integer division, one about sets:
+
+  INT_LT_REM = |- !x n. &0 < n ==> x rem n < n
+
+  INT_REM_DIV = |- !m n. m rem n = m - m div n * n
+
+  INTERS_ANTIMONO_GEN =
+    |- !s t. (!y. y IN t ==> ?x. x IN s /\ x SUBSET y)
+             ==> INTERS s SUBSET INTERS t
+
+Mon 22nd Jan 2018         Library/grouptheory.ml
+
+Added a few more theorems to the group theory library, and in the process
+created a dependency of this file on Library/card.ml, since all of these
+theorems use material from there.
+
+  CARD_EQ_FREE_ABELIAN_GROUP_INFINITE =
+    |- !s. INFINITE s ==> group_carrier (free_abelian_group s) =_c s
+
+  CARD_EQ_HOMOMORPHISMS_FROM_FREE_ABELIAN_GROUP =
+    |- !s G.
+           abelian_group G
+           ==> {f | EXTENSIONAL (group_carrier (free_abelian_group s)) f /\
+                    group_homomorphism (free_abelian_group s,G) f} =_c
+               group_carrier G ^_c s
+
+  FINITE_PRODUCT_GROUP =
+    |- !k G.
+           FINITE (group_carrier (product_group k G)) <=>
+           FINITE {i | i IN k /\ ~trivial_group (G i)} /\
+           (!i. i IN k ==> FINITE (group_carrier (G i)))
+
+  ISOMORPHIC_FREE_ABELIAN_GROUPS =
+    |- !s t.
+           free_abelian_group s isomorphic_group free_abelian_group t <=>
+           s =_c t
+
+Sun 31st Dec 2017         Examples/padics.ml [new file]
 
 Added a construction of the p-adic numbers. This is mostly meant as an example
 of using metric space completion, but some effort is made to create a usable
 theory, with the p-adics for each p occupying the whole type ":padic" and with
 the embeddings of naturals overlaid in the same way for all p.
 
-Tue  5 Dec 2017         int.ml
+Tue  5th Dec 2017         int.ml
 
 Beefed up the previously minimal set of theorems about integer division and
 remainder with the following:
