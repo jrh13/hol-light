@@ -11521,7 +11521,7 @@ let PATH_CONNECTED_IN_TOPSPACE = prove
                     path_connected_space top`,
   REWRITE_TAC[path_connected_in; SUBSET_REFL; SUBTOPOLOGY_TOPSPACE]);;
 
-let PATH_CONNECTED_SPACE_IMP_CONNECTED_SPACE = prove
+let PATH_CONNECTED_IMP_CONNECTED_SPACE = prove
  (`!top:A topology. path_connected_space top ==> connected_space top`,
   REWRITE_TAC[path_connected_space; CONNECTED_SPACE_SUBCONNECTED] THEN
   GEN_TAC THEN STRIP_TAC THEN
@@ -11545,7 +11545,7 @@ let PATH_CONNECTED_SPACE_IMP_CONNECTED_SPACE = prove
 let PATH_CONNECTED_IN_IMP_CONNECTED_IN = prove
  (`!top s:A->bool. path_connected_in top s ==> connected_in top s`,
   SIMP_TAC[path_connected_in; connected_in] THEN
-  SIMP_TAC[PATH_CONNECTED_SPACE_IMP_CONNECTED_SPACE]);;
+  SIMP_TAC[PATH_CONNECTED_IMP_CONNECTED_SPACE]);;
 
 let PATH_CONNECTED_SPACE_TOPSPACE_EMPTY = prove
  (`!top:A topology. topspace top = {} ==> path_connected_space top`,
@@ -16276,6 +16276,277 @@ let HOMOTOPIC_WITH_TRANS = prove
     X_GEN_TAC `t:real` THEN STRIP_TAC THEN
     ASM_CASES_TAC `t <= &1 / &2` THEN ASM_REWRITE_TAC[] THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REAL_ARITH_TAC]);;
+
+let HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_LEFT = prove
+ (`!(f:A->B) g (h:B->C) top1 top2 top3.
+        homotopic_with (\k. T) (top1,top2) f g /\
+        continuous_map (top2,top3) h
+        ==> homotopic_with (\k. T) (top1,top3) (h o f) (h o g)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ_ALT] THEN DISCH_TAC THEN
+  REWRITE_TAC[homotopic_with; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `k:real#A->B` THEN STRIP_TAC THEN
+  EXISTS_TAC `(h:B->C) o (k:real#A->B)` THEN
+  ASM_REWRITE_TAC[o_THM] THEN
+  ASM_MESON_TAC[CONTINUOUS_MAP_COMPOSE]);;
+
+let HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_RIGHT = prove
+ (`!(f:B->C) g (h:A->B) top1 top2 top3.
+        homotopic_with (\k. T) (top2,top3) f g /\
+        continuous_map (top1,top2) h
+        ==> homotopic_with (\k. T) (top1,top3) (f o h) (g o h)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ_ALT] THEN DISCH_TAC THEN
+  REWRITE_TAC[homotopic_with; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `k:real#B->C` THEN STRIP_TAC THEN
+  EXISTS_TAC `\(t,x). (k:real#B->C)(t,(h:A->B) x)` THEN
+  ASM_REWRITE_TAC[o_THM] THEN
+  REWRITE_TAC[LAMBDA_PAIR] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM o_DEF] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+     CONTINUOUS_MAP_COMPOSE)) THEN
+  REWRITE_TAC[CONTINUOUS_MAP_PAIRWISE; o_DEF; ETA_AX] THEN
+  ASM_SIMP_TAC[CONTINUOUS_MAP_FST; CONTINUOUS_MAP_OF_SND]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Homotopy equivalence of topological spaces.                               *)
+(* ------------------------------------------------------------------------- *)
+
+parse_as_infix("homotopy_equivalent_space",(12,"right"));;
+
+let homotopy_equivalent_space = new_definition
+ `(top:A topology) homotopy_equivalent_space (top':B topology) <=>
+        ?f g. continuous_map (top,top') f /\
+              continuous_map (top',top) g /\
+              homotopic_with (\x. T) (top,top) (g o f) I /\
+              homotopic_with (\x. T) (top',top') (f o g) I`;;
+
+let HOMEOMORPHIC_IMP_HOMOTOPY_EQUIVALENT_SPACE = prove
+ (`!(top:A topology) (top':B topology).
+        top homeomorphic_space top'
+        ==> top homotopy_equivalent_space top'`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[homeomorphic_space; homotopy_equivalent_space] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  REWRITE_TAC[homeomorphic_maps] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC HOMOTOPIC_WITH_EQUAL THEN
+  ASM_REWRITE_TAC[o_THM; I_THM] THEN
+  ASM_MESON_TAC[CONTINUOUS_MAP_COMPOSE]);;
+
+let HOMOTOPY_EQUIVALENT_SPACE_REFL = prove
+ (`!top:A topology. top homotopy_equivalent_space top`,
+  SIMP_TAC[HOMEOMORPHIC_IMP_HOMOTOPY_EQUIVALENT_SPACE;
+           HOMEOMORPHIC_SPACE_REFL]);;
+
+let HOMOTOPY_EQUIVALENT_SPACE_SYM = prove
+ (`!(top:A topology) (top':B topology).
+        top homotopy_equivalent_space top' <=>
+        top' homotopy_equivalent_space top`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homotopy_equivalent_space] THEN
+  GEN_REWRITE_TAC RAND_CONV [SWAP_EXISTS_THM] THEN
+  REPEAT(AP_TERM_TAC THEN ABS_TAC) THEN CONV_TAC TAUT);;
+
+let HOMOTOPY_EQUIVALENT_SPACE_TRANS = prove
+ (`!top1:A topology top2:B topology top3:C topology.
+        top1 homotopy_equivalent_space top2 /\
+        top2 homotopy_equivalent_space top3
+        ==> top1 homotopy_equivalent_space top3`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[homotopy_equivalent_space] THEN
+  SIMP_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  SIMP_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC
+   [`f1:A->B`; `g1:B->A`;
+    `f2:B->C`; `g2:C->B`] THEN
+  STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC
+   [`(f2:B->C) o (f1:A->B)`;
+    `(g1:B->A) o (g2:C->B)`] THEN
+  REWRITE_TAC[IMAGE_o] THEN REPLICATE_TAC 2
+   (CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_MAP_COMPOSE]; ALL_TAC]) THEN
+  CONJ_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THENL
+   [EXISTS_TAC `(g1:B->A) o I o (f1:A->B)`;
+    EXISTS_TAC `(f2:B->C) o I o (g2:C->B)`] THEN
+  (CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[I_O_ID]]) THEN
+  REWRITE_TAC[GSYM o_ASSOC] THEN
+  MATCH_MP_TAC HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_LEFT THEN
+  EXISTS_TAC `top2:B topology` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[o_ASSOC] THEN
+  MATCH_MP_TAC HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_RIGHT THEN
+  EXISTS_TAC `top2:B topology` THEN ASM_REWRITE_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Contractible spaces. The definition (which agrees with "contractible" on  *)
+(* subsets of Euclidean space) is a little cryptic because we don't in fact  *)
+(* assume that the constant "a" is in the space. This forces the convention  *)
+(* that the empty space / set is contractible, avoiding some special cases.  *)
+(* ------------------------------------------------------------------------- *)
+
+let contractible_space = new_definition
+ `contractible_space (top:A topology) <=>
+        ?a. homotopic_with (\x. T) (top,top) (\x. x) (\x. a)`;;
+
+let CONTRACTIBLE_SPACE_EMPTY = prove
+ (`!top:A topology. topspace top = {} ==> contractible_space top`,
+  REWRITE_TAC[contractible_space; homotopic_with] THEN
+  SIMP_TAC[CONTINUOUS_MAP_ON_EMPTY; TOPSPACE_PROD_TOPOLOGY; CROSS_EMPTY] THEN
+  REPEAT STRIP_TAC THEN MAP_EVERY EXISTS_TAC
+   [`ARB:A`; `\(t,x):real#A. if t = &0 then x else ARB`] THEN
+  REWRITE_TAC[REAL_ARITH `~(&1 = &0)`]);;
+
+let CONTRACTIBLE_SPACE_SING = prove
+ (`!top a:A. topspace top = {a} ==> contractible_space top`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[contractible_space] THEN
+  EXISTS_TAC `a:A` THEN REWRITE_TAC[homotopic_with] THEN
+  EXISTS_TAC `(\(t,x). if t = &0 then x else a):real#A->A` THEN
+  REWRITE_TAC[REAL_ARITH `~(&1 = &0)`] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_EQ THEN EXISTS_TAC `(\z. a):real#A->A` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_CONST; IN_SING] THEN
+  ASM_REWRITE_TAC[FORALL_PAIR_THM; TOPSPACE_PROD_TOPOLOGY; IN_CROSS] THEN
+  SET_TAC[]);;
+
+let CONTRACTIBLE_SPACE_SUBSET_SING = prove
+ (`!top a:A. topspace top SUBSET {a} ==> contractible_space top`,
+  REWRITE_TAC[SET_RULE `s SUBSET {a} <=> s = {} \/ s = {a}`] THEN
+  MESON_TAC[CONTRACTIBLE_SPACE_EMPTY; CONTRACTIBLE_SPACE_SING]);;
+
+let CONTRACTIBLE_SPACE_SUBTOPOLOGY_SING = prove
+ (`!top a:A. contractible_space(subtopology top {a})`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC CONTRACTIBLE_SPACE_SUBSET_SING THEN
+  EXISTS_TAC `a:A` THEN REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; INTER_SUBSET]);;
+
+let CONTRACTIBLE_SPACE = prove
+ (`!top:A topology.
+        contractible_space top <=>
+        topspace top = {} \/
+        ?a. a IN topspace top /\
+            homotopic_with (\x. T) (top,top) (\x. x) (\x. a)`,
+  GEN_TAC THEN ASM_CASES_TAC `topspace top:A->bool = {}` THEN
+  ASM_SIMP_TAC[CONTRACTIBLE_SPACE_EMPTY] THEN
+  REWRITE_TAC[contractible_space] THEN EQ_TAC THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:A` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP HOMOTOPIC_WITH_IMP_CONTINUOUS_MAPS) THEN
+  REWRITE_TAC[continuous_map] THEN ASM SET_TAC[]);;
+
+let CONTRACTIBLE_IMP_PATH_CONNECTED_SPACE = prove
+ (`!top:A topology.
+        contractible_space top ==> path_connected_space top`,
+  GEN_TAC THEN
+  ASM_CASES_TAC `topspace top:A->bool = {}` THEN
+  ASM_SIMP_TAC[PATH_CONNECTED_SPACE_TOPSPACE_EMPTY; CONTRACTIBLE_SPACE] THEN
+  REWRITE_TAC[homotopic_with; LEFT_IMP_EXISTS_THM; RIGHT_AND_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `h:real#A->A`] THEN STRIP_TAC THEN
+  REWRITE_TAC[PATH_CONNECTED_SPACE_IFF_PATH_COMPONENT] THEN
+  SUBGOAL_THEN
+   `!x:A. x IN topspace top ==> path_component_of top x a`
+  MP_TAC THENL
+   [ALL_TAC;
+    ASM_MESON_TAC[PATH_COMPONENT_OF_TRANS; PATH_COMPONENT_OF_SYM]] THEN
+  X_GEN_TAC `b:A` THEN DISCH_TAC THEN REWRITE_TAC[path_component_of] THEN
+  EXISTS_TAC `(h:real#A->A) o (\x. x,b)` THEN
+  ASM_REWRITE_TAC[o_THM] THEN REWRITE_TAC[path_in] THEN
+  MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN EXISTS_TAC
+   `prod_topology (subtopology euclideanreal (real_interval[&0,&1]))
+                  (top:A topology)` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_PAIRWISE; o_DEF] THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST]);;
+
+let NULLHOMOTOPIC_THROUGH_CONTRACTIBLE_SPACE = prove
+ (`!(f:A->B) (g:B->C) top1 top2 top3.
+        continuous_map (top1,top2) f /\
+        continuous_map (top2,top3) g /\
+        contractible_space top2
+        ==> ?c. homotopic_with (\h. T) (top1,top3) (g o f) (\x. c)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [contractible_space]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `b:B` MP_TAC) THEN
+  DISCH_THEN(MP_TAC o ISPECL [`g:B->C`; `top3:C topology`] o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ] HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_LEFT)) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o ISPECL [`f:A->B`; `top1:A topology`] o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ] HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_RIGHT)) THEN
+  ASM_REWRITE_TAC[o_DEF] THEN DISCH_TAC THEN
+  EXISTS_TAC `(g:B->C) b` THEN ASM_REWRITE_TAC[]);;
+
+let NULLHOMOTOPIC_INTO_CONTRACTIBLE_SPACE = prove
+ (`!(f:A->B) top1 top2.
+        continuous_map (top1,top2) f /\ contractible_space top2
+        ==> ?c. homotopic_with (\h. T) (top1,top2) f (\x. c)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(f:A->B) = (\x. x) o f` SUBST1_TAC THENL
+   [REWRITE_TAC[o_THM; FUN_EQ_THM];
+    MATCH_MP_TAC NULLHOMOTOPIC_THROUGH_CONTRACTIBLE_SPACE THEN
+    EXISTS_TAC `top2:B topology` THEN ASM_REWRITE_TAC[CONTINUOUS_MAP_ID]]);;
+
+let NULLHOMOTOPIC_FROM_CONTRACTIBLE_SPACE = prove
+ (`!(f:A->B) top1 top2.
+        continuous_map (top1,top2) f /\ contractible_space top1
+        ==> ?c. homotopic_with (\h. T) (top1,top2) f (\x. c)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(f:A->B) = f o (\x. x)` SUBST1_TAC THENL
+   [REWRITE_TAC[o_THM; FUN_EQ_THM];
+    MATCH_MP_TAC NULLHOMOTOPIC_THROUGH_CONTRACTIBLE_SPACE THEN
+    EXISTS_TAC `top1:A topology` THEN ASM_REWRITE_TAC[CONTINUOUS_MAP_ID]]);;
+
+let HOMOTOPY_DOMINATED_CONTRACTIBILITY = prove
+ (`!(f:A->B) g top top'.
+        continuous_map (top,top') f /\
+        continuous_map (top',top) g /\
+        homotopic_with (\x. T) (top',top') (f o g) I /\
+        contractible_space top
+        ==> contractible_space top'`,
+  REPEAT GEN_TAC THEN SIMP_TAC[contractible_space; I_DEF] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:A->B`; `top:A topology`; `top':B topology`]
+        NULLHOMOTOPIC_FROM_CONTRACTIBLE_SPACE) THEN
+  ASM_REWRITE_TAC[contractible_space; I_DEF] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `b:B` THEN
+  ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN DISCH_TAC THEN
+  MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
+  EXISTS_TAC `(f:A->B) o (g:B->A)` THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `(\x. (b:B)) = (\x. b) o (g:B->A)`
+  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
+  MATCH_MP_TAC HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_RIGHT THEN
+  EXISTS_TAC `top:A topology` THEN ASM_REWRITE_TAC[]);;
+
+let HOMOTOPY_EQUIVALENT_SPACE_CONTRACTIBILITY = prove
+ (`!(top:A topology) (top':B topology).
+        top homotopy_equivalent_space top'
+        ==> (contractible_space top <=> contractible_space top')`,
+  REWRITE_TAC[homotopy_equivalent_space] THEN REPEAT STRIP_TAC THEN EQ_TAC THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
+   (REWRITE_RULE[CONJ_ASSOC] HOMOTOPY_DOMINATED_CONTRACTIBILITY)) THEN
+  ASM_MESON_TAC[]);;
+
+let HOMEOMORPHIC_SPACE_CONTRACTIBILITY = prove
+ (`!(top:A topology) (top':B topology).
+        top homeomorphic_space top'
+        ==> (contractible_space top <=> contractible_space top')`,
+  MESON_TAC[HOMOTOPY_EQUIVALENT_SPACE_CONTRACTIBILITY;
+            HOMEOMORPHIC_IMP_HOMOTOPY_EQUIVALENT_SPACE]);;
+
+let CONTRACTIBLE_EQ_HOMOTOPY_EQUIVALENT_SINGLETON_SUBTOPOLOGY = prove
+ (`!top:A topology.
+        contractible_space top <=>
+        topspace top = {} \/
+        ?a. a IN topspace top /\
+            top homotopy_equivalent_space (subtopology top {a})`,
+  GEN_TAC THEN ASM_CASES_TAC `topspace top:A->bool = {}` THEN
+  ASM_SIMP_TAC[CONTRACTIBLE_SPACE_EMPTY] THEN EQ_TAC THENL
+   [ASM_REWRITE_TAC[CONTRACTIBLE_SPACE] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `a:A` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[homotopy_equivalent_space] THEN
+    MAP_EVERY EXISTS_TAC [`(\x. a):A->A`; `(\x. x):A->A`] THEN
+    ASM_SIMP_TAC[o_DEF; CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_ID;
+      IN_INTER; CONTINUOUS_MAP_CONST; TOPSPACE_SUBTOPOLOGY; IN_SING] THEN
+    ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN
+    ASM_REWRITE_TAC[I_DEF] THEN MATCH_MP_TAC HOMOTOPIC_WITH_EQUAL THEN
+    REWRITE_TAC[CONTINUOUS_MAP_ID; TOPSPACE_SUBTOPOLOGY] THEN SET_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC) THEN
+    FIRST_ASSUM(SUBST1_TAC o
+      MATCH_MP HOMOTOPY_EQUIVALENT_SPACE_CONTRACTIBILITY) THEN
+    MATCH_MP_TAC CONTRACTIBLE_SPACE_SING THEN
+    EXISTS_TAC `a:A` THEN ASM_REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN
+    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Three more restrictive notions of continuity for metric spaces.           *)

@@ -16121,6 +16121,13 @@ let HOMEOMORPHIC_MAPS_EUCLIDEAN_SUBTOPOLOGY = prove
   REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
   SET_TAC[]);;
 
+let HOMEOMORPHIC_SPACE_EUCLIDEAN = prove
+ (`!(s:real^M->bool) (t:real^N->bool).
+     (subtopology euclidean s) homeomorphic_space (subtopology euclidean t) <=>
+     s homeomorphic t`,
+  REWRITE_TAC[homeomorphic; homeomorphic_space;
+              HOMEOMORPHIC_MAPS_EUCLIDEAN_SUBTOPOLOGY]);;
+
 let HOMEOMORPHISM_IMP_HOMEOMORPHIC = prove
  (`!f:real^M->real^N g s t. homeomorphism (s,t) (f,g) ==> s homeomorphic t`,
   REWRITE_TAC[homeomorphic] THEN MESON_TAC[]);;

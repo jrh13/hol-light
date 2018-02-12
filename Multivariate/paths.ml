@@ -20648,6 +20648,14 @@ let homotopy_equivalent = new_definition
               homotopic_with (\x. T)
                (subtopology euclidean t,subtopology euclidean t) (f o g) I`;;
 
+let HOMOTOPY_EQUIVALENT_SPACE_EUCLIDEAN = prove
+ (`!(s:real^M->bool) (t:real^N->bool).
+     (subtopology euclidean s) homotopy_equivalent_space
+     (subtopology euclidean t) <=>
+     s homotopy_equivalent t`,
+  REWRITE_TAC[homotopy_equivalent_space; homotopy_equivalent] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN2] THEN MESON_TAC[]);;
+
 let HOMOTOPY_EQUIVALENT = prove
  (`!s:real^M->bool t:real^N->bool.
         s homotopy_equivalent t <=>
@@ -20687,13 +20695,9 @@ let HOMOTOPY_EQUIVALENT = prove
 let HOMEOMORPHIC_IMP_HOMOTOPY_EQUIVALENT = prove
  (`!s:real^M->bool t:real^N->bool.
         s homeomorphic t ==> s homotopy_equivalent t`,
-  REPEAT GEN_TAC THEN
-  REWRITE_TAC[homeomorphic; homotopy_equivalent; homeomorphism] THEN
-  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
-  STRIP_TAC THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
-  CONJ_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_EQUAL THEN
-  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN2; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
-  ASM_SIMP_TAC[CONTINUOUS_ON_COMPOSE; IMAGE_o; o_THM; I_THM; SUBSET_REFL]);;
+  REWRITE_TAC[GSYM HOMEOMORPHIC_SPACE_EUCLIDEAN;
+              GSYM HOMOTOPY_EQUIVALENT_SPACE_EUCLIDEAN] THEN
+  REWRITE_TAC[HOMEOMORPHIC_IMP_HOMOTOPY_EQUIVALENT_SPACE]);;
 
 let HOMOTOPY_EQUIVALENT_REFL = prove
  (`!s:real^N->bool. s homotopy_equivalent s`,
@@ -20702,39 +20706,15 @@ let HOMOTOPY_EQUIVALENT_REFL = prove
 let HOMOTOPY_EQUIVALENT_SYM = prove
  (`!s:real^M->bool t:real^N->bool.
         s homotopy_equivalent t <=> t homotopy_equivalent s`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopy_equivalent] THEN
-  GEN_REWRITE_TAC RAND_CONV [SWAP_EXISTS_THM] THEN
-  REPEAT(AP_TERM_TAC THEN ABS_TAC) THEN CONV_TAC TAUT);;
+  REWRITE_TAC[GSYM HOMOTOPY_EQUIVALENT_SPACE_EUCLIDEAN] THEN
+  REWRITE_TAC[HOMOTOPY_EQUIVALENT_SPACE_SYM]);;
 
 let HOMOTOPY_EQUIVALENT_TRANS = prove
  (`!s:real^M->bool t:real^N->bool u:real^P->bool.
         s homotopy_equivalent t /\ t homotopy_equivalent u
         ==> s homotopy_equivalent u`,
-  REPEAT GEN_TAC THEN
-  SIMP_TAC[homotopy_equivalent; LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
-  SIMP_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC
-   [`f1:real^M->real^N`; `g1:real^N->real^M`;
-    `f2:real^N->real^P`; `g2:real^P->real^N`] THEN
-  STRIP_TAC THEN
-  MAP_EVERY EXISTS_TAC
-   [`(f2:real^N->real^P) o (f1:real^M->real^N)`;
-    `(g1:real^N->real^M) o (g2:real^P->real^N)`] THEN
-  REWRITE_TAC[IMAGE_o] THEN
-  REPLICATE_TAC 2
-   (CONJ_TAC THENL
-    [ASM_MESON_TAC[CONTINUOUS_ON_COMPOSE; CONTINUOUS_ON_SUBSET];ALL_TAC] THEN
-    CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
-  CONJ_TAC THEN MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THENL
-   [EXISTS_TAC `(g1:real^N->real^M) o I o (f1:real^M->real^N)`;
-    EXISTS_TAC `(f2:real^N->real^P) o I o (g2:real^P->real^N)`] THEN
-  (CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[I_O_ID]]) THEN
-  REWRITE_TAC[GSYM o_ASSOC] THEN
-  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT THEN
-  EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
-  REWRITE_TAC[o_ASSOC] THEN
-  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
-  EXISTS_TAC `t:real^N->bool` THEN ASM_REWRITE_TAC[]);;
+  REWRITE_TAC[GSYM HOMOTOPY_EQUIVALENT_SPACE_EUCLIDEAN] THEN
+  REWRITE_TAC[HOMOTOPY_EQUIVALENT_SPACE_TRANS]);;
 
 let HOMOTOPY_EQUIVALENT_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool s':real^P->bool t':real^Q->bool.
@@ -21299,6 +21279,11 @@ let contractible = new_definition
     ?a. homotopic_with (\x. T)
          (subtopology euclidean s,subtopology euclidean s) (\x. x) (\x. a)`;;
 
+let CONTRACTIBLE_SPACE_EUCLIDEAN = prove
+ (`!s:real^N->bool.
+        contractible_space(subtopology euclidean s) <=> contractible s`,
+  REWRITE_TAC[contractible; contractible_space]);;
+
 let CONTRACTIBLE_IMP_SIMPLY_CONNECTED = prove
  (`!s:real^N->bool. contractible s ==> simply_connected s`,
   GEN_TAC THEN REWRITE_TAC[contractible] THEN
@@ -21352,16 +21337,11 @@ let NULLHOMOTOPIC_THROUGH_CONTRACTIBLE = prove
         ==> ?c. homotopic_with (\h. T)
                  (subtopology euclidean s,subtopology euclidean u)
                  (g o f) (\x. c)`,
+  REWRITE_TAC[GSYM CONTRACTIBLE_SPACE_EUCLIDEAN] THEN
   REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [contractible]) THEN
-  DISCH_THEN(X_CHOOSE_THEN `b:real^N` MP_TAC) THEN
-  DISCH_THEN(MP_TAC o ISPECL [`g:real^N->real^P`; `u:real^P->bool`] o MATCH_MP
-   (ONCE_REWRITE_RULE[IMP_CONJ] HOMOTOPIC_COMPOSE_CONTINUOUS_LEFT)) THEN
-  ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(MP_TAC o ISPECL [`f:real^M->real^N`; `s:real^M->bool`] o MATCH_MP
-   (ONCE_REWRITE_RULE[IMP_CONJ] HOMOTOPIC_COMPOSE_CONTINUOUS_RIGHT)) THEN
-  ASM_REWRITE_TAC[o_DEF] THEN DISCH_TAC THEN
-  EXISTS_TAC `(g:real^N->real^P) b` THEN ASM_REWRITE_TAC[]);;
+  MATCH_MP_TAC NULLHOMOTOPIC_THROUGH_CONTRACTIBLE_SPACE THEN
+  EXISTS_TAC `subtopology euclidean (t:real^N->bool)` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN2]);;
 
 let NULLHOMOTOPIC_INTO_CONTRACTIBLE = prove
  (`!f:real^M->real^N s t.
@@ -21655,38 +21635,12 @@ let HOMOTOPY_EQUIVALENT_EMPTY = prove
   SIMP_TAC[HOMOTOPY_EQUIVALENT_CONTRACTIBLE_SETS; CONTRACTIBLE_EMPTY] THEN
   REWRITE_TAC[homotopy_equivalent] THEN SET_TAC[]);;
 
-let HOMOTOPY_DOMINATED_CONTRACTIBILITY = prove
- (`!f:real^M->real^N g s t.
-        f continuous_on s /\
-        IMAGE f s SUBSET t /\
-        g continuous_on t /\
-        IMAGE g t SUBSET s /\
-        homotopic_with (\x. T)
-         (subtopology euclidean t,subtopology euclidean t) (f o g) I /\
-        contractible s
-        ==> contractible t`,
-  REPEAT GEN_TAC THEN SIMP_TAC[contractible; I_DEF] THEN STRIP_TAC THEN
-  MP_TAC(ISPECL [`f:real^M->real^N`; `s:real^M->bool`; `t:real^N->bool`]
-        NULLHOMOTOPIC_FROM_CONTRACTIBLE) THEN
-  ASM_REWRITE_TAC[contractible; I_DEF] THEN
-  ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `b:real^N` THEN
-  ONCE_REWRITE_TAC[HOMOTOPIC_WITH_SYM] THEN DISCH_TAC THEN
-  MATCH_MP_TAC HOMOTOPIC_WITH_TRANS THEN
-  EXISTS_TAC `(f:real^M->real^N) o (g:real^N->real^M)` THEN
-  ASM_REWRITE_TAC[] THEN
-  SUBGOAL_THEN `(\x. (b:real^N)) = (\x. b) o (g:real^N->real^M)`
-  SUBST1_TAC THENL [REWRITE_TAC[o_DEF]; ALL_TAC] THEN
-  MATCH_MP_TAC HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT THEN
-  EXISTS_TAC `s:real^M->bool` THEN ASM_REWRITE_TAC[]);;
-
 let HOMOTOPY_EQUIVALENT_CONTRACTIBILITY = prove
  (`!s:real^M->bool t:real^N->bool.
         s homotopy_equivalent t ==> (contractible s <=> contractible t)`,
-  REWRITE_TAC[homotopy_equivalent] THEN REPEAT STRIP_TAC THEN EQ_TAC THEN
-  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
-   (REWRITE_RULE[CONJ_ASSOC] HOMOTOPY_DOMINATED_CONTRACTIBILITY)) THEN
-  ASM_MESON_TAC[]);;
+  REWRITE_TAC[GSYM HOMOTOPY_EQUIVALENT_SPACE_EUCLIDEAN;
+              GSYM CONTRACTIBLE_SPACE_EUCLIDEAN] THEN
+  REWRITE_TAC[HOMOTOPY_EQUIVALENT_SPACE_CONTRACTIBILITY]);;
 
 let HOMOTOPY_EQUIVALENT_SING = prove
  (`!s:real^M->bool a:real^N.

@@ -61,7 +61,7 @@ let INT_POLY_DIFF_EXPLICIT = INT_OF_REAL_THM REAL_POLY_DIFF_EXPLICIT;;
 
 let FINITE_INTSEG_RESTRICT = prove
  (`!P a b. FINITE {x:int | a <= x /\ x <= b /\ P x}`,
-  SIMP_TAC[FINITE_RESTRICT; FINITE_INTSEG; SET_RULE
+  SIMP_TAC[FINITE_RESTRICT; FINITE_INT_SEG; SET_RULE
    `{x | P x /\ Q x /\ R x} = {x | x IN {x | P x /\ Q x} /\ R x}`]);;
 
 let INT_POLY_LAGRANGE = prove

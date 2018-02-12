@@ -8,7 +8,14 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Sat 27th Jan 2018         int.ml, sets.ml
+Sat 10th Feb 2018       iterate.ml, Library/grouptheory.ml,
+
+Fixed a couple of name collisions, renaming the GROUP_SUM in the group theory
+library to GROUP_SUM_CLAUSES to avoid clashing with the theorem about
+rearranging real sums into groups, and renamed FINITE_INTSEG in iterate.ml to
+FINITE_INT_SEG to avoid the other theorem of the same name in Library/floor.ml.
+
+Sat 27th Jan 2018       int.ml, sets.ml
 
 Added a few trivial theorems, two about integer division, one about sets:
 

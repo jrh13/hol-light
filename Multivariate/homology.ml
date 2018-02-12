@@ -5192,7 +5192,8 @@ let GROUP_ISOMORPHISM_CYCLE_GROUP_SUM = prove
   SIMP_TAC[INTER_SUBSET; IN_INTER] THEN CONJ_TAC THENL
    [REWRITE_TAC[CHAIN_GROUP; SUBSET; IN] THEN SIMP_TAC[SINGULAR_CYCLE];
     X_GEN_TAC `z:(A->bool)->((num->real)->A)frag`] THEN
-  REWRITE_TAC[SUM_GROUP; cartesian_product; IN_ELIM_THM; CHAIN_GROUP] THEN
+  REWRITE_TAC[SUM_GROUP_CLAUSES; cartesian_product; 
+              IN_ELIM_THM; CHAIN_GROUP] THEN
   REWRITE_TAC[SET_RULE `z IN singular_relcycle q <=> singular_relcycle q z`;
               SET_RULE `z IN singular_chain q <=> singular_chain q z`] THEN
   REWRITE_TAC[SINGULAR_CYCLE] THEN STRIP_TAC THEN ASM_SIMP_TAC[] THEN
@@ -5211,7 +5212,7 @@ let GROUP_ISOMORPHISM_CYCLE_GROUP_SUM = prove
   DISCH_THEN(MP_TAC o SPEC
    `RESTRICTION u (chain_boundary p o (z:(A->bool)->((num->real)->A)frag))` o
    CONJUNCT2) THEN
-  REWRITE_TAC[SUM_GROUP; CHAIN_GROUP; RESTRICTION_EXTENSION] THEN
+  REWRITE_TAC[SUM_GROUP_CLAUSES; CHAIN_GROUP; RESTRICTION_EXTENSION] THEN
   REWRITE_TAC[IN_ELIM_THM; RESTRICTION_IN_CARTESIAN_PRODUCT; o_THM] THEN
   ANTS_TAC THENL
    [CONJ_TAC THENL
@@ -5277,7 +5278,7 @@ let HOMOLOGY_ADDITIVITY_AXIOM_GEN = prove
             (sum_group u (\s. relcycle_group(p,subtopology top s,{}))))`
   SUBST1_TAC THENL
    [REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET; FORALL_IN_IMAGE] THEN
-    REWRITE_TAC[RELATIVE_HOMOLOGY_GROUP; SUM_GROUP; homology_group] THEN
+    REWRITE_TAC[RELATIVE_HOMOLOGY_GROUP; SUM_GROUP_CLAUSES; homology_group] THEN
     REWRITE_TAC[cartesian_product; IN_ELIM_THM] THEN
     REWRITE_TAC[REWRITE_RULE[IN] RESTRICTION_IN_EXTENSIONAL] THEN
     CONJ_TAC THENL
@@ -5332,7 +5333,7 @@ let HOMOLOGY_ADDITIVITY_AXIOM_GEN = prove
             homologous_rel(p,top,{}) (iterate frag_add u x)`
    (fun th -> SIMP_TAC[th])
   THENL
-   [REWRITE_TAC[SUM_GROUP; cartesian_product; IN_ELIM_THM] THEN
+   [REWRITE_TAC[SUM_GROUP_CLAUSES; cartesian_product; IN_ELIM_THM] THEN
     REWRITE_TAC[RELCYCLE_GROUP; SET_RULE
      `x IN singular_relcycle q <=> singular_relcycle q x`] THEN
     X_GEN_TAC `z:(A->bool)->((num->real)->A)frag` THEN STRIP_TAC THEN
@@ -5416,7 +5417,7 @@ let HOMOLOGY_ADDITIVITY_AXIOM_GEN = prove
       `IMAGE f s = t ==> !y. y IN t ==> ?x. x IN s /\ f x = y`) o
       last o CONJUNCTS) THEN
     REWRITE_TAC[RELCYCLE_GROUP] THEN MESON_TAC[IN]] THEN
-  REWRITE_TAC[SUM_GROUP; RESTRICTION_EXTENSION; IN_ELIM_THM] THEN
+  REWRITE_TAC[SUM_GROUP_CLAUSES; RESTRICTION_EXTENSION; IN_ELIM_THM] THEN
   REWRITE_TAC[homology_group; RELATIVE_HOMOLOGY_GROUP] THEN
   REWRITE_TAC[HOMOLOGOUS_REL_EQ_RELBOUNDARY; RELCYCLE_GROUP] THEN
   SIMP_TAC[cartesian_product; IN_ELIM_THM; SINGULAR_BOUNDARY; SET_RULE
@@ -5433,7 +5434,7 @@ let HOMOLOGY_ADDITIVITY_AXIOM_GEN = prove
   DISCH_THEN(MP_TAC o SPEC `d:((num->real)->A)frag`) THEN
   REWRITE_TAC[SET_RULE
    `(y IN IMAGE f s <=> x IN t) <=> ((?x. x IN s /\ f x = y) <=> t x)`] THEN
-  ASM_REWRITE_TAC[CHAIN_GROUP; SUM_GROUP; LEFT_IMP_EXISTS_THM] THEN
+  ASM_REWRITE_TAC[CHAIN_GROUP; SUM_GROUP_CLAUSES; LEFT_IMP_EXISTS_THM] THEN
   X_GEN_TAC `w:(A->bool)->((num->real)->A)frag` THEN
   REWRITE_TAC[cartesian_product; IN_ELIM_THM; SET_RULE
     `x IN singular_chain p <=> singular_chain p x`] THEN
@@ -5447,7 +5448,7 @@ let HOMOLOGY_ADDITIVITY_AXIOM_GEN = prove
               ((w:(A->bool)->((num->real)->A)frag) s))`;
     `z:(A->bool)->((num->real)->A)frag`] o
    CONJUNCT2 o CONJUNCT1) THEN
-  REWRITE_TAC[SUM_GROUP; IN_ELIM_THM; RESTRICTION_IN_CARTESIAN_PRODUCT] THEN
+  REWRITE_TAC[SUM_GROUP_CLAUSES; IN_ELIM_THM; RESTRICTION_IN_CARTESIAN_PRODUCT] THEN
   ASM_REWRITE_TAC[CHAIN_GROUP; cartesian_product; IN_ELIM_THM; SET_RULE
     `x IN singular_chain p <=> singular_chain p x`] THEN
   ASM_SIMP_TAC[SINGULAR_CHAIN_BOUNDARY_ALT] THEN
@@ -5702,3 +5703,180 @@ let ZEROTH_HOMOLOGY_GROUP = prove
     ASM_SIMP_TAC[TOPSPACE_SUBTOPOLOGY_SUBSET; PATH_COMPONENTS_OF_SUBSET;
      REWRITE_RULE[path_connected_in] PATH_CONNECTED_IN_PATH_COMPONENTS_OF] THEN
     ASM_MESON_TAC[NONEMPTY_PATH_COMPONENTS_OF]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* More basic properties of homology groups, deduced from the E-S axioms.    *)
+(* ------------------------------------------------------------------------- *)
+
+let TRIVIAL_HOMOLOGY_GROUP = prove
+ (`!p top:A topology. p < &0 ==> trivial_group(homology_group(p,top))`,
+  REWRITE_TAC[TRIVIAL_RELATIVE_HOMOLOGY_GROUP; homology_group]);;
+
+let ABELIAN_HOMOLOGY_GROUP = prove
+ (`!p top:A topology. abelian_group(homology_group(p,top))`,
+  REWRITE_TAC[homology_group; ABELIAN_RELATIVE_HOMOLOGY_GROUP]);;
+
+let GROUP_HOMOMORPHISM_HOM_INDUCED_EMPTY = prove
+ (`!p top top' f:A->B.
+        group_homomorphism
+         (homology_group (p,top),homology_group (p,top'))
+         (hom_induced p (top,{}) (top',{}) f)`,
+  REWRITE_TAC[GROUP_HOMOMORPHISM_HOM_INDUCED; homology_group]);;
+
+let HOM_INDUCED_COMPOSE_EMPTY = prove
+ (`!p top top' top'' (f:A->B) (g:B->C).
+        continuous_map(top,top') f /\
+        continuous_map(top',top'') g
+        ==> hom_induced p (top,{}) (top'',{}) (g o f) =
+            hom_induced p (top',{}) (top'',{}) g o
+            hom_induced p (top,{}) (top',{}) f`,
+  REWRITE_TAC[homology_group] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC HOM_INDUCED_COMPOSE THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES; EMPTY_SUBSET]);;
+
+let HOMOLOGY_HOMOTOPY_EMPTY = prove
+ (`!p (top:A topology) (top':B topology) f g.
+        homotopic_with (\h. T) (top,top') f g
+        ==> hom_induced p (top,{}) (top',{}) f =
+            hom_induced p (top,{}) (top',{}) g`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC HOMOLOGY_HOMOTOPY_AXIOM THEN
+  ASM_REWRITE_TAC[GSYM homology_group; IMAGE_CLAUSES; EMPTY_SUBSET]);;
+
+let HOMOTOPY_EQUIVALENCE_RELATIVE_HOMOLOGY_GROUP_ISOMORPHISMS = prove
+ (`!p top top' s t (f:A->B) g.
+        continuous_map (top,top') f /\ IMAGE f s SUBSET t /\
+        continuous_map (top',top) g /\ IMAGE g t SUBSET s /\
+        homotopic_with (\h. IMAGE h s SUBSET s) (top,top) (g o f) I /\
+        homotopic_with (\k. IMAGE k t SUBSET t) (top',top') (f o g) I
+        ==> group_isomorphisms (relative_homology_group (p,top,s),
+                                relative_homology_group (p,top',t))
+                               (hom_induced p (top,s) (top',t) f,
+                                hom_induced p (top',t) (top,s) g)`,
+  REPEAT GEN_TAC THEN
+  REPLICATE_TAC 4 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_TAC THEN REWRITE_TAC[group_isomorphisms] THEN
+  REWRITE_TAC[GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
+  FIRST_ASSUM(CONJUNCTS_THEN (MP_TAC o SPEC `p:int` o
+   MATCH_MP (REWRITE_RULE[IMP_CONJ] HOMOLOGY_HOMOTOPY_AXIOM))) THEN
+  REWRITE_TAC[GSYM IMP_CONJ_ALT; homology_group] THEN
+  MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [FUN_EQ_THM] THEN MATCH_MP_TAC MONO_FORALL THEN
+  GEN_TAC THEN DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  BINOP_TAC THEN ASM_SIMP_TAC[I_DEF; HOM_INDUCED_ID] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM o_THM] THEN AP_THM_TAC THEN
+  MATCH_MP_TAC HOM_INDUCED_COMPOSE THEN ASM_REWRITE_TAC[]);;
+
+let HOMOTOPY_EQUIVALENCE_RELATIVE_HOMOLOGY_GROUP_ISOMORPHISM = prove
+ (`!p top top' s t (f:A->B) g.
+        continuous_map (top,top') f /\ IMAGE f s SUBSET t /\
+        continuous_map (top',top) g /\ IMAGE g t SUBSET s /\
+        homotopic_with (\h. IMAGE h s SUBSET s) (top,top) (g o f) I /\
+        homotopic_with (\k. IMAGE k t SUBSET t) (top',top') (f o g) I
+        ==> group_isomorphism (relative_homology_group (p,top,s),
+                               relative_homology_group (p,top',t))
+                              (hom_induced p (top,s) (top',t) f)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP
+    HOMOTOPY_EQUIVALENCE_RELATIVE_HOMOLOGY_GROUP_ISOMORPHISMS) THEN
+  REWRITE_TAC[group_isomorphism] THEN MESON_TAC[]);;
+
+let HOMOTOPY_EQUIVALENCE_HOMOLOGY_GROUP_ISOMORPHISM = prove
+ (`!p top top' (f:A->B) g.
+        continuous_map (top,top') f /\ continuous_map (top',top) g /\
+        homotopic_with (\h. T) (top,top) (g o f) I /\
+        homotopic_with (\k. T) (top',top') (f o g) I
+        ==> group_isomorphism (homology_group (p,top),homology_group (p,top'))
+                              (hom_induced p (top,{}) (top',{}) f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[homology_group] THEN
+  MATCH_MP_TAC HOMOTOPY_EQUIVALENCE_RELATIVE_HOMOLOGY_GROUP_ISOMORPHISM THEN
+  EXISTS_TAC `g:B->A` THEN ASM_REWRITE_TAC[IMAGE_CLAUSES; EMPTY_SUBSET]);;
+
+let HOMOTOPY_EQUIVALENT_SPACE_IMP_ISOMORPHIC_RELATIVE_HOMOLOGY_GROUPS = prove
+ (`!p top top' s t (f:A->B) g.
+        continuous_map (top,top') f /\ IMAGE f s SUBSET t /\
+        continuous_map (top',top) g /\ IMAGE g t SUBSET s /\
+        homotopic_with (\h. IMAGE h s SUBSET s) (top,top) (g o f) I /\
+        homotopic_with (\k. IMAGE k t SUBSET t) (top',top') (f o g) I
+        ==> relative_homology_group (p,top,s) isomorphic_group
+            relative_homology_group (p,top',t)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP
+    HOMOTOPY_EQUIVALENCE_RELATIVE_HOMOLOGY_GROUP_ISOMORPHISMS) THEN
+  REWRITE_TAC[isomorphic_group; group_isomorphism] THEN MESON_TAC[]);;
+
+let HOMOTOPY_EQUIVALENT_SPACE_IMP_ISOMORPHIC_HOMOLOGY_GROUPS = prove
+ (`!p (top:A topology) (top':B topology).
+        top homotopy_equivalent_space top'
+        ==> homology_group(p,top) isomorphic_group homology_group(p,top')`,
+  REWRITE_TAC[homotopy_equivalent_space] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[homology_group] THEN MATCH_MP_TAC
+   HOMOTOPY_EQUIVALENT_SPACE_IMP_ISOMORPHIC_RELATIVE_HOMOLOGY_GROUPS THEN
+  REWRITE_TAC[IMAGE_CLAUSES; EMPTY_SUBSET] THEN ASM_MESON_TAC[]);;
+
+let HOMEOMORPHIC_SPACE_IMP_ISOMORPHIC_HOMOLOGY_GROUPS = prove
+ (`!p (top:A topology) (top':B topology).
+        top homeomorphic_space top'
+        ==> homology_group(p,top) isomorphic_group homology_group(p,top')`,
+  SIMP_TAC[HOMOTOPY_EQUIVALENT_SPACE_IMP_ISOMORPHIC_HOMOLOGY_GROUPS;
+           HOMEOMORPHIC_IMP_HOMOTOPY_EQUIVALENT_SPACE]);;
+
+let TRIVIAL_RELATIVE_HOMOLOGY_GROUP_GEN = prove
+ (`!p top s f:A->A.
+        continuous_map (top,subtopology top s) f /\
+        homotopic_with (\h. T) (subtopology top s,subtopology top s) f I /\
+        homotopic_with (\k. T) (top,top) f I
+        ==> trivial_group(relative_homology_group(p,top,s))`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`hom_induced p (subtopology top s:A topology,{}) (top,{}) (\x. x)`;
+    `hom_induced p (top:A topology,{}) (top,s) (\x. x)`;
+    `hom_boundary p (top:A topology,s)`;
+    `hom_induced (p - &1) (subtopology top s:A topology,{}) (top,{}) (\x. x)`;
+    `homology_group (p,subtopology top (s:A->bool))`;
+    `homology_group (p,top:A topology)`;
+    `relative_homology_group (p,top,s:A->bool)`;
+    `homology_group (p - &1,subtopology top (s:A->bool))`;
+    `homology_group (p - &1,top:A topology)`]
+  GROUP_EXACTNESS_IMP_TRIVIALITY) THEN
+  REWRITE_TAC[HOMOLOGY_EXACTNESS_AXIOM_1;
+              HOMOLOGY_EXACTNESS_AXIOM_2;
+              HOMOLOGY_EXACTNESS_AXIOM_3] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  REWRITE_TAC[homology_group] THEN CONJ_TAC THEN MATCH_MP_TAC
+   HOMOTOPY_EQUIVALENCE_RELATIVE_HOMOLOGY_GROUP_ISOMORPHISM THEN
+  SIMP_TAC[IMAGE_CLAUSES; EMPTY_SUBSET] THEN
+  SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+  REWRITE_TAC[o_DEF; ETA_AX] THEN ASM_MESON_TAC[]);;
+
+let TRIVIAL_RELATIVE_HOMOLOGY_GROUP_TOPSPACE = prove
+ (`!p top:A topology.
+        trivial_group(relative_homology_group(p,top,topspace top))`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC TRIVIAL_RELATIVE_HOMOLOGY_GROUP_GEN THEN
+  EXISTS_TAC `\x:A. x` THEN
+  REWRITE_TAC[HOMOTOPIC_WITH_REFL; I_DEF; SUBTOPOLOGY_TOPSPACE] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_ID]);;
+
+let TRIVIAL_RELATIVE_HOMOLOGY_GROUP_EMPTY = prove
+ (`!p top s:A->bool.
+        topspace top = {}
+        ==> trivial_group(relative_homology_group(p,top,s))`,
+  ONCE_REWRITE_TAC[RELATIVE_HOMOLOGY_GROUP_RESTRICT] THEN
+  SIMP_TAC[INTER_EMPTY] THEN
+  MESON_TAC[TRIVIAL_RELATIVE_HOMOLOGY_GROUP_TOPSPACE]);;
+
+let TRIVIAL_HOMOLOGY_GROUP_EMPTY = prove
+ (`!p top:A topology.
+        topspace top = {} ==> trivial_group(homology_group(p,top))`,
+  REWRITE_TAC[homology_group; TRIVIAL_RELATIVE_HOMOLOGY_GROUP_EMPTY]);;
+
+let TRIVIAL_HOMOLOGY_GROUP_CONTRACTIBLE_SPACE = prove
+ (`!p top:A topology.
+        contractible_space top /\ ~(p = &0)
+        ==> trivial_group(homology_group(p,top))`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  REWRITE_TAC[CONTRACTIBLE_EQ_HOMOTOPY_EQUIVALENT_SINGLETON_SUBTOPOLOGY] THEN
+  DISCH_THEN(DISJ_CASES_THEN MP_TAC) THEN
+  REWRITE_TAC[TRIVIAL_HOMOLOGY_GROUP_EMPTY] THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC) THEN
+  FIRST_ASSUM(SUBST1_TAC o MATCH_MP ISOMORPHIC_GROUP_TRIVIALITY o SPEC`p:int` o
+   MATCH_MP HOMOTOPY_EQUIVALENT_SPACE_IMP_ISOMORPHIC_HOMOLOGY_GROUPS) THEN
+  MATCH_MP_TAC HOMOLOGY_DIMENSION_AXIOM THEN EXISTS_TAC `a:A` THEN
+  ASM_REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN ASM SET_TAC[]);;

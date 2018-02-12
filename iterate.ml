@@ -259,7 +259,7 @@ let TOPOLOGICAL_SORT = prove
 (* Analogous finiteness theorem for segments of integers.                    *)
 (* ------------------------------------------------------------------------- *)
 
-let FINITE_INTSEG = prove
+let FINITE_INT_SEG = prove
  (`(!l r. FINITE {x:int | l <= x /\ x <= r}) /\
    (!l r. FINITE {x:int | l <= x /\ x < r}) /\
    (!l r. FINITE {x:int | l < x /\ x <= r}) /\
