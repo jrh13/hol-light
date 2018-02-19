@@ -2958,6 +2958,23 @@ let retraction = new_definition
 let retract_of = new_definition
   `t retract_of s <=> ?r. retraction (s,t) r`;;
 
+let RETRACTION_MAPS_EUCLIDEAN = prove
+ (`!r s t:real^N->bool.
+        retraction_maps (subtopology euclidean s,subtopology euclidean t)
+                        (r,I) <=>
+   retraction (s,t) r`,
+  REWRITE_TAC[retraction_maps; retraction; I_DEF] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN; CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[CONTINUOUS_ON_ID; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; IMAGE_ID] THEN
+  REWRITE_TAC[CONJ_ACI]);;
+
+let RETRACT_OF_SPACE_EUCLIDEAN = prove
+ (`!s t:real^N->bool.
+        t retract_of_space (subtopology euclidean s) <=> t retract_of s`,
+  REWRITE_TAC[retract_of; retract_of_space; retraction] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN2; SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN SET_TAC[]);;
+
 let RETRACTION = prove
  (`!s t r. retraction (s,t) r <=>
            t SUBSET s /\
@@ -9074,15 +9091,11 @@ let DEFORMATION_RETRACT_IMP_HOMOTOPY_EQUIVALENT = prove
               (subtopology euclidean s,subtopology euclidean s) (\x. x) r /\
              retraction(s,t) r)
         ==> s homotopy_equivalent t`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[homotopy_equivalent] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r:real^N->real^N` THEN
-  REWRITE_TAC[retraction] THEN STRIP_TAC THEN
-  EXISTS_TAC `I:real^N->real^N` THEN REWRITE_TAC[I_O_ID] THEN
-  ASM_REWRITE_TAC[I_DEF; CONTINUOUS_ON_ID; IMAGE_ID] THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[HOMOTOPIC_WITH_SYM]; ALL_TAC] THEN
-  MATCH_MP_TAC HOMOTOPIC_WITH_EQUAL THEN 
-  ASM_SIMP_TAC[CONTINUOUS_MAP_EUCLIDEAN2; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN 
-  CONJ_TAC THENL [ASM_MESON_TAC[CONTINUOUS_ON_SUBSET]; ASM SET_TAC[]]);;
+  REWRITE_TAC[GSYM I_DEF; GSYM RETRACTION_MAPS_EUCLIDEAN] THEN
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM HOMOTOPY_EQUIVALENT_SPACE_EUCLIDEAN] THEN
+  MATCH_MP_TAC DEFORMATION_RETRACTION_IMP_HOMOTOPY_EQUIVALENT_SPACE THEN
+  ASM_MESON_TAC[I_O_ID; HOMOTOPIC_WITH_SYM]);;
 
 let DEFORMATION_RETRACT = prove
  (`!s t:real^N->bool.
