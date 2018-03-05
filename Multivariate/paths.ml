@@ -17628,7 +17628,7 @@ let HOMOTOPIC_WITH_EUCLIDEAN = prove
 (* We often want to just localize the ending function equality or whatever.  *)
 (* ------------------------------------------------------------------------- *)
 
-let HOMOTOPIC_WITH = prove
+let HOMOTOPIC_WITH_EUCLIDEAN_ALT = prove
  (`(!h k. (!x. x IN X ==> h x = k x) ==> (P h <=> P k))
    ==> (homotopic_with P
            (subtopology euclidean X,subtopology euclidean Y) p q <=>
@@ -17696,7 +17696,8 @@ let HOMOTOPIC_CONSTANT_MAPS = prove
         homotopic_with (\x. T)
          (subtopology euclidean s,subtopology euclidean t) (\x. a) (\x. b) <=>
         s = {} \/ path_component t a b`,
-  REPEAT GEN_TAC THEN SIMP_TAC[HOMOTOPIC_WITH; path_component] THEN
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[HOMOTOPIC_WITH_EUCLIDEAN_ALT; path_component] THEN
   ASM_CASES_TAC `s:real^M->bool = {}` THEN
   ASM_REWRITE_TAC[NOT_IN_EMPTY; PCROSS_EMPTY; IMAGE_CLAUSES] THEN
   REWRITE_TAC[EMPTY_SUBSET; CONTINUOUS_ON_EMPTY] THEN
@@ -17963,7 +17964,7 @@ let HOMOTOPIC_WITH_PCROSS = prove
 let HOMOTOPIC_ON_EMPTY = prove
  (`!t f g. homotopic_with (\x. T)
             (subtopology euclidean {},subtopology euclidean t) f g`,
-  SIMP_TAC[HOMOTOPIC_WITH; NOT_IN_EMPTY; PCROSS_EMPTY] THEN
+  SIMP_TAC[HOMOTOPIC_WITH_EUCLIDEAN_ALT; NOT_IN_EMPTY; PCROSS_EMPTY] THEN
   REWRITE_TAC[CONTINUOUS_ON_EMPTY; IMAGE_CLAUSES; EMPTY_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -18030,8 +18031,8 @@ let HOMOTOPIC_TRIVIALITY = prove
                       (subtopology euclidean s,subtopology euclidean t)
                       f (\x. c))`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `s:real^M->bool = {}` THENL
-   [ASM_SIMP_TAC[CONTINUOUS_ON_EMPTY; HOMOTOPIC_WITH; NOT_IN_EMPTY;
-                 PCROSS_EMPTY; IMAGE_CLAUSES; EMPTY_SUBSET];
+   [ASM_SIMP_TAC[CONTINUOUS_ON_EMPTY; HOMOTOPIC_WITH_EUCLIDEAN_ALT;
+                 NOT_IN_EMPTY;PCROSS_EMPTY; IMAGE_CLAUSES; EMPTY_SUBSET];
     ASM_CASES_TAC `t:real^N->bool = {}` THEN
     ASM_REWRITE_TAC[SUBSET_EMPTY; IMAGE_EQ_EMPTY; PATH_CONNECTED_EMPTY]] THEN
   EQ_TAC THEN REPEAT STRIP_TAC THENL
@@ -18090,7 +18091,7 @@ let HOMOTOPIC_ON_CLOPEN_UNIONS = prove
   ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[FORALL_AND_THM]] THEN
   REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [HOMOTOPIC_WITH_EUCLIDEAN] THEN
-  SIMP_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; HOMOTOPIC_WITH] THEN
+  SIMP_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; HOMOTOPIC_WITH_EUCLIDEAN_ALT] THEN
   X_GEN_TAC `h:num->real^(1,M)finite_sum->real^N` THEN
   REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC THEN
   MP_TAC(ISPECL
@@ -18218,7 +18219,8 @@ let HOMOTOPIC_PATHS = prove
                    pathfinish(h o pastecart t) = pathfinish p)`,
   REPEAT GEN_TAC THEN
   REWRITE_TAC[homotopic_paths] THEN
-  W(MP_TAC o PART_MATCH (lhand o rand) HOMOTOPIC_WITH o lhand o snd) THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) HOMOTOPIC_WITH_EUCLIDEAN_ALT o
+    lhand o snd) THEN
   ANTS_TAC THENL
    [SIMP_TAC[pathstart; pathfinish; ENDS_IN_UNIT_INTERVAL];
     DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[o_DEF]]);;
@@ -18798,7 +18800,8 @@ let HOMOTOPIC_LOOPS = prove
                ==> pathfinish(h o pastecart t) = pathstart(h o pastecart t))`,
   REPEAT GEN_TAC THEN
   REWRITE_TAC[homotopic_loops] THEN
-  W(MP_TAC o PART_MATCH (lhand o rand) HOMOTOPIC_WITH o lhand o snd) THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) HOMOTOPIC_WITH_EUCLIDEAN_ALT o
+    lhand o snd) THEN
   ANTS_TAC THENL
    [SIMP_TAC[pathstart; pathfinish; ENDS_IN_UNIT_INTERVAL];
     DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[o_DEF]]);;
@@ -20461,11 +20464,12 @@ let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
   THENL
    [ASM_SIMP_TAC[NORM_ARITH `r < &0 ==> ~(norm x = r)`] THEN
     FIRST_ASSUM(ASSUME_TAC o GEN_REWRITE_RULE I [GSYM CBALL_EQ_EMPTY]) THEN
-    ASM_SIMP_TAC[HOMOTOPIC_WITH; IMAGE_CLAUSES; EMPTY_GSPEC; NOT_IN_EMPTY;
-       PCROSS; SET_RULE `{f t x |x,t| F} = {}`; EMPTY_SUBSET] THEN
+    ASM_SIMP_TAC[HOMOTOPIC_WITH_EUCLIDEAN_ALT; IMAGE_CLAUSES; EMPTY_GSPEC;
+     NOT_IN_EMPTY; PCROSS; SET_RULE `{f t x |x,t| F} = {}`; EMPTY_SUBSET] THEN
     REWRITE_TAC[CONTINUOUS_ON_EMPTY];
     ASM_SIMP_TAC[NORM_EQ_0; VECTOR_SUB_EQ; CBALL_SING] THEN
-    SIMP_TAC[HOMOTOPIC_WITH; PCROSS; FORALL_IN_GSPEC; FORALL_UNWIND_THM2] THEN
+    SIMP_TAC[HOMOTOPIC_WITH_EUCLIDEAN_ALT; PCROSS;
+             FORALL_IN_GSPEC; FORALL_UNWIND_THM2] THEN
     ASM_CASES_TAC `(f:real^M->real^N) a IN s` THENL
      [MATCH_MP_TAC(TAUT `p /\ q ==> (p <=> q)`) THEN CONJ_TAC THENL
        [EXISTS_TAC `(f:real^M->real^N) a` THEN
@@ -20608,7 +20612,7 @@ let NULLHOMOTOPIC_FROM_SPHERE_EXTENSION = prove
       REWRITE_TAC[VECTOR_ARITH `a + &1 % (x - a):real^N = x`]];
     DISCH_THEN(X_CHOOSE_THEN `g:real^M->real^N` STRIP_ASSUME_TAC) THEN
     EXISTS_TAC `(g:real^M->real^N) a` THEN
-    ASM_SIMP_TAC[HOMOTOPIC_WITH; PCROSS] THEN
+    ASM_SIMP_TAC[HOMOTOPIC_WITH_EUCLIDEAN_ALT; PCROSS] THEN
     EXISTS_TAC `\y:real^(1,M)finite_sum.
                    (g:real^M->real^N)
                    (a + drop(fstcart y) % (sndcart y - a))` THEN
@@ -21514,7 +21518,8 @@ let IS_INTERVAL_SIMPLY_CONNECTED_1 = prove
 
 let CONTRACTIBLE_EMPTY = prove
  (`contractible {}`,
-  SIMP_TAC[contractible; HOMOTOPIC_WITH; PCROSS_EMPTY; NOT_IN_EMPTY] THEN
+  SIMP_TAC[contractible; HOMOTOPIC_WITH_EUCLIDEAN_ALT; PCROSS_EMPTY;
+           NOT_IN_EMPTY] THEN
   REWRITE_TAC[CONTINUOUS_ON_EMPTY] THEN SET_TAC[]);;
 
 let CONIC_IMP_CONTRACTIBLE = prove

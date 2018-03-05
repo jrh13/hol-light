@@ -7400,7 +7400,8 @@ let HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS = prove
     SET_TAC[REAL_LE_TOTAL]) in
   REPEAT GEN_TAC THEN REWRITE_TAC[homotopic_loops; sphere; DIST_0] THEN
   GEN_REWRITE_TAC LAND_CONV [HOMOTOPIC_WITH_EUCLIDEAN] THEN
-  SIMP_TAC[pathstart; pathfinish; LEFT_IMP_EXISTS_THM; HOMOTOPIC_WITH] THEN
+  SIMP_TAC[pathstart; pathfinish; LEFT_IMP_EXISTS_THM; 
+           HOMOTOPIC_WITH_EUCLIDEAN_ALT] THEN
   X_GEN_TAC `h:real^(1,1)finite_sum->real^N` THEN STRIP_TAC THEN
   EXISTS_TAC `\w. (h:real^(1,1)finite_sum->real^N)
                   (pastecart (fstcart w)

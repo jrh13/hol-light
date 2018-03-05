@@ -4000,7 +4000,7 @@ let JACOBIAN_SIGN_INVARIANCE = prove
   MATCH_MP_TAC HOMOTOPIC_LINEAR_MAPS_IMP THEN
   REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
    [ASM_MESON_TAC[has_derivative; SUBSET]; ALL_TAC] THEN
-  SIMP_TAC[HOMOTOPIC_WITH] THEN EXISTS_TAC
+  SIMP_TAC[HOMOTOPIC_WITH_EUCLIDEAN_ALT] THEN EXISTS_TAC
    `\z. if fstcart z:real^1 = vec 0
         then (f':real^N->real^N->real^N) a (sndcart z)
         else if fstcart z = vec 1
