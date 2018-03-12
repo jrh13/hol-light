@@ -4492,9 +4492,22 @@ let SUBSPACE_MUL = prove
  (`!x c s. subspace s /\ x IN s ==> (c % x) IN s`,
   SIMP_TAC[subspace]);;
 
+let SUBSPACE_MUL_EQ = prove
+ (`!s c x:real^N. subspace s ==> ((c % x) IN s <=> c = &0 \/ x IN s)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `c:real = &0` THEN
+  ASM_SIMP_TAC[VECTOR_MUL_LZERO; SUBSPACE_0] THEN
+  EQ_TAC THEN ASM_SIMP_TAC[SUBSPACE_MUL] THEN DISCH_TAC THEN
+  SUBGOAL_THEN `x:real^N = inv c % (c % x)` SUBST1_TAC THENL
+   [ASM_SIMP_TAC[VECTOR_MUL_ASSOC; REAL_MUL_LINV; VECTOR_MUL_LID];
+    ASM_SIMP_TAC[SUBSPACE_MUL]]);;
+
 let SUBSPACE_NEG = prove
  (`!x s. subspace s /\ x IN s ==> (--x) IN s`,
   SIMP_TAC[VECTOR_ARITH `--x = --(&1) % x`; SUBSPACE_MUL]);;
+
+let SUBSPACE_NEG_EQ = prove
+ (`!s x:real^N. subspace s ==> (--x IN s <=> x IN s)`,
+  MESON_TAC[SUBSPACE_NEG; VECTOR_NEG_NEG]);;
 
 let SUBSPACE_SUB = prove
  (`!x y s. subspace s /\ x IN s /\ y IN s ==> (x - y) IN s`,

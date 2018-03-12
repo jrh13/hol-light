@@ -2403,6 +2403,21 @@ let ISOMORPHIC_GROUP_CARD_EQ = prove
   REWRITE_TAC[eq_c; group_monomorphism; group_epimorphism] THEN
   REPEAT GEN_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
 
+let ISOMORPHIC_GROUP_FINITENESS = prove
+ (`!(G:A group) (H:B group).
+        G isomorphic_group H
+        ==> (FINITE(group_carrier G) <=> FINITE(group_carrier H))`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP ISOMORPHIC_GROUP_CARD_EQ) THEN
+  REWRITE_TAC[CARD_FINITE_CONG]);;
+
+let ISOMORPHIC_GROUP_INFINITENESS = prove
+ (`!(G:A group) (H:B group).
+        G isomorphic_group H
+        ==> (INFINITE(group_carrier G) <=> INFINITE(group_carrier H))`,
+  REWRITE_TAC[INFINITE; TAUT `(~p <=> ~q) <=> (p <=> q)`] THEN
+  REWRITE_TAC[ISOMORPHIC_GROUP_FINITENESS]);;
+
 let ISOMORPHIC_GROUP_ABELIANNESS = prove
  (`!(G:A group) (H:B group).
         G isomorphic_group H ==> (abelian_group G <=> abelian_group H)`,
@@ -4054,6 +4069,13 @@ let FINITE_CYCLIC_SUBGROUP_ORDER = prove
   SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_0; FINITE_CYCLIC_SUBGROUP] THEN
   MESON_TAC[]);;
 
+let INFINITE_CYCLIC_SUBGROUP_ORDER = prove
+  (`!G x:A.
+        x IN group_carrier G
+        ==> (INFINITE (group_carrier(subgroup_generated G {x})) <=>
+             group_element_order G x = 0)`,
+  SIMP_TAC[INFINITE; FINITE_CYCLIC_SUBGROUP_ORDER]);;
+
 let FINITE_CYCLIC_SUBGROUP_EXPLICIT = prove
  (`!G x:A.
         FINITE(group_carrier(subgroup_generated G {x})) /\ x IN group_carrier G
@@ -4626,6 +4648,10 @@ let ABELIAN_INTEGER_GROUP = prove
  (`abelian_group integer_group`,
   REWRITE_TAC[abelian_group; INTEGER_GROUP; INT_ADD_SYM]);;
 
+let INFINITE_INTEGER_GROUP = prove
+ (`INFINITE(group_carrier integer_group)`,
+  REWRITE_TAC[INTEGER_GROUP; int_INFINITE]);;
+
 let GROUP_POW_INTEGER_GROUP = prove
  (`!x n. group_pow integer_group x n = &n * x`,
   GEN_TAC THEN INDUCT_TAC THEN
@@ -4805,6 +4831,11 @@ let TRIVIAL_INTEGER_MOD_GROUP = prove
     ASM_REWRITE_TAC[INTEGER_MOD_GROUP_0; INTEGER_MOD_GROUP_1] THEN
     CONV_TAC INT_REDUCE_CONV]);;
 
+let NON_TRIVIAL_INTEGER_GROUP = prove
+ (`~(trivial_group integer_group)`,
+  MP_TAC(SPEC `0` TRIVIAL_INTEGER_MOD_GROUP) THEN
+  CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC[integer_mod_group]);;
+
 let INTEGER_MOD_SUBGROUP_GENERATED_BY_1 = prove
  (`!n. subgroup_generated (integer_mod_group n) {&1} =
        integer_mod_group n`,
@@ -4830,6 +4861,11 @@ let CYCLIC_GROUP_INTEGER_MOD_GROUP = prove
  (`!n. cyclic_group(integer_mod_group n)`,
   ONCE_REWRITE_TAC[GSYM INTEGER_MOD_SUBGROUP_GENERATED_BY_1] THEN
   REWRITE_TAC[CYCLIC_GROUP_GENERATED]);;
+
+let CYCLIC_INTEGER_GROUP = prove
+ (`cyclic_group integer_group`,
+  MP_TAC(SPEC `0` CYCLIC_GROUP_INTEGER_MOD_GROUP) THEN
+  REWRITE_TAC[integer_mod_group]);;
 
 let FINITE_INTEGER_MOD_GROUP = prove
  (`!n. FINITE(group_carrier(integer_mod_group n)) <=> ~(n = 0)`,

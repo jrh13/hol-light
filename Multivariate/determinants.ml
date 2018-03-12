@@ -3882,6 +3882,10 @@ let REFLECT_ALONG_0 = prove
  (`!v:real^N. reflect_along v (vec 0) = vec 0`,
   REWRITE_TAC[MATCH_MP LINEAR_0 (SPEC_ALL LINEAR_REFLECT_ALONG)]);;
 
+let REFLECT_ALONG_NEG = prove
+ (`!v x:real^N. reflect_along v (--x) = --(reflect_along v x)`,
+  MESON_TAC[LINEAR_REFLECT_ALONG; LINEAR_NEG]);;
+
 let REFLECT_ALONG_REFL = prove
  (`!v:real^N. reflect_along v v = --v`,
   GEN_TAC THEN ASM_CASES_TAC `v:real^N = vec 0` THEN
@@ -3894,6 +3898,10 @@ let REFLECT_ALONG_INVOLUTION = prove
   REWRITE_TAC[reflect_along; DOT_LSUB; VECTOR_MUL_EQ_0; VECTOR_ARITH
    `x - a % v - b % v:real^N = x <=> (a + b) % v = vec 0`] THEN
   REWRITE_TAC[DOT_LMUL; GSYM DOT_EQ_0] THEN CONV_TAC REAL_FIELD);;
+
+let REFLECT_ALONG_GALOIS = prove
+ (`!v p q:real^N. reflect_along v p = q <=> p = reflect_along v q`,
+  MESON_TAC[REFLECT_ALONG_INVOLUTION]);;
 
 let REFLECT_ALONG_EQ_0 = prove
  (`!v x:real^N. reflect_along v x = vec 0 <=> x = vec 0`,
@@ -3945,6 +3953,11 @@ let REFLECT_ALONG_SCALE = prove
   REWRITE_TAC[DOT_RMUL] THEN REWRITE_TAC[DOT_LMUL] THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [GSYM DOT_EQ_0]) THEN
   POP_ASSUM MP_TAC THEN CONV_TAC REAL_FIELD);;
+
+let REFLECT_ALONG_NEGATION = prove
+ (`!v:real^N. reflect_along (--v) = reflect_along v`,
+  REWRITE_TAC[FUN_EQ_THM; VECTOR_NEG_MINUS1] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC REFLECT_ALONG_SCALE THEN REAL_ARITH_TAC);;
 
 let REFLECT_ALONG_1D = prove
  (`!v x:real^N.
@@ -4051,6 +4064,15 @@ let REFLECT_ALONG_BASIS_COMPONENT = prove
   REPEAT STRIP_TAC THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
 
+let REFLECT_BASIS_ALONG_BASIS = prove
+ (`!i j. 1 <= i /\ i <= dimindex(:N) /\ 1 <= j /\ j <= dimindex(:N)
+         ==> reflect_along (basis i:real^N) (basis j) =
+             if i = j then --(basis j) else basis j`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[CART_EQ; REFLECT_ALONG_BASIS_COMPONENT; BASIS_COMPONENT;
+               VECTOR_NEG_COMPONENT] THEN
+  ASM_MESON_TAC[REAL_NEG_0]);;
+
 let NORM_REFLECT_ALONG = prove
  (`!v x:real^N. norm(reflect_along v x) = norm x`,
   MESON_TAC[ORTHOGONAL_TRANSFORMATION;
@@ -4065,6 +4087,23 @@ let REFLECT_ALONG_SURJECTIVE = prove
  (`!v y:real^N. ?x. reflect_along v x = y`,
   MESON_TAC[REFLECT_ALONG_INVOLUTION]);;
 
+let REFLECT_ALONG_SWITCH = prove
+ (`!a b:real^N.
+        norm a = norm b /\ ~(a = b)
+        ==> reflect_along (b - a) a = b /\ reflect_along (b - a) b = a`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SIMP_TAC[reflect_along; DOT_RSUB] THEN
+  REWRITE_TAC[real_div; VECTOR_ARITH
+    `(a - c % (b - a):real^N = b <=> (&1 + c) % (b - a) = vec 0) /\
+     (b - c % (b - a):real^N = a <=> (&1 - c) % (b - a) = vec 0)`] THEN
+  ASM_REWRITE_TAC[VECTOR_MUL_EQ_0; VECTOR_SUB_EQ] THEN
+  MATCH_MP_TAC(REAL_FIELD
+   `~(d = &0) /\ x + y = &0 /\ y - x = d
+    ==> &1 + &2 * x * inv d = &0 /\ &1 - &2 * y * inv d = &0`) THEN
+  ASM_REWRITE_TAC[GSYM DOT_RSUB; DOT_EQ_0; VECTOR_SUB_EQ] THEN
+  ASM_REWRITE_TAC[DOT_RSUB; GSYM NORM_POW_2; DOT_LSUB] THEN
+  REWRITE_TAC[DOT_SYM] THEN REAL_ARITH_TAC);;
+
 let ROTOINVERSION_EXISTS_GEN = prove
  (`!s a b:real^N.
         subspace s /\ a IN s /\ b IN s /\ ~(a = b) /\ norm a = norm b
@@ -4075,26 +4114,15 @@ let ROTOINVERSION_EXISTS_GEN = prove
   REPEAT STRIP_TAC THEN EXISTS_TAC `reflect_along (b - a:real^N)` THEN
   REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG] THEN
   ASM_REWRITE_TAC[DET_MATRIX_REFLECT_ALONG; VECTOR_SUB_EQ] THEN
-  CONJ_TAC THENL
+  ASM_SIMP_TAC[REFLECT_ALONG_SWITCH] THEN CONJ_TAC THENL
    [MATCH_MP_TAC(SET_RULE
      `(!x. f(f x) = x) /\ (!x. x IN s ==> f x IN s) ==> IMAGE f s = s`) THEN
     REWRITE_TAC[REFLECT_ALONG_INVOLUTION] THEN REWRITE_TAC[reflect_along] THEN
     ASM_SIMP_TAC[SUBSPACE_SUB; SUBSPACE_MUL];
-
     REWRITE_TAC[ONCE_REWRITE_RULE[DOT_SYM] orthogonal] THEN
     SIMP_TAC[reflect_along; DOT_RSUB] THEN
     REWRITE_TAC[real_div; REAL_SUB_REFL; REAL_MUL_LZERO; REAL_MUL_RZERO] THEN
-    REWRITE_TAC[VECTOR_ARITH `x - &0 % y:real^N = x`] THEN
-    REWRITE_TAC[VECTOR_ARITH
-      `(a - c % (b - a):real^N = b <=> (&1 + c) % (b - a) = vec 0) /\
-       (b - c % (b - a):real^N = a <=> (&1 - c) % (b - a) = vec 0)`] THEN
-    ASM_REWRITE_TAC[VECTOR_MUL_EQ_0; VECTOR_SUB_EQ] THEN
-    MATCH_MP_TAC(REAL_FIELD
-     `~(d = &0) /\ x + y = &0 /\ y - x = d
-      ==> &1 + &2 * x * inv d = &0 /\ &1 - &2 * y * inv d = &0`) THEN
-    ASM_REWRITE_TAC[GSYM DOT_RSUB; DOT_EQ_0; VECTOR_SUB_EQ] THEN
-    ASM_REWRITE_TAC[DOT_RSUB; GSYM NORM_POW_2; DOT_LSUB] THEN
-    REWRITE_TAC[DOT_SYM] THEN REAL_ARITH_TAC]);;
+    REWRITE_TAC[VECTOR_ARITH `x - &0 % y:real^N = x`]]);;
 
 let ORTHOGONAL_TRANSFORMATION_EXISTS_GEN = prove
  (`!s a b:real^N.
@@ -4177,6 +4205,27 @@ let ORTHOGONAL_TRANSFORMATION_GENERATED_BY_REFLECTIONS = prove
       FIRST_X_ASSUM(MP_TAC o AP_TERM
        `(o)(reflect_along (v:real^N)):(real^N->real^N)->(real^N->real^N)`) THEN
       REWRITE_TAC[FUN_EQ_THM; o_THM; REFLECT_ALONG_INVOLUTION]]]);;
+
+let ORTHOGONAL_TRANSFORMATION_REFLECT_INDUCT = prove
+ (`!P:(real^N->real^N)->bool.
+        P I /\
+        (!f a. orthogonal_transformation f /\ ~(a = vec 0) /\ P f
+               ==> P(reflect_along a o f))
+        ==> !f. orthogonal_transformation f ==> P f`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`f:real^N->real^N`; `dimindex(:N)`]
+        ORTHOGONAL_TRANSFORMATION_GENERATED_BY_REFLECTIONS) THEN
+  ASM_REWRITE_TAC[ONCE_REWRITE_RULE[ADD_SYM] LE_ADD] THEN
+  DISCH_THEN(X_CHOOSE_THEN `l:(real^N)list` STRIP_ASSUME_TAC) THEN
+  UNDISCH_TAC `orthogonal_transformation(f:real^N->real^N)` THEN
+  MATCH_MP_TAC(TAUT `p /\ q ==> p ==> q`) THEN FIRST_X_ASSUM SUBST1_TAC THEN
+  UNDISCH_TAC `ALL (\v:real^N. ~(v = vec 0)) l` THEN
+  UNDISCH_THEN `LENGTH(l:(real^N)list) <= dimindex(:N)` (K ALL_TAC) THEN
+  SPEC_TAC(`l:(real^N)list`,`l:(real^N)list`) THEN
+  MATCH_MP_TAC list_INDUCT THEN REWRITE_TAC[ALL; ITLIST] THEN
+  ASM_REWRITE_TAC[ORTHOGONAL_TRANSFORMATION_I] THEN
+  ASM_SIMP_TAC[ORTHOGONAL_TRANSFORMATION_COMPOSE;
+               ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Extract scaling, translation and linear invariance theorems.              *)

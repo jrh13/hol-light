@@ -374,7 +374,7 @@ let SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY_SING = prove
 let subtopology = new_definition
  `subtopology top u = topology {s INTER u | open_in top s}`;;
 
-let ISTOPLOGY_SUBTOPOLOGY = prove
+let ISTOPOLOGY_SUBTOPOLOGY = prove
  (`!top u:A->bool. istopology {s INTER u | open_in top s}`,
   REWRITE_TAC[istopology; SET_RULE
    `{s INTER u | open_in top s} =
@@ -395,13 +395,13 @@ let ISTOPOLOGY_RELATIVE_TO = prove
         istopology top ==> istopology(top relative_to u)`,
   REWRITE_TAC[RELATIVE_TO] THEN ONCE_REWRITE_TAC[INTER_COMM] THEN
   REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [topology_tybij] THEN
-  DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[ISTOPLOGY_SUBTOPOLOGY]);;
+  DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[ISTOPOLOGY_SUBTOPOLOGY]);;
 
 let OPEN_IN_SUBTOPOLOGY = prove
  (`!top u s. open_in (subtopology top u) s <=>
                 ?t. open_in top t /\ s = t INTER u`,
   REWRITE_TAC[subtopology] THEN
-  SIMP_TAC[REWRITE_RULE[CONJUNCT2 topology_tybij] ISTOPLOGY_SUBTOPOLOGY] THEN
+  SIMP_TAC[REWRITE_RULE[CONJUNCT2 topology_tybij] ISTOPOLOGY_SUBTOPOLOGY] THEN
   REWRITE_TAC[EXTENSION; IN_ELIM_THM]);;
 
 let OPEN_IN_SUBSET_TOPSPACE = prove

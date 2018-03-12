@@ -320,6 +320,68 @@ let CONTINUOUS_MAP_DROP_EQ = prove
   REWRITE_TAC[CONTINUOUS_MAP_LIFT_EQ; o_DEF; LIFT_DROP; ETA_AX]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Arithmetic combining theorems for vector-valued continuous maps.          *)
+(* ------------------------------------------------------------------------- *)
+
+
+let CONTINUOUS_MAP_VECTOR_CONST = prove
+ (`!(top:A topology) (b:real^N).
+        continuous_map (top,euclidean) (\x. b)`,
+  REWRITE_TAC[CONTINUOUS_MAP_CONST; TOPSPACE_EUCLIDEAN; IN_UNIV]);;
+
+let CONTINUOUS_MAP_VECTOR_ADD = prove
+ (`!top f g:A->real^N.
+        continuous_map(top,euclidean) f /\ continuous_map(top,euclidean) g
+        ==> continuous_map(top,euclidean) (\x. f x + g x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_REAL] THEN
+  STRIP_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+  ASM_SIMP_TAC[VECTOR_ADD_COMPONENT; CONTINUOUS_MAP_REAL_ADD]);;
+
+let CONTINUOUS_MAP_VECTOR_SUB = prove
+ (`!top f g:A->real^N.
+        continuous_map(top,euclidean) f /\ continuous_map(top,euclidean) g
+        ==> continuous_map(top,euclidean) (\x. f x - g x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_REAL] THEN
+  STRIP_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
+  ASM_SIMP_TAC[VECTOR_SUB_COMPONENT; CONTINUOUS_MAP_REAL_SUB]);;
+
+let CONTINUOUS_MAP_VECTOR_MUL = prove
+ (`!top c f:A->real^N.
+        continuous_map(top,euclideanreal) c /\ continuous_map(top,euclidean) f
+        ==> continuous_map(top,euclidean) (\x. c x % f x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_REAL] THEN
+  STRIP_TAC THEN X_GEN_TAC `i:num` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `i:num`) THEN
+  ASM_SIMP_TAC[VECTOR_MUL_COMPONENT; CONTINUOUS_MAP_REAL_MUL]);;
+
+let CONTINUOUS_MAP_DOT = prove
+ (`!top f g:A->real^N.
+        continuous_map(top,euclidean) f /\ continuous_map(top,euclidean) g
+        ==> continuous_map(top,euclideanreal) (\x. f x dot g x)`,
+  REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_REAL] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[dot] THEN MATCH_MP_TAC CONTINUOUS_MAP_SUM THEN
+  ASM_SIMP_TAC[IN_NUMSEG; FINITE_NUMSEG; CONTINUOUS_MAP_REAL_MUL]);;
+
+let CONTINUOUS_MAP_VSUM = prove
+ (`!top k (f:A->K->real^N).
+        FINITE k /\ (!i. i IN k ==> continuous_map(top,euclidean) (\x. f x i))
+        ==> continuous_map(top,euclidean) (\x. vsum k (f x))`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN REWRITE_TAC[FORALL_IN_INSERT] THEN
+  SIMP_TAC[VSUM_CLAUSES; CONTINUOUS_MAP_VECTOR_CONST;
+           CONTINUOUS_MAP_VECTOR_ADD]);;
+
+let CONTINUOUS_MAP_EUCLIDEAN_COMPONENT = prove
+ (`!top (f:A->real^N) i.
+        continuous_map(top,euclidean) f
+        ==> continuous_map (top,euclideanreal) (\x. f x$i)`,
+  REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_REAL] THEN REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?k. 1 <= k /\ k <= dimindex(:N) /\ !x:real^N. x$i = x$k`
+  STRIP_ASSUME_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ASM_SIMP_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Open and closed balls and spheres.                                        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -30205,6 +30267,83 @@ let LOCALLY_COMPACT_CLOSURE_DIFF = prove
      [MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[];
       REWRITE_TAC[LOCALLY_COMPACT_CLOSED_DIFF] THEN
       ASM_MESON_TAC[CLOSED_CLOSURE]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Homotopy within the space of linear maps.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMOTOPIC_WITH_REFLECTIONS_ALONG = prove
+ (`!P s t a b:real^N.
+        ~(a = vec 0) /\ ~(b = vec 0) /\
+        (!c. c IN segment[a,b]
+             ==> P(reflect_along c) /\ IMAGE (reflect_along c) s SUBSET t)
+        ==> homotopic_with P (subtopology euclidean s,subtopology euclidean t)
+                             (reflect_along a) (reflect_along b)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `vec 0 IN segment[a:real^N,b]` THENL
+   [SUBGOAL_THEN `reflect_along (b:real^N) = reflect_along a` SUBST1_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM BETWEEN_IN_SEGMENT]) THEN
+      DISCH_THEN(MP_TAC o MATCH_MP BETWEEN_IMP_COLLINEAR) THEN
+      ONCE_REWRITE_TAC[SET_RULE `{a,z,b} = {z,a,b}`] THEN
+      ASM_REWRITE_TAC[COLLINEAR_LEMMA_ALT] THEN
+      DISCH_THEN(X_CHOOSE_THEN `c:real` SUBST_ALL_TAC) THEN
+      REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+      MATCH_MP_TAC REFLECT_ALONG_SCALE THEN
+      ASM_MESON_TAC[VECTOR_MUL_EQ_0];
+      ASM_SIMP_TAC[HOMOTOPIC_WITH_REFL; ENDS_IN_SEGMENT; LINEAR_CONTINUOUS_ON;
+                   CONTINUOUS_MAP_EUCLIDEAN2; LINEAR_REFLECT_ALONG]];
+    ALL_TAC] THEN
+  REWRITE_TAC[homotopic_with] THEN
+  EXISTS_TAC
+   `(\(c,x). reflect_along (c:real^N) x) o
+    (\(t,x). (&1 - t) % a + t % b,x)` THEN
+  REWRITE_TAC[o_THM] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+  REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_MUL_LID] THEN
+  REWRITE_TAC[VECTOR_ADD_LID; VECTOR_ADD_RID; ETA_AX] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; TOPSPACE_PROD_TOPOLOGY] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_CROSS; o_THM] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; IMP_CONJ] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+    EXISTS_TAC `prod_topology
+                 (subtopology euclidean ((:real^N) DIFF {vec 0}))
+                 (euclidean:(real^N)topology)` THEN
+    REWRITE_TAC[CONTINUOUS_MAP_PROD] THEN CONJ_TAC THENL
+     [DISJ2_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+      SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE;
+                  TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+      CONJ_TAC THENL
+       [MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
+        REWRITE_TAC[CONTINUOUS_MAP_DROP_EQ; o_DEF; GSYM DROP_VEC] THEN
+        REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN_EUCLIDEAN; GSYM DROP_SUB] THEN
+        MATCH_MP_TAC CONTINUOUS_ON_ADD THEN CONJ_TAC THEN
+        MATCH_MP_TAC CONTINUOUS_ON_VMUL THEN REWRITE_TAC[o_DEF; LIFT_DROP] THEN
+        SIMP_TAC[CONTINUOUS_ON_SUB; CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID];
+        FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [IN_SEGMENT]) THEN
+        REWRITE_TAC[IN_REAL_INTERVAL] THEN SET_TAC[]];
+      REWRITE_TAC[reflect_along; LAMBDA_PAIR] THEN
+      MATCH_MP_TAC CONTINUOUS_MAP_VECTOR_SUB THEN
+      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM ETA_AX] THEN
+      REWRITE_TAC[CONTINUOUS_MAP_OF_SND; CONTINUOUS_MAP_ID] THEN
+      MATCH_MP_TAC CONTINUOUS_MAP_VECTOR_MUL THEN
+      GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM ETA_AX] THEN
+      REWRITE_TAC[CONTINUOUS_MAP_OF_FST] THEN
+      SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_ID] THEN
+      MATCH_MP_TAC CONTINUOUS_MAP_REAL_LMUL THEN
+      MATCH_MP_TAC CONTINUOUS_MAP_REAL_DIV THEN
+      REWRITE_TAC[TOPSPACE_PROD_TOPOLOGY; FORALL_IN_CROSS] THEN
+      REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; DOT_EQ_0] THEN
+      SIMP_TAC[IN_DIFF; IN_SING] THEN
+      CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_MAP_DOT THEN CONJ_TAC THEN
+      GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+      REWRITE_TAC[CONTINUOUS_MAP_OF_FST; CONTINUOUS_MAP_OF_SND] THEN
+      SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY]];
+    REWRITE_TAC[AND_FORALL_THM; RIGHT_FORALL_IMP_THM; IN_REAL_INTERVAL; TAUT
+                 `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+    X_GEN_TAC `t:real` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(&1 - t) % a + t % b:real^N`) THEN
+    REWRITE_TAC[IN_SEGMENT; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* F_sigma and G_delta sets.                                                 *)
