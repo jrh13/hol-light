@@ -8,6 +8,13 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 10th Mar 2018       int.ml
+
+Added a somewhat surprising missing lemma:
+
+  INT_MUL_EQ_1 = 
+    |- !x y:int. x * y = &1 <=> x = &1 /\ y = &1 \/ x = --(&1) /\ y = --(&1)
+
 Sat 10th Feb 2018       iterate.ml, Library/grouptheory.ml,
 
 Fixed a couple of name collisions, renaming the GROUP_SUM in the group theory

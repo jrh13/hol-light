@@ -256,6 +256,11 @@ let EPSILON_DELTA_MINIMAL = prove
       FIRST_X_ASSUM MATCH_MP_TAC THEN
       EXISTS_TAC `(d:A->real) a` THEN ASM_SIMP_TAC[]]]);;
 
+let HAS_SIZE_1_EXISTS = prove
+ (`!s. s HAS_SIZE 1 <=> ?!x. x IN s`,
+  REPEAT GEN_TAC THEN CONV_TAC(LAND_CONV HAS_SIZE_CONV) THEN
+  REWRITE_TAC[EXTENSION; IN_SING] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Handy definitions and basic lemmas for real intervals.                    *)
 (* ------------------------------------------------------------------------- *)

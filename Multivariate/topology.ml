@@ -319,10 +319,21 @@ let CONTINUOUS_MAP_DROP_EQ = prove
         continuous_map(euclidean,top) (f o drop)`,
   REWRITE_TAC[CONTINUOUS_MAP_LIFT_EQ; o_DEF; LIFT_DROP; ETA_AX]);;
 
+let CONTINUOUS_MAP_COMPONENTWISE_EUCLIDEAN_SPACE = prove
+ (`!top (f:A->num->real) n.
+        continuous_map (top,euclidean_space n)
+                       (\x i. if 1 <= i /\ i <= n then f x i else &0) <=>
+   !i. 1 <= i /\ i <= n ==> continuous_map(top,euclideanreal) (\x. f x i)`,
+  REWRITE_TAC[euclidean_space; CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; IN_NUMSEG] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_UNIV] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:num` THEN
+  ASM_CASES_TAC `1 <= i /\ i <= n` THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_REAL_CONST]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic combining theorems for vector-valued continuous maps.          *)
 (* ------------------------------------------------------------------------- *)
-
 
 let CONTINUOUS_MAP_VECTOR_CONST = prove
  (`!(top:A topology) (b:real^N).
@@ -854,6 +865,77 @@ let CLOSED_IN_INJECTIVE_LINEAR_IMAGE = prove
   GEOM_TRANSFORM_TAC[]);;
 
 add_linear_invariants [CLOSED_IN_INJECTIVE_LINEAR_IMAGE];;
+
+(* ------------------------------------------------------------------------- *)
+(* Relating two variants of Euclidean space, one within product topology.    *)
+(* ------------------------------------------------------------------------- *)
+
+let HOMEOMORPHIC_MAPS_EUCLIDEAN_SPACE_EUCLIDEAN_GEN = prove
+ (`!n. n <= dimindex(:N)
+       ==> homeomorphic_maps
+             (euclidean_space n,
+              subtopology euclidean (span(IMAGE basis (1..n)):real^N->bool))
+             ((\x. lambda i. if 1 <= i /\ i <= n then x i else &0),
+              (\x i. if 1 <= i /\ i <= n then x$i else &0))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[homeomorphic_maps] THEN
+  REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_EUCLIDEAN_SPACE;
+              CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_COMPONENTWISE_UNIV;
+              CONTINUOUS_MAP_COMPONENTWISE_REAL] THEN
+  SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_EUCLIDEAN_COMPONENT;
+           LAMBDA_BETA; CONTINUOUS_MAP_ID] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; TOPSPACE_EUCLIDEAN_SPACE] THEN
+  REPEAT CONJ_TAC THENL
+   [X_GEN_TAC `i:num` THEN ASM_CASES_TAC `i:num <= n` THEN
+    ASM_REWRITE_TAC[CONTINUOUS_MAP_REAL_CONST] THEN
+    SIMP_TAC[CONTINUOUS_MAP_PRODUCT_PROJECTION; IN_UNIV; euclidean_space;
+             CONTINUOUS_MAP_FROM_SUBTOPOLOGY];
+    X_GEN_TAC `x:num->real` THEN
+    REWRITE_TAC[IN_SPAN_IMAGE_BASIS; IN_ELIM_THM; IN_NUMSEG] THEN
+    SIMP_TAC[LAMBDA_BETA];
+    REWRITE_TAC[IN_ELIM_THM; IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+    GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `i:num` THEN
+    REWRITE_TAC[] THEN COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN
+    SUBGOAL_THEN `i <= dimindex(:N)` MP_TAC THENL
+     [ASM_ARITH_TAC; ASM_SIMP_TAC[LAMBDA_BETA]];
+    REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; IN_SPAN_IMAGE_BASIS] THEN
+    SIMP_TAC[CART_EQ; IN_NUMSEG; LAMBDA_BETA] THEN MESON_TAC[]]);;
+
+let HOMEOMORPHIC_MAPS_EUCLIDEAN_SPACE_EUCLIDEAN = prove
+ (`homeomorphic_maps (euclidean_space(dimindex(:N)),euclidean:(real^N)topology)
+                 ((\x. lambda i. x i),
+                  (\x i. if 1 <= i /\ i <= dimindex(:N) then x$i else &0))`,
+  MP_TAC(SPEC `dimindex(:N)`
+        HOMEOMORPHIC_MAPS_EUCLIDEAN_SPACE_EUCLIDEAN_GEN) THEN
+  REWRITE_TAC[GSYM SIMPLE_IMAGE; IN_NUMSEG; SPAN_STDBASIS; LE_REFL] THEN
+  REWRITE_TAC[SUBTOPOLOGY_UNIV] THEN MATCH_MP_TAC EQ_IMP THEN
+  BINOP_TAC THEN REWRITE_TAC[PAIR_EQ] THEN ABS_TAC THEN
+  SIMP_TAC[CART_EQ; LAMBDA_BETA]);;
+
+let HOMEOMORPHIC_MAPS_NSPHERE_EUCLIDEAN_SPHERE = prove
+ (`!n. 1 <= n /\ n <= dimindex(:N)
+       ==> homeomorphic_maps
+            (nsphere(n - 1),
+             subtopology euclidean
+              (sphere(vec 0:real^N,&1) INTER span(IMAGE basis (1..n))))
+            ((\x. lambda i. if 1 <= i /\ i <= n then x i else &0),
+             (\x i. if 1 <= i /\ i <= n then x$i else &0))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[nsphere; SUB_ADD] THEN
+  ONCE_REWRITE_TAC[INTER_COMM] THEN
+  REWRITE_TAC[GSYM SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  MATCH_MP_TAC HOMEOMORPHIC_MAPS_SUBTOPOLOGIES_ALT THEN
+  ASM_SIMP_TAC[HOMEOMORPHIC_MAPS_EUCLIDEAN_SPACE_EUCLIDEAN_GEN] THEN
+  REWRITE_TAC[SUBSET; TOPSPACE_EUCLIDEAN_SPACE; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[IN_INTER; IN_ELIM_THM; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[IN_SPHERE_0; NORM_EQ_1; dot; GSYM REAL_POW_2] THEN
+  SUBGOAL_THEN `!j. j <= n ==> j <= dimindex(:N)` ASSUME_TAC THENL
+   [ASM_ARITH_TAC; ALL_TAC] THEN
+  REWRITE_TAC[IN_NUMSEG; IN_SPAN_IMAGE_BASIS] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(fun th ->  GEN_REWRITE_TAC RAND_CONV [GSYM th]) THENL
+   [ALL_TAC; CONV_TAC SYM_CONV] THEN
+  MATCH_MP_TAC SUM_EQ_SUPERSET THEN
+  ASM_SIMP_TAC[FINITE_NUMSEG; SUBSET_NUMSEG; IN_NUMSEG; LAMBDA_BETA] THEN
+  REWRITE_TAC[LE_REFL] THEN REPEAT STRIP_TAC THEN
+  CONV_TAC REAL_RAT_REDUCE_CONV);;
 
 (* ------------------------------------------------------------------------- *)
 (* Manhattan metric.                                                         *)
@@ -30267,83 +30349,6 @@ let LOCALLY_COMPACT_CLOSURE_DIFF = prove
      [MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[];
       REWRITE_TAC[LOCALLY_COMPACT_CLOSED_DIFF] THEN
       ASM_MESON_TAC[CLOSED_CLOSURE]]]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Homotopy within the space of linear maps.                                 *)
-(* ------------------------------------------------------------------------- *)
-
-let HOMOTOPIC_WITH_REFLECTIONS_ALONG = prove
- (`!P s t a b:real^N.
-        ~(a = vec 0) /\ ~(b = vec 0) /\
-        (!c. c IN segment[a,b]
-             ==> P(reflect_along c) /\ IMAGE (reflect_along c) s SUBSET t)
-        ==> homotopic_with P (subtopology euclidean s,subtopology euclidean t)
-                             (reflect_along a) (reflect_along b)`,
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `vec 0 IN segment[a:real^N,b]` THENL
-   [SUBGOAL_THEN `reflect_along (b:real^N) = reflect_along a` SUBST1_TAC THENL
-     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM BETWEEN_IN_SEGMENT]) THEN
-      DISCH_THEN(MP_TAC o MATCH_MP BETWEEN_IMP_COLLINEAR) THEN
-      ONCE_REWRITE_TAC[SET_RULE `{a,z,b} = {z,a,b}`] THEN
-      ASM_REWRITE_TAC[COLLINEAR_LEMMA_ALT] THEN
-      DISCH_THEN(X_CHOOSE_THEN `c:real` SUBST_ALL_TAC) THEN
-      REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
-      MATCH_MP_TAC REFLECT_ALONG_SCALE THEN
-      ASM_MESON_TAC[VECTOR_MUL_EQ_0];
-      ASM_SIMP_TAC[HOMOTOPIC_WITH_REFL; ENDS_IN_SEGMENT; LINEAR_CONTINUOUS_ON;
-                   CONTINUOUS_MAP_EUCLIDEAN2; LINEAR_REFLECT_ALONG]];
-    ALL_TAC] THEN
-  REWRITE_TAC[homotopic_with] THEN
-  EXISTS_TAC
-   `(\(c,x). reflect_along (c:real^N) x) o
-    (\(t,x). (&1 - t) % a + t % b,x)` THEN
-  REWRITE_TAC[o_THM] THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
-  REWRITE_TAC[VECTOR_MUL_LZERO; VECTOR_MUL_LID] THEN
-  REWRITE_TAC[VECTOR_ADD_LID; VECTOR_ADD_RID; ETA_AX] THEN
-  REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; TOPSPACE_PROD_TOPOLOGY] THEN
-  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_CROSS; o_THM] THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; IMP_CONJ] THEN
-  REWRITE_TAC[GSYM CONJ_ASSOC] THEN CONJ_TAC THENL
-   [MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
-    EXISTS_TAC `prod_topology
-                 (subtopology euclidean ((:real^N) DIFF {vec 0}))
-                 (euclidean:(real^N)topology)` THEN
-    REWRITE_TAC[CONTINUOUS_MAP_PROD] THEN CONJ_TAC THENL
-     [DISJ2_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
-      SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
-      REWRITE_TAC[SUBSET; FORALL_IN_IMAGE;
-                  TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
-      CONJ_TAC THENL
-       [MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
-        REWRITE_TAC[CONTINUOUS_MAP_DROP_EQ; o_DEF; GSYM DROP_VEC] THEN
-        REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN_EUCLIDEAN; GSYM DROP_SUB] THEN
-        MATCH_MP_TAC CONTINUOUS_ON_ADD THEN CONJ_TAC THEN
-        MATCH_MP_TAC CONTINUOUS_ON_VMUL THEN REWRITE_TAC[o_DEF; LIFT_DROP] THEN
-        SIMP_TAC[CONTINUOUS_ON_SUB; CONTINUOUS_ON_CONST; CONTINUOUS_ON_ID];
-        FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [IN_SEGMENT]) THEN
-        REWRITE_TAC[IN_REAL_INTERVAL] THEN SET_TAC[]];
-      REWRITE_TAC[reflect_along; LAMBDA_PAIR] THEN
-      MATCH_MP_TAC CONTINUOUS_MAP_VECTOR_SUB THEN
-      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM ETA_AX] THEN
-      REWRITE_TAC[CONTINUOUS_MAP_OF_SND; CONTINUOUS_MAP_ID] THEN
-      MATCH_MP_TAC CONTINUOUS_MAP_VECTOR_MUL THEN
-      GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM ETA_AX] THEN
-      REWRITE_TAC[CONTINUOUS_MAP_OF_FST] THEN
-      SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_ID] THEN
-      MATCH_MP_TAC CONTINUOUS_MAP_REAL_LMUL THEN
-      MATCH_MP_TAC CONTINUOUS_MAP_REAL_DIV THEN
-      REWRITE_TAC[TOPSPACE_PROD_TOPOLOGY; FORALL_IN_CROSS] THEN
-      REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; DOT_EQ_0] THEN
-      SIMP_TAC[IN_DIFF; IN_SING] THEN
-      CONJ_TAC THEN MATCH_MP_TAC CONTINUOUS_MAP_DOT THEN CONJ_TAC THEN
-      GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
-      REWRITE_TAC[CONTINUOUS_MAP_OF_FST; CONTINUOUS_MAP_OF_SND] THEN
-      SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY]];
-    REWRITE_TAC[AND_FORALL_THM; RIGHT_FORALL_IMP_THM; IN_REAL_INTERVAL; TAUT
-                 `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
-    X_GEN_TAC `t:real` THEN STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `(&1 - t) % a + t % b:real^N`) THEN
-    REWRITE_TAC[IN_SEGMENT; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
-    ASM SET_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* F_sigma and G_delta sets.                                                 *)

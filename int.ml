@@ -578,25 +578,6 @@ let INT_EXISTS_ABS = prove
   REWRITE_TAC[NOT_EXISTS_THM; INT_FORALL_ABS] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Sometimes handy in number-theoretic applications.                         *)
-(* ------------------------------------------------------------------------- *)
-
-let INT_ABS_MUL_1 = prove
- (`!x y. (abs(x * y) = &1) <=> (abs(x) = &1) /\ (abs(y) = &1)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[INT_ABS_MUL] THEN
-  MP_TAC(SPEC `y:int` INT_ABS_POS) THEN SPEC_TAC(`abs(y)`,`b:int`) THEN
-  MP_TAC(SPEC `x:int` INT_ABS_POS) THEN SPEC_TAC(`abs(x)`,`a:int`) THEN
-  REWRITE_TAC[GSYM INT_FORALL_POS; INT_OF_NUM_MUL; INT_OF_NUM_EQ; MULT_EQ_1]);;
-
-let INT_WOP = prove
- (`(?x. &0 <= x /\ P x) <=>
-   (?x. &0 <= x /\ P x /\ !y. &0 <= y /\ P y ==> x <= y)`,
-  ONCE_REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
-  REWRITE_TAC[IMP_CONJ; GSYM INT_FORALL_POS; INT_OF_NUM_LE] THEN
-  REWRITE_TAC[NOT_FORALL_THM] THEN GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN
-  REWRITE_TAC[GSYM NOT_LE; CONTRAPOS_THM]);;
-
-(* ------------------------------------------------------------------------- *)
 (* A few "pseudo definitions".                                               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -694,6 +675,32 @@ let INT_LE_TRANS_LT = prove
  (`!x y:int. x <= y <=> (!z. y < z ==> x < z)`,
   REPEAT GEN_TAC THEN EQ_TAC THENL [INT_ARITH_TAC; ALL_TAC] THEN
   DISCH_THEN(MP_TAC o SPEC `y + &1:int`) THEN INT_ARITH_TAC);;
+
+let INT_MUL_EQ_1 = prove
+ (`!x y:int. x * y = &1 <=> x = &1 /\ y = &1 \/ x = --(&1) /\ y = --(&1)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPEC `x:int` INT_IMAGE) THEN
+  MP_TAC(ISPEC `y:int` INT_IMAGE) THEN
+  REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[INT_MUL_LNEG; INT_MUL_RNEG; INT_NEG_NEG;
+     INT_ARITH `~(--(&n:int) = &1)`; INT_OF_NUM_MUL;
+     INT_ARITH `~(&n:int = -- &1)`; INT_OF_NUM_EQ; INT_NEG_EQ] THEN
+  REWRITE_TAC[MULT_EQ_1]);;
+
+let INT_ABS_MUL_1 = prove
+ (`!x y. abs(x * y) = &1 <=> abs(x) = &1 /\ abs(y) = &1`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[INT_ABS_MUL] THEN
+  MP_TAC(SPEC `y:int` INT_ABS_POS) THEN SPEC_TAC(`abs(y)`,`b:int`) THEN
+  MP_TAC(SPEC `x:int` INT_ABS_POS) THEN SPEC_TAC(`abs(x)`,`a:int`) THEN
+  REWRITE_TAC[GSYM INT_FORALL_POS; INT_OF_NUM_MUL; INT_OF_NUM_EQ; MULT_EQ_1]);;
+
+let INT_WOP = prove
+ (`(?x. &0 <= x /\ P x) <=>
+   (?x. &0 <= x /\ P x /\ !y. &0 <= y /\ P y ==> x <= y)`,
+  ONCE_REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  REWRITE_TAC[IMP_CONJ; GSYM INT_FORALL_POS; INT_OF_NUM_LE] THEN
+  REWRITE_TAC[NOT_FORALL_THM] THEN GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN
+  REWRITE_TAC[GSYM NOT_LE; CONTRAPOS_THM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Archimedian property for the integers.                                    *)

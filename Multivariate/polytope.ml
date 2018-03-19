@@ -7743,6 +7743,18 @@ let SIMPLEX_0_NOT_IN_AFFINE_HULL = prove
               SIMPLEX_ALT1] THEN
   MESON_TAC[AFFINE_HULL_CONVEX_HULL]);;
 
+let SIMPLEX_EXTREME_POINTS_NONEMPTY = prove
+ (`!c. &(dimindex (:N)) - &1 simplex c ==> ~({v | v extreme_point_of c} = {})`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; IN_ELIM_THM] THEN
+  MATCH_MP_TAC EXTREME_POINT_EXISTS_CONVEX THEN REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[SIMPLEX_IMP_COMPACT];
+    ASM_MESON_TAC[SIMPLEX_IMP_CONVEX];
+    DISCH_THEN SUBST_ALL_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SIMPLEX_EMPTY]) THEN
+    MATCH_MP_TAC(INT_ARITH `&1:int <= d ==> d - &1 = -- &1 ==> F`) THEN
+    REWRITE_TAC[INT_OF_NUM_LE; DIMINDEX_GE_1]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Simplicial complexes and triangulations.                                  *)
 (* ------------------------------------------------------------------------- *)
