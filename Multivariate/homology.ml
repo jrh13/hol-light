@@ -6153,6 +6153,442 @@ let HOMOLOGY_ADDITIVITY_EXPLICIT = prove
     REWRITE_TAC[o_DEF]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Generalize exact homology sequence to triples (derived from E-S axioms)   *)
+(* ------------------------------------------------------------------------- *)
+
+let hom_relboundary = new_definition
+ `hom_relboundary p (top:A topology,s,t) =
+    hom_induced (p - &1) (subtopology top s,{}) (subtopology top s,t) (\x. x) o
+    hom_boundary p (top,s)`;;
+
+let GROUP_HOMOMORPHISM_HOM_RELBOUNDARY = prove
+ (`!p top s t:A->bool.
+           group_homomorphism
+           (relative_homology_group (p,top,s),
+            relative_homology_group (p - &1,subtopology top s,t))
+           (hom_relboundary p (top,s,t))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[hom_relboundary] THEN
+  MATCH_MP_TAC GROUP_HOMOMORPHISM_COMPOSE THEN
+  EXISTS_TAC `homology_group(p - &1,subtopology top (s:A->bool))` THEN
+  REWRITE_TAC[GROUP_HOMOMORPHISM_HOM_BOUNDARY; GROUP_HOMOMORPHISM_HOM_INDUCED;
+              homology_group]);;
+
+let HOM_RELBOUNDARY = prove
+ (`!p top s t c.
+         hom_relboundary p (top,s,t) c IN
+         group_carrier (relative_homology_group (p - &1,subtopology top s,t))`,
+  REWRITE_TAC[hom_relboundary; o_THM; HOM_INDUCED]);;
+
+let HOM_RELBOUNDARY_EMPTY = prove
+ (`!p top s:A->bool.
+        hom_relboundary p (top,s,{}) = hom_boundary p (top,s)`,
+  SIMP_TAC[hom_relboundary; o_DEF; HOM_INDUCED_ID; HOM_BOUNDARY;
+           GSYM homology_group; ETA_AX]);;
+
+let NATURALITY_HOM_INDUCED_RELBOUNDARY = prove
+ (`!p top s t top' u v (f:A->B).
+    continuous_map(top,top') f /\ IMAGE f s SUBSET u /\ IMAGE f t SUBSET v
+    ==> hom_relboundary p (top',u,v) o
+        hom_induced p (top,s) (top',u) f =
+        hom_induced (p - &1) (subtopology top s,t) (subtopology top' u,v) f o
+        hom_relboundary p (top,s,t)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[hom_relboundary; GSYM o_ASSOC; NATURALITY_HOM_INDUCED] THEN
+  REWRITE_TAC[o_ASSOC] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  W(MP_TAC o PART_MATCH (rand o rand) HOM_INDUCED_COMPOSE o lhand o snd) THEN
+  W(MP_TAC o PART_MATCH (rand o rand)
+    HOM_INDUCED_COMPOSE o rand o rand o snd) THEN
+  ASM_SIMP_TAC[IMAGE_CLAUSES; IMAGE_ID; EMPTY_SUBSET; INTER_SUBSET;
+               CONTINUOUS_MAP_ID; CONTINUOUS_MAP_IN_SUBTOPOLOGY;
+               CONTINUOUS_MAP_FROM_SUBTOPOLOGY; TOPSPACE_SUBTOPOLOGY; SET_RULE
+                `IMAGE f s SUBSET t ==> IMAGE f (u INTER s) SUBSET t`] THEN
+  REPEAT(DISCH_THEN(SUBST1_TAC o SYM)) THEN REWRITE_TAC[o_DEF]);;
+
+let HOMOLOGY_EXACTNESS_TRIPLE_1 = prove
+ (`!p top s t:A->bool.
+        t SUBSET s
+        ==> group_exactness(relative_homology_group(p,top,t),
+                            relative_homology_group(p,top,s),
+                            relative_homology_group(p - &1,subtopology top s,t))
+                (hom_induced p (top,t) (top,s) (\x. x),
+                 hom_relboundary p (top,s,t))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[group_exactness; GROUP_HOMOMORPHISM_HOM_RELBOUNDARY;
+              GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
+  REWRITE_TAC[group_image; group_kernel] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN GEN_REWRITE_TAC BINOP_CONV [SUBSET] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+  CONJ_TAC THENL
+   [X_GEN_TAC `b:((num->real)->A)frag->bool` THEN DISCH_TAC THEN
+    REWRITE_TAC[HOM_INDUCED; hom_relboundary] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_THM] THEN REWRITE_TAC[GSYM o_ASSOC] THEN
+    ASM_SIMP_TAC[NATURALITY_HOM_INDUCED; IMAGE_ID; CONTINUOUS_MAP_ID] THEN
+    REWRITE_TAC[o_THM] THEN
+    MP_TAC(ISPECL [`p - &1:int`; `subtopology top (s:A->bool)`; `t:A->bool`]
+        HOMOLOGY_EXACTNESS_AXIOM_3) THEN
+    ASM_SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+     `t SUBSET s ==> s INTER t = t`] THEN
+    REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+    DISCH_THEN(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN s ==> g(f x) = z`)) THEN
+    REWRITE_TAC[HOM_BOUNDARY];
+    ALL_TAC] THEN
+  X_GEN_TAC `x:((num->real)->A)frag->bool` THEN
+  REWRITE_TAC[hom_relboundary; o_THM] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`p - &1:int`; `subtopology top (s:A->bool)`; `t:A->bool`]
+   HOMOLOGY_EXACTNESS_AXIOM_3) THEN
+  REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+  DISCH_THEN(MP_TAC o SPEC `hom_boundary p (top,s:A->bool) x` o
+   MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN t /\ g x = z ==> ?y. y IN s /\ f y = x`)) THEN
+  ASM_REWRITE_TAC[HOM_BOUNDARY] THEN
+  ASM_SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+   `t SUBSET s ==> s INTER t = t`] THEN
+  DISCH_THEN(X_CHOOSE_THEN
+   `y:((num->real)->A)frag->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL
+   [`p:int`; `top:A topology`; `t:A->bool`]
+        HOMOLOGY_EXACTNESS_AXIOM_2) THEN
+  REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN t /\ g x = z ==> ?y. y IN s /\ f y = x`)) THEN
+  DISCH_THEN(MP_TAC o SPEC `y:((num->real)->A)frag->bool`) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [MP_TAC(ISPECL
+     [`p:int`; `top:A topology`; `s:A->bool`]
+        HOMOLOGY_EXACTNESS_AXIOM_2) THEN
+    REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN s ==> g(f x) = z`)) THEN
+    DISCH_THEN(MP_TAC o SPEC `x:((num->real)->A)frag->bool`) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EQ_TRANS) THEN
+    FIRST_X_ASSUM(fun th ->
+      GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [SYM th]) THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM o_THM] THEN AP_THM_TAC THEN
+    W(MP_TAC o PART_MATCH (rand o rand) HOM_INDUCED_COMPOSE o rand o snd) THEN
+    SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_IN_SUBTOPOLOGY;
+             CONTINUOUS_MAP_FROM_SUBTOPOLOGY; IMAGE_ID; EMPTY_SUBSET] THEN
+    REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    REWRITE_TAC[o_DEF];
+    DISCH_THEN(X_CHOOSE_THEN `z:((num->real)->A)frag->bool`
+      STRIP_ASSUME_TAC)] THEN
+  MP_TAC(ISPECL [`p:int`; `top:A topology`; `s:A->bool`]
+   HOMOLOGY_EXACTNESS_AXIOM_1) THEN
+  REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN t /\ g x = z ==> ?y. y IN s /\ f y = x`)) THEN
+  DISCH_THEN(MP_TAC o SPEC
+   `group_div (relative_homology_group (p,top,s)) x
+              (hom_induced p (top,t) (top,s) (\x:A. x) z)`) THEN
+  ASM_SIMP_TAC[GROUP_DIV; HOM_INDUCED; HOM_BOUNDARY;
+               MATCH_MP GROUP_HOMOMORPHISM_DIV
+                 (SPEC_ALL GROUP_HOMOMORPHISM_HOM_BOUNDARY);
+               GROUP_RULE `group_div G x y = group_id G <=> y = x`] THEN
+  ANTS_TAC THENL
+   [GEN_REWRITE_TAC LAND_CONV [GSYM o_THM] THEN
+    ASM_SIMP_TAC[NATURALITY_HOM_INDUCED; IMAGE_ID; CONTINUOUS_MAP_ID] THEN
+    ASM_REWRITE_TAC[o_THM];
+    DISCH_THEN(X_CHOOSE_THEN `w:((num->real)->A)frag->bool`
+        STRIP_ASSUME_TAC)] THEN
+  EXISTS_TAC `group_mul (relative_homology_group (p,top,t)) z
+                        (hom_induced p (top,{}) (top,t) (\x:A. x) w)` THEN
+  ASM_SIMP_TAC[GROUP_MUL; HOM_INDUCED;
+               MATCH_MP GROUP_HOMOMORPHISM_MUL
+                  (SPEC_ALL GROUP_HOMOMORPHISM_HOM_INDUCED)] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand)
+     (REWRITE_RULE[abelian_group] ABELIAN_RELATIVE_HOMOLOGY_GROUP) o
+    rand o snd) THEN
+  REWRITE_TAC[HOM_INDUCED] THEN DISCH_THEN SUBST1_TAC THEN
+  ASM_SIMP_TAC[GROUP_MUL; HOM_INDUCED;
+               GROUP_RULE `x = group_mul G z y <=> group_div G x y = z`] THEN
+  FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [SYM th]) THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM o_THM] THEN AP_THM_TAC THEN
+  W(MP_TAC o PART_MATCH (rand o rand) HOM_INDUCED_COMPOSE o rand o snd) THEN
+  SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_IN_SUBTOPOLOGY;
+           CONTINUOUS_MAP_FROM_SUBTOPOLOGY; IMAGE_ID; EMPTY_SUBSET] THEN
+  REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  REWRITE_TAC[o_DEF]);;
+
+let HOMOLOGY_EXACTNESS_TRIPLE_2 = prove
+ (`!p top s t:A->bool.
+        t SUBSET s
+        ==> group_exactness(relative_homology_group(p,top,s),
+                            relative_homology_group(p - &1,subtopology top s,t),
+                            relative_homology_group(p - &1,top,t))
+               (hom_relboundary p (top,s,t),
+                hom_induced (p - &1) (subtopology top s,t) (top,t) (\x. x))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[group_exactness; GROUP_HOMOMORPHISM_HOM_RELBOUNDARY;
+              GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
+  REWRITE_TAC[group_image; group_kernel] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN GEN_REWRITE_TAC BINOP_CONV [SUBSET] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[HOM_RELBOUNDARY] THEN
+    X_GEN_TAC `c:((num->real)->A)frag->bool` THEN DISCH_TAC THEN
+    REWRITE_TAC[hom_relboundary] THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM o_THM] THEN
+    TRANS_TAC EQ_TRANS
+     `(hom_induced (p - &1) (top,{}) (top,t) (\x:A. x) o
+       hom_induced (p - &1) (subtopology top s,{}) (top,{}) (\x. x) o
+       hom_boundary p (top,s)) c` THEN
+    CONJ_TAC THENL
+     [AP_THM_TAC THEN REWRITE_TAC[o_ASSOC] THEN
+      AP_THM_TAC THEN AP_TERM_TAC THEN
+      W(MP_TAC o PART_MATCH (rand o rand) HOM_INDUCED_COMPOSE o
+        rand o snd) THEN
+      SIMP_TAC[IMAGE_ID; EMPTY_SUBSET; CONTINUOUS_MAP_FROM_SUBTOPOLOGY;
+               CONTINUOUS_MAP_ID] THEN
+      DISCH_THEN(SUBST1_TAC o SYM) THEN
+      W(MP_TAC o PART_MATCH (rand o rand) HOM_INDUCED_COMPOSE o
+        lhand o snd) THEN
+      REWRITE_TAC[CONTINUOUS_MAP_ID; IMAGE_ID; EMPTY_SUBSET] THEN
+      SIMP_TAC[SUBSET_REFL; CONTINUOUS_MAP_ID;
+               CONTINUOUS_MAP_FROM_SUBTOPOLOGY];
+      ONCE_REWRITE_TAC[o_THM] THEN MATCH_MP_TAC(MESON[group_homomorphism]
+       `!G. group_homomorphism(G,H) f /\ x = group_id G
+            ==> f x = group_id H`) THEN
+      EXISTS_TAC `homology_group(p - &1,top:A topology)` THEN
+      REWRITE_TAC[homology_group; GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
+      MP_TAC(ISPECL[`p:int`; `top:A topology`; `s:A->bool`]
+        HOMOLOGY_EXACTNESS_AXIOM_2) THEN
+      REWRITE_TAC[group_exactness; group_kernel; group_image; o_THM] THEN
+      REWRITE_TAC[GSYM homology_group] THEN MATCH_MP_TAC(SET_RULE
+        `x IN s ==> P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+         ==> g(f x) = z`) THEN
+      ASM SET_TAC[]];
+    ALL_TAC] THEN
+  X_GEN_TAC `x:((num->real)->A)frag->bool` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL[`p - &1:int`; `subtopology top s:A topology`; `t:A->bool`]
+    HOMOLOGY_EXACTNESS_AXIOM_1) THEN
+  REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN t /\ g x = z ==> ?y. y IN s /\ f y = x`)) THEN
+  DISCH_THEN(MP_TAC o SPEC `x:((num->real)->A)frag->bool`) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [MP_TAC(ISPECL
+     [`p - &1:int`; `subtopology top s:A topology`; `t:A->bool`;
+      `top:A topology`; `t:A->bool`; `\x:A. x`]
+        NATURALITY_HOM_INDUCED) THEN
+    REWRITE_TAC[IMAGE_ID; SUBSET_REFL] THEN
+    SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+    ASM_SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+     `t SUBSET s ==> s INTER t = t`] THEN
+    DISCH_THEN(MP_TAC o C AP_THM `x:((num->real)->A)frag->bool`) THEN
+    ASM_REWRITE_TAC[o_THM;
+     REWRITE_RULE[group_homomorphism] GROUP_HOMOMORPHISM_HOM_BOUNDARY] THEN
+    DISCH_THEN SUBST1_TAC THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC HOM_INDUCED_ID THEN
+    W(MP_TAC o PART_MATCH lhand HOM_BOUNDARY o lhand o snd) THEN
+    ASM_SIMP_TAC[homology_group; SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+     `t SUBSET s ==> s INTER t = t`];
+    DISCH_THEN(X_CHOOSE_THEN `y:((num->real)->A)frag->bool`
+      STRIP_ASSUME_TAC)] THEN
+  MP_TAC(ISPECL [`p - &1:int`; `top:A topology`; `t:A->bool`]
+    HOMOLOGY_EXACTNESS_AXIOM_3) THEN
+  REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN t /\ g x = z ==> ?y. y IN s /\ f y = x`)) THEN
+  DISCH_THEN(MP_TAC o SPEC
+   `hom_induced (p - &1) (subtopology top s,{}) (top,{}) (\x:A. x) y`) THEN
+  REWRITE_TAC[HOM_INDUCED; homology_group] THEN
+  GEN_REWRITE_TAC (funpow 3 LAND_CONV) [GSYM o_THM] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) HOM_INDUCED_COMPOSE o
+    rator o lhand o lhand o lhand o snd) THEN
+  REWRITE_TAC[IMAGE_ID; EMPTY_SUBSET] THEN
+  SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[o_DEF] THEN
+  MP_TAC(ISPECL
+   [`p - &1:int`; `subtopology top s:A topology`; `{}:A->bool`;
+    `subtopology top s:A topology`; `t:A->bool`;
+    `top:A topology`; `t:A->bool`; `\x:A. x`; `\x:A. x`]
+        HOM_INDUCED_COMPOSE) THEN
+  REWRITE_TAC[IMAGE_ID; EMPTY_SUBSET; SUBSET_REFL] THEN
+  SIMP_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+  REWRITE_TAC[o_DEF] THEN DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `z:((num->real)->A)frag->bool`
+    STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL [`p:int`; `top:A topology`; `s:A->bool`]
+    HOMOLOGY_EXACTNESS_AXIOM_2) THEN
+  REWRITE_TAC[group_exactness; group_kernel; group_image] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
+     `P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+      ==> !x. x IN t /\ g x = z ==> ?y. y IN s /\ f y = x`)) THEN
+  DISCH_THEN(MP_TAC o SPEC
+   `group_div (homology_group(p - &1,subtopology top s)) y
+              (hom_induced (p - &1) (subtopology top t,{})
+                                    (subtopology top s,{}) (\x:A. x) z)`) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[homology_group]) THEN
+  ASM_SIMP_TAC[GROUP_DIV; HOM_INDUCED; homology_group;
+    MATCH_MP GROUP_HOMOMORPHISM_DIV (SPEC_ALL GROUP_HOMOMORPHISM_HOM_INDUCED);
+    GROUP_RULE `group_div G x y = group_id G <=> y = x`] THEN
+  GEN_REWRITE_TAC (funpow 3 LAND_CONV) [GSYM o_THM] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) HOM_INDUCED_COMPOSE o
+    rator o lhand o lhand o lhand o snd) THEN
+  SIMP_TAC[IMAGE_ID; EMPTY_SUBSET; CONTINUOUS_MAP_ID;
+           CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  ASM_REWRITE_TAC[o_DEF] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `w:((num->real)->A)frag->bool` THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[hom_relboundary; o_THM] THEN
+  ASM_SIMP_TAC[HOM_INDUCED; MATCH_MP GROUP_HOMOMORPHISM_DIV
+   (SPEC_ALL GROUP_HOMOMORPHISM_HOM_INDUCED)] THEN
+  ASM_SIMP_TAC[HOM_INDUCED; GROUP_RULE
+   `x = group_div G x y <=> y = group_id G`] THEN
+  MP_TAC(ISPECL[`p - &1:int`; `subtopology top s:A topology`; `t:A->bool`]
+    HOMOLOGY_EXACTNESS_AXIOM_3) THEN
+  ASM_SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; SET_RULE
+   `t SUBSET s ==> s INTER t = t`] THEN
+  REWRITE_TAC[group_exactness; group_kernel; group_image; o_THM] THEN
+  REWRITE_TAC[GSYM homology_group] THEN MATCH_MP_TAC(SET_RULE
+   `x IN s ==> P /\ Q /\ IMAGE f s = {y | y IN t /\ g y = z}
+    ==> g(f x) = z`) THEN
+  ASM_REWRITE_TAC[homology_group]);;
+
+let HOMOLOGY_EXACTNESS_TRIPLE_3 = prove
+ (`!p top s t:A->bool.
+      t SUBSET s
+      ==> group_exactness(relative_homology_group(p,subtopology top s,t),
+                          relative_homology_group(p,top,t),
+                          relative_homology_group(p,top,s))
+            (hom_induced p (subtopology top s,t) (top,t) (\x. x),
+             hom_induced p (top,t) (top,s) (\x. x))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[group_exactness; GROUP_HOMOMORPHISM_HOM_RELBOUNDARY;
+              GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
+  REWRITE_TAC[group_image; group_kernel] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN GEN_REWRITE_TAC BINOP_CONV [SUBSET] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE] THEN REWRITE_TAC[IN_IMAGE; IN_ELIM_THM] THEN
+  REWRITE_TAC[HOM_INDUCED; HOM_RELBOUNDARY] THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [X_GEN_TAC `c:((num->real)->A)frag->bool` THEN DISCH_TAC THEN
+    TRANS_TAC EQ_TRANS
+     `hom_induced p (subtopology top s,s) (top,s) (\x:A. x)
+       (hom_induced p (subtopology top s,t) (subtopology top s,s) (\x. x)
+        c)` THEN
+    CONJ_TAC THENL
+     [GEN_REWRITE_TAC BINOP_CONV [GSYM o_THM] THEN AP_THM_TAC THEN
+      ASM_SIMP_TAC[GSYM HOM_INDUCED_COMPOSE; CONTINUOUS_MAP_FROM_SUBTOPOLOGY;
+                  IMAGE_ID; SUBSET_REFL; CONTINUOUS_MAP_ID];
+      MATCH_MP_TAC(MESON[group_homomorphism]
+       `!G. group_homomorphism(G,H) f /\ x = group_id G
+            ==> f x = group_id H`) THEN
+      EXISTS_TAC
+       `relative_homology_group (p,subtopology top (s:A->bool),s)` THEN
+      REWRITE_TAC[GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
+      MP_TAC(ISPECL [`p:int`; `subtopology top (s:A->bool)`]
+        TRIVIAL_RELATIVE_HOMOLOGY_GROUP_TOPSPACE) THEN
+      REWRITE_TAC[trivial_group] THEN MATCH_MP_TAC(SET_RULE
+       `x IN c /\ a = b ==> c = {b} ==> x = a`) THEN
+      REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN
+      ONCE_REWRITE_TAC[SET_RULE `u INTER s = (u INTER s) INTER s`] THEN
+      ONCE_REWRITE_TAC[GSYM TOPSPACE_SUBTOPOLOGY] THEN
+      REWRITE_TAC[GSYM RELATIVE_HOMOLOGY_GROUP_RESTRICT; HOM_INDUCED]];
+    DISCH_TAC] THEN
+  X_GEN_TAC `x:((num->real)->A)frag->bool` THEN STRIP_TAC THEN
+  ABBREV_TAC `b = hom_boundary p (top:A topology,t) x` THEN
+  SUBGOAL_THEN
+   `b IN group_carrier(homology_group(p - &1,subtopology top (t:A->bool)))`
+  ASSUME_TAC THENL
+   [EXPAND_TAC "b" THEN REWRITE_TAC[HOM_BOUNDARY]; ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`p:int`; `top:A topology`; `t:A->bool`; `top:A topology`;
+    `s:A->bool`; `\x:A. x`] NATURALITY_HOM_INDUCED) THEN
+  ASM_SIMP_TAC[CONTINUOUS_MAP_ID; IMAGE_ID] THEN
+  DISCH_THEN(MP_TAC o C AP_THM `x:((num->real)->A)frag->bool`) THEN
+  ASM_REWRITE_TAC[o_THM; REWRITE_RULE[group_homomorphism]
+     GROUP_HOMOMORPHISM_HOM_BOUNDARY] THEN
+  DISCH_THEN(ASSUME_TAC o SYM) THEN
+  MP_TAC(ISPECL [`p:int`; `subtopology top s:A topology`; `t:A->bool`]
+      HOMOLOGY_EXACTNESS_AXIOM_2) THEN
+  REWRITE_TAC[group_exactness; group_image; group_kernel] THEN
+  DISCH_THEN(MP_TAC o GEN_REWRITE_RULE I [EXTENSION] o last o CONJUNCTS) THEN
+  DISCH_THEN(MP_TAC o SPEC `b:((num->real)->A)frag->bool`) THEN
+  REWRITE_TAC[IN_IMAGE; IN_ELIM_THM; SUBTOPOLOGY_SUBTOPOLOGY] THEN
+  ASM_SIMP_TAC[SET_RULE `t SUBSET s ==> s INTER t = t`] THEN
+  DISCH_THEN(X_CHOOSE_THEN `u:((num->real)->A)frag->bool`
+   (STRIP_ASSUME_TAC o GSYM)) THEN
+  ABBREV_TAC
+   `y = group_div (relative_homology_group(p,top,t))
+         x (hom_induced p (subtopology top s,t) (top,t) (\x:A. x) u)` THEN
+  SUBGOAL_THEN
+   `y IN group_carrier(relative_homology_group(p,top:A topology,t))`
+  ASSUME_TAC THENL
+   [EXPAND_TAC "y" THEN MATCH_MP_TAC GROUP_DIV THEN
+    ASM_REWRITE_TAC[HOM_INDUCED];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL [`p:int`; `top:A topology`; `t:A->bool`]
+      HOMOLOGY_EXACTNESS_AXIOM_1) THEN
+  REWRITE_TAC[group_exactness; group_image; group_kernel] THEN
+  DISCH_THEN(MP_TAC o GEN_REWRITE_RULE I [EXTENSION] o last o CONJUNCTS) THEN
+  DISCH_THEN(MP_TAC o SPEC `y:((num->real)->A)frag->bool`) THEN
+  DISCH_THEN(MP_TAC o snd o EQ_IMP_RULE) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM; IN_IMAGE] THEN
+  ANTS_TAC THENL
+   [EXPAND_TAC "y" THEN
+    ASM_SIMP_TAC[HOM_INDUCED; MATCH_MP GROUP_HOMOMORPHISM_DIV
+       (SPEC_ALL GROUP_HOMOMORPHISM_HOM_BOUNDARY)] THEN
+    ASM_SIMP_TAC[GROUP_DIV_EQ_ID; HOM_INDUCED; HOM_BOUNDARY] THEN
+    CONV_TAC SYM_CONV THEN GEN_REWRITE_TAC LAND_CONV [GSYM o_THM] THEN
+    SIMP_TAC[NATURALITY_HOM_INDUCED; IMAGE_ID; CONTINUOUS_MAP_ID;
+            CONTINUOUS_MAP_FROM_SUBTOPOLOGY; SUBSET_REFL] THEN
+    ASM_REWRITE_TAC[o_THM; SUBTOPOLOGY_SUBTOPOLOGY] THEN
+    ASM_SIMP_TAC[SET_RULE `t SUBSET s ==> s INTER t = t`] THEN
+    ASM_SIMP_TAC[HOM_INDUCED_ID; GSYM homology_group];
+    DISCH_THEN(X_CHOOSE_THEN `z:((num->real)->A)frag->bool`
+     (STRIP_ASSUME_TAC o GSYM))] THEN
+  MP_TAC(ISPECL [`p:int`; `top:A topology`; `s:A->bool`]
+      HOMOLOGY_EXACTNESS_AXIOM_3) THEN
+  REWRITE_TAC[group_exactness; group_image; group_kernel] THEN
+  DISCH_THEN(MP_TAC o GEN_REWRITE_RULE I [EXTENSION] o last o CONJUNCTS) THEN
+  DISCH_THEN(MP_TAC o SPEC `z:((num->real)->A)frag->bool`) THEN
+  DISCH_THEN(MP_TAC o snd o EQ_IMP_RULE) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM; IN_IMAGE] THEN
+  ANTS_TAC THENL
+   [TRANS_TAC EQ_TRANS
+     `(hom_induced p (top,t) (top,s) (\x:A. x) o
+       hom_induced p (top,{}) (top,t) (\x. x)) z` THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC[GSYM HOM_INDUCED_COMPOSE; CONTINUOUS_MAP_ID;
+                   IMAGE_ID; EMPTY_SUBSET] THEN
+      REWRITE_TAC[o_DEF];
+      ASM_REWRITE_TAC[o_THM]] THEN
+    SUBST1_TAC(SYM(ASSUME
+     `group_div (relative_homology_group (p,top,t)) x
+                (hom_induced p (subtopology top s,t) (top,t) (\x:A. x) u) =
+      y`)) THEN
+    ASM_SIMP_TAC[HOM_INDUCED; MATCH_MP GROUP_HOMOMORPHISM_DIV
+              (SPEC_ALL GROUP_HOMOMORPHISM_HOM_INDUCED)] THEN
+    REWRITE_TAC[GROUP_RULE
+     `group_div G (group_id G) (group_id G) = group_id G`];
+    DISCH_THEN(X_CHOOSE_THEN `w:((num->real)->A)frag->bool`
+     (STRIP_ASSUME_TAC o GSYM)) THEN
+    EXISTS_TAC
+     `group_mul (relative_homology_group (p,subtopology top s,t))
+                (hom_induced p (subtopology top s,{}) (subtopology top s,t)
+                    (\x:A. x) w) u` THEN
+    ASM_SIMP_TAC[GROUP_MUL; HOM_INDUCED;
+                MATCH_MP GROUP_HOMOMORPHISM_MUL
+              (SPEC_ALL GROUP_HOMOMORPHISM_HOM_INDUCED)] THEN
+    ASM_SIMP_TAC[GROUP_RULE `x = group_mul G z u <=> z = group_div G x u`;
+                 HOM_INDUCED] THEN
+    EXPAND_TAC "y" THEN EXPAND_TAC "z" THEN
+    GEN_REWRITE_TAC BINOP_CONV [GSYM o_THM] THEN
+    SIMP_TAC[GSYM HOM_INDUCED_COMPOSE; IMAGE_ID; SUBSET_REFL; EMPTY_SUBSET;
+             CONTINUOUS_MAP_ID; CONTINUOUS_MAP_FROM_SUBTOPOLOGY]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Reduced homology.                                                         *)
 (* ------------------------------------------------------------------------- *)
 

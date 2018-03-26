@@ -2393,6 +2393,23 @@ let REAL_CONTINUOUS_ON_ABS = prove
   REWRITE_TAC[REAL_CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   SIMP_TAC[REAL_CONTINUOUS_ABS]);;
 
+let REAL_CONTINUOUS_ON_MAX = prove
+ (`!f g s. f real_continuous_on s /\ g real_continuous_on s
+           ==> (\x. max (f x) (g x)) real_continuous_on s`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[REAL_ARITH `max a b = inv(&2) * (a + b + abs(b - a))`] THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_LMUL THEN
+  REPEAT(MATCH_MP_TAC REAL_CONTINUOUS_ON_ADD THEN ASM_REWRITE_TAC[]) THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_ABS THEN
+  MATCH_MP_TAC REAL_CONTINUOUS_ON_SUB THEN ASM_REWRITE_TAC[]);;
+
+let REAL_CONTINUOUS_ON_MIN = prove
+ (`!f g s. f real_continuous_on s /\ g real_continuous_on s
+           ==> (\x. min (f x) (g x)) real_continuous_on s`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[REAL_ARITH `min a b = --(max (--a) (--b))`] THEN
+  ASM_SIMP_TAC[REAL_CONTINUOUS_ON_MAX; REAL_CONTINUOUS_ON_NEG]);;
+
 let REAL_CONTINUOUS_ON_EQ = prove
  (`!f g s. (!x. x IN s ==> f(x) = g(x)) /\ f real_continuous_on s
            ==> g real_continuous_on s`,
@@ -9780,6 +9797,39 @@ let HAS_REAL_INTEGRAL_UNIONS = prove
   ANTS_TAC THENL [ASM SET_TAC[LIFT_DROP]; ALL_TAC] THEN
   DISCH_THEN SUBST1_TAC THEN
   REWRITE_TAC[o_DEF; GSYM IMAGE_o; IMAGE_LIFT_DROP]);;
+
+let REAL_INDEFINITE_INTEGRAL_CONTINUOUS = prove
+ (`!f a b c d e.
+        f real_integrable_on real_interval[a,b] /\
+        c IN real_interval[a,b] /\
+        d IN real_interval[a,b] /\
+        &0 < e
+        ==> ?k. &0 < k /\
+                !c' d'. c' IN real_interval[a,b] /\
+                        d' IN real_interval[a,b] /\
+                        abs(c' - c) <= k /\ abs(d' - d) <= k
+                      ==> abs(real_integral (real_interval[c',d']) f -
+                              real_integral (real_interval[c,d]) f) < e`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`lift o f o drop`; `lift a`; `lift b`; `lift c`; `lift d`; `e:real`]
+        INDEFINITE_INTEGRAL_CONTINUOUS) THEN
+  ASM_REWRITE_TAC[GSYM REAL_INTEGRABLE_ON; GSYM IMAGE_LIFT_REAL_INTERVAL] THEN
+  ASM_SIMP_TAC[FUN_IN_IMAGE] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:real` THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[IMP_IMP; RIGHT_IMP_FORALL_THM; GSYM LIFT_SUB; NORM_LIFT] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MAP_EVERY X_GEN_TAC [`c':real`; `d':real`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`c':real`; `d':real`]) THEN
+  ASM_REWRITE_TAC[NORM_1; DROP_SUB] THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  AP_TERM_TAC THEN BINOP_TAC THEN CONV_TAC SYM_CONV THEN
+  REWRITE_TAC[GSYM IMAGE_LIFT_REAL_INTERVAL] THEN
+  MATCH_MP_TAC REAL_INTEGRAL THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] REAL_INTEGRABLE_ON_SUBINTERVAL)) THEN
+  REWRITE_TAC[SUBSET; IN_REAL_INTERVAL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[IN_REAL_INTERVAL]) THEN ASM_REAL_ARITH_TAC);;
 
 let REAL_MONOTONE_CONVERGENCE_INCREASING = prove
  (`!f:num->real->real g s.
