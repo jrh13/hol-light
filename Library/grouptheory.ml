@@ -615,6 +615,13 @@ let ABELIAN_GROUP_MUL_ZPOW = prove
             group_mul G (group_zpow G x n) (group_zpow G y n)`,
   MESON_TAC[GROUP_MUL_ZPOW; abelian_group]);;
 
+let ABELIAN_GROUP_DIV_ZPOW = prove
+ (`!G x (y:A) n.
+        abelian_group G /\ x IN group_carrier G /\ y IN group_carrier G
+        ==> group_zpow G (group_div G x y) n =
+            group_div G (group_zpow G x n) (group_zpow G y n)`,
+  MESON_TAC[group_div; GROUP_INV_ZPOW; ABELIAN_GROUP_MUL_ZPOW; GROUP_INV]);;
+
 let ABELIAN_GROUP_MUL_AC = prove
  (`!G:A group.
         abelian_group G <=>
@@ -1933,6 +1940,34 @@ let GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS = prove
     ASM_MESON_TAC[GROUP_ID; SUBGROUP_GENERATED];
     ASM_MESON_TAC[GROUP_INV; SUBGROUP_GENERATED];
     ASM_MESON_TAC[GROUP_MUL; SUBGROUP_GENERATED]]);;
+
+let SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE = prove
+ (`!G H (f:A->B) s.
+        group_homomorphism(G,H) f /\ s SUBSET group_carrier G
+        ==> group_carrier (subgroup_generated H (IMAGE f s)) =
+            IMAGE f (group_carrier(subgroup_generated G s))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET] THEN MATCH_MP_TAC SUBGROUP_GENERATED_INDUCT THEN
+    REWRITE_TAC[FORALL_IN_IMAGE_2] THEN ONCE_REWRITE_TAC[IMP_CONJ_ALT] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE] THEN
+    MP_TAC(REWRITE_RULE[SUBSET] (ISPECL [`G:A group`; `s:A->bool`]
+        GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET)) THEN
+    FIRST_X_ASSUM(MP_TAC o GSYM o GEN_REWRITE_RULE I [group_homomorphism]) THEN
+    ASM_SIMP_TAC[SUBGROUP_GENERATED_INC; FUN_IN_IMAGE] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC FUN_IN_IMAGE THEN
+    ASM_MESON_TAC[SUBGROUP_GENERATED; GROUP_ID; GROUP_INV; GROUP_MUL];
+    FIRST_ASSUM(MP_TAC o ISPECL [`s:A->bool`; `IMAGE (f:A->B) s`] o MATCH_MP
+     (REWRITE_RULE[IMP_CONJ] GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS)) THEN
+    SIMP_TAC[group_homomorphism; SUBSET_REFL]]);;
+
+let GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS = prove
+ (`!G H (f:A->B).
+        group_homomorphism(G,H) f /\ s SUBSET group_carrier G
+        ==> group_epimorphism(subgroup_generated G s,
+                              subgroup_generated H (IMAGE f s)) f`,
+  REWRITE_TAC[group_epimorphism; GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ_GEN] THEN
+  SIMP_TAC[GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED] THEN
+  ASM_SIMP_TAC[SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE; SUBSET_REFL]);;
 
 let GROUP_ISOMORPHISM = prove
  (`!G G' f:A->B.

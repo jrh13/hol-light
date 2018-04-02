@@ -13940,6 +13940,20 @@ let VECTOR_POLYNOMIAL_FUNCTION_o = prove
     REAL_VECTOR_POLYNOMIAL_FUNCTION_o)) THEN
   SIMP_TAC[vector_polynomial_function; o_DEF]);;
 
+let VECTOR_POLYNOMIAL_FUNCTION_REFLECT = prove
+ (`!f:real^M->real^N.
+        vector_polynomial_function (\x. f(--x)) <=>
+        vector_polynomial_function f`,
+  GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM o_DEF] THEN
+  EQ_TAC THEN DISCH_TAC THENL
+   [SUBGOAL_THEN `f:real^M->real^N = (f o (--)) o (--)` SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; o_DEF; VECTOR_NEG_NEG; ETA_AX]; ALL_TAC];
+    ALL_TAC] THEN
+  MATCH_MP_TAC VECTOR_POLYNOMIAL_FUNCTION_o THEN ASM_REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM ETA_AX] THEN
+  MATCH_MP_TAC VECTOR_POLYNOMIAL_FUNCTION_NEG THEN
+  REWRITE_TAC[VECTOR_POLYNOMIAL_FUNCTION_ID]);;
+
 let REAL_POLYNOMIAL_FUNCTION_1 = prove
  (`!f. real_polynomial_function f <=>
        ?a n. f = \x. sum(0..n) (\i. a i * drop x pow i)`,
