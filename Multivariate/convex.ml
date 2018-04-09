@@ -13801,6 +13801,20 @@ let CONNECTED_WITH_RELATIVE_INTERIOR_OPEN_IN_CONVEX = prove
   ASM_REWRITE_TAC[CENTRE_IN_BALL] THEN
   ONCE_REWRITE_TAC[INTER_COMM] THEN ASM_REWRITE_TAC[]);;
 
+let RELATIVE_INTERIOR_CBALL_INTER_AFFINE = prove
+ (`!s a:real^N r.
+        affine s /\ a IN s /\ ~(r = &0)
+        ==> relative_interior(cball(a,r) INTER s) = ball(a,r) INTER s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `r < &0` THENL
+   [ASM_SIMP_TAC[CBALL_EMPTY; BALL_EMPTY; REAL_LT_IMP_LE; INTER_EMPTY] THEN
+    REWRITE_TAC[RELATIVE_INTERIOR_EMPTY];
+    W(MP_TAC o PART_MATCH (lhand o rand)
+      RELATIVE_INTERIOR_CONVEX_INTER_AFFINE o lhand o snd) THEN
+    REWRITE_TAC[INTERIOR_CBALL] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[CONVEX_CBALL; INTERIOR_CBALL; GSYM MEMBER_NOT_EMPTY] THEN
+    EXISTS_TAC `a:real^N` THEN ASM_REWRITE_TAC[IN_INTER; CENTRE_IN_BALL] THEN
+    ASM_REAL_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Lemmas about extending nondecreasing functions.                           *)
 (* ------------------------------------------------------------------------- *)

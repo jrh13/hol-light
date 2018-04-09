@@ -10766,6 +10766,64 @@ let OUTER_MEASURE_EQ = prove
   REWRITE_TAC[LEFT_IMP_EXISTS_THM; OUTER_MEASURE_GEN]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Continuity of measure with respect to parameters determining region.      *)
+(* ------------------------------------------------------------------------- *)
+
+let CONTINUOUS_ON_MEASURE_IN_PORTION = prove
+ (`!(f:real^M->real^N->real) s t.
+        measurable s /\
+        (!a. a IN t ==> lebesgue_measurable {x | f a x <= &0}) /\
+        (!a. a IN t ==> negligible {x | f a x = &0}) /\
+        (!x. x IN s ==> (\a. lift(f a x)) continuous_on t)
+        ==> (\a. lift(measure {x | x IN s /\ f a x <= &0}))
+            continuous_on t`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[CONTINUOUS_ON_SEQUENTIALLY; IN_UNIV; IN_DELETE] THEN
+  MAP_EVERY X_GEN_TAC [`a:num->real^M`; `c:real^M`] THEN STRIP_TAC THEN
+  REWRITE_TAC[SET_RULE `{x | x IN s /\ P x} = s INTER {x | P x}`] THEN
+  ASM_SIMP_TAC[MEASURE_INTEGRAL_UNIV; LIFT_DROP; o_DEF;
+               MEASURABLE_MEASURABLE_INTER_LEBESGUE_MEASURABLE] THEN
+  MATCH_MP_TAC(TAUT
+    `g integrable_on s /\ (f --> integral s g) sequentially
+     ==> (f --> integral s g) sequentially`)  THEN
+  MATCH_MP_TAC DOMINATED_CONVERGENCE_AE THEN
+  EXISTS_TAC `indicator(s:real^N->bool)` THEN
+  EXISTS_TAC `{x | (f:real^M->real^N->real) c x = &0}` THEN
+  ASM_REWRITE_TAC[GSYM MEASURABLE_INTEGRABLE; indicator] THEN
+  ASM_SIMP_TAC[MEASURABLE_MEASURABLE_INTER_LEBESGUE_MEASURABLE] THEN
+  REWRITE_TAC[IN_DIFF; IN_UNIV; IN_ELIM_THM; IN_INTER] THEN CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`n:num`; `x:real^N`] THEN DISCH_TAC THEN
+    ASM_CASES_TAC `(x:real^N) IN s` THEN
+    ASM_REWRITE_TAC[NORM_1; DROP_VEC; REAL_ABS_NUM; REAL_LE_REFL] THEN
+    COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[DROP_VEC; REAL_ABS_NUM; REAL_POS; REAL_LE_REFL];
+    X_GEN_TAC `x:real^N` THEN DISCH_TAC] THEN
+  MATCH_MP_TAC LIM_EVENTUALLY THEN REWRITE_TAC[] THEN
+  ASM_CASES_TAC `(x:real^N) IN s` THEN ASM_REWRITE_TAC[EVENTUALLY_TRUE] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[CONTINUOUS_ON_SEQUENTIALLY] THEN
+  DISCH_THEN(MP_TAC o SPECL [`a:num->real^M`; `c:real^M`]) THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[tendsto] THEN
+  DISCH_THEN(MP_TAC o SPEC `abs((f:real^M->real^N->real) c x)`) THEN
+  ASM_REWRITE_TAC[GSYM REAL_ABS_NZ; REAL_SUB_0; o_THM; DIST_LIFT] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  X_GEN_TAC `n:num` THEN REPEAT STRIP_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN ASM_REAL_ARITH_TAC);;
+
+let CONTINUOUS_ON_MEASURE_IN_HALFSPACE = prove
+ (`!s b. measurable s
+         ==> (\a. lift(measure {x | x IN s /\ a dot x <= b}))
+             continuous_on ((:real^N) DELETE vec 0)`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[REAL_ARITH `a:real <= b <=> a - b <= &0`] THEN
+  MATCH_MP_TAC CONTINUOUS_ON_MEASURE_IN_PORTION THEN
+  ASM_SIMP_TAC[IN_DELETE; REAL_SUB_0; NEGLIGIBLE_HYPERPLANE] THEN
+  REWRITE_TAC[REAL_ARITH `a - b <= &0 <=> a:real <= b`] THEN
+  SIMP_TAC[LEBESGUE_MEASURABLE_CONVEX; CONVEX_HALFSPACE_LE; LIFT_SUB] THEN
+  SIMP_TAC[CONTINUOUS_ON_SUB; CONTINUOUS_ON_CONST; CONTINUOUS_ON_LIFT_DOT2;
+           CONTINUOUS_ON_ID]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Negigibility of set with uncountably many disjoint translates.            *)
 (* ------------------------------------------------------------------------- *)
 

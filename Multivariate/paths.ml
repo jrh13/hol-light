@@ -3411,6 +3411,20 @@ let RELATIVE_FRONTIER_CONVEX_INTER_AFFINE = prove
     ASM SET_TAC[];
     ASM_SIMP_TAC[CLOSURE_CONVEX_INTER_AFFINE] THEN SET_TAC[]]);;
 
+let RELATIVE_FRONTIER_CBALL_INTER_AFFINE = prove
+ (`!s a:real^N r.
+        affine s /\ a IN s /\ ~(r = &0)
+        ==> relative_frontier(cball(a,r) INTER s) = sphere(a,r) INTER s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `r < &0` THENL
+   [ASM_SIMP_TAC[CBALL_EMPTY; SPHERE_EMPTY; INTER_EMPTY] THEN
+    REWRITE_TAC[RELATIVE_FRONTIER_EMPTY];
+    W(MP_TAC o PART_MATCH (lhand o rand)
+      RELATIVE_FRONTIER_CONVEX_INTER_AFFINE o lhand o snd) THEN
+    REWRITE_TAC[FRONTIER_CBALL] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_REWRITE_TAC[CONVEX_CBALL; INTERIOR_CBALL; GSYM MEMBER_NOT_EMPTY] THEN
+    EXISTS_TAC `a:real^N` THEN ASM_REWRITE_TAC[IN_INTER; CENTRE_IN_BALL] THEN
+    ASM_REAL_ARITH_TAC]);;
+
 let CONNECTED_COMPONENT_1_GEN = prove
  (`!s a b:real^N.
         dimindex(:N) = 1
@@ -22432,6 +22446,45 @@ let CONTRACTIBLE_PUNCTURED_SPHERE = prove
     ONCE_REWRITE_TAC[HOMEOMORPHIC_SYM] THEN
     MATCH_MP_TAC HOMEOMORPHIC_PUNCTURED_SPHERE_HYPERPLANE THEN
     ASM_SIMP_TAC[BASIS_NONZERO; LE_REFL; DIMINDEX_GE_1]]);;
+
+let CONTRACTIBLE_PUNCTURED_SPHERE_GEN = prove
+ (`!s a:real^N.
+        convex s /\ bounded s /\ a IN relative_frontier s
+        ==> contractible(relative_frontier s DELETE a)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THEN
+  ASM_REWRITE_TAC[RELATIVE_FRONTIER_EMPTY; EMPTY_DELETE;
+                  CONTRACTIBLE_EMPTY] THEN
+  MP_TAC(SPEC `aff_dim(s:real^N->bool) - &1` AFFINE_EXISTS) THEN
+  REWRITE_TAC[INT_ARITH `--a:int <= s - a <=> &0 <= s`] THEN
+  ASM_SIMP_TAC[AFF_DIM_POS_LE; AFF_DIM_LE_UNIV; LEFT_IMP_EXISTS_THM;
+               INT_ARITH `s:int <= n ==> s - &1 <= n`] THEN
+  X_GEN_TAC `t:real^N->bool` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`s:real^N->bool`; `t:real^N->bool`; `a:real^N`]
+    HOMEOMORPHIC_PUNCTURED_SPHERE_AFFINE_GEN) THEN
+  ASM_REWRITE_TAC[INT_SUB_ADD] THEN
+  DISCH_THEN(SUBST1_TAC o MATCH_MP HOMEOMORPHIC_CONTRACTIBLE_EQ) THEN
+  ASM_SIMP_TAC[AFFINE_IMP_CONVEX; CONVEX_IMP_CONTRACTIBLE]);;
+
+let NULLHOMOTOPIC_NONSURJECTIVE_SPHERE_MAP_GEN = prove
+ (`!f s:real^N->bool.
+        convex s /\ bounded s /\
+        f continuous_on (relative_frontier s) /\
+        IMAGE f (relative_frontier s) PSUBSET relative_frontier s
+        ==> ?a. homotopic_with (\x. T)
+                 (subtopology euclidean (relative_frontier s),
+                  subtopology euclidean (relative_frontier s)) f (\x. a)`,
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC o
+    GEN_REWRITE_RULE I [PSUBSET_ALT]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:real^N` STRIP_ASSUME_TAC) THEN
+  MP_TAC(ISPECL
+   [`f:real^N->real^N`; `\x:real^N. x`;
+    `relative_frontier s:real^N->bool`;
+    `relative_frontier s DELETE (a:real^N)`;
+    `relative_frontier s:real^N->bool`]
+   NULLHOMOTOPIC_THROUGH_CONTRACTIBLE) THEN
+  ASM_REWRITE_TAC[IMAGE_ID; SUBSET_DELETE; DELETE_SUBSET; o_DEF; ETA_AX] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[CONTINUOUS_ON_ID; CONTRACTIBLE_PUNCTURED_SPHERE_GEN]);;
 
 let CONNECTED_PUNCTURED_SPHERE = prove
  (`!a r b:real^N.
