@@ -29545,6 +29545,33 @@ let [LOCALLY_CONTINUOUS_ON; LOCALLY_CONTINUOUS_ON_ALT;
     REWRITE_TAC[CONTINUOUS_ON] THEN
     MATCH_MP_TAC MONO_FORALL THEN MESON_TAC[LIM_WITHIN_OPEN_IN]]);;
 
+let LOCALLY_TO_COMPACTLY = prove
+ (`!P s c:real^N->bool.
+        (!t u. t SUBSET u /\ u SUBSET s /\ P u ==> P t) /\
+        (!f. FINITE f /\ (!t. t IN f ==> P t /\ t SUBSET s)
+             ==> P(UNIONS f)) /\
+        locally P s /\ compact c /\ c SUBSET s
+        ==> P c`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [locally]) THEN
+  DISCH_THEN(MP_TAC o SPEC `s:real^N->bool`) THEN
+  ASM_REWRITE_TAC[OPEN_IN_REFL; RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^N->real^N->bool`; `v:real^N->real^N->bool`] THEN
+  DISCH_TAC THEN FIRST_ASSUM(MP_TAC o
+    GEN_REWRITE_RULE I [COMPACT_EQ_HEINE_BOREL_GEN]) THEN DISCH_THEN(MP_TAC o
+    SPECL [`IMAGE (u:real^N->real^N->bool) s`; `s:real^N->bool`]) THEN
+  ASM_SIMP_TAC[FORALL_IN_IMAGE] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  ONCE_REWRITE_TAC[TAUT `a /\ b /\ c <=> b /\ a /\ c`] THEN
+  REWRITE_TAC[EXISTS_FINITE_SUBSET_IMAGE] THEN
+  DISCH_THEN(X_CHOOSE_THEN `k:real^N->bool` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  EXISTS_TAC `UNIONS (IMAGE (v:real^N->real^N->bool) k)` THEN
+  REPEAT (CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Local compactness.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -30210,6 +30237,20 @@ let MUMFORD_LEMMA = prove
       DISCH_THEN(MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN
       DISCH_THEN(X_CHOOSE_THEN `n:num` (MP_TAC o SPEC `n:num`)) THEN
       ASM_REWRITE_TAC[LE_REFL; o_THM] THEN ASM SET_TAC[]]]);;
+
+let LOCALLY_EQ_COMPACTLY = prove
+ (`!P s:real^N->bool.
+        (!t u. t SUBSET u /\ u SUBSET s /\ P u ==> P t) /\
+        (!f. FINITE f /\ (!t. t IN f ==> P t /\ t SUBSET s)
+             ==> P(UNIONS f)) /\
+        locally compact s
+        ==> (locally P s <=> !c. compact c /\ c SUBSET s ==> P c)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [REPEAT STRIP_TAC THEN MATCH_MP_TAC LOCALLY_TO_COMPACTLY THEN
+    EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[];
+    REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [LOCALLY_AND_SUBSET]) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] LOCALLY_MONO) THEN ASM_MESON_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Locally compact sets are closed in an open set and are homeomorphic       *)

@@ -3700,6 +3700,38 @@ let ONORM_COVARIANCE_ALT = prove
   REWRITE_TAC[ADJOINT_MATRIX; MATRIX_VECTOR_MUL_LINEAR; o_DEF] THEN
   REWRITE_TAC[MATRIX_VECTOR_MUL_ASSOC]);;
 
+let ONORM_LE_EQ_2,ONORM_LE_EQ_2_ABS = (CONJ_PAIR o prove)
+ (`(!f:real^M->real^N b.
+        linear f
+        ==> (onorm f <= b <=> !x y. x dot (f y) <= b * norm x * norm y)) /\
+   (!f:real^M->real^N b.
+        linear f
+        ==> (onorm f <= b <=> !x y. abs(x dot (f y)) <= b * norm x * norm y))`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `linear(f:real^M->real^N)` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(TAUT
+   `(r ==> q) /\ (p ==> r) /\ (q ==> p) ==> (p <=> q) /\ (p <=> r)`) THEN
+  CONJ_TAC THENL
+   [REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN REAL_ARITH_TAC;
+    ASM_SIMP_TAC[ONORM_LE_EQ]] THEN
+  CONJ_TAC THEN DISCH_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^M`] THEN
+    TRANS_TAC REAL_LE_TRANS `norm(x:real^N) * norm((f:real^M->real^N) y)` THEN
+    REWRITE_TAC[NORM_CAUCHY_SCHWARZ_ABS] THEN
+    GEN_REWRITE_TAC RAND_CONV [REAL_ARITH `b * x * y:real = x * b * y`] THEN
+    ASM_SIMP_TAC[REAL_LE_LMUL; NORM_POS_LE];
+    X_GEN_TAC `x:real^M` THEN
+    ASM_CASES_TAC `(f:real^M->real^N) x = vec 0` THENL
+     [ASM_CASES_TAC `x:real^M = vec 0` THEN
+      ASM_REWRITE_TAC[NORM_0; REAL_MUL_RZERO; REAL_LE_REFL] THEN
+      FIRST_X_ASSUM(MP_TAC o SPECL [`basis 1:real^N`; `x:real^M`]) THEN
+      ASM_SIMP_TAC[DOT_RZERO; NORM_BASIS; LE_REFL;
+                   DIMINDEX_GE_1; REAL_MUL_LID];
+      FIRST_ASSUM(MP_TAC o SPECL [`(f:real^M->real^N) x`; `x:real^M`]) THEN
+      REWRITE_TAC[GSYM NORM_POW_2; REAL_ARITH
+       `y pow 2 <= b * y * x <=> y * y <= y * b * x`] THEN
+      ASM_SIMP_TAC[REAL_LE_LMUL_EQ; NORM_POS_LT]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* It's handy to "lift" from R to R^1 and "drop" from R^1 to R.              *)
 (* ------------------------------------------------------------------------- *)
