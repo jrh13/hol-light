@@ -8578,7 +8578,7 @@ let QUOTIENT_MAP_COMPOSE_EXPLICIT = prove
     {x | x IN s /\ f x IN {x | x IN t /\ g x IN v}}`
   SUBST1_TAC THENL [ASM SET_TAC[]; ASM_SIMP_TAC[SUBSET_RESTRICT]]);;
 
-let QUOTIENT_MAP_FROM_COMPOSITION = prove
+let QUOTIENT_MAP_FROM_COMPOSITION_EXPLICIT = prove
  (`!f:real^M->real^N g:real^N->real^P s t u.
         f continuous_on s /\ IMAGE f s SUBSET t /\
         g continuous_on t /\ IMAGE g t SUBSET u /\
@@ -8615,7 +8615,7 @@ let QUOTIENT_MAP_FROM_SUBSET = prove
                              {x | x IN t /\ f x IN v} <=>
                      open_in (subtopology euclidean u) v)`,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
-  MATCH_MP_TAC QUOTIENT_MAP_FROM_COMPOSITION THEN
+  MATCH_MP_TAC QUOTIENT_MAP_FROM_COMPOSITION_EXPLICIT THEN
   MAP_EVERY EXISTS_TAC [`\x:real^M. x`; `s:real^M->bool`] THEN
   ASM_REWRITE_TAC[CONTINUOUS_ON_ID; IMAGE_ID; o_THM]);;
 
@@ -17285,7 +17285,7 @@ add_linear_invariants [INTERIOR_OF_INJECTIVE_LINEAR_IMAGE];;
 (* Relatively weak hypotheses if the domain of the function is compact.      *)
 (* ------------------------------------------------------------------------- *)
 
-let CONTINUOUS_IMP_CLOSED_MAP = prove
+let CONTINUOUS_IMP_CLOSED_MAP_EXPLICIT = prove
  (`!f:real^M->real^N s t.
         f continuous_on s /\ IMAGE f s = t /\ compact s
         ==> !u. closed_in (subtopology euclidean s) u
@@ -17298,7 +17298,7 @@ let CONTINUOUS_IMP_CLOSED_MAP = prove
   ASM_MESON_TAC[COMPACT_EQ_BOUNDED_CLOSED; CLOSED_IN_CLOSED_TRANS;
                 BOUNDED_SUBSET; CONTINUOUS_ON_SUBSET]);;
 
-let CONTINUOUS_IMP_QUOTIENT_MAP = prove
+let CONTINUOUS_IMP_QUOTIENT_MAP_EXPLICIT = prove
  (`!f:real^M->real^N s t.
         f continuous_on s /\ IMAGE f s = t /\ compact s
         ==> !u. u SUBSET t
@@ -17308,7 +17308,7 @@ let CONTINUOUS_IMP_QUOTIENT_MAP = prove
   REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_X_ASSUM(SUBST_ALL_TAC o SYM) THEN
   MATCH_MP_TAC CLOSED_MAP_IMP_QUOTIENT_MAP THEN
   ASM_REWRITE_TAC[] THEN
-  MATCH_MP_TAC CONTINUOUS_IMP_CLOSED_MAP THEN
+  MATCH_MP_TAC CONTINUOUS_IMP_CLOSED_MAP_EXPLICIT THEN
   ASM_REWRITE_TAC[]);;
 
 let CONTINUOUS_ON_INVERSE = prove

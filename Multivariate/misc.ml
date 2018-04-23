@@ -376,6 +376,16 @@ let REAL_CLOSED_OPEN_INTERVAL = prove
   SIMP_TAC[EXTENSION; IN_UNION; IN_REAL_INTERVAL; IN_INSERT; NOT_IN_EMPTY] THEN
   REAL_ARITH_TAC);;
 
+let IS_REALINTERVAL_SING = prove
+ (`!a. is_realinterval {a}`,
+  REWRITE_TAC[is_realinterval; IN_SING] THEN REAL_ARITH_TAC);;
+
+let IS_REALINTERVAL_CONTAINS_INTERVAL = prove
+ (`!s a b. is_realinterval s /\ a IN s /\ b IN s
+           ==> real_interval[a,b] SUBSET s`,
+  REWRITE_TAC[SUBSET; is_realinterval; IN_REAL_INTERVAL] THEN
+  MESON_TAC[]);;
+
 let IS_REALINTERVAL_SHRINK = prove
  (`!s. is_realinterval (IMAGE (\x. x / (&1 + abs x)) s) <=>
        is_realinterval s`,
