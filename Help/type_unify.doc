@@ -1,0 +1,20 @@
+\DOC type_unify
+
+\TYPE {type_unify : hol_type -> hol_type -> (hol_type * hol_type) list -> (hol_type * hol_type) list}
+
+\SYNOPSIS
+Unify two types by instantiating their type variables
+
+\DESCRIBE
+Given two types {ty1} and {ty2} and an existing instantiation {i} of type 
+variables,  a call {type_unify vars ty1 ty2 i} attempts to find an augmented 
+instantiation of the type variables to make the two types equal.
+
+\FAILURE
+Fails if the two types are not first-order unifiable by instantiating the given
+type variables.
+
+\SEEALSO
+instantiate, term_match, term_type_unify, term_unify.
+
+\ENDDOC

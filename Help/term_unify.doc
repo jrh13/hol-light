@@ -3,20 +3,23 @@
 \TYPE {term_unify : term list -> term -> term -> instantiation}
 
 \SYNOPSIS
-Unify two terms.
+Unify two terms with compatible types
 
 \DESCRIBE
-Given two terms {tm1} and {tm2}, a call {term_unify vars tm1 tm2} attempts to 
-find instantiations of the variables {vars} in the two terms to make them 
-alpha-equivalent. At present, no type instantiation is done. The unification is 
-also purely first-order. In these respects it is less general than 
-{term_match}, and this may be improved in the future.
+Given two terms {tm1} and {tm2}, a call {term_unify vars tm1 tm2} attempts to
+find instantiations of the variables {vars} in the two terms to make them
+alpha-equivalent. The unification is also purely first-order. In these respects
+it is less general than {term_match}, and this may be improved in the future.
 
 \FAILURE
-Fails if the two terms are not first-order unifiable by instantiating the given 
+Fails if the two terms are not first-order unifiable by instantiating the given
 variables without type instantiation.
 
+\COMMENTS
+This function is restricted to terms of the same type, but {term_type_unify}
+offers a similar and more general function that handles type differences.
+
 \SEEALSO
-instantiate, term_match.
+instantiate, term_match, term_type_unify, type_unify.
 
 \ENDDOC

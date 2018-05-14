@@ -8,6 +8,24 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 13th May 2018       Examples/digit_serial_methods.ml [new file]
+
+Added a new file with the HOL Light formalizations mentioned in the paper by
+Warren Ferguson, Jesse Bingham, Levent Erkok, John Harrison and Joe
+Leslie-Hurd: "Digit Serial Methods with Applications to Division and Square
+Root", IEEE Transactions on Computers, vol. 67, issue 3, pp. 449-456, 2017.
+
+Fri 11th May 2018       drule.ml
+
+Added two new functions "type_unify" for unifying types and "term_type_unify"
+for unifying terms by instantiating both term and type variables, both
+contributed by Michael Faerber. Also fixed a bug he pointed out in the existing
+"term_unify" which does term unification only when the types are already
+compatible. Since this is essentially subsumed anyway by the new
+"term_type_unify" it might be appropriate to simply delete "term_unify", but as
+the interface is minutely different and it's used in a few places I kept it for
+now.
+
 Sat 24th Mar 2018       lists.ml
 
 Added a trivial but sometimes convenient list theorem:

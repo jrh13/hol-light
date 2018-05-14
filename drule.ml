@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                (c) Copyright, Michael Faerber 2018                        *)
 (* ========================================================================= *)
 
 needs "bool.ml";;
@@ -281,13 +282,13 @@ let (term_match:term list -> term -> term -> instantiation) =
     separate_insts insts;;
 
 (* ------------------------------------------------------------------------- *)
-(* First order unification (no type instantiation -- yet).                   *)
+(* First order unification of terms of the same type.                        *)
 (* ------------------------------------------------------------------------- *)
 
 let (term_unify:term list -> term -> term -> instantiation) =
   let augment1 sofar (s,x) =
     let s' = subst sofar s in
-    if vfree_in x s && not (s = x) then failwith "augment_insts"
+    if vfree_in x s' && not (s = x) then failwith "term_unify: augment1"
     else (s',x) in
   let raw_augment_insts p insts =
     p::(map (augment1 [p]) insts) in
@@ -317,6 +318,93 @@ let (term_unify:term list -> term -> term -> instantiation) =
       and l2,r2 = dest_comb tm2 in
       unify vars l1 l2 (unify vars r1 r2 sofar) in
   fun vars tm1 tm2 -> [],unify vars tm1 tm2 [],[];;
+
+(* ------------------------------------------------------------------------- *)
+(* Unification of types.                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let type_unify : hol_type -> hol_type -> (hol_type * hol_type) list
+                 -> (hol_type * hol_type) list =
+  let augment1 sofar (s,x) =
+    let s' = type_subst sofar s in
+    if occurs_in x s' && not (s = x) then failwith "type_unify: augment1"
+    else (s',x) in
+  let raw_augment_insts p insts =
+    p::(map (augment1 [p]) insts) in
+  let augment_insts(ty,v) insts =
+    let ty' = type_subst insts ty in
+    if ty' = v then insts
+    else if occurs_in v ty' then failwith "type_unify: augment_insts"
+    else raw_augment_insts (ty',v) insts in
+  let rec unify ty1 ty2 sofar =
+    if ty1 = ty2 then sofar
+    else if is_vartype ty1 then
+      try let ty1' = rev_assoc ty1 sofar in
+          unify ty1' ty2 sofar
+      with Failure "find" ->
+          augment_insts (ty2,ty1) sofar
+    else if is_vartype ty2 then
+       try let ty2' = rev_assoc ty2 sofar in
+          unify ty1 ty2' sofar
+      with Failure "find" ->
+          augment_insts (ty1,ty2) sofar
+    else
+      let l1,r1 = dest_type ty1
+      and l2,r2 = dest_type ty2 in
+      if l1 = l2 then itlist2 unify r1 r2 sofar
+      else failwith "unify_type" in
+  unify;;
+
+(* ------------------------------------------------------------------------- *)
+(* Unification of terms and their types together.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let term_type_unify : term -> term -> instantiation -> instantiation =
+  let augment_tyinsts (s, t) tyinsts =
+    let sty = type_of (inst tyinsts s)
+    and tty = type_of (inst tyinsts t) in
+    let tyinsts' = type_unify sty tty [] in
+    tyinsts' @ map (fun (ty, v) -> type_subst tyinsts' ty, v) tyinsts in
+  let augment1 sofar (s,x) =
+    let s' = subst sofar s in
+    if vfree_in x s' && not (s = x) then failwith "term_unify: augment1"
+    else (s',x) in
+  let raw_augment_insts p (tminsts, tyinsts) =
+    p::(map (augment1 [p]) tminsts), tyinsts in
+  let augment_insts(t,v) (tminsts, tyinsts) =
+    let tminsts' = map (fun (t, v) -> inst tyinsts t, inst tyinsts v) tminsts in
+    let t' = inst tyinsts (vsubst tminsts' t) in
+    let v' = inst tyinsts v in
+    let sofar' = (tminsts', tyinsts) in
+    if t' = v' then sofar'
+    else if vfree_in v' t' then failwith "term_unify: augment_insts"
+    else raw_augment_insts (t',v') sofar' in
+  let rec unify tm1 tm2 (tminsts, tyinsts as sofar) =
+    if tm1 = tm2 then sofar
+    else if is_var tm1 then
+      try let tm1' = rev_assoc tm1 tminsts in
+          unify tm1' tm2 sofar
+      with Failure "find" ->
+          augment_insts (tm2,tm1) (tminsts, augment_tyinsts (tm1, tm2) tyinsts)
+    else if is_var tm2 then
+       try let tm2' = rev_assoc tm2 tminsts in
+          unify tm1 tm2' sofar
+      with Failure "find" ->
+          augment_insts (tm1,tm2) (tminsts, augment_tyinsts (tm1, tm2) tyinsts)
+    else if is_abs tm1 then
+      let tm1' = body tm1
+      and tm2' = subst [bndvar tm1,bndvar tm2] (body tm2) in
+      unify tm1' tm2' sofar
+    else if is_const tm1 then
+      if name_of tm1 <> name_of tm2 then failwith "term_unify"
+      else tminsts, augment_tyinsts (tm1, tm2) tyinsts
+    else
+      let l1,r1 = dest_comb tm1
+      and l2,r2 = dest_comb tm2 in
+      unify l1 l2 (unify r1 r2 sofar) in
+  fun tm1 tm2 (it, tminsts, tyinsts) ->
+    let tminsts', tyinsts' = unify tm1 tm2 (tminsts, tyinsts) in
+    it,tminsts',tyinsts';;
 
 (* ------------------------------------------------------------------------- *)
 (* Modify bound variable names at depth. (Not very efficient...)             *)
