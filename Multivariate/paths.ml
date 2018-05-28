@@ -6477,6 +6477,17 @@ let ARC_CONNECTED_TRANS = prove
 (* Local connectedness and local path connectedness.                         *)
 (* ------------------------------------------------------------------------- *)
 
+let LOCALLY_CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN = prove
+ (`!s:real^N->bool.
+        locally_connected_space (subtopology euclidean s) <=>
+        locally connected s`,
+  GEN_TAC THEN
+  SIMP_TAC[locally_connected_space; NEIGHBOURHOOD_BASE_OF_EUCLIDEAN] THEN
+  GEN_REWRITE_TAC RAND_CONV [LOCALLY_AND_SUBSET] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+  REWRITE_TAC[CONNECTED_IN_SUBTOPOLOGY; CONNECTED_IN_EUCLIDEAN] THEN
+  CONV_TAC TAUT);;
+
 let LOCALLY_CONNECTED,LOCALLY_CONNECTED_OPEN_CONNECTED_COMPONENT =
  (CONJ_PAIR o prove)
  (`(!s:real^N->bool.
@@ -6513,6 +6524,17 @@ let LOCALLY_CONNECTED,LOCALLY_CONNECTED_OPEN_CONNECTED_COMPONENT =
     EXISTS_TAC `connected_component u (x:real^N)` THEN
     REWRITE_TAC[CONNECTED_COMPONENT_SUBSET; CONNECTED_CONNECTED_COMPONENT] THEN
     ASM_SIMP_TAC[IN; CONNECTED_COMPONENT_REFL]]);;
+
+let LOCALLY_PATH_CONNECTED_SPACE_SUBTOPOLOGY_EUCLIDEAN = prove
+ (`!s:real^N->bool.
+        locally_path_connected_space (subtopology euclidean s) <=>
+        locally path_connected s`,
+  GEN_TAC THEN
+  SIMP_TAC[locally_path_connected_space; NEIGHBOURHOOD_BASE_OF_EUCLIDEAN] THEN
+  GEN_REWRITE_TAC RAND_CONV [LOCALLY_AND_SUBSET] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+  REWRITE_TAC[PATH_CONNECTED_IN_SUBTOPOLOGY; PATH_CONNECTED_IN_EUCLIDEAN] THEN
+  CONV_TAC TAUT);;
 
 let LOCALLY_PATH_CONNECTED,LOCALLY_PATH_CONNECTED_OPEN_PATH_COMPONENT =
  (CONJ_PAIR o prove)
