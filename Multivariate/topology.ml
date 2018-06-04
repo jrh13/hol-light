@@ -1351,7 +1351,6 @@ let CONNECTED_SEGMENT = prove
   REWRITE_TAC[CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST] THEN
   REWRITE_TAC[TOPSPACE_EUCLIDEANREAL; IN_UNIV]);;
 
-
 let CONNECTED_UNIV = prove
  (`connected(:real^N)`,
   ONCE_REWRITE_TAC[CONNECTED_IFF_CONNECTABLE_POINTS] THEN
@@ -2281,16 +2280,9 @@ let CONNECTED_UNION_STRONG = prove
  (`!s t:real^N->bool.
         connected s /\ connected t /\ ~(closure s INTER t = {})
         ==> connected(s UNION t)`,
-  REPEAT STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
-  DISCH_THEN(X_CHOOSE_TAC `p:real^N`) THEN
-  SUBGOAL_THEN `s UNION t = ((p:real^N) INSERT s) UNION t` SUBST1_TAC THENL
-   [ASM SET_TAC[]; ALL_TAC] THEN
-  MATCH_MP_TAC CONNECTED_UNION THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-   [MATCH_MP_TAC CONNECTED_INTERMEDIATE_CLOSURE THEN
-    EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN
-    MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN ASM SET_TAC[];
-    ASM SET_TAC[]]);;
+  REWRITE_TAC[GSYM CONNECTED_IN_EUCLIDEAN; GSYM EUCLIDEAN_CLOSURE_OF] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CONNECTED_IN_NONSEPARATED_UNION THEN
+  ASM_REWRITE_TAC[separated_in] THEN ASM SET_TAC[]);;
 
 let CONNECTED_INSERT = prove
  (`!s a:real^N. connected s
@@ -2506,9 +2498,11 @@ let SEPARATION_CLOSED_IN_UNION = prove
         DISJOINT s t /\
         closed_in (subtopology euclidean (s UNION t)) s /\
         closed_in (subtopology euclidean (s UNION t)) t`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM EUCLIDEAN_CLOSURE_OF] THEN
-  MATCH_MP_TAC SEPARATION_CLOSED_IN_UNION_GEN THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+   [`euclidean:(real^N)topology`; `s:real^N->bool`; `t:real^N->bool`]
+   SEPARATION_CLOSED_IN_UNION_GEN) THEN
+  REWRITE_TAC[separated_in; TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
+  REWRITE_TAC[EUCLIDEAN_CLOSURE_OF]);;
 
 let SEPARATION_OPEN_IN_UNION = prove
  (`!s t:real^N->bool.
@@ -2516,9 +2510,11 @@ let SEPARATION_OPEN_IN_UNION = prove
         DISJOINT s t /\
         open_in (subtopology euclidean (s UNION t)) s /\
         open_in (subtopology euclidean (s UNION t)) t`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM EUCLIDEAN_CLOSURE_OF] THEN
-  MATCH_MP_TAC SEPARATION_OPEN_IN_UNION_GEN THEN
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+   [`euclidean:(real^N)topology`; `s:real^N->bool`; `t:real^N->bool`]
+   SEPARATION_OPEN_IN_UNION_GEN) THEN
+  REWRITE_TAC[separated_in; TOPSPACE_EUCLIDEAN; SUBSET_UNIV] THEN
+  REWRITE_TAC[EUCLIDEAN_CLOSURE_OF]);;
 
 let CONNECTED_SEPARATION,CONNECTED_SEPARATION_ALT = (CONJ_PAIR o prove)
  (`(!s:real^N->bool.
@@ -5451,6 +5447,10 @@ let COMPACT_EQ_BOUNDED_CLOSED = prove
  (`!s:real^N->bool. compact s <=> bounded s /\ closed s`,
   MESON_TAC[BOUNDED_CLOSED_IMP_COMPACT; COMPACT_IMP_CLOSED;
             COMPACT_IMP_BOUNDED]);;
+
+let NOT_COMPACT_UNIV = prove
+ (`~compact (:real^N)`,
+  REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED; NOT_BOUNDED_UNIV]);;
 
 let COMPACT_CLOSURE = prove
  (`!s. compact(closure s) <=> bounded s`,
@@ -11032,6 +11032,14 @@ let connected_component = new_definition
  `connected_component s x y <=>
         ?t. connected t /\ t SUBSET s /\ x IN t /\ y IN t`;;
 
+let CONNECTED_COMPONENT_OF_EUCLIDEAN = prove
+ (`!s x:real^N.
+     connected_component_of (subtopology euclidean s) x =
+     connected_component s x`,
+  REWRITE_TAC[FUN_EQ_THM; connected_component_of; connected_component] THEN
+  REWRITE_TAC[CONNECTED_IN_SUBTOPOLOGY; CONNECTED_IN_EUCLIDEAN] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC]);;
+
 let CONNECTED_COMPONENT_IN = prove
  (`!s x y. connected_component s x y ==> x IN s /\ y IN s`,
   REWRITE_TAC[connected_component] THEN SET_TAC[]);;
@@ -11498,6 +11506,13 @@ let CONNECTED_CONNECTED_DIFF = prove
 
 let components = new_definition
   `components s = {connected_component s x | x | x:real^N IN s}`;;
+
+let EUCLIDEAN_CONNECTED_COMPONENTS_OF = prove
+ (`!s:real^N->bool.
+        connected_components_of (subtopology euclidean s) = components s`,
+  REWRITE_TAC[connected_components_of; components] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+              CONNECTED_COMPONENT_OF_EUCLIDEAN]);;
 
 let COMPONENTS_TRANSLATION = prove
  (`!a s. components(IMAGE (\x. a + x) s) =
@@ -30451,21 +30466,8 @@ let GDELTA_DESCENDING = prove
         gdelta s <=>
         ?u. (!n. open(u n)) /\ (!n. u(SUC n) SUBSET u n) /\
             INTERS {u n | n IN (:num)} = s`,
-  GEN_TAC THEN EQ_TAC THENL
-   [REWRITE_TAC[GSYM FSIGMA_COMPLEMENT; FSIGMA_ASCENDING] THEN
-    DISCH_THEN(X_CHOOSE_THEN `u:num->real^N->bool` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `\n:num. (:real^N) DIFF u n` THEN
-    ASM_SIMP_TAC[GSYM closed; COMPACT_IMP_CLOSED; SET_RULE
-     `UNIV DIFF t SUBSET UNIV DIFF s <=> s SUBSET t`] THEN
-    REWRITE_TAC[INTERS_UNIONS; SET_RULE
-     `{g y | y IN {f x | x IN UNIV}} = {g(f x) | x IN UNIV}`] THEN
-    ASM_REWRITE_TAC[COMPL_COMPL];
-    DISCH_THEN(X_CHOOSE_THEN `u:num->real^N->bool` STRIP_ASSUME_TAC) THEN
-    REWRITE_TAC[gdelta; INTERSECTION_OF] THEN
-    EXISTS_TAC `{u n | n IN (:num)}:(real^N->bool)->bool` THEN
-    ASM_REWRITE_TAC[FORALL_IN_GSPEC] THEN
-    ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
-    ASM_SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_SUBSET_NUM]]);;
+  REWRITE_TAC[GSYM GDELTA_IN_EUCLIDEAN; GDELTA_IN_DESCENDING] THEN
+  REWRITE_TAC[GSYM OPEN_IN; ADD1]);;
 
 let GDELTA_TRANSLATION = prove
  (`!a:real^N s. gdelta (IMAGE (\x. a + x) s) <=> gdelta s`,

@@ -2497,6 +2497,9 @@ let path_component = new_definition
         ?g. path g /\ path_image g SUBSET s /\
             pathstart g = x /\ pathfinish g = y`;;
 
+let path_components = new_definition
+ `path_components s = {path_component s x | x | x IN s}`;;
+
 let PATH_COMPONENT_OF_EUCLIDEAN = prove
  (`!s:real^N->bool.
         path_component_of (subtopology euclidean s) = path_component s`,
@@ -2506,6 +2509,12 @@ let PATH_COMPONENT_OF_EUCLIDEAN = prove
   DISCH_THEN(X_CHOOSE_THEN `g:real^1->real^N` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC `(g:real^1->real^N) o lift` THEN
   ASM_REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
+
+let PATH_COMPONENTS_OF_EUCLIDEAN = prove
+ (`!s:real^N->bool.
+        path_components_of (subtopology euclidean s) = path_components s`,
+  REWRITE_TAC[path_components_of; path_components] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; PATH_COMPONENT_OF_EUCLIDEAN]);;
 
 let PATH_COMPONENT_IN = prove
  (`!s x y. path_component s x y ==> x IN s /\ y IN s`,
