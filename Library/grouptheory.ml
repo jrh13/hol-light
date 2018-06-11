@@ -2236,6 +2236,16 @@ let GROUP_HOMOMORPHISM_OF_SND = prove
   REWRITE_TAC[group_homomorphism; SUBSET; FORALL_IN_IMAGE; PROD_GROUP] THEN
   REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; o_DEF] THEN MESON_TAC[GROUP_ID]);;
 
+let GROUP_ISOMORPHISMS_PROD_GROUP_SWAP = prove
+ (`!(G:A group) (H:B group).
+        group_isomorphisms (prod_group G H,prod_group H G)
+                           ((\(x,y). y,x),(\(y,x). x,y))`,
+  REWRITE_TAC[group_isomorphisms; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[GROUP_HOMOMORPHISM_PAIRWISE; o_DEF; LAMBDA_PAIR] THEN
+  REWRITE_TAC[REWRITE_RULE[o_DEF] GROUP_HOMOMORPHISM_OF_FST;
+              REWRITE_RULE[o_DEF] GROUP_HOMOMORPHISM_OF_SND] THEN
+  REWRITE_TAC[GROUP_HOMOMORPHISM_ID]);;
+
 let ABELIAN_GROUP_EPIMORPHIC_IMAGE = prove
  (`!G H (f:A->B).
      group_epimorphism(G,H) f /\ abelian_group G ==> abelian_group H`,
@@ -2374,6 +2384,27 @@ let ISOMORPHIC_GROUP_PROD_GROUPS = prove
   REWRITE_TAC[isomorphic_group; group_isomorphism; RIGHT_AND_EXISTS_THM] THEN
   REWRITE_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
   REWRITE_TAC[GSYM GROUP_ISOMORPHISMS_PAIRED2] THEN MESON_TAC[]);;
+
+let ISOMORPHIC_GROUP_PROD_GROUP_SYM = prove
+ (`!(G:A group) (H:B group).
+        prod_group G H isomorphic_group prod_group H G`,
+  REWRITE_TAC[isomorphic_group; group_isomorphism] THEN
+  MESON_TAC[GROUP_ISOMORPHISMS_PROD_GROUP_SWAP]);;
+
+let ISOMORPHIC_GROUP_PROD_GROUP_SWAP_LEFT = prove
+ (`!(G:A group) (H:B group) (K:C group).
+        prod_group G H isomorphic_group K <=>
+        prod_group H G isomorphic_group K`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] ISOMORPHIC_GROUP_TRANS) THEN
+  REWRITE_TAC[ISOMORPHIC_GROUP_PROD_GROUP_SYM]);;
+
+let ISOMORPHIC_GROUP_PROD_GROUP_SWAP_RIGHT = prove
+ (`!(G:A group) (H:B group) (K:C group).
+        G isomorphic_group prod_group H K <=>
+        G isomorphic_group prod_group K H`,
+  ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+  REWRITE_TAC[ISOMORPHIC_GROUP_PROD_GROUP_SWAP_LEFT]);;
 
 let ISOMORPHIC_GROUP_PRODUCT_GROUP,ISOMORPHIC_GROUP_SUM_GROUP =
  (CONJ_PAIR o prove)

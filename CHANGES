@@ -8,6 +8,29 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 10th Jun 2018       Library/grouptheory.ml
+
+Added a few more or less trivial theorems about group isomorphisms up
+to swapping of pairs:
+
+  GROUP_ISOMORPHISMS_PROD_GROUP_SWAP =
+    |- !G H.
+           group_isomorphisms (prod_group G H,prod_group H G)
+           ((\(x,y). y,x),(\(y,x). x,y))
+
+  ISOMORPHIC_GROUP_PROD_GROUP_SYM =
+    |- !G H. prod_group G H isomorphic_group prod_group H G
+
+  ISOMORPHIC_GROUP_PROD_GROUP_SWAP_LEFT =
+    |- !G H K.
+           prod_group G H isomorphic_group K <=>
+           prod_group H G isomorphic_group K
+
+  ISOMORPHIC_GROUP_PROD_GROUP_SWAP_RIGHT =
+    |- !G H K.
+           G isomorphic_group prod_group H K <=>
+           G isomorphic_group prod_group K H
+
 Sun 13th May 2018       Examples/digit_serial_methods.ml [new file]
 
 Added a new file with the HOL Light formalizations mentioned in the paper by

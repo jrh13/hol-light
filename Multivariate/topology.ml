@@ -319,18 +319,6 @@ let CONTINUOUS_MAP_DROP_EQ = prove
         continuous_map(euclidean,top) (f o drop)`,
   REWRITE_TAC[CONTINUOUS_MAP_LIFT_EQ; o_DEF; LIFT_DROP; ETA_AX]);;
 
-let CONTINUOUS_MAP_COMPONENTWISE_EUCLIDEAN_SPACE = prove
- (`!top (f:A->num->real) n.
-        continuous_map (top,euclidean_space n)
-                       (\x i. if 1 <= i /\ i <= n then f x i else &0) <=>
-   !i. 1 <= i /\ i <= n ==> continuous_map(top,euclideanreal) (\x. f x i)`,
-  REWRITE_TAC[euclidean_space; CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
-  SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; IN_NUMSEG] THEN
-  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE_UNIV] THEN
-  EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:num` THEN
-  ASM_CASES_TAC `1 <= i /\ i <= n` THEN
-  ASM_REWRITE_TAC[CONTINUOUS_MAP_REAL_CONST]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic combining theorems for vector-valued continuous maps.          *)
 (* ------------------------------------------------------------------------- *)
