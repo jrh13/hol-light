@@ -6545,6 +6545,45 @@ let CONNECTED_COMPONENTS_OF_CONNECTED_SPACE = prove
   ASM_MESON_TAC[CONNECTED_COMPONENTS_OF_EMPTY_SPACE;
                 CONNECTED_COMPONENTS_OF_EQ_SING]);;
 
+let HOMEOMORPHIC_MAP_CONNECTED_COMPONENT_OF = prove
+ (`!(f:A->B) top top' x.
+        homeomorphic_map(top,top') f /\ x IN topspace top
+        ==> connected_component_of top' (f x) =
+            IMAGE f (connected_component_of top x)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MAP_MAPS]) THEN
+  REWRITE_TAC[homeomorphic_maps; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:B->A` THEN STRIP_TAC THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [SUBGOAL_THEN
+     `connected_component_of top' (f x) SUBSET topspace top' /\
+      IMAGE (g:B->A) (connected_component_of top' (f x))
+      SUBSET connected_component_of top (g((f:A->B) x))`
+    MP_TAC THENL
+     [REWRITE_TAC[CONNECTED_COMPONENT_OF_SUBSET_TOPSPACE];
+      ASM_SIMP_TAC[] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[continuous_map]) THEN ASM SET_TAC[]];
+    ALL_TAC] THEN
+  MATCH_MP_TAC CONNECTED_COMPONENT_OF_MAXIMAL THEN
+  (CONJ_TAC THENL
+    [ASM_MESON_TAC[CONNECTED_IN_CONNECTED_COMPONENT_OF;
+                   CONNECTED_IN_CONTINUOUS_MAP_IMAGE];
+     MATCH_MP_TAC FUN_IN_IMAGE THEN REWRITE_TAC[IN] THEN
+     ASM_REWRITE_TAC[CONNECTED_COMPONENT_OF_REFL]]) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[continuous_map]) THEN ASM SET_TAC[]);;
+
+let HOMEOMORPHIC_MAP_CONNECTED_COMPONENTS_OF = prove
+ (`!(f:A->B) top top'.
+      homeomorphic_map(top,top') f
+      ==> connected_components_of top' =
+          IMAGE (IMAGE f) (connected_components_of top)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[connected_components_of; SIMPLE_IMAGE] THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP HOMEOMORPHIC_IMP_SURJECTIVE_MAP) THEN
+  REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  REWRITE_TAC[] THEN ASM_MESON_TAC[HOMEOMORPHIC_MAP_CONNECTED_COMPONENT_OF]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Monotone (in the general topological sense) maps.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -13423,6 +13462,43 @@ let PATH_COMPONENT_SUBSET_CONNECTED_COMPONENT_OF = prove
              PATH_CONNECTED_IN_PATH_COMPONENT_OF] THEN
     REWRITE_TAC[IN] THEN ASM_REWRITE_TAC[PATH_COMPONENT_OF_REFL];
     ASM_MESON_TAC[PATH_COMPONENT_OF_EQ_EMPTY; EMPTY_SUBSET]]);;
+
+let HOMEOMORPHIC_MAP_PATH_COMPONENT_OF = prove
+ (`!(f:A->B) top top' x.
+        homeomorphic_map(top,top') f /\ x IN topspace top
+        ==> path_component_of top' (f x) = IMAGE f (path_component_of top x)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [HOMEOMORPHIC_MAP_MAPS]) THEN
+  REWRITE_TAC[homeomorphic_maps; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:B->A` THEN STRIP_TAC THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [SUBGOAL_THEN
+     `path_component_of top' (f x) SUBSET topspace top' /\
+      IMAGE (g:B->A) (path_component_of top' (f x))
+      SUBSET path_component_of top (g((f:A->B) x))`
+    MP_TAC THENL
+     [REWRITE_TAC[PATH_COMPONENT_OF_SUBSET_TOPSPACE];
+      ASM_SIMP_TAC[] THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[continuous_map]) THEN ASM SET_TAC[]];
+    ALL_TAC] THEN
+  MATCH_MP_TAC PATH_COMPONENT_OF_MAXIMAL THEN
+  (CONJ_TAC THENL
+    [ASM_MESON_TAC[PATH_CONNECTED_IN_PATH_COMPONENT_OF;
+                   PATH_CONNECTED_IN_CONTINUOUS_MAP_IMAGE];
+     MATCH_MP_TAC FUN_IN_IMAGE THEN REWRITE_TAC[IN] THEN
+     ASM_REWRITE_TAC[PATH_COMPONENT_OF_REFL]]) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[continuous_map]) THEN ASM SET_TAC[]);;
+
+let HOMEOMORPHIC_MAP_PATH_COMPONENTS_OF = prove
+ (`!(f:A->B) top top'.
+      homeomorphic_map(top,top') f
+      ==> path_components_of top' = IMAGE (IMAGE f) (path_components_of top)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[path_components_of; SIMPLE_IMAGE] THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP HOMEOMORPHIC_IMP_SURJECTIVE_MAP) THEN
+  REWRITE_TAC[GSYM IMAGE_o; o_DEF] THEN MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> f x = g x) ==> IMAGE f s = IMAGE g s`) THEN
+  REWRITE_TAC[] THEN ASM_MESON_TAC[HOMEOMORPHIC_MAP_PATH_COMPONENT_OF]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Normal spaces including Urysohn's lemma and the Tietze extension theorem. *)

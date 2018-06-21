@@ -8,6 +8,14 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 19th Jun 2018       Library/card.ml
+
+Incompatibly improved the existing theorem CARD_HAS_SIZE_CONG to
+have an "iff" in the conclusion:
+
+  CARD_HAS_SIZE_CONG =
+    |- !s t n. s =_c t ==> (s HAS_SIZE n <=> t HAS_SIZE n)
+
 Sun 10th Jun 2018       Library/grouptheory.ml
 
 Added a few more or less trivial theorems about group isomorphisms up

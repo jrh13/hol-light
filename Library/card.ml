@@ -485,7 +485,7 @@ let CARD_LT_CARD = prove
   SIMP_TAC[CARD_LE_CARD; GSYM NOT_LE; GSYM CARD_NOT_LE]);;
 
 let CARD_HAS_SIZE_CONG = prove
- (`!s:A->bool t:B->bool n. s HAS_SIZE n /\ s =_c t ==> t HAS_SIZE n`,
+ (`!(s:A->bool) (t:B->bool) n. s =_c t ==> (s HAS_SIZE n <=> t HAS_SIZE n)`,
   REWRITE_TAC[HAS_SIZE] THEN
   MESON_TAC[CARD_EQ_CARD; CARD_FINITE_CONG]);;
 
