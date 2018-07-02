@@ -6134,3 +6134,112 @@ let SHORT_FIVE_LEMMA = prove
         (a' /\ b /\ c' /\ d /\ e /\ f /\ g)`)) THEN
   MATCH_MP_TAC MONO_AND THEN
   REWRITE_TAC[SHORT_FIVE_LEMMA_MONO; SHORT_FIVE_LEMMA_EPI]);;
+
+let EXACT_SEQUENCE_HEXAGON_LEMMA = prove
+ (`!(f:X->C) (g:X->D) (h:A->C) (h':C->A) (i:A->X) (j:B->X) (k:B->D) (k':D->B)
+    (a:A->Y) (b:B->Y) (c:W->C) (d:W->D) (l:W->X) (m:X->Y) A B C D W X Y.
+        abelian_group X /\
+        group_homomorphism(A,Y) a /\
+        group_homomorphism(B,Y) b /\
+        group_homomorphism(W,C) c /\
+        group_homomorphism(W,D) d /\
+        group_isomorphisms(A,C) (h,h') /\
+        group_isomorphisms(B,D) (k,k') /\
+        group_exactness(A,X,D) (i,g) /\
+        group_exactness(B,X,C) (j,f) /\
+        group_exactness(W,X,Y) (l,m) /\
+        (!x. x IN group_carrier W ==> f(l x) = c x) /\
+        (!x. x IN group_carrier W ==> g(l x) = d x) /\
+        (!x. x IN group_carrier A ==> f(i x) = h x) /\
+        (!x. x IN group_carrier A ==> m(i x) = a x) /\
+        (!x. x IN group_carrier B ==> g(j x) = k x) /\
+        (!x. x IN group_carrier B ==> m(j x) = b x)
+        ==> !x. x IN group_carrier W
+                ==> group_inv Y (a(h'(c x))) = b(k'(d x))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `(l:W->X) x IN group_carrier X` ASSUME_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism; group_exactness]) THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `(c:W->C) x IN group_carrier C /\
+    (h':C->A) (c x) IN group_carrier A /\
+    (a:A->Y) (h'(c x)) IN group_carrier Y /\
+    (i:A->X) (h'(c x)) IN group_carrier X /\
+    (d:W->D) x IN group_carrier D /\
+    (k':D->B) (d x) IN group_carrier B /\
+    (b:B->Y) (k'(d x)) IN group_carrier Y /\
+    (j:B->X) (k'(d x)) IN group_carrier X`
+  STRIP_ASSUME_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE
+     [group_isomorphisms; group_homomorphism; group_exactness]) THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  MP_TAC(ISPECL
+   [`f:X->C`; `g:X->D`; `h:A->C`; `i:A->X`; `j:B->X`; `k:B->D`;
+    `A:A group`; `B:B group`; `C:C group`; `D:D group`; `X:X group`]
+   EXACT_SEQUENCE_SUM_LEMMA) THEN
+  ASM_REWRITE_TAC[] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[group_isomorphism]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o GEN_REWRITE_RULE I [GROUP_ISOMORPHISM_ALT] o
+        CONJUNCT1) THEN
+  DISCH_THEN(MP_TAC o SPEC `(l:W->X) x` o MATCH_MP(SET_RULE
+   `IMAGE f s = t /\ P ==> !y. y IN t ==> ?x. x IN s /\ f x = y`)) THEN
+  ASM_REWRITE_TAC[PROD_GROUP; LEFT_IMP_EXISTS_THM; FORALL_PAIR_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:A`; `v:B`] THEN REWRITE_TAC[IN_CROSS] THEN
+  STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(i:A->X) u IN group_carrier X /\
+    (j:B->X) v IN group_carrier X /\
+    (f:X->C) (i u) IN group_carrier C /\
+    (f:X->C) (j v) IN group_carrier C /\
+    (g:X->D) (i u) IN group_carrier D /\
+    (g:X->D) (j v) IN group_carrier D`
+  STRIP_ASSUME_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE
+     [group_isomorphisms; group_homomorphism; group_exactness]) THEN
+    ASM SET_TAC[];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[GROUP_RULE
+   `group_inv G x = y <=> group_mul G x y = group_id G`] THEN
+  FIRST_X_ASSUM(fun th ->
+    W(MP_TAC o PART_MATCH (rand o rand) th o lhand o lhand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  FIRST_X_ASSUM(fun th ->
+    W(MP_TAC o PART_MATCH (rand o rand) th o rand o lhand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  UNDISCH_TAC `group_exactness (W,X,Y) ((l:W->X),(m:X->Y))` THEN
+  REWRITE_TAC[group_exactness] THEN DISCH_THEN(MP_TAC o CONJUNCT2) THEN
+  REWRITE_TAC[IMP_CONJ] THEN REWRITE_TAC[group_homomorphism] THEN
+  DISCH_THEN(fun th -> ASM_SIMP_TAC[GSYM(el 3 (CONJUNCTS th))]) THEN
+  REWRITE_TAC[group_image; group_kernel] THEN
+  MATCH_MP_TAC(SET_RULE
+   `y IN s /\ y IN IMAGE l t
+    ==> IMAGE l t = {x | x IN s /\ m x = z} ==> m y = z`) THEN
+  ASM_SIMP_TAC[GROUP_MUL; IN_IMAGE] THEN EXISTS_TAC `x:W` THEN
+  ASM_REWRITE_TAC[] THEN FIRST_ASSUM(SUBST1_TAC o SYM) THEN
+  BINOP_TAC THEN AP_TERM_TAC THEN
+  FIRST_X_ASSUM(fun th ->
+   W(MP_TAC o PART_MATCH (rand o rand) th o rand o lhand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THENL
+   [SUBGOAL_THEN
+    `group_mul C ((f:X->C) ((i:A->X) u)) ((f:X->C) (((j:B->X) v))) = h u`
+    MP_TAC THENL
+     [ALL_TAC; RULE_ASSUM_TAC(REWRITE_RULE
+       [group_isomorphisms; group_homomorphism; group_exactness]) THEN
+      ASM SET_TAC[]];
+    SUBGOAL_THEN
+    `group_mul D ((g:X->D) ((i:A->X) u)) ((g:X->D) (((j:B->X) v))) = k v`
+    MP_TAC THENL
+     [ALL_TAC; RULE_ASSUM_TAC(REWRITE_RULE
+       [group_isomorphisms; group_homomorphism; group_exactness]) THEN
+      ASM SET_TAC[]]] THEN
+  FIRST_X_ASSUM(fun th ->
+   W(MP_TAC o PART_MATCH (rand o rand) th o rand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  ASM_SIMP_TAC[GROUP_RULE `group_mul G x y = x <=> y = group_id G`] THEN
+  ASM_SIMP_TAC[GROUP_RULE `group_mul G x y = y <=> x = group_id G`] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+       [group_isomorphisms; group_homomorphism; group_exactness;
+        group_image; group_kernel]) THEN
+  ASM SET_TAC[]);;

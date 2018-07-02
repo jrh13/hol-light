@@ -262,6 +262,39 @@ let HAS_SIZE_1_EXISTS = prove
   REWRITE_TAC[EXTENSION; IN_SING] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Characterizations of solvability of small systems of equations.           *)
+(* ------------------------------------------------------------------------- *)
+
+let LINEAR_EQUATIONS_1_EQ  = prove
+ (`!a b. (?x. a * x = b) <=> a = &0 ==> b = &0`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [CONV_TAC REAL_RING; ALL_TAC] THEN
+  ASM_CASES_TAC `b = &0` THEN
+  ASM_SIMP_TAC[REAL_FIELD `~(a = &0) ==> (a * x = b <=> x = b / a)`] THEN
+  MESON_TAC[REAL_MUL_RZERO]);;
+
+let LINEAR_EQUATIONS_2_EQ = prove
+ (`!a b c d u v.
+        (?x y. a * x + b * y = u /\ c * x + d * y = v) <=>
+        (a * d = b * c ==> d * u = b * v /\ c * u = a * v) /\
+        (a = &0 /\ b = &0 /\ c = &0 /\ d = &0 ==> u = &0 /\ v = &0)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [CONV_TAC REAL_RING; ALL_TAC] THEN
+  ASM_CASES_TAC `u = &0 /\ v = &0` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_METIS_TAC[REAL_MUL_RZERO; REAL_ADD_LID]; ALL_TAC] THEN
+  REWRITE_TAC[DE_MORGAN_THM] THEN STRIP_TAC THENL
+   [ALL_TAC;
+    ONCE_REWRITE_TAC[REAL_ADD_SYM] THEN ONCE_REWRITE_TAC[SWAP_EXISTS_THM];
+    ONCE_REWRITE_TAC[CONJ_SYM];
+    ONCE_REWRITE_TAC[CONJ_SYM] THEN
+    ONCE_REWRITE_TAC[REAL_ADD_SYM] THEN ONCE_REWRITE_TAC[SWAP_EXISTS_THM]] THEN
+  ASM_SIMP_TAC[REAL_FIELD
+   `~(a = &0)
+     ==> (a * x + b * y = u /\ c * x + d * y = v <=>
+         x = (u - b * y) / a /\ (a * d - b * c) * y = a * v - c * u)`] THEN
+  GEN_REWRITE_TAC I [SWAP_EXISTS_THM] THEN REWRITE_TAC[UNWIND_THM2] THEN
+  REWRITE_TAC[LINEAR_EQUATIONS_1_EQ] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_RING);;
+
+(* ------------------------------------------------------------------------- *)
 (* Handy definitions and basic lemmas for real intervals.                    *)
 (* ------------------------------------------------------------------------- *)
 

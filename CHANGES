@@ -8,6 +8,33 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 27th Jun 2017       Library/group.ml
+
+Added one more basic homological algebra lemma (found in Dieck's "Algebraic
+Topology", 11.1.3), which is a bit of a mouthful but intuitively nice when
+you look at the picture:
+
+  EXACT_SEQUENCE_HEXAGON_LEMMA : thm =
+    |- !f g h h' i j k k' a b c d l m A B C D W X Y.
+           abelian_group X /\
+           group_homomorphism (A,Y) a /\
+           group_homomorphism (B,Y) b /\
+           group_homomorphism (W,C) c /\
+           group_homomorphism (W,D) d /\
+           group_isomorphisms (A,C) (h,h') /\
+           group_isomorphisms (B,D) (k,k') /\
+           group_exactness (A,X,D) (i,g) /\
+           group_exactness (B,X,C) (j,f) /\
+           group_exactness (W,X,Y) (l,m) /\
+           (!x. x IN group_carrier W ==> f (l x) = c x) /\
+           (!x. x IN group_carrier W ==> g (l x) = d x) /\
+           (!x. x IN group_carrier A ==> f (i x) = h x) /\
+           (!x. x IN group_carrier A ==> m (i x) = a x) /\
+           (!x. x IN group_carrier B ==> g (j x) = k x) /\
+           (!x. x IN group_carrier B ==> m (j x) = b x)
+           ==> (!x. x IN group_carrier W
+                    ==> group_inv Y (a (h' (c x))) = b (k' (d x)))
+
 Mon 19th Jun 2018       Library/card.ml
 
 Incompatibly improved the existing theorem CARD_HAS_SIZE_CONG to

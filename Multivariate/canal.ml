@@ -3048,6 +3048,18 @@ let INTEGRAL_COMPLEX_RMUL = prove
   ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
   REWRITE_TAC[INTEGRAL_COMPLEX_LMUL]);;
 
+let ABSOLUTELY_INTEGRABLE_COMPLEX_LMUL = prove
+ (`!f s c. f absolutely_integrable_on s
+           ==> (\x. c * f x) absolutely_integrable_on s`,
+  SIMP_TAC[absolutely_integrable_on; INTEGRABLE_COMPLEX_LMUL] THEN
+  SIMP_TAC[COMPLEX_NORM_MUL; LIFT_CMUL; INTEGRABLE_CMUL]);;
+
+let ABSOLUTELY_INTEGRABLE_COMPLEX_RMUL = prove
+ (`!f s c. f absolutely_integrable_on s
+           ==> (\x. f x * c) absolutely_integrable_on s`,
+  ONCE_REWRITE_TAC[COMPLEX_MUL_SYM] THEN
+  REWRITE_TAC[ABSOLUTELY_INTEGRABLE_COMPLEX_LMUL]);;
+
 let REAL_COMPLEX_INTEGRAL = prove
  (`!f:real^N->complex s.
      f integrable_on s /\ (!x. x IN s ==> real(f x)) ==> real(integral s f)`,

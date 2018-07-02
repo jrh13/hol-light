@@ -1822,6 +1822,27 @@ let HAS_MEASURE_NESTED_INTERS = prove
       ASM_REWRITE_TAC[] THEN
       ANTS_TAC THENL [SET_TAC[]; MESON_TAC[LE_0]]]]);;
 
+let INTEGRAL_ZERO_ON_SUBINTERVALS_IMP_ZERO_AE_ALT = prove
+ (`!f:real^M->real^N.
+        (!a b. (f has_integral (vec 0)) (interval[a,b]))
+        ==> negligible{x | ~(f x = vec 0)}`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `(:real^M)` OPEN_COUNTABLE_UNION_CLOSED_INTERVALS) THEN
+  REWRITE_TAC[OPEN_UNIV; SUBSET_UNIV] THEN
+  DISCH_THEN(X_CHOOSE_THEN `D:(real^M->bool)->bool` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN
+  EXISTS_TAC `UNIONS {{x | x IN d /\ ~((f:real^M->real^N) x = vec 0)} |
+                      d IN D}` THEN
+  CONJ_TAC THENL [ALL_TAC; REWRITE_TAC[UNIONS_GSPEC] THEN ASM SET_TAC[]] THEN
+  MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_UNIONS_GEN THEN
+  ASM_SIMP_TAC[SIMPLE_IMAGE; COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `d:real^M->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `d:real^M->bool`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC INTEGRAL_ZERO_ON_SUBINTERVALS_IMP_ZERO_AE THEN
+  ASM_REWRITE_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Measurability of compact and bounded open sets.                           *)
 (* ------------------------------------------------------------------------- *)
@@ -27281,6 +27302,36 @@ let FUBINI_HAS_ABSOLUTE_INTEGRAL_ALT = prove
     MATCH_MP_TAC INTEGRAL_NORM_BOUND_INTEGRAL THEN
     REWRITE_TAC[LIFT_DROP; REAL_LE_REFL] THEN
     ASM_SIMP_TAC[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE]]);;
+
+let FUBINI_INTEGRAL_SWAP = prove
+ (`!f. f absolutely_integrable_on (:real^(M,N)finite_sum)
+         ==> integral (:real^M)
+                      (\x. integral (:real^N) (\y. f (pastecart x y))):real^P =
+             integral (:real^N)
+                      (\y. integral (:real^M) (\x. f (pastecart x y)))`,
+  MESON_TAC[FUBINI_INTEGRAL; FUBINI_INTEGRAL_ALT]);;
+
+let FUBINI_HAS_INTEGRAL_SWAP = prove
+ (`!f. f absolutely_integrable_on (:real^(M,N)finite_sum)
+       ==> ((\x. integral (:real^N) (\y. f (pastecart x y))) has_integral
+            integral (:real^N)
+                     (\y. integral (:real^M) (\x. f (pastecart x y))):real^P)
+            (:real^M)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP FUBINI_ABSOLUTELY_INTEGRABLE) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP FUBINI_ABSOLUTELY_INTEGRABLE_ALT) THEN
+  MESON_TAC[INTEGRAL_UNIQUE]);;
+
+let FUBINI_HAS_INTEGRAL_SWAP_ALT = prove
+ (`!f. f absolutely_integrable_on (:real^(M,N)finite_sum)
+       ==> ((\y. integral (:real^M) (\x. f (pastecart x y))) has_integral
+            integral (:real^M)
+                      (\x. integral (:real^N) (\y. f (pastecart x y))):real^P)
+            (:real^N)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP FUBINI_ABSOLUTELY_INTEGRABLE) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP FUBINI_ABSOLUTELY_INTEGRABLE_ALT) THEN
+  MESON_TAC[INTEGRAL_UNIQUE]);;
 
 let FUBINI_INTEGRAL_INTERVAL = prove
  (`!f:real^(M,N)finite_sum->real^P a b c d.
