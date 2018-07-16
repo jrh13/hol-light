@@ -87,8 +87,9 @@ let FINITE_NUMBER_SEGMENT = prove
       ARITH_TAC]]);;
 
 let COPRIME_MOD = prove
- (`!a n. ~(n = 0) ==> (coprime(a MOD n,n) <=> coprime(a,n))`,
-  REPEAT STRIP_TAC THEN
+ (`!a n. coprime(a MOD n,n) <=> coprime(a,n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO] THEN
   FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o LAND_CONV)
    [MATCH_MP DIVISION th]) THEN REWRITE_TAC[coprime] THEN
   AP_TERM_TAC THEN ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
@@ -99,8 +100,22 @@ let COPRIME_MOD = prove
 (* Congruences.                                                              *)
 (* ------------------------------------------------------------------------- *)
 
+let CONG_MOD_0 = prove
+ (`!x y. (x == y) (mod 0) <=> (x = y)`,
+  NUMBER_TAC);;
+
+let CONG_MOD_1 = prove
+ (`!x y. (x == y) (mod 1)`,
+  NUMBER_TAC);;
+
+let CONG_0 = prove
+ (`!x n. ((x == 0) (mod n) <=> n divides x)`,
+  NUMBER_TAC);;
+
 let CONG = prove
- (`!x y n. ~(n = 0) ==> ((x == y) (mod n) <=> (x MOD n = y MOD n))`,
+ (`!x y n. (x == y) (mod n) <=> x MOD n = y MOD n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO; CONG_MOD_0] THEN
   REWRITE_TAC[cong; nat_mod] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
    [ASM_CASES_TAC `x <= y` THENL
@@ -113,23 +128,6 @@ let CONG = prove
     MATCH_MP_TAC(ARITH_RULE
      `(y = dy + my) /\ (x = dx + mx) ==> (mx = my) ==> (x + dy = y + dx)`) THEN
     ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_SIMP_TAC[DIVISION]]);;
-
-let CONG_MOD_0 = prove
- (`!x y. (x == y) (mod 0) <=> (x = y)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[cong; nat_mod; MULT_CLAUSES; ADD_CLAUSES]);;
-
-let CONG_MOD_1 = prove
- (`!x y. (x == y) (mod 1)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[cong; nat_mod] THEN
-  MAP_EVERY EXISTS_TAC [`y:num`; `x:num`] THEN
-  REWRITE_TAC[MULT_CLAUSES; ADD_AC]);;
-
-let CONG_0 = prove
- (`!x n. ((x == 0) (mod n) <=> n divides x)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
-  ASM_REWRITE_TAC[DIVIDES_ZERO; CONG_MOD_0] THEN
-  ASM_SIMP_TAC[CONG; MOD_0; MOD_EQ_0] THEN
-  ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[divides]);;
 
 let CONG_SUB_CASES = prove
  (`!x y n. (x == y) (mod n) <=>
@@ -863,7 +861,9 @@ let EXP_EQ_MOD_CONV =
     ONCE_REWRITE_TAC[MULT_SYM] THEN
     REWRITE_TAC[MULT_ASSOC] THEN
     ASM_SIMP_TAC[MOD_MULT_LMOD; MOD_MULT_RMOD])
-  and pth_cong = SPEC_ALL CONG
+  and pth_cong = prove
+   (`~(n = 0) ==> ((x == y) (mod n) <=> x MOD n = y MOD n)`,
+    REWRITE_TAC[CONG])
   and n_tm = `n:num` in
   let raw_conv tm =
     let ntm = rand(rand tm) in

@@ -485,8 +485,7 @@ let PRIMITIVE_ROOT_MODULO_PRIMEPOW = prove
       ASM_SIMP_TAC[EXP_EQ_0; ARITH_RULE `3 <= p ==> ~(p = 0)`]];
     MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC `order (p EXP k) x` THEN
     CONJ_TAC THENL [ALL_TAC; ASM_REWRITE_TAC[]] THEN
-    MATCH_MP_TAC ORDER_CONG THEN MATCH_MP_TAC CONG_MOD THEN
-    ASM_SIMP_TAC[EXP_EQ_0; ARITH_RULE `3 <= p ==> ~(p = 0)`]]);;
+    MATCH_MP_TAC ORDER_CONG THEN REWRITE_TAC[CONG_MOD]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Double prime powers and the other remaining positive cases 2 and 4.       *)

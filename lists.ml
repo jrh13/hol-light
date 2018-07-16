@@ -420,9 +420,16 @@ let APPEND_RCANCEL = prove
   REWRITE_TAC[REVERSE_APPEND; APPEND_LCANCEL]);;
 
 let LENGTH_MAP2 = prove
- (`!f l m. (LENGTH l = LENGTH m) ==> (LENGTH(MAP2 f l m) = LENGTH m)`,
+ (`!f l m. LENGTH l = LENGTH m ==> LENGTH(MAP2 f l m) = LENGTH m`,
   GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
   ASM_SIMP_TAC[LENGTH; NOT_CONS_NIL; NOT_SUC; MAP2; SUC_INJ]);;
+
+let EL_MAP2 = prove
+ (`!f l m k. k < LENGTH l /\ k < LENGTH m
+             ==> EL k (MAP2 f l m) = f (EL k l) (EL k m)`,
+  GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
+  ASM_SIMP_TAC[LENGTH; CONJUNCT1 LT] THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[LENGTH; MAP2; EL; HD; TL; LT_SUC]);;
 
 let MAP_EQ_NIL  = prove
  (`!f l. MAP f l = [] <=> l = []`,

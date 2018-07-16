@@ -87,8 +87,9 @@ let FINITE_NUMBER_SEGMENT = prove
       ARITH_TAC]]);;
 
 let COPRIME_MOD = prove
- (`!a n. ~(n = 0) ==> (coprime(a MOD n,n) <=> coprime(a,n))`,
-  REPEAT STRIP_TAC THEN
+ (`!a n. coprime(a MOD n,n) <=> coprime(a,n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO] THEN
   FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o LAND_CONV)
    [MATCH_MP DIVISION th]) THEN REWRITE_TAC[coprime] THEN
   AP_TERM_TAC THEN ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
@@ -98,21 +99,6 @@ let COPRIME_MOD = prove
 (* ------------------------------------------------------------------------- *)
 (* Congruences.                                                              *)
 (* ------------------------------------------------------------------------- *)
-
-let CONG = prove
- (`!x y n. ~(n = 0) ==> ((x == y) (mod n) <=> (x MOD n = y MOD n))`,
-  REWRITE_TAC[cong; nat_mod] THEN
-  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
-   [ASM_CASES_TAC `x <= y` THENL
-     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q1 - q2`;
-      MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q2 - q1`] THEN
-    REWRITE_TAC[RIGHT_SUB_DISTRIB] THEN
-    POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN ARITH_TAC;
-    MAP_EVERY EXISTS_TAC [`y DIV n`; `x DIV n`] THEN
-    UNDISCH_TAC `x MOD n = y MOD n` THEN
-    MATCH_MP_TAC(ARITH_RULE
-     `(y = dy + my) /\ (x = dx + mx) ==> (mx = my) ==> (x + dy = y + dx)`) THEN
-    ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_SIMP_TAC[DIVISION]]);;
 
 let CONG_MOD_0 = prove
  (`!x y. (x == y) (mod 0) <=> (x = y)`,
@@ -125,6 +111,23 @@ let CONG_MOD_1 = prove
 let CONG_0 = prove
  (`!x n. ((x == 0) (mod n) <=> n divides x)`,
   NUMBER_TAC);;
+
+let CONG = prove
+ (`!x y n. (x == y) (mod n) <=> x MOD n = y MOD n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO; CONG_MOD_0] THEN
+  REWRITE_TAC[cong; nat_mod] THEN
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [ASM_CASES_TAC `x <= y` THENL
+     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q1 - q2`;
+      MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q2 - q1`] THEN
+    REWRITE_TAC[RIGHT_SUB_DISTRIB] THEN
+    POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN ARITH_TAC;
+    MAP_EVERY EXISTS_TAC [`y DIV n`; `x DIV n`] THEN
+    UNDISCH_TAC `x MOD n = y MOD n` THEN
+    MATCH_MP_TAC(ARITH_RULE
+     `(y = dy + my) /\ (x = dx + mx) ==> (mx = my) ==> (x + dy = y + dx)`) THEN
+    ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_SIMP_TAC[DIVISION]]);;
 
 let CONG_SUB_CASES = prove
  (`!x y n. (x == y) (mod n) <=>
@@ -260,8 +263,10 @@ let CONG_COPRIME = prove
   NUMBER_TAC);;
 
 let CONG_MOD = prove
- (`!a n. ~(n = 0) ==> (a MOD n == a) (mod n)`,
-  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o MATCH_MP DIVISION) THEN
+ (`!a n. (a MOD n == a) (mod n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[CONG_REFL; MOD_ZERO] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP DIVISION) THEN
   DISCH_THEN(MP_TAC o SPEC `a:num`) THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   DISCH_THEN(fun th -> GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV) [th]) THEN
@@ -270,8 +275,7 @@ let CONG_MOD = prove
   REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES; ADD_AC; MULT_AC]);;
 
 let MOD_MULT_CONG = prove
- (`!a b x y. ~(a = 0) /\ ~(b = 0)
-             ==> ((x MOD (a * b) == y) (mod a) <=> (x == y) (mod a))`,
+ (`!a b x y. ((x MOD (a * b) == y) (mod a) <=> (x == y) (mod a))`,
   REPEAT STRIP_TAC THEN SUBGOAL_THEN `(x MOD (a * b) == x) (mod a)`
    (fun th -> MESON_TAC[th; CONG_TRANS; CONG_SYM]) THEN
   MATCH_MP_TAC CONG_DIVIDES_MODULUS THEN EXISTS_TAC `a * b` THEN
@@ -282,16 +286,34 @@ let CONG_MOD_MULT = prove
   NUMBER_TAC);;
 
 let CONG_LMOD = prove
- (`!x y n. ~(n = 0) ==> ((x MOD n == y) (mod n) <=> (x == y) (mod n))`,
+ (`!x y n. (x MOD n == y) (mod n) <=> (x == y) (mod n)`,
   MESON_TAC[CONG_MOD; CONG_TRANS; CONG_SYM]);;
 
 let CONG_RMOD = prove
- (`!x y n. ~(n = 0) ==> ((x == y MOD n) (mod n) <=> (x == y) (mod n))`,
+ (`!x y n. (x == y MOD n) (mod n) <=> (x == y) (mod n)`,
   MESON_TAC[CONG_MOD; CONG_TRANS; CONG_SYM]);;
 
 let CONG_MOD_LT = prove
  (`!y. y < n ==> (x MOD n = y <=> (x == y) (mod n))`,
   MESON_TAC[MOD_LT; CONG; LT]);;
+
+let MOD_UNIQUE = prove
+ (`!m n p. m MOD n = p <=> ((n = 0 /\ m = p) \/ p < n) /\ (m == p) (mod n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[CONG_MOD_0; LT] THENL
+   [ASM_MESON_TAC[DIVISION_0]; ALL_TAC] THEN
+  ASM_SIMP_TAC[CONG] THEN ASM_MESON_TAC[DIVISION; MOD_LT]);;
+
+let CONG_DIV = prove
+ (`!m n a b.
+        ~(m = 0) /\ (a == m * b) (mod (m * n)) ==> (a DIV m == b) (mod n)`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (NUMBER_RULE
+   `(a == m * b) (mod (m * n)) ==> ~(m = 0) /\ m * q = a
+   ==> (q == b) (mod n)`)) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[DIVISION_SIMP; ADD_CLAUSES]
+   `m MOD n = 0 ==> n * m DIV n = m`) THEN
+  REWRITE_TAC[GSYM DIVIDES_MOD] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NUMBER_RULE);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some things when we know more about the order.                            *)
@@ -363,22 +385,32 @@ let CONG_CONV =
 (* Some basic theorems about solving congruences.                            *)
 (* ------------------------------------------------------------------------- *)
 
+let CONG_SOLVE_EQ = prove
+ (`!n a b. (?x. (a * x == b) (mod n)) <=> gcd(a,n) divides b`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [NUMBER_TAC; ALL_TAC] THEN
+  ASM_CASES_TAC `a = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES; GCD_0]
+  THENL [NUMBER_TAC; REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `c:num` THEN DISCH_THEN SUBST1_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `n:num` o MATCH_MP BEZOUT_GCD_STRONG) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`x:num`; `y:num`] THEN STRIP_TAC THEN
+  EXISTS_TAC `c * x:num` THEN POP_ASSUM MP_TAC THEN CONV_TAC NUMBER_RULE);;
+
+let CONG_SOLVE_LT_EQ = prove
+ (`!n a b. (?x. x < n /\ (a * x == b) (mod n)) <=>
+           ~(n = 0) /\ gcd(a,n) divides b`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[CONJUNCT1 LT] THEN REWRITE_TAC[GSYM CONG_SOLVE_EQ] THEN
+  MATCH_MP_TAC(MESON[DIVISION]
+   `~(n = 0) /\ (!y. P y ==> P(y MOD n))
+    ==> ((?y. y < n /\ P y) <=> (?y. P y))`) THEN
+  ASM_REWRITE_TAC[] THEN X_GEN_TAC `x:num` THEN MATCH_MP_TAC(NUMBER_RULE
+   `(x == y) (mod n) ==> (a * x == b) (mod n) ==> (a * y == b) (mod n)`) THEN
+  ASM_SIMP_TAC[CONG_RMOD; CONG_REFL]);;
+
 let CONG_SOLVE = prove
  (`!a b n. coprime(a,n) ==> ?x. (a * x == b) (mod n)`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(SPECL [`a:num`; `n:num`] BEZOUT_ADD_STRONG) THEN
-  ASM_CASES_TAC `a = 0` THENL
-   [ASM_MESON_TAC[COPRIME_0; COPRIME_SYM; CONG_MOD_1]; ALL_TAC] THEN
-  ASM_REWRITE_TAC[] THEN GEN_REWRITE_TAC LAND_CONV [SWAP_EXISTS_THM] THEN
-  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`x:num`; `d:num`; `y:num`] THEN
-  ASM_CASES_TAC `d = 1` THEN ASM_REWRITE_TAC[] THENL
-   [ALL_TAC; ASM_MESON_TAC[COPRIME]] THEN
-  STRIP_TAC THEN EXISTS_TAC `x * b:num` THEN ASM_REWRITE_TAC[MULT_ASSOC] THEN
-  REWRITE_TAC[RIGHT_ADD_DISTRIB; MULT_CLAUSES] THEN
-  GEN_REWRITE_TAC LAND_CONV [ARITH_RULE `b = 0 + b`] THEN
-  MATCH_MP_TAC CONG_ADD THEN REWRITE_TAC[CONG_REFL] THEN
-  REWRITE_TAC[CONG_0; GSYM MULT_ASSOC] THEN MESON_TAC[divides]);;
+  REWRITE_TAC[CONG_SOLVE_EQ] THEN CONV_TAC NUMBER_RULE);;
 
 let CONG_SOLVE_UNIQUE = prove
  (`!a b n. coprime(a,n) /\ ~(n = 0) ==> ?!x. x < n /\ (a * x == b) (mod n)`,
@@ -1514,7 +1546,9 @@ let EXP_MOD_CONV =
     ONCE_REWRITE_TAC[MULT_SYM] THEN
     REWRITE_TAC[MULT_ASSOC] THEN
     ASM_SIMP_TAC[MOD_MULT_LMOD; MOD_MULT_RMOD])
-  and pth_cong = SPEC_ALL CONG
+  and pth_cong = prove
+   (`~(n = 0) ==> ((x == y) (mod n) <=> x MOD n = y MOD n)`,
+    REWRITE_TAC[CONG])
   and n_tm = `n:num` in
   fun tm ->
     let ntm = rand tm in

@@ -3247,6 +3247,76 @@ let FORALL_CLOSED_IN_HOMEOMORPHIC_IMAGE = prove
   AP_TERM_TAC THEN
   FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN ASM SET_TAC[]);;
 
+let HOMEOMORPHIC_MAP_DERIVED_SET_OF = prove
+ (`!(f:A->B) top top' s.
+        homeomorphic_map (top,top') f /\ s SUBSET topspace top
+        ==> top' derived_set_of (IMAGE f s) = IMAGE f (top derived_set_of s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[derived_set_of] THEN MATCH_MP_TAC(SET_RULE
+   `t = IMAGE f s /\ (!x. x IN s ==> (P x <=> Q(f x)))
+    ==> {y | y IN t /\ Q y} = IMAGE f {x | x IN s /\ P x}`) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[HOMEOMORPHIC_EQ_EVERYTHING_MAP]; ALL_TAC] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [MESON[OPEN_IN_SUBSET]
+   `P /\ open_in top s <=> s SUBSET topspace top /\ P /\ open_in top s`] THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP HOMEOMORPHIC_IMP_SURJECTIVE_MAP) THEN
+  REWRITE_TAC[IMP_CONJ; FORALL_SUBSET_IMAGE] THEN FIRST_ASSUM
+   (fun th -> REWRITE_TAC[MATCH_MP HOMEOMORPHIC_MAP_OPENNESS_EQ th]) THEN
+  AP_TERM_TAC THEN ABS_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHIC_EQ_EVERYTHING_MAP]) THEN
+  ASM SET_TAC[]);;
+
+let HOMEOMORPHIC_MAP_CLOSURE_OF = prove
+ (`!(f:A->B) top top' s.
+        homeomorphic_map (top,top') f /\ s SUBSET topspace top
+        ==> top' closure_of (IMAGE f s) = IMAGE f (top closure_of s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CLOSURE_OF] THEN
+  FIRST_ASSUM(MP_TAC o SPEC `s:A->bool` o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ] HOMEOMORPHIC_MAP_DERIVED_SET_OF)) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+  REWRITE_TAC[GSYM IMAGE_UNION] THEN MATCH_MP_TAC(SET_RULE
+   `IMAGE f u = t /\ s SUBSET u
+    ==> t INTER IMAGE f s = IMAGE f (u INTER s)`) THEN
+  ASM_REWRITE_TAC[UNION_SUBSET; DERIVED_SET_OF_SUBSET_TOPSPACE] THEN
+  ASM_MESON_TAC[HOMEOMORPHIC_IMP_SURJECTIVE_MAP]);;
+
+let HOMEOMORPHIC_MAP_INTERIOR_OF = prove
+ (`!(f:A->B) top top' s.
+        homeomorphic_map (top,top') f /\ s SUBSET topspace top
+        ==> top' interior_of (IMAGE f s) = IMAGE f (top interior_of s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INTERIOR_OF_CLOSURE_OF] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(IMAGE f t = v /\ (!x y. x IN t /\ y IN t /\ f x = f y ==> x = y)) /\
+    IMAGE f s = u /\ s SUBSET t
+    ==> v DIFF u = IMAGE f (t DIFF s)`) THEN
+  CONJ_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHIC_EQ_EVERYTHING_MAP]) THEN
+    ASM SET_TAC[];
+    REWRITE_TAC[CLOSURE_OF_SUBSET_TOPSPACE]] THEN
+  SUBGOAL_THEN
+   `topspace top' DIFF IMAGE (f:A->B) s =
+    IMAGE f (topspace top DIFF s)`
+  SUBST1_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[HOMEOMORPHIC_EQ_EVERYTHING_MAP]) THEN
+    ASM SET_TAC[];
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC HOMEOMORPHIC_MAP_CLOSURE_OF THEN
+    ASM_REWRITE_TAC[SUBSET_DIFF]]);;
+
+let HOMEOMORPHIC_MAP_FRONTIER_OF = prove
+ (`!(f:A->B) top top' s.
+        homeomorphic_map (top,top') f /\ s SUBSET topspace top
+        ==> top' frontier_of (IMAGE f s) = IMAGE f (top frontier_of s)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[frontier_of] THEN MATCH_MP_TAC(SET_RULE
+   `!u. IMAGE f s = s' /\ IMAGE f t = t' /\
+        s SUBSET t /\ t SUBSET u /\
+        (!x y. x IN u /\ y IN u /\ f x = f y ==> x = y)
+        ==> t' DIFF s' = IMAGE f (t DIFF s)`) THEN
+  EXISTS_TAC `topspace top:A->bool` THEN
+  REWRITE_TAC[INTERIOR_OF_SUBSET_CLOSURE_OF] THEN
+  REWRITE_TAC[CLOSURE_OF_SUBSET_TOPSPACE] THEN REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[HOMEOMORPHIC_MAP_INTERIOR_OF];
+    ASM_MESON_TAC[HOMEOMORPHIC_MAP_CLOSURE_OF];
+    ASM_MESON_TAC[HOMEOMORPHIC_IMP_INJECTIVE_MAP]]);;
+
 let HOMEOMORPHIC_MAPS_SUBTOPOLOGIES = prove
  (`!top top' (f:A->B) g s t.
         homeomorphic_maps(top,top') (f,g) /\
@@ -5860,6 +5930,24 @@ let SEPARATION_OPEN_IN_UNION_GEN = prove
   GEN_REWRITE_TAC RAND_CONV[CONJ_SYM] THEN BINOP_TAC THEN
   AP_TERM_TAC THEN ASM SET_TAC[]);;
 
+let HOMEOMORPHIC_MAP_SEPARATION = prove
+ (`!(f:A->B) top top' s t.
+        homeomorphic_map (top,top') f /\
+        s SUBSET topspace top /\ t SUBSET topspace top
+        ==> (separated_in top' (IMAGE f s) (IMAGE f t) <=>
+             separated_in top s t)`,
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[separated_in] THEN
+  FIRST_ASSUM(SUBST1_TAC o SYM o MATCH_MP HOMEOMORPHIC_IMP_SURJECTIVE_MAP) THEN
+  ASM_SIMP_TAC[IMAGE_SUBSET] THEN BINOP_TAC THEN
+  MATCH_MP_TAC(SET_RULE
+   `!u. IMAGE f t = t' /\ s SUBSET u /\ t SUBSET u /\
+        (!x y. x IN u /\ y IN u /\ f x = f y ==> x = y)
+        ==> (IMAGE f s INTER t' = {} <=> s INTER t = {})`) THEN
+  EXISTS_TAC `topspace top:A->bool` THEN
+  ASM_REWRITE_TAC[CLOSURE_OF_SUBSET_TOPSPACE] THEN
+  ASM_MESON_TAC[HOMEOMORPHIC_MAP_CLOSURE_OF;
+                HOMEOMORPHIC_IMP_INJECTIVE_MAP]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Connected topological spaces.                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -6375,6 +6463,13 @@ let CONNECTED_COMPONENT_OF_TRANS = prove
   ASM_REWRITE_TAC[IN_UNION] THEN MATCH_MP_TAC CONNECTED_IN_UNION THEN
   ASM SET_TAC[]);;
 
+let CONNECTED_COMPONENT_OF_MONO = prove
+ (`!top s t x y:A.
+        connected_component_of (subtopology top s) x y /\ s SUBSET t
+        ==> connected_component_of (subtopology top t) x y`,
+  REWRITE_TAC[connected_component_of; CONNECTED_IN_SUBTOPOLOGY] THEN
+  MESON_TAC[SUBSET]);;
+
 let CONNECTED_COMPONENT_OF_SET = prove
  (`!top x:A.
         connected_component_of top x =
@@ -6570,6 +6665,42 @@ let CONNECTED_COMPONENTS_OF_CONNECTED_SPACE = prove
             if topspace top = {} then {} else {topspace top}`,
   ASM_MESON_TAC[CONNECTED_COMPONENTS_OF_EMPTY_SPACE;
                 CONNECTED_COMPONENTS_OF_EQ_SING]);;
+
+let EXISTS_CONNECTED_COMPONENT_OF_SUPERSET = prove
+ (`!top s:A->bool.
+        connected_in top s /\ ~(topspace top = {})
+        ==> ?c. c IN connected_components_of top /\ s SUBSET c`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:A->bool = {}` THENL
+   [ASM_REWRITE_TAC[EMPTY_SUBSET; MEMBER_NOT_EMPTY] THEN
+    ASM_REWRITE_TAC[CONNECTED_COMPONENTS_OF_EQ_EMPTY];
+    UNDISCH_TAC `~(s:A->bool = {})` THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+  EXISTS_TAC `connected_component_of top (a:A)` THEN CONJ_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[connected_in]) THEN
+    REWRITE_TAC[CONNECTED_COMPONENT_IN_CONNECTED_COMPONENTS_OF] THEN
+    ASM SET_TAC[];
+    MATCH_MP_TAC CONNECTED_COMPONENT_OF_MAXIMAL THEN
+    ASM_REWRITE_TAC[]]);;
+
+let CLOSED_IN_CONNECTED_COMPONENTS_OF = prove
+ (`!top c:A->bool.
+        c IN connected_components_of top ==> closed_in top c`,
+  REWRITE_TAC[connected_components_of; FORALL_IN_GSPEC] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CLOSURE_OF_SUBSET_EQ] THEN
+  REWRITE_TAC[CONNECTED_COMPONENT_OF_SUBSET_TOPSPACE] THEN
+  MATCH_MP_TAC CONNECTED_COMPONENT_OF_MAXIMAL THEN
+  SIMP_TAC[CONNECTED_IN_CLOSURE_OF; CONNECTED_IN_CONNECTED_COMPONENT_OF] THEN
+  MATCH_MP_TAC(REWRITE_RULE[SUBSET] CLOSURE_OF_SUBSET_INTER) THEN
+  ASM_REWRITE_TAC[IN_INTER] THEN REWRITE_TAC[IN] THEN
+  ASM_REWRITE_TAC[CONNECTED_COMPONENT_OF_REFL]);;
+
+let CLOSED_IN_CONNECTED_COMPONENT_OF = prove
+ (`!top x:A. closed_in top (connected_component_of top x)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `(x:A) IN topspace top` THENL
+   [MATCH_MP_TAC CLOSED_IN_CONNECTED_COMPONENTS_OF THEN
+    ASM_MESON_TAC[CONNECTED_COMPONENT_IN_CONNECTED_COMPONENTS_OF];
+    ASM_MESON_TAC[CLOSED_IN_EMPTY; CONNECTED_COMPONENT_OF_EQ_EMPTY]]);;
 
 let HOMEOMORPHIC_MAP_CONNECTED_COMPONENT_OF = prove
  (`!(f:A->B) top top' x.
@@ -13344,6 +13475,13 @@ let PATH_COMPONENT_OF_TRANS = prove
   REPEAT(MATCH_MP_TAC CONTINUOUS_MAP_REAL_MUL) THEN
   REWRITE_TAC[CONTINUOUS_MAP_REAL_CONST; CONTINUOUS_MAP_ID]);;
 
+let PATH_COMPONENT_OF_MONO = prove
+ (`!top s t x y:A.
+        path_component_of (subtopology top s) x y /\ s SUBSET t
+        ==> path_component_of (subtopology top t) x y`,
+  REWRITE_TAC[path_component_of; PATH_IN_SUBTOPOLOGY] THEN
+  MESON_TAC[SUBSET]);;
+
 let PATH_COMPONENT_OF = prove
  (`!top x y:A.
         path_component_of top x y <=>
@@ -13598,6 +13736,22 @@ let PATH_COMPONENT_SUBSET_CONNECTED_COMPONENT_OF = prove
     REWRITE_TAC[IN] THEN ASM_REWRITE_TAC[PATH_COMPONENT_OF_REFL];
     ASM_MESON_TAC[PATH_COMPONENT_OF_EQ_EMPTY; EMPTY_SUBSET]]);;
 
+let EXISTS_PATH_COMPONENT_OF_SUPERSET = prove
+ (`!top s:A->bool.
+        path_connected_in top s /\ ~(topspace top = {})
+        ==> ?c. c IN path_components_of top /\ s SUBSET c`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:A->bool = {}` THENL
+   [ASM_REWRITE_TAC[EMPTY_SUBSET; MEMBER_NOT_EMPTY] THEN
+    ASM_REWRITE_TAC[PATH_COMPONENTS_OF_EQ_EMPTY];
+    UNDISCH_TAC `~(s:A->bool = {})` THEN
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+  EXISTS_TAC `path_component_of top (a:A)` THEN CONJ_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[path_connected_in]) THEN
+    REWRITE_TAC[PATH_COMPONENT_IN_PATH_COMPONENTS_OF] THEN ASM SET_TAC[];
+    MATCH_MP_TAC PATH_COMPONENT_OF_MAXIMAL THEN
+    ASM_REWRITE_TAC[]]);;
+
 let HOMEOMORPHIC_MAP_PATH_COMPONENT_OF = prove
  (`!(f:A->B) top top' x.
         homeomorphic_map(top,top') f /\ x IN topspace top
@@ -13721,6 +13875,44 @@ let NORMAL_SPACE_CLOSURES = prove
    [`top closure_of s:A->bool`; `top closure_of t:A->bool`]) THEN
   ASM_SIMP_TAC[CLOSED_IN_CLOSURE_OF] THEN
   ASM_MESON_TAC[CLOSURE_OF_SUBSET; SUBSET_TRANS]);;
+
+let NORMAL_SPACE_DISJOINT_CLOSURES = prove
+ (`!top:A topology.
+        normal_space top <=>
+        !s t. closed_in top s /\ closed_in top t /\ DISJOINT s t
+              ==> ?u v. open_in top u /\ open_in top v /\
+                        s SUBSET u /\ t SUBSET v /\
+                        DISJOINT (top closure_of u) (top closure_of v)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[normal_space] THEN EQ_TAC THENL
+   [DISCH_TAC;
+    REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+    MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
+    REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(SET_RULE
+     `s SUBSET s' /\ t SUBSET t' ==> DISJOINT s' t' ==> DISJOINT s t`) THEN
+    ASM_SIMP_TAC[CLOSURE_OF_SUBSET; OPEN_IN_SUBSET]] THEN
+  MAP_EVERY X_GEN_TAC [`s:A->bool`; `t:A->bool`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPECL [`s:A->bool`; `t:A->bool`]) THEN
+  ANTS_TAC THENL [ASM_REWRITE_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`s:A->bool`; `topspace top DIFF u:A->bool`]) THEN
+  ASM_SIMP_TAC[CLOSED_IN_DIFF; CLOSED_IN_TOPSPACE] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u':A->bool` THEN
+  DISCH_THEN(X_CHOOSE_THEN `v':A->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `v:A->bool` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(SET_RULE
+   `!t'. t' INTER s = {} /\ t SUBSET t' ==> DISJOINT s t`) THEN
+  EXISTS_TAC `v':A->bool` THEN
+  ASM_SIMP_TAC[OPEN_IN_INTER_CLOSURE_OF_EQ_EMPTY] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  TRANS_TAC SUBSET_TRANS `topspace top DIFF u:A->bool` THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CLOSURE_OF_MINIMAL THEN
+  ASM_SIMP_TAC[CLOSED_IN_DIFF; CLOSED_IN_TOPSPACE] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET)) THEN
+  ASM SET_TAC[]);;
 
 let NORMAL_T1_IMP_HAUSDORFF_SPACE = prove
  (`!top:A topology.

@@ -231,15 +231,6 @@ let DIVIDES_ADD_REVL = prove
  (`!d a b. d divides b /\ d divides (a + b) ==> d divides a`,
   NUMBER_TAC);;
 
-let DIVIDES_DIV = prove
- (`!n x. 0 < n /\ (x MOD n = 0) ==> n divides x`,
-  REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o SPEC `x:num` o MATCH_MP DIVISION o
-           MATCH_MP (ARITH_RULE `0 < n ==> ~(n = 0)`)) THEN
-  ASM_REWRITE_TAC[ADD_CLAUSES] THEN DISCH_TAC THEN
-  REWRITE_TAC[divides] THEN EXISTS_TAC `x DIV n` THEN
-  ONCE_REWRITE_TAC[MULT_SYM] THEN FIRST_ASSUM MATCH_ACCEPT_TAC);;
-
 let DIVIDES_MUL_L = prove
  (`!a b c. a divides b ==> (c * a) divides (c * b)`,
   NUMBER_TAC);;
@@ -351,11 +342,8 @@ let DIVIDES_REXP = prove
   GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN SIMP_TAC[DIVIDES_REXP_SUC]);;
 
 let DIVIDES_MOD = prove
- (`!m n. ~(m = 0) ==> (m divides n <=> (n MOD m = 0))`,
-  REWRITE_TAC[divides] THEN REPEAT STRIP_TAC THEN EQ_TAC THENL
-   [ASM_MESON_TAC[MOD_MULT]; DISCH_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `n:num` o MATCH_MP DIVISION) THEN
-  ASM_REWRITE_TAC[ADD_CLAUSES] THEN MESON_TAC[MULT_AC]);;
+ (`!m n. m divides n <=> (n MOD m = 0)`,
+  REWRITE_TAC[divides; MOD_EQ_0] THEN MESON_TAC[MULT_SYM]);;
 
 let DIVIDES_DIV_MULT = prove
  (`!m n. m divides n <=> ((n DIV m) * m = n)`,

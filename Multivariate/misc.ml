@@ -68,6 +68,21 @@ let REAL_HALF = prove
    (!e. &2 * (e / &2) = e)`,
   REAL_ARITH_TAC);;
 
+let ABS_SQUARE_LT_1 = prove
+ (`!x. x pow 2 < &1 <=> abs(x) < &1`,
+  ONCE_REWRITE_TAC[GSYM REAL_ABS_NUM] THEN
+  REWRITE_TAC[REAL_LT_SQUARE_ABS] THEN REAL_ARITH_TAC);;
+
+let ABS_SQUARE_LE_1 = prove
+ (`!x. x pow 2 <= &1 <=> abs(x) <= &1`,
+  ONCE_REWRITE_TAC[GSYM REAL_ABS_NUM] THEN
+  REWRITE_TAC[REAL_LT_SQUARE_ABS; GSYM REAL_NOT_LT] THEN REAL_ARITH_TAC);;
+
+let ABS_SQUARE_EQ_1 = prove
+ (`!x. x pow 2 = &1 <=> abs(x) = &1`,
+  REWRITE_TAC[REAL_RING `x pow 2 = &1 <=> x = &1 \/ x = -- &1`] THEN
+  REAL_ARITH_TAC);;
+
 let UPPER_BOUND_FINITE_SET = prove
  (`!f:(A->num) s. FINITE(s) ==> ?a. !x. x IN s ==> f(x) <= a`,
   GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN

@@ -678,7 +678,7 @@ let num_MAX = prove
     REPEAT STRIP_TAC THEN EXISTS_TAC `m:num` THEN ASM_REWRITE_TAC[]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Another variant of induction.                                             *)
+(* Other variants of induction.                                              *)
 (* ------------------------------------------------------------------------- *)
 
 let LE_INDUCT = prove
@@ -689,6 +689,19 @@ let LE_INDUCT = prove
     `(!m n:num. m <= n ==> R m n) <=> (!m d. R m (m + d))`] THEN
   REPEAT DISCH_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
   ASM_SIMP_TAC[ADD_CLAUSES]);;
+
+let num_INDUCTION_DOWN = prove
+ (`!(P:num->bool) m.
+        (!n. m <= n ==> P n) /\
+        (!n. n < m /\ P(n + 1) ==> P n)
+        ==> !n. P n`,
+  REWRITE_TAC[GSYM ADD1] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!x. P x) <=> ~(?x. ~P x)`] THEN
+  W(MP_TAC o PART_MATCH (lhand o lhand) num_MAX o rand o snd) THEN
+  MATCH_MP_TAC(TAUT `q /\ ~r ==> (p /\ q <=> r) ==> ~p`) THEN
+  ONCE_REWRITE_TAC[TAUT `~p ==> q <=> ~q ==> p`] THEN
+  REWRITE_TAC[NOT_EXISTS_THM; TAUT `~(~p /\ q) <=> q ==> p`; NOT_LE] THEN
+  ASM_MESON_TAC[LTE_CASES; LT; LT_IMP_LE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Oddness and evenness (recursively rather than inductively!)               *)
@@ -1076,10 +1089,20 @@ let DIVISION = prove
  (`!m n. ~(n = 0) ==> (m = m DIV n * n + m MOD n) /\ m MOD n < n`,
   MESON_TAC[DIVISION_0]);;
 
+let DIV_ZERO = prove
+ (`!n. n DIV 0 = 0`,
+  MESON_TAC[DIVISION_0]);;
+
+let MOD_ZERO = prove
+ (`!n. n MOD 0 = n`,
+  MESON_TAC[DIVISION_0]);;
+
 let DIVISION_SIMP = prove
- (`(!m n. ~(n = 0) ==> m DIV n * n + m MOD n = m) /\
-   (!m n. ~(n = 0) ==> n * m DIV n + m MOD n = m)`,
-  MESON_TAC[DIVISION; MULT_SYM]);;
+ (`(!m n. m DIV n * n + m MOD n = m) /\
+   (!m n. n * m DIV n + m MOD n = m)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_SIMP_TAC[DIV_ZERO; MOD_ZERO; MULT_CLAUSES; ADD_CLAUSES] THEN
+  ASM_MESON_TAC[DIVISION; MULT_SYM]);;
 
 let DIVMOD_UNIQ_LEMMA = prove
  (`!m n q1 r1 q2 r2. ((m = q1 * n + r1) /\ r1 < n) /\
@@ -1124,20 +1147,28 @@ let DIV_UNIQ = prove
   REPEAT GEN_TAC THEN
   DISCH_THEN(fun th -> REWRITE_TAC[MATCH_MP DIVMOD_UNIQ th]));;
 
+let DIV_0,MOD_0 = (CONJ_PAIR o prove)
+ (`(!n. 0 DIV n = 0) /\ (!n. 0 MOD n = 0)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[DIV_ZERO; MOD_ZERO] THEN
+  MATCH_MP_TAC DIVMOD_UNIQ THEN
+  ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES; LT_NZ]);;
+
 let DIV_MULT,MOD_MULT = (CONJ_PAIR o prove)
  (`(!m n. ~(m = 0) ==> (m * n) DIV m = n) /\
-   (!m n. ~(m = 0) ==> (m * n) MOD m = 0)`,
-  SIMP_TAC[AND_FORALL_THM; TAUT `(a ==> b) /\ (a ==> c) <=> a ==> b /\ c`] THEN
-  REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC DIVMOD_UNIQ THEN
+   (!m n. (m * n) MOD m = 0)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES; MOD_0] THEN
+  MATCH_MP_TAC DIVMOD_UNIQ THEN
   ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES; MULT_AC; LT_NZ]);;
 
 let MOD_LT = prove
- (`!m n. m < n ==> (m MOD n = m)`,
+ (`!m n. m < n ==> m MOD n = m`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC MOD_UNIQ THEN
   EXISTS_TAC `0` THEN ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES]);;
 
 let MOD_EQ = prove
- (`!m n p q. (m = n + q * p) ==> (m MOD p = n MOD p)`,
+ (`!m n p q. m = n + q * p ==> m MOD p = n MOD p`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `p = 0` THENL
    [ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES] THEN
     DISCH_THEN SUBST1_TAC THEN REFL_TAC;
@@ -1150,8 +1181,9 @@ let MOD_EQ = prove
     MATCH_ACCEPT_TAC ADD_SYM]);;
 
 let DIV_LE = prove
- (`!m n. ~(n = 0) ==> m DIV n <= m`,
-  REPEAT STRIP_TAC THEN
+ (`!m n. m DIV n <= m`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[DIV_ZERO; LE_0] THEN
   FIRST_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [MATCH_MP DIVISION th]) THEN
   UNDISCH_TAC `~(n = 0)` THEN SPEC_TAC(`n:num`,`n:num`) THEN
   INDUCT_TAC THEN REWRITE_TAC[MULT_CLAUSES; GSYM ADD_ASSOC; LE_ADD]);;
@@ -1164,12 +1196,22 @@ let DIV_MUL_LE = prove
   DISCH_THEN(fun th -> GEN_REWRITE_TAC RAND_CONV [CONJUNCT1 th]) THEN
   REWRITE_TAC[LE_ADD; MULT_AC]);;
 
-let DIV_0,MOD_0 = (CONJ_PAIR o prove)
- (`(!n. ~(n = 0) ==> 0 DIV n = 0) /\
-   (!n. ~(n = 0) ==> 0 MOD n = 0)`,
-  SIMP_TAC[AND_FORALL_THM; TAUT `(a ==> b) /\ (a ==> c) <=> a ==> b /\ c`] THEN
-  GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC DIVMOD_UNIQ THEN
-  ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES; LT_NZ]);;
+let MOD_LE_TWICE = prove
+ (`!m n. 0 < m /\ m <= n ==> 2 * n MOD m <= n`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `2 * m <= n` THENL
+   [TRANS_TAC LE_TRANS `2 * m` THEN
+    ASM_SIMP_TAC[LE_MULT_LCANCEL; DIVISION; LT_IMP_LE; LE_1];
+    RULE_ASSUM_TAC(REWRITE_RULE[NOT_LE])] THEN
+  TRANS_TAC LE_TRANS `m + n MOD m` THEN
+  ASM_SIMP_TAC[MULT_2; LE_ADD_RCANCEL; DIVISION; LT_IMP_LE; LE_1] THEN
+  ONCE_REWRITE_TAC[ADD_SYM] THEN
+  SUBGOAL_THEN `n MOD m = n - m` 
+   (fun th -> ASM_SIMP_TAC[LE_REFL; SUB_ADD; th]) THEN
+  MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC `1` THEN
+  ONCE_REWRITE_TAC[ADD_SYM] THEN ASM_SIMP_TAC[MULT_CLAUSES; SUB_ADD] THEN
+  ONCE_REWRITE_TAC[MESON[LT_ADD_RCANCEL]
+   `n - m:num < m <=> (n - m) + m < m + m`] THEN
+  ASM_SIMP_TAC[GSYM MULT_2; SUB_ADD]);;
 
 let DIV_1,MOD_1 = (CONJ_PAIR o prove)
  (`(!n. n DIV 1 = n) /\ (!n. n MOD 1 = 0)`,
@@ -1177,13 +1219,15 @@ let DIV_1,MOD_1 = (CONJ_PAIR o prove)
   REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES] THEN REWRITE_TAC[ONE; LT]);;
 
 let DIV_LT = prove
- (`!m n. m < n ==> (m DIV n = 0)`,
+ (`!m n. m < n ==> m DIV n = 0`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `m:num` THEN
   ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES]);;
 
 let MOD_MOD = prove
- (`!m n p. ~(n * p = 0) ==> ((m MOD (n * p)) MOD n = m MOD n)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[MULT_EQ_0; DE_MORGAN_THM] THEN STRIP_TAC THEN
+ (`!m n p. (m MOD (n * p)) MOD n = m MOD n`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `p = 0` THEN ASM_REWRITE_TAC[MOD_ZERO; MULT_CLAUSES] THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[MOD_ZERO; MULT_CLAUSES] THEN
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN
   EXISTS_TAC `m DIV (n * p) * p` THEN
   MP_TAC(SPECL [`m:num`; `n * p:num`] DIVISION) THEN
@@ -1191,15 +1235,16 @@ let MOD_MOD = prove
   DISCH_THEN(fun th -> REWRITE_TAC[GSYM th]));;
 
 let MOD_MOD_REFL = prove
- (`!m n. ~(n = 0) ==> ((m MOD n) MOD n = m MOD n)`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN
+ (`!m n. (m MOD n) MOD n = m MOD n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[MOD_ZERO] THEN
   MP_TAC(SPECL [`m:num`; `n:num`; `1`] MOD_MOD) THEN
   ASM_REWRITE_TAC[MULT_CLAUSES; MULT_EQ_0] THEN
   REWRITE_TAC[ONE; NOT_SUC]);;
 
 let DIV_MULT2 = prove
- (`!m n p. ~(m * p = 0) ==> ((m * n) DIV (m * p) = n DIV p)`,
-  REWRITE_TAC[MULT_EQ_0; DE_MORGAN_THM] THEN REPEAT STRIP_TAC THEN
+ (`!m n p. ~(m = 0) ==> ((m * n) DIV (m * p) = n DIV p)`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `p = 0` THEN
+  ASM_REWRITE_TAC[DIV_ZERO; MULT_CLAUSES] THEN
   MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `m * (n MOD p)` THEN
   ASM_SIMP_TAC[LT_MULT_LCANCEL; DIVISION] THEN
   ONCE_REWRITE_TAC[AC MULT_AC `a * b * c:num = b * a * c`] THEN
@@ -1207,8 +1252,10 @@ let DIV_MULT2 = prove
   ASM_SIMP_TAC[GSYM DIVISION]);;
 
 let MOD_MULT2 = prove
- (`!m n p. ~(m * p = 0) ==> ((m * n) MOD (m * p) = m * n MOD p)`,
-  REWRITE_TAC[MULT_EQ_0; DE_MORGAN_THM] THEN REPEAT STRIP_TAC THEN
+ (`!m n p. (m * n) MOD (m * p) = m * n MOD p`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `p = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO; MULT_CLAUSES] THEN ASM_CASES_TAC `m = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO; MULT_CLAUSES] THEN
   MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC `n DIV p` THEN
   ASM_SIMP_TAC[LT_MULT_LCANCEL; DIVISION] THEN
   ONCE_REWRITE_TAC[AC MULT_AC `a * b * c:num = b * a * c`] THEN
@@ -1256,8 +1303,9 @@ let LE_LDIV = prove
   MESON_TAC[LT_ADD; LT_NZ; LET_TRANS]);;
 
 let DIV_MONO = prove
- (`!m n p. ~(p = 0) /\ m <= n ==> m DIV p <= n DIV p`,
-  REPEAT STRIP_TAC THEN
+ (`!m n p. m <= n ==> m DIV p <= n DIV p`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `p = 0` THEN
+  ASM_REWRITE_TAC[DIV_ZERO; LE_REFL] THEN
   MATCH_MP_TAC(MESON[LE_REFL] `(!k:num. k <= a ==> k <= b) ==> a <= b`) THEN
   ASM_SIMP_TAC[LE_RDIV_EQ] THEN ASM_MESON_TAC[LE_TRANS]);;
 
@@ -1277,7 +1325,9 @@ let DIV_EQ_0 = prove
     ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES]]);;
 
 let MOD_EQ_0 = prove
- (`!m n. ~(n = 0) ==> ((m MOD n = 0) <=> (?q. m = q * n))`,
+ (`!m n. (m MOD n = 0) <=> ?q. m = q * n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MULT_CLAUSES; MOD_ZERO] THEN
   REPEAT(STRIP_TAC ORELSE EQ_TAC) THENL
    [FIRST_ASSUM(SUBST1_TAC o CONJUNCT1 o SPEC `m:num` o MATCH_MP DIVISION) THEN
     ASM_SIMP_TAC[MULT_CLAUSES; ADD_CLAUSES; DIVISION] THEN MESON_TAC[];
@@ -1285,16 +1335,15 @@ let MOD_EQ_0 = prove
     ASM_MESON_TAC[NOT_LE; CONJUNCT1 LE]]);;
 
 let MOD_REFL = prove
- (`!n. ~(n = 0) ==> n MOD n = 0`,
+ (`!n. n MOD n = 0`,
   SIMP_TAC[MOD_EQ_0] THEN MESON_TAC[MULT_CLAUSES]);;
 
 let EVEN_MOD = prove
- (`!n. EVEN(n) <=> (n MOD 2 = 0)`,
-  GEN_TAC THEN REWRITE_TAC[EVEN_EXISTS] THEN ONCE_REWRITE_TAC[MULT_SYM] THEN
-  MATCH_MP_TAC(GSYM MOD_EQ_0) THEN REWRITE_TAC[TWO; NOT_SUC]);;
+ (`!n. EVEN(n) <=> n MOD 2 = 0`,
+  REWRITE_TAC[EVEN_EXISTS; MOD_EQ_0] THEN MESON_TAC[MULT_SYM]);;
 
 let ODD_MOD = prove
- (`!n. ODD(n) <=> (n MOD 2 = 1)`,
+ (`!n. ODD(n) <=> n MOD 2 = 1`,
   GEN_TAC THEN REWRITE_TAC[GSYM NOT_EVEN; EVEN_MOD] THEN
   SUBGOAL_THEN `n MOD 2 < 2` MP_TAC THENL
    [SIMP_TAC[DIVISION; TWO; NOT_SUC]; ALL_TAC] THEN
@@ -1302,24 +1351,25 @@ let ODD_MOD = prove
   REWRITE_TAC[TWO; ONE; LT] THEN MESON_TAC[NOT_SUC]);;
 
 let MOD_MULT_RMOD = prove
- (`!m n p. ~(n = 0) ==> ((m * (p MOD n)) MOD n = (m * p) MOD n)`,
-  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN
-  EXISTS_TAC `m * p DIV n` THEN
+ (`!m n p. (m * (p MOD n)) MOD n = (m * p) MOD n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[MOD_ZERO] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `m * p DIV n` THEN
   REWRITE_TAC[GSYM MULT_ASSOC; GSYM LEFT_ADD_DISTRIB] THEN
   REWRITE_TAC[EQ_MULT_LCANCEL] THEN DISJ2_TAC THEN
   ONCE_REWRITE_TAC[ADD_SYM] THEN ASM_SIMP_TAC[DIVISION]);;
 
 let MOD_MULT_LMOD = prove
- (`!m n p. ~(n = 0) ==> (((m MOD n) * p) MOD n = (m * p) MOD n)`,
+ (`!m n p. ((m MOD n) * p) MOD n = (m * p) MOD n`,
   ONCE_REWRITE_TAC[MULT_SYM] THEN SIMP_TAC[MOD_MULT_RMOD]);;
 
 let MOD_MULT_MOD2 = prove
- (`!m n p. ~(n = 0) ==> (((m MOD n) * (p MOD n)) MOD n = (m * p) MOD n)`,
+ (`!m n p. ((m MOD n) * (p MOD n)) MOD n = (m * p) MOD n`,
   SIMP_TAC[MOD_MULT_RMOD; MOD_MULT_LMOD]);;
 
 let MOD_EXP_MOD = prove
- (`!m n p. ~(n = 0) ==> (((m MOD n) EXP p) MOD n = (m EXP p) MOD n)`,
-  REPEAT STRIP_TAC THEN SPEC_TAC(`p:num`,`p:num`) THEN
+ (`!m n p. ((m MOD n) EXP p) MOD n = (m EXP p) MOD n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO] THEN SPEC_TAC(`p:num`,`p:num`) THEN
   INDUCT_TAC THEN ASM_REWRITE_TAC[EXP] THEN ASM_SIMP_TAC[MOD_MULT_LMOD] THEN
   MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC `(m * ((m MOD n) EXP p) MOD n) MOD n` THEN CONJ_TAC THENL
@@ -1341,8 +1391,10 @@ let DIV_MULT_ADD = prove
   ASM_MESON_TAC[DIVISION]);;
 
 let MOD_ADD_MOD = prove
- (`!a b n. ~(n = 0) ==> ((a MOD n + b MOD n) MOD n = (a + b) MOD n)`,
-  REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN
+ (`!a b n. (a MOD n + b MOD n) MOD n = (a + b) MOD n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN
   EXISTS_TAC `a DIV n + b DIV n` THEN REWRITE_TAC[RIGHT_ADD_DISTRIB] THEN
   ONCE_REWRITE_TAC[AC ADD_AC `(a + b) + (c + d) = (c + a) + (d + b)`] THEN
   BINOP_TAC THEN ASM_SIMP_TAC[DIVISION]);;
@@ -1371,9 +1423,10 @@ let DIV_REFL = prove
   INDUCT_TAC THEN REWRITE_TAC[LT_0]);;
 
 let MOD_LE = prove
- (`!m n. ~(n = 0) ==> m MOD n <= m`,
-  REPEAT GEN_TAC THEN
-  DISCH_THEN(fun th -> GEN_REWRITE_TAC RAND_CONV
+ (`!m n. m MOD n <= m`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_ZERO; LE_REFL] THEN FIRST_ASSUM
+  (fun th -> GEN_REWRITE_TAC RAND_CONV
    [MATCH_MP DIVISION th]) THEN
   ONCE_REWRITE_TAC[ADD_SYM] THEN REWRITE_TAC[LE_ADD]);;
 
@@ -1397,29 +1450,39 @@ let DIV_LE_EXCLUSION = prove
   REWRITE_TAC[GSYM ADD1; LT_SUC_LE]);;
 
 let DIV_EQ_EXCLUSION = prove
- (`b * c < (a + 1) * d /\ a * d < (c + 1) * b ==> (a DIV b = c DIV d)`,
+ (`!a b c d.
+        b * c < (a + 1) * d /\ a * d < (c + 1) * b ==> (a DIV b = c DIV d)`,
   REPEAT GEN_TAC THEN
   ASM_CASES_TAC `b = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES; LT] THEN
   ASM_CASES_TAC `d = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES; LT] THEN
   ASM_MESON_TAC[MULT_SYM; LE_ANTISYM; DIV_LE_EXCLUSION]);;
 
 let MULT_DIV_LE = prove
- (`!m n p. ~(p = 0) ==> m * (n DIV p) <= (m * n) DIV p`,
-  REPEAT GEN_TAC THEN SIMP_TAC[LE_RDIV_EQ] THEN
-  DISCH_THEN(MP_TAC o SPEC `n:num` o MATCH_MP DIVISION) THEN
+ (`!m n p. m * (n DIV p) <= (m * n) DIV p`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `p = 0` THEN
+  ASM_REWRITE_TAC[LE_REFL; DIV_ZERO; MULT_CLAUSES] THEN
+  ASM_SIMP_TAC[LE_RDIV_EQ] THEN
+  FIRST_ASSUM(MP_TAC o SPEC `n:num` o MATCH_MP DIVISION) THEN
   DISCH_THEN(fun th ->
     GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [CONJUNCT1 th]) THEN
   REWRITE_TAC[LEFT_ADD_DISTRIB] THEN REWRITE_TAC[MULT_AC; LE_ADD]);;
 
 let DIV_DIV = prove
- (`!m n p. ~(n * p = 0) ==> ((m DIV n) DIV p = m DIV (n * p))`,
+ (`!m n p. (m DIV n) DIV p = m DIV (n * p)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `p = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES; DIV_ZERO] THEN
+  ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[DIV_0; MULT_CLAUSES; DIV_ZERO] THEN
   REWRITE_TAC[MULT_EQ_0; DE_MORGAN_THM] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(MESON[LE_ANTISYM] `(!k. k <= m <=> k <= n) ==> m = n`) THEN
   ASM_SIMP_TAC[LE_RDIV_EQ; MULT_EQ_0; MULT_ASSOC]);;
 
 let DIV_MOD = prove
- (`!m n p. ~(n * p = 0) ==> ((m DIV n) MOD p = (m MOD (n * p)) DIV n)`,
-  REWRITE_TAC[MULT_EQ_0; DE_MORGAN_THM] THEN REPEAT STRIP_TAC THEN
+ (`!m n p. (m DIV n) MOD p = (m MOD (n * p)) DIV n`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `p = 0` THEN ASM_REWRITE_TAC[MOD_ZERO; MULT_CLAUSES] THEN
+  ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[MOD_0; MULT_CLAUSES; DIV_ZERO] THEN
   MATCH_MP_TAC(MESON[LE_ANTISYM] `(!k. k <= m <=> k <= n) ==> m = n`) THEN
   X_GEN_TAC `k:num` THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC `k + p * ((m DIV n) DIV p) <= (m DIV n)` THEN CONJ_TAC THENL

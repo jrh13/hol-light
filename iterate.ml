@@ -1399,21 +1399,17 @@ let NSUM_REFLECT = prove
 
 let MOD_NSUM_MOD = prove
  (`!f:A->num n s.
-        FINITE s /\ ~(n = 0)
-        ==> (nsum s f) MOD n = nsum s (\i. f(i) MOD n) MOD n`,
+        FINITE s ==> (nsum s f) MOD n = nsum s (\i. f(i) MOD n) MOD n`,
   GEN_TAC THEN GEN_TAC THEN
-  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[MOD_ZERO; ETA_AX] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN SIMP_TAC[NSUM_CLAUSES] THEN
-  REPEAT STRIP_TAC THEN
-  W(MP_TAC o PART_MATCH (rand o rand) MOD_ADD_MOD o lhand o snd) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
-  W(MP_TAC o PART_MATCH (rand o rand) MOD_ADD_MOD o rand o snd) THEN
-  ASM_SIMP_TAC[MOD_MOD_REFL]);;
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM MOD_ADD_MOD] THEN
+  ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[GSYM MOD_ADD_MOD] THEN
+  REWRITE_TAC[MOD_MOD_REFL]);;
 
 let MOD_NSUM_MOD_NUMSEG = prove
  (`!f a b n.
-        ~(n = 0)
-        ==> (nsum(a..b) f) MOD n = nsum(a..b) (\i. f i MOD n) MOD n`,
+        (nsum(a..b) f) MOD n = nsum(a..b) (\i. f i MOD n) MOD n`,
   MESON_TAC[MOD_NSUM_MOD; FINITE_NUMSEG]);;
 
 let th = prove

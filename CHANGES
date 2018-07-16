@@ -8,7 +8,99 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Wed 27th Jun 2017       Library/group.ml
+Sun 15th Jul 2018       arith.ml, iter.ml, Library/prime.ml, Library/pratt.ml, Library/pocklington.ml
+
+Added a few new DIV/MOD/congruence-related theorems as well as a "downward"
+induction variant:
+
+  CONG_DIV =
+    |- !m n a b.
+         ~(m = 0) /\ (a == m * b) (mod (m * n)) ==> (a DIV m == b) (mod n)
+
+  CONG_SOLVE_EQ =
+    |- !n a b. (?x. (a * x == b) (mod n)) <=> gcd (a,n) divides b
+
+  CONG_SOLVE_LT_EQ =
+    |- !n a b.
+         (?x. x < n /\ (a * x == b) (mod n)) <=>
+         ~(n = 0) /\ gcd (a,n) divides b
+
+  DIV_ZERO =
+    |- !n. n DIV 0 = 0
+
+  MOD_LE_TWICE =
+    |- !m n. 0 < m /\ m <= n ==> 2 * n MOD m <= n
+
+  MOD_ZERO =
+    |- !n. n MOD 0 = n
+
+  num_INDUCTION_DOWN =
+    |- !P m.
+         (!n. m <= n ==> P n) /\ (!n. n < m /\ P (n + 1) ==> P n)
+         ==> (!n. P n)
+
+Having called out that special case DIV_ZERO and MOD_ZERO, took the chance
+to streamline a lot of existing theorems, removing nonzeroness hypotheses
+completely from the following:
+
+        CONG
+        CONG_LMOD
+        CONG_MOD
+        CONG_RMOD
+        COPRIME_MOD
+        DIVIDES_MOD
+        DIVISION_SIMP
+        DIV_0
+        DIV_DIV
+        DIV_LE
+        DIV_MOD
+        MOD_0
+        MOD_ADD_MOD
+        MOD_EQ_0
+        MOD_EXP_MOD
+        MOD_LE
+        MOD_MOD
+        MOD_MOD_REFL
+        MOD_MULT
+        MOD_MULT2
+        MOD_MULT_CONG
+        MOD_MULT_LMOD
+        MOD_MULT_MOD2
+        MOD_MULT_RMOD
+        MOD_NSUM_MOD
+        MOD_NSUM_MOD_NUMSEG
+        MOD_REFL
+        MULT_DIV_LE
+
+sharpening the hypothesis of these
+
+        DIV_MULT2
+        DIV_MONO
+
+and indicdentally adding missing quantifiers to
+
+        DIV_EQ_EXCLUSION
+
+On the other hand simply removed DIVIDES_DIV which is now even more
+clearly subsumed by DIVIDES_MOD.
+
+Tue  3rd Jul 2018       Library/pocklington.ml
+
+Added one more uniqueness theorem for modulus based on congruences:
+
+  MOD_UNIQUE : thm =
+    |- !m n p. m MOD n = p <=> (n = 0 /\ m = p \/ p < n) /\ (m == p) (mod n)
+
+Mon  2nd Jul 2018       list.ml
+
+Added one more basic list lemma:
+
+  EL_MAP2 =
+    |- !f l m k.
+           k < LENGTH l /\ k < LENGTH m
+           ==> EL k (MAP2 f l m) = f (EL k l) (EL k m)
+
+Wed 27th Jun 2018       Library/group.ml
 
 Added one more basic homological algebra lemma (found in Dieck's "Algebraic
 Topology", 11.1.3), which is a bit of a mouthful but intuitively nice when
