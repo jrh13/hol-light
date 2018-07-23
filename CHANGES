@@ -8,6 +8,25 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 17th Jul 2018       sets.ml
+
+Added a handy rewrite for "pairwise" with a symmetric relation:
+
+  PAIRWISE_INSERT_SYMMETRIC =
+    |- !r x s.
+         (!y. y IN s ==> (r x y <=> r y x))
+         ==> (pairwise r (x INSERT s) <=>
+              (!y. y IN s /\ ~(y = x) ==> r x y) /\ pairwise r s)
+
+Mon 16th Jul 2018       Library/card.ml
+
+Added a theorem expressing a simple equivalent idiom for the intuitive "a set
+s has cardinality >= n" (finite or infinite), which is otherwise a bit of a
+mouthful when expressed as a case analysis (the rhs of this theorem):
+
+  NUMSEG_CARD_LE =
+   |- !s. 1..n <=_c s <=> FINITE s ==> n <= CARD s
+
 Sun 15th Jul 2018       arith.ml, iter.ml, Library/prime.ml, Library/pratt.ml, Library/pocklington.ml
 
 Added a few new DIV/MOD/congruence-related theorems as well as a "downward"

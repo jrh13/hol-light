@@ -3432,6 +3432,13 @@ let PAIRWISE_INSERT = prove
         pairwise r s`,
   REWRITE_TAC[pairwise; IN_INSERT] THEN MESON_TAC[]);;
 
+let PAIRWISE_INSERT_SYMMETRIC = prove
+ (`!r (x:A) s.
+        (!y. y IN s ==> (r x y <=> r y x))
+        ==> (pairwise r (x INSERT s) <=>
+             (!y. y IN s /\ ~(y = x) ==> r x y) /\ pairwise r s)`,
+  REWRITE_TAC[PAIRWISE_INSERT] THEN MESON_TAC[]);;
+
 let PAIRWISE_IMAGE = prove
  (`!r f. pairwise r (IMAGE f s) <=>
          pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s`,
