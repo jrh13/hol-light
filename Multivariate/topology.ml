@@ -116,6 +116,13 @@ let OPEN_IN_REFL = prove
  (`!s:real^N->bool. open_in (subtopology euclidean s) s`,
   REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_REFL; TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
 
+let SUBTOPOLOGY_EUCLIDEAN_EQ_DISCRETE_TOPOLOGY_FINITE = prove
+ (`!s:real^N->bool.
+        FINITE s ==> subtopology euclidean s = discrete_topology s`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY_FINITE THEN
+  ASM_REWRITE_TAC[T1_SPACE_EUCLIDEAN; TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Closed sets.                                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -11488,6 +11495,13 @@ let CONNECTED_CONNECTED_DIFF = prove
     MATCH_MP_TAC CONNECTED_COMPONENT_MONO THEN
     FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET) THEN SET_TAC[]]);;
 
+let CONNECTED_COMPONENT_FINITE = prove
+ (`!s x:real^N.
+        FINITE s ==> connected_component s x = if x IN s then {x} else {}`,
+  REWRITE_TAC[GSYM CONNECTED_COMPONENT_OF_EUCLIDEAN] THEN
+  SIMP_TAC[SUBTOPOLOGY_EUCLIDEAN_EQ_DISCRETE_TOPOLOGY_FINITE] THEN
+  REWRITE_TAC[CONNECTED_COMPONENT_OF_DISCRETE_TOPOLOGY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The set of connected components of a set.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -11501,6 +11515,15 @@ let EUCLIDEAN_CONNECTED_COMPONENTS_OF = prove
   REWRITE_TAC[connected_components_of; components] THEN
   REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
               CONNECTED_COMPONENT_OF_EUCLIDEAN]);;
+
+let PAIRWISE_SEPARATED_COMPONENTS = prove
+ (`!s:real^N->bool. pairwise (separated_in euclidean) (components s)`,
+  GEN_TAC THEN
+  MP_TAC(ISPEC `subtopology euclidean (s:real^N->bool)`
+        PAIRWISE_SEPARATED_CONNECTED_COMPONENTS_OF) THEN
+  REWRITE_TAC[EUCLIDEAN_CONNECTED_COMPONENTS_OF] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] PAIRWISE_IMP) THEN
+  SIMP_TAC[SEPARATED_IN_SUBTOPOLOGY]);;
 
 let COMPONENTS_TRANSLATION = prove
  (`!a s. components(IMAGE (\x. a + x) s) =
@@ -11875,6 +11898,19 @@ let COMPONENTS_INTERMEDIATE_SUBSET = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[IN_COMPONENTS; LEFT_AND_EXISTS_THM] THEN
   MESON_TAC[CONNECTED_COMPONENT_INTERMEDIATE_SUBSET; SUBSET;
             CONNECTED_COMPONENT_REFL; IN; CONNECTED_COMPONENT_SUBSET]);;
+
+let FINITE_COMPONENTS_FINITE = prove
+ (`!s:real^N->bool. FINITE s ==> FINITE(components s)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[GSYM EUCLIDEAN_CONNECTED_COMPONENTS_OF] THEN
+  MATCH_MP_TAC FINITE_CONNECTED_COMPONENTS_OF_FINITE THEN
+  ASM_REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);;
+
+let COMPONENTS_FINITE = prove
+ (`!s:real^N->bool. FINITE s ==> components s = {{x} | x IN s}`,
+  REWRITE_TAC[GSYM EUCLIDEAN_CONNECTED_COMPONENTS_OF] THEN
+  SIMP_TAC[SUBTOPOLOGY_EUCLIDEAN_EQ_DISCRETE_TOPOLOGY_FINITE] THEN
+  REWRITE_TAC[CONNECTED_COMPONENTS_OF_DISCRETE_TOPOLOGY]);;
 
 let COMPONENTS_INTER_COMPONENTS = prove
  (`!s t c d:real^N->bool.

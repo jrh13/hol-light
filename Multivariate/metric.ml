@@ -6782,6 +6782,51 @@ let PAIRWISE_SEPARATED_CONNECTED_COMPONENTS_OF = prove
   SIMP_TAC[CLOSED_IN_CONNECTED_COMPONENTS_OF; SEPARATED_IN_CLOSED_SETS] THEN
   REWRITE_TAC[GSYM pairwise; PAIRWISE_DISJOINT_CONNECTED_COMPONENTS_OF]);;
 
+let CARD_LE_CONNECTED_COMPONENTS_OF_TOPSPACE = prove
+ (`!top:A topology. connected_components_of top <=_c topspace top`,
+  GEN_TAC THEN MATCH_MP_TAC CARD_LE_RELATIONAL_FULL THEN
+  EXISTS_TAC `(IN):A->(A->bool)->bool` THEN CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP CONNECTED_COMPONENTS_OF_SUBSET) THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP NONEMPTY_CONNECTED_COMPONENTS_OF) THEN
+    SET_TAC[];
+    MESON_TAC[REWRITE_RULE[GSYM MEMBER_NOT_EMPTY; IN_INTER]
+                CONNECTED_COMPONENTS_OF_OVERLAP]]);;
+
+let FINITE_CONNECTED_COMPONENTS_OF_FINITE = prove
+ (`!top:A topology.
+        FINITE(topspace top) ==> FINITE(connected_components_of top)`,
+  GEN_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_FINITE) THEN
+  REWRITE_TAC[CARD_LE_CONNECTED_COMPONENTS_OF_TOPSPACE]);;
+
+let CONNECTED_COMPONENT_OF_UNIQUE = prove
+ (`!top c x:A.
+        x IN c /\ connected_in top c /\
+        (!c'. x IN c' /\ connected_in top c' ==> c' SUBSET c)
+        ==> connected_component_of top x = c`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE `R = s <=> !x. R x <=> x IN s`] THEN
+  REWRITE_TAC[connected_component_of] THEN ASM SET_TAC[]);;
+
+let CONNECTED_COMPONENT_OF_DISCRETE_TOPOLOGY = prove
+ (`!u x:A. connected_component_of (discrete_topology u) x =
+           if x IN u then {x} else {}`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[CONNECTED_COMPONENT_OF_EQ_EMPTY;
+                  TOPSPACE_DISCRETE_TOPOLOGY] THEN
+  MATCH_MP_TAC CONNECTED_COMPONENT_OF_UNIQUE THEN
+  ASM_REWRITE_TAC[CONNECTED_IN_DISCRETE_TOPOLOGY; IN_SING; SING_SUBSET] THEN
+  SET_TAC[]);;
+
+let CONNECTED_COMPONENTS_OF_DISCRETE_TOPOLOGY = prove
+ (`!u:A->bool.
+        connected_components_of (discrete_topology u) = {{x} | x IN u}`,
+  GEN_TAC THEN REWRITE_TAC[connected_components_of] THEN
+  REWRITE_TAC[TOPSPACE_DISCRETE_TOPOLOGY;
+              CONNECTED_COMPONENT_OF_DISCRETE_TOPOLOGY] THEN
+  SET_TAC[]);;
+
 let CARD_LE_CONNNECTED_COMPONENTS_CONNECTED_IN = prove
  (`!(top:A topology) u.
         (!c. c IN u ==> connected_in top c) /\
@@ -7664,6 +7709,34 @@ let T1_SPACE_CLOSED_IN_FINITE = prove
   GEN_REWRITE_TAC RAND_CONV [GSYM UNIONS_SINGS] THEN
   MATCH_MP_TAC CLOSED_IN_UNIONS THEN
   ASM_SIMP_TAC[SIMPLE_IMAGE; FORALL_IN_IMAGE; FINITE_IMAGE] THEN
+  ASM SET_TAC[]);;
+
+let CLOSURE_OF_SING = prove
+ (`!top a:A.
+        t1_space top
+        ==> top closure_of {a} = if a IN topspace top then {a} else {}`,
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THENL
+   [MATCH_MP_TAC CLOSURE_OF_CLOSED_IN THEN
+    ASM_MESON_TAC[T1_SPACE_CLOSED_IN_SING];
+    ONCE_REWRITE_TAC[CLOSURE_OF_RESTRICT] THEN
+    ASM_SIMP_TAC[SET_RULE `~(a IN s) ==> s INTER {a} = {}`] THEN
+    REWRITE_TAC[CLOSURE_OF_EMPTY]]);;
+
+let SEPARATED_IN_SING = prove
+ (`(!top s a:A.
+        t1_space top
+        ==> (separated_in top {a} s <=>
+             a IN topspace top /\ s SUBSET topspace top /\
+             ~(a IN top closure_of s))) /\
+   (!top s a:A.
+        t1_space top
+        ==> (separated_in top s {a} <=>
+             a IN topspace top /\ s SUBSET topspace top /\
+             ~(a IN top closure_of s)))`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[separated_in; CLOSURE_OF_SING] THEN
+  ASM_CASES_TAC `(a:A) IN topspace top` THEN ASM_REWRITE_TAC[] THEN
+  MP_TAC(ISPECL [`top:A topology`; `s:A->bool`] CLOSURE_OF_SUBSET) THEN
   ASM SET_TAC[]);;
 
 let T1_SPACE_OPEN_IN_DELETE = prove
@@ -13997,6 +14070,52 @@ let PATH_COMPONENTS_OF_OVERLAP = prove
         ==> (~(c INTER c' = {}) <=> c = c')`,
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; path_components_of] THEN
   SIMP_TAC[FORALL_IN_GSPEC; DISJOINT; PATH_COMPONENT_OF_NONOVERLAP]);;
+
+let CARD_LE_PATH_COMPONENTS_OF_TOPSPACE = prove
+ (`!top:A topology. path_components_of top <=_c topspace top`,
+  GEN_TAC THEN MATCH_MP_TAC CARD_LE_RELATIONAL_FULL THEN
+  EXISTS_TAC `(IN):A->(A->bool)->bool` THEN CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP PATH_COMPONENTS_OF_SUBSET) THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP NONEMPTY_PATH_COMPONENTS_OF) THEN
+    SET_TAC[];
+    MESON_TAC[REWRITE_RULE[GSYM MEMBER_NOT_EMPTY; IN_INTER]
+                PATH_COMPONENTS_OF_OVERLAP]]);;
+
+let FINITE_PATH_COMPONENTS_OF_FINITE = prove
+ (`!top:A topology.
+        FINITE(topspace top) ==> FINITE(path_components_of top)`,
+  GEN_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_FINITE) THEN
+  REWRITE_TAC[CARD_LE_PATH_COMPONENTS_OF_TOPSPACE]);;
+
+let PATH_COMPONENT_OF_UNIQUE = prove
+ (`!top c x:A.
+        x IN c /\ path_connected_in top c /\
+        (!c'. x IN c' /\ path_connected_in top c' ==> c' SUBSET c)
+        ==> path_component_of top x = c`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SET_RULE `R = s <=> !x. R x <=> x IN s`] THEN
+  REWRITE_TAC[PATH_COMPONENT_OF] THEN ASM SET_TAC[]);;
+
+let PATH_COMPONENT_OF_DISCRETE_TOPOLOGY = prove
+ (`!u x:A. path_component_of (discrete_topology u) x =
+           if x IN u then {x} else {}`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[PATH_COMPONENT_OF_EQ_EMPTY;
+                  TOPSPACE_DISCRETE_TOPOLOGY] THEN
+  MATCH_MP_TAC PATH_COMPONENT_OF_UNIQUE THEN
+  ASM_REWRITE_TAC[PATH_CONNECTED_IN_DISCRETE_TOPOLOGY;
+                  IN_SING; SING_SUBSET] THEN
+  SET_TAC[]);;
+
+let PATH_COMPONENTS_OF_DISCRETE_TOPOLOGY = prove
+ (`!u:A->bool.
+        path_components_of (discrete_topology u) = {{x} | x IN u}`,
+  GEN_TAC THEN REWRITE_TAC[path_components_of] THEN
+  REWRITE_TAC[TOPSPACE_DISCRETE_TOPOLOGY;
+              PATH_COMPONENT_OF_DISCRETE_TOPOLOGY] THEN
+  SET_TAC[]);;
 
 let HOMEOMORPHIC_MAP_PATH_COMPONENT_OF = prove
  (`!(f:A->B) top top' x.
