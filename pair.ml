@@ -304,9 +304,18 @@ let LAMBDA_PAIR_THM = prove
  (`!t. (\p. t p) = (\(x,y). t(x,y))`,
   REWRITE_TAC[FORALL_PAIR_THM; FUN_EQ_THM]);;
 
-let LAMBDA_PAIR = prove                                                        
+let LAMBDA_PAIR = prove
  (`!f:A->B->C. (\(x,y). f x y) = (\p. f (FST p) (SND p))`,
-  REWRITE_TAC[LAMBDA_PAIR_THM]);;      
+  REWRITE_TAC[LAMBDA_PAIR_THM]);;
+
+let LAMBDA_TRIPLE_THM = prove
+ (`!f:A#B#C->D. (\t. f t) = (\(x,y,z). f(x,y,z))`,
+  REWRITE_TAC[FORALL_PAIR_THM; FUN_EQ_THM]);;
+
+let LAMBDA_TRIPLE = prove
+ (`!f:A->B->C->D.
+   (\(x,y,z). f x y z) = (\t. f (FST t) (FST(SND t)) (SND(SND t)))`,
+  REWRITE_TAC[LAMBDA_TRIPLE_THM]);;
 
 let PAIRED_ETA_THM = prove
  (`(!f. (\(x,y). f (x,y)) = f) /\

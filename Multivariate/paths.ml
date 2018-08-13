@@ -18022,35 +18022,15 @@ let HOMOTOPIC_WITH_SUBSET_RIGHT = prove
 
 let HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT = prove
  (`!p f:real^N->real^P g h:real^M->real^N W X Y.
-        homotopic_with (\f. p(f o h))
-         (subtopology euclidean X,subtopology euclidean Y) f g /\
-        h continuous_on W /\ IMAGE h W SUBSET X
-        ==> homotopic_with p
-             (subtopology euclidean W,subtopology euclidean Y) (f o h) (g o h)`,
-  REPEAT GEN_TAC THEN
-  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; o_DEF; PCROSS] THEN
-  DISCH_THEN(X_CHOOSE_THEN `k:real^(1,N)finite_sum->real^P`
-    STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `\y:real^(1,M)finite_sum.
-                (k:real^(1,N)finite_sum->real^P)
-                (pastecart (fstcart y) (h(sndcart y)))` THEN
-  ASM_REWRITE_TAC[o_THM; FSTCART_PASTECART; SNDCART_PASTECART] THEN
-  CONJ_TAC THENL
-   [GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
-    MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN CONJ_TAC THENL
-     [MATCH_MP_TAC CONTINUOUS_ON_PASTECART THEN
-      SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_FSTCART] THEN
-      GEN_REWRITE_TAC LAND_CONV [GSYM o_DEF] THEN
-      MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
-      SIMP_TAC[LINEAR_CONTINUOUS_ON; LINEAR_SNDCART];
-      ALL_TAC] THEN
-    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE [IMP_CONJ]
-      CONTINUOUS_ON_SUBSET));
-    ALL_TAC] THEN
-  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
-  SIMP_TAC[IN_ELIM_PASTECART_THM; FSTCART_PASTECART; SNDCART_PASTECART] THEN
-  ASM SET_TAC[]);;
+      homotopic_with (\f. p(f o h))
+       (subtopology euclidean X,subtopology euclidean Y) f g /\
+      h continuous_on W /\ IMAGE h W SUBSET X
+      ==> homotopic_with p
+           (subtopology euclidean W,subtopology euclidean Y) (f o h) (g o h)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ_ALT] THEN STRIP_TAC THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+   HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_MAP_RIGHT) THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN2]);;
 
 let HOMOTOPIC_COMPOSE_CONTINUOUS_RIGHT = prove
  (`!f:real^N->real^P g h:real^M->real^N W X Y.
@@ -18065,23 +18045,15 @@ let HOMOTOPIC_COMPOSE_CONTINUOUS_RIGHT = prove
 
 let HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT = prove
  (`!p f:real^M->real^N g h:real^N->real^P X Y Z.
-        homotopic_with (\f. p(h o f))
-         (subtopology euclidean X,subtopology euclidean Y) f g /\
-        h continuous_on Y /\ IMAGE h Y SUBSET Z
-        ==> homotopic_with p
-             (subtopology euclidean X,subtopology euclidean Z) (h o f) (h o g)`,
-  REPEAT GEN_TAC THEN
-  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  REWRITE_TAC[HOMOTOPIC_WITH_EUCLIDEAN; o_DEF] THEN
-  DISCH_THEN(X_CHOOSE_THEN `k:real^(1,M)finite_sum->real^N`
-    STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `(h:real^N->real^P) o (k:real^(1,M)finite_sum->real^N)` THEN
-  ASM_REWRITE_TAC[o_THM] THEN CONJ_TAC THENL
-   [MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN ASM_REWRITE_TAC[] THEN
-    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE [IMP_CONJ]
-      CONTINUOUS_ON_SUBSET));
-    ALL_TAC] THEN
-  REWRITE_TAC[IMAGE_o] THEN ASM SET_TAC[]);;
+      homotopic_with (\f. p(h o f))
+       (subtopology euclidean X,subtopology euclidean Y) f g /\
+      h continuous_on Y /\ IMAGE h Y SUBSET Z
+      ==> homotopic_with p
+           (subtopology euclidean X,subtopology euclidean Z) (h o f) (h o g)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[IMP_CONJ_ALT] THEN STRIP_TAC THEN
+  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+   HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_MAP_LEFT) THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_EUCLIDEAN2]);;
 
 let HOMOTOPIC_COMPOSE_CONTINUOUS_LEFT = prove
  (`!f:real^M->real^N g h:real^N->real^P X Y Z.
@@ -29047,7 +29019,7 @@ let JORDAN_BROUWER_NONSEPARATION = prove
         2 <= dimindex(:N) /\
         s homeomorphic sphere(a,r) /\ t PSUBSET s
         ==> connected((:real^N) DIFF t)`,
-  REPEAT STRIP_TAC THEN 
+  REPEAT STRIP_TAC THEN
   MATCH_MP_TAC MINIMAL_SEPARATING_COMMON_COMPONENT_FRONTIER THEN
   EXISTS_TAC `s:real^N->bool` THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
    [DISCH_THEN SUBST_ALL_TAC THEN

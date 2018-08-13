@@ -8,6 +8,18 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 11th Aug 2018       pair.ml
+
+Added two more theorems that are morally consequences of the corresponding
+"PAIR" versions already there, but not literally so in the encoding and
+therefore useful to have sometimes:
+
+  LAMBDA_TRIPLE =
+    |- !f. (\(x,y,z). f x y z) = (\t. f (FST t) (FST (SND t)) (SND (SND t)))
+
+  LAMBDA_TRIPLE_THM =
+    |- !f. (\t. f t) = (\(x,y,z). f (x,y,z))
+
 Fri 27th Jul 2018       Library/card.ml
 
 Added some handy "cancellation" properties of cardinal addition
@@ -17,34 +29,34 @@ Added some handy "cancellation" properties of cardinal addition
     |- !s t u.
            (FINITE s \/ s <=_c t /\ s <=_c u) /\ s +_c t =_c s +_c u
            ==> t =_c u
-  
+
   CARD_EQ_ADD_LCANCEL_EQ =
     |- !s t u.
            FINITE s \/ s <=_c t /\ s <=_c u
            ==> (s +_c t =_c s +_c u <=> t =_c u)
-  
+
   CARD_EQ_ADD_RCANCEL =
     |- !s t u.
            (FINITE u \/ u <=_c s /\ u <=_c t) /\ s +_c u =_c t +_c u
            ==> s =_c t
-  
+
   CARD_EQ_ADD_RCANCEL_EQ =
     |- !s t u.
            FINITE u \/ u <=_c s /\ u <=_c t
            ==> (s +_c u =_c t +_c u <=> s =_c t)
-  
+
   CARD_LE_ADD_LCANCEL =
     |- !s t u. (FINITE s \/ s <=_c u) /\ s +_c t <=_c s +_c u ==> t <=_c u
-  
+
   CARD_LE_ADD_LCANCEL_EQ =
     |- !s t u. FINITE s \/ s <=_c u ==> (s +_c t <=_c s +_c u <=> t <=_c u)
-  
+
   CARD_LE_ADD_RCANCEL =
     |- !s t u. (FINITE u \/ u <=_c t) /\ s +_c u <=_c t +_c u ==> s <=_c t
-  
+
   CARD_LE_ADD_RCANCEL_EQ =
     |- !s t u. FINITE u \/ u <=_c t ==> (s +_c u <=_c t +_c u <=> s <=_c t)
-  
+
 Tue 17th Jul 2018       sets.ml
 
 Added a handy rewrite for "pairwise" with a symmetric relation:
