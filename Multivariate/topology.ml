@@ -223,14 +223,9 @@ let CLOSED_UNIONS = prove
 
 let CLOSED_LOCALLY_FINITE_UNIONS = prove
  (`!f:(real^N->bool)->bool.
-        (!s. s IN f ==> closed s) /\
-        (!x. ?u. open u /\ x IN u /\ FINITE {s | s IN f /\ ~(s INTER u = {})})
+        (!s. s IN f ==> closed s) /\ locally_finite_in euclidean f
         ==> closed(UNIONS f)`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`euclidean:(real^N)topology`; `f:(real^N->bool)->bool`]
-        CLOSED_IN_LOCALLY_FINITE_UNIONS) THEN
-  REWRITE_TAC[GSYM OPEN_IN; GSYM CLOSED_IN] THEN
-  ASM_REWRITE_TAC[IN_UNIV]);;
+  REWRITE_TAC[CLOSED_IN; CLOSED_IN_LOCALLY_FINITE_UNIONS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Componentwise, lifted and dropped limits and continuity.                  *)
@@ -2245,21 +2240,9 @@ let INTERIOR_COMPLEMENT = prove
 
 let CLOSURE_LOCALLY_FINITE_UNIONS = prove
  (`!f:(real^N->bool)->bool.
-        (!x. ?u. open u /\ x IN u /\ FINITE {s | s IN f /\ ~(s INTER u = {})})
+        locally_finite_in euclidean f
         ==> closure(UNIONS f) = UNIONS {closure s | s IN f}`,
-  REPEAT STRIP_TAC THEN
-  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; CLOSURE_UNIONS_SUBSET] THEN
-  MATCH_MP_TAC CLOSURE_MINIMAL THEN CONJ_TAC THENL
-   [MATCH_MP_TAC UNIONS_MONO THEN REWRITE_TAC[EXISTS_IN_GSPEC] THEN
-    MESON_TAC[CLOSURE_SUBSET];
-    MATCH_MP_TAC CLOSED_LOCALLY_FINITE_UNIONS THEN
-    REWRITE_TAC[FORALL_IN_GSPEC; CLOSED_CLOSURE] THEN
-    X_GEN_TAC `x:real^N` THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:real^N`) THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:real^N->bool` THEN
-    REWRITE_TAC[SET_RULE
-     `{y | y IN {f x | x IN s} /\ P y} = IMAGE f {x | x IN s /\ P(f x)}`] THEN
-    ONCE_REWRITE_TAC[INTER_COMM] THEN
-    SIMP_TAC[OPEN_INTER_CLOSURE_EQ_EMPTY; FINITE_IMAGE]]);;
+  REWRITE_TAC[GSYM EUCLIDEAN_CLOSURE_OF; CLOSURE_OF_LOCALLY_FINITE_UNIONS]);;
 
 let CONNECTED_INTERMEDIATE_CLOSURE = prove
  (`!s t:real^N->bool.

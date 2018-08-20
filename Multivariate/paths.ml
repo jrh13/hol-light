@@ -23536,60 +23536,8 @@ let (HOMEOMORPHIC_DIMENSION,DIMENSION_LE_EQ, LOCALLY_DIMENSION_LE,
           s homeomorphic t
           ==> (subtopology euclidean s dimension_le n <=>
                subtopology euclidean t dimension_le n)`,
-    let lemma = prove
-     (`!n s:real^M->bool t:real^N->bool.
-          s homeomorphic t /\ (subtopology euclidean s) dimension_le (&n - &1)
-          ==> (subtopology euclidean t) dimension_le (&n - &1)`,
-      INDUCT_TAC THENL
-       [CONV_TAC INT_REDUCE_CONV THEN
-        REWRITE_TAC[DIMENSION_LE_EQ_EMPTY; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
-        MESON_TAC[HOMEOMORPHIC_EMPTY];
-        REWRITE_TAC[GSYM INT_OF_NUM_SUC; INT_ARITH `(x + y) - y:int = x`]] THEN
-      MAP_EVERY X_GEN_TAC [`s:real^M->bool`; `t:real^N->bool`] THEN
-      DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-      ONCE_REWRITE_TAC[DIMENSION_LE_CASES] THEN
-      SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY; FRONTIER_OF_SUBSET_SUBTOPOLOGY;
-                 SET_RULE `t SUBSET s ==> s INTER t = t`] THEN
-      STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-      FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [homeomorphic]) THEN
-      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-      MAP_EVERY X_GEN_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
-      STRIP_TAC THEN
-      MAP_EVERY X_GEN_TAC [`v:real^N->bool`; `b:real^N`] THEN STRIP_TAC THEN
-      FIRST_X_ASSUM(MP_TAC o SPECL
-       [`IMAGE (g:real^N->real^M) v`; `(g:real^N->real^M) b`]) THEN
-      ANTS_TAC THENL
-       [CONJ_TAC THENL
-         [MATCH_MP_TAC HOMEOMORPHISM_IMP_OPEN_MAP THEN
-          ASM_MESON_TAC[HOMEOMORPHISM_SYM];
-          RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[]];
-        DISCH_THEN(X_CHOOSE_THEN `u:real^M->bool` STRIP_ASSUME_TAC)] THEN
-      EXISTS_TAC `IMAGE (f:real^M->real^N) u` THEN REPEAT CONJ_TAC THENL
-       [REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
-        RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[];
-        REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_IMP_SUBSET)) THEN
-        RULE_ASSUM_TAC(REWRITE_RULE[homeomorphism]) THEN ASM SET_TAC[];
-        MATCH_MP_TAC HOMEOMORPHISM_IMP_OPEN_MAP THEN
-        ASM_MESON_TAC[HOMEOMORPHISM_SYM];
-        FIRST_X_ASSUM MATCH_MP_TAC THEN
-        EXISTS_TAC `subtopology euclidean s frontier_of u:real^M->bool` THEN
-        ASM_REWRITE_TAC[homeomorphic] THEN
-        MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `g:real^N->real^M`] THEN
-        FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
-          HOMEOMORPHISM_OF_SUBSETS)) THEN
-        REWRITE_TAC[FRONTIER_OF_SUBSET_SUBTOPOLOGY] THEN
-        MATCH_MP_TAC HOMEOMORPHISM_FRONTIER_OF THEN
-        EXISTS_TAC `g:real^N->real^M` THEN
-        ASM_MESON_TAC[OPEN_IN_IMP_SUBSET]]) in
-    REPEAT STRIP_TAC THEN ASM_CASES_TAC `-- &1:int <= n` THENL
-     [ALL_TAC; ASM_MESON_TAC[DIMENSION_LE_BOUND]] THEN
-    SUBST1_TAC(INT_ARITH `n:int = (n + &1) - &1`) THEN
-    FIRST_X_ASSUM(MP_TAC o MATCH_MP
-     (INT_ARITH `--x:int <= y ==> &0 <= y + x`)) THEN
-    REWRITE_TAC[GSYM INT_OF_NUM_EXISTS; LEFT_IMP_EXISTS_THM] THEN
-    X_GEN_TAC `n:num` THEN DISCH_THEN SUBST1_TAC THEN
-    EQ_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] lemma) THEN
-    ASM_MESON_TAC[HOMEOMORPHIC_SYM]) in
+    REWRITE_TAC[GSYM HOMEOMORPHIC_SPACE_EUCLIDEAN] THEN
+    REWRITE_TAC[HOMEOMORPHIC_SPACE_DIMENSION_LE]) in
   let DIMENSION_LE_EQ' = prove
    (`!s:real^N->bool n.
           (subtopology euclidean s) dimension_le n <=>
