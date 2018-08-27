@@ -1014,8 +1014,22 @@ let CONVERGENT_BOUNDED_MONOTONE = prove
   ASM_MESON_TAC[REAL_ARITH `abs(x - --l) = abs(--x - l)`]);;
 
 (* ------------------------------------------------------------------------- *)
-(* A characterization of monotonicity.                                       *)
+(* Monotonic functions R->R.                                                 *)
 (* ------------------------------------------------------------------------- *)
+
+let STRICTLY_INCREASING_ALT = prove
+ (`!P f:real->real.
+        (!x y. P x /\ P y /\ x < y ==> f x < f y) <=>
+        (!x y. P x /\ P y /\ x <= y ==> f x <= f y) /\
+        (!x y. P x /\ P y /\ f x = f y ==> x = y)`,
+  METIS_TAC[REAL_LT_TOTAL; REAL_LE_LT; REAL_LT_ANTISYM]);;
+
+let STRICTLY_DECREASING_ALT = prove
+ (`!P f:real->real.
+        (!x y. P x /\ P y /\ x < y ==> f y < f x) <=>
+        (!x y. P x /\ P y /\ x <= y ==> f y <= f x) /\
+        (!x y. P x /\ P y /\ f x = f y ==> x = y)`,
+  METIS_TAC[REAL_LT_TOTAL; REAL_LE_LT; REAL_LT_ANTISYM]);;
 
 let REAL_NON_MONOTONE = prove
  (`!P f:real->real.

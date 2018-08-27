@@ -5886,14 +5886,10 @@ let COMPACT_SEQUENCE_WITH_LIMIT_GEN = prove
  (`!f l:real^N s.
         (f --> l) sequentially /\ s SUBSET IMAGE f (:num)
         ==> compact (l INSERT s)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[COMPACT_EQ_BOUNDED_CLOSED] THEN
-  REWRITE_TAC[BOUNDED_INSERT] THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[CONVERGENT_IMP_BOUNDED; BOUNDED_SUBSET];
-    SIMP_TAC[CLOSED_LIMPT; LIMPT_INSERT; IN_INSERT] THEN
-    REWRITE_TAC[IMAGE; IN_UNIV] THEN REPEAT STRIP_TAC THEN DISJ1_TAC THEN
-    MATCH_MP_TAC SEQUENCE_UNIQUE_LIMPT THEN
-    REWRITE_TAC[SET_RULE `{y | ?n. y = f n} = IMAGE f UNIV`] THEN
-    ASM_MESON_TAC[LIMPT_SUBSET]]);;
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM COMPACT_IN_EUCLIDEAN] THEN
+  MATCH_MP_TAC COMPACT_IN_SEQUENCE_WITH_LIMIT THEN
+  EXISTS_TAC `f:num->real^N` THEN
+  ASM_REWRITE_TAC[LIMIT_EUCLIDEAN; TOPSPACE_EUCLIDEAN; SUBSET_UNIV]);;
 
 let COMPACT_SEQUENCE_WITH_LIMIT = prove
  (`!f l:real^N.
@@ -8637,42 +8633,6 @@ let QUOTIENT_MAP_RESTRICT = prove
    MATCH_MP_TAC CONTINUOUS_CLOSED_IN_PREIMAGE_GEN ORELSE ASM_SIMP_TAC[]) THEN
   ASM SET_TAC[]);;
 
-let CONNECTED_MONOTONE_QUOTIENT_PREIMAGE = prove
- (`!f:real^M->real^N s t.
-      f continuous_on s /\ IMAGE f s = t /\
-      (!u. u SUBSET t
-           ==> (open_in (subtopology euclidean s) {x | x IN s /\ f x IN u} <=>
-                open_in (subtopology euclidean t) u)) /\
-      (!y. y IN t ==> connected {x | x IN s /\ f x = y}) /\
-      connected t
-      ==> connected s`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[connected; NOT_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`u:real^M->bool`; `v:real^M->bool`] THEN STRIP_TAC THEN
-  UNDISCH_TAC `connected(t:real^N->bool)` THEN SIMP_TAC[CONNECTED_OPEN_IN] THEN
-  MAP_EVERY EXISTS_TAC
-   [`IMAGE (f:real^M->real^N) (s INTER u)`;
-    `IMAGE (f:real^M->real^N) (s INTER v)`] THEN
-  ASM_REWRITE_TAC[IMAGE_EQ_EMPTY] THEN
-  SUBGOAL_THEN
-   `IMAGE (f:real^M->real^N) (s INTER u) INTER IMAGE f (s INTER v) = {}`
-  ASSUME_TAC THENL
-   [REWRITE_TAC[EXTENSION; IN_INTER; NOT_IN_EMPTY] THEN
-    X_GEN_TAC `y:real^N` THEN STRIP_TAC  THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `y:real^N`) THEN
-    ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[connected]] THEN
-    MAP_EVERY EXISTS_TAC [`u:real^M->bool`; `v:real^M->bool`] THEN
-    ASM SET_TAC[];
-    ALL_TAC] THEN
-  ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
-  CONJ_TAC THENL [CONJ_TAC; ASM SET_TAC[]] THEN
-  FIRST_X_ASSUM(fun th ->
-   W(MP_TAC o PART_MATCH (rand o rand) th o snd)) THEN
-  (ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)]) THEN
-  MATCH_MP_TAC(MESON[]
-   `{x | x IN s /\ f x IN IMAGE f u} = u /\ open_in top u
-    ==> open_in top {x | x IN s /\ f x IN IMAGE f u}`) THEN
-  ASM_SIMP_TAC[OPEN_IN_OPEN_INTER] THEN ASM SET_TAC[]);;
-
 let CONNECTED_MONOTONE_QUOTIENT_PREIMAGE_GEN = prove
  (`!f:real^M->real^N s t c.
       IMAGE f s = t /\
@@ -8684,25 +8644,30 @@ let CONNECTED_MONOTONE_QUOTIENT_PREIMAGE_GEN = prove
        closed_in (subtopology euclidean t) c) /\
       connected c
       ==> connected {x | x IN s /\ f x IN c}`,
-  REPEAT GEN_TAC THEN
-  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-  MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ]
-   (REWRITE_RULE[CONJ_ASSOC] CONNECTED_MONOTONE_QUOTIENT_PREIMAGE)) THEN
-  SUBGOAL_THEN `(c:real^N->bool) SUBSET t` ASSUME_TAC THENL
-   [ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; CLOSED_IN_IMP_SUBSET]; ALL_TAC] THEN
-  EXISTS_TAC `f:real^M->real^N` THEN REPEAT CONJ_TAC THENL
-   [FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
-      QUOTIENT_MAP_IMP_CONTINUOUS_OPEN)) THEN
-    ASM_REWRITE_TAC[SUBSET_REFL] THEN
-    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CONTINUOUS_ON_SUBSET) THEN
-    REWRITE_TAC[SUBSET_RESTRICT];
-    ASM SET_TAC[];
-    MATCH_MP_TAC QUOTIENT_MAP_RESTRICT THEN
-    ASM_MESON_TAC[SUBSET_REFL];
-    X_GEN_TAC `y:real^N` THEN DISCH_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `y:real^N`) THEN
-    ANTS_TAC THENL [ASM SET_TAC[]; MATCH_MP_TAC EQ_IMP] THEN
-    AP_TERM_TAC THEN ASM SET_TAC[]]);;
+  REPEAT GEN_TAC THEN DISCH_TAC THEN MP_TAC(ISPECL
+   [`subtopology euclidean (s:real^M->bool)`;
+    `subtopology euclidean (t:real^N->bool)`;
+    `f:real^M->real^N`; `c:real^N->bool`]
+    CONNECTED_IN_MONOTONE_QUOTIENT_MAP_PREIMAGE) THEN
+  ASM_REWRITE_TAC[monotone_map; quotient_map; CONNECTED_IN_SUBTOPOLOGY;
+                  CONNECTED_IN_EUCLIDEAN; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY;
+                  SUBSET_RESTRICT; SUBSET_REFL] THEN
+  ASM_MESON_TAC[OPEN_IN_IMP_SUBSET; CLOSED_IN_IMP_SUBSET]);;
+
+let CONNECTED_MONOTONE_QUOTIENT_PREIMAGE = prove
+ (`!f:real^M->real^N s t.
+      f continuous_on s /\ IMAGE f s = t /\
+      (!u. u SUBSET t
+           ==> (open_in (subtopology euclidean s) {x | x IN s /\ f x IN u} <=>
+                open_in (subtopology euclidean t) u)) /\
+      (!y. y IN t ==> connected {x | x IN s /\ f x = y}) /\
+      connected t
+      ==> connected s`,
+  MP_TAC CONNECTED_MONOTONE_QUOTIENT_PREIMAGE_GEN THEN
+  REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC(SPEC `t:real^N->bool` th)) THEN
+  ASM_REWRITE_TAC[OPEN_IN_REFL] THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More properties of open and closed maps.                                  *)
@@ -9030,25 +8995,14 @@ let CONNECTED_OPEN_MONOTONE_PREIMAGE = prove
         (!y. y IN t ==> connected {x | x IN s /\ f x = y})
         ==> !c. connected c /\ c SUBSET t
                 ==> connected {x | x IN s /\ f x IN c}`,
-  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o SPEC `c:real^N->bool` o MATCH_MP
-   (ONCE_REWRITE_RULE[IMP_CONJ] OPEN_MAP_RESTRICT)) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN MP_TAC(ISPECL
-   [`f:real^M->real^N`; `{x | x IN s /\ (f:real^M->real^N) x IN c}`]
-   OPEN_MAP_IMP_QUOTIENT_MAP) THEN
-  SUBGOAL_THEN `IMAGE f {x | x IN s /\ (f:real^M->real^N) x IN c} = c`
-  ASSUME_TAC THENL [ASM SET_TAC[]; ASM_REWRITE_TAC[]] THEN ANTS_TAC THENL
-   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-      CONTINUOUS_ON_SUBSET)) THEN SET_TAC[];
-    DISCH_TAC] THEN
-  MATCH_MP_TAC CONNECTED_MONOTONE_QUOTIENT_PREIMAGE THEN
-  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `c:real^N->bool`] THEN
-  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-      CONTINUOUS_ON_SUBSET)) THEN SET_TAC[];
-    SIMP_TAC[SET_RULE
-     `y IN c ==> {x | x IN {x | x IN s /\ f x IN c} /\ f x = y} =
-                 {x | x IN s /\ f x = y}`] THEN
-   ASM SET_TAC[]]);;
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`subtopology euclidean (s:real^M->bool)`;
+    `subtopology euclidean (t:real^N->bool)`; `f:real^M->real^N`]
+   MONOTONE_OPEN_MAP) THEN
+  ASM_REWRITE_TAC[open_map; monotone_map; CONTINUOUS_MAP_EUCLIDEAN2;
+    CONNECTED_IN_SUBTOPOLOGY; CONNECTED_IN_EUCLIDEAN;
+    TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; SUBSET_REFL; SUBSET_RESTRICT]);;
 
 let CONNECTED_CLOSED_MONOTONE_PREIMAGE = prove
  (`!f:real^M->real^N s t.
@@ -9058,25 +9012,14 @@ let CONNECTED_CLOSED_MONOTONE_PREIMAGE = prove
         (!y. y IN t ==> connected {x | x IN s /\ f x = y})
         ==> !c. connected c /\ c SUBSET t
                 ==> connected {x | x IN s /\ f x IN c}`,
-  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o SPEC `c:real^N->bool` o MATCH_MP
-   (ONCE_REWRITE_RULE[IMP_CONJ] CLOSED_MAP_RESTRICT)) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN MP_TAC(ISPECL
-   [`f:real^M->real^N`; `{x | x IN s /\ (f:real^M->real^N) x IN c}`]
-   CLOSED_MAP_IMP_QUOTIENT_MAP) THEN
-  SUBGOAL_THEN `IMAGE f {x | x IN s /\ (f:real^M->real^N) x IN c} = c`
-  ASSUME_TAC THENL [ASM SET_TAC[]; ASM_REWRITE_TAC[]] THEN ANTS_TAC THENL
-   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-      CONTINUOUS_ON_SUBSET)) THEN SET_TAC[];
-    DISCH_TAC] THEN
-  MATCH_MP_TAC CONNECTED_MONOTONE_QUOTIENT_PREIMAGE THEN
-  MAP_EVERY EXISTS_TAC [`f:real^M->real^N`; `c:real^N->bool`] THEN
-  ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
-      CONTINUOUS_ON_SUBSET)) THEN SET_TAC[];
-    SIMP_TAC[SET_RULE
-     `y IN c ==> {x | x IN {x | x IN s /\ f x IN c} /\ f x = y} =
-                 {x | x IN s /\ f x = y}`] THEN
-   ASM SET_TAC[]]);;
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`subtopology euclidean (s:real^M->bool)`;
+    `subtopology euclidean (t:real^N->bool)`; `f:real^M->real^N`]
+   MONOTONE_CLOSED_MAP) THEN
+  ASM_REWRITE_TAC[closed_map; monotone_map; CONTINUOUS_MAP_EUCLIDEAN2;
+    CONNECTED_IN_SUBTOPOLOGY; CONNECTED_IN_EUCLIDEAN;
+    TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; SUBSET_REFL; SUBSET_RESTRICT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Proper maps, including projections out of compact sets.                   *)
