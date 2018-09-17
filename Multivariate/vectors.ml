@@ -3786,6 +3786,20 @@ let FORALL_DROP_FUN = prove
  (`!P:(A->real)->bool. (!f. P f) <=> (!f. P(drop o f))`,
   REWRITE_TAC[FORALL_LIFT_FUN; o_DEF; LIFT_DROP; ETA_AX]);;
 
+let FORALL_FUN_LIFT = prove
+ (`!P:(real->A)->bool. (!f. P f) <=> (!f. P(f o lift))`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `f:real->A` THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `(f:real->A) o drop`) THEN
+  REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
+
+let FORALL_FUN_DROP = prove
+ (`!P:(real^1->A)->bool. (!f. P f) <=> (!f. P(f o drop))`,
+  GEN_TAC THEN EQ_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `f:real^1->A` THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `(f:real^1->A) o lift`) THEN
+  REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]);;
+
 let EXISTS_LIFT_FUN = prove
  (`!P:(A->real^1)->bool. (?f. P f) <=> (?f. P(lift o f))`,
   ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
@@ -3795,6 +3809,16 @@ let EXISTS_DROP_FUN = prove
  (`!P:(A->real)->bool. (?f. P f) <=> (?f. P(drop o f))`,
   ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
   REWRITE_TAC[FORALL_DROP_FUN]);;
+
+let EXISTS_FUN_LIFT = prove
+ (`!P:(real->A)->bool. (?f. P f) <=> (?f. P(f o lift))`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[FORALL_FUN_LIFT]);;
+
+let EXISTS_FUN_DROP = prove
+ (`!P:(real^1->A)->bool. (?f. P f) <=> (?f. P(f o drop))`,
+  GEN_TAC THEN ONCE_REWRITE_TAC[MESON[] `(?x. P x) <=> ~(!x. ~P x)`] THEN
+  REWRITE_TAC[FORALL_FUN_DROP]);;
 
 let LIFT_EQ = prove
  (`!x y. (lift x = lift y) <=> (x = y)`,

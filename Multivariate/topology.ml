@@ -321,6 +321,34 @@ let CONTINUOUS_MAP_DROP_EQ = prove
         continuous_map(euclidean,top) (f o drop)`,
   REWRITE_TAC[CONTINUOUS_MAP_LIFT_EQ; o_DEF; LIFT_DROP; ETA_AX]);;
 
+let CONTINUOUS_MAP_LIFT_EQ_GEN = prove
+ (`!top s (f:real^1->A).
+        continuous_map (subtopology euclidean s,top) f <=>
+        continuous_map (subtopology euclideanreal (IMAGE drop s),top)
+                       (f o lift)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+   [MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+    EXISTS_TAC `subtopology euclidean (s:real^1->bool)` THEN
+    ASM_SIMP_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_LIFT;
+                 CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+    REWRITE_TAC[SUBSET; TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; LIFT_DROP];
+    SUBGOAL_THEN `f:real^1->A = (f o lift) o drop` SUBST1_TAC THENL
+     [REWRITE_TAC[o_DEF; LIFT_DROP; ETA_AX]; ALL_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+    EXISTS_TAC `subtopology euclideanreal (IMAGE drop (s:real^1->bool))` THEN
+    ASM_SIMP_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_DROP;
+                 CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+    REWRITE_TAC[SUBSET; TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE; LIFT_DROP]]);;
+
+let CONTINUOUS_MAP_DROP_EQ_GEN = prove
+ (`!top s (f:real->A).
+        continuous_map(subtopology euclideanreal s,top) f <=>
+        continuous_map(subtopology euclidean (IMAGE lift s),top) (f o drop)`,
+  REWRITE_TAC[CONTINUOUS_MAP_LIFT_EQ_GEN; o_DEF; LIFT_DROP; ETA_AX;
+              GSYM IMAGE_o; IMAGE_ID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic combining theorems for vector-valued continuous maps.          *)
 (* ------------------------------------------------------------------------- *)
@@ -1215,6 +1243,14 @@ let CONNECTED_IN_EUCLIDEAN = prove
  (`!s:real^N->bool. connected_in euclidean s <=> connected s`,
   REWRITE_TAC[CONNECTED_IN; connected] THEN
   REWRITE_TAC[TOPSPACE_EUCLIDEAN; GSYM OPEN_IN; SUBSET_UNIV; INTER_UNIV]);;
+
+let CONNECTED_SPACE_EUCLIDEAN_SUBTOPOLOGY = prove
+ (`!s:real^N->bool.
+       connected_space(subtopology euclidean s) <=> connected s`,
+  REWRITE_TAC[GSYM CONNECTED_IN_TOPSPACE] THEN
+  REWRITE_TAC[CONNECTED_IN_SUBTOPOLOGY] THEN
+  REWRITE_TAC[CONNECTED_IN_EUCLIDEAN] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY; SUBSET_REFL]);;
 
 let CONNECTED_CLOSED = prove
  (`!s:real^N->bool.
@@ -14974,6 +15010,13 @@ let IS_INTERVAL_1_CLAUSES = prove
    (!a b. is_interval {x | a <= drop x /\ drop x <= b})`,
   REWRITE_TAC[IS_INTERVAL_1; IN_ELIM_THM; IN_UNIV; NOT_IN_EMPTY] THEN
   REAL_ARITH_TAC);;
+
+let IS_REALINTERVAL_IS_INTERVAL = prove
+ (`!s. is_realinterval s <=> is_interval(IMAGE lift s)`,
+  REWRITE_TAC[IS_INTERVAL_1; is_realinterval] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[LIFT_DROP; IN_IMAGE; EXISTS_DROP; UNWIND_THM1] THEN
+  REWRITE_TAC[GSYM FORALL_DROP]);;
 
 let IS_INTERVAL_PCROSS = prove
  (`!s:real^M->bool t:real^N->bool.
