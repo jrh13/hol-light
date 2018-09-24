@@ -2726,6 +2726,12 @@ let cartesian_product = new_definition
  `cartesian_product k s =
         {f:K->A | EXTENSIONAL k f /\ !i. i IN k ==> f i IN s i}`;;
 
+let IN_CARTESIAN_PRODUCT = prove
+ (`!k s (x:K->A).
+        x IN cartesian_product k s <=>
+        EXTENSIONAL k x /\ (!i. i IN k ==> x i IN s i)`,
+  REWRITE_TAC[cartesian_product; IN_ELIM_THM]);;
+
 let CARTESIAN_PRODUCT = prove
  (`!k s. cartesian_product k s =
          {f:K->A | !i. f i IN (if i IN k then s i else {ARB})}`,
@@ -2892,6 +2898,31 @@ let FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ = prove
         ==> ((!i x. i IN k /\ x IN s i ==> P i x) <=>
              !z i. z IN cartesian_product k s /\ i IN k ==> P i (z i))`,
   SIMP_TAC[FORALL_CARTESIAN_PRODUCT_ELEMENTS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Product of a family of maps.                                              *)
+(* ------------------------------------------------------------------------- *)
+
+let product_map = new_definition
+ `product_map k (f:K->A->B) = \x. RESTRICTION k (\i. f i (x i))`;;
+
+let PRODUCT_MAP_RESTRICTION = prove
+ (`!(f:K->A->B) k x.
+        product_map k f (RESTRICTION k x) = RESTRICTION k (\i. f i (x i))`,
+  SIMP_TAC[product_map; RESTRICTION; o_THM; FUN_EQ_THM]);;
+
+let IMAGE_PRODUCT_MAP = prove
+ (`!(f:K->A->B) k s.
+        IMAGE (product_map k f) (cartesian_product k s) =
+        cartesian_product k (\i. IMAGE (f i) (s i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CARTESIAN_PRODUCT_AS_RESTRICTIONS] THEN
+  ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  REWRITE_TAC[product_map; GSYM IMAGE_o; o_DEF] THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `g:K->B` THEN
+  REWRITE_TAC[IN_IMAGE; RESTRICTION; IN_ELIM_THM] THEN
+  EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[RESTRICTION_EXTENSION] THEN
+  ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)

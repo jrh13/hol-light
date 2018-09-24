@@ -8,6 +8,33 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 23rd Sep 2018       sets.ml
+
+Added one trivial theorem, occasionally useful to avoid disturbing the
+"cartesian_product" construct:
+
+  IN_CARTESIAN_PRODUCT =
+    |-!k s x.
+        x IN cartesian_product k s <=>
+        EXTENSIONAL k x /\ (!i. i IN k ==> x i IN s i)
+
+Sun 23rd Sep 2018       sets.ml
+
+Added a definition of the product of a family of maps in the setting of
+"cartesian_product", with two basic theorems:
+
+  product_map =
+    |- !k f. product_map k f = (\x. RESTRICTION k (\i. f i (x i)))
+
+  IMAGE_PRODUCT_MAP =
+    |- !f k s.
+           IMAGE (product_map k f) (cartesian_product k s) =
+           cartesian_product k (\i. IMAGE (f i) (s i))
+
+  PRODUCT_MAP_RESTRICTION =
+    |- !f k x.
+           product_map k f (RESTRICTION k x) = RESTRICTION k (\i. f i (x i))
+
 Sat 11th Aug 2018       pair.ml
 
 Added two more theorems that are morally consequences of the corresponding
