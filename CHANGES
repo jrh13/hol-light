@@ -8,6 +8,26 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 20th Oct 2018       Geometric_Algebra [new directory]
+
+Added a new contribution from Liming Li, Zhiping Shi, Yong Guan, Guohui Wang
+and Sha Ma, from Capital Normal University, Beijing. This is a theory of 
+geometric algebra with a multivector structure (P,Q,R)multivector for
+formulating any geometric algebra G(P,Q,R) with positive definite, negative
+definite and zero quadratic forms.
+
+Fri 19th Oct 2018       Library/rstc.ml, Help/*
+
+Made a small change from Marco Maggesi to the proof of TC_CLOSED to remove
+warnings, as well as fixing a few documentation issues he pointed out.
+
+Fri 19th Oct 2018       Library/card.ml
+
+Added one trivial cardinal theorem where the FINITE analog is already there:
+
+COUNTABLE_DIFF =
+  |- !s t. COUNTABLE s ==> COUNTABLE (s DIFF t)
+
 Sun 23rd Sep 2018       sets.ml
 
 Added one trivial theorem, occasionally useful to avoid disturbing the

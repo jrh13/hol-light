@@ -34,7 +34,7 @@ A toplevel equivalence {p <=> q} is converted to {(p \/ ~q) /\ (~p \/ q)}. In
 general this ``splitting'' of equivalences is done with the expectation that
 the final formula may be put into conjunctive normal form (CNF), as a prelude
 to a proof (rather than refutation) procedure. An otherwise similar conversion
-{NNC_CONV} prefers a `disjunctive' splitting and is better suited for a term
+{NNF_CONV} prefers a `disjunctive' splitting and is better suited for a term
 that will later be translated to DNF for refutation.
 
 \SEEALSO

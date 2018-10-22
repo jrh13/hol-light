@@ -40,6 +40,6 @@ difference with that function
 }
 
 \SEEALSO
-INST_TYPE, INST_TY_TERM, MATCH_MP, PART_MATCH, REWR_CONV, term_match.
+INST_TYPE, MATCH_MP, PART_MATCH, REWR_CONV, term_match.
 
 \ENDDOC

@@ -383,6 +383,13 @@ let OPEN_IN_SUBTOPOLOGY = prove
   SIMP_TAC[REWRITE_RULE[CONJUNCT2 topology_tybij] ISTOPOLOGY_SUBTOPOLOGY] THEN
   REWRITE_TAC[EXTENSION; IN_ELIM_THM]);;
 
+let TOPOLOGY_FINER_SUBTOPOLOGY = prove
+ (`!top top' (u:A->bool).
+        (!s. open_in top s ==> open_in top' s)
+        ==> (!s. open_in (subtopology top u) s
+                 ==> open_in (subtopology top' u) s)`,
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY] THEN MESON_TAC[]);;
+
 let OPEN_IN_SUBSET_TOPSPACE = prove
  (`!top s t:A->bool.
         open_in top s /\ s SUBSET t ==> open_in (subtopology top t) s`,
@@ -2142,6 +2149,14 @@ let CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE = prove
 let CONTINUOUS_MAP_ON_EMPTY = prove
  (`!top top' (f:A->B). topspace top = {} ==> continuous_map(top,top') f`,
   SIMP_TAC[continuous_map; NOT_IN_EMPTY; EMPTY_GSPEC; OPEN_IN_EMPTY]);;
+
+let CONTINUOUS_MAP_INTO_EMPTY = prove
+ (`!top top' (f:A->B).
+        topspace top' = {}
+        ==> (continuous_map(top,top') f <=> topspace top = {})`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_ON_EMPTY] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE) THEN
+  ASM SET_TAC[]);;
 
 let CONTINUOUS_MAP_CLOSED_IN = prove
  (`!top top' f:A->B.
@@ -5235,6 +5250,12 @@ let HOMEOMORPHIC_SPACE_PROD_TOPOLOGY = prove
    `(p <=> q \/ r) ==> (r ==> p)`) (SPEC_ALL HOMEOMORPHIC_MAPS_PROD))) THEN
   MESON_TAC[]);;
 
+let HOMEOMORPHIC_SPACE_PROD_TOPOLOGY_SWAP = prove
+ (`!(top:A topology) (top':B topology).
+        (prod_topology top top') homeomorphic_space (prod_topology top' top)`,
+  REWRITE_TAC[homeomorphic_space] THEN
+  MESON_TAC[HOMEOMORPHIC_MAPS_SWAP]);;
+
 let HOMEOMORPHIC_SPACE_SINGLETON_PRODUCT = prove
  (`!(tops:K->A topology) k.
         product_topology {k} tops homeomorphic_space (tops k)`,
@@ -5831,6 +5852,13 @@ let COMPACT_IN_CONTRACTIVE = prove
   REPEAT GEN_TAC THEN STRIP_TAC THEN GEN_TAC THEN
   REWRITE_TAC[compact_in] THEN MATCH_MP_TAC MONO_AND THEN CONJ_TAC THENL
    [ASM SET_TAC[]; MATCH_MP_TAC MONO_FORALL THEN ASM SET_TAC[]]);;
+
+let COMPACT_SPACE_CONTRACTIVE = prove
+ (`!top top':A topology.
+        topspace top' = topspace top /\
+        (!u. open_in top u ==> open_in top' u)
+        ==> compact_space top' ==> compact_space top`,
+  SIMP_TAC[compact_space] THEN MESON_TAC[COMPACT_IN_CONTRACTIVE]);;
 
 let FINITE_IMP_COMPACT_IN = prove
  (`!top s:A->bool. s SUBSET topspace top /\ FINITE s ==> compact_in top s`,
@@ -7020,6 +7048,12 @@ let t1_space = new_definition
   !x y. x IN topspace top /\ y IN topspace top /\ ~(x = y)
         ==> ?u. open_in top u /\ x IN u /\ ~(y IN u)`;;
 
+let T1_SPACE_EXPANSIVE = prove
+ (`!top top':A topology.
+         topspace top' = topspace top /\ (!u. open_in top u ==> open_in top' u)
+         ==> t1_space top ==> t1_space top'`,
+  REWRITE_TAC[t1_space] THEN METIS_TAC[]);;
+
 let T1_SPACE_ALT = prove
  (`!top:A topology.
         t1_space top <=>
@@ -7303,6 +7337,10 @@ let HAUSDORFF_SPACE_EXPANSIVE = prove
          topspace top' = topspace top /\ (!u. open_in top u ==> open_in top' u)
          ==> hausdorff_space top ==> hausdorff_space top'`,
   REWRITE_TAC[hausdorff_space] THEN METIS_TAC[]);;
+
+let HAUSDORFF_SPACE_TOPSPACE_EMPTY = prove
+ (`!top:A topology. topspace top = {} ==> hausdorff_space top`,
+  SIMP_TAC[hausdorff_space; NOT_IN_EMPTY]);;
 
 let HAUSDORFF_IMP_T1_SPACE = prove
  (`!top:A topology. hausdorff_space top ==> t1_space top`,
@@ -7974,6 +8012,13 @@ let CLOSED_MAP_PAIRED_CONTINUOUS_MAP_LEFT = prove
 let kc_space = new_definition
  `kc_space (top:A topology) <=> !s. compact_in top s ==> closed_in top s`;;
 
+let KC_SPACE_EXPANSIVE = prove
+ (`!top top':A topology.
+         topspace top' = topspace top /\ (!u. open_in top u ==> open_in top' u)
+         ==> kc_space top ==> kc_space top'`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[kc_space] THEN
+  ASM_MESON_TAC[TOPOLOGY_FINER_CLOSED_IN; COMPACT_IN_CONTRACTIVE]);;
+
 let COMPACT_IN_IMP_CLOSED_IN_GEN = prove
  (`!top s:A->bool. kc_space top /\ compact_in top s ==> closed_in top s`,
   SIMP_TAC[kc_space]);;
@@ -8187,6 +8232,87 @@ let KC_SPACE_PROD_TOPOLOGY_ALT = prove
   REWRITE_TAC[KC_SPACE_PROD_TOPOLOGY] THEN
   ONCE_REWRITE_TAC[KC_SPACE_COMPACT_SUBTOPOLOGIES] THEN
   MESON_TAC[HAUSDORFF_IMP_KC_SPACE]);;
+
+let KC_SPACE_PROD_TOPOLOGY_LEFT = prove
+ (`!(top:A topology) (top':B topology).
+        kc_space top /\ hausdorff_space top'
+        ==> kc_space (prod_topology top top')`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[kc_space] THEN
+  X_GEN_TAC `k:A#B->bool` THEN DISCH_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP COMPACT_IN_SUBSET_TOPSPACE) THEN
+  ASM_REWRITE_TAC[closed_in] THEN
+  GEN_REWRITE_TAC I [OPEN_IN_SUBOPEN] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; IN_DIFF; IN_CROSS; TOPSPACE_PROD_TOPOLOGY] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `b:B`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o
+    SPECL [`{b:B}`; `{y | y IN topspace top' /\ (a,y) IN (k:A#B->bool)}`] o
+    MATCH_MP (ONCE_REWRITE_RULE [IMP_CONJ]
+     HAUSDORFF_SPACE_COMPACT_SEPARATION)) THEN
+  ASM_REWRITE_TAC[COMPACT_IN_SING] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    REWRITE_TAC[COMPACT_IN_SUBSPACE; SUBSET_RESTRICT] THEN
+    MP_TAC(ISPECL [`prod_topology top top':(A#B)topology`;
+                   `k:A#B->bool`; `{a:A} CROSS (topspace top':B->bool)`]
+        COMPACT_INTER_CLOSED_IN) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [REWRITE_TAC[CLOSED_IN_CROSS; CLOSED_IN_TOPSPACE] THEN
+      ASM_MESON_TAC[T1_SPACE_CLOSED_IN_SING; KC_IMP_T1_SPACE];
+      REWRITE_TAC[COMPACT_IN_SUBSPACE] THEN
+      DISCH_THEN(MP_TAC o CONJUNCT2) THEN MATCH_MP_TAC EQ_IMP] THEN
+    MATCH_MP_TAC HOMEOMORPHIC_COMPACT_SPACE THEN
+    REWRITE_TAC[homeomorphic_space; homeomorphic_maps] THEN
+    MAP_EVERY EXISTS_TAC [`SND:A#B->B`; `(\x. (a,x)):B->A#B`] THEN
+    REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+    SIMP_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY; CONTINUOUS_MAP_SND;
+       CONTINUOUS_MAP_PAIRED; CONTINUOUS_MAP_ID; CONTINUOUS_MAP_CONST] THEN
+    ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_PAIR_THM] THEN
+    REWRITE_TAC[TOPSPACE_SUBTOPOLOGY; IN_INTER; IN_CROSS;
+                TOPSPACE_PROD_TOPOLOGY; IN_SING] THEN
+    SIMP_TAC[IN_ELIM_THM] THEN MESON_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `v:B->bool` MP_TAC)] THEN
+  REWRITE_TAC[RIGHT_EXISTS_AND_THM; IMP_CONJ] THEN DISCH_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [EXISTS_OPEN_IN] THEN
+  DISCH_THEN(X_CHOOSE_THEN `v':B->bool` MP_TAC) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP CLOSED_IN_SUBSET) THEN
+  REWRITE_TAC[SING_SUBSET; SUBSET_RESTRICT; SET_RULE
+    `s SUBSET t DIFF u <=> s SUBSET t /\ DISJOINT s u`] THEN
+  ASM_SIMP_TAC[SET_RULE
+   `v SUBSET u ==> (DISJOINT v (u DIFF v') <=> v SUBSET v')`] THEN
+  STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [kc_space]) THEN
+  ABBREV_TAC
+   `c = IMAGE FST (k INTER {z:A#B | z IN topspace(prod_topology top top') /\
+                                    SND z IN v'})` THEN
+  DISCH_THEN(MP_TAC o SPEC `c:A->bool`) THEN ANTS_TAC THENL
+   [EXPAND_TAC "c" THEN MATCH_MP_TAC IMAGE_COMPACT_IN THEN
+    EXISTS_TAC `prod_topology top top':(A#B)topology` THEN
+    REWRITE_TAC[CONTINUOUS_MAP_FST] THEN
+    MATCH_MP_TAC COMPACT_INTER_CLOSED_IN THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC CLOSED_IN_CONTINUOUS_MAP_PREIMAGE THEN
+    EXISTS_TAC `top':B topology` THEN ASM_REWRITE_TAC[CONTINUOUS_MAP_SND];
+    DISCH_TAC] THEN
+  EXISTS_TAC `(topspace top DIFF c:A->bool) CROSS (v:B->bool)` THEN
+  ASM_SIMP_TAC[OPEN_IN_CROSS; OPEN_IN_DIFF; OPEN_IN_TOPSPACE] THEN
+  ASM_REWRITE_TAC[IN_CROSS; IN_DIFF] THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ o rev) THEN
+  REWRITE_TAC[DISJOINT] THEN ONCE_REWRITE_TAC[EXTENSION] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; SUBSET; IN_IMAGE; EXISTS_PAIR_THM] THEN
+  REWRITE_TAC[IN_INTER; IN_ELIM_PAIR_THM; IN_CROSS; IN_DIFF;
+              TOPSPACE_PROD_TOPOLOGY; NOT_IN_EMPTY] THEN
+  SET_TAC[]);;
+
+let KC_SPACE_PROD_TOPOLOGY_RIGHT = prove
+ (`!(top:A topology) (top':B topology).
+        hausdorff_space top /\ kc_space top'
+        ==> kc_space (prod_topology top top')`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`top':B topology`; `top:A topology`]
+        KC_SPACE_PROD_TOPOLOGY_LEFT) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  MATCH_MP_TAC HOMEOMORPHIC_KC_SPACE THEN
+  REWRITE_TAC[HOMEOMORPHIC_SPACE_PROD_TOPOLOGY_SWAP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Proper maps (not a priori assumed continuous)                             *)
@@ -12474,6 +12600,12 @@ let t0_space = new_definition
  `t0_space (top:A topology) <=>
         !x y. x IN topspace top /\ y IN topspace top /\ ~(x = y)
               ==> ?u. open_in top u /\ ~(x IN u <=> y IN u)`;;
+
+let T0_SPACE_EXPANSIVE = prove
+ (`!top top':A topology.
+         topspace top' = topspace top /\ (!u. open_in top u ==> open_in top' u)
+         ==> t0_space top ==> t0_space top'`,
+  REWRITE_TAC[t0_space] THEN METIS_TAC[]);;
 
 let T1_IMP_T0_SPACE = prove
  (`!top:A topology. t1_space top ==> t0_space top`,
@@ -22159,6 +22291,22 @@ let QUOTIENT_MAP_INTO_K_SPACE = prove
     {x | x IN topspace top /\ f x IN k} INTER
     {x | x IN topspace top /\ f x IN c}`] THEN
   ASM_SIMP_TAC[CLOSED_IN_SUBTOPOLOGY_INTER_CLOSED]);;
+
+let QUOTIENT_MAP_INTO_K_SPACE_EQ = prove
+ (`!top top' (f:A->B).
+        k_space top' /\ kc_space top'
+        ==> (quotient_map(top,top') f <=>
+             continuous_map(top,top') f /\
+             IMAGE f (topspace top) = topspace top' /\
+             !k. compact_in top' k
+                  ==> quotient_map
+                       (subtopology top {x | x IN topspace top /\ f x IN k},
+                        subtopology top' k) f)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [ASM_SIMP_TAC[QUOTIENT_IMP_SURJECTIVE_MAP; QUOTIENT_IMP_CONTINUOUS_MAP] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC QUOTIENT_MAP_RESTRICTION THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[kc_space]) THEN ASM_SIMP_TAC[];
+    MATCH_MP_TAC QUOTIENT_MAP_INTO_K_SPACE THEN ASM_REWRITE_TAC[]]);;
 
 let OPEN_MAP_INTO_K_SPACE_EQ = prove
  (`!top top' (f:A->B).

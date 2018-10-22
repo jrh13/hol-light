@@ -63,6 +63,6 @@ is not quite a higher-order pattern in the usual sense, consider the theorem:
 }
 
 \SEEALSO
-GEN_PART_MATCH, INST_TYPE, INST_TY_TERM, MATCH_MP, REWR_CONV, term_match.
+GEN_PART_MATCH, INST_TYPE, MATCH_MP, REWR_CONV, term_match.
 
 \ENDDOC
