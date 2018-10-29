@@ -841,6 +841,12 @@ let HEREDITARILY_INC = prove
  (`!P:A topology->bool. hereditarily P top ==> P top`,
   REWRITE_TAC[HEREDITARILY] THEN MESON_TAC[SUBTOPOLOGY_TOPSPACE]);;
 
+let HEREDITARILY_SUBTOPOLOGY = prove
+ (`!P top s:A->bool.
+        hereditarily P top ==> hereditarily P (subtopology top s)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[HEREDITARILY] THEN
+  SIMP_TAC[SUBTOPOLOGY_SUBTOPOLOGY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Derived set (set of limit points).                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -2307,6 +2313,48 @@ let CONTINUOUS_MAP_EQ_CLOSURE_PREIMAGE_SUBSET,
   FIRST_X_ASSUM(MP_TAC o SPEC `t:B->bool`) THEN
   ASM_SIMP_TAC[CLOSURE_OF_CLOSED_IN; CLOSED_IN_SUBSET] THEN
   SIMP_TAC[GSYM CLOSURE_OF_SUBSET_EQ; SUBSET_RESTRICT]);;
+
+let CONTINUOUS_MAP_INTERIOR_PREIMAGE_SUBSET = prove
+ (`!top top' (f:A->B) t.
+        continuous_map (top,top') f
+        ==> {x | x IN topspace top /\ f x IN top' interior_of t} SUBSET
+            top interior_of {x | x IN topspace top /\ f x IN t}`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE) THEN
+  FIRST_ASSUM(MP_TAC o SPEC `topspace top' DIFF (t:B->bool)` o
+    MATCH_MP CONTINUOUS_MAP_CLOSURE_PREIMAGE_SUBSET) THEN
+  ASM_SIMP_TAC[INTERIOR_OF_CLOSURE_OF; SET_RULE
+   `IMAGE f t SUBSET u
+        ==> {x | x IN t /\ f x IN u DIFF v} =
+            t DIFF {x | x IN t /\ f x IN v}`] THEN
+  SET_TAC[]);;
+
+let CONTINUOUS_MAP_EQ_INTERIOR_PREIMAGE_SUBSET,
+    CONTINUOUS_MAP_EQ_INTERIOR_PREIMAGE_SUBSET_ALT = (CONJ_PAIR o prove)
+ (`(!top top' f:A->B.
+        continuous_map (top,top') f <=>
+        IMAGE f (topspace top) SUBSET topspace top' /\
+        !t. {x | x IN topspace top /\ f x IN top' interior_of t} SUBSET
+            top interior_of {x | x IN topspace top /\ f x IN t}) /\
+   (!top top' f:A->B.
+        continuous_map (top,top') f <=>
+        IMAGE f (topspace top) SUBSET topspace top' /\
+        !t. t SUBSET topspace top'
+            ==> {x | x IN topspace top /\ f x IN top' interior_of t} SUBSET
+                top interior_of {x | x IN topspace top /\ f x IN t})`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN MATCH_MP_TAC(TAUT
+   `(p ==> q) /\ (q ==> r) /\ (r ==> p) ==> (p <=> q) /\ (p <=> r)`) THEN
+  SIMP_TAC[CONTINUOUS_MAP_INTERIOR_PREIMAGE_SUBSET;
+           CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE] THEN
+  STRIP_TAC THEN
+  ASM_REWRITE_TAC[CONTINUOUS_MAP_EQ_CLOSURE_PREIMAGE_SUBSET_ALT] THEN
+  X_GEN_TAC `t:B->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `topspace top' DIFF (t:B->bool)`) THEN
+  ASM_SIMP_TAC[CLOSURE_OF_INTERIOR_OF; SET_RULE
+   `IMAGE f t SUBSET u
+        ==> {x | x IN t /\ f x IN u DIFF v} =
+            t DIFF {x | x IN t /\ f x IN v}`] THEN
+  SET_TAC[]);;
 
 let CONTINUOUS_MAP_FRONTIER_FRONTIER_PREIMAGE_SUBSET = prove
  (`!top top' (f:A->B) t.
@@ -3864,6 +3912,29 @@ let CLOSED_MAP_PROD = prove
     ASM_REWRITE_TAC[IMAGE_EQ_EMPTY; CLOSED_IN_TOPSPACE] THEN
     STRIP_TAC THEN ASM_REWRITE_TAC[]]);;
 
+let PROD_TOPOLOGY_EQ = prove
+ (`!(top1:A topology) (top2:B topology) top1' top2'.
+        prod_topology top1 top2 = prod_topology top1' top2' <=>
+        topspace(prod_topology top1 top2) = {} /\
+        topspace(prod_topology top1' top2') = {} \/
+        top1 = top1' /\ top2 = top2'`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC
+   `topspace(prod_topology top1' top2' :(A#B)topology) =
+    topspace(prod_topology top1 top2)`
+  THENL [ASM_REWRITE_TAC[]; ASM_MESON_TAC[]] THEN
+  ASM_CASES_TAC `topspace(prod_topology top1 top2 :(A#B)topology) = {}` THENL
+   [ASM_MESON_TAC[SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY_EMPTY];
+    ASM_REWRITE_TAC[]] THEN
+  EQ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+  REWRITE_TAC[TOPOLOGY_EQ] THEN DISCH_THEN(fun th ->
+    MP_TAC(GEN `u:A->bool` (SPEC `(u CROSS topspace top2):A#B->bool` th)) THEN
+    MP_TAC(GEN `v:B->bool` (SPEC `(topspace top1 CROSS v):A#B->bool` th))) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [TOPSPACE_PROD_TOPOLOGY; CROSS_EQ; CROSS_EQ_EMPTY; DE_MORGAN_THM]) THEN
+  ASM_REWRITE_TAC[OPEN_IN_CROSS; OPEN_IN_TOPSPACE] THEN
+  ASM_MESON_TAC[OPEN_IN_EMPTY; OPEN_IN_TOPSPACE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The usual (Tychonoff) product topology for general cartesian products.    *)
 (* ------------------------------------------------------------------------- *)
@@ -4572,6 +4643,84 @@ let IN_PRODUCT_TOPOLOGY_CLOSURE_OF = prove
    [SUBSET; FORALL_IN_IMAGE; CONTINUOUS_MAP_EQ_IMAGE_CLOSURE_SUBSET] o
    MATCH_MP CONTINUOUS_MAP_PRODUCT_PROJECTION) THEN
   ASM_REWRITE_TAC[]);;
+
+let PRODUCT_TOPOLOGY_EQ = prove
+ (`!k top (top':K->A topology).
+        product_topology k top = product_topology k top' <=>
+        topspace(product_topology k top) = {} /\
+        topspace(product_topology k top') = {} \/
+        (!i. i IN k ==> top i = top' i)`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC
+   `topspace(product_topology k (top':K->A topology)) =
+    topspace(product_topology k top)`
+  THENL
+   [ASM_REWRITE_TAC[];
+    EQ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[TOPSPACE_PRODUCT_TOPOLOGY]) THEN
+    REWRITE_TAC[CARTESIAN_PRODUCT_EQ; TOPSPACE_PRODUCT_TOPOLOGY] THEN
+    REWRITE_TAC[o_DEF] THEN MESON_TAC[]] THEN
+  ASM_CASES_TAC `topspace (product_topology k (top:K->A topology)) = {}` THENL
+   [ASM_MESON_TAC[SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY_EMPTY];
+    ASM_REWRITE_TAC[]] THEN
+  EQ_TAC THENL
+   [REWRITE_TAC[TOPOLOGY_EQ] THEN
+    DISCH_THEN(fun th -> X_GEN_TAC `i:K` THEN DISCH_TAC THEN MP_TAC th) THEN
+    REWRITE_TAC[FORALL_AND_THM; TAUT
+     `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+    MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN DISCH_TAC THEN
+    X_GEN_TAC `u:A->bool` THEN DISCH_TAC THEN
+    (ASM_CASES_TAC `u:A->bool = {}` THEN ASM_REWRITE_TAC[OPEN_IN_EMPTY]) THENL
+    [FIRST_X_ASSUM(MP_TAC o SPEC
+      `cartesian_product k
+        (\j:K. if j = i then (u:A->bool) else topspace(top j))`);
+     FIRST_X_ASSUM((fun th -> SUBST_ALL_TAC th THEN ASSUME_TAC th) o SYM) THEN
+     FIRST_X_ASSUM(MP_TAC o SPEC
+      `cartesian_product k
+        (\j:K. if j = i then (u:A->bool) else topspace(top' j))`)] THEN
+    REWRITE_TAC[OPEN_IN_CARTESIAN_PRODUCT_GEN] THEN
+    MATCH_MP_TAC(TAUT
+     `(r ==> s) /\ ~p /\ q ==> (p \/ q ==> p \/ r) ==> s`) THEN
+    (CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC]) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE
+     [TOPSPACE_PRODUCT_TOPOLOGY; o_DEF; CARTESIAN_PRODUCT_EQ_EMPTY]) THEN
+    REWRITE_TAC[o_DEF; CARTESIAN_PRODUCT_EQ_EMPTY] THEN
+    (CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC]) THEN
+    (CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[OPEN_IN_TOPSPACE]]) THEN
+    MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{i:K}` THEN
+    REWRITE_TAC[FINITE_SING; SUBSET; IN_SING; IN_ELIM_THM; NOT_IMP] THEN
+    MESON_TAC[];
+    DISCH_TAC THEN ASM_SIMP_TAC[product_topology] THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN AP_THM_TAC THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]]);;
+
+let DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT_EQ = prove
+ (`!k (s:K->A->bool).
+        discrete_topology(cartesian_product k s) =
+        product_topology k (discrete_topology o s) <=>
+        cartesian_product k s = {} \/
+        FINITE {i | i IN k /\ ~(?a. s i SUBSET {a})}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[DISCRETE_TOPOLOGY_UNIQUE] THEN
+  REWRITE_TAC[TOPSPACE_PRODUCT_TOPOLOGY; o_DEF] THEN
+  REWRITE_TAC[TOPSPACE_DISCRETE_TOPOLOGY; ETA_AX] THEN
+  SIMP_TAC[IN_CARTESIAN_PRODUCT; GSYM CARTESIAN_PRODUCT_SINGS] THEN
+  REWRITE_TAC[OPEN_IN_CARTESIAN_PRODUCT_GEN] THEN
+  REWRITE_TAC[OPEN_IN_DISCRETE_TOPOLOGY] THEN
+  SIMP_TAC[TOPSPACE_DISCRETE_TOPOLOGY; SING_SUBSET] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY; NOT_INSERT_EMPTY] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `P /\ ~({x} = s) <=> P /\ (P ==> x IN s ==> ~(?a. s SUBSET {a}))`] THEN
+  SIMP_TAC[] THEN
+  REWRITE_TAC[TAUT `p /\ (p ==> q) <=> p /\ q`; LEFT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[GSYM IN_CARTESIAN_PRODUCT; MEMBER_NOT_EMPTY] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY; TAUT `~p ==> q <=> p \/ q`]);;
+
+let DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT = prove
+ (`!k (s:K->A->bool).
+        FINITE {i | i IN k /\ ~(?a. s i SUBSET {a})}
+        ==> discrete_topology(cartesian_product k s) =
+            product_topology k (discrete_topology o s)`,
+  SIMP_TAC[DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Homeomorphisms (1-way and 2-way versions may be useful in places).        *)
@@ -5709,6 +5858,31 @@ let RETRACT_OF_SPACE_SING = prove
   EXISTS_TAC `(\x. a):A->A` THEN
   REWRITE_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_CONST] THEN
   ASM_REWRITE_TAC[] THEN SET_TAC[]);;
+
+let RETRACT_OF_SPACE_TRANS = prove
+ (`!top s t:A->bool.
+        s retract_of_space top /\ t retract_of_space (subtopology top s)
+        ==> t retract_of_space top`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[RETRACT_OF_SPACE_RETRACTION_MAPS] THEN
+  REWRITE_TAC[SUBSET_INTER; TOPSPACE_SUBTOPOLOGY] THEN
+  DISCH_THEN(CONJUNCTS_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC)) THEN
+  ASM_REWRITE_TAC[SUBTOPOLOGY_SUBTOPOLOGY; LEFT_IMP_EXISTS_THM] THEN
+  ASM_SIMP_TAC[SET_RULE `t SUBSET s ==> s INTER t = t`] THEN
+  X_GEN_TAC `r2:A->A` THEN DISCH_TAC THEN
+  X_GEN_TAC `r1:A->A` THEN DISCH_TAC THEN
+  EXISTS_TAC `(r2:A->A) o (r1:A->A)` THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM I_O_ID] THEN
+  MATCH_MP_TAC RETRACTION_MAPS_COMPOSE THEN ASM_MESON_TAC[]);;
+
+let RETRACT_OF_SPACE_SUBTOPOLOGY = prove
+ (`!top s u:A->bool.
+        s retract_of_space top /\ s SUBSET u
+        ==> s retract_of_space (subtopology top u)`,
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[retract_of_space; SUBTOPOLOGY_SUBTOPOLOGY;
+           TOPSPACE_SUBTOPOLOGY; SUBSET_INTER;
+           SET_RULE `s SUBSET u ==> u INTER s = s`] THEN
+  MESON_TAC[CONTINUOUS_MAP_FROM_SUBTOPOLOGY]);;
 
 let RETRACT_OF_SPACE_CLOPEN = prove
  (`!top s:A->bool.
@@ -13845,6 +14019,37 @@ let LOCALLY_COMPACT_REGULAR_SPACE_NEIGHBOURHOOD_BASE = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] NEIGHBOURHOOD_BASE_OF_MONO) THEN
   SIMP_TAC[]);;
 
+let LOCALLY_COMPACT_KC_SPACE = prove
+ (`!top:A topology.
+        neighbourhood_base_of (compact_in top) top /\ kc_space top <=>
+        locally_compact_space top /\ hausdorff_space top`,
+  MESON_TAC[NEIGHBOURHOOD_BASE_IMP_LOCALLY_COMPACT_SPACE;
+            HAUSDORFF_IMP_KC_SPACE; LOCALLY_COMPACT_SPACE_NEIGHBOURHOOD_BASE;
+            LOCALLY_COMPACT_IMP_KC_EQ_HAUSDORFF_SPACE]);;
+
+let LOCALLY_COMPACT_KC_SPACE_ALT = prove
+ (`!top:A topology.
+        neighbourhood_base_of (compact_in top) top /\ kc_space top <=>
+        locally_compact_space top /\ hausdorff_space top /\ regular_space top`,
+  MESON_TAC[LOCALLY_COMPACT_HAUSDORFF_IMP_REGULAR_SPACE;
+            LOCALLY_COMPACT_KC_SPACE]);;
+
+let LOCALLY_COMPACT_KC_IMP_REGULAR_SPACE = prove
+ (`!top:A topology.
+        neighbourhood_base_of (compact_in top) top /\ kc_space top
+        ==> regular_space top`,
+  SIMP_TAC[LOCALLY_COMPACT_KC_SPACE_ALT]);;
+
+let KC_LOCALLY_COMPACT_SPACE = prove
+ (`!top:A topology.
+        kc_space top
+        ==> (neighbourhood_base_of (compact_in top) top <=>
+             locally_compact_space top /\
+             hausdorff_space top /\
+             regular_space top)`,
+  MESON_TAC[LOCALLY_COMPACT_KC_SPACE_ALT;
+             LOCALLY_COMPACT_SPACE_NEIGHBOURHOOD_BASE]);;
+
 let LOCALLY_COMPACT_SPACE_CLOSED_SUBSET = prove
  (`!top s:A->bool.
         locally_compact_space top /\ closed_in top s
@@ -14606,6 +14811,118 @@ let EUCLIDEANREAL_FRONTIER_OF_HALFSPACE_LT = prove
   REWRITE_TAC[EUCLIDEANREAL_INTERIOR_OF_HALFSPACE_LT;
               EUCLIDEANREAL_CLOSURE_OF_HALFSPACE_LT] THEN
   REWRITE_TAC[IN_ELIM_THM; IN_DIFF; EXTENSION] THEN REAL_ARITH_TAC);;
+
+let EUCLIDEANREAL_CLOSURE_OF_RATIONAL = prove
+ (`euclideanreal closure_of rational = (:real)`,
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[METRIC_CLOSURE_OF; IN_MBALL; REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_ELIM_THM; IN_UNIV; EXTENSION] THEN
+  REWRITE_TAC[IN; RATIONAL_APPROXIMATION]);;
+
+let EUCLIDEANREAL_CLOSURE_OF_IRRATIONAL = prove
+ (`euclideanreal closure_of {z | ~rational z} = (:real)`,
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[METRIC_CLOSURE_OF; IN_MBALL; REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[IN_ELIM_THM; IN_UNIV; EXTENSION] THEN
+  REWRITE_TAC[IN; IRRATIONAL_APPROXIMATION]);;
+
+let NOT_LOCALLY_COMPACT_SPACE_RATIONAL_GEN = prove
+ (`!s. ~(euclideanreal interior_of s = {})
+       ==> ~locally_compact_space
+              (subtopology euclideanreal {q | q IN s /\ rational q})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`subtopology euclideanreal (euclideanreal interior_of s)`;
+                 `{q | q IN euclideanreal interior_of s /\ rational q}`]
+        DENSE_LOCALLY_COMPACT_OPEN_IN_HAUSDORFF_SPACE) THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; SUBSET_RESTRICT] THEN
+  REWRITE_TAC[NOT_IMP] THEN REPEAT CONJ_TAC THENL
+   [SIMP_TAC[HAUSDORFF_SPACE_SUBTOPOLOGY; HAUSDORFF_SPACE_EUCLIDEANREAL];
+    ONCE_REWRITE_TAC[SET_RULE `{x | x IN s /\ P x} = s INTER {x | P x}`] THEN
+    GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o LAND_CONV)
+     [GSYM TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+    REWRITE_TAC[GSYM CLOSURE_OF_RESTRICT] THEN
+    SIMP_TAC[CLOSURE_OF_SUBTOPOLOGY_OPEN; OPEN_IN_INTERIOR_OF] THEN
+    REWRITE_TAC[EUCLIDEANREAL_CLOSURE_OF_RATIONAL; INTER_UNIV;
+                SET_RULE `{x | P x} = P`];
+    MP_TAC(ISPECL
+     [`subtopology euclideanreal {q | q IN s /\ rational q}`;
+      `{q | q IN s /\ rational q} INTER euclideanreal interior_of s`]
+     LOCALLY_COMPACT_SPACE_OPEN_SUBSET) THEN
+    ASM_SIMP_TAC[HAUSDORFF_SPACE_SUBTOPOLOGY; HAUSDORFF_SPACE_EUCLIDEANREAL;
+                 OPEN_IN_SUBTOPOLOGY_INTER_OPEN; OPEN_IN_INTERIOR_OF] THEN
+    MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC[SUBTOPOLOGY_SUBTOPOLOGY] THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN
+    MP_TAC(ISPECL [`euclideanreal`; `s:real->bool`] INTERIOR_OF_SUBSET) THEN
+    SET_TAC[];
+    SIMP_TAC[OPEN_IN_OPEN_SUBTOPOLOGY; OPEN_IN_INTERIOR_OF] THEN
+    DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+    SUBGOAL_THEN
+     `?q. q IN euclideanreal interior_of s /\ rational q`
+    STRIP_ASSUME_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+      DISCH_THEN(X_CHOOSE_TAC `a:real`) THEN
+      MP_TAC(ISPECL [`euclideanreal`; `s:real->bool`] OPEN_IN_INTERIOR_OF) THEN
+      REWRITE_TAC[GSYM REAL_OPEN_IN; real_open; IN_ELIM_THM] THEN
+      ASM_MESON_TAC[RATIONAL_APPROXIMATION];
+      REWRITE_TAC[GSYM REAL_OPEN_IN; real_open; IN_ELIM_THM] THEN
+      DISCH_THEN(MP_TAC o SPEC `q:real`) THEN ASM_REWRITE_TAC[] THEN
+      MESON_TAC[IRRATIONAL_APPROXIMATION]]]);;
+
+let NOT_LOCALLY_COMPACT_SPACE_IRRATIONAL_GEN = prove
+ (`!s. ~(euclideanreal interior_of s = {})
+       ==> ~locally_compact_space
+              (subtopology euclideanreal {q | q IN s /\ ~rational q})`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`subtopology euclideanreal (euclideanreal interior_of s)`;
+                 `{q | q IN euclideanreal interior_of s /\ ~rational q}`]
+        DENSE_LOCALLY_COMPACT_OPEN_IN_HAUSDORFF_SPACE) THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY; SUBSET_RESTRICT] THEN
+  REWRITE_TAC[NOT_IMP] THEN REPEAT CONJ_TAC THENL
+   [SIMP_TAC[HAUSDORFF_SPACE_SUBTOPOLOGY; HAUSDORFF_SPACE_EUCLIDEANREAL];
+    ONCE_REWRITE_TAC[SET_RULE `{x | x IN s /\ P x} = s INTER {x | P x}`] THEN
+    GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o LAND_CONV)
+     [GSYM TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+    REWRITE_TAC[GSYM CLOSURE_OF_RESTRICT] THEN
+    SIMP_TAC[CLOSURE_OF_SUBTOPOLOGY_OPEN; OPEN_IN_INTERIOR_OF] THEN
+    REWRITE_TAC[EUCLIDEANREAL_CLOSURE_OF_IRRATIONAL; INTER_UNIV];
+    MP_TAC(ISPECL
+     [`subtopology euclideanreal {q | q IN s /\ ~rational q}`;
+      `{q | q IN s /\ ~rational q} INTER euclideanreal interior_of s`]
+     LOCALLY_COMPACT_SPACE_OPEN_SUBSET) THEN
+    ASM_SIMP_TAC[HAUSDORFF_SPACE_SUBTOPOLOGY; HAUSDORFF_SPACE_EUCLIDEANREAL;
+                 OPEN_IN_SUBTOPOLOGY_INTER_OPEN; OPEN_IN_INTERIOR_OF] THEN
+    MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC[SUBTOPOLOGY_SUBTOPOLOGY] THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN
+    MP_TAC(ISPECL [`euclideanreal`; `s:real->bool`] INTERIOR_OF_SUBSET) THEN
+    SET_TAC[];
+    SIMP_TAC[OPEN_IN_OPEN_SUBTOPOLOGY; OPEN_IN_INTERIOR_OF] THEN
+    DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+    SUBGOAL_THEN
+     `?q. q IN euclideanreal interior_of s /\ ~rational q`
+    STRIP_ASSUME_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
+      DISCH_THEN(X_CHOOSE_TAC `a:real`) THEN
+      MP_TAC(ISPECL [`euclideanreal`; `s:real->bool`] OPEN_IN_INTERIOR_OF) THEN
+      REWRITE_TAC[GSYM REAL_OPEN_IN; real_open; IN_ELIM_THM] THEN
+      ASM_MESON_TAC[IRRATIONAL_APPROXIMATION];
+      REWRITE_TAC[GSYM REAL_OPEN_IN; real_open; IN_ELIM_THM] THEN
+      DISCH_THEN(MP_TAC o SPEC `q:real`) THEN ASM_REWRITE_TAC[] THEN
+      MESON_TAC[RATIONAL_APPROXIMATION]]]);;
+
+let NOT_LOCALLY_COMPACT_SPACE_RATIONAL = prove
+ (`~locally_compact_space (subtopology euclideanreal rational)`,
+  MP_TAC(SPEC `topspace euclideanreal`
+    NOT_LOCALLY_COMPACT_SPACE_RATIONAL_GEN) THEN
+  REWRITE_TAC[INTERIOR_OF_TOPSPACE] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL; IN_UNIV; UNIV_NOT_EMPTY] THEN
+  REWRITE_TAC[SET_RULE `{x | P x} = P`]);;
+
+let NOT_LOCALLY_COMPACT_SPACE_IRRATIONAL = prove
+ (`~locally_compact_space (subtopology euclideanreal {z | ~rational z})`,
+  MP_TAC(SPEC `topspace euclideanreal`
+    NOT_LOCALLY_COMPACT_SPACE_IRRATIONAL_GEN) THEN
+  REWRITE_TAC[INTERIOR_OF_TOPSPACE] THEN
+  REWRITE_TAC[TOPSPACE_EUCLIDEANREAL; IN_UNIV; UNIV_NOT_EMPTY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Boundedness in R.                                                         *)
@@ -19893,6 +20210,24 @@ let HEREDITARILY_NORMAL_SPACE_CONTINUOUS_CLOSED_MAP_IMAGE = prove
   FIRST_X_ASSUM(MP_TAC o MATCH_MP CLOSED_MAP_IMP_SUBSET_TOPSPACE) THEN
   ASM SET_TAC[]);;
 
+let HOMEOMORPHIC_HEREDITARILY_NORMAL_SPACE = prove
+ (`!(top:A topology) (top':B topology).
+      top homeomorphic_space top'
+      ==> (hereditarily normal_space top <=> hereditarily normal_space top')`,
+  REWRITE_TAC[homeomorphic_space; HOMEOMORPHIC_MAPS_MAP] THEN
+  MESON_TAC[HEREDITARILY_NORMAL_SPACE_CONTINUOUS_CLOSED_MAP_IMAGE;
+            HOMEOMORPHIC_IMP_SURJECTIVE_MAP;
+            HOMEOMORPHIC_IMP_CONTINUOUS_MAP;
+            HOMEOMORPHIC_IMP_CLOSED_MAP]);;
+
+let HEREDITARILY_NORMAL_SPACE_RETRACTION_MAP_IMAGE = prove
+ (`!top top' (r:A->B).
+        retraction_map(top,top') r /\ hereditarily normal_space top
+        ==> hereditarily normal_space top'`,
+  MATCH_MP_TAC HEREDITARY_IMP_RETRACTIVE_PROPERTY THEN
+  REWRITE_TAC[HEREDITARILY_SUBTOPOLOGY;
+              HOMEOMORPHIC_HEREDITARILY_NORMAL_SPACE]);;
+
 let URYSOHN_LEMMA = prove
  (`!(top:A topology) s t a b.
         a <= b /\ normal_space top /\
@@ -22167,9 +22502,47 @@ let K_SPACE_SUBTOPOLOGY_OPEN = prove
 
 let K_SPACE_OPEN_SUBTOPOLOGY = prove
  (`!top s:A->bool.
-        (hausdorff_space top \/ regular_space top) /\
+        (kc_space top \/ hausdorff_space top \/ regular_space top) /\
         k_space top /\ open_in top s
         ==> k_space(subtopology top s)`,
+  let lemma = prove
+   (`!top (v:A->bool).
+          kc_space top /\ compact_space top /\ open_in top v
+          ==> k_space(subtopology top v)`,
+    REPEAT STRIP_TAC THEN
+    REWRITE_TAC[K_SPACE; TOPSPACE_SUBTOPOLOGY; SUBTOPOLOGY_SUBTOPOLOGY;
+                COMPACT_IN_SUBTOPOLOGY; SUBSET_INTER] THEN
+    X_GEN_TAC `s:A->bool` THEN
+    SIMP_TAC[SET_RULE `k SUBSET v ==> v INTER k = k`] THEN
+    DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC (LABEL_TAC "*")) THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
+    SUBGOAL_THEN
+     `s:A->bool = v INTER ((topspace top DIFF v) UNION s)` SUBST1_TAC
+    THENL [ASM SET_TAC[]; MATCH_MP_TAC CLOSED_IN_SUBTOPOLOGY_INTER_CLOSED] THEN
+    MATCH_MP_TAC COMPACT_IN_IMP_CLOSED_IN_GEN THEN ASM_REWRITE_TAC[] THEN
+    ASM_REWRITE_TAC[compact_in; UNION_SUBSET; SUBSET_DIFF] THEN
+    X_GEN_TAC `U:(A->bool)->bool` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `compact_in top (topspace top DIFF v:A->bool)` MP_TAC THENL
+     [MATCH_MP_TAC CLOSED_IN_COMPACT_SPACE THEN
+      ASM_SIMP_TAC[CLOSED_IN_DIFF; CLOSED_IN_TOPSPACE];
+      REWRITE_TAC[compact_in; SUBSET_DIFF]] THEN
+    DISCH_THEN(MP_TAC o SPEC `U:(A->bool)->bool`) THEN
+    ASM_SIMP_TAC[SET_RULE `s SUBSET t ==> (t DIFF u) INTER s = s DIFF u`] THEN
+    DISCH_THEN(X_CHOOSE_THEN `V1:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+    REMOVE_THEN "*" (MP_TAC o SPEC `topspace top DIFF UNIONS V1:A->bool`) THEN
+    SUBGOAL_THEN `open_in top (UNIONS V1:A->bool)` ASSUME_TAC THENL
+     [ASM_MESON_TAC[OPEN_IN_UNIONS; SUBSET]; ALL_TAC] THEN
+    ASM_SIMP_TAC[CLOSED_IN_COMPACT_SPACE; CLOSED_IN_DIFF; CLOSED_IN_TOPSPACE;
+                 CLOSED_IN_CLOSED_SUBTOPOLOGY] THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT]
+      CLOSED_IN_COMPACT_SPACE) o CONJUNCT1) THEN
+    ASM_REWRITE_TAC[compact_in] THEN
+    DISCH_THEN(MP_TAC o SPEC `U:(A->bool)->bool` o CONJUNCT2) THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(X_CHOOSE_THEN `V2:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `V1 UNION V2:(A->bool)->bool` THEN
+    ASM_REWRITE_TAC[FINITE_UNION] THEN ASM SET_TAC[]) in
   REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
   MATCH_MP_TAC K_SPACE_SUBTOPOLOGY_OPEN THEN CONJ_TAC THENL
    [X_GEN_TAC `t:A->bool` THEN STRIP_TAC THEN
@@ -22181,14 +22554,29 @@ let K_SPACE_OPEN_SUBTOPOLOGY = prove
     MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] OPEN_IN_TRANS) THEN
     ASM_SIMP_TAC[OPEN_IN_SUBTOPOLOGY_INTER_OPEN];
     X_GEN_TAC `k:A->bool` THEN DISCH_TAC THEN
-    MATCH_MP_TAC LOCALLY_COMPACT_IMP_K_SPACE THEN
-    ONCE_REWRITE_TAC[SET_RULE `k INTER s = k INTER (k INTER s)`] THEN
-    ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_SUBTOPOLOGY] THEN
-    MATCH_MP_TAC LOCALLY_COMPACT_SPACE_OPEN_SUBSET THEN
-    ASM_SIMP_TAC[OPEN_IN_SUBTOPOLOGY_INTER_OPEN] THEN
-    ASM_SIMP_TAC[COMPACT_SPACE_SUBTOPOLOGY;
-                 COMPACT_IMP_LOCALLY_COMPACT_SPACE] THEN
-    ASM_MESON_TAC[HAUSDORFF_SPACE_SUBTOPOLOGY; REGULAR_SPACE_SUBTOPOLOGY]]);;
+    FIRST_X_ASSUM DISJ_CASES_TAC THENL
+     [MP_TAC(ISPECL [`subtopology top (k:A->bool)`; `k INTER s:A->bool`]
+        lemma) THEN
+      ASM_SIMP_TAC[KC_SPACE_SUBTOPOLOGY; OPEN_IN_SUBTOPOLOGY_INTER_OPEN] THEN
+      ASM_SIMP_TAC[COMPACT_SPACE_SUBTOPOLOGY] THEN
+      REWRITE_TAC[SUBTOPOLOGY_SUBTOPOLOGY; INTER_ACI];
+      MATCH_MP_TAC LOCALLY_COMPACT_IMP_K_SPACE THEN
+      ONCE_REWRITE_TAC[SET_RULE `k INTER s = k INTER (k INTER s)`] THEN
+      ONCE_REWRITE_TAC[GSYM SUBTOPOLOGY_SUBTOPOLOGY] THEN
+      MATCH_MP_TAC LOCALLY_COMPACT_SPACE_OPEN_SUBSET THEN
+      ASM_SIMP_TAC[OPEN_IN_SUBTOPOLOGY_INTER_OPEN] THEN
+      ASM_SIMP_TAC[COMPACT_SPACE_SUBTOPOLOGY;
+                   COMPACT_IMP_LOCALLY_COMPACT_SPACE] THEN
+      ASM_MESON_TAC[HAUSDORFF_SPACE_SUBTOPOLOGY;
+                    REGULAR_SPACE_SUBTOPOLOGY]]]);;
+
+let K_KC_SPACE_SUBTOPOLOGY = prove
+ (`!top s:A->bool.
+        k_space top /\ kc_space top /\
+        (open_in top s \/ closed_in top s)
+        ==> k_space(subtopology top s) /\ kc_space(subtopology top s)`,
+  MESON_TAC[K_SPACE_OPEN_SUBTOPOLOGY; K_SPACE_CLOSED_SUBTOPOLOGY;
+            KC_SPACE_SUBTOPOLOGY]);;
 
 let CONTINUOUS_MAP_FROM_K_SPACE = prove
  (`!top top' (f:A->B).
