@@ -8,10 +8,59 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  3rd Nov 2018       sets.ml
+
+Added a basic "disjoint union" set construction with the obvious lemmas:
+
+  disjoint_union =
+    |- !k s. disjoint_union k s = {i,x | i IN k /\ x IN s i}
+
+  DISJOINT_DISJOINT_UNION =
+    |- !k s t.
+           DISJOINT (disjoint_union k s) (disjoint_union k t) <=>
+           (!i. i IN k ==> DISJOINT (s i) (t i))
+
+  DISJOINT_UNION_EQ =
+    |- !k s t.
+           disjoint_union k s = disjoint_union k t <=>
+           (!i. i IN k ==> s i = t i)
+
+  DISJOINT_UNION_EQ_EMPTY =
+    |- !k s. disjoint_union k s = {} <=> (!i. i IN k ==> s i = {})
+
+  INTER_DISJOINT_UNION =
+    |- !k s t.
+           disjoint_union k s INTER disjoint_union k t =
+           disjoint_union k (\i. s i INTER t i)
+
+  SUBSET_DISJOINT_UNION =
+    |- !k s t.
+           disjoint_union k s SUBSET disjoint_union k t <=>
+           (!i. i IN k ==> s i SUBSET t i)
+
+  SUBSET_DISJOINT_UNION_EXISTS =
+    |- !k s u.
+           u SUBSET disjoint_union k s <=>
+           (?t. u = disjoint_union k t /\ (!i. i IN k ==> t i SUBSET s i))
+
+  UNION_DISJOINT_UNION =
+    |- !k s t.
+           disjoint_union k s UNION disjoint_union k t =
+           disjoint_union k (\i. s i UNION t i)
+
+Sat  3rd Nov 2018       trivia.ml
+
+Added for completeness the trivial quantification theorems for the
+one-element type ":1":
+
+  FORALL_ONE_THM = |- (!x. P x) <=> P one
+
+  EXISTS_ONE_THM = |- (?x. P x) <=> P one
+
 Sat 20th Oct 2018       Geometric_Algebra [new directory]
 
 Added a new contribution from Liming Li, Zhiping Shi, Yong Guan, Guohui Wang
-and Sha Ma, from Capital Normal University, Beijing. This is a theory of 
+and Sha Ma, from Capital Normal University, Beijing. This is a theory of
 geometric algebra with a multivector structure (P,Q,R)multivector for
 formulating any geometric algebra G(P,Q,R) with positive definite, negative
 definite and zero quadratic forms.

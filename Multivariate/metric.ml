@@ -4723,6 +4723,182 @@ let DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT = prove
   SIMP_TAC[DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Disjoint sum of arbitarily many spaces.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let sum_topology = new_definition
+ `sum_topology (k:K->bool) (top:K->A topology) =
+        topology { u | u SUBSET disjoint_union k (topspace o top) /\
+                       !i. i IN k ==> open_in (top i) {x | (i,x) IN u}}`;;
+
+let OPEN_IN_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology) u.
+        open_in (sum_topology k top) u <=>
+        u SUBSET disjoint_union k (topspace o top) /\
+        !i. i IN k ==> open_in (top i) {x | (i,x) IN u}`,
+  let lemma = prove
+   (`{x | i,x IN UNIONS v} = UNIONS {{x | i,x IN k} | k IN v}`,
+    REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]) in
+  REPEAT GEN_TAC THEN REWRITE_TAC[sum_topology] THEN
+  W(MP_TAC o fst o EQ_IMP_RULE o
+      PART_MATCH (lhand o rand) (CONJUNCT2 topology_tybij) o
+        rator o lhand o snd) THEN
+  ANTS_TAC THENL [ALL_TAC; SIMP_TAC[IN_ELIM_THM]] THEN
+  REWRITE_TAC[istopology] THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  REWRITE_TAC[NOT_IN_EMPTY; EMPTY_GSPEC; EMPTY_SUBSET] THEN
+  SIMP_TAC[OPEN_IN_EMPTY; OPEN_IN_INTER; SET_RULE
+   `{x | (i,x) IN s INTER t} = {x | (i,x) IN s} INTER {x | (i,x) IN t}`] THEN
+  CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+  X_GEN_TAC `v:(K#A->bool)->bool` THEN REWRITE_TAC[UNIONS_SUBSET] THEN
+  GEN_REWRITE_TAC LAND_CONV [SUBSET] THEN
+  SIMP_TAC[IN_ELIM_THM; lemma; OPEN_IN_UNIONS; FORALL_IN_GSPEC]);;
+
+let OPEN_IN_DISJOINT_UNION = prove
+ (`!k (top:K->A topology) u.
+        open_in (sum_topology k top) (disjoint_union k u) <=>
+        !i. i IN k ==> open_in (top i) (u i)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[OPEN_IN_SUM_TOPOLOGY; disjoint_union] THEN
+  SIMP_TAC[IN_ELIM_PAIR_THM; SUBSET; FORALL_IN_GSPEC; o_THM; IN_GSPEC] THEN
+  MESON_TAC[SUBSET; OPEN_IN_SUBSET]);;
+
+let TOPSPACE_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        topspace(sum_topology k top) = disjoint_union k (topspace o top)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN CONJ_TAC THENL
+   [GEN_REWRITE_TAC LAND_CONV [topspace] THEN
+    SIMP_TAC[UNIONS_SUBSET; IN_ELIM_THM; OPEN_IN_SUM_TOPOLOGY];
+    MATCH_MP_TAC OPEN_IN_SUBSET THEN
+    REWRITE_TAC[OPEN_IN_DISJOINT_UNION; o_THM; OPEN_IN_TOPSPACE]]);;
+
+let OPEN_IN_SUM_TOPOLOGY_ALT = prove
+ (`!k (top:K->A topology) u.
+        open_in (sum_topology k top) u <=>
+        ?t. u = disjoint_union k t /\
+            !i. i IN k ==> open_in (top i) (t i)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_SUM_TOPOLOGY] THEN
+  REWRITE_TAC[SUBSET_DISJOINT_UNION_EXISTS] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[disjoint_union; IN_ELIM_PAIR_THM] THEN
+  SIMP_TAC[IN_GSPEC; o_THM; OPEN_IN_SUBSET]);;
+
+let FORALL_OPEN_IN_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        (!u. open_in (sum_topology k top) u ==> P u) <=>
+        (!t. (!i. i IN k ==> open_in (top i) (t i))
+             ==> P(disjoint_union k t))`,
+  REWRITE_TAC[OPEN_IN_SUM_TOPOLOGY_ALT] THEN MESON_TAC[]);;
+
+let EXISTS_OPEN_IN_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        (?u. open_in (sum_topology k top) u /\ P u) <=>
+        (?t. (!i. i IN k ==> open_in (top i) (t i)) /\
+             P(disjoint_union k t))`,
+  REWRITE_TAC[OPEN_IN_SUM_TOPOLOGY_ALT] THEN MESON_TAC[]);;
+
+let CLOSED_IN_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology) u.
+        closed_in (sum_topology k top) u <=>
+        u SUBSET disjoint_union k (topspace o top) /\
+        !i. i IN k ==> closed_in (top i) {x | (i,x) IN u}`,
+  REWRITE_TAC[closed_in; TOPSPACE_SUM_TOPOLOGY; OPEN_IN_SUM_TOPOLOGY] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[SUBSET_DIFF] THEN
+  SIMP_TAC[IN_DIFF; disjoint_union; SUBSET; IN_ELIM_PAIR_THM; o_THM;
+           FORALL_PAIR_THM] THEN
+  REWRITE_TAC[DIFF; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let CLOSED_IN_DISJOINT_UNION = prove
+ (`!k (top:K->A topology) u.
+        closed_in (sum_topology k top) (disjoint_union k u) <=>
+        !i. i IN k ==> closed_in (top i) (u i)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CLOSED_IN_SUM_TOPOLOGY; disjoint_union] THEN
+  SIMP_TAC[IN_ELIM_PAIR_THM; SUBSET; FORALL_IN_GSPEC; o_THM; IN_GSPEC] THEN
+  MESON_TAC[SUBSET; CLOSED_IN_SUBSET]);;
+
+let CLOSED_IN_SUM_TOPOLOGY_ALT = prove
+ (`!k (top:K->A topology) u.
+        closed_in (sum_topology k top) u <=>
+        ?t. u = disjoint_union k t /\
+            !i. i IN k ==> closed_in (top i) (t i)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSED_IN_SUM_TOPOLOGY] THEN
+  REWRITE_TAC[SUBSET_DISJOINT_UNION_EXISTS] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[disjoint_union; IN_ELIM_PAIR_THM] THEN
+  SIMP_TAC[IN_GSPEC; o_THM; CLOSED_IN_SUBSET]);;
+
+let FORALL_CLOSED_IN_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        (!u. closed_in (sum_topology k top) u ==> P u) <=>
+        (!t. (!i. i IN k ==> closed_in (top i) (t i))
+             ==> P(disjoint_union k t))`,
+  REWRITE_TAC[CLOSED_IN_SUM_TOPOLOGY_ALT] THEN MESON_TAC[]);;
+
+let EXISTS_CLOSED_IN_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        (?u. closed_in (sum_topology k top) u /\ P u) <=>
+        (?t. (!i. i IN k ==> closed_in (top i) (t i)) /\
+             P(disjoint_union k t))`,
+  REWRITE_TAC[CLOSED_IN_SUM_TOPOLOGY_ALT] THEN MESON_TAC[]);;
+
+let OPEN_MAP_COMPONENT_INJECTION = prove
+ (`!k (top:K->A topology) i.
+        i IN k ==> open_map(top i,sum_topology k top) (\x. (i,x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[open_map; OPEN_IN_SUM_TOPOLOGY] THEN
+  X_GEN_TAC `u:A->bool` THEN DISCH_TAC THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; disjoint_union; IN_ELIM_THM] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
+    REWRITE_TAC[o_THM; PAIR_EQ] THEN ASM SET_TAC[];
+    X_GEN_TAC `j:K` THEN DISCH_TAC THEN REWRITE_TAC[IN_IMAGE; PAIR_EQ] THEN
+    ASM_CASES_TAC `j:K = i` THEN
+    ASM_REWRITE_TAC[UNWIND_THM1; EMPTY_GSPEC; IN_GSPEC] THEN
+    ASM_SIMP_TAC[OPEN_IN_EMPTY]]);;
+
+let CLOSED_MAP_COMPONENT_INJECTION = prove
+ (`!k (top:K->A topology) i.
+        i IN k ==> closed_map(top i,sum_topology k top) (\x. (i,x))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[closed_map; CLOSED_IN_SUM_TOPOLOGY] THEN
+  X_GEN_TAC `u:A->bool` THEN DISCH_TAC THEN CONJ_TAC THENL
+   [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; disjoint_union; IN_ELIM_THM] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_SUBSET) THEN
+    REWRITE_TAC[o_THM; PAIR_EQ] THEN ASM SET_TAC[];
+    X_GEN_TAC `j:K` THEN DISCH_TAC THEN REWRITE_TAC[IN_IMAGE; PAIR_EQ] THEN
+    ASM_CASES_TAC `j:K = i` THEN
+    ASM_REWRITE_TAC[UNWIND_THM1; EMPTY_GSPEC; IN_GSPEC] THEN
+    ASM_SIMP_TAC[CLOSED_IN_EMPTY]]);;
+
+let CONTINUOUS_MAP_COMPONENT_INJECTION = prove
+ (`!k (top:K->A topology) i.
+        i IN k ==> continuous_map(top i,sum_topology k top) (\x. (i,x))`,
+  REWRITE_TAC[continuous_map; OPEN_IN_SUM_TOPOLOGY; TOPSPACE_SUM_TOPOLOGY] THEN
+  REWRITE_TAC[SET_RULE `{x | x IN s /\ P x} = s INTER {x | P x}`] THEN
+  SIMP_TAC[OPEN_IN_INTER; OPEN_IN_TOPSPACE] THEN
+  SIMP_TAC[disjoint_union; IN_ELIM_PAIR_THM; o_THM]);;
+
+let SUBTOPOLOGY_SUM_TOPOLOGY = prove
+ (`!k top s:K->A->bool.
+        subtopology (sum_topology k top) (disjoint_union k s) =
+        sum_topology k (\i. subtopology (top i) (s i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[TOPOLOGY_EQ] THEN
+  REWRITE_TAC[FORALL_AND_THM; TAUT `(p <=> q) <=> (p ==> q) /\ (q ==> p)`] THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_ALT; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[FORALL_OPEN_IN_SUM_TOPOLOGY] THEN
+  REWRITE_TAC[INTER_DISJOINT_UNION; OPEN_IN_DISJOINT_UNION] THEN
+  SIMP_TAC[OPEN_IN_SUBTOPOLOGY_INTER_OPEN] THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY; RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:K->A->bool`; `t:K->A->bool`] THEN STRIP_TAC THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  EXISTS_TAC `disjoint_union k (t:K->A->bool)` THEN
+  ASM_SIMP_TAC[OPEN_IN_DISJOINT_UNION; INTER_DISJOINT_UNION] THEN
+  REWRITE_TAC[DISJOINT_UNION_EQ] THEN
+  ASM_SIMP_TAC[INTER_COMM]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Homeomorphisms (1-way and 2-way versions may be useful in places).        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -5512,6 +5688,20 @@ let EMBEDDING_MAP_IMP_HOMEOMORPHIC_SPACE = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[embedding_map] THEN
   REWRITE_TAC[HOMEOMORPHIC_MAP_IMP_HOMEOMORPHIC_SPACE]);;
 
+let EMBEDDING_IMP_CONTINUOUS_MAP = prove
+ (`!top top' (f:A->B).
+     embedding_map(top,top') f ==> continuous_map(top,top') f`,
+  MESON_TAC[embedding_map; HOMEOMORPHIC_IMP_CONTINUOUS_MAP;
+                CONTINUOUS_MAP_IN_SUBTOPOLOGY]);;
+
+let EMBEDDING_IMP_INJECTIVE_MAP = prove
+ (`!top top' (f:A->B).
+     embedding_map(top,top') f
+     ==> !x y. x IN topspace top /\ y IN topspace top
+               ==> (f x = f y <=> x = y)`,
+  MESON_TAC[embedding_map; HOMEOMORPHIC_IMP_INJECTIVE_MAP;
+                CONTINUOUS_MAP_IN_SUBTOPOLOGY]);;
+
 let EMBEDDING_IMP_CLOSED_MAP = prove
  (`!top top' (f:A->B).
         embedding_map(top,top') f /\ closed_in top' (IMAGE f (topspace top))
@@ -5551,6 +5741,36 @@ let EMBEDDING_MAP_ON_EMPTY = prove
   SIMP_TAC[embedding_map; IMAGE_CLAUSES; HOMEOMORPHIC_MAP_MAPS;
            homeomorphic_maps; CONTINUOUS_MAP_ON_EMPTY; TOPSPACE_SUBTOPOLOGY;
            INTER_EMPTY; NOT_IN_EMPTY]);;
+
+let EMBEDDING_MAP_COMPONENT_INJECTION = prove
+ (`!k (top:K->A topology) i.
+        i IN k ==> embedding_map(top i,sum_topology k top) (\x. (i,x))`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INJECTIVE_OPEN_IMP_EMBEDDING_MAP THEN
+  ASM_SIMP_TAC[OPEN_MAP_COMPONENT_INJECTION; PAIR_EQ;
+               CONTINUOUS_MAP_COMPONENT_INJECTION]);;
+
+let TOPOLOGICAL_PROPERTY_OF_SUM_COMPONENT = prove
+ (`!P Q (tops:K->A topology) k.
+        (!top s. P top /\ closed_in top s /\ open_in top s
+                 ==> P(subtopology top s)) /\
+        (!top top'. top homeomorphic_space top' ==> (P top <=> Q top'))
+        ==> P(sum_topology k tops) ==> !i. i IN k ==> Q(tops i)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`sum_topology k (tops:K->A topology)`;
+     `IMAGE (\x:A. (i:K),x) (topspace(tops i))`]) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL
+     [MATCH_MP_TAC(REWRITE_RULE[closed_map; RIGHT_IMP_FORALL_THM; IMP_IMP]
+        CLOSED_MAP_COMPONENT_INJECTION) THEN
+      ASM_REWRITE_TAC[CLOSED_IN_TOPSPACE];
+      MATCH_MP_TAC(REWRITE_RULE[open_map; RIGHT_IMP_FORALL_THM; IMP_IMP]
+        OPEN_MAP_COMPONENT_INJECTION) THEN
+      ASM_REWRITE_TAC[OPEN_IN_TOPSPACE]];
+    MATCH_MP_TAC EQ_IMP THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ONCE_REWRITE_TAC[HOMEOMORPHIC_SPACE_SYM] THEN
+    MATCH_MP_TAC EMBEDDING_MAP_IMP_HOMEOMORPHIC_SPACE THEN
+    ASM_SIMP_TAC[EMBEDDING_MAP_COMPONENT_INJECTION]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Retraction and section maps (having 1-sided inverses).                    *)
@@ -7269,6 +7489,10 @@ let T1_SPACE_CLOSED_IN_SING = prove
     DISCH_TAC THEN REWRITE_TAC[T1_SPACE_ALT] THEN
     MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
     EXISTS_TAC `{x:A}` THEN ASM_SIMP_TAC[IN_SING]]);;
+
+let CLOSED_IN_T1_SING = prove
+ (`!top a:A. t1_space top /\ a IN topspace top ==> closed_in top {a}`,
+  MESON_TAC[T1_SPACE_CLOSED_IN_SING]);;
 
 let T1_SPACE_CLOSED_IN_FINITE = prove
  (`!top:A topology.
@@ -14327,6 +14551,33 @@ let LOCALLY_COMPACT_SPACE_PRODUCT_TOPOLOGY = prove
       REWRITE_TAC[TOPSPACE_PRODUCT_TOPOLOGY; cartesian_product] THEN
       ASM_SIMP_TAC[IN_ELIM_THM; o_THM]]]);;
 
+let LOCALLY_COMPACT_SPACE_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        locally_compact_space(sum_topology k top) <=>
+        !i. i IN k ==> locally_compact_space(top i)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MATCH_MP_TAC TOPOLOGICAL_PROPERTY_OF_SUM_COMPONENT THEN
+    REWRITE_TAC[HOMEOMORPHIC_LOCALLY_COMPACT_SPACE] THEN
+    SIMP_TAC[LOCALLY_COMPACT_SPACE_CLOSED_SUBSET];
+    REWRITE_TAC[locally_compact_space; FORALL_PAIR_THM] THEN
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `i:K` THEN
+    REWRITE_TAC[TOPSPACE_SUM_TOPOLOGY; disjoint_union; IN_ELIM_PAIR_THM] THEN
+    ASM_CASES_TAC `(i:K) IN k` THEN ASM_REWRITE_TAC[o_THM] THEN
+    MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:A` THEN
+    ASM_CASES_TAC `(x:A) IN topspace(top(i:K))` THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:A->bool`; `l:A->bool`] THEN STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC
+     [`IMAGE (\x:A. (i:K),x) u`; `IMAGE (\x:A. (i:K),x) l`] THEN
+    ASM_SIMP_TAC[IMAGE_SUBSET] THEN REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC(REWRITE_RULE[open_map; RIGHT_IMP_FORALL_THM; IMP_IMP]
+        OPEN_MAP_COMPONENT_INJECTION) THEN
+      ASM_REWRITE_TAC[];
+      MATCH_MP_TAC IMAGE_COMPACT_IN THEN
+      EXISTS_TAC `(top:K->A topology) i` THEN
+      ASM_SIMP_TAC[CONTINUOUS_MAP_COMPONENT_INJECTION];
+      ASM SET_TAC[]]]);;
+
 let QUOTIENT_MAP_PROD_RIGHT = prove
  (`!(top:A topology) top1 top2 (f:B->C).
      locally_compact_space top /\ (hausdorff_space top \/ regular_space top) /\
@@ -21232,6 +21483,13 @@ let LOCALLY_COMPACT_REGULAR_IMP_COMPLETELY_REGULAR_SPACE = prove
       COND_CASES_TAC THEN REWRITE_TAC[CLOSED_IN_EMPTY] THEN
       ASM_SIMP_TAC[CLOSED_IN_DIFF; CLOSED_IN_TOPSPACE]]]);;
 
+let COMPLETELY_REGULAR_EQ_REGULAR_SPACE = prove
+ (`!top:A topology.
+        locally_compact_space top
+        ==> (completely_regular_space top <=> regular_space top)`,
+  MESON_TAC[COMPLETELY_REGULAR_IMP_REGULAR_SPACE;
+            LOCALLY_COMPACT_REGULAR_IMP_COMPLETELY_REGULAR_SPACE]);;
+
 let COMPLETELY_REGULAR_SPACE_PROD_TOPOLOGY = prove
  (`!(top1:A topology) (top2:B topology).
         completely_regular_space (prod_topology top1 top2) <=>
@@ -21799,6 +22057,39 @@ let LOCALLY_PATH_CONNECTED_SPACE_PRODUCT_TOPOLOGY = prove
       ASM_REWRITE_TAC[] THEN REWRITE_TAC[SUBSET_CARTESIAN_PRODUCT] THEN
       ASM SET_TAC[]]]);;
 
+let LOCALLY_PATH_CONNECTED_SPACE_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        locally_path_connected_space(sum_topology k top) <=>
+        !i. i IN k ==> locally_path_connected_space(top i)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MATCH_MP_TAC TOPOLOGICAL_PROPERTY_OF_SUM_COMPONENT THEN
+    REWRITE_TAC[HOMEOMORPHIC_LOCALLY_PATH_CONNECTED_SPACE] THEN
+    SIMP_TAC[LOCALLY_PATH_CONNECTED_SPACE_OPEN_SUBSET];
+    REWRITE_TAC[locally_path_connected_space; NEIGHBOURHOOD_BASE_OF] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[FORALL_OPEN_IN_SUM_TOPOLOGY] THEN
+    DISCH_TAC THEN X_GEN_TAC `w:K->A->bool` THEN DISCH_TAC THEN
+    REWRITE_TAC[FORALL_PAIR_THM; disjoint_union; IN_ELIM_PAIR_THM] THEN
+    MAP_EVERY X_GEN_TAC [`i:K`; `x:A`] THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:K`)) THEN
+    ASM_REWRITE_TAC[] THEN REPEAT DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(w:K->A->bool) i`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o SPEC `x:A`) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN STRIP_TAC THEN
+    EXISTS_TAC `IMAGE (\x. (i:K),(x:A)) u` THEN
+    EXISTS_TAC `IMAGE (\x. (i:K),(x:A)) v` THEN
+    ASM_SIMP_TAC[IMAGE_SUBSET] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_PAIR_THM] THEN
+    ASM_REWRITE_TAC[GSYM SUBSET] THEN REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC(REWRITE_RULE[open_map; RIGHT_IMP_FORALL_THM; IMP_IMP]
+        OPEN_MAP_COMPONENT_INJECTION) THEN
+      ASM_REWRITE_TAC[];
+      MATCH_MP_TAC PATH_CONNECTED_IN_CONTINUOUS_MAP_IMAGE THEN
+      EXISTS_TAC `(top:K->A topology) i` THEN
+      ASM_SIMP_TAC[CONTINUOUS_MAP_COMPONENT_INJECTION];
+      ASM SET_TAC[]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Locally connected spaces.                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -22263,6 +22554,39 @@ let LOCALLY_CONNECTED_SPACE_PRODUCT_TOPOLOGY = prove
       ASM_REWRITE_TAC[] THEN REWRITE_TAC[SUBSET_CARTESIAN_PRODUCT] THEN
       ASM SET_TAC[]]]);;
 
+let LOCALLY_CONNECTED_SPACE_SUM_TOPOLOGY = prove
+ (`!k (top:K->A topology).
+        locally_connected_space(sum_topology k top) <=>
+        !i. i IN k ==> locally_connected_space(top i)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MATCH_MP_TAC TOPOLOGICAL_PROPERTY_OF_SUM_COMPONENT THEN
+    REWRITE_TAC[HOMEOMORPHIC_LOCALLY_CONNECTED_SPACE] THEN
+    SIMP_TAC[LOCALLY_CONNECTED_SPACE_OPEN_SUBSET];
+    REWRITE_TAC[locally_connected_space; NEIGHBOURHOOD_BASE_OF] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[FORALL_OPEN_IN_SUM_TOPOLOGY] THEN
+    DISCH_TAC THEN X_GEN_TAC `w:K->A->bool` THEN DISCH_TAC THEN
+    REWRITE_TAC[FORALL_PAIR_THM; disjoint_union; IN_ELIM_PAIR_THM] THEN
+    MAP_EVERY X_GEN_TAC [`i:K`; `x:A`] THEN STRIP_TAC THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:K`)) THEN
+    ASM_REWRITE_TAC[] THEN REPEAT DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(w:K->A->bool) i`) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o SPEC `x:A`) THEN
+    ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN STRIP_TAC THEN
+    EXISTS_TAC `IMAGE (\x. (i:K),(x:A)) u` THEN
+    EXISTS_TAC `IMAGE (\x. (i:K),(x:A)) v` THEN
+    ASM_SIMP_TAC[IMAGE_SUBSET] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_PAIR_THM] THEN
+    ASM_REWRITE_TAC[GSYM SUBSET] THEN REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC(REWRITE_RULE[open_map; RIGHT_IMP_FORALL_THM; IMP_IMP]
+        OPEN_MAP_COMPONENT_INJECTION) THEN
+      ASM_REWRITE_TAC[];
+      MATCH_MP_TAC CONNECTED_IN_CONTINUOUS_MAP_IMAGE THEN
+      EXISTS_TAC `(top:K->A topology) i` THEN
+      ASM_SIMP_TAC[CONTINUOUS_MAP_COMPONENT_INJECTION];
+      ASM SET_TAC[]]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* k-spaces (with no Hausdorff-ness assumptions built in).                   *)
 (* ------------------------------------------------------------------------- *)
@@ -22577,6 +22901,79 @@ let K_KC_SPACE_SUBTOPOLOGY = prove
         ==> k_space(subtopology top s) /\ kc_space(subtopology top s)`,
   MESON_TAC[K_SPACE_OPEN_SUBTOPOLOGY; K_SPACE_CLOSED_SUBTOPOLOGY;
             KC_SPACE_SUBTOPOLOGY]);;
+
+let K_SPACE_AS_QUOTIENT_EXPLICIT = prove
+ (`!top:A topology.
+        k_space top <=>
+        quotient_map (sum_topology {k | compact_in top k} (subtopology top),
+                      top)
+                     SND`,
+  REWRITE_TAC[quotient_map; OPEN_IN_SUM_TOPOLOGY] THEN
+  REWRITE_TAC[IN_ELIM_THM; TOPSPACE_SUM_TOPOLOGY; SUBSET_RESTRICT] THEN
+  REWRITE_TAC[disjoint_union; IN_ELIM_PAIR_THM] THEN
+  GEN_TAC THEN SIMP_TAC[K_SPACE_ALT; IN_ELIM_THM] THEN
+  SIMP_TAC[o_THM; TOPSPACE_SUBTOPOLOGY_SUBSET; COMPACT_IN_SUBSET_TOPSPACE] THEN
+  REWRITE_TAC[GSYM INTER] THEN MATCH_MP_TAC(TAUT
+   `(p <=> p') /\ q ==> (p <=> q /\ p')`) THEN
+  CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[SET_RULE `IMAGE f {x,y | P x y} = {f(x,y) | P x y}`] THEN
+  MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC[SUBSET; FORALL_IN_GSPEC] THEN
+  SIMP_TAC[TOPSPACE_SUBTOPOLOGY; IN_INTER; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  MAP_EVERY EXISTS_TAC [`{x:A}`; `x:A`] THEN
+  ASM_REWRITE_TAC[COMPACT_IN_SING; IN_SING]);;
+
+let K_SPACE_AS_QUOTIENT = prove
+ (`!top:A topology.
+        k_space top <=>
+        ?q (top':((A->bool)#A)topology).
+                locally_compact_space top' /\ quotient_map(top',top) q`,
+  GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN MAP_EVERY EXISTS_TAC
+     [`SND:(A->bool)#A->A`;
+      `sum_topology {k:A->bool | compact_in top k} (subtopology top)`] THEN
+    ASM_REWRITE_TAC[GSYM K_SPACE_AS_QUOTIENT_EXPLICIT] THEN
+    REWRITE_TAC[LOCALLY_COMPACT_SPACE_SUM_TOPOLOGY; IN_ELIM_THM] THEN
+    SIMP_TAC[COMPACT_IMP_LOCALLY_COMPACT_SPACE; COMPACT_SPACE_SUBTOPOLOGY];
+    MESON_TAC[LOCALLY_COMPACT_IMP_K_SPACE; K_SPACE_QUOTIENT_MAP_IMAGE]]);;
+
+let K_SPACE_PROD_TOPOLOGY_LEFT = prove
+ (`!(top:A topology) (top':B topology).
+        locally_compact_space top /\
+        (hausdorff_space top \/ regular_space top) /\
+        k_space top'
+        ==> k_space(prod_topology top top')`,
+  REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [K_SPACE_AS_QUOTIENT]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`q:(B->bool)#B->B`; `top'':((B->bool)#B)topology`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`top:A topology`; `top'':((B->bool)#B)topology`; `top':B topology`;
+    `q:(B->bool)#B->B`] QUOTIENT_MAP_PROD_RIGHT) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] K_SPACE_QUOTIENT_MAP_IMAGE) THEN
+  MATCH_MP_TAC LOCALLY_COMPACT_IMP_K_SPACE THEN
+  ASM_REWRITE_TAC[LOCALLY_COMPACT_SPACE_PROD_TOPOLOGY]);;
+
+let K_SPACE_PROD_TOPOLOGY_RIGHT = prove
+ (`!(top:A topology) (top':B topology).
+        k_space top /\
+        locally_compact_space top' /\
+        (hausdorff_space top' \/ regular_space top')
+        ==> k_space(prod_topology top top')`,
+  REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [K_SPACE_AS_QUOTIENT]) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`q:(A->bool)#A->A`; `top'':((A->bool)#A)topology`] THEN
+  STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`top'':((A->bool)#A)topology`; `top:A topology`; `top':B topology`;
+    `q:(A->bool)#A->A`] QUOTIENT_MAP_PROD_LEFT) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] K_SPACE_QUOTIENT_MAP_IMAGE) THEN
+  MATCH_MP_TAC LOCALLY_COMPACT_IMP_K_SPACE THEN
+  ASM_REWRITE_TAC[LOCALLY_COMPACT_SPACE_PROD_TOPOLOGY]);;
 
 let CONTINUOUS_MAP_FROM_K_SPACE = prove
  (`!top top' (f:A->B).

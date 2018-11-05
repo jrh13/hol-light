@@ -2925,6 +2925,68 @@ let IMAGE_PRODUCT_MAP = prove
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Disjoint union construction for a family of sets.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let disjoint_union = new_definition
+ `disjoint_union (k:K->bool) (s:K->A->bool) = { (i,x) | i IN k /\ x IN s i}`;;
+
+let SUBSET_DISJOINT_UNION = prove
+ (`!k (s:K->A->bool) t.
+        disjoint_union k s SUBSET disjoint_union k t <=>
+        !i. i IN k ==> s i SUBSET t i`,
+  REWRITE_TAC[SUBSET; disjoint_union; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[IN_ELIM_PAIR_THM] THEN SET_TAC[]);;
+
+let DISJOINT_UNION_EQ = prove
+ (`!k (s:K->A->bool) t.
+        disjoint_union k s = disjoint_union k t <=>
+        !i. i IN k ==> s i = t i`,
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_DISJOINT_UNION] THEN
+  SET_TAC[]);;
+
+let SUBSET_DISJOINT_UNION_EXISTS = prove
+ (`!k (s:K->A->bool) u.
+        u SUBSET disjoint_union k s <=>
+        ?t. u = disjoint_union k t /\ !i. i IN k ==> t i SUBSET s i`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC; MESON_TAC[SUBSET_DISJOINT_UNION]] THEN
+  EXISTS_TAC `\i. {x | (i,x) IN (u:K#A->bool)}` THEN
+  POP_ASSUM MP_TAC THEN REWRITE_TAC[SUBSET; EXTENSION] THEN
+  REWRITE_TAC[disjoint_union; FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN
+  SET_TAC[]);;
+
+let INTER_DISJOINT_UNION = prove
+ (`!k s t:K->A->bool.
+        (disjoint_union k s) INTER (disjoint_union k t) =
+        disjoint_union k (\i. s i INTER t i)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[EXTENSION; disjoint_union; IN_INTER; IN_ELIM_THM] THEN
+  MESON_TAC[PAIR_EQ]);;
+
+let UNION_DISJOINT_UNION = prove
+ (`!k s t:K->A->bool.
+        (disjoint_union k s) UNION (disjoint_union k t) =
+        disjoint_union k (\i. s i UNION t i)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[EXTENSION; disjoint_union; IN_UNION; IN_ELIM_THM] THEN
+  MESON_TAC[PAIR_EQ]);;
+
+let DISJOINT_UNION_EQ_EMPTY = prove
+ (`!k s:K->A->bool.
+        disjoint_union k s = {} <=> !i. i IN k ==> s i = {}`,
+  REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; disjoint_union; IN_ELIM_PAIR_THM;
+              NOT_IN_EMPTY] THEN
+  SET_TAC[]);;
+
+let DISJOINT_DISJOINT_UNION = prove
+ (`!k s t:K->A->bool.
+        DISJOINT (disjoint_union k s) (disjoint_union k t) =
+        !i. i IN k ==> DISJOINT (s i) (t i)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[DISJOINT; INTER_DISJOINT_UNION; DISJOINT_UNION_EQ_EMPTY]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Cardinality of functions with bounded domain (support) and range.         *)
 (* ------------------------------------------------------------------------- *)
 

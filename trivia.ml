@@ -83,6 +83,15 @@ let one_Axiom = prove
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[FUN_EQ_THM] THEN
   ONCE_REWRITE_TAC [one] THEN ASM_REWRITE_TAC[]);;
 
+let FORALL_ONE_THM = prove
+ (`(!x. P x) <=> P one`,
+  EQ_TAC THEN REWRITE_TAC[one_INDUCT] THEN DISCH_THEN MATCH_ACCEPT_TAC);;
+
+let EXISTS_ONE_THM = prove
+ (`(?x. P x) <=> P one`,
+  GEN_REWRITE_TAC I [TAUT `(p <=> q) <=> (~p <=> ~q)`] THEN
+  REWRITE_TAC[NOT_EXISTS_THM; FORALL_ONE_THM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Add the type "1" to the inductive type store.                             *)
 (* ------------------------------------------------------------------------- *)

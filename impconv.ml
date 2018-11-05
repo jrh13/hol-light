@@ -13,6 +13,8 @@
 (*            Distributed under the same license as HOL Light.               *)
 (* ========================================================================= *)
 
+needs "quot.ml";;
+
 let IMP_REWRITE_TAC,TARGET_REWRITE_TAC,HINT_EXISTS_TAC,
     SEQ_IMP_REWRITE_TAC,CASE_REWRITE_TAC =
 
