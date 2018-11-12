@@ -13905,8 +13905,8 @@ let BOUNDED_INTERVAL = prove
             INTERVAL_OPEN_SUBSET_CLOSED]);;
 
 let NOT_INTERVAL_UNIV = prove
- (`(!a b. ~(interval[a,b] = UNIV)) /\
-   (!a b. ~(interval(a,b) = UNIV))`,
+ (`(!a b. ~(interval[a,b] = (:real^N))) /\
+   (!a b. ~(interval(a,b) = (:real^N)))`,
   MESON_TAC[BOUNDED_INTERVAL; NOT_BOUNDED_UNIV]);;
 
 let OPEN_INTERVAL_MIDPOINT = prove

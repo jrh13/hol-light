@@ -167,6 +167,10 @@ let REVERSE_REVERSE = prove
  (`!l:A list. REVERSE(REVERSE l) = l`,
   LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[REVERSE; REVERSE_APPEND; APPEND]);;
 
+let REVERSE_EQ_EMPTY = prove
+ (`!l:A list. REVERSE l = [] <=> l = []`,
+  MESON_TAC[REVERSE_REVERSE; REVERSE]);;
+
 let CONS_11 = prove
  (`!(h1:A) h2 t1 t2. (CONS h1 t1 = CONS h2 t2) <=> (h1 = h2) /\ (t1 = t2)`,
   REWRITE_TAC[injectivity "list"]);;
@@ -207,6 +211,12 @@ let LENGTH_EQ_CONS = prove
  (`!l n. (LENGTH l = SUC n) <=> ?h t. (l = CONS h t) /\ (LENGTH t = n)`,
   LIST_INDUCT_TAC THEN REWRITE_TAC[LENGTH; NOT_SUC; NOT_CONS_NIL] THEN
   ASM_REWRITE_TAC[SUC_INJ; CONS_11] THEN MESON_TAC[]);;
+
+let LENGTH_REVERSE = prove
+ (`!l:A list. LENGTH(REVERSE l) = LENGTH l`,
+  LIST_INDUCT_TAC THEN
+  ASM_REWRITE_TAC[REVERSE; LENGTH_APPEND; LENGTH] THEN
+  REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES]);;
 
 let MAP_o = prove
  (`!f:A->B. !g:B->C. !l. MAP (g o f) l = MAP g (MAP f l)`,
@@ -482,6 +492,15 @@ let LAST_APPEND = prove
 let LENGTH_TL = prove
  (`!l. ~(l = []) ==> LENGTH(TL l) = LENGTH l - 1`,
   LIST_INDUCT_TAC THEN REWRITE_TAC[LENGTH; TL; ARITH; SUC_SUB1]);;
+
+let LAST_REVERSE = prove
+ (`!l:A list. ~(l = []) ==> LAST(REVERSE l) = HD l`,
+  LIST_INDUCT_TAC THEN
+  REWRITE_TAC[HD; REVERSE; LAST; LAST_APPEND; NOT_CONS_NIL]);;
+
+let HD_REVERSE = prove
+ (`!l:A list. ~(l = []) ==> HD(REVERSE l) = LAST l`,
+  MESON_TAC[LAST_REVERSE; REVERSE_REVERSE; REVERSE_EQ_EMPTY]);;
 
 let EL_APPEND = prove
  (`!k l m. EL k (APPEND l m) = if k < LENGTH l then EL k l

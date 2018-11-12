@@ -8,6 +8,68 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 10th Nov 2018       lists.ml, int.ml, iterate.ml, Library/binary.ml
+
+Added a few elementary theorems (the first one BINARY_INDUCT just
+moved from Library/binary.ml into the core files).
+
+  BINARY_INDUCT
+    |- !P. P 0 /\ (!n. P n ==> P (2 * n) /\ P (2 * n + 1)) ==> (!n. P n)
+  
+  CONG_NSUM =
+    |- !n f g s.
+           FINITE s /\ (!x. x IN s ==> (f x == g x) (mod n))
+           ==> (nsum s f == nsum s g) (mod n)
+  
+  HD_REVERSE =
+    |- !l. ~(l = []) ==> HD (REVERSE l) = LAST l
+  
+  LAST_REVERSE =
+    |- !l. ~(l = []) ==> LAST (REVERSE l) = HD l
+  
+  LENGTH_REVERSE =
+    |- !l. LENGTH (REVERSE l) = LENGTH l
+  
+  NSUM_RELATED =
+    |- !R f g s.
+           R 0 0 /\
+           (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+           FINITE s /\
+           (!x. x IN s ==> R (f x) (g x))
+           ==> R (nsum s f) (nsum s g)
+  
+  NUM_CASES_BINARY =
+    |- !P. (!n. P n) <=> (!n. P (2 * n)) /\ (!n. P (2 * n + 1))
+  
+  REVERSE_EQ_EMPTY =
+    |- !l. REVERSE l = [] <=> l = []
+  
+  SUM_RELATED =
+    |- !R f g s.
+           R (&0) (&0) /\
+           (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+           FINITE s /\
+           (!x. x IN s ==> R (f x) (g x))
+           ==> R (sum s f) (sum s g)
+  
+  num_WF_DOWN =
+    |- !P m.
+           (!n. m <= n ==> P n) /\ (!n. n < m /\ (!p. n < p ==> P p) ==> P n)
+           ==> (!n. P n)
+
+Fri  9th Nov 2018       firstorder.ml [new file], metis.ml
+
+Added a complete revision of the METIS prover code from Michael Faerber.
+This fixes some known failures of the previous version and also separates
+off and generalizes utilities for first-order term manipulation that can
+be used in other first-order provers.
+
+Fri  9th Nov 2018       lib.ml
+
+Added a definition of the reversed function application operator "|>".
+This is already there as standard with recent versions of OCaml, but
+this helps backwards compatibility with much older ones.
+
 Sat  3rd Nov 2018       sets.ml
 
 Added a basic "disjoint union" set construction with the obvious lemmas:

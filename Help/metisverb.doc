@@ -1,0 +1,19 @@
+\DOC metisverb
+
+\TYPE {metisverb : bool ref}
+
+\SYNOPSIS
+Make {METIS}'s output more verbose and detailed.
+
+\DESCRIBE
+When this reference variable is set to {true}, it makes any applications of
+{METIS}, {METIS_TAC} and related rules and tactics provide more verbose output
+about their working.
+
+\FAILURE
+Not applicable.
+
+\SEEALSO
+meson_chatty.ml
+
+\ENDDOC

@@ -2,13 +2,6 @@
 (* Binary expansions as a bijection between numbers and finite sets.         *)
 (* ========================================================================= *)
 
-let BINARY_INDUCT = prove
- (`!P. P 0 /\ (!n. P n ==> P(2 * n) /\ P(2 * n + 1)) ==> !n. P n`,
-  GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC num_WF THEN GEN_TAC THEN
-  STRIP_ASSUME_TAC(ARITH_RULE
-   `n = 0 \/ n DIV 2 < n /\ (n = 2 * n DIV 2 \/ n = 2 * n DIV 2 + 1)`) THEN
-  ASM_MESON_TAC[]);;
-
 let BOUNDED_FINITE = prove
  (`!s. (!x:num. x IN s ==> x <= n) ==> FINITE s`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `0..n` THEN

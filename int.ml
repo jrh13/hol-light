@@ -1548,6 +1548,40 @@ let ASM_ARITH_TAC =
   ARITH_TAC;;
 
 (* ------------------------------------------------------------------------- *)
+(* A few miscellaneous applications.                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let BINARY_INDUCT = prove
+ (`!P. P 0 /\ (!n. P n ==> P(2 * n) /\ P(2 * n + 1)) ==> !n. P n`,
+  GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC num_WF THEN GEN_TAC THEN
+  STRIP_ASSUME_TAC(ARITH_RULE
+   `n = 0 \/ n DIV 2 < n /\ (n = 2 * n DIV 2 \/ n = 2 * n DIV 2 + 1)`) THEN
+  ASM_MESON_TAC[]);;
+
+let NUM_CASES_BINARY = prove
+ (`!P. (!n. P n) <=> (!n. P(2 * n)) /\ (!n. P(2 * n + 1))`,
+  MESON_TAC[ARITH_RULE `n = 2 * n DIV 2 \/ n = 2 * n DIV 2 + 1`]);;
+
+let num_WF_DOWN = prove
+ (`!P m:num.
+        (!n. m <= n ==> P n) /\
+        (!n. n < m /\ (!p. n < p ==> P p) ==> P n)
+        ==> (!n. P n)`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  ASM_CASES_TAC `m = 0` THENL [ASM_MESON_TAC[LE_0]; ALL_TAC] THEN
+  SUBGOAL_THEN `!i. P(m - 1 - i)` MP_TAC THENL
+   [MATCH_MP_TAC num_WF THEN GEN_TAC THEN
+    DISCH_THEN(fun th -> FIRST_X_ASSUM MATCH_MP_TAC THEN ASSUME_TAC th) THEN
+    CONJ_TAC THENL [ASM_ARITH_TAC; X_GEN_TAC `p:num`] THEN
+    ASM_CASES_TAC `m:num <= p` THEN ASM_SIMP_TAC[] THEN
+    STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `m - 1 - p`) THEN
+    ASM_SIMP_TAC[ARITH_RULE
+     `~(m <= p) ==> m - 1 - (m - 1 - p) = p`] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC;
+    ASM_MESON_TAC[ARITH_RULE `~(m <= n) ==> n = m - 1 - (m - 1 - n)`]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Also a similar divisibility procedure for natural numbers.                *)
 (* ------------------------------------------------------------------------- *)
 

@@ -7,16 +7,20 @@
 (*            http://www.gilith.com/research/metis/                          *)
 (*                                                                           *)
 (* This is a port from SML to OCaml and proof-reconstructing integration     *)
-(* with HOL Light, written by Michael Färber and Cezary Kaliszyk.            *)
+(* with HOL Light, written by Michael Faerber and Cezary Kaliszyk.           *)
 (*                                                                           *)
 (*                (c) Copyright, Joe Hurd, 2001                              *)
 (*             (c) Copyright, Joe Leslie-Hurd, 2004                          *)
-(*   (c) Copyright, Michael Färber and Cezary Kaliszyk, 2014-2016.           *)
+(*   (c) Copyright, Michael Faerber and Cezary Kaliszyk, 2014-2018.          *)
 (*                                                                           *)
 (*            Distributed under the same license as HOL Light.               *)
 (* ========================================================================= *)
 
-needs "meson.ml";;
+needs "firstorder.ml";;
+
+let metisverb = ref false;;
+
+module Metis_prover = struct
 
 (* ------------------------------------------------------------------------- *)
 (* Convenient utility modules.                                               *)
@@ -3686,7 +3690,7 @@ and existentialName = Name.fromString "?";;
         split asms false f1 @ split (Not f1 :: asms) false f2
       | (false, Imp (f1,f2)) -> split asms true f1 @ split (f1 :: asms) false f2
       | (false, Iff (f1,f2)) ->
-        split (f1 :: asms) false f2 @ split (f2 :: asms) false f1
+        split (f1 :: asms) false f2 @ split (Not f2 :: asms) true f1
       | (false, Exists (v,f)) -> List.map (add_var_asms asms v) (split [] false f)
         (* Unsplittables *)
       | _ -> [add_asms asms (if pol then fm else Not fm)];;
@@ -5249,7 +5253,7 @@ let freshVars th = Thm.subst (Substitute.freshVars (Thm.freeVars th)) th;;
       ;;
 
 let factor th =
-      let fact sub = removeSym (Thm.subst sub th)
+      let fact sub = removeIrrefl (removeSym (Thm.subst sub th))
     in
       List.map fact (factor' (Thm.clause th))
     ;;
@@ -9252,32 +9256,38 @@ let deduce active cl =
         sortMap utility Int.compare
       ;;
 
-  let factor_add (cl, ((active,subsume,acc) as active_subsume_acc)) =
+  let rec post_factor (cl, ((active,subsume,acc) as active_subsume_acc)) =
       match postfactor_simplify active subsume cl with
         None -> active_subsume_acc
-      | Some cl ->
-          let active = addFactorClause active cl
-          and subsume = addSubsume subsume cl
-          and acc = cl :: acc
-        in
-          (active,subsume,acc)
-        ;;
+      | Some cl' ->
+          if Clause.equalThms cl' cl then
+            let active = addFactorClause active cl
+            and subsume = addSubsume subsume cl
+            and acc = cl :: acc
+            in (active,subsume,acc)
+          else
+            (* If the clause was changed in the post-factor simplification *)
+            (* step, then it may have altered the set of largest literals *)
+            (* in the clause. The safest thing to do is to factor again. *)
+            factor1 (cl', active_subsume_acc)
 
-  let factor1 (cl, ((active,subsume,_) as active_subsume_acc)) =
+  and factor1 (cl, active_subsume_acc) =
+      let cls = sort_utilitywise (cl :: Clause.factor cl)
+      in Mlist.foldl post_factor active_subsume_acc cls
+      ;;
+
+  let pre_factor (cl, ((active,subsume,_) as active_subsume_acc)) =
       match prefactor_simplify active subsume cl with
         None -> active_subsume_acc
-      | Some cl ->
-          let cls = sort_utilitywise (cl :: Clause.factor cl)
-        in
-          Mlist.foldl factor_add active_subsume_acc cls
-        ;;
+      | Some cl -> factor1 (cl, active_subsume_acc)
+      ;;
 
   let rec factor' active acc = function
       [] -> (active, List.rev acc)
     | cls ->
         let cls = sort_utilitywise cls
         in let subsume = getSubsume active
-        in let (active,_,acc) = Mlist.foldl factor1 (active,subsume,acc) cls
+        in let (active,_,acc) = Mlist.foldl pre_factor (active,subsume,acc) cls
         in let (active,cls) = extract_rewritables active
       in
         factor' active acc cls
@@ -9742,7 +9752,7 @@ end
 (* The basic Metis loop.                                                     *)
 (* ========================================================================= *)
 
-module Metis_loop =
+module Loop =
 struct
 
 let rec loop res =
@@ -9763,156 +9773,212 @@ let run rules =
 
 end
 
-(* ========================================================================= *)
-(* Conversion of HOL to Metis FOL.                                           *)
-(* ========================================================================= *)
+end
 
-module Metis_generate = struct
 
-let metis_name = string_of_int
+module Metis_debug = struct
 
-let rec metis_of_term env consts tm =
-  if is_var tm && not (mem tm consts) then
-    (Term.Var(metis_name (Meson.fol_of_var tm)))
-  else (
-    let f,args = strip_comb tm in
-    if mem f env then failwith "metis_of_term: higher order" else
-    let ff = Meson.fol_of_const f in
-    Term.Fn (metis_name ff, map (metis_of_term env consts) args))
+(* Taken from: https://sourceforge.net/p/hol/mailman/message/35201767/ *)
+let print_varandtype fmt tm =
+   let hop,args = strip_comb tm in
+   let s = name_of hop
+   and ty = type_of hop in
+   if is_var hop && args = [] then
+    (pp_print_string fmt "(";
+     pp_print_string fmt s;
+     pp_print_string fmt ":";
+     pp_print_type fmt ty;
+     pp_print_string fmt ")")
+   else fail() ;;
 
-let rec metis_of_term env consts tm =
-  if is_var tm && not (mem tm consts) then
-    (Term.Var(metis_name (Meson.fol_of_var tm)))
-  else (
-    let f,args = strip_comb tm in
-    if mem f env then failwith "metis_of_term: higher order" else
-    let ff = Meson.fol_of_const f in
-    Term.Fn (metis_name ff, map (metis_of_term env consts) args))
-
-let metis_of_atom env consts tm =
-  try let (l, r) = dest_eq tm in
-      let l' = metis_of_term env consts l
-      and r' = metis_of_term env consts r in
-      Atom.mkEq (l', r')
-  with Failure _ ->
-      let f,args = strip_comb tm in
-      if mem f env then failwith "metis_of_atom: higher order" else
-      let ff = Meson.fol_of_const f in
-      (metis_name ff, map (metis_of_term env consts) args)
-
-let metis_of_literal env consts tm =
-  let (pol, tm') = try (false, dest_neg tm)
-     with Failure _ -> (true,           tm)
-  in (pol, metis_of_atom env consts tm')
-
-let metis_of_clause th =
-  let lconsts = freesl (hyp th) in
-  let tm = concl th in
-  let hlits = disjuncts tm in
-  let flits = map (metis_of_literal [] lconsts) hlits in
-  let set = Literal.Set.fromList flits in
-  Thm.axiom set
-
-let metis_of_clauses = map metis_of_clause
+let show_types,hide_types =
+   (fun () -> install_user_printer ("Show Types",print_varandtype)),
+   (fun () -> try delete_user_printer "Show Types"
+              with Failure _ -> failwith ("hide_types: "^
+                                          "Types are already hidden."));;
 
 end
 
-(* ========================================================================= *)
-(* Reconstruction of HOL proofs from Metis ones.                             *)
-(* ========================================================================= *)
 
-module Metis_reconstruct = struct
+module Preterm = struct
 
-let hol_of_var tymap v =
-  try let v' = int_of_string v in
-      Meson.hol_of_var v'
-  with _ ->
-  (match Name.Map.peek tymap v with
-    Some ty -> mk_var (v, ty)
-  | None -> failwith ("Metis_reconstruct.hol_of_var: " ^ v))
+let mk_negp pt = Combp (preterm_of_term `~`, pt)
+let mk_eqp (ps, pt) = Combp (Combp (Constp ("=", dpty), ps), pt)
+let mk_conjp (ps, pt) = Combp (Combp (preterm_of_term `/\`, ps), pt)
+let mk_disjp (ps, pt) = Combp (Combp (preterm_of_term `\/`, ps), pt)
 
-let hol_of_const c =
-  try Meson.hol_of_const (int_of_string c)
-  with _ -> failwith ("Metis_reconstruct.hol_of_const: " ^ c)
+let list_mk_combp (h, t) = rev_itlist (fun x acc -> Combp (acc, x)) t h
 
-let rec hol_of_term tymap = function
-    Term.Var v -> hol_of_var tymap v
+assert
+  (
+    list_mk_combp (Varp ("1", dpty), [Varp ("2", dpty); Varp ("3", dpty)])
+  =
+    Combp (Combp (Varp ("1", Ptycon ("", [])), Varp ("2", Ptycon ("", []))),
+      Varp ("3", Ptycon ("", [])))
+  );;
+
+let list_mk_disjp = function
+    [] -> preterm_of_term `F`
+  | h::t -> itlist (curry mk_disjp) t h
+
+(* typechecking a preterm with constants fails,
+   therefore we convert constants to variables before type checking
+   type checking converts the variables back to the corresponding constants
+*)
+let rec unconst_preterm = function
+    Varp (s, pty) -> Varp (s, pty)
+  | Constp (s, pty) -> Varp (s, pty)
+  | Combp (l, r) -> Combp (unconst_preterm l, unconst_preterm r)
+  | Typing (ptm, pty) -> Typing (unconst_preterm ptm, pty)
+  | _ -> failwith "unconst_preterm"
+
+let rec env_of_preterm = function
+    Varp (s, pty) -> [(s, pty)]
+  | Constp (s, pty) -> []
+  | Combp (l, r) -> env_of_preterm l @ env_of_preterm r
+  | Typing (ptm, pty) -> env_of_preterm ptm
+  | _ -> failwith "env_of_preterm"
+
+let env_of_th = env_of_preterm o preterm_of_term o concl
+let env_of_ths = List.concat o List.map env_of_th
+
+end
+
+
+module Metis_mapping = struct
+
+open Metis_prover
+
+  let reset_consts,fol_of_const,hol_of_const =
+    Meson.reset_consts,Meson.fol_of_const,Meson.hol_of_const
+
+let preterm_of_const = preterm_of_term o hol_of_const o int_of_string
+
+let prefix s = "__" ^ s
+
+let rec preterm_of_fol_term = function
+    Term.Var x -> Varp (prefix x, dpty)
   | Term.Fn (f, args) ->
-      list_mk_comb(hol_of_const f, map (hol_of_term tymap) args)
+      let pf = preterm_of_const f in
+      let pargs = List.map preterm_of_fol_term args in
+      Preterm.list_mk_combp (pf, pargs)
 
-let hol_of_atom tymap (p,args) =
-  let args' = map (hol_of_term tymap) args in
-  if p = "=" then match args' with
-      eq_l :: eq_r :: [] -> mk_eq (eq_l, eq_r)
-    | _ -> failwith "Metis_reconstruct.hol_of_atom: bad equality"
-  else list_mk_comb(hol_of_const p,args')
+let preterm_of_predicate = function
+    "=" -> Constp ("=", dpty)
+  | p -> preterm_of_const p
 
-let hol_of_literal tymap (pol,args) =
-  let atom = hol_of_atom tymap args in
-  match pol with
-    false -> mk_neg atom
-  | true  -> atom
+let preterm_of_atom (p, args) =
+  let pp = preterm_of_predicate p in
+  let pargs = List.map preterm_of_fol_term args in
+  Typing (Preterm.list_mk_combp (pp, pargs), pretype_of_type bool_ty)
 
-let string_of_metis_subst subst =
-  let print_single (name, term) = name ^ " -> " ^ Term.toString term in
-  String.concat ", " (map print_single subst)
+let preterm_of_literal (pol, fat) =
+  let pat = preterm_of_atom fat in
+  if pol then pat else Preterm.mk_negp pat
 
-let string_of_hol_subst subst =
-  let print_single (t, v) = string_of_term t ^ " / " ^ string_of_term v in
-  String.concat ", " (map print_single subst)
-
-let hol_of_subst tymap subst =
-  map (fun (name, term) -> hol_of_term tymap term, hol_of_var tymap name) subst
-
-let empty_tymap = Name.Map.newMap ()
-
-(* update type map with all variables from substitution that are not covered
-   by the type map yet *)
-let update_tymap tymap subst =
-  let f (v, term) acc =
-    try let _ = hol_of_var acc v in acc
-    with _ -> Name.Map.insert acc (v, type_of (hol_of_term tymap term)) in
-  List.fold_right f subst tymap
-
-let string_of_int_list = String.concat "; " o List.map string_of_int
+let preterm_of_eq (s, t) =
+  Preterm.mk_eqp (preterm_of_fol_term s, preterm_of_fol_term t)
 
 
-(* return polarity and atom of literal *)
-let atom_of_literal lit = match is_neg lit with
-  true  -> (false, dest_neg lit)
-| false -> (true ,          lit)
+let typecheck env = term_of_preterm o retypecheck env o Preterm.unconst_preterm
+let typecheckl env = function
+    [] -> []
+  | xs -> Preterm.list_mk_disjp xs |> typecheck env |> disjuncts
 
-let literal_of_atom (pol, atom) = if pol then atom else mk_neg atom
 
-let rec follow_metis_atom_path tm = function
-    [] -> (tm, "")
-  | i :: is ->
-    let f,args = strip_comb tm in
-    let arity = length args in
-    if i < arity then
-      let (tm', path') = follow_metis_atom_path (List.nth args i) is in
+let hol_of_term env = typecheck env o preterm_of_fol_term
+
+let hol_of_atom env = typecheck env o preterm_of_atom
+
+let hol_of_literal env = typecheck env o preterm_of_literal
+
+let hol_of_clause env = typecheck env o Preterm.list_mk_disjp o map preterm_of_literal
+
+let hol_of_substitution env = map dest_eq o typecheckl env o map preterm_of_eq
+
+end
+
+
+module Metis_path = struct
+
+open Metis_prover
+
+(* The term `f 1 2 3` is encoded in HOL Light as follows:
+
+         @
+        / \
+       @  3
+      / \
+     @  2
+    / \
+   f  1
+
+*)
+
+let rec hol_of_term_path tm path = match tm, path with
+    (tm, []) -> tm, ""
+  | Term.Fn (f, args), i :: is ->
+      let arity = length args in
+      assert (i < arity);
+      let (tm', path') = hol_of_term_path (List.nth args i) is in
       (tm', String.make (arity - i - 1) 'l' ^ "r" ^ path')
-    else failwith "follow_metis_atom_path"
+  | _ -> failwith "hol_of_term_path"
 
-(* find literal subterm at a Metis path, and return it along with
-   equivalent HOL Light path *)
-let follow_metis_lit_path lit path =
-  (* Metis returns paths that indicate the position of a term inside an
-     *atom*, even if the atom is negated, thus a literal. *)
-  let (pol, atom) = atom_of_literal lit in
-  let (s, path) = follow_metis_atom_path atom path in
-  (s, if pol then path else "r" ^ path)
+let hol_of_atom_path (p, args) = hol_of_term_path (Term.Fn (p, args))
+
+let hol_of_literal_path (pol, atom) path =
+  let s, path = hol_of_atom_path atom path in
+  s, if pol then path else "r" ^ path
+
+end
 
 
-(* retrieve axiom that proves the disjunction of the given literals *)
-let match_axiom axioms lits =
-  let set = setify lits in
-  let clause = list_mk_disj set in
-  (* we could canonicalise just once at the beginning for all axioms *)
-  let canonicalise = CONV_RULE DISJ_CANON_CONV in
-  let axioms' = map canonicalise axioms in
-  try find (fun thm -> concl thm = clause) axioms'
-  with _ -> failwith "match_axiom"
+module Metis_unify = struct
+
+open Metis_prover
+
+let verb = ref false
+
+exception Unify
+
+let rec unify_fo_ho_term vars fat tm m =
+  if !verb then Format.printf "unify_fo_ho_term: fat = %s, tm = %s\n%!"
+    (Term.toString fat) (string_of_term tm);
+  match fat with
+    Term.Var v when List.mem_assoc v m ->
+      if !verb then Format.printf "var_assoc\n%!";
+      let tm' = List.assoc v m in
+      if tm = tm' then m else raise Unify
+  | Term.Var v ->
+      if !verb then Format.printf "var\n%!";
+      if is_var tm && not (List.mem tm vars) then (v, tm) :: m
+      else (if !verb then Format.printf "Unify!\n%!"; raise Unify)
+  | Term.Fn (f, args) ->
+      if !verb then Format.printf "fn\n%!";
+      let hf, hargs = try strip_comb tm with _ -> raise Unify in
+      if !verb then begin
+        Format.printf "hf = %s\n%!" (string_of_term hf);
+        Format.printf "is_var: %s\n%!" (if is_var hf then "true" else "false")
+      end;
+      assert (is_const hf || is_var hf);
+      if hf = Metis_mapping.hol_of_const (int_of_string f)
+      then itlist2 (unify_fo_ho_term vars) args hargs m
+      else raise Unify
+
+let unify_fo_ho_atom vars (p, args) htm m =
+  if p = "="
+  then try let hl, hr = dest_eq htm in itlist2 (unify_fo_ho_term vars) args [hl; hr] m
+       with _ -> raise Unify
+  else unify_fo_ho_term vars (Term.Fn (p, args)) htm m
+
+let unify_fo_ho_literal vars (pol, atom) htm m =
+  let htm' = if pol then htm else try dest_neg htm with _ -> raise Unify in
+  unify_fo_ho_atom vars atom htm' m
+
+end
+
+
+module Metis_rules = struct
 
 (* move a literal in the proof of a disjunction to the first position
    may not preserve the order of the other literals *)
@@ -9968,68 +10034,205 @@ let DISCH_DISJ =
 (* given A, tm1, .., tmn |- th, prove A |- ~tm1 \/ .. \/ ~tmn \/ th *)
 let DISCH_DISJS tms th = List.fold_right DISCH_DISJ tms th
 
-let rec hol_of_proof axioms tymap th_concl =
-  let hol_term  = hol_of_term tymap
-  and hol_atom  = hol_of_atom tymap
-  and hol_lit   = hol_of_literal tymap
-  and hol_proof = hol_of_proof axioms tymap in
+end
 
-  (*print_string ("Thm: " ^ Thm.toString th_concl);
-  print_newline ();*)
 
-  let result =
-  match Proof.thmToInference th_concl with
-    Proof.Axiom litset ->
-      let lits = Literal.Set.toList litset in
-      match_axiom axioms (map hol_lit lits)
-  | Proof.Assume atom -> SPEC (hol_atom atom) EXCLUDED_MIDDLE
-  | Proof.Subst (subst, th) ->
-      let sl = Substitute.toList subst in
-      let tymap' = update_tymap tymap sl in
-      let subst' = hol_of_subst tymap' sl in
-      let proof' = (hol_of_proof axioms tymap' th) in
-      (*print_endline ("Subst (Metis): " ^ string_of_metis_subst sl);
-      print_endline ("Subst (HOL): " ^ string_of_hol_subst subst');
-      print_string "Proof: ";
-      print_thm proof';
-      print_newline ();*)
-      INST subst' proof'
-  | Proof.Resolve (atom, th1, th2) ->
-      RESOLVE (hol_atom atom) (hol_proof th1) (hol_proof th2)
-  | Proof.Refl term -> REFL (hol_term term)
-  | Proof.Equality (lit, path, term) ->
-      let lit' = hol_lit lit
-      and t = hol_term term in
+module Metis_reconstruct2 = struct
 
-      let (s, path') = follow_metis_lit_path lit' path in
+open Metis_prover
 
-      (*print_string "Literal: "; print_term lit';
-      print_newline ();
-      print_string "Path (Metis): "; print_string (string_of_int_list path);
-      print_newline ();
-      print_string "Path (HOL): "; print_string path';
-      print_newline ();
-      print_string "Term (t, Metis): "; print_string (Term.toString term);
-      print_newline ();
-      print_string "Term (t, HOL): "; print_term t;
-      print_newline ();
-      print_string "Term (s, from fmlp): "; print_term s;
-      print_newline ();
-      print_string "Term (s, from fp): "; print_term (follow_path path' lit');
-      print_newline ();*)
+let term_eq_mod_type t1 t2 tyinsts =
+  try
+    let _,tminsts,tyinsts = term_type_unify t1 t2 ([], [], tyinsts) in
+    if !metisverb then
+    begin
+      Format.printf "unified with |tminsts| = %d!\n%!" (List.length tminsts);
+      List.iter (fun t1, t2 -> Format.printf "%s <- %s\n%!" (string_of_term t1) (string_of_term t2)) tminsts
+    end;
+    assert (tminsts = []);
+    Some tyinsts
+  with _ -> None
 
-      let eq = mk_eq (s,t) in
-      let conv = PATH_CONV path' (PURE_ONCE_REWRITE_CONV [ASSUME eq]) in
-      let converted = CONV_RULE conv (ASSUME lit') in
-      (*print_thm converted;
-      print_newline ();*)
-      try DISCH_DISJS [eq; lit'] converted
-      with _ -> failwith "equality"
+let rec match_elems f m = function
+    ([], []) -> [m]
+  | ([],  _) -> []
+  | (x :: xs, ys) -> List.map (fun y -> match f x y m with
+        Some m' -> match_elems f m' (xs, List.filter ((!=) y) ys)
+      | None -> []) ys |> List.concat
 
+let match_fo_ho_clause vars = match_elems
+  (fun ft ht m -> try Some (Metis_unify.unify_fo_ho_literal vars ft ht m) with Metis_unify.Unify -> None)
+  []
+
+
+let string_of_tminst = String.concat ", " o
+  map (fun (tm, v) -> string_of_term tm ^ " <- " ^ string_of_term v)
+
+let string_of_tyinst = String.concat ", " o
+  map (fun (ty, v) -> string_of_type ty ^ " <- " ^ string_of_type v)
+
+let string_of_instantiation (it, tminst, tyinst) =
+  "([" ^ string_of_tminst tminst ^ "], [" ^ string_of_tyinst tyinst ^ "])"
+
+let reorient_tysubst vars sub =
+  let sub' = map (fun (ty, v) ->
+    if List.mem v vars && is_vartype ty then v, ty else ty, v) sub in
+  map (fun (ty, v) -> tysubst sub' ty, v) sub'
+
+let rec hol_of_thm axioms fth =
+  if !metisverb then Format.printf "hol_of_thm: %s\n%!" (Thm.toString fth);
+  let env = Preterm.env_of_ths axioms in
+  let hth = match Proof.thmToInference fth with
+    Proof.Axiom clause ->
+      let clausel = Literal.Set.toList clause in
+      let maxs = Utils.List.concat_map (fun ax ->
+        (*if !metisverb then Format.printf "ax: %s\n%!" (string_of_thm ax);*)
+        let disjs = concl ax |> striplist dest_disj in
+        (*if !metisverb then Format.printf "before matching\n%!";*)
+        let tmvars = freesl (hyp ax) in
+        let ms = match_fo_ho_clause tmvars (clausel, disjs) in
+        (*if !metisverb then Format.printf "after matching\n%!";*)
+        map (fun m -> m, ax) ms) axioms in
+      assert (List.length maxs > 0);
+      let tminst = List.map (fun v, tm -> mk_var (Metis_mapping.prefix v, type_of tm), tm) in
+      if !metisverb then Format.printf "length maxs = %d\n%!" (List.length maxs);
+      if !metisverb then List.iter (fun (m, ax) -> Format.printf "max: %s with m = %s\n%!" (string_of_thm ax) (string_of_tminst (tminst m))) maxs;
+      let (m, ax) = List.hd maxs in
+      INST (tminst m) ax
+  (* Caution: the substitution can contain elements such as "x -> f(x)" *)
+  | Proof.Subst (fsub, fth1) ->
+      let th1 = hol_of_thm axioms fth1 in
+      if !metisverb then Format.printf "subst with th1 = %s\n%!" (string_of_thm th1);
+
+      let fsubl = Substitute.toList fsub in
+      if !metisverb then Format.printf "before substitution lifting\n%!";
+      let hsub = map (fun (v, t) -> t, Term.Var v) fsubl |>
+        Metis_mapping.hol_of_substitution env in
+      if !metisverb then Format.printf "subst: %s\n%!" (string_of_tminst hsub);
+      let tyinst = itlist (fun (t, v) m ->
+        let v' = find (fun v' -> name_of v' = name_of v) (frees (concl th1)) in
+        type_unify (type_of v) (type_of v') m) hsub [] in
+      let tminst = map (fun (t, v) -> inst tyinst t, inst tyinst v) hsub in
+
+      if !metisverb then
+        Format.printf "before instantiate of th1 = %s with %s\n%!"
+          (string_of_thm th1) (string_of_instantiation ([], tminst, tyinst));
+
+      INSTANTIATE ([], tminst, tyinst) th1
+  | Proof.Resolve (atom, fth1, fth2) ->
+      let th1 = hol_of_thm axioms fth1
+      and th2 = hol_of_thm axioms fth2 in
+      let env = Preterm.env_of_ths [th1; th2] @ env in
+      if !metisverb then List.iter (fun (s, pty) -> Format.printf "%s <- %s\n%!" s (string_of_type (type_of_pretype pty))) env;
+      if !metisverb then Format.printf "before resolving\n%!";
+      if !metisverb then Format.printf "th1 = %s\n%!" (string_of_thm th1);
+      if !metisverb then Format.printf "th2 = %s\n%!" (string_of_thm th2);
+      let tm1 = striplist dest_disj (concl th1) |> List.filter (not o is_neg)
+      and tm2 = striplist dest_disj (concl th2) |> List.filter is_neg |> List.map dest_neg in
+      if !metisverb then List.iter (Format.printf "tm1: %s\n%!" o string_of_term) tm1;
+      if !metisverb then List.iter (Format.printf "tm2: %s\n%!" o string_of_term) tm2;
+      let hatom = Metis_mapping.hol_of_atom env atom in
+      if !metisverb then Format.printf "hatom: %s\n%!" (string_of_term hatom);
+      let cands = Utils.List.concat_map (fun x ->
+        match term_eq_mod_type hatom x [] with
+          None -> []
+        | Some m -> Utils.List.filter_map (fun y -> term_eq_mod_type hatom y m) tm2) tm1 in
+      if !metisverb then Format.printf "%d candidates available\n%!" (List.length cands);
+      assert (List.length cands > 0);
+      assert (let h = List.hd cands in List.for_all ((=) h) cands);
+      let tyinsts = List.hd cands in
+      let tyvars = map hyp axioms |> List.concat |>
+        map type_vars_in_term |> List.concat in
+      if !metisverb then Format.printf "Reorienting type substitution ...\n%!";
+      let tyinsts = reorient_tysubst tyvars tyinsts in
+
+      if !metisverb then Format.printf "Resolving ...\n%!";
+
+      Metis_rules.RESOLVE (inst tyinsts hatom)
+        (INST_TYPE tyinsts th1) (INST_TYPE tyinsts th2)
+  | Proof.Refl term -> REFL (Metis_mapping.hol_of_term env term)
+  | Proof.Assume atom -> SPEC (Metis_mapping.hol_of_atom env atom) EXCLUDED_MIDDLE
+  | Proof.Equality (flit, fpath, ft) ->
+      let hlit = Metis_mapping.hol_of_literal env flit in
+      let fs, hpath = Metis_path.hol_of_literal_path flit fpath in
+      let hs = follow_path hpath hlit in
+      let ht = Metis_mapping.hol_of_term env ft in
+      let m = type_unify (type_of ht) (type_of hs) [] in
+      let hlit, hs, ht = inst m hlit, inst m hs, inst m ht in
+
+      if !metisverb then begin
+        Format.printf "Trying to replace %s : %s with %s : %s\n%!"
+          (string_of_term hs) (string_of_type (type_of hs))
+          (string_of_term ht) (string_of_type (type_of ht));
+        Format.printf "In %s\n%!" (string_of_term hlit)
+      end;
+
+      let heq = mk_eq (hs, ht) in
+      let conv = PATH_CONV hpath (PURE_ONCE_REWRITE_CONV [ASSUME heq]) in
+      let hlit' = CONV_RULE conv (ASSUME hlit) in
+      if !metisverb then Format.printf "hlit = %s, hlit' = %s\n%!"
+        (string_of_term hlit) (string_of_thm hlit');
+
+      if hs <> ht then assert (concl hlit' <> hlit);
+      (try Metis_rules.DISCH_DISJS [heq; hlit] hlit'
+      with _ -> failwith "equality")
   in
-    (*print_endline ("Desired: " ^ Thm.toString th_concl);
-    print_endline ("Result : " ^ string_of_term (concl result));*)
-    result
+    (* eliminate duplicates in clause *)
+    let hth = CONV_RULE DISJ_CANON_CONV hth in
+    if !metisverb then begin
+      Format.printf "hol_of_thm finished\n%!";
+      let hth' = Thm.clause fth |> Literal.Set.toList |> Metis_mapping.hol_of_clause env in
+      Format.printf "hol_of_thm returned:\n%s\n for\n%s\n%!"
+        (string_of_term (concl hth)) (string_of_term hth')
+    end;
+    hth
+
+end
+
+(* ========================================================================= *)
+(* Conversion of HOL to Metis FOL.                                           *)
+(* ========================================================================= *)
+
+module Metis_generate = struct
+
+open Metis_prover
+
+let metis_name = string_of_int
+
+let rec metis_of_term env consts tm =
+  if is_var tm && not (mem tm consts) then
+    (Term.Var(metis_name (Meson.fol_of_var tm)))
+  else (
+    let f,args = strip_comb tm in
+    if mem f env then failwith "metis_of_term: higher order" else
+    let ff = Meson.fol_of_const f in
+    Term.Fn (metis_name ff, map (metis_of_term env consts) args))
+
+let metis_of_atom env consts tm =
+  try let (l, r) = dest_eq tm in
+      let l' = metis_of_term env consts l
+      and r' = metis_of_term env consts r in
+      Atom.mkEq (l', r')
+  with Failure _ ->
+      let f,args = strip_comb tm in
+      if mem f env then failwith "metis_of_atom: higher order" else
+      let ff = Meson.fol_of_const f in
+      (metis_name ff, map (metis_of_term env consts) args)
+
+let metis_of_literal env consts tm =
+  let (pol, tm') = try (false, dest_neg tm)
+     with Failure _ -> (true,           tm)
+  in (pol, metis_of_atom env consts tm')
+
+let metis_of_clause th =
+  let lconsts = freesl (hyp th) in
+  let tm = concl th in
+  let hlits = disjuncts tm in
+  let flits = map (metis_of_literal [] lconsts) hlits in
+  let set = Literal.Set.fromList flits in
+  Thm.axiom set
+
+let metis_of_clauses = map metis_of_clause
 
 end
 
@@ -10039,6 +10242,8 @@ end
 (* ========================================================================= *)
 
 module Metis = struct
+
+open Metis_prover
 
 (* ------------------------------------------------------------------------- *)
 (* Some parameters controlling Metis behaviour.                              *)
@@ -10119,25 +10324,46 @@ let FOL_PREPARE_TAC ths =
   REPEAT (FIRST_X_ASSUM (Meson.CONJUNCTS_THEN' ASSUME_TAC)) THEN
   (* make every conjunction a separate assumption *)
 
-  RULE_ASSUM_TAC(CONV_RULE(ASSOC_CONV DISJ_ASSOC)) THEN
+  RULE_ASSUM_TAC(CONV_RULE(ASSOC_CONV DISJ_ASSOC))
   (* associate disjunctions to the right *)
-
-  REPEAT (FIRST_X_ASSUM SUBST_VAR_TAC)
-  (* substitute variables safely among assumptions, not changing provability *)
 
   (*THEN PRINT_ID_TAC "before Metis"*)
 
+
+let without_warnings f =
+  let tiv = !type_invention_warning in
+  let reset () = type_invention_warning := tiv in
+  type_invention_warning := false;
+  try let y = f () in reset (); y
+  with e -> (reset(); raise e)
+
+
 let SIMPLE_METIS_REFUTE ths =
   Meson.clear_contrapos_cache();
+  (* TODO: Metis currently uses randomness to search for proof --
+     we should make that deterministic for proof reconstruction! *)
+  Random.init 0;
   let rules = Metis_generate.metis_of_clauses ths in
-  let res = Metis_loop.run rules in
-  (*Thm.print_proof res;*)
-  let proof = Metis_reconstruct.hol_of_proof ths
-    Metis_reconstruct.empty_tymap res in
-  (*List.iter print_thm ths;*)
-  (*print_endline "Metis theorem:";
-  print_thm proof;
-  print_endline "Metis end.";*)
+  if !metisverb then
+  begin
+    Format.printf "Original ths:\n%!";
+    List.iter (Format.printf "%s\n%!" o string_of_thm) ths
+  end;
+  let res = Loop.run rules in
+  if !metisverb then Thm.print_proof res;
+  let ths = map (CONV_RULE DISJ_CANON_CONV) ths in
+  let proof = without_warnings (fun () -> Metis_reconstruct2.hol_of_thm ths res) in
+  if !metisverb then
+  begin
+    Format.printf "ths:\n%!";
+    List.iter (fun t -> print_thm t; Format.printf "\n%!") ths;
+    Format.printf "Metis theorem:\n%!";
+    print_thm proof;
+    Format.printf "Metis end.\n%!";
+  end;
+  let allhyps = List.concat (List.map hyp ths) in
+  assert (forall (fun h -> mem h allhyps) (hyp proof));
+  assert (concl proof = `F`);
   proof
 
 let PURE_METIS_TAC g =
@@ -10152,7 +10378,7 @@ end
 ;;
 
 (* ========================================================================= *)
-(* Baic Metis refutation procedure and parametrized tactic.                  *)
+(* Basic Metis refutation procedure and parametrized tactic.                 *)
 (* ========================================================================= *)
 
 let ASM_METIS_TAC = Metis.GEN_METIS_TAC;;

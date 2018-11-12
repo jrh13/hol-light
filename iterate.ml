@@ -1314,6 +1314,18 @@ let NSUM_CLOSED = prove
   DISCH_THEN(MP_TAC o SPEC `P:num->bool`) THEN
   ASM_SIMP_TAC[NEUTRAL_ADD; GSYM nsum]);;
 
+let NSUM_RELATED = prove
+ (`!R (f:A->num) g s.
+        R 0 0 /\
+        (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+        FINITE s /\ (!x. x IN s ==> R (f x) (g x))
+        ==> R (nsum s f) (nsum s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:num->num->bool`
+    (MATCH_MP ITERATE_RELATED MONOIDAL_ADD)) THEN
+  ASM_REWRITE_TAC[GSYM nsum; NEUTRAL_ADD] THEN ASM_MESON_TAC[]);;
+
 let NSUM_ADD_NUMSEG = prove
  (`!f g m n. nsum(m..n) (\i. f(i) + g(i)) = nsum(m..n) f + nsum(m..n) g`,
   SIMP_TAC[NSUM_ADD; FINITE_NUMSEG]);;
@@ -1411,6 +1423,16 @@ let MOD_NSUM_MOD_NUMSEG = prove
  (`!f a b n.
         (nsum(a..b) f) MOD n = nsum(a..b) (\i. f i MOD n) MOD n`,
   MESON_TAC[MOD_NSUM_MOD; FINITE_NUMSEG]);;
+
+let CONG_NSUM = prove
+ (`!n (f:A->num) g s.
+        FINITE s /\ (!x. x IN s ==> (f x == g x) (mod n))
+        ==> (nsum s f == nsum s g) (mod n)`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`\x y:num. (x == y) (mod n)`; `f:A->num`; `g:A->num`; `s:A->bool`]
+        NSUM_RELATED) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+  CONV_TAC NUMBER_RULE);;
 
 let th = prove
  (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
@@ -2020,6 +2042,18 @@ let SUM_CLOSED = prove
   REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_REAL_ADD) THEN
   DISCH_THEN(MP_TAC o SPEC `P:real->bool`) THEN
   ASM_SIMP_TAC[NEUTRAL_REAL_ADD; GSYM sum]);;
+
+let SUM_RELATED = prove
+ (`!R (f:A->real) g s.
+        R (&0) (&0) /\
+        (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+        FINITE s /\ (!x. x IN s ==> R (f x) (g x))
+        ==> R (sum s f) (sum s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:real->real->bool`
+    (MATCH_MP ITERATE_RELATED MONOIDAL_REAL_ADD)) THEN
+  ASM_REWRITE_TAC[GSYM sum; NEUTRAL_REAL_ADD] THEN ASM_MESON_TAC[]);;
 
 let REAL_OF_NUM_SUM_GEN = prove
  (`!f s:A->bool.
