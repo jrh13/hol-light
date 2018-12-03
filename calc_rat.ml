@@ -160,6 +160,14 @@ let REAL_RAT_EQ_CONV =
     TRANS th1 th2 in
    BINOP_CONV REAL_INT_RAT_CONV THENC RAW_REAL_RAT_EQ_CONV;;
 
+let REAL_RAT_SGN_CONV =
+  GEN_REWRITE_CONV I [real_sgn] THENC
+  RATOR_CONV(LAND_CONV REAL_RAT_LT_CONV) THENC
+  (GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL COND_CLAUSES)] ORELSEC
+   (GEN_REWRITE_CONV I [CONJUNCT2(SPEC_ALL COND_CLAUSES)] THENC
+    RATOR_CONV(LAND_CONV REAL_RAT_LT_CONV) THENC
+    GEN_REWRITE_CONV I [COND_CLAUSES]));;
+
 (* ------------------------------------------------------------------------- *)
 (* The unary operations; all easy.                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -386,6 +394,7 @@ let REAL_RAT_RED_CONV =
      `x > y`,REAL_RAT_GT_CONV;
      `x:real = y`,REAL_RAT_EQ_CONV;
      `--x`,CHANGED_CONV REAL_RAT_NEG_CONV;
+     `real_sgn(x)`,REAL_RAT_SGN_CONV;
      `abs(x)`,REAL_RAT_ABS_CONV;
      `inv(x)`,REAL_RAT_INV_CONV;
      `x + y`,REAL_RAT_ADD_CONV;

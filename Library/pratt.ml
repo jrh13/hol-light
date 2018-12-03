@@ -112,23 +112,6 @@ let CONG_0 = prove
  (`!x n. ((x == 0) (mod n) <=> n divides x)`,
   NUMBER_TAC);;
 
-let CONG = prove
- (`!x y n. (x == y) (mod n) <=> x MOD n = y MOD n`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
-  ASM_REWRITE_TAC[MOD_ZERO; CONG_MOD_0] THEN
-  REWRITE_TAC[cong; nat_mod] THEN
-  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
-   [ASM_CASES_TAC `x <= y` THENL
-     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q1 - q2`;
-      MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q2 - q1`] THEN
-    REWRITE_TAC[RIGHT_SUB_DISTRIB] THEN
-    POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN ARITH_TAC;
-    MAP_EVERY EXISTS_TAC [`y DIV n`; `x DIV n`] THEN
-    UNDISCH_TAC `x MOD n = y MOD n` THEN
-    MATCH_MP_TAC(ARITH_RULE
-     `(y = dy + my) /\ (x = dx + mx) ==> (mx = my) ==> (x + dy = y + dx)`) THEN
-    ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_SIMP_TAC[DIVISION]]);;
-
 let CONG_SUB_CASES = prove
  (`!x y n. (x == y) (mod n) <=>
            if x <= y then (y - x == 0) (mod n)

@@ -511,6 +511,14 @@ let INT_CONG_MOD_MULT = prove
  (`!x y m n. (x == y) (mod n) /\ m divides n ==> (x == y) (mod m)`,
   INTEGER_TAC);;
 
+let INT_CONG_GCD_RIGHT = prove
+ (`!x y n. (x == y) (mod n) ==> gcd(n,x) = gcd(n,y)`,
+  REWRITE_TAC[INT_GCD_UNIQUE; INT_GCD_POS] THEN INTEGER_TAC);;
+
+let INT_CONG_GCD_LEFT = prove
+ (`!x y n. (x == y) (mod n) ==> gcd(x,n) = gcd(y,n)`,
+  REWRITE_TAC[INT_GCD_UNIQUE; INT_GCD_POS] THEN INTEGER_TAC);;
+
 let INT_CONG_TO_1 = prove
  (`!a n. (a == &1) (mod n) <=> ?m. a = &1 + m * n`,
   INTEGER_TAC);;
@@ -582,6 +590,11 @@ let INT_CONG_IMP_EQ = prove
    `abs n * (q:int) < abs n * &1 <=> ~(&0 <= abs n * (q - &1))`] THEN
   ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
   STRIP_TAC THEN MATCH_MP_TAC INT_LE_MUL THEN ASM_INT_ARITH_TAC);;
+
+let INT_CONG_DIV = prove
+ (`!m n a b.
+        &0 < m /\ (a == m * b) (mod (m * n)) ==> (a div m == b) (mod n)`,
+  METIS_TAC[INT_CONG_DIV2; INT_DIV_MUL; INT_LT_LE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A stronger form of the CRT.                                               *)

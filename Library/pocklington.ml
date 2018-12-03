@@ -112,23 +112,6 @@ let CONG_0 = prove
  (`!x n. ((x == 0) (mod n) <=> n divides x)`,
   NUMBER_TAC);;
 
-let CONG = prove
- (`!x y n. (x == y) (mod n) <=> x MOD n = y MOD n`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
-  ASM_REWRITE_TAC[MOD_ZERO; CONG_MOD_0] THEN
-  REWRITE_TAC[cong; nat_mod] THEN
-  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
-   [ASM_CASES_TAC `x <= y` THENL
-     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q1 - q2`;
-      MATCH_MP_TAC MOD_EQ THEN EXISTS_TAC `q2 - q1`] THEN
-    REWRITE_TAC[RIGHT_SUB_DISTRIB] THEN
-    POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN ARITH_TAC;
-    MAP_EVERY EXISTS_TAC [`y DIV n`; `x DIV n`] THEN
-    UNDISCH_TAC `x MOD n = y MOD n` THEN
-    MATCH_MP_TAC(ARITH_RULE
-     `(y = dy + my) /\ (x = dx + mx) ==> (mx = my) ==> (x + dy = y + dx)`) THEN
-    ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_SIMP_TAC[DIVISION]]);;
-
 let CONG_SUB_CASES = prove
  (`!x y n. (x == y) (mod n) <=>
            if x <= y then (y - x == 0) (mod n)
@@ -262,6 +245,14 @@ let CONG_COPRIME = prove
  (`!x y n. (x == y) (mod n) ==> (coprime(n,x) <=> coprime(n,y))`,
   NUMBER_TAC);;
 
+let CONG_GCD_RIGHT = prove
+ (`!x y n. (x == y) (mod n) ==> gcd(n,x) = gcd(n,y)`,
+  NUMBER_TAC);;
+
+let CONG_GCD_LEFT = prove
+ (`!x y n. (x == y) (mod n) ==> gcd(x,n) = gcd(y,n)`,
+  NUMBER_TAC);;
+
 let CONG_MOD = prove
  (`!a n. (a MOD n == a) (mod n)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
@@ -285,14 +276,6 @@ let CONG_MOD_MULT = prove
  (`!x y m n. (x == y) (mod n) /\ m divides n ==> (x == y) (mod m)`,
   NUMBER_TAC);;
 
-let CONG_LMOD = prove
- (`!x y n. (x MOD n == y) (mod n) <=> (x == y) (mod n)`,
-  MESON_TAC[CONG_MOD; CONG_TRANS; CONG_SYM]);;
-
-let CONG_RMOD = prove
- (`!x y n. (x == y MOD n) (mod n) <=> (x == y) (mod n)`,
-  MESON_TAC[CONG_MOD; CONG_TRANS; CONG_SYM]);;
-
 let CONG_MOD_LT = prove
  (`!y. y < n ==> (x MOD n = y <=> (x == y) (mod n))`,
   MESON_TAC[MOD_LT; CONG; LT]);;
@@ -307,13 +290,7 @@ let MOD_UNIQUE = prove
 let CONG_DIV = prove
  (`!m n a b.
         ~(m = 0) /\ (a == m * b) (mod (m * n)) ==> (a DIV m == b) (mod n)`,
-  REPEAT STRIP_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (NUMBER_RULE
-   `(a == m * b) (mod (m * n)) ==> ~(m = 0) /\ m * q = a
-   ==> (q == b) (mod n)`)) THEN
-  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[DIVISION_SIMP; ADD_CLAUSES]
-   `m MOD n = 0 ==> n * m DIV n = m`) THEN
-  REWRITE_TAC[GSYM DIVIDES_MOD] THEN
-  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NUMBER_RULE);;
+  MESON_TAC[CONG_DIV2; DIV_MULT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some things when we know more about the order.                            *)

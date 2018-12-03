@@ -8,6 +8,196 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 30th Nov 2018       calc_rat.ml, int.ml
+
+Added two missing explicit value conversions for the real and integer signum 
+functions applied to concrete rational or integer numbers, REAL_RAT_SGN_CONV 
+and INT_SGN_CONV, also rolling them into the corresponding "..._RED_CONV" and
+"..._REDUCE_CONV" functions.
+
+Thu 29th Nov 2018       int.ml, Library/pocklington.ml, Library/integer.ml
+
+Added a number of new theorems, mainly about integer division and remainder
+and all pretty straightforward but nice to have:
+
+  CONG_DIV2 =
+    |- !a n m n. (a == b) (mod (m * n)) ==> (a DIV m == b DIV m) (mod n)
+
+  CONG_GCD_LEFT =
+    |- !x y n. (x == y) (mod n) ==> gcd(x,n) = gcd(y,n)
+
+  CONG_GCD_RIGHT =
+    |- !x y n. (x == y) (mod n) ==> gcd(n,x) = gcd(n,y)
+
+  INT_CONG_DIV =
+    |- !m n a b.
+          &0 < m /\ (a == m * b) (mod (m * n)) ==> (a div m == b) (mod n)
+
+  INT_CONG_DIV2 =
+    |- !a n m n.
+           &0 <= m /\ (a == b) (mod (m * n))
+           ==> (a div m == b div m) (mod n)
+
+  INT_CONG_GCD_LEFT =
+    |- !x y n. (x == y) (mod n) ==> gcd(x,n) = gcd(y,n)
+
+  INT_CONG_GCD_RIGHT =
+    |- !x y n. (x == y) (mod n) ==> gcd(n,x) = gcd(n,y)
+
+  INT_DIV_1 =
+    |- !n. n div &1 = n
+
+  INT_DIV_DIV =
+    |- !m n p. &0 <= n ==> m div n div p = m div (n * p)
+
+  INT_DIV_EQ_0 =
+    |- !m n. m div n = &0 <=> n = &0 \/ &0 <= m /\ m < abs n
+
+  INT_DIV_LE =
+    |- !m n. abs (m div n) <= abs m
+
+  INT_DIV_LE_EQ =
+    |- !a b c. &0 < a ==> (b div a <= c <=> b < a * (c + &1))
+
+  INT_DIV_LNEG =
+   |- !m n.
+         --m div n =
+         (if m rem n = &0 then --(m div n) else --(m div n) - int_sgn n)
+
+  INT_DIV_LT_EQ =
+    |- !a b c. &0 < a ==> (b div a < c <=> b < a * c)
+
+  INT_DIV_MUL =
+   |- (!m n. ~(n = &0) ==> (m * n) div n = m) /\
+      (!m n. ~(m = &0) ==> (m * n) div m = n)
+
+  INT_DIV_MUL_ADD =
+   |- (!m n p. ~(n = &0) ==> (m * n + p) div n = m + p div n) /\
+      (!m n p. ~(n = &0) ==> (n * m + p) div n = m + p div n) /\
+      (!m n p. ~(n = &0) ==> (p + m * n) div n = p div n + m) /\
+      (!m n p. ~(n = &0) ==> (p + n * m) div n = p div n + m)
+
+  INT_DIV_NEG2 =
+    |- !m n. --m div --n = if m rem n = &0 then m div n else m div n + int_sgn n
+
+  INT_DIV_REFL =
+    |- !n. n div n = (if n = &0 then &0 else &1)
+
+  INT_DIV_REM =
+    |- !m n p. &0 <= n ==> (m div n) rem p = (m rem (n * p)) div n
+
+  INT_LE_DIV =
+    |- !m n. &0 <= m /\ &0 <= n ==> &0 <= m div n
+
+  INT_LE_DIV_EQ =
+    |- !a b c. &0 < a ==> (c <= b div a <=> a * c <= b)
+
+  INT_LE_LMUL_EQ =
+    |- !x y z. &0 < z ==> (z * x <= z * y <=> x <= y)
+
+  INT_LT_DIV =
+    |- !m n. &0 < n /\ n <= m ==> &0 < m div n
+
+  INT_LT_DIV_EQ =
+    |- !a b c. &0 < a ==> (c < b div a <=> a * (c + &1) <= b)
+
+  INT_NEG_REM =
+    |- !n p. --(n rem p) rem p = --n rem p
+
+  INT_POW_REM =
+    |- !m n p. (m rem p) pow n rem p = m pow n rem p
+
+  INT_REM_1 =
+    |- !n. n rem &1 = &0
+
+  INT_REM_EQ_SELF =
+    |- !m n. m rem n = m <=> n = &0 \/ &0 <= m /\ m < abs n
+
+  INT_REM_LNEG =
+   |- !m n. --m rem n = (if m rem n = &0 then &0 else abs n - m rem n)
+
+  INT_REM_MUL =
+    |- (!m n. (m * n) rem n = &0) /\
+       (!m n. (m * n) rem m = &0)
+
+  INT_REM_MUL_ADD =
+    |- (!m n p. (m * n + p) rem n = p rem n) /\
+       (!m n p. (n * m + p) rem n = p rem n) /\
+       (!m n p. (p + m * n) rem n = p rem n) /\
+       (!m n p. (p + n * m) rem n = p rem n)
+
+  INT_REM_MUL_REM =
+   |- !m n p. &0 <= n ==> m rem (n * p) = n * (m div n) rem p + m rem n
+
+  INT_REM_NEG2 =
+   |- !m n. --m rem --n = if m rem n = &0 then &0 else abs n - m rem n
+
+  INT_REM_REFL =
+    |- !n. n rem n = &0
+
+  INT_SUB_REM =
+    |- |- !m n p. (m rem p - n rem p) rem p = (m - n) rem p
+
+  MOD_MULT_MOD =
+    |- !m n p. m MOD (n * p) = n * (m DIV n) MOD p + m MOD n
+
+Also moved two existing theorems from "Library/integer.ml" back into the
+main "int.ml" file: INT_CONG_IMP_EQ and INT_DIVIDES_LE.
+
+Wed 28th Nov 2018       int.ml, Library/prime.ml
+
+Made a few small but useful improvements to INTEGER_RULE/INTEGER_TAC
+(slightly better gcd elimination) and NUMBER_RULE/NUMBER_TAC (also
+better splitting up of conjuncts and some limited exploitation of
+antisymmetry of divisibility relation over N). Here are a couple of
+examples that failed before but are now proved automatically:
+
+  NUMBER_RULE
+   `!a b c:num. gcd(c * a,c * b) = c * gcd(a,b)`;;
+
+  NUMBER_RULE
+   `(!a m n k. coprime(a,k) ==> gcd(a * m + k,a * n) = gcd(a * m + k,n)) /\
+    (!a m n k. coprime(a,k) ==> gcd(a * m,a * n + k) = gcd(m,a * n + k))`;;
+
+Made a few tweaks to "Library/prime.ml" where things can now be done more
+automatically, and also eliminated pointless duplicates (reflecting the
+origins of that file in ancient HOL88 stuff)
+
+  LESS_EQ_MULT -> LE_MULT2
+  LESS_MULT -> LT_MULT2
+
+Tue 27th Nov 2018       int.ml, Library/pratt.ml, Library/pocklington.ml
+
+Added two new theorems connecting division and modulus over N and Z in the
+obvious way:
+
+  INT_OF_NUM_DIV = |- !m n. &m div &n = &(m DIV n)
+
+  INT_OF_NUM_REM = |- !m n. &m rem &n = &(m MOD n)
+
+Also moved three elementary theorems about congruences, which are quite handy
+(but, in contrast to many other basic congruence properties, not automatically
+creatable by NUMBER_RULE etc.) from the Library to the core "int.ml" file:
+
+  CONG = |- !x y n. (x == y) (mod n) <=> x MOD n = y MOD n
+
+  CONG_LMOD = |- !x y n. (x MOD n == y) (mod n) <=> (x == y) (mod n)
+
+  CONG_RMOD = |- !x y n. (x == y MOD n) (mod n) <=> (x == y) (mod n)
+
+Mon 26th Nov 2018       arith.ml
+
+Added one very simple theorem about modulus
+
+  MOD_MOD_LE =
+    |- !m n p. ~(n = 0) /\ n <= p ==> m MOD n MOD p = m MOD n
+
+as well as sharpening the existing MOD_MOD_EXP_MIN by removing a nonzeroness
+assumption, so it is now:
+
+ MOD_MOD_EXP_MIN =
+  |- !x p m n. x MOD p EXP m MOD p EXP n = x MOD p EXP MIN m n
+
 Sat 10th Nov 2018       lists.ml, int.ml, iterate.ml, Library/binary.ml
 
 Added a few elementary theorems (the first one BINARY_INDUCT just
@@ -15,21 +205,21 @@ moved from Library/binary.ml into the core files).
 
   BINARY_INDUCT
     |- !P. P 0 /\ (!n. P n ==> P (2 * n) /\ P (2 * n + 1)) ==> (!n. P n)
-  
+
   CONG_NSUM =
     |- !n f g s.
            FINITE s /\ (!x. x IN s ==> (f x == g x) (mod n))
            ==> (nsum s f == nsum s g) (mod n)
-  
+
   HD_REVERSE =
     |- !l. ~(l = []) ==> HD (REVERSE l) = LAST l
-  
+
   LAST_REVERSE =
     |- !l. ~(l = []) ==> LAST (REVERSE l) = HD l
-  
+
   LENGTH_REVERSE =
     |- !l. LENGTH (REVERSE l) = LENGTH l
-  
+
   NSUM_RELATED =
     |- !R f g s.
            R 0 0 /\
@@ -37,13 +227,13 @@ moved from Library/binary.ml into the core files).
            FINITE s /\
            (!x. x IN s ==> R (f x) (g x))
            ==> R (nsum s f) (nsum s g)
-  
+
   NUM_CASES_BINARY =
     |- !P. (!n. P n) <=> (!n. P (2 * n)) /\ (!n. P (2 * n + 1))
-  
+
   REVERSE_EQ_EMPTY =
     |- !l. REVERSE l = [] <=> l = []
-  
+
   SUM_RELATED =
     |- !R f g s.
            R (&0) (&0) /\
@@ -51,7 +241,7 @@ moved from Library/binary.ml into the core files).
            FINITE s /\
            (!x. x IN s ==> R (f x) (g x))
            ==> R (sum s f) (sum s g)
-  
+
   num_WF_DOWN =
     |- !P m.
            (!n. m <= n ==> P n) /\ (!n. n < m /\ (!p. n < p ==> P p) ==> P n)
@@ -244,12 +434,12 @@ induction variant:
          ~(m = 0) /\ (a == m * b) (mod (m * n)) ==> (a DIV m == b) (mod n)
 
   CONG_SOLVE_EQ =
-    |- !n a b. (?x. (a * x == b) (mod n)) <=> gcd (a,n) divides b
+    |- !n a b. (?x. (a * x == b) (mod n)) <=> gcd(a,n) divides b
 
   CONG_SOLVE_LT_EQ =
     |- !n a b.
          (?x. x < n /\ (a * x == b) (mod n)) <=>
-         ~(n = 0) /\ gcd (a,n) divides b
+         ~(n = 0) /\ gcd(a,n) divides b
 
   DIV_ZERO =
     |- !n. n DIV 0 = 0
@@ -3500,19 +3690,19 @@ Sat 10th May 2014       int.ml, real.ml, Library/prime.ml, Library/integer.ml
 Added a few miscellaneous trivial theorems:
 
   DIVIDES_GCD_LEFT =
-    |- !m n. m divides n <=> gcd (m,n) = m
+    |- !m n. m divides n <=> gcd(m,n) = m
 
   DIVIDES_GCD_RIGHT =
-    |- !m n. n divides m <=> gcd (m,n) = n
+    |- !m n. n divides m <=> gcd(m,n) = n
 
   INT_DIVIDES_ANTISYM_DIVISORS =
     |- !a b. a divides b /\ b divides a <=> (!d. d divides a <=> d divides b)
 
   INT_DIVIDES_GCD_LEFT =
-    |- !m n. m divides n <=> gcd (m,n) = abs m
+    |- !m n. m divides n <=> gcd(m,n) = abs m
 
   INT_DIVIDES_GCD_RIGHT =
-    |- !m n. n divides m <=> gcd (m,n) = abs n
+    |- !m n. n divides m <=> gcd(m,n) = abs n
 
   INT_EQ_SGN_ABS =
     |- !x y. x = y <=> int_sgn x = int_sgn y /\ abs x = abs y
@@ -4016,16 +4206,16 @@ that. Also added "symmetric" clauses to GCD_0 and GCD_1.
     |- !m n r. r divides m \/ r divides n ==> r divides lcm (m,n)
 
   DIVIDES_LCM_GCD =
-    |- !m n d. d divides lcm (m,n) <=> d * gcd (m,n) divides m * n
+    |- !m n d. d divides lcm (m,n) <=> d * gcd(m,n) divides m * n
 
   DIVISORS_EQ =
     |- !m n. m = n <=> (!d. d divides m <=> d divides n)
 
   GCD_LCM_DISTRIB =
-    |- !a b c. gcd (a,lcm (b,c)) = lcm (gcd (a,b),gcd (a,c))
+    |- !a b c. gcd(a,lcm (b,c)) = lcm (gcd(a,b),gcd(a,c))
 
   lcm =
-    |- !m n. lcm (m,n) = (if m * n = 0 then 0 else (m * n) DIV gcd (m,n))
+    |- !m n. lcm (m,n) = (if m * n = 0 then 0 else (m * n) DIV gcd(m,n))
 
   LCM =
     |- !m n.
@@ -4054,7 +4244,7 @@ that. Also added "symmetric" clauses to GCD_0 and GCD_1.
     |- !n a b. lcm (a EXP n,b EXP n) = lcm (a,b) EXP n
 
   LCM_GCD_DISTRIB =
-    |- !a b c. lcm (a,gcd (b,c)) = gcd (lcm (a,b),lcm (a,c))
+    |- !a b c. lcm (a,gcd(b,c)) = gcd(lcm (a,b),lcm (a,c))
 
   LCM_LMUL =
     |- !a b c. lcm (c * a,c * b) = c * lcm (a,b)
@@ -9078,9 +9268,9 @@ net new definitions/theorems are, I believe:
   num_mod = |- !n x y. mod n x y <=> mod &n (&x) (&y)
   num_congruent = |- !x y n. (x == y) (mod n) <=> (&x == &y) (mod &n)
   num_coprime = |- !a b. coprime (a,b) <=> coprime (&a,&b)
-  num_gcd = |- !a b. gcd (a,b) = num_of_int (gcd (&a,&b))
+  num_gcd = |- !a b. gcd(a,b) = num_of_int (gcd(&a,&b))
 
-  NUM_GCD = |- !a b. &(gcd (a,b)) = gcd (&a,&b)
+  NUM_GCD = |- !a b. &(gcd(a,b)) = gcd(&a,&b)
   INT_GCD_EXISTS =
    |- !a b. ?d. d divides a /\ d divides b /\ (?x y. d = a * x + b * y)
   INT_GCD_EXISTS_POS =
@@ -9091,10 +9281,10 @@ net new definitions/theorems are, I believe:
                (?x y. d = a * x + b * y)
   int_gcd =
     |- !a b.
-           &0 <= gcd (a,b) /\
-           gcd (a,b) divides a /\
-           gcd (a,b) divides b /\
-           (?x y. gcd (a,b) = a * x + b * y)
+           &0 <= gcd(a,b) /\
+           gcd(a,b) divides a /\
+           gcd(a,b) divides b /\
+           (?x y. gcd(a,b) = a * x + b * y)
 
 Also defined a mapping "num_of_int" from integers back to natural numbers and
 proved a few lemmas about it:
