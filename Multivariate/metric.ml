@@ -9466,6 +9466,309 @@ let PROPER_MAP_FROM_COMPOSITION_RIGHT = prove
     SIMP_TAC[HOMEOMORPHIC_MAPS_MAP; HOMEOMORPHIC_IMP_PROPER_MAP]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Perfect maps (proper, continuous and surjective).                         *)
+(* ------------------------------------------------------------------------- *)
+
+let perfect_map = new_definition
+ `perfect_map (top,top') (f:A->B) <=>
+        continuous_map(top,top') f /\
+        proper_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'`;;
+
+let HOMEOMORPHIC_IMP_PERFECT_MAP = prove
+ (`!top top' (f:A->B).
+        homeomorphic_map(top,top') f ==> perfect_map(top,top') f`,
+  SIMP_TAC[perfect_map; HOMEOMORPHIC_IMP_PROPER_MAP] THEN
+  REWRITE_TAC[HOMEOMORPHIC_EQ_EVERYTHING_MAP] THEN REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[]);;
+
+let PERFECT_IMP_QUOTIENT_MAP = prove
+ (`!top top' (f:A->B). perfect_map(top,top') f ==> quotient_map(top,top') f`,
+  SIMP_TAC[perfect_map; proper_map; CONTINUOUS_CLOSED_IMP_QUOTIENT_MAP]);;
+
+let HOMEOMORPHIC_EQ_INJECTIVE_PERFECT_MAP = prove
+ (`!top top' (f:A->B).
+        homeomorphic_map(top,top') f <=>
+        perfect_map(top,top') f /\
+        !x y. x IN topspace top /\ y IN topspace top
+              ==> (f x = f y <=> x = y)`,
+  MESON_TAC[HOMEOMORPHIC_IMP_PERFECT_MAP; HOMEOMORPHIC_IMP_INJECTIVE_MAP;
+            homeomorphic_map; PERFECT_IMP_QUOTIENT_MAP]);;
+
+let PERFECT_INJECTIVE_EQ_HOMEOMORPHIC_MAP = prove
+ (`!top top' (f:A->B).
+      perfect_map(top,top') f /\
+      (!x y. x IN topspace top /\ y IN topspace top /\ f x = f y ==> x = y) <=>
+      homeomorphic_map(top,top') f`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[homeomorphic_map] THEN MESON_TAC[PERFECT_IMP_QUOTIENT_MAP];
+    MESON_TAC[HOMEOMORPHIC_IMP_PERFECT_MAP; HOMEOMORPHIC_IMP_INJECTIVE_MAP]]);;
+
+let PERFECT_MAP_ID = prove
+ (`!top:A topology. perfect_map(top,top) (\x. x)`,
+  REWRITE_TAC[perfect_map; IMAGE_ID; PROPER_MAP_ID; CONTINUOUS_MAP_ID]);;
+
+let PERFECT_MAP_COMPOSE = prove
+ (`!top top' top'' (f:A->B) (g:B->C).
+        perfect_map(top,top') f /\ perfect_map(top',top'') g
+        ==> perfect_map(top,top'') (g o f)`,
+  REWRITE_TAC[perfect_map] THEN
+  MESON_TAC[PROPER_MAP_COMPOSE; IMAGE_o; CONTINUOUS_MAP_COMPOSE]);;
+
+let PERFECT_IMP_CONTINUOUS_MAP = prove
+ (`!top top' (f:A->B).
+        perfect_map(top,top') f ==> continuous_map(top,top') f`,
+  SIMP_TAC[perfect_map]);;
+
+let PERFECT_IMP_CLOSED_MAP = prove
+ (`!top top' (f:A->B).
+        perfect_map(top,top') f ==> closed_map(top,top') f`,
+  SIMP_TAC[perfect_map; PROPER_IMP_CLOSED_MAP]);;
+
+let PERFECT_IMP_PROPER_MAP = prove
+ (`!top top' (f:A->B).
+        perfect_map(top,top') f ==> proper_map(top,top') f`,
+  SIMP_TAC[perfect_map]);;
+
+let PERFECT_IMP_SURJECTIVE_MAP = prove
+ (`!top top' (f:A->B).
+        perfect_map(top,top') f ==> IMAGE f (topspace top) = topspace top'`,
+  SIMP_TAC[perfect_map]);;
+
+let CONTINUOUS_CLOSED_IMP_PERFECT_MAP = prove
+ (`!top top' (f:A->B).
+        compact_space top /\ t1_space top' /\
+        continuous_map (top,top') f /\
+        closed_map (top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> perfect_map (top,top') f`,
+  SIMP_TAC[perfect_map; CONTINUOUS_CLOSED_IMP_PROPER_MAP]);;
+
+let CONTINUOUS_IMP_PEFECT_MAP = prove
+ (`!top top' (f:A->B).
+        compact_space top /\ kc_space top' /\
+        continuous_map (top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> perfect_map (top,top') f`,
+  SIMP_TAC[perfect_map; CONTINUOUS_IMP_PROPER_MAP;
+           CONTINUOUS_IMP_CLOSED_MAP_GEN]);;
+
+let PERFECT_MAP_FST = prove
+ (`!(top:A topology) (top':B topology).
+        perfect_map(prod_topology top top',top) FST <=>
+        (topspace top = {} \/ compact_space top') /\
+        (topspace top' = {} ==> topspace top = {})`,
+  REWRITE_TAC[perfect_map; PROPER_MAP_FST; CONTINUOUS_MAP_FST] THEN
+  REWRITE_TAC[TOPSPACE_PROD_TOPOLOGY; IMAGE_FST_CROSS] THEN
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `topspace top:A->bool = {}` THEN ASM_REWRITE_TAC[COND_ID] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[COMPACT_SPACE_TOPSPACE_EMPTY]);;
+
+let PERFECT_MAP_SND = prove
+ (`!(top:A topology) (top':B topology).
+        perfect_map(prod_topology top top',top') SND <=>
+        (topspace top' = {} \/ compact_space top) /\
+        (topspace top = {} ==> topspace top' = {})`,
+  REWRITE_TAC[perfect_map; PROPER_MAP_SND; CONTINUOUS_MAP_SND] THEN
+  REWRITE_TAC[TOPSPACE_PROD_TOPOLOGY; IMAGE_SND_CROSS] THEN
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `topspace top':B->bool = {}` THEN ASM_REWRITE_TAC[COND_ID] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[COMPACT_SPACE_TOPSPACE_EMPTY]);;
+
+let PERFECT_MAP_RESTRICTION = prove
+ (`!top top' (f:A->B) u v.
+        perfect_map (top,top') f /\ {x | x IN topspace top /\ f x IN v} = u
+        ==> perfect_map (subtopology top u,subtopology top' v) f`,
+  REPEAT GEN_TAC THEN SIMP_TAC[perfect_map; PROPER_MAP_RESTRICTION] THEN
+  SIMP_TAC[TOPSPACE_SUBTOPOLOGY; CONTINUOUS_MAP_IN_SUBTOPOLOGY;
+           CONTINUOUS_MAP_FROM_SUBTOPOLOGY] THEN
+  SET_TAC[]);;
+
+let PERFECT_MAP_FROM_COMPOSITION_LEFT = prove
+ (`!top top' top'' (f:A->B) (g:B->C).
+        perfect_map(top,top'') (g o f) /\
+        continuous_map(top,top') f /\
+        continuous_map(top',top'') g /\
+        IMAGE f (topspace top) = topspace top'
+        ==> perfect_map(top',top'') g`,
+  REWRITE_TAC[perfect_map] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
+        PROPER_MAP_FROM_COMPOSITION_LEFT));
+    ALL_TAC] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[IMAGE_o]) THEN ASM SET_TAC[]);;
+
+let PERFECT_MAP_FROM_COMPOSITION_RIGHT = prove
+ (`!top top' top'' (f:A->B) (g:B->C).
+        hausdorff_space top' /\
+        perfect_map(top,top'') (g o f) /\
+        continuous_map(top,top') f /\
+        continuous_map(top',top'') g /\
+        IMAGE f (topspace top) = topspace top'
+        ==> perfect_map(top,top') f`,
+  REWRITE_TAC[perfect_map] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  ASM_MESON_TAC[PROPER_MAP_FROM_COMPOSITION_RIGHT]);;
+
+let PERFECT_MAP_FROM_COMPOSITION_RIGHT_INJ = prove
+ (`!top top' top'' (f:A->B) (g:B->C).
+        perfect_map(top,top'') (g o f) /\
+        IMAGE f (topspace top) = topspace top' /\
+        continuous_map(top,top') f /\
+        continuous_map(top',top'') g /\
+        (!x y. x IN topspace top' /\ y IN topspace top' /\ g x = g y
+               ==> x = y)
+        ==> perfect_map(top,top') f`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[perfect_map] THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN
+  ASM_METIS_TAC[PROPER_MAP_FROM_COMPOSITION_RIGHT_INJ; SUBSET_REFL]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Preservation theorems for proper or perfect maps.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let DISCRETE_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        discrete_space top /\ perfect_map (top,top') f
+        ==> discrete_space top'`,
+  REWRITE_TAC[perfect_map; proper_map] THEN
+  MESON_TAC[DISCRETE_SPACE_CLOSED_MAP_IMAGE]);;
+
+let KC_SPACE_PROPER_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        kc_space top /\
+        proper_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> kc_space top'`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[kc_space] THEN
+  ONCE_REWRITE_TAC[MESON[COMPACT_IN_SUBSET_TOPSPACE]
+   `compact_in top s <=> s SUBSET topspace top /\ compact_in top s`] THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[IMP_CONJ; FORALL_SUBSET_IMAGE] THEN
+  X_GEN_TAC `s:A->bool` THEN REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `IMAGE (f:A->B) s = IMAGE f {x | x IN topspace top /\ f x IN IMAGE f s}`
+  SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[closed_map; kc_space; PROPER_MAP_ALT]) THEN
+  ASM_SIMP_TAC[]);;
+
+let KC_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        kc_space top /\
+        compact_space top /\
+        closed_map(top,top') f /\
+        continuous_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> kc_space top'`,
+  MESON_TAC[KC_SPACE_PROPER_MAP_IMAGE; KC_IMP_T1_SPACE;
+           T1_SPACE_CLOSED_MAP_IMAGE; CONTINUOUS_CLOSED_IMP_PROPER_MAP]);;
+
+let KC_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE_EQ = prove
+ (`!top top' (f:A->B).
+        kc_space top /\
+        compact_space top /\
+        continuous_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> (closed_map(top,top') f <=> kc_space top')`,
+  MESON_TAC[KC_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE;
+            CONTINUOUS_IMP_CLOSED_MAP_GEN]);;
+
+let HAUSDORFF_SPACE_PROPER_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        hausdorff_space top /\
+        proper_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> hausdorff_space top'`,
+  REWRITE_TAC[proper_map] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[hausdorff_space] THEN
+  MAP_EVERY X_GEN_TAC [`x:B`; `y:B`] THEN STRIP_TAC THEN FIRST_X_ASSUM
+   (MP_TAC o GEN_REWRITE_RULE I [HAUSDORFF_SPACE_COMPACT_SETS]) THEN
+  DISCH_THEN(MP_TAC o SPECL
+   [`{z | z IN topspace top /\ (f:A->B) z = x}`;
+    `{z | z IN topspace top /\ (f:A->B) z = y}`]) THEN
+  ASM_SIMP_TAC[] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN
+  STRIP_TAC THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC o GEN_REWRITE_RULE I
+   [CLOSED_MAP_PREIMAGE_NEIGHBOURHOOD]) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(SPECL [`u:A->bool`; `{x:B}`] th) THEN
+    MP_TAC(SPECL [`v:A->bool`; `{y:B}`] th)) THEN
+  ASM_REWRITE_TAC[SING_SUBSET; IN_SING; IMP_IMP; RIGHT_AND_EXISTS_THM] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET)) THEN
+  ASM SET_TAC[]);;
+
+let HAUSDORFF_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        compact_space top /\ hausdorff_space top /\
+        closed_map(top,top') f /\ continuous_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> hausdorff_space top'`,
+  MESON_TAC[HAUSDORFF_SPACE_PROPER_MAP_IMAGE;
+            CONTINUOUS_CLOSED_IMP_PROPER_MAP;
+            T1_SPACE_CLOSED_MAP_IMAGE; HAUSDORFF_IMP_T1_SPACE]);;
+
+let HAUSDORFF_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE_EQ = prove
+ (`!top top' (f:A->B).
+        compact_space top /\ hausdorff_space top /\
+        continuous_map(top,top') f /\ IMAGE f (topspace top) = topspace top'
+        ==> (closed_map(top,top') f <=> hausdorff_space top')`,
+  MESON_TAC[HAUSDORFF_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE;
+            CONTINUOUS_IMP_CLOSED_MAP]);;
+
+let HAUSDORFF_SPACE_CONTINUOUS_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        compact_space top /\ hausdorff_space top /\ kc_space top' /\
+        continuous_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> hausdorff_space top'`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`top:A topology`; `top':B topology`; `f:A->B`]
+        HAUSDORFF_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE) THEN
+  DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC[KC_IMP_T1_SPACE] THEN
+  MATCH_MP_TAC CONTINUOUS_IMP_CLOSED_MAP_GEN THEN ASM_REWRITE_TAC[]);;
+
+let HAUSDORFF_SPACE_CONTINUOUS_MAP_IMAGE_EQ = prove
+ (`!top top' (f:A->B).
+        compact_space top /\ hausdorff_space top /\
+        continuous_map(top,top') f /\ IMAGE f (topspace top) = topspace top'
+        ==> (hausdorff_space top' <=> kc_space top')`,
+  MESON_TAC[HAUSDORFF_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE_EQ;
+            KC_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE_EQ;
+            HAUSDORFF_IMP_KC_SPACE]);;
+
+let T1_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        t1_space top /\ perfect_map(top,top') f ==> t1_space top'`,
+  REWRITE_TAC[perfect_map; proper_map] THEN
+  MESON_TAC[T1_SPACE_CLOSED_MAP_IMAGE]);;
+
+let HAUSDORFF_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+    hausdorff_space top /\ perfect_map(top,top') f ==> hausdorff_space top'`,
+  REWRITE_TAC[perfect_map] THEN MESON_TAC[HAUSDORFF_SPACE_PROPER_MAP_IMAGE]);;
+
+let COMPACT_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+    compact_space top /\ perfect_map(top,top') f ==> compact_space top'`,
+  MESON_TAC[COMPACT_SPACE_QUOTIENT_MAP_IMAGE; PERFECT_IMP_QUOTIENT_MAP]);;
+
+let COMPACT_SPACE_PERFECT_MAP_IMAGE_EQ = prove
+ (`!top top' (f:A->B).
+      perfect_map(top,top') f ==> (compact_space top <=> compact_space top')`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[COMPACT_SPACE_PERFECT_MAP_IMAGE];
+    ASM_MESON_TAC[perfect_map; COMPACT_SPACE_PROPER_MAP_PREIMAGE]]);;
+
+let KC_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+      kc_space top /\ perfect_map(top,top') f
+      ==> kc_space top'`,
+  REWRITE_TAC[perfect_map] THEN MESON_TAC[KC_SPACE_PROPER_MAP_IMAGE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A variant of nets (slightly non-standard but good for our purposes).      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -14087,6 +14390,84 @@ let PROPER_MAP_PAIRED_CLOSED_MAP_LEFT = prove
   SIMP_TAC[PAIR_EQ] THEN
   ASM_SIMP_TAC[CLOSED_MAP_PAIRED_CLOSED_MAP_LEFT]);;
 
+let REGULAR_SPACE_CONTINUOUS_PROPER_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        regular_space top /\
+        continuous_map(top,top') f /\
+        proper_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> regular_space top'`,
+  REWRITE_TAC[proper_map] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[regular_space; IN_DIFF] THEN
+  MAP_EVERY X_GEN_TAC [`c:B->bool`; `x:B`] THEN STRIP_TAC THEN FIRST_X_ASSUM
+   (MP_TAC o GEN_REWRITE_RULE I [REGULAR_SPACE_COMPACT_CLOSED_SETS]) THEN
+  DISCH_THEN(MP_TAC o SPECL
+   [`{z | z IN topspace top /\ (f:A->B) z = x}`;
+    `{z | z IN topspace top /\ (f:A->B) z IN c}`]) THEN
+  ASM_SIMP_TAC[] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC CLOSED_IN_CONTINUOUS_MAP_PREIMAGE THEN ASM_MESON_TAC[];
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN
+  STRIP_TAC THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC o GEN_REWRITE_RULE I
+   [CLOSED_MAP_PREIMAGE_NEIGHBOURHOOD]) THEN
+  DISCH_THEN(fun th ->
+    MP_TAC(SPECL [`u:A->bool`; `{x:B}`] th) THEN
+    MP_TAC(SPECL [`v:A->bool`; `c:B->bool`] th)) THEN
+  ASM_REWRITE_TAC[SING_SUBSET; IN_SING; IMP_IMP; RIGHT_AND_EXISTS_THM] THEN
+  ASM_SIMP_TAC[CLOSED_IN_SUBSET; LEFT_AND_EXISTS_THM] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET)) THEN
+  ASM SET_TAC[]);;
+
+let REGULAR_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+    regular_space top /\ perfect_map(top,top') f ==> regular_space top'`,
+  REWRITE_TAC[perfect_map] THEN
+  MESON_TAC[REGULAR_SPACE_CONTINUOUS_PROPER_MAP_IMAGE]);;
+
+let REGULAR_SPACE_PERFECT_MAP_IMAGE_EQ = prove
+ (`!top top' (f:A->B).
+        hausdorff_space top /\ perfect_map(top,top') f
+        ==> (regular_space top <=> regular_space top')`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[REGULAR_SPACE_PERFECT_MAP_IMAGE];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [perfect_map]) THEN
+    REWRITE_TAC[proper_map; closed_map] THEN REPEAT STRIP_TAC] THEN
+  REWRITE_TAC[regular_space; IN_DIFF] THEN
+  MAP_EVERY X_GEN_TAC [`c:A->bool`; `x:A`] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL
+    [`top:A topology`; `{x:A}`;
+     `c INTER {z | z IN topspace top /\ (f:A->B) z = f x}`]
+    HAUSDORFF_SPACE_COMPACT_SEPARATION) THEN
+  ASM_REWRITE_TAC[COMPACT_IN_SING] THEN ANTS_TAC THENL
+   [CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+    MATCH_MP_TAC CLOSED_INTER_COMPACT_IN THEN ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[];
+    REWRITE_TAC[SING_SUBSET; LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+    [`IMAGE (f:A->B) (c DIFF v)`; `(f:A->B) x`] o
+    GEN_REWRITE_RULE I [regular_space]) THEN
+  ASM_SIMP_TAC[CLOSED_IN_DIFF] THEN ANTS_TAC THENL
+   [REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_SUBSET)) THEN
+    ASM SET_TAC[];
+    REWRITE_TAC[SING_SUBSET; LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`u':B->bool`; `v':B->bool`] THEN STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC
+   [`u INTER {x | x IN topspace top /\ (f:A->B) x IN u'}`;
+    `v UNION {x | x IN topspace top /\ (f:A->B) x IN v'}`] THEN
+  GEN_REWRITE_TAC I [CONJ_ASSOC] THEN CONJ_TAC THENL
+   [CONJ_TAC THENL
+     [MATCH_MP_TAC OPEN_IN_INTER; MATCH_MP_TAC OPEN_IN_UNION] THEN
+    ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC OPEN_IN_CONTINUOUS_MAP_PREIMAGE THEN ASM_MESON_TAC[];
+    REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_SUBSET)) THEN
+    ASM SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Locally compact spaces.                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -14894,6 +15275,73 @@ let QUOTIENT_MAP_PROD = prove
       MATCH_MP_TAC QUOTIENT_MAP_COMPOSE THEN
       EXISTS_TAC `prod_topology top1' top2:(B#C)topology` THEN
       ASM_SIMP_TAC[QUOTIENT_MAP_PROD_RIGHT; QUOTIENT_MAP_PROD_LEFT]]]);;
+
+let LOCALLY_COMPACT_SPACE_PERFECT_MAP_PREIMAGE = prove
+ (`!top top' (f:A->B).
+        locally_compact_space top' /\
+        perfect_map(top,top') f
+        ==> locally_compact_space top`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[locally_compact_space; perfect_map] THEN STRIP_TAC THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `(f:A->B) x`) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`u:B->bool`; `k:B->bool`] THEN STRIP_TAC THEN
+  MAP_EVERY EXISTS_TAC
+   [`{x | x IN topspace top /\ (f:A->B) x IN u}`;
+    `{x | x IN topspace top /\ (f:A->B) x IN k}`] THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC OPEN_IN_CONTINUOUS_MAP_PREIMAGE THEN ASM_MESON_TAC[];
+    MATCH_MP_TAC COMPACT_IN_PROPER_MAP_PREIMAGE THEN ASM SET_TAC[];
+    ASM SET_TAC[]]);;
+
+let LOCALLY_COMPACT_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+     (hausdorff_space top \/ regular_space top) /\
+     locally_compact_space top /\
+     perfect_map(top,top') f
+     ==> locally_compact_space top'`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[perfect_map] THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  REWRITE_TAC[locally_compact_space] THEN X_GEN_TAC `y:B` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o
+    MATCH_MP LOCALLY_COMPACT_SPACE_COMPACT_CLOSED_COMPACT) THEN
+  ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(MP_TAC o SPEC `{x | x IN topspace top /\ (f:A->B) x = y}`) THEN
+  FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [proper_map]) THEN
+  ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:A->bool`; `k:A->bool`] THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o
+    SPECL [`u:A->bool`; `y:B`] o
+    CONJUNCT2 o GEN_REWRITE_RULE I [CLOSED_MAP_FIBRE_NEIGHBOURHOOD]) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `v:B->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (f:A->B) (top closure_of u)` THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC IMAGE_COMPACT_IN THEN
+    EXISTS_TAC `top:A topology` THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC COMPACT_IN_SUBTOPOLOGY_IMP_COMPACT THEN
+    EXISTS_TAC `k:A->bool` THEN MATCH_MP_TAC CLOSED_IN_COMPACT_SPACE THEN
+    ASM_SIMP_TAC[CLOSED_IN_CLOSED_SUBTOPOLOGY; CLOSED_IN_CLOSURE_OF;
+                 CLOSURE_OF_MINIMAL; COMPACT_SPACE_SUBTOPOLOGY];
+    FIRST_X_ASSUM(MP_TAC o SPEC `u:A->bool` o CONJUNCT2 o
+        GEN_REWRITE_RULE I [CLOSED_MAP_CLOSURE_OF_IMAGE]) THEN
+    ASM_SIMP_TAC[OPEN_IN_SUBSET] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUBSET_TRANS) THEN
+    TRANS_TAC SUBSET_TRANS `IMAGE (f:A->B) u` THEN CONJ_TAC THENL
+      [ALL_TAC; MATCH_MP_TAC CLOSURE_OF_SUBSET] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET)) THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_SUBSET)) THEN
+    ASM SET_TAC[]]);;
+
+let LOCALLY_COMPACT_SPACE_PERFECT_MAP_IMAGE_EQ = prove
+ (`!top top' (f:A->B).
+     (hausdorff_space top \/ regular_space top) /\
+     perfect_map(top,top') f
+     ==> (locally_compact_space top <=>
+          locally_compact_space top')`,
+  MESON_TAC[LOCALLY_COMPACT_SPACE_PERFECT_MAP_PREIMAGE;
+            LOCALLY_COMPACT_SPACE_PERFECT_MAP_IMAGE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The most basic facts about usual topology and metric on R.                *)
@@ -21276,6 +21724,35 @@ let NORMAL_SPACE_EQ_TIETZE = prove
     ASM_REWRITE_TAC[EMPTY_GSPEC; CLOSED_IN_EMPTY; UNION_EMPTY; IN_GSPEC] THEN
     ASM_SIMP_TAC[CLOSED_IN_UNION]]);;
 
+let NORMAL_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+    normal_space top /\ perfect_map(top,top') f ==> normal_space top'`,
+  REWRITE_TAC[perfect_map; proper_map] THEN
+  MESON_TAC[NORMAL_SPACE_CONTINUOUS_CLOSED_MAP_IMAGE]);;
+
+let HAUSDORFF_NORMAL_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        normal_space top /\
+        closed_map (top,top') f /\
+        continuous_map (top,top') f /\
+        IMAGE f (topspace top) = topspace top' /\
+        t1_space top'
+        ==> hausdorff_space top'`,
+  MESON_TAC[NORMAL_T1_IMP_HAUSDORFF_SPACE;
+            NORMAL_SPACE_CONTINUOUS_CLOSED_MAP_IMAGE]);;
+
+let NORMAL_HAUSDORFF_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        normal_space top /\
+        hausdorff_space top /\
+        closed_map (top,top') f /\
+        continuous_map (top,top') f /\
+        IMAGE f (topspace top) = topspace top'
+        ==> normal_space top' /\ hausdorff_space top'`,
+  MESON_TAC[NORMAL_SPACE_CONTINUOUS_CLOSED_MAP_IMAGE;
+            NORMAL_T1_IMP_HAUSDORFF_SPACE;
+            T1_SPACE_CLOSED_MAP_IMAGE; HAUSDORFF_IMP_T1_SPACE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Hereditarily normal spaces.                                               *)
 (* ------------------------------------------------------------------------- *)
@@ -21393,6 +21870,13 @@ let HEREDITARILY_NORMAL_SEPARATION_PAIRWISE = prove
       REWRITE_TAC[FINITE_EMPTY; NOT_IN_EMPTY; PAIRWISE_EMPTY; IN_SING] THEN
       ANTS_TAC THENL [ASM_MESON_TAC[separated_in]; ALL_TAC] THEN
       REWRITE_TAC[IMP_CONJ; FORALL_UNWIND_THM2] THEN ASM_MESON_TAC[]]]);;
+
+let HEREDITARILY_NORMAL_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+    hereditarily normal_space top /\ perfect_map(top,top') f
+    ==> hereditarily normal_space top'`,
+  REWRITE_TAC[perfect_map; proper_map] THEN
+  MESON_TAC[HEREDITARILY_NORMAL_SPACE_CONTINUOUS_CLOSED_MAP_IMAGE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Completely regular spaces.                                                *)
@@ -22863,6 +23347,12 @@ let HOMEOMORPHIC_K_SPACE = prove
   REWRITE_TAC[GSYM SECTION_AND_RETRACTION_EQ_HOMEOMORPHIC_MAP] THEN
   MESON_TAC[K_SPACE_RETRACTION_MAP_IMAGE]);;
 
+let K_SPACE_PERFECT_MAP_IMAGE = prove
+ (`!top top' (f:A->B).
+        k_space top /\ perfect_map(top,top') f
+        ==> k_space top'`,
+  MESON_TAC[PERFECT_IMP_QUOTIENT_MAP; K_SPACE_QUOTIENT_MAP_IMAGE]);;
+
 let LOCALLY_COMPACT_IMP_K_SPACE = prove
  (`!top:A topology. locally_compact_space top ==> k_space top`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[K_SPACE] THEN
@@ -23363,6 +23853,17 @@ let PROPER_EQ_COMPACT_MAP = prove
     STRIP_TAC THEN MATCH_MP_TAC COMPACT_IMP_PROPER_MAP THEN
     ASM_REWRITE_TAC[]]);;
 
+let COMPACT_IMP_PERFECT_MAP = prove
+ (`!top top' (f:A->B).
+        k_space top' /\ kc_space top' /\
+        continuous_map(top,top') f /\ IMAGE f (topspace top) = topspace top' /\
+        (!k. compact_in top' k
+             ==> compact_in top {x | x IN topspace top /\ f x IN k})
+        ==> perfect_map(top,top') f`,
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[perfect_map] THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE) THEN
+  MATCH_MP_TAC COMPACT_IMP_PROPER_MAP THEN ASM_REWRITE_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* More generally, the k-ification functor.                                  *)
 (* ------------------------------------------------------------------------- *)
@@ -23538,6 +24039,53 @@ let SUBTOPOLOGY_KIFICATION_FINER = prove
   ASM_REWRITE_TAC[SUBTOPOLOGY_SUBTOPOLOGY] THEN
   REWRITE_TAC[OPEN_IN_SUBTOPOLOGY] THEN MATCH_MP_TAC MONO_EXISTS THEN
   SET_TAC[]);;
+
+let PROPER_MAP_FROM_KIFICATION = prove
+ (`!top top' (f:A->B).
+        k_space top'
+        ==> (proper_map(kification top,top') f <=>
+             proper_map(top,top') f)`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[PROPER_MAP_INTO_K_SPACE_EQ] THEN
+  REWRITE_TAC[TOPSPACE_KIFICATION; PROPER_MAP_ALT] THEN
+  REWRITE_TAC[COMPACT_IN_SUBTOPOLOGY; COMPACT_IN_KIFICATION;
+              TOPSPACE_SUBTOPOLOGY; IN_ELIM_THM; IN_INTER;
+              TOPSPACE_KIFICATION] THEN
+  MATCH_MP_TAC(MESON[]
+   `(P /\ (!k. Q k ==> S k) ==> (!k. Q k ==> (R k <=> R' k)))
+    ==> (P /\ (!k. Q k ==> R k /\ S k) <=>
+         P /\ (!k. Q k ==> R' k /\ S k))`) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o MATCH_MP (MESON[]
+   `(!x. P x ==> (!y. P y /\ Q x y ==> R x y))
+    ==> (!x. P x /\ Q x x ==> R x x)`))) THEN
+  REWRITE_TAC[TAUT `(p /\ p /\ q) /\ q <=> p /\ q`; SUBSET_REFL] THEN
+  SIMP_TAC[SUBTOPOLOGY_KIFICATION_COMPACT]);;
+
+let PERFECT_MAP_FROM_KIFICATION = prove
+ (`!top top' (f:A->B).
+        k_space top' /\ perfect_map(top,top') f
+        ==> perfect_map(kification top,top') f`,
+  SIMP_TAC[perfect_map; PROPER_MAP_FROM_KIFICATION;
+           CONTINUOUS_MAP_FROM_KIFICATION; TOPSPACE_KIFICATION]);;
+
+let K_SPACE_PERFECT_MAP_IMAGE_EQ = prove
+ (`!top top' (f:A->B).
+     hausdorff_space top /\ perfect_map(top,top') f
+     ==> (k_space top <=> k_space top')`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ASM_MESON_TAC[K_SPACE_PERFECT_MAP_IMAGE]; DISCH_TAC] THEN
+  MP_TAC(ISPECL [`kification top:A topology`; `top:A topology`]
+        HOMEOMORPHIC_K_SPACE) THEN
+  ASM_REWRITE_TAC[HOMEOMORPHIC_SPACE; K_SPACE_KIFICATION] THEN
+  DISCH_THEN MATCH_MP_TAC THEN EXISTS_TAC `\x:A. x` THEN
+  REWRITE_TAC[HOMEOMORPHIC_EQ_INJECTIVE_PERFECT_MAP] THEN
+  MP_TAC(ISPECL
+   [`kification top:A topology`; `top:A topology`; `top':B topology`;
+    `\x:A. x`; `f:A->B`] PERFECT_MAP_FROM_COMPOSITION_RIGHT) THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[o_DEF; ETA_AX; IMAGE_ID; TOPSPACE_KIFICATION] THEN
+  ASM_SIMP_TAC[PERFECT_MAP_FROM_KIFICATION] THEN
+  SIMP_TAC[CONTINUOUS_MAP_FROM_KIFICATION; CONTINUOUS_MAP_ID] THEN
+  ASM_SIMP_TAC[PERFECT_IMP_CONTINUOUS_MAP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* One-point compactifications and the Alexandroff extension construction.   *)

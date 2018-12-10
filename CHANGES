@@ -8,10 +8,49 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  7th Dec 2018       arith.ml
+
+Added a simple but sometimes useful theorem
+
+  MOD_ADD_CASES =
+    |- !m n p.
+           m < p /\ n < p
+           ==> (m + n) MOD p = if m + n < p then m + n else (m + n) - p
+
+Wed  5th Dec 2018       printer.ml
+
+Changed, in a rather ad hoc but potentially valuable way, how some larger
+nested conditionals are printed. Now when the nesting depth gets above 4, the
+printer switches from following the logical nesting recursively to a flatter
+style. For example, what was printed as:
+
+   `if x = 1
+     then 6
+     else if x = 2
+          then 5
+          else if x = 3
+               then 4
+               else if x = 4
+                    then 3
+                    else if x = 5 then 2 else if x = 6 then 1 else 0`
+
+now becomes
+
+  `if x = 1 then 6
+   else if x = 2 then 5
+   else if x = 3 then 4
+   else if x = 4 then 3
+   else if x = 5 then 2
+   else if x = 6 then 1
+   else 0`
+
+while slightly smaller nesting maintains the old behaviour, which does seem
+clearer in such cases.
+
 Fri 30th Nov 2018       calc_rat.ml, int.ml
 
-Added two missing explicit value conversions for the real and integer signum 
-functions applied to concrete rational or integer numbers, REAL_RAT_SGN_CONV 
+Added two missing explicit value conversions for the real and integer signum
+functions applied to concrete rational or integer numbers, REAL_RAT_SGN_CONV
 and INT_SGN_CONV, also rolling them into the corresponding "..._RED_CONV" and
 "..._REDUCE_CONV" functions.
 
