@@ -54,6 +54,6 @@ documentation for {MESON_TAC} to find more examples.
 Generating simple logical lemmas as part of a large proof.
 
 \SEEALSO
-ASM_MESON_TAC, GEN_MESON_TAC, MESON_TAC, METIS.
+ASM_MESON_TAC, GEN_MESON_TAC, LEANCOP, MESON_TAC, METIS, NANOCOP.
 
 \ENDDOC

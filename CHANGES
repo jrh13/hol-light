@@ -8,6 +8,30 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 14th Dec 2018       thecops.ml, Help/LEANCOP.doc, Help/LEANCOP_TAC.doc, Help/NANOCOP.doc, Help/NANOCOP_TAC.doc, Help/copverb.doc [new files]
+
+Added a new file "thecops.ml" with two connection-based proof-producing
+first-order provers from Michael Faerber: leanCoP and nanoCoP. This
+provides in particular two new first-order derived inference rules
+
+        LEANCOP
+        NANOCOP
+
+and two corresponding tactics
+
+        LEANCOP_TAC
+        NANOCOP_TAC
+
+These are analogous to MESON/MESON_TAC and METIS/METIS_TAC, so there are now
+four different proof-producing first-order provers to choose from, any of which
+may work particularly well on problems of a particular structure.
+
+Mon 10th Dec 2018       arith.ml
+
+Added another trivial but handy theorem
+
+        MOD_2_CASES = |- !n. n MOD 2 = if EVEN n then 0 else 1
+
 Fri  7th Dec 2018       arith.ml
 
 Added a simple but sometimes useful theorem

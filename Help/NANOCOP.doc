@@ -1,25 +1,24 @@
-\DOC METIS
+\DOC NANOCOP
 
-\TYPE {METIS : thm list -> term -> thm}
+\TYPE {NANOCOP : thm list -> term -> thm}
 
 \SYNOPSIS
-Attempt to prove a term by first-order proof search using Metis algorithm.
+Attempt to prove a term by first-order proof search using nanoCop
+connection-based prover.
 
 \DESCRIBE
-A call {METIS[theorems] `tm`} will attempt to prove {tm} using pure first-order
-reasoning, taking {theorems} as the starting-point. It will usually either
-prove it completely or run for an infeasibly long time, but it may sometimes
-fail quickly.
+A call {NANOCOP[theorems] `tm`} will attempt to prove {tm} using pure
+first-order reasoning, taking {theorems} as the starting-point. It will usually
+either prove it completely or run for an infeasibly long time, but it may
+sometimes fail quickly.
 
-Although {METIS} is capable of some fairly non-obvious pieces of first-order
+Although {NANOCOP} is capable of some fairly non-obvious pieces of first-order
 reasoning, and will handle equality adequately, it does purely logical
 reasoning. It will exploit no special properties of the constants in the goal,
 other than equality and logical primitives. Any properties that are needed must
 be supplied explicitly in the theorem list, e.g. {LE_REFL} to tell it that {<=}
 on natural numbers is reflexive, or {REAL_ADD_SYM} to tell it that addition on
 real numbers is symmetric.
-
-Sometimes the similar {MESON} rule is faster, especially on simpler problems.
 
 \FAILURE
 Fails if the term is unprovable within the search bounds.
@@ -28,13 +27,14 @@ Fails if the term is unprovable within the search bounds.
 A typical application is to prove some elementary logical lemma for use inside
 a tactic proof:
 {
-  # METIS[num_CASES] `(!n. P n) <=> P 0 /\ (!n. P (SUC n))`;;
+  # NANOCOP [EXTENSION; IN_INSERT]
+      `x INSERT y INSERT s = y INSERT x INSERT s`;;
 }
 
 \USES
 Generating simple logical lemmas as part of a large proof.
 
 \SEEALSO
-ASM_METIS_TAC, LEANCOP, MESON, METIS_TAC, NANOCOP.
+LEANCOP, MESON, METIS, NANOCOP_TAC.
 
 \ENDDOC

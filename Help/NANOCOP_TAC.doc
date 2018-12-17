@@ -1,0 +1,36 @@
+\DOC NANOCOP_TAC
+
+\TYPE {NANOCOP_TAC : thm list -> tactic}
+
+\SYNOPSIS
+Automated first-order proof search tactic using nanoCoP algorithm.
+
+\DESCRIBE
+A call to {NANOCOP_TAC[theorems]} will attempt to establish the current goal
+using pure first-order reasoning, taking {theorems} as the starting-point.
+It will usually either solve the goal completely or run for an infeasibly long
+time, but it may sometimes fail quickly. This tactic is analogous to
+{MESON_TAC}, and many of the same general comments apply.
+
+\FAILURE
+Fails if the goal is unprovable within the search bounds.
+
+\EXAMPLE
+Here is a simple fact about natural number sums as a goal:
+{
+  # g `!f u v.
+         FINITE u /\ (!x. x IN v /\ ~(x IN u) ==> f x = 0)
+         ==> nsum (u UNION v) f = nsum u f`;;
+
+}
+It is solved in a fraction of a second by {NANOCOP_TAC} with some relevant
+lemmas:
+{
+  # e(NANOCOP_TAC[SUBSET; NSUM_SUPERSET; IN_UNION]);;
+  val it : goalstack = No subgoals
+}
+
+\SEEALSO
+LEANCOP_TAC, MESON_TAC, METIS_TAC, NANOCOP.
+
+\ENDDOC

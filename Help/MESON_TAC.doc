@@ -71,6 +71,6 @@ quantification over a function {g}:
 \noindent and both of those are solvable directly by {MESON_TAC[]}.
 
 \SEEALSO
-ASM_MESON_TAC, GEN_MESON_TAC, MESON, METIS_TAC.
+ASM_MESON_TAC, GEN_MESON_TAC, LEANCOP_TAC, MESON, METIS_TAC, NANOCOP_TAC.
 
 \ENDDOC

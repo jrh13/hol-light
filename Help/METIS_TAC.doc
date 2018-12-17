@@ -44,6 +44,6 @@ This is an example where {METIS_TAC} substantially outperforms {MESON_TAC},
 which does not seem to be able to solve that problem in a reasonable time.
 
 \SEEALSO
-ASM_METIS_TAC, MESON_TAC, METIS.
+ASM_METIS_TAC, LEANCOP_TAC, MESON_TAC, METIS, NANOCOP_TAC.
 
 \ENDDOC

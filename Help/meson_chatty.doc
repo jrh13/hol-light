@@ -17,7 +17,7 @@ inference numbers are condensed into 1-line output.
 Not applicable.
 
 \SEEALSO
-meson_brand, meson_dcutin, meson_depth, meson_prefine, meson_skew,
-meson_split_limit, metisverb.
+copverb, meson_brand, meson_dcutin, meson_depth, meson_prefine, meson_skew,
+meson_split_limit, MESON, MESON_TAC, metisverb.
 
 \ENDDOC

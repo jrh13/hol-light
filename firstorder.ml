@@ -7,6 +7,12 @@
 needs "meson.ml";;
 
 (* ------------------------------------------------------------------------- *)
+(* Controls verbosity of these and the main CoP functions.                   *)
+(* ------------------------------------------------------------------------- *)
+
+let copverb = ref false;;           (* Controls output verbosity of the CoPs *)
+
+(* ------------------------------------------------------------------------- *)
 (* Misc utility functions.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
@@ -141,7 +147,7 @@ module Mapping = struct
     let fol_of_var v =
       try assoc v !vstore with Failure _ ->
       let n = inc_vcounter() in
-      if !verbose then
+      if !copverb then
         Format.printf "fol_of_var: %s (ty = %s) <- %d\n%!"
         (string_of_term v) (string_of_type (type_of v)) n;
       vstore := (v,n)::!vstore; n in
