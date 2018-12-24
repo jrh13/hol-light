@@ -1467,6 +1467,37 @@ let CARD_UNIONS = prove
   REWRITE_TAC[EMPTY_UNIONS; IN_ELIM_THM] THEN ASM MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Expand "nsum (m..n) f" where m and n are numerals.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let EXPAND_NSUM_CONV =
+  let [pth_0; pth_1; pth_2] = (CONJUNCTS o prove)
+   (`(n < m ==> nsum(m..n) f = 0) /\
+     nsum(m..m) f = f m /\
+     (m <= n ==> nsum (m..n) f = f m + nsum (m + 1..n) f)`,
+    REWRITE_TAC[NSUM_CLAUSES_LEFT; NSUM_SING_NUMSEG; NSUM_TRIV_NUMSEG])
+  and ns_tm = `..` and f_tm = `f:num->num`
+  and m_tm = `m:num` and n_tm = `n:num` in
+  let rec conv tm =
+    let smn,ftm = dest_comb tm in
+    let s,mn = dest_comb smn in
+    if not(is_const s && fst(dest_const s) = "nsum")
+    then failwith "EXPAND_NSUM_CONV" else
+    let mtm,ntm = dest_binop ns_tm mn in
+    let m = dest_numeral mtm and n = dest_numeral ntm in
+    if n < m then
+      let th1 = INST [ftm,f_tm; mtm,m_tm; ntm,n_tm] pth_0 in
+      MP th1 (EQT_ELIM(NUM_LT_CONV(lhand(concl th1))))
+    else if n = m then CONV_RULE (RAND_CONV(TRY_CONV BETA_CONV))
+                                 (INST [ftm,f_tm; mtm,m_tm] pth_1)
+    else
+      let th1 = INST [ftm,f_tm; mtm,m_tm; ntm,n_tm] pth_2 in
+      let th2 = MP th1 (EQT_ELIM(NUM_LE_CONV(lhand(concl th1)))) in
+      CONV_RULE (RAND_CONV(COMB2_CONV (RAND_CONV(TRY_CONV BETA_CONV))
+       (LAND_CONV(LAND_CONV NUM_ADD_CONV) THENC conv))) th2 in
+  conv;;
+
+(* ------------------------------------------------------------------------- *)
 (* Sums of real numbers.                                                     *)
 (* ------------------------------------------------------------------------- *)
 

@@ -221,6 +221,37 @@ let ISUM_UNIV = prove
   REWRITE_TAC[MONOIDAL_INT_ADD]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Expand "isum (m..n) f" where m and n are numerals.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let EXPAND_ISUM_CONV =
+  let [pth_0; pth_1; pth_2] = (CONJUNCTS o prove)
+   (`(n < m ==> isum(m..n) f = &0) /\
+     isum(m..m) f = f m /\
+     (m <= n ==> isum (m..n) f = f m + isum (m + 1..n) f)`,
+    REWRITE_TAC[ISUM_CLAUSES_LEFT; ISUM_SING_NUMSEG; ISUM_TRIV_NUMSEG])
+  and ns_tm = `..` and f_tm = `f:num->int`
+  and m_tm = `m:num` and n_tm = `n:num` in
+  let rec conv tm =
+    let smn,ftm = dest_comb tm in
+    let s,mn = dest_comb smn in
+    if not(is_const s && fst(dest_const s) = "isum")
+    then failwith "EXPAND_ISUM_CONV" else
+    let mtm,ntm = dest_binop ns_tm mn in
+    let m = dest_numeral mtm and n = dest_numeral ntm in
+    if n < m then
+      let th1 = INST [ftm,f_tm; mtm,m_tm; ntm,n_tm] pth_0 in
+      MP th1 (EQT_ELIM(NUM_LT_CONV(lhand(concl th1))))
+    else if n = m then CONV_RULE (RAND_CONV(TRY_CONV BETA_CONV))
+                                 (INST [ftm,f_tm; mtm,m_tm] pth_1)
+    else
+      let th1 = INST [ftm,f_tm; mtm,m_tm; ntm,n_tm] pth_2 in
+      let th2 = MP th1 (EQT_ELIM(NUM_LE_CONV(lhand(concl th1)))) in
+      CONV_RULE (RAND_CONV(COMB2_CONV (RAND_CONV(TRY_CONV BETA_CONV))
+       (LAND_CONV(LAND_CONV NUM_ADD_CONV) THENC conv))) th2 in
+  conv;;
+
+(* ------------------------------------------------------------------------- *)
 (* Extend the congruences.                                                   *)
 (* ------------------------------------------------------------------------- *)
 

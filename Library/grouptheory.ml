@@ -1252,6 +1252,13 @@ let SUBGROUP_GENERATED_SUBSET_CARRIER_SUBSET = prove
   MESON_TAC[SUBGROUP_GENERATED_SUBSET_CARRIER;
             SET_RULE `s SUBSET t <=> t INTER s = s`]);;
 
+let SUBGROUP_GENERATED_REFL = prove
+ (`!G s:A->bool. group_carrier G SUBSET s ==> subgroup_generated G s = G`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[SUBGROUP_GENERATED_RESTRICT] THEN
+  ASM_SIMP_TAC[SET_RULE `u SUBSET s ==> u INTER s = u`] THEN
+  REWRITE_TAC[SUBGROUP_GENERATED_GROUP_CARRIER]);;
+
 let SUBGROUP_GENERATED_INC = prove
  (`!G s x:A.
         s SUBSET group_carrier G /\ x IN s
@@ -1390,6 +1397,13 @@ let PROD_GROUP = prove
     DISCH_TAC THEN
     ASM_REWRITE_TAC[group_carrier; group_id; group_inv; group_mul]]);;
 
+let OPPOSITE_PROD_GROUP = prove
+ (`!(G1:A group) (G2:B group).
+        opposite_group(prod_group G1 G2) =
+        prod_group (opposite_group G1) (opposite_group G2)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GROUPS_EQ; OPPOSITE_GROUP; PROD_GROUP] THEN
+  REWRITE_TAC[LAMBDA_PAIR_THM]);;
+
 let TRIVIAL_PROD_GROUP = prove
  (`!(G:A group) (H:B group).
         trivial_group(prod_group G H) <=>
@@ -1462,6 +1476,13 @@ let PRODUCT_GROUP = prove
     DISCH_TAC THEN
     ASM_REWRITE_TAC[group_carrier; group_id; group_inv; group_mul]]);;
 
+let OPPOSITE_PRODUCT_GROUP = prove
+ (`!(G:K->A group) k.
+        opposite_group(product_group k G) =
+        product_group k (\i. opposite_group(G i))`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GROUPS_EQ; OPPOSITE_GROUP; PRODUCT_GROUP]);;
+
 let TRIVIAL_PRODUCT_GROUP = prove
  (`!k (G:K->A group).
         trivial_group(product_group k G) <=>
@@ -1530,6 +1551,13 @@ let sum_group = new_definition
          (product_group k G)
          {x | x IN cartesian_product k (\i. group_carrier(G i)) /\
               FINITE {i | i IN k /\ ~(x i = group_id(G i))}}`;;
+
+
+let SUM_GROUP_EQ_PRODUCT_GROUP = prove
+ (`!k (G:K->A group). FINITE k ==> sum_group k G = product_group k G`,
+  SIMP_TAC[sum_group; FINITE_RESTRICT] THEN
+  REWRITE_TAC[GSYM(CONJUNCT1 PRODUCT_GROUP); IN_GSPEC] THEN
+  REWRITE_TAC[SUBGROUP_GENERATED_GROUP_CARRIER]);;
 
 let SUBGROUP_SUM_GROUP = prove
  (`!k (G:K->A group).
@@ -1986,6 +2014,31 @@ let GROUP_ISOMORPHISM = prove
     `IMAGE (f:A->B) (group_carrier G) = group_carrier G'`)) THEN
   REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_IMAGE_2] THEN
   ASM_SIMP_TAC[] THEN ASM_MESON_TAC(GROUP_PROPERTIES));;
+
+let SUBGROUP_OF_HOMOMORPHIC_IMAGE = prove
+ (`!G G' (f:A->B).
+        group_homomorphism (G,G') f /\ h subgroup_of G
+        ==> IMAGE f h subgroup_of G'`,
+  REWRITE_TAC[group_homomorphism; subgroup_of] THEN SET_TAC[]);;
+
+let SUBGROUP_OF_HOMOMORPHIC_PREIMAGE = prove
+ (`!G H (f:A->B) h.
+        group_homomorphism(G,H) f /\ h subgroup_of H
+        ==> {x | x IN group_carrier G /\ f x IN h} subgroup_of G`,
+  REWRITE_TAC[group_homomorphism; subgroup_of; IN_ELIM_THM] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
+  MESON_TAC[GROUP_ID; GROUP_INV; GROUP_MUL]);;
+
+let SUBGROUP_OF_EPIMORPHIC_PREIMAGE = prove
+ (`!G H (f:A->B) h.
+        group_epimorphism(G,H) f /\ h subgroup_of H
+        ==> {x | x IN group_carrier G /\ f x IN h} subgroup_of G /\
+            IMAGE f {x | x IN group_carrier G /\ f x IN h} = h`,
+  REWRITE_TAC[group_epimorphism] THEN
+  REWRITE_TAC[group_homomorphism; subgroup_of; IN_ELIM_THM] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM] THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_IMAGE] THEN
+  MESON_TAC[GROUP_ID; GROUP_INV; GROUP_MUL]);;
 
 let GROUP_MONOMORPHISM_EPIMORPHISM = prove
  (`!G G' f:A->B.
@@ -3069,6 +3122,88 @@ let LAGRANGE_THEOREM = prove
   DISCH_THEN(SUBST1_TAC o SYM o MATCH_MP LAGRANGE_THEOREM_RIGHT) THEN
   NUMBER_TAC);;
 
+let GROUP_SETMUL_PROD_GROUP = prove
+ (`!(G1:A group) (G2:B group) s1 s2 t1 t2.
+        group_setmul (prod_group G1 G2) (s1 CROSS s2) (t1 CROSS t2) =
+        (group_setmul G1 s1 t1) CROSS (group_setmul G2 s2 t2)`,
+  REWRITE_TAC[group_setmul; CROSS; PROD_GROUP; SET_RULE
+   `{f x y | x IN {g a b | P a b} /\ y IN {h c d | Q c d}} =
+    {f (g a b) (h c d) | P a b /\ Q c d}`] THEN
+  SET_TAC[]);;
+
+let RIGHT_COSET_PROD_GROUP = prove
+ (`!G1 G2 h1 h2 (x1:A) (x2:B).
+        right_coset (prod_group G1 G2) (h1 CROSS h2) (x1,x2) =
+        (right_coset G1 h1 x1) CROSS (right_coset G2 h2 x2)`,
+  REWRITE_TAC[right_coset; GSYM CROSS_SING; GROUP_SETMUL_PROD_GROUP]);;
+
+let LEFT_COSET_PROD_GROUP = prove
+ (`!G1 G2 h1 h2 (x1:A) (x2:B).
+        left_coset (prod_group G1 G2) (x1,x2) (h1 CROSS h2) =
+        (left_coset G1 x1 h1) CROSS (left_coset G2 x2 h2)`,
+  REWRITE_TAC[left_coset; GSYM CROSS_SING; GROUP_SETMUL_PROD_GROUP]);;
+
+let GROUP_SETMUL_PRODUCT_GROUP = prove
+ (`!(G:K->A group) k s t.
+        group_setmul (product_group k G)
+                     (cartesian_product k s) (cartesian_product k t) =
+        cartesian_product k (\i. group_setmul (G i) (s i) (t i))`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[group_setmul; CARTESIAN_PRODUCT_AS_RESTRICTIONS;
+              PRODUCT_GROUP] THEN
+  REWRITE_TAC[IN_ELIM_THM; SET_RULE
+   `{f x y | x,y | x IN {g x | P x} /\ y IN {g f | Q f}} =
+    {f (g x) (g y) | P x /\ Q y}`] THEN
+  GEN_REWRITE_TAC (RAND_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; FORALL_AND_THM; TAUT
+   `p ==> (q /\ r) /\ s <=> (p ==> s) /\ (p ==> q) /\ (p ==> r)`] THEN
+  REWRITE_TAC[GSYM RESTRICTION_EXTENSION; SET_RULE
+   `{RESTRICTION k f | f | ?x y. RESTRICTION k f = RESTRICTION k (g x y) /\
+                                 R x y} =
+    {RESTRICTION k (g x y) | R x y}`] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x y. R x y ==> f x y = g x y)
+    ==> {f x y | R x y} = {g x y | R x y}`) THEN
+  REWRITE_TAC[RESTRICTION_EXTENSION] THEN SIMP_TAC[RESTRICTION]);;
+
+let RIGHT_COSET_PRODUCT_GROUP = prove
+ (`!(G:K->A group) h x k.
+        right_coset (product_group k G) (cartesian_product k h) x =
+        cartesian_product k (\i. right_coset (G i) (h i) (x i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[right_coset] THEN
+  REWRITE_TAC[GSYM GROUP_SETMUL_PRODUCT_GROUP] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_SINGS_GEN] THEN
+  REWRITE_TAC[group_setmul; PRODUCT_GROUP; SET_RULE
+   `{f x y | x,y | P x /\ y IN {a}} = {f x a | P x}`] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> f x = g x) ==> {f x | x IN s} = {g x | x IN s}`) THEN
+  REWRITE_TAC[RESTRICTION_EXTENSION] THEN SIMP_TAC[RESTRICTION]);;
+
+let LEFT_COSET_PRODUCT_GROUP = prove
+ (`!(G:K->A group) h x k.
+        left_coset (product_group k G) x (cartesian_product k h) =
+        cartesian_product k (\i. left_coset (G i) (x i) (h i))`,
+  REWRITE_TAC[LEFT_COSET_OPPOSITE_GROUP; OPPOSITE_PRODUCT_GROUP] THEN
+  REWRITE_TAC[RIGHT_COSET_PRODUCT_GROUP]);;
+
+let GROUP_SETINV_SUBGROUP_GENERATED = prove
+ (`!G h:A->bool.
+        group_setinv (subgroup_generated G h) = group_setinv G`,
+  REWRITE_TAC[group_setinv; FUN_EQ_THM; SUBGROUP_GENERATED]);;
+
+let GROUP_SETMUL_SUBGROUP_GENERATED = prove
+ (`!G h:A->bool.
+        group_setmul (subgroup_generated G h) = group_setmul G`,
+  REWRITE_TAC[group_setmul; FUN_EQ_THM; SUBGROUP_GENERATED]);;
+
+let RIGHT_COSET_SUBGROUP_GENERATED = prove
+ (`!G h k x. right_coset (subgroup_generated G h) k x = right_coset G k x`,
+  REWRITE_TAC[right_coset; GROUP_SETMUL_SUBGROUP_GENERATED]);;
+
+let LEFT_COSET_SUBGROUP_GENERATED = prove
+ (`!G h k x. left_coset (subgroup_generated G h) x k = left_coset G x k`,
+  REWRITE_TAC[left_coset; GROUP_SETMUL_SUBGROUP_GENERATED]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Normal subgroups.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -3217,6 +3352,40 @@ let GROUP_SETMUL_LEFT_COSET = prove
   ONCE_REWRITE_TAC[GSYM OPPOSITE_GROUP_SETMUL] THEN
   SIMP_TAC[GROUP_SETMUL_RIGHT_COSET; NORMAL_SUBGROUP_OF_OPPOSITE_GROUP;
            OPPOSITE_GROUP]);;
+
+let CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP = prove
+ (`!(G1:A group) (G2:B group) h1 h2.
+        (h1 CROSS h2) normal_subgroup_of (prod_group G1 G2) <=>
+        h1 normal_subgroup_of G1 /\ h2 normal_subgroup_of G2`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[normal_subgroup_of] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; RIGHT_COSET_PROD_GROUP; LEFT_COSET_PROD_GROUP;
+    CROSS_SUBGROUP_OF_PROD_GROUP; CROSS_EQ; PROD_GROUP; IN_CROSS] THEN
+  ASM_CASES_TAC `(h1:A->bool) subgroup_of G1` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `(h2:B->bool) subgroup_of G2` THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC[RIGHT_COSET_NONEMPTY; LEFT_COSET_NONEMPTY] THEN
+  MESON_TAC[GROUP_ID]);;
+
+let NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN = prove
+ (`!G s h:A->bool.
+        h normal_subgroup_of G /\
+        h SUBSET group_carrier(subgroup_generated G s)
+        ==> h normal_subgroup_of (subgroup_generated G s)`,
+  SIMP_TAC[normal_subgroup_of; SUBGROUP_OF_SUBGROUP_GENERATED_EQ] THEN
+  SIMP_TAC[LEFT_COSET_SUBGROUP_GENERATED; RIGHT_COSET_SUBGROUP_GENERATED] THEN
+  MESON_TAC[REWRITE_RULE[SUBSET] GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET]);;
+
+let NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED = prove
+ (`!G s h:A->bool.
+        h normal_subgroup_of G /\ h SUBSET s
+        ==> h normal_subgroup_of (subgroup_generated G s)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN THEN
+  ASM_REWRITE_TAC[] THEN
+  W(MP_TAC o PART_MATCH rand SUBGROUP_GENERATED_SUBSET_CARRIER o
+    rand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUBSET_TRANS) THEN
+  ASM_SIMP_TAC[SUBSET_INTER; NORMAL_SUBGROUP_IMP_SUBGROUP;
+               SUBGROUP_OF_IMP_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Quotient groups.                                                          *)
@@ -3370,6 +3539,183 @@ let QUOTIENT_GROUP_TRIVIAL = prove
            TRIVIAL_SUBGROUP_OF; TRIVIAL_NORMAL_SUBGROUP_OF;
            RIGHT_COSET_EQ; IMP_CONJ; IN_SING; GROUP_DIV_EQ_ID]);;
 
+let GROUP_ISOMORPHISM_PROD_QUOTIENT_GROUP = prove
+ (`!(G1:A group) (G2:B group) n1 n2.
+        n1 normal_subgroup_of G1 /\ n2 normal_subgroup_of G2
+        ==> group_isomorphism(prod_group (quotient_group G1 n1)
+                                         (quotient_group G2 n2),
+                              quotient_group (prod_group G1 G2) (n1 CROSS n2))
+                             (\(s,t). s CROSS t)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GROUP_ISOMORPHISM] THEN
+  REWRITE_TAC[GROUP_HOMOMORPHISM; SET_RULE
+   `(IMAGE f s SUBSET t /\ P) /\ IMAGE f s = t /\ Q <=>
+    IMAGE f s SUBSET t /\ t SUBSET IMAGE f s /\ P /\ Q`] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[PROD_GROUP; FORALL_PAIR_THM; IN_CROSS] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[ONCE_REWRITE_RULE[CONJ_SYM] IN_IMAGE] THEN
+  ASM_SIMP_TAC[CONJUNCT1 QUOTIENT_GROUP;
+               CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP] THEN
+  REWRITE_TAC[EXISTS_PAIR_THM; IN_CROSS] THEN
+  REWRITE_TAC[RIGHT_EXISTS_AND_THM; GSYM CONJ_ASSOC] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; EXISTS_IN_GSPEC] THEN
+  REWRITE_TAC[RIGHT_COSET_PROD_GROUP; PROD_GROUP; IN_CROSS] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  REPLICATE_TAC 2 (CONJ_TAC THENL [MESON_TAC[]; ALL_TAC]) THEN
+  ASM_SIMP_TAC[CROSS_EQ; PAIR_EQ; RIGHT_COSET_NONEMPTY;
+               NORMAL_SUBGROUP_IMP_SUBGROUP] THEN
+  ASM_SIMP_TAC[QUOTIENT_GROUP; CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP] THEN
+  REWRITE_TAC[GROUP_SETMUL_PROD_GROUP]);;
+
+let ISOMORPHIC_QUOTIENT_PROD_GROUP = prove
+ (`!(G1:A group) (G2:B group) n1 n2.
+        n1 normal_subgroup_of G1 /\ n2 normal_subgroup_of G2
+        ==> quotient_group (prod_group G1 G2) (n1 CROSS n2) isomorphic_group
+            prod_group (quotient_group G1 n1) (quotient_group G2 n2)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP GROUP_ISOMORPHISM_PROD_QUOTIENT_GROUP) THEN
+  REWRITE_TAC[GROUP_ISOMORPHISM_IMP_ISOMORPHIC]);;
+
+let CARTESIAN_PRODUCT_NORMAL_SUBGROUP_OF_PRODUCT_GROUP = prove
+ (`!(G:K->A group) h k.
+        (cartesian_product k h) normal_subgroup_of (product_group k G) <=>
+        !i. i IN k ==> (h i) normal_subgroup_of (G i)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[normal_subgroup_of] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP] THEN
+  REWRITE_TAC[RIGHT_COSET_PRODUCT_GROUP; LEFT_COSET_PRODUCT_GROUP] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_EQ; CARTESIAN_PRODUCT_EQ_EMPTY] THEN
+  REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  ASM_CASES_TAC `!i. i IN k ==> (h:K->A->bool) i subgroup_of G i` THENL
+   [ASM_SIMP_TAC[RIGHT_COSET_NONEMPTY]; ASM_MESON_TAC[]] THEN
+  REWRITE_TAC[RIGHT_IMP_FORALL_THM; PRODUCT_GROUP; IMP_IMP] THEN
+  REWRITE_TAC[FORALL_CARTESIAN_PRODUCT_ELEMENTS] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_EQ_EMPTY; GROUP_CARRIER_NONEMPTY]);;
+
+let GROUP_ISOMORPHISM_PRODUCT_QUOTIENT_GROUP = prove
+ (`!(G:K->A group) n k.
+        (!i. i IN k ==> (n i) normal_subgroup_of (G i))
+        ==> group_isomorphism
+              (product_group k (\i. quotient_group (G i) (n i)),
+               quotient_group (product_group k G) (cartesian_product k n))
+              (cartesian_product k)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GROUP_ISOMORPHISM] THEN
+  REWRITE_TAC[GROUP_HOMOMORPHISM; SET_RULE
+   `(IMAGE f s SUBSET t /\ P) /\ IMAGE f s = t /\ Q <=>
+    IMAGE f s SUBSET t /\ t SUBSET IMAGE f s /\ P /\ Q`] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+  ASM_SIMP_TAC[PRODUCT_GROUP; QUOTIENT_GROUP; RIGHT_COSET_PRODUCT_GROUP;
+               CARTESIAN_PRODUCT_NORMAL_SUBGROUP_OF_PRODUCT_GROUP;
+               GROUP_SETMUL_PRODUCT_GROUP; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_EQ; CARTESIAN_PRODUCT_EQ_EMPTY] THEN
+  REPEAT CONJ_TAC THENL
+   [X_GEN_TAC `x:K->A->bool` THEN
+    REWRITE_TAC[IN_ELIM_THM; CARTESIAN_PRODUCT_EQ] THEN
+    REWRITE_TAC[IN_ELIM_THM; cartesian_product] THEN
+    ASM_SIMP_TAC[QUOTIENT_GROUP; IN_ELIM_THM] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+    REWRITE_TAC[SKOLEM_THM; RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `y:K->A` THEN DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+    EXISTS_TAC `RESTRICTION k (y:K->A)` THEN
+    REWRITE_TAC[REWRITE_RULE[IN] RESTRICTION_IN_EXTENSIONAL] THEN
+    SIMP_TAC[RESTRICTION] THEN ASM_MESON_TAC[];
+    X_GEN_TAC `x:K->A` THEN
+    REWRITE_TAC[IN_ELIM_THM; IN_IMAGE; CARTESIAN_PRODUCT_EQ] THEN
+    REWRITE_TAC[IN_ELIM_THM; cartesian_product] THEN STRIP_TAC THEN EXISTS_TAC
+     `RESTRICTION k (\i. right_coset (G i) (n i) (x i)):K->A->bool` THEN
+    REWRITE_TAC[REWRITE_RULE[IN] RESTRICTION_IN_EXTENSIONAL] THEN
+    ASM_SIMP_TAC[RESTRICTION; QUOTIENT_GROUP] THEN ASM SET_TAC[];
+    ASM_SIMP_TAC[IN_ELIM_THM; cartesian_product; RESTRICTION; QUOTIENT_GROUP];
+    REPEAT GEN_TAC THEN
+    GEN_REWRITE_TAC RAND_CONV [FUN_EQ_THM] THEN
+    ASM_SIMP_TAC[IN_ELIM_THM; cartesian_product; EXTENSIONAL;
+                 QUOTIENT_GROUP] THEN
+    ASM_MESON_TAC[RIGHT_COSET_EQ_EMPTY; SUBGROUP_OF_IMP_NONEMPTY;
+                  normal_subgroup_of]]);;
+
+let ISOMORPHIC_QUOTIENT_PRODUCT_GROUP = prove
+ (`!(G:K->A group) n k.
+        (!i. i IN k ==> (n i) normal_subgroup_of (G i))
+        ==> (quotient_group (product_group k G) (cartesian_product k n))
+            isomorphic_group
+            (product_group k (\i. quotient_group (G i) (n i)))`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[ISOMORPHIC_GROUP_SYM] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP GROUP_ISOMORPHISM_PRODUCT_QUOTIENT_GROUP) THEN
+  REWRITE_TAC[GROUP_ISOMORPHISM_IMP_ISOMORPHIC]);;
+
+let SUBGROUP_OF_QUOTIENT_GROUP,SUBGROUP_OF_QUOTIENT_GROUP_ALT =
+ (CONJ_PAIR o prove)
+ (`(!G n h:(A->bool)->bool.
+        n normal_subgroup_of G
+        ==> (h subgroup_of quotient_group G n <=>
+             ?k. k subgroup_of G /\ { right_coset G n x | x IN k} = h)) /\
+   (!G n h:(A->bool)->bool.
+        n normal_subgroup_of G
+        ==> (h subgroup_of quotient_group G n <=>
+             ?k. k subgroup_of G /\
+                 n SUBSET k /\
+                 { right_coset G n x | x IN k} = h))`,
+  REWRITE_TAC[AND_FORALL_THM; TAUT
+    `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
+  REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC(TAUT
+   `(r ==> q) /\ (p ==> r) /\ (q ==> p)
+    ==> (p <=> q) /\ (p <=> r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [MESON_TAC[];
+    DISCH_TAC THEN
+    EXISTS_TAC `{x:A | x IN group_carrier G /\ right_coset G n x IN h}` THEN
+    MATCH_MP_TAC(TAUT `q /\ p /\ r ==> p /\ q /\ r`) THEN CONJ_TAC THENL
+     [FIRST_ASSUM(MP_TAC o MATCH_MP IN_SUBGROUP_ID) THEN
+      MATCH_MP_TAC(SET_RULE
+       `n SUBSET {x | x IN s /\ f x = z}
+        ==> z IN h ==> n SUBSET {x | x IN s /\ f x IN h}`) THEN
+      ASM_SIMP_TAC[QUOTIENT_GROUP; SUBSET; IN_ELIM_THM] THEN
+      ASM_MESON_TAC[RIGHT_COSET_EQ_SUBGROUP; normal_subgroup_of;
+                    subgroup_of; SUBSET];
+      REWRITE_TAC[SIMPLE_IMAGE] THEN
+      MATCH_MP_TAC SUBGROUP_OF_EPIMORPHIC_PREIMAGE THEN
+      EXISTS_TAC `quotient_group (G:A group) n` THEN
+      ASM_SIMP_TAC[GROUP_EPIMORPHISM_RIGHT_COSET; ETA_AX]];
+    DISCH_THEN(X_CHOOSE_THEN `k:A->bool`
+     (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM))) THEN
+    REWRITE_TAC[SIMPLE_IMAGE] THEN
+    MATCH_MP_TAC SUBGROUP_OF_HOMOMORPHIC_IMAGE THEN
+    EXISTS_TAC `G:A group` THEN
+    ASM_SIMP_TAC[GROUP_HOMOMORPHISM_RIGHT_COSET; ETA_AX]]);;
+
+let SUBGROUP_OF_QUOTIENT_GROUP_GENERATED_BY = prove
+ (`!G n h:(A->bool)->bool.
+        n normal_subgroup_of G /\ h subgroup_of quotient_group G n
+        ==> ?k. k subgroup_of G /\ n SUBSET k /\
+                quotient_group (subgroup_generated G k) n =
+                subgroup_generated (quotient_group G n) h`,
+  REPEAT STRIP_TAC THEN FIRST_ASSUM(MP_TAC o SPEC
+   `h:(A->bool)->bool` o  MATCH_MP SUBGROUP_OF_QUOTIENT_GROUP_ALT) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `k:A->bool` THEN STRIP_TAC THEN REWRITE_TAC[] THEN
+  ASM_REWRITE_TAC[GROUPS_EQ] THEN
+  ASM_SIMP_TAC[QUOTIENT_GROUP; CONJUNCT2 SUBGROUP_GENERATED;
+               NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED;
+               CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
+  ASM_REWRITE_TAC[GROUP_SETINV_SUBGROUP_GENERATED;
+                  GROUP_SETMUL_SUBGROUP_GENERATED;
+                  RIGHT_COSET_SUBGROUP_GENERATED]);;
+
+let QUOTIENT_GROUP_SUBGROUP_GENERATED = prove
+ (`!G h n:A->bool.
+        n normal_subgroup_of G /\ h subgroup_of G /\ n SUBSET h
+        ==> quotient_group (subgroup_generated G h) n =
+            subgroup_generated (quotient_group G n)
+                               {right_coset G n x | x IN h}`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[GROUPS_EQ; QUOTIENT_GROUP; CONJUNCT2 SUBGROUP_GENERATED;
+               NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED] THEN
+  REWRITE_TAC[GROUP_SETINV_SUBGROUP_GENERATED; GROUP_SETMUL_SUBGROUP_GENERATED;
+              RIGHT_COSET_SUBGROUP_GENERATED] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_RIGHT_COSET) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        SUBGROUP_OF_HOMOMORPHIC_IMAGE)) THEN
+  ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_SUBGROUP; SIMPLE_IMAGE; ETA_AX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Kernels and images of homomorphisms.                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -3480,12 +3826,6 @@ let SUBGROUP_GROUP_IMAGE = prove
   SIMP_TAC[group_homomorphism; subgroup_of; group_image; SUBSET;
            FORALL_IN_IMAGE; FORALL_IN_IMAGE_2; IN_IMAGE] THEN
   MESON_TAC[GROUP_MUL; GROUP_INV; GROUP_ID]);;
-
-let SUBGROUP_OF_HOMOMORPHIC_IMAGE = prove
- (`!G G' (f:A->B).
-        group_homomorphism (G,G') f /\ h subgroup_of G
-        ==> IMAGE f h subgroup_of G'`,
-  REWRITE_TAC[group_homomorphism; subgroup_of] THEN SET_TAC[]);;
 
 let GROUP_KERNEL_TO_SUBGROUP_GENERATED = prove
  (`!G H s (f:A->B).
@@ -3841,6 +4181,74 @@ let ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES = prove
         ==> group_element_order G (group_mul G x y)
             divides (group_element_order G x * group_element_order G y)`,
   MESON_TAC[GROUP_ELEMENT_ORDER_MUL_DIVIDES; abelian_group]);;
+
+let GROUP_POW_MUL_EQ_ID_SYM = prove
+ (`!G n x y:A.
+        x IN group_carrier G /\ y IN group_carrier G
+        ==> (group_pow G (group_mul G x y) n = group_id G <=>
+             group_pow G (group_mul G y x) n = group_id G)`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC EQ_TRANS
+   `group_mul G (group_inv G x)
+               (group_mul G (group_pow G (group_mul G x y) n) x):A =
+    group_id G` THEN
+  CONJ_TAC THENL
+   [ASM_SIMP_TAC[GROUP_MUL; GROUP_POW; GROUP_RULE
+     `group_mul G (group_inv G x) (group_mul G z x) = group_id G <=>
+      z = group_id G`];
+    AP_THM_TAC THEN AP_TERM_TAC] THEN
+  SPEC_TAC(`n:num`,`n:num`) THEN INDUCT_TAC THEN
+  ASM_SIMP_TAC[group_pow; GROUP_MUL_LID; GROUP_MUL_LINV] THEN
+  ASM_SIMP_TAC[GROUP_POW; GROUP_MUL; GROUP_RULE
+   `group_mul G (group_inv G x)
+                (group_mul G (group_mul G (group_mul G x y) z) x) =
+    group_mul G (group_mul G y x)
+                (group_mul G (group_inv G x) (group_mul G z x))`]);;
+
+let GROUP_ELEMENT_ORDER_MUL_SYM = prove
+ (`!G x y:A.
+        x IN group_carrier G /\ y IN group_carrier G
+        ==> group_element_order G (group_mul G x y) =
+            group_element_order G (group_mul G y x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[group_element_order] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN ASM_MESON_TAC[GROUP_POW_MUL_EQ_ID_SYM]);;
+
+let GROUP_ELEMENT_ORDER_UNIQUE_ALT = prove
+ (`!G (x:A) n.
+        x IN group_carrier G /\ ~(n = 0)
+        ==> (group_element_order G x = n <=>
+             group_pow G x n = group_id G /\
+             !m. 0 < m /\ m < n ==> ~(group_pow G x m = group_id G))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_THEN(SUBST1_TAC o SYM) THEN
+    ASM_SIMP_TAC[GROUP_POW_ELEMENT_ORDER] THEN
+    ASM_SIMP_TAC[GROUP_POW_EQ_ID] THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN
+    ASM_ARITH_TAC;
+    STRIP_TAC THEN ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE] THEN
+    X_GEN_TAC `m:num` THEN EQ_TAC THEN DISCH_TAC THENL
+     [UNDISCH_TAC `group_pow G (x:A) m = group_id G` THEN
+      FIRST_ASSUM(MP_TAC o SPEC `m:num` o MATCH_MP DIVISION) THEN
+      DISCH_THEN(CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) THEN
+      ASM_SIMP_TAC[GROUP_POW_ADD; NUMBER_RULE
+       `(n:num) divides (q * n + r) <=> n divides r`] THEN
+      ONCE_REWRITE_TAC[MULT_SYM] THEN
+      ASM_SIMP_TAC[GROUP_POW_MUL; GROUP_POW_ID; GROUP_MUL_LID; GROUP_POW] THEN
+      GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+      DISCH_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
+      ASM_MESON_TAC[LE_1; NUMBER_RULE `n divides 0`];
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [divides]) THEN
+      ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM; GROUP_POW_MUL; GROUP_POW_ID]]]);;
+
+let GROUP_ELEMENT_ORDER_EQ_2 = prove
+ (`!G x:A.
+        x IN group_carrier G
+        ==> (group_element_order G x = 2 <=>
+             ~(x = group_id G) /\ group_pow G x 2 = group_id G)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_ALT; ARITH] THEN
+  REWRITE_TAC[ARITH_RULE `0 < m /\ m < 2 <=> m = 1`] THEN
+  ASM_SIMP_TAC[GROUP_POW_1] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Cyclic groups.                                                            *)
