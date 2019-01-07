@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*     (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018              *)
 (* ========================================================================= *)
 
 needs "fusion.ml";;
@@ -389,6 +390,26 @@ let mk_let(assigs,bod) =
   let ty1,ty2 = dest_fun_ty(type_of lbod) in
   let ltm = mk_const("LET",[ty1,aty; ty2,bty]) in
   list_mk_comb(ltm,lbod::rights);;
+
+(* ------------------------------------------------------------------------- *)
+(* Constructors and destructors for finite types.                            *)
+(* ------------------------------------------------------------------------- *)
+
+let mk_finty:num->hol_type =
+  let rec finty n =
+    if n =/ num_1 then mk_type("1",[]) else
+    mk_type((if Num.mod_num n num_2 =/ num_0 then "tybit0" else "tybit1"),
+            [finty(Num.quo_num n num_2)]) in
+  fun n ->
+    if not(is_integer_num n) || n </ num_1 then failwith "mk_finty" else
+    finty n;;
+
+let rec dest_finty:hol_type->num =
+  function
+    Tyapp("1",_) -> num_1
+  | Tyapp("tybit0",[ty]) -> dest_finty ty */ num_2
+  | Tyapp("tybit1",[ty]) -> succ_num (dest_finty ty */ num_2)
+  | _ -> failwith "dest_finty";;
 
 (* ------------------------------------------------------------------------- *)
 (* Useful function to create stylized arguments using numbers.               *)

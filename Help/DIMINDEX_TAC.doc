@@ -1,0 +1,33 @@
+\DOC DIMINDEX_TAC
+
+\TYPE {DIMINDEX_TAC : tactic}
+
+\SYNOPSIS
+Solves subterms of a goal by computing the {dimindex} for standard finite types.
+
+\DESCRIBE
+Finite types parsed and printed as numerals are provided, and this tactic
+simplfies subterms of a goal of the form {`dimindex (:n)`} to a simple numeral
+{`n`}.
+
+\FAILURE
+Never fails
+
+\EXAMPLE
+We set up the following goal:
+{
+  # g `dimindex(:64) = 2 * dimindex(:32)`;;
+}
+and simplify it by
+{
+# e DIMINDEX_TAC;;
+val it : goalstack = 1 subgoal (1 total)
+
+`64 = 2 * 32`
+}
+after which simply {ARITH_TAC} would finish the goal.
+
+\SEEALSO
+dest_finty, DIMINDEX_CONV, HAS_SIZE_DIMINDEX_RULE, mk_finty.
+
+\ENDDOC

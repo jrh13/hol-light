@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*     (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018              *)
 (* ========================================================================= *)
 
 needs "preterm.ml";;
@@ -178,6 +179,14 @@ let lex =
 (* ------------------------------------------------------------------------- *)
 
 let parse_pretype =
+  let mk_prefinty:num->pretype =
+    let rec prefinty n =
+      if n =/ num_1 then Ptycon("1",[]) else
+      let c = if Num.mod_num n num_2 =/ num_0 then "tybit0" else "tybit1" in
+      Ptycon(c,[prefinty(Num.quo_num n num_2)]) in
+    fun n ->
+      if not(is_integer_num n) || n </ num_1 then failwith "mk_prefinty" else
+      prefinty n in
   let btyop n n' x y = Ptycon(n,[x;y])
   and mk_apptype =
     function
@@ -188,6 +197,7 @@ let parse_pretype =
     match input with
       (Ident s)::rest ->
           (try pretype_of_type(assoc s (type_abbrevs())) with Failure _ ->
+           try mk_prefinty (num_of_string s) with Failure _ ->
            if try get_type_arity s = 0 with Failure _ -> false
            then Ptycon(s,[]) else Utv(s)),rest
     | _ -> raise Noparse
@@ -196,7 +206,8 @@ let parse_pretype =
       (Ident s)::rest -> if try get_type_arity s > 0 with Failure _ -> false
                          then s,rest else raise Noparse
     | _ -> raise Noparse in
-  let rec pretype i = rightbin sumtype (a (Resword "->")) (btyop "fun") "type" i
+  let rec pretype i =
+    rightbin sumtype (a (Resword "->")) (btyop "fun") "type" i
   and sumtype i = rightbin prodtype (a (Ident "+")) (btyop "sum") "type" i
   and prodtype i = rightbin carttype (a (Ident "#")) (btyop "prod") "type" i
   and carttype i = leftbin apptype (a (Ident "^")) (btyop "cart") "type" i

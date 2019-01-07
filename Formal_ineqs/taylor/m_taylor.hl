@@ -59,7 +59,7 @@ let has_size_array = Array.init (max_dim + 1)
   (fun i -> match i with
      | 0 -> TRUTH
      | 1 -> HAS_SIZE_1
-     | _ -> define_finite_type i);;
+     | _ -> HAS_SIZE_DIMINDEX_RULE(mk_finty(Int i)));;
 
 let dimindex_array = Array.init (max_dim + 1) 
   (fun i -> if i < 1 then TRUTH else MATCH_MP DIMINDEX_UNIQUE has_size_array.(i));;
@@ -306,7 +306,7 @@ let dest_m_cell_domain domain_tm =
 (**************************************************)
 
 (* Given a variable of the type `:real^N`, returns the number N *)
-let get_dim = int_of_string o fst o dest_type o hd o tl o snd o dest_type o type_of;;
+let get_dim = Num.int_of_num o dest_finty o hd o tl o snd o dest_type o type_of;;
 
 
 (**********************)
@@ -385,7 +385,7 @@ let diff2c_domain_tm = `diff2c_domain domain`;;
 
 let rec gen_diff2c_domain_poly poly_tm =
   let x_var, expr = dest_abs poly_tm in
-  let n = (int_of_string o fst o dest_type o hd o tl o snd o dest_type o type_of) x_var in
+  let n = get_dim x_var in
   let diff2c_tm = mk_icomb (diff2c_domain_tm, poly_tm) in
     if frees expr = [] then
       (* const *)
@@ -452,7 +452,7 @@ let gen_partial_poly =
 	  let i_tm = mk_small_numeral i in
 	  let rec gen_rec poly_tm =
 	    let x_var, expr = dest_abs poly_tm in
-	    let n = (int_of_string o fst o dest_type o hd o tl o snd o dest_type o type_of) x_var in
+	    let n = get_dim x_var in
 	      if frees expr = [] then
 		(* const *)
 		(SPECL [i_tm; expr] o inst_first_type_var (n_type_array.(n))) partial_const

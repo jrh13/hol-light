@@ -6,6 +6,7 @@
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (*                 (c) Copyright, Marco Maggesi 2017                         *)
+(*     (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018              *)
 (* ========================================================================= *)
 
 needs "nets.ml";;
@@ -163,6 +164,7 @@ let pp_print_type,pp_print_qtype =
     if flag then "("^s^")" else s in
   let rec sot pr ty =
     try dest_vartype ty with Failure _ ->
+    try string_of_num(dest_finty ty) with Failure _ ->
     match dest_type ty with
       con,[] -> con
     | "fun",[ty1;ty2] -> soc "->" (pr > 0) [sot 1 ty1; sot 0 ty2]

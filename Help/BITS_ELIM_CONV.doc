@@ -1,0 +1,35 @@
+\DOC BITS_ELIM_CONV
+
+\TYPE {BITS_ELIM_CONV : conv}
+
+\SYNOPSIS
+Removes stray instances of special constants used in numeral representation
+
+\DESCRIBE
+The HOL Light representation of numeral constants like {`6`} uses a
+number of special constants {`NUMERAL`}, {`BIT0`}, {`BIT1`} and {`_0`}, 
+essentially to represent those numbers in binary. The conversion
+{BITS_ELIM_CONV} eliminates any uses of these constants within the given term
+not used as part of a standard numeral.
+
+\FAILURE
+Never fails
+
+\EXAMPLE
+{
+  # BITS_ELIM_CONV `BIT0(BIT1(BIT1 _0)) = 6`;;
+  val it : thm = 
+    |- BIT0 (BIT1 (BIT1 _0)) = 6 <=> 2 * (2 * (2 * 0 + 1) + 1) = 6
+  
+  # (BITS_ELIM_CONV THENC NUM_REDUCE_CONV) `BIT0(BIT1(BIT1 _0)) = 6`;;
+  val it : thm = |- BIT0 (BIT1 (BIT1 _0)) = 6 <=> T
+}
+
+\USES
+Mainly intended for internal use in functions doing sophisticated things with 
+numerals.
+
+\SEEALSO
+ARITH_RULE, ARITH_TAC, NUM_RING.
+
+\ENDDOC

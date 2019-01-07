@@ -6,6 +6,7 @@
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (*                 (c) Copyright, Marco Maggesi 2015                         *)
+(*      (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018             *)
 (* ========================================================================= *)
 
 needs "recursion.ml";;
@@ -1104,6 +1105,14 @@ let DIVISION_SIMP = prove
   ASM_SIMP_TAC[DIV_ZERO; MOD_ZERO; MULT_CLAUSES; ADD_CLAUSES] THEN
   ASM_MESON_TAC[DIVISION; MULT_SYM]);;
 
+let MOD_LT_EQ = prove
+ (`!m n. m MOD n < n <=> ~(n = 0)`,
+  MESON_TAC[DIVISION; LE_1; CONJUNCT1 LT]);;
+
+let MOD_LT_EQ_LT = prove
+ (`!m n. m MOD n < n <=> 0 < n`,
+  MESON_TAC[DIVISION; LE_1; CONJUNCT1 LT]);;
+
 let DIVMOD_UNIQ_LEMMA = prove
  (`!m n q1 r1 q2 r2. ((m = q1 * n + r1) /\ r1 < n) /\
                      ((m = q2 * n + r2) /\ r2 < n)
@@ -1709,3 +1718,37 @@ let DEPENDENT_CHOICE = prove
         (?a. P 0 a) /\ (!n x. P n x ==> ?y. P (SUC n) y /\ R n x y)
         ==> ?f. (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))`,
   MESON_TAC[DEPENDENT_CHOICE_FIXED]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Conversion that elimimates every occurrence of `NUMERAL`, `BIT0`,         *)
+(* `BIT1`, `_0` that is not part of a well-formed numeral.                   *)
+(* ------------------------------------------------------------------------- *)
+
+let BITS_ELIM_CONV : conv =
+  let NUMERAL_pth = prove(`m = n <=> NUMERAL m = n`,REWRITE_TAC[NUMERAL])
+  and ZERO_pth = GSYM (REWRITE_CONV[NUMERAL] `0`)
+  and BIT0_pth,BIT1_pth = CONJ_PAIR
+   (prove(`(m = n <=> BIT0 m = 2 * n) /\
+           (m = n <=> BIT1 m = 2 * n + 1)`,
+    CONJ_TAC THEN GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [BIT0; BIT1] THEN
+    REWRITE_TAC[ADD1; EQ_ADD_RCANCEL; GSYM MULT_2] THEN
+    REWRITE_TAC[EQ_MULT_LCANCEL] THEN
+    REWRITE_TAC[TWO; NOT_SUC]))
+  and mvar,nvar = `m:num`,`n:num` in
+  let rec BITS_ELIM_CONV : conv =
+    fun tm -> match tm with
+      Const("_0",_) -> ZERO_pth
+    | Var _ | Const _ -> REFL tm
+    | Comb(Const("NUMERAL",_),mtm) ->
+        if is_numeral tm then REFL tm else
+        let th = BITS_ELIM_CONV mtm in
+        EQ_MP (INST[mtm,mvar;rand(concl th),nvar] NUMERAL_pth) th
+    | Comb(Const("BIT0",_),mtm) ->
+        let th = BITS_ELIM_CONV mtm in
+        EQ_MP (INST [mtm,mvar;rand(concl th),nvar] BIT0_pth) th
+    | Comb(Const("BIT1",_),mtm) ->
+        let th = BITS_ELIM_CONV mtm in
+        EQ_MP (INST [mtm,mvar;rand(concl th),nvar] BIT1_pth) th
+    | Comb _ -> COMB_CONV BITS_ELIM_CONV tm
+    | Abs _ -> ABS_CONV BITS_ELIM_CONV tm in
+  BITS_ELIM_CONV;;

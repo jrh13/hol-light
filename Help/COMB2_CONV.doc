@@ -16,7 +16,11 @@ Never fails when applied to the initial conversions. On application to the term,
 it fails if either {c1} or {c2} does, or if either returns a theorem that is of
 the wrong form.
 
+\COMMENTS
+The special case when the two conversions are the same is more briefly achieved 
+using {COMB_CONV}.
+
 \SEEALSO
-BINOP_CONV, COMB_CONV, LAND_CONV, RAND_CONV, RATOR_CONV
+BINOP_CONV, BINOP2_CONV, COMB_CONV, LAND_CONV, RAND_CONV, RATOR_CONV
 
 \ENDDOC

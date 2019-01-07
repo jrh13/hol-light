@@ -2,6 +2,7 @@
 (* Definition of finite Cartesian product types.                             *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*     (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018              *)
 (* ========================================================================= *)
 
 needs "iterate.ml";;
@@ -29,6 +30,18 @@ let DIMINDEX_UNIV = prove
 let DIMINDEX_UNIQUE = prove
  (`(:A) HAS_SIZE n ==> dimindex(:A) = n`,
   MESON_TAC[dimindex; HAS_SIZE]);;
+
+let UNIV_HAS_SIZE_DIMINDEX = prove
+ (`(:N) HAS_SIZE dimindex (:N) <=> FINITE(:N)`,
+  MESON_TAC[HAS_SIZE; dimindex]);;
+
+let HAS_SIZE_1 = prove
+ (`(:1) HAS_SIZE 1`,
+  SUBGOAL_THEN `(:1) = {one}` SUBST1_TAC THENL
+   [REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING] THEN MESON_TAC[one];
+    SIMP_TAC[NOT_IN_EMPTY; HAS_SIZE; FINITE_RULES; CARD_CLAUSES; ARITH]]);;
+
+let DIMINDEX_1 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_1;;
 
 (* ------------------------------------------------------------------------- *)
 (* An indexing type with that size, parametrized by base type.               *)
@@ -295,50 +308,146 @@ let DIMINDEX_FINITE_PROD = prove
   REWRITE_TAC[REWRITE_RULE[HAS_SIZE] DIMINDEX_HAS_SIZE_FINITE_PROD]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Automatically define a type of size n.                                    *)
+(* Type constructors for setting up finite types indexed by binary numbers.  *)
 (* ------------------------------------------------------------------------- *)
 
-let define_finite_type =
-  let lemma_pre = prove
-   (`~(n = 0) ==> ?x. x IN 1..n`,
-    DISCH_TAC THEN EXISTS_TAC `1` THEN REWRITE_TAC[IN_NUMSEG] THEN
-    POP_ASSUM MP_TAC THEN ARITH_TAC)
-  and lemma_post = prove
-   (`(!a:A. mk(dest a) = a) /\ (!r. r IN 1..n <=> dest(mk r) = r)
-     ==> (:A) HAS_SIZE n`,
-    REPEAT STRIP_TAC THEN
-    SUBGOAL_THEN `(:A) = IMAGE mk (1..n)` SUBST1_TAC THENL
-     [REWRITE_TAC[EXTENSION; IN_IMAGE; IN_UNIV];
-      MATCH_MP_TAC HAS_SIZE_IMAGE_INJ] THEN
-    ASM_MESON_TAC[HAS_SIZE_NUMSEG_1]) in
-  let POST_RULE = MATCH_MP lemma_post and n_tm = `n:num` in
-  fun n ->
-    let ns = string_of_int n in
-    let ns' = "auto_define_finite_type_"^ns in
-    let th0 = INST [mk_small_numeral n,n_tm] lemma_pre in
-    let th1 = MP th0 (EQF_ELIM(NUM_EQ_CONV(rand(lhand(concl th0))))) in
-    POST_RULE(new_type_definition ns ("mk_"^ns',"dest_"^ns') th1);;
+let tybit0_INDUCT,tybit0_RECURSION = define_type
+  "tybit0 = mktybit0((A,A)finite_sum)";;
+
+let tybit1_INDUCT,tybit1_RECURSION = define_type
+  "tybit1 = mktybit1(((A,A)finite_sum,1)finite_sum)";;
+
+let HAS_SIZE_TYBIT0 = prove
+ (`(:(A)tybit0) HAS_SIZE 2 * dimindex(:A)`,
+  SUBGOAL_THEN
+   `(:(A)tybit0) = IMAGE mktybit0 (:(A,A)finite_sum)`
+  SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    REWRITE_TAC[IN_UNIV] THEN MESON_TAC[cases "tybit0"];
+    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+    REWRITE_TAC[IN_UNIV; injectivity "tybit0"] THEN
+    W(MP_TAC o PART_MATCH lhand
+      DIMINDEX_HAS_SIZE_FINITE_SUM o lhand o snd) THEN
+    REWRITE_TAC[DIMINDEX_FINITE_SUM; GSYM MULT_2]]);;
+
+let HAS_SIZE_TYBIT1 = prove
+ (`(:(A)tybit1) HAS_SIZE 2 * dimindex(:A) + 1`,
+  SUBGOAL_THEN
+   `(:(A)tybit1) = IMAGE mktybit1 (:((A,A)finite_sum,1)finite_sum)`
+  SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
+    REWRITE_TAC[IN_UNIV] THEN MESON_TAC[cases "tybit1"];
+    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+    REWRITE_TAC[IN_UNIV; injectivity "tybit1"] THEN
+    W(MP_TAC o PART_MATCH lhand
+      DIMINDEX_HAS_SIZE_FINITE_SUM o lhand o snd) THEN
+    REWRITE_TAC[DIMINDEX_FINITE_SUM; DIMINDEX_1; GSYM MULT_2]]);;
+
+let DIMINDEX_TYBIT0 = prove
+ (`dimindex(:(A)tybit0) = 2 * dimindex(:A)`,
+  MATCH_MP_TAC DIMINDEX_UNIQUE THEN MATCH_ACCEPT_TAC HAS_SIZE_TYBIT0);;
+
+let DIMINDEX_TYBIT1 = prove
+ (`dimindex(:(A)tybit1) = 2 * dimindex(:A) + 1`,
+  MATCH_MP_TAC DIMINDEX_UNIQUE THEN MATCH_ACCEPT_TAC HAS_SIZE_TYBIT1);;
+
+let DIMINDEX_CLAUSES = prove
+ (`dimindex(:1) = 1 /\
+   dimindex(:(A)tybit0) = 2 * dimindex(:A) /\
+   dimindex(:(A)tybit1) = 2 * dimindex(:A) + 1`,
+ REWRITE_TAC[DIMINDEX_1] THEN CONJ_TAC THEN
+ MATCH_MP_TAC DIMINDEX_UNIQUE THEN
+ REWRITE_TAC[ HAS_SIZE_TYBIT0; HAS_SIZE_TYBIT1]);;
+
+let FINITE_1 = prove
+ (`FINITE (:1)`,
+  MESON_TAC[HAS_SIZE_1; HAS_SIZE]);;
+
+let FINITE_TYBIT0 = prove
+ (`FINITE (:A tybit0)`,
+  MESON_TAC[HAS_SIZE_TYBIT0; HAS_SIZE]);;
+
+let FINITE_TYBIT1 = prove
+ (`FINITE (:A tybit1)`,
+  MESON_TAC[HAS_SIZE_TYBIT1; HAS_SIZE]);;
+
+let FINITE_CLAUSES = prove
+ (`FINITE(:1) /\ FINITE(:A tybit0) /\ FINITE(:A tybit1)`,
+  REWRITE_TAC[FINITE_1; FINITE_TYBIT0; FINITE_TYBIT1]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Predefine the cases 2, 3 and 4, which are especially useful for real^N.   *)
+(* Computing dimindex of fintypes.                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let HAS_SIZE_1 = prove
- (`(:1) HAS_SIZE 1`,
-  SUBGOAL_THEN `(:1) = {one}` SUBST1_TAC THENL
-   [REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING] THEN MESON_TAC[one];
-    SIMP_TAC[NOT_IN_EMPTY; HAS_SIZE; FINITE_RULES; CARD_CLAUSES; ARITH]]);;
+let DIMINDEX_CONV : conv =
+  let [pth_num;pth0;pth1;pth_one] = (CONJUNCTS o prove)
+   (`(dimindex(:A) = n <=> dimindex(s:A->bool) = NUMERAL n) /\
+     (dimindex(:A) = n <=> dimindex(:A tybit0) = BIT0 n) /\
+     (dimindex(:A) = n <=> dimindex(:A tybit1) = BIT1 n) /\
+     dimindex(:1) = BIT1 _0`,
+    CONJ_TAC THENL [REWRITE_TAC[NUMERAL; dimindex]; ALL_TAC] THEN
+    REWRITE_TAC[DIMINDEX_CLAUSES] THEN CONV_TAC BITS_ELIM_CONV THEN
+    ARITH_TAC) in
+  let nvar = `n:num` in
+  let rec calc_dimindex ty =
+    match ty with
+      Tyapp("1",_) -> pth_one
+    | Tyapp("tybit0",ty'::_) ->
+        let th = calc_dimindex ty' in
+        let n = rand(concl th) in
+        EQ_MP (INST [n,nvar] (INST_TYPE [ty',aty] pth0)) th
+    | Tyapp("tybit1",ty'::_) ->
+        let th = calc_dimindex ty' in
+        let n = rand(concl th) in
+        EQ_MP (INST [n,nvar] (INST_TYPE [ty',aty] pth1)) th
+    | _ -> fail() in
+  function
+    Comb(Const("dimindex",_),tm) ->
+      let uty = type_of tm in
+      let _,(sty::_) = dest_type uty in
+      let th = calc_dimindex sty in
+      let svar = mk_var("s",uty)
+      and ntm = rand(concl th) in
+      let pth = INST [tm,svar;ntm,nvar] (INST_TYPE [sty,aty] pth_num) in
+      EQ_MP pth th
+   | _ -> failwith "DIMINDEX_CONV";;
 
-let HAS_SIZE_2 = define_finite_type 2;;
+let HAS_SIZE_DIMINDEX_RULE =
+  let pth = prove
+   (`(:A) HAS_SIZE n <=> FINITE(:A) /\ dimindex(:A) = n`,
+    MESON_TAC[UNIV_HAS_SIZE_DIMINDEX; HAS_SIZE]) in
+  let htm = `(HAS_SIZE) (:A)`
+  and conv = GEN_REWRITE_CONV I [pth]
+  and rule = EQT_ELIM o GEN_REWRITE_CONV I [FINITE_CLAUSES] in
+  fun nty ->
+    let tm = mk_comb(inst[nty,aty] htm,mk_numeral (dest_finty nty)) in
+    let th1 = conv tm in
+    EQ_MP (SYM th1)
+          (CONJ (rule (lhand(rand(concl th1))))
+                (DIMINDEX_CONV (lhand(rand(rand(concl th1))))));;
+  
+let DIMINDEX_TAC : tactic =
+  CONV_TAC (ONCE_DEPTH_CONV DIMINDEX_CONV);;
 
-let HAS_SIZE_3 = define_finite_type 3;;
+(* ------------------------------------------------------------------------- *)
+(* Remember cases 2, 3 and 4, which are especially useful for real^N.        *)
+(* ------------------------------------------------------------------------- *)
 
-let HAS_SIZE_4 = define_finite_type 4;;
+let DIMINDEX_2 = prove
+ (`dimindex (:2) = 2`,
+  DIMINDEX_TAC THEN REFL_TAC);;
 
-let DIMINDEX_1 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_1;;
-let DIMINDEX_2 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_2;;
-let DIMINDEX_3 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_3;;
-let DIMINDEX_4 = MATCH_MP DIMINDEX_UNIQUE HAS_SIZE_4;;
+let DIMINDEX_3 = prove
+ (`dimindex (:3) = 3`,
+  DIMINDEX_TAC THEN REFL_TAC);;
+
+let DIMINDEX_4 = prove
+ (`dimindex (:4) = 4`,
+  DIMINDEX_TAC THEN REFL_TAC);;
+
+let HAS_SIZE_2 = HAS_SIZE_DIMINDEX_RULE `:2`;;
+let HAS_SIZE_3 = HAS_SIZE_DIMINDEX_RULE `:3`;;
+let HAS_SIZE_4 = HAS_SIZE_DIMINDEX_RULE `:4`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Finiteness lemma.                                                         *)

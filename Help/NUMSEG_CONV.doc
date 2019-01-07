@@ -25,6 +25,6 @@ Fails unless applied to a term of the form {m..n} for specific numerals {m} and
 }
 
 \SEEALSO
-SET_RULE, SET_TAC.
+EXPAND_CASES_CONV, EXPAND_NSUM_CONV, EXPAND_SUM_CONV, SET_RULE, SET_TAC.
 
 \ENDDOC

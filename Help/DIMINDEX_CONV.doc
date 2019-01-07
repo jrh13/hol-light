@@ -1,0 +1,32 @@
+\DOC DIMINDEX_CONV
+
+\TYPE {DIMINDEX_CONV : conv}
+
+\SYNOPSIS
+Computes the {dimindex} for a standard finite type.
+
+\DESCRIBE
+Finite types parsed and printed as numerals are provided, and this conversion
+when applied to a term of the form {`dimindex (:n)`} returns the theorem
+{|- dimindex(:n) = n} where the {n} on the right is a numeral term.
+
+\FAILURE
+Fails if the term is not of the form {`dimindex (:n)`} for a standard finite
+type.
+
+\EXAMPLE
+Here we use a 32-element type, perhaps useful for indexing the bits of a
+word:
+{
+  # DIMINDEX_CONV `dimindex(:32)`;;
+  val it : thm = |- dimindex (:32) = 32
+}
+
+\USES
+In conjunction with Cartesian powers such as {real^3}, where only the size of
+the indexing type is relevant and the simple name {n} is intuitive.
+
+\SEEALSO
+dest_finty, DIMINDEX_TAC, HAS_SIZE_DIMINDEX_RULE, mk_finty.
+
+\ENDDOC

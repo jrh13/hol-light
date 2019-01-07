@@ -82,7 +82,7 @@ let GEN_ALPHA_CONV v tm =
   let b,abs = dest_comb tm in
   AP_TERM b (ALPHA_CONV v abs);;
 
-let MK_BINOP op = 
+let MK_BINOP op =
   let afn = AP_TERM op in
   fun (lth,rth) -> MK_COMB(afn lth,rth);;
 
@@ -138,15 +138,15 @@ let (RATOR_CONV:conv->conv) =
 
 let (RAND_CONV:conv->conv) =
   fun conv tm ->
-   match tm with    
-     Comb(l,r) -> MK_COMB(REFL l,conv r)    
+   match tm with
+     Comb(l,r) -> MK_COMB(REFL l,conv r)
    |  _ -> failwith "RAND_CONV: Not a combination";;
 
 let LAND_CONV = RATOR_CONV o RAND_CONV;;
 
 let (COMB2_CONV: conv->conv->conv) =
-  fun lconv rconv tm -> 
-   match tm with    
+  fun lconv rconv tm ->
+   match tm with
      Comb(l,r) -> MK_COMB(lconv l,rconv r)
   | _ -> failwith "COMB2_CONV: Not a combination";;
 
@@ -176,10 +176,17 @@ let SUB_CONV conv tm =
   | Abs(_,_) -> ABS_CONV conv tm
   | _ -> REFL tm;;
 
-let BINOP_CONV conv tm =
-  let lop,r = dest_comb tm in
-  let op,l = dest_comb lop in
-  MK_COMB(AP_TERM op (conv l),conv r);;
+let (BINOP_CONV:conv->conv) =
+  fun conv tm ->
+    let lop,r = dest_comb tm in
+    let op,l = dest_comb lop in
+    MK_COMB(AP_TERM op (conv l),conv r);;
+
+let (BINOP2_CONV:conv->conv->conv) =
+  fun conv1 conv2 tm ->
+    let lop,r = dest_comb tm in
+    let op,l = dest_comb lop in
+    MK_COMB(AP_TERM op (conv1 l),conv2 r);;
 
 (* ------------------------------------------------------------------------- *)
 (* Depth conversions; internal use of a failure-propagating `Boultonized'    *)
@@ -202,11 +209,11 @@ let (ONCE_DEPTH_CONV: conv->conv),
     with Failure _ -> th1
   and COMB_QCONV conv tm =
     match tm with
-      Comb(l,r) -> 
+      Comb(l,r) ->
         (try let th1 = conv l in
              try let th2 = conv r in MK_COMB(th1,th2)
              with Failure _ -> AP_THM th1 r
-         with Failure _ -> AP_TERM l (conv r)) 
+         with Failure _ -> AP_TERM l (conv r))
     | _ -> failwith "COMB_QCONV: Not a combination" in
   let rec REPEATQC conv tm = THENCQC conv (REPEATQC conv) tm in
   let SUB_QCONV conv tm =

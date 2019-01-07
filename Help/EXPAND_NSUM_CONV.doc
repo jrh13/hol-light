@@ -1,0 +1,34 @@
+\DOC EXPAND_NSUM_CONV
+
+\TYPE {EXPAND_NSUM_CONV : conv}
+
+\SYNOPSIS
+Expands a natural number sum over an explicit interval of numerals
+
+\DESCRIBE
+The conversion {EXPAND_NSUM_CONV} applied to a term of the form
+{`nsum (m..n) f`} where {m} and {n} are explicit numerals (the double-dot being
+an infix set construction for a range), returns an expansion theorem
+{|- nsum (m..n) f = f(m) + ... + f(n)}. In the common case where {f} is a
+lambda-term, each application {f(i)} will be beta-reduced at the top level.
+
+\FAILURE
+{EXPAND_NSUM_CONV tm} fails if {tm} is not a sum of the specified form.
+
+\EXAMPLE
+The following is a typical use of the conversion:
+{
+  # EXPAND_NSUM_CONV `nsum (1..5) (\n. n * n)`;;
+  val it : thm =
+    |- nsum (1..5) (\n. n * n) = 1 * 1 + 2 * 2 + 3 * 3 + 4 * 4 + 5 * 5
+}
+
+\COMMENTS
+As well as the real-number version {EXPAND_SUM_CONV} in the core HOL Light, the
+library file {Library/isum.ml} contains a corresponding form for integer sums
+{EXPAND_ISUM_CONV}.
+
+\SEEALSO
+EXPAND_CASES_CONV, EXPAND_SUM_CONV, NUMSEG_CONV.
+
+\ENDDOC

@@ -1,0 +1,33 @@
+\DOC BINOP2_CONV
+
+\TYPE {BINOP2_CONV : conv -> conv -> conv}
+
+\SYNOPSIS
+Applies conversions to the two arguments of a binary operator.
+
+\DESCRIBE
+If {c1} is a conversion where {c1 `l`} returns {|- l = l'} and {c2} is a
+conversion where {c2 `r`} returns {|- r = r'}, then
+{BINOP2_CONV c1 c2 `op l r`} returns {|- op l r = op l' r'}. The
+term {op} is arbitrary, but is often a constant such as addition or
+conjunction.
+
+\FAILURE
+Never fails when applied to the conversion. But may fail when applied to the
+term if one of the core conversions fails or returns an inappropriate theorem
+on the subterms.
+
+\EXAMPLE
+{
+  # BINOP2_CONV NUM_ADD_CONV NUM_SUB_CONV `(3 + 3) * (10 - 3)`;;
+  val it : thm = |- (3 + 3) * (10 - 3) = 6 * 7
+}
+
+\COMMENTS
+The special case when the two conversions are the same is more briefly achieved
+using {BINOP_CONV}.
+
+\SEEALSO
+ABS_CONV, BINOP_CONV, COMB_CONV, COMB2_CONV, RAND_CONV, RATOR_CONV.
+
+\ENDDOC

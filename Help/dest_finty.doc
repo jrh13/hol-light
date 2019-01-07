@@ -1,0 +1,26 @@
+\DOC dest_finty
+
+\TYPE {dest_finty : hol_type -> num}
+
+\SYNOPSIS
+Converts a standard finite type to corresponding integer.
+
+\DESCRIBE
+Finite types parsed and printed as numerals are provided, and this operation 
+when applied to such a type gives the corresponding number.
+
+\FAILURE
+Fails if the type is not a standard finite type.
+
+\EXAMPLE
+Here we use a 32-element type, perhaps useful for indexing the bits of a
+word:
+{
+  # dest_finty `:32`;;
+  val it : num = 32
+}
+
+\SEEALSO
+dest_type, DIMINDEX_CONV, DIMINDEX_TAC, HAS_SIZE_DIMINDEX_RULE, mk_finty.
+
+\ENDDOC

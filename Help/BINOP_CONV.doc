@@ -1,19 +1,19 @@
 \DOC BINOP_CONV
 
-\TYPE {BINOP_CONV : (term -> thm) -> term -> thm}
+\TYPE {BINOP_CONV : conv -> conv}
 
 \SYNOPSIS
 Applies a conversion to both arguments of a binary operator.
 
 \DESCRIBE
-If {c} is a conversion where {c `l`} returns {|- l = l'} and {c `r`} returns 
-{|- r = r'}, then {BINOP_CONV `op l r`} returns {|- op l r = op l' r'}. The 
-term {op} is arbitrary, but is often a constant such as addition or 
+If {c} is a conversion where {c `l`} returns {|- l = l'} and {c `r`} returns
+{|- r = r'}, then {BINOP_CONV c `op l r`} returns {|- op l r = op l' r'}. The
+term {op} is arbitrary, but is often a constant such as addition or
 conjunction.
 
 \FAILURE
-Never fails when applied to the conversion. But may fail when applied to the 
-term if one of the core conversions fails or returns an inappropriate theorem 
+Never fails when applied to the conversion. But may fail when applied to the
+term if one of the core conversions fails or returns an inappropriate theorem
 on the subterms.
 
 \EXAMPLE
@@ -23,6 +23,6 @@ on the subterms.
 }
 
 \SEEALSO
-ABS_CONV, COMB_CONV, COMB2_CONV, RAND_CONV, RATOR_CONV.
+ABS_CONV, BINOP2_CONV, COMB_CONV, COMB2_CONV, RAND_CONV, RATOR_CONV.
 
 \ENDDOC

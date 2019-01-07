@@ -1,0 +1,29 @@
+\DOC HAS_SIZE_DIMINDEX_RULE
+
+\TYPE {HAS_SIZE_DIMINDEX_RULE : hol_type -> thm}
+
+\SYNOPSIS
+Computes the {dimindex} for a standard finite type.
+
+\DESCRIBE
+Finite types parsed and printed as numerals are provided, and this conversion
+when applied to such a type of the form {`:n`} returns the theorem
+{|- (:n) HAS_SIZE n} where the {(:n)} is the customary HOL Light printing of 
+the universe set {UNIV:n->bool}, the second {n} is a numeral term and
+{HAS_SIZE} is the usual cardinality relation.
+
+\FAILURE
+Fails if the type provided is not a standard finite type.
+
+\EXAMPLE
+Here we use a 64-element type, perhaps useful for indexing the bits of a
+word:
+{
+  # HAS_SIZE_DIMINDEX_RULE `:64`;;
+  val it : thm = |- (:64) HAS_SIZE 64
+}
+
+\SEEALSO
+dest_finty, DIMINDEX_CONV, DIMINDEX_TAC, mk_finty.
+
+\ENDDOC

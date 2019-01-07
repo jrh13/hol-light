@@ -8,6 +8,44 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  5th Jan 2019       arith.ml, basics.ml, cart.ml, parser.ml, printer.ml, Formal_ineqs/taylor/m_taylor.hl, Help/BITS_ELIM_CONV.doc [new file], Help/DIMINDEX_CONV.doc [new file], Help/DIMINDEX_TAC.doc [new file], Help/HAS_SIZE_DIMINDEX_RULE.doc [new file], Help/dest_finty.doc [new file], Help/mk_finty.doc [new file]
+
+Added a complete replacement, from Andrea Gabrielli and Marco Maggesi, of the
+previous arrangements for the definition of finite types of specified size. In
+place of the former case-by-case approach via "define_finite_type", there is
+now a pair of type constructors "tybit0" and "tybit1" allowing finite types to
+be represented schematically in binary, keeping the old scheme only for the
+base type `:1` defined in "trivia.ml". The parser and printer are modified so
+that this representation is parsed and printed as before (e.g. what is written
+`:6` is actually `:(1 tybit1) tybit0`).
+
+A conversion "DIMINDEX_CONV", rule "HAS_SIZE_DIMINDEX_RULE"  and corresponding
+tactic "DIMINDEX_TAC" are also provided to compute the `dimindex` function for
+such types, while syntax constructors and destructors "mk_finty" and
+"dest_finty" convert between such types and nums.
+
+The old "define_finite_type" has been deleted, since it could just be
+confusing. The same final theorem (without the side-effects) from the call
+"define_finite_type k" can be obtained using the new setup by
+"HAS_SIZE_DIMINDEX_RULE(mk_finty(Num.num_of_int k))".
+
+In addition, a useful conversion "BITS_ELIM_CONV" is provided for eliminating
+some stray instances of numeral-constructing constants.
+
+Thu  3rd Jan 2019       equal.ml, Help/BINOP2_CONV.doc  [new file]
+
+Added a simple new conversional BINOP2_CONV, which is similar to BINOP_CONV
+but with different conversions for the left and right.
+
+Thu  3rd Jan 2019       arith.ml
+
+Added a couple of trivial results that are easy via DIVISION / LE_1 but
+seemed worth having as simple equivalences:
+
+  MOD_LT_EQ = |- !m n. m MOD n < n <=> ~(n = 0)
+
+  MOD_LT_EQ_LT = |- !m n. m MOD n < n <=> 0 < n
+
 Fri 21st Dec 2018       Library/grouptheory.ml
 
 Added a number of theorems about group theory, mainly natural interrelations
@@ -17,31 +55,31 @@ among various concepts:
     |- !G h k.
            cartesian_product k h normal_subgroup_of product_group k G <=>
            (!i. i IN k ==> h i normal_subgroup_of G i)
-  
+
   CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP =
     |- !G1 G2 h1 h2.
            h1 CROSS h2 normal_subgroup_of prod_group G1 G2 <=>
            h1 normal_subgroup_of G1 /\ h2 normal_subgroup_of G2
-  
+
   GROUP_ELEMENT_ORDER_EQ_2 =
     |- !G x.
            x IN group_carrier G
            ==> (group_element_order G x = 2 <=>
                 ~(x = group_id G) /\ group_pow G x 2 = group_id G)
-  
+
   GROUP_ELEMENT_ORDER_MUL_SYM =
     |- !G x y.
            x IN group_carrier G /\ y IN group_carrier G
            ==> group_element_order G (group_mul G x y) =
                group_element_order G (group_mul G y x)
-  
+
   GROUP_ELEMENT_ORDER_UNIQUE_ALT =
     |- !G x n.
            x IN group_carrier G /\ ~(n = 0)
            ==> (group_element_order G x = n <=>
                 group_pow G x n = group_id G /\
                 (!m. 0 < m /\ m < n ==> ~(group_pow G x m = group_id G)))
-  
+
   GROUP_ISOMORPHISM_PRODUCT_QUOTIENT_GROUP =
     |- !G n k.
            (!i. i IN k ==> n i normal_subgroup_of G i)
@@ -49,7 +87,7 @@ among various concepts:
                (product_group k (\i. quotient_group (G i) (n i)),
                 quotient_group (product_group k G) (cartesian_product k n))
                (cartesian_product k)
-  
+
   GROUP_ISOMORPHISM_PROD_QUOTIENT_GROUP =
     |- !G1 G2 n1 n2.
            n1 normal_subgroup_of G1 /\ n2 normal_subgroup_of G2
@@ -57,117 +95,117 @@ among various concepts:
                (prod_group (quotient_group G1 n1) (quotient_group G2 n2),
                 quotient_group (prod_group G1 G2) (n1 CROSS n2))
                (\(s,t). s CROSS t)
-  
+
   GROUP_POW_MUL_EQ_ID_SYM =
     |- !G n x y.
            x IN group_carrier G /\ y IN group_carrier G
            ==> (group_pow G (group_mul G x y) n = group_id G <=>
                 group_pow G (group_mul G y x) n = group_id G)
-  
+
   GROUP_SETINV_SUBGROUP_GENERATED =
     |- !G h. group_setinv (subgroup_generated G h) = group_setinv G
-  
+
   GROUP_SETMUL_PRODUCT_GROUP =
     |- !G k s t.
            group_setmul (product_group k G) (cartesian_product k s)
            (cartesian_product k t) =
            cartesian_product k (\i. group_setmul (G i) (s i) (t i))
-  
+
   GROUP_SETMUL_PROD_GROUP =
     |- !G1 G2 s1 s2 t1 t2.
            group_setmul (prod_group G1 G2) (s1 CROSS s2) (t1 CROSS t2) =
            group_setmul G1 s1 t1 CROSS group_setmul G2 s2 t2
-  
+
   GROUP_SETMUL_SUBGROUP_GENERATED =
     |- !G h. group_setmul (subgroup_generated G h) = group_setmul G
-  
+
   ISOMORPHIC_QUOTIENT_PRODUCT_GROUP =
     |- !G n k.
            (!i. i IN k ==> n i normal_subgroup_of G i)
-           ==> quotient_group (product_group k G) (cartesian_product k n) 
+           ==> quotient_group (product_group k G) (cartesian_product k n)
                isomorphic_group
                product_group k (\i. quotient_group (G i) (n i))
-  
+
   ISOMORPHIC_QUOTIENT_PROD_GROUP =
     |- !G1 G2 n1 n2.
            n1 normal_subgroup_of G1 /\ n2 normal_subgroup_of G2
            ==> quotient_group (prod_group G1 G2) (n1 CROSS n2) isomorphic_group
                prod_group (quotient_group G1 n1) (quotient_group G2 n2)
-  
+
   LEFT_COSET_PRODUCT_GROUP =
     |- !G h x k.
            left_coset (product_group k G) x (cartesian_product k h) =
            cartesian_product k (\i. left_coset (G i) (x i) (h i))
-  
+
   LEFT_COSET_PROD_GROUP =
     |- !G1 G2 h1 h2 x1 x2.
            left_coset (prod_group G1 G2) (x1,x2) (h1 CROSS h2) =
            left_coset G1 x1 h1 CROSS left_coset G2 x2 h2
-  
+
   LEFT_COSET_SUBGROUP_GENERATED =
     |- !G h k x. left_coset (subgroup_generated G h) x k = left_coset G x k
-  
+
   NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED =
     |- !G s h.
            h normal_subgroup_of G /\ h SUBSET s
            ==> h normal_subgroup_of subgroup_generated G s
-  
+
   NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN =
     |- !G s h.
            h normal_subgroup_of G /\
            h SUBSET group_carrier (subgroup_generated G s)
            ==> h normal_subgroup_of subgroup_generated G s
-  
+
   OPPOSITE_PRODUCT_GROUP =
     |- !G k.
            opposite_group (product_group k G) =
            product_group k (\i. opposite_group (G i))
-  
+
   OPPOSITE_PROD_GROUP =
     |- !G1 G2.
            opposite_group (prod_group G1 G2) =
            prod_group (opposite_group G1) (opposite_group G2)
-  
+
   QUOTIENT_GROUP_SUBGROUP_GENERATED =
     |- !G h n.
            n normal_subgroup_of G /\ h subgroup_of G /\ n SUBSET h
            ==> quotient_group (subgroup_generated G h) n =
                subgroup_generated (quotient_group G n)
                {right_coset G n x | x IN h}
-  
+
   RIGHT_COSET_PRODUCT_GROUP =
     |- !G h x k.
            right_coset (product_group k G) (cartesian_product k h) x =
            cartesian_product k (\i. right_coset (G i) (h i) (x i))
-  
+
   RIGHT_COSET_PROD_GROUP =
     |- !G1 G2 h1 h2 x1 x2.
            right_coset (prod_group G1 G2) (h1 CROSS h2) (x1,x2) =
            right_coset G1 h1 x1 CROSS right_coset G2 h2 x2
-  
+
   RIGHT_COSET_SUBGROUP_GENERATED =
     |- !G h k x. right_coset (subgroup_generated G h) k x = right_coset G k x
-  
+
   SUBGROUP_GENERATED_REFL =
     |- !G s. group_carrier G SUBSET s ==> subgroup_generated G s = G
-  
+
   SUBGROUP_OF_EPIMORPHIC_PREIMAGE =
     |- !G H f h.
            group_epimorphism (G,H) f /\ h subgroup_of H
            ==> {x | x IN group_carrier G /\ f x IN h} subgroup_of G /\
                IMAGE f {x | x IN group_carrier G /\ f x IN h} = h
-  
+
   SUBGROUP_OF_HOMOMORPHIC_PREIMAGE =
     |- !G H f h.
            group_homomorphism (G,H) f /\ h subgroup_of H
            ==> {x | x IN group_carrier G /\ f x IN h} subgroup_of G
-  
+
   SUBGROUP_OF_QUOTIENT_GROUP =
     |- !G n h.
            n normal_subgroup_of G
            ==> (h subgroup_of quotient_group G n <=>
                 (?k. k subgroup_of G /\ {right_coset G n x | x IN k} = h))
-  
+
   SUBGROUP_OF_QUOTIENT_GROUP_ALT =
     |- !G n h.
            n normal_subgroup_of G
@@ -175,7 +213,7 @@ among various concepts:
                 (?k. k subgroup_of G /\
                      n SUBSET k /\
                      {right_coset G n x | x IN k} = h))
-  
+
   SUBGROUP_OF_QUOTIENT_GROUP_GENERATED_BY =
     |- !G n h.
            n normal_subgroup_of G /\ h subgroup_of quotient_group G n
@@ -183,7 +221,7 @@ among various concepts:
                     n SUBSET k /\
                     quotient_group (subgroup_generated G k) n =
                     subgroup_generated (quotient_group G n) h)
-  
+
   SUM_GROUP_EQ_PRODUCT_GROUP =
     |- !k G. FINITE k ==> sum_group k G = product_group k G
 

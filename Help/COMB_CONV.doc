@@ -12,11 +12,11 @@ If {c} is a conversion such that {c `f`} returns {|- f = f'} and
 immediate subterms.
 
 \FAILURE
-Never fails when applied to the initial conversion. On application to the term, 
+Never fails when applied to the initial conversion. On application to the term,
 it fails if conversion given as the argument does, or if the theorem returned
 by it is inappropriate.
 
 \SEEALSO
-BINOP_CONV, COMB2_CONV, LAND_CONV, RAND_CONV, RATOR_CONV
+BINOP_CONV, BINOP2_CONV, COMB2_CONV, LAND_CONV, RAND_CONV, RATOR_CONV
 
 \ENDDOC

@@ -6,8 +6,8 @@
 Expand a numerical range {`!i. i < n ==> P[i]`}.
 
 \DESCRIBE
-When applied to a term of the form {`!i. i < n ==> P[i]`} for some {P[i]} and a 
-numeral {n}, the conversion {EXPAND_CASES_CONV} returns 
+When applied to a term of the form {`!i. i < n ==> P[i]`} for some {P[i]} and a
+numeral {n}, the conversion {EXPAND_CASES_CONV} returns
 {
   |- (!i. i < n ==> P[i]) <=> P[0] /\ ... /\ P[n-1]
 }
@@ -26,11 +26,11 @@ Fails if applied to a term that is not of the right form.
        (~(4 = 0) ==> 12 MOD 4 = 0)
 
   # (EXPAND_CASES_CONV THENC NUM_REDUCE_CONV)
-      `(!n. n < 5 ==> ~(n = 0) ==> 12 MOD n = 0)`;;     
+      `(!n. n < 5 ==> ~(n = 0) ==> 12 MOD n = 0)`;;
   val it : thm = |- (!n. n < 5 ==> ~(n = 0) ==> 12 MOD n = 0) <=> T
 }
 
 \SEEALSO
-NUM_REDUCE_CONV.
+EXPAND_SUM_CONV, EXPAND_NSUM_CONV, NUMSEG_CONV, NUM_REDUCE_CONV.
 
 \ENDDOC

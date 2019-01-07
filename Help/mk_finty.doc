@@ -1,0 +1,25 @@
+\DOC mk_finty
+
+\TYPE {mk_finty :num -> hol_type}
+
+\SYNOPSIS
+Converts an integer to a standard finite type.
+
+\DESCRIBE
+Finite types parsed and printed as numerals are provided, and this operation
+when applied to a number gives a type of that size.
+
+\FAILURE
+Fails if the number is not a strictly positive integer.
+
+\EXAMPLE
+Here we use a 6-element type:
+{
+  # mk_finty (Int 6);;
+  val it : hol_type = `:6`
+}
+
+\SEEALSO
+dest_finty, DIMINDEX_CONV, DIMINDEX_TAC, HAS_SIZE_DIMINDEX_RULE, mk_type.
+
+\ENDDOC
