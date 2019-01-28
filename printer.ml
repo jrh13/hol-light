@@ -547,9 +547,9 @@ let print_thm = pp_print_thm std_formatter;;
 (* Install all the printers.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
-#install_printer print_qtype;;
-#install_printer print_qterm;;
-#install_printer print_thm;;
+#install_printer pp_print_qtype;;
+#install_printer pp_print_qterm;;
+#install_printer pp_print_thm;;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversions to string.                                                    *)
