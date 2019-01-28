@@ -207,16 +207,16 @@ let parse_pretype =
                          then s,rest else raise Noparse
     | _ -> raise Noparse in
   let rec pretype i =
-    rightbin sumtype (a (Resword "->")) (btyop "fun") "type" i
-  and sumtype i = rightbin prodtype (a (Ident "+")) (btyop "sum") "type" i
-  and prodtype i = rightbin carttype (a (Ident "#")) (btyop "prod") "type" i
-  and carttype i = leftbin apptype (a (Ident "^")) (btyop "cart") "type" i
+    rightbin sumtype (a (Resword "->")) (btyop "fun") "proper use of type operator (->)" i
+  and sumtype i = rightbin prodtype (a (Ident "+")) (btyop "sum") "proper use of type operator (+)" i
+  and prodtype i = rightbin carttype (a (Ident "#")) (btyop "prod") "proper use of type operator (#)" i
+  and carttype i = leftbin apptype (a (Ident "^")) (btyop "cart") "proper use of type operator (^)" i
   and apptype i = (atomictypes ++ (type_constructor >> (fun x -> [x])
                                 ||| nothing) >> mk_apptype) i
   and atomictypes i =
         (((a (Resword "(")) ++ typelist ++ a (Resword ")") >> (snd o fst))
       ||| (type_atom >> (fun x -> [x]))) i
-  and typelist i = listof pretype (a (Ident ",")) "type" i in
+  and typelist i = listof pretype (a (Ident ",")) "comma separated list for type constructor" i in
   pretype;;
 
 (* ------------------------------------------------------------------------- *)
@@ -443,6 +443,10 @@ let parse_preterm =
     (try_user_parser
   ||| ((a (Resword "(") ++ a (Resword ":")) ++ pretype ++ a (Resword ")")
        >> lmk_univ)
+  ||| ((a (Resword "(") ++ a (Resword ":")) ++ pretype
+       >> (fun _ -> failwith "closing right parenthesis on universe expected"))
+  ||| ((a (Resword "(") ++ a (Resword ":"))
+       >> (fun _ -> failwith "type in universe construction expected"))
   ||| (string >> pmk_string)
   ||| (a (Resword "(") ++
        (any_identifier >> (fun s -> Varp(s,dpty))) ++
@@ -459,12 +463,25 @@ let parse_preterm =
        a (Resword "else") ++
        preterm
        >> lmk_ite)
+  ||| ((a (Resword "if") ) ++ preterm ++ a (Resword "then") ++ preterm ++ a (Resword "else") 
+      >> (fun _ -> failwith "malformed else clause"))
+  ||| ((a (Resword "if") ) ++ preterm ++ a (Resword "then") ++ preterm
+      >> (fun _ -> failwith "missing else following then clause"))
+  ||| ((a (Resword "if") ) ++ preterm ++ a (Resword "then")
+      >> (fun _ -> failwith "malformed then clause in if-then-else statement"))
+  ||| ((a (Resword "if") ) ++ preterm
+      >> (fun _ -> failwith "missing 'then' reserved word in if-then-else statement"))
+  ||| ((a (Resword "if") )
+      >> (fun _ -> failwith "malformed if-then-else"))
   ||| (a (Resword "[") ++
-       elistof preterm (a (Resword ";")) "term" ++
+       elistof preterm (a (Resword ";")) "semicolon separated list of terms" ++
        a (Resword "]")
        >> (pmk_list o snd o fst))
+  ||| (a (Resword "[") ++
+       elistof preterm (a (Resword ";")) "semicolon separated list of terms"
+        >> (fun _ -> failwith "closing square bracket on list expected"))
   ||| (a (Resword "{") ++
-       (elistof nocommapreterm (a (Ident ",")) "term" ++  a (Resword "}")
+       (elistof nocommapreterm (a (Ident ",")) "comma separated list of terms" ++  a (Resword "}")
               >> lmk_setenum
         ||| (preterm ++ a (Resword "|") ++ preterm ++ a (Resword "}")
               >> lmk_setabs)
@@ -472,13 +489,17 @@ let parse_preterm =
              a (Resword "|") ++ preterm ++ a (Resword "}")
              >> lmk_setcompr))
       >> snd)
+  ||| (a (Resword "{") >> (fun _ -> failwith "malformed set {}"))
   ||| (a (Resword "match") ++ preterm ++ a (Resword "with") ++ clauses
        >> (fun (((_,e),_),c) -> Combp(Combp(Varp("_MATCH",dpty),e),c)))
+  ||| (a (Resword "match")  >> (fun _ -> failwith "malformed match-with statement"))
   ||| (a (Resword "function") ++ clauses
        >> (fun (_,c) -> Combp(Varp("_FUNCTION",dpty),c)))
+  ||| (a (Resword "function")  >> (fun _ -> failwith "malformed function and pattern clauses"))
   ||| (a (Ident "#") ++ identifier ++
        possibly (a (Resword ".") ++ identifier >> snd)
        >> lmk_decimal)
+  ||| (a (Ident "#")  >> (fun _ -> failwith "malformed numerical # identifier"))
   ||| (identifier >> (fun s -> Varp(s,dpty)))) i
   and pattern i =
     (preterm ++ possibly (a (Resword "when") ++ preterm >> snd)) i
