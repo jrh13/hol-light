@@ -8,6 +8,20 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 17th Jan 2019       arith.ml
+
+Added a slight generalization of MOD_ADD_CASES:
+
+  MOD_CASES = |- !n p. n < 2 * p ==> n MOD p = (if n < p then n else n - p)
+
+Tue 15th Jan 2019       arith.ml
+
+Added one more trivial arithmetical theorem
+
+  MOD_EQ_SELF = |- !m n. m MOD n = m <=> n = 0 \/ m < n
+
+MOD_EQ_SELF
+
 Sat  5th Jan 2019       arith.ml, basics.ml, cart.ml, parser.ml, printer.ml, Formal_ineqs/taylor/m_taylor.hl, Help/BITS_ELIM_CONV.doc [new file], Help/DIMINDEX_CONV.doc [new file], Help/DIMINDEX_TAC.doc [new file], Help/HAS_SIZE_DIMINDEX_RULE.doc [new file], Help/dest_finty.doc [new file], Help/mk_finty.doc [new file]
 
 Added a complete replacement, from Andrea Gabrielli and Marco Maggesi, of the

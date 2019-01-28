@@ -142,15 +142,15 @@ let CONNECTED_IN_STANDARD_SIMPLEX = prove
 (* Face map.                                                                 *)
 (* ------------------------------------------------------------------------- *)
 
-let face_map = new_definition
- `face_map k (x:num->real) =
+let simplicial_face = new_definition
+ `simplicial_face k (x:num->real) =
   \i. if i < k then x i else if i = k then &0 else x(i - 1)`;;
 
-let FACE_MAP_IN_STANDARD_SIMPLEX = prove
+let SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX = prove
  (`!p k (x:num->real).
         1 <= p /\ k <= p /\ x IN standard_simplex (p - 1)
-        ==> (face_map k x) IN standard_simplex p`,
-  REWRITE_TAC[standard_simplex; face_map; IN_ELIM_THM] THEN
+        ==> (simplicial_face k x) IN standard_simplex p`,
+  REWRITE_TAC[standard_simplex; simplicial_face; IN_ELIM_THM] THEN
   REPEAT GEN_TAC THEN STRIP_TAC THEN REPEAT CONJ_TAC THENL
    [GEN_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_POS]);
     GEN_TAC THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
@@ -213,7 +213,7 @@ let SINGULAR_SIMPLEX_SUBTOPOLOGY = prove
 
 let singular_face = new_definition
  `singular_face p k f =
-    RESTRICTION (standard_simplex (p - 1)) (f o face_map k)`;;
+    RESTRICTION (standard_simplex (p - 1)) (f o simplicial_face k)`;;
 
 let SINGULAR_SIMPLEX_SINGULAR_FACE = prove
  (`!p (top:A topology) k f.
@@ -228,10 +228,10 @@ let SINGULAR_SIMPLEX_SINGULAR_FACE = prove
                           (standard_simplex p)` THEN
   ASM_REWRITE_TAC[] THEN
   ASM_SIMP_TAC[CONTINUOUS_MAP_IN_SUBTOPOLOGY; TOPSPACE_STANDARD_SIMPLEX;
-               SUBSET; FORALL_IN_IMAGE; FACE_MAP_IN_STANDARD_SIMPLEX] THEN
+    SUBSET; FORALL_IN_IMAGE; SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX] THEN
   REWRITE_TAC[CONTINUOUS_MAP_COMPONENTWISE; IN_UNIV] THEN
   REWRITE_TAC[SUBSET; EXTENSIONAL_UNIV; IN] THEN
-  X_GEN_TAC `i:num` THEN REWRITE_TAC[face_map] THEN
+  X_GEN_TAC `i:num` THEN REWRITE_TAC[simplicial_face] THEN
   MATCH_MP_TAC CONTINUOUS_MAP_FROM_SUBTOPOLOGY THEN
   MAP_EVERY ASM_CASES_TAC [`i:num < k`; `i:num = k`] THEN
   ASM_SIMP_TAC[CONTINUOUS_MAP_PRODUCT_PROJECTION; IN_UNIV] THEN
@@ -841,15 +841,15 @@ let CHAIN_BOUNDARY_BOUNDARY = prove
   X_GEN_TAC `t:(num->real)` THEN
   ASM_CASES_TAC `(t:(num->real)) IN standard_simplex (p - 1 - 1)` THEN
   ASM_REWRITE_TAC[RESTRICTION; o_THM] THEN
-  SUBGOAL_THEN `face_map i (t:num->real) IN standard_simplex (p - 1) /\
-                face_map j (t:num->real) IN standard_simplex (p - 1)`
+  SUBGOAL_THEN `simplicial_face i (t:num->real) IN standard_simplex (p - 1) /\
+                simplicial_face j (t:num->real) IN standard_simplex (p - 1)`
   STRIP_ASSUME_TAC THENL
-   [CONJ_TAC THEN MATCH_MP_TAC FACE_MAP_IN_STANDARD_SIMPLEX THEN
+   [CONJ_TAC THEN MATCH_MP_TAC SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX THEN
     ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC;
     ASM_REWRITE_TAC[] THEN AP_TERM_TAC] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[standard_simplex; IN_ELIM_THM]) THEN
   REPEAT(FIRST_X_ASSUM(CONJUNCTS_THEN STRIP_ASSUME_TAC)) THEN
-  REWRITE_TAC[face_map; FUN_EQ_THM] THEN X_GEN_TAC `k:num` THEN
+  REWRITE_TAC[simplicial_face; FUN_EQ_THM] THEN X_GEN_TAC `k:num` THEN
   REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN ASM_ARITH_TAC);;
 
 let CHAIN_BOUNDARY_BOUNDARY_ALT = prove
@@ -954,9 +954,9 @@ let SINGULAR_FACE_SIMPLEX_MAP = prove
  (`!p k f:A->B c.
         1 <= p /\ k <= p
         ==> singular_face p k (simplex_map p f c) =
-            simplex_map (p - 1) f (c o face_map k)`,
+            simplex_map (p - 1) f (c o simplicial_face k)`,
   REWRITE_TAC[FUN_EQ_THM; simplex_map; singular_face] THEN
-  SIMP_TAC[FACE_MAP_IN_STANDARD_SIMPLEX; RESTRICTION; o_THM]);;
+  SIMP_TAC[SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX; RESTRICTION; o_THM]);;
 
 let chain_map = new_definition
  `chain_map p (g:A->B) (c:((num->real)->A)frag) =
@@ -1087,7 +1087,8 @@ let CHAIN_BOUNDARY_CHAIN_MAP = prove
   AP_TERM_TAC THEN AP_TERM_TAC THEN
   REWRITE_TAC[singular_face; simplex_map; FUN_EQ_THM] THEN
   REWRITE_TAC[RESTRICTION_COMPOSE_RIGHT] THEN
-  ASM_SIMP_TAC[RESTRICTION; o_THM; FACE_MAP_IN_STANDARD_SIMPLEX; LE_1]);;
+  ASM_SIMP_TAC[RESTRICTION; o_THM; 
+               SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX; LE_1]);;
 
 let SINGULAR_RELCYCLE_CHAIN_MAP = prove
  (`!p top s top' t g:A->B c:((num->real)->A)frag.
@@ -1379,8 +1380,8 @@ let SINGULAR_FACE_ORIENTED_SIMPLEX = prove
   REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN
   MAP_EVERY X_GEN_TAC [`x:num->real`; `j:num`] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
-  ASM_SIMP_TAC[RESTRICTION; o_DEF; FACE_MAP_IN_STANDARD_SIMPLEX] THEN
-  REWRITE_TAC[face_map] THEN REPLICATE_TAC 2
+  ASM_SIMP_TAC[RESTRICTION; o_DEF; SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX] THEN
+  REWRITE_TAC[simplicial_face] THEN REPLICATE_TAC 2
    (REWRITE_TAC[COND_RATOR] THEN ONCE_REWRITE_TAC[COND_RAND]) THEN
   SIMP_TAC[SUM_CASES; FINITE_NUMSEG; FINITE_RESTRICT] THEN
   REWRITE_TAC[REAL_MUL_RZERO; REAL_ADD_LID; SUM_0] THEN
@@ -1407,9 +1408,9 @@ let SIMPLICIAL_SIMPLEX_SINGULAR_FACE = prove
   FIRST_X_ASSUM(X_CHOOSE_THEN `m:num->num->real` SUBST_ALL_TAC) THEN
   ASM_REWRITE_TAC[singular_face; oriented_simplex] THEN
   ASM_SIMP_TAC[RESTRICTION_COMPOSE_LEFT; SUBSET; FORALL_IN_IMAGE;
-               FACE_MAP_IN_STANDARD_SIMPLEX] THEN
+               SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX] THEN
   EXISTS_TAC `\i. if i < k then (m:num->num->real) i else m (i + 1)` THEN
-  REWRITE_TAC[face_map; o_DEF] THEN AP_TERM_TAC THEN
+  REWRITE_TAC[simplicial_face; o_DEF] THEN AP_TERM_TAC THEN
   REWRITE_TAC[FUN_EQ_THM] THEN
   MAP_EVERY X_GEN_TAC [`x:num->real`; `i:num`] THEN
   REPLICATE_TAC 2
@@ -1736,7 +1737,8 @@ let SIMPLICIAL_SUBDIVISION_OF = prove
          if p = 0 then frag_of f
          else simplicial_cone (p - 1)
                (\i. sum(0..p) (\j. simplicial_vertex j f i) / (&p + &1))
-               (simplicial_subdivision (p - 1) (chain_boundary p (frag_of f)))`,
+               (simplicial_subdivision (p - 1) 
+                                       (chain_boundary p (frag_of f)))`,
   INDUCT_TAC THEN REWRITE_TAC[simplicial_subdivision; I_THM] THEN
   REWRITE_TAC[NOT_SUC; SUC_SUB1; FRAG_EXTEND_OF] THEN
   REWRITE_TAC[REAL_OF_NUM_ADD; ARITH_RULE `SUC p + 1 = p + 2`]);;
@@ -2737,7 +2739,7 @@ let CHAIN_HOMOTOPIC_SINGULAR_SUBDIVISION = prove
         AP_TERM_TAC THEN REWRITE_TAC[CHAIN_MAP_OF] THEN AP_TERM_TAC THEN
         REWRITE_TAC[singular_face; simplex_map; RESTRICTION; FUN_EQ_THM;
                     o_THM; I_THM] THEN
-        ASM_SIMP_TAC[LE_1; FACE_MAP_IN_STANDARD_SIMPLEX]]];
+        ASM_SIMP_TAC[LE_1; SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX]]];
     SIMP_TAC[CHAIN_MAP_SUM; FINITE_NUMSEG] THEN
     MATCH_MP_TAC(MATCH_MP ITERATE_EQ MONOIDAL_FRAG_ADD) THEN
     X_GEN_TAC `k:num` THEN REWRITE_TAC[IN_NUMSEG] THEN STRIP_TAC THEN
@@ -2767,7 +2769,7 @@ let CHAIN_HOMOTOPIC_SINGULAR_SUBDIVISION = prove
   STRIP_TAC THEN
   AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM; simplex_map] THEN
   ASM_SIMP_TAC[singular_face; I_THM; o_THM; RESTRICTION;
-               FACE_MAP_IN_STANDARD_SIMPLEX; LE_1]));;
+               SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX; LE_1]));;
 
 let HOMOLOGOUS_REL_SINGULAR_SUBDIVISION = prove
  (`!p s t c:((num->real)->A)frag.
@@ -2950,7 +2952,7 @@ let SUFFICIENT_ITERATED_SINGULAR_SUBDIVISION_EXISTS = prove
       FIRST_X_ASSUM(MP_TAC o
         GEN_REWRITE_RULE BINDER_CONV [GSYM REAL_OPEN_IN]) THEN
       REWRITE_TAC[real_open] THEN
-      DISCH_THEN(MP_TAC o GEN `i:num` o SPECL [`i:num`; `(x:num->real) i`]) THEN
+      DISCH_THEN(MP_TAC o GEN `i:num` o SPECL[`i:num`; `(x:num->real) i`]) THEN
       ASM_REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; FORALL_AND_THM] THEN
       X_GEN_TAC `d:num->real` THEN STRIP_TAC THEN EXISTS_TAC
        `inf ((&1) INSERT IMAGE (d:num->real) {i | ~(v i = (:real))}) / &3` THEN
@@ -3650,9 +3652,9 @@ let HOMOTOPIC_IMP_HOMOLOGOUS_REL_CHAIN_MAPS = prove
        `(!x. h(a,x) = c x) ==> w = a /\ z = y ==> h(w,z) = c y`)) THEN
       (CONJ_TAC THENL [ALL_TAC; AP_TERM_TAC]) THEN
       EXPAND_TAC "simp" THEN REWRITE_TAC[oriented_simplex] THEN
-      ASM_SIMP_TAC[RESTRICTION; FACE_MAP_IN_STANDARD_SIMPLEX; ADD_SUB;
+      ASM_SIMP_TAC[RESTRICTION; SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX; ADD_SUB;
                    LE_REFL; LE_0; ARITH_RULE `1 <= p + 1`] THEN
-      REWRITE_TAC[face_map; CONJUNCT1 LE; CONJUNCT1 LT] THEN
+      REWRITE_TAC[simplicial_face; CONJUNCT1 LE; CONJUNCT1 LT] THEN
       REWRITE_TAC[ARITH_RULE `j < q + 1 <=> j <= q`] THEN
       REWRITE_TAC[MESON[]
        `(if p then f1 else f2) a * (if p then y1 else y2):real =
@@ -3699,7 +3701,7 @@ let HOMOTOPIC_IMP_HOMOLOGOUS_REL_CHAIN_MAPS = prove
       COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
       GEN_REWRITE_TAC BINOP_CONV [o_THM] THEN AP_TERM_TAC THEN
       EXPAND_TAC "simp" THEN REWRITE_TAC[o_THM; oriented_simplex] THEN
-      ASM_SIMP_TAC[RESTRICTION; FACE_MAP_IN_STANDARD_SIMPLEX;
+      ASM_SIMP_TAC[RESTRICTION; SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX;
                    ARITH_RULE `1 <= p + 1`; ADD_SUB;
                    ARITH_RULE `i < q ==> i + 1 <= q + 1`] THEN
       GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `k:num` THEN
@@ -3711,7 +3713,7 @@ let HOMOTOPIC_IMP_HOMOLOGOUS_REL_CHAIN_MAPS = prove
       ASM_SIMP_TAC[ARITH_RULE `~(j <= i) ==> (j <= i + 1 <=> j = i + 1)`] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
       MAP_EVERY EXPAND_TAC ["vv"; "ww"] THEN
-      REWRITE_TAC[ADD_SUB; face_map; LT_REFL; REAL_MUL_RZERO]];
+      REWRITE_TAC[ADD_SUB; simplicial_face; LT_REFL; REAL_MUL_RZERO]];
     ALL_TAC] THEN
   REWRITE_TAC[chain_boundary] THEN
   ASM_CASES_TAC `q = 0` THEN ASM_REWRITE_TAC[] THENL
@@ -3779,10 +3781,10 @@ let HOMOTOPIC_IMP_HOMOLOGOUS_REL_CHAIN_MAPS = prove
     EXPAND_TAC "simp" THEN
     REWRITE_TAC[oriented_simplex; RESTRICTION] THEN
     ASM_SIMP_TAC[SUB_ADD; LE_1] THEN
-    ASM_SIMP_TAC[FACE_MAP_IN_STANDARD_SIMPLEX; ADD_SUB;
+    ASM_SIMP_TAC[SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX; ADD_SUB;
                  ARITH_RULE `1 <= j + 1`] THEN
     MAP_EVERY EXPAND_TAC ["vv"; "ww"] THEN
-    REWRITE_TAC[face_map; o_DEF] THEN
+    REWRITE_TAC[simplicial_face; o_DEF] THEN
     ONCE_REWRITE_TAC[COND_RATOR] THEN
     REWRITE_TAC[ARITH_RULE `~(0 = k + 1)`; NOT_SUC] THENL
      [ONCE_REWRITE_TAC[MESON[]
@@ -3885,10 +3887,10 @@ let HOMOTOPIC_IMP_HOMOLOGOUS_REL_CHAIN_MAPS = prove
     EXPAND_TAC "simp" THEN
     REWRITE_TAC[oriented_simplex; RESTRICTION] THEN
     ASM_SIMP_TAC[SUB_ADD; LE_1] THEN
-    ASM_SIMP_TAC[FACE_MAP_IN_STANDARD_SIMPLEX; ADD_SUB;
+    ASM_SIMP_TAC[SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX; ADD_SUB;
                  LE_ADD_RCANCEL; ARITH_RULE `1 <= j + 1`] THEN
     MAP_EVERY EXPAND_TAC ["vv"; "ww"] THEN
-    REWRITE_TAC[face_map; o_DEF] THEN
+    REWRITE_TAC[simplicial_face; o_DEF] THEN
     ONCE_REWRITE_TAC[COND_RATOR] THEN
     REWRITE_TAC[ARITH_RULE `~(0 = k + 1)`; NOT_SUC] THENL
      [ONCE_REWRITE_TAC[MESON[]
@@ -5440,7 +5442,8 @@ let HOMOLOGY_ADDITIVITY_AXIOM_GEN = prove
               ((w:(A->bool)->((num->real)->A)frag) s))`;
     `z:(A->bool)->((num->real)->A)frag`] o
    CONJUNCT2 o CONJUNCT1) THEN
-  REWRITE_TAC[SUM_GROUP_CLAUSES; IN_ELIM_THM; RESTRICTION_IN_CARTESIAN_PRODUCT] THEN
+  REWRITE_TAC[SUM_GROUP_CLAUSES; IN_ELIM_THM; 
+              RESTRICTION_IN_CARTESIAN_PRODUCT] THEN
   ASM_REWRITE_TAC[CHAIN_GROUP; cartesian_product; IN_ELIM_THM; SET_RULE
     `x IN singular_chain p <=> singular_chain p x`] THEN
   ASM_SIMP_TAC[SINGULAR_CHAIN_BOUNDARY_ALT] THEN
@@ -5556,7 +5559,8 @@ let GROUP_ISOMORPHISM_INTEGER_ZEROTH_HOMOLOGY_GROUP = prove
       GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `x:num->real` THEN
       ASM_CASES_TAC `x:num->real = p` THEN
       ASM_SIMP_TAC[RESTRICTION; IN_SING; o_THM] THEN
-      REWRITE_TAC[face_map; CONJUNCT1 LT] THEN CONV_TAC NUM_REDUCE_CONV THEN
+      REWRITE_TAC[simplicial_face; CONJUNCT1 LT] THEN 
+      CONV_TAC NUM_REDUCE_CONV THEN
       ASM_REWRITE_TAC[standard_simplex; IN_ELIM_THM] THEN
       UNDISCH_THEN `x:num->real = p` SUBST1_TAC THEN
       REWRITE_TAC[num_CONV `1`; SUM_CLAUSES_NUMSEG] THEN
@@ -6223,12 +6227,12 @@ let NATURALITY_HOM_INDUCED_RELBOUNDARY = prove
 
 let HOMOLOGY_EXACTNESS_TRIPLE_1 = prove
  (`!p top s t:A->bool.
-        t SUBSET s
-        ==> group_exactness(relative_homology_group(p,top,t),
-                            relative_homology_group(p,top,s),
-                            relative_homology_group(p - &1,subtopology top s,t))
-                (hom_induced p (top,t) (top,s) (\x. x),
-                 hom_relboundary p (top,s,t))`,
+       t SUBSET s
+       ==> group_exactness(relative_homology_group(p,top,t),
+                           relative_homology_group(p,top,s),
+                           relative_homology_group(p - &1,subtopology top s,t))
+               (hom_induced p (top,t) (top,s) (\x. x),
+                hom_relboundary p (top,s,t))`,
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[group_exactness; GROUP_HOMOMORPHISM_HOM_RELBOUNDARY;
               GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
@@ -6336,12 +6340,12 @@ let HOMOLOGY_EXACTNESS_TRIPLE_1 = prove
 
 let HOMOLOGY_EXACTNESS_TRIPLE_2 = prove
  (`!p top s t:A->bool.
-        t SUBSET s
-        ==> group_exactness(relative_homology_group(p,top,s),
-                            relative_homology_group(p - &1,subtopology top s,t),
-                            relative_homology_group(p - &1,top,t))
-               (hom_relboundary p (top,s,t),
-                hom_induced (p - &1) (subtopology top s,t) (top,t) (\x. x))`,
+       t SUBSET s
+       ==> group_exactness(relative_homology_group(p,top,s),
+                           relative_homology_group(p - &1,subtopology top s,t),
+                           relative_homology_group(p - &1,top,t))
+              (hom_relboundary p (top,s,t),
+               hom_induced (p - &1) (subtopology top s,t) (top,t) (\x. x))`,
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[group_exactness; GROUP_HOMOMORPHISM_HOM_RELBOUNDARY;
               GROUP_HOMOMORPHISM_HOM_INDUCED] THEN
@@ -7376,8 +7380,8 @@ let GROUP_ISOMORPHISMS_HOMOLOGY_GROUP_PROD_DEFORMATION = prove
       MATCH_MP HOMOTOPIC_WITH_IMP_CONTINUOUS_MAPS) THEN
     GEN_TAC THEN DISCH_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM o_THM] THEN
     ASM_SIMP_TAC[GSYM HOM_INDUCED_COMPOSE; IMAGE_CLAUSES; EMPTY_SUBSET;
-                 CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_FROM_SUBTOPOLOGY;
-                 CONTINUOUS_MAP_ID] THEN
+      CONTINUOUS_MAP_IN_SUBTOPOLOGY; CONTINUOUS_MAP_FROM_SUBTOPOLOGY;
+      CONTINUOUS_MAP_ID] THEN
     FIRST_X_ASSUM(fun th ->
       GEN_REWRITE_TAC RAND_CONV [GSYM(MATCH_MP HOM_INDUCED_ID th)]) THEN
     AP_THM_TAC THEN REWRITE_TAC[o_DEF; ETA_AX; GSYM I_DEF] THEN
