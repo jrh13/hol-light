@@ -1336,6 +1336,10 @@ let INT_REM_MOD_SELF = prove
   REWRITE_TAC[INT_ARITH `r - m:int = n * --d <=> d * n + r = m`] THEN
   REWRITE_TAC[INT_DIVISION_DECOMP]);;
 
+let INT_CONG_SOLVE_BOUNDS = prove
+ (`!a n:int. ~(n = &0) ==> ?x. &0 <= x /\ x < abs n /\ (x == a) (mod n)`,
+  MESON_TAC[INT_DIVISION; INT_REM_MOD_SELF]);;
+
 let INT_NEG_REM = prove
  (`!n p. --(n rem p) rem p = --n rem p`,
   REPEAT GEN_TAC THEN REWRITE_TAC[INT_REM_EQ] THEN

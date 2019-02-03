@@ -245,6 +245,28 @@ let PASTECART_INJ = prove
  (`!x:A^M y:A^N w z. pastecart x y = pastecart w z <=> x = w /\ y = z`,
   REWRITE_TAC[PASTECART_EQ; FSTCART_PASTECART; SNDCART_PASTECART]);;
 
+let FSTCART_COMPONENT = prove
+ (`!x:A^(M,N)finite_sum i. 1 <= i /\ i <= dimindex(:M)
+                           ==> fstcart x$i = x$i`,
+  SIMP_TAC[fstcart; LAMBDA_BETA]);;
+
+let SNDCART_COMPONENT = prove
+ (`!x:A^(M,N)finite_sum i. 1 <= i /\ i <= dimindex(:N)
+                           ==> sndcart x$i = x$(i + dimindex(:M))`,
+  SIMP_TAC[sndcart; LAMBDA_BETA]);;
+
+let PASTECART_COMPONENT = prove
+ (`(!u:A^M v:A^N i. 1 <= i /\ i <= dimindex(:M) ==> pastecart u v$i = u$i) /\
+   (!u:A^M v:A^N i. dimindex(:M) + 1 <= i /\ i <= dimindex(:M) + dimindex(:N)
+                    ==> pastecart u v$i = v$(i - dimindex(:M)))`,
+  REWRITE_TAC[pastecart] THEN CONJ_TAC THEN REPEAT GEN_TAC THEN STRIP_TAC THENL
+  [SUBGOAL_THEN `i <= dimindex(:(M,N)finite_sum)`
+     (fun th -> ASM_SIMP_TAC[LAMBDA_BETA; th]) THEN
+   REWRITE_TAC[DIMINDEX_FINITE_SUM] THEN ASM_ARITH_TAC;
+   ASM_SIMP_TAC[LAMBDA_BETA; DIMINDEX_FINITE_SUM;
+                ARITH_RULE `dimindex(:M) + 1 <= i ==> 1 <= i`] THEN
+   COND_CASES_TAC THEN REWRITE_TAC[] THEN ASM_ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Likewise a "subtraction" function on type indices.                        *)
 (* ------------------------------------------------------------------------- *)
@@ -425,7 +447,7 @@ let HAS_SIZE_DIMINDEX_RULE =
     EQ_MP (SYM th1)
           (CONJ (rule (lhand(rand(concl th1))))
                 (DIMINDEX_CONV (lhand(rand(rand(concl th1))))));;
-  
+
 let DIMINDEX_TAC : tactic =
   CONV_TAC (ONCE_DEPTH_CONV DIMINDEX_CONV);;
 

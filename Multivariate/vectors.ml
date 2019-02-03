@@ -3,6 +3,7 @@
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (*               (c) Copyright, Marco Maggesi 2014                           *)
+(*       (c) Copyright, Andrea Gabrielli, Marco Maggesi 2016-2017            *)
 (* ========================================================================= *)
 
 needs "Multivariate/misc.ml";;
@@ -1269,9 +1270,11 @@ let VSUM_CONST = prove
   SIMP_TAC[vsum; CART_EQ; LAMBDA_BETA; SUM_CONST; VECTOR_MUL_COMPONENT]);;
 
 let VSUM_COMPONENT = prove
- (`!s f i. 1 <= i /\ i <= dimindex(:N)
-           ==> ((vsum s (f:A->real^N))$i = sum s (\x. f(x)$i))`,
-  SIMP_TAC[vsum; LAMBDA_BETA]);;
+ (`!s f:A->real^N i. vsum s f$i = sum s (\x. f x$i)`,
+  REPEAT GEN_TAC THEN C SUBGOAL_THEN CHOOSE_TAC
+    `?k. 1 <= k /\ k <= dimindex(:N) /\ !z:real^N. z$i = z$k`  THENL
+  [REWRITE_TAC[FINITE_INDEX_INRANGE];
+   ASM_SIMP_TAC[vsum; LAMBDA_BETA]]);;
 
 let VSUM_IMAGE = prove
  (`!f g s. FINITE s /\ (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
@@ -2755,6 +2758,49 @@ let MAT_0_COMPONENT = prove
   CHOOSE_TAC THENL [REWRITE_TAC[FINITE_INDEX_INRANGE]; ALL_TAC] THEN
   ASM_SIMP_TAC[mat; COND_ID; LAMBDA_BETA]);;
 
+let MATRIX_ADD_ROW = prove
+ (`!X Y:real^M^N i. (X + Y)$i = X$i + Y$i`,
+  REWRITE_TAC[CART_EQ_FULL; VECTOR_ADD_COMPONENT; MATRIX_ADD_COMPONENT]);;
+
+let MATRIX_SUB_ROW = prove
+ (`!X Y:real^M^N i. (X - Y)$i = X$i - Y$i`,
+  REWRITE_TAC[CART_EQ_FULL; VECTOR_SUB_COMPONENT; MATRIX_SUB_COMPONENT]);;
+
+let MATRIX_NEG_ROW = prove
+  (`!X:real^M^N i. (--X)$i = --(X$i)`,
+  REWRITE_TAC[CART_EQ_FULL; VECTOR_NEG_COMPONENT; MATRIX_NEG_COMPONENT]);;
+
+let MATRIX_CMUL_ROW = prove
+  (`!c X:real^M^N i. (c %% X)$i = c % X$i`,
+  REWRITE_TAC[CART_EQ_FULL; VECTOR_MUL_COMPONENT; MATRIX_CMUL_COMPONENT]);;
+
+let MAT_0_ROW = prove
+ (`mat 0:real^M^N$i = vec 0`,
+  REWRITE_TAC[CART_EQ_FULL; MAT_0_COMPONENT; VEC_COMPONENT]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A decision procedure for matrices analogous to VECTOR_ARITH.              *)
+(* ------------------------------------------------------------------------- *)
+
+let MATRIX_ARITH_TAC =
+  let CART2_EQ_FULL = prove
+   (`!x y:A^M^N. x = y <=> (!i j. x$i$j = y$i$j)`,
+    REWRITE_TAC[CART_EQ_FULL]) in
+  POP_ASSUM_LIST(K ALL_TAC) THEN
+  REPEAT(GEN_TAC ORELSE CONJ_TAC ORELSE DISCH_TAC ORELSE EQ_TAC) THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[IMP_IMP; GSYM CONJ_ASSOC] THEN
+  GEN_REWRITE_TAC ONCE_DEPTH_CONV [CART2_EQ_FULL] THEN
+  REWRITE_TAC[AND_FORALL_THM] THEN TRY EQ_TAC THEN
+  REPEAT((MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) ORELSE GEN_TAC) THEN
+  REWRITE_TAC[TAUT `(a ==> b) /\ (a ==> c) <=> a ==> b /\ c`;
+              TAUT `(a ==> b) \/ (a ==> c) <=> a ==> b \/ c`] THEN
+  TRY(MATCH_MP_TAC(TAUT `(a ==> b ==> c) ==> (a ==> b) ==> (a ==> c)`)) THEN
+  REWRITE_TAC[MATRIX_ADD_COMPONENT; MATRIX_SUB_COMPONENT;
+    MATRIX_NEG_COMPONENT; MATRIX_CMUL_COMPONENT; MAT_0_COMPONENT] THEN
+  REAL_ARITH_TAC;;
+
+let MATRIX_ARITH tm = prove(tm,MATRIX_ARITH_TAC);;
+
 let MAT_CMUL = prove
  (`!a. mat a = &a %% mat 1`,
   SIMP_TAC[CART_EQ; MAT_COMPONENT; MATRIX_CMUL_COMPONENT] THEN
@@ -2770,61 +2816,55 @@ let COLUMN_0 = prove
 
 let MATRIX_CMUL_ASSOC = prove
  (`!a b X:real^M^N. a %% (b %% X) = (a * b) %% X`,
-  SIMP_TAC[CART_EQ; matrix_cmul; LAMBDA_BETA; REAL_MUL_ASSOC]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_CMUL_LID = prove
  (`!X:real^M^N. &1 %% X = X`,
-  SIMP_TAC[CART_EQ; matrix_cmul; LAMBDA_BETA; REAL_MUL_LID]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_SYM = prove
  (`!A:real^N^M B. A + B = B + A`,
-  SIMP_TAC[matrix_add; CART_EQ; LAMBDA_BETA; REAL_ADD_AC]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_ASSOC = prove
  (`!A:real^N^M B C. A + (B + C) = (A + B) + C`,
-  SIMP_TAC[matrix_add; CART_EQ; LAMBDA_BETA; REAL_ADD_AC]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_LID = prove
  (`!A. mat 0 + A = A`,
-  SIMP_TAC[matrix_add; mat; COND_ID; CART_EQ; LAMBDA_BETA; REAL_ADD_LID]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_RID = prove
  (`!A. A + mat 0 = A`,
-  SIMP_TAC[matrix_add; mat; COND_ID; CART_EQ; LAMBDA_BETA; REAL_ADD_RID]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_LNEG = prove
  (`!A. --A + A = mat 0`,
-  SIMP_TAC[matrix_neg; matrix_add; mat; COND_ID;
-           CART_EQ; LAMBDA_BETA; REAL_ADD_LINV]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_RNEG = prove
  (`!A. A + --A = mat 0`,
-  SIMP_TAC[matrix_neg; matrix_add; mat; COND_ID;
-           CART_EQ; LAMBDA_BETA; REAL_ADD_RINV]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_SUB = prove
  (`!A:real^N^M B. A - B = A + --B`,
-  SIMP_TAC[matrix_neg; matrix_add; matrix_sub; CART_EQ; LAMBDA_BETA;
-           real_sub]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_SUB_REFL = prove
  (`!A. A - A = mat 0`,
-  REWRITE_TAC[MATRIX_SUB; MATRIX_ADD_RNEG]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_SUB_EQ = prove
  (`!A B:real^N^M. A - B = mat 0 <=> A = B`,
-  SIMP_TAC[CART_EQ; MAT_COMPONENT;
-           MATRIX_SUB_COMPONENT; COND_ID; REAL_SUB_0]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_SUB_ADD = prove
  (`!A B:real^N^M. (A - B) + B = A`,
-  REWRITE_TAC[CART_EQ; MATRIX_ADD_COMPONENT; MATRIX_SUB_COMPONENT] THEN
-  REAL_ARITH_TAC);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_SUB_ADD2 = prove
  (`!A B:real^N^M. A + (B - A) = B`,
-  REWRITE_TAC[CART_EQ; MATRIX_ADD_COMPONENT; MATRIX_SUB_COMPONENT] THEN
-  REAL_ARITH_TAC);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_LDISTRIB = prove
  (`!A:real^N^M B:real^P^N C. A ** (B + C) = A ** B + A ** C`,
@@ -2892,23 +2932,19 @@ let MATRIX_MUL_RMUL = prove
 
 let MATRIX_CMUL_ADD_LDISTRIB = prove
  (`!A:real^N^M B c. c %% (A + B) = c %% A + c %% B`,
-  SIMP_TAC[matrix_cmul; matrix_add; CART_EQ; LAMBDA_BETA] THEN
-  REWRITE_TAC[REAL_ADD_LDISTRIB]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_CMUL_SUB_LDISTRIB = prove
  (`!A:real^N^M B c. c %% (A - B) = c %% A - c %% B`,
-  SIMP_TAC[matrix_cmul; matrix_sub; CART_EQ; LAMBDA_BETA] THEN
-  REWRITE_TAC[REAL_SUB_LDISTRIB]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_CMUL_ADD_RDISTRIB = prove
  (`!A:real^N^M b c. (b + c) %% A = b %% A + c %% A`,
-  SIMP_TAC[matrix_cmul; matrix_add; CART_EQ; LAMBDA_BETA] THEN
-  REWRITE_TAC[REAL_ADD_RDISTRIB]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_CMUL_SUB_RDISTRIB = prove
  (`!A:real^N^M b c. (b - c) %% A = b %% A - c %% A`,
-  SIMP_TAC[matrix_cmul; matrix_sub; CART_EQ; LAMBDA_BETA] THEN
-  REWRITE_TAC[REAL_SUB_RDISTRIB]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_CMUL_RZERO = prove
  (`!c. c %% mat 0 = mat 0`,
@@ -2920,39 +2956,37 @@ let MATRIX_CMUL_LZERO = prove
 
 let MATRIX_NEG_MINUS1 = prove
  (`!A:real^N^M. --A = --(&1) %% A`,
-  REWRITE_TAC[matrix_cmul; matrix_neg; CART_EQ; LAMBDA_BETA] THEN
-  REWRITE_TAC[GSYM REAL_NEG_MINUS1]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_ADD_AC = prove
  (`(A:real^N^M) + B = B + A /\
    (A + B) + C = A + (B + C) /\
    A + (B + C) = B + (A + C)`,
-  MESON_TAC[MATRIX_ADD_ASSOC; MATRIX_ADD_SYM]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_NEG_ADD = prove
  (`!A B:real^N^M. --(A + B) = --A + --B`,
-  SIMP_TAC[matrix_neg; matrix_add; CART_EQ; LAMBDA_BETA; REAL_NEG_ADD]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_NEG_SUB = prove
  (`!A B:real^N^M. --(A - B) = B - A`,
-  SIMP_TAC[matrix_neg; matrix_sub; CART_EQ; LAMBDA_BETA; REAL_NEG_SUB]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_NEG_0 = prove
  (`--(mat 0) = mat 0`,
-  SIMP_TAC[CART_EQ; mat; matrix_neg; LAMBDA_BETA; REAL_NEG_0; COND_ID]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_SUB_RZERO = prove
  (`!A:real^N^M. A - mat 0 = A`,
-  SIMP_TAC[CART_EQ; mat; matrix_sub; LAMBDA_BETA; REAL_SUB_RZERO; COND_ID]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_SUB_LZERO = prove
  (`!A:real^N^M. mat 0 - A = --A`,
-  SIMP_TAC[CART_EQ; mat; matrix_sub; matrix_neg;
-           LAMBDA_BETA; REAL_SUB_LZERO; COND_ID]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_NEG_EQ_0 = prove
  (`!A:real^N^M. --A = mat 0 <=> A = mat 0`,
-  SIMP_TAC[CART_EQ; matrix_neg; mat; LAMBDA_BETA; REAL_NEG_EQ_0; COND_ID]);;
+  MATRIX_ARITH_TAC);;
 
 let MATRIX_VECTOR_MUL_ASSOC = prove
  (`!A:real^N^M B:real^P^N x:real^P. A ** B ** x = (A ** B) ** x`,
@@ -4253,6 +4287,18 @@ let PASTECART_EQ_VEC = prove
  (`!x y n. pastecart x y = vec n <=> x = vec n /\ y = vec n`,
   REWRITE_TAC[PASTECART_EQ; FSTCART_VEC; SNDCART_VEC;
               FSTCART_PASTECART; SNDCART_PASTECART]);;
+
+let FSTCART_SNDCART_MAT_ZERO = prove
+ (`fstcart(mat 0:real^M^(A,B)finite_sum) = mat 0 /\
+   sndcart(mat 0:real^M^(A,B)finite_sum) = mat 0`,
+  SIMP_TAC[CART_EQ; FSTCART_COMPONENT; SNDCART_COMPONENT; MAT_0_ROW]);;
+
+let FSTCART_SNDCART_MATRIX_ADD = prove
+ (`!x:real^K^(M,N)finite_sum y.
+     fstcart(x + y) = fstcart(x) + fstcart(y) /\
+     sndcart(x + y) = sndcart(x) + sndcart(y)`,
+  SIMP_TAC[CART_EQ; FSTCART_COMPONENT; SNDCART_COMPONENT;
+           MATRIX_ADD_COMPONENT]);;
 
 let NORM_FSTCART = prove
  (`!x. norm(fstcart x) <= norm x`,

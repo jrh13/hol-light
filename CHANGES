@@ -8,6 +8,47 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  2nd Feb 2019       Multivariate/vectors.ml, Multivariate/msum.ml [new file]
+
+Added a lot of new material, mainly about matrices, from Andrea Gabrielli
+and Marco Maggesi.
+
+In the core "Multivariate/vectors.ml" file are several new theorems and
+also a linear decision procedure for matrix equations (MATRIX_ARITH and
+MATRIX_ARITH_TAC), which is now used to derive many of the basic matrix
+lemmas automatically. Also incompatibly changed VSUM_COMPONENT to their
+improved version, with no range conditions on the indices.
+
+The new file "Multivariate/msum.ml" defines sums of matrices over indexing
+sets ("msum"), with a large suite of natural properties. It also contains a
+definition of "matrix_norm" (= the usual Euclidean norm of the "flattened"
+form).
+
+Sat  2nd Feb 2019       cart.ml
+
+Added three new theorems about the Cartesian variant of products,
+from Andrea Gabrielli and Marco Maggesi:
+
+  FSTCART_COMPONENT =
+    |- !x i. 1 <= i /\ i <= dimindex(:M) ==> fstcart x$i = x$i
+
+  SNDCART_COMPONENT =
+    |- !x i. 1 <= i /\ i <= dimindex(:N) ==> sndcart x$i = x$(i + dimindex(:M))
+
+  PASTECART_COMPONENT =
+    |- (!u v i. 1 <= i /\ i <= dimindex(:M) ==> pastecart u v$i = u$i) /\
+       (!u v i.
+            dimindex(:M) + 1 <= i /\ i <= dimindex(:M) + dimindex(:N)
+            ==> pastecart u v$i = v$(i - dimindex(:M)))
+
+Tue 29th Jan 2019       int.ml
+
+Added a simple but sometimes useful theorem that one can pick an integer
+congruence solution in a canonical range:
+
+  INT_CONG_SOLVE_BOUNDS =
+    |- !a n. ~(n = &0) ==> (?x. &0 <= x /\ x < abs n /\ (x == a) (mod n))
+
 Thu 17th Jan 2019       arith.ml
 
 Added a slight generalization of MOD_ADD_CASES:
