@@ -770,9 +770,11 @@ let rec choose t =
 (* Install a trivial printer for the general polymorphic case.               *)
 (* ------------------------------------------------------------------------- *)
 
-let print_fpf (f:('a,'b)func) = Format.print_string "<func>";;
+let pp_print_fpf fmt (f:('a,'b)func) = Format.pp_print_string fmt "<func>";;
 
-#install_printer print_fpf;;
+let print_fpf = pp_print_fpf Format.std_formatter;;
+
+#install_printer pp_print_fpf;;
 
 (* ------------------------------------------------------------------------- *)
 (* Set operations parametrized by equality (from Steven Obua).               *)
