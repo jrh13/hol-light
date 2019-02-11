@@ -7,14 +7,14 @@ Print a finite partial function.
 
 \DESCRIBE
 This prints a finite partial function but only as a trivial string `{<func>}'.
-Installed automatically at the top level and probably not useful for most 
+Installed automatically at the top level and probably not useful for most
 users.
 
 \FAILURE
 Never fails.
 
 \SEEALSO
-|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
-graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr,
+graph, is_undefined, mapf, pp_print_fpf, ran, tryapplyd, undefine, undefined.
 
 \ENDDOC

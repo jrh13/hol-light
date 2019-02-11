@@ -3177,18 +3177,16 @@ let FINITE_RESTRICTED_FUNSPACE = prove
 (* Set of numbers is infinite.                                               *)
 (* ------------------------------------------------------------------------- *)
 
+let NUMSEG_CLAUSES_LT = prove
+ (`{i | i < 0} = {} /\
+   (!k. {i | i < SUC k} = k INSERT {i | i < k})`,
+  REWRITE_TAC[LT] THEN SET_TAC[]);;
+
 let HAS_SIZE_NUMSEG_LT = prove
  (`!n. {m | m < n} HAS_SIZE n`,
-  INDUCT_TAC THENL
-   [SUBGOAL_THEN `{m | m < 0} = {}`
-       (fun th -> REWRITE_TAC[HAS_SIZE_0; th]) THEN
-    REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_ELIM_THM; LT];
-    SUBGOAL_THEN `{m | m < SUC n} = n INSERT {m | m < n}` SUBST1_TAC THENL
-     [REWRITE_TAC[EXTENSION; IN_ELIM_THM; IN_INSERT] THEN ARITH_TAC;
-      ALL_TAC] THEN
-    RULE_ASSUM_TAC(REWRITE_RULE[HAS_SIZE]) THEN
-    ASM_SIMP_TAC[HAS_SIZE; CARD_CLAUSES; FINITE_INSERT] THEN
-    REWRITE_TAC[IN_ELIM_THM; LT_REFL]]);;
+  REWRITE_TAC[HAS_SIZE] THEN INDUCT_TAC THEN
+  ASM_SIMP_TAC[NUMSEG_CLAUSES_LT; FINITE_EMPTY; CARD_CLAUSES; FINITE_INSERT;
+               IN_ELIM_THM; LT_REFL]);;
 
 let CARD_NUMSEG_LT = prove
  (`!n. CARD {m | m < n} = n`,
@@ -3197,6 +3195,11 @@ let CARD_NUMSEG_LT = prove
 let FINITE_NUMSEG_LT = prove
  (`!n:num. FINITE {m | m < n}`,
   REWRITE_TAC[REWRITE_RULE[HAS_SIZE] HAS_SIZE_NUMSEG_LT]);;
+
+let NUMSEG_CLAUSES_LE = prove
+ (`{i | i <= 0} = {0} /\
+   (!k. {i | i <= SUC k} = SUC k INSERT {i | i <= k})`,
+  REWRITE_TAC[LE] THEN SET_TAC[]);;
 
 let HAS_SIZE_NUMSEG_LE = prove
  (`!n. {m | m <= n} HAS_SIZE (n + 1)`,

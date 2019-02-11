@@ -795,6 +795,24 @@ let ITERATE_CLAUSES_NUMSEG = prove
   REWRITE_TAC[ARITH_RULE `~(SUC n <= n)`; NOT_IN_EMPTY] THEN
   ASM_MESON_TAC[monoidal]);;
 
+let ITERATE_CLAUSES_NUMSEG_LT = prove
+ (`!op. monoidal op
+        ==> iterate op {i | i < 0} f = neutral op /\
+            (!k. iterate op {i | i < SUC k} f =
+                 op (iterate op {i | i < k} f) (f k))`,
+  SIMP_TAC[NUMSEG_CLAUSES_LT; ITERATE_CLAUSES; FINITE_NUMSEG_LT] THEN
+  REWRITE_TAC[IN_ELIM_THM; LT_REFL; monoidal] THEN MESON_TAC[]);;
+
+let ITERATE_CLAUSES_NUMSEG_LE = prove
+ (`!op. monoidal op
+        ==> iterate op {i | i <= 0} f = f 0 /\
+            (!k. iterate op {i | i <= SUC k} f =
+                 op (iterate op {i | i <= k} f) (f(SUC k)))`,
+  SIMP_TAC[NUMSEG_CLAUSES_LE; ITERATE_CLAUSES;
+           FINITE_NUMSEG_LE; ITERATE_SING] THEN
+  REWRITE_TAC[monoidal; IN_ELIM_THM; ARITH_RULE `~(SUC k <= k)`] THEN
+  MESON_TAC[]);;
+
 let ITERATE_PAIR = prove
  (`!op. monoidal op
         ==> !f m n. iterate op (2*m..2*n+1) f =
@@ -1365,6 +1383,18 @@ let NSUM_CLAUSES_NUMSEG = prove
    (!m n. nsum(m..SUC n) f = if m <= SUC n then nsum(m..n) f + f(SUC n)
                              else nsum(m..n) f)`,
   MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG MONOIDAL_ADD) THEN
+  REWRITE_TAC[NEUTRAL_ADD; nsum]);;
+
+let NSUM_CLAUSES_NUMSEG_LT = prove
+ (`nsum {i | i < 0} f = 0 /\
+   (!k. nsum {i | i < SUC k} f = nsum {i | i < k} f + f k)`,
+  MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG_LT MONOIDAL_ADD) THEN
+  REWRITE_TAC[NEUTRAL_ADD; nsum]);;
+
+let NSUM_CLAUSES_NUMSEG_LE = prove
+ (`nsum {i | i <= 0} f = f 0 /\
+   (!k. nsum {i | i <= SUC k} f = nsum {i | i <= k} f + f(SUC k))`,
+  MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG_LE MONOIDAL_ADD) THEN
   REWRITE_TAC[NEUTRAL_ADD; nsum]);;
 
 let NSUM_SWAP_NUMSEG = prove
@@ -2150,6 +2180,18 @@ let SUM_CLAUSES_NUMSEG = prove
    (!m n. sum(m..SUC n) f = if m <= SUC n then sum(m..n) f + f(SUC n)
                             else sum(m..n) f)`,
   MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG MONOIDAL_REAL_ADD) THEN
+  REWRITE_TAC[NEUTRAL_REAL_ADD; sum]);;
+
+let SUM_CLAUSES_NUMSEG_LT = prove
+ (`sum {i | i < 0} f = &0 /\
+   (!k. sum {i | i < SUC k} f = sum {i | i < k} f + f k)`,
+  MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG_LT MONOIDAL_REAL_ADD) THEN
+  REWRITE_TAC[NEUTRAL_REAL_ADD; sum]);;
+
+let SUM_CLAUSES_NUMSEG_LE = prove
+ (`sum {i | i <= 0} f = f 0 /\
+   (!k. sum {i | i <= SUC k} f = sum {i | i <= k} f + f(SUC k))`,
+  MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG_LE MONOIDAL_REAL_ADD) THEN
   REWRITE_TAC[NEUTRAL_REAL_ADD; sum]);;
 
 let SUM_SWAP_NUMSEG = prove

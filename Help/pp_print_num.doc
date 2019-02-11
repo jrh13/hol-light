@@ -1,0 +1,23 @@
+\DOC pp_print_num
+
+\TYPE {pp_print_num : Format.formatter -> num -> unit}
+
+\SYNOPSIS
+Print an arbitrary-precision number to the given formatter.
+
+\DESCRIBE
+This function prints an arbitrary-precision (type {num}) number to the
+formatter given as first argument. It is automatically invoked on anything of
+type {num} at the toplevel anyway, but it may sometimes be useful to issue it
+under user control.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+The usual case where the formatter is the standard output is {print_num}.
+
+\SEEALSO
+print_num.
+
+\ENDDOC

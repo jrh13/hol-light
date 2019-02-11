@@ -85,6 +85,7 @@ EXTENDED_EXAMPLES:=\
 	Multivariate/geom \
 	Multivariate/homology \
 	Multivariate/lpspaces \
+	Multivariate/msum \
 	Multivariate/tarski \
 	RichterHilbertAxiomGeometry/Topology \
 	RichterHilbertAxiomGeometry/TarskiAxiomGeometry_read \

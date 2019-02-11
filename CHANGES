@@ -8,6 +8,64 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  9th Feb 2019       compute.ml [new file]
+
+Added a new file from Alexey Solovyev containing tools for doing ML-style
+call-by-value reduction of terms by inference inside the logic. This is a port
+of the HOL4 "computeLib" library originally developed by Bruno Barras
+(see "Programming and Computing in HOL", TPHOLs 2000).
+
+Wed  6th Feb 2019       lib.ml, parser.ml, printer.ml, system.ml, tactics.ml, Help/print_num.doc [new file], Help/pp_print_num.doc [new file]
+
+Made several fixes from pull requests prepared by Alexey Solovyev. Made the
+parser error messages a bit more explicit (based on local code in Flyspeck by
+Tom Hales). Fixed some cases where printing functions were not properly
+parametrized by the formatter, with new functions "pp_print_num" and
+"pp_print_fpf" that are used to print nums and finite partial functions, plus
+proper use of the pre-existing parametrized form for types, terms, theorems,
+goals and goalstacks in the #install_printer directives.
+
+Wed  6th Feb 2019       sets.ml
+
+Added a couple of trivial but handy clausal theorems about initial number
+segments:
+
+  NUMSEG_CLAUSES_LT =
+    |- {i | i < 0} = {} /\ (!k. {i | i < SUC k} = k INSERT {i | i < k})
+
+  NUMSEG_CLAUSES_LE =
+    |- {i | i <= 0} = {0} /\ (!k. {i | i <= SUC k} = SUC k INSERT {i | i <= k})
+
+and some corresponding clauses for sums and other iterated operations:
+
+  ITERATE_CLAUSES_NUMSEG_LE =
+    |- !op. monoidal op
+            ==> iterate op {i | i <= 0} f = f 0 /\
+                (!k. iterate op {i | i <= SUC k} f =
+                     op (iterate op {i | i <= k} f) (f (SUC k)))
+
+  ITERATE_CLAUSES_NUMSEG_LT =
+    |- !op. monoidal op
+            ==> iterate op {i | i < 0} f = neutral op /\
+                (!k. iterate op {i | i < SUC k} f =
+                     op (iterate op {i | i < k} f) (f k))
+
+  NSUM_CLAUSES_NUMSEG_LE =
+    |- nsum {i | i <= 0} f = f 0 /\
+       (!k. nsum {i | i <= SUC k} f = nsum {i | i <= k} f + f (SUC k))
+
+  NSUM_CLAUSES_NUMSEG_LT =
+    |- nsum {i | i < 0} f = 0 /\
+       (!k. nsum {i | i < SUC k} f = nsum {i | i < k} f + f k)
+
+  SUM_CLAUSES_NUMSEG_LE =
+    |- sum {i | i <= 0} f = f 0 /\
+       (!k. sum {i | i <= SUC k} f = sum {i | i <= k} f + f (SUC k))
+
+  SUM_CLAUSES_NUMSEG_LT =
+    |- sum {i | i < 0} f = &0 /\
+       (!k. sum {i | i < SUC k} f = sum {i | i < k} f + f k)
+
 Sat  2nd Feb 2019       Multivariate/vectors.ml, Multivariate/msum.ml [new file]
 
 Added a lot of new material, mainly about matrices, from Andrea Gabrielli

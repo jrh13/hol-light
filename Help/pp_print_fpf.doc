@@ -1,0 +1,23 @@
+\DOC pp_print_fpf
+
+\TYPE {pp_print_fpf : Format.formatter -> ('a, 'b) func -> unit}
+
+\SYNOPSIS
+Print a finite partial function to a formatter.
+
+\DESCRIBE
+This prints a finite partial function but only as a trivial string `{<func>}',
+to the given formatter. Installed automatically at the top level and probably
+not useful for most users.
+
+\FAILURE
+Never fails.
+
+\COMMENTS
+The usual case where the formatter is the standard output is {print_fpf}.
+
+\SEEALSO
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr,
+graph, is_undefined, mapf, print_fpf, ran, tryapplyd, undefine, undefined.
+
+\ENDDOC

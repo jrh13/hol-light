@@ -137,6 +137,7 @@ loads "impconv.ml";;    (* More powerful implicational rewriting etc.        *)
 (* ------------------------------------------------------------------------- *)
 
 loads "pair.ml";;       (* Theory of pairs                                   *)
+loads "compute.ml";;    (* General call-by-value reduction tool for terms    *)
 loads "nums.ml";;       (* Axiom of Infinity, definition of natural numbers  *)
 loads "recursion.ml";;  (* Tools for primitive recursion on inductive types  *)
 loads "arith.ml";;      (* Natural number arithmetic                         *)
