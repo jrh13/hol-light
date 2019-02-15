@@ -8,3 +8,5 @@ update_database.ml
 
 facts.lst
 proofs
+theorems
+holstep-generate
