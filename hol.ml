@@ -121,6 +121,7 @@ loads "tactics.ml";;    (* Tactics, tacticals and goal stack                 *)
 loads "itab.ml";;       (* Toy prover for intuitionistic logic               *)
 loads "simp.ml";;       (* Basic rewriting and simplification tools          *)
 loads "theorems.ml";;   (* Additional theorems (mainly for quantifiers) etc. *)
+(*
 loads "ind_defs.ml";;   (* Derived rules for inductive definitions           *)
 loads "class.ml";;      (* Classical reasoning: Choice and Extensionality    *)
 loads "trivia.ml";;     (* Some very basic theories, e.g. type ":1"          *)
@@ -131,7 +132,9 @@ loads "metis.ml";;      (* More advanced first-order automation: Metis       *)
 loads "thecops.ml";;    (* Connection-based automation: leanCoP and nanoCoP  *)
 loads "quot.ml";;       (* Derived rules for defining quotient types         *)
 loads "impconv.ml";;    (* More powerful implicational rewriting etc.        *)
+*)
 
+(*
 (* ------------------------------------------------------------------------- *)
 (* Mathematical theories and additional proof tools.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -164,3 +167,4 @@ loads "define.ml";;     (* Support for general recursive definitions         *)
 
 loads "help.ml";;       (* Online help using the entries in Help directory   *)
 loads "database.ml";;   (* List of name-theorem pairs for search system      *)
+*)
