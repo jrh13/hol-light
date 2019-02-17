@@ -3,9 +3,10 @@
 (* ========================================================================= *)
 
 needs "Multivariate/complexes.ml";;
+needs "Multivariate/msum.ml";;
 
 (* ------------------------------------------------------------------------- *)
-(* Powers of a square matrix (mpow) and sums of matrices (msum).             *)
+(* Powers of a square matrix (mpow).                                         *)
 (* ------------------------------------------------------------------------- *)
 
 parse_as_infix("mpow",(24,"left"));;
@@ -13,118 +14,6 @@ parse_as_infix("mpow",(24,"left"));;
 let mpow = define
   `(!A:real^N^N. A mpow 0 = (mat 1 :real^N^N)) /\
    (!A:real^N^N n. A mpow (SUC n) = A ** A mpow n)`;;
-
-let msum = new_definition
- `msum = iterate (matrix_add)`;;
-
-let NEUTRAL_MATRIX_ADD = prove
- (`neutral((+):real^N^M->real^N^M->real^N^M) = mat 0`,
-  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  MESON_TAC[MATRIX_ADD_RID; MATRIX_ADD_LID]);;
-
-let MONOIDAL_MATRIX_ADD = prove
- (`monoidal((+):real^N^M->real^N^M->real^N^M)`,
-  REWRITE_TAC[monoidal; NEUTRAL_MATRIX_ADD] THEN
-  REWRITE_TAC[MATRIX_ADD_LID; MATRIX_ADD_ASSOC] THEN
-  REWRITE_TAC[MATRIX_ADD_SYM]);;
-
-let MSUM_CLAUSES = prove
- (`(!(f:A->real^N^M). msum {} f = mat 0) /\
-   (!x (f:A->real^N^M) s.
-        FINITE(s)
-        ==> (msum (x INSERT s) f =
-             if x IN s then msum s f else f(x) + msum s f))`,
-  REWRITE_TAC[msum; GSYM NEUTRAL_MATRIX_ADD] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_MATRIX_ADD]);;
-
-let MSUM_MATRIX_RMUL = prove
- (`!(f:A->real^N^M) (A:real^P^N) s.
-        FINITE s ==> msum s (\i. f(i) ** A) = msum s f ** A`,
-  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[MSUM_CLAUSES; MATRIX_MUL_LZERO; MATRIX_ADD_RDISTRIB]);;
-
-let MSUM_MATRIX_LMUL = prove
- (`!(f:A->real^P^N) (A:real^N^M) s.
-        FINITE s ==> msum s (\i. A ** f(i)) = A ** msum s f`,
-  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[MSUM_CLAUSES; MATRIX_MUL_RZERO; MATRIX_ADD_LDISTRIB]);;
-
-let MSUM_ADD = prove
- (`!f g s. FINITE s ==> (msum s (\x. f(x) + g(x)) = msum s f + msum s g)`,
-  SIMP_TAC[msum; ITERATE_OP; MONOIDAL_MATRIX_ADD]);;
-
-let MSUM_CMUL = prove
- (`!(f:A->real^N^M) c s.
-        FINITE s ==>  msum s (\i. c %% f(i)) = c %% msum s f`,
-  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[MSUM_CLAUSES; MATRIX_CMUL_ADD_LDISTRIB; MATRIX_CMUL_RZERO]);;
-
-let MSUM_NEG = prove
- (`!(f:A->real^N^M) s.
-        FINITE s ==>  msum s (\i. --(f(i))) = --(msum s f)`,
-  ONCE_REWRITE_TAC[MATRIX_NEG_MINUS1] THEN
-  REWRITE_TAC[MSUM_CMUL]);;
-
-let MSUM_SUB = prove
- (`!f g s. FINITE s ==> (msum s (\x. f(x) - g(x)) = msum s f - msum s g)`,
-  REWRITE_TAC[MATRIX_SUB; MATRIX_NEG_MINUS1] THEN
-  SIMP_TAC[MSUM_ADD; MSUM_CMUL]);;
-
-let MSUM_CLAUSES_LEFT = prove
- (`!f m n. m <= n ==> msum(m..n) f = f(m) + msum(m+1..n) f`,
-  SIMP_TAC[GSYM NUMSEG_LREC; MSUM_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
-  ARITH_TAC);;
-
-let MSUM_SUPPORT = prove
- (`!f s. msum (support (+) f s) f = msum s f`,
-  SIMP_TAC[msum; iterate; SUPPORT_SUPPORT]);;
-
-let MSUM_EQ = prove
- (`!f g s. (!x. x IN s ==> (f x = g x)) ==> (msum s f = msum s g)`,
-  REWRITE_TAC[msum] THEN
-  MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_MATRIX_ADD]);;
-
-let MSUM_RESTRICT_SET = prove
- (`!P s f. msum {x:A | x IN s /\ P x} f =
-           msum s (\x. if P x then f(x) else mat 0)`,
-  REWRITE_TAC[msum; GSYM NEUTRAL_MATRIX_ADD] THEN
-  MATCH_MP_TAC ITERATE_RESTRICT_SET THEN REWRITE_TAC[MONOIDAL_MATRIX_ADD]);;
-
-let MSUM_SING = prove
- (`!f x. msum {x} f = f(x)`,
-  SIMP_TAC[MSUM_CLAUSES; FINITE_RULES; NOT_IN_EMPTY; MATRIX_ADD_RID]);;
-
-let MSUM_IMAGE = prove
- (`!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
-           ==> (msum (IMAGE f s) g = msum s (g o f))`,
-  REWRITE_TAC[msum; GSYM NEUTRAL_MATRIX_ADD] THEN
-  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_MATRIX_ADD]);;
-
-let MSUM_OFFSET = prove
- (`!p f m n. msum(m+p..n+p) f = msum(m..n) (\i. f(i + p))`,
-  SIMP_TAC[NUMSEG_OFFSET_IMAGE; MSUM_IMAGE; EQ_ADD_RCANCEL; FINITE_NUMSEG] THEN
-  REWRITE_TAC[o_DEF]);;
-
-let MSUM_COMPONENT = prove
- (`!f:A->real^N^M i j s.
-        1 <= i /\ i <= dimindex(:M) /\
-        1 <= j /\ j <= dimindex(:N) /\
-        FINITE s
-        ==> (msum s f)$i$j = sum s (\a. f(a)$i$j)`,
-  REPLICATE_TAC 3 GEN_TAC THEN
-  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
-  REPEAT DISCH_TAC THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[MSUM_CLAUSES; SUM_CLAUSES] THEN
-  ASM_SIMP_TAC[MATRIX_ADD_COMPONENT; MAT_COMPONENT; COND_ID]);;
-
-let MSUM_CLAUSES_NUMSEG = prove
- (`(!m. msum(m..0) f = if m = 0 then f(0) else mat 0) /\
-   (!m n. msum(m..SUC n) f = if m <= SUC n then msum(m..n) f + f(SUC n)
-                             else msum(m..n) f)`,
-  REWRITE_TAC[MATCH_MP ITERATE_CLAUSES_NUMSEG MONOIDAL_MATRIX_ADD;
-              NEUTRAL_MATRIX_ADD; msum]);;
 
 let MPOW_ADD = prove
  (`!A:real^N^N m n. A mpow (m + n) = A mpow m ** A mpow n`,
@@ -415,7 +304,7 @@ let MATRIC_CHARPOLY_DIFFERENCE = prove
       REWRITE_TAC[GSYM MSUM_RESTRICT_SET; IN_NUMSEG] THEN
       REWRITE_TAC[numseg; ARITH_RULE
        `(0 <= i /\ i <= n) /\ i <= n - 1 <=> 0 <= i /\ i <= n - 1`];
-      SIMP_TAC[GSYM MSUM_CMUL; FINITE_NUMSEG; MATRIX_CMUL_ASSOC] THEN
+      SIMP_TAC[GSYM MSUM_LMUL; FINITE_NUMSEG; MATRIX_CMUL_ASSOC] THEN
       REWRITE_TAC[REAL_MUL_SYM]]]);;
 
 let CAYLEY_HAMILTON = prove

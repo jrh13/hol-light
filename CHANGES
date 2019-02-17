@@ -8,6 +8,16 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon 11th Feb 2019       Multivariate/msum.ml, 100/cayley_hamilton.ml
+
+Eliminated most of the ad hoc collection of material about matrix sums in the
+old Cayley-Hamilton proof and instead just included the more general
+development "Multivariate/msum.ml". But also merged a few things from the
+Cayley-Hamilton proof into there: MSUM_MATRIX_LMUL, MSUM_MATRIX_RMUL and
+switched to a sharper form of MSUM_IMAGE without a finiteness assumption, as
+well as renaming the old MSUM_SUPPORT to MSUM_SUPPORT_EXPLICIT, making room for
+a new version of MSUM_SUPPORT actually using the "support" constant.
+
 Sat  9th Feb 2019       compute.ml [new file]
 
 Added a new file from Alexey Solovyev containing tools for doing ML-style

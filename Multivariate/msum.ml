@@ -97,12 +97,26 @@ let MSUM_CONST = prove
   REWRITE_TAC[CART_EQ_FULL; MSUM_COMPONENT; MATRIX_CMUL_COMPONENT] THEN
   SIMP_TAC[SUM_CONST]);;
 
+let MSUM_MATRIX_RMUL = prove
+ (`!(f:A->real^N^M) (A:real^P^N) s.
+        FINITE s ==> msum s (\i. f(i) ** A) = msum s f ** A`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[MSUM_CLAUSES; MATRIX_MUL_LZERO; MATRIX_ADD_RDISTRIB]);;
+
+let MSUM_MATRIX_LMUL = prove
+ (`!(f:A->real^P^N) (A:real^N^M) s.
+        FINITE s ==> msum s (\i. A ** f(i)) = A ** msum s f`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[MSUM_CLAUSES; MATRIX_MUL_RZERO; MATRIX_ADD_LDISTRIB]);;
+
 let MSUM_IMAGE = prove
- (`!f:A->B g:B->real^M^N s.
-     FINITE s /\ (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
-     ==> (msum (IMAGE f s) g = msum s (g o f))`,
-  REWRITE_TAC[CART_EQ_FULL; MSUM_COMPONENT] THEN REPEAT STRIP_TAC THEN
-  POP_ASSUM (fun th -> REWRITE_TAC[MATCH_MP SUM_IMAGE th; o_DEF]));;
+ (`!(f:A->B) (g:B->real^M^N) s. 
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> msum (IMAGE f s) g = msum s (g o f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CART_EQ_FULL; MSUM_COMPONENT] THEN
+  REPEAT GEN_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) SUM_IMAGE o lhand o snd) THEN
+  ASM_REWRITE_TAC[o_DEF]);;
 
 let MSUM_UNION = prove
  (`!f:A->real^M^N s t.
@@ -146,16 +160,20 @@ let MSUM_SUPERSET = prove
   REWRITE_TAC[CART_EQ_FULL; MSUM_COMPONENT; MAT_0_COMPONENT] THEN
   SIMP_TAC[SUM_SUPERSET]);;
 
-let MSUM_SUPPORT = prove
+let MSUM_SUPPORT_EXPLICIT = prove
  (`!f:A->real^M^N s. msum {x | x IN s /\ ~(f x = mat 0)} f = msum s f`,
   REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC MSUM_SUPERSET THEN
   SET_TAC[]);;
+
+let MSUM_SUPPORT = prove
+ (`!f s. msum (support (+) f s) f = msum s f`,
+  SIMP_TAC[support; NEUTRAL_MATRIX_ADD; MSUM_SUPPORT_EXPLICIT]);;
 
 let MSUM_UNIV = prove
  (`!f:A->real^M^N s.
      support (+) f (:A) SUBSET s ==> msum s f = msum (:A) f`,
   REWRITE_TAC[support; NEUTRAL_MATRIX_ADD] THEN REPEAT STRIP_TAC THEN
-  ONCE_REWRITE_TAC[GSYM MSUM_SUPPORT] THEN
+  ONCE_REWRITE_TAC[GSYM MSUM_SUPPORT_EXPLICIT] THEN
   AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
 
 let MSUM_EQ_SUPERSET = prove
