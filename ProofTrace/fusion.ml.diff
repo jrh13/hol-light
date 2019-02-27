@@ -1,5 +1,5 @@
 diff --git a/fusion.ml b/fusion.ml
-index a08ad1c..791bb4a 100644
+index a08ad1c..a6158cf 100644
 --- a/fusion.ml
 +++ b/fusion.ml
 @@ -23,6 +23,23 @@ module type Hol_kernel =
@@ -45,7 +45,7 @@ index a08ad1c..791bb4a 100644
 +  type thm = Sequent of (term list * term * int)
 +
 +(*---------------------------------------------------------------------------*)
-+(* Proof tracing implementation and storage.                                 *) 
++(* Proof tracing implementation and storage.                                 *)
 +(*---------------------------------------------------------------------------*)
 +  type proof =
 +    Proof of (int * thm * proof_content)
