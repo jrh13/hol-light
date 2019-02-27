@@ -91,4 +91,7 @@ associated proofs).
 # dump_theorems "ProofTrace/prooftrace.theorems";;
 # dump_proofs "ProofTrace/prooftrace.proofs";;
 # dump_names "ProofTrace/prooftrace.names";;
+
+(* Each of these steps may take a while. The generated files for a fresh *)
+(* hol.ml context is generally 8GB large. *)
 ```
