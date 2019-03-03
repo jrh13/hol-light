@@ -8,6 +8,92 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  1st Mar 2019       Library/floor.ml
+
+Added a simple theorem relating integer-valued reals and the integer type: 
+
+  IMAGE_REAL_OF_INT_UNIV = 
+    |- IMAGE real_of_int (:int) = integer
+
+Wed 27th Feb 2019       int.ml
+
+Added a definition of "real_zpow" (just "zpow" for short in the interface map),
+real numbers to integer powers, with some basic lemmas. While trivial, this is
+sometimes much more natural than forcing the use of natural number indices.
+
+  real_zpow =
+    |- !z i.
+           z zpow i =
+           (if &0 <= i
+            then z pow num_of_int i
+            else inv (z pow num_of_int (--i)))
+
+  REAL_ABS_ZPOW =
+    |- !x n. abs (x zpow n) = abs x zpow n
+
+  REAL_INV_ZPOW =
+    |- !x n. inv (x zpow n) = inv x zpow n
+
+  REAL_POW_ZPOW =
+    |- !x n. x pow n = x zpow &n
+
+  REAL_SGN_ZPOW =
+    |- !x n. real_sgn (x zpow n) = real_sgn x zpow n
+
+  REAL_ZPOW_0 =
+    |- !x. x zpow &0 = &1
+
+  REAL_ZPOW_1 =
+    |- !x. x zpow &1 = x
+
+  REAL_ZPOW_2 =
+    |- !x. x zpow &2 = x * x
+
+  REAL_ZPOW_ADD =
+    |- !x m n. ~(x = &0) ==> x zpow (m + n) = x zpow m * x zpow n
+
+  REAL_ZPOW_DIV =
+    |- !x y n. (x / y) zpow n = x zpow n / y zpow n
+
+  REAL_ZPOW_EQ_0 =
+    |- !x n. x zpow n = &0 <=> x = &0 /\ ~(n = &0)
+
+  REAL_ZPOW_INV =
+    |- !x n. inv x zpow n = inv (x zpow n)
+
+  REAL_ZPOW_LE =
+    |- !x n. &0 <= x ==> &0 <= x zpow n
+
+  REAL_ZPOW_LT =
+    |- !x n. &0 < x ==> &0 < x zpow n
+
+  REAL_ZPOW_MINUS1 =
+    |- !x. x zpow -- &1 = inv x
+
+  REAL_ZPOW_MUL =
+    |- !x y n. (x * y) zpow n = x zpow n * y zpow n
+
+  REAL_ZPOW_NEG =
+    |- !x n. x zpow --n = inv (x zpow n)
+
+  REAL_ZPOW_NUM =
+    |- !x n. x zpow &n = x pow n
+
+  REAL_ZPOW_ONE =
+    |- !n. &1 zpow n = &1
+
+  REAL_ZPOW_POW =
+    |- (!x n. x zpow &n = x pow n) /\ (!x n. x zpow -- &n = inv (x pow n))
+
+  REAL_ZPOW_SUB =
+    |- !x m n. ~(x = &0) ==> x zpow (m - n) = x zpow m / x zpow n
+
+  REAL_ZPOW_ZERO =
+    |- !n. &0 zpow n = (if n = &0 then &1 else &0)
+
+  REAL_ZPOW_ZPOW =
+    |- !x m n. x zpow m zpow n = x zpow (m * n)
+
 Mon 11th Feb 2019       Multivariate/msum.ml, 100/cayley_hamilton.ml
 
 Eliminated most of the ad hoc collection of material about matrix sums in the

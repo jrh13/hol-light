@@ -1927,6 +1927,137 @@ let ONE_OR_PRIME = prove
   ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[DIVIDES_ONE]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Integer powers of real numbers.                                           *)
+(* ------------------------------------------------------------------------- *)
+
+make_overloadable "zpow" `:A->int->A`;;
+parse_as_infix("zpow",(24,"left"));;
+overload_interface ("zpow",`real_zpow:real->int->real`);;
+
+let real_zpow = new_definition
+ `(z:real) zpow (i:int) = if &0 <= i then z pow (num_of_int i)
+                          else inv(z pow (num_of_int(--i)))`;;
+
+let REAL_POW_ZPOW = prove
+ (`!x n. x pow n = x zpow (&n)`,
+  REWRITE_TAC[real_zpow; INT_POS; NUM_OF_INT_OF_NUM]);;
+
+let REAL_ZPOW_NUM = prove
+ (`!x n. x zpow (&n) = x pow n`,
+  REWRITE_TAC[real_zpow; INT_POS; NUM_OF_INT_OF_NUM]);;
+
+let REAL_ZPOW_0 = prove
+ (`!x:real. x zpow (&0) = &1`,
+  REWRITE_TAC[REAL_ZPOW_NUM; real_pow]);;
+
+let REAL_ZPOW_1 = prove
+ (`!x:real. x zpow (&1) = x`,
+  REWRITE_TAC[REAL_ZPOW_NUM; REAL_POW_1]);;
+
+let REAL_ZPOW_2 = prove
+ (`!x:real. x zpow (&2) = x * x`,
+  REWRITE_TAC[REAL_ZPOW_NUM; REAL_POW_2]);;
+
+let REAL_ZPOW_ONE = prove
+ (`!n. &1 zpow n = &1`,
+  REWRITE_TAC[real_zpow; REAL_POW_ONE; REAL_INV_1; COND_ID]);;
+
+let REAL_ZPOW_NEG = prove
+ (`!x n. x zpow (--n) = inv(x zpow n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n:int = &0` THEN
+  ASM_REWRITE_TAC[INT_NEG_0; REAL_ZPOW_0; REAL_INV_1] THEN
+  ASM_SIMP_TAC[real_zpow; COND_SWAP; INT_NEG_NEG; INT_ARITH
+   `~(n:int = &0) ==> (&0 <= --n <=> ~(&0 <= n))`] THEN
+  MESON_TAC[REAL_INV_INV]);;
+
+let REAL_ZPOW_MINUS1 = prove
+ (`!x. x zpow --(&1) = inv x`,
+  REWRITE_TAC[REAL_ZPOW_NEG; REAL_ZPOW_1]);;
+
+let REAL_ZPOW_ZERO = prove
+ (`!n. &0 zpow n = if n = &0 then &1 else &0`,
+  REWRITE_TAC[FORALL_INT_CASES; REAL_ZPOW_NEG; REAL_ZPOW_NUM] THEN
+  REWRITE_TAC[REAL_POW_ZERO; INT_NEG_EQ_0; INT_OF_NUM_EQ] THEN
+  MESON_TAC[REAL_INV_0; REAL_INV_1]);;
+
+let REAL_ZPOW_POW = prove
+ (`(!(x:real) n. x zpow (&n) = x pow n) /\
+   (!(x:real) n. x zpow (-- &n) = inv(x pow n))`,
+  REWRITE_TAC[REAL_ZPOW_NEG; REAL_ZPOW_NUM]);;
+
+let REAL_INV_ZPOW = prove
+ (`!(x:real) n. inv(x zpow n) = inv(x) zpow n`,
+  REWRITE_TAC[FORALL_INT_CASES; REAL_ZPOW_POW] THEN
+  REWRITE_TAC[REAL_INV_POW; REAL_INV_INV]);;
+
+let REAL_ZPOW_INV = prove
+ (`!(x:real) n. inv x zpow n = inv(x zpow n)`,
+  REWRITE_TAC[REAL_INV_ZPOW]);;
+
+let REAL_ZPOW_ZPOW = prove
+ (`!(x:real) m n. (x zpow m) zpow n = x zpow (m * n)`,
+  REWRITE_TAC[FORALL_INT_CASES; INT_MUL_LNEG; INT_MUL_RNEG; INT_NEG_NEG] THEN
+  REWRITE_TAC[REAL_ZPOW_POW; REAL_INV_POW; INT_OF_NUM_MUL; REAL_INV_INV] THEN
+  REWRITE_TAC[REAL_POW_POW]);;
+
+let REAL_ZPOW_MUL = prove
+ (`!(x:real) (y:real) n. (x * y) zpow n = x zpow n * y zpow n`,
+  REWRITE_TAC[FORALL_INT_CASES; REAL_ZPOW_POW; REAL_POW_MUL; REAL_INV_MUL]);;
+
+let REAL_ZPOW_DIV = prove
+ (`!(x:real) (y:real) n. (x / y) zpow n = x zpow n / y zpow n`,
+  REWRITE_TAC[real_div; REAL_INV_ZPOW; REAL_ZPOW_MUL]);;
+
+let REAL_ZPOW_ADD = prove
+ (`!(x:real) m n.
+        ~(x = &0) ==> x zpow (m + n) = x zpow m * x zpow n`,
+  REWRITE_TAC[FORALL_INT_CASES; GSYM INT_NEG_ADD; INT_OF_NUM_ADD] THEN
+  REWRITE_TAC[REAL_ZPOW_POW; REAL_POW_ADD; REAL_INV_MUL] THEN
+  X_GEN_TAC `x:real` THEN GEN_REWRITE_TAC LAND_CONV [SWAP_FORALL_THM] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
+    [REAL_MUL_SYM; INT_ADD_SYM] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
+  MATCH_MP_TAC WLOG_LE THEN CONJ_TAC THENL
+   [REPEAT GEN_TAC THEN
+    GEN_REWRITE_TAC LAND_CONV [GSYM REAL_EQ_INV2] THEN
+    REWRITE_TAC[REAL_INV_MUL; REAL_INV_INV; GSYM REAL_ZPOW_NEG] THEN
+    REWRITE_TAC[INT_ARITH `--(--x + y):int = --y + x`] THEN
+    REWRITE_TAC[REAL_MUL_AC];
+    MAP_EVERY X_GEN_TAC [`n:num`; `p:num`] THEN
+    REWRITE_TAC[LE_EXISTS; LEFT_IMP_EXISTS_THM] THEN
+    SIMP_TAC[GSYM INT_OF_NUM_ADD; ARITH_RULE `--n + (n + m):int = m`] THEN
+    REWRITE_TAC[REAL_POW_ADD; REAL_ZPOW_NUM; REAL_MUL_ASSOC] THEN
+    ASM_SIMP_TAC[REAL_MUL_LINV; REAL_POW_EQ_0; REAL_MUL_LID]]);;
+
+let REAL_ZPOW_SUB = prove
+ (`!(x:real) m n.
+        ~(x = &0) ==> x zpow (m - n) = x zpow m / x zpow n`,
+  SIMP_TAC[INT_SUB; REAL_ZPOW_ADD; REAL_ZPOW_NEG; real_div]);;
+
+let REAL_ZPOW_LE = prove
+ (`!x n. &0 <= x ==> &0 <= x zpow n`,
+  SIMP_TAC[FORALL_INT_CASES; REAL_ZPOW_POW; REAL_LE_INV_EQ; REAL_POW_LE]);;
+
+let REAL_ZPOW_LT = prove
+ (`!x n. &0 < x ==> &0 < x zpow n`,
+  SIMP_TAC[FORALL_INT_CASES; REAL_ZPOW_POW; REAL_LT_INV_EQ; REAL_POW_LT]);;
+
+let REAL_ZPOW_EQ_0 = prove
+ (`!x n. x zpow n = &0 <=> x = &0 /\ ~(n = &0)`,
+  REWRITE_TAC[FORALL_INT_CASES; REAL_ZPOW_POW; REAL_INV_EQ_0] THEN
+  REWRITE_TAC[INT_NEG_EQ_0; REAL_POW_EQ_0; INT_OF_NUM_EQ]);;
+
+let REAL_ABS_ZPOW = prove
+ (`!x n. abs(x zpow n) = abs(x) zpow n`,
+  REWRITE_TAC[FORALL_INT_CASES; REAL_ZPOW_POW; REAL_ABS_INV; REAL_ABS_POW]);;
+
+let REAL_SGN_ZPOW = prove
+ (`!x n. real_sgn(x zpow n) = real_sgn(x) zpow n`,
+  REWRITE_TAC[FORALL_INT_CASES; REAL_ZPOW_POW] THEN
+  REWRITE_TAC[GSYM REAL_SGN_POW] THEN
+  REWRITE_TAC[REAL_SGN_INV; REAL_INV_SGN]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Make sure we give priority to N.                                          *)
 (* ------------------------------------------------------------------------- *)
 
