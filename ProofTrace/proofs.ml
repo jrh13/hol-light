@@ -9,15 +9,30 @@
 (* Marshalling of term to AST-like.                                          *)
 (* ------------------------------------------------------------------------- *)
 
-let escaped str =
-  Str.global_replace (Str.regexp ",") "_comma_" (String.escaped str);;
+let type_string ty =
+  let rec args_str args =
+    match args with
+      [] -> ""
+    | ty::tail -> Printf.sprintf "[%s]%s"
+                                 (type_str ty) (args_str tail)
+  and type_str ty =
+    match ty with
+      Tyvar(v) -> Printf.sprintf "v[%s]"
+                                 (String.escaped v)
+    | Tyapp(c,args) -> Printf.sprintf "c[%s][%s]"
+                                      (String.escaped c) (args_str args)
+  in (type_str ty)
 
 let rec term_string tm =
   match tm with
-    Var(v,_) -> Printf.sprintf "v%s" (escaped v)
-  | Const(c,_) -> Printf.sprintf "c%s" (escaped c)
-  | Comb(t1,t2) -> Printf.sprintf "C(%s,%s)" (term_string t1) (term_string t2)
-  | Abs(t1,t2) -> Printf.sprintf "A(%s,%s)" (term_string t1) (term_string t2)
+    Var(v,ty) -> Printf.sprintf "v(%s)(%s)"
+                                (String.escaped v) (type_string ty)
+  | Const(c,ty) -> Printf.sprintf "c(%s)(%s)"
+                                  (String.escaped c) (type_string ty)
+  | Comb(t1,t2) -> Printf.sprintf "C(%s)(%s)"
+                                  (term_string t1) (term_string t2)
+  | Abs(t1,t2) -> Printf.sprintf "A(%s)(%s)"
+                                 (term_string t1) (term_string t2)
 
 (* ------------------------------------------------------------------------- *)
 (* Marshalling of proof to JSON parts.                                       *)
@@ -33,6 +48,17 @@ let rec inst_string insts =
                                     (term_string t2)
                                     (term_string t1)
                                     (inst_string tail)
+
+let rec instt_string insts =
+  match insts with
+    [] -> ""
+  | (t1,t2)::[] -> Printf.sprintf "[\"%s\", \"%s\"]"
+                                  (type_string t2)
+                                  (type_string t1)
+  | (t1,t2)::tail -> Printf.sprintf "[\"%s\", \"%s\"], %s"
+                                    (type_string t2)
+                                    (type_string t1)
+                                    (instt_string tail)
 
 let proof_index proof =
   let Proof(idx,_,_) = proof in idx
@@ -63,18 +89,19 @@ let proof_content_string content =
   | Pinst(p1,insts) -> Printf.sprintf "[\"INST\", %d, [%s]]"
                                       (proof_index p1)
                                       (inst_string insts)
-  | Pinstt(p1,insts) -> Printf.sprintf "[\"INST_TYPE\", %d]"
+  | Pinstt(p1,insts) -> Printf.sprintf "[\"INST_TYPE\", %d, [%s]]"
                                        (proof_index p1)
+                                       (instt_string insts)
   | Paxiom(tm) -> Printf.sprintf "[\"AXIOM\", \"%s\"]"
                                  (term_string tm)
   | Pdef(tm,name,ty) -> Printf.sprintf "[\"DEFINITION\", \"%s\", \"%s\"]"
                                        (term_string tm)
-                                       (escaped name)
+                                       (String.escaped name)
   | Pdeft(p1,tm,name,ty) -> Printf.sprintf
                               "[\"TYPE_DEFINITION\", %d, \"%s\", \"%s\"]"
                               (proof_index p1)
                               (term_string tm)
-                              (escaped name)
+                              (String.escaped name)
 
 
 let proof_string proof =
