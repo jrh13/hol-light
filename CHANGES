@@ -8,11 +8,48 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Mon  1st Apr 2019       arith.ml, Formal_ineqs/arith/arith_num.hl
+
+Added one simple new theorem EQ_DIVMOD and generalized the existing theorems
+DIV_MULT_ADD and MOD_MULT_ADD to have four conjuncts with all orderings of
+addition and multiplication in the main term. This is often more convenient and
+better matches the integer variants INT_DIV_MUL_ADD and INT_REM_MUL_ADD. So
+now:
+
+  DIV_MULT_ADD =
+    |- (!a b n. ~(n = 0) ==> (a * n + b) DIV n = a + b DIV n) /\
+       (!a b n. ~(n = 0) ==> (n * a + b) DIV n = a + b DIV n) /\
+       (!a b n. ~(n = 0) ==> (b + a * n) DIV n = b DIV n + a) /\
+       (!a b n. ~(n = 0) ==> (b + n * a) DIV n = b DIV n + a)
+
+  EQ_DIVMOD =
+    |- !p m n. m DIV p = n DIV p /\ m MOD p = n MOD p <=> m = n
+
+  MOD_MULT_ADD =
+    |- (!m n p. (m * n + p) MOD n = p MOD n) /\
+       (!m n p. (n * m + p) MOD n = p MOD n) /\
+       (!m n p. (p + m * n) MOD n = p MOD n) /\
+       (!m n p. (p + n * m) MOD n = p MOD n)
+
+the main term
+
+Sun 31st Mar 2019       ProofTrace/* [new files]
+
+Merged in Stanislas Polu's new ProofTrace proof recording setup.
+This gives a much more lightweight proof recording toolchain than
+the existing Proofrecording, and it is entirely written in OCaml.
+
+Wed 26th Mar 2019       Makefile, pa_j_4.xx_7.06.ml [new file]
+
+Merged in a pull request from ivarsfg, which fixes the compatibility problems
+introduced with recent camlp5 versions. I've confirmed that everything now
+works with Ocaml 4.07.1 and camlp5 7.07.
+
 Fri  1st Mar 2019       Library/floor.ml
 
-Added a simple theorem relating integer-valued reals and the integer type: 
+Added a simple theorem relating integer-valued reals and the integer type:
 
-  IMAGE_REAL_OF_INT_UNIV = 
+  IMAGE_REAL_OF_INT_UNIV =
     |- IMAGE real_of_int (:int) = integer
 
 Wed 27th Feb 2019       int.ml
