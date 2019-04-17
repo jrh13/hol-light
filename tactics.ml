@@ -133,9 +133,9 @@ let (VALID:tactic->tactic) =
 let (THEN),(THENL) =
   let propagate_empty i [] = []
   and propagate_thm th i [] = INSTANTIATE_ALL i th in
-  let compose_justs n just1 just2 i ths =
+  let compose_justs n just1 just2 insts2 i ths =
     let ths1,ths2 = chop_list n ths in
-    (just1 i ths1)::(just2 i ths2) in
+    (just1 (compose_insts insts2 i) ths1)::(just2 i ths2) in
   let rec seqapply l1 l2 = match (l1,l2) with
      ([],[]) -> null_meta,[],propagate_empty
    | ((tac:tactic)::tacs),((goal:goal)::goals) ->
@@ -143,7 +143,7 @@ let (THEN),(THENL) =
             let goals' = map (inst_goal insts1) goals in
             let ((mvs2,insts2),gls2,just2) = seqapply tacs goals' in
             ((union mvs1 mvs2,compose_insts insts1 insts2),
-             gls1@gls2,compose_justs (length gls1) just1 just2)
+             (map (inst_goal insts2) gls1)@gls2,compose_justs (length gls1) just1 just2 insts2)
    | _,_ -> failwith "seqapply: Length mismatch" in
   let justsequence just1 just2 insts2 i ths =
     just1 (compose_insts insts2 i) (just2 i ths) in
