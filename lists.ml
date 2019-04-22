@@ -129,6 +129,10 @@ let ZIP = prove
    (ZIP (CONS h1 t1) (CONS h2 t2) = CONS (h1,h2) (ZIP t1 t2))`,
   REWRITE_TAC[ZIP_DEF; HD; TL]);;
 
+let ALLPAIRS = new_recursive_definition list_RECURSION
+  `(ALLPAIRS f [] l <=> T) /\
+   (ALLPAIRS f (CONS h t) l <=> ALL (f h) l /\ ALLPAIRS f t l)`;;
+
 let PAIRWISE = new_recursive_definition list_RECURSION
   `(PAIRWISE (r:A->A->bool) [] <=> T) /\
    (PAIRWISE (r:A->A->bool) (CONS h t) <=> ALL (r h) t /\ PAIRWISE r t)`;;
@@ -247,6 +251,13 @@ let ALL_MAP = prove
  (`!P f l. ALL P (MAP f l) <=> ALL (P o f) l`,
   GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN
   ASM_REWRITE_TAC[ALL; MAP; o_THM]);;
+
+let ALL_EQ = prove
+ (`!l. ALL R l /\ (!x. R x ==> (P x <=> Q x))
+       ==> (ALL P l <=> ALL Q l)`,
+  LIST_INDUCT_TAC THEN REWRITE_TAC[ALL] THEN
+  STRIP_TAC THEN BINOP_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[]);;
 
 let ALL_T = prove
  (`!l. ALL (\x. T) l`,
@@ -409,6 +420,29 @@ let AND_ALL2 = prove
   GEN_TAC THEN GEN_TAC THEN CONV_TAC(ONCE_DEPTH_CONV SYM_CONV) THEN
   LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL2] THEN
   REWRITE_TAC[CONJ_ACI]);;
+
+let ALLPAIRS_SYM = prove
+ (`!P l m. ALLPAIRS P l m <=> ALLPAIRS (\x y. P y x) m l`,
+  GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC[ALLPAIRS] THEN
+  LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALLPAIRS; ALL] THEN
+  ASM_MESON_TAC[]);;
+
+let ALLPAIRS_MEM = prove
+ (`!P l m. (!x y. MEM x l /\ MEM y m ==> P x y) <=> ALLPAIRS P l m`,
+  GEN_TAC THEN
+  LIST_INDUCT_TAC THEN REWRITE_TAC[ALLPAIRS; GSYM ALL_MEM; MEM] THEN
+  ASM_MESON_TAC[]);;
+
+let ALLPAIRS_MAP = prove
+ (`!P l m. ALLPAIRS P (MAP f l) (MAP g m) <=>
+           ALLPAIRS (\x y. P (f x) (g y)) l m`,
+  REWRITE_TAC[GSYM ALLPAIRS_MEM; MEM_MAP] THEN MESON_TAC[]);;
+
+let ALLPAIRS_EQ = prove
+ (`!l m. !P Q. ALL P (l:A list) /\ ALL Q (m:B list) /\
+               (!p q. P p /\ Q q ==> (R p q <=> R' p q))
+               ==> (ALLPAIRS R l m <=> ALLPAIRS R' l m)`,
+  REWRITE_TAC[GSYM ALLPAIRS_MEM; GSYM ALL_MEM] THEN MESON_TAC[]);;
 
 let ALL2_ALL = prove
  (`!P l. ALL2 P l l <=> ALL (\x. P x x) l`,

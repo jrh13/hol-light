@@ -3075,10 +3075,28 @@ let CTAN_ADD = prove
   CONV_TAC COMPLEX_FIELD);;
 
 let CTAN_DOUBLE = prove
- (`!z. ~(ccos(z) = Cx(&0)) /\ ~(ccos(Cx(&2) * z) = Cx(&0))
-       ==> ctan(Cx(&2) * z) =
-           (Cx(&2) * ctan z) / (Cx(&1) - ctan(z) pow 2)`,
-  SIMP_TAC[COMPLEX_MUL_2; CTAN_ADD; COMPLEX_POW_2]);;
+ (`!z. ctan(Cx(&2) * z) = (Cx(&2) * ctan z) / (Cx(&1) - ctan z pow 2)`,
+  GEN_TAC THEN REWRITE_TAC[ctan; CSIN_DOUBLE; CCOS_DOUBLE] THEN
+  REWRITE_TAC[complex_div; COMPLEX_INV_MUL] THEN
+  MAP_EVERY ASM_CASES_TAC [`csin z = Cx(&0)`; `ccos z = Cx(&0)`] THEN
+  ASM_REWRITE_TAC[COMPLEX_INV_0; COMPLEX_MUL_LZERO; COMPLEX_MUL_RZERO] THEN
+  REWRITE_TAC[COMPLEX_POW_MUL; COMPLEX_POW_INV] THEN
+  ASM_CASES_TAC `csin z pow 2 = ccos z pow 2` THEN
+  ASM_SIMP_TAC[COMPLEX_MUL_RINV; COMPLEX_POW_EQ_0; COMPLEX_SUB_REFL;
+               COMPLEX_INV_0; COMPLEX_MUL_RZERO] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC COMPLEX_FIELD);;
+
+let CCOT_DOUBLE = prove
+ (`!z. inv(ctan(Cx(&2) * z)) = (inv(ctan z) - ctan z) / Cx(&2)`,
+  GEN_TAC THEN REWRITE_TAC[ctan; CSIN_DOUBLE; CCOS_DOUBLE] THEN
+  REWRITE_TAC[complex_div; COMPLEX_INV_MUL] THEN
+  MAP_EVERY ASM_CASES_TAC [`csin z = Cx(&0)`; `ccos z = Cx(&0)`] THEN
+  ASM_REWRITE_TAC[COMPLEX_INV_0; COMPLEX_MUL_LZERO; COMPLEX_MUL_RZERO] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC COMPLEX_FIELD);;
+
+let CTAN_CCOT_DOUBLE = prove
+ (`!z. ctan z = Cx(&1) / ctan z - Cx(&2) / ctan(Cx(&2) * z)`,
+  REWRITE_TAC[complex_div; CCOT_DOUBLE] THEN CONV_TAC COMPLEX_RING);;
 
 let CTAN_SUB = prove
  (`!w z. ~(ccos(w) = Cx(&0)) /\
@@ -3099,6 +3117,25 @@ let COMPLEX_SUB_CTAN = prove
          ~(ccos(z) = Cx(&0))
          ==> ctan(w) - ctan(z) = csin(w - z) / (ccos(w) * ccos(z))`,
   REWRITE_TAC[ctan; CSIN_SUB] THEN CONV_TAC COMPLEX_FIELD);;
+
+let CTAN_CEXP = prove
+ (`!z. ctan z =
+       --ii * (cexp(Cx(&2) * ii * z) - Cx(&1)) /
+              (cexp(Cx(&2) * ii * z) + Cx(&1))`,
+  GEN_TAC THEN REWRITE_TAC[ctan; csin; ccos] THEN
+  REWRITE_TAC[COMPLEX_MUL_LNEG; CEXP_NEG] THEN
+  SIMP_TAC[CEXP_NZ; COMPLEX_FIELD
+   `~(c = Cx(&0))
+    ==> c - inv c = (c pow 2 - Cx(&1)) / c /\
+        c + inv c = (c pow 2 + Cx(&1)) / c`] THEN
+  REWRITE_TAC[GSYM CEXP_N; complex_div; COMPLEX_INV_MUL] THEN
+  REWRITE_TAC[GSYM COMPLEX_MUL_ASSOC; COMPLEX_INV_INV] THEN
+  SIMP_TAC[CEXP_NZ; COMPLEX_FIELD
+   `~(e = Cx(&0))
+    ==> x * inv e * inv(Cx(&2)) * inv ii * y * e * Cx(&2) =
+        --ii * x * y`] THEN
+  REWRITE_TAC[complex_div; COMPLEX_MUL_LNEG] THEN
+  REWRITE_TAC[COMPLEX_MUL_AC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Analytic properties of tangent function.                                  *)
@@ -3210,9 +3247,18 @@ let TAN_SUB = prove
               CX_DIV; CX_ADD; CX_SUB; CX_MUL]);;
 
 let TAN_DOUBLE = prove
- (`!x. ~(cos(x) = &0) /\ ~(cos(&2 * x) = &0)
-       ==> tan(&2 * x) = (&2 * tan(x)) / (&1 - (tan(x) pow 2))`,
-  SIMP_TAC[REAL_MUL_2; TAN_ADD; REAL_POW_2]);;
+ (`!x. tan(&2 * x) = (&2 * tan x) / (&1 - tan x pow 2)`,
+  REWRITE_TAC[GSYM CX_INJ; CX_DIV; CX_MUL; CX_SUB; CX_POW; CX_TAN] THEN
+  REWRITE_TAC[CTAN_DOUBLE]);;
+
+let COT_DOUBLE = prove
+ (`!z. inv(tan(&2 * z)) = (inv(tan z) - tan z) / &2`,
+  REWRITE_TAC[GSYM CX_INJ; CX_INV; CX_DIV; CX_MUL; CX_SUB; CX_POW; CX_TAN] THEN
+  REWRITE_TAC[CCOT_DOUBLE]);;
+
+let TAN_COT_DOUBLE = prove
+ (`!z. tan z = &1 / tan z - &2 / tan(&2 * z)`,
+  REWRITE_TAC[real_div; COT_DOUBLE] THEN CONV_TAC REAL_RING);;
 
 let REAL_ADD_TAN = prove
  (`!x y. ~(cos(x) = &0) /\ ~(cos(y) = &0)

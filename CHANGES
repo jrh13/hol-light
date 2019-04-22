@@ -8,6 +8,31 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 20th Apr 2019       lists.ml
+
+Added a two-list asymmetric analog of ALL / PAIRWISE called ALLPAIRS, with
+the obvious definition and a few basic theorems:
+
+  ALLPAIRS =
+    |- (ALLPAIRS f [] l <=> T) /\
+       (ALLPAIRS f (CONS h t) l <=> ALL (f h) l /\ ALLPAIRS f t l))
+
+  ALLPAIRS_EQ =
+    |- !l m P Q.
+           ALL P l /\ ALL Q m /\ (!p q. P p /\ Q q ==> (R p q <=> R' p q))
+           ==> (ALLPAIRS R l m <=> ALLPAIRS R' l m)
+
+  ALLPAIRS_MAP =
+    |- !P l m.
+           ALLPAIRS P (MAP f l) (MAP g m) <=>
+           ALLPAIRS (\x y. P (f x) (g y)) l m
+
+  ALLPAIRS_MEM =
+    |- !P l m. (!x y. MEM x l /\ MEM y m ==> P x y) <=> ALLPAIRS P l m
+
+  ALLPAIRS_SYM =
+    |- !P l m. ALLPAIRS P l m <=> ALLPAIRS (\x y. P y x) m l
+
 Mon  1st Apr 2019       arith.ml, Formal_ineqs/arith/arith_num.hl
 
 Added one simple new theorem EQ_DIVMOD and generalized the existing theorems
