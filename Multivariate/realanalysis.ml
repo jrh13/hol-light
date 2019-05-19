@@ -4364,7 +4364,7 @@ add_real_differentiation_theorems
     (MATCH_MP HAS_REAL_DERIVATIVE_CHAIN
               HAS_REAL_DERIVATIVE_ACS))));;
 
-let rec REAL_DIFF_CONV =
+let REAL_DIFF_CONV =
   let partfn tm = let l,r = dest_comb tm in mk_pair(lhand l,r)
   and is_deriv = can (term_match [] `(f has_real_derivative f') net`) in
   let rec REAL_DIFF_CONV tm =
