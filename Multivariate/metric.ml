@@ -10154,6 +10154,265 @@ let LINDELOF_SPACE_PERFECT_MAP_IMAGE_EQ = prove
     ASM_MESON_TAC[perfect_map; LINDELOF_SPACE_PROPER_MAP_PREIMAGE]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Other countability properties.                                            *)
+(* ------------------------------------------------------------------------- *)
+
+let second_countable = new_definition
+ `second_countable (top:A topology) <=>
+         ?b. COUNTABLE b /\
+             (!v. v IN b ==> open_in top v) /\
+             (!u x. open_in top u /\ x IN u
+                    ==> ?v. v IN b /\ x IN v /\ v SUBSET u)`;;
+
+let first_countable = new_definition
+ `first_countable (top:A topology) <=>
+        !x. x IN topspace top
+            ==> ?b. COUNTABLE b /\
+                    (!v. v IN b ==> open_in top v) /\
+                    (!u. open_in top u /\ x IN u
+                         ==> ?v. v IN b /\ x IN v /\ v SUBSET u)`;;
+
+let separable_space = new_definition
+ `separable_space (top:A topology) <=>
+        ?c. COUNTABLE c /\
+            c SUBSET topspace top /\
+            top closure_of c = topspace top`;;
+
+let SECOND_COUNTABLE = prove
+ (`!top:A topology.
+        second_countable top <=>
+        ?b. COUNTABLE b /\ open_in top = ARBITRARY UNION_OF b`,
+  REWRITE_TAC[OPEN_IN_TOPOLOGY_BASE_UNIQUE; second_countable]);;
+
+let SECOND_COUNTABLE_SUBTOPOLOGY = prove
+ (`!top (s:A->bool).
+        second_countable top ==> second_countable(subtopology top s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[second_countable; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `B:(A->bool)->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (\b:A->bool. s INTER b) B` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE; EXISTS_IN_IMAGE] THEN
+  ASM_SIMP_TAC[OPEN_IN_SUBTOPOLOGY_INTER_OPEN] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_ALT; FORALL_IN_GSPEC] THEN
+  ASM SET_TAC[]);;
+
+let SECOND_COUNTABLE_DISCRETE_TOPOLOGY = prove
+ (`!u:A->bool. second_countable(discrete_topology u) <=> COUNTABLE u`,
+  GEN_TAC THEN REWRITE_TAC[second_countable] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `b:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+        CARD_LE_COUNTABLE)) THEN
+    REWRITE_TAC[le_c] THEN EXISTS_TAC `\x:A. {x}` THEN
+    SIMP_TAC[SET_RULE `{x} = {y} <=> x = y`] THEN
+    X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [`{x:A}`; `x:A`]) THEN
+    ASM_REWRITE_TAC[IN_SING; OPEN_IN_DISCRETE_TOPOLOGY; SING_SUBSET] THEN
+    REWRITE_TAC[SET_RULE `x IN s /\ s SUBSET {x} <=> s = {x}`] THEN
+    MESON_TAC[];
+    DISCH_TAC THEN EXISTS_TAC `IMAGE (\x:A. {x}) u` THEN
+    ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE] THEN
+    REWRITE_TAC[OPEN_IN_DISCRETE_TOPOLOGY; SING_SUBSET] THEN
+    REWRITE_TAC[EXISTS_IN_IMAGE] THEN SET_TAC[]]);;
+
+let SECOND_COUNTABLE_OPEN_MAP_IMAGE = prove
+ (`!(f:A->B) top top'.
+        continuous_map(top,top') f /\ open_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top' /\
+        second_countable top
+        ==> second_countable top'`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[open_map] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  REWRITE_TAC[second_countable; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `B:(A->bool)->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (IMAGE (f:A->B)) B` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE; EXISTS_IN_IMAGE] THEN
+  MAP_EVERY X_GEN_TAC [`v:B->bool`; `y:B`] THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?x. x IN topspace top /\ (f:A->B) x = y` STRIP_ASSUME_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`{x | x IN topspace top /\ (f:A->B) x IN v}`; `x:A`]) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM] THEN ANTS_TAC THENL
+   [MATCH_MP_TAC OPEN_IN_CONTINUOUS_MAP_PREIMAGE THEN ASM_MESON_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]]);;
+
+let HOMEOMORPHIC_SPACE_SECOND_COUNTABILITY = prove
+ (`!(top:A topology) (top':B topology).
+        top homeomorphic_space top'
+        ==> (second_countable top <=> second_countable top')`,
+  REWRITE_TAC[homeomorphic_space; HOMEOMORPHIC_MAPS_MAP] THEN
+  REWRITE_TAC[HOMEOMORPHIC_EQ_EVERYTHING_MAP] THEN
+  MESON_TAC[SECOND_COUNTABLE_OPEN_MAP_IMAGE]);;
+
+let SECOND_COUNTABLE_RETRACTION_MAP_IMAGE = prove
+ (`!top top' (r:A->B).
+        retraction_map(top,top') r /\ second_countable top
+        ==> second_countable top'`,
+  MATCH_MP_TAC HEREDITARY_IMP_RETRACTIVE_PROPERTY THEN
+  REWRITE_TAC[SECOND_COUNTABLE_SUBTOPOLOGY;
+              HOMEOMORPHIC_SPACE_SECOND_COUNTABILITY]);;
+
+let SECOND_COUNTABLE_IMP_FIRST_COUNTABLE = prove
+ (`!top:A topology. second_countable top ==> first_countable top`,
+  GEN_TAC THEN REWRITE_TAC[second_countable; first_countable] THEN
+  DISCH_THEN(fun th -> REPEAT STRIP_TAC THEN MP_TAC th) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN MESON_TAC[]);;
+
+let FIRST_COUNTABLE_SUBTOPOLOGY = prove
+ (`!top s:A->bool. first_countable top ==> first_countable(subtopology top s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[first_countable] THEN DISCH_TAC THEN
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_ALT; TOPSPACE_SUBTOPOLOGY; IN_INTER] THEN
+  REWRITE_TAC[GSYM SUBSET; IMP_CONJ; FORALL_IN_GSPEC] THEN
+  ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  REWRITE_TAC[EXISTS_COUNTABLE_SUBSET_IMAGE; EXISTS_IN_IMAGE] THEN
+  X_GEN_TAC `x:A` THEN REPEAT DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]);;
+
+let FIRST_COUNTABLE_DISCRETE_TOPOLOGY = prove
+ (`!u:A->bool. first_countable(discrete_topology u)`,
+  GEN_TAC THEN REWRITE_TAC[first_countable] THEN
+  REWRITE_TAC[OPEN_IN_DISCRETE_TOPOLOGY; TOPSPACE_DISCRETE_TOPOLOGY] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN EXISTS_TAC `{{x:A}}` THEN
+  REWRITE_TAC[COUNTABLE_SING; FORALL_IN_INSERT; EXISTS_IN_INSERT] THEN
+  ASM_SIMP_TAC[IN_SING; SING_SUBSET; NOT_IN_EMPTY]);;
+
+let FIRST_COUNTABLE_OPEN_MAP_IMAGE = prove
+ (`!(f:A->B) top top'.
+        continuous_map(top,top') f /\ open_map(top,top') f /\
+        IMAGE f (topspace top) = topspace top' /\
+        first_countable top
+        ==> first_countable top'`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[open_map] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  REWRITE_TAC[first_countable] THEN DISCH_TAC THEN
+  X_GEN_TAC `y:B` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `?x. x IN topspace top /\ (f:A->B) x = y` STRIP_ASSUME_TAC THENL
+   [ASM SET_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `B:(A->bool)->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (IMAGE (f:A->B)) B` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE; EXISTS_IN_IMAGE] THEN
+  X_GEN_TAC `v:B->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC
+    `{x | x IN topspace top /\ (f:A->B) x IN v}`) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM] THEN ANTS_TAC THENL
+   [MATCH_MP_TAC OPEN_IN_CONTINUOUS_MAP_PREIMAGE THEN ASM_MESON_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[]]);;
+
+let HOMEOMORPHIC_SPACE_FIRST_COUNTABILITY = prove
+ (`!(top:A topology) (top':B topology).
+        top homeomorphic_space top'
+        ==> (first_countable top <=> first_countable top')`,
+  REWRITE_TAC[homeomorphic_space; HOMEOMORPHIC_MAPS_MAP] THEN
+  REWRITE_TAC[HOMEOMORPHIC_EQ_EVERYTHING_MAP] THEN
+  MESON_TAC[FIRST_COUNTABLE_OPEN_MAP_IMAGE]);;
+
+let FIRST_COUNTABLE_RETRACTION_MAP_IMAGE = prove
+ (`!top top' (r:A->B).
+        retraction_map(top,top') r /\ first_countable top
+        ==> first_countable top'`,
+  MATCH_MP_TAC HEREDITARY_IMP_RETRACTIVE_PROPERTY THEN
+  REWRITE_TAC[FIRST_COUNTABLE_SUBTOPOLOGY;
+              HOMEOMORPHIC_SPACE_FIRST_COUNTABILITY]);;
+
+let SEPARABLE_SPACE_OPEN_SUBSET = prove
+ (`!top s:A->bool.
+        separable_space top /\ open_in top s
+        ==> separable_space(subtopology top s)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ; separable_space; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:A->bool` THEN REPEAT STRIP_TAC THEN
+  EXISTS_TAC `s INTER b:A->bool` THEN
+  ASM_SIMP_TAC[TOPSPACE_SUBTOPOLOGY_SUBSET; OPEN_IN_SUBSET] THEN
+  ASM_SIMP_TAC[COUNTABLE_INTER; INTER_SUBSET] THEN
+  REWRITE_TAC[CLOSURE_OF_SUBTOPOLOGY] THEN
+  REWRITE_TAC[SET_RULE `s INTER s INTER b = s INTER b`] THEN
+  ASM_SIMP_TAC[GSYM OPEN_IN_INTER_CLOSURE_OF_EQ] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN SET_TAC[]);;
+
+let SEPARABLE_SPACE_CONTINUOUS_MAP_IMAGE = prove
+ (`!top top' f:A->B.
+        separable_space top /\
+        continuous_map (top,top') f /\ IMAGE f (topspace top) = topspace top'
+        ==> separable_space top'`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_EQ_IMAGE_CLOSURE_SUBSET] THEN
+  REWRITE_TAC[IMP_CONJ; separable_space; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `c:A->bool` THEN REPEAT DISCH_TAC THEN
+  EXISTS_TAC `IMAGE (f:A->B) c` THEN ASM_SIMP_TAC[COUNTABLE_IMAGE] THEN
+  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; CLOSURE_OF_SUBSET_TOPSPACE] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `c:A->bool`) THEN
+  ASM_REWRITE_TAC[]);;
+
+let SEPARABLE_SPACE_QUOTIENT_MAP_IMAGE = prove
+ (`!top top' (q:A->B).
+        quotient_map(top,top') q /\ separable_space top
+        ==> separable_space top'`,
+  MESON_TAC[QUOTIENT_IMP_SURJECTIVE_MAP; QUOTIENT_IMP_CONTINUOUS_MAP;
+            SEPARABLE_SPACE_CONTINUOUS_MAP_IMAGE]);;
+
+let SEPARABLE_SPACE_RETRACTION_MAP_IMAGE = prove
+ (`!top top' (r:A->B).
+        retraction_map(top,top') r /\ separable_space top
+        ==> separable_space top'`,
+  MESON_TAC[SEPARABLE_SPACE_QUOTIENT_MAP_IMAGE;
+            RETRACTION_IMP_QUOTIENT_MAP]);;
+
+let HOMEOMORPHIC_SEPARABLE_SPACE = prove
+ (`!(top:A topology) (top':B topology).
+        top homeomorphic_space top'
+        ==> (separable_space top <=> separable_space top')`,
+  REWRITE_TAC[homeomorphic_space; HOMEOMORPHIC_MAPS_MAP] THEN
+  REWRITE_TAC[GSYM SECTION_AND_RETRACTION_EQ_HOMEOMORPHIC_MAP] THEN
+  MESON_TAC[SEPARABLE_SPACE_RETRACTION_MAP_IMAGE]);;
+
+let SEPARABLE_SPACE_DISCRETE_TOPOLOGY = prove
+ (`!u:A->bool. separable_space(discrete_topology u) <=> COUNTABLE u`,
+  REWRITE_TAC[separable_space; DISCRETE_TOPOLOGY_CLOSURE_OF] THEN
+  REWRITE_TAC[TOPSPACE_DISCRETE_TOPOLOGY] THEN
+  REWRITE_TAC[SET_RULE `s SUBSET u /\ u INTER s = u <=> s = u`] THEN
+  MESON_TAC[]);;
+
+let SECOND_COUNTABLE_IMP_SEPARABLE_SPACE = prove
+ (`!top:A topology. second_countable top ==> separable_space top`,
+  GEN_TAC THEN REWRITE_TAC[second_countable; separable_space] THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+  MP_TAC(SET_RULE `!v. ?x:A. v IN B /\ ~(v = {}) ==> x IN v`) THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `c:(A->bool)->A` THEN DISCH_TAC THEN
+  EXISTS_TAC `IMAGE (c:(A->bool)->A) (B DELETE {})` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_DELETE; SUBSET] THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[CLOSURE_OF_SUBSET_TOPSPACE; IN_DELETE] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[OPEN_IN_SUBSET; SUBSET]; ALL_TAC] THEN
+  REWRITE_TAC[closure_of; SUBSET; IN_ELIM_THM] THEN X_GEN_TAC `x:A` THEN
+  DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+  X_GEN_TAC `u:A->bool` THEN STRIP_TAC THEN REWRITE_TAC[EXISTS_IN_IMAGE] THEN
+  REWRITE_TAC[IN_DELETE; EXTENSION; NOT_IN_EMPTY] THEN ASM SET_TAC[]);;
+
+let SECOND_COUNTABLE_IMP_LINDELOF_SPACE = prove
+ (`!top:A topology. second_countable top ==> lindelof_space top`,
+  GEN_TAC THEN REWRITE_TAC[second_countable; lindelof_space] THEN
+  DISCH_THEN(X_CHOOSE_THEN `B:(A->bool)->bool` STRIP_ASSUME_TAC) THEN
+  X_GEN_TAC `U:(A->bool)->bool` THEN STRIP_TAC THEN
+  ABBREV_TAC `B' = {b:A->bool | b IN B /\ ?u. u IN U /\ b SUBSET u}` THEN
+  SUBGOAL_THEN
+   `COUNTABLE B' /\ UNIONS B' :A->bool = UNIONS U`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "B'" THEN ASM_SIMP_TAC[COUNTABLE_RESTRICT] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!b:A->bool. ?u. b IN B' ==> u IN U /\ b SUBSET u`
+  MP_TAC THENL [EXPAND_TAC "B'" THEN SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `g:(A->bool)->(A->bool)` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (g:(A->bool)->(A->bool)) B'` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; UNIONS_IMAGE] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A variant of nets (slightly non-standard but good for our purposes).      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -12121,6 +12380,31 @@ let OPEN_IMP_FSIGMA_IN = prove
   MATCH_MP_TAC CLOSED_IMP_GDELTA_IN THEN
   ASM_SIMP_TAC[CLOSED_IN_DIFF; CLOSED_IN_TOPSPACE]);;
 
+let FIRST_COUNTABLE_MTOPOLOGY = prove
+ (`!m:A metric. first_countable(mtopology m)`,
+  GEN_TAC THEN REWRITE_TAC[first_countable; TOPSPACE_MTOPOLOGY] THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  EXISTS_TAC `{ mball m (x:A,r) | rational r /\ &0 < r}` THEN
+  REWRITE_TAC[FORALL_IN_GSPEC; OPEN_IN_MBALL; EXISTS_IN_GSPEC] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `{f x | s x /\ Q x} = IMAGE f {x | x IN s /\ Q x}`] THEN
+  SIMP_TAC[COUNTABLE_IMAGE; COUNTABLE_RATIONAL; COUNTABLE_RESTRICT] THEN
+  REWRITE_TAC[OPEN_IN_MTOPOLOGY] THEN
+  X_GEN_TAC `u:A->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `r:real` THEN STRIP_TAC THEN FIRST_ASSUM
+   (MP_TAC o SPEC `r:real` o MATCH_MP RATIONAL_APPROXIMATION_BELOW) THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `q:real` THEN
+  REWRITE_TAC[REAL_SUB_REFL] THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[CENTRE_IN_MBALL] THEN
+  TRANS_TAC SUBSET_TRANS `mball m (x:A,r)` THEN
+  ASM_SIMP_TAC[MBALL_SUBSET_CONCENTRIC; REAL_LT_IMP_LE]);;
+
+let METRIZABLE_IMP_FIRST_COUNTABLE = prove
+ (`!top:A topology. metrizable_space top ==> first_countable top`,
+  REWRITE_TAC[FORALL_METRIZABLE_SPACE; FIRST_COUNTABLE_MTOPOLOGY]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Connected topological spaces.                                             *)
 (* ------------------------------------------------------------------------- *)
@@ -13976,6 +14260,71 @@ let NEIGHBOURHOOD_BASE_OF_WITH_SUBSET = prove
   X_GEN_TAC `x:A` THEN DISCH_TAC THEN
   MATCH_MP_TAC NEIGHBOURHOOD_BASE_AT_WITH_SUBSET THEN
   ASM_REWRITE_TAC[OPEN_IN_TOPSPACE]);;
+
+let SECOND_COUNTABLE_NEIGHBOURHOOD_BASE_ALT = prove
+ (`!top:A topology.
+        second_countable top <=>
+        ?b. COUNTABLE b /\
+            (!v. v IN b ==> open_in top v) /\
+            neighbourhood_base_of b top`,
+  REWRITE_TAC[SECOND_COUNTABLE; OPEN_IN_TOPOLOGY_NEIGHBOURHOOD_BASE_UNIQUE]);;
+
+let FIRST_COUNTABLE_NEIGHBOURHOOD_BASE_ALT = prove
+ (`!top:A topology.
+        first_countable top <=>
+        !x. x IN topspace top
+            ==> ?b. COUNTABLE b /\
+                    (!v. v IN b ==> open_in top v) /\
+                    neighbourhood_base_at x b top`,
+  GEN_TAC THEN REWRITE_TAC[first_countable] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN AP_TERM_TAC THEN
+  AP_TERM_TAC THEN ABS_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) OPEN_NEIGHBOURHOOD_BASE_AT o
+    rand o rand o rand o snd) THEN
+  REWRITE_TAC[IN] THEN MESON_TAC[]);;
+
+let SECOND_COUNTABLE_NEIGHBOURHOOD_BASE = prove
+ (`!top:A topology.
+        second_countable top <=>
+        ?b. COUNTABLE b /\ neighbourhood_base_of b top`,
+  GEN_TAC THEN REWRITE_TAC[SECOND_COUNTABLE_NEIGHBOURHOOD_BASE_ALT] THEN
+  EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[NEIGHBOURHOOD_BASE_OF; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:(A->bool)->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (\u:A->bool. top interior_of u) b` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE; OPEN_IN_INTERIOR_OF] THEN
+  MAP_EVERY X_GEN_TAC [`w:A->bool`;` x:A`] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`w:A->bool`;` x:A`]) THEN
+  ASM_REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:A->bool` THEN
+  ASM_CASES_TAC `open_in top (u:A->bool)` THEN ASM_REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o LAND_CONV) [GSYM IN] THEN
+  REWRITE_TAC[EXISTS_IN_IMAGE] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_SIMP_TAC[INTERIOR_OF_MAXIMAL_EQ] THEN
+  ASM_MESON_TAC[INTERIOR_OF_SUBSET; SUBSET; IN]);;
+
+let FIRST_COUNTABLE_NEIGHBOURHOOD_BASE = prove
+ (`!top:A topology.
+        first_countable top <=>
+        !x. x IN topspace top
+            ==> ?b. COUNTABLE b /\ neighbourhood_base_at x b top`,
+  GEN_TAC THEN REWRITE_TAC[FIRST_COUNTABLE_NEIGHBOURHOOD_BASE_ALT] THEN
+  EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  DISCH_TAC THEN X_GEN_TAC `x:A` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+  ASM_REWRITE_TAC[neighbourhood_base_at; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `b:(A->bool)->bool` THEN STRIP_TAC THEN
+  EXISTS_TAC `IMAGE (\u:A->bool. top interior_of u) b` THEN
+  ASM_SIMP_TAC[COUNTABLE_IMAGE; FORALL_IN_IMAGE; OPEN_IN_INTERIOR_OF] THEN
+  X_GEN_TAC `w:A->bool` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `w:A->bool`) THEN
+  ASM_REWRITE_TAC[RIGHT_EXISTS_AND_THM] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `u:A->bool` THEN
+  ASM_CASES_TAC `open_in top (u:A->bool)` THEN ASM_REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o LAND_CONV) [GSYM IN] THEN
+  REWRITE_TAC[EXISTS_IN_IMAGE] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_SIMP_TAC[INTERIOR_OF_MAXIMAL_EQ] THEN
+  ASM_MESON_TAC[INTERIOR_OF_SUBSET; SUBSET; IN]);;
 
 (* ------------------------------------------------------------------------- *)
 (* T_0 spaces and the Kolmogorov quotient.                                   *)
@@ -22593,6 +22942,16 @@ let HEREDITARILY_NORMAL_SPACE_PERFECT_MAP_IMAGE = prove
     ==> hereditarily normal_space top'`,
   REWRITE_TAC[perfect_map; proper_map] THEN
   MESON_TAC[HEREDITARILY_NORMAL_SPACE_CONTINUOUS_CLOSED_MAP_IMAGE]);;
+
+let REGULAR_SECOND_COUNTABLE_IMP_HEREDITARILY_NORMAL_SPACE = prove
+ (`!top:A topology.
+        regular_space top /\ second_countable top
+        ==> hereditarily normal_space top`,
+  REWRITE_TAC[hereditarily] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC REGULAR_LINDELOF_IMP_NORMAL_SPACE THEN
+  ASM_SIMP_TAC[REGULAR_SPACE_SUBTOPOLOGY] THEN
+  MATCH_MP_TAC SECOND_COUNTABLE_IMP_LINDELOF_SPACE THEN
+  ASM_SIMP_TAC[SECOND_COUNTABLE_SUBTOPOLOGY]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Completely regular spaces.                                                *)

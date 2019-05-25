@@ -8,6 +8,31 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 18th May 2019       Multivariate/realanalysis.ml
+
+Merged in a fix from Alexey Solovyev for a curious change in behaviour starting
+with OCaml >= 4.06 (?). This seems to be connected with having a "let rec" 
+definition containing a nested "let rec" for a local function with the same
+name. As Alexey pointed out this consistently crashes on recent OCaml versions:
+
+  let rec f =
+    let s t = t in
+    let rec f t = s t
+    and g a = a in
+    f;;
+  
+  Gc.minor();;
+  
+  f 0;;
+
+While it's probably fundamentally an OCaml bug, there was no good reason for
+the code to be the way it was anyway.
+
+Sat 18th May 2019       tactics.ml
+
+Merged a fix from Petros Papapanagiotou for a bug in metavariable
+instantiation in THEN/THENL. This bug had been around a long time!
+
 Sat 20th Apr 2019       lists.ml
 
 Added a two-list asymmetric analog of ALL / PAIRWISE called ALLPAIRS, with
