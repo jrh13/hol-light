@@ -1,0 +1,27 @@
+                FORMALIZED METATHEORY OF FIRST-ORDER LOGIC
+
+                       (c) John Harrison 1998-2008
+
+This is a miscellany of results involving formalization of first-order
+logic and various proof systems, particularly automated theorem proving
+methods like resolution. It's a combination of work published here:
+
+    Formalizing Basic First Order Model Theory
+    Proceedings of the 11th International Conference on Theorem Proving
+    in Higher Order Logics, TPHOLs'98, Springer LNCS 1497, pp. 153-170.
+
+    https://www.cl.cam.ac.uk/~jrh13/papers/model.html
+
+and later work done as a correctness check when writing my textbook on
+automated reasoning:
+
+    "Handbook of Practical Logic and Automated Reasoning"
+    Cambridge University Press 2009
+
+    https://www.cl.cam.ac.uk/~jrh13/atp/index.html
+
+There is additional formalization work connected with the material
+there on limitations (Tarski, Goedel etc.). That can be found in the
+"Arithmetic" subdirectory of the HOL Light repository
+
+    https://github.com/jrh13/hol-light/tree/master/Arithmetic
