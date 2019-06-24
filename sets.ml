@@ -273,6 +273,12 @@ let NOT_EQUAL_SETS = prove
  (`!s:A->bool. !t. ~(s = t) <=> ?x. x IN t <=> ~(x IN s)`,
   SET_TAC[]);;
 
+let INSERT_RESTRICT = prove
+ (`!P s a:A.
+        {x | x IN a INSERT s /\ P x} =
+        if P a then a INSERT {x | x IN s /\ P x} else {x | x IN s /\ P x}`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* The empty set.                                                            *)
 (* ------------------------------------------------------------------------- *)
@@ -420,6 +426,12 @@ let UNION_SUBSET = prove
  (`!s t u. (s UNION t) SUBSET u <=> s SUBSET u /\ t SUBSET u`,
   SET_TAC[]);;
 
+let UNION_RESTRICT = prove
+ (`!P s t.
+        {x | x IN (s UNION t) /\ P x} =
+        {x | x IN s /\ P x} UNION {x | x IN t /\ P x}`,
+  SET_TAC[]);;
+
 let FORALL_SUBSET_UNION = prove
  (`!t u:A->bool.
         (!s. s SUBSET t UNION u ==> P s) <=>
@@ -492,6 +504,12 @@ let SUBSET_INTER = prove
  (`!s t u. s SUBSET (t INTER u) <=> s SUBSET t /\ s SUBSET u`,
   SET_TAC[]);;
 
+let INTER_RESTRICT = prove
+ (`!P s t.
+        {x | x IN (s INTER t) /\ P x} =
+        {x | x IN s /\ P x} INTER {x | x IN t /\ P x}`,
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Distributivity.                                                           *)
 (* ------------------------------------------------------------------------- *)
@@ -558,6 +576,12 @@ let SUBSET_DIFF = prove
 
 let COMPL_COMPL = prove
  (`!s. (:A) DIFF ((:A) DIFF s) = s`,
+  SET_TAC[]);;
+
+let DIFF_RESTRICT = prove
+ (`!P s t.
+        {x | x IN (s DIFF t) /\ P x} =
+        {x | x IN s /\ P x} DIFF {x | x IN t /\ P x}`,
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)

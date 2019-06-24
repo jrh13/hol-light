@@ -44,6 +44,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/prover9 \
 	Library/q \
 	Examples/rectypes \
+	Library/ringtheory \
 	Examples/schnirelmann \
 	Examples/solovay \
 	Examples/sos \
@@ -64,6 +65,7 @@ EXTENDED_EXAMPLES:=\
 	IEEE/make \
 	IsabelleLight/make \
 	Jordan/make \
+	Logic/make \
 	Mizarlight/make \
 	miz3/make-test \
 	Minisat/make-taut \

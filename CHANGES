@@ -8,10 +8,87 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 22nd Jun 2019       Library/ringtheory.ml [new file]
+
+Added a new library file with a basic development of ring theory (where
+ring = commutative ring with 1), using a type `:(A)ring`. The setup is
+directly analogous to "Library/grouptheory.ml" and follows roughly the
+same naming conventions for theorems and general style. So far this is
+mainly a lot of definitions of basic ring concepts and a slew of trivial
+theorems about them. New definitions:
+
+        field
+        ideal_generated
+        integral_domain
+        isomorphic_ring
+        prod_ring
+        product_ring
+        quotient_ring
+        ring_0
+        ring_1
+        ring_add
+        ring_associates
+        ring_automorphism
+        ring_carrier
+        ring_char
+        ring_coprime
+        ring_coset
+        ring_div
+        ring_divides
+        ring_endomorphism
+        ring_epimorphism
+        ring_homomorphism
+        ring_ideal
+        ring_image
+        ring_inv
+        ring_isomorphism
+        ring_isomorphisms
+        ring_kernel
+        ring_monomorphism
+        ring_mul
+        ring_neg
+        ring_of_int
+        ring_of_num
+        ring_pow
+        ring_regular
+        ring_setadd
+        ring_setmul
+        ring_setneg
+        ring_sub
+        ring_unit
+        ring_zerodivisor
+        subring_generated
+        subring_of
+        trivial_ring
+
+Mon 10th Jun 2019       sets.ml
+
+Added a few trivial but occasionally useful set restriction theorems:
+
+  DIFF_RESTRICT =
+    |- !P s t.
+           {x | x IN s DIFF t /\ P x} =
+           {x | x IN s /\ P x} DIFF {x | x IN t /\ P x}
+
+  INSERT_RESTRICT =
+    |- !P s a.
+           {x | x IN a INSERT s /\ P x} =
+           (if P a then a INSERT {x | x IN s /\ P x} else {x | x IN s /\ P x})
+
+  INTER_RESTRICT =
+    |- !P s t.
+           {x | x IN s INTER t /\ P x} =
+           {x | x IN s /\ P x} INTER {x | x IN t /\ P x}
+
+  UNION_RESTRICT =
+    |- !P s t.
+           {x | x IN s UNION t /\ P x} =
+           {x | x IN s /\ P x} UNION {x | x IN t /\ P x}
+
 Sat 18th May 2019       Multivariate/realanalysis.ml
 
 Merged in a fix from Alexey Solovyev for a curious change in behaviour starting
-with OCaml >= 4.06 (?). This seems to be connected with having a "let rec" 
+with OCaml >= 4.06 (?). This seems to be connected with having a "let rec"
 definition containing a nested "let rec" for a local function with the same
 name. As Alexey pointed out this consistently crashes on recent OCaml versions:
 
@@ -20,9 +97,9 @@ name. As Alexey pointed out this consistently crashes on recent OCaml versions:
     let rec f t = s t
     and g a = a in
     f;;
-  
+
   Gc.minor();;
-  
+
   f 0;;
 
 While it's probably fundamentally an OCaml bug, there was no good reason for
