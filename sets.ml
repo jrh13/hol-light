@@ -546,6 +546,11 @@ let DISJOINT_UNION = prove
  (`!s:A->bool. !t u. DISJOINT (s UNION t) u <=> DISJOINT s u /\ DISJOINT t u`,
   SET_TAC[]);;
 
+let DISJOINT_SING = prove
+ (`(!s a:A. DISJOINT s {a} <=> ~(a IN s)) /\
+   (!s a:A. DISJOINT {a} s <=> ~(a IN s))`,
+  SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Set difference.                                                           *)
 (* ------------------------------------------------------------------------- *)

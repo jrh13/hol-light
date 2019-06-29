@@ -2,6 +2,7 @@
 (* Simple formulation of rings (commutative, with 1) as type "(A)ring".      *)
 (* ========================================================================= *)
 
+needs "Library/binomial.ml";;
 needs "Library/card.ml";;
 
 (* ------------------------------------------------------------------------- *)
@@ -697,6 +698,462 @@ let RING_OF_INT_POW = prove
   INDUCT_TAC THEN ASM_REWRITE_TAC[ring_pow; INT_POW; RING_OF_INT_1] THEN
   ASM_REWRITE_TAC[RING_OF_INT_MUL]);;
 
+let RING_POW_NEG = prove
+ (`!r (x:A) n.
+        x IN ring_carrier r
+        ==> ring_pow r (ring_neg r x) n =
+            if EVEN n then ring_pow r x n else ring_neg r (ring_pow r x n)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
+  MATCH_MP_TAC num_INDUCTION THEN SIMP_TAC[EVEN; ring_pow; COND_SWAP] THEN
+  X_GEN_TAC `n:num` THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[RING_MUL_LNEG; RING_MUL_RNEG; RING_POW; RING_NEG; RING_MUL;
+               RING_NEG_NEG]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Sum in a ring. The instantiation required is a little ugly since all      *)
+(* the ITSET/iterate stuff is really designed for total operators.           *)
+(* ------------------------------------------------------------------------- *)
+
+let ring_sum = new_definition
+ `ring_sum r s (f:K->A) =
+        iterate (\x y. if x IN ring_carrier r /\ y IN ring_carrier r
+                       then ring_add r x y
+                       else if x IN ring_carrier r then y
+                       else if y IN ring_carrier r then x
+                       else @z:A. ~(z IN ring_carrier r))
+                {x | x IN s /\ f(x) IN ring_carrier r} f`;;
+
+let NEUTRAL_RING_ADD = prove
+ (`!r:A ring.
+        neutral (\x y. if x IN ring_carrier r /\ y IN ring_carrier r
+                       then ring_add r x y
+                       else if x IN ring_carrier r then y
+                       else if y IN ring_carrier r then x
+                       else @z. ~(z IN ring_carrier r)) = ring_0 r`,
+  GEN_TAC THEN REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  X_GEN_TAC `x:A` THEN REWRITE_TAC[] THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o SPEC `ring_0 r:A`); DISCH_THEN SUBST1_TAC] THEN
+  SIMP_TAC[RING_0; RING_ADD_LZERO; RING_ADD_RZERO; COND_ID]);;
+
+let MONOIDAL_RING_ADD = prove
+ (`!r:A ring.
+        monoidal (\x y. if x IN ring_carrier r /\ y IN ring_carrier r
+                        then ring_add r x y
+                        else if x IN ring_carrier r then y
+                         else if y IN ring_carrier r then x
+                        else @z. ~(z IN ring_carrier r))`,
+  REWRITE_TAC[monoidal; NEUTRAL_RING_ADD] THEN
+  SIMP_TAC[RING_0; RING_ADD_LZERO; COND_ID] THEN
+  GEN_TAC THEN CONJ_TAC THEN MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN
+  TRY(X_GEN_TAC `z:A`) THEN
+  MAP_EVERY ASM_CASES_TAC
+   [`(x:A) IN ring_carrier r`; `(y:A) IN ring_carrier r`;
+    `(z:A) IN ring_carrier r`] THEN
+  ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC[RING_ADD] THEN
+  ASM_SIMP_TAC[RING_ADD_AC; RING_ADD] THEN ASM_MESON_TAC[]);;
+
+let RING_SUM = prove
+ (`!r s (f:K->A). ring_sum r s f IN ring_carrier r`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ring_sum] THEN
+  MATCH_MP_TAC
+   (SIMP_RULE[NEUTRAL_RING_ADD; RING_0; RING_ADD]
+     (ISPEC `\x:B. x IN ring_carrier r`
+     (MATCH_MP ITERATE_CLOSED (ISPEC `r:C ring` MONOIDAL_RING_ADD)))) THEN
+  SIMP_TAC[IN_ELIM_THM]);;
+
+let RING_SUM_RESTRICT = prove
+ (`!s f. ring_sum r s f = ring_sum r {a | a IN s /\ f a IN ring_carrier r} f`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ring_sum] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN SET_TAC[]);;
+
+let RING_SUM_SUPPORT = prove
+ (`!s (f:K->A).
+        ring_sum r s f = ring_sum r {a | a IN s /\ ~(f a = ring_0 r)} f`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ring_sum] THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM ITERATE_SUPPORT] THEN
+  REWRITE_TAC[support; NEUTRAL_RING_ADD] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN SET_TAC[]);;
+
+let RING_SUM_CLAUSES = prove
+ (`(!r f:K->A. ring_sum r {} f = ring_0 r) /\
+   (!r x (f:K->A) s.
+          FINITE s
+          ==> ring_sum r (x INSERT s) f =
+              (if f(x) IN ring_carrier r ==> x IN s
+               then ring_sum r s f else ring_add r (f x) (ring_sum r s f)))`,
+  REWRITE_TAC[ring_sum; SET_RULE `{x | x IN {} /\ P x} = {}`] THEN
+  REWRITE_TAC[INSERT_RESTRICT] THEN
+  REPEAT STRIP_TAC THEN TRY COND_CASES_TAC THEN
+  ASM_SIMP_TAC[MATCH_MP ITERATE_CLAUSES (ISPEC `r:A ring` MONOIDAL_RING_ADD);
+               NOT_IN_EMPTY; EMPTY_GSPEC; FINITE_RESTRICT] THEN
+  ASM_REWRITE_TAC[NEUTRAL_RING_ADD; GSYM ring_sum; IN_ELIM_THM; RING_SUM]);;
+
+let RING_SUM_SING = prove
+ (`!r (f:K->A) a.
+        ring_sum r {a} f = if f a IN ring_carrier r then f a else ring_0 r`,
+  SIMP_TAC[RING_SUM_CLAUSES; FINITE_EMPTY; NOT_IN_EMPTY; COND_SWAP] THEN
+  MESON_TAC[RING_ADD_RZERO]);;
+
+let RING_SUM_CLAUSES_NUMSEG_ALT = prove
+ (`(!r m f:num->A.
+        ring_sum r (m..0) f =
+        if m = 0 /\ f 0 IN ring_carrier r then f 0 else ring_0 r) /\
+   (!r m n f:num->A.
+        ring_sum r (m..SUC n) f =
+        if m <= SUC n /\ f(SUC n) IN ring_carrier r
+        then ring_add r (f(SUC n)) (ring_sum r (m..n) f)
+        else ring_sum r (m..n) f)`,
+  REWRITE_TAC[NUMSEG_CLAUSES] THEN REPEAT STRIP_TAC THENL
+   [ASM_CASES_TAC `m = 0`; ASM_CASES_TAC `m <= SUC n`] THEN
+  ASM_REWRITE_TAC[RING_SUM_SING; CONJUNCT1 RING_SUM_CLAUSES] THEN
+  ASM_SIMP_TAC[RING_SUM_CLAUSES; FINITE_NUMSEG] THEN
+  REWRITE_TAC[IN_NUMSEG; ARITH_RULE `~(SUC n <= n)`; COND_SWAP]);;
+
+let RING_SUM_CLAUSES_NUMSEG = prove
+ (`(!r m f:num->A.
+        ring_sum r (m..0) f =
+        if m = 0 /\ f 0 IN ring_carrier r then f 0 else ring_0 r) /\
+   (!r m n f:num->A.
+        ring_sum r (m..SUC n) f =
+        if m <= SUC n /\ f(SUC n) IN ring_carrier r
+        then ring_add r (ring_sum r (m..n) f) (f(SUC n))
+        else ring_sum r (m..n) f)`,
+  REWRITE_TAC[RING_SUM_CLAUSES_NUMSEG_ALT] THEN
+  MESON_TAC[RING_SUM; RING_ADD_SYM]);;
+
+let RING_SUM_CLAUSES_LEFT = prove
+ (`!r (f:num->A) m n.
+        m <= n
+        ==> ring_sum r (m..n) f =
+            if f m IN ring_carrier r
+            then ring_add r (f m) (ring_sum r (m+1..n) f)
+            else ring_sum r (m+1..n) f`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[GSYM NUMSEG_LREC; RING_SUM_CLAUSES; FINITE_NUMSEG] THEN
+  REWRITE_TAC[IN_NUMSEG; ARITH_RULE `~(n + 1 <= n)`; COND_SWAP]);;
+
+let RING_SUM_UNION = prove
+ (`!r (f:K->A) s t.
+        FINITE s /\ FINITE t /\ DISJOINT s t
+        ==> ring_sum r (s UNION t) f =
+            ring_add r (ring_sum r s f) (ring_sum r t f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_sum; UNION_RESTRICT] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) (MATCH_MP ITERATE_UNION
+    (ISPEC `r:C ring` MONOIDAL_RING_ADD)) o lhand o snd) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[FINITE_RESTRICT] THEN ASM SET_TAC[];
+    DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[]] THEN
+  REWRITE_TAC[GSYM ring_sum; RING_SUM]);;
+
+let RING_SUM_DIFF = prove
+ (`!r (f:K->A) s t.
+        FINITE s /\ t SUBSET s
+        ==> ring_sum r (s DIFF t) f =
+            ring_sub r (ring_sum r s f) (ring_sum r t f)`,
+  REPEAT STRIP_TAC THEN SIMP_TAC[RING_EQ_SUB_LADD; RING_SUM] THEN
+  SIMP_TAC[ring_sum; DIFF_RESTRICT] THEN
+  W(MP_TAC o PART_MATCH (lhand o lhand o rand) (MATCH_MP ITERATE_DIFF
+    (ISPEC `r:C ring` MONOIDAL_RING_ADD)) o lhand o lhand o snd) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[FINITE_RESTRICT] THEN ASM SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[GSYM ring_sum; RING_SUM; GSYM DIFF_RESTRICT]);;
+
+let RING_SUM_INCL_EXCL = prove
+ (`!r (f:K->A) s t.
+        FINITE s /\ FINITE t
+        ==> ring_add r (ring_sum r s f) (ring_sum r t f) =
+            ring_add r (ring_sum r (s UNION t) f)
+                       (ring_sum r (s INTER t) f)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[ring_sum; INTER_RESTRICT; UNION_RESTRICT] THEN
+  W(MP_TAC o PART_MATCH (funpow 3 rand) (MATCH_MP ITERATE_INCL_EXCL
+    (ISPEC `r:C ring` MONOIDAL_RING_ADD)) o rand o rand o snd) THEN
+  ASM_SIMP_TAC[FINITE_RESTRICT] THEN
+  REWRITE_TAC[GSYM INTER_RESTRICT; GSYM UNION_RESTRICT] THEN
+  REWRITE_TAC[GSYM ring_sum; RING_SUM]);;
+
+let RING_SUM_CLOSED = prove
+ (`!r P (f:K->A) s.
+        P(ring_0 r) /\
+        (!x y. x IN ring_carrier r /\ y IN ring_carrier r /\ P x /\ P y
+               ==> P(ring_add r x y)) /\
+        (!a. a IN s ==> P(f a))
+        ==> P(ring_sum r s f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_sum] THEN
+  MP_TAC(ISPECL
+   [`\x:A. x IN ring_carrier r /\ P x`;
+    `f:K->A`; `{a | a IN s /\ (f:K->A) a IN ring_carrier r}`]
+   (MATCH_MP (REWRITE_RULE[RIGHT_IMP_FORALL_THM] ITERATE_CLOSED)
+             (ISPEC `r:C ring` MONOIDAL_RING_ADD))) THEN
+  ASM_SIMP_TAC[NEUTRAL_RING_ADD; IMP_IMP; RING_0; RING_ADD; IN_ELIM_THM]);;
+
+let RING_SUM_RELATED = prove
+ (`!r R (f:K->A) g s.
+        R (ring_0 r) (ring_0 r)/\
+        (!x y x' y'. x IN ring_carrier r /\ y IN ring_carrier r /\
+                     x' IN ring_carrier r /\ y' IN ring_carrier r /\
+                     R x y /\ R x' y'
+                     ==> R (ring_add r x x') (ring_add r y y')) /\
+        FINITE s /\
+        (!a. a IN s
+             ==> (f a IN ring_carrier r <=> g a IN ring_carrier r) /\
+                 R (f a) (g a))
+        ==> R (ring_sum r s f) (ring_sum r s g)`,
+  REPLICATE_TAC 4 GEN_TAC THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r ==> s <=> p /\ q ==> r ==> s`] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[FORALL_IN_INSERT; RING_SUM_CLAUSES] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[COND_SWAP] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[RING_SUM]);;
+
+let RING_SUM_EQ_0 = prove
+ (`!r (f:K->A) s.
+        (!a. a IN s /\ f a IN ring_carrier r ==> f a = ring_0 r)
+        ==> ring_sum r s f = ring_0 r`,
+  REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC[RING_SUM_RESTRICT] THEN
+  ONCE_REWRITE_TAC[RING_SUM_SUPPORT] THEN
+  MATCH_MP_TAC(MESON[RING_SUM_CLAUSES]
+   `s = {} ==> ring_sum r s f = ring_0 r`) THEN
+  ASM SET_TAC[]);;
+
+let RING_SUM_0 = prove
+ (`!r s. ring_sum r s (\i:K. ring_0 r):A = ring_0 r`,
+  SIMP_TAC[RING_SUM_EQ_0]);;
+
+let RING_SUM_DELETE = prove
+ (`!r (f:K->A) s a.
+        FINITE s /\ a IN s /\ f a IN ring_carrier r
+        ==> ring_sum r (s DELETE a) f = ring_sub r (ring_sum r s f) (f a)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `(a:K) IN s` THEN ASM_REWRITE_TAC[] THEN
+  ABBREV_TAC `t = s DELETE (a:K)` THEN
+  SUBGOAL_THEN `s = (a:K) INSERT t` SUBST1_TAC THENL
+   [ASM SET_TAC[]; REWRITE_TAC[FINITE_INSERT] THEN STRIP_TAC] THEN
+  ASM_SIMP_TAC[RING_SUM_CLAUSES] THEN
+  EXPAND_TAC "t" THEN REWRITE_TAC[IN_DELETE] THEN
+  ASM_SIMP_TAC[RING_EQ_SUB_LADD; RING_SUM; RING_ADD] THEN
+  ASM_SIMP_TAC[RING_ADD_SYM; RING_SUM]);;
+
+let RING_SUM_NEG = prove
+ (`!r (f:K->A) s.
+        FINITE s /\
+        (!a. a IN s ==> f a IN ring_carrier r)
+        ==> ring_sum r s (\x. ring_neg r (f x)) =
+            ring_neg r (ring_sum r s f)`,
+  REPLICATE_TAC 2 GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[RING_SUM_CLAUSES; FORALL_IN_INSERT; RING_NEG] THEN
+  SIMP_TAC[RING_NEG_ADD; RING_SUM; RING_NEG_0]);;
+
+let RING_SUM_ADD = prove
+ (`!r (f:K->A) (g:K->A) s.
+        FINITE s /\
+        (!a. a IN s ==> f a IN ring_carrier r /\ g a IN ring_carrier r)
+        ==> ring_sum r s (\x. ring_add r (f x) (g x)) =
+            ring_add r (ring_sum r s f) (ring_sum r s g)`,
+  REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[RING_SUM_CLAUSES; FORALL_IN_INSERT; RING_ADD] THEN
+  ASM_SIMP_TAC[RING_ADD_AC; RING_SUM; RING_ADD] THEN
+  SIMP_TAC[RING_ADD_LZERO; RING_0]);;
+
+let RING_SUM_EQ = prove
+ (`!r (f:K->A) g s.
+        (!a. a IN s ==> f a = g a) ==> ring_sum r s f = ring_sum r s g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_sum] THEN
+  SUBGOAL_THEN
+   `{a | a IN s /\ (g:K->A) a IN ring_carrier r} =
+    {a | a IN s /\ (f:K->A) a IN ring_carrier r}`
+  SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC(MATCH_MP ITERATE_EQ (ISPEC `r:C ring` MONOIDAL_RING_ADD)) THEN
+  ASM SET_TAC[]);;
+
+let RING_SUM_DELTA = prove
+ (`!r s (i:K) (a:A).
+        ring_sum r s (\j. if j = i then a else ring_0 r) =
+        if i IN s /\ a IN ring_carrier r then a else ring_0 r`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[RING_SUM_SUPPORT] THEN
+  ONCE_REWRITE_TAC[RING_SUM_RESTRICT] THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [COND_RAND] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [COND_RATOR] THEN
+  REWRITE_TAC[RING_0; NOT_IMP; TAUT `(if p then q else T) <=> p ==> q`] THEN
+  ASM_CASES_TAC `(i:K) IN s` THEN ASM_SIMP_TAC[RING_SUM_CLAUSES; SET_RULE
+   `~(i IN s) ==> {j | (j IN s /\ j = i /\ P j) /\ Q j} = {}`] THEN
+  ASM_CASES_TAC `a:A = ring_0 r` THEN
+  ASM_REWRITE_TAC[COND_ID; EMPTY_GSPEC; RING_SUM_CLAUSES] THEN
+  ASM_CASES_TAC `(a:A) IN ring_carrier r` THEN
+  ASM_SIMP_TAC[TAUT `~((p /\ q) /\ ~q)`; EMPTY_GSPEC; RING_SUM_CLAUSES] THEN
+  ASM_SIMP_TAC[SET_RULE `i IN s ==> {j | j IN s /\ j = i} = {i}`] THEN
+  ASM_REWRITE_TAC[RING_SUM_SING]);;
+
+let RING_SUM_LMUL = prove
+ (`!r (f:K->A) c s.
+        c IN ring_carrier r /\
+        FINITE s /\
+        (!a. a IN s ==> f a IN ring_carrier r)
+        ==> ring_sum r s (\x. ring_mul r c (f x)) =
+            ring_mul r c (ring_sum r s f)`,
+  REPLICATE_TAC 3 GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[RING_SUM_CLAUSES; FORALL_IN_INSERT; RING_MUL;
+               RING_ADD_LDISTRIB; RING_MUL_RZERO; RING_SUM]);;
+
+let RING_SUM_RMUL = prove
+ (`!r (f:K->A) c s.
+        c IN ring_carrier r /\
+        FINITE s /\
+        (!a. a IN s ==> f a IN ring_carrier r)
+        ==> ring_sum r s (\x. ring_mul r (f x) c) =
+            ring_mul r (ring_sum r s f) c`,
+  REPLICATE_TAC 3 GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[RING_SUM_CLAUSES; FORALL_IN_INSERT; RING_MUL;
+               RING_ADD_RDISTRIB; RING_MUL_LZERO; RING_SUM]);;
+
+let RING_SUM_SWAP = prove
+ (`!r (f:K->L->A) s t.
+        FINITE s /\ FINITE t /\
+        (!i j. i IN s /\ j IN t ==> f i j IN ring_carrier r)
+        ==> ring_sum r s (\i. ring_sum r t (f i)) =
+            ring_sum r t (\j. ring_sum r s (\i. f i j))`,
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[FORALL_IN_INSERT; RING_SUM_CLAUSES; RING_SUM; RING_SUM_0;
+               GSYM RING_SUM_ADD] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC[]);;
+
+let RING_SUM_REFLECT = prove
+ (`!r (x:num->A) m n.
+        (!i. m <= i /\ i <= n ==> x i IN ring_carrier r)
+        ==> ring_sum r (m..n) x =
+            if n < m then ring_0 r
+            else ring_sum r (0..n-m) (\i. x(n - i))`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `~(n < m)
+    ==> !j. 0 <= j /\ j <= n - m ==> (x:num->A) (n - j) IN ring_carrier r`
+  ASSUME_TAC THENL
+   [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  REWRITE_TAC[ring_sum; IN_NUMSEG] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `{x | P x /\ f x IN s} = {x | P x /\ (P x ==> f x IN s)}`] THEN
+  ASM_SIMP_TAC[] THEN REWRITE_TAC[GSYM numseg] THEN
+  MP_TAC(ISPECL [`x:num->A`; `m:num`; `n:num`]
+   (MATCH_MP ITERATE_REFLECT (ISPEC `r:C ring` MONOIDAL_RING_ADD))) THEN
+  ASM_REWRITE_TAC[NEUTRAL_RING_ADD]);;
+
+let RING_SUM_EQ_GENERAL_INVERSES = prove
+ (`!r s t (f:K->A) (g:L->A) h k.
+        (!i. i IN s ==> f i IN ring_carrier r) /\
+        (!j. j IN t ==> g j IN ring_carrier r) /\
+        (!y. y IN t ==> k y IN s /\ h (k y) = y) /\
+        (!x. x IN s ==> h x IN t /\ k (h x) = x /\ g (h x) = f x)
+        ==> ring_sum r s f = ring_sum r t g`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_sum] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `{x | P x /\ f x IN s} = {x | P x /\ (P x ==> f x IN s)}`] THEN
+  ASM_SIMP_TAC[IN_GSPEC] THEN MATCH_MP_TAC
+   (MATCH_MP ITERATE_EQ_GENERAL_INVERSES
+     (ISPEC `r:C ring` MONOIDAL_RING_ADD)) THEN
+  ASM_METIS_TAC[]);;
+
+let RING_SUM_SUM_PRODUCT = prove
+ (`!r s t (x:K->L->A).
+        FINITE s /\
+        (!i. i IN s ==> FINITE(t i)) /\
+        (!i j. i IN s /\ j IN t i ==> x i j IN ring_carrier r)
+        ==> ring_sum r s (\i. ring_sum r (t i) (x i)) =
+            ring_sum r {i,j | i IN s /\ j IN t i} (\(i,j). x i j)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_sum] THEN
+  MP_TAC(ISPECL [`s:K->bool`; `t:K->L->bool`; `x:K->L->A`]
+  (MATCH_MP ITERATE_ITERATE_PRODUCT (ISPEC `r:D ring` MONOIDAL_RING_ADD))) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[]
+   `t' = t /\ s' = s ==> s = t ==> s' = t'`) THEN
+  CONJ_TAC THENL
+   [AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+    REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN
+    REWRITE_TAC[IN_ELIM_THM; PAIR_EQ] THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  MATCH_MP_TAC(MESON[ITERATE_EQ]
+   `monoidal op /\ s = t /\ (!i. i IN s ==> f i = g i)
+    ==> iterate op s f = iterate op t g`) THEN
+  REWRITE_TAC[MONOIDAL_RING_ADD] THEN
+  REWRITE_TAC[GSYM ring_sum; RING_SUM; IN_GSPEC] THEN
+  X_GEN_TAC `i:K` THEN DISCH_TAC THEN REWRITE_TAC[ring_sum] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN_ELIM_PAIR_THM] THEN
+  REWRITE_TAC[IN_ELIM_THM; PAIR_EQ] THEN ASM_MESON_TAC[]);;
+
+let RING_SUM_SUPERSET = prove
+ (`!r (f:K->A) u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f x = ring_0 r)
+        ==> ring_sum r v f = ring_sum r u f`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[RING_SUM_SUPPORT] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
+
+let RING_SUM_IMAGE = prove
+ (`!r (f:K->L) (g:L->A) s.
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+        ==> ring_sum r (IMAGE f s) g = ring_sum r s (g o f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_sum] THEN
+  W(MP_TAC o PART_MATCH (rand o rand)
+   (MATCH_MP ITERATE_IMAGE(ISPEC `r:C ring` MONOIDAL_RING_ADD)) o
+    rand o snd) THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[o_THM] THEN ASM SET_TAC[]);;
+
+let RING_SUM_OFFSET = prove
+ (`!p r (f:num->A) m n.
+        ring_sum r (m+p..n+p) f = ring_sum r (m..n) (\i. f(i + p))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[NUMSEG_OFFSET_IMAGE] THEN
+  MATCH_MP_TAC(REWRITE_RULE[o_DEF] RING_SUM_IMAGE) THEN
+  SIMP_TAC[EQ_ADD_RCANCEL]);;
+
+let RING_BINOMIAL_THEOREM = prove
+ (`!r n x y:A.
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> ring_pow r (ring_add r x y) n =
+            ring_sum r (0..n)
+              (\k. ring_mul r (ring_of_num r (binom(n,k)))
+                    (ring_mul r (ring_pow r x k) (ring_pow r y (n - k))))`,
+  GEN_TAC THEN INDUCT_TAC THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[NUMSEG_SING; RING_SUM_SING; binom; SUB_REFL; ring_pow;
+               RING_MUL_LID; RING_OF_NUM_1; RING_1] THEN
+  ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 4)
+   [RING_SUM_CLAUSES_LEFT; ADD1; ARITH_RULE `0 <= n + 1`;
+    RING_SUM_OFFSET; RING_POW; RING_MUL; RING_1; RING_OF_NUM] THEN
+  ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 4)
+   [ring_pow; binom; GSYM ADD1; GSYM RING_SUM_LMUL; FINITE_NUMSEG;
+    RING_POW; RING_MUL; RING_1; RING_OF_NUM; RING_ADD] THEN
+  ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 5)
+   [RING_OF_NUM_ADD; RING_MUL_LID; SUB_0; RING_ADD_RDISTRIB; RING_SUM_ADD;
+    RING_POW; RING_MUL; RING_1; RING_OF_NUM; RING_ADD; FINITE_NUMSEG;
+    RING_OF_NUM_1] THEN
+  MATCH_MP_TAC(MESON[RING_ADD_AC]
+   `a IN ring_carrier r /\ b IN ring_carrier r /\ c IN ring_carrier r /\
+    d IN ring_carrier r /\ e IN ring_carrier r /\
+    a = e /\ b = ring_add r c d
+    ==> ring_add r a b = ring_add r c (ring_add r d e)`) THEN
+  ASM_SIMP_TAC[RING_SUM; RING_MUL; RING_POW; RING_OF_NUM] THEN  CONJ_TAC THENL
+   [ASM_SIMP_TAC[SUB_SUC; RING_MUL_AC; RING_MUL; RING_OF_NUM; RING_POW];
+    REWRITE_TAC[GSYM ring_pow]] THEN
+  ASM_SIMP_TAC[ADD1; SYM(REWRITE_CONV
+   [RING_SUM_OFFSET] `ring_sum r (m+1..n+1) (\i. f i)`)] THEN
+  ASM_SIMP_TAC[RING_SUM_CLAUSES_NUMSEG; GSYM ADD1; LE_SUC; LE_0;
+               RING_MUL; RING_POW; RING_OF_NUM] THEN
+  ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 5)
+   [RING_SUM_CLAUSES_LEFT; LE_0; BINOM_LT; LT; RING_MUL_LID; SUB_0;
+               RING_OF_NUM_1; ring_pow; binom; RING_MUL_LZERO; RING_ADD_RZERO;
+               RING_OF_NUM_0; RING_ADD_LZERO; RING_SUM;
+               RING_MUL; RING_POW; RING_OF_NUM] THEN
+  REWRITE_TAC[ARITH] THEN AP_TERM_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN
+  SIMP_TAC[IN_NUMSEG; ARITH_RULE`k <= n ==> SUC n - k = SUC(n - k)`] THEN
+  ASM_SIMP_TAC[ring_pow; RING_MUL_AC; RING_POW; RING_MUL; RING_OF_NUM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Divisibility, zerodivisors, units etc.                                    *)
 (*                                                                           *)
@@ -729,6 +1186,7 @@ let ring_associates = new_definition
 
 let ring_coprime = new_definition
  `ring_coprime r (a:A,b) <=>
+        a IN ring_carrier r /\ b IN ring_carrier r /\
         !d. ring_divides r d a /\ ring_divides r d b ==> ring_unit r d`;;
 
 let ring_inv = new_definition
@@ -743,6 +1201,12 @@ let ring_div = new_definition
 let RING_UNIT_IN_CARRIER = prove
  (`!r a:A. ring_unit r a ==> a IN ring_carrier r`,
   SIMP_TAC[ring_unit]);;
+
+let RING_DIVIDES_IN_CARRIER = prove
+ (`!r a b:A.
+        ring_divides r a b
+        ==> a IN ring_carrier r /\ b IN ring_carrier r`,
+  SIMP_TAC[ring_divides]);;
 
 let RING_INV,RING_MUL_RINV = (CONJ_PAIR o prove)
  (`(!r a:A. a IN ring_carrier r ==> (ring_inv r a) IN ring_carrier r) /\
@@ -857,6 +1321,27 @@ let RING_MUL_IMP_UNITS = prove
   REWRITE_TAC[ring_unit] THEN
   MESON_TAC[RING_MUL_SYM]);;
 
+let RING_UNIT_MUL_EQ = prove
+ (`!r x y:A.
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> (ring_unit r (ring_mul r x y) <=> ring_unit r x /\ ring_unit r y)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[RING_UNIT_MUL] THEN
+  REWRITE_TAC[ring_unit] THEN ASM_MESON_TAC[RING_MUL; RING_MUL_AC]);;
+
+let RING_UNIT_POW = prove
+ (`!r (a:A) n. ring_unit r a ==> ring_unit r (ring_pow r a n)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[ring_pow; RING_UNIT_1; RING_UNIT_MUL]);;
+
+let RING_UNIT_POW_EQ = prove
+ (`!r (a:A) n.
+        a IN ring_carrier r
+        ==> (ring_unit r (ring_pow r a n) <=> n = 0 \/ ring_unit r a)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[ring_pow; RING_UNIT_1; RING_UNIT_MUL_EQ; RING_POW; NOT_SUC] THEN
+  CONV_TAC TAUT);;
+
 let RING_UNIT_DIVIDES_ANY = prove
  (`!r a b:A. ring_unit r a /\ b IN ring_carrier r ==> ring_divides r a b`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
@@ -957,6 +1442,17 @@ let RING_DIVIDES_RMUL2 = prove
         ==> ring_divides r d a`,
   REWRITE_TAC[ring_divides] THEN MESON_TAC[RING_MUL_AC; RING_MUL]);;
 
+let RING_DIVIDES_MUL2 = prove
+ (`!r a b c d:A.
+        ring_divides r a b /\ ring_divides r c d
+        ==> ring_divides r (ring_mul r a c) (ring_mul r b d)`,
+  REPEAT GEN_TAC THEN SIMP_TAC[ring_divides; RING_MUL] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+  REWRITE_TAC[LEFT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:A`; `v:A`] THEN STRIP_TAC THEN
+  EXISTS_TAC `ring_mul r u v:A` THEN ASM_SIMP_TAC[RING_MUL] THEN
+  ASM_SIMP_TAC[RING_MUL_AC; RING_MUL]);;
+
 let RING_ASSOCIATES_IN_CARRIER = prove
  (`!r a a':A. ring_associates r a a'
               ==> a IN ring_carrier r /\ a' IN ring_carrier r`,
@@ -986,6 +1482,21 @@ let RING_ASSOCIATES_1 = prove
    (!r a:A. ring_associates r (ring_1 r) a <=> ring_unit r a)`,
   REWRITE_TAC[ring_associates; RING_DIVIDES_1; RING_DIVIDES_ONE] THEN
   MESON_TAC[ring_unit]);;
+
+let RING_ASSOCIATES_MUL = prove
+ (`!r a a' b b'.
+        ring_associates r a a' /\ ring_associates r b b'
+        ==> ring_associates r (ring_mul r a b) (ring_mul r a' b')`,
+  SIMP_TAC[ring_associates; RING_DIVIDES_MUL2]);;
+
+let RING_ASSOCIATES_POW = prove
+ (`!r a (a':A) n.
+        ring_associates r a a'
+        ==> ring_associates r (ring_pow r a n) (ring_pow r a' n)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN
+  ASM_SIMP_TAC[ring_pow; RING_ASSOCIATES_REFL; RING_1; RING_ASSOCIATES_MUL;
+                RING_MUL]);;
 
 let RING_ZERODIVISOR_0 = prove
  (`!r:A ring. ring_zerodivisor r (ring_0 r) <=> ~trivial_ring r`,
@@ -1057,7 +1568,8 @@ let RING_ASSOCIATES_COPRIME = prove
         ring_associates r a a' /\ ring_associates r b b'
         ==> (ring_coprime r (a,b) <=> ring_coprime r (a',b'))`,
   REWRITE_TAC[ring_coprime] THEN
-  MESON_TAC[RING_ASSOCIATES_DIVIDES; RING_ASSOCIATES_REFL; ring_divides]);;
+  MESON_TAC[RING_ASSOCIATES_DIVIDES; RING_ASSOCIATES_REFL;
+            RING_ASSOCIATES_IN_CARRIER; ring_divides]);;
 
 let RING_ASSOCIATES_ZERODIVISOR = prove
  (`!r a a':A.
@@ -1446,6 +1958,13 @@ let RING_MULTIPLE_IN_IDEAL = prove
  (`!r j a b:A. ring_ideal r j /\ a IN j /\ ring_divides r a b ==> b IN j`,
   REWRITE_TAC[ring_divides] THEN MESON_TAC[IN_RING_IDEAL_RMUL]);;
 
+let IN_RING_IDEAL_SUM = prove
+ (`!r j s (f:K->A).
+        ring_ideal r j /\ (!i. i IN s ==> f i IN j) ==> ring_sum r s f IN j`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(REWRITE_RULE[]
+        (ISPECL [`r:A ring`; `\x:A. x IN j`] RING_SUM_CLOSED)) THEN
+  ASM_MESON_TAC[ring_ideal; SUBSET]);;
+
 let RING_ASSOCIATES_IN_IDEAL = prove
  (`!r j a a'.
         ring_ideal r j /\ ring_associates r a a'
@@ -1499,7 +2018,7 @@ let TRIVIAL_RING_IDEAL = prove
   SIMP_TAC[ring_ideal; IN_SING; SING_SUBSET] THEN
   SIMP_TAC[RING_ADD_LZERO; RING_0; RING_MUL_RZERO; RING_NEG_0]);;
 
-let CARRIER_RING_IDEAL = prove
+let RING_IDEAL_CARRIER = prove
  (`!r:A ring. ring_ideal r (ring_carrier r)`,
   REWRITE_TAC[ring_ideal; SUBSET_REFL] THEN
   SIMP_TAC[RING_0; RING_NEG; RING_ADD; RING_MUL]);;
@@ -2009,7 +2528,7 @@ let RING_IDEAL_IDEAL_GENERATED = prove
   MATCH_MP_TAC RING_IDEAL_INTERS THEN
   SIMP_TAC[GSYM MEMBER_NOT_EMPTY; IN_ELIM_THM] THEN
   EXISTS_TAC `ring_carrier r:A->bool` THEN
-  REWRITE_TAC[CARRIER_RING_IDEAL; INTER_SUBSET]);;
+  REWRITE_TAC[RING_IDEAL_CARRIER; INTER_SUBSET]);;
 
 let IDEAL_GENERATED_MONO = prove
  (`!r s t:A->bool.
@@ -2047,7 +2566,7 @@ let IDEAL_GENERATED_SUBSET = prove
          ideal_generated r h SUBSET ring_carrier r`,
   REPEAT GEN_TAC THEN REWRITE_TAC[ideal_generated] THEN
   MATCH_MP_TAC(SET_RULE `a IN s ==> INTERS s SUBSET a`) THEN
-  REWRITE_TAC[IN_ELIM_THM; CARRIER_RING_IDEAL; INTER_SUBSET]);;
+  REWRITE_TAC[IN_ELIM_THM; RING_IDEAL_CARRIER; INTER_SUBSET]);;
 
 let FINITE_IDEAL_GENERATED = prove
  (`!r s:A->bool.
@@ -2091,7 +2610,7 @@ let IDEAL_GENERATED_RING_IDEAL_EQ = prove
 let IDEAL_GENERATED_RING_CARRIER = prove
  (`!r:A ring. ideal_generated r (ring_carrier r) = ring_carrier r`,
   GEN_TAC THEN REWRITE_TAC[RINGS_EQ] THEN
-  SIMP_TAC[IDEAL_GENERATED_RING_IDEAL; CARRIER_RING_IDEAL] THEN
+  SIMP_TAC[IDEAL_GENERATED_RING_IDEAL; RING_IDEAL_CARRIER] THEN
   REWRITE_TAC[ideal_generated]);;
 
 let IDEAL_GENERATED_SUBSET_CARRIER_SUBSET = prove
@@ -3574,7 +4093,7 @@ let RING_COSET_CARRIER = prove
  (`!r x:A. x IN ring_carrier r
            ==> ring_coset r (ring_carrier r) x = ring_carrier r`,
   SIMP_TAC[RING_COSET_SETADD; RING_SETADD_LSUBSET; SING_SUBSET;
-           NOT_INSERT_EMPTY; CARRIER_RING_IDEAL]);;
+           NOT_INSERT_EMPTY; RING_IDEAL_CARRIER]);;
 
 let RING_COSET_EQ = prove
  (`!r t x y:A.
@@ -4001,3 +4520,736 @@ let FIRST_RING_ISOMORPHISM_THEOREM = prove
   ASM_SIMP_TAC[ring_kernel; IN_ELIM_THM; RING_HOMOMORPHISM_SUB] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[ring_homomorphism; SUBSET; FORALL_IN_IMAGE]) THEN
   ASM_SIMP_TAC[RING_SUB; RING_SUB_EQ_0]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Prime and irreducible elements.                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let ring_prime = new_definition
+ `ring_prime r (p:A) <=>
+        p IN ring_carrier r /\ ~(p = ring_0 r) /\ ~(ring_unit r p) /\
+        !a b. a IN ring_carrier r /\
+              b IN ring_carrier r /\
+              ring_divides r p (ring_mul r a b)
+              ==> ring_divides r p a \/ ring_divides r p b`;;
+
+let ring_irreducible = new_definition
+ `ring_irreducible r (p:A) <=>
+        p IN ring_carrier r /\ ~(p = ring_0 r) /\ ~(ring_unit r p) /\
+        !a b. a IN ring_carrier r /\
+              b IN ring_carrier r /\
+              ring_mul r a b = p
+              ==> ring_unit r a \/ ring_unit r b`;;
+
+let RING_ASSOCIATES_PRIME = prove
+ (`!r a a':A.
+        ring_associates r a a' ==> (ring_prime r a <=> ring_prime r a')`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_prime] THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP RING_ASSOCIATES_IN_CARRIER) THEN
+  ASM_REWRITE_TAC[] THEN
+  BINOP_TAC THENL [ASM_MESON_TAC[RING_ASSOCIATES_EQ_0]; ALL_TAC] THEN
+  BINOP_TAC THENL [ASM_MESON_TAC[RING_ASSOCIATES_UNIT]; ALL_TAC] THEN
+  ASM_MESON_TAC[RING_MUL; RING_ASSOCIATES_DIVIDES; RING_ASSOCIATES_REFL]);;
+
+let RING_PRIME_IMP_IRREDUCIBLE = prove
+ (`!r p:A. integral_domain r /\ ring_prime r p ==> ring_irreducible r p`,
+  REPEAT GEN_TAC THEN SIMP_TAC[ring_prime; ring_irreducible] THEN
+  STRIP_TAC THEN MAP_EVERY X_GEN_TAC [`a:A`; `b:A`] THEN STRIP_TAC THEN
+  GEN_REWRITE_TAC I [DISJ_SYM] THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`a:A`; `b:A`]) THEN
+  ASM_REWRITE_TAC[RING_DIVIDES_REFL] THEN
+  MATCH_MP_TAC MONO_OR THEN CONJ_TAC THEN
+  ASM_REWRITE_TAC[ring_divides; ring_unit] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:A` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN
+  EXISTS_TAC `r:A ring` THEN EXISTS_TAC `p:A` THEN
+  ASM_SIMP_TAC[RING_MUL; RING_1; RING_MUL_RID] THEN
+  ASM_MESON_TAC[RING_MUL_AC]);;
+
+let INTEGRAL_DOMAIN_IRREDUCIBLE = prove
+ (`!r a:A.
+        integral_domain r
+        ==> (ring_irreducible r a <=>
+             a IN ring_carrier r /\
+             ~(a = ring_0 r) /\
+             ~ring_unit r a /\
+             !d. ring_divides r d a
+                 ==> ring_unit r d \/ ring_divides r a d)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_irreducible] THEN
+  REPEAT(MATCH_MP_TAC(TAUT `(p ==> (q <=> q')) ==> (p /\ q <=> p /\ q')`) THEN
+         DISCH_TAC) THEN
+  GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o LAND_CONV) [ring_divides] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_IMP_EXISTS_THM] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN EQ_TAC THEN
+  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:A` THEN
+  MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `y:A` THEN
+  DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th THEN ASM_REWRITE_TAC[]) THEN
+  ASM_CASES_TAC `ring_unit r (x:A)` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(SUBST_ALL_TAC o SYM) THENL
+   [ASM_MESON_TAC[RING_ASSOCIATES_RMUL; RING_DIVIDES_REFL;
+                  RING_ASSOCIATES_DIVIDES; RING_ASSOCIATES_REFL];
+    ASM_REWRITE_TAC[ring_divides; ring_unit] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `u:A` THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SYM)) THEN
+    ASM_SIMP_TAC[GSYM RING_MUL_ASSOC] THEN DISCH_TAC THEN
+    MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN
+    MAP_EVERY EXISTS_TAC [`r:A ring`; `x:A`] THEN
+    ASM_SIMP_TAC[RING_1; RING_MUL_RID; RING_MUL] THEN
+    ASM_MESON_TAC[RING_MUL_LZERO]]);;
+
+let INTEGRAL_DOMAIN_IRREDUCIBLE_ALT = prove
+ (`!r a:A.
+        integral_domain r
+        ==> (ring_irreducible r a <=>
+             a IN ring_carrier r /\
+             ~(a = ring_0 r) /\
+             ~ring_unit r a /\
+             !d. ring_divides r d a
+                 ==> ring_unit r d \/ ring_associates r d a)`,
+  SIMP_TAC[ring_associates; INTEGRAL_DOMAIN_IRREDUCIBLE]);;
+
+let RING_ASSOCIATES_IRREDUCIBLE = prove
+ (`!r a a':A.
+        integral_domain r /\ ring_associates r a a'
+        ==> (ring_irreducible r a <=> ring_irreducible r a')`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[INTEGRAL_DOMAIN_IRREDUCIBLE_ALT] THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP RING_ASSOCIATES_IN_CARRIER) THEN
+  ASM_REWRITE_TAC[] THEN
+  BINOP_TAC THENL [ASM_MESON_TAC[RING_ASSOCIATES_EQ_0]; ALL_TAC] THEN
+  BINOP_TAC THENL [ASM_MESON_TAC[RING_ASSOCIATES_UNIT]; ALL_TAC] THEN
+  ASM_MESON_TAC[ring_divides; RING_ASSOCIATES_DIVIDES; RING_ASSOCIATES_REFL;
+                RING_ASSOCIATES_ASSOCIATES]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Multiplicative system in a ring.                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let ring_multsys = new_definition
+ `ring_multsys (r:A ring) s <=>
+        s SUBSET ring_carrier r /\
+        ring_1 r IN s /\
+        (!x y. x IN s /\ y IN s ==> ring_mul r x y IN s)`;;
+
+let RING_MULTSYS_IMP_SUBSET = prove
+ (`!r s:A->bool. ring_multsys r s ==> s SUBSET ring_carrier r`,
+  SIMP_TAC[ring_multsys]);;
+
+let RING_MULTSYS_IMP_NONEMPTY = prove
+ (`!r s:A->bool. ring_multsys r s ==> ~(s = {})`,
+  MESON_TAC[ring_multsys; NOT_IN_EMPTY]);;
+
+let RING_MULYSYS_1 = prove
+ (`!r:A ring. ring_multsys r {ring_1 r}`,
+  GEN_TAC THEN REWRITE_TAC[ring_multsys; SING_SUBSET; IN_SING] THEN
+  SIMP_TAC[RING_1; RING_MUL_LID]);;
+
+let RING_MULYSYS_CARRIER = prove
+ (`!r:A ring. ring_multsys r (ring_carrier r)`,
+  GEN_TAC THEN REWRITE_TAC[ring_multsys; SUBSET_REFL] THEN
+  SIMP_TAC[RING_1; RING_MUL]);;
+
+let RING_MULTSYS_REGULAR = prove
+ (`!r:A ring.
+        ring_multsys r {a | ring_regular r a}`,
+  GEN_TAC THEN REWRITE_TAC[ring_multsys; IN_ELIM_THM] THEN
+  REWRITE_TAC[RING_REGULAR_MUL; RING_REGULAR_1] THEN
+  REWRITE_TAC[ring_regular] THEN SET_TAC[]);;
+
+let RING_MULTSYS_NONZERO = prove
+ (`!r:A ring.
+        ring_multsys r (ring_carrier r DIFF {ring_0 r}) <=>
+        integral_domain r`,
+  REWRITE_TAC[ring_multsys; IN_DIFF; IN_SING; integral_domain] THEN
+  GEN_TAC THEN SIMP_TAC[RING_MUL; RING_1] THEN SET_TAC[]);;
+
+let RING_MULTSYS_POWERS = prove
+ (`!r x:A. x IN ring_carrier r
+           ==> ring_multsys r {ring_pow r x n | n IN (:num)}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_multsys] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC; IN_UNIV] THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN ASM_SIMP_TAC[GSYM RING_POW_ADD] THEN
+  ASM_MESON_TAC[RING_POW; ring_pow]);;
+
+let RING_MULTSYS_UNITS = prove
+ (`!r:A ring. ring_multsys r {u | ring_unit r u}`,
+  SIMP_TAC[ring_multsys; IN_ELIM_THM; SUBSET; RING_UNIT_MUL; RING_UNIT_1] THEN
+  SIMP_TAC[ring_unit]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Special types of ideal, hence PIDs.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let proper_ideal = new_definition
+ `proper_ideal (r:A ring) j <=>
+        ring_ideal r j /\ j PSUBSET ring_carrier r`;;
+
+let principal_ideal = new_definition
+ `principal_ideal (r:A ring) j <=>
+        ?a. a IN ring_carrier r /\ ideal_generated r {a} = j`;;
+
+let finitely_generated_ideal = new_definition
+ `finitely_generated_ideal (r:A ring) j <=>
+        ?s. FINITE s /\ s SUBSET ring_carrier r /\ ideal_generated r s = j`;;
+
+let prime_ideal = new_definition
+ `prime_ideal (r:A ring) j <=>
+        proper_ideal r j /\
+        !x y. x IN ring_carrier r /\
+              y IN ring_carrier r /\
+              (ring_mul r x y) IN j
+              ==> x IN j \/ y IN j`;;
+
+let maximal_ideal = new_definition
+ `maximal_ideal (r:A ring) j <=>
+        proper_ideal r j /\ ~(?j'. proper_ideal r j' /\ j PSUBSET j')`;;
+
+let PID = new_definition
+ `PID (r:A ring) <=>
+        integral_domain r /\
+        !j. ring_ideal r j ==> principal_ideal r j`;;
+
+let PROPER_IDEAL_0 = prove
+ (`!r:A ring. proper_ideal r {ring_0 r} <=> ~trivial_ring r`,
+  GEN_TAC THEN REWRITE_TAC[proper_ideal; RING_IDEAL_0; trivial_ring] THEN
+  MP_TAC(ISPEC `r:A ring` RING_0) THEN SET_TAC[]);;
+
+let PRINCIPAL_IMP_FINITELY_GENRATED_IDEAL = prove
+ (`!r j:A->bool. principal_ideal r j ==> finitely_generated_ideal r j`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[principal_ideal; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `a:A` THEN STRIP_TAC THEN REWRITE_TAC[finitely_generated_ideal] THEN
+  EXISTS_TAC `{a:A}` THEN ASM_REWRITE_TAC[SING_SUBSET; FINITE_SING]);;
+
+let PID_IMP_INTEGRAL_DOMAIN = prove
+ (`!r:A ring. PID r ==> integral_domain r`,
+  SIMP_TAC[PID]);;
+
+let PRINCIPAL_IDEAL_ALT = prove
+ (`!(r:A ring) j.
+        principal_ideal (r:A ring) j <=> ?a. ideal_generated r {a} = j`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[principal_ideal] THEN
+  EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A` MP_TAC) THEN
+  ASM_CASES_TAC `(a:A) IN ring_carrier r` THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [IDEAL_GENERATED_RESTRICT] THEN
+  ASM_SIMP_TAC[SET_RULE `~(x IN s) ==> s INTER {x} = {}`] THEN
+  REWRITE_TAC[IDEAL_GENERATED_EMPTY] THEN
+  MESON_TAC[IDEAL_GENERATED_0; RING_0]);;
+
+let PRINCIPAL_IDEAL_IDEAL_GENERATED_SING = prove
+ (`!r a:A. principal_ideal r (ideal_generated r {a})`,
+  MESON_TAC[PRINCIPAL_IDEAL_ALT]);;
+
+let FINITELY_GENERATED_IDEAL_ALT = prove
+ (`!(r:A ring) j.
+        finitely_generated_ideal (r:A ring) j <=>
+        ?s. FINITE s /\ ideal_generated r s = j`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[finitely_generated_ideal] THEN
+  EQ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `s:A->bool` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `(ring_carrier r INTER s):A->bool` THEN
+  ASM_REWRITE_TAC[INTER_SUBSET; GSYM IDEAL_GENERATED_RESTRICT] THEN
+  ASM_SIMP_TAC[FINITE_INTER]);;
+
+let MAXIMAL_IMP_PROPER_IDEAL = prove
+ (`!(r:A ring) j. maximal_ideal r j ==> proper_ideal r j`,
+  SIMP_TAC[maximal_ideal]);;
+
+let PROPER_IDEAL_ALT = prove
+ (`!(r:A ring) j.
+        proper_ideal r j <=> ring_ideal r j /\ ~(j = ring_carrier r)`,
+  REWRITE_TAC[proper_ideal; PSUBSET] THEN
+  MESON_TAC[RING_IDEAL_IMP_SUBSET]);;
+
+let PROPER_IDEAL = prove
+ (`!(r:A ring) j. proper_ideal r j <=> ring_ideal r j /\ ~(ring_1 r IN j)`,
+  SIMP_TAC[proper_ideal; PSUBSET] THEN
+  MESON_TAC[RING_IDEAL_IMP_SUBSET; RING_IDEAL_EQ_CARRIER]);;
+
+let PROPER_IDEAL_UNIT = prove
+ (`!(r:A ring) j.
+        proper_ideal r j <=> ring_ideal r j /\ DISJOINT j {u | ring_unit r u}`,
+  REWRITE_TAC[SET_RULE `DISJOINT u {x | P x} <=> ~(?x. P x /\ x IN u)`] THEN
+  SIMP_TAC[proper_ideal; PSUBSET] THEN
+  MESON_TAC[RING_IDEAL_IMP_SUBSET; RING_IDEAL_EQ_CARRIER_UNIT]);;
+
+let PROPER_IDEAL_EXISTS = prove
+ (`!(r:A ring). (?j. proper_ideal r j) <=> ~(trivial_ring r)`,
+  GEN_TAC THEN REWRITE_TAC[proper_ideal; TRIVIAL_RING_SUBSET] THEN EQ_TAC THENL
+   [REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `j:A->bool` THEN
+    MP_TAC(ISPECL [`r:A ring`; `j:A->bool`] IN_RING_IDEAL_0) THEN SET_TAC[];
+    DISCH_TAC THEN EXISTS_TAC `{ring_0 r:A}` THEN
+    REWRITE_TAC[RING_IDEAL_0] THEN
+    MP_TAC(ISPEC `r:A ring` RING_0) THEN ASM SET_TAC[]]);;
+
+let RING_1_NOT_IN_PRIME_IDEAL = prove
+ (`!r j:A->bool.
+        prime_ideal r j ==> ~(ring_1 r IN j)`,
+  MESON_TAC[PROPER_IDEAL; prime_ideal]);;
+
+let RING_UNIT_NOT_IN_PRIME_IDEAL = prove
+ (`!r j x:A.
+        prime_ideal r j /\ ring_unit r x ==> ~(x IN j)`,
+  REWRITE_TAC[prime_ideal; PROPER_IDEAL_UNIT] THEN SET_TAC[]);;
+
+let RING_MUL_IN_PRIME_IDEAL = prove
+ (`!r j x y:A.
+        prime_ideal r j /\ x IN ring_carrier r /\ y IN ring_carrier r
+        ==> (ring_mul r x y IN j <=> x IN j \/ y IN j)`,
+  ASM_MESON_TAC[prime_ideal; proper_ideal; ring_ideal; RING_MUL_SYM; SUBSET]);;
+
+let RING_POW_IN_PRIME_IDEAL = prove
+ (`!r j (x:A) n.
+        prime_ideal r j /\ x IN ring_carrier r
+        ==> (ring_pow r x n IN j <=> ~(n = 0) /\ x IN j)`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[ring_pow; RING_1_NOT_IN_PRIME_IDEAL] THEN
+  ASM_SIMP_TAC[RING_MUL_IN_PRIME_IDEAL; RING_POW; NOT_SUC] THEN
+  CONV_TAC TAUT);;
+
+let MAXIMAL_SUPERIDEAL_EXISTS = prove
+ (`!(r:A ring) j.
+        proper_ideal r j ==> ?j'. maximal_ideal r j' /\ j SUBSET j'`,
+  REWRITE_TAC[PROPER_IDEAL] THEN REPEAT STRIP_TAC THEN MP_TAC(ISPEC
+   `\j'. proper_ideal (r:A ring) j' /\ j SUBSET j'`
+   ZL_SUBSETS_UNIONS_NONEMPTY) THEN
+  ANTS_TAC THENL
+   [ASM_REWRITE_TAC[MEMBER_NOT_EMPTY; PROPER_IDEAL] THEN
+    SIMP_TAC[RING_IDEAL_UNIONS] THEN ASM SET_TAC[];
+    REWRITE_TAC[maximal_ideal; PROPER_IDEAL] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]]);;
+
+let MAXIMAL_IDEAL_EXISTS = prove
+ (`!r:A ring. (?j. maximal_ideal r j) <=> ~(trivial_ring r)`,
+  GEN_TAC THEN REWRITE_TAC[GSYM PROPER_IDEAL_EXISTS] THEN
+  MESON_TAC[MAXIMAL_IMP_PROPER_IDEAL; MAXIMAL_SUPERIDEAL_EXISTS]);;
+
+let RING_MULTSYS_NONPRIME = prove
+ (`!r j:A->bool.
+        prime_ideal r j ==> ring_multsys r (ring_carrier r DIFF j)`,
+  REWRITE_TAC[ring_multsys; IN_DIFF; prime_ideal; PROPER_IDEAL] THEN
+  GEN_TAC THEN SIMP_TAC[RING_MUL; RING_1] THEN SET_TAC[]);;
+
+let RING_MULTSYS_NONPRIME_EQ = prove
+ (`!r j:A->bool.
+        ring_ideal r j
+        ==> (ring_multsys r (ring_carrier r DIFF j) <=> prime_ideal r j)`,
+  REWRITE_TAC[ring_multsys; IN_DIFF; prime_ideal; PROPER_IDEAL] THEN
+  GEN_TAC THEN SIMP_TAC[RING_MUL; RING_1] THEN SET_TAC[]);;
+
+let MAXIMAL_EXCLUDING_IMP_PRIME_IDEAL = prove
+ (`!r s j:A->bool.
+        ring_multsys r s /\
+        ring_ideal r j /\ DISJOINT j s /\
+        (!j'. ring_ideal r j' /\ j PSUBSET j' ==> ~DISJOINT j' s)
+        ==> prime_ideal r j`,
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[prime_ideal; proper_ideal] THEN
+  CONJ_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+     `DISJOINT j s
+      ==> j SUBSET c /\ s SUBSET c /\ ~(s = {}) ==> j PSUBSET c`)) THEN
+    ASM_MESON_TAC[RING_MULTSYS_IMP_SUBSET; RING_MULTSYS_IMP_NONEMPTY;
+                  RING_IDEAL_IMP_SUBSET];
+    MAP_EVERY X_GEN_TAC [`a:A`; `b:A`] THEN
+    REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[DE_MORGAN_THM] THEN STRIP_TAC THEN
+   FIRST_X_ASSUM(fun th ->
+      MP_TAC(SPEC `ring_setadd r j (ideal_generated r {b:A})` th) THEN
+      MP_TAC(SPEC `ring_setadd r j (ideal_generated r {a:A})` th)) THEN
+   MATCH_MP_TAC(TAUT
+    `(p /\ p') /\ (q /\ q' ==> r) ==> (p ==> q) ==> (p' ==> q') ==> r`) THEN
+   CONJ_TAC THENL
+    [ASM_SIMP_TAC[RING_IDEAL_SETADD; RING_IDEAL_IDEAL_GENERATED] THEN
+     CONJ_TAC THEN MATCH_MP_TAC(SET_RULE
+      `!a. a IN s /\ ~(a IN j) /\
+           j SUBSET ring_setadd r j s /\ s SUBSET ring_setadd r j s
+           ==> j PSUBSET ring_setadd r j s`)
+     THENL [EXISTS_TAC `a:A`; EXISTS_TAC `b:A`] THEN
+     ASM_SIMP_TAC[IDEAL_GENERATED_INC; IN_SING; SING_SUBSET] THEN
+     ASM_SIMP_TAC[RING_SETADD_SUPERSET_LEFT; IN_RING_IDEAL_0; SING_SUBSET;
+                  RING_IDEAL_IMP_SUBSET; RING_IDEAL_IDEAL_GENERATED;
+                  RING_SETADD_SUPERSET_RIGHT];
+     REWRITE_TAC[SET_RULE `~DISJOINT t s /\ ~DISJOINT u s ==> P <=>
+         !x y. x IN s /\ y IN s ==> x IN t /\ y IN u ==> P`] THEN
+     MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
+     DISCH_THEN(MP_TAC o ISPEC `r:A ring` o MATCH_MP RING_MUL_IN_SETMUL) THEN
+     W(MP_TAC o PART_MATCH (lhand o rand) RING_SETMUL_IDEAL_LEFT o
+        rand o lhand o snd) THEN
+     ASM_REWRITE_TAC[IDEAL_GENERATED_SUBSET] THEN MATCH_MP_TAC(SET_RULE
+      `(P ==> a IN t ==> F) ==> (s SUBSET t ==> a IN s ==> ~P)`) THEN
+     DISCH_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+      `DISJOINT j s ==> z IN s /\ j' SUBSET j ==> z IN j' ==> F`)) THEN
+     CONJ_TAC THENL [ASM_MESON_TAC[ring_multsys]; ALL_TAC] THEN
+     ASM_SIMP_TAC[RING_SETMUL_IDEAL_GENERATED_SING] THEN
+     MATCH_MP_TAC RING_SETADD_SUBSET_IDEAL THEN
+     ASM_SIMP_TAC[SUBSET_REFL; IDEAL_GENERATED_MINIMAL; SING_SUBSET]]]);;
+
+let MAXIMAL_IMP_PRIME_IDEAL = prove
+ (`!r j:A->bool. maximal_ideal r j ==> prime_ideal r j`,
+  REWRITE_TAC[maximal_ideal; PROPER_IDEAL] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC MAXIMAL_EXCLUDING_IMP_PRIME_IDEAL THEN
+  EXISTS_TAC `{ring_1 r:A}` THEN ASM_REWRITE_TAC[RING_MULYSYS_1] THEN
+  ASM SET_TAC[]);;
+
+let PRIME_IDEAL_0 = prove
+ (`!r:A ring. prime_ideal r {ring_0 r} <=> integral_domain r`,
+  GEN_TAC THEN REWRITE_TAC[prime_ideal; PROPER_IDEAL; RING_IDEAL_0] THEN
+  REWRITE_TAC[IN_SING; integral_domain]);;
+
+let MAXIMAL_IDEAL_0 = prove
+ (`!r:A ring. maximal_ideal r {ring_0 r} <=> field r`,
+  REWRITE_TAC[maximal_ideal; PROPER_IDEAL; RING_IDEAL_IDEAL_GENERATED] THEN
+  REWRITE_TAC[RING_IDEAL_0; IN_SING; field] THEN
+  GEN_TAC THEN ASM_CASES_TAC `ring_1 r:A = ring_0 r` THEN
+  ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN EQ_TAC THEN DISCH_TAC THENL
+   [X_GEN_TAC `a:A` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `ideal_generated r {a:A}`) THEN
+    REWRITE_TAC[RING_IDEAL_IDEAL_GENERATED] THEN
+    MATCH_MP_TAC(SET_RULE
+      `!x. x IN a /\ ring_0 r IN a /\ ~(x = ring_0 r) /\ (P ==> Q)
+            ==> ~(~P /\ {ring_0 r} PSUBSET a) ==> Q`) THEN
+    EXISTS_TAC `a:A` THEN
+    ASM_SIMP_TAC[IDEAL_GENERATED_INC_GEN; IN_SING] THEN
+    SIMP_TAC[IN_RING_IDEAL_0; RING_IDEAL_IDEAL_GENERATED] THEN
+    ASM_SIMP_TAC[IDEAL_GENERATED_SING; IN_ELIM_THM; ring_divides] THEN
+    MESON_TAC[RING_1];
+    X_GEN_TAC `j:A->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC o MATCH_MP (SET_RULE
+     `{z} PSUBSET s ==> ?a. z IN s /\ a IN s /\ ~(a = z)`)) THEN
+    SUBGOAL_THEN `(a:A) IN ring_carrier r` ASSUME_TAC THENL
+     [ASM_MESON_TAC[RING_IDEAL_IMP_SUBSET; SUBSET];
+      ASM_MESON_TAC[IN_RING_IDEAL_RMUL]]]);;
+
+let PRIME_IDEAL_EXISTS = prove
+ (`!r:A ring. (?j. prime_ideal r j) <=> ~trivial_ring r`,
+  MESON_TAC[MAXIMAL_IDEAL_EXISTS; MAXIMAL_IMP_PRIME_IDEAL; PROPER_IDEAL_EXISTS;
+            prime_ideal]);;
+
+let PRIME_SUPERIDEAL_EXCLUDING_EXISTS = prove
+ (`!r s j:A->bool.
+        ring_ideal r j /\ ring_multsys r s /\ DISJOINT j s
+        ==> ?j'. prime_ideal r j' /\ j SUBSET j' /\ DISJOINT j' s`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPEC
+   `\j'. ring_ideal (r:A ring) j' /\ j SUBSET j' /\ DISJOINT j' s`
+   ZL_SUBSETS_UNIONS_NONEMPTY) THEN
+  ANTS_TAC THENL
+   [ASM_SIMP_TAC[MEMBER_NOT_EMPTY; RING_IDEAL_UNIONS] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[SUBSET_REFL]; SET_TAC[]];
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `k:A->bool` THEN
+    REWRITE_TAC[] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC MAXIMAL_EXCLUDING_IMP_PRIME_IDEAL THEN
+    EXISTS_TAC `s:A->bool` THEN ASM_REWRITE_TAC[] THEN ASM SET_TAC[]]);;
+
+let PRIME_IDEAL_EXCLUDING_EXISTS = prove
+ (`!r s:A->bool.
+           ring_multsys r s /\ ~(ring_0 r IN s)
+           ==> ?j. prime_ideal r j /\ DISJOINT j s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`r:A ring`; `s:A->bool`; `{ring_0 r:A}`]
+        PRIME_SUPERIDEAL_EXCLUDING_EXISTS) THEN
+  ASM_REWRITE_TAC[RING_IDEAL_0; DISJOINT_SING] THEN MESON_TAC[]);;
+
+let PRIME_IDEAL_SING = prove
+ (`!r a:A. prime_ideal r (ideal_generated r {a}) <=>
+           if ~(a IN ring_carrier r) \/ a = ring_0 r then integral_domain r
+           else ring_prime r a`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `(a:A) IN ring_carrier r` THEN ASM_REWRITE_TAC[] THENL
+   [COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[IDEAL_GENERATED_0; PRIME_IDEAL_0] THEN
+    ASM_SIMP_TAC[prime_ideal; PROPER_IDEAL; RING_IDEAL_IDEAL_GENERATED] THEN
+    ASM_SIMP_TAC[IDEAL_GENERATED_SING; IN_ELIM_THM; RING_DIVIDES_ONE] THEN
+    ASM_REWRITE_TAC[ring_prime];
+    ONCE_REWRITE_TAC[IDEAL_GENERATED_RESTRICT] THEN
+    ASM_SIMP_TAC[IDEAL_GENERATED_EMPTY; SET_RULE
+      `~(a IN s) ==> s INTER {a} = {}`] THEN
+    REWRITE_TAC[PRIME_IDEAL_0]]);;
+
+let RING_PRIME_IDEAL = prove
+ (`!r a:A.
+        ring_prime r a <=>
+        a IN ring_carrier r /\ ~(a = ring_0 r) /\
+        prime_ideal r (ideal_generated r {a})`,
+  MESON_TAC[ring_prime; PRIME_IDEAL_SING]);;
+
+let PROPER_IDEAL_IDEAL_GENERATED_SING = prove
+ (`!r a:A.
+        a IN ring_carrier r
+        ==> (proper_ideal r (ideal_generated r {a}) <=> ~(ring_unit r a))`,
+  SIMP_TAC[PROPER_IDEAL_ALT; RING_IDEAL_IDEAL_GENERATED] THEN
+  SIMP_TAC[IDEAL_GENERATED_SING_EQ_CARRIER]);;
+
+let UNIONS_MAXIMAL_IDEALS = prove
+ (`!r:A ring.
+        UNIONS {j | maximal_ideal r j} =
+        {x | x IN ring_carrier r /\ ~(ring_unit r x)}`,
+  GEN_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; UNIONS_SUBSET] THEN
+  REWRITE_TAC[SUBSET; UNIONS_GSPEC; IN_ELIM_THM] THEN CONJ_TAC THENL
+   [REWRITE_TAC[maximal_ideal; PROPER_IDEAL_UNIT; ring_ideal] THEN
+    GEN_TAC THEN DISCH_THEN(MP_TAC o CONJUNCT1) THEN SET_TAC[];
+    SIMP_TAC[GSYM PROPER_IDEAL_IDEAL_GENERATED_SING; IMP_CONJ] THEN
+    X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+    DISCH_THEN(MP_TAC o MATCH_MP MAXIMAL_SUPERIDEAL_EXISTS) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN REWRITE_TAC[SUBSET] THEN
+    REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[IDEAL_GENERATED_INC_GEN; IN_SING]]);;
+
+let RING_IRREDUCIBLE_IMP_MAXIMAL_PRINCIPAL_IDEAL = prove
+ (`!r p:A.
+        ring_irreducible r p
+        ==> proper_ideal r (ideal_generated r {p}) /\
+            ~(?j. principal_ideal r j /\
+                  proper_ideal r j /\
+                  ideal_generated r {p} PSUBSET j)`,
+  REWRITE_TAC[ring_irreducible] THEN REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[PROPER_IDEAL_IDEAL_GENERATED_SING] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [principal_ideal]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A`
+   (CONJUNCTS_THEN2 ASSUME_TAC (SUBST_ALL_TAC o SYM))) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [PSUBSET]) THEN
+  ASM_SIMP_TAC[SUBSET_IDEALS_GENERATED_SING; IDEALS_GENERATED_SING_EQ] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [ring_divides]) THEN
+  ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `u:A` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`a:A`; `u:A`]) THEN
+  ASM_REWRITE_TAC[] THEN
+  ASM_MESON_TAC[RING_ASSOCIATES_RMUL; PROPER_IDEAL_IDEAL_GENERATED_SING]);;
+
+let RING_IRREDUCIBLE_EQ_MAXIMAL_PRINCIPAL_IDEAL = prove
+ (`!r p:A.
+        integral_domain r
+        ==> (ring_irreducible r p <=>
+             p IN ring_carrier r /\ ~(p = ring_0 r) /\
+             proper_ideal r (ideal_generated r {p}) /\
+             ~(?j. principal_ideal r j /\
+                   proper_ideal r j /\
+                   ideal_generated r {p} PSUBSET j))`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `(p:A) IN ring_carrier r` THENL
+   [ASM_REWRITE_TAC[]; ASM_MESON_TAC[ring_irreducible]] THEN
+  ASM_CASES_TAC `p:A = ring_0 r` THENL
+   [ASM_MESON_TAC[ring_irreducible]; ASM_REWRITE_TAC[]] THEN
+  EQ_TAC THEN REWRITE_TAC[RING_IRREDUCIBLE_IMP_MAXIMAL_PRINCIPAL_IDEAL] THEN
+  ASM_SIMP_TAC[PROPER_IDEAL_IDEAL_GENERATED_SING; NOT_EXISTS_THM] THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[INTEGRAL_DOMAIN_IRREDUCIBLE_ALT] THEN
+  X_GEN_TAC `d:A` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `ideal_generated r {d:A}`) THEN
+  FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP RING_DIVIDES_IN_CARRIER) THEN
+  REWRITE_TAC[PRINCIPAL_IDEAL_IDEAL_GENERATED_SING] THEN
+  ASM_SIMP_TAC[PROPER_IDEAL_IDEAL_GENERATED_SING; DE_MORGAN_THM] THEN
+  ASM_SIMP_TAC[PSUBSET; SUBSET_IDEALS_GENERATED_SING] THEN
+  ASM_SIMP_TAC[IDEALS_GENERATED_SING_EQ]);;
+
+let MAXIMAL_IDEAL_SING_IMP_IRREDUCIBLE = prove
+ (`!r p:A.
+        integral_domain r /\
+        p IN ring_carrier r /\ ~(p = ring_0 r) /\
+        maximal_ideal r (ideal_generated r {p})
+        ==> ring_irreducible r p`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_PRIME_IMP_IRREDUCIBLE THEN
+  ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP MAXIMAL_IMP_PRIME_IDEAL) THEN
+  ASM_SIMP_TAC[PRIME_IDEAL_SING]);;
+
+let RING_IRREDUCIBLE_EQ_MAXIMAL_IDEAL = prove
+ (`!r p:A.
+        PID r
+        ==> (ring_irreducible r p <=>
+             p IN ring_carrier r /\ ~(p = ring_0 r) /\
+             maximal_ideal r (ideal_generated r {p}))`,
+  SIMP_TAC[PID; RING_IRREDUCIBLE_EQ_MAXIMAL_PRINCIPAL_IDEAL] THEN
+  REWRITE_TAC[maximal_ideal] THEN MESON_TAC[proper_ideal]);;
+
+let MAXIMAL_IDEAL_SING = prove
+ (`!r p:A.
+        PID r
+        ==> (maximal_ideal r (ideal_generated r {p}) <=>
+             if ~(p IN ring_carrier r) \/ p = ring_0 r then field r
+             else ring_irreducible r p)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `(p:A) IN ring_carrier r` THEN ASM_REWRITE_TAC[] THENL
+   [COND_CASES_TAC THEN
+    ASM_REWRITE_TAC[IDEAL_GENERATED_0; MAXIMAL_IDEAL_0] THEN
+    ASM_SIMP_TAC[RING_IRREDUCIBLE_EQ_MAXIMAL_IDEAL];
+    ONCE_REWRITE_TAC[IDEAL_GENERATED_RESTRICT] THEN
+    ASM_SIMP_TAC[IDEAL_GENERATED_EMPTY; SET_RULE
+      `~(p IN s) ==> s INTER {p} = {}`] THEN
+    REWRITE_TAC[MAXIMAL_IDEAL_0]]);;
+
+let PID_IRREDUCIBLE_EQ_PRIME = prove
+ (`!r p:A. PID r ==> (ring_irreducible r p <=> ring_prime r p)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[PID; RING_PRIME_IMP_IRREDUCIBLE]] THEN
+  ASM_SIMP_TAC[RING_IRREDUCIBLE_EQ_MAXIMAL_IDEAL; RING_PRIME_IDEAL] THEN
+  SIMP_TAC[MAXIMAL_IMP_PRIME_IDEAL]);;
+
+let FIELD_EQ_TRIVIAL_IDEALS = prove
+ (`!r:A ring.
+        field r <=>
+        ~(trivial_ring r) /\
+        !j. ring_ideal r j ==> j = {ring_0 r} \/ j = ring_carrier r`,
+  GEN_TAC THEN REWRITE_TAC[GSYM MAXIMAL_IDEAL_0; maximal_ideal] THEN
+  REWRITE_TAC[PROPER_IDEAL_0; NOT_EXISTS_THM] THEN AP_TERM_TAC THEN
+  REWRITE_TAC[proper_ideal; TAUT `~((p /\ q) /\ r) <=> p ==> ~r \/ ~q`] THEN
+  SIMP_TAC[PSUBSET; RING_IDEAL_IMP_SUBSET; SING_SUBSET; IN_RING_IDEAL_0] THEN
+  MESON_TAC[]);;
+
+let FIELD_EQ_TRIVIAL_IDEALS_EQ = prove
+ (`!r:A ring.
+        field r <=>
+        ~(trivial_ring r) /\
+        !j. ring_ideal r j <=> j = {ring_0 r} \/ j = ring_carrier r`,
+  REWRITE_TAC[FIELD_EQ_TRIVIAL_IDEALS] THEN
+  MESON_TAC[RING_IDEAL_CARRIER; RING_IDEAL_0]);;
+
+let FIELD_EQ_NO_PROPER_IDEALS = prove
+ (`!r:A ring. field r <=>
+               ~(trivial_ring r) /\
+               !j. proper_ideal r j ==> j = {ring_0 r}`,
+  REWRITE_TAC[proper_ideal; FIELD_EQ_TRIVIAL_IDEALS; PSUBSET] THEN
+  MESON_TAC[RING_IDEAL_IMP_SUBSET]);;
+
+let FIELD_EQ_NO_PROPER_IDEALS_EQ = prove
+ (`!r:A ring. field r <=>
+               ~(trivial_ring r) /\
+               !j. proper_ideal r j <=> j = {ring_0 r}`,
+  REWRITE_TAC[FIELD_EQ_NO_PROPER_IDEALS] THEN MESON_TAC[PROPER_IDEAL_0]);;
+
+let FIELD_EQ_PROPER_IMP_MAXIMAL_IDEAL = prove
+ (`!r:A ring. field r <=>
+               ~(trivial_ring r) /\
+               !j. proper_ideal r j ==> maximal_ideal r j`,
+  MESON_TAC[FIELD_EQ_NO_PROPER_IDEALS; PROPER_IDEAL_0; MAXIMAL_IDEAL_0]);;
+
+let FIELD_EQ_PROPER_IMP_PRIME_IDEAL = prove
+ (`!r:A ring. field r <=>
+               ~(trivial_ring r) /\
+               !j. proper_ideal r j ==> prime_ideal r j`,
+  GEN_TAC THEN EQ_TAC THENL
+   [SIMP_TAC[FIELD_EQ_PROPER_IMP_MAXIMAL_IDEAL; MAXIMAL_IMP_PRIME_IDEAL];
+    STRIP_TAC THEN ASM_SIMP_TAC[FIELD_EQ_ALL_UNITS; GSYM TRIVIAL_RING_10]] THEN
+  X_GEN_TAC `a:A` THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `ideal_generated r {ring_pow r (a:A) 2}`) THEN
+  REWRITE_TAC[TAUT `(p ==> q) ==> r <=> (~p ==> r) /\ (q ==> r)`] THEN
+  ASM_SIMP_TAC[PROPER_IDEAL_IDEAL_GENERATED_SING; RING_POW] THEN
+  ASM_SIMP_TAC[RING_UNIT_POW_EQ; ARITH_EQ] THEN STRIP_TAC THEN
+  MP_TAC(ISPECL[`r:A ring`; `ideal_generated r {ring_pow r (a:A) 2}`; `a:A`; `2`]
+        RING_POW_IN_PRIME_IDEAL) THEN
+  ASM_SIMP_TAC[IDEAL_GENERATED_INC_GEN; IN_SING; RING_POW; ARITH_EQ] THEN
+  ASM_SIMP_TAC[IDEAL_GENERATED_SING_ALT; RING_POW; IN_ELIM_THM; ring_unit] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `b:A` THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN
+  MAP_EVERY EXISTS_TAC [`r:A ring`; `a:A`] THEN ASM_REWRITE_TAC[RING_1] THEN
+  ASM_SIMP_TAC[RING_MUL_ASSOC; RING_MUL; GSYM RING_POW_2; RING_MUL_RID] THEN
+  ASM_MESON_TAC[PRIME_IDEAL_0; PROPER_IDEAL_0]);;
+
+let IDEAL_GENERATED_EQ_0 = prove
+ (`!r a:A. ideal_generated r {a} = {ring_0 r} <=>
+           a IN ring_carrier r ==> a = ring_0 r`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `(a:A) IN ring_carrier r` THEN ASM_REWRITE_TAC[] THENL
+   [ONCE_REWRITE_TAC[GSYM IDEAL_GENERATED_0] THEN
+    ASM_SIMP_TAC[IDEALS_GENERATED_SING_EQ; RING_0; RING_ASSOCIATES_0];
+    ONCE_REWRITE_TAC[IDEAL_GENERATED_RESTRICT] THEN
+    ASM_SIMP_TAC[SET_RULE `~(a IN s) ==> s INTER {a} = {}`] THEN
+    REWRITE_TAC[IDEAL_GENERATED_EMPTY]]);;
+
+let PID_MAXIMAL_EQ_PRIME_IDEAL = prove
+ (`!r j:A->bool.
+        PID r /\ ~(j = {ring_0 r})
+        ==> (maximal_ideal r j <=> prime_ideal r j)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  ASM_CASES_TAC `principal_ideal r (j:A->bool)` THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [principal_ideal]);
+    ASM_MESON_TAC[PID; maximal_ideal; prime_ideal; proper_ideal]] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC `a:A` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM)) THEN
+  ASM_REWRITE_TAC[IDEAL_GENERATED_EQ_0] THEN DISCH_TAC THEN
+  ASM_SIMP_TAC[MAXIMAL_IDEAL_SING; PRIME_IDEAL_SING;
+               PID_IMP_INTEGRAL_DOMAIN] THEN
+  ASM_SIMP_TAC[PID_IRREDUCIBLE_EQ_PRIME]);;
+
+let INTEGRAL_DOMAIN_QUOTIENT_RING = prove
+ (`!r j:A->bool.
+        ring_ideal r j
+        ==> (integral_domain(quotient_ring r j) <=> prime_ideal r j)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[integral_domain] THEN
+  ASM_SIMP_TAC[CONJUNCT1 QUOTIENT_RING] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC] THEN
+  ASM_SIMP_TAC[QUOTIENT_RING_0] THEN
+  ASM_SIMP_TAC[el 2 (CONJUNCTS QUOTIENT_RING)] THEN
+  ASM_SIMP_TAC[RING_COSET_EQ_IDEAL; QUOTIENT_RING_MUL; RING_MUL; RING_1] THEN
+  ASM_REWRITE_TAC[prime_ideal; PROPER_IDEAL] THEN MESON_TAC[]);;
+
+let FIELD_QUOTIENT_RING = prove
+ (`!r j:A->bool.
+        ring_ideal r j ==> (field(quotient_ring r j) <=> maximal_ideal r j)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[field] THEN
+  ASM_SIMP_TAC[CONJUNCT1 QUOTIENT_RING] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM;
+              FORALL_IN_GSPEC; EXISTS_IN_GSPEC] THEN
+  ASM_SIMP_TAC[QUOTIENT_RING_0] THEN
+  ONCE_REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  ASM_SIMP_TAC[el 2 (CONJUNCTS QUOTIENT_RING)] THEN
+  ASM_SIMP_TAC[RING_COSET_EQ_IDEAL; QUOTIENT_RING_MUL; RING_MUL; RING_1;
+               RING_COSET_EQ] THEN
+  ASM_CASES_TAC `(ring_1 r:A) IN j` THEN
+  ASM_REWRITE_TAC[maximal_ideal; PROPER_IDEAL; NOT_FORALL_THM; NOT_IMP;
+                  NOT_EXISTS_THM; IMP_IMP] THEN
+  EQ_TAC THEN DISCH_TAC THENL
+   [X_GEN_TAC `k:A->bool` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC o
+        GEN_REWRITE_RULE I [PSUBSET_ALT]) THEN
+    DISCH_THEN(X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `a:A`) THEN
+    SUBGOAL_THEN `(a:A) IN ring_carrier r` ASSUME_TAC THENL
+     [ASM_MESON_TAC[SUBSET; RING_IDEAL_IMP_SUBSET];
+      ASM_REWRITE_TAC[NOT_EXISTS_THM]] THEN
+    X_GEN_TAC `b:A` THEN STRIP_TAC THEN
+     UNDISCH_TAC `~((ring_1 r:A) IN k)` THEN
+    SUBGOAL_THEN
+     `ring_1 r:A =
+      ring_sub r (ring_mul r a b) (ring_sub r (ring_mul r a b) (ring_1 r))`
+    SUBST1_TAC THENL
+     [ASM_SIMP_TAC[ring_sub; RING_NEG_ADD; RING_NEG_NEG; RING_1; RING_MUL;
+        RING_ADD; RING_NEG; RING_ADD_ASSOC; RING_ADD_RNEG; RING_ADD_LZERO];
+      REWRITE_TAC[] THEN MATCH_MP_TAC IN_RING_IDEAL_SUB THEN
+      ASM_MESON_TAC[SUBSET; ring_ideal; RING_MUL_SYM]];
+    X_GEN_TAC `a:A` THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC
+     `ring_setadd r j (ideal_generated r {a:A})`) THEN
+    ASM_SIMP_TAC[RING_IDEAL_SETADD; RING_IDEAL_IDEAL_GENERATED;
+                 SING_SUBSET] THEN
+    MATCH_MP_TAC(TAUT `q /\ (~p ==> r) ==> ~(p /\ q) ==> r`) THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC[PSUBSET; RING_SETADD_SUPERSET_LEFT; IN_RING_IDEAL_0;
+                   RING_IDEAL_IMP_SUBSET; RING_IDEAL_IDEAL_GENERATED] THEN
+      FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+       `~(a IN j) ==> a IN s ==> ~(j = s)`)) THEN
+      W(MP_TAC o PART_MATCH (rand o rand) RING_SETADD_SUPERSET_RIGHT o
+        rand o snd) THEN
+      ASM_SIMP_TAC[IN_RING_IDEAL_0; IDEAL_GENERATED_SUBSET; SING_SUBSET] THEN
+      MATCH_MP_TAC(SET_RULE `x IN s ==> s SUBSET t ==> x IN t`) THEN
+      ASM_SIMP_TAC[IDEAL_GENERATED_INC; IN_SING; SING_SUBSET];
+      ASM_SIMP_TAC[ring_setadd; IDEAL_GENERATED_SING_ALT] THEN
+      REWRITE_TAC[IN_ELIM_THM] THEN
+      REWRITE_TAC[RIGHT_AND_EXISTS_THM; LEFT_AND_EXISTS_THM] THEN
+      REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [`x:A`; `y:A`; `z:A`] THEN
+      STRIP_TAC THEN EXISTS_TAC `z:A` THEN ASM_REWRITE_TAC[] THEN
+      SUBGOAL_THEN `(x:A) IN ring_carrier r` ASSUME_TAC THENL
+       [ASM_MESON_TAC[ring_ideal; SUBSET]; ALL_TAC] THEN
+      ASM_SIMP_TAC[ring_sub; RING_NEG_ADD; RING_MUL] THEN
+      MATCH_MP_TAC(MESON[]
+       `x IN j /\
+        ring_add r a (ring_add r x (ring_neg r a)) = x
+        ==> (ring_add r a (ring_add r x (ring_neg r a))) IN j`) THEN
+      ASM_SIMP_TAC[IN_RING_IDEAL_NEG] THEN CONV_TAC SYM_CONV THEN
+      MATCH_MP_TAC RING_LNEG_UNIQUE THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+       [ASM_MESON_TAC[RING_ADD; RING_NEG; RING_MUL]; ALL_TAC] THEN
+      ASM_SIMP_TAC[GSYM RING_NEG_ADD; RING_MUL;
+                   RING_ADD; RING_MUL; RING_NEG] THEN
+      ASM (CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 4)
+       [RING_ADD_ASSOC; RING_MUL; RING_NEG; RING_ADD; RING_ADD_RNEG]]]);;
