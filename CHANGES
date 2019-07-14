@@ -8,6 +8,20 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 10th Jul 2019       sets.ml
+
+Added two more handy theorems about extensional/restricted functions:
+
+ RESTRICTION_UNIQUE =
+  |- !s f g.
+         RESTRICTION s f = g <=>
+         EXTENSIONAL s g /\ (!x. x IN s ==> f x = g x)
+
+ RESTRICTION_UNIQUE_ALT =
+  |- !s f g.
+         f = RESTRICTION s g <=>
+         EXTENSIONAL s f /\ (!x. x IN s ==> f x = g x)
+
 Mon 24th Jun 2019       sets.ml
 
 Added one more trivial set rewrite:

@@ -4161,7 +4161,7 @@ let [HOM_BOUNDARY_DEFAULT;
       `right_coset (relcycle_group(p-1,subtopology top s:A topology,{}))
                    (singular_relboundary(p - 1,subtopology top s,{})) o
        (chain_boundary p:((num->real)->A)frag->((num->real)->A)frag)`]
-          QUOTIENT_GROUP_UNIVERSAL) THEN
+          QUOTIENT_GROUP_UNIVERSAL_EXPLICIT) THEN
     REWRITE_TAC[GSYM NONTRIVIAL_RELATIVE_HOMOLOGY_GROUP] THEN
     GEN_REWRITE_TAC LAND_CONV [IMP_CONJ] THEN ANTS_TAC THENL
      [MATCH_MP_TAC GROUP_HOMOMORPHISM_COMPOSE THEN
@@ -4332,7 +4332,7 @@ let [HOM_INDUCED_DEFAULT;
       `right_coset (relcycle_group(p,top',t))
                    (singular_relboundary(p,top',t)) o
        chain_map p (f:A->B)`]
-          QUOTIENT_GROUP_UNIVERSAL) THEN
+          QUOTIENT_GROUP_UNIVERSAL_EXPLICIT) THEN
     REWRITE_TAC[GSYM NONTRIVIAL_RELATIVE_HOMOLOGY_GROUP] THEN
     GEN_REWRITE_TAC LAND_CONV [IMP_CONJ] THEN ANTS_TAC THENL
      [MATCH_MP_TAC GROUP_HOMOMORPHISM_COMPOSE THEN

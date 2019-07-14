@@ -2747,6 +2747,18 @@ let RESTRICTION_COMPOSE = prove
             RESTRICTION s (g o f)`,
   SIMP_TAC[RESTRICTION_COMPOSE_LEFT; RESTRICTION_COMPOSE_RIGHT]);;
 
+let RESTRICTION_UNIQUE = prove
+ (`!s (f:A->B) g.
+        RESTRICTION s f = g <=> EXTENSIONAL s g /\ !x. x IN s ==> f x = g x`,
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION; EXTENSIONAL; IN_ELIM_THM] THEN
+  MESON_TAC[]);;
+
+let RESTRICTION_UNIQUE_ALT = prove
+ (`!s (f:A->B) g.
+        f = RESTRICTION s g <=> EXTENSIONAL s f /\ !x. x IN s ==> f x = g x`,
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION; EXTENSIONAL; IN_ELIM_THM] THEN
+  MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* General Cartesian product / dependent function space.                     *)
 (* ------------------------------------------------------------------------- *)
