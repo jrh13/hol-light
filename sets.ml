@@ -2940,6 +2940,14 @@ let FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ = prove
              !z i. z IN cartesian_product k s /\ i IN k ==> P i (z i))`,
   SIMP_TAC[FORALL_CARTESIAN_PRODUCT_ELEMENTS]);;
 
+let EXISTS_CARTESIAN_PRODUCT_ELEMENT = prove
+ (`!P k s:K->A->bool.
+        (?z. z IN cartesian_product k s /\ (!i. i IN k ==> P i (z i))) <=>
+        (!i. i IN k ==> ?x. x IN (s i) /\ P i x)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[CARTESIAN_PRODUCT_AS_RESTRICTIONS; EXISTS_IN_GSPEC] THEN
+  SIMP_TAC[RESTRICTION] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Product of a family of maps.                                              *)
 (* ------------------------------------------------------------------------- *)

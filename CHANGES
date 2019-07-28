@@ -8,6 +8,16 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue 23rd Jul 2019       sets.ml
+
+Added one more simple theorem about Cartesian products, a kind of Skolemization
+theorem:
+
+  EXISTS_CARTESIAN_PRODUCT_ELEMENT = 
+    |- !P k s.
+         (?z. z IN cartesian_product k s /\ (!i. i IN k ==> P i (z i))) <=>
+         (!i. i IN k ==> (?x. x IN s i /\ P i x))
+
 Wed 10th Jul 2019       sets.ml
 
 Added two more handy theorems about extensional/restricted functions:
