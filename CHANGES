@@ -8,12 +8,30 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun  4th Aug 2019       Library/words.ml [new file]
+
+Added a new file with a basic theory of machine words via the type
+`:N word` of N-bit words. Here `:N` is a type of size N, so we are using
+essentially the same indexing scheme as in the Multivariate theories for
+vectors of size N. Note that this builds in a priori the assumption the
+wordsize is nonzero.
+
+Mappings `val:N word->num` and `word:num->N word` for unsigned values, and
+similar 2s-complement `ival:N word->int` and `iword:int->word`, cast
+(reducing modulo word in one direction) between words and numbers. The
+`bit` function gives a specific bit as a Boolean.
+
+The usual operations are provided like `word_add`, `word_xor`; currently
+for explicitness we don't overload the usual operators. Some have signed
+and unsigned variants (e.g. `word_ushr` is unsigned/logical shift right,
+while `word_ishr` is signed/arithmetical shift right).
+
 Tue 23rd Jul 2019       sets.ml
 
 Added one more simple theorem about Cartesian products, a kind of Skolemization
 theorem:
 
-  EXISTS_CARTESIAN_PRODUCT_ELEMENT = 
+  EXISTS_CARTESIAN_PRODUCT_ELEMENT =
     |- !P k s.
          (?z. z IN cartesian_product k s /\ (!i. i IN k ==> P i (z i))) <=>
          (!i. i IN k ==> (?x. x IN s i /\ P i x))
