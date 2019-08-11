@@ -8,6 +8,12 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed  7th Aug 2019       grobner.ml
+
+Made a few small tweaks so that the derived rule inside RING becomes
+more delicate, and in particular more robust with respect to parameters
+and extra hypotheses on theorems.
+
 Sun  4th Aug 2019       Library/words.ml [new file]
 
 Added a new file with a basic theory of machine words via the type

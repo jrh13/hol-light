@@ -547,8 +547,9 @@ let RING_AND_IDEAL_CONV =
                           (INE_RULE l th3) in
       let l,r = dest_eq(rand(concl th4)) in
       EQ_MP (EQF_INTRO th4) (REFL l) in
+  let ring_ty = snd(dest_fun_ty(snd(dest_fun_ty(type_of ring_add_tm)))) in
   let RING tm =
-    let avs = frees tm in
+    let avs = filter ((=) ring_ty o type_of) (frees tm) in
     let tm' = list_mk_forall(avs,tm) in
     let th1 = INITIAL_CONV(mk_neg tm') in
     let evs,bod = strip_exists(rand(concl th1)) in
@@ -558,8 +559,15 @@ let RING_AND_IDEAL_CONV =
     let th2a = refute_disj REFUTE boda in
     let th2b = TRANS th1a (EQF_INTRO(NOT_INTRO(DISCH boda th2a))) in
     let th2 = UNDISCH(NOT_ELIM(EQF_ELIM th2b)) in
-    let th3 = itlist SIMPLE_CHOOSE evs th2 in
-    SPECL avs (MATCH_MP (FINAL_RULE (DISCH_ALL th3)) th1)
+    let finbod,th3 =
+      let rec CHOOSES evs (etm,th) =
+        match evs with
+          [] -> (etm,th)
+        | ev::oevs ->
+              let etm',th' = CHOOSES oevs (etm,th) in
+              mk_exists(ev,etm'),CHOOSE (ev,ASSUME (mk_exists(ev,etm'))) th' in
+      CHOOSES evs (bod,th2) in
+    SPECL avs (MATCH_MP (FINAL_RULE (DISCH finbod th3)) th1)
   and ideal tms tm =
     let rawvars = itlist grobvars (tm::tms) [] in
     let vars = sort (fun x y -> x < y) (setify rawvars) in
