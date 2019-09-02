@@ -8,6 +8,40 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 30th Aug 2019       int.ml, Library/integer.ml 
+
+Renamed the theorem INT_DIVISION_DECOMP in int.ml to INT_DIVISION_SIMP,
+which better maintains the pattern of DIVISION_SIMP and avoids a clash
+with a different theorem in Library/integer.ml. Also added one more
+simple theorem to the latter file, something that INTEGER_RULE won't do
+by default, depending as it does on the canonical choice of nonnegative
+integer gcds:
+
+  INT_GCD_EQ =
+    |- !x y u v.
+         (!d. d divides x /\ d divides y <=> d divides u /\ d divides v)
+         ==> gcd(x,y) = gcd(u,v)
+
+Fri 30th Aug 2019       int.ml
+
+Added some trivialities about integer div and rem, the last three being
+especially handy when reasoning about even/odd integers.
+
+  let INT_MUL_DIV_EQ = prove
+   |- (!m n. n * m div n = m <=> n divides m) /\
+      (!m n. m div n * n = m <=> n divides m)
+
+  INT_REM_2_CASES =
+    |- !n. n rem &2 = &0 \/ n rem &2 = &1
+
+  INT_REM_2_DIVIDES =
+    |- (!n. n rem &2 = &0 <=> &2 divides n) /\
+       (!n. n rem &2 = &1 <=> ~(&2 divides n))
+
+  NOT_INT_REM_2 =
+    |- (!n. ~(n rem &2 = &0) <=> n rem &2 = &1) /\
+       (!n. ~(n rem &2 = &1) <=> n rem &2 = &0)
+
 Wed  7th Aug 2019       grobner.ml
 
 Made a few small tweaks so that the derived rule inside RING becomes

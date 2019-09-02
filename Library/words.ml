@@ -15,6 +15,13 @@
 (* and unsigned variants (e.g. `word_ushr` is unsigned/logical shift right,  *)
 (* while `word_ishr` is signed/arithmetical shift right).                    *)
 (*                                                                           *)
+(* For some cases where the result is debatable or machine-dependent, we     *)
+(* have versions that match the JVM tagged with a "j" (e.g. `word_jshr`      *)
+(* truncates shift counts modulo word size).                                 *)
+(*                                                                           *)
+(* There are conversions like WORD_REDUCE_CONV for reducing via proof        *)
+(* expressions built up from concrete words like `word 255:byte`.            *)
+(*                                                                           *)
 (* Some simple decision procedures for proving basic equalities are here too *)
 (* and have limited and somewhat complementary scopes:                       *)
 (*  - WORD_RULE for simple algebraic properties                              *)
@@ -2832,3 +2839,1366 @@ let WORD_BITMASK = prove
   REWRITE_TAC[WORD_OF_BITS_MASK; WORD_OF_BITS_SING_AS_WORD] THEN
   REWRITE_TAC[WORD_SUB; ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN
   REWRITE_TAC[EXP_EQ_0; ARITH_EQ]);;
+
+(* ------------------------------------------------------------------------- *)
+(* JVM-specific word operations, though they may well work in other places.  *)
+(*                                                                           *)
+(* All shift operations mask out the lower bits as the unsigned shift count. *)
+(*                                                                           *)
+(* Division does truncation towards zero; at this level there is no concept  *)
+(* of an exception on division by zero. Note that the JVM is defined anyway  *)
+(* so INT_MIN / -1 doesn't generate any exception, just returning the        *)
+(* correct modular result as per the usual pattern.                          *)
+(*                                                                           *)
+(* Remainder is then defined by the usual Euclidean identity.                *)
+(* ------------------------------------------------------------------------- *)
+
+let word_jshl = new_definition
+ `word_jshl (x:N word) (y:N word) =
+        word_shl x (val y MOD dimindex(:N))`;;
+
+let word_jshr = new_definition
+ `word_jshr (x:N word) (y:N word) =
+        word_ishr x (val y MOD dimindex(:N))`;;
+
+let word_jushr = new_definition
+ `word_jushr (x:N word) (y:N word) =
+        word_ushr x (val y MOD dimindex(:N))`;;
+
+let word_jdiv = new_definition
+ `word_jdiv:N word->N word->N word =
+   imodular (\a b. int_sgn a * int_sgn b * (abs(a) div abs(b)))`;;
+
+let word_jrem = new_definition
+ `word_jrem (x:N word) (y:N word) =
+    word_sub x (word_mul (word_jdiv x y) y)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* The JVM doesn't include rotates as primitive, but here is what they       *)
+(* obviously would be like, and proof that some emulations work. Note that   *)
+(* emulation using negative shifts relies not only on the Java               *)
+(* masking treatment of shift counts but also on the word size being a       *)
+(* power of 2 (of course for the JVM it is 2^5 = 32 or 2^6 = 64).            *)
+(* ------------------------------------------------------------------------- *)
+
+let word_jror = new_definition
+ `word_jror (w:N word) (k:N word) = word_ror w (val k)`;;
+
+let word_jrol = new_definition
+ `word_jrol (w:N word) (k:N word) = word_rol w (val k)`;;
+
+let VAL_WORD_NEG_MOD_DIMINDEX = prove
+ (`!k:N word.
+        dimindex(:N) divides 2 EXP dimindex(:N)
+        ==> (val(word_neg k) == dimindex (:N) - val k MOD dimindex(:N))
+            (mod dimindex(:N))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[VAL_WORD_NEG; CONG] THEN
+  MATCH_MP_TAC(MESON[]
+   `x MOD n MOD m = x MOD m /\ x MOD m = y ==> x MOD n MOD m = y`) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[divides; MOD_MOD]; ALL_TAC] THEN
+  REWRITE_TAC[GSYM CONG; num_congruent] THEN
+  SIMP_TAC[GSYM INT_OF_NUM_SUB; LT_IMP_LE; VAL_BOUND; DIVISION;
+           DIMINDEX_NONZERO; GSYM INT_OF_NUM_REM] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `n divides e /\ (k':int == k) (mod n) ==> (e - k == n - k') (mod n)`) THEN
+  ASM_REWRITE_TAC[GSYM num_divides; INT_REM_MOD_SELF]);;
+
+let WORD_JROL_JROR = prove
+ (`!w k:N word.
+        dimindex(:N) divides 2 EXP dimindex(:N)
+        ==> word_jrol w k = word_jror w (word_neg k)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[word_jrol; word_jror] THEN
+  REWRITE_TAC[WORD_ROL_ROR_GEN] THEN MATCH_MP_TAC WORD_ROR_PERIODIC THEN
+  ONCE_REWRITE_TAC[NUMBER_RULE
+   `(x:num == y) (mod n) <=> (y == x) (mod n)`] THEN
+  MATCH_MP_TAC VAL_WORD_NEG_MOD_DIMINDEX THEN ASM_REWRITE_TAC[]);;
+
+let WORD_JROR_JROL = prove
+ (`!w k:N word.
+        dimindex(:N) divides 2 EXP dimindex(:N)
+        ==> word_jror w k = word_jrol w (word_neg k)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[word_jrol; word_jror] THEN
+  REWRITE_TAC[WORD_ROR_ROL_GEN] THEN MATCH_MP_TAC WORD_ROL_PERIODIC THEN
+  ONCE_REWRITE_TAC[NUMBER_RULE
+   `(x:num == y) (mod n) <=> (y == x) (mod n)`] THEN
+  MATCH_MP_TAC VAL_WORD_NEG_MOD_DIMINDEX THEN ASM_REWRITE_TAC[]);;
+
+let WORD_JROR = prove
+ (`!w k:N word.
+        dimindex(:N) divides 2 EXP dimindex(:N)
+        ==> word_jror w k =
+            word_or (word_jushr w k) (word_jshl w (word_neg k))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[word_jror; word_jushr; word_jshl] THEN
+  ONCE_REWRITE_TAC[WORD_ROR_MOD] THEN
+  SIMP_TAC[WORD_ROR_SHIFTS; DIVISION; DIMINDEX_NONZERO; LT_IMP_LE] THEN
+  FIRST_X_ASSUM(MP_TAC o ISPEC `k:N word` o
+    MATCH_MP VAL_WORD_NEG_MOD_DIMINDEX) THEN
+  REWRITE_TAC[CONG] THEN DISCH_THEN SUBST1_TAC THEN
+  ASM_CASES_TAC `val(k:N word) MOD dimindex(:N) = 0` THENL
+   [ASM_REWRITE_TAC[SUB_0; MOD_REFL; WORD_USHR_ZERO; WORD_SHL_ZERO] THEN
+    MATCH_MP_TAC(WORD_BITWISE_RULE
+     `y = word 0 ==> word_or x y = word_or x x`) THEN
+    REWRITE_TAC[GSYM VAL_EQ_0; VAL_WORD_SHL; MOD_MULT];
+    AP_TERM_TAC THEN AP_TERM_TAC THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
+    REWRITE_TAC[ARITH_RULE `n - k < n <=> ~(k = 0) /\ ~(n = 0)`] THEN
+    ASM_REWRITE_TAC[DIMINDEX_NONZERO]]);;
+
+let WORD_JROL = prove
+ (`!w k:N word.
+        dimindex(:N) divides 2 EXP dimindex(:N)
+        ==> word_jrol w k =
+            word_or (word_jshl w k) (word_jushr w (word_neg k))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[WORD_JROL_JROR; WORD_JROR] THEN
+  ONCE_REWRITE_TAC[WORD_RULE `word_neg(word_neg x):N word = x`] THEN
+  CONV_TAC WORD_BITWISE_RULE);;
+
+(* ------------------------------------------------------------------------- *)
+(* Conversion for "j" forms applied to numeral shift/rotate word.            *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_WORD_OPERATION_CONV =
+  let pth = prove
+   (`word_jshl (x:N word) (word n) =
+     word_shl x (n MOD (2 EXP dimindex(:N)) MOD dimindex(:N)) /\
+     word_jshr x (word n) =
+     word_ishr x (n MOD (2 EXP dimindex(:N)) MOD dimindex(:N)) /\
+     word_jushr x (word n) =
+     word_ushr x (n MOD (2 EXP dimindex(:N)) MOD dimindex(:N)) /\
+     word_jrol x (word n) =
+     word_rol x (n MOD (2 EXP dimindex(:N)) MOD dimindex(:N)) /\
+     word_jror x (word n) =
+     word_ror x (n MOD (2 EXP dimindex(:N)) MOD dimindex(:N))`,
+    REWRITE_TAC[word_jshl; word_jshr; word_jushr; word_jrol; word_jror] THEN
+    REWRITE_TAC[VAL_WORD; GSYM WORD_ROL_MOD; GSYM WORD_ROR_MOD]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV
+   (BINOP2_CONV (RAND_CONV (!word_POW2SIZE_CONV) THENC NUM_MOD_CONV)
+                (!word_SIZE_CONV) THENC
+    NUM_MOD_CONV);;
+
+(* ------------------------------------------------------------------------- *)
+(* Emulation of unsigned comparisons using signed (useful for the JVM).      *)
+(* ------------------------------------------------------------------------- *)
+
+let IVAL_TOPFLIP_VAL = prove
+ (`!w:N word.
+        ival(word_xor word_INT_MIN w) =
+        &(val w) - &2 pow (dimindex(:N) - 1)`,
+  REWRITE_TAC[INT_IVAL; WORD_XOR_INT_MIN] THEN
+  REWRITE_TAC[INT_VAL_WORD_ADD_CASES; INT_VAL_WORD_INT_MIN; MSB_INT_VAL] THEN
+  WORD_ARITH_TAC);;
+
+let WORD_ULE_TOPFLIP = prove
+ (`!v w:N word.
+        word_ule v w <=>
+        word_ile (word_xor (word_INT_MIN) v) (word_xor (word_INT_MIN) w)`,
+  REWRITE_TAC[word_ule; word_ile; relational2; irelational2] THEN
+  REWRITE_TAC[IVAL_TOPFLIP_VAL; GSYM INT_OF_NUM_LE] THEN INT_ARITH_TAC);;
+
+let WORD_ULT_TOPFLIP = prove
+ (`!v w:N word.
+        word_ult v w <=>
+        word_ilt (word_xor (word_INT_MIN) v) (word_xor (word_INT_MIN) w)`,
+  REWRITE_TAC[word_ult; word_ilt; relational2; irelational2] THEN
+  REWRITE_TAC[IVAL_TOPFLIP_VAL; GSYM INT_OF_NUM_LT] THEN INT_ARITH_TAC);;
+
+let WORD_UGE_TOPFLIP = prove
+ (`!v w:N word.
+        word_uge v w <=>
+        word_ige (word_xor (word_INT_MIN) v) (word_xor (word_INT_MIN) w)`,
+  REWRITE_TAC[word_uge; word_ige; relational2; irelational2] THEN
+  REWRITE_TAC[IVAL_TOPFLIP_VAL; INT_GE; GE; GSYM INT_OF_NUM_LE] THEN
+  INT_ARITH_TAC);;
+
+let WORD_UGT_TOPFLIP = prove
+ (`!v w:N word.
+        word_ugt v w <=>
+        word_igt (word_xor (word_INT_MIN) v) (word_xor (word_INT_MIN) w)`,
+  REWRITE_TAC[word_ugt; word_igt; relational2; irelational2] THEN
+  REWRITE_TAC[IVAL_TOPFLIP_VAL; INT_GT; GT; GSYM INT_OF_NUM_LT] THEN
+  INT_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Conversion for explicit numeric bits of word operations, one level.       *)
+(* For example BIT_WORD_CONV `bit 7 (word_sub x y:int16)`                    *)
+(* ------------------------------------------------------------------------- *)
+
+let BIT_WORD_CONV =
+  let pth_ror = prove
+   (`bit i (word_ror (w:N word) n) <=>
+          (\m. (\s. if s < dimindex(:N) then bit s w
+                    else i < dimindex(:N) /\ bit (s - dimindex(:N)) w)
+               (i + m))
+          (n MOD dimindex(:N))`,
+    REWRITE_TAC[BIT_WORD_ROR])
+  and pth_rol = prove
+   (`bit i (word_rol (w:N word) n) <=>
+          (\m. if i < m then bit (i + dimindex(:N) - m) w
+               else i < dimindex(:N) /\ bit (i - m) w)
+          (n MOD dimindex(:N))`,
+    REWRITE_TAC[BIT_WORD_ROL]) in
+  let rule_add = (MATCH_MP o prove)
+   (`n = SUC m
+     ==> (bit n (word_add x y:N word) <=>
+          n < dimindex(:N) /\
+          ((bit n x <=> bit n y) <=>
+           bit m x /\ bit m y \/
+           (bit m x \/ bit m y) /\ ~bit m (word_add x y)))`,
+    SIMP_TAC[REWRITE_RULE[GSYM ADD1] BIT_WORD_ADD_CLAUSES])
+  and rule_sub = (MATCH_MP o prove)
+   (`n = SUC m
+     ==> (bit n (word_sub x y:N word) <=>
+          n < dimindex(:N) /\
+          ((bit n x <=> bit n y) <=>
+           ~bit m x /\ bit m y \/
+           (~bit m x \/ bit m y) /\ bit m (word_sub x y)))`,
+    SIMP_TAC[REWRITE_RULE[GSYM ADD1] BIT_WORD_SUB_CLAUSES])
+  and rule_neg = (MATCH_MP o prove)
+   (`n = SUC m
+     ==> (bit n (word_neg x:N word) <=>
+          n < dimindex(:N) /\
+          (bit n x <=> ~bit m x /\ ~bit m (word_neg x)))`,
+    SIMP_TAC[REWRITE_RULE[GSYM ADD1] BIT_WORD_NEG_CLAUSES])
+  and conv_shl = GEN_REWRITE_CONV I [REWRITE_RULE[CONJ_ASSOC] BIT_WORD_SHL]
+  and conv_ror = GEN_REWRITE_CONV I [pth_ror]
+  and conv_rol = GEN_REWRITE_CONV I [pth_rol]
+  and conv_cond_t = GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL COND_CLAUSES)]
+  and conv_cond_f = GEN_REWRITE_CONV I [CONJUNCT2(SPEC_ALL COND_CLAUSES)]
+  and conv_and = GEN_REWRITE_CONV I [AND_CLAUSES]
+  and conv_and_t = GEN_REWRITE_CONV I [CONJUNCT1(SPEC_ALL AND_CLAUSES)]
+  and conv_and_f = GEN_REWRITE_CONV I [el 2 (CONJUNCTS(SPEC_ALL AND_CLAUSES))]
+  and zero_tm = `0` and one_tm = `1` in
+  fun tm ->
+    match tm with
+      Comb(Comb(Const("bit",_),n),Comb(Const("word",_),m))
+      when is_numeral n && is_numeral m ->
+          if m = zero_tm then
+            GEN_REWRITE_CONV I [BIT_WORD_0] tm
+          else if m = one_tm then
+            (GEN_REWRITE_CONV I [BIT_WORD_1] THENC NUM_EQ_CONV) tm
+          else
+            (GEN_REWRITE_CONV I [BIT_WORD] THENC
+             BINOP2_CONV (RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV)
+                         (RAND_CONV (RAND_CONV NUM_EXP_CONV THENC
+                                     NUM_DIV_CONV) THENC
+                          NUM_ODD_CONV) THENC
+             conv_and) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Const("word",_),m))
+      when is_numeral n && m = one_tm ->
+          (GEN_REWRITE_CONV I [BIT_WORD_1] THENC NUM_EQ_CONV) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Const("word_not",_),_))
+      when is_numeral n ->
+       (GEN_REWRITE_CONV I [BIT_WORD_NOT] THENC
+        LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+        conv_and) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_and",_),_),_))
+      when is_numeral n ->
+        GEN_REWRITE_CONV I [BIT_WORD_AND_ALT] tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_or",_),_),_))
+      when is_numeral n ->
+        GEN_REWRITE_CONV I [BIT_WORD_OR_ALT] tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_xor",_),_),_))
+      when is_numeral n ->
+        GEN_REWRITE_CONV I [BIT_WORD_XOR_ALT] tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_add",_),_),_))
+      when is_numeral n ->
+        if n = zero_tm then
+         (GEN_REWRITE_CONV I [CONJUNCT1 BIT_WORD_ADD_CLAUSES]) tm
+        else
+         (GEN_REWRITE_CONV I [rule_add (num_CONV n)] THENC
+          LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+          conv_and) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_sub",_),_),_))
+      when is_numeral n ->
+        if n = zero_tm then
+         (GEN_REWRITE_CONV I [CONJUNCT1 BIT_WORD_SUB_CLAUSES]) tm
+        else
+         (GEN_REWRITE_CONV I [rule_sub (num_CONV n)] THENC
+          LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+          conv_and) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Const("word_neg",_),_))
+      when is_numeral n ->
+        if n = zero_tm then
+         (GEN_REWRITE_CONV I [CONJUNCT1 BIT_WORD_NEG_CLAUSES]) tm
+        else
+         (GEN_REWRITE_CONV I [rule_neg (num_CONV n)] THENC
+          LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+          conv_and) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_shl",_),_),m))
+      when is_numeral n && is_numeral m ->
+        (conv_shl THENC
+         BINOP2_CONV (BINOP2_CONV NUM_LE_CONV
+                       (RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+                         conv_and)
+                     (LAND_CONV NUM_SUB_CONV) THENC
+         conv_and) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_ushr",_),_),m))
+      when is_numeral n && is_numeral m ->
+        (GEN_REWRITE_CONV I [BIT_WORD_USHR] THENC LAND_CONV NUM_ADD_CONV) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_ishr",_),_),m))
+      when is_numeral n && is_numeral m ->
+        (GEN_REWRITE_CONV I [BIT_WORD_ISHR] THENC
+         RATOR_CONV(LAND_CONV
+           (BINOP2_CONV NUM_ADD_CONV (!word_SIZE_CONV) THENC
+            NUM_LT_CONV)) THENC
+         ((conv_cond_t THENC
+           LAND_CONV NUM_ADD_CONV) ORELSEC
+          (conv_cond_f THENC
+           COMB2_CONV
+              (RAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV))
+              (LAND_CONV(LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV)) THENC
+           conv_and))) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_ror",_),_),m))
+      when is_numeral n && is_numeral m ->
+        (conv_ror THENC
+         RAND_CONV (RAND_CONV(!word_SIZE_CONV) THENC NUM_MOD_CONV) THENC
+         BETA_CONV THENC RAND_CONV NUM_ADD_CONV THENC BETA_CONV THENC
+         RATOR_CONV(LAND_CONV
+          (RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV)) THENC
+         (conv_cond_t ORELSEC
+          (conv_cond_f THENC
+           LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+           ((conv_and_t THENC
+             LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV)) ORELSEC
+            conv_and_f
+           ))))
+        tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_rol",_),_),m))
+      when is_numeral n && is_numeral m ->
+        (conv_rol THENC
+         RAND_CONV (RAND_CONV(!word_SIZE_CONV) THENC NUM_MOD_CONV) THENC
+         BETA_CONV THENC
+         RATOR_CONV(LAND_CONV NUM_LT_CONV) THENC
+         ((conv_cond_t THENC
+           LAND_CONV(RAND_CONV
+            (LAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV) THENC
+           NUM_ADD_CONV)) ORELSEC
+          (conv_cond_f THENC
+           LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+           ((conv_and_t THENC
+             LAND_CONV NUM_SUB_CONV) ORELSEC
+            conv_and_f)
+         ))) tm
+    | Comb(Comb(Const("bit",_),n),Comb(Comb(Const("word_join",_),_),_))
+      when is_numeral n ->
+        (GEN_REWRITE_CONV I [BIT_WORD_JOIN] THENC
+         LAND_CONV (RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV) THENC
+         (conv_and_f ORELSEC
+          (conv_and_t THENC
+           RATOR_CONV(LAND_CONV
+            (RAND_CONV(!word_SIZE_CONV) THENC NUM_LT_CONV)) THENC
+           (conv_cond_t ORELSEC
+            (conv_cond_f THENC
+             LAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_SUB_CONV))
+          ))))
+        tm
+    | Comb(Comb(Const("bit",_),n),
+           Comb(Comb(Const("word_subword",_),_),
+                Comb(Comb(Const(",",_),p),q)))
+        when is_numeral n && is_numeral p && is_numeral q ->
+         (GEN_REWRITE_CONV I [BIT_WORD_SUBWORD] THENC
+          LAND_CONV
+           (RAND_CONV(RAND_CONV(!word_SIZE_CONV) THENC NUM_MIN_CONV) THENC
+            NUM_LT_CONV) THENC
+          ((conv_and_t THENC
+             LAND_CONV NUM_ADD_CONV) ORELSEC
+            conv_and_f)) tm
+    | _ -> failwith "BIT_WORD_CONV";;
+
+(* ------------------------------------------------------------------------- *)
+(* Conversions for explicit calculations with terms of the form "word n"     *)
+(* where n is a numeral. They all work for arbitrary n and whenever they     *)
+(* return "word m", then that will be canonical, i.e. m < 2^wordsize.        *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_WORD_CONV =
+  let pth = prove
+   (`word n:N word = word(n MOD (2 EXP dimindex(:N)))`,
+    REWRITE_TAC[WORD_MOD_SIZE]) in
+  fun tm ->
+    match tm with
+      Comb(Const("word",_),t) when is_numeral t ->
+        (GEN_REWRITE_CONV I [pth] THENC
+         funpow 2 RAND_CONV (!word_POW2SIZE_CONV) THENC
+         RAND_CONV NUM_MOD_CONV) tm
+    | _ -> failwith "WORD_WORD_CONV";;
+
+let WORD_IWORD_CONV tm =
+  match tm with
+   Comb(Const("iword",_),t) when is_intconst t ->
+     (REWR_CONV iword THENC
+      funpow 4 RAND_CONV (!word_SIZE_CONV) THENC
+      funpow 3 RAND_CONV INT_POW_CONV THENC
+      funpow 2 RAND_CONV INT_REM_CONV THENC
+      GEN_REWRITE_CONV RAND_CONV [NUM_OF_INT_OF_NUM]) tm
+  | _ -> failwith "WORD_IWORD_CONV";;
+
+let WORD_VAL_CONV tm =
+  match tm with
+    Comb(Const("val",_),Comb(Const("word",_),n)) when is_numeral n ->
+     (GEN_REWRITE_CONV I [VAL_WORD] THENC
+      funpow 2 RAND_CONV (!word_SIZE_CONV) THENC
+      RAND_CONV NUM_EXP_CONV THENC NUM_MOD_CONV) tm
+  | _ -> failwith "WORD_VAL_CONV";;
+
+let WORD_IVAL_CONV =
+  let pth = prove
+   (`ival(word n:N word) =
+        (\v. if v < 2 EXP (dimindex (:N) - 1)
+             then &v else &v - &2 pow dimindex(:N))
+        (val(word n:N word))`,
+    REWRITE_TAC[ival])
+  and cth1,cth2 = CONJ_PAIR
+   (MESON[] `(if T then x:int else y:int) = x /\
+             (if F then x:int else y:int) = y`) in
+  fun tm ->
+   (match tm with
+      Comb(Const("ival",_),Comb(Const("word",_),n)) when is_numeral n ->
+     (GEN_REWRITE_CONV I [pth] THENC
+      RAND_CONV WORD_VAL_CONV THENC
+      BETA_CONV THENC
+      RATOR_CONV(LAND_CONV
+       (RAND_CONV (RAND_CONV
+           (LAND_CONV (!word_SIZE_CONV) THENC NUM_SUB_CONV) THENC
+         NUM_EXP_CONV) THENC
+        NUM_LT_CONV)) THENC
+      (GEN_REWRITE_CONV I [cth1] ORELSEC
+       (GEN_REWRITE_CONV I [cth2] THENC
+        (RAND_CONV o RAND_CONV) (!word_SIZE_CONV) THENC
+        RAND_CONV INT_POW_CONV THENC INT_SUB_CONV))) tm
+    | _ -> failwith "WORD_IVAL_CONV");;
+
+let WORD_BIT_CONV =
+  let pth0 = prove
+   (`(ODD(0 DIV 2 EXP k) <=> F) /\
+     (ODD(NUMERAL(BIT0 n) DIV 2 EXP 0) <=> F) /\
+     (ODD(NUMERAL(BIT1 n) DIV 2 EXP 0) <=> T)`,
+    REWRITE_TAC[DIV_0; ODD; EXP; DIV_1] THEN
+    REWRITE_TAC[NUMERAL; BIT0; BIT1] THEN
+    REWRITE_TAC[ODD; ODD_ADD])
+  and pth1 = prove
+   (`(ODD(NUMERAL(BIT0 n) DIV 2 EXP SUC k) <=> ODD(NUMERAL n DIV (2 EXP k))) /\
+     (ODD(NUMERAL(BIT1 n) DIV 2 EXP SUC k) <=> ODD(NUMERAL n DIV (2 EXP k)))`,
+    CONJ_TAC THEN AP_TERM_TAC THEN
+    GEN_REWRITE_TAC (BINOP_CONV o LAND_CONV) [NUMERAL] THEN
+    GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [BIT0; BIT1] THEN
+    REWRITE_TAC[EXP; GSYM DIV_DIV] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN ARITH_TAC) in
+  let conv0 = GEN_REWRITE_CONV I [pth0]
+  and conv1 = GEN_REWRITE_CONV I [pth1]
+  and conva = GEN_REWRITE_CONV I [AND_CLAUSES] in
+  let rec conv tm =
+    (conv0 ORELSEC
+     (funpow 3 RAND_CONV num_CONV THENC
+      conv1 THENC
+      conv)) tm in
+  fun tm ->
+    match tm with
+       Comb(Comb(Const("bit",_),k),Comb(Const("word",_),n))
+       when is_numeral k && is_numeral n ->
+     (GEN_REWRITE_CONV I [BIT_WORD] THENC
+      BINOP2_CONV (RAND_CONV (!word_SIZE_CONV) THENC NUM_LT_CONV) conv THENC
+      conva) tm
+    | _ -> failwith "WORD_BIT_CONV";;
+
+let WORD_EQ_CONV =
+   let pth = prove
+   (`word(NUMERAL m):N word = (word(NUMERAL n):N word) <=>
+     val(word(NUMERAL m):N word) = val(word(NUMERAL n):N word)`,
+    REWRITE_TAC[VAL_EQ]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_VAL_CONV THENC NUM_EQ_CONV;;
+
+let WORD_ULT_CONV =
+  let pth = prove
+   (`word_ult (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     val(word(NUMERAL m):N word) < val(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_ult; relational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_VAL_CONV THENC NUM_LT_CONV;;
+
+let WORD_ULE_CONV =
+  let pth = prove
+   (`word_ule (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     val(word(NUMERAL m):N word) <= val(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_ule; relational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_VAL_CONV THENC NUM_LE_CONV;;
+
+let WORD_UGT_CONV =
+  let pth = prove
+   (`word_ugt (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     val(word(NUMERAL m):N word) > val(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_ugt; relational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_VAL_CONV THENC NUM_GT_CONV;;
+
+let WORD_UGE_CONV =
+  let pth = prove
+   (`word_uge (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     val(word(NUMERAL m):N word) >= val(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_uge; relational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_VAL_CONV THENC NUM_GE_CONV;;
+
+let WORD_ILT_CONV =
+  let pth = prove
+   (`word_ilt (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     ival(word(NUMERAL m):N word) < ival(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_ilt; irelational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_IVAL_CONV THENC INT_LT_CONV;;
+
+let WORD_ILE_CONV =
+  let pth = prove
+   (`word_ile (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     ival(word(NUMERAL m):N word) <= ival(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_ile; irelational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_IVAL_CONV THENC INT_LE_CONV;;
+
+let WORD_IGT_CONV =
+  let pth = prove
+   (`word_igt (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     ival(word(NUMERAL m):N word) > ival(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_igt; irelational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_IVAL_CONV THENC INT_GT_CONV;;
+
+let WORD_IGE_CONV =
+  let pth = prove
+   (`word_ige (word(NUMERAL m):N word) (word(NUMERAL n):N word) <=>
+     ival(word(NUMERAL m):N word) >= ival(word(NUMERAL n):N word)`,
+    REWRITE_TAC[word_ige; irelational2]) in
+  GEN_REWRITE_CONV I [pth] THENC BINOP_CONV WORD_IVAL_CONV THENC INT_GE_CONV;;
+
+let WORD_ADD_CONV =
+  let pth = prove
+   (`word_add (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word((NUMERAL m + NUMERAL n) MOD (2 EXP dimindex(:N)))`,
+    REWRITE_TAC[word_add; modular; VAL_WORD; WORD_EQ; CONG] THEN
+    CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC[]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV
+   (BINOP2_CONV NUM_ADD_CONV (!word_POW2SIZE_CONV) THENC NUM_MOD_CONV);;
+
+let WORD_MUL_CONV =
+  let pth = prove
+   (`word_mul (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word((NUMERAL m * NUMERAL n) MOD (2 EXP dimindex(:N)))`,
+    REWRITE_TAC[word_mul; modular; VAL_WORD; WORD_EQ; CONG] THEN
+    CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC[]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV
+   (BINOP2_CONV NUM_MULT_CONV (!word_POW2SIZE_CONV) THENC NUM_MOD_CONV);;
+
+let WORD_SUB_CONV =
+  let pth = prove
+   (`word_sub (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     (\p. word((NUMERAL m + (p - NUMERAL n MOD p)) MOD p))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[word_sub; modular; VAL_WORD; WORD_EQ; CONG] THEN
+    CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC[]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV
+   (LAND_CONV
+    (RAND_CONV(RAND_CONV NUM_MOD_CONV THENC NUM_SUB_CONV) THENC
+     NUM_ADD_CONV) THENC
+    NUM_MOD_CONV);;
+
+let WORD_NEG_CONV =
+  let pth = prove
+   (`word_neg (word(NUMERAL n):N word) =
+     (\p. word((p - NUMERAL n MOD p) MOD p))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[word_neg; word_sub; modular; VAL_WORD; WORD_EQ; CONG] THEN
+    CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC[ADD_CLAUSES]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV
+   (LAND_CONV
+    (RAND_CONV NUM_MOD_CONV THENC NUM_SUB_CONV) THENC
+    NUM_MOD_CONV);;
+
+let WORD_UDIV_CONV =
+  let pth = prove
+   (`word_udiv (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     (\p. word((NUMERAL m MOD p) DIV (NUMERAL n MOD p)))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UDIV; VAL_WORD] THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN MATCH_MP_TAC(ARITH_RULE
+     `m DIV n <= m /\ m < p ==> m DIV n < p`) THEN
+    SIMP_TAC[DIV_LE; DIVISION; EXP_EQ_0; ARITH_EQ]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV(BINOP_CONV NUM_MOD_CONV THENC NUM_DIV_CONV);;
+
+let WORD_UMOD_CONV =
+  let pth = prove
+   (`word_umod (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     (\p. word((NUMERAL m MOD p) MOD (NUMERAL n MOD p)))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMOD; VAL_WORD] THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN MATCH_MP_TAC(ARITH_RULE
+     `m MOD n <= m /\ m < p ==> m MOD n < p`) THEN
+    SIMP_TAC[MOD_LE; DIVISION; EXP_EQ_0; ARITH_EQ]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV(BINOP_CONV NUM_MOD_CONV THENC NUM_MOD_CONV);;
+
+let WORD_UMAX_CONV =
+  let pth = prove
+   (`word_umax (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     (\p. word(MAX (NUMERAL m MOD p) (NUMERAL n MOD p)))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMAX; VAL_WORD] THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
+    REWRITE_TAC[ARITH_RULE `MAX a b < n <=> a < n /\ b < n`] THEN
+    SIMP_TAC[DIVISION; EXP_EQ_0; ARITH_EQ]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV(BINOP_CONV NUM_MOD_CONV THENC NUM_MAX_CONV);;
+
+let WORD_UMIN_CONV =
+  let pth = prove
+   (`word_umin (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     (\p. word(MIN (NUMERAL m MOD p) (NUMERAL n MOD p)))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMIN; VAL_WORD] THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
+    REWRITE_TAC[ARITH_RULE `MIN a b < n <=> a < n \/ b < n`] THEN
+    SIMP_TAC[DIVISION; EXP_EQ_0; ARITH_EQ]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV(BINOP_CONV NUM_MOD_CONV THENC NUM_MIN_CONV);;
+
+let WORD_IMAX_CONV =
+  let pth = prove
+   (`word_imax (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     if ival(word(NUMERAL m):N word) <= ival(word(NUMERAL n):N word)
+     then word((NUMERAL n) MOD (2 EXP dimindex(:N)))
+     else word((NUMERAL m) MOD (2 EXP dimindex(:N)))`,
+    COND_CASES_TAC THEN
+    REWRITE_TAC[GSYM IVAL_EQ; IVAL_WORD_IMAX; WORD_MOD_SIZE] THEN
+    ASM_REWRITE_TAC[INT_MAX]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RATOR_CONV(LAND_CONV(BINOP_CONV WORD_IVAL_CONV THENC INT_LE_CONV)) THENC
+  GEN_REWRITE_CONV I [COND_CLAUSES] THENC
+  funpow 2 RAND_CONV (!word_POW2SIZE_CONV) THENC RAND_CONV NUM_MOD_CONV;;
+
+let WORD_IMIN_CONV =
+  let pth = prove
+   (`word_imin (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     if ival(word(NUMERAL m):N word) <= ival(word(NUMERAL n):N word)
+     then word((NUMERAL m) MOD (2 EXP dimindex(:N)))
+     else word((NUMERAL n) MOD (2 EXP dimindex(:N)))`,
+    COND_CASES_TAC THEN
+    REWRITE_TAC[GSYM IVAL_EQ; IVAL_WORD_IMIN; WORD_MOD_SIZE] THEN
+    ASM_REWRITE_TAC[INT_MIN]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RATOR_CONV(LAND_CONV(BINOP_CONV WORD_IVAL_CONV THENC INT_LE_CONV)) THENC
+  GEN_REWRITE_CONV I [COND_CLAUSES] THENC
+  funpow 2 RAND_CONV (!word_POW2SIZE_CONV) THENC RAND_CONV NUM_MOD_CONV;;
+
+let WORD_SHL_CONV =
+  let pth = prove
+   (`word_shl (word(NUMERAL m):N word) (NUMERAL n) =
+     (\p. word((NUMERAL m * 2 EXP (NUMERAL n)) MOD p))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[word_shl; WORD_EQ; VAL_WORD; CONG] THEN
+    CONV_TAC MOD_DOWN_CONV THEN REFL_TAC) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV (!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV
+   (LAND_CONV
+     (RAND_CONV NUM_EXP_CONV THENC
+      NUM_MULT_CONV) THENC
+    NUM_MOD_CONV);;
+
+let WORD_USHR_CONV =
+  let pth = prove
+   (`word_ushr (word(NUMERAL m):N word) (NUMERAL n) =
+     (\p. word((NUMERAL m MOD p) DIV (2 EXP NUMERAL n) MOD p))
+     (2 EXP dimindex(:N))`,
+    REWRITE_TAC[word_ushr; WORD_EQ; VAL_WORD; CONG] THEN
+    CONV_TAC MOD_DOWN_CONV THEN REFL_TAC) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV (!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+  RAND_CONV
+   (LAND_CONV
+     (BINOP2_CONV NUM_MOD_CONV NUM_EXP_CONV THENC NUM_DIV_CONV) THENC
+    NUM_MOD_CONV);;
+
+let WORD_ISHR_CONV =
+  let pth = prove
+   (`word_ishr (word(NUMERAL m):N word) (NUMERAL n) =
+     iword (ival(word(NUMERAL m):N word) div &2 pow (NUMERAL n))`,
+    REWRITE_TAC[word_ishr]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(BINOP2_CONV WORD_IVAL_CONV INT_POW_CONV THENC INT_DIV_CONV) THENC
+  WORD_IWORD_CONV;;
+
+let WORD_NOT_CONV =
+  let pth = prove
+   (`word_not(word n:N word) =
+     (\p. word(p - 1 - n MOD p)) (2 EXP dimindex(:N))`,
+    REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_NOT; VAL_WORD] THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
+    MATCH_MP_TAC(ARITH_RULE `~(p = 0) ==> p - 1 - n < p`) THEN
+    REWRITE_TAC[EXP_EQ_0; ARITH_EQ]) in
+  fun tm ->
+   (match tm with
+      Comb(Const("word_not",_),Comb(Const("word",_),n)) when is_numeral n ->
+     (GEN_REWRITE_CONV I [pth] THENC
+      RAND_CONV (!word_POW2SIZE_CONV) THENC BETA_CONV THENC
+      RAND_CONV(BINOP2_CONV NUM_SUB_CONV NUM_MOD_CONV THENC
+                NUM_SUB_CONV)) tm
+    | _ -> failwith "WORD_NOT_CONV");;
+
+let WORD_AND_CONV =
+  let pth = prove
+   (`?f. ((!n. f _0 n = _0) /\ (!m. f m _0 = _0)) /\
+         ((!m n. f (BIT0 m) (BIT0 n) = BIT0(f m n)) /\
+          (!m n. f (BIT0 m) (BIT1 n) = BIT0(f m n)) /\
+          (!m n. f (BIT1 m) (BIT0 n) = BIT0(f m n)) /\
+          (!m n. f (BIT1 m) (BIT1 n) = BIT1(f m n))) /\
+         (!m n. word_and (word(NUMERAL m):N word) (word(NUMERAL n)) =
+                word(NUMERAL(f m n)))`,
+    MP_TAC(prove_general_recursive_function_exists
+     `?f. !m n. f m n =
+                if m = 0 then 0 else if n = 0 then 0
+                else (if m MOD 2 = 1 /\ n MOD 2 = 1 then 1 else 0) +
+                     2 * f (m DIV 2) (n DIV 2)`) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:num->num->num` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     `(!n. f 0 n = 0) /\ (!m. f m 0 = 0) /\
+      (!m n. f (2 * m) (2 * n) = 2 * f m n) /\
+      (!m n. f (2 * m + 1) (2 * n) = 2 * f m n) /\
+      (!m n. f (2 * m) (2 * n + 1) = 2 * f m n) /\
+      (!m n. f (2 * m + 1) (2 * n + 1) = 2 * f m n + 1)`
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      FIRST_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n /\ (2 * n + 1) DIV 2 = n`;
+                  ONCE_REWRITE_RULE[MULT_SYM] MOD_MULT_ADD;
+                 MOD_MULT; ADD_EQ_0; MULT_EQ_0] THEN
+      CONV_TAC NUM_REDUCE_CONV THEN
+      REWRITE_TAC[ADD_CLAUSES; ARITH_RULE `1 + 2 * n = 2 * n + 1`] THEN
+      REPEAT(COND_CASES_TAC THEN REWRITE_TAC[]) THEN
+      REWRITE_TAC[ARITH_RULE `0 = 2 * n <=> n = 0`] THEN
+      FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      ASM_REWRITE_TAC[COND_ID];
+      FIRST_X_ASSUM(K ALL_TAC) THEN STRIP_TAC] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[NUMERAL]; ALL_TAC] THEN CONJ_TAC THENL
+     [REWRITE_TAC[BIT0; BIT1] THEN ASM_REWRITE_TAC[GSYM MULT_2; ADD1];
+      REWRITE_TAC[NUMERAL]] THEN
+    REWRITE_TAC[WORD_EQ_BITS; BIT_WORD_AND; BIT_WORD] THEN
+    SIMP_TAC[TAUT `(p /\ q <=> p /\ r) <=> (p ==> (q <=> r))`] THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN ASM_REWRITE_TAC[DIV_0; ODD] THEN
+    X_GEN_TAC `m:num` THEN DISCH_TAC THEN CONJ_TAC THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN ASM_REWRITE_TAC[DIV_0; ODD] THEN
+    X_GEN_TAC `n:num` THEN DISCH_THEN(K ALL_TAC) THEN CONJ_TAC THEN
+    INDUCT_TAC THEN REWRITE_TAC[EXP; DIV_1; ODD_MULT; ARITH; ODD_ADD] THEN
+    DISCH_TAC THEN REWRITE_TAC[GSYM DIV_DIV] THEN
+    REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n /\ (2 * n + 1) DIV 2 = n`;
+                MOD_MULT; ONCE_REWRITE_RULE[MULT_SYM] MOD_MULT_ADD] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC)
+  and qth = prove
+   (`BIT0 _0 = _0`,
+    REWRITE_TAC[ARITH_ZERO])
+  and nty = `:N` in
+  fun tm ->
+    (match tm with
+      Comb(Comb(Const("word_and",_),
+                Comb(Const("word",_),m)),
+           Comb(Const("word",_),n))
+          when is_numeral m && is_numeral n ->
+       let th1 = INST_TYPE
+          [hd(snd(dest_type(type_of(rand tm)))),nty] pth in
+       let f,bod = dest_exists(concl th1) in
+       let pth_base,th2 = CONJ_PAIR(ASSUME bod) in
+       let pth_step,pth_trans = CONJ_PAIR th2 in
+       let base_conv = GEN_REWRITE_CONV I [pth_base]
+       and step_conv = GEN_REWRITE_CONV I [pth_step]
+       and fix_conv = GEN_REWRITE_CONV TRY_CONV [qth] in
+       let rec conv t =
+         (base_conv ORELSEC
+          (step_conv THENC RAND_CONV conv THENC fix_conv)) t in
+       let th3 = REWR_CONV pth_trans tm in
+       let th4 = CONV_RULE(funpow 3 RAND_CONV conv) th3 in
+       let th5 = PROVE_HYP th1 (SIMPLE_CHOOSE f th4) in
+       CONV_RULE(RAND_CONV WORD_WORD_CONV) th5
+     | _ -> failwith "WORD_AND_CONV");;
+
+let WORD_OR_CONV =
+  let pth = prove
+   (`?f. ((!n. f _0 n = n) /\ (!m. f m _0 = m)) /\
+         ((!m n. f (BIT0 m) (BIT0 n) = BIT0(f m n)) /\
+          (!m n. f (BIT0 m) (BIT1 n) = BIT1(f m n)) /\
+          (!m n. f (BIT1 m) (BIT0 n) = BIT1(f m n)) /\
+          (!m n. f (BIT1 m) (BIT1 n) = BIT1(f m n))) /\
+         (!m n. word_or (word(NUMERAL m):N word) (word(NUMERAL n)) =
+                word(NUMERAL(f m n)))`,
+    MP_TAC(prove_general_recursive_function_exists
+     `?f. !m n. f m n =
+                if m = 0 then n else if n = 0 then m
+                else (if m MOD 2 = 1 \/ n MOD 2 = 1 then 1 else 0) +
+                     2 * f (m DIV 2) (n DIV 2)`) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:num->num->num` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     `(!n. f 0 n = n) /\ (!m. f m 0 = m) /\
+      (!m n. f (2 * m) (2 * n) = 2 * f m n) /\
+      (!m n. f (2 * m + 1) (2 * n) = 2 * f m n + 1) /\
+      (!m n. f (2 * m) (2 * n + 1) = 2 * f m n + 1) /\
+      (!m n. f (2 * m + 1) (2 * n + 1) = 2 * f m n + 1)`
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      FIRST_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n /\ (2 * n + 1) DIV 2 = n`;
+                  ONCE_REWRITE_RULE[MULT_SYM] MOD_MULT_ADD;
+                 MOD_MULT; ADD_EQ_0; MULT_EQ_0] THEN
+      CONV_TAC NUM_REDUCE_CONV THEN
+      REWRITE_TAC[ADD_CLAUSES; ARITH_RULE `1 + 2 * n = 2 * n + 1`] THEN
+      REPEAT(COND_CASES_TAC THEN REWRITE_TAC[]) THEN
+      ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN TRY(FIRST_ASSUM ACCEPT_TAC) THEN
+      TRY(AP_THM_TAC THEN AP_TERM_TAC) THEN AP_TERM_TAC THEN
+      FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      ASM_REWRITE_TAC[COND_ID] THEN MESON_TAC[];
+      FIRST_X_ASSUM(K ALL_TAC) THEN STRIP_TAC] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[NUMERAL]; ALL_TAC] THEN CONJ_TAC THENL
+     [REWRITE_TAC[BIT0; BIT1] THEN ASM_REWRITE_TAC[GSYM MULT_2; ADD1];
+      REWRITE_TAC[NUMERAL]] THEN
+    REWRITE_TAC[WORD_EQ_BITS; BIT_WORD_OR; BIT_WORD] THEN
+    SIMP_TAC[TAUT `(p /\ q <=> p /\ r) <=> (p ==> (q <=> r))`] THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN ASM_REWRITE_TAC[DIV_0; ODD] THEN
+    X_GEN_TAC `m:num` THEN DISCH_TAC THEN CONJ_TAC THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN ASM_REWRITE_TAC[DIV_0; ODD] THEN
+    X_GEN_TAC `n:num` THEN DISCH_THEN(K ALL_TAC) THEN CONJ_TAC THEN
+    INDUCT_TAC THEN REWRITE_TAC[EXP; DIV_1; ODD_MULT; ARITH; ODD_ADD] THEN
+    DISCH_TAC THEN REWRITE_TAC[GSYM DIV_DIV] THEN
+    REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n /\ (2 * n + 1) DIV 2 = n`;
+                MOD_MULT; ONCE_REWRITE_RULE[MULT_SYM] MOD_MULT_ADD] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC)
+  and qth = prove
+   (`BIT0 _0 = _0`,
+    REWRITE_TAC[ARITH_ZERO])
+  and nty = `:N` in
+  fun tm ->
+    (match tm with
+      Comb(Comb(Const("word_or",_),
+                Comb(Const("word",_),m)),
+           Comb(Const("word",_),n))
+          when is_numeral m && is_numeral n ->
+       let th1 = INST_TYPE
+          [hd(snd(dest_type(type_of(rand tm)))),nty] pth in
+       let f,bod = dest_exists(concl th1) in
+       let pth_base,th2 = CONJ_PAIR(ASSUME bod) in
+       let pth_step,pth_trans = CONJ_PAIR th2 in
+       let base_conv = GEN_REWRITE_CONV I [pth_base]
+       and step_conv = GEN_REWRITE_CONV I [pth_step]
+       and fix_conv = GEN_REWRITE_CONV TRY_CONV [qth] in
+       let rec conv t =
+         (base_conv ORELSEC
+          (step_conv THENC RAND_CONV conv THENC fix_conv)) t in
+       let th3 = REWR_CONV pth_trans tm in
+       let th4 = CONV_RULE(funpow 3 RAND_CONV conv) th3 in
+       let th5 = PROVE_HYP th1 (SIMPLE_CHOOSE f th4) in
+       CONV_RULE(RAND_CONV WORD_WORD_CONV) th5
+     | _ -> failwith "WORD_OR_CONV");;
+
+let WORD_XOR_CONV =
+  let pth = prove
+   (`?f. ((!n. f _0 n = n) /\ (!m. f m _0 = m)) /\
+         ((!m n. f (BIT0 m) (BIT0 n) = BIT0(f m n)) /\
+          (!m n. f (BIT0 m) (BIT1 n) = BIT1(f m n)) /\
+          (!m n. f (BIT1 m) (BIT0 n) = BIT1(f m n)) /\
+          (!m n. f (BIT1 m) (BIT1 n) = BIT0(f m n))) /\
+         (!m n. word_xor (word(NUMERAL m):N word) (word(NUMERAL n)) =
+                word(NUMERAL(f m n)))`,
+    MP_TAC(prove_general_recursive_function_exists
+     `?f. !m n. f m n =
+                if m = 0 then n else if n = 0 then m
+                else (if m MOD 2 = 1 <=> n MOD 2 = 1 then 0 else 1) +
+                     2 * f (m DIV 2) (n DIV 2)`) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:num->num->num` THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     `(!n. f 0 n = n) /\ (!m. f m 0 = m) /\
+      (!m n. f (2 * m) (2 * n) = 2 * f m n) /\
+      (!m n. f (2 * m + 1) (2 * n) = 2 * f m n + 1) /\
+      (!m n. f (2 * m) (2 * n + 1) = 2 * f m n + 1) /\
+      (!m n. f (2 * m + 1) (2 * n + 1) = 2 * f m n)`
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      FIRST_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n /\ (2 * n + 1) DIV 2 = n`;
+                  ONCE_REWRITE_RULE[MULT_SYM] MOD_MULT_ADD;
+                 MOD_MULT; ADD_EQ_0; MULT_EQ_0] THEN
+      CONV_TAC NUM_REDUCE_CONV THEN
+      REWRITE_TAC[ADD_CLAUSES; ARITH_RULE `1 + 2 * n = 2 * n + 1`] THEN
+      REPEAT(COND_CASES_TAC THEN REWRITE_TAC[]) THEN
+      ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN TRY(FIRST_ASSUM ACCEPT_TAC) THEN
+      TRY(AP_THM_TAC THEN AP_TERM_TAC) THEN AP_TERM_TAC THEN
+      FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      ASM_REWRITE_TAC[COND_ID] THEN MESON_TAC[];
+      FIRST_X_ASSUM(K ALL_TAC) THEN STRIP_TAC] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC[NUMERAL]; ALL_TAC] THEN CONJ_TAC THENL
+     [REWRITE_TAC[BIT0; BIT1] THEN ASM_REWRITE_TAC[GSYM MULT_2; ADD1];
+      REWRITE_TAC[NUMERAL]] THEN
+    REWRITE_TAC[WORD_EQ_BITS; BIT_WORD_XOR; BIT_WORD] THEN
+    SIMP_TAC[TAUT `(p /\ q <=> p /\ r) <=> (p ==> (q <=> r))`] THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN ASM_REWRITE_TAC[DIV_0; ODD] THEN
+    X_GEN_TAC `m:num` THEN DISCH_TAC THEN CONJ_TAC THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN ASM_REWRITE_TAC[DIV_0; ODD] THEN
+    X_GEN_TAC `n:num` THEN DISCH_THEN(K ALL_TAC) THEN CONJ_TAC THEN
+    INDUCT_TAC THEN REWRITE_TAC[EXP; DIV_1; ODD_MULT; ARITH; ODD_ADD] THEN
+    DISCH_TAC THEN REWRITE_TAC[GSYM DIV_DIV] THEN
+    REWRITE_TAC[ARITH_RULE `(2 * n) DIV 2 = n /\ (2 * n + 1) DIV 2 = n`;
+                MOD_MULT; ONCE_REWRITE_RULE[MULT_SYM] MOD_MULT_ADD] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC)
+  and qth = prove
+   (`BIT0 _0 = _0`,
+    REWRITE_TAC[ARITH_ZERO])
+  and nty = `:N` in
+  fun tm ->
+    (match tm with
+      Comb(Comb(Const("word_xor",_),
+                Comb(Const("word",_),m)),
+           Comb(Const("word",_),n))
+          when is_numeral m && is_numeral n ->
+       let th1 = INST_TYPE
+          [hd(snd(dest_type(type_of(rand tm)))),nty] pth in
+       let f,bod = dest_exists(concl th1) in
+       let pth_base,th2 = CONJ_PAIR(ASSUME bod) in
+       let pth_step,pth_trans = CONJ_PAIR th2 in
+       let base_conv = GEN_REWRITE_CONV I [pth_base]
+       and step_conv = GEN_REWRITE_CONV I [pth_step]
+       and fix_conv = GEN_REWRITE_CONV TRY_CONV [qth] in
+       let rec conv t =
+         (base_conv ORELSEC
+          (step_conv THENC RAND_CONV conv THENC fix_conv)) t in
+       let th3 = REWR_CONV pth_trans tm in
+       let th4 = CONV_RULE(funpow 3 RAND_CONV conv) th3 in
+       let th5 = PROVE_HYP th1 (SIMPLE_CHOOSE f th4) in
+       CONV_RULE(RAND_CONV WORD_WORD_CONV) th5
+     | _ -> failwith "WORD_XOR_CONV");;
+
+let WORD_ROL_CONV =
+  let pth = prove
+   (`word_rol (word(NUMERAL m):N word) n =
+     (\n. word_or (word_shl (word(NUMERAL m):N word) n)
+                  (word_ushr (word(NUMERAL m):N word) (dimindex (:N) - n)))
+     (n MOD dimindex(:N))`,
+    REWRITE_TAC[] THEN
+    GEN_REWRITE_TAC LAND_CONV [WORD_ROL_MOD] THEN
+    SIMP_TAC[WORD_ROL_SHIFTS; DIMINDEX_NONZERO; DIVISION; LT_IMP_LE]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  (RAND_CONV o RAND_CONV) (!word_SIZE_CONV) THENC
+  RAND_CONV NUM_MOD_CONV THENC NUM_REDUCE_CONV THENC
+  BINOP2_CONV WORD_SHL_CONV
+              ((RAND_CONV o LAND_CONV) (!word_SIZE_CONV) THENC
+               RAND_CONV NUM_SUB_CONV THENC WORD_USHR_CONV) THENC
+  WORD_OR_CONV;;
+
+let WORD_ROR_CONV =
+  let pth = prove
+   (`word_ror (word(NUMERAL m):N word) n =
+     (\n. word_or (word_ushr (word(NUMERAL m):N word) n)
+                  (word_shl (word(NUMERAL m):N word) (dimindex (:N) - n)))
+     (n MOD dimindex(:N))`,
+    REWRITE_TAC[] THEN
+    GEN_REWRITE_TAC LAND_CONV [WORD_ROR_MOD] THEN
+    SIMP_TAC[WORD_ROR_SHIFTS; DIMINDEX_NONZERO; DIVISION; LT_IMP_LE]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  (RAND_CONV o RAND_CONV) (!word_SIZE_CONV) THENC
+  RAND_CONV NUM_MOD_CONV THENC NUM_REDUCE_CONV THENC
+  BINOP2_CONV WORD_USHR_CONV
+              ((RAND_CONV o LAND_CONV) (!word_SIZE_CONV) THENC
+               RAND_CONV NUM_SUB_CONV THENC WORD_SHL_CONV) THENC
+  WORD_OR_CONV;;
+
+let WORD_ZX_CONV =
+  let pth = prove
+   (`(word_zx:M word->N word) (word (NUMERAL n)) =
+     word (NUMERAL n MOD (2 EXP (MIN (dimindex(:M)) (dimindex(:N)))))`,
+    REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_ZX_GEN; VAL_WORD] THEN
+    MESON_TAC[MOD_MOD_EXP_MIN; MOD_MOD_REFL]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV
+   (RAND_CONV
+     (RAND_CONV(BINOP_CONV (!word_SIZE_CONV) THENC
+                NUM_MIN_CONV) THENC
+      NUM_EXP_CONV) THENC
+    NUM_MOD_CONV);;
+
+let WORD_SX_CONV =
+  let pth = prove
+   (`(word_sx:M word->N word) (word (NUMERAL n)) =
+     iword(ival(word(NUMERAL n):M word))`,
+    REWRITE_TAC[word_sx]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV WORD_IVAL_CONV THENC
+  WORD_IWORD_CONV;;
+
+let WORD_CAND_CONV =
+ let pth = prove
+  (`word_cand (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+    if word(NUMERAL m):N word = word 0 \/
+       word(NUMERAL n):N word = word 0
+    then word 0 else word 1`,
+   REWRITE_TAC[WORD_CAND]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RATOR_CONV(LAND_CONV
+   (BINOP_CONV WORD_EQ_CONV THENC
+    GEN_REWRITE_CONV I [OR_CLAUSES])) THENC
+  GEN_REWRITE_CONV I [COND_CLAUSES];;
+
+let WORD_COR_CONV =
+ let pth = prove
+  (`word_cor (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+    if word(NUMERAL m):N word = word 0 /\
+       word(NUMERAL n):N word = word 0
+    then word 0 else word 1`,
+   REWRITE_TAC[WORD_COR]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RATOR_CONV(LAND_CONV
+   (BINOP_CONV WORD_EQ_CONV THENC
+    GEN_REWRITE_CONV I [AND_CLAUSES])) THENC
+  GEN_REWRITE_CONV I [COND_CLAUSES];;
+
+let WORD_JOIN_CONV =
+ let pth = prove
+   (`(word_join:(M)word->(N)word->(P)word)
+     (word(NUMERAL m)) (word(NUMERAL n)) =
+     word((2 EXP dimindex(:N) * NUMERAL m MOD 2 EXP dimindex(:M) +
+           NUMERAL n MOD 2 EXP dimindex(:N)) MOD
+          2 EXP dimindex(:P))`,
+    REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_JOIN; VAL_WORD; MOD_MOD_REFL]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV
+   (BINOP2_CONV
+      (BINOP2_CONV
+         (BINOP2_CONV
+           (!word_POW2SIZE_CONV)
+           (RAND_CONV(!word_POW2SIZE_CONV) THENC NUM_MOD_CONV) THENC
+          NUM_MULT_CONV)
+         (RAND_CONV(!word_POW2SIZE_CONV) THENC NUM_MOD_CONV)  THENC
+       NUM_ADD_CONV)
+      (!word_POW2SIZE_CONV) THENC
+    NUM_MOD_CONV);;
+
+let WORD_SUBWORD_CONV =
+  let pth = prove
+   (`word_subword (word(NUMERAL m):M word) (NUMERAL p,NUMERAL q):N word =
+     word((val(word(NUMERAL m):M word) DIV 2 EXP NUMERAL p) MOD
+           2 EXP MIN (NUMERAL q) (dimindex (:N)))`,
+    REWRITE_TAC[word_subword; GSYM MOD_MOD_EXP_MIN] THEN
+    REWRITE_TAC[WORD_EQ; CONG; MOD_MOD_REFL]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV
+   (BINOP2_CONV
+     (BINOP2_CONV WORD_VAL_CONV NUM_EXP_CONV THENC NUM_DIV_CONV)
+     (RAND_CONV (RAND_CONV (!word_SIZE_CONV) THENC NUM_MIN_CONV) THENC
+      NUM_EXP_CONV) THENC
+    NUM_MOD_CONV);;
+
+let WORD_BITS_OF_WORD_CONV =
+  let pth = prove
+   (`?f. (!i. f i _0 = {} /\
+              (!n. f i (BIT0 n) = f (i + 1) n) /\
+              (!n. f i (BIT1 n) = i INSERT f (i + 1) n)) /\
+         (!w:N word. bits_of_word w = f 0 (val w))`,
+    MP_TAC(prove_general_recursive_function_exists
+     `?f. !i n. f i n =
+                  if n = 0 then {}
+             else if n MOD 2 = 1 then i INSERT f (i + 1) (n DIV 2)
+             else f (i + 1) (n DIV 2)`) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:num->num->num->bool` THEN
+    DISCH_TAC THEN
+    GEN_REWRITE_TAC
+     (LAND_CONV o BINDER_CONV o LAND_CONV o LAND_CONV o RAND_CONV)
+     [GSYM NUMERAL] THEN
+    GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV o RAND_CONV o BINOP_CONV o
+                     BINDER_CONV o LAND_CONV o RAND_CONV)
+     [BIT0; BIT1] THEN
+    REWRITE_TAC[ADD1; GSYM MULT_2] THEN MATCH_MP_TAC(TAUT
+     `p /\ (p ==> q) ==> p /\ q`) THEN
+    CONJ_TAC THENL
+     [REPEAT STRIP_TAC THEN FIRST_ASSUM(fun th ->
+        GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      REWRITE_TAC[ADD_EQ_0; MULT_EQ_0; ARITH_EQ; ARITH_RULE
+       `(2 * n + 1) DIV 2 = n /\ (2 * n) DIV 2 = n`] THEN
+      REWRITE_TAC[MOD_MULT] THEN
+      ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[MOD_MULT_ADD] THEN
+      CONV_TAC NUM_REDUCE_CONV THEN ASM_MESON_TAC[];
+      POP_ASSUM(K ALL_TAC) THEN
+      REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC] THEN
+    X_GEN_TAC `w:N word` THEN REWRITE_TAC[EXTENSION] THEN
+    SUBGOAL_THEN
+     `!k i. i IN f k (val w) <=> k <= i /\ (i - k) IN bits_of_word(w:N word)`
+    MP_TAC THENL [ALL_TAC; MESON_TAC[SUB_0; LE_0]] THEN
+    REWRITE_TAC[bits_of_word; BIT_VAL] THEN
+    SPEC_TAC(`val(w:N word)`,`n:num`) THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN ASM_REWRITE_TAC[IN_ELIM_THM] THEN
+    REWRITE_TAC[DIV_0; NOT_IN_EMPTY; ARITH] THEN
+    X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+    ASM_REWRITE_TAC[IN_INSERT; AND_FORALL_THM] THEN
+    MAP_EVERY X_GEN_TAC [`k:num`; `i:num`] THEN
+    ASM_CASES_TAC `i:num = k` THEN
+    ASM_REWRITE_TAC[LE_REFL; SUB_REFL; ARITH_RULE `~(k + 1 <= k)`] THEN
+    REWRITE_TAC[EXP; DIV_1; ODD_ADD; ODD_MULT; ARITH] THEN
+    ASM_CASES_TAC `k:num <= i` THEN ASM_REWRITE_TAC[] THENL
+     [ALL_TAC; ASM_ARITH_TAC] THEN
+    ASM_CASES_TAC `k + 1 <= i` THEN ASM_REWRITE_TAC[] THENL
+     [ALL_TAC; ASM_ARITH_TAC] THEN
+    SUBGOAL_THEN `i - k = SUC(i - (k + 1))` SUBST1_TAC THENL
+     [ASM_ARITH_TAC; REWRITE_TAC[EXP; GSYM DIV_DIV]] THEN
+    REWRITE_TAC[ARITH_RULE `(2 * n + 1) DIV 2 = n /\ (2 * n) DIV 2 = n`])
+  and nty = `:N` in
+  fun tm ->
+    (match tm with
+      Comb(Const("bits_of_word",_),Comb(Const("word",_),n))
+          when is_numeral n ->
+       let th1 = INST_TYPE
+          [hd(snd(dest_type(type_of(rand tm)))),nty] pth in
+       let f,bod = dest_exists(concl th1) in
+       let pth_clauses,th2 = CONJ_PAIR(ASSUME bod) in
+       let pth_z,pth_o = CONJ_PAIR(SPEC_ALL pth_clauses) in
+       let pth_0,pth_1 = CONJ_PAIR pth_o in
+       let conv_z = GEN_REWRITE_CONV I [pth_z]
+       and conv_0 = GEN_REWRITE_CONV I [pth_0]
+       and conv_1 = GEN_REWRITE_CONV I [pth_1] in
+       let rec conv t =
+        (conv_z ORELSEC
+         (conv_0 THENC LAND_CONV NUM_ADD_CONV THENC conv) ORELSEC
+         (conv_1 THENC RAND_CONV(LAND_CONV NUM_ADD_CONV THENC conv))) t in
+       let th3 = REWR_CONV th2 tm in
+       let th4 = CONV_RULE(RAND_CONV(RAND_CONV WORD_VAL_CONV)) th3 in
+       let th5 = GEN_REWRITE_RULE (RAND_CONV o RAND_CONV) [NUMERAL] th4 in
+       let th6 = CONV_RULE(RAND_CONV conv) th5 in
+       PROVE_HYP th1 (SIMPLE_CHOOSE f th6)
+     | _ -> failwith "WORD_BITS_OF_WORD_CONV");;
+
+let WORD_POPCOUNT_CONV =
+  let pth = prove
+   (`?f. (f _0 = 0 /\
+          (!n. f (BIT0 n) = f n) /\
+          (!n. f (BIT1 n) = SUC(f n))) /\
+         (!w:N word. word_popcount w = f (val w))`,
+    MP_TAC(prove_general_recursive_function_exists
+     `?f. !n. f n =
+                  if n = 0 then 0
+             else if n MOD 2 = 1 then SUC(f (n DIV 2))
+             else f (n DIV 2)`) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `f:num->num` THEN
+    DISCH_TAC THEN
+    GEN_REWRITE_TAC
+     (LAND_CONV o LAND_CONV o LAND_CONV o RAND_CONV)
+     [GSYM NUMERAL] THEN
+    GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o BINOP_CONV o
+                     BINDER_CONV o LAND_CONV o RAND_CONV)
+     [BIT0; BIT1] THEN
+    REWRITE_TAC[ADD1; GSYM MULT_2] THEN MATCH_MP_TAC(TAUT
+     `p /\ (p ==> q) ==> p /\ q`) THEN
+    CONJ_TAC THENL
+     [REPEAT STRIP_TAC THEN FIRST_ASSUM(fun th ->
+        GEN_REWRITE_TAC LAND_CONV [th]) THEN
+      REWRITE_TAC[ADD_EQ_0; MULT_EQ_0; ARITH_EQ; ARITH_RULE
+       `(2 * n + 1) DIV 2 = n /\ (2 * n) DIV 2 = n`] THEN
+      REWRITE_TAC[MOD_MULT] THEN
+      ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[MOD_MULT_ADD] THEN
+      CONV_TAC NUM_REDUCE_CONV THEN ASM_MESON_TAC[ADD1];
+      POP_ASSUM(K ALL_TAC) THEN
+      REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC] THEN
+    X_GEN_TAC `w:N word` THEN REWRITE_TAC[word_popcount] THEN
+    REWRITE_TAC[bits_of_word; BIT_VAL] THEN
+    SUBGOAL_THEN `!n. {i | ODD(n DIV 2 EXP i)} HAS_SIZE f n` MP_TAC THENL
+     [ALL_TAC; SIMP_TAC[HAS_SIZE]] THEN
+    MATCH_MP_TAC BINARY_INDUCT THEN
+    ASM_REWRITE_TAC[HAS_SIZE; DIV_0; ODD; EMPTY_GSPEC;
+                    FINITE_EMPTY; CARD_CLAUSES] THEN
+    X_GEN_TAC `n:num` THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     `!P. {i | P i} = {i | i = 0 /\ P 0} UNION IMAGE SUC {i | P(SUC i)}`
+     (fun th -> ONCE_REWRITE_TAC[th])
+    THENL
+     [REWRITE_TAC[EXTENSION; IN_UNION; IN_ELIM_THM; IN_IMAGE] THEN
+      MESON_TAC[num_CASES];
+      REWRITE_TAC[EXP; DIV_1; ODD_ADD; ODD_MULT; ARITH]] THEN
+    REWRITE_TAC[EMPTY_GSPEC; SING_GSPEC; GSYM DIV_DIV] THEN
+    REWRITE_TAC[ARITH_RULE `(2 * n + 1) DIV 2 = n /\ (2 * n) DIV 2 = n`] THEN
+    REWRITE_TAC[UNION_EMPTY; INSERT_UNION_EQ] THEN
+    ASM_SIMP_TAC[FINITE_INSERT; FINITE_IMAGE; CARD_CLAUSES] THEN
+    REWRITE_TAC[IN_IMAGE; NOT_SUC; ADD1; EQ_ADD_RCANCEL] THEN
+    ASM_SIMP_TAC[CARD_IMAGE_INJ; SUC_INJ])
+  and nty = `:N` in
+  fun tm ->
+    (match tm with
+      Comb(Const("word_popcount",_),Comb(Const("word",_),n))
+          when is_numeral n ->
+       let th1 = INST_TYPE
+          [hd(snd(dest_type(type_of(rand tm)))),nty] pth in
+       let f,bod = dest_exists(concl th1) in
+       let pth_clauses,th2 = CONJ_PAIR(ASSUME bod) in
+       let pth_z,pth_o = CONJ_PAIR(SPEC_ALL pth_clauses) in
+       let pth_0,pth_1 = CONJ_PAIR pth_o in
+       let conv_z = GEN_REWRITE_CONV I [pth_z]
+       and conv_0 = GEN_REWRITE_CONV I [pth_0]
+       and conv_1 = GEN_REWRITE_CONV I [pth_1] in
+       let rec conv t =
+        (conv_z ORELSEC
+         (conv_0 THENC conv) ORELSEC
+         (conv_1 THENC RAND_CONV conv THENC NUM_SUC_CONV)) t in
+       let th3 = REWR_CONV th2 tm in
+       let th4 = CONV_RULE(RAND_CONV(RAND_CONV WORD_VAL_CONV)) th3 in
+       let th5 = GEN_REWRITE_RULE (RAND_CONV o RAND_CONV) [NUMERAL] th4 in
+       let th6 = CONV_RULE(RAND_CONV conv) th5 in
+       PROVE_HYP th1 (SIMPLE_CHOOSE f th6)
+     | _ -> failwith "WORD_POPCOUNT_CONV");;
+
+let WORD_EVENPARITY_CONV =
+  let conv =
+    GEN_REWRITE_CONV I [word_evenparity] THENC
+    RAND_CONV WORD_POPCOUNT_CONV THENC
+    NUM_EVEN_CONV in
+  fun tm ->
+   (match tm with
+     Comb(Const("word_evenparity",_),Comb(Const("word",_),n))
+      when is_numeral n -> conv tm
+    | _ -> failwith "WORD_EVENPARITY_CONV");;
+
+let WORD_ODDPARITY_CONV =
+  let conv =
+    GEN_REWRITE_CONV I [word_oddparity] THENC
+    RAND_CONV WORD_POPCOUNT_CONV THENC
+    NUM_ODD_CONV in
+  fun tm ->
+   (match tm with
+     Comb(Const("word_oddparity",_),Comb(Const("word",_),n))
+      when is_numeral n -> conv tm
+    | _ -> failwith "WORD_ODDPARITY_CONV");;
+
+let WORD_JSHL_CONV =
+  let pth = prove
+   (`word_jshl (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word_shl (word(NUMERAL m):N word)
+              (val(word(NUMERAL n):N word) MOD dimindex (:N))`,
+    REWRITE_TAC[word_jshl]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(BINOP2_CONV WORD_VAL_CONV (!word_SIZE_CONV) THENC
+            NUM_MOD_CONV) THENC
+  WORD_SHL_CONV;;
+
+let WORD_JSHR_CONV =
+  let pth = prove
+   (`word_jshr (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word_ishr (word(NUMERAL m):N word)
+               (val(word(NUMERAL n):N word) MOD dimindex (:N))`,
+    REWRITE_TAC[word_jshr]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(BINOP2_CONV WORD_VAL_CONV (!word_SIZE_CONV) THENC
+            NUM_MOD_CONV) THENC
+  WORD_ISHR_CONV;;
+
+let WORD_JUSHR_CONV =
+  let pth = prove
+   (`word_jushr (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word_ushr (word(NUMERAL m):N word)
+               (val(word(NUMERAL n):N word) MOD dimindex (:N))`,
+    REWRITE_TAC[word_jushr]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV(BINOP2_CONV WORD_VAL_CONV (!word_SIZE_CONV) THENC
+            NUM_MOD_CONV) THENC
+  WORD_USHR_CONV;;
+
+let WORD_JDIV_CONV =
+  let pth = prove
+   (`word_jdiv (word(NUMERAL m):N word) (word(NUMERAL n)) =
+     (\a b. iword((int_sgn a * int_sgn b) * (abs a div abs b)))
+     (ival(word(NUMERAL m):N word)) (ival(word(NUMERAL n):N word))`,
+    REWRITE_TAC[word_jdiv; imodular; GSYM INT_MUL_ASSOC]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RATOR_CONV(RAND_CONV WORD_IVAL_CONV THENC BETA_CONV) THENC
+  RAND_CONV WORD_IVAL_CONV THENC BETA_CONV THENC
+  RAND_CONV(COMB2_CONV
+             (RAND_CONV (BINOP_CONV INT_SGN_CONV THENC INT_MUL_CONV))
+             (BINOP_CONV INT_ABS_CONV THENC INT_DIV_CONV) THENC
+            INT_MUL_CONV) THENC
+  WORD_IWORD_CONV;;
+
+let WORD_JREM_CONV =
+  let pth = prove
+   (`word_jrem (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word_sub (word (NUMERAL m))
+              (word_mul (word_jdiv (word (NUMERAL m)) (word (NUMERAL n)))
+                        (word (NUMERAL n)))`,
+    REWRITE_TAC[word_jrem]) in
+  GEN_REWRITE_CONV I [pth] THENC
+  RAND_CONV (LAND_CONV WORD_JDIV_CONV THENC WORD_MUL_CONV) THENC
+  WORD_SUB_CONV;;
+
+let WORD_RED_CONV =
+  let gconv_net = itlist (uncurry net_of_conv)
+   [`word(NUMERAL n):N word`,CHANGED_CONV WORD_WORD_CONV;
+    `iword i:N word`,WORD_IWORD_CONV;
+    `val(w:N word)`,WORD_VAL_CONV;
+    `ival(w:N word)`,WORD_IVAL_CONV;
+    `bit (NUMERAL k) (word(NUMERAL n):N word)`,WORD_BIT_CONV;
+    `word(NUMERAL m):N word = word(NUMERAL n)`,WORD_EQ_CONV;
+    `word_ult (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ULT_CONV;
+    `word_ule (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ULE_CONV;
+    `word_ugt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UGT_CONV;
+    `word_uge (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UGE_CONV;
+    `word_ilt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ILT_CONV;
+    `word_ile (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ILE_CONV;
+    `word_igt (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IGT_CONV;
+    `word_ige (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IGE_CONV;
+    `word_neg (word(NUMERAL n):N word)`,WORD_NEG_CONV;
+    `word_add (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_ADD_CONV;
+    `word_mul (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_MUL_CONV;
+    `word_sub (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_SUB_CONV;
+    `word_udiv (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UDIV_CONV;
+    `word_umod (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMOD_CONV;
+    `word_umax (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMAX_CONV;
+    `word_umin (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_UMIN_CONV;
+    `word_imax (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IMAX_CONV;
+    `word_imin (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_IMIN_CONV;
+    `word_shl (word(NUMERAL m):N word) (NUMERAL n)`,WORD_SHL_CONV;
+    `word_ushr (word(NUMERAL m):N word) (NUMERAL n)`,WORD_USHR_CONV;
+    `word_ishr (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ISHR_CONV;
+    `word_not (word(NUMERAL n):N word)`,WORD_NOT_CONV;
+    `word_and (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_AND_CONV;
+    `word_or (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_OR_CONV;
+    `word_xor (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_XOR_CONV;
+    `word_rol (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ROL_CONV;
+    `word_ror (word(NUMERAL m):N word) (NUMERAL n)`,WORD_ROR_CONV;
+    `word_zx (word(NUMERAL n):N word)`,WORD_ZX_CONV;
+    `word_sx (word(NUMERAL n):N word)`,WORD_SX_CONV;
+    `word_cand (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_CAND_CONV;
+    `word_cor (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_COR_CONV;
+    `word_join (word(NUMERAL m):M word) (word(NUMERAL n):N word)`,
+                WORD_JOIN_CONV;
+    `word_subword (word(NUMERAL m):M word) (NUMERAL p,NUMERAL q):N word`,
+                WORD_SUBWORD_CONV;
+    `bits_of_word (word(NUMERAL n):N word)`,WORD_BITS_OF_WORD_CONV;
+    `word_popcount (word(NUMERAL n):N word)`,WORD_POPCOUNT_CONV;
+    `word_evenparity (word(NUMERAL n):N word)`,WORD_EVENPARITY_CONV;
+    `word_oddparity (word(NUMERAL n):N word)`,WORD_ODDPARITY_CONV;
+    `word_jshl (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHL_CONV;
+    `word_jshr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHR_CONV;
+    `word_jushr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JUSHR_CONV;
+    `word_jdiv (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JDIV_CONV;
+    `word_jrem (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JREM_CONV]
+  (basic_net()) in
+  REWRITES_CONV gconv_net;;
+
+let WORD_REDUCE_CONV = DEPTH_CONV WORD_RED_CONV;;
+
+(* ------------------------------------------------------------------------- *)
+(* Alternative returning signed words.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_TO_IWORD_CONV =
+  let pth = prove
+   (`word(NUMERAL n):N word = iword(ival(word(NUMERAL n):N word))`,
+    REWRITE_TAC[IWORD_IVAL]) in
+  GEN_REWRITE_CONV I [pth] THENC RAND_CONV WORD_IVAL_CONV;;
+
+let WORD_IREDUCE_CONV =
+  WORD_REDUCE_CONV THENC ONCE_DEPTH_CONV WORD_TO_IWORD_CONV;;

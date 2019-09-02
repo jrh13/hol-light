@@ -241,6 +241,16 @@ let INT_DIVIDES_GCD_RIGHT = prove
   SIMP_TAC[INT_GCD_UNIQUE; INT_ABS_POS; INT_DIVIDES_ABS; INT_DIVIDES_REFL] THEN
   MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
 
+let INT_GCD_EQ = prove
+ (`!x y u v:int.
+        (!d. d divides x /\ d divides y <=> d divides u /\ d divides v)
+        ==> gcd(x,y) = gcd(u,v)`,
+  REPEAT STRIP_TAC THEN
+  SIMP_TAC[GSYM INT_DIVIDES_ANTISYM_POS; INT_GCD_POS] THEN
+  ASM_REWRITE_TAC[INT_DIVIDES_GCD; INT_GCD_DIVIDES] THEN
+  FIRST_X_ASSUM(fun th -> REWRITE_TAC[GSYM th]) THEN
+  REWRITE_TAC[INT_GCD_DIVIDES]);;
+
 (* ------------------------------------------------------------------------- *)
 (* More lemmas about coprimality.                                            *)
 (* ------------------------------------------------------------------------- *)

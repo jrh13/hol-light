@@ -761,7 +761,7 @@ let INT_DIVISION = prove
          ==> m = m div n * n + m rem n /\ &0 <= m rem n /\ m rem n < abs n`,
   MESON_TAC[INT_DIVISION_0]);;
 
-let INT_DIVISION_DECOMP = prove
+let INT_DIVISION_SIMP = prove
  (`!m n. m div n * n + m rem n = m`,
   MP_TAC INT_DIVISION_0 THEN REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN CONV_TAC INT_ARITH);;
@@ -777,7 +777,7 @@ let INT_REM_0 = prove
 let INT_REM_DIV = prove
  (`!m n. m rem n = m - m div n * n`,
   REWRITE_TAC[INT_ARITH `a:int = b - c <=> c + a = b`] THEN
-  REWRITE_TAC[INT_DIVISION_DECOMP]);;
+  REWRITE_TAC[INT_DIVISION_SIMP]);;
 
 let INT_LT_REM = prove
  (`!x n. &0 < n ==> x rem n < n`,
@@ -1305,8 +1305,8 @@ let INT_REM_EQ = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[int_congruent] THEN
   EQ_TAC THENL
    [DISCH_TAC THEN EXISTS_TAC `m div p - n div p` THEN
-    MP_TAC(SPECL [`m:int`; `p:int`] INT_DIVISION_DECOMP) THEN
-    MP_TAC(SPECL [`n:int`; `p:int`] INT_DIVISION_DECOMP) THEN
+    MP_TAC(SPECL [`m:int`; `p:int`] INT_DIVISION_SIMP) THEN
+    MP_TAC(SPECL [`n:int`; `p:int`] INT_DIVISION_SIMP) THEN
     ASM_REWRITE_TAC[] THEN CONV_TAC INT_RING;
     REWRITE_TAC[LEFT_IMP_EXISTS_THM; INT_EQ_SUB_RADD] THEN
     X_GEN_TAC `d:int` THEN DISCH_THEN SUBST1_TAC THEN
@@ -1329,12 +1329,19 @@ let INT_REM_EQ_0 = prove
   SUBST1_TAC(SYM(SPEC `n:int` INT_REM_ZERO)) THEN
   REWRITE_TAC[INT_REM_EQ] THEN CONV_TAC INTEGER_RULE);;
 
+let INT_MUL_DIV_EQ = prove
+ (`(!m n. n * m div n = m <=> n divides m) /\
+   (!m n. m div n * n = m <=> n divides m)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MP_TAC(SPECL [`m:int`; `n:int`] INT_DIVISION_SIMP) THEN
+  REWRITE_TAC[GSYM INT_REM_EQ_0] THEN CONV_TAC INT_RING);;
+
 let INT_REM_MOD_SELF = prove
  (`!m n. (m rem n == m) (mod n)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[int_congruent] THEN
   EXISTS_TAC `--(m div n)` THEN
   REWRITE_TAC[INT_ARITH `r - m:int = n * --d <=> d * n + r = m`] THEN
-  REWRITE_TAC[INT_DIVISION_DECOMP]);;
+  REWRITE_TAC[INT_DIVISION_SIMP]);;
 
 let INT_CONG_SOLVE_BOUNDS = prove
  (`!a n:int. ~(n = &0) ==> ?x. &0 <= x /\ x < abs n /\ (x == a) (mod n)`,
@@ -1570,6 +1577,23 @@ let INT_CONG_DIV2 = prove
  (`!a n m n.
       &0 <= m /\ (a == b) (mod (m * n)) ==> (a div m == b div m) (mod n)`,
   SIMP_TAC[GSYM INT_REM_EQ; INT_DIV_REM]);;
+
+let INT_REM_2_CASES = prove
+ (`!n. n rem &2 = &0 \/ n rem &2 = &1`,
+  GEN_TAC THEN MP_TAC(SPECL [`n:int`; `&2:int`] INT_DIVISION) THEN
+  INT_ARITH_TAC);;
+
+let NOT_INT_REM_2 = prove
+ (`(!n. ~(n rem &2 = &0) <=> n rem &2 = &1) /\
+   (!n. ~(n rem &2 = &1) <=> n rem &2 = &0)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN MP_TAC INT_REM_2_CASES THEN
+  MATCH_MP_TAC MONO_FORALL THEN INT_ARITH_TAC);;
+
+let INT_REM_2_DIVIDES = prove
+ (`(!n. n rem &2 = &0 <=> &2 divides n) /\
+   (!n. n rem &2 = &1 <=> ~(&2 divides n))`,
+  REWRITE_TAC[GSYM(CONJUNCT1 NOT_INT_REM_2)] THEN
+  REWRITE_TAC[INT_REM_EQ_0]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic operations also on div and rem, hence the whole lot.           *)
