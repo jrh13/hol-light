@@ -8,7 +8,14 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Fri 30th Aug 2019       int.ml, Library/integer.ml 
+Tue  3rd Sep 2019       sets.ml
+
+Added a trivial variant of IN_ELIM_PAIR_THM that is not an instance of it:
+
+  IN_ELIM_TRIPLE_THM =
+    |- !P a b c. a,b,c IN {x,y,z | P x y z} <=> P a b c
+
+Fri 30th Aug 2019       int.ml, Library/integer.ml
 
 Renamed the theorem INT_DIVISION_DECOMP in int.ml to INT_DIVISION_SIMP,
 which better maintains the pattern of DIVISION_SIMP and avoids a clash

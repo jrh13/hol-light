@@ -1004,6 +1004,10 @@ let IN_ELIM_PAIR_THM = prove
  (`!P a b. (a,b) IN {(x,y) | P x y} <=> P a b`,
   REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[PAIR_EQ]);;
 
+let IN_ELIM_TRIPLE_THM = prove
+ (`!P a b c. (a,b,c) IN {(x,y,z) | P x y z} <=> P a b c`,
+  REWRITE_TAC[IN_ELIM_THM; PAIR_EQ] THEN MESON_TAC[]);;
+
 let SET_PAIR_THM = prove
  (`!P. {p | P p} = {(a,b) | P(a,b)}`,
   REWRITE_TAC[EXTENSION; FORALL_PAIR_THM; IN_ELIM_THM; IN_ELIM_PAIR_THM]);;

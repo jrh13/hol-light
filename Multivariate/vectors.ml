@@ -2779,6 +2779,20 @@ let MAT_0_ROW = prove
   REWRITE_TAC[CART_EQ_FULL; MAT_0_COMPONENT; VEC_COMPONENT]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Symmetric and normal matrices                                             *)
+(* ------------------------------------------------------------------------- *)
+
+let symmetric_matrix = new_definition
+ `symmetric_matrix (A:real^N^N) <=> transp A = A`;;
+
+let normal_matrix = new_definition
+ `normal_matrix (A:real^N^N) <=> transp A ** A = A ** transp A`;;
+
+let SYMMETRIC_IMP_NORMAL_MATRIX = prove
+ (`!A:real^N^N. symmetric_matrix A ==> normal_matrix A`,
+  SIMP_TAC[symmetric_matrix; normal_matrix]);;
+
+(* ------------------------------------------------------------------------- *)
 (* A decision procedure for matrices analogous to VECTOR_ARITH.              *)
 (* ------------------------------------------------------------------------- *)
 
@@ -3062,9 +3076,9 @@ let TRANSP_EQ_0 = prove
 
 let SYMMETRIC_MATRIX_MUL = prove
  (`!A B:real^N^N.
-        transp(A) = A /\ transp(B) = B
-        ==> (transp(A ** B) = A ** B <=> A ** B = B ** A)`,
-  SIMP_TAC[MATRIX_TRANSP_MUL] THEN MESON_TAC[]);;
+        symmetric_matrix A /\ symmetric_matrix B
+        ==> (symmetric_matrix(A ** B) <=> A ** B = B ** A)`,
+  SIMP_TAC[symmetric_matrix; MATRIX_TRANSP_MUL] THEN MESON_TAC[]);;
 
 let MATRIX_EQ = prove
  (`!A:real^N^M B. (A = B) = !x:real^N. A ** x = B ** x`,
@@ -3095,17 +3109,39 @@ let TRANSP_MATRIX_CMUL = prove
  (`!A:real^M^N c. transp(c %% A) = c %% transp A`,
   SIMP_TAC[CART_EQ; transp; MATRIX_CMUL_COMPONENT; LAMBDA_BETA]);;
 
+let SYMMETRIC_MATRIX_CMUL = prove
+ (`!c A:real^N^N.
+        symmetric_matrix A ==> symmetric_matrix(c %% A)`,
+  SIMP_TAC[symmetric_matrix; TRANSP_MATRIX_CMUL]);;
+
 let TRANSP_MATRIX_ADD = prove
  (`!A B:real^N^M. transp(A + B) = transp A + transp B`,
   SIMP_TAC[CART_EQ; transp; LAMBDA_BETA; matrix_add]);;
+
+let SYMMETRIC_MATRIX_ADD = prove
+ (`!A B:real^N^N.
+        symmetric_matrix A /\ symmetric_matrix B
+        ==> symmetric_matrix(A + B)`,
+  SIMP_TAC[symmetric_matrix; TRANSP_MATRIX_ADD]);;
 
 let TRANSP_MATRIX_SUB = prove
  (`!A B:real^N^M. transp(A - B) = transp A - transp B`,
   SIMP_TAC[CART_EQ; transp; LAMBDA_BETA; matrix_sub]);;
 
+let SYMMETRIC_MATRIX_SUB = prove
+ (`!A B:real^N^N.
+        symmetric_matrix A /\ symmetric_matrix B
+        ==> symmetric_matrix(A - B)`,
+  SIMP_TAC[symmetric_matrix; TRANSP_MATRIX_SUB]);;
+
 let TRANSP_MATRIX_NEG = prove
  (`!A:real^N^M. transp(--A) = --(transp A)`,
   SIMP_TAC[CART_EQ; transp; LAMBDA_BETA; matrix_neg]);;
+
+let SYMMETRIC_MATRIX_NEG = prove
+ (`!A:real^N^N. symmetric_matrix(--A) <=> symmetric_matrix A`,
+  REWRITE_TAC[symmetric_matrix; TRANSP_MATRIX_NEG] THEN
+  CONV_TAC MATRIX_ARITH);;
 
 let TRANSP_MAT = prove
  (`!n. transp(mat n) = mat n`,
@@ -3115,9 +3151,18 @@ let TRANSP_TRANSP = prove
  (`!A:real^N^M. transp(transp A) = A`,
   SIMP_TAC[CART_EQ; transp; LAMBDA_BETA]);;
 
+let SYMMETRIC_MATRIX_MAT = prove
+ (`!n. symmetric_matrix(mat n)`,
+  REWRITE_TAC[symmetric_matrix; TRANSP_MAT]);;
+
+let SYMMETRIC_MATRIX_COVARIANCE = prove
+ (`!A:real^N^M. symmetric_matrix(transp A ** A)`,
+  REWRITE_TAC[symmetric_matrix; MATRIX_TRANSP_MUL; TRANSP_TRANSP]);;
+
 let SYMMETRIC_MATRIX_SIMILAR = prove
- (`!A B:real^N^N. transp B = B
-                  ==> transp(transp A ** B ** A) = transp A ** B ** A`,
+ (`!A B:real^N^N.
+        symmetric_matrix B ==> symmetric_matrix(transp A ** B ** A)`,
+  REWRITE_TAC[symmetric_matrix] THEN
   SIMP_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP; MATRIX_MUL_ASSOC]);;
 
 let TRANSP_EQ = prove
@@ -3454,8 +3499,8 @@ let MATRIX_ADD = prove
   SIMP_TAC[MATRIX_WORKS; LINEAR_COMPOSE_ADD]);;
 
 let MATRIX_SELF_ADJOINT = prove
- (`!f. linear f ==> (adjoint f = f <=> transp(matrix f) = matrix f)`,
-  SIMP_TAC[GSYM MATRIX_ADJOINT] THEN
+ (`!f. linear f ==> (adjoint f = f <=> symmetric_matrix(matrix f))`,
+  SIMP_TAC[symmetric_matrix; GSYM MATRIX_ADJOINT] THEN
   MESON_TAC[LINEAR_EQ_MATRIX; ADJOINT_LINEAR]);;
 
 let LINEAR_MATRIX_EXISTS = prove
@@ -3487,7 +3532,7 @@ let LINEAR_1 = prove
   SIMP_TAC[LINEAR_1_GEN; DIMINDEX_1]);;
 
 let SYMMETRIC_MATRIX = prove
- (`!A:real^N^N. transp A = A <=> adjoint(\x. A ** x) = \x. A ** x`,
+ (`!A:real^N^N. symmetric_matrix A <=> adjoint(\x. A ** x) = \x. A ** x`,
   SIMP_TAC[MATRIX_SELF_ADJOINT; MATRIX_VECTOR_MUL_LINEAR] THEN
   REWRITE_TAC[MATRIX_OF_MATRIX_VECTOR_MUL]);;
 
@@ -3502,7 +3547,7 @@ let DOT_MATRIX_TRANSP_RMUL = prove
 
 let SYMMETRIC_MATRIX_ORTHOGONAL_EIGENVECTORS = prove
  (`!A:real^N^N v w a b.
-        transp A = A /\ A ** v = a % v /\ A ** w = b % w /\ ~(a = b)
+        symmetric_matrix A /\ A ** v = a % v /\ A ** w = b % w /\ ~(a = b)
         ==> orthogonal v w`,
   REPEAT GEN_TAC THEN REWRITE_TAC[SYMMETRIC_MATRIX] THEN
   DISCH_THEN(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
@@ -9064,8 +9109,8 @@ let MATRIX_INV_MUL_INNER = prove
   REWRITE_TAC[MOORE_PENROSE_PSEUDOINVERSE]);;
 
 let SYMMETRIC_MATRIX_INV_RMUL = prove
- (`!A:real^M^N. transp(A ** matrix_inv A) = A ** matrix_inv A`,
-  GEN_TAC THEN
+ (`!A:real^M^N. symmetric_matrix(A ** matrix_inv A)`,
+  GEN_TAC THEN REWRITE_TAC[symmetric_matrix] THEN
   MP_TAC(ISPEC `\x:real^N. ((A:real^M^N) ** matrix_inv A) ** x`
     ORTHOGONAL_PROJECTION_EQ_SELF_ADJOINT_IDEMPOTENT) THEN
   SIMP_TAC[ADJOINT_MATRIX; ORTHOGONAL_PROJECTION_ALT; MATRIX_VECTOR_MUL_ASSOC;
@@ -9100,7 +9145,7 @@ let MATRIX_INV_MUL_OUTER = prove
   REWRITE_TAC[MATRIX_INV_INV]);;
 
 let SYMMETRIC_MATRIX_INV_LMUL = prove
- (`!A:real^M^N. transp(matrix_inv A ** A) = matrix_inv A ** A`,
+ (`!A:real^M^N. symmetric_matrix(matrix_inv A ** A)`,
   GEN_TAC THEN
   MP_TAC(ISPEC `matrix_inv(A:real^M^N)` SYMMETRIC_MATRIX_INV_RMUL) THEN
   REWRITE_TAC[MATRIX_INV_INV]);;
@@ -9108,10 +9153,10 @@ let SYMMETRIC_MATRIX_INV_LMUL = prove
 let MATRIX_INV_UNIQUE_STRONG = prove
  (`!A:real^M^N X.
         A ** X ** A = A /\ X ** A ** X = X /\
-        transp(A ** X) = A ** X /\ transp(X ** A) = X ** A
+        symmetric_matrix(A ** X) /\ symmetric_matrix(X ** A)
         ==> matrix_inv A = X`,
-  REPEAT STRIP_TAC THEN
-  MAP_EVERY (ASSUME_TAC o ISPEC `A:real^M^N`)
+  REWRITE_TAC[symmetric_matrix] THEN REPEAT STRIP_TAC THEN
+  MAP_EVERY (ASSUME_TAC o REWRITE_RULE[symmetric_matrix] o ISPEC `A:real^M^N`)
    [MATRIX_INV_MUL_OUTER; SYMMETRIC_MATRIX_INV_RMUL; MATRIX_INV_MUL_INNER;
     SYMMETRIC_MATRIX_INV_LMUL] THEN
   ABBREV_TAC `Y = matrix_inv(A:real^M^N)` THEN
@@ -9139,23 +9184,24 @@ let MATRIX_INV_UNIQUE_STRONG = prove
 let MATRIX_INV_TRANSP = prove
  (`!A:real^M^N. matrix_inv (transp A) = transp(matrix_inv A)`,
   GEN_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
-  REWRITE_TAC[GSYM MATRIX_TRANSP_MUL; TRANSP_TRANSP] THEN
+  REWRITE_TAC[symmetric_matrix; GSYM MATRIX_TRANSP_MUL; TRANSP_TRANSP] THEN
   REWRITE_TAC[TRANSP_EQ; GSYM MATRIX_MUL_ASSOC] THEN
   REWRITE_TAC[MATRIX_INV_MUL_INNER; MATRIX_INV_MUL_OUTER;
-              SYMMETRIC_MATRIX_INV_RMUL; SYMMETRIC_MATRIX_INV_LMUL]);;
+              REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL;
+              REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL]);;
 
 let TRANSP_MATRIX_INV = prove
  (`!A:real^M^N. transp(matrix_inv A) = matrix_inv(transp A)`,
   REWRITE_TAC[MATRIX_INV_TRANSP]);;
 
 let SYMMETRIC_MATRIX_INV = prove
- (`!A:real^N^N. transp(matrix_inv A) = matrix_inv A <=> transp A = A`,
-  REWRITE_TAC[TRANSP_MATRIX_INV; MATRIX_INV_EQ]);;
+ (`!A:real^N^N. symmetric_matrix(matrix_inv A) <=> symmetric_matrix A`,
+  REWRITE_TAC[symmetric_matrix; TRANSP_MATRIX_INV; MATRIX_INV_EQ]);;
 
 let MATRIX_INV_0 = prove
  (`matrix_inv(mat 0:real^M^N) = mat 0`,
   MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
-  REWRITE_TAC[MATRIX_MUL_LZERO; MATRIX_MUL_RZERO; TRANSP_MAT]);;
+  REWRITE_TAC[MATRIX_MUL_LZERO; MATRIX_MUL_RZERO; SYMMETRIC_MATRIX_MAT]);;
 
 let MATRIX_INV_EQ_0 = prove
  (`!A:real^M^N. matrix_inv A = mat 0 <=> A = mat 0`,
@@ -9164,9 +9210,11 @@ let MATRIX_INV_EQ_0 = prove
 let MATRIX_INV_CMUL = prove
  (`!c A:real^M^N. matrix_inv (c %% A) = inv(c) %% matrix_inv A`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
+  REWRITE_TAC[symmetric_matrix] THEN
   REWRITE_TAC[MATRIX_MUL_LMUL; MATRIX_MUL_RMUL; TRANSP_MATRIX_CMUL] THEN
   REWRITE_TAC[MATRIX_CMUL_ASSOC; MATRIX_INV_MUL_INNER; MATRIX_INV_MUL_OUTER;
-              SYMMETRIC_MATRIX_INV_RMUL; SYMMETRIC_MATRIX_INV_LMUL] THEN
+              REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL;
+              REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL] THEN
   ASM_CASES_TAC `c = &0` THEN
   ASM_REWRITE_TAC[REAL_INV_0; MATRIX_CMUL_LZERO; REAL_MUL_RZERO] THEN
   ASM_SIMP_TAC[REAL_MUL_LINV; REAL_MUL_RINV; REAL_MUL_LID]);;
@@ -9244,7 +9292,7 @@ let MATRIX_INV_UNIQUE = prove
  (`!A:real^N^M B. A ** B = mat 1 /\ B ** A = mat 1 ==> matrix_inv A = B`,
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
-  ASM_REWRITE_TAC[TRANSP_MAT; MATRIX_MUL_RID]);;
+  ASM_REWRITE_TAC[SYMMETRIC_MATRIX_MAT; MATRIX_MUL_RID]);;
 
 let MATRIX_INV_I = prove
  (`matrix_inv(mat 1:real^N^N) = mat 1`,
@@ -9269,20 +9317,22 @@ let MATRIX_INV_COVARIANCE = prove
  (`!A:real^M^N.
      matrix_inv(transp A ** A) = matrix_inv(A) ** transp(matrix_inv A)`,
   GEN_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
-  REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_TRANSP] THEN
+  REWRITE_TAC[symmetric_matrix; MATRIX_TRANSP_MUL; TRANSP_TRANSP] THEN
   REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MESON[MATRIX_MUL_ASSOC; MATRIX_TRANSP_MUL]
    `(A:real^M^N) ** transp B ** transp C ** (D:real^P^Q) =
     A ** transp(C ** B) ** D`] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_LMUL; SYMMETRIC_MATRIX_INV_RMUL] THEN
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL;
+              REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL] THEN
   REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_INV_MUL_INNER] THEN
   REWRITE_TAC[EQT_ELIM(REWRITE_CONV[MATRIX_MUL_ASSOC]
    `(A:real^M^N) ** B ** C ** (D:real^P^Q) = (A ** B ** C) ** D`)] THEN
   REWRITE_TAC[MATRIX_INV_MUL_OUTER] THEN
   MATCH_MP_TAC(MESON[] `y = x ==> x = y /\ y = x`) THEN
-  ONCE_REWRITE_TAC[GSYM SYMMETRIC_MATRIX_INV_RMUL] THEN
+  ONCE_REWRITE_TAC[GSYM(REWRITE_RULE[symmetric_matrix]
+        SYMMETRIC_MATRIX_INV_RMUL)] THEN
   REWRITE_TAC[GSYM MATRIX_TRANSP_MUL] THEN
   REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_INV_MUL_INNER] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_LMUL]);;
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL]);;
 
 let COVARIANCE_MATRIX_INV = prove
  (`!A:real^M^N.
@@ -9291,10 +9341,8 @@ let COVARIANCE_MATRIX_INV = prove
   REWRITE_TAC[MATRIX_INV_INV; MATRIX_INV_COVARIANCE]);;
 
 let NORMAL_MATRIX_INV = prove
- (`!A:real^N^N.
-        transp(matrix_inv A) ** matrix_inv A =
-        matrix_inv A ** transp(matrix_inv A) <=>
-        transp A ** A = A ** transp A`,
+ (`!A:real^N^N. normal_matrix(matrix_inv A) <=> normal_matrix A`,
+  REWRITE_TAC[normal_matrix] THEN
   REWRITE_TAC[GSYM MATRIX_INV_COVARIANCE; COVARIANCE_MATRIX_INV] THEN
   REWRITE_TAC[MATRIX_INV_EQ] THEN MESON_TAC[]);;
 
@@ -9302,13 +9350,15 @@ let MATRIX_INV_COVARIANCE_RMUL = prove
  (`!A:real^M^N. matrix_inv(transp A ** A) ** transp A = matrix_inv A`,
   REWRITE_TAC[MATRIX_INV_COVARIANCE] THEN
   REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; GSYM MATRIX_TRANSP_MUL] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_RMUL; MATRIX_INV_MUL_OUTER]);;
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL;
+              MATRIX_INV_MUL_OUTER]);;
 
 let MATRIX_INV_COVARIANCE_LMUL = prove
  (`!A:real^M^N. transp(A) ** matrix_inv(A ** transp A) = matrix_inv A`,
   REWRITE_TAC[GSYM COVARIANCE_MATRIX_INV] THEN
   REWRITE_TAC[GSYM MATRIX_TRANSP_MUL; MATRIX_MUL_ASSOC] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_LMUL; GSYM MATRIX_MUL_ASSOC] THEN
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL;
+              GSYM MATRIX_MUL_ASSOC] THEN
   REWRITE_TAC[MATRIX_INV_MUL_OUTER]);;
 
 let RANK_SIMILAR = prove
@@ -9342,7 +9392,8 @@ let RANK_MATRIX_INV_LMUL = prove
 let MATRIX_INV_MULTIPLE_TRANP_RIGHT = prove
  (`!A:real^M^N.
        matrix_inv A = matrix_inv A ** transp(matrix_inv A) ** transp A`,
-  REWRITE_TAC[GSYM MATRIX_TRANSP_MUL; SYMMETRIC_MATRIX_INV_RMUL] THEN
+  REWRITE_TAC[GSYM MATRIX_TRANSP_MUL;
+              REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL] THEN
   REWRITE_TAC[MATRIX_INV_MUL_OUTER]);;
 
 let MATRIX_TRANSP_MULTIPLE_INV_RIGHT = prove
@@ -9351,7 +9402,7 @@ let MATRIX_TRANSP_MULTIPLE_INV_RIGHT = prove
   GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM MATRIX_INV_MUL_INNER] THEN
   REWRITE_TAC[MATRIX_MUL_ASSOC] THEN
   ONCE_REWRITE_TAC[MATRIX_TRANSP_MUL] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_RMUL] THEN
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL] THEN
   REWRITE_TAC[MATRIX_MUL_ASSOC]);;
 
 let MATRIX_INV_MULTIPLE_TRANP_LEFT = prove
@@ -9360,14 +9411,14 @@ let MATRIX_INV_MULTIPLE_TRANP_LEFT = prove
   GEN_TAC THEN
   GEN_REWRITE_TAC LAND_CONV [GSYM MATRIX_INV_MUL_OUTER] THEN
   REWRITE_TAC[MATRIX_MUL_ASSOC; GSYM MATRIX_TRANSP_MUL] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_LMUL]);;
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL]);;
 
 let MATRIX_TRANSP_MULTIPLE_INV_LEFT = prove
  (`!A:real^M^N. transp A = matrix_inv A ** A ** transp A`,
   GEN_TAC THEN
   GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM MATRIX_INV_MUL_INNER] THEN
   ONCE_REWRITE_TAC[MATRIX_TRANSP_MUL] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_LMUL] THEN
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL] THEN
   REWRITE_TAC[MATRIX_MUL_ASSOC]);;
 
 let MATRIX_VECTOR_MUL_INV_EQ_0 = prove
@@ -9397,13 +9448,14 @@ let COMMUTING_MATRIX_INV_COVARIANCE = prove
  (`!A:real^M^N.
         matrix_inv(transp A ** A) ** (transp A ** A) =
         (transp A ** A) ** matrix_inv(transp A ** A)`,
-  GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM SYMMETRIC_MATRIX_INV_RMUL] THEN
+  GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV
+   [GSYM(REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL)] THEN
   REWRITE_TAC[MATRIX_TRANSP_MUL; TRANSP_MATRIX_INV; TRANSP_TRANSP]);;
 
 let COMMUTING_MATRIX_INV_NORMAL = prove
  (`!A:real^N^N.
-      transp A ** A = A ** transp A ==> matrix_inv A ** A = A ** matrix_inv A`,
-  REPEAT STRIP_TAC THEN
+      normal_matrix A ==> matrix_inv A ** A = A ** matrix_inv A`,
+  REWRITE_TAC[normal_matrix] THEN REPEAT STRIP_TAC THEN
   GEN_REWRITE_TAC (LAND_CONV o LAND_CONV)
    [GSYM MATRIX_INV_COVARIANCE_RMUL] THEN
   GEN_REWRITE_TAC (RAND_CONV o RAND_CONV)
@@ -9433,7 +9485,7 @@ let MATRIX_MUL_INV_EQ_0 = prove
   REWRITE_TAC[MATRIX_INV_INV]);;
 
 let MATRIX_INV_IDEMPOTENT = prove
- (`!A:real^N^N. transp A = A /\ A ** A = A ==> matrix_inv A = A`,
+ (`!A:real^N^N. symmetric_matrix A /\ A ** A = A ==> matrix_inv A = A`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
   ASM_REWRITE_TAC[MATRIX_TRANSP_MUL]);;
 
@@ -9454,18 +9506,20 @@ let IDEMPOTENT_MATRIX_MUL_RINV = prove
 let MATRIX_INV_MUL_LINV = prove
  (`!A:real^N^M. matrix_inv(matrix_inv A ** A) = matrix_inv A ** A`,
   GEN_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
+  REWRITE_TAC[symmetric_matrix] THEN
   REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_TRANSP_MUL; TRANSP_MATRIX_INV] THEN
   REWRITE_TAC[MATRIX_INV_MUL_INNER; MATRIX_INV_MUL_OUTER] THEN
   REWRITE_TAC[GSYM TRANSP_MATRIX_INV; GSYM MATRIX_TRANSP_MUL] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_LMUL]);;
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_LMUL]);;
 
 let MATRIX_INV_MUL_RINV = prove
  (`!A:real^N^M. matrix_inv(A ** matrix_inv A) = A ** matrix_inv A`,
   GEN_TAC THEN MATCH_MP_TAC MATRIX_INV_UNIQUE_STRONG THEN
+  REWRITE_TAC[symmetric_matrix] THEN
   REWRITE_TAC[GSYM MATRIX_MUL_ASSOC; MATRIX_TRANSP_MUL; TRANSP_MATRIX_INV] THEN
   REWRITE_TAC[MATRIX_INV_MUL_INNER; MATRIX_INV_MUL_OUTER] THEN
   REWRITE_TAC[GSYM TRANSP_MATRIX_INV; GSYM MATRIX_TRANSP_MUL] THEN
-  REWRITE_TAC[SYMMETRIC_MATRIX_INV_RMUL]);;
+  REWRITE_TAC[REWRITE_RULE[symmetric_matrix] SYMMETRIC_MATRIX_INV_RMUL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Infinity norm.                                                            *)
@@ -10614,12 +10668,12 @@ let ORTHOGONAL_LINEAR_IMAGE_EQ = prove
 let NORMAL_MATRIX_IFF_SAME_NORM_TRANSP,NORMAL_MATRIX_IFF_SAME_DOT_TRANSP =
     (CONJ_PAIR o prove)
  (`(!A:real^N^N.
-         transp A ** A = A ** transp A <=>
+         normal_matrix A <=>
          !x. norm(transp A ** x) = norm(A ** x)) /\
    (!A:real^N^N.
-         transp A ** A = A ** transp A <=>
+         normal_matrix A <=>
          !x y. (transp A ** x) dot (transp A ** y) = (A ** x) dot (A ** y))`,
-  REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN MATCH_MP_TAC
+  REWRITE_TAC[normal_matrix; AND_FORALL_THM] THEN GEN_TAC THEN MATCH_MP_TAC
    (TAUT `(q <=> r) /\ (p <=> r) ==> (p <=> q) /\ (p <=> r)`) THEN
   CONJ_TAC THENL
    [EQ_TAC THENL [ALL_TAC; SIMP_TAC[NORM_EQ]] THEN
@@ -10637,14 +10691,14 @@ let NORMAL_MATRIX_IFF_SAME_NORM_TRANSP,NORMAL_MATRIX_IFF_SAME_DOT_TRANSP =
 
 let NORMAL_MATRIX_KERNEL_TRANSP_EXPLICIT = prove
  (`!A x:real^N.
-        transp A ** A = A ** transp A
+        normal_matrix A
         ==> (transp A ** x = vec 0 <=> A ** x = vec 0)`,
   REWRITE_TAC[GSYM NORM_EQ_0] THEN
   MESON_TAC[NORMAL_MATRIX_IFF_SAME_NORM_TRANSP]);;
 
 let NORMAL_MATRIX_KERNEL_TRANSP = prove
  (`!A:real^N^N.
-        transp A ** A = A ** transp A
+        normal_matrix A
         ==> {x | transp A ** x = vec 0} = {x | A ** x = vec 0}`,
   SIMP_TAC[EXTENSION; IN_ELIM_THM; NORMAL_MATRIX_KERNEL_TRANSP_EXPLICIT]);;
 
