@@ -1005,7 +1005,14 @@ let IN_ELIM_PAIR_THM = prove
   REWRITE_TAC[IN_ELIM_THM] THEN MESON_TAC[PAIR_EQ]);;
 
 let IN_ELIM_TRIPLE_THM = prove
- (`!P a b c. (a,b,c) IN {(x,y,z) | P x y z} <=> P a b c`,
+ (`(!P a b c. (a,b,c) IN {(x,y,z) | P x y z} <=> P a b c) /\
+   (!P a b c. ((a,b),c) IN {((x,y),z) | P x y z} <=> P a b c)`,
+  REWRITE_TAC[IN_ELIM_THM; PAIR_EQ] THEN MESON_TAC[]);;
+
+let IN_ELIM_QUAD_THM = prove
+ (`(!P a b c d. (a,b,c,d) IN {w,x,y,z | P w x y z} <=> P a b c d) /\
+   (!P a b c d. ((a,b),(c,d)) IN {(w,x),(y,z) | P w x y z} <=> P a b c d) /\
+   (!P a b c d. (((a,b),c),d) IN {(((w,x),y),z) | P w x y z} <=> P a b c d)`,
   REWRITE_TAC[IN_ELIM_THM; PAIR_EQ] THEN MESON_TAC[]);;
 
 let SET_PAIR_THM = prove

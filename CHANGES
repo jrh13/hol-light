@@ -8,6 +8,20 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 20th Sep 2019       sets.ml
+
+Added an additional conjunct to IN_ELIM_TRIPLE_THM and also added an
+analogous IN_ELIM_QUAD_THM, so:
+
+  IN_ELIM_TRIPLE_THM =
+    |- (!P a b c. a,b,c IN {x,y,z | P x y z} <=> P a b c) /\
+       (!P a b c. (a,b),c IN {(x,y),z | P x y z} <=> P a b c)
+
+  IN_ELIM_QUAD_THM =
+    |- (!P a b c d. a,b,c,d IN {w,x,y,z | P w x y z} <=> P a b c d) /\
+       (!P a b c d. (a,b),c,d IN {(w,x),y,z | P w x y z} <=> P a b c d) /\
+       (!P a b c d. ((a,b),c),d IN {((w,x),y),z | P w x y z} <=> P a b c d)
+
 Tue  3rd Sep 2019       sets.ml
 
 Added a trivial variant of IN_ELIM_PAIR_THM that is not an instance of it:
