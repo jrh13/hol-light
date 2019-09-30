@@ -21587,7 +21587,7 @@ let POSITIVE_SEMIDEFINITE_HADAMARD_PRODUCT,
  (SUBGOAL_THEN `transp(A:real^N^N) = A /\ transp(B:real^N^N) = B`
   STRIP_ASSUME_TAC THENL
    [ASM_MESON_TAC[positive_semidefinite; positive_definite; symmetric_matrix];
-    REWRITE_TAC[positive_semidefinite; positive_definite; 
+    REWRITE_TAC[positive_semidefinite; positive_definite;
                 symmetric_matrix]] THEN
   CONJ_TAC THENL
    [SIMP_TAC[CART_EQ; TRANSP_COMPONENT; LAMBDA_BETA] THEN
@@ -30936,15 +30936,15 @@ let EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS = prove
       ASM_REWRITE_TAC[COUNTABLE_SING; SING_SUBSET; UNIONS_1] THEN
       ASM SET_TAC[];
       ALL_TAC] THEN
-    MP_TAC(ISPEC `\(s:real^N->bool,t). s IN f /\ t IN f /\ s SUBSET t`
+    MP_TAC(ISPEC `\(s:real^N->bool) t. s IN f /\ t IN f /\ s SUBSET t`
           TOSET_COFINAL_WOSET) THEN
     SUBGOAL_THEN
-     `fl(\(s:real^N->bool,t). s IN f /\ t IN f /\ s SUBSET t) = f`
+     `fl(\(s:real^N->bool) t. s IN f /\ t IN f /\ s SUBSET t) = f`
     ASSUME_TAC THENL
      [REWRITE_TAC[fl; FUN_EQ_THM] THEN ASM_MESON_TAC[IN]; ALL_TAC] THEN
     ASM_REWRITE_TAC[toset; poset] THEN ANTS_TAC THENL
      [ASM_MESON_TAC[IN; SUBSET_REFL; SUBSET_TRANS; SUBSET_ANTISYM];
-      DISCH_THEN(X_CHOOSE_THEN `w:((real^N->bool)#(real^N->bool)->bool)`
+      DISCH_THEN(X_CHOOSE_THEN `w:((real^N->bool)->(real^N->bool)->bool)`
           STRIP_ASSUME_TAC)] THEN
     FIRST_ASSUM(MP_TAC o MATCH_MP FL_SUBSET) THEN ASM_REWRITE_TAC[] THEN
     ABBREV_TAC `f':(real^N->bool)->bool = fl w` THEN DISCH_TAC THEN
@@ -30992,11 +30992,10 @@ let EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS = prove
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `t:real^N->bool` THEN
     STRIP_TAC THEN REPEAT(CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC]) THEN
     X_GEN_TAC `d:real^N->bool` THEN STRIP_TAC THEN
-    UNDISCH_TAC
-     `w SUBSET (\(s:real^N->bool,t). s IN f /\ t IN f /\ s SUBSET t)` THEN
-    GEN_REWRITE_TAC LAND_CONV [SUBSET] THEN
-    DISCH_THEN(MP_TAC o SPEC `(c':real^N->bool),(d:real^N->bool)`) THEN
-    ASM_SIMP_TAC[IN] THEN ASM SET_TAC[]) in
+    UNDISCH_THEN
+     `!x y:real^N->bool. w x y ==> x IN f /\ y IN f /\ x SUBSET y`
+     (MP_TAC o SPECL [`c':real^N->bool`; `d:real^N->bool`]) THEN
+    ASM SET_TAC[]) in
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
    [`{s:real^N->bool | s IN f /\ closed_in (subtopology euclidean v) s}`;
@@ -31161,36 +31160,40 @@ let GDELTA_INTERS_CLOPEN_CHAIN = prove
 
 let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
  (`!f:A->real^N->bool v w.
-        woset w /\ ~COUNTABLE w /\
-        (!v. v inseg w /\ ~(v = w) ==> COUNTABLE v) /\
+        woset w /\ ~COUNTABLE {(x,y) | w x y} /\
+        (!v. v inseg w /\ ~(v = w) ==> COUNTABLE {(x,y) | v x y}) /\
         (!i. i IN fl w ==> closed_in (subtopology euclidean v) (f i) \/
                            open_in (subtopology euclidean v) (f i)) /\
-        (!i j. w(i,j) ==> f j SUBSET f i)
-        ==> ?k. k IN fl w /\ !i. w(k,i) ==> f i = f k`,
+        (!i j. w i j ==> f j SUBSET f i)
+        ==> ?k. k IN fl w /\ !i. w k i ==> f i = f k`,
+  let lemma = prove
+   (`{x,y | ?l. l IN p /\ l x y} = UNIONS {{x,y | l x y} | l IN p}`,
+    REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]) in
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`IMAGE (f:A->real^N->bool) (fl w)`; `v:real^N->bool`]
         EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS) THEN
   ASM_REWRITE_TAC[FORALL_IN_IMAGE_2; FORALL_IN_IMAGE] THEN ANTS_TAC THENL
-   [UNDISCH_TAC `woset(w:A#A->bool)` THEN
+   [UNDISCH_TAC `woset(w:A->A->bool)` THEN
     REWRITE_TAC[woset; IN] THEN ASM_MESON_TAC[];
     REWRITE_TAC[EXISTS_COUNTABLE_SUBSET_IMAGE] THEN
     DISCH_THEN(X_CHOOSE_THEN `k:A->bool` STRIP_ASSUME_TAC) THEN
     MP_TAC(ISPECL
-     [`w:A#A->bool`; `UNIONS {linseg w (a:A) | a IN k}`]
+     [`w:A->A->bool`; `\x y. ?l. l IN {linseg w (a:A) | a IN k} /\ l x y`]
         INSEG_LINSEG) THEN
     ASM_SIMP_TAC[] THEN MATCH_MP_TAC(TAUT
      `p /\ ~q /\ (r ==> s) ==> (p <=> q \/ r) ==> s`) THEN
     REPEAT CONJ_TAC THENL
-     [MATCH_MP_TAC UNION_INSEG THEN
-      GEN_REWRITE_TAC (BINDER_CONV o LAND_CONV) [GSYM IN] THEN
-      REWRITE_TAC[FORALL_IN_GSPEC] THEN ASM_SIMP_TAC[LINSEG_INSEG];
-      DISCH_THEN(MP_TAC o AP_TERM `COUNTABLE:(A#A->bool)->bool`) THEN
-      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC COUNTABLE_UNIONS THEN
+     [MATCH_MP_TAC UNION_INSEG THEN 
+      ASM_SIMP_TAC[FORALL_IN_GSPEC; LINSEG_INSEG];
+      DISCH_THEN(MP_TAC o AP_TERM 
+       `\l:A->A->bool. COUNTABLE {(x,y) | l x y}`) THEN
+      ASM_REWRITE_TAC[] THEN REWRITE_TAC[lemma] THEN
+      MATCH_MP_TAC COUNTABLE_UNIONS THEN
       ASM_SIMP_TAC[COUNTABLE_IMAGE; SIMPLE_IMAGE; FORALL_IN_IMAGE] THEN
       X_GEN_TAC `a:A` THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-      ASM_SIMP_TAC[LINSEG_INSEG] THEN
-      REWRITE_TAC[FUN_EQ_THM] THEN DISCH_THEN(MP_TAC o SPEC `(a:A,a)`) THEN
-      REWRITE_TAC[linseg; less] THEN UNDISCH_TAC `woset(w:A#A->bool)` THEN
+      ASM_SIMP_TAC[LINSEG_INSEG; ETA_AX] THEN REWRITE_TAC[FUN_EQ_THM] THEN
+      DISCH_THEN(MP_TAC o SPECL [`a:A`; `a:A`]) THEN
+      REWRITE_TAC[linseg; less] THEN UNDISCH_TAC `woset(w:A->A->bool)` THEN
       REWRITE_TAC[woset] THEN ASM SET_TAC[];
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:A` THEN STRIP_TAC THEN
       MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
@@ -31205,12 +31208,12 @@ let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
       MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUBSET_TRANS) THEN
       REWRITE_TAC[SUBSET_INTERS; FORALL_IN_IMAGE] THEN
       X_GEN_TAC `c:A` THEN DISCH_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
-      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE LAND_CONV [UNIONS_GSPEC]) THEN
-      DISCH_THEN(MP_TAC o C AP_THM `(a,a):A#A`) THEN
+      FIRST_X_ASSUM(MP_TAC o C AP_THM `a:A` o C AP_THM `a:A`) THEN
+      REWRITE_TAC[EXISTS_IN_GSPEC] THEN
       REWRITE_TAC[linseg; IN_ELIM_THM] THEN
       REWRITE_TAC[IN; less; NOT_EXISTS_THM] THEN
       DISCH_THEN(MP_TAC o SPEC `c:A`) THEN
-      UNDISCH_TAC `woset(w:A#A->bool)` THEN
+      UNDISCH_TAC `woset(w:A->A->bool)` THEN
       REWRITE_TAC[woset; IN] THEN ASM_MESON_TAC[IN; SUBSET]]]);;
 
 (* ------------------------------------------------------------------------- *)

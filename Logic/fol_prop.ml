@@ -18,7 +18,7 @@ let PHOLDS = prove
    (pholds v (q --> r) <=> pholds v q ==> pholds v r) /\
    (pholds v (q <-> r) <=> (pholds v q = pholds v r))`,
   REWRITE_TAC
-   [True_DEF; Not_DEF; Or_DEF; And_DEF; Iff_DEF; Exists_DEF; pholds] THEN 
+   [True_DEF; Not_DEF; Or_DEF; And_DEF; Iff_DEF; Exists_DEF; pholds] THEN
   CONV_TAC TAUT);;
 
 (* ------------------------------------------------------------------------- *)
@@ -61,15 +61,15 @@ let FINSAT_MAX = prove
  (`!A. finsat(A) ==> ?B. A SUBSET B /\ finsat(B) /\
                          !C. B SUBSET C /\ finsat(C) ==> (C = B)`,
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPEC `\(B,C). A SUBSET B /\ B SUBSET C /\ finsat(C)` ZL) THEN
+  MP_TAC(ISPEC `\B C. A SUBSET B /\ B SUBSET C /\ finsat(C)` ZL) THEN
   PBETA_TAC THEN REWRITE_TAC[] THEN
-  SUBGOAL_THEN `poset (\(B,C). A SUBSET B /\ B SUBSET C /\ finsat(C))`
+  SUBGOAL_THEN `poset (\B C. A SUBSET B /\ B SUBSET C /\ finsat(C))`
   ASSUME_TAC THENL
    [REWRITE_TAC[poset; fl] THEN PBETA_TAC THEN
     MESON_TAC[SUBSET_TRANS; SUBSET_REFL; FINSAT_MONO; SUBSET_ANTISYM];
     ALL_TAC] THEN
   ASM_REWRITE_TAC[] THEN
-  SUBGOAL_THEN `fl(\(B,C). A SUBSET B /\ B SUBSET C /\ finsat(C)) =
+  SUBGOAL_THEN `fl(\B C. A SUBSET B /\ B SUBSET C /\ finsat(C)) =
                  \B. A SUBSET B /\ finsat(B)`
   ASSUME_TAC THENL
    [REWRITE_TAC[FUN_EQ_THM; fl] THEN PBETA_TAC THEN

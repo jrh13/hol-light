@@ -8,6 +8,16 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 29th Sep 2019       Library/wo.ml, Library/card.ml, Logic/fol_prop.ml, Multivariate/topology.ml
+
+Made a small but systematic switch of the whole theory of orderings in this
+file (poset, toset, woset, ordinal, ...) from uncurried relations `:A#A->bool`
+to curried ones `:A->A->bool`. This has the slight negative feature that you
+can't directly use set unions, but in all other respects is more coherent: it
+is consistent with the core definition of WF, with all the stuff in
+Library/rstc.ml and Examples/reduct.ml, and with all the concrete cases like
+"<" on number systems.
+
 Fri 20th Sep 2019       sets.ml
 
 Added an additional conjunct to IN_ELIM_TRIPLE_THM and also added an
