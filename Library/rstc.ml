@@ -224,6 +224,14 @@ let TC_INDUCT_R = prove
   SUBGOAL_THEN `!x:A y. TC(R) x y ==> !z:A. P y z ==> P x z` MP_TAC THENL
    [MATCH_MP_TAC TC_INDUCT THEN ASM_MESON_TAC[]; ASM_MESON_TAC[TC_CASES_L]]);;
 
+let WF_TC = prove
+ (`!R:A->A->bool. WF(TC R) <=> WF(R)`,
+  GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[WF_SUBSET; TC_INC];
+    REWRITE_TAC[WF] THEN DISCH_TAC THEN X_GEN_TAC `P:A->bool` THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `\y:A. ?z. P z /\ TC(R) z y`) THEN
+    REWRITE_TAC[] THEN MESON_TAC[TC_CASES_L]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Reflexive symmetric closure                                               *)
 (* ------------------------------------------------------------------------- *)

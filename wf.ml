@@ -57,6 +57,15 @@ let WF_DCHAIN = prove
     EXISTS_TAC `\y:A. ?n:num. y = s(n)` THEN REWRITE_TAC[] THEN
     ASM_MESON_TAC[]]);;
 
+let WF_DHAIN_TRANSITIVE = prove
+ (`!(<<):A->A->bool.
+        (!x y z. x << y /\ y << z ==> x << z)
+        ==> (WF(<<) <=> ~(?s:num->A. !i j. i < j ==> s j << s i))`,
+  GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[WF_DCHAIN] THEN
+  AP_TERM_TAC THEN EQ_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `s:num->A` THEN SIMP_TAC[LT] THEN DISCH_TAC THEN
+  MATCH_MP_TAC TRANSITIVE_STEPWISE_LT THEN ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Equivalent to just *uniqueness* part of recursion.                        *)
 (* ------------------------------------------------------------------------- *)
@@ -182,9 +191,14 @@ let WF_SUBSET = prove
   DISCH_TAC THEN GEN_TAC THEN DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN
   UNDISCH_TAC `!(x:A) (y:A). x << y ==> x <<< y` THEN MESON_TAC[]);;
 
+let WF_RESTRICT = prove
+ (`!(<<) P:A->bool. WF(<<) ==> WF(\x y. P x /\ P y /\ x << y)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] WF_SUBSET) THEN
+  SIMP_TAC[]);;
+
 let WF_MEASURE_GEN = prove
- (`!m:A->B. WF(<<) ==> WF(\x x'. m x << m x')`,
-  GEN_TAC THEN REWRITE_TAC[WF_IND] THEN REPEAT STRIP_TAC THEN
+ (`!(<<) (m:A->B). WF(<<) ==> WF(\x x'. m x << m x')`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[WF_IND] THEN REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o SPEC `\y:B. !x:A. (m(x) = y) ==> P x`) THEN
   UNDISCH_TAC `!x. (!y. (m:A->B) y << m x ==> P y) ==> P x` THEN
   REWRITE_TAC[] THEN MESON_TAC[]);;
@@ -274,6 +288,33 @@ let WF_REFL = prove
 let WF_FALSE = prove
  (`WF(\x y:A. F)`,
   REWRITE_TAC[WF]);;
+
+(* ------------------------------------------------------------------------- *)
+(* The Nash-Williams minimal bad sequence argument for some predicate `bad`  *)
+(* that is a "safety property" in the Lamport/Alpern/Schneider sense.        *)
+(* ------------------------------------------------------------------------- *)
+
+let MINIMAL_BAD_SEQUENCE = prove
+ (`!(<<) (bad:(num->A)->bool).
+        WF(<<) /\
+        (!x. ~bad x ==> ?n. !y. (!k. k < n ==> y k = x k) ==> ~bad y) /\
+        (?x. bad x)
+         ==> ?y. bad y /\
+                 !z n. bad z /\ (!k. k < n ==> z k = y k) ==> ~(z n << y n)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN SUBGOAL_THEN
+   `?x:num->A. !n. (?y. bad y /\ (!k. k < n ==> y k = x k) /\ y n = x n) /\
+                   !z. bad z /\ (!k. k < n ==> z k = x k) ==> ~(z n << x n)`
+  MP_TAC THENL
+   [MATCH_MP_TAC(MATCH_MP WF_REC_EXISTS WF_num) THEN SIMP_TAC[];
+    MATCH_MP_TAC MONO_EXISTS THEN ASM_MESON_TAC[]] THEN
+  MAP_EVERY X_GEN_TAC [`x:num->A`; `n:num`] THEN
+  DISCH_TAC THEN REWRITE_TAC[MESON[]
+    `(?a. (?y. P y /\ Q y /\ f y = a) /\ (!z. A z ==> ~B a z)) <=>
+     ?y. (P y /\ Q y) /\ (!z. B (f y) z ==> ~A z)`] THEN
+  MP_TAC(ISPECL [`(<<):A->A->bool`; `\x:num->A. x n`] WF_MEASURE_GEN) THEN
+  ASM_REWRITE_TAC[] THEN REWRITE_TAC[WF] THEN DISCH_THEN MATCH_MP_TAC THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN SPEC_TAC(`n:num`,`n:num`) THEN
+  INDUCT_TAC THEN SIMP_TAC[LT] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Tail recursion.                                                           *)

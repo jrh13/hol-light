@@ -911,7 +911,8 @@ let instantiate_casewise_recursion,
       EXISTS_TAC `\u:A#B v:A#B.
                     (\(x1:B,y1:A) (x2:B,y2:A). r x1 x2 \/ (x1 = x2) /\ s y1 y2)
                      ((\(a,b). b,a) u) ((\(a,b). b,a) v)` THEN
-      ASM_SIMP_TAC[ISPEC `\(a,b). b,a` WF_MEASURE_GEN; WF_LEX; ETA_AX] THEN
+      ASM_SIMP_TAC[WF_LEX; ETA_AX;
+       ISPECL [`R:A#B->A#B->bool`; `\(b:B,a:A). a,b`] WF_MEASURE_GEN] THEN
       FIRST_X_ASSUM(fun th -> MP_TAC th THEN
                               MATCH_MP_TAC EQ_IMP THEN
                               AP_TERM_TAC) THEN

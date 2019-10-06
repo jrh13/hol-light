@@ -45,6 +45,7 @@ STANDALONE_EXAMPLES:=\
 	Library/q \
 	Examples/rectypes \
 	Library/ringtheory \
+	Examples/safetyliveness \
 	Examples/schnirelmann \
 	Examples/solovay \
 	Examples/sos \

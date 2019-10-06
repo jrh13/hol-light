@@ -8,8 +8,8 @@ needs "Library/rstc.ml";;
 (* Field of a binary relation.                                               *)
 (* ------------------------------------------------------------------------- *)
 
-let FL = new_definition
-  `FL(R) x <=> (?y:A. R x y) \/ (?y. R y x)`;;
+let fld = new_definition
+  `fld(R) = {x | ?y. R x y \/ R y x}`;;
 
 (* ------------------------------------------------------------------------ *)
 (* Normality of a term w.r.t. a reduction relation                          *)
@@ -58,8 +58,8 @@ let SN = new_definition
 let TREE = new_definition
   `TREE(R:A->A->bool) <=>
         (!y. ~(TC R y y)) /\
-        ?a. a IN FL(R) /\
-            !y. y IN FL(R) ==> (y = a) \/ TC R a y /\ ?!x. R x y`;;
+        ?a. a IN fld(R) /\
+            !y. y IN fld(R) ==> (y = a) \/ TC R a y /\ ?!x. R x y`;;
 
 (* ------------------------------------------------------------------------- *)
 (* Local finiteness (finitely branching).                                    *)
@@ -85,7 +85,7 @@ let SN_NOETHERIAN = prove
   REWRITE_TAC[WF_IND; SN_WF; INV]);;
 
 (* ------------------------------------------------------------------------ *)
-(* Normality and weak normalization is preserved by transitive closure.     *)
+(* Normality, weak or strong normalization preserved by transitive closure. *)
 (* ------------------------------------------------------------------------ *)
 
 let NORMAL_TC = prove
@@ -100,51 +100,6 @@ let NORMAL_RTC = prove
 let WN_TC = prove
  (`!R:A->A->bool. WN(TC R) <=> WN R`,
   REWRITE_TAC[WN; NORMAL_TC; RTC; TC_IDEMP]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Wellfoundedness and strong normalization are too.                         *)
-(* ------------------------------------------------------------------------- *)
-
-let WF_TC = prove
- (`!R:A->A->bool. WF(TC R) <=> WF(R)`,
-  GEN_TAC THEN EQ_TAC THENL
-   [MESON_TAC[WF_SUBSET; TC_INC];
-    REWRITE_TAC[WF] THEN DISCH_TAC THEN X_GEN_TAC `P:A->bool` THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `\y:A. ?z. P z /\ TC(R) z y`) THEN
-    REWRITE_TAC[] THEN MESON_TAC[TC_CASES_L]]);;
-
-(******************* Alternative --- intuitionistic --- proof
-
-let WF_TC = prove
- (`!R:A->A->bool. WF(TC R) <=> WF(R)`,
-  GEN_TAC THEN EQ_TAC THENL
-   [MESON_TAC[WF_SUBSET; TC_INC];
-    REWRITE_TAC[WF_IND]] THEN
-  DISCH_TAC THEN GEN_TAC THEN
-  FIRST_ASSUM(MP_TAC o SPEC `\z:A. !u:A. TC(R) u z ==> P(u)`) THEN
-  REWRITE_TAC[] THEN MESON_TAC[TC_CASES_L]);;
-
-let WF_TC_EXPLICIT = prove
- (`!R:A->A->bool. WF(R) ==> WF(TC(R))`,
-  GEN_TAC THEN REWRITE_TAC[WF_IND] THEN DISCH_TAC THEN
-  GEN_TAC THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `\z:A. !u:A. TC(R) u z ==> P(u)`) THEN
-  REWRITE_TAC[] THEN STRIP_TAC THEN X_GEN_TAC `z:A` THEN
-  FIRST_ASSUM MATCH_MP_TAC THEN SPEC_TAC(`z:A`,`z:A`) THEN
-  FIRST_ASSUM MATCH_MP_TAC THEN
-  GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o REDEPTH_CONV)
-   [RIGHT_IMP_FORALL_THM; IMP_IMP] THEN
-  DISCH_TAC THEN X_GEN_TAC `u:A` THEN
-  ONCE_REWRITE_TAC[TC_CASES_L] THEN DISCH_THEN(DISJ_CASES_THEN MP_TAC) THENL
-   [DISCH_TAC THEN
-    MATCH_MP_TAC(ASSUME `!x:A. (!y. TC R y x ==> P y) ==> P x`) THEN
-    X_GEN_TAC `v:A` THEN DISCH_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
-    EXISTS_TAC `u:A` THEN CONJ_TAC THEN FIRST_ASSUM ACCEPT_TAC;
-    DISCH_THEN(X_CHOOSE_THEN `w:A` STRIP_ASSUME_TAC) THEN
-    FIRST_ASSUM MATCH_MP_TAC THEN EXISTS_TAC `w:A` THEN
-    CONJ_TAC THEN FIRST_ASSUM ACCEPT_TAC]);;
-
-***********************)
 
 let SN_TC = prove
  (`!R:A->A->bool. SN(TC R) <=> SN R`,
@@ -401,20 +356,22 @@ let LF_SN_BOUND = prove
 (* Koenig's lemma.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let TREE_FL = prove
- (`!R. TREE(R) ==> ?a:A. FL(R) = {y | RTC(R) a y}`,
+let TREE_FLD = prove
+ (`!R. TREE(R) ==> ?a:A. fld(R) = {y | RTC(R) a y}`,
   GEN_TAC THEN REWRITE_TAC[TREE] THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC
    (X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC)) THEN
   EXISTS_TAC `a:A` THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
   X_GEN_TAC `x:A` THEN EQ_TAC THENL
    [DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN REWRITE_TAC[RTC; RC_EXPLICIT] THEN
-    MESON_TAC[]; ONCE_REWRITE_TAC[RTC_CASES_L] THEN ASM_MESON_TAC[IN; FL]]);;
+    MESON_TAC[];
+    ONCE_REWRITE_TAC[RTC_CASES_L] THEN REPEAT(POP_ASSUM MP_TAC) THEN
+    REWRITE_TAC[fld] THEN SET_TAC[]]);;
 
 let KOENIG_LEMMA = prove
- (`!R:A->A->bool. TREE(R) /\ LF(R) /\ SN(R) ==> FINITE (FL R)`,
+ (`!R:A->A->bool. TREE(R) /\ LF(R) /\ SN(R) ==> FINITE (fld R)`,
   GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-  DISCH_THEN(X_CHOOSE_THEN `a:A` SUBST1_TAC o MATCH_MP TREE_FL) THEN
+  DISCH_THEN(X_CHOOSE_THEN `a:A` SUBST1_TAC o MATCH_MP TREE_FLD) THEN
   REWRITE_TAC[RTC_TC_LEMMA; FINITE_INSERT] THEN
   SPEC_TAC(`a:A`,`a:A`) THEN MATCH_MP_TAC LF_TC_FINITE THEN
   ASM_REWRITE_TAC[]);;

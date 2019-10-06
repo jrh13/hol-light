@@ -3447,6 +3447,25 @@ let INFINITE_ENUMERATE_EQ = prove
   REWRITE_TAC[num_INFINITE; IN_UNIV] THEN
   MATCH_MP_TAC WLOG_LT THEN ASM_MESON_TAC[LT_REFL]);;
 
+let INFINITE_ENUMERATE_SUBSET = prove
+ (`!s. INFINITE s <=>
+       ?f:num->A. (!x. f x IN s) /\ (!x y. f x = f y ==> x = y)`,
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [SUBGOAL_THEN `?f:num->A. !n. f n IN s /\ !m. m < n ==> ~(f m = f n)`
+    MP_TAC THENL
+     [MATCH_MP_TAC(MATCH_MP WF_REC_EXISTS WF_num) THEN SIMP_TAC[] THEN
+      MAP_EVERY X_GEN_TAC [`f:num->A`; `n:num`] THEN STRIP_TAC THEN
+      FIRST_ASSUM(MP_TAC o SPEC `IMAGE (f:num->A) {m | m < n}` o
+        MATCH_MP (REWRITE_RULE[IMP_CONJ] INFINITE_DIFF_FINITE)) THEN
+      SIMP_TAC[FINITE_IMAGE; FINITE_NUMSEG_LT] THEN
+      DISCH_THEN(MP_TAC o MATCH_MP INFINITE_NONEMPTY) THEN SET_TAC[];
+      MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
+      ASM_REWRITE_TAC[] THEN MATCH_MP_TAC WLOG_LT THEN ASM SET_TAC[]];
+     MATCH_MP_TAC INFINITE_SUPERSET THEN
+     EXISTS_TAC `IMAGE (f:num->A) (:num)` THEN
+     ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN
+     ASM_MESON_TAC[INFINITE_IMAGE_INJ; num_INFINITE]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Mapping between finite sets and lists.                                    *)
 (* ------------------------------------------------------------------------- *)

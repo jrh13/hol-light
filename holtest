@@ -74,6 +74,7 @@ echo '### Loading Examples/prover9.ml'; echo 'loadt "Examples/prover9.ml";;' | (
 echo '### Loading Library/q.ml'; echo 'loadt "Library/q.ml";;' | (time $hollight)
 echo '### Loading Examples/rectypes.ml'; echo 'loadt "Examples/rectypes.ml";;' | (time $hollight)
 echo '### Loading Library/ringtheory.ml'; echo 'loadt "Library/ringtheory.ml";;' | (time $hollight)
+echo '### Loading Examples/safetyliveness.ml'; echo 'loadt "Examples/safetyliveness.ml";;' | (time $hollight)
 echo '### Loading Examples/schnirelmann.ml'; echo 'loadt "Examples/schnirelmann.ml";;' | (time $hollight)
 echo '### Loading Examples/solovay.ml'; echo 'loadt "Examples/solovay.ml";;' | (time $hollight)
 echo '### Loading Examples/sos.ml'; echo 'loadt "Examples/sos.ml";;' | (time $hollight)

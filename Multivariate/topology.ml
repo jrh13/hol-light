@@ -30939,15 +30939,15 @@ let EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS = prove
     MP_TAC(ISPEC `\(s:real^N->bool) t. s IN f /\ t IN f /\ s SUBSET t`
           TOSET_COFINAL_WOSET) THEN
     SUBGOAL_THEN
-     `fl(\(s:real^N->bool) t. s IN f /\ t IN f /\ s SUBSET t) = f`
+     `fld(\(s:real^N->bool) t. s IN f /\ t IN f /\ s SUBSET t) = f`
     ASSUME_TAC THENL
-     [REWRITE_TAC[fl; FUN_EQ_THM] THEN ASM_MESON_TAC[IN]; ALL_TAC] THEN
+     [REWRITE_TAC[fld; IN_ELIM_THM] THEN ASM SET_TAC[]; ALL_TAC] THEN
     ASM_REWRITE_TAC[toset; poset] THEN ANTS_TAC THENL
      [ASM_MESON_TAC[IN; SUBSET_REFL; SUBSET_TRANS; SUBSET_ANTISYM];
       DISCH_THEN(X_CHOOSE_THEN `w:((real^N->bool)->(real^N->bool)->bool)`
           STRIP_ASSUME_TAC)] THEN
-    FIRST_ASSUM(MP_TAC o MATCH_MP FL_SUBSET) THEN ASM_REWRITE_TAC[] THEN
-    ABBREV_TAC `f':(real^N->bool)->bool = fl w` THEN DISCH_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP FLD_SUBSET) THEN ASM_REWRITE_TAC[] THEN
+    ABBREV_TAC `f':(real^N->bool)->bool = fld w` THEN DISCH_TAC THEN
     EXISTS_TAC `f':(real^N->bool)->bool` THEN
     CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
     MP_TAC(ISPEC `v:real^N->bool` SUBSET_SECOND_COUNTABLE) THEN
@@ -30975,7 +30975,7 @@ let EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS = prove
       SUBGOAL_THEN `c PSUBSET (c':real^N->bool)` ASSUME_TAC THENL
        [ASM SET_TAC[]; ALL_TAC] THEN
       SUBGOAL_THEN `?c'':real^N->bool. c'' IN f' /\ c' SUBSET c''` MP_TAC THENL
-       [ASM SET_TAC[]; ALL_TAC] THEN
+       [ASM SET_TAC[]; REWRITE_TAC[GSYM MEMBER_NOT_EMPTY]] THEN
       MATCH_MP_TAC MONO_EXISTS THEN ASM SET_TAC[];
       DISCH_THEN(X_CHOOSE_THEN `c':real^N->bool` STRIP_ASSUME_TAC)] THEN
     SUBGOAL_THEN `?p:real^N. p IN c' /\ ~(p IN c)` STRIP_ASSUME_TAC THENL
@@ -31162,15 +31162,15 @@ let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
  (`!f:A->real^N->bool v w.
         woset w /\ ~COUNTABLE {(x,y) | w x y} /\
         (!v. v inseg w /\ ~(v = w) ==> COUNTABLE {(x,y) | v x y}) /\
-        (!i. i IN fl w ==> closed_in (subtopology euclidean v) (f i) \/
-                           open_in (subtopology euclidean v) (f i)) /\
+        (!i. i IN fld w ==> closed_in (subtopology euclidean v) (f i) \/
+                            open_in (subtopology euclidean v) (f i)) /\
         (!i j. w i j ==> f j SUBSET f i)
-        ==> ?k. k IN fl w /\ !i. w k i ==> f i = f k`,
+        ==> ?k. k IN fld w /\ !i. w k i ==> f i = f k`,
   let lemma = prove
    (`{x,y | ?l. l IN p /\ l x y} = UNIONS {{x,y | l x y} | l IN p}`,
     REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]) in
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`IMAGE (f:A->real^N->bool) (fl w)`; `v:real^N->bool`]
+  MP_TAC(ISPECL [`IMAGE (f:A->real^N->bool) (fld w)`; `v:real^N->bool`]
         EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS) THEN
   ASM_REWRITE_TAC[FORALL_IN_IMAGE_2; FORALL_IN_IMAGE] THEN ANTS_TAC THENL
    [UNDISCH_TAC `woset(w:A->A->bool)` THEN
@@ -31183,9 +31183,9 @@ let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
     ASM_SIMP_TAC[] THEN MATCH_MP_TAC(TAUT
      `p /\ ~q /\ (r ==> s) ==> (p <=> q \/ r) ==> s`) THEN
     REPEAT CONJ_TAC THENL
-     [MATCH_MP_TAC UNION_INSEG THEN 
+     [MATCH_MP_TAC UNION_INSEG THEN
       ASM_SIMP_TAC[FORALL_IN_GSPEC; LINSEG_INSEG];
-      DISCH_THEN(MP_TAC o AP_TERM 
+      DISCH_THEN(MP_TAC o AP_TERM
        `\l:A->A->bool. COUNTABLE {(x,y) | l x y}`) THEN
       ASM_REWRITE_TAC[] THEN REWRITE_TAC[lemma] THEN
       MATCH_MP_TAC COUNTABLE_UNIONS THEN
@@ -31193,7 +31193,7 @@ let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
       X_GEN_TAC `a:A` THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_SIMP_TAC[LINSEG_INSEG; ETA_AX] THEN REWRITE_TAC[FUN_EQ_THM] THEN
       DISCH_THEN(MP_TAC o SPECL [`a:A`; `a:A`]) THEN
-      REWRITE_TAC[linseg; less] THEN UNDISCH_TAC `woset(w:A->A->bool)` THEN
+      REWRITE_TAC[linseg; properly] THEN UNDISCH_TAC `woset(w:A->A->bool)` THEN
       REWRITE_TAC[woset] THEN ASM SET_TAC[];
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `a:A` THEN STRIP_TAC THEN
       MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
@@ -31203,7 +31203,7 @@ let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
       FIRST_ASSUM(MP_TAC o MATCH_MP (SET_RULE
        `s = INTERS f ==> !x. x IN f ==> s SUBSET x`)) THEN
       REWRITE_TAC[FORALL_IN_IMAGE] THEN
-      DISCH_THEN(MP_TAC o SPEC `b:A`) THEN REWRITE_TAC[fl; IN] THEN
+      DISCH_THEN(MP_TAC o SPEC `b:A`) THEN REWRITE_TAC[fld; IN_ELIM_THM] THEN
       ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
       MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUBSET_TRANS) THEN
       REWRITE_TAC[SUBSET_INTERS; FORALL_IN_IMAGE] THEN
@@ -31211,7 +31211,7 @@ let CANTOR_BAIRE_STATIONARY_PRINCIPLE = prove
       FIRST_X_ASSUM(MP_TAC o C AP_THM `a:A` o C AP_THM `a:A`) THEN
       REWRITE_TAC[EXISTS_IN_GSPEC] THEN
       REWRITE_TAC[linseg; IN_ELIM_THM] THEN
-      REWRITE_TAC[IN; less; NOT_EXISTS_THM] THEN
+      REWRITE_TAC[IN; properly; NOT_EXISTS_THM] THEN
       DISCH_THEN(MP_TAC o SPEC `c:A`) THEN
       UNDISCH_TAC `woset(w:A->A->bool)` THEN
       REWRITE_TAC[woset; IN] THEN ASM_MESON_TAC[IN; SUBSET]]]);;

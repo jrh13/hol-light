@@ -8,6 +8,78 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  5th Oct 2019       Library/wo.ml
+
+Made an additional revamp of the wellordering material, trying to rationalize
+things and start a switch from predicate to set notation. Also changed the name
+of "fl" (field of a binary relation) to "fld", and added "qoset" (quasi-order /
+preorder) and "wqoset" (well quasi-order) to the menagerie of ordered sets. As
+a result changed the names of many ...FL... theorems to ...FLD..., and really
+changed the definitions of the following to be more systematic stylistically
+and use set notation:
+
+        chain
+        poset
+        toset
+        woset
+        WOSET
+
+Also WOSET_POSET is now a different theorem, the old one being renamed
+WOSET_IMP_POSET, more in keeping with other theorem names of the same form.
+
+Sat  5th Oct 2019       Library/rstc.ml, Examples/reduct.ml
+
+Moved the fact that transitive closure preserves wellfoundedness (WF_TC)
+from "Examples/reduct.ml" to "Library/rstc.ml". This seems a more natural
+home, since it is independent of the more reduction-relation-oriented stuff
+in the former.
+
+Fri  4th Oct 2019       Examples/safetyliveness.ml
+
+Added a very simple but classic example, a formalization of "safety" and
+"liveness" for properties of traces, and a proof following Gries's "Decomposing
+Properties into Safety and Liveness using Predicate Logic" that any property of
+traces can be decomposed into the conjunction of a safety and a liveness
+property.
+
+Fri  4th Oct 2019       wf.ml
+
+Added a couple more trivial facts about wellfounded relations:
+
+  WF_RESTRICT = |- !(<<) P. WF (<<) ==> WF (\x y. P x /\ P y /\ x << y)
+
+  WF_DHAIN_TRANSITIVE : thm =
+    |- !(<<). (!x y z. x << y /\ y << z ==> x << z)
+              ==> (WF (<<) <=> ~(?s. !i j. i < j ==> s j << s i))
+
+Tue  1st Oct 2019       wf.ml, define.ml, Examples/dickson.ml
+
+Factored out the key "minimal bad sequence" argument a la Nash-Williams from
+the existing example of Dickson's lemma and added it (for a more general
+wellfounded ordering) to the core wf.ml file:
+
+  MINIMAL_BAD_SEQUENCE =
+   |- !(<<) bad.
+         WF (<<) /\
+         (!x. ~bad x ==> ?n. !y. (!k. k < n ==> y k = x k) ==> ~bad y) /\
+         (?x. bad x)
+         ==> ?y. bad y /\
+                 !z n. bad z /\ (!k. k < n ==> z k = y k) ==> ~(z n << y n)
+
+The hypothesis are that the "ordering" is wellfounded, that the notion of
+"bad" is a "safety property", and that there exists some bad sequence. Also
+made the tiny tweak of adding a missing outer quantifier to the existing
+theorem WF_MEASURE_GEN.
+
+Mon 30th Sep 2019       sets.ml, Library/card.ml
+
+Added the following, factoring out its proof from Library/card.ml where
+it was already there inside the proof of INFINITE_CARD_LE.
+
+  INFINITE_ENUMERATE_SUBSET
+    |- !s. INFINITE s <=>
+           ?f:num->A. (!x. f x IN s) /\ (!x y. f x = f y ==> x = y)
+
 Sun 29th Sep 2019       Library/wo.ml, Library/card.ml, Logic/fol_prop.ml, Multivariate/topology.ml
 
 Made a small but systematic switch of the whole theory of orderings in this
