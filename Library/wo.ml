@@ -208,6 +208,11 @@ let PROPERLY_STRICTLY = prove
  (`!R:A->A->bool. properly(strictly R) = strictly R`,
   REWRITE_TAC[FUN_EQ_THM; strictly; properly] THEN MESON_TAC[]);;
 
+let PROPERLY_MONO = prove
+ (`!R S. (!x y. R x y ==> S x y)
+         ==> (!x y. properly R x y ==> properly S x y)`,
+  REWRITE_TAC[properly] THEN MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Various interrelations and alternative forms of definitions.              *)
 (* ------------------------------------------------------------------------- *)
@@ -800,7 +805,7 @@ let WOSET_TOTAL_LE = prove
 
 let WOSET_TOTAL_LT = prove
  (`!l:A->A->bool. woset l ==>
-     !x y. fld(l) x /\ fld(l) y 
+     !x y. fld(l) x /\ fld(l) y
            ==> x = y \/ (properly l) x y \/ (properly l) y x`,
   REWRITE_TAC[properly] THEN MESON_TAC[WOSET_TOTAL]);;
 
@@ -811,13 +816,13 @@ let ORDINAL_IMP_WOSET = prove
 let WOSET_FINITE_TOSET = prove
  (`!l:A->A->bool. toset l /\ FINITE {(x,y) | l x y} ==> woset l`,
   ONCE_REWRITE_TAC[GSYM FINITE_FLD] THEN
-  SIMP_TAC[TOSET_POSET; WOSET_WF; properly; poset; IN] THEN 
+  SIMP_TAC[TOSET_POSET; WOSET_WF; properly; poset; IN] THEN
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC WF_FINITE THEN REWRITE_TAC[] THEN
   CONJ_TAC THENL [ASM_MESON_TAC[]; X_GEN_TAC `a:A`] THEN
   FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ]
     FINITE_SUBSET)) THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN 
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
   REWRITE_TAC[REWRITE_RULE[IN] IN_FLD; IN] THEN
   ASM_MESON_TAC[]);;
 
@@ -883,7 +888,7 @@ let INSEG_ORDINAL = prove
 
 let LINSEG_INSEG = prove
  (`!(l:A->A->bool) a. woset l ==> (linseg l a) inseg l`,
-  REPEAT STRIP_TAC THEN 
+  REPEAT STRIP_TAC THEN
   REWRITE_TAC[inseg; linseg; REWRITE_RULE[IN] IN_FLD] THEN PBETA_TAC THEN
   ASM_MESON_TAC[WOSET_TRANS_LE]);;
 
@@ -918,7 +923,7 @@ let INSEG_LINSEG = prove
    [REWRITE_TAC[inseg; REWRITE_RULE[IN] IN_FLD] THEN MESON_TAC[]; ALL_TAC] THEN
   EQ_TAC THEN STRIP_TAC THENL [ALL_TAC; ASM_MESON_TAC[LINSEG_INSEG]] THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP WOSET_WELL_CONTRAPOS) THEN
-  DISCH_THEN(MP_TAC o SPEC `\x:A. fld(l) x /\ ~fld(m) x`) THEN 
+  DISCH_THEN(MP_TAC o SPEC `\x:A. fld(l) x /\ ~fld(m) x`) THEN
   REWRITE_TAC[] THEN REWRITE_TAC[linseg; GSYM PAIRED_EXT] THEN PBETA_TAC THEN
   W(C SUBGOAL_THEN (fun t -> REWRITE_TAC[t]) o funpow 2 lhand o snd) THENL
    [ASM_MESON_TAC[INSEG_PROPER_SUBSET_FLD]; ALL_TAC] THEN
@@ -957,7 +962,7 @@ let EXTEND_LINSEG = prove
 (* ------------------------------------------------------------------------ *)
 
 let ORDINAL_CHAINED_LEMMA = prove
- (`!(k:A->A->bool) l m. 
+ (`!(k:A->A->bool) l m.
         ordinal(l) /\ ordinal(m)
         ==> k inseg l /\ k inseg m
             ==> k = l \/ k = m \/ ?a. fld(l) a /\ fld(m) a /\
@@ -1091,7 +1096,7 @@ let ORDINAL_SUC = prove
       BETA_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[] THEN
       ASM_CASES_TAC `y:A = a` THEN ASM_REWRITE_TAC[] THEN
       EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-      REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN 
+      REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN
       EXISTS_TAC `a:A` THEN ASM_REWRITE_TAC[]]]);;
 
 (* ------------------------------------------------------------------------ *)
@@ -1153,7 +1158,7 @@ let ORDINAL_UNION = prove
       ASM_REWRITE_TAC[] THEN DISCH_THEN (DISJ_CASES_THEN MP_TAC) THEN
       ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
       IMP_RES_THEN MATCH_MP_TAC INSEG_SUBSET THEN
-      FIRST_ASSUM MATCH_MP_TAC THEN 
+      FIRST_ASSUM MATCH_MP_TAC THEN
       ASM_REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN
       EXISTS_TAC `b:A` THEN ASM_REWRITE_TAC[]];
     X_GEN_TAC `x:A` THEN REWRITE_TAC[UNION_FLD] THEN
@@ -1168,7 +1173,7 @@ let ORDINAL_UNION = prove
     BETA_TAC THEN EQ_TAC THEN DISCH_TAC THENL
      [EXISTS_TAC `l:A->A->bool` THEN ASM_REWRITE_TAC[];
       FIRST_ASSUM(X_CHOOSE_THEN `m:A->A->bool` STRIP_ASSUME_TAC) THEN
-      SUBGOAL_THEN `ordinal(l:A->A->bool) /\ ordinal(m:A->A->bool)` 
+      SUBGOAL_THEN `ordinal(l:A->A->bool) /\ ordinal(m:A->A->bool)`
       MP_TAC THENL
        [CONJ_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[];
         DISCH_THEN(DISJ_CASES_TAC o MATCH_MP ORDINAL_CHAINED)] THENL
@@ -1221,7 +1226,7 @@ let FLD_RESTRICT = prove
   TRY(EXISTS_TAC `y:A` THEN ASM_REWRITE_TAC[] THEN NO_TAC) THEN
   EXISTS_TAC `x:A` THEN ASM_REWRITE_TAC[] THEN
   IMP_RES_THEN MATCH_MP_TAC WOSET_REFL THEN
-  REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN EXISTS_TAC `y:A` THEN 
+  REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN EXISTS_TAC `y:A` THEN
   ASM_REWRITE_TAC[]);;
 
 let WO = prove
@@ -1266,11 +1271,11 @@ let WF_INSEG_WOSET = prove
     ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[INSEG_LINSEG];
     ALL_TAC] THEN
   REWRITE_TAC[SKOLEM_THM; NOT_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC 
+  MAP_EVERY X_GEN_TAC
    [`a:(A->A->bool)->A`; `l:(A->A->bool)->(A->A->bool)`] THEN
   DISCH_TAC THEN FIRST_X_ASSUM(X_CHOOSE_TAC `z:A->A->bool`) THEN
   SUBGOAL_THEN `woset(z:A->A->bool)` MP_TAC THENL
-   [ASM_MESON_TAC[]; 
+   [ASM_MESON_TAC[];
     REWRITE_TAC[woset; SUBSET; GSYM MEMBER_NOT_EMPTY; IN]] THEN
   REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
   DISCH_THEN(MP_TAC o SPEC `{(a:(A->A->bool)->A) x | P x /\ x inseg z}`) THEN
@@ -1341,7 +1346,7 @@ let SUBWOSET_ISO_INSEG = prove
       REWRITE_TAC[properly; woset] THEN SET_TAC[];
       REWRITE_TAC[IN_DIFF; IN_IMAGE; IN_ELIM_THM; IN_UNIV] THEN
       DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MATCH_MP_TAC) THEN
-      REPEAT(POP_ASSUM MP_TAC) THEN 
+      REPEAT(POP_ASSUM MP_TAC) THEN
       REWRITE_TAC[properly; woset] THEN SET_TAC[]];
     ALL_TAC] THEN
   FIRST_X_ASSUM(MP_TAC o MATCH_MP MONO_FORALL o GEN `x:A` o SPEC
@@ -1352,7 +1357,7 @@ let SUBWOSET_ISO_INSEG = prove
   REWRITE_TAC[IN_UNIV; IN_IMAGE; IN_DIFF; IN_ELIM_THM; FORALL_AND_THM] THEN
   STRIP_TAC THEN
   SUBGOAL_THEN
-   `!x z:A. x IN s /\ properly l z (f x) 
+   `!x z:A. x IN s /\ properly l z (f x)
             ==> ?u. u IN s /\ properly l u x /\ f u = z`
   ASSUME_TAC THENL
    [REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[properly; woset] THEN SET_TAC[];
@@ -1368,14 +1373,14 @@ let SUBWOSET_ISO_INSEG = prove
     MP_TAC THENL
      [REPEAT STRIP_TAC THEN
       REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [`x:A`; `(f:A->A) y`])) THEN
-      REPEAT(POP_ASSUM MP_TAC) THEN 
+      REPEAT(POP_ASSUM MP_TAC) THEN
       REWRITE_TAC[properly; woset] THEN SET_TAC[];
       MATCH_MP_TAC(MESON[]
        `(!x y. P x y /\ P y x ==> Q x y)
         ==> (!x y. P x y) ==> (!x y. Q x y)`) THEN
-      REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[properly; woset] THEN 
+      REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[properly; woset] THEN
       SET_TAC[]];
-    REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[properly; woset] THEN 
+    REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[properly; woset] THEN
     SET_TAC[]]);;
 
 (* ======================================================================== *)
@@ -1403,7 +1408,7 @@ let HP = prove
     REWRITE_TAC[] THEN DISCH_TAC THEN
     DISCH_THEN(MP_TAC o SPECL [`u:A`; `u:A`]) THEN
     IMP_RES_THEN(ASSUME_TAC o GSYM) POSET_FLDEQ THEN ASM_REWRITE_TAC[]] THEN
-  SUBGOAL_THEN 
+  SUBGOAL_THEN
     `?f. !x. f x = if fld(l) x /\
                       !y. properly w  y x ==> l x (f y) \/ l (f y) x
                    then (x:A) else b`
@@ -1456,7 +1461,7 @@ let HP = prove
                   !y. (properly w) y z ==> l z (f y) \/ l (f y) z`
     (fun th -> REWRITE_TAC[th]) THEN CONJ_TAC THENL
      [UNDISCH_TAC `chain(l:A->A->bool) Q` THEN REWRITE_TAC[chain; IN] THEN
-      DISCH_THEN(MP_TAC o SPECL [`z:A`; `z:A`]) THEN 
+      DISCH_THEN(MP_TAC o SPECL [`z:A`; `z:A`]) THEN
       ASM_REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN
       DISCH_TAC THEN EXISTS_TAC `z:A` THEN ASM_REWRITE_TAC[];
       X_GEN_TAC `y:A` THEN DISCH_TAC THEN
@@ -1496,7 +1501,7 @@ let ZL = prove
       EXISTS_TAC `m:A` THEN ASM_REWRITE_TAC[] THEN
       FIRST_ASSUM MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC;
       FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP POSET_REFL) THEN
-      REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN EXISTS_TAC `m:A` THEN 
+      REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN EXISTS_TAC `m:A` THEN
       ASM_REWRITE_TAC[]];
     ALL_TAC] THEN
   SUBGOAL_THEN `M SUBSET (\x:A. M x \/ (x = z))` MP_TAC THENL
@@ -1685,12 +1690,12 @@ let OEP = prove
   SUBGOAL_THEN `!x:A y:A. p x y ==> t x y` ASSUME_TAC THENL
    [EXPAND_TAC "t" THEN REWRITE_TAC[] THEN
     REPEAT GEN_TAC THEN STRIP_TAC THEN
-    REPEAT(CONJ_TAC THENL 
+    REPEAT(CONJ_TAC THENL
      [ASM_MESON_TAC[REWRITE_RULE[IN] IN_FLD]; ALL_TAC]) THEN
-    ASM_CASES_TAC `x:A = y` THENL 
+    ASM_CASES_TAC `x:A = y` THENL
      [ASM_MESON_TAC[REWRITE_RULE[IN] IN_FLD]; ALL_TAC] THEN
     REMOVE_THEN "*" (MP_TAC o SPECL [`x:A`; `y:A`]) THEN ASM_SIMP_TAC[] THEN
-    ANTS_TAC THENL 
+    ANTS_TAC THENL
      [ASM_MESON_TAC[REWRITE_RULE[IN] IN_FLD]; MATCH_MP_TAC MONO_EXISTS] THEN
     FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [poset]) THEN ASM SET_TAC[];
     ALL_TAC] THEN
@@ -1698,7 +1703,7 @@ let OEP = prove
   MATCH_MP_TAC(TAUT `q /\ (q ==> p) ==> p /\ q`) THEN CONJ_TAC THENL
    [MATCH_MP_TAC SUBSET_ANTISYM THEN
     ASM_REWRITE_TAC[SUBSET; FORALL_PAIR_THM; IN] THEN
-    EXPAND_TAC "t" THEN REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN 
+    EXPAND_TAC "t" THEN REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN
     ASM_MESON_TAC[];
     DISCH_TAC THEN ASM_REWRITE_TAC[TOSET_POSET; poset; IN]] THEN
   EXPAND_TAC "t" THEN REWRITE_TAC[] THEN
@@ -1718,7 +1723,7 @@ let OEP = prove
     REWRITE_TAC[SUBSET; GSYM MEMBER_NOT_EMPTY; IN] THEN
     REPLICATE_TAC 3 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     DISCH_THEN(MP_TAC o SPECL [`m:A`; `n:A`] o CONJUNCT1) THEN
-    ANTS_TAC THENL [ASM_MESON_TAC[REWRITE_RULE[IN] IN_FLD]; ALL_TAC] THEN 
+    ANTS_TAC THENL [ASM_MESON_TAC[REWRITE_RULE[IN] IN_FLD]; ALL_TAC] THEN
     STRIP_TAC THENL
      [EXISTS_TAC `m:A`; EXISTS_TAC `n:A`] THEN ASM_MESON_TAC[];
     MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN

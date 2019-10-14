@@ -1114,21 +1114,6 @@ let RING_SUM_REFLECT = prove
    (MATCH_MP ITERATE_REFLECT (ISPEC `r:C ring` MONOIDAL_RING_ADD))) THEN
   ASM_REWRITE_TAC[NEUTRAL_RING_ADD]);;
 
-let RING_SUM_EQ_GENERAL_INVERSES = prove
- (`!r s t (f:K->A) (g:L->A) h k.
-        (!i. i IN s ==> f i IN ring_carrier r) /\
-        (!j. j IN t ==> g j IN ring_carrier r) /\
-        (!y. y IN t ==> k y IN s /\ h (k y) = y) /\
-        (!x. x IN s ==> h x IN t /\ k (h x) = x /\ g (h x) = f x)
-        ==> ring_sum r s f = ring_sum r t g`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_sum] THEN
-  ONCE_REWRITE_TAC[SET_RULE
-   `{x | P x /\ f x IN s} = {x | P x /\ (P x ==> f x IN s)}`] THEN
-  ASM_SIMP_TAC[IN_GSPEC] THEN MATCH_MP_TAC
-   (MATCH_MP ITERATE_EQ_GENERAL_INVERSES
-     (ISPEC `r:C ring` MONOIDAL_RING_ADD)) THEN
-  ASM_METIS_TAC[]);;
-
 let RING_SUM_SUM_PRODUCT = prove
  (`!r s t (x:K->L->A).
         FINITE s /\
@@ -1186,6 +1171,19 @@ let RING_SUM_IMAGE = prove
     rand o snd) THEN
   ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
   AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[o_THM] THEN ASM SET_TAC[]);;
+
+let RING_SUM_EQ_GENERAL_INVERSES = prove
+ (`!r s t (f:K->A) (g:L->A) h k.
+        (!y. y IN t ==> k y IN s /\ h (k y) = y) /\
+        (!x. x IN s ==> h x IN t /\ k (h x) = x /\ g (h x) = f x)
+        ==> ring_sum r s f = ring_sum r t g`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC EQ_TRANS `ring_sum r s ((g:L->A) o (h:K->L))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC[o_THM];
+    W(MP_TAC o PART_MATCH (rand o rand) RING_SUM_IMAGE o lhand o snd) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]]);;
 
 let RING_SUM_OFFSET = prove
  (`!p r (f:num->A) m n.
@@ -1549,21 +1547,6 @@ let RING_PRODUCT_REFLECT = prove
    (MATCH_MP ITERATE_REFLECT (ISPEC `r:C ring` MONOIDAL_RING_MUL))) THEN
   ASM_REWRITE_TAC[NEUTRAL_RING_MUL]);;
 
-let RING_PRODUCT_EQ_GENERAL_INVERSES = prove
- (`!r s t (f:K->A) (g:L->A) h k.
-        (!i. i IN s ==> f i IN ring_carrier r) /\
-        (!j. j IN t ==> g j IN ring_carrier r) /\
-        (!y. y IN t ==> k y IN s /\ h (k y) = y) /\
-        (!x. x IN s ==> h x IN t /\ k (h x) = x /\ g (h x) = f x)
-        ==> ring_product r s f = ring_product r t g`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[ring_product] THEN
-  ONCE_REWRITE_TAC[SET_RULE
-   `{x | P x /\ f x IN s} = {x | P x /\ (P x ==> f x IN s)}`] THEN
-  ASM_SIMP_TAC[IN_GSPEC] THEN MATCH_MP_TAC
-   (MATCH_MP ITERATE_EQ_GENERAL_INVERSES
-     (ISPEC `r:C ring` MONOIDAL_RING_MUL)) THEN
-  ASM_METIS_TAC[]);;
-
 let RING_PRODUCT_SUPERSET = prove
  (`!r (f:K->A) u v.
         u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f x = ring_1 r)
@@ -1594,6 +1577,19 @@ let RING_PRODUCT_IMAGE = prove
     rand o snd) THEN
   ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
   AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[o_THM] THEN ASM SET_TAC[]);;
+
+let RING_PRODUCT_EQ_GENERAL_INVERSES = prove
+ (`!r s t (f:K->A) (g:L->A) h k.
+        (!y. y IN t ==> k y IN s /\ h (k y) = y) /\
+        (!x. x IN s ==> h x IN t /\ k (h x) = x /\ g (h x) = f x)
+        ==> ring_product r s f = ring_product r t g`,
+  REPEAT STRIP_TAC THEN
+  TRANS_TAC EQ_TRANS `ring_product r s ((g:L->A) o (h:K->L))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC RING_PRODUCT_EQ THEN ASM_SIMP_TAC[o_THM];
+    W(MP_TAC o PART_MATCH (rand o rand) RING_PRODUCT_IMAGE o lhand o snd) THEN
+    ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]]);;
 
 let RING_PRODUCT_OFFSET = prove
  (`!p r (f:num->A) m n.
@@ -13039,15 +13035,12 @@ let monomial_var = new_definition
 let monomial_vars = new_definition
  `monomial_vars m = {i:V | ~(m i = 0)}`;;
 
-let MONOMIAL_DIVIDES_EXISTS = prove
- (`!m1 m2:V->num.
-        monomial_divides m1 m2 <=> ?m. m2 = monomial_mul m1 m`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[monomial_divides; monomial_mul] THEN
-  REWRITE_TAC[FUN_EQ_THM] THEN EQ_TAC THEN
-  STRIP_TAC THEN ASM_REWRITE_TAC[LE_ADD] THEN
-  EXISTS_TAC `\i. (m2:V->num) i - m1 i` THEN
-  REWRITE_TAC[] THEN POP_ASSUM MP_TAC THEN
-  MATCH_MP_TAC MONO_FORALL THEN ARITH_TAC);;
+let monomial_deg = new_definition
+ `monomial_deg m = nsum (monomial_vars m) (m:V->num)`;;
+
+let monomial = new_definition
+ `monomial (s:V->bool) m <=>
+     FINITE(monomial_vars m) /\ (monomial_vars m) SUBSET s`;;
 
 let MONOMIAL_VARS_1 = prove
  (`monomial_vars (monomial_1:V->num) = {}`,
@@ -13076,6 +13069,124 @@ let MONOMIAL_VARS_RESTRICT = prove
  (`!s m:V->num.
         monomial_vars(monomial_restrict s m) = s INTER monomial_vars m`,
   REWRITE_TAC[monomial_vars; monomial_restrict] THEN SET_TAC[]);;
+
+let MONOMIAL_MONO = prove
+ (`!s t (m:V->num).
+        monomial s m /\ s SUBSET t ==> monomial t m`,
+  REWRITE_TAC[monomial] THEN SET_TAC[]);;
+
+let MONOMIAL_UNIV = prove
+ (`!s m. monomial s m ==> monomial (:V) m`,
+  REWRITE_TAC[monomial] THEN SET_TAC[]);;
+
+let MONOMIAL_1 = prove
+ (`!s:V->bool. monomial s monomial_1`,
+  REWRITE_TAC[monomial; monomial_1; monomial_vars; EMPTY_GSPEC] THEN
+  REWRITE_TAC[FINITE_EMPTY; EMPTY_SUBSET]);;
+
+let MONOMIAL_MUL = prove
+ (`!(s:V->bool) m1 m2.
+        monomial s (monomial_mul m1 m2) <=> monomial s m1 /\ monomial s m2`,
+  REWRITE_TAC[monomial; monomial_mul; monomial_vars; ADD_EQ_0; SET_RULE
+   `{x | ~(P x /\ Q x)} = {x | ~P x} UNION {x | ~Q x}`] THEN
+  REWRITE_TAC[UNION_SUBSET; FINITE_UNION] THEN REWRITE_TAC[CONJ_ACI]);;
+
+let MONOMIAL_DIVISOR = prove
+ (`!(s:V->bool) d m.
+        monomial s m /\ monomial_divides d m ==> monomial s d`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[monomial; monomial_vars; monomial_divides] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+  MATCH_MP_TAC(MESON[FINITE_SUBSET; SUBSET_TRANS]
+   `s SUBSET t ==> FINITE t /\ t SUBSET u ==> FINITE s /\ s SUBSET u`) THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM; CONTRAPOS_THM] THEN
+  POP_ASSUM MP_TAC THEN MATCH_MP_TAC MONO_FORALL THEN ARITH_TAC);;
+
+let MONOMIAL_VAR = prove
+ (`!(s:V->bool) v. monomial s (monomial_var v) <=> v IN s`,
+  REWRITE_TAC[monomial; monomial_vars; monomial_var] THEN
+  ONCE_REWRITE_TAC[COND_RAND] THEN ONCE_REWRITE_TAC[COND_RATOR] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN
+  REWRITE_TAC[MESON[] `~(if p then F else T) <=> p`] THEN
+  REWRITE_TAC[SING_GSPEC; FINITE_SING; SING_SUBSET]);;
+
+let MONOMIAL_RESTRICT = prove
+ (`!(s:V->bool) m. FINITE s ==> monomial s (monomial_restrict s m)`,
+  REWRITE_TAC[monomial; MONOMIAL_VARS_RESTRICT] THEN
+  SIMP_TAC[FINITE_INTER; INTER_SUBSET]);;
+
+let MONOMIAL = prove
+ (`monomial (:V) m <=> FINITE(monomial_vars m)`,
+  REWRITE_TAC[monomial; SUBSET_UNIV]);;
+
+let MONOMIAL_DEG_1 = prove
+ (`monomial_deg (monomial_1:V->num) = 0`,
+  REWRITE_TAC[monomial_deg; MONOMIAL_VARS_1; NSUM_CLAUSES]);;
+
+let MONOMIAL_DEG_VAR = prove
+ (`!v:V. monomial_deg (monomial_var v) = 1`,
+  REWRITE_TAC[monomial_deg; MONOMIAL_VARS_VAR; NSUM_SING] THEN
+  REWRITE_TAC[monomial_var]);;
+
+let MONOMIAL_DEG_EQ_0_ALT = prove
+ (`!m. monomial (:V) m ==> (monomial_deg m = 0 <=> m = monomial_1)`,
+  REWRITE_TAC[MONOMIAL] THEN REPEAT STRIP_TAC THEN
+  EQ_TAC THEN SIMP_TAC[MONOMIAL_DEG_1] THEN
+  ASM_SIMP_TAC[monomial_deg; NSUM_EQ_0_IFF] THEN
+  REWRITE_TAC[GSYM MONOMIAL_VARS_EQ_EMPTY; monomial_vars] THEN SET_TAC[]);;
+
+let MONOMIAL_DEG_EQ_0 = prove
+ (`!s m. monomial s m ==> (monomial_deg m = 0 <=> m = monomial_1)`,
+  SIMP_TAC[monomial; SUBSET_UNIV; MONOMIAL_DEG_EQ_0_ALT]);;
+
+let MONOMIAL_DIV_DIVIDES = prove
+ (`!m d:V->num. monomial_divides (monomial_div m d) m`,
+  REWRITE_TAC[monomial_divides; monomial_div] THEN ARITH_TAC);;
+
+let MONOMIAL_DIV = prove
+ (`!s m d:V->num. monomial s m ==> monomial s (monomial_div m d)`,
+  MESON_TAC[MONOMIAL_DIVISOR; MONOMIAL_DIV_DIVIDES]);;
+
+let MONOMIAL_DIVIDES_1 = prove
+ (`!m:V->num. monomial_divides monomial_1 m`,
+  REWRITE_TAC[monomial_divides; monomial_1; LE_0]);;
+
+let MONOMIAL_DIVIDES_EXISTS = prove
+ (`!m1 m2:V->num.
+        monomial_divides m1 m2 <=> ?m. m2 = monomial_mul m1 m`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[monomial_divides; monomial_mul] THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN EQ_TAC THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[LE_ADD] THEN
+  EXISTS_TAC `\i. (m2:V->num) i - m1 i` THEN
+  REWRITE_TAC[] THEN POP_ASSUM MP_TAC THEN
+  MATCH_MP_TAC MONO_FORALL THEN ARITH_TAC);;
+
+let MONOMIAL_DEG_MUL = prove
+ (`!(m1:V->num) m2.
+        monomial (:V) m1 /\ monomial (:V) m2
+        ==> monomial_deg(monomial_mul m1 m2) =
+            monomial_deg m1 + monomial_deg m2`,
+  REWRITE_TAC[monomial; monomial_vars] THEN
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[monomial_deg; monomial_vars; monomial_mul; ADD_EQ_0] THEN
+  REWRITE_TAC[SET_RULE
+   `{i | ~(P i /\ Q i)} = {i | ~P i} UNION {i | ~Q i}`] THEN
+  ASM_SIMP_TAC[NSUM_ADD; FINITE_UNION] THEN BINOP_TAC THEN
+  MATCH_MP_TAC NSUM_SUPERSET THEN SET_TAC[]);;
+
+let MONOMIAL_DEG_LE = prove
+ (`!(m1:V->num) m2.
+        monomial (:V) m2 /\
+        monomial_divides m1 m2
+        ==> monomial_deg m1 <= monomial_deg m2`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[MONOMIAL; CONJ_ASSOC; monomial_vars] THEN
+  ONCE_REWRITE_TAC[IMP_CONJ_ALT] THEN
+  REWRITE_TAC[MONOMIAL_DIVIDES_EXISTS; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `m:V->num` THEN DISCH_THEN SUBST1_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [monomial_mul] THEN
+  REWRITE_TAC[ADD_EQ_0; FINITE_UNION; SET_RULE
+   `{i | ~(P i /\ Q i)} = {i | ~P i} UNION {i | ~Q i}`] THEN
+  SIMP_TAC[MONOMIAL_DEG_MUL; MONOMIAL; GSYM monomial_vars; LE_ADD]);;
 
 let MONOMIAL_VAR_EQ = prove
  (`!v w:V. monomial_var v = monomial_var w <=> v = w`,
@@ -13116,6 +13227,14 @@ let MONOMIAL_MUL_EQ_1 = prove
   REWRITE_TAC[FUN_EQ_THM; monomial_mul; monomial_1; ADD_EQ_0] THEN
   MESON_TAC[]);;
 
+let MONOMIAL_MUL_LCANCEL = prove
+ (`!m m1 m2:V->num. monomial_mul m m1 = monomial_mul m m2 <=> m1 = m2`,
+  REWRITE_TAC[FUN_EQ_THM; monomial_mul; EQ_ADD_LCANCEL]);;
+
+let MONOMIAL_MUL_RCANCEL = prove
+ (`!m m1 m2:V->num. monomial_mul m1 m = monomial_mul m2 m <=> m1 = m2`,
+  REWRITE_TAC[FUN_EQ_THM; monomial_mul; EQ_ADD_RCANCEL]);;
+
 let MONOMIAL_DIVIDES_REFL = prove
  (`!m:V->num. monomial_divides m m`,
   REWRITE_TAC[monomial_divides; LE_REFL]);;
@@ -13143,6 +13262,43 @@ let MONOMIAL_DIVIDES_RMUL = prove
  (`!d m1 m2:V->num.
         monomial_divides d m1 ==> monomial_divides d (monomial_mul m1 m2)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[monomial_divides; monomial_mul] THEN
+  MATCH_MP_TAC MONO_FORALL THEN ARITH_TAC);;
+
+let MONOMIAL_DIV_LMUL_EQ = prove
+ (`!m1 m2:V->num.
+        monomial_mul m2 (monomial_div m1 m2) = m1 <=> monomial_divides m2 m1`,
+  REWRITE_TAC[FUN_EQ_THM; monomial_mul; monomial_div; monomial_divides] THEN
+  REPEAT GEN_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN ARITH_TAC);;
+
+let MONOMIAL_DIV_LMUL = prove
+ (`!m1 m2:V->num.
+        monomial_divides m2 m1 ==> monomial_mul m2 (monomial_div m1 m2) = m1`,
+  REWRITE_TAC[MONOMIAL_DIV_LMUL_EQ]);;
+
+let MONOMIAL_DIV_RMUL_EQ = prove
+ (`!m1 m2:V->num.
+        monomial_mul (monomial_div m1 m2) m2 = m1 <=> monomial_divides m2 m1`,
+  REWRITE_TAC[FUN_EQ_THM; monomial_mul; monomial_div; monomial_divides] THEN
+  REPEAT GEN_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN ARITH_TAC);;
+
+let MONOMIAL_DIV_RMUL = prove
+ (`!m1 m2:V->num.
+        monomial_divides m2 m1 ==> monomial_mul (monomial_div m1 m2) m2 = m1`,
+  REWRITE_TAC[MONOMIAL_DIV_RMUL_EQ]);;
+
+let MONOMIAL_VAR_DIVIDES = prove
+ (`!m v:V. monomial_divides (monomial_var v) m <=> v IN monomial_vars m`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[monomial_divides; monomial_var] THEN
+  REWRITE_TAC[monomial_vars; IN_ELIM_THM] THEN EQ_TAC THENL
+   [DISCH_THEN(MP_TAC o SPEC `v:V`) THEN REWRITE_TAC[] THEN ARITH_TAC;
+    DISCH_TAC THEN GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+    ASM_ARITH_TAC]);;
+
+let MONOMIAL_VARS_DIVISOR = prove
+ (`!d m:V->num.
+        monomial_divides d m ==> monomial_vars d SUBSET monomial_vars m`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[monomial_divides; monomial_vars] THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM; CONTRAPOS_THM] THEN
   MATCH_MP_TAC MONO_FORALL THEN ARITH_TAC);;
 
 let MONOMIAL_FINITE_DIVISORS = prove
@@ -13189,6 +13345,44 @@ let MONOMIAL_FINITE_DIVISORPAIRS = prove
     REWRITE_TAC[IN_CROSS; IN_ELIM_THM] THEN
     MESON_TAC[MONOMIAL_DIVIDES_LMUL; MONOMIAL_DIVIDES_RMUL;
               MONOMIAL_DIVIDES_REFL]]);;
+
+let MONOMIAL_INDUCT = prove
+ (`!s (P:(V->num)->bool).
+        P monomial_1 /\
+        (!m v. monomial s m /\ P m /\ v IN s
+               ==> P(monomial_mul (monomial_var v) m))
+        ==> !m. monomial s m ==> P m`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  SUBGOAL_THEN `!d m:V->num. monomial s m /\ monomial_deg m = d ==> P m`
+  MP_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+  MATCH_MP_TAC num_INDUCTION THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[MONOMIAL_DEG_EQ_0]; ALL_TAC] THEN
+  X_GEN_TAC `d:num` THEN DISCH_TAC THEN
+  X_GEN_TAC `m:V->num` THEN STRIP_TAC THEN
+  SUBGOAL_THEN `~(monomial_vars(m:V->num) = {})` MP_TAC THENL
+   [ASM_MESON_TAC[MONOMIAL_VARS_EQ_EMPTY; MONOMIAL_DEG_1; NOT_SUC];
+    REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `v:V` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o
+   SPECL [`monomial_div m (monomial_var(v:V))`; `v:V`]) THEN
+  ASM_SIMP_TAC[MONOMIAL_DIV_LMUL; MONOMIAL_VAR_DIVIDES] THEN
+  DISCH_THEN MATCH_MP_TAC THEN REPEAT CONJ_TAC THENL
+   [ASM_MESON_TAC[MONOMIAL_DIVISOR; MONOMIAL_DIV_DIVIDES];
+    FIRST_X_ASSUM MATCH_MP_TAC;
+    RULE_ASSUM_TAC(REWRITE_RULE[monomial]) THEN ASM SET_TAC[]] THEN
+  CONJ_TAC THENL
+   [ASM_MESON_TAC[MONOMIAL_DIVISOR; MONOMIAL_DIV_DIVIDES];
+    GEN_REWRITE_TAC I [GSYM SUC_INJ]] THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN TRANS_TAC EQ_TRANS
+   `monomial_deg(monomial_mul (monomial_var v)
+                              (monomial_div m (monomial_var v)):V->num)` THEN
+  CONJ_TAC THENL
+   [ALL_TAC; ASM_SIMP_TAC[MONOMIAL_DIV_LMUL; MONOMIAL_VAR_DIVIDES]] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) MONOMIAL_DEG_MUL o rand o snd) THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[GSYM MONOMIAL; MONOMIAL_VAR; IN_UNIV] THEN
+    MATCH_MP_TAC MONOMIAL_DIV THEN ASM_MESON_TAC[MONOMIAL_UNIV];
+    DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[MONOMIAL_DEG_VAR] THEN ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
 (* General power series / polynomial sets and operations.                    *)
@@ -13240,6 +13434,10 @@ let poly_mul = new_definition
 let poly_var = new_definition
  `poly_var (r:A ring) (v:V) =
         \m:V->num. if m = monomial_var v then ring_1 r else ring_0 r`;;
+
+let POLY_CONST_0 = prove
+ (`!r:A ring. poly_const r (ring_0 r) = \x. ring_0 r`,
+  REWRITE_TAC[poly_const; COND_ID]);;
 
 let RING_POWERSERIES_CONST = prove
  (`!r c. ring_powerseries r (poly_const r c :(V->num)->A) <=>
@@ -13376,11 +13574,11 @@ let POLY_ADD_ASSOC = prove
   REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `m:V->num` THEN RING_TAC);;
 
 let POLY_ADD_LZERO = prove
- (`!r(p:(V->num)->A).
+ (`!r (p:(V->num)->A).
         ring_powerseries r p
         ==> poly_add r (poly_0 r) p = p`,
   REWRITE_TAC[ring_powerseries] THEN
-  REPEAT STRIP_TAC THEN REWRITE_TAC[poly_add; poly_0; poly_const; COND_ID] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[poly_add; poly_0; POLY_CONST_0] THEN
   REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `m:V->num` THEN RING_TAC);;
 
 let POLY_ADD_LNEG = prove
@@ -13388,7 +13586,7 @@ let POLY_ADD_LNEG = prove
         ring_powerseries r p
         ==> poly_add r (poly_neg r p) p = poly_0 r`,
   REWRITE_TAC[ring_powerseries] THEN REPEAT STRIP_TAC THEN
-  REWRITE_TAC[poly_add; poly_neg; poly_0; poly_const; COND_ID] THEN
+  REWRITE_TAC[poly_add; poly_neg; poly_0; POLY_CONST_0] THEN
   REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `m:V->num` THEN RING_TAC);;
 
 let POLY_MUL_SYM = prove
@@ -13400,7 +13598,7 @@ let POLY_MUL_SYM = prove
   REWRITE_TAC[FUN_EQ_THM] THEN X_GEN_TAC `m:V->num` THEN
   MATCH_MP_TAC RING_SUM_EQ_GENERAL_INVERSES THEN
   REPEAT(EXISTS_TAC `\(m:V->num,m':V->num). (m',m)`) THEN
-  REWRITE_TAC[FORALL_IN_GSPEC] THEN ASM_SIMP_TAC[RING_MUL] THEN
+  REWRITE_TAC[FORALL_IN_GSPEC] THEN
   MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN SIMP_TAC[] THEN
   CONJ_TAC THEN REPEAT(DISCH_THEN(K ALL_TAC)) THEN
   REPEAT GEN_TAC THENL [ALL_TAC; DISCH_TAC THEN RING_TAC] THEN
@@ -13602,6 +13800,13 @@ let POLY_VARS_MUL = prove
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [MONOMIAL_VARS_MUL]) THEN
   ASM SET_TAC[]);;
 
+let FINITE_POLYNOMIAL_VARS = prove
+ (`!r (p:(V->num)->A). ring_polynomial r p ==> FINITE(poly_vars r p)`,
+  REWRITE_TAC[ring_polynomial; ring_powerseries; INFINITE] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[poly_vars; FINITE_UNIONS] THEN
+  ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN] THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Actual polynomial and power series rings.                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -13700,6 +13905,10 @@ let POLY_CARRIER_SUBRING_OF_POWSER_RING = prove
         ring_carrier(poly_ring r s) subring_of powser_ring r s`,
   REWRITE_TAC[SUBRING_SUBRING_GENERATED; POLY_RING_AS_SUBRING]);;
 
+let RING_MONOMORPHISM_POLY_POWSER = prove
+ (`!r s:A->bool. ring_monomorphism(poly_ring r s,powser_ring r s) (\x. x)`,
+  REWRITE_TAC[POLY_RING_AS_SUBRING; RING_MONOMORPHISM_INCLUSION]);;
+
 let POLY_RING = prove
  (`(!(r:A ring) (s:V->bool).
         ring_carrier(poly_ring r s) =
@@ -13713,6 +13922,11 @@ let POLY_RING = prove
   SIMP_TAC[CARRIER_SUBRING_GENERATED_SUBRING;
            POLY_RING_SUBRING_OF_POWSER_RING] THEN
   REWRITE_TAC[SUBRING_GENERATED] THEN REWRITE_TAC[POWSER_RING]);;
+
+let FINITE_POLY_VARS = prove
+ (`!(r:A ring) (s:V->bool) p.
+        p IN ring_carrier(poly_ring r s) ==> FINITE(poly_vars r p)`,
+  SIMP_TAC[FINITE_POLYNOMIAL_VARS; POLY_RING; IN_ELIM_THM]);;
 
 let RING_CARRIER_POLY_RING_FINITE = prove
  (`!(r:A ring) (s:V->bool).
@@ -13822,8 +14036,8 @@ let POWSER_SUM = prove
   ONCE_REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[RING_SUM_CLAUSES; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
-  REWRITE_TAC[POWSER_RING; poly_0; poly_add; poly_const] THEN
-  SIMP_TAC[ring_powerseries; COND_ID; IN_ELIM_THM]);;
+  REWRITE_TAC[POWSER_RING; poly_0; poly_add; POLY_CONST_0] THEN
+  SIMP_TAC[ring_powerseries; IN_ELIM_THM]);;
 
 let POLY_SUM = prove
  (`!(r:A ring) (s:V->bool) f (k:K->bool).
@@ -13834,8 +14048,76 @@ let POLY_SUM = prove
   ONCE_REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[RING_SUM_CLAUSES; FORALL_IN_INSERT; NOT_IN_EMPTY] THEN
-  REWRITE_TAC[POLY_RING; poly_0; poly_add; poly_const] THEN
-  SIMP_TAC[ring_polynomial; ring_powerseries; COND_ID; IN_ELIM_THM]);;
+  REWRITE_TAC[POLY_RING; poly_0; poly_add; POLY_CONST_0] THEN
+  SIMP_TAC[ring_polynomial; ring_powerseries; IN_ELIM_THM]);;
+
+let POLY_RING_VAR_POW = prove
+ (`!(r:A ring) (s:V->bool) i k.
+        ring_pow (poly_ring r s) (poly_var r i) k =
+        \m. if m = (\j. if j = i then k else 0)
+            then ring_1 r else ring_0 r`,
+  REPLICATE_TAC 3 GEN_TAC THEN INDUCT_TAC THEN
+  ASM_REWRITE_TAC[ring_pow; POLY_RING; poly_1; poly_const; COND_ID;
+                  monomial_1; monomial_var; poly_var; poly_mul] THEN
+  REWRITE_TAC[MESON
+   [RING_MUL_LZERO; RING_MUL_RZERO; RING_MUL_LID;
+    RING_MUL_RID; RING_0; RING_1]
+   `ring_mul r (if p then ring_1 r else ring_0 r)
+               (if q then ring_1 r else ring_0 r) =
+    if p /\ q then ring_1 r else ring_0 r`] THEN
+  REWRITE_TAC[GSYM PAIR_EQ; GSYM LAMBDA_PAIR_THM] THEN
+  REWRITE_TAC[RING_SUM_DELTA; RING_1; IN_ELIM_PAIR_THM] THEN
+  REWRITE_TAC[monomial_mul] THEN ABS_TAC THEN
+  AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [EQ_SYM_EQ] THEN AP_TERM_TAC THEN
+  ABS_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN ARITH_TAC);;
+
+let POLY_RING_PRODUCT_VAR_POW = prove
+ (`!(r:A ring) (s:V->bool) m k.
+        FINITE k /\ k SUBSET s
+        ==> ring_product (poly_ring r s) k
+                         (\i. ring_pow (poly_ring r s) (poly_var r i) (m i)) =
+            \m'. if m' = (\i. if i IN k then m i else 0)
+                 then ring_1 r else ring_0 r`,
+  REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[RING_PRODUCT_CLAUSES; FORALL_IN_INSERT; INSERT_SUBSET] THEN
+  REWRITE_TAC[POLY_RING; NOT_IN_EMPTY; poly_1; poly_const; monomial_1] THEN
+  MAP_EVERY X_GEN_TAC [`i:V`; `k:V->bool`] THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o CONJUNCT2) THEN STRIP_TAC THEN
+  COND_CASES_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (TAUT `~p ==> p ==> q`)) THEN
+    REWRITE_TAC[GSYM(CONJUNCT1 POLY_RING)] THEN MATCH_MP_TAC RING_POW THEN
+    REWRITE_TAC[POLY_RING; IN_ELIM_THM; RING_POLYNOMIAL_VAR] THEN
+    REWRITE_TAC[POLY_VARS_VAR] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  REWRITE_TAC[POLY_RING_VAR_POW; poly_mul; MESON
+   [RING_MUL_LZERO; RING_MUL_RZERO; RING_MUL_LID;
+    RING_MUL_RID; RING_0; RING_1]
+   `ring_mul r (if p then ring_1 r else ring_0 r)
+               (if q then ring_1 r else ring_0 r) =
+    if p /\ q then ring_1 r else ring_0 r`] THEN
+  REWRITE_TAC[GSYM PAIR_EQ; GSYM LAMBDA_PAIR_THM] THEN
+  REWRITE_TAC[RING_SUM_DELTA; RING_1; IN_ELIM_PAIR_THM] THEN
+  REWRITE_TAC[monomial_mul] THEN ABS_TAC THEN
+  AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [EQ_SYM_EQ] THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `j:V` THEN
+  ASM_CASES_TAC `j:V = i` THEN ASM_REWRITE_TAC[IN_INSERT; ADD_CLAUSES]);;
+
+let POLY_RING_PRODUCT_VAR = prove
+ (`!(r:A ring) (s:V->bool) k.
+        FINITE k /\ k SUBSET s
+        ==> ring_product (poly_ring r s) k (poly_var r) =
+            \m. if m = (\i. if i IN k then 1 else 0)
+                then ring_1 r else ring_0 r`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`r:A ring`; `s:V->bool`; `\i:V. 1`; `k:V->bool`]
+        POLY_RING_PRODUCT_VAR_POW) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+  MATCH_MP_TAC RING_PRODUCT_EQ THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+  ASM_SIMP_TAC[RING_POW_1; POLY_VAR]);;
 
 let POLY_RING_EXPAND = prove
  (`!(r:A ring) (s:V->bool) p.
@@ -13846,65 +14128,13 @@ let POLY_RING_EXPAND = prove
                    (ring_product (poly_ring r s) (monomial_vars m)
                      (\i. ring_pow (poly_ring r s) (poly_var r i) (m i)))) =
            p`,
-  let lemma1 = prove
-   (`!(r:A ring) (s:V->bool) i k.
-          ring_pow (poly_ring r s) (poly_var r i) k =
-          \m. if m = (\j. if j = i then k else 0)
-              then ring_1 r else ring_0 r`,
-    REPLICATE_TAC 3 GEN_TAC THEN INDUCT_TAC THEN
-    ASM_REWRITE_TAC[ring_pow; POLY_RING; poly_1; poly_const; COND_ID;
-                    monomial_1; monomial_var; poly_var; poly_mul] THEN
-    REWRITE_TAC[MESON
-     [RING_MUL_LZERO; RING_MUL_RZERO; RING_MUL_LID;
-      RING_MUL_RID; RING_0; RING_1]
-     `ring_mul r (if p then ring_1 r else ring_0 r)
-                 (if q then ring_1 r else ring_0 r) =
-      if p /\ q then ring_1 r else ring_0 r`] THEN
-    REWRITE_TAC[GSYM PAIR_EQ; GSYM LAMBDA_PAIR_THM] THEN
-    REWRITE_TAC[RING_SUM_DELTA; RING_1; IN_ELIM_PAIR_THM] THEN
-    REWRITE_TAC[monomial_mul] THEN ABS_TAC THEN
-    AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-    GEN_REWRITE_TAC LAND_CONV [EQ_SYM_EQ] THEN AP_TERM_TAC THEN
-    ABS_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN ARITH_TAC) in
-  let lemma2 = prove
-   (`!(r:A ring) (s:V->bool) m k.
-          FINITE k /\ k SUBSET s
-          ==> ring_product (poly_ring r s) k
-                (\i. ring_pow (poly_ring r s) (poly_var r i) (m i)) =
-              \m'. if m' = (\i. if i IN k then m i else 0)
-                   then ring_1 r else ring_0 r`,
-    REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
-    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-    SIMP_TAC[RING_PRODUCT_CLAUSES; FORALL_IN_INSERT; INSERT_SUBSET] THEN
-    REWRITE_TAC[POLY_RING; NOT_IN_EMPTY; poly_1; poly_const; monomial_1] THEN
-    MAP_EVERY X_GEN_TAC [`i:V`; `k:V->bool`] THEN
-    DISCH_THEN(STRIP_ASSUME_TAC o CONJUNCT2) THEN STRIP_TAC THEN
-    COND_CASES_TAC THENL
-     [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (TAUT `~p ==> p ==> q`)) THEN
-      REWRITE_TAC[GSYM(CONJUNCT1 POLY_RING)] THEN MATCH_MP_TAC RING_POW THEN
-      REWRITE_TAC[POLY_RING; IN_ELIM_THM; RING_POLYNOMIAL_VAR] THEN
-      REWRITE_TAC[POLY_VARS_VAR] THEN ASM SET_TAC[];
-      ALL_TAC] THEN
-    REWRITE_TAC[lemma1; poly_mul; MESON
-     [RING_MUL_LZERO; RING_MUL_RZERO; RING_MUL_LID;
-      RING_MUL_RID; RING_0; RING_1]
-     `ring_mul r (if p then ring_1 r else ring_0 r)
-                 (if q then ring_1 r else ring_0 r) =
-      if p /\ q then ring_1 r else ring_0 r`] THEN
-    REWRITE_TAC[GSYM PAIR_EQ; GSYM LAMBDA_PAIR_THM] THEN
-    REWRITE_TAC[RING_SUM_DELTA; RING_1; IN_ELIM_PAIR_THM] THEN
-    REWRITE_TAC[monomial_mul] THEN ABS_TAC THEN
-    AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-    GEN_REWRITE_TAC LAND_CONV [EQ_SYM_EQ] THEN AP_TERM_TAC THEN
-    GEN_REWRITE_TAC I [FUN_EQ_THM] THEN X_GEN_TAC `j:V` THEN
-    ASM_CASES_TAC `j:V = i` THEN ASM_REWRITE_TAC[IN_INSERT; ADD_CLAUSES]) in
-  let lemma3 = prove
+  let lemma = prove
    (`!(r:A ring) (s:V->bool) m.
           FINITE(monomial_vars m) /\ monomial_vars m SUBSET s
           ==> ring_product (poly_ring r s) (monomial_vars m)
                  (\i. ring_pow (poly_ring r s) (poly_var r i) (m i)) =
                \m'. if m' = m then ring_1 r else ring_0 r`,
-    REPEAT STRIP_TAC THEN ASM_SIMP_TAC[lemma2] THEN
+    REPEAT STRIP_TAC THEN ASM_SIMP_TAC[POLY_RING_PRODUCT_VAR_POW] THEN
     REWRITE_TAC[monomial_vars; IN_ELIM_THM] THEN
     REWRITE_TAC[MESON[] `(if ~(m = 0) then m else 0) = m`] THEN
     REWRITE_TAC[ETA_AX]) in
@@ -13927,7 +14157,7 @@ let POLY_RING_EXPAND = prove
   CONJ_TAC THENL
    [MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC[IN_ELIM_THM] THEN
     X_GEN_TAC `m':V->num` THEN DISCH_TAC THEN
-    AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC lemma3 THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC lemma THEN
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [POLY_RING]) THEN
     REWRITE_TAC[IN_ELIM_THM; ring_polynomial; ring_powerseries] THEN
     REWRITE_TAC[INFINITE; GSYM monomial_vars; poly_vars; UNIONS_SUBSET] THEN
@@ -14042,54 +14272,6 @@ let TRIVIAL_POLY_RING = prove
   REWRITE_TAC[POLY_RING_AS_SUBRING; TRIVIAL_RING_SUBRING_GENERATED] THEN
   REWRITE_TAC[TRIVIAL_POWSER_RING]);;
 
-(* ------------------------------------------------------------------------- *)
-(* Explicit predicate for the set of monomials, to make things look tidier.  *)
-(* ------------------------------------------------------------------------- *)
-
-let monomial = new_definition
- `monomial (s:V->bool) m <=>
-     FINITE(monomial_vars m) /\ (monomial_vars m)  SUBSET s`;;
-
-let MONOMIAL_MONO = prove
- (`!s t (m:V->num).
-        monomial s m /\ s SUBSET t ==> monomial t m`,
-  REWRITE_TAC[monomial] THEN SET_TAC[]);;
-
-let MONOMIAL_UNIV = prove
- (`!s m. monomial s m ==> monomial (:V) m`,
-  REWRITE_TAC[monomial] THEN SET_TAC[]);;
-
-let MONOMIAL_1 = prove
- (`!s:V->bool. monomial s monomial_1`,
-  REWRITE_TAC[monomial; monomial_1; monomial_vars; EMPTY_GSPEC] THEN
-  REWRITE_TAC[FINITE_EMPTY; EMPTY_SUBSET]);;
-
-let MONOMIAL_MUL = prove
- (`!(s:V->bool) m1 m2.
-        monomial s (monomial_mul m1 m2) <=> monomial s m1 /\ monomial s m2`,
-  REWRITE_TAC[monomial; monomial_mul; monomial_vars; ADD_EQ_0; SET_RULE
-   `{x | ~(P x /\ Q x)} = {x | ~P x} UNION {x | ~Q x}`] THEN
-  REWRITE_TAC[UNION_SUBSET; FINITE_UNION] THEN REWRITE_TAC[CONJ_ACI]);;
-
-let MONOMIAL_DIVISOR = prove
- (`!(s:V->bool) d m.
-        monomial s m /\ monomial_divides d m ==> monomial s d`,
-  REPEAT GEN_TAC THEN
-  REWRITE_TAC[monomial; monomial_vars; monomial_divides] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-  MATCH_MP_TAC(MESON[FINITE_SUBSET; SUBSET_TRANS]
-   `s SUBSET t ==> FINITE t /\ t SUBSET u ==> FINITE s /\ s SUBSET u`) THEN
-  REWRITE_TAC[SUBSET; IN_ELIM_THM; CONTRAPOS_THM] THEN
-  POP_ASSUM MP_TAC THEN MATCH_MP_TAC MONO_FORALL THEN ARITH_TAC);;
-
-let MONOMIAL_VAR = prove
- (`!(s:V->bool) v. monomial s (monomial_var v) <=> v IN s`,
-  REWRITE_TAC[monomial; monomial_vars; monomial_var] THEN
-  ONCE_REWRITE_TAC[COND_RAND] THEN ONCE_REWRITE_TAC[COND_RATOR] THEN
-  CONV_TAC NUM_REDUCE_CONV THEN
-  REWRITE_TAC[MESON[] `~(if p then F else T) <=> p`] THEN
-  REWRITE_TAC[SING_GSPEC; FINITE_SING; SING_SUBSET]);;
-
 let RING_CARRIER_POWSER_RING = prove
  (`!(r:A ring) (s:V->bool).
         ring_carrier(powser_ring r s) =
@@ -14109,6 +14291,40 @@ let RING_CARRIER_POLY_RING = prove
   REWRITE_TAC[ring_powerseries; ring_polynomial; INFINITE; poly_vars;
               UNIONS_SUBSET; FORALL_IN_GSPEC; monomial] THEN
   SET_TAC[]);;
+
+let POWSER_RING_EQ = prove
+ (`!(r:A ring) (s:V->bool) p q.
+        p IN ring_carrier(powser_ring r s) /\
+        q IN ring_carrier(powser_ring r s)
+        ==> (p = q <=> !m. monomial s m ==> p m = q m)`,
+  REWRITE_TAC[RING_CARRIER_POWSER_RING; IN_ELIM_THM] THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let POWSER_RING_EQ_IMP = prove
+ (`!(r:A ring) (s:V->bool) p q.
+        p IN ring_carrier(powser_ring r s) /\
+        q IN ring_carrier(powser_ring r s) /\
+        (!m. monomial s m ==> p m = q m)
+        ==> p = q`,
+  REWRITE_TAC[RING_CARRIER_POWSER_RING; IN_ELIM_THM] THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let POLY_RING_EQ = prove
+ (`!(r:A ring) (s:V->bool) p q.
+        p IN ring_carrier(poly_ring r s) /\
+        q IN ring_carrier(poly_ring r s)
+        ==> (p = q <=> !m. monomial s m ==> p m = q m)`,
+  REWRITE_TAC[RING_CARRIER_POLY_RING; IN_ELIM_THM] THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let POLY_RING_EQ_IMP = prove
+ (`!(r:A ring) (s:V->bool) p q.
+        p IN ring_carrier(poly_ring r s) /\
+        q IN ring_carrier(poly_ring r s) /\
+        (!m. monomial s m ==> p m = q m)
+        ==> p = q`,
+  REWRITE_TAC[RING_CARRIER_POLY_RING; IN_ELIM_THM] THEN
+  REWRITE_TAC[FUN_EQ_THM] THEN MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* The extension of a homomorphism to one from a polynomial ring.            *)
@@ -15242,3 +15458,697 @@ let ISOMORPHIC_RING_POLY_POLY_GEN = prove
   REWRITE_TAC[ISOMORPHIC_RING_REFL] THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
   REWRITE_TAC[SIMPLE_IMAGE] THEN MATCH_MP_TAC CARD_EQ_IMAGE THEN
   SIMP_TAC[sum_INJECTIVE]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Monomial divisibility is a partial order, and on a *finite* set of        *)
+(* variables any preorder extending it (in particular a "compatible" one)    *)
+(* is automatically a WQO, hence wellfounded, and hence WO whenever total.   *)
+(* ------------------------------------------------------------------------- *)
+
+let POSET_MONOMIAL_DIVIDES = prove
+ (`poset(monomial_divides:(V->num)->(V->num)->bool)`,
+  REWRITE_TAC[poset; MONOMIAL_DIVIDES_REFL] THEN
+  REWRITE_TAC[MONOMIAL_DIVIDES_TRANS; MONOMIAL_DIVIDES_ANTISYM]);;
+
+let FLD_MONOMIAL_DIVIDES = prove
+ (`fld(monomial_divides) = (:V->num)`,
+  SIMP_TAC[QOSET_FLD; POSET_IMP_QOSET; POSET_MONOMIAL_DIVIDES] THEN
+  REWRITE_TAC[MONOMIAL_DIVIDES_REFL; UNIV_GSPEC]);;
+
+let COMPATIBLE_MONOMIAL_ORDER = prove
+ (`!(<<=) (s:V->bool).
+     (!m. monomial s m ==> monomial_1 <<= m) /\
+     (!m n p. monomial s m /\ monomial s n /\ monomial s p /\ n <<= p
+              ==> monomial_mul m n <<= monomial_mul m p)
+     ==> !m n. monomial s m /\ monomial s n /\ monomial_divides m n
+               ==> m <<= n`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL
+   [`m:V->num`; `monomial_1:V->num`; `monomial_div n m:V->num`]) THEN
+  ASM_SIMP_TAC[MONOMIAL_DIV; MONOMIAL_DIV_LMUL] THEN
+  REWRITE_TAC[MONOMIAL_1; MONOMIAL_MUL_RID]);;
+
+let WQOSET_COMPATIBLE_MONOMIAL_ORDER = prove
+ (`!(<<=) (s:V->bool).
+       FINITE s /\ qoset(<<=) /\ fld(<<=) SUBSET {m | monomial s m} /\
+       (!m n. monomial s m /\ monomial s n /\ monomial_divides m n ==> m <<= n)
+       ==> wqoset(<<=)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC WQOSET_SUPERSET THEN
+  EXISTS_TAC `\m (n:V->num). monomial s m /\ monomial s n /\
+                             monomial_divides m n` THEN
+  ASM_SIMP_TAC[FLD_RESTRICT_QOSET; POSET_IMP_QOSET; POSET_MONOMIAL_DIVIDES;
+               FLD_MONOMIAL_DIVIDES; IN_UNIV; IN_GSPEC] THEN
+  MP_TAC(ISPECL [`(<=):num->num->bool`; `s:V->bool`]
+        WQOSET_POINTWISE) THEN
+  ASM_REWRITE_TAC[WQOSET_num] THEN DISCH_THEN(MP_TAC o SPEC
+    `monomial (s:V->bool)` o MATCH_MP WQOSET_RESTRICT) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+  REWRITE_TAC[FUN_EQ_THM; monomial; monomial_vars; monomial_divides] THEN
+  MP_TAC(ARITH_RULE `0 <= 0`) THEN SET_TAC[]);;
+
+let WF_COMPATIBLE_MONOMIAL_ORDER = prove
+ (`!(<<=) (s:V->bool).
+       FINITE s /\ qoset(<<=) /\ fld(<<=) SUBSET {m | monomial s m} /\
+       (!m n. monomial s m /\ monomial s n /\ monomial_divides m n ==> m <<= n)
+       ==> WF(strictly(<<=))`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP WQOSET_COMPATIBLE_MONOMIAL_ORDER) THEN
+  REWRITE_TAC[WQOSET_IMP_WF]);;
+
+let WOSET_COMPATIBLE_MONOMIAL_ORDER = prove
+ (`!(<<=) (s:V->bool).
+       FINITE s /\ toset(<<=) /\ fld(<<=) SUBSET {m | monomial s m} /\
+       (!m n. monomial s m /\ monomial s n /\ monomial_divides m n ==> m <<= n)
+       ==> woset(<<=)`,
+  SIMP_TAC[WOSET_WQOSET] THEN
+  MESON_TAC[WQOSET_COMPATIBLE_MONOMIAL_ORDER; TOSET_IMP_QOSET]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A more general monomial ordering on monomials over any set of             *)
+(* variables (the monomials themselves are still finitely supported).        *)
+(* This is simply the classic Dershowitz-Manna multiset ordering, which      *)
+(* has all the main properties we want. It's parametrized by a variable      *)
+(* ordering, which can be either a reflexive or irreflexive relation.        *)
+(* Whatever the parametrizing "order" is, the overall monomial order is      *)
+(* at least reflexive and transitive and compatible with multiplication.     *)
+(* If the variable order is a partial order on variables it is also          *)
+(* equivalent to the Huet-Oppen form, and in the case of a total order       *)
+(* becomes a lexicographic order. It also inherits being a partial order,    *)
+(* total order, wellorder and being wellfounded in general from the          *)
+(* variable order. It is *not* designed to preserve any equivalences         *)
+(* given a non-antisymmetric variable order.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let monomial_le = new_definition
+ `monomial_le (<<=) (m1:V->num) m2 <=>
+        monomial (:V) m1 /\ monomial (:V) m2 /\
+        ?ma mb. monomial (:V) ma /\ monomial (:V) mb /\
+                monomial_mul m1 ma = monomial_mul m2 mb /\
+                !i. i IN monomial_vars mb
+                    ==> ?j. j IN monomial_vars ma /\ properly(<<=) i j`;;
+
+let monomial_lt = new_definition
+  `monomial_lt (<<=) (m1:V->num) m2 <=>
+        ~(m1 = m2) /\ monomial_le (<<=) (m1:V->num) m2`;;
+
+let PROPERLY_MONOMIAL_LE = prove
+ (`!(<<=):V->V->bool. properly(monomial_le(<<=)) = monomial_lt(<<=)`,
+  REWRITE_TAC[FUN_EQ_THM; properly; monomial_lt] THEN MESON_TAC[]);;
+
+let MONOMIAL_LE_MONO = prove
+ (`!l l'. (!x y. l x y ==> l' x y)
+         ==> (!m n. monomial_le l m n ==> monomial_le l' m n)`,
+  REWRITE_TAC[monomial_le; properly] THEN MESON_TAC[]);;
+
+let MONOMIAL_LT_MONO = prove
+ (`!l l'. (!x y. l x y ==> l' x y)
+         ==> (!m n. monomial_lt l m n ==> monomial_lt l' m n)`,
+  REWRITE_TAC[monomial_lt; monomial_le; properly] THEN MESON_TAC[]);;
+
+let MONOMIAL_LE_PROPERLY = prove
+ (`!(<<=):V->V->bool. monomial_le (properly(<<=)) = monomial_le (<<=)`,
+  REWRITE_TAC[FUN_EQ_THM; monomial_le; PROPERLY_PROPERLY]);;
+
+let MONOMIAL_LT_PROPERLY = prove
+ (`!(<<=):V->V->bool. monomial_lt (properly(<<=)) = monomial_lt (<<=)`,
+  REWRITE_TAC[FUN_EQ_THM; monomial_lt; monomial_le; PROPERLY_PROPERLY]);;
+
+let MONOMIAL_LE_IMPROPERLY = prove
+ (`!(<<):V->V->bool.
+        monomial_le (\x y. x << y \/ x = y) = monomial_le (<<)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM MONOMIAL_LE_PROPERLY] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[properly; FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let MONOMIAL_LT_IMPROPERLY = prove
+ (`!(<<):V->V->bool. monomial_lt (\x y. x << y \/ x = y) = monomial_lt (<<)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM MONOMIAL_LT_PROPERLY] THEN
+  AP_TERM_TAC THEN REWRITE_TAC[properly; FUN_EQ_THM] THEN MESON_TAC[]);;
+
+let MONOMIAL_LE_REFL = prove
+ (`!(<<=) m. monomial_le (<<=) m m <=> monomial (:V) m`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[monomial_le] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  REPEAT(EXISTS_TAC `monomial_1:V->num`) THEN
+  REWRITE_TAC[MONOMIAL_VARS_1; MONOMIAL_MUL_LID; MONOMIAL_MUL_RID] THEN
+  REWRITE_TAC[MONOMIAL_1; NOT_IN_EMPTY]);;
+
+let MONOMIAL_LT_REFL = prove
+ (`!(<<) m:V->num. ~(monomial_lt (<<) m m)`,
+  REWRITE_TAC[monomial_lt]);;
+
+let MONOMIAL_LT_IMP_LE = prove
+ (`!(<<) m1 m2:V->num. monomial_lt (<<) m1 m2 ==> monomial_le (<<) m1 m2`,
+  SIMP_TAC[monomial_lt]);;
+
+let MONOMIAL_LE_LT = prove
+ (`!(<<) m1 m2:V->num.
+        monomial_le (<<) m1 m2 <=>
+        monomial_lt (<<) m1 m2 \/
+        monomial (:V) m1 /\ monomial (:V) m2 /\ m1 = m2`,
+  REWRITE_TAC[monomial_lt] THEN MESON_TAC[MONOMIAL_LE_REFL]);;
+
+let MONOMIAL_LE_TRANS = prove
+ (`!(<<=) m1 m2 m3:V->num.
+        monomial_le (<<=) m1 m2 /\ monomial_le (<<=) m2 m3
+        ==> monomial_le (<<=) m1 m3`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[monomial_le; LEFT_IMP_EXISTS_THM; RIGHT_AND_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`ma:V->num`; `mb:V->num`] THEN STRIP_TAC THEN
+  MAP_EVERY X_GEN_TAC [`mc:V->num`; `md:V->num`] THEN STRIP_TAC THEN
+  EXISTS_TAC `monomial_mul ma mc:V->num` THEN
+  EXISTS_TAC `monomial_mul mb md:V->num` THEN
+  ASM_REWRITE_TAC[MONOMIAL_MUL; MONOMIAL_VARS_MUL] THEN
+  CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  ASM_REWRITE_TAC[MONOMIAL_MUL_ASSOC] THEN
+  GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [MONOMIAL_MUL_SYM] THEN
+  ASM_REWRITE_TAC[GSYM MONOMIAL_MUL_ASSOC] THEN
+  REWRITE_TAC[MONOMIAL_MUL_AC]);;
+
+let QOSET_MONOMIAL_LE = prove
+ (`!(<<=):V->V->bool. qoset(monomial_le (<<=))`,
+  REWRITE_TAC[qoset; MONOMIAL_LE_TRANS; MONOMIAL_LE_REFL] THEN
+  REWRITE_TAC[fld; monomial_le; IN_ELIM_THM] THEN MESON_TAC[]);;
+
+let FLD_MONOMIAL_LE = prove
+ (`!(<<=). fld(monomial_le(<<=)) = {m | monomial (:V) m}`,
+  GEN_TAC THEN REWRITE_TAC[GSYM MONOMIAL_LE_REFL] THEN
+  MATCH_MP_TAC QOSET_FLD THEN REWRITE_TAC[QOSET_MONOMIAL_LE]);;
+
+let MONOMIAL_LE_LMUL = prove
+ (`!(<<=) m m1 m2:V->num.
+        monomial_le (<<=) (monomial_mul m m1) (monomial_mul m m2) <=>
+        monomial (:V) m /\ monomial_le (<<=) m1 m2`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[monomial_le] THEN
+  REWRITE_TAC[MONOMIAL_VARS_MUL; MONOMIAL_MUL] THEN
+  REWRITE_TAC[GSYM MONOMIAL_MUL_ASSOC; MONOMIAL_MUL_LCANCEL] THEN
+  REWRITE_TAC[CONJ_ACI]);;
+
+let MONOMIAL_LE_RMUL = prove
+ (`!(<<=) m m1 m2:V->num.
+        monomial_le (<<=) (monomial_mul m1 m) (monomial_mul m2 m) <=>
+        monomial (:V) m /\ monomial_le (<<=) m1 m2`,
+  ONCE_REWRITE_TAC[MONOMIAL_MUL_SYM] THEN
+  REWRITE_TAC[MONOMIAL_LE_LMUL]);;
+
+let MONOMIAL_LT_LMUL = prove
+ (`!(<<=) m m1 m2:V->num.
+        monomial_lt (<<=) (monomial_mul m m1) (monomial_mul m m2) <=>
+        monomial (:V) m /\ monomial_lt (<<=) m1 m2`,
+  REWRITE_TAC[monomial_lt; MONOMIAL_MUL_LCANCEL; MONOMIAL_LE_LMUL] THEN
+  MESON_TAC[]);;
+
+let MONOMIAL_LT_RMUL = prove
+ (`!(<<=) m m1 m2:V->num.
+        monomial_lt (<<=) (monomial_mul m1 m) (monomial_mul m2 m) <=>
+        monomial (:V) m /\ monomial_lt (<<=) m1 m2`,
+  REWRITE_TAC[monomial_lt; MONOMIAL_MUL_RCANCEL; MONOMIAL_LE_RMUL] THEN
+  MESON_TAC[]);;
+
+let MONOMIAL_LE_MUL2 = prove
+ (`!(<<=) m1 m1' m2 m2':V->num.
+         monomial_le (<<=) m1 m1' /\
+         monomial_le (<<=) m2 m2'
+        ==> monomial_le (<<=) (monomial_mul m1 m2) (monomial_mul m1' m2')`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MONOMIAL_LE_TRANS THEN
+  EXISTS_TAC  `monomial_mul m1' m2:V->num` THEN
+  ASM_REWRITE_TAC[MONOMIAL_LE_LMUL; MONOMIAL_LE_RMUL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[monomial_le]) THEN ASM_REWRITE_TAC[]);;
+
+let MONOMIAL_LE_DIVISOR = prove
+ (`!m d:V->num. monomial (:V) m /\ monomial_divides d m
+                ==> monomial_le (<<=) d m`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[monomial_le] THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[MONOMIAL_DIVISOR]; ALL_TAC] THEN
+  MAP_EVERY EXISTS_TAC
+   [`monomial_div m d:V->num`; `monomial_1:V->num`] THEN
+  ASM_REWRITE_TAC[MONOMIAL_DIV_LMUL_EQ; MONOMIAL_MUL_RID] THEN
+  ASM_SIMP_TAC[MONOMIAL_DIV; MONOMIAL_1; MONOMIAL_VARS_1; NOT_IN_EMPTY]);;
+
+let MONOMIAL_GE_1 = prove
+ (`!(<<=) (m:V->num).
+        monomial_le (<<=) monomial_1 m <=> monomial (:V) m`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL [SIMP_TAC[monomial_le]; ALL_TAC] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] MONOMIAL_LE_DIVISOR) THEN
+  REWRITE_TAC[MONOMIAL_DIVIDES_1]);;
+
+let MONOMIAL_LE_VARS = prove
+ (`!(<<=) v w:V.
+    v <<= w ==> monomial_le (<<=) (monomial_var v) (monomial_var w)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `v:V = w` THEN ASM_REWRITE_TAC[MONOMIAL_LE_REFL] THEN
+  REWRITE_TAC[monomial_le; MONOMIAL_VAR; IN_UNIV] THEN
+  REWRITE_TAC[FINITE_SING] THEN MAP_EVERY EXISTS_TAC
+   [`monomial_var(w:V)`; `monomial_var(v:V)`] THEN
+  REWRITE_TAC[MONOMIAL_VARS_VAR; MONOMIAL_VAR; IN_UNIV] THEN
+  REWRITE_TAC[MONOMIAL_MUL_SYM; properly] THEN ASM SET_TAC[]);;
+
+let MONOMIAL_LT_VARS = prove
+ (`!(<<=) v w:V.
+    properly(<<=) v w ==> monomial_lt (<<=) (monomial_var v) (monomial_var w)`,
+  SIMP_TAC[monomial_lt; MONOMIAL_VAR_EQ; properly; MONOMIAL_LE_VARS]);;
+
+let MONOMIAL_LE_POSET = prove
+ (`!(<<=):V->V->bool.
+        poset(<<=)
+        ==> monomial_le (<<=) =
+            \m1 m2. monomial (:V) m1 /\ monomial (:V) m2 /\
+                    !i. m2 i < m1 i ==> ?j. i <<= j /\ m1 j < m2 j`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+  MAP_EVERY X_GEN_TAC [`m1:V->num`; `m2:V->num`] THEN
+  REWRITE_TAC[monomial_le; properly; MONOMIAL] THEN
+  ASM_CASES_TAC `FINITE(monomial_vars m1:V->bool)` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `FINITE(monomial_vars m2:V->bool)` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THENL
+   [ALL_TAC;
+    STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    EXISTS_TAC `\i. (m2:V->num) i - m1 i` THEN
+    EXISTS_TAC `\i. (m1:V->num) i - m2 i` THEN REPEAT CONJ_TAC THENL
+     [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `monomial_vars(m2:V->num)`;
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `monomial_vars(m1:V->num)`;
+      REWRITE_TAC[monomial_mul] THEN ABS_TAC THEN ARITH_TAC;
+      X_GEN_TAC `i:V` THEN REWRITE_TAC[monomial_vars; IN_ELIM_THM] THEN
+      REWRITE_TAC[ARITH_RULE `~(a - b = 0) <=> b < a`] THEN
+      ASM_MESON_TAC[LT_ANTISYM]] THEN
+    ASM_REWRITE_TAC[SUBSET; monomial_vars; IN_ELIM_THM] THEN ARITH_TAC] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; IMP_CONJ] THEN
+  MAP_EVERY X_GEN_TAC [`ma:V->num`; `mb:V->num`] THEN
+  REPLICATE_TAC 3 DISCH_TAC THEN
+  REWRITE_TAC[monomial_vars; IN_ELIM_THM] THEN DISCH_TAC THEN
+  SUBGOAL_THEN
+   `!i. (ma:V->num) i < mb i ==> (?j. i <<= j /\ mb j < ma j)`
+  MP_TAC THENL
+   [ALL_TAC;
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [FUN_EQ_THM]) THEN
+    REWRITE_TAC[monomial_mul] THEN MESON_TAC[ARITH_RULE
+     `a + b:num = c + d ==> (b < d <=> c < a) /\ (a < c <=> d < b)`]] THEN
+  X_GEN_TAC `i:V` THEN DISCH_TAC THEN ONCE_REWRITE_TAC[MESON[]
+   `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  REWRITE_TAC[NOT_LT] THEN DISCH_TAC THEN
+  MP_TAC(ISPECL [`\x y:V. x = y \/ x <<= y`;
+                 `{j:V | j IN monomial_vars mb /\ (i:V) <<= j}`]
+        POSET_MAX) THEN
+  ASM_SIMP_TAC[NOT_IMP; FINITE_RESTRICT] THEN REWRITE_TAC[monomial_vars] THEN
+  REWRITE_TAC[EXISTS_IN_GSPEC; FORALL_IN_GSPEC; strictly] THEN
+  REWRITE_TAC[IN_ELIM_THM; GSYM MEMBER_NOT_EMPTY] THEN
+  REPEAT CONJ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [poset]) THEN
+    REWRITE_TAC[poset; fld] THEN SET_TAC[];
+    ASM_MESON_TAC[ARITH_RULE `a < b ==> ~(b = 0)`;
+                  ARITH_RULE `a <= b /\ ~(a = 0) ==> ~(b = 0)`];
+    REWRITE_TAC[fld] THEN SET_TAC[];
+    DISCH_THEN(X_CHOOSE_THEN `j:V` STRIP_ASSUME_TAC) THEN
+    UNDISCH_THEN
+     `!i:V. ~(mb i = 0) ==> (?j. ~(ma j = 0) /\ i <<= j /\ ~(i = j))`
+     (MP_TAC o SPEC `j:V`) THEN
+    ASM_REWRITE_TAC[NOT_EXISTS_THM] THEN X_GEN_TAC `k:V` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `((i:V) <<= (k:V)):bool` ASSUME_TAC THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE[poset]) THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `k:V`)) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_TAC THEN REWRITE_TAC[NOT_IMP] THEN
+    CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    REWRITE_TAC[properly] THEN RULE_ASSUM_TAC(REWRITE_RULE[poset]) THEN
+    ASM_MESON_TAC[]]);;
+
+let MONOMIAL_LE_ANTISYM = prove
+ (`!(<<=) m1 m2:V->num.
+        poset(<<=) /\
+        monomial_le (<<=) m1 m2 /\
+        monomial_le (<<=) m2 m1
+        ==> m1 = m2`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [IMP_CONJ] THEN
+  SIMP_TAC[MONOMIAL_LE_POSET] THEN REWRITE_TAC[poset] THEN
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  REWRITE_TAC[ARITH_RULE `m:num = n <=> ~(m < n) /\ ~(n < m)`] THEN
+  MATCH_MP_TAC(SET_RULE
+   `~(~({i | P i} = {})) /\ ~(~({i | Q i} = {}))
+    ==> !i. ~(P i) /\ ~(Q i)`) THEN
+  CONJ_TAC THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `\x y:V. x = y \/ x <<= y` POSET_MAX) THENL
+   [DISCH_THEN(MP_TAC o SPEC `{i | (m1:V->num) i < m2 i}`);
+    DISCH_THEN(MP_TAC o SPEC `{i | (m2:V->num) i < m1 i}`)] THEN
+  (ASM_REWRITE_TAC[NOT_IMP; SUBSET; IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[poset] THEN ASM_MESON_TAC[];
+    RULE_ASSUM_TAC(REWRITE_RULE[MONOMIAL]) THEN MATCH_MP_TAC FINITE_SUBSET THEN
+    EXISTS_TAC `monomial_vars(monomial_mul m1 m2:V->num)` THEN
+    ASM_REWRITE_TAC[MONOMIAL_VARS_MUL; FINITE_UNION] THEN
+    REWRITE_TAC[SUBSET; IN_ELIM_THM; monomial_vars; IN_UNION] THEN ARITH_TAC;
+    REWRITE_TAC[fld; IN_ELIM_THM] THEN ASM_MESON_TAC[];
+    REWRITE_TAC[properly] THEN ASM_METIS_TAC[LT_ANTISYM]]));;
+
+let MONOMIAL_LET_ANTISYM = prove
+ (`!(<<=) m1 m2.
+        poset(<<=)
+        ==> ~(monomial_le (<<=) m1 m2 /\ monomial_lt (<<=) m2 m1)`,
+  REWRITE_TAC[monomial_lt; TAUT `~(p /\ ~q /\ r) <=> r /\ p ==> q`] THEN
+  REWRITE_TAC[IMP_IMP; MONOMIAL_LE_ANTISYM]);;
+
+let MONOMIAL_LTE_ANTISYM = prove
+ (`!(<<=) m1 m2.
+        poset(<<=)
+        ==> ~(monomial_lt (<<=) m1 m2 /\ monomial_le (<<=) m2 m1)`,
+  REWRITE_TAC[monomial_lt; TAUT `~((~p /\ q) /\ r) <=> q /\ r ==> p`] THEN
+  REWRITE_TAC[IMP_IMP; MONOMIAL_LE_ANTISYM]);;
+
+let MONOMIAL_LT_ANTISYM = prove
+ (`!(<<=) m1 m2.
+        poset(<<=)
+        ==> ~(monomial_lt (<<=) m1 m2 /\ monomial_lt (<<=) m2 m1)`,
+  MESON_TAC[MONOMIAL_LT_IMP_LE; MONOMIAL_LTE_ANTISYM]);;
+
+let MONOMIAL_LET_TRANS = prove
+ (`!(<<=) m1 m2 m3:V->num.
+        poset(<<=) /\
+        monomial_le (<<=) m1 m2 /\
+        monomial_lt (<<=) m2 m3
+        ==> monomial_lt (<<=) m1 m3`,
+  REWRITE_TAC[monomial_lt] THEN
+  MESON_TAC[MONOMIAL_LE_TRANS; MONOMIAL_LE_ANTISYM]);;
+
+let MONOMIAL_LTE_TRANS = prove
+ (`!(<<=) m1 m2 m3.
+        poset(<<=) /\
+        monomial_lt (<<=) m1 m2 /\
+        monomial_le (<<=) m2 m3
+        ==> monomial_lt (<<=) m1 m3`,
+  REWRITE_TAC[monomial_lt] THEN
+  MESON_TAC[MONOMIAL_LE_TRANS; MONOMIAL_LE_ANTISYM]);;
+
+let MONOMIAL_LT_TRANS = prove
+ (`!(<<=) m1 m2 m3.
+        poset(<<=) /\
+        monomial_lt (<<=) m1 m2 /\
+        monomial_lt (<<=) m2 m3
+        ==> monomial_lt (<<=) m1 m3`,
+  MESON_TAC[MONOMIAL_LT_IMP_LE; MONOMIAL_LTE_TRANS]);;
+
+let MONOMIAL_LET_MUL2 = prove
+ (`!(<<=) m1 m1' m2 m2':V->num.
+        poset(<<=) /\
+        monomial_le (<<=) m1 m1' /\ monomial_lt (<<=) m2 m2'
+        ==> monomial_lt (<<=) (monomial_mul m1 m2) (monomial_mul m1' m2')`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MONOMIAL_LET_TRANS THEN
+  EXISTS_TAC  `monomial_mul m1' m2:V->num` THEN
+  ASM_REWRITE_TAC[MONOMIAL_LT_LMUL; MONOMIAL_LE_RMUL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[monomial_lt; monomial_le]) THEN
+  ASM_REWRITE_TAC[]);;
+
+let MONOMIAL_LTE_MUL2 = prove
+ (`!(<<=) m1 m1' m2 m2':V->num.
+        poset(<<=) /\
+        monomial_lt (<<=) m1 m1' /\ monomial_le (<<=) m2 m2'
+        ==> monomial_lt (<<=) (monomial_mul m1 m2) (monomial_mul m1' m2')`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[MONOMIAL_MUL_SYM] THEN
+  MATCH_MP_TAC MONOMIAL_LET_MUL2 THEN ASM_MESON_TAC[]);;
+
+let MONOMIAL_LT_MUL2 = prove
+ (`!(<<=) m1 m1' m2 m2':V->num.
+        poset(<<=) /\
+        monomial_lt (<<=) m1 m1' /\ monomial_lt (<<=) m2 m2'
+        ==> monomial_lt (<<=) (monomial_mul m1 m2) (monomial_mul m1' m2')`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC MONOMIAL_LET_MUL2 THEN
+  ASM_SIMP_TAC[MONOMIAL_LT_IMP_LE]);;
+
+let POSET_MONOMIAL_LE = prove
+ (`!(<<=):V->V->bool. poset(<<=) ==> poset(monomial_le(<<=))`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[poset; FLD_MONOMIAL_LE; MONOMIAL_LE_REFL] THEN
+  REWRITE_TAC[IN_ELIM_THM; MONOMIAL_LE_TRANS] THEN
+  ASM_MESON_TAC[MONOMIAL_LE_ANTISYM]);;
+
+let MONOMIAL_LE_VARS_EQ = prove
+ (`!(<<=) v w.
+        poset(<<=) /\ fld(<<=) = (:V)
+        ==> (monomial_le (<<=) (monomial_var v) (monomial_var w) <=>
+             v <<= w)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[MONOMIAL_LE_VARS] THEN
+  ASM_SIMP_TAC[MONOMIAL_LE_POSET; MONOMIAL_VARS_VAR] THEN
+  REWRITE_TAC[FINITE_SING; monomial_var] THEN
+  SIMP_TAC[MESON[ARITH_RULE `0 < 1 /\ ~(1 < 0)`; LT_REFL]
+   `(if p then 1 else 0) < (if q then 1 else 0) <=> ~p /\ q`] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+  REWRITE_TAC[UNWIND_THM2; IMP_CONJ; FORALL_UNWIND_THM2] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[poset]) THEN ASM SET_TAC[]);;
+
+let MONOMIAL_LT_VARS_EQ = prove
+ (`!(<<=) v w:V.
+        poset(<<=)
+        ==> (monomial_lt (<<=) (monomial_var v) (monomial_var w) <=>
+             v <<= w /\ ~(v = w))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[monomial_lt] THEN
+  ASM_CASES_TAC `v:V = w` THEN ASM_REWRITE_TAC[MONOMIAL_VAR_EQ] THEN
+  ASM_SIMP_TAC[MONOMIAL_LE_POSET; MONOMIAL_VARS_VAR;
+               MONOMIAL_VAR; IN_UNIV] THEN
+  SIMP_TAC[monomial_var; MESON[ARITH_RULE `0 < 1 /\ ~(1 < 0)`; LT_REFL]
+   `(if p then 1 else 0) < (if q then 1 else 0) <=> ~p /\ q`] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN ONCE_REWRITE_TAC[CONJ_SYM] THEN
+  REWRITE_TAC[UNWIND_THM2; IMP_CONJ; FORALL_UNWIND_THM2] THEN
+  ASM_REWRITE_TAC[]);;
+
+let MONOMIAL_LT_TOSET = prove
+ (`!(<<=) m1 m2.
+        toset (<<=) /\ fld (<<=) = (:V)
+        ==> (monomial_lt (<<=) m1 m2 <=>
+             monomial (:V) m1 /\ monomial (:V) m2 /\
+             ?i. m1 i < m2 i /\ !j. properly (<<=) i j ==> m1 j = m2 j)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[monomial_lt] THEN
+  ASM_CASES_TAC `m1:V->num = m2` THEN ASM_REWRITE_TAC[LT_REFL] THEN
+  ASM_SIMP_TAC[MONOMIAL_LE_POSET; TOSET_IMP_POSET; properly; CONJ_ASSOC] THEN
+  REWRITE_TAC[MONOMIAL; GSYM FINITE_UNION] THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+  DISCH_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN
+    MP_TAC(ISPECL [`(<<=):V->V->bool`; `{i | ~((m1:V->num) i = m2 i)}`]
+        TOSET_MAX) THEN
+    ASM_REWRITE_TAC[SUBSET_UNIV; IN_ELIM_THM] THEN ANTS_TAC THENL
+     [CONJ_TAC THENL
+       [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+         (REWRITE_RULE[IMP_CONJ] FINITE_SUBSET)) THEN
+        REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_UNION; monomial_vars] THEN
+        ARITH_TAC;
+        REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+        REWRITE_TAC[GSYM FUN_EQ_THM] THEN ASM_REWRITE_TAC[ETA_AX]];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `i:V` THEN STRIP_TAC THEN
+      FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [toset]) THEN
+      ASM_REWRITE_TAC[IN_UNIV] THEN
+      REPEAT STRIP_TAC THENL [ALL_TAC; ASM_MESON_TAC[LT_ANTISYM]] THEN
+      MATCH_MP_TAC(ARITH_RULE `~(a:num = b) /\ ~(a < b) ==> b < a`) THEN
+      ASM_METIS_TAC[LT_ANTISYM; LT_TRANS]];
+    DISCH_THEN(X_CHOOSE_THEN `j:V` STRIP_ASSUME_TAC) THEN
+    X_GEN_TAC `i:V` THEN DISCH_TAC THEN EXISTS_TAC `j:V` THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [toset]) THEN
+    ASM_REWRITE_TAC[IN_UNIV] THEN ASM_METIS_TAC[LT_ANTISYM; LT_TRANS]]);;
+
+let MONOMIAL_LE_TOSET = prove
+ (`!(<<=) m1 m2.
+        toset (<<=) /\ fld (<<=) = (:V)
+        ==> (monomial_le (<<=) m1 m2 <=>
+             monomial (:V) m1 /\ monomial (:V) m2 /\
+             (m1 = m2 \/
+              ?i. m1 i < m2 i /\ !j. properly (<<=) i j ==> m1 j = m2 j))`,
+  SIMP_TAC[MONOMIAL_LE_LT; MONOMIAL_LT_TOSET] THEN MESON_TAC[]);;
+
+let TOSET_MONOMIAL_LE = prove
+ (`!(<<=). toset (<<=) /\ fld (<<=) = (:V) ==> toset(monomial_le (<<=))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[toset; FLD_MONOMIAL_LE] THEN
+  ASM_SIMP_TAC[MONOMIAL_LE_TOSET] THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN REPEAT CONJ_TAC THEN
+  MAP_EVERY X_GEN_TAC [`x:V->num`; `y:V->num`] THEN
+  TRY(X_GEN_TAC `z:V->num`) THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  REPEAT(FIRST_X_ASSUM(DISJ_CASES_THEN2 SUBST_ALL_TAC MP_TAC)
+         THENL [ASM_MESON_TAC[]; ALL_TAC]) THEN
+  ASM_REWRITE_TAC[properly] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [toset]) THEN
+  ASM_REWRITE_TAC[IN_UNIV] THEN STRIP_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `i:V` STRIP_ASSUME_TAC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `j:V` STRIP_ASSUME_TAC) THEN DISJ2_TAC THEN
+    SUBGOAL_THEN `(i:V) <<= (j:V) \/ j <<= i`
+    MP_TAC THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+    STRIP_TAC THENL [EXISTS_TAC `j:V`; EXISTS_TAC `i:V`] THEN
+    ASM_MESON_TAC[LT_ANTISYM; LT_TRANS];
+    DISCH_THEN(X_CHOOSE_THEN `i:V` STRIP_ASSUME_TAC) THEN
+    DISCH_THEN(X_CHOOSE_THEN `j:V` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `(i:V) <<= (j:V) \/ j <<= i`
+    MP_TAC THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+    ASM_MESON_TAC[LT_ANTISYM; LT_TRANS];
+    ASM_CASES_TAC `x:V->num = y` THEN ASM_REWRITE_TAC[] THEN
+    MP_TAC(ISPECL [`(<<=):V->V->bool`; `{i | ~((x:V->num) i = y i)}`]
+        TOSET_MAX) THEN
+    ASM_REWRITE_TAC[SUBSET_UNIV; IN_ELIM_THM] THEN ANTS_TAC THENL
+     [ASM_REWRITE_TAC[toset; IN_UNIV] THEN CONJ_TAC THENL
+       [RULE_ASSUM_TAC(REWRITE_RULE[MONOMIAL]) THEN
+        MATCH_MP_TAC FINITE_SUBSET THEN
+        EXISTS_TAC `monomial_vars(x:V->num) UNION monomial_vars y` THEN
+        ASM_REWRITE_TAC[FINITE_UNION] THEN
+        REWRITE_TAC[SUBSET; IN_ELIM_THM; IN_UNION; monomial_vars] THEN
+        ARITH_TAC;
+        REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+        REWRITE_TAC[GSYM FUN_EQ_THM] THEN ASM_REWRITE_TAC[ETA_AX]];
+      REWRITE_TAC[OR_EXISTS_THM] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `i:V` THEN STRIP_TAC THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP (ARITH_RULE
+       `~(m:num = n) ==> m < n \/ n < m`)) THEN
+      MATCH_MP_TAC MONO_OR THEN ASM_MESON_TAC[]]]);;
+
+let WF_MONOMIAL_LT = prove
+ (`!(<<):V->V->bool. WF(<<) ==> WF(monomial_lt(<<))`,
+  SUBGOAL_THEN
+   `!(<<):V->V->bool.
+        WF(<<) /\
+        (\m1 m2. monomial (:V) m1 /\ monomial (:V) m2 /\
+                 !i. m2 i < m1 i ==> ?j. i << j /\ m1 j < m2 j) =
+        monomial_le (<<)
+        ==> WF(monomial_lt(<<))`
+  ASSUME_TAC THENL
+   [ALL_TAC;
+    X_GEN_TAC `(<<):V->V->bool` THEN STRIP_TAC THEN
+    (X_CHOOSE_THEN `(<<<):V->V->bool` MP_TAC o prove_inductive_relations_exist)
+     `(!x y. x << y ==> x <<< y) /\
+      (!(x:V) y z. x <<< y /\ y <<< z ==> x <<< z)` THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (ASSUME_TAC o CONJUNCT1)) THEN
+    MATCH_MP_TAC WF_SUBSET THEN
+    EXISTS_TAC `monomial_lt((<<<):V->V->bool)` THEN CONJ_TAC THENL
+     [MATCH_MP_TAC MONOMIAL_LT_MONO THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN
+    MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+     [REWRITE_TAC[WF] THEN X_GEN_TAC `P:V->bool` THEN
+      FIRST_X_ASSUM(MP_TAC o SPEC `\y:V. ?z:V. P z /\ z <<< y` o
+        GEN_REWRITE_RULE I [WF]) THEN
+      SUBGOAL_THEN `!x:V z:V. x <<< z ==> x << z \/ ?y:V. x <<< y /\ y << z`
+      MP_TAC THENL
+       [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[]; MESON_TAC[]];
+      FIRST_X_ASSUM(K ALL_TAC o GEN_REWRITE_RULE I [WF]) THEN
+      DISCH_TAC] THEN
+    ONCE_REWRITE_TAC[GSYM MONOMIAL_LE_IMPROPERLY] THEN
+    W(MP_TAC o PART_MATCH (lhand o rand) MONOMIAL_LE_POSET o rand o snd) THEN
+    REWRITE_TAC[] THEN ANTS_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o MATCH_MP WF_ANTISYM) THEN
+      REWRITE_TAC[poset] THEN ASM_MESON_TAC[];
+      DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+      MESON_TAC[LT_ANTISYM]]] THEN
+  X_GEN_TAC `(<<):V->V->bool` THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "D")) THEN
+  (X_CHOOSE_THEN `w:(V->num)->bool` MP_TAC o prove_inductive_relations_exist)
+   `!m. monomial (:V) m /\ (!m'. monomial_lt (<<) m' m ==> w m') ==> w m` THEN
+  MP_TAC(SET_RULE `!m:V->num. w m <=> m IN w`) THEN
+  DISCH_THEN(fun th -> ONCE_REWRITE_TAC[th]) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (LABEL_TAC "R") MP_TAC) THEN
+  DISCH_THEN(CONJUNCTS_THEN2 (LABEL_TAC "I") (LABEL_TAC "C" o GSYM)) THEN
+  SUBGOAL_THEN `!m. monomial (:V) m ==> m IN w` ASSUME_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[WF_IND] THEN X_GEN_TAC `P:(V->num)->bool` THEN DISCH_TAC THEN
+    SUBGOAL_THEN `!m:V->num. m IN w ==> P m` MP_TAC THENL
+     [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[];
+      RULE_ASSUM_TAC(REWRITE_RULE
+        [monomial_lt; monomial_le; GSYM MONOMIAL]) THEN
+      ASM_MESON_TAC[]]] THEN
+  MATCH_MP_TAC MONOMIAL_INDUCT THEN REWRITE_TAC[IN_UNIV] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[MONOMIAL_1] THEN
+    REWRITE_TAC[monomial_lt] THEN USE_THEN "D" (SUBST1_TAC o SYM) THEN
+    REWRITE_TAC[monomial_1; LT; FUN_EQ_THM] THEN MESON_TAC[LE_1];
+    GEN_REWRITE_TAC I [SWAP_FORALL_THM]] THEN
+  SUBGOAL_THEN
+   `!P. (!m. m IN w /\ (!m'. monomial_lt (<<) m' m ==> P m') ==> P m)
+           ==> !m:V->num. m IN w ==> P m`
+   (LABEL_TAC "J")
+  THENL
+   [GEN_TAC THEN STRIP_TAC THEN
+    ONCE_REWRITE_TAC[TAUT `a ==> b <=> a ==> a /\ b`] THEN
+    REMOVE_THEN "I" MATCH_MP_TAC THEN ASM_MESON_TAC[];
+    ALL_TAC] THEN
+  MATCH_MP_TAC(MESON[]
+   `(!x y. Q x y ==> R x y) ==> (!x y. P x y /\ Q x y ==> R x y)`) THEN
+  FIRST_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [WF_IND]) THEN
+  X_GEN_TAC `a:V` THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
+   [RIGHT_IMP_FORALL_THM; IMP_IMP] THEN
+  DISCH_TAC THEN
+  USE_THEN "J" MATCH_MP_TAC THEN REWRITE_TAC[IMP_IMP] THEN
+  X_GEN_TAC `m0:V->num` THEN STRIP_TAC THEN
+  USE_THEN "R" MATCH_MP_TAC THEN
+  REWRITE_TAC[MONOMIAL_MUL; MONOMIAL_VAR; IN_UNIV] THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[]; X_GEN_TAC `n:V->num` THEN DISCH_TAC] THEN
+  ASM_CASES_TAC `(n:V->num)(a) = m0(a) + 1` THENL
+   [ABBREV_TAC `n0:V->num = \b. if b = a then m0(a) else (n:V->num) b` THEN
+    SUBGOAL_THEN `n = monomial_mul (monomial_var a) (n0:V->num)`
+    SUBST_ALL_TAC THENL
+     [EXPAND_TAC "n0" THEN
+      REWRITE_TAC[FUN_EQ_THM; monomial_mul; monomial_var] THEN
+      X_GEN_TAC `i:V` THEN COND_CASES_TAC THEN
+      ASM_REWRITE_TAC[ADD_CLAUSES] THEN ARITH_TAC;
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[MONOMIAL_LT_LMUL]];
+    ALL_TAC] THEN
+  ABBREV_TAC
+   `n0:V->num = \b. if m0(b) < n(b) /\ b << (a:V) then m0(b) else n b` THEN
+  SUBGOAL_THEN `monomial_le (<<) (n0:V->num) m0` ASSUME_TAC THENL
+   [EXPAND_TAC "n0" THEN USE_THEN "D" (SUBST1_TAC o SYM) THEN
+    REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o CONJUNCT2 o REWRITE_RULE[monomial_lt]) THEN
+      USE_THEN "D" (SUBST1_TAC o SYM) THEN REWRITE_TAC[CONJ_ASSOC] THEN
+      DISCH_THEN(MP_TAC o CONJUNCT1) THEN REWRITE_TAC[MONOMIAL_MUL] THEN
+      SIMP_TAC[MONOMIAL_VAR; IN_UNIV] THEN
+      REWRITE_TAC[MONOMIAL; GSYM FINITE_UNION] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+      REWRITE_TAC[monomial_vars; SUBSET; IN_UNION; IN_ELIM_THM] THEN
+      MESON_TAC[];
+      ALL_TAC] THEN
+    X_GEN_TAC `i:V` THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[LT_REFL] THEN
+    DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [DE_MORGAN_THM]) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o CONJUNCT2 o REWRITE_RULE[monomial_lt]) THEN
+    USE_THEN "D" (SUBST1_TAC o SYM) THEN REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o SPEC `i:V` o CONJUNCT2 o CONJUNCT2) THEN
+    ASM_REWRITE_TAC[monomial_mul; monomial_var] THEN
+    ASM_CASES_TAC `i:V = a` THEN ASM_REWRITE_TAC[] THENL
+     [ALL_TAC;
+      ASM_REWRITE_TAC[ADD_CLAUSES] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      X_GEN_TAC `j:V` THEN ASM_CASES_TAC `j:V = a` THENL
+       [ASM_MESON_TAC[]; ASM_REWRITE_TAC[]] THEN
+      ASM_REWRITE_TAC[ADD_CLAUSES] THEN ASM_ARITH_TAC] THEN
+    UNDISCH_THEN `i:V = a` SUBST_ALL_TAC THEN
+    ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC `j:V` THEN ASM_CASES_TAC `j:V = a` THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[ADD_CLAUSES] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    ASM_ARITH_TAC;
+    ALL_TAC] THEN
+  SUBGOAL_THEN `(n0:V->num) IN w` ASSUME_TAC THENL
+   [ASM_CASES_TAC `n0:V->num = m0` THEN ASM_REWRITE_TAC[] THEN
+    ASM_MESON_TAC[monomial_lt];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `?k:V->num. monomial {b | b << (a:V)} k /\ n = monomial_mul k n0`
+  STRIP_ASSUME_TAC THENL
+   [EXISTS_TAC `monomial_div (n:V->num) n0` THEN
+    GEN_REWRITE_TAC RAND_CONV [GSYM EQ_SYM_EQ] THEN
+    REWRITE_TAC[MONOMIAL_DIV_RMUL_EQ] THEN EXPAND_TAC "n0" THEN
+    REWRITE_TAC[monomial; monomial_div; monomial_divides] THEN
+    CONJ_TAC THENL [ALL_TAC; ARITH_TAC] THEN
+    REWRITE_TAC[monomial_vars; SUBSET; IN_ELIM_THM] THEN CONJ_TAC THENL
+     [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [monomial_lt]) THEN
+      DISCH_THEN(MP_TAC o CONJUNCT2) THEN
+      USE_THEN "D" (SUBST1_TAC o SYM) THEN REWRITE_TAC[MONOMIAL] THEN
+      DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+      REWRITE_TAC[SUBSET; monomial_vars; IN_ELIM_THM] THEN ARITH_TAC;
+      GEN_TAC THEN GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+      SIMP_TAC[] THEN ARITH_TAC];
+    ALL_TAC] THEN
+  ASM_REWRITE_TAC[] THEN
+  UNDISCH_TAC `monomial {b:V | b << (a:V)} k` THEN ASM_REWRITE_TAC[] THEN
+  SPEC_TAC(`k:V->num`,`k:V->num`) THEN
+  MATCH_MP_TAC MONOMIAL_INDUCT THEN
+  REWRITE_TAC[IN_ELIM_THM; MONOMIAL_MUL_LID; GSYM MONOMIAL_MUL_ASSOC] THEN
+  REPEAT STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC[]);;
+
+let WOSET_MONOMIAL_LE = prove
+ (`!(<<=). woset(<<=) /\ fld(<<=) = (:V) ==> woset(monomial_le(<<=))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WOSET_WF] THEN CONJ_TAC THENL
+   [MP_TAC(SPEC `(<<=):V->V->bool` TOSET_MONOMIAL_LE) THEN
+    ASM_SIMP_TAC[WOSET_IMP_TOSET] THEN SIMP_TAC[toset];
+    REWRITE_TAC[PROPERLY_MONOMIAL_LE] THEN
+    ONCE_REWRITE_TAC[GSYM MONOMIAL_LT_PROPERLY] THEN
+    MATCH_MP_TAC WF_MONOMIAL_LT THEN ASM_MESON_TAC[WOSET_WF]]);;

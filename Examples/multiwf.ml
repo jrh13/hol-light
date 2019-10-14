@@ -224,6 +224,31 @@ let WFP_WF = prove
     ASM_REWRITE_TAC[IN; UNIV; WF_IND]]);;
 
 (* ------------------------------------------------------------------------- *)
+(* This isn't needed for the result as such, but formalizes the last         *)
+(* remarks in section 3 that the WFP is exactly those elements that cannot   *)
+(* start infinite descending chains.                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let WFP_DCHAIN = prove
+ (`!(<<):A->A->bool.
+        WFP(<<) = {a | !x. (!n. x(SUC n) << x n) ==> ~(x 0 = a)}`,
+  GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
+  REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN REWRITE_TAC[IN] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC WFP_INDUCT THEN X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+    X_GEN_TAC `x:num->A` THEN DISCH_TAC THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `(x:num->A) (SUC 0)`) THEN
+    REWRITE_TAC[NOT_IMP] THEN CONJ_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+    DISCH_THEN(MP_TAC o SPEC `(x:num->A) o SUC`) THEN
+    ASM_REWRITE_TAC[o_THM];
+    X_GEN_TAC `a:A` THEN GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+    DISCH_TAC THEN MP_TAC(ISPECL
+     [`\(n:num) (x:A). ~WFP(<<) x`; `\(n:num) x y. ((<<):A->A->bool) y x`;
+      `a:A`] DEPENDENT_CHOICE_FIXED) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [ALL_TAC; MESON_TAC[]] THEN
+    GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [WFP_CASES] THEN
+    MESON_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
 (* The multiset order.                                                       *)
 (* ------------------------------------------------------------------------- *)
 

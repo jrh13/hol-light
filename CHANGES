@@ -8,6 +8,18 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu 10th Oct 2019       sets.ml
+
+Added a trivial but not quite 1-line equivalence for finiteness of the
+set of n-element subsets:
+
+  FINITE_RESTRICTED_POWERSET =
+    |- !s n. FINITE {t | t SUBSET s /\ t HAS_SIZE n} <=> FINITE s \/ n = 0
+
+Mon  7th Oct 2019       wf.ml
+
+Added missing outer quantifiers to WF_SUBSET.
+
 Sat  5th Oct 2019       Library/wo.ml
 
 Made an additional revamp of the wellordering material, trying to rationalize

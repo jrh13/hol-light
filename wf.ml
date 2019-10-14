@@ -186,7 +186,8 @@ let WF_REC_EXISTS = prove
 parse_as_infix("<<<",(12,"right"));;
 
 let WF_SUBSET = prove
- (`(!(x:A) y. x << y ==> x <<< y) /\ WF(<<<) ==> WF(<<)`,
+ (`!(<<) (<<<). (!(x:A) y. x << y ==> x <<< y) /\ WF(<<<) ==> WF(<<)`,
+  REPEAT GEN_TAC THEN 
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN REWRITE_TAC[WF] THEN
   DISCH_TAC THEN GEN_TAC THEN DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN
   UNDISCH_TAC `!(x:A) (y:A). x << y ==> x <<< y` THEN MESON_TAC[]);;
@@ -230,7 +231,7 @@ let WF_LEX = prove
 let WF_POINTWISE = prove
  (`WF((<<) :A->A->bool) /\ WF((<<<) :B->B->bool)
    ==> WF(\(x1,y1) (x2,y2). x1 << x2 /\ y1 <<< y2)`,
-  STRIP_TAC THEN MATCH_MP_TAC(GEN_ALL WF_SUBSET) THEN EXISTS_TAC
+  STRIP_TAC THEN MATCH_MP_TAC WF_SUBSET THEN EXISTS_TAC
    `\(x1,y1) (x2,y2). x1 << x2 \/ (x1:A = x2) /\ (y1:B) <<< (y2:B)` THEN
   CONJ_TAC THENL
    [REWRITE_TAC[FORALL_PAIR_THM] THEN CONV_TAC TAUT;
