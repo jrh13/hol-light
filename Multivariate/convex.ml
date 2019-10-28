@@ -3590,6 +3590,15 @@ let CONVEX_SPAN = prove
  (`!s. convex(span s)`,
   SIMP_TAC[SUBSPACE_IMP_CONVEX; SUBSPACE_SPAN]);;
 
+let SEGMENT_SUBSET_LINE = prove
+ (`(!a b:real^N. segment[a,b] SUBSET affine hull {a,b}) /\
+   (!a b:real^N. segment(a,b) SUBSET affine hull {a,b})`,
+  REWRITE_TAC[open_segment] THEN
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ p ==> p /\ q`) THEN
+  CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+  SIMP_TAC[CONVEX_CONTAINS_SEGMENT_IMP; AFFINE_AFFINE_HULL; AFFINE_IMP_CONVEX;
+           HULL_INC; IN_INSERT]);;
+
 let SPAN_CONVEX_HULL = prove
  (`!s:real^N->bool. span(convex hull s) = span s`,
   GEN_TAC THEN REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
@@ -11794,6 +11803,19 @@ let CONVEX_OPEN_SEGMENT_CASES = prove
     MP_TAC(SPEC `b:real^N` th) THEN MP_TAC(SPEC `a:real^N` th)) THEN
   ASM_REWRITE_TAC[SEGMENT_SYM; CONJUNCT2 segment] THEN ASM SET_TAC[]);;
 
+let CONVEX_OPEN_SEGMENT_CASES_ALT = prove
+ (`!s a b:real^N.
+         convex s /\ a IN closure s /\ b IN closure s
+         ==> segment (a,b) SUBSET frontier s \/
+             segment (a,b) SUBSET interior s`,
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `interior s:real^N->bool = {}` THENL
+   [DISJ1_TAC THEN ASM_REWRITE_TAC[frontier; DIFF_EMPTY] THEN
+    ASM_MESON_TAC[CONVEX_CONTAINS_OPEN_SEGMENT; CONVEX_CLOSURE];
+    MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N`; `b:real^N`]
+        CONVEX_OPEN_SEGMENT_CASES) THEN
+    ASM_SIMP_TAC[RELATIVE_INTERIOR_NONEMPTY_INTERIOR;
+                 RELATIVE_FRONTIER_NONEMPTY_INTERIOR]]);;
+
 let SEGMENT_SUBSET_RELATIVE_FRONTIER_CONVEX = prove
  (`!s a b c:real^N.
         convex s /\ c IN segment(a,b) /\ {a,b,c} SUBSET relative_frontier s
@@ -14585,29 +14607,87 @@ let CONVEX_LINE_INTERSECTION_UNIQUE_CLOSED = prove
   REWRITE_TAC[GSYM BETWEEN_IN_SEGMENT] THEN
   ASM_MESON_TAC[BETWEEN_TRANS_2; BETWEEN_SYM]);;
 
+let CONVEX_LINE_INTERSECTION_UNIQUE_OPEN_IN = prove
+ (`!s a b:real^N.
+        convex s /\
+        open_in (subtopology euclidean (affine hull s)) s /\
+        a IN relative_frontier s /\ b IN relative_frontier s /\
+        ~(segment(a,b) INTER s = {})
+        ==> s INTER (affine hull {a,b}) = segment(a,b)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+   [REWRITE_TAC[open_segment; SET_RULE
+     `s SUBSET t DIFF {a,b} <=> (~(a IN s) /\ ~(b IN s)) /\ s SUBSET t`] THEN
+    CONJ_TAC THENL
+     [REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV
+       [relative_frontier])) THEN
+      ASM_SIMP_TAC[RELATIVE_INTERIOR_OPEN_IN] THEN SET_TAC[];
+      TRANS_TAC SUBSET_TRANS `closure s INTER affine hull {a:real^N,b}` THEN
+      CONJ_TAC THENL
+       [MP_TAC(ISPEC `s:real^N->bool` CLOSURE_SUBSET) THEN SET_TAC[];
+        MATCH_MP_TAC(SET_RULE `s = t ==> s SUBSET t`)] THEN
+      MATCH_MP_TAC CONVEX_LINE_INTERSECTION_UNIQUE_CLOSED THEN
+      ASM_SIMP_TAC[CLOSED_CLOSURE; CONVEX_CLOSURE; RELATIVE_FRONTIER_CLOSURE;
+        CONVEX_RELATIVE_INTERIOR_CLOSURE; RELATIVE_INTERIOR_OPEN_IN]];
+    REWRITE_TAC[SUBSET_INTER; SEGMENT_SUBSET_LINE] THEN
+    MP_TAC(ISPECL [`s:real^N->bool`; `a:real^N`; `b:real^N`]
+        CONVEX_OPEN_SEGMENT_CASES) THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV
+       [relative_frontier])) THEN
+    ASM_SIMP_TAC[RELATIVE_INTERIOR_OPEN_IN; IN_DIFF; relative_frontier] THEN
+    ASM SET_TAC[]]);;
+
 let CONVEX_LINE_INTERSECTION_UNIQUE_OPEN = prove
  (`!s a b:real^N.
         convex s /\ open s /\
         a IN relative_frontier s /\ b IN relative_frontier s /\
         ~(segment(a,b) INTER s = {})
         ==> s INTER (affine hull {a,b}) = segment(a,b)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `b:real^N = a` THEN
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC CONVEX_LINE_INTERSECTION_UNIQUE_OPEN_IN THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC OPEN_SUBSET THEN
+  ASM_REWRITE_TAC[HULL_SUBSET]);;
+
+let CONVEX_LINE_INTERSECTIONS = prove
+ (`!s a b:real^N.
+        convex s /\ a IN relative_frontier s /\ b IN relative_frontier s /\
+        ~(segment(a,b) INTER relative_interior s = {})
+        ==> ~(a = b) /\
+            closure s INTER affine hull {a,b} = segment[a,b] /\
+            relative_interior s INTER affine hull {a,b} = segment(a,b) /\
+            relative_frontier s INTER affine hull {a,b} = {a,b}`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a:real^N = b` THEN
   ASM_REWRITE_TAC[SEGMENT_REFL; INTER_EMPTY] THEN STRIP_TAC THEN
-  MP_TAC(ISPECL [`closure s:real^N->bool`; `a:real^N`; `b:real^N`]
-        CONVEX_LINE_INTERSECTION_UNIQUE_CLOSED) THEN
-  ASM_SIMP_TAC[RELATIVE_FRONTIER_CLOSURE; CONVEX_RELATIVE_INTERIOR_CLOSURE;
-               RELATIVE_INTERIOR_OPEN; CONVEX_CLOSURE; CLOSED_CLOSURE] THEN
-  DISCH_TAC THEN CONV_TAC SYM_CONV THEN
-  MP_TAC(ISPECL [`closure s:real^N->bool`; `affine hull {a:real^N,b}`]
-        RELATIVE_INTERIOR_CONVEX_INTER_AFFINE) THEN
-  ASM_SIMP_TAC[CONVEX_CLOSURE; AFFINE_AFFINE_HULL] THEN
-  ASM_SIMP_TAC[CONVEX_INTERIOR_CLOSURE; INTERIOR_OPEN] THEN
-  ASM_REWRITE_TAC[RELATIVE_INTERIOR_SEGMENT] THEN DISCH_THEN MATCH_MP_TAC THEN
-  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP(SET_RULE
-   `~(ab INTER s = {}) ==> ab SUBSET a ==> ~(s INTER a = {})`)) THEN
+  MATCH_MP_TAC(TAUT `(p /\ q ==> r) /\ p /\ q ==> p /\ q /\ r`) THEN
+  REPEAT CONJ_TAC THENL
+   [STRIP_TAC THEN ASM_REWRITE_TAC[relative_frontier; SET_RULE
+     `(s DIFF t) INTER u = (s INTER u) DIFF (t INTER u)`] THEN
+    REWRITE_TAC[open_segment] THEN MATCH_MP_TAC(SET_RULE
+     `t SUBSET s ==> s DIFF (s DIFF t) = t`) THEN
+    REWRITE_TAC[INSERT_SUBSET; ENDS_IN_SEGMENT; EMPTY_SUBSET];
+    MATCH_MP_TAC CONVEX_LINE_INTERSECTION_UNIQUE_CLOSED THEN
+    ASM_SIMP_TAC[RELATIVE_FRONTIER_CLOSURE; CONVEX_RELATIVE_INTERIOR_CLOSURE;
+                 CLOSED_CLOSURE; CONVEX_CLOSURE];
+    MATCH_MP_TAC CONVEX_LINE_INTERSECTION_UNIQUE_OPEN_IN THEN
+    ASM_SIMP_TAC[RELATIVE_FRONTIER_RELATIVE_INTERIOR;
+                 OPEN_IN_RELATIVE_INTERIOR; CONVEX_RELATIVE_INTERIOR;
+                 AFFINE_HULL_RELATIVE_INTERIOR]]);;
+
+let CONVEX_LINE_INTERSECTIONS_ALT = prove
+ (`!s a b:real^N.
+        convex s /\ a IN relative_frontier s /\ b IN relative_frontier s /\
+        ~(segment(a,b) SUBSET relative_frontier s)
+        ==> ~(a = b) /\
+            closure s INTER affine hull {a,b} = segment[a,b] /\
+            relative_interior s INTER affine hull {a,b} = segment(a,b) /\
+            relative_frontier s INTER affine hull {a,b} = {a,b}`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  MATCH_MP_TAC CONVEX_LINE_INTERSECTIONS THEN ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[relative_frontier; IN_DIFF]) THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
+   `~(s SUBSET c DIFF d) ==> s SUBSET c ==> ~(s INTER d = {})`)) THEN
   TRANS_TAC SUBSET_TRANS `segment[a:real^N,b]` THEN
   REWRITE_TAC[SEGMENT_OPEN_SUBSET_CLOSED] THEN
-  REWRITE_TAC[SEGMENT_CONVEX_HULL; CONVEX_HULL_SUBSET_AFFINE_HULL]);;
+  ASM_SIMP_TAC[CONVEX_CONTAINS_SEGMENT_IMP; CONVEX_CLOSURE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Theorems about strips between bounds on a component.                      *)

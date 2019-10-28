@@ -3575,17 +3575,23 @@ let SIMPLE_PATH_ENDLESS = prove
   ASM_REWRITE_TAC[] THEN
   REWRITE_TAC[IN_INTERVAL_1; DROP_VEC; REAL_POS; REAL_LE_REFL]);;
 
-let CONNECTED_SIMPLE_PATH_ENDLESS = prove
+let PATH_CONNECTED_SIMPLE_PATH_ENDLESS = prove
  (`!c:real^1->real^N.
         simple_path c
-        ==> connected(path_image c DIFF {pathstart c,pathfinish c})`,
+        ==> path_connected(path_image c DIFF {pathstart c,pathfinish c})`,
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SIMPLE_PATH_ENDLESS] THEN
-  MATCH_MP_TAC CONNECTED_CONTINUOUS_IMAGE THEN
-  SIMP_TAC[CONVEX_INTERVAL; CONVEX_CONNECTED] THEN
+  MATCH_MP_TAC PATH_CONNECTED_CONTINUOUS_IMAGE THEN
+  REWRITE_TAC[GSYM IS_INTERVAL_PATH_CONNECTED_1; IS_INTERVAL_INTERVAL] THEN
   MATCH_MP_TAC CONTINUOUS_ON_SUBSET THEN
   EXISTS_TAC `interval[vec 0:real^1,vec 1]` THEN
   RULE_ASSUM_TAC(REWRITE_RULE[simple_path; path]) THEN
   ASM_REWRITE_TAC[INTERVAL_OPEN_SUBSET_CLOSED]);;
+
+let CONNECTED_SIMPLE_PATH_ENDLESS = prove
+ (`!c:real^1->real^N.
+        simple_path c
+        ==> connected(path_image c DIFF {pathstart c,pathfinish c})`,
+  SIMP_TAC[PATH_CONNECTED_IMP_CONNECTED; PATH_CONNECTED_SIMPLE_PATH_ENDLESS]);;
 
 let NONEMPTY_SIMPLE_PATH_ENDLESS = prove
  (`!c:real^1->real^N.
