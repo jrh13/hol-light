@@ -1708,6 +1708,25 @@ let WORD_USHR_COMPOSE = prove
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[word_ushr] THEN
   REWRITE_TAC[VAL_WORD_USHR] THEN REWRITE_TAC[EXP_ADD; DIV_DIV]);;
 
+let WORD_USHR_MSB = prove
+ (`!x:N word. word_ushr x (dimindex(:N) - 1) =
+              if bit (dimindex(:N) - 1) x then word 1 else word 0`,
+  GEN_TAC THEN REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_USHR] THEN
+  X_GEN_TAC `i:num` THEN DISCH_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[BIT_WORD_0; BIT_WORD_1] THEN
+  ASM_CASES_TAC `i = 0` THEN ASM_REWRITE_TAC[ADD_CLAUSES] THEN
+  MATCH_MP_TAC(REWRITE_RULE[] BIT_TRIVIAL) THEN ASM_ARITH_TAC);;
+
+let WORD_USHR_MSB_EQ = prove
+ (`(!P (x:N word).
+        (word_ushr x (dimindex(:N) - 1) = if P then word 1 else word 0) <=>
+        (bit (dimindex(:N) - 1) x <=> P)) /\
+   (!P (x:N word).
+        (word_ushr x (dimindex(:N) - 1) = if P then word 0 else word 1) <=>
+        (bit (dimindex(:N) - 1) x <=> ~P))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_USHR_MSB] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[WORD_NE_10]));;
+
 let word_ishr = new_definition
   `(word_ishr:N word ->num->N word) x n = iword((ival x) div (&2 pow n))`;;
 
@@ -2016,6 +2035,38 @@ let word_ige = new_definition `word_ige = irelational2 (>=)`;;
 let word_ilt = new_definition `word_ilt = irelational2 (<)`;;
 let word_igt = new_definition `word_igt = irelational2 (>)`;;
 
+let WORD_ULT = prove
+ (`!x y:N word. word_ult x y <=> val x < val y`,
+  REWRITE_TAC[word_ult; relational2]);;
+
+let WORD_ULE = prove
+ (`!x y:N word. word_ule x y <=> val x <= val y`,
+  REWRITE_TAC[word_ule; relational2]);;
+
+let WORD_UGT = prove
+ (`!x y:N word. word_ugt x y <=> val x > val y`,
+  REWRITE_TAC[word_ugt; relational2]);;
+
+let WORD_UGE = prove
+ (`!x y:N word. word_uge x y <=> val x >= val y`,
+  REWRITE_TAC[word_uge; relational2]);;
+
+let WORD_ILT = prove
+ (`!x y:N word. word_ilt x y <=> ival x < ival y`,
+  REWRITE_TAC[word_ilt; irelational2]);;
+
+let WORD_ILE = prove
+ (`!x y:N word. word_ile x y <=> ival x <= ival y`,
+  REWRITE_TAC[word_ile; irelational2]);;
+
+let WORD_IGT = prove
+ (`!x y:N word. word_igt x y <=> ival x > ival y`,
+  REWRITE_TAC[word_igt; irelational2]);;
+
+let WORD_IGE = prove
+ (`!x y:N word. word_ige x y <=> ival x >= ival y`,
+  REWRITE_TAC[word_ige; irelational2]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Simple "propagate signed value modulo" decision procedure.                *)
 (* ------------------------------------------------------------------------- *)
@@ -2172,6 +2223,14 @@ let WORD_ZX_0 = prove
  (`(word_zx:M word->N word) (word 0) = word 0`,
   REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_ZX_GEN; VAL_WORD_0; MOD_0]);;
 
+let WORD_ZX_TRIVIAL = prove
+ (`!x:N word. word_zx x = x`,
+  SIMP_TAC[GSYM VAL_EQ; VAL_WORD_ZX; LE_REFL]);;
+
+let WORD_ZX_WORD = prove
+ (`!n. (word_zx:M word->N word) (word n) = word (n MOD 2 EXP dimindex(:M))`,
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD; VAL_WORD_ZX_GEN]);;
+
 let WORD_ZX_1 = prove
  (`(word_zx:M word->N word) (word 1) = word 1`,
   REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_ZX_GEN; VAL_WORD_1; MOD_EQ_SELF] THEN
@@ -2201,6 +2260,10 @@ let WORD_SX_SX = prove
 let WORD_SX_0 = prove
  (`(word_sx:M word->N word) (word 0) = word 0`,
   REWRITE_TAC[GSYM IVAL_EQ; word_sx; IVAL_WORD_0; GSYM WORD_IWORD]);;
+
+let WORD_SX_TRIVIAL = prove
+ (`!x:N word. word_sx x = x`,
+  SIMP_TAC[GSYM IVAL_EQ; IVAL_WORD_SX; LE_REFL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Conditional AND and OR, with semantics of C's "&&" and "||"               *)
@@ -2805,6 +2868,103 @@ let IVAL_WORD_NOT = prove
   REWRITE_TAC[IWORD_INT_NEG; IWORD_INT_ADD; IWORD_IVAL; GSYM WORD_IWORD] THEN
   CONV_TAC WORD_RULE);;
 
+let [BIT_WORD_NEG_CASES; BIT_WORD_ADD_1_CASES; BIT_WORD_SUB_1_CASES] =
+  (CONJUNCTS o prove)
+ (`(!(x:N word) i.
+        bit i (word_neg x) <=>
+        i < dimindex(:N) /\
+        (if ?j. j < i /\ bit j x then ~(bit i x) else bit i x)) /\
+   (!(x:N word) i.
+        bit i (word_add x (word 1)) <=>
+        i < dimindex(:N) /\
+        (if ?j. j < i /\ ~(bit j x) then bit i x else ~(bit i x))) /\
+   (!(x:N word) i.
+        bit i (word_sub x (word 1)) <=>
+        i < dimindex(:N) /\
+        (if ?j. j < i /\ bit j x then bit i x else ~(bit i x)))`,
+  REPEAT CONJ_TAC THEN GEN_TAC THEN MATCH_MP_TAC num_INDUCTION THEN
+  REWRITE_TAC[LT; BIT_WORD_NEG_CLAUSES; BIT_WORD_ADD_CLAUSES;
+              BIT_WORD_SUB_CLAUSES; ADD1; BIT_WORD_1] THEN
+  SIMP_TAC[ADD_EQ_0; LE_1; DIMINDEX_GE_1; ARITH_EQ] THEN
+  X_GEN_TAC `i:num` THEN DISCH_THEN SUBST1_TAC THEN
+  ASM_CASES_TAC `i + 1 < dimindex(:N)` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[RIGHT_OR_DISTRIB; EXISTS_OR_THM; UNWIND_THM2] THEN
+  (ASM_CASES_TAC `i = 0` THEN ASM_SIMP_TAC[LT; LE_1; DIMINDEX_GE_1] THENL
+   [CONV_TAC TAUT; ALL_TAC]) THEN
+  ASM_CASES_TAC `bit i (x:N word)` THEN ASM_REWRITE_TAC[] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `bit (i + 1) (x:N word)` THEN ASM_REWRITE_TAC[] THEN
+  ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* An idiom for describing a mask duplicating a bit throughout a word.       *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_MASK_ALT = prove
+ (`!p. word_neg(word(bitval p)) = if p then word_neg(word 1) else word 0`,
+  MATCH_MP_TAC bool_INDUCT THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0]);;
+
+let WORD_MASK = prove
+ (`!p. word_neg(word(bitval p)) = if p then word_not(word 0) else word 0`,
+  REWRITE_TAC[WORD_MASK_ALT; WORD_NEG_1]);;
+
+let BIT_WORD_MASK = prove
+ (`!p i. bit i (word_neg(word(bitval p)):N word) <=> i < dimindex(:N) /\ p`,
+  MATCH_MP_TAC bool_INDUCT THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; BIT_WORD_0] THEN
+  REWRITE_TAC[WORD_NEG_1; BIT_WORD_NOT; BIT_WORD_0]);;
+
+let WORD_NOT_MASK = prove
+ (`!p. word_not(word_neg(word(bitval p))) = word_neg(word(bitval(~p)))`,
+  MATCH_MP_TAC bool_INDUCT THEN
+  REWRITE_TAC[BITVAL_CLAUSES] THEN CONV_TAC WORD_RULE);;
+
+let WORD_AND_MASK = prove
+ (`(!p x. word_and (word_neg(word(bitval p))) x =
+          if p then x else word 0) /\
+   (!p x. word_and x (word_neg(word(bitval p))) =
+          if p then x else word 0)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_MASK] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_OR_MASK = prove
+ (`(!p x. word_or (word_neg(word(bitval p))) x =
+          if p then word_neg(word(bitval p)) else x) /\
+   (!p x. word_or x (word_neg(word(bitval p))) =
+          if p then word_neg(word(bitval p)) else x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_MASK] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_XOR_MASK = prove
+ (`(!p x. word_xor (word_neg(word(bitval p))) x =
+          if p then word_not x else x) /\
+   (!p x. word_xor x (word_neg(word(bitval p))) =
+          if p then word_not x else x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_MASK] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_AND_MASKS = prove
+ (`!p q. word_and (word_neg(word(bitval p))) (word_neg(word(bitval q))) =
+         word_neg(word(bitval(p /\ q)))`,
+  REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_AND_0; WORD_AND_REFL]);;
+
+let WORD_OR_MASKS = prove
+ (`!p q. word_or (word_neg(word(bitval p))) (word_neg(word(bitval q))) =
+         word_neg(word(bitval(p \/ q)))`,
+  REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_OR_0; WORD_OR_REFL]);;
+
+let WORD_XOR_MASKS = prove
+ (`!p q. word_xor (word_neg(word(bitval p))) (word_neg(word(bitval q))) =
+         word_neg(word(bitval(~(p <=> q))))`,
+  REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_XOR_0; WORD_XOR_REFL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Some lemmas about masks 000..001111..1111 and their values.               *)
 (* ------------------------------------------------------------------------- *)
@@ -3018,6 +3178,34 @@ let WORD_UGT_TOPFLIP = prove
   REWRITE_TAC[word_ugt; word_igt; relational2; irelational2] THEN
   REWRITE_TAC[IVAL_TOPFLIP_VAL; INT_GT; GT; GSYM INT_OF_NUM_LT] THEN
   INT_ARITH_TAC);;
+
+let WORD_ILT_TOPFLIP = prove
+ (`!v w:N word.
+        word_ilt v w <=>
+        word_ult (word_xor word_INT_MIN v) (word_xor word_INT_MIN w)`,
+  REWRITE_TAC[WORD_ULT_TOPFLIP] THEN
+  REWRITE_TAC[WORD_BITWISE_RULE `word_xor m (word_xor m x) = x`]);;
+
+let WORD_ILE_TOPFLIP = prove
+ (`!v w:N word.
+        word_ile v w <=>
+        word_ule (word_xor word_INT_MIN v) (word_xor word_INT_MIN w)`,
+  REWRITE_TAC[WORD_ULE_TOPFLIP] THEN
+  REWRITE_TAC[WORD_BITWISE_RULE `word_xor m (word_xor m x) = x`]);;
+
+let WORD_IGT_TOPFLIP = prove
+ (`!v w:N word.
+        word_igt v w <=>
+        word_ugt (word_xor word_INT_MIN v) (word_xor word_INT_MIN w)`,
+  REWRITE_TAC[WORD_UGT_TOPFLIP] THEN
+  REWRITE_TAC[WORD_BITWISE_RULE `word_xor m (word_xor m x) = x`]);;
+
+let WORD_IGE_TOPFLIP = prove
+ (`!v w:N word.
+        word_ige v w <=>
+        word_uge (word_xor word_INT_MIN v) (word_xor word_INT_MIN w)`,
+  REWRITE_TAC[WORD_UGE_TOPFLIP] THEN
+  REWRITE_TAC[WORD_BITWISE_RULE `word_xor m (word_xor m x) = x`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversion for explicit numeric bits of word operations, one level.       *)
