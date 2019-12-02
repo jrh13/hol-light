@@ -239,6 +239,14 @@ let BITVAL_BOUND_ALT = prove
  (`!b. bitval b < 2`,
   REWRITE_TAC[bitval] THEN ARITH_TAC);;
 
+let NUM_AS_BITVAL = prove
+ (`!n. n <= 1 <=> ?b. n = bitval b`,
+  REWRITE_TAC[EXISTS_BOOL_THM; BITVAL_CLAUSES] THEN ARITH_TAC);;
+
+let NUM_AS_BITVAL_ALT = prove
+ (`!n. n < 2 <=> ?b. n = bitval b`,
+  REWRITE_TAC[EXISTS_BOOL_THM; BITVAL_CLAUSES] THEN ARITH_TAC);;
+
 let BITVAL_EQ_0 = prove
  (`!b. bitval b = 0 <=> ~b`,
   GEN_TAC THEN REWRITE_TAC[bitval] THEN
@@ -504,6 +512,11 @@ let VAL_WORD_1 = prove
   GEN_REWRITE_TAC LAND_CONV [ARITH_RULE `1 = 2 EXP 0`] THEN
   SIMP_TAC[LT_EXP; LE_1; DIMINDEX_GE_1] THEN ARITH_TAC);;
 
+let VAL_WORD_BITVAL = prove
+ (`!b. val(word(bitval b)) = bitval b`,
+  MATCH_MP_TAC bool_INDUCT THEN
+  REWRITE_TAC[VAL_WORD_1; VAL_WORD_0; BITVAL_CLAUSES]);;
+
 let VAL_WORD_EQ = prove
  (`!n. n < 2 EXP dimindex(:N) ==> val(word n :(N)word) = n`,
   SIMP_TAC[VAL_WORD; MOD_LT]);;
@@ -519,6 +532,18 @@ let VAL_EQ_0 = prove
 let VAL_EQ_1 = prove
  (`!w:(N)word. val w = 1 <=> w = word 1`,
   MESON_TAC[VAL_WORD_1; VAL_EQ]);;
+
+let VAL_EQ_BITVAL = prove
+ (`!w:(N)word b. val w = bitval b <=> w = word(bitval b)`,
+  REWRITE_TAC[FORALL_BOOL_THM; BITVAL_CLAUSES; VAL_EQ_0; VAL_EQ_1]);;
+
+let WORD_BITVAL_EQ_0 = prove
+ (`!b. word(bitval b):N word = word 0 <=> ~b`,
+  REWRITE_TAC[GSYM VAL_EQ_0; VAL_WORD_BITVAL; BITVAL_EQ_0]);;
+
+let WORD_BITVAL_EQ_1 = prove
+ (`!b. word(bitval b):N word = word 1 <=> b`,
+  REWRITE_TAC[GSYM VAL_EQ_1; VAL_WORD_BITVAL; BITVAL_EQ_1]);;
 
 let WORD_NE_10 = prove
  (`~(word 1:N word = word 0)`,
@@ -766,11 +791,6 @@ let IVAL_WORD_1 = prove
    `1 <= n - 1 <=> ~(n = 0 \/ n = 1)`] THEN
   ASM_CASES_TAC `dimindex(:N) = 1` THEN ASM_REWRITE_TAC[] THEN
   CONV_TAC INT_REDUCE_CONV);;
-
-let VAL_WORD_BITVAL = prove
- (`!b. val(word(bitval b)) = bitval b`,
-  MATCH_MP_TAC bool_INDUCT THEN
-  REWRITE_TAC[VAL_WORD_1; VAL_WORD_0; BITVAL_CLAUSES]);;
 
 let IVAL_VAL_CONG = prove
  (`!(w:N word). (ival w == &(val w)) (mod (&2 pow (dimindex(:N))))`,
@@ -1718,7 +1738,11 @@ let WORD_USHR_MSB = prove
   MATCH_MP_TAC(REWRITE_RULE[] BIT_TRIVIAL) THEN ASM_ARITH_TAC);;
 
 let WORD_USHR_MSB_EQ = prove
- (`(!P (x:N word).
+ (`(!x:N word. word_ushr x (dimindex(:N) - 1) = word 1 <=>
+               bit (dimindex(:N) - 1) x) /\
+   (!x:N word. word_ushr x (dimindex(:N) - 1) = word 0 <=>
+               ~bit (dimindex(:N) - 1) x) /\
+   (!P (x:N word).
         (word_ushr x (dimindex(:N) - 1) = if P then word 1 else word 0) <=>
         (bit (dimindex(:N) - 1) x <=> P)) /\
    (!P (x:N word).
@@ -2175,19 +2199,28 @@ let WORD_BITWISE_RULE tm = prove(tm,WORD_BITWISE_TAC);;
 (* ------------------------------------------------------------------------- *)
 
 let WORD_ARITH_TAC =
-  let wordy tm =
+  let msb_pth = prove
+   (`dimindex (:N) - 1 < dimindex(:N)`,
+    REWRITE_TAC[DIMINDEX_GE_1; ARITH_RULE `n - 1 < n <=> 1 <= n`])
+  and wordy tm =
     match tm with Var(_,Tyapp("word",[_])) -> true | _ -> false in
-  REPEAT GEN_TAC THEN REWRITE_TAC[WORD_NOT_AS_SUB] THEN
-  REWRITE_TAC[WORD_RULE `word_shl (x:N word) 1 = word_add x x`] THEN
-  REWRITE_TAC[word_ile; word_ule; word_ilt; word_ult;
-              word_ige; word_uge; word_igt; word_ugt] THEN
-  REWRITE_TAC[irelational2; relational2; GSYM VAL_EQ] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[WORD_USHR_MSB_EQ] THEN
+  REWRITE_TAC[BIT_WORD_OR; BIT_WORD_AND; BIT_WORD_NOT; BIT_WORD_XOR;
+              BIT_WORD_INT_MIN; BIT_WORD_1; BIT_WORD_0; msb_pth] THEN
+  REWRITE_TAC[MSB_INT_VAL; WORD_NOT_AS_SUB; WORD_RULE
+   `word_shl (x:N word) 1 = word_add x x`] THEN
+  REWRITE_TAC[WORD_ULT; WORD_ULE; WORD_UGT; WORD_UGE;
+              WORD_ILT; WORD_ILE; WORD_IGT; WORD_IGE] THEN
+  REWRITE_TAC[irelational2; relational2; GSYM VAL_EQ; INT_IVAL] THEN
+  REWRITE_TAC[INT_GT; INT_GE; GT; GE] THEN
+  REWRITE_TAC[GSYM INT_OF_NUM_LE; GSYM INT_OF_NUM_LT; GSYM INT_OF_NUM_EQ] THEN
+  REWRITE_TAC[GSYM INT_OF_NUM_POW; GSYM INT_OF_NUM_MUL; 
+              GSYM INT_OF_NUM_ADD] THEN
+  REWRITE_TAC[INT_VAL_WORD_NEG_CASES; INT_VAL_WORD_ADD_CASES;
+              INT_VAL_WORD_INT_MIN;
+              INT_VAL_WORD_SUB_CASES; INT_IVAL; VAL_WORD_0; VAL_WORD_1] THEN
   W(MAP_EVERY (MP_TAC o C ISPEC INT_VAL_BOUND) o find_terms wordy o snd) THEN
-  REWRITE_TAC[GSYM INT_OF_NUM_EQ; GSYM INT_OF_NUM_LE; GSYM INT_OF_NUM_LT;
-              GSYM INT_OF_NUM_GE; GSYM INT_OF_NUM_GT] THEN
-  REWRITE_TAC[INT_IVAL; INT_VAL_WORD_NEG_CASES; INT_VAL_WORD_ADD_CASES;
-              INT_VAL_WORD_SUB_CASES; VAL_WORD_0; VAL_WORD_1] THEN
-  REWRITE_TAC[TWICE_MSB] THEN INT_ARITH_TAC;;
+  REWRITE_TAC[CONJUNCT2 TWICE_MSB] THEN INT_ARITH_TAC;;
 
 let WORD_ARITH tm = prove(tm,WORD_ARITH_TAC);;
 
@@ -2650,6 +2683,10 @@ let WORD_SUB_EQ_0 = prove
 
 let WORD_SUB_REFL = prove
  (`!x:N word. word_sub x x = word 0`,
+  CONV_TAC WORD_RULE);;
+
+let WORD_NEG_NEG = prove
+ (`!x:N word. word_neg(word_neg x) = x`,
   CONV_TAC WORD_RULE);;
 
 let WORD_NEG_0 = prove
