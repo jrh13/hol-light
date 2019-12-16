@@ -8,20 +8,29 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun 15th Dec 2019       Library/modmul_group.ml
+
+Added a new library file "Library/modmul_group.ml" with a basic setup of
+the multiplicative group of integers modulo n. This is more or less just
+a straightforward combination of existing number-theoretic material with
+explicitly group-theoretic language. For example, CYCLIC_MODMUL_GROUP
+characterizes when this group is cyclic, and the core content here is
+essentially the same as PRIMITIVE_ROOT_EXISTS in "Library/primitive.ml".
+
 Sun 27th Oct 2019       sets.ml, Library/card.ml
 
 Added a few miscellaneous cardinality-related lemmas:
 
   CARD_EQ_EXP_INFINITE_FINITE =
     |- !s t. INFINITE s /\ FINITE t /\ ~(t = {}) ==> s ^_c t =_c s
-  
+
   CARD_EQ_FUNSPACE =
     |- !s t k.
            {f | IMAGE f s SUBSET t /\ {x | ~(f x = k x)} SUBSET s} =_c t ^_c s
-  
+
   CARD_EQ_INFINITE =
     |- !s t. INFINITE t /\ s =_c t ==> INFINITE s
-  
+
   CARD_EQ_RESTRICTED_FUNSPACE_INFINITE =
     |- !s t k.
            INFINITE s /\ ~(?a. t SUBSET {a}) /\ IMAGE k s SUBSET t
@@ -29,7 +38,7 @@ Added a few miscellaneous cardinality-related lemmas:
                     {x | ~(f x = k x)} SUBSET s /\
                     FINITE {x | ~(f x = k x)}} =_c
                s *_c t
-  
+
   CARD_LE_RESTRICTED_FUNSPACE_INFINITE =
     |- !s t k.
            INFINITE s /\ ~(t = {})
@@ -37,29 +46,29 @@ Added a few miscellaneous cardinality-related lemmas:
                     {x | ~(f x = k x)} SUBSET s /\
                     FINITE {x | ~(f x = k x)}} <=_c
                s *_c t
-  
+
   CARD_MUL2_ABSORB_LE_ALT =
     |- !s t u.
            (INFINITE s \/ INFINITE t) /\ s <=_c u /\ t <=_c u
            ==> s *_c t <=_c u
-  
+
   CARD_MUL_LID =
     |- !a t. {a} *_c t =_c t
-  
+
   CARD_MUL_RID =
     |- !s b. s *_c {b} =_c s
-  
+
   FINITE_CROSS_UNIV =
     |- FINITE (:A#B) <=> FINITE (:A) /\ FINITE (:B)
-  
+
   INFINITE_CROSS_EQ =
     |- !s t.
            INFINITE (s CROSS t) <=>
            ~(s = {}) /\ INFINITE t \/ INFINITE s /\ ~(t = {})
-  
+
   INFINITE_CROSS_UNIV =
     |- INFINITE (:A#B) <=> INFINITE (:A) \/ INFINITE (:B)
-  
+
 Thu 10th Oct 2019       sets.ml
 
 Added a trivial but not quite 1-line equivalence for finiteness of the

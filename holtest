@@ -62,6 +62,7 @@ echo '### Loading Examples/mangoldt.ml'; echo 'loadt "Examples/mangoldt.ml";;' |
 echo '### Loading Examples/mccarthy.ml'; echo 'loadt "Examples/mccarthy.ml";;' | (time $hollight)
 echo '### Loading Examples/misiurewicz.ml'; echo 'loadt "Examples/misiurewicz.ml";;' | (time $hollight)
 echo '### Loading Examples/mizar.ml'; echo 'loadt "Examples/mizar.ml";;' | (time $hollight)
+echo '### Loading Library/modmul_group.ml'; echo 'loadt "Library/modmul_group.ml";;' | (time $hollight)
 echo '### Loading Library/multiplicative.ml'; echo 'loadt "Library/multiplicative.ml";;' | (time $hollight)
 echo '### Loading Examples/multiwf.ml'; echo 'loadt "Examples/multiwf.ml";;' | (time $hollight)
 echo '### Loading Examples/padics.ml'; echo 'loadt "Examples/padics.ml";;' | (time $hollight)

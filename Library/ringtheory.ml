@@ -430,6 +430,10 @@ let RING_CARRIER_HAS_SIZE_1 = prove
   GEN_TAC THEN CONV_TAC(LAND_CONV HAS_SIZE_CONV) THEN
   REWRITE_TAC[TRIVIAL_RING]);;
 
+let TRIVIAL_RING_HAS_SIZE_1 = prove
+ (`!G:A ring. trivial_ring G <=> ring_carrier(G) HAS_SIZE 1`,
+  REWRITE_TAC[RING_CARRIER_HAS_SIZE_1]);;
+
 let RING_CARRIER_HAS_SIZE_2 = prove
  (`!r:A ring.
         ring_carrier r HAS_SIZE 2 <=>
@@ -725,6 +729,12 @@ let RING_POW_MUL = prove
   REPEAT GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN
   INDUCT_TAC THEN REWRITE_TAC[RING_POW_0; MULT_CLAUSES] THEN
   ASM_SIMP_TAC[RING_POW_ADD; CONJUNCT2 ring_pow]);;
+
+let RING_POW_POW = prove
+ (`!G (x:A) m n.
+        x IN ring_carrier G
+        ==> ring_pow G (ring_pow G x m) n = ring_pow G x (m * n)`,
+  SIMP_TAC[RING_POW_MUL]);;
 
 let RING_MUL_POW = prove
  (`!r (x:A) (y:A) n.
@@ -2495,6 +2505,13 @@ let SUBRING_GENERATED = prove
     DISCH_TAC THEN
     ASM_REWRITE_TAC[ring_carrier; ring_0; ring_1; ring_neg;
                     ring_add; ring_mul]]);;
+
+let SUBRING_GENERATED_EQ = prove
+ (`!G s:A->bool.
+        subring_generated G s = G <=>
+        ring_carrier(subring_generated G s) = ring_carrier G`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [RINGS_EQ] THEN
+  REWRITE_TAC[CONJUNCT2 SUBRING_GENERATED]);;
 
 let RING_SUB_SUBRING_GENERATED = prove
  (`!r s:A->bool. ring_sub (subring_generated r s) = ring_sub r`,
@@ -4973,6 +4990,36 @@ let RING_ISOMORPHISMS_ISOMORPHISM = prove
     SIMP_TAC[ring_isomorphisms] THEN
     MESON_TAC[RING_ISOMORPHISM_IMP_HOMOMORPHISM]]);;
 
+let RING_ISOMORPHISM_EQ_MONOMORPHISM_FINITE = prove
+ (`!G H (f:A->B).
+        FINITE(ring_carrier G) /\ FINITE(ring_carrier H) /\
+        CARD(ring_carrier G) = CARD(ring_carrier H)
+        ==> (ring_isomorphism(G,H) f <=> ring_monomorphism(G,H) f)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM] THEN
+  SIMP_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM] THEN
+  SIMP_TAC[ring_monomorphism; ring_epimorphism] THEN
+  REWRITE_TAC[ring_homomorphism] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN MP_TAC(ISPECL
+   [`ring_carrier G:A->bool`; `ring_carrier H:B->bool`; `f:A->B`]
+        SURJECTIVE_IFF_INJECTIVE_GEN) THEN
+  ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
+
+let RING_ISOMORPHISM_EQ_EPIMORPHISM_FINITE = prove
+ (`!G H (f:A->B).
+        FINITE(ring_carrier G) /\ FINITE(ring_carrier H) /\
+        CARD(ring_carrier G) = CARD(ring_carrier H)
+        ==> (ring_isomorphism(G,H) f <=> ring_monomorphism(G,H) f)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  REWRITE_TAC[RING_ISOMORPHISM_IMP_EPIMORPHISM] THEN
+  SIMP_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM] THEN
+  SIMP_TAC[ring_monomorphism; ring_epimorphism] THEN
+  REWRITE_TAC[ring_homomorphism] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN MP_TAC(ISPECL
+   [`ring_carrier G:A->bool`; `ring_carrier H:B->bool`; `f:A->B`]
+        SURJECTIVE_IFF_INJECTIVE_GEN) THEN
+  ASM_REWRITE_TAC[] THEN ASM SET_TAC[]);;
+
 let RING_ISOMORPHISMS_BETWEEN_SUBRINGS = prove
  (`!r r' g h (f:A->B) f'.
       ring_isomorphisms(r,r') (f,f') /\
@@ -5234,6 +5281,12 @@ let ISOMORPHIC_TO_TRIVIAL_RING = prove
   REWRITE_TAC[lemma] THEN ONCE_REWRITE_TAC[ISOMORPHIC_RING_SYM] THEN
   REWRITE_TAC[lemma]);;
 
+let ISOMORPHIC_TRIVIAL_RINGS = prove
+ (`!(G:A ring) (H:B ring).
+        trivial_ring G /\ trivial_ring H
+        ==> G isomorphic_ring H`,
+  MESON_TAC[ISOMORPHIC_TO_TRIVIAL_RING]);;
+
 let ISOMORPHIC_RING_SINGLETON_RING = prove
  (`(!(r:A ring) (b:B).
         r isomorphic_ring singleton_ring b <=> trivial_ring r) /\
@@ -5270,6 +5323,14 @@ let ISOMORPHIC_RING_SIZE = prove
   REPEAT GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP ISOMORPHIC_RING_CARD_EQ) THEN
   REWRITE_TAC[CARD_HAS_SIZE_CONG]);;
+
+let ISOMORPHIC_RING_CARD = prove
+ (`!(G:A ring) (H:B ring) n.
+        G isomorphic_ring H /\
+        (FINITE(ring_carrier G) \/ FINITE(ring_carrier H))
+        ==> CARD(ring_carrier G) = CARD(ring_carrier H)`,
+  MESON_TAC[ISOMORPHIC_RING_SIZE; HAS_SIZE;
+            ISOMORPHIC_RING_FINITENESS]);;
 
 let ISOMORPHIC_RING_CHAR = prove
  (`!(r:A ring) (r':B ring).
@@ -6002,6 +6063,28 @@ let RING_EPIMORPHISM_SND = prove
   REWRITE_TAC[ring_epimorphism; RING_HOMOMORPHISM_SND] THEN
   REWRITE_TAC[PROD_RING; IMAGE_o; IMAGE_SND_CROSS; RING_CARRIER_NONEMPTY]);;
 
+let RING_ISOMORPHISM_FST = prove
+ (`!(G:A ring) (H:B ring).
+        ring_isomorphism (prod_ring G H,G) FST <=> trivial_ring H`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM] THEN
+  REWRITE_TAC[RING_EPIMORPHISM_FST] THEN
+  REWRITE_TAC[ring_monomorphism; RING_HOMOMORPHISM_FST] THEN
+  SIMP_TAC[FORALL_PAIR_THM; PROD_RING; IN_CROSS; PAIR_EQ] THEN
+  REWRITE_TAC[TRIVIAL_RING_ALT] THEN
+  MP_TAC(ISPEC `G:A ring` RING_CARRIER_NONEMPTY) THEN SET_TAC[]);;
+
+let RING_ISOMORPHISM_SND = prove
+ (`!(G:A ring) (H:B ring).
+        ring_isomorphism (prod_ring G H,H) SND <=> trivial_ring G`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM] THEN
+  REWRITE_TAC[RING_EPIMORPHISM_SND] THEN
+  REWRITE_TAC[ring_monomorphism; RING_HOMOMORPHISM_SND] THEN
+  SIMP_TAC[FORALL_PAIR_THM; PROD_RING; IN_CROSS; PAIR_EQ] THEN
+  REWRITE_TAC[TRIVIAL_RING_ALT] THEN
+  MP_TAC(ISPEC `H:B ring` RING_CARRIER_NONEMPTY) THEN SET_TAC[]);;
+
 let RING_ISOMORPHISMS_PROD_RING_SWAP = prove
  (`!(r:A ring) (r':B ring).
         ring_isomorphisms (prod_ring r r',prod_ring r' r)
@@ -6032,6 +6115,27 @@ let ISOMORPHIC_RING_PROD_RING_SWAP_RIGHT = prove
         r isomorphic_ring prod_ring K r'`,
   ONCE_REWRITE_TAC[ISOMORPHIC_RING_SYM] THEN
   REWRITE_TAC[ISOMORPHIC_RING_PROD_RING_SWAP_LEFT]);;
+
+let ISOMORPHIC_PROD_TRIVIAL_RING = prove
+ (`(!(G:A ring) (H:B ring).
+        trivial_ring G ==> (prod_ring G H isomorphic_ring H)) /\
+   (!(G:A ring) (H:B ring).
+        trivial_ring H ==> (prod_ring G H isomorphic_ring G)) /\
+   (!(G:A ring) (H:B ring).
+        trivial_ring G ==> (H isomorphic_ring prod_ring G H)) /\
+   (!(G:A ring) (H:B ring).
+        trivial_ring H ==> (G isomorphic_ring prod_ring G H))`,
+  let lemma = prove
+   (`!(G:A ring) (H:B ring).
+        trivial_ring G ==> (prod_ring G H isomorphic_ring H)`,
+    REPEAT STRIP_TAC THEN REWRITE_TAC[isomorphic_ring] THEN
+    EXISTS_TAC `SND:A#B->B` THEN ASM_REWRITE_TAC[RING_ISOMORPHISM_SND]) in
+  GEN_REWRITE_TAC I [CONJ_ASSOC] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [ISOMORPHIC_RING_SYM] THEN
+  REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+   [ISOMORPHIC_RING_PROD_RING_SWAP_LEFT] THEN
+  REWRITE_TAC[lemma]);;
 
 let TRIVIAL_PROD_RING = prove
  (`!(r:A ring) (r':B ring).

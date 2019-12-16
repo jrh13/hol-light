@@ -33,6 +33,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/mccarthy \
 	Examples/misiurewicz \
 	Examples/mizar \
+	Library/modmul_group \
 	Library/multiplicative \
 	Examples/multiwf \
 	Examples/padics \
