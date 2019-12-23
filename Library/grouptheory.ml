@@ -4818,6 +4818,15 @@ let INFINITE_CYCLIC_SUBGROUP_ORDER = prove
              group_element_order G x = 0)`,
   SIMP_TAC[INFINITE; FINITE_CYCLIC_SUBGROUP_ORDER]);;
 
+let FINITE_GROUP_ELEMENT_ORDER_NONZERO = prove
+ (`!G x:A.
+        FINITE(group_carrier G) /\ x IN group_carrier G
+        ==> ~(group_element_order G x = 0)`,
+  REPEAT GEN_TAC THEN SIMP_TAC[GSYM FINITE_CYCLIC_SUBGROUP_ORDER] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC (K ALL_TAC)) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET) THEN
+  REWRITE_TAC[GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET]);;
+
 let FINITE_CYCLIC_SUBGROUP_EXPLICIT = prove
  (`!G x:A.
         FINITE(group_carrier(subgroup_generated G {x})) /\ x IN group_carrier G

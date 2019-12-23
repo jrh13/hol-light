@@ -4140,6 +4140,23 @@ let IMAGE_IMP_INJECTIVE = prove
        ==> !x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)`,
   MESON_TAC[IMAGE_IMP_INJECTIVE_GEN]);;
 
+let HAS_SIZE_IMAGE_INJ_RESTRICT = prove
+ (`!(f:A->B) s t P n.
+      FINITE s /\ FINITE t /\ CARD s = CARD t /\
+      IMAGE f s SUBSET t /\
+      (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+      {x | x IN s /\ P(f x)} HAS_SIZE n
+      ==> {x | x IN t /\ P x} HAS_SIZE n`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `{x | x IN t /\ P x} = IMAGE (f:A->B) {x | x IN s /\ P(f x)}`
+  SUBST1_TAC THENL
+   [MP_TAC(ISPECL [`s:A->bool`; `t:B->bool`; `f:A->B`]
+        SURJECTIVE_IFF_INJECTIVE_GEN) THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[];
+    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN
+    ASM_REWRITE_TAC[] THEN ASM SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Converse relation between cardinality and injection.                      *)
 (* ------------------------------------------------------------------------- *)

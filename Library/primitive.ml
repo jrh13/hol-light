@@ -762,3 +762,354 @@ let PRIMITIVE_ROOT_EXISTS_NONTRIVIAL = prove
     CONV_TAC(BINOP_CONV(ONCE_DEPTH_CONV SYM_CONV)) THEN
     ASM_CASES_TAC `k = 0` THEN ASM_SIMP_TAC[LE_1] THEN
     AP_TERM_TAC THEN ASM_ARITH_TAC]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Counting power residues and the special case of k'th roots.               *)
+(* ------------------------------------------------------------------------- *)
+
+let COUNT_POWER_RESIDUES_MODULO_PRIMITIVE_ALT = prove
+ (`!n a k.
+        ~(n = 0) /\ ~(k = 0) /\ (?x. order n x = phi n)
+        ==> {x | x < n /\ coprime(n,x) /\ (x EXP k == a) (mod n)} HAS_SIZE
+            (if (a EXP (phi n DIV gcd(k,phi n)) == 1) (mod n)
+             then gcd(k,phi n) else 0)`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(X_CHOOSE_TAC `g:num`) THEN
+  ASM_CASES_TAC `coprime(n:num,a)` THENL
+   [ALL_TAC;
+    ONCE_REWRITE_TAC[MESON[CONG_COPRIME]
+     `(x == a) (mod n) <=>
+      (x == a) (mod n) /\ (coprime(n,x) <=> coprime(n,a))`] THEN
+    ASM_REWRITE_TAC[COPRIME_REXP; COPRIME_1] THEN
+    ASM_SIMP_TAC[DIV_EQ_0; GCD_ZERO] THEN
+    ASM_REWRITE_TAC[GSYM NOT_LE; GCD_LE; PHI_EQ_0; HAS_SIZE_0] THEN
+    SET_TAC[]] THEN
+  SUBGOAL_THEN `coprime(n:num,g)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[ORDER_EQ_0; PHI_EQ_0]; ALL_TAC] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `{x | P x /\ Q x /\ R x} = {x | x IN {y | P y /\ Q y} /\ R x}`] THEN
+  MATCH_MP_TAC(ISPEC `\i. (g EXP i) MOD n` HAS_SIZE_IMAGE_INJ_RESTRICT) THEN
+  EXISTS_TAC `{i | i < phi n}` THEN
+  REWRITE_TAC[IN_ELIM_THM; FINITE_NUMSEG_LT; CARD_NUMSEG_LT] THEN
+  REPEAT CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SET_RULE
+     `{x | P x /\ Q x} = {x | x IN {y | P y} /\ Q x}`] THEN
+    SIMP_TAC[FINITE_RESTRICT; FINITE_NUMSEG_LT];
+    ONCE_REWRITE_TAC[COPRIME_SYM] THEN REWRITE_TAC[PHI_ALT] THEN
+    AP_TERM_TAC THEN SET_TAC[];
+    ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; MOD_LT_EQ] THEN
+    ASM_REWRITE_TAC[COPRIME_REXP; COPRIME_RMOD];
+    REWRITE_TAC[GSYM CONG] THEN ASM_SIMP_TAC[ORDER_DIVIDES_EXPDIFF] THEN
+    REWRITE_TAC[CONG_IMP_EQ];
+    REWRITE_TAC[CONG; MOD_EXP_MOD] THEN REWRITE_TAC[GSYM CONG; EXP_EXP]] THEN
+  SUBGOAL_THEN `?r. r < phi n /\ (g EXP r == a) (mod n)` STRIP_ASSUME_TAC THENL
+   [MP_TAC(ISPECL [`{i | i < phi n}`; `{x:num | x < n /\ coprime(n,x)}`;
+             `\i. (g EXP i) MOD n`] SURJECTIVE_IFF_INJECTIVE_GEN) THEN
+    REWRITE_TAC[IN_ELIM_THM; FINITE_NUMSEG_LT; CARD_NUMSEG_LT] THEN
+    ANTS_TAC THENL
+     [REPEAT CONJ_TAC THENL
+       [ONCE_REWRITE_TAC[SET_RULE
+         `{x | P x /\ Q x} = {x | x IN {y | P y} /\ Q x}`] THEN
+        SIMP_TAC[FINITE_RESTRICT; FINITE_NUMSEG_LT];
+        ONCE_REWRITE_TAC[COPRIME_SYM] THEN REWRITE_TAC[PHI_ALT] THEN
+        AP_TERM_TAC THEN SET_TAC[];
+        ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; MOD_LT_EQ] THEN
+        ASM_REWRITE_TAC[COPRIME_REXP; COPRIME_RMOD]];
+      DISCH_THEN(MP_TAC o snd o EQ_IMP_RULE) THEN ANTS_TAC THENL
+       [REWRITE_TAC[GSYM CONG] THEN ASM_SIMP_TAC[ORDER_DIVIDES_EXPDIFF] THEN
+        REWRITE_TAC[CONG_IMP_EQ];
+        DISCH_THEN(MP_TAC o SPEC `a MOD n`) THEN
+        ASM_REWRITE_TAC[MOD_LT_EQ; COPRIME_RMOD; CONG]]];
+    ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!d:num. (g EXP (d * k) == a) (mod n) <=>
+            (g EXP (d * k) == g EXP r) (mod n)`
+   (fun th -> REWRITE_TAC[th])
+  THENL
+   [ASM_MESON_TAC[CONG_SYM; CONG_REFL; CONG_TRANS];
+    ASM_SIMP_TAC[ORDER_DIVIDES_EXPDIFF]] THEN
+  SUBGOAL_THEN
+   `!i:num. (a EXP i == 1) (mod n) <=> (g EXP (r * i) == 1) (mod n)`
+   (fun th -> REWRITE_TAC[th])
+  THENL
+   [X_GEN_TAC `i:num` THEN REWRITE_TAC[GSYM EXP_EXP; CONG] THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[CONG]) THEN ASM_MESON_TAC[MOD_EXP_MOD];
+    ALL_TAC] THEN
+  ONCE_REWRITE_TAC[MULT_SYM] THEN
+  REWRITE_TAC[HAS_SIZE; REWRITE_RULE[HAS_SIZE] COUNT_CONG_SOLVE] THEN
+  ASM_REWRITE_TAC[PHI_EQ_0; ORDER_DIVIDES] THEN
+  MP_TAC(NUMBER_RULE `gcd(k,phi(n)) divides phi(n)`) THEN
+  GEN_REWRITE_TAC LAND_CONV [divides] THEN
+  ABBREV_TAC `d = gcd(k,phi n)` THEN DISCH_THEN(X_CHOOSE_THEN `p:num`
+   (fun th -> ASSUME_TAC(SYM th) THEN SUBST1_TAC th)) THEN
+  ASM_CASES_TAC `d = 0` THENL [ASM_MESON_TAC[GCD_ZERO; PHI_EQ_0]; ALL_TAC] THEN
+  ASM_SIMP_TAC[DIV_MULT] THEN ONCE_REWRITE_TAC[MULT_SYM] THEN
+  SUBST1_TAC(SYM(ASSUME `d * p = phi n`)) THEN
+  ASM_CASES_TAC `p = 0` THENL
+   [ASM_MESON_TAC[MULT_CLAUSES; PHI_EQ_0]; ALL_TAC] THEN
+  ASM_SIMP_TAC[DIVIDES_RMUL2_EQ] THEN
+  ASM_MESON_TAC[NUMBER_RULE `gcd(k,n) = d /\ d * p = n ==> gcd(n,k) = d`]);;
+
+let COUNT_POWER_RESIDUES_MODULO_PRIMITIVE = prove
+ (`!n a k.
+        ~(n = 0) /\ ~(k = 0) /\ coprime(n,a) /\ (?x. order n x = phi n)
+        ==> {x | x < n /\ (x EXP k == a) (mod n)} HAS_SIZE
+            (if (a EXP (phi n DIV gcd(k,phi n)) == 1) (mod n)
+             then gcd(k,phi n) else 0)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  MP_TAC(SPECL [`n:num`; `a:num`; `k:num`]
+        COUNT_POWER_RESIDUES_MODULO_PRIMITIVE_ALT) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP CONG_COPRIME) THEN
+  ASM_REWRITE_TAC[COPRIME_REXP]);;
+
+let POWER_RESIDUE_MODULO_PRIMITIVE = prove
+ (`!n a k.
+        ~(n = 0) /\ ~(k = 0) /\ coprime(n,a) /\ (?x. order n x = phi n)
+        ==> ((?x. (x EXP k == a) (mod n)) <=>
+             (a EXP (phi n DIV gcd(k,phi n)) == 1) (mod n))`,
+  REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  MP_TAC(SPECL [`n:num`; `a:num`; `k:num`]
+        COUNT_POWER_RESIDUES_MODULO_PRIMITIVE) THEN
+  ASM_REWRITE_TAC[] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+   [GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[NOT_EXISTS_THM] THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[HAS_SIZE; EMPTY_GSPEC; CARD_CLAUSES; FINITE_EMPTY] THEN
+    ASM_MESON_TAC[GCD_ZERO; PHI_EQ_0];
+    REWRITE_TAC[HAS_SIZE_0; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+    REWRITE_TAC[GSYM NOT_EXISTS_THM; CONTRAPOS_THM] THEN
+    DISCH_THEN(X_CHOOSE_TAC `x:num`) THEN EXISTS_TAC `x MOD n` THEN
+    ASM_REWRITE_TAC[MOD_LT_EQ] THEN REWRITE_TAC[CONG] THEN
+    REWRITE_TAC[MOD_EXP_MOD] THEN ASM_REWRITE_TAC[GSYM CONG]]);;
+
+let GENERALIZED_EULER_CRITERION = prove
+ (`!n a k.
+        (n = 0 \/ n = 1 \/ n = 2 \/ n = 4 \/
+         ?p k. prime p /\ 3 <= p /\ (n = p EXP k \/ n = 2 * p EXP k)) /\
+        ~(k = 0) /\ coprime(n,a)
+        ==> ((?x. (x EXP k == a) (mod n)) <=>
+             (a EXP (phi n DIV gcd(k,phi n)) == 1) (mod n))`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `n = 1` THEN ASM_REWRITE_TAC[CONG_MOD_1] THEN
+  ASM_CASES_TAC `n = 0` THENL
+   [ASM_REWRITE_TAC[CONG_MOD_0; PHI_0; DIV_0; COPRIME_0; EXP] THEN
+    MESON_TAC[EXP_ONE];
+    DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+    MATCH_MP_TAC POWER_RESIDUE_MODULO_PRIMITIVE THEN
+    ASM_REWRITE_TAC[PRIMITIVE_ROOT_EXISTS]]);;
+
+let COUNT_POWER_RESIDUES_MODULO_ODD = prove
+ (`!n a k.
+        ODD n /\ coprime(n,a) /\ ~(k = 0)
+        ==> {x | x < n /\ (x EXP k == a) (mod n)} HAS_SIZE
+            (if !p. prime p /\ p divides n
+                    ==> (a EXP ((p EXP (index p n - 1) * (p - 1)) DIV
+                                gcd(k,p EXP (index p n - 1) * (p - 1))) == 1)
+                        (mod (p EXP index p n))
+             then iterate ( * ) {p | prime p /\ p divides n}
+                           (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))
+             else 0)`,
+  MAP_EVERY X_GEN_TAC [`n:num`; `z:num`; `k:num`] THEN
+  ASM_CASES_TAC `k = 0` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[ODD] THEN
+  ASM_CASES_TAC `n = 1` THENL
+   [ASM_REWRITE_TAC[MESON[PRIME_1; DIVIDES_ONE]
+      `~(prime p /\ p divides 1)`] THEN
+    ASM_REWRITE_TAC[EMPTY_GSPEC; MATCH_MP ITERATE_CLAUSES MONOIDAL_MUL] THEN
+    REWRITE_TAC[CONG_MOD_1; NEUTRAL_MUL; HAS_SIZE_NUMSEG_LT];
+    MAP_EVERY UNDISCH_TAC [`~(n = 1)`; `~(n = 0)`]] THEN
+  GEN_REWRITE_TAC I [IMP_IMP] THEN
+  REWRITE_TAC[ARITH_RULE `~(n = 0) /\ ~(n = 1) <=> 1 < n`] THEN
+  SPEC_TAC(`n:num`,`n:num`) THEN
+  MATCH_MP_TAC INDUCT_COPRIME_STRONG THEN CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`a:num`; `b:num`] THEN REWRITE_TAC[ODD_MULT] THEN
+    ASM_CASES_TAC `ODD a` THEN ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `ODD b` THEN ASM_REWRITE_TAC[IMP_IMP] THEN
+    REWRITE_TAC[COPRIME_LMUL] THEN
+    ASM_CASES_TAC `coprime(a:num,z)` THEN ASM_REWRITE_TAC[] THEN
+    ASM_CASES_TAC `coprime(b:num,z)` THEN ASM_REWRITE_TAC[] THEN
+    STRIP_TAC THEN REWRITE_TAC[MESON[PRIME_DIVPROD_EQ]
+     `prime p /\ p divides a * b <=>
+      prime p /\ (p divides a \/ p divides b)`] THEN
+    REWRITE_TAC[SET_RULE
+     `{x | P x /\ (Q x \/ R x)} =
+      {x | P x /\ Q x} UNION {x | P x /\ R x}`] THEN
+    W(MP_TAC o PART_MATCH (lhand o rand)
+     (MATCH_MP ITERATE_UNION MONOIDAL_MUL) o lhand o rand o snd) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+       [CONJ_TAC THEN MATCH_MP_TAC(MESON[FINITE_SUBSET]
+         `FINITE {d | d divides a} /\
+          {p | prime p /\ p divides a} SUBSET {d | d divides a}
+          ==> FINITE {p | prime p /\ p divides a}`) THEN
+        ASM_SIMP_TAC[FINITE_DIVISORS; ARITH_RULE `1 < n ==> ~(n = 0)`] THEN
+        SET_TAC[];
+        REWRITE_TAC[SET_RULE `DISJOINT s t <=> !x. ~(x IN s /\ x IN t)`] THEN
+        REWRITE_TAC[IN_ELIM_THM] THEN ASM_MESON_TAC[COPRIME_PRIME]];
+      DISCH_THEN SUBST1_TAC] THEN
+    REWRITE_TAC[MESON[]
+     `(!p. prime p /\ (P p \/ Q p) ==> R p) <=>
+      (!p. prime p /\ P p ==> R p) /\ (!p. prime p /\ Q p ==> R p)`] THEN
+    REWRITE_TAC[MESON[MULT_CLAUSES]
+     `(if p /\ q then a * b else 0) =
+      (if p then a else 0) * (if q then b else 0)`] THEN
+    MATCH_MP_TAC CHINESE_REMAINDER_COUNT THEN
+    EXISTS_TAC `\x. (x EXP k == z) (mod a)` THEN
+    EXISTS_TAC `\x. (x EXP k == z) (mod b)` THEN
+    ASM_SIMP_TAC[NUMBER_RULE
+       `coprime(a,b)
+           ==> ((x == y) (mod (a * b)) <=>
+                (x == y) (mod a) /\ (x == y) (mod b))`] THEN
+    CONJ_TAC THENL [REWRITE_TAC[CONG; MOD_EXP_MOD]; ALL_TAC] THEN
+    SUBGOAL_THEN
+     `(!p. prime p /\ p divides a ==> index p (a * b) = index p a) /\
+      (!p. prime p /\ p divides b ==> index p (a * b) = index p b)`
+    STRIP_ASSUME_TAC THENL
+     [ASM_SIMP_TAC[INDEX_MUL; ARITH_RULE `1 < n ==> ~(n = 0)`] THEN
+      REWRITE_TAC[EQ_ADD_LCANCEL_0; EQ_ADD_RCANCEL_0] THEN
+      REWRITE_TAC[INDEX_EQ_0] THEN ASM_MESON_TAC[COPRIME_PRIME_EQ];
+      ASM_SIMP_TAC[]] THEN
+    CONJ_TAC THEN
+    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (MESON[]
+     `s HAS_SIZE m ==> n = m ==> s HAS_SIZE n`)) THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(MATCH_MP ITERATE_EQ MONOIDAL_MUL) THEN
+    ASM_SIMP_TAC[IN_ELIM_THM];
+    MAP_EVERY X_GEN_TAC [`p:num`; `j:num`] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC[ODD_EXP; COPRIME_LEXP] THEN STRIP_TAC THEN
+    ASM_SIMP_TAC[MESON[PRIME_DIVEXP_EQ; DIVIDES_PRIME_PRIME]
+     `~(n = 0) /\ prime p ==> (prime q /\ q divides p EXP n <=> q = p)`] THEN
+    REWRITE_TAC[FORALL_UNWIND_THM2] THEN
+    REWRITE_TAC[SING_GSPEC; MATCH_MP ITERATE_SING MONOIDAL_MUL] THEN
+    W(MP_TAC o PART_MATCH (lhand o rand) COUNT_POWER_RESIDUES_MODULO_PRIMITIVE o
+        lhand o snd) THEN
+    ASM_REWRITE_TAC[EXP_EQ_0] THEN ANTS_TAC THENL
+     [CONJ_TAC THENL [ASM_MESON_TAC[PRIME_0]; ALL_TAC] THEN
+      ASM_REWRITE_TAC[COPRIME_LEXP] THEN
+      ASM_REWRITE_TAC[PRIMITIVE_ROOT_EXISTS] THEN ASM_MESON_TAC[ODD_PRIME];
+      FIRST_ASSUM(ASSUME_TAC o MATCH_MP PRIME_GE_2) THEN
+      ASM_SIMP_TAC[PHI_PRIMEPOW_ALT; INDEX_EXP; INDEX_REFL] THEN
+      ASM_SIMP_TAC[ARITH_RULE `2 <= p ==> ~(p <= 1)`; MULT_CLAUSES]]]);;
+
+let COUNT_POWER_RESIDUES_MODULO_ODD_ALT = prove
+ (`!n a k.
+        ODD n /\ ~(k = 0)
+        ==> {x | x < n /\ coprime(n,x) /\ (x EXP k == a) (mod n)} HAS_SIZE
+            (if !p. prime p /\ p divides n
+                    ==> (a EXP ((p EXP (index p n - 1) * (p - 1)) DIV
+                                gcd(k,p EXP (index p n - 1) * (p - 1))) == 1)
+                        (mod (p EXP index p n))
+             then iterate ( * ) {p | prime p /\ p divides n}
+                           (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))
+             else 0)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `coprime(n:num,a)` THENL
+   [MP_TAC(SPECL [`n:num`; `a:num`; `k:num`]
+        COUNT_POWER_RESIDUES_MODULO_ODD) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN
+    REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+    X_GEN_TAC `i:num` THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP CONG_COPRIME) THEN
+    ASM_REWRITE_TAC[COPRIME_REXP];
+    MATCH_MP_TAC(MESON[HAS_SIZE_0]
+     `s = {} /\ ~p ==> s HAS_SIZE (if p then n else 0)`) THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC[EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+      REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP CONG_COPRIME) THEN
+      ASM_REWRITE_TAC[COPRIME_REXP];
+      FIRST_X_ASSUM(MP_TAC o
+        GEN_REWRITE_RULE RAND_CONV [COPRIME_PRIME_EQ]) THEN
+      REWRITE_TAC[NOT_FORALL_THM] THEN MATCH_MP_TAC MONO_EXISTS THEN
+      X_GEN_TAC `p:num` THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+      DISCH_THEN(MP_TAC o SPEC `p:num` o MATCH_MP (NUMBER_RULE
+       `!p. (a == 1) (mod n)
+            ==> p divides a /\ p divides n ==> p divides 1`)) THEN
+      ASM_SIMP_TAC[NOT_IMP; DIVIDES_ONE; PRIME_DIVEXP_EQ] THEN
+      ASM_REWRITE_TAC[DIVIDES_REFL; INDEX_EQ_0] THEN
+      ASM_SIMP_TAC[MESON[PRIME_1] `prime p ==> ~(p = 1)`] THEN
+      CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[ODD]] THEN
+      ASM_SIMP_TAC[DIV_EQ_0; GCD_ZERO] THEN
+      ASM_REWRITE_TAC[GSYM NOT_LE; GCD_LE] THEN
+      ASM_REWRITE_TAC[EXP_EQ_0; MULT_EQ_0] THEN
+      FIRST_X_ASSUM(MP_TAC o MATCH_MP PRIME_GE_2) THEN ARITH_TAC]]);;
+
+let POWER_RESIDUE_MODULO_ODD = prove
+ (`!n a k.
+        ODD n /\ ~(k = 0) /\ coprime(n,a)
+        ==> ((?x. (x EXP k == a) (mod n)) <=>
+             !p. prime p /\ p divides n
+                    ==> (a EXP ((p EXP (index p n - 1) * (p - 1)) DIV
+                                gcd(k,p EXP (index p n - 1) * (p - 1))) == 1)
+                        (mod (p EXP index p n)))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`n:num`; `a:num`; `k:num`]
+        COUNT_POWER_RESIDUES_MODULO_ODD) THEN
+  ASM_REWRITE_TAC[] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+   [GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC[NOT_EXISTS_THM] THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[HAS_SIZE; EMPTY_GSPEC; CARD_CLAUSES; FINITE_EMPTY] THEN
+    CONV_TAC(RAND_CONV SYM_CONV) THEN
+    SUBGOAL_THEN `FINITE {p | prime p /\ p divides n}` MP_TAC THENL
+     [MATCH_MP_TAC FINITE_SPECIAL_DIVISORS THEN ASM_MESON_TAC[ODD];
+      SPEC_TAC(`{p | prime p /\ p divides n}`,`s:num->bool`)] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    SIMP_TAC[MATCH_MP ITERATE_CLAUSES MONOIDAL_MUL; NEUTRAL_MUL] THEN
+    ASM_SIMP_TAC[MULT_EQ_0; GCD_ZERO] THEN ARITH_TAC;
+    REWRITE_TAC[HAS_SIZE_0; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
+    REWRITE_TAC[GSYM NOT_EXISTS_THM; CONTRAPOS_THM] THEN
+    DISCH_THEN(X_CHOOSE_TAC `x:num`) THEN EXISTS_TAC `x MOD n` THEN
+    ASM_REWRITE_TAC[MOD_LT_EQ] THEN REWRITE_TAC[CONG] THEN
+    REWRITE_TAC[MOD_EXP_MOD] THEN ASM_REWRITE_TAC[GSYM CONG] THEN
+    ASM_MESON_TAC[ODD]]);;
+
+let COUNT_ROOTS_MODULO_PRIMITIVE_ALT = prove
+ (`!n k. ~(n = 0) /\ (?x. order n x = phi n)
+         ==> { x | x < n /\ coprime(n,x) /\ (x EXP k == 1) (mod n)}
+             HAS_SIZE gcd(k,phi n)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  MP_TAC(SPECL [`n:num`; `1`; `k:num`]
+   COUNT_POWER_RESIDUES_MODULO_PRIMITIVE_ALT) THEN
+  ASM_REWRITE_TAC[EXP_ONE; CONG_REFL] THEN
+  ASM_CASES_TAC `k = 0` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[GCD_0; EXP; CONG_REFL; HAS_SIZE] THEN CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SET_RULE
+     `{x | P x /\ Q x} = {x | x IN {y | P y} /\ Q x}`] THEN
+    SIMP_TAC[FINITE_RESTRICT; FINITE_NUMSEG_LT];
+    ONCE_REWRITE_TAC[COPRIME_SYM] THEN REWRITE_TAC[PHI_ALT] THEN
+    AP_TERM_TAC THEN SET_TAC[]]);;
+
+let COUNT_ROOTS_MODULO_PRIMITIVE = prove
+ (`!n k. ~(n = 0) /\ ~(k = 0) /\ (?x. order n x = phi n)
+         ==> { x | x < n /\ (x EXP k == 1) (mod n)} HAS_SIZE gcd(k,phi n)`,
+  REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  MP_TAC(SPECL [`n:num`; `k:num`] COUNT_ROOTS_MODULO_PRIMITIVE_ALT) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN
+  AP_TERM_TAC THEN REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+  X_GEN_TAC `x:num` THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (NUMBER_RULE
+   `(x == 1) (mod n) ==> coprime(x,n)`)) THEN
+  ASM_REWRITE_TAC[COPRIME_LEXP] THEN REWRITE_TAC[COPRIME_SYM]);;
+
+let COUNT_ROOTS_MODULO_ODD_ALT = prove
+ (`!n k. ODD n /\ ~(k = 0)
+         ==> {x | x < n /\ coprime(n,x) /\ (x EXP k == 1) (mod n)} HAS_SIZE
+             iterate ( * ) {p | prime p /\ p divides n}
+                           (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`n:num`; `1`; `k:num`] 
+     COUNT_POWER_RESIDUES_MODULO_ODD_ALT) THEN
+  ASM_REWRITE_TAC[EXP_ONE; CONG_REFL; COPRIME_1]);;
+
+let COUNT_ROOTS_MODULO_ODD = prove
+ (`!n k. ODD n /\ ~(k = 0)
+         ==> {x | x < n /\ (x EXP k == 1) (mod n)} HAS_SIZE
+             iterate ( * ) {p | prime p /\ p divides n}
+                           (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`n:num`; `1`; `k:num`] COUNT_POWER_RESIDUES_MODULO_ODD) THEN
+  ASM_REWRITE_TAC[EXP_ONE; CONG_REFL; COPRIME_1]);;

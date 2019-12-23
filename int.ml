@@ -1901,6 +1901,10 @@ let DIVIDES_LE_STRONG = prove
   ASM_SIMP_TAC[DIVIDES_LE; LE_1; LE_0] THEN
   REWRITE_TAC[divides] THEN MESON_TAC[MULT_CLAUSES]);;
 
+let DIVIDES_LE_IMP = prove
+ (`!m n. m divides n /\ (n = 0 ==> m = 0) ==> m <= n`,
+  MESON_TAC[DIVIDES_LE; LE_REFL]);;
+
 let DIVIDES_ANTISYM = prove
  (`!m n. m divides n /\ n divides m <=> m = n`,
   REPEAT GEN_TAC THEN EQ_TAC THENL
@@ -1937,6 +1941,16 @@ let NUMBER_TAC =
   INTEGER_TAC;;
 
 let NUMBER_RULE tm = prove(tm,NUMBER_TAC);;
+
+let COPRIME_LMOD = prove
+ (`!a n. coprime(a MOD n,n) <=> coprime(a,n)`,
+  MESON_TAC[CONG_LMOD; NUMBER_RULE `(x:num == x) (mod n)`; NUMBER_RULE
+   `(a:num == b) (mod n) /\ coprime(a,n) ==> coprime(b,n)`]);;
+
+let COPRIME_RMOD = prove
+ (`!a n. coprime(n,a MOD n) <=> coprime(n,a)`,
+  ONCE_REWRITE_TAC[NUMBER_RULE `coprime(a:num,b) <=> coprime(b,a)`] THEN
+  REWRITE_TAC[COPRIME_LMOD]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition (and not much more) of primality.                              *)

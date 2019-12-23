@@ -86,16 +86,6 @@ let FINITE_NUMBER_SEGMENT = prove
       DISCH_TAC THEN REWRITE_TAC[IN_ELIM_THM; LT_REFL] THEN
       ARITH_TAC]]);;
 
-let COPRIME_MOD = prove
- (`!a n. coprime(a MOD n,n) <=> coprime(a,n)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
-  ASM_REWRITE_TAC[MOD_ZERO] THEN
-  FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o LAND_CONV)
-   [MATCH_MP DIVISION th]) THEN REWRITE_TAC[coprime] THEN
-  AP_TERM_TAC THEN ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-  MESON_TAC[DIVIDES_ADD; DIVIDES_ADD_REVR; DIVIDES_ADD_REVL;
-            DIVIDES_LMUL; DIVIDES_RMUL]);;
-
 (* ------------------------------------------------------------------------- *)
 (* Congruences.                                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -235,12 +225,11 @@ let PHI_LOWERBOUND_2 = prove
     ASM_SIMP_TAC[ARITH_RULE `3 <= n ==> ~(1 = n - 1)`]; ALL_TAC] THEN
   REWRITE_TAC[phi] THEN MATCH_MP_TAC CARD_SUBSET THEN CONJ_TAC THENL
    [SIMP_TAC[SUBSET; IN_INSERT; NOT_IN_EMPTY; IN_ELIM_THM] THEN
-    GEN_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[ONCE_REWRITE_RULE[COPRIME_SYM] COPRIME_1] THEN
+    GEN_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[COPRIME_1] THEN
     ASM_SIMP_TAC[ARITH;
                ARITH_RULE `3 <= n ==> 0 < n - 1 /\ n - 1 <= n /\ 1 <= n`] THEN
     REWRITE_TAC[coprime] THEN X_GEN_TAC `d:num` THEN STRIP_TAC THEN
-    MP_TAC(SPEC `n:num` COPRIME_1) THEN REWRITE_TAC[coprime] THEN
+    MP_TAC(SPEC `n:num` (CONJUNCT1 COPRIME_1)) THEN REWRITE_TAC[coprime] THEN
     DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
     SUBGOAL_THEN `1 = n - (n - 1)` SUBST1_TAC THENL
      [UNDISCH_TAC `3 <= n` THEN ARITH_TAC;
@@ -347,7 +336,7 @@ let ITSET_MODMULT_COPRIME = prove
   MAP_EVERY X_GEN_TAC [`x:num`; `s:num->bool`] THEN
   ASM_CASES_TAC `!b. b IN s ==> coprime(b,n)` THEN ASM_REWRITE_TAC[] THEN
   STRIP_TAC THEN DISCH_THEN(MP_TAC o SPEC `x:num`) THEN
-  ASM_SIMP_TAC[COPRIME_MOD; ONCE_REWRITE_RULE[COPRIME_SYM] COPRIME_MUL]);;
+  ASM_SIMP_TAC[COPRIME_LMOD; ONCE_REWRITE_RULE[COPRIME_SYM] COPRIME_MUL]);;
 
 let FERMAT_LITTLE = prove
  (`!a n. coprime(a,n) ==> (a EXP (phi n) == 1) (mod n)`,

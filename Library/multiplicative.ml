@@ -46,7 +46,6 @@ let MULTIPLICATIVE_IGNOREZERO = prove
 (* A key "building block" theorem.                                           *)
 (* ------------------------------------------------------------------------- *)
 
-
 let MULTIPLICATIVE_CONVOLUTION = prove
  (`!f g. multiplicative f /\ multiplicative g
          ==> multiplicative (\n. nsum {d | d divides n}
@@ -171,7 +170,8 @@ let PHI_DIVISORSUM = prove
   REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
   INDUCT_TAC THEN REWRITE_TAC[LE; NOT_SUC] THEN
   REWRITE_TAC[CONJUNCT1 EXP; SET_RULE `{x | x = 0} = {0}`; NSUM_SING] THEN
-  REWRITE_TAC[SET_RULE `{i | i = a \/ i <= b} = a INSERT {i | i <= b}`] THEN
+  REWRITE_TAC[SET_RULE
+   `{i:num | i = a \/ i <= b} = a INSERT {i | i <= b}`] THEN
   ASM_SIMP_TAC[NSUM_CLAUSES; FINITE_NUMSEG_LE; NOT_SUC] THEN
   REWRITE_TAC[IN_ELIM_THM; SUC_SUB1; ARITH_RULE `~(SUC k <= k)`] THEN
   MATCH_MP_TAC(ARITH_RULE `a:num <= b ==> b - a + a = b`) THEN

@@ -85,6 +85,44 @@ let INVERSE_MOD_UNIQUE = prove
   ASM_REWRITE_TAC[INVERSE_MOD_RMUL_EQ] THEN
   UNDISCH_TAC `(a * x == 1) (mod n)` THEN CONV_TAC NUMBER_RULE);;
 
+let INVERSE_MOD_CONG = prove
+ (`!n x y. (x == y) (mod n) ==> inverse_mod n x = inverse_mod n y`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[inverse_mod] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  FIRST_ASSUM(SUBST1_TAC o MATCH_MP CONG_GCD_RIGHT) THEN
+  AP_TERM_TAC THEN ABS_TAC THEN AP_TERM_TAC THEN
+  UNDISCH_TAC `(x:num == y) (mod n)` THEN CONV_TAC NUMBER_RULE);;
+
+let INVERSE_MOD_INVERSE_MOD_CONG = prove
+ (`!n x. coprime(n,x) ==> (inverse_mod n (inverse_mod n x) == x) (mod n)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(NUMBER_RULE
+   `!x'. (x * x' == 1) (mod n) /\ (x' * x'' == 1) (mod n)
+         ==> (x'' == x) (mod n)`) THEN
+  EXISTS_TAC `inverse_mod n x` THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [ASM_REWRITE_TAC[INVERSE_MOD_RMUL_EQ];
+    GEN_REWRITE_TAC RAND_CONV [INVERSE_MOD_RMUL_EQ] THEN
+    CONV_TAC NUMBER_RULE]);;
+
+let INVERSE_MOD_INVERSE_MOD = prove
+ (`!n x. coprime(n,x) /\ 1 <= x /\ x <= n
+         ==> inverse_mod n (inverse_mod n x) = x`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC INVERSE_MOD_UNIQUE THEN
+  ASM_SIMP_TAC[INVERSE_MOD_LMUL_EQ; LE_1]);;
+
+let ORDER_INVERSE_MOD = prove
+ (`!n a. coprime(n,a) ==> order n (inverse_mod n a) = order n a`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[order] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `d:num` THEN REWRITE_TAC[] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `k:num` THEN REWRITE_TAC[] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC(NUMBER_RULE
+   `(a * b == 1) (mod n) ==> ((a == 1) (mod n) <=> (b == 1) (mod n))`) THEN
+  REWRITE_TAC[GSYM MULT_EXP] THEN MATCH_MP_TAC CONG_EXP_1 THEN
+  ASM_REWRITE_TAC[INVERSE_MOD_LMUL_EQ]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Multiplicative group of integers mod n, with degenerate {1} for n <= 1.   *)
 (* ------------------------------------------------------------------------- *)
@@ -117,7 +155,7 @@ let MODMUL_GROUP = prove
     MATCH_MP_TAC(NUMBER_RULE `!m. (a * m == 1) (mod n) ==> coprime(a,n)`) THEN
     EXISTS_TAC `m:num` THEN REWRITE_TAC[INVERSE_MOD_LMUL_EQ] THEN
     ASM_MESON_TAC[COPRIME_SYM];
-    REWRITE_TAC[COPRIME_MOD; COPRIME_LMUL] THEN
+    REWRITE_TAC[COPRIME_LMOD; COPRIME_LMUL] THEN
     ASM_SIMP_TAC[MOD_LT_EQ; ARITH_RULE `2 <= n ==> ~(n = 0)`];
     REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM MOD_MULT_MOD2] THEN
     REWRITE_TAC[MOD_MOD_REFL] THEN REWRITE_TAC[MOD_MULT_MOD2] THEN
@@ -182,7 +220,7 @@ let GROUP_HOMOMORPHISM_PROD_MODMUL_GROUP = prove
   REWRITE_TAC[FORALL_IN_IMAGE; FORALL_PAIR_THM; IN_CROSS] THEN
   REWRITE_TAC[MODMUL_GROUP] THEN
   REWRITE_TAC[ARITH_RULE `n <= 1 <=> n = 0 \/ n = 1`] THEN
-  ASM_SIMP_TAC[MULT_EQ_0; MULT_EQ_1; IN_ELIM_THM; MOD_LT_EQ; COPRIME_MOD;
+  ASM_SIMP_TAC[MULT_EQ_0; MULT_EQ_1; IN_ELIM_THM; MOD_LT_EQ; COPRIME_LMOD;
                PAIR_EQ; ARITH_RULE  `2 <= n ==> ~(n = 0) /\ ~(n = 1)`] THEN
   SIMP_TAC[COPRIME_RMUL; MOD_MOD; ONCE_REWRITE_RULE[MULT_SYM] MOD_MOD] THEN
   REWRITE_TAC[MOD_MULT_MOD2]);;
