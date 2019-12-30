@@ -96,7 +96,7 @@ let NPRODUCT_EQ_0_NUMSEG = prove
   SIMP_TAC[NPRODUCT_EQ_0; FINITE_NUMSEG; IN_NUMSEG; GSYM CONJ_ASSOC]);;
 
 let NPRODUCT_LE = prove
- (`!f s. FINITE s /\ (!x. x IN s ==> 0 <= f(x) /\ f(x) <= g(x))
+ (`!f s. FINITE s /\ (!x. x IN s ==> f(x) <= g(x))
          ==> nproduct s f <= nproduct s g`,
   GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
@@ -104,17 +104,17 @@ let NPRODUCT_LE = prove
   MESON_TAC[LE_MULT2; LE_0]);;
 
 let NPRODUCT_LE_NUMSEG = prove
- (`!f m n. (!i. m <= i /\ i <= n ==> 0 <= f(i) /\ f(i) <= g(i))
+ (`!f m n. (!i. m <= i /\ i <= n ==> f(i) <= g(i))
            ==> nproduct(m..n) f <= nproduct(m..n) g`,
   SIMP_TAC[NPRODUCT_LE; FINITE_NUMSEG; IN_NUMSEG]);;
 
 let NPRODUCT_EQ_1 = prove
- (`!f s. (!x:A. x IN s ==> (f(x) = 1)) ==> (nproduct s f = 1)`,
+ (`!f s. (!x:A. x IN s ==> f(x) = 1) ==> nproduct s f = 1`,
   REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
   SIMP_TAC[ITERATE_EQ_NEUTRAL; MONOIDAL_MUL]);;
 
 let NPRODUCT_EQ_1_NUMSEG = prove
- (`!f m n. (!i. m <= i /\ i <= n ==> (f(i) = 1)) ==> (nproduct(m..n) f = 1)`,
+ (`!f m n. (!i. m <= i /\ i <= n ==> f(i) = 1) ==> nproduct(m..n) f = 1`,
   SIMP_TAC[NPRODUCT_EQ_1; IN_NUMSEG]);;
 
 let NPRODUCT_MUL_GEN = prove

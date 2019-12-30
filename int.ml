@@ -1905,6 +1905,13 @@ let DIVIDES_LE_IMP = prove
  (`!m n. m divides n /\ (n = 0 ==> m = 0) ==> m <= n`,
   MESON_TAC[DIVIDES_LE; LE_REFL]);;
 
+let PROPERLY_DIVIDES_LE_IMP = prove
+ (`!m n. m divides n /\ ~(n = 0) /\ ~(m = n) ==> 2 * m <= n`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[MULT_SYM] THEN
+  SIMP_TAC[IMP_CONJ; divides; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[NUM_RING `~(m = m * d) <=> ~(m = 0) /\ ~(d = 1)`] THEN
+  SIMP_TAC[LE_MULT_LCANCEL; MULT_EQ_0] THEN ARITH_TAC);;
+
 let DIVIDES_ANTISYM = prove
  (`!m n. m divides n /\ n divides m <=> m = n`,
   REPEAT GEN_TAC THEN EQ_TAC THENL

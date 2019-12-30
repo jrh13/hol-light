@@ -764,6 +764,75 @@ let PRIMITIVE_ROOT_EXISTS_NONTRIVIAL = prove
     AP_TERM_TAC THEN ASM_ARITH_TAC]);;
 
 (* ------------------------------------------------------------------------- *)
+(* If there are any primitive roots mod n, there are exactly phi(phi n).     *)
+(* ------------------------------------------------------------------------- *)
+
+let COUNT_PRIMITIVE_ROOTS_ALT = prove
+ (`!n. {a | a < n /\ coprime(n,a) /\ order n a = phi n} HAS_SIZE
+       (if n = 0 \/ n = 2 \/ n = 4 \/
+           ?p k. prime p /\ 3 <= p /\ (n = p EXP k \/ n = 2 * p EXP k)
+        then phi(phi n) else 0)`,
+  GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_REWRITE_TAC[LT; PHI_0; COND_ID; EMPTY_GSPEC] THEN
+    REWRITE_TAC[HAS_SIZE; CARD_CLAUSES; FINITE_EMPTY];
+    REWRITE_TAC[GSYM PRIMITIVE_ROOT_EXISTS]] THEN
+  COND_CASES_TAC THENL
+   [FIRST_X_ASSUM(X_CHOOSE_TAC `g:num`);
+    RULE_ASSUM_TAC(REWRITE_RULE[NOT_EXISTS_THM]) THEN
+    ASM_REWRITE_TAC[EMPTY_GSPEC; HAS_SIZE; CARD_CLAUSES; FINITE_EMPTY]] THEN
+  SUBGOAL_THEN `coprime(n:num,g)` ASSUME_TAC THENL
+   [ASM_MESON_TAC[ORDER_EQ_0; PHI_EQ_0]; ALL_TAC] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `{x | P x /\ Q x /\ R x} = {x | x IN {y | P y /\ Q y} /\ R x}`] THEN
+  MATCH_MP_TAC(ISPEC `\i. (g EXP i) MOD n` HAS_SIZE_IMAGE_INJ_RESTRICT) THEN
+  EXISTS_TAC `{i | i < phi n}` THEN
+  REWRITE_TAC[IN_ELIM_THM; FINITE_NUMSEG_LT; CARD_NUMSEG_LT] THEN
+  REPEAT CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[SET_RULE
+     `{x | P x /\ Q x} = {x | x IN {y | P y} /\ Q x}`] THEN
+    SIMP_TAC[FINITE_RESTRICT; FINITE_NUMSEG_LT];
+    ONCE_REWRITE_TAC[COPRIME_SYM] THEN REWRITE_TAC[PHI_ALT] THEN
+    AP_TERM_TAC THEN SET_TAC[];
+    ASM_REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; MOD_LT_EQ] THEN
+    ASM_REWRITE_TAC[COPRIME_REXP; COPRIME_RMOD];
+    REWRITE_TAC[GSYM CONG] THEN ASM_SIMP_TAC[ORDER_DIVIDES_EXPDIFF] THEN
+    REWRITE_TAC[CONG_IMP_EQ];
+    REWRITE_TAC[ORDER_MOD]] THEN
+  SUBGOAL_THEN
+   `{a | a < phi n /\ order n (g EXP a) = phi n} =
+    {a | coprime(a,phi n) /\ a < phi n}`
+  SUBST1_TAC THENL
+   [ALL_TAC;
+    REWRITE_TAC[HAS_SIZE; GSYM PHI_ALT] THEN
+    MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{a | a < phi n}` THEN
+    REWRITE_TAC[FINITE_NUMSEG_LT] THEN SET_TAC[]] THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC `a:num` THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  ASM_CASES_TAC `a < phi n` THEN ASM_REWRITE_TAC[ORDER_EXP_GEN] THEN
+  COND_CASES_TAC THENL [ASM_MESON_TAC[COPRIME_0]; ALL_TAC] THEN
+  GEN_REWRITE_TAC RAND_CONV [COPRIME_SYM] THEN EQ_TAC THEN
+  SIMP_TAC[GCD_ONE; DIV_1] THEN
+  MP_TAC(NUMBER_RULE `gcd(phi n,a) divides phi n`) THEN
+  REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `e:num` THEN ABBREV_TAC `d = gcd(phi n,a)` THEN
+  DISCH_THEN(fun th -> SUBST1_TAC th THEN ASSUME_TAC(SYM th)) THEN
+  ASM_CASES_TAC `d = 0` THENL
+   [ASM_MESON_TAC[MULT_CLAUSES; PHI_EQ_0]; ALL_TAC] THEN
+  ASM_SIMP_TAC[DIV_MULT] THEN DISCH_THEN SUBST_ALL_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (NUM_RING `d * p = p ==> d = 1 \/ p = 0`)) THEN
+  ASM_REWRITE_TAC[PHI_EQ_0; COPRIME_GCD]);;
+
+let COUNT_PRIMITIVE_ROOTS = prove
+ (`!n. {x | x < n /\ order n x = phi n} HAS_SIZE
+       (if n = 0 \/ n = 2 \/ n = 4 \/
+           ?p k. prime p /\ 3 <= p /\ (n = p EXP k \/ n = 2 * p EXP k)
+        then phi(phi n) else 0)`,
+  GEN_TAC THEN MP_TAC(SPEC `n:num` COUNT_PRIMITIVE_ROOTS_ALT) THEN
+  MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
+  MESON_TAC[ORDER_EQ_0; PHI_EQ_0; LT]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Counting power residues and the special case of k'th roots.               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1101,7 +1170,7 @@ let COUNT_ROOTS_MODULO_ODD_ALT = prove
              iterate ( * ) {p | prime p /\ p divides n}
                            (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))`,
   REPEAT STRIP_TAC THEN
-  MP_TAC(ISPECL [`n:num`; `1`; `k:num`] 
+  MP_TAC(ISPECL [`n:num`; `1`; `k:num`]
      COUNT_POWER_RESIDUES_MODULO_ODD_ALT) THEN
   ASM_REWRITE_TAC[EXP_ONE; CONG_REFL; COPRIME_1]);;
 

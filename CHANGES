@@ -8,6 +8,193 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 28th Dec 2019       arith.ml, Library/prime.ml, Library/pocklington.ml
+
+Added a few more basic number-theoretic lemmas:
+
+  DIV_EQ_SELF =
+    |- !m n. m DIV n = m <=> m = 0 \/ n = 1
+  
+  LCM_EQ_MULT =
+    |- !m n. lcm(m,n) = m * n <=> m = 0 \/ n = 0 \/ coprime(m,n)
+  
+  LCM_LE_MULT =
+    |- !m n. lcm(m,n) <= m * n
+  
+  LE_LCM =
+    |- (!m n. m <= lcm(m,n) <=> n = 0 ==> m = 0) /\
+       (!m n. n <= lcm(m,n) <=> m = 0 ==> n = 0)
+  
+  MAX_LE_LCM =
+    |- !m n. (m = 0 <=> n = 0) ==> MAX m n <= lcm(m,n)
+  
+  MAX_LE_LCM_EQ =
+    |- !m n. MAX m n <= lcm(m,n) <=> m = 0 <=> n = 0
+  
+  ORDER_DIVIDES_MAXIMAL =
+    |- !p. ~(p = 1)
+           ==> ?n. coprime(p,n) /\
+                   !m. coprime(p,m) ==> order p m divides order p n
+
+
+Fri 27th Dec 2019       Library/prime.ml
+
+Added the simple fact that one can choose a number with a given prime
+factorization, expressed via index:
+
+  PRIME_FACTORIZATION_INDEX =
+    |- !k. FINITE {p | prime p /\ ~(k p = 0)}
+           ==> ?n. ~(n = 0) /\ !p. prime p ==> index p n = k p
+
+Thu 26th Dec 2019       Library/pocklington.ml
+
+Added a few more basic theorems, mainly analogs for the special case
+of natural number "order" of existing theorems for "group_element_order":
+
+  CONG_MULT_1 =
+    |- !n x y. (x == 1) (mod n) /\ (y == 1) (mod n) ==> (x * y == 1) (mod n)
+
+  ORDER_LCM_EXISTS =
+    |- !p a b. ?c. order p c = lcm(order p a,order p b)
+
+  ORDER_MUL_DIVIDES =
+    |- !p a b. order p (a * b) divides order p a * order p b
+
+  ORDER_MUL_EQ =
+    |- !p a b.
+           coprime(order p a,order p b)
+           ==> order p (a * b) = order p a * order p b
+
+Tue 24th Dec 2019       int.ml, Library/prime.ml
+
+Added a few more simple number-theoretic lemmas:
+
+  GCD_MUL_COPRIME =
+    |- (!a b c. coprime(a,b) ==> gcd(a,b * c) = gcd(a,c)) /\
+       (!a b c. coprime(a,c) ==> gcd(a,b * c) = gcd(a,b)) /\
+       (!a b c. coprime(b,c) ==> gcd(a,b * c) = gcd(a,b) * gcd(a,c)) /\
+       (!a b c. coprime(a,c) ==> gcd(a * b,c) = gcd(b,c)) /\
+       (!a b c. coprime(b,c) ==> gcd(a * b,c) = gcd(a,c)) /\
+       (!a b c. coprime(a,b) ==> gcd(a * b,c) = gcd(a,c) * gcd(b,c))
+
+  INDEX_UNIQUE_ALT =
+    |- !n p k.
+           index p n = k <=>
+           (if p = 1 \/ n = 0
+            then k = 0
+            else p EXP k divides n /\ ~(p EXP (k + 1) divides n))
+
+  INDEX_UNIQUE_EQ =
+    |- !n p k.
+           index p n = k <=>
+           (if p = 1 \/ n = 0 then k = 0 else !j. p EXP j divides n <=> j <= k)
+
+  PROPERLY_DIVIDES_LE_IMP =
+    |- !m n. m divides n /\ ~(n = 0) /\ ~(m = n) ==> 2 * m <= n
+
+Mon 23rd Dec 2019       Library/prime.ml, Library/pocklington.ml, Library/multiplicative.ml, Library/primitive.ml, Library/modmul_group.ml
+
+Added some new theorems and reshuffled existing material, in particular
+moving the "inverse_mod" stuff from "Library/modmul_group.ml" to the pure
+number theory file "Library/pocklington.ml". Furthermore added a
+dependency on "Library/products.ml" to "Library/multiplicative.ml", since
+it seems unnatural not to have MULTIPLICATIVE_EXPAND and PHI_EXPAND use it.
+
+  ABELIAN_GROUP_ELEMENT_ORDER_DIVIDES_MAXIMAL_ALT =
+    |- !G. abelian_group G /\ FINITE(group_carrier G)
+           ==> ?x. x IN group_carrier G /\
+                   !y. y IN group_carrier G
+                       ==> group_pow G y (group_element_order G x) =
+                           group_id G
+
+  ABELIAN_GROUP_ELEMENT_ORDER_LCM_EXISTS =
+    |- !G x y.
+         abelian_group G /\ x IN group_carrier G /\ y IN group_carrier G
+         ==> ?z. z IN group_carrier G /\
+                 group_element_order G z =
+                 lcm(group_element_order G x,group_element_order G y)
+
+  ABELIAN_GROUP_ORDER_DIVIDES_MAXIMAL =
+    |- !G. abelian_group G /\ FINITE(group_carrier G)
+           ==> ?x. x IN group_carrier G /\
+                   !y. y IN group_carrier G
+                       ==> group_element_order G y divides
+                           group_element_order G x
+
+  CONG_SQUARE_1_PRIME_POWER =
+    |- !p k x.
+           prime p /\ ~(p = 2)
+           ==> ((x EXP 2 == 1) (mod (p EXP k)) <=>
+                (x == 1) (mod (p EXP k)) \/ (x == p EXP k - 1) (mod (p EXP k)))
+
+  COUNT_PRIMITIVE_ROOTS =
+    |- !n. {x | x < n /\ order n x = phi n} HAS_SIZE
+           (if n = 0 \/
+               n = 2 \/
+               n = 4 \/
+               ?p k. prime p /\ 3 <= p /\ (n = p EXP k \/ n = 2 * p EXP k)
+            then phi(phi n)
+            else 0)
+
+  COUNT_PRIMITIVE_ROOTS_ALT =
+    |- !n. {a | a < n /\ coprime(n,a) /\ order n a = phi n} HAS_SIZE
+           (if n = 0 \/
+               n = 2 \/
+               n = 4 \/
+               ?p k. prime p /\ 3 <= p /\ (n = p EXP k \/ n = 2 * p EXP k)
+            then phi (phi n)
+            else 0)
+
+  GCD_ONE =
+    |- !a b. coprime(a,b) ==> gcd(a,b) = 1
+
+  GROUP_ELEMENT_ORDER_LCM_EXISTS =
+    |- !G x y.
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           group_mul G x y = group_mul G y x
+           ==> ?z. z IN group_carrier G /\
+                   group_element_order G z =
+                   lcm(group_element_order G x,group_element_order G y)
+
+  MULTIPLICATIVE_EXPAND =
+    |- !f n.
+           multiplicative f /\ ~(n = 0)
+           ==> f n =
+               nproduct {p | prime p /\ p divides n} (\p. f(p EXP index p n))
+
+  ORDER_MOD =
+    |- !p n. order p (n MOD p) = order p n
+
+  PHI_EXPAND =
+    |- !n. phi n =
+           (if n = 0
+            then 0
+            else nproduct {p | prime p /\ p divides n}
+                 (\p. p EXP (index p n - 1) * (p - 1)))
+
+  PRIME_DIVPROD_POW_EQ =
+    |- !n p a b.
+           prime p /\ coprime(a,b)
+           ==> (p EXP n divides a * b <=>
+                p EXP n divides a \/ p EXP n divides b)
+
+  PRIME_DIVPROD_POW_GEN =
+    |- !n p a b.
+           prime p /\ ~(p divides gcd(a,b)) /\ p EXP n divides a * b
+           ==> p EXP n divides a \/ p EXP n divides b
+
+  PRIME_DIVPROD_POW_GEN_EQ =
+    |- !n p a b.
+           prime p /\ ~(p divides gcd(a,b))
+           ==> (p EXP n divides a * b <=>
+                p EXP n divides a \/ p EXP n divides b)
+
+Mon 23rd Dec 2019       Library/products.ml
+
+Removed redundant 0 <= ... clauses (which over N are trivially true)
+from NPRODUCT_LE and NPRODUCT_LE_NUMSEG.
+
 Sat 21st Dec 2019       Library/pocklington.ml, Library/primitive.ml
 
 Added some additional theorems, mainly generalizing the root counts
@@ -27,8 +214,8 @@ power residues:
                 then iterate (*) {p | prime p /\ p divides n}
                      (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))
                 else 0)
-  
-  
+
+
   COUNT_POWER_RESIDUES_MODULO_ODD_ALT =
     |- !n a k.
            ODD n /\ ~(k = 0)
@@ -42,24 +229,24 @@ power residues:
                 then iterate (*) {p | prime p /\ p divides n}
                      (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))
                 else 0)
-  
+
   COUNT_ROOTS_MODULO_ODD_ALT =
     |- !n k.
            ODD n /\ ~(k = 0)
            ==> {x | x < n /\ coprime(n,x) /\ (x EXP k == 1) (mod n)} HAS_SIZE
                iterate (*) {p | prime p /\ p divides n}
                (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))
-  
+
   ORDER_EXP =
     |- !p a k.
            ~(k = 0) /\ k divides order p a
            ==> order p (a EXP k) = order p a DIV k
-  
+
   ORDER_EXP_GEN =
     |- !p a k.
            order p (a EXP k) =
            (if k = 0 then 1 else order p a DIV gcd(order p a,k))
-  
+
   POWER_RESIDUE_MODULO_ODD =
     |- !n a k.
            ODD n /\ ~(k = 0) /\ coprime(n,a)
@@ -70,7 +257,7 @@ power residues:
                            gcd(k,p EXP (index p n - 1) * (p - 1))) ==
                           1)
                          (mod (p EXP index p n))))
-  
+
 Fri 20th Dec 2019       Library/prime.ml, Library/pocklington.ml, Library/primitive.ml, Library/modmul_group.ml
 
 Added another slew of number-theoretic lemmas, various trivia together with
@@ -84,17 +271,17 @@ former).
     |- !n a b.
            {x | x < n /\ (a * x == b) (mod n)} HAS_SIZE
            (if ~(n = 0) /\ gcd(n,a) divides b then gcd(n,a) else 0)
-  
+
   COUNT_CONG_SOLVE_GEN =
     |- !m n a b.
            {x | x < m * n /\ (a * x == b) (mod n)} HAS_SIZE
            (if ~(n = 0) /\ gcd(n,a) divides b then m * gcd(n,a) else 0)
-  
+
   COUNT_CONG_SOLVE_SIMPLE =
     |- !m n b.
            {x | x < m * n /\ (x == b) (mod n)} HAS_SIZE
            (if n = 0 then 0 else m)
-  
+
   COUNT_POWER_RESIDUES_MODULO_PRIMITIVE =
     |- !n a k.
            ~(n = 0) /\ ~(k = 0) /\ coprime(n,a) /\ (?x. order n x = phi n)
@@ -102,7 +289,7 @@ former).
                (if (a EXP (phi n DIV gcd(k,phi n)) == 1) (mod n)
                 then gcd(k,phi n)
                 else 0)
-  
+
   COUNT_POWER_RESIDUES_MODULO_PRIMITIVE_ALT =
     |- !n a k.
            ~(n = 0) /\ ~(k = 0) /\ (?x. order n x = phi n)
@@ -110,23 +297,23 @@ former).
                (if (a EXP (phi n DIV gcd(k,phi n)) == 1) (mod n)
                 then gcd(k,phi n)
                 else 0)
-  
+
   DIVIDES_LE_IMP =
     |- !m n. m divides n /\ (n = 0 ==> m = 0) ==> m <= n
-  
+
   GCD_LE =
     |- (!m n. gcd(m,n) <= m <=> m = 0 ==> n = 0) /\
        (!m n. gcd(m,n) <= n <=> n = 0 ==> m = 0)
-  
+
   GCD_LE_MAX =
     |- !m n. gcd(m,n) <= MAX m n
-  
+
   GCD_LE_MIN =
     |- !m n. (m = 0 <=> n = 0) ==> gcd(m,n) <= MIN m n
-  
+
   GCD_LE_MIN_EQ =
     |- !m n. gcd(m,n) <= MIN m n <=> m = 0 <=> n = 0
-  
+
   GENERALIZED_EULER_CRITERION =
     |- !n a k.
            (n = 0 \/
@@ -138,16 +325,16 @@ former).
            coprime(n,a)
            ==> ((?x. (x EXP k == a) (mod n)) <=>
                 (a EXP (phi n DIV gcd(k,phi n)) == 1) (mod n))
-  
+
   ORDER_INVERSE_MOD =
     |- !n a. coprime(n,a) ==> order n (inverse_mod n a) = order n a
-  
+
   ORDER_MUL_LCM =
-    |- !m n a. coprime(m,n) ==> order (m * n) a = lcm (order m a,order n a)
-  
+    |- !m n a. coprime(m,n) ==> order (m * n) a = lcm(order m a,order n a)
+
   ORDER_UNIQUE_ALT =
     |- !n a d. order n a = d <=> (!k. (a EXP k == 1) (mod n) <=> d divides k)
-  
+
   POWER_RESIDUE_MODULO_PRIMITIVE =
     |- !n a k.
            ~(n = 0) /\ ~(k = 0) /\ coprime(n,a) /\ (?x. order n x = phi n)

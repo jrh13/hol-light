@@ -646,6 +646,15 @@ let DIVIDES_RMUL_GCD = prove
    (!d a b. d divides a * gcd(b,d) <=> d divides a * b)`,
   NUMBER_TAC);;
 
+let GCD_MUL_COPRIME = prove
+ (`(!a b c. coprime(a,b) ==> gcd(a,b * c) = gcd(a,c)) /\
+   (!a b c. coprime(a,c) ==> gcd(a,b * c) = gcd(a,b)) /\
+   (!a b c. coprime(b,c) ==> gcd(a,b * c) = gcd(a,b) * gcd(a,c)) /\
+   (!a b c. coprime(a,c) ==> gcd(a * b,c) = gcd(b,c)) /\
+   (!a b c. coprime(b,c) ==> gcd(a * b,c) = gcd(a,c)) /\
+   (!a b c. coprime(a,b) ==> gcd(a * b,c) = gcd(a,c) * gcd(b,c))`,
+  NUMBER_TAC);;
+
 let GCD_LE = prove
  (`(!m n. gcd(m,n) <= m <=> (m = 0 ==> n = 0)) /\
    (!m n. gcd(m,n) <= n <=> (n = 0 ==> m = 0))`,
@@ -701,6 +710,10 @@ let COPRIME = prove(
 let COPRIME_GCD = prove
  (`!a b. coprime(a,b) <=> gcd(a,b) = 1`,
   REWRITE_TAC[GSYM DIVIDES_ONE] THEN NUMBER_TAC);;
+
+let GCD_ONE = prove
+ (`!a b. coprime(a,b) ==> gcd(a,b) = 1`,
+  NUMBER_TAC);;
 
 let COPRIME_SYM = prove
  (`!a b. coprime(a,b) <=> coprime(b,a)`,
@@ -1279,10 +1292,33 @@ let PRIME_COPRIME_CASES = prove
  (`!p a b. prime p /\ coprime(a,b) ==> coprime(p,a) \/ coprime(p,b)`,
   MESON_TAC[COPRIME_PRIME; PRIME_COPRIME_EQ]);;
 
+let PRIME_DIVPROD_POW_GEN = prove
+ (`!n p a b.
+        prime p /\ ~(p divides gcd(a,b)) /\ p EXP n divides a * b
+        ==> p EXP n divides a \/ p EXP n divides b`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[DISJ_SYM] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [DIVIDES_GCD]) THEN
+  ASM_SIMP_TAC[DE_MORGAN_THM; GSYM PRIME_COPRIME_EQ] THEN
+  ASM_MESON_TAC[COPRIME_LEXP; COPRIME_DIVPROD; MULT_SYM]);;
+
+let PRIME_DIVPROD_POW_GEN_EQ = prove
+ (`!n p a b.
+        prime p /\ ~(p divides gcd(a,b))
+        ==> (p EXP n divides a * b <=>
+             p EXP n divides a \/ p EXP n divides b)`,
+  MESON_TAC[PRIME_DIVPROD_POW_GEN; DIVIDES_RMUL; DIVIDES_LMUL]);;
+
 let PRIME_DIVPROD_POW = prove
  (`!n p a b. prime(p) /\ coprime(a,b) /\ (p EXP n) divides (a * b)
              ==> (p EXP n) divides a \/ (p EXP n) divides b`,
   MESON_TAC[COPRIME_EXP_DIVPROD; PRIME_COPRIME_CASES; MULT_SYM]);;
+
+let PRIME_DIVPROD_POW_EQ = prove
+ (`!n p a b.
+        prime p /\ coprime(a,b)
+        ==> (p EXP n divides a * b <=>
+             p EXP n divides a \/ p EXP n divides b)`,
+  MESON_TAC[PRIME_DIVPROD_POW; DIVIDES_RMUL; DIVIDES_LMUL]);;
 
 let EXP_MULT_EXISTS = prove
  (`!m n p k. ~(m = 0) /\ m EXP k * n = p EXP k ==> ?q. n = q EXP k`,
@@ -1720,6 +1756,30 @@ let INDEX_UNIQUE = prove
   REWRITE_TAC[EXP_ADD; NUMBER_RULE `p divides (p * q:num)`] THEN
   ASM_SIMP_TAC[DIVIDES_LMUL2_EQ; EXP_EQ_0; EXP_1]);;
 
+let INDEX_UNIQUE_EQ = prove
+ (`!n p k. index p n = k <=>
+           if p = 1 \/ n = 0 then k = 0
+           else !j. p EXP j divides n <=> j <= k`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THENL
+   [REWRITE_TAC[index_def] THEN ASM_MESON_TAC[LE_REFL];
+    RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM])] THEN
+  ASM_REWRITE_TAC[PRIMEPOW_DIVIDES_INDEX] THEN
+  MESON_TAC[LE_ANTISYM]);;
+
+let INDEX_UNIQUE_ALT = prove
+ (`!n p k. index p n = k <=>
+           if p = 1 \/ n = 0 then k = 0
+           else p EXP k divides n /\ ~(p EXP (k + 1) divides n)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[INDEX_UNIQUE_EQ] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN EQ_TAC THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THENL [ARITH_TAC; ALL_TAC] THEN
+  X_GEN_TAC `j:num` THEN EQ_TAC THEN DISCH_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[DIVIDES_EXP_LE_IMP; DIVIDES_TRANS]] THEN
+  UNDISCH_TAC `~(p EXP (k + 1) divides n)` THEN
+  REWRITE_TAC[GSYM NOT_LT; CONTRAPOS_THM] THEN
+  REWRITE_TAC[ARITH_RULE `k < j <=> k + 1 <= j`] THEN
+  ASM_MESON_TAC[DIVIDES_EXP_LE_IMP; DIVIDES_TRANS]);;
+
 let INDEX_ADD_MIN = prove
  (`!p m n. MIN (index p m) (index p n) <= index p (m + n)`,
   REPEAT STRIP_TAC THEN ASM_CASES_TAC `p = 1` THENL
@@ -1788,6 +1848,35 @@ let INDEX_GCD = prove
   ASM_REWRITE_TAC[GCD_ZERO] THEN
   REWRITE_TAC[ARITH_RULE `k <= m /\ k <= n <=> k <= MIN m n`] THEN
   MESON_TAC[LE_REFL; LE_ANTISYM; LE_TRANS]);;
+
+let PRIME_FACTORIZATION_INDEX = prove
+ (`!k. FINITE {p | prime p /\ ~(k p = 0)}
+       ==> ?n. ~(n = 0) /\ !p. prime p ==> index p n = k p`,
+  SUBGOAL_THEN
+   `!s. FINITE s
+       ==> !k. {p | prime p /\ ~(k p = 0)} SUBSET s
+               ==> ?n. ~(n = 0) /\ !p. prime p ==> index p n = k p`
+  MP_TAC THENL [ALL_TAC; MESON_TAC[SUBSET_REFL]] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN CONJ_TAC THENL
+   [REWRITE_TAC[SET_RULE
+     `{p | prime p /\ ~Z p} SUBSET {} <=> !p. prime p ==> Z p`] THEN
+    MESON_TAC[INDEX_1; ARITH_RULE `~(1 = 0)`];
+    MAP_EVERY X_GEN_TAC [`p:num`; `s:num->bool`] THEN STRIP_TAC THEN
+    X_GEN_TAC `k:num->num` THEN STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC
+     `\i. if i = p then 0 else (k:num->num) i`) THEN
+    REWRITE_TAC[] THEN ANTS_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    ASM_CASES_TAC `prime p` THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP PRIME_IMP_NZ) THEN
+    DISCH_THEN(X_CHOOSE_THEN `n:num` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `p EXP k p * n` THEN
+    ASM_SIMP_TAC[INDEX_MUL; MULT_EQ_0; EXP_EQ_0; INDEX_EXP] THEN
+    X_GEN_TAC `q:num` THEN DISCH_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `q:num`) THEN
+    COND_CASES_TAC THEN ASM_SIMP_TAC[INDEX_REFL] THENL
+     [COND_CASES_TAC THEN REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES] THEN
+      FIRST_ASSUM(MP_TAC o MATCH_MP PRIME_GE_2) THEN ASM_ARITH_TAC;
+      DISCH_TAC THEN REWRITE_TAC[EQ_ADD_RCANCEL_0; MULT_EQ_0] THEN
+      ASM_SIMP_TAC[INDEX_EQ_0; DIVIDES_PRIME_PRIME]]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Least common multiples.                                                   *)
@@ -2055,6 +2144,37 @@ let LCM_COPRIME_DECOMP = prove
   EXISTS_TAC `gcd(m,n):num` THEN
   ASM_REWRITE_TAC[MULT_LCM_GCD; GCD_ZERO] THEN
   REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NUM_RING);;
+
+let LE_LCM = prove
+ (`(!m n. m <= lcm(m,n) <=> n = 0 ==> m = 0) /\
+   (!m n. n <= lcm(m,n) <=> m = 0 ==> n = 0)`,
+  REPEAT STRIP_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [`m = 0`; `n = 0`] THEN
+  ASM_REWRITE_TAC[LCM_0; LE_REFL; LE] THEN
+  MATCH_MP_TAC DIVIDES_LE_IMP THEN
+  ASM_REWRITE_TAC[LCM; LCM_ZERO]);;
+
+let LCM_LE_MULT = prove
+ (`!m n. lcm(m,n) <= m * n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[lcm] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[LE_REFL; DIV_LE]);;
+
+let LCM_EQ_MULT = prove
+ (`!m n. lcm(m,n) = m * n <=> m = 0 \/ n = 0 \/ coprime(m,n)`,
+  REPEAT GEN_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [`m = 0`; `n = 0`] THEN
+  ASM_REWRITE_TAC[LCM_0; MULT_CLAUSES] THEN
+  ASM_REWRITE_TAC[lcm; DIV_EQ_SELF; MULT_EQ_0; COPRIME_GCD]);;
+
+let MAX_LE_LCM_EQ = prove
+ (`!m n. MAX m n <= lcm(m,n) <=> (m = 0 <=> n = 0)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[MAX] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[LE_LCM] THEN
+  ASM_ARITH_TAC);;
+
+let MAX_LE_LCM = prove
+ (`!m n. (m = 0 <=> n = 0) ==> MAX m n <= lcm(m,n)`,
+  REWRITE_TAC[MAX_LE_LCM_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Induction principle for multiplicative functions etc.                     *)

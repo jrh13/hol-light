@@ -2,6 +2,7 @@
 (* Multiplicative functions into N or R (could add Z, C etc.)                *)
 (* ========================================================================= *)
 
+needs "Library/products.ml";;
 needs "Library/prime.ml";;
 needs "Library/pocklington.ml";;
 
@@ -41,6 +42,51 @@ let MULTIPLICATIVE_IGNOREZERO = prove
   REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
   DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
   ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[MULT_EQ_0]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Expanding a multiplicative function in terms of values on prime powers.   *)
+(* ------------------------------------------------------------------------- *)
+
+let MULTIPLICATIVE_EXPAND = prove
+ (`!f n.
+       multiplicative f /\ ~(n = 0)
+       ==> f n = nproduct {p | prime p /\ p divides n}
+                          (\p. f(p EXP index p n))`,
+  REWRITE_TAC[multiplicative] THEN REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `n = 1` THENL
+   [ASM_REWRITE_TAC[MESON[PRIME_1; DIVIDES_ONE]
+      `~(prime p /\ p divides 1)`] THEN
+    ASM_REWRITE_TAC[EMPTY_GSPEC; NPRODUCT_CLAUSES];
+    MAP_EVERY UNDISCH_TAC [`~(n = 1)`; `~(n = 0)`] THEN
+    REWRITE_TAC[IMP_IMP; ARITH_RULE `~(n = 0) /\ ~(n = 1) <=> 1 < n`]] THEN
+  SPEC_TAC(`n:num`,`n:num`) THEN
+  MATCH_MP_TAC INDUCT_COPRIME_STRONG THEN CONJ_TAC THENL
+   [MAP_EVERY X_GEN_TAC [`a:num`; `b:num`] THEN ASM_SIMP_TAC[] THEN
+    REPLICATE_TAC 3 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    DISCH_THEN(CONJUNCTS_THEN SUBST1_TAC) THEN
+    REWRITE_TAC[MESON[PRIME_DIVPROD_EQ]
+     `prime p /\ p divides a * b <=>
+      prime p /\ p divides a \/ prime p /\ p divides b`] THEN
+    REWRITE_TAC[SET_RULE `{x | P x \/ Q x} = {x | P x} UNION {x | Q x}`] THEN
+    W(MP_TAC o PART_MATCH (lhand o rand) NPRODUCT_UNION o rand o snd) THEN
+    ASM_SIMP_TAC[FINITE_SPECIAL_DIVISORS; ARITH_RULE `1 < p ==> ~(p = 0)`] THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[DISJOINT; EXTENSION; IN_ELIM_THM;
+                  IN_INTER; NOT_IN_EMPTY] THEN
+      ASM_MESON_TAC[COPRIME_PRIME_EQ];
+      DISCH_THEN SUBST1_TAC] THEN
+    BINOP_TAC THEN MATCH_MP_TAC NPRODUCT_EQ THEN
+    X_GEN_TAC `p:num` THEN REWRITE_TAC[IN_ELIM_THM] THEN STRIP_TAC THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN
+    ASM_SIMP_TAC[INDEX_MUL; ARITH_RULE `1 < p ==> ~(p = 0)`] THEN
+    REWRITE_TAC[EQ_ADD_LCANCEL_0; EQ_ADD_RCANCEL_0] THEN
+    REWRITE_TAC[INDEX_EQ_0] THEN ASM_MESON_TAC[COPRIME_PRIME_EQ];
+    SIMP_TAC[MESON[PRIME_DIVEXP_EQ; DIVIDES_PRIME_PRIME]
+     `prime p ==> (prime q /\ q divides p EXP k <=> q = p /\ ~(k = 0))`] THEN
+    REWRITE_TAC[SING_GSPEC; NPRODUCT_SING] THEN
+    SIMP_TAC[INDEX_EXP; INDEX_REFL] THEN
+    REWRITE_TAC[ARITH_RULE `p <= 1 <=> p = 0 \/ p = 1`] THEN
+    ASM_MESON_TAC[PRIME_0; PRIME_1; MULT_CLAUSES]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A key "building block" theorem.                                           *)
@@ -139,6 +185,16 @@ let MULTIPLICATIVE_GCD = prove
  (`!n. multiplicative(\m. gcd(n,m))`,
   REWRITE_TAC[multiplicative; ONCE_REWRITE_RULE[GCD_SYM] GCD_1] THEN
   ONCE_REWRITE_TAC[GSYM DIVIDES_ANTISYM] THEN NUMBER_TAC);;
+
+let PHI_EXPAND = prove
+ (`!n. phi n = if n = 0 then 0
+               else nproduct {p | prime p /\ p divides n}
+                             (\p. p EXP (index p n - 1) * (p - 1))`,
+  GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[PHI_0] THEN
+  MP_TAC(SPECL [`phi`; `n:num`] MULTIPLICATIVE_EXPAND) THEN
+  ASM_REWRITE_TAC[MULTIPLICATIVE_PHI] THEN DISCH_THEN SUBST1_TAC THEN
+  MATCH_MP_TAC NPRODUCT_EQ THEN SIMP_TAC[IN_ELIM_THM; PHI_PRIMEPOW_ALT] THEN
+  ASM_SIMP_TAC[INDEX_EQ_0] THEN MESON_TAC[PRIME_1]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Uniqueness of multiplicative functions if equal on prime powers.          *)

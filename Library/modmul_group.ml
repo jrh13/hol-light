@@ -20,108 +20,87 @@ let MULT_EQ_2 = prove
   MATCH_MP_TAC LE_MULT2 THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
-(* Modulo-n multiplicative inverse, 1 in degenerate cases.                   *)
+(* Some lemmas about orders of elements in Abelian groups. These aren't      *)
+(* really specific to this development, and could be put back into the       *)
+(* core "Library/grouptheory.ml" file, but the proofs use a bit more         *)
+(* material on prime factorization than is currently used in that file.      *)
 (* ------------------------------------------------------------------------- *)
 
-let inverse_mod = new_definition
- `inverse_mod n x =
-    if n <= 1 then 1
-    else @y. y < n /\ (x * y == gcd(n,x)) (mod n)`;;
-
-let INVERSE_MOD_BOUND,INVERSE_MOD_RMUL_GEN = (CONJ_PAIR o prove)
- (`(!n x. inverse_mod n x < n <=> 2 <= n) /\
-   (!n x. (x * inverse_mod n x == gcd(n,x)) (mod n))`,
-  REWRITE_TAC[AND_FORALL_THM] THEN REWRITE_TAC[inverse_mod] THEN
-  MAP_EVERY X_GEN_TAC [`n:num`; `x:num`] THEN ASM_CASES_TAC `n <= 1` THENL
-   [FIRST_X_ASSUM(DISJ_CASES_TAC o MATCH_MP (ARITH_RULE
-     `n <= 1 ==> n = 0 \/ n = 1`)) THEN
-    ASM_REWRITE_TAC[] THEN CONV_TAC NUM_REDUCE_CONV THEN
-    REWRITE_TAC[CONG_MOD_0; CONG_MOD_1; GCD_0; MULT_CLAUSES];
-    ASM_REWRITE_TAC[ARITH_RULE `2 <= n <=> ~(n <= 1)`] THEN
-    CONV_TAC SELECT_CONV THEN ASM_REWRITE_TAC[CONG_SOLVE_LT_EQ] THEN
-    REWRITE_TAC[GCD_SYM; DIVIDES_REFL] THEN ASM_ARITH_TAC]);;
-
-let INVERSE_MOD_LMUL_GEN = prove
- (`!n x. (inverse_mod n x * x == gcd(n,x)) (mod n)`,
-  ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[INVERSE_MOD_RMUL_GEN]);;
-
-let INVERSE_MOD_RMUL_EQ = prove
- (`!n x. (x * inverse_mod n x == 1) (mod n) <=> coprime(n,x)`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL [NUMBER_TAC; ALL_TAC] THEN
-  REWRITE_TAC[COPRIME_GCD] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
-  REWRITE_TAC[INVERSE_MOD_RMUL_GEN]);;
-
-let INVERSE_MOD_LMUL_EQ = prove
- (`!n x. (inverse_mod n x * x == 1) (mod n) <=> coprime(n,x)`,
-  ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[INVERSE_MOD_RMUL_EQ]);;
-
-let INVERSE_MOD_LMUL = prove
- (`!n x. coprime(n,x) ==> (inverse_mod n x * x == 1) (mod n)`,
-  REWRITE_TAC[INVERSE_MOD_LMUL_EQ]);;
-
-let INVERSE_MOD_RMUL = prove
- (`!n x. coprime(n,x) ==> (x * inverse_mod n x == 1) (mod n)`,
-  REWRITE_TAC[INVERSE_MOD_RMUL_EQ]);;
-
-let INVERSE_MOD_UNIQUE = prove
- (`!n a x.
-        (a * x == 1) (mod n) /\ x <= n /\ ~(n = 1 /\ x = 0)
-        ==> inverse_mod n a = x`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
-   [ASM_REWRITE_TAC[CONG_MOD_0; MULT_EQ_1] THEN ARITH_TAC;
-    ALL_TAC] THEN
-  ASM_CASES_TAC `x:num = n` THENL
-   [ASM_REWRITE_TAC[NUMBER_RULE `(a * n == z) (mod n) <=> n divides z`] THEN
-    REWRITE_TAC[DIVIDES_ONE] THEN SIMP_TAC[inverse_mod; LE_REFL];
-    REPEAT STRIP_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP (ARITH_RULE
-   `~(n = 1 /\ x = 0) ==> ~(x = n) /\ x <= n ==> ~(n = 1)`)) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
-  MATCH_MP_TAC CONG_IMP_EQ THEN EXISTS_TAC `n:num` THEN
-  ASM_REWRITE_TAC[INVERSE_MOD_BOUND] THEN
-  REPEAT(CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC]) THEN
-  MATCH_MP_TAC(NUMBER_RULE
-   `(a * x == 1) (mod n) /\ (a * y == 1) (mod n) ==> (x == y) (mod n)`) THEN
-  ASM_REWRITE_TAC[INVERSE_MOD_RMUL_EQ] THEN
-  UNDISCH_TAC `(a * x == 1) (mod n)` THEN CONV_TAC NUMBER_RULE);;
-
-let INVERSE_MOD_CONG = prove
- (`!n x y. (x == y) (mod n) ==> inverse_mod n x = inverse_mod n y`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[inverse_mod] THEN
-  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
-  FIRST_ASSUM(SUBST1_TAC o MATCH_MP CONG_GCD_RIGHT) THEN
-  AP_TERM_TAC THEN ABS_TAC THEN AP_TERM_TAC THEN
-  UNDISCH_TAC `(x:num == y) (mod n)` THEN CONV_TAC NUMBER_RULE);;
-
-let INVERSE_MOD_INVERSE_MOD_CONG = prove
- (`!n x. coprime(n,x) ==> (inverse_mod n (inverse_mod n x) == x) (mod n)`,
+let GROUP_ELEMENT_ORDER_LCM_EXISTS = prove
+ (`!G x y:A.
+        x IN group_carrier G /\ y IN group_carrier G /\
+        group_mul G x y = group_mul G y x
+        ==> ?z. z IN group_carrier G /\
+                group_element_order G z =
+                lcm(group_element_order G x,group_element_order G y)`,
   REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC(NUMBER_RULE
-   `!x'. (x * x' == 1) (mod n) /\ (x' * x'' == 1) (mod n)
-         ==> (x'' == x) (mod n)`) THEN
-  EXISTS_TAC `inverse_mod n x` THEN
-  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
-   [ASM_REWRITE_TAC[INVERSE_MOD_RMUL_EQ];
-    GEN_REWRITE_TAC RAND_CONV [INVERSE_MOD_RMUL_EQ] THEN
-    CONV_TAC NUMBER_RULE]);;
+  ASM_CASES_TAC `group_element_order G (x:A) = 0` THENL
+   [ASM_MESON_TAC[LCM_0]; ALL_TAC] THEN
+  ASM_CASES_TAC `group_element_order G (y:A) = 0` THENL
+   [ASM_MESON_TAC[LCM_0]; ALL_TAC] THEN
+  MP_TAC(SPECL [`group_element_order G (x:A)`; `group_element_order G (y:A)`]
+        LCM_COPRIME_DECOMP) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN
+  REWRITE_TAC[divides; IMP_CONJ; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `m':num` THEN DISCH_TAC THEN
+  X_GEN_TAC `n':num` THEN DISCH_TAC THEN DISCH_TAC THEN
+  DISCH_THEN(fun th -> SUBST1_TAC(SYM th) THEN ASSUME_TAC(SYM th)) THEN
+  EXISTS_TAC `group_mul G (group_pow G x m') (group_pow G y n'):A` THEN
+  ASM_SIMP_TAC[GROUP_MUL; GROUP_POW] THEN
+  SUBGOAL_THEN
+   `group_element_order G (group_pow G (x:A) m') = m /\
+    group_element_order G (group_pow G (y:A) n') = n`
+  STRIP_ASSUME_TAC THENL
+   [ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_POW_GEN] THEN CONJ_TAC THEN
+    (COND_CASES_TAC THENL [ASM_MESON_TAC[MULT_CLAUSES]; ALL_TAC]) THEN
+    REWRITE_TAC[NUMBER_RULE `gcd(a * b:num,a) = a /\ gcd(a * b,b) = b`] THEN
+    ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_SIMP_TAC[DIV_MULT];
+    W(MP_TAC o PART_MATCH (lhand o rand) GROUP_ELEMENT_ORDER_MUL_EQ o
+      lhand o snd) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+    ASM_SIMP_TAC[GROUP_POW] THEN MATCH_MP_TAC GROUP_COMMUTES_POW THEN
+    ASM_SIMP_TAC[GROUP_POW] THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC GROUP_COMMUTES_POW THEN ASM_REWRITE_TAC[]]);;
 
-let INVERSE_MOD_INVERSE_MOD = prove
- (`!n x. coprime(n,x) /\ 1 <= x /\ x <= n
-         ==> inverse_mod n (inverse_mod n x) = x`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC INVERSE_MOD_UNIQUE THEN
-  ASM_SIMP_TAC[INVERSE_MOD_LMUL_EQ; LE_1]);;
+let ABELIAN_GROUP_ELEMENT_ORDER_LCM_EXISTS = prove
+ (`!G x y:A.
+        abelian_group G /\
+        x IN group_carrier G /\ y IN group_carrier G
+        ==> ?z. z IN group_carrier G /\
+                group_element_order G z =
+                lcm(group_element_order G x,group_element_order G y)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC GROUP_ELEMENT_ORDER_LCM_EXISTS THEN
+  ASM_MESON_TAC[abelian_group]);;
 
-let ORDER_INVERSE_MOD = prove
- (`!n a. coprime(n,a) ==> order n (inverse_mod n a) = order n a`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[order] THEN
-  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
-  X_GEN_TAC `d:num` THEN REWRITE_TAC[] THEN
-  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
-  X_GEN_TAC `k:num` THEN REWRITE_TAC[] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-  MATCH_MP_TAC(NUMBER_RULE
-   `(a * b == 1) (mod n) ==> ((a == 1) (mod n) <=> (b == 1) (mod n))`) THEN
-  REWRITE_TAC[GSYM MULT_EXP] THEN MATCH_MP_TAC CONG_EXP_1 THEN
-  ASM_REWRITE_TAC[INVERSE_MOD_LMUL_EQ]);;
+let ABELIAN_GROUP_ORDER_DIVIDES_MAXIMAL = prove
+ (`!G:A group.
+      abelian_group G /\ FINITE(group_carrier G)
+      ==> ?x. x IN group_carrier G /\
+              !y. y IN group_carrier G
+                  ==> group_element_order G y divides group_element_order G x`,
+  REPEAT STRIP_TAC THEN MP_TAC(fst(EQ_IMP_RULE(ISPEC
+   `IMAGE (group_element_order G) (group_carrier G:A->bool)` num_MAX))) THEN
+  REWRITE_TAC[MESON[IN] `IMAGE f s x <=> x IN IMAGE f s`] THEN
+  ASM_SIMP_TAC[GSYM num_FINITE; FINITE_IMAGE] THEN
+  REWRITE_TAC[MEMBER_NOT_EMPTY; IMAGE_EQ_EMPTY; GROUP_CARRIER_NONEMPTY] THEN
+  REWRITE_TAC[EXISTS_IN_IMAGE; FORALL_IN_IMAGE] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `z:A` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN X_GEN_TAC `y:A` THEN DISCH_TAC THEN
+  REWRITE_TAC[DIVIDES_LCM_LEFT] THEN REWRITE_TAC[GSYM LE_ANTISYM] THEN
+  CONJ_TAC THENL
+   [ASM_MESON_TAC[ABELIAN_GROUP_ELEMENT_ORDER_LCM_EXISTS];
+    ASM_MESON_TAC[DIVIDES_LE; LCM; FINITE_GROUP_ELEMENT_ORDER_NONZERO;
+                  LCM_ZERO]]);;
+
+let ABELIAN_GROUP_ELEMENT_ORDER_DIVIDES_MAXIMAL_ALT = prove
+ (`!G:A group.
+        abelian_group G /\ FINITE(group_carrier G)
+        ==> ?x. x IN group_carrier G /\
+                !y. y IN group_carrier G
+                    ==> group_pow G y (group_element_order G x) = group_id G`,
+  SIMP_TAC[GROUP_POW_EQ_ID] THEN
+  REWRITE_TAC[ABELIAN_GROUP_ORDER_DIVIDES_MAXIMAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Multiplicative group of integers mod n, with degenerate {1} for n <= 1.   *)
