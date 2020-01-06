@@ -31,6 +31,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/lucas_lehmer \
 	Examples/mangoldt \
 	Examples/mccarthy \
+	Examples/miller_rabin \
 	Examples/misiurewicz \
 	Examples/mizar \
 	Library/modmul_group \

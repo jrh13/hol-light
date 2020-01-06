@@ -8,29 +8,37 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sun  5th Jan 2020       Examples/miller_rabin.ml [new file]
+
+Added a new file giving some results about Miller-Rabin strong probable primes
+or pseudoprimes (in our naming we  use "pseudoprime" inclusively to include
+primes). This consists of the basic definitions, a few elementary properties
+and relations with primality, and then the main "1/4 of (coprime) numbers"
+upper bounds on the density of pseudoprime bases for a composite number.
+
 Sat 28th Dec 2019       arith.ml, Library/prime.ml, Library/pocklington.ml
 
 Added a few more basic number-theoretic lemmas:
 
   DIV_EQ_SELF =
     |- !m n. m DIV n = m <=> m = 0 \/ n = 1
-  
+
   LCM_EQ_MULT =
     |- !m n. lcm(m,n) = m * n <=> m = 0 \/ n = 0 \/ coprime(m,n)
-  
+
   LCM_LE_MULT =
     |- !m n. lcm(m,n) <= m * n
-  
+
   LE_LCM =
     |- (!m n. m <= lcm(m,n) <=> n = 0 ==> m = 0) /\
        (!m n. n <= lcm(m,n) <=> m = 0 ==> n = 0)
-  
+
   MAX_LE_LCM =
     |- !m n. (m = 0 <=> n = 0) ==> MAX m n <= lcm(m,n)
-  
+
   MAX_LE_LCM_EQ =
     |- !m n. MAX m n <= lcm(m,n) <=> m = 0 <=> n = 0
-  
+
   ORDER_DIVIDES_MAXIMAL =
     |- !p. ~(p = 1)
            ==> ?n. coprime(p,n) /\
