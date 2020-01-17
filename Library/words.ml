@@ -239,6 +239,14 @@ let BITVAL_BOUND_ALT = prove
  (`!b. bitval b < 2`,
   REWRITE_TAC[bitval] THEN ARITH_TAC);;
 
+let ODD_BITVAL = prove
+ (`!b. ODD(bitval b) <=> b`,
+  REWRITE_TAC[FORALL_BOOL_THM; BITVAL_CLAUSES; ARITH]);;
+
+let EVEN_BITVAL = prove
+ (`!b. EVEN(bitval b) <=> ~b`,
+  REWRITE_TAC[FORALL_BOOL_THM; BITVAL_CLAUSES; ARITH]);;
+
 let NUM_AS_BITVAL = prove
  (`!n. n <= 1 <=> ?b. n = bitval b`,
   REWRITE_TAC[EXISTS_BOOL_THM; BITVAL_CLAUSES] THEN ARITH_TAC);;
@@ -511,6 +519,10 @@ let VAL_WORD_1 = prove
   REWRITE_TAC[VAL_WORD] THEN MATCH_MP_TAC MOD_LT THEN
   GEN_REWRITE_TAC LAND_CONV [ARITH_RULE `1 = 2 EXP 0`] THEN
   SIMP_TAC[LT_EXP; LE_1; DIMINDEX_GE_1] THEN ARITH_TAC);;
+
+let WORD_BITVAL = prove
+ (`!b. word(bitval b) = if b then word 1 else word 0`,
+  REWRITE_TAC[bitval] THEN MESON_TAC[]);;
 
 let VAL_WORD_BITVAL = prove
  (`!b. val(word(bitval b)) = bitval b`,
@@ -2214,7 +2226,7 @@ let WORD_ARITH_TAC =
   REWRITE_TAC[irelational2; relational2; GSYM VAL_EQ; INT_IVAL] THEN
   REWRITE_TAC[INT_GT; INT_GE; GT; GE] THEN
   REWRITE_TAC[GSYM INT_OF_NUM_LE; GSYM INT_OF_NUM_LT; GSYM INT_OF_NUM_EQ] THEN
-  REWRITE_TAC[GSYM INT_OF_NUM_POW; GSYM INT_OF_NUM_MUL; 
+  REWRITE_TAC[GSYM INT_OF_NUM_POW; GSYM INT_OF_NUM_MUL;
               GSYM INT_OF_NUM_ADD] THEN
   REWRITE_TAC[INT_VAL_WORD_NEG_CASES; INT_VAL_WORD_ADD_CASES;
               INT_VAL_WORD_INT_MIN;
@@ -2999,6 +3011,24 @@ let WORD_OR_MASKS = prove
 let WORD_XOR_MASKS = prove
  (`!p q. word_xor (word_neg(word(bitval p))) (word_neg(word(bitval q))) =
          word_neg(word(bitval(~(p <=> q))))`,
+  REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_XOR_0; WORD_XOR_REFL]);;
+
+let WORD_AND_CONDITIONS = prove
+ (`!p q. word_and (word(bitval p)) (word(bitval q)) =
+         word(bitval(p /\ q))`,
+  REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_AND_0; WORD_AND_REFL]);;
+
+let WORD_OR_CONDITIONS = prove
+ (`!p q. word_or (word(bitval p)) (word(bitval q)) =
+         word(bitval(p \/ q))`,
+  REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
+  REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_OR_0; WORD_OR_REFL]);;
+
+let WORD_XOR_CONDITIONS = prove
+ (`!p q. word_xor (word(bitval p)) (word(bitval q)) =
+         word(bitval(~(p <=> q)))`,
   REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
   REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_XOR_0; WORD_XOR_REFL]);;
 

@@ -332,6 +332,11 @@ let IS_REALINTERVAL_UNIV = prove
  (`is_realinterval (:real)`,
   REWRITE_TAC[is_realinterval; IN_UNIV]);;
 
+let IS_REALINTERVAL_INTER = prove
+ (`!s t. is_realinterval s /\ is_realinterval t
+         ==> is_realinterval(s INTER t)`,
+  REWRITE_TAC[is_realinterval; IN_INTER] THEN MESON_TAC[]);;
+
 let open_real_interval = new_definition
   `open_real_interval(a:real,b:real) = {x:real | a < x /\ x < b}`;;
 
