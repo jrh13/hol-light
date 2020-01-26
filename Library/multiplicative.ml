@@ -128,7 +128,7 @@ let MULTIPLICATIVE_CONVOLUTION = prove
      `(e * e') * d * d':num = (d * e) * (d' * e')`] THEN
     ASM_SIMP_TAC[DIV_MULT; MULT_EQ_0] THEN
     FIRST_ASSUM(ASSUME_TAC o MATCH_MP (NUMBER_RULE
-     `coprime(a * b,c * d) ==> coprime(c,a) /\ coprime(d,b)`)) THEN
+     `coprime(a * b:num,c * d) ==> coprime(c,a) /\ coprime(d,b)`)) THEN
     ASM_SIMP_TAC[] THEN ARITH_TAC]);;
 
 let MULTIPLICATIVE_CONST = prove
@@ -308,7 +308,7 @@ let REAL_MULTIPLICATIVE_CONVOLUTION = prove
      `(e * e') * d * d':num = (d * e) * (d' * e')`] THEN
     ASM_SIMP_TAC[DIV_MULT; MULT_EQ_0] THEN
     FIRST_ASSUM(ASSUME_TAC o MATCH_MP (NUMBER_RULE
-     `coprime(a * b,c * d) ==> coprime(c,a) /\ coprime(d,b)`)) THEN
+     `coprime(a * b:num,c * d) ==> coprime(c,a) /\ coprime(d,b)`)) THEN
     ASM_SIMP_TAC[] THEN REAL_ARITH_TAC]);;
 
 let REAL_MULTIPLICATIVE_DIVISORSUM = prove
@@ -365,7 +365,7 @@ let MOBIUS_MULT = prove
   ASM_CASES_TAC `a = 0` THENL [ASM_MESON_TAC[PRIME_2; DIVIDES_0]; ALL_TAC] THEN
   ASM_CASES_TAC `b = 0` THENL [ASM_MESON_TAC[PRIME_2; DIVIDES_0]; ALL_TAC] THEN
   CONJ_TAC THENL
-   [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{p | p divides a * b}` THEN
+   [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{p:num | p divides a * b}` THEN
     ASM_SIMP_TAC[FINITE_DIVISORS; MULT_EQ_0] THEN SET_TAC[];
     SIMP_TAC[EXTENSION; IN_INTER; NOT_IN_EMPTY; IN_UNION; AND_FORALL_THM] THEN
     X_GEN_TAC `p:num` THEN REWRITE_TAC[IN_ELIM_THM] THEN
@@ -468,4 +468,4 @@ let MOBIUS_INVERSION = prove
     DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     REWRITE_TAC[REAL_MUL_SYM] THEN
     ASM_MESON_TAC[DIVIDES_DIVIDES_DIV; MULT_SYM;
-                  NUMBER_RULE `(a * b) divides c ==> b divides c`]]);;
+                  NUMBER_RULE `(a * b:num) divides c ==> b divides c`]]);;

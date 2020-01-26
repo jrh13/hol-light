@@ -8,6 +8,92 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 24th Jan 2020       Library/prime.ml
+
+Removed the unnecessary 1 <= n hypothesis from
+
+  DIVIDES_DIVIDES_DIV =
+   |- !n d e. d divides n ==> (e divides n DIV d <=> d * e divides n)
+
+and likewise a ~(n = 0) hypothesis from
+
+  POWER_RESIDUE_MODULO_PRIMITIVE =
+    |- !n a k.
+         coprime(n,a) /\ (?x. order n x = phi n)
+         ==> ((?x. (x EXP k == a) (mod n)) <=>
+              (a EXP (phi n DIV gcd (k,phi n)) == 1) (mod n))
+
+Thu 23rd Jan 2020       int.ml, Library/integer.ml
+
+Added miscelleneous trivia around integer divisibility:
+
+  INT_CONG_MOD_ABS =
+    |- !a b n. (a == b) (mod abs n) <=> (a == b) (mod n)
+
+  INT_COPRIME_LREM =
+    |- !a b. coprime(a rem n,n) <=> coprime(a,n)
+
+  INT_COPRIME_RREM =
+   |- !m n. coprime(m,n rem m) <=> coprime(m,n)
+
+  INT_REM_RABS =
+   |- !x y. x rem abs y = x rem y
+
+  NUM_OF_INT_ADD =
+    |- !x y.
+           &0 <= x /\ &0 <= y
+           ==> num_of_int (x + y) = num_of_int x + num_of_int y
+
+  NUM_OF_INT_MUL =
+    |- !x y.
+           &0 <= x /\ &0 <= y
+           ==> num_of_int (x * y) = num_of_int x * num_of_int y
+
+  NUM_OF_INT_POW =
+   |- !x n. &0 <= x ==> num_of_int (x pow n) = num_of_int x EXP n
+
+Wed 22nd Jan 2020       int.ml
+
+Added a few trivial integer remainder theorems, analogs of things already
+there for the natural numbers
+
+  INT_CONG_LREM =
+    |- !x y n. (x rem n == y) (mod n) <=> (x == y) (mod n)
+
+  INT_CONG_RREM =
+    |- !x y n. (x == y rem n) (mod n) <=> (x == y) (mod n)
+
+  INT_REM_REM_MUL =
+    |- (!m n p. m rem (n * p) rem n = m rem n) /\
+       (!m n p. m rem (n * p) rem p = m rem p)
+
+Tue 21st Jan 2020       Library/pocklington.ml
+
+Added a couple of trivial but handy formulations of congruences mod 2:
+
+  CONG_MOD_2 =
+    |- !a b. (a == b) (mod 2) <=> (EVEN a <=> EVEN b)
+
+  CONG_MOD_2_ALT =
+    |- !a b. (a == b) (mod 2) <=> (ODD a <=> ODD b)
+
+Mon 20th Jan 2020       int.ml, Library/products.ml
+
+Added a definition of "iproduct" (product over integers) to the Library file
+"Library/products.ml", with theorems exactly analogous to those of real
+products minus the ones about inversion and division. The only other difference
+is that there is no "prioritize_int()" to avoid disturbing any existing
+applications.
+
+In support, added two trivial theorems where the analogs of existing real
+theorems were forgotten:
+
+  INT_LE_MUL2 =
+    |- !w x y z. &0 <= w /\ w <= x /\ &0 <= y /\ y <= z ==> w * y <= x * z
+
+  INT_LT_MUL2 =
+    |- !w x y z. &0 <= w /\ w < x /\ &0 <= y /\ y < z ==> w * y < x * z
+
 Sun  5th Jan 2020       Examples/miller_rabin.ml [new file]
 
 Added a new file giving some results about Miller-Rabin strong probable primes

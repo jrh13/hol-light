@@ -368,6 +368,7 @@ let INT_LE_MAX = INT_OF_REAL_THM REAL_LE_MAX;;
 let INT_LE_MIN = INT_OF_REAL_THM REAL_LE_MIN;;
 let INT_LE_MUL = INT_OF_REAL_THM REAL_LE_MUL;;
 let INT_LE_MUL_EQ = INT_OF_REAL_THM REAL_LE_MUL_EQ;;
+let INT_LE_MUL2 = INT_OF_REAL_THM REAL_LE_MUL2;;
 let INT_LE_NEG2 = INT_OF_REAL_THM REAL_LE_NEG2;;
 let INT_LE_NEGL = INT_OF_REAL_THM REAL_LE_NEGL;;
 let INT_LE_NEGR = INT_OF_REAL_THM REAL_LE_NEGR;;
@@ -409,6 +410,7 @@ let INT_LT_MAX = INT_OF_REAL_THM REAL_LT_MAX;;
 let INT_LT_MIN = INT_OF_REAL_THM REAL_LT_MIN;;
 let INT_LT_MUL = INT_OF_REAL_THM REAL_LT_MUL;;
 let INT_LT_MUL_EQ = INT_OF_REAL_THM REAL_LT_MUL_EQ;;
+let INT_LT_MUL2 = INT_OF_REAL_THM REAL_LT_MUL2;;
 let INT_LT_NEG2 = INT_OF_REAL_THM REAL_LT_NEG2;;
 let INT_LT_NEGTOTAL = INT_OF_REAL_THM REAL_LT_NEGTOTAL;;
 let INT_LT_POW2 = INT_OF_REAL_THM REAL_LT_POW2;;
@@ -1292,6 +1294,10 @@ let INT_DIV_RNEG,INT_REM_RNEG = (CONJ_PAIR o prove)
   MP_TAC(SPECL [`m:int`; `n:int`] INT_DIVISION) THEN
   ASM_INT_ARITH_TAC);;
 
+let INT_REM_RABS = prove
+ (`!x y. x rem (abs y) = x rem y`,
+  REWRITE_TAC[FORALL_INT_CASES; INT_ABS_NEG; INT_REM_RNEG; INT_ABS_NUM]);;
+
 let INT_REM_REM = prove
  (`!m n. (m rem n) rem n = m rem n`,
   REPEAT GEN_TAC THEN
@@ -1336,12 +1342,25 @@ let INT_MUL_DIV_EQ = prove
   MP_TAC(SPECL [`m:int`; `n:int`] INT_DIVISION_SIMP) THEN
   REWRITE_TAC[GSYM INT_REM_EQ_0] THEN CONV_TAC INT_RING);;
 
+let INT_CONG_LREM = prove
+ (`!x y n. (x rem n == y) (mod n) <=> (x == y) (mod n)`,
+  REWRITE_TAC[GSYM INT_REM_EQ; INT_REM_REM]);;
+
+let INT_CONG_RREM = prove
+ (`!x y n. (x == y rem n) (mod n) <=> (x == y) (mod n)`,
+  REWRITE_TAC[GSYM INT_REM_EQ; INT_REM_REM]);;
+
 let INT_REM_MOD_SELF = prove
  (`!m n. (m rem n == m) (mod n)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[int_congruent] THEN
-  EXISTS_TAC `--(m div n)` THEN
-  REWRITE_TAC[INT_ARITH `r - m:int = n * --d <=> d * n + r = m`] THEN
-  REWRITE_TAC[INT_DIVISION_SIMP]);;
+  REWRITE_TAC[INT_CONG_LREM] THEN CONV_TAC INTEGER_RULE);;
+
+let INT_REM_REM_MUL = prove
+ (`(!m n p. m rem (n * p) rem n = m rem n) /\
+   (!m n p. m rem (n * p) rem p = m rem p)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[INT_REM_EQ] THENL
+   [MP_TAC(ISPECL [`m:int`; `n * p:int`] INT_REM_MOD_SELF);
+    MP_TAC(ISPECL [`m:int`; `n * p:int`] INT_REM_MOD_SELF)] THEN
+  CONV_TAC INTEGER_RULE);;
 
 let INT_CONG_SOLVE_BOUNDS = prove
  (`!a n:int. ~(n = &0) ==> ?x. &0 <= x /\ x < abs n /\ (x == a) (mod n)`,
@@ -1740,6 +1759,23 @@ let INT_OF_NUM_OF_INT = prove
 let NUM_OF_INT = prove
  (`!x. &0 <= x <=> (&(num_of_int x) = x)`,
   MESON_TAC[INT_OF_NUM_OF_INT; INT_POS]);;
+
+let NUM_OF_INT_ADD = prove
+ (`!x y. &0 <= x /\ &0 <= y
+         ==> num_of_int(x + y) = num_of_int x + num_of_int y`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN
+  REWRITE_TAC[GSYM INT_FORALL_POS; INT_OF_NUM_ADD; NUM_OF_INT_OF_NUM]);;
+
+let NUM_OF_INT_MUL = prove
+ (`!x y. &0 <= x /\ &0 <= y
+         ==> num_of_int(x * y) = num_of_int x * num_of_int y`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN
+  REWRITE_TAC[GSYM INT_FORALL_POS; INT_OF_NUM_MUL; NUM_OF_INT_OF_NUM]);;
+
+let NUM_OF_INT_POW = prove
+ (`!x n. &0 <= x ==> num_of_int(x pow n) = num_of_int x EXP n`,
+  GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN
+  REWRITE_TAC[GSYM INT_FORALL_POS; INT_OF_NUM_POW; NUM_OF_INT_OF_NUM]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Now define similar notions over the natural numbers.                      *)

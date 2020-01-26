@@ -421,6 +421,10 @@ let INT_CONG = prove
  (`!x y n. (x == y) (mod n) <=> n divides (x - y)`,
   INTEGER_TAC);;
 
+let INT_CONG_MOD_ABS = prove
+ (`!a b n:int. (a == b) (mod (abs n)) <=> (a == b) (mod n)`,
+  REWRITE_TAC[INT_CONG; INT_DIVIDES_LABS]);;
+
 let INT_CONG_MUL_LCANCEL = prove
  (`!a n x y. coprime(a,n) /\ (a * x == a * y) (mod n) ==> (x == y) (mod n)`,
   INTEGER_TAC);;
@@ -516,6 +520,14 @@ let INT_CONG_DIVIDES = prove
 let INT_CONG_COPRIME = prove
  (`!x y n. (x == y) (mod n) ==> (coprime(n,x) <=> coprime(n,y))`,
   INTEGER_TAC);;
+
+let INT_COPRIME_RREM = prove
+ (`!m n. coprime(m,n rem m) <=> coprime(m,n)`,
+  MESON_TAC[INT_CONG_COPRIME; INT_CONG_RREM; INT_CONG_REFL]);;
+
+let INT_COPRIME_LREM = prove
+ (`!a b. coprime(a rem n,n) <=> coprime(a,n)`,
+  MESON_TAC[INT_COPRIME_RREM; INT_COPRIME_SYM]);;
 
 let INT_CONG_MOD_MULT = prove
  (`!x y m n. (x == y) (mod n) /\ m divides n ==> (x == y) (mod m)`,

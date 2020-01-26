@@ -339,15 +339,11 @@ let FINITE_SPECIAL_DIVISORS = prove
   SET_TAC[]);;
 
 let DIVIDES_DIVIDES_DIV = prove
- (`!n d. 1 <= n /\ d divides n
-         ==> (e divides (n DIV d) <=> (d * e) divides n)`,
-  REPEAT GEN_TAC THEN
-  GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [DIVIDES_DIV_MULT] THEN
-  ABBREV_TAC `q = n DIV d` THEN
-  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_CASES_TAC `d = 0` THENL
-   [ASM_SIMP_TAC[MULT_CLAUSES; LE_1];
-    ASM_MESON_TAC[DIVIDES_LMUL2_EQ; MULT_SYM]]);;
+ (`!n d e. d divides n ==> (e divides (n DIV d) <=> (d * e) divides n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `d = 0` THEN
+  ASM_REWRITE_TAC[DIV_ZERO; MULT_CLAUSES; DIVIDES_0; DIVIDES_ZERO] THEN
+  REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM] THEN
+  ASM_SIMP_TAC[DIV_MULT; GSYM MULT_ASSOC; EQ_MULT_LCANCEL]);;
 
 let DIVISORS_EQ = prove
  (`!m n. m = n <=> !d. d divides m <=> d divides n`,

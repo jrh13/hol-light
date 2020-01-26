@@ -98,6 +98,17 @@ let CONG_MOD_1 = prove
  (`!x y. (x == y) (mod 1)`,
   NUMBER_TAC);;
 
+let CONG_MOD_2 = prove
+ (`!a b. (a == b) (mod 2) <=> (EVEN a <=> EVEN b)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONG; MOD_2_CASES] THEN
+  ASM_CASES_TAC `EVEN a` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `EVEN b` THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC NUM_REDUCE_CONV);;
+
+let CONG_MOD_2_ALT = prove
+ (`!a b. (a == b) (mod 2) <=> (ODD a <=> ODD b)`,
+  REWRITE_TAC[CONG_MOD_2; GSYM NOT_ODD] THEN MESON_TAC[]);;
+
 let CONG_0 = prove
  (`!x n. ((x == 0) (mod n) <=> n divides x)`,
   NUMBER_TAC);;

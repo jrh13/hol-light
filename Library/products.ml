@@ -295,6 +295,274 @@ let th = prove
     extend_basic_congs (map SPEC_ALL (CONJUNCTS th));;
 
 (* ------------------------------------------------------------------------- *)
+(* Now products over integers.                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let NEUTRAL_INT_MUL = prove
+ (`neutral(( * ):int->int->int) = &1`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[INT_MUL_LID; INT_MUL_RID]);;
+
+let MONOIDAL_INT_MUL = prove
+ (`monoidal(( * ):int->int->int)`,
+  REWRITE_TAC[monoidal; NEUTRAL_INT_MUL] THEN INT_ARITH_TAC);;
+
+let iproduct = new_definition
+  `iproduct = iterate (( * ):int->int->int)`;;
+
+let IPRODUCT_CLAUSES = prove
+ (`(!f. iproduct {} f = &1) /\
+   (!x f s. FINITE(s)
+            ==> (iproduct (x INSERT s) f =
+                 if x IN s then iproduct s f else f(x) * iproduct s f))`,
+  REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_SUPPORT = prove
+ (`!f s. iproduct (support ( * ) f s) f = iproduct s f`,
+  REWRITE_TAC[iproduct; ITERATE_SUPPORT]);;
+
+let IPRODUCT_UNION = prove
+ (`!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
+           ==> (iproduct (s UNION t) f = iproduct s f * iproduct t f)`,
+  SIMP_TAC[iproduct; ITERATE_UNION; MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_IMAGE = prove
+ (`!f g s. (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+           ==> (iproduct (IMAGE f s) g = iproduct s (g o f))`,
+  REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
+  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_ADD_SPLIT = prove
+ (`!f m n p.
+        m <= n + 1
+        ==> (iproduct (m..(n+p)) f = iproduct(m..n) f * iproduct(n+1..n+p) f)`,
+  SIMP_TAC[NUMSEG_ADD_SPLIT; IPRODUCT_UNION; DISJOINT_NUMSEG; FINITE_NUMSEG;
+           ARITH_RULE `x < x + 1`]);;
+
+let IPRODUCT_POS_LE = prove
+ (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f x) ==> &0 <= iproduct s f`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; INT_POS; IN_INSERT; INT_LE_MUL]);;
+
+let IPRODUCT_POS_LE_NUMSEG = prove
+ (`!f m n. (!x. m <= x /\ x <= n ==> &0 <= f x) ==> &0 <= iproduct(m..n) f`,
+  SIMP_TAC[IPRODUCT_POS_LE; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let IPRODUCT_POS_LT = prove
+ (`!f s. FINITE s /\ (!x. x IN s ==> &0 < f x) ==> &0 < iproduct s f`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; INT_LT_01; IN_INSERT; INT_LT_MUL]);;
+
+let IPRODUCT_POS_LT_NUMSEG = prove
+ (`!f m n. (!x. m <= x /\ x <= n ==> &0 < f x) ==> &0 < iproduct(m..n) f`,
+  SIMP_TAC[IPRODUCT_POS_LT; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let IPRODUCT_OFFSET = prove
+ (`!f m p. iproduct(m+p..n+p) f = iproduct(m..n) (\i. f(i + p))`,
+  SIMP_TAC[NUMSEG_OFFSET_IMAGE; IPRODUCT_IMAGE;
+           EQ_ADD_RCANCEL; FINITE_NUMSEG] THEN
+  REWRITE_TAC[o_DEF]);;
+
+let IPRODUCT_SING = prove
+ (`!f x. iproduct {x} f = f(x)`,
+  SIMP_TAC[IPRODUCT_CLAUSES; FINITE_RULES; NOT_IN_EMPTY; INT_MUL_RID]);;
+
+let IPRODUCT_SING_NUMSEG = prove
+ (`!f n. iproduct(n..n) f = f(n)`,
+  REWRITE_TAC[NUMSEG_SING; IPRODUCT_SING]);;
+
+let IPRODUCT_CLAUSES_NUMSEG = prove
+ (`(!m. iproduct(m..0) f = if m = 0 then f(0) else &1) /\
+   (!m n. iproduct(m..SUC n) f = if m <= SUC n then iproduct(m..n) f * f(SUC n)
+                                else iproduct(m..n) f)`,
+  REWRITE_TAC[NUMSEG_CLAUSES] THEN REPEAT STRIP_TAC THEN
+  COND_CASES_TAC THEN
+  ASM_SIMP_TAC[IPRODUCT_SING; IPRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
+  REWRITE_TAC[ARITH_RULE `~(SUC n <= n)`; INT_MUL_AC]);;
+
+let IPRODUCT_EQ = prove
+ (`!f g s. (!x. x IN s ==> (f x = g x)) ==> iproduct s f = iproduct s g`,
+  REWRITE_TAC[iproduct] THEN MATCH_MP_TAC ITERATE_EQ THEN
+  REWRITE_TAC[MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_EQ_NUMSEG = prove
+ (`!f g m n. (!i. m <= i /\ i <= n ==> (f(i) = g(i)))
+             ==> (iproduct(m..n) f = iproduct(m..n) g)`,
+  MESON_TAC[IPRODUCT_EQ; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let IPRODUCT_EQ_0 = prove
+ (`!f s. FINITE s ==> (iproduct s f = &0 <=> ?x. x IN s /\ f(x) = &0)`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; INT_ENTIRE; IN_INSERT; INT_OF_NUM_EQ; ARITH;
+           NOT_IN_EMPTY] THEN
+  MESON_TAC[]);;
+
+let IPRODUCT_EQ_0_NUMSEG = prove
+ (`!f m n. iproduct(m..n) f = &0 <=> ?x. m <= x /\ x <= n /\ f(x) = &0`,
+  SIMP_TAC[IPRODUCT_EQ_0; FINITE_NUMSEG; IN_NUMSEG; GSYM CONJ_ASSOC]);;
+
+let IPRODUCT_LE = prove
+ (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x) /\ f(x) <= g(x))
+         ==> iproduct s f <= iproduct s g`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IN_INSERT; IPRODUCT_CLAUSES; NOT_IN_EMPTY; INT_LE_REFL] THEN
+  MESON_TAC[INT_LE_MUL2; IPRODUCT_POS_LE]);;
+
+let IPRODUCT_LE_NUMSEG = prove
+ (`!f m n. (!i. m <= i /\ i <= n ==> &0 <= f(i) /\ f(i) <= g(i))
+           ==> iproduct(m..n) f <= iproduct(m..n) g`,
+  SIMP_TAC[IPRODUCT_LE; FINITE_NUMSEG; IN_NUMSEG]);;
+
+let IPRODUCT_EQ_1 = prove
+ (`!f s. (!x:A. x IN s ==> (f(x) = &1)) ==> (iproduct s f = &1)`,
+  REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
+  SIMP_TAC[ITERATE_EQ_NEUTRAL; MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_EQ_1_NUMSEG = prove
+ (`!f m n. (!i. m <= i /\ i <= n ==> (f(i) = &1)) ==> (iproduct(m..n) f = &1)`,
+  SIMP_TAC[IPRODUCT_EQ_1; IN_NUMSEG]);;
+
+let IPRODUCT_MUL_GEN = prove
+ (`!f g s.
+       FINITE {x | x IN s /\ ~(f x = &1)} /\ FINITE {x | x IN s /\ ~(g x = &1)}
+       ==> iproduct s (\x. f x * g x) = iproduct s f * iproduct s g`,
+  REWRITE_TAC[GSYM NEUTRAL_INT_MUL; GSYM support; iproduct] THEN
+  MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_INT_MUL);;
+
+let IPRODUCT_MUL = prove
+ (`!f g s. FINITE s
+           ==> iproduct s (\x. f x * g x) = iproduct s f * iproduct s g`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; INT_MUL_AC; INT_MUL_LID]);;
+
+let IPRODUCT_MUL_NUMSEG = prove
+ (`!f g m n.
+     iproduct(m..n) (\x. f x * g x) = iproduct(m..n) f * iproduct(m..n) g`,
+  SIMP_TAC[IPRODUCT_MUL; FINITE_NUMSEG]);;
+
+let IPRODUCT_CONST = prove
+ (`!c s. FINITE s ==> iproduct s (\x. c) = c pow (CARD s)`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; CARD_CLAUSES; INT_POW]);;
+
+let IPRODUCT_CONST_NUMSEG = prove
+ (`!c m n. iproduct (m..n) (\x. c) = c pow ((n + 1) - m)`,
+  SIMP_TAC[IPRODUCT_CONST; CARD_NUMSEG; FINITE_NUMSEG]);;
+
+let IPRODUCT_CONST_NUMSEG_1 = prove
+ (`!c n. iproduct(1..n) (\x. c) = c pow n`,
+  SIMP_TAC[IPRODUCT_CONST; CARD_NUMSEG_1; FINITE_NUMSEG]);;
+
+let IPRODUCT_NEG = prove
+ (`!f s:A->bool.
+     FINITE s
+     ==> iproduct s (\i. --(f i)) = --(&1) pow (CARD s) * iproduct s f`,
+  SIMP_TAC[GSYM IPRODUCT_CONST; GSYM IPRODUCT_MUL] THEN
+  REWRITE_TAC[INT_MUL_LNEG; INT_MUL_LID]);;
+
+let IPRODUCT_NEG_NUMSEG = prove
+ (`!f m n. iproduct(m..n) (\i. --(f i)) =
+           --(&1) pow ((n + 1) - m) * iproduct(m..n) f`,
+  SIMP_TAC[IPRODUCT_NEG; CARD_NUMSEG; FINITE_NUMSEG]);;
+
+let IPRODUCT_NEG_NUMSEG_1 = prove
+ (`!f n. iproduct(1..n) (\i. --(f i)) = --(&1) pow n * iproduct(1..n) f`,
+  REWRITE_TAC[IPRODUCT_NEG_NUMSEG; ADD_SUB]);;
+
+let IPRODUCT_ONE = prove
+ (`!s. iproduct s (\n. &1) = &1`,
+  SIMP_TAC[IPRODUCT_EQ_1]);;
+
+let IPRODUCT_LE_1 = prove
+ (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f x /\ f x <= &1)
+         ==> iproduct s f <= &1`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; INT_LE_REFL; IN_INSERT] THEN
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [GSYM INT_MUL_LID] THEN
+  MATCH_MP_TAC INT_LE_MUL2 THEN ASM_SIMP_TAC[IPRODUCT_POS_LE]);;
+
+let IPRODUCT_ABS = prove
+ (`!f s. FINITE s ==> iproduct s (\x. abs(f x)) = abs(iproduct s f)`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; INT_ABS_MUL; INT_ABS_NUM]);;
+
+let IPRODUCT_CLOSED = prove
+ (`!P f:A->int s.
+        P(&1) /\ (!x y. P x /\ P y ==> P(x * y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(iproduct s f)`,
+  REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_INT_MUL) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:int->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_INT_MUL; GSYM iproduct]);;
+
+let IPRODUCT_CLAUSES_LEFT = prove
+ (`!f m n. m <= n ==> iproduct(m..n) f = f(m) * iproduct(m+1..n) f`,
+  SIMP_TAC[GSYM NUMSEG_LREC; IPRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
+  ARITH_TAC);;
+
+let IPRODUCT_CLAUSES_RIGHT = prove
+ (`!f m n. 0 < n /\ m <= n ==> iproduct(m..n) f = iproduct(m..n-1) f * f(n)`,
+  GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
+  SIMP_TAC[LT_REFL; IPRODUCT_CLAUSES_NUMSEG; SUC_SUB1]);;
+
+let INT_OF_NUM_NPRODUCT = prove
+ (`!f:A->num s. FINITE s ==> &(nproduct s f) = iproduct s (\x. &(f x))`,
+  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[IPRODUCT_CLAUSES; NPRODUCT_CLAUSES; GSYM INT_OF_NUM_MUL]);;
+
+let IPRODUCT_SUPERSET = prove
+ (`!f:A->int u v.
+        u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> f(x) = &1)
+        ==> iproduct v f = iproduct u f`,
+  SIMP_TAC[iproduct; GSYM NEUTRAL_INT_MUL;
+           ITERATE_SUPERSET; MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_UNIV = prove
+ (`!f:A->int s.
+        support ( * ) f (:A) SUBSET s ==> iproduct s f = iproduct (:A) f`,
+  REWRITE_TAC[iproduct] THEN MATCH_MP_TAC ITERATE_UNIV THEN
+  REWRITE_TAC[MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_PAIR = prove
+ (`!f m n. iproduct(2*m..2*n+1) f = iproduct(m..n) (\i. f(2*i) * f(2*i+1))`,
+  MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_INT_MUL) THEN
+  REWRITE_TAC[iproduct; NEUTRAL_INT_MUL]);;
+
+let IPRODUCT_REFLECT = prove
+ (`!x m n. iproduct(m..n) x =
+           if n < m then &1 else iproduct(0..n-m) (\i. x(n - i))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[iproduct] THEN
+  GEN_REWRITE_TAC LAND_CONV [MATCH_MP ITERATE_REFLECT MONOIDAL_INT_MUL] THEN
+  REWRITE_TAC[NEUTRAL_INT_MUL]);;
+
+let IPRODUCT_DELETE = prove
+ (`!f s a.
+    FINITE s /\ a IN s ==> f(a) * iproduct(s DELETE a) f = iproduct s f`,
+  SIMP_TAC[iproduct; ITERATE_DELETE; MONOIDAL_INT_MUL]);;
+
+let IPRODUCT_DELTA = prove
+ (`!s a. iproduct s (\x. if x = a then b else &1) =
+         (if a IN s then b else &1)`,
+  REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
+  SIMP_TAC[ITERATE_DELTA; MONOIDAL_INT_MUL]);;
+
+let th = prove
+   (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
+                ==> iproduct s (\i. f(i)) = iproduct s g) /\
+     (!f g a b. (!i. a <= i /\ i <= b ==> f(i) = g(i))
+                ==> iproduct(a..b) (\i. f(i)) = iproduct(a..b) g) /\
+     (!f g p.   (!x. p x ==> f x = g x)
+                ==> iproduct {y | p y} (\i. f(i)) = iproduct {y | p y} g)`,
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC IPRODUCT_EQ THEN
+    ASM_SIMP_TAC[IN_ELIM_THM; IN_NUMSEG]) in
+    extend_basic_congs (map SPEC_ALL (CONJUNCTS th));;
+
+(* ------------------------------------------------------------------------- *)
 (* Now products over real numbers.                                           *)
 (* ------------------------------------------------------------------------- *)
 
@@ -563,10 +831,6 @@ let POLYNOMIAL_FUNCTION_PRODUCT = prove
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   SIMP_TAC[PRODUCT_CLAUSES; POLYNOMIAL_FUNCTION_CONST] THEN
   SIMP_TAC[FORALL_IN_INSERT; POLYNOMIAL_FUNCTION_MUL]);;
-
-(* ------------------------------------------------------------------------- *)
-(* Extend congruences.                                                       *)
-(* ------------------------------------------------------------------------- *)
 
 let th = prove
    (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
