@@ -4,6 +4,7 @@
 
 needs "Library/prime.ml";;
 needs "Library/pocklington.ml";;
+needs "Library/products.ml";;
 
 prioritize_num();;
 
@@ -196,45 +197,12 @@ let legendre = new_definition
 
 let nproduct = new_definition `nproduct = iterate ( * )`;;
 
-let NPRODUCT_CLAUSES = prove
- (`(!f. nproduct {} f = 1) /\
-   (!x f s. FINITE(s)
-            ==> (nproduct (x INSERT s) f =
-                 if x IN s then nproduct s f else f(x) * nproduct s f))`,
-  REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_MUL]);;
-
-let NPRODUCT_DELETE = prove
- (`!s. FINITE s /\ a IN s
-       ==> f(a) * nproduct(s DELETE a) f = nproduct s f`,
-  SIMP_TAC[nproduct; ITERATE_DELETE; MONOIDAL_MUL]);;
-
 let CONG_NPRODUCT = prove
  (`!f g s. FINITE s /\ (!x. x IN s ==> (f x == g x) (mod n))
            ==> (nproduct s f == nproduct s g) (mod n)`,
   REWRITE_TAC[nproduct] THEN
   MATCH_MP_TAC(MATCH_MP ITERATE_RELATED MONOIDAL_MUL) THEN
   SIMP_TAC[CONG_REFL; CONG_MULT]);;
-
-let NPRODUCT_MULT = prove
- (`!f g s. FINITE s
-           ==> nproduct s (\x. f x * g x) = nproduct s f * nproduct s g`,
-  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[NPRODUCT_CLAUSES; MULT_AC; MULT_CLAUSES]);;
-
-let NPRODUCT_INJECTION = prove
- (`!f p s. FINITE s /\
-           (!x. x IN s ==> p x IN s) /\
-           (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
-           ==> nproduct s (f o p) = nproduct s f`,
-  REWRITE_TAC[nproduct] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
-  REWRITE_TAC[MONOIDAL_MUL]);;
-
-let NPRODUCT_CONST = prove
- (`!c s. FINITE s ==> nproduct s (\x. c) = c EXP (CARD s)`,
-  GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[NPRODUCT_CLAUSES; CARD_CLAUSES; EXP]);;
 
 let NPRODUCT_DELTA_CONST = prove
  (`!c s. FINITE s
@@ -524,7 +492,7 @@ let GAUSS_LEMMA_2 = prove
     ASM_SIMP_TAC[LT_IMP_LE; cong; nat_mod] THEN DISCH_THEN(K ALL_TAC) THEN
     MAP_EVERY EXISTS_TAC [`b:num`; `1`] THEN ARITH_TAC;
     ALL_TAC] THEN
-  ASM_SIMP_TAC[NPRODUCT_MULT; FINITE_NUMSEG] THEN
+  ASM_SIMP_TAC[NPRODUCT_MUL; FINITE_NUMSEG] THEN
   MATCH_MP_TAC CONG_MULT THEN CONJ_TAC THENL
    [ONCE_REWRITE_TAC[GSYM COND_SWAP] THEN
     SIMP_TAC[NPRODUCT_DELTA_CONST; FINITE_NUMSEG] THEN
@@ -535,7 +503,7 @@ let GAUSS_LEMMA_2 = prove
   MATCH_MP_TAC CONG_TRANS THEN EXISTS_TAC `nproduct(1..r) (\x. a * x)` THEN
   CONJ_TAC THENL
    [ASM_SIMP_TAC[CONG_MOD; PRIME_IMP_NZ; CONG_NPRODUCT; FINITE_NUMSEG];
-    SIMP_TAC[NPRODUCT_MULT; FINITE_NUMSEG; NPRODUCT_CONST; CARD_NUMSEG_1] THEN
+    SIMP_TAC[NPRODUCT_MUL; FINITE_NUMSEG; NPRODUCT_CONST; CARD_NUMSEG_1] THEN
     REWRITE_TAC[CONG_REFL]]);;
 
 let GAUSS_LEMMA_3 = prove

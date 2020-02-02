@@ -1017,6 +1017,14 @@ let PRIME_FACTOR_INDUCT = prove
   DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[PRIME_FACTOR_LT; MULT_EQ_0]);;
 
+let COMPLETE_FACTOR_INDUCT = prove
+ (`!P. P 0 /\ P 1 /\
+       (!p. prime p ==> P p) /\
+       (!m n. P m /\ P n ==> P(m * n))
+       ==> !n. P n`,
+  GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC PRIME_FACTOR_INDUCT THEN
+  ASM_SIMP_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Infinitude of primes.                                                     *)
 (* ------------------------------------------------------------------------- *)

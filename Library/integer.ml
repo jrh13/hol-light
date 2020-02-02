@@ -103,6 +103,11 @@ let INT_DIVIDES_RPOW_SUC = prove
  (`!x y n. x divides y ==> x divides (y pow (SUC n))`,
   SIMP_TAC[INT_DIVIDES_RPOW; NOT_SUC]);;
 
+let INT_DIVIDES_POW_LE_IMP = prove
+ (`!(p:int) m n. m <= n ==> p pow m divides p pow n`,
+  SIMP_TAC[LE_EXISTS; INT_POW_ADD; LEFT_IMP_EXISTS_THM] THEN
+  CONV_TAC INTEGER_RULE);;
+
 let INT_DIVIDES_ANTISYM_DIVISORS = prove
  (`!a b:int. a divides b /\ b divides a <=> !d. d divides a <=> d divides b`,
   MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
@@ -547,6 +552,10 @@ let INT_CONG_TO_1 = prove
 
 let INT_CONG_SOLVE = prove
  (`!a b n. coprime(a,n) ==> ?x. (a * x == b) (mod n)`,
+  INTEGER_TAC);;
+
+let INT_CONG_SOLVE_EQ = prove
+ (`!n a b:int. (?x. (a * x == b) (mod n)) <=> gcd(a,n) divides b`,
   INTEGER_TAC);;
 
 let INT_CONG_SOLVE_UNIQUE = prove

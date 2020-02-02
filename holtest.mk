@@ -26,6 +26,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/inverse_bug_puzzle_tac \
 	RichterHilbertAxiomGeometry/inverse_bug_puzzle_read \
 	Library/isum \
+	Examples/jacobi \
 	Examples/kb \
 	Examples/lagrange_lemma \
 	Examples/lucas_lehmer \

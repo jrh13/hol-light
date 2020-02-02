@@ -35,6 +35,14 @@ let NPRODUCT_IMAGE = prove
   REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
   MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_MUL]);;
 
+let NPRODUCT_INJECTION = prove
+ (`!f p s. FINITE s /\
+           (!x. x IN s ==> p x IN s) /\
+           (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
+           ==> nproduct s (f o p) = nproduct s f`,
+  REWRITE_TAC[nproduct] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
+  REWRITE_TAC[MONOIDAL_MUL]);;
+
 let NPRODUCT_ADD_SPLIT = prove
  (`!f m n p.
         m <= n + 1
@@ -94,6 +102,17 @@ let NPRODUCT_EQ_0 = prove
 let NPRODUCT_EQ_0_NUMSEG = prove
  (`!f m n. nproduct(m..n) f = 0 <=> ?x. m <= x /\ x <= n /\ f(x) = 0`,
   SIMP_TAC[NPRODUCT_EQ_0; FINITE_NUMSEG; IN_NUMSEG; GSYM CONJ_ASSOC]);;
+
+let NPRODUCT_RESTRICT = prove
+ (`!f s. FINITE s
+         ==> nproduct s (\i. if i IN s then f i else 1) = nproduct s f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NPRODUCT_EQ THEN ASM_SIMP_TAC[]);;
+
+let NPRODUCT_RESTRICT_SET = prove
+ (`!P s f. nproduct {i:A | i IN s /\ P i} f =
+           nproduct s (\i. if P i then f i else 1)`,
+  REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
+  MATCH_MP_TAC ITERATE_RESTRICT_SET THEN REWRITE_TAC[MONOIDAL_MUL]);;
 
 let NPRODUCT_LE = prove
  (`!f s. FINITE s /\ (!x. x IN s ==> f(x) <= g(x))
@@ -159,6 +178,18 @@ let NPRODUCT_CLOSED = prove
   REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_MUL) THEN
   DISCH_THEN(MP_TAC o SPEC `P:num->bool`) THEN
   ASM_SIMP_TAC[NEUTRAL_MUL; GSYM nproduct]);;
+
+let NPRODUCT_RELATED = prove
+ (`!R (f:A->num) g s.
+        R 1 1 /\
+        (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+        FINITE s /\ (!i. i IN s ==> R (f i) (g i))
+        ==> R (nproduct s f) (nproduct s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:num->num->bool`
+    (MATCH_MP ITERATE_RELATED MONOIDAL_MUL)) THEN
+  ASM_REWRITE_TAC[GSYM nproduct; NEUTRAL_MUL] THEN ASM_MESON_TAC[]);;
 
 let NPRODUCT_CLAUSES_LEFT = prove
  (`!f m n. m <= n ==> nproduct(m..n) f = f(m) * nproduct(m+1..n) f`,
@@ -334,6 +365,14 @@ let IPRODUCT_IMAGE = prove
   REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
   MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_INT_MUL]);;
 
+let IPRODUCT_INJECTION = prove
+ (`!f p s. FINITE s /\
+           (!x. x IN s ==> p x IN s) /\
+           (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
+           ==> iproduct s (f o p) = iproduct s f`,
+  REWRITE_TAC[iproduct] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
+  REWRITE_TAC[MONOIDAL_INT_MUL]);;
+
 let IPRODUCT_ADD_SPLIT = prove
  (`!f m n p.
         m <= n + 1
@@ -404,6 +443,17 @@ let IPRODUCT_EQ_0 = prove
 let IPRODUCT_EQ_0_NUMSEG = prove
  (`!f m n. iproduct(m..n) f = &0 <=> ?x. m <= x /\ x <= n /\ f(x) = &0`,
   SIMP_TAC[IPRODUCT_EQ_0; FINITE_NUMSEG; IN_NUMSEG; GSYM CONJ_ASSOC]);;
+
+let IPRODUCT_RESTRICT = prove
+ (`!f s. FINITE s
+         ==> iproduct s (\i. if i IN s then f i else &1) = iproduct s f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC IPRODUCT_EQ THEN ASM_SIMP_TAC[]);;
+
+let IPRODUCT_RESTRICT_SET = prove
+ (`!P s f. iproduct {i:A | i IN s /\ P i} f =
+           iproduct s (\i. if P i then f i else &1)`,
+  REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
+  MATCH_MP_TAC ITERATE_RESTRICT_SET THEN REWRITE_TAC[MONOIDAL_INT_MUL]);;
 
 let IPRODUCT_LE = prove
  (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x) /\ f(x) <= g(x))
@@ -500,6 +550,18 @@ let IPRODUCT_CLOSED = prove
   DISCH_THEN(MP_TAC o SPEC `P:int->bool`) THEN
   ASM_SIMP_TAC[NEUTRAL_INT_MUL; GSYM iproduct]);;
 
+let IPRODUCT_RELATED = prove
+ (`!R (f:A->int) g s.
+        R (&1) (&1) /\
+        (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+        FINITE s /\ (!i. i IN s ==> R (f i) (g i))
+        ==> R (iproduct s f) (iproduct s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:int->int->bool`
+    (MATCH_MP ITERATE_RELATED MONOIDAL_INT_MUL)) THEN
+  ASM_REWRITE_TAC[GSYM iproduct; NEUTRAL_INT_MUL] THEN ASM_MESON_TAC[]);;
+
 let IPRODUCT_CLAUSES_LEFT = prove
  (`!f m n. m <= n ==> iproduct(m..n) f = f(m) * iproduct(m+1..n) f`,
   SIMP_TAC[GSYM NUMSEG_LREC; IPRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
@@ -595,6 +657,14 @@ let PRODUCT_IMAGE = prove
   REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
   MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_REAL_MUL]);;
 
+let PRODUCT_INJECTION = prove
+ (`!f p s. FINITE s /\
+           (!x. x IN s ==> p x IN s) /\
+           (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y)
+           ==> product s (f o p) = product s f`,
+  REWRITE_TAC[product] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
+  REWRITE_TAC[MONOIDAL_REAL_MUL]);;
+
 let PRODUCT_ADD_SPLIT = prove
  (`!f m n p.
         m <= n + 1
@@ -665,6 +735,17 @@ let PRODUCT_EQ_0 = prove
 let PRODUCT_EQ_0_NUMSEG = prove
  (`!f m n. product(m..n) f = &0 <=> ?x. m <= x /\ x <= n /\ f(x) = &0`,
   SIMP_TAC[PRODUCT_EQ_0; FINITE_NUMSEG; IN_NUMSEG; GSYM CONJ_ASSOC]);;
+
+let PRODUCT_RESTRICT = prove
+ (`!f s. FINITE s
+         ==> product s (\i. if i IN s then f i else &1) = product s f`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC PRODUCT_EQ THEN ASM_SIMP_TAC[]);;
+
+let PRODUCT_RESTRICT_SET = prove
+ (`!P s f. product {i:A | i IN s /\ P i} f =
+           product s (\i. if P i then f i else &1)`,
+  REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
+  MATCH_MP_TAC ITERATE_RESTRICT_SET THEN REWRITE_TAC[MONOIDAL_REAL_MUL]);;
 
 let PRODUCT_LE = prove
  (`!f s. FINITE s /\ (!x. x IN s ==> &0 <= f(x) /\ f(x) <= g(x))
@@ -772,6 +853,18 @@ let PRODUCT_CLOSED = prove
   REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_REAL_MUL) THEN
   DISCH_THEN(MP_TAC o SPEC `P:real->bool`) THEN
   ASM_SIMP_TAC[NEUTRAL_REAL_MUL; GSYM product]);;
+
+let PRODUCT_RELATED = prove
+ (`!R (f:A->real) g s.
+        R (&1) (&1) /\
+        (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+        FINITE s /\ (!i. i IN s ==> R (f i) (g i))
+        ==> R (product s f) (product s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:real->real->bool`
+    (MATCH_MP ITERATE_RELATED MONOIDAL_REAL_MUL)) THEN
+  ASM_REWRITE_TAC[GSYM product; NEUTRAL_REAL_MUL] THEN ASM_MESON_TAC[]);;
 
 let PRODUCT_CLAUSES_LEFT = prove
  (`!f m n. m <= n ==> product(m..n) f = f(m) * product(m+1..n) f`,

@@ -202,6 +202,10 @@ let FORALL_INT_CASES = prove
  (`!P:int->bool. (!x. P x) <=> (!n. P(&n)) /\ (!n. P(-- &n))`,
   MESON_TAC[INT_IMAGE]);;
 
+let EXISTS_INT_CASES = prove
+ (`!P:int->bool. (?x. P x) <=> (?n. P(&n)) \/ (?n. P(-- &n))`,
+  MESON_TAC[INT_IMAGE]);;
+
 let INT_LT_DISCRETE = prove
  (`!x y. x < y <=> (x + &1) <= y`,
   REPEAT GEN_TAC THEN
@@ -1959,6 +1963,14 @@ let DIVIDES_ONE = prove
  (`!n. n divides 1 <=> n = 1`,
   REWRITE_TAC[divides] THEN MESON_TAC[MULT_EQ_1; MULT_CLAUSES]);;
 
+let DIV_ADD = prove
+ (`!d a b. d divides a \/ d divides b
+           ==> (a + b) DIV d = a DIV d + b DIV d`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `d = 0` THEN
+  ASM_SIMP_TAC[DIV_ZERO; ADD_CLAUSES] THEN
+  REWRITE_TAC[divides] THEN STRIP_TAC THEN
+  ASM_SIMP_TAC[DIV_MULT_ADD; DIV_MULT]);;
+
 let NUMBER_TAC =
   let conva = GEN_REWRITE_CONV TRY_CONV [GSYM DIVIDES_ANTISYM] in
   let rec antisym_conv tm =
@@ -1994,6 +2006,24 @@ let COPRIME_RMOD = prove
  (`!a n. coprime(n,a MOD n) <=> coprime(n,a)`,
   ONCE_REWRITE_TAC[NUMBER_RULE `coprime(a:num,b) <=> coprime(b,a)`] THEN
   REWRITE_TAC[COPRIME_LMOD]);;
+
+let INT_CONG_NUM_EXISTS = prove
+ (`!x y:int.
+        (y = &0 ==> &0 <= x)
+        ==> ?n. (&n == x) (mod y)`,
+  REPEAT STRIP_TAC THEN
+  EXISTS_TAC `num_of_int(x + abs(x * y))` THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) INT_OF_NUM_OF_INT o
+        lhand o rator o snd) THEN
+  ANTS_TAC THENL
+   [POP_ASSUM MP_TAC THEN ASM_CASES_TAC `y:int = &0` THEN
+    ASM_REWRITE_TAC[] THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+    MATCH_MP_TAC(INT_ARITH `abs(x) * &1:int <= y ==> &0 <= x + y`) THEN
+    REWRITE_TAC[INT_ABS_MUL] THEN MATCH_MP_TAC INT_LE_LMUL THEN
+    ASM_INT_ARITH_TAC;
+    DISCH_THEN SUBST1_TAC THEN
+    REWRITE_TAC[INTEGER_RULE `(x + a:int == x) (mod n) <=> n divides a`] THEN
+    REWRITE_TAC[INT_ABS] THEN COND_CASES_TAC THEN CONV_TAC INTEGER_RULE]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition (and not much more) of primality.                              *)
