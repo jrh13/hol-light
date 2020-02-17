@@ -1675,6 +1675,42 @@ let INT_RED_CONV =
 let INT_REDUCE_CONV = DEPTH_CONV INT_RED_CONV;;
 
 (* ------------------------------------------------------------------------- *)
+(* Integer analogs of the usual even/odd combining theorems EVEN_ADD etc.    *)
+(* ------------------------------------------------------------------------- *)
+
+let INT_2_DIVIDES_ADD = prove
+ (`!m n:int. &2 divides (m + n) <=> (&2 divides m <=> &2 divides n)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM INT_REM_2_DIVIDES] THEN
+  ONCE_REWRITE_TAC[GSYM INT_ADD_REM] THEN
+  DISJ_CASES_TAC(SPEC `m:int` INT_REM_2_CASES) THEN
+  DISJ_CASES_TAC(SPEC `n:int` INT_REM_2_CASES) THEN
+  ASM_REWRITE_TAC[] THEN CONV_TAC INT_REDUCE_CONV);;
+
+let INT_2_DIVIDES_SUB = prove
+ (`!m n:int. &2 divides (m - n) <=> (&2 divides m <=> &2 divides n)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM INT_REM_2_DIVIDES] THEN
+  ONCE_REWRITE_TAC[GSYM INT_SUB_REM] THEN
+  DISJ_CASES_TAC(SPEC `m:int` INT_REM_2_CASES) THEN
+  DISJ_CASES_TAC(SPEC `n:int` INT_REM_2_CASES) THEN
+  ASM_REWRITE_TAC[] THEN CONV_TAC INT_REDUCE_CONV);;
+
+let INT_2_DIVIDES_MUL = prove
+ (`!m n:int. &2 divides (m * n) <=> &2 divides m \/ &2 divides n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM INT_REM_2_DIVIDES] THEN
+  ONCE_REWRITE_TAC[GSYM INT_MUL_REM] THEN
+  DISJ_CASES_TAC(SPEC `m:int` INT_REM_2_CASES) THEN
+  DISJ_CASES_TAC(SPEC `n:int` INT_REM_2_CASES) THEN
+  ASM_REWRITE_TAC[] THEN CONV_TAC INT_REDUCE_CONV);;
+
+let INT_2_DIVIDES_POW = prove
+ (`!n k. &2 divides (n pow k) <=> &2 divides n /\ ~(k = 0)`,
+  GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC[INT_POW] THENL
+   [REWRITE_TAC[GSYM(CONJUNCT2 INT_REM_2_DIVIDES)] THEN
+    CONV_TAC INT_REDUCE_CONV;
+    ASM_REWRITE_TAC[INT_2_DIVIDES_MUL; NOT_SUC] THEN
+    CONV_TAC TAUT]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Existence of integer gcd, and the Bezout identity.                        *)
 (* ------------------------------------------------------------------------- *)
 

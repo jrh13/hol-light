@@ -8,6 +8,299 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 14th Feb 2020       Library/pocklington.ml
+
+Added two more simple consequences of existing theorems:
+
+  PHI_LIMIT_COMPOSITE =
+    |- !n. ~prime n /\ ~(n = 0) /\ ~(n = 1) ==> phi n < n - 1
+
+  PRIMITIVE_ROOT_IMP_COPRIME : thm =
+    |- !n g. order n g = phi n ==> n = 0 \/ coprime(n,g)
+
+Mon 10th Feb 2020       Examples/zolotarev.ml [new file]
+
+Added a new Examples file with Zolotarev's characterization of the Jacobi
+symbol (for odd modulus) as the sign of the permutation induced by
+multplication modulo.
+
+Sun  9th Feb 2020       Library/permutations.ml
+
+Added various new facts about permutations, including some results on
+transferring them "isomorphically" and forming Cartesian products of them,
+as well as concrete results about cyclic permutations, in the form of
+modular successor/addition:
+
+  EVENPERM_CYCLIC =
+    |- !n. evenperm (\i. if i < n then (i + 1) MOD n else i) <=>
+           n = 0 \/ ODD n
+
+  EVENPERM_CYCLIC_N =
+    |- !n k.
+           evenperm (\i. if i < n then (i + k) MOD n else i) <=>
+           n = 0 \/ ODD n \/ EVEN k
+
+  EVENPERM_ID =
+    |- evenperm (\x. x)
+
+  EVENPERM_TRANSFER =
+    |- !f s p q.
+           FINITE s /\
+           (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+           p permutes s /\
+           (!x. x IN s ==> q (f x) = f (p x)) /\
+           (!y. ~(y IN IMAGE f s) ==> q y = y)
+           ==> (evenperm q <=> evenperm p)
+
+  PERMUTATION_CYCLIC =
+    |- !n. permutation (\i. if i < n then (i + 1) MOD n else i)
+
+  PERMUTATION_CYCLIC_N =
+    |- !n k. permutation (\i. if i < n then (i + k) MOD n else i)
+
+  PERMUTATION_RESTRICT =
+    |- !Q p.
+           permutation p /\ (!x. Q (p x) <=> Q x)
+           ==> permutation (\i. if Q i then p i else i)
+
+  PERMUTES_ALT =
+    |- !p s.
+           p permutes s <=>
+           (!x. x IN s ==> p x IN s) /\
+           (!x. ~(x IN s) ==> p x = x) /\
+           (!y. y IN s ==> (?!x. x IN s /\ p x = y))
+
+  PERMUTES_CARTESIAN_PRODUCT =
+    |- !p q s t.
+           p permutes s /\ q permutes t
+           ==> (\(i,j). if i IN s /\ j IN t then p i,q j else i,j) permutes
+               s CROSS t
+
+  PERMUTES_CYCLIC =
+    |- !n. (\i. if i < n then (i + 1) MOD n else i) permutes {i | i < n}
+
+  PERMUTES_CYCLIC_N =
+    |- !n k. (\i. if i < n then (i + k) MOD n else i) permutes {i | i < n}
+
+  PERMUTES_INDUCT_STRONG =
+    |- !P s.
+           FINITE s /\
+           P I /\
+           (!a b p.
+                a IN s /\ b IN s /\ ~(a = b) /\ P p /\ p permutes s
+                ==> P (swap (a,b) o p))
+           ==> (!p. p permutes s ==> P p)
+
+  PERMUTES_INVERSE_FUNCTION =
+    |- !s p.
+           p permutes s <=>
+           (?q. (!x. ~(x IN s) ==> p x = x) /\
+                (!x. x IN s ==> p x IN s) /\
+                (!x. x IN s ==> p (q x) = x /\ q (p x) = x))
+
+  PERMUTES_RESTRICT =
+    |- !Q p s.
+           p permutes s /\ (!x. x IN s ==> (Q (p x) <=> Q x))
+           ==> (\i. if Q i then p i else i) permutes s
+
+  PERMUTES_RESTRICT_SET =
+    |- !Q p s.
+           p permutes s /\ (!x. x IN s ==> (Q (p x) <=> Q x))
+           ==> (\i. if Q i then p i else i) permutes {x | x IN s /\ Q x}
+
+  PERMUTES_TRANSFER =
+    |- !f p q s.
+           p permutes s /\
+           (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+           (!x. x IN s ==> q (f x) = f (p x)) /\
+           (!y. ~(y IN IMAGE f s) ==> q y = y)
+           ==> q permutes IMAGE f s
+
+  PERMUTES_TRANSFER_BIJECTIONS =
+    |- !f f' p s t.
+           (!x. f' (f x) = x) /\
+           (!y. f (f' y) = y) /\
+           (!x. x IN s ==> f x IN t) /\
+           (!y. y IN t ==> f' y IN s)
+           ==> (f' o p o f permutes s <=> p permutes t)
+
+  SIGN_CARTESIAN_PRODUCT =
+    |- !p q s t.
+           FINITE s /\ FINITE t /\ p permutes s /\ q permutes t
+           ==> sign (\(i,j). if i IN s /\ j IN t then p i,q j else i,j) =
+               sign p pow CARD t * sign q pow CARD s
+
+  SIGN_CYCLIC =
+    |- !n k.
+           sign (\i. if i < n then (i + k) MOD n else i) =
+           -- &1 pow (k * (n - 1))
+
+  SIGN_CYCLIC_N =
+    |- !n k.
+           sign (\i. if i < n then (i + k) MOD n else i) =
+           -- &1 pow (k * (n - 1))
+
+  SIGN_ID =
+    |- sign (\x. x) = &1
+
+  SIGN_TRANSFER =
+    |- !f s p q.
+           FINITE s /\
+           (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+           p permutes s /\
+           (!x. x IN s ==> q (f x) = f (p x)) /\
+           (!y. ~(y IN IMAGE f s) ==> q y = y)
+           ==> sign q = sign p
+
+Fri  7th Feb 2010       arith.ml, int.ml, Library/prime.ml, Library/pocklington.ml, Library/primitive.ml
+
+Added a wide miscellany of number-theoretic results, including basic
+divisibility lemmas, more about primitive roots, quadratic residues and the
+Euler totient function, plus additional properties of "inverse_mod" including
+the reciprocity property, a.k.a. Arazi's inversion formula.
+
+  CHINESE_REMAINDER_USUAL =
+    |- !a b u v. coprime(a,b) ==> (?x. (x == u) (mod a) /\ (x == v) (mod b))
+
+  DIVIDES_DIV_DIVIDES =
+    |- !n d e.
+           d divides n /\ (n = 0 ==> e = 0)
+           ==> (n DIV d divides e <=> n divides d * e)
+
+  DIVIDES_DIV_SELF =
+    |- !n d. d divides n ==> n DIV d divides n
+
+  DIV_BY_DIV =
+    |- !m n. ~(n = 0) /\ m divides n ==> n DIV (n DIV m) = m
+
+  EVEN_MOD_EVEN =
+    |- !m n. EVEN n ==> (EVEN (m MOD n) <=> EVEN m)
+
+  GCD_2_CASES =
+    |- (!n. gcd(2,n) = (if EVEN n then 2 else 1)) /\
+       (!n. gcd(n,2) = (if EVEN n then 2 else 1))
+
+  GCD_PRIME_CASES =
+    |- (!p n. prime p ==> gcd(p,n) = (if p divides n then p else 1)) /\
+       (!p n. prime p ==> gcd(n,p) = (if p divides n then p else 1))
+
+  INDUCT_COPRIME_ALT =
+    |- !P. P 0 /\
+           (!a b. 1 < a /\ 1 < b /\ coprime(a,b) /\ P a /\ P b ==> P (a * b)) /\
+           (!p k. prime p ==> P (p EXP k))
+           ==> (!n. P n)
+
+  INT_2_DIVIDES_ADD =
+    |- !m n. &2 divides m + n <=> &2 divides m <=> &2 divides n
+
+  INT_2_DIVIDES_MUL =
+    |- !m n. &2 divides m * n <=> &2 divides m \/ &2 divides n
+
+  INT_2_DIVIDES_POW =
+    |- !n k. &2 divides n pow k <=> &2 divides n /\ ~(k = 0)
+
+  INT_2_DIVIDES_SUB =
+    |- !m n. &2 divides m - n <=> &2 divides m <=> &2 divides n
+
+  INVERSE_MOD_BOUND_LE =
+    |- !n a. inverse_mod n a <= n <=> ~(n = 0)
+
+  INVERSE_MOD_INVERSION =
+    |- !m n.
+           coprime(m,n)
+           ==> m * inverse_mod n m + n * inverse_mod m n = m * n + 1
+
+  INVERSE_MOD_NONZERO =
+    |- !n a. coprime(n,a) ==> ~(inverse_mod n a = 0)
+
+  INVERSE_MOD_NONZERO_ALT =
+    |- !n a. ~(n divides a) ==> ~(inverse_mod n a = 0)
+
+  MOD_EVEN_2 =
+    |- !m n. EVEN n ==> m MOD n MOD 2 = m MOD 2
+
+  ODD_MOD_EVEN =
+    |- !m n. EVEN n ==> (ODD (m MOD n) <=> ODD m)
+
+  ORDER_LE_PHI =
+    |- !n. ~(n = 0) ==> order n a <= phi n
+
+  PHI_EQ_PRIME =
+    |- !p. phi p = p - 1 <=> p = 0 \/ prime p
+
+  POWER_RESIDUE_MODULO_PRIMITIVE_POWER =
+    |- !n g m k.
+           coprime(n,g) /\ order n g = phi n
+           ==> ((?x. (x EXP k == g EXP m) (mod n)) <=> gcd(k,phi n) divides m)
+
+  PRIMITIVE_ROOT_IMAGE =
+    |- !n g.
+           order n g = phi n
+           ==> IMAGE (\i. g EXP i MOD n) {i | i < phi n} =
+               {a | coprime(a,n) /\ a < n}
+
+  PRIMITIVE_ROOT_IMAGE_PRIME =
+    |- !p g.
+           order p g = p - 1
+           ==> IMAGE (\i. g EXP i MOD p) {i | i < p - 1} = {a | 0 < a /\ a < p}
+
+  PRIMITIVE_ROOT_IMP_PRIME =
+    |- !p g. order p g = p - 1 ==> p = 0 \/ prime p
+
+  PRIMITIVE_ROOT_SURJECTIVE =
+    |- !n g a.
+           ~(n = 0) /\ order n g = phi n /\ coprime(a,n)
+           ==> (?m. m < phi n /\ (a == g EXP m) (mod n))
+
+  PRIMITIVE_ROOT_SURJECTIVE_ALT =
+    |- !n g a.
+           order n g = phi n /\ coprime(a,n) ==> (?m. (a == g EXP m) (mod n))
+
+  PRIMITIVE_ROOT_SURJECTIVE_PRIME =
+    |- !p g a.
+           ~(p = 0) /\ order p g = p - 1 /\ coprime(a,p)
+           ==> (?m. m < p - 1 /\ (a == g EXP m) (mod p))
+
+  PRIMITIVE_ROOT_SURJECTIVE_PRIME_ALT =
+    |- !p g a.
+           order p g = p - 1 /\ coprime(a,p) ==> (?m. (a == g EXP m) (mod p))
+
+  QUADRATIC_RESIDUE_MODULO_POWER_2 =
+    |- !a k.
+           ODD a /\ 3 <= k
+           ==> ((?x. (x EXP 2 == a) (mod (2 EXP k))) <=> (a == 1) (mod 8))
+
+  QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE =
+    |- !a k.
+           ODD a /\ 3 <= k
+           ==> ((?x. (x EXP 2 == a) (mod (2 EXP k))) <=>
+                (?x. (x EXP 2 == a) (mod 8)))
+
+  QUADRATIC_RESIDUE_MODULO_PRIMITIVE_POWER =
+    |- !n g m.
+           coprime(n,g) /\ order n g = phi n
+           ==> ((?x. (x EXP 2 == g EXP m) (mod n)) <=> 3 <= n ==> EVEN m)
+
+Tue  4th Feb 2020       arith.ml
+
+Added a few rudimentary lemmas about the "minimal" constant, which
+was otherwise little more than a binder definition.
+
+  LE_MINIMAL =
+   |- !P n. (?r. P r) ==> (n <= (minimal) P <=> (!i. P i ==> n <= i))
+
+  MINIMAL_LBOUND =
+   |- !P n. (?r. P r) /\ (!m. m < n ==> ~P m) ==> n <= (minimal) P
+
+  MINIMAL_LE =
+   |- !P n. (?r. P r) ==> ((minimal) P <= n <=> (?i. i <= n /\ P i))
+
+  MINIMAL_UBOUND =
+   |- !P n. P n ==> (minimal) P <= n
+
+  MINIMAL_UNIQUE =
+   |- !P n. P n /\ (!m. m < n ==> ~P m) ==> (minimal) P = n
+
 Fri 31st Jan 2020       Library/jacobi.ml [new file]
 
 Added a new library file giving the definition of and basic results about the
@@ -17903,3 +18196,4 @@ STVs, but issue a warning.
 Sun 29th Oct 95         subgoal.ml
 
 Inserted a warning into "expand" if the tactic does not change the goal state.
+val it : unit = ()

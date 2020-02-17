@@ -55,7 +55,7 @@ echo '### Loading Examples/inverse_bug_puzzle_miz3.ml'; echo 'loadt "Examples/in
 echo '### Loading Examples/inverse_bug_puzzle_tac.ml'; echo 'loadt "Examples/inverse_bug_puzzle_tac.ml";;' | (time $hollight)
 echo '### Loading RichterHilbertAxiomGeometry/inverse_bug_puzzle_read.ml'; echo 'loadt "RichterHilbertAxiomGeometry/inverse_bug_puzzle_read.ml";;' | (time $hollight)
 echo '### Loading Library/isum.ml'; echo 'loadt "Library/isum.ml";;' | (time $hollight)
-echo '### Loading Examples/jacobi.ml'; echo 'loadt "Examples/jacobi.ml";;' | (time $hollight)
+echo '### Loading Library/jacobi.ml'; echo 'loadt "Library/jacobi.ml";;' | (time $hollight)
 echo '### Loading Examples/kb.ml'; echo 'loadt "Examples/kb.ml";;' | (time $hollight)
 echo '### Loading Examples/lagrange_lemma.ml'; echo 'loadt "Examples/lagrange_lemma.ml";;' | (time $hollight)
 echo '### Loading Examples/lucas_lehmer.ml'; echo 'loadt "Examples/lucas_lehmer.ml";;' | (time $hollight)
@@ -86,6 +86,7 @@ echo '### Loading Examples/sylvester_gallai.ml'; echo 'loadt "Examples/sylvester
 echo '### Loading Examples/vitali.ml'; echo 'loadt "Examples/vitali.ml";;' | (time $hollight)
 echo '### Loading Library/wo.ml'; echo 'loadt "Library/wo.ml";;' | (time $hollight)
 echo '### Loading Library/words.ml'; echo 'loadt "Library/words.ml";;' | (time $hollight)
+echo '### Loading Examples/zolotarev.ml'; echo 'loadt "Examples/zolotarev.ml";;' | (time $hollight)
 echo '### Loading Library/analysis.ml,/transc.ml,calc_real.ml,machin.ml,polylog.ml,poly.ml';
 (echo 'loadt "Library/analysis.ml";;'; echo 'loadt "Library/transc.ml";;';
  echo 'loadt "Library/calc_real.ml";;'; echo 'loadt "Examples/machin.ml";;';

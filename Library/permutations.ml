@@ -134,6 +134,73 @@ let PERMUTES_BIJECTIONS = prove
          ==> p permutes s`,
   REWRITE_TAC[permutes] THEN MESON_TAC[]);;
 
+let PERMUTES_INVERSE_FUNCTION = prove
+ (`!s p:A->A.
+        p permutes s <=>
+        ?q. (!x. ~(x IN s) ==> p x = x) /\
+            (!x. x IN s ==> p x IN s) /\
+            (!x. x IN s ==> p(q x) = x /\ q(p x) = x)`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_TAC THEN EXISTS_TAC `inverse p:A->A` THEN
+    ASM_MESON_TAC[permutes; PERMUTES_INVERSES];
+    STRIP_TAC THEN ASM_SIMP_TAC[permutes; SUBSET; FORALL_IN_IMAGE] THEN
+  X_GEN_TAC `x:A` THEN REWRITE_TAC[EXISTS_UNIQUE] THEN
+  ASM_CASES_TAC `(x:A) IN s` THENL
+   [EXISTS_TAC `(q:A->A) x`; EXISTS_TAC `x:A`] THEN
+  ASM_MESON_TAC[]]);;
+
+let PERMUTES_ALT = prove
+ (`!(p:A->A) s.
+        p permutes s <=>
+        (!x. x IN s ==> p x IN s) /\
+        (!x. ~(x IN s) ==> p x = x) /\
+        (!y. y IN s ==> ?!x. x IN s /\ p x = y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[permutes] THEN
+  EQ_TAC THEN SIMP_TAC[] THENL [MESON_TAC[]; DISCH_TAC] THEN
+  MATCH_MP_TAC(MESON[]
+   `!s. (!y. ~(y IN s) ==> P y) /\ (!y. y IN s ==> P y) ==> !y. P y`) THEN
+  EXISTS_TAC `IMAGE (p:A->A) s` THEN REWRITE_TAC[FORALL_IN_IMAGE] THEN
+  ASM SET_TAC[]);;
+
+let PERMUTES_RESTRICT_SET = prove
+ (`!Q p s:A->bool.
+        p permutes s /\ (!x. x IN s ==> (Q(p x) <=> Q x))
+        ==> (\i. if Q i then p i else i) permutes {x | x IN s /\ Q x}`,
+  REWRITE_TAC[PERMUTES_ALT] THEN SET_TAC[]);;
+
+let PERMUTES_RESTRICT = prove
+ (`!Q p s:A->bool.
+        p permutes s /\ (!x. x IN s ==> (Q(p x) <=> Q x))
+        ==> (\i. if Q i then p i else i) permutes s`,
+  REWRITE_TAC[PERMUTES_ALT] THEN SET_TAC[]);;
+
+let PERMUTES_CARTESIAN_PRODUCT = prove
+ (`!(p:A->A) (q:B->B) s t.
+        p permutes s /\ q permutes t
+        ==> (\(i,j). if i IN s /\ j IN t then p i,q j else i,j)
+            permutes (s CROSS t)`,
+  REWRITE_TAC[permutes; EXISTS_UNIQUE_THM] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; EXISTS_PAIR_THM; PAIR_EQ; IN_CROSS] THEN
+  REWRITE_TAC[COND_RAND] THEN REWRITE_TAC[COND_RATOR] THEN
+  REWRITE_TAC[PAIR_EQ] THEN MESON_TAC[]);;
+
+let PERMUTES_TRANSFER_BIJECTIONS = prove
+ (`!(f:A->B) f' p s t.
+        (!x. f'(f x) = x) /\ (!y. f(f' y) = y) /\
+        (!x. x IN s ==> f x IN t) /\
+        (!y. y IN t ==> f' y IN s)
+        ==> ((f' o p o f) permutes s <=> p permutes t)`,
+  REWRITE_TAC[permutes; o_THM] THEN MESON_TAC[]);;
+
+let PERMUTES_TRANSFER = prove
+ (`!(f:A->B) p q s.
+        p permutes s /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+        (!x. x IN s ==> q(f x) = f(p x)) /\
+        (!y. ~(y IN IMAGE f s) ==> q y = y)
+        ==> q permutes (IMAGE f s)`,
+  SIMP_TAC[PERMUTES_ALT] THEN SET_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Group properties.                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -492,6 +559,10 @@ let EVENPERM_I = prove
  (`evenperm I = T`,
   MATCH_MP_TAC EVENPERM_UNIQUE THEN MESON_TAC[swapseq_RULES; EVEN]);;
 
+let EVENPERM_ID = prove
+ (`evenperm(\x:A. x)`,
+  REWRITE_TAC[GSYM I_DEF; EVENPERM_I]);;
+
 let EVENPERM_SWAP = prove
  (`!a b:A. evenperm(swap(a,b)) = (a = b)`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC EVENPERM_UNIQUE THEN
@@ -617,6 +688,14 @@ let PERMUTATION_PERMUTES = prove
     MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `s:A->bool` THEN
     ASM_SIMP_TAC[IN_ELIM_THM; SUBSET] THEN ASM_MESON_TAC[]]);;
 
+let PERMUTATION_RESTRICT = prove
+ (`!Q (p:A->A).
+        permutation p /\ (!x. Q(p x) <=> Q x)
+        ==> permutation (\i. if Q i then p i else i)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ_ALT] THEN DISCH_TAC THEN
+  REWRITE_TAC[PERMUTATION_PERMUTES] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  ASM_MESON_TAC[PERMUTES_RESTRICT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Hence a sort of induction principle composing by swaps.                   *)
 (* ------------------------------------------------------------------------- *)
@@ -641,6 +720,20 @@ let PERMUTES_INDUCT = prove
                 PERMUTATION_PERMUTES; FINITE_INSERT; PERMUTATION_COMPOSE;
                 PERMUTATION_SWAP]);;
 
+let PERMUTES_INDUCT_STRONG = prove
+ (`!P s:A->bool.
+        FINITE s /\
+        P I /\
+        (!a b p. a IN s /\ b IN s /\ ~(a = b) /\ P p /\ p permutes s
+                 ==> P (swap(a,b) o p))
+        ==> !p. p permutes s ==> P p`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+  ONCE_REWRITE_TAC[TAUT `p ==> q <=> p ==> p /\ q`] THEN
+  MATCH_MP_TAC PERMUTES_INDUCT THEN
+  ASM_SIMP_TAC[PERMUTES_I; PERMUTES_COMPOSE; PERMUTES_SWAP] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `b:A`] THEN
+  ASM_CASES_TAC `a:A = b` THEN ASM_SIMP_TAC[SWAP_REFL; I_O_ID]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Sign of a permutation as a real number.                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -655,6 +748,10 @@ let SIGN_NZ = prove
 let SIGN_I = prove
  (`sign I = &1`,
   REWRITE_TAC[sign; EVENPERM_I]);;
+
+let SIGN_ID = prove
+ (`sign(\x:A. x) = &1`,
+  REWRITE_TAC[sign; EVENPERM_ID]);;
 
 let SIGN_INVERSE = prove
  (`!p. permutation p ==> sign(inverse p) = sign p`,
@@ -682,6 +779,147 @@ let REAL_SGN_SIGN = prove
   GEN_TAC THEN REWRITE_TAC[sign] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_SGN_EQ] THEN
   CONV_TAC REAL_RAT_REDUCE_CONV);;
+
+let EVENPERM_TRANSFER = prove
+ (`!(f:A->B) s p q.
+        FINITE s /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+        p permutes s /\
+        (!x. x IN s ==> q(f x) = f(p x)) /\
+        (!y. ~(y IN IMAGE f s) ==> q y = y)
+        ==> (evenperm q <=> evenperm p)`,
+  GEN_TAC THEN GEN_TAC THEN ONCE_REWRITE_TAC[CONJ_ASSOC] THEN
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [INJECTIVE_ON_LEFT_INVERSE]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `g:B->A`) THEN
+  SUBGOAL_THEN
+   `!p q. (!x. x IN s ==> q (f x) = f (p x)) /\
+          (!y. ~(y IN IMAGE f s) ==> q y = y) <=>
+          q = \x. if x IN IMAGE f s then (f:A->B) (p(g x)) else x`
+   (fun th -> REWRITE_TAC[th])
+  THENL
+   [REWRITE_TAC[FUN_EQ_THM] THEN ASM SET_TAC[];
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_UNWIND_THM2]] THEN
+  MATCH_MP_TAC PERMUTES_INDUCT_STRONG THEN
+  ASM_REWRITE_TAC[I_THM; o_THM] THEN
+  SUBGOAL_THEN
+   `(\x. if x IN IMAGE (f:A->B) s then f (g x) else x) = I`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; I_THM] THEN ASM SET_TAC[];
+    REWRITE_TAC[EVENPERM_I]] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `b:A`; `p:A->A`] THEN STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) EVENPERM_COMPOSE o rand o snd) THEN
+  REWRITE_TAC[PERMUTATION_SWAP] THEN REWRITE_TAC[PERMUTATION_PERMUTES] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
+  SUBGOAL_THEN `evenperm(swap(a,b)) = evenperm(swap((f:A->B) a,f b))`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[EVENPERM_SWAP] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) EVENPERM_COMPOSE o rand o snd) THEN
+  REWRITE_TAC[PERMUTATION_SWAP] THEN ANTS_TAC THENL
+   [REWRITE_TAC[PERMUTATION_PERMUTES] THEN
+    EXISTS_TAC `IMAGE (f:A->B) s` THEN ASM_SIMP_TAC[FINITE_IMAGE] THEN
+    MATCH_MP_TAC PERMUTES_TRANSFER THEN EXISTS_TAC `p:A->A` THEN
+    ASM SET_TAC[];
+    DISCH_THEN(SUBST1_TAC o SYM) THEN AP_TERM_TAC] THEN
+  REWRITE_TAC[FUN_EQ_THM; o_DEF; swap] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[PERMUTES_ALT]) THEN
+  X_GEN_TAC `y:B` THEN REWRITE_TAC[IN_IMAGE] THEN
+  ASM_CASES_TAC `?x. y = (f:A->B) x /\ x IN s` THEN
+  ASM_REWRITE_TAC[] THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+  FIRST_X_ASSUM(X_CHOOSE_THEN `x:A`
+   (CONJUNCTS_THEN2 SUBST_ALL_TAC ASSUME_TAC)) THEN
+  ASM_SIMP_TAC[] THEN ASM_MESON_TAC[]);;
+
+let SIGN_TRANSFER = prove
+ (`!(f:A->B) s p q.
+        FINITE s /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+        p permutes s /\
+        (!x. x IN s ==> q(f x) = f(p x)) /\
+        (!y. ~(y IN IMAGE f s) ==> q y = y)
+        ==> sign q = sign p`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sign] THEN
+  DISCH_THEN(SUBST1_TAC o MATCH_MP EVENPERM_TRANSFER) THEN
+  REWRITE_TAC[]);;
+
+let SIGN_CARTESIAN_PRODUCT = prove
+ (`!(p:A->A) (q:B->B) s t.
+        FINITE s /\ FINITE t /\ p permutes s /\ q permutes t
+        ==> sign (\(i,j). if i IN s /\ j IN t then p i,q j else i,j) =
+            sign p pow CARD t * sign q pow CARD s`,
+
+  let lemma1 = prove
+   (`!p (s:A->bool) (t:B->bool).
+          p permutes s /\ FINITE s /\ FINITE t
+          ==> sign (\(i,j). if i IN s /\ j IN t then p i,j else i,j) =
+              sign p pow CARD t`,
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN CONJ_TAC THENL
+     [REWRITE_TAC[CARD_CLAUSES; NOT_IN_EMPTY] THEN
+      REWRITE_TAC[GSYM LAMBDA_PAIR_THM; SIGN_ID; real_pow];
+      MAP_EVERY X_GEN_TAC [`b:B`; `t:B->bool`] THEN STRIP_TAC] THEN
+    SUBGOAL_THEN
+     `(\(i:A,j:B). if i IN s /\ j IN b INSERT t then p i,j else i,j) =
+      (\(i,j). if i IN s /\ j IN {b} then p i,j else i,j) o
+      (\(i,j). if i IN s /\ j IN t then p i,j else i,j)`
+    SUBST1_TAC THENL
+     [REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM; o_THM] THEN
+      MAP_EVERY X_GEN_TAC [`i:A`; `j:B`] THEN
+      ASM_CASES_TAC `(i:A) IN s` THEN ASM_REWRITE_TAC[IN_INSERT] THEN
+      ASM_CASES_TAC `j:B = b` THEN ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
+      ASM_CASES_TAC `(j:B) IN t` THEN ASM_REWRITE_TAC[];
+      ALL_TAC] THEN
+    W(MP_TAC o PART_MATCH (lhand o rand) SIGN_COMPOSE o lhand o snd) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC[PERMUTATION_PERMUTES] THEN CONJ_TAC THENL
+       [EXISTS_TAC `(s:A->bool) CROSS {b:B}`;
+        EXISTS_TAC `(s:A->bool) CROSS (t:B->bool)`] THEN
+      ASM_REWRITE_TAC[FINITE_CROSS_EQ; FINITE_SING] THEN
+      MATCH_MP_TAC PERMUTES_CARTESIAN_PRODUCT THEN
+      ASM_REWRITE_TAC[PERMUTES_ID];
+      DISCH_THEN SUBST1_TAC] THEN
+    ASM_SIMP_TAC[CARD_CLAUSES; real_pow; IN_SING] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN
+    MATCH_MP_TAC SIGN_TRANSFER THEN
+    EXISTS_TAC `\x:A. x,(b:B)` THEN EXISTS_TAC `s:A->bool` THEN
+    ASM_SIMP_TAC[PAIR_EQ; IN_IMAGE; FORALL_PAIR_THM] THEN
+    ASM_MESON_TAC[]) in
+  let lemma2 = prove
+   (`!p (s:A->bool) (t:B->bool).
+          FINITE s /\ p permutes t /\ FINITE t
+          ==> sign (\(i:A,j:B). if i IN s /\ j IN t then i,p j else i,j) =
+              sign p pow CARD s`,
+    REPEAT STRIP_TAC THEN
+    MP_TAC(ISPECL [`p:B->B`; `t:B->bool`; `s:A->bool`]
+      lemma1) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+    MATCH_MP_TAC SIGN_TRANSFER THEN
+    EXISTS_TAC `\(i:B,j:A). j,i` THEN
+    EXISTS_TAC `(t:B->bool) CROSS (s:A->bool)` THEN
+    ASM_REWRITE_TAC[FINITE_CROSS_EQ; FORALL_PAIR_THM; IN_CROSS] THEN
+    SIMP_TAC[PAIR_EQ; IN_IMAGE; IN_CROSS; EXISTS_PAIR_THM] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+    MATCH_MP_TAC PERMUTES_CARTESIAN_PRODUCT THEN
+    ASM_REWRITE_TAC[PERMUTES_ID]) in
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `(\(i,j). if i IN s /\ j IN t then (p:A->A) i,(q:B->B) j else i,j) =
+    (\(i,j). if i IN s /\ j IN t then p i,j else i,j) o
+    (\(i,j). if i IN s /\ j IN t then i,q j else i,j)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; FORALL_PAIR_THM; o_THM] THEN REPEAT GEN_TAC THEN
+    REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[PAIR_EQ]) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[PERMUTES_ALT]) THEN ASM SET_TAC[];
+    W(MP_TAC o PART_MATCH (lhand o rand) SIGN_COMPOSE o lhand o snd)] THEN
+  ANTS_TAC THENL
+   [REWRITE_TAC[PERMUTATION_PERMUTES] THEN CONJ_TAC THEN
+    EXISTS_TAC `(s:A->bool) CROSS (t:B->bool)` THEN
+    ASM_SIMP_TAC[FINITE_CROSS_EQ; PERMUTES_CARTESIAN_PRODUCT; PERMUTES_ID];
+    DISCH_THEN SUBST1_TAC] THEN
+  ASM_SIMP_TAC[lemma1; lemma2]);;
 
 (* ------------------------------------------------------------------------- *)
 (* More lemmas about permutations.                                           *)
@@ -869,6 +1107,104 @@ let SIGN_INVOLUTION = prove
    [ASM_SIMP_TAC[CARD_CLAUSES; FINITE_RULES; IN_SING; NOT_IN_EMPTY] THEN
     CONV_TAC NUM_REDUCE_CONV;
     MATCH_MP_TAC CARD_SUBSET THEN ASM SET_TAC[]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Cyclic permutations realized via modular addition.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let PERMUTES_CYCLIC = prove
+ (`!n. (\i. if i < n then (i + 1) MOD n else i) permutes {i | i < n}`,
+  GEN_TAC THEN SIMP_TAC[PERMUTES_FINITE_INJECTIVE; FINITE_NUMSEG_LT] THEN
+  REWRITE_TAC[IMP_CONJ; IN_ELIM_THM] THEN SIMP_TAC[] THEN
+  SIMP_TAC[MOD_CASES; ARITH_RULE `x < n ==> x + 1 < 2 * n`] THEN ARITH_TAC);;
+
+let PERMUTES_CYCLIC_N = prove
+ (`!n k. (\i. if i < n then (i + k) MOD n else i) permutes {i | i < n}`,
+  GEN_TAC THEN INDUCT_TAC THEN
+  SIMP_TAC[ADD_CLAUSES; MOD_LT; COND_ID; PERMUTES_ID] THEN
+  SUBGOAL_THEN
+   `(\i. if i < n then SUC(i + k) MOD n else i) =
+    (\i. if i < n then (i + 1) MOD n else i) o
+    (\i. if i < n then (i + k) MOD n else i)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_THM] THEN X_GEN_TAC `m:num` THEN
+    ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[CONJUNCT1 LT] THEN
+    ASM_CASES_TAC `m:num < n` THEN ASM_REWRITE_TAC[MOD_LT_EQ] THEN
+    REWRITE_TAC[ADD1] THEN MESON_TAC[MOD_ADD_MOD; MOD_MOD_REFL];
+    MATCH_MP_TAC PERMUTES_COMPOSE THEN
+    ASM_REWRITE_TAC[PERMUTES_CYCLIC]]);;
+
+let PERMUTATION_CYCLIC = prove
+ (`!n. permutation (\i. if i < n then (i + 1) MOD n else i)`,
+  GEN_TAC THEN REWRITE_TAC[PERMUTATION_PERMUTES] THEN
+  EXISTS_TAC `{i:num | i < n}` THEN
+  ASM_REWRITE_TAC[PERMUTES_CYCLIC; FINITE_NUMSEG_LT]);;
+
+let PERMUTATION_CYCLIC_N = prove
+ (`!n k. permutation (\i. if i < n then (i + k) MOD n else i)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[PERMUTATION_PERMUTES] THEN
+  EXISTS_TAC `{i:num | i < n}` THEN
+  ASM_REWRITE_TAC[PERMUTES_CYCLIC_N; FINITE_NUMSEG_LT]);;
+
+let EVENPERM_CYCLIC = prove
+ (`!n. evenperm(\i. if i < n then (i + 1) MOD n else i) <=> n = 0 \/ ODD n`,
+  INDUCT_TAC THEN REWRITE_TAC[CONJUNCT1 LT; EVENPERM_ID; ODD] THEN
+  REWRITE_TAC[NOT_SUC] THEN
+  SUBGOAL_THEN
+   `(\i. if i < SUC n then (i + 1) MOD SUC n else i) =
+    (swap(0,n)) o (\i. if i <  n then (i + 1) MOD n else i)`
+  SUBST1_TAC THENL
+   [SIMP_TAC[MOD_CASES; ARITH_RULE `x < n ==> x + 1 < 2 * n`] THEN
+    REWRITE_TAC[FUN_EQ_THM; o_THM; swap] THEN
+    POP_ASSUM_LIST(K ALL_TAC) THEN
+    REWRITE_TAC[ARITH_RULE `m + 1 < SUC n <=> m < n`] THEN
+    X_GEN_TAC `m:num` THEN
+    ASM_CASES_TAC `m + 1 < n` THEN
+    ASM_SIMP_TAC[ARITH_RULE `m + 1 < n ==> m < n /\ m < SUC n`] THENL
+     [ASM_ARITH_TAC; ALL_TAC] THEN
+    ASM_CASES_TAC `m:num < n` THEN
+    ASM_SIMP_TAC[ARITH_RULE `m < n ==> m < SUC n`] THEN
+    ASM_ARITH_TAC;
+    ASM_SIMP_TAC[EVENPERM_COMPOSE; PERMUTATION_SWAP; PERMUTATION_CYCLIC] THEN
+    REWRITE_TAC[EVENPERM_SWAP] THEN
+    MESON_TAC[ODD]]);;
+
+let EVENPERM_CYCLIC_N = prove
+ (`!n k. evenperm(\i. if i < n then (i + k) MOD n else i) <=>
+         n = 0 \/ ODD n \/ EVEN k`,
+  GEN_TAC THEN INDUCT_TAC THEN
+  SIMP_TAC[ADD_CLAUSES; MOD_LT; COND_ID; EVENPERM_ID; ARITH] THEN
+  SUBGOAL_THEN
+   `(\i. if i < n then SUC(i + k) MOD n else i) =
+    (\i. if i < n then (i + 1) MOD n else i) o
+    (\i. if i < n then (i + k) MOD n else i)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[FUN_EQ_THM; o_THM] THEN X_GEN_TAC `m:num` THEN
+    ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[CONJUNCT1 LT] THEN
+    ASM_CASES_TAC `m:num < n` THEN ASM_REWRITE_TAC[MOD_LT_EQ] THEN
+    REWRITE_TAC[ADD1] THEN MESON_TAC[MOD_ADD_MOD; MOD_MOD_REFL];
+    ALL_TAC] THEN
+  ASM_SIMP_TAC[EVENPERM_COMPOSE; PERMUTATION_CYCLIC_N] THEN
+  REWRITE_TAC[EVENPERM_CYCLIC; EVEN; NOT_EVEN] THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[] THEN
+  MESON_TAC[NOT_EVEN]);;
+
+let SIGN_CYCLIC = prove
+ (`!n. sign(\i. if i < n then (i + 1) MOD n else i) = --(&1) pow (n - 1)`,
+  GEN_TAC THEN REWRITE_TAC[sign; EVENPERM_CYCLIC] THEN
+  REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE; EVEN_SUB; ARITH; NOT_EVEN] THEN
+  ASM_CASES_TAC `n = 1` THEN ASM_REWRITE_TAC[LE_REFL; ARITH] THEN
+  ASM_REWRITE_TAC[ARITH_RULE `n <= 1 <=> n = 1 \/ n = 0`]);;
+
+let SIGN_CYCLIC_N = prove
+ (`!n k. sign(\i. if i < n then (i + k) MOD n else i) =
+         --(&1) pow (k * (n - 1))`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[sign; EVENPERM_CYCLIC_N] THEN
+  REWRITE_TAC[REAL_POW_NEG; REAL_POW_ONE; EVEN_MULT;
+              EVEN_SUB; ARITH; NOT_EVEN] THEN
+  ASM_CASES_TAC `n = 1` THEN ASM_REWRITE_TAC[LE_REFL; ARITH] THEN
+  ASM_REWRITE_TAC[ARITH_RULE `n <= 1 <=> n = 1 \/ n = 0`] THEN
+  MESON_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversion for `{p | p permutes s}` where s is a set enumeration.         *)

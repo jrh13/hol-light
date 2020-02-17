@@ -326,6 +326,28 @@ let DIVIDES_DIV_MULT = prove
    [ASM_MESON_TAC[DIVIDES_MOD; ADD_CLAUSES];
     ASM_MESON_TAC[DIVISION]]);;
 
+let DIV_BY_DIV = prove
+ (`!m n. ~(n = 0) /\ m divides n ==> n DIV (n DIV m) = m`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[DIV_ZERO] THEN
+  MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `0` THEN
+  ASM_SIMP_TAC[LDIV_LT_EQ; ADD_CLAUSES] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[DIVIDES_DIV_MULT; MULT_SYM]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN ASM_ARITH_TAC);;
+
+let DIVIDES_DIV_DIVIDES = prove
+ (`!n d e. d divides n /\ (n = 0 ==> e = 0)
+           ==> (n DIV d divides e <=> n divides d * e)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `d = 0` THEN
+  ASM_SIMP_TAC[DIV_ZERO; MULT_CLAUSES; DIVIDES_0; DIVIDES_ZERO] THEN
+  REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM; IMP_CONJ] THEN
+  ASM_SIMP_TAC[DIV_MULT; GSYM MULT_ASSOC; EQ_MULT_LCANCEL]);;
+
+let DIVIDES_DIV_SELF = prove
+ (`!n d. d divides n ==> n DIV d divides n`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[DIVIDES_DIV_DIVIDES] THEN
+  CONV_TAC NUMBER_RULE);;
+
 let FINITE_DIVISORS = prove
  (`!n. ~(n = 0) ==> FINITE {d | d divides n}`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
@@ -1081,6 +1103,20 @@ let PRIME_COPRIME_EQ = prove
   ASM_SIMP_TAC[PRIME_COPRIME_STRONG] THEN
   ASM_MESON_TAC[COPRIME_REFL; PRIME_1; NUMBER_RULE
    `coprime(p,n) /\ p divides n ==> coprime(p,p)`]);;
+
+let GCD_PRIME_CASES = prove
+ (`(!p n. prime p ==> gcd(p,n) = if p divides n then p else 1) /\
+   (!p n. prime p ==> gcd(n,p) = if p divides n then p else 1)`,
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [GCD_SYM] THEN
+  REWRITE_TAC[] THEN REPEAT GEN_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[GSYM DIVIDES_GCD_LEFT] THEN
+  REWRITE_TAC[GSYM COPRIME_GCD] THEN
+  ASM_MESON_TAC[PRIME_COPRIME_EQ]);;
+
+let GCD_2_CASES = prove
+ (`(!n. gcd(2,n) = if EVEN n then 2 else 1) /\
+   (!n. gcd(n,2) = if EVEN n then 2 else 1)`,
+  SIMP_TAC[GCD_PRIME_CASES; PRIME_2; DIVIDES_2]);;
 
 let COPRIME_PRIMEPOW = prove
  (`!p k m. prime p /\ ~(k = 0) ==> (coprime(m,p EXP k) <=> ~(p divides m))`,
@@ -2237,6 +2273,18 @@ let INDUCT_COPRIME_STRONG = prove
    [ASM_MESON_TAC[];
     MAP_EVERY X_GEN_TAC [`p:num`; `k:num`] THEN ASM_CASES_TAC `k = 0` THEN
     ASM_REWRITE_TAC[LT_REFL; EXP] THEN ASM_MESON_TAC[]]);;
+
+let INDUCT_COPRIME_ALT = prove
+ (`!P. P 0 /\
+       (!a b. 1 < a /\ 1 < b /\ coprime(a,b) /\ P a /\ P b ==> P(a * b)) /\
+       (!p k. prime p ==> P(p EXP k))
+       ==> !n. P n`,
+  GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC(MESON[]
+   `(!n. 1 < n ==> P n) /\ (!n. ~(1 < n) ==> P n) ==> !n. P n`) THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC INDUCT_COPRIME THEN ASM_REWRITE_TAC[];
+    REWRITE_TAC[ARITH_RULE `~(1 < n) <=> n = 0 \/ n = 1`] THEN
+    REPEAT STRIP_TAC THEN ASM_MESON_TAC[PRIME_2; EXP]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* A conversion for divisibility.                                            *)

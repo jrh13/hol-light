@@ -26,7 +26,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/inverse_bug_puzzle_tac \
 	RichterHilbertAxiomGeometry/inverse_bug_puzzle_read \
 	Library/isum \
-	Examples/jacobi \
+	Library/jacobi \
 	Examples/kb \
 	Examples/lagrange_lemma \
 	Examples/lucas_lehmer \
@@ -57,6 +57,7 @@ STANDALONE_EXAMPLES:=\
 	Examples/vitali \
 	Library/wo \
 	Library/words \
+	Examples/zolotarev \
 	Library/analysis-transc \
 	Library/prime-pratt \
 	Library/prime-pocklington \

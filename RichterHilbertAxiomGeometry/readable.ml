@@ -648,7 +648,7 @@ let SKOLEM_THM_GEN = theorem `;
   qed;
 `;;
 
-let MOD_MOD_REFL = theorem `;
+let MOD_MOD_REFL' = theorem `;
   ∀m n. ¬(n = 0)  ⇒  ((m MOD n) MOD n = m MOD n)
 
   proof
