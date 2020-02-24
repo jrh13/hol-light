@@ -8,6 +8,56 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 21st Feb 2020       Library/primitive.ml
+
+Renamed a few existing theorems where the original name seemed ill-chosen
+(since they are about counting the number of preimages giving a residue,
+not the number of residues themselves)
+
+  COUNT_POWER_RESIDUES_MODULO_ODD
+          -> COUNT_ROOTS_MODULO_ODD_GEN
+
+  COUNT_POWER_RESIDUES_MODULO_ODD_ALT
+          -> COUNT_ROOTS_MODULO_ODD_ALT_GEN
+
+  COUNT_POWER_RESIDUES_MODULO_PRIMITIVE
+          -> COUNT_ROOTS_MODULO_PRIMITIVE_GEN
+
+  COUNT_POWER_RESIDUES_MODULO_PRIMITIVE_ALT
+          -> COUNT_ROOTS_MODULO_PRIMITIVE_GEN_ALT
+
+And then added a few new theorems, one of them taking over the old name
+
+  COUNT_POWER_RESIDUES_MODULO_PRIMITIVE =
+    |- !n k.
+           ~(n = 0) /\ (?g. order n g = phi n)
+           ==> {a | a < n /\ coprime(n,a) /\ (?x. (x EXP k == a) (mod n))} 
+               HAS_SIZE phi n DIV gcd(k,phi n)
+  
+  COUNT_QUADRATIC_RESIDUES_MODULO_PRIMITIVE =
+    |- !n. 3 <= n /\ (?g. order n g = phi n)
+           ==> {a | a < n /\ coprime(n,a) /\ (?x. (x EXP 2 == a) (mod n))} 
+               HAS_SIZE phi n DIV 2
+  
+  POWER_RESIDUE_EXISTS =
+    |- !n k.
+           ~(n = 0)
+           ==> (?a. a < n /\ coprime(n,a) /\ (?x. (x EXP k == a) (mod n)))
+  
+  QUADRATIC_NONRESIDUE_EXISTS =
+    |- !n. (?a. a < n /\ coprime(n,a) /\ ~(?x. (x EXP 2 == a) (mod n))) <=>
+           3 <= n
+
+Fri 21st Feb 2020       sets.ml
+
+Added a couple more trivial things about proper subset related to cardinality:
+
+  CARD_PSUBSET_IMP =
+    |- !a b. a SUBSET b /\ ~(CARD a = CARD b) ==> a PSUBSET b
+
+  CARD_PSUBSET_EQ =
+    |- !a b. FINITE b /\ a SUBSET b ==> (a PSUBSET b <=> CARD a < CARD b)
+
 Fri 14th Feb 2020       Library/pocklington.ml
 
 Added two more simple consequences of existing theorems:

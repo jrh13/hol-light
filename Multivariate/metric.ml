@@ -1933,6 +1933,31 @@ let DISCRETE_TOPOLOGY_FRONTIER_OF = prove
   REWRITE_TAC[frontier_of; DISCRETE_TOPOLOGY_CLOSURE_OF;
               DISCRETE_TOPOLOGY_INTERIOR_OF; DIFF_EQ_EMPTY]);;
 
+let OPEN_IN_SUBSET_TOPSPACE_EQ = prove
+ (`!top u s:A->bool.
+        DISJOINT s (top frontier_of u)
+        ==> (open_in (subtopology top u) s <=>
+             open_in top s /\ s SUBSET u)`,
+  ONCE_REWRITE_TAC[FRONTIER_OF_RESTRICT] THEN REPEAT STRIP_TAC THEN
+  EQ_TAC THEN REWRITE_TAC[OPEN_IN_SUBSET_TOPSPACE] THEN
+  ONCE_REWRITE_TAC[SUBTOPOLOGY_RESTRICT] THEN DISCH_TAC THEN CONJ_TAC THENL
+   [MP_TAC(SET_RULE `topspace top INTER (u:A->bool) SUBSET topspace top`);
+    FIRST_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
+    REWRITE_TAC[TOPSPACE_SUBTOPOLOGY] THEN SET_TAC[]] THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN
+  SPEC_TAC(`topspace top INTER u:A->bool`,`u:A->bool`) THEN
+  X_GEN_TAC `u:A->bool` THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_SUBTOPOLOGY]) THEN
+  DISCH_THEN(X_CHOOSE_THEN `t:A->bool` STRIP_ASSUME_TAC) THEN
+  ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN `t INTER u:A->bool = t INTER top interior_of u` SUBST1_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[frontier_of]) THEN
+    MP_TAC(ISPECL [`top:A topology`; `u:A->bool`] INTERIOR_OF_SUBSET) THEN
+    MP_TAC(ISPECL [`top:A topology`; `u:A->bool`] CLOSURE_OF_SUBSET) THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
+    ASM SET_TAC[];
+    ASM_SIMP_TAC[OPEN_IN_INTER; OPEN_IN_INTERIOR_OF]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Iteration of interior and closure.                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -12531,6 +12556,21 @@ let CONNECTED_SPACE_CLOPEN_IN = prove
   REWRITE_TAC[NOT_EXISTS_THM] THEN AP_TERM_TAC THEN ABS_TAC THEN
   ONCE_REWRITE_TAC[OPEN_IN_CLOSED_IN_EQ] THEN SET_TAC[]);;
 
+let CONNECTED_SPACE_EQ_FRONTIER_EQ_EMPTY = prove
+ (`!top:A topology.
+        connected_space top <=>
+        !s. s SUBSET topspace top /\ top frontier_of s = {}
+            ==> s = {} \/ s = topspace top`,
+  REWRITE_TAC[CONNECTED_SPACE_CLOPEN_IN] THEN
+  MESON_TAC[CLOPEN_IN_EQ_FRONTIER_OF]);;
+
+let CONNECTED_SPACE_FRONTIER_EQ_EMPTY = prove
+ (`!top s:A->bool.
+        connected_space top /\ s SUBSET topspace top
+        ==> (top frontier_of s = {} <=> s = {} \/ s = topspace top)`,
+  MESON_TAC[CONNECTED_SPACE_EQ_FRONTIER_EQ_EMPTY;
+            FRONTIER_OF_EMPTY; FRONTIER_OF_TOPSPACE]);;
+
 let CONNECTED_IN = prove
  (`!top s:A->bool.
         connected_in top s <=>
@@ -13312,6 +13352,262 @@ let CONNECTED_IN_CARTESIAN_PRODUCT = prove
   SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
+(* The notion of "separated between" (complement of "connected between")     *)
+(* ------------------------------------------------------------------------- *)
+
+let separated_between = new_definition
+ `separated_between top (s:A->bool) t <=>
+        ?u v. open_in top u /\ open_in top v /\
+              u UNION v = topspace top /\ DISJOINT u v /\
+              s SUBSET u /\ t SUBSET v`;;
+
+let SEPARATED_BETWEEN_ALT = prove
+ (`!top s (t:A->bool).
+        separated_between top s t <=>
+        ?u v. closed_in top u /\ closed_in top v /\
+              u UNION v = topspace top /\ DISJOINT u v /\
+              s SUBSET u /\ t SUBSET v`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[separated_between] THEN
+  GEN_REWRITE_TAC LAND_CONV [SWAP_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_EXISTS_AND_THM; EXISTS_CLOSED_IN] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN REPEAT(AP_TERM_TAC THEN ABS_TAC) THEN
+  REWRITE_TAC[OPEN_IN_CLOSED_IN_EQ] THEN SET_TAC[]);;
+
+let SEPARATED_BETWEEN = prove
+ (`!top s (t:A->bool).
+        separated_between top s t <=>
+        ?u. closed_in top u /\ open_in top u /\
+            s SUBSET u /\ t SUBSET (topspace top DIFF u)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[separated_between] THEN
+  ONCE_REWRITE_TAC[TAUT
+    `p /\ q /\ r /\ s /\ t /\ u <=> (r /\ s) /\ p /\ q /\ t /\ u`] THEN
+  REWRITE_TAC[SET_RULE
+   `u UNION v = t /\ DISJOINT u v <=> v = t DIFF u /\ u SUBSET t`] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC; UNWIND_THM2; closed_in] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN SET_TAC[]);;
+
+let SEPARATED_BETWEEN_MONO = prove
+ (`!top s t s' t':A->bool.
+        separated_between top s t /\ s' SUBSET s /\ t' SUBSET t
+        ==> separated_between top s' t'`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+  REWRITE_TAC[separated_between] THEN
+  REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  ASM SET_TAC[]);;
+
+let SEPARATED_BETWEEN_REFL = prove
+ (`!top s:A->bool. separated_between top s s <=> s = {}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[separated_between] THEN
+  EQ_TAC THENL [SET_TAC[]; DISCH_TAC] THEN
+  MAP_EVERY EXISTS_TAC [`topspace top:A->bool`; `{}:A->bool`] THEN
+  ASM_REWRITE_TAC[OPEN_IN_TOPSPACE; OPEN_IN_EMPTY; EMPTY_SUBSET] THEN
+  SET_TAC[]);;
+
+let SEPARATED_BETWEEN_SYM = prove
+ (`!top s (t:A->bool).
+        separated_between top s t <=> separated_between top t s`,
+  REWRITE_TAC[separated_between] THEN MESON_TAC[UNION_COMM; DISJOINT_SYM]);;
+
+let SEPARATED_BETWEEN_IMP_SUBSET = prove
+ (`!top s (t:A->bool).
+        separated_between top s t
+        ==> s SUBSET topspace top /\ t SUBSET topspace top`,
+  REWRITE_TAC[separated_between] THEN
+  MESON_TAC[OPEN_IN_SUBSET; SUBSET_TRANS]);;
+
+let SEPARATED_BETWEEN_EMPTY = prove
+ (`(!top s:A->bool. separated_between top {} s <=> s SUBSET topspace top) /\
+   (!top s:A->bool. separated_between top s {} <=> s SUBSET topspace top)`,
+  REPEAT STRIP_TAC THEN
+  (EQ_TAC THENL [MESON_TAC[SEPARATED_BETWEEN_IMP_SUBSET]; DISCH_TAC])
+  THENL [ONCE_REWRITE_TAC[SEPARATED_BETWEEN_SYM]; ALL_TAC] THEN
+  REWRITE_TAC[SEPARATED_BETWEEN] THEN EXISTS_TAC `topspace top:A->bool` THEN
+  ASM_REWRITE_TAC[CLOSED_IN_TOPSPACE; OPEN_IN_TOPSPACE; EMPTY_SUBSET]);;
+
+let SEPARATED_BETWEEN_UNION = prove
+ (`(!top s t u:A->bool.
+        separated_between top s (t UNION u) <=>
+        separated_between top s t /\
+        separated_between top s u) /\
+   (!top s t u:A->bool.
+        separated_between top (s UNION t) u <=>
+        separated_between top s u /\
+        separated_between top t u)`,
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ p ==> p /\ q`) THEN
+  CONJ_TAC THENL [MESON_TAC[SEPARATED_BETWEEN_SYM]; ALL_TAC] THEN
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[SEPARATED_BETWEEN_MONO; SUBSET_UNION; SUBSET_REFL];
+    REWRITE_TAC[SEPARATED_BETWEEN]] THEN
+  DISCH_THEN(CONJUNCTS_THEN2
+   (X_CHOOSE_THEN `c:A->bool` STRIP_ASSUME_TAC)
+   (X_CHOOSE_THEN `d:A->bool` STRIP_ASSUME_TAC)) THEN
+  EXISTS_TAC `c INTER d:A->bool` THEN
+  ASM_SIMP_TAC[OPEN_IN_INTER; CLOSED_IN_INTER] THEN ASM SET_TAC[]);;
+
+let SEPARATED_BETWEEN_IMP_DISJOINT = prove
+ (`!top s (t:A->bool). separated_between top s t ==> DISJOINT s t`,
+  REWRITE_TAC[separated_between] THEN SET_TAC[]);;
+
+let SEPARATED_BETWEEN_IMP_SEPARATED_IN = prove
+ (`!top s (t:A->bool). separated_between top s t ==> separated_in top s t`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[separated_between; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN STRIP_TAC THEN
+  MATCH_MP_TAC SEPARATED_IN_MONO THEN
+  MAP_EVERY EXISTS_TAC [`u:A->bool`; `v:A->bool`] THEN
+  ASM_SIMP_TAC[SEPARATED_IN_OPEN_SETS]);;
+
+let SEPARATED_BETWEEN_FULL = prove
+ (`!top s t:A->bool.
+        s UNION t = topspace top
+        ==> (separated_between top s t <=>
+             DISJOINT s t /\
+             closed_in top s /\ open_in top s /\
+             closed_in top t /\ open_in top t)`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [MESON[SEPARATED_BETWEEN_SYM]
+   `separated_between top s t <=>
+    separated_between top s t /\ separated_between top t s`] THEN
+  REWRITE_TAC[SEPARATED_BETWEEN; LEFT_AND_EXISTS_THM] THEN
+  REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN EQ_TAC THENL
+   [REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [`u:A->bool`; `v:A->bool`] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `s:A->bool = u /\ t:A->bool = v`
+    (CONJUNCTS_THEN SUBST_ALL_TAC) THENL
+     [RULE_ASSUM_TAC(REWRITE_RULE[closed_in]) THEN ASM SET_TAC[];
+      ASM SET_TAC[]];
+    STRIP_TAC THEN MAP_EVERY EXISTS_TAC [`s:A->bool`; `t:A->bool`] THEN
+    ASM SET_TAC[]]);;
+
+let SEPARATED_BETWEEN_EQ_SEPARATED_IN = prove
+ (`!top s t:A->bool.
+        s UNION t = topspace top
+        ==> (separated_between top s t <=> separated_in top s t)`,
+  SIMP_TAC[SEPARATED_IN_FULL; SEPARATED_BETWEEN_FULL]);;
+
+let SEPARATED_BETWEEN_POINTWISE_LEFT = prove
+ (`!top s t:A->bool.
+        compact_in top s
+        ==> (separated_between top s t <=>
+             (s = {} ==> t SUBSET topspace top) /\
+             !x. x IN s ==> separated_between top {x} t)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [MESON_TAC[SEPARATED_BETWEEN_MONO; SUBSET_REFL;
+              SEPARATED_BETWEEN_IMP_SUBSET; SING_SUBSET];
+    ASM_CASES_TAC `s:A->bool = {}` THEN
+    ASM_REWRITE_TAC[SEPARATED_BETWEEN_EMPTY; NOT_IN_EMPTY] THEN
+    REWRITE_TAC[SEPARATED_BETWEEN]] THEN
+  GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[SKOLEM_THM; LEFT_IMP_EXISTS_THM; SING_SUBSET] THEN
+  X_GEN_TAC `u:A->A->bool` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [compact_in]) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `IMAGE (u:A->A->bool) s`) THEN
+  REWRITE_TAC[FORALL_IN_IMAGE; EXISTS_FINITE_SUBSET_IMAGE; UNIONS_IMAGE] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; REWRITE_TAC[LEFT_IMP_EXISTS_THM]] THEN
+  X_GEN_TAC `k:A->bool` THEN ASM_CASES_TAC `k:A->bool = {}` THEN
+  ASM_REWRITE_TAC[NOT_IN_EMPTY; EMPTY_GSPEC; SUBSET_EMPTY] THEN STRIP_TAC THEN
+  EXISTS_TAC `UNIONS(IMAGE (u:A->A->bool) k)` THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC CLOSED_IN_UNIONS;
+    MATCH_MP_TAC OPEN_IN_UNIONS;
+    REWRITE_TAC[UNIONS_IMAGE];
+    REWRITE_TAC[UNIONS_IMAGE]] THEN
+  ASM_SIMP_TAC[FINITE_IMAGE; FORALL_IN_IMAGE] THEN ASM SET_TAC[]);;
+
+let SEPARATED_BETWEEN_POINTWISE_RIGHT = prove
+ (`!top s t:A->bool.
+        compact_in top t
+        ==> (separated_between top s t <=>
+             (t = {} ==> s SUBSET topspace top) /\
+             !y. y IN t ==> separated_between top s {y})`,
+  ONCE_REWRITE_TAC[SEPARATED_BETWEEN_SYM] THEN
+  REWRITE_TAC[SEPARATED_BETWEEN_POINTWISE_LEFT]);;
+
+let SEPARATED_BETWEEN_CLOSURE_OF = prove
+ (`(!top s t:A->bool.
+        s SUBSET topspace top
+        ==> (separated_between top (top closure_of s) t <=>
+             separated_between top s t)) /\
+   (!top s t:A->bool.
+        t SUBSET topspace top
+        ==> (separated_between top s (top closure_of t) <=>
+             separated_between top s t))`,
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ p ==> p /\ q`) THEN
+  CONJ_TAC THENL [MESON_TAC[SEPARATED_BETWEEN_SYM]; ALL_TAC] THEN
+  REWRITE_TAC[SEPARATED_BETWEEN] THEN MESON_TAC[CLOSURE_OF_MINIMAL_EQ]);;
+
+let SEPARATED_BETWEEN_CLOSURE_OF_EQ = prove
+ (`(!top s t:A->bool.
+        separated_between top s t <=>
+        s SUBSET topspace top /\
+        separated_between top (top closure_of s) t) /\
+   (!top s t:A->bool.
+        separated_between top s t <=>
+        t SUBSET topspace top /\
+        separated_between top s (top closure_of t))`,
+  MESON_TAC[SEPARATED_BETWEEN_CLOSURE_OF; SEPARATED_BETWEEN_IMP_SUBSET]);;
+
+let SEPARATED_BETWEEN_FRONTIER_OF_EQ = prove
+ (`(!top s t:A->bool.
+        separated_between top s t <=>
+        s SUBSET topspace top /\ DISJOINT s t /\
+        separated_between top (top frontier_of s) t) /\
+   (!top s t:A->bool.
+        separated_between top s t <=>
+        t SUBSET topspace top /\ DISJOINT s t /\
+        separated_between top s (top frontier_of t))`,
+  MATCH_MP_TAC(TAUT `(q ==> p) /\ q ==> p /\ q`) THEN CONJ_TAC THENL
+   [MESON_TAC[SEPARATED_BETWEEN_SYM; DISJOINT_SYM]; ALL_TAC] THEN
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [CONJ_TAC THENL
+     [ASM_MESON_TAC[SEPARATED_BETWEEN_IMP_SUBSET]; ALL_TAC] THEN
+    CONJ_TAC THENL
+     [ASM_MESON_TAC[SEPARATED_BETWEEN_IMP_DISJOINT]; ALL_TAC] THEN
+    MATCH_MP_TAC SEPARATED_BETWEEN_MONO THEN
+    MAP_EVERY EXISTS_TAC [`s:A->bool`; `top closure_of t:A->bool`] THEN
+    FIRST_X_ASSUM(MP_TAC o
+      GEN_REWRITE_RULE I [CONJUNCT2 SEPARATED_BETWEEN_CLOSURE_OF_EQ]) THEN
+    SIMP_TAC[SUBSET_REFL] THEN REWRITE_TAC[frontier_of] THEN SET_TAC[];
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [SEPARATED_BETWEEN]) THEN
+    REWRITE_TAC[SEPARATED_BETWEEN; LEFT_IMP_EXISTS_THM] THEN
+    X_GEN_TAC `u:A->bool` THEN STRIP_TAC THEN
+    EXISTS_TAC `u DIFF t:A->bool` THEN
+    GEN_REWRITE_TAC I [CONJ_ASSOC] THEN
+    CONJ_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN CONJ_TAC THENL
+     [SUBGOAL_THEN `u DIFF t:A->bool = u DIFF top interior_of t`
+       (fun th -> ASM_SIMP_TAC[th; CLOSED_IN_DIFF; OPEN_IN_INTERIOR_OF]);
+      SUBGOAL_THEN `u DIFF t:A->bool = u DIFF top closure_of t`
+       (fun th -> ASM_SIMP_TAC[th; OPEN_IN_DIFF; CLOSED_IN_CLOSURE_OF])] THEN
+    MP_TAC(ISPECL [`top:A topology`; `t:A->bool`] INTERIOR_OF_SUBSET) THEN
+    MP_TAC(ISPECL [`top:A topology`; `t:A->bool`] CLOSURE_OF_SUBSET) THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[frontier_of]) THEN ASM SET_TAC[]]);;
+
+let SEPARATED_BETWEEN_FRONTIER_OF = prove
+ (`(!top s t:A->bool.
+        s SUBSET topspace top /\ DISJOINT s t
+        ==> (separated_between top (top frontier_of s) t <=>
+             separated_between top s t)) /\
+   (!top s t:A->bool.
+        t SUBSET topspace top /\ DISJOINT s t
+        ==> (separated_between top s (top frontier_of t) <=>
+             separated_between top s t))`,
+  MESON_TAC[SEPARATED_BETWEEN_FRONTIER_OF_EQ]);;
+
+let CONNECTED_SPACE_SEPARATED_BETWEEN = prove
+ (`!top:A topology.
+        connected_space top <=>
+        !s t. separated_between top s t ==> s = {} \/ t = {}`,
+  REWRITE_TAC[CONNECTED_SPACE_EQ; separated_between] THEN
+  MESON_TAC[DISJOINT; SUBSET_REFL; SUBSET_EMPTY]);;
+
+let CONNECTED_SPACE_IMP_SEPARATED_BETWEEN_TRIVIAL = prove
+ (`!top s t:A->bool.
+        connected_space top
+        ==> (separated_between top s t <=>
+             s = {} /\ t SUBSET topspace top \/
+             s SUBSET topspace top /\ t = {})`,
+  MESON_TAC[CONNECTED_SPACE_SEPARATED_BETWEEN; SEPARATED_BETWEEN_EMPTY]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Connected components.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
@@ -13378,6 +13674,28 @@ let CONNECTED_COMPONENT_OF_SET = prove
 let CONNECTED_COMPONENT_OF_SUBSET_TOPSPACE = prove
  (`!top x. (connected_component_of top x) SUBSET topspace top`,
   REWRITE_TAC[SUBSET; IN] THEN MESON_TAC[CONNECTED_COMPONENT_IN_TOPSPACE; IN]);;
+
+let CONNECTED_COMPONENT_OF_SUBTOPOLOGY_EQ = prove
+ (`!top u x:A.
+      connected_component_of (subtopology top u) x =
+      connected_component_of top x <=>
+      connected_component_of top x SUBSET u`,
+  REWRITE_TAC[CONNECTED_COMPONENT_OF_SET; CONNECTED_IN_SUBTOPOLOGY] THEN
+  SET_TAC[]);;
+
+let CONNECTED_COMPONENTS_OF_SUBTOPOLOGY = prove
+ (`!top u c:A->bool.
+        c IN connected_components_of top /\ c SUBSET u
+        ==> c IN connected_components_of (subtopology top u)`,
+  GEN_TAC THEN GEN_TAC THEN
+  SIMP_TAC[connected_components_of; IMP_CONJ; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `x:A` THEN REPEAT DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `x:A` o GEN_REWRITE_RULE I [SUBSET]) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[CONNECTED_COMPONENT_OF_REFL; IN]; DISCH_TAC] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN EXISTS_TAC `x:A` THEN
+  ASM_SIMP_TAC[TOPSPACE_SUBTOPOLOGY; IN_INTER] THEN
+  ASM_MESON_TAC[CONNECTED_COMPONENT_OF_SUBTOPOLOGY_EQ]);;
 
 let CONNECTED_COMPONENT_OF_EQ_EMPTY = prove
  (`!top x. connected_component_of top x = {} <=> ~(x IN topspace top)`,
@@ -13599,6 +13917,17 @@ let CLOSED_IN_CONNECTED_COMPONENT_OF = prove
    [MATCH_MP_TAC CLOSED_IN_CONNECTED_COMPONENTS_OF THEN
     ASM_MESON_TAC[CONNECTED_COMPONENT_IN_CONNECTED_COMPONENTS_OF];
     ASM_MESON_TAC[CLOSED_IN_EMPTY; CONNECTED_COMPONENT_OF_EQ_EMPTY]]);;
+
+let OPEN_IN_FINITE_CONNECTED_COMPONENTS = prove
+ (`!top c:A->bool.
+        FINITE(connected_components_of top) /\
+        c IN connected_components_of top
+        ==> open_in top c`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[OPEN_IN_CLOSED_IN_EQ; CONNECTED_COMPONENTS_OF_SUBSET] THEN
+  ASM_SIMP_TAC[COMPLEMENT_CONNECTED_COMPONENTS_OF_UNIONS] THEN
+  MATCH_MP_TAC CLOSED_IN_UNIONS THEN
+  ASM_SIMP_TAC[FINITE_DELETE; IN_DELETE; CLOSED_IN_CONNECTED_COMPONENTS_OF]);;
 
 let CONNECTED_COMPONENT_OF_EQ_OVERLAP = prove
  (`!top x y:A.
@@ -20866,6 +21195,36 @@ let PATH_COMPONENT_OF_SET = prove
         {y | ?g. path_in top g /\ g(&0) = x /\ g(&1) = y}`,
   REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN
   REWRITE_TAC[IN; path_component_of]);;
+
+let PATH_COMPONENT_OF_SET_ALT = prove
+ (`!top x:A.
+         path_component_of top x =
+         {y | ?t. path_connected_in top t /\ x IN t /\ y IN t}`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
+  GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [IN] THEN
+  REWRITE_TAC[PATH_COMPONENT_OF; IN_ELIM_THM]);;
+
+let PATH_COMPONENT_OF_SUBTOPOLOGY_EQ = prove
+ (`!top u x:A.
+      path_component_of (subtopology top u) x =
+      path_component_of top x <=>
+      path_component_of top x SUBSET u`,
+  REWRITE_TAC[PATH_COMPONENT_OF_SET_ALT; PATH_CONNECTED_IN_SUBTOPOLOGY] THEN
+  SET_TAC[]);;
+
+let PATH_COMPONENTS_OF_SUBTOPOLOGY = prove
+ (`!top u c:A->bool.
+        c IN path_components_of top /\ c SUBSET u
+        ==> c IN path_components_of (subtopology top u)`,
+  GEN_TAC THEN GEN_TAC THEN
+  SIMP_TAC[path_components_of; IMP_CONJ; FORALL_IN_GSPEC] THEN
+  X_GEN_TAC `x:A` THEN REPEAT DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `x:A` o GEN_REWRITE_RULE I [SUBSET]) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[PATH_COMPONENT_OF_REFL; IN]; DISCH_TAC] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN EXISTS_TAC `x:A` THEN
+  ASM_SIMP_TAC[TOPSPACE_SUBTOPOLOGY; IN_INTER] THEN
+  ASM_MESON_TAC[PATH_COMPONENT_OF_SUBTOPOLOGY_EQ]);;
 
 let PATH_COMPONENT_OF_SUBSET_TOPSPACE = prove
  (`!top x. (path_component_of top x) SUBSET topspace top`,

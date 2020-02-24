@@ -2198,6 +2198,14 @@ let CARD_PSUBSET = prove
   ASM_SIMP_TAC[CARD_DELETE; ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
   ASM_MESON_TAC[CARD_EQ_0; MEMBER_NOT_EMPTY]);;
 
+let CARD_PSUBSET_IMP = prove
+ (`!a b. a SUBSET b /\ ~(CARD a = CARD b) ==> a PSUBSET b`,
+  REWRITE_TAC[PSUBSET] THEN MESON_TAC[]);;
+
+let CARD_PSUBSET_EQ = prove
+ (`!a b. FINITE b /\ a SUBSET b ==> (a PSUBSET b <=> CARD a < CARD b)`,
+  MESON_TAC[CARD_PSUBSET_IMP; CARD_PSUBSET; LT_REFL]);;
+
 let CARD_UNION_LE = prove
  (`!s t:A->bool.
         FINITE s /\ FINITE t ==> CARD(s UNION t) <= CARD(s) + CARD(t)`,
