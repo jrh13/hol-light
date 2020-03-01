@@ -4334,6 +4334,15 @@ let GROUP_ELEMENT_ORDER_EQ_1 = prove
   SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE; NUMBER_RULE `1 divides n`] THEN
   MESON_TAC[GROUP_POW_ID; GROUP_POW_1]);;
 
+let GROUP_ELEMENT_ORDER_UNIQUE_PRIME = prove
+ (`!G (x:A) p.
+        x IN group_carrier G /\ prime p
+        ==> (group_element_order G x = p <=>
+             ~(x = group_id G) /\ group_pow G x p = group_id G)`,
+  SIMP_TAC[GROUP_POW_EQ_ID; GSYM GROUP_ELEMENT_ORDER_EQ_1] THEN
+  REWRITE_TAC[prime] THEN
+  MESON_TAC[NUMBER_RULE `1 divides n /\ n divides n`]);;
+
 let GROUP_ELEMENT_ORDER_ID = prove
  (`!G:A group. group_element_order G (group_id G) = 1`,
   SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_1; GROUP_ID]);;
@@ -4472,6 +4481,13 @@ let GROUP_ELEMENT_ORDER_EQ_2 = prove
   ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_UNIQUE_ALT; ARITH] THEN
   REWRITE_TAC[ARITH_RULE `0 < m /\ m < 2 <=> m = 1`] THEN
   ASM_SIMP_TAC[GROUP_POW_1] THEN MESON_TAC[]);;
+
+let GROUP_ELEMENT_ORDER_EQ_2_ALT = prove
+ (`!G x:A.
+        x IN group_carrier G
+        ==> (group_element_order G x = 2 <=>
+             ~(x = group_id G) /\ group_inv G x = x)`,
+  SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_2; GROUP_LINV_EQ; GROUP_POW_2]);;
 
 let GROUP_ELEMENT_ORDER_POW_DIVIDES = prove
  (`!G (x:A) n.

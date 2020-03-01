@@ -8,6 +8,283 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 29th Feb 2020       Examples/nist_curves.ml
+
+Added a new Examples file giving basic properties of the NIST-recommended
+(though see https://eprint.iacr.org/2015/1018.pdf) elliptic curves over
+prime-order fields, P-384 and friends. This file sets up the parameters
+for P-192, P-224, P-256, P-384 and P-521, defines those curve groups in affine
+Weierstrass form, and shows they do indeed form groups and have the orders
+claimed in the NIST documents; it is also proved here that those orders are
+prime and hence that the groups are cyclic, plus a few other expected
+properties of the NIST parameters.
+
+Sat 29th Feb 2020       Library/ringtheory.ml
+
+Made a small tweak to the totalization process inside INTEGRAL_DOMAIN_RULE,
+keeping the names of the monomorphically mapped variables instead of choosing
+genvars for them. This makes it easier to maintain control over the variable
+ordering in the Groebner basis process simply by alphabetic choices at the top
+level.
+
+Sat 29th Feb 2020       Library/ringtheory.ml
+
+Added a few more basic ring lemmas:
+
+  RING_CHAR_DIVIDES_MUL =
+    |- !r m n.
+         integral_domain r \/ field r
+         ==> (ring_char r divides m * n <=>
+              ring_char r divides m \/ ring_char r divides n)
+
+  RING_CHAR_DIVIDES_PRIME =
+    |- !r p.
+         (integral_domain r \/ field r) /\ prime p
+         ==> (ring_char r divides p <=> ring_char r = p)
+
+  RING_INV_0 =
+     |- !r. ring_inv r (ring_0 r) = ring_0 r
+
+Sat 29th Feb 2020       int.ml
+
+Added a couple more basic lemmas about primes to the core int.ml file,
+so they can be deployed without loading all the number theory material in the
+Library files. Moreover they are not already present in exactly this sharpened
+form anyway.
+
+  ZERO_ONE_OR_PRIME_DIVPROD =
+    |- !p a b.
+           p = 0 \/ p = 1 \/ prime p
+           ==> (p divides a * b <=> p divides a \/ p divides b)
+
+  ZERO_ONE_OR_PRIME =
+    |- !p. p = 0 \/ p = 1 \/ prime p <=>
+           (!a b. p divides a * b ==> p divides a \/ p divides b)
+
+Fri 28th Feb 2020       grobner.ml
+
+Made a bugfix / optimization to the proof replay in the grobner.ml procedure.
+In cases where there are no negated equations (i.e. you are originally just
+trying to refute a set of equations, not show that some other equation follows
+from them), it tries to replay the proof directly rather than go via the
+circuitous (and sometimes very inefficient) route of computing the cofactors
+explicitly, doing the weak->strong Nullstellensatz transform etc. But this does
+not in general work if there are non-integer constants in the trace, e.g.
+
+  # INT_RING `&3 * x + &1:int  = &0 /\ &7 * x = &43 ==> F`;;
+  1 basis elements and 0 critical pairs
+  Exception: Failure "integer argument required".
+
+Changed this so that unless the Rabinowitsch theorem provided is non-trivial,
+it will do a more careful "scaled" version of proof replay. The above now
+works, and refutation in non-field integral domains (or ostensible ones,
+i.e. fields where the field properties aren't supplied to the generic
+procedure) can often become more efficient as a result since they don't need to
+go through the lengthier path. Also added a more informative message about
+how the proof generation is done, so you get exactly one of
+
+ "Translating certificate to HOL inferences"    (cofactor certificate)
+ "Generating HOL version of proof"              (direct proof replay)
+ "Generating HOL version of scaled proof"       (integer-scaled proof replay)
+
+Thu 27th Feb 2020       arith.ml, int.ml, Library/words.ml
+
+Moved out of the words theory into the core two conversions that seemed
+generally useful enough not to hide there, the transformations they do
+otherwise being a bit tedious to orchestrate: MOD_DOWN_CONV and
+INT_REM_DOWN_CONV.
+
+Thu 27th Feb 2020       sets.ml
+
+Added a few theorems that help to chain through standard constructions for
+assertions of the form "s is finite and |s| <= n", which otherwise sometimes
+have to be unpacked and some work duplicated:
+
+  FINITE_CARD_LE_IMAGE;;
+    |- !f s n.
+           FINITE s /\ CARD s <= n
+           ==> FINITE (IMAGE f s) /\ CARD (IMAGE f s) <= n
+
+  FINITE_CARD_LE_SUBSET;;
+    |- !s t n.
+           s SUBSET t /\ FINITE t /\ CARD t <= n ==> FINITE s /\ CARD s <= n
+
+  FINITE_CARD_LE_UNION;;
+    |- !s t m n.
+           (FINITE s /\ CARD s <= m) /\ FINITE t /\ CARD t <= n
+           ==> FINITE (s UNION t) /\ CARD (s UNION t) <= m + n
+
+  FINITE_CARD_LE_UNIONS;;
+    |- !s t m n.
+           (!x. x IN s ==> FINITE (t x) /\ CARD (t x) <= n) /\
+           FINITE s /\
+           CARD s <= m
+           ==> FINITE (UNIONS {t x | x IN s}) /\
+               CARD (UNIONS {t x | x IN s}) <= m * n
+
+Wed 26th Feb 2020       ind_types.ml
+
+Bound the distinctness and injectivity theorems for the option type to names:
+
+  option_DISTINCT = |- !a. ~(SOME a = NONE)
+
+  option_INJ  = |- !a b. SOME a = SOME b <=> a = b
+
+Wed 26th Feb 2020       Library/ringtheory.ml
+
+Added a couple more forgotten trivialities about the ring of intgers mod n:
+
+  CARD_INTEGER_MOD_RING =
+    |- !n. ~(n = 0) ==> CARD (ring_carrier (integer_mod_ring n)) = n
+
+  INTEGER_MOD_RING_POW =
+    |- !n a k. ring_pow (integer_mod_ring n) a k = a pow k rem &n
+
+Tue 25th Feb 2020       Library/ringtheory.ml
+
+Added two new carrier membership tools RING_CARRIER_RULE and RING_CARRIER_TAC
+(both of which basically just do the obvious backchaining with a few tweaks),
+as well as improving the implementation of RING_TAC (so it doesn't call the
+core rule twoce) and fixing a big in RING_INTEGRAL_DOMAIN_UNIVERSAL where it
+was not writing away "ring_of_num" terms in the input in the initial
+simplification step.
+
+Mon 24th Feb 2020       ind_types.ml
+
+Added a trivial but occasionally handy rewrite for the option type:
+
+  FORALL_OPTION_THM =
+    |- P. (!x. P x) <=> P NONE /\ (!a. P (SOME a))
+
+Mon 24th Feb 2020       Library/ringtheory.ml
+
+Added a definition of the ring of integers mod n. As with the analogous group
+thing "integer_mod_group", this defaults to the full ring of integers for
+n = 0, which makes quite a few of the theorems work more smoothly without case
+distinctions. New theorems:
+
+  FIELD_INTEGER_MOD_RING =
+    |- !n. field (integer_mod_ring n) <=> prime n
+
+  FINITE_INTEGER_MOD_RING =
+    |- !n. FINITE (ring_carrier (integer_mod_ring n)) <=> ~(n = 0)
+
+  FINITE_INTEGRAL_DOMAIN_EQ_FIELD =
+    |- !r. FINITE (ring_carrier r) ==> (integral_domain r <=> field r)
+
+  INTEGER_MOD_RING =
+    |- ring_carrier (integer_mod_ring 0) = (:int) /\
+       (!n. 0 < n
+            ==> ring_carrier (integer_mod_ring n) = {m | &0 <= m /\ m < &n}) /\
+       (!n. ring_0 (integer_mod_ring n) = &0) /\
+       (!n. ring_1 (integer_mod_ring n) = &1 rem &n) /\
+       (!n. ring_neg (integer_mod_ring n) = (\a. --a rem &n)) /\
+       (!n. ring_add (integer_mod_ring n) = (\a b. (a + b) rem &n)) /\
+       (!n. ring_mul (integer_mod_ring n) = (\a b. (a * b) rem &n))
+
+  INTEGER_MOD_RING_ASSOCIATES =
+    |- !n x y.
+           ring_associates (integer_mod_ring n) x y <=>
+           x IN ring_carrier (integer_mod_ring n) /\
+           y IN ring_carrier (integer_mod_ring n) /\
+           gcd (x,&n) = gcd (y,&n)
+
+  INTEGER_MOD_RING_CHAR =
+    |- !n. ring_char (integer_mod_ring n) = n
+
+  INTEGER_MOD_RING_DIVIDES =
+    |- !n a b.
+           ring_divides (integer_mod_ring n) a b <=>
+           a IN ring_carrier (integer_mod_ring n) /\
+           b IN ring_carrier (integer_mod_ring n) /\
+           gcd (a,&n) divides b
+
+  INTEGER_MOD_RING_OF_INT =
+    |- !n x. ring_of_int (integer_mod_ring n) x = x rem &n
+
+  INTEGER_MOD_RING_OF_NUM =
+    |- !n k. ring_of_num (integer_mod_ring n) k = &k rem &n
+
+  INTEGER_MOD_RING_UNIT =
+    |- !n x.
+           ring_unit (integer_mod_ring n) x <=>
+           x IN ring_carrier (integer_mod_ring n) /\ coprime (x,&n)
+
+  INTEGRAL_DOMAIN_INTEGER_MOD_RING =
+    |- !n. integral_domain (integer_mod_ring n) <=> n = 0 \/ prime n
+
+  TRIVIAL_INTEGER_MOD_RING =
+    |- !n. trivial_ring (integer_mod_ring n) <=> n = 1
+
+Mon 24th Feb 2020       Library/pocklington.ml, Library/grouptheory.ml
+
+Added a few more basic lemmas including analogous uniqueness for prime
+order in the general group case and the particular case of modular
+arithmetic:
+
+  GROUP_ELEMENT_ORDER_EQ_2_ALT =
+    |- !G x.
+           x IN group_carrier G
+           ==> (group_element_order G x = 2 <=>
+                ~(x = group_id G) /\ group_inv G x = x)
+
+  GROUP_ELEMENT_ORDER_UNIQUE_PRIME =
+    |- !G x p.
+           x IN group_carrier G /\ prime p
+           ==> (group_element_order G x = p <=>
+                ~(x = group_id G) /\ group_pow G x p = group_id G)
+
+  ORDER_EQ_1 =
+    |- !n a. order n a = 1 <=> (a == 1) (mod n)
+
+  ORDER_UNIQUE_PRIME =
+    |- !n a p.
+           prime p
+           ==> (order n a = p <=> ~(a == 1) (mod n) /\ (a EXP p == 1) (mod n))
+
+Mon 24th Feb 2020       sets.ml, 100/two_squares.ml, 100/four_squares.ml
+
+Factored out the core lemmas about parity of the set of fixed points of
+an involution from the two Zagier-style "Great 100 theorems", since they
+are a bit more generally applicable:
+
+  INVOLUTION_EVEN_NOFIXPOINTS =
+    |- !f s.
+         FINITE s /\ (!x. x IN s ==> f x IN s /\ ~(f x = x) /\ f (f x) = x)
+         ==> EVEN (CARD s)
+
+  INVOLUTION_EVEN_FIXPOINTS =
+    |- !f s.
+         FINITE s /\ (!x. x IN s ==> f x IN s /\ f (f x) = x)
+         ==> (EVEN (CARD {x | x IN s /\ f x = x}) <=> EVEN (CARD s))
+
+Mon 24th Feb 2020       int.ml, Library/prime.ml
+
+Moved a couple more very basic divisibility theorems back into the core,
+to make it easier to use them in a rudimentary way without loading lots
+of additional material:
+
+  GCD =
+    |- !a b.
+         (gcd(a,b) divides a /\ gcd(a,b) divides b) /\
+         (!e. e divides a /\ e divides b ==> e divides gcd(a,b))
+
+  coprime =
+    |- coprime(a,b) <=> !d. d divides a /\ d divides b ==> d = 1
+
+Mon 24th Feb 2020       int.ml
+
+Added a few more basic lemmas about intger remainders:
+
+  INT_LT_REM_EQ =
+    |- !m n. m rem n < n <=> &0 < n \/ n = &0 /\ m < &0
+
+  INT_REM_POS =
+    |- !a b. ~(b = &0) ==> &0 <= a rem b
+
+  INT_REM_POS_EQ =
+    |- !m n. &0 <= m rem n <=> n = &0 ==> &0 <= m
+
 Fri 21st Feb 2020       Library/primitive.ml
 
 Renamed a few existing theorems where the original name seemed ill-chosen
@@ -31,19 +308,19 @@ And then added a few new theorems, one of them taking over the old name
   COUNT_POWER_RESIDUES_MODULO_PRIMITIVE =
     |- !n k.
            ~(n = 0) /\ (?g. order n g = phi n)
-           ==> {a | a < n /\ coprime(n,a) /\ (?x. (x EXP k == a) (mod n))} 
+           ==> {a | a < n /\ coprime(n,a) /\ (?x. (x EXP k == a) (mod n))}
                HAS_SIZE phi n DIV gcd(k,phi n)
-  
+
   COUNT_QUADRATIC_RESIDUES_MODULO_PRIMITIVE =
     |- !n. 3 <= n /\ (?g. order n g = phi n)
-           ==> {a | a < n /\ coprime(n,a) /\ (?x. (x EXP 2 == a) (mod n))} 
+           ==> {a | a < n /\ coprime(n,a) /\ (?x. (x EXP 2 == a) (mod n))}
                HAS_SIZE phi n DIV 2
-  
+
   POWER_RESIDUE_EXISTS =
     |- !n k.
            ~(n = 0)
            ==> (?a. a < n /\ coprime(n,a) /\ (?x. (x EXP k == a) (mod n)))
-  
+
   QUADRATIC_NONRESIDUE_EXISTS =
     |- !n. (?a. a < n /\ coprime(n,a) /\ ~(?x. (x EXP 2 == a) (mod n))) <=>
            3 <= n

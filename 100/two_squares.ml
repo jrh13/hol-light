@@ -34,48 +34,10 @@ let INVOLUTION_SUBSET = prove
            ==> involution f t`,
   REWRITE_TAC[involution; SUBSET] THEN MESON_TAC[]);;
 
-(* ------------------------------------------------------------------------- *)
-(* Involution with no fixpoints can only occur on finite set of even card    *)
-(* ------------------------------------------------------------------------- *)
-
-let INVOLUTION_EVEN_STEP = prove
- (`FINITE(s) /\
-   involution f s /\
-   (!x:A. x IN s ==> ~(f x = x)) /\
-   a IN s
-   ==> FINITE(s DIFF {a, (f a)}) /\
-       involution f (s DIFF {a, (f a)}) /\
-       (!x:A. x IN (s DIFF {a, (f a)}) ==> ~(f x = x)) /\
-       (CARD s = CARD(s DIFF {a, (f a)}) + 2)`,
-  SIMP_TAC[FINITE_DIFF; INVOLUTION_STEPDOWN; IN_DIFF] THEN STRIP_TAC THEN
-  SUBGOAL_THEN `s = (a:A) INSERT (f a) INSERT (s DIFF {a, (f a)})` MP_TAC THENL
-   [REWRITE_TAC[EXTENSION; IN_INSERT; IN_DIFF; NOT_IN_EMPTY] THEN
-    ASM_MESON_TAC[involution]; ALL_TAC] THEN
-  DISCH_THEN(fun th -> GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [th]) THEN
-  ASM_SIMP_TAC[CARD_CLAUSES; FINITE_DIFF; FINITE_INSERT] THEN
-  ASM_SIMP_TAC[IN_INSERT; IN_DIFF; NOT_IN_EMPTY] THEN ARITH_TAC);;
-
-let INVOLUTION_EVEN_INDUCT = prove
- (`!n s. FINITE(s) /\ (CARD s = n) /\ involution f s /\
-         (!x:A. x IN s ==> ~(f x = x))
-         ==> EVEN(CARD s)`,
-  MATCH_MP_TAC num_WF THEN GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN
-  ASM_CASES_TAC `s:A->bool = {}` THEN
-  ASM_REWRITE_TAC[CARD_CLAUSES; ARITH] THEN
-  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [EXTENSION]) THEN
-  REWRITE_TAC[NOT_IN_EMPTY; NOT_FORALL_THM] THEN
-  DISCH_THEN(X_CHOOSE_THEN `a:A` STRIP_ASSUME_TAC) THEN STRIP_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `CARD(s DIFF {a:A, (f a)})`) THEN
-  REWRITE_TAC[RIGHT_IMP_FORALL_THM] THEN
-  DISCH_THEN(MP_TAC o SPEC `s DIFF {a:A, (f a)}`) THEN
-  MP_TAC INVOLUTION_EVEN_STEP THEN ASM_REWRITE_TAC[] THEN
-  STRIP_TAC THEN ASM_REWRITE_TAC[ARITH_RULE `n < n + 2`] THEN
-  SIMP_TAC[EVEN_ADD; ARITH]);;
-
 let INVOLUTION_EVEN = prove
  (`!s. FINITE(s) /\ involution f s /\ (!x:A. x IN s ==> ~(f x = x))
        ==> EVEN(CARD s)`,
-  MESON_TAC[INVOLUTION_EVEN_INDUCT]);;
+  REWRITE_TAC[involution] THEN MESON_TAC[INVOLUTION_EVEN_NOFIXPOINTS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* So an involution with exactly one fixpoint has odd card domain.           *)

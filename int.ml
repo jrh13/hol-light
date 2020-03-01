@@ -772,6 +772,10 @@ let INT_DIVISION_SIMP = prove
   MP_TAC INT_DIVISION_0 THEN REPEAT(MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC[] THEN CONV_TAC INT_ARITH);;
 
+let INT_REM_POS = prove
+ (`!a b. ~(b = &0) ==> &0 <= a rem b`,
+  MESON_TAC[INT_DIVISION]);;
+
 let INT_DIV_0 = prove
  (`!m. m div &0 = &0`,
   MESON_TAC[INT_DIVISION_0]);;
@@ -779,6 +783,11 @@ let INT_DIV_0 = prove
 let INT_REM_0 = prove
  (`!m. m rem &0 = m`,
   MESON_TAC[INT_DIVISION_0]);;
+
+let INT_REM_POS_EQ = prove
+ (`!m n. &0 <= m rem n <=> n = &0 ==> &0 <= m`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n:int = &0` THEN
+  ASM_SIMP_TAC[INT_REM_0; INT_REM_POS]);;
 
 let INT_REM_DIV = prove
  (`!m n. m rem n = m - m div n * n`,
@@ -788,6 +797,14 @@ let INT_REM_DIV = prove
 let INT_LT_REM = prove
  (`!x n. &0 < n ==> x rem n < n`,
   MESON_TAC[INT_DIVISION; INT_LT_REFL; INT_ARITH `&0:int < n ==> abs n = n`]);;
+
+let INT_LT_REM_EQ = prove
+ (`!m n. m rem n < n <=> &0 < n \/ n = &0 /\ m < &0`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n:int = &0` THEN
+  ASM_SIMP_TAC[INT_REM_0; INT_LT_REFL] THEN
+  EQ_TAC THEN REWRITE_TAC[INT_LT_REM] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] INT_LET_TRANS) THEN
+  ASM_SIMP_TAC[INT_REM_POS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic operations on integers. Essentially a clone of stuff for reals *)
@@ -1711,6 +1728,25 @@ let INT_2_DIVIDES_POW = prove
     CONV_TAC TAUT]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Pushing and pulling to combine nested rem terms into a single rem.        *)
+(* ------------------------------------------------------------------------- *)
+
+let INT_REM_DOWN_CONV =
+  let addmul_conv = GEN_REWRITE_CONV I
+    [GSYM INT_NEG_REM; GSYM INT_ADD_REM; GSYM INT_SUB_REM;
+     GSYM INT_MUL_REM; GSYM INT_POW_REM]
+  and mod_conv = GEN_REWRITE_CONV I [INT_REM_REM] in
+  let rec downconv tm =
+   ((addmul_conv THENC LAND_CONV downconv) ORELSEC
+    (mod_conv THENC downconv) ORELSEC
+    SUB_CONV downconv) tm
+  and upconv =
+    GEN_REWRITE_CONV DEPTH_CONV
+     [INT_NEG_REM; INT_ADD_REM; INT_SUB_REM; INT_MUL_REM;
+      INT_POW_REM; INT_REM_REM] in
+  downconv THENC upconv;;
+
+(* ------------------------------------------------------------------------- *)
 (* Existence of integer gcd, and the Bezout identity.                        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -2061,6 +2097,17 @@ let INT_CONG_NUM_EXISTS = prove
     REWRITE_TAC[INTEGER_RULE `(x + a:int == x) (mod n) <=> n divides a`] THEN
     REWRITE_TAC[INT_ABS] THEN COND_CASES_TAC THEN CONV_TAC INTEGER_RULE]);;
 
+let GCD = prove
+ (`!a b. (gcd(a,b) divides a /\ gcd(a,b) divides b) /\
+         (!e. e divides a /\ e divides b ==> e divides gcd(a,b))`,
+  NUMBER_TAC);;
+
+let coprime = prove
+ (`coprime(a,b) <=> !d. d divides a /\ d divides b ==> d = 1`,
+  EQ_TAC THENL [CONV_TAC NUMBER_RULE; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `gcd(a,b)`) THEN REWRITE_TAC[GCD] THEN
+  NUMBER_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Definition (and not much more) of primality.                              *)
 (* ------------------------------------------------------------------------- *)
@@ -2072,6 +2119,34 @@ let ONE_OR_PRIME = prove
  (`!p. p = 1 \/ prime p <=> !n. n divides p ==> n = 1 \/ n = p`,
   GEN_TAC THEN REWRITE_TAC[prime] THEN
   ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[DIVIDES_ONE]);;
+
+let ZERO_ONE_OR_PRIME_DIVPROD = prove
+ (`!p a b. 
+        p = 0 \/ p = 1 \/ prime p
+        ==> (p divides (a * b) <=> p divides a \/ p divides b)`,
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[NUMBER_RULE `1 divides n`] THEN
+  ASM_REWRITE_TAC[NUMBER_RULE `0 divides n <=> n = 0`; MULT_EQ_0] THEN
+  EQ_TAC THENL [ALL_TAC; CONV_TAC NUMBER_RULE] THEN
+  ASM_MESON_TAC[prime; coprime; NUMBER_RULE
+   `!d a b:num. d divides (a * b) /\ coprime(d,a) ==> d divides b`]);;
+ 
+let ZERO_ONE_OR_PRIME = prove
+ (`!p. p = 0 \/ p = 1 \/ prime p <=> 
+       !a b. p divides (a * b) ==> p divides a \/ p divides b`,
+  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[ZERO_ONE_OR_PRIME_DIVPROD] THEN
+  DISCH_TAC THEN REWRITE_TAC[TAUT `p \/ q <=> ~p ==> q`] THEN
+  REPEAT STRIP_TAC THEN 
+  ASM_REWRITE_TAC[prime; divides; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:num`; `b:num`] THEN DISCH_THEN(ASSUME_TAC o SYM) THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`a:num`; `b:num`]) THEN
+  FIRST_X_ASSUM(SUBST_ALL_TAC o SYM) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[MULT_EQ_0; MULT_EQ_1; DE_MORGAN_THM]) THEN
+  REWRITE_TAC[NUMBER_RULE `(n:num) divides n`] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE_STRONG) THEN
+  ONCE_REWRITE_TAC[ARITH_RULE `a * b <= a <=> a * b <= a * 1`;
+                   ARITH_RULE `a * b <= b <=> a * b <= 1 * b`]THEN
+  REWRITE_TAC[LE_MULT_LCANCEL; LE_MULT_RCANCEL] THEN
+  ASM_SIMP_TAC[MULT_CLAUSES; ARITH_RULE `n <= 1 <=> n = 0 \/ n = 1`]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Integer powers of real numbers.                                           *)

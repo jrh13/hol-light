@@ -38,6 +38,7 @@ STANDALONE_EXAMPLES:=\
 	Library/modmul_group \
 	Library/multiplicative \
 	Examples/multiwf \
+	Examples/nist_curves \
 	Examples/padics \
 	Examples/pell \
 	Library/permutations \

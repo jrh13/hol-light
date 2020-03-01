@@ -84,40 +84,6 @@ add_word_sizes [DIMINDEX_8; DIMINDEX_16; DIMINDEX_32; DIMINDEX_64];;
 add_word_sizes [DIMINDEX_128; DIMINDEX_256; DIMINDEX_512];;
 
 (* ------------------------------------------------------------------------- *)
-(* Pushing and pulling to combine nested MOD or rem terms.                   *)
-(* ------------------------------------------------------------------------- *)
-
-let MOD_DOWN_CONV =
-  let MOD_SUC_MOD = METIS[ADD1; MOD_ADD_MOD; MOD_MOD_REFL]
-   `(SUC(m MOD n)) MOD n = SUC m MOD n` in
-  let addmul_conv = GEN_REWRITE_CONV I
-    [GSYM MOD_SUC_MOD; GSYM MOD_ADD_MOD; GSYM MOD_MULT_MOD2; GSYM MOD_EXP_MOD]
-  and mod_conv = GEN_REWRITE_CONV I [MOD_MOD_REFL] in
-  let rec downconv tm =
-   ((addmul_conv THENC LAND_CONV downconv) ORELSEC
-    (mod_conv THENC downconv) ORELSEC
-    SUB_CONV downconv) tm
-  and upconv =
-    GEN_REWRITE_CONV DEPTH_CONV
-     [MOD_SUC_MOD; MOD_ADD_MOD; MOD_MULT_MOD2; MOD_EXP_MOD; MOD_MOD_REFL] in
-  downconv THENC upconv;;
-
-let INT_REM_DOWN_CONV =
-  let addmul_conv = GEN_REWRITE_CONV I
-    [GSYM INT_NEG_REM; GSYM INT_ADD_REM; GSYM INT_SUB_REM;
-     GSYM INT_MUL_REM; GSYM INT_POW_REM]
-  and mod_conv = GEN_REWRITE_CONV I [INT_REM_REM] in
-  let rec downconv tm =
-   ((addmul_conv THENC LAND_CONV downconv) ORELSEC
-    (mod_conv THENC downconv) ORELSEC
-    SUB_CONV downconv) tm
-  and upconv =
-    GEN_REWRITE_CONV DEPTH_CONV
-     [INT_NEG_REM; INT_ADD_REM; INT_SUB_REM; INT_MUL_REM;
-      INT_POW_REM; INT_REM_REM] in
-  downconv THENC upconv;;
-
-(* ------------------------------------------------------------------------- *)
 (* Some generic lemmas about digit sums.                                     *)
 (* ------------------------------------------------------------------------- *)
 

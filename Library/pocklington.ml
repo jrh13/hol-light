@@ -1360,6 +1360,19 @@ let ORDER_EQ_0 = prove
      `~p ==> (q ==> p) ==> q ==> r`)) THEN
     REWRITE_TAC[EXP] THEN CONV_TAC NUMBER_RULE]);;
 
+let ORDER_EQ_1 = prove
+ (`!n a. order n a = 1 <=> (a == 1) (mod n)`,
+  REWRITE_TAC[ORDER_UNIQUE_ALT; DIVIDES_1] THEN
+  MESON_TAC[CONG_EXP_1; EXP_1]);;
+
+let ORDER_UNIQUE_PRIME = prove
+ (`!n a p.
+        prime p
+        ==> (order n a = p <=> ~((a == 1) (mod n)) /\ (a EXP p == 1) (mod n))`,
+  SIMP_TAC[ORDER_DIVIDES] THEN REWRITE_TAC[GSYM ORDER_EQ_1] THEN
+  REWRITE_TAC[prime] THEN
+  MESON_TAC[NUMBER_RULE `1 divides n /\ n divides n`]);;
+
 let ORDER_CONG = prove
  (`!n a b. (a == b) (mod n) ==> order n a = order n b`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[order] THEN

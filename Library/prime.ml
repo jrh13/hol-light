@@ -523,11 +523,6 @@ let BEZOUT_ADD_STRONG = prove
 (* Greatest common divisor.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-let GCD = prove
- (`!a b. (gcd(a,b) divides a /\ gcd(a,b) divides b) /\
-         (!e. e divides a /\ e divides b ==> e divides gcd(a,b))`,
-  NUMBER_TAC);;
-
 let DIVIDES_GCD = prove
  (`!a b d. d divides gcd(a,b) <=> d divides a /\ d divides b`,
   NUMBER_TAC);;
@@ -709,13 +704,6 @@ let GCD_LE_MAX = prove
 (* ------------------------------------------------------------------------- *)
 (* Coprimality                                                               *)
 (* ------------------------------------------------------------------------- *)
-
-let coprime = prove
- (`coprime(a,b) <=> !d. d divides a /\ d divides b ==> d = 1`,
-  EQ_TAC THENL
-   [REWRITE_TAC[GSYM DIVIDES_ONE];
-    DISCH_THEN(MP_TAC o SPEC `gcd(a,b)`) THEN REWRITE_TAC[GCD]] THEN
-  NUMBER_TAC);;
 
 let COPRIME = prove(
   `!a b. coprime(a,b) <=> !d. d divides a /\ d divides b <=> d = 1`,
@@ -1303,8 +1291,6 @@ let PRIME_FACTOR_PARTITION = prove
   ASM_SIMP_TAC[IMP_CONJ; PRIME_DIVPROD_EQ] THEN
   EXPAND_TAC "n" THEN REWRITE_TAC[MULT_AC] THEN
   ASM_SIMP_TAC[DIVIDES_PRIME_PRIME] THEN ASM_MESON_TAC[]);;
-
-
 
 let COPRIME_PAIR_DECOMP = prove
  (`!n1 n2 m.

@@ -1,0 +1,31 @@
+\DOC MOD_DOWN_CONV
+
+\TYPE {MOD_DOWN_CONV : conv}
+
+\SYNOPSIS
+Combines nested {MOD} terms into a single toplevel one.
+
+\DESCRIBE
+When applied to a term containing natural number arithmetic operations of
+successor, addition, multiplication and exponentiation, interspersed with
+applying {MOD} with a fixed modulus {n}, and a toplevel {... MOD n} too, the
+conversion {MOD_DOWN_CONV} proves that this is equal to a simplified term with
+only the toplevel {MOD}.
+
+\FAILURE
+Never fails but may have no effect
+
+\EXAMPLE
+{
+  # let tm = `((x MOD n) + (y MOD n * 3) EXP 2) MOD n`;;
+  val tm : term = `(x MOD n + (y MOD n * 3) EXP 2) MOD n`
+  
+  # MOD_DOWN_CONV tm;;
+  val it : thm =
+    |- (x MOD n + (y MOD n * 3) EXP 2) MOD n = (x + (y * 3) EXP 2) MOD n
+}
+
+\SEEALSO
+INT_REM_DOWN_CONV.
+
+\ENDDOC

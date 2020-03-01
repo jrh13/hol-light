@@ -480,22 +480,53 @@ let RING_AND_IDEAL_CONV =
          CONV_RULE (BINOP_CONV RING_NORMALIZE_CONV)
                    (AP_TERM (mk_comb(ring_mul_tm,holify_polynomial vars [m]))
                             th) in
-      let execache = ref [] in
-      let memoize prf x = (execache := (prf,x)::(!execache)); x in
       let rec assoceq a l =
         match l with
          [] -> failwith "assoceq"
         | (x,y)::t -> if x==a then y else assoceq a t in
-      let rec run_proof vars prf =
-        try assoceq prf (!execache) with Failure _ ->
-        (match prf with
-           Start m -> el m initpols
-         | Add(p1,p2) ->
-            memoize prf (ADD_RULE (run_proof vars p1) (run_proof vars p2))
-         | Mmul(m,p2) ->
-            memoize prf (MUL_RULE vars m (run_proof vars p2))) in
+      let run_proof =
+        if is_iff(snd(strip_forall(concl RABINOWITSCH_THM))) then
+         (Format.print_string("Generating HOL version of proof");
+          Format.print_newline();
+          let execache = ref [] in
+          let memoize prf x = (execache := (prf,x)::(!execache)); x in
+          let rec run_proof vars prf =
+            try assoceq prf (!execache) with Failure _ ->
+            (match prf with
+               Start m -> el m initpols
+             | Add(p1,p2) ->
+                memoize prf (ADD_RULE (run_proof vars p1) (run_proof vars p2))
+             | Mmul(m,p2) ->
+                memoize prf (MUL_RULE vars m (run_proof vars p2))) in
+          fun vars prf ->
+            let ans = run_proof vars prf in
+            (execache := []; ans))
+        else
+         (Format.print_string("Generating HOL version of scaled proof");
+          Format.print_newline();
+          let km = map (fun x -> 0) vars in
+          let execache = ref [] in
+          let memoize prf x = (execache := (prf,x)::(!execache)); x in
+          let rec run_scaled_proof vars prf =
+            try assoceq prf (!execache) with Failure _ ->
+            (match prf with
+               Start m -> (num_1,el m initpols)
+             | Add(p1,p2) ->
+                    let d1,th1 = run_scaled_proof vars p1
+                    and d2,th2 = run_scaled_proof vars p2 in
+                    let d = lcm_num d1 d2 in
+                    memoize prf
+                     (d,ADD_RULE (MUL_RULE vars (d//d1,km) th1)
+                                 (MUL_RULE vars (d//d2,km) th2))
+             | Mmul((c,xs),p2) ->
+                    let e = denominator c in
+                    let d,th = run_scaled_proof vars p2 in
+                    memoize prf ((d */ e),MUL_RULE vars (c */ e,xs) th)) in
+          fun vars prf -> 
+            let _,ans = run_scaled_proof vars prf in
+            (execache := []; ans)) in
       let th = run_proof vars prf in
-      execache := []; CONV_RULE RING_EQ_CONV th in
+      CONV_RULE RING_EQ_CONV th in
     let REFUTE tm =
       if tm = false_tm then ASSUME tm else
       let nths0,eths0 = partition (is_neg o concl) (CONJUNCTS(ASSUME tm)) in

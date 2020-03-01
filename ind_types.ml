@@ -886,6 +886,10 @@ let list_INDUCT,list_RECURSION =
   define_type_raw
    (parse_inductive_type_specification "list = NIL | CONS A list");;
 
+let FORALL_OPTION_THM = prove
+ (`!P. (!x. P x) <=> P NONE /\ !a. P(SOME a)`,
+  GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[option_INDUCT] THEN SIMP_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Tools for proving injectivity and distinctness of constructors.           *)
 (* ------------------------------------------------------------------------- *)
@@ -1036,6 +1040,14 @@ let injectivity ty = assoc ty (!injectivity_store);;
 let cases ty =
   if ty = "num" then num_CASES else
   let _,ith,_ = assoc ty (!inductive_type_store) in prove_cases_thm ith;;
+
+let option_DISTINCT = prove
+ (`!a:A. ~(SOME a = NONE)`,
+  REWRITE_TAC[distinctness "option"]);;
+
+let option_INJ = prove
+ (`!a b:A. SOME a = SOME b <=> a = b`,
+  REWRITE_TAC[injectivity "option"]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convenient definitions for type isomorphism.                              *)
