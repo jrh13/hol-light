@@ -8,6 +8,173 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  7th Mar 2020       iterate.ml, Library/products.ml, Library/isum.ml
+
+Added slight variants of the "CLOSED" and "RELATED" theorems for iterators,
+where the set is assumed nonempty (and now finite in the case of "CLOSED"
+whereas that isn't needed for the other version), but you don't need to assume
+anything about the neutral element. Systematically added the generic theorem
+and the common instances for sums and products, as well as backfilling the
+others in the case of "isum" which were previously missing.
+
+  ITERATE_CLOSED_NONEMPTY =
+    |- !op. monoidal op
+            ==> (!P. (!x y. P x /\ P y ==> P (op x y))
+                     ==> (!f s.
+                              FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> P (f x))
+                              ==> P (iterate op s f)))
+
+  ITERATE_RELATED_NONEMPTY =
+    |- !op. monoidal op
+            ==> (!R. (!x1 y1 x2 y2.
+                          R x1 x2 /\ R y1 y2 ==> R (op x1 y1) (op x2 y2))
+                     ==> (!f g s.
+                              FINITE s /\
+                              ~(s = {}) /\
+                              (!x. x IN s ==> R (f x) (g x))
+                              ==> R (iterate op s f) (iterate op s g)))
+
+  NSUM_CLOSED_NONEMPTY =
+    |- !P f s.
+           FINITE s /\
+           ~(s = {}) /\
+           (!x y. P x /\ P y ==> P (x + y)) /\
+           (!a. a IN s ==> P (f a))
+           ==> P (nsum s f)
+
+  NSUM_RELATED_NONEMPTY =
+    |- !R f g s.
+           (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+           FINITE s /\
+           ~(s = {}) /\
+           (!x. x IN s ==> R (f x) (g x))
+           ==> R (nsum s f) (nsum s g)
+
+  SUM_CLOSED_NONEMPTY =
+    |- !P f s.
+           FINITE s /\
+           ~(s = {}) /\
+           (!x y. P x /\ P y ==> P (x + y)) /\
+           (!a. a IN s ==> P (f a))
+           ==> P (sum s f)
+
+  SUM_RELATED_NONEMPTY =
+    |- !R f g s.
+           (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+           FINITE s /\
+           ~(s = {}) /\
+           (!x. x IN s ==> R (f x) (g x))
+           ==> R (sum s f) (sum s g)
+
+  NPRODUCT_CLOSED_NONEMPTY =
+    |- !P f s.
+           FINITE s /\
+           ~(s = {}) /\
+           (!x y. P x /\ P y ==> P (x * y)) /\
+           (!a. a IN s ==> P (f a))
+           ==> P (nproduct s f)
+
+  NPRODUCT_RELATED_NONEMPTY =
+    |- !R f g s.
+           (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+           FINITE s /\
+           ~(s = {}) /\
+           (!i. i IN s ==> R (f i) (g i))
+           ==> R (nproduct s f) (nproduct s g)
+
+  IPRODUCT_CLOSED_NONEMPTY =
+    |- !P f s.
+           FINITE s /\
+           ~(s = {}) /\
+           (!x y. P x /\ P y ==> P (x * y)) /\
+           (!a. a IN s ==> P (f a))
+           ==> P (iproduct s f)
+
+  IPRODUCT_RELATED_NONEMPTY =
+    |- !R f g s.
+           (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+           FINITE s /\
+           ~(s = {}) /\
+           (!i. i IN s ==> R (f i) (g i))
+           ==> R (iproduct s f) (iproduct s g)
+
+  PRODUCT_CLOSED_NONEMPTY =
+    |- !P f s.
+           FINITE s /\
+           ~(s = {}) /\
+           (!x y. P x /\ P y ==> P (x * y)) /\
+           (!a. a IN s ==> P (f a))
+           ==> P (product s f)
+
+  PRODUCT_RELATED_NONEMPTY =
+    |- !R f g s.
+           (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+           FINITE s /\
+           ~(s = {}) /\
+           (!i. i IN s ==> R (f i) (g i))
+           ==> R (product s f) (product s g)
+
+  ISUM_CLOSED =
+    |- !P f s.
+           P (&0) /\
+           (!x y. P x /\ P y ==> P (x + y)) /\
+           (!a. a IN s ==> P (f a))
+           ==> P (isum s f)
+
+  ISUM_RELATED =
+    |- !R f g s.
+           R (&0) (&0) /\
+           (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+           FINITE s /\
+           (!x. x IN s ==> R (f x) (g x))
+           ==> R (isum s f) (isum s g)
+
+  ISUM_CLOSED_NONEMPTY =
+    |- !P f s.
+           FINITE s /\
+           ~(s = {}) /\
+           (!x y. P x /\ P y ==> P (x + y)) /\
+           (!a. a IN s ==> P (f a))
+           ==> P (isum s f)
+
+  ISUM_RELATED_NONEMPTY =
+    |- !R f g s.
+           (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+           FINITE s /\
+           ~(s = {}) /\
+           (!x. x IN s ==> R (f x) (g x))
+           ==> R (isum s f) (isum s g)
+
+Fri  6th Mar 2020       Library/card.ml
+
+Added a few more natural cardinality lemmas, including cardinality of
+function images where all fibres have the same cardinal:
+
+  CARD_EQ_DISJOINT_UNIONS =
+    |- !s t.
+           pairwise DISJOINT s /\ (!u. u IN s ==> u =_c t)
+           ==> UNIONS s =_c s *_c t
+
+  CARD_EQ_IMAGE_MUL_FIBRES =
+    |- !f s t.
+           (!x. x IN s ==> {z | z IN s /\ f z = f x} =_c t)
+           ==> IMAGE f s *_c t =_c s
+
+  CARD_EQ_IMAGES =
+    |- !f g s.
+           (!x y. x IN s /\ y IN s ==> (f x = f y <=> g x = g y))
+           ==> IMAGE f s =_c IMAGE g s
+
+  CARD_LE_DISJOINT_UNIONS =
+    |- !s t.
+         pairwise DISJOINT s /\ (!u. u IN s ==> t <=_c u)
+         ==> s *_c t <=_c UNIONS s
+
+  CARD_LE_IMAGES =
+    |- !f g s.
+           (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y)
+           ==> IMAGE f s <=_c IMAGE g s
+
 Sat 29th Feb 2020       Examples/nist_curves.ml
 
 Added a new Examples file giving basic properties of the NIST-recommended

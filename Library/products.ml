@@ -191,6 +191,27 @@ let NPRODUCT_RELATED = prove
     (MATCH_MP ITERATE_RELATED MONOIDAL_MUL)) THEN
   ASM_REWRITE_TAC[GSYM nproduct; NEUTRAL_MUL] THEN ASM_MESON_TAC[]);;
 
+let NPRODUCT_CLOSED_NONEMPTY = prove
+ (`!P f:A->num s.
+        FINITE s /\ ~(s = {}) /\
+        (!x y. P x /\ P y ==> P(x * y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(nproduct s f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(MATCH_MP ITERATE_CLOSED_NONEMPTY MONOIDAL_MUL) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:num->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_MUL; GSYM nproduct]);;
+
+let NPRODUCT_RELATED_NONEMPTY = prove
+ (`!R (f:A->num) g s.
+        (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+        FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> R (f i) (g i))
+        ==> R (nproduct s f) (nproduct s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:num->num->bool`
+    (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_MUL)) THEN
+  ASM_REWRITE_TAC[GSYM nproduct; NEUTRAL_MUL] THEN ASM_MESON_TAC[]);;
+
 let NPRODUCT_CLAUSES_LEFT = prove
  (`!f m n. m <= n ==> nproduct(m..n) f = f(m) * nproduct(m+1..n) f`,
   SIMP_TAC[GSYM NUMSEG_LREC; NPRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
@@ -562,6 +583,27 @@ let IPRODUCT_RELATED = prove
     (MATCH_MP ITERATE_RELATED MONOIDAL_INT_MUL)) THEN
   ASM_REWRITE_TAC[GSYM iproduct; NEUTRAL_INT_MUL] THEN ASM_MESON_TAC[]);;
 
+let IPRODUCT_CLOSED_NONEMPTY = prove
+ (`!P f:A->int s.
+        FINITE s /\ ~(s = {}) /\
+        (!x y. P x /\ P y ==> P(x * y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(iproduct s f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(MATCH_MP ITERATE_CLOSED_NONEMPTY MONOIDAL_INT_MUL) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:int->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_INT_MUL; GSYM iproduct]);;
+
+let IPRODUCT_RELATED_NONEMPTY = prove
+ (`!R (f:A->int) g s.
+        (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+        FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> R (f i) (g i))
+        ==> R (iproduct s f) (iproduct s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:int->int->bool`
+    (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_INT_MUL)) THEN
+  ASM_REWRITE_TAC[GSYM iproduct; NEUTRAL_INT_MUL] THEN ASM_MESON_TAC[]);;
+
 let IPRODUCT_CLAUSES_LEFT = prove
  (`!f m n. m <= n ==> iproduct(m..n) f = f(m) * iproduct(m+1..n) f`,
   SIMP_TAC[GSYM NUMSEG_LREC; IPRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
@@ -864,6 +906,27 @@ let PRODUCT_RELATED = prove
   GEN_TAC THEN REPEAT DISCH_TAC THEN
   MP_TAC(ISPEC `R:real->real->bool`
     (MATCH_MP ITERATE_RELATED MONOIDAL_REAL_MUL)) THEN
+  ASM_REWRITE_TAC[GSYM product; NEUTRAL_REAL_MUL] THEN ASM_MESON_TAC[]);;
+
+let PRODUCT_CLOSED_NONEMPTY = prove
+ (`!P f:A->real s.
+        FINITE s /\ ~(s = {}) /\
+        (!x y. P x /\ P y ==> P(x * y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(product s f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(MATCH_MP ITERATE_CLOSED_NONEMPTY MONOIDAL_REAL_MUL) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:real->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_REAL_MUL; GSYM product]);;
+
+let PRODUCT_RELATED_NONEMPTY = prove
+ (`!R (f:A->real) g s.
+        (!m n m' n'. R m n /\ R m' n' ==> R (m * m') (n * n')) /\
+        FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> R (f i) (g i))
+        ==> R (product s f) (product s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:real->real->bool`
+    (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_REAL_MUL)) THEN
   ASM_REWRITE_TAC[GSYM product; NEUTRAL_REAL_MUL] THEN ASM_MESON_TAC[]);;
 
 let PRODUCT_CLAUSES_LEFT = prove

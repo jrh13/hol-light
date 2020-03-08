@@ -505,6 +505,35 @@ let ITERATE_SING = prove
   SIMP_TAC[ITERATE_CLAUSES; FINITE_RULES; NOT_IN_EMPTY] THEN
   MESON_TAC[monoidal]);;
 
+let ITERATE_CLOSED_NONEMPTY = prove
+ (`!op. monoidal op
+        ==> !P. (!x y. P x /\ P y ==> P (op x y))
+                ==> !f:A->B s. FINITE s /\ ~(s = {}) /\
+                               (!x. x IN s ==> P(f x))
+                               ==> P(iterate op s f)`,
+  GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN
+  REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; NOT_INSERT_EMPTY] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `t:A->bool`] THEN
+  ASM_CASES_TAC `t:A->bool = {}` THEN
+  ASM_SIMP_TAC[ITERATE_SING] THEN  ASM_SIMP_TAC[ITERATE_CLAUSES]);;
+
+let ITERATE_RELATED_NONEMPTY = prove
+ (`!op. monoidal op
+        ==> !R. (!x1 y1 x2 y2. R x1 x2 /\ R y1 y2 ==> R (op x1 y1) (op x2 y2))
+                ==> !f:A->B g s.
+                      FINITE s /\
+                      ~(s = {}) /\
+                      (!x. x IN s ==> R (f x) (g x))
+                      ==> R (iterate op s f) (iterate op s g)`,
+  GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; NOT_INSERT_EMPTY] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `t:A->bool`] THEN
+  ASM_CASES_TAC `t:A->bool = {}` THEN
+  ASM_SIMP_TAC[ITERATE_SING] THEN  ASM_SIMP_TAC[ITERATE_CLAUSES]);;
+
 let ITERATE_DELETE = prove
  (`!op. monoidal op
         ==> !f:A->B s a. FINITE s /\ a IN s
@@ -1344,6 +1373,27 @@ let NSUM_RELATED = prove
     (MATCH_MP ITERATE_RELATED MONOIDAL_ADD)) THEN
   ASM_REWRITE_TAC[GSYM nsum; NEUTRAL_ADD] THEN ASM_MESON_TAC[]);;
 
+let NSUM_CLOSED_NONEMPTY = prove
+ (`!P f:A->num s.
+        FINITE s /\ ~(s = {}) /\
+        (!x y. P x /\ P y ==> P(x + y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(nsum s f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(MATCH_MP ITERATE_CLOSED_NONEMPTY MONOIDAL_ADD) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:num->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_ADD; GSYM nsum]);;
+
+let NSUM_RELATED_NONEMPTY = prove
+ (`!R (f:A->num) g s.
+        (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+        FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> R (f x) (g x))
+        ==> R (nsum s f) (nsum s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:num->num->bool`
+    (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_ADD)) THEN
+  ASM_REWRITE_TAC[GSYM nsum; NEUTRAL_ADD] THEN ASM_MESON_TAC[]);;
+
 let NSUM_ADD_NUMSEG = prove
  (`!f g m n. nsum(m..n) (\i. f(i) + g(i)) = nsum(m..n) f + nsum(m..n) g`,
   SIMP_TAC[NSUM_ADD; FINITE_NUMSEG]);;
@@ -2114,6 +2164,27 @@ let SUM_RELATED = prove
   GEN_TAC THEN REPEAT DISCH_TAC THEN
   MP_TAC(ISPEC `R:real->real->bool`
     (MATCH_MP ITERATE_RELATED MONOIDAL_REAL_ADD)) THEN
+  ASM_REWRITE_TAC[GSYM sum; NEUTRAL_REAL_ADD] THEN ASM_MESON_TAC[]);;
+
+let SUM_CLOSED_NONEMPTY = prove
+ (`!P f:A->real s.
+        FINITE s /\ ~(s = {}) /\
+        (!x y. P x /\ P y ==> P(x + y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(sum s f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(MATCH_MP ITERATE_CLOSED_NONEMPTY MONOIDAL_REAL_ADD) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:real->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_REAL_ADD; GSYM sum]);;
+
+let SUM_RELATED_NONEMPTY = prove
+ (`!R (f:A->real) g s.
+        (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+        FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> R (f x) (g x))
+        ==> R (sum s f) (sum s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:real->real->bool`
+    (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_REAL_ADD)) THEN
   ASM_REWRITE_TAC[GSYM sum; NEUTRAL_REAL_ADD] THEN ASM_MESON_TAC[]);;
 
 let REAL_OF_NUM_SUM_GEN = prove

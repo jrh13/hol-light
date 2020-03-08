@@ -220,6 +220,47 @@ let ISUM_UNIV = prove
   REWRITE_TAC[isum] THEN MATCH_MP_TAC ITERATE_UNIV THEN
   REWRITE_TAC[MONOIDAL_INT_ADD]);;
 
+let ISUM_CLOSED = prove
+ (`!P f:A->int s.
+        P(&0) /\ (!x y. P x /\ P y ==> P(x + y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(isum s f)`,
+  REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_INT_ADD) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:int->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_INT_ADD; GSYM isum]);;
+
+let ISUM_RELATED = prove
+ (`!R (f:A->int) g s.
+        R (&0) (&0) /\
+        (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+        FINITE s /\ (!x. x IN s ==> R (f x) (g x))
+        ==> R (isum s f) (isum s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:int->int->bool`
+    (MATCH_MP ITERATE_RELATED MONOIDAL_INT_ADD)) THEN
+  ASM_REWRITE_TAC[GSYM isum; NEUTRAL_INT_ADD] THEN ASM_MESON_TAC[]);;
+
+let ISUM_CLOSED_NONEMPTY = prove
+ (`!P f:A->int s.
+        FINITE s /\ ~(s = {}) /\
+        (!x y. P x /\ P y ==> P(x + y)) /\ (!a. a IN s ==> P(f a))
+        ==> P(isum s f)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(MATCH_MP ITERATE_CLOSED_NONEMPTY MONOIDAL_INT_ADD) THEN
+  DISCH_THEN(MP_TAC o SPEC `P:int->bool`) THEN
+  ASM_SIMP_TAC[NEUTRAL_INT_ADD; GSYM isum]);;
+
+let ISUM_RELATED_NONEMPTY = prove
+ (`!R (f:A->int) g s.
+        (!m n m' n'. R m n /\ R m' n' ==> R (m + m') (n + n')) /\
+        FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> R (f x) (g x))
+        ==> R (isum s f) (isum s g)`,
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  GEN_TAC THEN REPEAT DISCH_TAC THEN
+  MP_TAC(ISPEC `R:int->int->bool`
+    (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_INT_ADD)) THEN
+  ASM_REWRITE_TAC[GSYM isum; NEUTRAL_INT_ADD] THEN ASM_MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Expand "isum (m..n) f" where m and n are numerals.                        *)
 (* ------------------------------------------------------------------------- *)
