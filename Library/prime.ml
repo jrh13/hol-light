@@ -5,152 +5,6 @@
 prioritize_num();;
 
 (* ------------------------------------------------------------------------- *)
-(* HOL88 compatibility (since all this is a port of old HOL88 stuff).        *)
-(* ------------------------------------------------------------------------- *)
-
-let MULT_MONO_EQ = prove
- (`!m i n. (SUC n) * m = (SUC n) * i <=> (m = i)`,
-  REWRITE_TAC[EQ_MULT_LCANCEL; NOT_SUC]);;
-
-let LESS_ADD_1 = prove
- (`!m n. n < m ==> ?p. m = n + (p + 1)`,
-  REWRITE_TAC[LT_EXISTS; ADD1; ADD_ASSOC]);;
-
-let LESS_ADD_SUC = ARITH_RULE `!m n. m < m + (SUC n)`;;
-
-let LESS_0_CASES = ARITH_RULE `!m. 0 = m \/ 0 < m`;;
-
-let LESS_MONO_ADD = ARITH_RULE `!m n p. m < n ==> (m + p) < (n + p)`;;
-
-let LESS_EQ_0 = prove
- (`!n. n <= 0 <=> (n = 0)`,
-  REWRITE_TAC[LE]);;
-
-let LESS_LESS_CASES = ARITH_RULE `!m n. m = n \/ m < n \/ n < m`;;
-
-let LESS_ADD_NONZERO = ARITH_RULE `!m n. ~(n = 0) ==> m < (m + n)`;;
-
-let NOT_EXP_0 = prove
- (`!m n. ~((SUC n) EXP m = 0)`,
-  REWRITE_TAC[EXP_EQ_0; NOT_SUC]);;
-
-let LESS_THM = ARITH_RULE `!m n. m < (SUC n) <=> (m = n) \/ m < n`;;
-
-let NOT_LESS_0 = ARITH_RULE `!n. ~(n < 0)`;;
-
-let ZERO_LESS_EXP = prove
- (`!m n. 0 < (SUC n) EXP m`,
-  REWRITE_TAC[LT_NZ; NOT_EXP_0]);;
-
-(* ------------------------------------------------------------------------- *)
-(* General arithmetic lemmas.                                                *)
-(* ------------------------------------------------------------------------- *)
-
-let MULT_FIX = prove
- (`!x y. x * y = x <=> x = 0 \/ y = 1`,
-  CONV_TAC NUM_RING);;
-
-let MULT_LCANCEL = prove
- (`!a b c. ~(a = 0) /\ (a * b = a * c) ==> (b = c)`,
-  CONV_TAC NUM_RING);;
-
-(* ------------------------------------------------------------------------- *)
-(* Properties of the exponential function.                                   *)
-(* ------------------------------------------------------------------------- *)
-
-let EXP_0 = prove
- (`!n. 0 EXP (SUC n) = 0`,
-  REWRITE_TAC[EXP; MULT_CLAUSES]);;
-
-let EXP_MONO_LT_SUC = prove
- (`!n x y. (x EXP (SUC n)) < (y EXP (SUC n)) <=> (x < y)`,
-  REWRITE_TAC[EXP_MONO_LT; NOT_SUC]);;
-
-let EXP_MONO_LE_SUC = prove
- (`!x y n. (x EXP (SUC n)) <= (y EXP (SUC n)) <=> x <= y`,
-  REWRITE_TAC[EXP_MONO_LE; NOT_SUC]);;
-
-let EXP_MONO_EQ_SUC = prove
- (`!x y n. (x EXP (SUC n) = y EXP (SUC n)) <=> (x = y)`,
-  REWRITE_TAC[EXP_MONO_EQ; NOT_SUC]);;
-
-let EXP_EXP = prove
- (`!x m n. (x EXP m) EXP n = x EXP (m * n)`,
-  REWRITE_TAC[EXP_MULT]);;
-
-(* ------------------------------------------------------------------------- *)
-(* More ad-hoc arithmetic lemmas unlikely to be useful elsewhere.            *)
-(* ------------------------------------------------------------------------- *)
-
-let DIFF_LEMMA = prove
- (`!a b. a < b ==> (a = 0) \/ (a + (b - a)) < (a + b)`,
-  ARITH_TAC);;
-
-let NOT_EVEN_EQ_ODD = prove(
-  `!m n. ~(2 * m = SUC(2 * n))`,
-  REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o AP_TERM `EVEN`) THEN
-  REWRITE_TAC[EVEN; EVEN_MULT; ARITH]);;
-
-let CANCEL_TIMES2 = prove
- (`!x y. 2 * x = 2 * y <=> x = y`,
-  ARITH_TAC);;
-
-let EVEN_SQUARE = prove(
-  `!n. EVEN(n) ==> ?x. n EXP 2 = 4 * x`,
-  GEN_TAC THEN REWRITE_TAC[EVEN_EXISTS] THEN
-  DISCH_THEN(X_CHOOSE_THEN `m:num` SUBST1_TAC) THEN
-  EXISTS_TAC `m * m` THEN REWRITE_TAC[EXP_2] THEN
-  REWRITE_TAC[SYM(REWRITE_CONV[ARITH] `2 * 2`)] THEN
-  REWRITE_TAC[MULT_AC]);;
-
-let ODD_SQUARE = prove(
-  `!n. ODD(n) ==> ?x. n EXP 2 = (4 * x) + 1`,
-  GEN_TAC THEN REWRITE_TAC[ODD_EXISTS] THEN
-  DISCH_THEN(X_CHOOSE_THEN `m:num` SUBST1_TAC) THEN
-  ASM_REWRITE_TAC[EXP_2; MULT_CLAUSES; ADD_CLAUSES] THEN
-  REWRITE_TAC[GSYM ADD1; SUC_INJ] THEN
-  EXISTS_TAC `(m * m) + m` THEN
-  REWRITE_TAC(map num_CONV [`4`; `3`; `2`; `1`]) THEN
-  REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES] THEN
-  REWRITE_TAC[LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
-  REWRITE_TAC[ADD_AC]);;
-
-let DIFF_SQUARE = prove(
-  `!x y. (x EXP 2) - (y EXP 2) = (x + y) * (x - y)`,
-  REPEAT GEN_TAC THEN
-  DISJ_CASES_TAC(SPECL [`x:num`; `y:num`] LE_CASES) THENL
-   [SUBGOAL_THEN `(x * x) <= (y * y)` MP_TAC THENL
-     [MATCH_MP_TAC LE_MULT2 THEN ASM_REWRITE_TAC[];
-      POP_ASSUM MP_TAC THEN REWRITE_TAC[GSYM SUB_EQ_0] THEN
-      REPEAT DISCH_TAC THEN ASM_REWRITE_TAC[EXP_2; MULT_CLAUSES]];
-    POP_ASSUM(CHOOSE_THEN SUBST1_TAC o REWRITE_RULE[LE_EXISTS]) THEN
-    REWRITE_TAC[ONCE_REWRITE_RULE[ADD_SYM] ADD_SUB] THEN
-    REWRITE_TAC[EXP_2; LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
-    REWRITE_TAC[GSYM ADD_ASSOC; ONCE_REWRITE_RULE[ADD_SYM] ADD_SUB] THEN
-    AP_TERM_TAC THEN GEN_REWRITE_TAC LAND_CONV [ADD_SYM] THEN
-    AP_TERM_TAC THEN MATCH_ACCEPT_TAC MULT_SYM]);;
-
-let ADD_IMP_SUB = prove(
-  `!x y z. (x + y = z) ==> (x = z - y)`,
-  REPEAT GEN_TAC THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
-  REWRITE_TAC[ADD_SUB]);;
-
-let ADD_SUM_DIFF = prove(
-  `!v w. v <= w ==> ((w + v) - (w - v) = 2 * v) /\
-                    ((w + v) + (w - v) = 2 * w)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[LE_EXISTS] THEN
-  DISCH_THEN(CHOOSE_THEN SUBST1_TAC) THEN
-  REWRITE_TAC[ONCE_REWRITE_RULE[ADD_SYM] ADD_SUB] THEN
-  REWRITE_TAC[MULT_2; GSYM ADD_ASSOC] THEN
-  ONCE_REWRITE_TAC[ADD_SYM] THEN
-  REWRITE_TAC[ONCE_REWRITE_RULE[ADD_SYM] ADD_SUB; GSYM ADD_ASSOC]);;
-
-let EXP_4 = prove(
-  `!n. n EXP 4 = (n EXP 2) EXP 2`,
-  GEN_TAC THEN REWRITE_TAC[EXP_EXP] THEN
-  REWRITE_TAC[ARITH]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Elementary theory of divisibility                                         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -244,7 +98,7 @@ let DIVIDES_DIV_NOT = prove(
   PURE_REWRITE_TAC[TAUT `a ==> ~b <=> a /\ b ==> F`] THEN
   DISCH_THEN(MP_TAC o MATCH_MP DIVIDES_ADD_REVR) THEN
   DISCH_THEN(MP_TAC o MATCH_MP DIVIDES_LE) THEN
-  ASM_REWRITE_TAC[DE_MORGAN_THM; NOT_LE; GSYM LESS_EQ_0]);;
+  ASM_REWRITE_TAC[DE_MORGAN_THM; NOT_LE; GSYM(CONJUNCT1 LE)]);;
 
 let DIVIDES_MUL2 = prove
  (`!a b c d. a divides b /\ c divides d ==> (a * c) divides (b * d)`,
@@ -277,7 +131,7 @@ let DIVIDES_TRIVIAL_UPPERBOUND = prove
   ASM_REWRITE_TAC[NOT_LE] THEN MATCH_MP_TAC LTE_TRANS THEN
   EXISTS_TAC `2 EXP n` THEN REWRITE_TAC[LT_POW2_REFL] THEN
   UNDISCH_TAC `~(n = 0)` THEN SPEC_TAC(`n:num`,`n:num`) THEN
-  INDUCT_TAC THEN ASM_REWRITE_TAC[EXP_MONO_LE_SUC]);;
+  INDUCT_TAC THEN ASM_REWRITE_TAC[EXP_MONO_LE; NOT_SUC]);;
 
 let FACTORIZATION_INDEX = prove
  (`!n p. ~(n = 0) /\ 2 <= p
@@ -293,7 +147,7 @@ let FACTORIZATION_INDEX = prove
     MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC `2 EXP l` THEN
     SIMP_TAC[LT_POW2_REFL; LT_IMP_LE] THEN
     SPEC_TAC(`l:num`,`l:num`) THEN INDUCT_TAC THEN
-    ASM_REWRITE_TAC[ARITH; CONJUNCT1 EXP; EXP_MONO_LE_SUC]]);;
+    ASM_REWRITE_TAC[ARITH; CONJUNCT1 EXP; EXP_MONO_LE; NOT_SUC]]);;
 
 let DIVIDES_FACT = prove
  (`!n p. 1 <= p /\ p <= n ==> p divides (FACT n)`,
@@ -312,42 +166,6 @@ let DIVIDES_REXP = prove
  (`!x y n. x divides y /\ ~(n = 0) ==> x divides (y EXP n)`,
   GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN SIMP_TAC[DIVIDES_REXP_SUC]);;
 
-let DIVIDES_MOD = prove
- (`!m n. m divides n <=> (n MOD m = 0)`,
-  REWRITE_TAC[divides; MOD_EQ_0] THEN MESON_TAC[MULT_SYM]);;
-
-let DIVIDES_DIV_MULT = prove
- (`!m n. m divides n <=> ((n DIV m) * m = n)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `m = 0` THENL
-   [ASM_REWRITE_TAC[DIVIDES_ZERO; MULT_CLAUSES; EQ_SYM_EQ]; ALL_TAC] THEN
-  EQ_TAC THENL [ALL_TAC; MESON_TAC[DIVIDES_LMUL; DIVIDES_REFL]] THEN
-  DISCH_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
-  EXISTS_TAC `n DIV m * m + n MOD m` THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[DIVIDES_MOD; ADD_CLAUSES];
-    ASM_MESON_TAC[DIVISION]]);;
-
-let DIV_BY_DIV = prove
- (`!m n. ~(n = 0) /\ m divides n ==> n DIV (n DIV m) = m`,
-  REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[DIV_ZERO] THEN
-  MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `0` THEN
-  ASM_SIMP_TAC[LDIV_LT_EQ; ADD_CLAUSES] THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[DIVIDES_DIV_MULT; MULT_SYM]; ALL_TAC] THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN ASM_ARITH_TAC);;
-
-let DIVIDES_DIV_DIVIDES = prove
- (`!n d e. d divides n /\ (n = 0 ==> e = 0)
-           ==> (n DIV d divides e <=> n divides d * e)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `d = 0` THEN
-  ASM_SIMP_TAC[DIV_ZERO; MULT_CLAUSES; DIVIDES_0; DIVIDES_ZERO] THEN
-  REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM; IMP_CONJ] THEN
-  ASM_SIMP_TAC[DIV_MULT; GSYM MULT_ASSOC; EQ_MULT_LCANCEL]);;
-
-let DIVIDES_DIV_SELF = prove
- (`!n d. d divides n ==> n DIV d divides n`,
-  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[DIVIDES_DIV_DIVIDES] THEN
-  CONV_TAC NUMBER_RULE);;
-
 let FINITE_DIVISORS = prove
  (`!n. ~(n = 0) ==> FINITE {d | d divides n}`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
@@ -359,13 +177,6 @@ let FINITE_SPECIAL_DIVISORS = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
   EXISTS_TAC `{d | d divides n}` THEN ASM_SIMP_TAC[FINITE_DIVISORS] THEN
   SET_TAC[]);;
-
-let DIVIDES_DIVIDES_DIV = prove
- (`!n d e. d divides n ==> (e divides (n DIV d) <=> (d * e) divides n)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `d = 0` THEN
-  ASM_REWRITE_TAC[DIV_ZERO; MULT_CLAUSES; DIVIDES_0; DIVIDES_ZERO] THEN
-  REWRITE_TAC[divides; LEFT_IMP_EXISTS_THM] THEN
-  ASM_SIMP_TAC[DIV_MULT; GSYM MULT_ASSOC; EQ_MULT_LCANCEL]);;
 
 let DIVISORS_EQ = prove
  (`!m n. m = n <=> !d. d divides m <=> d divides n`,
@@ -399,14 +210,15 @@ let IND_EUCLID = prove(
    [ALL_TAC; EXISTS_TAC `a + b` THEN REFL_TAC] THEN
   MATCH_MP_TAC num_WF THEN
   REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN MP_TAC
-   (SPECL [`a:num`; `b:num`] LESS_LESS_CASES) THENL
-   [DISCH_THEN SUBST1_TAC THEN
+   (SPECL [`a:num`; `b:num`] LT_CASES) THENL
+   [ALL_TAC; ALL_TAC;
+    DISCH_THEN SUBST1_TAC THEN
     GEN_REWRITE_TAC RAND_CONV [GSYM ADD_0] THEN
-    FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[];
-    ALL_TAC; ALL_TAC] THEN
+    FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]] THEN
   DISCH_THEN(fun th -> SUBST1_TAC(SYM(MATCH_MP SUB_ADD
    (MATCH_MP LT_IMP_LE th))) THEN
-    DISJ_CASES_THEN MP_TAC (MATCH_MP DIFF_LEMMA th)) THENL
+    DISJ_CASES_THEN MP_TAC (MATCH_MP
+     (ARITH_RULE `a < b ==> a = 0 \/ a + b - a < a + b`) th)) THENL
    [DISCH_THEN SUBST1_TAC THEN
     FIRST_ASSUM (CONV_TAC o REWR_CONV) THEN
     FIRST_ASSUM MATCH_ACCEPT_TAC;
@@ -967,7 +779,7 @@ let PRIME_2 = prove(
   REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN
   REWRITE_TAC[ARITH] THEN REWRITE_TAC[LE_LT] THEN
-  REWRITE_TAC[num_CONV `2`; num_CONV `1`; LESS_THM; NOT_LESS_0] THEN
+  REWRITE_TAC[num_CONV `2`; num_CONV `1`; LT_SUC_LE; LE_LT; CONJUNCT1 LT] THEN
   DISCH_THEN(REPEAT_TCL DISJ_CASES_THEN SUBST_ALL_TAC) THEN
   REWRITE_TAC[] THEN POP_ASSUM MP_TAC THEN REWRITE_TAC[DIVIDES_ZERO] THEN
   REWRITE_TAC[ARITH] THEN REWRITE_TAC[]);;
@@ -975,7 +787,7 @@ let PRIME_2 = prove(
 let PRIME_GE_2 = prove(
   `!p. prime(p) ==> 2 <= p`,
   GEN_TAC THEN CONV_TAC CONTRAPOS_CONV THEN REWRITE_TAC[NOT_LE] THEN
-  REWRITE_TAC[num_CONV `2`; num_CONV `1`; LESS_THM; NOT_LESS_0] THEN
+  REWRITE_TAC[num_CONV `2`; num_CONV `1`; LT_SUC_LE; LE_LT; CONJUNCT1 LT] THEN
   DISCH_THEN(REPEAT_TCL DISJ_CASES_THEN SUBST1_TAC) THEN
   REWRITE_TAC[SYM(num_CONV `1`); PRIME_0; PRIME_1]);;
 
@@ -1006,7 +818,8 @@ let PRIME_FACTOR_LT = prove(
   ASM_REWRITE_TAC[LE_EXISTS] THEN
   DISCH_THEN(X_CHOOSE_THEN `q:num` SUBST_ALL_TAC) THEN
   REWRITE_TAC[num_CONV `2`; RIGHT_ADD_DISTRIB; MULT_CLAUSES] THEN
-  REWRITE_TAC[GSYM ADD_ASSOC] THEN MATCH_MP_TAC LESS_ADD_NONZERO THEN
+  REWRITE_TAC[GSYM ADD_ASSOC] THEN
+  MATCH_MP_TAC(ARITH_RULE `~(n = 0) ==> m < (m + n)`) THEN
   REWRITE_TAC[ADD_EQ_0] THEN DISCH_THEN(CONJUNCTS_THEN SUBST_ALL_TAC) THEN
   FIRST_ASSUM(UNDISCH_TAC o check is_eq o concl) THEN
   ASM_REWRITE_TAC[MULT_CLAUSES]);;
@@ -1185,6 +998,10 @@ let PRIME_COPRIME_LT = prove
 let DIVIDES_PRIME_PRIME = prove
  (`!p q. prime p /\ prime q  ==> (p divides q <=> p = q)`,
   MESON_TAC[DIVIDES_REFL; DISTINCT_PRIME_COPRIME; PRIME_COPRIME_EQ]);;
+
+let COPRIME_PRIME_PRIME = prove
+ (`!p q. prime p /\ prime q ==> (coprime(p,q) <=> ~(p = q))`,
+  MESON_TAC[PRIME_COPRIME_EQ; DIVIDES_PRIME_PRIME; COPRIME_SYM]);;
 
 let DIVIDES_PRIME_EXP_LE = prove
  (`!p q m n. prime p /\ prime q
@@ -1699,6 +1516,15 @@ let INDEX_ZERO = prove
  (`!p n. ~(p divides n) ==> index p n = 0`,
   SIMP_TAC[INDEX_EQ_0]);;
 
+let INDEX_POW = prove
+ (`!p n k. index (p EXP k) n = index p n DIV k`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `k = 0` THENL
+   [ASM_REWRITE_TAC[DIV_ZERO; INDEX_EQ_0; EXP]; ALL_TAC] THEN
+  GEN_REWRITE_TAC I [MESON[LE_TRANS; LE_ANTISYM]
+   `(m:num = n) <=> !d. d <= m <=> d <= n`] THEN
+  X_GEN_TAC `d:num` THEN ASM_SIMP_TAC[LE_INDEX; LE_RDIV_EQ; EXP_EXP] THEN
+  ASM_REWRITE_TAC[MULT_EQ_0; EXP_EQ_1]);;
+
 let INDEX_PRIME = prove
  (`!p a. prime p ==> index a p = if p = a then 1 else 0`,
   REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
@@ -1829,6 +1655,16 @@ let INDEX_SUB_MIN = prove
   REWRITE_TAC[EXP_INDEX_DIVIDES] THEN
   MATCH_MP_TAC DIVIDES_EXP_LE_IMP THEN ARITH_TAC);;
 
+let INDEX_NSUM_LE = prove
+ (`!(f:A->num) p n k.
+         FINITE k /\ ~(k = {}) /\ (!a. a IN k ==> n <= index p (f a))
+         ==> n <= index p (nsum k f)`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPEC `\m. n <= index p m`
+   NSUM_CLOSED_NONEMPTY) THEN
+  REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+  REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH rand INDEX_ADD_MIN o rand o snd) THEN ASM_ARITH_TAC);;
+
 let DIVIDES_INDEX = prove
  (`!m n. m divides n <=>
          n = 0 \/ ~(m = 0) /\ !p. prime p ==> index p m <= index p n`,
@@ -1908,46 +1744,25 @@ let PRIME_FACTORIZATION_INDEX = prove
 (* Least common multiples.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let lcm = new_definition
- `lcm(m,n) = if m * n = 0 then 0 else (m * n) DIV gcd(m,n)`;;
+let lcm = prove
+ (`lcm(m,n) = if m * n = 0 then 0 else (m * n) DIV gcd(m,n)`,
+  REWRITE_TAC[GSYM INT_OF_NUM_EQ; GSYM INT_OF_NUM_MUL; NUM_LCM; int_lcm] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[INT_OF_NUM_MUL; INT_OF_NUM_DIV; INT_ABS_NUM; GSYM NUM_GCD]);;
 
 let LCM_DIVIDES = prove
  (`!m n d. lcm(m,n) divides d <=> m divides d /\ n divides d`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[lcm] THEN
-  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES] THEN
-  REWRITE_TAC[DIVIDES_ZERO] THENL [MESON_TAC[DIVIDES_0]; ALL_TAC] THEN
-  ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[MULT_CLAUSES] THEN
-  REWRITE_TAC[DIVIDES_ZERO] THENL [MESON_TAC[DIVIDES_0]; ALL_TAC] THEN
-  ASM_REWRITE_TAC[MULT_EQ_0] THEN
-  TRANS_TAC EQ_TRANS `(m * n) divides (gcd(m,n) * d)` THEN CONJ_TAC THENL
-   [REWRITE_TAC[divides] THEN AP_TERM_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
-    X_GEN_TAC `r:num` THEN TRANS_TAC EQ_TRANS
-     `gcd(m,n) * d = gcd(m,n) * ((m * n) DIV gcd (m,n) * r)` THEN
-    CONJ_TAC THENL
-     [ASM_REWRITE_TAC[EQ_MULT_LCANCEL; GCD_ZERO];
-      AP_TERM_TAC THEN REWRITE_TAC[MULT_ASSOC] THEN
-      AP_THM_TAC THEN AP_TERM_TAC THEN
-      GEN_REWRITE_TAC LAND_CONV [MULT_SYM] THEN
-      REWRITE_TAC[GSYM DIVIDES_DIV_MULT]];
-    ALL_TAC] THEN
-   REPEAT(POP_ASSUM MP_TAC) THEN NUMBER_TAC);;
+  NUMBER_TAC);;
 
 let LCM = prove
  (`!m n. m divides lcm(m,n) /\
          n divides lcm(m,n) /\
          (!d. m divides d /\ n divides d ==> lcm(m,n) divides d)`,
-  REPEAT GEN_TAC THEN SIMP_TAC[LCM_DIVIDES] THEN REWRITE_TAC[lcm] THEN
-  MAP_EVERY ASM_CASES_TAC [`m = 0`; `n = 0`] THEN
-  ASM_REWRITE_TAC[DIVIDES_0; MULT_CLAUSES] THEN
-  ASM_REWRITE_TAC[DIVIDES_ZERO; DIVIDES_REFL; MULT_EQ_0] THEN
-  CONJ_TAC THEN REWRITE_TAC[divides] THENL
-   [EXISTS_TAC `n DIV gcd(m,n)`; EXISTS_TAC `m DIV gcd(m,n)`] THEN
-  MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `0` THEN
-  ASM_SIMP_TAC[GCD_ZERO; LE_1; ADD_CLAUSES] THEN CONV_TAC SYM_CONV THENL
-   [ALL_TAC; GEN_REWRITE_TAC RAND_CONV [MULT_SYM]] THEN
-  REWRITE_TAC[GSYM MULT_ASSOC] THEN AP_TERM_TAC THEN
-  REWRITE_TAC[GSYM DIVIDES_DIV_MULT] THEN
-  REPEAT(POP_ASSUM MP_TAC) THEN NUMBER_TAC);;
+  NUMBER_TAC);;
+
+let LCM_DIVIDES_MUL = prove
+ (`!m n. lcm(m,n) divides m * n`,
+  REWRITE_TAC[LCM_DIVIDES] THEN CONV_TAC NUMBER_RULE);;
 
 let DIVIDES_LCM = prove
  (`!m n r. r divides m \/ r divides n
@@ -1970,13 +1785,7 @@ let LCM_SYM = prove
 
 let DIVIDES_LCM_GCD = prove
  (`!m n d. d divides lcm(m,n) <=> d * gcd(m,n) divides m * n`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[lcm] THEN
-  COND_CASES_TAC THEN ASM_REWRITE_TAC[DIVIDES_0] THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[MULT_EQ_0; DE_MORGAN_THM]) THEN
-  MP_TAC(NUMBER_RULE `gcd(m,n) divides m * n`) THEN
-  SIMP_TAC[divides; LEFT_IMP_EXISTS_THM] THEN REWRITE_TAC[GSYM divides] THEN
-  REPEAT STRIP_TAC THEN MP_TAC(SPECL [`m:num`; `n:num`] GCD_ZERO) THEN
-  ASM_SIMP_TAC[DIV_MULT] THEN CONV_TAC NUMBER_RULE);;
+  NUMBER_TAC);;
 
 let PRIMEPOW_DIVIDES_LCM = prove
  (`!m n p k.
@@ -2136,7 +1945,7 @@ let LCM_EXP = prove
   ASM_CASES_TAC `n = 0` THEN
   ASM_REWRITE_TAC[EXP; GCD_REFL; DIV_1; MULT_CLAUSES] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
-   [ASM_MESON_TAC[num_CASES; EXP_0]; ALL_TAC] THEN
+   [ASM_MESON_TAC[num_CASES; EXP_ZERO]; ALL_TAC] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
   REWRITE_TAC[GCD_EXP; GSYM MULT_EXP] THEN
   MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `0` THEN

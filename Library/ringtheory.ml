@@ -1765,12 +1765,33 @@ let RING_INV_1 = prove
   GEN_TAC THEN MATCH_MP_TAC RING_RINV_UNIQUE THEN
   SIMP_TAC[RING_MUL_LID; RING_1]);;
 
+let RING_DIV_1 = prove
+ (`!r x:A. x IN ring_carrier r ==> ring_div r x (ring_1 r) = x`,
+  SIMP_TAC[ring_div; RING_INV_1; RING_MUL_RID]);;
+
+let RING_INV_ZERO = prove
+ (`!r x:A. ~ring_unit r x ==> ring_inv r x = ring_0 r`,
+  SIMP_TAC[ring_inv]);;
+
 let RING_INV_MUL = prove
  (`!r a b:A.
-        ring_unit r a /\ ring_unit r b
+        a IN ring_carrier r /\ b IN ring_carrier r
         ==> ring_inv r (ring_mul r a b) =
             ring_mul r (ring_inv r a) (ring_inv r b)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_RINV_UNIQUE THEN
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `ring_unit r (a:A)` THENL
+   [ALL_TAC;
+    ASM_SIMP_TAC[RING_INV_ZERO; RING_INV; RING_MUL_LZERO] THEN
+    MATCH_MP_TAC RING_INV_ZERO THEN UNDISCH_TAC `~ring_unit r (a:A)` THEN
+    REWRITE_TAC[ring_unit; CONTRAPOS_THM] THEN
+    ASM_MESON_TAC[RING_MUL_AC; RING_MUL]] THEN
+  ASM_CASES_TAC `ring_unit r (b:A)` THENL
+   [ALL_TAC;
+    ASM_SIMP_TAC[RING_INV_ZERO; RING_INV; RING_MUL_RZERO] THEN
+    MATCH_MP_TAC RING_INV_ZERO THEN UNDISCH_TAC `~ring_unit r (b:A)` THEN
+    REWRITE_TAC[ring_unit; CONTRAPOS_THM] THEN
+    ASM_MESON_TAC[RING_MUL_AC; RING_MUL]] THEN
+  MATCH_MP_TAC RING_RINV_UNIQUE THEN
   ASM_SIMP_TAC[RING_MUL; RING_INV; RING_UNIT_IN_CARRIER] THEN
   TRANS_TAC EQ_TRANS
    `ring_mul r (ring_mul r a (ring_inv r a))
@@ -1780,13 +1801,40 @@ let RING_INV_MUL = prove
         [RING_MUL; RING_INV; RING_MUL_AC; RING_UNIT_IN_CARRIER];
     ASM_SIMP_TAC[RING_MUL_RINV; RING_MUL_LID; RING_1; RING_UNIT_IN_CARRIER]]);;
 
+let RING_INV_POW = prove
+ (`!r (x:A) n.
+        x IN ring_carrier r
+        ==> ring_inv r (ring_pow r x n) = ring_pow r (ring_inv r x) n`,
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
+  INDUCT_TAC THEN ASM_SIMP_TAC[ring_pow; RING_INV_1] THEN
+  ASM_SIMP_TAC[RING_INV_MUL; RING_POW]);;
+
+let RING_POW_INV = prove
+ (`!r (x:A) n.
+        x IN ring_carrier r
+        ==> ring_pow r (ring_inv r x) n = ring_inv r (ring_pow r x n)`,
+  SIMP_TAC[RING_INV_POW]);;
+
 let RING_INV_INV = prove
  (`!r a:A. ring_unit r a ==> ring_inv r (ring_inv r a) = a`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_RINV_UNIQUE THEN
   ASM_SIMP_TAC[RING_INV; RING_UNIT_IN_CARRIER; RING_MUL_LINV]);;
 
+ let RING_MUL_RINV_EQ = prove
+ (`!r x:A.
+        x IN ring_carrier r
+        ==> (ring_mul r x (ring_inv r x) = ring_1 r <=> ring_unit r x)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC[RING_MUL_RINV] THEN
+  REWRITE_TAC[ring_unit] THEN ASM_MESON_TAC[RING_INV]);;
+
+let RING_MUL_LINV_EQ = prove
+ (`!r x:A.
+        x IN ring_carrier r
+        ==> (ring_mul r (ring_inv r x) x = ring_1 r <=> ring_unit r x)`,
+  MESON_TAC[RING_MUL_RINV_EQ; RING_MUL_SYM; RING_INV]);;
+
 let RING_UNIT_DIVIDES = prove
- (`!r a:A. ring_unit r a <=> ring_divides r a (ring_1 r)`,
+(`!r a:A. ring_unit r a <=> ring_divides r a (ring_1 r)`,
   REWRITE_TAC[ring_unit; ring_divides] THEN MESON_TAC[RING_1]);;
 
 let RING_UNIT_0 = prove
@@ -6829,6 +6877,25 @@ let RING_NILPOTENT_PRODUCT_RING = prove
   REWRITE_TAC[ARITH_RULE `SUC(m + d) = m + SUC d`] THEN
   ASM_SIMP_TAC[RING_POW_ADD; RING_MUL_LZERO; RING_POW]);;
 
+let ISOMORPHIC_PRODUCT_RING_DISJOINT_UNION = prove
+ (`!(f:K->A ring) k l.
+        DISJOINT k l
+        ==> product_ring (k UNION l) f isomorphic_ring
+            prod_ring (product_ring k f) (product_ring l f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[isomorphic_ring; ring_isomorphism] THEN
+  REWRITE_TAC[RING_ISOMORPHISMS] THEN
+  EXISTS_TAC `\(f:K->A). RESTRICTION k f,RESTRICTION l f` THEN
+  EXISTS_TAC `\((f:K->A),g) x. if x IN k then f x else g x` THEN
+  CONJ_TAC THENL
+   [REWRITE_TAC[RING_HOMOMORPHISM_PAIRED;
+                RING_HOMOMORPHISM_COMPONENTWISE] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; RESTRICTION_IN_EXTENSIONAL] THEN
+    SIMP_TAC[RESTRICTION; RING_HOMOMORPHISM_PRODUCT_PROJECTION; IN_UNION];
+    REWRITE_TAC[PROD_RING; FORALL_PAIR_THM; IN_CROSS; PAIR_EQ] THEN
+    SIMP_TAC[RESTRICTION_UNIQUE; IN_CARTESIAN_PRODUCT; PRODUCT_RING] THEN
+    REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN
+    REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN ASM SET_TAC[]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Derived rule to take a theorem asserting a monomorphism between r and r'  *)
 (* and a term that is some Boolean combination of equations in the ring r    *)
@@ -7250,6 +7317,13 @@ let DISJOINT_RING_COSETS = prove
         ==> (DISJOINT (ring_coset r j x) (ring_coset r j y) <=>
              ~(ring_coset r j x = ring_coset r j y))`,
   SIMP_TAC[RING_COSETS_EQ]);;
+
+let PAIRWISE_DISJOINT_RING_COSETS = prove
+ (`!r j:A->bool.
+        ring_ideal r j
+        ==> pairwise DISJOINT {ring_coset r j x |x| x IN ring_carrier r}`,
+  REWRITE_TAC[SIMPLE_IMAGE; PAIRWISE_IMAGE] THEN
+  SIMP_TAC[pairwise; DISJOINT_RING_COSETS]);;
 
 let IMAGE_RING_COSET_SWITCH = prove
  (`!r j x y:A.

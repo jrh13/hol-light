@@ -3184,6 +3184,12 @@ let CARD_LE_CARTESIAN_PRODUCT = prove
     RULE_ASSUM_TAC(REWRITE_RULE[cartesian_product; IN_ELIM_THM]) THEN
     ASM_MESON_TAC[]]);;
 
+let CARD_EQ_CARTESIAN_PRODUCT = prove
+ (`!(s:K->A->bool) (t:K->B->bool) k.
+        (!i. i IN k ==> s i =_c t i)
+        ==> cartesian_product k s =_c cartesian_product k t`,
+  SIMP_TAC[GSYM CARD_LE_ANTISYM; CARD_LE_CARTESIAN_PRODUCT]);;
+
 let CARD_LE_CARTESIAN_PRODUCT_SUBINDEX = prove
  (`!(s:K->A->bool) k l.
         k SUBSET l /\ ~(cartesian_product l s = {})
@@ -3360,3 +3366,18 @@ let CARD_EXP_FINITE_EQ = prove
   REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
   ASM_SIMP_TAC[SET_RULE `~(t = {}) ==> ((!a. a IN t ==> P) <=> P)`] THEN
   ASM_MESON_TAC[FINITE_SUBSET; FINITE_SING; EMPTY_SUBSET]);;
+
+let CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION = prove
+ (`!(f:K->A->bool) k l.
+        DISJOINT k l
+        ==> cartesian_product (k UNION l) f =_c
+            cartesian_product k f CROSS cartesian_product l f`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[EQ_C_BIJECTIONS] THEN
+  EXISTS_TAC `\(f:K->A). RESTRICTION k f,RESTRICTION l f` THEN
+  EXISTS_TAC `\((f:K->A),g) x. if x IN k then f x else g x` THEN
+  REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; PAIR_EQ] THEN
+  REWRITE_TAC[RESTRICTION_IN_CARTESIAN_PRODUCT] THEN
+  REWRITE_TAC[RESTRICTION_UNIQUE; IN_CARTESIAN_PRODUCT] THEN
+  SIMP_TAC[FORALL_IN_UNION] THEN
+  REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM] THEN
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN ASM SET_TAC[]);;

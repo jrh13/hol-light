@@ -837,7 +837,7 @@ let DOUBLE_THE_CUBE_ALGEBRA = prove
   REWRITE_TAC[REAL_ABS_NUM; REAL_OF_NUM_POW; REAL_OF_NUM_EQ] THEN
   MATCH_MP_TAC(ARITH_RULE
    `n EXP 3 <= 1 EXP 3 \/ 2 EXP 3 <= n EXP 3 ==> ~(n EXP 3 = 2)`) THEN
-  REWRITE_TAC[num_CONV `3`; EXP_MONO_LE_SUC] THEN ARITH_TAC);;
+  REWRITE_TAC[num_CONV `3`; EXP_MONO_LE; NOT_SUC] THEN ARITH_TAC);;
 
 let DOUBLE_THE_CUBE = prove
  (`!x. x pow 3 = &2 ==> ~(constructible(vector[x; &0]))`,

@@ -261,6 +261,10 @@ let EXP_MULT = prove
     INDUCT_TAC THEN ASM_REWRITE_TAC[EXP; MULT_CLAUSES];
     REWRITE_TAC[MULT_EXP] THEN MATCH_ACCEPT_TAC MULT_SYM]);;
 
+let EXP_EXP = prove
+ (`!x m n. (x EXP m) EXP n = x EXP (m * n)`,
+  REWRITE_TAC[EXP_MULT]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Define the orderings recursively too.                                     *)
 (* ------------------------------------------------------------------------- *)

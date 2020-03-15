@@ -8,6 +8,424 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 13th Mar 2020       Library/card.ml, Library/grouptheory.ml, Library/ringtheory.ml
+
+Added a miscellany of technical lemmas, mainly about group theory but in a
+few places ring theory and cardinality. In fact, the three theorems with
+"DISJOINT_UNION" in the name are effectively the same result in three 
+different categories.
+
+  ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN =
+    |- !G x y n.
+           abelian_group G /\
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           group_element_order G x divides n /\
+           group_element_order G y divides n
+           ==> group_element_order G (group_mul G x y) divides n
+  
+  ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM =
+    |- !G x y.
+           abelian_group G /\ x IN group_carrier G /\ y IN group_carrier G
+           ==> group_element_order G (group_mul G x y) divides
+               lcm(group_element_order G x,group_element_order G y)
+  
+  ABELIAN_GROUP_HOMOMORPHISM_POWERING =
+    |- !G n. abelian_group G ==> group_homomorphism (G,G) (\x. group_pow G x n)
+  
+  ABELIAN_GROUP_HOMOMORPHISM_ZPOWERING =
+    |- !G n.
+           abelian_group G ==> group_homomorphism (G,G) (\x. group_zpow G x n)
+  
+  CARD_EQ_CARTESIAN_PRODUCT =
+    |- !s t k.
+           (!i. i IN k ==> s i =_c t i)
+           ==> cartesian_product k s =_c cartesian_product k t
+  
+  CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> cartesian_product (k UNION l) f =_c
+               cartesian_product k f CROSS cartesian_product l f
+  
+  CYCLIC_PRIME_ORDER_GROUP =
+    |- !G a.
+           FINITE (group_carrier G) /\
+           (CARD (group_carrier G) = 1 \/ prime (CARD (group_carrier G))) /\
+           a IN group_carrier G /\
+           ~(a = group_id G)
+           ==> subgroup_generated G {a} = G
+  
+  CYCLIC_PROD_GROUP =
+    |- !G H.
+           cyclic_group (prod_group G H) <=>
+           cyclic_group G /\
+           cyclic_group H /\
+           (trivial_group G \/
+            trivial_group H \/
+            FINITE (group_carrier G) /\
+            FINITE (group_carrier H) /\
+            coprime(CARD (group_carrier G),CARD (group_carrier H)))
+  
+  CYCLIC_PROD_INTEGER_MOD_GROUP =
+    |- !m n.
+           cyclic_group
+           (prod_group (integer_mod_group m) (integer_mod_group n)) <=>
+           coprime(m,n)
+  
+  GENERATOR_INTEGER_MOD_GROUP =
+    |- !n a.
+           subgroup_generated (integer_mod_group n) {a} = integer_mod_group n <=>
+           (n <= 1 \/ &0 <= a /\ a < &n) /\ coprime(&n,a)
+  
+  GROUP_CARRIER_INTEGER_MOD_GROUP =
+    |- !n. group_carrier (integer_mod_group n) = IMAGE (\x. x rem &n) (:int)
+  
+  GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP =
+    |- !n m.
+           group_element_order (integer_mod_group n) (&m) =
+           (if m = 0 /\ n = 0 then 1 else n DIV gcd (n,m))
+  
+  GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1 =
+    |- !n. group_element_order (integer_mod_group n) (&1) = n
+  
+  GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1R =
+    |- !n. group_element_order (integer_mod_group n) (&1 rem &n) = n
+  
+  GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN =
+    |- !G x y n.
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           group_mul G x y = group_mul G y x /\
+           group_element_order G x divides n /\
+           group_element_order G y divides n
+           ==> group_element_order G (group_mul G x y) divides n
+  
+  GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM =
+    |- !G x y.
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           group_mul G x y = group_mul G y x
+           ==> group_element_order G (group_mul G x y) divides
+               lcm(group_element_order G x,group_element_order G y)
+  
+  GROUP_ELEMENT_ORDER_PROD_GROUP =
+    |- !G H x y.
+           x IN group_carrier G /\ y IN group_carrier H
+           ==> group_element_order (prod_group G H) (x,y) =
+               lcm(group_element_order G x,group_element_order H y)
+  
+  GROUP_ELEMENT_ORDER_PROD_GROUP_ALT =
+    |- !G H z.
+           z IN group_carrier (prod_group G H)
+           ==> group_element_order (prod_group G H) z =
+               lcm
+               (group_element_order G (FST z),group_element_order H (SND z))
+  
+  GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED =
+    |- !G h x.
+           group_element_order (subgroup_generated G h) x =
+           group_element_order G x
+  
+  GROUP_HOMOMORPHISM_INCLUSION =
+    |- !G s. group_homomorphism (subgroup_generated G s,G) (\x. x)
+  
+  GROUP_HOMOMORPHISM_OF_ID =
+    |- !f G G'. group_homomorphism (G,G') f ==> f (group_id G) = group_id G'
+  
+  GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP =
+    |- !m n.
+           group_homomorphism
+           (integer_mod_group (m * n),
+            prod_group (integer_mod_group m) (integer_mod_group n))
+           (\a. a rem &m,a rem &n)
+  
+  GROUP_ISOMORPHISMS =
+    |- !G H f g.
+           group_isomorphisms (G,H) (f,g) <=>
+           group_homomorphism (G,H) f /\
+           (!x. x IN group_carrier G ==> g (f x) = x) /\
+           (!y. y IN group_carrier H ==> g y IN group_carrier G /\ f (g y) = y)
+  
+  GROUP_ISOMORPHISM_PROD_INTEGER_MOD_GROUP =
+    |- !m n.
+           group_isomorphism
+           (integer_mod_group (m * n),
+            prod_group (integer_mod_group m) (integer_mod_group n))
+           (\a. a rem &m,a rem &n) <=>
+           coprime(m,n)
+  
+  GROUP_ISOMORPHISM_SUBSET =
+    |- !G G' f.
+           group_isomorphism (G,G') f <=>
+           group_homomorphism (G,G') f /\
+           (!z. z IN group_carrier G' 
+                ==> ?x. x IN group_carrier G /\ f x = z) /\
+           (!x y.
+                x IN group_carrier G /\ y IN group_carrier G /\ f x = f y
+                ==> x = y)
+  
+  GROUP_MONOMORPHISM_BETWEEN_SUBGROUPS =
+    |- !G H s t f.
+           group_monomorphism (G,H) f /\ IMAGE f s SUBSET t
+           ==> group_monomorphism
+               (subgroup_generated G s,subgroup_generated H t)
+               f
+  
+  GROUP_MONOMORPHISM_FROM_SUBGROUP_GENERATED =
+    |- !f G H s.
+           group_monomorphism (G,H) f
+           ==> group_monomorphism (subgroup_generated G s,H) f
+  
+  GROUP_MONOMORPHISM_INCLUSION =
+    |- !G s. group_monomorphism (subgroup_generated G s,G) (\x. x)
+  
+  GROUP_POW_PROD_GROUP =
+    |- !G H x y n.
+           x IN group_carrier G /\ y IN group_carrier H
+           ==> group_pow (prod_group G H) (x,y) n =
+               group_pow G x n,group_pow H y n
+  
+  GROUP_ZPOW_PROD_GROUP =
+    |- !G H x y n.
+           x IN group_carrier G /\ y IN group_carrier H
+           ==> group_zpow (prod_group G H) (x,y) n =
+               group_zpow G x n,group_zpow H y n
+  
+  INTEGER_MOD_GROUP_1R =
+    |- !n x. x rem &n IN group_carrier (integer_mod_group n)
+  
+  INTEGER_MOD_SUBGROUP_GENERATED_BY_1R =
+    |- !n. subgroup_generated (integer_mod_group n) {&1 rem &n} =
+           integer_mod_group n
+  
+  ISOMORPHIC_PRODUCT_GROUP_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> product_group (k UNION l) f isomorphic_group
+               prod_group (product_group k f) (product_group l f)
+  
+  ISOMORPHIC_PRODUCT_RING_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> product_ring (k UNION l) f isomorphic_ring
+               prod_ring (product_ring k f) (product_ring l f)
+  
+  ISOMORPHIC_PROD_INTEGER_MOD_GROUP =
+    |- !m n.
+           prod_group (integer_mod_group m) (integer_mod_group n) isomorphic_group
+           integer_mod_group (m * n) <=>
+           coprime(m,n)
+  
+  PAIRWISE_DISJOINT_LEFT_COSETS =
+    |- !G h.
+           h subgroup_of G
+           ==> pairwise DISJOINT {left_coset G a h | a | a IN group_carrier G}
+  
+  PAIRWISE_DISJOINT_RIGHT_COSETS =
+    |- !G h.
+           h subgroup_of G
+           ==> pairwise DISJOINT {right_coset G h a | a | a IN group_carrier G}
+  
+  PAIRWISE_DISJOINT_RING_COSETS =
+    |- !r j.
+           ring_ideal r j
+           ==> pairwise DISJOINT {ring_coset r j x | x | x IN ring_carrier r}
+  
+  SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP =
+    |- !G n.
+           n normal_subgroup_of G
+           ==> short_exact_sequence
+               (subgroup_generated G n,G,quotient_group G n)
+               ((\x. x),right_coset G n)
+  
+  SHORT_EXACT_SEQUENCE_PROD_GROUP =
+    |- !G H. short_exact_sequence (G,prod_group G H,H) ((\x. x,group_id H),SND)
+  
+  SHORT_EXACT_SEQUENCE_PROD_GROUP_ALT =
+    |- !G H. short_exact_sequence (H,prod_group G H,G) ((\x. group_id G,x),FST)
+  
+  TRIVIAL_GROUP_GENERATED_BY_ANYTHING =
+    |- !G s. trivial_group G ==> subgroup_generated G s = G
+  
+Fri 13th Mar 2020       Library/prime.ml
+
+Added four miscellaneous lemmas around divisibility:
+
+  COPRIME_PRIME_PRIME =
+    |- !p q. prime p /\ prime q ==> (coprime(p,q) <=> ~(p = q))
+
+  INDEX_NSUM_LE =
+    |- !f p n k.
+           FINITE k /\ ~(k = {}) /\ (!a. a IN k ==> n <= index p (f a))
+           ==> n <= index p (nsum k f)
+
+  INDEX_POW =
+    |- !p n k. index (p EXP k) n = index p n DIV k
+
+  LCM_DIVIDES_MUL =
+    |- !m n. lcm(m,n) divides m * n
+
+Fri 13th Mar 2020       Library/ringtheory.ml
+
+Added a few new elementary theorems about ring inverses
+
+  RING_DIV_1 =
+    |- !r x. x IN ring_carrier r ==> ring_div r x (ring_1 r) = x
+
+  RING_INV_POW =
+    |- !r x n.
+           x IN ring_carrier r
+           ==> ring_inv r (ring_pow r x n) = ring_pow r (ring_inv r x) n
+
+  RING_INV_ZERO =
+    |- !r x. ~ring_unit r x ==> ring_inv r x = ring_0 r
+
+  RING_MUL_LINV_EQ =
+    |- !r x.
+           x IN ring_carrier r
+           ==> (ring_mul r (ring_inv r x) x = ring_1 r <=> ring_unit r x)
+
+  RING_MUL_RINV_EQ =
+    |- !r x.
+           x IN ring_carrier r
+           ==> (ring_mul r x (ring_inv r x) = ring_1 r <=> ring_unit r x)
+
+  RING_POW_INV =
+    |- !r x n.
+           x IN ring_carrier r
+           ==> ring_pow r (ring_inv r x) n = ring_inv r (ring_pow r x n)
+
+as well as generalizing the existing theorem RING_INV_MUL to just assume
+carrier membership, not that the elements are units:
+
+  RING_INV_MUL =
+    |- !r a b.
+           a IN ring_carrier r /\ b IN ring_carrier r
+           ==> ring_inv r (ring_mul r a b) =
+               ring_mul r (ring_inv r a) (ring_inv r b)
+
+Thu 12th Mar 2020       int.ml, Library/prime.ml, Library/integer.ml
+
+Moved these theorems back into int.ml, also adding the first one to the
+initial simplifications inside INTEGER_RULE:
+
+        INT_DIVIDES_ABS
+        INT_DIVIDES_LABS
+        INT_DIVIDES_RABS
+
+and defined an integer lcm operation with some rudimentary theorems
+
+  int_lcm =
+    |- !m n. lcm(m,n) = (if m * n = &0 then &0 else abs(m * n) div gcd(m,n))
+
+  INT_DIVIDES_LCM_GCD =
+    |- !m n d. d divides lcm(m,n) <=> d * gcd(m,n) divides m * n
+
+  INT_DIVIDES_RABS =
+    |- !d n. d divides abs n <=> d divides n
+
+  INT_LCM =
+    |- !m n.
+           m divides lcm(m,n) /\
+           n divides lcm(m,n) /\
+           (!d. m divides d /\ n divides d ==> lcm(m,n) divides d)
+
+  INT_LCM_DIVIDES =
+    |- !m n d. lcm(m,n) divides d <=> m divides d /\ n divides d
+
+  INT_LCM_POS =
+    |- !m n. &0 <= lcm(m,n)
+
+  INT_MUL_GCD_LCM =
+    |- !m n. gcd(m,n) * lcm(m,n) = abs(m * n)
+
+  INT_MUL_LCM_GCD =
+    |- !m n. lcm(m,n) * gcd(m,n) = abs(m * n)
+
+Also made a definition of num_lcm here, changing the later "definition" in
+Library/prime.ml into a derived theorem and making some of the first lemmas
+there more or less just NUMBER_TAC invocations. This restructuring makes lcms
+available without loading any libraries and also keeps the treatments of gcd
+and lcm more closely analogous.
+
+Thu 12th Mar 2020       int.ml
+
+Added the following new theorems
+
+  DIVIDES_DIVIDES_DIV_EQ =
+    |- ![1;5An d e. d divides n /\ e divides n DIV d <=> d * e divides n
+
+  INT_DIVIDES_DIVIDES_DIV =
+    |- !n d e. d divides n ==> (e divides n div d <=> d * e divides n)
+
+  INT_DIVIDES_DIVIDES_DIV_EQ =
+    |- !n d e. d divides n /\ e divides n div d <=> d * e divides n
+
+  INT_DIVIDES_DIV_DIVIDES =
+    |- !n d e.
+           d divides n /\ (n = &0 ==> e = &0)
+           ==> (n div d divides e <=> n divides d * e)
+
+  INT_DIVIDES_DIV_SELF =
+    |- !n d. d divides n ==> n div d divides n
+
+  INT_DIV_BY_DIV =
+    |- !m n. ~(n = &0) /\ m divides n ==> n div (n div m) = m
+
+as well as moving the following back from Library/prime.ml into int.ml,
+where they can be easily derived from their integer counterparts.
+
+        DIVIDES_DIVIDES_DIV
+        DIVIDES_DIV_DIVIDES
+        DIVIDES_DIV_MULT
+        DIVIDES_DIV_SELF
+        DIVIDES_MOD
+        DIV_BY_DIV
+
+Thu 12th Mar 2020       Library/prime.ml, Library/pocklington.ml, Examples/pell.ml, 100/bertrand.ml, 100/constructible.ml
+
+Made another series of removals of ad-hoc lemmas that are largely subsumed
+by those elsewhere (e.g. EXP_MONO_LE_SUC by EXP_MONO_LE + NOT_SUC).
+
+        DIFF_SQUARE
+        EVEN_SQUARE
+        EXP_0
+        EXP_4
+        EXP_MONO_EQ_SUC
+        EXP_MONO_LE_SUC
+        EXP_MONO_LT_SUC
+        ODD_SQUARE
+
+Wed 11th Mar 2020       arith.ml, Library/prime.ml
+
+Removed a lot of little-used lemmas that are mainly HOL88 relics from
+Library/prime.ml, while moving a single one EXP_EXP back into the core
+arith.ml file. The following have disappeared (from here, though several
+are there in other places too). If these are needed then there are other
+theorems very close to them and/or they can trivially be generated by
+calling ARITH_RULE:
+
+        ADD_IMP_SUB
+        ADD_SUM_DIFF
+        CANCEL_TIMES2
+        DIFF_LEMMA
+        LESS_0_CASES
+        LESS_ADD_1
+        LESS_ADD_NONZERO
+        LESS_ADD_SUC
+        LESS_EQ_0
+        LESS_LESS_CASES
+        LESS_MONO_ADD
+        LESS_THM
+        MULT_FIX
+        MULT_LCANCEL
+        MULT_MONO_EQ
+        NOT_EVEN_EQ_ODD
+        NOT_EXP_0
+        NOT_LESS_0
+        ZERO_LESS_EXP
+
 Sat  7th Mar 2020       iterate.ml, Library/products.ml, Library/isum.ml
 
 Added slight variants of the "CLOSED" and "RELATED" theorems for iterators,
@@ -354,7 +772,7 @@ distinctions. New theorems:
            ring_associates (integer_mod_ring n) x y <=>
            x IN ring_carrier (integer_mod_ring n) /\
            y IN ring_carrier (integer_mod_ring n) /\
-           gcd (x,&n) = gcd (y,&n)
+           gcd(x,&n) = gcd(y,&n)
 
   INTEGER_MOD_RING_CHAR =
     |- !n. ring_char (integer_mod_ring n) = n
@@ -364,7 +782,7 @@ distinctions. New theorems:
            ring_divides (integer_mod_ring n) a b <=>
            a IN ring_carrier (integer_mod_ring n) /\
            b IN ring_carrier (integer_mod_ring n) /\
-           gcd (a,&n) divides b
+           gcd(a,&n) divides b
 
   INTEGER_MOD_RING_OF_INT =
     |- !n x. ring_of_int (integer_mod_ring n) x = x rem &n
@@ -375,7 +793,7 @@ distinctions. New theorems:
   INTEGER_MOD_RING_UNIT =
     |- !n x.
            ring_unit (integer_mod_ring n) x <=>
-           x IN ring_carrier (integer_mod_ring n) /\ coprime (x,&n)
+           x IN ring_carrier (integer_mod_ring n) /\ coprime(x,&n)
 
   INTEGRAL_DOMAIN_INTEGER_MOD_RING =
     |- !n. integral_domain (integer_mod_ring n) <=> n = 0 \/ prime n
@@ -2040,7 +2458,7 @@ sometimes much more natural than forcing the use of natural number indices.
             else inv (z pow num_of_int (--i)))
 
   REAL_ABS_ZPOW =
-    |- !x n. abs (x zpow n) = abs x zpow n
+    |- !x n. abs(x zpow n) = abs x zpow n
 
   REAL_INV_ZPOW =
     |- !x n. inv (x zpow n) = inv x zpow n
@@ -2562,7 +2980,7 @@ and all pretty straightforward but nice to have:
     |- !m n. m div n = &0 <=> n = &0 \/ &0 <= m /\ m < abs n
 
   INT_DIV_LE =
-    |- !m n. abs (m div n) <= abs m
+    |- !m n. abs(m div n) <= abs m
 
   INT_DIV_LE_EQ =
     |- !a b c. &0 < a ==> (b div a <= c <=> b < a * (c + &1))
@@ -3405,13 +3823,13 @@ Added quite a few new and fairly basic real number theorems (some of the convex
 bounds ones were moved out of Multivariate/misc.ml).
 
   REAL_ABS_LE_SQRT =
-   |- !x y. abs (sqrt x - sqrt y) <= sqrt (&2 * abs (x - y))
+   |- !x y. abs(sqrt x - sqrt y) <= sqrt (&2 * abs(x - y))
 
   REAL_ABS_LE_SQRT_POS =
-    |- !x y. &0 <= x /\ &0 <= y ==> abs (sqrt x - sqrt y) <= sqrt (abs (x - y))
+    |- !x y. &0 <= x /\ &0 <= y ==> abs(sqrt x - sqrt y) <= sqrt (abs(x - y))
 
   REAL_ABS_SQRT =
-    |- !x. abs (sqrt x) = sqrt (abs x)
+    |- !x. abs(sqrt x) = sqrt (abs x)
 
   REAL_CONVEX_BOUND2_LE =
     |- !x y a u v.
@@ -3685,7 +4103,7 @@ CONVEXITY_PRESERVING_SHRINK_0 in "Multivariate/convex.ml") but these simple
 forms are nice to have too:
 
   REAL_GROW_SHRINK =
-    |- !x y. x / (&1 + abs x) / (&1 - abs (x / (&1 + abs x))) = x
+    |- !x y. x / (&1 + abs x) / (&1 - abs(x / (&1 + abs x))) = x
 
   REAL_SHRINK_EQ =
     |- !x y. x / (&1 + abs x) = y / (&1 + abs y) <=> x = y
@@ -3695,10 +4113,10 @@ forms are nice to have too:
 
   REAL_SHRINK_GROW =
     |- !x y. abs x < &1
-             ==> x / (&1 - abs x) / (&1 + abs (x / (&1 - abs x))) = x
+             ==> x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x
 
   REAL_SHRINK_GROW_EQ =
-    |- !x y. x / (&1 - abs x) / (&1 + abs (x / (&1 - abs x))) = x <=>
+    |- !x y. x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x <=>
              abs x < &1
 
   REAL_SHRINK_LE =
@@ -3708,7 +4126,7 @@ forms are nice to have too:
     |- !x y. x / (&1 + abs x) < y / (&1 + abs y) <=> x < y
 
   REAL_SHRINK_RANGE =
-    |- !x. abs (x / (&1 + abs x)) < &1
+    |- !x. abs(x / (&1 + abs x)) < &1
 
 Sat  3rd Jun 2017       Library/floor.ml
 
@@ -3723,7 +4141,7 @@ want to choose "p-adic" rationals:
                   integer r /\
                   q / p pow n < x /\
                   x < r / p pow n /\
-                  abs (q / p pow n - r / p pow n) < e)
+                  abs(q / p pow n - r / p pow n) < e)
 
   PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS =
     |- !p x e.
@@ -3731,7 +4149,7 @@ want to choose "p-adic" rationals:
          ==> (?n q r.
                   &q / p pow n < x /\
                   x < &r / p pow n /\
-                  abs (&q / p pow n - &r / p pow n) < e)
+                  abs(&q / p pow n - &r / p pow n) < e)
 
   PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS_LE =
     |- !p x e.
@@ -3739,7 +4157,7 @@ want to choose "p-adic" rationals:
          ==> (?n q r.
                   &q / p pow n <= x /\
                   x < &r / p pow n /\
-                  abs (&q / p pow n - &r / p pow n) < e)
+                  abs(&q / p pow n - &r / p pow n) < e)
 
 Sat  3rd Jun 2017       real.ml, sets.ml, passim
 
@@ -5297,12 +5715,12 @@ Added two theorems characterizing sign equality as an inequality for R and Z:
 
   REAL_SGN_EQ_INEQ =
     |- !x y. real_sgn x = real_sgn y <=>
-             x = y \/ abs (x - y) < max (abs x) (abs y)
+             x = y \/ abs(x - y) < max (abs x) (abs y)
 
 
   INT_SGN_EQ_INEQ =
     |- !x y. int_sgn x = int_sgn y <=>
-             x = y \/ abs (x - y) < max (abs x) (abs y)
+             x = y \/ abs(x - y) < max (abs x) (abs y)
 
 Thu 17th Dec 2015       sets.ml
 
@@ -8092,15 +8510,15 @@ this file from Multivariate/misc.ml:
            ==> (inf s = a <=> a IN s /\ (!y. y IN s ==> a <= y))
 
    REAL_ABS_INF_LE =
-    |- !s a. ~(s = {}) /\ (!x. x IN s ==> abs x <= a) ==> abs (inf s) <= a
+    |- !s a. ~(s = {}) /\ (!x. x IN s ==> abs x <= a) ==> abs(inf s) <= a
 
    REAL_ABS_SUP_LE =
-    |- !s a. ~(s = {}) /\ (!x. x IN s ==> abs x <= a) ==> abs (sup s) <= a
+    |- !s a. ~(s = {}) /\ (!x. x IN s ==> abs x <= a) ==> abs(sup s) <= a
 
    REAL_INF_ASCLOSE =
     |- !s l e.
-           ~(s = {}) /\ (!x. x IN s ==> abs (x - l) <= e)
-           ==> abs (inf s - l) <= e
+           ~(s = {}) /\ (!x. x IN s ==> abs(x - l) <= e)
+           ==> abs(inf s - l) <= e
 
    REAL_INF_BOUNDS =
     |- !s a b.
@@ -8144,8 +8562,8 @@ this file from Multivariate/misc.ml:
 
    REAL_SUP_ASCLOSE =
     |- !s l e.
-           ~(s = {}) /\ (!x. x IN s ==> abs (x - l) <= e)
-           ==> abs (sup s - l) <= e
+           ~(s = {}) /\ (!x. x IN s ==> abs(x - l) <= e)
+           ==> abs(sup s - l) <= e
 
    REAL_SUP_BOUNDS =
     |- !s a b.
@@ -10291,8 +10709,8 @@ and an unrelated but useful theorem:
 
   SUM_ABS_LE =
     |- !f g s.
-         FINITE s /\ (!x. x IN s ==> abs (f x) <= g x)
-         ==> abs (sum s f) <= sum s g
+         FINITE s /\ (!x. x IN s ==> abs(f x) <= g x)
+         ==> abs(sum s f) <= sum s g
 
 Wed 13th Feb 2008       iter.ml
 
@@ -10475,13 +10893,13 @@ Tue 18th Dec 2007       Examples/floor.ml
 To be more consistent with other names, redefined:
 
   REAL_EQ_INTEGERS =
-    |- !x y. integer x /\ integer y ==> (x = y <=> abs (x - y) < &1)
+    |- !x y. integer x /\ integer y ==> (x = y <=> abs(x - y) < &1)
 
 and renamed the old theorem that had that name:
 
 
   REAL_EQ_INTEGERS_IMP =
-    |- !x y. integer x /\ integer y /\ abs (x - y) < &1 ==> x = y
+    |- !x y. integer x /\ integer y /\ abs(x - y) < &1 ==> x = y
 
 Sun 16th Dec 2007       cart.ml
 
@@ -15569,7 +15987,7 @@ Added ITSET_EQ =
 Wed 30th Jan 02         int.ml
 
 Added INT_ABS_MUL_1 =
- |- !x y. (abs (x * y) = &1) = (abs x = &1) /\ (abs y = &1)
+ |- !x y. (abs(x * y) = &1) = (abs x = &1) /\ (abs y = &1)
 
 Fri 25th Jan 02         int.ml
 

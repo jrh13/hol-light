@@ -73,19 +73,6 @@ let INT_DIVIDES_RMUL2_EQ = INTEGER_RULE
 let INT_DIVIDES_MUL2 = INTEGER_RULE
   `!a b c d. a divides b /\ c divides d ==> (a * c) divides (b * d)`;;
 
-let INT_DIVIDES_LABS = prove
- (`!d n. abs(d) divides n <=> d divides n`,
-  REPEAT GEN_TAC THEN SIMP_TAC[INT_ABS] THEN COND_CASES_TAC THEN INTEGER_TAC);;
-
-let INT_DIVIDES_RABS = prove
- (`!d n. d divides (abs n) <=> d divides n`,
-  REPEAT GEN_TAC THEN SIMP_TAC[INT_ABS] THEN COND_CASES_TAC THEN INTEGER_TAC);;
-
-let INT_DIVIDES_ABS = prove
- (`(!d n. abs(d) divides n <=> d divides n) /\
-   (!d n. d divides (abs n) <=> d divides n)`,
-  REWRITE_TAC[INT_DIVIDES_LABS; INT_DIVIDES_RABS]);;
-
 let INT_DIVIDES_POW = prove
  (`!x y n. x divides y ==> (x pow n) divides (y pow n)`,
   REWRITE_TAC[int_divides] THEN MESON_TAC[INT_POW_MUL]);;
