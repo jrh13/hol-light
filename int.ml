@@ -1853,7 +1853,7 @@ let INT_MUL_GCD_LCM = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[int_lcm] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[INT_MUL_RZERO; INT_ABS_NUM] THEN
   REWRITE_TAC[INT_MUL_DIV_EQ] THEN REWRITE_TAC[INT_ABS] THEN
-  ASM_MESON_TAC[int_gcd; INTEGER_RULE 
+  ASM_MESON_TAC[int_gcd; INTEGER_RULE
    `d divides m ==> d divides (m * n:int) /\ d divides --(m * n)`]);;
 
 let INT_MUL_LCM_GCD = prove
@@ -1885,8 +1885,8 @@ let INT_LCM = prove
  (`!m n. m divides lcm(m,n) /\
          n divides lcm(m,n) /\
          (!d. m divides d /\ n divides d ==> lcm(m,n) divides d)`,
-  REWRITE_TAC[INT_LCM_DIVIDES; INT_DIVIDES_LCM_GCD] THEN 
-  REPEAT GEN_TAC THEN MP_TAC(SPECL [`m:int`; `n:int`] int_gcd) THEN 
+  REWRITE_TAC[INT_LCM_DIVIDES; INT_DIVIDES_LCM_GCD] THEN
+  REPEAT GEN_TAC THEN MP_TAC(SPECL [`m:int`; `n:int`] int_gcd) THEN
   INTEGER_TAC);;
 
 (* ------------------------------------------------------------------------- *)
@@ -2261,6 +2261,16 @@ let ONE_OR_PRIME = prove
   GEN_TAC THEN REWRITE_TAC[prime] THEN
   ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[DIVIDES_ONE]);;
 
+let ONE_OR_PRIME_DIVIDES_OR_COPRIME = prove
+ (`!p. p = 1 \/ prime p <=> !n. p divides n \/ coprime(p,n)`,
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+   [ASM_REWRITE_TAC[] THEN GEN_TAC THEN DISJ1_TAC THEN CONV_TAC NUMBER_RULE;
+    ASM_MESON_TAC[prime; coprime];
+    REWRITE_TAC[ONE_OR_PRIME] THEN
+    X_GEN_TAC `n:num` THEN DISCH_TAC THEN ONCE_REWRITE_TAC[DISJ_SYM] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN MATCH_MP_TAC MONO_OR THEN
+    CONJ_TAC THEN POP_ASSUM MP_TAC THEN CONV_TAC NUMBER_RULE]);;
+
 let ZERO_ONE_OR_PRIME_DIVPROD = prove
  (`!p a b.
         p = 0 \/ p = 1 \/ prime p
@@ -2288,6 +2298,7 @@ let ZERO_ONE_OR_PRIME = prove
                    ARITH_RULE `a * b <= b <=> a * b <= 1 * b`]THEN
   REWRITE_TAC[LE_MULT_LCANCEL; LE_MULT_RCANCEL] THEN
   ASM_SIMP_TAC[MULT_CLAUSES; ARITH_RULE `n <= 1 <=> n = 0 \/ n = 1`]);;
+
 
 (* ------------------------------------------------------------------------- *)
 (* Integer powers of real numbers.                                           *)

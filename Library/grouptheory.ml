@@ -345,6 +345,12 @@ let GROUP_COMMUTES_INV_EQ = prove
              group_mul G x y = group_mul G y x)`,
   MESON_TAC[GROUP_COMMUTES_INV; GROUP_INV_INV; GROUP_INV]);;
 
+let FORALL_IN_GROUP_CARRIER_INV = prove
+ (`!(P:A->bool) G.
+        (!x. x IN group_carrier G ==> P(group_inv G x)) <=>
+        (!x. x IN group_carrier G ==> P x)`,
+  MESON_TAC[GROUP_INV; GROUP_INV_INV]);;
+
 let group_pow = new_recursive_definition num_RECURSION
  `group_pow G x 0 = group_id G /\
   group_pow G x (SUC n) = group_mul G x (group_pow G x n)`;;
@@ -3156,6 +3162,52 @@ let LEFT_COSET = prove
         ==> left_coset G x h SUBSET group_carrier G`,
   SIMP_TAC[left_coset; GROUP_SETMUL; SING_SUBSET]);;
 
+let IN_RIGHT_COSET = prove
+ (`!G h x a:A.
+        h SUBSET group_carrier G /\
+        a IN group_carrier G /\ x IN group_carrier G
+        ==> (x IN right_coset G h a <=>
+             group_mul G x (group_inv G a) IN h)`,
+  REWRITE_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[right_coset; group_setmul; IN_ELIM_THM; IN_SING] THEN
+  REWRITE_TAC[TAUT `(p /\ q) /\ r <=> q /\ p /\ r`; UNWIND_THM2] THEN
+  EQ_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC(MESON[] `P a ==> a IN h ==> ?y. y IN h /\ P y`)] THEN
+  ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM; GSYM GROUP_MUL_ASSOC; GROUP_MUL_LINV;
+               GROUP_MUL_RINV; GROUP_MUL_RID; GROUP_INV]);;
+
+let IN_LEFT_COSET = prove
+ (`!G h x a:A.
+        h SUBSET group_carrier G /\
+        a IN group_carrier G /\ x IN group_carrier G
+        ==> (x IN left_coset G a h <=>
+             group_mul G (group_inv G a) x IN h)`,
+  REWRITE_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[left_coset; group_setmul; IN_ELIM_THM; IN_SING] THEN
+  REWRITE_TAC[GSYM CONJ_ASSOC; UNWIND_THM2; RIGHT_EXISTS_AND_THM] THEN
+  EQ_TAC THENL
+   [ALL_TAC;
+    MATCH_MP_TAC(MESON[] `P a ==> a IN h ==> ?y. y IN h /\ P y`)] THEN
+  ASM_SIMP_TAC[LEFT_IMP_EXISTS_THM; GROUP_MUL_ASSOC; GROUP_MUL_LINV;
+               GROUP_MUL_RINV; GROUP_MUL_LID; GROUP_INV]);;
+
+let IN_RIGHT_COSET_INV = prove
+ (`!G h x y:A.
+        h SUBSET group_carrier G /\
+        x IN group_carrier G /\ y IN group_carrier G
+        ==> (x IN right_coset G h (group_inv G y) <=>
+             group_mul G x y IN h)`,
+  SIMP_TAC[IN_RIGHT_COSET; GROUP_INV; GROUP_INV_INV]);;
+
+let IN_LEFT_COSET_INV = prove
+ (`!G h x y:A.
+        h SUBSET group_carrier G /\
+        x IN group_carrier G /\ y IN group_carrier G
+        ==> (x IN left_coset G (group_inv G y) h <=>
+             group_mul G y x IN h)`,
+  SIMP_TAC[IN_LEFT_COSET; GROUP_INV; GROUP_INV_INV]);;
+
 let RIGHT_COSET_OPPOSITE_GROUP = prove
  (`!G h x:A. right_coset G h x = left_coset (opposite_group G) x h`,
   REWRITE_TAC[left_coset; right_coset; OPPOSITE_GROUP_SETMUL]);;
@@ -3599,6 +3651,73 @@ let NORMAL_SUBGROUP_CONJUGATE = prove
   ASM_SIMP_TAC[GSYM GROUP_MUL_ASSOC; GROUP_MUL_LINV; GROUP_MUL; GROUP_INV] THEN
   ASM_SIMP_TAC[GROUP_MUL_RID]);;
 
+
+let NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS = prove
+ (`!G n:A->bool.
+        n normal_subgroup_of G <=>
+        n subgroup_of G /\
+        {left_coset G x n |x| x IN group_carrier G} =
+        {right_coset G n x |x| x IN group_carrier G}`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[normal_subgroup_of] THEN
+  ASM_CASES_TAC `(n:A->bool) subgroup_of G` THEN
+  ASM_REWRITE_TAC[] THEN EQ_TAC THEN STRIP_TAC THENL
+   [MATCH_MP_TAC(SET_RULE
+     `(!x. x IN s ==> f x = g x) ==> {f x | x IN s} = {g x | x IN s}`) THEN
+    ASM_REWRITE_TAC[];
+    MATCH_MP_TAC(SET_RULE
+     `(!x. x IN s ==> x IN f x /\ x IN g x) /\
+      (!x y. x IN s /\ y IN s /\ ~(f x = f y) ==> DISJOINT (f x) (f y)) /\
+      {f x | x IN s} = {g x | x IN s}
+      ==> !x. x IN s ==> f x = g x`) THEN
+    ASM_SIMP_TAC[IN_LEFT_COSET_SELF; IN_RIGHT_COSET_SELF] THEN
+    ASM_SIMP_TAC[DISJOINT_LEFT_COSETS]]);;
+
+let NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS,
+    NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS = (CONJ_PAIR o prove)
+ (`(!G n:A->bool.
+        n normal_subgroup_of G <=>
+        n subgroup_of G /\
+        {left_coset G x n |x| x IN group_carrier G} SUBSET
+        {right_coset G n x |x| x IN group_carrier G}) /\
+   (!G n:A->bool.
+        n normal_subgroup_of G <=>
+        n subgroup_of G /\
+        {right_coset G n x |x| x IN group_carrier G} SUBSET
+        {left_coset G x n |x| x IN group_carrier G})`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS] THEN
+  ASM_CASES_TAC `(n:A->bool) subgroup_of G` THEN
+  ASM_REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN
+  EQ_TAC THEN SIMP_TAC[] THEN DISCH_THEN(MP_TAC o MATCH_MP
+   (ONCE_REWRITE_RULE[IMP_CONJ_ALT] DIFF_UNIONS_PAIRWISE_DISJOINT)) THEN
+  ASM_SIMP_TAC[UNIONS_LEFT_COSETS; UNIONS_RIGHT_COSETS; DIFF_EQ_EMPTY;
+    PAIRWISE_DISJOINT_RIGHT_COSETS; PAIRWISE_DISJOINT_LEFT_COSETS] THEN
+  DISCH_THEN(MP_TAC o SYM) THEN REWRITE_TAC[EMPTY_UNIONS] THEN
+  MATCH_MP_TAC(SET_RULE
+   `(!x. x IN t ==> ~(P x))
+    ==> (!x. x IN t DIFF s ==> P x) ==> t SUBSET s`) THEN
+  ASM_SIMP_TAC[FORALL_IN_GSPEC; LEFT_COSET_NONEMPTY; RIGHT_COSET_NONEMPTY]);;
+
+let NORMAL_SUBGROUP_MUL_SYM = prove
+ (`!G h:A->bool.
+        h normal_subgroup_of G <=>
+        h subgroup_of G /\
+        !x y. x IN group_carrier G /\ y IN group_carrier G
+              ==> (group_mul G x y IN h <=> group_mul G y x IN h)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[normal_subgroup_of] THEN
+  ASM_CASES_TAC `(h:A->bool) subgroup_of G` THEN ASM_REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM FORALL_IN_GROUP_CARRIER_INV] THEN
+  TRANS_TAC EQ_TRANS
+   `!x y:A. x IN group_carrier G /\ y IN group_carrier G
+            ==> (y IN left_coset G (group_inv G x) h <=>
+                 y IN right_coset G h (group_inv G x))` THEN
+  CONJ_TAC THENL
+   [MP_TAC(ISPECL [`G:A group`; `h:A->bool`] LEFT_COSET) THEN
+    MP_TAC(ISPECL [`G:A group`; `h:A->bool`] RIGHT_COSET) THEN
+    ASM_SIMP_TAC[SUBGROUP_OF_IMP_SUBSET] THEN
+    REWRITE_TAC[SUBSET; EXTENSION] THEN MESON_TAC[GROUP_INV];
+    ASM_SIMP_TAC[IN_LEFT_COSET_INV; IN_RIGHT_COSET_INV;
+                 SUBGROUP_OF_IMP_SUBSET]]);;
+
 let TRIVIAL_NORMAL_SUBGROUP_OF = prove
  (`!G:A group. {group_id G} normal_subgroup_of G`,
   SIMP_TAC[normal_subgroup_of; TRIVIAL_SUBGROUP_OF;
@@ -3705,6 +3824,48 @@ let NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] SUBSET_TRANS) THEN
   ASM_SIMP_TAC[SUBSET_INTER; NORMAL_SUBGROUP_IMP_SUBGROUP;
                SUBGROUP_OF_IMP_SUBSET]);;
+
+let GROUP_SETMUL_NORMAL_SUBGROUP_LEFT = prove
+ (`!G n h:A->bool.
+        n normal_subgroup_of G /\ h subgroup_of G
+        ==> group_setmul G n h subgroup_of G`,
+  REWRITE_TAC[normal_subgroup_of; left_coset; right_coset] THEN
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SUBGROUP_SETMUL_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_setmul; subgroup_of]) THEN
+  CONV_TAC SYM_CONV THEN REWRITE_TAC[group_setmul] THEN MATCH_MP_TAC(SET_RULE
+  `(!x. x IN s ==> {f x y | y IN t} = {f y x | y IN t})
+    ==> {f x y | x IN s /\ y IN t} = {f y x | y IN t /\ x IN s}`) THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+  REWRITE_TAC[group_setmul; IN_SING] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; MATCH_MP_TAC EQ_IMP THEN BINOP_TAC] THEN
+  ASM SET_TAC[]);;
+
+let GROUP_SETMUL_NORMAL_SUBGROUP_RIGHT = prove
+ (`!G h n:A->bool.
+        h subgroup_of G /\ n normal_subgroup_of G
+        ==> group_setmul G h n subgroup_of G`,
+  REWRITE_TAC[normal_subgroup_of; left_coset; right_coset] THEN
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[SUBGROUP_SETMUL_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_setmul; subgroup_of]) THEN
+  REWRITE_TAC[group_setmul] THEN MATCH_MP_TAC(SET_RULE
+   `(!x. x IN s ==> {f x y | y IN t} = {f y x | y IN t})
+    ==> {f x y | x IN s /\ y IN t} = {f y x | y IN t /\ x IN s}`) THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+  REWRITE_TAC[group_setmul; IN_SING] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; MATCH_MP_TAC EQ_IMP THEN BINOP_TAC] THEN
+  ASM SET_TAC[]);;
+
+let GROUP_SETMUL_NORMAL_SUBGROUP = prove
+ (`!G h k:A->bool.
+        h normal_subgroup_of G /\ k normal_subgroup_of G
+        ==> group_setmul G h k normal_subgroup_of G`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[GROUP_SETMUL_NORMAL_SUBGROUP_RIGHT; left_coset; right_coset;
+               normal_subgroup_of; NORMAL_SUBGROUP_IMP_SUBGROUP] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [normal_subgroup_of])) THEN
+  REWRITE_TAC[subgroup_of; left_coset; right_coset] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 (ASSUME_TAC o CONJUNCT1) ASSUME_TAC)) THEN
+  ASM_MESON_TAC[GROUP_SETMUL_ASSOC; SING_SUBSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Quotient groups.                                                          *)
@@ -3841,12 +4002,20 @@ let GROUP_EPIMORPHISM_RIGHT_COSET = prove
   SIMP_TAC[group_epimorphism; GROUP_HOMOMORPHISM_RIGHT_COSET] THEN
   SIMP_TAC[QUOTIENT_GROUP] THEN SET_TAC[]);;
 
+let TRIVIAL_QUOTIENT_GROUP_EQ = prove
+ (`!G n:A->bool.
+        n normal_subgroup_of G
+        ==> (trivial_group(quotient_group G n) <=> n = group_carrier G)`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[TRIVIAL_GROUP_SUBSET; QUOTIENT_GROUP] THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_GSPEC; IN_SING] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP NORMAL_SUBGROUP_IMP_SUBGROUP) THEN
+  SIMP_TAC[RIGHT_COSET_EQ_SUBGROUP] THEN
+  REWRITE_TAC[subgroup_of] THEN SET_TAC[]);;
+
 let TRIVIAL_QUOTIENT_GROUP_SELF = prove
  (`!G:A group. trivial_group(quotient_group G (group_carrier G))`,
-  SIMP_TAC[trivial_group; QUOTIENT_GROUP; CARRIER_NORMAL_SUBGROUP_OF] THEN
-  GEN_TAC THEN MATCH_MP_TAC(SET_RULE
-   `~(s = {}) /\ (!x. x IN s ==> f x = a) ==> {f x | x IN s} = {a}`) THEN
-  REWRITE_TAC[RIGHT_COSET_CARRIER; GROUP_CARRIER_NONEMPTY]);;
+  SIMP_TAC[TRIVIAL_QUOTIENT_GROUP_EQ; CARRIER_NORMAL_SUBGROUP_OF]);;
 
 let QUOTIENT_GROUP_TRIVIAL = prove
  (`!G:A group. quotient_group G {group_id G} isomorphic_group G`,
@@ -4051,6 +4220,15 @@ let GROUP_KERNEL_ID = prove
         group_homomorphism(G,G') f
         ==> group_id G IN group_kernel (G,G') f`,
   SIMP_TAC[group_homomorphism; group_kernel; IN_ELIM_THM; GROUP_ID]);;
+
+let GROUP_KERNEL_NONEMPTY = prove
+ (`!G H (f:A->B).
+        group_homomorphism(G,H) f ==> ~(group_kernel(G,H) f = {})`,
+  MESON_TAC[GROUP_KERNEL_ID; NOT_IN_EMPTY]);;
+
+let GROUP_KERNEL_SUBSET_CARRIER = prove
+ (`!G H (f:A->B). group_kernel(G,H) f SUBSET group_carrier G`,
+  REWRITE_TAC[group_kernel; SUBSET_RESTRICT]);;
 
 let GROUP_MONOMORPHISM = prove
  (`!G G' (f:A->B).
@@ -4312,6 +4490,394 @@ let FIRST_GROUP_ISOMORPHISM_THEOREM = prove
    (REWRITE_RULE[group_homomorphism; SUBSET; FORALL_IN_IMAGE]) THEN
   ASM_SIMP_TAC[group_div; GROUP_INV] THEN
   ASM_SIMP_TAC[GSYM group_div; GROUP_DIV_EQ_ID]);;
+
+let FIRST_GROUP_EPIMORPHISM_THEOREM = prove
+ (`!G G' (f:A->B).
+        group_epimorphism(G,G') f
+        ==> (quotient_group G (group_kernel (G,G') f)) isomorphic_group G'`,
+  REWRITE_TAC[group_epimorphism] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP FIRST_GROUP_ISOMORPHISM_THEOREM) THEN
+  ASM_REWRITE_TAC[group_image; SUBGROUP_GENERATED_GROUP_CARRIER]);;
+
+let GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT = prove
+ (`!G H (f:A->B) s.
+        group_homomorphism(G,H) f /\ s SUBSET group_carrier G
+        ==> {x | x IN group_carrier G /\ f x IN IMAGE f s} =
+            group_setmul G s (group_kernel(G,H) f)`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[EXTENSION; group_kernel; IN_ELIM_THM; group_setmul] THEN
+  X_GEN_TAC `z:A` THEN EQ_TAC THENL
+   [STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_IMAGE]) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:A` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `(x:A) IN group_carrier G` ASSUME_TAC THENL
+     [ASM SET_TAC[]; ASM_REWRITE_TAC[]] THEN
+    EXISTS_TAC `group_mul G (group_inv G x) z:A` THEN
+    ASM_SIMP_TAC[GROUP_MUL_ASSOC; GROUP_MUL_RINV; GROUP_MUL_LID;
+                 GROUP_INV; GROUP_MUL] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_MUL) THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_INV) THEN
+    ASM_SIMP_TAC[GROUP_INV] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC GROUP_MUL_LINV THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[];
+    REWRITE_TAC[IN_IMAGE; RIGHT_AND_EXISTS_THM] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:A` THEN
+    DISCH_THEN(X_CHOOSE_THEN `y:A` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `(x:A) IN group_carrier G` ASSUME_TAC THENL
+     [ASM SET_TAC[]; ASM_SIMP_TAC[GROUP_ADD]] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_MUL) THEN
+    ASM_SIMP_TAC[GROUP_MUL] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC GROUP_MUL_RID THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[]]);;
+
+let GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT = prove
+ (`!G H (f:A->B) s.
+        group_homomorphism(G,H) f /\ s SUBSET group_carrier G
+        ==> {x | x IN group_carrier G /\ f x IN IMAGE f s} =
+            group_setmul G (group_kernel(G,H) f) s`,
+  REPEAT STRIP_TAC THEN
+  REWRITE_TAC[EXTENSION; group_kernel; IN_ELIM_THM; group_setmul] THEN
+  X_GEN_TAC `z:A` THEN EQ_TAC THENL
+   [STRIP_TAC THEN GEN_REWRITE_TAC I [SWAP_EXISTS_THM] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_IMAGE]) THEN
+    MATCH_MP_TAC MONO_EXISTS THEN  X_GEN_TAC `x:A` THEN STRIP_TAC THEN
+    SUBGOAL_THEN `(x:A) IN group_carrier G` ASSUME_TAC THENL
+     [ASM SET_TAC[]; ASM_REWRITE_TAC[]] THEN
+    EXISTS_TAC `group_mul G z (group_inv G x):A` THEN
+    ASM_SIMP_TAC[GSYM GROUP_MUL_ASSOC; GROUP_MUL_LINV; GROUP_MUL_RID;
+                 GROUP_INV; GROUP_MUL] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_MUL) THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_INV) THEN
+    ASM_SIMP_TAC[GROUP_INV] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC GROUP_MUL_RINV THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[];
+    REWRITE_TAC[IN_IMAGE; RIGHT_AND_EXISTS_THM] THEN
+    GEN_REWRITE_TAC LAND_CONV [SWAP_EXISTS_THM] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `x:A` THEN
+    DISCH_THEN(X_CHOOSE_THEN `y:A` STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN `(x:A) IN group_carrier G` ASSUME_TAC THENL
+     [ASM SET_TAC[]; ASM_SIMP_TAC[GROUP_ADD]] THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_MUL) THEN
+    ASM_SIMP_TAC[GROUP_MUL] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC GROUP_MUL_LID THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[]]);;
+
+let GROUP_HOMOMORPHISM_IMAGE_PREIMAGE = prove
+ (`!G H (f:A->B) t.
+        group_homomorphism(G,H) f
+        ==> IMAGE f {x | x IN group_carrier G /\ f x IN t} =
+            t INTER (group_image(G,H) f)`,
+  REWRITE_TAC[group_homomorphism; group_image] THEN SET_TAC[]);;
+
+let GROUP_HOMOMORPHISM_PREIMAGE_IMAGE = prove
+ (`!G H (f:A->B) s.
+        group_homomorphism(G,H) f /\
+        group_kernel(G,H) f SUBSET s /\
+        s subgroup_of G
+        ==> {x | x IN group_carrier G /\ f x IN IMAGE f s} = s`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
+  W(MP_TAC o PART_MATCH (lhand o rand)
+    GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT o lhand o snd) THEN
+  ANTS_TAC THENL
+   [ASM_MESON_TAC[subgroup_of]; DISCH_THEN SUBST1_TAC] THEN
+  ASM_SIMP_TAC[GROUP_SETMUL_RSUBSET_EQ; GROUP_KERNEL_NONEMPTY;
+               GROUP_KERNEL_SUBSET_CARRIER]);;
+
+let GROUP_HOMOMORPHISM_IMAGE_PREIMAGE_EQ = prove
+ (`!G H (f:A->B) t.
+        group_homomorphism(G,H) f /\ t SUBSET group_image(G,H) f
+        ==> IMAGE f {x | x IN group_carrier G /\ f x IN t} = t`,
+  SIMP_TAC[GROUP_HOMOMORPHISM_IMAGE_PREIMAGE] THEN SET_TAC[]);;
+
+let GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE = prove
+ (`!G H (f:A->B) k.
+        group_epimorphism(G,H) f
+        ==> (k subgroup_of H <=>
+             ?j. j subgroup_of G /\
+                 group_kernel(G,H) f SUBSET j /\
+                 {x | x IN group_carrier G /\ f x IN k} = j /\
+                 IMAGE f j = k)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP GROUP_EPIMORPHISM_IMP_HOMOMORPHISM) THEN
+  EQ_TAC THEN DISCH_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[SUBGROUP_OF_HOMOMORPHIC_IMAGE]] THEN
+  EXISTS_TAC `{x | x IN group_carrier G /\ (f:A->B) x IN k}` THEN
+  REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC SUBGROUP_OF_HOMOMORPHIC_PREIMAGE THEN ASM_MESON_TAC[];
+    ASM_SIMP_TAC[group_kernel; SUBSET; IN_ELIM_THM; IN_SUBGROUP_ID];
+    RULE_ASSUM_TAC(REWRITE_RULE
+     [GROUP_EPIMORPHISM; group_image; subgroup_of]) THEN ASM SET_TAC[]]);;
+
+let GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT = prove
+ (`!G H (f:A->B) j.
+        group_epimorphism(G,H) f
+        ==> (j subgroup_of G /\ group_kernel(G,H) f SUBSET j <=>
+             ?k. k subgroup_of H /\
+                 {x | x IN group_carrier G /\ f x IN k} = j /\
+                 IMAGE f j = k)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP GROUP_EPIMORPHISM_IMP_HOMOMORPHISM) THEN
+  EQ_TAC THENL
+   [STRIP_TAC THEN EXISTS_TAC `IMAGE (f:A->B) j` THEN CONJ_TAC THENL
+     [ASM_MESON_TAC[SUBGROUP_OF_HOMOMORPHIC_IMAGE]; ASM_REWRITE_TAC[]] THEN
+    MATCH_MP_TAC(SET_RULE
+     `j SUBSET s /\ (!x y. x IN j /\ y IN s /\ f x = f y ==> y IN j)
+      ==> {x | x IN s /\ f x IN IMAGE f j} = j`) THEN
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP SUBGROUP_OF_IMP_SUBSET) THEN
+    ASM_REWRITE_TAC[] THEN RULE_ASSUM_TAC(REWRITE_RULE[SUBSET]) THEN
+    MAP_EVERY X_GEN_TAC [`x:A`; `y:A`] THEN STRIP_TAC THEN
+    SUBGOAL_THEN `y:A = group_mul G (group_div G y x) x` SUBST1_TAC THENL
+     [ASM_SIMP_TAC[group_div; GSYM GROUP_MUL_ASSOC; GROUP_INV;
+                   GROUP_MUL_LINV; GROUP_MUL_RID];
+      MATCH_MP_TAC IN_SUBGROUP_MUL THEN ASM_REWRITE_TAC[] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_SIMP_TAC[group_kernel; IN_ELIM_THM; GROUP_DIV] THEN
+      FIRST_ASSUM(fun th ->
+        ASM_SIMP_TAC[MATCH_MP GROUP_HOMOMORPHISM_DIV th]) THEN
+      W(MP_TAC o PART_MATCH (lhand o rand) GROUP_DIV_EQ_ID o snd) THEN
+      ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+      RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[]];
+    DISCH_THEN(X_CHOOSE_THEN `k:B->bool` STRIP_ASSUME_TAC) THEN
+    EXPAND_TAC "j" THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUBGROUP_OF_HOMOMORPHIC_PREIMAGE THEN ASM_MESON_TAC[];
+      REWRITE_TAC[SUBSET; group_kernel; IN_ELIM_THM] THEN
+      ASM_MESON_TAC[IN_SUBGROUP_ID]]]);;
+
+let NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE = prove
+ (`!G H (f:A->B) j.
+        group_homomorphism(G,H) f /\ j normal_subgroup_of H
+        ==> {x | x IN group_carrier G /\ f x IN j} normal_subgroup_of G`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[NORMAL_SUBGROUP_MUL_SYM] THEN
+  STRIP_TAC THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[SUBGROUP_OF_HOMOMORPHIC_PREIMAGE]; ALL_TAC] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_HOMOMORPHISM_MUL) THEN
+  SIMP_TAC[IN_ELIM_THM; GROUP_MUL] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_homomorphism]) THEN ASM SET_TAC[]);;
+
+let NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE = prove
+ (`!G H (f:A->B) n.
+        group_epimorphism(G,H) f /\ n normal_subgroup_of G
+        ==> IMAGE f n normal_subgroup_of H`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[NORMAL_SUBGROUP_CONJUGATE] THEN
+  REWRITE_TAC[group_epimorphism] THEN DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[SUBGROUP_OF_HOMOMORPHIC_IMAGE]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[FORALL_IN_IMAGE] THEN X_GEN_TAC `a:A` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `a:A`) THEN
+  REWRITE_TAC[group_setmul; SUBSET; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[IN_SING; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  REWRITE_TAC[FORALL_UNWIND_THM2; FORALL_IN_GSPEC] THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_UNWIND_THM2] THEN
+  ASM_REWRITE_TAC[FORALL_IN_GSPEC; FORALL_IN_IMAGE] THEN DISCH_TAC THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `x:A`) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [group_homomorphism]) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP SUBGROUP_OF_IMP_SUBSET) THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE] THEN DISCH_TAC THEN DISCH_THEN
+   (CONJUNCTS_THEN2 ASSUME_TAC (STRIP_ASSUME_TAC o GSYM o CONJUNCT2)) THEN
+  ASM_SIMP_TAC[GROUP_MUL; GROUP_INV; FUN_IN_IMAGE]);;
+
+let NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ = prove
+ (`!G H (f:A->B) j k.
+        group_epimorphism (G,H) f /\
+        k subgroup_of H /\
+        {x | x IN group_carrier G /\ f x IN k} = j
+        ==> (j normal_subgroup_of G <=> k normal_subgroup_of H)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_TAC;
+    ASM_MESON_TAC[NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE;
+                  group_epimorphism]] THEN
+  SUBGOAL_THEN `k = IMAGE (f:A->B) j` SUBST1_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE]] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[subgroup_of; group_epimorphism]) THEN
+  ASM SET_TAC[]);;
+
+let GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE = prove
+ (`!G H (f:A->B) k.
+        group_epimorphism(G,H) f
+        ==> (k normal_subgroup_of H <=>
+             ?j. j normal_subgroup_of G /\
+                 group_kernel(G,H) f SUBSET j /\
+                 {x | x IN group_carrier G /\ f x IN k} = j /\
+                 IMAGE f j = k)`,
+  MESON_TAC[GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE;
+            NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ;
+            NORMAL_SUBGROUP_IMP_SUBGROUP]);;
+
+let GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT = prove
+ (`!G H (f:A->B) j.
+        group_epimorphism(G,H) f
+        ==> (j normal_subgroup_of G /\ group_kernel(G,H) f SUBSET j <=>
+             ?k. k normal_subgroup_of H /\
+                 {x | x IN group_carrier G /\ f x IN k} = j /\
+                 IMAGE f j = k)`,
+  MESON_TAC[GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT;
+            NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ;
+            NORMAL_SUBGROUP_IMP_SUBGROUP]);;
+
+let SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ = prove
+ (`!G H (f:A->B) j.
+        group_isomorphism(G,H) f /\ j SUBSET group_carrier G
+        ==> ((IMAGE f j) subgroup_of H <=> j subgroup_of G)`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL
+   [DISCH_TAC;
+    ASM_MESON_TAC[GROUP_ISOMORPHISM_IMP_HOMOMORPHISM;
+                  SUBGROUP_OF_HOMOMORPHIC_IMAGE]] THEN
+  SUBGOAL_THEN
+   `j = {x | x IN group_carrier G /\ (f:A->B) x IN IMAGE f j}`
+  SUBST1_TAC THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[group_isomorphism; group_isomorphisms]) THEN
+    ASM SET_TAC[];
+    MATCH_MP_TAC SUBGROUP_OF_HOMOMORPHIC_PREIMAGE THEN
+    ASM_MESON_TAC[GROUP_ISOMORPHISM_IMP_HOMOMORPHISM]]);;
+
+let NORMAL_SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ = prove
+ (`!G H (f:A->B) j.
+        group_isomorphism(G,H) f /\ j SUBSET group_carrier G
+        ==> ((IMAGE f j) normal_subgroup_of H <=> j normal_subgroup_of G)`,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ) THEN
+  MATCH_MP_TAC(TAUT
+   `(q ==> p) /\ (q' ==> p') /\ (p' ==> (q' <=> q))
+    ==> (p' <=> p) ==> (q' <=> q)`) THEN
+  REWRITE_TAC[NORMAL_SUBGROUP_IMP_SUBGROUP] THEN DISCH_TAC THEN
+  CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ THEN
+  EXISTS_TAC `f:A->B` THEN ASM_SIMP_TAC[GROUP_ISOMORPHISM_IMP_EPIMORPHISM] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_isomorphism; group_isomorphisms]) THEN
+  ASM SET_TAC[]);;
+
+let QUOTIENT_SUBGROUP_CORRESPONDENCE = prove
+ (`!(G:A group) j k.
+        j normal_subgroup_of G
+        ==> (k subgroup_of (quotient_group G j) <=>
+             ?i. i subgroup_of G /\ j SUBSET i /\
+                 {x | x IN group_carrier G /\ right_coset G j x IN k} = i /\
+                 IMAGE (right_coset G j) i = k)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_EPIMORPHISM_RIGHT_COSET) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE) THEN
+  ASM_SIMP_TAC[GROUP_KERNEL_RIGHT_COSET]);;
+
+let QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE = prove
+ (`!(G:A group) j k.
+        j normal_subgroup_of G
+        ==> (k normal_subgroup_of (quotient_group G j) <=>
+             ?i. i normal_subgroup_of G /\ j SUBSET i /\
+                 {x | x IN group_carrier G /\ right_coset G j x IN k} = i /\
+                 IMAGE (right_coset G j) i = k)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_EPIMORPHISM_RIGHT_COSET) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP
+    GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE) THEN
+  ASM_SIMP_TAC[GROUP_KERNEL_RIGHT_COSET]);;
+
+let FIRST_GROUP_ISOMORPHISM_THEOREM_GEN = prove
+ (`!G H (f:A->B) j k.
+        group_epimorphism(G,H) f /\
+        k normal_subgroup_of H /\ {x | x IN group_carrier G /\ f x IN k} = j
+        ==> quotient_group G j isomorphic_group quotient_group H k`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`G:A group`; `quotient_group H (k:B->bool)`;
+                 `right_coset H k o (f:A->B)`]
+        FIRST_GROUP_EPIMORPHISM_THEOREM) THEN
+  ANTS_TAC THENL
+   [MATCH_MP_TAC GROUP_EPIMORPHISM_COMPOSE THEN EXISTS_TAC `H:B group` THEN
+    ASM_SIMP_TAC[GROUP_EPIMORPHISM_RIGHT_COSET];
+    MATCH_MP_TAC EQ_IMP] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
+  ASM_SIMP_TAC[group_kernel; QUOTIENT_GROUP_ID; o_THM] THEN
+  GEN_REWRITE_TAC I [EXTENSION] THEN EXPAND_TAC "j" THEN
+  X_GEN_TAC `x:A` THEN REWRITE_TAC[IN_ELIM_THM] THEN
+  ASM_CASES_TAC `(x:A) IN group_carrier G` THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC RIGHT_COSET_EQ_SUBGROUP THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[group_epimorphism; normal_subgroup_of]) THEN
+  ASM SET_TAC[]);;
+
+let FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT = prove
+ (`!G H (f:A->B) j k.
+        group_epimorphism(G,H) f /\ j normal_subgroup_of G /\
+        group_kernel (G,H) f SUBSET j /\ IMAGE f j = k
+        ==> quotient_group G j isomorphic_group quotient_group H k`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC FIRST_GROUP_ISOMORPHISM_THEOREM_GEN THEN
+  EXISTS_TAC `f:A->B` THEN ASM_REWRITE_TAC[] THEN
+  ASM_MESON_TAC[GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT]);;
+
+let SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ = prove
+ (`!G H (f:A->B).
+      group_epimorphism(G,H) f
+      ==> ((!k. k normal_subgroup_of H
+                ==> k = {group_id H} \/ k = group_carrier H) <=>
+           (!h. h normal_subgroup_of G /\ group_kernel(G,H) f PSUBSET h
+                ==> h = group_carrier G))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[PSUBSET; TAUT
+   `p /\ q /\ ~r ==> s <=> p /\ q ==> r \/ s`] THEN
+  ASM_SIMP_TAC[GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r ==> s <=> q ==> p /\ r ==> s`] THEN
+  REWRITE_TAC[FORALL_UNWIND_THM1] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+    SUBGROUP_OF_EPIMORPHIC_PREIMAGE)) THEN
+  SIMP_TAC[IMP_CONJ; NORMAL_SUBGROUP_IMP_SUBGROUP] THEN
+  DISCH_THEN(K ALL_TAC) THEN  REWRITE_TAC[group_kernel] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `k:B->bool` THEN
+  ASM_CASES_TAC `(k:B->bool) normal_subgroup_of H` THEN ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC
+   (REWRITE_RULE[group_epimorphism; subgroup_of; normal_subgroup_of;
+       group_homomorphism]) THEN
+  ASM SET_TAC[]);;
+
+let NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ = prove
+ (`!G H (f:A->B).
+      group_epimorphism(G,H) f
+      ==> ((!k. k subgroup_of H
+                ==> k = {group_id H} \/ k = group_carrier H) <=>
+           (!h. h subgroup_of G /\ group_kernel(G,H) f PSUBSET h
+                ==> h = group_carrier G))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[PSUBSET; TAUT
+   `p /\ q /\ ~r ==> s <=> p /\ q ==> r \/ s`] THEN
+  ASM_SIMP_TAC[GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r ==> s <=> q ==> p /\ r ==> s`] THEN
+  REWRITE_TAC[FORALL_UNWIND_THM1] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+    SUBGROUP_OF_EPIMORPHIC_PREIMAGE)) THEN
+  SIMP_TAC[IMP_CONJ] THEN DISCH_THEN(K ALL_TAC) THEN
+  REWRITE_TAC[group_kernel] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `k:B->bool` THEN
+  ASM_CASES_TAC `(k:B->bool) subgroup_of H` THEN ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC
+   (REWRITE_RULE[group_epimorphism; subgroup_of; group_homomorphism]) THEN
+  ASM SET_TAC[]);;
+
+let MAXIMAL_SUBGROUP = prove
+ (`!G n:A->bool.
+        n normal_subgroup_of G
+        ==> ((!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G) <=>
+             (!k. k subgroup_of quotient_group G n
+                  ==> k = {group_id(quotient_group G n)} \/
+                      k = group_carrier(quotient_group G n)))`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_EPIMORPHISM_RIGHT_COSET) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ) THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+  ASM_SIMP_TAC[GROUP_KERNEL_RIGHT_COSET]);;
+
+let MAXIMAL_NORMAL_SUBGROUP = prove
+ (`!G n:A->bool.
+        n normal_subgroup_of G
+        ==> ((!h. h normal_subgroup_of G /\ n PSUBSET h
+                  ==> h = group_carrier G) <=>
+             (!k. k normal_subgroup_of quotient_group G n
+                  ==> k = {group_id(quotient_group G n)} \/
+                      k = group_carrier(quotient_group G n)))`,
+  REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP GROUP_EPIMORPHISM_RIGHT_COSET) THEN
+  DISCH_THEN(MP_TAC o MATCH_MP SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ) THEN
+  DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
+  ASM_SIMP_TAC[GROUP_KERNEL_RIGHT_COSET]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Trivial homomorphisms.                                                    *)
@@ -5177,6 +5743,16 @@ let PRIME_ORDER_EQ_NO_PROPER_SUBGROUPS,
   DISCH_THEN(MP_TAC o AP_TERM `CARD:(A->bool)->num`) THEN
   ASM_SIMP_TAC[CARD_CYCLIC_SUBGROUP_ORDER; GROUP_POW; CARD_SING]);;
 
+let ABELIAN_SIMPLE_GROUP = prove
+ (`!G:A group.
+        abelian_group G
+        ==> ((!h. h normal_subgroup_of G
+                  ==> h = {group_id G} \/ h = group_carrier G) <=>
+             FINITE(group_carrier G) /\
+             (CARD (group_carrier G) = 1 \/ prime(CARD(group_carrier G))))`,
+  REWRITE_TAC[PRIME_ORDER_EQ_NO_PROPER_SUBGROUPS] THEN
+  SIMP_TAC[ABELIAN_GROUP_NORMAL_SUBGROUP]);;
+
 let PRIME_ORDER_IMP_CYCLIC_GROUP = prove
  (`!G:A group.
         FINITE(group_carrier G) /\
@@ -5200,6 +5776,36 @@ let GROUP_POW_GROUP_ORDER = prove
         x IN group_carrier G /\ FINITE(group_carrier G)
         ==> group_pow G x (CARD(group_carrier G)) = group_id G`,
   SIMP_TAC[GROUP_POW_EQ_ID; GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER]);;
+
+let MAXIMAL_SUBGROUP_PRIME_INDEX = prove
+ (`!G n:A->bool.
+        n normal_subgroup_of G
+        ==> ((!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G) <=>
+             FINITE {right_coset G n x | x | x IN group_carrier G} /\
+             (CARD {right_coset G n x | x | x IN group_carrier G} = 1 \/
+              prime(CARD {right_coset G n x | x | x IN group_carrier G})))`,
+  SIMP_TAC[MAXIMAL_SUBGROUP; GSYM PRIME_ORDER_EQ_NO_PROPER_SUBGROUPS] THEN
+  SIMP_TAC[QUOTIENT_GROUP]);;
+
+let PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP = prove
+ (`!G n:A->bool.
+        n normal_subgroup_of G
+        ==> (FINITE {right_coset G n x | x | x IN group_carrier G} /\
+             prime(CARD {right_coset G n x | x | x IN group_carrier G}) <=>
+             ~(n = group_carrier G) /\
+             !h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G)`,
+  SIMP_TAC[MAXIMAL_SUBGROUP_PRIME_INDEX] THEN
+  SIMP_TAC[GSYM TRIVIAL_QUOTIENT_GROUP_EQ] THEN
+  SIMP_TAC[TRIVIAL_GROUP_HAS_SIZE_1; QUOTIENT_GROUP; HAS_SIZE] THEN
+  MESON_TAC[prime]);;
+
+let MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX = prove
+ (`!G n:A->bool.
+        n normal_subgroup_of G /\ ~(n = group_carrier G)
+        ==> ((!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G) <=>
+             FINITE {right_coset G n x | x | x IN group_carrier G} /\
+             prime(CARD {right_coset G n x | x | x IN group_carrier G}))`,
+  SIMP_TAC[PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Theorems related to "internal" direct sums.                               *)
@@ -6217,6 +6823,51 @@ let GENERATOR_INTEGER_MOD_GROUP = prove
     ASM_CASES_TAC `n = 0` THEN
     ASM_SIMP_TAC[INTEGER_MOD_GROUP; LE_1; IN_UNIV; IN_ELIM_THM] THEN
     ASM_ARITH_TAC]);;
+
+let CYCLIC_GROUP_PRIME_ORDER_EQ = prove
+ (`!(G:A group).
+        (!a. a IN group_carrier G /\ ~(a = group_id G)
+             ==> subgroup_generated G {a} = G) <=>
+        FINITE(group_carrier G) /\
+        (CARD (group_carrier G) = 1 \/ prime (CARD (group_carrier G)))`,
+  GEN_TAC THEN EQ_TAC THEN SIMP_TAC[CYCLIC_PRIME_ORDER_GROUP] THEN
+  DISCH_TAC THEN ASM_CASES_TAC `trivial_group(G:A group)` THENL
+   [RULE_ASSUM_TAC(REWRITE_RULE[trivial_group]) THEN
+    ASM_REWRITE_TAC[FINITE_SING; CARD_SING];
+    FIRST_X_ASSUM(MP_TAC o
+      GEN_REWRITE_RULE RAND_CONV [TRIVIAL_GROUP_SUBSET])] THEN
+  REWRITE_TAC[SUBSET; IN_SING; NOT_FORALL_THM; NOT_IMP] THEN
+  DISCH_THEN(X_CHOOSE_THEN `z:A` STRIP_ASSUME_TAC) THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> r) ==> p /\ (q \/ r)`) THEN
+  SUBGOAL_THEN `G = subgroup_generated G {z:A}` MP_TAC THENL
+   [ASM_MESON_TAC[]; ALL_TAC] THEN
+  DISCH_THEN(fun th ->
+   SUBST1_TAC th THEN ASM_SIMP_TAC[CARD_CYCLIC_SUBGROUP_ORDER] THEN
+   REWRITE_TAC[TAUT `p /\ (p ==> q) <=> p /\ q`] THEN
+   SUBST1_TAC th THEN ASM_SIMP_TAC[FINITE_CYCLIC_SUBGROUP_ORDER]) THEN
+  ABBREV_TAC `d = group_element_order G (z:A)` THEN
+  MATCH_MP_TAC(TAUT `(p ==> ~q) /\ q ==> ~p /\ q`) THEN CONJ_TAC THENL
+   [DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[prime; ARITH_EQ] THEN
+    DISCH_THEN(MP_TAC o SPEC `2`) THEN REWRITE_TAC[ARITH_EQ] THEN
+    CONV_TAC NUMBER_RULE;
+    ALL_TAC] THEN
+  MP_TAC(SPEC `d:num` ONE_OR_PRIME_DIVIDES_OR_COPRIME) THEN
+  EXPAND_TAC "d" THEN ASM_SIMP_TAC[GROUP_ELEMENT_ORDER_EQ_1] THEN
+  DISCH_THEN SUBST1_TAC THEN X_GEN_TAC `n:num` THEN
+  ASM_CASES_TAC `(d:num) divides n` THEN ASM_REWRITE_TAC[] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `group_pow G (z:A) n`) THEN
+  ASM_SIMP_TAC[GROUP_POW_EQ_ID; GROUP_POW] THEN
+  DISCH_THEN(MP_TAC o AP_TERM `group_carrier:A group->A->bool`) THEN
+  ASM_SIMP_TAC[CARRIER_SUBGROUP_GENERATED_BY_SING; GROUP_POW] THEN
+  GEN_REWRITE_TAC LAND_CONV [EXTENSION] THEN
+  DISCH_THEN(MP_TAC o SPEC `z:A`) THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM; IN_UNIV; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `m:int` THEN
+  FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (LAND_CONV o LAND_CONV)
+     [SYM(MATCH_MP GROUP_POW_1 th)]) THEN
+  REWRITE_TAC[GSYM GROUP_NPOW; num_coprime] THEN
+  ASM_SIMP_TAC[GSYM GROUP_ZPOW_MUL; GROUP_ZPOW_EQ] THEN
+  CONV_TAC INTEGER_RULE);;
 
 (* ------------------------------------------------------------------------- *)
 (* Free Abelian groups on a set, using the "frag" type constructor.          *)

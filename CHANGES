@@ -8,11 +8,319 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 21st Mar 2020       Library/grouptheory.ml
+
+Added a number of miscellaneous and natural group theory lemmas, in particular
+some around the correspondence principle for (normal) subgroups under an
+epimorphism.
+
+  ABELIAN_SIMPLE_GROUP =
+    |- !G. abelian_group G
+           ==> ((!h. h normal_subgroup_of G
+                     ==> h = {group_id G} \/ h = group_carrier G) <=>
+                FINITE (group_carrier G) /\
+                (CARD (group_carrier G) = 1 \/ prime (CARD (group_carrier G))))
+  
+  CYCLIC_GROUP_PRIME_ORDER_EQ =
+    |- !G. (!a. a IN group_carrier G /\ ~(a = group_id G)
+                ==> subgroup_generated G {a} = G) <=>
+           FINITE (group_carrier G) /\
+           (CARD (group_carrier G) = 1 \/ prime (CARD (group_carrier G)))
+  
+  FIRST_GROUP_EPIMORPHISM_THEOREM =
+    |- !G G' f.
+           group_epimorphism (G,G') f
+           ==> quotient_group G (group_kernel (G,G') f) isomorphic_group G'
+  
+  FIRST_GROUP_ISOMORPHISM_THEOREM_GEN =
+    |- !G H f j k.
+           group_epimorphism (G,H) f /\
+           k normal_subgroup_of H /\
+           {x | x IN group_carrier G /\ f x IN k} = j
+           ==> quotient_group G j isomorphic_group quotient_group H k
+  
+  FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT =
+    |- !G H f j k.
+           group_epimorphism (G,H) f /\
+           j normal_subgroup_of G /\
+           group_kernel (G,H) f SUBSET j /\
+           IMAGE f j = k
+           ==> quotient_group G j isomorphic_group quotient_group H k
+  
+  FORALL_IN_GROUP_CARRIER_INV =
+    |- !P G.
+           (!x. x IN group_carrier G ==> P (group_inv G x)) <=>
+           (!x. x IN group_carrier G ==> P x)
+  
+  GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE =
+    |- !G H f k.
+           group_epimorphism (G,H) f
+           ==> (k normal_subgroup_of H <=>
+                (?j. j normal_subgroup_of G /\
+                     group_kernel (G,H) f SUBSET j /\
+                     {x | x IN group_carrier G /\ f x IN k} = j /\
+                     IMAGE f j = k))
+  
+  GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT =
+    |- !G H f j.
+           group_epimorphism (G,H) f
+           ==> (j normal_subgroup_of G /\ group_kernel (G,H) f SUBSET j <=>
+                (?k. k normal_subgroup_of H /\
+                     {x | x IN group_carrier G /\ f x IN k} = j /\
+                     IMAGE f j = k))
+  
+  GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE =
+    |- !G H f k.
+           group_epimorphism (G,H) f
+           ==> (k subgroup_of H <=>
+                (?j. j subgroup_of G /\
+                     group_kernel (G,H) f SUBSET j /\
+                     {x | x IN group_carrier G /\ f x IN k} = j /\
+                     IMAGE f j = k))
+  
+  GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT =
+    |- !G H f j.
+           group_epimorphism (G,H) f
+           ==> (j subgroup_of G /\ group_kernel (G,H) f SUBSET j <=>
+                (?k. k subgroup_of H /\
+                     {x | x IN group_carrier G /\ f x IN k} = j /\
+                     IMAGE f j = k))
+  
+  GROUP_HOMOMORPHISM_IMAGE_PREIMAGE =
+    |- !G H f t.
+           group_homomorphism (G,H) f
+           ==> IMAGE f {x | x IN group_carrier G /\ f x IN t} =
+               t INTER group_image (G,H) f
+  
+  GROUP_HOMOMORPHISM_IMAGE_PREIMAGE_EQ =
+    |- !G H f t.
+           group_homomorphism (G,H) f /\ t SUBSET group_image (G,H) f
+           ==> IMAGE f {x | x IN group_carrier G /\ f x IN t} = t
+  
+  GROUP_HOMOMORPHISM_PREIMAGE_IMAGE =
+    |- !G H f s.
+           group_homomorphism (G,H) f /\
+           group_kernel (G,H) f SUBSET s /\
+           s subgroup_of G
+           ==> {x | x IN group_carrier G /\ f x IN IMAGE f s} = s
+  
+  GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT =
+    |- !G H f s.
+           group_homomorphism (G,H) f /\ s SUBSET group_carrier G
+           ==> {x | x IN group_carrier G /\ f x IN IMAGE f s} =
+               group_setmul G (group_kernel (G,H) f) s
+  
+  GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT =
+    |- !G H f s.
+           group_homomorphism (G,H) f /\ s SUBSET group_carrier G
+           ==> {x | x IN group_carrier G /\ f x IN IMAGE f s} =
+               group_setmul G s (group_kernel (G,H) f)
+  
+  GROUP_KERNEL_NONEMPTY =
+    |- !G H f. group_homomorphism (G,H) f ==> ~(group_kernel (G,H) f = {})
+  
+  GROUP_KERNEL_SUBSET_CARRIER =
+    |- !G H f. group_kernel (G,H) f SUBSET group_carrier G
+  
+  GROUP_SETMUL_NORMAL_SUBGROUP =
+    |- !G h k.
+           h normal_subgroup_of G /\ k normal_subgroup_of G
+           ==> group_setmul G h k normal_subgroup_of G
+  
+  GROUP_SETMUL_NORMAL_SUBGROUP_LEFT =
+    |- !G n h.
+           n normal_subgroup_of G /\ h subgroup_of G
+           ==> group_setmul G n h subgroup_of G
+  
+  GROUP_SETMUL_NORMAL_SUBGROUP_RIGHT =
+    |- !G h n.
+           h subgroup_of G /\ n normal_subgroup_of G
+           ==> group_setmul G h n subgroup_of G
+  
+  IN_LEFT_COSET =
+    |- !G h x a.
+           h SUBSET group_carrier G /\
+           a IN group_carrier G /\
+           x IN group_carrier G
+           ==> (x IN left_coset G a h <=> group_mul G (group_inv G a) x IN h)
+  
+  IN_LEFT_COSET_INV =
+    |- !G h x y.
+           h SUBSET group_carrier G /\
+           x IN group_carrier G /\
+           y IN group_carrier G
+           ==> (x IN left_coset G (group_inv G y) h <=> group_mul G y x IN h)
+  
+  IN_RIGHT_COSET =
+    |- !G h x a.
+           h SUBSET group_carrier G /\
+           a IN group_carrier G /\
+           x IN group_carrier G
+           ==> (x IN right_coset G h a <=> group_mul G x (group_inv G a) IN h)
+  
+  IN_RIGHT_COSET_INV =
+    |- !G h x y.
+           h SUBSET group_carrier G /\
+           x IN group_carrier G /\
+           y IN group_carrier G
+           ==> (x IN right_coset G h (group_inv G y) <=> group_mul G x y IN h)
+  
+  MAXIMAL_NORMAL_SUBGROUP =
+    |- !G n.
+           n normal_subgroup_of G
+           ==> ((!h. h normal_subgroup_of G /\ n PSUBSET h
+                     ==> h = group_carrier G) <=>
+                (!k. k normal_subgroup_of quotient_group G n
+                     ==> k = {group_id (quotient_group G n)} \/
+                         k = group_carrier (quotient_group G n)))
+  
+  MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX =
+    |- !G n.
+           n normal_subgroup_of G /\ ~(n = group_carrier G)
+           ==> ((!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G) <=>
+                FINITE {right_coset G n x | x | x IN group_carrier G} /\
+                prime (CARD {right_coset G n x | x | x IN group_carrier G}))
+  
+  MAXIMAL_SUBGROUP =
+    |- !G n.
+           n normal_subgroup_of G
+           ==> ((!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G) <=>
+                (!k. k subgroup_of quotient_group G n
+                     ==> k = {group_id (quotient_group G n)} \/
+                         k = group_carrier (quotient_group G n)))
+  
+  MAXIMAL_SUBGROUP_PRIME_INDEX =
+    |- !G n.
+           n normal_subgroup_of G
+           ==> ((!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G) <=>
+                FINITE {right_coset G n x | x | x IN group_carrier G} /\
+                (CARD {right_coset G n x | x | x IN group_carrier G} = 1 \/
+                 prime (CARD {right_coset G n x | x | x IN group_carrier G})))
+  
+  NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS =
+    |- !G n.
+           n normal_subgroup_of G <=>
+           n subgroup_of G /\
+           {left_coset G x n | x | x IN group_carrier G} =
+           {right_coset G n x | x | x IN group_carrier G}
+  
+  NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS =
+    |- !G n.
+           n normal_subgroup_of G <=>
+           n subgroup_of G /\
+           {left_coset G x n | x | x IN group_carrier G} SUBSET
+           {right_coset G n x | x | x IN group_carrier G}
+  
+  NORMAL_SUBGROUP_MUL_SYM =
+    |- !G h.
+           h normal_subgroup_of G <=>
+           h subgroup_of G /\
+           (!x y.
+                x IN group_carrier G /\ y IN group_carrier G
+                ==> (group_mul G x y IN h <=> group_mul G y x IN h))
+  
+  NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE =
+    |- !G H f n.
+           group_epimorphism (G,H) f /\ n normal_subgroup_of G
+           ==> IMAGE f n normal_subgroup_of H
+  
+  NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ =
+    |- !G H f j k.
+           group_epimorphism (G,H) f /\
+           k subgroup_of H /\
+           {x | x IN group_carrier G /\ f x IN k} = j
+           ==> (j normal_subgroup_of G <=> k normal_subgroup_of H)
+  
+  NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE =
+    |- !G H f j.
+           group_homomorphism (G,H) f /\ j normal_subgroup_of H
+           ==> {x | x IN group_carrier G /\ f x IN j} normal_subgroup_of G
+  
+  NORMAL_SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ =
+    |- !G H f j.
+           group_isomorphism (G,H) f /\ j SUBSET group_carrier G
+           ==> (IMAGE f j normal_subgroup_of H <=> j normal_subgroup_of G)
+  
+  NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS =
+    |- !G n.
+           n normal_subgroup_of G <=>
+           n subgroup_of G /\
+           {right_coset G n x | x | x IN group_carrier G} SUBSET
+           {left_coset G x n | x | x IN group_carrier G}
+  
+  NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ =
+    |- !G H f.
+           group_epimorphism (G,H) f
+           ==> ((!k. k subgroup_of H
+                     ==> k = {group_id H} \/ k = group_carrier H) <=>
+                (!h. h subgroup_of G /\ group_kernel (G,H) f PSUBSET h
+                     ==> h = group_carrier G))
+  
+  PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP =
+    |- !G n.
+           n normal_subgroup_of G
+           ==> (FINITE {right_coset G n x | x | x IN group_carrier G} /\
+                prime (CARD {right_coset G n x | x | x IN group_carrier G}) <=>
+                ~(n = group_carrier G) /\
+                (!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G))
+  
+  QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE =
+    |- !G j k.
+           j normal_subgroup_of G
+           ==> (k normal_subgroup_of quotient_group G j <=>
+                (?i. i normal_subgroup_of G /\
+                     j SUBSET i /\
+                     {x | x IN group_carrier G /\ right_coset G j x IN k} = i /\
+                     IMAGE (right_coset G j) i = k))
+  
+  QUOTIENT_SUBGROUP_CORRESPONDENCE =
+    |- !G j k.
+           j normal_subgroup_of G
+           ==> (k subgroup_of quotient_group G j <=>
+                (?i. i subgroup_of G /\
+                     j SUBSET i /\
+                     {x | x IN group_carrier G /\ right_coset G j x IN k} = i /\
+                     IMAGE (right_coset G j) i = k))
+  
+  SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ =
+    |- !G H f.
+           group_epimorphism (G,H) f
+           ==> ((!k. k normal_subgroup_of H
+                     ==> k = {group_id H} \/ k = group_carrier H) <=>
+                (!h. h normal_subgroup_of G /\ group_kernel (G,H) f PSUBSET h
+                     ==> h = group_carrier G))
+  
+  SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ =
+    |- !G H f j.
+           group_isomorphism (G,H) f /\ j SUBSET group_carrier G
+           ==> (IMAGE f j subgroup_of H <=> j subgroup_of G)
+  
+  TRIVIAL_QUOTIENT_GROUP_EQ =
+    |- !G n.
+           n normal_subgroup_of G
+           ==> (trivial_group (quotient_group G n) <=> n = group_carrier G)
+  
+Sat 21st Mar 2020       int.ml
+
+Added one more basic primality property to the core results in int.ml:
+
+  ONE_OR_PRIME_DIVIDES_OR_COPRIME =
+    |- !p. p = 1 \/ prime p <=> (!n. p divides n \/ coprime(p,n))
+
+Mon 15th Mar 2020       Examples/nist_curves.ml
+
+Slightly reorganized the existing proofs with a mildly different approach to
+field reasoning, and added new material about (standard) projective and
+Jacobian coordinates for Weierstrass curves. In each case we define parallel
+versions of the group operations as well as equivalence relations
+"projective_eq" and "jacobian_eq" and show that they have all the expected
+properties relative to the affine coordinates.
+
 Fri 13th Mar 2020       Library/card.ml, Library/grouptheory.ml, Library/ringtheory.ml
 
 Added a miscellany of technical lemmas, mainly about group theory but in a
 few places ring theory and cardinality. In fact, the three theorems with
-"DISJOINT_UNION" in the name are effectively the same result in three 
+"DISJOINT_UNION" in the name are effectively the same result in three
 different categories.
 
   ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN =
@@ -23,31 +331,31 @@ different categories.
            group_element_order G x divides n /\
            group_element_order G y divides n
            ==> group_element_order G (group_mul G x y) divides n
-  
+
   ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM =
     |- !G x y.
            abelian_group G /\ x IN group_carrier G /\ y IN group_carrier G
            ==> group_element_order G (group_mul G x y) divides
                lcm(group_element_order G x,group_element_order G y)
-  
+
   ABELIAN_GROUP_HOMOMORPHISM_POWERING =
     |- !G n. abelian_group G ==> group_homomorphism (G,G) (\x. group_pow G x n)
-  
+
   ABELIAN_GROUP_HOMOMORPHISM_ZPOWERING =
     |- !G n.
            abelian_group G ==> group_homomorphism (G,G) (\x. group_zpow G x n)
-  
+
   CARD_EQ_CARTESIAN_PRODUCT =
     |- !s t k.
            (!i. i IN k ==> s i =_c t i)
            ==> cartesian_product k s =_c cartesian_product k t
-  
+
   CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
            ==> cartesian_product (k UNION l) f =_c
                cartesian_product k f CROSS cartesian_product l f
-  
+
   CYCLIC_PRIME_ORDER_GROUP =
     |- !G a.
            FINITE (group_carrier G) /\
@@ -55,7 +363,7 @@ different categories.
            a IN group_carrier G /\
            ~(a = group_id G)
            ==> subgroup_generated G {a} = G
-  
+
   CYCLIC_PROD_GROUP =
     |- !G H.
            cyclic_group (prod_group G H) <=>
@@ -66,32 +374,32 @@ different categories.
             FINITE (group_carrier G) /\
             FINITE (group_carrier H) /\
             coprime(CARD (group_carrier G),CARD (group_carrier H)))
-  
+
   CYCLIC_PROD_INTEGER_MOD_GROUP =
     |- !m n.
            cyclic_group
            (prod_group (integer_mod_group m) (integer_mod_group n)) <=>
            coprime(m,n)
-  
+
   GENERATOR_INTEGER_MOD_GROUP =
     |- !n a.
            subgroup_generated (integer_mod_group n) {a} = integer_mod_group n <=>
            (n <= 1 \/ &0 <= a /\ a < &n) /\ coprime(&n,a)
-  
+
   GROUP_CARRIER_INTEGER_MOD_GROUP =
     |- !n. group_carrier (integer_mod_group n) = IMAGE (\x. x rem &n) (:int)
-  
+
   GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP =
     |- !n m.
            group_element_order (integer_mod_group n) (&m) =
            (if m = 0 /\ n = 0 then 1 else n DIV gcd (n,m))
-  
+
   GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1 =
     |- !n. group_element_order (integer_mod_group n) (&1) = n
-  
+
   GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1R =
     |- !n. group_element_order (integer_mod_group n) (&1 rem &n) = n
-  
+
   GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN =
     |- !G x y n.
            x IN group_carrier G /\
@@ -100,7 +408,7 @@ different categories.
            group_element_order G x divides n /\
            group_element_order G y divides n
            ==> group_element_order G (group_mul G x y) divides n
-  
+
   GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM =
     |- !G x y.
            x IN group_carrier G /\
@@ -108,45 +416,45 @@ different categories.
            group_mul G x y = group_mul G y x
            ==> group_element_order G (group_mul G x y) divides
                lcm(group_element_order G x,group_element_order G y)
-  
+
   GROUP_ELEMENT_ORDER_PROD_GROUP =
     |- !G H x y.
            x IN group_carrier G /\ y IN group_carrier H
            ==> group_element_order (prod_group G H) (x,y) =
                lcm(group_element_order G x,group_element_order H y)
-  
+
   GROUP_ELEMENT_ORDER_PROD_GROUP_ALT =
     |- !G H z.
            z IN group_carrier (prod_group G H)
            ==> group_element_order (prod_group G H) z =
                lcm
                (group_element_order G (FST z),group_element_order H (SND z))
-  
+
   GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED =
     |- !G h x.
            group_element_order (subgroup_generated G h) x =
            group_element_order G x
-  
+
   GROUP_HOMOMORPHISM_INCLUSION =
     |- !G s. group_homomorphism (subgroup_generated G s,G) (\x. x)
-  
+
   GROUP_HOMOMORPHISM_OF_ID =
     |- !f G G'. group_homomorphism (G,G') f ==> f (group_id G) = group_id G'
-  
+
   GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP =
     |- !m n.
            group_homomorphism
            (integer_mod_group (m * n),
             prod_group (integer_mod_group m) (integer_mod_group n))
            (\a. a rem &m,a rem &n)
-  
+
   GROUP_ISOMORPHISMS =
     |- !G H f g.
            group_isomorphisms (G,H) (f,g) <=>
            group_homomorphism (G,H) f /\
            (!x. x IN group_carrier G ==> g (f x) = x) /\
            (!y. y IN group_carrier H ==> g y IN group_carrier G /\ f (g y) = y)
-  
+
   GROUP_ISOMORPHISM_PROD_INTEGER_MOD_GROUP =
     |- !m n.
            group_isomorphism
@@ -154,100 +462,100 @@ different categories.
             prod_group (integer_mod_group m) (integer_mod_group n))
            (\a. a rem &m,a rem &n) <=>
            coprime(m,n)
-  
+
   GROUP_ISOMORPHISM_SUBSET =
     |- !G G' f.
            group_isomorphism (G,G') f <=>
            group_homomorphism (G,G') f /\
-           (!z. z IN group_carrier G' 
+           (!z. z IN group_carrier G'
                 ==> ?x. x IN group_carrier G /\ f x = z) /\
            (!x y.
                 x IN group_carrier G /\ y IN group_carrier G /\ f x = f y
                 ==> x = y)
-  
+
   GROUP_MONOMORPHISM_BETWEEN_SUBGROUPS =
     |- !G H s t f.
            group_monomorphism (G,H) f /\ IMAGE f s SUBSET t
            ==> group_monomorphism
                (subgroup_generated G s,subgroup_generated H t)
                f
-  
+
   GROUP_MONOMORPHISM_FROM_SUBGROUP_GENERATED =
     |- !f G H s.
            group_monomorphism (G,H) f
            ==> group_monomorphism (subgroup_generated G s,H) f
-  
+
   GROUP_MONOMORPHISM_INCLUSION =
     |- !G s. group_monomorphism (subgroup_generated G s,G) (\x. x)
-  
+
   GROUP_POW_PROD_GROUP =
     |- !G H x y n.
            x IN group_carrier G /\ y IN group_carrier H
            ==> group_pow (prod_group G H) (x,y) n =
                group_pow G x n,group_pow H y n
-  
+
   GROUP_ZPOW_PROD_GROUP =
     |- !G H x y n.
            x IN group_carrier G /\ y IN group_carrier H
            ==> group_zpow (prod_group G H) (x,y) n =
                group_zpow G x n,group_zpow H y n
-  
+
   INTEGER_MOD_GROUP_1R =
     |- !n x. x rem &n IN group_carrier (integer_mod_group n)
-  
+
   INTEGER_MOD_SUBGROUP_GENERATED_BY_1R =
     |- !n. subgroup_generated (integer_mod_group n) {&1 rem &n} =
            integer_mod_group n
-  
+
   ISOMORPHIC_PRODUCT_GROUP_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
            ==> product_group (k UNION l) f isomorphic_group
                prod_group (product_group k f) (product_group l f)
-  
+
   ISOMORPHIC_PRODUCT_RING_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
            ==> product_ring (k UNION l) f isomorphic_ring
                prod_ring (product_ring k f) (product_ring l f)
-  
+
   ISOMORPHIC_PROD_INTEGER_MOD_GROUP =
     |- !m n.
            prod_group (integer_mod_group m) (integer_mod_group n) isomorphic_group
            integer_mod_group (m * n) <=>
            coprime(m,n)
-  
+
   PAIRWISE_DISJOINT_LEFT_COSETS =
     |- !G h.
            h subgroup_of G
            ==> pairwise DISJOINT {left_coset G a h | a | a IN group_carrier G}
-  
+
   PAIRWISE_DISJOINT_RIGHT_COSETS =
     |- !G h.
            h subgroup_of G
            ==> pairwise DISJOINT {right_coset G h a | a | a IN group_carrier G}
-  
+
   PAIRWISE_DISJOINT_RING_COSETS =
     |- !r j.
            ring_ideal r j
            ==> pairwise DISJOINT {ring_coset r j x | x | x IN ring_carrier r}
-  
+
   SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP =
     |- !G n.
            n normal_subgroup_of G
            ==> short_exact_sequence
                (subgroup_generated G n,G,quotient_group G n)
                ((\x. x),right_coset G n)
-  
+
   SHORT_EXACT_SEQUENCE_PROD_GROUP =
     |- !G H. short_exact_sequence (G,prod_group G H,H) ((\x. x,group_id H),SND)
-  
+
   SHORT_EXACT_SEQUENCE_PROD_GROUP_ALT =
     |- !G H. short_exact_sequence (H,prod_group G H,G) ((\x. group_id G,x),FST)
-  
+
   TRIVIAL_GROUP_GENERATED_BY_ANYTHING =
     |- !G s. trivial_group G ==> subgroup_generated G s = G
-  
+
 Fri 13th Mar 2020       Library/prime.ml
 
 Added four miscellaneous lemmas around divisibility:
@@ -927,7 +1235,7 @@ Added two more simple consequences of existing theorems:
   PHI_LIMIT_COMPOSITE =
     |- !n. ~prime n /\ ~(n = 0) /\ ~(n = 1) ==> phi n < n - 1
 
-  PRIMITIVE_ROOT_IMP_COPRIME : thm =
+  PRIMITIVE_ROOT_IMP_COPRIME =
     |- !n g. order n g = phi n ==> n = 0 \/ coprime(n,g)
 
 Mon 10th Feb 2020       Examples/zolotarev.ml [new file]
@@ -19108,4 +19416,3 @@ STVs, but issue a warning.
 Sun 29th Oct 95         subgoal.ml
 
 Inserted a warning into "expand" if the tactic does not change the goal state.
-val it : unit = ()

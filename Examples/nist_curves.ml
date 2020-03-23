@@ -301,6 +301,11 @@ let SANITY_CHECK_521 = prove
 (* where we always have a = -3 and using the integers modulo a large prime.  *)
 (* ------------------------------------------------------------------------- *)
 
+let weierstrass_point = define
+ `(weierstrass_point f NONE <=> T) /\
+  (weierstrass_point f (SOME(x:A,y)) <=>
+        x IN ring_carrier f /\ y IN ring_carrier f)`;;
+
 let weierstrass_curve = define
  `(weierstrass_curve(f:A ring,a:A,b:A) NONE <=> T) /\
   (weierstrass_curve(f:A ring,a:A,b:A) (SOME(x,y)) <=>
@@ -405,10 +410,7 @@ let (FINITE_WEIERSTRASS_CURVE,CARD_BOUND_WEIERSTRASS_CURVE) =
   ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Proof of the group properties. This is just done by algebraic brute       *)
-(* force, and often with far from optimal assumptions about the              *)
-(* characteristic. In particular we only prove associativity for the         *)
-(* specific characteristics we care about here.                              *)
+(* Some slightly ad-hoc tactics for field reasoning.                         *)
 (* ------------------------------------------------------------------------- *)
 
 let NOT_RING_CHAR_DIVIDES_TAC =
@@ -432,26 +434,6 @@ let weierstrass_carrier_tac =
         SUBGOAL_THEN (list_mk_conj cjs) STRIP_ASSUME_TAC THENL
          [REPEAT CONJ_TAC THEN RING_CARRIER_TAC; ALL_TAC]);;
 
-let weierstrass_leftfield_tac =
-  let field_lemma = prove
-   (`!r a b c:A.
-          ring_div r a b = c
-          ==> field r /\
-              a IN ring_carrier r /\
-              b IN ring_carrier r
-              ==> c IN ring_carrier r /\
-                  (b = ring_0 r \/ a = ring_mul r c b)`,
-    REPEAT GEN_TAC THEN DISCH_THEN(SUBST1_TAC o SYM) THEN STRIP_TAC THEN
-    ASM_SIMP_TAC[RING_DIV] THEN
-    REWRITE_TAC[TAUT `p \/ q <=> ~p ==> q`] THEN DISCH_TAC THEN
-    ASM_SIMP_TAC[ring_div; GSYM RING_MUL_ASSOC; RING_INV] THEN
-    ASM_SIMP_TAC[FIELD_MUL_LINV; RING_MUL_RID]) in
-  REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP field_lemma) THEN
-         ANTS_TAC THENL
-          [ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THEN RING_CARRIER_TAC;
-           STRIP_TAC]) THEN
-  FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP FIELD_IMP_INTEGRAL_DOMAIN);;
-
 let weierstrass_rabinify_tac =
   let rabinowitsch_lemma = prove
    (`!x y:A. ~(x = y)
@@ -465,6 +447,76 @@ let weierstrass_rabinify_tac =
     ANTS_TAC THENL
      [ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THEN
       RING_CARRIER_TAC; STRIP_TAC]);;
+
+let weierstrass_invelim_tac =
+  let is_fieldinv = can (term_match [] `ring_inv f (x:A)`)
+  and pth = prove
+   (`!f t:A.
+          field f
+          ==> t IN ring_carrier f
+              ==> ring_inv f t = ring_0 f /\ t = ring_0 f \/
+                  (?z. z IN ring_carrier f /\
+                       ring_inv f t = z /\ ring_mul f t z = ring_1 f)`,
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> q /\ p /\ r`] THEN
+    REPEAT STRIP_TAC THEN ASM_CASES_TAC `t:A = ring_0 f` THEN
+    ASM_SIMP_TAC[RING_INV_0; UNWIND_THM1; FIELD_MUL_RINV; RING_INV]) in
+  W(fun (asl,w) ->
+        let ctms = sort free_in (find_terms is_fieldinv w) in
+        if ctms = [] then failwith "weierstrass_invelim_tac" else
+        FIRST_ASSUM(MP_TAC o ISPEC (rand(hd ctms)) o MATCH_MP pth) THEN
+        ANTS_TAC THENL [RING_CARRIER_TAC; ALL_TAC] THEN
+        DISCH_THEN(DISJ_CASES_THEN2
+         (CONJUNCTS_THEN2 SUBST1_TAC MP_TAC)
+         (CHOOSE_THEN(CONJUNCTS_THEN2 ASSUME_TAC
+           (CONJUNCTS_THEN2 SUBST1_TAC MP_TAC)))));;
+
+let weierstrass_field_tac =
+  REWRITE_TAC[DE_MORGAN_THM] THEN
+  REPEAT STRIP_TAC THEN
+  TRY(MATCH_MP_TAC(MESON[] `(~(a = b) ==> F) ==> a = b`) THEN DISCH_TAC) THEN
+  TRY(FIRST_ASSUM CONTR_TAC) THEN
+  weierstrass_carrier_tac THEN
+  ASM_REWRITE_TAC[] THEN
+  weierstrass_rabinify_tac THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o check (can (find_term is_eq) o concl))) THEN
+  REWRITE_TAC[ring_div] THEN
+  REPEAT weierstrass_invelim_tac THEN
+  W(fun (asl,w) ->
+        let th = INTEGRAL_DOMAIN_RULE w in
+        MATCH_ACCEPT_TAC th ORELSE MATCH_MP_TAC th) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN] THEN
+  REPEAT CONJ_TAC THEN TRY RING_CARRIER_TAC THEN
+  NOT_RING_CHAR_DIVIDES_TAC;;
+
+(* ------------------------------------------------------------------------- *)
+(* Proof of the group properties. This is just done by algebraic brute       *)
+(* force, and often with far from optimal assumptions about the              *)
+(* characteristic. In particular we only prove associativity for the         *)
+(* specific characteristics we care about here.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let WEIERSTRASS_CURVE_IMP_POINT = prove
+ (`!f a b p. weierstrass_curve(f,a,b) p ==> weierstrass_point f p`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  SIMP_TAC[weierstrass_curve; weierstrass_point]);;
+
+let WEIERSTRASS_POINT_NEG = prove
+ (`!(f:A ring) a b p.
+        weierstrass_point f p
+        ==> weierstrass_point f (weierstrass_neg (f,a,b) p)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  SIMP_TAC[weierstrass_neg; weierstrass_point; RING_NEG]);;
+
+let WEIERSTRASS_POINT_ADD = prove
+ (`!(f:A ring) a b p q.
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p /\ weierstrass_point f q
+        ==> weierstrass_point f (weierstrass_add (f,a,b) p q)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  SIMP_TAC[weierstrass_add; weierstrass_point; LET_DEF; LET_END_DEF] THEN
+  REPEAT STRIP_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[weierstrass_point]) THEN
+  REPEAT STRIP_TAC THEN RING_CARRIER_TAC);;
 
 let WEIERSTRASS_CURVE_0 = prove
  (`!f a b:A. weierstrass_curve(f,a,b) NONE`,
@@ -499,10 +551,7 @@ let WEIERSTRASS_CURVE_ADD = prove
   REPEAT(FIRST_X_ASSUM SUBST_ALL_TAC) THEN
   REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_curve] THEN
   REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
-  weierstrass_carrier_tac THEN weierstrass_leftfield_tac THEN
-  REPEAT(FIRST_X_ASSUM(MP_TAC o check (free_in `(=):A->A->bool` o concl))) THEN
-  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
-  ASM_REWRITE_TAC[] THEN NOT_RING_CHAR_DIVIDES_TAC);;
+  weierstrass_field_tac);;
 
 let WEIERSTRASS_ADD_LNEG = prove
  (`!f a (b:A) p.
@@ -523,9 +572,7 @@ let WEIERSTRASS_ADD_LNEG = prove
   REPEAT(FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC)) THEN
   REPEAT LET_TAC THEN REWRITE_TAC[option_DISTINCT] THEN
   REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
-  weierstrass_carrier_tac THEN weierstrass_leftfield_tac THEN
-  REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[GSYM RING_OF_INT_OF_NUM] THEN
-  CONV_TAC INTEGRAL_DOMAIN_RULE);;
+  weierstrass_field_tac);;
 
 let WEIERSTRASS_ADD_SYM = prove
  (`!f a (b:A) p q.
@@ -545,9 +592,7 @@ let WEIERSTRASS_ADD_SYM = prove
   REPEAT LET_TAC THEN
   REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
   REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
-  weierstrass_carrier_tac THEN weierstrass_leftfield_tac THEN
-  REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[GSYM RING_OF_INT_OF_NUM] THEN
-  CONV_TAC INTEGRAL_DOMAIN_RULE);;
+  weierstrass_field_tac);;
 
 let WEIERSTRASS_ADD_ASSOC = prove
  (`!f a (b:A) p q r.
@@ -607,16 +652,8 @@ let WEIERSTRASS_ADD_ASSOC = prove
   TRY(MATCH_MP_TAC(MESON[] `(~(a = b) ==> F) ==> a = b`) THEN DISCH_TAC) THEN
   TRY(FIRST_ASSUM CONTR_TAC) THEN
   RULE_ASSUM_TAC(REWRITE_RULE[weierstrass_singular]) THEN
-  weierstrass_carrier_tac THEN
-  weierstrass_rabinify_tac THEN
-  weierstrass_leftfield_tac THEN
-  REPEAT GEN_TAC THEN
-  TRY(FIRST_ASSUM CONTR_TAC) THEN
-  REPEAT(FIRST_X_ASSUM(MP_TAC o check (is_eq o concl))) THEN
-  W(fun (asl,w) ->
-        let th = INTEGRAL_DOMAIN_RULE w in
-        MATCH_ACCEPT_TAC th ORELSE MATCH_MP_TAC th) THEN
-  ASM_REWRITE_TAC[] THEN
+  weierstrass_field_tac THEN
+  REWRITE_TAC[DE_MORGAN_THM] THEN REPEAT CONJ_TAC THEN
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_INSERT]) THEN
   REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
   REWRITE_TAC[p_192; p_224; p_256; p_384; p_521] THEN
@@ -656,6 +693,703 @@ let WEIERSTRASS_GROUP = prove
      [ASM_SIMP_TAC[WEIERSTRASS_ADD_LNEG];
       MATCH_MP_TAC WEIERSTRASS_ADD_SYM THEN
       ASM_SIMP_TAC[WEIERSTRASS_CURVE_NEG; FIELD_IMP_INTEGRAL_DOMAIN]]]);;
+
+
+(* ------------------------------------------------------------------------- *)
+(* Projective coordinates, (x,y,z) |-> (x/z,y/z) and (0,1,0) |-> infinity    *)
+(* ------------------------------------------------------------------------- *)
+
+let projective_point = define
+ `projective_point f (x,y,z) <=>
+        x IN ring_carrier f /\ y IN ring_carrier f /\ z IN ring_carrier f`;;
+
+let projective_curve = define
+ `projective_curve (f,a:A,b) (x,y,z) <=>
+        x IN ring_carrier f /\
+        y IN ring_carrier f /\
+        z IN ring_carrier f /\
+        ring_mul f (ring_pow f y 2) z =
+        ring_add f (ring_pow f x 3)
+                   (ring_add f (ring_mul f a (ring_mul f x (ring_pow f z 2)))
+                               (ring_mul f b (ring_pow f z 3)))`;;
+
+let weierstrass_of_projective = define
+ `weierstrass_of_projective (f:A ring) (x,y,z) =
+        if z = ring_0 f then NONE
+        else SOME(ring_div f x z,ring_div f y z)`;;
+
+let projective_of_weierstrass = define
+ `projective_of_weierstrass (f:A ring) NONE = (ring_0 f,ring_1 f,ring_0 f) /\
+  projective_of_weierstrass f (SOME(x,y)) = (x,y,ring_1 f)`;;
+
+let projective_eq = define
+ `projective_eq (f:A ring) (x,y,z) (x',y',z') <=>
+        (z = ring_0 f <=> z' = ring_0 f) /\
+        ring_mul f x z' = ring_mul f x' z /\
+        ring_mul f y z' = ring_mul f y' z`;;
+
+let projective_0 = new_definition
+ `projective_0 (f:A ring,a:A,b:A) = (ring_0 f,ring_1 f,ring_0 f)`;;
+
+let projective_neg = new_definition
+ `projective_neg (f,a:A,b:A) (x,y,z) = (x:A,ring_neg f y:A,z:A)`;;
+
+let projective_add = new_definition
+ `projective_add (f,a,b) (x1,y1,z1) (x2,y2,z2) =
+    if z1 = ring_0 f then (x2,y2,z2)
+    else if z2 = ring_0 f then (x1,y1,z1)
+    else if projective_eq f (x1,y1,z1) (x2,y2,z2) then
+      let t =
+          ring_add f (ring_mul f a (ring_pow f z1 2))
+          (ring_mul f (ring_of_num f 3) (ring_pow f x1 2))
+      and u = ring_mul f y1 z1 in
+      let v = ring_mul f u (ring_mul f x1 y1) in
+      let w = ring_sub f (ring_pow f t 2) (ring_mul f (ring_of_num f 8) v) in
+      (ring_mul f (ring_of_num f 2) (ring_mul f u w),
+       ring_sub f (ring_mul f t (ring_sub f (ring_mul f (ring_of_num f 4) v) w))
+       (ring_mul f (ring_of_num f 8)
+       (ring_mul f (ring_pow f y1 2) (ring_pow f u 2))),
+       ring_mul f (ring_of_num f 8) (ring_pow f u 3))
+    else if projective_eq f (projective_neg (f,a,b) (x1,y1,z1)) (x2,y2,z2) then
+      projective_0 (f,a,b)
+    else
+      let u = ring_sub f (ring_mul f y2 z1) (ring_mul f y1 z2)
+      and v = ring_sub f (ring_mul f x2 z1) (ring_mul f x1 z2) in
+      let w =
+          ring_sub f
+          (ring_sub f (ring_mul f (ring_pow f u 2) (ring_mul f z1 z2))
+          (ring_pow f v 3))
+          (ring_mul f (ring_of_num f 2)
+          (ring_mul f (ring_pow f v 2) (ring_mul f x1 z2))) in
+      (ring_mul f v w,
+       ring_sub f
+       (ring_mul f u
+       (ring_sub f (ring_mul f (ring_pow f v 2) (ring_mul f x1 z2)) w))
+       (ring_mul f (ring_pow f v 3) (ring_mul f y1 z2)),
+       ring_mul f (ring_pow f v 3) (ring_mul f z1 z2))`;;
+
+let PROJECTIVE_CURVE_IMP_POINT = prove
+ (`!f a b p. projective_curve(f,a,b) p ==> projective_point f p`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  SIMP_TAC[projective_curve; projective_point]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_POINT_EQ = prove
+ (`!(f:A ring) p.
+        projective_point f (projective_of_weierstrass f p) <=>
+        weierstrass_point f p`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[weierstrass_point; projective_of_weierstrass] THEN
+  SIMP_TAC[projective_point; RING_0; RING_1]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_POINT = prove
+ (`!(f:A ring) p.
+        weierstrass_point f p
+        ==> projective_point f (projective_of_weierstrass f p)`,
+  REWRITE_TAC[PROJECTIVE_OF_WEIERSTRASS_POINT_EQ]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_POINT = prove
+ (`!(f:A ring) p.
+        projective_point f p
+        ==> weierstrass_point f (weierstrass_of_projective f p)`,
+  SIMP_TAC[FORALL_PAIR_THM; weierstrass_of_projective; projective_point] THEN
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[weierstrass_point; RING_DIV]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_EQ = prove
+ (`!(f:A ring) p q.
+        field f
+        ==> (projective_of_weierstrass f p = projective_of_weierstrass f q <=>
+             p = q)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; field] THEN
+  REWRITE_TAC[projective_of_weierstrass; option_DISTINCT; option_INJ] THEN
+  SIMP_TAC[PAIR_EQ]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_EQ = prove
+ (`!(f:A ring) p q.
+        field f /\ projective_point f p /\ projective_point f q
+        ==> (weierstrass_of_projective f p = weierstrass_of_projective f q <=>
+             projective_eq f p q)`,
+  REWRITE_TAC[FORALL_PAIR_THM; projective_point] THEN
+  REWRITE_TAC[weierstrass_of_projective; projective_eq] THEN
+  REPEAT STRIP_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[option_INJ; option_DISTINCT]) THEN
+  ASM_SIMP_TAC[RING_MUL_RZERO; PAIR_EQ] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+   (REWRITE_RULE[CONJ_ASSOC] FIELD_MUL_LINV)))) THEN
+  ASM_REWRITE_TAC[ring_div] THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[RING_INV; FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_OF_WEIERSTRASS = prove
+ (`!(f:A ring) p.
+        field f /\ weierstrass_point f p
+        ==> weierstrass_of_projective f (projective_of_weierstrass f p) = p`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; field] THEN
+  SIMP_TAC[weierstrass_of_projective; projective_of_weierstrass;
+           weierstrass_point; RING_DIV_1]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_OF_PROJECTIVE = prove
+ (`!(f:A ring) p.
+        field f /\ projective_point f p
+        ==> projective_eq f
+             (projective_of_weierstrass f (weierstrass_of_projective f p)) p`,
+  SIMP_TAC[GSYM WEIERSTRASS_OF_PROJECTIVE_EQ;
+           WEIERSTRASS_OF_PROJECTIVE_OF_WEIERSTRASS;
+           PROJECTIVE_OF_WEIERSTRASS_POINT_EQ;
+           WEIERSTRASS_OF_PROJECTIVE_POINT]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_CURVE_EQ = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p
+        ==> (projective_curve (f,a,b) (projective_of_weierstrass f p) <=>
+             weierstrass_curve (f,a,b) p)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; weierstrass_point] THEN
+  REWRITE_TAC[weierstrass_curve; projective_of_weierstrass] THEN
+  SIMP_TAC[projective_curve; RING_0; RING_1] THEN
+  REPEAT STRIP_TAC THEN REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_CURVE = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_curve (f,a,b) p
+        ==> projective_curve (f,a,b) (projective_of_weierstrass f p)`,
+  MESON_TAC[PROJECTIVE_OF_WEIERSTRASS_CURVE_EQ;
+            WEIERSTRASS_CURVE_IMP_POINT]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_CURVE = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_curve (f,a,b) p
+        ==> weierstrass_curve (f,a,b) (weierstrass_of_projective f p)`,
+  SIMP_TAC[FORALL_PAIR_THM; weierstrass_of_projective; projective_curve] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[weierstrass_curve; RING_DIV] THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o MATCH_MP (ONCE_REWRITE_RULE[IMP_CONJ_ALT]
+   (REWRITE_RULE[CONJ_ASSOC] FIELD_MUL_LINV)))) THEN
+  ASM_REWRITE_TAC[ring_div] THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[RING_INV; FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let PROJECTIVE_POINT_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_point f p
+        ==> projective_point f (projective_neg (f,a,b) p)`,
+  REWRITE_TAC[FORALL_PAIR_THM; projective_neg; projective_point] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let PROJECTIVE_CURVE_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_curve (f,a,b) p
+        ==> projective_curve (f,a,b) (projective_neg (f,a,b) p)`,
+  REWRITE_TAC[FORALL_PAIR_THM; projective_neg; projective_curve] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_point f p
+        ==> weierstrass_of_projective f (projective_neg (f,a,b) p) =
+            weierstrass_neg (f,a,b) (weierstrass_of_projective f p)`,
+  REWRITE_TAC[FORALL_PAIR_THM; projective_neg; weierstrass_of_projective;
+              projective_point] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[weierstrass_neg; option_INJ; PAIR_EQ] THEN
+  weierstrass_field_tac);;
+
+let PROJECTIVE_EQ_NEG = prove
+ (`!(f:A ring) a b p p'.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_point f p /\ projective_point f p' /\ projective_eq f p p'
+        ==> projective_eq f
+              (projective_neg (f,a,b) p) (projective_neg (f,a,b) p')`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ASM_SIMP_TAC[GSYM WEIERSTRASS_OF_PROJECTIVE_EQ; PROJECTIVE_POINT_NEG] THEN
+  ASM_SIMP_TAC[WEIERSTRASS_OF_PROJECTIVE_NEG]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_NEG_OF_WEIERSTRASS = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p
+        ==> weierstrass_of_projective f
+             (projective_neg (f,a,b) (projective_of_weierstrass f p)) =
+            weierstrass_neg (f,a,b) p`,
+  SIMP_TAC[WEIERSTRASS_OF_PROJECTIVE_NEG;
+           PROJECTIVE_OF_WEIERSTRASS_POINT;
+           WEIERSTRASS_OF_PROJECTIVE_OF_WEIERSTRASS]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p
+        ==> projective_eq f
+             (projective_of_weierstrass f (weierstrass_neg (f,a,b) p))
+             (projective_neg (f,a,b) (projective_of_weierstrass f p))`,
+  SIMP_TAC[GSYM WEIERSTRASS_OF_PROJECTIVE_EQ;
+           PROJECTIVE_OF_WEIERSTRASS_POINT;
+           PROJECTIVE_POINT_NEG; WEIERSTRASS_POINT_NEG;
+           WEIERSTRASS_OF_PROJECTIVE_NEG;
+           WEIERSTRASS_OF_PROJECTIVE_OF_WEIERSTRASS]);;
+
+let PROJECTIVE_POINT_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_point f p /\ projective_point f q
+        ==> projective_point f (projective_add (f,a,b) p q)`,
+  REWRITE_TAC[FORALL_PAIR_THM; projective_add; projective_point;
+              projective_0; projective_eq; LET_DEF; LET_END_DEF] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(COND_CASES_TAC THEN
+   ASM_REWRITE_TAC[projective_add; projective_point;
+              projective_eq; LET_DEF; LET_END_DEF]) THEN
+  REPEAT STRIP_TAC THEN RING_CARRIER_TAC);;
+
+let PROJECTIVE_CURVE_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_curve (f,a,b) p /\ projective_curve (f,a,b) q
+        ==> projective_curve (f,a,b) (projective_add (f,a,b) p q)`,
+  REWRITE_TAC[FORALL_PAIR_THM; projective_add; projective_curve;
+              projective_0; projective_eq; LET_DEF; LET_END_DEF] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(COND_CASES_TAC THEN
+   ASM_REWRITE_TAC[projective_add; projective_curve;
+              projective_eq; LET_DEF; LET_END_DEF]) THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_point f p /\ projective_point f q
+        ==> weierstrass_of_projective f (projective_add (f,a,b) p q) =
+            weierstrass_add (f,a,b)
+             (weierstrass_of_projective f p)
+             (weierstrass_of_projective f q)`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; projective_point] THEN
+  MAP_EVERY X_GEN_TAC
+   [`f:A ring`; `a:A`; `b:A`; `x1:A`; `y1:A`; `z1:A`;
+    `x2:A`; `y2:A`; `z2:A`] THEN
+  STRIP_TAC THEN REWRITE_TAC[weierstrass_of_projective; projective_add] THEN
+  MAP_EVERY ASM_CASES_TAC [`z1:A = ring_0 f`; `z2:A = ring_0 f`] THEN
+  ASM_REWRITE_TAC[weierstrass_of_projective; weierstrass_add] THEN
+  ASM_REWRITE_TAC[projective_eq; projective_neg; projective_0] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[LET_DEF; LET_END_DEF] THEN
+  REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_of_projective] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
+  REPEAT(FIRST_X_ASSUM(DISJ_CASES_TAC) ORELSE
+         FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC)) THEN
+  weierstrass_field_tac);;
+
+let PROJECTIVE_EQ_ADD = prove
+ (`!(f:A ring) a b p p' q q'.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        projective_point f p /\ projective_point f p' /\
+        projective_point f q /\ projective_point f q' /\
+        projective_eq f p p' /\ projective_eq f q q'
+        ==> projective_eq f
+              (projective_add (f,a,b) p q) (projective_add (f,a,b) p' q')`,
+  REPEAT GEN_TAC THEN
+  REPLICATE_TAC 9 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ASM_SIMP_TAC[GSYM WEIERSTRASS_OF_PROJECTIVE_EQ; PROJECTIVE_POINT_ADD] THEN
+  ASM_SIMP_TAC[WEIERSTRASS_OF_PROJECTIVE_ADD]);;
+
+let WEIERSTRASS_OF_PROJECTIVE_ADD_OF_WEIERSTRASS = prove
+ (`!(f:A ring) a b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p /\ weierstrass_point f q
+        ==> weierstrass_of_projective f
+             (projective_add (f,a,b)
+               (projective_of_weierstrass f p)
+               (projective_of_weierstrass f q)) =
+            weierstrass_add (f,a,b) p q`,
+  SIMP_TAC[WEIERSTRASS_OF_PROJECTIVE_ADD;
+           PROJECTIVE_OF_WEIERSTRASS_POINT;
+           WEIERSTRASS_OF_PROJECTIVE_OF_WEIERSTRASS]);;
+
+let PROJECTIVE_OF_WEIERSTRASS_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p /\ weierstrass_point f q
+        ==> projective_eq f
+             (projective_of_weierstrass f (weierstrass_add (f,a,b) p q))
+             (projective_add (f,a,b)
+               (projective_of_weierstrass f p)
+               (projective_of_weierstrass f q))`,
+  SIMP_TAC[GSYM WEIERSTRASS_OF_PROJECTIVE_EQ;
+           PROJECTIVE_OF_WEIERSTRASS_POINT;
+           PROJECTIVE_POINT_ADD; WEIERSTRASS_POINT_ADD;
+           WEIERSTRASS_OF_PROJECTIVE_ADD;
+           WEIERSTRASS_OF_PROJECTIVE_OF_WEIERSTRASS]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Jacobian coordinates, (x,y,z) |-> (x/z^2,y/z^3) and (1,1,0) |-> infinity  *)
+(* ------------------------------------------------------------------------- *)
+
+let jacobian_point = define
+ `jacobian_point f (x,y,z) <=>
+        x IN ring_carrier f /\ y IN ring_carrier f /\ z IN ring_carrier f`;;
+
+let jacobian_curve = define
+ `jacobian_curve (f,a:A,b) (x,y,z) <=>
+        x IN ring_carrier f /\
+        y IN ring_carrier f /\
+        z IN ring_carrier f /\
+        ring_pow f y 2 =
+        ring_add f (ring_pow f x 3)
+                   (ring_add f (ring_mul f a (ring_mul f x (ring_pow f z 4)))
+                               (ring_mul f b (ring_pow f z 6)))`;;
+
+let weierstrass_of_jacobian = define
+ `weierstrass_of_jacobian (f:A ring) (x,y,z) =
+        if z = ring_0 f then NONE
+        else SOME(ring_div f x (ring_pow f z 2),
+                  ring_div f y (ring_pow f z 3))`;;
+
+let jacobian_of_weierstrass = define
+ `jacobian_of_weierstrass (f:A ring) NONE = (ring_1 f,ring_1 f,ring_0 f) /\
+  jacobian_of_weierstrass f (SOME(x,y)) = (x,y,ring_1 f)`;;
+
+let jacobian_eq = define
+ `jacobian_eq (f:A ring) (x,y,z) (x',y',z') <=>
+        (z = ring_0 f <=> z' = ring_0 f) /\
+        ring_mul f x (ring_pow f z' 2) = ring_mul f x' (ring_pow f z 2) /\
+        ring_mul f y (ring_pow f z' 3) = ring_mul f y' (ring_pow f z 3)`;;
+
+let jacobian_0 = new_definition
+ `jacobian_0 (f:A ring,a:A,b:A) = (ring_1 f,ring_1 f,ring_0 f)`;;
+
+let jacobian_neg = new_definition
+ `jacobian_neg (f,a:A,b:A) (x,y,z) = (x:A,ring_neg f y:A,z:A)`;;
+
+let jacobian_add = new_definition
+ `jacobian_add (f:A ring,a,b) (x1,y1,z1) (x2,y2,z2) =
+   if z1 = ring_0 f then (x2,y2,z2)
+   else if z2 = ring_0 f then (x1,y1,z1)
+   else if jacobian_eq f (x1,y1,z1) (x2,y2,z2) then
+     let v = ring_mul f (ring_of_num f 4) (ring_mul f x1 (ring_pow f y1 2))
+     and w =
+       ring_add f (ring_mul f (ring_of_num f 3) (ring_pow f x1 2))
+       (ring_mul f a (ring_pow f z1 4)) in
+     let x3 =
+       ring_add f (ring_mul f (ring_neg f (ring_of_num f 2)) v)
+       (ring_pow f w 2) in
+     x3,
+     ring_add f (ring_mul f (ring_neg f (ring_of_num f 8)) (ring_pow f y1 4))
+     (ring_mul f (ring_sub f v x3) w),
+     ring_mul f (ring_of_num f 2) (ring_mul f y1 z1)
+    else if jacobian_eq f (jacobian_neg (f,a,b) (x1,y1,z1)) (x2,y2,z2) then
+      jacobian_0 (f,a,b)
+    else
+     let r = ring_mul f x1 (ring_pow f z2 2)
+     and s = ring_mul f x2 (ring_pow f z1 2)
+     and t = ring_mul f y1 (ring_pow f z2 3)
+     and u = ring_mul f y2 (ring_pow f z1 3) in
+     let v = ring_sub f s r
+     and w = ring_sub f u t in
+     let x3 =
+         ring_add f
+         (ring_sub f (ring_neg f (ring_pow f v 3))
+         (ring_mul f (ring_of_num f 2) (ring_mul f r (ring_pow f v 2))))
+         (ring_pow f w 2) in
+     x3,
+     ring_add f (ring_mul f (ring_neg f t) (ring_pow f v 3))
+     (ring_mul f (ring_sub f (ring_mul f r (ring_pow f v 2)) x3) w),
+     ring_mul f v (ring_mul f z1 z2)`;;
+
+let JACOBIAN_CURVE_IMP_POINT = prove
+ (`!f a b p. jacobian_curve(f,a,b) p ==> jacobian_point f p`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  SIMP_TAC[jacobian_curve; jacobian_point]);;
+
+let JACOBIAN_OF_WEIERSTRASS_POINT_EQ = prove
+ (`!(f:A ring) p.
+        jacobian_point f (jacobian_of_weierstrass f p) <=>
+        weierstrass_point f p`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM] THEN
+  REWRITE_TAC[weierstrass_point; jacobian_of_weierstrass] THEN
+  SIMP_TAC[jacobian_point; RING_0; RING_1]);;
+
+let JACOBIAN_OF_WEIERSTRASS_POINT = prove
+ (`!(f:A ring) p.
+        weierstrass_point f p
+        ==> jacobian_point f (jacobian_of_weierstrass f p)`,
+  REWRITE_TAC[JACOBIAN_OF_WEIERSTRASS_POINT_EQ]);;
+
+let WEIERSTRASS_OF_JACOBIAN_POINT = prove
+ (`!(f:A ring) p.
+        jacobian_point f p
+        ==> weierstrass_point f (weierstrass_of_jacobian f p)`,
+  SIMP_TAC[FORALL_PAIR_THM; weierstrass_of_jacobian; jacobian_point] THEN
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[weierstrass_point; RING_DIV; RING_POW]);;
+
+let JACOBIAN_OF_WEIERSTRASS_EQ = prove
+ (`!(f:A ring) p q.
+        field f
+        ==> (jacobian_of_weierstrass f p = jacobian_of_weierstrass f q <=>
+             p = q)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; field] THEN
+  REWRITE_TAC[jacobian_of_weierstrass; option_DISTINCT; option_INJ] THEN
+  SIMP_TAC[PAIR_EQ]);;
+
+let WEIERSTRASS_OF_JACOBIAN_EQ = prove
+ (`!(f:A ring) p q.
+        field f /\ jacobian_point f p /\ jacobian_point f q
+        ==> (weierstrass_of_jacobian f p = weierstrass_of_jacobian f q <=>
+             jacobian_eq f p q)`,
+  REWRITE_TAC[FORALL_PAIR_THM; jacobian_point] THEN
+  REWRITE_TAC[weierstrass_of_jacobian; jacobian_eq] THEN
+  REPEAT STRIP_TAC THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[option_INJ; option_DISTINCT]) THEN
+  ASM_SIMP_TAC[RING_MUL_RZERO; PAIR_EQ] THEN
+  weierstrass_field_tac);;
+
+let WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS = prove
+ (`!(f:A ring) p.
+        field f /\ weierstrass_point f p
+        ==> weierstrass_of_jacobian f (jacobian_of_weierstrass f p) = p`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; field] THEN
+  SIMP_TAC[weierstrass_of_jacobian; jacobian_of_weierstrass;
+           weierstrass_point; RING_POW_ONE; RING_DIV_1]);;
+
+let JACOBIAN_OF_WEIERSTRASS_OF_JACOBIAN = prove
+ (`!(f:A ring) p.
+        field f /\ jacobian_point f p
+        ==> jacobian_eq f
+             (jacobian_of_weierstrass f (weierstrass_of_jacobian f p)) p`,
+  SIMP_TAC[GSYM WEIERSTRASS_OF_JACOBIAN_EQ;
+           WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS;
+           JACOBIAN_OF_WEIERSTRASS_POINT_EQ;
+           WEIERSTRASS_OF_JACOBIAN_POINT]);;
+
+let JACOBIAN_OF_WEIERSTRASS_CURVE_EQ = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p
+        ==> (jacobian_curve (f,a,b) (jacobian_of_weierstrass f p) <=>
+             weierstrass_curve (f,a,b) p)`,
+  REWRITE_TAC[FORALL_OPTION_THM; FORALL_PAIR_THM; weierstrass_point] THEN
+  REWRITE_TAC[weierstrass_curve; jacobian_of_weierstrass] THEN
+  SIMP_TAC[jacobian_curve; RING_0; RING_1] THEN
+  REPEAT STRIP_TAC THEN REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let JACOBIAN_OF_WEIERSTRASS_CURVE = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_curve (f,a,b) p
+        ==> jacobian_curve (f,a,b) (jacobian_of_weierstrass f p)`,
+  MESON_TAC[JACOBIAN_OF_WEIERSTRASS_CURVE_EQ;
+            WEIERSTRASS_CURVE_IMP_POINT]);;
+
+let WEIERSTRASS_OF_JACOBIAN_CURVE = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_curve (f,a,b) p
+        ==> weierstrass_curve (f,a,b) (weierstrass_of_jacobian f p)`,
+  SIMP_TAC[FORALL_PAIR_THM; weierstrass_of_jacobian; jacobian_curve] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[weierstrass_curve; RING_DIV; RING_POW] THEN
+  weierstrass_field_tac);;
+
+let JACOBIAN_POINT_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p
+        ==> jacobian_point f (jacobian_neg (f,a,b) p)`,
+  REWRITE_TAC[FORALL_PAIR_THM; jacobian_neg; jacobian_point] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let JACOBIAN_CURVE_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_curve (f,a,b) p
+        ==> jacobian_curve (f,a,b) (jacobian_neg (f,a,b) p)`,
+  REWRITE_TAC[FORALL_PAIR_THM; jacobian_neg; jacobian_curve] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let WEIERSTRASS_OF_JACOBIAN_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p
+        ==> weierstrass_of_jacobian f (jacobian_neg (f,a,b) p) =
+            weierstrass_neg (f,a,b) (weierstrass_of_jacobian f p)`,
+  REWRITE_TAC[FORALL_PAIR_THM; jacobian_neg; weierstrass_of_jacobian;
+              jacobian_point] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[weierstrass_neg; option_INJ; PAIR_EQ] THEN
+  weierstrass_field_tac);;
+
+let JACOBIAN_EQ_NEG = prove
+ (`!(f:A ring) a b p p'.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p /\ jacobian_point f p' /\ jacobian_eq f p p'
+        ==> jacobian_eq f
+              (jacobian_neg (f,a,b) p) (jacobian_neg (f,a,b) p')`,
+  REPEAT GEN_TAC THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ASM_SIMP_TAC[GSYM WEIERSTRASS_OF_JACOBIAN_EQ; JACOBIAN_POINT_NEG] THEN
+  ASM_SIMP_TAC[WEIERSTRASS_OF_JACOBIAN_NEG]);;
+
+let WEIERSTRASS_OF_JACOBIAN_NEG_OF_WEIERSTRASS = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p
+        ==> weierstrass_of_jacobian f
+             (jacobian_neg (f,a,b) (jacobian_of_weierstrass f p)) =
+            weierstrass_neg (f,a,b) p`,
+  SIMP_TAC[WEIERSTRASS_OF_JACOBIAN_NEG;
+           JACOBIAN_OF_WEIERSTRASS_POINT;
+           WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS]);;
+
+let JACOBIAN_OF_WEIERSTRASS_NEG = prove
+ (`!(f:A ring) a b p.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p
+        ==> jacobian_eq f
+             (jacobian_of_weierstrass f (weierstrass_neg (f,a,b) p))
+             (jacobian_neg (f,a,b) (jacobian_of_weierstrass f p))`,
+  SIMP_TAC[GSYM WEIERSTRASS_OF_JACOBIAN_EQ;
+           JACOBIAN_OF_WEIERSTRASS_POINT;
+           JACOBIAN_POINT_NEG; WEIERSTRASS_POINT_NEG;
+           WEIERSTRASS_OF_JACOBIAN_NEG;
+           WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS]);;
+
+let JACOBIAN_POINT_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p /\ jacobian_point f q
+        ==> jacobian_point f (jacobian_add (f,a,b) p q)`,
+  REWRITE_TAC[FORALL_PAIR_THM; jacobian_add; jacobian_point;
+              jacobian_0; jacobian_eq; LET_DEF; LET_END_DEF] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(COND_CASES_TAC THEN
+   ASM_REWRITE_TAC[jacobian_add; jacobian_point;
+              jacobian_eq; LET_DEF; LET_END_DEF]) THEN
+  REPEAT STRIP_TAC THEN RING_CARRIER_TAC);;
+
+let JACOBIAN_CURVE_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_curve (f,a,b) p /\ jacobian_curve (f,a,b) q
+        ==> jacobian_curve (f,a,b) (jacobian_add (f,a,b) p q)`,
+  REWRITE_TAC[FORALL_PAIR_THM; jacobian_add; jacobian_curve;
+              jacobian_0; jacobian_eq; LET_DEF; LET_END_DEF] THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(COND_CASES_TAC THEN
+   ASM_REWRITE_TAC[jacobian_add; jacobian_curve;
+              jacobian_eq; LET_DEF; LET_END_DEF]) THEN
+  REPEAT STRIP_TAC THEN TRY RING_CARRIER_TAC THEN
+  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
+  W(MATCH_MP_TAC o INTEGRAL_DOMAIN_RULE o snd) THEN
+  ASM_SIMP_TAC[FIELD_IMP_INTEGRAL_DOMAIN]);;
+
+let WEIERSTRASS_OF_JACOBIAN_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p /\ jacobian_point f q
+        ==> weierstrass_of_jacobian f (jacobian_add (f,a,b) p q) =
+            weierstrass_add (f,a,b)
+             (weierstrass_of_jacobian f p)
+             (weierstrass_of_jacobian f q)`,
+  REWRITE_TAC[MESON[RING_CHAR_DIVIDES_PRIME; PRIME_2; PRIME_CONV `prime 3`]
+   `field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
+    field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P`] THEN
+  REWRITE_TAC[FORALL_PAIR_THM; jacobian_point] THEN
+  MAP_EVERY X_GEN_TAC
+   [`f:A ring`; `a:A`; `b:A`; `x1:A`; `y1:A`; `z1:A`;
+    `x2:A`; `y2:A`; `z2:A`] THEN
+  STRIP_TAC THEN REWRITE_TAC[weierstrass_of_jacobian; jacobian_add] THEN
+  MAP_EVERY ASM_CASES_TAC [`z1:A = ring_0 f`; `z2:A = ring_0 f`] THEN
+  ASM_REWRITE_TAC[weierstrass_of_jacobian; weierstrass_add] THEN
+  ASM_REWRITE_TAC[jacobian_eq; jacobian_neg; jacobian_0] THEN
+  ASM_SIMP_TAC[ring_div; RING_INV_POW] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[LET_DEF; LET_END_DEF] THEN
+  REPEAT LET_TAC THEN REWRITE_TAC[weierstrass_of_jacobian] THEN
+  REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  REWRITE_TAC[option_DISTINCT; option_INJ; PAIR_EQ] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN
+  REPEAT(FIRST_X_ASSUM(DISJ_CASES_TAC) ORELSE
+         FIRST_X_ASSUM(CONJUNCTS_THEN ASSUME_TAC)) THEN
+  weierstrass_field_tac);;
+
+let JACOBIAN_EQ_ADD = prove
+ (`!(f:A ring) a b p p' q q'.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        jacobian_point f p /\ jacobian_point f p' /\
+        jacobian_point f q /\ jacobian_point f q' /\
+        jacobian_eq f p p' /\ jacobian_eq f q q'
+        ==> jacobian_eq f
+              (jacobian_add (f,a,b) p q) (jacobian_add (f,a,b) p' q')`,
+  REPEAT GEN_TAC THEN
+  REPLICATE_TAC 9 (DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  ASM_SIMP_TAC[GSYM WEIERSTRASS_OF_JACOBIAN_EQ; JACOBIAN_POINT_ADD] THEN
+  ASM_SIMP_TAC[WEIERSTRASS_OF_JACOBIAN_ADD]);;
+
+let WEIERSTRASS_OF_JACOBIAN_ADD_OF_WEIERSTRASS = prove
+ (`!(f:A ring) a b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p /\ weierstrass_point f q
+        ==> weierstrass_of_jacobian f
+             (jacobian_add (f,a,b)
+               (jacobian_of_weierstrass f p)
+               (jacobian_of_weierstrass f q)) =
+            weierstrass_add (f,a,b) p q`,
+  SIMP_TAC[WEIERSTRASS_OF_JACOBIAN_ADD;
+           JACOBIAN_OF_WEIERSTRASS_POINT;
+           WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS]);;
+
+let JACOBIAN_OF_WEIERSTRASS_ADD = prove
+ (`!(f:A ring) a b p q.
+        field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\
+        a IN ring_carrier f /\ b IN ring_carrier f /\
+        weierstrass_point f p /\ weierstrass_point f q
+        ==> jacobian_eq f
+             (jacobian_of_weierstrass f (weierstrass_add (f,a,b) p q))
+             (jacobian_add (f,a,b)
+               (jacobian_of_weierstrass f p)
+               (jacobian_of_weierstrass f q))`,
+  SIMP_TAC[GSYM WEIERSTRASS_OF_JACOBIAN_EQ;
+           JACOBIAN_OF_WEIERSTRASS_POINT;
+           JACOBIAN_POINT_ADD; WEIERSTRASS_POINT_ADD;
+           WEIERSTRASS_OF_JACOBIAN_ADD;
+           WEIERSTRASS_OF_JACOBIAN_OF_WEIERSTRASS]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition of the NIST curve groups and proof that they are groups.       *)
