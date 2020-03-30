@@ -8,18 +8,6 @@ prioritize_num();;
 (* Products over natural numbers.                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let nproduct = new_definition
-  `nproduct = iterate(( * ):num->num->num)`;;
-
-let NPRODUCT_CLAUSES = prove
- (`(!f. nproduct {} f = 1) /\
-   (!x f s. FINITE(s)
-            ==> (nproduct (x INSERT s) f =
-                 if x IN s then nproduct s f else f(x) * nproduct s f))`,
-  REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_MUL]);;
-
 let NPRODUCT_SUPPORT = prove
  (`!f s. nproduct (support ( * ) f s) f = nproduct s f`,
   REWRITE_TAC[nproduct; ITERATE_SUPPORT]);;
@@ -350,27 +338,6 @@ let th = prove
 (* Now products over integers.                                               *)
 (* ------------------------------------------------------------------------- *)
 
-let NEUTRAL_INT_MUL = prove
- (`neutral(( * ):int->int->int) = &1`,
-  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  MESON_TAC[INT_MUL_LID; INT_MUL_RID]);;
-
-let MONOIDAL_INT_MUL = prove
- (`monoidal(( * ):int->int->int)`,
-  REWRITE_TAC[monoidal; NEUTRAL_INT_MUL] THEN INT_ARITH_TAC);;
-
-let iproduct = new_definition
-  `iproduct = iterate (( * ):int->int->int)`;;
-
-let IPRODUCT_CLAUSES = prove
- (`(!f. iproduct {} f = &1) /\
-   (!x f s. FINITE(s)
-            ==> (iproduct (x INSERT s) f =
-                 if x IN s then iproduct s f else f(x) * iproduct s f))`,
-  REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_INT_MUL]);;
-
 let IPRODUCT_SUPPORT = prove
  (`!f s. iproduct (support ( * ) f s) f = iproduct s f`,
   REWRITE_TAC[iproduct; ITERATE_SUPPORT]);;
@@ -671,18 +638,6 @@ let th = prove
 (* ------------------------------------------------------------------------- *)
 
 prioritize_real();;
-
-let product = new_definition
-  `product = iterate (( * ):real->real->real)`;;
-
-let PRODUCT_CLAUSES = prove
- (`(!f. product {} f = &1) /\
-   (!x f s. FINITE(s)
-            ==> (product (x INSERT s) f =
-                 if x IN s then product s f else f(x) * product s f))`,
-  REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_REAL_MUL]);;
 
 let PRODUCT_SUPPORT = prove
  (`!f s. product (support ( * ) f s) f = product s f`,

@@ -1261,10 +1261,12 @@ theorems :=
 "IN_UNION",IN_UNION;
 "IN_UNIONS",IN_UNIONS;
 "IN_UNIV",IN_UNIV;
+"IPRODUCT_CLAUSES",IPRODUCT_CLAUSES;
 "ISO",ISO;
 "ISO_FUN",ISO_FUN;
 "ISO_REFL",ISO_REFL;
 "ISO_USAGE",ISO_USAGE;
+"ISUM_CLAUSES",ISUM_CLAUSES;
 "ITERATE_BIJECTION",ITERATE_BIJECTION;
 "ITERATE_CASES",ITERATE_CASES;
 "ITERATE_CLAUSES",ITERATE_CLAUSES;
@@ -1493,6 +1495,8 @@ theorems :=
 "MOD_ZERO",MOD_ZERO;
 "MONOIDAL_AC",MONOIDAL_AC;
 "MONOIDAL_ADD",MONOIDAL_ADD;
+"MONOIDAL_INT_ADD",MONOIDAL_INT_ADD;
+"MONOIDAL_INT_MUL",MONOIDAL_INT_MUL;
 "MONOIDAL_MUL",MONOIDAL_MUL;
 "MONOIDAL_REAL_ADD",MONOIDAL_REAL_ADD;
 "MONOIDAL_REAL_MUL",MONOIDAL_REAL_MUL;
@@ -1586,6 +1590,8 @@ theorems :=
 "NADD_SUC",NADD_SUC;
 "NADD_UBOUND",NADD_UBOUND;
 "NEUTRAL_ADD",NEUTRAL_ADD;
+"NEUTRAL_INT_ADD",NEUTRAL_INT_ADD;
+"NEUTRAL_INT_MUL",NEUTRAL_INT_MUL;
 "NEUTRAL_MUL",NEUTRAL_MUL;
 "NEUTRAL_REAL_ADD",NEUTRAL_REAL_ADD;
 "NEUTRAL_REAL_MUL",NEUTRAL_REAL_MUL;
@@ -1610,6 +1616,7 @@ theorems :=
 "NOT_PSUBSET_EMPTY",NOT_PSUBSET_EMPTY;
 "NOT_SUC",NOT_SUC;
 "NOT_UNIV_PSUBSET",NOT_UNIV_PSUBSET;
+"NPRODUCT_CLAUSES",NPRODUCT_CLAUSES;
 "NSUM_0",NSUM_0;
 "NSUM_ADD",NSUM_ADD;
 "NSUM_ADD_GEN",NSUM_ADD_GEN;
@@ -1803,6 +1810,8 @@ theorems :=
 "PRE",PRE;
 "PRE_ELIM_THM",PRE_ELIM_THM;
 "PRE_ELIM_THM'",PRE_ELIM_THM';
+"PRIME_COPRIME_EQ_NONDIVISIBLE",PRIME_COPRIME_EQ_NONDIVISIBLE;
+"PRODUCT_CLAUSES",PRODUCT_CLAUSES;
 "PRODUCT_MAP_RESTRICTION",PRODUCT_MAP_RESTRICTION;
 "PROPERLY_DIVIDES_LE_IMP",PROPERLY_DIVIDES_LE_IMP;
 "PSUBSET",PSUBSET;
@@ -2750,9 +2759,11 @@ theorems :=
 "int_sub_th",int_sub_th;
 "int_tybij",int_tybij;
 "integer",integer;
+"iproduct",iproduct;
 "is_int",is_int;
 "is_nadd",is_nadd;
 "is_nadd_0",is_nadd_0;
+"isum",isum;
 "iterate",iterate;
 "lambda",lambda;
 "le_c",le_c;
@@ -2775,6 +2786,7 @@ theorems :=
 "nadd_rep",nadd_rep;
 "nadd_rinv",nadd_rinv;
 "neutral",neutral;
+"nproduct",nproduct;
 "nsum",nsum;
 "num_Axiom",num_Axiom;
 "num_CASES",num_CASES;
@@ -2818,6 +2830,7 @@ theorems :=
 "polynomial_function",polynomial_function;
 "prime",prime;
 "prod_tybij",prod_tybij;
+"product",product;
 "product_map",product_map;
 "real_INFINITE",real_INFINITE;
 "real_abs",real_abs;

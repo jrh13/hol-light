@@ -196,221 +196,11 @@ let DIVIDES_NSUM = prove
   ASM_SIMP_TAC[DIVIDES_0; NSUM_CLAUSES; FORALL_IN_INSERT; DIVIDES_ADD]);;
 
 (* ------------------------------------------------------------------------- *)
-(* The Bezout theorem is a bit ugly for N; it'd be easier for Z              *)
-(* ------------------------------------------------------------------------- *)
-
-let IND_EUCLID = prove(
-  `!P. (!a b. P a b <=> P b a) /\
-       (!a. P a 0) /\
-       (!a b. P a b ==> P a (a + b)) ==>
-         !a b. P a b`,
-  REPEAT STRIP_TAC THEN
-  W(fun (asl,w) -> SUBGOAL_THEN `!n a b. (a + b = n) ==> P a b`
-                   MATCH_MP_TAC) THENL
-   [ALL_TAC; EXISTS_TAC `a + b` THEN REFL_TAC] THEN
-  MATCH_MP_TAC num_WF THEN
-  REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN MP_TAC
-   (SPECL [`a:num`; `b:num`] LT_CASES) THENL
-   [ALL_TAC; ALL_TAC;
-    DISCH_THEN SUBST1_TAC THEN
-    GEN_REWRITE_TAC RAND_CONV [GSYM ADD_0] THEN
-    FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]] THEN
-  DISCH_THEN(fun th -> SUBST1_TAC(SYM(MATCH_MP SUB_ADD
-   (MATCH_MP LT_IMP_LE th))) THEN
-    DISJ_CASES_THEN MP_TAC (MATCH_MP
-     (ARITH_RULE `a < b ==> a = 0 \/ a + b - a < a + b`) th)) THENL
-   [DISCH_THEN SUBST1_TAC THEN
-    FIRST_ASSUM (CONV_TAC o REWR_CONV) THEN
-    FIRST_ASSUM MATCH_ACCEPT_TAC;
-    REWRITE_TAC[ASSUME `a + b = n`] THEN
-    DISCH_TAC THEN ONCE_REWRITE_TAC[ADD_SYM] THEN
-    FIRST_ASSUM MATCH_MP_TAC THEN
-    UNDISCH_TAC `a + b - a < n` THEN
-    DISCH_THEN(ANTE_RES_THEN MATCH_MP_TAC);
-    DISCH_THEN SUBST1_TAC THEN FIRST_ASSUM MATCH_ACCEPT_TAC;
-    REWRITE_TAC[ONCE_REWRITE_RULE[ADD_SYM] (ASSUME `a + b = n`)] THEN
-    DISCH_TAC THEN ONCE_REWRITE_TAC[ADD_SYM] THEN
-    FIRST_ASSUM (CONV_TAC o REWR_CONV) THEN
-    FIRST_ASSUM MATCH_MP_TAC THEN
-    UNDISCH_TAC `b + a - b < n` THEN
-    DISCH_THEN(ANTE_RES_THEN MATCH_MP_TAC)] THEN
-  REWRITE_TAC[]);;
-
-let BEZOUT_LEMMA = prove(
-  `!a b. (?d x y. (d divides a /\ d divides b) /\
-                  ((a * x = (b * y) + d) \/
-                   (b * x = (a * y) + d)))
-     ==> (?d x y. (d divides a /\ d divides (a + b)) /\
-                  ((a * x = ((a + b) * y) + d) \/
-                   ((a + b) * x = (a * y) + d)))`,
-  REPEAT STRIP_TAC THEN EXISTS_TAC `d:num` THENL
-   [MAP_EVERY EXISTS_TAC [`x + y`; `y:num`];
-    MAP_EVERY EXISTS_TAC [`x:num`; `x + y`]] THEN
-  ASM_REWRITE_TAC[] THEN
-  (CONJ_TAC THENL [MATCH_MP_TAC DIVIDES_ADD; ALL_TAC]) THEN
-  ASM_REWRITE_TAC[LEFT_ADD_DISTRIB; RIGHT_ADD_DISTRIB] THEN
-  REWRITE_TAC[ADD_ASSOC] THEN DISJ1_TAC THEN
-  REWRITE_TAC[ADD_AC]);;
-
-let BEZOUT_ADD = prove(
-  `!a b. ?d x y. (d divides a /\ d divides b) /\
-                 ((a * x = (b * y) + d) \/
-                  (b * x = (a * y) + d))`,
-  W(fun (asl,w) -> MP_TAC(SPEC (list_mk_abs([`a:num`; `b:num`],
-                                            snd(strip_forall w)))
-    IND_EUCLID)) THEN BETA_TAC THEN DISCH_THEN MATCH_MP_TAC THEN
-  REPEAT CONJ_TAC THENL
-   [REPEAT GEN_TAC THEN REPEAT
-     (AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
-    GEN_TAC THEN BETA_TAC) THEN
-    GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [DISJ_SYM] THEN
-    GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [CONJ_SYM] THEN REFL_TAC;
-    GEN_TAC THEN MAP_EVERY EXISTS_TAC [`a:num`; `1`; `0`] THEN
-    REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES; DIVIDES_0; DIVIDES_REFL];
-    MATCH_ACCEPT_TAC BEZOUT_LEMMA]);;
-
-let BEZOUT = prove(
-  `!a b. ?d x y. (d divides a /\ d divides b) /\
-                 (((a * x) - (b * y) = d) \/
-                  ((b * x) - (a * y) = d))`,
-  REPEAT GEN_TAC THEN REPEAT_TCL STRIP_THM_THEN ASSUME_TAC
-   (SPECL [`a:num`; `b:num`] BEZOUT_ADD) THEN
-  REPEAT(W(EXISTS_TAC o fst o dest_exists o snd)) THEN
-  ASM_REWRITE_TAC[] THEN
-  ONCE_REWRITE_TAC[ADD_SYM] THEN REWRITE_TAC[ADD_SUB]);;
-
-(* ------------------------------------------------------------------------- *)
-(* We can get a stronger version with a nonzeroness assumption.              *)
-(* ------------------------------------------------------------------------- *)
-
-let BEZOUT_ADD_STRONG = prove
- (`!a b. ~(a = 0)
-         ==> ?d x y. d divides a /\ d divides b /\ (a * x = b * y + d)`,
-  REPEAT STRIP_TAC THEN
-  MP_TAC(SPECL [`a:num`; `b:num`] BEZOUT_ADD) THEN
-  REWRITE_TAC[TAUT `a /\ (b \/ c) <=> a /\ b \/ a /\ c`] THEN
-  REWRITE_TAC[EXISTS_OR_THM; GSYM CONJ_ASSOC] THEN
-  MATCH_MP_TAC(TAUT `(b ==> a) ==> a \/ b ==> a`) THEN
-  DISCH_THEN(X_CHOOSE_THEN `d:num` (X_CHOOSE_THEN `x:num`
-    (X_CHOOSE_THEN `y:num` STRIP_ASSUME_TAC))) THEN
-  FIRST_X_ASSUM(MP_TAC o SYM) THEN
-  ASM_CASES_TAC `b = 0` THENL
-   [ASM_SIMP_TAC[MULT_CLAUSES; ADD_EQ_0; MULT_EQ_0; ADD_CLAUSES] THEN
-    STRIP_TAC THEN UNDISCH_TAC `d divides a` THEN
-    ASM_REWRITE_TAC[DIVIDES_ZERO]; ALL_TAC] THEN
-  MP_TAC(SPECL [`d:num`; `b:num`] DIVIDES_LE) THEN ASM_REWRITE_TAC[] THEN
-  REWRITE_TAC[LE_LT] THEN STRIP_TAC THENL
-   [ALL_TAC;
-    DISCH_TAC THEN EXISTS_TAC `b:num` THEN EXISTS_TAC `b:num` THEN
-    EXISTS_TAC `a - 1` THEN
-    UNDISCH_TAC `d divides a` THEN ASM_SIMP_TAC[DIVIDES_REFL] THEN
-    REWRITE_TAC[ARITH_RULE `b * x + b = (x + 1) * b`] THEN
-    ASM_SIMP_TAC[ARITH_RULE `~(a = 0) ==> ((a - 1) + 1 = a)`]] THEN
-  ASM_CASES_TAC `x = 0` THENL
-   [ASM_SIMP_TAC[MULT_CLAUSES; ADD_EQ_0; MULT_EQ_0] THEN STRIP_TAC THEN
-    UNDISCH_TAC `d divides a` THEN ASM_REWRITE_TAC[DIVIDES_ZERO]; ALL_TAC] THEN
-  DISCH_THEN(MP_TAC o AP_TERM `( * ) (b - 1)`) THEN
-  DISCH_THEN(MP_TAC o AP_TERM `(+) (d:num)`) THEN
-  GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o RAND_CONV)
-   [LEFT_ADD_DISTRIB] THEN
-  REWRITE_TAC[ARITH_RULE `d + bay + b1 * d = (1 + b1) * d + bay`] THEN
-  ASM_SIMP_TAC[ARITH_RULE `~(b = 0) ==> (1 + (b - 1) = b)`] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP (ARITH_RULE
-   `(a + b = c + d) ==> a <= d ==> (b = (d - a) + c:num)`)) THEN
-  ANTS_TAC THENL
-   [ONCE_REWRITE_TAC[AC MULT_AC `(b - 1) * b * x = b * (b - 1) * x`] THEN
-    REWRITE_TAC[LE_MULT_LCANCEL] THEN DISJ2_TAC THEN
-    GEN_REWRITE_TAC LAND_CONV [ARITH_RULE `d = d * 1`] THEN
-    MATCH_MP_TAC LE_MULT2 THEN
-    MAP_EVERY UNDISCH_TAC [`d < b:num`; `~(x = 0)`] THEN ARITH_TAC;
-    ALL_TAC] THEN
-  DISCH_THEN(fun th ->
-    MAP_EVERY EXISTS_TAC [`d:num`; `y * (b - 1)`; `(b - 1) * x - d`] THEN
-    MP_TAC th) THEN
-  ASM_REWRITE_TAC[] THEN
-  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o LAND_CONV) [LEFT_SUB_DISTRIB] THEN
-  REWRITE_TAC[MULT_AC]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Greatest common divisor.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
 let DIVIDES_GCD = prove
  (`!a b d. d divides gcd(a,b) <=> d divides a /\ d divides b`,
-  NUMBER_TAC);;
-
-let GCD_UNIQUE = prove(
-  `!d a b. (d divides a /\ d divides b) /\
-           (!e. e divides a /\ e divides b ==> e divides d) <=>
-           (d = gcd(a,b))`,
-  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[GCD] THEN
-  ONCE_REWRITE_TAC[GSYM DIVIDES_ANTISYM] THEN
-  ASM_REWRITE_TAC[DIVIDES_GCD] THEN
-  FIRST_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[GCD]);;
-
-let GCD_EQ = prove
- (`(!d. d divides x /\ d divides y <=> d divides u /\ d divides v)
-   ==> gcd(x,y) = gcd(u,v)`,
-  REWRITE_TAC[DIVIDES_GCD; GSYM DIVIDES_ANTISYM] THEN MESON_TAC[GCD]);;
-
-let GCD_SYM = prove
- (`!a b. gcd(a,b) = gcd(b,a)`,
-  NUMBER_TAC);;
-
-let GCD_ASSOC = prove
- (`!a b c. gcd(a,gcd(b,c)) = gcd(gcd(a,b),c)`,
-  NUMBER_TAC);;
-
-let BEZOUT_GCD = prove(
-  `!a b. ?x y. ((a * x) - (b * y) = gcd(a,b)) \/
-               ((b * x) - (a * y) = gcd(a,b))`,
-  REPEAT GEN_TAC THEN
-  MP_TAC(SPECL [`a:num`; `b:num`] BEZOUT) THEN
-  DISCH_THEN(EVERY_TCL (map X_CHOOSE_THEN [`d:num`; `x:num`; `y:num`])
-    (CONJUNCTS_THEN ASSUME_TAC)) THEN
-  SUBGOAL_THEN `d divides gcd(a,b)` MP_TAC THENL
-   [MATCH_MP_TAC(last(CONJUNCTS(SPEC_ALL GCD))) THEN ASM_REWRITE_TAC[];
-    DISCH_THEN(X_CHOOSE_THEN `k:num` SUBST1_TAC o REWRITE_RULE[divides]) THEN
-    MAP_EVERY EXISTS_TAC [`x * k`; `y * k`] THEN
-    ASM_REWRITE_TAC[GSYM RIGHT_SUB_DISTRIB; MULT_ASSOC] THEN
-    FIRST_ASSUM(DISJ_CASES_THEN SUBST1_TAC) THEN REWRITE_TAC[]]);;
-
-let BEZOUT_GCD_STRONG = prove
- (`!a b. ~(a = 0) ==> ?x y. a * x = b * y + gcd(a,b)`,
-  REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o SPEC `b:num` o MATCH_MP BEZOUT_ADD_STRONG) THEN
-  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
-  MAP_EVERY X_GEN_TAC [`d:num`; `x:num`; `y:num`] THEN
-  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  SUBGOAL_THEN `d divides gcd(a,b)` MP_TAC THENL
-   [ASM_MESON_TAC[GCD]; ALL_TAC] THEN
-  DISCH_THEN(X_CHOOSE_THEN `k:num` SUBST1_TAC o REWRITE_RULE[divides]) THEN
-  MAP_EVERY EXISTS_TAC [`x * k`; `y * k`] THEN
-  ASM_REWRITE_TAC[GSYM RIGHT_ADD_DISTRIB; MULT_ASSOC]);;
-
-let GCD_LMUL = prove
- (`!a b c. gcd(c * a, c * b) = c * gcd(a,b)`,
-  NUMBER_TAC);;
-
-let GCD_RMUL = prove
- (`!a b c. gcd(a * c, b * c) = c * gcd(a,b)`,
-  NUMBER_TAC);;
-
-let GCD_BEZOUT = prove(
-  `!a b d. (?x y. ((a * x) - (b * y) = d) \/ ((b * x) - (a * y) = d)) <=>
-           gcd(a,b) divides d`,
-  REPEAT GEN_TAC THEN EQ_TAC THENL
-   [STRIP_TAC THEN POP_ASSUM(SUBST1_TAC o SYM) THEN
-    MATCH_MP_TAC DIVIDES_SUB THEN CONJ_TAC THEN
-    MATCH_MP_TAC DIVIDES_RMUL THEN REWRITE_TAC[GCD];
-    DISCH_THEN(X_CHOOSE_THEN `k:num` SUBST1_TAC o REWRITE_RULE[divides]) THEN
-    STRIP_ASSUME_TAC(SPECL [`a:num`; `b:num`] BEZOUT_GCD) THEN
-    MAP_EVERY EXISTS_TAC [`x * k`; `y * k`] THEN
-    ASM_REWRITE_TAC[GSYM RIGHT_SUB_DISTRIB; MULT_ASSOC] THEN
-    FIRST_ASSUM(DISJ_CASES_THEN SUBST1_TAC) THEN REWRITE_TAC[]]);;
-
-let GCD_BEZOUT_SUM = prove
- (`!a b d x y. ((a * x) + (b * y) = d) ==> gcd(a,b) divides d`,
   NUMBER_TAC);;
 
 let GCD_0 = prove
@@ -480,6 +270,98 @@ let GCD_MUL_COPRIME = prove
    (!a b c. coprime(a,b) ==> gcd(a * b,c) = gcd(a,c) * gcd(b,c))`,
   NUMBER_TAC);;
 
+let GCD_SYM = prove
+ (`!a b. gcd(a,b) = gcd(b,a)`,
+  NUMBER_TAC);;
+
+let GCD_ASSOC = prove
+ (`!a b c. gcd(a,gcd(b,c)) = gcd(gcd(a,b),c)`,
+  NUMBER_TAC);;
+
+let GCD_LMUL = prove
+ (`!a b c. gcd(c * a, c * b) = c * gcd(a,b)`,
+  NUMBER_TAC);;
+
+let GCD_RMUL = prove
+ (`!a b c. gcd(a * c, b * c) = c * gcd(a,b)`,
+  NUMBER_TAC);;
+
+let GCD_BEZOUT_SUM = prove
+ (`!a b d x y. a * x + b * y = d ==> gcd(a,b) divides d`,
+  NUMBER_TAC);;
+
+let GCD_UNIQUE = prove
+ (`!d a b. (d divides a /\ d divides b) /\
+           (!e. e divides a /\ e divides b ==> e divides d) <=>
+           d = gcd(a,b)`,
+  REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[GCD] THEN
+  ONCE_REWRITE_TAC[GSYM DIVIDES_ANTISYM] THEN
+  ASM_REWRITE_TAC[DIVIDES_GCD] THEN
+  FIRST_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[GCD]);;
+
+let GCD_EQ = prove
+ (`(!d. d divides x /\ d divides y <=> d divides u /\ d divides v)
+   ==> gcd(x,y) = gcd(u,v)`,
+  REWRITE_TAC[DIVIDES_GCD; GSYM DIVIDES_ANTISYM] THEN MESON_TAC[GCD]);;
+
+let BEZOUT_GCD_STRONG = prove
+ (`!a b. ~(a = 0) ==> ?x y. a * x = b * y + gcd(a,b)`,
+  REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [SWAP_EXISTS_THM] THEN
+  MP_TAC(INTEGER_RULE `?x y. &a * x:int = &b * y + gcd(&a,&b)`) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`x:int`; `y:int`] THEN STRIP_TAC THEN
+  MP_TAC(SPECL [`y:int`; `&a:int`] INT_CONG_NUM_EXISTS) THEN
+  ASM_REWRITE_TAC[INT_OF_NUM_EQ] THEN MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC `r:num` THEN DISCH_TAC THEN
+  SUBGOAL_THEN `&a divides (&b * &r + gcd(&a,&b):int)` MP_TAC THENL
+   [REPLICATE_TAC 2 (POP_ASSUM MP_TAC) THEN CONV_TAC INTEGER_RULE;
+    ASM_REWRITE_TAC[int_divides; EXISTS_INT_CASES] THEN
+    DISCH_THEN(DISJ_CASES_THEN MP_TAC) THEN MATCH_MP_TAC MONO_EXISTS THEN
+    SIMP_TAC[GSYM NUM_GCD; INT_OF_NUM_MUL; INT_OF_NUM_ADD; INT_OF_NUM_EQ] THEN
+    REWRITE_TAC[INT_MUL_RNEG; INT_OF_NUM_MUL;
+                INT_ARITH `&x:int = -- &y <=> &x:int = &0 /\ &y:int = &0`] THEN
+    ASM_REWRITE_TAC[INT_OF_NUM_EQ; ADD_EQ_0; GCD_ZERO]]);;
+
+let BEZOUT_ADD_STRONG = prove
+ (`!a b. ~(a = 0)
+         ==> ?d x y. d divides a /\ d divides b /\ a * x = b * y + d`,
+  MESON_TAC[BEZOUT_GCD_STRONG; GCD]);;
+
+let BEZOUT_GCD = prove
+ (`!a b. ?x y. a * x - b * y = gcd(a,b) \/ b * x - a * y = gcd(a,b)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a = 0 /\ b = 0` THEN
+  ASM_REWRITE_TAC[MULT_CLAUSES; GCD_0; SUB_0] THEN
+  FIRST_X_ASSUM(DISJ_CASES_TAC o REWRITE_RULE[DE_MORGAN_THM]) THENL
+   [MP_TAC(SPECL [`a:num`; `b:num`] BEZOUT_GCD_STRONG);
+    MP_TAC(SPECL [`b:num`; `a:num`] BEZOUT_GCD_STRONG)] THEN
+  ASM_REWRITE_TAC[] THEN REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+  REWRITE_TAC[GCD_SYM] THEN ARITH_TAC);;
+
+let BEZOUT_ADD = prove
+ (`!a b. ?d x y. (d divides a /\ d divides b) /\
+                 (a * x = b * y + d \/ b * x = a * y + d)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a = 0 /\ b = 0` THEN
+  ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES; DIVIDES_0; GSYM EXISTS_REFL] THEN
+  ASM_MESON_TAC[BEZOUT_ADD_STRONG; MULT_SYM; ADD_SYM]);;
+
+let BEZOUT = prove
+ (`!a b. ?d x y. (d divides a /\ d divides b) /\
+                 (a * x - b * y = d \/ b * x - a * y = d)`,
+  MESON_TAC[BEZOUT_GCD; GCD]);;
+
+let GCD_BEZOUT = prove
+ (`!a b d. (?x y. a * x - b * y = d \/ b * x - a * y = d) <=>
+           gcd(a,b) divides d`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [STRIP_TAC THEN POP_ASSUM(SUBST1_TAC o SYM) THEN
+    MATCH_MP_TAC DIVIDES_SUB THEN CONJ_TAC THEN
+    MATCH_MP_TAC DIVIDES_RMUL THEN REWRITE_TAC[GCD];
+    DISCH_THEN(X_CHOOSE_THEN `k:num` SUBST1_TAC o REWRITE_RULE[divides]) THEN
+    STRIP_ASSUME_TAC(SPECL [`a:num`; `b:num`] BEZOUT_GCD) THEN
+    MAP_EVERY EXISTS_TAC [`x * k`; `y * k`] THEN
+    ASM_REWRITE_TAC[GSYM RIGHT_SUB_DISTRIB; MULT_ASSOC] THEN
+    FIRST_ASSUM(DISJ_CASES_THEN SUBST1_TAC) THEN REWRITE_TAC[]]);;
+
 let GCD_LE = prove
  (`(!m n. gcd(m,n) <= m <=> (m = 0 ==> n = 0)) /\
    (!m n. gcd(m,n) <= n <=> (n = 0 ==> m = 0))`,
@@ -517,8 +399,8 @@ let GCD_LE_MAX = prove
 (* Coprimality                                                               *)
 (* ------------------------------------------------------------------------- *)
 
-let COPRIME = prove(
-  `!a b. coprime(a,b) <=> !d. d divides a /\ d divides b <=> d = 1`,
+let COPRIME = prove
+ (`!a b. coprime(a,b) <=> !d. d divides a /\ d divides b <=> d = 1`,
   REPEAT GEN_TAC THEN REWRITE_TAC[coprime] THEN
   REPEAT(EQ_TAC ORELSE STRIP_TAC) THEN ASM_REWRITE_TAC[DIVIDES_1] THENL
    [FIRST_ASSUM MATCH_MP_TAC;
@@ -537,9 +419,8 @@ let COPRIME_SYM = prove
  (`!a b. coprime(a,b) <=> coprime(b,a)`,
   NUMBER_TAC);;
 
-let COPRIME_BEZOUT = prove(
-  `!a b. coprime(a,b) <=> ?x y. ((a * x) - (b * y) = 1) \/
-                                ((b * x) - (a * y) = 1)`,
+let COPRIME_BEZOUT = prove
+ (`!a b. coprime(a,b) <=> ?x y. a * x - b * y = 1 \/ b * x - a * y = 1`,
   REWRITE_TAC[GCD_BEZOUT; DIVIDES_ONE; COPRIME_GCD]);;
 
 let COPRIME_DIVPROD = prove
@@ -555,20 +436,17 @@ let GCD_COPRIME = prove
                ==> coprime(a',b')`,
   NUMBER_TAC);;
 
-let GCD_COPRIME_EXISTS = prove(
-  `!a b. ~(gcd(a,b) = 0) ==>
-        ?a' b'. (a = a' * gcd(a,b)) /\
-                (b = b' * gcd(a,b)) /\
-                coprime(a',b')`,
-  REPEAT GEN_TAC THEN DISCH_TAC THEN MP_TAC(SPECL [`a:num`; `b:num`] GCD) THEN
-  DISCH_THEN(MP_TAC o CONJUNCT1) THEN REWRITE_TAC[divides] THEN
-  DISCH_THEN(CONJUNCTS_THEN2 (X_CHOOSE_TAC `a':num` o GSYM)
-   (X_CHOOSE_TAC `b':num` o GSYM)) THEN
-  MAP_EVERY EXISTS_TAC [`a':num`; `b':num`] THEN
-  ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_REWRITE_TAC[] THEN
-  MATCH_MP_TAC GCD_COPRIME THEN
-  MAP_EVERY EXISTS_TAC [`a:num`; `b:num`] THEN
-  ONCE_REWRITE_TAC[MULT_SYM] THEN ASM_REWRITE_TAC[]);;
+let GCD_COPRIME_EXISTS = prove
+ (`!a b. ?a' b'. a = a' * gcd(a,b) /\ b = b' * gcd(a,b) /\ coprime(a',b')`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `gcd(a,b) = 0` THENL
+   [FIRST_ASSUM(ASSUME_TAC o REWRITE_RULE[GCD_ZERO]) THEN
+    MAP_EVERY EXISTS_TAC [`0`; `1`] THEN ASM_REWRITE_TAC[MULT_CLAUSES] THEN
+    CONV_TAC NUMBER_RULE;
+    MP_TAC(CONJUNCT1(SPECL [`a:num`; `b:num`] GCD)) THEN
+    REWRITE_TAC[divides; LEFT_AND_EXISTS_THM] THEN
+    REWRITE_TAC[RIGHT_AND_EXISTS_THM] THEN
+    REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
+    ASM_MESON_TAC[GCD_COPRIME; MULT_SYM]]);;
 
 let COPRIME_0 = prove
  (`(!d. coprime(d,0) <=> d = 1) /\
@@ -628,6 +506,24 @@ let COPRIME_EXP2_SUC = prove
  (`!n a b. coprime(a EXP (SUC n),b EXP (SUC n)) <=> coprime(a,b)`,
   REWRITE_TAC[COPRIME_EXP2; NOT_SUC]);;
 
+let COPRIME_NPRODUCT_EQ = prove
+ (`(!(f:A->num) a s.
+        FINITE s
+        ==> (coprime(a,nproduct s f) <=> !i. i IN s ==> coprime(a,f i))) /\
+   (!(f:A->num) b s.
+        FINITE s
+        ==> (coprime(nproduct s f,b) <=> !i. i IN s ==> coprime(f i,b)))`,
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [COPRIME_SYM] THEN
+  REWRITE_TAC[] THEN GEN_TAC THEN GEN_TAC THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NPRODUCT_CLAUSES; NOT_IN_EMPTY; COPRIME_1] THEN
+  SIMP_TAC[COPRIME_RMUL; FORALL_IN_INSERT]);;
+
+let COPRIME_NPRODUCT = prove
+ (`!s n. FINITE s /\ (!x. x IN s ==> coprime(n,a x))
+         ==> coprime(n,nproduct s a)`,
+  SIMP_TAC[COPRIME_NPRODUCT_EQ]);;
+
 let COPRIME_REFL = prove
  (`!n. coprime(n,n) <=> n = 1`,
   NUMBER_TAC);;
@@ -642,58 +538,29 @@ let COPRIME_MINUS1 = prove
   GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP DIVIDES_SUB) THEN
   ASM_SIMP_TAC[ARITH_RULE `~(n = 0) ==> n - (n - 1) = 1`; DIVIDES_ONE]);;
 
-let BEZOUT_GCD_POW = prove(
-  `!n a b. ?x y. (((a EXP n) * x) - ((b EXP n) * y) = gcd(a,b) EXP n) \/
-                 (((b EXP n) * x) - ((a EXP n) * y) = gcd(a,b) EXP n)`,
-  REPEAT GEN_TAC THEN ASM_CASES_TAC `gcd(a,b) = 0` THENL
-   [STRUCT_CASES_TAC(SPEC `n:num` num_CASES) THEN
-    ASM_REWRITE_TAC[EXP; MULT_CLAUSES] THENL
-     [MAP_EVERY EXISTS_TAC [`1`; `0`] THEN REWRITE_TAC[SUB_0];
-      REPEAT(EXISTS_TAC `0`) THEN REWRITE_TAC[MULT_CLAUSES; SUB_0]];
-    MP_TAC(SPECL [`a:num`; `b:num`] GCD) THEN
-    DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-    DISCH_THEN(CONJUNCTS_THEN MP_TAC) THEN REWRITE_TAC[divides] THEN
-    DISCH_THEN(X_CHOOSE_THEN `b':num` ASSUME_TAC) THEN
-    DISCH_THEN(X_CHOOSE_THEN `a':num` ASSUME_TAC) THEN
-    MP_TAC(SPECL [`a:num`; `b:num`; `a':num`; `b':num`] GCD_COPRIME) THEN
-    RULE_ASSUM_TAC GSYM THEN RULE_ASSUM_TAC(ONCE_REWRITE_RULE[MULT_SYM]) THEN
-    ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o GSYM) THEN
-    ASM_REWRITE_TAC[] THEN
-    DISCH_THEN(MP_TAC o SPEC `n:num` o MATCH_MP COPRIME_EXP_IMP) THEN
-    REWRITE_TAC[COPRIME_BEZOUT] THEN
-    DISCH_THEN(X_CHOOSE_THEN `x:num` (X_CHOOSE_THEN `y:num` MP_TAC)) THEN
-    DISCH_THEN(DISJ_CASES_THEN MP_TAC) THEN
-    DISCH_THEN (MP_TAC o AP_TERM `(*) (gcd(a,b) EXP n)`) THEN
-    REWRITE_TAC[MULT_CLAUSES; LEFT_SUB_DISTRIB] THEN
-    DISCH_THEN(SUBST1_TAC o SYM) THEN
-    MAP_EVERY EXISTS_TAC [`x:num`; `y:num`] THEN
-    REWRITE_TAC[MULT_ASSOC; GSYM MULT_EXP] THEN
-    RULE_ASSUM_TAC(ONCE_REWRITE_RULE[MULT_SYM]) THEN
-    ASM_REWRITE_TAC[]]);;
+let GCD_EXP = prove
+ (`!n a b. gcd(a EXP n,b EXP n) = gcd(a,b) EXP n`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`a:num`; `b:num`] GCD_COPRIME_EXISTS) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a':num`; `b':num`] THEN
+  STRIP_TAC THEN ONCE_ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[MULT_EXP; GCD_RMUL] THEN
+  MATCH_MP_TAC(NUM_RING `x = 1 /\ y = 1 ==> a * x = a * y`) THEN
+  ASM_REWRITE_TAC[GSYM COPRIME_GCD; EXP_EQ_1] THEN
+  ASM_REWRITE_TAC[COPRIME_LEXP; COPRIME_REXP]);;
 
-let GCD_EXP = prove(
-  `!n a b. gcd(a EXP n,b EXP n) = gcd(a,b) EXP n`,
-  REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN
-  ONCE_REWRITE_TAC[GSYM GCD_UNIQUE] THEN REPEAT CONJ_TAC THENL
-   [MATCH_MP_TAC DIVIDES_EXP THEN REWRITE_TAC[GCD];
-    MATCH_MP_TAC DIVIDES_EXP THEN REWRITE_TAC[GCD];
-    X_GEN_TAC `d:num` THEN STRIP_TAC THEN
-    MP_TAC(SPECL [`n:num`; `a:num`; `b:num`] BEZOUT_GCD_POW) THEN
-    DISCH_THEN(REPEAT_TCL CHOOSE_THEN (DISJ_CASES_THEN
-     (SUBST1_TAC o SYM))) THEN
-    MATCH_MP_TAC DIVIDES_SUB THEN CONJ_TAC THEN
-    MATCH_MP_TAC DIVIDES_RMUL THEN ASM_REWRITE_TAC[]]);;
-
-let DIVISION_DECOMP = prove(
-  `!a b c. a divides (b * c) ==>
-     ?b' c'. (a = b' * c') /\ b' divides b /\ c' divides c`,
+let DIVISION_DECOMP = prove
+ (`!a b c.
+        a divides (b * c)
+        ==> ?b' c'. a = b' * c' /\ b' divides b /\ c' divides c`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   EXISTS_TAC `gcd(a,b)` THEN REWRITE_TAC[GCD] THEN
-  MP_TAC(SPECL [`a:num`; `b:num`] GCD_COPRIME_EXISTS) THEN
   ASM_CASES_TAC `gcd(a,b) = 0` THENL
    [ASM_REWRITE_TAC[] THEN EXISTS_TAC `1` THEN
     RULE_ASSUM_TAC(REWRITE_RULE[GCD_ZERO]) THEN
     ASM_REWRITE_TAC[MULT_CLAUSES; DIVIDES_1];
+    MP_TAC(SPECL [`a:num`; `b:num`] GCD_COPRIME_EXISTS) THEN
     ASM_REWRITE_TAC[] THEN
     DISCH_THEN(X_CHOOSE_THEN `a':num` (X_CHOOSE_THEN `b':num`
       (STRIP_ASSUME_TAC o GSYM o ONCE_REWRITE_RULE[MULT_SYM]))) THEN
@@ -713,7 +580,7 @@ let DIVIDES_EXP2_REV = prove
  (`!n a b. (a EXP n) divides (b EXP n) /\ ~(n = 0) ==> a divides b`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `gcd(a,b) = 0` THENL
    [ASM_MESON_TAC[GCD_ZERO; DIVIDES_REFL]; ALL_TAC] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP GCD_COPRIME_EXISTS) THEN
+  MP_TAC(SPECL [`a:num`; `b:num`] GCD_COPRIME_EXISTS) THEN
   STRIP_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   ONCE_ASM_REWRITE_TAC[] THEN REWRITE_TAC[MULT_EXP] THEN
   ASM_SIMP_TAC[EXP_EQ_0; DIVIDES_RMUL2_EQ] THEN
@@ -735,7 +602,7 @@ let DIVIDES_MUL = prove
 
 let CHINESE_REMAINDER = prove
  (`!a b u v. coprime(a,b) /\ ~(a = 0) /\ ~(b = 0)
-             ==> ?x q1 q2. (x = u + q1 * a) /\ (x = v + q2 * b)`,
+             ==> ?x q1 q2. x = u + q1 * a /\ x = v + q2 * b`,
   let lemma = prove
    (`(?d x y. (d = 1) /\ P x y d) <=> (?x y. P x y 1)`,
     MESON_TAC[]) in
@@ -899,11 +766,7 @@ let PRIME_COPRIME = prove
 
 let PRIME_COPRIME_EQ = prove
  (`!p n. prime p ==> (coprime(p,n) <=> ~(p divides n))`,
-  REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC(TAUT `(b \/ a) /\ ~(a /\ b) ==> (a <=> ~b)`) THEN
-  ASM_SIMP_TAC[PRIME_COPRIME_STRONG] THEN
-  ASM_MESON_TAC[COPRIME_REFL; PRIME_1; NUMBER_RULE
-   `coprime(p,n) /\ p divides n ==> coprime(p,p)`]);;
+  SIMP_TAC[PRIME_COPRIME_EQ_NONDIVISIBLE]);;
 
 let GCD_PRIME_CASES = prove
  (`(!p n. prime p ==> gcd(p,n) = if p divides n then p else 1) /\

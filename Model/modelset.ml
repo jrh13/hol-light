@@ -537,7 +537,7 @@ let CARTESIAN_EXISTS = prove
   STRIP_TAC THEN ASM_REWRITE_TAC[LEVEL_PAIR] THEN BINOP_TAC THEN
   ASM_MESON_TAC[inset; setlevel_INJ]);;
 
-let PRODUCT = new_specification ["product"]
+let CARTPRODUCT = new_specification ["cartproduct"]
        (REWRITE_RULE[SKOLEM_THM] CARTESIAN_EXISTS);;
 
 (* ------------------------------------------------------------------------- *)
@@ -698,17 +698,17 @@ let IN_POWERSET = prove
  (`!x s. x <: powerset s <=> x <=: s`,
   MESON_TAC[POWERSET]);;
 
-let IN_PRODUCT = prove
- (`!z s t. z <: product s t <=> ?x y. (z = pair x y) /\ x <: s /\ y <: t`,
-  MESON_TAC[PRODUCT]);;
+let IN_CARTPRODUCT = prove
+ (`!z s t. z <: cartproduct s t <=> ?x y. (z = pair x y) /\ x <: s /\ y <: t`,
+  MESON_TAC[CARTPRODUCT]);;
 
 let IN_COMPREHENSION = prove
  (`!p s x. x <: s suchthat p <=> x <: s /\ p x`,
   MESON_TAC[SUCHTHAT]);;
 
-let PRODUCT_INHABITED = prove
- (`(?x. x <: s) /\ (?y. y <: t) ==> ?z. z <: product s t`,
-  MESON_TAC[IN_PRODUCT]);;
+let CARTPRODUCT_INHABITED = prove
+ (`(?x. x <: s) /\ (?y. y <: t) ==> ?z. z <: cartproduct s t`,
+  MESON_TAC[IN_CARTPRODUCT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Definition of function space.                                             *)
@@ -716,7 +716,7 @@ let PRODUCT_INHABITED = prove
 
 let funspace = new_definition
   `funspace s t =
-      powerset(product s t) suchthat
+      powerset(cartproduct s t) suchthat
       (\u. !x. x <: s ==> ?!y. pair x y <: u)`;;
 
 let apply_def = new_definition
@@ -724,24 +724,24 @@ let apply_def = new_definition
 
 let abstract = new_definition
   `abstract s t f =
-        (product s t) suchthat (\z. !x y. (pair x y = z) ==> (y = f x))`;;
+        (cartproduct s t) suchthat (\z. !x y. (pair x y = z) ==> (y = f x))`;;
 
 let APPLY_ABSTRACT = prove
  (`!x s t. x <: s /\ f(x) <: t ==> (apply(abstract s t f) x = f(x))`,
   REPEAT STRIP_TAC THEN
-  REWRITE_TAC[apply_def; abstract; IN_PRODUCT; SUCHTHAT] THEN
+  REWRITE_TAC[apply_def; abstract; IN_CARTPRODUCT; SUCHTHAT] THEN
   MATCH_MP_TAC SELECT_UNIQUE THEN REWRITE_TAC[PAIR_INJ] THEN
   ASM_MESON_TAC[]);;
 
 let APPLY_IN_RANSPACE = prove
  (`!f x s t. x <: s /\ f <: funspace s t ==> apply f x <: t`,
-  REWRITE_TAC[funspace; SUCHTHAT; IN_POWERSET; IN_PRODUCT; subset_def] THEN
+  REWRITE_TAC[funspace; SUCHTHAT; IN_POWERSET; IN_CARTPRODUCT; subset_def] THEN
   REWRITE_TAC[apply_def] THEN MESON_TAC[PAIR_INJ]);;
 
 let ABSTRACT_IN_FUNSPACE = prove
  (`!f x s t. (!x. x <: s ==> f(x) <: t)
              ==> abstract s t f <: funspace s t`,
-  REWRITE_TAC[funspace; abstract; SUCHTHAT; IN_POWERSET; IN_PRODUCT;
+  REWRITE_TAC[funspace; abstract; SUCHTHAT; IN_POWERSET; IN_CARTPRODUCT;
               subset_def; PAIR_INJ] THEN
   SIMP_TAC[LEFT_FORALL_IMP_THM; GSYM CONJ_ASSOC; RIGHT_EXISTS_AND_THM] THEN
   REWRITE_TAC[UNWIND_THM1; EXISTS_REFL] THEN MESON_TAC[]);;
@@ -759,7 +759,7 @@ let ABSTRACT_EQ = prove
         ==> (abstract s t1 f = abstract s t2 g)`,
   REWRITE_TAC[abstract] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC EXTENSIONALITY_NONEMPTY THEN
-  REWRITE_TAC[SUCHTHAT; IN_PRODUCT] THEN REPEAT CONJ_TAC THEN
+  REWRITE_TAC[SUCHTHAT; IN_CARTPRODUCT] THEN REPEAT CONJ_TAC THEN
   REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
   SIMP_TAC[TAUT `(a /\ b /\ c) /\ d <=> ~(a ==> b /\ c ==> ~d)`] THEN
   REWRITE_TAC[PAIR_INJ] THEN SIMP_TAC[LEFT_FORALL_IMP_THM] THENL

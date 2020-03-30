@@ -1820,7 +1820,7 @@ let RING_INV_INV = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_RINV_UNIQUE THEN
   ASM_SIMP_TAC[RING_INV; RING_UNIT_IN_CARRIER; RING_MUL_LINV]);;
 
- let RING_MUL_RINV_EQ = prove
+let RING_MUL_RINV_EQ = prove
  (`!r x:A.
         x IN ring_carrier r
         ==> (ring_mul r x (ring_inv r x) = ring_1 r <=> ring_unit r x)`,
@@ -1834,7 +1834,7 @@ let RING_MUL_LINV_EQ = prove
   MESON_TAC[RING_MUL_RINV_EQ; RING_MUL_SYM; RING_INV]);;
 
 let RING_UNIT_DIVIDES = prove
-(`!r a:A. ring_unit r a <=> ring_divides r a (ring_1 r)`,
+ (`!r a:A. ring_unit r a <=> ring_divides r a (ring_1 r)`,
   REWRITE_TAC[ring_unit; ring_divides] THEN MESON_TAC[RING_1]);;
 
 let RING_UNIT_0 = prove
@@ -5462,12 +5462,29 @@ let ISOMORPHIC_RING_SINGLETON_RING = prove
         singleton_ring a isomorphic_ring r <=> trivial_ring r)`,
   MESON_TAC[ISOMORPHIC_TO_TRIVIAL_RING; TRIVIAL_RING_SINGLETON_RING]);;
 
+let CARD_LE_RING_MONOMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_monomorphism(r,r') f ==> ring_carrier r <=_c ring_carrier r'`,
+  REWRITE_TAC[ring_monomorphism; le_c; ring_homomorphism] THEN
+  REPEAT STRIP_TAC THEN EXISTS_TAC `f:A->B` THEN ASM SET_TAC[]);;
+
+let CARD_LE_RING_EPIMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_epimorphism(r,r') f ==> ring_carrier r' <=_c ring_carrier r`,
+  REWRITE_TAC[ring_epimorphism; LE_C; ring_homomorphism] THEN
+  REPEAT STRIP_TAC THEN EXISTS_TAC `f:A->B` THEN ASM SET_TAC[]);;
+
+let CARD_EQ_RING_ISOMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_isomorphism(r,r') f ==> ring_carrier r =_c ring_carrier r'`,
+  REWRITE_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM; GSYM CARD_LE_ANTISYM] THEN
+  MESON_TAC[CARD_LE_RING_MONOMORPHIC_IMAGE; CARD_LE_RING_EPIMORPHIC_IMAGE]);;
+
 let ISOMORPHIC_RING_CARD_EQ = prove
  (`!(r:A ring) (r':B ring).
         r isomorphic_ring r' ==> ring_carrier r =_c ring_carrier r'`,
-  REWRITE_TAC[isomorphic_ring; GSYM RING_MONOMORPHISM_EPIMORPHISM] THEN
-  REWRITE_TAC[eq_c; ring_monomorphism; ring_epimorphism] THEN
-  REPEAT GEN_TAC THEN MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
+  REWRITE_TAC[isomorphic_ring; LEFT_IMP_EXISTS_THM] THEN
+  REWRITE_TAC[CARD_EQ_RING_ISOMORPHIC_IMAGE]);;
 
 let ISOMORPHIC_RING_FINITENESS = prove
  (`!(r:A ring) (r':B ring).
@@ -5483,6 +5500,26 @@ let ISOMORPHIC_RING_INFINITENESS = prove
         ==> (INFINITE(ring_carrier r) <=> INFINITE(ring_carrier r'))`,
   REWRITE_TAC[INFINITE; TAUT `(~p <=> ~q) <=> (p <=> q)`] THEN
   REWRITE_TAC[ISOMORPHIC_RING_FINITENESS]);;
+
+let FINITE_RING_MONOMORPHIC_PREIMAGE = prove
+ (`!r r' (f:A->B).
+        ring_monomorphism(r,r') f /\ FINITE(ring_carrier r')
+        ==> FINITE(ring_carrier r)`,
+  MESON_TAC[CARD_LE_FINITE; CARD_LE_RING_MONOMORPHIC_IMAGE]);;
+
+let FINITE_RING_EPIMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_epimorphism(r,r') f /\ FINITE(ring_carrier r)
+        ==> FINITE(ring_carrier r')`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_LE_FINITE) THEN
+  ASM_MESON_TAC[CARD_LE_RING_EPIMORPHIC_IMAGE]);;
+
+let CARD_EQ_RING_MONOMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_monomorphism(r,r') f
+        ==> IMAGE f (ring_carrier r) =_c ring_carrier r`,
+  REWRITE_TAC[ring_monomorphism] THEN MESON_TAC[CARD_EQ_IMAGE]);;
 
 let ISOMORPHIC_RING_SIZE = prove
  (`!(r:A ring) (r':B ring) n.
@@ -5661,6 +5698,26 @@ let RING_ISOMORPHISM_ALT = prove
                   ring_kernel; ring_image] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[ring_homomorphism]) THEN
   MP_TAC(ISPEC `r:A ring` RING_0) THEN ASM SET_TAC[]);;
+
+let CARD_EQ_RING_IMAGE_KERNEL = prove
+ (`!r r' (f:A->B).
+        ring_homomorphism(r,r') f
+        ==> ring_image(r,r') f *_c ring_kernel(r,r') f =_c ring_carrier r`,
+  REWRITE_TAC[ring_homomorphism; ring_image; SUBSET; FORALL_IN_IMAGE] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CARD_EQ_IMAGE_MUL_FIBRES THEN
+  X_GEN_TAC `x:A` THEN DISCH_TAC THEN TRANS_TAC CARD_EQ_TRANS
+   `IMAGE (ring_add r x) (ring_kernel(r,r') (f:A->B))` THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC CARD_EQ_REFL_IMP;
+    MATCH_MP_TAC CARD_EQ_IMAGE THEN REWRITE_TAC[ring_kernel; IN_ELIM_THM] THEN
+    ASM_MESON_TAC[RING_ADD_LCANCEL_IMP]] THEN
+  MATCH_MP_TAC(SET_RULE
+   `!g. IMAGE f s SUBSET t /\ IMAGE g t SUBSET s /\ (!y. y IN t ==> f(g y) = y)
+        ==> t = IMAGE f s`) THEN
+  EXISTS_TAC `ring_add r (ring_neg r x:A)` THEN
+  REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; IN_ELIM_THM; ring_kernel] THEN
+  ASM_SIMP_TAC[RING_ADD; RING_NEG; RING_ADD_RZERO; RING_ADD_LZERO;
+               RING_ADD_LNEG; RING_ADD_ASSOC; RING_ADD_RNEG]);;
 
 let RING_IDEAL_RING_KERNEL = prove
  (`!r r' (f:A->B).
@@ -7252,13 +7309,14 @@ let RING_COSET_CARRIER = prove
 
 let RING_COSET_EQ = prove
  (`!r t x y:A.
-        ring_ideal r j /\ x IN ring_carrier r /\ y IN ring_carrier r
+        (ring_ideal r j \/ j subring_of r) /\
+        x IN ring_carrier r /\ y IN ring_carrier r
         ==> (ring_coset r j x = ring_coset r j y <=> ring_sub r x y IN j)`,
   SIMP_TAC[RING_SETADD_RCANCEL_SET; RING_COSET_SETADD]);;
 
 let RING_COSET_EQ_IDEAL = prove
  (`!r j x:A.
-        ring_ideal r j /\ x IN ring_carrier r
+        (ring_ideal r j \/ j subring_of r) /\ x IN ring_carrier r
         ==> (ring_coset r j x = j <=> x IN j)`,
   SIMP_TAC[RING_COSET_SETADD; RING_SETADD_LSUBSET_EQ; SING_SUBSET] THEN
   REWRITE_TAC[NOT_INSERT_EMPTY]);;
@@ -7268,30 +7326,33 @@ let RING_COSET_EQ_EMPTY = prove
   REWRITE_TAC[RING_COSET_SETADD; RING_SETADD_EQ_EMPTY; NOT_INSERT_EMPTY]);;
 
 let RING_COSET_NONEMPTY = prove
- (`!r j x:A. ring_ideal r j ==> ~(ring_coset r j x = {})`,
-  REWRITE_TAC[RING_COSET_EQ_EMPTY; RING_IDEAL_IMP_NONEMPTY]);;
+ (`!r j x:A. ring_ideal r j \/ j subring_of r ==> ~(ring_coset r j x = {})`,
+  MESON_TAC[RING_COSET_EQ_EMPTY; SUBRING_OF_IMP_NONEMPTY;
+            RING_IDEAL_IMP_NONEMPTY]);;
 
 let IN_RING_COSET_SELF = prove
  (`!r j x:A.
-      ring_ideal r j /\ x IN ring_carrier r ==> x IN ring_coset r j x`,
-  REWRITE_TAC[ring_ideal; RING_COSET_SETADD; ring_setadd;
+      (ring_ideal r j \/ j subring_of r) /\ x IN ring_carrier r
+      ==> x IN ring_coset r j x`,
+  REWRITE_TAC[ring_ideal; subring_of; RING_COSET_SETADD; ring_setadd;
               IN_ELIM_THM; IN_SING] THEN
   MESON_TAC[RING_ADD_RZERO]);;
 
 let UNIONS_RING_COSETS = prove
  (`!r j:A->bool.
-        ring_ideal r j
+        ring_ideal r j \/ j subring_of r
         ==> UNIONS {ring_coset r j x |x| x IN ring_carrier r} =
             ring_carrier r`,
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; UNIONS_SUBSET; FORALL_IN_GSPEC] THEN
-  ASM_SIMP_TAC[RING_COSET; RING_IDEAL_IMP_SUBSET] THEN
+  ASM_SIMP_TAC[RING_COSET; RING_IDEAL_IMP_SUBSET; SUBRING_OF_IMP_SUBSET] THEN
   REWRITE_TAC[UNIONS_GSPEC; IN_ELIM_THM; SUBSET] THEN
   ASM_MESON_TAC[IN_RING_COSET_SELF]);;
 
 let RING_COSETS_EQ = prove
  (`!r j x y:A.
-        ring_ideal r j /\ x IN ring_carrier r /\ y IN ring_carrier r
+        (ring_ideal r j \/ j subring_of r) /\
+        x IN ring_carrier r /\ y IN ring_carrier r
         ==> (ring_coset r j x = ring_coset r j y <=>
              ~(DISJOINT (ring_coset r j x) (ring_coset r j y)))`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN
@@ -7302,39 +7363,42 @@ let RING_COSETS_EQ = prove
   REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_UNWIND_THM2] THEN
   X_GEN_TAC `u:A` THEN DISCH_TAC THEN X_GEN_TAC `v:A` THEN DISCH_TAC THEN
   DISCH_THEN(MP_TAC o AP_TERM `\x:A. ring_sub r x u`) THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[ring_ideal; SUBSET]) THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[ring_ideal; subring_of; SUBSET]) THEN
   REWRITE_TAC[ring_sub] THEN
   ASM_SIMP_TAC[GSYM RING_ADD_ASSOC; RING_ADD_RNEG; RING_ADD_RZERO] THEN
   DISCH_THEN SUBST1_TAC THEN
   W(MP_TAC o PART_MATCH (lhand o rand) RING_ADD_SYM o lhand o snd) THEN
-  ANTS_TAC THENL
-   [ASM_MESON_TAC[RING_ADD; RING_NEG]; DISCH_THEN SUBST1_TAC] THEN
+  (ANTS_TAC THENL
+   [ASM_MESON_TAC[RING_ADD; RING_NEG]; DISCH_THEN SUBST1_TAC]) THEN
   ASM_SIMP_TAC[RING_ADD_ASSOC; RING_SUB; RING_ADD; RING_NEG; RING_ADD_LNEG]);;
 
 let DISJOINT_RING_COSETS = prove
  (`!r j x y:A.
-        ring_ideal r j /\ x IN ring_carrier r /\ y IN ring_carrier r
+        (ring_ideal r j \/ j subring_of r) /\
+        x IN ring_carrier r /\ y IN ring_carrier r
         ==> (DISJOINT (ring_coset r j x) (ring_coset r j y) <=>
              ~(ring_coset r j x = ring_coset r j y))`,
   SIMP_TAC[RING_COSETS_EQ]);;
 
 let PAIRWISE_DISJOINT_RING_COSETS = prove
  (`!r j:A->bool.
-        ring_ideal r j
+        ring_ideal r j \/ j subring_of r
         ==> pairwise DISJOINT {ring_coset r j x |x| x IN ring_carrier r}`,
   REWRITE_TAC[SIMPLE_IMAGE; PAIRWISE_IMAGE] THEN
   SIMP_TAC[pairwise; DISJOINT_RING_COSETS]);;
 
 let IMAGE_RING_COSET_SWITCH = prove
  (`!r j x y:A.
-        ring_ideal r j /\ x IN ring_carrier r /\ y IN ring_carrier r
+        (ring_ideal r j \/ j subring_of r) /\
+        x IN ring_carrier r /\ y IN ring_carrier r
         ==> IMAGE (\a. ring_add r (ring_sub r y x) a)
                   (ring_coset r j x) =
             ring_coset r j y`,
   REPEAT STRIP_TAC THEN TRANS_TAC EQ_TRANS
    `ring_setadd r {ring_sub r y x:A} (ring_coset r j x)` THEN
-  CONJ_TAC THENL [REWRITE_TAC[ring_setadd] THEN SET_TAC[]; ALL_TAC] THEN
-  FIRST_ASSUM(ASSUME_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET) THEN
+  (CONJ_TAC THENL [REWRITE_TAC[ring_setadd] THEN SET_TAC[]; ALL_TAC]) THENL
+   [FIRST_ASSUM(ASSUME_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET);
+    FIRST_ASSUM(ASSUME_TAC o MATCH_MP SUBRING_OF_IMP_SUBSET)] THEN
   REWRITE_TAC[RING_COSET_SETADD; ring_sub] THEN
   ASM_SIMP_TAC[RING_SETADD_ASSOC; RING_SETADD; SING_SUBSET;
                RING_ADD; RING_NEG; RING_SETADD_SING; GSYM RING_ADD_ASSOC;
@@ -7342,7 +7406,8 @@ let IMAGE_RING_COSET_SWITCH = prove
 
 let CARD_EQ_RING_COSETS = prove
  (`!r j x y:A.
-        ring_ideal r j /\ x IN ring_carrier r /\ y IN ring_carrier r
+        (ring_ideal r j \/ j subring_of r) /\
+        x IN ring_carrier r /\ y IN ring_carrier r
         ==> ring_coset r j x =_c ring_coset r j y`,
   let lemma = prove
    (`!f g. (IMAGE f s = t /\ IMAGE g t = s) /\
@@ -7355,30 +7420,33 @@ let CARD_EQ_RING_COSETS = prove
   EXISTS_TAC `\a:A. ring_add r (ring_sub r x y) a` THEN
   ASM_SIMP_TAC[IMAGE_RING_COSET_SWITCH; INJECTIVE_ON_ALT] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_ADD_LCANCEL THEN
-  ASM_MESON_TAC[RING_SUB; SUBSET; RING_COSET; RING_IDEAL_IMP_SUBSET]);;
+  ASM_MESON_TAC[RING_SUB; SUBSET; RING_COSET;
+                SUBRING_OF_IMP_SUBSET; RING_IDEAL_IMP_SUBSET]);;
 
 let CARD_EQ_RING_COSET_IDEAL = prove
  (`!r j x:A.
-        ring_ideal r j /\ x IN ring_carrier r
+        (ring_ideal r j \/ j subring_of r) /\
+        x IN ring_carrier r
         ==> ring_coset r j x =_c j`,
  MESON_TAC[CARD_EQ_RING_COSETS; RING_0; RING_COSET_0;
-           RING_IDEAL_IMP_SUBSET]);;
+           SUBRING_OF_IMP_SUBSET; RING_IDEAL_IMP_SUBSET]);;
 
 let LAGRANGE_THEOREM_RING_EXPLICIT = prove
  (`!r j:A->bool.
-        FINITE(ring_carrier r) /\ ring_ideal r j
+        FINITE(ring_carrier r) /\
+        (ring_ideal r j \/ j subring_of r)
         ==> CARD {ring_coset r j x |x| x IN ring_carrier r} * CARD j =
             CARD(ring_carrier r)`,
-  REPEAT STRIP_TAC THEN
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
   SUBGOAL_THEN `FINITE(j:A->bool)` STRIP_ASSUME_TAC THENL
-   [ASM_MESON_TAC[FINITE_SUBSET; ring_ideal]; ALL_TAC] THEN
+   [ASM_MESON_TAC[FINITE_SUBSET; ring_ideal; subring_of]; ALL_TAC] THEN
   FIRST_ASSUM(fun th -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV)
    [SYM(MATCH_MP UNIONS_RING_COSETS th)]) THEN
   W(MP_TAC o PART_MATCH (lhand o rand) CARD_UNIONS o rand o snd) THEN
   ASM_REWRITE_TAC[SIMPLE_IMAGE; IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
   ASM_SIMP_TAC[FORALL_IN_IMAGE; FINITE_IMAGE] THEN
   ASM_SIMP_TAC[GSYM DISJOINT; DISJOINT_RING_COSETS] THEN ANTS_TAC THENL
-   [ASM_MESON_TAC[FINITE_SUBSET; RING_COSET; ring_ideal];
+   [ASM_MESON_TAC[FINITE_SUBSET; RING_COSET; ring_ideal; subring_of];
     DISCH_THEN SUBST1_TAC] THEN
   ASM_SIMP_TAC[GSYM NSUM_CONST; FINITE_IMAGE] THEN
   MATCH_MP_TAC NSUM_EQ THEN REWRITE_TAC[FORALL_IN_IMAGE] THEN
@@ -7386,13 +7454,49 @@ let LAGRANGE_THEOREM_RING_EXPLICIT = prove
   MATCH_MP_TAC CARD_EQ_CARD_IMP THEN ASM_REWRITE_TAC[] THEN
   ASM_MESON_TAC[CARD_EQ_RING_COSET_IDEAL]);;
 
-let LAGRANGE_THEOREM_RING_IDEAL = prove
+let LAGRANGE_THEOREM_RING = prove
  (`!r j:A->bool.
-        FINITE(ring_carrier r) /\ ring_ideal r j
+        FINITE(ring_carrier r) /\
+        (ring_ideal r j \/ j subring_of r)
         ==> (CARD j) divides CARD(ring_carrier r)`,
   REPEAT GEN_TAC THEN
   DISCH_THEN(SUBST1_TAC o SYM o MATCH_MP LAGRANGE_THEOREM_RING_EXPLICIT) THEN
   NUMBER_TAC);;
+
+let CARD_DIVIDES_RING_MONOMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_monomorphism(r,r') f /\ FINITE(ring_carrier r')
+        ==> CARD(ring_carrier r) divides CARD(ring_carrier r')`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `CARD(ring_carrier r) = CARD(ring_image (r,r') (f:A->B))`
+  SUBST1_TAC THENL
+   [CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_EQ_CARD_IMP THEN
+    REWRITE_TAC[ring_image] THEN
+    ASM_MESON_TAC[CARD_EQ_RING_MONOMORPHIC_IMAGE;
+                  FINITE_RING_MONOMORPHIC_PREIMAGE];
+    MATCH_MP_TAC LAGRANGE_THEOREM_RING THEN
+    ASM_MESON_TAC[SUBRING_RING_IMAGE; ring_monomorphism]]);;
+
+let CARD_DIVIDES_RING_EPIMORPHIC_IMAGE = prove
+ (`!r r' (f:A->B).
+        ring_epimorphism(r,r') f /\ FINITE(ring_carrier r)
+        ==> CARD(ring_carrier r') divides CARD(ring_carrier r)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[RING_EPIMORPHISM] THEN
+  DISCH_THEN(STRIP_ASSUME_TAC o GSYM) THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP CARD_EQ_RING_IMAGE_KERNEL) THEN DISCH_THEN
+   (MP_TAC o (MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] CARD_EQ_CARD_IMP))) THEN
+  ASM_REWRITE_TAC[ring_image; mul_c; GSYM CROSS; ring_kernel] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  ASM_SIMP_TAC[FINITE_CROSS; CARD_CROSS; FINITE_IMAGE; FINITE_RESTRICT] THEN
+  CONV_TAC NUMBER_RULE);;
+
+let CARD_RING_COSETS_DIVIDES = prove
+ (`!r j:A->bool.
+        FINITE(ring_carrier r) /\
+        (ring_ideal r j \/ j subring_of r)
+        ==> CARD {ring_coset r j x | x | x IN ring_carrier r} divides
+            CARD(ring_carrier r)`,
+  MESON_TAC[divides; LAGRANGE_THEOREM_RING_EXPLICIT]);;
 
 let RING_SETADD_PROD_RING = prove
  (`!(r1:A ring) (r2:B ring) s1 s2 t1 t2.
@@ -7456,7 +7560,7 @@ let RING_SETADD_SUBRING_GENERATED = prove
 
 let RING_SETNEG_COSET = prove
  (`!r j a:A.
-        a IN ring_carrier r /\ ring_ideal r j
+        a IN ring_carrier r /\ (ring_ideal r j \/ j subring_of r)
         ==> ring_setneg r (ring_coset r j a) = ring_coset r j (ring_neg r a)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[ring_coset] THEN
   MATCH_MP_TAC SUBSET_ANTISYM THEN
@@ -7465,8 +7569,9 @@ let RING_SETNEG_COSET = prove
   REWRITE_TAC[SET_RULE `{f x | x IN {g a | P a}} = {f (g a) | P a}`] THEN
   REWRITE_TAC[IN_ELIM_THM] THEN CONJ_TAC THEN
   X_GEN_TAC `x:A` THEN DISCH_TAC THEN EXISTS_TAC `ring_neg r x:A` THEN
-  ASM_SIMP_TAC[IN_RING_IDEAL_NEG] THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET) THEN
+  ASM_SIMP_TAC[IN_RING_IDEAL_NEG; IN_SUBRING_NEG] THEN
+  (FIRST_X_ASSUM(MP_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET) ORELSE
+   FIRST_X_ASSUM(MP_TAC o MATCH_MP SUBRING_OF_IMP_SUBSET)) THEN
   ASM_SIMP_TAC[SUBSET; RING_NEG_ADD; RING_NEG_NEG; RING_NEG]);;
 
 let RING_SETADD_COSETS = prove
@@ -7638,6 +7743,20 @@ let RING_KERNEL_RING_COSET = prove
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[ring_kernel; QUOTIENT_RING_0] THEN
   GEN_REWRITE_TAC I [EXTENSION] THEN REWRITE_TAC[IN_ELIM_THM] THEN
   ASM_MESON_TAC[RING_COSET_EQ_IDEAL; RING_IDEAL_IMP_SUBSET; SUBSET]);;
+
+let CARD_LE_QUOTIENT_RING = prove
+ (`!r j:A->bool.
+    ring_ideal r j ==> ring_carrier(quotient_ring r j) <=_c ring_carrier r`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN(MP_TAC o MATCH_MP RING_EPIMORPHISM_RING_COSET) THEN
+  REWRITE_TAC[CARD_LE_RING_EPIMORPHIC_IMAGE]);;
+
+let CARD_QUOTIENT_RING_DIVIDES = prove
+ (`!r j:A->bool.
+        FINITE(ring_carrier r) /\ ring_ideal r j
+        ==> CARD(ring_carrier(quotient_ring r j)) divides
+            CARD(ring_carrier r)`,
+  SIMP_TAC[QUOTIENT_RING; CARD_RING_COSETS_DIVIDES]);;
 
 let QUOTIENT_RING_UNIVERSAL_EXPLICIT = prove
  (`!r r' j (f:A->B).

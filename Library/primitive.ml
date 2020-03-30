@@ -1224,11 +1224,11 @@ let COUNT_ROOTS_MODULO_ODD_GEN = prove
                     ==> (a EXP ((p EXP (index p n - 1) * (p - 1)) DIV
                                 gcd(k,p EXP (index p n - 1) * (p - 1))) == 1)
                         (mod (p EXP index p n))
-             then iterate ( * ) {p | prime p /\ p divides n}
+             then nproduct {p | prime p /\ p divides n}
                            (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))
              else 0)`,
   MAP_EVERY X_GEN_TAC [`n:num`; `z:num`; `k:num`] THEN
-  ASM_CASES_TAC `k = 0` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[nproduct] THEN ASM_CASES_TAC `k = 0` THEN ASM_REWRITE_TAC[] THEN
   ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[ODD] THEN
   ASM_CASES_TAC `n = 1` THENL
    [ASM_REWRITE_TAC[MESON[PRIME_1; DIVIDES_ONE]
@@ -1317,7 +1317,7 @@ let COUNT_ROOTS_MODULO_ODD_ALT_GEN = prove
                     ==> (a EXP ((p EXP (index p n - 1) * (p - 1)) DIV
                                 gcd(k,p EXP (index p n - 1) * (p - 1))) == 1)
                         (mod (p EXP index p n))
-             then iterate ( * ) {p | prime p /\ p divides n}
+             then nproduct {p | prime p /\ p divides n}
                            (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))
              else 0)`,
   REPEAT STRIP_TAC THEN
@@ -1363,7 +1363,7 @@ let POWER_RESIDUE_MODULO_ODD = prove
   REPEAT STRIP_TAC THEN
   MP_TAC(SPECL [`n:num`; `a:num`; `k:num`]
         COUNT_ROOTS_MODULO_ODD_GEN) THEN
-  ASM_REWRITE_TAC[] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+  ASM_REWRITE_TAC[nproduct] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
    [GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
     REWRITE_TAC[NOT_EXISTS_THM] THEN DISCH_TAC THEN ASM_REWRITE_TAC[] THEN
     REWRITE_TAC[HAS_SIZE; EMPTY_GSPEC; CARD_CLAUSES; FINITE_EMPTY] THEN
@@ -1371,7 +1371,7 @@ let POWER_RESIDUE_MODULO_ODD = prove
     SUBGOAL_THEN `FINITE {p | prime p /\ p divides n}` MP_TAC THENL
      [MATCH_MP_TAC FINITE_SPECIAL_DIVISORS THEN ASM_MESON_TAC[ODD];
       SPEC_TAC(`{p | prime p /\ p divides n}`,`s:num->bool`)] THEN
-    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN 
     SIMP_TAC[MATCH_MP ITERATE_CLAUSES MONOIDAL_MUL; NEUTRAL_MUL] THEN
     ASM_SIMP_TAC[MULT_EQ_0; GCD_ZERO] THEN ARITH_TAC;
     REWRITE_TAC[HAS_SIZE_0; EXTENSION; IN_ELIM_THM; NOT_IN_EMPTY] THEN
@@ -1412,8 +1412,8 @@ let COUNT_ROOTS_MODULO_PRIMITIVE = prove
 let COUNT_ROOTS_MODULO_ODD_ALT = prove
  (`!n k. ODD n /\ ~(k = 0)
          ==> {x | x < n /\ coprime(n,x) /\ (x EXP k == 1) (mod n)} HAS_SIZE
-             iterate ( * ) {p | prime p /\ p divides n}
-                           (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))`,
+             nproduct {p | prime p /\ p divides n}
+                      (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))`,
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`n:num`; `1`; `k:num`]
      COUNT_ROOTS_MODULO_ODD_ALT_GEN) THEN
@@ -1422,8 +1422,8 @@ let COUNT_ROOTS_MODULO_ODD_ALT = prove
 let COUNT_ROOTS_MODULO_ODD = prove
  (`!n k. ODD n /\ ~(k = 0)
          ==> {x | x < n /\ (x EXP k == 1) (mod n)} HAS_SIZE
-             iterate ( * ) {p | prime p /\ p divides n}
-                           (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))`,
+             nproduct {p | prime p /\ p divides n}
+                      (\p. gcd(k,p EXP (index p n - 1) * (p - 1)))`,
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [`n:num`; `1`; `k:num`] COUNT_ROOTS_MODULO_ODD_GEN) THEN
   ASM_REWRITE_TAC[EXP_ONE; CONG_REFL; COPRIME_1]);;

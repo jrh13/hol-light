@@ -883,6 +883,97 @@ let ITERATE_REFLECT = prove
   ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Four iterated operations where we just more or less express the basic     *)
+(* definition and clausal form of the recursion, but don't develop any       *)
+(* more lemmas; for products load "Library/products.ml" and for sums of      *)
+(* intgers load "Library/isum.ml".                                           *)
+(* ------------------------------------------------------------------------- *)
+
+let nproduct = new_definition
+  `nproduct = iterate(( * ):num->num->num)`;;
+
+let NEUTRAL_MUL = prove
+ (`neutral(( * ):num->num->num) = 1`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[MULT_CLAUSES; MULT_EQ_1]);;
+
+let MONOIDAL_MUL = prove
+ (`monoidal(( * ):num->num->num)`,
+  REWRITE_TAC[monoidal; NEUTRAL_MUL] THEN ARITH_TAC);;
+
+let NPRODUCT_CLAUSES = prove
+ (`(!f. nproduct {} f = 1) /\
+   (!x f s. FINITE(s)
+            ==> (nproduct (x INSERT s) f =
+                 if x IN s then nproduct s f else f(x) * nproduct s f))`,
+  REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_MUL]);;
+
+let iproduct = new_definition
+  `iproduct = iterate (( * ):int->int->int)`;;
+
+let NEUTRAL_INT_MUL = prove
+ (`neutral(( * ):int->int->int) = &1`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[INT_MUL_LID; INT_MUL_RID]);;
+
+let MONOIDAL_INT_MUL = prove
+ (`monoidal(( * ):int->int->int)`,
+  REWRITE_TAC[monoidal; NEUTRAL_INT_MUL] THEN INT_ARITH_TAC);;
+
+let IPRODUCT_CLAUSES = prove
+ (`(!f. iproduct {} f = &1) /\
+   (!x f s. FINITE(s)
+            ==> (iproduct (x INSERT s) f =
+                 if x IN s then iproduct s f else f(x) * iproduct s f))`,
+  REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_INT_MUL]);;
+
+let product = new_definition
+  `product = iterate (( * ):real->real->real)`;;
+
+let NEUTRAL_REAL_MUL = prove
+ (`neutral(( * ):real->real->real) = &1`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[REAL_MUL_LID; REAL_MUL_RID]);;
+
+let MONOIDAL_REAL_MUL = prove
+ (`monoidal(( * ):real->real->real)`,
+  REWRITE_TAC[monoidal; NEUTRAL_REAL_MUL] THEN REAL_ARITH_TAC);;
+
+let PRODUCT_CLAUSES = prove
+ (`(!f. product {} f = &1) /\
+   (!x f s. FINITE(s)
+            ==> (product (x INSERT s) f =
+                 if x IN s then product s f else f(x) * product s f))`,
+  REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_REAL_MUL]);;
+
+let isum = new_definition
+ `isum = iterate((+):int->int->int)`;;
+
+let NEUTRAL_INT_ADD = prove
+ (`neutral((+):int->int->int) = &0`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
+  MESON_TAC[INT_ADD_LID; INT_ADD_RID]);;
+
+let MONOIDAL_INT_ADD = prove
+ (`monoidal((+):int->int->int)`,
+  REWRITE_TAC[monoidal; NEUTRAL_INT_ADD] THEN INT_ARITH_TAC);;
+
+let ISUM_CLAUSES = prove
+ (`(!f. isum {} f = &0) /\
+   (!x f s. FINITE(s)
+            ==> (isum (x INSERT s) f =
+                 if x IN s then isum s f else f(x) + isum s f))`,
+  REWRITE_TAC[isum; GSYM NEUTRAL_INT_ADD] THEN
+  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
+  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_INT_ADD]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Sums of natural numbers.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
@@ -896,18 +987,9 @@ let NEUTRAL_ADD = prove
   REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
   MESON_TAC[ADD_CLAUSES]);;
 
-let NEUTRAL_MUL = prove
- (`neutral(( * ):num->num->num) = 1`,
-  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  MESON_TAC[MULT_CLAUSES; MULT_EQ_1]);;
-
 let MONOIDAL_ADD = prove
  (`monoidal((+):num->num->num)`,
   REWRITE_TAC[monoidal; NEUTRAL_ADD] THEN ARITH_TAC);;
-
-let MONOIDAL_MUL = prove
- (`monoidal(( * ):num->num->num)`,
-  REWRITE_TAC[monoidal; NEUTRAL_MUL] THEN ARITH_TAC);;
 
 let NSUM_DEGENERATE = prove
  (`!f s. ~(FINITE {x | x IN s /\ ~(f x = 0)}) ==> nsum s f = 0`,
@@ -1591,18 +1673,9 @@ let NEUTRAL_REAL_ADD = prove
   REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
   MESON_TAC[REAL_ADD_LID; REAL_ADD_RID]);;
 
-let NEUTRAL_REAL_MUL = prove
- (`neutral(( * ):real->real->real) = &1`,
-  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  MESON_TAC[REAL_MUL_LID; REAL_MUL_RID]);;
-
 let MONOIDAL_REAL_ADD = prove
  (`monoidal((+):real->real->real)`,
   REWRITE_TAC[monoidal; NEUTRAL_REAL_ADD] THEN REAL_ARITH_TAC);;
-
-let MONOIDAL_REAL_MUL = prove
- (`monoidal(( * ):real->real->real)`,
-  REWRITE_TAC[monoidal; NEUTRAL_REAL_MUL] THEN REAL_ARITH_TAC);;
 
 let SUM_DEGENERATE = prove
  (`!f s. ~(FINITE {x | x IN s /\ ~(f x = &0)}) ==> sum s f = &0`,

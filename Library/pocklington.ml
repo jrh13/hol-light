@@ -1099,8 +1099,9 @@ let PHI_LIMIT_COMPOSITE = prove
 let NPRODUCT_MOD = prove
  (`!s a:A->num n.
         FINITE s /\ ~(n = 0)
-        ==> (iterate (*) s (\m. a(m) MOD n) == iterate (*) s a) (mod n)`,
-  REPEAT STRIP_TAC THEN MP_TAC(SPEC `\x y. (x == y) (mod n)`
+        ==> (nproduct s (\m. a(m) MOD n) == nproduct s a) (mod n)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[nproduct] THEN
+  MP_TAC(SPEC `\x y. (x == y) (mod n)`
    (MATCH_MP ITERATE_RELATED MONOIDAL_MUL)) THEN
   SIMP_TAC[NEUTRAL_MUL; CONG_MULT; CONG_REFL] THEN DISCH_THEN MATCH_MP_TAC THEN
   ASM_SIMP_TAC[CONG_MOD]);;
@@ -1108,20 +1109,12 @@ let NPRODUCT_MOD = prove
 let NPRODUCT_CMUL = prove
  (`!s a c n.
         FINITE s
-        ==> iterate (*) s (\m. c * a(m)) = c EXP (CARD s) * iterate (*) s a`,
-  REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+        ==> nproduct s (\m. c * a(m)) = c EXP (CARD s) * nproduct s a`,
+  REWRITE_TAC[nproduct; RIGHT_FORALL_IMP_THM] THEN
   MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
   ASM_SIMP_TAC[ITERATE_CLAUSES; MONOIDAL_MUL; NEUTRAL_MUL; CARD_CLAUSES;
                EXP; MULT_CLAUSES] THEN
   REWRITE_TAC[MULT_AC]);;
-
-let COPRIME_NPRODUCT = prove
- (`!s n. FINITE s /\ (!x. x IN s ==> coprime(n,a(x)))
-         ==> coprime(n,iterate (*) s a)`,
-  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
-  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-  SIMP_TAC[ITERATE_CLAUSES; MONOIDAL_MUL; NEUTRAL_MUL;
-           IN_INSERT; COPRIME_MUL; COPRIME_1]);;
 
 let ITERATE_OVER_COPRIME = prove
  (`!op f n k.
@@ -1179,16 +1172,16 @@ let FERMAT_LITTLE = prove
   REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
   ASM_SIMP_TAC[COPRIME_0; PHI_0; CONG_MOD_0] THEN CONV_TAC NUM_REDUCE_CONV THEN
   DISCH_TAC THEN MATCH_MP_TAC CONG_MULT_LCANCEL THEN
-  EXISTS_TAC `iterate (*) {m | coprime (m,n) /\ m < n} (\m. m)` THEN
+  EXISTS_TAC `nproduct {m | coprime (m,n) /\ m < n} (\m. m)` THEN
   ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[PHI_ALT; MULT_CLAUSES] THEN
   SIMP_TAC[IN_ELIM_THM; ONCE_REWRITE_RULE[COPRIME_SYM] COPRIME_NPRODUCT;
            PHI_FINITE_LEMMA; GSYM NPRODUCT_CMUL] THEN
   ONCE_REWRITE_TAC[CONG_SYM] THEN MATCH_MP_TAC CONG_TRANS THEN
-  EXISTS_TAC `iterate (*) {m | coprime(m,n) /\ m < n} (\m. (a * m) MOD n)` THEN
+  EXISTS_TAC `nproduct {m | coprime(m,n) /\ m < n} (\m. (a * m) MOD n)` THEN
   ASM_SIMP_TAC[NPRODUCT_MOD; PHI_FINITE_LEMMA] THEN
   MP_TAC(ISPECL [`( * ):num->num->num`; `\x. x MOD n`; `n:num`; `a:num`]
                 ITERATE_OVER_COPRIME) THEN
-  ASM_SIMP_TAC[MONOIDAL_MUL; GSYM CONG] THEN
+  ASM_SIMP_TAC[MONOIDAL_MUL; GSYM CONG; GSYM nproduct] THEN
   DISCH_TAC THEN ONCE_REWRITE_TAC[CONG_SYM] THEN
   MATCH_MP_TAC NPRODUCT_MOD THEN ASM_SIMP_TAC[PHI_FINITE_LEMMA]);;
 

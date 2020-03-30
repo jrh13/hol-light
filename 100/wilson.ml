@@ -8,54 +8,39 @@ needs "Library/pocklington.ml";;
 prioritize_num();;
 
 (* ------------------------------------------------------------------------- *)
-(* Definition of iterated product.                                           *)
-(* ------------------------------------------------------------------------- *)
-
-let product = new_definition `product = iterate ( * )`;;
-
-let PRODUCT_CLAUSES = prove
- (`(!f. product {} f = 1) /\
-   (!x f s. FINITE(s)
-            ==> (product (x INSERT s) f =
-                 if x IN s then product s f else f(x) * product s f))`,
-  REWRITE_TAC[product; GSYM NEUTRAL_MUL] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  MATCH_MP_TAC ITERATE_CLAUSES THEN REWRITE_TAC[MONOIDAL_MUL]);;
-
-(* ------------------------------------------------------------------------- *)
 (* Factorial in terms of products.                                           *)
 (* ------------------------------------------------------------------------- *)
 
-let FACT_PRODUCT = prove
- (`!n. FACT(n) = product(1..n) (\i. i)`,
+let FACT_NPRODUCT = prove
+ (`!n. FACT(n) = nproduct(1..n) (\i. i)`,
   INDUCT_TAC THEN
-  REWRITE_TAC[FACT; NUMSEG_CLAUSES; ARITH; PRODUCT_CLAUSES] THEN
-  ASM_SIMP_TAC[ARITH_RULE `1 <= SUC n`; PRODUCT_CLAUSES; FINITE_NUMSEG] THEN
+  REWRITE_TAC[FACT; NUMSEG_CLAUSES; ARITH; NPRODUCT_CLAUSES] THEN
+  ASM_SIMP_TAC[ARITH_RULE `1 <= SUC n`; NPRODUCT_CLAUSES; FINITE_NUMSEG] THEN
   REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC);;
 
-let FACT_PRODUCT_ALT = prove
- (`!n. FACT(n) = product(2..n) (\i. i)`,
-  GEN_TAC THEN REWRITE_TAC[FACT_PRODUCT] THEN
+let FACT_NPRODUCT_ALT = prove
+ (`!n. FACT(n) = nproduct(2..n) (\i. i)`,
+  GEN_TAC THEN REWRITE_TAC[FACT_NPRODUCT] THEN
   DISJ_CASES_TAC(ARITH_RULE `n = 0 \/ 1 <= n`) THEN
   ASM_REWRITE_TAC[num_CONV `1`; NUMSEG_CLAUSES] THEN
-  REWRITE_TAC[ARITH; PRODUCT_CLAUSES; FACT] THEN
+  REWRITE_TAC[ARITH; NPRODUCT_CLAUSES; FACT] THEN
   ASM_SIMP_TAC[GSYM NUMSEG_LREC] THEN
-  SIMP_TAC[PRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG; MULT_CLAUSES] THEN
+  SIMP_TAC[NPRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG; MULT_CLAUSES] THEN
   ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* General "pairing up" theorem for products.                                *)
 (* ------------------------------------------------------------------------- *)
 
-let PRODUCT_PAIRUP_INDUCT = prove
+let NPRODUCT_PAIRUP_INDUCT = prove
  (`!f r n s. FINITE s /\ CARD s = n /\
              (!x:A. x IN s ==> ?!y. y IN s /\ ~(y = x) /\
                                     (f(x) * f(y) == 1) (mod r))
-             ==> (product s f == 1) (mod r)`,
+             ==> (nproduct s f == 1) (mod r)`,
   GEN_TAC THEN GEN_TAC THEN
   MATCH_MP_TAC num_WF THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
   X_GEN_TAC `s:A->bool` THEN ASM_CASES_TAC `s:A->bool = {}` THEN
-  ASM_REWRITE_TAC[PRODUCT_CLAUSES; CONG_REFL] THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[NPRODUCT_CLAUSES; CONG_REFL] THEN STRIP_TAC THEN
   ASM_CASES_TAC `n = 0` THENL [ASM_MESON_TAC[CARD_EQ_0]; ALL_TAC] THEN
   FIRST_X_ASSUM(X_CHOOSE_TAC `a:A` o
     GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
@@ -83,19 +68,19 @@ let PRODUCT_PAIRUP_INDUCT = prove
   DISCH_TAC THEN
   SUBGOAL_THEN `s = (a:A) INSERT (b INSERT (s DELETE a DELETE b))`
   SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
-  SIMP_TAC[PRODUCT_CLAUSES; FINITE_INSERT; FINITE_DELETE;
+  SIMP_TAC[NPRODUCT_CLAUSES; FINITE_INSERT; FINITE_DELETE;
            ASSUME `FINITE(s:A->bool)`] THEN
   ASM_REWRITE_TAC[IN_INSERT; IN_DELETE; MULT_CLAUSES] THEN
   REWRITE_TAC[MULT_ASSOC] THEN
   ONCE_REWRITE_TAC[SYM(NUM_REDUCE_CONV `1 * 1`)] THEN
   MATCH_MP_TAC CONG_MULT THEN ASM_REWRITE_TAC[]);;
 
-let PRODUCT_PAIRUP = prove
+let NPRODUCT_PAIRUP = prove
  (`!f r s. FINITE s /\
            (!x:A. x IN s ==> ?!y. y IN s /\ ~(y = x) /\
                                   (f(x) * f(y) == 1) (mod r))
-           ==> (product s f == 1) (mod r)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC PRODUCT_PAIRUP_INDUCT THEN
+           ==> (nproduct s f == 1) (mod r)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NPRODUCT_PAIRUP_INDUCT THEN
   EXISTS_TAC `CARD(s:A->bool)` THEN ASM_REWRITE_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
@@ -118,7 +103,7 @@ let WILSON = prove
     ALL_TAC] THEN
   GEN_REWRITE_TAC LAND_CONV [ARITH_RULE `x = 1 * x`] THEN
   MATCH_MP_TAC CONG_MULT THEN REWRITE_TAC[CONG_REFL] THEN
-  REWRITE_TAC[FACT_PRODUCT_ALT] THEN MATCH_MP_TAC PRODUCT_PAIRUP THEN
+  REWRITE_TAC[FACT_NPRODUCT_ALT] THEN MATCH_MP_TAC NPRODUCT_PAIRUP THEN
   REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
   X_GEN_TAC `x:num` THEN STRIP_TAC THEN
   MP_TAC(SPECL [`p:num`; `x:num`] CONG_UNIQUE_INVERSE_PRIME) THEN

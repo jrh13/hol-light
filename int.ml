@@ -2271,6 +2271,18 @@ let ONE_OR_PRIME_DIVIDES_OR_COPRIME = prove
     FIRST_X_ASSUM(MP_TAC o SPEC `n:num`) THEN MATCH_MP_TAC MONO_OR THEN
     CONJ_TAC THEN POP_ASSUM MP_TAC THEN CONV_TAC NUMBER_RULE]);;
 
+let PRIME_COPRIME_EQ_NONDIVISIBLE = prove
+ (`!p. prime p <=> !n. coprime(p,n) <=> ~(p divides n)`,
+  X_GEN_TAC `p:num` THEN ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[] THENL
+   [ASM_REWRITE_TAC[prime] THEN DISCH_THEN(MP_TAC o SPEC `1`) THEN
+    MATCH_MP_TAC(TAUT `p /\ q ==> (p <=> ~q) ==> F`) THEN CONV_TAC NUMBER_RULE;
+    MP_TAC(SPEC `p:num` ONE_OR_PRIME_DIVIDES_OR_COPRIME) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
+    EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN SIMP_TAC[TAUT `p \/ ~p`] THEN
+    GEN_TAC THEN MATCH_MP_TAC(TAUT `~(p /\ q) ==> q \/ p ==> (p <=> ~q)`) THEN
+    POP_ASSUM MP_TAC THEN REWRITE_TAC[CONTRAPOS_THM] THEN
+    CONV_TAC NUMBER_RULE]);;
+
 let ZERO_ONE_OR_PRIME_DIVPROD = prove
  (`!p a b.
         p = 0 \/ p = 1 \/ prime p
@@ -2298,7 +2310,6 @@ let ZERO_ONE_OR_PRIME = prove
                    ARITH_RULE `a * b <= b <=> a * b <= 1 * b`]THEN
   REWRITE_TAC[LE_MULT_LCANCEL; LE_MULT_RCANCEL] THEN
   ASM_SIMP_TAC[MULT_CLAUSES; ARITH_RULE `n <= 1 <=> n = 0 \/ n = 1`]);;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Integer powers of real numbers.                                           *)

@@ -2,18 +2,6 @@
 (* Define integer sums, with most theorems derived automatically.            *)
 (* ========================================================================= *)
 
-let isum = new_definition
- `isum = iterate((+):int->int->int)`;;
-
-let NEUTRAL_INT_ADD = prove
- (`neutral((+):int->int->int) = &0`,
-  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  MESON_TAC[INT_ADD_LID; INT_ADD_RID]);;
-
-let MONOIDAL_INT_ADD = prove
- (`monoidal((+):int->int->int)`,
-  REWRITE_TAC[monoidal; NEUTRAL_INT_ADD] THEN INT_ARITH_TAC);;
-
 let ISUM_SUPPORT = prove
  (`!f s. isum (support (+) f s) f = isum s f`,
   REWRITE_TAC[isum; ITERATE_SUPPORT]);;
@@ -113,7 +101,6 @@ let ISUM_BOUND = INT_OF_REAL_THM SUM_BOUND;;
 let ISUM_BOUND_LT = INT_OF_REAL_THM SUM_BOUND_LT;;
 let ISUM_BOUND_LT_ALL = INT_OF_REAL_THM SUM_BOUND_LT_ALL;;
 let ISUM_CASES = INT_OF_REAL_THM SUM_CASES;;
-let ISUM_CLAUSES = INT_OF_REAL_THM SUM_CLAUSES;;
 let ISUM_CLAUSES_LEFT = INT_OF_REAL_THM SUM_CLAUSES_LEFT;;
 let ISUM_CLAUSES_NUMSEG = INT_OF_REAL_THM SUM_CLAUSES_NUMSEG;;
 let ISUM_CLAUSES_RIGHT = INT_OF_REAL_THM SUM_CLAUSES_RIGHT;;
