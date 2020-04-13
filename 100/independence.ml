@@ -23,8 +23,8 @@
 (* for geometry see "http://en.wikipedia.org/wiki/Tarski's_axioms".          *)
 (* ========================================================================= *)
 
-needs "Multivariate/tarski.ml";;
 needs "Multivariate/cauchy.ml";;
+needs "Multivariate/tarski.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* The semimetric we will use, directly on real^N first. Choose a sensible   *)

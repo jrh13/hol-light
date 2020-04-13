@@ -1825,17 +1825,8 @@ let CAUCHY_GROUP_THEOREM_2 = prove
  (`!G:A group.
         FINITE(group_carrier G) /\ EVEN(CARD(group_carrier G))
         ==> ?x. x IN group_carrier G /\ group_element_order G x = 2`,
-  REPEAT STRIP_TAC THEN
-  ONCE_REWRITE_TAC[TAUT `p /\ q <=> ~(p ==> ~q)`] THEN
-  MP_TAC(ISPECL [`group_inv (G:A group)`; `group_carrier(G:A group)`]
-        INVOLUTION_EVEN_FIXPOINTS) THEN
-  ASM_SIMP_TAC[GROUP_INV_INV; GROUP_INV; GROUP_ELEMENT_ORDER_EQ_2_ALT] THEN
-  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
-  REWRITE_TAC[NOT_EXISTS_THM; DE_MORGAN_THM; NOT_EVEN] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP (SET_RULE
-   `(!x. x IN s ==> x = e \/ ~(f x = x))
-    ==> e IN s /\ f e = e ==> {x | x IN s /\ f x = x} = {e}`)) THEN
-  SIMP_TAC[GROUP_ID; GROUP_INV_ID; CARD_SING; ARITH]);;
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC CAUCHY_GROUP_THEOREM THEN
+  ASM_REWRITE_TAC[PRIME_2; DIVIDES_2]);;
 
 let GROUP_ADHOC_ORDER_UNIQUE_LEMMA = prove
  (`!G (a:A) p.

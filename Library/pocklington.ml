@@ -41,28 +41,6 @@ let nat_mod = prove
 (* Lemmas about previously defined terms.                                    *)
 (* ------------------------------------------------------------------------- *)
 
-let PRIME = prove
- (`!p. prime p <=> ~(p = 0) /\ ~(p = 1) /\ !m. 0 < m /\ m < p ==> coprime(p,m)`,
-  GEN_TAC THEN ASM_CASES_TAC `p = 0` THEN ASM_REWRITE_TAC[PRIME_0] THEN
-  ASM_CASES_TAC `p = 1` THEN ASM_REWRITE_TAC[PRIME_1] THEN
-  EQ_TAC THENL
-   [DISCH_THEN(MP_TAC o MATCH_MP PRIME_COPRIME) THEN
-    DISCH_TAC THEN X_GEN_TAC `m:num` THEN STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `m:num`) THEN
-    STRIP_TAC THEN ASM_REWRITE_TAC[COPRIME_1] THEN
-    ASM_MESON_TAC[NOT_LT; LT_REFL; DIVIDES_LE]; ALL_TAC] THEN
-  FIRST_ASSUM(X_CHOOSE_THEN `q:num` MP_TAC o MATCH_MP PRIME_FACTOR) THEN
-  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `q:num`) THEN
-  SUBGOAL_THEN `~(coprime(p,q))` (fun th -> REWRITE_TAC[th]) THENL
-   [REWRITE_TAC[coprime; NOT_FORALL_THM] THEN
-    EXISTS_TAC `q:num` THEN ASM_REWRITE_TAC[DIVIDES_REFL] THEN
-    ASM_MESON_TAC[PRIME_1]; ALL_TAC] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP DIVIDES_LE) THEN
-  ASM_REWRITE_TAC[LT_LE; LE_0] THEN
-  ASM_CASES_TAC `p:num = q` THEN ASM_REWRITE_TAC[] THEN
-  SIMP_TAC[] THEN DISCH_TAC THEN DISCH_THEN(SUBST_ALL_TAC o SYM) THEN
-  ASM_MESON_TAC[DIVIDES_ZERO]);;
-
 let FINITE_NUMBER_SEGMENT = prove
  (`!n. { m | 0 < m /\ m < n } HAS_SIZE (n - 1)`,
   INDUCT_TAC THENL
@@ -1661,17 +1639,6 @@ let PRIMITIVE_ROOT_SURJECTIVE_PRIME_ALT = prove
 (* Another trivial primality characterization.                               *)
 (* ------------------------------------------------------------------------- *)
 
-let PRIME_PRIME_FACTOR = prove
- (`!n. prime n <=> ~(n = 1) /\ !p. prime p /\ p divides n ==> (p = n)`,
-  GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [prime] THEN
-  ASM_CASES_TAC `n = 1` THEN ASM_REWRITE_TAC[] THEN EQ_TAC THENL
-   [MESON_TAC[PRIME_1]; ALL_TAC] THEN
-  STRIP_TAC THEN X_GEN_TAC `d:num` THEN
-  ASM_CASES_TAC `d = 1` THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
-  FIRST_ASSUM(X_CHOOSE_THEN `p:num` STRIP_ASSUME_TAC o
-    MATCH_MP PRIME_FACTOR) THEN
-  ASM_MESON_TAC[DIVIDES_TRANS; DIVIDES_ANTISYM]);;
-
 let PRIME_DIVISOR_SQRT = prove
  (`!n. prime(n) <=> ~(n = 1) /\ !d. d divides n /\ d EXP 2 <= n ==> (d = 1)`,
   GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [prime] THEN
@@ -2308,44 +2275,6 @@ let PRIME_CONV =
     let ptm,tm = dest_comb tm0 in
     if ptm <> prime_tm then failwith "expected term of form prime(n)"
     else PRIME_TEST tm;;
-
-(* ------------------------------------------------------------------------- *)
-(* Another lemma.                                                            *)
-(* ------------------------------------------------------------------------- *)
-
-let PRIME_POWER_EXISTS = prove
- (`!q. prime q
-       ==> ((?i. n = q EXP i) <=>
-            (!p. prime p /\ p divides n ==> p = q))`,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THEN
-  ASM_SIMP_TAC[IMP_CONJ; PRIME_DIVEXP_EQ; DIVIDES_PRIME_PRIME] THEN
-  ASM_CASES_TAC `n = 0` THENL
-   [FIRST_X_ASSUM(fun th -> MP_TAC(SPEC `2` th) THEN MP_TAC(SPEC `3` th)) THEN
-    ASM_REWRITE_TAC[PRIME_2; PRIME_CONV `prime 3`; DIVIDES_0] THEN ARITH_TAC;
-    ALL_TAC] THEN
-  ASM_CASES_TAC `n = 1` THENL
-   [EXISTS_TAC `0` THEN ASM_REWRITE_TAC[EXP]; ALL_TAC] THEN
-  MP_TAC(ISPEC `n:num` PRIMEPOW_FACTOR) THEN
-  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
-  DISCH_THEN(X_CHOOSE_THEN `p:num` MP_TAC) THEN
-  ASM_CASES_TAC `p:num = q` THENL
-   [FIRST_X_ASSUM(SUBST_ALL_TAC o SYM);
-    ASM_MESON_TAC[DIVIDES_REXP; LE_1; DIVIDES_RMUL; DIVIDES_REFL]] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `i:num` THEN
-  DISCH_THEN(X_CHOOSE_THEN `m:num` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM SUBST_ALL_TAC THEN
-  MATCH_MP_TAC(NUM_RING `m = 1 ==> x * m = x`) THEN
-  MATCH_MP_TAC(ARITH_RULE `~(m = 0) /\ ~(2 <= m) ==> m = 1`) THEN
-  CONJ_TAC THENL [ASM_MESON_TAC[COPRIME_0; PRIME_1]; ALL_TAC] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP PRIMEPOW_FACTOR) THEN
-  DISCH_THEN(X_CHOOSE_THEN `r:num` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `r:num`) THEN
-  REWRITE_TAC[NOT_IMP] THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[DIVIDES_LMUL; DIVIDES_RMUL; DIVIDES_REXP; LE_1; DIVIDES_REFL];
-    DISCH_THEN SUBST_ALL_TAC THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [COPRIME_RMUL]) THEN
-    ASM_SIMP_TAC[COPRIME_REXP; LE_1; COPRIME_REFL] THEN
-    ASM_MESON_TAC[PRIME_1]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Example.                                                                  *)

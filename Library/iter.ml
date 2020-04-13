@@ -68,7 +68,7 @@ let ORDER_EXISTENCE_GEN = prove
    [ALL_TAC; ASM_MESON_TAC[NOT_LT; DIVIDES_LE]] THEN
   SUBGOAL_THEN `n:num = (n - d) + d` SUBST1_TAC THENL
    [ASM_ARITH_TAC; ABBREV_TAC `m:num = n - d`] THEN
-  REWRITE_TAC[NUMBER_RULE `d divides m + d <=> d divides m`] THEN
+  REWRITE_TAC[NUMBER_RULE `(d:num) divides m + d <=> d divides m`] THEN
   FIRST_X_ASSUM(MP_TAC o SPEC `m:num`) THEN
   ANTS_TAC THENL [ASM_ARITH_TAC; ASM_MESON_TAC[ADD_SYM]]);;
 

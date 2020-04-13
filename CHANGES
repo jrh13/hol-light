@@ -8,6 +8,415 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 11th Apr 2020       Library/grouptheory.ml, Library/modmul_group.ml
+
+Added proofs of the Sylow theorems in a reasonably general form; the
+core SYLOW_THEOREM_COUNT_MOD is a Frobenius generalization following
+from approximately the usual Wielandt-style proof, modelled on the
+presentation here
+
+  https://people.bath.ac.uk/dmjc20/GpThy/wiel.pdf
+
+while the conjugacy part also has a generalized (though easy to prove) form
+SYLOW_THEOREM_CONJUGATE_GEN taken from Rose's "A Course on Group Theory"
+(theorem 5.4, p89).
+
+Added more miscellaneous group theory machinery, some of it in support
+of the Sylow proofs, and as part of the latest additions, gave up the
+losing battle to avoid including the number-theory lemma library from
+"Library/prime.ml", and so at least was able to move some lemmas on
+the order of group elements back out of "Library/modmul_group.ml" to
+where they more naturally belong. New theorems:
+
+  CARD_CONJUGATE_SUBSETS =
+    |- !G s.
+           FINITE (group_carrier G) /\ s SUBSET group_carrier G
+           ==> CARD {t | group_conjugate G s t} =
+               CARD(group_carrier G) DIV CARD(group_normalizer G s)
+
+  CARD_CONJUGATE_SUBSETS_MUL =
+    |- !G s.
+           FINITE (group_carrier G) /\ s SUBSET group_carrier G
+           ==> CARD {t | group_conjugate G s t} * CARD(group_normalizer G s) =
+               CARD(group_carrier G)
+
+  CARD_CONJUGATE_SUBSETS_MUL_GEN =
+    |- !G s.
+           s SUBSET group_carrier G
+           ==> {t | group_conjugate G s t} *_c group_normalizer G s =_c
+               group_carrier G
+
+  CAUCHY_GROUP_THEOREM =
+    |- !G p.
+           FINITE (group_carrier G) /\
+           prime p /\
+           p divides CARD(group_carrier G)
+           ==> (?x. x IN group_carrier G /\ group_element_order G x = p)
+
+  COPRIME_GROUP_ORDER =
+    |- !G n.
+           FINITE (group_carrier G)
+           ==> ((!x. x IN group_carrier G
+                     ==> coprime(group_element_order G x,n)) <=>
+                coprime(CARD(group_carrier G),n))
+
+  COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS =
+    |- !G d.
+         FINITE (group_carrier G) /\ cyclic_group G
+         ==> CARD {h | h subgroup_of G /\ CARD h = d} =
+             (if d divides CARD(group_carrier G) then 1 else 0)
+
+  FINITE_GROUP_CENTRALIZER =
+    |- !G s. FINITE (group_carrier G) ==> FINITE (group_centralizer G s)
+
+  FINITE_GROUP_NORMALIZER =
+    |- !G s. FINITE (group_carrier G) ==> FINITE (group_normalizer G s)
+
+  FINITE_RESTRICTED_SUBGROUPS =
+    |- !P G. FINITE (group_carrier G) ==> FINITE {h | h subgroup_of G /\ P h}
+
+  FINITE_SUBGROUPS =
+    |- !G. FINITE (group_carrier G) ==> FINITE {h | h subgroup_of G}
+
+  GROUP_CENTRALIZER_NONEMPTY =
+    |- !G s. ~(group_centralizer G s = {})
+
+  GROUP_ID_IN_LEFT_COSET =
+    |- !G h x.
+         h subgroup_of G /\ x IN group_carrier G
+         ==> (group_id G IN left_coset G x h <=> x IN h)
+
+  GROUP_ID_IN_LEFT_COSET_GEN =
+   |- !G h x.
+         h SUBSET group_carrier G /\ x IN group_carrier G
+         ==> (group_id G IN left_coset G x h <=> group_inv G x IN h)
+
+  GROUP_ID_IN_RIGHT_COSET =
+    |- !G h x.
+         h subgroup_of G /\ x IN group_carrier G
+         ==> (group_id G IN right_coset G h x <=> x IN h)
+
+  GROUP_ID_IN_RIGHT_COSET_GEN =
+    |- !G h x.
+         h SUBSET group_carrier G /\ x IN group_carrier G
+         ==> (group_id G IN right_coset G h x <=> group_inv G x IN h)
+
+  GROUP_NORMALIZER_NONEMPTY =
+    |- !G s. ~(group_normalizer G s = {})
+
+  GROUP_ORBIT_COMMON_DIVISOR =
+    |- !G s a n.
+           group_action G s a /\
+           FINITE s /\
+           (!x. x IN s ==> n divides CARD(group_orbit G s a x))
+           ==> n divides CARD s
+
+  GROUP_ORBIT_COMMON_INDEX =
+    |- !G s a p k.
+           group_action G s a /\
+           FINITE s /\
+           (s = {} ==> k = 0) /\
+           (!x. x IN s ==> k <= index p (CARD(group_orbit G s a x)))
+           ==> k <= index p (CARD s)
+
+  GROUP_POW_EQ =
+    |- !G x m n.
+           x IN group_carrier G
+           ==> (group_pow G x m = group_pow G x n <=>
+                (m == n) (mod group_element_order G x))
+
+  GROUP_SETINV_MONO =
+    |- !G s s'. s SUBSET s' ==> group_setinv G s SUBSET group_setinv G s'
+
+  GROUP_SETMUL_INC =
+    |- (!G s t.
+            s subgroup_of G /\ t subgroup_of G
+            ==> t SUBSET group_setmul G s t) /\
+       (!G s t.
+            s subgroup_of G /\ t subgroup_of G
+            ==> s SUBSET group_setmul G s t)
+
+  GROUP_SETMUL_INC_GEN =
+    |- (!G s t.
+            group_id G IN s /\ t SUBSET group_carrier G
+            ==> t SUBSET group_setmul G s t) /\
+       (!G s t.
+            s SUBSET group_carrier G /\ group_id G IN t
+            ==> s SUBSET group_setmul G s t)
+
+  GROUP_SETMUL_MONO =
+    |- !G s t s' t'.
+           s SUBSET s' /\ t SUBSET t'
+           ==> group_setmul G s t SUBSET group_setmul G s' t'
+
+  GROUP_ZPOW_EQ =
+    |- !G x m n.
+           x IN group_carrier G
+           ==> (group_zpow G x m = group_zpow G x n <=>
+                (m == n) (mod &(group_element_order G x)))
+
+  GROUP_ZPOW_EQ_ALT =
+    |- !G x m n.
+           x IN group_carrier G
+           ==> (group_zpow G x m = group_zpow G x n <=>
+                &(group_element_order G x) divides n - m)
+
+  IN_GROUP_CENTRALIZER_ID =
+    |- !G s. group_id G IN group_centralizer G s
+
+  IN_GROUP_NORMALIZER_ID =
+    |- !G s. group_id G IN group_normalizer G s
+
+  IN_IMAGE_GROUP_CONJUGATION =
+    |- !G s x y.
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           s SUBSET group_carrier G
+           ==> (x IN IMAGE (group_conjugation G y) s <=>
+                group_conjugation G (group_inv G y) x IN s)
+
+  NORMAL_SUBGROUP_CONJUGATE_EQ =
+    |- !G n n'.
+         n normal_subgroup_of G \/ n' normal_subgroup_of G
+         ==> (group_conjugate G n n' <=> n = n')
+
+  NORMAL_SUBGROUP_CONJUGATE_INV =
+    |- !G n.
+           n normal_subgroup_of G <=>
+           n subgroup_of G /\
+           (!x. x IN group_carrier G
+                ==> group_setmul G {group_inv G x} (group_setmul G n {x})
+                    SUBSET n)
+
+  NORMAL_SUBGROUP_OF_IMP_SUBSET =
+    |- !G n. n normal_subgroup_of G ==> n SUBSET group_carrier G
+
+  PGROUP =
+    |- !G p.
+           FINITE (group_carrier G) /\ prime p
+           ==> ((!x. x IN group_carrier G
+                     ==> (?k. group_element_order G x = p EXP k)) <=>
+                (?k. CARD(group_carrier G) = p EXP k))
+
+  PGROUP_ACTION_FIXPOINT =
+    |- !G s a p k.
+           group_action G s a /\
+           prime p /\
+           group_carrier G HAS_SIZE p EXP k /\
+           FINITE s /\
+           ~(p divides CARD s)
+           ==> (?x. x IN s /\ (!g. g IN group_carrier G ==> a g x = x))
+
+  PGROUP_ACTION_FIXPOINTS =
+    |- !G s a p k.
+           group_action G s a /\
+           FINITE s /\
+           prime p /\
+           group_carrier G HAS_SIZE p EXP k
+           ==> (CARD {x | x IN s /\
+                          (!g. g IN group_carrier G ==> a g x = x)} ==
+                CARD s)
+               (mod p)
+
+  PRIME_DIVIDES_GROUP_ORDER =
+    |- !G p.
+           FINITE (group_carrier G) /\ prime p
+           ==> ((?x. x IN group_carrier G /\
+                     p divides group_element_order G x) <=>
+                p divides CARD(group_carrier G))
+
+  SUBGROUP_OF_FINITE_CYCLIC_GROUP =
+    |- !G h a.
+         FINITE (group_carrier G) /\
+         a IN group_carrier G /\
+         subgroup_generated G {a} = G
+         ==> (h subgroup_of G <=>
+              ?d. d divides CARD(group_carrier G) /\
+                  h = group_carrier (subgroup_generated G {group_pow G a d}))
+
+  SUBGROUP_OF_LEFT_COSET =
+   |- !G h x.
+         h subgroup_of G /\ x IN group_carrier G
+         ==> (left_coset G x h subgroup_of G <=> left_coset G x h = h)
+
+  SUBGROUP_OF_RIGHT_COSET =
+   |- !G h x.
+         h subgroup_of G /\ x IN group_carrier G
+         ==> (right_coset G h x subgroup_of G <=> right_coset G h x = h)
+
+  SYLOW_THEOREM =
+    |- !G p k.
+           FINITE (group_carrier G) /\
+           prime p /\
+           p EXP k divides CARD(group_carrier G)
+           ==> (?h. h subgroup_of G /\ CARD h = p EXP k)
+
+  SYLOW_THEOREM_CONJUGATE =
+    |- !G p k h h'.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD(group_carrier G)) = k /\
+           h subgroup_of G /\
+           CARD h = p EXP k /\
+           h' subgroup_of G /\
+           CARD h' = p EXP k
+           ==> group_conjugate G h h'
+
+  SYLOW_THEOREM_CONJUGATE_ALT =
+    |- !G p k h h'.
+           FINITE (group_carrier G) /\
+           prime p /\
+           ~(p EXP (k + 1) divides CARD(group_carrier G)) /\
+           h subgroup_of G /\
+           CARD h = p EXP k /\
+           h' subgroup_of G /\
+           CARD h' = p EXP k
+           ==> group_conjugate G h h'
+
+  SYLOW_THEOREM_CONJUGATE_EQ =
+    |- !G p k h h'.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD(group_carrier G)) = k /\
+           h subgroup_of G /\
+           CARD h = p EXP k
+           ==> (h' subgroup_of G /\ CARD h' = p EXP k <=>
+                group_conjugate G h h')
+
+  SYLOW_THEOREM_CONJUGATE_GEN =
+    |- !G p k h j.
+           prime p /\
+           h subgroup_of G /\
+           FINITE {left_coset G x h | x | x IN group_carrier G} /\
+           ~(p divides CARD {left_coset G x h | x | x IN group_carrier G}) /\
+           j subgroup_of G /\
+           FINITE j /\
+           CARD j = p EXP k
+           ==> (?a. a IN group_carrier G /\
+                    j SUBSET IMAGE (group_conjugation G a) h)
+
+  SYLOW_THEOREM_CONJUGATE_SUBSET =
+    |- !G p k l h j.
+           FINITE (group_carrier G) /\
+           prime p /\
+           ~(p EXP (k + 1) divides CARD(group_carrier G)) /\
+           h subgroup_of G /\
+           CARD h = p EXP k /\
+           j subgroup_of G /\
+           CARD j = p EXP l
+           ==> (?a. a IN group_carrier G /\
+                    j SUBSET IMAGE (group_conjugation G a) h)
+
+  SYLOW_THEOREM_COUNT_DIVISOR =
+    |- !G p k.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD(group_carrier G)) = k
+           ==> CARD {h | h subgroup_of G /\ CARD h = p EXP k} divides
+               CARD(group_carrier G) DIV p EXP k
+
+  SYLOW_THEOREM_COUNT_MOD =
+    |- !G p k.
+         FINITE (group_carrier G) /\
+         prime p /\
+         p EXP k divides CARD(group_carrier G)
+         ==> (CARD {h | h subgroup_of G /\ CARD h = p EXP k} == 1) (mod p)
+
+  SYLOW_THEOREM_COUNT_NORMALIZER =
+    |- !G h p k.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD(group_carrier G)) = k /\
+           h subgroup_of G /\
+           CARD h = p EXP k
+           ==> CARD {h | h subgroup_of G /\ CARD h = p EXP k} =
+               CARD(group_carrier G) DIV CARD(group_normalizer G h)
+
+  SYLOW_THEOREM_COUNT_NORMALIZER_MUL =
+    |- !G h p k.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD(group_carrier G)) = k /\
+           h subgroup_of G /\
+           CARD h = p EXP k
+           ==> CARD {h | h subgroup_of G /\ CARD h = p EXP k} *
+               CARD(group_normalizer G h) =
+               CARD(group_carrier G)
+
+Renamed the existing NORMAL_SUBGROUP_CONJUGATE (which rather suggests the use
+of the "group_conjugate" concept) to NORMAL_SUBGROUP_CONJUGATE_INV, and
+renamed GROUP_ZPOW_EQ to GROUP_ZPOW_EQ_ALT, using the original names for:
+
+  GROUP_ZPOW_EQ =
+    |- !G x m n.
+         x IN group_carrier G
+         ==> (group_zpow G x m = group_zpow G x n <=>
+              (m == n) (mod &(group_element_order G x)))
+
+  NORMAL_SUBGROUP_CONJUGATE =
+    |- !G n.
+         n normal_subgroup_of G <=>
+         n subgroup_of G /\ (!n'. group_conjugate G n n' ==> n' = n)
+
+and incompatibly improved the existing theorem GROUP_ACTION_FROM_SUBGROUP
+by removing the "subgroup" hypothesis, so it's now just:
+
+  GROUP_ACTION_FROM_SUBGROUP =
+    |- !G s h a.
+          group_action G s a ==> group_action (subgroup_generated G h) s a
+
+Wed  8th Apr 2020       sets.ml, Library/binomial.ml, 100/combinations.ml
+
+Moved the "number of combinations" formula into "Library/binomial.ml" under
+these two names:
+
+  HAS_SIZE_RESTRICTED_POWERSET =
+    |- !n m s.
+         s HAS_SIZE n
+         ==> {t | t SUBSET s /\ t HAS_SIZE m} HAS_SIZE binom(n,m)
+
+  CARD_RESTRICTED_POWERSET =
+    |- !s k.
+         FINITE s
+         ==> CARD {t | t SUBSET s /\ t HAS_SIZE k} = binom(CARD s,k)
+
+and also added the following missing general lemma to the core "sets.ml":
+
+  FINITE_RESTRICTED_SUBSETS =
+    |- !P s. FINITE s ==> FINITE {t | t SUBSET s /\ P t}
+
+Removed most of the proof in "100/combinations.ml" since it is all either
+duplicating stuff in "Library/binomial.ml" or an immediate consequence. Also
+removed any "prioritize..." calls from "Library/binomial.ml" to make things
+less brittle w.r.t. overloading.
+
+Wed  8th Apr 2020       Library/prime.ml, Library/pocklington.ml
+
+Did some more cleanup and reorganizing around "Library/prime.ml", reordering
+and tweaking some proofs, moving these theorems from "Library/pocklington.ml":
+
+        PRIME
+        PRIME_PRIME_FACTOR
+        PRIME_POWER_EXISTS
+
+Removed the not-very-useful lemma PARITY_EXP (easily subsumed by combining
+existing theorems like EVEN_EXP and ARITH_EQ) and added the following; the
+first two are handy to avoid too much mess when dealing with cutoff subtraction
+over N in the setting of congruences:
+
+  DIVIDES_SUB_EQ =
+   |- !d a b. d divides a - b <=> a < b \/ (a == b) (mod d)
+
+  DIVIDES_SUB_1 =
+    |- !d n. d divides n - 1 <=> n = 0 \/ (n == 1) (mod d)
+
+  INDEX_FACT_PRIME_MULT =
+    |- !p n. prime p ==> index p (FACT (p * n)) = n + index p (FACT n)
+
+  PRIME_ALT =
+    |- !p. prime p <=>
+           ~(p = 0) /\ ~(p = 1) /\ (!n. 1 < n /\ n < p ==> ~(n divides p))
+
 Sat  4th Apr 2020       itab.ml
 
 Merged a pull request from Ben Lynn, removing a redundant line from the
@@ -71,8 +480,8 @@ and theorems:
   CARD_GROUP_SETMUL =
     |- !G g h.
            FINITE g /\ FINITE h /\ g subgroup_of G /\ h subgroup_of G
-           ==> CARD (group_setmul G g h) =
-               (CARD g * CARD h) DIV CARD (g INTER h)
+           ==> CARD(group_setmul G g h) =
+               (CARD g * CARD h) DIV CARD(g INTER h)
 
   CARD_GROUP_SETMUL_GEN =
     |- !G g h.
@@ -82,7 +491,7 @@ and theorems:
   CARD_GROUP_SETMUL_MUL =
     |- !G g h.
            FINITE g /\ FINITE h /\ g subgroup_of G /\ h subgroup_of G
-           ==> CARD (group_setmul G g h) * CARD (g INTER h) = CARD g * CARD h
+           ==> CARD(group_setmul G g h) * CARD(g INTER h) = CARD g * CARD h
 
   EXISTS_IN_GROUP_CARRIER_INV =
     |- !P G.
@@ -541,12 +950,12 @@ of orbit-stabilizer. New definitions and theorems:
   CARD_GROUP_ORBIT_DIVIDES =
     |- !G s a x.
            FINITE (group_carrier G) /\ group_action G s a /\ x IN s
-           ==> CARD (group_orbit G s a x) divides CARD (group_carrier G)
+           ==> CARD(group_orbit G s a x) divides CARD(group_carrier G)
 
   CARD_GROUP_STABILIZER_DIVIDES =
     |- !G s a x.
            FINITE (group_carrier G) /\ group_action G s a /\ x IN s
-           ==> CARD (group_stabilizer G a x) divides CARD (group_carrier G)
+           ==> CARD(group_stabilizer G a x) divides CARD(group_carrier G)
 
   CLOSED_GROUP_ORBIT =
     |- !G s a x g.
@@ -931,7 +1340,7 @@ of orbit-stabilizer. New definitions and theorems:
   ORBIT_STABILIZER =
     |- !G s a x.
            FINITE (group_carrier G) /\ group_action G s a /\ x IN s
-           ==> CARD (group_orbit G s a x) =
+           ==> CARD(group_orbit G s a x) =
                CARD {left_coset G g (group_stabilizer G a x) | g |
                      g IN group_carrier G}
 
@@ -945,8 +1354,8 @@ of orbit-stabilizer. New definitions and theorems:
   ORBIT_STABILIZER_MUL =
     |- !G s a x.
            FINITE (group_carrier G) /\ group_action G s a /\ x IN s
-           ==> CARD (group_orbit G s a x) * CARD (group_stabilizer G a x) =
-               CARD (group_carrier G)
+           ==> CARD(group_orbit G s a x) * CARD(group_stabilizer G a x) =
+               CARD(group_carrier G)
 
   ORBIT_STABILIZER_MUL_GEN =
     |- !G s a x.
@@ -1218,10 +1627,10 @@ to "Library/prime.ml" and restating it using the actual "nproduct" constant:
   COPRIME_NPRODUCT_EQ =
     |- (!f a s.
           FINITE s
-          ==> (coprime (a,nproduct s f) <=> (!i. i IN s ==> coprime (a,f i)))) /\
+          ==> (coprime(a,nproduct s f) <=> (!i. i IN s ==> coprime(a,f i)))) /\
      (!f b s.
           FINITE s
-          ==> (coprime (nproduct s f,b) <=> (!i. i IN s ==> coprime (f i,b))))
+          ==> (coprime(nproduct s f,b) <=> (!i. i IN s ==> coprime(f i,b))))
 
 In addition in other files changed the following theorems to use the "nproduct"
 construct explicitly instead of "iterate ( * )":
@@ -1631,7 +2040,7 @@ different categories.
   GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP =
     |- !n m.
            group_element_order (integer_mod_group n) (&m) =
-           (if m = 0 /\ n = 0 then 1 else n DIV gcd (n,m))
+           (if m = 0 /\ n = 0 then 1 else n DIV gcd(n,m))
 
   GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1 =
     |- !n. group_element_order (integer_mod_group n) (&1) = n
@@ -8428,10 +8837,10 @@ Appell sequences:
  APPELL_SEQUENCE =
   |- !c n x y.
          sum (0..n)
-         (\k. &(binom (n,k)) *
-              sum (0..k) (\l. &(binom (k,l)) * c l * x pow (k - l)) *
+         (\k. &(binom(n,k)) *
+              sum (0..k) (\l. &(binom(k,l)) * c l * x pow (k - l)) *
               y pow (n - k)) =
-         sum (0..n) (\k. &(binom (n,k)) * c k * (x + y) pow (n - k))
+         sum (0..n) (\k. &(binom(n,k)) * c k * (x + y) pow (n - k))
 
 Sun 16th Mar 2014       Multivariate/gamma.ml [new file]
 

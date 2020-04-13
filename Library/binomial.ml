@@ -2,12 +2,6 @@
 (* Binomial coefficients and the binomial theorem.                           *)
 (* ========================================================================= *)
 
-prioritize_num();;
-
-(* ------------------------------------------------------------------------- *)
-(* Binomial coefficients.                                                    *)
-(* ------------------------------------------------------------------------- *)
-
 let binom = define
   `(!n. binom(n,0) = 1) /\
    (!k. binom(0,SUC(k)) = 0) /\
@@ -18,7 +12,7 @@ let BINOM_0 = prove
   INDUCT_TAC THEN REWRITE_TAC[binom; NOT_SUC]);;
 
 let BINOM_LT = prove
- (`!n k. n < k ==> (binom(n,k) = 0)`,
+ (`!n k. n < k ==> binom(n,k) = 0`,
   INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC[binom; ARITH; LT_SUC; LT] THEN
   ASM_SIMP_TAC[ARITH_RULE `n < k ==> n < SUC(k)`; ARITH]);;
 
@@ -50,7 +44,7 @@ let BINOM_EQ_0 = prove
 let BINOM_PENULT = prove
  (`!n. binom(SUC n,n) = SUC n`,
   INDUCT_TAC THEN ASM_REWRITE_TAC [binom; ONE; BINOM_REFL] THEN
-  SUBGOAL_THEN `binom(n,SUC n)=0` SUBST1_TAC THENL
+  SUBGOAL_THEN `binom(n,SUC n) = 0` SUBST1_TAC THENL
    [REWRITE_TAC [BINOM_EQ_0; LT]; REWRITE_TAC [ADD; ADD_0; ADD_SUC; SUC_INJ]]);;
 
 let BINOM_GE_TOP = prove
@@ -100,6 +94,57 @@ let BINOM_BOTTOM_STEP = prove
   REWRITE_TAC[LT_NZ] THEN CONV_TAC NUM_RING);;
 
 (* ------------------------------------------------------------------------- *)
+(* The "number of combinations", number of size-m subsets of a size-n set.   *)
+(* ------------------------------------------------------------------------- *)
+
+let HAS_SIZE_RESTRICTED_POWERSET = prove
+ (`!n m s:A->bool.
+        s HAS_SIZE n ==> {t | t SUBSET s /\ t HAS_SIZE m} HAS_SIZE binom(n,m)`,
+  let binom_induct = prove
+   (`!P. (!n. P n 0) /\
+         (!k. P 0 (SUC k)) /\
+         (!n k. P n (SUC k) /\ P n k ==> P (SUC n) (SUC k))
+         ==> !m n. P m n`,
+    GEN_TAC THEN STRIP_TAC THEN REPEAT INDUCT_TAC THEN ASM_MESON_TAC[])
+  and setstep_lemma = prove
+   (`~(a IN t)
+     ==> {u | u SUBSET (a:A INSERT t) /\ u HAS_SIZE (SUC m)} =
+         {u | u SUBSET t /\ u HAS_SIZE (SUC m)} UNION
+         IMAGE (\u. a INSERT u) {u | u SUBSET t /\ u HAS_SIZE m}`,
+    REWRITE_TAC[REWRITE_RULE[EXTENSION; IN_ELIM_THM] POWERSET_CLAUSES] THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC[IN_ELIM_THM; SET_RULE
+     `{y | y IN t UNION IMAGE f s /\ P y} =
+      {y | y IN t /\ P y} UNION IMAGE f {x | x IN s /\ P(f x)}`] THEN
+    AP_TERM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[HAS_SIZE; FINITE_INSERT] THEN
+    ONCE_REWRITE_TAC[TAUT `p /\ q /\ r <=> ~(p /\ q ==> ~r)`] THEN
+    SIMP_TAC[CARD_CLAUSES] THEN MP_TAC SUC_INJ THEN ASM SET_TAC[]) in
+  MATCH_MP_TAC binom_induct THEN REWRITE_TAC[binom] THEN REPEAT CONJ_TAC THENL
+   [REPEAT STRIP_TAC THEN CONV_TAC HAS_SIZE_CONV THEN
+    EXISTS_TAC `{}:A->bool` THEN SIMP_TAC[EXTENSION; IN_SING; IN_ELIM_THM] THEN
+    REWRITE_TAC[NOT_IN_EMPTY; HAS_SIZE_0] THEN SET_TAC[];
+    SIMP_TAC[HAS_SIZE_0; SUBSET_EMPTY; HAS_SIZE_SUC] THEN SET_TAC[];
+    ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`n:num`; `m:num`] THEN STRIP_TAC THEN
+  GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [HAS_SIZE_CLAUSES] THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a:A`; `t:A->bool`] THEN
+  STRIP_TAC THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN
+  ASM_SIMP_TAC[setstep_lemma] THEN MATCH_MP_TAC HAS_SIZE_UNION THEN
+  ASM_SIMP_TAC[] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN ASM_SIMP_TAC[] THEN
+    UNDISCH_TAC `~(a:A IN t)` THEN SET_TAC[];
+    ALL_TAC] THEN
+  REWRITE_TAC[DISJOINT; EXTENSION; IN_INTER; NOT_IN_EMPTY] THEN
+  REWRITE_TAC[IN_IMAGE; IN_ELIM_THM; HAS_SIZE_SUC] THEN
+  UNDISCH_TAC `~(a:A IN t)` THEN SET_TAC[]);;
+
+let CARD_RESTRICTED_POWERSET = prove
+ (`!s k. FINITE s ==> CARD {t | t SUBSET s /\ t HAS_SIZE k} = binom(CARD s,k)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[FINITE_HAS_SIZE] THEN DISCH_THEN
+   (MP_TAC o SPEC `k:num` o MATCH_MP HAS_SIZE_RESTRICTED_POWERSET) THEN
+  SIMP_TAC[HAS_SIZE]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Binomial expansion.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -111,7 +156,7 @@ let BINOMIAL_THEOREM = prove
   SIMP_TAC[NSUM_CLAUSES_LEFT; ADD1; ARITH_RULE `0 <= n + 1`; NSUM_OFFSET] THEN
   ASM_REWRITE_TAC[EXP; binom; GSYM ADD1; GSYM NSUM_LMUL] THEN
   REWRITE_TAC[RIGHT_ADD_DISTRIB; NSUM_ADD_NUMSEG; MULT_CLAUSES; SUB_0] THEN
-  MATCH_MP_TAC(ARITH_RULE `a = e /\ b = c + d ==> a + b = c + d + e`) THEN
+  MATCH_MP_TAC(ARITH_RULE `a:num = e /\ b = c + d ==> a + b = c + d + e`) THEN
   CONJ_TAC THENL [REWRITE_TAC[MULT_AC; SUB_SUC]; REWRITE_TAC[GSYM EXP]] THEN
   SIMP_TAC[ADD1; SYM(REWRITE_CONV[NSUM_OFFSET]`nsum(m+1..n+1) (\i. f i)`)] THEN
   REWRITE_TAC[NSUM_CLAUSES_NUMSEG; GSYM ADD1; LE_SUC; LE_0] THEN
@@ -124,8 +169,6 @@ let BINOMIAL_THEOREM = prove
 (* Same thing for the reals.                                                 *)
 (* ------------------------------------------------------------------------- *)
 
-prioritize_real();;
-
 let REAL_BINOMIAL_THEOREM = prove
  (`!n x y.
      (x + y) pow n = sum(0..n) (\k. &(binom(n,k)) * x pow k * y pow (n - k))`,
@@ -135,7 +178,7 @@ let REAL_BINOMIAL_THEOREM = prove
   ASM_REWRITE_TAC[real_pow; binom; GSYM ADD1; GSYM SUM_LMUL] THEN
   REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
   REWRITE_TAC[REAL_ADD_RDISTRIB; SUM_ADD_NUMSEG; REAL_MUL_LID; SUB_0] THEN
-  MATCH_MP_TAC(ARITH_RULE `a = e /\ b = c + d ==> a + b = c + d + e`) THEN
+  MATCH_MP_TAC(REAL_ARITH `a:real = e /\ b = c + d ==> a + b = c + d + e`) THEN
   CONJ_TAC THENL [SIMP_TAC[REAL_MUL_AC; SUB_SUC]; SIMP_TAC[GSYM real_pow]] THEN
   SIMP_TAC[ADD1; SYM(REWRITE_CONV[SUM_OFFSET]`sum(m+1..n+1) (\i. f i)`)] THEN
   REWRITE_TAC[SUM_CLAUSES_NUMSEG; GSYM ADD1; LE_SUC; LE_0] THEN
@@ -149,7 +192,7 @@ let REAL_BINOMIAL_THEOREM = prove
 (* ------------------------------------------------------------------------- *)
 
 let BINOM_TOP_STEP_REAL = prove
- (`!n k. &(binom(n + 1,k)) =
+ (`!n k. &(binom(n + 1,k)):real =
            if k = n + 1 then &1
            else (&n + &1) / (&n + &1 - &k) * &(binom(n,k))`,
   REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[BINOM_REFL] THEN
@@ -163,7 +206,7 @@ let BINOM_TOP_STEP_REAL = prove
   CONV_TAC REAL_FIELD);;
 
 let BINOM_BOTTOM_STEP_REAL = prove
- (`!n k. &(binom(n,k+1)) = (&n - &k) / (&k + &1) * &(binom(n,k))`,
+ (`!n k. &(binom(n,k+1)):real = (&n - &k) / (&k + &1) * &(binom(n,k))`,
   REPEAT GEN_TAC THEN DISJ_CASES_TAC(ARITH_RULE `n:num < k \/ k <= n`) THENL
    [ASM_SIMP_TAC[BINOM_LT; ARITH_RULE `n < k ==> n < k + 1`; REAL_MUL_RZERO];
     MP_TAC(SPECL [`n:num`; `k:num`] BINOM_BOTTOM_STEP) THEN
@@ -172,7 +215,7 @@ let BINOM_BOTTOM_STEP_REAL = prove
     CONV_TAC REAL_FIELD]);;
 
 let REAL_OF_NUM_BINOM = prove
- (`!n k. &(binom(n,k)) =
+ (`!n k. &(binom(n,k)):real =
              if k <= n then &(FACT n) / (&(FACT(n - k)) * &(FACT k))
              else &0`,
   REPEAT GEN_TAC THEN COND_CASES_TAC THEN
@@ -187,7 +230,7 @@ let REAL_OF_NUM_BINOM = prove
 (* ------------------------------------------------------------------------- *)
 
 let BINOM_BOTH_STEP_REAL = prove
- (`!p k. &(binom(p + 1,k + 1)) = (&p + &1) / (&k + &1) * &(binom(p,k))`,
+ (`!p k. &(binom(p + 1,k + 1)):real = (&p + &1) / (&k + &1) * &(binom(p,k))`,
   REWRITE_TAC[BINOM_TOP_STEP_REAL; BINOM_BOTTOM_STEP_REAL] THEN
   REPEAT GEN_TAC THEN REWRITE_TAC[EQ_ADD_RCANCEL] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[BINOM_REFL] THEN POP_ASSUM MP_TAC THEN
