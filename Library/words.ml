@@ -2780,6 +2780,25 @@ let WORD_NOT_ADD = prove
         word_not(word_add x y) = word_add (word_not x) (word_neg y)`,
   REWRITE_TAC[WORD_NOT_AS_SUB] THEN CONV_TAC WORD_RULE);;
 
+let VAL_EQ_MAX_ALT = prove
+ (`!x:N word. val x = 2 EXP dimindex(:N) - 1 <=> x = word_not(word 0)`,
+  GEN_TAC THEN REWRITE_TAC[GSYM VAL_EQ;  VAL_WORD_NOT; VAL_WORD_0; SUB_0]);;
+
+let VAL_EQ_MAX = prove
+ (`!x:N word. val x = 2 EXP dimindex(:N) - 1 <=> word_not x = word 0`,
+  REWRITE_TAC[VAL_EQ_MAX_ALT] THEN CONV_TAC WORD_BITWISE_RULE);;
+
+let VAL_WORD_OR_EQ_0 = prove
+ (`!x y:N word. val(word_or x y) = 0 <=> val x = 0 /\ val y = 0`,
+  REWRITE_TAC[VAL_EQ_0; WORD_OR_EQ_0]);;
+
+let VAL_WORD_AND_EQ_MAX = prove
+ (`!x y:N word.
+        val(word_and x y) = 2 EXP dimindex(:N) - 1 <=>
+        val x = 2 EXP dimindex(:N) - 1 /\
+        val y = 2 EXP dimindex(:N) - 1`,
+  REWRITE_TAC[VAL_EQ_MAX] THEN CONV_TAC WORD_BITWISE_RULE);;
+
 let WORD_SHL_AND = prove
  (`!(v:N word) w n.
         word_shl (word_and v w) n =

@@ -8,6 +8,277 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 18th Apr 2020       Library/grouptheory.ml
+
+Added a number of new group theory results, some plugging routine
+gaps, others additional simple Sylow corollaries or other p-group facts
+like the Frattini argument (PGROUP_FRATTINI):
+
+  CARD_EQ_LEFT_RIGHT_COSETS =
+    |- !G h.
+           h subgroup_of G
+           ==> {left_coset G x h | x | x IN group_carrier G} =_c
+               {right_coset G h x | x | x IN group_carrier G}
+  
+  COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS_ALL =
+    |- !G. FINITE (group_carrier G) /\ cyclic_group G
+           ==> CARD {h | h subgroup_of G} =
+               CARD {d | d divides CARD (group_carrier G)}
+  
+  GROUP_CENTRALIZER_SUBGROUP_GENERATED =
+    |- !G h s.
+           s SUBSET h /\ h subgroup_of G
+           ==> group_centralizer (subgroup_generated G h) s =
+               h INTER group_centralizer G s
+  
+  GROUP_NORMALIZER_SUBGROUP_GENERATED =
+    |- !G h s.
+           s SUBSET h /\ h subgroup_of G
+           ==> group_normalizer (subgroup_generated G h) s =
+               h INTER group_normalizer G s
+  
+  GROUP_SETINV_AS_IMAGE = 
+    |- !G. group_setinv G = IMAGE (group_inv G)
+  
+  GROUP_SETINV_LEFT_COSET_GEN =
+    |- !G h a.
+           h subgroup_of G /\ a IN group_carrier G
+           ==> group_setinv G (left_coset G a h) =
+               right_coset G h (group_inv G a)
+  
+  GROUP_SETINV_RIGHT_COSET_GEN =
+    |- !G h a.
+           h subgroup_of G /\ a IN group_carrier G
+           ==> group_setinv G (right_coset G h a) =
+               left_coset G (group_inv G a) h
+  
+  LAGRANGE_THEOREM_LEFT_DIV =
+    |- !G h.
+           FINITE (group_carrier G) /\ h subgroup_of G
+           ==> CARD {left_coset G x h | x | x IN group_carrier G} =
+               CARD (group_carrier G) DIV CARD h
+  
+  LAGRANGE_THEOREM_RIGHT_DIV =
+    |- !G h.
+           FINITE (group_carrier G) /\ h subgroup_of G
+           ==> CARD {right_coset G h x | x | x IN group_carrier G} =
+               CARD (group_carrier G) DIV CARD h
+  
+  PGROUP_DIVIDES_NORMALIZER_QUOTIENT =
+    |- !G p k h.
+           FINITE (group_carrier G) /\
+           prime p /\
+           h subgroup_of G /\
+           CARD h = p EXP k /\
+           p divides CARD (group_carrier G) DIV CARD h
+           ==> p divides CARD (group_normalizer G h) DIV CARD h
+  
+  PGROUP_FRATTINI =
+    |- !G p k h j.
+           prime p /\
+           FINITE j /\
+           j normal_subgroup_of G /\
+           h SUBSET j /\
+           h subgroup_of G /\
+           index p (CARD j) = k /\
+           CARD h = p EXP k
+           ==> group_setmul G (group_normalizer G h) j = group_carrier G
+  
+  PGROUP_GEN =
+    |- !G Q.
+           FINITE (group_carrier G)
+           ==> ((!x p.
+                     x IN group_carrier G /\
+                     prime p /\
+                     p divides group_element_order G x
+                     ==> Q p) <=>
+                (!p. prime p /\ p divides CARD (group_carrier G) ==> Q p))
+  
+  PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF =
+    |- !G p k h.
+           FINITE (group_carrier G) /\
+           prime p /\
+           CARD (group_carrier G) = p EXP k /\
+           h subgroup_of G /\
+           (!h'. h' subgroup_of G /\ h PSUBSET h' ==> h' = group_carrier G)
+           ==> h normal_subgroup_of G
+  
+  PGROUP_NONTRIVIAL_CENTRE =
+    |- !G p k.
+           prime p /\ ~(k = 0) /\ group_carrier G HAS_SIZE p EXP k
+           ==> {group_id G} PSUBSET group_centralizer G (group_carrier G)
+  
+  PGROUP_NONTRIVIAL_CENTRE_GEN =
+    |- !G n p k.
+           prime p /\
+           group_carrier G HAS_SIZE p EXP k /\
+           n normal_subgroup_of G /\
+           ~(n = {group_id G})
+           ==> {group_id G} PSUBSET
+               group_centralizer G (group_carrier G) INTER n
+  
+  PGROUP_NORMALIZER_NORMALIZER =
+    |- !G p k h.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD (group_carrier G)) = k /\
+           h subgroup_of G /\
+           CARD h = p EXP k
+           ==> group_normalizer G (group_normalizer G h) = group_normalizer G h
+  
+  PGROUP_SELF_NORMALIZER =
+    |- !G p k s h.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD (group_carrier G)) = k /\
+           s subgroup_of G /\
+           CARD s = p EXP k /\
+           h subgroup_of G /\
+           group_normalizer G s SUBSET h
+           ==> group_normalizer G h = h
+  
+  PGROUP_SUBGROUP_PSUBSET_NORMALIZER =
+    |- !G p k h.
+           FINITE (group_carrier G) /\
+           prime p /\
+           CARD (group_carrier G) = p EXP k /\
+           h subgroup_of G /\
+           ~(h = group_carrier G)
+           ==> h PSUBSET group_normalizer G h
+  
+  SYLOW_THEOREM_NORMAL_UNIQUE =
+    |- !G p k h h'.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD (group_carrier G)) = k /\
+           h normal_subgroup_of G /\
+           CARD h = p EXP k
+           ==> (h' subgroup_of G /\ CARD h' = p EXP k <=> h' = h)
+  
+  SYLOW_THEOREM_NORMAL_UNIQUE_EQ =
+    |- !G p k h.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD (group_carrier G)) = k /\
+           h subgroup_of G /\
+           CARD h = p EXP k
+           ==> ((!h'. h' subgroup_of G /\ CARD h' = p EXP k <=> h' = h) <=>
+                h normal_subgroup_of G)
+  
+  SYLOW_THEOREM_PGROUP_SUPERSET =
+    |- !G p k h.
+           FINITE (group_carrier G) /\
+           prime p /\
+           h subgroup_of G /\
+           CARD h = p EXP k
+           ==> (?h'. h' subgroup_of G /\
+                     h SUBSET h' /\
+                     CARD h' = p EXP index p (CARD (group_carrier G)))
+  
+  SYLOW_THEOREM_UNIQUE =
+    |- !G p k.
+           FINITE (group_carrier G) /\
+           prime p /\
+           index p (CARD (group_carrier G)) = k
+           ==> ((?!h. h subgroup_of G /\ CARD h = p EXP k) <=>
+                (?h. h normal_subgroup_of G /\ CARD h = p EXP k))
+  
+Thu 16th Apr 2020       Library/card.ml
+
+Added a few natural lemmas about cardinal comparison and preimages:
+
+  CARD_EQ_PREIMAGE =
+   |- !f s t.
+         (!x y.
+              x IN s /\ y IN s /\ f x IN t /\ f y IN t /\ f x = f y
+              ==> x = y) /\
+         t SUBSET IMAGE f s
+         ==> {x | x IN s /\ f x IN t} =_c t
+
+  CARD_GE_PREIMAGE =
+    |- !f s t. t SUBSET IMAGE f s ==> t <=_c {x | x IN s /\ f x IN t}
+
+  CARD_LE_PREIMAGE
+   |- !f s t.
+         (!x y.
+              x IN s /\ y IN s /\ f x IN t /\ f y IN t /\ f x = f y
+              ==> x = y)
+         ==> {x | x IN s /\ f x IN t} <=_c t
+
+Tue 14th Apr 2020       Library/pocklington.ml
+
+Added a definition of "square-free" natural numbers with several different
+characterizations and a few useful lemmas:
+
+  squarefree =
+    |- !n. squarefree n <=> (!m. m EXP 2 divides n ==> m = 1)
+
+  PRIME_IMP_SQUAREFREE =
+    |- !p. prime p ==> squarefree p
+
+  SQUAREFREE_0 =
+    |- ~squarefree 0
+
+  SQUAREFREE_1 =
+    |- squarefree 1
+
+  SQUAREFREE_COPRIME =
+    |- !n. squarefree n <=> (!a b. a * b = n ==> coprime(a,b))
+
+  SQUAREFREE_COPRIME_DIVISORS =
+    |- !n. squarefree n <=> (!a b. a * b divides n ==> coprime(a,b))
+
+  SQUAREFREE_DIVISOR =
+    |- !m n. squarefree n /\ m divides n ==> squarefree m
+
+  SQUAREFREE_EXP =
+    |- !n k. squarefree(n EXP k) <=> n = 1 \/ k = 0 \/ squarefree n /\ k = 1
+
+  SQUAREFREE_IMP_NZ =
+    |- !n. squarefree n ==> ~(n = 0)
+
+  SQUAREFREE_INDEX =
+    |- !n. squarefree n <=> ~(n = 0) /\ (!m. index m n <= 1)
+
+  SQUAREFREE_MUL =
+    |- !m n.
+          squarefree(m * n) <=>
+          coprime(m,n) /\ squarefree m /\ squarefree n
+
+  SQUAREFREE_NPRODUCT =
+    |- !s. FINITE s
+          ==> (squarefree(nproduct s (\n. n)) <=>
+               pairwise (\a b. coprime(a,b)) s /\
+               (!n. n IN s ==> squarefree n))
+
+  SQUAREFREE_PRIME =
+    |- !n. squarefree n <=> (!p. prime p ==> ~(p EXP 2 divides n))
+
+  SQUAREFREE_PRIME_DIVISOR =
+    |- !n. squarefree n <=>
+           (!p. prime p /\ p divides n ==> ~(p EXP 2 divides n))
+
+  SQUAREFREE_PRIME_INDEX =
+    |- !n. squarefree n <=> ~(n = 0) /\ (!p. prime p ==> index p n <= 1)
+
+Mon 13th Apr 2020       Library/words.ml
+
+Added a few more simple machine word lemmas:
+
+  VAL_EQ_MAX =
+   |- !x. val x = 2 EXP dimindex(:N) - 1 <=> word_not x = word 0
+
+  VAL_EQ_MAX_ALT =
+    |- !x. val x = 2 EXP dimindex(:N) - 1 <=> x = word_not (word 0)
+
+  VAL_WORD_AND_EQ_MAX =
+   |- !x y.
+           val(word_and x y) = 2 EXP dimindex(:N) - 1 <=>
+           val x = 2 EXP dimindex(:N) - 1 /\ val y = 2 EXP dimindex(:N) - 1
+
+  VAL_WORD_OR_EQ_0 =
+    |- !x y. val(word_or x y) = 0 <=> val x = 0 /\ val y = 0
+
 Sat 11th Apr 2020       Library/grouptheory.ml, Library/modmul_group.ml
 
 Added proofs of the Sylow theorems in a reasonably general form; the

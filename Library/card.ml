@@ -492,6 +492,28 @@ let CARD_EQ_IMAGE = prove
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
   REWRITE_TAC[eq_c] THEN EXISTS_TAC `f:A->B` THEN ASM SET_TAC[]);;
 
+let CARD_GE_PREIMAGE = prove
+ (`!(f:A->B) s t.
+        t SUBSET IMAGE f s ==> t <=_c {x | x IN s /\ f x IN t}`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[LE_C] THEN EXISTS_TAC `f:A->B` THEN
+  ASM SET_TAC[]);;
+
+let CARD_LE_PREIMAGE = prove
+ (`!(f:A->B) s t.
+        (!x y. x IN s /\ y IN s /\ f x IN t /\ f y IN t /\ f x = f y ==> x = y)
+        ==> {x | x IN s /\ f x IN t} <=_c t`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[le_c] THEN EXISTS_TAC `f:A->B` THEN
+  ASM SET_TAC[]);;
+
+let CARD_EQ_PREIMAGE = prove
+ (`!(f:A->B) s t.
+     (!x y. x IN s /\ y IN s /\ f x IN t /\ f y IN t /\ f x = f y ==> x = y) /\
+     t SUBSET IMAGE f s
+     ==> {x | x IN s /\ f x IN t} =_c t`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC CARD_LE_PREIMAGE; MATCH_MP_TAC CARD_GE_PREIMAGE] THEN
+  ASM SET_TAC[]);;
+
 let CARD_LE_IMAGES = prove
  (`!(f:A->B) (g:A->C) s.
         (!x y. x IN s /\ y IN s /\ g x = g y ==> f x = f y)

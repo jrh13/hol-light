@@ -814,6 +814,116 @@ let INVERSE_MOD_INVERSION = prove
   REWRITE_TAC[LE_MULT_RCANCEL] THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
+(* Square-free natural numbers.                                              *)
+(* ------------------------------------------------------------------------- *)
+
+let squarefree = new_definition
+ `squarefree n <=> !m. m EXP 2 divides n ==> m = 1`;;
+
+let SQUAREFREE_0 = prove
+ (`~squarefree 0`,
+  REWRITE_TAC[squarefree; DIVIDES_0] THEN MESON_TAC[ARITH_RULE `~(1 = 0)`]);;
+
+let SQUAREFREE_1 = prove
+ (`squarefree 1`,
+  REWRITE_TAC[squarefree; DIVIDES_ONE; EXP_EQ_1; ARITH_EQ]);;
+
+let SQUAREFREE_IMP_NZ = prove
+ (`!n. squarefree n ==> ~(n = 0)`,
+  MESON_TAC[SQUAREFREE_0]);;
+
+let SQUAREFREE_PRIME,SQUAREFREE_PRIME_DIVISOR = (CONJ_PAIR o prove)
+ (`(!n. squarefree n <=> !p. prime p ==> ~(p EXP 2 divides n)) /\
+   (!n. squarefree n <=> !p. prime p /\ p divides n ==> ~(p EXP 2 divides n))`,
+  REWRITE_TAC[AND_FORALL_THM; squarefree] THEN X_GEN_TAC `n:num` THEN
+  MATCH_MP_TAC(TAUT
+   `(q ==> r) /\ (p ==> q) /\ (r ==> p)
+    ==> (p <=> q) /\ (p <=> r)`) THEN
+  CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
+  CONJ_TAC THENL [MESON_TAC[PRIME_1]; ALL_TAC] THEN
+  DISCH_TAC THEN X_GEN_TAC `m:num` THEN DISCH_TAC THEN
+  ASM_CASES_TAC `m = 1` THEN ASM_REWRITE_TAC[] THEN
+  MP_TAC(SPEC `m:num` PRIME_FACTOR) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(X_CHOOSE_THEN `p:num` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `p:num`) THEN ASM_REWRITE_TAC[NOT_IMP] THEN
+  MAP_EVERY UNDISCH_TAC [`m EXP 2 divides n`; `(p:num) divides m`] THEN
+  CONV_TAC NUMBER_RULE);;
+
+let SQUAREFREE_INDEX = prove
+ (`!n. squarefree n <=> ~(n = 0) /\ !m. index m n <= 1`,
+  GEN_TAC THEN REWRITE_TAC[squarefree; PRIMEPOW_DIVIDES_INDEX] THEN
+  ASM_CASES_TAC `n = 0` THENL
+   [ASM_MESON_TAC[ARITH_RULE `~(1 = 0)`];
+    ASM_REWRITE_TAC[TAUT `p \/ q ==> p <=> q ==> p`]] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `m:num` THEN ASM_CASES_TAC `m = 1` THEN
+  ASM_REWRITE_TAC[ARITH_RULE `~(2 <= n) <=> n <= 1`] THEN
+  ASM_REWRITE_TAC[index_def] THEN CONV_TAC NUM_REDUCE_CONV);;
+
+let SQUAREFREE_PRIME_INDEX = prove
+ (`!n. squarefree n <=>
+       ~(n = 0) /\ !p. prime p ==> index p n <= 1`,
+  GEN_TAC THEN REWRITE_TAC[SQUAREFREE_PRIME] THEN
+  REWRITE_TAC[PRIMEPOW_DIVIDES_INDEX] THEN
+  ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[DE_MORGAN_THM; ARITH_RULE `~(2 <= n) <=> n <= 1`] THEN
+  ASM_MESON_TAC[PRIME_1; PRIME_2]);;
+
+let SQUAREFREE_COPRIME,SQUAREFREE_COPRIME_DIVISORS = (CONJ_PAIR o prove)
+ (`(!n. squarefree n <=> !a b. a * b = n ==> coprime(a,b)) /\
+   (!n. squarefree n <=> !a b. a * b divides n ==> coprime(a,b))`,
+  REWRITE_TAC[squarefree; AND_FORALL_THM] THEN X_GEN_TAC `n:num` THEN
+  MATCH_MP_TAC(TAUT
+   `(r ==> p) /\ (q ==> r) /\ (p ==> q)
+    ==> (p <=> q) /\ (p <=> r)`) THEN
+  REPEAT CONJ_TAC THENL
+   [REWRITE_TAC[EXP_2] THEN MESON_TAC[COPRIME_REFL];
+    REWRITE_TAC[divides; GSYM MULT_ASSOC] THEN MESON_TAC[COPRIME_RMUL];
+    REWRITE_TAC[coprime; EXP_2] THEN MESON_TAC[DIVIDES_MUL2]]);;
+
+let SQUAREFREE_DIVISOR = prove
+ (`!m n. squarefree n /\ m divides n ==> squarefree m`,
+  REWRITE_TAC[squarefree] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NUMBER_RULE);;
+
+let PRIME_IMP_SQUAREFREE = prove
+ (`!p. prime p ==> squarefree p`,
+  REPEAT STRIP_TAC THEN
+  ASM_SIMP_TAC[SQUAREFREE_PRIME_DIVISOR; DIVIDES_PRIME_PRIME; IMP_CONJ] THEN
+  GEN_TAC THEN REPLICATE_TAC 2 (DISCH_THEN(K ALL_TAC)) THEN
+  GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [GSYM EXP_1] THEN
+  ASM_SIMP_TAC[DIVIDES_EXP_LE; PRIME_GE_2] THEN
+  CONV_TAC NUM_REDUCE_CONV);;
+
+let SQUAREFREE_MUL = prove
+ (`!m n. squarefree(m * n) <=> coprime(m,n) /\ squarefree m /\ squarefree n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `coprime(m:num,n)` THENL
+   [ASM_REWRITE_TAC[]; ASM_MESON_TAC[SQUAREFREE_COPRIME]] THEN
+  EQ_TAC THENL
+   [REWRITE_TAC[squarefree] THEN MESON_TAC[DIVIDES_LMUL; DIVIDES_RMUL];
+    ASM_SIMP_TAC[SQUAREFREE_PRIME; PRIME_DIVPROD_POW_EQ]]);;
+
+let SQUAREFREE_EXP = prove
+ (`!n k. squarefree(n EXP k) <=> n = 1 \/ k = 0 \/ squarefree n /\ k = 1`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `n = 1` THEN ASM_REWRITE_TAC[EXP_ONE; SQUAREFREE_1] THEN
+  ASM_CASES_TAC `k = 0` THEN ASM_REWRITE_TAC[EXP; SQUAREFREE_1] THEN
+  ASM_CASES_TAC `k = 1` THEN ASM_REWRITE_TAC[EXP_1] THEN
+  REWRITE_TAC[squarefree] THEN DISCH_THEN(MP_TAC o SPEC `n:num`) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC DIVIDES_EXP_LE_IMP THEN
+  ASM_ARITH_TAC);;
+
+let SQUAREFREE_NPRODUCT = prove
+ (`!s. FINITE s
+       ==> (squarefree(nproduct s (\n. n)) <=>
+            pairwise (\a b. coprime(a,b)) s /\ !n. n IN s ==> squarefree n)`,
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NPRODUCT_CLAUSES; PAIRWISE_EMPTY; NOT_IN_EMPTY; SQUAREFREE_1] THEN
+  REWRITE_TAC[PAIRWISE_INSERT; SQUAREFREE_MUL; FORALL_IN_INSERT] THEN
+  SIMP_TAC[pairwise; COPRIME_NPRODUCT_EQ] THEN MESON_TAC[COPRIME_SYM]);;
+
+(* ------------------------------------------------------------------------- *)
 (* Euler totient function.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
