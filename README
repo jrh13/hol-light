@@ -142,7 +142,14 @@ be available for some platforms. First the basic approach:
 
         #
 
-(3) At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
+(3) Make sure backtrace recording is disabled in your OCaml system.
+    HOL Light makes heavy use of exceptions and leaving recording
+    enabled will significantly degrade the performance (slowdowns up
+    to 10x were observed). You can see if backtrace recording is enabled
+    by issuing 'Printexc.backtrace_status ();;' at the prompt '#'. To
+    disable exception recording, do 'Printexc.record_backtrace false;;'.
+
+(4) At the OCaml prompt '#', do '#use "hol.ml";;' (the '#' is part of the
     command, not the prompt) followed by a newline. This should rebuild
     all the core HOL Light theories, and terminate after a few minutes
     with the usual OCaml prompt, something like:
