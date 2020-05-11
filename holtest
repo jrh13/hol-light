@@ -33,6 +33,7 @@ fi
 echo '### Loading Library/agm.ml'; echo 'loadt "Library/agm.ml";;' | (time $hollight)
 echo '### Loading Library/binary.ml'; echo 'loadt "Library/binary.ml";;' | (time $hollight)
 echo '### Loading Library/binomial.ml'; echo 'loadt "Library/binomial.ml";;' | (time $hollight)
+echo '### Loading Library/bitmatch.ml'; echo 'loadt "Library/bitmatch.ml";;' | (time $hollight)
 echo '### Loading Examples/borsuk.ml'; echo 'loadt "Examples/borsuk.ml";;' | (time $hollight)
 echo '### Loading Examples/brunn_minkowski.ml'; echo 'loadt "Examples/brunn_minkowski.ml";;' | (time $hollight)
 echo '### Loading Library/card.ml'; echo 'loadt "Library/card.ml";;' | (time $hollight)

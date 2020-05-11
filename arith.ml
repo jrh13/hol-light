@@ -7,6 +7,7 @@
 (*              (c) Copyright, John Harrison 1998-2007                       *)
 (*                 (c) Copyright, Marco Maggesi 2015                         *)
 (*      (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018             *)
+(*                (c) Copyright, Mario Carneiro 2020                         *)
 (* ========================================================================= *)
 
 needs "recursion.ml";;
@@ -1368,6 +1369,11 @@ let DIV_EQ_0 = prove
     ASM_SIMP_TAC[MULT_CLAUSES; ADD_CLAUSES; DIVISION];
     MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC `m:num` THEN
     ASM_REWRITE_TAC[MULT_CLAUSES; ADD_CLAUSES]]);;
+
+let MOD_DIV_EQ_0 = prove
+ (`!m n. ~(n = 0) ==> (m MOD n) DIV n = 0`,
+  REPEAT GEN_TAC THEN
+  DISCH_THEN (fun th -> IMP_REWRITE_TAC [th; DIV_EQ_0; MOD_LT_EQ]));;
 
 let MOD_EQ_0 = prove
  (`!m n. (m MOD n = 0) <=> ?q. m = q * n`,

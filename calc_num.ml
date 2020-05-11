@@ -5,6 +5,7 @@
 (*                                                                           *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*              (c) Copyright, John Harrison 1998-2007                       *)
+(*                (c) Copyright, Mario Carneiro 2020                         *)
 (* ========================================================================= *)
 
 needs "wf.ml";;
@@ -26,6 +27,14 @@ let ARITH_ZERO = prove
  (`(NUMERAL 0 = 0) /\
    (BIT0 _0 = _0)`,
   REWRITE_TAC[NUMERAL; BIT0; DENUMERAL ADD_CLAUSES]);;
+
+let BIT0_0 = prove
+  (`BIT0 0 = 0`,
+   REWRITE_TAC [NUMERAL; ARITH_ZERO]);;
+
+let BIT1_0 = prove
+ (`BIT1 0 = 1`,
+  REWRITE_TAC [NUMERAL]);;
 
 let ARITH_SUC = prove
  (`(!n. SUC(NUMERAL n) = NUMERAL(SUC n)) /\
@@ -190,6 +199,10 @@ let ARITH = end_itlist CONJ
    ARITH_EVEN; ARITH_ODD;
    ARITH_EQ; ARITH_LE; ARITH_LT; ARITH_GE; ARITH_GT;
    ARITH_SUB];;
+
+let EXP_2_NE_0 = prove
+ (`!n. ~(2 EXP n = 0)`,
+  REWRITE_TAC [EXP_EQ_0; ARITH_EQ]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Now more delicate conversions for situations where efficiency matters.    *)

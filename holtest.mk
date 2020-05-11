@@ -4,6 +4,7 @@ STANDALONE_EXAMPLES:=\
 	Library/agm \
 	Library/binary \
 	Library/binomial \
+	Library/bitmatch \
 	Examples/borsuk \
 	Examples/brunn_minkowski \
 	Library/card \

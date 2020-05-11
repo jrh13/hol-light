@@ -8,6 +8,102 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  9th May 2020       Library/bitmatch.ml [new file]
+
+Added a new library from Mario Carneiro supporting "bit matches" of the kind
+often found in machine instruction decoding where words are decomposed into
+bitfields for casewise matching. This not only supports parsing and printing
+of such expressions with intuitive syntax
+
+ `bitmatch w:int32 with
+    [sf; op; S; 0b100010:6; sh; imm12:12; Rn:5; Rd:5] -> Rn
+  | [sf; op; S; 0b01011000:8; Rm:5; 0:6; Rn:5; Rd:5] -> Rn`;;
+
+but also provides efficient proof tools for manipulating such expressions, e.g.
+bm_seq_numeral
+
+ # bm_seq_numeral
+   `bitmatch w:byte with
+      [hi3:3; 0b00:2; lo3:3] -> foo hi3 lo3
+    | [hi3:3; 0b1:1; lo4:4]  -> bar hi3 lo4
+    | [0b1010101:7; b]       -> baz b`
+    (Int 17);;
+
+ val it : term * thm =
+  (`word 17`,
+   |- (bitmatch word 17 with
+        [hi3:3; 0:2; lo3:3] -> foo hi3 lo3
+      | [hi3:3; 1:1; lo4:4] -> bar hi3 lo4
+      | [85:7; b] -> baz b) =
+      bar (word 0) (word 1))
+
+and BITMATCH_SEQ_CONV:
+
+ # BITMATCH_SEQ_CONV
+    `bitmatch (word 289406645 :int32) with
+       [sf; op; S; 0b100010:6; sh; imm12:12; Rn:5; Rd:5] -> Rn
+     | [sf; op; S; 0b01011000:8; Rm:5; 0:6; Rn:5; Rd:5] -> Rn`;;
+
+  val it : thm =
+  |- (bitmatch word 289406645 with
+       [sf; op; S; 34:6; sh; imm12:12; Rn:5; Rd:5] -> Rn
+     | [sf; op; S; 88:8; Rm:5; 0:6; Rn:5; Rd:5] -> Rn) =
+     word 21
+
+Sat  9th May 2020       Library/words.ml
+
+Added two new tranches of material for word-like computation with natural
+numbers, all from Mario Carneiro. They are installed in the machine words
+theory since that is the intended application domain, but they are in fact
+largely separate from the actual type. The new material  includes two new
+constants "numbit" (analogous to "bit" but over :num not :N word) and
+"num_shift_add" (for decomposing numerals along powers of 2):
+
+  numbit =
+    |- !n i. numbit i n <=> ODD(n DIV 2 EXP i)
+
+  num_shift_add =
+    |- !a b n. num_shift_add a b n = a MOD 2 EXP n + b * 2 EXP n
+
+together with additional lemmas:
+
+  num_shift_add_0 =
+    |- num_shift_add a b 0 = b
+
+  num_shift_add_SUC =
+    |- num_shift_add (BIT0 a) b (SUC n) = BIT0 (num_shift_add a b n) /\
+       num_shift_add (BIT1 a) b (SUC n) = BIT1 (num_shift_add a b n)
+
+  num_shift_add_lt =
+    |- !a b n i. b < 2 EXP i ==> num_shift_add a b n < 2 EXP (i + n)
+
+  num_shift_add_mod =
+    |- num_shift_add a (b MOD 2 EXP i) n =
+       num_shift_add a b n MOD 2 EXP (i + n)
+
+and supporting proof tools
+
+  BIT_PRED
+  NUMBIT_CONV
+  NUM_SHIFT_ADD_CORE
+  NUM_SHIFT_ADD_CONV
+
+Sat  9th May 2020       arith.ml, calc_num.ml
+
+Added a few more simple handy lemmas (from Mario Carneiro)
+
+  BIT0_0 =
+    |- BIT0 0 = 0
+
+  BIT1_0 =
+    |- BIT1 0 = 1
+
+  EXP_2_NE_0 =
+    |- !n. ~(2 EXP n = 0)
+
+  MOD_DIV_EQ_0 =
+    |- !m n. ~(n = 0) ==> (m MOD n) DIV n = 0
+
 Sat 18th Apr 2020       Library/grouptheory.ml
 
 Added a number of new group theory results, some plugging routine
@@ -19,51 +115,51 @@ like the Frattini argument (PGROUP_FRATTINI):
            h subgroup_of G
            ==> {left_coset G x h | x | x IN group_carrier G} =_c
                {right_coset G h x | x | x IN group_carrier G}
-  
+
   COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS_ALL =
     |- !G. FINITE (group_carrier G) /\ cyclic_group G
            ==> CARD {h | h subgroup_of G} =
                CARD {d | d divides CARD (group_carrier G)}
-  
+
   GROUP_CENTRALIZER_SUBGROUP_GENERATED =
     |- !G h s.
            s SUBSET h /\ h subgroup_of G
            ==> group_centralizer (subgroup_generated G h) s =
                h INTER group_centralizer G s
-  
+
   GROUP_NORMALIZER_SUBGROUP_GENERATED =
     |- !G h s.
            s SUBSET h /\ h subgroup_of G
            ==> group_normalizer (subgroup_generated G h) s =
                h INTER group_normalizer G s
-  
-  GROUP_SETINV_AS_IMAGE = 
+
+  GROUP_SETINV_AS_IMAGE =
     |- !G. group_setinv G = IMAGE (group_inv G)
-  
+
   GROUP_SETINV_LEFT_COSET_GEN =
     |- !G h a.
            h subgroup_of G /\ a IN group_carrier G
            ==> group_setinv G (left_coset G a h) =
                right_coset G h (group_inv G a)
-  
+
   GROUP_SETINV_RIGHT_COSET_GEN =
     |- !G h a.
            h subgroup_of G /\ a IN group_carrier G
            ==> group_setinv G (right_coset G h a) =
                left_coset G (group_inv G a) h
-  
+
   LAGRANGE_THEOREM_LEFT_DIV =
     |- !G h.
            FINITE (group_carrier G) /\ h subgroup_of G
            ==> CARD {left_coset G x h | x | x IN group_carrier G} =
                CARD (group_carrier G) DIV CARD h
-  
+
   LAGRANGE_THEOREM_RIGHT_DIV =
     |- !G h.
            FINITE (group_carrier G) /\ h subgroup_of G
            ==> CARD {right_coset G h x | x | x IN group_carrier G} =
                CARD (group_carrier G) DIV CARD h
-  
+
   PGROUP_DIVIDES_NORMALIZER_QUOTIENT =
     |- !G p k h.
            FINITE (group_carrier G) /\
@@ -72,7 +168,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            CARD h = p EXP k /\
            p divides CARD (group_carrier G) DIV CARD h
            ==> p divides CARD (group_normalizer G h) DIV CARD h
-  
+
   PGROUP_FRATTINI =
     |- !G p k h j.
            prime p /\
@@ -83,7 +179,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            index p (CARD j) = k /\
            CARD h = p EXP k
            ==> group_setmul G (group_normalizer G h) j = group_carrier G
-  
+
   PGROUP_GEN =
     |- !G Q.
            FINITE (group_carrier G)
@@ -93,7 +189,7 @@ like the Frattini argument (PGROUP_FRATTINI):
                      p divides group_element_order G x
                      ==> Q p) <=>
                 (!p. prime p /\ p divides CARD (group_carrier G) ==> Q p))
-  
+
   PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF =
     |- !G p k h.
            FINITE (group_carrier G) /\
@@ -102,12 +198,12 @@ like the Frattini argument (PGROUP_FRATTINI):
            h subgroup_of G /\
            (!h'. h' subgroup_of G /\ h PSUBSET h' ==> h' = group_carrier G)
            ==> h normal_subgroup_of G
-  
+
   PGROUP_NONTRIVIAL_CENTRE =
     |- !G p k.
            prime p /\ ~(k = 0) /\ group_carrier G HAS_SIZE p EXP k
            ==> {group_id G} PSUBSET group_centralizer G (group_carrier G)
-  
+
   PGROUP_NONTRIVIAL_CENTRE_GEN =
     |- !G n p k.
            prime p /\
@@ -116,7 +212,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            ~(n = {group_id G})
            ==> {group_id G} PSUBSET
                group_centralizer G (group_carrier G) INTER n
-  
+
   PGROUP_NORMALIZER_NORMALIZER =
     |- !G p k h.
            FINITE (group_carrier G) /\
@@ -125,7 +221,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            h subgroup_of G /\
            CARD h = p EXP k
            ==> group_normalizer G (group_normalizer G h) = group_normalizer G h
-  
+
   PGROUP_SELF_NORMALIZER =
     |- !G p k s h.
            FINITE (group_carrier G) /\
@@ -136,7 +232,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            h subgroup_of G /\
            group_normalizer G s SUBSET h
            ==> group_normalizer G h = h
-  
+
   PGROUP_SUBGROUP_PSUBSET_NORMALIZER =
     |- !G p k h.
            FINITE (group_carrier G) /\
@@ -145,7 +241,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            h subgroup_of G /\
            ~(h = group_carrier G)
            ==> h PSUBSET group_normalizer G h
-  
+
   SYLOW_THEOREM_NORMAL_UNIQUE =
     |- !G p k h h'.
            FINITE (group_carrier G) /\
@@ -154,7 +250,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            h normal_subgroup_of G /\
            CARD h = p EXP k
            ==> (h' subgroup_of G /\ CARD h' = p EXP k <=> h' = h)
-  
+
   SYLOW_THEOREM_NORMAL_UNIQUE_EQ =
     |- !G p k h.
            FINITE (group_carrier G) /\
@@ -164,7 +260,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            CARD h = p EXP k
            ==> ((!h'. h' subgroup_of G /\ CARD h' = p EXP k <=> h' = h) <=>
                 h normal_subgroup_of G)
-  
+
   SYLOW_THEOREM_PGROUP_SUPERSET =
     |- !G p k h.
            FINITE (group_carrier G) /\
@@ -174,7 +270,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            ==> (?h'. h' subgroup_of G /\
                      h SUBSET h' /\
                      CARD h' = p EXP index p (CARD (group_carrier G)))
-  
+
   SYLOW_THEOREM_UNIQUE =
     |- !G p k.
            FINITE (group_carrier G) /\
@@ -182,7 +278,7 @@ like the Frattini argument (PGROUP_FRATTINI):
            index p (CARD (group_carrier G)) = k
            ==> ((?!h. h subgroup_of G /\ CARD h = p EXP k) <=>
                 (?h. h normal_subgroup_of G /\ CARD h = p EXP k))
-  
+
 Thu 16th Apr 2020       Library/card.ml
 
 Added a few natural lemmas about cardinal comparison and preimages:
