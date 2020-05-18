@@ -923,6 +923,49 @@ let SQUAREFREE_NPRODUCT = prove
   REWRITE_TAC[PAIRWISE_INSERT; SQUAREFREE_MUL; FORALL_IN_INSERT] THEN
   SIMP_TAC[pairwise; COPRIME_NPRODUCT_EQ] THEN MESON_TAC[COPRIME_SYM]);;
 
+let SQUAREFREE_EXPAND = prove
+ (`!n. squarefree n
+       ==> nproduct {p | prime p /\ p divides n} (\p. p) = n`,
+  REWRITE_TAC[SQUAREFREE_INDEX] THEN REPEAT STRIP_TAC THEN
+  W(MP_TAC o PART_MATCH (rand o rand) PRIME_FACTORIZATION o rand o snd) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EQ_TRANS) THEN REWRITE_TAC[nproduct] THEN
+  MATCH_MP_TAC(MATCH_MP ITERATE_EQ MONOIDAL_MUL) THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN X_GEN_TAC `p:num` THEN STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `p:num` o REWRITE_RULE[SQUAREFREE_INDEX]) THEN
+  ASM_REWRITE_TAC[ARITH_RULE `n <= 1 <=> n = 0 \/ n = 1`; INDEX_EQ_0] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[EXP_1] THEN ASM_MESON_TAC[PRIME_1]);;
+
+let SQUAREFREE_EXPAND_EQ = prove
+ (`!n. squarefree n <=>
+       ~(n = 0) /\ nproduct {p | prime p /\ p divides n} (\p. p) = n`,
+  GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_MESON_TAC[SQUAREFREE_0]; ASM_REWRITE_TAC[]] THEN
+  EQ_TAC THEN REWRITE_TAC[SQUAREFREE_EXPAND] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  ASM_SIMP_TAC[SQUAREFREE_NPRODUCT; FINITE_SPECIAL_DIVISORS] THEN
+  SIMP_TAC[IN_ELIM_THM; PRIME_IMP_SQUAREFREE; pairwise] THEN
+  MESON_TAC[COPRIME_PRIME_PRIME]);;
+
+let SQUAREFREE_DECOMPOSITION = prove
+ (`!n. ?m r. squarefree m /\ m * r EXP 2 = n`,
+  MATCH_MP_TAC INDUCT_COPRIME_ALT THEN REPEAT CONJ_TAC THENL
+   [MAP_EVERY EXISTS_TAC [`1`; `0`] THEN
+    REWRITE_TAC[SQUAREFREE_1] THEN CONV_TAC NUM_REDUCE_CONV;
+    REWRITE_TAC[IMP_CONJ; RIGHT_IMP_FORALL_THM; LEFT_IMP_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC
+     [`a:num`; `b:num`; `ma:num`; `na:num`; `mb:num`; `nb:num`] THEN
+    REPEAT STRIP_TAC THEN UNDISCH_TAC `coprime(a:num,b)` THEN
+    REPEAT(FIRST_X_ASSUM(SUBST1_TAC o SYM)) THEN
+    REWRITE_TAC[COPRIME_LMUL; COPRIME_RMUL] THEN STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC [`ma * mb:num`; `na * nb:num`] THEN
+    ASM_REWRITE_TAC[SQUAREFREE_MUL] THEN ARITH_TAC;
+    MAP_EVERY X_GEN_TAC [`p:num`; `k:num`] THEN DISCH_TAC THEN
+    MAP_EVERY EXISTS_TAC [`p EXP (k MOD 2)`; `p EXP (k DIV 2)`] THEN
+    ASM_SIMP_TAC[SQUAREFREE_EXP; PRIME_IMP_SQUAREFREE] THEN
+    CONJ_TAC THENL [ARITH_TAC; ALL_TAC] THEN
+    REWRITE_TAC[EXP_EXP; GSYM EXP_ADD] THEN AP_TERM_TAC THEN ARITH_TAC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Euler totient function.                                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -1644,6 +1687,45 @@ let ORDER_DIVIDES_MAXIMAL = prove
   DISCH_THEN(MP_TAC o MATCH_MP (ARITH_RULE
    `a:num <= b ==> b <= a ==> a = b`)) THEN
   ASM_REWRITE_TAC[LE_LCM; GSYM DIVIDES_LCM_RIGHT; ORDER_EQ_0]);;
+
+let POWER_RESIDUE_MODULO_COPRIME = prove
+ (`!n a k. coprime(n,a) /\ coprime(k,phi n)
+           ==> ?x. (x EXP k == a) (mod n)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `1` o MATCH_MP CONG_SOLVE) THEN
+  DISCH_THEN(X_CHOOSE_TAC `l:num`) THEN EXISTS_TAC `a EXP l` THEN
+  REWRITE_TAC[EXP_EXP] THEN ONCE_REWRITE_TAC[MULT_SYM] THEN
+  GEN_REWRITE_TAC LAND_CONV [GSYM EXP_1] THEN
+  ASM_SIMP_TAC[ORDER_DIVIDES_EXPDIFF] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP ORDER_DIVIDES_PHI) THEN
+  POP_ASSUM MP_TAC THEN NUMBER_TAC);;
+
+let POWER_RESIDUE_MODULO_PRIME = prove
+ (`!p a k. prime p /\ ~(p divides a) /\ coprime(k,p - 1)
+           ==> ?x. (x EXP k == a) (mod p)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC POWER_RESIDUE_MODULO_COPRIME THEN
+  ASM_SIMP_TAC[PHI_PRIME; PRIME_COPRIME_EQ]);;
+
+let INJECTIVE_EXP_MODULO = prove
+ (`!n a b k.
+        coprime(k,phi n) /\
+        coprime(n,a) /\ coprime(n,b) /\
+        (a EXP k == b EXP k) (mod n)
+        ==> (a == b) (mod n)`,
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN `?l. (k * l == 1) (mod phi n)` STRIP_ASSUME_TAC THENL
+   [ASM_MESON_TAC[CONG_SOLVE]; ALL_TAC] THEN
+  SUBGOAL_THEN `(a EXP k EXP l == b EXP k EXP l) (mod n)` MP_TAC THENL
+   [ASM_MESON_TAC[CONG_EXP]; ALL_TAC] THEN
+  MATCH_MP_TAC(NUMBER_RULE
+   `(a':num == a) (mod n) /\ (b' == b) (mod n)
+    ==> (a' == b') (mod n) ==> (a == b) (mod n)`) THEN
+  CONJ_TAC THEN GEN_REWRITE_TAC LAND_CONV [GSYM EXP_1] THEN
+  ASM_SIMP_TAC[ORDER_DIVIDES_EXPDIFF; EXP_EXP] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (NUMBER_RULE
+   `(a:num == b) (mod d) ==> e divides d ==> (a == b) (mod e)`)) THEN
+  ASM_SIMP_TAC[ORDER_DIVIDES_PHI]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Properties of primitive roots (when they exist).                          *)

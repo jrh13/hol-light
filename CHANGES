@@ -8,6 +8,282 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 15th May 2020       Library/pocklington.ml, Library/primitive.ml
+
+Added theorems about injectivity and surjectivity of powers modulo an integer,
+which can actually be considered as special cases (for the multiplicative group
+of integers) of the group powering theorems added yesterday. Indeed
+PRIME_DIVISOR_ORDER_EXISTS is in effect the special case of Cauchy's theorem in
+group theory for the case of multiplicative groups of integers, but we maintain
+the policy of keeping the two settings independent until brought together in
+"Library/modmul_group.ml".
+
+  INJECTIVE_EXP_MODULO =
+    |- !n a b k.
+           coprime(k,phi n) /\
+           coprime(n,a) /\
+           coprime(n,b) /\
+           (a EXP k == b EXP k) (mod n)
+           ==> (a == b) (mod n)
+
+  INJECTIVE_EXP_MODULO_EQ =
+    |- !n k.
+           ~(n = 0)
+           ==> ((!a b.
+                     coprime(n,a) /\
+                     coprime(n,b) /\
+                     (a EXP k == b EXP k) (mod n)
+                     ==> (a == b) (mod n)) <=>
+                coprime(k,phi n))
+
+  POWER_RESIDUE_MODULO_COPRIME =
+    |- !n a k.
+           coprime(n,a) /\ coprime(k,phi n) ==> (?x. (x EXP k == a) (mod n))
+
+  POWER_RESIDUE_MODULO_EQ =
+    |- !n k.
+           ~(n = 0)
+           ==> ((!a. coprime(n,a) ==> (?x. (x EXP k == a) (mod n))) <=>
+                coprime(k,phi n))
+
+  POWER_RESIDUE_MODULO_EQ_ALT =
+    |- !n k.
+           ~(n = 0)
+           ==> ((!a. coprime(n,a)
+                     ==> (?x. coprime(n,x) /\ (x EXP k == a) (mod n))) <=>
+                coprime(k,phi n))
+
+  POWER_RESIDUE_MODULO_PRIME =
+    |- !p a k.
+           prime p /\ ~(p divides a) /\ coprime(k,p - 1)
+           ==> (?x. (x EXP k == a) (mod p))
+
+  PRIME_DIVISOR_ORDER_EXISTS =
+    |- !n p. ~(n = 0) /\ prime p /\ p divides phi n ==> (?x. order n x = p)
+
+Thu 14th May 2020       Library/grouptheory.ml
+
+Added a number of theorems around injectivity and surjectivity of the n'th
+power function in finite groups (including the easier special case of
+n = -1, inversion). For example FINITE_GROUP_POW_INJECTIVE_EQ which says that
+the "n'th power" function is injective in a finite group iff n is coprime to
+|G|.
+
+  ABELIAN_GROUP_EPIMORPHISM_INVERSION =
+    |- !G. group_epimorphism (G,G) (group_inv G) <=> abelian_group G
+
+  ABELIAN_GROUP_EPIMORPHISM_POWERING =
+    |- !G n.
+           abelian_group G /\
+           FINITE(group_carrier G) /\
+           coprime(n,CARD(group_carrier G))
+           ==> group_epimorphism (G,G) (\x. group_pow G x n)
+
+  ABELIAN_GROUP_EPIMORPHISM_POWERING_EQ =
+    |- !G n.
+           abelian_group G /\ FINITE(group_carrier G)
+           ==> (group_epimorphism (G,G) (\x. group_pow G x n) <=>
+                coprime(n,CARD(group_carrier G)))
+
+  ABELIAN_GROUP_HOMOMORPHISM_INVERSION =
+    |- !G. group_homomorphism (G,G) (group_inv G) <=> abelian_group G
+
+  ABELIAN_GROUP_ISOMORPHISMS_INVERSION =
+    |- !G. group_isomorphisms (G,G) (group_inv G,group_inv G) <=>
+           abelian_group G
+
+  ABELIAN_GROUP_ISOMORPHISM_INVERSION =
+    |- !G. group_isomorphism (G,G) (group_inv G) <=> abelian_group G
+
+  ABELIAN_GROUP_ISOMORPHISM_POWERING =
+    |- !G n.
+           abelian_group G /\
+           FINITE(group_carrier G) /\
+           coprime(n,CARD(group_carrier G))
+           ==> group_isomorphism (G,G) (\x. group_pow G x n)
+
+  ABELIAN_GROUP_ISOMORPHISM_POWERING_EQ =
+    |- !G n.
+           abelian_group G /\ FINITE(group_carrier G)
+           ==> (group_isomorphism (G,G) (\x. group_pow G x n) <=>
+                coprime(n,CARD(group_carrier G)))
+
+  ABELIAN_GROUP_MONOMORPHISM_INVERSION =
+    |- !G. group_monomorphism (G,G) (group_inv G) <=> abelian_group G
+
+  ABELIAN_GROUP_MONOMORPHISM_POWERING =
+    |- !G n.
+           abelian_group G /\
+           FINITE(group_carrier G) /\
+           coprime(n,CARD(group_carrier G))
+           ==> group_monomorphism (G,G) (\x. group_pow G x n)
+
+  ABELIAN_GROUP_MONOMORPHISM_POWERING_EQ =
+    |- !G n.
+           abelian_group G /\ FINITE(group_carrier G)
+           ==> (group_monomorphism (G,G) (\x. group_pow G x n) <=>
+                coprime(n,CARD(group_carrier G)))
+
+  FINITE_GROUP_POW_INJECTIVE_EQ =
+    |- !G n.
+           FINITE(group_carrier G)
+           ==> ((!x y.
+                     x IN group_carrier G /\
+                     y IN group_carrier G /\
+                     group_pow G x n = group_pow G y n
+                     ==> x = y) <=>
+                coprime(n,CARD(group_carrier G)))
+
+  FINITE_GROUP_POW_SURJECTIVE_EQ =
+    |- !G n.
+           FINITE(group_carrier G)
+           ==> ((!x. x IN group_carrier G
+                     ==> (?y. y IN group_carrier G /\ group_pow G y n = x)) <=>
+                coprime(n,CARD(group_carrier G)))
+
+  FINITE_GROUP_ROOT_EXISTS =
+    |- !G n x.
+           FINITE(group_carrier G) /\
+           coprime(n,CARD(group_carrier G)) /\
+           x IN group_carrier G
+           ==> (?y. y IN group_carrier G /\ group_pow G y n = x)
+
+  FINITE_GROUP_ZPOW_INJECTIVE_EQ =
+    |- !G n.
+           FINITE(group_carrier G)
+           ==> ((!x y.
+                     x IN group_carrier G /\
+                     y IN group_carrier G /\
+                     group_zpow G x n = group_zpow G y n
+                     ==> x = y) <=>
+                coprime(n,&(CARD(group_carrier G))))
+
+  FINITE_GROUP_ZPOW_SURJECTIVE_EQ =
+    |- !G n.
+           FINITE(group_carrier G)
+           ==> ((!x. x IN group_carrier G
+                     ==> (?y. y IN group_carrier G /\ group_zpow G y n = x)) <=>
+                coprime(n,&(CARD(group_carrier G))))
+
+  FINITE_GROUP_ZROOT_EXISTS =
+    |- !G n x.
+           FINITE(group_carrier G) /\
+           coprime(n,&(CARD(group_carrier G))) /\
+           x IN group_carrier G
+           ==> (?y. y IN group_carrier G /\ group_zpow G y n = x)
+
+  GROUP_INV_EQ =
+    |- !G x y.
+           x IN group_carrier G /\ y IN group_carrier G
+           ==> (group_inv G x = group_inv G y <=> x = y)
+
+  GROUP_POW_CANCEL =
+    |- !G n x y.
+           FINITE(group_carrier G) /\
+           coprime(n,CARD(group_carrier G)) /\
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           group_pow G x n = group_pow G y n
+           ==> x = y
+
+  GROUP_ZPOW_CANCEL =
+    |- !G n x y.
+           FINITE(group_carrier G) /\
+           coprime(n,&(CARD(group_carrier G))) /\
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           group_zpow G x n = group_zpow G y n
+           ==> x = y
+
+Thu 14th May 2020       Library/grouptheory.ml
+
+Fixed a trivial error where GROUP_ISOMORPHISM_EQ_EPIMORPHISM_FINITE was
+in fact a duplicate of GROUP_ISOMORPHISM_EQ_MONOMORPHISM_FINITE, not proving
+what it was supposed to prove. Now:
+
+  GROUP_ISOMORPHISM_EQ_EPIMORPHISM_FINITE
+    |- !G H f.
+         FINITE (group_carrier G) /\
+         FINITE (group_carrier H) /\
+         CARD(group_carrier G) = CARD(group_carrier H)
+         ==> (group_isomorphism (G,H) f <=> group_epimorphism (G,H) f)
+
+Wed 13th May 2020       arith.ml, Library/prime.ml
+
+Added a few simple but nice rewrites to map between bounded quantifiers
+are "modularized" ones:
+
+  EXISTS_LT_MOD_THM =
+    |- !P n. (?a. a < n /\ P a) <=> ~(n = 0) /\ (?a. P (a MOD n))
+
+  EXISTS_MOD_THM =
+    |- !P n. ~(n = 0) ==> ((?a. P (a MOD n)) <=> (?a. a < n /\ P a))
+
+  FORALL_LT_MOD_THM =
+    |- !P n. (!a. a < n ==> P a) <=> n = 0 \/ (!a. P (a MOD n))
+
+  FORALL_MOD_THM =
+    |- !P n. ~(n = 0) ==> ((!a. P (a MOD n)) <=> (!a. a < n ==> P a))
+
+and some "if and only if" variants of cancellability in congruences
+asserting that it is actually equivalent to coprimality:
+
+  CONG_MULT_LCANCEL_IFF =
+    |- !a n.
+           ~(n = 0)
+           ==> ((!x y. (a * x == a * y) (mod n) ==> (x == y) (mod n)) <=>
+                coprime(a,n))
+
+  CONG_MULT_RCANCEL_IFF =
+    |- !a n.
+           ~(n = 0)
+           ==> ((!x y. (x * a == y * a) (mod n) ==> (x == y) (mod n)) <=>
+                coprime(a,n))
+
+  COPRIME_DIVPROD_IFF =
+    |- !d a.
+           ~(d = 0)
+           ==> ((!b. d divides a * b ==> d divides b) <=> coprime(d,a))
+
+Tue 12th May 2020       Library/pocklington.ml, Library/multiplicative.ml
+
+Added three more natural lemmas about "squarefree" (the last one indeed
+being another characterization of it):
+
+  SQUAREFREE_DECOMPOSITION =
+    |- !n. ?m r. squarefree m /\ m * r EXP 2 = n
+
+  SQUAREFREE_EXPAND =
+    |- !n. squarefree n ==> nproduct {p | prime p /\ p divides n} (\p. p) = n
+
+  SQUAREFREE_EXPAND_EQ =
+    |- !n. squarefree n <=>
+           ~(n = 0) /\ nproduct {p | prime p /\ p divides n} (\p. p) = n
+
+and also changed the definition of the Moebius function "mobius" in
+"Library/multiplicative.ml" to use the concept "squarefree" explicitly,
+streamlining some proofs in the process. Kept the former "expanded"
+definition as a new theorem:
+
+  MOBIUS_ALT =
+    |- !n. mobius n =
+           if ?p. prime p /\ p EXP 2 divides n then &0
+           else -- &1 pow CARD {p | prime p /\ p divides n}
+
+Mon 11th May 2020       Library/prime.ml
+
+Added two versions of prime factorization with "bare hands" proofs, not even
+assuming trivial lemmas about "nproduct". It seemed silly that previously one
+had to get this very basic fact by expanding MULTIPLICATIVE_ID and so pulling
+in additional dependencies.
+
+  PRIME_FACTORIZATION =
+    |- !n. ~(n = 0)
+           ==> nproduct {p | prime p /\ p divides n} (\p. p EXP index p n) = n
+
+  PRIME_FACTORIZATION_ALT =
+    |- !n. ~(n = 0) ==> nproduct {p | prime p} (\p. p EXP index p n) = n
+
 Sat  9th May 2020       Library/bitmatch.ml [new file]
 
 Added a new library from Mario Carneiro supporting "bit matches" of the kind

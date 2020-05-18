@@ -1623,6 +1623,22 @@ let DIV_EXP,MOD_EXP = (CONJ_PAIR o prove)
   REWRITE_TAC[LT; GSYM NOT_LT; ONE; TWO] THEN
   ASM_REWRITE_TAC[SYM ONE; GSYM NOT_LE]);;
 
+let FORALL_LT_MOD_THM = prove
+ (`!P n. (!a. a < n ==> P a) <=> n = 0 \/ !a. P(a MOD n)`,
+  MESON_TAC[LT; MOD_EQ_SELF; MOD_LT_EQ]);;
+
+let FORALL_MOD_THM = prove
+ (`!P n. ~(n = 0) ==> ((!a. P(a MOD n)) <=> (!a. a < n ==> P a))`,
+  SIMP_TAC[FORALL_LT_MOD_THM]);;
+
+let EXISTS_LT_MOD_THM = prove
+ (`!P n. (?a. a < n /\ P a) <=> ~(n = 0) /\ ?a. P(a MOD n)`,
+  MESON_TAC[LT; MOD_EQ_SELF; MOD_LT_EQ]);;
+
+let EXISTS_MOD_THM = prove
+ (`!P n. ~(n = 0) ==> ((?a. P(a MOD n)) <=> (?a. a < n /\ P a))`,
+  SIMP_TAC[EXISTS_LT_MOD_THM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Theorems for eliminating cutoff subtraction, predecessor, DIV and MOD.    *)
 (* We have versions that introduce universal or existential quantifiers.     *)

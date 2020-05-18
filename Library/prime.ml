@@ -436,6 +436,32 @@ let GCD_COPRIME_EXISTS = prove
     REPEAT(MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
     ASM_MESON_TAC[GCD_COPRIME; MULT_SYM]]);;
 
+let COPRIME_DIVPROD_IFF = prove
+ (`!d a. ~(d = 0)
+         ==> ((!b. d divides a * b ==> d divides b) <=> coprime(d,a))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL [ALL_TAC; CONV_TAC NUMBER_RULE] THEN
+  MP_TAC(GSYM(ISPECL [`d:num`; `a:num`] GCD_COPRIME_EXISTS)) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a':num`; `b':num`] THEN STRIP_TAC THEN
+  DISCH_THEN(MP_TAC o SPEC `a':num`) THEN ANTS_TAC THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN NUMBER_TAC);;
+
+let CONG_MULT_LCANCEL_IFF = prove
+ (`!a n. ~(n = 0)
+         ==> ((!x y. (a * x == a * y) (mod n) ==> (x == y) (mod n)) <=>
+              coprime(a,n))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL [ALL_TAC; CONV_TAC NUMBER_RULE] THEN
+  DISCH_THEN(MP_TAC o SPEC `0`) THEN
+  ASM_SIMP_TAC[MULT_CLAUSES; NUMBER_RULE `(0 == x) (mod n) <=> n divides x`;
+               COPRIME_DIVPROD_IFF] THEN
+  CONV_TAC NUMBER_RULE);;
+
+let CONG_MULT_RCANCEL_IFF = prove
+ (`!a n. ~(n = 0)
+         ==> ((!x y. (x * a == y * a) (mod n) ==> (x == y) (mod n)) <=>
+              coprime(a,n))`,
+  ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[CONG_MULT_LCANCEL_IFF]);;
+
 let COPRIME_0 = prove
  (`(!d. coprime(d,0) <=> d = 1) /\
    (!d. coprime(0,d) <=> d = 1)`,
@@ -1607,6 +1633,44 @@ let PRIME_POWER_EXISTS = prove
     REWRITE_TAC[PRIME_ALT; IMP_CONJ_ALT; DIVIDES_MOD] THEN
     CONV_TAC(ONCE_DEPTH_CONV EXPAND_CASES_CONV) THEN
     REWRITE_TAC[LT] THEN ARITH_TAC]);;
+
+let PRIME_FACTORIZATION_ALT = prove
+ (`!n. ~(n = 0) ==> nproduct {p | prime p} (\p. p EXP index p n) = n`,
+  MATCH_MP_TAC COMPLETE_FACTOR_INDUCT THEN
+  REWRITE_TAC[INDEX_0; INDEX_1; MULT_EQ_0; ARITH_EQ; DE_MORGAN_THM; EXP] THEN
+  SIMP_TAC[REWRITE_RULE[GSYM nproduct; NEUTRAL_MUL]
+            (MATCH_MP ITERATE_EQ_NEUTRAL MONOIDAL_MUL)] THEN
+  CONJ_TAC THENL
+   [X_GEN_TAC `p:num` THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC[INDEX_PRIME] THEN
+    REWRITE_TAC[COND_RAND; EXP; EXP_1] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
+    ASM_SIMP_TAC[IN_ELIM_THM; REWRITE_RULE[GSYM nproduct; NEUTRAL_MUL]
+        (MATCH_MP ITERATE_DELTA MONOIDAL_MUL)];
+    MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN
+    DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN
+    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(MESON[]
+     `x * y = z ==> x = m /\ y = n ==> z = m * n`) THEN
+    W(MP_TAC o PART_MATCH (rand o rand)
+      (REWRITE_RULE[GSYM nproduct] (MATCH_MP ITERATE_OP_GEN MONOIDAL_MUL)) o
+      lhand o snd) THEN
+    REWRITE_TAC[support; NEUTRAL_MUL] THEN ANTS_TAC THENL
+     [ASM_REWRITE_TAC[IN_ELIM_THM; EXP_EQ_1; INDEX_EQ_0] THEN
+      ASM_SIMP_TAC[DE_MORGAN_THM; CONJ_ASSOC; FINITE_SPECIAL_DIVISORS];
+      DISCH_THEN(SUBST1_TAC o SYM)] THEN
+    MATCH_MP_TAC(REWRITE_RULE[GSYM nproduct]
+        (MATCH_MP ITERATE_EQ MONOIDAL_MUL)) THEN
+    ASM_SIMP_TAC[IN_ELIM_THM; INDEX_MUL; EXP_ADD]]);;
+
+let PRIME_FACTORIZATION = prove
+ (`!n. ~(n = 0)
+       ==> nproduct {p | prime p /\ p divides n} (\p. p EXP index p n) = n`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV
+        [SYM(MATCH_MP PRIME_FACTORIZATION_ALT th)]) THEN
+  CONV_TAC SYM_CONV THEN REWRITE_TAC[nproduct] THEN
+  MATCH_MP_TAC(MATCH_MP ITERATE_SUPERSET MONOIDAL_MUL) THEN
+  SIMP_TAC[IN_ELIM_THM; IMP_CONJ; NEUTRAL_MUL; EXP_EQ_1; INDEX_EQ_0] THEN
+  SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Least common multiples.                                                   *)

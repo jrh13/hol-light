@@ -326,18 +326,23 @@ let REAL_MULTIPLICATIVE_DIVISORSUM = prove
 prioritize_real();;
 
 let mobius = new_definition
- `mobius(n) = if ?p. prime p /\ (p EXP 2) divides n then &0
-              else --(&1) pow CARD {p | prime p /\ p divides n}`;;
+ `mobius(n) = if squarefree n then --(&1) pow CARD {p | prime p /\ p divides n}
+              else &0:real`;;
+
+let MOBIUS_ALT = prove
+ (`!n. mobius(n) = if ?p. prime p /\ (p EXP 2) divides n then &0
+                   else --(&1) pow CARD {p | prime p /\ p divides n}`,
+  ONCE_REWRITE_TAC[GSYM COND_SWAP] THEN
+  REWRITE_TAC[MESON[] `~(?x. P x /\ Q x) <=> !x. P x ==> ~Q x`] THEN
+  REWRITE_TAC[GSYM SQUAREFREE_PRIME; GSYM mobius]);;
 
 let MOBIUS_0 = prove
  (`mobius 0 = &0`,
-  REWRITE_TAC[mobius] THEN MP_TAC(SPEC `2 EXP 2` DIVIDES_0) THEN
-  MESON_TAC[PRIME_2]);;
+  REWRITE_TAC[mobius; SQUAREFREE_0]);;
 
 let MOBIUS_1 = prove
  (`mobius 1 = &1`,
-  REWRITE_TAC[mobius; DIVIDES_ONE; EXP_EQ_1; ARITH] THEN
-  COND_CASES_TAC THENL [ASM_MESON_TAC[PRIME_1]; ALL_TAC] THEN
+  REWRITE_TAC[mobius; SQUAREFREE_1; DIVIDES_ONE] THEN
   SUBGOAL_THEN `{p | prime p /\ p = 1} = {}`
    (fun th -> SIMP_TAC[th; CARD_CLAUSES; real_pow]) THEN SET_TAC[PRIME_1]);;
 
@@ -349,30 +354,16 @@ let REAL_ABS_MOBIUS = prove
 
 let MOBIUS_MULT = prove
  (`!a b. coprime(a,b) ==> mobius(a * b) = mobius a * mobius b`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[mobius] THEN
-  ASM_CASES_TAC `?p. prime p /\ (p EXP 2) divides a` THENL
-   [ASM_CASES_TAC `?p. prime p /\ p EXP 2 divides (a * b)` THEN
-    ASM_REWRITE_TAC[REAL_MUL_LZERO] THEN ASM_MESON_TAC[DIVIDES_RMUL];
-    ALL_TAC] THEN
-  ASM_CASES_TAC `?p. prime p /\ (p EXP 2) divides b` THENL
-   [ASM_CASES_TAC `?p. prime p /\ p EXP 2 divides (a * b)` THEN
-    ASM_REWRITE_TAC[REAL_MUL_RZERO] THEN ASM_MESON_TAC[DIVIDES_LMUL];
-    ALL_TAC] THEN
-  ASM_CASES_TAC `?p. prime p /\ p EXP 2 divides (a * b)` THENL
-   [ASM_MESON_TAC[PRIME_DIVPROD_POW]; ALL_TAC] THEN
-  ASM_REWRITE_TAC[GSYM REAL_POW_ADD] THEN AP_TERM_TAC THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[mobius; SQUAREFREE_MUL] THEN
+  MAP_EVERY ASM_CASES_TAC [`squarefree a`; `squarefree b`] THEN
+  ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_MUL_RZERO] THEN
+  REWRITE_TAC[GSYM REAL_POW_ADD] THEN AP_TERM_TAC THEN
+  ASM_CASES_TAC `a = 0` THENL [ASM_MESON_TAC[SQUAREFREE_0]; ALL_TAC] THEN
+  ASM_CASES_TAC `b = 0` THENL [ASM_MESON_TAC[SQUAREFREE_0]; ALL_TAC] THEN
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_UNION_EQ THEN
-  ASM_CASES_TAC `a = 0` THENL [ASM_MESON_TAC[PRIME_2; DIVIDES_0]; ALL_TAC] THEN
-  ASM_CASES_TAC `b = 0` THENL [ASM_MESON_TAC[PRIME_2; DIVIDES_0]; ALL_TAC] THEN
-  CONJ_TAC THENL
-   [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{p:num | p divides a * b}` THEN
-    ASM_SIMP_TAC[FINITE_DIVISORS; MULT_EQ_0] THEN SET_TAC[];
-    SIMP_TAC[EXTENSION; IN_INTER; NOT_IN_EMPTY; IN_UNION; AND_FORALL_THM] THEN
-    X_GEN_TAC `p:num` THEN REWRITE_TAC[IN_ELIM_THM] THEN
-    UNDISCH_TAC `~(?p. prime p /\ p EXP 2 divides a * b)` THEN
-    REWRITE_TAC[NOT_EXISTS_THM] THEN DISCH_THEN(MP_TAC o SPEC `p:num`) THEN
-    ASM_CASES_TAC `prime p` THEN ASM_SIMP_TAC[PRIME_DIVPROD_EQ] THEN
-    REWRITE_TAC[CONTRAPOS_THM; EXP_2] THEN CONV_TAC NUMBER_RULE]);;
+  ASM_SIMP_TAC[FINITE_SPECIAL_DIVISORS; MULT_EQ_0] THEN CONJ_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o MATCH_MP COPRIME_PRIME) THEN SET_TAC[];
+    MP_TAC PRIME_DIVPROD_EQ THEN ASM SET_TAC[]]);;
 
 let REAL_MULTIPLICATIVE_MOBIUS = prove
  (`real_multiplicative mobius`,
@@ -380,33 +371,19 @@ let REAL_MULTIPLICATIVE_MOBIUS = prove
 
 let MOBIUS_PRIME = prove
  (`!p. prime p ==> mobius(p) = -- &1`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[mobius] THEN COND_CASES_TAC THENL
-   [FIRST_X_ASSUM(X_CHOOSE_THEN `q:num`
-     (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-    DISCH_THEN(fun th -> MP_TAC th THEN ASSUME_TAC
-     (MATCH_MP(NUMBER_RULE `q EXP 2 divides p ==> q divides p`) th)) THEN
-    SUBGOAL_THEN `q:num = p` SUBST_ALL_TAC THENL
-     [ASM_MESON_TAC[DIVIDES_PRIME_PRIME]; ALL_TAC] THEN
-    DISCH_THEN(MP_TAC o MATCH_MP DIVIDES_LE) THEN
-    REWRITE_TAC[ARITH_RULE `p EXP 2 <= p <=> p * p <= 1 * p`] THEN
-    REWRITE_TAC[LE_MULT_RCANCEL] THEN
-    FIRST_ASSUM(MP_TAC o MATCH_MP PRIME_GE_2) THEN ARITH_TAC;
-    SUBGOAL_THEN `{q | prime q /\ q divides p} = {p}` SUBST1_TAC THENL
-     [ASM SET_TAC[DIVIDES_PRIME_PRIME]; ALL_TAC] THEN
-    SIMP_TAC[CARD_CLAUSES; FINITE_RULES; NOT_IN_EMPTY; ARITH; REAL_POW_1]]);;
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[mobius; PRIME_IMP_SQUAREFREE] THEN
+  SUBGOAL_THEN `{q | prime q /\ q divides p} = {p}` SUBST1_TAC THENL
+   [ASM SET_TAC[DIVIDES_PRIME_PRIME]; ALL_TAC] THEN
+  REWRITE_TAC[CARD_SING] THEN CONV_TAC REAL_RAT_REDUCE_CONV);;
 
 let MOBIUS_PRIMEPOW = prove
  (`!p k. prime p ==> mobius(p EXP k) = if k = 0 then &1
                                        else if k = 1 then -- &1
                                        else &0`,
   REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC `k = 0` THEN ASM_REWRITE_TAC[EXP; MOBIUS_1] THEN
-  ASM_CASES_TAC `k = 1` THEN ASM_SIMP_TAC[EXP_1; MOBIUS_PRIME] THEN
-  REWRITE_TAC[mobius] THEN
-  SUBGOAL_THEN `?q. prime q /\ q EXP 2 divides p EXP k`
-   (fun th -> REWRITE_TAC[th]) THEN
-  EXISTS_TAC `p:num` THEN ASM_SIMP_TAC[DIVIDES_PRIME_EXP_LE] THEN
-  ASM_ARITH_TAC);;
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[MOBIUS_1; EXP] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[MOBIUS_PRIME; EXP_1] THEN
+  ASM_REWRITE_TAC[mobius; SQUAREFREE_EXP] THEN ASM_MESON_TAC[PRIME_1]);;
 
 let DIVISORSUM_MOBIUS = prove
  (`!n. 1 <= n
