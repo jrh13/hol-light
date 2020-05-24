@@ -200,6 +200,16 @@ let NPRODUCT_RELATED_NONEMPTY = prove
     (MATCH_MP ITERATE_RELATED_NONEMPTY MONOIDAL_MUL)) THEN
   ASM_REWRITE_TAC[GSYM nproduct; NEUTRAL_MUL] THEN ASM_MESON_TAC[]);;
 
+let CONG_NPRODUCT = prove
+ (`!n f g s:A->bool.
+         FINITE s /\ (!x. x IN s ==> (f x == g x) (mod n))
+         ==> (nproduct s f == nproduct s g) (mod n)`,
+  REPEAT STRIP_TAC THEN MP_TAC(ISPECL
+   [`\x y:num. (x == y) (mod n)`; `f:A->num`; `g:A->num`; `s:A->bool`]
+        NPRODUCT_RELATED) THEN
+  ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
+  CONV_TAC NUMBER_RULE);;
+
 let NPRODUCT_CLAUSES_LEFT = prove
  (`!f m n. m <= n ==> nproduct(m..n) f = f(m) * nproduct(m+1..n) f`,
   SIMP_TAC[GSYM NUMSEG_LREC; NPRODUCT_CLAUSES; FINITE_NUMSEG; IN_NUMSEG] THEN
@@ -249,6 +259,12 @@ let NPRODUCT_DELTA = prove
          (if a IN s then b else 1)`,
   REWRITE_TAC[nproduct; GSYM NEUTRAL_MUL] THEN
   SIMP_TAC[ITERATE_DELTA; MONOIDAL_MUL]);;
+
+let EXP_NSUM = prove
+ (`!m n s:A->bool.
+        FINITE s ==> m EXP (nsum s n) = nproduct s (\i. m EXP n i)`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; NPRODUCT_CLAUSES; EXP; EXP_ADD]);;
 
 let HAS_SIZE_CART = prove
  (`!P m. (!i. 1 <= i /\ i <= dimindex(:N) ==> {x | P i x} HAS_SIZE m i)
@@ -622,6 +638,12 @@ let IPRODUCT_DELTA = prove
   REWRITE_TAC[iproduct; GSYM NEUTRAL_INT_MUL] THEN
   SIMP_TAC[ITERATE_DELTA; MONOIDAL_INT_MUL]);;
 
+let INT_POW_NSUM = prove
+ (`!x n s:A->bool.
+        FINITE s ==> x pow (nsum s n) = iproduct s (\i. x pow n i)`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; IPRODUCT_CLAUSES; INT_POW; INT_POW_ADD]);;
+
 let th = prove
    (`(!f g s.   (!x. x IN s ==> f(x) = g(x))
                 ==> iproduct s (\i. f(i)) = iproduct s g) /\
@@ -933,6 +955,12 @@ let PRODUCT_DELTA = prove
          (if a IN s then b else &1)`,
   REWRITE_TAC[product; GSYM NEUTRAL_REAL_MUL] THEN
   SIMP_TAC[ITERATE_DELTA; MONOIDAL_REAL_MUL]);;
+
+let REAL_POW_NSUM = prove
+ (`!x n s:A->bool.
+        FINITE s ==> x pow (nsum s n) = product s (\i. x pow n i)`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[NSUM_CLAUSES; PRODUCT_CLAUSES; real_pow; REAL_POW_ADD]);;
 
 let POLYNOMIAL_FUNCTION_PRODUCT = prove
  (`!s:A->bool p.

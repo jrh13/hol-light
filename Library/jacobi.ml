@@ -272,6 +272,20 @@ let JACOBI_EXP_2_ALT = prove
   REPEAT GEN_TAC THEN REWRITE_TAC[JACOBI_REXP; JACOBI_2_CASES] THEN
   ASM_CASES_TAC `ODD a` THEN ASM_REWRITE_TAC[INT_POW_ONE; INT_POW_ZERO]);;
 
+let JACOBI_NPRODUCT_RIGHT = prove
+ (`!a (n:A->num) k.
+        FINITE k
+        ==> jacobi(a,nproduct k n) = iproduct k (\i. jacobi(a,n i))`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[NPRODUCT_CLAUSES; JACOBI_RMUL; JACOBI_1; IPRODUCT_CLAUSES]);;
+
+let JACOBI_NPRODUCT_LEFT = prove
+ (`!(a:A->num) n k.
+        FINITE k
+        ==> jacobi(nproduct k a,n) = iproduct k (\i. jacobi(a i,n))`,
+  GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  ASM_SIMP_TAC[NPRODUCT_CLAUSES; JACOBI_LMUL; JACOBI_1; IPRODUCT_CLAUSES]);;
+
 let JACOBI_CONG = prove
  (`!a b n. (a == b) (mod n) ==> jacobi(a,n) = jacobi(b,n)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN ASM_SIMP_TAC[CONG_MOD_0] THEN

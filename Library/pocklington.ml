@@ -966,6 +966,32 @@ let SQUAREFREE_DECOMPOSITION = prove
     CONJ_TAC THENL [ARITH_TAC; ALL_TAC] THEN
     REWRITE_TAC[EXP_EXP; GSYM EXP_ADD] THEN AP_TERM_TAC THEN ARITH_TAC]);;
 
+let CONG_MOD_SQUAREFREE = prove
+ (`!n a b. squarefree n /\
+           (!p. prime p /\ p divides n ==> (a == b) (mod p))
+           ==> (a == b) (mod n)`,
+  REPLICATE_TAC 2 (GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN GEN_TAC) THEN
+  MATCH_MP_TAC COMPLETE_FACTOR_INDUCT THEN
+  REWRITE_TAC[CONG_MOD_1; SQUAREFREE_0] THEN
+  CONJ_TAC THENL [MESON_TAC[DIVIDES_PRIME_PRIME]; ALL_TAC] THEN
+  MAP_EVERY X_GEN_TAC [`m:num`; `n:num`] THEN
+  ASM_CASES_TAC `squarefree m` THEN ASM_REWRITE_TAC[SQUAREFREE_MUL] THEN
+  ASM_CASES_TAC `squarefree n` THEN ASM_REWRITE_TAC[] THEN
+  SIMP_TAC[NUMBER_RULE
+   `coprime(m:num,n)
+    ==> ((a == b) (mod (m * n)) <=>
+         (a == b) (mod m) /\ (a == b) (mod n))`] THEN
+  STRIP_TAC THEN DISCH_TAC THEN CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o CONJUNCT2) THEN
+  ASM_MESON_TAC[DIVIDES_LMUL; DIVIDES_RMUL]);;
+
+let CONG_MOD_SQUAREFREE_EQ = prove
+ (`!n a b. squarefree n
+           ==> ((a == b) (mod n) <=>
+               !p. prime p /\ p divides n ==> (a == b) (mod p))`,
+  REPEAT STRIP_TAC THEN EQ_TAC THENL [CONV_TAC NUMBER_RULE; ALL_TAC] THEN
+  ASM_MESON_TAC[CONG_MOD_SQUAREFREE]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Euler totient function.                                                   *)
 (* ------------------------------------------------------------------------- *)

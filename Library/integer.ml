@@ -461,6 +461,16 @@ let INT_CONG_POW = prove
   GEN_TAC THEN INDUCT_TAC THEN
   ASM_SIMP_TAC[INT_CONG_MUL; INT_POW; INT_CONG_REFL]);;
 
+let INT_CONG_MUL_1 = prove
+ (`!n x y:int.
+        (x == &1) (mod n) /\ (y == &1) (mod n)
+        ==> (x * y == &1) (mod n)`,
+  MESON_TAC[INT_CONG_MUL; INT_MUL_LID]);;
+
+let INT_CONG_POW_1 = prove
+ (`!a k n:int. (a == &1) (mod n) ==> (a pow k == &1) (mod n)`,
+  MESON_TAC[INT_CONG_POW; INT_POW_ONE]);;
+
 let INT_CONG_MUL_LCANCEL_EQ = prove
  (`!a n x y. coprime(a,n) ==> ((a * x == a * y) (mod n) <=> (x == y) (mod n))`,
   INTEGER_TAC);;

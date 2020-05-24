@@ -47,6 +47,7 @@ STANDALONE_EXAMPLES:=\
 	Library/products \
 	Examples/prog \
 	Examples/prover9 \
+	Examples/pseudoprime \
 	Library/q \
 	Examples/rectypes \
 	Library/ringtheory \

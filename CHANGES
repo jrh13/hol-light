@@ -8,6 +8,89 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 23rd May 2020       Examples/pseudoprime.ml [new file]
+
+Added a file about three additional concepts of "pseudoprime", in addition to
+the Miller-Rabin or strong pseudoprime material in "Examples/miller_rabin.ml".
+Together these two files now define four different concepts of pseudoprime. The
+phrase "Euler pseudoprime" can be used for either of the middle ones; this
+terminology is chosen in an attempt to be less ambiguous.
+
+        fermat_pseudoprime
+        weak_euler_pseudoprime
+        euler_jacobi_pseudoprime
+        miller_rabin_pseudoprime
+
+This file proves all the standard implications and equivalences between the
+concepts, density bounds for composites with or without exceptions etc., as
+well as some auxiliary results about Carmichael numbers (defined as
+"carmichael_number").
+
+Fri 22nd May 2020       int.ml, Library/products.ml, Library/integer.ml, Library/jacobi.ml
+
+Added a few miscellaneous arithmetical lemmas
+
+  DIVIDES_DIVIDES_DIV_IMP =
+    |- !n d e. d * e divides n ==> e divides n DIV d
+  
+  EXP_NSUM =
+    |- !m n s. FINITE s ==> m EXP nsum s n = nproduct s (\i. m EXP n i)
+  
+  INT_CONG_MUL_1 =
+    |- !n x y. (x == &1) (mod n) /\ (y == &1) (mod n) ==> (x * y == &1) (mod n)
+  
+  INT_CONG_POW_1 =
+    |- !a k n. (a == &1) (mod n) ==> (a pow k == &1) (mod n)
+  
+  INT_POW_NSUM =
+    |- !x n s. FINITE s ==> x pow nsum s n = iproduct s (\i. x pow n i)
+  
+  JACOBI_NPRODUCT_LEFT =
+    |- !a n k.
+           FINITE k
+           ==> jacobi (nproduct k a,n) = iproduct k (\i. jacobi (a i,n))
+  
+  JACOBI_NPRODUCT_RIGHT =
+    |- !a n k.
+           FINITE k
+           ==> jacobi (a,nproduct k n) = iproduct k (\i. jacobi (a,n i))
+  
+  REAL_POW_NSUM =
+    |- !x n s. FINITE s ==> x pow nsum s n = product s (\i. x pow n i)
+  
+Thu 21st May 2020       Examples/miller_rabin.ml
+
+As a prelude to introducing a first-class definition of "Fermat pseudoprime",
+renamed two existing theorems:
+
+  MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME ->
+    MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT
+
+  MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME ->
+    MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT
+
+and added the following, which is an easy consequence of the bound theorems but
+worth calling out explicitly:
+
+  ABSOLUTE_MILLER_RABIN_PSEUDOPRIME =
+    |- !n. (!a. coprime (a,n) ==> miller_rabin_pseudoprime a n) <=>
+         n = 1 \/ prime n
+
+Wed 20th May 2020       Library/pocklington.ml
+
+Added a couple more natural lemmas about congruences modulo squarefree numbers:
+
+  CONG_MOD_SQUAREFREE =
+    |- !n a b.
+           squarefree n /\ (!p. prime p /\ p divides n ==> (a == b) (mod p))
+           ==> (a == b) (mod n)
+
+  CONG_MOD_SQUAREFREE_EQ =
+    |- !n a b.
+           squarefree n
+           ==> ((a == b) (mod n) <=>
+                (!p. prime p /\ p divides n ==> (a == b) (mod p)))
+
 Fri 15th May 2020       Library/pocklington.ml, Library/primitive.ml
 
 Added theorems about injectivity and surjectivity of powers modulo an integer,

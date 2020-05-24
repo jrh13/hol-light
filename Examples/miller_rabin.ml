@@ -47,7 +47,7 @@ let NOT_MILLER_RABIN_PSEUDOPRIME = prove
 (* prime power the reverse is true (not more generally).                     *)
 (* ------------------------------------------------------------------------- *)
 
-let MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME = prove
+let MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT = prove
  (`!a q. miller_rabin_pseudoprime a q /\ ~(q = 2)
          ==> (a EXP (q - 1) == 1) (mod q)`,
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
@@ -75,12 +75,12 @@ let MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME = prove
     ONCE_REWRITE_TAC[MULT_SYM] THEN
     REWRITE_TAC[GSYM DIVIDES_DIV_MULT; EXP_INDEX_DIVIDES]]);;
 
-let MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME = prove
+let MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT = prove
  (`!a q. (?p k. prime p /\ ODD p /\ p EXP k = q)
          ==> (miller_rabin_pseudoprime a q <=> (a EXP (q - 1) == 1) (mod q))`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL
    [MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT]
-     MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME) THEN
+     MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT) THEN
     ASM_MESON_TAC[ODD_EXP; REWRITE_CONV[ARITH] `ODD 2`];
     REWRITE_TAC[miller_rabin_pseudoprime] THEN
     REPEAT LET_TAC THEN DISCH_TAC] THEN
@@ -117,7 +117,7 @@ let PRIME_IMP_MILLER_RABIN_PSEUDOPRIME = prove
   REPEAT GEN_TAC THEN ASM_CASES_TAC `p = 2` THENL
    [ASM_REWRITE_TAC[miller_rabin_pseudoprime]; STRIP_TAC] THEN
   W(MP_TAC o PART_MATCH (lhand o rand)
-      MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME o snd) THEN
+      MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT o snd) THEN
   ASM_SIMP_TAC[FERMAT_LITTLE_PRIME] THEN DISCH_THEN MATCH_MP_TAC THEN
   MAP_EVERY EXISTS_TAC [`p:num`; `1`] THEN
   ASM_MESON_TAC[PRIME_ODD; EXP_1]);;
@@ -148,7 +148,7 @@ let MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME = prove
   ASM_CASES_TAC `p = 0` THENL
    [ASM_REWRITE_TAC[miller_rabin_pseudoprime; ARITH]; ALL_TAC] THEN
   DISCH_THEN(MP_TAC o MATCH_MP
-   (REWRITE_RULE[IMP_CONJ] MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME)) THEN
+   (REWRITE_RULE[IMP_CONJ] MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT)) THEN
   ASM_REWRITE_TAC[] THEN
   DISCH_THEN(MP_TAC o MATCH_MP (NUMBER_RULE
    `(a == 1) (mod n) ==> coprime(a,n)`)) THEN
@@ -615,6 +615,48 @@ let MILLER_RABIN_PSEUDOPRIME_BOUND_PHI = prove
         ==> s * t + 1 = (v * a + 1) * (v * b + 1)
             ==> v * a = v * b`) THEN
       ASM_REWRITE_TAC[COPRIME_REXP; COPRIME_2]]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* There are no non-trivial absolute Miller-Rabin pseudoprimes               *)
+(* ------------------------------------------------------------------------- *)
+
+let ABSOLUTE_MILLER_RABIN_PSEUDOPRIME = prove
+ (`!n. (!a. coprime(a,n) ==> miller_rabin_pseudoprime a n) <=>
+       n = 1 \/ prime n`,
+  GEN_TAC THEN ASM_CASES_TAC `n = 1` THEN
+  ASM_REWRITE_TAC[MILLER_RABIN_PSEUDOPRIME_MOD_1] THEN
+  EQ_TAC THENL [ALL_TAC; MESON_TAC[PRIME_IMP_MILLER_RABIN_PSEUDOPRIME]] THEN
+  ASM_CASES_TAC `n = 2` THEN ASM_REWRITE_TAC[PRIME_2] THEN
+  ASM_CASES_TAC `ODD n` THENL
+   [ALL_TAC;
+    ASM_REWRITE_TAC[miller_rabin_pseudoprime] THEN MESON_TAC[COPRIME_1]] THEN
+  ASM_CASES_TAC `n > 9` THENL
+   [GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
+    MATCH_MP_TAC(SET_RULE
+     `{a | a < n /\ miller_rabin_pseudoprime a n} PSUBSET
+      {a | coprime(a,n) /\ a < n}
+      ==> ~(!a. coprime (a,n) ==> miller_rabin_pseudoprime a n)`) THEN
+    MATCH_MP_TAC CARD_PSUBSET_IMP THEN REWRITE_TAC[SUBSET; IN_ELIM_THM] THEN
+    CONJ_TAC THENL
+     [ASM_MESON_TAC[MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME];
+      REWRITE_TAC[GSYM PHI_ALT]] THEN
+    MATCH_MP_TAC(ARITH_RULE `a <= b DIV 4 /\ ~(b = 0) ==> ~(a = b)`) THEN
+    ASM_SIMP_TAC[MILLER_RABIN_PSEUDOPRIME_BOUND_PHI] THEN
+    ASM_MESON_TAC[PHI_EQ_0; ODD];
+    REPEAT(POP_ASSUM MP_TAC)] THEN
+  ASM_CASES_TAC `n < 10` THENL [ALL_TAC; ASM_ARITH_TAC] THEN
+  POP_ASSUM MP_TAC THEN SPEC_TAC(`n:num`,`n:num`) THEN
+  CONV_TAC EXPAND_CASES_CONV THEN CONV_TAC NUM_REDUCE_CONV THEN
+  CONV_TAC(ONCE_DEPTH_CONV PRIME_CONV) THEN
+  REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `2`) THEN
+  CONV_TAC(ONCE_DEPTH_CONV COPRIME_CONV) THEN
+  REWRITE_TAC[miller_rabin_pseudoprime] THEN CONV_TAC NUM_REDUCE_CONV THEN
+  REWRITE_TAC[ARITH_RULE `8 = 2 EXP 3`] THEN
+  SIMP_TAC[INDEX_EXP; INDEX_REFL; PRIME_2] THEN
+  CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN CONV_TAC NUM_REDUCE_CONV THEN
+  REWRITE_TAC[MESON[] `(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)`] THEN
+  CONV_TAC(TOP_DEPTH_CONV EXPAND_CASES_CONV) THEN
+  REWRITE_TAC[CONG] THEN CONV_TAC NUM_REDUCE_CONV);;
 
 (* ------------------------------------------------------------------------- *)
 (* Less than 1/4 of numbers are pseudoprime bases, for any odd composite n.  *)

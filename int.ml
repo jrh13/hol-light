@@ -2184,6 +2184,10 @@ let DIVIDES_DIVIDES_DIV_EQ = prove
   REWRITE_TAC[num_divides; GSYM INT_OF_NUM_DIV; GSYM INT_OF_NUM_MUL] THEN
   REWRITE_TAC[INT_DIVIDES_DIVIDES_DIV_EQ]);;
 
+let DIVIDES_DIVIDES_DIV_IMP = prove
+ (`!n d e. d * e divides n ==> e divides n DIV d`,
+  MESON_TAC[DIVIDES_DIVIDES_DIV_EQ]);;
+
 let NUMBER_TAC =
   let conva = GEN_REWRITE_CONV TRY_CONV [GSYM DIVIDES_ANTISYM] in
   let rec antisym_conv tm =
