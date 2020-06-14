@@ -307,6 +307,15 @@ let CONG_DIV = prove
         ~(m = 0) /\ (a == m * b) (mod (m * n)) ==> (a DIV m == b) (mod n)`,
   MESON_TAC[CONG_DIV2; DIV_MULT]);;
 
+let CONG_DIV_COPRIME = prove
+ (`!m n a b.
+        coprime(m,n) /\ m divides a /\ (a == m * b) (mod n)
+        ==> (a DIV m == b) (mod n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `m = 0` THEN
+  ASM_SIMP_TAC[COPRIME_0; CONG_MOD_1] THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CONG_DIV THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC NUMBER_RULE);;
+
 let CONG_SQUARE_1_PRIME_POWER = prove
  (`!p k x.
         prime p /\ ~(p = 2)

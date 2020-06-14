@@ -53,6 +53,22 @@ let REAL_OF_NUM_SUB_CASES = prove
   GEN_REWRITE_TAC LAND_CONV [GSYM REAL_NEG_SUB] THEN AP_TERM_TAC THEN
   MATCH_MP_TAC REAL_OF_NUM_SUB THEN ASM_MESON_TAC[LE_CASES]);;
 
+let REAL_OF_NUM_CLAUSES = prove
+ (`(!m n. &m:real = &n <=> m = n) /\
+   (!m n. &m:real >= &n <=> m >= n) /\
+   (!m n. &m:real > &n <=> m > n) /\
+   (!m n. &m:real <= &n <=> m <= n) /\
+   (!m n. &m:real < &n <=> m < n) /\
+   (!m n. max (&m) (&n):real = &(MAX m n)) /\
+   (!m n. min (&m) (&n):real = &(MIN m n)) /\
+   (!m n. &m + &n:real = &(m + n)) /\
+   (!m n. &m * &n:real = &(m * n)) /\
+   (!x n. (&x:real) pow n = &(x EXP n))`,
+  REWRITE_TAC[REAL_OF_NUM_EQ; REAL_OF_NUM_GE; REAL_OF_NUM_GT;
+              REAL_OF_NUM_LE; REAL_OF_NUM_LT; REAL_OF_NUM_MAX;
+              REAL_OF_NUM_MIN; REAL_OF_NUM_ADD; REAL_OF_NUM_MUL;
+              REAL_OF_NUM_POW]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A few theorems we need to prove explicitly for later.                     *)
 (* ------------------------------------------------------------------------- *)

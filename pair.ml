@@ -369,6 +369,15 @@ let EXISTS_UNPAIR_FUN_THM = prove
  (`!P. (?f g. P f g) <=> (?h. P (FST o h) (SND o h))`,
   REWRITE_TAC[EXISTS_PAIR_FUN_THM; o_DEF; ETA_AX]);;
 
+let EXISTS_SWAP_FUN_THM = prove
+ (`!P:(A->B->C)->bool. (?f. P f) <=> (?f. P (\a b. f b a))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_TAC `f:A->B->C`) THEN
+    EXISTS_TAC `\b a. (f:A->B->C) a b`;
+    DISCH_THEN(X_CHOOSE_TAC `f:B->A->C`) THEN
+    EXISTS_TAC `\b a. (f:B->A->C) a b`] THEN
+  ASM_REWRITE_TAC[ETA_AX]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Related theorems for explicitly paired quantifiers.                       *)
 (* ------------------------------------------------------------------------- *)

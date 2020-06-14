@@ -469,6 +469,7 @@ let INT_NOT_EQ = INT_OF_REAL_THM REAL_NOT_EQ;;
 let INT_NOT_LE = INT_OF_REAL_THM REAL_NOT_LE;;
 let INT_NOT_LT = INT_OF_REAL_THM REAL_NOT_LT;;
 let INT_OF_NUM_ADD = INT_OF_REAL_THM REAL_OF_NUM_ADD;;
+let INT_OF_NUM_CLAUSES = INT_OF_REAL_THM REAL_OF_NUM_CLAUSES;;
 let INT_OF_NUM_EQ = INT_OF_REAL_THM REAL_OF_NUM_EQ;;
 let INT_OF_NUM_GE = INT_OF_REAL_THM REAL_OF_NUM_GE;;
 let INT_OF_NUM_GT = INT_OF_REAL_THM REAL_OF_NUM_GT;;
@@ -1615,9 +1616,13 @@ let INT_DIV_MUL_ADD = prove
   ASM_REWRITE_TAC[] THEN ASM_INT_ARITH_TAC);;
 
 let INT_CONG_DIV2 = prove
- (`!a n m n.
-      &0 <= m /\ (a == b) (mod (m * n)) ==> (a div m == b div m) (mod n)`,
-  SIMP_TAC[GSYM INT_REM_EQ; INT_DIV_REM]);;
+ (`!a b m n.
+      (a == b) (mod (m * n)) ==> (a div m == b div m) (mod n)`,
+  GEN_REWRITE_TAC (funpow 2 BINDER_CONV) [FORALL_INT_CASES] THEN
+  REWRITE_TAC[INT_DIV_RNEG; INT_MUL_LNEG;
+     INTEGER_RULE `(--a:int == --b) (mod n) <=> (a == b) (mod n)`;
+     INTEGER_RULE `(a:int == b) (mod(--n)) <=> (a == b) (mod n)`] THEN
+  SIMP_TAC[GSYM INT_REM_EQ; INT_DIV_REM; INT_POS]);;
 
 let INT_REM_2_CASES = prove
  (`!n. n rem &2 = &0 \/ n rem &2 = &1`,
@@ -2093,7 +2098,7 @@ let CONG_RMOD = prove
   REWRITE_TAC[CONG; MOD_MOD_REFL]);;
 
 let CONG_DIV2 = prove
- (`!a n m n. (a == b) (mod (m * n)) ==> (a DIV m == b DIV m) (mod n)`,
+ (`!a b m n. (a == b) (mod (m * n)) ==> (a DIV m == b DIV m) (mod n)`,
   SIMP_TAC[CONG; DIV_MOD]);;
 
 let divides = prove

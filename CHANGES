@@ -8,6 +8,487 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 13th Jun 2020       pair.ml, iterate.ml, Library/grouptheory.ml
+
+Added a more generic iterator "iterato" ("o" for "ordered"), analogous to
+"iterate" and collapsing to it in the usual universal commuting case, and
+then its instantiations to two slightly different iterated operations on
+groups, "group_product" (a product in order, an order given explicitly as
+an argument) and "group_sum" (using an arbitrary wellorder, intended for
+cases where it doesn't matter such as Abelian groups or more specific
+settings in general groups). New definitions:
+
+  iterato =
+    |- !dom neut op (<<=) k f.
+           iterato dom neut op (<<=) k f =
+           (if FINITE {i | i IN k /\ f i IN dom DIFF {neut}} /\
+               ~({i | i IN k /\ f i IN dom DIFF {neut}} = {})
+            then let i =
+                     (if ?i. i IN k /\
+                             f i IN dom DIFF {neut} /\
+                             (!j. j <<= i /\ j IN k /\ f j IN dom DIFF {neut}
+                                  ==> j = i)
+                      then @i. i IN k /\
+                               f i IN dom DIFF {neut} /\
+                               (!j. j <<= i /\ j IN k /\ f j IN dom DIFF {neut}
+                                    ==> j = i)
+                      else @i. i IN k /\ f i IN dom DIFF {neut}) in
+                 op (f i)
+                 (iterato dom neut op (<<=)
+                  {j | j IN k DELETE i /\ f j IN dom DIFF {neut}}
+                 f)
+            else neut)
+
+  group_product =
+    |- !G. group_product G =
+           iterato (group_carrier G) (group_id G) (group_mul G)
+
+  group_sum =
+    |- !G. group_sum G = group_product G (@l. woset l /\ fld l = (:K))
+
+and theorems:
+
+  ABELIAN_GROUP_PRODUCT_CLAUSES =
+    |- !G (<<=) i k f.
+           woset (<<=) /\
+           fld (<<=) = (:K) /\
+           abelian_group G /\
+           FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}}
+           ==> group_product G (<<=) (i INSERT k) f =
+               (if f i IN group_carrier G ==> i IN k
+                then group_product G (<<=) k f
+                else group_mul G (f i) (group_product G (<<=) k f))
+
+  ABELIAN_GROUP_SUM_CLAUSES =
+    |- !G i k f.
+           abelian_group G /\
+           FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}}
+           ==> group_sum G (i INSERT k) f =
+               (if f i IN group_carrier G ==> i IN k
+                then group_sum G k f
+                else group_mul G (f i) (group_sum G k f))
+
+  EMPTY_NUMSEG =
+    |- !m n. n < m ==> m..n = {}
+
+  EXISTS_SWAP_FUN_THM =
+    |- !P. (?f. P f) <=> (?f. P (\a b. f b a))
+
+  GROUP_COMMUTES_MUL =
+    |- !G x y z.
+           x IN group_carrier G /\
+           y IN group_carrier G /\
+           z IN group_carrier G /\
+           group_mul G x z = group_mul G z x /\
+           group_mul G y z = group_mul G z y
+           ==> group_mul G (group_mul G x y) z =
+               group_mul G z (group_mul G x y)
+
+  GROUP_COMMUTES_PRODUCT =
+    |- !G (<<=) k f z.
+           (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G)
+                ==> group_mul G (f i) z = group_mul G z (f i)) /\
+           z IN group_carrier G
+           ==> group_mul G (group_product G (<<=) k f) z =
+               group_mul G z (group_product G (<<=) k f)
+
+  GROUP_COMMUTES_SUM =
+    |- !G k f z.
+           (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G)
+                ==> group_mul G (f i) z = group_mul G z (f i)) /\
+           z IN group_carrier G
+           ==> group_mul G (group_sum G k f) z =
+               group_mul G z (group_sum G k f)
+
+  GROUP_PRODUCT =
+    |- !G (<<=) k f. group_product G (<<=) k f IN group_carrier G
+
+  GROUP_PRODUCT_CLAUSES =
+    |- !G (<<=) f.
+         group_product G (<<=) {} f = group_id G /\
+         (!i k.
+              FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}} /\
+              (!j. j IN k ==> i <<= j /\ ~(j <<= i))
+              ==> group_product G (<<=) (i INSERT k) f =
+                  (if f i IN group_carrier G ==> i IN k
+                   then group_product G (<<=) k f
+                   else group_mul G (f i) (group_product G (<<=) k f)))
+
+  GROUP_PRODUCT_CLAUSES_COMMUTING =
+    |- !G (<<=) i k f.
+           woset (<<=) /\
+           fld (<<=) = (:K) /\
+           FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}} /\
+           (!j. j IN k /\
+                j <<= i /\
+                ~(j = i) /\
+                f i IN group_carrier G /\
+                f j IN group_carrier G
+                ==> group_mul G (f i) (f j) = group_mul G (f j) (f i))
+           ==> group_product G (<<=) (i INSERT k) f =
+               (if f i IN group_carrier G ==> i IN k
+                then group_product G (<<=) k f
+                else group_mul G (f i) (group_product G (<<=) k f))
+
+  GROUP_PRODUCT_CLAUSES_EXISTS =
+    |- !G (<<=) f.
+         group_product G (<<=) {} f = group_id G /\
+         (!k. FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} /\
+              ~({i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} =
+                {})
+              ==> (?i. i IN k /\
+                       f i IN group_carrier G DIFF {group_id G} /\
+                       group_product G (<<=) k f =
+                       group_mul G (f i)
+                       (group_product G (<<=) (k DELETE i) f)))
+
+  GROUP_PRODUCT_CLAUSES_LEFT =
+    |- !G f m n.
+           group_product G (<=) (m..n) f =
+           (if m <= n
+            then if f m IN group_carrier G
+                 then group_mul G (f m) (group_product G (<=) (m + 1..n) f)
+                 else group_product G (<=) (m + 1..n) f
+            else group_id G)
+
+  GROUP_PRODUCT_CLAUSES_NUMSEG =
+    |- (!G m f.
+            group_product G (<=) (m..0) f =
+            (if m = 0 /\ f 0 IN group_carrier G then f 0 else group_id G)) /\
+       (!G m n f.
+            group_product G (<=) (m..SUC n) f =
+            (if m <= SUC n /\ f (SUC n) IN group_carrier G
+             then group_mul G (group_product G (<=) (m..n) f) (f (SUC n))
+             else group_product G (<=) (m..n) f))
+
+  GROUP_PRODUCT_CLAUSES_RIGHT =
+    |- !G f m n.
+           group_product G (<=) (m..n) f =
+           (if m <= n
+            then if f n IN group_carrier G
+                 then if n = 0
+                      then f 0
+                      else group_mul G (group_product G (<=) (m..n - 1) f)
+                           (f n)
+                 else group_product G (<=) (m..n - 1) f
+            else group_id G)
+
+  GROUP_PRODUCT_CLOSED =
+    |- !P G (<<=) k f.
+           P (group_id G) /\
+           (!x y.
+                x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
+                ==> P (group_mul G x y)) /\
+           (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G)
+                ==> P (f i))
+           ==> P (group_product G (<<=) k f)
+
+  GROUP_PRODUCT_EQ =
+    |- !G (<<=) k f g.
+           (!i. i IN k ==> f i = g i)
+           ==> group_product G (<<=) k f = group_product G (<<=) k g
+
+  GROUP_PRODUCT_EXPAND_CASES =
+    |- !G (<<=) k f.
+           group_product G (<<=) k f =
+           (if FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}}
+            then group_product G (<<=)
+                 {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}}
+                 f
+            else group_id G)
+
+  GROUP_PRODUCT_MUL =
+    |- !G (<<=) k f g.
+           woset (<<=) /\
+           fld (<<=) = (:K) /\
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           FINITE {i | i IN k /\ ~(g i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G /\ g i IN group_carrier G) /\
+           pairwise (\i j. group_mul G (f i) (g j) = group_mul G (g j) (f i)) k
+           ==> group_product G (<<=) k (\i. group_mul G (f i) (g i)) =
+               group_mul G (group_product G (<<=) k f)
+               (group_product G (<<=) k g)
+
+  GROUP_PRODUCT_RESTRICT =
+    |- !G (<<=) k f.
+           group_product G (<<=) {i | i IN k /\ f i IN group_carrier G} f =
+           group_product G (<<=) k f
+
+  GROUP_PRODUCT_SING =
+    |- !G (<<=) i f.
+           group_product G (<<=) {i} f =
+           (if f i IN group_carrier G then f i else group_id G)
+
+  GROUP_PRODUCT_SUPPORT =
+    |- !G (<<=) k f.
+           group_product G (<<=) {i | i IN k /\ ~(f i = group_id G)} f =
+           group_product G (<<=) k f
+
+  GROUP_PRODUCT_UNION =
+    |- !G (<<=) f s t.
+           woset (<<=) /\
+           fld (<<=) = (:K) /\
+           (FINITE {i | i IN s /\ f i IN group_carrier G DIFF {group_id G}} <=>
+            FINITE {i | i IN t /\ f i IN group_carrier G DIFF {group_id G}}) /\
+           (!x y. x IN s /\ y IN t ==> x <<= y /\ ~(x = y))
+           ==> group_product G (<<=) (s UNION t) f =
+               group_mul G (group_product G (<<=) s f)
+               (group_product G (<<=) t f)
+
+  GROUP_SUM =
+    |- !G k f. group_sum G k f IN group_carrier G
+
+  GROUP_SUM_CLAUSES_COMMUTING =
+    |- !G i k f.
+           FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}} /\
+           (!j. j IN k /\
+                ~(j = i) /\
+                f i IN group_carrier G /\
+                f j IN group_carrier G
+                ==> group_mul G (f i) (f j) = group_mul G (f j) (f i))
+           ==> group_sum G (i INSERT k) f =
+               (if f i IN group_carrier G ==> i IN k
+                then group_sum G k f
+                else group_mul G (f i) (group_sum G k f))
+
+  GROUP_SUM_CLAUSES_EXISTS =
+    |- !G f.
+         group_sum G {} f = group_id G /\
+         (!k. FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} /\
+              ~({i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} =
+                {})
+              ==> (?i. i IN k /\
+                       f i IN group_carrier G DIFF {group_id G} /\
+                       group_sum G k f =
+                       group_mul G (f i) (group_sum G (k DELETE i) f)))
+
+  GROUP_SUM_CLOSED =
+    |- !P G k f.
+           P (group_id G) /\
+           (!x y.
+                x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
+                ==> P (group_mul G x y)) /\
+           (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G)
+                ==> P (f i))
+           ==> P (group_sum G k f)
+
+  GROUP_SUM_EQ =
+    |- !G k f g.
+           (!i. i IN k ==> f i = g i) ==> group_sum G k f = group_sum G k g
+
+  GROUP_SUM_EXPAND_CASES =
+    |- !G k f.
+           group_sum G k f =
+           (if FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}}
+            then group_sum G
+                 {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}}
+                 f
+            else group_id G)
+
+  GROUP_SUM_MUL =
+    |- !G k f g.
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           FINITE {i | i IN k /\ ~(g i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G /\ g i IN group_carrier G) /\
+           pairwise (\i j. group_mul G (f i) (g j) = group_mul G (g j) (f i)) k
+           ==> group_sum G k (\i. group_mul G (f i) (g i)) =
+               group_mul G (group_sum G k f) (group_sum G k g)
+
+  GROUP_SUM_RESTRICT =
+    |- !G k f.
+           group_sum G {i | i IN k /\ f i IN group_carrier G} f =
+           group_sum G k f
+
+  GROUP_SUM_SING =
+    |- !G i f.
+           group_sum G {i} f =
+           (if f i IN group_carrier G then f i else group_id G)
+
+  GROUP_SUM_SUPPORT =
+    |- !G k f.
+           group_sum G {i | i IN k /\ ~(f i = group_id G)} f = group_sum G k f
+
+  ITERATO_CLAUSES =
+    |- !dom neut op (<<=) f.
+           iterato dom neut op (<<=) {} f = neut /\
+           (!i k.
+                FINITE {i | i IN k /\ f i IN dom DIFF {neut}} /\
+                (!j. j IN k ==> i <<= j /\ ~(j <<= i))
+                ==> iterato dom neut op (<<=) (i INSERT k) f =
+                    (if f i IN dom ==> f i = neut \/ i IN k
+                     then iterato dom neut op (<<=) k f
+                     else op (f i) (iterato dom neut op (<<=) k f)))
+
+  ITERATO_CLAUSES_EXISTS =
+    |- !dom neut op (<<=) f.
+           iterato dom neut op (<<=) {} f = neut /\
+           (!k. FINITE {i | i IN k /\ f i IN dom DIFF {neut}} /\
+                ~({i | i IN k /\ f i IN dom DIFF {neut}} = {})
+                ==> (?i. i IN k /\
+                         f i IN dom DIFF {neut} /\
+                         iterato dom neut op (<<=) k f =
+                         op (f i) (iterato dom neut op (<<=) (k DELETE i) f)))
+
+  ITERATO_CLAUSES_GEN =
+    |- !dom neut op (<<=) f.
+           iterato dom neut op (<<=) {} f = neut /\
+           (!i k.
+                FINITE {j | j IN k /\ f j IN dom DIFF {neut}} /\
+                (!j. j IN k ==> i = j \/ i <<= j \/ j <<= i) /\
+                (!j. j <<= i /\ j IN k /\ f j IN dom DIFF {neut} ==> j = i)
+                ==> iterato dom neut op (<<=) (i INSERT k) f =
+                    (if f i IN dom ==> f i = neut \/ i IN k
+                     then iterato dom neut op (<<=) k f
+                     else op (f i) (iterato dom neut op (<<=) k f)))
+
+  ITERATO_CLAUSES_NUMSEG_LEFT =
+    |- !dom neut op f m n.
+           iterato dom neut op (<=) (m..n) f =
+           (if m <= n
+            then if f m IN dom ==> f m = neut
+                 then iterato dom neut op (<=) (m + 1..n) f
+                 else op (f m) (iterato dom neut op (<=) (m + 1..n) f)
+            else neut)
+
+  ITERATO_CLOSED =
+    |- !dom neut op (<<=) k f P.
+           P neut /\
+           (!x y. P x /\ P y ==> P (op x y)) /\
+           (!i. i IN k /\ f i IN dom /\ ~(f i = neut) ==> P (f i))
+           ==> P (iterato dom neut op (<<=) k f)
+
+  ITERATO_EQ =
+    |- !dom neut op (<<=) k f g.
+           (!i. i IN k ==> f i = g i)
+           ==> iterato dom neut op (<<=) k f = iterato dom neut op (<<=) k g
+
+  ITERATO_EXPAND_CASES =
+    |- !dom neut op (<<=) k f.
+           iterato dom neut op (<<=) k f =
+           (if FINITE {i | i IN k /\ f i IN dom DIFF {neut}}
+            then iterato dom neut op (<<=)
+                 {i | i IN k /\ f i IN dom DIFF {neut}}
+                 f
+            else neut)
+
+  ITERATO_INDUCT =
+    |- !dom neut op (<<=) k f P.
+           P neut /\
+           (!i x.
+                i IN k /\ f i IN dom /\ ~(f i = neut) /\ P x ==> P (op (f i) x))
+           ==> P (iterato dom neut op (<<=) k f)
+
+  ITERATO_ITERATE =
+    |- !op (<<=).
+           monoidal op ==> iterato (:A) (neutral op) op (<<=) = iterate op
+
+  ITERATO_SUPPORT =
+    |- !dom neut op (<<=) k f.
+           iterato dom neut op (<<=) {i | i IN k /\ f i IN dom DIFF {neut}} f =
+           iterato dom neut op (<<=) k f
+
+Fri 12th Jun 2020       Library/words.ml
+
+Added a few miscellaneous useful lemmas about machine words:
+
+  BITVAL_POS =
+    |- !b. 0 < bitval b <=> b
+
+  EQ_BITVAL =
+    |- !b c. bitval b = bitval c <=> b <=> c
+
+  INT_EQ_BITVAL =
+    |- !b c. &(bitval b) = &(bitval c) <=> b <=> c
+
+  INT_LE_BITVAL =
+    |- !b c. &(bitval b) <= &(bitval c) <=> b ==> c
+
+  INT_VAL_WORD_NOT =
+     |- !x. &(val (word_not x)) = &2 pow dimindex (:N) - &1 - &(val x)
+
+  LE_BITVAL =
+    |- !b c. bitval b <= bitval c <=> b ==> c
+
+  REAL_BITVAL_NOT =
+    |- !b. &(bitval (~b)) = &1 - &(bitval b)
+
+  REAL_EQ_BITVAL =
+    |- !b c. &(bitval b) = &(bitval c) <=> b <=> c
+
+  REAL_LE_BITVAL =
+    |- !b c. &(bitval b) <= &(bitval c) <=> b ==> c
+
+  REAL_VAL_WORD_NOT =
+     |- !x. &(val (word_not x)) = &2 pow dimindex (:N) - &1 - &(val x)
+
+  VAL_EQ_MAX_MASK =
+     |- !x. val x = 2 EXP dimindex (:N) - 1 <=> x = word_neg (word 1)
+
+  VAL_MOD_2 =
+    |- !x. val x MOD 2 = bitval (bit 0 x)
+
+  WORD_AND_1_BITVAL =
+     |- (!x. word_and (word 1) x = word (bitval (bit 0 x))) /\
+        (!x. word_and x (word 1) = word (bitval (bit 0 x)))
+
+  WORD_NEG_AND_MASK =
+    |- (!b x.
+            word_neg (word_and (word_neg (word (bitval b))) x) =
+            word_and (word_neg (word (bitval b))) (word_neg x)) /\
+       (!b x.
+            word_neg (word_and x (word_neg (word (bitval b)))) =
+            word_and (word_neg x) (word_neg (word (bitval b))))
+
+Thu 11th Jun 2020       int.ml, Library/integer.ml, Library/pocklington.ml
+
+Sharpened the existing theorems INT_CONG_DIV2 and INT_CONG_DIV, which formerly
+assumed nonnegativity of m and are now:
+
+  INT_CONG_DIV2 =
+    |- !a b m n. (a == b) (mod (m * n)) ==> (a div m == b div m) (mod n)
+
+  INT_CONG_DIV =
+    |- !m n a b.
+           ~(m = &0) /\ (a == m * b) (mod (m * n)) ==> (a div m == b) (mod n)
+
+Fixed a trivial fumble in the outer quantifiers of CONG_DIV2, now:
+
+  CONG_DIV2 =
+    |- !a b m n. (a == b) (mod (m * n)) ==> (a DIV m == b DIV m) (mod n)
+
+and added two new variants in the setting of N and Z:
+
+  CONG_DIV_COPRIME =
+    |- !m n a b.
+         coprime(m,n) /\ m divides a /\ (a == m * b) (mod n)
+         ==> (a DIV m == b) (mod n)
+
+  INT_CONG_DIV_COPRIME =
+    |- !m n a b.
+         coprime(m,n) /\ m divides a /\ (a == m * b) (mod n)
+         ==> (a div m == b) (mod n)
+
+Fri  5th Jun 2020       real.ml, int.ml
+
+Added a couple of trivial theorems collecting the basic properties of the
+N->R and N->Z type casts together into a single conjunction (leaving out those
+for successor and subtraction that seem a bit more delicate).
+
+  REAL_OF_NUM_CLAUSES =
+    |- (!m n. &m = &n <=> m = n) /\
+       (!m n. &m >= &n <=> m >= n) /\
+       (!m n. &m > &n <=> m > n) /\
+       (!m n. &m <= &n <=> m <= n) /\
+       (!m n. &m < &n <=> m < n) /\
+       (!m n. max (&m) (&n) = &(MAX m n)) /\
+       (!m n. min (&m) (&n) = &(MIN m n)) /\
+       (!m n. &m + &n = &(m + n)) /\
+       (!m n. &m * &n = &(m * n)) /\
+       (!x n. &x pow n = &(x EXP n))
+
+and the identical-looking INT_OF_NUM_CLAUSES (with the type ":int" instead of
+":real").
+
 Sat 23rd May 2020       Examples/pseudoprime.ml [new file]
 
 Added a file about three additional concepts of "pseudoprime", in addition to
@@ -32,32 +513,32 @@ Added a few miscellaneous arithmetical lemmas
 
   DIVIDES_DIVIDES_DIV_IMP =
     |- !n d e. d * e divides n ==> e divides n DIV d
-  
+
   EXP_NSUM =
     |- !m n s. FINITE s ==> m EXP nsum s n = nproduct s (\i. m EXP n i)
-  
+
   INT_CONG_MUL_1 =
     |- !n x y. (x == &1) (mod n) /\ (y == &1) (mod n) ==> (x * y == &1) (mod n)
-  
+
   INT_CONG_POW_1 =
     |- !a k n. (a == &1) (mod n) ==> (a pow k == &1) (mod n)
-  
+
   INT_POW_NSUM =
     |- !x n s. FINITE s ==> x pow nsum s n = iproduct s (\i. x pow n i)
-  
+
   JACOBI_NPRODUCT_LEFT =
     |- !a n k.
            FINITE k
            ==> jacobi (nproduct k a,n) = iproduct k (\i. jacobi (a i,n))
-  
+
   JACOBI_NPRODUCT_RIGHT =
     |- !a n k.
            FINITE k
            ==> jacobi (a,nproduct k n) = iproduct k (\i. jacobi (a,n i))
-  
+
   REAL_POW_NSUM =
     |- !x n s. FINITE s ==> x pow nsum s n = product s (\i. x pow n i)
-  
+
 Thu 21st May 2020       Examples/miller_rabin.ml
 
 As a prelude to introducing a first-class definition of "Fermat pseudoprime",
@@ -73,7 +554,7 @@ and added the following, which is an easy consequence of the bound theorems but
 worth calling out explicitly:
 
   ABSOLUTE_MILLER_RABIN_PSEUDOPRIME =
-    |- !n. (!a. coprime (a,n) ==> miller_rabin_pseudoprime a n) <=>
+    |- !n. (!a. coprime(a,n) ==> miller_rabin_pseudoprime a n) <=>
          n = 1 \/ prime n
 
 Wed 20th May 2020       Library/pocklington.ml

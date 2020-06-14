@@ -61,6 +61,10 @@ let NUMSEG_EMPTY = prove
   REWRITE_TAC[EXTENSION; NOT_IN_EMPTY; IN_NUMSEG] THEN
   MESON_TAC[NOT_LE; LE_TRANS; LE_REFL]);;
 
+let EMPTY_NUMSEG = prove
+ (`!m n. n < m ==> m..n = {}`,
+  REWRITE_TAC[NUMSEG_EMPTY]);;
+
 let FINITE_SUBSET_NUMSEG = prove
  (`!s:num->bool. FINITE s <=> ?n. s SUBSET 0..n`,
   GEN_TAC THEN EQ_TAC THENL
@@ -881,6 +885,304 @@ let ITERATE_REFLECT = prove
     `x = n - y /\ 0 <= y /\ y <= n - m <=>
      y = n - x /\ x <= n /\ y <= n - m`] THEN
   ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* A more general notion of iteration, using a specific order (<<=)          *)
+(* and hence applying to non-commutative operations, as well as giving       *)
+(* more refined notions of domain ("dom") and neutral element ("neut").      *)
+(* Otherwise it tries to be stylistically similar to "iterate" above.        *)
+(* ------------------------------------------------------------------------- *)
+
+let iterato = (new_specification ["iterato"] o prove)
+ (`?itty.
+      !dom neut op (<<=) k (f:K->A).
+         itty dom neut op (<<=) k f =
+         if FINITE {i | i IN k /\ f i IN dom DIFF {neut}} /\
+            ~({i | i IN k /\ f i IN dom DIFF {neut}} = {})
+         then let i = if ?i. i IN k /\ f i IN dom DIFF {neut} /\
+                             !j. j <<= i /\ j IN k /\ f j IN dom DIFF {neut}
+                                 ==> j = i
+                       then @i. i IN k /\ f i IN dom DIFF {neut} /\
+                                !j. j <<= i /\ j IN k /\
+                                    f j IN dom DIFF {neut}
+                                    ==> j = i
+                       else @i. i IN k /\ f i IN dom DIFF {neut} in
+              op (f i) (itty dom neut op (<<=)
+                          {j | j IN k DELETE i /\ f j IN dom DIFF {neut}} f)
+         else neut`,
+  REPLICATE_TAC 4 (ONCE_REWRITE_TAC[GSYM SKOLEM_THM]) THEN REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC I [EXISTS_SWAP_FUN_THM] THEN REWRITE_TAC[] THEN
+  GEN_REWRITE_TAC BINDER_CONV [SWAP_FORALL_THM] THEN
+  ONCE_REWRITE_TAC[GSYM SKOLEM_THM] THEN GEN_TAC THEN
+  MATCH_MP_TAC(MATCH_MP WF_REC (ISPEC
+   `\k. CARD {i | i IN k /\ (f:K->A) i IN dom DIFF {neut}}` WF_MEASURE)) THEN
+  REWRITE_TAC[MEASURE] THEN REPEAT STRIP_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  LET_TAC THEN CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN
+  AP_TERM_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  REWRITE_TAC[SET_RULE
+   `{i | i IN k DIFF {a} /\ P i} = {i | i IN k /\ P i} DELETE a`] THEN
+  MATCH_MP_TAC CARD_PSUBSET THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[PSUBSET_ALT] THEN CONJ_TAC THENL [SET_TAC[]; ALL_TAC] THEN
+  REWRITE_TAC[IN_ELIM_THM; IN_DELETE; GSYM CONJ_ASSOC] THEN
+  REWRITE_TAC[SET_RULE `p /\ q /\ ~(p /\ ~r /\ q) <=> r /\ p /\ q`] THEN
+  REWRITE_TAC[UNWIND_THM2] THEN
+  FIRST_X_ASSUM(MP_TAC o REWRITE_RULE[GSYM MEMBER_NOT_EMPTY] o CONJUNCT2) THEN
+  REWRITE_TAC[IN_ELIM_THM; IN_DELETE] THEN ASM_MESON_TAC[]);;
+
+let ITERATO_SUPPORT = prove
+ (`!dom neut op (<<=) k (f:K->A).
+        iterato dom neut op (<<=) {i | i IN k /\ f i IN dom DIFF {neut}} f =
+        iterato dom neut op (<<=) k f`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[iterato] THEN
+  REWRITE_TAC[CONJ_ASSOC; SET_RULE `y IN {x | x IN s /\ P x} /\ P y <=>
+                        y IN {x | x IN s /\ P x}`] THEN
+  REWRITE_TAC[IN_ELIM_THM; GSYM CONJ_ASSOC] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN LET_TAC THEN
+  CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN AP_TERM_TAC THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]);;
+
+let ITERATO_EXPAND_CASES = prove
+ (`!dom neut op (<<=) k (f:K->A).
+        iterato dom neut op (<<=) k f =
+        if FINITE {i | i IN k /\ f i IN dom DIFF {neut}}
+        then iterato dom neut op (<<=) {i | i IN k /\ f i IN dom DIFF {neut}} f
+        else neut`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THENL
+   [REWRITE_TAC[ITERATO_SUPPORT];
+    GEN_REWRITE_TAC LAND_CONV [iterato] THEN ASM_REWRITE_TAC[]]);;
+
+let ITERATO_CLAUSES_GEN = prove
+ (`!dom neut op (<<=) (f:K->A).
+        (iterato dom neut op (<<=) {} f = neut) /\
+        (!i k. FINITE {j | j IN k /\ f j IN dom DIFF {neut}} /\
+               (!j. j IN k ==> i = j \/ i <<= j \/ j <<= i) /\
+               (!j. j <<= i /\ j IN k /\ f j IN dom DIFF {neut} ==> j = i)
+               ==> iterato dom neut op (<<=) (i INSERT k) f =
+                   if f i IN dom ==> f i = neut \/ i IN k
+                   then iterato dom neut op (<<=) k f
+                   else op (f i) (iterato dom neut op (<<=) k f))`,
+  REPEAT GEN_TAC THEN CONJ_TAC THENL
+   [GEN_REWRITE_TAC LAND_CONV [iterato] THEN
+    ASM_REWRITE_TAC[NOT_IN_EMPTY; EMPTY_GSPEC];
+    REPEAT GEN_TAC THEN STRIP_TAC] THEN
+  ASM_CASES_TAC `(i:K) IN k` THEN
+  ASM_SIMP_TAC[COND_SWAP; SET_RULE `i IN k ==> i INSERT k = k`] THEN
+  REWRITE_TAC[SET_RULE `x IN dom ==> x = a <=> ~(x IN dom DIFF {a})`] THEN
+  REWRITE_TAC[COND_SWAP] THEN COND_CASES_TAC THENL
+   [GEN_REWRITE_TAC LAND_CONV [iterato] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [IN_DIFF]) THEN
+    REWRITE_TAC[IN_SING] THEN STRIP_TAC;
+    ONCE_REWRITE_TAC[GSYM ITERATO_SUPPORT] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[]] THEN
+  MATCH_MP_TAC(MESON[]
+   `q /\ p /\ x = z ==> (if p /\ q then x else y) = z`) THEN
+  REPEAT CONJ_TAC THENL
+   [ASM SET_TAC[];
+    MATCH_MP_TAC FINITE_SUBSET THEN
+    EXISTS_TAC `i INSERT {j | j IN k /\ (f:K->A) j IN dom DIFF {neut}}` THEN
+    ASM_REWRITE_TAC[FINITE_INSERT] THEN ASM SET_TAC[];
+    ALL_TAC] THEN
+  COND_CASES_TAC THENL
+   [FIRST_X_ASSUM(K ALL_TAC o check (is_exists o concl));
+    FIRST_X_ASSUM(MP_TAC o SPEC `i:K` o REWRITE_RULE[NOT_EXISTS_THM]) THEN
+    ASM SET_TAC[]] THEN
+  SUBGOAL_THEN
+   `(@i'. i' IN i INSERT k /\
+          (f:K->A) i' IN dom DIFF {neut} /\
+          (!j. j <<= i' /\ j IN i INSERT k /\ f j IN dom DIFF {neut}
+               ==> j = i')) = i`
+  SUBST1_TAC THENL
+   [ALL_TAC;
+    CONV_TAC(ONCE_DEPTH_CONV let_CONV) THEN
+    ASM_SIMP_TAC[SET_RULE `~(i IN k) ==> (i INSERT k) DELETE i = k`] THEN
+    REWRITE_TAC[ITERATO_SUPPORT]] THEN
+  MATCH_MP_TAC SELECT_UNIQUE THEN X_GEN_TAC `j:K` THEN
+  REWRITE_TAC[] THEN EQ_TAC THEN SIMP_TAC[] THENL [ALL_TAC; ASM SET_TAC[]] THEN
+  ASM_CASES_TAC `j:K = i` THEN ASM_REWRITE_TAC[IN_INSERT] THEN ASM SET_TAC[]);;
+
+let ITERATO_CLAUSES = prove
+ (`!dom neut op (<<=) (f:K->A).
+        (iterato dom neut op (<<=) {} f = neut) /\
+        (!i k. FINITE {i | i IN k /\ f i IN dom DIFF {neut}} /\
+               (!j. j IN k ==> i <<= j /\ ~(j <<= i))
+               ==> iterato dom neut op (<<=) (i INSERT k) f =
+                   if f i IN dom ==> f i = neut \/ i IN k
+                   then iterato dom neut op (<<=) k f
+                   else op (f i) (iterato dom neut op (<<=) k f))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[ITERATO_CLAUSES_GEN] THEN
+  MATCH_MP_TAC(CONJUNCT2(SPEC_ALL ITERATO_CLAUSES_GEN)) THEN
+  ASM_MESON_TAC[]);;
+
+let ITERATO_CLAUSES_EXISTS = prove
+ (`!dom neut op (<<=) (f:K->A).
+        (iterato dom neut op (<<=) {} f = neut) /\
+        (!k. FINITE {i | i IN k /\ f i IN dom DIFF {neut}} /\
+             ~({i | i IN k /\ f i IN dom DIFF {neut}} = {})
+             ==> ?i. i IN k /\ f i IN dom DIFF {neut} /\
+                     iterato dom neut op (<<=) k f =
+                     op (f i) (iterato dom neut op (<<=) (k DELETE i) f))`,
+  REPEAT GEN_TAC THEN CONJ_TAC THENL
+   [GEN_REWRITE_TAC LAND_CONV [iterato] THEN
+    ASM_REWRITE_TAC[NOT_IN_EMPTY; EMPTY_GSPEC];
+    REPEAT GEN_TAC THEN STRIP_TAC] THEN
+  GEN_REWRITE_TAC (BINDER_CONV o RAND_CONV o RAND_CONV o LAND_CONV)
+   [iterato] THEN
+  ASM_REWRITE_TAC[] THEN LET_TAC THEN
+  GEN_REWRITE_TAC (BINDER_CONV o funpow 4 RAND_CONV)
+   [GSYM ITERATO_SUPPORT] THEN
+  FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (MESON[]
+   `t = i ==> (t = i ==> P i) ==> ?j. P j`)) THEN
+  REWRITE_TAC[] THEN COND_CASES_TAC THENL [DISCH_TAC; ASM SET_TAC[]] THEN
+  FIRST_X_ASSUM(MP_TAC o SELECT_RULE) THEN ASM_REWRITE_TAC[] THEN SIMP_TAC[]);;
+
+let ITERATO_EQ = prove
+ (`!dom neut op (<<=) k f (g:K->A).
+        (!i. i IN k ==> f i = g i)
+        ==> iterato dom neut op (<<=) k f = iterato dom neut op (<<=) k g`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[ITERATO_EXPAND_CASES] THEN
+  ASM_SIMP_TAC[TAUT `p /\ q <=> ~(p ==> ~q)`] THEN
+  REWRITE_TAC[NOT_IMP] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+   `!i. i IN {i | i IN k /\ (g:K->A) i IN dom DIFF {neut}} ==> f i = g i`
+  MP_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  UNDISCH_TAC `FINITE {i | i IN k /\ (g:K->A) i IN dom DIFF {neut}}` THEN
+  SPEC_TAC(`{i | i IN k /\ (g:K->A) i IN dom DIFF {neut}}`,`k:K->bool`) THEN
+  POP_ASSUM_LIST(K ALL_TAC) THEN MATCH_MP_TAC(MESON[]
+   `(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)`) THEN
+  REWRITE_TAC[IMP_IMP] THEN MATCH_MP_TAC num_WF THEN
+  X_GEN_TAC `n:num` THEN DISCH_TAC THEN X_GEN_TAC `k:K->bool` THEN
+  STRIP_TAC THEN RULE_ASSUM_TAC(REWRITE_RULE
+   [IMP_IMP; RIGHT_IMP_FORALL_THM; GSYM CONJ_ASSOC]) THEN
+  ASM_CASES_TAC `k:K->bool = {}` THEN
+  ASM_REWRITE_TAC[ITERATO_CLAUSES_EXISTS] THEN ONCE_REWRITE_TAC[iterato] THEN
+    SUBGOAL_THEN `!s i. i IN k /\ (f:K->A) i IN s <=> i IN k /\ g i IN s`
+  ASSUME_TAC THENL [ASM_MESON_TAC[]; ASM_REWRITE_TAC[CONJ_ASSOC]] THEN
+  ASM_REWRITE_TAC[GSYM CONJ_ASSOC] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN LET_TAC THEN
+  CONV_TAC(TOP_DEPTH_CONV let_CONV) THEN
+  SUBGOAL_THEN `(i:K) IN k` ASSUME_TAC THENL
+   [EXPAND_TAC "i" THEN
+    RULE_ASSUM_TAC(REWRITE_RULE[GSYM MEMBER_NOT_EMPTY; IN_ELIM_THM]) THEN
+    FIRST_X_ASSUM(MP_TAC o CONJUNCT2) THEN MESON_TAC[];
+    ALL_TAC] THEN
+  BINOP_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  ASM_REWRITE_TAC[SET_RULE
+   `{j | j IN s DELETE i /\ P j} = {j | j IN s /\ P j} DELETE i`] THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_SIMP_TAC[FINITE_DELETE; FINITE_RESTRICT; IN_DELETE; IN_ELIM_THM] THEN
+  REWRITE_TAC[ONCE_REWRITE_RULE[CONJ_SYM] UNWIND_THM1] THEN
+  FIRST_X_ASSUM(fun th -> GEN_REWRITE_TAC RAND_CONV [SYM th]) THEN
+  MATCH_MP_TAC CARD_PSUBSET THEN ASM SET_TAC[]);;
+
+let ITERATO_INDUCT = prove
+ (`!dom neut op (<<=) k (f:K->A) P.
+        P neut /\
+        (!i x. i IN k /\ f i IN dom /\ ~(f i = neut) /\ P x ==> P (op (f i) x))
+        ==> P(iterato dom neut op (<<=) k f)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[SET_RULE
+   `i IN k /\ f i IN s /\ ~(f i = z) /\ Q <=>
+    i IN {j | j IN k /\ f j IN s DIFF {z}} /\ Q`] THEN
+  ONCE_REWRITE_TAC[ITERATO_EXPAND_CASES] THEN
+  ONCE_REWRITE_TAC[COND_RAND] THEN SIMP_TAC[] THEN
+  REWRITE_TAC[TAUT
+   `(a /\ p ==> if q then r else T) <=> a ==> q ==> p ==> r`] THEN
+  STRIP_TAC THEN
+  SPEC_TAC(`{i | i IN k /\ (f:K->A) i IN dom DIFF {neut}}`,`k:K->bool`) THEN
+  MATCH_MP_TAC(MESON[]
+   `(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)`) THEN
+  REWRITE_TAC[IMP_IMP] THEN MATCH_MP_TAC num_WF THEN
+  X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  X_GEN_TAC `k:K->bool` THEN STRIP_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [IMP_IMP; RIGHT_IMP_FORALL_THM; GSYM CONJ_ASSOC]) THEN
+  ASM_CASES_TAC `k:K->bool = {}` THEN
+  ASM_REWRITE_TAC[ITERATO_CLAUSES_EXISTS] THEN
+  MP_TAC(ISPECL
+   [`dom:A->bool`; `neut:A`; `op:A->A->A`; `(<<=):K->K->bool`; `f:K->A`]
+   ITERATO_CLAUSES_EXISTS) THEN
+  DISCH_THEN(MP_TAC o SPEC `k:K->bool` o CONJUNCT2) THEN
+  ASM_SIMP_TAC[FINITE_RESTRICT] THEN MATCH_MP_TAC(TAUT
+   `(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r`) THEN
+  CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM ITERATO_SUPPORT] THEN SIMP_TAC[] THEN
+    ASM_REWRITE_TAC[ITERATO_CLAUSES_EXISTS];
+    DISCH_THEN(X_CHOOSE_THEN `i:K` MP_TAC)] THEN
+  REWRITE_TAC[IN_DIFF; IN_SING] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM SUBST1_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
+  ASM_REWRITE_TAC[] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  EXISTS_TAC `n - 1` THEN
+  ASM_SIMP_TAC[CARD_DELETE; FINITE_DELETE; IN_DELETE] THEN
+  REWRITE_TAC[ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
+  ASM_MESON_TAC[CARD_EQ_0]);;
+
+let ITERATO_CLOSED = prove
+ (`!dom neut op (<<=) k (f:K->A) P.
+        P neut /\
+        (!x y. P x /\ P y ==> P(op x y)) /\
+        (!i. i IN k /\ f i IN dom /\ ~(f i = neut) ==> P(f i))
+        ==> P(iterato dom neut op (<<=) k f)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC ITERATO_INDUCT THEN ASM_SIMP_TAC[]);;
+
+let ITERATO_ITERATE = prove
+ (`!(op:A->A->A) ((<<=):K->K->bool).
+        monoidal op ==> iterato (:A) (neutral op) op (<<=) = iterate op`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN
+  MAP_EVERY X_GEN_TAC [`k:K->bool`; `f:K->A`] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES; ITERATO_EXPAND_CASES] THEN
+  REWRITE_TAC[support; IN_UNIV; IN_DIFF; IN_SING] THEN MATCH_MP_TAC(MESON[]
+   `(p ==> x = y) ==> (if p then x else z) = (if p then y else z)`) THEN
+  SPEC_TAC(`{i | i IN k /\ ~((f:K->A) i = neutral op)}`,`k:K->bool`) THEN
+  MATCH_MP_TAC(MESON[]
+   `(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)`) THEN
+  REWRITE_TAC[IMP_IMP] THEN MATCH_MP_TAC num_WF THEN
+  X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  X_GEN_TAC `k:K->bool` THEN STRIP_TAC THEN
+  RULE_ASSUM_TAC(REWRITE_RULE
+   [IMP_IMP; RIGHT_IMP_FORALL_THM; GSYM CONJ_ASSOC]) THEN
+  ASM_CASES_TAC `k:K->bool = {}` THEN
+  ASM_SIMP_TAC[ITERATE_CLAUSES; ITERATO_CLAUSES_EXISTS] THEN
+  MP_TAC(ISPECL
+   [`(:A)`; `neutral op:A`; `op:A->A->A`; `(<<=):K->K->bool`; `f:K->A`]
+   ITERATO_CLAUSES_EXISTS) THEN
+  DISCH_THEN(MP_TAC o SPEC `k:K->bool` o CONJUNCT2) THEN
+  ASM_SIMP_TAC[FINITE_RESTRICT] THEN MATCH_MP_TAC(TAUT
+   `(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r`) THEN
+  CONJ_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM ITERATO_SUPPORT; GSYM ITERATE_SUPPORT] THEN
+    REWRITE_TAC[support; IN_UNIV; IN_DIFF; IN_SING] THEN
+    ASM_SIMP_TAC[ITERATE_CLAUSES; ITERATO_CLAUSES_EXISTS];
+    DISCH_THEN(X_CHOOSE_THEN `i:K` MP_TAC)] THEN
+  REWRITE_TAC[IN_DIFF; IN_SING] THEN STRIP_TAC THEN
+  FIRST_X_ASSUM SUBST1_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPECL [`n - 1`; `k DELETE (i:K)`]) THEN
+  REWRITE_TAC[ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
+  ASM_SIMP_TAC[FINITE_DELETE; CARD_DELETE] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[CARD_EQ_0]; DISCH_THEN SUBST1_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o ISPECL [`f:K->A`; `i:K`; `k DELETE (i:K)`] o
+    CONJUNCT2 o MATCH_MP ITERATE_CLAUSES) THEN
+  ASM_REWRITE_TAC[FINITE_DELETE; IN_DELETE] THEN
+  ASM_SIMP_TAC[SET_RULE `i IN k ==> i INSERT (k DELETE i) = k`]);;
+
+let ITERATO_CLAUSES_NUMSEG_LEFT = prove
+ (`!dom neut op (f:num->A) m n.
+       iterato dom neut op (<=) (m..n) f =
+         if m <= n then
+           if f m IN dom ==> f m = neut
+           then iterato dom neut op (<=) (m+1..n) f
+           else op (f m) (iterato dom neut op (<=) (m+1..n) f)
+         else neut`,
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+     [`dom:A->bool`; `neut:A`; `op:A->A->A`;
+      `(<=):num->num->bool`; `f:num->A`] ITERATO_CLAUSES_GEN) THEN
+  COND_CASES_TAC THENL
+   [DISCH_THEN(fun th -> ASM_SIMP_TAC[GSYM NUMSEG_LREC] THEN MP_TAC th);
+    DISCH_THEN(MP_TAC o CONJUNCT1) THEN
+    ASM_MESON_TAC[NUMSEG_EMPTY; NOT_LE]] THEN
+  DISCH_THEN(MP_TAC o SPECL [`m:num`; `m+1..n`] o CONJUNCT2) THEN
+  ANTS_TAC THENL
+   [SIMP_TAC[FINITE_RESTRICT; FINITE_NUMSEG; IN_NUMSEG] THEN ARITH_TAC;
+    REWRITE_TAC[IN_NUMSEG; ARITH_RULE `~(m + 1 <= m)`]]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Four iterated operations where we just more or less express the basic     *)

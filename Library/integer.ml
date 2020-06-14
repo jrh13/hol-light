@@ -621,8 +621,18 @@ let INT_CONG_IMP_EQ = prove
 
 let INT_CONG_DIV = prove
  (`!m n a b.
-        &0 < m /\ (a == m * b) (mod (m * n)) ==> (a div m == b) (mod n)`,
+        ~(m = &0) /\ (a == m * b) (mod (m * n)) ==> (a div m == b) (mod n)`,
   METIS_TAC[INT_CONG_DIV2; INT_DIV_MUL; INT_LT_LE]);;
+
+let INT_CONG_DIV_COPRIME = prove
+ (`!m n a b:int.
+        coprime(m,n) /\ m divides a /\ (a == m * b) (mod n)
+        ==> (a div m == b) (mod n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `m:int = &0` THEN
+  ASM_SIMP_TAC[INT_COPRIME_0; INT_CONG_MOD_1] THENL
+   [INTEGER_TAC; STRIP_TAC] THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC INT_CONG_DIV THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC INTEGER_RULE);;
 
 (* ------------------------------------------------------------------------- *)
 (* A stronger form of the CRT.                                               *)

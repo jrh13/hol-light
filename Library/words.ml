@@ -236,6 +236,10 @@ let BITVAL_EQ_1 = prove
   ASM_CASES_TAC `b:bool` THEN ASM_REWRITE_TAC[] THEN
   CONV_TAC NUM_REDUCE_CONV);;
 
+let BITVAL_POS = prove
+ (`!b. 0 < bitval b <=> b`,
+  REWRITE_TAC[ARITH_RULE `0 < a <=> ~(a = 0)`; BITVAL_EQ_0]);;
+
 let BITVAL_NOT = prove
  (`!b. bitval(~b) = 1 - bitval b`,
   REWRITE_TAC[FORALL_BOOL_THM; BITVAL_CLAUSES] THEN CONV_TAC NUM_REDUCE_CONV);;
@@ -261,9 +265,39 @@ let INT_BITVAL_NOT = prove
  (`!b. &(bitval(~b)):int = &1 - &(bitval b)`,
   SIMP_TAC[BITVAL_NOT; GSYM INT_OF_NUM_SUB; BITVAL_BOUND]);;
 
+let REAL_BITVAL_NOT = prove
+ (`!b. &(bitval(~b)):real = &1 - &(bitval b)`,
+  SIMP_TAC[BITVAL_NOT; GSYM REAL_OF_NUM_SUB; BITVAL_BOUND]);;
+
 let BITVAL_ODD = prove
  (`!n. bitval(ODD n) = n MOD 2`,
   REWRITE_TAC[bitval; GSYM NOT_EVEN; MOD_2_CASES; COND_SWAP]);;
+
+let LE_BITVAL = prove
+ (`!b c. bitval b <= bitval c <=> b ==> c`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[bitval] THEN
+  REPEAT COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC NUM_REDUCE_CONV);;
+
+let INT_LE_BITVAL = prove
+ (`!b c. &(bitval b):int <= &(bitval c) <=> b ==> c`,
+  REWRITE_TAC[INT_OF_NUM_LE; LE_BITVAL]);;
+
+let REAL_LE_BITVAL = prove
+ (`!b c. &(bitval b):real <= &(bitval c) <=> b ==> c`,
+  REWRITE_TAC[REAL_OF_NUM_LE; LE_BITVAL]);;
+
+let EQ_BITVAL = prove
+ (`!b c. (bitval b = bitval c) <=> (b <=> c)`,
+  REWRITE_TAC[GSYM LE_ANTISYM; LE_BITVAL] THEN CONV_TAC TAUT);;
+
+let INT_EQ_BITVAL = prove
+ (`!b c. &(bitval b):int = &(bitval c) <=> (b <=> c)`,
+  REWRITE_TAC[INT_OF_NUM_EQ; EQ_BITVAL]);;
+
+let REAL_EQ_BITVAL = prove
+ (`!b c. &(bitval b):real = &(bitval c) <=> (b <=> c)`,
+  REWRITE_TAC[REAL_OF_NUM_EQ; EQ_BITVAL]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some more binary-specific lemmas.                                         *)
@@ -688,6 +722,12 @@ let VAL_MOD = prove
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC NSUM_SUPERSET THEN
   SIMP_TAC[SUBSET; IN_ELIM_THM; IMP_CONJ; MULT_EQ_0; BITVAL_EQ_0; NOT_LT] THEN
   MESON_TAC[BIT_TRIVIAL]);;
+
+let VAL_MOD_2 = prove
+ (`!x:N word. val x MOD 2 = bitval(bit 0 x)`,
+  ONCE_REWRITE_TAC[ARITH_RULE `2 = 2 EXP 1`] THEN
+  REWRITE_TAC[VAL_MOD; ARITH_RULE `i < 1 <=> i = 0`; SING_GSPEC] THEN
+  REWRITE_TAC[NSUM_SING; EXP; MULT_CLAUSES]);;
 
 let VAL_MOD_STEP = prove
  (`!(x:N word) k.
@@ -1330,6 +1370,26 @@ let VAL_WORD_NOT = prove
   SPEC_TAC(`dimindex(:N)`,`k:num`) THEN INDUCT_TAC THEN
   ASM_REWRITE_TAC[NSUM_CLAUSES_NUMSEG_LT; EXP; ADD_CLAUSES; MULT_CLAUSES] THEN
   ASM_ARITH_TAC);;
+
+let INT_VAL_WORD_NOT = prove
+ (`!x:N word. &(val(word_not x)):int = &2 pow dimindex(:N) - &1 - &(val x)`,
+  GEN_TAC THEN
+  REWRITE_TAC[VAL_WORD_NOT; ARITH_RULE `n - 1 - m = n - (m + 1)`] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) INT_OF_NUM_SUB o lhand o snd) THEN
+  REWRITE_TAC[VAL_BOUND; ARITH_RULE `x + 1 <= n <=> x < n`] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[GSYM INT_OF_NUM_ADD; GSYM INT_OF_NUM_POW] THEN
+  INT_ARITH_TAC);;
+
+let REAL_VAL_WORD_NOT = prove
+ (`!x:N word. &(val(word_not x)):real = &2 pow dimindex(:N) - &1 - &(val x)`,
+  GEN_TAC THEN
+  REWRITE_TAC[VAL_WORD_NOT; ARITH_RULE `n - 1 - m = n - (m + 1)`] THEN
+  W(MP_TAC o PART_MATCH (rand o rand) REAL_OF_NUM_SUB o lhand o snd) THEN
+  REWRITE_TAC[VAL_BOUND; ARITH_RULE `x + 1 <= n <=> x < n`] THEN
+  DISCH_THEN(SUBST1_TAC o SYM) THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_ADD; GSYM REAL_OF_NUM_POW] THEN
+  REAL_ARITH_TAC);;
 
 let WORD_POPCOUNT_NOT = prove
  (`!x:N word. word_popcount(word_not x) = dimindex(:N) - word_popcount x`,
@@ -2932,6 +2992,11 @@ let WORD_AND_1 = prove
   X_GEN_TAC `i:num` THEN ASM_CASES_TAC `i = 0` THEN
   ASM_REWRITE_TAC[BIT_WORD_0] THEN SIMP_TAC[DIMINDEX_GE_1; LE_1]);;
 
+let WORD_AND_1_BITVAL = prove
+ (`(!x:N word. word_and (word 1) x = word(bitval(bit 0 x))) /\
+   (!x:N word. word_and x (word 1) = word(bitval(bit 0 x)))`,
+  REWRITE_TAC[bitval; WORD_AND_1] THEN MESON_TAC[]);;
+
 let WORD_NOT_NEG = prove
  (`!x:N word. word_not(word_neg x) = word_sub x (word 1)`,
   GEN_TAC THEN REWRITE_TAC[WORD_NOT_AS_SUB] THEN
@@ -2954,6 +3019,10 @@ let VAL_EQ_MAX_ALT = prove
 let VAL_EQ_MAX = prove
  (`!x:N word. val x = 2 EXP dimindex(:N) - 1 <=> word_not x = word 0`,
   REWRITE_TAC[VAL_EQ_MAX_ALT] THEN CONV_TAC WORD_BITWISE_RULE);;
+
+let VAL_EQ_MAX_MASK = prove
+ (`!x:N word. val x = 2 EXP dimindex(:N) - 1 <=> x = word_neg(word 1)`,
+  REWRITE_TAC[WORD_NEG_1; VAL_EQ_MAX_ALT]);;
 
 let VAL_WORD_OR_EQ_0 = prove
  (`!x y:N word. val(word_or x y) = 0 <=> val x = 0 /\ val y = 0`,
@@ -3165,6 +3234,14 @@ let WORD_XOR_MASK = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_MASK] THEN
   COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
   CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_NEG_AND_MASK = prove
+ (`(!b x. word_neg (word_and (word_neg(word(bitval b))) x) =
+          word_and (word_neg(word(bitval b))) (word_neg x)) /\
+   (!b x. word_neg (word_and x (word_neg(word(bitval b)))) =
+          word_and (word_neg x) (word_neg(word(bitval b))))`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_AND_MASK] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[WORD_NEG_0]);;
 
 let WORD_AND_MASKS = prove
  (`!p q. word_and (word_neg(word(bitval p))) (word_neg(word(bitval q))) =

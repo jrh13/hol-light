@@ -351,6 +351,16 @@ let GROUP_COMMUTES_INV_EQ = prove
              group_mul G x y = group_mul G y x)`,
   MESON_TAC[GROUP_COMMUTES_INV; GROUP_INV_INV; GROUP_INV]);;
 
+let GROUP_COMMUTES_MUL = prove
+ (`!G x y z:A.
+        x IN group_carrier G /\
+        y IN group_carrier G /\
+        z IN group_carrier G /\
+        group_mul G x z = group_mul G z x /\
+        group_mul G y z = group_mul G z y
+        ==> group_mul G (group_mul G x y) z = group_mul G z (group_mul G x y)`,
+  MESON_TAC[GROUP_MUL; GROUP_MUL_ASSOC]);;
+
 let FORALL_IN_GROUP_CARRIER_INV = prove
  (`!(P:A->bool) G.
         (!x. x IN group_carrier G ==> P(group_inv G x)) <=>
@@ -1044,6 +1054,496 @@ let GROUP_RULE =
     let th4 = GENL avs th3 in
     let bvs = frees(concl th4) in
     GENL (sort (<) bvs) th4;;
+
+(* ------------------------------------------------------------------------- *)
+(* Iterated operation on groups, the first one being in a specific           *)
+(* order given as an argument, the latter picking some arbitrary             *)
+(* wellorder, usually with the expectation that it will be immaterial.       *)
+(* ------------------------------------------------------------------------- *)
+
+let group_product = new_definition
+ `group_product (G:A group) =
+        iterato (group_carrier G) (group_id G) (group_mul G)`;;
+
+let group_sum = new_definition
+ `group_sum (G:A group) =
+        group_product G (@l. woset l /\ fld l = (:K))`;;
+
+let GROUP_PRODUCT_EQ = prove
+ (`!G (<<=) k (f:K->A) g.
+        (!i. i IN k ==> f i = g i)
+        ==> group_product G (<<=) k f = group_product G (<<=) k g`,
+  REWRITE_TAC[group_product; ITERATO_EQ]);;
+
+let GROUP_SUM_EQ = prove
+ (`!G k (f:K->A) g.
+        (!i. i IN k ==> f i = g i) ==> group_sum G k f = group_sum G k g`,
+  REWRITE_TAC[group_sum; GROUP_PRODUCT_EQ]);;
+
+let GROUP_PRODUCT_CLOSED = prove
+ (`!P G (<<=) k (f:K->A).
+       P(group_id G) /\
+       (!x y. x IN group_carrier G /\ y IN group_carrier G /\
+              P x /\ P y
+              ==> P(group_mul G x y)) /\
+       (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G) ==> P(f i))
+       ==> P(group_product G (<<=) k f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[group_product] THEN
+  MP_TAC(ISPECL
+   [`group_carrier G:A->bool`; `group_id G:A`; `group_mul G:A->A->A`;
+    `(<<=):K->K->bool`; `k:K->bool`; `f:K->A`;
+    `\x:A. x IN group_carrier G /\ P x`]
+   ITERATO_CLOSED) THEN
+  ASM_SIMP_TAC[GROUP_ID; GROUP_MUL]);;
+
+let GROUP_SUM_CLOSED = prove
+ (`!P G k (f:K->A).
+       P(group_id G) /\
+       (!x y. x IN group_carrier G /\ y IN group_carrier G /\
+              P x /\ P y
+              ==> P(group_mul G x y)) /\
+       (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G) ==> P(f i))
+       ==> P(group_sum G k f)`,
+  REWRITE_TAC[group_sum; GROUP_PRODUCT_CLOSED]);;
+
+let GROUP_PRODUCT = prove
+ (`!G (<<=) k (f:K->A). group_product G (<<=) k f IN group_carrier G`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC (REWRITE_RULE[]
+   (ISPEC `\x:A. x IN group_carrier G` GROUP_PRODUCT_CLOSED)) THEN
+  SIMP_TAC[GROUP_ID; GROUP_MUL]);;
+
+let GROUP_SUM = prove
+ (`!G k (f:K->A). group_sum G k f IN group_carrier G`,
+  REWRITE_TAC[group_sum; GROUP_PRODUCT]);;
+
+let GROUP_PRODUCT_SUPPORT = prove
+ (`!G (<<=) k (f:K->A).
+        group_product G (<<=) {i | i IN k /\ ~(f i = group_id G)} f =
+        group_product G (<<=) k f`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[group_product] THEN
+  ONCE_REWRITE_TAC[GSYM ITERATO_SUPPORT] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN SET_TAC[]);;
+
+let GROUP_SUM_SUPPORT = prove
+ (`!G k (f:K->A).
+      group_sum G {i | i IN k /\ ~(f i = group_id G)} f =
+      group_sum G k f`,
+  REWRITE_TAC[group_sum; GROUP_PRODUCT_SUPPORT]);;
+
+let GROUP_PRODUCT_RESTRICT = prove
+ (`!G (<<=) k (f:K->A).
+        group_product G (<<=) {i | i IN k /\ f i IN group_carrier G} f =
+        group_product G (<<=) k f`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[group_product] THEN
+  ONCE_REWRITE_TAC[GSYM ITERATO_SUPPORT] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN SET_TAC[]);;
+
+let GROUP_SUM_RESTRICT = prove
+ (`!G k (f:K->A).
+        group_sum G {i | i IN k /\ f i IN group_carrier G} f =
+        group_sum G k f`,
+  REWRITE_TAC[group_sum; GROUP_PRODUCT_RESTRICT]);;
+
+let GROUP_PRODUCT_EXPAND_CASES = prove
+ (`!G (<<=) k (f:K->A).
+        group_product G (<<=) k f =
+        if FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}}
+        then group_product G (<<=)
+              {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} f
+        else group_id G`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[group_product] THEN
+  MATCH_ACCEPT_TAC ITERATO_EXPAND_CASES);;
+
+let GROUP_SUM_EXPAND_CASES = prove
+ (`!G k (f:K->A).
+        group_sum G k f =
+        if FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}}
+        then group_sum G
+              {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} f
+        else group_id G`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[group_sum] THEN
+  MATCH_ACCEPT_TAC GROUP_PRODUCT_EXPAND_CASES);;
+
+let GROUP_PRODUCT_CLAUSES = prove
+ (`!G (<<=) (f:K->A).
+      group_product G (<<=) {} f = group_id G /\
+      (!i k. FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}} /\
+             (!j. j IN k ==> i <<= j /\ ~(j <<= i))
+             ==> group_product G (<<=) (i INSERT k) f =
+                   if f i IN group_carrier G ==> i IN k
+                   then group_product G (<<=) k f
+                   else group_mul G (f i) (group_product G (<<=) k f))`,
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC[group_product; ITERATO_CLAUSES] THEN
+  ASM_CASES_TAC `(i:K) IN k` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `(f:K->A) i = group_id G` THEN ASM_REWRITE_TAC[] THEN
+  SIMP_TAC[GROUP_MUL_LID; GSYM group_product; GROUP_PRODUCT; GROUP_ID]);;
+
+let GROUP_PRODUCT_CLAUSES_EXISTS = prove
+ (`!G (<<=) (f:K->A).
+      group_product G (<<=) {} f = group_id G /\
+      (!k. FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} /\
+           ~({i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} = {})
+           ==> ?i. i IN k /\
+                   f i IN group_carrier G DIFF {group_id G} /\
+                   group_product G (<<=) k f =
+                   group_mul G (f i) (group_product G (<<=) (k DELETE i) f))`,
+  REWRITE_TAC[group_product] THEN
+  MATCH_ACCEPT_TAC ITERATO_CLAUSES_EXISTS);;
+
+let GROUP_SUM_CLAUSES_EXISTS = prove
+ (`!G (f:K->A).
+      group_sum G {} f = group_id G /\
+      (!k. FINITE {i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} /\
+           ~({i | i IN k /\ f i IN group_carrier G DIFF {group_id G}} = {})
+           ==> ?i. i IN k /\
+                   f i IN group_carrier G DIFF {group_id G} /\
+                   group_sum G k f =
+                   group_mul G (f i) (group_sum G (k DELETE i) f))`,
+  REWRITE_TAC[group_sum] THEN MATCH_ACCEPT_TAC GROUP_PRODUCT_CLAUSES_EXISTS);;
+
+let GROUP_COMMUTES_PRODUCT = prove
+ (`!G (<<=) k (f:K->A) z.
+        (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G)
+             ==> group_mul G (f i) z = group_mul G z (f i)) /\
+        z IN group_carrier G
+        ==> group_mul G (group_product G (<<=) k f) z =
+            group_mul G z (group_product G (<<=) k f)`,
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(REWRITE_RULE[]
+   (ISPEC `\x:A. group_mul G x z = group_mul G z x` GROUP_PRODUCT_CLOSED)) THEN
+  ASM_SIMP_TAC[GROUP_MUL_LID; GROUP_MUL_RID] THEN
+  ASM_MESON_TAC[GROUP_COMMUTES_MUL]);;
+
+let GROUP_COMMUTES_SUM = prove
+ (`!G k (f:K->A) z.
+        (!i. i IN k /\ f i IN group_carrier G /\ ~(f i = group_id G)
+             ==> group_mul G (f i) z = group_mul G z (f i)) /\
+        z IN group_carrier G
+        ==> group_mul G (group_sum G k f) z = group_mul G z (group_sum G k f)`,
+  REWRITE_TAC[group_sum; GROUP_COMMUTES_PRODUCT]);;
+
+let GROUP_PRODUCT_SING = prove
+ (`!G (<<=) i (f:K->A).
+        group_product G (<<=) {i} f =
+        if f i IN group_carrier G then f i else group_id G`,
+  REPEAT GEN_TAC THEN
+  SIMP_TAC[GROUP_PRODUCT_CLAUSES; NOT_IN_EMPTY; EMPTY_GSPEC; FINITE_EMPTY] THEN
+  SIMP_TAC[COND_SWAP; GROUP_MUL_RID]);;
+
+let GROUP_SUM_SING = prove
+ (`!G i (f:K->A).
+        group_sum G {i} f =
+        if f i IN group_carrier G then f i else group_id G`,
+  REWRITE_TAC[group_sum; GROUP_PRODUCT_SING]);;
+
+let GROUP_PRODUCT_UNION = prove
+ (`!G (<<=) (f:K->A) s t.
+        woset(<<=) /\ fld(<<=) = (:K) /\
+        (FINITE {i | i IN s /\ f i IN group_carrier G DIFF {group_id G}} <=>
+         FINITE {i | i IN t /\ f i IN group_carrier G DIFF {group_id G}}) /\
+        (!x y. x IN s /\ y IN t ==> x <<= y /\ ~(x = y))
+        ==> group_product G (<<=) (s UNION t) f =
+            group_mul G (group_product G (<<=) s f)
+                        (group_product G (<<=) t f)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GROUP_PRODUCT_EXPAND_CASES] THEN
+  REWRITE_TAC[SET_RULE
+   `{x | x IN s UNION t /\ P x} =
+    {x | x IN s /\ P x} UNION {x | x IN t /\ P x}`] THEN
+  REWRITE_TAC[FINITE_UNION] THEN ASM_CASES_TAC
+  `FINITE {i | i IN t /\ (f:K->A) i IN group_carrier G DIFF {group_id G}}` THEN
+  ASM_SIMP_TAC[GROUP_MUL_LID; GROUP_ID] THEN
+  SUBGOAL_THEN
+   `(!i. i IN {i | i IN s /\ (f:K->A) i IN group_carrier G DIFF {group_id G}}
+         ==> f i IN group_carrier G /\ ~(f i = group_id G)) /\
+    (!i. i IN {i | i IN t /\ (f:K->A) i IN group_carrier G DIFF {group_id G}}
+         ==> f i IN group_carrier G /\ ~(f i = group_id G))`
+  MP_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  SUBGOAL_THEN
+   `!x y. x IN {i | i IN s /\ f i IN group_carrier G DIFF {group_id G}} /\
+          y IN {i | i IN t /\ (f:K->A) i IN group_carrier G DIFF {group_id G}}
+          ==> x <<= y /\ ~(x = y)`
+  MP_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (TAUT `(p <=> q) ==> (q ==> q /\ p)`)) THEN
+  ANTS_TAC THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
+  MAP_EVERY UNDISCH_TAC [`fld(<<=) = (:K)`; `woset((<<=):K->K->bool)`] THEN
+  POP_ASSUM_LIST(K ALL_TAC) THEN DISCH_TAC THEN DISCH_TAC THEN
+  SPEC_TAC(`{i | i IN s /\ (f:K->A) i IN group_carrier G DIFF {group_id G}}`,
+           `s:K->bool`) THEN
+  SPEC_TAC(`{i | i IN t /\ (f:K->A) i IN group_carrier G DIFF {group_id G}}`,
+           `t:K->bool`) THEN
+  REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  X_GEN_TAC `t:K->bool` THEN DISCH_TAC THEN ASM_CASES_TAC
+   `!i. i IN t ==> (f:K->A) i IN group_carrier G /\ ~(f i = group_id G)` THEN
+  ASM_REWRITE_TAC[GSYM CONJ_ASSOC; IMP_IMP] THEN
+  ONCE_REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC(MESON[]
+   `(!n s. FINITE s /\ CARD s = n ==> P s) ==> !s. FINITE s ==> P s`) THEN
+  MATCH_MP_TAC num_WF THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  X_GEN_TAC `s:K->bool` THEN
+  ASM_CASES_TAC `s:K->bool = {}` THEN
+  ASM_REWRITE_TAC[UNION_EMPTY; GROUP_PRODUCT_CLAUSES_EXISTS] THEN
+  SIMP_TAC[GROUP_MUL_LID; GROUP_PRODUCT] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `s:K->bool` o last o CONJUNCTS o
+        GEN_REWRITE_RULE I [woset]) THEN
+  ASM_REWRITE_TAC[SUBSET_UNIV; LEFT_IMP_EXISTS_THM] THEN
+  X_GEN_TAC `i:K` THEN STRIP_TAC THEN
+  MP_TAC(ISPECL [`G:A group`; `(<<=):K->K->bool`; `f:K->A`]
+        GROUP_PRODUCT_CLAUSES) THEN
+  DISCH_THEN(MP_TAC o SPEC `i:K` o CONJUNCT2) THEN DISCH_THEN(fun th ->
+    MP_TAC(SPEC `s DELETE (i:K)` th) THEN
+    MP_TAC(SPEC `(s DELETE (i:K)) UNION t` th)) THEN
+  ASM_SIMP_TAC[FINITE_DELETE; FINITE_UNION; FINITE_RESTRICT;
+    IN_DELETE; IN_UNION;
+    SET_RULE `i IN s ==> i INSERT (s DELETE i) = s`;
+    SET_RULE `i IN s ==> i INSERT (s DELETE i UNION t) = s UNION t`] THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [woset]) THEN
+  ASM_REWRITE_TAC[IN_UNIV] THEN STRIP_TAC THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  COND_CASES_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `n - 1`) THEN
+  REWRITE_TAC[ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[CARD_EQ_0]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `s DELETE (i:K)`) THEN
+  ASM_SIMP_TAC[FINITE_DELETE; CARD_DELETE; IN_DELETE] THEN
+  ASM_SIMP_TAC[GROUP_MUL_ASSOC; GROUP_MUL; GROUP_PRODUCT]);;
+
+let GROUP_PRODUCT_CLAUSES_LEFT = prove
+ (`!G (f:num->A) m n.
+        group_product G (<=) (m..n) f =
+        if m <= n then
+           if f m IN group_carrier G
+           then group_mul G (f m) (group_product G (<=) (m+1..n) f)
+           else group_product G (<=) (m+1..n) f
+         else group_id G`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THENL
+   [ASM_SIMP_TAC[GSYM NUMSEG_LREC];
+    ASM_SIMP_TAC[EMPTY_NUMSEG; GSYM NOT_LE; GROUP_PRODUCT_CLAUSES]] THEN
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = {a} UNION s`] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) GROUP_PRODUCT_UNION o lhand o snd) THEN
+  SIMP_TAC[WOSET_num; FLD_num; FINITE_RESTRICT; FINITE_SING; FINITE_NUMSEG;
+           IN_NUMSEG; IN_SING] THEN
+  ANTS_TAC THENL [ARITH_TAC; DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[GROUP_PRODUCT_SING] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[GROUP_MUL_LID; GROUP_PRODUCT]);;
+
+let GROUP_PRODUCT_CLAUSES_RIGHT = prove
+ (`!G (f:num->A) m n.
+        group_product G (<=) (m..n) f =
+        if m <= n then
+           if f n IN group_carrier G
+           then if n = 0 then f 0
+                else group_mul G (group_product G (<=) (m..n-1) f) (f n)
+           else group_product G (<=) (m..n-1) f
+         else group_id G`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
+   [ASM_SIMP_TAC[CONJUNCT1 LE; SUB_0; NUMSEG_CLAUSES] THEN
+    ASM_CASES_TAC `m = 0` THEN ASM_SIMP_TAC[GROUP_PRODUCT_SING] THEN
+    REWRITE_TAC[GROUP_PRODUCT_CLAUSES];
+    ASM_REWRITE_TAC[]] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THENL
+   [ASM_SIMP_TAC[GSYM NUMSEG_RREC];
+    ASM_SIMP_TAC[EMPTY_NUMSEG; GSYM NOT_LE; GROUP_PRODUCT_CLAUSES]] THEN
+  ONCE_REWRITE_TAC[SET_RULE `a INSERT s = s UNION {a}`] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) GROUP_PRODUCT_UNION o lhand o snd) THEN
+  SIMP_TAC[WOSET_num; FLD_num; FINITE_RESTRICT; FINITE_SING; FINITE_NUMSEG;
+           IN_NUMSEG; IN_SING] THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[GROUP_PRODUCT_SING] THEN
+  COND_CASES_TAC THEN ASM_SIMP_TAC[GROUP_MUL_RID; GROUP_PRODUCT]);;
+
+let GROUP_PRODUCT_CLAUSES_NUMSEG = prove
+ (`(!G m f:num->A.
+        group_product G (<=) (m..0) f =
+        if m = 0 /\ f 0 IN group_carrier G then f 0 else group_id G) /\
+   (!G m n f:num->A.
+        group_product G (<=) (m..SUC n) f =
+        if m <= SUC n /\ f(SUC n) IN group_carrier G
+        then group_mul G (group_product G (<=) (m..n) f) (f(SUC n))
+        else group_product G (<=) (m..n) f)`,
+  REPEAT STRIP_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [GROUP_PRODUCT_CLAUSES_RIGHT] THEN
+  SIMP_TAC[CONJUNCT1 LE; NOT_SUC; SUC_SUB1; SUB_0; NUMSEG_SING;
+           GROUP_PRODUCT_SING]
+  THENL [MESON_TAC[]; ALL_TAC] THEN
+  ASM_CASES_TAC `m <= SUC n` THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC[EMPTY_NUMSEG; ARITH_RULE `~(m <= SUC n) ==> n < m`] THEN
+  REWRITE_TAC[GROUP_PRODUCT_CLAUSES]);;
+
+let GROUP_PRODUCT_CLAUSES_COMMUTING = prove
+ (`!G (<<=) i k (f:K->A).
+        woset(<<=) /\ fld(<<=) = (:K) /\
+        FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}} /\
+        (!j. j IN k /\ j <<= i /\ ~(j = i) /\
+             f i IN group_carrier G /\ f j IN group_carrier G
+             ==> group_mul G (f i) (f j) = group_mul G (f j) (f i))
+        ==> group_product G (<<=) (i INSERT k) f =
+                if f i IN group_carrier G ==> i IN k
+                then group_product G (<<=) k f
+                else group_mul G (f i) (group_product G (<<=) k f)`,
+  let tac pfn =
+    W(MP_TAC o PART_MATCH (lhand o rand) GROUP_PRODUCT_UNION o pfn o snd) THEN
+    ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+     [REWRITE_TAC[CONJ_ASSOC] THEN CONJ_TAC THENL
+       [MATCH_MP_TAC(TAUT `p /\ q ==> (p <=> q)`) THEN CONJ_TAC THEN
+        FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+         (MESON[FINITE_INSERT; FINITE_SUBSET]
+          `FINITE s ==> !i. t SUBSET i INSERT s ==> FINITE t`)) THEN
+        EXISTS_TAC `i:K` THEN SET_TAC[];
+        FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [woset]) THEN
+        ASM_REWRITE_TAC[IN_UNIV] THEN ASM SET_TAC[];];
+      DISCH_THEN SUBST1_TAC] in
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THENL
+   [ONCE_REWRITE_TAC[GSYM GROUP_PRODUCT_RESTRICT] THEN
+    ONCE_REWRITE_TAC[GSYM GROUP_PRODUCT_SUPPORT] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC[];
+    FIRST_X_ASSUM(STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [NOT_IMP])] THEN
+  SUBGOAL_THEN
+   `k = {j:K | j IN k /\ j <<= i /\ ~(j = i)} UNION
+        {j | j IN k /\ i <<= j /\ ~(j = i)}`
+  SUBST1_TAC THENL
+   [FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [woset]) THEN
+    ASM_REWRITE_TAC[IN_UNIV] THEN ASM SET_TAC[];
+    ONCE_REWRITE_TAC[SET_RULE
+     `i INSERT (l UNION r) = (i INSERT l) UNION r`]] THEN
+  tac lhand THEN
+  ONCE_REWRITE_TAC[SET_RULE `i INSERT s = s UNION {i}`] THEN
+  tac (lhand o lhand) THEN
+  tac (rand o rand) THEN
+   ASM_SIMP_TAC[GROUP_MUL_ASSOC; GROUP_PRODUCT] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN ASM_REWRITE_TAC[GROUP_PRODUCT_SING] THEN
+  MATCH_MP_TAC GROUP_COMMUTES_PRODUCT THEN ASM SET_TAC[]);;
+
+let ABELIAN_GROUP_PRODUCT_CLAUSES = prove
+ (`!G (<<=) i k (f:K->A).
+        woset(<<=) /\ fld(<<=) = (:K) /\
+        abelian_group G /\
+        FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}}
+        ==> group_product G (<<=) (i INSERT k) f =
+                if f i IN group_carrier G ==> i IN k
+                then group_product G (<<=) k f
+                else group_mul G (f i) (group_product G (<<=) k f)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC GROUP_PRODUCT_CLAUSES_COMMUTING THEN
+  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[abelian_group]);;
+
+let GROUP_SUM_CLAUSES_COMMUTING = prove
+ (`!G i k (f:K->A).
+        FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}} /\
+        (!j. j IN k /\ ~(j = i) /\
+             f i IN group_carrier G /\ f j IN group_carrier G
+             ==> group_mul G (f i) (f j) = group_mul G (f j) (f i))
+        ==> group_sum G (i INSERT k) f =
+                if f i IN group_carrier G ==> i IN k
+                then group_sum G k f
+                else group_mul G (f i) (group_sum G k f)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[group_sum] THEN
+  MATCH_MP_TAC GROUP_PRODUCT_CLAUSES_COMMUTING THEN ASM_SIMP_TAC[] THEN
+  CONV_TAC SELECT_CONV THEN REWRITE_TAC[WO]);;
+
+let ABELIAN_GROUP_SUM_CLAUSES = prove
+ (`!G i k (f:K->A).
+        abelian_group G /\
+        FINITE {j | j IN k /\ f j IN group_carrier G DIFF {group_id G}}
+        ==> group_sum G (i INSERT k) f =
+                if f i IN group_carrier G ==> i IN k
+                then group_sum G k f
+                else group_mul G (f i) (group_sum G k f)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC GROUP_SUM_CLAUSES_COMMUTING THEN
+  ASM_MESON_TAC[abelian_group]);;
+
+let GROUP_PRODUCT_MUL = prove
+ (`!G (<<=) k f (g:K->A).
+      woset(<<=) /\ fld(<<=) = (:K) /\
+      FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+      FINITE {i | i IN k /\ ~(g i = group_id G)} /\
+      (!i. i IN k ==> f i IN group_carrier G /\ g i IN group_carrier G) /\
+      pairwise (\i j. group_mul G (f i) (g j) = group_mul G (g j) (f i)) k
+      ==> group_product G (<<=) k (\i. group_mul G (f i) (g i)) =
+          group_mul G (group_product G (<<=) k f) (group_product G (<<=) k g)`,
+  GEN_REWRITE_TAC (funpow 2 BINDER_CONV) [SWAP_FORALL_THM] THEN
+  GEN_REWRITE_TAC (funpow 3 BINDER_CONV) [SWAP_FORALL_THM] THEN
+  REWRITE_TAC[RIGHT_FORALL_IMP_THM; IMP_CONJ] THEN
+  REPEAT GEN_TAC THEN DISCH_TAC THEN DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
+  ONCE_REWRITE_TAC[IMP_IMP] THEN REWRITE_TAC[GSYM FINITE_UNION] THEN
+  X_GEN_TAC `s:K->bool` THEN
+  W(fun (asl,w) -> ABBREV_TAC(mk_eq(`t:K->bool`,rand(lhand w)))) THEN
+  REPEAT STRIP_TAC THEN
+  SUBGOAL_THEN
+   `group_product G (<<=) t (\i. group_mul G (f i) (g i)) =
+    group_mul G (group_product G (<<=) t (f:K->A)) (group_product G (<<=) t g)`
+  MP_TAC THENL
+   [SUBGOAL_THEN
+     `!i. i IN t ==> (f:K->A) i IN group_carrier G /\ g i IN group_carrier G`
+    MP_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `t:K->bool` o MATCH_MP
+     (REWRITE_RULE[IMP_CONJ] PAIRWISE_MONO)) THEN
+    ANTS_TAC THENL [ASM SET_TAC[]; UNDISCH_TAC `FINITE(t:K->bool)`] THEN
+    FIRST_X_ASSUM(K ALL_TAC o SYM) THEN
+    FIRST_X_ASSUM(K ALL_TAC o check (is_forall o concl));
+    MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THENL
+     [ALL_TAC; BINOP_TAC] THEN
+    ONCE_REWRITE_TAC[GSYM GROUP_PRODUCT_RESTRICT] THEN
+    ONCE_REWRITE_TAC[GSYM GROUP_PRODUCT_SUPPORT] THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN
+    MP_TAC(ISPEC `G:A group` GROUP_MUL_LID) THEN
+    MP_TAC(ISPEC `G:A group` GROUP_MUL_RID) THEN ASM SET_TAC[]] THEN
+  SPEC_TAC(`t:K->bool`,`s:K->bool`) THEN MATCH_MP_TAC(MESON[]
+   `(!n s. FINITE s /\ CARD s = n ==> P s)
+    ==> !s. FINITE s ==> P s`) THEN
+  MATCH_MP_TAC num_WF THEN X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+  X_GEN_TAC `s:K->bool` THEN ONCE_REWRITE_TAC[IMP_CONJ] THEN
+  ASM_CASES_TAC `n = 0` THENL
+   [ASM_SIMP_TAC[CARD_EQ_0] THEN
+    REWRITE_TAC[GROUP_PRODUCT_CLAUSES] THEN SIMP_TAC[GROUP_MUL_LID; GROUP_ID];
+    REPEAT DISCH_TAC THEN
+    FIRST_ASSUM(MP_TAC o MATCH_MP (MESON[CARD_EQ_0]
+     `CARD s = n ==> FINITE s /\ ~(n = 0) ==> ~(s = {})`)) THEN
+    ASM_REWRITE_TAC[]] THEN
+  FIRST_ASSUM(MP_TAC o last o CONJUNCTS o GEN_REWRITE_RULE I [woset]) THEN
+  ASM_REWRITE_TAC[IMP_IMP; SUBSET_UNIV] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP (MESON[]
+   `(!s. ~(s = {}) ==> P s) /\ ~(t = {}) ==> P t`)) THEN
+  DISCH_THEN(X_CHOOSE_THEN `i:K` STRIP_ASSUME_TAC) THEN
+  SUBGOAL_THEN `s = {i:K} UNION (s DELETE i)` SUBST1_TAC THENL
+   [ASM SET_TAC[]; ALL_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) GROUP_PRODUCT_UNION o lhand o snd) THEN
+  ASM_SIMP_TAC[FINITE_DELETE; FINITE_RESTRICT; FINITE_SING] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) GROUP_PRODUCT_UNION o
+    lhand o rand o snd) THEN
+  ASM_SIMP_TAC[FINITE_DELETE; FINITE_RESTRICT; FINITE_SING] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) GROUP_PRODUCT_UNION o
+    rand o rand o snd) THEN
+  ASM_SIMP_TAC[FINITE_DELETE; FINITE_RESTRICT; FINITE_SING] THEN
+  ANTS_TAC THENL [ASM SET_TAC[]; DISCH_THEN SUBST1_TAC] THEN
+  REWRITE_TAC[GROUP_PRODUCT_SING] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `n - 1`) THEN
+  REWRITE_TAC[ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[CARD_EQ_0]; ALL_TAC] THEN
+  DISCH_THEN(MP_TAC o SPEC `s DELETE (i:K)`) THEN
+  ASM_SIMP_TAC[FINITE_DELETE; CARD_DELETE; IN_DELETE] THEN ANTS_TAC THENL
+   [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+     (REWRITE_RULE[IMP_CONJ] PAIRWISE_MONO)) THEN
+    SET_TAC[];
+    DISCH_THEN SUBST1_TAC] THEN
+  ASM_SIMP_TAC[GSYM GROUP_MUL_ASSOC; GROUP_MUL; GROUP_PRODUCT] THEN
+  AP_TERM_TAC THEN
+  ASM_SIMP_TAC[GROUP_MUL_ASSOC; GROUP_MUL; GROUP_PRODUCT] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC GROUP_COMMUTES_PRODUCT THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [pairwise]) THEN ASM SET_TAC[]);;
+
+let GROUP_SUM_MUL = prove
+ (`!G k f (g:K->A).
+        FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+        FINITE {i | i IN k /\ ~(g i = group_id G)} /\
+        (!i. i IN k ==> f i IN group_carrier G /\ g i IN group_carrier G) /\
+        pairwise (\i j. group_mul G (f i) (g j) = group_mul G (g j) (f i)) k
+        ==> group_sum G k (\i. group_mul G (f i) (g i)) =
+            group_mul G (group_sum G k f) (group_sum G k g)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[group_sum] THEN
+  MATCH_MP_TAC GROUP_PRODUCT_MUL THEN ASM_REWRITE_TAC[] THEN
+  CONV_TAC SELECT_CONV THEN REWRITE_TAC[WO]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Congugation.                                                              *)
