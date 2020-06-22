@@ -2781,6 +2781,10 @@ let EXTENSIONAL_EQ = prove
 let RESTRICTION = new_definition
   `RESTRICTION s (f:A->B) x = if x IN s then f x else ARB`;;
 
+let RESTRICTION_THM = prove
+ (`!s (f:A->B). RESTRICTION s f = \x. if x IN s then f x else ARB`,
+  REWRITE_TAC[FUN_EQ_THM; RESTRICTION]);;
+
 let RESTRICTION_DEFINED = prove
  (`!s f:A->B x. x IN s ==> RESTRICTION s f x = f x`,
   SIMP_TAC[RESTRICTION]);;

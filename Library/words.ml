@@ -2916,9 +2916,17 @@ let WORD_NEG_0 = prove
  (`word_neg (word 0) = word 0`,
   CONV_TAC WORD_RULE);;
 
+let WORD_NEG_SUB = prove
+ (`!x y:N word. word_neg(word_sub x y) = word_sub y x`,
+  CONV_TAC WORD_RULE);;
+
 let WORD_NEG_EQ_0 = prove
  (`!x:N word. word_neg x = word 0 <=> x = word 0`,
   CONV_TAC WORD_RULE);;
+
+let WORD_NOT_NOT = prove
+ (`!x:N word. word_not(word_not x) = x`,
+  CONV_TAC WORD_BITWISE_RULE);;
 
 let WORD_AND_REFL = prove
  (`!x:N word. word_and x x = x`,
@@ -2969,10 +2977,15 @@ let WORD_XOR_0 = prove
    (!x:N word. word_xor (word 0) x = x)`,
   CONV_TAC WORD_BITWISE_RULE);;
 
+let WORD_XOR_NOT = prove
+ (`(!x y:N word. word_xor (word_not x) y = word_not(word_xor x y)) /\
+   (!x y:N word. word_xor x (word_not y) = word_not(word_xor x y))`,
+  CONV_TAC WORD_BITWISE_RULE);;
+
 let WORD_XOR_NOT0 = prove
  (`(!x:N word. word_xor x (word_not(word 0)) = word_not x) /\
    (!x:N word. word_xor (word_not(word 0)) x = word_not x)`,
-  CONV_TAC WORD_BITWISE_RULE);;
+  REWRITE_TAC[WORD_XOR_NOT; WORD_XOR_0]);;
 
 let WORD_XOR_REFL = prove
  (`!x:N word. word_xor x x = word 0`,

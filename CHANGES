@@ -8,6 +8,113 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 20th Jun 2020       Library/grouptheory.ml
+
+Added a number of technical group lemmas, mostly around the correspondence
+between internal and external direct sums over an arbitrary indexing set:
+
+        GROUP_EPIMORPHISM_ABELIAN_GROUP_SUM
+        GROUP_EPIMORPHISM_GROUP_SUM
+        GROUP_EPIMORPHISM_GROUP_SUM_EQ
+        GROUP_EPIMORPHISM_GROUP_SUM_GEN
+        GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ
+        GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ_GEN
+        GROUP_HOMOMORPHISM_GROUP_SUM
+        GROUP_HOMOMORPHISM_GROUP_SUM_EQ
+        GROUP_HOMOMORPHISM_GROUP_SUM_GEN
+        GROUP_ISOMORPHISM_ABELIAN_GROUP_SUM
+        GROUP_ISOMORPHISM_GROUP_SUM
+        GROUP_ISOMORPHISM_GROUP_SUM_EQ
+        GROUP_ISOMORPHISM_GROUP_SUM_GEN
+        GROUP_MONOMORPHISM_ABELIAN_GROUP_SUM
+        GROUP_MONOMORPHISM_GROUP_SUM
+        GROUP_MONOMORPHISM_GROUP_SUM_EQ
+        GROUP_MONOMORPHISM_GROUP_SUM_GEN
+        GROUP_MONOMORPHISM_INTO_SUPERGROUP
+        IN_SUBGROUP_PRODUCT
+        IN_SUBGROUP_SUM
+        ISOMORPHIC_ABELIAN_SUM_GROUP
+        ISOMORPHIC_NORMAL_SUM_GROUP
+        ISOMORPHIC_SUM_GROUP
+        ISOMORPHIC_SUM_GROUP_GEN
+        SUBGROUP_EPIMORPHISM_ABELIAN_GROUP_SUM
+        SUBGROUP_EPIMORPHISM_GROUP_SUM
+        SUBGROUP_EPIMORPHISM_GROUP_SUM_EQ
+        SUBGROUP_EPIMORPHISM_GROUP_SUM_GEN
+        SUBGROUP_GENERATED_SUPERSET
+        SUBGROUP_ISOMORPHISM_ABELIAN_GROUP_SUM
+        SUBGROUP_ISOMORPHISM_GROUP_SUM
+        SUBGROUP_ISOMORPHISM_GROUP_SUM_EQ
+        SUBGROUP_ISOMORPHISM_GROUP_SUM_GEN
+        SUBGROUP_MONOMORPHISM_EPIMORPHISM
+
+For example this is a fairly standard form, in among numerous other variants:
+
+  ISOMORPHIC_NORMAL_SUM_GROUP =
+    |- !k G h.
+         (!i. i IN k ==> h i normal_subgroup_of G) /\
+         subgroup_generated G (UNIONS {h i | i IN k}) = G /\
+         (!i. i IN k
+              ==> h i INTER
+                  group_carrier
+                  (subgroup_generated G (UNIONS {h j | j IN k DELETE i})) =
+                  {group_id G})
+         ==> sum_group k (\i. subgroup_generated G (h i)) isomorphic_group G
+
+Fri 19th Jun 2020       Library/words.ml
+
+Added three more trivial word lemmas, which can be derived automatically
+but seem natural enough to deserve names:
+
+  WORD_NEG_SUB =
+    |- !x y. word_neg (word_sub x y) = word_sub y x
+
+  WORD_NOT_NOT =
+    |- !x. word_not (word_not x) = x
+
+  WORD_XOR_NOT =
+    |- (!x y. word_xor (word_not x) y = word_not (word_xor x y)) /\
+       (!x y. word_xor x (word_not y) = word_not (word_xor x y))
+
+Fri 19th Jun 2020       Library/grouptheory.ml
+
+Renamed SUBGROUP_GENERATED_SETOP -> SUBGROUP_GENERATED_SETMUL, which is a
+more natural name (this was a survival from more general "op" terminology
+which tried to be neutral between additive and multiplicative forms of
+group properties).
+
+Mon 15th Jun 2020       sets.ml
+
+Added an "eta-converted" definition of RESTRICTION:
+
+  RESTRICTION_THM =
+    |- !s f. RESTRICTION s f = (\x. if x IN s then f x else ARB)
+
+Mon 15th Jun 2020       Library/ringtheory.ml
+
+Added "ring_sum" and "ring_product" to the basic congruence rules for the
+simplifier, and also switched around all the theorems RING_SUM_RESTRICT,
+RING_SUM_SUPPORT, RING_PRODUCT_RESTRICT and RING_PRODUCT_SUPPORT, to be
+more consistent with similar clauses for "group_sum" and "group_product"
+and other iterated operations. So now:
+
+  RING_SUM_RESTRICT =
+    |- !s f.
+           ring_sum r {a | a IN s /\ f a IN ring_carrier r} f = ring_sum r s f
+
+  RING_SUM_SUPPORT =
+    |- !s f. ring_sum r {a | a IN s /\ ~(f a = ring_0 r)} f = ring_sum r s f
+
+  RING_PRODUCT_RESTRICT =
+    |- !s f.
+           ring_product r {a | a IN s /\ f a IN ring_carrier r} f =
+           ring_product r s f
+
+  RING_PRODUCT_SUPPORT =
+    |- !s f.
+           ring_product r {a | a IN s /\ ~(f a = ring_1 r)} f =
+           ring_product r s f
+
 Sat 13th Jun 2020       pair.ml, iterate.ml, Library/grouptheory.ml
 
 Added a more generic iterator "iterato" ("o" for "ordered"), analogous to
@@ -22271,3 +22378,4 @@ STVs, but issue a warning.
 Sun 29th Oct 95         subgoal.ml
 
 Inserted a warning into "expand" if the tactic does not change the goal state.
+
