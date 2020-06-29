@@ -809,3 +809,21 @@ let INFINITE_RATIONAL_IN_RANGE = prove
      (fun th -> MESON_TAC[LT_CASES; th; REAL_LT_REFL]) THEN
     MATCH_MP_TAC TRANSITIVE_STEPWISE_LT THEN
     ASM_MESON_TAC[REAL_LT_TRANS]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* A simple tactic to try and prove that a real expression is integral.      *)
+(* ------------------------------------------------------------------------- *)
+
+let (REAL_INTEGER_TAC:tactic) =
+  let base = MATCH_ACCEPT_TAC(CONJUNCT1 INTEGER_CLOSED) ORELSE
+             MATCH_ACCEPT_TAC INTEGER_REAL_OF_INT
+  and step =
+    MAP_FIRST MATCH_MP_TAC (CONJUNCTS(CONJUNCT2 INTEGER_CLOSED)) THEN
+    TRY CONJ_TAC in
+  let tac = REPEAT step THEN base in
+  fun (asl,w) ->
+   (match w with
+     Comb(Const("integer",_),t) ->
+      (tac ORELSE
+       (CONV_TAC(RAND_CONV REAL_POLY_CONV) THEN tac)) (asl,w)
+    | _ -> failwith "REAL_INTEGER_TAC: Goal not of expected form");;

@@ -8,6 +8,102 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 26th Jun 2020       Library/groups.ml
+
+Made a few miscellaneous additions to the group theory material
+
+  ABELIAN_GROUP_PRODUCT_ITERATE =
+    |- !G (<<=) x k.
+           woset (<<=) /\
+           fld (<<=) = (:K) /\
+           abelian_group G /\
+           (!i. i IN k ==> x i IN group_carrier G)
+           ==> group_product G (<<=) k x = iterate (group_add G) k x
+
+  ABELIAN_GROUP_SUM_ITERATE =
+    |- !G x k.
+           abelian_group G /\ (!i. i IN k ==> x i IN group_carrier G)
+           ==> group_sum G k x = iterate (group_add G) k x
+
+  GROUP_HOMOMORPHISM_PRODUCT =
+    |- !f k G H.
+           group_homomorphism (product_group k G,product_group k H)
+           (\x. RESTRICTION k (\i. f i (x i))) <=>
+           (!i. i IN k ==> group_homomorphism (G i,H i) (f i))
+
+  GROUP_HOMOMORPHISM_PRODUCT_INJECTION =
+    |- !k G i.
+           group_homomorphism (G i,product_group k G)
+           (\a. RESTRICTION k (\j. if j = i then a else group_id (G j)))
+
+  GROUP_HOMOMORPHISM_SUM =
+    |- !f k G H.
+           group_homomorphism (sum_group k G,sum_group k H)
+           (\x. RESTRICTION k (\i. f i (x i))) <=>
+           (!i. i IN k ==> group_homomorphism (G i,H i) (f i))
+
+  GROUP_HOMOMORPHISM_SUM_INJECTION =
+    |- !k G i.
+           group_homomorphism (G i,sum_group k G)
+           (\a. RESTRICTION k (\j. if j = i then a else group_id (G j)))
+
+  GROUP_HOMOMORPHISM_SUM_PROJECTION =
+    |- !G k i. i IN k ==> group_homomorphism (sum_group k G,G i) (\x. x i)
+
+  SUM_GROUP_ALT =
+    |- !k G.
+           sum_group k G =
+           subgroup_generated (product_group k G)
+           {x | FINITE {i | i IN k /\ ~(x i = group_id (G i))}}
+
+Also made a couple of changes to emphasize the newer "group_sum G" in place
+of "iterate (group_add G)", renaming ABELIAN_GROUP_SUM to ABELIAN_GROUP_ITERATE
+while also removing its finiteness assumption:
+
+  ABELIAN_GROUP_ITERATE =
+    |- !G x k.
+           abelian_group G /\ (!i. i IN k ==> x i IN group_carrier G)
+           ==> iterate (group_add G) k x IN group_carrier G
+
+and changing ABELIAN_GROUP_HOMOMORPHISM_GROUP_SUM to use "group_sum"
+explicitly:
+
+  ABELIAN_GROUP_HOMOMORPHISM_GROUP_SUM =
+    |- !f k A B.
+           abelian_group B /\ (!i. i IN k ==> group_homomorphism (A i,B) (f i))
+           ==> group_homomorphism (sum_group k A,B)
+               (\x. group_sum B k (\i. f i (x i)))
+
+Wed 24th Jun 2020       Library/words.ml
+
+Added a few more trivial word lemmas:
+
+  INT_VAL_WORD_MASK =
+    |- !b. &(val (word_neg (word (bitval b)))) =
+           (&2 pow dimindex (:N) - &1) * &(bitval b)
+
+  REAL_VAL_WORD_MASK =
+    |- !b. &(val (word_neg (word (bitval b)))) =
+           (&2 pow dimindex (:N) - &1) * &(bitval b)
+
+  REAL_VAL_WORD_NEG_CASES =
+    |- !x. &(val (word_neg x)) =
+           (if &(val x) = &0 then &0 else &2 pow dimindex (:N) - &(val x))
+
+  VAL_WORD_MASK =
+    |- !b. val (word_neg (word (bitval b))) =
+           (2 EXP dimindex (:N) - 1) * bitval b
+
+Mon 22nd Jun 2020       Library/floor.ml
+
+Added a simple tactic (naive backchaining plus optional initial polynomial
+normalization) that tries to prove a real expression is an integer
+
+        # g `integer(&22 / &7 * (x - x * &1) + &n pow 7)`;;
+        ...
+        # e REAL_INTEGER_TAC;;
+        val it : goalstack = No subgoals
+
 Sat 20th Jun 2020       Library/grouptheory.ml
 
 Added a number of technical group lemmas, mostly around the correspondence

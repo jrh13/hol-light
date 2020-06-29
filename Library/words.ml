@@ -1678,6 +1678,13 @@ let INT_VAL_WORD_NEG_CASES = prove
   SIMP_TAC[INT_OF_NUM_POW; INT_OF_NUM_SUB; LT_IMP_LE; VAL_BOUND] THEN
   REWRITE_TAC[VAL_WORD_NEG_CASES; INT_OF_NUM_EQ] THEN MESON_TAC[]);;
 
+let REAL_VAL_WORD_NEG_CASES = prove
+ (`!x:N word.
+        &(val(word_neg x)):real =
+        if &(val x):real = &0 then &0 else &2 pow dimindex(:N) - &(val x)`,
+  SIMP_TAC[REAL_OF_NUM_POW; REAL_OF_NUM_SUB; LT_IMP_LE; VAL_BOUND] THEN
+  REWRITE_TAC[VAL_WORD_NEG_CASES; REAL_OF_NUM_EQ] THEN MESON_TAC[]);;
+
 let CONG_WORD_NEG = prove
  (`!x:(N)word.
         (val(word_neg x) + val x == 0) (mod (2 EXP dimindex(:N)))`,
@@ -3291,6 +3298,33 @@ let WORD_XOR_CONDITIONS = prove
          word(bitval(~(p <=> q)))`,
   REPEAT(MATCH_MP_TAC bool_INDUCT THEN CONJ_TAC) THEN
   REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; WORD_XOR_0; WORD_XOR_REFL]);;
+
+let VAL_WORD_MASK = prove
+ (`!b. val(word_neg(word(bitval b):N word)) =
+       (2 EXP dimindex(:N) - 1) * bitval b`,
+  GEN_TAC THEN
+  REWRITE_TAC[VAL_WORD_NEG_CASES; VAL_WORD_BITVAL; BITVAL_EQ_0] THEN
+  REWRITE_TAC[COND_SWAP] THEN
+  COND_CASES_TAC THEN  ASM_REWRITE_TAC[BITVAL_CLAUSES] THEN
+  ARITH_TAC);;
+
+let INT_VAL_WORD_MASK = prove
+ (`!b. &(val(word_neg(word(bitval b):N word))):int =
+       (&2 pow dimindex(:N) - &1) * &(bitval b)`,
+  GEN_TAC THEN
+  REWRITE_TAC[INT_VAL_WORD_NEG_CASES; VAL_WORD_BITVAL; BITVAL_EQ_0;
+              INT_OF_NUM_EQ; COND_SWAP] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[BITVAL_CLAUSES] THEN
+  INT_ARITH_TAC);;
+
+let REAL_VAL_WORD_MASK = prove
+ (`!b. &(val(word_neg(word(bitval b):N word))):real =
+       (&2 pow dimindex(:N) - &1) * &(bitval b)`,
+  GEN_TAC THEN
+  REWRITE_TAC[REAL_VAL_WORD_NEG_CASES; VAL_WORD_BITVAL; BITVAL_EQ_0;
+              REAL_OF_NUM_EQ; COND_SWAP] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[BITVAL_CLAUSES] THEN
+  REAL_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Some lemmas about masks 000..001111..1111 and their values.               *)
