@@ -1767,6 +1767,14 @@ let PRIMEPOW_DIVIDES_LCM = prove
     MATCH_MP_TAC MONO_OR THEN REPEAT STRIP_TAC THEN
     MATCH_MP_TAC DIVIDES_RMUL THEN ASM_SIMP_TAC[DIVIDES_EXP_LE; PRIME_GE_2]]);;
 
+let PRIME_DIVIDES_LCM = prove
+ (`!m n p.
+        prime p
+        ==> (p divides lcm(m,n) <=> p divides m \/ p divides n)`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(SPECL [`m:num`; `n:num`; `p:num`; `1`] PRIMEPOW_DIVIDES_LCM) THEN
+  REWRITE_TAC[EXP_1]);;
+
 let LCM_ZERO = prove
  (`!m n. lcm(m,n) = 0 <=> m = 0 \/ n = 0`,
   REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [MULTIPLES_EQ] THEN
@@ -1942,6 +1950,155 @@ let MAX_LE_LCM_EQ = prove
 let MAX_LE_LCM = prove
  (`!m n. (m = 0 <=> n = 0) ==> MAX m n <= lcm(m,n)`,
   REWRITE_TAC[MAX_LE_LCM_EQ]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Iterated GCD and LCM over a finite set (or one with finite support).      *)
+(* ------------------------------------------------------------------------- *)
+
+let NEUTRAL_GCD = prove
+ (`neutral (\m n. gcd(m,n)) = 0`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN MESON_TAC[GCD_0]);;
+
+let MONOIDAL_GCD = prove
+ (`monoidal (\m n:num. gcd(m,n))`,
+  REWRITE_TAC[monoidal; NEUTRAL_GCD; GCD_0] THEN
+  MESON_TAC[GCD_ASSOC; GCD_SYM]);;
+
+let NEUTRAL_LCM = prove
+ (`neutral (\m n. lcm(m,n)) = 1`,
+  REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN MESON_TAC[LCM_1]);;
+
+let MONOIDAL_LCM = prove
+ (`monoidal (\m n:num. lcm(m,n))`,
+  REWRITE_TAC[monoidal; NEUTRAL_LCM; LCM_1] THEN
+  MESON_TAC[LCM_ASSOC; LCM_SYM]);;
+
+let ITERATE_GCD_DIVIDES = prove
+ (`!f k i:K.
+        FINITE k /\ i IN k
+        ==> iterate (\m n:num. gcd(m,n)) k f divides f i`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; MATCH_MP ITERATE_CLAUSES MONOIDAL_GCD] THEN
+  MESON_TAC[NOT_IN_EMPTY; GCD; DIVIDES_REFL; DIVIDES_TRANS]);;
+
+let ITERATE_GCD_DIVIDES_EQ = prove
+ (`!f k i:K.
+        i IN k
+        ==> (iterate (\m n:num. gcd(m,n)) k f divides f i <=>
+             FINITE {j | j IN k /\ ~(f j = 0)} \/ f i = 0)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `f(i:K) = 0` THEN ASM_REWRITE_TAC[DIVIDES_0] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_GCD] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[DIVIDES_ZERO] THEN
+  MATCH_MP_TAC ITERATE_GCD_DIVIDES THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM]);;
+
+let DIVIDES_ITERATE_GCD = prove
+ (`!f (k:K->bool) d.
+        FINITE k
+        ==> (d divides iterate (\m n:num. gcd(m,n)) k f <=>
+             !i. i IN k ==> d divides f i)`,
+  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; MATCH_MP ITERATE_CLAUSES MONOIDAL_GCD] THEN
+  SIMP_TAC[NEUTRAL_GCD; DIVIDES_0; NOT_IN_EMPTY; DIVIDES_GCD]);;
+
+let DIVIDES_ITERATE_GCD_GEN = prove
+ (`!f (k:K->bool) d.
+        d divides iterate (\m n:num. gcd(m,n)) k f <=>
+        FINITE {j | j IN k /\ ~(f j = 0)} ==> !i. i IN k ==> d divides f i`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_GCD] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[DIVIDES_0] THEN
+  ASM_SIMP_TAC[DIVIDES_ITERATE_GCD; IN_ELIM_THM] THEN
+  MESON_TAC[DIVIDES_0]);;
+
+let DIVIDES_ITERATE_LCM = prove
+ (`!f k i:K.
+        FINITE k /\ i IN k
+        ==> f i divides iterate (\m n:num. lcm(m,n)) k f`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; MATCH_MP ITERATE_CLAUSES MONOIDAL_LCM] THEN
+  ASM_SIMP_TAC[NOT_IN_EMPTY; DIVIDES_LCM; DIVIDES_REFL]);;
+
+let DIVIDES_ITERATE_LCM_GEN = prove
+ (`!f k i:K.
+        i IN k
+        ==> (f i divides iterate (\m n:num. lcm(m,n)) k f <=>
+             FINITE {j | j IN k /\ ~(f j = 1)} \/ f i = 1)`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `f(i:K) = 1` THEN ASM_REWRITE_TAC[DIVIDES_1] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_LCM] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[DIVIDES_ONE] THEN
+  MATCH_MP_TAC DIVIDES_ITERATE_LCM THEN
+  ASM_REWRITE_TAC[IN_ELIM_THM]);;
+
+let ITERATE_LCM_DIVIDES = prove
+ (`!f (k:K->bool) n.
+        FINITE k
+        ==> (iterate (\m n:num. lcm(m,n)) k f divides n <=>
+             !i. i IN k ==> f i divides n)`,
+  GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[FORALL_IN_INSERT; MATCH_MP ITERATE_CLAUSES MONOIDAL_LCM] THEN
+  SIMP_TAC[NEUTRAL_LCM; DIVIDES_1; NOT_IN_EMPTY; LCM_DIVIDES]);;
+
+let ITERATE_LCM_DIVIDES_GEN = prove
+ (`!f (k:K->bool) n.
+        iterate (\m n:num. lcm(m,n)) k f divides n <=>
+        FINITE {j | j IN k /\ ~(f j = 1)} ==> !i. i IN k ==> f i divides n`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_LCM] THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC[ITERATE_LCM_DIVIDES; DIVIDES_1; IN_ELIM_THM] THEN
+  MESON_TAC[DIVIDES_1]);;
+
+let PRIMEPOW_DIVIDES_ITERATE_LCM = prove
+ (`!f (k:K->bool) p m.
+        FINITE k /\ prime p
+        ==> (p EXP m divides iterate (\m n:num. lcm(m,n)) k f <=>
+             m = 0 \/ ?i. i IN k /\ p EXP m divides (f i))`,
+  GEN_TAC THEN REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[EXISTS_IN_INSERT; MATCH_MP ITERATE_CLAUSES MONOIDAL_LCM;
+        PRIMEPOW_DIVIDES_LCM; NOT_IN_EMPTY; NEUTRAL_LCM] THEN
+  MESON_TAC[DIVIDES_ONE; EXP_EQ_1; PRIME_1]);;
+
+let PRIMEPOW_DIVIDES_ITERATE_LCM_GEN = prove
+ (`!f (k:K->bool) p m.
+        prime p
+        ==> (p EXP m divides iterate (\m n:num. lcm(m,n)) k f <=>
+             m = 0 \/
+             FINITE {j | j IN k /\ ~(f j = 1)} /\
+             ?i. i IN k /\ p EXP m divides (f i))`,
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[EXP; DIVIDES_1] THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_LCM] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[DIVIDES_ONE; EXP_EQ_1] THEN
+  ASM_SIMP_TAC[PRIMEPOW_DIVIDES_ITERATE_LCM; IN_ELIM_THM] THEN
+  ASM_MESON_TAC[DIVIDES_1; DIVIDES_ONE; PRIME_1; EXP_EQ_1]);;
+
+let PRIME_DIVIDES_ITERATE_LCM_GEN = prove
+ (`!f (k:K->bool) p.
+        prime p
+        ==> (p divides iterate (\m n:num. lcm(m,n)) k f <=>
+             FINITE {j | j IN k /\ ~(f j = 1)} /\
+             ?i. i IN k /\ p divides (f i))`,
+  REPEAT GEN_TAC THEN
+  MP_TAC(ISPECL [`f:K->num`; `k:K->bool`; `p:num`; `1`]
+    PRIMEPOW_DIVIDES_ITERATE_LCM_GEN) THEN
+  REWRITE_TAC[EXP_1; ARITH_EQ]);;
+
+let PRIME_DIVIDES_ITERATE_LCM = prove
+ (`!f (k:K->bool) p.
+        FINITE k /\ prime p
+        ==> (p divides iterate (\m n:num. lcm(m,n)) k f <=>
+             ?i. i IN k /\ p divides (f i))`,
+  SIMP_TAC[PRIME_DIVIDES_ITERATE_LCM_GEN; FINITE_RESTRICT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Induction principle for multiplicative functions etc.                     *)

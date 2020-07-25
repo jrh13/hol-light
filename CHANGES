@@ -8,6 +8,406 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 24th Jul 2020       Library/ringtheory.ml
+
+Added a few new basic ring theorems, keeping things more in step with the
+analogous things in Library/grouptheory.ml
+
+  RING_MONOMORPHISM_INTO_SUPERRING =
+    |- !r r' t f.
+           ring_monomorphism (r,subring_generated r' t) f
+           ==> ring_monomorphism (r,r') f
+
+  SUBRING_GENERATED_SUPERSET =
+   |- !r s.
+           subring_generated r s = r <=>
+           ring_carrier r SUBSET ring_carrier (subring_generated r s)
+
+  SUBRING_MONOMORPHISM_EPIMORPHISM =
+    |- !r r' s f.
+           ring_monomorphism (r,r') f /\
+           ring_epimorphism (r,subring_generated r' s) f <=>
+           ring_isomorphism (r,subring_generated r' s) f
+
+  RING_AUTOMORPHISM_IMP_ENDOMORPHISM =
+   |- !r f. ring_automorphism r f ==> ring_endomorphism r f
+
+and fixed an entirely analogous fumble where this theorem formerly
+didn't say what the name suggests, but now does:
+
+  RING_ISOMORPHISM_EQ_EPIMORPHISM_FINITE =
+    |- !G H f.
+         FINITE (ring_carrier G) /\
+         FINITE (ring_carrier H) /\
+         CARD (ring_carrier G) = CARD (ring_carrier H)
+         ==> (ring_isomorphism (G,H) f <=> ring_epimorphism (G,H) f)
+
+Fri 24th Jul 2020       Library/grouptheory.ml
+
+Added more group theory material, in particular a constant for the
+concept of "p-group" in a somewhat general sense:
+
+ |- !G s. pgroup s G <=>
+          !p x. prime p /\
+                x IN group_carrier G /\
+                p divides group_element_order G x
+                ==> p IN s
+
+This allows an arbitrary set of numbers, not just a singleton
+(as in Rose's "A Course in Group Theory", definition 3.41), and
+uses element orders to make it workable in infinite groups, while
+still satisfying natural combinator theorems like PGROUP_SUM_GROUP
+and PGROUP_EPIMORPHIC_IMAGE. Various theorems listed below like
+FINITE_PGROUP_SING give the collapse to a more common definition
+for finite groups. New theorems:
+
+  CARRIER_SUBGROUP_GENERATED_UNION =
+    |- !G g h.
+           g subgroup_of G /\
+           h subgroup_of G /\
+           group_setmul G g h = group_setmul G h g
+           ==> group_carrier (subgroup_generated G (g UNION h)) =
+               group_setmul G g h
+
+  CARRIER_SUBGROUP_GENERATED_UNION_LEFT =
+    |- !G g h.
+           g normal_subgroup_of G /\ h subgroup_of G
+           ==> group_carrier (subgroup_generated G (g UNION h)) =
+               group_setmul G g h
+
+  CARRIER_SUBGROUP_GENERATED_UNION_RIGHT =
+    |- !G g h.
+           g subgroup_of G /\ h normal_subgroup_of G
+           ==> group_carrier (subgroup_generated G (g UNION h)) =
+               group_setmul G g h
+
+  FINITE_AND_PGROUP_SING =
+    |- !G p.
+           prime p
+           ==> (FINITE (group_carrier G) /\ pgroup {p} G <=>
+                (?k. group_carrier G HAS_SIZE p EXP k))
+
+  FINITE_PGROUP =
+    |- !s G.
+           FINITE (group_carrier G)
+           ==> (pgroup s G <=>
+                (!p. prime p /\ p divides CARD (group_carrier G) ==> p IN s))
+
+  FINITE_PGROUP_SING =
+    |- !G p.
+           FINITE (group_carrier G) /\ prime p
+           ==> (pgroup {p} G <=> (?k. CARD (group_carrier G) = p EXP k))
+
+  GROUP_ELEMENT_ORDER_HOMOMORPHIC_IMAGE =
+    |- !G H f x.
+           group_homomorphism (G,H) f /\ x IN group_carrier G
+           ==> group_element_order H (f x) divides group_element_order G x
+
+  GROUP_ELEMENT_ORDER_SUM_GROUP =
+    |- !G k x.
+           x IN group_carrier (sum_group k G)
+           ==> group_element_order (sum_group k G) x =
+               iterate (\m n. lcm (m,n)) k
+               (\i. group_element_order (G i) (x i))
+
+  GROUP_EPIMORPHISM_SUBSET =
+    |- !G G' f.
+           group_epimorphism (G,G') f <=>
+           group_homomorphism (G,G') f /\
+           group_carrier G' SUBSET IMAGE f (group_carrier G)
+
+  GROUP_EPIMORPHISM_SUM_PROJECTION =
+    |- !G k i. i IN k ==> group_epimorphism (sum_group k G,G i) (\x. x i)
+
+  GROUP_POW_PRODUCT_GROUP =
+    |- !G k x n.
+           group_pow (product_group k G) x n =
+           RESTRICTION k (\i. group_pow (G i) (x i) n)
+
+  GROUP_POW_SUM_GROUP =
+    |- !G k x n.
+           group_pow (sum_group k G) x n =
+           RESTRICTION k (\i. group_pow (G i) (x i) n)
+
+  GROUP_ZPOW_PRODUCT_GROUP =
+    |- !G k x n.
+           group_zpow (product_group k G) x n =
+           RESTRICTION k (\i. group_zpow (G i) (x i) n)
+
+  GROUP_ZPOW_SUM_GROUP =
+    |- !G k x n.
+           group_zpow (sum_group k G) x n =
+           RESTRICTION k (\i. group_zpow (G i) (x i) n)
+
+  ISOMORPHIC_PROD_GROUP_SUBGROUP_GENERATED =
+    |- !G g h.
+           g normal_subgroup_of G /\
+           h normal_subgroup_of G /\
+           g INTER h = {group_id G}
+           ==> prod_group (subgroup_generated G g) (subgroup_generated G h)
+               isomorphic_group
+               subgroup_generated G (group_setmul G g h)
+
+  PGROUP_EMPTY =
+    |- !G. pgroup {} G <=> trivial_group G
+
+  PGROUP_EPIMORPHIC_IMAGE =
+    |- !G H f s. group_epimorphism (G,H) f /\ pgroup s G ==> pgroup s H
+
+  PGROUP_MONO =
+    |- !G s t. pgroup s G /\ s SUBSET t ==> pgroup t G
+
+  PGROUP_MONOMORPHIC_PREIMAGE =
+    |- !G H f s. group_monomorphism (G,H) f /\ pgroup s H ==> pgroup s G
+
+  PGROUP_PROD_GROUP =
+    |- !G H s. pgroup s (prod_group G H) <=> pgroup s G /\ pgroup s H
+
+  PGROUP_QUOTIENT_GROUP =
+    |- !G n s.
+           n normal_subgroup_of G /\ pgroup s G
+           ==> pgroup s (quotient_group G n)
+
+  PGROUP_SING =
+    |- !G p.
+           prime p
+           ==> (pgroup {p} G <=>
+                (!x. x IN group_carrier G
+                     ==> (?k. group_element_order G x = p EXP k)))
+
+  PGROUP_SUBGROUP_GENERATED =
+    |- !G s h. pgroup s G ==> pgroup s (subgroup_generated G h)
+
+  PGROUP_SUM_GROUP =
+    |- !k G s. pgroup s (sum_group k G) <=> (!i. i IN k ==> pgroup s (G i))
+
+  QUOTIENT_GROUP_POW_EQ_ID =
+    |- !G n x k.
+           n normal_subgroup_of G /\ x IN group_carrier G
+           ==> (group_pow (quotient_group G n) (right_coset G n x) k =
+                group_id (quotient_group G n) <=>
+                group_pow G x k IN n)
+
+  SUBGROUP_OF_COPRIME_ORDER =
+    |- !G n.
+           abelian_group G
+           ==> {x | x IN group_carrier G /\ coprime (n,group_element_order G x)}
+               subgroup_of G
+
+  SUBGROUP_OF_LOWER_ORDER =
+    |- !G n.
+           abelian_group G
+           ==> {x | x IN group_carrier G /\ group_element_order G x divides n}
+               subgroup_of G
+
+  SUBGROUP_OF_LOWER_ORDER_ALT =
+    |- !G n.
+           abelian_group G
+           ==> {x | x IN group_carrier G /\ group_pow G x n = group_id G}
+               subgroup_of G
+
+  SUBGROUP_OF_NONDIVISIBLE_ORDER =
+    |- !G p.
+           abelian_group G /\ prime p
+           ==> {x | x IN group_carrier G /\
+                    ~(p divides group_element_order G x)}
+               subgroup_of G
+
+  SUBGROUP_OF_PRIMES_TORSION =
+    |- !G Q.
+           abelian_group G
+           ==> {x | x IN group_carrier G /\
+                    (!p. prime p /\ p divides group_element_order G x ==> Q p)}
+               subgroup_of G
+
+  SUBGROUP_OF_PRIME_TORSION =
+    |- !G p.
+           abelian_group G /\ prime p
+           ==> {x | x IN group_carrier G /\
+                    (?k. group_element_order G x = p EXP k)}
+               subgroup_of G
+
+  SUBGROUP_OF_TORSION =
+    |- !G. abelian_group G
+           ==> {x | x IN group_carrier G /\ ~(group_element_order G x = 0)}
+               subgroup_of G
+
+  SUBGROUP_OF_TORSION_GEN =
+    |- !P G.
+           abelian_group G /\
+           P 1 /\
+           (!m n p. p divides m * n /\ P m /\ P n ==> P p)
+           ==> {x | x IN group_carrier G /\ P (group_element_order G x)}
+               subgroup_of G
+
+  SUBGROUP_OF_TORSION_GENERAL =
+    |- !P G.
+           abelian_group G /\
+           P 1 /\
+           (!m n p. p divides lcm (m,n) /\ P m /\ P n ==> P p)
+           ==> {x | x IN group_carrier G /\ P (group_element_order G x)}
+               subgroup_of G
+
+  TORSION_FREE_GROUP =
+    |- !G. (!x. x IN group_carrier G ==> group_element_order G x <= 1) <=>
+           (!x. x IN group_carrier G /\ ~(x = group_id G)
+                ==> group_element_order G x = 0)
+
+  TORSION_FREE_GROUP_ALT =
+    |- !G. (!x. x IN group_carrier G ==> group_element_order G x <= 1) <=>
+           (!x n.
+                x IN group_carrier G /\ group_pow G x n = group_id G
+                ==> x = group_id G \/ n = 0)
+
+  TORSION_FREE_QUOTIENT_GROUP =
+    |- !G H.
+           abelian_group G /\
+           quotient_group G
+           {x | x IN group_carrier G /\ ~(group_element_order G x = 0)} = H
+           ==> (!x. x IN group_carrier H ==> group_element_order H x <= 1)
+
+Deleted the old theorems PGROUP and PGROUP_GEN (which are now just trivial
+expanded combinations of stuff above), and changed the following to use the
+new "pgroup" constant explicitly:
+
+  PGROUP_ACTION_FIXPOINTS =
+    |- !G s a p.
+          group_action G s a /\
+          FINITE s /\
+          prime p /\
+          FINITE (group_carrier G) /\
+          pgroup {p} G
+          ==> (CARD {x | x IN s /\ (!g. g IN group_carrier G ==> a g x = x)} ==
+               CARD s) (mod p)
+    
+  PGROUP_ACTION_FIXPOINT =
+    |- !G s a p.
+           group_action G s a /\
+           prime p /\
+           FINITE (group_carrier G) /\
+           pgroup {p} G /\
+           FINITE s /\
+           ~(p divides CARD s)
+           ==> (?x. x IN s /\ (!g. g IN group_carrier G ==> a g x = x))
+    
+  PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF =
+    |- !G p h.
+           prime p /\
+           FINITE (group_carrier G) /\
+           pgroup {p} G /\
+           h subgroup_of G /\
+           (!h'. h' subgroup_of G /\ h PSUBSET h' ==> h' = group_carrier G)
+           ==> h normal_subgroup_of G
+    
+  PGROUP_NONTRIVIAL_CENTRE_GEN =
+    |- !G n p.
+           prime p /\
+           FINITE (group_carrier G) /\
+           pgroup {p} G /\
+           n normal_subgroup_of G /\
+           ~(n = {group_id G})
+           ==> {group_id G} PSUBSET
+               group_centralizer G (group_carrier G) INTER n
+    
+  PGROUP_SUBGROUP_PSUBSET_NORMALIZER =
+    |- !G p h.
+           prime p /\
+           FINITE (group_carrier G) /\
+           pgroup {p} G /\
+           h subgroup_of G /\
+           ~(h = group_carrier G)
+           ==> h PSUBSET group_normalizer G h
+    
+Thu 23rd Jul 2020       Library/prime.ml
+
+Added a basic suite of theorems about iterated GCD and LCM over finite sets,
+or more generally those where the operator has finite support (with neutral
+elements 0 and 1 respectively). This all fits naturally into the general
+"iterate" framework with the minor syntactic cruft arising from currying the
+two operators. New theorems:
+
+  DIVIDES_ITERATE_GCD =
+    |- !f k d.
+           FINITE k
+           ==> (d divides iterate (\m n. gcd(m,n)) k f <=>
+                (!i. i IN k ==> d divides f i))
+
+  DIVIDES_ITERATE_GCD_GEN =
+    |- !f k d.
+           d divides iterate (\m n. gcd(m,n)) k f <=>
+           FINITE {j | j IN k /\ ~(f j = 0)} ==> (!i. i IN k ==> d divides f i)
+
+  DIVIDES_ITERATE_LCM =
+    |- !f k i. FINITE k /\ i IN k ==> f i divides iterate (\m n. lcm(m,n)) k f
+
+  DIVIDES_ITERATE_LCM_GEN =
+    |- !f k i.
+           i IN k
+           ==> (f i divides iterate (\m n. lcm(m,n)) k f <=>
+                FINITE {j | j IN k /\ ~(f j = 1)} \/ f i = 1)
+
+  ITERATE_GCD_DIVIDES =
+    |- !f k i. FINITE k /\ i IN k ==> iterate (\m n. gcd(m,n)) k f divides f i
+
+  ITERATE_GCD_DIVIDES_EQ =
+    |- !f k i.
+           i IN k
+           ==> (iterate (\m n. gcd(m,n)) k f divides f i <=>
+                FINITE {j | j IN k /\ ~(f j = 0)} \/ f i = 0)
+
+  ITERATE_LCM_DIVIDES =
+    |- !f k n.
+           FINITE k
+           ==> (iterate (\m n. lcm(m,n)) k f divides n <=>
+                (!i. i IN k ==> f i divides n))
+
+  ITERATE_LCM_DIVIDES_GEN =
+    |- !f k n.
+           iterate (\m n. lcm(m,n)) k f divides n <=>
+           FINITE {j | j IN k /\ ~(f j = 1)} ==> (!i. i IN k ==> f i divides n)
+
+  MONOIDAL_GCD =
+    |- monoidal (\m n. gcd(m,n))
+
+  MONOIDAL_LCM =
+    |- monoidal (\m n. lcm(m,n))
+
+  NEUTRAL_GCD =
+    |- neutral (\m n. gcd(m,n)) = 0
+
+  NEUTRAL_LCM =
+    |- neutral (\m n. lcm(m,n)) = 1
+
+  PRIMEPOW_DIVIDES_ITERATE_LCM =
+    |- !f k p m.
+           FINITE k /\ prime p
+           ==> (p EXP m divides iterate (\m n. lcm(m,n)) k f <=>
+                m = 0 \/ (?i. i IN k /\ p EXP m divides f i))
+
+  PRIMEPOW_DIVIDES_ITERATE_LCM_GEN =
+    |- !f k p m.
+           prime p
+           ==> (p EXP m divides iterate (\m n. lcm(m,n)) k f <=>
+                m = 0 \/
+                FINITE {j | j IN k /\ ~(f j = 1)} /\
+                (?i. i IN k /\ p EXP m divides f i))
+
+  PRIME_DIVIDES_ITERATE_LCM =
+    |- !f k p.
+           FINITE k /\ prime p
+           ==> (p divides iterate (\m n. lcm(m,n)) k f <=>
+                (?i. i IN k /\ p divides f i))
+
+  PRIME_DIVIDES_ITERATE_LCM_GEN =
+    |- !f k p.
+           prime p
+           ==> (p divides iterate (\m n. lcm(m,n)) k f <=>
+                FINITE {j | j IN k /\ ~(f j = 1)} /\
+                (?i. i IN k /\ p divides f i))
+
+  PRIME_DIVIDES_LCM =
+    |- !m n p. prime p ==> (p divides lcm(m,n) <=> p divides m \/ p divides n)
+
 Fri 26th Jun 2020       Library/groups.ml
 
 Made a few miscellaneous additions to the group theory material
@@ -22474,4 +22874,3 @@ STVs, but issue a warning.
 Sun 29th Oct 95         subgoal.ml
 
 Inserted a warning into "expand" if the tactic does not change the goal state.
-

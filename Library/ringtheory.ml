@@ -2666,6 +2666,13 @@ let SUBRING_OF_SUBRING_GENERATED_EQ = prove
   REWRITE_TAC[subring_of; CONJUNCT2 SUBRING_GENERATED] THEN
   MESON_TAC[RING_CARRIER_SUBRING_GENERATED_SUBSET; SUBSET_TRANS]);;
 
+let SUBRING_GENERATED_SUPERSET = prove
+ (`!r s:A->bool.
+    subring_generated r s = r <=>
+    ring_carrier r SUBSET ring_carrier(subring_generated r s)`,
+  REWRITE_TAC[SUBRING_GENERATED_EQ; GSYM SUBSET_ANTISYM_EQ] THEN
+  REWRITE_TAC[RING_CARRIER_SUBRING_GENERATED_SUBSET]);;
+
 let FINITE_SUBRING_GENERATED = prove
  (`!r s:A->bool.
         FINITE(ring_carrier r)
@@ -4983,6 +4990,13 @@ let RING_MONOMORPHISM_BETWEEN_SUBRINGS = prove
     RING_CARRIER_SUBRING_GENERATED_SUBSET) THEN
   SET_TAC[]);;
 
+let RING_MONOMORPHISM_INTO_SUPERRING = prove
+ (`!r r' t (f:A->B).
+        ring_monomorphism(r,subring_generated r' t) f
+        ==> ring_monomorphism(r,r') f`,
+  REWRITE_TAC[ring_monomorphism; RING_HOMOMORPHISM_INTO_SUBRING_EQ_GEN] THEN
+  MESON_TAC[]);;
+
 let RING_SUM_SUBRING_GENERATED_GEN = prove
  (`!r s k (f:K->A).
       ring_sum (subring_generated r s) k f =
@@ -5128,6 +5142,15 @@ let RING_MONOMORPHISM_EPIMORPHISM = prove
   REWRITE_TAC[RING_ISOMORPHISM; ring_monomorphism; ring_epimorphism] THEN
   MESON_TAC[]);;
 
+let SUBRING_MONOMORPHISM_EPIMORPHISM = prove
+ (`!r r' s (f:A->B).
+        ring_monomorphism(r,r') f /\
+        ring_epimorphism(r,subring_generated r' s) f <=>
+        ring_isomorphism(r,subring_generated r' s) f`,
+  MESON_TAC[RING_MONOMORPHISM_EPIMORPHISM; RING_MONOMORPHISM_INTO_SUPERRING;
+            RING_HOMOMORPHISM_INTO_SUBRING; ring_monomorphism;
+            ring_epimorphism]);;
+
 let RING_ISOMORPHISM_MONOMORPHISM = prove
  (`!r r' f:A->B.
         ring_isomorphism (r,r') f <=>
@@ -5159,6 +5182,11 @@ let RING_ISOMORPHISM_IMP_EPIMORPHISM = prove
 let RING_ISOMORPHISM_IMP_HOMOMORPHISM = prove
  (`!(f:A->B) r r'. ring_isomorphism(r,r') f ==> ring_homomorphism(r,r') f`,
   SIMP_TAC[RING_ISOMORPHISM]);;
+
+let RING_AUTOMORPHISM_IMP_ENDOMORPHISM = prove
+ (`!r (f:A->A). ring_automorphism r f ==> ring_endomorphism r f`,
+  REWRITE_TAC[ring_automorphism; ring_endomorphism] THEN
+  REWRITE_TAC[RING_ISOMORPHISM_IMP_HOMOMORPHISM]);;
 
 let RING_ISOMORPHISMS_ISOMORPHISM = prove
  (`!r r' (f:A->B) g.
@@ -5192,7 +5220,7 @@ let RING_ISOMORPHISM_EQ_EPIMORPHISM_FINITE = prove
  (`!G H (f:A->B).
         FINITE(ring_carrier G) /\ FINITE(ring_carrier H) /\
         CARD(ring_carrier G) = CARD(ring_carrier H)
-        ==> (ring_isomorphism(G,H) f <=> ring_monomorphism(G,H) f)`,
+        ==> (ring_isomorphism(G,H) f <=> ring_epimorphism(G,H) f)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN
   REWRITE_TAC[RING_ISOMORPHISM_IMP_EPIMORPHISM] THEN
   SIMP_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM] THEN
