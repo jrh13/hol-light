@@ -793,25 +793,12 @@ let FINITE_INDEX_NUMSEG_SPECIAL = prove
                 s = IMAGE f (1..CARD s) /\
                 f 1 = a`,
   REPEAT STRIP_TAC THEN
-  FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [FINITE_INDEX_NUMSEG]) THEN
-  DISCH_THEN(X_CHOOSE_THEN `f:num->A` STRIP_ASSUME_TAC) THEN
-  SUBGOAL_THEN `?k. k IN 1..CARD(s:A->bool) /\ (a:A) = f k`
-  STRIP_ASSUME_TAC THENL[ASM SET_TAC[]; ALL_TAC] THEN
-  EXISTS_TAC
-   `(f:num->A) o (\j. if j = 1 then k else if j = k then 1 else j)` THEN
-  SUBGOAL_THEN `1 IN 1..CARD(s:A->bool)` ASSUME_TAC THENL
-   [REWRITE_TAC[IN_NUMSEG; LE_REFL; ARITH_RULE `1 <= x <=> ~(x = 0)`] THEN
-    ASM_SIMP_TAC[CARD_EQ_0; ARITH_EQ] THEN ASM SET_TAC[];
-    ALL_TAC] THEN
-  ASM_REWRITE_TAC[o_THM] THEN
-  CONJ_TAC THENL [ASM SET_TAC[]; ALL_TAC] THEN
-  UNDISCH_THEN `s = IMAGE (f:num->A) (1..CARD(s:A->bool))`
-   (fun th -> GEN_REWRITE_TAC LAND_CONV [th]) THEN
-  REWRITE_TAC[EXTENSION; IN_IMAGE; o_THM] THEN
-  X_GEN_TAC `b:A` THEN EQ_TAC THEN
-  DISCH_THEN(X_CHOOSE_THEN `i:num` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `if i = 1 then k else if i = k then 1 else i` THEN
-  ASM_MESON_TAC[]);;
+  MP_TAC(ISPECL [`1..CARD(s:A->bool)`; `s:A->bool`; `1`; `a:A`]
+        CARD_EQ_BIJECTIONS_SPECIAL) THEN
+  ANTS_TAC THENL [ALL_TAC; MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]] THEN
+  ASM_REWRITE_TAC[FINITE_NUMSEG; CARD_NUMSEG_1; IN_NUMSEG; LE_REFL] THEN
+  ASM_SIMP_TAC[CARD_EQ_0; ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN 
+  ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Geometric progression.                                                    *)

@@ -8,6 +8,402 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat  8th Aug 2020       Library/grouptheory.ml
+
+Added more group theory material, including various systematic technical
+lemmas for sum and product groups (permuting and restricting the indexing
+sets etc.) and a definition of finitely generated groups with some basic
+lemmas about the concept:
+
+  finitely_generated_group =
+    |- !G. finitely_generated_group G <=>
+           (?s. FINITE s /\ subgroup_generated G s = G)
+  
+  ABELIAN_SUM_GROUP =
+    |- !k G.
+           abelian_group (sum_group k G) <=>
+           (!i. i IN k ==> abelian_group (G i))
+  
+  CARD_EQ_BIJECTIONS_SPECIAL =
+    |- !s t a b.
+           FINITE s /\ FINITE t /\ CARD s = CARD t /\ a IN s /\ b IN t
+           ==> (?f g.
+                    f a = b /\
+                    g b = a /\
+                    (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+                    (!y. y IN t ==> g y IN s /\ f (g y) = y))
+  
+  CARD_LE_SUBGROUP_GENERATED =
+    |- !G s k.
+           INFINITE k /\ s <=_c k
+           ==> group_carrier (subgroup_generated G s) <=_c k
+  
+  COUNTABLE_SUBGROUP_GENERATED =
+    |- !G s.
+           COUNTABLE (group_carrier G) \/ COUNTABLE s
+           ==> COUNTABLE (group_carrier (subgroup_generated G s))
+  
+  CYCLIC_IMP_FINITELY_GENERATED_GROUP =
+    |- !G. cyclic_group G ==> finitely_generated_group G
+  
+  FINITELY_GENERATED_ABELIAN_SUBGROUP =
+    |- !G h.
+           finitely_generated_group G /\ abelian_group G /\ h subgroup_of G
+           ==> finitely_generated_group (subgroup_generated G h)
+  
+  FINITELY_GENERATED_FINITE_INDEX_SUBGROUP =
+    |- !G h.
+           finitely_generated_group G /\
+           h subgroup_of G /\
+           FINITE {right_coset G h x | x | x IN group_carrier G}
+           ==> finitely_generated_group (subgroup_generated G h)
+  
+  FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS =
+    |- !G n.
+           finitely_generated_group G
+           ==> FINITE
+               {h | h subgroup_of G /\
+                    {right_coset G h x | x | x IN group_carrier G} HAS_SIZE n}
+  
+  FINITELY_GENERATED_GROUP =
+    |- !G. finitely_generated_group G <=>
+           (?s. FINITE s /\
+                s SUBSET group_carrier G /\
+                subgroup_generated G s = G)
+  
+  FINITELY_GENERATED_GROUP_EPIMORPHIC_IMAGE =
+    |- !G H f.
+           group_epimorphism (G,H) f /\ finitely_generated_group G
+           ==> finitely_generated_group H
+  
+  FINITELY_GENERATED_GROUP_QUOTIENT_GROUP =
+    |- !G n.
+           finitely_generated_group G /\ n normal_subgroup_of G
+           ==> finitely_generated_group (quotient_group G n)
+  
+  FINITELY_GENERATED_IMP_COUNTABLE_GROUP =
+    |- !G. finitely_generated_group G ==> COUNTABLE (group_carrier G)
+  
+  FINITELY_GENERATED_PRODUCT_GROUP =
+    |- !k G.
+           finitely_generated_group (product_group k G) <=>
+           FINITE {i | i IN k /\ ~trivial_group (G i)} /\
+           (!i. i IN k ==> finitely_generated_group (G i))
+  
+  FINITELY_GENERATED_PROD_GROUP =
+    |- !G H.
+           finitely_generated_group (prod_group G H) <=>
+           finitely_generated_group G /\ finitely_generated_group H
+  
+  FINITELY_GENERATED_SUM_GROUP =
+    |- !k G.
+           finitely_generated_group (sum_group k G) <=>
+           FINITE {i | i IN k /\ ~trivial_group (G i)} /\
+           (!i. i IN k ==> finitely_generated_group (G i))
+  
+  FINITE_GROUP_ACTIONS =
+    |- !G s f.
+           finitely_generated_group G /\
+           FINITE s /\
+           (!a a'.
+                (!g x. g IN group_carrier G /\ x IN s ==> a g x = a' g x)
+                ==> f a = f a')
+           ==> FINITE {f a | group_action G s a}
+  
+  FINITE_IMAGE_GEN =
+    |- !f g s t.
+           IMAGE f s SUBSET t /\
+           FINITE t /\
+           (!x y. x IN s /\ y IN s /\ f x = f y ==> g x = g y)
+           ==> FINITE (IMAGE g s)
+  
+  FINITE_IMP_FINITELY_GENERATED_GROUP =
+    |- !G. FINITE (group_carrier G) ==> finitely_generated_group G
+  
+  GROUP_ACTIONS_EQ_ON_GENERATORS =
+    |- !G t s a a'.
+           group_action G s a /\
+           group_action G s a' /\
+           (!g x. g IN group_carrier G /\ g IN t /\ x IN s ==> a g x = a' g x)
+           ==> (!g x.
+                    g IN group_carrier (subgroup_generated G t) /\ x IN s
+                    ==> a g x = a' g x)
+  
+  GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS =
+    |- !G H s f g.
+           group_homomorphism (G,H) f /\
+           group_homomorphism (G,H) g /\
+           (!x. x IN group_carrier G /\ x IN s ==> f x = g x)
+           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> f x = g x)
+  
+  GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS_ALT =
+    |- !G H g h f.
+           group_homomorphism (G,H) f /\
+           IMAGE f (group_carrier G INTER g) SUBSET h
+           ==> group_homomorphism
+               (subgroup_generated G g,subgroup_generated H h)
+               f
+  
+  GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS_ALT =
+    |- !G H g h f f'.
+           group_isomorphisms (G,H) (f,f') /\
+           IMAGE f (group_carrier G INTER g) SUBSET h /\
+           IMAGE f' (group_carrier H INTER h) SUBSET g
+           ==> group_isomorphisms
+               (subgroup_generated G g,subgroup_generated H h)
+               (f,f')
+  
+  GROUP_ISOMORPHISMS_PRODUCT_GROUP_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> group_isomorphisms
+               (product_group (k UNION l) f,
+                prod_group (product_group k f) (product_group l f))
+               ((\f. RESTRICTION k f,RESTRICTION l f),
+                (\(f,g) x. if x IN k then f x else g x))
+  
+  GROUP_ISOMORPHISMS_SUM_GROUP_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> group_isomorphisms
+               (sum_group (k UNION l) f,
+                prod_group (sum_group k f) (sum_group l f))
+               ((\f. RESTRICTION k f,RESTRICTION l f),
+                (\(f,g) x. if x IN k then f x else g x))
+  
+  GROUP_ISOMORPHISM_EPIMORPHISM =
+    |- !G G' f.
+           group_isomorphism (G,G') f <=>
+           group_epimorphism (G,G') f /\
+           (!x y.
+                x IN group_carrier G /\ y IN group_carrier G /\ f x = f y
+                ==> x = y)
+  
+  GROUP_ISOMORPHISM_EPIMORPHISM_ALT =
+    |- !G G' f.
+           group_isomorphism (G,G') f <=>
+           group_epimorphism (G,G') f /\
+           (!x. x IN group_carrier G /\ f x = group_id G' ==> x = group_id G)
+  
+  GROUP_ISOMORPHISM_PRODUCT_GROUP_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> group_isomorphism
+               (product_group (k UNION l) f,
+                prod_group (product_group k f) (product_group l f))
+               (\f. RESTRICTION k f,RESTRICTION l f)
+  
+  GROUP_ISOMORPHISM_PRODUCT_PROJECTION =
+    |- !G k. group_isomorphism (product_group {k} G,G k) (\x. x k)
+  
+  GROUP_ISOMORPHISM_SUM_GROUP_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> group_isomorphism
+               (sum_group (k UNION l) f,
+                prod_group (sum_group k f) (sum_group l f))
+               (\f. RESTRICTION k f,RESTRICTION l f)
+  
+  GROUP_ISOMORPHISM_SUM_PROJECTION =
+    |- !G k. group_isomorphism (sum_group {k} G,G k) (\x. x k)
+  
+  GROUP_PRODUCT_INJECTION =
+    |- !k G a i.
+           RESTRICTION k (\j. if j = i then a else group_id (G j)) IN
+           group_carrier (product_group k G) <=>
+           i IN k ==> a IN group_carrier (G i)
+  
+  GROUP_SUM_INJECTION =
+    |- !k G a i.
+           RESTRICTION k (\j. if j = i then a else group_id (G j)) IN
+           group_carrier (sum_group k G) <=>
+           i IN k ==> a IN group_carrier (G i)
+  
+  HAS_SIZE_LEFT_RIGHT_COSETS =
+    |- !G h.
+           h subgroup_of G
+           ==> ({left_coset G x h | x | x IN group_carrier G} HAS_SIZE n <=>
+                {right_coset G h x | x | x IN group_carrier G} HAS_SIZE n)
+  
+  ISOMORPHIC_COPY_OF_GROUP =
+    |- !G s.
+           (?G'. group_carrier G' = s /\ G isomorphic_group G') <=>
+           group_carrier G =_c s
+  
+  ISOMORPHIC_GROUP_FINITE_GENERATION =
+    |- !G H.
+           G isomorphic_group H
+           ==> (finitely_generated_group G <=> finitely_generated_group H)
+  
+  ISOMORPHIC_GROUP_TORSION =
+    |- !P G H.
+           G isomorphic_group H
+           ==> ((!x. x IN group_carrier G ==> P (group_element_order G x)) <=>
+                (!y. y IN group_carrier H ==> P (group_element_order H y)))
+  
+  ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS =
+    |- !s G t H f g.
+           (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+           (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
+           (!i. i IN s ==> G i isomorphic_group H (f i))
+           ==> product_group s G isomorphic_group product_group t H
+  
+  ISOMORPHIC_PRODUCT_GROUP_INSERT =
+    |- !f i k.
+           ~(i IN k)
+           ==> product_group (i INSERT k) f isomorphic_group
+               prod_group (f i) (product_group k f)
+  
+  ISOMORPHIC_PRODUCT_GROUP_SING =
+    |- !G k. product_group {k} G isomorphic_group G k
+  
+  ISOMORPHIC_PRODUCT_GROUP_SUPPORT =
+    |- !k G.
+           product_group {i | i IN k /\ ~trivial_group (G i)} G isomorphic_group
+           product_group k G
+  
+  ISOMORPHIC_PRODUCT_GROUP_SYMDIFF =
+    |- !k l G.
+           (!i. i IN k DIFF l UNION l DIFF k ==> trivial_group (G i))
+           ==> product_group k G isomorphic_group product_group l G
+  
+  ISOMORPHIC_SUM_GROUP_BIJECTIONS =
+    |- !s G t H f g.
+           (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+           (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
+           (!i. i IN s ==> G i isomorphic_group H (f i))
+           ==> sum_group s G isomorphic_group sum_group t H
+  
+  ISOMORPHIC_SUM_GROUP_DISJOINT_UNION =
+    |- !f k l.
+           DISJOINT k l
+           ==> sum_group (k UNION l) f isomorphic_group
+               prod_group (sum_group k f) (sum_group l f)
+  
+  ISOMORPHIC_SUM_GROUP_INSERT =
+    |- !f i k.
+           ~(i IN k)
+           ==> sum_group (i INSERT k) f isomorphic_group
+               prod_group (f i) (sum_group k f)
+  
+  ISOMORPHIC_SUM_GROUP_SING =
+    |- !G k. sum_group {k} G isomorphic_group G k
+  
+  ISOMORPHIC_SUM_GROUP_SUPPORT =
+    |- !k G.
+           sum_group {i | i IN k /\ ~trivial_group (G i)} G isomorphic_group
+           sum_group k G
+  
+  ISOMORPHIC_SUM_GROUP_SYMDIFF =
+    |- !k l G.
+           (!i. i IN k DIFF l UNION l DIFF k ==> trivial_group (G i))
+           ==> sum_group k G isomorphic_group sum_group l G
+  
+  SCHREIER_TRANSVERSAL_LEMMA =
+    |- !G h s t.
+           h subgroup_of G /\
+           s SUBSET group_carrier G /\
+           subgroup_generated G s = G /\
+           (!x. x IN s ==> group_inv G x IN s) /\
+           t SUBSET group_carrier G /\
+           UNIONS {right_coset G h x | x IN t} = group_carrier G /\
+           t INTER h SUBSET {group_id G}
+           ==> group_carrier
+               (subgroup_generated G
+               (h INTER group_setmul G t (group_setmul G s (group_setinv G t)))) =
+               h
+  
+  SUBGROUPS_GENERATED_EQ =
+    |- !G s t.
+           s SUBSET group_carrier (subgroup_generated G t) /\
+           t SUBSET group_carrier (subgroup_generated G s)
+           ==> subgroup_generated G s = subgroup_generated G t
+  
+  SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED_IDEMPOT =
+    |- !G s t.
+           s SUBSET t
+           ==> subgroup_generated (subgroup_generated G t)
+               (group_carrier (subgroup_generated G s)) =
+               subgroup_generated G s
+  
+  SUBGROUP_GENERATED_INDUCT_ALT =
+    |- !G P s.
+           P (group_id G) /\
+           (!x. x IN group_carrier G /\ x IN s ==> P x /\ P (group_inv G x)) /\
+           (!x y.
+                x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
+                ==> P (group_mul G x y))
+           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
+  
+  SUBGROUP_GENERATED_INDUCT_LEFT =
+    |- !G P s.
+           P (group_id G) /\
+           (!x y.
+                x IN group_carrier G /\ x IN s /\ y IN group_carrier G /\ P y
+                ==> P (group_mul G x y) /\ P (group_mul G (group_inv G x) y))
+           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
+  
+  SUBGROUP_GENERATED_INDUCT_STRONG =
+    |- !G P s.
+           (!x. x IN group_carrier G /\ x IN s ==> P x) /\
+           P (group_id G) /\
+           (!x. x IN group_carrier G /\ P x ==> P (group_inv G x)) /\
+           (!x y.
+                x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
+                ==> P (group_mul G x y))
+           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
+  
+  SUBGROUP_GENERATED_UNION =
+    |- !G s t.
+           subgroup_generated G
+           (group_carrier (subgroup_generated G s) UNION
+            group_carrier (subgroup_generated G t)) =
+           subgroup_generated G (s UNION t)
+  
+  SUBGROUP_GENERATED_UNION_LEFT =
+    |- !G s t.
+           subgroup_generated G
+           (group_carrier (subgroup_generated G s) UNION t) =
+           subgroup_generated G (s UNION t)
+  
+  SUBGROUP_GENERATED_UNION_RIGHT =
+    |- !G s t.
+           subgroup_generated G
+           (s UNION group_carrier (subgroup_generated G t)) =
+           subgroup_generated G (s UNION t)
+  
+  SUBSET_CARRIER_SUBGROUP_GENERATED =
+    |- !G s t.
+           s SUBSET group_carrier G /\ s SUBSET t
+           ==> s SUBSET group_carrier (subgroup_generated G t)
+  
+  TRIVIAL_IMP_FINITELY_GENERATED_GROUP =
+    |- !G. trivial_group G ==> finitely_generated_group G
+
+Thu  6th Aug 2020       sets.ml, iterate.ml, Multivariate/misc.ml
+
+Added a couple more finite set lemmas
+
+  FINITE_IMAGE_GEN =
+    |- !f g s t.
+           IMAGE f s SUBSET t /\
+           FINITE t /\
+           (!x y. x IN s /\ y IN s /\ f x = f y ==> g x = g y)
+           ==> FINITE (IMAGE g s)
+
+  CARD_EQ_BIJECTIONS_SPECIAL =
+    |- !s t a b.
+           FINITE s /\ FINITE t /\ CARD s = CARD t /\ a IN s /\ b IN t
+           ==> (?f g.
+                    f a = b /\
+                    g b = a /\
+                    (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+                    (!y. y IN t ==> g y IN s /\ f (g y) = y))
+
+Also cleaned up proofs of FINITE_INDEX_NUMSEG and FINITE_INDEX_NUMSEG_SPECIAL
+elsewhere, since they are after all trivial instances of
+CARD_EQ_BIJECTIONS and CARD_EQ_BIJECTIONS_SPECIAL.
+
 Fri 24th Jul 2020       Library/ringtheory.ml
 
 Added a few new basic ring theorems, keeping things more in step with the
@@ -279,7 +675,7 @@ new "pgroup" constant explicitly:
           pgroup {p} G
           ==> (CARD {x | x IN s /\ (!g. g IN group_carrier G ==> a g x = x)} ==
                CARD s) (mod p)
-    
+
   PGROUP_ACTION_FIXPOINT =
     |- !G s a p.
            group_action G s a /\
@@ -289,7 +685,7 @@ new "pgroup" constant explicitly:
            FINITE s /\
            ~(p divides CARD s)
            ==> (?x. x IN s /\ (!g. g IN group_carrier G ==> a g x = x))
-    
+
   PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF =
     |- !G p h.
            prime p /\
@@ -298,7 +694,7 @@ new "pgroup" constant explicitly:
            h subgroup_of G /\
            (!h'. h' subgroup_of G /\ h PSUBSET h' ==> h' = group_carrier G)
            ==> h normal_subgroup_of G
-    
+
   PGROUP_NONTRIVIAL_CENTRE_GEN =
     |- !G n p.
            prime p /\
@@ -308,7 +704,7 @@ new "pgroup" constant explicitly:
            ~(n = {group_id G})
            ==> {group_id G} PSUBSET
                group_centralizer G (group_carrier G) INTER n
-    
+
   PGROUP_SUBGROUP_PSUBSET_NORMALIZER =
     |- !G p h.
            prime p /\
@@ -317,7 +713,7 @@ new "pgroup" constant explicitly:
            h subgroup_of G /\
            ~(h = group_carrier G)
            ==> h PSUBSET group_normalizer G h
-    
+
 Thu 23rd Jul 2020       Library/prime.ml
 
 Added a basic suite of theorems about iterated GCD and LCM over finite sets,

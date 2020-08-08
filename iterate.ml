@@ -113,31 +113,21 @@ let NUMSEG_CLAUSES = prove
 
 let FINITE_INDEX_NUMSEG = prove
  (`!s:A->bool.
-        FINITE s =
-        ?f. (!i j. i IN (1..CARD(s)) /\ j IN (1..CARD(s)) /\ (f i = f j)
-                   ==> (i = j)) /\
-            (s = IMAGE f (1..CARD(s)))`,
-  GEN_TAC THEN EQ_TAC THENL
-   [ALL_TAC; MESON_TAC[FINITE_NUMSEG; FINITE_IMAGE]] THEN
-  DISCH_TAC THEN
-  MP_TAC(ISPECL [`s:A->bool`; `CARD(s:A->bool)`] HAS_SIZE_INDEX) THEN
-  ASM_REWRITE_TAC[HAS_SIZE] THEN
-  DISCH_THEN(X_CHOOSE_THEN `f:num->A` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC `\n. f(n - 1):A` THEN
-  ASM_REWRITE_TAC[EXTENSION; IN_IMAGE; IN_NUMSEG] THEN
-  CONJ_TAC THENL
-   [REWRITE_TAC[ARITH_RULE `1 <= i /\ i <= n <=> ~(i = 0) /\ i - 1 < n`] THEN
-    ASM_MESON_TAC[ARITH_RULE
-     `~(x = 0) /\ ~(y = 0) /\ (x - 1 = y - 1) ==> (x = y)`];
-    ASM_MESON_TAC
-     [ARITH_RULE `m < C ==> (m = (m + 1) - 1) /\ 1 <= m + 1 /\ m + 1 <= C`;
-      ARITH_RULE `1 <= i /\ i <= n <=> ~(i = 0) /\ i - 1 < n`]]);;
+        FINITE s <=>
+        ?f. (!i j. i IN 1..CARD s /\ j IN 1..CARD s /\ f i = f j ==> i = j) /\
+            s = IMAGE f (1..CARD s)`,
+  GEN_TAC THEN 
+  EQ_TAC THENL [DISCH_TAC; MESON_TAC[FINITE_IMAGE; FINITE_NUMSEG]] THEN
+  MP_TAC(ISPECL [`1..CARD(s:A->bool)`; `s:A->bool`] 
+        CARD_EQ_BIJECTIONS) THEN
+  ASM_REWRITE_TAC[FINITE_NUMSEG; CARD_NUMSEG_1] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;
 
 let FINITE_INDEX_NUMBERS = prove
  (`!s:A->bool.
-        FINITE s =
-         ?k:num->bool f. (!i j. i IN k /\ j IN k /\ (f i = f j) ==> (i = j)) /\
-                         FINITE k /\ (s = IMAGE f k)`,
+        FINITE s <=>
+        ?k:num->bool f. (!i j. i IN k /\ j IN k /\ f i = f j ==> i = j) /\
+                        FINITE k /\ s = IMAGE f k`,
   MESON_TAC[FINITE_INDEX_NUMSEG; FINITE_NUMSEG; FINITE_IMAGE]);;
 
 let INTER_NUMSEG = prove

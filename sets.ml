@@ -1462,19 +1462,32 @@ let FINITE_FINITE_PREIMAGE = prove
   REWRITE_TAC[IN_UNIV]);;
 
 let FINITE_IMAGE_INJ_EQ = prove
- (`!(f:A->B) s. (!x y. x IN s /\ y IN s /\ (f(x) = f(y)) ==> (x = y))
-                ==> (FINITE(IMAGE f s) <=> FINITE s)`,
+ (`!(f:A->B) s.
+        (!x y. x IN s /\ y IN s /\ f(x) = f(y) ==> x = y)
+        ==> (FINITE(IMAGE f s) <=> FINITE s)`,
   REPEAT STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC[FINITE_IMAGE] THEN
   POP_ASSUM MP_TAC THEN REWRITE_TAC[IMP_IMP] THEN
   DISCH_THEN(MP_TAC o MATCH_MP FINITE_IMAGE_INJ_GENERAL) THEN
   MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN SET_TAC[]);;
 
 let FINITE_IMAGE_INJ = prove
- (`!(f:A->B) A. (!x y. (f(x) = f(y)) ==> (x = y)) /\
-                FINITE A ==> FINITE {x | f(x) IN A}`,
+ (`!(f:A->B) A.
+        (!x y. f(x) = f(y) ==> x = y) /\ FINITE A
+        ==> FINITE {x | f(x) IN A}`,
   REPEAT GEN_TAC THEN
   MP_TAC(SPECL [`f:A->B`; `A:B->bool`; `UNIV:A->bool`]
     FINITE_IMAGE_INJ_GENERAL) THEN REWRITE_TAC[IN_UNIV]);;
+
+let FINITE_IMAGE_GEN = prove
+ (`!(f:A->B) (g:A->C) s t.
+        IMAGE f s SUBSET t /\ FINITE t /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> g x = g y)
+        ==> FINITE(IMAGE g s)`,
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [FUNCTION_FACTORS_LEFT_GEN]) THEN
+  DISCH_THEN(X_CHOOSE_TAC `h:B->C`) THEN
+  SUBGOAL_THEN `IMAGE g s = IMAGE (h:B->C) (IMAGE (f:A->B) s)` SUBST1_TAC THENL
+   [ASM SET_TAC[]; ASM_MESON_TAC[FINITE_IMAGE; FINITE_SUBSET]]);;
 
 let INFINITE_IMAGE = prove
  (`!f:A->B s.
@@ -4386,6 +4399,21 @@ let CARD_EQ_BIJECTIONS = prove
   MATCH_MP_TAC MONO_EXISTS THEN REWRITE_TAC[SURJECTIVE_ON_RIGHT_INVERSE] THEN
   GEN_TAC THEN REWRITE_TAC[LEFT_AND_EXISTS_THM; RIGHT_AND_EXISTS_THM] THEN
   MATCH_MP_TAC MONO_EXISTS THEN MESON_TAC[]);;
+
+let CARD_EQ_BIJECTIONS_SPECIAL = prove
+ (`!s t (a:A) (b:B).
+         FINITE s /\ FINITE t /\ CARD s = CARD t /\ a IN s /\ b IN t
+         ==> ?f g. f a = b /\ g b = a /\
+                   (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+                   (!y. y IN t ==> g y IN s /\ f (g y) = y)`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`s DELETE (a:A)`; `t DELETE (b:B)`]
+        CARD_EQ_BIJECTIONS) THEN
+  ASM_SIMP_TAC[FINITE_DELETE; CARD_DELETE; IN_DELETE; LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`f:A->B`; `g:B->A`] THEN STRIP_TAC THEN
+  EXISTS_TAC `\x. if x = a then b else (f:A->B) x` THEN
+  EXISTS_TAC `\y. if y = b then a else (g:B->A) y` THEN
+  ASM_MESON_TAC[]);;
 
 let BIJECTIONS_HAS_SIZE = prove
  (`!s t f:A->B g.
