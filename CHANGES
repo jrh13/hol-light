@@ -8,6 +8,407 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 15th Aug 2020       Library/grouptheory.ml
+
+Added various group theory material including some boring but useful things
+about iterated operations, leading up to one form of structure theorem
+for Abelian groups, expressing torsion (of an) Abelian group, not necessarily
+finitely generated, as a sum of p-groups over all primes p, for example in
+TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
+
+  ABELIAN_GROUP_SUM_INV =
+    |- !G k f.
+           abelian_group G /\
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G)
+           ==> group_sum G k (\i. group_inv G (f i)) =
+               group_inv G (group_sum G k f)
+
+  ABELIAN_GROUP_SUM_MUL =
+    |- !G k f g.
+           abelian_group G /\
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           FINITE {i | i IN k /\ ~(g i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G /\ g i IN group_carrier G)
+           ==> group_sum G k (\i. group_mul G (f i) (g i)) =
+               group_mul G (group_sum G k f) (group_sum G k g)
+
+  ABELIAN_GROUP_SUM_POW =
+    |- !G k f n.
+           abelian_group G /\
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G)
+           ==> group_sum G k (\i. group_pow G (f i) n) =
+               group_pow G (group_sum G k f) n
+
+  ABELIAN_GROUP_SUM_ZPOW =
+    |- !G k f n.
+           abelian_group G /\
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G)
+           ==> group_sum G k (\i. group_zpow G (f i) n) =
+               group_zpow G (group_sum G k f) n
+
+  ABELIAN_GROUP_TORSION_ISOMORPHISM =
+    |- !G. abelian_group G
+           ==> group_isomorphism
+               (sum_group {p | prime p}
+                (\p. subgroup_generated G
+                     {x | x IN group_carrier G /\
+                          (?k. group_element_order G x = p EXP k)}),
+                subgroup_generated G
+                {x | x IN group_carrier G /\ ~(group_element_order G x = 0)})
+               (group_sum G {p | prime p})
+
+  ABELIAN_GROUP_TORSION_STRUCTURE =
+    |- !G. abelian_group G
+           ==> subgroup_generated G
+               {x | x IN group_carrier G /\ ~(group_element_order G x = 0)} isomorphic_group
+               sum_group {p | prime p}
+               (\p. subgroup_generated G
+                    {x | x IN group_carrier G /\
+                         (?k. group_element_order G x = p EXP k)})
+
+  CARRIER_SUBGROUP_GENERATED_ALT =
+    |- !G s.
+           abelian_group G /\ s SUBSET group_carrier G
+           ==> group_carrier (subgroup_generated G s) =
+               {group_sum G s (\x. group_zpow G x (n x)) | n | FINITE
+                                                               {x | x IN s /\
+                                                                    ~(n x = &0)}}
+
+  CARRIER_SUBGROUP_GENERATED_EXPLICIT =
+    |- !G s.
+           abelian_group G /\ s SUBSET group_carrier G
+           ==> group_carrier (subgroup_generated G s) =
+               {group_sum G t (\x. group_zpow G x (n x)) | t,n | FINITE t /\
+                                                                 t SUBSET s}
+
+  CARRIER_SUBGROUP_GENERATED_FINITE =
+    |- !G s.
+           abelian_group G /\ FINITE s /\ s SUBSET group_carrier G
+           ==> group_carrier (subgroup_generated G s) =
+               {group_sum G s (\x. group_zpow G x (n x)) | n IN (:A->int)}
+
+  CARRIER_SUBGROUP_GENERATED_UNIONS =
+    |- !G u.
+           abelian_group G
+           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+               IMAGE (group_sum G u)
+               (group_carrier (sum_group u (\i. subgroup_generated G i)))
+
+  CARRIER_SUBGROUP_GENERATED_UNIONS_ALT =
+    |- !G u.
+           abelian_group G
+           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+               {group_sum G u f | f | (!s. s IN u
+                                           ==> f s IN
+                                               group_carrier
+                                               (subgroup_generated G s)) /\
+                                      FINITE
+                                      {s | s IN u /\ ~(f s = group_id G)}}
+
+  CARRIER_SUBGROUP_GENERATED_UNIONS_EXPLICIT =
+    |- !G u.
+           abelian_group G
+           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+               {group_sum G t f | t,f | FINITE t /\
+                                        t SUBSET u /\
+                                        (!s. s IN t
+                                             ==> f s IN
+                                                 group_carrier
+                                                 (subgroup_generated G s))}
+
+  CARRIER_SUBGROUP_GENERATED_UNIONS_FINITE =
+    |- !G u.
+           abelian_group G /\ FINITE u
+           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+               {group_sum G u f | f | !s. s IN u
+                                          ==> f s IN
+                                              group_carrier
+                                              (subgroup_generated G s)}
+
+  FINITE_ABELIAN_GROUP_STRUCTURE =
+    |- !G. abelian_group G /\ FINITE (group_carrier G)
+           ==> G isomorphic_group
+               sum_group {p | prime p /\ p divides CARD (group_carrier G)}
+               (\p. subgroup_generated G
+                    {x | x IN group_carrier G /\
+                         (?k. group_element_order G x = p EXP k)})
+
+  FINITE_ABELIAN_GROUP_STRUCTURE_ALT =
+    |- !G. abelian_group G /\ FINITE (group_carrier G)
+           ==> G isomorphic_group
+               product_group {p | prime p /\ p divides CARD (group_carrier G)}
+               (\p. subgroup_generated G
+                    {x | x IN group_carrier G /\
+                         (?k. group_element_order G x = p EXP k)})
+
+  GROUP_ELEMENT_ORDER_COPRIME_DECOMP =
+    |- !G z m n.
+           coprime (m,n) /\
+           z IN group_carrier G /\
+           group_element_order G z = m * n
+           ==> (?x y.
+                    x IN group_carrier G /\
+                    y IN group_carrier G /\
+                    group_mul G x y = z /\
+                    group_mul G y x = z /\
+                    group_element_order G x = m /\
+                    group_element_order G y = n)
+
+  GROUP_ELEMENT_ORDER_COPRIME_DECOMP_DIVIDES =
+    |- !G z m n.
+           coprime (m,n) /\
+           z IN group_carrier G /\
+           group_element_order G z divides m * n
+           ==> (?x y.
+                    x IN group_carrier G /\
+                    y IN group_carrier G /\
+                    group_mul G x y = z /\
+                    group_mul G y x = z /\
+                    group_element_order G x divides m /\
+                    group_element_order G y divides n)
+
+  GROUP_ELEMENT_ORDER_COPRIME_DECOMP_EXPLICIT =
+    |- !G x m n.
+           coprime (m,n) /\
+           x IN group_carrier G /\
+           group_element_order G x = m * n
+           ==> (?r s.
+                    group_element_order G (group_zpow G x r) = m /\
+                    group_element_order G (group_zpow G x s) = n /\
+                    group_mul G (group_zpow G x r) (group_zpow G x s) = x)
+
+  GROUP_ELEMENT_ORDER_COPRIME_DECOMP_UNIQUE =
+    |- !G z m n.
+           coprime (m,n) /\
+           z IN group_carrier G /\
+           group_element_order G z = m * n
+           ==> (?!(x,y). x IN group_carrier G /\
+                         y IN group_carrier G /\
+                         group_mul G x y = z /\
+                         group_mul G y x = z /\
+                         group_element_order G x = m /\
+                         group_element_order G y = n)
+
+  GROUP_ELEMENT_ORDER_PRIMEPOW_DECOMP =
+    |- !G z p.
+           prime p /\ z IN group_carrier G /\ ~(group_element_order G z = 0)
+           ==> (?x y.
+                    x IN group_carrier G /\
+                    y IN group_carrier G /\
+                    group_mul G x y = z /\
+                    group_mul G y x = z /\
+                    (?k. group_element_order G x = p EXP k) /\
+                    coprime (p,group_element_order G y))
+
+  GROUP_ELEMENT_ORDER_SUM_GROUP_EQ_0 =
+    |- !G k x.
+           x IN group_carrier (sum_group k G)
+           ==> (group_element_order (sum_group k G) x = 0 <=>
+                (?i. i IN k /\ group_element_order (G i) (x i) = 0))
+
+  GROUP_POW_COPRIME_EQ_ID =
+    |- !G x m n.
+           x IN group_carrier G /\ coprime (m,n)
+           ==> (group_pow G x m = group_id G /\ group_pow G x n = group_id G <=>
+                x = group_id G)
+
+  GROUP_POW_EQ_ID_DECOMP =
+    |- !G z m n.
+           coprime (m,n) /\
+           z IN group_carrier G /\
+           group_pow G z (m * n) = group_id G
+           ==> (?x y.
+                    x IN group_carrier G /\
+                    y IN group_carrier G /\
+                    group_mul G x y = z /\
+                    group_mul G y x = z /\
+                    group_pow G x m = group_id G /\
+                    group_pow G y n = group_id G)
+
+  GROUP_POW_GCD_EQ_ID =
+    |- !G x m n.
+           x IN group_carrier G
+           ==> (group_pow G x (gcd (m,n)) = group_id G <=>
+                group_pow G x m = group_id G /\ group_pow G x n = group_id G)
+
+  GROUP_PRODUCT_EQ_ID =
+    |- !G (<<=) s f.
+           (!i. i IN s ==> f i = group_id G)
+           ==> group_product G (<<=) s f = group_id G
+
+  GROUP_PRODUCT_ID =
+    |- !G (<<=) s. group_product G (<<=) s (\x. group_id G) = group_id G
+
+  GROUP_PRODUCT_RESTRICT_SET =
+    |- !G (<<=) P s f.
+           group_product G (<<=) {x | x IN s /\ P x} f =
+           group_product G (<<=) s (\x. if P x then f x else group_id G)
+
+  GROUP_PRODUCT_SUPERSET =
+    |- !G (<<=) s t f.
+           t SUBSET s /\ (!x. x IN s /\ ~(x IN t) ==> f x = group_id G)
+           ==> group_product G (<<=) s f = group_product G (<<=) t f
+
+  GROUP_SUM_EQ_ID =
+    |- !G s f.
+           (!i. i IN s ==> f i = group_id G) ==> group_sum G s f = group_id G
+
+  GROUP_SUM_ID =
+    |- !G s. group_sum G s (\x. group_id G) = group_id G
+
+  GROUP_SUM_IMAGE =
+    |- !G f g s.
+           abelian_group G /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
+           ==> group_sum G (IMAGE f s) g = group_sum G s (g o f)
+
+  GROUP_SUM_INV =
+    |- !G k f.
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G) /\
+           pairwise (\i j. group_mul G (f i) (f j) = group_mul G (f j) (f i)) k
+           ==> group_sum G k (\i. group_inv G (f i)) =
+               group_inv G (group_sum G k f)
+
+  GROUP_SUM_POW =
+    |- !G k f n.
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G) /\
+           pairwise (\i j. group_mul G (f i) (f j) = group_mul G (f j) (f i)) k
+           ==> group_sum G k (\i. group_pow G (f i) n) =
+               group_pow G (group_sum G k f) n
+
+  GROUP_SUM_RESTRICT_SET =
+    |- !G P s f.
+           group_sum G {x | x IN s /\ P x} f =
+           group_sum G s (\x. if P x then f x else group_id G)
+
+  GROUP_SUM_SUPERSET =
+    |- !G s t f.
+           t SUBSET s /\ (!x. x IN s /\ ~(x IN t) ==> f x = group_id G)
+           ==> group_sum G s f = group_sum G t f
+
+  GROUP_SUM_ZPOW =
+    |- !G k f n.
+           FINITE {i | i IN k /\ ~(f i = group_id G)} /\
+           (!i. i IN k ==> f i IN group_carrier G) /\
+           pairwise (\i j. group_mul G (f i) (f j) = group_mul G (f j) (f i)) k
+           ==> group_sum G k (\i. group_zpow G (f i) n) =
+               group_zpow G (group_sum G k f) n
+
+  PGROUP_PRIME_TORSION =
+    |- !G p.
+           abelian_group G /\ prime p
+           ==> pgroup {p}
+               (subgroup_generated G
+               {x | x IN group_carrier G /\
+                    (?k. group_element_order G x = p EXP k)})
+
+  PGROUP_SUBSET_PRIME_TORSION =
+    |- !G p s.
+           prime p /\
+           s SUBSET group_carrier G /\
+           pgroup {p} (subgroup_generated G s)
+           ==> s SUBSET
+               {x | x IN group_carrier G /\
+                    (?k. group_element_order G x = p EXP k)}
+
+  SUBGROUP_GENERATED_UNIONS_PRIME_TORSION =
+    |- !G P.
+           subgroup_generated G
+           (UNIONS
+           {{x | x IN group_carrier G /\
+                 (?k. group_element_order G x = p EXP k)} | prime p /\ P p}) =
+           subgroup_generated G
+           {x | x IN group_carrier G /\
+                ~(group_element_order G x = 0) /\
+                (!p. prime p /\ p divides group_element_order G x ==> P p)}
+
+  SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FINITE =
+    |- !G P.
+           FINITE {p | prime p /\ P p}
+           ==> subgroup_generated G
+               (UNIONS
+               {{x | x IN group_carrier G /\
+                     (?k. group_element_order G x = p EXP k)} | prime p /\ P p}) =
+               subgroup_generated G
+               {x | x IN group_carrier G /\
+                    (!p. prime p /\ p divides group_element_order G x ==> P p)}
+
+  SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FULL =
+    |- !G. subgroup_generated G
+           (UNIONS
+           {{x | x IN group_carrier G /\
+                 (?k. group_element_order G x = p EXP k)} | prime p}) =
+           subgroup_generated G
+           {x | x IN group_carrier G /\ ~(group_element_order G x = 0)}
+
+  TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS =
+    |- !G. abelian_group G
+           ==> ((!x. x IN group_carrier G ==> ~(group_element_order G x = 0)) <=>
+                (?H. (!p. prime p ==> pgroup {p} (H p)) /\
+                     G isomorphic_group sum_group {p | prime p} H))
+
+  TORSION_ABELIAN_GROUP_ISOMORPHISM =
+    |- !G. abelian_group G /\
+           (!x. x IN group_carrier G ==> ~(group_element_order G x = 0))
+           ==> group_isomorphism
+               (sum_group {p | prime p}
+                (\p. subgroup_generated G
+                     {x | x IN group_carrier G /\
+                          (?k. group_element_order G x = p EXP k)}),
+                G)
+               (group_sum G {p | prime p})
+
+  TORSION_ABELIAN_GROUP_STRUCTURE =
+    |- !G. abelian_group G /\
+           (!x. x IN group_carrier G ==> ~(group_element_order G x = 0))
+           ==> G isomorphic_group
+               sum_group {p | prime p}
+               (\p. subgroup_generated G
+                    {x | x IN group_carrier G /\
+                         (?k. group_element_order G x = p EXP k)})
+
+Sun  9th Aug 2020       Library/prime.ml
+
+Added a simple suite of theorems about where iterated GCDs and LCMs collapse
+to 0 or 1 (plus one for binary LCM and 1, which was previously missing):
+
+  ITERATE_GCD_EQ_0 =
+    |- !k f.
+           FINITE k
+           ==> (iterate (\m n. gcd(m,n)) k f = 0 <=> (!j. j IN k ==> f j = 0))
+
+  ITERATE_GCD_EQ_0_GEN =
+    |- !k f.
+           iterate (\m n. gcd(m,n)) k f = 0 <=>
+           FINITE {j | j IN k /\ ~(f j = 0)} ==> (!j. j IN k ==> f j = 0)
+
+  ITERATE_LCM_EQ_0 =
+    |- !k f.
+           FINITE k
+           ==> (iterate (\m n. lcm(m,n)) k f = 0 <=> (?j. j IN k /\ f j = 0))
+
+  ITERATE_LCM_EQ_0_GEN =
+    |- !k f.
+           iterate (\m n. lcm(m,n)) k f = 0 <=>
+           FINITE {j | j IN k /\ ~(f j = 1)} /\ (?j. j IN k /\ f j = 0)
+
+  ITERATE_LCM_EQ_1 =
+    |- !k f.
+           FINITE k
+           ==> (iterate (\m n. lcm(m,n)) k f = 1 <=> (!j. j IN k ==> f j = 1))
+
+  ITERATE_LCM_EQ_1_GEN =
+    |- !k f.
+           iterate (\m n. lcm(m,n)) k f = 1 <=>
+           FINITE {j | j IN k /\ ~(f j = 1)} ==> (!j. j IN k ==> f j = 1)
+
+  LCM_EQ_1 =
+    |- !m n. lcm(m,n) = 1 <=> m = 1 /\ n = 1
+
 Sat  8th Aug 2020       Library/grouptheory.ml
 
 Added more group theory material, including various systematic technical
@@ -18,12 +419,12 @@ lemmas about the concept:
   finitely_generated_group =
     |- !G. finitely_generated_group G <=>
            (?s. FINITE s /\ subgroup_generated G s = G)
-  
+
   ABELIAN_SUM_GROUP =
     |- !k G.
            abelian_group (sum_group k G) <=>
            (!i. i IN k ==> abelian_group (G i))
-  
+
   CARD_EQ_BIJECTIONS_SPECIAL =
     |- !s t a b.
            FINITE s /\ FINITE t /\ CARD s = CARD t /\ a IN s /\ b IN t
@@ -32,75 +433,75 @@ lemmas about the concept:
                     g b = a /\
                     (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
                     (!y. y IN t ==> g y IN s /\ f (g y) = y))
-  
+
   CARD_LE_SUBGROUP_GENERATED =
     |- !G s k.
            INFINITE k /\ s <=_c k
            ==> group_carrier (subgroup_generated G s) <=_c k
-  
+
   COUNTABLE_SUBGROUP_GENERATED =
     |- !G s.
            COUNTABLE (group_carrier G) \/ COUNTABLE s
            ==> COUNTABLE (group_carrier (subgroup_generated G s))
-  
+
   CYCLIC_IMP_FINITELY_GENERATED_GROUP =
     |- !G. cyclic_group G ==> finitely_generated_group G
-  
+
   FINITELY_GENERATED_ABELIAN_SUBGROUP =
     |- !G h.
            finitely_generated_group G /\ abelian_group G /\ h subgroup_of G
            ==> finitely_generated_group (subgroup_generated G h)
-  
+
   FINITELY_GENERATED_FINITE_INDEX_SUBGROUP =
     |- !G h.
            finitely_generated_group G /\
            h subgroup_of G /\
            FINITE {right_coset G h x | x | x IN group_carrier G}
            ==> finitely_generated_group (subgroup_generated G h)
-  
+
   FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS =
     |- !G n.
            finitely_generated_group G
            ==> FINITE
                {h | h subgroup_of G /\
                     {right_coset G h x | x | x IN group_carrier G} HAS_SIZE n}
-  
+
   FINITELY_GENERATED_GROUP =
     |- !G. finitely_generated_group G <=>
            (?s. FINITE s /\
                 s SUBSET group_carrier G /\
                 subgroup_generated G s = G)
-  
+
   FINITELY_GENERATED_GROUP_EPIMORPHIC_IMAGE =
     |- !G H f.
            group_epimorphism (G,H) f /\ finitely_generated_group G
            ==> finitely_generated_group H
-  
+
   FINITELY_GENERATED_GROUP_QUOTIENT_GROUP =
     |- !G n.
            finitely_generated_group G /\ n normal_subgroup_of G
            ==> finitely_generated_group (quotient_group G n)
-  
+
   FINITELY_GENERATED_IMP_COUNTABLE_GROUP =
     |- !G. finitely_generated_group G ==> COUNTABLE (group_carrier G)
-  
+
   FINITELY_GENERATED_PRODUCT_GROUP =
     |- !k G.
            finitely_generated_group (product_group k G) <=>
            FINITE {i | i IN k /\ ~trivial_group (G i)} /\
            (!i. i IN k ==> finitely_generated_group (G i))
-  
+
   FINITELY_GENERATED_PROD_GROUP =
     |- !G H.
            finitely_generated_group (prod_group G H) <=>
            finitely_generated_group G /\ finitely_generated_group H
-  
+
   FINITELY_GENERATED_SUM_GROUP =
     |- !k G.
            finitely_generated_group (sum_group k G) <=>
            FINITE {i | i IN k /\ ~trivial_group (G i)} /\
            (!i. i IN k ==> finitely_generated_group (G i))
-  
+
   FINITE_GROUP_ACTIONS =
     |- !G s f.
            finitely_generated_group G /\
@@ -109,17 +510,17 @@ lemmas about the concept:
                 (!g x. g IN group_carrier G /\ x IN s ==> a g x = a' g x)
                 ==> f a = f a')
            ==> FINITE {f a | group_action G s a}
-  
+
   FINITE_IMAGE_GEN =
     |- !f g s t.
            IMAGE f s SUBSET t /\
            FINITE t /\
            (!x y. x IN s /\ y IN s /\ f x = f y ==> g x = g y)
            ==> FINITE (IMAGE g s)
-  
+
   FINITE_IMP_FINITELY_GENERATED_GROUP =
     |- !G. FINITE (group_carrier G) ==> finitely_generated_group G
-  
+
   GROUP_ACTIONS_EQ_ON_GENERATORS =
     |- !G t s a a'.
            group_action G s a /\
@@ -128,14 +529,14 @@ lemmas about the concept:
            ==> (!g x.
                     g IN group_carrier (subgroup_generated G t) /\ x IN s
                     ==> a g x = a' g x)
-  
+
   GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS =
     |- !G H s f g.
            group_homomorphism (G,H) f /\
            group_homomorphism (G,H) g /\
            (!x. x IN group_carrier G /\ x IN s ==> f x = g x)
            ==> (!x. x IN group_carrier (subgroup_generated G s) ==> f x = g x)
-  
+
   GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS_ALT =
     |- !G H g h f.
            group_homomorphism (G,H) f /\
@@ -143,7 +544,7 @@ lemmas about the concept:
            ==> group_homomorphism
                (subgroup_generated G g,subgroup_generated H h)
                f
-  
+
   GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS_ALT =
     |- !G H g h f f'.
            group_isomorphisms (G,H) (f,f') /\
@@ -152,7 +553,7 @@ lemmas about the concept:
            ==> group_isomorphisms
                (subgroup_generated G g,subgroup_generated H h)
                (f,f')
-  
+
   GROUP_ISOMORPHISMS_PRODUCT_GROUP_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
@@ -161,7 +562,7 @@ lemmas about the concept:
                 prod_group (product_group k f) (product_group l f))
                ((\f. RESTRICTION k f,RESTRICTION l f),
                 (\(f,g) x. if x IN k then f x else g x))
-  
+
   GROUP_ISOMORPHISMS_SUM_GROUP_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
@@ -170,7 +571,7 @@ lemmas about the concept:
                 prod_group (sum_group k f) (sum_group l f))
                ((\f. RESTRICTION k f,RESTRICTION l f),
                 (\(f,g) x. if x IN k then f x else g x))
-  
+
   GROUP_ISOMORPHISM_EPIMORPHISM =
     |- !G G' f.
            group_isomorphism (G,G') f <=>
@@ -178,13 +579,13 @@ lemmas about the concept:
            (!x y.
                 x IN group_carrier G /\ y IN group_carrier G /\ f x = f y
                 ==> x = y)
-  
+
   GROUP_ISOMORPHISM_EPIMORPHISM_ALT =
     |- !G G' f.
            group_isomorphism (G,G') f <=>
            group_epimorphism (G,G') f /\
            (!x. x IN group_carrier G /\ f x = group_id G' ==> x = group_id G)
-  
+
   GROUP_ISOMORPHISM_PRODUCT_GROUP_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
@@ -192,10 +593,10 @@ lemmas about the concept:
                (product_group (k UNION l) f,
                 prod_group (product_group k f) (product_group l f))
                (\f. RESTRICTION k f,RESTRICTION l f)
-  
+
   GROUP_ISOMORPHISM_PRODUCT_PROJECTION =
     |- !G k. group_isomorphism (product_group {k} G,G k) (\x. x k)
-  
+
   GROUP_ISOMORPHISM_SUM_GROUP_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
@@ -203,102 +604,102 @@ lemmas about the concept:
                (sum_group (k UNION l) f,
                 prod_group (sum_group k f) (sum_group l f))
                (\f. RESTRICTION k f,RESTRICTION l f)
-  
+
   GROUP_ISOMORPHISM_SUM_PROJECTION =
     |- !G k. group_isomorphism (sum_group {k} G,G k) (\x. x k)
-  
+
   GROUP_PRODUCT_INJECTION =
     |- !k G a i.
            RESTRICTION k (\j. if j = i then a else group_id (G j)) IN
            group_carrier (product_group k G) <=>
            i IN k ==> a IN group_carrier (G i)
-  
+
   GROUP_SUM_INJECTION =
     |- !k G a i.
            RESTRICTION k (\j. if j = i then a else group_id (G j)) IN
            group_carrier (sum_group k G) <=>
            i IN k ==> a IN group_carrier (G i)
-  
+
   HAS_SIZE_LEFT_RIGHT_COSETS =
     |- !G h.
            h subgroup_of G
            ==> ({left_coset G x h | x | x IN group_carrier G} HAS_SIZE n <=>
                 {right_coset G h x | x | x IN group_carrier G} HAS_SIZE n)
-  
+
   ISOMORPHIC_COPY_OF_GROUP =
     |- !G s.
            (?G'. group_carrier G' = s /\ G isomorphic_group G') <=>
            group_carrier G =_c s
-  
+
   ISOMORPHIC_GROUP_FINITE_GENERATION =
     |- !G H.
            G isomorphic_group H
            ==> (finitely_generated_group G <=> finitely_generated_group H)
-  
+
   ISOMORPHIC_GROUP_TORSION =
     |- !P G H.
            G isomorphic_group H
            ==> ((!x. x IN group_carrier G ==> P (group_element_order G x)) <=>
                 (!y. y IN group_carrier H ==> P (group_element_order H y)))
-  
+
   ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS =
     |- !s G t H f g.
            (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
            (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
            (!i. i IN s ==> G i isomorphic_group H (f i))
            ==> product_group s G isomorphic_group product_group t H
-  
+
   ISOMORPHIC_PRODUCT_GROUP_INSERT =
     |- !f i k.
            ~(i IN k)
            ==> product_group (i INSERT k) f isomorphic_group
                prod_group (f i) (product_group k f)
-  
+
   ISOMORPHIC_PRODUCT_GROUP_SING =
     |- !G k. product_group {k} G isomorphic_group G k
-  
+
   ISOMORPHIC_PRODUCT_GROUP_SUPPORT =
     |- !k G.
            product_group {i | i IN k /\ ~trivial_group (G i)} G isomorphic_group
            product_group k G
-  
+
   ISOMORPHIC_PRODUCT_GROUP_SYMDIFF =
     |- !k l G.
            (!i. i IN k DIFF l UNION l DIFF k ==> trivial_group (G i))
            ==> product_group k G isomorphic_group product_group l G
-  
+
   ISOMORPHIC_SUM_GROUP_BIJECTIONS =
     |- !s G t H f g.
            (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
            (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
            (!i. i IN s ==> G i isomorphic_group H (f i))
            ==> sum_group s G isomorphic_group sum_group t H
-  
+
   ISOMORPHIC_SUM_GROUP_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
            ==> sum_group (k UNION l) f isomorphic_group
                prod_group (sum_group k f) (sum_group l f)
-  
+
   ISOMORPHIC_SUM_GROUP_INSERT =
     |- !f i k.
            ~(i IN k)
            ==> sum_group (i INSERT k) f isomorphic_group
                prod_group (f i) (sum_group k f)
-  
+
   ISOMORPHIC_SUM_GROUP_SING =
     |- !G k. sum_group {k} G isomorphic_group G k
-  
+
   ISOMORPHIC_SUM_GROUP_SUPPORT =
     |- !k G.
            sum_group {i | i IN k /\ ~trivial_group (G i)} G isomorphic_group
            sum_group k G
-  
+
   ISOMORPHIC_SUM_GROUP_SYMDIFF =
     |- !k l G.
            (!i. i IN k DIFF l UNION l DIFF k ==> trivial_group (G i))
            ==> sum_group k G isomorphic_group sum_group l G
-  
+
   SCHREIER_TRANSVERSAL_LEMMA =
     |- !G h s t.
            h subgroup_of G /\
@@ -312,20 +713,20 @@ lemmas about the concept:
                (subgroup_generated G
                (h INTER group_setmul G t (group_setmul G s (group_setinv G t)))) =
                h
-  
+
   SUBGROUPS_GENERATED_EQ =
     |- !G s t.
            s SUBSET group_carrier (subgroup_generated G t) /\
            t SUBSET group_carrier (subgroup_generated G s)
            ==> subgroup_generated G s = subgroup_generated G t
-  
+
   SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED_IDEMPOT =
     |- !G s t.
            s SUBSET t
            ==> subgroup_generated (subgroup_generated G t)
                (group_carrier (subgroup_generated G s)) =
                subgroup_generated G s
-  
+
   SUBGROUP_GENERATED_INDUCT_ALT =
     |- !G P s.
            P (group_id G) /\
@@ -334,7 +735,7 @@ lemmas about the concept:
                 x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
                 ==> P (group_mul G x y))
            ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
-  
+
   SUBGROUP_GENERATED_INDUCT_LEFT =
     |- !G P s.
            P (group_id G) /\
@@ -342,7 +743,7 @@ lemmas about the concept:
                 x IN group_carrier G /\ x IN s /\ y IN group_carrier G /\ P y
                 ==> P (group_mul G x y) /\ P (group_mul G (group_inv G x) y))
            ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
-  
+
   SUBGROUP_GENERATED_INDUCT_STRONG =
     |- !G P s.
            (!x. x IN group_carrier G /\ x IN s ==> P x) /\
@@ -352,31 +753,31 @@ lemmas about the concept:
                 x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
                 ==> P (group_mul G x y))
            ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
-  
+
   SUBGROUP_GENERATED_UNION =
     |- !G s t.
            subgroup_generated G
            (group_carrier (subgroup_generated G s) UNION
             group_carrier (subgroup_generated G t)) =
            subgroup_generated G (s UNION t)
-  
+
   SUBGROUP_GENERATED_UNION_LEFT =
     |- !G s t.
            subgroup_generated G
            (group_carrier (subgroup_generated G s) UNION t) =
            subgroup_generated G (s UNION t)
-  
+
   SUBGROUP_GENERATED_UNION_RIGHT =
     |- !G s t.
            subgroup_generated G
            (s UNION group_carrier (subgroup_generated G t)) =
            subgroup_generated G (s UNION t)
-  
+
   SUBSET_CARRIER_SUBGROUP_GENERATED =
     |- !G s t.
            s SUBSET group_carrier G /\ s SUBSET t
            ==> s SUBSET group_carrier (subgroup_generated G t)
-  
+
   TRIVIAL_IMP_FINITELY_GENERATED_GROUP =
     |- !G. trivial_group G ==> finitely_generated_group G
 
@@ -503,7 +904,7 @@ for finite groups. New theorems:
     |- !G k x.
            x IN group_carrier (sum_group k G)
            ==> group_element_order (sum_group k G) x =
-               iterate (\m n. lcm (m,n)) k
+               iterate (\m n. lcm(m,n)) k
                (\i. group_element_order (G i) (x i))
 
   GROUP_EPIMORPHISM_SUBSET =
@@ -640,7 +1041,7 @@ for finite groups. New theorems:
     |- !P G.
            abelian_group G /\
            P 1 /\
-           (!m n p. p divides lcm (m,n) /\ P m /\ P n ==> P p)
+           (!m n p. p divides lcm(m,n) /\ P m /\ P n ==> P p)
            ==> {x | x IN group_carrier G /\ P (group_element_order G x)}
                subgroup_of G
 

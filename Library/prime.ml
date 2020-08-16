@@ -1837,6 +1837,11 @@ let LCM_EQ = prove
              ==> lcm(x,y) = lcm(u,v)`,
   SIMP_TAC[MULTIPLES_EQ; LCM_DIVIDES]);;
 
+let LCM_EQ_1 = prove
+ (`!m n. lcm(m,n) = 1 <=> m = 1 /\ n = 1`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [EQ_SYM_EQ] THEN
+  REWRITE_TAC[GSYM LCM_UNIQUE; DIVIDES_1; DIVIDES_ONE]);;
+
 let DIVIDES_LCM_LEFT = prove
  (`!m n. n divides m <=> lcm(m,n) = m`,
   REPEAT GEN_TAC THEN GEN_REWRITE_TAC RAND_CONV [EQ_SYM_EQ] THEN
@@ -2099,6 +2104,82 @@ let PRIME_DIVIDES_ITERATE_LCM = prove
         ==> (p divides iterate (\m n:num. lcm(m,n)) k f <=>
              ?i. i IN k /\ p divides (f i))`,
   SIMP_TAC[PRIME_DIVIDES_ITERATE_LCM_GEN; FINITE_RESTRICT]);;
+
+let ITERATE_LCM_EQ_0_GEN = prove
+ (`!(k:K->bool) f.
+        iterate (\m n. lcm(m,n)) k f = 0 <=>
+        FINITE {j | j IN k /\ ~(f j = 1)} /\
+        ?j. j IN k /\ f j = 0`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_LCM] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[ARITH_EQ] THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+   [ARITH_RULE `n = 0 <=> ~(n = 1) /\ n = 0`] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `j IN k /\ ~(f j = 1) /\ f j = 0 <=>
+    j IN {j | j IN k /\ ~(f j = 1)} /\ f j = 0`] THEN
+  POP_ASSUM MP_TAC THEN
+  SPEC_TAC(`{j:K | j IN k /\ ~(f j = 1)}`,`k:K->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[MATCH_MP ITERATE_CLAUSES MONOIDAL_LCM] THEN
+  SIMP_TAC[NEUTRAL_LCM; LCM_ZERO; EXISTS_IN_INSERT; NOT_IN_EMPTY] THEN
+  CONV_TAC NUM_REDUCE_CONV);;
+
+let ITERATE_LCM_EQ_0 = prove
+ (`!(k:K->bool) f.
+        FINITE k
+        ==> (iterate (\m n. lcm(m,n)) k f = 0 <=>
+             ?j. j IN k /\ f j = 0)`,
+  SIMP_TAC[ITERATE_LCM_EQ_0_GEN; FINITE_RESTRICT]);;
+
+let ITERATE_LCM_EQ_1_GEN = prove
+ (`!(k:K->bool) f.
+        iterate (\m n. lcm(m,n)) k f = 1 <=>
+        FINITE {j | j IN k /\ ~(f j = 1)} ==> !j. j IN k ==> f j = 1`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_LCM] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `(!j. j IN k ==> f j = 1) <=>
+    !j. j IN {j | j IN k /\ ~(f j = 1)} ==> f j = 1`] THEN
+  POP_ASSUM MP_TAC THEN
+  SPEC_TAC(`{j:K | j IN k /\ ~(f j = 1)}`,`k:K->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[MATCH_MP ITERATE_CLAUSES MONOIDAL_LCM] THEN
+  SIMP_TAC[NEUTRAL_LCM; LCM_EQ_1; NOT_IN_EMPTY] THEN SET_TAC[]);;
+
+let ITERATE_LCM_EQ_1 = prove
+ (`!(k:K->bool) f.
+        FINITE k
+        ==> (iterate (\m n. lcm(m,n)) k f = 1 <=>
+             !j. j IN k ==> f j = 1)`,
+  SIMP_TAC[ITERATE_LCM_EQ_1_GEN; FINITE_RESTRICT]);;
+
+let ITERATE_GCD_EQ_0_GEN = prove
+ (`!(k:K->bool) f.
+        iterate (\m n. gcd(m,n)) k f = 0 <=>
+        FINITE {j | j IN k /\ ~(f j = 0)} ==> !j. j IN k ==> f j = 0`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
+  REWRITE_TAC[support; NEUTRAL_GCD] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   `(!j. j IN k ==> f j = 0) <=>
+    !j. j IN {j | j IN k /\ ~(f j = 0)} ==> f j = 0`] THEN
+  POP_ASSUM MP_TAC THEN
+  SPEC_TAC(`{j:K | j IN k /\ ~(f j = 0)}`,`k:K->bool`) THEN
+  MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC[MATCH_MP ITERATE_CLAUSES MONOIDAL_GCD] THEN
+  SIMP_TAC[NEUTRAL_GCD; GCD_ZERO; NOT_IN_EMPTY] THEN SET_TAC[]);;
+
+let ITERATE_GCD_EQ_0 = prove
+ (`!(k:K->bool) f.
+        FINITE k
+        ==> (iterate (\m n. gcd(m,n)) k f = 0 <=>
+             !j. j IN k ==> f j = 0)`,
+  SIMP_TAC[ITERATE_GCD_EQ_0_GEN; FINITE_RESTRICT]);;
 
 (* ------------------------------------------------------------------------- *)
 (* Induction principle for multiplicative functions etc.                     *)
