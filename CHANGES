@@ -8,6 +8,373 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 21st Aug 2020       Library/grouptheory.ml
+
+Added a more refined and explicit version of the existing theorem
+FINITELY_GENERATED_ABELIAN_SUBGROUP (which is now derived directly
+from it), via essentially the same proof with cardinality bound
+systematically added:
+
+  FINITELY_GENERATED_ABELIAN_SUBGROUP_EXPLICIT =
+    |- !G s h.
+          FINITE s /\
+          s SUBSET group_carrier G /\
+          abelian_group G /\
+          h subgroup_of subgroup_generated G s
+          ==> ?t. FINITE t /\
+                  t SUBSET group_carrier G /\
+                  CARD t <= CARD s /\
+                  subgroup_generated G t = subgroup_generated G h
+
+Fri 21st Aug 2020       sets.ml
+
+Added a few more handy theorems for rewriting things about "small"
+subsets of an image:
+
+  EXISTS_SMALL_SUBSET_IMAGE =
+    |- !P f s n.
+           (?t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s /\ P t) <=>
+           (?t. FINITE t /\ CARD t < n /\ t SUBSET s /\ P (IMAGE f t))
+
+  EXISTS_SMALL_SUBSET_IMAGE_INJ =
+    |- !P f s n.
+           (?t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s /\ P t) <=>
+           (?t. FINITE t /\
+                CARD t < n /\
+                t SUBSET s /\
+                (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
+                P (IMAGE f t))
+
+  FORALL_SMALL_SUBSET_IMAGE =
+    |- !P f s n.
+           (!t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s ==> P t) <=>
+           (!t. FINITE t /\ CARD t < n /\ t SUBSET s ==> P (IMAGE f t))
+
+  FORALL_SMALL_SUBSET_IMAGE_INJ =
+    |- !P f s n.
+           (!t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s ==> P t) <=>
+           (!t. FINITE t /\
+                CARD t < n /\
+                t SUBSET s /\
+                (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))
+                ==> P (IMAGE f t))
+
+Thu 20th Aug 2020       Library/ringtheory.ml
+
+Added more technical ring theory lemmas to keep things as closely in
+step with the group theory analogs as relevant/possible:
+
+  IDEAL_GENERATED_INDUCT_STRONG : thm =
+    |- !r P s.
+           (!x. x IN ring_carrier r /\ x IN s ==> P x) /\
+           P (ring_0 r) /\
+           (!x. x IN ring_carrier r /\ P x ==> P (ring_neg r x)) /\
+           (!x y.
+                x IN ring_carrier r /\ y IN ring_carrier r /\ P x /\ P y
+                ==> P (ring_add r x y)) /\
+           (!x y.
+                x IN ring_carrier r /\ y IN ring_carrier r /\ P y
+                ==> P (ring_mul r x y))
+           ==> (!x. x IN ideal_generated r s ==> P x)
+
+  INTEGER_MOD_RING_TRIVIAL : thm =
+    |- integer_mod_ring 0 = integer_ring
+
+  ISOMORPHIC_PRODUCT_RING_BIJECTIONS : thm =
+    |- !s r t r' f g.
+           (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
+           (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
+           (!i. i IN s ==> r i isomorphic_ring r' (f i))
+           ==> product_ring s r isomorphic_ring product_ring t r'
+
+  ISOMORPHIC_PRODUCT_RING_INSERT : thm =
+    |- !f i k.
+           ~(i IN k)
+           ==> product_ring (i INSERT k) f isomorphic_ring
+               prod_ring (f i) (product_ring k f)
+
+  ISOMORPHIC_PRODUCT_RING_SING : thm =
+    |- !r k. product_ring {k} r isomorphic_ring r k
+
+  ISOMORPHIC_PRODUCT_RING_SUPPORT : thm =
+    |- !k r.
+           product_ring {i | i IN k /\ ~trivial_ring (r i)} r isomorphic_ring
+           product_ring k r
+
+  ISOMORPHIC_PRODUCT_RING_SYMDIFF : thm =
+    |- !k l r.
+           (!i. i IN k DIFF l UNION l DIFF k ==> trivial_ring (r i))
+           ==> product_ring k r isomorphic_ring product_ring l r
+
+  RING_HOMOMORPHISM_BETWEEN_SUBRINGS_ALT : thm =
+    |- !r s g h f.
+           ring_homomorphism (r,s) f /\
+           IMAGE f (ring_carrier r INTER g) SUBSET h
+           ==> ring_homomorphism (subring_generated r g,subring_generated s h)
+               f
+
+  RING_ISOMORPHISMS_BETWEEN_SUBRINGS_ALT : thm =
+    |- !r s g h f f'.
+           ring_isomorphisms (r,s) (f,f') /\
+           IMAGE f (ring_carrier r INTER g) SUBSET h /\
+           IMAGE f' (ring_carrier s INTER h) SUBSET g
+           ==> ring_isomorphisms (subring_generated r g,subring_generated s h)
+               (f,f')
+
+  RING_ISOMORPHISMS_PRODUCT_RING_DISJOINT_UNION : thm =
+    |- !f k l.
+           DISJOINT k l
+           ==> ring_isomorphisms
+               (product_ring (k UNION l) f,
+                prod_ring (product_ring k f) (product_ring l f))
+               ((\f. RESTRICTION k f,RESTRICTION l f),
+                (\(f,g) x. if x IN k then f x else g x))
+
+  RING_ISOMORPHISM_EPIMORPHISM : thm =
+    |- !r r' f.
+           ring_isomorphism (r,r') f <=>
+           ring_epimorphism (r,r') f /\
+           (!x y.
+                x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y
+                ==> x = y)
+
+  RING_ISOMORPHISM_PRODUCT_PROJECTION : thm =
+    |- !r k. ring_isomorphism (product_ring {k} r,r k) (\x. x k)
+
+  RING_ISOMORPHISM_PRODUCT_RING_DISJOINT_UNION : thm =
+    |- !f k l.
+           DISJOINT k l
+           ==> ring_isomorphism
+               (product_ring (k UNION l) f,
+                prod_ring (product_ring k f) (product_ring l f))
+               (\f. RESTRICTION k f,RESTRICTION l f)
+
+  RING_PRODUCT_INJECTION : thm =
+    |- !k r a i.
+           RESTRICTION k (\j. if j = i then a else ring_0 (r j)) IN
+           ring_carrier(product_ring k r) <=>
+           i IN k ==> a IN ring_carrier(r i)
+
+  SUBRINGS_GENERATED_EQ : thm =
+    |- !r s t.
+           s SUBSET ring_carrier(subring_generated r t) /\
+           t SUBSET ring_carrier(subring_generated r s)
+           ==> subring_generated r s = subring_generated r t
+
+  SUBRING_GENERATED_BY_SUBRING_GENERATED_IDEMPOT : thm =
+    |- !r s t.
+           s SUBSET t
+           ==> subring_generated (subring_generated r t)
+               (ring_carrier(subring_generated r s)) =
+               subring_generated r s
+
+  SUBRING_GENERATED_IDEMPOT_GEN : thm =
+    |- !r s t.
+           s SUBSET ring_carrier(subring_generated r t)
+           ==> subring_generated (subring_generated r t) s =
+               subring_generated r s
+
+  SUBRING_GENERATED_INDUCT_STRONG : thm =
+    |- !r P s.
+           (!x. x IN ring_carrier r /\ x IN s ==> P x) /\
+           P (ring_0 r) /\
+           P (ring_1 r) /\
+           (!x. x IN ring_carrier r /\ P x ==> P (ring_neg r x)) /\
+           (!x y.
+                x IN ring_carrier r /\ y IN ring_carrier r /\ P x /\ P y
+                ==> P (ring_add r x y)) /\
+           (!x y.
+                x IN ring_carrier r /\ y IN ring_carrier r /\ P x /\ P y
+                ==> P (ring_mul r x y))
+           ==> (!x. x IN ring_carrier(subring_generated r s) ==> P x)
+
+  SUBRING_GENERATED_MINIMAL_EQ : thm =
+    |- !r h s.
+           h subring_of r
+           ==> (ring_carrier(subring_generated r s) SUBSET h <=>
+                ring_carrier r INTER s SUBSET h)
+
+  SUBRING_GENERATED_UNION : thm =
+    |- !r s t.
+           subring_generated r
+           (ring_carrier(subring_generated r s) UNION
+            ring_carrier(subring_generated r t)) =
+           subring_generated r (s UNION t)
+
+  SUBRING_GENERATED_UNION_LEFT : thm =
+    |- !r s t.
+           subring_generated r (ring_carrier(subring_generated r s) UNION t) =
+           subring_generated r (s UNION t)
+
+  SUBRING_GENERATED_UNION_RIGHT : thm =
+    |- !r s t.
+           subring_generated r (s UNION ring_carrier(subring_generated r t)) =
+           subring_generated r (s UNION t)
+
+  SUBSET_CARRIER_SUBRING_GENERATED : thm =
+    |- !r s t.
+           s SUBSET ring_carrier r /\ s SUBSET t
+           ==> s SUBSET ring_carrier(subring_generated r t)
+
+Thu 20th Aug 2020       Library/grouptheory.ml
+
+Added the structure theorem for finitely generated Abelian groups, in
+several different variants, with isomorphisms both to products and sums
+(which of course are the same since they are finite, but for the sake
+of completeness) of cyclic groups generated by elements of the group
+and canonical cyclic groups based on the integers. Also included a few
+other miscellaneous lemmas including the existence of maximal (normal)
+subgroups in finitely generated groups and FINITE_SUBGROUPS_EQ, which
+is an equivalential form of "finite group has finitely many subgroups".
+
+  FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_CYCLIC_GROUPS =
+    |- !G. finitely_generated_group G /\ abelian_group G <=>
+           (?n H.
+                (!i. 1 <= i /\ i <= n ==> cyclic_group (H i)) /\
+                G isomorphic_group product_group (1..n) H)
+
+  FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_GROUPS =
+    |- !G. finitely_generated_group G /\
+           abelian_group G /\
+           (!x. x IN group_carrier G ==> group_element_order G x <= 1) <=>
+           (?n. G isomorphic_group product_group (1..n) (\i. integer_group))
+
+  FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_MOD_GROUPS =
+    |- !G. finitely_generated_group G /\ abelian_group G <=>
+           (?n d.
+                G isomorphic_group
+                product_group (1..n) (\i. integer_mod_group (d i)))
+
+  FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_CYCLIC_GROUPS =
+    |- !G. finitely_generated_group G /\ abelian_group G <=>
+           (?n H.
+                (!i. 1 <= i /\ i <= n ==> cyclic_group (H i)) /\
+                G isomorphic_group sum_group (1..n) H)
+
+  FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_GROUPS =
+    |- !G. finitely_generated_group G /\
+           abelian_group G /\
+           (!x. x IN group_carrier G ==> group_element_order G x <= 1) <=>
+           (?n. G isomorphic_group sum_group (1..n) (\i. integer_group))
+
+  FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_MOD_GROUPS =
+    |- !G. finitely_generated_group G /\ abelian_group G <=>
+           (?n d.
+                G isomorphic_group
+                sum_group (1..n) (\i. integer_mod_group (d i)))
+
+  FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT =
+    |- !G. finitely_generated_group G /\ abelian_group G <=>
+           (?t. FINITE t /\
+                t SUBSET group_carrier G /\
+                G isomorphic_group sum_group t (\x. subgroup_generated G {x}))
+
+  FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT_ALT =
+    |- !G. finitely_generated_group G /\ abelian_group G <=>
+           (?t. FINITE t /\
+                t SUBSET group_carrier G /\
+                G isomorphic_group
+                product_group t (\x. subgroup_generated G {x}))
+
+  FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT =
+    |- !G s.
+           abelian_group G /\ FINITE s
+           ==> (?t. FINITE t /\
+                    CARD t <= CARD s /\
+                    t SUBSET group_carrier G /\
+                    subgroup_generated G t = subgroup_generated G s /\
+                    subgroup_generated G s isomorphic_group
+                    sum_group t (\x. subgroup_generated G {x}))
+
+  FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT_ALT =
+    |- !G s.
+           abelian_group G /\ FINITE s
+           ==> (?t. FINITE t /\
+                    CARD t <= CARD s /\
+                    t SUBSET group_carrier G /\
+                    subgroup_generated G t = subgroup_generated G s /\
+                    subgroup_generated G s isomorphic_group
+                    product_group t (\x. subgroup_generated G {x}))
+
+  FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM =
+    |- !G s.
+           abelian_group G /\ FINITE s
+           ==> (?t. FINITE t /\
+                    CARD t <= CARD s /\
+                    t SUBSET group_carrier G /\
+                    subgroup_generated G t = subgroup_generated G s /\
+                    group_isomorphism
+                    (sum_group t (\x. subgroup_generated G {x}),
+                     subgroup_generated G s)
+                    (group_sum G t))
+
+  FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM_ALT =
+    |- !G s.
+           abelian_group G /\ FINITE s
+           ==> (?t. FINITE t /\
+                    CARD t <= CARD s /\
+                    t SUBSET group_carrier G /\
+                    subgroup_generated G t = subgroup_generated G s /\
+                    group_isomorphism
+                    (product_group t (\x. subgroup_generated G {x}),
+                     subgroup_generated G s)
+                    (group_sum G t))
+
+  FINITE_SUBGROUPS_EQ =
+    |- !G. FINITE {h | h subgroup_of G} <=> FINITE (group_carrier G)
+
+  GROUP_ELEMENT_ORDER_INTEGER_GROUP =
+    |- !n. group_element_order integer_group n = (if n = &0 then 1 else 0)
+
+  GROUP_POW_EQ_ID_DIVISOR =
+    |- !G x m n.
+           x IN group_carrier G /\ group_pow G x m = group_id G /\ m divides n
+           ==> group_pow G x n = group_id G
+
+  GROUP_ZPOW_ABS_EQ_ID =
+    |- !G x n.
+           x IN group_carrier G
+           ==> (group_zpow G x (abs n) = group_id G <=>
+                group_zpow G x n = group_id G)
+
+  GROUP_ZPOW_EQ_ID_DIVISOR =
+    |- !G x m n.
+           x IN group_carrier G /\ group_zpow G x m = group_id G /\ m divides n
+           ==> group_zpow G x n = group_id G
+
+  INTEGER_MOD_GROUP_TRIVIAL =
+    |- integer_mod_group 0 = integer_group
+
+  MAXIMAL_NORMAL_SUBGROUP_EXISTS =
+    |- !G. finitely_generated_group G /\ ~trivial_group G
+           ==> (?h. h normal_subgroup_of G /\
+                    ~(h = group_carrier G) /\
+                    (!h'. h' normal_subgroup_of G /\ h PSUBSET h'
+                          ==> h' = group_carrier G))
+
+  MAXIMAL_SUBGROUP_EXISTS =
+    |- !G. finitely_generated_group G /\ ~trivial_group G
+           ==> (?h. h subgroup_of G /\
+                    ~(h = group_carrier G) /\
+                    (!h'. h' subgroup_of G /\ h PSUBSET h'
+                          ==> h' = group_carrier G))
+
+  NORMAL_SUBGROUP_OF_UNIONS =
+    |- !G k u.
+           ~(u = {}) /\
+           (!h. h IN u ==> h normal_subgroup_of G) /\
+           (!g h. g IN u /\ h IN u ==> g SUBSET h \/ h SUBSET g)
+           ==> UNIONS u normal_subgroup_of G
+
+  SUBGROUP_GENERATED_IDEMPOT_GEN =
+    |- !G s t.
+           s SUBSET group_carrier(subgroup_generated G t)
+           ==> subgroup_generated (subgroup_generated G t) s =
+               subgroup_generated G s
+
+Also added a missing outer universal quantifier to the existing lemma
+SUBGROUP_GENERATED_IDEMPOT.
+
 Sat 15th Aug 2020       Library/grouptheory.ml
 
 Added various group theory material including some boring but useful things
@@ -72,7 +439,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
   CARRIER_SUBGROUP_GENERATED_ALT =
     |- !G s.
            abelian_group G /\ s SUBSET group_carrier G
-           ==> group_carrier (subgroup_generated G s) =
+           ==> group_carrier(subgroup_generated G s) =
                {group_sum G s (\x. group_zpow G x (n x)) | n | FINITE
                                                                {x | x IN s /\
                                                                     ~(n x = &0)}}
@@ -80,27 +447,27 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
   CARRIER_SUBGROUP_GENERATED_EXPLICIT =
     |- !G s.
            abelian_group G /\ s SUBSET group_carrier G
-           ==> group_carrier (subgroup_generated G s) =
+           ==> group_carrier(subgroup_generated G s) =
                {group_sum G t (\x. group_zpow G x (n x)) | t,n | FINITE t /\
                                                                  t SUBSET s}
 
   CARRIER_SUBGROUP_GENERATED_FINITE =
     |- !G s.
            abelian_group G /\ FINITE s /\ s SUBSET group_carrier G
-           ==> group_carrier (subgroup_generated G s) =
+           ==> group_carrier(subgroup_generated G s) =
                {group_sum G s (\x. group_zpow G x (n x)) | n IN (:A->int)}
 
   CARRIER_SUBGROUP_GENERATED_UNIONS =
     |- !G u.
            abelian_group G
-           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+           ==> group_carrier(subgroup_generated G (UNIONS u)) =
                IMAGE (group_sum G u)
-               (group_carrier (sum_group u (\i. subgroup_generated G i)))
+               (group_carrier(sum_group u (\i. subgroup_generated G i)))
 
   CARRIER_SUBGROUP_GENERATED_UNIONS_ALT =
     |- !G u.
            abelian_group G
-           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+           ==> group_carrier(subgroup_generated G (UNIONS u)) =
                {group_sum G u f | f | (!s. s IN u
                                            ==> f s IN
                                                group_carrier
@@ -111,7 +478,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
   CARRIER_SUBGROUP_GENERATED_UNIONS_EXPLICIT =
     |- !G u.
            abelian_group G
-           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+           ==> group_carrier(subgroup_generated G (UNIONS u)) =
                {group_sum G t f | t,f | FINITE t /\
                                         t SUBSET u /\
                                         (!s. s IN t
@@ -122,7 +489,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
   CARRIER_SUBGROUP_GENERATED_UNIONS_FINITE =
     |- !G u.
            abelian_group G /\ FINITE u
-           ==> group_carrier (subgroup_generated G (UNIONS u)) =
+           ==> group_carrier(subgroup_generated G (UNIONS u)) =
                {group_sum G u f | f | !s. s IN u
                                           ==> f s IN
                                               group_carrier
@@ -205,7 +572,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
 
   GROUP_ELEMENT_ORDER_SUM_GROUP_EQ_0 =
     |- !G k x.
-           x IN group_carrier (sum_group k G)
+           x IN group_carrier(sum_group k G)
            ==> (group_element_order (sum_group k G) x = 0 <=>
                 (?i. i IN k /\ group_element_order (G i) (x i) = 0))
 
@@ -437,12 +804,12 @@ lemmas about the concept:
   CARD_LE_SUBGROUP_GENERATED =
     |- !G s k.
            INFINITE k /\ s <=_c k
-           ==> group_carrier (subgroup_generated G s) <=_c k
+           ==> group_carrier(subgroup_generated G s) <=_c k
 
   COUNTABLE_SUBGROUP_GENERATED =
     |- !G s.
            COUNTABLE (group_carrier G) \/ COUNTABLE s
-           ==> COUNTABLE (group_carrier (subgroup_generated G s))
+           ==> COUNTABLE (group_carrier(subgroup_generated G s))
 
   CYCLIC_IMP_FINITELY_GENERATED_GROUP =
     |- !G. cyclic_group G ==> finitely_generated_group G
@@ -527,7 +894,7 @@ lemmas about the concept:
            group_action G s a' /\
            (!g x. g IN group_carrier G /\ g IN t /\ x IN s ==> a g x = a' g x)
            ==> (!g x.
-                    g IN group_carrier (subgroup_generated G t) /\ x IN s
+                    g IN group_carrier(subgroup_generated G t) /\ x IN s
                     ==> a g x = a' g x)
 
   GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS =
@@ -535,7 +902,7 @@ lemmas about the concept:
            group_homomorphism (G,H) f /\
            group_homomorphism (G,H) g /\
            (!x. x IN group_carrier G /\ x IN s ==> f x = g x)
-           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> f x = g x)
+           ==> (!x. x IN group_carrier(subgroup_generated G s) ==> f x = g x)
 
   GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS_ALT =
     |- !G H g h f.
@@ -611,14 +978,14 @@ lemmas about the concept:
   GROUP_PRODUCT_INJECTION =
     |- !k G a i.
            RESTRICTION k (\j. if j = i then a else group_id (G j)) IN
-           group_carrier (product_group k G) <=>
-           i IN k ==> a IN group_carrier (G i)
+           group_carrier(product_group k G) <=>
+           i IN k ==> a IN group_carrier(G i)
 
   GROUP_SUM_INJECTION =
     |- !k G a i.
            RESTRICTION k (\j. if j = i then a else group_id (G j)) IN
-           group_carrier (sum_group k G) <=>
-           i IN k ==> a IN group_carrier (G i)
+           group_carrier(sum_group k G) <=>
+           i IN k ==> a IN group_carrier(G i)
 
   HAS_SIZE_LEFT_RIGHT_COSETS =
     |- !G h.
@@ -716,15 +1083,15 @@ lemmas about the concept:
 
   SUBGROUPS_GENERATED_EQ =
     |- !G s t.
-           s SUBSET group_carrier (subgroup_generated G t) /\
-           t SUBSET group_carrier (subgroup_generated G s)
+           s SUBSET group_carrier(subgroup_generated G t) /\
+           t SUBSET group_carrier(subgroup_generated G s)
            ==> subgroup_generated G s = subgroup_generated G t
 
   SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED_IDEMPOT =
     |- !G s t.
            s SUBSET t
            ==> subgroup_generated (subgroup_generated G t)
-               (group_carrier (subgroup_generated G s)) =
+               (group_carrier(subgroup_generated G s)) =
                subgroup_generated G s
 
   SUBGROUP_GENERATED_INDUCT_ALT =
@@ -734,7 +1101,7 @@ lemmas about the concept:
            (!x y.
                 x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
                 ==> P (group_mul G x y))
-           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
+           ==> (!x. x IN group_carrier(subgroup_generated G s) ==> P x)
 
   SUBGROUP_GENERATED_INDUCT_LEFT =
     |- !G P s.
@@ -742,7 +1109,7 @@ lemmas about the concept:
            (!x y.
                 x IN group_carrier G /\ x IN s /\ y IN group_carrier G /\ P y
                 ==> P (group_mul G x y) /\ P (group_mul G (group_inv G x) y))
-           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
+           ==> (!x. x IN group_carrier(subgroup_generated G s) ==> P x)
 
   SUBGROUP_GENERATED_INDUCT_STRONG =
     |- !G P s.
@@ -752,31 +1119,31 @@ lemmas about the concept:
            (!x y.
                 x IN group_carrier G /\ y IN group_carrier G /\ P x /\ P y
                 ==> P (group_mul G x y))
-           ==> (!x. x IN group_carrier (subgroup_generated G s) ==> P x)
+           ==> (!x. x IN group_carrier(subgroup_generated G s) ==> P x)
 
   SUBGROUP_GENERATED_UNION =
     |- !G s t.
            subgroup_generated G
-           (group_carrier (subgroup_generated G s) UNION
-            group_carrier (subgroup_generated G t)) =
+           (group_carrier(subgroup_generated G s) UNION
+            group_carrier(subgroup_generated G t)) =
            subgroup_generated G (s UNION t)
 
   SUBGROUP_GENERATED_UNION_LEFT =
     |- !G s t.
            subgroup_generated G
-           (group_carrier (subgroup_generated G s) UNION t) =
+           (group_carrier(subgroup_generated G s) UNION t) =
            subgroup_generated G (s UNION t)
 
   SUBGROUP_GENERATED_UNION_RIGHT =
     |- !G s t.
            subgroup_generated G
-           (s UNION group_carrier (subgroup_generated G t)) =
+           (s UNION group_carrier(subgroup_generated G t)) =
            subgroup_generated G (s UNION t)
 
   SUBSET_CARRIER_SUBGROUP_GENERATED =
     |- !G s t.
            s SUBSET group_carrier G /\ s SUBSET t
-           ==> s SUBSET group_carrier (subgroup_generated G t)
+           ==> s SUBSET group_carrier(subgroup_generated G t)
 
   TRIVIAL_IMP_FINITELY_GENERATED_GROUP =
     |- !G. trivial_group G ==> finitely_generated_group G
@@ -818,7 +1185,7 @@ analogous things in Library/grouptheory.ml
   SUBRING_GENERATED_SUPERSET =
    |- !r s.
            subring_generated r s = r <=>
-           ring_carrier r SUBSET ring_carrier (subring_generated r s)
+           ring_carrier r SUBSET ring_carrier(subring_generated r s)
 
   SUBRING_MONOMORPHISM_EPIMORPHISM =
     |- !r r' s f.
@@ -863,19 +1230,19 @@ for finite groups. New theorems:
            g subgroup_of G /\
            h subgroup_of G /\
            group_setmul G g h = group_setmul G h g
-           ==> group_carrier (subgroup_generated G (g UNION h)) =
+           ==> group_carrier(subgroup_generated G (g UNION h)) =
                group_setmul G g h
 
   CARRIER_SUBGROUP_GENERATED_UNION_LEFT =
     |- !G g h.
            g normal_subgroup_of G /\ h subgroup_of G
-           ==> group_carrier (subgroup_generated G (g UNION h)) =
+           ==> group_carrier(subgroup_generated G (g UNION h)) =
                group_setmul G g h
 
   CARRIER_SUBGROUP_GENERATED_UNION_RIGHT =
     |- !G g h.
            g subgroup_of G /\ h normal_subgroup_of G
-           ==> group_carrier (subgroup_generated G (g UNION h)) =
+           ==> group_carrier(subgroup_generated G (g UNION h)) =
                group_setmul G g h
 
   FINITE_AND_PGROUP_SING =
@@ -902,7 +1269,7 @@ for finite groups. New theorems:
 
   GROUP_ELEMENT_ORDER_SUM_GROUP =
     |- !G k x.
-           x IN group_carrier (sum_group k G)
+           x IN group_carrier(sum_group k G)
            ==> group_element_order (sum_group k G) x =
                iterate (\m n. lcm(m,n)) k
                (\i. group_element_order (G i) (x i))
@@ -2839,7 +3206,7 @@ where they more naturally belong. New theorems:
          subgroup_generated G {a} = G
          ==> (h subgroup_of G <=>
               ?d. d divides CARD(group_carrier G) /\
-                  h = group_carrier (subgroup_generated G {group_pow G a d}))
+                  h = group_carrier(subgroup_generated G {group_pow G a d}))
 
   SUBGROUP_OF_LEFT_COSET =
    |- !G h x.
@@ -3223,8 +3590,8 @@ and theorems:
   GROUP_CONJUGATE_SUBGROUPS_GENERATED =
     |- !G s t.
            group_conjugate G s t
-           ==> group_conjugate G (group_carrier (subgroup_generated G s))
-               (group_carrier (subgroup_generated G t))
+           ==> group_conjugate G (group_carrier(subgroup_generated G s))
+               (group_carrier(subgroup_generated G t))
 
   GROUP_CONJUGATE_SUBGROUP_OF =
     |- !G s t. group_conjugate G s t ==> (s subgroup_of G <=> t subgroup_of G)
@@ -3397,7 +3764,7 @@ and theorems:
   GROUP_STABILIZER_SUBGROUP_GENERATED =
     |- !G h a x.
            group_stabilizer (subgroup_generated G h) a x =
-           group_carrier (subgroup_generated G h) INTER group_stabilizer G a x
+           group_carrier(subgroup_generated G h) INTER group_stabilizer G a x
 
   IMAGE_GROUP_CONJUGATION_BY_ID =
     |- !G s.
@@ -3511,7 +3878,7 @@ and theorems:
   SUBGROUP_GENERATED_MINIMAL_EQ =
     |- !G h s.
            h subgroup_of G
-           ==> (group_carrier (subgroup_generated G s) SUBSET h <=>
+           ==> (group_carrier(subgroup_generated G s) SUBSET h <=>
                 group_carrier G INTER s SUBSET h)
 
   SUBGROUP_GROUP_CENTRALIZER =
@@ -4125,12 +4492,12 @@ with the cardinalities of carriers dividing each other:
   CARD_LE_QUOTIENT_GROUP : thm =
     |- !G n.
            n normal_subgroup_of G
-           ==> group_carrier (quotient_group G n) <=_c group_carrier G
+           ==> group_carrier(quotient_group G n) <=_c group_carrier G
 
   CARD_LE_QUOTIENT_RING : thm =
     |- !r j.
            ring_ideal r j
-           ==> ring_carrier (quotient_ring r j) <=_c ring_carrier r
+           ==> ring_carrier(quotient_ring r j) <=_c ring_carrier r
 
   CARD_LE_RING_EPIMORPHIC_IMAGE : thm =
     |- !r r' f.
@@ -4143,13 +4510,13 @@ with the cardinalities of carriers dividing each other:
   CARD_QUOTIENT_GROUP_DIVIDES : thm =
     |- !G n.
            FINITE(group_carrier G) /\ n normal_subgroup_of G
-           ==> CARD(group_carrier (quotient_group G n)) divides
+           ==> CARD(group_carrier(quotient_group G n)) divides
                CARD(group_carrier G)
 
   CARD_QUOTIENT_RING_DIVIDES : thm =
     |- !r j.
            FINITE(ring_carrier r) /\ ring_ideal r j
-           ==> CARD(ring_carrier (quotient_ring r j)) divides
+           ==> CARD(ring_carrier(quotient_ring r j)) divides
                CARD(ring_carrier r)
 
   CARD_RIGHT_COSETS_DIVIDES : thm =
@@ -4427,7 +4794,7 @@ epimorphism.
                      ==> h = group_carrier G) <=>
                 (!k. k normal_subgroup_of quotient_group G n
                      ==> k = {group_id (quotient_group G n)} \/
-                         k = group_carrier (quotient_group G n)))
+                         k = group_carrier(quotient_group G n)))
 
   MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX =
     |- !G n.
@@ -4442,7 +4809,7 @@ epimorphism.
            ==> ((!h. h subgroup_of G /\ n PSUBSET h ==> h = group_carrier G) <=>
                 (!k. k subgroup_of quotient_group G n
                      ==> k = {group_id (quotient_group G n)} \/
-                         k = group_carrier (quotient_group G n)))
+                         k = group_carrier(quotient_group G n)))
 
   MAXIMAL_SUBGROUP_PRIME_INDEX =
     |- !G n.
@@ -4642,7 +5009,7 @@ different categories.
            (n <= 1 \/ &0 <= a /\ a < &n) /\ coprime(&n,a)
 
   GROUP_CARRIER_INTEGER_MOD_GROUP =
-    |- !n. group_carrier (integer_mod_group n) = IMAGE (\x. x rem &n) (:int)
+    |- !n. group_carrier(integer_mod_group n) = IMAGE (\x. x rem &n) (:int)
 
   GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP =
     |- !n m.
@@ -4680,7 +5047,7 @@ different categories.
 
   GROUP_ELEMENT_ORDER_PROD_GROUP_ALT =
     |- !G H z.
-           z IN group_carrier (prod_group G H)
+           z IN group_carrier(prod_group G H)
            ==> group_element_order (prod_group G H) z =
                lcm
                (group_element_order G (FST z),group_element_order H (SND z))
@@ -4756,7 +5123,7 @@ different categories.
                group_zpow G x n,group_zpow H y n
 
   INTEGER_MOD_GROUP_1R =
-    |- !n x. x rem &n IN group_carrier (integer_mod_group n)
+    |- !n x. x rem &n IN group_carrier(integer_mod_group n)
 
   INTEGER_MOD_SUBGROUP_GENERATED_BY_1R =
     |- !n. subgroup_generated (integer_mod_group n) {&1 rem &n} =
@@ -5283,7 +5650,7 @@ Wed 26th Feb 2020       Library/ringtheory.ml
 Added a couple more forgotten trivialities about the ring of intgers mod n:
 
   CARD_INTEGER_MOD_RING =
-    |- !n. ~(n = 0) ==> CARD(ring_carrier (integer_mod_ring n)) = n
+    |- !n. ~(n = 0) ==> CARD(ring_carrier(integer_mod_ring n)) = n
 
   INTEGER_MOD_RING_POW =
     |- !n a k. ring_pow (integer_mod_ring n) a k = a pow k rem &n
@@ -5315,15 +5682,15 @@ distinctions. New theorems:
     |- !n. field (integer_mod_ring n) <=> prime n
 
   FINITE_INTEGER_MOD_RING =
-    |- !n. FINITE(ring_carrier (integer_mod_ring n)) <=> ~(n = 0)
+    |- !n. FINITE(ring_carrier(integer_mod_ring n)) <=> ~(n = 0)
 
   FINITE_INTEGRAL_DOMAIN_EQ_FIELD =
     |- !r. FINITE(ring_carrier r) ==> (integral_domain r <=> field r)
 
   INTEGER_MOD_RING =
-    |- ring_carrier (integer_mod_ring 0) = (:int) /\
+    |- ring_carrier(integer_mod_ring 0) = (:int) /\
        (!n. 0 < n
-            ==> ring_carrier (integer_mod_ring n) = {m | &0 <= m /\ m < &n}) /\
+            ==> ring_carrier(integer_mod_ring n) = {m | &0 <= m /\ m < &n}) /\
        (!n. ring_0 (integer_mod_ring n) = &0) /\
        (!n. ring_1 (integer_mod_ring n) = &1 rem &n) /\
        (!n. ring_neg (integer_mod_ring n) = (\a. --a rem &n)) /\
@@ -5333,8 +5700,8 @@ distinctions. New theorems:
   INTEGER_MOD_RING_ASSOCIATES =
     |- !n x y.
            ring_associates (integer_mod_ring n) x y <=>
-           x IN ring_carrier (integer_mod_ring n) /\
-           y IN ring_carrier (integer_mod_ring n) /\
+           x IN ring_carrier(integer_mod_ring n) /\
+           y IN ring_carrier(integer_mod_ring n) /\
            gcd(x,&n) = gcd(y,&n)
 
   INTEGER_MOD_RING_CHAR =
@@ -5343,8 +5710,8 @@ distinctions. New theorems:
   INTEGER_MOD_RING_DIVIDES =
     |- !n a b.
            ring_divides (integer_mod_ring n) a b <=>
-           a IN ring_carrier (integer_mod_ring n) /\
-           b IN ring_carrier (integer_mod_ring n) /\
+           a IN ring_carrier(integer_mod_ring n) /\
+           b IN ring_carrier(integer_mod_ring n) /\
            gcd(a,&n) divides b
 
   INTEGER_MOD_RING_OF_INT =
@@ -5356,7 +5723,7 @@ distinctions. New theorems:
   INTEGER_MOD_RING_UNIT =
     |- !n x.
            ring_unit (integer_mod_ring n) x <=>
-           x IN ring_carrier (integer_mod_ring n) /\ coprime(x,&n)
+           x IN ring_carrier(integer_mod_ring n) /\ coprime(x,&n)
 
   INTEGRAL_DOMAIN_INTEGER_MOD_RING =
     |- !n. integral_domain (integer_mod_ring n) <=> n = 0 \/ prime n
@@ -7354,7 +7721,7 @@ among various concepts:
   NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN =
     |- !G s h.
            h normal_subgroup_of G /\
-           h SUBSET group_carrier (subgroup_generated G s)
+           h SUBSET group_carrier(subgroup_generated G s)
            ==> h normal_subgroup_of subgroup_generated G s
 
   OPPOSITE_PRODUCT_GROUP =
@@ -8121,20 +8488,20 @@ created a dependency of this file on Library/card.ml, since all of these
 theorems use material from there.
 
   CARD_EQ_FREE_ABELIAN_GROUP_INFINITE =
-    |- !s. INFINITE s ==> group_carrier (free_abelian_group s) =_c s
+    |- !s. INFINITE s ==> group_carrier(free_abelian_group s) =_c s
 
   CARD_EQ_HOMOMORPHISMS_FROM_FREE_ABELIAN_GROUP =
     |- !s G.
            abelian_group G
-           ==> {f | EXTENSIONAL (group_carrier (free_abelian_group s)) f /\
+           ==> {f | EXTENSIONAL (group_carrier(free_abelian_group s)) f /\
                     group_homomorphism (free_abelian_group s,G) f} =_c
                group_carrier G ^_c s
 
   FINITE_PRODUCT_GROUP =
     |- !k G.
-           FINITE(group_carrier (product_group k G)) <=>
+           FINITE(group_carrier(product_group k G)) <=>
            FINITE {i | i IN k /\ ~trivial_group (G i)} /\
-           (!i. i IN k ==> FINITE(group_carrier (G i)))
+           (!i. i IN k ==> FINITE(group_carrier(G i)))
 
   ISOMORPHIC_FREE_ABELIAN_GROUPS =
     |- !s t.

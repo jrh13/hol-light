@@ -2369,6 +2369,47 @@ let CARD_IMAGE_EQ_INJ = prove
                ARITH_RULE `n - 1 < n <=> ~(n = 0)`] THEN
   ASM SET_TAC[]);;
 
+let EXISTS_SMALL_SUBSET_IMAGE_INJ = prove
+ (`!P f s n.
+    (?t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s /\ P t) <=>
+    (?t. FINITE t /\ CARD t < n /\ t SUBSET s /\
+         (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
+         P (IMAGE f t))`,
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r /\ s <=> r /\ s /\ p /\ q`] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[EXISTS_SUBSET_IMAGE_INJ] THEN
+  REWRITE_TAC[CONJ_ASSOC] THEN AP_TERM_TAC THEN ABS_TAC THEN
+  MATCH_MP_TAC(TAUT
+   `(p ==> (q <=> s)) /\ (p /\ s ==> (r <=> t))
+    ==> ((p /\ q) /\ r <=> (p /\ s) /\ t)`) THEN
+  MESON_TAC[CARD_IMAGE_INJ; FINITE_IMAGE_INJ_EQ]);;
+
+let FORALL_SMALL_SUBSET_IMAGE_INJ = prove
+ (`!P f s n.
+    (!t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s ==> P t) <=>
+    (!t. FINITE t /\ CARD t < n /\ t SUBSET s /\
+         (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y))
+         ==> P (IMAGE f t))`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!t. p t) <=> ~(?t. ~p t)`] THEN
+  REWRITE_TAC[NOT_IMP; EXISTS_SMALL_SUBSET_IMAGE_INJ; GSYM CONJ_ASSOC]);;
+
+let EXISTS_SMALL_SUBSET_IMAGE = prove
+ (`!P f s n.
+    (?t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s /\ P t) <=>
+    (?t. FINITE t /\ CARD t < n /\ t SUBSET s /\
+         P (IMAGE f t))`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [REWRITE_TAC[EXISTS_SMALL_SUBSET_IMAGE_INJ] THEN MESON_TAC[];
+    MESON_TAC[FINITE_IMAGE; CARD_IMAGE_LE; LET_TRANS; IMAGE_SUBSET]]);;
+
+let FORALL_SMALL_SUBSET_IMAGE = prove
+ (`!P f s n.
+    (!t. FINITE t /\ CARD t < n /\ t SUBSET IMAGE f s ==> P t) <=>
+    (!t. FINITE t /\ CARD t < n /\ t SUBSET s ==> P (IMAGE f t))`,
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[MESON[] `(!t. p t) <=> ~(?t. ~p t)`] THEN
+  REWRITE_TAC[NOT_IMP; EXISTS_SMALL_SUBSET_IMAGE; GSYM CONJ_ASSOC]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Choosing a smaller subset of a given size.                                *)
 (* ------------------------------------------------------------------------- *)
