@@ -5,6 +5,7 @@ STANDALONE_EXAMPLES:=\
 	Library/binary \
 	Library/binomial \
 	Library/bitmatch \
+	Library/bitsize \
 	Examples/borsuk \
 	Examples/brunn_minkowski \
 	Library/card \

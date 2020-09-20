@@ -566,6 +566,15 @@ let WORD_EQ = prove
  (`!x y. word x:(N)word = word y <=> (x == y) (mod (2 EXP dimindex(:N)))`,
   MESON_TAC[VAL_WORD; WORD_VAL; CONG]);;
 
+let WORD_EQ_IMP = prove
+ (`!m n. m < 2 EXP dimindex(:N) /\ n < 2 EXP dimindex(:N)
+         ==> (word m:N word = word n <=> m = n)`,
+  REWRITE_TAC[WORD_EQ; CONG] THEN SIMP_TAC[MOD_LT]);;
+
+let WORD_EQ_0 = prove
+ (`!m. m < 2 EXP dimindex(:N) ==> (word m:N word = word 0 <=> m = 0)`,
+  SIMP_TAC[WORD_EQ_IMP; EXP_LT_0; ARITH_EQ]);;
+
 let VAL_BOUND = prove
  (`!w:N word. val w < 2 EXP dimindex(:N)`,
   REWRITE_TAC[val_def; BINARY_DIGITSUM_BOUND]);;
@@ -3204,6 +3213,62 @@ let [BIT_WORD_NEG_CASES; BIT_WORD_ADD_1_CASES; BIT_WORD_SUB_1_CASES] =
   ASM_CASES_TAC `bit (i + 1) (x:N word)` THEN ASM_REWRITE_TAC[] THEN
   ASM_ARITH_TAC);;
 
+let BIT_WORD_AND_NEG = prove
+ (`!(x:N word) i.
+        bit i (word_and x (word_neg x)) <=>
+        bit i x /\ !j. j < i ==> ~(bit j x)`,
+  REWRITE_TAC[BIT_WORD_AND; BIT_WORD_NEG_CASES] THEN
+  MESON_TAC[BIT_TRIVIAL; NOT_LE]);;
+
+let BIT_WORD_OR_NEG = prove
+ (`!(x:N word) i.
+        bit i (word_or x (word_neg x)) <=>
+        i < dimindex(:N) /\ ?j. j <= i /\ bit j x`,
+  REWRITE_TAC[BIT_WORD_OR; BIT_WORD_NEG_CASES] THEN MESON_TAC[LE_LT]);;
+
+let BIT_WORD_AND_ADD_1 = prove
+ (`!(x:N word) i.
+        bit i (word_and x (word_add x (word 1))) <=>
+        bit i x /\ ?j. j < i /\ ~bit j x`,
+  REWRITE_TAC[BIT_WORD_AND; BIT_WORD_ADD_1_CASES] THEN
+  MESON_TAC[BIT_TRIVIAL; NOT_LE]);;
+
+let BIT_WORD_AND_SUB_1 = prove
+ (`!(x:N word) i.
+        bit i (word_and x (word_sub x (word 1))) <=>
+        bit i x /\ ?j. j < i /\ bit j x`,
+  REWRITE_TAC[BIT_WORD_AND; BIT_WORD_SUB_1_CASES] THEN
+  MESON_TAC[BIT_TRIVIAL; NOT_LE]);;
+
+let BIT_WORD_OR_ADD_1 = prove
+ (`!(x:N word) i.
+        bit i (word_or x (word_add x (word 1))) <=>
+        i < dimindex(:N) /\
+        (bit i x \/ !j. j < i ==> bit j x)`,
+  REWRITE_TAC[BIT_WORD_OR; BIT_WORD_ADD_1_CASES] THEN MESON_TAC[]);;
+
+let BIT_WORD_OR_SUB_1 = prove
+ (`!(x:N word) i.
+        bit i (word_or x (word_sub x (word 1))) <=>
+        i < dimindex(:N) /\
+        (bit i x \/ !j. j < i ==> ~bit j x)`,
+  REWRITE_TAC[BIT_WORD_OR; BIT_WORD_SUB_1_CASES] THEN MESON_TAC[]);;
+
+let BIT_WORD_AND_NOT_SUB_1 = prove
+ (`!(x:N word) i.
+        bit i (word_and (word_not x) (word_sub x (word 1))) <=>
+        i < dimindex(:N) /\ !j. j <= i ==> ~(bit j x)`,
+  REWRITE_TAC[LE_LT; BIT_WORD_AND; BIT_WORD_NOT; BIT_WORD_SUB_1_CASES] THEN
+  MESON_TAC[]);;
+
+let BIT_WORD_AND_NOT_ADD_1 = prove
+ (`!(x:N word) i.
+        bit i (word_and (word_not x) (word_add x (word 1))) <=>
+        i < dimindex(:N) /\
+         ~(bit i x) /\ !j. j < i ==> bit j x`,
+  REWRITE_TAC[BIT_WORD_AND; BIT_WORD_NOT; BIT_WORD_ADD_1_CASES] THEN
+  MESON_TAC[]);;
+
 (* ------------------------------------------------------------------------- *)
 (* An idiom for describing a mask duplicating a bit throughout a word.       *)
 (* ------------------------------------------------------------------------- *)
@@ -3371,6 +3436,14 @@ let word_ctz = new_definition
 
 let word_clz = new_definition
  `word_clz (a:N word) = dimindex(:N) - minimal m. !i. m <= i ==> ~bit i a`;;
+
+let WORD_CLZ = prove
+ (`!x:N word. word_clz x = dimindex (:N) - (minimal m. val x < 2 EXP m)`,
+  GEN_TAC THEN REWRITE_TAC[word_clz] THEN AP_TERM_TAC THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `m:num` THEN REWRITE_TAC[] THEN
+  SIMP_TAC[GSYM WORD_USHR_EQ_0; WORD_EQ_BITS; BIT_WORD_USHR; BIT_WORD_0] THEN
+  MESON_TAC[LE_EXISTS; ADD_SYM]);;
 
 let WORD_CTZ_0 = prove
  (`word_ctz(word 0:N word) = dimindex(:N)`,
@@ -3650,6 +3723,28 @@ let WORD_CLZ_UNIQUE_VAL = prove
   SIMP_TAC[DIV_EQ_0; ARITH_EQ; EXP_EQ_0] THEN
   GEN_REWRITE_TAC LAND_CONV [ARITH_RULE `1 = 2 EXP 0`] THEN
   REWRITE_TAC[LT_EXP] THEN ARITH_TAC);;
+
+let WORD_CTZ_EMULATION_REV = prove
+ (`!x:N word.
+        word_clz(word_and (word_not x) (word_sub x (word 1))) =
+        dimindex(:N) - word_ctz x`,
+  GEN_TAC THEN  REWRITE_TAC[WORD_CLZ_UNIQUE_GEN] THEN
+  CONJ_TAC THENL [ARITH_TAC; ALL_TAC] THEN
+  SIMP_TAC[WORD_CTZ_LE_DIMINDEX; BIT_WORD_AND_NOT_SUB_1; ARITH_RULE
+    `i <= n ==> n - (n - i) = i /\ (n - i < n <=> ~(i = 0))`] THEN
+  SIMP_TAC[ARITH_RULE `~(t = 0) ==> (j <= t - 1 <=> j + 1 <= t)`] THEN
+  SIMP_TAC[WORD_CTZ_LE_DIMINDEX; WORD_CTZ_LE; WORD_LE_CTZ;
+           ARITH_RULE `c <= n /\ ~(c = 0) ==> c - 1 < n`] THEN
+  MESON_TAC[ARITH_RULE `~(j + 1 <= j)`]);;
+
+let WORD_CTZ_EMULATION = prove
+ (`!x:N word.
+        word_ctz x =
+        dimindex(:N) - word_clz(word_and (word_not x) (word_sub x (word 1)))`,
+  GEN_TAC THEN MATCH_MP_TAC(ARITH_RULE
+   `t:num <= n /\ l <= n /\ l = n - t ==> t = n - l`) THEN
+  REWRITE_TAC[WORD_CLZ_LE_DIMINDEX; WORD_CTZ_LE_DIMINDEX] THEN
+  REWRITE_TAC[WORD_CTZ_EMULATION_REV]);;
 
 (* ------------------------------------------------------------------------- *)
 (* JVM-specific word operations, though they may well work in other places.  *)

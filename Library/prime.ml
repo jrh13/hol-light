@@ -1258,6 +1258,14 @@ let EXP_INDEX_DIVIDES = prove
  (`!p n. p EXP (index p n) divides n`,
   MESON_TAC[LE_INDEX; LE_REFL]);;
 
+let INDEX_LT = prove
+ (`!n p k. (~(n = 0) \/ ~(k = 0)) /\ n < p EXP k ==> index p n < k`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM DE_MORGAN_THM; GSYM NOT_LE; LE_INDEX] THEN
+  REWRITE_TAC[CONTRAPOS_THM] THEN
+  DISCH_THEN(CONJUNCTS_THEN2 MP_TAC (MP_TAC o MATCH_MP DIVIDES_LE_STRONG)) THEN
+  ASM_CASES_TAC `n = 0` THEN ASM_SIMP_TAC[]);;
+
 let INDEX_1 = prove
  (`!p. index p 1 = 0`,
   GEN_TAC THEN REWRITE_TAC[index_def; ARITH] THEN COND_CASES_TAC THEN
@@ -1501,6 +1509,65 @@ let INDEX_SUB_MIN = prove
    [EXISTS_TAC `p EXP (index p n)`; EXISTS_TAC `p EXP (index p m)`] THEN
   REWRITE_TAC[EXP_INDEX_DIVIDES] THEN
   MATCH_MP_TAC DIVIDES_EXP_LE_IMP THEN ARITH_TAC);;
+
+let INDEX_ADD = prove
+ (`!p n m.
+        ~(n = 0) /\ (~(m = 0) ==> index p n < index p m)
+        ==> index p (m + n) = index p n`,
+  REPEAT GEN_TAC THEN
+  ASM_CASES_TAC `m = 0` THEN ASM_REWRITE_TAC[ADD_CLAUSES] THEN
+  ASM_CASES_TAC `p = 1` THENL
+   [ASM_MESON_TAC[INDEX_EQ_0; LT_REFL]; REPEAT STRIP_TAC] THEN
+  ASM_REWRITE_TAC[INDEX_UNIQUE_ALT; ADD_EQ_0] THEN CONJ_TAC THENL
+   [MATCH_MP_TAC DIVIDES_ADD;
+    MATCH_MP_TAC(MESON[DIVIDES_ADD_REVR]
+     `(p:num) divides m /\ ~(p divides n) ==> ~(p divides m + n)`)] THEN
+  ASM_REWRITE_TAC[PRIMEPOW_DIVIDES_INDEX] THEN ASM_ARITH_TAC);;
+
+let INDEX_MULT_BASE = prove
+ (`(!p n. index p (p * n) = if p <= 1 \/ n = 0 then 0 else index p n + 1) /\
+   (!p n. index p (n * p) = if p <= 1 \/ n = 0 then 0 else index p n + 1)`,
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ p ==> p /\ q`) THEN CONJ_TAC THENL
+   [MESON_TAC[MULT_SYM]; REPEAT GEN_TAC] THEN
+  COND_CASES_TAC THENL
+   [ASM_REWRITE_TAC[index_def] THEN ASM_MESON_TAC[MULT_EQ_0];
+    RULE_ASSUM_TAC(REWRITE_RULE[DE_MORGAN_THM]) THEN POP_ASSUM MP_TAC] THEN
+  ASM_CASES_TAC `p = 0` THEN ASM_REWRITE_TAC[LE_0] THEN STRIP_TAC THEN
+  MATCH_MP_TAC INDEX_UNIQUE THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC[ONCE_REWRITE_RULE[ADD_SYM] EXP_ADD] THEN
+  ASM_REWRITE_TAC[EXP_1; GSYM MULT_ASSOC] THEN
+  ASM_MESON_TAC[INDEX_DECOMPOSITION; LE_REFL]);;
+
+let INDEX_MULT_EXP = prove
+ (`(!p n k. index p (p EXP k * n) =
+            if p <= 1 \/ n = 0 then 0 else k + index p n) /\
+   (!p n k. index p (n * p EXP k) =
+            if n = 0 \/ p <= 1 then 0 else index p n + k)`,
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ p ==> p /\ q`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[MULT_SYM; ADD_SYM; DISJ_SYM]; GEN_TAC THEN GEN_TAC] THEN
+  ASM_CASES_TAC `p = 0` THENL [ASM_REWRITE_TAC[index_def; ARITH]; ALL_TAC] THEN
+  ASM_CASES_TAC `p <= 1` THENL [ASM_REWRITE_TAC[index_def]; ALL_TAC] THEN
+  ASM_CASES_TAC `n = 0` THENL
+   [ASM_REWRITE_TAC[index_def; MULT_CLAUSES]; ASM_REWRITE_TAC[]] THEN
+  INDUCT_TAC THEN REWRITE_TAC[EXP; MULT_CLAUSES; GSYM MULT_ASSOC] THEN
+  ASM_REWRITE_TAC[INDEX_MULT_BASE; ADD1; ADD_CLAUSES] THEN
+  ASM_REWRITE_TAC[MULT_EQ_0; EXP_EQ_0] THEN ARITH_TAC);;
+
+let INDEX_MULT_ADD = prove
+ (`(!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (p EXP k * m + n) = index p n) /\
+   (!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (m * p EXP k + n) = index p n) /\
+   (!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (n + m * p EXP k) = index p n) /\
+   (!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (n + p EXP k * m) = index p n)`,
+  MATCH_MP_TAC(TAUT `(p ==> q) /\ p ==> p /\ q`) THEN CONJ_TAC THENL
+   [REWRITE_TAC[MULT_SYM; ADD_SYM; DISJ_SYM]; REPEAT GEN_TAC] THEN
+  ASM_CASES_TAC `p <= 1` THENL [ASM_REWRITE_TAC[index_def]; ALL_TAC] THEN
+  STRIP_TAC THEN MATCH_MP_TAC INDEX_ADD THEN
+  ASM_SIMP_TAC[MULT_EQ_0; EXP_EQ_0; DE_MORGAN_THM] THEN
+  REWRITE_TAC[INDEX_MULT_EXP] THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC);;
 
 let INDEX_NSUM_LE = prove
  (`!(f:A->num) p n k.

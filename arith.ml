@@ -1772,6 +1772,14 @@ let MINIMAL_LBOUND = prove
  (`!P n. (?r. P r) /\ (!m. m < n ==> ~P m) ==> n <= (minimal) P`,
   SIMP_TAC[LE_MINIMAL] THEN MESON_TAC[NOT_LT]);;
 
+let MINIMAL_MONO = prove
+ (`!P Q. (?n. P n) /\ (!n. P n ==> Q n) ==> (minimal) Q <= (minimal) P`,
+  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
+  SUBGOAL_THEN `?n:num. Q n` ASSUME_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC(MESON[LE_TRANS; LE_REFL]
+   `(!p:num. p <= m ==> p <= n) ==> m <= n`) THEN
+  ASM_SIMP_TAC[LE_MINIMAL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* A common lemma for transitive relations.                                  *)
 (* ------------------------------------------------------------------------- *)

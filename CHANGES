@@ -8,6 +8,198 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 18th Aug 2020       Library/bitsize.ml [new file]
+
+Added a simple new library file giving a definition and basic properties of
+the "bitsize" function, which determines how many bits are needed to represent
+a natural number.
+
+  bitsize =
+    |- !n. bitsize n = (minimal i. n < 2 EXP i)
+
+  BITSIZE =
+    |- !n. n < 2 EXP bitsize n
+
+  BITSIZE_0 =
+    |- bitsize 0 = 0
+
+  BITSIZE_1 =
+    |- bitsize 1 = 1
+
+  BITSIZE_2 =
+    |- bitsize 2 = 2
+
+  BITSIZE_EQ_0 =
+    |- !n. bitsize n = 0 <=> n = 0
+
+  BITSIZE_LE =
+    |- !n k. bitsize n <= k <=> n < 2 EXP k
+
+  BITSIZE_MONO =
+    |- !m n. m <= n ==> bitsize m <= bitsize n
+
+  BITSIZE_MULT =
+    |- (!k n. bitsize (2 EXP k * n) = (if n = 0 then 0 else k + bitsize n)) /\
+       (!k n. bitsize (n * 2 EXP k) = (if n = 0 then 0 else bitsize n + k))
+
+  BITSIZE_MULT_ADD =
+    |- (!k m n.
+            ~(m = 0) /\ n < 2 EXP k
+            ==> bitsize (2 EXP k * m + n) = k + bitsize m) /\
+       (!k m n.
+            ~(m = 0) /\ n < 2 EXP k
+            ==> bitsize (m * 2 EXP k + n) = k + bitsize m) /\
+       (!k m n.
+            ~(m = 0) /\ n < 2 EXP k
+            ==> bitsize (n + 2 EXP k * m) = k + bitsize m) /\
+       (!k m n.
+            ~(m = 0) /\ n < 2 EXP k
+            ==> bitsize (n + m * 2 EXP k) = k + bitsize m)
+
+  BITSIZE_MULT_LE =
+    |- !m n. bitsize (m * n) <= bitsize m + bitsize n
+
+  BITSIZE_POW2 =
+    |- !k. bitsize (2 EXP k) = k + 1
+
+  BITSIZE_REV =
+    |- !n. ~(n = 0) ==> 2 EXP (bitsize n - 1) <= n
+
+  BITSIZE_REV_ALT =
+    |- !n. ~(n = 0) ==> 2 EXP bitsize n <= 2 * n
+
+  BITSIZE_REV_EQ =
+    |- !n. 2 EXP (bitsize n - 1) <= n <=> ~(n = 0)
+
+  BITSIZE_REV_EQ_ALT =
+    |- !n. 2 EXP bitsize n <= 2 * n <=> ~(n = 0)
+
+  BITSIZE_UNIQUE =
+    |- !n k. bitsize n = k <=> n < 2 EXP k /\ (!j. j < k ==> 2 EXP j <= n)
+
+  BITSIZE_UNIQUE_ALT =
+    |- !n k. bitsize n = k <=> (!j. n < 2 EXP j <=> k <= j)
+
+  LE_BITSIZE =
+    |- !n k. k <= bitsize n <=> ~(k = 0) ==> 2 EXP (k - 1) <= n
+
+  LE_BITSIZE_ALT =
+    |- !n k. k <= bitsize n <=> ~(k = 0) ==> 2 EXP k <= 2 * n
+
+Thu 17th Aug 2020       arith.ml, real.ml. int.ml, Library/prime.ml
+
+Added a few miscellaneous lemmas of an arithmetic character:
+
+  INDEX_ADD =
+    |- !p n m.
+           ~(n = 0) /\ (~(m = 0) ==> index p n < index p m)
+           ==> index p (m + n) = index p n
+
+  INDEX_MULT_ADD =
+    |- (!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (p EXP k * m + n) = index p n) /\
+       (!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (m * p EXP k + n) = index p n) /\
+       (!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (n + m * p EXP k) = index p n) /\
+       (!p m n k.
+        ~(n = 0) /\ index p n < k ==> index p (n + p EXP k * m) = index p n)
+
+  INDEX_MULT_BASE =
+    |- (!p n. index p (p * n) = if p <= 1 \/ n = 0 then 0 else index p n + 1) /\
+       (!p n. index p (n * p) = if p <= 1 \/ n = 0 then 0 else index p n + 1)
+
+  INDEX_MULT_EXP =
+    |- (!p n k.
+            index p (p EXP k * n) =
+            (if p <= 1 \/ n = 0 then 0 else k + index p n)) /\
+       (!p n k.
+            index p (n * p EXP k) =
+            (if n = 0 \/ p <= 1 then 0 else index p n + k))
+
+  INT_OF_NUM_MOD =
+    |- !m n. &(m MOD n) = &m - &(m DIV n) * &n
+
+  INDEX_LT =
+    |- !n p k. (~(n = 0) \/ ~(k = 0)) /\ n < p EXP k ==> index p n < k
+
+  MINIMAL_MONO =
+    |- !P Q. (?n. P n) /\ (!n. P n ==> Q n) ==> (minimal) Q <= (minimal) P
+
+  REAL_CONGRUENCE =
+    |- !a b n.
+           (a == b) (mod n) <=>
+           (if n = 0 then &a = &b else integer ((&a - &b) / &n))
+
+  REAL_OF_NUM_MOD =
+    |- !m n. &(m MOD n) = &m - &(m DIV n) * &n
+
+Wed 16th Aug 2020       Library/words.ml
+
+Added some additional word lemmas, including many standard bit twiddling hacks
+inclduing emulation of "count trailing zeros" via "count leading zeros", as for
+example in "Hacker's Delight" section 2-1 etc.:
+
+  BIT_WORD_AND_ADD_1 =
+    |- !x i.
+           bit i (word_and x (word_add x (word 1))) <=>
+           bit i x /\ (?j. j < i /\ ~bit j x)
+
+  BIT_WORD_AND_NEG =
+    |- !x i.
+           bit i (word_and x (word_neg x)) <=>
+           bit i x /\ (!j. j < i ==> ~bit j x)
+
+  BIT_WORD_AND_NOT_ADD_1 =
+    |- !x i.
+           bit i (word_and (word_not x) (word_add x (word 1))) <=>
+           i < dimindex(:N) /\ ~bit i x /\ (!j. j < i ==> bit j x)
+
+  BIT_WORD_AND_NOT_SUB_1 =
+    |- !x i.
+           bit i (word_and (word_not x) (word_sub x (word 1))) <=>
+           i < dimindex(:N) /\ (!j. j <= i ==> ~bit j x)
+
+  BIT_WORD_AND_SUB_1 =
+    |- !x i.
+           bit i (word_and x (word_sub x (word 1))) <=>
+           bit i x /\ (?j. j < i /\ bit j x)
+
+  BIT_WORD_OR_ADD_1 =
+    |- !x i.
+           bit i (word_or x (word_add x (word 1))) <=>
+           i < dimindex(:N) /\ (bit i x \/ (!j. j < i ==> bit j x))
+
+  BIT_WORD_OR_NEG =
+    |- !x i.
+           bit i (word_or x (word_neg x)) <=>
+           i < dimindex(:N) /\ (?j. j <= i /\ bit j x)
+
+  BIT_WORD_OR_SUB_1 =
+    |- !x i.
+           bit i (word_or x (word_sub x (word 1))) <=>
+           i < dimindex(:N) /\ (bit i x \/ (!j. j < i ==> ~bit j x))
+
+  WORD_CLZ =
+    |- !x. word_clz x = dimindex(:N) - (minimal m. val x < 2 EXP m)
+
+  WORD_CTZ_EMULATION =
+    |- !x. word_ctz x =
+           dimindex(:N) -
+           word_clz (word_and (word_not x) (word_sub x (word 1)))
+
+  WORD_CTZ_EMULATION_REV =
+    |- !x. word_clz (word_and (word_not x) (word_sub x (word 1))) =
+           dimindex(:N) - word_ctz x
+
+  WORD_EQ_0 =
+    |- !m. m < 2 EXP dimindex(:N) ==> (word m = word 0 <=> m = 0)
+
+  WORD_EQ_IMP =
+    |- !m n.
+           m < 2 EXP dimindex(:N) /\ n < 2 EXP dimindex(:N)
+           ==> (word m = word n <=> m = n)
+
 Fri 21st Aug 2020       Library/grouptheory.ml
 
 Added a more refined and explicit version of the existing theorem
@@ -64,7 +256,7 @@ Thu 20th Aug 2020       Library/ringtheory.ml
 Added more technical ring theory lemmas to keep things as closely in
 step with the group theory analogs as relevant/possible:
 
-  IDEAL_GENERATED_INDUCT_STRONG : thm =
+  IDEAL_GENERATED_INDUCT_STRONG =
     |- !r P s.
            (!x. x IN ring_carrier r /\ x IN s ==> P x) /\
            P (ring_0 r) /\
@@ -77,43 +269,43 @@ step with the group theory analogs as relevant/possible:
                 ==> P (ring_mul r x y))
            ==> (!x. x IN ideal_generated r s ==> P x)
 
-  INTEGER_MOD_RING_TRIVIAL : thm =
+  INTEGER_MOD_RING_TRIVIAL =
     |- integer_mod_ring 0 = integer_ring
 
-  ISOMORPHIC_PRODUCT_RING_BIJECTIONS : thm =
+  ISOMORPHIC_PRODUCT_RING_BIJECTIONS =
     |- !s r t r' f g.
            (!x. x IN s ==> f x IN t /\ g (f x) = x) /\
            (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
            (!i. i IN s ==> r i isomorphic_ring r' (f i))
            ==> product_ring s r isomorphic_ring product_ring t r'
 
-  ISOMORPHIC_PRODUCT_RING_INSERT : thm =
+  ISOMORPHIC_PRODUCT_RING_INSERT =
     |- !f i k.
            ~(i IN k)
            ==> product_ring (i INSERT k) f isomorphic_ring
                prod_ring (f i) (product_ring k f)
 
-  ISOMORPHIC_PRODUCT_RING_SING : thm =
+  ISOMORPHIC_PRODUCT_RING_SING =
     |- !r k. product_ring {k} r isomorphic_ring r k
 
-  ISOMORPHIC_PRODUCT_RING_SUPPORT : thm =
+  ISOMORPHIC_PRODUCT_RING_SUPPORT =
     |- !k r.
            product_ring {i | i IN k /\ ~trivial_ring (r i)} r isomorphic_ring
            product_ring k r
 
-  ISOMORPHIC_PRODUCT_RING_SYMDIFF : thm =
+  ISOMORPHIC_PRODUCT_RING_SYMDIFF =
     |- !k l r.
            (!i. i IN k DIFF l UNION l DIFF k ==> trivial_ring (r i))
            ==> product_ring k r isomorphic_ring product_ring l r
 
-  RING_HOMOMORPHISM_BETWEEN_SUBRINGS_ALT : thm =
+  RING_HOMOMORPHISM_BETWEEN_SUBRINGS_ALT =
     |- !r s g h f.
            ring_homomorphism (r,s) f /\
            IMAGE f (ring_carrier r INTER g) SUBSET h
            ==> ring_homomorphism (subring_generated r g,subring_generated s h)
                f
 
-  RING_ISOMORPHISMS_BETWEEN_SUBRINGS_ALT : thm =
+  RING_ISOMORPHISMS_BETWEEN_SUBRINGS_ALT =
     |- !r s g h f f'.
            ring_isomorphisms (r,s) (f,f') /\
            IMAGE f (ring_carrier r INTER g) SUBSET h /\
@@ -121,7 +313,7 @@ step with the group theory analogs as relevant/possible:
            ==> ring_isomorphisms (subring_generated r g,subring_generated s h)
                (f,f')
 
-  RING_ISOMORPHISMS_PRODUCT_RING_DISJOINT_UNION : thm =
+  RING_ISOMORPHISMS_PRODUCT_RING_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
            ==> ring_isomorphisms
@@ -130,7 +322,7 @@ step with the group theory analogs as relevant/possible:
                ((\f. RESTRICTION k f,RESTRICTION l f),
                 (\(f,g) x. if x IN k then f x else g x))
 
-  RING_ISOMORPHISM_EPIMORPHISM : thm =
+  RING_ISOMORPHISM_EPIMORPHISM =
     |- !r r' f.
            ring_isomorphism (r,r') f <=>
            ring_epimorphism (r,r') f /\
@@ -138,10 +330,10 @@ step with the group theory analogs as relevant/possible:
                 x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y
                 ==> x = y)
 
-  RING_ISOMORPHISM_PRODUCT_PROJECTION : thm =
+  RING_ISOMORPHISM_PRODUCT_PROJECTION =
     |- !r k. ring_isomorphism (product_ring {k} r,r k) (\x. x k)
 
-  RING_ISOMORPHISM_PRODUCT_RING_DISJOINT_UNION : thm =
+  RING_ISOMORPHISM_PRODUCT_RING_DISJOINT_UNION =
     |- !f k l.
            DISJOINT k l
            ==> ring_isomorphism
@@ -149,32 +341,32 @@ step with the group theory analogs as relevant/possible:
                 prod_ring (product_ring k f) (product_ring l f))
                (\f. RESTRICTION k f,RESTRICTION l f)
 
-  RING_PRODUCT_INJECTION : thm =
+  RING_PRODUCT_INJECTION =
     |- !k r a i.
            RESTRICTION k (\j. if j = i then a else ring_0 (r j)) IN
            ring_carrier(product_ring k r) <=>
            i IN k ==> a IN ring_carrier(r i)
 
-  SUBRINGS_GENERATED_EQ : thm =
+  SUBRINGS_GENERATED_EQ =
     |- !r s t.
            s SUBSET ring_carrier(subring_generated r t) /\
            t SUBSET ring_carrier(subring_generated r s)
            ==> subring_generated r s = subring_generated r t
 
-  SUBRING_GENERATED_BY_SUBRING_GENERATED_IDEMPOT : thm =
+  SUBRING_GENERATED_BY_SUBRING_GENERATED_IDEMPOT =
     |- !r s t.
            s SUBSET t
            ==> subring_generated (subring_generated r t)
                (ring_carrier(subring_generated r s)) =
                subring_generated r s
 
-  SUBRING_GENERATED_IDEMPOT_GEN : thm =
+  SUBRING_GENERATED_IDEMPOT_GEN =
     |- !r s t.
            s SUBSET ring_carrier(subring_generated r t)
            ==> subring_generated (subring_generated r t) s =
                subring_generated r s
 
-  SUBRING_GENERATED_INDUCT_STRONG : thm =
+  SUBRING_GENERATED_INDUCT_STRONG =
     |- !r P s.
            (!x. x IN ring_carrier r /\ x IN s ==> P x) /\
            P (ring_0 r) /\
@@ -188,30 +380,30 @@ step with the group theory analogs as relevant/possible:
                 ==> P (ring_mul r x y))
            ==> (!x. x IN ring_carrier(subring_generated r s) ==> P x)
 
-  SUBRING_GENERATED_MINIMAL_EQ : thm =
+  SUBRING_GENERATED_MINIMAL_EQ =
     |- !r h s.
            h subring_of r
            ==> (ring_carrier(subring_generated r s) SUBSET h <=>
                 ring_carrier r INTER s SUBSET h)
 
-  SUBRING_GENERATED_UNION : thm =
+  SUBRING_GENERATED_UNION =
     |- !r s t.
            subring_generated r
            (ring_carrier(subring_generated r s) UNION
             ring_carrier(subring_generated r t)) =
            subring_generated r (s UNION t)
 
-  SUBRING_GENERATED_UNION_LEFT : thm =
+  SUBRING_GENERATED_UNION_LEFT =
     |- !r s t.
            subring_generated r (ring_carrier(subring_generated r s) UNION t) =
            subring_generated r (s UNION t)
 
-  SUBRING_GENERATED_UNION_RIGHT : thm =
+  SUBRING_GENERATED_UNION_RIGHT =
     |- !r s t.
            subring_generated r (s UNION ring_carrier(subring_generated r t)) =
            subring_generated r (s UNION t)
 
-  SUBSET_CARRIER_SUBRING_GENERATED : thm =
+  SUBSET_CARRIER_SUBRING_GENERATED =
     |- !r s t.
            s SUBSET ring_carrier r /\ s SUBSET t
            ==> s SUBSET ring_carrier(subring_generated r t)
@@ -1644,19 +1836,19 @@ Added a few more trivial word lemmas:
 
   INT_VAL_WORD_MASK =
     |- !b. &(val (word_neg (word (bitval b)))) =
-           (&2 pow dimindex (:N) - &1) * &(bitval b)
+           (&2 pow dimindex(:N) - &1) * &(bitval b)
 
   REAL_VAL_WORD_MASK =
     |- !b. &(val (word_neg (word (bitval b)))) =
-           (&2 pow dimindex (:N) - &1) * &(bitval b)
+           (&2 pow dimindex(:N) - &1) * &(bitval b)
 
   REAL_VAL_WORD_NEG_CASES =
     |- !x. &(val (word_neg x)) =
-           (if &(val x) = &0 then &0 else &2 pow dimindex (:N) - &(val x))
+           (if &(val x) = &0 then &0 else &2 pow dimindex(:N) - &(val x))
 
   VAL_WORD_MASK =
     |- !b. val (word_neg (word (bitval b))) =
-           (2 EXP dimindex (:N) - 1) * bitval b
+           (2 EXP dimindex(:N) - 1) * bitval b
 
 Mon 22nd Jun 2020       Library/floor.ml
 
@@ -2171,7 +2363,7 @@ Added a few miscellaneous useful lemmas about machine words:
     |- !b c. &(bitval b) <= &(bitval c) <=> b ==> c
 
   INT_VAL_WORD_NOT =
-     |- !x. &(val (word_not x)) = &2 pow dimindex (:N) - &1 - &(val x)
+     |- !x. &(val (word_not x)) = &2 pow dimindex(:N) - &1 - &(val x)
 
   LE_BITVAL =
     |- !b c. bitval b <= bitval c <=> b ==> c
@@ -2186,10 +2378,10 @@ Added a few miscellaneous useful lemmas about machine words:
     |- !b c. &(bitval b) <= &(bitval c) <=> b ==> c
 
   REAL_VAL_WORD_NOT =
-     |- !x. &(val (word_not x)) = &2 pow dimindex (:N) - &1 - &(val x)
+     |- !x. &(val (word_not x)) = &2 pow dimindex(:N) - &1 - &(val x)
 
   VAL_EQ_MAX_MASK =
-     |- !x. val x = 2 EXP dimindex (:N) - 1 <=> x = word_neg (word 1)
+     |- !x. val x = 2 EXP dimindex(:N) - 1 <=> x = word_neg (word 1)
 
   VAL_MOD_2 =
     |- !x. val x MOD 2 = bitval (bit 0 x)
@@ -4418,55 +4610,55 @@ Added a collection of highly analogous theorems for groups and rings,
 mainly about cardinality properties w.r.t. morphisms and the elaborations
 with the cardinalities of carriers dividing each other:
 
-  CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE : thm =
+  CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE =
     |- !G H f.
            group_epimorphism (G,H) f /\ FINITE(group_carrier G)
            ==> CARD(group_carrier H) divides CARD(group_carrier G)
 
-  CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE : thm =
+  CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE =
     |- !G H f.
            group_monomorphism (G,H) f /\ FINITE(group_carrier H)
            ==> CARD(group_carrier G) divides CARD(group_carrier H)
 
-  CARD_DIVIDES_RING_EPIMORPHIC_IMAGE : thm =
+  CARD_DIVIDES_RING_EPIMORPHIC_IMAGE =
     |- !r r' f.
            ring_epimorphism (r,r') f /\ FINITE(ring_carrier r)
            ==> CARD(ring_carrier r') divides CARD(ring_carrier r)
 
-  CARD_DIVIDES_RING_MONOMORPHIC_IMAGE : thm =
+  CARD_DIVIDES_RING_MONOMORPHIC_IMAGE =
     |- !r r' f.
            ring_monomorphism (r,r') f /\ FINITE(ring_carrier r')
            ==> CARD(ring_carrier r) divides CARD(ring_carrier r')
 
-  CARD_EQ_GROUP_IMAGE_KERNEL : thm =
+  CARD_EQ_GROUP_IMAGE_KERNEL =
     |- !G H f.
            group_homomorphism (G,H) f
            ==> group_image (G,H) f *_c group_kernel (G,H) f =_c group_carrier G
 
-  CARD_EQ_GROUP_ISOMORPHIC_IMAGE : thm =
+  CARD_EQ_GROUP_ISOMORPHIC_IMAGE =
     |- !G H f.
            group_isomorphism (G,H) f ==> group_carrier G =_c group_carrier H
 
-  CARD_EQ_GROUP_MONOMORPHIC_IMAGE : thm =
+  CARD_EQ_GROUP_MONOMORPHIC_IMAGE =
     |- !G H f.
            group_monomorphism (G,H) f
            ==> IMAGE f (group_carrier G) =_c group_carrier G
 
-  CARD_EQ_RING_IMAGE_KERNEL : thm =
+  CARD_EQ_RING_IMAGE_KERNEL =
     |- !r r' f.
            ring_homomorphism (r,r') f
            ==> ring_image (r,r') f *_c ring_kernel (r,r') f =_c ring_carrier r
 
-  CARD_EQ_RING_ISOMORPHIC_IMAGE : thm =
+  CARD_EQ_RING_ISOMORPHIC_IMAGE =
     |- !r r' f.
            ring_isomorphism (r,r') f ==> ring_carrier r =_c ring_carrier r'
 
-  CARD_EQ_RING_MONOMORPHIC_IMAGE : thm =
+  CARD_EQ_RING_MONOMORPHIC_IMAGE =
     |- !r r' f.
            ring_monomorphism (r,r') f
            ==> IMAGE f (ring_carrier r) =_c ring_carrier r
 
-  CARD_GROUP_SETMUL_DIVIDES : thm =
+  CARD_GROUP_SETMUL_DIVIDES =
     |- !G g h.
            abelian_group G /\
            FINITE g /\
@@ -4475,78 +4667,78 @@ with the cardinalities of carriers dividing each other:
            h subgroup_of G
            ==> CARD(group_setmul G g h) divides CARD g * CARD h
 
-  CARD_LEFT_COSETS_DIVIDES : thm =
+  CARD_LEFT_COSETS_DIVIDES =
     |- !G h.
            FINITE(group_carrier G) /\ h subgroup_of G
            ==> CARD {left_coset G x h | x | x IN group_carrier G} divides
                CARD(group_carrier G)
 
-  CARD_LE_GROUP_EPIMORPHIC_IMAGE : thm =
+  CARD_LE_GROUP_EPIMORPHIC_IMAGE =
     |- !G H f.
            group_epimorphism (G,H) f ==> group_carrier H <=_c group_carrier G
 
-  CARD_LE_GROUP_MONOMORPHIC_IMAGE : thm =
+  CARD_LE_GROUP_MONOMORPHIC_IMAGE =
     |- !G H f.
            group_monomorphism (G,H) f ==> group_carrier G <=_c group_carrier H
 
-  CARD_LE_QUOTIENT_GROUP : thm =
+  CARD_LE_QUOTIENT_GROUP =
     |- !G n.
            n normal_subgroup_of G
            ==> group_carrier(quotient_group G n) <=_c group_carrier G
 
-  CARD_LE_QUOTIENT_RING : thm =
+  CARD_LE_QUOTIENT_RING =
     |- !r j.
            ring_ideal r j
            ==> ring_carrier(quotient_ring r j) <=_c ring_carrier r
 
-  CARD_LE_RING_EPIMORPHIC_IMAGE : thm =
+  CARD_LE_RING_EPIMORPHIC_IMAGE =
     |- !r r' f.
            ring_epimorphism (r,r') f ==> ring_carrier r' <=_c ring_carrier r
 
-  CARD_LE_RING_MONOMORPHIC_IMAGE : thm =
+  CARD_LE_RING_MONOMORPHIC_IMAGE =
     |- !r r' f.
            ring_monomorphism (r,r') f ==> ring_carrier r <=_c ring_carrier r'
 
-  CARD_QUOTIENT_GROUP_DIVIDES : thm =
+  CARD_QUOTIENT_GROUP_DIVIDES =
     |- !G n.
            FINITE(group_carrier G) /\ n normal_subgroup_of G
            ==> CARD(group_carrier(quotient_group G n)) divides
                CARD(group_carrier G)
 
-  CARD_QUOTIENT_RING_DIVIDES : thm =
+  CARD_QUOTIENT_RING_DIVIDES =
     |- !r j.
            FINITE(ring_carrier r) /\ ring_ideal r j
            ==> CARD(ring_carrier(quotient_ring r j)) divides
                CARD(ring_carrier r)
 
-  CARD_RIGHT_COSETS_DIVIDES : thm =
+  CARD_RIGHT_COSETS_DIVIDES =
     |- !G h.
            FINITE(group_carrier G) /\ h subgroup_of G
            ==> CARD {right_coset G h x | x | x IN group_carrier G} divides
                CARD(group_carrier G)
 
-  CARD_RING_COSETS_DIVIDES : thm =
+  CARD_RING_COSETS_DIVIDES =
     |- !r j.
            FINITE(ring_carrier r) /\ (ring_ideal r j \/ j subring_of r)
            ==> CARD {ring_coset r j x | x | x IN ring_carrier r} divides
                CARD(ring_carrier r)
 
-  FINITE_GROUP_EPIMORPHIC_IMAGE : thm =
+  FINITE_GROUP_EPIMORPHIC_IMAGE =
     |- !G H f.
            group_epimorphism (G,H) f /\ FINITE(group_carrier G)
            ==> FINITE(group_carrier H)
 
-  FINITE_GROUP_MONOMORPHIC_PREIMAGE : thm =
+  FINITE_GROUP_MONOMORPHIC_PREIMAGE =
     |- !G H f.
            group_monomorphism (G,H) f /\ FINITE(group_carrier H)
            ==> FINITE(group_carrier G)
 
-  FINITE_RING_EPIMORPHIC_IMAGE : thm =
+  FINITE_RING_EPIMORPHIC_IMAGE =
     |- !r r' f.
            ring_epimorphism (r,r') f /\ FINITE(ring_carrier r)
            ==> FINITE(ring_carrier r')
 
-  FINITE_RING_MONOMORPHIC_PREIMAGE : thm =
+  FINITE_RING_MONOMORPHIC_PREIMAGE =
     |- !r r' f.
            ring_monomorphism (r,r') f /\ FINITE(ring_carrier r')
            ==> FINITE(ring_carrier r)
@@ -7050,7 +7242,7 @@ Added a couple more trivial facts about wellfounded relations:
 
   WF_RESTRICT = |- !(<<) P. WF (<<) ==> WF (\x y. P x /\ P y /\ x << y)
 
-  WF_DHAIN_TRANSITIVE : thm =
+  WF_DHAIN_TRANSITIVE =
     |- !(<<). (!x y z. x << y /\ y << z ==> x << z)
               ==> (WF (<<) <=> ~(?s. !i j. i < j ==> s j << s i))
 
@@ -7199,7 +7391,7 @@ Mon 24th Jun 2019       sets.ml
 
 Added one more trivial set rewrite:
 
-  DISJOINT_SING : thm =
+  DISJOINT_SING =
     |- (!s a. DISJOINT s {a} <=> ~(a IN s)) /\
        (!s a. DISJOINT {a} s <=> ~(a IN s))
 
@@ -8360,7 +8552,7 @@ Tue  3rd Jul 2018       Library/pocklington.ml
 
 Added one more uniqueness theorem for modulus based on congruences:
 
-  MOD_UNIQUE : thm =
+  MOD_UNIQUE =
     |- !m n p. m MOD n = p <=> (n = 0 /\ m = p \/ p < n) /\ (m == p) (mod n)
 
 Mon  2nd Jul 2018       list.ml
@@ -8378,7 +8570,7 @@ Added one more basic homological algebra lemma (found in Dieck's "Algebraic
 Topology", 11.1.3), which is a bit of a mouthful but intuitively nice when
 you look at the picture:
 
-  EXACT_SEQUENCE_HEXAGON_LEMMA : thm =
+  EXACT_SEQUENCE_HEXAGON_LEMMA =
     |- !f g h h' i j k k' a b c d l m A B C D W X Y.
            abelian_group X /\
            group_homomorphism (A,Y) a /\
@@ -9931,7 +10123,7 @@ Added the following theorem about defining recursive functions based on an
 existential condition, after finally getting tired of effectively proving
 special cases using the same reasoning:
 
-  WF_REC_EXISTS : thm =
+  WF_REC_EXISTS =
     |- WF (<<)
        ==> (!P. (!f g x y.
                      (!z. z << x ==> f z = g z) ==> (P f x y <=> P g x y)) /\
@@ -10360,14 +10552,14 @@ Added two obvious theorems about the sizes of cartesian products:
 
   HAS_SIZE_CART =
     |- !P m.
-           (!i. 1 <= i /\ i <= dimindex (:N) ==> {x | P i x} HAS_SIZE m i)
-           ==> {v | !i. 1 <= i /\ i <= dimindex (:N) ==> P i (v$i)} HAS_SIZE
-               nproduct (1..dimindex (:N)) m
+           (!i. 1 <= i /\ i <= dimindex(:N) ==> {x | P i x} HAS_SIZE m i)
+           ==> {v | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)} HAS_SIZE
+               nproduct (1..dimindex(:N)) m
 
   CARD_CART =
-    |- !P. (!i. 1 <= i /\ i <= dimindex (:N) ==> FINITE {x | P i x})
-           ==> CARD {v | !i. 1 <= i /\ i <= dimindex (:N) ==> P i (v$i)} =
-               nproduct (1..dimindex (:N)) (\i. CARD {x | P i x})
+    |- !P. (!i. 1 <= i /\ i <= dimindex(:N) ==> FINITE {x | P i x})
+           ==> CARD {v | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)} =
+               nproduct (1..dimindex(:N)) (\i. CARD {x | P i x})
 
 Wed 13th Apr 2016       Library/wo.ml, Library/card.ml
 
@@ -10546,8 +10738,8 @@ lemmas:
   |- (!a. mk_finite_diff (dest_finite_diff a) = a) /\
      (!r. r IN
           1..
-          (if dimindex (:B) < dimindex (:A)
-           then dimindex (:A) - dimindex (:B)
+          (if dimindex(:B) < dimindex(:A)
+           then dimindex(:A) - dimindex(:B)
            else 1) <=>
           dest_finite_diff (mk_finite_diff r) = r)
 
@@ -10555,34 +10747,34 @@ lemmas:
   |- (:(A,B)finite_diff) =
      IMAGE mk_finite_diff
      (1..
-      (if dimindex (:B) < dimindex (:A)
-       then dimindex (:A) - dimindex (:B)
+      (if dimindex(:B) < dimindex(:A)
+       then dimindex(:A) - dimindex(:B)
        else 1))
 
  DIMINDEX_HAS_SIZE_FINITE_DIFF =
   |- (:(M,N)finite_diff) HAS_SIZE
-     (if dimindex (:N) < dimindex (:M)
-      then dimindex (:M) - dimindex (:N)
+     (if dimindex(:N) < dimindex(:M)
+      then dimindex(:M) - dimindex(:N)
       else 1)
 
  DIMINDEX_FINITE_DIFF =
-  |- dimindex (:(M,N)finite_diff) =
-     (if dimindex (:N) < dimindex (:M)
-      then dimindex (:M) - dimindex (:N)
+  |- dimindex(:(M,N)finite_diff) =
+     (if dimindex(:N) < dimindex(:M)
+      then dimindex(:M) - dimindex(:N)
       else 1)
 
  FINITE_DIFF_IMAGE =
   |- (:(A,B)finite_diff) =
      IMAGE mk_finite_diff
      (1..
-      (if dimindex (:B) < dimindex (:A)
-       then dimindex (:A) - dimindex (:B)
+      (if dimindex(:B) < dimindex(:A)
+       then dimindex(:A) - dimindex(:B)
        else 1))
 
  DIMINDEX_HAS_SIZE_FINITE_DIFF =
   |- (:(M,N)finite_diff) HAS_SIZE
-     (if dimindex (:N) < dimindex (:M)
-      then dimindex (:M) - dimindex (:N)
+     (if dimindex(:N) < dimindex(:M)
+      then dimindex(:M) - dimindex(:N)
       else 1)
 
 This can occasionally be useful to make "size-lowering" arguments.
@@ -12568,7 +12760,7 @@ Tue  4th Jun 2013       cart.ml
 Added a 4-element type and corresponding theorems
 
         HAS_SIZE_4 = |- (:4) HAS_SIZE 4
-        DIMINDEX_4 = |- dimindex (:4) = 4
+        DIMINDEX_4 = |- dimindex(:4) = 4
 
 Fri 31st May 2013       cart.ml
 
@@ -12966,7 +13158,7 @@ CARD_BOOL =
   |- CARD(:bool) = 2
 
 CARD_CART_UNIV =
-  |- FINITE(:A) ==> CARD(:A^N) = CARD(:A) EXP dimindex (:N)
+  |- FINITE(:A) ==> CARD(:A^N) = CARD(:A) EXP dimindex(:N)
 
 CARD_FUNSPACE_UNIV =
   |- FINITE(:A) /\ FINITE(:B) ==> CARD(:A->B) = CARD(:B) EXP CARD(:A)
@@ -12984,7 +13176,7 @@ HAS_SIZE_BOOL =
   |- (:bool) HAS_SIZE 2
 
 HAS_SIZE_CART_UNIV =
-  |- !m. (:A) HAS_SIZE m ==> (:A^N) HAS_SIZE m EXP dimindex (:N)
+  |- !m. (:A) HAS_SIZE m ==> (:A^N) HAS_SIZE m EXP dimindex(:N)
 
 HAS_SIZE_FUNSPACE_UNIV =
   |- !m n. (:A) HAS_SIZE m /\ (:B) HAS_SIZE n ==> (:A->B) HAS_SIZE n EXP m
@@ -15836,8 +16028,8 @@ Sun 16th Dec 2007       cart.ml
 Added this finiteness theorem (which is actually quite tedious to prove!)
 
   FINITE_CART =
-    |- !P. (!i. 1 <= i /\ i <= dimindex (:N) ==> FINITE {x | P i x})
-           ==> FINITE {v | !i. 1 <= i /\ i <= dimindex (:N) ==> P i (v$i)}
+    |- !P. (!i. 1 <= i /\ i <= dimindex(:N) ==> FINITE {x | P i x})
+           ==> FINITE {v | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)}
 
 Mon 10th Dec 2007       iter.ml
 
@@ -17519,15 +17711,15 @@ old way:
   HAS_SIZE_2 = |- (:2) HAS_SIZE 2
   HAS_SIZE_3 = |- (:3) HAS_SIZE 3
 
-  DIMINDEX_1 = |- dimindex (:1) = 1
-  DIMINDEX_2 = |- dimindex (:2) = 2
-  DIMINDEX_3 = |- dimindex (:3) = 3
+  DIMINDEX_1 = |- dimindex(:1) = 1
+  DIMINDEX_2 = |- dimindex(:2) = 2
+  DIMINDEX_3 = |- dimindex(:3) = 3
 
 Mon 10th Apr 06         cart.ml
 
 Added
 
-  DIMINDEX_UNIQUE = |- (:A) HAS_SIZE n ==> dimindex (:A) = n
+  DIMINDEX_UNIQUE = |- (:A) HAS_SIZE n ==> dimindex(:A) = n
 
 Mon 10th Apr 06         theorems.ml, passim.
 

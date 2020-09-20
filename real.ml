@@ -397,6 +397,12 @@ let REAL_SUB_RDISTRIB = prove
  (`!x y z. (x - y) * z = x * z - y * z`,
   REAL_ARITH_TAC);;
 
+let REAL_OF_NUM_MOD = prove
+ (`!m n. &(m MOD n):real = &m - &(m DIV n) * &n`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[REAL_EQ_SUB_LADD] THEN
+  REWRITE_TAC[REAL_OF_NUM_CLAUSES] THEN
+  MESON_TAC[DIVISION_SIMP; ADD_SYM]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Theorems about "abs".                                                     *)
 (* ------------------------------------------------------------------------- *)
