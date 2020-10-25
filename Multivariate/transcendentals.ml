@@ -1762,7 +1762,7 @@ let COS_EQ_MINUS1 = prove
   REWRITE_TAC[GSYM CX_INJ; CX_NEG; CX_COS; CCOS_EQ_MINUS1]);;
 
 let DIST_CEXP_II_1 = prove
- (`!z. norm(cexp(ii * Cx t) - Cx(&1)) = &2 * abs(sin(t / &2))`,
+ (`!t. norm(cexp(ii * Cx t) - Cx(&1)) = &2 * abs(sin(t / &2))`,
   GEN_TAC THEN REWRITE_TAC[NORM_EQ_SQUARE] THEN
   CONJ_TAC THENL [REAL_ARITH_TAC; REWRITE_TAC[GSYM NORM_POW_2]] THEN
   REWRITE_TAC[CEXP_EULER; COMPLEX_SQNORM; GSYM CX_COS; GSYM CX_SIN] THEN
@@ -6457,7 +6457,7 @@ let REAL_ROOT_MUL = prove
   REAL_ARITH_TAC);;
 
 let REAL_ROOT_POW_GEN = prove
- (`!m n x y. root n (x pow m) = (root n x) pow m`,
+ (`!m n x. root n (x pow m) = (root n x) pow m`,
   INDUCT_TAC THEN ASM_REWRITE_TAC[REAL_ROOT_MUL; ROOT_1; real_pow]);;
 
 let REAL_ROOT_POW = prove
@@ -7360,7 +7360,7 @@ let HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_POLAR = prove
     AP_THM_TAC THEN AP_TERM_TAC THEN ASM_REAL_ARITH_TAC]);;
 
 let ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_POLAR = prove
- (`!f:complex->real^N b.
+ (`!f:complex->real^N.
         f absolutely_integrable_on (:complex) <=>
         (\z. Re z % f(Cx(Re z) * cexp(ii * Cx(Im z))))
         absolutely_integrable_on

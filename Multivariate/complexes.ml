@@ -808,7 +808,7 @@ let COMPLEX_INV_DIV = prove
   REWRITE_TAC[COMPLEX_MUL_AC]);;
 
 let COMPLEX_EQ_INV2 = prove
- (`!w x:complex. inv w = inv z <=> w = z`,
+ (`!w z:complex. inv w = inv z <=> w = z`,
   MESON_TAC[COMPLEX_INV_INV]);;
 
 let SGN_RE_COMPLEX_INV = prove

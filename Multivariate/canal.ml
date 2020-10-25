@@ -1235,7 +1235,7 @@ let HAS_COMPLEX_DERIVATIVE_CDIV_WITHIN = prove
   SIMP_TAC[complex_div; HAS_COMPLEX_DERIVATIVE_RMUL_WITHIN]);;
 
 let HAS_COMPLEX_DERIVATIVE_CDIV_AT = prove
- (`!f f' c x s.
+ (`!f f' c x.
         (f has_complex_derivative f') (at x)
         ==> ((\x. f(x) / c) has_complex_derivative (f' / c)) (at x)`,
   SIMP_TAC[complex_div; HAS_COMPLEX_DERIVATIVE_RMUL_AT]);;
@@ -1564,7 +1564,7 @@ let COMPLEX_DIFFERENTIABLE_COMPOSE_WITHIN = prove
   MESON_TAC[COMPLEX_DIFF_CHAIN_WITHIN]);;
 
 let COMPLEX_DIFFERENTIABLE_COMPOSE_AT = prove
- (`!f g x s.
+ (`!f g x.
          f complex_differentiable (at x) /\
          g complex_differentiable (at (f x))
          ==> (g o f) complex_differentiable (at x)`,
@@ -2870,7 +2870,7 @@ let SUMMABLE_GP = prove
 (* ------------------------------------------------------------------------- *)
 
 let SERIES_DIRICHLET_COMPLEX_GEN = prove
- (`!f g N k m p l.
+ (`!f g k m p l.
         bounded {vsum (m..n) f | n IN (:num)} /\
         summable (from p) (\n. Cx(norm(g(n + 1) - g(n)))) /\
         ((\n. vsum(1..n) f * g(n + 1)) --> l) sequentially

@@ -1940,7 +1940,7 @@ let DIFFERENTIABLE_IMP_OPEN_MAP = prove
   ASM_MESON_TAC[DET_MATRIX_EQ_0_RIGHT; has_derivative]);;
 
 let DIFFERENTIABLE_IMP_OPEN_MAP_ALT = prove
- (`!f:real^N->real^N f' g' s t.
+ (`!f:real^N->real^N f' s t.
         (!x. x IN s
              ==> (f has_derivative f' x) (at x within s) /\
                  ~(det(matrix(f' x)) = &0)) /\

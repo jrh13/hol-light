@@ -2611,7 +2611,7 @@ let LIPSCHITZ_ON_COMPOSE = prove
   ASM_SIMP_TAC[REAL_LE_LMUL_EQ]);;
 
 let LINEAR_IMP_LIPSCHITZ = prove
- (`!f:real^M->real^N x y.
+ (`!f:real^M->real^N.
         linear f ==> ?B. !x y. norm(f x - f y) <= B * norm(x - y)`,
   SIMP_TAC[GSYM LINEAR_SUB] THEN MESON_TAC[LINEAR_BOUNDED]);;
 

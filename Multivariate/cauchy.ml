@@ -3773,7 +3773,7 @@ let WINDING_NUMBER = prove
   ASM_REWRITE_TAC[COMPLEX_SUB_0]);;
 
 let WINDING_NUMBER_UNIQUE = prove
- (`!g z e n.
+ (`!g z n.
         path g /\ ~(z IN path_image g) /\
         (!e. &0 < e
              ==> ?p. valid_path p /\ ~(z IN path_image p) /\
@@ -8171,8 +8171,8 @@ let HIGHER_COMPLEX_DERIVATIVE_HIGHER_COMPLEX_DERIVATIVE = prove
 
 let higher_complex_derivative_alt = prove
  (`(!f. higher_complex_derivative 0 f = f) /\
-   (!f z n. higher_complex_derivative (SUC n) f =
-            higher_complex_derivative n (complex_derivative f))`,
+   (!f n. higher_complex_derivative (SUC n) f =
+          higher_complex_derivative n (complex_derivative f))`,
   REWRITE_TAC [HIGHER_COMPLEX_DERIVATIVE_EQ_ITER; ITER_ALT]);;
 
 let HIGHER_COMPLEX_DERIVATIVE_LINEAR = prove

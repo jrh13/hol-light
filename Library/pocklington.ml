@@ -102,7 +102,7 @@ let CONG_SUB_CASES = prove
   POP_ASSUM MP_TAC THEN ARITH_TAC);;
 
 let CONG_MINUS1 = prove
- (`!a b n. (a == n - 1) (mod n) <=> n = 0 /\ a = 0 \/ n divides (a + 1)`,
+ (`!a n. (a == n - 1) (mod n) <=> n = 0 /\ a = 0 \/ n divides (a + 1)`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THENL
    [ASM_REWRITE_TAC[SUB_0; CONG_MOD_0; DIVIDES_ZERO] THEN ARITH_TAC;
     ONCE_REWRITE_TAC[NUMBER_RULE
@@ -214,11 +214,11 @@ let CONG_ADD_LCANCEL = prove
   NUMBER_TAC);;
 
 let CONG_ADD_LCANCEL_EQ_0 = prove
- (`!a n x y. (a + x == a) (mod n) <=> (x == 0) (mod n)`,
+ (`!a n x. (a + x == a) (mod n) <=> (x == 0) (mod n)`,
   NUMBER_TAC);;
 
 let CONG_ADD_RCANCEL_EQ_0 = prove
- (`!a n x y. (x + a == a) (mod n) <=> (x == 0) (mod n)`,
+ (`!a n x. (x + a == a) (mod n) <=> (x == 0) (mod n)`,
   NUMBER_TAC);;
 
 let CONG_IMP_EQ = prove
@@ -603,7 +603,7 @@ let CONG_CHINESE_EQ = prove
   NUMBER_TAC);;
 
 let CHINESE_REMAINDER_COUNT = prove
- (`!P Q R a b k m n.
+ (`!P Q R a b m n.
         coprime(a,b) /\
         (!x. x < a * b ==> (R x <=> P (x MOD a) /\ Q (x MOD b))) /\
         {x | x < a /\ P x} HAS_SIZE m /\ {x | x < b /\ Q x} HAS_SIZE n
@@ -645,7 +645,7 @@ let CHINESE_REMAINDER_COUNT = prove
      ASM_MESON_TAC[MOD_LT; MOD_LT_EQ; CONG]]);;
 
 let CHINESE_REMAINDER_COPRIME_COUNT = prove
- (`!P Q R a b k m n.
+ (`!P Q R a b m n.
         coprime(a,b) /\
         (!x. x < a * b ==> (R x <=> P (x MOD a) /\ Q (x MOD b))) /\
         {x | x < a /\ coprime(a,x) /\ P x} HAS_SIZE m /\
@@ -1032,7 +1032,7 @@ let PHI_ALT = prove
     ASM_MESON_TAC[LE_LT; COPRIME_REFL; LT_NZ]]);;
 
 let PHI_FINITE_LEMMA = prove
- (`!P n. FINITE {m | coprime(m,n) /\ m < n}`,
+ (`!n. FINITE {m | coprime(m,n) /\ m < n}`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `0..n` THEN
   REWRITE_TAC[FINITE_NUMSEG; SUBSET; IN_NUMSEG; IN_ELIM_THM] THEN ARITH_TAC);;
 
@@ -1273,7 +1273,7 @@ let NPRODUCT_MOD = prove
   ASM_SIMP_TAC[CONG_MOD]);;
 
 let NPRODUCT_CMUL = prove
- (`!s a c n.
+ (`!s a c.
         FINITE s
         ==> nproduct s (\m. c * a(m)) = c EXP (CARD s) * nproduct s a`,
   REWRITE_TAC[nproduct; RIGHT_FORALL_IMP_THM] THEN

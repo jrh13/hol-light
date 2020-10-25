@@ -835,7 +835,7 @@ let WOSET_FINITE_TOSET = prove
 (* ------------------------------------------------------------------------ *)
 
 let UNION_FLD = prove
- (`!P (l:A->A->bool). fld(\x y. ?l. P l /\ l x y) x <=> ?l. P l /\ fld(l) x`,
+ (`!P. fld(\x y:A. ?l. P l /\ l x y) x <=> ?l. P l /\ fld(l) x`,
   REPEAT GEN_TAC THEN REWRITE_TAC[REWRITE_RULE[IN] IN_FLD] THEN MESON_TAC[]);;
 
 let UNION_INSEG = prove

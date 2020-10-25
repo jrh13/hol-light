@@ -344,7 +344,7 @@ let RING_NEG_ADD = prove
     ASM_SIMP_TAC[RING_ADD_RNEG; RING_ADD_RZERO]]);;
 
 let RING_SUB_REFL = prove
- (`!r x y:A. x IN ring_carrier r ==> ring_sub r x x = ring_0 r`,
+ (`!r x:A. x IN ring_carrier r ==> ring_sub r x x = ring_0 r`,
   SIMP_TAC[ring_sub; RING_ADD_RNEG]);;
 
 let RING_SUB_LZERO = prove
@@ -2530,7 +2530,7 @@ let SUBRING_OF_INTER = prove
   REWRITE_TAC[subring_of; SUBSET; IN_INTER] THEN SET_TAC[]);;
 
 let SUBRING_OF_UNIONS = prove
- (`!r k (u:(A->bool)->bool).
+ (`!r (u:(A->bool)->bool).
         ~(u = {}) /\
         (!h. h IN u ==> h subring_of r) /\
         (!g h. g IN u /\ h IN u ==> g SUBSET h \/ h SUBSET g)
@@ -3193,14 +3193,14 @@ let RING_SETMUL = prove
   SIMP_TAC[ring_setmul; SUBSET; FORALL_IN_GSPEC; RING_MUL]);;
 
 let RING_SETADD_SYM = prove
- (`!r s t u:A->bool.
+ (`!r s t:A->bool.
         s SUBSET ring_carrier r /\ t SUBSET ring_carrier r
         ==> ring_setadd r s t = ring_setadd r t s`,
   REWRITE_TAC[SUBSET; EXTENSION; IN_ELIM_THM; ring_setadd] THEN
   MESON_TAC[RING_ADD_SYM]);;
 
 let RING_SETMUL_SYM = prove
- (`!r s t u:A->bool.
+ (`!r s t:A->bool.
         s SUBSET ring_carrier r /\ t SUBSET ring_carrier r
         ==> ring_setmul r s t = ring_setmul r t s`,
   REWRITE_TAC[SUBSET; EXTENSION; IN_ELIM_THM; ring_setmul] THEN
@@ -5719,7 +5719,7 @@ let ISOMORPHIC_RING_SIZE = prove
   REWRITE_TAC[CARD_HAS_SIZE_CONG]);;
 
 let ISOMORPHIC_RING_CARD = prove
- (`!(G:A ring) (H:B ring) n.
+ (`!(G:A ring) (H:B ring).
         G isomorphic_ring H /\
         (FINITE(ring_carrier G) \/ FINITE(ring_carrier H))
         ==> CARD(ring_carrier G) = CARD(ring_carrier H)`,
@@ -6798,7 +6798,7 @@ let RING_HOMOMORPHISM_COMPONENTWISE = prove
   MESON_TAC[]);;
 
 let RING_HOMOMORPHISM_COMPONENTWISE_UNIV = prove
- (`!r k (f:A->K->B).
+ (`!r s (f:A->K->B).
         ring_homomorphism(r,product_ring (:K) s) f <=>
         !i. ring_homomorphism (r,s i) (\x. f x i)`,
   REWRITE_TAC[RING_HOMOMORPHISM_COMPONENTWISE; IN_UNIV] THEN
@@ -7631,7 +7631,7 @@ let RING_COSET_CARRIER = prove
            NOT_INSERT_EMPTY; RING_IDEAL_CARRIER]);;
 
 let RING_COSET_EQ = prove
- (`!r t x y:A.
+ (`!r j x y:A.
         (ring_ideal r j \/ j subring_of r) /\
         x IN ring_carrier r /\ y IN ring_carrier r
         ==> (ring_coset r j x = ring_coset r j y <=> ring_sub r x y IN j)`,

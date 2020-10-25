@@ -17640,7 +17640,7 @@ let HOMOTOPIC_WITH_SUBSET_LEFT = prove
     ASM SET_TAC[]]);;
 
 let HOMOTOPIC_WITH_SUBSET_RIGHT = prove
- (`!P X Y Z (f:real^M->real^N) g h.
+ (`!P X Y Z (f:real^M->real^N) g.
         homotopic_with P
          (subtopology euclidean X,subtopology euclidean Y) f g /\
         Y SUBSET Z
@@ -18276,7 +18276,7 @@ let HOMOTOPIC_WITH_ORTHOGONAL_TRANSFORMATIONS_GEN = prove
       ASM_REAL_ARITH_TAC]]);;
 
 let HOMOTOPIC_WITH_ORTHOGONAL_TRANSFORMATIONS_ALT = prove
- (`!P f g:real^N->real^N.
+ (`!f g:real^N->real^N.
         homotopic_with orthogonal_transformation
           (subtopology euclidean ((:real^N) DELETE vec 0),
            subtopology euclidean ((:real^N) DELETE vec 0))
@@ -18547,7 +18547,7 @@ let HOMOTOPIC_PATHS_EQ = prove
   MESON_TAC[ENDS_IN_UNIT_INTERVAL]);;
 
 let HOMOTOPIC_PATHS_REPARAMETRIZE = prove
- (`!p:real^1->real^N q f:real^1->real^1.
+ (`!p:real^1->real^N q.
         path p /\ path_image p SUBSET s /\
         (?f. f continuous_on interval[vec 0,vec 1] /\
              IMAGE f (interval[vec 0,vec 1]) SUBSET interval[vec 0,vec 1] /\

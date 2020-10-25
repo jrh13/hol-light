@@ -2326,7 +2326,7 @@ let INTEGRAL_0 = prove
   MESON_TAC[INTEGRAL_UNIQUE; HAS_INTEGRAL_0]);;
 
 let INTEGRAL_ADD = prove
- (`!f:real^M->real^N g k l s.
+ (`!f:real^M->real^N g s.
         f integrable_on s /\ g integrable_on s
         ==> integral s (\x. f x + g x) = integral s f + integral s g`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
@@ -2345,7 +2345,7 @@ let INTEGRAL_NEG = prove
   MATCH_MP_TAC HAS_INTEGRAL_NEG THEN ASM_SIMP_TAC[INTEGRABLE_INTEGRAL]);;
 
 let INTEGRAL_SUB = prove
- (`!f:real^M->real^N g k l s.
+ (`!f:real^M->real^N g s.
         f integrable_on s /\ g integrable_on s
         ==> integral s (\x. f x - g x) = integral s f - integral s g`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
@@ -4503,7 +4503,7 @@ let INTEGRABLE_SPIKE_EQ = prove
   MESON_TAC[INTEGRABLE_SPIKE]);;
 
 let INTEGRAL_SPIKE = prove
- (`!f:real^M->real^N g s t y.
+ (`!f:real^M->real^N g s t.
         negligible s /\ (!x. x IN (t DIFF s) ==> g x = f x)
         ==> integral t f = integral t g`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[integral] THEN
@@ -5979,7 +5979,7 @@ let HAS_INTEGRAL_PASTECART_SYM = prove
   REWRITE_TAC[PASTECART_FST_SND; IMAGE_ID]);;
 
 let INTEGRAL_PASTECART_SYM = prove
- (`!f:real^(M,N)finite_sum->real^P s y.
+ (`!f:real^(M,N)finite_sum->real^P s.
         integral
            (IMAGE (\z. pastecart (sndcart z) (fstcart z)) s)
            (\z. f(pastecart (sndcart z) (fstcart z))) =
@@ -5987,7 +5987,7 @@ let INTEGRAL_PASTECART_SYM = prove
   REWRITE_TAC[integral; HAS_INTEGRAL_PASTECART_SYM]);;
 
 let INTEGRABLE_PASTECART_SYM = prove
- (`!f:real^(M,N)finite_sum->real^P s y.
+ (`!f:real^(M,N)finite_sum->real^P s.
         (\z. f(pastecart (sndcart z) (fstcart z))) integrable_on
         (IMAGE (\z. pastecart (sndcart z) (fstcart z)) s) <=>
         f integrable_on s`,
@@ -11662,7 +11662,7 @@ let DOMINATED_CONVERGENCE_INTEGRABLE = prove
  (`!f:num->real^M->real^N g h s.
          (!k. f k absolutely_integrable_on s) /\
          h integrable_on s /\
-         (!k x. x IN s ==> norm(g x) <= drop(h x)) /\
+         (!x. x IN s ==> norm(g x) <= drop(h x)) /\
          (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
          ==> g integrable_on s`,
   let lemma = prove
@@ -11726,7 +11726,7 @@ let DOMINATED_CONVERGENCE_ABSOLUTELY_INTEGRABLE = prove
  (`!f:num->real^M->real^N g h s.
          (!k. f k absolutely_integrable_on s) /\
          h integrable_on s /\
-         (!k x. x IN s ==> norm(g x) <= drop(h x)) /\
+         (!x. x IN s ==> norm(g x) <= drop(h x)) /\
          (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
          ==> g absolutely_integrable_on s`,
   REPEAT STRIP_TAC THEN

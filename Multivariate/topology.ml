@@ -3165,7 +3165,7 @@ let EVENTUALLY_IN_OPEN = prove
   ASM_SIMP_TAC[INTERIOR_OPEN]);;
 
 let EVENTUALLY_WITHIN_OPEN = prove
- (`!f l a:real^M s.
+ (`!f a:real^M s.
         a IN s /\ open s
         ==> (eventually P (at a within s) <=> eventually P (at a))`,
   REPEAT STRIP_TAC THEN
@@ -4544,7 +4544,7 @@ let IN_CLOSURE_DELETE = prove
   SIMP_TAC[CLOSURE_APPROACHABLE; LIMPT_APPROACHABLE; IN_DELETE; CONJ_ASSOC]);;
 
 let DENSE_LIMIT_POINTS = prove
- (`!x. {x | x limit_point_of s} = (:real^N) <=> closure s = (:real^N)`,
+ (`!s. {x | x limit_point_of s} = (:real^N) <=> closure s = (:real^N)`,
   GEN_TAC THEN EQ_TAC THENL [SIMP_TAC[closure] THEN SET_TAC[]; DISCH_TAC] THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP DENSE_IMP_PERFECT) THEN
   RULE_ASSUM_TAC(REWRITE_RULE[closure]) THEN ASM SET_TAC[]);;
@@ -11429,7 +11429,7 @@ let IN_COMPONENTS_CONNECTED = prove
   STRIP_TAC THEN ASM_REWRITE_TAC[CONNECTED_CONNECTED_COMPONENT]);;
 
 let CONNECTED_COMPONENT_IN_COMPONENTS = prove
- (`!s c x:real^N. connected_component s x IN components s <=> x IN s`,
+ (`!s x:real^N. connected_component s x IN components s <=> x IN s`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `(x:real^N) IN s` THEN
   ASM_REWRITE_TAC[] THENL
    [REWRITE_TAC[components; IN_ELIM_THM] THEN ASM_MESON_TAC[];
@@ -15806,7 +15806,7 @@ let CONTINUOUS_ON_MATRIX_COMPONENTWISE = prove
 (* ------------------------------------------------------------------------- *)
 
 let CONTINUOUS_MATRIX_VECTOR_MUL = prove
- (`!net m:A->real^N^M v:A->real^N.
+ (`!net A:A->real^N^M v:A->real^N.
         (vectorize o A) continuous net /\ v continuous net
         ==> (\x. (A x) ** (v x)) continuous net`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
@@ -15815,7 +15815,7 @@ let CONTINUOUS_MATRIX_VECTOR_MUL = prove
   REWRITE_TAC[o_THM; MATRIFY_VECTORIZE]);;
 
 let CONTINUOUS_ON_MATRIX_VECTOR_MUL = prove
- (`!m:real^P->real^N^M v:real^P->real^N s.
+ (`!A:real^P->real^N^M v:real^P->real^N s.
         (vectorize o A) continuous_on s /\ v continuous_on s
         ==> (\x. (A x) ** (v x)) continuous_on s`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP (MATCH_MP (REWRITE_RULE
@@ -27873,8 +27873,8 @@ let RIGHT_LIMIT_WITHIN_ALT = prove
   REWRITE_TAC[tendsto; EVENTUALLY_WITHIN_RIGHT_ALT_GEN]);;
 
 let RIGHT_LIMIT_ALT = prove
- (`!f l s a. (f --> l) (at a within {x | drop a <= drop x}) <=>
-             (f --> l) (at a within {x | drop a < drop x})`,
+ (`!f l a. (f --> l) (at a within {x | drop a <= drop x}) <=>
+           (f --> l) (at a within {x | drop a < drop x})`,
   REWRITE_TAC[tendsto; EVENTUALLY_WITHIN_RIGHT_ALT]);;
 
 let EVENTUALLY_WITHIN_LEFT_ALT_GEN = prove
@@ -27900,8 +27900,8 @@ let LEFT_LIMIT_WITHIN_ALT = prove
   REWRITE_TAC[tendsto; EVENTUALLY_WITHIN_LEFT_ALT_GEN]);;
 
 let LEFT_LIMIT_ALT = prove
- (`!f l s a. (f --> l) (at a within {x | drop x <= drop a}) <=>
-             (f --> l) (at a within {x | drop x < drop a})`,
+ (`!f l a. (f --> l) (at a within {x | drop x <= drop a}) <=>
+           (f --> l) (at a within {x | drop x < drop a})`,
   REWRITE_TAC[tendsto; EVENTUALLY_WITHIN_LEFT_ALT]);;
 
 let TWO_SIDED_LIMIT_WITHIN = prove
@@ -34724,7 +34724,7 @@ let BOREL_MEASURABLE_NORM = prove
   ASM_REWRITE_TAC[CONTINUOUS_ON_LIFT_NORM]);;
 
 let BOREL_MEASURABLE_MAX = prove
- (`!f g:real^N->real s n.
+ (`!f g:real^N->real s.
         (\x. lift(f x)) borel_measurable_on s /\
         (\x. lift(g x)) borel_measurable_on s
         ==> (\x. lift(max (f x) (g x))) borel_measurable_on s`,
@@ -34738,7 +34738,7 @@ let BOREL_MEASURABLE_MAX = prove
   ASM_SIMP_TAC[BOREL_MEASURABLE_SUB; LIFT_SUB]);;
 
 let BOREL_MEASURABLE_MIN = prove
- (`!f g:real^N->real s n.
+ (`!f g:real^N->real s.
         (\x. lift(f x)) borel_measurable_on s /\
         (\x. lift(g x)) borel_measurable_on s
         ==> (\x. lift(min (f x) (g x))) borel_measurable_on s`,

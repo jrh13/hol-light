@@ -656,14 +656,14 @@ let REAL_SHRINK_GALOIS = prove
   REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD);;
 
 let REAL_GROW_SHRINK = prove
- (`!x y. x / (&1 + abs x) / (&1 - abs(x / (&1 + abs x))) = x`,
+ (`!x. x / (&1 + abs x) / (&1 - abs(x / (&1 + abs x))) = x`,
   MESON_TAC[REAL_SHRINK_GALOIS; REAL_SHRINK_RANGE]);;
 
 let REAL_SHRINK_GROW_EQ = prove
- (`!x y. x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x <=> abs x < &1`,
+ (`!x. x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x <=> abs x < &1`,
   MESON_TAC[REAL_SHRINK_GALOIS; REAL_SHRINK_RANGE]);;
 
 let REAL_SHRINK_GROW = prove
- (`!x y. abs x < &1
-         ==> x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x`,
+ (`!x. abs x < &1
+       ==> x / (&1 - abs x) / (&1 + abs(x / (&1 - abs x))) = x`,
   REWRITE_TAC[REAL_SHRINK_GROW_EQ]);;

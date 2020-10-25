@@ -701,12 +701,12 @@ let CLOSED_IN_IMP_SUBSET = prove
   REWRITE_TAC[closed_in; TOPSPACE_SUBTOPOLOGY] THEN SET_TAC[]);;
 
 let OPEN_IN_TRANS_FULL = prove
- (`!top s t u.
+ (`!top s u.
         open_in (subtopology top u) s /\ open_in top u ==> open_in top s`,
   MESON_TAC[OPEN_IN_TRANS; SUBTOPOLOGY_TOPSPACE]);;
 
 let CLOSED_IN_TRANS_FULL = prove
- (`!top s t u.
+ (`!top s u.
       closed_in (subtopology top u) s /\ closed_in top u ==> closed_in top s`,
   MESON_TAC[CLOSED_IN_TRANS; SUBTOPOLOGY_TOPSPACE]);;
 
@@ -828,7 +828,7 @@ let TOPOLOGY_BASE_UNIQUE = prove
   REWRITE_TAC[OPEN_IN_TOPOLOGY_BASE_UNIQUE] THEN ASM SET_TAC[]);;
 
 let TOPOLOGY_BASES_EQ = prove
- (`!top P Q.
+ (`!P Q.
         (!u x. P u /\ x IN u ==> ?v. Q v /\ x IN v /\ v SUBSET u) /\
         (!v x. Q v /\ x IN v ==> ?u. P u /\ x IN u /\ u SUBSET v)
         ==> topology (ARBITRARY UNION_OF P) =
@@ -6031,7 +6031,7 @@ let HOMEOMORPHIC_IMP_RETRACTION_MAPS = prove
   REWRITE_TAC[homeomorphic_maps; retraction_maps] THEN MESON_TAC[]);;
 
 let SECTION_AND_RETRACTION_EQ_HOMEOMORPHIC_MAP = prove
- (`!top top' (f:A->B) g.
+ (`!top top' (f:A->B).
         section_map (top,top') f /\ retraction_map (top,top') f <=>
         homeomorphic_map (top,top') f`,
   REPEAT GEN_TAC THEN
@@ -10496,7 +10496,7 @@ let netlimit = new_definition
  `netlimit(n:A net) = @x. x IN netlimits n`;;
 
 let NET = prove
- (`!n x y. !s t. s IN netfilter n /\ t IN netfilter n
+ (`!n s t. !s t. s IN netfilter n /\ t IN netfilter n
                  ==> (s INTER t) IN netfilter n`,
   REWRITE_TAC[netfilter] THEN MESON_TAC[net_tybij]);;
 
@@ -10691,8 +10691,8 @@ let sequentially = new_definition
   `sequentially = mk_net({from n | n IN (:num)},{})`;;
 
 let SEQUENTIALLY,NETLIMITS_SEQUENTIALLY = (CONJ_PAIR o prove)
- (`(!m n. netfilter sequentially = {from n | n IN (:num)}) /\
-   (!m n. netlimits sequentially = {})`,
+ (`(!n. netfilter sequentially = {from n | n IN (:num)}) /\
+   (netlimits sequentially = {})`,
   REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
   REWRITE_TAC[netfilter; netlimits; GSYM PAIR_EQ] THEN
   REWRITE_TAC[sequentially] THEN
@@ -20282,7 +20282,7 @@ let CONTINUOUS_MAP_UPPER_LOWER_SEMICONTINUOUS_LTE_GEN = prove
   REWRITE_TAC[real_gt; CONJ_ACI]);;
 
 let CONTINUOUS_MAP_UPPER_LOWER_SEMICONTINUOUS_LTE = prove
- (`!top u f:A->real.
+ (`!top f:A->real.
          continuous_map (top,euclideanreal) f <=>
          (!a. open_in top {x | x IN topspace top /\ f x < a}) /\
          (!a. closed_in top {x | x IN topspace top /\ f x <= a})`,

@@ -4106,7 +4106,7 @@ let REFLECT_ALONG_EQ_SELF = prove
   CONV_TAC REAL_FIELD);;
 
 let REFLECT_ALONG_ZERO = prove
- (`!x:real^N. reflect_along (vec 0) = I`,
+ (`reflect_along (vec 0:real^N) = I`,
   REWRITE_TAC[FUN_EQ_THM; I_THM; REFLECT_ALONG_EQ_SELF; ORTHOGONAL_0]);;
 
 let REFLECT_ALONG_LINEAR_IMAGE = prove

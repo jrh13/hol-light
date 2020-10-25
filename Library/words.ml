@@ -684,7 +684,7 @@ let WORD_OF_BITS_AS_WORD_FINITE = prove
   REPEAT STRIP_TAC THEN CONV_TAC NUMBER_RULE);;
 
 let WORD_OF_BITS_SING_AS_WORD = prove
- (`!s i. word_of_bits {i}:N word = word(2 EXP i)`,
+ (`!i. word_of_bits {i}:N word = word(2 EXP i)`,
   SIMP_TAC[WORD_OF_BITS_AS_WORD_FINITE; FINITE_SING; NSUM_SING]);;
 
 let VAL_WORD_OF_BITS_SING = prove
@@ -859,7 +859,7 @@ let IVAL_EQ = prove
   MESON_TAC[NUMBER_RULE `(x:int == x) (mod n)`; IVAL_CONG]);;
 
 let IVAL_EQ_0 = prove
- (`!(v:N word). ival w = &0 <=> w = word 0`,
+ (`!(w:N word). ival w = &0 <=> w = word 0`,
   REWRITE_TAC[GSYM IVAL_EQ; IVAL_WORD_0]);;
 
 let IVAL_EQ_1 = prove
@@ -1416,7 +1416,7 @@ let word_and = new_definition
  `word_and = bitwise2 (/\)`;;
 
 let BIT_WORD_AND = prove
- (`!op (x:N word) (y:N word) k.
+ (`!(x:N word) (y:N word) k.
         bit k (word_and x y) <=>
         k < dimindex(:N) /\ bit k x /\ bit k y`,
   REWRITE_TAC[word_and; BIT_BITWISE2]);;
@@ -1464,7 +1464,7 @@ let word_or = new_definition
  `word_or = bitwise2 (\/)`;;
 
 let BIT_WORD_OR = prove
- (`!op (x:N word) (y:N word) k.
+ (`!(x:N word) (y:N word) k.
         bit k (word_or x y) <=>
         k < dimindex(:N) /\ (bit k x \/ bit k y)`,
   REWRITE_TAC[word_or; BIT_BITWISE2]);;
@@ -1490,7 +1490,7 @@ let word_xor = new_definition
  `word_xor = bitwise2 (\x y. ~(x <=> y))`;;
 
 let BIT_WORD_XOR = prove
- (`!op (x:N word) (y:N word) k.
+ (`!(x:N word) (y:N word) k.
         bit k (word_xor x y) <=>
         k < dimindex(:N) /\ ~(bit k x <=> bit k y)`,
   REWRITE_TAC[word_xor; BIT_BITWISE2]);;
@@ -1882,7 +1882,7 @@ let ICONG_WORD_SHL = prove
   CONV_TAC INTEGER_RULE);;
 
 let BIT_WORD_SHL = prove
- (`!(x:N word) m i.
+ (`!(x:N word) n i.
         bit i (word_shl x n) <=>
         n <= i /\ i < dimindex(:N) /\ bit (i - n) x`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `i < dimindex(:N)` THENL
@@ -1967,7 +1967,7 @@ let WORD_USHR_COMPOSE = prove
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[word_ushr] THEN
   REWRITE_TAC[VAL_WORD_USHR] THEN REWRITE_TAC[EXP_ADD; DIV_DIV]);;
 
-let WORD_USHR_MSB = prove
+let WORD_USHR_MSB_ALT = prove
  (`!x:N word. word_ushr x (dimindex(:N) - 1) =
               if bit (dimindex(:N) - 1) x then word 1 else word 0`,
   GEN_TAC THEN REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_USHR] THEN
@@ -1975,6 +1975,11 @@ let WORD_USHR_MSB = prove
   COND_CASES_TAC THEN ASM_REWRITE_TAC[BIT_WORD_0; BIT_WORD_1] THEN
   ASM_CASES_TAC `i = 0` THEN ASM_REWRITE_TAC[ADD_CLAUSES] THEN
   MATCH_MP_TAC(REWRITE_RULE[] BIT_TRIVIAL) THEN ASM_ARITH_TAC);;
+
+let WORD_USHR_MSB = prove
+ (`!x:N word. word_ushr x (dimindex(:N) - 1) =
+              word(bitval(bit (dimindex(:N) - 1) x))`,
+  REWRITE_TAC[WORD_USHR_MSB_ALT; WORD_BITVAL]);;
 
 let WORD_USHR_MSB_EQ = prove
  (`(!x:N word. word_ushr x (dimindex(:N) - 1) = word 1 <=>
@@ -1987,7 +1992,7 @@ let WORD_USHR_MSB_EQ = prove
    (!P (x:N word).
         (word_ushr x (dimindex(:N) - 1) = if P then word 0 else word 1) <=>
         (bit (dimindex(:N) - 1) x <=> ~P))`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_USHR_MSB] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_USHR_MSB_ALT] THEN
   REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[WORD_NE_10]));;
 
 let word_ishr = new_definition
@@ -2484,7 +2489,7 @@ let VAL_WORD_ZX = prove
   CONV_TAC NUM_REDUCE_CONV);;
 
 let WORD_ZX_ZX = prove
- (`!w. dimindex(:M) <= dimindex(:N)
+ (`!x. dimindex(:M) <= dimindex(:N)
        ==> (word_zx:N word->M word) ((word_zx:M word->N word) x) = x`,
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_ZX_GEN; MOD_MOD_EXP_MIN] THEN
@@ -3288,6 +3293,13 @@ let BIT_WORD_MASK = prove
   REWRITE_TAC[BITVAL_CLAUSES; WORD_NEG_0; BIT_WORD_0] THEN
   REWRITE_TAC[WORD_NEG_1; BIT_WORD_NOT; BIT_WORD_0]);;
 
+let WORD_ISHR_MSB = prove
+ (`!x:N word. word_ishr x (dimindex(:N) - 1) =
+              word_neg(word(bitval(bit (dimindex(:N) - 1) x)))`,
+  SIMP_TAC[WORD_EQ_BITS_ALT; BIT_WORD_MASK; BIT_WORD_ISHR] THEN
+  SIMP_TAC[ARITH_RULE `i < n ==> (i + n - 1 < n <=> i = 0)`] THEN
+  REWRITE_TAC[COND_ID; ADD_CLAUSES]);;
+
 let WORD_NOT_MASK = prove
  (`!p. word_not(word_neg(word(bitval p))) = word_neg(word(bitval(~p)))`,
   MATCH_MP_TAC bool_INDUCT THEN
@@ -3373,6 +3385,14 @@ let VAL_WORD_MASK = prove
   COND_CASES_TAC THEN  ASM_REWRITE_TAC[BITVAL_CLAUSES] THEN
   ARITH_TAC);;
 
+let IVAL_WORD_MASK = prove
+ (`!b. ival(word_neg(word(bitval b):N word)) = --(&(bitval b))`,
+  GEN_TAC THEN REWRITE_TAC[WORD_IWORD; GSYM IWORD_INT_NEG] THEN
+  MATCH_MP_TAC IVAL_IWORD THEN MATCH_MP_TAC(INT_ARITH
+   `&0:int <= x /\ x <= &1 /\ &2 pow 0 <= e ==> --e <= --x /\ --x < e`) THEN
+  REWRITE_TAC[INT_OF_NUM_LE; LE_0; BITVAL_BOUND] THEN
+  MATCH_MP_TAC INT_POW_MONO THEN REWRITE_TAC[INT_OF_NUM_LE] THEN ARITH_TAC);;
+
 let INT_VAL_WORD_MASK = prove
  (`!b. &(val(word_neg(word(bitval b):N word))):int =
        (&2 pow dimindex(:N) - &1) * &(bitval b)`,
@@ -3419,11 +3439,29 @@ let VAL_WORD_AND_MASK_WORD = prove
  (`!x k. val(word_and x (word(2 EXP k - 1))) = val x MOD 2 EXP k`,
   REWRITE_TAC[GSYM WORD_OF_BITS_MASK; VAL_WORD_AND_MASK]);;
 
+let WORD_AND_MASK_WORD = prove
+ (`(!(x:N word) k.
+        word_and x (word(2 EXP k - 1)) = word(val x MOD 2 EXP k)) /\
+   (!(x:N word) k.
+        word_and (word(2 EXP k - 1)) x = word(val x MOD 2 EXP k))`,
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [WORD_AND_SYM] THEN
+  REWRITE_TAC[] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_AND_MASK_WORD] THEN
+  CONV_TAC SYM_CONV THEN MATCH_MP_TAC VAL_WORD_EQ THEN
+  MATCH_MP_TAC(ARITH_RULE `x MOD n <= x /\ x < e ==> x MOD n < e`) THEN
+  REWRITE_TAC[MOD_LE; VAL_BOUND]);;
+
 let WORD_BITMASK = prove
  (`!k. word_of_bits {i | i < k}:N word =
        word_sub (word_of_bits {k}) (word 1)`,
   REWRITE_TAC[WORD_OF_BITS_MASK; WORD_OF_BITS_SING_AS_WORD] THEN
   REWRITE_TAC[WORD_SUB; ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN
+  REWRITE_TAC[EXP_EQ_0; ARITH_EQ]);;
+
+let MASK_WORD_SUB = prove
+ (`!k. word_sub (word(2 EXP k)) (word 1):N word = word(2 EXP k - 1)`,
+  GEN_TAC THEN REWRITE_TAC[WORD_SUB] THEN
+  REWRITE_TAC[ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN
   REWRITE_TAC[EXP_EQ_0; ARITH_EQ]);;
 
 (* ------------------------------------------------------------------------- *)

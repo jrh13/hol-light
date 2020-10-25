@@ -144,7 +144,7 @@ let AFFINE_HYPERPLANE = prove
   CONV_TAC REAL_RING);;
 
 let AFFINE_STANDARD_HYPERPLANE = prove
- (`!a b k. affine {x:real^N | x$k = b}`,
+ (`!b k. affine {x:real^N | x$k = b}`,
   REPEAT GEN_TAC THEN
   SUBGOAL_THEN `?i. 1 <= i /\ i <= dimindex(:N) /\ !x:real^N. x$k = x$i`
   CHOOSE_TAC THENL
@@ -2315,7 +2315,7 @@ let CONVEX_INTERMEDIATE_BALL = prove
   REWRITE_TAC[IN_CBALL] THEN ASM_MESON_TAC[REAL_LTE_TRANS]);;
 
 let FRONTIER_OF_CONNECTED_COMPONENT_SUBSET = prove
- (`!s c x:real^N. frontier(connected_component s x) SUBSET frontier s`,
+ (`!s x:real^N. frontier(connected_component s x) SUBSET frontier s`,
   REPEAT GEN_TAC THEN REWRITE_TAC[frontier; SUBSET; IN_DIFF] THEN
   X_GEN_TAC `y:real^N` THEN REPEAT STRIP_TAC THENL
    [FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (SET_RULE
@@ -7336,7 +7336,7 @@ let SEPARATING_HYPERPLANE_SET_POINT_INAFF = prove
 let SEPARATING_HYPERPLANE_SET_0 = prove
  (`!s:real^N->bool.
         convex s /\ ~(vec 0 IN s)
-        ==> ?a b. ~(a = vec 0) /\ !x. x IN s ==> &0 <= a dot x`,
+        ==> ?a. ~(a = vec 0) /\ !x. x IN s ==> &0 <= a dot x`,
   REPEAT STRIP_TAC THEN ASM_CASES_TAC `s:real^N->bool = {}` THENL
    [ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
     MESON_TAC[BASIS_NONZERO; LE_REFL; DIMINDEX_GE_1];
@@ -12726,7 +12726,7 @@ let SUBSET_RELATIVE_INTERIOR_INTERSECTING_CONVEX = prove
   ASM_MESON_TAC[SUBSET; CLOSURE_SUBSET]);;
 
 let CONVEX_HULL_SPHERE = prove
- (`!s:real^N r. convex hull (sphere(a,r)) = cball(a,r)`,
+ (`!a:real^N r. convex hull (sphere(a,r)) = cball(a,r)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC KREIN_MILMAN_FRONTIER THEN
   REWRITE_TAC[CONVEX_CBALL; COMPACT_CBALL]);;
@@ -15395,7 +15395,7 @@ let HOMEOMORPHIC_CONVEX_OPEN_SETS = prove
 (* ------------------------------------------------------------------------- *)
 
 let LIPSCHITZ_CONVEX_SPHERICAL_PROJECTION_EXPLICIT = prove
- (`!r R s x y:real^N.
+ (`!r s x y:real^N.
       convex s /\ &0 < r /\ vec 0 IN s /\
       ball(vec 0,r) INTER affine hull s SUBSET relative_interior s /\
       x IN relative_frontier s /\ y IN relative_frontier s

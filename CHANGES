@@ -8,6 +8,126 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 24th Oct 2020       Library/words.ml
+
+Added a few word lemmas, renaming the former WORD_USHR_MSB -> WORD_USHR_MSB_ALT
+to make room for the new one here:
+
+  IVAL_WORD_MASK =
+    |- !b. ival (word_neg (word(bitval b))) = -- &(bitval b)
+
+  MASK_WORD_SUB =
+    |- !k. word_sub (word(2 EXP k)) (word 1) = word(2 EXP k - 1)
+
+  WORD_ISHR_MSB =
+    |- !x. word_ishr x (dimindex(:N) - 1) =
+           word_neg (word(bitval (bit (dimindex(:N) - 1) x)))
+
+  WORD_USHR_MSB =
+    |- !x. word_ushr x (dimindex(:N) - 1) =
+           word(bitval (bit (dimindex(:N) - 1) x))
+
+  WORD_AND_MASK_WORD =
+    |- (!x k. word_and x (word(2 EXP k - 1)) = word(val x MOD 2 EXP k)) /\
+       (!x k. word_and (word(2 EXP k - 1)) x = word(val x MOD 2 EXP k))
+
+Sat 24th Oct 2020       passim
+
+Systematically fixed redundant quantifiers in many existing theorems:
+
+    calc_rat.ml                     REAL_GROW_SHRINK
+    calc_rat.ml                     REAL_SHRINK_GROW
+    class.ml                        SKOLEM_THM_GEN
+    sets.ml                         LIST_OF_SET_SING
+    sets.ml                         REAL_LE_INF_EQ
+    Library/grouptheory.ml          GROUP_NEG_ID
+    Library/grouptheory.ml          SUBGROUP_OF_UNIONS
+    Library/grouptheory.ml          GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV
+    Library/grouptheory.ml          ISOMORPHIC_GROUP_ORDER
+    Library/grouptheory.ml          PAIRWISE_DISJOINT_GROUP_ORBITS
+    Library/grouptheory.ml          NORMAL_SUBGROUP_OF_UNIONS
+    Library/grouptheory.ml          GROUP_CENTRALIZER_SUBSET_EQ
+    Library/pocklington.ml          CONG_MINUS1
+    Library/pocklington.ml          CONG_ADD_LCANCEL_EQ_0
+    Library/pocklington.ml          CONG_ADD_RCANCEL_EQ_0
+    Library/pocklington.ml          CHINESE_REMAINDER_COUNT
+    Library/pocklington.ml          CHINESE_REMAINDER_COPRIME_COUNT
+    Library/pocklington.ml          PHI_FINITE_LEMMA
+    Library/pocklington.ml          NPRODUCT_CMUL
+    Library/ringtheory.ml           RING_SUB_REFL
+    Library/ringtheory.ml           SUBRING_OF_UNIONS
+    Library/ringtheory.ml           RING_SETADD_SYM
+    Library/ringtheory.ml           RING_SETMUL_SYM
+    Library/ringtheory.ml           ISOMORPHIC_RING_CARD
+    Library/ringtheory.ml           RING_HOMOMORPHISM_COMPONENTWISE_UNIV
+    Library/ringtheory.ml           RING_COSET_EQ
+    Library/wo.ml                   UNION_FLD
+    Library/words.ml                WORD_OF_BITS_SING_AS_WORD
+    Library/words.ml                IVAL_EQ_0
+    Library/words.ml                BIT_WORD_AND
+    Library/words.ml                BIT_WORD_OR
+    Library/words.ml                BIT_WORD_XOR
+    Library/words.ml                BIT_WORD_SHL
+    Library/words.ml                WORD_ZX_ZX
+    Multivariate/canal.ml           LIM_COMPLEX_INV
+    Multivariate/canal.ml           HAS_COMPLEX_DERIVATIVE_CDIV_AT
+    Multivariate/canal.ml           COMPLEX_DIFFERENTIABLE_COMPOSE_AT
+    Multivariate/canal.ml           SERIES_DIRICHLET_COMPLEX_GEN
+    Multivariate/cauchy.ml          WINDING_NUMBER_UNIQUE
+    Multivariate/cauchy.ml          higher_complex_derivative_alt
+    Multivariate/clifford.ml        LINEAR_EQ_MBASIS
+    Multivariate/clifford.ml        BILINEAR_EQ_MBASIS
+    Multivariate/clifford.ml        OUTERMORPHISM_MBASIS
+    Multivariate/complexes.ml       COMPLEX_EQ_INV2
+    Multivariate/convex.ml          AFFINE_STANDARD_HYPERPLANE
+    Multivariate/convex.ml          FRONTIER_OF_CONNECTED_COMPONENT_SUBSET
+    Multivariate/convex.ml          SEPARATING_HYPERPLANE_SET_0
+    Multivariate/convex.ml          CONVEX_HULL_SPHERE
+    Multivariate/convex.ml          LIPSCHITZ_CONVEX_SPHERICAL_PROJECTION_EXPLICIT
+    Multivariate/derivatives.ml     DIFFERENTIABLE_IMP_OPEN_MAP_ALT
+    Multivariate/determinants.ml    REFLECT_ALONG_ZERO
+    Multivariate/homology.ml        SIMPLICIAL_SIMPLEX_EMPTY
+    Multivariate/integration.ml     INTEGRAL_ADD
+    Multivariate/integration.ml     INTEGRAL_SUB
+    Multivariate/integration.ml     INTEGRAL_SPIKE
+    Multivariate/integration.ml     INTEGRAL_PASTECART_SYM
+    Multivariate/integration.ml     INTEGRABLE_PASTECART_SYM
+    Multivariate/integration.ml     ABSOLUTELY_INTEGRABLE_PASTECART_SYM
+    Multivariate/integration.ml     DOMINATED_CONVERGENCE_INTEGRABLE
+    Multivariate/integration.ml     DOMINATED_CONVERGENCE_ABSOLUTELY_INTEGRABLE
+    Multivariate/measure.ml         NEGLIGIBLE_SPHERE
+    Multivariate/measure.ml         ABSOLUTELY_INTEGRABLE_IMPROPER
+    Multivariate/measure.ml         BAIRE_IMP_MEASURABLE_ON
+    Multivariate/measure.ml         BAIRE_IMP_MEASURABLE_ON_UNIV
+    Multivariate/measure.ml         ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_1
+    Multivariate/metric.ml          OPEN_IN_TRANS_FULL
+    Multivariate/metric.ml          CLOSED_IN_TRANS_FULL
+    Multivariate/metric.ml          TOPOLOGY_BASES_EQ
+    Multivariate/metric.ml          SECTION_AND_RETRACTION_EQ_HOMEOMORPHIC_MAP
+    Multivariate/metric.ml          NET
+    Multivariate/metric.ml          SEQUENTIALLY
+    Multivariate/metric.ml          NETLIMITS_SEQUENTIALLY
+    Multivariate/metric.ml          CONTINUOUS_MAP_UPPER_LOWER_SEMICONTINUOUS_LTE
+    Multivariate/paths.ml           HOMOTOPIC_WITH_SUBSET_RIGHT
+    Multivariate/paths.ml           HOMOTOPIC_WITH_ORTHOGONAL_TRANSFORMATIONS_ALT
+    Multivariate/paths.ml           HOMOTOPIC_PATHS_REPARAMETRIZE
+    Multivariate/realanalysis.ml    REAL_DIFFERENTIABLE_AT
+    Multivariate/realanalysis.ml    REAL_DIFFERENTIABLE_WITHIN
+    Multivariate/realanalysis.ml    REAL_DERIVATIVE_IVT_DECREASING
+    Multivariate/topology.ml        EVENTUALLY_WITHIN_OPEN
+    Multivariate/topology.ml        DENSE_LIMIT_POINTS
+    Multivariate/topology.ml        CONNECTED_COMPONENT_IN_COMPONENTS
+    Multivariate/topology.ml        CONTINUOUS_MATRIX_VECTOR_MUL
+    Multivariate/topology.ml        CONTINUOUS_ON_MATRIX_VECTOR_MUL
+    Multivariate/topology.ml        RIGHT_LIMIT_ALT
+    Multivariate/topology.ml        LEFT_LIMIT_ALT
+    Multivariate/topology.ml        BOREL_MEASURABLE_MAX
+    Multivariate/topology.ml        BOREL_MEASURABLE_MIN
+    Multivariate/transcendentals.ml DIST_CEXP_II_1
+    Multivariate/transcendentals.ml REAL_ROOT_POW_GEN
+    Multivariate/transcendentals.ml ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_POLAR
+    Multivariate/vectors.ml         LINEAR_IMP_LIPSCHITZ
+
 Fri 18th Aug 2020       Library/bitsize.ml [new file]
 
 Added a simple new library file giving a definition and basic properties of
@@ -1835,11 +1955,11 @@ Wed 24th Jun 2020       Library/words.ml
 Added a few more trivial word lemmas:
 
   INT_VAL_WORD_MASK =
-    |- !b. &(val (word_neg (word (bitval b)))) =
+    |- !b. &(val (word_neg (word(bitval b)))) =
            (&2 pow dimindex(:N) - &1) * &(bitval b)
 
   REAL_VAL_WORD_MASK =
-    |- !b. &(val (word_neg (word (bitval b)))) =
+    |- !b. &(val (word_neg (word(bitval b)))) =
            (&2 pow dimindex(:N) - &1) * &(bitval b)
 
   REAL_VAL_WORD_NEG_CASES =
@@ -1847,7 +1967,7 @@ Added a few more trivial word lemmas:
            (if &(val x) = &0 then &0 else &2 pow dimindex(:N) - &(val x))
 
   VAL_WORD_MASK =
-    |- !b. val (word_neg (word (bitval b))) =
+    |- !b. val (word_neg (word(bitval b))) =
            (2 EXP dimindex(:N) - 1) * bitval b
 
 Mon 22nd Jun 2020       Library/floor.ml
@@ -2387,16 +2507,16 @@ Added a few miscellaneous useful lemmas about machine words:
     |- !x. val x MOD 2 = bitval (bit 0 x)
 
   WORD_AND_1_BITVAL =
-     |- (!x. word_and (word 1) x = word (bitval (bit 0 x))) /\
-        (!x. word_and x (word 1) = word (bitval (bit 0 x)))
+     |- (!x. word_and (word 1) x = word(bitval (bit 0 x))) /\
+        (!x. word_and x (word 1) = word(bitval (bit 0 x)))
 
   WORD_NEG_AND_MASK =
     |- (!b x.
-            word_neg (word_and (word_neg (word (bitval b))) x) =
-            word_and (word_neg (word (bitval b))) (word_neg x)) /\
+            word_neg (word_and (word_neg (word(bitval b))) x) =
+            word_and (word_neg (word(bitval b))) (word_neg x)) /\
        (!b x.
-            word_neg (word_and x (word_neg (word (bitval b)))) =
-            word_and (word_neg x) (word_neg (word (bitval b))))
+            word_neg (word_and x (word_neg (word(bitval b)))) =
+            word_and (word_neg x) (word_neg (word(bitval b))))
 
 Thu 11th Jun 2020       int.ml, Library/integer.ml, Library/pocklington.ml
 

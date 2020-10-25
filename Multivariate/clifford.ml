@@ -270,7 +270,7 @@ let SPAN_MBASIS = prove
 (* ------------------------------------------------------------------------- *)
 
 let LINEAR_EQ_MBASIS = prove
- (`!f:real^(M)multivector->real^N g b s.
+ (`!f:real^(M)multivector->real^N g s.
         linear f /\ linear g /\
         (!s. s SUBSET 1..dimindex(:M) ==> f(mbasis s) = g(mbasis s))
         ==> f = g`,
@@ -283,7 +283,7 @@ let LINEAR_EQ_MBASIS = prove
   ASM_MESON_TAC[]);;
 
 let BILINEAR_EQ_MBASIS = prove
- (`!f:real^(M)multivector->real^(N)multivector->real^P g b s.
+ (`!f:real^(M)multivector->real^(N)multivector->real^P g s.
         bilinear f /\ bilinear g /\
         (!s t.  s SUBSET 1..dimindex(:M) /\ t SUBSET 1..dimindex(:N)
                 ==> f (mbasis s) (mbasis t) = g (mbasis s) (mbasis t))
@@ -957,7 +957,7 @@ let NEUTRAL_OUTER = prove
   MESON_TAC[OUTER_MBASIS_LSCALAR; OUTER_MBASIS_RSCALAR]);;
 
 let OUTERMORPHISM_MBASIS = prove
- (`!f:real^M->real^N s t.
+ (`!f:real^M->real^N s.
         s SUBSET 1..dimindex(:M)
         ==> outermorphism f (mbasis s) =
             seqiterate(outer) s (multivec o f o basis)`,

@@ -1298,7 +1298,7 @@ let SIMPLICIAL_SIMPLEX = prove
   SIMP_TAC[CONTINUOUS_MAP_PRODUCT_PROJECTION; IN_UNIV]);;
 
 let SIMPLICIAL_SIMPLEX_EMPTY = prove
- (`!p s f. ~(simplicial_simplex (p,{}) f)`,
+ (`!p f. ~(simplicial_simplex (p,{}) f)`,
   SIMP_TAC[simplicial_simplex; TOPSPACE_SUBTOPOLOGY; INTER_EMPTY;
            SINGULAR_SIMPLEX_EMPTY]);;
 

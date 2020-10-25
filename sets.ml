@@ -3721,7 +3721,7 @@ let LIST_OF_SET_EMPTY = prove
   SIMP_TAC[LENGTH_LIST_OF_SET; FINITE_EMPTY; CARD_CLAUSES]);;
 
 let LIST_OF_SET_SING = prove
- (`!x:A. list_of_set {a} = [a]`,
+ (`!a:A. list_of_set {a} = [a]`,
   GEN_TAC THEN REWRITE_TAC[list_of_set] THEN
   MATCH_MP_TAC SELECT_UNIQUE THEN
   MATCH_MP_TAC list_INDUCT THEN REWRITE_TAC[NOT_CONS_NIL] THEN
@@ -4842,7 +4842,7 @@ let REAL_INF_LE = prove
   MESON_TAC[INF; MEMBER_NOT_EMPTY; REAL_LE_TRANS]);;
 
 let REAL_LE_INF_EQ = prove
- (`!s t. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
+ (`!s y. ~(s = {}) /\ (?b. !x. x IN s ==> b <= x)
          ==> (y <= inf s <=> !x. x IN s ==> y <= x)`,
   MESON_TAC[INF; REAL_LE_TRANS]);;
 

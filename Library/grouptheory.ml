@@ -767,7 +767,7 @@ let GROUP_NEG_NEG = prove
   MESON_TAC[GROUP_INV; GROUP_INV_INV]);;
 
 let GROUP_NEG_ID = prove
- (`!G x:A. group_neg G (group_id G) = group_id G`,
+ (`!G:A group. group_neg G (group_id G) = group_id G`,
   SIMP_TAC[group_neg; GROUP_INV_ID; GROUP_ID]);;
 
 let GROUP_ADD_EQ_ID = prove
@@ -2004,7 +2004,7 @@ let SUBGROUP_OF_INTER = prove
   REWRITE_TAC[subgroup_of; SUBSET; IN_INTER] THEN SET_TAC[]);;
 
 let SUBGROUP_OF_UNIONS = prove
- (`!G k (u:(A->bool)->bool).
+ (`!G (u:(A->bool)->bool).
         ~(u = {}) /\
         (!h. h IN u ==> h subgroup_of G) /\
         (!g h. g IN u /\ h IN u ==> g SUBSET h \/ h SUBSET g)
@@ -3934,7 +3934,7 @@ let GROUP_HOMOMORPHISM_COMPONENTWISE = prove
   MESON_TAC[]);;
 
 let GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV = prove
- (`!G k (f:A->K->B).
+ (`!G H (f:A->K->B).
         group_homomorphism(G,product_group (:K) H) f <=>
         !i. group_homomorphism (G,H i) (\x. f x i)`,
   REWRITE_TAC[GROUP_HOMOMORPHISM_COMPONENTWISE; IN_UNIV] THEN
@@ -4571,7 +4571,7 @@ let ISOMORPHIC_GROUP_HAS_ORDER = prove
   MESON_TAC[CARD_HAS_SIZE_CONG]);;
 
 let ISOMORPHIC_GROUP_ORDER = prove
- (`!(G:A group) (H:B group) n.
+ (`!(G:A group) (H:B group).
         G isomorphic_group H /\
         (FINITE(group_carrier G) \/ FINITE(group_carrier H))
         ==> CARD(group_carrier G) = CARD(group_carrier H)`,
@@ -5406,7 +5406,7 @@ let DISJOINT_GROUP_ORBITS = prove
   SIMP_TAC[GROUP_ORBITS_EQ]);;
 
 let PAIRWISE_DISJOINT_GROUP_ORBITS = prove
- (`!G h:A->bool.
+ (`!G s (a:A->X->X).
         group_action G s a
         ==> pairwise DISJOINT {group_orbit G s a x |x| x IN s}`,
   REWRITE_TAC[SIMPLE_IMAGE; PAIRWISE_IMAGE] THEN
@@ -6703,7 +6703,7 @@ let NORMAL_SUBGROUP_OF_INTER = prove
   ASM_REWRITE_TAC[FORALL_IN_INSERT; NOT_IN_EMPTY; NOT_INSERT_EMPTY]);;
 
 let NORMAL_SUBGROUP_OF_UNIONS = prove
- (`!G k (u:(A->bool)->bool).
+ (`!G (u:(A->bool)->bool).
         ~(u = {}) /\
         (!h. h IN u ==> h normal_subgroup_of G) /\
         (!g h. g IN u /\ h IN u ==> g SUBSET h \/ h SUBSET g)
@@ -7212,7 +7212,7 @@ let GROUP_CENTRALIZER_SUBSET = prove
   REWRITE_TAC[group_centralizer] THEN SET_TAC[]);;
 
 let GROUP_CENTRALIZER_SUBSET_EQ = prove
- (`!g h:A->bool.
+ (`!G h:A->bool.
         h subgroup_of G
         ==> (h SUBSET group_centralizer G h <=>
              abelian_group(subgroup_generated G h))`,

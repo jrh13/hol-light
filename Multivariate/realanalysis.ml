@@ -2808,7 +2808,7 @@ let HAS_REAL_VECTOR_DERIVATIVE_AT = prove
   REWRITE_TAC[LIFT_DROP; LIFT_EQ; REAL_MUL_SYM]);;
 
 let REAL_DIFFERENTIABLE_AT = prove
- (`!f a. f real_differentiable (atreal x) <=>
+ (`!f x. f real_differentiable (atreal x) <=>
          (lift o f o drop) differentiable (at(lift x))`,
   REWRITE_TAC[real_differentiable; HAS_REAL_FRECHET_DERIVATIVE_AT] THEN
   REWRITE_TAC[differentiable; has_derivative; LINEAR_SCALING] THEN
@@ -2816,7 +2816,7 @@ let REAL_DIFFERENTIABLE_AT = prove
   ONCE_REWRITE_TAC[SWAP_EXISTS_THM] THEN REWRITE_TAC[UNWIND_THM2]);;
 
 let REAL_DIFFERENTIABLE_WITHIN = prove
- (`!f a s.
+ (`!f x s.
         f real_differentiable (atreal x within s) <=>
         (lift o f o drop) differentiable (at(lift x) within IMAGE lift s)`,
   REWRITE_TAC[real_differentiable; HAS_REAL_FRECHET_DERIVATIVE_WITHIN] THEN
@@ -5176,7 +5176,7 @@ let REAL_DERIVATIVE_IVT_INCREASING = prove
     ASM_REWRITE_TAC[REAL_OPEN_CLOSED_INTERVAL] THEN ASM SET_TAC[]]);;
 
 let REAL_DERIVATIVE_IVT_DECREASING = prove
- (`!f f' a b t.
+ (`!f f' a b.
    a <= b /\
    (!x. x IN real_interval[a,b]
         ==> (f has_real_derivative f'(x)) (atreal x within real_interval[a,b]))

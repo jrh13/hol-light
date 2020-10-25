@@ -2715,7 +2715,7 @@ let NEGLIGIBLE_CONVEX_INTERIOR = prove
 (* ------------------------------------------------------------------------- *)
 
 let NEGLIGIBLE_SPHERE = prove
- (`!a:real^N r. negligible (sphere(a,e))`,
+ (`!a:real^N r. negligible (sphere(a,r))`,
   REWRITE_TAC[GSYM FRONTIER_CBALL] THEN
   SIMP_TAC[NEGLIGIBLE_CONVEX_FRONTIER; CONVEX_CBALL]);;
 
@@ -2816,7 +2816,7 @@ let MEASURE_CBALL_SCALING = prove
 (* ------------------------------------------------------------------------- *)
 
 let ABSOLUTELY_INTEGRABLE_IMPROPER = prove
- (`!net:A net f:real^M->real^N a b.
+ (`!f:real^M->real^N a b.
      (!c d. interval[c,d] SUBSET interval(a,b)
             ==> f integrable_on interval[c,d]) /\
      bounded { integral (interval[c,d]) f |
@@ -12661,12 +12661,12 @@ let BOREL_MEASURABLE_IMP_MEASURABLE_ON = prove
 (* ------------------------------------------------------------------------- *)
 
 let BAIRE_IMP_MEASURABLE_ON = prove
- (`!(f:real^M->real^N) s k.
+ (`!(f:real^M->real^N) s.
         baire n s f /\ lebesgue_measurable s ==> f measurable_on s`,
   MESON_TAC[BOREL_MEASURABLE_IMP_MEASURABLE_ON; BAIRE_IMP_BOREL_MEASURABLE]);;
 
 let BAIRE_IMP_MEASURABLE_ON_UNIV = prove
- (`!(f:real^M->real^N) s k.
+ (`!(f:real^M->real^N) s.
         baire n (:real^M) f ==> f measurable_on (:real^M)`,
   MESON_TAC[BAIRE_IMP_MEASURABLE_ON; LEBESGUE_MEASURABLE_UNIV]);;
 
@@ -19470,7 +19470,7 @@ let HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1 = prove
   REWRITE_TAC[LIFT_CMUL; VECTOR_MUL_COMPONENT]);;
 
 let ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_1 = prove
- (`!f:real^1->real^N g:real^1->real^1 g' s b.
+ (`!f:real^1->real^N g:real^1->real^1 g' s.
         lebesgue_measurable s /\
         (!x y. x IN s /\ y IN s /\ g x = g y ==> x = y) /\
         (!x. x IN s
