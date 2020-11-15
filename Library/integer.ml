@@ -99,6 +99,10 @@ let INT_DIVIDES_ANTISYM_DIVISORS = prove
  (`!a b:int. a divides b /\ b divides a <=> !d. d divides a <=> d divides b`,
   MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
 
+let INT_DIVIDES_ANTISYM_MULTIPLES = prove
+ (`!a b. a divides b /\ b divides a <=> !d. a divides d <=> b divides d`,
+  MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Now carefully distinguish signs.                                          *)
 (* ------------------------------------------------------------------------- *)
@@ -147,16 +151,16 @@ let INT_GCD_POS = prove
  (`!a b. &0 <= gcd(a,b)`,
   REWRITE_TAC[int_gcd]);;
 
+let INT_ABS_GCD = prove
+ (`!a b. abs(gcd(a,b)) = gcd(a,b)`,
+  REWRITE_TAC[INT_ABS; INT_GCD_POS]);;
+
 let INT_GCD_DIVIDES = prove
  (`!a b. gcd(a,b) divides a /\ gcd(a,b) divides b`,
   INTEGER_TAC);;
 
 let INT_GCD_BEZOUT = prove
  (`!a b. ?x y. gcd(a,b) = a * x + b * y`,
-  INTEGER_TAC);;
-
-let INT_DIVIDES_GCD = prove
- (`!a b d. d divides gcd(a,b) <=> d divides a /\ d divides b`,
   INTEGER_TAC);;
 
 let INT_DIVIDES_GCD = prove
@@ -244,6 +248,79 @@ let INT_GCD_EQ = prove
   REWRITE_TAC[INT_GCD_DIVIDES]);;
 
 (* ------------------------------------------------------------------------- *)
+(* Lemmas about lcms.                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+let INT_ABS_LCM = prove
+ (`!a b. abs(lcm(a,b)) = lcm(a,b)`,
+  REWRITE_TAC[INT_ABS; INT_LCM_POS]);;
+
+let INT_LCM_EQ_0 = prove
+ (`!m n. lcm(m,n) = &0 <=> m = &0 \/ n = &0`,
+  REWRITE_TAC[INTEGER_RULE `n:int = &0 <=> &0 divides n`] THEN
+  REWRITE_TAC[INT_DIVIDES_LCM_GCD] THEN INTEGER_TAC);;
+
+let INT_DIVIDES_LCM = prove
+ (`!m n r. r divides m \/ r divides n ==> r divides lcm(m,n)`,
+  REWRITE_TAC[INT_DIVIDES_LCM_GCD] THEN INTEGER_TAC);;
+
+let INT_LCM_0 = prove
+ (`(!n. lcm(&0,n) = &0) /\ (!n. lcm(n,&0) = &0)`,
+  REWRITE_TAC[INT_LCM_EQ_0]);;
+
+let INT_LCM_1 = prove
+ (`(!n. lcm(&1,n) = abs n) /\ (!n. lcm(n,&1) = abs n)`,
+  SIMP_TAC[int_lcm; INT_MUL_LID; INT_MUL_RID; INT_GCD_1] THEN
+  GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[INT_DIV_1; INT_ABS_NUM]);;
+
+let INT_LCM_UNIQUE_ABS = prove
+ (`!a b m.
+        lcm(a,b) = abs m <=>
+        a divides m /\
+        b divides m /\
+        (!n. a divides n /\ b divides n  ==> m divides n)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM INT_ABS_LCM] THEN
+  REWRITE_TAC[GSYM INT_DIVIDES_ANTISYM_ABS; INT_DIVIDES_ANTISYM_MULTIPLES] THEN
+  REWRITE_TAC[INT_LCM_DIVIDES] THEN
+  MESON_TAC[INT_DIVIDES_REFL; INT_DIVIDES_TRANS]);;
+
+let INT_LCM_UNIQUE = prove
+ (`!a b m.
+        lcm(a,b) = m <=>
+        &0 <= m /\
+        a divides m /\
+        b divides m /\
+        (!n. a divides n /\ b divides n ==> m divides n)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM INT_LCM_UNIQUE_ABS] THEN
+  MP_TAC(SPECL [`a:int`; `b:int`] INT_LCM_POS) THEN INT_ARITH_TAC);;
+
+let INT_LCM_EQ = prove
+ (`!x y u v.
+        (!m. x divides m /\ y divides m <=> u divides m /\ v divides m)
+        ==> lcm(x,y) = lcm(u,v)`,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [GSYM INT_ABS_LCM] THEN
+  REWRITE_TAC[GSYM INT_DIVIDES_ANTISYM_ABS; INT_DIVIDES_ANTISYM_MULTIPLES] THEN
+  ASM_REWRITE_TAC[INT_LCM_DIVIDES]);;
+
+let INT_LCM_REFL = prove
+ (`!n. lcm(n,n) = abs n`,
+  REWRITE_TAC[int_lcm; INT_GCD_REFL; INT_ENTIRE] THEN
+  GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[INT_ABS_NUM; INT_ABS_MUL] THEN
+  ASM_SIMP_TAC[INT_DIV_MUL; INT_ABS_ZERO]);;
+
+let INT_LCM_SYM = prove
+ (`!m n. lcm(m,n) = lcm(n,m)`,
+  REWRITE_TAC[int_lcm; INT_GCD_SYM; INT_MUL_SYM]);;
+
+let INT_LCM_ASSOC = prove
+ (`!m n p. lcm(m,lcm(n,p)) = lcm(lcm(m,n),p)`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [GSYM INT_ABS_LCM] THEN
+  REWRITE_TAC[GSYM INT_DIVIDES_ANTISYM_ABS; INT_DIVIDES_ANTISYM_MULTIPLES] THEN
+  REWRITE_TAC[INT_LCM_DIVIDES] THEN REWRITE_TAC[CONJ_ASSOC]);;
+
+(* ------------------------------------------------------------------------- *)
 (* More lemmas about coprimality.                                            *)
 (* ------------------------------------------------------------------------- *)
 
@@ -255,7 +332,7 @@ let int_coprime = prove
  (`!a b. coprime(a,b) <=> !d. d divides a /\ d divides b ==> d divides &1`,
   REWRITE_TAC[INT_COPRIME_GCD; INT_GCD_UNIQUE; INT_POS; INT_DIVIDES_1]);;
 
-let COPRIME = prove
+let INT_COPRIME = prove
  (`!a b. coprime(a,b) <=> !d. d divides a /\ d divides b <=> d divides &1`,
   MESON_TAC[INT_DIVIDES_1; INT_DIVIDES_TRANS; int_coprime]);;
 

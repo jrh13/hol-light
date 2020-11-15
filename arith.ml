@@ -1424,6 +1424,17 @@ let ODD_MOD_EVEN = prove
  (`!m n. EVEN n ==> (ODD(m MOD n) <=> ODD m)`,
   SIMP_TAC[GSYM NOT_EVEN; EVEN_MOD_EVEN]);;
 
+let HALF_DOUBLE = prove
+ (`(!n. (2 * n) DIV 2 = n) /\ (!n. (n * 2) DIV 2 = n)`,
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [MULT_SYM] THEN
+  SIMP_TAC[DIV_MULT; TWO; NOT_SUC]);;
+
+let DOUBLE_HALF = prove
+ (`(!n. EVEN n ==> 2 * n DIV 2 = n) /\
+   (!n. EVEN n ==> n DIV 2 * 2 = n)`,
+  SIMP_TAC[EVEN_EXISTS; LEFT_IMP_EXISTS_THM; HALF_DOUBLE] THEN
+  REWRITE_TAC[MULT_SYM]);;
+
 let MOD_MULT_RMOD = prove
  (`!m n p. (m * (p MOD n)) MOD n = (m * p) MOD n`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[MOD_ZERO] THEN

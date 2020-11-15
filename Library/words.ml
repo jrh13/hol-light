@@ -460,6 +460,10 @@ let BIT_WORD = prove
   ASM_SIMP_TAC[LAMBDA_BETA; ADD_SUB; ARITH_RULE `1 <= i + 1`;
                ARITH_RULE `i < n ==> i + 1 <= n`]);;
 
+let BIT_LSB_WORD = prove
+ (`!n. bit 0 (word n) <=> ODD n`,
+  SIMP_TAC[BIT_WORD; DIV_1; EXP; DIMINDEX_GE_1; LE_1]);;
+
 let BIT_WORD_0 = prove
  (`!i. bit i (word 0:N word) <=> F`,
   REWRITE_TAC[BIT_WORD; DIV_0; ODD]);;
@@ -1563,6 +1567,12 @@ let CONG_WORD_ADD = prove
         (val(word_add x y) == val x + val y) (mod (2 EXP dimindex(:N)))`,
   REWRITE_TAC[word_add; CONG_MODULAR]);;
 
+let INT_CONG_WORD_ADD = prove
+ (`!x y:N word.
+    (&(val(word_add x y)):int == &(val x) + &(val y))
+    (mod (&2 pow dimindex(:N)))`,
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; GSYM num_congruent; CONG_WORD_ADD]);;
+
 let WORD_ADD = prove
  (`!x y. word(x + y):N word = word_add (word x) (word y)`,
   REPEAT GEN_TAC THEN REWRITE_TAC[GSYM VAL_CONG] THEN
@@ -1593,6 +1603,15 @@ let WORD_ADD_IMODULAR = prove
   REWRITE_TAC[FUN_EQ_THM; GSYM IVAL_CONG] THEN
   ASM_MESON_TAC[ICONG_WORD_ADD; CONG_IMODULAR; INTEGER_RULE
    `(a:int == b) (mod n) /\ (c == b) (mod n) ==> (a == c) (mod n)`]);;
+
+let ODD_VAL_WORD_ADD = prove
+ (`!x y:N word. ODD(val(word_add x y)) <=> ~(ODD(val x) <=> ODD(val y))`,
+  SIMP_TAC[VAL_WORD_ADD; ODD_MOD_EVEN; EVEN_EXP; ARITH; DIMINDEX_NONZERO] THEN
+  REWRITE_TAC[ODD_ADD]);;
+
+let EVEN_VAL_WORD_ADD = prove
+ (`!x y:N word. EVEN(val(word_add x y)) <=> (EVEN(val x) <=> EVEN(val y))`,
+  REWRITE_TAC[GSYM NOT_ODD; ODD_VAL_WORD_ADD] THEN CONV_TAC TAUT);;
 
 let word_sub = new_definition
  `(word_sub:(N)word->(N)word->(N)word) =
@@ -1634,6 +1653,14 @@ let CONG_WORD_SUB = prove
   SIMP_TAC[VAL_BOUND; ARITH_RULE `y:num < n ==> (x + n - y) + y = x + n`] THEN
   REWRITE_TAC[GSYM CONG] THEN CONV_TAC NUMBER_RULE);;
 
+let INT_CONG_WORD_SUB = prove
+ (`!x y:N word.
+    (&(val(word_sub x y)):int == &(val x) - &(val y))
+    (mod (&2 pow dimindex(:N)))`,
+  REWRITE_TAC[INTEGER_RULE
+   `(z:int == x - y) (mod n) <=> (z + y == x) (mod n)`] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; CONG_WORD_SUB; GSYM num_congruent]);;
+
 let ICONG_WORD_SUB = prove
  (`!x y:N word.
         (ival(word_sub x y) == ival x - ival y) (mod (&2 pow dimindex(:N)))`,
@@ -1667,6 +1694,16 @@ let WORD_SUB = prove
 let word_neg = new_definition
  `word_neg (a:N word) = word_sub (word 0) a`;;
 
+let ODD_VAL_WORD_SUB = prove
+ (`!x y:N word. ODD(val(word_sub x y)) <=> ~(ODD(val x) <=> ODD(val y))`,
+  SIMP_TAC[VAL_WORD_SUB; ODD_MOD_EVEN; EVEN_EXP; ARITH; DIMINDEX_NONZERO] THEN
+  REWRITE_TAC[ODD_ADD; ODD_SUB; ODD_EXP; DIMINDEX_NONZERO; ARITH] THEN
+  REWRITE_TAC[VAL_BOUND]);;
+
+let EVEN_VAL_WORD_SUB = prove
+ (`!x y:N word. EVEN(val(word_sub x y)) <=> (EVEN(val x) <=> EVEN(val y))`,
+  REWRITE_TAC[GSYM NOT_ODD; ODD_VAL_WORD_SUB] THEN CONV_TAC TAUT);;
+
 let VAL_WORD_NEG = prove
  (`!x:(N) word.
         val(word_neg x) =
@@ -1698,6 +1735,13 @@ let CONG_WORD_NEG = prove
  (`!x:(N)word.
         (val(word_neg x) + val x == 0) (mod (2 EXP dimindex(:N)))`,
   REWRITE_TAC[word_neg] THEN MESON_TAC[CONG_WORD_SUB; VAL_WORD_0]);;
+
+let INT_CONG_WORD_NEG = prove
+ (`!x:N word. (&(val(word_neg x)):int == -- &(val x))
+              (mod (&2 pow dimindex(:N)))`,
+  REWRITE_TAC[INTEGER_RULE
+   `(z:int == --y) (mod n) <=> (z + y == &0) (mod n)`] THEN
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; CONG_WORD_NEG; GSYM num_congruent]);;
 
 let ICONG_WORD_NEG = prove
  (`!x:(N)word.
@@ -1749,6 +1793,15 @@ let WORD_NEG_1 = prove
   REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_0; VAL_WORD_SUB_CASES] THEN
   CONV_TAC NUM_REDUCE_CONV);;
 
+let ODD_VAL_WORD_NEG = prove
+ (`!x:N word. ODD(val(word_neg x)) <=> ODD(val x)`,
+  SIMP_TAC[VAL_WORD_NEG; ODD_MOD_EVEN; EVEN_EXP; ARITH; DIMINDEX_NONZERO] THEN
+  REWRITE_TAC[ODD_SUB; VAL_BOUND; ODD_EXP; DIMINDEX_NONZERO; ARITH]);;
+
+let EVEN_VAL_WORD_NEG = prove
+ (`!x:N word. EVEN(val(word_neg x)) <=> EVEN(val x)`,
+  REWRITE_TAC[GSYM NOT_ODD; ODD_VAL_WORD_NEG] THEN CONV_TAC TAUT);;
+
 let word_mul = new_definition
  `word_mul = modular ( * )`;;
 
@@ -1761,6 +1814,12 @@ let CONG_WORD_MUL = prove
  (`!x y:(N)word.
         (val(word_mul x y) == val x * val y) (mod (2 EXP dimindex(:N)))`,
   REWRITE_TAC[word_mul; CONG_MODULAR]);;
+
+let INT_CONG_WORD_MUL = prove
+ (`!x y:N word.
+    (&(val(word_mul x y)):int == &(val x) * &(val y))
+    (mod (&2 pow dimindex(:N)))`,
+  REWRITE_TAC[INT_OF_NUM_CLAUSES; GSYM num_congruent; CONG_WORD_MUL]);;
 
 let WORD_MUL = prove
  (`!x y. word(x * y):N word = word_mul (word x) (word y)`,
@@ -1793,6 +1852,15 @@ let WORD_MUL_IMODULAR = prove
   REWRITE_TAC[FUN_EQ_THM; GSYM IVAL_CONG] THEN
   ASM_MESON_TAC[ICONG_WORD_MUL; CONG_IMODULAR; INTEGER_RULE
    `(a:int == b) (mod n) /\ (c == b) (mod n) ==> (a == c) (mod n)`]);;
+
+let ODD_VAL_WORD_MUL = prove
+ (`!x y:N word. ODD(val(word_mul x y)) <=> ODD(val x) /\ ODD(val y)`,
+  SIMP_TAC[VAL_WORD_MUL; ODD_MOD_EVEN; EVEN_EXP; ARITH; DIMINDEX_NONZERO] THEN
+  REWRITE_TAC[ODD_MULT]);;
+
+let EVEN_VAL_WORD_MUL = prove
+ (`!x y:N word. EVEN(val(word_mul x y)) <=> EVEN(val x) \/ EVEN(val y)`,
+  REWRITE_TAC[GSYM NOT_ODD; ODD_VAL_WORD_MUL] THEN CONV_TAC TAUT);;
 
 let word_udiv = new_definition
  `word_udiv = modular (DIV)`;;

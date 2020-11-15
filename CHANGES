@@ -8,6 +8,125 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 14th Nov 2020       Library/integer.ml
+
+Added a few more basic integer lemmas, mainly related to LCMs.
+
+  INT_ABS_GCD =
+     |- !a b. abs (gcd(a,b)) = gcd(a,b)
+  
+  INT_ABS_LCM =
+     |- !a b. abs (lcm(a,b)) = lcm(a,b)
+  
+  INT_DIVIDES_ANTISYM_MULTIPLES =
+    |- !a b. a divides b /\ b divides a <=> (!d. a divides d <=> b divides d)
+  
+  INT_DIVIDES_LCM =
+     |- !m n r. r divides m \/ r divides n ==> r divides lcm(m,n)
+  
+  INT_LCM_0 =
+     |- (!n. lcm(&0,n) = &0) /\ (!n. lcm(n,&0) = &0)
+  
+  INT_LCM_1 =
+     |- (!n. lcm(&1,n) = abs n) /\ (!n. lcm(n,&1) = abs n)
+  
+  INT_LCM_ASSOC =
+     |- !m n p. lcm(m,lcm(n,p)) = lcm(lcm(m,n),p)
+  
+  INT_LCM_EQ =
+    |- !x y u v.
+           (!m. x divides m /\ y divides m <=> u divides m /\ v divides m)
+           ==> lcm(x,y) = lcm(u,v)
+  
+  INT_LCM_EQ_0 =
+     |- !m n. lcm(m,n) = &0 <=> m = &0 \/ n = &0
+  
+  INT_LCM_REFL =
+     |- !n. lcm(n,n) = abs n
+  
+  INT_LCM_SYM =
+     |- !m n. lcm(m,n) = lcm(n,m)
+  
+  INT_LCM_UNIQUE =
+    |- !a b m.
+           lcm(a,b) = m <=>
+           &0 <= m /\
+           a divides m /\
+           b divides m /\
+           (!n. a divides n /\ b divides n ==> m divides n)
+  
+  INT_LCM_UNIQUE_ABS =
+    |- !a b m.
+           lcm(a,b) = abs m <=>
+           a divides m /\
+           b divides m /\
+           (!n. a divides n /\ b divides n ==> m divides n)
+  
+Also renamed the existing COPRIME there to the more idiomatic INT_COPRIME,
+avoiding a name clash with the corresponding theorem for N in Library/prime.ml
+that was inconvenient if one wanted to use both together.
+
+Thu 12th Nov 2020       Library/words.ml
+
+Added a systematic set of basic word lemmas, mainly around evenness and
+oddity of values from word operations
+
+  BIT_LSB_WORD =
+     |- !n. bit 0 (word n) <=> ODD n
+
+  EVEN_VAL_WORD_ADD =
+    |- !x y. EVEN(val (word_add x y)) <=> EVEN(val x) <=> EVEN(val y)
+
+  EVEN_VAL_WORD_MUL =
+    |- !x y. EVEN(val (word_mul x y)) <=> EVEN(val x) \/ EVEN(val y)
+
+  EVEN_VAL_WORD_NEG =
+     |- !x. EVEN(val (word_neg x)) <=> EVEN(val x)
+
+  EVEN_VAL_WORD_SUB =
+    |- !x y. EVEN(val (word_sub x y)) <=> EVEN(val x) <=> EVEN(val y)
+
+  INT_CONG_WORD_ADD =
+    |- !x y.
+         (&(val (word_add x y)) == &(val x) + &(val y))
+         (mod (&2 pow dimindex (:N)))
+
+  INT_CONG_WORD_MUL =
+    |- !x y.
+         (&(val (word_mul x y)) == &(val x) * &(val y))
+         (mod (&2 pow dimindex (:N)))
+
+  INT_CONG_WORD_NEG =
+    |- !x. (&(val (word_neg x)) == -- &(val x)) (mod (&2 pow dimindex (:N)))
+
+  INT_CONG_WORD_SUB =
+    |- !x y.
+         (&(val (word_sub x y)) == &(val x) - &(val y))
+         (mod (&2 pow dimindex (:N)))
+
+  ODD_VAL_WORD_ADD =
+    |- !x y. ODD(val (word_add x y)) <=> ~(ODD(val x) <=> ODD(val y))
+
+  ODD_VAL_WORD_MUL =
+    |- !x y. ODD(val (word_mul x y)) <=> ODD(val x) /\ ODD(val y)
+
+  ODD_VAL_WORD_NEG =
+     |- !x. ODD(val (word_neg x)) <=> ODD(val x)
+
+  ODD_VAL_WORD_SUB =
+    |- !x y. ODD(val (word_sub x y)) <=> ~(ODD(val x) <=> ODD(val y))
+
+Thu 12th Nov 2020       arith.ml
+
+Added a couple of arithmetic lemmas that are handy to have bound to names,
+albeit the proofs are trivial (the latter is just proved by ARITH_TAC):
+
+  DOUBLE_HALF =
+    |- (!n. EVEN n ==> 2 * n DIV 2 = n) /\ (!n. EVEN n ==> n DIV 2 * 2 = n)
+
+  HALF_DOUBLE =
+    |- (!n. (2 * n) DIV 2 = n) /\ (!n. (n * 2) DIV 2 = n)
+
 Sat 24th Oct 2020       Library/words.ml
 
 Added a few word lemmas, renaming the former WORD_USHR_MSB -> WORD_USHR_MSB_ALT
@@ -910,7 +1029,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
   GROUP_POW_GCD_EQ_ID =
     |- !G x m n.
            x IN group_carrier G
-           ==> (group_pow G x (gcd (m,n)) = group_id G <=>
+           ==> (group_pow G x (gcd(m,n)) = group_id G <=>
                 group_pow G x m = group_id G /\ group_pow G x n = group_id G)
 
   GROUP_PRODUCT_EQ_ID =
@@ -6078,12 +6197,12 @@ are a bit more generally applicable:
   INVOLUTION_EVEN_NOFIXPOINTS =
     |- !f s.
          FINITE s /\ (!x. x IN s ==> f x IN s /\ ~(f x = x) /\ f (f x) = x)
-         ==> EVEN (CARD s)
+         ==> EVEN(CARD s)
 
   INVOLUTION_EVEN_FIXPOINTS =
     |- !f s.
          FINITE s /\ (!x. x IN s ==> f x IN s /\ f (f x) = x)
-         ==> (EVEN (CARD {x | x IN s /\ f x = x}) <=> EVEN (CARD s))
+         ==> (EVEN(CARD {x | x IN s /\ f x = x}) <=> EVEN(CARD s))
 
 Mon 24th Feb 2020       int.ml, Library/prime.ml
 
@@ -6328,7 +6447,7 @@ the reciprocity property, a.k.a. Arazi's inversion formula.
     |- !m n. ~(n = 0) /\ m divides n ==> n DIV (n DIV m) = m
 
   EVEN_MOD_EVEN =
-    |- !m n. EVEN n ==> (EVEN (m MOD n) <=> EVEN m)
+    |- !m n. EVEN n ==> (EVEN(m MOD n) <=> EVEN m)
 
   GCD_2_CASES =
     |- (!n. gcd(2,n) = (if EVEN n then 2 else 1)) /\
@@ -6374,7 +6493,7 @@ the reciprocity property, a.k.a. Arazi's inversion formula.
     |- !m n. EVEN n ==> m MOD n MOD 2 = m MOD 2
 
   ODD_MOD_EVEN =
-    |- !m n. EVEN n ==> (ODD (m MOD n) <=> ODD m)
+    |- !m n. EVEN n ==> (ODD(m MOD n) <=> ODD m)
 
   ORDER_LE_PHI =
     |- !n. ~(n = 0) ==> order n a <= phi n
@@ -6513,7 +6632,7 @@ a few filling rather surprising gaps.
   QUADRATIC_RESIDUE_MODULO_PRIMITIVE_ORDER =
     |- !n a.
            coprime(n,a) /\ 3 <= n /\ (?x. order n x = phi n)
-           ==> ((?x. (x EXP 2 == a) (mod n)) <=> EVEN (phi n DIV order n a))
+           ==> ((?x. (x EXP 2 == a) (mod n)) <=> EVEN(phi n DIV order n a))
 
 Wed 29th Jan 2020       int.ml
 
@@ -17851,8 +17970,8 @@ Mon 10th Apr 06         arith.ml
 
 Added two occasionally useful and very natural rewrites:
 
-  EVEN_SUB = |- !m n. EVEN (m - n) <=> m <= n \/ (EVEN m <=> EVEN n)
-  ODD_SUB = |- !m n. ODD (m - n) <=> n < m /\ ~(ODD m <=> ODD n)
+  EVEN_SUB = |- !m n. EVEN(m - n) <=> m <= n \/ (EVEN m <=> EVEN n)
+  ODD_SUB = |- !m n. ODD(m - n) <=> n < m /\ ~(ODD m <=> ODD n)
 
 Mon 10th Apr 06         iter.ml
 
@@ -22808,8 +22927,8 @@ Michael Norrish again).
 
 Mon 19th May 97         arith.ml
 
-Added EVEN_EXP = |- !m n. EVEN (m EXP n) = EVEN m /\ ~(n = 0)
-  and ODD_EXP = |- !m n. ODD (m EXP n) = ODD m \/ (n = 0)
+Added EVEN_EXP = |- !m n. EVEN(m EXP n) = EVEN m /\ ~(n = 0)
+  and ODD_EXP = |- !m n. ODD(m EXP n) = ODD m \/ (n = 0)
 
 Sun 18th May 97         real.ml,calc_rat.ml
 
