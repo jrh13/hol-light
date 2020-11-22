@@ -811,7 +811,7 @@ let INFINITE_RATIONAL_IN_RANGE = prove
     ASM_MESON_TAC[REAL_LT_TRANS]]);;
 
 (* ------------------------------------------------------------------------- *)
-(* Converting a congruence over N into a real equivalent.                    *)
+(* Converting a congruence over N or Z into a real equivalent.               *)
 (* ------------------------------------------------------------------------- *)
 
 let REAL_CONGRUENCE = prove
@@ -828,6 +828,20 @@ let REAL_CONGRUENCE = prove
   REWRITE_TAC[GSYM int_of_num_th] THEN
   REWRITE_TAC[GSYM int_sub_th; GSYM int_mul_th; GSYM int_eq] THEN
   REWRITE_TAC[num_congruent; int_congruent] THEN MESON_TAC[]);;
+
+let REAL_INT_CONGRUENCE = prove
+ (`!a b n. (a == b) (mod n) <=>
+           if n = &0 then real_of_int a = real_of_int b
+           else integer((real_of_int a - real_of_int b) / real_of_int n)`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[GSYM int_eq] THENL
+   [CONV_TAC INTEGER_RULE; ALL_TAC] THEN
+  REWRITE_TAC[GSYM IMAGE_REAL_OF_INT_UNIV] THEN
+  GEN_REWRITE_TAC RAND_CONV [GSYM IN] THEN
+  REWRITE_TAC[IN_IMAGE; IN_UNIV] THEN
+  ASM_SIMP_TAC[GSYM int_of_num_th; GSYM int_eq;  REAL_FIELD
+   `~(n:real = &0) ==> (x / n = y <=> n * y = x)`] THEN
+  REWRITE_TAC[GSYM int_mul_th; GSYM int_sub_th; GSYM int_eq] THEN
+  CONV_TAC INTEGER_RULE);;
 
 (* ------------------------------------------------------------------------- *)
 (* A simple tactic to try and prove that a real expression is integral.      *)

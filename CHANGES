@@ -8,45 +8,103 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 20th Nov 2020       int.ml, Library/prime.ml, Library/pocklington.ml, Library/integer.ml, Library/floor.ml
+
+Added various simple divisibility-related lemmas of one sort or another:
+
+  CONG_LMUL =
+     |- !a x y n. (x == y) (mod n) ==> (a * x == a * y) (mod n)
+  
+  CONG_MULT_LCANCEL_ALL =
+    |- !a x y n. (a * x == a * y) (mod (a * n)) <=> a = 0 \/ (x == y) (mod n)
+  
+  CONG_RMUL =
+     |- !x y a n. (x == y) (mod n) ==> (x * a == y * a) (mod n)
+  
+  GCD_COPRIME_DIVIDES_LMUL =
+    |- !a b c. coprime(a,b) /\ a divides c ==> gcd(a * b,c) = a * gcd(b,c)
+  
+  GCD_COPRIME_DIVIDES_RMUL =
+    |- !a b c. coprime(b,c) /\ b divides a ==> gcd(a,b * c) = b * gcd(a,c)
+  
+  INT_CONG_LMUL =
+     |- !a x y n. (x == y) (mod n) ==> (a * x == a * y) (mod n)
+  
+  INT_CONG_MULT_LCANCEL_ALL =
+    |- !a x y n. (a * x == a * y) (mod (a * n)) <=> a = &0 \/ (x == y) (mod n)
+  
+  INT_CONG_RMUL =
+     |- !x y a n. (x == y) (mod n) ==> (x * a == y * a) (mod n)
+  
+  INT_GCD_COPRIME_DIVIDES_LMUL =
+    |- !a b c.
+           coprime(a,b) /\ a divides c ==> gcd(a * b,c) = abs a * gcd(b,c)
+  
+  INT_GCD_COPRIME_DIVIDES_RMUL =
+    |- !a b c.
+           coprime(b,c) /\ b divides a ==> gcd(a,b * c) = abs b * gcd(a,c)
+  
+  INT_GCD_COPRIME_LMUL =
+    |- !a b c. coprime(a,b) ==> gcd(a * b,c) = gcd(a,c) * gcd(b,c)
+  
+  INT_GCD_COPRIME_RMUL =
+    |- !a b c. coprime(b,c) ==> gcd(a,b * c) = gcd(a,b) * gcd(a,c)
+  
+  INT_GCD_LMUL =
+     |- !a b c. gcd(c * a,c * b) = abs c * gcd(a,b)
+  
+  INT_GCD_RMUL =
+     |- !a b c. gcd(a * c,b * c) = gcd(a,b) * abs c
+  
+  INT_MUL_2 =
+     |- !x. &2 * x = x + x
+  
+  REAL_INT_CONGRUENCE =
+    |- !a b n.
+           (a == b) (mod n) <=>
+           (if n = &0
+            then real_of_int a = real_of_int b
+            else integer ((real_of_int a - real_of_int b) / real_of_int n))
+  
 Sat 14th Nov 2020       Library/integer.ml
 
 Added a few more basic integer lemmas, mainly related to LCMs.
 
   INT_ABS_GCD =
-     |- !a b. abs (gcd(a,b)) = gcd(a,b)
-  
+     |- !a b. abs(gcd(a,b)) = gcd(a,b)
+
   INT_ABS_LCM =
-     |- !a b. abs (lcm(a,b)) = lcm(a,b)
-  
+     |- !a b. abs(lcm(a,b)) = lcm(a,b)
+
   INT_DIVIDES_ANTISYM_MULTIPLES =
     |- !a b. a divides b /\ b divides a <=> (!d. a divides d <=> b divides d)
-  
+
   INT_DIVIDES_LCM =
      |- !m n r. r divides m \/ r divides n ==> r divides lcm(m,n)
-  
+
   INT_LCM_0 =
      |- (!n. lcm(&0,n) = &0) /\ (!n. lcm(n,&0) = &0)
-  
+
   INT_LCM_1 =
      |- (!n. lcm(&1,n) = abs n) /\ (!n. lcm(n,&1) = abs n)
-  
+
   INT_LCM_ASSOC =
      |- !m n p. lcm(m,lcm(n,p)) = lcm(lcm(m,n),p)
-  
+
   INT_LCM_EQ =
     |- !x y u v.
            (!m. x divides m /\ y divides m <=> u divides m /\ v divides m)
            ==> lcm(x,y) = lcm(u,v)
-  
+
   INT_LCM_EQ_0 =
      |- !m n. lcm(m,n) = &0 <=> m = &0 \/ n = &0
-  
+
   INT_LCM_REFL =
      |- !n. lcm(n,n) = abs n
-  
+
   INT_LCM_SYM =
      |- !m n. lcm(m,n) = lcm(n,m)
-  
+
   INT_LCM_UNIQUE =
     |- !a b m.
            lcm(a,b) = m <=>
@@ -54,14 +112,14 @@ Added a few more basic integer lemmas, mainly related to LCMs.
            a divides m /\
            b divides m /\
            (!n. a divides n /\ b divides n ==> m divides n)
-  
+
   INT_LCM_UNIQUE_ABS =
     |- !a b m.
            lcm(a,b) = abs m <=>
            a divides m /\
            b divides m /\
            (!n. a divides n /\ b divides n ==> m divides n)
-  
+
 Also renamed the existing COPRIME there to the more idiomatic INT_COPRIME,
 avoiding a name clash with the corresponding theorem for N in Library/prime.ml
 that was inconvenient if one wanted to use both together.
@@ -944,7 +1002,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
 
   GROUP_ELEMENT_ORDER_COPRIME_DECOMP =
     |- !G z m n.
-           coprime (m,n) /\
+           coprime(m,n) /\
            z IN group_carrier G /\
            group_element_order G z = m * n
            ==> (?x y.
@@ -957,7 +1015,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
 
   GROUP_ELEMENT_ORDER_COPRIME_DECOMP_DIVIDES =
     |- !G z m n.
-           coprime (m,n) /\
+           coprime(m,n) /\
            z IN group_carrier G /\
            group_element_order G z divides m * n
            ==> (?x y.
@@ -970,7 +1028,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
 
   GROUP_ELEMENT_ORDER_COPRIME_DECOMP_EXPLICIT =
     |- !G x m n.
-           coprime (m,n) /\
+           coprime(m,n) /\
            x IN group_carrier G /\
            group_element_order G x = m * n
            ==> (?r s.
@@ -980,7 +1038,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
 
   GROUP_ELEMENT_ORDER_COPRIME_DECOMP_UNIQUE =
     |- !G z m n.
-           coprime (m,n) /\
+           coprime(m,n) /\
            z IN group_carrier G /\
            group_element_order G z = m * n
            ==> (?!(x,y). x IN group_carrier G /\
@@ -999,7 +1057,7 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
                     group_mul G x y = z /\
                     group_mul G y x = z /\
                     (?k. group_element_order G x = p EXP k) /\
-                    coprime (p,group_element_order G y))
+                    coprime(p,group_element_order G y))
 
   GROUP_ELEMENT_ORDER_SUM_GROUP_EQ_0 =
     |- !G k x.
@@ -1009,13 +1067,13 @@ TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS. New theorems:
 
   GROUP_POW_COPRIME_EQ_ID =
     |- !G x m n.
-           x IN group_carrier G /\ coprime (m,n)
+           x IN group_carrier G /\ coprime(m,n)
            ==> (group_pow G x m = group_id G /\ group_pow G x n = group_id G <=>
                 x = group_id G)
 
   GROUP_POW_EQ_ID_DECOMP =
     |- !G z m n.
-           coprime (m,n) /\
+           coprime(m,n) /\
            z IN group_carrier G /\
            group_pow G z (m * n) = group_id G
            ==> (?x y.
@@ -1786,7 +1844,7 @@ for finite groups. New theorems:
   SUBGROUP_OF_COPRIME_ORDER =
     |- !G n.
            abelian_group G
-           ==> {x | x IN group_carrier G /\ coprime (n,group_element_order G x)}
+           ==> {x | x IN group_carrier G /\ coprime(n,group_element_order G x)}
                subgroup_of G
 
   SUBGROUP_OF_LOWER_ORDER =

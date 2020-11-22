@@ -278,6 +278,14 @@ let GCD_BEZOUT_SUM = prove
  (`!a b d x y. a * x + b * y = d ==> gcd(a,b) divides d`,
   NUMBER_TAC);;
 
+let GCD_COPRIME_DIVIDES_LMUL = prove
+ (`!a b c:num. coprime(a,b) /\ a divides c ==> gcd(a * b,c) = a * gcd(b,c)`,
+  NUMBER_TAC);;
+
+let GCD_COPRIME_DIVIDES_RMUL = prove
+ (`!a b c:num. coprime(b,c) /\ b divides a ==> gcd(a,b * c) = b * gcd(a,c)`,
+ ONCE_REWRITE_TAC[GCD_SYM] THEN REWRITE_TAC[GCD_COPRIME_DIVIDES_LMUL]);;
+
 let GCD_UNIQUE = prove
  (`!d a b. (d divides a /\ d divides b) /\
            (!e. e divides a /\ e divides b ==> e divides d) <=>

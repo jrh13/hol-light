@@ -247,6 +247,36 @@ let INT_GCD_EQ = prove
   FIRST_X_ASSUM(fun th -> REWRITE_TAC[GSYM th]) THEN
   REWRITE_TAC[INT_GCD_DIVIDES]);;
 
+let INT_GCD_LMUL = prove
+ (`!a b c:int. gcd(c * a,c * b) = abs c * gcd(a,b)`,
+  ONCE_REWRITE_TAC[GSYM INT_ABS_GCD] THEN REWRITE_TAC[GSYM INT_ABS_MUL] THEN
+  REWRITE_TAC[GSYM INT_DIVIDES_ANTISYM_ABS] THEN CONV_TAC INTEGER_RULE);;
+
+let INT_GCD_RMUL = prove
+ (`!a b c:int. gcd(a * c,b * c) = gcd(a,b) * abs c`,
+  ONCE_REWRITE_TAC[INT_MUL_SYM] THEN REWRITE_TAC[INT_GCD_LMUL]);;
+
+let INT_GCD_COPRIME_LMUL = prove
+ (`!a b c:int. coprime(a,b) ==> gcd(a * b,c) = gcd(a,c) * gcd(b,c)`,
+  ONCE_REWRITE_TAC[GSYM INT_ABS_GCD] THEN REWRITE_TAC[GSYM INT_ABS_MUL] THEN
+  REWRITE_TAC[GSYM INT_DIVIDES_ANTISYM_ABS] THEN CONV_TAC INTEGER_RULE);;
+
+let INT_GCD_COPRIME_RMUL = prove
+ (`!a b c:int. coprime(b,c) ==> gcd(a, b * c) = gcd(a,b) * gcd(a,c)`,
+  ONCE_REWRITE_TAC[INT_GCD_SYM] THEN REWRITE_TAC[INT_GCD_COPRIME_LMUL]);;
+
+let INT_GCD_COPRIME_DIVIDES_LMUL = prove
+ (`!a b c:int. coprime(a,b) /\ a divides c
+                ==> gcd(a * b,c) = abs a * gcd(b,c)`,
+  ONCE_REWRITE_TAC[GSYM INT_ABS_GCD] THEN REWRITE_TAC[GSYM INT_ABS_MUL] THEN
+  REWRITE_TAC[GSYM INT_DIVIDES_ANTISYM_ABS] THEN CONV_TAC INTEGER_RULE);;
+
+let INT_GCD_COPRIME_DIVIDES_RMUL = prove
+ (`!a b c:int. coprime(b,c) /\ b divides a
+               ==> gcd(a,b * c) = abs b * gcd(a,c)`,
+ ONCE_REWRITE_TAC[INT_GCD_SYM] THEN
+ REWRITE_TAC[INT_GCD_COPRIME_DIVIDES_LMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Lemmas about lcms.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -501,6 +531,16 @@ let INT_CONG_MUL_LCANCEL = prove
 let INT_CONG_MUL_RCANCEL = prove
  (`!a n x y. coprime(a,n) /\ (x * a == y * a) (mod n) ==> (x == y) (mod n)`,
   INTEGER_TAC);;
+
+let INT_CONG_MULT_LCANCEL_ALL = INTEGER_RULE
+  `!a x y n:int.
+      (a * x == a * y) (mod (a * n)) <=> a = &0 \/ (x == y) (mod n)`;;
+
+let INT_CONG_LMUL = INTEGER_RULE
+ `!a x y n:int. (x == y) (mod n) ==> (a * x == a * y) (mod n)`;;
+
+let INT_CONG_RMUL = INTEGER_RULE
+ `!x y a n:int. (x == y) (mod n) ==> (x * a == y * a) (mod n)`;;
 
 let INT_CONG_REFL = prove
  (`!x n. (x == x) (mod n)`,

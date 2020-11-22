@@ -221,6 +221,17 @@ let CONG_ADD_RCANCEL_EQ_0 = prove
  (`!a n x. (x + a == a) (mod n) <=> (x == 0) (mod n)`,
   NUMBER_TAC);;
 
+let CONG_MULT_LCANCEL_ALL = prove
+ (`!a x y n. (a * x == a * y) (mod (a * n)) <=> a = 0 \/ (x == y) (mod n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `a = 0` THEN ASM_REWRITE_TAC[] THEN
+  POP_ASSUM MP_TAC THEN NUMBER_TAC);;
+
+let CONG_LMUL = NUMBER_RULE
+ `!a x y n:num. (x == y) (mod n) ==> (a * x == a * y) (mod n)`;;
+
+let CONG_RMUL = NUMBER_RULE
+ `!x y a n:num. (x == y) (mod n) ==> (x * a == y * a) (mod n)`;;
+
 let CONG_IMP_EQ = prove
  (`!x y n. x < n /\ y < n /\ (x == y) (mod n) ==> x = y`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN ASM_REWRITE_TAC[LT] THEN
