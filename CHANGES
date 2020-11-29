@@ -8,64 +8,236 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 27th Nov 2020       Library/bitsize.ml
+
+Added a few more properties of "bitsize":
+
+  BITSIZE_DIV =
+    |- !n k. bitsize(n DIV 2 EXP k) = bitsize n - k
+
+  BITSIZE_MAX =
+    |- !m n. bitsize(MAX m n) = MAX (bitsize m) (bitsize n)
+
+  BITSIZE_MIN =
+    |- !m n. bitsize(MIN m n) = MIN (bitsize m) (bitsize n)
+
+Wed 25th Nov 2020       Library/integer.ml
+
+Added a few more integer divisibility lemmas:
+
+  INT_GCD_POW =
+    |- !a b n. gcd(a pow n,b pow n) = gcd(a,b) pow n
+
+  INT_LCM_LMUL =
+    |- !a b c. lcm(c * a,c * b) = abs c * lcm(a,b)
+
+  INT_LCM_POW =
+   |- !a b n. lcm(a pow n,b pow n) = lcm(a,b) pow n
+
+  INT_LCM_RMUL =
+   |- !a b c. lcm(a * c,b * c) = lcm(a,b) * abs c
+
+as well as removing the nonzeroness hypothesis from INT_GCD_COPRIME_EXISTS
+(in line with the natural number version GCD_COPRIME_EXISTS), which is now:
+
+  INT_GCD_COPRIME_EXISTS =
+    |- !a b. ?a' b'. a = a' * gcd(a,b) /\ b = b' * gcd(a,b) /\ coprime(a',b')
+
+Tue 24th Nov 2020       Library/words.ml
+
+Added various new word lemmas:
+
+  BIT_WORD_ZX =
+    |- !x i. bit i (word_zx x) <=> i < dimindex(:N) /\ bit i x
+  
+  VAL_LE_BITS =
+    |- !x y. (!i. i < dimindex(:N) /\ bit i x ==> bit i y) ==> val x <= val y
+  
+  VAL_WORD_OR_LE =
+    |- (!x y. val x <= val (word_or x y)) /\ (!x y. val y <= val (word_or x y))
+  
+  VAL_WORD_SUBWORD_JOIN =
+    |- !h l n m.
+           m <= dimindex(:N)
+           ==> val (word_subword (word_join h l) (n,m)) =
+               ((2 EXP dimindex(:N) * val h + val l) DIV 2 EXP n) MOD 2 EXP m
+  
+  VAL_WORD_SUBWORD_JOIN_FULL =
+    |- !h l k.
+           k <= dimindex(:N)
+           ==> val (word_subword (word_join h l) (k,dimindex(:N))) =
+               2 EXP (dimindex(:N) - k) * val h MOD 2 EXP k +
+               val l DIV 2 EXP k
+  
+  WORD_ADD_SHL_USHR =
+    |- !h l m n.
+           m + n = dimindex(:N)
+           ==> word_add (word_shl h m) (word_ushr l n) =
+               word_zx (word_ushr (word_join h l) n)
+  
+  WORD_ADD_USHR_SHL =
+    |- !h l m n.
+           m + n = dimindex(:N)
+           ==> word_add (word_ushr l m) (word_shl h n) =
+               word_zx (word_ushr (word_join h l) m)
+  
+  WORD_CLZ_IMP =
+    |- !x y.
+           (!i. i < dimindex(:N) /\ bit i x ==> bit i y)
+           ==> word_clz y <= word_clz x
+  
+  WORD_CLZ_MONO =
+    |- !x y. val x <= val y ==> word_clz y <= word_clz x
+  
+  WORD_CLZ_OR =
+    |- !x y. word_clz (word_or x y) = MIN (word_clz x) (word_clz y)
+  
+  WORD_CTZ_IMP =
+    |- !x y.
+           (!i. i < dimindex(:N) /\ bit i x ==> bit i y)
+           ==> word_ctz y <= word_ctz x
+  
+  WORD_CTZ_OR =
+    |- !x y. word_ctz (word_or x y) = MIN (word_ctz x) (word_ctz y)
+  
+  WORD_ISHR_0 = 
+    |- !n. word_ishr (word 0) n = word 0
+  
+  WORD_JSHL_NEG =
+    |- !w k.
+           dimindex(:N) divides 2 EXP dimindex(:N)
+           ==> word_jshl w (word_neg k) =
+               (if val k MOD dimindex(:N) = 0
+                then w
+                else word_shl w (dimindex(:N) - val k MOD dimindex(:N)))
+  
+  WORD_JUSHR_NEG =
+    |- !w k.
+           dimindex(:N) divides 2 EXP dimindex(:N)
+           ==> word_jushr w (word_neg k) =
+               (if val k MOD dimindex(:N) = 0
+                then w
+                else word_ushr w (dimindex(:N) - val k MOD dimindex(:N)))
+  
+  WORD_OR_SHL_USHR =
+    |- !h l m n.
+           m + n = dimindex(:N)
+           ==> word_or (word_shl h m) (word_ushr l n) =
+               word_zx (word_ushr (word_join h l) n)
+  
+  WORD_OR_USHR_SHL =
+    |- !h l m n.
+           m + n = dimindex(:N)
+           ==> word_or (word_ushr l m) (word_shl h n) =
+               word_zx (word_ushr (word_join h l) m)
+  
+  WORD_SHL_0 = 
+    |- !n. word_shl (word 0) n = word 0
+  
+  WORD_SUBWORD_DIMINDEX =
+    |- !x k. word_subword x (k,dimindex(:M)) = word_zx (word_ushr x k)
+  
+  WORD_USHR_0 = 
+    |- !n. word_ushr (word 0) n = word 0
+
+Mon 23rd Nov 2020       Library/integer.ml
+
+Added a few more routine lemmas about integer GCDs and LCMs under sign flip:
+
+  INT_GCD_ABS =
+    |- (!a b. gcd(abs a,b) = gcd(a,b)) /\ (!a b. gcd(a,abs b) = gcd(a,b))
+
+  INT_GCD_LABS =
+   |- !a b. gcd(abs a,b) = gcd(a,b)
+
+  INT_GCD_LNEG =
+   |- !a b. gcd(--a,b) = gcd(a,b)
+
+  INT_GCD_NEG =
+    |- (!a b. gcd(--a,b) = gcd(a,b)) /\ (!a b. gcd(a,--b) = gcd(a,b))
+
+  INT_GCD_RABS =
+   |- !a b. gcd(a,abs b) = gcd(a,b)
+
+  INT_GCD_RNEG =
+   |- !a b. gcd(a,--b) = gcd(a,b)
+
+  INT_LCM_ABS =
+    |- (!a b. lcm(abs a,b) = lcm(a,b)) /\ (!a b. lcm(a,abs b) = lcm(a,b))
+
+  INT_LCM_LABS =
+   |- !a b. lcm(abs a,b) = lcm(a,b)
+
+  INT_LCM_LNEG =
+   |- !a b. lcm(--a,b) = lcm(a,b)
+
+  INT_LCM_NEG =
+    |- (!a b. lcm(--a,b) = lcm(a,b)) /\ (!a b. lcm(a,--b) = lcm(a,b))
+
+  INT_LCM_RABS =
+   |- !a b. lcm(a,abs b) = lcm(a,b)
+
+  INT_LCM_RNEG =
+   |- !a b. lcm(a,--b) = lcm(a,b)
+
 Fri 20th Nov 2020       int.ml, Library/prime.ml, Library/pocklington.ml, Library/integer.ml, Library/floor.ml
 
 Added various simple divisibility-related lemmas of one sort or another:
 
   CONG_LMUL =
      |- !a x y n. (x == y) (mod n) ==> (a * x == a * y) (mod n)
-  
+
   CONG_MULT_LCANCEL_ALL =
     |- !a x y n. (a * x == a * y) (mod (a * n)) <=> a = 0 \/ (x == y) (mod n)
-  
+
   CONG_RMUL =
      |- !x y a n. (x == y) (mod n) ==> (x * a == y * a) (mod n)
-  
+
   GCD_COPRIME_DIVIDES_LMUL =
     |- !a b c. coprime(a,b) /\ a divides c ==> gcd(a * b,c) = a * gcd(b,c)
-  
+
   GCD_COPRIME_DIVIDES_RMUL =
     |- !a b c. coprime(b,c) /\ b divides a ==> gcd(a,b * c) = b * gcd(a,c)
-  
+
   INT_CONG_LMUL =
      |- !a x y n. (x == y) (mod n) ==> (a * x == a * y) (mod n)
-  
+
   INT_CONG_MULT_LCANCEL_ALL =
     |- !a x y n. (a * x == a * y) (mod (a * n)) <=> a = &0 \/ (x == y) (mod n)
-  
+
   INT_CONG_RMUL =
      |- !x y a n. (x == y) (mod n) ==> (x * a == y * a) (mod n)
-  
+
   INT_GCD_COPRIME_DIVIDES_LMUL =
     |- !a b c.
            coprime(a,b) /\ a divides c ==> gcd(a * b,c) = abs a * gcd(b,c)
-  
+
   INT_GCD_COPRIME_DIVIDES_RMUL =
     |- !a b c.
            coprime(b,c) /\ b divides a ==> gcd(a,b * c) = abs b * gcd(a,c)
-  
+
   INT_GCD_COPRIME_LMUL =
     |- !a b c. coprime(a,b) ==> gcd(a * b,c) = gcd(a,c) * gcd(b,c)
-  
+
   INT_GCD_COPRIME_RMUL =
     |- !a b c. coprime(b,c) ==> gcd(a,b * c) = gcd(a,b) * gcd(a,c)
-  
+
   INT_GCD_LMUL =
      |- !a b c. gcd(c * a,c * b) = abs c * gcd(a,b)
-  
+
   INT_GCD_RMUL =
      |- !a b c. gcd(a * c,b * c) = gcd(a,b) * abs c
-  
+
   INT_MUL_2 =
      |- !x. &2 * x = x + x
-  
+
   REAL_INT_CONGRUENCE =
     |- !a b n.
            (a == b) (mod n) <=>
            (if n = &0
             then real_of_int a = real_of_int b
             else integer ((real_of_int a - real_of_int b) / real_of_int n))
-  
+
 Sat 14th Nov 2020       Library/integer.ml
 
 Added a few more basic integer lemmas, mainly related to LCMs.
@@ -147,20 +319,20 @@ oddity of values from word operations
   INT_CONG_WORD_ADD =
     |- !x y.
          (&(val (word_add x y)) == &(val x) + &(val y))
-         (mod (&2 pow dimindex (:N)))
+         (mod (&2 pow dimindex(:N)))
 
   INT_CONG_WORD_MUL =
     |- !x y.
          (&(val (word_mul x y)) == &(val x) * &(val y))
-         (mod (&2 pow dimindex (:N)))
+         (mod (&2 pow dimindex(:N)))
 
   INT_CONG_WORD_NEG =
-    |- !x. (&(val (word_neg x)) == -- &(val x)) (mod (&2 pow dimindex (:N)))
+    |- !x. (&(val (word_neg x)) == -- &(val x)) (mod (&2 pow dimindex(:N)))
 
   INT_CONG_WORD_SUB =
     |- !x y.
          (&(val (word_sub x y)) == &(val x) - &(val y))
-         (mod (&2 pow dimindex (:N)))
+         (mod (&2 pow dimindex(:N)))
 
   ODD_VAL_WORD_ADD =
     |- !x y. ODD(val (word_add x y)) <=> ~(ODD(val x) <=> ODD(val y))
@@ -336,28 +508,28 @@ a natural number.
     |- !m n. m <= n ==> bitsize m <= bitsize n
 
   BITSIZE_MULT =
-    |- (!k n. bitsize (2 EXP k * n) = (if n = 0 then 0 else k + bitsize n)) /\
-       (!k n. bitsize (n * 2 EXP k) = (if n = 0 then 0 else bitsize n + k))
+    |- (!k n. bitsize(2 EXP k * n) = (if n = 0 then 0 else k + bitsize n)) /\
+       (!k n. bitsize(n * 2 EXP k) = (if n = 0 then 0 else bitsize n + k))
 
   BITSIZE_MULT_ADD =
     |- (!k m n.
             ~(m = 0) /\ n < 2 EXP k
-            ==> bitsize (2 EXP k * m + n) = k + bitsize m) /\
+            ==> bitsize(2 EXP k * m + n) = k + bitsize m) /\
        (!k m n.
             ~(m = 0) /\ n < 2 EXP k
-            ==> bitsize (m * 2 EXP k + n) = k + bitsize m) /\
+            ==> bitsize(m * 2 EXP k + n) = k + bitsize m) /\
        (!k m n.
             ~(m = 0) /\ n < 2 EXP k
-            ==> bitsize (n + 2 EXP k * m) = k + bitsize m) /\
+            ==> bitsize(n + 2 EXP k * m) = k + bitsize m) /\
        (!k m n.
             ~(m = 0) /\ n < 2 EXP k
-            ==> bitsize (n + m * 2 EXP k) = k + bitsize m)
+            ==> bitsize(n + m * 2 EXP k) = k + bitsize m)
 
   BITSIZE_MULT_LE =
-    |- !m n. bitsize (m * n) <= bitsize m + bitsize n
+    |- !m n. bitsize(m * n) <= bitsize m + bitsize n
 
   BITSIZE_POW2 =
-    |- !k. bitsize (2 EXP k) = k + 1
+    |- !k. bitsize(2 EXP k) = k + 1
 
   BITSIZE_REV =
     |- !n. ~(n = 0) ==> 2 EXP (bitsize n - 1) <= n

@@ -159,6 +159,10 @@ let INT_GCD_DIVIDES = prove
  (`!a b. gcd(a,b) divides a /\ gcd(a,b) divides b`,
   INTEGER_TAC);;
 
+let INT_COPRIME_GCD = prove
+ (`!a b. coprime(a,b) <=> gcd(a,b) = &1`,
+  SIMP_TAC[GSYM INT_DIVIDES_ONE_POS; INT_GCD_POS] THEN INTEGER_TAC);;
+
 let INT_GCD_BEZOUT = prove
  (`!a b. ?x y. gcd(a,b) = a * x + b * y`,
   INTEGER_TAC);;
@@ -205,6 +209,10 @@ let INT_GCD_0 = prove
  (`!a. gcd(a,&0) = abs(a) /\ gcd(&0,a) = abs(a)`,
   SIMP_TAC[INT_GCD_UNIQUE_ABS] THEN INTEGER_TAC);;
 
+let INT_GCD_EQ_0 = prove
+ (`!a b. gcd(a,b) = &0 <=> a = &0 /\ b = &0`,
+  INTEGER_TAC);;
+
 let INT_GCD_ABS = prove
  (`!a b. gcd(abs(a),b) = gcd(a,b) /\ gcd(a,abs(b)) = gcd(a,b)`,
   REWRITE_TAC[INT_GCD_UNIQUE; INT_DIVIDES_ABS; INT_GCD_POS; INT_GCD]);;
@@ -247,6 +255,32 @@ let INT_GCD_EQ = prove
   FIRST_X_ASSUM(fun th -> REWRITE_TAC[GSYM th]) THEN
   REWRITE_TAC[INT_GCD_DIVIDES]);;
 
+let INT_GCD_LNEG = prove
+ (`!a b:int. gcd(--a,b) = gcd(a,b)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC INT_GCD_EQ THEN INTEGER_TAC);;
+
+let INT_GCD_RNEG = prove
+ (`!a b:int. gcd(a,--b) = gcd(a,b)`,
+  REPEAT GEN_TAC THEN MATCH_MP_TAC INT_GCD_EQ THEN INTEGER_TAC);;
+
+let INT_GCD_NEG = prove
+ (`(!a b. gcd(--a,b) = gcd(a,b)) /\
+   (!a b. gcd(a,--b) = gcd(a,b))`,
+  REWRITE_TAC[INT_GCD_LNEG; INT_GCD_RNEG]);;
+
+let INT_GCD_LABS = prove
+ (`!a b. gcd(abs a,b) = gcd(a,b)`,
+  REWRITE_TAC[INT_ABS] THEN MESON_TAC[INT_GCD_LNEG]);;
+
+let INT_GCD_RABS = prove
+ (`!a b. gcd(a,abs b) = gcd(a,b)`,
+  REWRITE_TAC[INT_ABS] THEN MESON_TAC[INT_GCD_RNEG]);;
+
+let INT_GCD_ABS = prove
+ (`(!a b. gcd(abs a,b) = gcd(a,b)) /\
+   (!a b. gcd(a,abs b) = gcd(a,b))`,
+  REWRITE_TAC[INT_GCD_LABS; INT_GCD_RABS]);;
+
 let INT_GCD_LMUL = prove
  (`!a b c:int. gcd(c * a,c * b) = abs c * gcd(a,b)`,
   ONCE_REWRITE_TAC[GSYM INT_ABS_GCD] THEN REWRITE_TAC[GSYM INT_ABS_MUL] THEN
@@ -276,6 +310,14 @@ let INT_GCD_COPRIME_DIVIDES_RMUL = prove
                ==> gcd(a,b * c) = abs b * gcd(a,c)`,
  ONCE_REWRITE_TAC[INT_GCD_SYM] THEN
  REWRITE_TAC[INT_GCD_COPRIME_DIVIDES_LMUL]);;
+
+let INT_GCD_COPRIME_EXISTS = prove
+ (`!a b. ?a' b'. a = a' * gcd(a,b) /\ b = b' * gcd(a,b) /\ coprime(a',b')`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `gcd(a,b):int = &0` THENL
+   [ALL_TAC; POP_ASSUM MP_TAC THEN CONV_TAC INTEGER_RULE] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[INT_GCD_EQ_0]) THEN
+  REPEAT(EXISTS_TAC `&1:int`) THEN ASM_REWRITE_TAC[INT_GCD_0] THEN
+  CONV_TAC INT_REDUCE_CONV THEN CONV_TAC INTEGER_RULE);;
 
 (* ------------------------------------------------------------------------- *)
 (* Lemmas about lcms.                                                        *)
@@ -350,13 +392,51 @@ let INT_LCM_ASSOC = prove
   REWRITE_TAC[GSYM INT_DIVIDES_ANTISYM_ABS; INT_DIVIDES_ANTISYM_MULTIPLES] THEN
   REWRITE_TAC[INT_LCM_DIVIDES] THEN REWRITE_TAC[CONJ_ASSOC]);;
 
+let INT_LCM_LNEG = prove
+ (`!a b:int. lcm(--a,b) = lcm(a,b)`,
+  SIMP_TAC[int_lcm; INT_MUL_LNEG; INT_ABS_NEG; INT_GCD_LNEG; INT_NEG_EQ_0]);;
+
+let INT_LCM_RNEG = prove
+ (`!a b:int. lcm(a,--b) = lcm(a,b)`,
+  SIMP_TAC[int_lcm; INT_MUL_RNEG; INT_ABS_NEG; INT_GCD_RNEG; INT_NEG_EQ_0]);;
+
+let INT_LCM_NEG = prove
+ (`(!a b. lcm(--a,b) = lcm(a,b)) /\
+   (!a b. lcm(a,--b) = lcm(a,b))`,
+  REWRITE_TAC[INT_LCM_LNEG; INT_LCM_RNEG]);;
+
+let INT_LCM_LABS = prove
+ (`!a b. lcm(abs a,b) = lcm(a,b)`,
+  REWRITE_TAC[INT_ABS] THEN MESON_TAC[INT_LCM_LNEG]);;
+
+let INT_LCM_RABS = prove
+ (`!a b. lcm(a,abs b) = lcm(a,b)`,
+  REWRITE_TAC[INT_ABS] THEN MESON_TAC[INT_LCM_RNEG]);;
+
+let INT_LCM_ABS = prove
+ (`(!a b. lcm(abs a,b) = lcm(a,b)) /\
+   (!a b. lcm(a,abs b) = lcm(a,b))`,
+  REWRITE_TAC[INT_LCM_LABS; INT_LCM_RABS]);;
+
+let INT_LCM_LMUL = prove
+ (`!a b c:int. lcm(c * a,c * b) = abs c * lcm(a,b)`,
+  REPEAT GEN_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [`a:int = &0`; `b:int = &0`; `c:int = &0`] THEN
+  ASM_REWRITE_TAC[INT_MUL_LZERO; INT_MUL_RZERO; INT_ABS_NUM; INT_LCM_0] THEN
+  MATCH_MP_TAC(INT_RING `!x:int. ~(x = &0) /\ a * x = b * x ==> a = b`) THEN
+  EXISTS_TAC `gcd(c * a:int,c * b)` THEN
+  ASM_REWRITE_TAC[INT_GCD_EQ_0; INT_ENTIRE; INT_MUL_LCM_GCD] THEN
+  REWRITE_TAC[INT_GCD_LMUL; INT_MUL_LCM_GCD;
+              INT_ARITH `(x * a) * x * b:int = x * x * a * b`] THEN
+  REWRITE_TAC[INT_ABS_MUL; INT_MUL_AC]);;
+
+let INT_LCM_RMUL = prove
+ (`!a b c:int. lcm(a * c,b * c) = lcm(a,b) * abs c`,
+  ONCE_REWRITE_TAC[INT_MUL_SYM] THEN REWRITE_TAC[INT_LCM_LMUL]);;
+
 (* ------------------------------------------------------------------------- *)
 (* More lemmas about coprimality.                                            *)
 (* ------------------------------------------------------------------------- *)
-
-let INT_COPRIME_GCD = prove
- (`!a b. coprime(a,b) <=> gcd(a,b) = &1`,
-  SIMP_TAC[GSYM INT_DIVIDES_ONE_POS; INT_GCD_POS] THEN INTEGER_TAC);;
 
 let int_coprime = prove
  (`!a b. coprime(a,b) <=> !d. d divides a /\ d divides b ==> d divides &1`,
@@ -381,13 +461,6 @@ let INT_COPRIME_1 = prove
 let INT_GCD_COPRIME = prove
  (`!a b a' b'. ~(gcd(a,b) = &0) /\ a = a' * gcd(a,b) /\ b = b' * gcd(a,b)
                ==> coprime(a',b')`,
-  INTEGER_TAC);;
-
-let INT_GCD_COPRIME_EXISTS = prove
- (`!a b. ~(gcd(a,b) = &0) ==>
-        ?a' b'. (a = a' * gcd(a,b)) /\
-                (b = b' * gcd(a,b)) /\
-                coprime(a',b')`,
   INTEGER_TAC);;
 
 let INT_COPRIME_0 = prove
@@ -449,9 +522,28 @@ let INT_COPRIME_POW_IMP = prove
  (`!n a b. coprime(a,b) ==> coprime(a pow n,b pow n)`,
   MESON_TAC[INT_COPRIME_POW; INT_COPRIME_SYM]);;
 
-let INT_GCD_EQ_0 = prove
- (`!a b. gcd(a,b) = &0 <=> a = &0 /\ b = &0`,
-  INTEGER_TAC);;
+let INT_GCD_POW = prove
+ (`!(a:int) b n. gcd(a pow n,b pow n) = gcd(a,b) pow n`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPECL [`a:int`; `b:int`] INT_GCD_COPRIME_EXISTS) THEN
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
+  MAP_EVERY X_GEN_TAC [`a':int`; `b':int`] THEN
+  STRIP_TAC THEN ONCE_ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[INT_POW_MUL; INT_GCD_RMUL; INT_ABS_POW] THEN
+  ASM_SIMP_TAC[fst(EQ_IMP_RULE(SPEC_ALL INT_COPRIME_GCD));
+               INT_COPRIME_POW2; INT_POW_ONE]);;
+
+let INT_LCM_POW = prove
+ (`!(a:int) b n. lcm(a pow n,b pow n) = lcm(a,b) pow n`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n = 0` THEN
+  ASM_REWRITE_TAC[INT_POW; INT_LCM_1; INT_POW_ONE; INT_ABS_NUM] THEN
+  MAP_EVERY ASM_CASES_TAC [`a:int = &0`; `b:int = &0`] THEN
+  ASM_REWRITE_TAC[INT_POW_ZERO; INT_LCM_0] THEN
+  MATCH_MP_TAC(INT_RING `!x:int. ~(x = &0) /\ a * x = b * x ==> a = b`) THEN
+  EXISTS_TAC `gcd((a:int) pow n,b pow n)` THEN
+  ASM_REWRITE_TAC[INT_GCD_EQ_0; INT_POW_EQ_0; INT_MUL_LCM_GCD] THEN
+  REWRITE_TAC[INT_GCD_POW; GSYM INT_POW_MUL] THEN
+  REWRITE_TAC[INT_MUL_LCM_GCD; INT_ABS_POW]);;
 
 let INT_DIVISION_DECOMP = prove
  (`!a b c. a divides (b * c)
@@ -1059,7 +1151,7 @@ let INT_DIVIDES_POW2_REV = prove
  (`!n a b. (a pow n) divides (b pow n) /\ ~(n = 0) ==> a divides b`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `gcd(a,b) = &0` THENL
    [ASM_MESON_TAC[INT_GCD_EQ_0; INT_DIVIDES_REFL]; ALL_TAC] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP INT_GCD_COPRIME_EXISTS) THEN
+  MP_TAC(SPECL [`a:int`; `b:int`] INT_GCD_COPRIME_EXISTS) THEN
   STRIP_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   ONCE_ASM_REWRITE_TAC[] THEN REWRITE_TAC[INT_POW_MUL] THEN
   ASM_SIMP_TAC[INT_POW_EQ_0; INT_DIVIDES_RMUL2_EQ] THEN

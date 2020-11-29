@@ -54,6 +54,18 @@ let BITSIZE_MONO = prove
   REPEAT STRIP_TAC THEN REWRITE_TAC[BITSIZE_LE] THEN
   TRANS_TAC LET_TRANS `n:num` THEN ASM_REWRITE_TAC[BITSIZE]);;
 
+let BITSIZE_MAX = prove
+ (`!m n. bitsize(MAX m n) = MAX (bitsize m) (bitsize n)`,
+  REPEAT GEN_TAC THEN DISJ_CASES_TAC(ARITH_RULE `m:num <= n \/ n <= m`) THEN
+  ASM_SIMP_TAC[ARITH_RULE `m <= n ==> MAX m n = n`; BITSIZE_MONO;
+               ARITH_RULE `n <= m ==> MAX m n = m`]);;
+
+let BITSIZE_MIN = prove
+ (`!m n. bitsize(MIN m n) = MIN (bitsize m) (bitsize n)`,
+  REPEAT GEN_TAC THEN DISJ_CASES_TAC(ARITH_RULE `m:num <= n \/ n <= m`) THEN
+  ASM_SIMP_TAC[ARITH_RULE `m <= n ==> MIN m n = m`; BITSIZE_MONO;
+               ARITH_RULE `n <= m ==> MIN m n = n`]);;
+
 let BITSIZE_MULT_LE = prove
  (`!m n. bitsize(m * n) <= bitsize m + bitsize n`,
   REPEAT GEN_TAC THEN REWRITE_TAC[BITSIZE_LE; EXP_ADD] THEN
@@ -125,3 +137,18 @@ let BITSIZE_MULT_ADD = prove
     TRANS_TAC LE_TRANS `bitsize(2 EXP k * m)` THEN CONJ_TAC THENL
      [ASM_REWRITE_TAC[BITSIZE_MULT; LE_REFL];
       MATCH_MP_TAC BITSIZE_MONO THEN ARITH_TAC]]);;
+
+let BITSIZE_DIV = prove
+ (`!n k. bitsize(n DIV 2 EXP k) = bitsize n - k`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[BITSIZE_UNIQUE] THEN
+  SIMP_TAC[RDIV_LT_EQ; LE_RDIV_EQ;  EXP_EQ_0; ARITH_EQ] THEN
+  ASM_CASES_TAC `bitsize n <= k` THENL
+   [ASM_SIMP_TAC[ARITH_RULE `n <= k ==> n - k = 0`] THEN
+    REWRITE_TAC[CONJUNCT1 LT; MULT_CLAUSES; EXP] THEN
+    TRANS_TAC LTE_TRANS `2 EXP bitsize n` THEN
+    ASM_REWRITE_TAC[BITSIZE; LE_EXP] THEN ASM_ARITH_TAC;
+    ASM_SIMP_TAC[GSYM EXP_ADD; BITSIZE;
+                 ARITH_RULE `~(n:num <= k) ==> k + n - k = n`] THEN
+    ASM_SIMP_TAC[ARITH_RULE `~(n:num <= k) ==> (j < n - k <=> k + j < n)`] THEN
+    REWRITE_TAC[ARITH_RULE `a < b <=> a + 1 <= b`; LE_BITSIZE] THEN
+    REWRITE_TAC[ADD_SUB; ADD_EQ_0; ARITH_EQ]]);;
