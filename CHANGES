@@ -8,6 +8,48 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Thu  3rd Dec 2020       Library/words.ml
+
+Added a few more fairly straightforward but handy word lemmas:
+
+  BLOCK_BITS_ZERO =
+    |- !x m n.
+           (!i. m <= i /\ i < n ==> ~bit i x) <=> val x MOD 2 EXP n < 2 EXP m
+
+  BLOCK_BITS_ZERO_ALT =
+    |- !x m n.
+           (!i. m <= i /\ i < n ==> ~bit i x) <=>
+           (val x MOD 2 EXP n) DIV 2 EXP m = 0
+
+  EVEN_VAL_WORD =
+   |- !n. EVEN(val(word n)) <=> EVEN n
+
+  LOWER_BITS_ZERO =
+   |- !x n. (!i. i < n ==> ~bit i x) <=> val x MOD 2 EXP n = 0
+
+  ODD_VAL_WORD =
+   |- !n. ODD(val(word n)) <=> ODD n
+
+  UPPER_BITS_ZERO =
+   |- !x n. (!i. n <= i ==> ~bit i x) <=> val x < 2 EXP n
+
+  UPPER_BITS_ZERO_ALT =
+   |- !x n. (!i. n <= i ==> ~bit i x) <=> val x DIV 2 EXP n = 0
+
+  VAL_WORD_SUB_EQ_0 =
+   |- !x y. val(word_sub x y) = 0 <=> val x = val y
+
+  WORD_SUBWORD_JOIN_AS_SHL =
+    |- !x k.
+           k <= dimindex(:N)
+           ==> word_subword (word_join x (word 0)) (k,dimindex(:N)) =
+               word_shl x (dimindex(:N) - k)
+
+  WORD_SUBWORD_JOIN_AS_USHR =
+    |- !x k.
+           word_subword (word_join (word 0) x) (k,dimindex(:N)) =
+           word_ushr x k
+
 Fri 27th Nov 2020       Library/bitsize.ml
 
 Added a few more properties of "bitsize":
@@ -49,60 +91,60 @@ Added various new word lemmas:
 
   BIT_WORD_ZX =
     |- !x i. bit i (word_zx x) <=> i < dimindex(:N) /\ bit i x
-  
+
   VAL_LE_BITS =
     |- !x y. (!i. i < dimindex(:N) /\ bit i x ==> bit i y) ==> val x <= val y
-  
+
   VAL_WORD_OR_LE =
-    |- (!x y. val x <= val (word_or x y)) /\ (!x y. val y <= val (word_or x y))
-  
+    |- (!x y. val x <= val(word_or x y)) /\ (!x y. val y <= val(word_or x y))
+
   VAL_WORD_SUBWORD_JOIN =
     |- !h l n m.
            m <= dimindex(:N)
-           ==> val (word_subword (word_join h l) (n,m)) =
+           ==> val(word_subword (word_join h l) (n,m)) =
                ((2 EXP dimindex(:N) * val h + val l) DIV 2 EXP n) MOD 2 EXP m
-  
+
   VAL_WORD_SUBWORD_JOIN_FULL =
     |- !h l k.
            k <= dimindex(:N)
-           ==> val (word_subword (word_join h l) (k,dimindex(:N))) =
+           ==> val(word_subword (word_join h l) (k,dimindex(:N))) =
                2 EXP (dimindex(:N) - k) * val h MOD 2 EXP k +
                val l DIV 2 EXP k
-  
+
   WORD_ADD_SHL_USHR =
     |- !h l m n.
            m + n = dimindex(:N)
            ==> word_add (word_shl h m) (word_ushr l n) =
                word_zx (word_ushr (word_join h l) n)
-  
+
   WORD_ADD_USHR_SHL =
     |- !h l m n.
            m + n = dimindex(:N)
            ==> word_add (word_ushr l m) (word_shl h n) =
                word_zx (word_ushr (word_join h l) m)
-  
+
   WORD_CLZ_IMP =
     |- !x y.
            (!i. i < dimindex(:N) /\ bit i x ==> bit i y)
            ==> word_clz y <= word_clz x
-  
+
   WORD_CLZ_MONO =
     |- !x y. val x <= val y ==> word_clz y <= word_clz x
-  
+
   WORD_CLZ_OR =
     |- !x y. word_clz (word_or x y) = MIN (word_clz x) (word_clz y)
-  
+
   WORD_CTZ_IMP =
     |- !x y.
            (!i. i < dimindex(:N) /\ bit i x ==> bit i y)
            ==> word_ctz y <= word_ctz x
-  
+
   WORD_CTZ_OR =
     |- !x y. word_ctz (word_or x y) = MIN (word_ctz x) (word_ctz y)
-  
-  WORD_ISHR_0 = 
+
+  WORD_ISHR_0 =
     |- !n. word_ishr (word 0) n = word 0
-  
+
   WORD_JSHL_NEG =
     |- !w k.
            dimindex(:N) divides 2 EXP dimindex(:N)
@@ -110,7 +152,7 @@ Added various new word lemmas:
                (if val k MOD dimindex(:N) = 0
                 then w
                 else word_shl w (dimindex(:N) - val k MOD dimindex(:N)))
-  
+
   WORD_JUSHR_NEG =
     |- !w k.
            dimindex(:N) divides 2 EXP dimindex(:N)
@@ -118,26 +160,26 @@ Added various new word lemmas:
                (if val k MOD dimindex(:N) = 0
                 then w
                 else word_ushr w (dimindex(:N) - val k MOD dimindex(:N)))
-  
+
   WORD_OR_SHL_USHR =
     |- !h l m n.
            m + n = dimindex(:N)
            ==> word_or (word_shl h m) (word_ushr l n) =
                word_zx (word_ushr (word_join h l) n)
-  
+
   WORD_OR_USHR_SHL =
     |- !h l m n.
            m + n = dimindex(:N)
            ==> word_or (word_ushr l m) (word_shl h n) =
                word_zx (word_ushr (word_join h l) m)
-  
-  WORD_SHL_0 = 
+
+  WORD_SHL_0 =
     |- !n. word_shl (word 0) n = word 0
-  
+
   WORD_SUBWORD_DIMINDEX =
     |- !x k. word_subword x (k,dimindex(:M)) = word_zx (word_ushr x k)
-  
-  WORD_USHR_0 = 
+
+  WORD_USHR_0 =
     |- !n. word_ushr (word 0) n = word 0
 
 Mon 23rd Nov 2020       Library/integer.ml
@@ -305,46 +347,46 @@ oddity of values from word operations
      |- !n. bit 0 (word n) <=> ODD n
 
   EVEN_VAL_WORD_ADD =
-    |- !x y. EVEN(val (word_add x y)) <=> EVEN(val x) <=> EVEN(val y)
+    |- !x y. EVEN(val(word_add x y)) <=> EVEN(val x) <=> EVEN(val y)
 
   EVEN_VAL_WORD_MUL =
-    |- !x y. EVEN(val (word_mul x y)) <=> EVEN(val x) \/ EVEN(val y)
+    |- !x y. EVEN(val(word_mul x y)) <=> EVEN(val x) \/ EVEN(val y)
 
   EVEN_VAL_WORD_NEG =
-     |- !x. EVEN(val (word_neg x)) <=> EVEN(val x)
+     |- !x. EVEN(val(word_neg x)) <=> EVEN(val x)
 
   EVEN_VAL_WORD_SUB =
-    |- !x y. EVEN(val (word_sub x y)) <=> EVEN(val x) <=> EVEN(val y)
+    |- !x y. EVEN(val(word_sub x y)) <=> EVEN(val x) <=> EVEN(val y)
 
   INT_CONG_WORD_ADD =
     |- !x y.
-         (&(val (word_add x y)) == &(val x) + &(val y))
+         (&(val(word_add x y)) == &(val x) + &(val y))
          (mod (&2 pow dimindex(:N)))
 
   INT_CONG_WORD_MUL =
     |- !x y.
-         (&(val (word_mul x y)) == &(val x) * &(val y))
+         (&(val(word_mul x y)) == &(val x) * &(val y))
          (mod (&2 pow dimindex(:N)))
 
   INT_CONG_WORD_NEG =
-    |- !x. (&(val (word_neg x)) == -- &(val x)) (mod (&2 pow dimindex(:N)))
+    |- !x. (&(val(word_neg x)) == -- &(val x)) (mod (&2 pow dimindex(:N)))
 
   INT_CONG_WORD_SUB =
     |- !x y.
-         (&(val (word_sub x y)) == &(val x) - &(val y))
+         (&(val(word_sub x y)) == &(val x) - &(val y))
          (mod (&2 pow dimindex(:N)))
 
   ODD_VAL_WORD_ADD =
-    |- !x y. ODD(val (word_add x y)) <=> ~(ODD(val x) <=> ODD(val y))
+    |- !x y. ODD(val(word_add x y)) <=> ~(ODD(val x) <=> ODD(val y))
 
   ODD_VAL_WORD_MUL =
-    |- !x y. ODD(val (word_mul x y)) <=> ODD(val x) /\ ODD(val y)
+    |- !x y. ODD(val(word_mul x y)) <=> ODD(val x) /\ ODD(val y)
 
   ODD_VAL_WORD_NEG =
-     |- !x. ODD(val (word_neg x)) <=> ODD(val x)
+     |- !x. ODD(val(word_neg x)) <=> ODD(val x)
 
   ODD_VAL_WORD_SUB =
-    |- !x y. ODD(val (word_sub x y)) <=> ~(ODD(val x) <=> ODD(val y))
+    |- !x y. ODD(val(word_sub x y)) <=> ~(ODD(val x) <=> ODD(val y))
 
 Thu 12th Nov 2020       arith.ml
 
@@ -363,18 +405,18 @@ Added a few word lemmas, renaming the former WORD_USHR_MSB -> WORD_USHR_MSB_ALT
 to make room for the new one here:
 
   IVAL_WORD_MASK =
-    |- !b. ival (word_neg (word(bitval b))) = -- &(bitval b)
+    |- !b. ival(word_neg (word(bitval b))) = -- &(bitval b)
 
   MASK_WORD_SUB =
     |- !k. word_sub (word(2 EXP k)) (word 1) = word(2 EXP k - 1)
 
   WORD_ISHR_MSB =
     |- !x. word_ishr x (dimindex(:N) - 1) =
-           word_neg (word(bitval (bit (dimindex(:N) - 1) x)))
+           word_neg (word(bitval(bit (dimindex(:N) - 1) x)))
 
   WORD_USHR_MSB =
     |- !x. word_ushr x (dimindex(:N) - 1) =
-           word(bitval (bit (dimindex(:N) - 1) x))
+           word(bitval(bit (dimindex(:N) - 1) x))
 
   WORD_AND_MASK_WORD =
     |- (!x k. word_and x (word(2 EXP k - 1)) = word(val x MOD 2 EXP k)) /\
@@ -2304,19 +2346,19 @@ Wed 24th Jun 2020       Library/words.ml
 Added a few more trivial word lemmas:
 
   INT_VAL_WORD_MASK =
-    |- !b. &(val (word_neg (word(bitval b)))) =
+    |- !b. &(val(word_neg (word(bitval b)))) =
            (&2 pow dimindex(:N) - &1) * &(bitval b)
 
   REAL_VAL_WORD_MASK =
-    |- !b. &(val (word_neg (word(bitval b)))) =
+    |- !b. &(val(word_neg (word(bitval b)))) =
            (&2 pow dimindex(:N) - &1) * &(bitval b)
 
   REAL_VAL_WORD_NEG_CASES =
-    |- !x. &(val (word_neg x)) =
+    |- !x. &(val(word_neg x)) =
            (if &(val x) = &0 then &0 else &2 pow dimindex(:N) - &(val x))
 
   VAL_WORD_MASK =
-    |- !b. val (word_neg (word(bitval b))) =
+    |- !b. val(word_neg (word(bitval b))) =
            (2 EXP dimindex(:N) - 1) * bitval b
 
 Mon 22nd Jun 2020       Library/floor.ml
@@ -2832,13 +2874,13 @@ Added a few miscellaneous useful lemmas about machine words:
     |- !b c. &(bitval b) <= &(bitval c) <=> b ==> c
 
   INT_VAL_WORD_NOT =
-     |- !x. &(val (word_not x)) = &2 pow dimindex(:N) - &1 - &(val x)
+     |- !x. &(val(word_not x)) = &2 pow dimindex(:N) - &1 - &(val x)
 
   LE_BITVAL =
     |- !b c. bitval b <= bitval c <=> b ==> c
 
   REAL_BITVAL_NOT =
-    |- !b. &(bitval (~b)) = &1 - &(bitval b)
+    |- !b. &(bitval(~b)) = &1 - &(bitval b)
 
   REAL_EQ_BITVAL =
     |- !b c. &(bitval b) = &(bitval c) <=> b <=> c
@@ -2847,17 +2889,17 @@ Added a few miscellaneous useful lemmas about machine words:
     |- !b c. &(bitval b) <= &(bitval c) <=> b ==> c
 
   REAL_VAL_WORD_NOT =
-     |- !x. &(val (word_not x)) = &2 pow dimindex(:N) - &1 - &(val x)
+     |- !x. &(val(word_not x)) = &2 pow dimindex(:N) - &1 - &(val x)
 
   VAL_EQ_MAX_MASK =
      |- !x. val x = 2 EXP dimindex(:N) - 1 <=> x = word_neg (word 1)
 
   VAL_MOD_2 =
-    |- !x. val x MOD 2 = bitval (bit 0 x)
+    |- !x. val x MOD 2 = bitval(bit 0 x)
 
   WORD_AND_1_BITVAL =
-     |- (!x. word_and (word 1) x = word(bitval (bit 0 x))) /\
-        (!x. word_and x (word 1) = word(bitval (bit 0 x)))
+     |- (!x. word_and (word 1) x = word(bitval(bit 0 x))) /\
+        (!x. word_and x (word 1) = word(bitval(bit 0 x)))
 
   WORD_NEG_AND_MASK =
     |- (!b x.

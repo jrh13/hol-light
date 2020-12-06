@@ -661,6 +661,36 @@ let MSB_INT_VAL = prove
     bit (dimindex(:N) - 1) w <=> (&2 pow (dimindex(:N) - 1)):int <= &(val w)`,
   REWRITE_TAC[INT_OF_NUM_POW; INT_OF_NUM_LE; MSB_VAL]);;
 
+let BLOCK_BITS_ZERO_ALT = prove
+ (`!(x:N word) m n.
+        (!i. m <= i /\ i < n ==> ~bit i x) <=>
+        (val x MOD 2 EXP n) DIV 2 EXP m = 0`,
+  SIMP_TAC[val_def; BINARY_DIGITSUM_DIV; BINARY_DIGITSUM_MOD;
+           FINITE_NUMSEG_LT; FINITE_RESTRICT; NSUM_EQ_0_IFF] THEN
+  REWRITE_TAC[MULT_EQ_0; EXP_EQ_0; ARITH_EQ; BITVAL_EQ_0; IN_ELIM_THM] THEN
+  MESON_TAC[NOT_LT; BIT_TRIVIAL]);;
+
+let BLOCK_BITS_ZERO = prove
+ (`!(x:N word) m n.
+        (!i. m <= i /\ i < n ==> ~bit i x) <=>
+        val x MOD 2 EXP n < 2 EXP m`,
+  SIMP_TAC[BLOCK_BITS_ZERO_ALT; DIV_EQ_0; EXP_EQ_0; ARITH_EQ]);;
+
+let LOWER_BITS_ZERO = prove
+ (`!(x:N word) n. (!i. i < n ==> ~bit i x) <=> val x MOD 2 EXP n = 0`,
+  ONCE_REWRITE_TAC[ARITH_RULE `i < n <=> 0 <= i /\ i < n`] THEN
+  REWRITE_TAC[BLOCK_BITS_ZERO_ALT; EXP; DIV_1]);;
+
+let UPPER_BITS_ZERO = prove
+ (`!(x:N word) n. (!i. n <= i ==> ~bit i x) <=> val x < 2 EXP n`,
+  REPEAT GEN_TAC THEN MP_TAC(ISPECL
+   [`x:N word`; `n:num`; `dimindex(:N)`] BLOCK_BITS_ZERO) THEN
+  REWRITE_TAC[VAL_MOD_REFL] THEN MESON_TAC[NOT_LT; BIT_TRIVIAL]);;
+
+let UPPER_BITS_ZERO_ALT = prove
+ (`!(x:N word) n. (!i. n <= i ==> ~bit i x) <=> val x DIV 2 EXP n = 0`,
+  SIMP_TAC[UPPER_BITS_ZERO; DIV_EQ_0; EXP_EQ_0; ARITH_EQ]);;
+
 let VAL_WORD_OF_BITS = prove
  (`!s. val(word_of_bits s:N word) =
        nsum {i | i < dimindex(:N) /\ i IN s} (\i. 2 EXP i)`,
@@ -1617,6 +1647,14 @@ let WORD_ADD_IMODULAR = prove
   REWRITE_TAC[FUN_EQ_THM; GSYM IVAL_CONG] THEN
   ASM_MESON_TAC[ICONG_WORD_ADD; CONG_IMODULAR; INTEGER_RULE
    `(a:int == b) (mod n) /\ (c == b) (mod n) ==> (a == c) (mod n)`]);;
+
+let ODD_VAL_WORD = prove
+ (`!n. ODD(val(word n:N word)) <=> ODD n`,
+   SIMP_TAC[VAL_WORD; ODD_MOD_EVEN; EVEN_EXP; ARITH; DIMINDEX_NONZERO]);;
+
+let EVEN_VAL_WORD = prove
+ (`!n. EVEN(val(word n:N word)) <=> EVEN n`,
+  REWRITE_TAC[GSYM NOT_ODD; ODD_VAL_WORD]);;
 
 let ODD_VAL_WORD_ADD = prove
  (`!x y:N word. ODD(val(word_add x y)) <=> ~(ODD(val x) <=> ODD(val y))`,
@@ -2873,6 +2911,31 @@ let VAL_WORD_SUBWORD_JOIN_FULL = prove
     ASM_SIMP_TAC[GSYM EXP_ADD; ARITH_RULE `k:num <= d ==> k + d - k = d`] THEN
     REWRITE_TAC[VAL_BOUND]]);;
 
+let WORD_SUBWORD_JOIN_AS_USHR = prove
+ (`!(x:N word) k.
+      word_subword (word_join (word 0:N word) x:((N)tybit0)word)
+                   (k,dimindex(:N)) =
+      word_ushr x k`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM VAL_EQ] THEN
+  SIMP_TAC[VAL_WORD_USHR; VAL_WORD_SUBWORD_JOIN; LE_REFL] THEN
+  REWRITE_TAC[VAL_WORD_0; MULT_CLAUSES; ADD_CLAUSES] THEN
+  MATCH_MP_TAC MOD_LT THEN MESON_TAC[DIV_LE; VAL_BOUND; LET_TRANS]);;
+
+let WORD_SUBWORD_JOIN_AS_SHL = prove
+ (`!(x:N word) k.
+        k <= dimindex(:N)
+        ==> word_subword (word_join x (word 0:N word):((N)tybit0)word)
+                         (k,dimindex(:N)) =
+            word_shl x (dimindex(:N) - k)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM VAL_EQ] THEN
+  SIMP_TAC[VAL_WORD_SHL; VAL_WORD_SUBWORD_JOIN; LE_REFL] THEN
+  REWRITE_TAC[VAL_WORD_0; ADD_CLAUSES] THEN
+  AP_THM_TAC THEN AP_TERM_TAC THEN
+  SUBGOAL_THEN `2 EXP dimindex(:N) = 2 EXP k * 2 EXP (dimindex(:N) - k)`
+  SUBST1_TAC THENL
+   [REWRITE_TAC[GSYM EXP_ADD] THEN AP_TERM_TAC THEN ASM_ARITH_TAC;
+    SIMP_TAC[GSYM MULT_ASSOC; DIV_MULT; EXP_EQ_0; ARITH_EQ]]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Bit recursion equations for "linear" operations.                          *)
 (* ------------------------------------------------------------------------- *)
@@ -3193,6 +3256,10 @@ let WORD_NOT_ADD = prove
  (`!x y:N word.
         word_not(word_add x y) = word_add (word_not x) (word_neg y)`,
   REWRITE_TAC[WORD_NOT_AS_SUB] THEN CONV_TAC WORD_RULE);;
+
+let VAL_WORD_SUB_EQ_0 = prove
+ (`!x y:N word. val(word_sub x y) = 0 <=> val x = val y`,
+  REWRITE_TAC[VAL_EQ_0; WORD_SUB_EQ_0] THEN REWRITE_TAC[VAL_EQ]);;
 
 let VAL_EQ_MAX_ALT = prove
  (`!x:N word. val x = 2 EXP dimindex(:N) - 1 <=> x = word_not(word 0)`,
