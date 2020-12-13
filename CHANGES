@@ -8,6 +8,49 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Tue  8th Dec 2020       preterm.ml
+
+Made an improvement to pretype_of_type pointed out by Ben Kordesh and
+Bill Richter, using pattern-matching instead of the destructor style.
+This is not only much cleaner but probably more efficient.
+
+Mon  7th Dec 2020       Library/words.ml
+
+Added a few more word lemmas:
+
+  BIT_MASK_WORD =
+    |- !k i. bit i (word (2 EXP k - 1)) <=> i < dimindex(:N) /\ i < k
+
+  VAL_WORD_LE =
+   |- !n k. n <= k ==> val (word n) <= k
+
+  VAL_WORD_LT =
+   |- !n k. n < k ==> val (word n) < k
+
+  WORD_ADD_OR_EQ =
+   |- !x y. word_add x y = word_or x y <=> word_and x y = word 0
+
+  WORD_OR_XOR_EQ =
+   |- !x y. word_or x y = word_xor x y <=> word_and x y = word 0
+
+  WORD_SUB_MASK_WORD =
+    |- !k x.
+           val x < 2 EXP k
+           ==> word_sub (word (2 EXP k - 1)) x =
+               word_xor (word (2 EXP k - 1)) x
+
+  WORD_SUB_XOR =
+    |- !x y. word_and (word_not x) y = word 0 ==> word_sub x y = word_xor x y
+
+  WORD_XOR_MASK_WORD =
+    |- !k x.
+           val x < 2 EXP k
+           ==> word_xor (word (2 EXP k - 1)) x =
+               word_sub (word (2 EXP k - 1)) x
+
+  WORD_XOR_SUB =
+    |- !x y. word_and (word_not x) y = word 0 ==> word_xor x y = word_sub x y
+
 Thu  3rd Dec 2020       Library/words.ml
 
 Added a few more fairly straightforward but handy word lemmas:

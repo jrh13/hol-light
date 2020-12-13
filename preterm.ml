@@ -119,9 +119,9 @@ let dpty = Ptycon("",[]);;
 (* ------------------------------------------------------------------------- *)
 
 let rec pretype_of_type ty =
-  try let con,args = dest_type ty in
-      Ptycon(con,map pretype_of_type args)
-  with Failure _ -> Utv(dest_vartype ty);;
+  match ty with
+    Tyvar s -> Utv s
+  | Tyapp(con,args) -> Ptycon(con,map pretype_of_type args);;
 
 (* ------------------------------------------------------------------------- *)
 (* Preterm syntax.                                                           *)

@@ -507,6 +507,14 @@ let VAL_WORD = prove
   ASM_REWRITE_TAC[NSUM_CLAUSES_NUMSEG_LT; EXP; MOD_1] THEN
   ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[MOD_MULT_MOD] THEN ARITH_TAC);;
 
+let VAL_WORD_LE = prove
+ (`!n k. n <= k ==> val(word n:N word) <= k`,
+  REWRITE_TAC[VAL_WORD] THEN MESON_TAC[LE_TRANS; MOD_LE]);;
+
+let VAL_WORD_LT = prove
+ (`!n k. n < k ==> val(word n:N word) < k`,
+  REWRITE_TAC[VAL_WORD] THEN MESON_TAC[LET_TRANS; MOD_LE]);;
+
 let FORALL_WORD = prove
  (`!P. (!x:N word. P x) <=> (!n. P(word n))`,
   MESON_TAC[WORD_VAL]);;
@@ -734,6 +742,10 @@ let WORD_OF_BITS_MASK = prove
   SPEC_TAC(`n:num`,`n:num`) THEN
   INDUCT_TAC THEN ASM_REWRITE_TAC[NSUM_CLAUSES_NUMSEG_LT; EXP] THEN
   ASM_ARITH_TAC);;
+
+let BIT_MASK_WORD = prove
+ (`!k i. bit i (word(2 EXP k - 1):N word) <=> i < dimindex(:N) /\ i < k`,
+  REWRITE_TAC[GSYM WORD_OF_BITS_MASK; IN_ELIM_THM; BIT_WORD_OF_BITS]);;
 
 let BIT_WORD_POW2 = prove
  (`!k i. bit i (word (2 EXP k):N word) <=> i = k /\ k < dimindex(:N)`,
@@ -3368,19 +3380,56 @@ let WORD_OR_XOR_GEN = prove
   REWRITE_TAC[GSYM VAL_CONG; CONG; VAL_WORD_ADD] THEN
   CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC[VAL_WORD_OR_AND_XOR]);;
 
+let WORD_ADD_OR_EQ = prove
+ (`!x y:N word. word_add x y = word_or x y <=> word_and x y = word 0`,
+  REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[WORD_ADD_OR_GEN] THEN
+  CONV_TAC WORD_RULE);;
+
+let WORD_OR_XOR_EQ = prove
+ (`!x y:N word. word_or x y = word_xor x y <=> word_and x y = word 0`,
+  REWRITE_TAC[WORD_OR_XOR_GEN] THEN CONV_TAC WORD_RULE);;
+
+let WORD_ADD_OR = prove
+ (`!x y:N word. word_and x y = word 0 ==> word_add x y = word_or x y`,
+  REWRITE_TAC[WORD_ADD_OR_EQ]);;
+
+let WORD_OR_XOR = prove
+ (`!x y:N word. word_and x y = word 0 ==> word_or x y = word_xor x y`,
+  REWRITE_TAC[WORD_OR_XOR_EQ]);;
+
 let WORD_ADD_XOR = prove
  (`!x y:N word. word_and x y = word 0 ==> word_add x y = word_xor x y`,
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[WORD_ADD_XOR_GEN] THEN
   ASM_REWRITE_TAC[] THEN CONV_TAC WORD_RULE);;
 
-let WORD_OR_XOR = prove
- (`!x y:N word. word_and x y = word 0 ==> word_or x y = word_xor x y`,
+let WORD_SUB_XOR = prove
+ (`!x y:N word.
+        word_and (word_not x) y = word 0 ==> word_sub x y = word_xor x y`,
   REPEAT STRIP_TAC THEN
-  ASM_REWRITE_TAC[WORD_OR_XOR_GEN] THEN CONV_TAC WORD_RULE);;
+  REWRITE_TAC[WORD_RULE `word_sub x y = z <=> word_add y z = x`] THEN
+  W(MP_TAC o PART_MATCH (lhand o rand) WORD_ADD_XOR o lhand o snd) THEN
+  ANTS_TAC THENL [POP_ASSUM MP_TAC; DISCH_THEN SUBST1_TAC] THEN
+  CONV_TAC WORD_BITWISE_RULE);;
 
-let WORD_ADD_OR = prove
- (`!x y:N word. word_and x y = word 0 ==> word_add x y = word_or x y`,
-  SIMP_TAC[WORD_OR_XOR; WORD_ADD_XOR]);;
+let WORD_XOR_SUB = prove
+ (`!x y:N word.
+        word_and (word_not x) y = word 0 ==> word_xor x y = word_sub x y`,
+  SIMP_TAC[WORD_SUB_XOR]);;
+
+let WORD_SUB_MASK_WORD = prove
+ (`!k (x:N word).
+        val x < 2 EXP k
+        ==> word_sub (word(2 EXP k - 1)) x = word_xor (word(2 EXP k - 1)) x`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC WORD_SUB_XOR THEN
+  SIMP_TAC[WORD_EQ_BITS_ALT; BIT_WORD_AND; BIT_WORD_0; BIT_WORD_NOT;
+           BIT_MASK_WORD; TAUT `p ==> ~(q /\ r) <=> q /\ p ==> ~r`] THEN
+  ASM_REWRITE_TAC[NOT_LT; BLOCK_BITS_ZERO; VAL_MOD_REFL]);;
+
+let WORD_XOR_MASK_WORD = prove
+ (`!k (x:N word).
+        val x < 2 EXP k
+        ==> word_xor (word(2 EXP k - 1)) x = word_sub (word(2 EXP k - 1)) x`,
+  SIMP_TAC[WORD_SUB_MASK_WORD]);;
 
 let WORD_XOR_INT_MIN = prove
  (`!w:N word. word_xor word_INT_MIN w = word_add word_INT_MIN w`,
