@@ -71,6 +71,7 @@ EXTENDED_EXAMPLES:=\
 	Arithmetic/make \
 	Boyer_Moore/make \
 	Complex/make \
+	GL/make \
 	Geometric_Algebra/make \
 	IEEE/make \
 	IsabelleLight/make \

@@ -3190,6 +3190,10 @@ let WORD_AND_SYM = prove
  (`!x y:N word. word_and x y = word_and y x`,
   CONV_TAC WORD_BITWISE_RULE);;
 
+let WORD_AND_ASSOC = prove
+ (`!x y z:N word. word_and x (word_and y z) = word_and (word_and x y) z`,
+  CONV_TAC WORD_BITWISE_RULE);;
+
 let WORD_OR_REFL = prove
  (`!x:N word. word_or x x = x`,
   CONV_TAC WORD_BITWISE_RULE);;
@@ -3208,6 +3212,9 @@ let WORD_OR_SYM = prove
  (`!x y:N word. word_or x y = word_or y x`,
   CONV_TAC WORD_BITWISE_RULE);;
 
+let WORD_OR_ASSOC = prove
+ (`!x y z:N word. word_or x (word_or y z) = word_or (word_or x y) z`,
+  CONV_TAC WORD_BITWISE_RULE);;
 let WORD_OR_EQ_0 = prove
  (`!x y:N word. word_or x y = word 0 <=> x = word 0 /\ y = word 0`,
   CONV_TAC WORD_BITWISE_RULE);;
@@ -3237,6 +3244,10 @@ let WORD_XOR_REFL = prove
 
 let WORD_XOR_SYM = prove
  (`!x y:N word. word_xor x y = word_xor y x`,
+  CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_XOR_ASSOC = prove
+ (`!x y z:N word. word_xor x (word_xor y z) = word_xor (word_xor x y) z`,
   CONV_TAC WORD_BITWISE_RULE);;
 
 let WORD_AND_1 = prove

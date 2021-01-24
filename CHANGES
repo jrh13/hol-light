@@ -8,6 +8,32 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Sat 23rd Jan 2021       GL [new directory]
+
+Added an extended example from Marco Maggesi and Cosimo Perini Brogi
+setting up the provability logic GL and proving its modal completeness
+(see COMPLETENESS_THEOREM_GEN).
+
+Wed 30th Dec 2020       Library/words.ml
+
+Added three more trivial word lemmas:
+
+  WORD_AND_ASSOC =
+    |- !x y z. word_and x (word_and y z) = word_and (word_and x y) z
+
+  WORD_OR_ASSOC =
+    |- !x y z. word_or x (word_or y z) = word_or (word_or x y) z
+
+  WORD_XOR_ASSOC =
+    |- !x y z. word_xor x (word_xor y z) = word_xor (word_xor x y) z
+
+Wed 16th Dec 2020       Library/pocklington.ml
+
+Added one more simple lemma about modular inverses:
+
+  INVERSE_MOD_1 =
+    |- !n. inverse_mod n 1 = 1
+
 Tue  8th Dec 2020       preterm.ml
 
 Made an improvement to pretype_of_type pointed out by Ben Kordesh and

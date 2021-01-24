@@ -751,6 +751,13 @@ let INVERSE_MOD_UNIQUE = prove
   ASM_REWRITE_TAC[INVERSE_MOD_RMUL_EQ] THEN
   UNDISCH_TAC `(a * x == 1) (mod n)` THEN CONV_TAC NUMBER_RULE);;
 
+let INVERSE_MOD_1 = prove
+ (`!n. inverse_mod n 1 = 1`,
+  GEN_TAC THEN ASM_CASES_TAC `n <= 1` THENL
+   [ASM_REWRITE_TAC[inverse_mod]; MATCH_MP_TAC INVERSE_MOD_UNIQUE] THEN
+  ASM_SIMP_TAC[ARITH_RULE `~(n <= 1) ==> 1 <= n`; ARITH_EQ] THEN
+  NUMBER_TAC);;
+
 let INVERSE_MOD_CONG = prove
  (`!n x y. (x == y) (mod n) ==> inverse_mod n x = inverse_mod n y`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[inverse_mod] THEN
