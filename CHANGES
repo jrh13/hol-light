@@ -8,6 +8,52 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed 24th Feb 2021       Library/words.ml
+
+Added a definition of alignment of machine words (in the sense of
+alignment restrictions on addresses in CPUs) and a few simple theorems:
+
+  aligned =
+    |- !n a. aligned n a <=> n divides 2 EXP dimindex(:N) /\ n divides val a
+
+  ALIGNED =
+    |- !n x. aligned n x <=> n divides 2 EXP dimindex(:N) /\ &n divides ival x
+
+  ALIGNED_IWORD =
+    |- !n k.
+         aligned n (iword k) <=>
+         n divides 2 EXP diminde (:N) /\ &n divides k
+
+  ALIGNED_WORD =
+    |- !n k.
+           aligned n (word k) <=> n divides 2 EXP dimindex(:N) /\ n divides k
+
+  ALIGNED_WORD_0 =
+    |- !n. aligned n (word 0) <=> n divides 2 EXP dimindex(:N)
+
+  ALIGNED_WORD_ADD =
+    |- !n a b. aligned n a /\ aligned n b ==> aligned n (word_add a b)
+
+  ALIGNED_WORD_ADD_EQ =
+    |- (!n x y. aligned n x ==> (aligned n (word_add x y) <=> aligned n y)) /\
+       (!n x y. aligned n y ==> (aligned n (word_add x y) <=> aligned n x))
+
+  ALIGNED_WORD_MUL =
+    |- !n a b. aligned n a \/ aligned n b ==> aligned n (word_mul a b)
+
+  ALIGNED_WORD_NEG =
+    |- !n x. aligned n (word_neg x) <=> aligned n x
+
+  ALIGNED_WORD_SUB =
+    |- !n a b. aligned n a /\ aligned n b ==> aligned n (word_sub a b)
+
+  ALIGNED_WORD_SUB_EQ =
+    |- (!n x y. aligned n x ==> (aligned n (word_sub x y) <=> aligned n y)) /\
+       (!n x y. aligned n y ==> (aligned n (word_sub x y) <=> aligned n x))
+
+  VAL_IWORD_CONG =
+    |- !x. (&(val (iword x)) == x) (mod (&2 pow dimindex(:N)))
+
 Sat 23rd Jan 2021       GL [new directory]
 
 Added an extended example from Marco Maggesi and Cosimo Perini Brogi

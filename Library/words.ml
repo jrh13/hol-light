@@ -950,6 +950,12 @@ let IVAL_IWORD_CONG = prove
            INT_OF_NUM_EQ; ARITH_EQ] THEN
     REWRITE_TAC[GSYM INT_REM_EQ; INT_REM_REM]]);;
 
+let VAL_IWORD_CONG = prove
+ (`!x. (&(val(iword x:N word)) == x) (mod (&2 pow dimindex(:N)))`,
+  REWRITE_TAC[GSYM INT_REM_EQ] THEN
+  REWRITE_TAC[GSYM(REWRITE_RULE[GSYM INT_REM_EQ] IVAL_VAL_CONG)] THEN
+  REWRITE_TAC[INT_REM_EQ; IVAL_IWORD_CONG]);;
+
 let IVAL_IWORD = prove
  (`!n. --(&2 pow (dimindex (:N) - 1)) <= n /\ n < &2 pow (dimindex (:N) - 1)
        ==> ival(iword n:N word) = n`,
@@ -4151,6 +4157,96 @@ let WORD_CLZ_MONO = prove
   REPEAT STRIP_TAC THEN MATCH_MP_TAC(MESON[LE_TRANS; LE_REFL]
    `(!d:num. d <= x ==> d <= y) ==> x <= y`) THEN
   REWRITE_TAC[WORD_LE_CLZ_VAL] THEN ASM_ARITH_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* Alignment. The definition rolls in the assumption that the value is a     *)
+(* power of 2 no more than the wordsize, which seems intuitively natural.    *)
+(* ------------------------------------------------------------------------- *)
+
+let aligned = new_definition
+ `aligned n (a:N word) <=>
+    n divides 2 EXP dimindex(:N) /\ n divides val a`;;
+
+let ALIGNED = prove
+ (`!n x:N word.
+        aligned n x <=>
+        n divides 2 EXP dimindex(:N) /\ &n divides ival(x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[aligned] THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+  REWRITE_TAC[num_divides; GSYM INT_OF_NUM_CLAUSES] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `(y:int == x) (mod m)
+    ==> n divides m
+        ==> (n divides x <=> n divides y)`) THEN
+  REWRITE_TAC[IVAL_VAL_CONG]);;
+
+let ALIGNED_WORD = prove
+ (`!n k. aligned n (word k:N word) <=>
+         n divides 2 EXP dimindex(:N) /\ n divides k`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[aligned] THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+  GEN_REWRITE_TAC LAND_CONV [divides] THEN
+  REWRITE_TAC[aligned; VAL_WORD; DIVIDES_MOD] THEN
+  DISCH_THEN(CHOOSE_THEN SUBST1_TAC) THEN REWRITE_TAC[MOD_MOD]);;
+
+let ALIGNED_IWORD = prove
+ (`!n k. aligned n (iword k:N word) <=>
+         n divides 2 EXP dimindex(:N) /\ &n divides k`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ALIGNED] THEN
+  MATCH_MP_TAC(TAUT `(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)`) THEN
+  REWRITE_TAC[num_divides; GSYM INT_OF_NUM_CLAUSES] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `(x:int == y) (mod m)
+    ==> n divides m
+        ==> (n divides x <=> n divides y)`) THEN
+  REWRITE_TAC[IVAL_IWORD_CONG]);;
+
+let ALIGNED_WORD_0 = prove
+ (`!n. aligned n (word 0:N word) <=> n divides 2 EXP dimindex(:N)`,
+  REWRITE_TAC[ALIGNED_WORD; VAL_WORD_0] THEN CONV_TAC NUMBER_RULE);;
+
+let ALIGNED_WORD_NEG = prove
+ (`!n x:N word. aligned n (word_neg x) <=> aligned n x`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[ALIGNED] THEN
+  REWRITE_TAC[num_divides; GSYM INT_OF_NUM_CLAUSES] THEN
+  MATCH_MP_TAC(INTEGER_RULE
+   `(y:int == --x) (mod e)
+    ==> (n divides e /\ n divides y <=> n divides e /\ n divides x)`) THEN
+  REWRITE_TAC[ICONG_WORD_NEG]);;
+
+let ALIGNED_WORD_ADD = prove
+ (`!n a b:N word.
+        aligned n a /\ aligned n b ==> aligned n (word_add a b)`,
+  REWRITE_TAC[FORALL_WORD; ALIGNED_WORD; GSYM WORD_ADD] THEN
+  CONV_TAC NUMBER_RULE);;
+
+let ALIGNED_WORD_MUL = prove
+ (`!n a b:N word.
+        aligned n a \/ aligned n b ==> aligned n (word_mul a b)`,
+  REWRITE_TAC[FORALL_WORD; ALIGNED_WORD; GSYM WORD_MUL] THEN
+  CONV_TAC NUMBER_RULE);;
+
+let ALIGNED_WORD_SUB = prove
+ (`!n a b:N word.
+        aligned n a /\ aligned n b ==> aligned n (word_sub a b)`,
+  REWRITE_TAC[WORD_RULE `word_sub x y:N word = word_add x (word_neg y)`] THEN
+  SIMP_TAC[ALIGNED_WORD_NEG; ALIGNED_WORD_ADD]);;
+
+let ALIGNED_WORD_ADD_EQ = prove
+ (`(!n x y:N word.
+        aligned n x ==> (aligned n (word_add x y) <=> aligned n y)) /\
+   (!n x y:N word.
+        aligned n y ==> (aligned n (word_add x y) <=> aligned n x))`,
+  MESON_TAC[ALIGNED_WORD_ADD; ALIGNED_WORD_NEG; WORD_ADD_SYM;
+            WORD_RULE `word_add (word_neg x) (word_add x y) = y`]);;
+
+let ALIGNED_WORD_SUB_EQ = prove
+ (`(!n x y:N word.
+        aligned n x ==> (aligned n (word_sub x y) <=> aligned n y)) /\
+   (!n x y:N word.
+        aligned n y ==> (aligned n (word_sub x y) <=> aligned n x))`,
+  REWRITE_TAC[WORD_RULE `word_sub x y = word_add x (word_neg y)`] THEN
+  MESON_TAC[ALIGNED_WORD_ADD_EQ; ALIGNED_WORD_NEG]);;
 
 (* ------------------------------------------------------------------------- *)
 (* JVM-specific word operations, though they may well work in other places.  *)
