@@ -8,6 +8,100 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 16th Jul 2021       Library/words.ml
+
+Added one more little word lemma that zero-extension of a 1-bit
+Boolean value is trivial:
+
+  WORD_ZX_BITVAL = |- !b. word_zx(word(bitval b)) = word(bitval b)
+
+Wed  7th Jul 2021       Library/words.ml
+
+Added a few miscellaneous word theorems with an emphasis on commuting
+word_zx, mainly as a shortening, through other word operations:
+
+  BIT_GUARD =
+    |- !x i. bit i x <=> i < dimindex(:N) /\ bit i x
+
+  VAL_WORD_SUBWORD_DIMINDEX =
+    |- !pos w.
+           val (word_subword w (pos,dimindex(:N))) =
+           (val w DIV 2 EXP pos) MOD 2 EXP dimindex(:N)
+
+  VAL_WORD_SUBWORD_SIMPLE =
+    |- !w. val (word_subword w (0,dimindex(:N))) =
+           val w MOD 2 EXP dimindex(:N)
+
+  WORD_SUBWORD_AND =
+    |- !x y pos len.
+           word_subword (word_and x y) (pos,len) =
+           word_and (word_subword x (pos,len)) (word_subword y (pos,len))
+
+  WORD_SUBWORD_OR =
+    |- !x y pos len.
+           word_subword (word_or x y) (pos,len) =
+           word_or (word_subword x (pos,len)) (word_subword y (pos,len))
+
+  WORD_SUBWORD_XOR =
+    |- !x y pos len.
+           word_subword (word_xor x y) (pos,len) =
+           word_xor (word_subword x (pos,len)) (word_subword y (pos,len))
+
+  WORD_ZX_ADD =
+    |- !x y.
+           dimindex(:N) <= dimindex(:M)
+           ==> word_zx (word_add x y) = word_add (word_zx x) (word_zx y)
+
+  WORD_ZX_AND =
+    |- !x y. word_zx (word_and x y) = word_and (word_zx x) (word_zx y)
+
+  WORD_ZX_MUL =
+    |- !x y.
+           dimindex(:N) <= dimindex(:M)
+           ==> word_zx (word_mul x y) = word_mul (word_zx x) (word_zx y)
+
+  WORD_ZX_NEG =
+    |- !x. dimindex(:N) <= dimindex(:M)
+           ==> word_zx (word_neg x) = word_neg (word_zx x)
+
+  WORD_ZX_NOT =
+    |- !x. dimindex(:N) <= dimindex(:M)
+           ==> word_zx (word_not x) = word_not (word_zx x)
+
+  WORD_ZX_OR =
+    |- !x y. word_zx (word_or x y) = word_or (word_zx x) (word_zx y)
+
+  WORD_ZX_SHL =
+    |- !x n.
+           dimindex(:N) <= dimindex(:M)
+           ==> word_zx (word_shl x n) = word_shl (word_zx x) n
+
+  WORD_ZX_SUB =
+    |- !x y.
+           dimindex(:N) <= dimindex(:M)
+           ==> word_zx (word_sub x y) = word_sub (word_zx x) (word_zx y)
+
+  WORD_ZX_SUBWORD =
+    |- !x. word_zx x = word_subword x (0,dimindex(:M))
+
+  WORD_ZX_WORD_SIMPLE =
+    |- !n. dimindex(:N) <= dimindex(:M) ==> word_zx (word n) = word n
+
+  WORD_ZX_XOR =
+    |- !x y. word_zx (word_xor x y) = word_xor (word_zx x) (word_zx y)
+
+Tue 23rd Mar 2021       Library/bitsize.ml
+
+Added one more basic theorem about "bitsize"
+
+  BITSIZE_UNIQUE_EQ =
+    |- !n k. bitsize n = k <=> n < 2 EXP k /\ (~(k = 0) ==> 2 EXP k <= 2 * n)
+
+and a standard conversion, BITSIZE_CONV for concrete instances of it, e.g.
+
+  # BITSIZE_CONV `bitsize 12345`;;
+  val it : thm = |- bitsize 12345 = 14
+
 Wed 24th Feb 2021       Library/words.ml
 
 Added a definition of alignment of machine words (in the sense of

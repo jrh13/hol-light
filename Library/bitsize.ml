@@ -107,6 +107,13 @@ let LE_BITSIZE_ALT = prove
   MATCH_MP_TAC(ARITH_RULE `2 * a = b ==> (a <= n <=> b <= 2 * n)`) THEN
   REWRITE_TAC[GSYM(CONJUNCT2 EXP)] THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
 
+let BITSIZE_UNIQUE_EQ = prove
+ (`!n k. bitsize n = k <=> 
+         n < 2 EXP k /\ (~(k = 0) ==> 2 EXP k <= 2 * n)`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV
+   [ARITH_RULE `n = k <=> k <= n /\ ~(k + 1 <= n)`] THEN
+  REWRITE_TAC[LE_BITSIZE_ALT; EXP_ADD] THEN ARITH_TAC);;
+
 let BITSIZE_MULT = prove
  (`(!k n. bitsize (2 EXP k * n) = if n = 0 then 0 else k + bitsize n) /\
    (!k n. bitsize (n * 2 EXP k) = if n = 0 then 0 else bitsize n + k)`,
@@ -152,3 +159,15 @@ let BITSIZE_DIV = prove
     ASM_SIMP_TAC[ARITH_RULE `~(n:num <= k) ==> (j < n - k <=> k + j < n)`] THEN
     REWRITE_TAC[ARITH_RULE `a < b <=> a + 1 <= b`; LE_BITSIZE] THEN
     REWRITE_TAC[ADD_SUB; ADD_EQ_0; ARITH_EQ]]);;
+
+let BITSIZE_CONV =
+  let rec bitfun k n =
+    if n =/ num_0 then k
+    else bitfun (k + 1) (quo_num n num_2) in
+  fun tm ->
+   (match tm with
+      Comb(Const("bitsize",_),ntm) when is_numeral ntm ->
+        let ktm = mk_small_numeral(bitfun 0 (dest_numeral ntm)) in
+        let th = SPECL [ntm;ktm] BITSIZE_UNIQUE_EQ in
+        EQT_ELIM(CONV_RULE (RAND_CONV NUM_REDUCE_CONV) th)
+    | _ -> failwith "BITSIZE_CONV");;
