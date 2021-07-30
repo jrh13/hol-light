@@ -1524,6 +1524,26 @@ let WORD_OF_BITS_SING_AND_WORD = prove
   ASM_SIMP_TAC[WORD_EQ_BITS; BIT_WORD_AND; BIT_WORD_OF_BITS; BIT_WORD_0] THEN
   ASM SET_TAC[]);;
 
+let WORD_AND_POW2 = prove
+ (`(!(x:N word) k.
+        word_and x (word(2 EXP k)) = word(2 EXP k * bitval(bit k x))) /\
+   (!(x:N word) k.
+        word_and (word(2 EXP k)) x = word(2 EXP k * bitval(bit k x)))`,
+  REWRITE_TAC[AND_FORALL_THM; bitval] THEN REPEAT GEN_TAC THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[MULT_CLAUSES] THEN
+  REWRITE_TAC[WORD_EQ_BITS; BIT_WORD_AND; BIT_WORD_POW2; BIT_WORD_0] THEN
+  ASM_MESON_TAC[]);;
+
+let VAL_WORD_AND_POW2 = prove
+ (`(!(x:N word) k.
+        val(word_and x (word(2 EXP k))) = 2 EXP k * bitval(bit k x)) /\
+   (!(x:N word) k.
+        val(word_and (word(2 EXP k)) x) = 2 EXP k * bitval(bit k x))`,
+  REWRITE_TAC[WORD_AND_POW2] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC VAL_WORD_EQ THEN REWRITE_TAC[bitval] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[MULT_CLAUSES; LT_EXP; EXP_LT_0] THEN
+  CONV_TAC NUM_REDUCE_CONV THEN ASM_MESON_TAC[BIT_TRIVIAL; NOT_LE]);;
+
 let word_or = new_definition
  `word_or = bitwise2 (\/)`;;
 
@@ -2602,7 +2622,7 @@ let WORD_ARITH_TAC =
     REWRITE_TAC[DIMINDEX_GE_1; ARITH_RULE `n - 1 < n <=> 1 <= n`])
   and wordy tm =
     match tm with Var(_,Tyapp("word",[_])) -> true | _ -> false in
-  REPEAT GEN_TAC THEN REWRITE_TAC[WORD_USHR_MSB_EQ] THEN
+  REPEAT(CONJ_TAC ORELSE GEN_TAC) THEN REWRITE_TAC[WORD_USHR_MSB_EQ] THEN
   REWRITE_TAC[BIT_WORD_OR; BIT_WORD_AND; BIT_WORD_NOT; BIT_WORD_XOR;
               BIT_WORD_INT_MIN; BIT_WORD_1; BIT_WORD_0; msb_pth] THEN
   REWRITE_TAC[MSB_INT_VAL; WORD_NOT_AS_SUB; WORD_RULE
@@ -3347,6 +3367,14 @@ let WORD_OR_ASSOC = prove
   CONV_TAC WORD_BITWISE_RULE);;
 let WORD_OR_EQ_0 = prove
  (`!x y:N word. word_or x y = word 0 <=> x = word 0 /\ y = word 0`,
+  CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_NOT_AND = prove
+ (`!x y:N word. word_not(word_and x y) = word_or (word_not x) (word_not y)`,
+  CONV_TAC WORD_BITWISE_RULE);;
+
+let WORD_NOT_OR = prove
+ (`!x y:N word. word_not(word_or x y) = word_and (word_not x) (word_not y)`,
   CONV_TAC WORD_BITWISE_RULE);;
 
 let WORD_XOR_EQ_0 = prove
@@ -4602,6 +4630,62 @@ let WORD_IGE_TOPFLIP = prove
         word_uge (word_xor word_INT_MIN v) (word_xor word_INT_MIN w)`,
   REWRITE_TAC[WORD_UGE_TOPFLIP] THEN
   REWRITE_TAC[WORD_BITWISE_RULE `word_xor m (word_xor m x) = x`]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Characterizing exactness of word add or add-with-carry via comparison.    *)
+(* ------------------------------------------------------------------------- *)
+
+let WORD_LE_ADD_EXACT = prove
+ (`(!x y:N word.
+        val x <= val(word_add x y) <=> val(word_add x y) = val x + val y) /\
+   (!x y:N word.
+        val y <= val(word_add x y) <=> val(word_add x y) = val x + val y)`,
+  WORD_ARITH_TAC);;
+
+let WORD_ADD_LT_EXACT = prove
+ (`(!x y:N word.
+        val(word_add x y) < val x <=>
+        val(word_add x y) + 2 EXP dimindex(:N) = val x + val y) /\
+   (!x y:N word.
+        val(word_add x y) < val y <=>
+        val(word_add x y) + 2 EXP dimindex(:N) = val x + val y)`,
+  WORD_ARITH_TAC);;
+
+let WORD_ADD_LT_INEXACT = prove
+ (`(!x y:N word.
+        val(word_add x y) < val x <=> ~(val(word_add x y) = val x + val y)) /\
+   (!x y:N word.
+        val(word_add x y) < val y <=> ~(val(word_add x y) = val x + val y))`,
+  WORD_ARITH_TAC);;
+
+let WORD_LT_ADC_EXACT = prove
+ (`(!x y:N word.
+        val x < val(word_add (word_add x y) (word 1)) <=>
+        val(word_add (word_add x y) (word 1)) = val x + val y + 1) /\
+  (!x y:N word.
+        val y < val(word_add (word_add x y) (word 1)) <=>
+        val(word_add (word_add x y) (word 1)) = val x + val y + 1)`,
+  WORD_ARITH_TAC);;
+
+let WORD_ADC_LE_EXACT = prove
+ (`(!x y:N word.
+        val(word_add (word_add x y) (word 1)) <= val x <=>
+        val(word_add (word_add x y) (word 1)) + 2 EXP dimindex(:N) =
+        val x + val y + 1) /\
+  (!x y:N word.
+        val(word_add (word_add x y) (word 1)) <= val y <=>
+        val(word_add (word_add x y) (word 1)) + 2 EXP dimindex(:N) =
+        val x + val y + 1)`,
+  WORD_ARITH_TAC);;
+
+let WORD_ADC_LE_INEXACT = prove
+ (`(!x y:N word.
+        val(word_add (word_add x y) (word 1)) <= val x <=>
+        ~(val(word_add (word_add x y) (word 1)) = val x + val y + 1)) /\
+  (!x y:N word.
+        val(word_add (word_add x y) (word 1)) <= val y <=>
+        ~(val(word_add (word_add x y) (word 1)) = val x + val y + 1))`,
+  WORD_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Conversion for explicit numeric bits of word operations, one level.       *)

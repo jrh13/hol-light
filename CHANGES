@@ -8,6 +8,85 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri 30th Jul 2021       Library/words.ml
+
+Made the trivial generalization to WORD_ARITH / WORD_ARITH_TAC of also
+breaking apart conjunctions at the start. Added these lemmas
+characterizing exactness of additions or additions-with-carry in terms
+of a later word comparison on the result, all of which are just
+proved automatically by WORD_ARITH_TAC.
+
+  WORD_ADC_LE_EXACT =
+    |- (!x y.
+            val(word_add (word_add x y) (word 1)) <= val x <=>
+            val(word_add (word_add x y) (word 1)) + 2 EXP dimindex (:N) =
+            val x + val y + 1) /\
+       (!x y.
+            val(word_add (word_add x y) (word 1)) <= val y <=>
+            val(word_add (word_add x y) (word 1)) + 2 EXP dimindex (:N) =
+            val x + val y + 1)
+
+  WORD_ADC_LE_INEXACT =
+    |- (!x y.
+            val(word_add (word_add x y) (word 1)) <= val x <=>
+            ~(val(word_add (word_add x y) (word 1)) = val x + val y + 1)) /\
+       (!x y.
+            val(word_add (word_add x y) (word 1)) <= val y <=>
+            ~(val(word_add (word_add x y) (word 1)) = val x + val y + 1))
+
+  WORD_ADD_LT_EXACT =
+    |- (!x y.
+            val(word_add x y) < val x <=>
+            val(word_add x y) + 2 EXP dimindex (:N) = val x + val y) /\
+       (!x y.
+            val(word_add x y) < val y <=>
+            val(word_add x y) + 2 EXP dimindex (:N) = val x + val y)
+
+  WORD_ADD_LT_INEXACT =
+    |- (!x y.
+            val(word_add x y) < val x <=>
+            ~(val(word_add x y) = val x + val y)) /\
+       (!x y.
+            val(word_add x y) < val y <=>
+            ~(val(word_add x y) = val x + val y))
+
+  WORD_LE_ADD_EXACT =
+    |- (!x y.
+            val x <= val(word_add x y) <=> val(word_add x y) = val x + val y) /\
+       (!x y.
+            val y <= val(word_add x y) <=> val(word_add x y) = val x + val y)
+
+  WORD_LT_ADC_EXACT =
+    |- (!x y.
+            val x < val(word_add (word_add x y) (word 1)) <=>
+            val(word_add (word_add x y) (word 1)) = val x + val y + 1) /\
+       (!x y.
+            val y < val(word_add (word_add x y) (word 1)) <=>
+            val(word_add (word_add x y) (word 1)) = val x + val y + 1)
+
+Wed 28th Jul 2021       Library/words.ml
+
+Added two more simple word lemmas (the de Morgan laws in this setting)
+
+  WORD_NOT_AND =
+    |- !x y. word_not (word_and x y) = word_or (word_not x) (word_not y)
+
+  WORD_NOT_OR =
+    |- !x y. word_not (word_or x y) = word_and (word_not x) (word_not y)
+
+Tue 20th Jul 2021       Library/words.ml
+
+Added another couple of elementary lemmas about AND with a word
+consisting of a single bit expressed as a power of 2.
+
+  VAL_WORD_AND_POW2 =
+   |- (!x k. val(word_and x (word(2 EXP k))) = 2 EXP k * bitval(bit k x)) /\
+      (!x k. val(word_and (word(2 EXP k)) x) = 2 EXP k * bitval(bit k x))
+
+  WORD_AND_POW2 =
+   |- (!x k. word_and x (word(2 EXP k)) = word(2 EXP k * bitval(bit k x))) /\
+      (!x k. word_and (word(2 EXP k)) x = word(2 EXP k * bitval(bit k x)))
+
 Fri 16th Jul 2021       Library/words.ml
 
 Added one more little word lemma that zero-extension of a 1-bit
