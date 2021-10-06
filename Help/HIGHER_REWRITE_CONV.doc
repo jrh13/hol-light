@@ -6,9 +6,9 @@
 Rewrite once using more general higher order matching.
 
 \DESCRIBE
-The call {HIGHER_REWRITE_CONV [th1;...;thn] flag t} will find a higher-order 
-match for the whole term {t} against one of the left-hand sides of the 
-equational theorems in the list {[th1;...;thn]}. Each such theorem should be of 
+The call {HIGHER_REWRITE_CONV [th1;...;thn] flag t} will find a higher-order
+match for the whole term {t} against one of the left-hand sides of the
+equational theorems in the list {[th1;...;thn]}. Each such theorem should be of
 the form {|- P pat <=> t} where {f} is a variable. A free subterm {pat'} of {t}
 will be found that matches (in the usual restricted higher-order sense) the
 pattern {pat}. If the {flag} argument is true, this will be some topmost

@@ -690,7 +690,7 @@ let SOS_RESOLUTION_COMPLETE = prove
    [REWRITE_TAC[IN_IMAGE] THEN ASM_MESON_TAC[QFREE_INTERP]; ALL_TAC] THEN
   SUBGOAL_THEN
    `?d. d psatisfies
-          {formsubst v p | v,p | 
+          {formsubst v p | v,p |
                (!x. v x IN herbase (functions (IMAGE interp hyps))) /\
                p IN IMAGE interp (hyps DIFF sos)}`
   MP_TAC THENL

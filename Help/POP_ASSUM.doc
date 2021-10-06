@@ -30,7 +30,7 @@ applied to assumptions other than the first.
 
 There are admittedly times when {POP_ASSUM} is convenient, but it is unwise to
 use it if there is more than one assumption in the assumption list, since this
-introduces a dependency on the ordering and makes proofs somewhat brittle with 
+introduces a dependency on the ordering and makes proofs somewhat brittle with
 respect to changes.
 
 Another point to consider is that if the relevant assumption has been obtained
@@ -51,11 +51,11 @@ Starting with the goal:
 }
 \noindent and breaking it down:
 {
-  # e(REPEAT STRIP_TAC);; 
+  # e(REPEAT STRIP_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
    0 [`0 = x`]
-  
+
   `f (x * f x) = f x`
 }
 \noindent we might use the equation to substitute backwards:
@@ -66,11 +66,11 @@ Starting with the goal:
 {
   # e(REWRITE_TAC[MULT_CLAUSES; SYM(ASSUME `0 = x`)]);;
 }
-\noindent and we could even have avoided putting the equation in the 
+\noindent and we could even have avoided putting the equation in the
 assumptions at all by from the beginning doing:
 {
-  # e(REPEAT GEN_TAC THEN DISCH_THEN(SUBST1_TAC o SYM) THEN 
-      REWRITE_TAC[MULT_CLAUSES]);;   
+  # e(REPEAT GEN_TAC THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
+      REWRITE_TAC[MULT_CLAUSES]);;
 }
 
 \USES

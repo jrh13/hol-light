@@ -15,7 +15,7 @@ information.)
 Fails if the refinement fails.
 
 \COMMENTS
-Most users will not want to handle refinements explicitly. Usually one just 
+Most users will not want to handle refinements explicitly. Usually one just
 applies a tactic to the first goal in a goalstate.
 
 \ENDDOC

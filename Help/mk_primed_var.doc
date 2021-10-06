@@ -8,15 +8,15 @@ Rename variable to avoid specified names and constant names.
 \DESCRIBE
 The call {mk_primed_var avoid v} will return a renamed variant of {v}, by
 adding primes, so that its name is not the same as any of the variables in the
-list {avoid}, nor the same as any constant name. It is a more conservative 
+list {avoid}, nor the same as any constant name. It is a more conservative
 version of the renaming function {variant}.
 
 \FAILURE
-Fails if one of the items in the list {avoids} is not a variable, or if {v} 
+Fails if one of the items in the list {avoids} is not a variable, or if {v}
 itself is not.
 
 \EXAMPLE
-This shows how the effect is more conservative than {variant} because it even 
+This shows how the effect is more conservative than {variant} because it even
 avoids variables of the same name and different type:
 {
   # variant [`x:bool`] `x:num`;;

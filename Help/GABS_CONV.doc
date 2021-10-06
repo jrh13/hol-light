@@ -13,7 +13,7 @@ the conversion {ABS_CONV c} maps generalized abstractions of the form
    |- (\vs. t) = (\vs. t')
 }
 \noindent That is, {ABS_CONV c `\vs. t`} applies {c} to the body of the
-generalized abstraction {`\vs. t`}. It is permissible to use it on a basic 
+generalized abstraction {`\vs. t`}. It is permissible to use it on a basic
 abstraction, in which case the effect is the same as {ABS_CONV}.
 
 \FAILURE

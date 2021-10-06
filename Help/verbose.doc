@@ -6,8 +6,8 @@
 Flag to control verbosity of informative output.
 
 \DESCRIBE
-When the value of {verbose} is set to {true}, the function {remark} will output 
-its string argument whenever called. This is used for most informative output 
+When the value of {verbose} is set to {true}, the function {remark} will output
+its string argument whenever called. This is used for most informative output
 in automated rules.
 
 \FAILURE

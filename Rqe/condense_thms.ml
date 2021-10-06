@@ -9,12 +9,12 @@ let gt_aux = prove(
    REAL_ARITH_TAC);;
 
 let gen_thm = prove_by_refinement(
- `!P x1 x2 x3. 
-      (x1 < x3) ==> 
-      (!x. x1 < x /\ x < x2 ==> P x) ==> 
-      (!x. (x = x2) ==> P x) ==> 
-      (!x. x2 < x /\ x < x3 ==> P x) ==> 
-        (!x. x1 < x /\ x < x3 ==> P x)`, 
+ `!P x1 x2 x3.
+      (x1 < x3) ==>
+      (!x. x1 < x /\ x < x2 ==> P x) ==>
+      (!x. (x = x2) ==> P x) ==>
+      (!x. x2 < x /\ x < x3 ==> P x) ==>
+        (!x. x1 < x /\ x < x3 ==> P x)`,
 (* {{{ Proof *)
 
 [
@@ -24,28 +24,28 @@ let gen_thm = prove_by_refinement(
 (* }}} *)
 
 let gen_thm_noleft = prove(
- `!P x2 x3. 
-      (x2 < x3) ==> 
-      (!x. x < x2 ==> P x) ==> 
-      (!x. (x = x2) ==> P x) ==> 
-      (!x. x2 < x /\ x < x3 ==> P x) ==> 
-        (!x. x < x3 ==> P x)`, 
+ `!P x2 x3.
+      (x2 < x3) ==>
+      (!x. x < x2 ==> P x) ==>
+      (!x. (x = x2) ==> P x) ==>
+      (!x. x2 < x /\ x < x3 ==> P x) ==>
+        (!x. x < x3 ==> P x)`,
   MESON_TAC[real_cases;gt_aux]);;
 
 let gen_thm_noright = prove(
- `!P x1 x2. 
-      (x1 < x2) ==> 
-      (!x. x1 < x /\ x < x2 ==> P x) ==> 
-      (!x. (x = x2) ==> P x) ==> 
-      (!x. x2 < x ==> P x) ==> 
-        (!x. x1 < x ==> P x)`, 
+ `!P x1 x2.
+      (x1 < x2) ==>
+      (!x. x1 < x /\ x < x2 ==> P x) ==>
+      (!x. (x = x2) ==> P x) ==>
+      (!x. x2 < x ==> P x) ==>
+        (!x. x1 < x ==> P x)`,
   MESON_TAC[real_cases;gt_aux]);;
 
 let gen_thm_noboth = prove(
- `!P Q x2. 
-       Q ==>                                      
-      (!x. x < x2 ==> P x) ==> 
-      (!x. (x = x2) ==> P x) ==> 
-      (!x. x2 < x ==> P x) ==> 
-        (!x. T ==> P x)`, 
+ `!P Q x2.
+       Q ==>
+      (!x. x < x2 ==> P x) ==>
+      (!x. (x = x2) ==> P x) ==>
+      (!x. x2 < x ==> P x) ==>
+        (!x. T ==> P x)`,
   MESON_TAC[real_cases;gt_aux]);;

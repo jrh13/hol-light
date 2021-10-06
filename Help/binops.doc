@@ -6,10 +6,10 @@
 Repeatedly breaks apart an iterated binary operator into components.
 
 \DESCRIBE
-The call {binops op t} repeatedly breaks down applications of the binary 
-operator {op} within {t}. If {t} is of the form {(op l) r} (thinking of {op} as 
-infix, {l op r}), then it recursively breaks down {l} and {r} in the same way 
-and appends the results. Otherwise, a singleton list of the original term is 
+The call {binops op t} repeatedly breaks down applications of the binary
+operator {op} within {t}. If {t} is of the form {(op l) r} (thinking of {op} as
+infix, {l op r}), then it recursively breaks down {l} and {r} in the same way
+and appends the results. Otherwise, a singleton list of the original term is
 returned.
 
 \FAILURE

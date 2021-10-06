@@ -117,7 +117,7 @@ let dmatan_interval =
 let ddmatan_interval =
   let v = mk_float_interval_decimal 20 `#0.65` in
   let v0 = mk_small_num_interval 1 in
-  let vs = Array.init 20 
+  let vs = Array.init 20
     (fun i -> if i = 0 then v0 else round_interval i v) in
     fun pp x ->
       let lo, _ = dest_interval x in
@@ -154,7 +154,7 @@ let f = Eval_interval.build_interval_fun `&1 + &3`;;
 Eval_interval.eval_interval_fun 3 f [] [];;
 
 let mk_intervals pp a b =
-  let inf_mk tm = 
+  let inf_mk tm =
     let f = Informal_eval_interval.build_interval_fun tm in
       Informal_eval_interval.eval_interval_fun pp f [] [] in
   let mk tm =
@@ -200,7 +200,7 @@ let ddcheck pp (x, x_th) =
 
 
 ddcheck 3 (List.nth test_ints2 4);;
-  
-  
+
+
 
 *)

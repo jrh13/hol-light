@@ -6,14 +6,14 @@
 Returns the set of type variables used in a term.
 
 \DESCRIBE
-The call {type_vars_in_term t} returns the set of all type variables occurring 
+The call {type_vars_in_term t} returns the set of all type variables occurring
 anywhere inside any subterm of {t}.
 
 \FAILURE
 Never fails.
 
 \EXAMPLE
-Note that the list of types occurring somewhere in the term may be larger than 
+Note that the list of types occurring somewhere in the term may be larger than
 the set of type variables in the term's toplevel type. For example:
 {
   # type_vars_in_term `!x:A. x = x`;;

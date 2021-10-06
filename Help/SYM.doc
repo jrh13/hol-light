@@ -30,8 +30,8 @@ Fails unless the theorem is equational.
 }
 
 \COMMENTS
-The {SYM} rule requires the input theorem to be a simple equation, without 
-additional structure such as outer universal quantifiers. To reverse equality 
+The {SYM} rule requires the input theorem to be a simple equation, without
+additional structure such as outer universal quantifiers. To reverse equality
 signs deeper inside theorems, you may use {GSYM} instead.
 
 \SEEALSO

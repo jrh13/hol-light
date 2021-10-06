@@ -18,19 +18,19 @@ The function {b} will fail if the backup list is empty.
 {
   # g `(HD[1;2;3] = 1) /\ (TL[1;2;3] = [2;3])`;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `HD [1; 2; 3] = 1 /\ TL [1; 2; 3] = [2; 3]`
-  
+
   # e CONJ_TAC;;
   val it : goalstack = 2 subgoals (2 total)
-  
+
   `TL [1; 2; 3] = [2; 3]`
-  
+
   `HD [1; 2; 3] = 1`
-  
+
   # b();;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `HD [1; 2; 3] = 1 /\ TL [1; 2; 3] = [2; 3]`
 }
 

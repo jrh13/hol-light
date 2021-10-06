@@ -182,10 +182,10 @@ let UPDATE_SAME = prove
  *)
 
 let CORRECTNESS_THEOREM = prove
- (`!e map s s' r.                                                      
-      (!v. map v < r) ==>                                              
-      (!v. s v = s' (Reg (map v))) ==>                                 
-          (S' (C e map r) s' Acc = E e s) /\                           
+ (`!e map s s' r.
+      (!v. map v < r) ==>
+      (!v. s v = s' (Reg (map v))) ==>
+          (S' (C e map r) s' Acc = E e s) /\
           (!x. (x < r) ==> (S' (C e map r) s' (Reg x) = s' (Reg x)))`,
   MATCH_MP_TAC exp_INDUCT THEN
   REWRITE_TAC[E_DEF; S_DEF; S'_DEF; update_def; C_DEF; S'_APPEND] THEN

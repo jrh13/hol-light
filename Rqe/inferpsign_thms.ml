@@ -1,16 +1,16 @@
 let EVEN_DIV_LEM = prove_by_refinement(
-  `!set p q c d a n. 
-     (!x. a pow n * p x = c x * q x + d x) ==> 
-     a <> &0 ==> 
-     EVEN n ==>               
-       ((interpsign set q Zero) ==> 
-        (interpsign set d Neg)  ==> 
-         (interpsign set p Neg)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set d Pos)  ==> 
-         (interpsign set p Pos)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set d Zero)  ==> 
+  `!set p q c d a n.
+     (!x. a pow n * p x = c x * q x + d x) ==>
+     a <> &0 ==>
+     EVEN n ==>
+       ((interpsign set q Zero) ==>
+        (interpsign set d Neg)  ==>
+         (interpsign set p Neg)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set d Pos)  ==>
+         (interpsign set p Pos)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set d Zero)  ==>
          (interpsign set p Zero))`,
 (* {{{ Proof *)
 
@@ -22,7 +22,7 @@ let EVEN_DIV_LEM = prove_by_refinement(
   POP_ASSUM MP_TAC;
   POP_ASSUM (fun x -> REWRITE_ASSUMS[x;REAL_MUL_RZERO;REAL_ADD_LID;]);
   STRIP_TAC;
-  CLAIM `&0 < a pow n`; 
+  CLAIM `&0 < a pow n`;
   ASM_MESON_TAC[EVEN_ODD_POW;real_gt];
   STRIP_TAC;
   CLAIM `a pow n * p x < &0`;
@@ -35,7 +35,7 @@ let EVEN_DIV_LEM = prove_by_refinement(
   POP_ASSUM MP_TAC;
   POP_ASSUM (fun x -> REWRITE_ASSUMS[x;REAL_MUL_RZERO;REAL_ADD_LID;]);
   STRIP_TAC;
-  CLAIM `&0 < a pow n`; 
+  CLAIM `&0 < a pow n`;
   ASM_MESON_TAC[EVEN_ODD_POW;real_gt];
   STRIP_TAC;
   CLAIM `a pow n * p x > &0`;
@@ -48,7 +48,7 @@ let EVEN_DIV_LEM = prove_by_refinement(
   POP_ASSUM MP_TAC;
   POP_ASSUM (fun x -> REWRITE_ASSUMS[x;REAL_MUL_RZERO;REAL_ADD_LID;]);
   STRIP_TAC;
-  CLAIM `&0 < a pow n`; 
+  CLAIM `&0 < a pow n`;
   ASM_MESON_TAC[EVEN_ODD_POW;real_gt];
   STRIP_TAC;
   CLAIM `a pow n * p x = &0`;
@@ -61,17 +61,17 @@ let EVEN_DIV_LEM = prove_by_refinement(
 (* }}} *)
 
 let GT_DIV_LEM = prove_by_refinement(
-  `!set p q c d a n. 
-     (!x. a pow n * p x = c x * q x + d x) ==> 
-     a > &0 ==> 
-       ((interpsign set q Zero) ==> 
-        (interpsign set d Neg)  ==> 
-         (interpsign set p Neg)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set d Pos)  ==> 
-         (interpsign set p Pos)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set d Zero)  ==> 
+  `!set p q c d a n.
+     (!x. a pow n * p x = c x * q x + d x) ==>
+     a > &0 ==>
+       ((interpsign set q Zero) ==>
+        (interpsign set d Neg)  ==>
+         (interpsign set p Neg)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set d Pos)  ==>
+         (interpsign set p Pos)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set d Zero)  ==>
          (interpsign set p Zero))`,
 (* {{{ Proof *)
 [
@@ -91,7 +91,7 @@ let GT_DIV_LEM = prove_by_refinement(
   REWRITE_TAC[REAL_MUL_LT];
   REPEAT STRIP_TAC;
   EVERY_ASSUM MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   RULE_ASSUM_TAC (fun y -> try ISPEC `x:real` y with _ -> y);
   POP_ASSUM (fun x -> REWRITE_ASSUMS[x]);
   POP_ASSUM MP_TAC;
@@ -114,18 +114,18 @@ let GT_DIV_LEM = prove_by_refinement(
 (* }}} *)
 
 let NEG_ODD_LEM = prove_by_refinement(
-  `!set p q c d a n. 
-     (!x. a pow n * p x = c x * q x + d x) ==> 
+  `!set p q c d a n.
+     (!x. a pow n * p x = c x * q x + d x) ==>
      a < &0 ==>
-     ODD n ==>  
-       ((interpsign set q Zero) ==> 
-        (interpsign set (\x. -- d x) Neg)  ==> 
-         (interpsign set p Neg)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set (\x. -- d x) Pos)  ==> 
-         (interpsign set p Pos)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set (\x. -- d x) Zero)  ==> 
+     ODD n ==>
+       ((interpsign set q Zero) ==>
+        (interpsign set (\x. -- d x) Neg)  ==>
+         (interpsign set p Neg)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set (\x. -- d x) Pos)  ==>
+         (interpsign set p Pos)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set (\x. -- d x) Zero)  ==>
          (interpsign set p Zero))`,
 (* {{{ Proof *)
 [
@@ -146,7 +146,7 @@ let NEG_ODD_LEM = prove_by_refinement(
   REWRITE_TAC[REAL_MUL_LT;REAL_MUL_GT;real_gt];
   REPEAT STRIP_TAC;
   EVERY_ASSUM MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   RULE_ASSUM_TAC (fun y -> try ISPEC `x:real` y with _ -> y);
   POP_ASSUM (fun x -> REWRITE_ASSUMS[x]);
   POP_ASSUM MP_TAC;
@@ -169,18 +169,18 @@ let NEG_ODD_LEM = prove_by_refinement(
 (* }}} *)
 
 let NEQ_ODD_LEM = prove_by_refinement(
-  `!set p q c d a n. 
-     (!x. a pow n * p x = c x * q x + d x) ==> 
+  `!set p q c d a n.
+     (!x. a pow n * p x = c x * q x + d x) ==>
      a <> &0 ==>
-     ODD n ==>  
-       ((interpsign set q Zero) ==> 
-        (interpsign set (\x. a * d x) Neg)  ==> 
-         (interpsign set p Neg)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set (\x. a * d x) Pos)  ==> 
-         (interpsign set p Pos)) /\ 
-       ((interpsign set q Zero) ==> 
-        (interpsign set (\x. a * d x) Zero)  ==> 
+     ODD n ==>
+       ((interpsign set q Zero) ==>
+        (interpsign set (\x. a * d x) Neg)  ==>
+         (interpsign set p Neg)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set (\x. a * d x) Pos)  ==>
+         (interpsign set p Pos)) /\
+       ((interpsign set q Zero) ==>
+        (interpsign set (\x. a * d x) Zero)  ==>
          (interpsign set p Zero))`,
 (* {{{ Proof *)
 [
@@ -192,7 +192,7 @@ let NEQ_ODD_LEM = prove_by_refinement(
   ASM_REWRITE_TAC[];
   LABEL_ALL_TAC;
   STRIP_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `a pow n < &0`;
   ASM_MESON_TAC[PARITY_POW_LT];
   STRIP_TAC;
@@ -219,7 +219,7 @@ let NEQ_ODD_LEM = prove_by_refinement(
   REPEAT STRIP_TAC;
   EVERY_ASSUM MP_TAC THEN REAL_ARITH_TAC;
   EVERY_ASSUM MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   RULE_ASSUM_TAC (fun y -> try ISPEC `x:real` y with _ -> y);
   POP_ASSUM (fun x -> REWRITE_ASSUMS[x]);
   POP_ASSUM MP_TAC;
@@ -252,7 +252,7 @@ let NEQ_ODD_LEM = prove_by_refinement(
   CLAIM `a pow n * p x = &0`;
   EVERY_ASSUM MP_TAC THEN REAL_ARITH_TAC;
   ASM_MESON_TAC[REAL_ENTIRE;REAL_NOT_EQ;real_gt];
-  (* save *) 
+  (* save *)
   CLAIM `a pow n > &0`;
   ASM_MESON_TAC[EVEN_ODD_POW;NEQ;real_gt];
   STRIP_TAC;
@@ -283,7 +283,7 @@ let NEQ_ODD_LEM = prove_by_refinement(
   REWRITE_TAC[REAL_MUL_LT;REAL_MUL_GT;real_gt];
   REPEAT STRIP_TAC;
   EVERY_ASSUM MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   RULE_ASSUM_TAC (fun y -> try ISPEC `x:real` y with _ -> y);
   POP_ASSUM (fun x -> REWRITE_ASSUMS[x]);
   POP_ASSUM MP_TAC;
@@ -320,37 +320,37 @@ let NEQ_ODD_LEM = prove_by_refinement(
 (* }}} *)
 
 let NEQ_MULT_LT_LEM = prove_by_refinement(
-  `!a q d d' set. 
+  `!a q d d' set.
      a < &0 ==>
-       ((interpsign set d Neg)  ==> 
-        (interpsign set (\x. a * d x) Pos)) /\ 
-       ((interpsign set d Pos)  ==> 
-         (interpsign set (\x. a * d x) Neg)) /\ 
-       ((interpsign set d Zero)  ==> 
+       ((interpsign set d Neg)  ==>
+        (interpsign set (\x. a * d x) Pos)) /\
+       ((interpsign set d Pos)  ==>
+         (interpsign set (\x. a * d x) Neg)) /\
+       ((interpsign set d Zero)  ==>
          (interpsign set (\x. a * d x) Zero))`,
 (* {{{ Proof *)
 [
   REWRITE_TAC[interpsign;POLY_NEG];
   REPEAT STRIP_TAC;
-  ASM_MESON_TAC[REAL_MUL_GT;real_gt];  
-  ASM_MESON_TAC[REAL_MUL_LT;real_gt];  
+  ASM_MESON_TAC[REAL_MUL_GT;real_gt];
+  ASM_MESON_TAC[REAL_MUL_LT;real_gt];
   ASM_MESON_TAC[REAL_ENTIRE;REAL_NOT_EQ;real_gt];
 ]);;
 (* }}} *)
 
 let NEQ_MULT_GT_LEM = prove_by_refinement(
-  `!a q d d' set. 
+  `!a q d d' set.
      a > &0 ==>
-       ((interpsign set d Neg)  ==> 
-         (interpsign set (\x. a * d x) Neg)) /\ 
-       ((interpsign set d Pos)  ==> 
-         (interpsign set (\x. a * d x) Pos)) /\ 
-       ((interpsign set d Zero)  ==> 
+       ((interpsign set d Neg)  ==>
+         (interpsign set (\x. a * d x) Neg)) /\
+       ((interpsign set d Pos)  ==>
+         (interpsign set (\x. a * d x) Pos)) /\
+       ((interpsign set d Zero)  ==>
          (interpsign set (\x. a * d x) Zero))`,
 (* {{{ Proof *)
 [
-  REWRITE_TAC[interpsign;POLY_NEG] THEN 
-  MESON_TAC[REAL_MUL_LT;REAL_ENTIRE;REAL_NOT_EQ;REAL_MUL_GT;real_gt];  
+  REWRITE_TAC[interpsign;POLY_NEG] THEN
+  MESON_TAC[REAL_MUL_LT;REAL_ENTIRE;REAL_NOT_EQ;REAL_MUL_GT;real_gt];
 ]);;
 (* }}} *)
 

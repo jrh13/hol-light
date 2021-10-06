@@ -6,16 +6,16 @@
 Remove given strings from the set of reserved words.
 
 \DESCRIBE
-Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}', 
-meaning that they are special to the parser and cannot be used as ordinary 
-identifiers. The call {unreserve_words l} removes all strings in {l} from the 
+Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}',
+meaning that they are special to the parser and cannot be used as ordinary
+identifiers. The call {unreserve_words l} removes all strings in {l} from the
 list of reserved identifiers.
 
 \FAILURE
 Never fails, regardless of whether the given strings were in fact reserved.
 
 \COMMENTS
-The initial set of reserved words in HOL Light should be unreserved only with 
+The initial set of reserved words in HOL Light should be unreserved only with
 great care, since then various elementary constructs may fail to parse.
 
 \SEEALSO

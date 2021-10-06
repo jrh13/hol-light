@@ -334,7 +334,7 @@ let MULTI_DISJ_DISCH (overs,unders) th =
 try
  (let th1 = itlist UNDER_DISJ_DISCH unders th
   in  let tm1 = rhs (concl th1)
-  in  let th2 = 
+  in  let th2 =
          if (try(is_T (fst (dest_disj tm1))) with Failure _ -> false) then
             (CONV_RULE (RAND_CONV (REWR_CONV T_OR)) th1)
          else if (try(is_F (fst (dest_disj tm1))) with Failure _ -> false) then

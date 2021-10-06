@@ -6,11 +6,11 @@
 List of files loaded so far.
 
 \DESCRIBE
-This reference variable stores a list of previously loaded files together with 
-MD5 digests. It is updated by all the main loading functions {load_on_path}, 
-{loads}, {loadt} and {needs}, and is used by {needs} to avoid reloading the 
+This reference variable stores a list of previously loaded files together with
+MD5 digests. It is updated by all the main loading functions {load_on_path},
+{loads}, {loadt} and {needs}, and is used by {needs} to avoid reloading the
 same file multiple times.
- 
+
 \FAILURE
 Not applicable.
 

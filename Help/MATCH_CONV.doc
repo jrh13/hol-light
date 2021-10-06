@@ -36,8 +36,8 @@ reduction is performed:
        (function CONS h t -> h + 1) [1; 2; 3; 4]
 }
 \noindent so the conversion may need to be repeated:
-{ 
-  # TOP_DEPTH_CONV MATCH_CONV 
+{
+  # TOP_DEPTH_CONV MATCH_CONV
      `(function [] -> 0 | CONS h t -> h + 1) [1;2;3;4]`;;
   val it : thm = |- (function [] -> 0 | CONS h t -> h + 1) [1; 2; 3; 4] = 1 + 1
 }

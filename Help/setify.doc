@@ -7,7 +7,7 @@ Removes repeated elements from a list. Makes a list into a `set'.
 
 \DESCRIBE
 {setify l} removes repeated elements from {l}, leaving the last occurrence of
-each duplicate in the list. 
+each duplicate in the list.
 
 \FAILURE
 Never fails.
@@ -19,7 +19,7 @@ Never fails.
 }
 
 \COMMENTS
-The current implementation will in fact return a sorted list according to the 
+The current implementation will in fact return a sorted list according to the
 basic OCaml polymorphic ordering.
 
 \SEEALSO

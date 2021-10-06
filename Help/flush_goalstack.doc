@@ -6,9 +6,9 @@
 Eliminate all but the current goalstate from the current goalstack.
 
 \DESCRIBE
-Normally, the current goalstack has the current goalstate at the head and all 
-previous intermediate states further back in the list. This function 
-{flush_goalstack()} keeps just the current goalstate and eliminates all 
+Normally, the current goalstack has the current goalstate at the head and all
+previous intermediate states further back in the list. This function
+{flush_goalstack()} keeps just the current goalstate and eliminates all
 previous states.
 
 \FAILURE

@@ -46,7 +46,7 @@ let CUBIC_BASIC = COMPLEX_FIELD
     s3 = --s1 * (Cx(&1) - i * t) / Cx(&2) /\
     i pow 2 + Cx(&1) = Cx(&0) /\
     t pow 2 = Cx(&3)
-    ==> if p = Cx(&0) then 
+    ==> if p = Cx(&0) then
           (y pow 3 + Cx(&3) * p * y - Cx(&2) * q = Cx(&0) <=>
            y = s1 \/ y = s2 \/ y = s3)
         else
@@ -67,20 +67,20 @@ let CUBIC = prove
        let s1 = if p = Cx(&0) then ccbrt(Cx(&2) * q) else ccbrt(q + s) in
        let s2 = --s1 * (Cx(&1) + ii * csqrt(Cx(&3))) / Cx(&2)
        and s3 = --s1 * (Cx(&1) - ii * csqrt(Cx(&3))) / Cx(&2) in
-       if p = Cx(&0) then 
+       if p = Cx(&0) then
          a * x pow 3 + b * x pow 2 + c * x + d = Cx(&0) <=>
             x = s1 - b / (Cx(&3) * a) \/
-            x = s2 - b / (Cx(&3) * a) \/               
+            x = s2 - b / (Cx(&3) * a) \/
             x = s3 - b / (Cx(&3) * a)
        else
-         ~(s1 = Cx(&0)) /\                          
+         ~(s1 = Cx(&0)) /\
          (a * x pow 3 + b * x pow 2 + c * x + d = Cx(&0) <=>
              x = s1 - p / s1 - b / (Cx(&3) * a) \/
              x = s2 - p / s2 - b / (Cx(&3) * a) \/
              x = s3 - p / s3 - b / (Cx(&3) * a))`,
   DISCH_TAC THEN REPEAT LET_TAC THEN
   ABBREV_TAC `y = x + b / (Cx(&3) * a)` THEN
-  SUBGOAL_THEN 
+  SUBGOAL_THEN
    `a * x pow 3 + b * x pow 2 + c * x + d = Cx(&0) <=>
     y pow 3 + Cx(&3) * p * y - Cx(&2) * q = Cx(&0)`
   SUBST1_TAC THENL
@@ -89,7 +89,7 @@ let CUBIC = prove
     ALL_TAC] THEN
   ONCE_REWRITE_TAC[COMPLEX_RING `x = a - b <=> x + b = (a:complex)`] THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CUBIC_BASIC THEN
-  MAP_EVERY EXISTS_TAC 
+  MAP_EVERY EXISTS_TAC
    [`ii`; `csqrt(Cx(&3))`; `csqrt (q pow 2 + p pow 3)`] THEN
   ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THENL
    [ASM_MESON_TAC[CSQRT];

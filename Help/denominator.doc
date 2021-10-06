@@ -17,9 +17,9 @@ Never fails.
 {
   # denominator(Int 22 // Int 7);;
   val it : num = 7
-  # denominator(Int 0);;       
+  # denominator(Int 0);;
   val it : num = 1
-  # denominator(Int 100);;       
+  # denominator(Int 100);;
   val it : num = 1
   # denominator(Int 4 // Int(-2));;
   val it : num = 1

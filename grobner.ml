@@ -522,7 +522,7 @@ let RING_AND_IDEAL_CONV =
                     let e = denominator c in
                     let d,th = run_scaled_proof vars p2 in
                     memoize prf ((d */ e),MUL_RULE vars (c */ e,xs) th)) in
-          fun vars prf -> 
+          fun vars prf ->
             let _,ans = run_scaled_proof vars prf in
             (execache := []; ans)) in
       let th = run_proof vars prf in

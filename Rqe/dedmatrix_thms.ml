@@ -1,6 +1,6 @@
 let le_lem = prove_by_refinement(
- `(!y. y <= Y ==> P y) ==> 
-  (!y. y < Y ==> P y) /\ 
+ `(!y. y <= Y ==> P y) ==>
+  (!y. y < Y ==> P y) /\
   (!y. (y = Y) ==> P y)`,
 (* {{{ Proof *)
 [
@@ -14,7 +14,7 @@ let le_lem = prove_by_refinement(
 
 
 let lt_int_lem = prove_by_refinement(
- `(!y. y < Y ==> P y) ==> X < Y ==> 
+ `(!y. y < Y ==> P y) ==> X < Y ==>
   (!y. X < y /\ y < Y ==> P y)`,
 (* {{{ Proof *)
 [
@@ -25,8 +25,8 @@ let lt_int_lem = prove_by_refinement(
 (* }}} *)
 
 let ge_lem = prove_by_refinement(
- `(!y. Y <= y ==> P y) ==> 
-  (!y. Y < y ==> P y) /\ 
+ `(!y. Y <= y ==> P y) ==>
+  (!y. Y < y ==> P y) /\
   (!y. (y = Y) ==> P y)`,
 (* {{{ Proof *)
 [
@@ -39,7 +39,7 @@ let ge_lem = prove_by_refinement(
 (* }}} *)
 
 let gt_int_lem = prove_by_refinement(
- `(!y. Y < y ==> P y) ==> Y < X ==> 
+ `(!y. Y < y ==> P y) ==> Y < X ==>
   (!y. Y < y /\ y < X ==> P y)`,
 (* {{{ Proof *)
 [
@@ -116,9 +116,9 @@ let INTERPSIGN_SUBSET = prove_by_refinement(
 [
   REWRITE_TAC[SUBSET;IN];
   REPEAT_N 4 STRIP_TAC;
-  STRUCT_CASES_TAC (ISPEC `s:sign` SIGN_CASES) THEN 
+  STRUCT_CASES_TAC (ISPEC `s:sign` SIGN_CASES) THEN
   REWRITE_TAC[interpsign] THEN MESON_TAC[];
-]);; 
+]);;
 (* }}} *)
 
 let INTERPSIGNS_SUBSET = prove_by_refinement(
@@ -129,25 +129,25 @@ let INTERPSIGNS_SUBSET = prove_by_refinement(
   REPEAT_N 2 STRIP_TAC;
   LIST_INDUCT_TAC;
   LIST_INDUCT_TAC;
-  REWRITE_TAC[ALL2;interpsigns;interpsign];  
-  REWRITE_TAC[ALL2;interpsigns;interpsign];  
+  REWRITE_TAC[ALL2;interpsigns;interpsign];
+  REWRITE_TAC[ALL2;interpsigns;interpsign];
   LIST_INDUCT_TAC;
-  REWRITE_TAC[ALL2;interpsigns;interpsign];  
-  REWRITE_TAC[ALL2;interpsigns;interpsign];  
-  (* save *) 
+  REWRITE_TAC[ALL2;interpsigns;interpsign];
+  REWRITE_TAC[ALL2;interpsigns;interpsign];
+  (* save *)
   REPEAT STRIP_TAC;
   MATCH_MP_TAC INTERPSIGN_SUBSET;
   ASM_MESON_TAC[SUBSET;IN];
-  REWRITE_ASSUMS[ALL2;interpsigns;interpsign];  
+  REWRITE_ASSUMS[ALL2;interpsigns;interpsign];
   FIRST_ASSUM MATCH_MP_TAC;
   ASM_REWRITE_TAC[];
-]);; 
+]);;
 (* }}} *)
 
 let NOPOINT_LEM = prove_by_refinement(
-  `!pl sl. interpsigns pl (\x. T) sl  ==> 
-   (interpsigns pl (\x. x < &0) sl  /\ 
-    interpsigns pl (\x. x = &0) sl  /\ 
+  `!pl sl. interpsigns pl (\x. T) sl  ==>
+   (interpsigns pl (\x. x < &0) sl  /\
+    interpsigns pl (\x. x = &0) sl  /\
     interpsigns pl (\x. &0 < x) sl)`,
 (* {{{ Proof *)
 

@@ -1,7 +1,7 @@
 (*-------------------------------------------------------------------------*)
 (*
    File:         mk_unless.ml
-   Description: 
+   Description:
 
    This file defines the theorems for the UNLESS definition.
 

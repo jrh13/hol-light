@@ -59,7 +59,7 @@ When solving the goal
 {
   # e(STRIP_GOAL_THEN SUBST1_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `1 * 1 = 1`
 }
 \noindent which is immediate by {ARITH_TAC}, for example.

@@ -7,7 +7,7 @@ List of all definitions introduced so far.
 
 \DESCRIBE
 The reference variable {the_inductive_definitions} holds the list of
-inductive definitions made so far using {new_inductive_definition}, which 
+inductive definitions made so far using {new_inductive_definition}, which
 automatically augments it.
 
 \FAILURE
@@ -30,7 +30,7 @@ inductive definition is finiteness of a set:
 \USES
 This list is not logically necessary and is not part of HOL Light's logical
 core, but it is used outside the core so that multiple instances of the same
-inductive definition are quietly ``ignored'' rather than rejected. 
+inductive definition are quietly ``ignored'' rather than rejected.
 Users may also sometimes find it convenient.
 
 \SEEALSO

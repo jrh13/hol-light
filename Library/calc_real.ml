@@ -1095,7 +1095,7 @@ let STEPS_EXP_1 = prove
    (!k. SUC k < 1 ==>
                 &2 * abs(t(SUC k) * &2 pow n * &(SUC k) - s * t(k))
                 <= &2 pow n * &(SUC k))
-   ==> abs(sum(0,1) t - &2 pow n * sum(0,1)(\i. x pow i / &(FACT i))) 
+   ==> abs(sum(0,1) t - &2 pow n * sum(0,1)(\i. x pow i / &(FACT i)))
          <= &2 * &1`,
   CONV_TAC(ONCE_DEPTH_CONV EXPAND_RANGE_CONV) THEN REWRITE_TAC[] THEN
   STRIP_TAC THEN CONV_TAC(ONCE_DEPTH_CONV REAL_SUM_CONV) THEN

@@ -15,8 +15,8 @@ side of the equation {s = t} to {s'}, and return the corresponding theorem {A
 the ordering condition is violated, it will fail, even if the match is fine.
 
 \FAILURE
-Fails if the theorem is not of the right form or the two terms cannot be 
-matched, for example because the variables that need to be instantiated are 
+Fails if the theorem is not of the right form or the two terms cannot be
+matched, for example because the variables that need to be instantiated are
 free in the hypotheses {A}, or if the ordering requirement fails.
 
 \EXAMPLE
@@ -25,7 +25,7 @@ We apply the permutative rewrite:
   # ADD_SYM;;
   val it : thm = |- !m n. m + n = n + m
 }
-\noindent with the default term ordering {term_order} designed for this kind of 
+\noindent with the default term ordering {term_order} designed for this kind of
 application. Note that it applies in one direction:
 {
   # ORDERED_REWR_CONV term_order ADD_SYM `1 + 2`;;
@@ -38,10 +38,10 @@ application. Note that it applies in one direction:
 }
 
 \USES
-Applying conditional rewrite rules that are permutative and would loop without 
-some restriction. Thanks to the fact that higher-level rewriting operations 
-like {REWRITE_CONV} and {REWRITE_TAC} have ordering built in for permutative 
-rewrite rules, rewriting with theorem like {ADD_AC} will effectively normalize 
+Applying conditional rewrite rules that are permutative and would loop without
+some restriction. Thanks to the fact that higher-level rewriting operations
+like {REWRITE_CONV} and {REWRITE_TAC} have ordering built in for permutative
+rewrite rules, rewriting with theorem like {ADD_AC} will effectively normalize
 terms.
 
 \SEEALSO

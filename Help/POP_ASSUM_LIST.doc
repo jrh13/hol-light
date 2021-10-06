@@ -30,7 +30,7 @@ number from the {ASSUME}d-assumption list, since this introduces a dependency
 on ordering.
 
 \EXAMPLE
-We can collect all the assumptions of a goal into a conjunction and make them a 
+We can collect all the assumptions of a goal into a conjunction and make them a
 new antecedent by:
 {
   POP_ASSUM_LIST(MP_TAC o end_itlist CONJ)

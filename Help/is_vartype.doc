@@ -22,7 +22,7 @@ Never fails.
 
   # is_vartype (mk_vartype "bool");;
   val it : bool = true
-  
+
 }
 
 \SEEALSO

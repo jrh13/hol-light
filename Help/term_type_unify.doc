@@ -6,7 +6,7 @@
 Unify two terms including their type variables
 
 \DESCRIBE
-Given two terms {tm1} and {tm2} and an existing instantiation {i} of type and 
+Given two terms {tm1} and {tm2} and an existing instantiation {i} of type and
 term variables, a call {term_type_unify tm1 tm2 i} attempts to find an
 augmentation of the instantiation {i} that makes the terms alpha-equivalent.
 The unification is purely first-order.
@@ -16,7 +16,7 @@ Fails if the two terms are not first-order unifiable by instantiating the given
 variables and type variables.
 
 \COMMENTS
-The more restrictive {term_unify} does a similar job when the type variables 
+The more restrictive {term_unify} does a similar job when the type variables
 are already compatible and only terms need to be instantiated.
 
 \SEEALSO

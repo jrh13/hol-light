@@ -7,7 +7,7 @@ Lists the infixes currently recognized by the parser.
 
 \DESCRIBE
 The function {infixes} should be applied to the unit {()} and will then return
-a list of all the infixes currently recognized by the parser together with 
+a list of all the infixes currently recognized by the parser together with
 their precedence and associativity (left or right).
 
 \FAILURE

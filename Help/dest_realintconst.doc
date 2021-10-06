@@ -12,7 +12,7 @@ forms of integer literals are `{&n}' for a numeral {n} or `{-- &n}' for a
 nonzero numeral {n}.
 
 \FAILURE
-Fails if applied to a term that is not a canonical integer literal of type 
+Fails if applied to a term that is not a canonical integer literal of type
 {:real}.
 
 \EXAMPLE

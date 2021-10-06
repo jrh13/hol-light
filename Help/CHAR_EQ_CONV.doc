@@ -16,14 +16,14 @@ If {s} and {t} are two character literal terms in the HOL logic,
 respectively.
 
 \FAILURE
-{CHAR_EQ_CONV tm} fails f {tm} is not of the specified form, an equation 
+{CHAR_EQ_CONV tm} fails f {tm} is not of the specified form, an equation
 between character literals.
 
 \EXAMPLE
 {
   # let t = mk_eq(mk_char 'A',mk_char 'A');;
   val t : term = `ASCII F T F F F F F T = ASCII F T F F F F F T`
-  
+
   # CHAR_EQ_CONV t;;
   val it : thm = |- ASCII F T F F F F F T = ASCII F T F F F F F T <=> T
 }
@@ -32,8 +32,8 @@ between character literals.
 Performing basic equality reasoning while producing a proof about characters.
 
 \COMMENTS
-There is no particularly convenient parser/printer support for the HOL {char} 
-type, but when combined into lists they are considered as strings and provided 
+There is no particularly convenient parser/printer support for the HOL {char}
+type, but when combined into lists they are considered as strings and provided
 with more intuitive parser/printer support. There is a corresponding proof rule
 {STRING_EQ_CONV} for strings.
 

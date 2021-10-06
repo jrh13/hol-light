@@ -6,7 +6,7 @@
 Tests if a one-character string is some kind of space.
 
 \DESCRIBE
-The call {isspace s} tests whether the first character of string {s} (normally 
+The call {isspace s} tests whether the first character of string {s} (normally
 it is the only character) is a `space' of some kind, including tab and newline.
 
 \FAILURE

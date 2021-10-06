@@ -7,7 +7,7 @@ Prints out a warning string
 
 \DESCRIBE
 When applied to a boolean value {b} and a string {s}, the call {warn b s}
-prints out ``{Warning: s}'' and a following newline to the terminal if {b} is 
+prints out ``{Warning: s}'' and a following newline to the terminal if {b} is
 true and otherwise does nothing.
 
 \FAILURE

@@ -69,7 +69,7 @@ set_goal([],
      (!s. (p /\* p') s /\ ~((p /\* q' \/* p' /\* q) \/* q /\* q') s) ==>
      (((p /\* q' \/* p' /\* q) \/* q /\* q') (h s))`)
 );;
- 
+
 let ENSURES_lemma1 = TAC_PROOF
   (([],
     `!(p:'a->bool) p' q q' h.
@@ -141,7 +141,7 @@ let EXIST_TRANSITION_thm1 = prove_thm
 
                p EXIST_TRANSITION false in Pr
               --------------------------------
-                          ~p 
+                          ~p
 *)
 let EXIST_TRANSITION_thm2 = prove_thm
   ("EXIST_TRANSITION_thm2",
@@ -186,8 +186,8 @@ let EXIST_TRANSITION_thm4 = prove_thm
    STRIP_TAC THEN
    RES_TAC THEN
    ASM_REWRITE_TAC [] THEN
-   REWRITE_TAC [REWRITE_RULE 
-      [ASSUME `!s:'a. (p:'a->bool) s /\ ~q s ==> q (h s)`] 
+   REWRITE_TAC [REWRITE_RULE
+      [ASSUME `!s:'a. (p:'a->bool) s /\ ~q s ==> q (h s)`]
         (SPECL [`p:'a->bool`;`q:'a->bool`;`r:'a->bool`;`h:'a->'a`]
             ENSURES_lemma4)]);;
 
@@ -212,11 +212,11 @@ let APPEND_lemma02 = TAC_PROOF
    `!st (l:('a)list).  (APPEND [st] l) = (CONS st l)`),
    GEN_TAC THEN
    LIST_INDUCT_TAC THEN
-   REWRITE_TAC [APPEND]);;   
+   REWRITE_TAC [APPEND]);;
 
 let APPEND_lemma03 = TAC_PROOF
   (([],
-   `!st (l1:('a)list) l2. 
+   `!st (l1:('a)list) l2.
        (APPEND (APPEND l1 [st]) l2) = (APPEND l1 (CONS st l2))`),
    GEN_TAC THEN
    LIST_INDUCT_TAC THEN
@@ -228,7 +228,7 @@ let APPEND_lemma03 = TAC_PROOF
 
 let APPEND_lemma04 = TAC_PROOF
   (([],
-   `!st (l1:('a)list) l2. 
+   `!st (l1:('a)list) l2.
        (APPEND (CONS st l1) l2) = (CONS st (APPEND l1 l2))`),
    GEN_TAC THEN
    LIST_INDUCT_TAC THEN
@@ -449,7 +449,7 @@ let ENSURES_thm2 = prove_thm
 
                p ensures false in Pr
               ----------------------
-                       ~p 
+                       ~p
 *)
 
 let ENSURES_thm3 = prove_thm
@@ -548,8 +548,8 @@ let ENSURES_thm5 = prove_thm
      IMP_RES_TAC UNLESS_cor23 THEN
      ASM_REWRITE_TAC []
     ;
-     REWRITE_TAC [REWRITE_RULE 
-      [ASSUME `!s:'a. (p:'a->bool) s /\ ~q s ==> q (h s)`] 
+     REWRITE_TAC [REWRITE_RULE
+      [ASSUME `!s:'a. (p:'a->bool) s /\ ~q s ==> q (h s)`]
         (SPECL [`p:'a->bool`;`q:'a->bool`;`r:'a->bool`;`h:'a->'a`]
             ENSURES_lemma4)]
     ;
@@ -621,7 +621,7 @@ let ENSURES_cor3 = prove_thm
       (`((p:'a->bool) \/*  q)`);(`r:'a->bool`);
       (`Pr:('a->'a)list`)] ENSURES_thm4)) THEN
    UNDISCH_TAC (`(((p:'a->bool) /\* (p \/*  q)) ENSURES
-                (((p /\* r) \/*  ((p \/*  q) /\* (q \/*  r))) \/* 
+                (((p /\* r) \/*  ((p \/*  q) /\* (q \/*  r))) \/*
                  ((q \/*  r) /\* r))) Pr`) THEN
    REWRITE_TAC [AND_OR_EQ_lemma] THEN
    REWRITE_TAC [OR_ASSOC_lemma;AND_ASSOC_lemma] THEN
@@ -702,8 +702,8 @@ let ENSURES_cor7 = prove_thm
    REWRITE_TAC [STABLE] THEN
    REPEAT STRIP_TAC THEN
    IMP_RES_TAC (ONCE_REWRITE_RULE [AND_COMM_lemma]
-      (REWRITE_RULE [AND_False_lemma;OR_False_lemma] 
-        (ONCE_REWRITE_RULE [OR_AND_COMM_lemma] 
+      (REWRITE_RULE [AND_False_lemma;OR_False_lemma]
+        (ONCE_REWRITE_RULE [OR_AND_COMM_lemma]
           (REWRITE_RULE [AND_False_lemma;OR_False_lemma] (SPECL
             [(`r:'a->bool`);(`False:'a->bool`);
 	     (`p:'a->bool`);(`q:'a->bool`);

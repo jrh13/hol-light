@@ -58,7 +58,7 @@ following tactic:
 Generating a case split from the axioms specifying a structure.
 
 \SEEALSO
-ASM_CASES_TAC, BOOL_CASES_TAC, COND_CASES_TAC, DISJ_CASES_TAC, 
+ASM_CASES_TAC, BOOL_CASES_TAC, COND_CASES_TAC, DISJ_CASES_TAC,
 STRUCT_CASES_THEN.
 
 \ENDDOC

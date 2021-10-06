@@ -8,10 +8,10 @@ Determines whether the universe set on a type is printed just as the type.
 \DESCRIBE
 The reference variable {typify_universal_set} is one of several
 settable parameters controlling printing of terms by {pp_print_term}, and hence
-the automatic printing of terms and theorems at the toplevel. When it is 
+the automatic printing of terms and theorems at the toplevel. When it is
 {true}, as it is by default, any universal set {UNIV:A->bool} ({UNIV} is a
 predefined set constant valid over all types) is printed just as {(:A)}. When
-{typify_universal_set} is {false}, it is printed as {UNIV}, just as for any 
+{typify_universal_set} is {false}, it is printed as {UNIV}, just as for any
 other constant.
 
 \FAILURE
@@ -26,8 +26,8 @@ Note that having this setting is quite useful here:
 }
 
 \USES
-HOL Light's Cartesian power type (constructor `{^}') uses a type to index the 
-power. When this flag is {true}, formulas often become easier to understand 
+HOL Light's Cartesian power type (constructor `{^}') uses a type to index the
+power. When this flag is {true}, formulas often become easier to understand
 when printed, as in the above example.
 
 \SEEALSO

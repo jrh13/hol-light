@@ -6,7 +6,7 @@
 Constructs a logical equivalence (Boolean equation).
 
 \DESCRIBE
-{mk_iff(`t1`,`t2`)} returns {`t1 <=> t2`}. 
+{mk_iff(`t1`,`t2`)} returns {`t1 <=> t2`}.
 
 \FAILURE
 Fails with unless {t1} and {t2} both have Boolean type.
@@ -18,7 +18,7 @@ Fails with unless {t1} and {t2} both have Boolean type.
 }
 
 \COMMENTS
-Simply {mk_eq} has the same effect on successful calls. However {mk_iff} is 
+Simply {mk_eq} has the same effect on successful calls. However {mk_iff} is
 slightly more efficient, and will fail if the terms do not have Boolean type.
 
 \SEEALSO

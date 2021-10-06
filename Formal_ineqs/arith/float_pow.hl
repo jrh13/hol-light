@@ -25,7 +25,7 @@ prioritize_real();;
 (* Power of a float                                 *)
 (* ------------------------------------------------ *)
 
-let RULE = UNDISCH_ALL o Arith_nat.NUMERALS_TO_NUM o 
+let RULE = UNDISCH_ALL o Arith_nat.NUMERALS_TO_NUM o
   PURE_REWRITE_RULE[FLOAT_OF_NUM; min_exp_def; GSYM IMP_IMP] o SPEC_ALL;;
 
 let float_eq n = SYM (FLOAT_TO_NUM_CONV (mk_float n 0));;
@@ -82,19 +82,19 @@ let float_pow_pos_double_hi_th = (th_rule o prove)
      MATCH_MP_TAC REAL_POW_LE THEN REWRITE_TAC[FLOAT_F_POS]);;
 
 let float_pow0_hi = (REWRITE_RULE[float_eq 1] o prove)
-  (`x pow 0 <= &1`, 
+  (`x pow 0 <= &1`,
    REWRITE_TAC[real_pow; REAL_LE_REFL]);;
 
 let float_pow1_hi = (th_rule o prove)
-  (`x pow 1 <= x`, 
+  (`x pow 1 <= x`,
    REWRITE_TAC[REAL_POW_1; REAL_LE_REFL]);;
 
 let float_pow2_hi = (th_rule o prove)
-  (`x * x <= hi ==> x pow 2 <= hi`, 
+  (`x * x <= hi ==> x pow 2 <= hi`,
    REWRITE_TAC[REAL_POW_2]);;
 
 let float_pow_pos_suc_lo_th = (th_rule o prove)
-  (`float_num F n1 e1 <= float_num F n e pow j /\ 
+  (`float_num F n1 e1 <= float_num F n e pow j /\
      lo <= float_num F n e * float_num F n1 e1 /\  SUC j = i
      ==> lo <= float_num F n e pow i`,
    STRIP_TAC THEN (POP_ASSUM (fun th -> REWRITE_TAC[SYM th])) THEN
@@ -112,15 +112,15 @@ let float_pow_pos_double_lo_th = (th_rule o prove)
      MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[FLOAT_F_POS; REAL_LE_REFL]);;
 
 let float_pow0_lo = (th_rule o REWRITE_RULE[float_eq 1] o prove)
-  (`&1 <= x pow 0`, 
+  (`&1 <= x pow 0`,
    REWRITE_TAC[real_pow; REAL_LE_REFL]);;
 
 let float_pow1_lo = (th_rule o prove)
-  (`x <= x pow 1`, 
+  (`x <= x pow 1`,
    REWRITE_TAC[REAL_POW_1; REAL_LE_REFL]);;
 
 let float_pow2_lo = (th_rule o prove)
-  (`lo <= x * x ==> lo <= x pow 2`, 
+  (`lo <= x * x ==> lo <= x pow 2`,
    REWRITE_TAC[REAL_POW_2]);;
 
 let float_pow_neg_even_hi_th = (th_rule o prove)
@@ -206,7 +206,7 @@ let float_pow_pos_double_lo pp x_tm t_th =
       let i_tm = rand (concl double_j) in
       let mul_lo = float_mul_lo pp t_tm t_tm in
       let lo_tm = lhand (concl mul_lo) in
-      let th0 = INST[x_tm, x_var_real; n1_tm, n1_var_num; e1_tm, e1_var_num; 
+      let th0 = INST[x_tm, x_var_real; n1_tm, n1_var_num; e1_tm, e1_var_num;
 		     j_tm, j_var_num; lo_tm, lo_var_real;
 		     i_tm, i_var_num] float_pow_pos_double_lo_th in
 	MY_PROVE_HYP t_th (MY_PROVE_HYP mul_lo (MY_PROVE_HYP double_j th0));;
@@ -435,7 +435,7 @@ let float_interval_pow pp n x_th =
   let x, low, high = dest_float_interval (concl x_th) in
     match n with
       | 0 -> INST[x, x_var_real] float_interval_pow0
-      | 1 -> 
+      | 1 ->
 	  let th0 = INST[x, x_var_real; low, lo_var_real; high, hi_var_real] float_interval_pow1 in
 	    MY_PROVE_HYP x_th th0
       | _ ->
@@ -447,7 +447,7 @@ let float_interval_pow pp n x_th =
 	      let hi = rand (concl hi_th) and
 		  lo = lhand (concl lo_th) and
 		  n_tm = rand (rand (concl lo_th)) in
-	      let even_n = eval_even n_tm in	      
+	      let even_n = eval_even n_tm in	
 	      let th0 = INST[x, x_var_real; low, low_var_real; high, high_var_real;
 			     hi, hi_var_real; lo, lo_var_real; n_tm, n_var_num] float_interval_pow_odd in
 		MY_PROVE_HYP even_n (MY_PROVE_HYP lo_th (MY_PROVE_HYP hi_th (MY_PROVE_HYP x_th th0)))

@@ -6,9 +6,9 @@
 Remove a specific overload/interface mapping for an identifier.
 
 \DESCRIBE
-HOL Light allows an identifier to map to a specific constant (see 
-{override_interface}) or be overloaded to several depending on type (see 
-{overload_interface}). A call to {remove_interface "ident"} removes all such 
+HOL Light allows an identifier to map to a specific constant (see
+{override_interface}) or be overloaded to several depending on type (see
+{overload_interface}). A call to {remove_interface "ident"} removes all such
 mappings for the identifier {ident}.
 
 \FAILURE

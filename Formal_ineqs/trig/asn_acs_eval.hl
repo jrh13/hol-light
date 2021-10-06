@@ -82,7 +82,7 @@ let asn_pos_lo_th = (th_rule o prove)
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `atn t` THEN ASM_REWRITE_TAC[ATN_MONO_LE_EQ] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `x / r` THEN ASM_REWRITE_TAC[real_div] THEN
      MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
-     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[SQRT_LT_0] THEN 
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[SQRT_LT_0] THEN
      CONJ_TAC THENL [
        REWRITE_TAC[REAL_ARITH `&0 < &1 - a <=> a < &1`; ABS_SQUARE_LT_1] THEN
 	 ASM_ARITH_TAC;
@@ -107,7 +107,7 @@ let asn_neg_hi_th = (th_rule o prove)
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `--x / r` THEN ASM_REWRITE_TAC[real_div] THEN
      REWRITE_TAC[REAL_MUL_LNEG; REAL_LE_NEG2; REAL_POW_NEG; ARITH_RULE `EVEN 2`] THEN
      MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
-     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[SQRT_LT_0] THEN 
+     MATCH_MP_TAC REAL_LE_INV2 THEN ASM_REWRITE_TAC[SQRT_LT_0] THEN
      CONJ_TAC THENL [
        REWRITE_TAC[REAL_ARITH `&0 < &1 - a <=> a < &1`; ABS_SQUARE_LT_1] THEN
 	 ASM_ARITH_TAC;
@@ -154,7 +154,7 @@ let acs_hi_th = (th_rule o prove)
      c <= asn x /\
      b - c <= hi
      ==> acs x <= hi`,
-   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN 
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN
      ASM_SIMP_TAC[ACS_ASN] THEN ASM_ARITH_TAC);;
 
 let acs_lo_th = (th_rule o prove)
@@ -164,11 +164,11 @@ let acs_lo_th = (th_rule o prove)
      asn x <= c /\
      lo <= a - c
      ==> lo <= acs x`,
-   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN 
+   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN
      ASM_SIMP_TAC[ACS_ASN] THEN ASM_ARITH_TAC);;
 
 let asn_interval = (th_rule o prove)
-  (`interval_arith x (a, b) /\ 
+  (`interval_arith x (a, b) /\
      (-- &1 <= a <=> T) /\
      (b <= &1 <=> T) /\
      lo <= asn a /\
@@ -182,7 +182,7 @@ let asn_interval = (th_rule o prove)
    ]);;
 
 let acs_interval = (th_rule o prove)
-  (`interval_arith x (a, b) /\ 
+  (`interval_arith x (a, b) /\
      (-- &1 <= a <=> T) /\
      (b <= &1 <=> T) /\
      lo <= acs b /\
@@ -196,7 +196,7 @@ let acs_interval = (th_rule o prove)
    ]);;
 
 let acs_interval2 = (th_rule o prove)
-  (`interval_arith x (a, b) /\ 
+  (`interval_arith x (a, b) /\
      (-- &1 <= a <=> T) /\
      (b <= &1 <=> T) /\
      interval_arith (pi / &2) (low, high) /\

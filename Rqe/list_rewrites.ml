@@ -28,9 +28,9 @@ NOT_NIL;
 
 let LIST_SIMP_TAC = REWRITE_TAC (
   !LIST_REWRITES
-);; 
+);;
 
-let extend_list_rewrites l = 
+let extend_list_rewrites l =
   LIST_REWRITES := !LIST_REWRITES @ l;;
 
 BASIC_REWRITES := !LIST_REWRITES @ !BASIC_REWRITES;;

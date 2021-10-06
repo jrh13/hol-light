@@ -6,11 +6,11 @@
 Apply a conversion to left-hand argument of binary operator.
 
 \DESCRIBE
-If {c} is a conversion where {c `l`} gives {|- l = l'}, then 
+If {c} is a conversion where {c `l`} gives {|- l = l'}, then
 {LAND_CONV c `op l r`} gives {|- op l r = op l' r}.
- 
+
 \FAILURE
-Fails if the underlying conversion does or returns an inappropriate theorem 
+Fails if the underlying conversion does or returns an inappropriate theorem
 (i.e. is not really a conversion).
 
 \EXAMPLE

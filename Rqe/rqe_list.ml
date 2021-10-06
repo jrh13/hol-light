@@ -1,14 +1,14 @@
 
 let aacons_tm = `CONS:A -> A list -> A list` ;;
-let HD_CONV conv tm = 
+let HD_CONV conv tm =
   let h::rest = dest_list tm in
-  let ty = type_of h in  
+  let ty = type_of h in
   let thm = conv h in
   let thm2 = REFL (mk_list(rest,ty)) in
   let cs = inst [ty,aty] aacons_tm in
     MK_COMB ((AP_TERM cs thm),thm2);;
 
-let TL_CONV conv tm = 
+let TL_CONV conv tm =
 (*   try *)
     let h::t = dest_list tm in
     let lty = type_of h in
@@ -16,9 +16,9 @@ let TL_CONV conv tm =
       MK_COMB ((AP_TERM cs (REFL h)), (LIST_CONV conv (mk_list(t,lty))))
 (*   with _ -> failwith "TL_CONV" *)
 
-let rec EL_CONV conv i tm = 
+let rec EL_CONV conv i tm =
   if i = 0 then HD_CONV conv tm
-  else 
+  else
     let h::t = dest_list tm in
     let lty = type_of h in
     let cs = inst [lty,aty] aacons_tm in
@@ -29,9 +29,9 @@ let rec EL_CONV conv i tm =
 
   let conv = (REWRITE_CONV[ARITH_RULE `x + x = &2 * x`])
   let tm = `[&5 + &5; &6 + &6; &7 + &7]`
-  HD_CONV conv tm 
-  TL_CONV conv tm 
-  HD_CONV(TL_CONV conv) tm 
+  HD_CONV conv tm
+  TL_CONV conv tm
+  HD_CONV(TL_CONV conv) tm
   CONS_CONV conv tm
   EL_CONV conv 0 tm
   EL_CONV conv 1 tm
@@ -50,14 +50,14 @@ let NOT_CONS = prove_by_refinement(
 (* }}} *)
 
 let REMOVE = new_recursive_definition list_RECURSION
-  `(REMOVE x [] = []) /\ 
-   (REMOVE x (CONS (h:A) t) = 
+  `(REMOVE x [] = []) /\
+   (REMOVE x (CONS (h:A) t) =
      let rest = REMOVE x t in
-       if x = h then rest else CONS h rest)`;;   
+       if x = h then rest else CONS h rest)`;;
 
 let CHOP_LIST = new_recursive_definition num_RECURSION
-  `(CHOP_LIST 0 l = [],l) /\ 
-   (CHOP_LIST (SUC n) l = 
+  `(CHOP_LIST 0 l = [],l) /\
+   (CHOP_LIST (SUC n) l =
      let a,b = CHOP_LIST n (TL l) in
       CONS (HD l) a,b)`;;
 
@@ -132,7 +132,7 @@ let LAST_CONS = prove_by_refinement(
 (* {{{ Proof *)
 [
   ASM_MESON_TAC[LAST];
-]);;  
+]);;
 (* }}} *)
 
 
@@ -144,7 +144,7 @@ let LAST_CONS_CONS = prove_by_refinement(
   MESON_TAC[LAST;NOT_CONS_NIL;COND_CLAUSES];
 ]);;
 (* }}} *)
-  
+
 let HD_APPEND = prove_by_refinement(
   `!h t l. HD (APPEND (CONS h t) l) = h`,
 (* {{{ Proof *)
@@ -196,10 +196,10 @@ let LIST_TRI = prove_by_refinement(
   DISJ_CASES_TAC (ISPEC `p:A list` list_CASES);
   ASM_REWRITE_TAC[];
   POP_ASSUM MP_TAC THEN STRIP_TAC;
-  DISJ_CASES_TAC (ISPEC `t:A list` list_CASES);  
+  DISJ_CASES_TAC (ISPEC `t:A list` list_CASES);
   ASM_MESON_TAC[];
   ASM_MESON_TAC[];
-]);;  
+]);;
 (* }}} *)
 
 let LENGTH_PAIR = prove_by_refinement(
@@ -214,7 +214,7 @@ let LENGTH_PAIR = prove_by_refinement(
   MP_TAC (ISPEC `t:A list` list_CASES);
   STRIP_TAC;
   ASM_MESON_TAC[LENGTH_1;ARITH_RULE `~(1 = 2)`];
-  MP_TAC (ISPEC `t':A list` list_CASES);  
+  MP_TAC (ISPEC `t':A list` list_CASES);
   STRIP_TAC;
   EXISTS_TAC `h:A`;
   EXISTS_TAC `h':A`;
@@ -222,7 +222,7 @@ let LENGTH_PAIR = prove_by_refinement(
   CLAIM `p = CONS h (CONS h' (CONS h'' t''))`;
   ASM_MESON_TAC[];
   STRIP_TAC;
-  CLAIM `2 < LENGTH p`; 
+  CLAIM `2 < LENGTH p`;
   POP_ASSUM SUBST1_TAC;
   REWRITE_TAC[LENGTH];
   ARITH_TAC;
@@ -249,7 +249,7 @@ let LENGTH_SING = prove_by_refinement(
   CLAIM `p = CONS h (CONS h' t')`;
   ASM_MESON_TAC[];
   STRIP_TAC;
-  CLAIM `1 < LENGTH p`; 
+  CLAIM `1 < LENGTH p`;
   POP_ASSUM SUBST1_TAC;
   REWRITE_TAC[LENGTH];
   ARITH_TAC;
@@ -272,7 +272,7 @@ let TL_NIL = prove_by_refinement(
   ASM_REWRITE_TAC[TL];
   ASM_MESON_TAC !LIST_REWRITES;
   ASM_MESON_TAC !LIST_REWRITES;
-]);;  
+]);;
 (* }}} *)
 
 let LAST_TL = prove_by_refinement(
@@ -283,7 +283,7 @@ let LAST_TL = prove_by_refinement(
   REWRITE_TAC[];
   REWRITE_TAC[TL;LAST];
   ASM_MESON_TAC[NOT_CONS_NIL];
-]);;  
+]);;
 (* }}} *)
 
 let LENGTH_TL = prove_by_refinement(

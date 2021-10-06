@@ -1,4 +1,4 @@
-let [pth_0g;pth_0l;pth_gg;pth_gl;pth_lg;pth_ll] = 
+let [pth_0g;pth_0l;pth_gg;pth_gl;pth_lg;pth_ll] =
    (CONJUNCTS o prove)
    (`((p = &0) ==> c > &0 ==> (c * p = &0)) /\
      ((p = &0) ==> c < &0 ==> (c * p = &0)) /\
@@ -6,7 +6,7 @@ let [pth_0g;pth_0l;pth_gg;pth_gl;pth_lg;pth_ll] =
      (p > &0 ==> c < &0 ==> c * p < &0) /\
      (p < &0 ==> c > &0 ==> c * p < &0) /\
      (p < &0 ==> c < &0 ==> c * p > &0)`,
-    SIMP_TAC[REAL_MUL_RZERO] THEN                          
+    SIMP_TAC[REAL_MUL_RZERO] THEN
     REWRITE_TAC[REAL_ARITH `(x > &0 <=> &0 < x) /\ (x < &0 <=> &0 < --x)`;
                 REAL_ARITH `~(p = &0) <=> p < &0 \/ p > &0`] THEN
     REWRITE_TAC[IMP_IMP] THEN
@@ -128,7 +128,7 @@ let PULL_CASES_THM_NZ = prove
    ((p <=> a > &0 /\ p1 \/ a < &0 /\ p2)))`,
 (* {{{ Proof *)
    REWRITE_TAC[NEQ] THEN
-   REPEAT STRIP_TAC THEN  
+   REPEAT STRIP_TAC THEN
    REWRITE_TAC[NEQ] THEN
    MAP_EVERY BOOL_CASES_TAC [`p:bool`; `p0:bool`; `p1:bool`; `p2:bool`] THEN
    ASM_REWRITE_TAC[] THEN TRY (POP_ASSUM MP_TAC THEN REAL_ARITH_TAC)

@@ -23,10 +23,10 @@ valid on all integral domains (see below).
 \EXAMPLE
 Here is a nice identity taken from one of Ramanujan's notebooks:
 {
-  # INT_RING 
+  # INT_RING
      `!a b c:int.
        a + b + c = &0
-       ==> &2 * (a * b + a * c + b * c) pow 2 = 
+       ==> &2 * (a * b + a * c + b * c) pow 2 =
              a pow 4 + b pow 4 + c pow 4 /\
            &2 * (a * b + a * c + b * c) pow 4 =
              (a * (b - c)) pow 4 + (b * (a - c)) pow 4 + (c * (a - b)) pow 4`;;
@@ -38,7 +38,7 @@ Here is a nice identity taken from one of Ramanujan's notebooks:
                &2 * (a * b + a * c + b * c) pow 4 =
                (a * (b - c)) pow 4 + (b * (a - c)) pow 4 + (c * (a - b)) pow 4
 }
-The reasoning {INT_RING} is capable of includes, of course, the degenerate case 
+The reasoning {INT_RING} is capable of includes, of course, the degenerate case
 of simple algebraic identity, e.g. Brahmagupta's identity:
 {
   # INT_RING `(a pow 2 + b pow 2) * (c pow 2 + d pow 2) =

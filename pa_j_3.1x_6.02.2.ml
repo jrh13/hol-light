@@ -1125,7 +1125,7 @@ value next_token_after_spaces ctx bp =
       jrh_identifier ctx.find_kwd id
 (********** JRH: original was
       try ("", ctx.find_kwd id) with [ Not_found -> ("LIDENT", id) ]
- *********)               
+ *********)
   | '1'-'9' number!
   | "0" [ 'o' | 'O' ] (digits octal)!
   | "0" [ 'x' | 'X' ] (digits hexa)!

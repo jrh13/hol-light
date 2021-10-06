@@ -25,12 +25,12 @@ Fails unless the theorem has a conclusion which is instantiable to match that
 of the goal.
 
 \EXAMPLE
-The following example shows variable and type instantiation at work. Suppose we 
+The following example shows variable and type instantiation at work. Suppose we
 have the following simple goal:
 {
   # g `HD [1;2] = 1`;;
 }
-\noindent we can do it via the polymorphic theorem 
+\noindent we can do it via the polymorphic theorem
 {HD = |- !h t. HD(CONS h t) = h}:
 {
   # e(MATCH_ACCEPT_TAC HD);;

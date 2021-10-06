@@ -6,9 +6,9 @@
 Strip away a given number of arguments from a combination.
 
 \DESCRIBE
-Given a number {n} and a combination term {`f a1 ... an`}, the function 
+Given a number {n} and a combination term {`f a1 ... an`}, the function
 {strip_ncomb} returns the result of stripping away exactly {n} arguments:
-the pair {`f`,[`a1`;...;`an`]}. Note that exactly {n} arguments are stripped 
+the pair {`f`,[`a1`;...;`an`]}. Note that exactly {n} arguments are stripped
 even if {f} is a combination.
 
 \FAILURE

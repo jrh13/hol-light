@@ -19,7 +19,7 @@ Never fails but may have no effect
 {
   # let tm = `((x MOD n) + (y MOD n * 3) EXP 2) MOD n`;;
   val tm : term = `(x MOD n + (y MOD n * 3) EXP 2) MOD n`
-  
+
   # MOD_DOWN_CONV tm;;
   val it : thm =
     |- (x MOD n + (y MOD n * 3) EXP 2) MOD n = (x + (y * 3) EXP 2) MOD n

@@ -38,12 +38,12 @@ order:
 This function uses the Quicksort algorithm internally, which has good
 typical-case performance and will sort topologically. However, its worst-case
 performance is quadratic. By contrast {mergesort} gives a good worst-case
-performance but requires a total order. Note that any comparison-based 
-topological sorting function must have quadratic behaviour in the worst case. 
-For an $n$-element list, there are $n (n - 1) / 2$ pairs. For any topological 
-sorting algorithm, we can make sure the first $n (n - 1) / 2 - 1$ pairs 
+performance but requires a total order. Note that any comparison-based
+topological sorting function must have quadratic behaviour in the worst case.
+For an $n$-element list, there are $n (n - 1) / 2$ pairs. For any topological
+sorting algorithm, we can make sure the first $n (n - 1) / 2 - 1$ pairs
 compared are unrelated in either direction, while still leaving the option of
-choosing for the last pair $(a,b)$ either $a < b$ or $b < a$, eventually giving 
+choosing for the last pair $(a,b)$ either $a < b$ or $b < a$, eventually giving
 a partial order. So at least $n (n - 1) / 2$ comparisons are needed to
 distinguish these two partial orders correctly.
 

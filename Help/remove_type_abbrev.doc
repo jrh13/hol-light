@@ -6,9 +6,9 @@
 Removes use of name as a type abbreviation.
 
 \DESCRIBE
-A call {remove_type_abbrev "s"} removes any use of {s} as a type abbreviation, 
-whether there is one already. Note that since type abbreviations have no 
-logical status, being only a parsing abbreviation, this has no logical 
+A call {remove_type_abbrev "s"} removes any use of {s} as a type abbreviation,
+whether there is one already. Note that since type abbreviations have no
+logical status, being only a parsing abbreviation, this has no logical
 significance.
 
 \FAILURE

@@ -36,7 +36,7 @@
 \pagebreak
 % References
 \begin{thebibliography}{9}
-\bibitem{HOL} HOL Light home page\\ 
+\bibitem{HOL} HOL Light home page\\
   \url{http://www.cl.cam.ac.uk/~jrh13/hol-light}
 
 \bibitem{HOL-repo} HOL Light repository\\
@@ -109,8 +109,8 @@ can be verified with the following script
 needs "verifier/m_verifier_main.hl";;
 open M_verifier_main;;
 
-let ineq = 
-  `-- &1 / sqrt(&3) <= x /\ x <= sqrt(&2) /\ 
+let ineq =
+  `-- &1 / sqrt(&3) <= x /\ x <= sqrt(&2) /\
    -- sqrt(pi) <= y /\ y <= &1
    ==> x pow 2 * y - x * y pow 4 + y pow 6 - &7 + x pow 4 > -- #7.17995`;;
 
@@ -184,9 +184,9 @@ The field \verb|total_time| contains total verification time. The field \verb|fo
 
 The conclusion of the returned theorem is not exactly the same as the third parameter of the verification function: the order of bounds of variables may be altered and variables which are not used in the inequality are eliminated. For example, commands
 \begin{verbatim}
-let th1, _ = verify_ineq default_params 3 
+let th1, _ = verify_ineq default_params 3
   `&1 <= y /\ y <= &2 /\ &1 <= x /\ x <= &3 ==> x + y < &6`;;
-let th2, _ = verify_ineq default_params 3 
+let th2, _ = verify_ineq default_params 3
   `&1 <= y /\ y <= &2 /\ &1 <= x /\ x <= &3 ==> y < &3`;;
 \end{verbatim}
 return
@@ -203,7 +203,7 @@ The options which affect the arithmetic operations with natural and floating poi
 
 \begin{enumerate}
 % base
-\item[\bf base] Determines the base for representing natural numbers. Default HOL Light 
+\item[\bf base] Determines the base for representing natural numbers. Default HOL Light
 representation of natural numbers is binary (i.e., its base is 2). A higher base increases speed of arithmetic operations but it also requires more memory to remember additional theorems. The default value of the base is \verb|100|. To set a new base, use the command
 
 \verb|Arith_options.base := 200;;|
@@ -274,7 +274,7 @@ Here is the list of all examples.
 \end{eqnarray*}
 
 % rd
-\item[\bf rd] 
+\item[\bf rd]
 \begin{eqnarray*}
 &-36.7126907 < -x_1 + 2 x_2 - x_3 - 0.835634534\, x_2 (1 + x_2)\\
 &(x_1, x_2, x_3) \in [(-5,-5,-5),(5,5,5)]

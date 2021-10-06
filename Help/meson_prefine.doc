@@ -7,22 +7,22 @@ Makes {MESON} apply Plaisted's positive refinement.
 
 \DESCRIBE
 This is one of several parameters determining the behavior of {MESON},
-{MESON_TAC} and related rules and tactics. When the flag {meson_prefine} is 
-{true}, as it is by default, Plaisted's ``positive refinement'' is used in 
-proof search; this limits the search space at the cost of sometimes requiring 
-longer proofs. When {meson_prefine} is false, this refinement is not applied. 
+{MESON_TAC} and related rules and tactics. When the flag {meson_prefine} is
+{true}, as it is by default, Plaisted's ``positive refinement'' is used in
+proof search; this limits the search space at the cost of sometimes requiring
+longer proofs. When {meson_prefine} is false, this refinement is not applied.
 
 \FAILURE
 Not applicable.
 
 \USES
-For users requiring fine control over the algorithms used in {MESON}'s 
+For users requiring fine control over the algorithms used in {MESON}'s
 first-order proof search.
 
 \COMMENTS
-For more details, see Plaisted's article ``A Sequent-Style Model Elimination 
-Strategy and a Positive Refinement'', Journal of Automated Reasoning volume 6, 
-1990.                      
+For more details, see Plaisted's article ``A Sequent-Style Model Elimination
+Strategy and a Positive Refinement'', Journal of Automated Reasoning volume 6,
+1990.
 
 \SEEALSO
 meson_brand, meson_chatty, meson_dcutin, meson_depth, meson_skew,

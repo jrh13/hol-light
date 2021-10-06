@@ -6,18 +6,18 @@
 Fail with empty string.
 
 \DESCRIBE
-In HOL Light, the class of exceptions {Failure "string"} is used consistently. 
-This makes it easy to catch all HOL-related exceptions by a {Failure _} pattern 
-without accidentally catching others. In general, the failure can be generated 
-by {failwith "string"}, but the special case of an empty string is bound to the 
-function {fail}. 
+In HOL Light, the class of exceptions {Failure "string"} is used consistently.
+This makes it easy to catch all HOL-related exceptions by a {Failure _} pattern
+without accidentally catching others. In general, the failure can be generated
+by {failwith "string"}, but the special case of an empty string is bound to the
+function {fail}.
 
 \FAILURE
 Always fails.
 
 \USES
 Useful when there is no intention to propagate helpful information about the
-cause of the exception, for example because you know it will be caught and 
+cause of the exception, for example because you know it will be caught and
 handled without discrimination.
 
 \SEEALSO

@@ -24,6 +24,6 @@ OCaml type {num}. However, none of HOL's inference rules depend on the
 behaviour of machine integers, so logical soundness is not an issue.
 
 \SEEALSO
-dest_numeral, dest_small_numeral, is_numeral, mk_numeral, term_of_rat. 
+dest_numeral, dest_small_numeral, is_numeral, mk_numeral, term_of_rat.
 
 \ENDDOC

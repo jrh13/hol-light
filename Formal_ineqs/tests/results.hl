@@ -45,7 +45,7 @@ ftest2 rep "log_big/div_hi.log" Arith_float.float_div_hi;;
 ftest2 rep "log_big/div_lo.log" Arith_float.float_div_lo;;
 
 
-arith_test1d rep "data/nat15.txt" 
+arith_test1d rep "data/nat15.txt"
   `SUC`  Arith_nat.raw_suc_conv_hash;;
 
 new_arith_test1d rep "data/nat15.txt"
@@ -55,7 +55,7 @@ new_arith_test1d rep "data/nat15.txt"
 (* Addition *)
 
 (* 100: 2.189 +/- 0.053 *)
-arith_test2d rep "data/nat10.txt" 
+arith_test2d rep "data/nat10.txt"
   `(+):num->num->num`
   Arith_nat.raw_add_conv_hash;;
 
@@ -67,7 +67,7 @@ new_arith_test2d rep "data/nat10.txt"
 (* Subtraction *)
 
 (* 100: 3.482 +/- 0.043 *)
-arith_test2d rep "data/nat10.txt" 
+arith_test2d rep "data/nat10.txt"
   `(-):num->num->num`
   Arith_nat.raw_sub_hash_conv;;
 
@@ -79,7 +79,7 @@ new_arith_test2d rep "data/nat10.txt"
 (* Multiplication *)
 
 (* 100: 36.875 +/- 0.184 *)
-arith_test2d rep "data/nat10.txt" 
+arith_test2d rep "data/nat10.txt"
   `( * ):num->num->num`
   Arith_nat.raw_mul_conv_hash;;
 
@@ -91,7 +91,7 @@ new_arith_test2d rep "data/nat10.txt"
 (* Division *)
 
 (* 100:  +/-  *)
-arith_test2d rep "data/nat10_small.txt" 
+arith_test2d rep "data/nat10_small.txt"
   `DIV:num->num->num`
   Arith_nat.raw_div_hash_conv;;
 

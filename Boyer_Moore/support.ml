@@ -62,7 +62,7 @@ let lcombinep (x,y) = List.combine x y;;
 let lcount x l = length ( filter ((=) x) l );;
 
 
-let list_mk_imp (tms,tm) = 
+let list_mk_imp (tms,tm) =
      if (tms = []) then tm
      else try itlist (fun p q -> mk_imp (p,q)) tms tm with Failure _ -> failwith "list_mk_imp";;
 
@@ -75,7 +75,7 @@ let INDUCT_TAC_ thm = MATCH_MP_TAC thm THEN
 (* Checks whether the elements of a list are all distinct.                  *)
 (*--------------------------------------------------------------------------*)
 
-let rec distinct x = 
+let rec distinct x =
      if (x = []) then true
      else not (mem (hd x) (tl x)) && distinct (tl x);;
 
@@ -163,7 +163,7 @@ let rec sort_on_snd l =
 (*----------------------------------------------------------------------------*)
 
 let rec conj_list tm =
-   try 
+   try
       (let (tm1,tm2) = dest_conj tm
        in  tm1::(conj_list tm2))
    with Failure _ -> [tm];;
@@ -191,7 +191,7 @@ let rec disj_list tm =
 (*----------------------------------------------------------------------------*)
 
 let find_bm_terms p tm =
- try 
+ try
    (let rec accum tml p tm =
      let tml' = if (p tm) then (tm::tml) else tml
      in ( let args = snd (strip_comb tm)

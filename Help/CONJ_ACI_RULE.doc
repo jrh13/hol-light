@@ -12,7 +12,7 @@ sides of the equation are conjunctions of exactly the same set of conjuncts,
 corresponding theorem {|- t1 /\ ... /\ tn <=> u1 /\ ... /\ um}.
 
 \FAILURE
-Fails if applied to a term that is not a Boolean equation or the two sets of 
+Fails if applied to a term that is not a Boolean equation or the two sets of
 conjuncts are different.
 
 \EXAMPLE
@@ -22,8 +22,8 @@ conjuncts are different.
 }
 
 \COMMENTS
-The same effect can be had with the more general {AC} construct. However, for 
-the special case of conjunction, {CONJ_ACI_RULE} is substantially more 
+The same effect can be had with the more general {AC} construct. However, for
+the special case of conjunction, {CONJ_ACI_RULE} is substantially more
 efficient when there are many conjuncts involved.
 
 \SEEALSO

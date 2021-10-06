@@ -17,7 +17,7 @@ let EGCD_INVARIANT = thm `;
       !d. d divides
           (if m = 0
            then n
-           else 
+           else
           if n = 0
           then m
           else if m <= n then egcd (m,n - m) else egcd (m - n,n)) <=>
@@ -30,7 +30,7 @@ let EGCD_INVARIANT = thm `;
         ==> (d divides
              (if n = 0
               then m
-              else 
+              else
              if m <= n then egcd (m,n - m) else egcd (m - n,n)) <=>
              d divides m /\ d divides n) [5]
         proof

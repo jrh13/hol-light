@@ -6,10 +6,10 @@
 Expand an abbreviation in the hypotheses.
 
 \DESCRIBE
-The tactic {EXPAND_TAC "x"}, applied to a goal, looks for a hypothesis of the 
-form {`t = x`} where {x} is a variable with the given name. It then replaces 
+The tactic {EXPAND_TAC "x"}, applied to a goal, looks for a hypothesis of the
+form {`t = x`} where {x} is a variable with the given name. It then replaces
 {x} by {t} throughout the conclusion of the goal.
- 
+
 \FAILURE
 Fails if there is no suitable assumption in the goal.
 
@@ -26,9 +26,9 @@ Consider the final goal in the example given for {ABBREV_TAC}:
 {
   # e(EXPAND_TAC "n");;
   val it : goalstack = 1 subgoal (1 total)
-  
+
    0 [`12345 + 12345 = n`]
-  
+
   `(12345 + 12345) + f (12345 + 12345) = f (12345 + 12345)`
 }
 

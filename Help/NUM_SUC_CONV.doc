@@ -14,11 +14,11 @@ If {n} is a numeral (e.g. {0}, {1}, {2}, {3},...), then
 {
    |- SUC n = s
 }
-\noindent where {s} is the numeral that denotes the successor of the natural 
+\noindent where {s} is the numeral that denotes the successor of the natural
 number denoted by {n} (that is, the result of adding 1 to it).
 
 \FAILURE
-{NUM_SUC_CONV tm} fails if {tm} is not of the form  {`SUC n`}, where {n} is a 
+{NUM_SUC_CONV tm} fails if {tm} is not of the form  {`SUC n`}, where {n} is a
 numeral.
 
 \EXAMPLE

@@ -6,18 +6,18 @@
 Tests if a one-character string is a symbol other than bracket or separator.
 
 \DESCRIBE
-The call {issymb s} tests whether the first character of string {s} (normally 
-it is the only character) is ``symbolic''. This means that it is one of the 
+The call {issymb s} tests whether the first character of string {s} (normally
+it is the only character) is ``symbolic''. This means that it is one of the
 usual ASCII characters but is not alphanumeric, not an underscore or prime
 character, and is also not one of the two separators `{,}' or `{;}' nor any
-bracket, parenthesis or curly brace. More explicitly, the set of symbolic 
+bracket, parenthesis or curly brace. More explicitly, the set of symbolic
 characters is:
 {
   \ ! @ # $ % ^ & * - + | \ \ < = > / ? ~ . :
 }
 
 \FAILURE
-Fails if the string is empty.            
+Fails if the string is empty.
 
 \SEEALSO
 isalnum, isalpha, isbra, isnum, issep, isspace.

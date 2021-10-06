@@ -6,7 +6,7 @@
 Define a set or family of sets inductively.
 
 \DESCRIBE
-The function {new_inductive_set} is applied to a conjunction of ``rules'', each 
+The function {new_inductive_set} is applied to a conjunction of ``rules'', each
 of the form {!x1...xn. Pi ==> ti IN Sk}. This conjunction is interpreted as an
 inductive definition of a family of sets {Sk} (however many appear in the
 consequents of the rules). That is, the sets are defined to be the smallest

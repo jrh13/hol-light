@@ -6,12 +6,12 @@
 Constructs a generalized abstraction.
 
 \DESCRIBE
-Given a pair of terms {s} and {t}, the call {mk_gabs(s,t)} constructs a 
-canonical `generalized abstraction' that is thought of as `some function that 
-always maps {s} to {t}'. In the case where {s} is a variable, the result is an 
-ordinary abstraction as constructed by {mk_abs}. In other cases, the canonical 
-composite structure is created. Note that the logical construct is welldefined 
-even if there is no function mapping {s} to {t}, and this function will 
+Given a pair of terms {s} and {t}, the call {mk_gabs(s,t)} constructs a
+canonical `generalized abstraction' that is thought of as `some function that
+always maps {s} to {t}'. In the case where {s} is a variable, the result is an
+ordinary abstraction as constructed by {mk_abs}. In other cases, the canonical
+composite structure is created. Note that the logical construct is welldefined
+even if there is no function mapping {s} to {t}, and this function will
 always succeed, even if the resulting structure is not really useful.
 
 \FAILURE
@@ -31,8 +31,8 @@ Here is a simple abstraction:
   # mk_gabs(`CONS (h:num) t`,`if h = 0 then t else CONS h t`);;
   val it : term = `\CONS h t. if h = 0 then t else CONS h t`
 }
-\noindent while here is a vacuous one about which nothing interesting will be 
-proved, because there is no welldefined function that always maps {x + y} to 
+\noindent while here is a vacuous one about which nothing interesting will be
+proved, because there is no welldefined function that always maps {x + y} to
 {x}:
 {
   # mk_gabs(`x + y:num`,`x:num`);;

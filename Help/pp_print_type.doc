@@ -6,14 +6,14 @@
 Prints a type (without colon or quotes) to formatter.
 
 \DESCRIBE
-The call {pp_print_type fmt ty} prints the usual textual representation of the 
+The call {pp_print_type fmt ty} prints the usual textual representation of the
 type {ty} to the formatter {fmt}. The string is just {ty} not {`:ty`}.
 
 \FAILURE
 Should never fail unless the formatter does.
 
 \COMMENTS
-The usual case where the formatter is the standard output is {print_type}. 
+The usual case where the formatter is the standard output is {print_type}.
 
 \SEEALSO
 pp_print_qtype, print_qtype, print_type.

@@ -50,8 +50,8 @@ quantified theorems. For example one might use the inbuilt theorem
 
   `0 < (x + SUC d) * (x + SUC d)`
 }
-\noindent which can then be finished off quite easily, by, for example just 
-{ARITH_TAC}, or 
+\noindent which can then be finished off quite easily, by, for example just
+{ARITH_TAC}, or
 {
   # e(REWRITE_TAC[ADD_CLAUSES; MULT_CLAUSES; LT_0]);;
 }

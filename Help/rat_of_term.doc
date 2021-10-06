@@ -7,7 +7,7 @@ Converts a canonical rational literal of type {:real} to an OCaml number.
 
 \DESCRIBE
 The call {rat_of_term t} where term {t} is a canonical rational literal of type
-{:real} returns the corresponding OCaml rational number (type {num}). The 
+{:real} returns the corresponding OCaml rational number (type {num}). The
 canonical literals are integer literals {&n} for numeral {n}, {-- &n} for a
 nonzero numeral {n}, or ratios {&p / &q} or {-- &p / &q} where {p} is nonzero,
 {q > 1} and {p} and {q} share no common factor.

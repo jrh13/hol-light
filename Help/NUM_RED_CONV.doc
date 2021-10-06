@@ -43,7 +43,7 @@ combinations of numerals, use {NUM_REDUCE_CONV}:
 }
 
 \USES
-Access to this `one-step' reduction is not usually especially useful, but if 
+Access to this `one-step' reduction is not usually especially useful, but if
 you want to add a conversion {conv} for some other operator on numbers, you can
 conveniently incorporate it into {NUM_REDUCE_CONV} with
 {

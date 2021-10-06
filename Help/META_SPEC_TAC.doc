@@ -23,7 +23,7 @@ Delaying instantiations until the right choice becomes clearer.
 
 \COMMENTS
 Users should probably steer clear of using metavariables if possible. Note that
-the metavariable instantiations apply across the whole fringe of goals, not 
+the metavariable instantiations apply across the whole fringe of goals, not
 just the current goal, and can lead to confusion.
 
 \SEEALSO

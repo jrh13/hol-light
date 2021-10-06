@@ -9,12 +9,12 @@ Evaluate subexpressions of goal built up from natural number numerals.
 conversion, number, arithmetic.
 
 \DESCRIBE
-When applied to a goal, {NUM_REDUCE_TAC} performs a recursive bottom-up 
+When applied to a goal, {NUM_REDUCE_TAC} performs a recursive bottom-up
 evaluation by proof of subterms of the conclusion built from numerals using the
 unary operators `{SUC}', `{PRE}' and `{FACT}' and the binary arithmetic (`{+}',
 `{-}', `{*}', `{EXP}', `{DIV}', `{MOD}') and relational (`{<}', `{<=}', `{>}',
 `{>=}', `{=}') operators, as well as propagating constants through logical
-operations, e.g. {T /\ x <=> x}, returning a new subgoal where all these 
+operations, e.g. {T /\ x <=> x}, returning a new subgoal where all these
 subexpressions are reduced.
 
 \FAILURE
@@ -24,9 +24,9 @@ Never fails, but may have no effect.
 {
   # g `1 EXP 3 + 12 EXP 3 = 1729 /\ 9 EXP 3 + 10 EXP 3 = 1729`;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `1 EXP 3 + 12 EXP 3 = 1729 /\ 9 EXP 3 + 10 EXP 3 = 1729`
-  
+
   # e NUM_REDUCE_TAC;;
   val it : goalstack = No subgoals
 }

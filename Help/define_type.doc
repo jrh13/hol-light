@@ -6,11 +6,11 @@
 Automatically define user-specified inductive data types.
 
 \DESCRIBE
-The function {define_type} automatically defines an inductive data type or a 
-mutually inductive family of them. These may optionally contain nested 
-instances of other inductive data types. The function returns two theorems that 
-together identify the type up to isomorphism. The input is just a string 
-indicating the desired pattern of recursion. The simplest case where we define 
+The function {define_type} automatically defines an inductive data type or a
+mutually inductive family of them. These may optionally contain nested
+instances of other inductive data types. The function returns two theorems that
+together identify the type up to isomorphism. The input is just a string
+indicating the desired pattern of recursion. The simplest case where we define
 a single type is:
 {
    "op = C1 ty ... ty | C2 ty ... ty | ... | Cn ty ... ty"
@@ -18,7 +18,7 @@ a single type is:
 \noindent where {op} is the name of the type constant or type operator to be
 defined, {C1}, ..., {Cn} are identifiers, and each {ty} is either a (logical)
 type expression valid in the current theory (in which case {ty} must not
-contain {op}) or just the identifier "{op}' itself. 
+contain {op}) or just the identifier "{op}' itself.
 
 A string of this form describes an n-ary type operator {op}, where n is the
 number of distinct type variables in the types {ty} on the right hand side of
@@ -31,9 +31,9 @@ itself, then the equation specifies a recursive data type.  In any
 specification, at least one constructor must be non-recursive, i.e. all its
 arguments must have types which already exist in the current theory.
 
-Each of the types {ty} above may be built from the type being defined using 
-other inductive type operators already defined, e.g. {list}. Moreover, one can 
-actually have a mutually recursive family of types, where the format is a 
+Each of the types {ty} above may be built from the type being defined using
+other inductive type operators already defined, e.g. {list}. Moreover, one can
+actually have a mutually recursive family of types, where the format is a
 sequence of specifications in the above form separated by semicolons:
 {
   "op1 = C1_1 ty ... ty | C1_2 ty ... ty | ... | C1_n1 ty ... ty;
@@ -44,16 +44,16 @@ sequence of specifications in the above form separated by semicolons:
 
 Given a type specification of the form described above, {define_type} makes an
 appropriate type definition for the type operator or type operators.  It then
-makes appropriate definitions for the constants {Ci_j} and automatically proves 
-and returns two theorems that characterize the type up to isomorphism. Roughly, 
-the first theorem allows one to prove properties over the new (family of) types 
-by (mutual) induction, while the latter allows one to defined functions by 
-recursion. Rather than presenting these in full generality, it is probably 
+makes appropriate definitions for the constants {Ci_j} and automatically proves
+and returns two theorems that characterize the type up to isomorphism. Roughly,
+the first theorem allows one to prove properties over the new (family of) types
+by (mutual) induction, while the latter allows one to defined functions by
+recursion. Rather than presenting these in full generality, it is probably
 easier to consider some simple examples.
 
 \FAILURE
-The evaluation fails if one of the types or constructor constants is already 
-defined, or if there are certain improper kinds of recursion, e.g. involving 
+The evaluation fails if one of the types or constructor constants is already
+defined, or if there are certain improper kinds of recursion, e.g. involving
 function spaces of one of the types being defined.
 
 \EXAMPLE
@@ -79,7 +79,7 @@ defined using {define_type} is a type of binary trees:
 }
 \noindent The theorem returned by {define_type} in this case asserts the unique
 existence of functions defined by primitive recursion over labelled binary
-trees. For an example of nested recursion, here we use the type of lists in a 
+trees. For an example of nested recursion, here we use the type of lists in a
 nested fashion to define a type of first-order terms:
 {
   # define_type "term = Var num | Fn num (term list)";;
@@ -97,12 +97,12 @@ nested fashion to define a type of first-order terms:
                 fn0 [] = f2 /\
                 (!a0 a1. fn0 (CONS a0 a1) = f3 a0 a1 (fn1 a0) (fn0 a1)))
 }
-\noindent and here we have an example of mutual recursion, defining syntax 
+\noindent and here we have an example of mutual recursion, defining syntax
 trees for commands and expressions for a hypothetical programming language:
 {
-  # define_type "command = Assign num expression 
+  # define_type "command = Assign num expression
                          | Ite expression command command;
-                 expression = Variable num 
+                 expression = Variable num
                             | Constant num
                             | Plus expression expression
                             | Valof command";;

@@ -6,7 +6,7 @@
 Load a file, much like OCaml's {#use} directive.
 
 \DESCRIBE
-Essentially the same as OCaml's {#use} directive, but a regular OCaml function 
+Essentially the same as OCaml's {#use} directive, but a regular OCaml function
 and therefore easier to exploit programmatically.
 
 \FAILURE

@@ -187,7 +187,7 @@ parse_as_infix("<<<",(12,"right"));;
 
 let WF_SUBSET = prove
  (`!(<<) (<<<). (!(x:A) y. x << y ==> x <<< y) /\ WF(<<<) ==> WF(<<)`,
-  REPEAT GEN_TAC THEN 
+  REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN REWRITE_TAC[WF] THEN
   DISCH_TAC THEN GEN_TAC THEN DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN
   UNDISCH_TAC `!(x:A) (y:A). x << y ==> x <<< y` THEN MESON_TAC[]);;

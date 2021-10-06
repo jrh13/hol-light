@@ -919,19 +919,19 @@ let FUNCTIONS_TERM_FNV1 = prove
  (`functions_term (Fn p (MAP FST (Varpairs n))) = {(p,n)}`,
   REWRITE_TAC[functions_term; LENGTH_MAP; LENGTH_VARPAIRS] THEN
   AP_TERM_TAC THEN SPEC_TAC(`n:num`,`n:num`) THEN
-  INDUCT_TAC THEN 
+  INDUCT_TAC THEN
   REWRITE_TAC[MAP; Varpairs_DEF; functions_term; LIST_UNION] THEN
   ASM_REWRITE_TAC[UNION_EMPTY]);;
 
 let FUNCTIONS_FORM_FNV1 = prove
  (`!n. LIST_UNION (MAP functions_term (MAP FST (Varpairs n))) = EMPTY`,
-  INDUCT_TAC THEN 
+  INDUCT_TAC THEN
   REWRITE_TAC[MAP; Varpairs_DEF; functions_term; LIST_UNION] THEN
   ASM_REWRITE_TAC[UNION_EMPTY]);;
 
 let FUNCTIONS_FORM_FNV2 = prove
  (`!n. LIST_UNION (MAP functions_term (MAP SND (Varpairs n))) = EMPTY`,
-  INDUCT_TAC THEN 
+  INDUCT_TAC THEN
   REWRITE_TAC[MAP; Varpairs_DEF; functions_term; LIST_UNION] THEN
   ASM_REWRITE_TAC[UNION_EMPTY]);;
 
@@ -939,7 +939,7 @@ let FUNCTIONS_TERM_FNV2 = prove
  (`functions_term (Fn p (MAP SND (Varpairs n))) = {(p,n)}`,
   REWRITE_TAC[functions_term; LENGTH_MAP; LENGTH_VARPAIRS] THEN
   AP_TERM_TAC THEN SPEC_TAC(`n:num`,`n:num`) THEN
-  INDUCT_TAC THEN 
+  INDUCT_TAC THEN
   REWRITE_TAC[MAP; Varpairs_DEF; functions_term; LIST_UNION] THEN
   ASM_REWRITE_TAC[UNION_EMPTY]);;
 
@@ -956,9 +956,9 @@ let FUNCTIONS_EQAXIOM_FUNC = prove
  (`!fa. functions_form (Eqaxiom_Func fa) = {fa}`,
   REWRITE_TAC[FORALL_PAIR_THM; Eqaxiom_Func] THEN
   REWRITE_TAC[FUNCTIONS_FORM_UCLOSE] THEN
-  REWRITE_TAC[functions_form; Equal_DEF; MAP; LIST_UNION] THEN                 
-  REWRITE_TAC[FUNCTIONS_TERM_FNV1; FUNCTIONS_TERM_FNV2] THEN                   
-  REWRITE_TAC[FUNCTIONS_EQCONJ] THEN                                           
+  REWRITE_TAC[functions_form; Equal_DEF; MAP; LIST_UNION] THEN
+  REWRITE_TAC[FUNCTIONS_TERM_FNV1; FUNCTIONS_TERM_FNV2] THEN
+  REWRITE_TAC[FUNCTIONS_EQCONJ] THEN
   REWRITE_TAC[UNION_EMPTY; UNION_IDEMPOT]);;
 
 let FUNCTIONS_EQAXIOM_PRED = prove

@@ -11,7 +11,7 @@ The {REAL_LINEAR_PROVER} function should be given two arguments. The first is a
 proof translator that constructs a contradiction from a tuple of three theorem
 lists using a Positivstellensatz refutation, which is essentially a
 representation of how to add and multiply equalities or inequalities chosen
-from the list to reach a trivially false equation or inequality such as 
+from the list to reach a trivially false equation or inequality such as
 {&0 > &0}. The second argument is a triple of theorem lists, respectively a
 list of equations of the form {A_i |- p_i = &0}, a list of non-strict
 inequalities of the form {B_j |- q_i >= &0}, and a list of strict inequalities

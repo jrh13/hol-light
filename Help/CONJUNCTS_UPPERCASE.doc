@@ -23,7 +23,7 @@ Never fails.
 {
   # CONJUNCTS(ASSUME `(x /\ y) /\ z /\ w`);;
   val it : thm list =
-    [(x /\ y) /\ z /\ w |- x; (x /\ y) /\ z /\ w |- y; (x /\ y) /\ z /\ w 
+    [(x /\ y) /\ z /\ w |- x; (x /\ y) /\ z /\ w |- y; (x /\ y) /\ z /\ w
      |- z; (x /\ y) /\ z /\ w |- w]
 }
 

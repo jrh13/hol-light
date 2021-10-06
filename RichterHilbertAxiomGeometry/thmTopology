@@ -445,7 +445,7 @@ ConnectedClosedIn
 
 ConnectedSubtopology
   |- ∀α s.  s ⊂ topspace α
-         ⇒ (Connected (subtopology α s) ⇔ 
+         ⇒ (Connected (subtopology α s) ⇔
               ¬(∃e1 e2.  open_in α e1 ∧ open_in α e2 ∧
                     s ⊂ e1 ∪ e2 ∧ e1 ∩ e2 ∩ s = ∅ ∧
                     ¬(e1 ∩ s = ∅) ∧ ¬(e2 ∩ s = ∅)))
@@ -536,7 +536,7 @@ ConnectedInduction
   |- ∀α P Q s. s ⊂ topspace α ⇒ Connected (subtopology α s) ∧
              (∀t a. open_in (subtopology α s) t ∧ a ∈ t
                   ⇒ (∃z. z ∈ t ∧ P z)) ∧
-             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ a ∈ t ∧ 
+             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ a ∈ t ∧
                            (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ∧ Q x ⇒ Q y)))
          ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ∧ Q a ⇒ Q b)
 
@@ -565,7 +565,7 @@ ConnectedInductionSimple
 ConnectedEquivalenceRelation
   |- ∀α R s. s ⊂ topspace α ⇒ Connected (subtopology α s) ∧
              (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
-             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧ 
+             (∀a. a ∈ s ⇒ (∃t. open_in (subtopology α s) t ∧
                            a ∈ t ∧ (∀x. x ∈ t ⇒ R a x)))
          ⇒ (∀a b. a ∈ s ∧ b ∈ s ⇒ R a b)
 
@@ -943,7 +943,7 @@ FrontierDisjointEq
   |- ∀α s. s ⊂ topspace α ⇒ (Frontier α s ∩ s = ∅ ⇔ open_in α s)
 
 FrontierInterSubset
-  |- ∀α s t. s ∪ t ⊂ topspace α 
+  |- ∀α s t. s ∪ t ⊂ topspace α
          ⇒ Frontier α (s ∩ t) ⊂ Frontier α s ∪ Frontier α t
 
 FrontierUnionSubset
@@ -954,7 +954,7 @@ FrontierInteriors
   |- ∀α s. s ⊂ topspace α ⇒ Frontier α s =
              topspace α ━ Interior α s ━ Interior α (topspace α ━ s)
 
-FrontierFrontierSubset 
+FrontierFrontierSubset
   |- ∀α s. s ⊂ topspace α ⇒ Frontier α (Frontier α s) ⊂ Frontier α s
 
 InteriorFrontier
@@ -974,7 +974,7 @@ UnionFrontierPart1
 
 UnionFrontierPart2
   |- ∀α s t. s ∪ t ⊂ topspace α
-         ⇒ Frontier α s ━ Frontier α t ⊂ 
+         ⇒ Frontier α s ━ Frontier α t ⊂
              Frontier α (s ∩ t) ∪ Frontier α (s ∪ t)
 
 UnionFrontierPart3
@@ -985,7 +985,7 @@ UnionFrontierPart3
 UnionFrontier
   |- ∀α s t. s ∪ t ⊂ topspace α
          ⇒ Frontier α s ∪ Frontier α t =
-             Frontier α (s ∪ t) ∪ 
+             Frontier α (s ∪ t) ∪
              Frontier α (s ∩ t) ∪
              Frontier α s ∩ Frontier α t
 
@@ -1016,7 +1016,7 @@ FrontierInterSubsetInter
              Closure α s ∩ Frontier α t ∪ Frontier α s ∩ Closure α t
 
 FrontierUnionPart1
-  |- ∀α s t. s ∪ t ⊂ topspace α ⇒ Closure α s ∩ Closure α t = ∅ 
+  |- ∀α s t. s ∪ t ⊂ topspace α ⇒ Closure α s ∩ Closure α t = ∅
          ⇒ Frontier α s ∩ Interior α (s ∪ t) = ∅
 
 FrontierUnion
@@ -1354,7 +1354,7 @@ CONNECTED_FROM_OPEN_UNION_AND_INTER
 
 CONNECTED_INDUCTION
   |- ∀P Q s. connected s ∧
-         (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t 
+         (∀t a. open_in (subtopology euclidean s) t ∧ a ∈ t
               ⇒ (∃z. z ∈ t ∧ P z)) ∧
          (∀a. a ∈ s ⇒ (∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
                        (∀x y. x ∈ t ∧ y ∈ t ∧ P x ∧ P y ∧ Q x ⇒ Q y)))
@@ -1378,15 +1378,15 @@ CONNECTED_EQUIVALENCE_RELATION_GEN
          ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ∧ P b ⇒ R a b)
 
 CONNECTED_INDUCTION_SIMPLE
-  |- ∀P s. connected s ∧ (∀a. a ∈ s 
+  |- ∀P s. connected s ∧ (∀a. a ∈ s
               ⇒ (∃t. open_in (subtopology euclidean s) t ∧
                        a ∈ t ∧ (∀x y. x ∈ t ∧ y ∈ t ∧ P x ⇒ P y)))
          ⇒ (∀a b. a ∈ s ∧ b ∈ s ∧ P a ⇒ P b)
 
 CONNECTED_EQUIVALENCE_RELATION
-  |- ∀R s. connected s ∧ 
+  |- ∀R s. connected s ∧
          (∀x y. R x y ⇒ R y x) ∧ (∀x y z. R x y ∧ R y z ⇒ R x z) ∧
-         (∀a. a ∈ s ⇒ (∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧ 
+         (∀a. a ∈ s ⇒ (∃t. open_in (subtopology euclidean s) t ∧ a ∈ t ∧
                        (∀x. x ∈ t ⇒ R a x)))
          ⇒ (∀a b. a ∈ s ∧ b ∈ s ⇒ R a b)
 
@@ -1593,7 +1593,7 @@ INTERIOR_CLOSURE_INTER_OPEN
              interior (closure s) ∩ interior (closure t)
 
 CLOSURE_INTERIOR_UNION_CLOSED
-  |- ∀s t. closed s ∧ closed t ⇒ 
+  |- ∀s t. closed s ∧ closed t ⇒
         closure (interior (s ∪ t)) = closure (interior s) ∪ closure (interior t)
 
 REGULAR_OPEN_INTER
@@ -1667,7 +1667,7 @@ INTERIOR_CLOSED_EQ_EMPTY_AS_FRONTIER
   |- ∀s. closed s ∧ interior s = ∅ ⇔ (∃t. open t ∧ s = frontier t)
 
 FRONTIER_UNION
-  |- ∀s t. closure s ∩ closure t = ∅ 
+  |- ∀s t. closure s ∩ closure t = ∅
          ⇒ frontier (s ∪ t) = frontier s ∪ frontier t
 
 CLOSURE_UNION_FRONTIER     |- ∀s. closure s = s ∪ frontier s

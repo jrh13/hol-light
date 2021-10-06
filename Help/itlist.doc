@@ -21,7 +21,7 @@ Never fails.
 
 \EXAMPLE
 {
-  # itlist (+) [1;2;3;4;5] 0;;        
+  # itlist (+) [1;2;3;4;5] 0;;
   val it : int = 15
   # itlist (+) [1;2;3;4;5] 6;;
   val it : int = 21

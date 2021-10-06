@@ -116,9 +116,9 @@ let FINITE_INDEX_NUMSEG = prove
         FINITE s <=>
         ?f. (!i j. i IN 1..CARD s /\ j IN 1..CARD s /\ f i = f j ==> i = j) /\
             s = IMAGE f (1..CARD s)`,
-  GEN_TAC THEN 
+  GEN_TAC THEN
   EQ_TAC THENL [DISCH_TAC; MESON_TAC[FINITE_IMAGE; FINITE_NUMSEG]] THEN
-  MP_TAC(ISPECL [`1..CARD(s:A->bool)`; `s:A->bool`] 
+  MP_TAC(ISPECL [`1..CARD(s:A->bool)`; `s:A->bool`]
         CARD_EQ_BIJECTIONS) THEN
   ASM_REWRITE_TAC[FINITE_NUMSEG; CARD_NUMSEG_1] THEN
   MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]);;

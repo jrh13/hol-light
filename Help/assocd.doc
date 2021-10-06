@@ -6,9 +6,9 @@
 Looks up item in association list taking default in case of failure.
 
 \DESCRIBE
-The call {assocd x [x1,y1; ...; xn,yn] y} returns the first {yi} in the list 
-where the corresponding {xi} is the same as {x}. If there is no such item, it 
-returns the value {y}. This is similar to {assoc} except that the latter will 
+The call {assocd x [x1,y1; ...; xn,yn] y} returns the first {yi} in the list
+where the corresponding {xi} is the same as {x}. If there is no such item, it
+returns the value {y}. This is similar to {assoc} except that the latter will
 fail rather than take a default.
 
 \FAILURE

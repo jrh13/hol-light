@@ -14,8 +14,8 @@ application {foldl f p a} returns
 {
  f x1 y1 (f x2 y2 (f x3 y3 (f ... (f xn yn a) ... )))
 }
-Note that the order in which the pairs are operated on depends on the internal  
-structure of the finite partial function, and is often not the most obvious.    
+Note that the order in which the pairs are operated on depends on the internal
+structure of the finite partial function, and is often not the most obvious.
 
 \FAILURE
 Fails if one of the embedded function applications does.
@@ -31,9 +31,9 @@ Fails if one of the embedded function applications does.
   # foldr (fun x y a -> (x,y)::a) f [];;
   val it : (int * int) list = [(2, 3); (1, 2)]
 }
-Note how the pairs are actually processed in the opposite order to the order in 
-which they are presented by {graph}. The order will in general not be obvious, 
-and generally this is applied to operations with appropriate commutativity 
+Note how the pairs are actually processed in the opposite order to the order in
+which they are presented by {graph}. The order will in general not be obvious,
+and generally this is applied to operations with appropriate commutativity
 properties.
 
 \SEEALSO

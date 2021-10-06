@@ -6,9 +6,9 @@
 Tests if an element is equivalent to a member of a list w.r.t. some relation.
 
 \DESCRIBE
-If {r} is a binary relation, {x} an element and {l} a list, the call 
-{mem' r x l} tests if there is an element in the list {l} that is equivalent to 
-{x} according to {r}, that is, if {r x x'} holds for some {x'} in {l}. The 
+If {r} is a binary relation, {x} an element and {l} a list, the call
+{mem' r x l} tests if there is an element in the list {l} that is equivalent to
+{x} according to {r}, that is, if {r x x'} holds for some {x'} in {l}. The
 function {mem} is the special case where the relation is equality.
 
 \FAILURE

@@ -26,9 +26,9 @@ let SUC_1 = prove(
 
 let even_tm = `EVEN`;;
 let odd_tm = `ODD`;;
-let PARITY_CONV tm = 
+let PARITY_CONV tm =
   let k = dest_small_numeral tm in
   if even k then
     prove(mk_comb(even_tm,tm),ARITH_TAC)
-  else 
+  else
     prove(mk_comb(odd_tm,tm),ARITH_TAC);;

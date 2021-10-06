@@ -9,7 +9,7 @@ Try user-defined printers on a term.
 HOL Light allows arbitrary user printers to be inserted into the toplevel
 printer so that they are invoked on all applicable subterms (see
 {install_user_printer}). The call {try_user_printer fmt tm} attempts all
-installed user printers on the term {tm} in an implementation-defined order, 
+installed user printers on the term {tm} in an implementation-defined order,
 sending output to the formatter {fmt}. If one succeeds, the call returns {()},
 and otherwise it fails.
 

@@ -14,7 +14,7 @@ etc. The {graph} function takes a finite partial function that maps {x1} to
 {[x1,y1; ...; xn,yn]}.
 
 \FAILURE
-Attempts to sort the resulting list, so may fail if the type of the pairs does 
+Attempts to sort the resulting list, so may fail if the type of the pairs does
 not permit comparison.
 
 \EXAMPLE

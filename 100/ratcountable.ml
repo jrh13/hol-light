@@ -60,9 +60,9 @@ let DENUMERABLE_RATIONALS = prove
 (* ------------------------------------------------------------------------- *)
 
 let DENUMERABLE_RATIONALS_EXPAND = prove
- (`?rat:num->real. (!n. rational(rat n)) /\ 
+ (`?rat:num->real. (!n. rational(rat n)) /\
                    (!x. rational x ==> ?!n. x = rat n)`,
   MP_TAC DENUMERABLE_RATIONALS THEN REWRITE_TAC[denumerable] THEN
   ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN REWRITE_TAC[eq_c] THEN
-  REWRITE_TAC[IN_UNIV; IN_ELIM_THM] THEN 
+  REWRITE_TAC[IN_UNIV; IN_ELIM_THM] THEN
   MATCH_MP_TAC MONO_EXISTS THEN MESON_TAC[]);;

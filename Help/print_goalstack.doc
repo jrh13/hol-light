@@ -6,14 +6,14 @@
 Print a goalstack.
 
 \DESCRIBE
-{print_goalstack gs} prints the goalstack {gs} to standard output, with no 
-following newline. 
+{print_goalstack gs} prints the goalstack {gs} to standard output, with no
+following newline.
 
 \FAILURE
 Never fails.
 
 \COMMENTS
-This is invoked automatically when something of type {goalstack} is produced at 
+This is invoked automatically when something of type {goalstack} is produced at
 the top level, so manual invocation is not normally needed.
 
 \SEEALSO

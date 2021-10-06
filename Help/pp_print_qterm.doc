@@ -6,14 +6,14 @@
 Prints a term with surrounding quotes to formatter.
 
 \DESCRIBE
-The call {pp_print_term fmt tm} prints the usual textual representation of the 
+The call {pp_print_term fmt tm} prints the usual textual representation of the
 term {tm} to the formatter {fmt}, in the form {`tm`}.
 
 \FAILURE
 Should never fail unless the formatter does.
 
 \COMMENTS
-The usual case where the formatter is the standard output is {print_qterm}. 
+The usual case where the formatter is the standard output is {print_qterm}.
 
 \SEEALSO
 pp_print_term, print_qterm, print_term.

@@ -6,7 +6,7 @@
 Constant zero in unlimited-size integers.
 
 \DESCRIBE
-The constant {num_0} is bound to the integer constant 0 in the 
+The constant {num_0} is bound to the integer constant 0 in the
 unlimited-precision numbers provided by the OCaml {Num} library.
 
 \FAILURE

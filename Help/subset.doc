@@ -6,8 +6,8 @@
 Tests if one list is a subset of another.
 
 \DESCRIBE
-The call {subset l1 l2} returns {true} if every element of {l1} also occurs in 
-{l2}, regardless of whether an element appears once or more than once in each 
+The call {subset l1 l2} returns {true} if every element of {l1} also occurs in
+{l2}, regardless of whether an element appears once or more than once in each
 list. So when {l1} and {l2} are regarded as sets, this is a subset test.
 
 \FAILURE

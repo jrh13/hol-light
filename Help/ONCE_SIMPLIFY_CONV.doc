@@ -18,7 +18,7 @@ simplification.
 Never fails.
 
 \USES
-Usually some other interface to the simplifier is more convenient, but you may 
+Usually some other interface to the simplifier is more convenient, but you may
 want to use this to employ a customized simpset.
 
 \SEEALSO

@@ -1,6 +1,6 @@
 ;; The function Math-fonts-for-HOL-Light replace the expressions
-;; ==>, <=>, ~, \/, /\, !, ?, SUBSET, IN, UNION, INTER and {} 
-;;  in a file with the mathematical characters (used by Isabelle) 
+;; ==>, <=>, ~, \/, /\, !, ?, SUBSET, IN, UNION, INTER and {}
+;;  in a file with the mathematical characters (used by Isabelle)
 ;; ⇒, ⇔, ¬, ∨, ∧, ∀, ∃, ⊂, ∈, ∪, ∩ and ∅.
 ;; The function Remove-math-fonts-for-HOL-Light turns the mathematical characters
 ;; ⇒, ⇔, ¬ etc back to HOL Light expressions ==>, <=>, ~ etc.
@@ -260,7 +260,7 @@
 
 ;; Assuming the function key F2 is an unbound prefix key in Emacs, and
 ;; this code binds the keys
-;; F2 i,  F2 b (for biconditional) etc 
+;; F2 i,  F2 b (for biconditional) etc
 ;; to inserting the symbols (sometimes padded with spaces), as indicated:
 
 (global-set-key '[f2 73]  '(lambda () (interactive) (insert " ⇒ ")))     ;; F2 I
@@ -299,12 +299,12 @@
 (global-set-key '[f2 79]  '(lambda () (interactive) (insert " ∘ ")))       ;; F2 O
 (global-set-key '[f2 68]  '(lambda () (interactive) (insert " ◼ ")))       ;; F2 D
 
-;; Two Emacs functions are useful in this context: 
+;; Two Emacs functions are useful in this context:
 ;; (string-to-char "⇒") => 8658
 ;; (char-to-string 8660) => "⇔"
 
 ;; Here's my low-level system using math symbols in HOL-Light/Miz3 .
-;; In the Emacs buffer containing math symbols, type 
+;; In the Emacs buffer containing math symbols, type
 ;;                     M-x remove-math-fonts-for-HOL-Light
 ;; and then mouse-paste into a terminal window (or Emacs shell)
 ;; running ocaml/HOL Light/miz3.  The X selection pasted by the mouse
@@ -313,14 +313,14 @@
 
 ;; The command M-x remove-math-fonts-for-HOL-Light will be in the
 ;; command history, and you can recall it with repeat-complex-command,
-;; which I bind to the function key F8 by 
+;; which I bind to the function key F8 by
 ;; (global-set-key [f8] 'repeat-complex-command)
 
 (setq auto-mode-alist (append  `(("ml\\'" . text-mode))
 			       auto-mode-alist))
 (add-hook 'text-mode-hook 'turn-off-auto-fill)
 (add-hook 'text-mode-hook 'turn-on-visual-line-mode)
-(add-hook 'text-mode-hook 
+(add-hook 'text-mode-hook
 	  (lambda ()
 		      (setq comment-start "::")))
 

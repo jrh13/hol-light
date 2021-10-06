@@ -15,8 +15,8 @@ where {p} is a real polynomial in normal form, returns a theorem {|- --p = p'}
 where {p'} is in normal form.
 
 \FAILURE
-Fails if applied to a term that is not the negation of a real term. If negation 
-is applied to a polynomial in non-normal form, the overall normalization is not 
+Fails if applied to a term that is not the negation of a real term. If negation
+is applied to a polynomial in non-normal form, the overall normalization is not
 guaranteed.
 
 \EXAMPLE
@@ -26,7 +26,7 @@ guaranteed.
 }
 
 \USES
-More delicate polynomial operations than simply the direct normalization with 
+More delicate polynomial operations than simply the direct normalization with
 {REAL_POLY_CONV}.
 
 \SEEALSO

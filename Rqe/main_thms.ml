@@ -11,24 +11,24 @@ let empty_mat = prove_by_refinement(
 let empty_sgns = [ARITH_RULE `&1 > &0`];;
 
 let monic_isign_lem = prove(
-  `(!s c mp p. (!x. c * p x = mp x) ==> c > &0 ==> interpsign s mp Pos ==> interpsign s p Pos) /\  
-   (!s c mp p. (!x. c * p x = mp x) ==> c < &0 ==> interpsign s mp Pos ==> interpsign s p Neg) /\  
-   (!s c mp p. (!x. c * p x = mp x) ==> c > &0 ==> interpsign s mp Neg ==> interpsign s p Neg) /\  
-   (!s c mp p. (!x. c * p x = mp x) ==> c < &0 ==> interpsign s mp Neg ==> interpsign s p Pos) /\  
-   (!s c mp p. (!x. c * p x = mp x) ==> c > &0 ==> interpsign s mp Zero ==> interpsign s p Zero) /\  
+  `(!s c mp p. (!x. c * p x = mp x) ==> c > &0 ==> interpsign s mp Pos ==> interpsign s p Pos) /\
+   (!s c mp p. (!x. c * p x = mp x) ==> c < &0 ==> interpsign s mp Pos ==> interpsign s p Neg) /\
+   (!s c mp p. (!x. c * p x = mp x) ==> c > &0 ==> interpsign s mp Neg ==> interpsign s p Neg) /\
+   (!s c mp p. (!x. c * p x = mp x) ==> c < &0 ==> interpsign s mp Neg ==> interpsign s p Pos) /\
+   (!s c mp p. (!x. c * p x = mp x) ==> c > &0 ==> interpsign s mp Zero ==> interpsign s p Zero) /\
    (!s c mp p. (!x. c * p x = mp x) ==> c < &0 ==> interpsign s mp Zero ==> interpsign s p Zero)`,
 (* {{{ Proof *)
 
-  REWRITE_TAC[interpsign] THEN REPEAT STRIP_TAC THEN 
-  POP_ASSUM (fun x -> POP_ASSUM (fun y -> MP_TAC (MATCH_MP y x))) THEN 
-  POP_ASSUM MP_TAC THEN 
-  POP_ASSUM (ASSUME_TAC o GSYM o (ISPEC `x:real`)) THEN 
-  ASM_REWRITE_TAC[REAL_MUL_LT;REAL_MUL_GT;real_gt;REAL_ENTIRE] THEN 
+  REWRITE_TAC[interpsign] THEN REPEAT STRIP_TAC THEN
+  POP_ASSUM (fun x -> POP_ASSUM (fun y -> MP_TAC (MATCH_MP y x))) THEN
+  POP_ASSUM MP_TAC THEN
+  POP_ASSUM (ASSUME_TAC o GSYM o (ISPEC `x:real`)) THEN
+  ASM_REWRITE_TAC[REAL_MUL_LT;REAL_MUL_GT;real_gt;REAL_ENTIRE] THEN
   REAL_ARITH_TAC);;
 
 (* }}} *)
 
-let gtpos::ltpos::gtneg::ltneg::gtzero::ltzero::[] = CONJUNCTS monic_isign_lem;;  
+let gtpos::ltpos::gtneg::ltneg::gtzero::ltzero::[] = CONJUNCTS monic_isign_lem;;
 
 let main_lem000 = prove_by_refinement(
   `!l n. (LENGTH l = SUC n) ==> 0 < LENGTH l`,
@@ -48,11 +48,11 @@ let main_lem001 = prove_by_refinement(
 [MESON_TAC[]]);;
 
 let main_lem002 = prove_by_refinement(
-  `(x <> y ==> x <> y) /\ 
-   (x < y ==> x <> y) /\ 
-   (x > y ==> x <> y) /\ 
-   (~(x >= y) ==> x <> y) /\ 
-   (~(x <= y) ==> x <> y) /\ 
+  `(x <> y ==> x <> y) /\
+   (x < y ==> x <> y) /\
+   (x > y ==> x <> y) /\
+   (~(x >= y) ==> x <> y) /\
+   (~(x <= y) ==> x <> y) /\
    (~(x = y) ==> x <> y)`,
 (* {{{ Proof *)
 
@@ -63,7 +63,7 @@ let main_lem002 = prove_by_refinement(
 (* }}} *)
 
 let factor_pos_pos = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Pos ==> interpsign s p Pos ==> 
+  `interpsign s (\x. &0 + x * &1) Pos ==> interpsign s p Pos ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Pos`,
 (* {{{ Proof *)
 [
@@ -79,7 +79,7 @@ let factor_pos_pos = prove_by_refinement(
 (* }}} *)
 
 let factor_pos_neg = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Pos ==> interpsign s p Neg ==> 
+  `interpsign s (\x. &0 + x * &1) Pos ==> interpsign s p Neg ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Neg`,
 (* {{{ Proof *)
 [
@@ -95,7 +95,7 @@ let factor_pos_neg = prove_by_refinement(
 (* }}} *)
 
 let factor_pos_zero = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Pos ==> interpsign s p Zero ==> 
+  `interpsign s (\x. &0 + x * &1) Pos ==> interpsign s p Zero ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Zero`,
 (* {{{ Proof *)
 [
@@ -109,7 +109,7 @@ let factor_pos_zero = prove_by_refinement(
 (* }}} *)
 
 let factor_zero_pos = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Zero ==> interpsign s p Pos ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Zero ==> interpsign s p Pos ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Zero`,
 (* {{{ Proof *)
 [
@@ -125,7 +125,7 @@ let factor_zero_pos = prove_by_refinement(
 (* }}} *)
 
 let factor_zero_neg = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Zero ==> interpsign s p Neg ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Zero ==> interpsign s p Neg ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Zero`,
 (* {{{ Proof *)
 [
@@ -141,7 +141,7 @@ let factor_zero_neg = prove_by_refinement(
 (* }}} *)
 
 let factor_zero_zero = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Zero ==> interpsign s p Zero ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Zero ==> interpsign s p Zero ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Zero`,
 (* {{{ Proof *)
 [
@@ -155,7 +155,7 @@ let factor_zero_zero = prove_by_refinement(
 (* }}} *)
 
 let factor_neg_even_pos = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Pos ==> EVEN k ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Pos ==> EVEN k ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Pos`,
 (* {{{ Proof *)
 [
@@ -171,7 +171,7 @@ let factor_neg_even_pos = prove_by_refinement(
 (* }}} *)
 
 let factor_neg_even_neg = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Neg ==> EVEN k ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Neg ==> EVEN k ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Neg`,
 (* {{{ Proof *)
 [
@@ -187,7 +187,7 @@ let factor_neg_even_neg = prove_by_refinement(
 (* }}} *)
 
 let factor_neg_even_zero = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Zero ==> EVEN k ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Zero ==> EVEN k ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Zero`,
 (* {{{ Proof *)
 [
@@ -201,7 +201,7 @@ let factor_neg_even_zero = prove_by_refinement(
 (* }}} *)
 
 let factor_neg_odd_pos = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Pos ==> ODD k ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Pos ==> ODD k ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Neg`,
 (* {{{ Proof *)
 [
@@ -212,12 +212,12 @@ let factor_neg_odd_pos = prove_by_refinement(
   ASM_REWRITE_TAC[];
   REWRITE_TAC[REAL_MUL_GT;REAL_MUL_LT;real_gt;REAL_ENTIRE];
   DISJ1_TAC;
-  ASM_MESON_TAC[REAL_POW_LT;real_gt;PARITY_POW_LT];  
+  ASM_MESON_TAC[REAL_POW_LT;real_gt;PARITY_POW_LT];
 ]);;
 (* }}} *)
 
 let factor_neg_odd_neg = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Neg ==> ODD k ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Neg ==> ODD k ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Pos`,
 (* {{{ Proof *)
 [
@@ -228,12 +228,12 @@ let factor_neg_odd_neg = prove_by_refinement(
   ASM_REWRITE_TAC[];
   REWRITE_TAC[REAL_MUL_GT;REAL_MUL_LT;real_gt;REAL_ENTIRE];
   DISJ1_TAC;
-  ASM_MESON_TAC[REAL_POW_LT;real_gt;PARITY_POW_LT];  
+  ASM_MESON_TAC[REAL_POW_LT;real_gt;PARITY_POW_LT];
 ]);;
 (* }}} *)
 
 let factor_neg_odd_zero = prove_by_refinement(
-  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Zero ==> ODD k ==> ~(k = 0) ==> 
+  `interpsign s (\x. &0 + x * &1) Neg ==> interpsign s p Zero ==> ODD k ==> ~(k = 0) ==>
    (!x. x pow k * p x = q x) ==> interpsign s q Zero`,
 (* {{{ Proof *)
 [

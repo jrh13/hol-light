@@ -7,8 +7,8 @@ Tests two `sets' for equality.
 
 \DESCRIBE
 {set_eq l1 l2} returns {true} if every element of {l1} appears in {l2} and
-every element of {l2} appears in {l1}. Otherwise it returns {false}. In other 
-words, it tests if the lists are the same considered as sets, i.e. ignoring 
+every element of {l2} appears in {l1}. Otherwise it returns {false}. In other
+words, it tests if the lists are the same considered as sets, i.e. ignoring
 duplicates.
 
 \FAILURE

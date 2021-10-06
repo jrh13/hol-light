@@ -6,13 +6,13 @@
 Applies conversion to the body of a binder.
 
 \DESCRIBE
-If {c} is a conversion such that {c `t`} returns {|- t = t'}, then 
-{BINDER_CONV c `b (\x. t)`} returns {|- b (\x. t) = b (\x. t')}, i.e. applies 
-the core conversion to the body of a `binder'. In fact, {b} here can be any 
+If {c} is a conversion such that {c `t`} returns {|- t = t'}, then
+{BINDER_CONV c `b (\x. t)`} returns {|- b (\x. t) = b (\x. t')}, i.e. applies
+the core conversion to the body of a `binder'. In fact, {b} here can be any
 term, but it is typically a binder constant such as a quantifier.
 
 \FAILURE
-Fails if the core conversion does, or if the theorem returned by it is not of 
+Fails if the core conversion does, or if the theorem returned by it is not of
 the right form.
 
 \EXAMPLE

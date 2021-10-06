@@ -554,13 +554,13 @@ let (MATCH_MP_TAC :thm_tactic) =
 (* ------------------------------------------------------------------------- *)
 
 let (CONJUNCTS_THEN2:thm_tactic->thm_tactic->thm_tactic) =
-  fun ttac1 ttac2 cth ->                                                       
-      let c1,c2 = dest_conj(concl cth) in                                      
+  fun ttac1 ttac2 cth ->
+      let c1,c2 = dest_conj(concl cth) in
       fun gl -> let ti,gls,jfn = (ttac1(ASSUME c1) THEN ttac2(ASSUME c2)) gl in
-                let jfn' i ths =                                               
-                  let th1,th2 = CONJ_PAIR(INSTANTIATE_ALL i cth) in            
-                  PROVE_HYP th1 (PROVE_HYP th2 (jfn i ths)) in                 
-                ti,gls,jfn';;                        
+                let jfn' i ths =
+                  let th1,th2 = CONJ_PAIR(INSTANTIATE_ALL i cth) in
+                  PROVE_HYP th1 (PROVE_HYP th2 (jfn i ths)) in
+                ti,gls,jfn';;
 
 let (CONJUNCTS_THEN: thm_tactical) =
   W CONJUNCTS_THEN2;;

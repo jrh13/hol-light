@@ -6,7 +6,7 @@
 Tests if a term is a natural number numeral.
 
 \DESCRIBE
-When applied to a term, {is_numeral} returns {true} if and only if the term is 
+When applied to a term, {is_numeral} returns {true} if and only if the term is
 a canonical natural number numeral ({0}, {1}, {2} etc.)
 
 \FAILURE

@@ -20,7 +20,7 @@ Fails with {dest_comb} if term is not a combination.
   # dest_comb `SUC 0`;;
   val it : term * term = (`SUC`, `0`)
 }
-We can use {dest_comb} to reveal more about the internal representation of 
+We can use {dest_comb} to reveal more about the internal representation of
 numerals:
 {
   # dest_comb `12`;;

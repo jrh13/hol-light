@@ -6,10 +6,10 @@
 Try all user parsing functions.
 
 \DESCRIBE
-HOL Light allows user parsing functions to be installed, and will try them on 
-all terms during parsing before the usual parsers. The call 
-{try_user_parser l} attempts to parse the list of tokens {l} using all the user 
-parsers, taking the results from whichever one succeeds first. 
+HOL Light allows user parsing functions to be installed, and will try them on
+all terms during parsing before the usual parsers. The call
+{try_user_parser l} attempts to parse the list of tokens {l} using all the user
+parsers, taking the results from whichever one succeeds first.
 
 \FAILURE
 Fails if all user parsers fail.

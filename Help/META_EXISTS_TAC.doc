@@ -18,11 +18,11 @@ Never fails.
 See {UNIFY_ACCEPT_TAC} for an example of using metavariables.
 
 \USES
-Delaying instantiations until the correct term becomes clearer. 
+Delaying instantiations until the correct term becomes clearer.
 
 \COMMENTS
-Users should probably steer clear of using metavariables if possible. Note that 
-the metavariable instantiations apply across the whole fringe of goals, not 
+Users should probably steer clear of using metavariables if possible. Note that
+the metavariable instantiations apply across the whole fringe of goals, not
 just the current goal, and can lead to confusion.
 
 \SEEALSO

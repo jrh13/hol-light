@@ -6,17 +6,17 @@
 Converts a preterm into a term.
 
 \DESCRIBE
-HOL Light uses ``pretypes'' and ``preterms'' as intermediate structures for 
-parsing and typechecking, which are later converted to types and terms. A call 
+HOL Light uses ``pretypes'' and ``preterms'' as intermediate structures for
+parsing and typechecking, which are later converted to types and terms. A call
 {term_of_preterm ptm} attempts to convert preterm {ptm} into a HOL term.
 
 \FAILURE
-Fails if some constants used in the preterm have not been defined, or if there 
-are other inconsistencies in the types so that a consistent typing cannot be 
+Fails if some constants used in the preterm have not been defined, or if there
+are other inconsistencies in the types so that a consistent typing cannot be
 arrived at.
 
 \COMMENTS
-Only users seeking to change HOL's parser and typechecker quite radically need 
+Only users seeking to change HOL's parser and typechecker quite radically need
 to use this function.
 
 \SEEALSO

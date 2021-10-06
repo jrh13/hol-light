@@ -6,17 +6,17 @@
 Typecheck a term, iterating over possible overload resolutions.
 
 \DESCRIBE
-This is the main HOL Light typechecking function. Given an environment {env} of 
-pretype assignments for variables, it assigns a pretype to all variables and 
-constants, including performing resolution of overloaded constants based on 
-what type information there is. Normally, this happens implicitly when a term 
+This is the main HOL Light typechecking function. Given an environment {env} of
+pretype assignments for variables, it assigns a pretype to all variables and
+constants, including performing resolution of overloaded constants based on
+what type information there is. Normally, this happens implicitly when a term
 is entered in the quotation parser.
 
 \FAILURE
 Fails if some terms cannot be consistently assigned a type.
 
 \COMMENTS
-Only users seeking to change HOL's parser and typechecker quite radically need 
+Only users seeking to change HOL's parser and typechecker quite radically need
 to use this function.
 
 \SEEALSO

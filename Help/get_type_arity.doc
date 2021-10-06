@@ -6,10 +6,10 @@
 Returns the arity of a type constructor.
 
 \DESCRIBE
-When applied to the name of a type constructor, {arity} returns its arity, i.e. 
-how many types it is supposed to be applied to. Base types like {:bool} are 
+When applied to the name of a type constructor, {arity} returns its arity, i.e.
+how many types it is supposed to be applied to. Base types like {:bool} are
 regarded as constructors with zero arity.
- 
+
 \FAILURE
 Fails if there is no type constructor of that name.
 

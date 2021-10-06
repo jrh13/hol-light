@@ -6,12 +6,12 @@
 Instantiate type variables in a term.
 
 \DESCRIBE
-The call {inst [ty1,tv1; ...; tyn,tvn] t} will systematically replace each type 
-variable {tvi} by the corresponding type {tyi} inside the term {t}. Bound 
+The call {inst [ty1,tv1; ...; tyn,tvn] t} will systematically replace each type
+variable {tvi} by the corresponding type {tyi} inside the term {t}. Bound
 variables will be renamed if necessary to avoid capture.
 
 \FAILURE
-Never fails. Repeated type variables in the instantiation list are not 
+Never fails. Repeated type variables in the instantiation list are not
 detected, and the first such element will be used.
 
 \EXAMPLE
@@ -23,21 +23,21 @@ Here is a simple example:
   # type_of(rand it);;
   val it : hol_type = `:num`
 }
-To construct an example where variable renaming is necessary we need to 
-construct terms with identically-named variables of different types, which 
+To construct an example where variable renaming is necessary we need to
+construct terms with identically-named variables of different types, which
 cannot be done directly in the term parser:
 {
-  # let tm = mk_abs(`x:A`,`x + 1`);;   
+  # let tm = mk_abs(`x:A`,`x + 1`);;
   val tm : term = `\x. x + 1`
 }
-\noindent Note that the two variables {x} are different; this is a constant 
-boolean function returning {x + 1}. Now if we instantiate type variable {:A} to 
+\noindent Note that the two variables {x} are different; this is a constant
+boolean function returning {x + 1}. Now if we instantiate type variable {:A} to
 {:num}, we still get a constant function, thanks to variable renaming:
 {
-  # inst [`:num`,`:A`] tm;; 
+  # inst [`:num`,`:A`] tm;;
   val it : term = `\x'. x + 1`
 }
-\noindent It would have been incorrect to just keep the same name, for that 
+\noindent It would have been incorrect to just keep the same name, for that
 would have been the successor function, something different.
 
 \SEEALSO

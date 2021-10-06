@@ -12,7 +12,7 @@ module Log : Log_sig = struct
 
 (* Creates a directory if it doesn't exist and returns its name *)
 let get_dir dir_name =
-  let _ = 
+  let _ =
     if Sys.file_exists dir_name then ()
     else Unix.mkdir dir_name 0o777 in
   dir_name;;
@@ -21,7 +21,7 @@ let get_dir dir_name =
 let open_log, close_log, close_all_logs, append_to_log, log_fmt =
   (* [name, (channel, formatter)] *)
   let logs = ref [] in
-  let log_for_name name = 
+  let log_for_name name =
     try
       Some (assoc name !logs)
     with Failure _ ->

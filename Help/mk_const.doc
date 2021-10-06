@@ -6,10 +6,10 @@
 Produce constant term by applying an instantiation to its generic type.
 
 \DESCRIBE
-This is the basic way of constructing a constant term in HOL Light, applying a 
-specific instantiation (by {type_subst}) to its generic type. It may sometimes 
-be more convenient to use {mk_mconst}, which just takes the desired type for 
-the constant and finds the instantiation itself; that is also a natural inverse 
+This is the basic way of constructing a constant term in HOL Light, applying a
+specific instantiation (by {type_subst}) to its generic type. It may sometimes
+be more convenient to use {mk_mconst}, which just takes the desired type for
+the constant and finds the instantiation itself; that is also a natural inverse
 for {dest_const}. However, {mk_const} is likely to be significantly faster.
 
 \FAILURE
@@ -19,17 +19,17 @@ Fails if there is no constant of the given type.
 {
   # get_const_type "=";;
   val it : hol_type = `:A->A->bool`
-  
+
   # mk_const("=",[`:num`,`:A`]);;
   val it : term = `(=)`
   # type_of it;;
   val it : hol_type = `:num->num->bool`
-  
+
   # mk_const("=",[`:num`,`:A`]) = mk_mconst("=",`:num->num->bool`);;
   val it : bool = true
 }
 
 \SEEALSO
 dest_const, is_const, mk_mconst, type_subst.
- 
+
 \ENDDOC

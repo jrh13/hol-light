@@ -24,13 +24,13 @@ Suppose we want to prove the inbuilt theorem {DELETE_INSERT} ourselves:
   # g `!x y. (x INSERT s) DELETE y =
              if x = y then s DELETE y else x INSERT (s DELETE y)`;;
 }
-We may wish to perform a case-split using {COND_CASES_TAC}, but since variables 
+We may wish to perform a case-split using {COND_CASES_TAC}, but since variables
 in the if-then-else construct are bound, this is inapplicable. Thus we want to
-first strip off the universally quantified variables: 
+first strip off the universally quantified variables:
 {
   # e(REPEAT GEN_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `(x INSERT s) DELETE y =
    (if x = y then s DELETE y else x INSERT (s DELETE y))`
 }
@@ -40,7 +40,7 @@ first strip off the universally quantified variables:
   ...
 }
 A quicker way (starting again from the initial goal) would be to combine the
-tactics using {THEN}: 
+tactics using {THEN}:
 {
   # e(REPEAT GEN_TAC THEN COND_CASES_TAC);;
   ...
@@ -57,7 +57,7 @@ to multiple subgoals; sequences like the following:
 {
    EQ_TAC THEN ASM_REWRITE_TAC[]
 }
-If using this several times in succession, remember that {THEN} is 
+If using this several times in succession, remember that {THEN} is
 left-associative.
 
 \SEEALSO

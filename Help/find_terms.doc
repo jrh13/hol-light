@@ -18,7 +18,7 @@ This is a simple example:
   val it : term list = [`z`; `y`; `x`]
 }
 \noindent while the following shows that the terms returned may overlap or
-contain each other: 
+contain each other:
 {
   # find_terms is_comb `x + y + z`;;
   val it : term list = [`(+) y`; `y + z`; `(+) x`; `x + y + z`]

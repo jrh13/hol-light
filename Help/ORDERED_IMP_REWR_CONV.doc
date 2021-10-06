@@ -16,15 +16,15 @@ side, after instantiation. If the ordering condition is violated, it will fail,
 even if the match is fine.
 
 \FAILURE
-Fails if the theorem is not of the right form or the two terms cannot be 
-matched, for example because the variables that need to be instantiated are 
+Fails if the theorem is not of the right form or the two terms cannot be
+matched, for example because the variables that need to be instantiated are
 free in the hypotheses {A}, or if the ordering requirement fails.
 
 \EXAMPLE
 
 \USES
-Applying conditional rewrite rules that are permutative and would loop without 
-some ordering restriction. Applied automatically to some permutative rewrite 
+Applying conditional rewrite rules that are permutative and would loop without
+some ordering restriction. Applied automatically to some permutative rewrite
 rules in the simplifier, e.g. in {SIMP_CONV}.
 
 \SEEALSO

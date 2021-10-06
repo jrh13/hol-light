@@ -10,7 +10,7 @@ rule, type.
 
 \DESCRIBE
 This rule specializes a quantified variable as does {SPEC}; it differs
-from it in also instantiating the type if needed, both in the conclusion and 
+from it in also instantiating the type if needed, both in the conclusion and
 hypotheses:
 {
      A |- !x:ty.tm

@@ -311,16 +311,16 @@ let FREEFORM_THM = prove
 
 let AXIOM,AXIOM_THM =
   let th0 = prove
-   (`((?x p. P (number x) (gform p) /\ ~(x IN FV(p))) <=> 
+   (`((?x p. P (number x) (gform p) /\ ~(x IN FV(p))) <=>
       (?x p. FREEFORM x p /\ P x p)) /\
      ((?x t. P (number x) (gterm t) /\ ~(x IN FVT(t))) <=>
       (?x t. FREETERM x t /\ P x t))`,
-    REWRITE_TAC[FREETERM_THM; FREEFORM_THM] THEN CONJ_TAC THEN 
-    REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN        
-    ONCE_REWRITE_TAC[TAUT `(a /\ b) /\ c <=> b /\ a /\ c`] THEN         
+    REWRITE_TAC[FREETERM_THM; FREEFORM_THM] THEN CONJ_TAC THEN
+    REWRITE_TAC[LEFT_AND_EXISTS_THM] THEN
+    ONCE_REWRITE_TAC[TAUT `(a /\ b) /\ c <=> b /\ a /\ c`] THEN
     GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV) [SWAP_EXISTS_THM] THEN
-    REWRITE_TAC[UNWIND_THM2; IN_IMAGE] THEN 
-    ASM_MESON_TAC[IN_IMAGE; NUMBER_DENUMBER]) 
+    REWRITE_TAC[UNWIND_THM2; IN_IMAGE] THEN
+    ASM_MESON_TAC[IN_IMAGE; NUMBER_DENUMBER])
   and th1 = prove
    (`((?p. P(gform p)) <=> (?p. FORM(p) /\ P p)) /\
      ((?t. P(gterm t)) <=> (?t. TERM(t) /\ P t))`,
@@ -330,7 +330,7 @@ let AXIOM,AXIOM_THM =
     MESON_TAC[NUMBER_DENUMBER]) in
   let th = (REWRITE_CONV[GSYM GFORM_INJ] THENC
           REWRITE_CONV[gform; gterm] THENC
-          REWRITE_CONV[th0] THENC REWRITE_CONV[th1] THENC  
+          REWRITE_CONV[th0] THENC REWRITE_CONV[th1] THENC
           REWRITE_CONV[th2] THENC
           REWRITE_CONV[RIGHT_AND_EXISTS_THM])
          (rhs(concl(SPEC `a:form` axiom_CASES))) in
@@ -362,7 +362,7 @@ let AXIOM_FORMULA = prove
   REWRITE_TAC[AXIOM; FREEFORM_THM; FREETERM_THM; FORM_THM; TERM_THM] THEN
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   CONV_TAC(BINDER_CONV SYM_CONV) THEN
-  REWRITE_TAC[GFORM_CASES; GTERM_CASES; 
+  REWRITE_TAC[GFORM_CASES; GTERM_CASES;
               GTERM_CASES_ALT; GFORM_CASES_ALT] THEN
   MESON_TAC[NUMBER_DENUMBER]);;
 

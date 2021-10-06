@@ -7,9 +7,9 @@ Repeatedly applies a conversion top-down at all levels, but after descending to
 subterms, does not return to higher ones.
 
 \DESCRIBE
-The call {TOP_SWEEP_CONV conv} applies {conv} repeatedly at the top level of a 
-term, and then descends into subterms of the result, recursively doing the same 
-thing. However, once the subterms are dealt with, it does not, unlike 
+The call {TOP_SWEEP_CONV conv} applies {conv} repeatedly at the top level of a
+term, and then descends into subterms of the result, recursively doing the same
+thing. However, once the subterms are dealt with, it does not, unlike
 {TOP_DEPTH_CONV conv}, return to re-examine them.
 
 \FAILURE
@@ -24,12 +24,12 @@ If we create an equation between large tuples:
     mk_eq(mkpairs "x",mkpairs "y");;
   ...
 }
-\noindent we can observe that 
-{ 
+\noindent we can observe that
+{
   # time (TOP_DEPTH_CONV(REWR_CONV PAIR_EQ)); ();;
 }
 \noindent is a little bit slower than
-{                                           
+{
   # time (TOP_SWEEP_CONV(REWR_CONV PAIR_EQ)); ();;
 }
 

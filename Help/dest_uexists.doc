@@ -6,7 +6,7 @@
 Breaks apart a unique existence term.
 
 \DESCRIBE
-If {t} has the form {?!x. p[x]} (there exists a unique [x} such that {p[x]} 
+If {t} has the form {?!x. p[x]} (there exists a unique [x} such that {p[x]}
 then {dest_uexists t} returns the pair {x,p[x]}; otherwise it fails.
 
 \FAILURE

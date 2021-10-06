@@ -9,8 +9,8 @@ Computes the union of two `sets'.
 list, set.
 
 \DESCRIBE
-{union l1 l2} returns a list consisting of the elements of {l1} not already in 
-{l2} concatenated with {l2}. If {l1} and {l2} are initially free from 
+{union l1 l2} returns a list consisting of the elements of {l1} not already in
+{l2} concatenated with {l2}. If {l1} and {l2} are initially free from
 duplicates, this gives a set-theoretic union operation.
 
 \FAILURE

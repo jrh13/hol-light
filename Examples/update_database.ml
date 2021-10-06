@@ -161,7 +161,7 @@ let search =
     | Comb(Var("<match theorem name>",_),Var(pat,_)) -> name_contains pat
     | Comb(Var("<match aconv>",_),pat) -> exists_subterm_satisfying (aconv pat)
     | pat -> exists_subterm_satisfying (can (term_match [] pat)) in
-  fun pats -> 
+  fun pats ->
     update_database();
     let triv,nontriv = partition is_var pats in
     (if triv <> [] then

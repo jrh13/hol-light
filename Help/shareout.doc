@@ -6,9 +6,9 @@
 Shares out the elements of the second list according to pattern in first.
 
 \DESCRIBE
-The call {shareout pat l} shares out the elements of {l} into the same groups 
-as the pattern list {pat}, while keeping them in the same order. If there are 
-more elements in {l} than needed, they will be discarded, but if there are 
+The call {shareout pat l} shares out the elements of {l} into the same groups
+as the pattern list {pat}, while keeping them in the same order. If there are
+more elements in {l} than needed, they will be discarded, but if there are
 fewer, failure will occur.
 
 \FAILURE

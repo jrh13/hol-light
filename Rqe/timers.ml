@@ -21,7 +21,7 @@ let swap_head_col_timer = ref 0.0;;
 let replace_pol_timer = ref 0.0;;
 let unfactor_mat_timer = ref 0.0;;
 
-let reset_timers() = 
+let reset_timers() =
 
   testform_timer := 0.0;
   combine_testforms_timer := 0.0;
@@ -50,7 +50,7 @@ let reset_timers() =
 
 
 let print_timers() =
-  print_string "\n----------TIMERS---------\n\n"; 
+  print_string "\n----------TIMERS---------\n\n";
 
   print_string "TESTFORM: ";
   print_float !testform_timer;
@@ -113,7 +113,7 @@ let print_timers() =
   print_string "\n";
 
 
-  print_string "\n-------------------------\n"; 
+  print_string "\n-------------------------\n";
 
 ;;
 

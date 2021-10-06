@@ -11,7 +11,7 @@ Term nets (type {'a net}) are a lookup structure associating objects of type
 one can then relatively quickly look up all objects whose pattern terms might
 possibly match to it. This is used, for example, in rewriting to quickly filter
 out obviously inapplicable rewrites rather than attempting each one in turn.
-The call {merge_nets(net1,net2)} merges two nets together; the list of objects 
+The call {merge_nets(net1,net2)} merges two nets together; the list of objects
 is the union of those objects in the two nets {net1} and {net2}, with the term
 patterns adjusted appropriately.
 

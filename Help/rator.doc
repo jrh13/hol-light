@@ -13,13 +13,13 @@ Fails with {rator} if term is not a combination.
 
 \EXAMPLE
 {
-  # rator `f(x)`;;        
+  # rator `f(x)`;;
   Warning: inventing type variables
   val it : term = `f`
-  
+
   # rator `~p`;;
   val it : term = `(~)`
-  
+
   # rator `x + y`;;
   val it : term = `(+) x`
 }

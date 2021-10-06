@@ -16,9 +16,9 @@ ARITH_RULE `1 * x = x`;
 ARITH_RULE `x * 1 = x`;
 ];;
 
-let NUM_SIMP_TAC = REWRITE_TAC !NUM_REWRITES;; 
+let NUM_SIMP_TAC = REWRITE_TAC !NUM_REWRITES;;
 
-let extend_num_rewrites l = 
+let extend_num_rewrites l =
   NUM_REWRITES := !NUM_REWRITES @ l;;
 
 (* ---------------------------------------------------------------------- *)
@@ -26,7 +26,7 @@ let extend_num_rewrites l =
 (* ---------------------------------------------------------------------- *)
 
 (*
-search [`(pow)`;rp] 
+search [`(pow)`;rp]
 *)
 
 let REAL_REWRITES = ref [
@@ -80,11 +80,11 @@ real_div;
 
 let REAL_SIMP_TAC = REWRITE_TAC (
   !REAL_REWRITES
-);; 
+);;
 
 let REAL_SOLVE_TAC = ASM_MESON_TAC (!REAL_REWRITES @ !REAL_ELIM);;
 
-let extend_real_rewrites l = 
+let extend_real_rewrites l =
   REAL_REWRITES := !REAL_REWRITES @ l;;
 
 let BASIC_REWRITES = ref (!REAL_REWRITES @ !NUM_REWRITES);;

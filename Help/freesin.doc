@@ -6,8 +6,8 @@
 Tests if all free variables of a term appear in a list.
 
 \DESCRIBE
-The call {freesin l t} tests whether all free variables of {t} occur in the 
-list {l}. The special case where {l = []} will therefore test whether {t} is 
+The call {freesin l t} tests whether all free variables of {t} occur in the
+list {l}. The special case where {l = []} will therefore test whether {t} is
 closed (i.e. contains no free variables).
 
 \FAILURE
@@ -24,7 +24,7 @@ Never fails.
 }
 
 \USES
-Can be attractive to fold together some free-variable tests without explicitly 
+Can be attractive to fold together some free-variable tests without explicitly
 constructing the set of free variables in a term.
 
 \SEEALSO

@@ -2,7 +2,7 @@ module Sections = struct
 
 (* Basic commands for working with the goal stack *)
 (* b() from tactics.ml *)
-let revert_proof_step() = 
+let revert_proof_step() =
   let l = !current_goalstack in
     if length l = 1 then failwith "Can't back up any more" else
       current_goalstack := tl l;
@@ -13,7 +13,7 @@ let revert_proof_step() =
 let fast_load_flag = ref false;;
 
 (* Section variables, hypotheses (with labels), implicit types, and auxiliary lemmas *)
-type section_info = 
+type section_info =
 {
   vars : term list;
   hyps : (string * term) list;
@@ -109,8 +109,8 @@ let inst_section_vars tm =
   let inst_var (name, ty) tm =
     let ty_dst, ty_src = find_var (name, ty) in
       try (inst (type_match ty_src ty_dst []) tm)
-      with Failure _ -> 
-	failwith ("Section variable " ^ name ^ 
+      with Failure _ ->
+	failwith ("Section variable " ^ name ^
 		    " has type " ^ string_of_type ty_dst) in
   let f_vars = map dest_var (frees tm) in
     itlist inst_var f_vars tm;;
@@ -118,7 +118,7 @@ let inst_section_vars tm =
 
 (* Instantiates implicit types in the given term *)
 (* (free variables and top generalized variables are considered in the term) *)
-let inst_section_types tm = 
+let inst_section_types tm =
   let s_types = section_types() in
   let find_type tm =
     let name, ty = dest_var tm in
@@ -130,7 +130,7 @@ let inst_section_types tm =
     inst ty_inst tm;;
 
 
-(* Checks if the term contains any free variables 
+(* Checks if the term contains any free variables
    which are not section variables *)
 let check_section_term tm =
   let f_vars = frees tm in
@@ -146,7 +146,7 @@ let check_section_term tm =
 	let str = String.concat ", " (map string_of_term vars) in
 	  failwith ("Free variables: " ^ str)
       else ();;
-      
+
 
 (* Adds the given variable to the active section *)
 let add_section_var var =
@@ -269,7 +269,7 @@ let prepare_goal_term tm =
 (* Prepares a goal term and an initial tactic *)
 let prepare_section_proof names tm =
   let f_vars = map dest_var (frees tm) in
-  let find_type var_name = 
+  let find_type var_name =
     try assoc var_name f_vars with Failure _ -> failwith ("Unused variable: " ^ var_name) in
   let g_vars = map (fun name -> mk_var (name, find_type name)) names in
   let g_tm = list_mk_forall (g_vars, tm) in
@@ -312,7 +312,7 @@ let section_proof names tm tac_list =
   let hyps = section_hyps() in
     itlist (fun _ th -> UNDISCH th) hyps th0;;
 
-    
+
 (* Discharges all assumptions and generalizes all section variables *)
 let finalize_theorem th =
   let hyps = map snd (current_section_hyps()) in
@@ -323,5 +323,5 @@ let finalize_theorem th =
   let f_vars = frees (concl th1) in
   let vars = intersect f_vars s_vars in
     itlist (fun var th -> GEN var th) vars th1;;
-    
+
 end;;

@@ -6,8 +6,8 @@
 Internal theorem list of distinctness theorems.
 
 \DESCRIBE
-This list contains all the distinctness theorems (see {distinct}) for the 
-recursive types defined so far. It is automatically extended by {define_type} 
+This list contains all the distinctness theorems (see {distinct}) for the
+recursive types defined so far. It is automatically extended by {define_type}
 and used as a cache by {distinct}.
 
 \FAILURE
@@ -15,5 +15,5 @@ Not applicable.
 
 \SEEALSO
 define_type, distinctness, extend_rectype_net, injectivity_store.
- 
+
 \ENDDOC

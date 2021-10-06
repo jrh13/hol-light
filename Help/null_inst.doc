@@ -14,7 +14,7 @@ term instantiations and higher-order matching information. This instantiation
 Not applicable.
 
 \EXAMPLE
-Instantiating a term with it has no effect: 
+Instantiating a term with it has no effect:
 {
   # instantiate null_inst `x + 1 = 2`;;
   val it : term = `x + 1 = 2`

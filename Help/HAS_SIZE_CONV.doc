@@ -6,8 +6,8 @@
 Converts statement about set's size into existential enumeration.
 
 \DESCRIBE
-Given a term of the form {`s HAS_SIZE n`} for a numeral {n}, the conversion 
-{HAS_SIZE_CONV} returns an equivalent form postulating the existence of {n} 
+Given a term of the form {`s HAS_SIZE n`} for a numeral {n}, the conversion
+{HAS_SIZE_CONV} returns an equivalent form postulating the existence of {n}
 pairwise distinct elements that make up the set.
 
 \FAILURE

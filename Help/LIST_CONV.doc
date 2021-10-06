@@ -6,7 +6,7 @@
 Apply a conversion to each element of a list.
 
 \DESCRIBE
-If {cnv `ti`} returns {|- ti = ti'} for {i} ranging from {1} to {n}, then 
+If {cnv `ti`} returns {|- ti = ti'} for {i} ranging from {1} to {n}, then
 {LIST_CONV cnv `[t1; ...; tn]`} returns {|- [t1; ...; tn] = [t1'; ...; tn']}.
 
 \FAILURE

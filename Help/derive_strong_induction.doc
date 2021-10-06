@@ -6,15 +6,15 @@
 Derive stronger induction theorem from inductive definition.
 
 \DESCRIBE
-The function {derive_strong_induction} is applied to a pair of theorems as 
-returned by {new_inductive_definition}. The first theorem is the `rule' 
-theorem, the second the `induction' theorem; the `case' theorem returned by 
-{new_inductive_definition} is not needed. It returns a stronger induction 
-theorem where instances of each inductive predicate occurring in hypotheses 
+The function {derive_strong_induction} is applied to a pair of theorems as
+returned by {new_inductive_definition}. The first theorem is the `rule'
+theorem, the second the `induction' theorem; the `case' theorem returned by
+{new_inductive_definition} is not needed. It returns a stronger induction
+theorem where instances of each inductive predicate occurring in hypotheses
 is conjoined with the corresponding inductive relation too.
 
 \FAILURE
-Fails if the two input theorems are not of the correct form for rule and 
+Fails if the two input theorems are not of the correct form for rule and
 induction theorems returned by {new_inductive_definition}.
 
 \EXAMPLE
@@ -40,7 +40,7 @@ A simple example of a mutually inductive definition is:
     |- (!a0. odd a0 <=> a0 = 1 \/ (?n. a0 = n + 1 /\ even n)) /\
        (!a1. even a1 <=> a1 = 0 \/ (?n. a1 = n + 1 /\ odd n))
 }
-The stronger induction theorem can be derived as follows. Note that it is 
+The stronger induction theorem can be derived as follows. Note that it is
 similar in form to {eo_INDUCT} but has stronger hypotheses for two of the
 conjuncts in the antecedent.
 {
@@ -55,16 +55,16 @@ conjuncts in the antecedent.
 }
 
 \COMMENTS
-This function needs to discharge monotonicity theorems as part of its internal 
-working, just as {new_inductive_definition} does when the inductive definition 
-is made. Usually this is automatic and the user doesn't see it, but in 
-difficult cases, the theorem returned may have additional monotonicity 
+This function needs to discharge monotonicity theorems as part of its internal
+working, just as {new_inductive_definition} does when the inductive definition
+is made. Usually this is automatic and the user doesn't see it, but in
+difficult cases, the theorem returned may have additional monotonicity
 hypotheses that are unproven. In such cases, you can either try to prove them
-manually or extend {monotonicity_theorems} to make the built-in monotonicity 
+manually or extend {monotonicity_theorems} to make the built-in monotonicity
 prover more powerful.
 
 \SEEALSO
-new_inductive_definition, prove_inductive_relations_exist, 
+new_inductive_definition, prove_inductive_relations_exist,
 prove_monotonicity_hyps.
 
 \ENDDOC

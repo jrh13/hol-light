@@ -117,7 +117,7 @@ let COMP_ENSURES_thm1_lemma_1 = TAC_PROOF
             AND_INTRO_THM)) THEN
          UNDISCH_TAC (`((p:'a->bool) UNLESS  q)(APPEND t GPr) /\
                        (p EXIST_TRANSITION q)(APPEND t GPr)`) THEN
-         REWRITE_TAC [SPECL [(`q:'a->bool`); (`p:'a->bool`); 
+         REWRITE_TAC [SPECL [(`q:'a->bool`); (`p:'a->bool`);
 			     (`APPEND (t:('a->'a)list) GPr`)]
                              (GEN_ALL (SYM (SPEC_ALL ENSURES)))] THEN
          DISCH_TAC THEN

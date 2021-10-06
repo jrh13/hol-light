@@ -3,7 +3,7 @@
 \TYPE {REAL_INT_RED_CONV : term -> thm}
 
 \SYNOPSIS
-Performs one arithmetic or relational operation on integer literals of type 
+Performs one arithmetic or relational operation on integer literals of type
 {:real}.
 
 \DESCRIBE
@@ -15,19 +15,19 @@ asserting the equivalence of the term to a canonical integer (for the
 arithmetic operators) or a truth-value (for the relational operators). The
 integer literals are terms of the form {&n} or {-- &n} (with nonzero {n} in the
 latter case).
- 
+
 \FAILURE
 Fails if applied to an inappropriate term.
 
 \USES
 More convenient for most purposes is {REAL_INT_REDUCE_CONV}, which applies
-these evaluation conversions recursively at depth, or still more generally 
+these evaluation conversions recursively at depth, or still more generally
 {REAL_RAT_REDUCE_CONV} which applies to any rational numbers, not just
 integers. Still, access to this `one-step' reduction can be handy if you want to
 add a conversion {conv} for some other operator on real number literals, which
-you can conveniently incorporate it into {REAL_INT_REDUCE_CONV} with 
+you can conveniently incorporate it into {REAL_INT_REDUCE_CONV} with
 {
-  # let REAL_INT_REDUCE_CONV' = 
+  # let REAL_INT_REDUCE_CONV' =
       DEPTH_CONV(REAL_INT_RED_CONV ORELSEC conv);;
 }
 

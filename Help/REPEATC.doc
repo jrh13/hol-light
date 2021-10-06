@@ -24,7 +24,7 @@ Never fails, but can diverge if the supplied conversion never fails.
 {
   # BETA_CONV `(\x. (\y. x + y) (x + 1)) 1`;;
   val it : thm = |- (\x. (\y. x + y) (x + 1)) 1 = (\y. 1 + y) (1 + 1)
-   
+
   # REPEATC BETA_CONV `(\x. (\y. x + y) (x + 1)) 1`;;
   val it : thm = |- (\x. (\y. x + y) (x + 1)) 1 = 1 + 1 + 1
 }

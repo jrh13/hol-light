@@ -6,7 +6,7 @@
 Lists all current type abbreviations.
 
 \DESCRIBE
-The call {type_abbrevs()} returns a list of all current type abbreviations, 
+The call {type_abbrevs()} returns a list of all current type abbreviations,
 which are applied when parsing types but have no logical significance.
 
 \FAILURE

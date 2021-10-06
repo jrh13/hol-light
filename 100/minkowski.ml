@@ -72,18 +72,18 @@ let BLICHFELDT = prove
         ==> ?x y. x IN s /\ y IN s /\ ~(x = y) /\
                   !i. 1 <= i /\ i <= dimindex(:N) ==> integer(x$i - y$i)`,
   SUBGOAL_THEN
-   `!s:real^N->bool.                                                   
+   `!s:real^N->bool.
         bounded s /\ measurable s /\ &1 < measure s
         ==> ?x y. x IN s /\ y IN s /\ ~(x = y) /\
                   !i. 1 <= i /\ i <= dimindex(:N) ==> integer(x$i - y$i)`
   ASSUME_TAC THENL
    [ALL_TAC;
-    REPEAT STRIP_TAC THEN 
-    FIRST_ASSUM(MP_TAC o SPEC `measure(s:real^N->bool) - &1` o 
+    REPEAT STRIP_TAC THEN
+    FIRST_ASSUM(MP_TAC o SPEC `measure(s:real^N->bool) - &1` o
       MATCH_MP (REWRITE_RULE[IMP_CONJ] MEASURABLE_INNER_COMPACT)) THEN
     ASM_REWRITE_TAC[REAL_SUB_LT; LEFT_IMP_EXISTS_THM] THEN
     X_GEN_TAC `c:real^N->bool` THEN STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `c:real^N->bool`) THEN 
+    FIRST_X_ASSUM(MP_TAC o SPEC `c:real^N->bool`) THEN
     ASM_SIMP_TAC[COMPACT_IMP_BOUNDED] THEN
     ANTS_TAC THENL [ASM_REAL_ARITH_TAC; ASM SET_TAC[]]] THEN
   REPEAT STRIP_TAC THEN
@@ -181,22 +181,22 @@ let BLICHFELDT = prove
 (* The usual form of the theorem.                                            *)
 (* ------------------------------------------------------------------------- *)
 
-let MINKOWSKI = prove                                                       
- (`!s:real^N->bool.                                                            
-        convex s /\                                                            
-        (!x. x IN s ==> (--x) IN s) /\                                         
-        &2 pow dimindex(:N) < measure s                                        
-        ==> ?u. ~(u = vec 0) /\                                    
-                (!i. 1 <= i /\ i <= dimindex(:N) ==> integer(u$i)) /\       
-                u IN s`,                            
+let MINKOWSKI = prove
+ (`!s:real^N->bool.
+        convex s /\
+        (!x. x IN s ==> (--x) IN s) /\
+        &2 pow dimindex(:N) < measure s
+        ==> ?u. ~(u = vec 0) /\
+                (!i. 1 <= i /\ i <= dimindex(:N) ==> integer(u$i)) /\
+                u IN s`,
   SUBGOAL_THEN
-   `!s:real^N->bool.                                                            
-        convex s /\                                                            
-        bounded s /\                                                           
-        (!x. x IN s ==> (--x) IN s) /\                                         
-        &2 pow dimindex(:N) < measure s                                        
-        ==> ?u. ~(u = vec 0) /\                                    
-                (!i. 1 <= i /\ i <= dimindex(:N) ==> integer(u$i)) /\       
+   `!s:real^N->bool.
+        convex s /\
+        bounded s /\
+        (!x. x IN s ==> (--x) IN s) /\
+        &2 pow dimindex(:N) < measure s
+        ==> ?u. ~(u = vec 0) /\
+                (!i. 1 <= i /\ i <= dimindex(:N) ==> integer(u$i)) /\
                 u IN s`
   ASSUME_TAC THENL
    [ALL_TAC;
@@ -206,7 +206,7 @@ let MINKOWSKI = prove
     ASM_SIMP_TAC[LEBESGUE_MEASURABLE_CONVEX] THEN
     DISCH_THEN(X_CHOOSE_THEN `c:real^N->bool` STRIP_ASSUME_TAC) THEN
     FIRST_ASSUM(MP_TAC o MATCH_MP COMPACT_IMP_BOUNDED) THEN
-    DISCH_THEN(X_CHOOSE_THEN `r:real` STRIP_ASSUME_TAC o SPEC `vec 0:real^N` o 
+    DISCH_THEN(X_CHOOSE_THEN `r:real` STRIP_ASSUME_TAC o SPEC `vec 0:real^N` o
       MATCH_MP BOUNDED_SUBSET_BALL) THEN
     FIRST_X_ASSUM(MP_TAC o SPEC `s INTER ball(vec 0:real^N,r)`) THEN
     ANTS_TAC THENL [ALL_TAC; ASM SET_TAC[]] THEN
@@ -219,25 +219,25 @@ let MINKOWSKI = prove
     MATCH_MP_TAC MEASURABLE_CONVEX THEN
      SIMP_TAC[BOUNDED_INTER; BOUNDED_BALL] THEN
     ASM_SIMP_TAC[CONVEX_INTER; CONVEX_BALL]] THEN
-  REPEAT STRIP_TAC THEN                                            
-  MP_TAC(ISPEC `IMAGE (\x:real^N. (&1 / &2) % x) s` BLICHFELDT) THEN       
-  ASM_SIMP_TAC[MEASURABLE_SCALING; MEASURE_SCALING; MEASURABLE_CONVEX;         
-               BOUNDED_SCALING] THEN                                       
-  REWRITE_TAC[real_div; REAL_MUL_LID; REAL_ABS_INV; REAL_ABS_NUM] THEN        
-  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN                                      
-  REWRITE_TAC[GSYM real_div; REAL_POW_INV] THEN                           
-  ASM_SIMP_TAC[REAL_LT_RDIV_EQ; REAL_LT_POW2; REAL_MUL_LID] THEN      
-  REWRITE_TAC[RIGHT_EXISTS_AND_THM; EXISTS_IN_IMAGE] THEN                   
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPEC `IMAGE (\x:real^N. (&1 / &2) % x) s` BLICHFELDT) THEN
+  ASM_SIMP_TAC[MEASURABLE_SCALING; MEASURE_SCALING; MEASURABLE_CONVEX;
+               BOUNDED_SCALING] THEN
+  REWRITE_TAC[real_div; REAL_MUL_LID; REAL_ABS_INV; REAL_ABS_NUM] THEN
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+  REWRITE_TAC[GSYM real_div; REAL_POW_INV] THEN
+  ASM_SIMP_TAC[REAL_LT_RDIV_EQ; REAL_LT_POW2; REAL_MUL_LID] THEN
+  REWRITE_TAC[RIGHT_EXISTS_AND_THM; EXISTS_IN_IMAGE] THEN
   REWRITE_TAC[VECTOR_ARITH `inv(&2) % x:real^N = inv(&2) % y <=> x = y`] THEN
-  REWRITE_TAC[LEFT_IMP_EXISTS_THM; RIGHT_AND_EXISTS_THM] THEN                  
-  SIMP_TAC[VECTOR_MUL_COMPONENT; GSYM REAL_SUB_LDISTRIB] THEN                  
-  MAP_EVERY X_GEN_TAC [`u:real^N`; `v:real^N`] THEN STRIP_TAC THEN             
-  EXISTS_TAC `inv(&2) % (u - v):real^N` THEN                                   
-  ASM_SIMP_TAC[VECTOR_ARITH `inv(&2) % (u - v):real^N = vec 0 <=> u = v`] THEN 
-  ASM_SIMP_TAC[VECTOR_MUL_COMPONENT; VECTOR_SUB_COMPONENT] THEN                
-  REWRITE_TAC[VECTOR_SUB; VECTOR_ADD_LDISTRIB] THEN                        
-  FIRST_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [convex]) THEN    
-  ASM_SIMP_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV);;        
+  REWRITE_TAC[LEFT_IMP_EXISTS_THM; RIGHT_AND_EXISTS_THM] THEN
+  SIMP_TAC[VECTOR_MUL_COMPONENT; GSYM REAL_SUB_LDISTRIB] THEN
+  MAP_EVERY X_GEN_TAC [`u:real^N`; `v:real^N`] THEN STRIP_TAC THEN
+  EXISTS_TAC `inv(&2) % (u - v):real^N` THEN
+  ASM_SIMP_TAC[VECTOR_ARITH `inv(&2) % (u - v):real^N = vec 0 <=> u = v`] THEN
+  ASM_SIMP_TAC[VECTOR_MUL_COMPONENT; VECTOR_SUB_COMPONENT] THEN
+  REWRITE_TAC[VECTOR_SUB; VECTOR_ADD_LDISTRIB] THEN
+  FIRST_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I [convex]) THEN
+  ASM_SIMP_TAC[] THEN CONV_TAC REAL_RAT_REDUCE_CONV);;
 
 (* ------------------------------------------------------------------------- *)
 (* A slightly sharper variant for use when the set is also closed.           *)

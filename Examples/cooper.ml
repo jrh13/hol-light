@@ -1500,12 +1500,12 @@ time COOPER_CONV
           &3 divides (&4 * x + z) /\
           (x + y + z = &7 * z)`;;
 
-time COOPER_CONV                         
+time COOPER_CONV
  `?y x. &5 * x + x + x < x \/
         (y = &7 - x) /\
         &33 + z < x /\
-        x + &1 <= &2 * y \/        
-        &3 divides (&4 * x + z) /\                 
+        x + &1 <= &2 * y \/
+        &3 divides (&4 * x + z) /\
         (x + y + z = &7 * z)`;;
 
 *****)

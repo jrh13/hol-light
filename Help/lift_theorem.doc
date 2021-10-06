@@ -7,8 +7,8 @@ Lifts a theorem to quotient type from representing type.
 
 \DESCRIBE
 The function {lift_theorem} should be applied (i) a pair of type bijection
-theorems as returned by {define_quotient_type} for equivalence classes over a 
-binary relation {R}, (ii) a triple of theorems asserting that the relation {R} 
+theorems as returned by {define_quotient_type} for equivalence classes over a
+binary relation {R}, (ii) a triple of theorems asserting that the relation {R}
 is reflexive, symmetric and transitive in exactly the following form:
 {
   |- !x. R x x
@@ -16,38 +16,38 @@ is reflexive, symmetric and transitive in exactly the following form:
   |- !x y z. R x y /\ R y z ==> R x z
 }
 \noindent and (iii) the list of theorems returned as the second component of
-the pairs from {lift_function} for all functions that should be mapped. 
-Finally, it is then applied to a theorem about the representing type. It 
-automatically maps it over to the quotient type, appropriately modifying 
-quantification over the representing type into quantification over the new 
-quotient type, and replacing functions over the representing type with their 
-corresponding lifted counterparts. Note that all variables should be bound by 
-quantifiers; these may be existential or universal but if any types involve the 
-representing type {rty} it must be just {rty} and not a composite or 
+the pairs from {lift_function} for all functions that should be mapped.
+Finally, it is then applied to a theorem about the representing type. It
+automatically maps it over to the quotient type, appropriately modifying
+quantification over the representing type into quantification over the new
+quotient type, and replacing functions over the representing type with their
+corresponding lifted counterparts. Note that all variables should be bound by
+quantifiers; these may be existential or universal but if any types involve the
+representing type {rty} it must be just {rty} and not a composite or
 higher-order type such as {rty->rty} or {rty#num}.
 
 \FAILURE
-Fails if any of the input theorems are malformed (e.g. symmetry stated with 
+Fails if any of the input theorems are malformed (e.g. symmetry stated with
 implication instead of equivalence) or fail to correspond (e.g. different
-polymorphic type variables in the type bijections and the equivalence theorem). 
-Otherwise it will not fail, but if used improperly may not map the theorem 
-across cleanly. 
+polymorphic type variables in the type bijections and the equivalence theorem).
+Otherwise it will not fail, but if used improperly may not map the theorem
+across cleanly.
 
 \EXAMPLE
-This is a continuation of the example in the documentation entries for 
-{define_quotient_type} and {lift_function}, where a type of finite multisets is 
-defined as the quotient of the type of lists by a suitable equivalence relation 
-{multisame}. We can take the theorems asserting that this is indeed reflexive, 
+This is a continuation of the example in the documentation entries for
+{define_quotient_type} and {lift_function}, where a type of finite multisets is
+defined as the quotient of the type of lists by a suitable equivalence relation
+{multisame}. We can take the theorems asserting that this is indeed reflexive,
 symmetric and transitive:
 {
   # let [MULTISAME_REFL;MULTISAME_SYM;MULTISAME_TRANS] = (CONJUNCTS o prove)
      (`(!l:(A)list. multisame l l) /\
        (!l l':(A)list. multisame l l' <=> multisame l' l) /\
-       (!l1 l2 l3:(A)list. 
+       (!l1 l2 l3:(A)list.
             multisame l1 l2 /\ multisame l2 l3 ==> multisame l1 l3)`,
       REWRITE_TAC[multisame] THEN MESON_TAC[]);;
 }
-\noindent and can now lift theorems. For example, we know that {APPEND} is 
+\noindent and can now lift theorems. For example, we know that {APPEND} is
 itself associative, and so in particular:
 {
   # let MULTISAME_APPEND_ASSOC = prove
@@ -60,11 +60,11 @@ itself associative, and so in particular:
      (`!a l m. listmult a (APPEND l m) = listmult a l + listmult a m`,
       REWRITE_TAC[listmult; LENGTH_APPEND; FILTER_APPEND]);;
 }
-These theorems and any others like them can now be lifted to equivalence 
+These theorems and any others like them can now be lifted to equivalence
 classes:
 {
   # let [MULTIPLICITY_MUNION;MUNION_ASSOC] =
-        map (lift_theorem (multiset_abs,multiset_rep) 
+        map (lift_theorem (multiset_abs,multiset_rep)
                           (MULTISAME_REFL,MULTISAME_SYM,MULTISAME_TRANS)
                           [multiplicity_th; munion_th])
             [LISTMULT_APPEND; MULTISAME_APPEND_ASSOC];;

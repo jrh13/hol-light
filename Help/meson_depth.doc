@@ -7,8 +7,8 @@ Make {MESON}'s search algorithm work by proof depth rather than size.
 
 \DESCRIBE
 This is one of several parameters determining the behavior of {MESON},
-{MESON_TAC} and related rules and tactics. The basic search strategy is 
-iterated deepening, searching for proofs with higher and higher limits on the 
+{MESON_TAC} and related rules and tactics. The basic search strategy is
+iterated deepening, searching for proofs with higher and higher limits on the
 search space. The flag {meson_depth}, when set to {true}, limits the search
 space based on proof depth, i.e. the longest branch. When set to {false}, as it
 is by default, the proof is limited based on total size.
@@ -17,7 +17,7 @@ is by default, the proof is limited based on total size.
 Not applicable.
 
 \USES
-For users requiring fine control over the algorithms used in {MESON}'s 
+For users requiring fine control over the algorithms used in {MESON}'s
 first-order proof search.
 
 \SEEALSO

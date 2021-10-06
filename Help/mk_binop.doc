@@ -10,9 +10,9 @@ The call {mk_binop op l r} returns the term {(op l) r}.
 \LIBRARY
 
 \DESCRIBE
-The call {mk_binop op l r} returns the term {(op l) r} provided that is 
-well-typed. Otherwise it fails. The term {op} need not be a constant nor parsed 
-as infix, but that is the usual case. Note that type variables in {op} are not 
+The call {mk_binop op l r} returns the term {(op l) r} provided that is
+well-typed. Otherwise it fails. The term {op} need not be a constant nor parsed
+as infix, but that is the usual case. Note that type variables in {op} are not
 instantiated, so it needs to be the correct instance for the terms {l} and {r}.
 
 \FAILURE

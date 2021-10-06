@@ -3,9 +3,9 @@ index a08ad1c..7d67f20 100644
 --- a/fusion.ml
 +++ b/fusion.ml
 @@ -23,6 +23,23 @@ module type Hol_kernel =
- 
+
        type thm
- 
+
 +      type proof = private
 +        Proof of (int * thm * proof_content)
 +      and proof_content = private
@@ -35,12 +35,12 @@ index a08ad1c..7d67f20 100644
 +      val proof_of : thm -> proof
 +      val proof_at: int -> proof
  end;;
- 
+
  (* ------------------------------------------------------------------------- *)
 @@ -101,7 +122,49 @@ module Hol : Hol_kernel = struct
              | Comb of term * term
              | Abs of term * term
- 
+
 -  type thm = Sequent of (term list * term)
 +
 +  type thm = Sequent of (term list * term * int)
@@ -85,34 +85,34 @@ index a08ad1c..7d67f20 100644
 +
 +  let proof_at p =
 +    Hashtbl.find the_proofs p
- 
+
  (* ------------------------------------------------------------------------- *)
  (* List of current type constants with their arities.                        *)
 @@ -485,43 +548,57 @@ module Hol : Hol_kernel = struct
  (* Basic theorem destructors.                                                *)
  (* ------------------------------------------------------------------------- *)
- 
+
 -  let dest_thm (Sequent(asl,c)) = (asl,c)
 +  let dest_thm (Sequent(asl,c,_)) = (asl,c)
 +
 +  let hyp (Sequent(asl,c,_)) = asl
- 
+
 -  let hyp (Sequent(asl,c)) = asl
 +  let concl (Sequent(asl,c,_)) = c
- 
+
 -  let concl (Sequent(asl,c)) = c
 +  let proof_of(Sequent(_,_,p)) = Hashtbl.find the_proofs p
- 
+
  (* ------------------------------------------------------------------------- *)
  (* Basic equality properties; TRANS is derivable but included for efficiency *)
  (* ------------------------------------------------------------------------- *)
- 
+
    let REFL tm =
 -    Sequent([],safe_mk_eq tm tm)
 +    let idx = next_proof_idx() in
 +    let th = Sequent([],safe_mk_eq tm tm,idx) in
 +    new_proof (Proof(idx,th,Prefl tm))
- 
+
 -  let TRANS (Sequent(asl1,c1)) (Sequent(asl2,c2)) =
 +  let TRANS (Sequent(asl1,c1,p1)) (Sequent(asl2,c2,p2)) =
      match (c1,c2) with
@@ -124,11 +124,11 @@ index a08ad1c..7d67f20 100644
 +          new_proof (Proof(idx,th,Ptrans(Hashtbl.find the_proofs p1,
 +                                         Hashtbl.find the_proofs p2)))
      | _ -> failwith "TRANS"
- 
+
  (* ------------------------------------------------------------------------- *)
  (* Congruence properties of equality.                                        *)
  (* ------------------------------------------------------------------------- *)
- 
+
 -  let MK_COMB(Sequent(asl1,c1),Sequent(asl2,c2)) =
 +  let MK_COMB(Sequent(asl1,c1,p1),Sequent(asl2,c2,p2)) =
       match (c1,c2) with
@@ -146,7 +146,7 @@ index a08ad1c..7d67f20 100644
 +                                             Hashtbl.find the_proofs p2)))
           | _ -> failwith "MK_COMB: types do not agree")
       | _ -> failwith "MK_COMB: not both equations"
- 
+
 -  let ABS v (Sequent(asl,c)) =
 +  let ABS v (Sequent(asl,c,p)) =
      match (v,c) with
@@ -157,10 +157,10 @@ index a08ad1c..7d67f20 100644
 +        let th = Sequent(asl,safe_mk_eq (Abs(v,l)) (Abs(v,r)),idx) in
 +        new_proof (Proof(idx,th,Pabs(Hashtbl.find the_proofs p, v)))
      | _ -> failwith "ABS";;
- 
+
  (* ------------------------------------------------------------------------- *)
 @@ -530,8 +607,10 @@ module Hol : Hol_kernel = struct
- 
+
    let BETA tm =
      match tm with
 -      Comb(Abs(v,bod),arg) when Pervasives.compare arg v = 0
@@ -170,11 +170,11 @@ index a08ad1c..7d67f20 100644
 +        let th = Sequent([],safe_mk_eq tm bod,idx) in
 +        new_proof (Proof(idx,th,Pbeta(tm)))
      | _ -> failwith "BETA: not a trivial beta-redex"
- 
+
  (* ------------------------------------------------------------------------- *)
 @@ -539,30 +618,43 @@ module Hol : Hol_kernel = struct
  (* ------------------------------------------------------------------------- *)
- 
+
    let ASSUME tm =
 -    if Pervasives.compare (type_of tm) bool_ty = 0 then Sequent([tm],tm)
 +    if Pervasives.compare (type_of tm) bool_ty = 0 then
@@ -182,7 +182,7 @@ index a08ad1c..7d67f20 100644
 +      let th = Sequent([tm],tm,idx) in
 +      new_proof (Proof(idx,th,Passume(tm)))
      else failwith "ASSUME: not a proposition"
- 
+
 -  let EQ_MP (Sequent(asl1,eq)) (Sequent(asl2,c)) =
 +  let EQ_MP (Sequent(asl1,eq,p1)) (Sequent(asl2,c,p2)) =
      match eq with
@@ -194,7 +194,7 @@ index a08ad1c..7d67f20 100644
 +        new_proof (Proof(idx,th,Peqmp(Hashtbl.find the_proofs p1,
 +                                      Hashtbl.find the_proofs p2)))
      | _ -> failwith "EQ_MP"
- 
+
 -  let DEDUCT_ANTISYM_RULE (Sequent(asl1,c1)) (Sequent(asl2,c2)) =
 +  let DEDUCT_ANTISYM_RULE (Sequent(asl1,c1,p1)) (Sequent(asl2,c2,p2)) =
      let asl1' = term_remove c2 asl1 and asl2' = term_remove c1 asl2 in
@@ -203,11 +203,11 @@ index a08ad1c..7d67f20 100644
 +    let th = Sequent(term_union asl1' asl2',safe_mk_eq c1 c2,idx) in
 +    new_proof (Proof(idx,th,Pdeduct(Hashtbl.find the_proofs p1,
 +                                    Hashtbl.find the_proofs p2)))
- 
+
  (* ------------------------------------------------------------------------- *)
  (* Type and term instantiation.                                              *)
  (* ------------------------------------------------------------------------- *)
- 
+
 -  let INST_TYPE theta (Sequent(asl,c)) =
 +  let INST_TYPE theta (Sequent(asl,c,p)) =
 +    let idx = next_proof_idx() in
@@ -215,7 +215,7 @@ index a08ad1c..7d67f20 100644
 -    Sequent(term_image inst_fn asl,inst_fn c)
 +    let th = Sequent(term_image inst_fn asl,inst_fn c,idx) in
 +    new_proof (Proof(idx,th,Pinstt(Hashtbl.find the_proofs p,theta)))
- 
+
 -  let INST theta (Sequent(asl,c)) =
 +  let INST theta (Sequent(asl,c,p)) =
 +    let idx = next_proof_idx() in
@@ -223,11 +223,11 @@ index a08ad1c..7d67f20 100644
 -    Sequent(term_image inst_fun asl,inst_fun c)
 +    let th = Sequent(term_image inst_fun asl,inst_fun c,idx) in
 +    new_proof (Proof(idx,th,Pinst(Hashtbl.find the_proofs p,theta)))
- 
+
  (* ------------------------------------------------------------------------- *)
  (* Handling of axioms.                                                       *)
 @@ -574,8 +666,10 @@ module Hol : Hol_kernel = struct
- 
+
    let new_axiom tm =
      if Pervasives.compare (type_of tm) bool_ty = 0 then
 -      let th = Sequent([],tm) in
@@ -237,7 +237,7 @@ index a08ad1c..7d67f20 100644
 +       (the_axioms := th::(!the_axioms);
 +        new_proof (Proof(idx,th,Paxiom(tm))))
      else failwith "new_axiom: Not a proposition"
- 
+
  (* ------------------------------------------------------------------------- *)
 @@ -593,8 +687,11 @@ module Hol : Hol_kernel = struct
          else if not (subset (type_vars_in_term r) (tyvars ty))
@@ -251,12 +251,12 @@ index a08ad1c..7d67f20 100644
 +             (the_definitions := dth::(!the_definitions);
 +              new_proof (Proof(idx,dth,Pdef(dtm,cname,ty))))
      | _ -> failwith "new_basic_definition"
- 
+
  (* ------------------------------------------------------------------------- *)
 @@ -610,7 +707,7 @@ module Hol : Hol_kernel = struct
  (* Where "abs" and "rep" are new constants with the nominated names.         *)
  (* ------------------------------------------------------------------------- *)
- 
+
 -  let new_basic_type_definition tyname (absname,repname) (Sequent(asl,c)) =
 +  let new_basic_type_definition tyname (absname,repname) (Sequent(asl,c,p)) =
      if exists (can get_const_type) [absname; repname] then
@@ -282,6 +282,6 @@ index a08ad1c..7d67f20 100644
 +     new_proof (Proof(ridx,
 +                      rth,
 +                      Pdeft(Hashtbl.find the_proofs p,rtm,repname,repty))))
- 
+
  end;;
- 
+

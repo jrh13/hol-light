@@ -11,7 +11,7 @@ elementary ``divisibility'' properties of the natural numbers. The precise
 subset that is dealt with is difficult to describe rigorously, but many
 universally quantified combinations of {divides}, {coprime}, {gcd} and
 congruences {(x == y) (mod n)} can be proved automatically, as well as some
-existentially quantified goals. See a similar rule {INTEGER_RULE} for the 
+existentially quantified goals. See a similar rule {INTEGER_RULE} for the
 integers for a representative set of examples.
 
 \FAILURE
@@ -21,9 +21,9 @@ Fails if the goal is not accessible to the methods used.
 Here is a typical example, which would be rather tedious to prove manually:
 {
   # NUMBER_RULE
-     `!a b a' b'. ~(gcd(a,b) = 0) /\ a = a' * gcd(a,b) /\ b = b' * gcd(a,b)    
+     `!a b a' b'. ~(gcd(a,b) = 0) /\ a = a' * gcd(a,b) /\ b = b' * gcd(a,b)
                   ==> coprime(a',b')`;;
-  ... 
+  ...
   val it : thm =
   |- !a b a' b'.
         ~(gcd (a,b) = 0) /\ a = a' * gcd (a,b) /\ b = b' * gcd (a,b)

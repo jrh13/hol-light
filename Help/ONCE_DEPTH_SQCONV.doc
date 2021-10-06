@@ -7,9 +7,9 @@ Applies simplification to the first suitable sub-term(s) encountered in
 top-down order.
 
 \DESCRIBE
-HOL Light's simplification functions (e.g. {SIMP_TAC}) have their traversal 
-algorithm controlled by a ``strategy''. {ONCE_DEPTH_SQCONV} is a strategy 
-corresponding to {ONCE_DEPTH_CONV} for ordinary conversions: simplification is 
+HOL Light's simplification functions (e.g. {SIMP_TAC}) have their traversal
+algorithm controlled by a ``strategy''. {ONCE_DEPTH_SQCONV} is a strategy
+corresponding to {ONCE_DEPTH_CONV} for ordinary conversions: simplification is
 applied to the first suitable subterm(s) encountered in top-down order.
 
 \FAILURE

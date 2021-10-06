@@ -79,15 +79,15 @@ type poly_coeff = {
 };;
 
 (* Creates polynomial coefficients from the given list of constant expressions *)
-let mk_poly_coeffs = 
-  let interval_pos = prove(`interval_arith x (float_num F n e, f) 
+let mk_poly_coeffs =
+  let interval_pos = prove(`interval_arith x (float_num F n e, f)
 			   ==> interval_arith x (&0, f) /\ interval_arith (float_num F n e) (&0, x)`,
-			   REWRITE_TAC[interval_arith] THEN 
+			   REWRITE_TAC[interval_arith] THEN
 			     MP_TAC (SPECL[`n:num`; `e:num`] FLOAT_F_POS) THEN
 			     REAL_ARITH_TAC) and
-      interval_neg = prove(`interval_arith x (f, float_num T n e) 
+      interval_neg = prove(`interval_arith x (f, float_num T n e)
 			   ==> interval_arith x (f, &0) /\ interval_arith (float_num T n e) (x, &0)`,
-			   REWRITE_TAC[interval_arith] THEN 
+			   REWRITE_TAC[interval_arith] THEN
 			     MP_TAC (SPECL[`n:num`; `e:num`] FLOAT_T_NEG) THEN
 			     REAL_ARITH_TAC) in
   let mk_poly_coeff pp cs_tm =
@@ -104,7 +104,7 @@ let mk_poly_coeffs =
       match (s1, s2) with
 	| "F", _ -> 1, MATCH_MP interval_pos int_th
 	| _, "T" -> -1, MATCH_MP interval_neg int_th
-	| _ -> 0, TRUTH in 
+	| _ -> 0, TRUTH in
     let sign_high, sign_low = pair_of_list (CONJUNCTS sign_th) in
       {
 	c_tm = c_tm;
@@ -129,7 +129,7 @@ let eval_interval_poly_f =
     fun pp (cs_tm, cs_list) x_th ->
       let rec eval cs_tm cs_list x_tm x_th =
 	match cs_list with
-	  | [] -> 
+	  | [] ->
 	      INST[x_tm, x_var_real] poly_f_empty'
 	  | [first] ->
 	      let th0 = INST[first.c_tm, c_var_real; x_tm, x_var_real] poly_f_sing' in
@@ -157,8 +157,8 @@ let eval_high_poly_f_pos_pos =
       poly_f_cons_high' = RULE' poly_f_cons_high_pos_pos in
   let check_pos c =
     if c.sign = 1 then () else
-      failwith (Printf.sprintf "eval_high_poly_f_pos_pos: non-positive coefficient: %s, %s" 
-		  (string_of_term c.c_tm) 
+      failwith (Printf.sprintf "eval_high_poly_f_pos_pos: non-positive coefficient: %s, %s"
+		  (string_of_term c.c_tm)
 		  (string_of_term c.bounds_tm)) in
     fun pp (cs_tm, cs_list) x_th ->
       let rec eval cs_tm cs_list x_tm x_th =
@@ -167,7 +167,7 @@ let eval_high_poly_f_pos_pos =
 	  | [first] ->
 	      let _ = check_pos first in
 	      let bounds_tm = rand (concl first.sign_high_th) in
-	      let th0 = INST[first.c_tm, c_var_real; bounds_tm, bounds_var; x_tm, x_var_real] 
+	      let th0 = INST[first.c_tm, c_var_real; bounds_tm, bounds_var; x_tm, x_var_real]
 		poly_f_sing_high' in
 		MY_PROVE_HYP first.sign_high_th th0
 	  | first :: rest ->
@@ -185,9 +185,9 @@ let eval_high_poly_f_pos_pos =
 	      let th0 = INST[h_tm, h_var_real; t_tm, t_var_real_list; x_tm, x_var_real;
 			     a_tm, a_var_real; b_tm, b_var_real; c_tm, c_var_real;
 			     m_tm, m_var_real; r_tm, r_var_real] poly_f_cons_high' in
-		MY_PROVE_HYP r_bound_th 
-		  (MY_PROVE_HYP m_bound_th 
-		     (MY_PROVE_HYP first.sign_high_th 
+		MY_PROVE_HYP r_bound_th
+		  (MY_PROVE_HYP m_bound_th
+		     (MY_PROVE_HYP first.sign_high_th
 			(MY_PROVE_HYP rest_th (MY_PROVE_HYP x_th th0))))
       in
       let x_tm = rand (rator (concl x_th)) in
@@ -197,15 +197,15 @@ let eval_high_poly_f_pos_pos =
 (* Evaluates a lower bound of a polynomial on a given non-negative number.
  * All coefficients of the polynomial must be non-negative.
  * The argument x should be in the form: |- interval_arith f (&0, x) *)
-let eval_low_poly_f_pos_pos = 
+let eval_low_poly_f_pos_pos =
   let RULE' = (UNDISCH_ALL o REWRITE_RULE[real_zero] o DISCH_ALL o RULE) in
   let poly_f_empty_low' = RULE' poly_f_empty_low_pos and
       poly_f_sing_low' = RULE' poly_f_sing_low_pos and
       poly_f_cons_low' = RULE' poly_f_cons_low_pos_pos in
   let check_pos c =
     if c.sign = 1 then () else
-      failwith (Printf.sprintf "eval_low_poly_f_pos_pos: non-positive coefficient: %s, %s" 
-		  (string_of_term c.c_tm) 
+      failwith (Printf.sprintf "eval_low_poly_f_pos_pos: non-positive coefficient: %s, %s"
+		  (string_of_term c.c_tm)
 		  (string_of_term c.bounds_tm)) in
     fun pp (cs_tm, cs_list) x_th ->
       let rec eval cs_tm cs_list x_tm x_th =
@@ -214,7 +214,7 @@ let eval_low_poly_f_pos_pos =
 	  | [first] ->
 	      let _ = check_pos first in
 	      let b_tm = (rand o rator o concl) first.sign_low_th in
-	      let th0 = INST[first.c_tm, c_var_real; b_tm, b_var_real; x_tm, x_var_real] 
+	      let th0 = INST[first.c_tm, c_var_real; b_tm, b_var_real; x_tm, x_var_real]
 		poly_f_sing_low' in
 		MY_PROVE_HYP first.sign_low_th th0
 	  | first :: rest ->
@@ -234,9 +234,9 @@ let eval_low_poly_f_pos_pos =
 			     a_tm, a_var_real; b_tm, b_var_real; c_tm, c_var_real;
 			     m_tm, m_var_real; r_tm, r_var_real] poly_f_cons_low' in
 		MY_PROVE_HYP r_ge0_th
-		  (MY_PROVE_HYP r_bound_th 
-		     (MY_PROVE_HYP m_bound_th 
-			(MY_PROVE_HYP first.sign_low_th 
+		  (MY_PROVE_HYP r_bound_th
+		     (MY_PROVE_HYP m_bound_th
+			(MY_PROVE_HYP first.sign_low_th
 			   (MY_PROVE_HYP rest_th (MY_PROVE_HYP x_th th0)))))
       in
       let x_tm = rand (rand (concl x_th)) in
@@ -253,7 +253,7 @@ let eval_pow2_high =
 	MY_PROVE_HYP mul_th th0;;
 
 let eval_pow2_low =
-  let pow2_th = (UNDISCH_ALL o prove)(`(&0 <= a <=> T) ==> a <= x * x 
+  let pow2_th = (UNDISCH_ALL o prove)(`(&0 <= a <=> T) ==> a <= x * x
 				      ==> interval_arith a (&0, x pow 2)`,
 			SIMP_TAC[interval_arith; REAL_POW_2]) in
     fun pp f_tm ->
@@ -292,7 +292,7 @@ let eval_pow4_low =
 			REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
 			MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `a * a:real` THEN
 			ASM_REWRITE_TAC[] THEN
-  		        MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_POW_2; REAL_POW_2]) 
+  		        MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_POW_2; REAL_POW_2])
   in
     fun pp f_tm ->
       let mul1_th = float_mul_lo pp f_tm f_tm in
@@ -306,7 +306,7 @@ let eval_pow4_low =
 
 let eval_pow2_pow4_high =
   let pow4_th = (UNDISCH_ALL o prove)(`interval_arith (x pow 2) (&0, a) ==>
-					a * a <= b ==> 
+					a * a <= b ==>
 					interval_arith (x pow 4) (&0, b)`,
 		      REWRITE_TAC[interval_arith; ARITH_RULE `4 = 2 + 2`; REAL_POW_ADD] THEN
 			REPEAT STRIP_TAC THENL [
@@ -325,8 +325,8 @@ let eval_pow2_pow4_high =
 
 let eval_pow2_pow4_low =
   let pow4_th = (UNDISCH_ALL o prove)(`interval_arith a (&0, x pow 2) ==>
-					b <= a * a ==> 
-					(&0 <= b <=> T) ==> 
+					b <= a * a ==>
+					(&0 <= b <=> T) ==>
 					interval_arith b (&0, x pow 4)`,
 		      REWRITE_TAC[interval_arith; ARITH_RULE `4 = 2 + 2`; REAL_POW_ADD] THEN
 			REPEAT STRIP_TAC THENL [

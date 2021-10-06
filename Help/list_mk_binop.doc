@@ -7,13 +7,13 @@ Makes an iterative application of a binary operator.
 
 \DESCRIBE
 The call {list_mk_binop op [t1; ...; tn]} constructs the term
-{op t1 (op t2 (op ... (op tn-1 tn) ...)))}. If we think of {op} as an infix 
-operator we can write it {t1 op t2 op t3 ... op tn}, but the call will work for 
+{op t1 (op t2 (op ... (op tn-1 tn) ...)))}. If we think of {op} as an infix
+operator we can write it {t1 op t2 op t3 ... op tn}, but the call will work for
 any term {op} compatible with all the types.
 
 \FAILURE
-Fails if the list of terms is empty or if the types would not work for the 
-composite term. In particular, if the list contains at least three items, all 
+Fails if the list of terms is empty or if the types would not work for the
+composite term. In particular, if the list contains at least three items, all
 the types must be the same.
 
 \EXAMPLE
@@ -22,7 +22,7 @@ This example is typical:
   # list_mk_binop `(+):num->num->num` (map mk_small_numeral (1--10));;
   val it : term = `1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10`
 }
-\noindent while these show that for smaller lists, one can just regard it as 
+\noindent while these show that for smaller lists, one can just regard it as
 {mk_comb} or {mk_binop}:
 {
   # list_mk_binop `SUC` [`0`];;

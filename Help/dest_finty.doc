@@ -6,7 +6,7 @@
 Converts a standard finite type to corresponding integer.
 
 \DESCRIBE
-Finite types parsed and printed as numerals are provided, and this operation 
+Finite types parsed and printed as numerals are provided, and this operation
 when applied to such a type gives the corresponding number.
 
 \FAILURE

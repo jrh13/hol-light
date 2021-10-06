@@ -7,8 +7,8 @@ Insert element into list unless it contains an equivalent one already.
 
 \DESCRIBE
 If {r} is a binary relation, {x} an element and {l} a list, the call
-{insert' r x l} will add {x} to the head of the list, unless the list already 
-contains an element {x'} with {r x x'}; if it does, the list is returned 
+{insert' r x l} will add {x} to the head of the list, unless the list already
+contains an element {x'} with {r x x'}; if it does, the list is returned
 unchanged. The function {insert} is the special case where {r} is equality.
 
 \FAILURE
@@ -18,7 +18,7 @@ Fails only if the relation fails.
 {
   # insert' (fun x y -> abs(x) = abs(y)) (-1) [1;2;3];;
   val it : int list = [1; 2; 3]
-  
+
   # insert' (fun x y -> abs(x) = abs(y)) (-1) [2;3;4];;
   val it : int list = [-1; 2; 3; 4]
 }

@@ -113,39 +113,39 @@ let h0 = new_definition `h0 = #1.26`;;
 let lfun = new_definition `lfun h =  (h0 - h)/(h0 - &1)`;;
 
 (* lfun_y1 *)
-let lfun_y1 = new_definition `lfun_y1 (y1:real) (y2:real) (y3:real) 
+let lfun_y1 = new_definition `lfun_y1 (y1:real) (y2:real) (y3:real)
   (y4:real) (y5:real) (y6:real) =  lfun y1`;;
 
 		
 (* num1 *)
 let num1 = new_definition `num1 e1 e2 e3 a2 b2 c2 =
-   -- &4*((a2 pow 2) *e1 + &8*(b2 - c2)*(e2 - e3) - 
+   -- &4*((a2 pow 2) *e1 + &8*(b2 - c2)*(e2 - e3) -
   a2*(&16*e1 + ( b2 - &8 )*e2 + (c2 - &8)*e3))`;;
 
 (* unit6 *)
 let unit6 = define `unit6 x1 x2 x3 x4 x5 x6 = &1`;;
 
 (* arc_hhn *)
-let arc_hhn' = new_definition `arc_hhn' = 
+let arc_hhn' = new_definition `arc_hhn' =
   arclength' (&2 * h0) (&2 * h0) (&2)`;;
 
 (* arclength_y1 *)
-let arclength_y1' = new_definition 
- `arclength_y1' a b 
+let arclength_y1' = new_definition
+ `arclength_y1' a b
   (y1:real) (y2:real) (y3:real) (y4:real) (y5:real) (y6:real) =
   arclength' y1 a b`;;
 
 (* arclength_x1 *)
-let arclength_x1' = new_definition 
- `arclength_x1' a b x1 x2 x3 x4 x5 x6 = 
+let arclength_x1' = new_definition
+ `arclength_x1' a b x1 x2 x3 x4 x5 x6 =
   arclength_y1' a b (sqrt x1) (sqrt x2) (sqrt x3) (sqrt x4) (sqrt x5) (sqrt x6)`;;
 
 (* arclength_x_123 *)
-let arclength_x_123' = new_definition `arclength_x_123'  (x1:real) (x2:real) (x3:real) (x4:real) (x5:real) (x6:real) = 
+let arclength_x_123' = new_definition `arclength_x_123'  (x1:real) (x2:real) (x3:real) (x4:real) (x5:real) (x6:real) =
 		arclength' (sqrt x1) (sqrt x2) (sqrt x3)`;;
-  
-(* acs_sqrt_x1_d4 *)  
-let acs_sqrt_x1_d4 = new_definition `acs_sqrt_x1_d4 (x1:real) (x2:real) (x3:real) (x4:real) (x5:real) (x6:real) = 
+
+(* acs_sqrt_x1_d4 *)
+let acs_sqrt_x1_d4 = new_definition `acs_sqrt_x1_d4 (x1:real) (x2:real) (x3:real) (x4:real) (x5:real) (x6:real) =
   acs (sqrt(x1)/ &4)`;;
 
 let sqrt_x1 = define `sqrt_x1 x1 x2 x3 x4 x5 x6 = sqrt x1`;;
@@ -198,7 +198,7 @@ let add_example ex =
 add_example {id = "2485876245a";
 	     difficulty = Easy;
 	     ineq_tm = `ineq
-    [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #6.3504; 
+    [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #6.3504;
       #3.0 *  #3.0, x5, #2.0 *  #2.52 *  #2.0 *  #2.52;  #4.0,x6, #6.3504]
     (delta_x4 x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
 
@@ -207,7 +207,7 @@ add_example {id = "2485876245a";
 add_example {id = "4559601669b";
 	     difficulty = Easy;
 	     ineq_tm = `ineq
-    [ #4.0,x1, #6.3504;  #4.0,x2, #4.0;  #4.0,x3, #6.3504;  
+    [ #4.0,x1, #6.3504;  #4.0,x2, #4.0;  #4.0,x3, #6.3504;
       #3.01 *  #3.01, x4, #3.01 *  #3.01; #4.0, x5, #6.3504;  #4.0,x6, #4.0]
     (delta_x4 x1 x2 x3 x4 x5 x6 < &0)`};;
 
@@ -215,8 +215,8 @@ add_example {id = "4559601669b";
 (* 5512912661 *)
 add_example {id = "5512912661";
 	     difficulty = Easy;
-	     ineq_tm = `ineq [&1,x1,&1 + (pi * const1') / pi; &1,x2,&1 + (pi * const1') / pi; 
-			      &1, x3, &1 + (pi * const1') / pi;  #2.38 * #2.38, x4, #3.01 * #3.01; 
+	     ineq_tm = `ineq [&1,x1,&1 + (pi * const1') / pi; &1,x2,&1 + (pi * const1') / pi;
+			      &1, x3, &1 + (pi * const1') / pi;  #2.38 * #2.38, x4, #3.01 * #3.01;
 			      &2 * &2, x5, #2.52 *  #2.52;  #3.15 /  #1.26 *  #3.15 /  #1.26,x6, #15.53]
     (num1 x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
 
@@ -224,8 +224,8 @@ add_example {id = "5512912661";
 (* 6843920790 *)
 add_example {id = "6843920790";
 	     difficulty = Easy;
-	     ineq_tm = `ineq [&1,x1,&1 + (pi * const1') / pi; &1,x2,&1 + (pi * const1') / pi; 
-			      &1, x3, &1 + (pi * const1') / pi; &2 / #1.26 * &2 / #1.26, x4, #3.01 * #3.01; 
+	     ineq_tm = `ineq [&1,x1,&1 + (pi * const1') / pi; &1,x2,&1 + (pi * const1') / pi;
+			      &1, x3, &1 + (pi * const1') / pi; &2 / #1.26 * &2 / #1.26, x4, #3.01 * #3.01;
 			      #2.38 *  #2.38, x5, #15.53;  #2.38 *  #2.38,x6, #15.53]
     (num1 x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
 
@@ -245,8 +245,8 @@ add_example {id = "6096597438a";
 add_example {id = "4717061266";
 	     difficulty = Easy;
 	     ineq_tm = `ineq
-    [ #4.0,x1, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0, x2, #2.0 *  #1.26 *  #2.0 *  #1.26; 
-      #4.0, x3, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0,x4, #2.0 *  #1.26 *  #2.0 *  #1.26; 
+    [ #4.0,x1, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0, x2, #2.0 *  #1.26 *  #2.0 *  #1.26;
+      #4.0, x3, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0,x4, #2.0 *  #1.26 *  #2.0 *  #1.26;
       #4.0, x5, #2.0 *  #1.26 *  #2.0 *  #1.26;  #4.0,x6, #2.0 *  #1.26 *  #2.0 *  #1.26]
     (delta_x x1 x2 x3 x4 x5 x6 * -- &1 < &0)`};;
 
@@ -254,7 +254,7 @@ add_example {id = "4717061266";
 (* SDCCMGA b *)
 add_example {id = "SDCCMGA b";
 	     difficulty = Easy;
-	     ineq_tm = `ineq [ #4.0,x1, #6.3504; &1 * &1,x2,&1 * &1; &1 * &1,x3,&1 * &1; 
+	     ineq_tm = `ineq [ #4.0,x1, #6.3504; &1 * &1,x2,&1 * &1; &1 * &1,x3,&1 * &1;
 			       &1 * &1, x4, &1 * &1; &1 * &1, x5, &1 * &1; &1 * &1,x6,&1 * &1]
     (arclength_x1'  #2.0 ( #2.0 *  #1.26) x1 x2 x3 x4 x5 x6 +
        arclength_x1'  #2.0 ( #2.0 *  #1.26) x1 x2 x3 x4 x5 x6 +
@@ -267,7 +267,7 @@ add_example {id = "SDCCMGA b";
 add_example {id = "TSKAJXY-TADIAMB";
 	     difficulty = Medium;
 	     ineq_tm = `ineq
-    [ #2.0 *  #1.3254 *  #2.0 *  #1.3254,x1, #8.0;  #2.0 * #1.3254 * #2.0 * #1.3254, x2, #8.0;  
+    [ #2.0 *  #1.3254 *  #2.0 *  #1.3254,x1, #8.0;  #2.0 * #1.3254 * #2.0 * #1.3254, x2, #8.0;
       #4.0,x3, #8.0; #4.0, x4, #8.0;  #4.0,x5, #8.0;  #4.0,x6, #8.0]
     ((unit6 x1 x2 x3 x4 x5 x6 * #2.0) * (delta_x x1 x2 x3 x4 x5 x6 * &4) < rho_x x1 x2 x3 x4 x5 x6)`};;
 
@@ -275,7 +275,7 @@ add_example {id = "TSKAJXY-TADIAMB";
 (* 7067938795 *)
 add_example {id = "7067938795";
 	     difficulty = Medium;
-	     ineq_tm = `ineq [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #4.0; 
+	     ineq_tm = `ineq [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #4.0;
 			       #3.01 *  #3.01, x5, #3.24 *  #3.24;  #3.01 *  #3.01,x6, #3.24 *  #3.24]
     (dih_x' x1 x2 x3 x4 x5 x6 +
        unit6 x1 x2 x3 x4 x5 x6 * pi * --(&1 /  #2.0) +
@@ -286,7 +286,7 @@ add_example {id = "7067938795";
 add_example { id = "5490182221";
 	      difficulty = Medium;
 	      ineq_tm = `ineq
-    [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #6.3504; 
+    [ #4.0,x1, #6.3504;  #4.0,x2, #6.3504;  #4.0,x3, #6.3504;  #4.0,x4, #6.3504;
       #4.0, x5, #6.3504;  #4.0,x6, #6.3504]
     (dih_x' x1 x2 x3 x4 x5 x6 + unit6 x1 x2 x3 x4 x5 x6 * -- #1.893 < &0)`};;
 
@@ -298,9 +298,9 @@ add_example { id = "3318775219";
 	      ineq_tm = `ineq [&2, y1, #2.52; &2, y2, #2.52;
 			       &2, y3, #2.52; #2.52, y4, sqrt(&8);
 			       &2, y5, #2.52; &2, y6, #2.52]
-    ( ((dih_y' y1 y2 y3 y4 y5 y6) - #1.629 +  
+    ( ((dih_y' y1 y2 y3 y4 y5 y6) - #1.629 +
 	 (#0.414 * (y2 + y3 + y5 + y6 - #8.0)) -
-	 (#0.763 * (y4 - #2.52)) - 
+	 (#0.763 * (y4 - #2.52)) -
 	 (#0.315 * (y1 - #2.0))) * (-- &1)  < &0)`};;
 
 

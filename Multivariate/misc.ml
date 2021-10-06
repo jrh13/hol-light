@@ -797,7 +797,7 @@ let FINITE_INDEX_NUMSEG_SPECIAL = prove
         CARD_EQ_BIJECTIONS_SPECIAL) THEN
   ANTS_TAC THENL [ALL_TAC; MATCH_MP_TAC MONO_EXISTS THEN SET_TAC[]] THEN
   ASM_REWRITE_TAC[FINITE_NUMSEG; CARD_NUMSEG_1; IN_NUMSEG; LE_REFL] THEN
-  ASM_SIMP_TAC[CARD_EQ_0; ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN 
+  ASM_SIMP_TAC[CARD_EQ_0; ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN
   ASM SET_TAC[]);;
 
 (* ------------------------------------------------------------------------- *)

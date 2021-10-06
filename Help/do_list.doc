@@ -6,9 +6,9 @@
 Apply imperative function to each element of a list.
 
 \DESCRIBE
-The call {do_list f [x1; ... ; xn]} evaluates in sequence the expressions 
-{f x1}, ..., {f xn} in that order, discarding the results. Presumably the 
-applications will have some side-effect, such as printing something to the 
+The call {do_list f [x1; ... ; xn]} evaluates in sequence the expressions
+{f x1}, ..., {f xn} in that order, discarding the results. Presumably the
+applications will have some side-effect, such as printing something to the
 terminal.
 
 \EXAMPLE

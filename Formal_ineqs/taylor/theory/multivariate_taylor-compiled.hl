@@ -19,7 +19,7 @@ let IMAGE_DELETE_INJ_COMPAT = prove
 	      SET_TAC[]);;
 let partial = new_definition `partial i f x = derivative (f o (\t. (x:real^N) + t % basis i)) (&0)`;;
 let all_n = define `(all_n n [] s <=> T) /\ (all_n n (CONS h t) s <=> s n h /\ all_n (SUC n) t s)`;;
-let m_lin_approx = new_definition `m_lin_approx (f:real^N->real) x f_bounds df_bounds_list <=> 
+let m_lin_approx = new_definition `m_lin_approx (f:real^N->real) x f_bounds df_bounds_list <=>
 	(lift o f) differentiable at x /\
 	interval_arith (f x) f_bounds /\
 	all_n 1 df_bounds_list (\i int. interval_arith (partial i f x) int)`;;
@@ -126,7 +126,7 @@ let frechet_scale = Sections.section_proof ["c"]
 
 (* Lemma frechet_add *)
 let frechet_add = Sections.section_proof []
-`frechet_derivative (\x. f x + g x) (at x) = 
+`frechet_derivative (\x. f x + g x) (at x) =
 	(\y. frechet_derivative f (at x) y + frechet_derivative g (at x) y)`
 [
    ((((use_arg_then2 ("EQ_SYM_EQ", [EQ_SYM_EQ]))(thm_tac (new_rewrite [] [])))) THEN ((use_arg_then2 ("FRECHET_DERIVATIVE_AT", [FRECHET_DERIVATIVE_AT])) (thm_tac apply_tac)) THEN ((use_arg_then2 ("HAS_DERIVATIVE_ADD", [HAS_DERIVATIVE_ADD])) (thm_tac apply_tac)));
@@ -135,7 +135,7 @@ let frechet_add = Sections.section_proof []
 
 (* Lemma frechet_sub *)
 let frechet_sub = Sections.section_proof []
-`frechet_derivative (\x. f x - g x) (at x) = 
+`frechet_derivative (\x. f x - g x) (at x) =
 	(\y. frechet_derivative f (at x) y - frechet_derivative g (at x) y)`
 [
    ((((use_arg_then2 ("EQ_SYM_EQ", [EQ_SYM_EQ]))(thm_tac (new_rewrite [] [])))) THEN ((use_arg_then2 ("FRECHET_DERIVATIVE_AT", [FRECHET_DERIVATIVE_AT])) (thm_tac apply_tac)) THEN ((use_arg_then2 ("HAS_DERIVATIVE_SUB", [HAS_DERIVATIVE_SUB])) (thm_tac apply_tac)));
@@ -223,7 +223,7 @@ let has_derivative_x12 = Sections.section_proof ["y"]
 
 (* Lemma lambda_eq_vsum *)
 let lambda_eq_vsum = Sections.section_proof ["f"]
-`(\x:A. lambda i. f i x) =  
+`(\x:A. lambda i. f i x) =
 	(\x. vsum (1..dimindex (:N)) (\i. f i x % (basis i:real^N)))`
 [
    (((((use_arg_then2 ("eq_ext", [eq_ext]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (simp_tac)) THEN (move ["x"]));
@@ -283,7 +283,7 @@ let has_derivative_mul = Sections.section_proof ["f";"g";"f'";"g'";"y"]
    ((fun arg_tac -> arg_tac (Arg_term (`lift o (\x. f x * g x) = (lift o (\p. p$1 * p$2)) o (\x. vector [f x; g x]:real^2)`))) (term_tac (have_gen_tac [](((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] [])))))));
    ((((((use_arg_then2 ("eq_ext", [eq_ext]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] []))))) THEN (simp_tac)) THEN (move ["x"])) THEN (repeat_tactic 1 9 (((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL VECTOR_2)))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
    ((fun arg_tac -> arg_tac (Arg_term (`vector [f y; g y]:real^2`))) (term_tac (set_tac "q")));
-   ((fun arg_tac -> arg_tac (Arg_term (`lift o (\x. f' x * g y + f y * g' x) = 
+   ((fun arg_tac -> arg_tac (Arg_term (`lift o (\x. f' x * g y + f y * g' x) =
 	(lift o (\x:real^2. q$2 * x$1 + q$1 * x$2)) o (\x. vector [f' x; g' x])`))) (term_tac (have_gen_tac [](((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [] [])))))));
    (((((use_arg_then2 ("eq_ext", [eq_ext]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] []))))) THEN (simp_tac) THEN (((use_arg_then2 ("q_def", []))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL VECTOR_2)))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("REAL_MUL_SYM", [REAL_MUL_SYM]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
    ((((use_arg_then2 ("DIFF_CHAIN_AT", [DIFF_CHAIN_AT])) (thm_tac apply_tac)) THEN (simp_tac)) THEN ((((use_arg_then2 ("q_def", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("has_derivative_x12", [has_derivative_x12]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("has_derivative_vector2", [has_derivative_vector2]))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
@@ -313,7 +313,7 @@ let frechet_mul = Sections.section_proof ["f";"g";"y"]
 `lift o f differentiable at y ==>
 	lift o g differentiable at y ==>
 	frechet_derivative (lift o (\x. f x * g x)) (at y) =
-		(\x. g y % frechet_derivative (lift o f) (at y) x + 
+		(\x. g y % frechet_derivative (lift o f) (at y) x +
 		     f y % frechet_derivative (lift o g) (at y) x)`
 [
    (((repeat_tactic 1 9 (((use_arg_then2 ("FRECHET_DERIVATIVE_WORKS", [FRECHET_DERIVATIVE_WORKS]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("f_eq_lift_drop", [f_eq_lift_drop]))(thm_tac (new_rewrite [] [(`frechet_derivative _1 _2`)]))))) THEN (move ["df"]));
@@ -373,7 +373,7 @@ Sections.begin_section "Partial";;
 let real_derivative_compose_frechet = Sections.section_proof ["f";"h";"t"]
 `(lift o f) differentiable at (h t) ==>
 	(h o drop) differentiable at (lift t) ==>
-	((f o h) has_real_derivative (drop o (frechet_derivative (lift o f) (at (h t)) o 
+	((f o h) has_real_derivative (drop o (frechet_derivative (lift o f) (at (h t)) o
 			frechet_derivative (h o drop) (at (lift t))) o lift) (&1)) (atreal t)`
 [
    (BETA_TAC THEN (move ["diff_f"]) THEN (move ["diff_h"]));
@@ -397,7 +397,7 @@ let real_derivative_compose_frechet = Sections.section_proof ["f";"h";"t"]
 let real_derivative_compose_jacobian = Sections.section_proof ["f";"h";"t"]
 `(lift o f) differentiable at (h t) ==>
 	(h o drop) differentiable at (lift t) ==>
-	((f o h) has_real_derivative (jacobian (lift o f) (at (h t)) ** 
+	((f o h) has_real_derivative (jacobian (lift o f) (at (h t)) **
 				jacobian (h o drop) (at (lift t)))$1$1) (atreal t)`
 [
    (BETA_TAC THEN (move ["df"]) THEN (move ["dh"]));
@@ -409,7 +409,7 @@ let real_derivative_compose_jacobian = Sections.section_proof ["f";"h";"t"]
 
 (* Lemma diff_imp_real_diff *)
 let diff_imp_real_diff = Sections.section_proof ["f";"h";"t"]
-`(lift o f) differentiable at (h t) ==> 
+`(lift o f) differentiable at (h t) ==>
 	(h o drop) differentiable at (lift t) ==>
 	(f o h) real_differentiable atreal t`
 [
@@ -442,7 +442,7 @@ let frechet_direction = Sections.section_proof ["y";"e";"t"]
 (* Lemma real_dir_derivative_frechet *)
 let real_dir_derivative_frechet = Sections.section_proof ["f";"y";"e";"t"]
 `(lift o f) differentiable at (y + t % e) ==>
-	((f o (\t. y + t % e)) has_real_derivative 
+	((f o (\t. y + t % e)) has_real_derivative
 		(drop (frechet_derivative (lift o f) (at (y + t % e)) e))) (atreal t)`
 [
    (BETA_TAC THEN (move ["df"]));
@@ -453,7 +453,7 @@ let real_dir_derivative_frechet = Sections.section_proof ["f";"y";"e";"t"]
 (* Lemma real_dir_derivative_jacobian *)
 let real_dir_derivative_jacobian = Sections.section_proof ["f";"y";"e";"t"]
 `(lift o f) differentiable at (y + t % e) ==>
-	((f o (\t. y + t % e)) has_real_derivative 
+	((f o (\t. y + t % e)) has_real_derivative
 		drop (jacobian (lift o f) (at (y + t % e)) ** e)) (atreal t)`
 [
    (BETA_TAC THEN (move ["df"]));
@@ -914,7 +914,7 @@ let real_taylor2_bound = Sections.section_proof ["f";"dd_bound"]
 
 (* Lemma real_taylor1_bound *)
 let real_taylor1_bound = Sections.section_proof ["f";"d_bound"]
-`(!t. interval_arith t (&0, &1) ==> f real_differentiable atreal t /\ 
+`(!t. interval_arith t (&0, &1) ==> f real_differentiable atreal t /\
 			abs (derivative f t) <= d_bound) ==>
 	abs (f (&1) - f (&0)) <= d_bound`
 [
@@ -1040,7 +1040,7 @@ let open_contains_open_interval = Sections.section_proof ["e";"s";"x"]
 
 (* Lemma diff2_dir *)
 let diff2_dir = Sections.section_proof ["f";"x";"e";"t"]
-`diff2 f (x + t % e:real^N) ==> 
+`diff2 f (x + t % e:real^N) ==>
 	nth_diff_strong 2 (f o (\t. x + t % e)) t`
 [
    (((((use_arg_then2 ("diff2_eq_diff2_on_open", [diff2_eq_diff2_on_open]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("nth_diff_strong2_eq", [nth_diff_strong2_eq]))(thm_tac (new_rewrite [] []))))) THEN ALL_TAC THEN (case THEN (move ["s"])) THEN (case THEN (move ["open_s"])) THEN (case THEN (move ["xs"])) THEN (move ["df"]));
@@ -1072,7 +1072,7 @@ let diff2_dir = Sections.section_proof ["f";"x";"e";"t"]
 let diff2_dir_derivative2 = Sections.section_proof ["f";"x";"e";"t"]
 `diff2 f (x + t % e:real^N) ==>
 	nth_derivative 2 (f o (\t. x + t % e)) t =
-	sum (1..dimindex (:N)) (\i. sum (1..dimindex (:N)) 
+	sum (1..dimindex (:N)) (\i. sum (1..dimindex (:N))
 		(\j. e$i * e$j * (partial j (partial i f) o (\t. x + t % e)) t))`
 [
    ((((use_arg_then2 ("diff2_eq_diff2_on_open", [diff2_eq_diff2_on_open]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN (move ["s"])) THEN (case THEN (move ["open_s"])) THEN (case THEN (move ["xs"])) THEN (move ["df"]));
@@ -1095,7 +1095,7 @@ let diff2_dir_derivative2 = Sections.section_proof ["f";"x";"e";"t"]
 (* Lemma diff2_has_derivative_partial *)
 let diff2_has_derivative_partial = Sections.section_proof ["f";"i";"x";"e";"t"]
 `diff2 f (x + t % e:real^N) ==>
-	(partial i f o (\t. x + t % e) has_real_derivative 
+	(partial i f o (\t. x + t % e) has_real_derivative
 	sum (1..dimindex (:N)) (\j. e$j * (partial j (partial i f) o (\t. x + t % e)) t)) (atreal t)`
 [
    ((((use_arg_then2 ("diff2", [diff2]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN (move ["s"])) THEN (case THEN (move ["open_s"])) THEN (case THEN (move ["xs"])) THEN (move ["df"]));
@@ -1105,7 +1105,7 @@ let diff2_has_derivative_partial = Sections.section_proof ["f";"i";"x";"e";"t"]
 (* Lemma diff2_derivative_partial *)
 let diff2_derivative_partial = Sections.section_proof ["f";"i";"x";"e";"t"]
 `diff2 f (x + t % e:real^N) ==>
-	derivative (partial i f o (\t. x + t % e)) t = 
+	derivative (partial i f o (\t. x + t % e)) t =
 		sum (1..dimindex (:N)) (\j. e$j * (partial j (partial i f) o (\t. x + t % e)) t)`
 [
    ((BETA_TAC THEN (move ["df"])) THEN (((use_arg_then2 ("derivative_unique", [derivative_unique])) (disch_tac [])) THEN (clear_assumption "derivative_unique") THEN (DISCH_THEN apply_tac)) THEN (((use_arg_then2 ("diff2_has_derivative_partial", [diff2_has_derivative_partial])) (disch_tac [])) THEN (clear_assumption "diff2_has_derivative_partial") THEN (exact_tac)) THEN (done_tac));
@@ -1204,7 +1204,7 @@ let mixed_second_partials = Sections.section_proof ["f";"x";"i";"j"]
    ((fun arg_tac -> arg_tac (Arg_term (`!y e. (f o (\k. y + k % e)) o (\t. k + t) = f o (\t. (y + k % e) + t % e)`))) (term_tac (have_gen_tac [](move ["eq"]))));
    (((((use_arg_then2 ("eq_ext", [eq_ext]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] []))))) THEN (simp_tac) THEN (((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL VECTOR_ADD_RDISTRIB)))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL VECTOR_ADD_ASSOC)))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
    (((repeat_tactic 1 9 (((use_arg_then2 ("eq", []))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("partial", [partial]))(gsym_then (thm_tac (new_rewrite [] []))))))) THEN (done_tac));
-   ((fun arg_tac -> arg_tac (Arg_term (`!h k. abs h <= r /\ abs k <= r ==> 
+   ((fun arg_tac -> arg_tac (Arg_term (`!h k. abs h <= r /\ abs k <= r ==>
 		(?t1. G h k = k * derivative (F1 h) t1 /\ abs t1 <= abs k)`))) (term_tac (have_gen_tac [](move ["Gh"]))));
    ((BETA_TAC THEN (move ["h"]) THEN (move ["k"]) THEN (move ["ineq"])) THEN ((((use_arg_then2 ("G_def", []))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (simp_tac)));
    ((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("real_mvt0", [real_mvt0])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`F1 h`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`derivative (F1 h)`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("k", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun arg -> thm_tac MP_TAC arg THEN ALL_TAC));
@@ -1214,7 +1214,7 @@ let mixed_second_partials = Sections.section_proof ["f";"x";"i";"j"]
    (BETA_TAC THEN (case THEN (move ["t1"])) THEN (case THEN (move ["t1_ineq"])) THEN (move ["eq"]));
    (((use_arg_then2 ("t1", [])) (term_tac exists_tac)) THEN (((use_arg_then2 ("eq", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ineq", [])) (disch_tac [])) THEN (clear_assumption "ineq") THEN ((use_arg_then2 ("t1_ineq", [])) (disch_tac [])) THEN (clear_assumption "t1_ineq") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
    ((fun arg_tac -> arg_tac (Arg_term (`!h k. abs h <= r /\ abs k <= r ==>
-	(?t1 t2. G h k = h * k * partial i (partial j f) (x + t1 % basis j + t2 % basis i) 
+	(?t1 t2. G h k = h * k * partial i (partial j f) (x + t1 % basis j + t2 % basis i)
 		/\ abs t1 <= abs k /\ abs t2 <= abs h)`))) (term_tac (have_gen_tac [](move ["Ghk"]))));
    (BETA_TAC THEN (move ["h"]) THEN (move ["k"]) THEN (move ["ineq"]));
    ((((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("Gh", [])) (fun fst_arg -> (use_arg_then2 ("h", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("k", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (((repeat_tactic 1 9 (((use_arg_then2 ("ineq", []))(thm_tac (new_rewrite [] []))))) THEN (simp_tac)) THEN ALL_TAC THEN (case THEN (move ["t1"])) THEN (case THEN ((move ["eq"]) THEN (move ["t1k"])))));
@@ -1250,7 +1250,7 @@ let mixed_second_partials = Sections.section_proof ["f";"x";"i";"j"]
    ((fun arg_tac -> arg_tac (Arg_term (`!y e. (f o (\h. y + h % e)) o (\t. h + t) = f o (\t. (y + h % e) + t % e)`))) (term_tac (have_gen_tac [](move ["eq"]))));
    (((((use_arg_then2 ("eq_ext", [eq_ext]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] []))))) THEN (simp_tac) THEN (((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL VECTOR_ADD_RDISTRIB)))(thm_tac (new_rewrite [] [])))) THEN (((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL VECTOR_ADD_ASSOC)))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
    (((repeat_tactic 1 9 (((use_arg_then2 ("eq", []))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("partial", [partial]))(gsym_then (thm_tac (new_rewrite [] []))))))) THEN (done_tac));
-   ((fun arg_tac -> arg_tac (Arg_term (`!h k. abs h <= r /\ abs k <= r ==> 
+   ((fun arg_tac -> arg_tac (Arg_term (`!h k. abs h <= r /\ abs k <= r ==>
 		(?t3. G h k = h * derivative (F2 k) t3 /\ abs t3 <= abs h)`))) (term_tac (have_gen_tac [](move ["Gk"]))));
    ((BETA_TAC THEN (move ["h"]) THEN (move ["k"]) THEN (move ["ineq"])) THEN ((((use_arg_then2 ("G_eq", []))(thm_tac (new_rewrite [] [])))) THEN (simp_tac)));
    ((fun arg_tac -> (fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("real_mvt0", [real_mvt0])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`F2 k`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`derivative (F2 k)`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("h", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun arg -> thm_tac MP_TAC arg THEN ALL_TAC));
@@ -1260,7 +1260,7 @@ let mixed_second_partials = Sections.section_proof ["f";"x";"i";"j"]
    (BETA_TAC THEN (case THEN (move ["t3"])) THEN (case THEN (move ["t3_ineq"])) THEN (move ["eq"]));
    (((use_arg_then2 ("t3", [])) (term_tac exists_tac)) THEN (((use_arg_then2 ("eq", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("ineq", [])) (disch_tac [])) THEN (clear_assumption "ineq") THEN ((use_arg_then2 ("t3_ineq", [])) (disch_tac [])) THEN (clear_assumption "t3_ineq") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
    ((fun arg_tac -> arg_tac (Arg_term (`!h k. abs h <= r /\ abs k <= r ==>
-	(?t3 t4. G h k = h * k * partial j (partial i f) (x + t4 % basis j + t3 % basis i) 
+	(?t3 t4. G h k = h * k * partial j (partial i f) (x + t4 % basis j + t3 % basis i)
 		/\ abs t3 <= abs h /\ abs t4 <= abs k)`))) (term_tac (have_gen_tac [](move ["Gkh"]))));
    (BETA_TAC THEN (move ["h"]) THEN (move ["k"]) THEN (move ["ineq"]));
    ((((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("Gk", [])) (fun fst_arg -> (use_arg_then2 ("h", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("k", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (((repeat_tactic 1 9 (((use_arg_then2 ("ineq", []))(thm_tac (new_rewrite [] []))))) THEN (simp_tac)) THEN ALL_TAC THEN (case THEN (move ["t3"])) THEN (case THEN ((move ["eq"]) THEN (move ["t3h"])))));
@@ -1302,7 +1302,7 @@ let mixed_second_partials = Sections.section_proof ["f";"x";"i";"j"]
    (((((fun arg_tac -> (use_arg_then2 ("REAL_MUL_LINV", [REAL_MUL_LINV])) (fun fst_arg -> (fun arg_tac -> arg_tac (Arg_term (`&2`))) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg)))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("REAL_LT_LMUL", [REAL_LT_LMUL]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("REAL_LT_INV", [REAL_LT_INV]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("andTb", [andTb]))(thm_tac (new_rewrite [] [])))))) THEN (TRY ((arith_tac))));
    ((THENL_FIRST) ((fun arg_tac -> arg_tac (Arg_term (`&2 = sqrt (&2 * &2)`))) (term_tac (have_gen_tac [](((conv_thm_tac DISCH_THEN)(thm_tac (new_rewrite [2] []))))))) (((((use_arg_then2 ("REAL_POW_2", [REAL_POW_2]))(gsym_then (thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("POW_2_SQRT_ABS", [POW_2_SQRT_ABS]))(thm_tac (new_rewrite [] []))))) THEN (arith_tac) THEN (done_tac)));
    ((((use_arg_then2 ("SQRT_MONO_LT", [SQRT_MONO_LT]))(thm_tac (new_rewrite [] [])))) THEN (arith_tac) THEN (done_tac));
-   ((fun arg_tac -> arg_tac (Arg_term (`((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial j (partial i f) x)) 
+   ((fun arg_tac -> arg_tac (Arg_term (`((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial j (partial i f) x))
 		(at (vec 0) within {y | &0 < y$1 /\ &0 < y$2})`))) (term_tac (have_gen_tac [](move ["lim_ji"]))));
    ((((use_arg_then2 ("LIM_WITHIN", [LIM_WITHIN]))(thm_tac (new_rewrite [] [])))) THEN (move ["e"]) THEN (move ["e_gt0"]));
    ((((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("pc", [])) (fun fst_arg -> (use_arg_then2 ("i", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("j", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (((((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL continuous_at)))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("dist", [dist]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] [])))))) THEN ((fun arg_tac ->  (conv_thm_tac DISCH_THEN)  (fun fst_arg -> (use_arg_then2 ("e_gt0", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac MP_TAC)) THEN (case THEN (move ["d"])) THEN (case THEN (move ["d0"])) THEN (move ["e_ineq"])));
@@ -1322,7 +1322,7 @@ let mixed_second_partials = Sections.section_proof ["f";"x";"i";"j"]
    ((((use_arg_then2 ("REAL_LET_TRANS", [REAL_LET_TRANS])) (disch_tac [])) THEN (clear_assumption "REAL_LET_TRANS") THEN (DISCH_THEN apply_tac)) THEN ((fun arg_tac -> arg_tac (Arg_term (`norm (t2 % basis j:real^N) + norm (t1 % basis i:real^N)`))) (term_tac exists_tac)));
    ((((use_arg_then2 ("NORM_TRIANGLE", [NORM_TRIANGLE]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("andTb", [andTb]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("NORM_MUL", [NORM_MUL]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("NORM_BASIS", [NORM_BASIS]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (repeat_tactic 1 9 (((use_arg_then2 ("REAL_MUL_RID", [REAL_MUL_RID]))(thm_tac (new_rewrite [] []))))));
    ((((use_arg_then2 ("yr", [])) (disch_tac [])) THEN (clear_assumption "yr") THEN ((use_arg_then2 ("t_ineq", [])) (disch_tac [])) THEN (clear_assumption "t_ineq") THEN BETA_TAC) THEN (arith_tac) THEN (done_tac));
-   ((fun arg_tac -> arg_tac (Arg_term (`((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial i (partial j f) x)) 
+   ((fun arg_tac -> arg_tac (Arg_term (`((\y:real^2. lift (G (y$1) (y$2) / (y$1 * y$2))) --> lift (partial i (partial j f) x))
 		(at (vec 0) within {y | &0 < y$1 /\ &0 < y$2})`))) (term_tac (have_gen_tac [](move ["lim_ij"]))));
    ((((use_arg_then2 ("LIM_WITHIN", [LIM_WITHIN]))(thm_tac (new_rewrite [] [])))) THEN (move ["e"]) THEN (move ["e_gt0"]));
    ((((fun arg_tac -> (fun arg_tac -> (use_arg_then2 ("pc", [])) (fun fst_arg -> (use_arg_then2 ("j", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (fun fst_arg -> (use_arg_then2 ("i", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (disch_tac [])) THEN BETA_TAC) THEN (((((fun arg_tac -> arg_tac (Arg_theorem (GEN_ALL continuous_at)))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("dist", [dist]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 1 9 (((use_arg_then2 ("o_THM", [o_THM]))(thm_tac (new_rewrite [] [])))))) THEN ((fun arg_tac ->  (conv_thm_tac DISCH_THEN)  (fun fst_arg -> (use_arg_then2 ("e_gt0", [])) (fun snd_arg -> combine_args_then arg_tac fst_arg snd_arg))) (thm_tac MP_TAC)) THEN (case THEN (move ["d"])) THEN (case THEN (move ["d0"])) THEN (move ["e_ineq"])));
@@ -1375,7 +1375,7 @@ let y_in_domain = Sections.section_proof ["domain";"y";"w"]
 
 (* Lemma domain_width *)
 let domain_width = Sections.section_proof ["p";"domain";"y";"w"]
-`m_cell_domain domain y (w:real^N) ==> 
+`m_cell_domain domain y (w:real^N) ==>
 	p IN interval [domain] ==>
 	!i. i IN 1..dimindex (:N) ==> abs (p$i - y$i) <= w$i`
 [
@@ -1385,7 +1385,7 @@ let domain_width = Sections.section_proof ["p";"domain";"y";"w"]
 
 (* Lemma sum_swap1 *)
 let sum_swap1 = Sections.section_proof ["g";"n"]
-`sum (1..n) (\i. sum (i + 1..n) (\j. g i j)) = 
+`sum (1..n) (\i. sum (i + 1..n) (\j. g i j)) =
 			sum (1..n) (\i. sum (1..i - 1) (\j. g j i))`
 [
    ((repeat_tactic 1 9 (((use_arg_then2 ("SUM_SUM_PRODUCT", [SUM_SUM_PRODUCT]))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("FINITE_NUMSEG", [FINITE_NUMSEG]))(thm_tac (new_rewrite [] []))))) THEN ((simp_tac THEN TRY done_tac)) THEN (repeat_tactic 1 9 (((use_arg_then2 ("IN_NUMSEG", [IN_NUMSEG]))(thm_tac (new_rewrite [] []))))));
@@ -1406,14 +1406,14 @@ let sum_swap1 = Sections.section_proof ["g";"n"]
 
 (* Lemma m_taylor_error_eq *)
 let m_taylor_error_eq = Sections.section_proof ["f";"domain";"w";"error"]
-`diff2c_domain domain f ==> 
+`diff2c_domain domain f ==>
 	(m_taylor_error f domain (w:real^N) error <=>
-	(!x. x IN interval [domain] ==> 
+	(!x. x IN interval [domain] ==>
 	sum (1..dimindex (:N)) (\i. w$i * (w$i * abs (partial2 i i f x)
 		+ &2 * sum (1..i - 1) (\j. w$j * abs (partial2 j i f x)))) <= error))`
 [
    (((((use_arg_then2 ("diff2c_domain", [diff2c_domain]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("m_taylor_error", [m_taylor_error]))(thm_tac (new_rewrite [] []))))) THEN (move ["d2f"]));
-   ((fun arg_tac -> arg_tac (Arg_term (`!g1 g2. (!x. x IN interval [domain] ==> g1 x = g2 x) ==> 
+   ((fun arg_tac -> arg_tac (Arg_term (`!g1 g2. (!x. x IN interval [domain] ==> g1 x = g2 x) ==>
 	((!x. x IN interval [domain] ==> g1 x <= error) <=> (!x. x IN interval [domain] ==> g2 x <= error))`))) (term_tac (have_gen_tac [](move ["eq"]))));
    ((BETA_TAC THEN (move ["g1"]) THEN (move ["g2"]) THEN (move ["eq"])) THEN ((split_tac) THEN (move ["cond"]) THEN (move ["x"]) THEN (move ["Px"])));
    (((((use_arg_then2 ("eq", []))(gsym_then (thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("cond", []))(thm_tac (new_rewrite [] []))))) THEN (done_tac));
@@ -1447,7 +1447,7 @@ let diff2_derivative2_bound = Sections.section_proof ["domain";"y";"w";"p";"f";"
 	p IN interval [domain] ==>
 	diff2_domain domain f ==>
 	m_taylor_error f domain w dd_bound ==>
-	(!t. interval_arith t (&0, &1) ==> 
+	(!t. interval_arith t (&0, &1) ==>
 		abs (nth_derivative 2 (f o (\t. y + t % (p - y))) t) <= dd_bound)`
 [
    (((((use_arg_then2 ("diff2_domain", [diff2_domain]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("m_taylor_error", [m_taylor_error]))(thm_tac (new_rewrite [] []))))) THEN (move ["domainH"]) THEN (move ["p_in"]) THEN (move ["df"]) THEN (move ["boundedH"]) THEN (move ["t"]) THEN (move ["t_in"]));
@@ -1551,7 +1551,7 @@ let diff2_derivative_partial_bound = Sections.section_proof ["domain";"y";"w";"p
 	p IN interval [domain] ==>
 	diff2_domain domain f ==>
 	m_taylor_partial_error f i domain w d_bound ==>
-	(!t. interval_arith t (&0, &1) ==> 
+	(!t. interval_arith t (&0, &1) ==>
 		abs (derivative (partial i f o (\t. y + t % (p - y))) t) <= d_bound)`
 [
    (((((use_arg_then2 ("diff2_domain", [diff2_domain]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("m_taylor_partial_error", [m_taylor_partial_error]))(thm_tac (new_rewrite [] []))))) THEN (move ["domainH"]) THEN (move ["p_in"]) THEN (move ["df"]) THEN (move ["boundedH"]) THEN (move ["t"]) THEN (move ["t_in"]));
@@ -1727,7 +1727,7 @@ let has_derivative_uni_compose = Sections.section_proof ["u";"f";"u'";"f'";"x"]
 
 (* Lemma diff_uni_compose *)
 let diff_uni_compose = Sections.section_proof ["u";"f";"x"]
-`lift o f differentiable at x ==> 
+`lift o f differentiable at x ==>
 	u real_differentiable atreal (f x) ==>
 	lift o u o f differentiable at x`
 [
@@ -2149,7 +2149,7 @@ let second_partial_neg = Sections.section_proof ["f"]
 
 (* Lemma second_partial_add *)
 let second_partial_add = Sections.section_proof ["f";"g"]
-`diff2 f x ==> diff2 g x ==> 
+`diff2 f x ==> diff2 g x ==>
 	partial2 i j (\x. f x + g x) x = partial2 i j f x + partial2 i j g x`
 [
    ((repeat_tactic 1 9 (((use_arg_then2 ("diff2", [diff2]))(thm_tac (new_rewrite [] []))))) THEN ALL_TAC THEN (case THEN (move ["s"])) THEN (case THEN (move ["open_s"])) THEN (case THEN (move ["xs"])) THEN (move ["df"]) THEN (case THEN (move ["t"])) THEN (case THEN (move ["open_t"])) THEN (case THEN (move ["ys"])) THEN (move ["dg"]));
@@ -2162,7 +2162,7 @@ let second_partial_add = Sections.section_proof ["f";"g"]
 
 (* Lemma second_partial_sub *)
 let second_partial_sub = Sections.section_proof ["f";"g"]
-`diff2 f x ==> diff2 g x ==> 
+`diff2 f x ==> diff2 g x ==>
 	partial2 i j (\x. f x - g x) x = partial2 i j f x - partial2 i j g x`
 [
    ((BETA_TAC THEN (move ["d2f"]) THEN (move ["d2g"])) THEN ((((use_arg_then2 ("real_sub", [real_sub]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("second_partial_add", [second_partial_add]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("diff2_neg", [diff2_neg]))(thm_tac (new_rewrite [] []))))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("second_partial_neg", [second_partial_neg]))(thm_tac (new_rewrite [] [])))) THEN ((TRY done_tac)) THEN (((use_arg_then2 ("real_sub", [real_sub]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN (done_tac));
@@ -2170,7 +2170,7 @@ let second_partial_sub = Sections.section_proof ["f";"g"]
 
 (* Lemma second_partial_mul *)
 let second_partial_mul = Sections.section_proof ["f";"g"]
-`diff2 f x ==> diff2 g x ==> 
+`diff2 f x ==> diff2 g x ==>
 	partial2 i j (\x. f x * g x) x = (partial2 i j f x * g x + partial j f x * partial i g x) +
 		(partial i f x * partial j g x + f x * partial2 i j g x)`
 [
@@ -2675,7 +2675,7 @@ let diff2c_mul = Sections.section_proof ["f";"g"]
    ((use_arg_then2 ("real_cont_at_local", [real_cont_at_local])) (thm_tac apply_tac));
    ((((use_arg_then2 ("d2g", [])) (disch_tac [])) THEN (clear_assumption "d2g") THEN ((use_arg_then2 ("d2f", [])) (disch_tac [])) THEN (clear_assumption "d2f") THEN BETA_TAC) THEN ((((use_arg_then2 ("diff2_eq_diff2_on_open", [diff2_eq_diff2_on_open]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN (move ["s"])) THEN (case THEN (move ["open_s"])) THEN (case THEN (move ["xs"])) THEN (move ["d2f"])));
    ((((use_arg_then2 ("diff2_eq_diff2_on_open", [diff2_eq_diff2_on_open]))(thm_tac (new_rewrite [] [])))) THEN ALL_TAC THEN (case THEN (move ["t"])) THEN (case THEN (move ["open_t"])) THEN (case THEN (move ["xt"])) THEN (move ["d2g"]));
-   (((fun arg_tac -> arg_tac (Arg_term (`(\x. (partial2 j i f x * g x + partial i f x * partial j g x) + 
+   (((fun arg_tac -> arg_tac (Arg_term (`(\x. (partial2 j i f x * g x + partial i f x * partial j g x) +
 	partial j f x  * partial i g x + f x * partial2 j i g x)`))) (term_tac exists_tac)) THEN ((fun arg_tac -> arg_tac (Arg_term (`s INTER t`))) (term_tac exists_tac)));
    ((THENL_ROT (-1)) (((repeat_tactic 1 9 (((use_arg_then2 ("IN_INTER", [IN_INTER]))(thm_tac (new_rewrite [] []))))) THEN (((use_arg_then2 ("xs", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("xt", []))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("OPEN_INTER", [OPEN_INTER]))(thm_tac (new_rewrite [] [])))) THEN ((simp_tac THEN TRY done_tac))) THEN (split_tac)));
    ((BETA_TAC THEN (move ["y"]) THEN (case THEN ((move ["ys"]) THEN (move ["yt"])))) THEN ((((use_arg_then2 ("second_partial_mul", [second_partial_mul]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("d2f", []))(thm_tac (new_rewrite [] []))))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("d2g", []))(thm_tac (new_rewrite [] [])))))) THEN (done_tac));
@@ -3004,7 +3004,7 @@ Sections.end_section "M_LinApprox";;
 let second_bounded = new_definition `second_bounded f domain dd_bounds_list <=>
 	!x. x IN interval [domain] ==> all_n 1 dd_bounds_list
 		(\i list_i. all_n 1 list_i (\j int. interval_arith (partial2 j i f x) int))`;;
-let m_taylor_interval = 
+let m_taylor_interval =
 	new_definition `m_taylor_interval f domain y w f_bounds d_bounds_list dd_bounds_list <=>
 		m_cell_domain domain y w /\
 		diff2c_domain domain f /\
@@ -3410,7 +3410,7 @@ let partial_x_lemma = Sections.section_proof ["k";"i"]
 
 (* Lemma partial_x *)
 let partial_x = Sections.section_proof ["k";"i"]
-`k IN 1..dimindex (:N) ==> 
+`k IN 1..dimindex (:N) ==>
 	partial i (\x:real^N. x$k) = (\x. if i = k then &1 else &0)`
 [
    ((BETA_TAC THEN (move ["k_ineq"])) THEN ((((use_arg_then2 ("partial_x_lemma", [partial_x_lemma]))(thm_tac (new_rewrite [] [])))) THEN (((use_arg_then2 ("BASIS_COMPONENT", [BASIS_COMPONENT]))(thm_tac (new_rewrite [] [])))) THEN (repeat_tactic 0 10 (((use_arg_then2 ("IN_NUMSEG", [IN_NUMSEG]))(gsym_then (thm_tac (new_rewrite [] [])))))) THEN ((TRY done_tac))) THEN (arith_tac) THEN (done_tac));

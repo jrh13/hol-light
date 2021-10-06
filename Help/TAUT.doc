@@ -6,10 +6,10 @@
 Proves a propositional tautology.
 
 \DESCRIBE
-The call {TAUT `t`} where {t} is a propositional tautology, will prove it 
-automatically and return {|- t}. A propositional tautology is 
-a formula built up using the logical connectives `{~}', `{/\}', `{\/}', `{==>}' 
-and `{<=>}' from terms that can be considered ``atomic'' that is logically 
+The call {TAUT `t`} where {t} is a propositional tautology, will prove it
+automatically and return {|- t}. A propositional tautology is
+a formula built up using the logical connectives `{~}', `{/\}', `{\/}', `{==>}'
+and `{<=>}' from terms that can be considered ``atomic'' that is logically
 valid whatever truth-values are assigned to the atomic formulas.
 
 \FAILURE
@@ -33,12 +33,12 @@ Here is a simple and potentially useful tautology:
 }
 
 \USES
-Solving a tautologous goal completely by {CONV_TAC TAUT}, or generating a 
+Solving a tautologous goal completely by {CONV_TAC TAUT}, or generating a
 tautology to massage the goal into a more convenient equivalent form by
 {REWRITE_TAC[TAUT `...`]} or {ONCE_REWRITE_TAC[TAUT `...`]}.
 
 \COMMENTS
-The algorithm used is quite naive, and not efficient on large formulas. For 
+The algorithm used is quite naive, and not efficient on large formulas. For
 more general first-order reasoning, with quantifier instantiation, use
 MESON-based methods.
 

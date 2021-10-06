@@ -1216,7 +1216,7 @@ MESON_TAC thl
 Tries to prove the goal using meson; ignores assumptions.
 
 GEN_MESON_TAC min max step thl
-Like MESON_TAC but with explicit start (min), finish (max) and step (step) for 
+Like MESON_TAC but with explicit start (min), finish (max) and step (step) for
 the iterative deepening.
 
 quot:
@@ -1254,7 +1254,7 @@ lift_theorem:
 
 recursion.ml:
 
-Functions for defining recursive functions. Mostly subsumed by "define", but 
+Functions for defining recursive functions. Mostly subsumed by "define", but
 sometimes useful for efficiency or other reasons.
 
 pair.ml:
@@ -1361,7 +1361,7 @@ LET_TAC
 replaces "let x = t in p[x]" in goal with "p[x]" given a new
 hypothesis "t = x".
 
-GEN_BETA_CONV reduces generalized beta-redexes such as 
+GEN_BETA_CONV reduces generalized beta-redexes such as
 `(\(x,y). x + y) (1,2)`
 
 num.ml:
@@ -1810,7 +1810,7 @@ val ( WF_REFL ) : thm = |- !x. WF (<<) ==> ~(x << x)
 val ( WF_REC_TAIL ) : thm =
   |- !P g h. ?f. !x. f x = (if P x then f (g x) else h x)
 
-WF_INDUCT_THEN 
+WF_INDUCT_THEN
 WF_INDUCT_TAC
 Perform wellfounded induction over a nominated measure function. Sometimes
 avoids explicit "!n t. size(t) = n ==> ..." goal.

@@ -6,22 +6,22 @@
 General simplification at depth with arbitrary simpset.
 
 \DESCRIBE
-In their maximal generality, simplification operations in HOL Light (as invoked 
-by {SIMP_TAC}) are controlled by a `simpset'. Given a simpset {ss} and an 
+In their maximal generality, simplification operations in HOL Light (as invoked
+by {SIMP_TAC}) are controlled by a `simpset'. Given a simpset {ss} and an
 additional list of theorems {thl} to be used as (conditional or unconditional)
-rewrite rules, {SIMPLIFY_CONV ss thl} gives a simplification conversion with a 
-repeated top-down traversal strategy ({TOP_DEPTH_SQCONV}) and a nesting limit 
+rewrite rules, {SIMPLIFY_CONV ss thl} gives a simplification conversion with a
+repeated top-down traversal strategy ({TOP_DEPTH_SQCONV}) and a nesting limit
 of 3 for the recursive solution of subconditions by further simplification.
 
 \FAILURE
 Never fails.
 
 \USES
-Usually some other interface to the simplifier is more convenient, but you may 
+Usually some other interface to the simplifier is more convenient, but you may
 want to use this to employ a customized simpset.
 
 \SEEALSO
-GEN_SIMPLIFY_CONV, ONCE_SIMPLIFY_CONV, SIMP_CONV, SIMP_RULE, SIMP_TAC, 
+GEN_SIMPLIFY_CONV, ONCE_SIMPLIFY_CONV, SIMP_CONV, SIMP_RULE, SIMP_TAC,
 TOP_DEPTH_SQCONV.
 
 \ENDDOC

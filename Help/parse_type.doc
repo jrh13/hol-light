@@ -6,8 +6,8 @@
 Parses a string into a HOL type.
 
 \DESCRIBE
-The call {parse_type "s"} parses the string {s} into a HOL type. This is the 
-function that is invoked automatically when a type is written in quotations 
+The call {parse_type "s"} parses the string {s} into a HOL type. This is the
+function that is invoked automatically when a type is written in quotations
 with an initial colon {`:s`}.
 
 \FAILURE

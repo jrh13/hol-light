@@ -206,9 +206,9 @@ let pelly = define
    (!a n. pelly a (n + 2) = 2 * a * pelly a (n + 1) - pelly a (n))`;;
 
 let PELLY_INCREASES = prove
- (`!a n. ~(a = 0) ==> pelly a n <= pelly a (n + 1)`, 
+ (`!a n. ~(a = 0) ==> pelly a n <= pelly a (n + 1)`,
   GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
-  INDUCT_TAC THEN                                                       
+  INDUCT_TAC THEN
   ASM_SIMP_TAC[pelly; ARITH; LE_1; ADD1; ARITH_RULE `(n + 1) + 1 = n + 2`] THEN
   TRANS_TAC LE_TRANS `2 * pelly a (n + 1) - pelly a n` THEN
   CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN

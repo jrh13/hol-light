@@ -6,7 +6,7 @@
 Prints a string and a following line break.
 
 \DESCRIBE
-The call {report s} prints the string {s} to the terminal and then a following 
+The call {report s} prints the string {s} to the terminal and then a following
 newline.
 
 \FAILURE

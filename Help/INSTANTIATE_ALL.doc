@@ -10,14 +10,14 @@ The call {INSTANTIATE_ALL i t}, where {i} is an instantiation as returned by
 {term_match}, will perform the instantiation indicated by {i} in the conclusion
 of the theorem {th}: types and terms will be instantiated and the
 beta-reductions that are part of higher-order matching will be applied.
-                                  
+
 \FAILURE
 Never fails on a valid instantiation.
 
 \COMMENTS
-This is not intended for general use. {PART_MATCH} is generally a more 
-convenient packaging. The function {INSTANTIATE} is almost the same but does 
-not instantiate hypotheses and may fail if type variables or term variables 
+This is not intended for general use. {PART_MATCH} is generally a more
+convenient packaging. The function {INSTANTIATE} is almost the same but does
+not instantiate hypotheses and may fail if type variables or term variables
 free in the hypotheses make the instantiation impossible.
 
 \SEEALSO

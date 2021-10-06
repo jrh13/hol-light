@@ -4,18 +4,18 @@
 
 prioritize_real();;
 
-let REAL_POW_LBOUND = prove                   
+let REAL_POW_LBOUND = prove
  (`!x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n`,
   GEN_TAC THEN REWRITE_TAC[RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
-  INDUCT_TAC THEN         
+  INDUCT_TAC THEN
   REWRITE_TAC[real_pow; REAL_MUL_LZERO; REAL_ADD_RID; REAL_LE_REFL] THEN
-  REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN     
+  REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `(&1 + x) * (&1 + &n * x)` THEN
   ASM_SIMP_TAC[REAL_LE_LMUL; REAL_ARITH `&0 <= x ==> &0 <= &1 + x`] THEN
   ASM_SIMP_TAC[REAL_LE_MUL; REAL_POS; REAL_ARITH
    `&1 + (n + &1) * x <= (&1 + x) * (&1 + n * x) <=> &0 <= n * x * x`]);;
-                               
-let REAL_ARCH_POW = prove   
+
+let REAL_ARCH_POW = prove
  (`!x y. &1 < x ==> ?n. y < x pow n`,
   REPEAT STRIP_TAC THEN
   MP_TAC(SPEC `x - &1` REAL_ARCH) THEN ASM_REWRITE_TAC[REAL_SUB_LT] THEN

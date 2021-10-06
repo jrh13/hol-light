@@ -7,19 +7,19 @@ Limit initial case splits before {MESON} proper is applied.
 
 \DESCRIBE
 This is one of several parameters determining the behavior of {MESON},
-{MESON_TAC} and related rules and tactics. Before these rules or tactics are 
-applied, the formula to be proved is often decomposed by splitting, for example 
-an equivalence {p <=> q} to two separate implications {p ==> q} and {q ==> p}. 
-This often makes the eventual proof much easier for {MESON}. On the other hand, 
+{MESON_TAC} and related rules and tactics. Before these rules or tactics are
+applied, the formula to be proved is often decomposed by splitting, for example
+an equivalence {p <=> q} to two separate implications {p ==> q} and {q ==> p}.
+This often makes the eventual proof much easier for {MESON}. On the other hand,
 if splitting is applied too many times, it can become inefficient. The value
-{meson_split_limit} (default {8}) is the maximum number of times that splitting 
+{meson_split_limit} (default {8}) is the maximum number of times that splitting
 can be applied before {MESON} proper.
 
 \FAILURE
 Not applicable.
 
 \USES
-For users requiring fine control over the algorithms used in {MESON}'s 
+For users requiring fine control over the algorithms used in {MESON}'s
 first-order proof search.
 
 \SEEALSO

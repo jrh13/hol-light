@@ -10,12 +10,12 @@ conversion, number, arithmetic.
 
 \DESCRIBE
 If {n} and {m} are two numerals (e.g. {0}, {1}, {2}, {3},...), then
-{NUM_LE_CONV `n <= m`} returns:               
+{NUM_LE_CONV `n <= m`} returns:
 
 {
    |- n <= m <=> T       or       |- n <= m <=> F
 }
-\noindent depending on whether the natural number represented by {n} is less 
+\noindent depending on whether the natural number represented by {n} is less
 than or equal to the one represented by {m}.
 
 \FAILURE
@@ -26,17 +26,17 @@ are numerals.
 {
   # NUM_LE_CONV `12 <= 19`;;
   val it : thm = |- 12 <= 19 <=> T
-  
+
   # NUM_LE_CONV `12345 <= 12344`;;
   val it : thm = |- 12345 <= 12344 <=> F
 }
-       
+
 \USES
-Performing basic arithmetic reasoning while producing a proof.         
+Performing basic arithmetic reasoning while producing a proof.
 
 \SEEALSO
 NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
-NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LT_CONV, NUM_MAX_CONV, 
+NUM_FACT_CONV, NUM_GE_CONV, NUM_GT_CONV, NUM_LT_CONV, NUM_MAX_CONV,
 NUM_MIN_CONV, NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV, NUM_PRE_CONV,
 NUM_REDUCE_CONV, NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
 

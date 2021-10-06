@@ -19,11 +19,11 @@ documentation for {INTEGER_RULE} for a larger set of representative examples.
 Fails if the goal is not accessible to the methods used.
 
 \EXAMPLE
-A typical elementary divisibility property is that if two numbers are congruent 
-with respect to two coprime (without non-trivial common factors) moduli, then 
+A typical elementary divisibility property is that if two numbers are congruent
+with respect to two coprime (without non-trivial common factors) moduli, then
 they are congruent with respect to their product:
 {
-  # g `!m n x y:num. (x == y) (mod m) /\ (x == y) (mod n) /\ coprime(m,n) 
+  # g `!m n x y:num. (x == y) (mod m) /\ (x == y) (mod n) /\ coprime(m,n)
                      ==> (x == y) (mod (m * n))`;;
   ...
 }
@@ -33,7 +33,7 @@ they are congruent with respect to their product:
   ...
   val it : goalstack = No subgoals
 }
-The analogous goal without the coprimality assumption will fail, and indeed the 
+The analogous goal without the coprimality assumption will fail, and indeed the
 goal would be false without it.
 
 \SEEALSO

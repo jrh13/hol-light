@@ -14,7 +14,7 @@ succeeds, continues applying it to all subgoals generated.
 
 \FAILURE
 The application of {REPEAT} to a tactic never fails, and neither does the
-composite tactic, even if the basic tactic fails immediately, unless it raises 
+composite tactic, even if the basic tactic fails immediately, unless it raises
 an exception other that {Failure ...}.
 
 \EXAMPLE
@@ -26,7 +26,7 @@ If we start with a goal having many universal quantifiers:
 {
   # e GEN_TAC;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `!x y z. w < z /\ x < y ==> w * x + 1 <= y * z`
 }
 \noindent and {REPEAT GEN_TAC} will strip them off as far as possible:
@@ -36,7 +36,7 @@ If we start with a goal having many universal quantifiers:
 
   `w < z /\ x < y ==> w * x + 1 <= y * z`
 }
-Similarly, {REPEAT COND_CASES_TAC} will eliminate all free conditionals in the 
+Similarly, {REPEAT COND_CASES_TAC} will eliminate all free conditionals in the
 goal instead of just one.
 
 \SEEALSO

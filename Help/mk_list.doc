@@ -17,7 +17,7 @@ argument.
 
 \EXAMPLE
 {
-  # mk_list([`1`; `2`],`:num`);;                
+  # mk_list([`1`; `2`],`:num`);;
   val it : term = `[1; 2]`
 
   # mk_list([],`:num`);;

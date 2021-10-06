@@ -6,7 +6,7 @@
 Prints a HOL theorem to the standard output.
 
 \DESCRIBE
-The call {print_thm th} prints the usual textual representation of the 
+The call {print_thm th} prints the usual textual representation of the
 theorem {th} to the standard output.
 
 \COMMENTS

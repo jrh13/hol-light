@@ -6,17 +6,17 @@
 Change the set of basic congruences used by the simplifier.
 
 \DESCRIBE
-The HOL Light simplifier (as invoked by {SIMP_TAC} etc.) uses congruence rules 
-to determine how it uses context when descending through a term. These are 
-essentially theorems showing how to decompose one equality to a series of other 
-inequalities in context. A call to {set_basic_congs thl} sets the congruence 
-rules to the list of theorems {thl}. 
+The HOL Light simplifier (as invoked by {SIMP_TAC} etc.) uses congruence rules
+to determine how it uses context when descending through a term. These are
+essentially theorems showing how to decompose one equality to a series of other
+inequalities in context. A call to {set_basic_congs thl} sets the congruence
+rules to the list of theorems {thl}.
 
 \FAILURE
 Never fails.
 
 \COMMENTS
-Normally, users only need to extend the congruences; for an example of how to 
+Normally, users only need to extend the congruences; for an example of how to
 do that see {extend_basic_congs}.
 
 \SEEALSO

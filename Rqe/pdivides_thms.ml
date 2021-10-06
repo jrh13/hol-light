@@ -1,7 +1,7 @@
 let neg_odd_lem = prove_by_refinement(
   `!a n p c q d.
-     (a pow n * p x = c x * q x + d x) ==> 
-     ODD n ==> 
+     (a pow n * p x = c x * q x + d x) ==>
+     ODD n ==>
        ((-- a) pow n * p x = (-- c x) * q x + (-- d x))`,
 (* {{{ Proof *)
 
@@ -36,8 +36,8 @@ let neg_odd_lem = prove_by_refinement(
 
 let mul_odd_lem = prove_by_refinement(
   `!a n p c q d.
-     (a pow n * p x = c x * q x + d x) ==> 
-     ODD n ==> 
+     (a pow n * p x = c x * q x + d x) ==>
+     ODD n ==>
        ((a * a pow n) * p x = (a * c x) * q x + (a * d x))`,
 (* {{{ Proof *)
 [

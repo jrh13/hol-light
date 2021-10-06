@@ -17,7 +17,7 @@ Should never fail on a valid instantiation.
 Probably only of specialist interest to those writing tactics from scratch.
 
 \SEEALSO
-compose_insts, instantiate, INSTANTIATE, INSTANTIATE_ALL, 
+compose_insts, instantiate, INSTANTIATE, INSTANTIATE_ALL,
 PART_MATCH, term_match.
 
 \ENDDOC

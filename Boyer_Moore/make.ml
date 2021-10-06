@@ -16,7 +16,7 @@ loads "Boyer_Moore/boyer-moore.ml";;
 
 let BM = BOYER_MOORE;; (* Pure re-implementation of R.Boulton's work. *)
 let BME = BOYER_MOORE_EXT;; (* Extended with early termination heuristics and HOL Light features. *)
-let BMR = BOYER_MOORE_RE [];;  
+let BMR = BOYER_MOORE_RE [];;
 let BMG = BOYER_MOORE_GEN [];; (* Further extended with M.Aderhold's generalization techniques. *)
 let BMF = BOYER_MOORE_FINAL [];;
 
@@ -145,8 +145,8 @@ let bm_test f tm =
     let pfpt = (print_term tm ; print_newline() ; proof_printer false) in
     let (resu,(t1,t2)) = bm_time f tm in
     let pfpt = proof_printer pfpt in
-    printf "Proven: %b - Time: %f - Steps: %d - Inductions: %d - Gen terms: %d - Over gens: %d \\\\\n" resu 
-(t2.tms_utime -. t1.tms_utime) (fst !bm_steps) (snd !bm_steps) (length !my_gen_terms) (!counterexamples) ; 
+    printf "Proven: %b - Time: %f - Steps: %d - Inductions: %d - Gen terms: %d - Over gens: %d \\\\\n" resu
+(t2.tms_utime -. t1.tms_utime) (fst !bm_steps) (snd !bm_steps) (length !my_gen_terms) (!counterexamples) ;
     !my_gen_terms;;
 
 (* ------------------------------------------------------------------------- *)
@@ -158,7 +158,7 @@ let bm_test2 f tm =
     let pfpt = (print_term tm ; print_newline() ; proof_printer false) in
     let (resu,(t1,t2)) = bm_time f tm in
     let pfpt = proof_printer pfpt in
-    printf "& %b & %f & %d & %d & %d & %d \\\\\n" resu (t2.tms_utime -. t1.tms_utime) (fst !bm_steps) (snd !bm_steps) (length !my_gen_terms) (!counterexamples) ; 
+    printf "& %b & %f & %d & %d & %d & %d \\\\\n" resu (t2.tms_utime -. t1.tms_utime) (fst !bm_steps) (snd !bm_steps) (length !my_gen_terms) (!counterexamples) ;
     ();;
 
 (* ------------------------------------------------------------------------- *)

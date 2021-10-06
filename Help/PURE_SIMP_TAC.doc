@@ -3,7 +3,7 @@
 \TYPE {PURE_SIMP_TAC : thm list -> tactic}
 
 \SYNOPSIS
-Simplify a goal repeatedly by conditional contextual rewriting without default 
+Simplify a goal repeatedly by conditional contextual rewriting without default
 simplifications.
 
 \DESCRIBE
@@ -14,7 +14,7 @@ built-in simplifications (see {basic_rewrites} and {basic_convs}). For more
 details, see {SIMP_CONV}.
 
 \FAILURE
-Never fails, though may not change the goal if no simplifications are 
+Never fails, though may not change the goal if no simplifications are
 applicable.
 
 \COMMENTS

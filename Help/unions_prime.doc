@@ -7,8 +7,8 @@ Compute union of a family of sets modulo an equivalence.
 
 \DESCRIBE
 If {r} is an equivalence relation an {l} a list of lists, the call
-{unions' r l} returns a list with one representative of each {r}-equivalence 
-class occurring in any of the members. It thus gives a union of a family of 
+{unions' r l} returns a list with one representative of each {r}-equivalence
+class occurring in any of the members. It thus gives a union of a family of
 sets with no duplicates under the equivalence {r}.
 
 \FAILURE

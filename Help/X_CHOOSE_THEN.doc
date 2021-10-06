@@ -46,10 +46,10 @@ Suppose we have the following goal:
 {
   # e(REPEAT GEN_TAC THEN REWRITE_TAC[LT_EXISTS]);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
 `(?d. n = m + SUC d) ==> m EXP 2 + 2 * m <= n EXP 2`
 }
-\noindent we may then use {X_CHOOSE_THEN} to introduce the name {e} for the 
+\noindent we may then use {X_CHOOSE_THEN} to introduce the name {e} for the
 existential variable and immediately substitute it in the goal:
 {
   # e(DISCH_THEN(X_CHOOSE_THEN `e:num` SUBST1_TAC));;

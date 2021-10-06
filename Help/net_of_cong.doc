@@ -9,15 +9,15 @@ Add a congruence rule to a net.
 The underlying machinery in rewriting and simplification assembles
 (conditional) rewrite rules and other conversions into a net, including a
 priority number so that, for example, pure rewrites get applied before
-conditional rewrites. The congruence rules used by the simplifier to establish 
-context (see {extend_basic_congs}) are also stored in this structure, with the 
-lowest priority 4. A call {net_of_cong th net} adds {th} as a new congruence 
+conditional rewrites. The congruence rules used by the simplifier to establish
+context (see {extend_basic_congs}) are also stored in this structure, with the
+lowest priority 4. A call {net_of_cong th net} adds {th} as a new congruence
 rule to {net} to yield an updated net.
 
 \FAILURE
 Fails unless the congruence is of the appropriate implicational form.
 
 \SEEALSO
-extend_basic_congs, net_of_conv, net_of_thm. 
+extend_basic_congs, net_of_conv, net_of_thm.
 
 \ENDDOC

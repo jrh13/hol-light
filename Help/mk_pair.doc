@@ -13,7 +13,7 @@ Never fails.
 
 \EXAMPLE
 {
-  # mk_pair(`x:real`,`T`);;  
+  # mk_pair(`x:real`,`T`);;
   val it : term = `x,T`
 }
 

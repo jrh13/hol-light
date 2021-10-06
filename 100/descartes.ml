@@ -500,18 +500,18 @@ let MULTIPLICITY_UNIQUE = prove
     MAP_EVERY EXISTS_TAC [`b:num->real`; `m:num`] THEN ASM_REWRITE_TAC[]]);;
 
 let MULTIPLICITY_WORKS = prove
- (`!r n a. 
+ (`!r n a.
     (?i. i IN 0..n /\ ~(a i = &0))
-    ==> ?b m. 
+    ==> ?b m.
         ~(sum(0..m) (\i. b i * r pow i) = &0) /\
-        !x. sum(0..n) (\i. a i * x pow i) =                    
+        !x. sum(0..n) (\i. a i * x pow i) =
             (x - r) pow multiplicity (\x. sum(0..n) (\i. a i * x pow i)) r *
             sum(0..m) (\i. b i * x pow i)`,
   REWRITE_TAC[multiplicity] THEN CONV_TAC(ONCE_DEPTH_CONV SELECT_CONV) THEN
-  GEN_TAC THEN MATCH_MP_TAC num_WF THEN X_GEN_TAC `n:num` THEN  
+  GEN_TAC THEN MATCH_MP_TAC num_WF THEN X_GEN_TAC `n:num` THEN
   DISCH_TAC THEN X_GEN_TAC `a:num->real` THEN
   ASM_CASES_TAC `(a:num->real) n = &0` THENL
-   [ASM_CASES_TAC `n = 0` THEN     
+   [ASM_CASES_TAC `n = 0` THEN
     ASM_REWRITE_TAC[NUMSEG_SING; IN_SING; UNWIND_THM2]
     THENL [ASM_MESON_TAC[]; ALL_TAC] THEN
     DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC `n - 1`) THEN
@@ -532,7 +532,7 @@ let MULTIPLICITY_WORKS = prove
       ASM_REWRITE_TAC[NUMSEG_SING; IN_SING; UNWIND_THM2; SUM_SING] THEN
       REWRITE_TAC[real_pow; REAL_MUL_RID] THEN ASM_MESON_TAC[];
       ALL_TAC] THEN
-    MP_TAC(GEN `x:real` (ISPECL [`a:num->real`; `x:real`; `r:real`; `n:num`] 
+    MP_TAC(GEN `x:real` (ISPECL [`a:num->real`; `x:real`; `r:real`; `n:num`]
         REAL_SUB_POLYFUN)) THEN ASM_SIMP_TAC[LE_1; REAL_SUB_RZERO] THEN
     ABBREV_TAC `b j = sum (j + 1..n) (\i. a i * r pow (i - j - 1))` THEN
     DISCH_THEN(K ALL_TAC) THEN
@@ -551,7 +551,7 @@ let MULTIPLICITY_WORKS = prove
     STRIP_TAC THEN ASM_REWRITE_TAC[real_pow; GSYM REAL_MUL_ASSOC];
     MAP_EVERY EXISTS_TAC [`0`; `a:num->real`; `n:num`] THEN
     ASM_REWRITE_TAC[real_pow; REAL_MUL_LID]]);;
-  
+
 let MULTIPLICITY_OTHER_ROOT = prove
  (`!a n r s.
     ~(r = s) /\ (?i. i IN 0..n /\ ~(a i = &0))
@@ -560,7 +560,7 @@ let MULTIPLICITY_OTHER_ROOT = prove
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
   CONV_TAC SYM_CONV THEN MATCH_MP_TAC MULTIPLICITY_UNIQUE THEN
   REWRITE_TAC[] THEN
-  MP_TAC(ISPECL [`s:real`; `n:num`; `a:num->real`] 
+  MP_TAC(ISPECL [`s:real`; `n:num`; `a:num->real`]
         MULTIPLICITY_WORKS) THEN
   ASM_REWRITE_TAC[] THEN REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
   MAP_EVERY X_GEN_TAC [`c:num->real`; `p:num`] THEN
@@ -584,7 +584,7 @@ let MULTIPLICITY_OTHER_ROOT = prove
   MAP_EVERY X_GEN_TAC [`a:num->real`; `n:num`] THEN
   DISCH_THEN(ASSUME_TAC o GSYM) THEN
   ASM_REWRITE_TAC[real_pow; GSYM REAL_MUL_ASSOC] THEN
-  EXISTS_TAC `\i. (if 0 < i then a(i - 1) else &0) - 
+  EXISTS_TAC `\i. (if 0 < i then a(i - 1) else &0) -
                   (if i <= n then r * a i else &0)` THEN
   EXISTS_TAC `n + 1` THEN
   REWRITE_TAC[REAL_SUB_RDISTRIB; SUM_SUB_NUMSEG] THEN X_GEN_TAC `x:real` THEN
@@ -744,10 +744,10 @@ let VARIATION_POSITIVE_ROOT_MULTIPLICITY_FACTOR = prove
 (* ------------------------------------------------------------------------- *)
 
 let DESCARTES_RULE_OF_SIGNS = prove
- (`!f a n. f = (\x. sum(0..n) (\i. a i * x pow i)) /\ 
+ (`!f a n. f = (\x. sum(0..n) (\i. a i * x pow i)) /\
            (?i. i IN 0..n /\ ~(a i = &0))
            ==> ?d. EVEN d /\
-                   variation(0..n) a = 
+                   variation(0..n) a =
                    nsum {r | &0 < r /\ f(r) = &0} (\r. multiplicity f r) + d`,
   REPEAT GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   DISCH_THEN(fun th -> REWRITE_TAC[th]) THEN
@@ -757,7 +757,7 @@ let DESCARTES_RULE_OF_SIGNS = prove
    [ASM_CASES_TAC `n = 0` THEN
     ASM_REWRITE_TAC[NUMSEG_SING; IN_SING; UNWIND_THM2]
     THENL [ASM_MESON_TAC[]; DISCH_TAC] THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `n - 1`) THEN ANTS_TAC THENL 
+    FIRST_X_ASSUM(MP_TAC o SPEC `n - 1`) THEN ANTS_TAC THENL
      [ASM_ARITH_TAC; DISCH_THEN(MP_TAC o SPEC `a:num->real`)] THEN
     ANTS_TAC THENL
      [ASM_MESON_TAC[IN_NUMSEG; ARITH_RULE `i <= n ==> i <= n - 1 \/ i = n`];
@@ -781,17 +781,17 @@ let DESCARTES_RULE_OF_SIGNS = prove
   FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [GSYM MEMBER_NOT_EMPTY]) THEN
   REWRITE_TAC[IN_ELIM_THM; LEFT_IMP_EXISTS_THM] THEN
   X_GEN_TAC `r:real` THEN STRIP_TAC THEN
-  MP_TAC(ISPECL [`r:real`; `n:num`; `a:num->real`] 
+  MP_TAC(ISPECL [`r:real`; `n:num`; `a:num->real`]
     VARIATION_POSITIVE_ROOT_MULTIPLICITY_FACTOR) THEN
   ASM_REWRITE_TAC[LEFT_IMP_EXISTS_THM] THEN
   MAP_EVERY X_GEN_TAC [`b:num->real`; `m:num`] THEN
   DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `m:num`) THEN 
+  FIRST_X_ASSUM(MP_TAC o SPEC `m:num`) THEN
   ANTS_TAC THENL [ASM_REWRITE_TAC[]; ALL_TAC] THEN
   DISCH_THEN(MP_TAC o SPEC `b:num->real`) THEN ANTS_TAC THENL
    [EXISTS_TAC `m:num` THEN ASM_REWRITE_TAC[IN_NUMSEG; LE_REFL; LE_0];
     ALL_TAC] THEN
-  DISCH_THEN(X_CHOOSE_THEN `d1:num` 
+  DISCH_THEN(X_CHOOSE_THEN `d1:num`
     (CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC)) THEN
   FIRST_X_ASSUM(X_CHOOSE_THEN `d2:num`
     (CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC)) THEN
@@ -800,7 +800,7 @@ let DESCARTES_RULE_OF_SIGNS = prove
   MATCH_MP_TAC(ARITH_RULE
    `x + y = z ==> (x + d1) + (y + d2):num = z + d1 + d2`) THEN
   SUBGOAL_THEN
-   `{r | &0 < r /\ sum(0..n) (\i. a i * r pow i) = &0} = 
+   `{r | &0 < r /\ sum(0..n) (\i. a i * r pow i) = &0} =
     r INSERT {r | &0 < r /\ sum(0..m) (\i. b i * r pow i) = &0}`
   SUBST1_TAC THENL
    [MATCH_MP_TAC(SET_RULE `x IN s /\ s DELETE x = t ==> s = x INSERT t`) THEN

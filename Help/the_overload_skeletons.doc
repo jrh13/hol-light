@@ -13,7 +13,7 @@ priority (see {prioritize_overload}). The reference variable
 can add more using {make_overloadable}) and their type skeletons. All constants
 to which an identifier is overloaded must have a type that is an instance of
 this skeleton, although you can make it a type variable in which case any type
-would be allowed. The variable {the_implicit_types} offers somewhat analogous 
+would be allowed. The variable {the_implicit_types} offers somewhat analogous
 features for variables.
 
 \FAILURE

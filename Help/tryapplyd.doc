@@ -6,12 +6,12 @@
 Applies a finite partial function, with a default for undefined points.
 
 \DESCRIBE
-This is one of a suite of operations on finite partial functions, type 
+This is one of a suite of operations on finite partial functions, type
 {('a,'b)func}. These may sometimes be preferable to ordinary functions since
 they permit more operations such as equality comparison, extraction of domain
-etc. If {f} is a finite partial function, {x} an element of its domain type and 
-{y} of its range type, the call {tryapplyd f x y} tries to apply {f} to the 
-value {x}, as with {apply f x}, but if it is undefined, simply returns {y} 
+etc. If {f} is a finite partial function, {x} an element of its domain type and
+{y} of its range type, the call {tryapplyd f x y} tries to apply {f} to the
+value {x}, as with {apply f x}, but if it is undefined, simply returns {y}
 
 \FAILURE
 Never fails.
@@ -20,13 +20,13 @@ Never fails.
 {
   # tryapplyd (1 |=> 2) 1 (-1);;
   val it : int = 2
-  
+
   # tryapplyd undefined 1 (-1);;
   val it : int = -1
 }
 
 \SEEALSO
-|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr,
 graph, is_undefined, mapf, ran, undefine, undefined.
 
 \ENDDOC

@@ -9,8 +9,8 @@ This directory is distributed under the same license as HOL-Light (BSD-2-Clause)
 - - - -
 
 This README contains some brief information on the usage of this system.
-Please refer to the paper [1] for a general description as well as the comments 
-in the code for details on each available function. 
+Please refer to the paper [1] for a general description as well as the comments
+in the code for details on each available function.
 
 - - - -
 
@@ -42,9 +42,9 @@ FULL_SIMP_TAC thl     : SIMP_TAC then FULL_REWRITE_TAC.
 
 X_MATCH_GEN_TAC tm    : X_GEN_TAC, X_CHOOSE_TAC, EXISTS_TAC with
 X_MATCH_CHOOSE_TAC tm   type matching
-MATCH_EXISTS_TAC tm   
+MATCH_EXISTS_TAC tm
 
-gen_case_tac          : Applies case_tac to leading universally quantified 
+gen_case_tac          : Applies case_tac to leading universally quantified
                         variable in the goal.
 
 induct_tac            : Induction with any inductive datatype.
@@ -110,7 +110,7 @@ frulen_tac
 
 - - - -
 
-[1] Papapanagiotou, P. and Fleuriot, J.:  
-An Isabelle-Like Procedural Mode for HOL Light. 
+[1] Papapanagiotou, P. and Fleuriot, J.:
+An Isabelle-Like Procedural Mode for HOL Light.
 Logic for Programming, Artificial Intelligence, and Reasoning, #
 pp 565-580, Springer (2010)

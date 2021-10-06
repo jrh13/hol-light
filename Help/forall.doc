@@ -20,7 +20,7 @@ Never fails.
 {
   # forall (fun x -> x <= 2) [0;1;2];;
   val it : bool = true
-  # forall (fun x -> x <= 2) [1;2;3];;    
+  # forall (fun x -> x <= 2) [1;2;3];;
   val it : bool = false
 }
 

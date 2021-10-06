@@ -19,8 +19,8 @@ by {F} and {T} respectively.
     A ?- t[F/x]    A ?- t[T/x]
 }
 \noindent The term given does not have to be free in the goal, but if it isn't,
-{BOOL_CASES_TAC} will merely duplicate the original goal twice. Note that in 
-the new goals, we don't have {x} and {~x} as assumptions; for that use 
+{BOOL_CASES_TAC} will merely duplicate the original goal twice. Note that in
+the new goals, we don't have {x} and {~x} as assumptions; for that use
 {ASM_CASES_TAC}.
 
 \FAILURE

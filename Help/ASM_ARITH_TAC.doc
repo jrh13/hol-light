@@ -10,31 +10,31 @@ inequality reasoning only, using assumptions
 {ASM_ARITH_TAC} will automatically prove goals that require basic algebraic
 normalization and inequality reasoning over the natural numbers. For nonlinear
 equational reasoning use {NUM_RING} and derivatives. Unlike plain {ARITH_TAC},
-{ASM_ARITH_TAC} uses any assumptions that are not universally quantified as 
+{ASM_ARITH_TAC} uses any assumptions that are not universally quantified as
 additional hypotheses.
 
 \FAILURE
 Fails if the automated methods do not suffice.
 
 \EXAMPLE
-This example illustrates how {ASM_ARITH_TAC} uses assumptions while {ARITH_TAC} 
-does not. Of course, this is for illustration only: plain {ARITH_TAC} would 
+This example illustrates how {ASM_ARITH_TAC} uses assumptions while {ARITH_TAC}
+does not. Of course, this is for illustration only: plain {ARITH_TAC} would
 solve the entire goal before application of {STRIP_TAC}.
 {
-  # g `1 <= 6 * x /\ 2 * x <= 3 ==> x = 1`;;                     
+  # g `1 <= 6 * x /\ 2 * x <= 3 ==> x = 1`;;
   Warning: Free variables in goal: x
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `1 <= 6 * x /\ 2 * x <= 3 ==> x = 1`
-  
+
   # e STRIP_TAC;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
     0 [`1 <= 6 * x`]
     1 [`2 * x <= 3`]
-  
+
   `x = 1`
-  
+
   # e ARITH_TAC;;
   Exception: Failure "linear_ineqs: no contradiction".
   # e ASM_ARITH_TAC;;

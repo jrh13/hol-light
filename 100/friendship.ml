@@ -704,18 +704,18 @@ let FRIENDSHIP = prove
   SUBGOAL_THEN `~(p divides 1)` MP_TAC THENL
    [ASM_MESON_TAC[DIVIDES_ONE; PRIME_1]; ALL_TAC] THEN
   REWRITE_TAC[] THEN
-  MATCH_MP_TAC(NUMBER_RULE 
+  MATCH_MP_TAC(NUMBER_RULE
    `!x. p divides (x + 1) /\ p divides x ==> p divides 1`) THEN
   EXISTS_TAC `m - 1` THEN ASM_REWRITE_TAC[] THEN
   ASM_SIMP_TAC[ARITH_RULE `~(m = 0) ==> m - 1 + 1 = m`] THEN
   MATCH_MP_TAC PRIME_DIVEXP THEN EXISTS_TAC `p - 2` THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(NUMBER_RULE
    `!q c K1 K2.
-        p divides q /\ p divides c /\                
+        p divides q /\ p divides c /\
         c = (q + 1) * K1 + K2 /\
         K1 + K2 = ((q + 1) * q + 1) * nep2
         ==> p divides nep2`) THEN
-  MAP_EVERY EXISTS_TAC 
+  MAP_EVERY EXISTS_TAC
    [`m - 1`; `CARD {x:num->person | cycle friend p x}`;
     `CARD {x:num->person | path friend (p-2) x /\ x (p-2) = x 0}`;
     `CARD {x:num->person | path friend (p-2) x /\ ~(x (p-2) = x 0)}`] THEN
@@ -743,7 +743,7 @@ let FRIENDSHIP = prove
     ASM_REWRITE_TAC[] THEN
     CONJ_TAC THENL [ASM_MESON_TAC[HAS_SIZE]; ALL_TAC] THEN
     CONJ_TAC THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
-    UNDISCH_TAC `3 <= p` THEN ARITH_TAC; 
+    UNDISCH_TAC `3 <= p` THEN ARITH_TAC;
     ALL_TAC] THEN
   MP_TAC(ISPECL [`N:num`; `m:num`; `friend:person->person->bool`; `p - 2`]
                HAS_SIZE_PATHS) THEN

@@ -83,11 +83,11 @@ let getClause lfn mcth cl ci =
    where v is the only var that occurs with opposite signs in c0 and c1 *)
 (* if n0 then v negated in c0 *)
 (*   (but remember we are working with dualised clauses) *)
-let resolve =                                
+let resolve =
   let pth = UNDISCH(TAUT `F ==> p`) in
-  let p = concl pth                                            
+  let p = concl pth
   and f_tm = hd(hyp pth) in
-  fun v n0 rth0 rth1 ->           
+  fun v n0 rth0 rth1 ->
     let th0 = DEDUCT_ANTISYM_RULE (INST [v,p] pth) (if n0 then rth0 else rth1)
     and th1 = DEDUCT_ANTISYM_RULE (INST [mk_iff(v,f_tm),p] pth)
                                   (if n0 then rth1 else rth0) in

@@ -16,19 +16,19 @@ returns one of the theorems:
 }
 \noindent or
 {
-  |- ODD(n) <=> F 
+  |- ODD(n) <=> F
 }
 \noindent according to whether the number denoted by {n} is odd.
 
 \FAILURE
-Fails if applied to a term that is not of the form {`ODD n`} with {n} a 
+Fails if applied to a term that is not of the form {`ODD n`} with {n} a
 numeral.
 
 \EXAMPLE
 {
   # NUM_ODD_CONV `ODD 123`;;
   val it : thm = |- ODD 123 <=> T
-  
+
   # NUM_ODD_CONV `ODD 1234`;;
   val it : thm = |- ODD 1234 <=> F
 }

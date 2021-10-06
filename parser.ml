@@ -463,7 +463,7 @@ let parse_preterm =
        a (Resword "else") ++
        preterm
        >> lmk_ite)
-  ||| ((a (Resword "if") ) ++ preterm ++ a (Resword "then") ++ preterm ++ a (Resword "else") 
+  ||| ((a (Resword "if") ) ++ preterm ++ a (Resword "then") ++ preterm ++ a (Resword "else")
       >> (fun _ -> failwith "malformed else clause"))
   ||| ((a (Resword "if") ) ++ preterm ++ a (Resword "then") ++ preterm
       >> (fun _ -> failwith "missing else following then clause"))

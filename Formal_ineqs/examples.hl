@@ -54,8 +54,8 @@ let test4 () =
 
 (* A polynomial approximation of atn *)
 (* Taken from: *)
-(* Marc Daumas, David Lester, and César Muñoz, 
-   Verified real number calculations: A library for interval arithmetic, 
+(* Marc Daumas, David Lester, and César Muñoz,
+   Verified real number calculations: A library for interval arithmetic,
    IEEE Transactions on Computers, Volume 58, Number 2, 2009. *)
 let test5 () =
   let ineq1 = `-- &1 / &30 <= x /\ x <= &1 / &30 ==> x * (&1 - (x * x) * (&11184811 / &33554432 - (x * x) * (&13421773 / &67108864))) - atn x < #0.1 pow 7` in
@@ -64,7 +64,7 @@ let test5 () =
      verify_ineq default_params 5 ineq2];;
 
 let test5_abs () =
-  let ineq_abs = `-- &1 / &30 <= x /\ x <= &1 / &30 
+  let ineq_abs = `-- &1 / &30 <= x /\ x <= &1 / &30
     ==> abs (x * (&1 - (x * x) * (&11184811 / &33554432 - (x * x) * (&13421773 / &67108864))) - atn x) < #0.1 pow 7` in
      [verify_ineq default_params 10 ineq_abs];;
 

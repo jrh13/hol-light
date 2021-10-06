@@ -24,7 +24,7 @@ Fails unless the argument term has type {bool}.
 {
   # g `HD[1;2;3] = 1 /\ TL[1;2;3] = [2;3]`;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `HD [1; 2; 3] = 1 /\ TL [1; 2; 3] = [2; 3]`
 }
 

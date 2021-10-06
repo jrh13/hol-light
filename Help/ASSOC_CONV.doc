@@ -6,15 +6,15 @@
 Right-associates a term with respect to an associative binary operator.
 
 \DESCRIBE
-The conversion {ASSOC_CONV} expects a theorem asserting that a certain binary 
-operator is associative, in the standard form (with optional universal 
+The conversion {ASSOC_CONV} expects a theorem asserting that a certain binary
+operator is associative, in the standard form (with optional universal
 quantifiers):
 {
   x op (y op z) = (x op y) op z
 }
-It is then applied to a term, and will right-associate any toplevel 
-combinations built up from the operator {op}. Note that if {op} is polymorphic, 
-the type instance of the theorem needs to be the same as in the term to which 
+It is then applied to a term, and will right-associate any toplevel
+combinations built up from the operator {op}. Note that if {op} is polymorphic,
+the type instance of the theorem needs to be the same as in the term to which
 it is applied.
 
 \FAILURE

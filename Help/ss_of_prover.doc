@@ -6,13 +6,13 @@
 Change the method of prover application in a simpset.
 
 \DESCRIBE
-In their maximal generality, simplification operations in HOL Light (as invoked 
-by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and 
-unconditional rewrite rules, conversions and provers for conditions, as well as 
-a determination of how to use the prover on the conditions and how to process 
-theorems into rewrites. The default `prover use' method is to first recursively 
-apply all the simplification to conditions and then try the provers, if any, 
-one by one until one succeeds. It is unusual to want to change this, but if 
+In their maximal generality, simplification operations in HOL Light (as invoked
+by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and
+unconditional rewrite rules, conversions and provers for conditions, as well as
+a determination of how to use the prover on the conditions and how to process
+theorems into rewrites. The default `prover use' method is to first recursively
+apply all the simplification to conditions and then try the provers, if any,
+one by one until one succeeds. It is unusual to want to change this, but if
 desired you can do it with {ss_of_prover str ss}.
 
 \FAILURE

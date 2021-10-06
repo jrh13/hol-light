@@ -10,8 +10,8 @@ Returns the actual internal representation of the current goal, including the
 labels and the theorems that are the assumptions.
 
 \USES
-For users interested in the precise internal structure of the goal, e.g. to 
-debug subtle free variable problems. Normally the simpler structure returned by 
+For users interested in the precise internal structure of the goal, e.g. to
+debug subtle free variable problems. Normally the simpler structure returned by
 {top_goal} is entirely adequate.
 
 \SEEALSO

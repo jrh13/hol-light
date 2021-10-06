@@ -81,21 +81,21 @@ let run_tests =
     let start = Unix.gettimeofday() in
     let result = map f data in
     let finish = Unix.gettimeofday() in
-      finish -. start, result 
+      finish -. start, result
   in
   let rec repeat n data f ((ts, r) as acc) =
     if n <= 0 then acc else
       let time, result = run data f in
-	repeat (n - 1) data f (time :: ts, result) 
+	repeat (n - 1) data f (time :: ts, result)
   in
   let mean n s =
     let sum = itlist (+.) s 0.0 in
       sum /. (float_of_int n)
   in
-  let var n s = 
+  let var n s =
     let m = mean n s in
     let m2 = mean n (map (fun x -> x *. x) s) in
-      m2 -. m *. m 
+      m2 -. m *. m
   in
     fun n data_file pre mk post ?(result = true) f ->
       let strs = read_file data_file in
@@ -110,7 +110,7 @@ let run_tests =
 let show_result = ref true;;
 
 let arith_test1d n data op f =
-  run_tests n data mk_nums (rand o Arith_nat.mk_numeral_array) 
+  run_tests n data mk_nums (rand o Arith_nat.mk_numeral_array)
     (create_op op) ~result:!show_result f;;
 
 let arith_test2d n data op f =
@@ -118,11 +118,11 @@ let arith_test2d n data op f =
     (create_binop op o data_to_pairs) ~result:!show_result f;;
 
 let new_arith_test1d n data f =
-  run_tests n data mk_nums Nat_arith.mk_nat 
+  run_tests n data mk_nums Nat_arith.mk_nat
     I ~result:!show_result f;;
 
 let new_arith_test2d n data f =
-  run_tests n data mk_nums Nat_arith.mk_nat data_to_pairs 
+  run_tests n data mk_nums Nat_arith.mk_nat data_to_pairs
     ~result:!show_result (uncurry f);;
 
 
@@ -136,7 +136,7 @@ show_result := false;;
 let rep = 10;;
 
 
-arith_test1d rep "data/nat15.txt" 
+arith_test1d rep "data/nat15.txt"
   `SUC`  Arith_nat.raw_suc_conv_hash;;
 
 new_arith_test1d rep "data/nat15.txt"
@@ -146,7 +146,7 @@ new_arith_test1d rep "data/nat15.txt"
 (* Addition *)
 
 (* 100: 2.189 +/- 0.053 *)
-arith_test2d rep "data/nat10.txt" 
+arith_test2d rep "data/nat10.txt"
   `(+):num->num->num`
   Arith_nat.raw_add_conv_hash;;
 
@@ -158,7 +158,7 @@ new_arith_test2d rep "data/nat10.txt"
 (* Subtraction *)
 
 (* 100: 3.482 +/- 0.043 *)
-arith_test2d rep "data/nat10.txt" 
+arith_test2d rep "data/nat10.txt"
   `(-):num->num->num`
   Arith_nat.raw_sub_hash_conv;;
 
@@ -170,7 +170,7 @@ new_arith_test2d rep "data/nat10.txt"
 (* Multiplication *)
 
 (* 100: 36.875 +/- 0.184 *)
-arith_test2d rep "data/nat10.txt" 
+arith_test2d rep "data/nat10.txt"
   `( * ):num->num->num`
   Arith_nat.raw_mul_conv_hash;;
 
@@ -182,7 +182,7 @@ new_arith_test2d rep "data/nat10.txt"
 (* Division *)
 
 (* 100:  +/-  *)
-arith_test2d rep "data/nat10_small.txt" 
+arith_test2d rep "data/nat10_small.txt"
   `DIV:num->num->num`
   Arith_nat.raw_div_hash_conv;;
 

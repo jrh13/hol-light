@@ -9,18 +9,18 @@ Term destructor for logical equivalence.
 {dest_iff(`t1 <=> t2`)} returns {(`t1`,`t2`)}.
 
 \FAILURE
-Fails with if term is not a logical equivalence, i.e. an equation between terms 
+Fails with if term is not a logical equivalence, i.e. an equation between terms
 of Boolean type.
 
 \EXAMPLE
 {
-  # dest_iff `x = y <=> y = 1`;;           
+  # dest_iff `x = y <=> y = 1`;;
   val it : term * term = (`x = y`, `y = 1`)
 }
 
 \COMMENTS
-The function {dest_eq} has the same effect, but the present function checks 
-that the types of the two sides are indeed Boolean, whereas {dest_eq} will 
+The function {dest_eq} has the same effect, but the present function checks
+that the types of the two sides are indeed Boolean, whereas {dest_eq} will
 break apart any equation.
 
 \SEEALSO

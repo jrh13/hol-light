@@ -6,8 +6,8 @@
 Gives an identifier prefix status.
 
 \DESCRIBE
-Certain identifiers {c} have prefix status, meaning that combinations of the 
-form {c f x} will be parsed as {c (f x)} rather than the usual {(c f) x}. The 
+Certain identifiers {c} have prefix status, meaning that combinations of the
+form {c f x} will be parsed as {c (f x)} rather than the usual {(c f) x}. The
 call {parse_as_prefix "c"} adds {c} to the list of such identifiers.
 
 \FAILURE

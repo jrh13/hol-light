@@ -62,7 +62,7 @@ also substituting:
 
   `PRE 0 = 0 <=> 0 = 0`
 }
-\noindent Either subgoal can be finished with {ARITH_TAC}, but the way, but so 
+\noindent Either subgoal can be finished with {ARITH_TAC}, but the way, but so
 could the initial goal.
 
 \USES

@@ -6,10 +6,10 @@
 Add theorems to a simpset.
 
 \DESCRIBE
-In their maximal generality, simplification operations in HOL Light (as invoked 
-by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and 
-unconditional rewrite rules, conversions and provers for conditions, as well as 
-a determination of how to use the prover on the conditions and how to process 
+In their maximal generality, simplification operations in HOL Light (as invoked
+by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and
+unconditional rewrite rules, conversions and provers for conditions, as well as
+a determination of how to use the prover on the conditions and how to process
 theorems into rewrites. A call {ss_of_thms thl ss} processes the theorems {thl}
 according to the rewrite maker in the simpset {ss} (normally {mk_rewrites}) and
 adds them to the theorems in {ss} to yield a new simpset.
@@ -24,7 +24,7 @@ Never fails.
 }
 
 \SEEALSO
-mk_rewrites, SIMP_CONV, ss_of_congs, ss_of_conv, ss_of_maker, ss_of_prover, 
+mk_rewrites, SIMP_CONV, ss_of_congs, ss_of_conv, ss_of_maker, ss_of_prover,
 ss_of_provers.
- 
+
 \ENDDOC

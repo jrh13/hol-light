@@ -8,7 +8,7 @@ Base directory in which HOL Light is installed.
 \DESCRIBE
 This reference variable holds the directory (folder) for the base of the HOL
 Light distribution. This information is used, for example, when loading files
-with {loads}. Normally set to the current directory when HOL Light is loaded or 
+with {loads}. Normally set to the current directory when HOL Light is loaded or
 built, but picked up from the system variable {HOLLIGHT_DIR} if it is defined.
 
 \FAILURE

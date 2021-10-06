@@ -16,9 +16,9 @@ Never fails.
 
 \EXAMPLE
 In the default HOL Light state the only conversions are for generalized beta
-reduction and the reduction of pattern-matching constructs such as 
+reduction and the reduction of pattern-matching constructs such as
 {match...with}. All the other default simplifications are done by rewrite
-rules. 
+rules.
 {
   # basic_convs();;
   val it : (string * (term * conv)) list =

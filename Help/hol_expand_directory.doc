@@ -6,9 +6,9 @@
 Modifies directory name starting with {$} to include HOL directory
 
 \DESCRIBE
-The function {hol_expand_directory} takes a string indicating a directory. If 
-it does not begin with a dollar sign {$}, the string is returned unchanged. 
-Otherwise, the initial dollar sign is replaced with the current HOL Light 
+The function {hol_expand_directory} takes a string indicating a directory. If
+it does not begin with a dollar sign {$}, the string is returned unchanged.
+Otherwise, the initial dollar sign is replaced with the current HOL Light
 directory {hol_dir}. To get an actual {$} at the start of the returned
 directory, actually use two dollar signs {$$}.
 

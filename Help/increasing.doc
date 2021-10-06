@@ -6,7 +6,7 @@
 Returns a total ordering based on a measure function
 
 \DESCRIBE
-When applied to a ``measure'' function {f}, the call {increasing f} returns a 
+When applied to a ``measure'' function {f}, the call {increasing f} returns a
 binary function ordering elements in a call {increasing f x y} by
 {f(x) <? f(y)}, where the ordering {<?} is the OCaml polymorphic ordering.
 

@@ -3,30 +3,30 @@
 (* ------------------------------------------------------------------------- *)
 
 (*
-let rec testform pmat fm = 
-  match fm with 
-      Atom(R(a,[p;Fn("0",[])])) -> 
-        let s = assoc p pmat in 
-          if a = "=" then s = Zero 
-          else if a = "<=" then s = Zero || s = Negative 
-          else if a = ">=" then s = Zero || s = Positive 
-          else if a = "<" then s = Negative 
-          else if a = ">" then s = Positive 
-          else failwith "testform: unknown literal" 
-    | False -> false 
-    | True -> true 
-    | Not(p) -> not(testform pmat p) 
-    | And(p,q) -> testform pmat p && testform pmat q 
-    | Or(p,q) -> testform pmat p || testform pmat q 
-    | Imp(p,q) -> not(testform pmat p) || testform pmat q 
-    | Iff(p,q) -> (testform pmat p = testform pmat q) 
-    | _ -> failwith "testform: non-propositional formula";; 
+let rec testform pmat fm =
+  match fm with
+      Atom(R(a,[p;Fn("0",[])])) ->
+        let s = assoc p pmat in
+          if a = "=" then s = Zero
+          else if a = "<=" then s = Zero || s = Negative
+          else if a = ">=" then s = Zero || s = Positive
+          else if a = "<" then s = Negative
+          else if a = ">" then s = Positive
+          else failwith "testform: unknown literal"
+    | False -> false
+    | True -> true
+    | Not(p) -> not(testform pmat p)
+    | And(p,q) -> testform pmat p && testform pmat q
+    | Or(p,q) -> testform pmat p || testform pmat q
+    | Imp(p,q) -> not(testform pmat p) || testform pmat q
+    | Iff(p,q) -> (testform pmat p = testform pmat q)
+    | _ -> failwith "testform: non-propositional formula";;
 
 The model version of testform takes a row of the sign matrix in the form
  (p_1,s_1),(p_2,s_2),...,(p_n,s_n)
 The corresponding argument of TESTFORM is a theorem representing
 an `interpsigns` proposition.  This is natural.  The next argument,
-the formula to be tested, is the same.  
+the formula to be tested, is the same.
 
 *)
 
@@ -57,15 +57,15 @@ let and_thm_pp = prove(
         (!x. set x ==> (P x /\ Q x))`,MESON_TAC[]);;
 
 let and_thm_pn = prove(
-  `!P Q set. (?x. set x) ==> (!x. set x ==> P x) ==> 
+  `!P Q set. (?x. set x) ==> (!x. set x ==> P x) ==>
      (~ ?x. set x /\ Q x) ==> (~ ?x. set x /\ P x /\ Q x)`,MESON_TAC[]);;
 
 let and_thm_np = prove(
-  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==> 
+  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==>
           (!x. set x ==> Q x) ==> (~ ?x. set x /\ P x /\ Q x)`,MESON_TAC[]);;
 
 let and_thm_nn = prove(
-  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==> 
+  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==>
     (~ ?x. set x /\ Q x) ==> (~ ?x. set x /\ P x /\ Q x)`,MESON_TAC[]);;
 
 (* --------------------------------  \/  -------------------------------- *)
@@ -78,22 +78,22 @@ let or_thm_q = prove(
   `!P Q set. (?x. set x) ==> (!x. set x ==> Q x) ==> (!x. set x ==> (P x \/ Q x))`,
   MESON_TAC[]);;
 
-let or_thm_nn = 
+let or_thm_nn =
   prove(`!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==>
           (~ ?x. set x /\ Q x) ==> (~ ?x. set x /\ (P x \/ Q x))`,MESON_TAC[]);;
 
 (* -------------------------------  ==>  -------------------------------- *)
 
 let imp_thm_pp =
-  prove(`!P Q set. (?x. set x) ==> (!x. set x ==> Q x) ==> 
+  prove(`!P Q set. (?x. set x) ==> (!x. set x ==> Q x) ==>
         (!x. set x ==> (P x ==> Q x))`,MESON_TAC[]);;
 
-let imp_thm_pn = 
+let imp_thm_pn =
   prove(`!P Q set. (?x. set x) ==> (!x. set x ==> P x) ==>
         (~ ?x. set x /\ Q x) ==> (~ ?x. set x /\ (P x ==> Q x))`,MESON_TAC[]);;
 
-let imp_thm_n = 
-  prove(`!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==> 
+let imp_thm_n =
+  prove(`!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==>
      (!x. set x ==> (P x ==> Q x))`,MESON_TAC[]);;
 
 (* --------------------------------  =  --------------------------------- *)
@@ -103,15 +103,15 @@ let iff_thm_pp = prove(
         (!x. set x ==> (P x <=> Q x))`,MESON_TAC[]);;
 
 let iff_thm_pn = prove(
-  `!P Q set. (?x. set x) ==> (!x. set x ==> P x) ==> 
+  `!P Q set. (?x. set x) ==> (!x. set x ==> P x) ==>
      (~ ?x. set x /\ Q x) ==> (~ ?x. set x /\ (P x <=> Q x))`,MESON_TAC[]);;
 
 let iff_thm_np = prove(
-  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==> 
+  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==>
           (!x. set x ==> Q x) ==> (~ ?x. set x /\ (P x <=> Q x))`,MESON_TAC[]);;
 
 let iff_thm_nn = prove(
-  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==> 
+  `!P Q set. (?x. set x) ==> (~ ?x. set x /\ P x) ==>
     (~ ?x. set x /\ Q x) ==> (!x. set x ==> (P x <=> Q x))`,MESON_TAC[]);;
 
 (* ---------------------------------------------------------------------- *)
@@ -163,7 +163,7 @@ let gt_le_thm = prove(
   MESON_TAC[real_gt;REAL_LT_LE;REAL_LT_TRANS;real_le]);;
 
 (* --------------------------  ?x. p x >= &0  --------------------------- *)
-  
+
 let lt_ge_thm = prove(
   `!P set. (!x. set x ==> (P x < &0)) ==> ~ ?x. set x /\ (P x >= &0)`,
   MESON_TAC[real_gt;REAL_LT_LE;REAL_LT_TRANS;real_ge]);;

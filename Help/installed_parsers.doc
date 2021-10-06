@@ -6,8 +6,8 @@
 List the user parsers currently installed.
 
 \DESCRIBE
-HOL Light allows user parsing functions to be installed, and will try them on 
-all terms during parsing before the usual parsers. The call 
+HOL Light allows user parsing functions to be installed, and will try them on
+all terms during parsing before the usual parsers. The call
 {installed_parsers()} lists the parsing functions that have been so installed.
 
 \FAILURE

@@ -27,14 +27,14 @@ let psimplify1 fm =
 *)
 
 
-let PSIMPLIFY1_CONV = 
-  let nt = `~T` 
+let PSIMPLIFY1_CONV =
+  let nt = `~T`
   and t = `T`
   and f = `F`
-  and nf = `~F` in             
+  and nf = `~F` in
   fun fm ->
-  try 
-    let fm' = 
+  try
+    let fm' =
       if fm = nt then f
       else if fm = nf then t
       else if is_conj fm then
@@ -46,8 +46,8 @@ let PSIMPLIFY1_CONV =
       else if is_disj fm then
         let l,r = dest_disj fm in
           if l = t || r = t then t
-          else if l = f then r 
-          else if r = f then l 
+          else if l = f then r
+          else if r = f then l
           else fm
       else if is_imp fm then
         let l,r = dest_imp fm in
@@ -58,12 +58,12 @@ let PSIMPLIFY1_CONV =
           else fm
       else if is_iff fm then
         let l,r = dest_beq fm in
-          if l = f then mk_neg r 
+          if l = f then mk_neg r
           else if l = t then r
-          else if r = t then l 
-          else if r = f then mk_neg l 
+          else if r = t then l
+          else if r = f then mk_neg l
             else fm
-      else failwith "PSIMPLIFY: 0" in  
+      else failwith "PSIMPLIFY: 0" in
     let fm'' = mk_eq(fm,fm') in
       prove(fm'',REWRITE_TAC[])
   with _ -> REFL fm;;
@@ -82,7 +82,7 @@ let simplify1 fm =
 let SIMPLIFY1_CONV fm =
   if is_forall fm || is_exists fm then
     let x,p = dest_forall fm in
-      if mem x (frees p) then REFL fm 
+      if mem x (frees p) then REFL fm
       else  prove(mk_eq(fm,p),REWRITE_TAC[])
   else PSIMPLIFY1_CONV fm;;
 
@@ -100,10 +100,10 @@ let rec simplify fm =
 *)
 
 let rec SIMPLIFY_CONV =
-  let not_tm = `(~)`  
+  let not_tm = `(~)`
   and ex_tm = `(?)` in
-  fun fm -> 
-  if is_neg fm then 
+  fun fm ->
+  if is_neg fm then
     let thm1 = SIMPLIFY_CONV (dest_neg fm) in
     let thm2 = AP_TERM not_tm thm1 in
     let l,r = dest_eq (concl thm2) in
@@ -148,7 +148,7 @@ let evalc_atom at =
 let evalc = onatoms evalc_atom;;
 *)
 
-let REAL_LEAF_CONV fm = 
+let REAL_LEAF_CONV fm =
   let op,l,r = get_binop fm in
     if op = rlt then
       REAL_RAT_LT_CONV fm
@@ -158,7 +158,7 @@ let REAL_LEAF_CONV fm =
       REAL_RAT_LE_CONV fm
     else if op = rge then
       REAL_RAT_GE_CONV fm
-    else if op = req then 
+    else if op = req then
       REAL_RAT_EQ_CONV fm
     else failwith "REAL_LEAF_CONV";;
 

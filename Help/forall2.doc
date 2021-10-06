@@ -7,14 +7,14 @@ Tests if corresponding elements of two lists all satisfy a relation.
 
 \DESCRIBE
 {forall p [x1;...;xn] [y1;...;yn]} returns {true} if {(p xi yi)} is true for
-all corresponding {xi} and {yi} in the list. Otherwise, or if the lengths of 
+all corresponding {xi} and {yi} in the list. Otherwise, or if the lengths of
 the lists are different, it returns {false}.
 
 \FAILURE
 Never fails.
 
 \EXAMPLE
-Here we check whether all elements of the first list are less than the 
+Here we check whether all elements of the first list are less than the
 corresponding element of the second:
 {
   # forall2 (<) [1;2;3] [2;3;4];;
@@ -23,7 +23,7 @@ corresponding element of the second:
   # forall2 (<) [1;2;3;4] [5;4;3;2];;
   val it : bool = false
 
-  # forall2 (<) [1] [2;3];; 
+  # forall2 (<) [1] [2;3];;
   val it : bool = false
 }
 

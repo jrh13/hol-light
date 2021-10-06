@@ -6,10 +6,10 @@
 Turn theorem into list of (conditional) rewrites.
 
 \DESCRIBE
-Given a Boolean flag {b}, a theorem {th} and a list of theorems {thl}, the call 
-{mk_rewrites b th thl} breaks {th} down into a collection of rewrites (for 
-example, splitting conjunctions up into several sub-theorems) and appends them 
-to the front of {thl} (which are normally theorems already processed in this 
+Given a Boolean flag {b}, a theorem {th} and a list of theorems {thl}, the call
+{mk_rewrites b th thl} breaks {th} down into a collection of rewrites (for
+example, splitting conjunctions up into several sub-theorems) and appends them
+to the front of {thl} (which are normally theorems already processed in this
 way). Non-equational theorems {|- p} are converted to {|- p <=> T}. If the flag
 {b} is true, then implicational theorems {|- p ==> s = t} are used as
 conditional rewrites; otherwise they are converted to {|- (p ==> s = t) <=> T}.
@@ -27,7 +27,7 @@ Never fails.
        (!m. m + 0 = m) /\
        (!m n. SUC m + n = SUC (m + n)) /\
        (!m n. m + SUC n = SUC (m + n))
-  
+
   # mk_rewrites false ADD_CLAUSES [];;
   val it : thm list =
     [|- 0 + n = n; |- m + 0 = m; |- SUC m + n = SUC (m + n);
@@ -35,7 +35,7 @@ Never fails.
 }
 
 \SEEALSO
-extend_basic_rewrites, GEN_REWRITE_CONV, REWRITE_CONV, set_basic_rewrites, 
+extend_basic_rewrites, GEN_REWRITE_CONV, REWRITE_CONV, set_basic_rewrites,
 SIMP_CONV.
 
 \ENDDOC

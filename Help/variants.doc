@@ -9,7 +9,7 @@ other.
 \DESCRIBE
 The call {variants av vs},s where {av} and {vs} are both lists of variables,
 will return a list {vs'} of variants of the variables in the list {vs}, renamed
-as necessary by adding primes to avoid clashing with any free variables of the 
+as necessary by adding primes to avoid clashing with any free variables of the
 terms in the list {av} or with each other.
 
 \FAILURE

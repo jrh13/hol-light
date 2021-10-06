@@ -6,8 +6,8 @@
 Unify two types by instantiating their type variables
 
 \DESCRIBE
-Given two types {ty1} and {ty2} and an existing instantiation {i} of type 
-variables,  a call {type_unify vars ty1 ty2 i} attempts to find an augmented 
+Given two types {ty1} and {ty2} and an existing instantiation {i} of type
+variables,  a call {type_unify vars ty1 ty2 i} attempts to find an augmented
 instantiation of the type variables to make the two types equal.
 
 \FAILURE

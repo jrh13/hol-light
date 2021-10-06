@@ -6,12 +6,12 @@
 Eliminate select terms from a goal.
 
 \DESCRIBE
-The tactic {SELECT_ELIM_TAC} attempts to remove from a goal any select terms, 
-i.e. instances of the Hilbert choice operator {@x. P[x]}. First, any instances 
-that occur inside their own predicate, i.e. {P[@x. P[x]]}, are replaced simply 
-by {?x. P[x]}, as with {SELECT_CONV}. Other select-terms are eliminated by 
-replacing each on with a new variable {v} and adding a corresponding instance 
-of the axiom {SELECT_AX}, of the form {!x. P[x] ==> P[v]}. Note that the latter 
+The tactic {SELECT_ELIM_TAC} attempts to remove from a goal any select terms,
+i.e. instances of the Hilbert choice operator {@x. P[x]}. First, any instances
+that occur inside their own predicate, i.e. {P[@x. P[x]]}, are replaced simply
+by {?x. P[x]}, as with {SELECT_CONV}. Other select-terms are eliminated by
+replacing each on with a new variable {v} and adding a corresponding instance
+of the axiom {SELECT_AX}, of the form {!x. P[x] ==> P[v]}. Note that the latter
 does not strictly preserve logical equivalence, only implication. So it is
 possible to replace a provable goal by an unprovable one. But since not much is
 provable about a select term except via the axiom {SELECT_AX}, this is not

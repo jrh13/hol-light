@@ -7,9 +7,9 @@ Breaks apart a set enumeration.
 
 \DESCRIBE
 {dest_setenum} is a term destructor for set enumerations:
-{dest_setenum `{{t1,...,tn}}`} returns {[`t1`;...;`tn`]}. Note that the list 
-follows the syntactic pattern of the set enumeration, even if it contains 
-duplicates. (The underlying set is still a set logically, of course, but can be 
+{dest_setenum `{{t1,...,tn}}`} returns {[`t1`;...;`tn`]}. Note that the list
+follows the syntactic pattern of the set enumeration, even if it contains
+duplicates. (The underlying set is still a set logically, of course, but can be
 represented redundantly.)
 
 \FAILURE

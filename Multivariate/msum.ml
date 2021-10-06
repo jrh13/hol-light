@@ -110,7 +110,7 @@ let MSUM_MATRIX_LMUL = prove
   SIMP_TAC[MSUM_CLAUSES; MATRIX_MUL_RZERO; MATRIX_ADD_LDISTRIB]);;
 
 let MSUM_IMAGE = prove
- (`!(f:A->B) (g:B->real^M^N) s. 
+ (`!(f:A->B) (g:B->real^M^N) s.
         (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
         ==> msum (IMAGE f s) g = msum s (g o f)`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[CART_EQ_FULL; MSUM_COMPONENT] THEN

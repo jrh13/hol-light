@@ -15,10 +15,10 @@
 
         In the same way, we remove ambiguities between natural numbers and
         integers by appending a character.  We have chosen to use
-        the character `|` for natural number operations 
+        the character `|` for natural number operations
         and the character `:` for integer operations.
 
-        The character `&` continues to denote the embedding of 
+        The character `&` continues to denote the embedding of
         natural numbers into the integers or reals.
 
         HOL-light parsing does not permit an operator mixing alphanumeric
@@ -36,7 +36,7 @@
 
 
 
-let unambiguous_interface() = 
+let unambiguous_interface() =
 parse_as_infix("+|",(16,"right"));
 parse_as_infix("-|",(18,"left"));
 parse_as_infix("*|",(20,"right"));
@@ -61,7 +61,7 @@ override_interface(">=|",`(>=):num->(num->bool)`);
 parse_as_infix("+:",(16,"right"));
 parse_as_infix("-:",(18,"left"));
 parse_as_infix("*:",(20,"right"));
-parse_as_infix("**:",(24,"left")); 
+parse_as_infix("**:",(24,"left"));
 parse_as_infix("<:",(12,"right"));
 parse_as_infix("<=:",(12,"right"));
 parse_as_infix(">:",(12,"right"));
@@ -83,7 +83,7 @@ override_interface("||:",`int_abs:int->int`);
 parse_as_infix("+.",(16,"right"));
 parse_as_infix("-.",(18,"left"));
 parse_as_infix("*.",(20,"right"));
-parse_as_infix("**.",(24,"left")); 
+parse_as_infix("**.",(24,"left"));
 parse_as_infix("<.",(12,"right"));
 parse_as_infix("<=.",(12,"right"));
 parse_as_infix(">.",(12,"right"));
@@ -102,7 +102,7 @@ override_interface("--.",`real_neg:real->real`);
 override_interface("&.",`real_of_num:num->real`);
 override_interface("||.",`real_abs:real->real`);;
 
-let ambiguous_interface() = 
+let ambiguous_interface() =
 reduce_interface("+|",`(+):num->(num->num)`);
 reduce_interface("-|",`(-):num->(num->num)`);
 reduce_interface("*|",`( * ):num->(num->num)`);
@@ -143,9 +143,9 @@ reduce_interface("&.",`real_of_num:num->real`);
 reduce_interface("||.",`real_abs:real->real`);;
 
 (* add to Harrison's priorities the functions pop_priority and get_priority *)
-let prioritize_int,prioritize_num,prioritize_real,pop_priority,get_priority = 
+let prioritize_int,prioritize_num,prioritize_real,pop_priority,get_priority =
   let v = ref ([]:string list) in
-  let prioritize_int() = 
+  let prioritize_int() =
   v:= "int"::!v;
   overload_interface ("+",`int_add:int->int->int`);
   overload_interface ("-",`int_sub:int->int->int`);
@@ -158,7 +158,7 @@ let prioritize_int,prioritize_num,prioritize_real,pop_priority,get_priority =
   overload_interface ("pow",`int_pow:int->num->int`);
   overload_interface ("abs",`int_abs:int->int`);
   override_interface ("&",`int_of_num:num->int`) and
-  prioritize_num() = 
+  prioritize_num() =
   v:= "num"::!v;
   overload_interface ("+",`(+):num->num->num`);
   overload_interface ("-",`(-):num->num->num`);
@@ -182,7 +182,7 @@ let prioritize_int,prioritize_num,prioritize_real,pop_priority,get_priority =
   overload_interface ("inv",`real_inv:real->real`);
   overload_interface ("abs",`real_abs:real->real`);
   override_interface ("&",`real_of_num:num->real`) and
-  pop_priority() = 
+  pop_priority() =
   if (length !v <= 1) then (print_string "priority unchanged\n") else
   let (a::b::c) = !v in
   v:= (b::c);
@@ -192,7 +192,7 @@ let prioritize_int,prioritize_num,prioritize_real,pop_priority,get_priority =
     "int" -> prioritize_int() |
     "real"-> prioritize_real()|
     _ -> () and
-  get_priority() = 
+  get_priority() =
   if (!v=[]) then "unknown" else
   let (a::b) = !v in a
   in

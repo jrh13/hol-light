@@ -34,22 +34,22 @@ Given a theorem list:
 {
   # g `0 < 3`;;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `0 < 3`
 }
 \noindent the tactic {ONCE_REWRITE_TAC thl} performs a single rewrite
 {
   # e(ONCE_REWRITE_TAC thl);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `0 < SUC 2`
 }
-\noindent in contrast to {REWRITE_TAC thl} which would rewrite the goal 
+\noindent in contrast to {REWRITE_TAC thl} which would rewrite the goal
 repeatedly into this form:
 {
   # e(REWRITE_TAC thl);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `0 < SUC (SUC (SUC 0))`
 }
 
@@ -59,7 +59,7 @@ rewriting would diverge.  It can also be used to save inference steps.
 
 \SEEALSO
 ASM_REWRITE_TAC, ONCE_ASM_REWRITE_TAC, PURE_ASM_REWRITE_TAC,
-PURE_ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBST_ALL_TAC, 
+PURE_ONCE_REWRITE_TAC, PURE_REWRITE_TAC, REWRITE_TAC, SUBST_ALL_TAC,
 SUBST1_TAC.
 
 \ENDDOC

@@ -10,13 +10,13 @@ The underlying machinery in rewriting and simplification assembles
 (conditional) rewrite rules and other conversions into a net, including a
 priority number so that, for example, pure rewrites get applied before
 conditional rewrites. If {net} is such a net (for example, constructed using
-{mk_rewrites} and {net_of_thm}), then {REWRITES_CONV net} is a conversion that 
-uses all those conversions at the toplevel to attempt to rewrite the term. If a 
+{mk_rewrites} and {net_of_thm}), then {REWRITES_CONV net} is a conversion that
+uses all those conversions at the toplevel to attempt to rewrite the term. If a
 conditional rewrite is applied, the resulting theorem will have an assumption.
 This is the primitive operation that performs HOL Light rewrite steps.
 
 \FAILURE
-Fails when applied to the term if none of the conversions in the net are 
+Fails when applied to the term if none of the conversions in the net are
 applicable.
 
 \SEEALSO

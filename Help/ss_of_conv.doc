@@ -6,12 +6,12 @@
 Add a new conversion to a simpset.
 
 \DESCRIBE
-In their maximal generality, simplification operations in HOL Light (as invoked 
-by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and 
-unconditional rewrite rules, conversions and provers for conditions, as well as 
-a determination of how to use the prover on the conditions and how to process 
-theorems into rewrites. A call {ss_of_conv pat cnv ss} adds the conversion 
-{cnv} to the simpset {ss} to yield a new simpset, restricting the initial 
+In their maximal generality, simplification operations in HOL Light (as invoked
+by {SIMP_TAC}) are controlled by a `simpset', which may contain conditional and
+unconditional rewrite rules, conversions and provers for conditions, as well as
+a determination of how to use the prover on the conditions and how to process
+theorems into rewrites. A call {ss_of_conv pat cnv ss} adds the conversion
+{cnv} to the simpset {ss} to yield a new simpset, restricting the initial
 filtering of potential subterms to those matching {pat}.
 
 \FAILURE

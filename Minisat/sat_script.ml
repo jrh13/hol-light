@@ -5,7 +5,7 @@ let AND_IMP2 = prove
   (`!a b c. a /\ b ==> c <=> (a<=>T) ==> b ==> c`,CONV_TAC TAUT);;
 let AND_IMP3 = prove
   (`!a b c. ~a /\ b ==> c <=> (a<=>F) ==> b ==> c`,CONV_TAC TAUT);;
- 
+
 let NOT_NOT = GEN_ALL (hd (CONJUNCTS (SPEC_ALL NOT_CLAUSES)));;
 
 let AND_INV = prove
@@ -13,15 +13,15 @@ let AND_INV = prove
 
 let AND_INV_IMP = prove
   (`!a. a ==> ~a ==> F`,CONV_TAC TAUT);;
- 
+
 let OR_DUAL = prove
-  (`(~(a \/ b) ==> F) = (~a ==> ~b ==> F)`,CONV_TAC TAUT);; 
+  (`(~(a \/ b) ==> F) = (~a ==> ~b ==> F)`,CONV_TAC TAUT);;
 
 let OR_DUAL2 = prove
-  (`(~(a \/ b) ==> F) = ((a==>F) ==> ~b ==> F)`,CONV_TAC TAUT);; 
+  (`(~(a \/ b) ==> F) = ((a==>F) ==> ~b ==> F)`,CONV_TAC TAUT);;
 
 let OR_DUAL3 = prove
-  (`(~(~a \/ b) ==> F) = (a ==> ~b ==> F)`,CONV_TAC TAUT);; 
+  (`(~(~a \/ b) ==> F) = (a ==> ~b ==> F)`,CONV_TAC TAUT);;
 
 let AND_INV2 = prove
   (`(~a ==> F) ==> (a==>F) ==> F`,CONV_TAC TAUT)

@@ -9,7 +9,7 @@ assumptions and built-in simplifications.
 \DESCRIBE
 A call to {ASM_SIMP_TAC[theorems]} will apply conditional contextual rewriting
 with {theorems} and the current assumptions of the goal to the goal's
-conclusion, as well as the default simplifications (see {basic_rewrites} and 
+conclusion, as well as the default simplifications (see {basic_rewrites} and
 {basic_convs}). For more details on this kind of rewriting, see {SIMP_CONV}. If
 the extra generality of contextual conditional rewriting is not needed,
 {REWRITE_TAC} is usually more efficient.

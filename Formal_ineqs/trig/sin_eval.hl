@@ -70,12 +70,12 @@ let float_interval_sin pp x_th =
   let bounds = rand (concl cos_x_pi2) in
   let ltm, high_tm = dest_comb bounds in
   let low_tm = rand ltm in
-  let th0 = INST[x_tm, x_var_real; low_tm, low_var_real; 
+  let th0 = INST[x_tm, x_var_real; low_tm, low_var_real;
 		 high_tm, high_var_real] sin_reduce_th in
     MY_PROVE_HYP cos_x_pi2 th0;;
 
 
-end;;			    
+end;;			
 
 
 (*

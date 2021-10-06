@@ -26,15 +26,15 @@ Never fails; on non-Boolean terms it just returns a reflexive theorem.
 }
 
 \USES
-Mostly useful as a prelude to automated proof procedures, but users may 
+Mostly useful as a prelude to automated proof procedures, but users may
 sometimes find it useful.
 
 \COMMENTS
-A toplevel equivalence {p <=> q} is converted to {(p /\ q) \/ (~p /\ ~q)}. In 
-general this ``splitting'' of equivalences is done with the expectation that 
-the final formula may be put into disjunctive normal form (DNF), as a prelude 
-to a refutation procedure. An otherwise similar conversion {NNFC_CONV} prefers 
-a `conjunctive' splitting and is better suited for a term that will later be 
+A toplevel equivalence {p <=> q} is converted to {(p /\ q) \/ (~p /\ ~q)}. In
+general this ``splitting'' of equivalences is done with the expectation that
+the final formula may be put into disjunctive normal form (DNF), as a prelude
+to a refutation procedure. An otherwise similar conversion {NNFC_CONV} prefers
+a `conjunctive' splitting and is better suited for a term that will later be
 translated to CNF.
 
 \SEEALSO

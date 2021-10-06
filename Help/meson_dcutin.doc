@@ -7,19 +7,19 @@ Determines cut-in point for divide-and-conquer refinement in {MESON}.
 
 \DESCRIBE
 This is one of several parameters determining the behavior of {MESON},
-{MESON_TAC} and related rules and tactics. This number (by default 1) 
-determines the number of current subgoals at which point a special 
+{MESON_TAC} and related rules and tactics. This number (by default 1)
+determines the number of current subgoals at which point a special
 divide-and-conquer refinement will be invoked.
 
 \FAILURE
 Not applicable.
 
 \USES
-For users requiring fine control over the algorithms used in {MESON}'s 
+For users requiring fine control over the algorithms used in {MESON}'s
 first-order proof search.
 
 \COMMENTS
-For more details of this optimization, see Harrison's paper ``Optimizing 
+For more details of this optimization, see Harrison's paper ``Optimizing
 Proof Search in Model Elimination'', CADE-13, 1996.
 
 \SEEALSO

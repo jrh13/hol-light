@@ -18,8 +18,8 @@ The application of {TRY} to a tactic never fails. The resulting
 tactic never fails.
 
 \EXAMPLE
-We might want to try a certain tactic ``speculatively'', even if we're not sure 
-that it will work, for example, to handle the ``easy'' subgoals from breaking 
+We might want to try a certain tactic ``speculatively'', even if we're not sure
+that it will work, for example, to handle the ``easy'' subgoals from breaking
 apart a large conjunction. On a small scale, we might want to prove:
 {
   # g `(x + 1) EXP 2 = x EXP 2 + 2 * x + 1 /\
@@ -27,13 +27,13 @@ apart a large conjunction. On a small scale, we might want to prove:
        (x < y ==> 2 * x + 1 < 2 * y)`;;
   ...
 }
-\noindent and just see which conjuncts we can get rid of automatically by 
-{ARITH_TAC}. It turns out that it only leaves one subgoal with some nonlinear 
+\noindent and just see which conjuncts we can get rid of automatically by
+{ARITH_TAC}. It turns out that it only leaves one subgoal with some nonlinear
 reasoning:
 {
   # e(REPEAT CONJ_TAC THEN TRY ARITH_TAC);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `x EXP 2 = y EXP 2 ==> x = y`
 }
 

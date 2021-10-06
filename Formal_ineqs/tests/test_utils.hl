@@ -47,7 +47,7 @@ let write_file path buf =
 
 (* Splits a string into two substrings separated by a given character. *)
 (* The separator is not included in returned substrings.               *)
-let split_at str ch = 
+let split_at str ch =
   let n = String.length str in
   let i = try String.index str ch with Not_found -> -1 in
     if i < 0 || i >= n then
@@ -56,7 +56,7 @@ let split_at str ch =
       String.sub str 0 i,
       String.sub str (i + 1) (n - i - 1);;
 
-(* Returns n first elements of a list *)    
+(* Returns n first elements of a list *)
 let rec take n = function
   | [] -> []
   | h :: t ->
@@ -94,21 +94,21 @@ let run_tests_raw =
     let start = Unix.gettimeofday() in
     let result = map f data in
     let finish = Unix.gettimeofday() in
-      finish -. start, result 
+      finish -. start, result
   in
   let rec repeat n data f ((ts, r) as acc) =
     if n <= 0 then acc else
       let time, result = run data f in
-	repeat (n - 1) data f (time :: ts, result) 
+	repeat (n - 1) data f (time :: ts, result)
   in
   let mean n s =
     let sum = itlist (+.) s 0.0 in
       sum /. (float_of_int n)
   in
-  let var n s = 
+  let var n s =
     let m = mean n s in
     let m2 = mean n (map (fun x -> x *. x) s) in
-      m2 -. m *. m 
+      m2 -. m *. m
   in
     fun n data ?(result = true) f ->
       let time, r = repeat n data f ([], []) in
@@ -159,7 +159,7 @@ let convert_float_binop_data str =
 let show_result = ref true;;
 
 let ntest1 n data op f =
-  run_tests n data mk_nums (rand o Arith_nat.mk_numeral_array) 
+  run_tests n data mk_nums (rand o Arith_nat.mk_numeral_array)
     (create_op op) ~result:!show_result f;;
 
 let ntest2 n data op f =
@@ -167,11 +167,11 @@ let ntest2 n data op f =
     (create_binop op o data_to_pairs) ~result:!show_result f;;
 
 let ntest1_new n data f =
-  run_tests n data mk_nums Nat_arith.mk_nat 
+  run_tests n data mk_nums Nat_arith.mk_nat
     I ~result:!show_result f;;
 
 let ntest2_new n data f =
-  run_tests n data mk_nums Nat_arith.mk_nat data_to_pairs 
+  run_tests n data mk_nums Nat_arith.mk_nat data_to_pairs
     ~result:!show_result (uncurry f);;
 
 let ftest2 n data f =

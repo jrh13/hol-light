@@ -6,8 +6,8 @@
 Constructs object-level list from nonempty list of terms.
 
 \DESCRIBE
-{mk_flist [`t1`;...;`tn`]} returns {`[t1;...;tn]`}. The list must be nonempty, 
-since the type could not be inferred for that case. For cases where you may 
+{mk_flist [`t1`;...;`tn`]} returns {`[t1;...;tn]`}. The list must be nonempty,
+since the type could not be inferred for that case. For cases where you may
 need to construct an empty list, use {mk_list}.
 
 \FAILURE
@@ -16,7 +16,7 @@ other.
 
 \EXAMPLE
 {
-  # mk_flist(map mk_small_numeral (1--10));;    
+  # mk_flist(map mk_small_numeral (1--10));;
   val it : term = `[1; 2; 3; 4; 5; 6; 7; 8; 9; 10]`
 }
 

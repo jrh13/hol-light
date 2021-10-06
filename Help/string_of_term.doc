@@ -7,7 +7,7 @@ Converts a HOL term to a string representation.
 
 \DESCRIBE
 The call {string_of_term tm} produces a textual representation of the term {tm}
-as a string, similar to what is printed automatically at the toplevel, though 
+as a string, similar to what is printed automatically at the toplevel, though
 without the surrounding quotes.
 
 \FAILURE
@@ -20,7 +20,7 @@ Never fails.
 }
 
 \COMMENTS
-The string may contain newlines for large terms, broken in a similar fashion to 
+The string may contain newlines for large terms, broken in a similar fashion to
 automatic printing.
 
 \SEEALSO

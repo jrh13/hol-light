@@ -45,7 +45,7 @@ let mk_float_interval_decimal =
 
 
 (* Unary interval operations *)
-let unary_interval_operations = 
+let unary_interval_operations =
   let table = Hashtbl.create 10 in
   let add = Hashtbl.add in
     add table `--` (fun pp -> float_interval_neg);
@@ -66,7 +66,7 @@ let unary_interval_operations =
 
 
 (* Binary interval operations *)
-let binary_interval_operations = 
+let binary_interval_operations =
   let table = Hashtbl.create 10 in
   let add = Hashtbl.add in
     add table `+` float_interval_add;
@@ -125,7 +125,7 @@ let eval_constants pp ifun =
     match f with
       | Int_decimal_const tm -> Int_const (mk_float_interval_decimal pp tm)
       | Int_named_const tm -> Int_const (c_find tm pp)
-      | Int_pow (n,f1) -> 
+      | Int_pow (n,f1) ->
 	  (let f1_val = rec_eval f1 in
 	     match f1_val with
 	       | Int_const th -> Int_const (float_interval_pow pp n th)
@@ -166,7 +166,7 @@ let rec build_interval_fun expr_tm =
 	if ltm = amp_op_real then
 	  let n = dest_numeral r_tm in
 	    Int_const (mk_float_interval_num n)
-	else 
+	else
 	  let r_fun = build_interval_fun r_tm in
 	    Int_unary (ltm, r_fun)
       else
@@ -237,7 +237,7 @@ let find_and_replace_all f_list acc =
 		if c1 > 1 then expr, (c1, fs) else find_and_replace f2 i f_list
 	  | _ -> f, (0, f_list) in
 	if c > 1 then expr, (c, fs) else f, replace_subexpr f i f_list in
-    
+
   let rec iterate fs acc =
     let i = length acc in
     let expr, (c, fs') = find_and_replace (hd fs) i fs in
@@ -268,7 +268,7 @@ let eval_interval_fun_list pp (f_list, refs) vars =
 
 (* Approximate the bounds of the given interval with floating point numbers *)
 let interval_to_float_interval =
-  let th = (UNDISCH_ALL o prove)(`interval_arith x (lo, hi) ==> 
+  let th = (UNDISCH_ALL o prove)(`interval_arith x (lo, hi) ==>
 				   interval_arith lo (a, y) ==>
 				   interval_arith hi (z, b)
 				   ==> interval_arith x (a, b)`,
@@ -286,7 +286,7 @@ let interval_to_float_interval =
 		     a_tm, a_var_real; y_tm, y_var_real;
 		     z_tm, z_var_real; b_tm, b_var_real] th in
 	(MY_PROVE_HYP int_th o MY_PROVE_HYP th_lo o MY_PROVE_HYP th_hi) th1;;
-		     
+		
 
 (* Adds a new constant approximation to the table of constants *)
 let add_constant_interval int_th =

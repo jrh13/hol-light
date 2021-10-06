@@ -6,8 +6,8 @@
 Introduces an existential quantifier over a variable in a theorem.
 
 \DESCRIBE
-When applied to a pair consisting of a variable {v} and a theorem {|- p}, 
-{SIMPLE_EXISTS} returns the theorem {|- ?v. p}. It is not compulsory for {v} to 
+When applied to a pair consisting of a variable {v} and a theorem {|- p},
+{SIMPLE_EXISTS} returns the theorem {|- ?v. p}. It is not compulsory for {v} to
 appear free in {p}, but otherwise the quantification is vacuous.
 
 \FAILURE
@@ -20,8 +20,8 @@ Fails only if {v} is not a variable.
 }
 
 \COMMENTS
-The {EXISTS} function is more general: it can introduce an existentially 
-quantified variable to replace chosen instances of any term in the theorem. 
+The {EXISTS} function is more general: it can introduce an existentially
+quantified variable to replace chosen instances of any term in the theorem.
 However, {SIMPLE_EXISTS} is easier to use when the simple case is needed.
 
 \SEEALSO

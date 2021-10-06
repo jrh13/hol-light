@@ -7,7 +7,7 @@ Read file and convert content into a string.
 
 \DESCRIBE
 When given a filename, the function {strings_of_file} attempts to open the file
-for input, and if this is successful reads and closes it, returning the 
+for input, and if this is successful reads and closes it, returning the
 contents as a single string.
 
 \FAILURE

@@ -6,9 +6,9 @@
 Augment context of a simpset with a list of theorems.
 
 \DESCRIBE
-In their maximal generality, simplification operations in HOL Light (as invoked 
-by {SIMP_TAC}) are controlled by a `simpset'. Given a list of theorems {thl} 
-and a simpset {ss}, the call {AUGMENT_SIMPSET thl ss} augments the state of the 
+In their maximal generality, simplification operations in HOL Light (as invoked
+by {SIMP_TAC}) are controlled by a `simpset'. Given a list of theorems {thl}
+and a simpset {ss}, the call {AUGMENT_SIMPSET thl ss} augments the state of the
 simpset, adding the theorems as new rewrite rules and also making any
 provers in the simpset process the new context appropriately.
 

@@ -23,11 +23,11 @@ the theorem:
 {ti} for {v1} in parallel in {t}, with automatic renaming of bound variables
 to prevent free variable capture.
 
-{let_CONV} also works on {let}-terms that bind terms built up from applications 
+{let_CONV} also works on {let}-terms that bind terms built up from applications
 of inductive type constructors. For example, if {<tup>} is an
 arbitrarily-nested tuple of distinct variables {v1}, ..., {vn} and {<val>} is a
 structurally similar tuple of values, that is {<val>} equals
-{<tup>[t1,...,tn/v1,...,vn]} for some terms {t1}, ..., {tn}, then: 
+{<tup>[t1,...,tn/v1,...,vn]} for some terms {t1}, ..., {tn}, then:
 {
    let_CONV `let <tup> = <val> in t`
 }

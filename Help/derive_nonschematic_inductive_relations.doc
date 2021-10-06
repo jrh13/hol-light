@@ -8,12 +8,12 @@ Deduce inductive definitions properties from an explicit assignment.
 \DESCRIBE
 Given a set of clauses as given to {new_inductive_definitions}, the call
 {derive_nonschematic_inductive_relations} will introduce explicit equational
-constraints (``definitions'', though only assumptions of the theorem, not 
-actually constant definitions) that allow it to deduce those clauses. It will 
-in general have additional `monotonicity' hypotheses, but these may be 
-removable by {prove_monotonicity_hyps}. None of the arguments are treated as 
+constraints (``definitions'', though only assumptions of the theorem, not
+actually constant definitions) that allow it to deduce those clauses. It will
+in general have additional `monotonicity' hypotheses, but these may be
+removable by {prove_monotonicity_hyps}. None of the arguments are treated as
 schematic.
- 
+
 \FAILURE
 Fails if the format of the clauses is wrong.
 
@@ -22,7 +22,7 @@ Here we try one of the classic examples of a mutually inductive definition,
 defining odd-ness and even-ness of natural numbers:
 {
   # (prove_monotonicity_hyps o derive_nonschematic_inductive_relations)
-      `even(0) /\ odd(1) /\                                
+      `even(0) /\ odd(1) /\
        (!n. even(n) ==> odd(n + 1)) /\ (!n. odd(n) ==> even(n + 1))`;;
   val it : thm =
     odd =
@@ -48,16 +48,16 @@ defining odd-ness and even-ness of natural numbers:
        (!a0. odd a0 <=> a0 = 1 \/ (?n. a0 = n + 1 /\ even n)) /\
        (!a1. even a1 <=> a1 = 0 \/ (?n. a1 = n + 1 /\ odd n))
 }
-\noindent Note that the final theorem has two assumptions that one can think of 
-as the appropriate explicit definitions of these relations, and the conclusion 
+\noindent Note that the final theorem has two assumptions that one can think of
+as the appropriate explicit definitions of these relations, and the conclusion
 gives the rule, induction and cases theorems.
 
 \COMMENTS
-Normally, use {prove_inductive_relations_exist} or {new_inductive_definition}. 
+Normally, use {prove_inductive_relations_exist} or {new_inductive_definition}.
 This function is only needed for a very fine level of control.
 
 \SEEALSO
-new_inductive_definition, prove_inductive_relations_exist, 
+new_inductive_definition, prove_inductive_relations_exist,
 prove_monotonicity_hyps.
 
 \ENDDOC

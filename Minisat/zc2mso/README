@@ -12,7 +12,7 @@ probably be the same or very similar in other versions.)
 
    #define VERIFY_ON
 
-2. Change the filename around line 51 from "resolve_trace" to 
+2. Change the filename around line 51 from "resolve_trace" to
    "/tmp/resolve_trace", so it becomes:
 
    ofstream verify_out("/tmp/resolve_trace");

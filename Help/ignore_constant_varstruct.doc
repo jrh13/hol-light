@@ -3,17 +3,17 @@
 \TYPE {ignore_constant_varstruct : bool ref}
 
 \SYNOPSIS
-Interpret a simple varstruct as a variable, even if there is a constant of that 
+Interpret a simple varstruct as a variable, even if there is a constant of that
 name.
 
 \DESCRIBE
-As well as conventional abstractions {`\x. t`} where {x} is a variable, HOL 
-Light permits generalized abstractions where the varstruct is a more complex 
-term, e.g. {`\(x,y). x + y`}. This includes the degenerate case of just a 
-constant. However, one may want a regular abstraction whose bound variable 
-happens to be in use as a constant. When parsing a quotation {"\c. t"} where 
-{c} is the name of a constant, HOL Light interprets it as a simple abstraction 
-with a variable {c} when the flag {ignore_constant_varstruct} is {true}, as it 
+As well as conventional abstractions {`\x. t`} where {x} is a variable, HOL
+Light permits generalized abstractions where the varstruct is a more complex
+term, e.g. {`\(x,y). x + y`}. This includes the degenerate case of just a
+constant. However, one may want a regular abstraction whose bound variable
+happens to be in use as a constant. When parsing a quotation {"\c. t"} where
+{c} is the name of a constant, HOL Light interprets it as a simple abstraction
+with a variable {c} when the flag {ignore_constant_varstruct} is {true}, as it
 is by default. It will interpret it as a degenerate generalized abstraction,
 only useful when applied to the constant {c}, if the flag is {false}.
 

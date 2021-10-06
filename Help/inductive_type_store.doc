@@ -6,11 +6,11 @@
 List of inductive types defined with corresponding theorems.
 
 \DESCRIBE
-The reference variable {inductive_type_store} holds an association list that 
-associates with the name of each inductive type defined so far (e.g. {"list"} 
-or {"1"}) a triple: the number of constructors, the induction theorem and the 
-recursion theorem for it. The two theorems are exactly of the form returned by 
-{define_type}. 
+The reference variable {inductive_type_store} holds an association list that
+associates with the name of each inductive type defined so far (e.g. {"list"}
+or {"1"}) a triple: the number of constructors, the induction theorem and the
+recursion theorem for it. The two theorems are exactly of the form returned by
+{define_type}.
 
 \FAILURE
 Not applicable.
@@ -25,8 +25,8 @@ This example is characteristic:
             ?fn. fn [] = NIL' /\
                  (!a0 a1. fn (CONS a0 a1) = CONS' a0 a1 (fn a1)))
 }
-\noindent while the following shows that there is an entry for the Boolean 
-type, for the sake of regularity, even though it is not normally considered an 
+\noindent while the following shows that there is an entry for the Boolean
+type, for the sake of regularity, even though it is not normally considered an
 inductive type:
 {
   # assoc "bool" (!inductive_type_store);;
@@ -37,8 +37,8 @@ inductive type:
 \USES
 This list is mainly for internal use. For example it is employed by {define} to
 automatically prove the existence of recursive functions over inductive types.
-Users may find the information helpful to implement their own proof tools. 
-However, while the list may be inspected, it should not be modified explicitly 
+Users may find the information helpful to implement their own proof tools.
+However, while the list may be inspected, it should not be modified explicitly
 or there may be unwanted side-effects on {define}.
 
 \SEEALSO

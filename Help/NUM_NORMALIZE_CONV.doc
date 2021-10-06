@@ -10,8 +10,8 @@ in canonical polynomial form.
 Given a term {t} of natural number type built up from other ``atomic''
 components (not necessarily simple variables) and numeral constants by
 addition, multiplication and exponentiation by constant exponents,
-{NUM_NORMALIZE_CONV t} will return {|- t = t'} where {t'} is the result of 
-putting the term into a normalized form, essentially a multiplied-out 
+{NUM_NORMALIZE_CONV t} will return {|- t = t'} where {t'} is the result of
+putting the term into a normalized form, essentially a multiplied-out
 polynomial with a specific ordering of and within monomials.
 
 \FAILURE
@@ -19,16 +19,16 @@ Should never fail.
 
 \EXAMPLE
 {
-  # NUM_NORMALIZE_CONV `1 + (1 + x + x EXP 2) * (x + (x * x) EXP 2)`;;   
+  # NUM_NORMALIZE_CONV `1 + (1 + x + x EXP 2) * (x + (x * x) EXP 2)`;;
   val it : thm =
     |- 1 + (1 + x + x EXP 2) * (x + (x * x) EXP 2) =
        x EXP 6 + x EXP 5 + x EXP 4 + x EXP 3 + x EXP 2 + x + 1
 }
 
 \COMMENTS
-This can be used to prove simple algebraic equations, but {NUM_RING} or 
-{ARITH_RULE} are generally more powerful and convenient for that. In 
-particular, this function does not handle cutoff subtraction or other such 
+This can be used to prove simple algebraic equations, but {NUM_RING} or
+{ARITH_RULE} are generally more powerful and convenient for that. In
+particular, this function does not handle cutoff subtraction or other such
 operations.
 
 \SEEALSO

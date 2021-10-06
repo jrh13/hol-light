@@ -10,7 +10,7 @@ conversion, failure.
 
 \DESCRIBE
 {TRY_CONV c `t`} attempts to apply the conversion {c} to the term {`t`}; if
-this fails, then the identity conversion is applied instead giving the 
+this fails, then the identity conversion is applied instead giving the
 reflexive theorem {|- t = t}.
 
 \FAILURE

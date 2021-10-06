@@ -67,7 +67,7 @@ let hd_conv hd_tm =
 
 let EL_0' = (MY_RULE_NUM o prove)(`EL 0 (CONS (h:A) t) = h`, REWRITE_TAC[EL; HD]);;
 let EL_n' = (MY_RULE_NUM o prove)(`0 < n /\ PRE n = m ==> EL n (CONS (h:A) t) = EL m t`,
-   STRIP_TAC THEN SUBGOAL_THEN `n = SUC m` ASSUME_TAC THENL 
+   STRIP_TAC THEN SUBGOAL_THEN `n = SUC m` ASSUME_TAC THENL
      [ REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC; ALL_TAC ] THEN ASM_REWRITE_TAC[EL; TL]);;
 
 
@@ -88,7 +88,7 @@ let eval_el n_tm list_tm =
       let n_gt0 = (EQT_ELIM o raw_gt0_hash_conv) n_tm in
       let pre_n = raw_pre_hash_conv (mk_comb (pre_op_num, n_tm)) in
       let m_tm = (rand o concl) pre_n in
-      let th0 = (MY_PROVE_HYP pre_n o MY_PROVE_HYP n_gt0 o 
+      let th0 = (MY_PROVE_HYP pre_n o MY_PROVE_HYP n_gt0 o
 		   INST[n_tm, n_var_num; m_tm, m_var_num] o inst0) el_n in
       let th1 = el_conv_raw m_tm t_tm in
 	TRANS th0 th1 in
@@ -198,7 +198,7 @@ let eval_zip list1_tm list2_tm =
 (******************)
 
 let ALL_0' = prove(`ALL P ([]:(A)list) <=> T`, REWRITE_TAC[ALL]) and
-    ALL_CONS_T' = (MY_RULE o prove)(`(P h <=> T) /\ (ALL P t <=> T) ==> (ALL P (CONS (h:A) t) <=> T)`, 
+    ALL_CONS_T' = (MY_RULE o prove)(`(P h <=> T) /\ (ALL P t <=> T) ==> (ALL P (CONS (h:A) t) <=> T)`,
 				    REWRITE_TAC[ALL]) and
     ALL_CONS_F2' = (MY_RULE o prove)(`(ALL P t <=> F) ==> (ALL P (CONS (h:A) t) <=> F)`,
 				     SIMP_TAC[ALL]) and
@@ -216,7 +216,7 @@ let all_conv_univ p_conv tm =
   let ty = (hd o snd o dest_type) list_ty in
   let inst_t = INST_TYPE[ty, aty] in
 
-  let all_0, all_t, all_f1, all_f2 = inst_t ALL_0', inst_t ALL_CONS_T', 
+  let all_0, all_t, all_f1, all_f2 = inst_t ALL_0', inst_t ALL_CONS_T',
     inst_t ALL_CONS_F1', inst_t ALL_CONS_F2' in
   let h_var, t_var = mk_var("h", ty), mk_var("t", list_ty) and
       p_var = mk_var("P", p_ty) in
@@ -246,13 +246,13 @@ let all_conv_univ p_conv tm =
 (*******************)
 
 let ALL2_0' = prove(`ALL2 P ([]:(A)list) ([]:(B)list) <=> T`, REWRITE_TAC[ALL2]) and
-    ALL2_CONS_T' = (MY_RULE o prove)(`(P h1 h2 <=> T) /\ (ALL2 P t1 t2 <=> T) ==> 
+    ALL2_CONS_T' = (MY_RULE o prove)(`(P h1 h2 <=> T) /\ (ALL2 P t1 t2 <=> T) ==>
 				       (ALL2 P (CONS (h1:A) t1) (CONS (h2:B) t2) <=> T)`,
 				     REWRITE_TAC[ALL2]) and
-    ALL2_CONS_F2' = (MY_RULE o prove)(`(ALL2 P t1 t2 <=> F) ==> 
+    ALL2_CONS_F2' = (MY_RULE o prove)(`(ALL2 P t1 t2 <=> F) ==>
 					(ALL2 P (CONS (h1:A) t1) (CONS (h2:B) t2) <=> F)`,
 				      SIMP_TAC[ALL2]) and
-    ALL2_CONS_F1' = (MY_RULE o prove)(`(P h1 h2 <=> F) ==> 
+    ALL2_CONS_F1' = (MY_RULE o prove)(`(P h1 h2 <=> F) ==>
 					(ALL2 P (CONS (h1:A) t1) (CONS (h2:B) t2) <=> F)`,
 				      SIMP_TAC[ALL2]);;
 
@@ -270,7 +270,7 @@ let all2_conv_univ p_conv tm =
       ty2 = (hd o snd o dest_type) list2_ty in
   let inst_t = INST_TYPE[ty1, aty; ty2, bty] in
 
-  let all2_0, all2_t, all2_f1, all2_f2 = inst_t ALL2_0', inst_t ALL2_CONS_T', 
+  let all2_0, all2_t, all2_f1, all2_f2 = inst_t ALL2_0', inst_t ALL2_CONS_T',
     inst_t ALL2_CONS_F1', inst_t ALL2_CONS_F2' in
   let h1_var, t1_var = mk_var("h1", ty1), mk_var("t1", list1_ty) and
       h2_var, t2_var = mk_var("h2", ty2), mk_var("t2", list2_ty) and
@@ -344,9 +344,9 @@ let mem_conv_univ eq_conv mem_tm =
 (* FILTER conversions *)
 
 let FILTER_A_EMPTY = prove(`FILTER (P:A->bool) [] = []`, REWRITE_TAC[FILTER]) and
-    FILTER_A_HD = (MY_RULE o prove)(`(P h <=> T) ==> FILTER (P:A->bool) (CONS h t) = CONS h (FILTER P t)`, 
+    FILTER_A_HD = (MY_RULE o prove)(`(P h <=> T) ==> FILTER (P:A->bool) (CONS h t) = CONS h (FILTER P t)`,
 				    SIMP_TAC[FILTER]) and
-    FILTER_A_TL = (MY_RULE o prove)(`(P h <=> F) ==> FILTER (P:A->bool) (CONS h t) = FILTER P t`, 
+    FILTER_A_TL = (MY_RULE o prove)(`(P h <=> F) ==> FILTER (P:A->bool) (CONS h t) = FILTER P t`,
 				    SIMP_TAC[FILTER]);;
 
 
@@ -356,12 +356,12 @@ let filter_conv_univ p_conv tm =
   let p_ty = type_of p_tm in
   let ty = (hd o snd o dest_type) p_ty in
   let inst_t = INST_TYPE[ty, aty] in
-  let filter_empty, filter_hd, filter_tl = 
+  let filter_empty, filter_hd, filter_tl =
     inst_t FILTER_A_EMPTY, inst_t FILTER_A_HD, inst_t FILTER_A_TL in
   let p_var = mk_var("P", p_ty) in
   let h_var = mk_var("h", ty) in
   let t_var = mk_var("t", mk_type("list",[ty])) in
-    
+
   let rec filter_conv_raw = fun list_tm ->
     if (is_comb list_tm) then
       let ltm, t_tm = dest_comb list_tm in
@@ -381,9 +381,9 @@ let filter_conv_univ p_conv tm =
     else
       INST[p_tm, p_var] filter_empty in
     filter_conv_raw list_tm;;
-	  
-    
-    
+	
+
+
 (***************************)
 (* MAP conversions *)
 
@@ -451,7 +451,7 @@ let get_all th =
     else
       [] in
     get_all_raw th list_tm;;
-	    
+	
 
 
 (* Given a theorem `ALL P list`, returns (P x_i1),..., (P x_in)
@@ -485,7 +485,7 @@ let select_all th indices =
 	  else
 	    get_all_raw th_tl t_tm (i::is) (n + 1) in
     get_all_raw th list_tm indices 0;;
-	    
+	
 
 (*****************************************)
 (* set_of_list conversions *)

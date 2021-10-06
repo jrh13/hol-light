@@ -9,9 +9,9 @@ Tries to ensure that a tactic is valid.
 tactical.
 
 \DESCRIBE
-For any tactic {t}, the application {VALID t} gives a new tactic that does 
-exactly the same as {t} except that it also checks validity of the tactic 
-and will fail if it is violated. Validity means that the subgoals produced by 
+For any tactic {t}, the application {VALID t} gives a new tactic that does
+exactly the same as {t} except that it also checks validity of the tactic
+and will fail if it is violated. Validity means that the subgoals produced by
 {t} can, if proved, be used by the justification function given by {t} to
 construct a theorem corresponding to the original goal.
 

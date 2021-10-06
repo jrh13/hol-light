@@ -6,16 +6,16 @@
 Term order for use in AC-rewriting.
 
 \DESCRIBE
-This binary predicate implements a crude but fairly efficient ordering on terms 
-that is appropriate for ensuring that ordered rewriting will perform 
-normalization. 
+This binary predicate implements a crude but fairly efficient ordering on terms
+that is appropriate for ensuring that ordered rewriting will perform
+normalization.
 
 \FAILURE
 Never fails.
 
 \EXAMPLE
-This example shows how using ordered rewriting with this term ordering can give 
-normalization under associative and commutative laws given the appropriate 
+This example shows how using ordered rewriting with this term ordering can give
+normalization under associative and commutative laws given the appropriate
 rewrites:
 {
   # ADD_AC;;
@@ -31,8 +31,8 @@ rewrites:
 }
 
 \USES
-It is used automatically when applying permutative rewrite rules inside 
-rewriting and simplification. Users will not normally want to use it 
+It is used automatically when applying permutative rewrite rules inside
+rewriting and simplification. Users will not normally want to use it
 explicitly, though the example above shows roughly what goes on there.
 
 \SEEALSO

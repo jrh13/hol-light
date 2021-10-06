@@ -6,16 +6,16 @@
 Converts a pretype to a type.
 
 \DESCRIBE
-HOL Light uses ``pretypes'' and ``preterms'' as intermediate structures for 
-parsing and typechecking, which are later converted to types and terms. A call 
+HOL Light uses ``pretypes'' and ``preterms'' as intermediate structures for
+parsing and typechecking, which are later converted to types and terms. A call
 {type_of_pretype pty} attempts to convert pretype {pty} into a HOL type.
 
 \FAILURE
-Fails if some type constants used in the pretype have not been defined, or if 
+Fails if some type constants used in the pretype have not been defined, or if
 the arities are wrong.
 
 \COMMENTS
-Only users seeking to change HOL's parser and typechecker quite radically need 
+Only users seeking to change HOL's parser and typechecker quite radically need
 to use this function.
 
 \SEEALSO

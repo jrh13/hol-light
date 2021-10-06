@@ -10,7 +10,7 @@ For many purposes it is useful to retain polynomials in a canonical form. For
 more information on the usual normal form in HOL Light, see the function
 {REAL_POLY_CONV}, which converts a polynomial to normal form while proving the
 equivalence of the original and normalized forms. The function
-{REAL_POLY_POW_CONV} is a more delicate conversion that, given a term 
+{REAL_POLY_POW_CONV} is a more delicate conversion that, given a term
 {p1 pow n} where {p} is a real polynomial in normal form and {n} a numeral,
 returns a theorem {|- p pow n = p'} where {p'} is in normal form.
 
@@ -27,7 +27,7 @@ not guaranteed.
 }
 
 \USES
-More delicate polynomial operations that simply the direct normalization with 
+More delicate polynomial operations that simply the direct normalization with
 {REAL_POLY_CONV}.
 
 \SEEALSO

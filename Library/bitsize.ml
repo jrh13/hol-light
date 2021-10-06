@@ -108,7 +108,7 @@ let LE_BITSIZE_ALT = prove
   REWRITE_TAC[GSYM(CONJUNCT2 EXP)] THEN AP_TERM_TAC THEN ASM_ARITH_TAC);;
 
 let BITSIZE_UNIQUE_EQ = prove
- (`!n k. bitsize n = k <=> 
+ (`!n k. bitsize n = k <=>
          n < 2 EXP k /\ (~(k = 0) ==> 2 EXP k <= 2 * n)`,
   REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV
    [ARITH_RULE `n = k <=> k <= n /\ ~(k + 1 <= n)`] THEN

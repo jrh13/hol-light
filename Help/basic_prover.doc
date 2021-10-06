@@ -8,10 +8,10 @@ The basic prover use function used in the simplifier.
 \DESCRIBE
 The HOL Light simplifier (e.g. as invoked by {SIMP_TAC}) allows provers of type
 {prover} to be installed into simpsets, to automatically dispose of
-side-conditions. There is another component of the simpset that controls how 
-these are applied to unproven subgoals arising in simplification. The 
-{basic_prover} function, which is used in all the standard simpsets, simply 
-tries to simplify the goals with the rewrites as far as possible, then tries 
+side-conditions. There is another component of the simpset that controls how
+these are applied to unproven subgoals arising in simplification. The
+{basic_prover} function, which is used in all the standard simpsets, simply
+tries to simplify the goals with the rewrites as far as possible, then tries
 the provers one at a time on the resulting subgoals till one succeeds.
 
 \FAILURE

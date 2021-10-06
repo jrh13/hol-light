@@ -69,7 +69,7 @@ let MTAUT tm =
 
 
 (* ------------------------------------------------------------------------- *)
-(* RULE to replace implication by meta-level implication to easily create    *) 
+(* RULE to replace implication by meta-level implication to easily create    *)
 (* meta-theorems from normal theorems.                                       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -100,8 +100,8 @@ let (MDISCH_TAC: tactic) =
 (* Also gets rid of meta-level implication in the undischarged term.         *)
 (* ------------------------------------------------------------------------- *)
 
-let MUNDISCH th = 
-    let mth = BETA_RULE (AP_THM (AP_THM MIMP_DEF `p:bool`) `q:bool`) in 
+let MUNDISCH th =
+    let mth = BETA_RULE (AP_THM (AP_THM MIMP_DEF `p:bool`) `q:bool`) in
     let th =  PURE_ONCE_REWRITE_RULE [mth] th in
     try let undisch_tm = (rand o rator o concl) th in
     PROVE_HYP ((UNDISCH o snd o EQ_IMP_RULE o MIMP_TO_IMP_CONV) undisch_tm) (UNDISCH th)
@@ -167,7 +167,7 @@ let REV_PART_MATCH_I =
 let rec (term_to_asm_match: term list -> term -> (string * thm) list -> (string * thm) list * (thm * instantiation)) =
   fun avoids key asms ->
     if (asms = []) then failwith ("No assumptions match `" ^ (string_of_term key) ^ "`!")
-    else try 
+    else try
       let asm = (snd o hd) asms in
       let i = REV_PART_MATCH_I avoids I asm key in
       (tl asms),(asm,i)
@@ -189,7 +189,7 @@ let rec (term_to_asm_n_match: term list -> term -> (string * thm) list -> int ->
   fun avoids key asms n ->
     if (asms = []) then failwith "No such assumption found!"
     else try match n with
-	0 ->  
+	0 ->
 	  let asm = (snd o hd) asms in
 	  let i = REV_PART_MATCH_I avoids I asm key in
 	    (tl asms),(asm,i)
@@ -209,8 +209,8 @@ let gmm t =
      warn true ("Free variables in goal: "^errmsg)
    else ());
   let rec split_mimp = fun tm ->
-    if (is_mimp tm) 
-    then 
+    if (is_mimp tm)
+    then
       let (a,b) = dest_mimp tm in
       let (asms, concl) = split_mimp b in
       (a::asms,concl)
@@ -237,7 +237,7 @@ let gm t = ignore( g t ) ; e (REPEAT MDISCH_TAC);;
 let conjI = MTAUT `p===>q===>p/\q`;;
 let conjunct1 = MTAUT `p/\q===>p`;;
 let conjunct2 = MTAUT `p/\q===>q`;;
-let conjE = MTAUT `p/\q===>(p===>q===>r)===>r`;; 
+let conjE = MTAUT `p/\q===>(p===>q===>r)===>r`;;
 let disjI1 = MTAUT `p===>p\/q`;;
 let disjI2 = MTAUT `q===>p\/q`;;
 let disjE = MTAUT `p\/q===>(p===>r)===>(q===>r)===>r`;;
@@ -251,10 +251,10 @@ let iffE = MTAUT `(a<=>b)===>((a==>b) ===> (b==>a) ===> r) ===> r`;;
 
 let allE = prove( `(!x:A. P x) ===> (P (a:A) ===> (r:bool)) ===> r` ,
                   MIMP_TAC THEN MESON_TAC[]);;
-let exI = prove (`P (a:A)===> ?x:A. P x`, 
+let exI = prove (`P (a:A)===> ?x:A. P x`,
                           MIMP_TAC THEN
-			  DISCH_TAC THEN 
-			    (EXISTS_TAC `a:A`) THEN 
+			  DISCH_TAC THEN
+			    (EXISTS_TAC `a:A`) THEN
 			    (FIRST_ASSUM ACCEPT_TAC));;
 
 let notI = MTAUT `(p===>F)===> ~p`;;
@@ -307,7 +307,7 @@ let notE = MTAUT `~a ===> a ===> r`;;
 type meta_rule = term * goal list * thm;;
 
 
-let print_meta_rule: meta_rule->unit = 
+let print_meta_rule: meta_rule->unit =
   fun (c,glist,j) ->
     print_term c ; hd (map (print_newline () ; print_goal) glist) ;
     print_newline () ; print_thm j ; print_newline ();;
@@ -334,7 +334,7 @@ let inst_meta_rule:instantiation->meta_rule->meta_rule =
 
 let REWRITE_META_RULE:thm list->meta_rule->meta_rule =
   fun thl (c,glist,j) ->
-    let rewr = rhs o concl o (REWRITE_CONV thl) 
+    let rewr = rhs o concl o (REWRITE_CONV thl)
     and rewrg = (hd o snd3 o (REWRITE_ASM_TAC thl THEN REWRITE_TAC thl)) in
     rewr c,
     map (rewrg) glist,
@@ -361,13 +361,13 @@ let meta_rule_frees: meta_rule -> term list =
 (* Returns the new meta_rule and the instantiation for the variable renaming.*)
 (* ------------------------------------------------------------------------- *)
 
-let meta_rule_mk_primed_vars_I: term list -> meta_rule -> meta_rule * instantiation = 
+let meta_rule_mk_primed_vars_I: term list -> meta_rule -> meta_rule * instantiation =
   fun avoids r ->
     let fvars =  meta_rule_frees r in
     let rec mk_primed_l = fun avoids vars ->
-      match vars with 
+      match vars with
 	[] -> null_inst
-      | v::rest -> 
+      | v::rest ->
 	  let new_v = mk_primed_var avoids v in
 	  compose_insts (term_match [] v new_v) (mk_primed_l (new_v::avoids) rest)
     in
@@ -381,7 +381,7 @@ let meta_rule_mk_primed_vars_I: term list -> meta_rule -> meta_rule * instantiat
 (* Applies mk_primed_var to all the free variables in a meta_rule.           *)
 (* ------------------------------------------------------------------------- *)
 
-let meta_rule_mk_primed_vars: term list -> meta_rule -> meta_rule = 
+let meta_rule_mk_primed_vars: term list -> meta_rule -> meta_rule =
   fun avoids r -> fst (meta_rule_mk_primed_vars_I avoids r);;
 
 
@@ -430,24 +430,24 @@ let inst_meta_rule_vars: (term * term) list -> meta_rule -> term list -> meta_ru
   fun instlist r gfrees ->
     let rfrees = meta_rule_frees r in
     let vars,subs = List.split instlist in
-    
+
     let match_var = fun tm1 tm2 ->
       let inst = try term_match [] tm1 tm2 with Failure _ -> [],[tm2,tm1],[] in
       match inst with
 	[],[],_ -> tm2
       | _  -> failwith "match_var: no match" in
-    
+
     let mcheck_var = fun tm ->
       if (not (is_var tm)) then failwith ("inst_meta_rule_vars: `" ^ string_of_term tm ^ "` is not a variable")
-      else try tryfind (match_var tm) rfrees 
+      else try tryfind (match_var tm) rfrees
       with Failure _ -> failwith ("inst_meta_rule_vars: `" ^ string_of_term tm ^ "` could not be found in the meta_rule") in
 
     let mcheck_gvar = fun var ->
       try let mvar = tryfind (match_var var) gfrees in
       term_match [] var mvar
-      with Failure _ ->  
+      with Failure _ ->
 	warn true ("inst_meta_rule_vars: `" ^ string_of_term var ^ "` could not be found in the goal") ;
-	null_inst in 
+	null_inst in
 
     let new_r,prim_inst = meta_rule_mk_primed_vars_I gfrees r in
     let new_vars = map ((instantiate prim_inst) o mcheck_var) vars in
@@ -493,20 +493,20 @@ let inst_meta_rule_vars: (term * term) list -> meta_rule -> term list -> meta_ru
 let (mk_meta_rule: thm -> meta_rule) =
   fun thm ->
     let rec undisch_premises th =
-        if is_mimp (concl th) 
+        if is_mimp (concl th)
         then let rest,res_th = undisch_premises (MUNDISCH th) in
              (rand(rator(concl th)))::rest,res_th
         else [],th in
     let (prems,thm) = undisch_premises thm in
     let rec mk_meta_subgoal tm = (
-      if (is_mimp(tm)) then 
+      if (is_mimp(tm)) then
 	let (a,c) = dest_mimp tm in
 	let (prems,concl) = mk_meta_subgoal c in
 	("",ASSUME a)::prems,concl
      else [],tm
      ) in
     concl thm,map mk_meta_subgoal prems,MIMP_TO_IMP_RULE thm;;
-    
+
 
 (* ------------------------------------------------------------------------- *)
 (* Isabelle's natural deduction inference rules as meta_rules.               *)
@@ -616,7 +616,7 @@ let notEm:meta_rule =
   ],
   (UNDISCH o UNDISCH o TAUT) `~a==>a==>r`
 );;
-  
+
 
 (* ------------------------------------------------------------------------- *)
 (* rulem_tac: ((term * term) list -> meta_rule -> tactic):                   *)
@@ -675,7 +675,7 @@ let (rulem_tac: (term*term) list->meta_rule->tactic) =
       if (asms = []) then [] else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     let dischls = map create_dischl new_hyps in
     let disch_pair = fun i (dischl,thm) -> DISCHL (map (instantiate i) dischl) thm in
-    
+
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
     (mvs,null_inst),new_goals,fun i l ->
@@ -723,36 +723,36 @@ let (erulem_tac: (term * term) list -> meta_rule->tactic) =
   fun instlist r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let ins = try ( term_match (gl_frees g) c w ) 
+    let ins = try ( term_match (gl_frees g) c w )
     with Failure _ -> failwith "Rule doesn't match!" in
     let new_hyps = map (inst_goal ins) hyps in
 
-    let (prems,prim_hyp) = 
-      if (new_hyps = []) then failwith "erule: Not a proper elimination rule: no premises!" 
+    let (prems,prim_hyp) =
+      if (new_hyps = []) then failwith "erule: Not a proper elimination rule: no premises!"
       else hd new_hyps in
     let avoids = gl_frees g in
 
-    let asl,(prim_thm,elim_inst) = 
-      if (prems = []) 
-      then try term_to_asm_match avoids prim_hyp asl with Failure s -> failwith ("erule: " ^ s) 
+    let asl,(prim_thm,elim_inst) =
+      if (prems = [])
+      then try term_to_asm_match avoids prim_hyp asl with Failure s -> failwith ("erule: " ^ s)
       else failwith "erule: Not a proper elimination rule: major premise has assumptions!" in
     let (_,prim_hyp)::new_hyps = map (inst_goal elim_inst) new_hyps in
     let thm = INSTANTIATE_ALL elim_inst thm in
-    
+
     let create_goal = fun asms (hs,gl) -> (hs@asms,gl) in
     let new_goals = map (create_goal asl) new_hyps in
-    let rec create_dischl = 
-      fun (asms,g) -> 
-	if (asms = []) then [] 
+    let rec create_dischl =
+      fun (asms,g) ->
+	if (asms = []) then []
 	else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     let dischls = map create_dischl new_hyps in
     let disch_pair = fun i (dischl,thm) -> DISCHL (map (instantiate i) dischl) thm in
 
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
-    (mvs,null_inst),new_goals,fun i l ->  
+    (mvs,null_inst),new_goals,fun i l ->
       let major_thmi = INSTANTIATE_ALL i prim_thm in
-      List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL (compose_insts ins i) thm) 
+      List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL (compose_insts ins i) thm)
 	(major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (zip dischls l)));;
 
 
@@ -765,7 +765,7 @@ let (erulem_tac: (term * term) list -> meta_rule->tactic) =
 (* The assumption is removed from the list and the trivial goal is proven    *)
 (* automatically.                                                            *)
 (* A "proper" destructio rule H1 is of the form ?- H1 (ie. has no premises)  *)
-(* The goal A1,A2,...,Am,G ?- C is also added.                               *)     
+(* The goal A1,A2,...,Am,G ?- C is also added.                               *)
 (* ------------------------------------------------------------------------- *)
 (* Same as erulem with a few differences.                                    *)
 (* [+] Does not try to match the goal c.                                     *)
@@ -773,30 +773,30 @@ let (erulem_tac: (term * term) list -> meta_rule->tactic) =
 (* [+] The new goal is treated slightly different in the justification.      *)
 (* It is the one whose premises must be proven so as to get to the final     *)
 (* goal. So it gets proven using PROVE_HYP by the result of the              *)
-(* justification on the original rule.                                       *) 
+(* justification on the original rule.                                       *)
 (* ------------------------------------------------------------------------- *)
 
 let (drulem_tac: (term * term) list -> meta_rule->tactic) =
   fun instlist r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let (prems,major_prem) = 
-      if (hyps = []) then failwith "drule: Not a proper destruction rule: no premises!" 
+    let (prems,major_prem) =
+      if (hyps = []) then failwith "drule: Not a proper destruction rule: no premises!"
       else hd hyps in
     let avoids = gl_frees g in
 
-    let asl,(major_thm,elim_inst) = 
+    let asl,(major_thm,elim_inst) =
       if (prems = [])
-      then try term_to_asm_match avoids major_prem asl with Failure s -> failwith ("drule: " ^ s) 
+      then try term_to_asm_match avoids major_prem asl with Failure s -> failwith ("drule: " ^ s)
       else failwith "drule: not a proper destruction rule: major premise has assumptions!" in
     let (_,major_asm)::new_hyps = map (inst_goal elim_inst) hyps in
     let thm = INSTANTIATE_ALL elim_inst thm in
     let create_goal = fun asms (hs,gl) -> (hs@asms,gl) in
     let new_goals = (map (create_goal asl) new_hyps) @ [create_goal asl (["",ASSUME (instantiate elim_inst c)],w)] in
 
-    let rec create_dischl = 
-      fun (asms,g) -> 
-	if (asms = []) then [] 
+    let rec create_dischl =
+      fun (asms,g) ->
+	if (asms = []) then []
 	else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     (* We add an empty discharge list at the end for the extra goal. *)
     let dischls = map create_dischl new_hyps @ [[]] in
@@ -804,7 +804,7 @@ let (drulem_tac: (term * term) list -> meta_rule->tactic) =
 
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
-    (mvs,null_inst),new_goals,fun i l ->  
+    (mvs,null_inst),new_goals,fun i l ->
       let major_thmi = INSTANTIATE_ALL i major_thm in
       let l = (major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (zip dischls l))) in
       PROVE_HYP (List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL i thm) ((butlast) l)) (last l);;
@@ -823,30 +823,30 @@ let (frulem_tac: (term * term) list -> meta_rule->tactic) =
   fun instlist r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let (prems,major_prem) = 
-      if (hyps = []) then failwith "frule: Not a proper destruction rule: no premises!" 
+    let (prems,major_prem) =
+      if (hyps = []) then failwith "frule: Not a proper destruction rule: no premises!"
       else hd hyps in
     let avoids = gl_frees g in
 
-    let _,(major_thm,elim_inst) = 
-      if (prems = []) 
-      then try term_to_asm_match avoids major_prem asl with Failure s -> failwith ("frule: " ^ s) 
+    let _,(major_thm,elim_inst) =
+      if (prems = [])
+      then try term_to_asm_match avoids major_prem asl with Failure s -> failwith ("frule: " ^ s)
       else failwith "frule: Not a proper destruction rule: major premise has assumptions!" in
     let (_,major_asm)::new_hyps = map (inst_goal elim_inst) hyps in
     let thm = INSTANTIATE_ALL elim_inst thm in
     let create_goal = fun asms (hs,gl) -> (hs@asms,gl) in
     let new_goals = (map (create_goal asl) new_hyps) @ [create_goal asl (["",ASSUME (instantiate elim_inst c)],w)] in
 
-    let rec create_dischl = 
-      fun (asms,g) -> 
-	if (asms = []) then [] 
+    let rec create_dischl =
+      fun (asms,g) ->
+	if (asms = []) then []
 	else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     let dischls = map create_dischl new_hyps @ [[]] in
     let disch_pair = fun i (dischl,thm) -> DISCHL (map (instantiate i) dischl) thm in
 
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
-    (mvs,null_inst),new_goals,fun i l ->  
+    (mvs,null_inst),new_goals,fun i l ->
       let major_thmi = INSTANTIATE_ALL i major_thm in
       let l = (major_thmi :: ((map (disch_pair i)) o (zip dischls)) l) in
       PROVE_HYP (List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL i thm) ((butlast) l)) (last l);;
@@ -879,36 +879,36 @@ let (erulenm_tac: (term * term) list -> int -> meta_rule->tactic) =
   fun instlist n r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let ins = try ( term_match [] c w ) 
+    let ins = try ( term_match [] c w )
     with Failure _ -> failwith "Rule doesn't match!" in
     let new_hyps = map (inst_goal ins) hyps in
 
-    let (prems,prim_hyp) = 
-      if (new_hyps = []) then failwith "erule: Not a proper elimination rule: no premises!" 
+    let (prems,prim_hyp) =
+      if (new_hyps = []) then failwith "erule: Not a proper elimination rule: no premises!"
       else hd new_hyps in
     let avoids = gl_frees g in
 
-    let asl,(prim_thm,elim_inst) = 
-      if (prems = []) 
-      then try term_to_asm_n_match avoids prim_hyp (rev asl) n with Failure s -> failwith ("erule: " ^ s) 
+    let asl,(prim_thm,elim_inst) =
+      if (prems = [])
+      then try term_to_asm_n_match avoids prim_hyp (rev asl) n with Failure s -> failwith ("erule: " ^ s)
       else failwith "erule: Not a proper elimination rule: major premise has assumptions!" in
     let (_,prim_hyp)::new_hyps = map (inst_goal elim_inst) new_hyps in
     let thm = INSTANTIATE_ALL elim_inst thm in
-    
+
     let create_goal = fun asms (hs,gl) -> (hs@asms,gl) in
     let new_goals = map (create_goal asl) new_hyps in
-    let rec create_dischl = 
-      fun (asms,g) -> 
-	if (asms = []) then [] 
+    let rec create_dischl =
+      fun (asms,g) ->
+	if (asms = []) then []
 	else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     let dischls = map create_dischl new_hyps in
     let disch_pair = fun i (dischl,thm) -> DISCHL (map (instantiate i) dischl) thm in
 
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
-    (mvs,null_inst),new_goals,fun i l ->  
+    (mvs,null_inst),new_goals,fun i l ->
       let major_thmi = INSTANTIATE_ALL i prim_thm in
-      List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL (compose_insts ins i) thm) 
+      List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL (compose_insts ins i) thm)
 	(major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (List.combine dischls l)));;
 
 
@@ -916,23 +916,23 @@ let (drulenm_tac: (term * term) list -> int -> meta_rule->tactic) =
   fun instlist n r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let (prems,major_prem) = 
-      if (hyps = []) then failwith "drule: Not a proper destruction rule: no premises!" 
+    let (prems,major_prem) =
+      if (hyps = []) then failwith "drule: Not a proper destruction rule: no premises!"
       else hd hyps in
     let avoids = gl_frees g in
 
-    let asl,(major_thm,elim_inst) = 
+    let asl,(major_thm,elim_inst) =
       if (prems = [])
-      then try term_to_asm_n_match avoids major_prem (rev asl) n with Failure s -> failwith ("drule: " ^ s) 
+      then try term_to_asm_n_match avoids major_prem (rev asl) n with Failure s -> failwith ("drule: " ^ s)
       else failwith "drule: not a proper destruction rule: major premise has assumptions!" in
     let (_,major_asm)::new_hyps = map (inst_goal elim_inst) hyps in
     let thm = INSTANTIATE_ALL elim_inst thm in
     let create_goal = fun asms (hs,gl) -> (hs@asms,gl) in
     let new_goals = (map (create_goal asl) new_hyps) @ [create_goal asl (["",ASSUME (instantiate elim_inst c)],w)] in
 
-    let rec create_dischl = 
-      fun (asms,g) -> 
-	if (asms = []) then [] 
+    let rec create_dischl =
+      fun (asms,g) ->
+	if (asms = []) then []
 	else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     (* We add an empty discharge list at the end for the extra goal. *)
     let dischls = map create_dischl new_hyps @ [[]] in
@@ -940,7 +940,7 @@ let (drulenm_tac: (term * term) list -> int -> meta_rule->tactic) =
 
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
-    (mvs,null_inst),new_goals,fun i l ->  
+    (mvs,null_inst),new_goals,fun i l ->
       let major_thmi = INSTANTIATE_ALL i major_thm in
       let l = (major_thmi :: map (ADD_HYP major_thmi) (map (disch_pair i) (List.combine dischls l))) in
       PROVE_HYP (List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL i thm) ((butlast) l)) (last l);;
@@ -950,30 +950,30 @@ let (frulenm_tac: (term * term) list -> int -> meta_rule->tactic) =
   fun instlist n r ((asl,w) as g) ->
     let (c,hyps,thm) = inst_meta_rule_vars instlist r (gl_frees g) in
 
-    let (prems,major_prem) = 
-      if (hyps = []) then failwith "frule: Not a proper destruction rule: no premises!" 
+    let (prems,major_prem) =
+      if (hyps = []) then failwith "frule: Not a proper destruction rule: no premises!"
       else hd hyps in
     let avoids = gl_frees g in
 
-    let _,(major_thm,elim_inst) = 
-      if (prems = []) 
-      then try term_to_asm_n_match avoids major_prem (rev asl) n with Failure s -> failwith ("frule: " ^ s) 
+    let _,(major_thm,elim_inst) =
+      if (prems = [])
+      then try term_to_asm_n_match avoids major_prem (rev asl) n with Failure s -> failwith ("frule: " ^ s)
       else failwith "frule: Not a proper destruction rule: major premise has assumptions!" in
     let (_,major_asm)::new_hyps = map (inst_goal elim_inst) hyps in
     let thm = INSTANTIATE_ALL elim_inst thm in
     let create_goal = fun asms (hs,gl) -> (hs@asms,gl) in
     let new_goals = (map (create_goal asl) new_hyps) @ [create_goal asl (["",ASSUME (instantiate elim_inst c)],w)] in
 
-    let rec create_dischl = 
-      fun (asms,g) -> 
-	if (asms = []) then [] 
+    let rec create_dischl =
+      fun (asms,g) ->
+	if (asms = []) then []
 	else ((concl o snd o hd) asms)::(create_dischl ((tl asms),g)) in
     let dischls = map create_dischl new_hyps @ [[]] in
     let disch_pair = fun i (dischl,thm) -> DISCHL (map (instantiate i) dischl) thm in
 
     let normalfrees = itlist union (map ( fun (_,y) -> frees y ) instlist ) (gl_frees g) in
     let mvs = subtract (itlist union (map gl_frees new_goals) []) normalfrees in
-    (mvs,null_inst),new_goals,fun i l ->  
+    (mvs,null_inst),new_goals,fun i l ->
       let major_thmi = INSTANTIATE_ALL i major_thm in
       let l = (major_thmi :: ((map (disch_pair i)) o (List.combine dischls)) l) in
       PROVE_HYP (List.fold_left (fun t1 t2 -> PROVE_HYP (INSTANTIATE_ALL i t2) t1) (INSTANTIATE_ALL i thm) ((butlast) l)) (last l);;

@@ -22,10 +22,10 @@ This would fail with the basic {list_mk_comb} function
 }
 
 \COMMENTS
-Note that in general the generic type of the constant is only instantiated 
-sufficiently to make its type match the arguments, which does not necessarily 
-determine it completely. Unless you are sure this will be sufficient, it is 
-safer and probably more efficient to instantiate the type manually using {inst} 
+Note that in general the generic type of the constant is only instantiated
+sufficiently to make its type match the arguments, which does not necessarily
+determine it completely. Unless you are sure this will be sufficient, it is
+safer and probably more efficient to instantiate the type manually using {inst}
 first.
 
 \SEEALSO

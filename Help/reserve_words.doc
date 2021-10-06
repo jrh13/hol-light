@@ -6,8 +6,8 @@
 Add given strings to the set of reserved words.
 
 \DESCRIBE
-Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}', 
-meaning that they are special to the parser and cannot be used as ordinary 
+Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}',
+meaning that they are special to the parser and cannot be used as ordinary
 identifiers. A call {reserve_words l} adds all strings in {l} to the list of
 reserved identifiers.
 

@@ -9,7 +9,7 @@ extern int yylineno;
 /*     ',' ';' '[' ']' '(' ')'  */
 %%
 steplist
-	: 
+	:
 	| steplist step
 	;
 /*
@@ -52,7 +52,7 @@ step	: have_thus term labels by_just ';'
 	| EXEC ref ';'
         | ';'
 	;
-cases	: 
+cases	:
 	| cases
 	  CASE ';'
 	  proof_tail
@@ -66,13 +66,13 @@ proof_tail
 	| QED by_just ';'
 	| END ';'
 	;
-opttype	: 
+opttype	:
 	| BEING term
 	;
-labels	: 
+labels	:
 	| labels '[' ident ']'
 	;
-by_just	: 
+by_just	:
 	| BY reflist
         | FROM reflist
         | BY reflist FROM reflist
@@ -96,7 +96,7 @@ termitem
 	| ','
 	| '(' expr ')'
 	;
-expr	: 
+expr	:
 	| expr expritem
 	;
 expritem
@@ -113,7 +113,7 @@ identlist
 ident	: OTHER
 	;
 have_thus
-	: 
+	:
 	| THUS
 	;
 %%

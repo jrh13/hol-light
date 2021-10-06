@@ -15,18 +15,18 @@ If {n} is a numeral (e.g. {0}, {1}, {2}, {3},...), then
    |- PRE n = s
 }
 \noindent where {s} is the numeral that denotes the cutoff predecessor of the
-natural number denoted by {n} (that is, the result of subtracting 1 from it, or 
+natural number denoted by {n} (that is, the result of subtracting 1 from it, or
 zero if it is already zero).
 
 \FAILURE
-{NUM_PRE_CONV tm} fails if {tm} is not of the form  {`PRE n`}, where {n} is a 
+{NUM_PRE_CONV tm} fails if {tm} is not of the form  {`PRE n`}, where {n} is a
 numeral.
 
 \EXAMPLE
 {
   # NUM_PRE_CONV `PRE 0`;;
   val it : thm = |- PRE 0 = 0
-  
+
   # NUM_PRE_CONV `PRE 12345`;;
   val it : thm = |- PRE 12345 = 12344
 }

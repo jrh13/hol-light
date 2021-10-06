@@ -6,8 +6,8 @@
 Assign the set of default conversions.
 
 \DESCRIBE
-The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.) 
-have default sets of (conditional) equations and other conversions that are 
+The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.)
+have default sets of (conditional) equations and other conversions that are
 applied by default, except in the {PURE_} variants. The latter are normally
 term transformations that cannot be expressed as single (conditional or
 unconditional) rewrite rules. A call to {set_basic_convs l} where {l} is a list
@@ -19,8 +19,8 @@ encountered that match {pat}.
 Never fails.
 
 \COMMENTS
-Normally, users will only want to extend the existing set of conversions using 
-{extend_basic_convs}. 
+Normally, users will only want to extend the existing set of conversions using
+{extend_basic_convs}.
 
 \SEEALSO
 basic_convs, extend_basic_convs, set_basic_rewrites, REWRITE_TAC, SIMP_TAC.

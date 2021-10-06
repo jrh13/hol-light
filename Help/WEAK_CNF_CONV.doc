@@ -6,9 +6,9 @@
 Converts a term already in negation normal form into conjunctive normal form.
 
 \DESCRIBE
-When applied to a term already in negation normal form (see {NNF_CONV}), 
-meaning that all other propositional connectives have been eliminated in favour 
-of conjunction, disjunction and negation, and negation is only applied to 
+When applied to a term already in negation normal form (see {NNF_CONV}),
+meaning that all other propositional connectives have been eliminated in favour
+of conjunction, disjunction and negation, and negation is only applied to
 atomic formulas, {WEAK_CNF_CONV} puts the term into an equivalent conjunctive
 normal form, which is a conjunction of disjunctions.
 

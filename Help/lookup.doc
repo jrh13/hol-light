@@ -20,13 +20,13 @@ will match any term of the form {a + b}, even if {a} and {b} are the same.) It
 is intended that nets are a first-level filter for efficiency; finer
 discrimination may be embodied in the subsequent action with the list of
 returned objects.
- 
+
 \FAILURE
 Never fails.
 
 \EXAMPLE
-If we want to create ourselves the kind of automated rewriting with the basic 
-rewrites that is done by {REWRITE_CONV}, we could simply try in succession all 
+If we want to create ourselves the kind of automated rewriting with the basic
+rewrites that is done by {REWRITE_CONV}, we could simply try in succession all
 the rewrites:
 {
   # let BASIC_REWRITE_CONV' = FIRST_CONV (map REWR_CONV (basic_rewrites()));;
@@ -35,11 +35,11 @@ the rewrites:
 However, it would be more efficient to use the left-hand sides as patterns
 in a term net to organize the different rewriting conversions:
 {
-  # let rewr_net = 
+  # let rewr_net =
       let enter_thm th = enter (freesl(hyp th)) (lhs(concl th),REWR_CONV th) in
       itlist enter_thm (basic_rewrites()) empty_net;;
 }
-Now given a term, we get only the items with matchable patterns, usually much 
+Now given a term, we get only the items with matchable patterns, usually much
 less than the full list:
 {
   # lookup `(\x. x + 1) 2` rewr_net;;
@@ -49,15 +49,15 @@ less than the full list:
   val it : (term -> thm) list = [<fun>; <fun>; <fun>]
 }
 The three items returned in the last call are rewrites based on the theorems
-{|- T /\ t <=> t}, {|- t /\ T <=> t} and {|- t /\ t <=> t}, which are the only 
-ones matchable. We can use this net for a more efficient version of the same 
+{|- T /\ t <=> t}, {|- t /\ T <=> t} and {|- t /\ t <=> t}, which are the only
+ones matchable. We can use this net for a more efficient version of the same
 conversion:
 {
   # let BASIC_REWRITE_CONV tm = FIRST_CONV (lookup tm rewr_net) tm;;
   val ( BASIC_REWRITE_CONV ) : term -> conv = <fun>
 }
 To see that it is indeed more efficient, consider:
-{ 
+{
   # let tm = funpow 8 (fun x -> mk_conj(x,x)) `T`;;
   ...
   time (DEPTH_CONV BASIC_REWRITE_CONV) tm;;

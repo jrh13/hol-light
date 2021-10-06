@@ -34,7 +34,7 @@ type shell_info =
     cases : thm;                   (* Cases theorem                       *)
     distinct : thm list;           (* Constructors distinct               *)
     one_one : thm list;            (* Constructors one-one                *)
-    struct_conv : conv -> conv};; 
+    struct_conv : conv -> conv};;
 
 type shell = Shell of string * shell_info;;
 
@@ -67,7 +67,7 @@ let sys_shell_info name = shell_info !system_shells name;;
 (* Functions to extract the components of shell information.                  *)
 (*----------------------------------------------------------------------------*)
 let shell_constructors info = info.constructors;;
-let shell_accessor_thms info = 
+let shell_accessor_thms info =
   ((map snd) o flat o (map  thd3) o shell_constructors) info;;
 let shell_arg_types info = info.arg_types;;
 

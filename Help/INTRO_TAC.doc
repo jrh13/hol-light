@@ -64,20 +64,20 @@ variables x1, x2 into n, n'.  All is done in a single tactic invocation.
   # g `!a. ~(a = 0) ==> ONE_ONE (\n. a * n)`;;
   # e (REWRITE_TAC[ONE_ONE; EQ_MULT_LCANCEL]);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `!a. ~(a = 0) ==> (!x1 x2. a = 0 \/ x1 = x2 ==> x1 = x2)`
-  
+
   # e (INTRO_TAC "!a; anz; ![n] [n']; az | eq");;
   val it : goalstack = 2 subgoals (2 total)
-  
+
     0 [`~(a = 0)`] (anz)
     1 [`n = n'`] (eq)
-  
+
   `n = n'`
-  
+
     0 [`~(a = 0)`] (anz)
     1 [`a = 0`] (az)
-  
+
   `n = n'`
 }
 

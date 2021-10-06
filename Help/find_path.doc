@@ -6,7 +6,7 @@
 Returns a path to some subterm satisfying a predicate.
 
 \DESCRIBE
-The call {find_path p t} traverses the term {t} top-down until it finds a 
+The call {find_path p t} traverses the term {t} top-down until it finds a
 subterm satisfying the predicate {p}. It then returns a path indicating how to
 reach it; this is just a string with each character interpreted as:
 
@@ -14,7 +14,7 @@ reach it; this is just a string with each character interpreted as:
 
 \item {"b"}: take the body of an abstraction
 
-\item {"l"}: take the left (rator) path in an application 
+\item {"l"}: take the left (rator) path in an application
 
 \item {"r"}: take the right (rand) path in an application
 

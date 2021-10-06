@@ -16,16 +16,16 @@ and is undefined for all arguments other than {x}.
 {
   # let f = (1 |=> 2);;
   val f : (int, int) func = <func>
-  
+
   # apply f 1;;
   val it : int = 2
-  
+
   # apply f 2;;
   Exception: Failure "apply".
 }
 
 \SEEALSO
-|->, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+|->, apply, applyd, choose, combine, defined, dom, foldl, foldr,
 graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
 
 \ENDDOC

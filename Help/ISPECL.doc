@@ -15,7 +15,7 @@ rule, type.
    -----------------------------  ISPECL [`t1`,...,`tn`]
     A' |- t[t1,...tn/x1,...,xn]
 }
-\noindent (where {ti} is free for {xi} in {tm}) in which {A'} results from 
+\noindent (where {ti} is free for {xi} in {tm}) in which {A'} results from
 applying all the corresponding type instantiations to the assumption list {A}.
 
 \FAILURE

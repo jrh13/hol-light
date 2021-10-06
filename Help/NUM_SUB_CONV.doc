@@ -14,9 +14,9 @@ If {n} and {m} are numerals (e.g. {0}, {1}, {2}, {3},...), then
 {
    |- n - m = s
 }
-\noindent where {s} is the numeral that denotes the result of subtracting the 
-natural number denoted by {m} from the one denoted by {n}, returning zero for 
-all cases where {m} is greater than {n} (cutoff subtraction over the natural 
+\noindent where {s} is the numeral that denotes the result of subtracting the
+natural number denoted by {m} from the one denoted by {n}, returning zero for
+all cases where {m} is greater than {n} (cutoff subtraction over the natural
 numbers).
 
 \FAILURE
@@ -33,7 +33,7 @@ numbers).
 }
 
 \COMMENTS
-Note that subtraction over type {:num} is defined as this cutoff subtraction. 
+Note that subtraction over type {:num} is defined as this cutoff subtraction.
 If you want a number system with negative numbers, use {:int} or {:real}.
 
 \SEEALSO

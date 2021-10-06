@@ -6,7 +6,7 @@
 Repeatedly apply a function until it fails.
 
 \DESCRIBE
-The call {repeat f x} successively applies {f} over and over again starting 
+The call {repeat f x} successively applies {f} over and over again starting
 with {x}, and stops at the first point when a {Failure _} exception occurs.
 
 \FAILURE
@@ -19,7 +19,7 @@ Never fails. If {f} fails at once it returns {x}.
 }
 
 \COMMENTS
-If you know exactly how many times you want to apply it, you may prefer 
+If you know exactly how many times you want to apply it, you may prefer
 {funpow}.
 
 \SEEALSO

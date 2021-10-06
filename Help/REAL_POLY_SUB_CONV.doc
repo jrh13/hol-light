@@ -11,7 +11,7 @@ more information on the usual normal form in HOL Light, see the function
 {REAL_POLY_CONV}, which converts a polynomial to normal form while proving the
 equivalence of the original and normalized forms. The function
 {REAL_POLY_SUB_CONV} is a more delicate conversion that, given a term {p1 - p2}
-where {p1} and {p2} are real polynomials in normal form, returns a theorem 
+where {p1} and {p2} are real polynomials in normal form, returns a theorem
 {|- p1 - p2 = p} where {p} is in normal form.
 
 \FAILURE
@@ -26,7 +26,7 @@ not guaranteed.
 }
 
 \USES
-More delicate polynomial operations that simply the direct normalization with 
+More delicate polynomial operations that simply the direct normalization with
 {REAL_POLY_CONV}.
 
 \SEEALSO

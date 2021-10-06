@@ -19,10 +19,10 @@ Fails if the input term is not an eta-redex.
 {
   # ETA_CONV `\n. SUC n`;;
   val it : thm = |- (\n. SUC n) = SUC
-  
+
   # ETA_CONV `\n. 1 + n`;;
   val it : thm = |- (\n. 1 + n) = (+) 1
-  
+
   # ETA_CONV `\n. n + 1`;;
   Exception: Failure "ETA_CONV".
 }

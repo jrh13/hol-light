@@ -26,10 +26,10 @@ Fails if terms cannot be matched.
 }
 
 \COMMENTS
-This function can occasionally `succeed' yet produce a match that does not in 
-fact work. In typical uses, this will be implicitly checked by a subsequent 
-inference process. However, to get a self-contained matching effect, the user 
-should check that the instantiation returned does achieve a match, e.g. by 
+This function can occasionally `succeed' yet produce a match that does not in
+fact work. In typical uses, this will be implicitly checked by a subsequent
+inference process. However, to get a self-contained matching effect, the user
+should check that the instantiation returned does achieve a match, e.g. by
 applying {instantiate}.
 
 \SEEALSO

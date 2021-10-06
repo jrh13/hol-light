@@ -18,7 +18,7 @@ Never fails.
 {
   # REFL `2`;;
   val it : thm = |- 2 = 2
-  
+
   # REFL `p:bool`;;
   val it : thm = |- p <=> p
 }

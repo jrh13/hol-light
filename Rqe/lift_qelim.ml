@@ -28,7 +28,7 @@ let QE_SIMPLIFY_CONV =
      TAUT `~(p /\ q \/ ~p /\ r) <=> p /\ ~q \/ ~p /\ ~r`] in
   GEN_REWRITE_CONV TOP_SWEEP_CONV tauts;;
 
-let OR_ASSOC = TAUT `(a \/ b) \/ c <=> a \/ b \/ c`;; 
+let OR_ASSOC = TAUT `(a \/ b) \/ c <=> a \/ b \/ c`;;
 let forall_thm = prove(`!P. (!x. P x) <=> ~ (?x. ~ P x)`,MESON_TAC[])
 and or_exists_conv = PURE_REWRITE_CONV[OR_EXISTS_THM]
 and triv_exists_conv = REWR_CONV EXISTS_SIMP
@@ -87,15 +87,15 @@ let LIFT_QELIM_CONV afn_conv nfn_conv qfn_conv =
 
 
 (*
-let afn_conv,nfn_conv,qfn_conv = POLYATOM_CONV,(EVALC_CONV THENC SIMPLIFY_CONV),BASIC_REAL_QELIM_CONV 
-let LIFT_QELIM_CONV afn_conv nfn_conv qfn_conv = 
+let afn_conv,nfn_conv,qfn_conv = POLYATOM_CONV,(EVALC_CONV THENC SIMPLIFY_CONV),BASIC_REAL_QELIM_CONV
+let LIFT_QELIM_CONV afn_conv nfn_conv qfn_conv =
   fun fm -> ((qelift_conv (frees fm)) THENC QE_SIMPLIFY_CONV) fm;;
 
 
 let k0 = (TRANS thm1a thm2a)
 let k1 = thm3a
 let k2 = CONV_RULE (LAND_CONV (RAND_CONV (ALPHA_CONV `x:real`))) k1
-TRANS k0 k2 
+TRANS k0 k2
 
 
 let vars = []

@@ -11,7 +11,7 @@ rule, transitivity, equality.
 \DESCRIBE
 When applied to a theorem {A1 |- t1 = t2} and a theorem {A2 |- t2' = t3}, where
 {t2} and {t2'} are alpha-equivalent (in particular, where they are identical),
-the inference rule {TRANS} returns the theorem {A1 u A2 |- t1 = t3}. 
+the inference rule {TRANS} returns the theorem {A1 u A2 |- t1 = t3}.
 {
     A1 |- t1 = t2   A2 |- t2' = t3
    --------------------------------  TRANS

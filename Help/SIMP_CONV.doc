@@ -43,7 +43,7 @@ Here we use the conditional and contextual facilities:
   val it : thm = |- (a + c + e) + (b + a + d) + e = a + a + b + c + d + e + e
 }
 
-\COMMENTS                                                              
+\COMMENTS
 For simply rewriting with unconditional equations, {REWRITE_CONV} and relatives
 are simpler and more efficient.
 

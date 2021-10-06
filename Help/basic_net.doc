@@ -3,21 +3,21 @@
 \TYPE {basic_net : unit -> gconv net}
 
 \SYNOPSIS
-Returns the term net used to optimize access to default rewrites and 
+Returns the term net used to optimize access to default rewrites and
 conversions.
 
 \DESCRIBE
-The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.) 
-have default sets of (conditional) equations and other conversions that are 
-applied by default, except in the {PURE_} variants. Internally, these are 
-maintained in a term net (see {enter} and {lookup} for more information), and a 
+The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.)
+have default sets of (conditional) equations and other conversions that are
+applied by default, except in the {PURE_} variants. Internally, these are
+maintained in a term net (see {enter} and {lookup} for more information), and a
 call to {basic_net()} returns that net.
 
 \FAILURE
 Never fails.
 
 \USES
-Only useful for those who are delving deep into the implementation of 
+Only useful for those who are delving deep into the implementation of
 rewriting.
 
 \SEEALSO

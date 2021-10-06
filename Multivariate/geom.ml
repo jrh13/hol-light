@@ -359,15 +359,15 @@ let VECTOR_ANGLE_EQ_0_LEFT = prove
   MESON_TAC[VECTOR_ANGLE_EQ_0_RIGHT; VECTOR_ANGLE_SYM]);;
 
 let VECTOR_ANGLE_EQ_PI_RIGHT = prove
- (`!x y z:real^N. vector_angle x y = pi 
+ (`!x y z:real^N. vector_angle x y = pi
                   ==> (vector_angle x z = pi - vector_angle y z)`,
-  REPEAT STRIP_TAC THEN                                       
-  MP_TAC(ISPECL [`--x:real^N`; `y:real^N`; `z:real^N`]                 
-   VECTOR_ANGLE_EQ_0_RIGHT) THEN                
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL [`--x:real^N`; `y:real^N`; `z:real^N`]
+   VECTOR_ANGLE_EQ_0_RIGHT) THEN
   ASM_REWRITE_TAC[VECTOR_ANGLE_LNEG] THEN REAL_ARITH_TAC);;
-                                                      
+
 let VECTOR_ANGLE_EQ_PI_LEFT = prove
- (`!x y z:real^N. vector_angle x y = pi           
+ (`!x y z:real^N. vector_angle x y = pi
                   ==> (vector_angle z x = pi - vector_angle z y)`,
   MESON_TAC[VECTOR_ANGLE_EQ_PI_RIGHT; VECTOR_ANGLE_SYM]);;
 
@@ -608,13 +608,13 @@ let ANGLE_EQ_0_LEFT = prove
  (`!A B C. angle(A,B,C) = &0 ==> angle(D,B,A) = angle(D,B,C)`,
   MESON_TAC[ANGLE_EQ_0_RIGHT; ANGLE_SYM]);;
 
-let ANGLE_EQ_PI_RIGHT = prove                              
+let ANGLE_EQ_PI_RIGHT = prove
  (`!A B C. angle(A,B,C) = pi ==> angle(D,B,A) = pi - angle(D,B,C)`,
   REWRITE_TAC[VECTOR_ANGLE_EQ_PI_LEFT; angle]);;
-                                        
-let ANGLE_EQ_PI_LEFT = prove                                      
+
+let ANGLE_EQ_PI_LEFT = prove
  (`!A B C. angle(A,B,C) = pi ==> angle(A,B,D) = pi - angle(C,B,D)`,
-  MESON_TAC[ANGLE_EQ_PI_RIGHT; ANGLE_SYM]);;                           
+  MESON_TAC[ANGLE_EQ_PI_RIGHT; ANGLE_SYM]);;
 
 let COS_ANGLE = prove
  (`!a b c. cos(angle(a,b,c)) = if a = b \/ c = b then &0

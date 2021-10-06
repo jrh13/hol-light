@@ -6,11 +6,11 @@
 Tests if a one-character string is a separator.
 
 \DESCRIBE
-The call {issep s} tests whether the first character of string {s} (normally 
+The call {issep s} tests whether the first character of string {s} (normally
 it is the only character) is one of the separators `{,}' or `{;}'.
 
 \FAILURE
-Fails if the string is empty.            
+Fails if the string is empty.
 
 \SEEALSO
 isalnum, isalpha, isbra, isnum, isspace, issymb.

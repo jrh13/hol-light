@@ -3,7 +3,7 @@
 \TYPE {BINOP_TAC : tactic}
 
 \SYNOPSIS
-Breaks apart equation between binary operator applications into equality 
+Breaks apart equation between binary operator applications into equality
 between their arguments.
 
 \DESCRIBE
@@ -17,11 +17,11 @@ subgoals expressing equality of the corresponding arguments:
 }
 
 \FAILURE
-Fails if the conclusion of the goal is not an equation between applications of 
+Fails if the conclusion of the goal is not an equation between applications of
 the same curried binary operator.
 
 \EXAMPLE
-We can set up the following goal which is an equation between applications of 
+We can set up the following goal which is an equation between applications of
 the binary operator {+}:
 
 {
@@ -31,12 +31,12 @@ the binary operator {+}:
 {
   # e BINOP_TAC;;
   val it : goalstack = 2 subgoals (2 total)
-  
+
   `w * z = z * w`
-  
+
   `f (2 * x + 1) = f (SUC (x + 1) * 2 - 1)`
 }
-\noindent the first of which can be solved by {ARITH_TAC}, and the second by 
+\noindent the first of which can be solved by {ARITH_TAC}, and the second by
 {AP_TERM_TAC THEN ARITH_TAC}.
 
 \SEEALSO

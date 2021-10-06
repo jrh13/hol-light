@@ -10,9 +10,9 @@ The call {INSTANTIATE i t}, where {i} is an instantiation as returned by
 {term_match}, will perform the instantiation indicated by {i} in the conclusion
 of the theorem {th}: types and terms will be instantiated and the
 beta-reductions that are part of higher-order matching will be applied.
-                                  
+
 \FAILURE
-Fails if the instantiation is impossible because of free term or type variables 
+Fails if the instantiation is impossible because of free term or type variables
 in the hypotheses.
 
 \EXAMPLE
@@ -28,7 +28,7 @@ in the hypotheses.
 }
 
 \COMMENTS
-This is not intended for general use. {PART_MATCH} is generally a more 
+This is not intended for general use. {PART_MATCH} is generally a more
 convenient packaging.
 
 \SEEALSO

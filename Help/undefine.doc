@@ -6,11 +6,11 @@
 Remove definition of a finite partial function on specific domain value.
 
 \DESCRIBE
-This is one of a suite of operations on finite partial functions, type 
+This is one of a suite of operations on finite partial functions, type
 {('a,'b)func}. These may sometimes be preferable to ordinary functions since
 they permit more operations such as equality comparison, extraction of domain
-etc. The call {undefine x f} removes a definition for the domain value {x} in 
-the finite partial function {f}; if there was none to begin with the function 
+etc. The call {undefine x f} removes a definition for the domain value {x} in
+the finite partial function {f}; if there was none to begin with the function
 is unchanged.
 
 \FAILURE
@@ -27,7 +27,7 @@ Never fails.
 }
 
 \SEEALSO
-|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr, 
+|->, |=>, apply, applyd, choose, combine, defined, dom, foldl, foldr,
 graph, is_undefined, mapf, ran, tryapplyd, undefined.
 
 \ENDDOC

@@ -12,7 +12,7 @@ This name is bound to the HOL type {:bool}.
 Not applicable.
 
 \USES
-Exploiting the very common type {:bool} inside derived rules without the 
+Exploiting the very common type {:bool} inside derived rules without the
 inefficiency or inconvenience of calling a quotation parser or explicit
 constructor.
 

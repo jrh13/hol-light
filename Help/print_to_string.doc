@@ -21,7 +21,7 @@ The standard function {string_of_term} is defined as:
 }
 
 \USES
-Converting a general printing function to a `convert to string' function, as in 
+Converting a general printing function to a `convert to string' function, as in
 the example above.
 
 \SEEALSO

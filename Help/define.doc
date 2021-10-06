@@ -62,10 +62,10 @@ properties: (i) the clauses are not mutually inconsistent (more than one clause
 could apply to some arguments, and the results are not obviously the same), or
 (ii) the definition is recursive and no ordering justifying the recursion could
 be arrived at by the automated heuristic. In order to make progress in such
-cases, try applying {prove_general_recursive_function_exists} or 
+cases, try applying {prove_general_recursive_function_exists} or
 {pure_prove_recursive_function_exists} to the same definition with existential
 quantification over {f}, to see the unproven side-conditions. An example is in
-the documentation for {prove_general_recursive_function_exists}. On the other 
+the documentation for {prove_general_recursive_function_exists}. On the other
 hand, for suitably simple and regular primitive recursive definitions,
 the explicit alternative {prove_recursive_functions_exist} is often much faster
 than any of these.

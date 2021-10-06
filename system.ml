@@ -28,7 +28,7 @@ let quotexpander s =
   else if c = ";" then "parse_qproof \""^(String.escaped s)^"\"" else
   let n = String.length s - 1 in
   if String.sub s n 1 = ":"
-  then "\""^(String.escaped (String.sub s 0 n))^"\"" 
+  then "\""^(String.escaped (String.sub s 0 n))^"\""
   else "parse_term \""^(String.escaped s)^"\"";;
 
 Quotation.add "tot" (Quotation.ExStr (fun x -> quotexpander));;

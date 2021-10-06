@@ -19,7 +19,7 @@ is empty.
 
 \EXAMPLE
 {
-  # rev_assoc 2 [(1,4);(3,2);(2,5);(2,6)];;         
+  # rev_assoc 2 [(1,4);(3,2);(2,5);(2,6)];;
   val it : int = 3
 }
 

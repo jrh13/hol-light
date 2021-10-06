@@ -18,7 +18,7 @@ break.
 Not applicable.
 
 \EXAMPLE
-Here we change the comment token to be `{--}' (as used in Ada, Eiffel, Haskell, 
+Here we change the comment token to be `{--}' (as used in Ada, Eiffel, Haskell,
 Occam and several other programming languages):
 {
   # comment_token := Ident "--";;

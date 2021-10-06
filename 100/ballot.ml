@@ -311,7 +311,7 @@ let VALID_COUNTINGS = prove
   ASM_SIMP_TAC[MULT_CLAUSES; ARITH_RULE `a <= b ==> SUC a - SUC b = 0`] THEN
   MATCH_MP_TAC(NUM_RING
    `~(a + b + 1 = 0) /\
-    (SUC a + SUC b) * 
+    (SUC a + SUC b) *
     ((SUC a + b) * (a + SUC b) * y + (a + SUC b) * (SUC a + b) * z) =
     (SUC a + b) * (a + SUC b) * w
     ==> (SUC a + SUC b) * (y + z) = w`) THEN

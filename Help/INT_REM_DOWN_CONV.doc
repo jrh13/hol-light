@@ -8,7 +8,7 @@ Combines nested {rem} terms into a single toplevel one.
 \DESCRIBE
 When applied to a term containing integer arithmetic operations of
 negation, addition, subtraction, multiplication and exponentiation,
-interspersed with applying {rem} with a fixed modulus {n}, and a toplevel 
+interspersed with applying {rem} with a fixed modulus {n}, and a toplevel
 {... rem n} too, the conversion {INT_REM_DOWN_CONV} proves that this is equal
 to a simplified term with only the toplevel {rem}.
 

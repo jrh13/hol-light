@@ -9,8 +9,8 @@ Eliminates universally quantified variables that are equated to something.
 conversion.
 
 \DESCRIBE
-The conversion {FORALL_UNWIND_CONV}, applied to a formula with one or more 
-universal quantifiers around an implication, eliminates any quantifiers where 
+The conversion {FORALL_UNWIND_CONV}, applied to a formula with one or more
+universal quantifiers around an implication, eliminates any quantifiers where
 the antecedent of the implication contains a conjunct equating its variable to
 some other term (with that variable not free in it).
 

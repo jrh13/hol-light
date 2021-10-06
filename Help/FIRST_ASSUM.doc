@@ -16,7 +16,7 @@ The tactic
 \noindent has the effect of applying the first tactic which can be produced by
 {ttac} from the assumptions {(.. |- A1)}, ..., {(.. |- An)} and which
 succeeds when applied to the goal. Failures of {ttac} to produce a tactic are
-ignored. The similar function {FIRST_X_ASSUM} is the same except that the 
+ignored. The similar function {FIRST_X_ASSUM} is the same except that the
 assumption used is then removed from the goal.
 
 \FAILURE

@@ -7,9 +7,9 @@ Initial normalization and proof reconstruction wrapper for real decision
 procedure.
 
 \DESCRIBE
-The function {GEN_REAL_ARITH} takes two arguments, the first of which is an 
-underlying `prover', and the second a term to prove. This function is mainly 
-intended for internal use: the function {REAL_ARITH} is essentially implemented 
+The function {GEN_REAL_ARITH} takes two arguments, the first of which is an
+underlying `prover', and the second a term to prove. This function is mainly
+intended for internal use: the function {REAL_ARITH} is essentially implemented
 as
 {
   GEN_REAL_ARITH REAL_LINEAR_PROVER
@@ -31,14 +31,14 @@ proceeding with the proof, e.g. {REAL_LINEAR_PROVER} adds theorems {|- &0 <=
 &n} for relevant numeral terms {&n}. This is why the interface passes in a
 reconstruction function rather than simply expecting a Positivstellensatz
 refutation back.
- 
+
 \FAILURE
-Never fails at this stage, though it may fail when subsequently applied to a 
+Never fails at this stage, though it may fail when subsequently applied to a
 term.
 
 \EXAMPLE
-As noted, the built-in decision procedure {REAL_ARITH} is a simple application. 
-See also the file {Examples/sos.ml}, where a more sophisticated nonlinear 
+As noted, the built-in decision procedure {REAL_ARITH} is a simple application.
+See also the file {Examples/sos.ml}, where a more sophisticated nonlinear
 prover is plugged into {GEN_REAL_ARITH} in place of {REAL_LINEAR_PROVER}.
 
 \COMMENTS

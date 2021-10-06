@@ -6,19 +6,19 @@
 Removes antecedent of implication theorem by solving it with a conversion.
 
 \DESCRIBE
-The call {MP_CONV conv th}, where the theorem {th} has the form {A |- p ==> q}, 
-attempts to solve the antecedent {p} by applying the conversion {conv} to it. 
-If this conversion returns either {|- p} or {|- p <=> T}, then {MP_CONV} 
+The call {MP_CONV conv th}, where the theorem {th} has the form {A |- p ==> q},
+attempts to solve the antecedent {p} by applying the conversion {conv} to it.
+If this conversion returns either {|- p} or {|- p <=> T}, then {MP_CONV}
 returns {A |- q}. Otherwise it fails.
 
 \FAILURE
-Fails if the conclusion of the theorem is not implicational or if the 
+Fails if the conclusion of the theorem is not implicational or if the
 conversion fails to prove its antecedent.
 
 \EXAMPLE
 Suppose we generate this `epsilon-delta' theorem:
 {
-  # let th = MESON[LE_REFL]        
+  # let th = MESON[LE_REFL]
      `(!e. &0 < e / &2 <=> &0 < e) /\
       (!a x y e. abs(x - a) < e / &2 /\ abs(y - a) < e / &2 ==> abs(x - y) < e)
       ==> (!e. &0 < e ==> ?n. !m. n <= m ==> abs(x m - a) < e)

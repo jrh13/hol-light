@@ -6,14 +6,14 @@
 Converts a term already in negation normal form into conjunctive normal form.
 
 \DESCRIBE
-When applied to a term already in negation normal form (see {NNF_CONV}), 
-meaning that all other propositional connectives have been eliminated in favour 
-of conjunction, disjunction and negation, and negation is only applied to 
-atomic formulas, {CNF_CONV} puts the term into an equivalent conjunctive normal 
-form, which is a right-associated conjunction of disjunctions without 
-repetitions. No reduction by subsumption is performed, however, e.g. from 
+When applied to a term already in negation normal form (see {NNF_CONV}),
+meaning that all other propositional connectives have been eliminated in favour
+of conjunction, disjunction and negation, and negation is only applied to
+atomic formulas, {CNF_CONV} puts the term into an equivalent conjunctive normal
+form, which is a right-associated conjunction of disjunctions without
+repetitions. No reduction by subsumption is performed, however, e.g. from
 {a /\ (a \/ b)} to just {a}).
- 
+
 \FAILURE
 Never fails; non-Boolean terms will just yield a reflexive theorem.
 

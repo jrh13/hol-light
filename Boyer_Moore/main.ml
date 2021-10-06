@@ -23,8 +23,8 @@
 (*----------------------------------------------------------------------------*)
 
 let BOYER_MOORE_FINAL l tm =
-my_gen_terms := []; 
-counterexamples := 0; 
+my_gen_terms := [];
+counterexamples := 0;
  proof_print_depth := 0;
 bm_steps := (0,0);
 try  (proof_print_newline
@@ -42,8 +42,8 @@ try  (proof_print_newline
  ) with Failure _ -> failwith "BOYER_MOORE";;
 
 let BOYER_MOORE_MESON l tm =
-my_gen_terms := []; 
-counterexamples := 0; 
+my_gen_terms := [];
+counterexamples := 0;
 proof_print_depth := 0;
 bm_steps := (0,0);
 try  (proof_print_newline
@@ -62,8 +62,8 @@ try  (proof_print_newline
  ) with Failure _ -> failwith "BOYER_MOORE";;
 
 let BOYER_MOORE_GEN l tm =
-my_gen_terms := []; 
-counterexamples := 0; 
+my_gen_terms := [];
+counterexamples := 0;
  proof_print_depth := 0;
 bm_steps := (0,0);
 try  (proof_print_newline
@@ -81,8 +81,8 @@ try  (proof_print_newline
  ) with Failure _ -> failwith "BOYER_MOORE";;
 
 let BOYER_MOORE_EXT tm =
-my_gen_terms := []; 
-counterexamples := 0; 
+my_gen_terms := [];
+counterexamples := 0;
 proof_print_depth := 0;
 bm_steps := (0,0);
 try  (proof_print_newline
@@ -102,8 +102,8 @@ try  (proof_print_newline
 
 
 let BOYER_MOORE_RE l tm =
-my_gen_terms := []; 
-counterexamples := 0; 
+my_gen_terms := [];
+counterexamples := 0;
 proof_print_depth := 0;
 bm_steps := (0,0);
 try  (proof_print_newline
@@ -122,8 +122,8 @@ try  (proof_print_newline
  ) with Failure _ -> failwith "BOYER_MOORE";;
 
 let BOYER_MOORE tm =
-counterexamples := 0; 
-my_gen_terms := []; 
+counterexamples := 0;
+my_gen_terms := [];
  proof_print_depth := 0;
 bm_steps := (0,0);
 try  (proof_print_newline
@@ -251,9 +251,9 @@ let (BMF_TAC:thm list -> tactic) =
 	    setify_heuristic;
 	    subst_heuristic;
 	    HL_simplify_heuristic l;
-	    use_equality_heuristic; 
+	    use_equality_heuristic;
 	    generalize_heuristic_ext;
-	    irrelevance_heuristic; 
+	    irrelevance_heuristic;
 	    induction_heuristic]
 	   aslw
     ) with Failure s -> failwith ("BMF_TAC: " ^ s);;

@@ -22,7 +22,7 @@ Checks that a value satisfies a predicate.
 }
 
 \USES
-Can be used to filter out candidates from a set of terms, e.g. to apply 
+Can be used to filter out candidates from a set of terms, e.g. to apply
 theorem-tactics to assumptions with a certain pattern.
 
 \SEEALSO

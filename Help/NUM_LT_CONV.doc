@@ -3,36 +3,36 @@
 \TYPE {NUM_LT_CONV : conv}
 
 \SYNOPSIS
-Proves whether one numeral is less than another.       
-                                              
+Proves whether one numeral is less than another.
+
 \KEYWORDS
 conversion, number, arithmetic.
-                                                 
-\DESCRIBE
-If {n} and {m} are two numerals (e.g. {0}, {1}, {2}, {3},...), then          
-{NUM_LT_CONV `n < m`} returns:               
 
-{       
-   |- n < m <=> T       or       |- n < m <=> F                              
-}            
-\noindent depending on whether the natural number represented by {n} is less 
+\DESCRIBE
+If {n} and {m} are two numerals (e.g. {0}, {1}, {2}, {3},...), then
+{NUM_LT_CONV `n < m`} returns:
+
+{
+   |- n < m <=> T       or       |- n < m <=> F
+}
+\noindent depending on whether the natural number represented by {n} is less
 than the one represented by {m}.
- 
-\FAILURE                    
+
+\FAILURE
 {NUM_LT_CONV tm} fails if {tm} is not of the form {`n < m`}, where {n} and {m}
 are numerals.
-                                  
-\EXAMPLE                                
+
+\EXAMPLE
 {
   # NUM_LT_CONV `42 < 42`;;
   val it : thm = |- 42 < 42 <=> F
-  
+
   # NUM_LT_CONV `11 < 19`;;
   val it : thm = |- 11 < 19 <=> T
-}                                                                    
-                                                                  
-\USES                                                                    
-Performing basic arithmetic reasoning while producing a proof.         
+}
+
+\USES
+Performing basic arithmetic reasoning while producing a proof.
 
 \SEEALSO
 NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,

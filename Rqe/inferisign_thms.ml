@@ -1,7 +1,7 @@
 let inferisign_lem00 = prove_by_refinement(
-  `x1 < x3 ==> x3 < x2 ==> (!x. x1 < x /\ x < x2 ==> P x) ==> 
-    (!x. x1 < x /\ x < x3 ==> P x) /\ 
-    (!x. (x = x3) ==> P x) /\ 
+  `x1 < x3 ==> x3 < x2 ==> (!x. x1 < x /\ x < x2 ==> P x) ==>
+    (!x. x1 < x /\ x < x3 ==> P x) /\
+    (!x. (x = x3) ==> P x) /\
     (!x. x3 < x /\ x < x2 ==> P x)`,
 (* {{{ Proof *)
 
@@ -16,7 +16,7 @@ let inferisign_lem00 = prove_by_refinement(
   ASM_REWRITE_TAC[];
   FIRST_ASSUM MATCH_MP_TAC;
   ASM_REWRITE_TAC[];
-  MATCH_MP_TAC REAL_LT_TRANS;  
+  MATCH_MP_TAC REAL_LT_TRANS;
   EXISTS_TAC `x3`;
   ASM_REWRITE_TAC[];
 ]);;
@@ -24,8 +24,8 @@ let inferisign_lem00 = prove_by_refinement(
 (* }}} *)
 
 let neg_neg_neq_thm = prove_by_refinement(
-  `!x y p. x < y /\ poly p x < &0 /\ poly p y < &0 /\ 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y /\ poly p x < &0 /\ poly p y < &0 /\
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
             (!z. x < z /\ z < y ==> poly p z < &0)`,
 (* {{{ Proof *)
 [
@@ -50,7 +50,7 @@ let neg_neg_neq_thm = prove_by_refinement(
   USE_THEN "Z-8" MP_TAC THEN REAL_ARITH_TAC;
   LABEL_ALL_TAC;
   USE_THEN "Z-1" MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`y:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   STRIP_TAC;
@@ -94,8 +94,8 @@ let neg_neg_neq_thm = prove_by_refinement(
 (* }}} *)
 
 let neg_neg_neq_thm2 = prove_by_refinement(
-  `!x y p. x < y ==> poly p x < &0 ==> poly p y < &0 ==> 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y ==> poly p x < &0 ==> poly p y < &0 ==>
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
             (!z. x < z /\ z < y ==> poly p z < &0)`,
 (* {{{ Proof *)
 [
@@ -106,8 +106,8 @@ let neg_neg_neq_thm2 = prove_by_refinement(
 (* }}} *)
 
 let pos_pos_neq_thm = prove_by_refinement(
-  `!x y p. x < y /\ &0 < poly p x /\ &0 < poly p y /\ 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y /\ &0 < poly p x /\ &0 < poly p y /\
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
             (!z. x < z /\ z < y ==> &0 < poly p z)`,
 (* {{{ Proof *)
 [
@@ -132,7 +132,7 @@ let pos_pos_neq_thm = prove_by_refinement(
   USE_THEN "Z-8" MP_TAC THEN REAL_ARITH_TAC;
   LABEL_ALL_TAC;
   USE_THEN "Z-1" MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`y:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   STRIP_TAC;
@@ -176,8 +176,8 @@ let pos_pos_neq_thm = prove_by_refinement(
 (* }}} *)
 
 let pos_pos_neq_thm2 = prove_by_refinement(
-  `!x y p. x < y ==> poly p x > &0 ==> poly p y > &0 ==> 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y ==> poly p x > &0 ==> poly p y > &0 ==>
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
             (!z. x < z /\ z < y ==> poly p z > &0)`,
 (* {{{ Proof *)
 [
@@ -189,10 +189,10 @@ let pos_pos_neq_thm2 = prove_by_refinement(
 (* }}} *)
 
 let pos_neg_neq_thm = prove_by_refinement(
-  `!x y p. x < y /\ &0 < poly p x /\ poly p y < &0 /\ 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
-            ?X. x < X /\ X < y /\ (poly p X = &0) /\ 
-              (!z. x < z /\ z < X ==> &0 < poly p z) /\ 
+  `!x y p. x < y /\ &0 < poly p x /\ poly p y < &0 /\
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
+            ?X. x < X /\ X < y /\ (poly p X = &0) /\
+              (!z. x < z /\ z < X ==> &0 < poly p z) /\
               (!z. X < z /\ z < y ==> poly p z < &0)`,
 (* {{{ Proof *)
 
@@ -207,7 +207,7 @@ let pos_neg_neq_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   STRIP_TAC;
   REPEAT STRIP_TAC;
-  (* save *) 
+  (* save *)
   ONCE_REWRITE_TAC[ARITH_RULE `x < y <=> ~(y < x \/ (x = y))`];
   STRIP_TAC;
   MP_TAC (ISPECL [`p:real list`;`x:real`;`z:real`] POLY_MVT);
@@ -229,10 +229,10 @@ let pos_neg_neq_thm = prove_by_refinement(
   USE_THEN "Z-8" MP_TAC THEN REAL_ARITH_TAC;
   LABEL_ALL_TAC;
   USE_THEN "Z-1" MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`X:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
-  DISCH_THEN (X_CHOOSE_TAC `M:real`);  
+  DISCH_THEN (X_CHOOSE_TAC `M:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
   CLAIM `&0 < &0 - poly p z`;
   LABEL_ALL_TAC;
@@ -263,7 +263,7 @@ let pos_neg_neq_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   DISCH_THEN (X_CHOOSE_TAC `K:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x < K /\  K < y`;
   STRIP_TAC;
   MATCH_MP_TAC REAL_LT_TRANS;
@@ -276,7 +276,7 @@ let pos_neg_neq_thm = prove_by_refinement(
   EXISTS_TAC `X`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   POP_ASSUM (ASSUME_TAC o GSYM);
   MP_TAC (ISPECL [`p:real list`;`z:real`;`X:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
@@ -297,7 +297,7 @@ let pos_neg_neq_thm = prove_by_refinement(
   EXISTS_TAC `X`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   REPEAT STRIP_TAC;
   ONCE_REWRITE_TAC[ARITH_RULE `x < y <=> ~(y < x \/ (x = y))`];
   STRIP_TAC;
@@ -319,11 +319,11 @@ let pos_neg_neq_thm = prove_by_refinement(
   USE_THEN "Z-7" MP_TAC THEN REAL_ARITH_TAC;
   LABEL_ALL_TAC;
   USE_THEN "Z-1" MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`y:real`] POLY_MVT);
   LABEL_ALL_TAC;
   USE_THEN "Z-6" (REWRITE_TAC o list);
-  DISCH_THEN (X_CHOOSE_TAC `M:real`);  
+  DISCH_THEN (X_CHOOSE_TAC `M:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
   CLAIM `poly p y - poly p z < &0`;
   LABEL_ALL_TAC;
@@ -355,7 +355,7 @@ let pos_neg_neq_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   DISCH_THEN (X_CHOOSE_TAC `K:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x < K /\  K < y`;
   STRIP_TAC;
   MATCH_MP_TAC REAL_LT_TRANS;
@@ -368,7 +368,7 @@ let pos_neg_neq_thm = prove_by_refinement(
   EXISTS_TAC `M`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`X:real`;`z:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   REAL_SIMP_TAC;
@@ -394,11 +394,11 @@ let pos_neg_neq_thm = prove_by_refinement(
 
 
 let pos_neg_neq_thm2 = prove_by_refinement(
-  `!x y p. x < y ==> poly p x > &0 ==> poly p y < &0 ==> 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
-            ?X. x < X /\ X < y /\ 
-              (!z. (z = X) ==> (poly p z = &0)) /\ 
-              (!z. x < z /\ z < X ==> poly p z > &0) /\ 
+  `!x y p. x < y ==> poly p x > &0 ==> poly p y < &0 ==>
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
+            ?X. x < X /\ X < y /\
+              (!z. (z = X) ==> (poly p z = &0)) /\
+              (!z. x < z /\ z < X ==> poly p z > &0) /\
               (!z. X < z /\ z < y ==> poly p z < &0)`,
 (* {{{ Proof *)
 [
@@ -413,10 +413,10 @@ let pos_neg_neq_thm2 = prove_by_refinement(
 (* }}} *)
 
 let neg_pos_neq_thm = prove_by_refinement(
-  `!x y p. x < y /\ poly p x < &0 /\ &0 < poly p y /\ 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
-            ?X. x < X /\ X < y /\ (poly p X = &0) /\ 
-              (!z. x < z /\ z < X ==> poly p z < &0) /\ 
+  `!x y p. x < y /\ poly p x < &0 /\ &0 < poly p y /\
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
+            ?X. x < X /\ X < y /\ (poly p X = &0) /\
+              (!z. x < z /\ z < X ==> poly p z < &0) /\
               (!z. X < z /\ z < y ==> &0 < poly p z)`,
 (* {{{ Proof *)
 
@@ -431,7 +431,7 @@ let neg_pos_neq_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   STRIP_TAC;
   REPEAT STRIP_TAC;
-  (* save *) 
+  (* save *)
   ONCE_REWRITE_TAC[ARITH_RULE `x < y <=> ~(y < x \/ (x = y))`];
   STRIP_TAC;
   MP_TAC (ISPECL [`p:real list`;`x:real`;`z:real`] POLY_MVT);
@@ -453,10 +453,10 @@ let neg_pos_neq_thm = prove_by_refinement(
   USE_THEN "Z-8" MP_TAC THEN REAL_ARITH_TAC;
   LABEL_ALL_TAC;
   USE_THEN "Z-1" MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`X:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
-  DISCH_THEN (X_CHOOSE_TAC `M:real`);  
+  DISCH_THEN (X_CHOOSE_TAC `M:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
   CLAIM `&0 - poly p z < &0`;
   LABEL_ALL_TAC;
@@ -487,7 +487,7 @@ let neg_pos_neq_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   DISCH_THEN (X_CHOOSE_TAC `K:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x < K /\  K < y`;
   STRIP_TAC;
   MATCH_MP_TAC REAL_LT_TRANS;
@@ -500,7 +500,7 @@ let neg_pos_neq_thm = prove_by_refinement(
   EXISTS_TAC `X`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`X:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   REAL_SIMP_TAC;
@@ -520,7 +520,7 @@ let neg_pos_neq_thm = prove_by_refinement(
   EXISTS_TAC `X`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   REPEAT STRIP_TAC;
   ONCE_REWRITE_TAC[ARITH_RULE `x < y <=> ~(y < x \/ (x = y))`];
   STRIP_TAC;
@@ -542,11 +542,11 @@ let neg_pos_neq_thm = prove_by_refinement(
   USE_THEN "Z-7" MP_TAC THEN REAL_ARITH_TAC;
   LABEL_ALL_TAC;
   USE_THEN "Z-1" MP_TAC THEN REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`y:real`] POLY_MVT);
   LABEL_ALL_TAC;
   USE_THEN "Z-6" (REWRITE_TAC o list);
-  DISCH_THEN (X_CHOOSE_TAC `M:real`);  
+  DISCH_THEN (X_CHOOSE_TAC `M:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
   CLAIM `&0 < poly p y - poly p z`;
   LABEL_ALL_TAC;
@@ -578,7 +578,7 @@ let neg_pos_neq_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   DISCH_THEN (X_CHOOSE_TAC `K:real`);
   POP_ASSUM MP_TAC THEN STRIP_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x < K /\  K < y`;
   STRIP_TAC;
   MATCH_MP_TAC REAL_LT_TRANS;
@@ -591,7 +591,7 @@ let neg_pos_neq_thm = prove_by_refinement(
   EXISTS_TAC `M`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   POP_ASSUM (ASSUME_TAC o GSYM);
   MP_TAC (ISPECL [`p:real list`;`X:real`;`z:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
@@ -617,11 +617,11 @@ let neg_pos_neq_thm = prove_by_refinement(
 (* }}} *)
 
 let neg_pos_neq_thm2 = prove_by_refinement(
-  `!x y p. x < y ==> poly p x < &0 ==> poly p y > &0 ==> 
-            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
-            ?X. x < X /\ X < y /\ 
-              (!z. (z = X) ==> (poly p z = &0)) /\ 
-              (!z. x < z /\ z < X ==> poly p z < &0) /\ 
+  `!x y p. x < y ==> poly p x < &0 ==> poly p y > &0 ==>
+            (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
+            ?X. x < X /\ X < y /\
+              (!z. (z = X) ==> (poly p z = &0)) /\
+              (!z. x < z /\ z < X ==> poly p z < &0) /\
               (!z. X < z /\ z < y ==> poly p z > &0)`,
 (* {{{ Proof *)
 [
@@ -653,7 +653,7 @@ let gt_nz_thm = prove_by_refinement(
 (* }}} *)
 
 let eq_eq_false_thm = prove_by_refinement(
-  `!x y p. x < y ==> (poly p x = &0) ==> (poly p y = &0) ==> 
+  `!x y p. x < y ==> (poly p x = &0) ==> (poly p y = &0) ==>
        (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> F`,
 (* {{{ Proof *)
 
@@ -667,7 +667,7 @@ let eq_eq_false_thm = prove_by_refinement(
   ASM_REWRITE_TAC[];
   REAL_ARITH_TAC;
   DISCH_THEN (REWRITE_ASSUMS o list);
-  CLAIM `&0 < y - x`; 
+  CLAIM `&0 < y - x`;
   USE_THEN "Z-6" MP_TAC THEN REAL_ARITH_TAC;
   POP_ASSUM (MP_TAC o ISPEC `x':real`);
   RULE_ASSUM_TAC GSYM;
@@ -681,8 +681,8 @@ let eq_eq_false_thm = prove_by_refinement(
 (* }}} *)
 
 let neg_zero_neg_thm = prove_by_refinement(
-  `!x y p. x < y ==> poly p x < &0 ==> (poly p y = &0) ==> 
-     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y ==> poly p x < &0 ==> (poly p y = &0) ==>
+     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
      (!z. x < z /\ z < y ==> poly p z < &0)`,
 (* {{{ Proof *)
 
@@ -714,7 +714,7 @@ let neg_zero_neg_thm = prove_by_refinement(
   DISJ2_TAC;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[REAL_LT_ANTISYM];
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`y:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   STRIP_TAC;
@@ -736,7 +736,7 @@ let neg_zero_neg_thm = prove_by_refinement(
   REPEAT STRIP_TAC;
   REPEAT_N 3 (POP_ASSUM MP_TAC);
   REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x' < x''`;
   MATCH_MP_TAC REAL_LT_TRANS;
   EXISTS_TAC `z`;
@@ -755,7 +755,7 @@ let neg_zero_neg_thm = prove_by_refinement(
   EXISTS_TAC `x''`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   MP_TAC  (ISPECL[`z:real`;`y:real`;`p:real list`] eq_eq_false_thm);
   POP_ASSUM (ASSUME_TAC o GSYM);
   ASM_REWRITE_TAC[];
@@ -770,8 +770,8 @@ let neg_zero_neg_thm = prove_by_refinement(
 (* }}} *)
 
 let pos_zero_pos_thm = prove_by_refinement(
-  `!x y p. x < y ==> poly p x > &0 ==> (poly p y = &0) ==> 
-     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y ==> poly p x > &0 ==> (poly p y = &0) ==>
+     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
      (!z. x < z /\ z < y ==> poly p z > &0)`,
 (* {{{ Proof *)
 
@@ -803,7 +803,7 @@ let pos_zero_pos_thm = prove_by_refinement(
   DISJ2_TAC;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[REAL_LT_ANTISYM];
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`y:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   STRIP_TAC;
@@ -825,7 +825,7 @@ let pos_zero_pos_thm = prove_by_refinement(
   REPEAT STRIP_TAC;
   REPEAT_N 3 (POP_ASSUM MP_TAC);
   REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x' < x''`;
   MATCH_MP_TAC REAL_LT_TRANS;
   EXISTS_TAC `z`;
@@ -844,7 +844,7 @@ let pos_zero_pos_thm = prove_by_refinement(
   EXISTS_TAC `x''`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   MP_TAC  (ISPECL[`z:real`;`y:real`;`p:real list`] eq_eq_false_thm);
   POP_ASSUM (ASSUME_TAC o GSYM);
   ASM_REWRITE_TAC[];
@@ -859,8 +859,8 @@ let pos_zero_pos_thm = prove_by_refinement(
 (* }}} *)
 
 let zero_neg_neg_thm = prove_by_refinement(
-  `!x y p. x < y ==> (poly p x = &0) ==> (poly p y < &0) ==> 
-     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y ==> (poly p x = &0) ==> (poly p y < &0) ==>
+     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
      (!z. x < z /\ z < y ==> poly p z < &0)`,
 (* {{{ Proof *)
 
@@ -892,7 +892,7 @@ let zero_neg_neg_thm = prove_by_refinement(
   DISJ2_TAC;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[REAL_LT_ANTISYM];
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`z:real`;`y:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   STRIP_TAC;
@@ -915,7 +915,7 @@ let zero_neg_neg_thm = prove_by_refinement(
   REPEAT STRIP_TAC;
   REPEAT_N 3 (POP_ASSUM MP_TAC);
   REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x' < x''`;
   MATCH_MP_TAC REAL_LT_TRANS;
   EXISTS_TAC `z`;
@@ -934,7 +934,7 @@ let zero_neg_neg_thm = prove_by_refinement(
   EXISTS_TAC `x''`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   MP_TAC  (ISPECL[`x:real`;`z:real`;`p:real list`] eq_eq_false_thm);
   POP_ASSUM (ASSUME_TAC o GSYM);
   ASM_REWRITE_TAC[];
@@ -949,8 +949,8 @@ let zero_neg_neg_thm = prove_by_refinement(
 (* }}} *)
 
 let zero_pos_pos_thm = prove_by_refinement(
-  `!x y p. x < y ==> (poly p x = &0) ==> (poly p y > &0) ==> 
-     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==> 
+  `!x y p. x < y ==> (poly p x = &0) ==> (poly p y > &0) ==>
+     (!z. x < z /\ z < y ==> ~(poly (poly_diff p) z = &0)) ==>
      (!z. x < z /\ z < y ==> poly p z > &0)`,
 (* {{{ Proof *)
 
@@ -977,7 +977,7 @@ let zero_pos_pos_thm = prove_by_refinement(
   USE_THEN "Z-1" MP_TAC;
   USE_THEN "Z-7" MP_TAC;
   REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   MP_TAC (ISPECL [`p:real list`;`x:real`;`z:real`] POLY_MVT);
   ASM_REWRITE_TAC[];
   STRIP_TAC;
@@ -999,7 +999,7 @@ let zero_pos_pos_thm = prove_by_refinement(
   REPEAT STRIP_TAC;
   REPEAT_N 3 (POP_ASSUM MP_TAC);
   REAL_ARITH_TAC;
-  (* save *) 
+  (* save *)
   CLAIM `x'' < x'`;
   MATCH_MP_TAC REAL_LT_TRANS;
   EXISTS_TAC `z`;
@@ -1018,7 +1018,7 @@ let zero_pos_pos_thm = prove_by_refinement(
   EXISTS_TAC `x'`;
   ASM_REWRITE_TAC[];
   ASM_MESON_TAC[];
-  (* save *) 
+  (* save *)
   MP_TAC  (ISPECL[`x:real`;`z:real`;`p:real list`] eq_eq_false_thm);
   POP_ASSUM (ASSUME_TAC o GSYM);
   ASM_REWRITE_TAC[];

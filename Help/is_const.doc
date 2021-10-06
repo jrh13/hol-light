@@ -19,7 +19,7 @@ Never fails.
   # is_const `x:bool`;;
   val it : bool = false
 }
-Note that numerals are not constants; they are composite constructs hidden by 
+Note that numerals are not constants; they are composite constructs hidden by
 prettyprinting:
 {
   # is_const `0`;;

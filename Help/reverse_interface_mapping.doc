@@ -24,10 +24,10 @@ Here is a simple library theorem about real numbers as it usually appears:
   # REAL_EQ_SUB_LADD;;
   val it : thm = |- !x y z. x = y - z <=> x + z = y
 }
-\noindent but with another setting of {reverse_interface_mapping} we see that 
-the usual symbol `{+}' is an interface for {real_add}, while the `iff' sign is 
+\noindent but with another setting of {reverse_interface_mapping} we see that
+the usual symbol `{+}' is an interface for {real_add}, while the `iff' sign is
 just an interface for Boolean equality:
-{  
+{
   # reverse_interface_mapping := false;;
   val it : unit = ()
   # REAL_EQ_SUB_LADD;;

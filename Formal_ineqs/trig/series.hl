@@ -13,7 +13,7 @@ let abs_neg_one_pow = prove
    REWRITE_TAC[abs_neg_pow; REAL_ARITH `abs (&1) = &1`; REAL_POW_ONE]);;
 
 let real_infsum_offset = prove
-  (`!m k f. real_summable (from m) f /\ m <= k 
+  (`!m k f. real_summable (from m) f /\ m <= k
    ==> real_infsum (from m) f = sum (m..k) f + real_infsum (from (k + 1)) f`,
    REPEAT STRIP_TAC THEN
      FIRST_ASSUM (MP_TAC o SPEC `k + 1` o MATCH_MP REAL_SUMMABLE_FROM_ELSEWHERE) THEN
@@ -26,7 +26,7 @@ let real_infsum_offset = prove
      REAL_ARITH_TAC);;
 
 let real_infsum_offset_alt = prove
-  (`!m k f. real_summable (from m) f /\ m < k 
+  (`!m k f. real_summable (from m) f /\ m < k
    ==> real_infsum (from m) f = sum (m..k - 1) f + real_infsum (from k) f`,
    REPEAT STRIP_TAC THEN
      SUBGOAL_THEN `?t. k = t + 1 /\ m <= t` STRIP_ASSUME_TAC THENL [
@@ -40,7 +40,7 @@ let power_series_simple_bound = prove
   (`!a u x m. real_summable (from m) (\i. a i * x pow i)
    /\ (!i. m <= i ==> abs (a i) <= u)
    /\ abs x < &1
-   ==> abs (real_infsum (from m) (\i. a i * x pow i)) 
+   ==> abs (real_infsum (from m) (\i. a i * x pow i))
           <= u * abs x pow m / (&1 - abs x)`,
    REPEAT STRIP_TAC THEN
      MATCH_MP_TAC REAL_SERIES_BOUND THEN
@@ -62,7 +62,7 @@ let power_series_simple_bound2 = prove
   (`!a x m. real_summable (from m) (\i. a i * x pow i)
    /\ (!i. m <= i ==> abs (a (SUC i)) <= abs (a i))
    /\ abs x < &1
-   ==> abs (real_infsum (from m) (\i. a i * x pow i)) 
+   ==> abs (real_infsum (from m) (\i. a i * x pow i))
            <= abs (a m) * abs x pow m / (&1 - abs x)`,
    REPEAT STRIP_TAC THEN
      MATCH_MP_TAC power_series_simple_bound THEN ASM_REWRITE_TAC[] THEN
@@ -75,7 +75,7 @@ let real_sums_simple_bound = prove
    /\ n < m
    /\ (!i. m <= i ==> abs (a i) <= u)
    /\ abs x < &1
-   ==> abs (t - sum (n..m - 1) (\i. a i * x pow i)) 
+   ==> abs (t - sum (n..m - 1) (\i. a i * x pow i))
          <= u * abs x pow m / (&1 - abs x)`,
    REPEAT STRIP_TAC THEN
      FIRST_ASSUM (ASSUME_TAC o MATCH_MP REAL_SUMS_SUMMABLE) THEN
@@ -93,7 +93,7 @@ let real_sums_simple_bound2 = prove
    /\ n < m
    /\ (!i. m <= i ==> abs (a (SUC i)) <= abs (a i))
    /\ abs x < &1
-   ==> abs (t - sum (n..m - 1) (\i. a i * x pow i)) 
+   ==> abs (t - sum (n..m - 1) (\i. a i * x pow i))
             <= abs (a m) * abs x pow m / (&1 - abs x)`,
    REPEAT STRIP_TAC THEN
      FIRST_ASSUM (ASSUME_TAC o MATCH_MP REAL_SUMS_SUMMABLE) THEN
@@ -123,9 +123,9 @@ let sign_mul_lemma = prove
      POP_ASSUM (MP_TAC o REWRITE_RULE[GSYM REAL_LT_SQUARE]) THEN
      ONCE_REWRITE_TAC[REAL_ARITH `(b * b) * x <= &0 <=> &0 <= (--(b * b) * x)`] THEN
      REWRITE_TAC[REAL_MUL_POS_LE] THEN REAL_ARITH_TAC);;
-			     
+			
 let sum_bound_lemma = prove
-  (`!m n f. 
+  (`!m n f.
      (!k. abs (f (k + 1)) <= abs (f k) /\ f (k + 1) * f k <= &0) ==>
      abs (sum (m..n) f) <= abs (f m) /\ &0 <= sum (m..n) f * f m`,
    GEN_TAC THEN GEN_TAC THEN
@@ -191,9 +191,9 @@ let sum_bound_lemma = prove
 
 let alt_sign_converges = prove
   (`!f k. (!n. abs (f (n + 1)) <= abs (f n) /\ f (n + 1) * f n <= &0) /\
-     ((f ---> &0) sequentially) 
+     ((f ---> &0) sequentially)
       ==> ?l. (f real_sums l) (from k)`,
-   REWRITE_TAC[REAL_SERIES_CAUCHY; REALLIM_SEQUENTIALLY; GSYM IMP_IMP; REAL_SUB_RZERO] THEN 
+   REWRITE_TAC[REAL_SERIES_CAUCHY; REALLIM_SEQUENTIALLY; GSYM IMP_IMP; REAL_SUB_RZERO] THEN
      REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "h1") THEN REPEAT STRIP_TAC THEN
      REWRITE_TAC[FROM_INTER_NUMSEG_GEN] THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `e:real`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
@@ -213,13 +213,13 @@ let alt_sign_converges = prove
 
 let alt_sign_summable = prove
   (`!f k. (!n. abs (f (n + 1)) <= abs (f n) /\ f (n + 1) * f n <= &0) /\
-     ((f ---> &0) sequentially) 
+     ((f ---> &0) sequentially)
       ==> real_summable (from k) f`,
    ASM_SIMP_TAC[real_summable; alt_sign_converges]);;
 
 let alt_sign_converges2 = prove
   (`!f k. (!n. abs (f (n + 1)) <= abs (f n) /\ f (n + 1) * f n <= &0) /\
-     ((f ---> &0) sequentially) 
+     ((f ---> &0) sequentially)
       ==> ?l. (f real_sums l) (from k)
              /\ abs l <= abs (f k) /\ &0 <= l * f k`,
    REPEAT STRIP_TAC THEN
@@ -258,7 +258,7 @@ let alt_sign_converges2 = prove
 
 let alt_sign_bound = prove
   (`!f k. (!n. abs (f (n + 1)) <= abs (f n) /\ f (n + 1) * f n <= &0) /\
-     ((f ---> &0) sequentially) 
+     ((f ---> &0) sequentially)
       ==> abs (real_infsum (from k) f) <= abs (f k)`,
    REPEAT STRIP_TAC THEN
      MP_TAC (SPEC_ALL alt_sign_converges2) THEN ASM_REWRITE_TAC[] THEN
@@ -273,7 +273,7 @@ let alt_sign_abs_bound = prove
      MP_TAC (SPEC_ALL alt_sign_bound) THEN
      ASM_SIMP_TAC[alt_sign_summable] THEN
      REAL_ARITH_TAC);;
-   
+
 let alt_sign_upper_bound = prove
   (`!f m k. (!n. abs (f (n + 1)) <= abs (f n) /\ f (n + 1) * f n <= &0) /\
      (f ---> &0) sequentially /\ m < k
@@ -353,7 +353,7 @@ let integral_uniform_limit = prove
 
 let integral_series = prove
   (`!f g s r a b.
-     (!e. &0 < e ==> ?N. !n x. N <= n /\ x IN real_interval[a,b] 
+     (!e. &0 < e ==> ?N. !n x. N <= n /\ x IN real_interval[a,b]
                     ==> abs (sum (s INTER (0..n)) (\i. f i x) - g x) < e) /\
      (!n. ((f n) has_real_integral (r n)) (real_interval[a,b]))
    ==> (?v. (g has_real_integral v) (real_interval[a,b]) /\ (r real_sums v) s)`,
@@ -368,7 +368,7 @@ let integral_series = prove
 let power_series_uniform = prove
   (`!a s t y. real_summable s (\i. a i * y pow i) /\ abs t < abs y
    ==> (!e. &0 < e ==> ?N. !n x. N <= n /\ x IN real_interval[--abs t, abs t]
-				      ==> abs (sum (s INTER (0..n)) (\i. a i * x pow i) 
+				      ==> abs (sum (s INTER (0..n)) (\i. a i * x pow i)
 					       - real_infsum s (\i. a i * x pow i)) < e)`,
    REPEAT STRIP_TAC THEN
      ABBREV_TAC `M = (abs y + abs t) / (abs y - abs t)` THEN
@@ -473,7 +473,7 @@ let has_real_integral_pow_neg = prove
 let power_series_integral = prove
   (`!f a s r. (!x. abs x < r ==> ((\i. a i * x pow i) real_sums f x) s)
    ==> (!x. abs x < r ==>
-	  let v = if x < &0 then --real_integral (real_interval[x, &0]) f 
+	  let v = if x < &0 then --real_integral (real_interval[x, &0]) f
 	            else real_integral (real_interval[&0, x]) f in
 	    ((\i. a i * x pow (i + 1) / &(i + 1)) real_sums v) s)`,
    REPEAT STRIP_TAC THEN LET_TAC THEN
@@ -535,12 +535,12 @@ let power_series_integral = prove
 	 ALL_TAC
        ] THEN
        REWRITE_TAC[REAL_MUL_LID]);;
-	 
+	
 let power_series_integral2 = prove
-  (`!f f' a s r. 
+  (`!f f' a s r.
      (!x. abs x < r ==> (f has_real_derivative f' x) (atreal x)) /\
      (!x. abs x < r ==> ((\i. a i * x pow i) real_sums f' x) s)
-   ==> (!x. abs x < r 
+   ==> (!x. abs x < r
 	==> ((\i. a i * x pow (i + 1) / &(i + 1)) real_sums f x - f (&0)) s)`,
    REWRITE_TAC[GSYM IMP_IMP] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
      DISCH_THEN (MP_TAC o MATCH_MP power_series_integral) THEN REPEAT STRIP_TAC THEN
@@ -578,7 +578,7 @@ let strict_increasing_num_le = prove
    GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN TRY ARITH_TAC THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `n:num`) THEN
      REWRITE_TAC[ADD1] THEN POP_ASSUM MP_TAC THEN ARITH_TAC);;
-     
+
 let strict_increasing_num_lt = prove
   (`!h:num->num. (!n. h n < h (n + 1)) ==> (!n m. n < m ==> h n < h m)`,
    GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN INDUCT_TAC THEN TRY ARITH_TAC THENL [
@@ -612,11 +612,11 @@ let strict_increasing_num_le2 = prove
 
 
 let real_sums_image = prove
-  (`!f h s l. (!n. h n < h (n + 1)) 
+  (`!f h s l. (!n. h n < h (n + 1))
    ==> ((f real_sums l) (IMAGE h s) <=> ((f o h) real_sums l) s)`,
    REWRITE_TAC[real_sums; REALLIM_SEQUENTIALLY] THEN REPEAT STRIP_TAC THEN
      EQ_TAC THEN REPEAT STRIP_TAC THENL [
-       POP_ASSUM (fun th -> FIRST_X_ASSUM (STRIP_ASSUME_TAC o C MATCH_MP th)) THEN 
+       POP_ASSUM (fun th -> FIRST_X_ASSUM (STRIP_ASSUME_TAC o C MATCH_MP th)) THEN
 	 EXISTS_TAC `N:num` THEN REPEAT STRIP_TAC THEN
 	 SUBGOAL_THEN `?m. N <= m /\ IMAGE (h:num->num) s INTER (0..m) = IMAGE h (s INTER (0..n))` STRIP_ASSUME_TAC THENL [
 	   EXISTS_TAC `(h:num->num) n` THEN
@@ -681,7 +681,7 @@ let real_sums_image = prove
      POP_ASSUM (MP_TAC o MATCH_MP SUM_IMAGE) THEN SIMP_TAC[]);;
 
 let real_summable_image = prove
-  (`!f h s. (!n. h n < h (n + 1)) 
+  (`!f h s. (!n. h n < h (n + 1))
    ==> (real_summable (IMAGE h s) f <=> real_summable s (f o h))`,
    REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP real_sums_image) THEN
      REWRITE_TAC[real_summable] THEN DISCH_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL [
@@ -792,7 +792,7 @@ let n_le_pow_lemma = prove
      MATCH_MP_TAC REAL_POW_LE THEN ASM_SIMP_TAC[REAL_ARITH `&0 < e ==> &0 <= e`]);;
 
 let real_summable_lmul_eq = prove
-  (`!c f s. ~(c = &0) 
+  (`!c f s. ~(c = &0)
    ==> (real_summable s (\i. c * f i) <=> real_summable s f)`,
    REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL [
      SUBGOAL_THEN `f = (\i:num. inv c * c * f i)` (fun th -> ONCE_REWRITE_TAC[th]) THENL [
@@ -970,7 +970,7 @@ let power_series_has_derivative = prove
       ==> ?f'. (!x. abs x < r ==> (f has_real_derivative f' x) (atreal x) /\
 		  ((\i. (&i * a i) * x pow (i - 1)) real_sums f' x) s)`,
    REPEAT STRIP_TAC THEN
-     SUBGOAL_THEN `(!w. &0 < w /\ abs w < r /\ w < r /\ abs w < abs r ==> 
+     SUBGOAL_THEN `(!w. &0 < w /\ abs w < r /\ w < r /\ abs w < abs r ==>
 		      ?f'. (!x. abs x < w ==> (f has_real_derivative f' x) (atreal x) /\
 				  ((\i. (&i * a i) * x pow (i - 1)) real_sums f' x) s))
      ==> ?f'. (!x. abs x < r ==> (f has_real_derivative f' x) (atreal x) /\
@@ -983,7 +983,7 @@ let power_series_has_derivative = prove
 	   ALL_TAC
 	 ] THEN
 	 REWRITE_TAC[] THEN
-	 DISCH_THEN MATCH_MP_TAC THEN 
+	 DISCH_THEN MATCH_MP_TAC THEN
 	 POP_ASSUM MP_TAC THEN REAL_ARITH_TAC;
        ALL_TAC
      ] THEN
@@ -1096,7 +1096,7 @@ let power_series_has_derivative = prove
      ASM_REWRITE_TAC[]);;
 
 let power_series_has_derivative2 = prove
-  (`!f a r. 
+  (`!f a r.
      (!x. abs x < r ==> ((\i. a i * x pow i) real_sums f x) (:num))
        ==> ?f'. (!x. abs x < r ==>
 		   (f has_real_derivative f' x) (atreal x) /\
@@ -1142,7 +1142,7 @@ let real_sums_i_xi = prove
 
 let real_sums_neg_i_xi = prove
   (`!x. abs x < &1
-   ==> ((\i. ((-- &1) pow i * &i) * x pow i) real_sums 
+   ==> ((\i. ((-- &1) pow i * &i) * x pow i) real_sums
 	--(x / (&1 + x) pow 2)) (:num)`,
    REPEAT STRIP_TAC THEN
      MP_TAC (SPEC `--x` real_sums_i_xi) THEN ANTS_TAC THENL [
@@ -1215,7 +1215,7 @@ let log_series = prove
      REWRITE_TAC[REAL_ARITH `a * x / b = a / b * x`]);;
 
 let log_infsum = prove
-  (`!x. abs x < &1 ==> 
+  (`!x. abs x < &1 ==>
      real_infsum (from 0) (\k. ((-- &1) pow k / &(k + 1)) * x pow (k + 1)) = log (&1 + x)`,
    GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP REAL_INFSUM_UNIQUE o MATCH_MP log_series) THEN
      REWRITE_TAC[FROM_0]);;
@@ -1224,7 +1224,7 @@ let log_infsum = prove
 
 let atn_derivative_series = prove
   (`!x. abs x < &1
-   ==> ((\k. (if EVEN k then (-- &1) pow (k DIV 2) else &0) * x pow k) 
+   ==> ((\k. (if EVEN k then (-- &1) pow (k DIV 2) else &0) * x pow k)
 	  real_sums inv (&1 + x pow 2)) (:num)`,
    REPEAT STRIP_TAC THEN
      MP_TAC (SPECL[`0`; `(-- &1) * x pow 2`] REAL_SUMS_GP) THEN
@@ -1249,7 +1249,7 @@ let atn_series = prove
      REWRITE_TAC[ARITH_RULE `(2 * i) DIV 2 = i`; real_div; REAL_MUL_AC]);;
 
 let atn_infsum = prove
-  (`!x. abs x < &1 ==> 
+  (`!x. abs x < &1 ==>
      real_infsum (from 0) (\k. ((-- &1) pow k / &(2 * k + 1)) * x pow (2 * k + 1)) = atn x`,
    GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP REAL_INFSUM_UNIQUE o MATCH_MP atn_series) THEN
      REWRITE_TAC[FROM_0]);;

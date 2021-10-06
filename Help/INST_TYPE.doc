@@ -9,8 +9,8 @@ Instantiates types in a theorem.
 rule, type, instantiate.
 
 \DESCRIBE
-{INST_TYPE [ty1,tv1;...;tyn,tvn]} will systematically replaces all instances of 
-each type variable {tvi} by the corresponding type {tyi} in both assumptions 
+{INST_TYPE [ty1,tv1;...;tyn,tvn]} will systematically replaces all instances of
+each type variable {tvi} by the corresponding type {tyi} in both assumptions
 and conclusions of a theorem:
 {
                A |- t

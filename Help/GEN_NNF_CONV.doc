@@ -16,7 +16,7 @@ double negations eliminated.
 This function is very general. The first, boolean, argument determines how
 logical equivalences `{p <=> q}' are split. If the flag is {true}, toplevel
 equivalences are split ``conjunctively'' into `{(p \/ ~q) /\ (~p \/ q)}', while
-if it is false they are split ``disjunctively'' into 
+if it is false they are split ``disjunctively'' into
 `{(p /\ q) \/ (~p /\ ~q)}'. At subformulas, the effect is modified
 appropriately in order to make the resulting formula simpler in conjunctive
 normal form (if the flag is true) or disjunctive normal form (if the flag is

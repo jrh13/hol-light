@@ -6,8 +6,8 @@
 Returns a pair giving a ring proof procedure and an ideal membership routine.
 
 \DESCRIBE
-This function combines the functionality of {RING} and {ideal_cofactors}. Each 
-of these requires the same rather lengthy input. When you want to apply both to 
+This function combines the functionality of {RING} and {ideal_cofactors}. Each
+of these requires the same rather lengthy input. When you want to apply both to
 the same set of parameters, you can do so using {RING_AND_IDEAL_CONV}. That is:
 {
   RING_AND_IDEAL_CONV parms

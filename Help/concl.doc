@@ -13,7 +13,7 @@ Never fails.
 
 \EXAMPLE
 {
-  # ADD_SYM;;           
+  # ADD_SYM;;
   val it : thm = |- !m n. m + n = n + m
   # concl ADD_SYM;;
   val it : term = `!m n. m + n = n + m`

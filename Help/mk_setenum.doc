@@ -10,8 +10,8 @@ When applied to a list of terms {[`t1`; ...; `tn`]} and a type {ty}, where each
 term in the list has type {ty}, the function {mk_setenum} constructs an
 explicit set enumeration term {`{{t1, ..., tn}}`}. Note that duplicated
 elements are maintained in the resulting term, though this is logically the
-same as the set without them. The type is needed so that the empty set can be 
-constructed; if you know that the list is nonempty, you can use {mk_fset} 
+same as the set without them. The type is needed so that the empty set can be
+constructed; if you know that the list is nonempty, you can use {mk_fset}
 instead.
 
 \FAILURE

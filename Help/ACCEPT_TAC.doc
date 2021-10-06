@@ -17,7 +17,7 @@ conclusion is alpha-convertible to the conclusion of {th}.
 conclusion of the supplied theorem {th}.
 
 \EXAMPLE
-The theorem {BOOL_CASES_AX = |- !t. (t <=> T) \/ (t <=> F)} can be used to 
+The theorem {BOOL_CASES_AX = |- !t. (t <=> T) \/ (t <=> F)} can be used to
 solve the goal:
 {
   # g `!x. (x <=> T) \/ (x <=> F)`;;
@@ -30,7 +30,7 @@ solve the goal:
 
 \USES
 Used for completing proofs by supplying an existing theorem, such as an axiom,
-or a lemma already proved. Often this can simply be done by rewriting, but 
+or a lemma already proved. Often this can simply be done by rewriting, but
 there are times when greater delicacy is wanted.
 
 \SEEALSO

@@ -6,9 +6,9 @@
 Existentially quantifies both sides of equational theorem.
 
 \DESCRIBE
-Given a theorem {th} whose conclusion is a Boolean equation (iff), the rule 
+Given a theorem {th} whose conclusion is a Boolean equation (iff), the rule
 {MK_EXISTS `v` th} existentially quantifies both sides of {th} over the
-variable {v}, provided it is not free in the hypotheses 
+variable {v}, provided it is not free in the hypotheses
 {
              A |- p <=> q
       ---------------------------- MK_EXISTS `v` [where v not free in A]
@@ -16,7 +16,7 @@ variable {v}, provided it is not free in the hypotheses
 }
 
 \FAILURE
-Fails if the term is not a variable or is free in the hypotheses of the 
+Fails if the term is not a variable or is free in the hypotheses of the
 theorem, or if the theorem does not have a Boolean equation for its conclusion.
 
 \EXAMPLE

@@ -27,7 +27,7 @@ let thd3 (_,_,x) = x;;
 (* ------------------------------------------------------------------------- *)
 
 let (terms_match: term list -> term -> term list -> instantiation ) =
-  fun consts key tlist -> 
+  fun consts key tlist ->
     try (tryfind (term_match consts key) tlist)
     with Failure _ -> failwith "terms_match: No terms match!";;
 
@@ -39,7 +39,7 @@ let (terms_match: term list -> term -> term list -> instantiation ) =
 (* ------------------------------------------------------------------------- *)
 
 let try_type tp tm =
-  try inst (type_match (type_of tm) tp []) tm 
+  try inst (type_match (type_of tm) tp []) tm
   with Failure _ -> tm;;
 
 
@@ -71,7 +71,7 @@ let gl_frees : goal -> term list =
 (* ------------------------------------------------------------------------- *)
 (* (+) Used in the justification of erule and drule to add the eliminated    *)
 (* assumption to the proven subgoals.                                        *)
-(* (+) Could have been based on ADD_ASSUM but it's more convenient this way. *) 
+(* (+) Could have been based on ADD_ASSUM but it's more convenient this way. *)
 (* ------------------------------------------------------------------------- *)
 
 let ADD_HYP hyp_thm thm = CONJUNCT2 (CONJ hyp_thm thm);;
@@ -84,12 +84,12 @@ let ADD_HYP hyp_thm thm = CONJUNCT2 (CONJ hyp_thm thm);;
 
 let rec (DISCHL: term list -> thm -> thm) =
   fun tms thm ->
-    if (tms = []) then thm 
+    if (tms = []) then thm
 	else DISCH (hd tms) (DISCHL (tl tms) thm);;
 
 
 (* ------------------------------------------------------------------------- *)
-(* top_metas : goalstack -> term list                                        *) 
+(* top_metas : goalstack -> term list                                        *)
 (* Returns the list of metavariables in the current goalstate.               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -123,7 +123,7 @@ let show_types,hide_types =
 
 
 (* ------------------------------------------------------------------------- *)
-(* print_goalstack :                                                         *) 
+(* print_goalstack :                                                         *)
 (* Upgrade to print_goalstack that also prints a list of metavariables with  *)
 (* their types.                                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -139,7 +139,7 @@ let (print_goalstack_meta:goalstack->unit) =
     print_string s; print_newline();
     if (length mvs > 0) then (
       print_string "Metas:" ; let _ = map print_mv mvs in () ; print_newline()
-    ) ; 
+    ) ;
     if gl = [] then () else
     do_list (print_goal o C el gl) (rev(0--(k-1))) in
   fun l ->

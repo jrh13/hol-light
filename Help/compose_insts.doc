@@ -8,7 +8,7 @@ Compose two instantiations.
 \DESCRIBE
 Given two instantiations {i1} and {i2} (with type {instantiation}, as returned
 by {term_match} for example), the call {compose_insts i1 i2} will give a new
-instantiation that results from composing them, with {i1} applied first and 
+instantiation that results from composing them, with {i1} applied first and
 then {i2}. For example, {instantiate (compose_insts i1 i2) t} should be the
 same as {instantiate i2 (instantiate i1 t)}.
 
@@ -16,7 +16,7 @@ same as {instantiate i2 (instantiate i1 t)}.
 Never fails.
 
 \COMMENTS
-Mostly of specialized interest; used in sequencing tactics like {THEN} to 
+Mostly of specialized interest; used in sequencing tactics like {THEN} to
 compose metavariable instantiations.
 
 \SEEALSO

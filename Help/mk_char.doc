@@ -6,7 +6,7 @@
 Constructs object-level character from OCaml character.
 
 \DESCRIBE
-{mk_char 'c'} produces the HOL term of type {char} corresponding to the OCaml 
+{mk_char 'c'} produces the HOL term of type {char} corresponding to the OCaml
 character {c}.
 
 \FAILURE
@@ -19,8 +19,8 @@ Never fails
 }
 
 \COMMENTS
-There is no particularly convenient parser/printer support for the HOL {char} 
-type, but when combined into lists they are considered as strings and provided 
+There is no particularly convenient parser/printer support for the HOL {char}
+type, but when combined into lists they are considered as strings and provided
 with more intuitive parser/printer support.
 
 \SEEALSO

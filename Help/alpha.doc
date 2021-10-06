@@ -11,7 +11,7 @@ variable changed to {v'}, and other variables renamed if necessary.
 
 \FAILURE
 Fails if the first term is not a variable, or if the second is not an
-abstraction, if the corresponding types are not the same, or if the desired new 
+abstraction, if the corresponding types are not the same, or if the desired new
 variable is already free in the abstraction.
 
 \EXAMPLE

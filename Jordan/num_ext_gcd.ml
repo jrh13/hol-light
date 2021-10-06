@@ -1,4 +1,4 @@
-(* 
+(*
         Author: Thomas C. Hales, 2003
 
         GCD_CONV takes two HOL-light terms (NUMERALs) a and b and
@@ -12,7 +12,7 @@
 
 prioritize_num();;
 
-let DIVIDE = new_definition(`DIVIDE a b = ?m. (b = m*a )`);; 
+let DIVIDE = new_definition(`DIVIDE a b = ?m. (b = m*a )`);;
 
 parse_as_infix("||",(16,"right"));;
 
@@ -23,7 +23,7 @@ override_interface("||",`DIVIDE:num->num->bool`);;
 let DIV_TAC t =   EVERY[ REP_GEN_TAC;
    REWRITE_TAC[DIVIDE];
    DISCH_ALL_TAC;
-   REPEAT (FIRST_X_ASSUM CHOOSE_TAC); 
+   REPEAT (FIRST_X_ASSUM CHOOSE_TAC);
    TRY (EXISTS_TAC t)];;
 
 
@@ -34,7 +34,7 @@ let DIVIDE_DIVIDE = prove_by_refinement(
    ASM_REWRITE_TAC[MULT_ASSOC]
    ]);;
 
-let DIVIDE_EQ = prove_by_refinement( 
+let DIVIDE_EQ = prove_by_refinement(
    `! a b. (((a || b) /\ (b || a)) ==> (a = b))`,
   [
   DIV_TAC `1`;
@@ -78,7 +78,7 @@ let DIVIDE_PROD2 = prove_by_refinement(
    ASM_REWRITE_TAC[MULT_AC]
    ]);;
 
-let GCD = new_definition(`GCD a b = @g. 
+let GCD = new_definition(`GCD a b = @g.
         ((g || a) /\ (g || b) /\
         (!h. (((h || a) /\ (h || b)) ==> (h || g))))`);;
 
@@ -107,7 +107,7 @@ let gcd_certificate = prove(`!a b g. ((? r s r' s' a' b'.
         ) and
 
         gdivy_branch = (
-        (UNDISCH_TAC 
+        (UNDISCH_TAC
           (`(y||a) /\ (y ||b) /\ (!h. (((h||a)/\(h||b))==> (h||y)))`))
         THEN (TAUT_TAC (` (A ==> B) ==> ((C /\ D/\ A)==> B)`))
         THEN (DISCH_TAC)
@@ -132,11 +132,11 @@ let gcd_certificate = prove(`!a b g. ((? r s r' s' a' b'.
                 ) in
         tac1 THENL [ygbranch THENL [ydivg_branch;gdivy_branch];yghyp_branch]);;
 
-(* Now compute gcd with CAML num calculations, 
+(* Now compute gcd with CAML num calculations,
    then check the answer in HOL-light *)
 let gcd_num x1 x2 =
-        let rec gcd_data (a1,b1,x1,a2,b2,x2) = 
-        if (x1 < (Int 0)) then 
+        let rec gcd_data (a1,b1,x1,a2,b2,x2) =
+        if (x1 < (Int 0)) then
                 gcd_data(minus_num a1,minus_num b1,minus_num x1,a2,b2,x2)
         else if (x2 < (Int 0)) then gcd_data(a1,b1,x1,minus_num a2,minus_num
         b2,minus_num x2)
@@ -149,8 +149,8 @@ let gcd_num x1 x2 =
         gcd_data ((Int 1),(Int 0),x1,(Int 0),(Int 1),x2);;
 
 let gcd_num x1 x2 =
-        let rec gcd_data (a1,b1,x1,a2,b2,x2) = 
-        if (x1 < (Int 0)) then 
+        let rec gcd_data (a1,b1,x1,a2,b2,x2) =
+        if (x1 < (Int 0)) then
                 gcd_data(minus_num a1,minus_num b1,minus_num x1,a2,b2,x2)
         else if (x2 < (Int 0)) then gcd_data(a1,b1,x1,minus_num a2,minus_num
         b2,minus_num x2)
@@ -163,7 +163,7 @@ let gcd_num x1 x2 =
         gcd_data ((Int 1),(Int 0),x1,(Int 0),(Int 1),x2);;
 
         (* g = gcd, (a',b') = (a,b)/g, g +r1'*a+s1'*b = r1*a+s1*b *)
-let gcd_numdata a b = 
+let gcd_numdata a b =
         let a = abs_num a in
         let b = abs_num b in
         let Z = Int 0 in
@@ -177,7 +177,7 @@ let gcd_numdata a b =
         let (s1,s1') = if (s >/ Z) then (s,Z) else (Z,minus_num s) in
         (g,a,b,a',b',r1',s1',r1,s1);;
 
-(* Here is the conversion.  
+(* Here is the conversion.
         Example:
                 GCD_CONV (`66`) (`144`)
 
@@ -214,14 +214,14 @@ pop_priority();;
 
 (* test code *)
 
-exception Test_suite_num_ext_gcd of string;; 
+exception Test_suite_num_ext_gcd of string;;
 
 (* For the tests we use integers a and b.  These can overflow if
    a and b are too large, so that we should confine ourselves to
    tests that are not too large.
 *)
 
-let test_num_ext_gcd (a, b) = 
+let test_num_ext_gcd (a, b) =
   let a1 = string_of_int (abs a) in
   let b1 = string_of_int (abs b) in
   let c = gcd a b in
@@ -232,9 +232,9 @@ let test_num_ext_gcd (a, b) =
   else if (not (concl th = (parse_term ("GCD "^a1^" "^b1^"="^c1))))
     then raise (failwith ("num_ext_gcd test suite failure "^a1^" "^b1))
   else ();;
- 
 
-let test_suite_num_ext_gcd  = 
+
+let test_suite_num_ext_gcd  =
   let _ =
     map test_num_ext_gcd
       [(0,0);(0,1);(1,0);(-0,-0);
@@ -246,4 +246,4 @@ let test_suite_num_ext_gcd  =
 let divide = DIVIDE and
     gcd = GCD and
     gcd_conv = GCD_CONV;;
-  
+

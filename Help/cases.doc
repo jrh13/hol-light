@@ -6,9 +6,9 @@
 Produce cases theorem for an inductive type.
 
 \DESCRIBE
-A call {cases "ty"} where {"ty"} is the name of a recursive type defined with 
-{define_type}, returns a ``cases'' theorem asserting that each element of the 
-type is an instance of one of the type constructors. The effect is exactly 
+A call {cases "ty"} where {"ty"} is the name of a recursive type defined with
+{define_type}, returns a ``cases'' theorem asserting that each element of the
+type is an instance of one of the type constructors. The effect is exactly
 the same is if {prove_cases_thm} were applied to the induction theorem produced
 by {define_type}, and the documentation for {prove_cases_thm} gives a lengthier
 discussion.

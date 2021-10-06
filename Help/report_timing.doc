@@ -6,10 +6,10 @@
 Flag to determine whether {time} function outputs CPU time measure.
 
 \DESCRIBE
-When {report_timing} is true, a call {time f x} will evaluate {f x} as usual 
-but also as a side-effect print out the CPU time taken. If {report_timing} is 
-false, nothing will be printed. Times are already printed in this way 
-automatically as informative output in some rules like {MESON}, so this can be 
+When {report_timing} is true, a call {time f x} will evaluate {f x} as usual
+but also as a side-effect print out the CPU time taken. If {report_timing} is
+false, nothing will be printed. Times are already printed in this way
+automatically as informative output in some rules like {MESON}, so this can be
 used to silence them.
 
 \FAILURE

@@ -14,7 +14,7 @@ Never fails.
 
 \EXAMPLE
 {
-  # partition (fun x -> x mod 2 = 0) (1--10);;          
+  # partition (fun x -> x mod 2 = 0) (1--10);;
   val it : int list * int list = ([2; 4; 6; 8; 10], [1; 3; 5; 7; 9])
 }
 

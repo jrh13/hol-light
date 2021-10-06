@@ -18,10 +18,10 @@ The resulting tactic fails if both {t1} and {t2} fail when applied to the
 relevant goal.
 
 \EXAMPLE
-The tactic {STRIP_TAC} breaks down the logical structure of a goal in various 
-ways, e.g. stripping off universal quantifiers and putting the antecedent of 
-implicational conclusions into the assumptions. However it does not break down 
-equivalences into two implications, as {EQ_TAC} does. So you might start 
+The tactic {STRIP_TAC} breaks down the logical structure of a goal in various
+ways, e.g. stripping off universal quantifiers and putting the antecedent of
+implicational conclusions into the assumptions. However it does not break down
+equivalences into two implications, as {EQ_TAC} does. So you might start
 breaking down a goal corresponding to the inbuilt theorem {MOD_EQ_0}
 {
   # g `!m n. ~(n = 0) ==> ((m MOD n = 0) <=> (?q. m = q * n))`;;
@@ -31,15 +31,15 @@ breaking down a goal corresponding to the inbuilt theorem {MOD_EQ_0}
 {
   # e(REPEAT(STRIP_TAC ORELSE EQ_TAC));;
   val it : goalstack = 2 subgoals (2 total)
-  
+
    0 [`~(n = 0)`]
    1 [`m = q * n`]
-  
+
   `m MOD n = 0`
-  
+
    0 [`~(n = 0)`]
    1 [`m MOD n = 0`]
-  
+
   `?q. m = q * n`
 }
 

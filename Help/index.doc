@@ -6,8 +6,8 @@
 Returns position of given element in list.
 
 \DESCRIBE
-The call {index x l} where l is a list returns the position number of the first 
-instance of x in the list, failing if there is none. The indices start at zero, 
+The call {index x l} where l is a list returns the position number of the first
+instance of x in the list, failing if there is none. The indices start at zero,
 corresponding to {el}.
 
 \EXAMPLE

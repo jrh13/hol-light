@@ -13,7 +13,7 @@ information on how to use miz3.
 FontHilbertAxiom.ml is a version of HilbertAxiom.ml written with
 mathematical characters
 ⇒, ⇔, ¬, ∨, ∧, ∀, ∃, ⊂, ∈, ∪, ∩ and ∅
-which HOL4, Isabelle and readable.ml allow.  It requires 
+which HOL4, Isabelle and readable.ml allow.  It requires
 
 hol-light-fonts.el is needed to run the miz3 code FontHilbertAxiom.ml.
 hol-light-fonts.elc is the byte-compiled version of the Emacs code.

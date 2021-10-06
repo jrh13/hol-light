@@ -8,8 +8,8 @@ Attempt to prove goal using basic set-theoretic reasoning.
 \DESCRIBE
 When applied to a goal and a list of lemmas to use, the tactic {SET_TAC} puts
 the lemmas into the goal as antecedents, expands various set-theoretic
-definitions explicitly and then attempts to solve the result using {MESON}. It 
-does not by default use the assumption list of the goal, but this can be done 
+definitions explicitly and then attempts to solve the result using {MESON}. It
+does not by default use the assumption list of the goal, but this can be done
 using {ASM SET_TAC} in place of plain {SET_TAC}.
 
 \FAILURE

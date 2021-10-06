@@ -63,7 +63,7 @@ let TRIANGLE_CONVERGES = prove
 
 needs "Library/analysis.ml";;
 
-override_interface ("-->",`(tends_num_real)`);;                      
+override_interface ("-->",`(tends_num_real)`);;
 
 let TRIANGLE_CONVERGES' = prove
  (`(\n. sum(1..n) (\k. &1 / &(triangle k))) --> &2`,

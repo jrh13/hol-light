@@ -25,7 +25,7 @@ Fails if the term is not a numeral.
 \COMMENTS
 The similar function {dest_small_numeral} maps to a machine integer, which
 means it may overflow. So the use of {dest_numeral} is better unless you are
-very sure of the range. 
+very sure of the range.
 {
   # dest_small_numeral `18446744073709551616`;;
   Exception: Failure "int_of_big_int".

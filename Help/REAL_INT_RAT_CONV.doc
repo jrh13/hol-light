@@ -7,7 +7,7 @@ Convert basic rational constant of real type to canonical form.
 
 \DESCRIBE
 When applied to a term that is a rational constant of type {:real},
-{REAL_INT_RAT_CONV} converts it to an explicit ratio {&p / &q} or {-- &p / &q}; 
+{REAL_INT_RAT_CONV} converts it to an explicit ratio {&p / &q} or {-- &p / &q};
 {q} is always there, even if it is {1}.
 
 \FAILURE
@@ -26,7 +26,7 @@ Never fails; simply has no effect if it is not applied to a suitable constant.
 }
 
 \USES
-Mainly for internal use as a preprocessing step in rational-number 
+Mainly for internal use as a preprocessing step in rational-number
 calculations.
 
 \SEEALSO

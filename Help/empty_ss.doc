@@ -6,9 +6,9 @@
 Simpset consisting of only the default rewrites and conversions.
 
 \DESCRIBE
-In their maximal generality, simplification operations in HOL Light (as invoked 
-by {SIMP_TAC}) are controlled by a `simpset'. The simpset {empty_ss} has just 
-the basic rewrites and conversions (see {basic_rewrites} and {basic_convs}), 
+In their maximal generality, simplification operations in HOL Light (as invoked
+by {SIMP_TAC}) are controlled by a `simpset'. The simpset {empty_ss} has just
+the basic rewrites and conversions (see {basic_rewrites} and {basic_convs}),
 and no other provers.
 
 \FAILURE

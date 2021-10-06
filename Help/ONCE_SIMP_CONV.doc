@@ -6,16 +6,16 @@
 Simplify a term once by conditional contextual rewriting.
 
 \DESCRIBE
-A call {ONCE_SIMP_CONV thl tm} will return {|- tm = tm'} where {tm'} results 
+A call {ONCE_SIMP_CONV thl tm} will return {|- tm = tm'} where {tm'} results
 from applying the theorems in {thl} as (conditional) rewrite rules, as well as
-built-in simplifications (see {basic_rewrites} and {basic_convs}). For more 
-details on this kind of conditional rewriting, see {SIMP_TAC}. The {ONCE} 
-prefix indicates that the first applicable terms in a toplevel term will be 
-simplified once only, though conditional subgoals generated will be simplified 
+built-in simplifications (see {basic_rewrites} and {basic_convs}). For more
+details on this kind of conditional rewriting, see {SIMP_TAC}. The {ONCE}
+prefix indicates that the first applicable terms in a toplevel term will be
+simplified once only, though conditional subgoals generated will be simplified
 repeatedly.
 
 \FAILURE
-Never fails, but may return a reflexive theorem {|- tm = tm} if no 
+Never fails, but may return a reflexive theorem {|- tm = tm} if no
 simplifications can be made.
 
 \SEEALSO

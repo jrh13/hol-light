@@ -10,7 +10,7 @@ The reference variable {unspaced_binops} is one of several settable parameters
 controlling printing of terms by {pp_print_term}, and hence the automatic
 printing of terms and theorems at the toplevel. It holds a list of the names of
 infix binary operators that are printed without surrounding spaces. By default,
-it contains just the pairing operation `{,}', the numeric range `{..}' and the 
+it contains just the pairing operation `{,}', the numeric range `{..}' and the
 cartesian power indexing `{$}'.
 
 \FAILURE

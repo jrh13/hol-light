@@ -20,7 +20,7 @@ Boolean.
 
 \EXAMPLE
 {
-  # CONDS_CELIM_CONV `y <= z ==> !x. (if x <= y then y else x) <= z`;;     
+  # CONDS_CELIM_CONV `y <= z ==> !x. (if x <= y then y else x) <= z`;;
   val it : thm =
     |- y <= z ==> (!x. (if x <= y then y else x) <= z) <=>
        y <= z ==> (!x. (~(x <= y) \/ y <= z) /\ (x <= y \/ x <= z))
@@ -35,7 +35,7 @@ The function {CONDS_ELIM_CONV} is functionally similar, but will do the final
 propositional splitting in a ``disjunctive'' rather than ``conjunctive'' way.
 The disjunctive way is usually better when the term will subsequently be passed
 to a refutation procedure, whereas the conjunctive form is better for
-non-refutation procedures. In each case, the policy is changed in an 
+non-refutation procedures. In each case, the policy is changed in an
 appropriate way after passing through quantifiers.
 
 \SEEALSO

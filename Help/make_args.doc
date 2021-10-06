@@ -3,13 +3,13 @@
 \TYPE {make_args : string -> term list -> hol_type list -> term list}
 
 \SYNOPSIS
-Make a list of terms with stylized variable names 
+Make a list of terms with stylized variable names
 
 \DESCRIBE
-The call {make_args "s" avoids [ty0; ...; tyn]} constructs a list of variables 
+The call {make_args "s" avoids [ty0; ...; tyn]} constructs a list of variables
 of types {ty0}, ..., {tyn}, normally called {s0}, ..., {sn} but primed if
 necessary to avoid clashing with any in {avoids}
- 
+
 \FAILURE
 Never fails.
 

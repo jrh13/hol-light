@@ -6,8 +6,8 @@
 Converts a HOL type to a string representation.
 
 \DESCRIBE
-The call {string_of_type ty} produces a textual representation of the type {ty} 
-as a string, similar to what is printed automatically at the toplevel, though 
+The call {string_of_type ty} produces a textual representation of the type {ty}
+as a string, similar to what is printed automatically at the toplevel, though
 without the surrounding quotes and colon.
 
 \FAILURE

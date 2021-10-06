@@ -6,8 +6,8 @@
 Returns the list of reserved words.
 
 \DESCRIBE
-Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}', 
-meaning that they are special to the parser and cannot be used as ordinary 
+Certain identifiers in HOL are reserved, e.g. `{if}', `{let}' and `{|}',
+meaning that they are special to the parser and cannot be used as ordinary
 identifiers. The call {reserved_words()} returns a list of such identifiers.
 
 \FAILURE

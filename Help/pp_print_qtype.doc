@@ -6,14 +6,14 @@
 Prints a type with initial colon and surrounding quotes to formatter.
 
 \DESCRIBE
-The call {pp_print_type fmt ty} prints the usual textual representation of the 
+The call {pp_print_type fmt ty} prints the usual textual representation of the
 type {ty} to the formatter {fmt}, in the form {`:ty`}.
 
 \FAILURE
 Should never fail unless the formatter does.
 
 \COMMENTS
-The usual case where the formatter is the standard output is {print_qtype}. 
+The usual case where the formatter is the standard output is {print_qtype}.
 
 \SEEALSO
 pp_print_type, print_qtype, print_type.

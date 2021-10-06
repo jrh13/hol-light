@@ -6,7 +6,7 @@
 Rotate a goalstate.
 
 \DESCRIBE
-The function {rotate n gl} rotates a list {gl} of subgoals by {n} places. The 
+The function {rotate n gl} rotates a list {gl} of subgoals by {n} places. The
 function {r} is the special case where this modification is applied to the
 imperative variable of unproven subgoals.
 

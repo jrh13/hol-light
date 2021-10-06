@@ -6,8 +6,8 @@
 Tests if one type occurs in another.
 
 \DESCRIBE
-The call {occurs_in ty1 ty2} returns {true} if {ty1} occurs as a subtype of 
-{ty2}, including the case where {ty1} and {ty2} are the same. If returns 
+The call {occurs_in ty1 ty2} returns {true} if {ty1} occurs as a subtype of
+{ty2}, including the case where {ty1} and {ty2} are the same. If returns
 {false} otherwise. The type {ty1} does not have to be a type variable.
 
 \FAILURE

@@ -14,7 +14,7 @@ nothing interesting with metavariables.
 Not applicable.
 
 \COMMENTS
-This is not intended for general use, but readers writing custom tactics from 
+This is not intended for general use, but readers writing custom tactics from
 scratch may find it convenient.
 
 \SEEALSO

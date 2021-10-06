@@ -39,7 +39,7 @@ let find_max s =
     find (hd s) 0 1 (tl s);;
 
 (* split_domain *)
-let split_domain pp j domain = 
+let split_domain pp j domain =
   let n = length domain.w in
   let t = nth domain.y (j - 1) in
   let vv = map (fun i -> if i = j then t else nth domain.hi (i - 1)) (1--n) in
@@ -64,7 +64,7 @@ type function_info = {
   index : int;
 };;
 
-type result = 
+type result =
   | Cell_inconclusive
   | Cell_false
   | Cell_result of result_tree
@@ -133,7 +133,7 @@ let rec check_cell opt dom =
 		      let lower = eval_m_taylor_lower_bound pp ti in
 			if ge0_float lower then
 			  check flag rest
-			else 
+			else
 			  (if opt.mono_depth > 0 then
 			     try
 			       try_mono {opt with max_depth = opt.mono_depth} dom f ti
@@ -186,10 +186,10 @@ and construct_certificate0 opt =
     else
       let result = check_cell opt dom fs in
 	match result with
-	  | Cell_false -> 
+	  | Cell_false ->
 	      error "False result" dom fs
 	  | Cell_result r -> r
-	  | Cell_pass (raw_flag, f) -> 
+	  | Cell_pass (raw_flag, f) ->
 	      let _ = update_verified_vol dom in
 		Result_pass (f.index, raw_flag)
 	  | Cell_inconclusive ->
@@ -207,7 +207,7 @@ and construct_certificate0 opt =
 let construct_certificate opt dom fs_informal =
   let mk_f (f0, ft) i = {
     eval0 = f0;
-    taylor = ft; 
+    taylor = ft;
     index = i
   } in
   let fs = map2 mk_f fs_informal (0--(length fs_informal - 1)) in
@@ -249,7 +249,7 @@ let z_inf = [Informal_float.mk_float (Int 10) 0; Informal_float.mk_float (Int 10
 let dom_th = mk_m_center_domain 3 5 x_list z_list;;
 let dom_inf = Informal_taylor.mk_m_center_domain 5 x_inf z_inf;;
 
-let schwefel_poly = `\x:real^3. -- #0.0000001 - ((x$1 - x$2 pow 2) pow 2 + (x$2 - &1) pow 2 + 
+let schwefel_poly = `\x:real^3. -- #0.0000001 - ((x$1 - x$2 pow 2) pow 2 + (x$2 - &1) pow 2 +
   (x$1 - x$3 pow 2) pow 2 + (x$3 - &1) pow 2)`;;
 
 let f1, f2 = mk_verification_functions_poly 5 schwefel_poly;;

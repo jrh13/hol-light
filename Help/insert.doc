@@ -6,7 +6,7 @@
 Adds element to the head of a list if not already present.
 
 \DESCRIBE
-The call {insert x l} returns just {l} if {x} is already in the list, and 
+The call {insert x l} returns just {l} if {x} is already in the list, and
 otherwise returns {x::l}.
 
 \EXAMPLE
@@ -18,7 +18,7 @@ otherwise returns {x::l}.
 }
 
 \USES
-An analog to the basic list constructor {::} but treating the list more like a 
+An analog to the basic list constructor {::} but treating the list more like a
 set.
 
 \SEEALSO

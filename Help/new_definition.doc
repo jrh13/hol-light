@@ -11,14 +11,14 @@ It takes a term giving the desired definition.  The value returned by
 {new_definition} is a theorem stating the definition requested by the user.
 
 Let {v_1},...,{v_n} be tuples of distinct variables, containing the variables
-{x_1,...,x_m}.  Evaluating {new_definition `c v_1 ... v_n = t`}, where {c} is a 
+{x_1,...,x_m}.  Evaluating {new_definition `c v_1 ... v_n = t`}, where {c} is a
 variable whose name is not already used as a constant, declares {c} to be a new
-constant and returns the theorem: 
+constant and returns the theorem:
 {
    |- !x_1 ... x_m. c v_1 ... v_n = t
 }
 Optionally, the definitional term argument may have any of its variables
-universally quantified. 
+universally quantified.
 
 \FAILURE
 {new_definition} fails if {c} is already a constant or if the definition does
@@ -36,9 +36,9 @@ A NAND relation on signals indexed by `time' can be defined as follows.
 
 \COMMENTS
 Note that the conclusion of the theorem returned is essentially the same as the
-term input by the user, except that {c} was a variable in the original term but 
-is a constant in the returned theorem. The function {define} is significantly 
-more flexible in the kinds of definition it allows, but for some purposes this 
+term input by the user, except that {c} was a variable in the original term but
+is a constant in the returned theorem. The function {define} is significantly
+more flexible in the kinds of definition it allows, but for some purposes this
 more basic principle is fine.
 
 \SEEALSO

@@ -6,8 +6,8 @@
 Converts a term into a preterm.
 
 \DESCRIBE
-HOL Light uses ``pretypes'' and ``preterms'' as intermediate structures for 
-parsing and typechecking, which are later converted to types and terms. A call 
+HOL Light uses ``pretypes'' and ``preterms'' as intermediate structures for
+parsing and typechecking, which are later converted to types and terms. A call
 {preterm_of_term `tm`} converts in the other direction, from a normal HOL term
 back to a preterm.
 
@@ -15,8 +15,8 @@ back to a preterm.
 Never fails.
 
 \USES
-User manipulation of preterms is not usually necessary, unless you seek to 
-radically change aspects of parsing and typechecking.            
+User manipulation of preterms is not usually necessary, unless you seek to
+radically change aspects of parsing and typechecking.
 
 \SEEALSO
 pretype_of_type, term_of_preterm.

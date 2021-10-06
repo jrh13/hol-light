@@ -67,7 +67,7 @@ let system_defs = ref ([] : (string * (int * (string * thm) list)) list);;
 (*----------------------------------------------------------------------------*)
 
 let new_def th =
-try 
+try
  (let make_into_eqn th =
      let tm = concl th
      in  if (is_eq tm) then th
@@ -246,10 +246,10 @@ let gen_lemmas () = !system_gen_lemmas;;
 
 let rec max_var_depth tm =
   if (is_var tm) then 1
-  else if ((is_numeral tm) 
-	     || (is_const tm) 
+  else if ((is_numeral tm)
+	     || (is_const tm)
 	     || (is_T tm) || (is_F tm)) then 0
-  else try 
+  else try
     let (f,args) = strip_comb tm in
     let fn = (fst o dest_const) f in
     let l = flat [defs_names();all_constructors();all_accessors()] in

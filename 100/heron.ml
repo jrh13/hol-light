@@ -24,7 +24,7 @@ let SQRT_ELIM_TAC =
 (* ------------------------------------------------------------------------- *)
 
 let HERON = prove
- (`!A B C:real^2. 
+ (`!A B C:real^2.
         let a = dist(C,B)
         and b = dist(A,C)
         and c = dist(B,A) in

@@ -6,11 +6,11 @@
 Extend the set of default conversions used by rewriting and simplification.
 
 \DESCRIBE
-The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.) 
-have default sets of (conditional) equations and other conversions that are 
+The HOL Light rewriter ({REWRITE_TAC} etc.) and simplifier ({SIMP_TAC} etc.)
+have default sets of (conditional) equations and other conversions that are
 applied by default, except in the {PURE_} variants. The latter are normally
 term transformations that cannot be expressed as single (conditional or
-unconditional) rewrite rules. A call to 
+unconditional) rewrite rules. A call to
 {
   extend_basic_convs("name",(`pat`,conv))
 }
@@ -21,15 +21,15 @@ refer to it and restricting it to subterms encountered that match {pat}.
 Never fails.
 
 \EXAMPLE
-By default, no arithmetic is done in rewriting, though rewriting with the 
-theorem {ARITH} gives that effect. 
+By default, no arithmetic is done in rewriting, though rewriting with the
+theorem {ARITH} gives that effect.
 {
   # REWRITE_CONV[] `x = 1 + 2 + 3 + 4`;;
   val it : thm = |- x = 1 + 2 + 3 + 4 <=> x = 1 + 2 + 3 + 4
 }
 You can add {NUM_ADD_CONV} to the set of default conversions by
 {
-  # extend_basic_convs("addition on nat",(`m + n:num`,NUM_ADD_CONV));; 
+  # extend_basic_convs("addition on nat",(`m + n:num`,NUM_ADD_CONV));;
   val it : unit = ()
 }
 \noindent and now it happens by default:

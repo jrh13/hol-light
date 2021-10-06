@@ -10,7 +10,7 @@ because you will get an error
 Exception: Failure "new_type: type point has already been declared".
 
 You will see 190 or so definitions and proved theorems, in perhaps 15
-minutes.  
+minutes.
 
 How to check the Hilbert axiomatic geometry proofs HilbertAxiom.ml,
 which are a formalization in the proof assistant HOL Light of
@@ -25,7 +25,7 @@ HOL proof assistants, e.g. HOL4 & Isabelle.  Two outstanding
 advantages of HOL Light are Freek's miz3 and that HOL Light is the
 preferred proof assistant of Tom Hales, who is ambituously trying to
 formalize his proof of the Kepler sphere-packing theorem.  I suspect
-that John Harrison's leadership is involved in both advantages.  
+that John Harrison's leadership is involved in both advantages.
 
 Mizar was the first proof assistant allowing readable formal
 proofs. Miz3 now allows readable formal proofs in HOL Light.  Miz3
@@ -46,20 +46,20 @@ particularly good at equational reasoning, as one sees in this example
 from the Hilbert code (using fancy fonts for readability):
 
 let B4 = new_axiom
-  `∀ l A B C. Line l ∧ ¬Collinear A B C ∧ 
-   A ∉ l ∧ B ∉ l ∧ C ∉ l ∧ 
-   (∃ X. X ∈ l ∧ Between A X C) ⇒ 
+  `∀ l A B C. Line l ∧ ¬Collinear A B C ∧
+   A ∉ l ∧ B ∉ l ∧ C ∉ l ∧
+   (∃ X. X ∈ l ∧ Between A X C) ⇒
    (∃ Y. Y ∈ l ∧ Between A Y B) ∨ (∃ Y. Y ∈ l ∧ Between B Y C)`;;
 
 let B4' = thm `;
-  ∀ l A B C. Line l ∧ ¬Collinear A B C ∧ 
-   A ∉ l ∧ B ∉ l ∧ C ∉ l ∧ 
+  ∀ l A B C. Line l ∧ ¬Collinear A B C ∧
+   A ∉ l ∧ B ∉ l ∧ C ∉ l ∧
    (∃ X. X ∈ l ∧  X ∈ open (A,C)) ⇒
-   (∃ Y. Y ∈ l ∧  Y ∈ open (A,B)) ∨ (∃ Y. Y ∈ l ∧  Y ∈ open (B,C)) 
+   (∃ Y. Y ∈ l ∧  Y ∈ open (A,B)) ∨ (∃ Y. Y ∈ l ∧  Y ∈ open (B,C))
    by IN_Interval, B4;
 `;;
 
-B4' does nothing but substitute into B4 the definition 
+B4' does nothing but substitute into B4 the definition
 IN_Interval     |- ∀ A B X. X ∈ open (A,B) ⇔ Between A X B
 This is equational reasoning, and B4' times out with the default
 timeout value of 1 (5 suffices), and then, a longer proof is needed:
@@ -67,14 +67,14 @@ timeout value of 1 (5 suffices), and then, a longer proof is needed:
 let B4prime = thm `;
   let l be point_set;
   let A B C be point;
-  assume Line l ∧ ¬Collinear A B C ∧ 
-  A ∉ l ∧ B ∉ l ∧ C ∉ l ∧ 
+  assume Line l ∧ ¬Collinear A B C ∧
+  A ∉ l ∧ B ∉ l ∧ C ∉ l ∧
   (∃ X. X ∈ l ∧  X ∈ open (A,C))     [H1];
   thus (∃ Y. Y ∈ l ∧  Y ∈ open (A,B)) ∨ (∃ Y. Y ∈ l ∧  Y ∈ open (B,C))
 
   proof
-    Line l ∧ ¬Collinear A B C ∧ 
-    A ∉ l ∧ B ∉ l ∧ C ∉ l ∧ 
+    Line l ∧ ¬Collinear A B C ∧
+    A ∉ l ∧ B ∉ l ∧ C ∉ l ∧
     (∃ X. X ∈ l ∧  Between A X C)     by H1, IN_Interval;
     (∃ Y. Y ∈ l ∧ Between A Y B) ∨ (∃ Y. Y ∈ l ∧ Between B Y C)     by -, B4;
   qed     by -, IN_Interval;
@@ -88,7 +88,7 @@ HOL Light tactic that might be helpful here is REWRITE_TAC, which is
 used in equational reasoning, an interesting area of HOL.
 
 It pay to write a `skeleton' of your proof before filling in the
-details, and I always start with this: 
+details, and I always start with this:
 
   proof
 
@@ -123,17 +123,17 @@ always a thesis, which changes from line to line.  "Thus thesis" means
 the thesis is proven, and then one writes "end" to end the proof.  In
 the cases construction above, each of the 3 forks have their own
 thesis, A, B and C resp., and each proofs end with qed.  So in the
-final line, there is no thesis!  So we merely write "end".  
+final line, there is no thesis!  So we merely write "end".
 
 In the proof B4prime above, "thus" seems to have two separate
 meanings.  The first thus seems to be stating the theorem, and the
 second thus (contained in the qed) is is ending the proof.  In a sense
-thus has the same meaning.  Let's simplify B4prime as 
+thus has the same meaning.  Let's simplify B4prime as
 let B4prime = thm `;
-  [...] 
+  [...]
   thus α ∨ β
   proof
-  [...] 
+  [...]
   thus thesis by -, IN_Interval;
   end;
 `;;
@@ -141,14 +141,14 @@ The entire "proof [...] IN_Interval;" is as a justification of the
 statement α ∨ β, even though there is no "by".  So we could in a sense
 rewrite B4prime as
 let B4prime = thm `;
-  [...] 
+  [...]
   thus α ∨ β by [...];
   end;
 `;;
 
-As the thesis is α ∨ β on the "thus" line, this is analogous to 
+As the thesis is α ∨ β on the "thus" line, this is analogous to
 thus thesis by -, IN_Interval;
-which ends the proof.  
+which ends the proof.
 
 My code uses a fair amount of set theory, which is explained in John's
 tutorial briefly in sec 14, and in more detail in his reference
@@ -169,11 +169,11 @@ copy and paste with the mouse.  Open a terminal window.  Paste in
 these 4 commands and type RET:
 
 ocaml
-#use "hol.ml";; 
+#use "hol.ml";;
 #load "unix.cma";;
 loadt "miz3/miz3.ml";;
 
-After a short while you will see 
+After a short while you will see
 val it : unit = ()
 #
 Now select the entire file HilbertAxiom.ml and paste it in.  This will
@@ -194,15 +194,15 @@ session.  Sometimes even when only changing theorems it's good to
 start a new session.
 
 To end your ocam/HOL-Light/miz3 session, type
-C-d 
-If you paste in bad input, sometimes you can fix the problem by typing 
+C-d
+If you paste in bad input, sometimes you can fix the problem by typing
 C-c (or the signal BREAK in an Emacs shell C-c C-c).
 
 To learn the thesis in a statement in a miz3 proof, insert
-exec GOAL_TAC; 
-after the statement, and the type 
+exec GOAL_TAC;
+after the statement, and the type
 p();;
-at the end of the proof. 
+at the end of the proof.
 
 There are two problems with pasting into a terminal window, both
 solved by using intead an Emacs shell, created with M-x shell.  After
@@ -229,11 +229,11 @@ problem with HOL Light.  Some tips on the error messages:
 #1 inference error
 means that miz3 asserts that your `by' justification is impossible.  A
 simple way to earn a #1 error is to mix up `qed' and `end' in a cases
-construction.  
+construction.
 
 #2 inference time-out
 means that miz3 was unable to calculate your `by' justification before
-timing out.  There are two possibilities: 
+timing out.  There are two possibilities:
 1) your `by' justification doesn't work, so you should fix it;
 2) you need more time, in which case you can increase the value of
 timeout, to e.g. 50 as is done here, with
@@ -244,7 +244,7 @@ As Freek explains, this is useful in checking ones proofs on a slower
 machine than the one on which the miz3 proofs were debugged on.
 
 #3 skeleton error
-require a good understanding of miz3's version of Mizar's (barely documented) notion of the skeleton, which is the outline of the proof.  Freek's paper contains a reasonably good explanation of miz3 skeletons.  
+require a good understanding of miz3's version of Mizar's (barely documented) notion of the skeleton, which is the outline of the proof.  Freek's paper contains a reasonably good explanation of miz3 skeletons.
 
 The first line with an error message may not be the first line with a
 mistake on it.  Consider this fragment of a miz3 error messages:
@@ -257,12 +257,12 @@ Mizar_error
     assume seg B A === seg C B [H2];
   ::                               #3
   :: 3: skeleton error
-    thus  angle BCA  === angle CAB  
+    thus  angle BCA  === angle CAB
   ::                             #8
   :: 8: syntax or type error hol
-  
+
     proof
-  [...] 
+  [...]
 
 There is nothing wrong with the line with the #3 error message.  The
 problem is in the next line with the #8 error, where `BCA' & `CAB'
@@ -273,13 +273,13 @@ Mizar_error
     let A B C be point;
     assume ~Collinear A B C [H1];
     assume seg B A === seg B C [H2];
-    thus  angle B C A  === angle C A B  
-  
+    thus  angle B C A  === angle C A B
+
     proof
-  [...] 
+  [...]
 
 
-Here's another example where the first line with a reported error is fine, and the real error occurs later: 
+Here's another example where the first line with a reported error is fine, and the real error occurs later:
 
         cases;
         suppose G = A;
@@ -362,10 +362,10 @@ the `by' is missing, but sometimes HOL Light expertise is needed.  You
 can not e.g. define (by `let') the letter `o' as a variable, because
 it already means the composition operator.  Evaluating
 type_of `o`;;
-tells you the hol_type of `o' is 
+tells you the hol_type of `o' is
   `:(?143901->?143903)->(?143902->?143901)->?143902->?143903`
 meaning that `o' is a function taking two selfmaps and returning the
-composition.  You can see that `o' is infix operator by evaluting 
+composition.  You can see that `o' is infix operator by evaluting
 infixes();;
 which gives all the infix operators plus precedence info, including
 ("o", (26, "right"))
@@ -375,13 +375,13 @@ might mean that there's a colon (:) instead of a semicolon (;) at the
 end of the line, or a ;;, or there is no ; at the end of the line,
 there is a blank between two commas in the `by' list. i.e.
 statement [label] by X1, X2, , X3, X4;
-or that there are two occurrences of `by' on the line, as in 
+or that there are two occurrences of `by' on the line, as in
       ray D C = ray D G [rDCrDG] by by DCG, IntervalRay_THM;
 
    Exception: Failure "lex1".
 may means you have a bad character, perhaps obtained by pasting from a
 pdf file, where you can the fancy quote (’) which HOL Light will not
-parse, and you must replace it by the quote (').  
+parse, and you must replace it by the quote (').
 
 
 Use `thm' in miz3 for a theorem/proof.  The style used here is
@@ -399,7 +399,7 @@ let CarefullyChosenName_THM = thm `;
 Begin with `let' variable bindings, `assume' assumptions, then state
 the theorem with `thus', then give the proof beginning with `proof',
 and end the proof with `qed' or `end'.  Notice that the `thus' and
-`proof' statement do not end in a semicolon (;).  
+`proof' statement do not end in a semicolon (;).
 
 The miz3 comment symbol in a `thm' body is a double colon (::).
 Outside a `thm' body, use the Hol Light (* ... *) comment convention.

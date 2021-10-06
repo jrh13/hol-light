@@ -68,18 +68,18 @@ let rec shell_type_match : hol_type -> (hol_type * hol_type) list =
     if (is_type ty) then
       let tys,tyargs = dest_type ty in
       let info = try sys_shell_info tys
-	  with Failure _ -> failwith ("No shell defined for type '" ^ 
+	  with Failure _ -> failwith ("No shell defined for type '" ^
 				    (string_of_type ty) ^ "'") in
       itlist union (map shell_type_match tyargs) []
     else
-       try type_match ty `:num` [] 
-	with Failure _ -> failwith ("Unknown type '" ^ 
+       try type_match ty `:num` []
+	with Failure _ -> failwith ("Unknown type '" ^
 				    (string_of_type ty) ^ "' that doesn't match 'num'!");;
 
 
 (*----------------------------------------------------------------------------*)
 (* HL_rewrite_ground_term : term -> term                                      *)
-(*                                                                            *) 
+(*                                                                            *)
 (* Uses HOL Light's REWRITE_CONV to rewrite a ground term.                    *)
 (* The function and accessor definitions are used as rewrite rules.           *)
 (* This reduces valid expressions to `T`.                                     *)
@@ -87,19 +87,19 @@ let rec shell_type_match : hol_type -> (hol_type * hol_type) list =
 
 let HL_rewrite_ground_term tm =
 (* ((proof_print_newline) o (proof_print_term) o (proof_print_string "Checking:")) tm ;*)
-  if (frees tm = []) then 
+  if (frees tm = []) then
 (*    let rules = (union ((flat o defs) ()) (all_accessor_thms ())) *)
 (* let rules = (union (rewrite_rules ()) (all_accessor_thms ())) *)
     let numred = try (rhs o concl o NUM_REDUCE_CONV) tm with Failure _ -> tm in
     if (is_T numred) then numred else
-    let rew = REWRITE_CONV (union (rewrite_rules ()) (all_accessor_thms ())) 
+    let rew = REWRITE_CONV (union (rewrite_rules ()) (all_accessor_thms ()))
     in (rhs o concl o rew) tm
   else failwith ("rewrite_ground_term: free vars in term: " ^ (string_of_term tm));;
 
 
 
 let HL_rewrite_ground_term' tm =
-  if (frees tm = []) then 
+  if (frees tm = []) then
 (*    let rules = (union ((flat o defs) ()) (all_accessor_thms ())) *)
     let rules = (union ((flat o defs) ()) (all_accessor_thms ())) in
     let arith_rules = [PRE;ADD;MULT;EXP;EVEN;ODD;LE;LT;GE;GT;SUB] in
@@ -143,17 +143,17 @@ let random_example : int -> hol_type -> term =
       let sinfo = sys_shell_info tystr in
       let ocons = shell_constructors sinfo in
       let sh_arg_types = shell_arg_types sinfo in
-      
+
       let arg_type_pairs = zip sh_arg_types typarams in
       let arg_types_matches = try
-	itlist (fun (x,y) l -> type_match x y l) arg_type_pairs tyi 
+	itlist (fun (x,y) l -> type_match x y l) arg_type_pairs tyi
       with Failure _ -> failwith "Shell argument types cannot be matched." in
-      
+
       let mk_cons_type = fun arglist ->
 	List.fold_left (fun ty i -> mk_type ("fun",[i;ty])) ty' (rev arglist) in
       let inst_cons = map (fun x,y,_ -> x,map (inst_type arg_types_matches) y) ocons in
       let mk_cons = fun x,y ->
-	try let n = num_of_string x in (mk_numeral n),y 
+	try let n = num_of_string x in (mk_numeral n),y
 	with Failure _ ->  mk_mconst(x,(mk_cons_type y)),y in
       let cons = map mk_cons inst_cons in
 
@@ -171,7 +171,7 @@ let random_example : int -> hol_type -> term =
       else
 	(fst o hd) tcons
   in fun maxdepth ty -> random_example' maxdepth maxdepth ty;;
-       
+
 (*	print_string "*" ; print_term cconstm ; print_string "*" ; print_type (type_of cconstm); print_newline (); *)
 (* 	map (fun x -> print_term x ; print_string ":" ; print_type (type_of x); print_newline()) args ; *)
 (* 	print_newline (); *)
@@ -188,15 +188,15 @@ let random_grounding maxdepth tm =
 
 let counter_check_once maxdepth tm =
   let tm' = random_grounding maxdepth tm in
-  let tm'' = HL_rewrite_ground_term tm' in 
-  if (is_T(tm'')) then true else let junk = 
+  let tm'' = HL_rewrite_ground_term tm' in
+  if (is_T(tm'')) then true else let junk =
   warn (!proof_printing) ("Found counterexample for " ^ string_of_term(tm) ^ " : " ^ string_of_term(tm')) in
-  inc_counterexamples() ; false;; 
+  inc_counterexamples() ; false;;
 
 let rec counter_check_n maxdepth n tm =
   if (n<=0) then true
   else if (counter_check_once maxdepth tm) then counter_check_n maxdepth (n-1) tm
   else false;;
 
-let counter_check maxdepth tm = 
+let counter_check maxdepth tm =
   counter_check_n maxdepth !counter_check_num tm;;

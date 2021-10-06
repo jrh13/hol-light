@@ -23,7 +23,7 @@ produces the theorem {A1 u (A2 - {{s[v/x]}}) |- t}.
 \FAILURE
 Fails unless the terms and theorems correspond as indicated above; in
 particular, {v} must be a variable and have the same type as the variable
-existentially quantified over, and it must not be free in {A2 - {{s[v/x]}}}, 
+existentially quantified over, and it must not be free in {A2 - {{s[v/x]}}},
 {s} or {t}.
 
 \COMMENTS

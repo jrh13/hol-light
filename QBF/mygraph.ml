@@ -1,9 +1,9 @@
 unset_jrh_lexer;;
 
 module Intvertex = struct
-  type t = int 
+  type t = int
   let compare : t -> t -> int = Pervasives.compare
-  let hash = Hashtbl.hash 
+  let hash = Hashtbl.hash
   let equal = (=)
   let default = 0
 end;;

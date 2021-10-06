@@ -101,8 +101,8 @@ let HERBRAND_HERBRAND_OF_PROP = prove
 
 let INTERPRETATION_HERBRAND_OF_PROP = prove
  (`!L d. interpretation L (herbrand_of_prop L d)`,
-  REWRITE_TAC[FORALL_PAIR_THM; interpretation; herbrand_of_prop; Fun_DEF; 
-              Dom_DEF; IN; ETA_AX] THEN   
+  REWRITE_TAC[FORALL_PAIR_THM; interpretation; herbrand_of_prop; Fun_DEF;
+              Dom_DEF; IN; ETA_AX] THEN
   MESON_TAC[herbase_RULES; IN]);;
 
 (* ------------------------------------------------------------------------- *)

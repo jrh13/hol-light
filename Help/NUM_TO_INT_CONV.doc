@@ -25,7 +25,7 @@ Never fails.
 }
 
 \USES
-Mostly intended as a preprocessing step to allow rules for the integers to 
+Mostly intended as a preprocessing step to allow rules for the integers to
 deduce facts about natural numbers too.
 
 \SEEALSO

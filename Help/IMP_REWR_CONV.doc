@@ -6,15 +6,15 @@
 Basic conditional rewriting conversion.
 
 \DESCRIBE
-Given an equational theorem {A |- !x1...xn. p ==> s = t} that expresses a 
+Given an equational theorem {A |- !x1...xn. p ==> s = t} that expresses a
 conditional rewrite rule, the conversion {IMP_REWR_CONV} gives a conversion
 that applied to any term {s'} will attempt to match the left-hand side of the
-equation {s = t} to {s'}, and return the corresponding theorem 
+equation {s = t} to {s'}, and return the corresponding theorem
 {A |- p' ==> s' = t'}.
 
 \FAILURE
-Fails if the theorem is not of the right form or the two terms cannot be 
-matched, for example because the variables that need to be instantiated are 
+Fails if the theorem is not of the right form or the two terms cannot be
+matched, for example because the variables that need to be instantiated are
 free in the hypotheses {A}.
 
 \EXAMPLE
@@ -30,7 +30,7 @@ We use the following theorem:
 }
 
 \USES
-One of the building-blocks for conditional rewriting as implemented by 
+One of the building-blocks for conditional rewriting as implemented by
 {SIMP_CONV}, {SIMP_RULE}, {SIMP_TAC} etc.
 
 \SEEALSO

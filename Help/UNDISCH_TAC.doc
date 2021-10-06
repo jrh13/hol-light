@@ -19,7 +19,7 @@ tactic, discharge.
 {UNDISCH_TAC} will fail if {`v`} is not an assumption.
 
 \COMMENTS
-{UNDISCH}arging {`v`} will remove all assumptions that are alpha-equivalent to 
+{UNDISCH}arging {`v`} will remove all assumptions that are alpha-equivalent to
 {`v`}.
 
 \SEEALSO

@@ -10,7 +10,7 @@ list.
 
 \DESCRIBE
 {exists p [x1;...;xn]} returns {true} if {(p xi)} is true for some {xi} in the
-list. Otherwise, for example if the list is empty, it returns {false}. 
+list. Otherwise, for example if the list is empty, it returns {false}.
 
 \FAILURE
 Never fails.

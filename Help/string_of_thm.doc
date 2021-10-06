@@ -16,7 +16,7 @@ Never fails.
 {
   # string_of_thm ADD_CLAUSES;;
   val it : string =
-    "|- (!n. 0 + n = n) /\\\n   (!m. m + 0 = m) /\\\n   (!m n. SUC m + n = SUC (m 
+    "|- (!n. 0 + n = n) /\\\n   (!m. m + 0 = m) /\\\n   (!m n. SUC m + n = SUC (m
   + n)) /\\\n   (!m n. m + SUC n = SUC (m + n))"
 
   # print_string it;;
@@ -28,7 +28,7 @@ Never fails.
 }
 
 \COMMENTS
-The string may contain newlines for large terms, broken in a similar fashion to 
+The string may contain newlines for large terms, broken in a similar fashion to
 automatic printing.
 
 \SEEALSO

@@ -6,12 +6,12 @@
 Maps a nonnegative integer to corresponding numeral term.
 
 \DESCRIBE
-The call {mk_numeral n} where {n} is a nonnegative integer of type {num} (this 
-is OCaml's type of unlimited-precision numbers) returns the HOL numeral 
+The call {mk_numeral n} where {n} is a nonnegative integer of type {num} (this
+is OCaml's type of unlimited-precision numbers) returns the HOL numeral
 representation of {n}.
 
 \FAILURE
-Fails if the argument is negative or not integral (type {num} can include 
+Fails if the argument is negative or not integral (type {num} can include
 rationals).
 
 \EXAMPLE
@@ -24,10 +24,10 @@ rationals).
 }
 
 \COMMENTS
-The similar function {mk_small_numeral} works from a regular machine integer, 
+The similar function {mk_small_numeral} works from a regular machine integer,
 Ocaml type {int}. If that suffices, it may be simpler.
 
 \SEEALSO
-dest_numeral, dest_small_numeral, is_numeral, mk_small_numeral, term_of_rat. 
+dest_numeral, dest_small_numeral, is_numeral, mk_small_numeral, term_of_rat.
 
 \ENDDOC

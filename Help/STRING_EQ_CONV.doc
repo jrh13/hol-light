@@ -12,18 +12,18 @@ If {"s"} and {"t"} are two string literals in the HOL logic,
 {
    |- "s" = "t" <=> T       or       |- "s" = "t" <=> F
 }
-\noindent depending on whether the string literals are equal or not equal, 
+\noindent depending on whether the string literals are equal or not equal,
 respectively.
 
 \FAILURE
-{STRING_EQ_CONV tm} fails if {tm} is not of the specified form, an equation 
+{STRING_EQ_CONV tm} fails if {tm} is not of the specified form, an equation
 between string literals.
 
 \EXAMPLE
 {
   # STRING_EQ_CONV `"same" = "same"`;;
   val it : thm = |- "same" = "same" <=> T
-  
+
   # STRING_EQ_CONV `"knowledge" = "power"`;;
   val it : thm = |- "knowledge" = "power" <=> F
 }

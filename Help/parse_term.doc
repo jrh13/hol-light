@@ -20,9 +20,9 @@ Fails in the event of a syntax error or unparsed input.
 }
 
 \COMMENTS
-Note that backslash characters should be doubled up when entering OCaml 
+Note that backslash characters should be doubled up when entering OCaml
 strings, as in the example above, since they are the string escape character.
-This is handled automatically by the quotation parser, so one doesn't need to 
+This is handled automatically by the quotation parser, so one doesn't need to
 do it (indeed shouldn't do it) when entering quotations between backquotes.
 
 \SEEALSO

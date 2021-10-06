@@ -1,4 +1,4 @@
-let mytheory = ref [ 
+let mytheory = ref [
 `m + 0 = m`;
 `m + (SUC n) = SUC(m + n)`;
 `m + n = n + m`;

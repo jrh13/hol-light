@@ -6,7 +6,7 @@
 Performs the union of a set of sets.
 
 \DESCRIBE
-Applied to a list of lists, {union} returns a list of all the elements of them, 
+Applied to a list of lists, {union} returns a list of all the elements of them,
 in some unspecified order, with no repetitions. It can be considered as the
 union of the family of `sets'.
 

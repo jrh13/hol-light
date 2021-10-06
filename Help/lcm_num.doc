@@ -11,7 +11,7 @@ The call {lcm_num m n} for two unlimited-precision (type {num}) integers {m} and
 or {n} (or both) are both zero, it returns zero.
 
 \FAILURE
-Fails if either number is not an integer (the type {num} supports arbitrary 
+Fails if either number is not an integer (the type {num} supports arbitrary
 rationals).
 
 \EXAMPLE

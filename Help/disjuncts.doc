@@ -9,7 +9,7 @@ Iteratively breaks apart a disjunction.
 If a term {t} is a disjunction {p \/ q}, then {disjuncts t} will recursively
 break down {p} and {q} into disjuncts and append the resulting lists. Otherwise
 it will return the singleton list {[t]}. So if {t} is of the form
-{t1 \/ ... \/ tn} with any reassociation, no {ti} itself being a disjunction, 
+{t1 \/ ... \/ tn} with any reassociation, no {ti} itself being a disjunction,
 the list returned will be {[t1; ...; tn]}. But
 {
    disjuncts(list_mk_disj([t1;...;tn]))
@@ -25,16 +25,16 @@ Never fails, even if the term is not boolean.
   # list_mk_disj [`a \/ b`;`c \/ d`;`e \/ f`];;
   val it : term = `(a \/ b) \/ (c \/ d) \/ e \/ f`
 
-  # disjuncts it;;                                       
-  val it : term list = [`a`; `b`; `c`; `d`; `e`; `f`]                           
+  # disjuncts it;;
+  val it : term list = [`a`; `b`; `c`; `d`; `e`; `f`]
 
-  # disjuncts `1`;;                                                            
-  val it : term list = [`1`]                                           
+  # disjuncts `1`;;
+  val it : term list = [`1`]
 }
 
 \COMMENTS
 Because {disjuncts} splits both the left and right sides of a disjunction,
-this operation is not the inverse of {list_mk_disj}. You can also use 
+this operation is not the inverse of {list_mk_disj}. You can also use
 {splitlist dest_disj} to split in a right-associated way only.
 
 \SEEALSO

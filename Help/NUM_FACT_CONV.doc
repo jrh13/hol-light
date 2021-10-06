@@ -14,7 +14,7 @@ If {n} is a numeral (e.g. {0}, {1}, {2}, {3},...), then
 {
    |- FACT n = s
 }
-\noindent where {s} is the numeral that denotes the factorial of the natural 
+\noindent where {s} is the numeral that denotes the factorial of the natural
 number denoted by {n}.
 
 \FAILURE
@@ -35,7 +35,7 @@ numeral.
 
 \SEEALSO
 NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EVEN_CONV, NUM_EXP_CONV,
-NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MIN_CONV, 
+NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MIN_CONV,
 NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV, NUM_PRE_CONV, NUM_REDUCE_CONV,
 NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
 

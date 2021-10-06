@@ -7,7 +7,7 @@ Tests if a term is an integer literal of type {:real}.
 
 \DESCRIBE
 The call {is_realintconst t} tests whether the term {t} is a canonical integer
-literal of type {:real}, i.e. either `{&n}' for a numeral {n} or `{-- &n}' for 
+literal of type {:real}, i.e. either `{&n}' for a numeral {n} or `{-- &n}' for
 a nonzero numeral {n}. If so it returns {true}, otherwise {false}.
 
 \FAILURE

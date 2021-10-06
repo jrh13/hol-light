@@ -3,8 +3,8 @@
 \TYPE {prefixes : unit -> string list}
 
 \SYNOPSIS
-Certain identifiers {c} have prefix status, meaning that combinations of the 
-form {c f x} will be parsed as {c (f x)} rather than the usual {(c f) x}. The 
+Certain identifiers {c} have prefix status, meaning that combinations of the
+form {c f x} will be parsed as {c (f x)} rather than the usual {(c f) x}. The
 call {prefixes()} returns the list of all such identifiers.
 
 \FAILURE
@@ -16,7 +16,7 @@ In the default HOL state:
   # prefixes();;
   val it : string list = ["~"; "--"; "mod"]
 }
-This explains, for example, why `{~ ~ p}' parses as `{~(~p)}' rather than 
+This explains, for example, why `{~ ~ p}' parses as `{~(~p)}' rather than
 parsing as `{(~ ~) p}' and generating a typechecking error.
 
 \SEEALSO

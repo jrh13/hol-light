@@ -6,10 +6,10 @@
 Union of two sets of terms up to alpha-equivalence.
 
 \DESCRIBE
-The call {term_union l1 l2} for two lists of terms {l1} and {l2} returns a list 
-including all of {l2} and all terms of {l1} for which no alpha-equivalent term 
-occurs in {l2} or earlier in {l1}. If both lists were sets modulo 
-alpha-conversion, i.e. contained no alpha-equivalent pairs, then so will be the 
+The call {term_union l1 l2} for two lists of terms {l1} and {l2} returns a list
+including all of {l2} and all terms of {l1} for which no alpha-equivalent term
+occurs in {l2} or earlier in {l1}. If both lists were sets modulo
+alpha-conversion, i.e. contained no alpha-equivalent pairs, then so will be the
 result.
 
 \FAILURE
@@ -25,8 +25,8 @@ Never fails.
 }
 
 \USES
-For combining assumption lists of theorems without duplication of 
-alpha-equivalent ones. 
+For combining assumption lists of theorems without duplication of
+alpha-equivalent ones.
 
 \SEEALSO
 aconv, union, union'.

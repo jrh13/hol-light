@@ -476,7 +476,7 @@ let OR_COMM_lemma = prove_thm
     REWRITE_TAC [OR_def] THEN
     ASSUME_TAC DISJ_COMM_lemma THEN
     STRIP_ASSUME_TAC
-        (MK_ABS (SPECL [p;q] 
+        (MK_ABS (SPECL [p;q]
                 (ASSUME (`!(p:'a->bool) q s. p s \/ q s <=> q s \/ p s`)))));;
 
 let OR_OR_lemma = prove_thm
@@ -581,7 +581,7 @@ let AND_COMM_lemma = prove_thm
    REPEAT GEN_TAC THEN
    ASSUME_TAC CONJ_COMM_lemma THEN
    STRIP_ASSUME_TAC
-        (MK_ABS (SPECL [p;q] 
+        (MK_ABS (SPECL [p;q]
                 (ASSUME (`!p q (s:'a). p s /\ q s <=> q s /\ p s`)))));;
 
 let CONJ_ASSOC_lemma = TAC_PROOF
@@ -802,14 +802,14 @@ let DISJ_CONJ_lemma1 = TAC_PROOF
       ASM_REWRITE_TAC []; ASM_REWRITE_TAC []]);;
 
 let DISJ_CONJ_lemma2 = TAC_PROOF
-  (([], `!(p:'a->bool) q r s. 
+  (([], `!(p:'a->bool) q r s.
              ((p s \/ q s) /\ (p s \/ r s)) ==> (p s \/ q s /\ r s)`),
    REPEAT STRIP_TAC THENL
      [ASM_REWRITE_TAC []; ASM_REWRITE_TAC [];
       ASM_REWRITE_TAC []; ASM_REWRITE_TAC []]);;
 
 let DISJ_CONJ_lemma = TAC_PROOF
-  (([], `!(p:'a->bool) q r s. 
+  (([], `!(p:'a->bool) q r s.
             (p s \/ q s /\ r s) <=> ((p s \/ q s) /\ (p s \/ r s))`),
    REWRITE_TAC [IMP_ANTISYM_RULE
                       (SPEC_ALL DISJ_CONJ_lemma1)

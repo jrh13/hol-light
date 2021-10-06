@@ -11,7 +11,7 @@ the assumptions to give a goal {A - {{a}} |- t}, and applies the theorem-tactic
 {ttac} to the assumption {.. |- a} and that new goal.
 
 \FAILURE
-Fails if {a} is not an assumption; when applied to the goal it fails exactly if 
+Fails if {a} is not an assumption; when applied to the goal it fails exactly if
 the theorem-tactic fails on the modified goal.
 
 \COMMENTS

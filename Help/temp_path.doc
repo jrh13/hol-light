@@ -6,7 +6,7 @@
 Directory in which to create temporary files.
 
 \DESCRIBE
-Some HOL Light derived rules in the libraries (none in the core system) need to 
+Some HOL Light derived rules in the libraries (none in the core system) need to
 create temporary files. This is the directory in which they do so.
 
 \FAILURE

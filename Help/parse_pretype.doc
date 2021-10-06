@@ -6,8 +6,8 @@
 Parses a pretype.
 
 \DESCRIBE
-The call {parse_pretype t}, where {t} is a list of lexical tokens (as produced 
-by {lex}), parses the tokens and returns a pretype as well as the unparsed 
+The call {parse_pretype t}, where {t} is a list of lexical tokens (as produced
+by {lex}), parses the tokens and returns a pretype as well as the unparsed
 tokens.
 
 \FAILURE

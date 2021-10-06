@@ -10,7 +10,7 @@ Verifier_options.info_print_level := 2;;
 open M_verifier_main;;
 
 
-verify_ineq default_params 5 
+verify_ineq default_params 5
   `&0 <= x /\ x <= &1 ==> exp (x pow 3) < &3`;;
 
 verify_ineq default_params 5
@@ -19,7 +19,7 @@ verify_ineq default_params 5
 
 (* MetiTarski home page *)
 verify_ineq default_params 5
-  `&0 <= x /\ x <= #1.46 / &10 pow 6 ==> 
+  `&0 <= x /\ x <= #1.46 / &10 pow 6 ==>
   (#64.42 * sin(#1.71 * &10 pow 6 * x) - #21.08 * cos(#1.71 * &10 pow 6 * x)) * exp(#9.05 * &10 pow 5 * x)
   + #24.24 * exp(-- #1.86 * &10 pow 6 * x) > &0`;;
 
@@ -30,6 +30,6 @@ verify_ineq default_params 5
 
 verify_ineq default_params 5
   `#0.35 <= t /\ t <= &10 /\ &0 <= v /\ v <= &10 ==>
-  ((#1.565 + #0.313 * v) * cos(#1.16 * v) + 
+  ((#1.565 + #0.313 * v) * cos(#1.16 * v) +
   (#0.01340 + #0.00268 * v) * sin(#1.16 * t)) * exp(-- #1.34 * t)
   - (#6.55 + #1.31 * v) * exp(-- #0.318 * t) + v + &10 > &0`;;

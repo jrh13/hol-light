@@ -28,7 +28,7 @@ of {x} in the second term is free, even though there is also a bound instance:
 }
 
 \COMMENTS
-If the term {t1} is a variable, the rule {vfree_in} is more basic and probably 
+If the term {t1} is a variable, the rule {vfree_in} is more basic and probably
 more efficient.
 
 \SEEALSO

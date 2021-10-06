@@ -44,7 +44,7 @@ relations {R1}, {R2} and {R3} may be, and often are, the same) and the
 conclusion matches the goal, in the usual sense of higher-order matching.
 
 \COMMENTS
-The effect of {TRANS_TAC th t} can often be replicated by the more primitive 
+The effect of {TRANS_TAC th t} can often be replicated by the more primitive
 tactic sequence {MATCH_MP_TAC th THEN EXISTS_TAC t}. The use of {TRANS_TAC} is
 not only less verbose, but it is also more general in that it ensures correct
 type-instantiation of the theorem, whereas in highly polymorphic theorems the

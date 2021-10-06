@@ -22,8 +22,8 @@ Variables are renamed where necessary to avoid free variable capture.
 Never fails, but will have no effect if there are no beta-redexes.
 
 \COMMENTS
-Beta-reduction, and indeed, generalized beta reduction ({GEN_BETA_CONV}) are 
-already among the basic rewrites, so happen anyway simply on {REWRITE_TAC[]}. 
+Beta-reduction, and indeed, generalized beta reduction ({GEN_BETA_CONV}) are
+already among the basic rewrites, so happen anyway simply on {REWRITE_TAC[]}.
 But occasionally it is convenient to be able to invoke them separately.
 
 \SEEALSO

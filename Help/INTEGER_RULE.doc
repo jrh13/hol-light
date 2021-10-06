@@ -7,29 +7,29 @@ Automatically prove elementary divisibility property over the integers.
 
 \DESCRIBE
 {INTEGER_RULE} is a partly heuristic rule that can often
-automatically prove elementary ``divisibility'' properties of the integers. The 
-precise subset that is dealt with is difficult to describe rigorously, but many 
-universally quantified combinations of {divides}, {coprime}, {gcd} and 
-congruences {(x == y) (mod n)} can be proved automatically, as well as some 
-existentially quantified goals. The examples below may give a feel for what can 
+automatically prove elementary ``divisibility'' properties of the integers. The
+precise subset that is dealt with is difficult to describe rigorously, but many
+universally quantified combinations of {divides}, {coprime}, {gcd} and
+congruences {(x == y) (mod n)} can be proved automatically, as well as some
+existentially quantified goals. The examples below may give a feel for what can
 be done.
 
 \FAILURE
 Fails if the goal is not accessible to the methods used.
 
 \EXAMPLE
-All sorts of elementary Boolean combinations of divisibility and congruence 
+All sorts of elementary Boolean combinations of divisibility and congruence
 properties can be solved, e.g.
 {
-  # INTEGER_RULE 
+  # INTEGER_RULE
      `!x y n:int. (x == y) (mod n) ==> (n divides x <=> n divides y)`;;
   ...
   val it : thm = |- !x y n. (x == y) (mod n) ==> (n divides x <=> n divides y)
 
-  # INTEGER_RULE 
+  # INTEGER_RULE
      `!a b d:int. d divides gcd(a,b) <=> d divides a /\ d divides b`;;
   ...
-  val it : thm = 
+  val it : thm =
    |- !a b d. d divides gcd (a,b) <=> d divides a /\ d divides b
 }
 \noindent including some less obvious ones:
@@ -40,7 +40,7 @@ properties can be solved, e.g.
   val it : thm = |- !x y. coprime (x * y,x pow 2 + y pow 2) <=> coprime (x,y)
 }
 \noindent A limited class of existential goals is solvable too, e.g. a classic
-sufficient condition for a linear congruence to have a solution: 
+sufficient condition for a linear congruence to have a solution:
 {
   # INTEGER_RULE `!a b n:int. coprime(a,n) ==> ?x. (a * x == b) (mod n)`;;
   ...

@@ -3,7 +3,7 @@
 \TYPE {PURE_SIMP_CONV : thm list -> conv}
 
 \SYNOPSIS
-Simplify a term repeatedly by conditional contextual rewriting, not using 
+Simplify a term repeatedly by conditional contextual rewriting, not using
 default simplifications.
 
 \DESCRIBE

@@ -6,10 +6,10 @@
 Special primitive case of beta-reduction.
 
 \DESCRIBE
-Given a term of the form {(\x. t[x]) x}, i.e. a lambda-term applied to exactly 
+Given a term of the form {(\x. t[x]) x}, i.e. a lambda-term applied to exactly
 the same variable that occurs in the abstraction, {BETA} returns the theorem
 {|- (\x. t[x]) x = t[x]}.
- 
+
 \FAILURE
 Fails if the term is not of the required form.
 
@@ -18,7 +18,7 @@ Fails if the term is not of the required form.
   # BETA `(\n. n + 1) n`;;
   val it : thm = |- (\n. n + 1) n = n + 1
 }
-\noindent Note that more general beta-reduction is not handled by {BETA}, but 
+\noindent Note that more general beta-reduction is not handled by {BETA}, but
 will be by {BETA_CONV}:
 {
   # BETA `(\n. n + 1) m`;;
@@ -28,7 +28,7 @@ will be by {BETA_CONV}:
 }
 
 \USES
-This is more efficient than {BETA_CONV} in the special case in which it works, 
+This is more efficient than {BETA_CONV} in the special case in which it works,
 because no traversal and replacement of the body of the abstraction is needed.
 
 \COMMENTS

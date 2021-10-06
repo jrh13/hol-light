@@ -26,7 +26,7 @@ Fails if and only if the finite partial function is completely undefined.
 }
 
 \SEEALSO
-|->, |=>, apply, applyd, combine, defined, dom, foldl, foldr, 
+|->, |=>, apply, applyd, combine, defined, dom, foldl, foldr,
 graph, is_undefined, mapf, ran, tryapplyd, undefine, undefined.
 
 \ENDDOC

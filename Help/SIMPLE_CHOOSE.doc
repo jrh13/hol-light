@@ -12,7 +12,7 @@ hypothesis so that the choice of assumption is unambiguous. In general, it
 picks the one that happens to be first in the list.
 
 \FAILURE
-Fails if {v} is not a variable or if it is free in the conclusion of the 
+Fails if {v} is not a variable or if it is free in the conclusion of the
 theorem {th}.
 
 \EXAMPLE

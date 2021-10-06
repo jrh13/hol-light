@@ -9,7 +9,7 @@ Union of sets modulo an equivalence.
 The call {union' r l1 l2} appends to the list {l2} all those elements {x} of
 {l1} for which there is not already an equivalent {x'} with {r x x'} in {l2} or
 earlier in {l1}. If {l1} and {l2} were free of equivalents under {r}, the
-resulting list will be too, so this is a set operation modulo an equivalence. 
+resulting list will be too, so this is a set operation modulo an equivalence.
 The function {union} is the special case where the relation is just equality.
 
 \FAILURE

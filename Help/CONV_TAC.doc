@@ -18,9 +18,9 @@ tactic {CONV_TAC c} reduces a goal {g} to the subgoal {g'}.  More precisely, if
      ===============  CONV_TAC c
          A ?- g'
 }
-\noindent In the special case where {`g`} is {`T`}, the call immediately solves 
-the goal rather than generating a subgoal {A ?- T}. And in a slightly liberal 
-interpretation of ``conversion'', the conversion may also just prove the goal 
+\noindent In the special case where {`g`} is {`T`}, the call immediately solves
+the goal rather than generating a subgoal {A ?- T}. And in a slightly liberal
+interpretation of ``conversion'', the conversion may also just prove the goal
 and return {A' |- g}, in which case again the goal will be completely solved.
 
 Note that in all cases the conversion {c} should return a theorem whose
@@ -46,10 +46,10 @@ equations (rewrite rules).  For example, a goal:
 {
   # e(CONV_TAC REAL_RAT_REDUCE_CONV);;
   val it : goalstack = 1 subgoal (1 total)
-  
+
   `abs (pi - &22 / &7) <= &1 / &791`
 }
-It is also handy for invoking decision procedures that only have a ``rule'' 
+It is also handy for invoking decision procedures that only have a ``rule''
 form, and no special ``tactic'' form. (Indeed, the tactic form can be defined
 in terms of the rule form by using {CONV_TAC}.) For example, the goal:
 {

@@ -20,7 +20,7 @@ Fails if applied to a term that is not an equation.
 
 \EXAMPLE
 {
-  # SYM_CONV `2 = x`;; 
+  # SYM_CONV `2 = x`;;
   val it : thm = |- 2 = x <=> x = 2
 }
 

@@ -6,8 +6,8 @@
 Returns numerator and denominator of normalized fraction.
 
 \DESCRIBE
-Given a rational number as supported by the {Num} library, {numdom} returns a 
-numerator-denominator pair corresponding to that rational number cancelled down 
+Given a rational number as supported by the {Num} library, {numdom} returns a
+numerator-denominator pair corresponding to that rational number cancelled down
 to its reduced form, $p/q$ where $q > 0$ and $p$ and $q$ have no common factor.
 
 \FAILURE

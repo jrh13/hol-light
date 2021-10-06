@@ -8,7 +8,7 @@ Computes the {dimindex} for a standard finite type.
 \DESCRIBE
 Finite types parsed and printed as numerals are provided, and this conversion
 when applied to such a type of the form {`:n`} returns the theorem
-{|- (:n) HAS_SIZE n} where the {(:n)} is the customary HOL Light printing of 
+{|- (:n) HAS_SIZE n} where the {(:n)} is the customary HOL Light printing of
 the universe set {UNIV:n->bool}, the second {n} is a numeral term and
 {HAS_SIZE} is the usual cardinality relation.
 

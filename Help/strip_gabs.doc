@@ -6,7 +6,7 @@
 Breaks apart an iterated generalized or basic abstraction.
 
 \DESCRIBE
-If the term {t} is iteratively constructed by basic or generalized 
+If the term {t} is iteratively constructed by basic or generalized
 abstractions, i.e. is of the form {\vs1. \vs2. ... \vsn. t}, then the call
 {strip_gabs t} returns a pair of the list of varstructs and the term
 {[vs1; vs2; ...; vsn],t}.

@@ -6,7 +6,7 @@
 Constructs object-level string from OCaml string.
 
 \DESCRIBE
-{mk_string "..."} produces the HOL term of type {string} (which is an 
+{mk_string "..."} produces the HOL term of type {string} (which is an
 abbreviation for {char list}) corresponding to the OCaml string {"..."}.
 
 \FAILURE

@@ -16,12 +16,12 @@ returns one of the theorems:
 }
 \noindent or
 {
-  |- EVEN(n) <=> F 
+  |- EVEN(n) <=> F
 }
 \noindent according to whether the number denoted by {n} is even.
 
 \FAILURE
-Fails if applied to a term that is not of the form {`EVEN n`} with {n} a 
+Fails if applied to a term that is not of the form {`EVEN n`} with {n} a
 numeral.
 
 \EXAMPLE
@@ -34,7 +34,7 @@ numeral.
 
 \SEEALSO
 NUM_ADD_CONV, NUM_DIV_CONV, NUM_EQ_CONV, NUM_EXP_CONV, NUM_FACT_CONV,
-NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MIN_CONV, 
+NUM_GE_CONV, NUM_GT_CONV, NUM_LE_CONV, NUM_LT_CONV, NUM_MAX_CONV, NUM_MIN_CONV,
 NUM_MOD_CONV, NUM_MULT_CONV, NUM_ODD_CONV, NUM_PRE_CONV, NUM_REDUCE_CONV,
 NUM_RED_CONV, NUM_REL_CONV, NUM_SUB_CONV, NUM_SUC_CONV.
 

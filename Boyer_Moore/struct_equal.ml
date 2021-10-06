@@ -255,7 +255,7 @@ let CONJS_CONV =
 try(
    let is st th = try(fst(dest_const(rand(concl th))) = st) with Failure _ -> false
    in  let v1 = genvar `:bool` and v2 = genvar `:bool`
-   in  let fthm1 = 
+   in  let fthm1 =
           let th1 = ASSUME (mk_eq(v1,`F`))
           in  let cnj = mk_conj(v1,v2)
           in  let th1 = DISCH cnj (EQ_MP th1 (CONJUNCT1 (ASSUME cnj)))
@@ -264,7 +264,7 @@ try(
    in  let fthm2 = CONV_RULE(ONCE_DEPTH_CONV(REWR_CONV CONJ_SYM)) fthm1
    in  let fandr th tm = MP (INST [(lhs(concl th),v1);(tm,v2)] fthm1) th
    in  let fandl th tm = MP (INST [(lhs(concl th),v1);(tm,v2)] fthm2) th
-   in  let tthm1 = 
+   in  let tthm1 =
           let th1 = ASSUME (mk_eq(v1,`T`))
           in  let th2 = SUBS_OCCS [[2],th1] (REFL (mk_conj(v1,v2)))
           in  DISCH (mk_eq(v1,`T`)) (ONCE_REWRITE_RULE [] th2)
@@ -321,7 +321,7 @@ let ONE_STEP_RECTY_EQ_CONV (induction,distincts,oneOnes) =
           EQF_INTRO o EQT_ELIM o
           (VAR_NOT_EQ_STRUCT_OF_VAR_CONV (induction,distincts,oneOnes)) o
           mk_neg
-   in  let INJ_REW = GEN_REWRITE_CONV I oneOnes 
+   in  let INJ_REW = GEN_REWRITE_CONV I oneOnes
 (* Deleted empty_rewrites - GEN_REWRITE_CONV different in hol light - hope it works *)
    in  let ths1 = map SPEC_ALL distincts
    in  let ths2 = map (GEN_ALL o EQF_INTRO o NOT_EQ_SYM) ths1

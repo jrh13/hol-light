@@ -18,7 +18,7 @@ prioritize_real();;
 unparse_as_infix("ipow");;
 
 let ipow = new_definition
-  `ipow (x:real) (e:int) = 
+  `ipow (x:real) (e:int) =
   (if (&0 <= e)
    then (x pow (num_of_int e))
    else (inv (x pow (num_of_int (--e)))))`;;
@@ -57,7 +57,7 @@ let IPOW_INV = prove
      ASM_REWRITE_TAC[IPOW_0; INT_NEG_0; REAL_INV_1];
      ALL_TAC
    ] THEN
-      REWRITE_TAC[ipow] THEN REPEAT COND_CASES_TAC THEN 
+      REWRITE_TAC[ipow] THEN REPEAT COND_CASES_TAC THEN
      REWRITE_TAC[REAL_INV_POW; REAL_INV_INV] THEN ASM_ARITH_TAC);;
 
 let INV_IPOW = prove
@@ -71,7 +71,7 @@ let IPOW_NEG = prove
        ASM_REWRITE_TAC[IPOW_0; INT_NEG_0; REAL_INV_1];
        ALL_TAC
      ] THEN
-      REWRITE_TAC[ipow] THEN REPEAT COND_CASES_TAC THEN 
+      REWRITE_TAC[ipow] THEN REPEAT COND_CASES_TAC THEN
        ASM_REWRITE_TAC[INT_NEG_NEG; REAL_INV_INV] THEN ASM_ARITH_TAC);;
 
 let IPOW_NEG_NUM = prove
@@ -126,7 +126,7 @@ let IPOW_ADD = prove
 
 let IPOW_MUL = prove
   (`!x y u. (x * y) ipow u = x ipow u * y ipow u`,
-   REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN 
+   REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN
      COND_CASES_TAC THEN REWRITE_TAC[REAL_POW_MUL; REAL_INV_MUL]);;
 
 let IPOW_ZERO = prove
@@ -150,9 +150,9 @@ let IPOW_ONE = prove
 let IPOW_IPOW = prove
   (`!x u v. (x ipow u) ipow v = x ipow (u * v)`,
    REPEAT STRIP_TAC THEN ASM_CASES_TAC `x = &0` THENL [
-     ASM_REWRITE_TAC[IPOW_ZERO] THEN 
+     ASM_REWRITE_TAC[IPOW_ZERO] THEN
        COND_CASES_TAC THEN ASM_REWRITE_TAC[INT_MUL_LZERO; IPOW_ONE] THEN
-       REWRITE_TAC[IPOW_ZERO] THEN 
+       REWRITE_TAC[IPOW_ZERO] THEN
        COND_CASES_TAC THEN ASM_REWRITE_TAC[INT_ENTIRE; INT_MUL_RZERO];
      ALL_TAC
    ] THEN
@@ -349,9 +349,9 @@ let IPOW_EQ_1_IMP = prove
    ]);;
 
 let IPOW_OF_NUM = prove
-  (`!x i. &x ipow i = 
+  (`!x i. &x ipow i =
       if &0 <= i then &(x EXP (num_of_int i)) else inv (&(x EXP (num_of_int (--i))))`,
-   REPEAT STRIP_TAC THEN REWRITE_TAC[ipow] THEN 
+   REPEAT STRIP_TAC THEN REWRITE_TAC[ipow] THEN
      COND_CASES_TAC THEN REWRITE_TAC[REAL_OF_NUM_POW]);;
 
 let IPOW_EQ_EXP = prove
@@ -365,7 +365,7 @@ let IPOW_EQ_EXP_P = prove
      REWRITE_TAC[NUM_OF_INT_OF_NUM]);;
 
 let IPOW_BETWEEN = prove
-  (`!(x:real) (y:num) (z:num) (e:int). 
+  (`!(x:real) (y:num) (z:num) (e:int).
 	  &0 < x /\ &y * x ipow e <= &z * x ipow e /\
 	  &z * x ipow e <= (&y + &1) * x ipow e ==>
 	  z = y \/ z = y + 1`,
@@ -438,7 +438,7 @@ let IPOW_EXP_MONO_INV_LT = prove
      MATCH_MP_TAC IPOW_MONO_INV THEN ASM_ARITH_TAC);;
 
 let IPOW_MONOTONE = prove
-  (`!(x:num) (e1:int) (e2:int). 
+  (`!(x:num) (e1:int) (e2:int).
      2 <= x /\ &x ipow e1 <= &x ipow e2 ==> e1 <= e2`,
    REPEAT STRIP_TAC THEN MATCH_MP_TAC IPOW_EXP_MONO THEN
      EXISTS_TAC `&x:real` THEN ASM_REWRITE_TAC[REAL_OF_NUM_LT] THEN

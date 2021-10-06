@@ -55,7 +55,7 @@ let CHEB_2N1 = prove
          (&2 * (x pow 2 - &1) * (cheb (2 * n + 2) x - &1) =
           (cheb (n + 2) x - cheb n x) pow 2)`,
   ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN GEN_TAC THEN
-  MATCH_MP_TAC CHEB_INDUCT THEN 
+  MATCH_MP_TAC CHEB_INDUCT THEN
   REWRITE_TAC[ARITH; cheb; CHEB_CONV `cheb 2 x`; CHEB_CONV `cheb 3 x`] THEN
   REPEAT(CHANGED_TAC
    (REWRITE_TAC[GSYM ADD_ASSOC; LEFT_ADD_DISTRIB; ARITH] THEN
