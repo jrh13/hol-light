@@ -1577,6 +1577,17 @@ let INT_REM_EQ_SELF = prove
   REWRITE_TAC[INT_REM_DIV; INT_ARITH `m - x:int = m <=> x = &0`] THEN
   REWRITE_TAC[INT_DIV_EQ_0; INT_ENTIRE] THEN INT_ARITH_TAC);;
 
+let INT_REM_UNIQUE = prove
+ (`!m n p. m rem n = p <=>
+           (n = &0 /\ m = p \/ &0 <= p /\ p < abs n) /\ (m == p) (mod n)`,
+  REPEAT GEN_TAC THEN ASM_CASES_TAC `n:int = &0` THENL
+   [ASM_REWRITE_TAC[INT_REM_0; INT_ABS_0; INT_LET_ANTISYM] THEN
+    CONV_TAC INTEGER_RULE;
+    EQ_TAC THENL
+     [DISCH_THEN(SUBST1_TAC o SYM) THEN ASM_SIMP_TAC[INT_DIVISION] THEN
+      REWRITE_TAC[GSYM INT_REM_EQ; INT_REM_REM];
+      ASM_SIMP_TAC[GSYM INT_REM_EQ; INT_REM_EQ_SELF]]]);;
+
 let INT_DIV_REM = prove
  (`!m n p. &0 <= n ==> (m div n) rem p = (m rem (n * p)) div n`,
   REPEAT GEN_TAC THEN ASM_CASES_TAC `n:int = &0` THEN

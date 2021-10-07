@@ -8,6 +8,52 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Wed  9th Oct 2021       int.ml
+
+Added a natural integer analog of MOD_UNIQUE:
+
+  INT_REM_UNIQUE =
+    |- !m n p.
+         m rem n = p <=>
+         (n = &0 /\ m = p \/ &0 <= p /\ p < abs n) /\ (m == p) (mod n)
+
+Tue  8th Oct 2021       Library/words.ml
+
+Added a few trivial theorems about unsigned word max/min:
+
+  WORD_UMAX =
+    |- !x y. word_umax x y = (if val x <= val y then y else x)
+
+  WORD_UMAX_ASSOC =
+    |- !x y z. word_umax x (word_umax y z) = word_umax (word_umax x y) z
+
+  WORD_UMAX_SYM =
+    |- !x y. word_umax x y = word_umax y x
+
+  WORD_UMIN =
+    |- !x y. word_umin x y = (if val x <= val y then x else y)
+
+  WORD_UMIN_ASSOC =
+    |- !x y z. word_umin x (word_umin y z) = word_umin (word_umin x y) z
+
+  WORD_UMIN_SYM =
+    |- !x y. word_umin x y = word_umin y x
+
+Fri 20th Aug 2021       Library/words.ml
+
+Added three more word lemmas connecting shifts and subwords:
+
+  WORD_SHL_SUBWORD =
+    |- !x d l.
+           dimindex(:N) <= l + d
+           ==> word_shl (word_subword x (0,l)) d = word_shl x d
+
+  WORD_SUBWORD_AS_USHR =
+    |- !x k l. dimindex(:N) <= k + l ==> word_subword x (k,l) = word_ushr x k
+
+  WORD_USHR_AS_SUBWORD =
+    |- !x k. word_ushr x k = word_subword x (k,dimindex(:N) - k)
+
 Fri 30th Jul 2021       Library/words.ml
 
 Made the trivial generalization to WORD_ARITH / WORD_ARITH_TAC of also

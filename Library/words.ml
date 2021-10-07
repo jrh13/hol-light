@@ -1992,6 +1992,19 @@ let VAL_WORD_UMAX = prove
   REWRITE_TAC[ARITH_RULE `MAX x y < n <=> x < n /\ y < n`] THEN
   REWRITE_TAC[VAL_BOUND]);;
 
+let WORD_UMAX = prove
+ (`!x y:N word. word_umax x y = if val x <= val y then y else x`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMAX; MAX]);;
+
+let WORD_UMAX_SYM = prove
+ (`!x y:N word. word_umax x y = word_umax y x`,
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMAX] THEN ARITH_TAC);;
+
+let WORD_UMAX_ASSOC = prove
+ (`!x y z:N word. word_umax x (word_umax y z) = word_umax (word_umax x y) z`,
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMAX] THEN ARITH_TAC);;
+
 let IVAL_WORD_IMAX = prove
  (`!x y:(N)word.
         ival(word_imax x y) = max (ival x) (ival y)`,
@@ -2012,6 +2025,19 @@ let VAL_WORD_UMIN = prove
   MATCH_MP_TAC MOD_LT THEN
   REWRITE_TAC[ARITH_RULE `MIN x y < n <=> x < n \/ y < n`] THEN
   REWRITE_TAC[VAL_BOUND]);;
+
+let WORD_UMIN = prove
+ (`!x y:N word. word_umin x y = if val x <= val y then x else y`,
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMIN; MIN]);;
+
+let WORD_UMIN_SYM = prove
+ (`!x y:N word. word_umin x y = word_umin y x`,
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMIN] THEN ARITH_TAC);;
+
+let WORD_UMIN_ASSOC = prove
+ (`!x y z:N word. word_umin x (word_umin y z) = word_umin (word_umin x y) z`,
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD_UMIN] THEN ARITH_TAC);;
 
 let IVAL_WORD_IMIN = prove
  (`!x y:(N)word.
@@ -3075,6 +3101,31 @@ let WORD_SUBWORD_JOIN_AS_SHL = prove
   SUBST1_TAC THENL
    [REWRITE_TAC[GSYM EXP_ADD] THEN AP_TERM_TAC THEN ASM_ARITH_TAC;
     SIMP_TAC[GSYM MULT_ASSOC; DIV_MULT; EXP_EQ_0; ARITH_EQ]]);;
+
+let WORD_SUBWORD_AS_USHR = prove
+ (`!(x:N word) k l.
+        dimindex(:N) <= k + l ==> word_subword x (k,l) = word_ushr x k`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[word_subword; word_ushr] THEN
+  AP_TERM_TAC THEN MATCH_MP_TAC MOD_LT THEN
+  SIMP_TAC[RDIV_LT_EQ; EXP_EQ_0; ARITH_EQ; GSYM EXP_ADD] THEN
+  W(MP_TAC o PART_MATCH lhand VAL_BOUND o lhand o snd) THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] LTE_TRANS) THEN
+  ASM_REWRITE_TAC[LE_EXP] THEN ARITH_TAC);;
+
+let WORD_USHR_AS_SUBWORD = prove
+ (`!(x:N word) k. word_ushr x k = word_subword x (k,dimindex (:N) - k)`,
+  REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC WORD_SUBWORD_AS_USHR THEN ARITH_TAC);;
+
+let WORD_SHL_SUBWORD = prove
+ (`!(x:N word) d l.
+        dimindex(:N) <= l + d
+        ==> word_shl (word_subword x (0,l)) d = word_shl x d`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[word_shl; word_subword] THEN
+  REWRITE_TAC[GSYM VAL_EQ; VAL_WORD; EXP; DIV_1] THEN
+  CONV_TAC MOD_DOWN_CONV THEN ONCE_REWRITE_TAC[MULT_SYM] THEN
+  REWRITE_TAC[GSYM MOD_MULT2; GSYM EXP_ADD; MOD_MOD_EXP_MIN] THEN
+  ASM_SIMP_TAC[ARITH_RULE `n <= l + d ==> MIN (d + l) n = n`]);;
 
 let WORD_SUBWORD_AND = prove
  (`!(x:M word) y pos len.
