@@ -479,7 +479,7 @@ let parse_preterm =
        >> (pmk_list o snd o fst))
   ||| (a (Resword "[") ++
        elistof preterm (a (Resword ";")) "semicolon separated list of terms"
-        >> (fun _ -> failwith "closing square bracket on list expected"))
+        >> (fun _ -> failwith "closing square bracket of list expected"))
   ||| (a (Resword "{") ++
        (elistof nocommapreterm (a (Ident ",")) "comma separated list of terms" ++  a (Resword "}")
               >> lmk_setenum

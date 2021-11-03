@@ -1544,6 +1544,23 @@ let VAL_WORD_AND_POW2 = prove
   COND_CASES_TAC THEN REWRITE_TAC[MULT_CLAUSES; LT_EXP; EXP_LT_0] THEN
   CONV_TAC NUM_REDUCE_CONV THEN ASM_MESON_TAC[BIT_TRIVIAL; NOT_LE]);;
 
+let VAL_WORD_AND_LE = prove
+ (`(!x y:N word. val(word_and x y) <= val x) /\
+   (!x y:N word. val(word_and x y) <= val y)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[val_def] THEN MATCH_MP_TAC NSUM_LE THEN
+  REWRITE_TAC[FINITE_NUMSEG_LT] THEN X_GEN_TAC `i:num` THEN
+  SIMP_TAC[IN_ELIM_THM; BIT_WORD_AND; LE_MULT_LCANCEL; LE_BITVAL]);;
+
+let VAL_WORD_AND_LE_MIN = prove
+ (`!x y:N word. val(word_and x y) <= MIN (val x) (val y)`,
+  REWRITE_TAC[ARITH_RULE `x <= MIN y z <=> x <= y /\ x <= z`] THEN
+  REWRITE_TAC[VAL_WORD_AND_LE]);;
+
+let VAL_WORD_AND_WORD_LE = prove
+ (`(!(x:N word) n. val(word_and x (word n)) <= n) /\
+   (!(x:N word) n. val(word_and (word n) x) <= n)`,
+  MESON_TAC[VAL_WORD_AND_LE; LE_TRANS; LE_REFL; VAL_WORD_LE]);;
+
 let word_or = new_definition
  `word_or = bitwise2 (\/)`;;
 
@@ -1575,6 +1592,11 @@ let VAL_WORD_OR_LE = prove
    (!x y:N word. val y <= val(word_or x y))`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC VAL_LE_BITS THEN
   SIMP_TAC[BIT_WORD_OR]);;
+
+let VAL_WORD_OR_LE_MAX = prove
+ (`(!x y:N word. MAX (val x) (val y) <= val(word_or x y))`,
+  REWRITE_TAC[ARITH_RULE `MAX y z <= x <=> y <= x /\ z <= x`] THEN
+  REWRITE_TAC[VAL_WORD_OR_LE]);;
 
 let word_xor = new_definition
  `word_xor = bitwise2 (\x y. ~(x <=> y))`;;
@@ -2957,6 +2979,16 @@ let VAL_WORD_JOIN_SIMPLE = prove
     REWRITE_TAC[LE_MULT_LCANCEL; ARITH_RULE `1 <= n <=> ~(n = 0)`] THEN
     REWRITE_TAC[EXP_EQ_0; ARITH_EQ]]);;
 
+let WORD_JOIN_NOT = prove
+ (`!v w. dimindex(:P) <= dimindex(:M) + dimindex(:N)
+         ==> (word_join:(M)word->(N)word->(P)word) (word_not v) (word_not w) =
+             word_not(word_join v w)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[WORD_EQ_BITS_ALT] THEN
+  SIMP_TAC[BIT_WORD_JOIN; BIT_WORD_NOT; COND_SWAP] THEN
+  REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
+  ONCE_REWRITE_TAC[BIT_GUARD] THEN EQ_TAC THEN SIMP_TAC[] THEN
+  ASM_ARITH_TAC);;
+
 (* ------------------------------------------------------------------------- *)
 (* Subwords, where the (pos,len) argument is (lsb_position,length)           *)
 (* ------------------------------------------------------------------------- *)
@@ -3148,6 +3180,16 @@ let WORD_SUBWORD_XOR = prove
                  (word_subword y (pos,len))`,
   REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_XOR] THEN
   ONCE_REWRITE_TAC[BIT_GUARD] THEN CONV_TAC TAUT);;
+
+let WORD_SUBWORD_NOT = prove
+ (`!(x:M word) pos len.
+        dimindex(:N) <= len /\ pos + len <= dimindex(:M)
+        ==> word_subword (word_not x) (pos,len):N word =
+            word_not (word_subword x (pos,len))`,
+  REWRITE_TAC[WORD_EQ_BITS_ALT; BIT_WORD_SUBWORD; BIT_WORD_NOT] THEN
+  SIMP_TAC[ARITH_RULE `i < MIN m n <=> i < m /\ i < n`] THEN
+  REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC[DE_MORGAN_THM] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC);;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit recursion equations for "linear" operations.                          *)
@@ -5901,6 +5943,22 @@ let WORD_JUSHR_CONV =
             NUM_MOD_CONV) THENC
   WORD_USHR_CONV;;
 
+let WORD_JROL_CONV =
+  let pth = prove
+   (`word_jrol (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word_rol (word(NUMERAL m):N word) (val(word(NUMERAL n):N word))`,
+    REWRITE_TAC[word_jrol]) in
+  GEN_REWRITE_CONV I [pth] THENC RAND_CONV WORD_VAL_CONV THENC
+  WORD_ROL_CONV;;
+
+let WORD_JROR_CONV =
+  let pth = prove
+   (`word_jror (word(NUMERAL m):N word) (word(NUMERAL n):N word) =
+     word_ror (word(NUMERAL m):N word) (val(word(NUMERAL n):N word))`,
+    REWRITE_TAC[word_jror]) in
+  GEN_REWRITE_CONV I [pth] THENC RAND_CONV WORD_VAL_CONV THENC
+  WORD_ROR_CONV;;
+
 let WORD_JDIV_CONV =
   let pth = prove
    (`word_jdiv (word(NUMERAL m):N word) (word(NUMERAL n)) =
@@ -5979,6 +6037,8 @@ let WORD_RED_CONV =
     `word_jshl (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHL_CONV;
     `word_jshr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JSHR_CONV;
     `word_jushr (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JUSHR_CONV;
+    `word_jrol (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JROL_CONV;
+    `word_jror (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JROR_CONV;
     `word_jdiv (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JDIV_CONV;
     `word_jrem (word(NUMERAL m):N word) (word(NUMERAL n))`,WORD_JREM_CONV]
   (basic_net()) in

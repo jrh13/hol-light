@@ -1373,6 +1373,10 @@ let REAL_POW_EQ_EQ = prove
   FIRST_X_ASSUM(X_CHOOSE_THEN `m:num` SUBST1_TAC o
     REWRITE_RULE[EVEN_EXISTS]) THEN ASM_REWRITE_TAC[GSYM REAL_POW_POW]);;
 
+let REAL_EVENPOW_ABS = prove
+ (`!x n. EVEN n ==> abs x pow n = x pow n`,
+  SIMP_TAC[REAL_POW_EQ_EQ; REAL_ABS_ABS]);;
+
 (* ------------------------------------------------------------------------- *)
 (* Bounds on convex combinations.                                            *)
 (* ------------------------------------------------------------------------- *)

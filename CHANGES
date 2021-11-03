@@ -8,7 +8,151 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
-Wed  9th Oct 2021       int.ml
+Tue  2nd Nov 2021       Library/words.ml
+
+Added missing conversions WORD_JROL_CONV and WORD_JROR_CONV (for
+word-word rotate operations) and included them in WORD_RED_CONV
+and hence WORD_REDUCE_CONV.
+
+Mon  1st Nov 2021       parser.ml
+
+Fixed a trivial typo in the error message "closing square bracket
+of list expected".
+
+Tue 12th Oct 2021       Library/words.ml
+
+Added a couple more word lemmas about pushing logical complements through
+other constructs; the side-conditions make them a bit ugly but they can be
+useful:
+
+  WORD_JOIN_NOT =
+   |- !v w.
+         dimindex(:P) <= dimindex(:M) + dimindex(:N)
+         ==> word_join (word_not v) (word_not w) = word_not (word_join v w)
+
+  WORD_SUBWORD_NOT =
+    |- !x pos len.
+         dimindex(:N) <= len /\ pos + len <= dimindex(:M)
+         ==> word_subword (word_not x) (pos,len) =
+             word_not (word_subword x (pos,len))
+
+Sat  9th Oct 2021       Library/words.ml
+
+Added a few more elementary word lemmas like a simple upper bound on
+a concrete masking of a word:
+
+  VAL_WORD_AND_LE =
+    |- (!x y. val (word_and x y) <= val x) /\
+       (!x y. val (word_and x y) <= val y)
+
+  VAL_WORD_AND_LE_MIN =
+    |- !x y. val (word_and x y) <= MIN (val x) (val y)
+
+  VAL_WORD_AND_WORD_LE =
+    |- (!x n. val (word_and x (word n)) <= n) /\
+       (!x n. val (word_and (word n) x) <= n)
+
+  VAL_WORD_OR_LE_MAX =
+    |- !x y. MAX (val x) (val y) <= val (word_or x y)
+
+Fri  8th Oct 2021       int.ml
+
+Added a systematic set of missing analogs of real theorems for ints:
+
+  INT_ABS_BOUNDS : thm =
+   |- !x k. abs x <= k <=> --k <= x /\ x <= k
+
+  INT_EQ_LCANCEL_IMP : thm =
+    |- !x y z. ~(z = &0) /\ z * x = z * y ==> x = y
+
+  INT_EQ_RCANCEL_IMP : thm =
+    |- !x y z. ~(z = &0) /\ x * z = y * z ==> x = y
+
+  INT_LE_LCANCEL_IMP : thm =
+   |- !x y z. &0 < x /\ x * y <= x * z ==> y <= z
+
+  INT_LE_POW_2 : thm =
+   |- !x. &0 <= x pow 2
+
+  INT_LE_RCANCEL_IMP : thm =
+   |- !x y z. &0 < z /\ x * z <= y * z ==> x <= y
+
+  INT_LE_RMUL_EQ : thm =
+   |- !x y z. &0 < z ==> (x * z <= y * z <=> x <= y)
+
+  INT_LT_LADD_IMP : thm =
+   |- !x y z. y < z ==> x + y < x + z
+
+  INT_LT_LCANCEL_IMP : thm =
+   |- !x y z. &0 < x /\ x * y < x * z ==> y < z
+
+  INT_LT_LMUL : thm =
+   |- !x y z. &0 < x /\ y < z ==> x * y < x * z
+
+  INT_LT_LNEG : thm =
+   |- !x y. --x < y <=> &0 < x + y
+
+  INT_LT_POW_2 : thm =
+   |- !x. &0 < x pow 2 <=> ~(x = &0)
+
+  INT_LT_RCANCEL_IMP : thm =
+   |- !x y z. &0 < z /\ x * z < y * z ==> x < y
+
+  INT_LT_RMUL : thm =
+   |- !x y z. x < y /\ &0 < z ==> x * z < y * z
+
+  INT_LT_RNEG : thm =
+   |- !x y. x < --y <=> x + y < &0
+
+  INT_LT_SQUARE : thm =
+   |- !x. &0 < x * x <=> ~(x = &0)
+
+  INT_OF_NUM_SUB_CASES : thm =
+    |- !m n. &m - &n = (if n <= m then &(m - n) else -- &(n - m))
+
+  INT_POS_EQ_SQUARE : thm =
+    |- !x. &0 <= x <=> (?y. y pow 2 = real_of_int x)
+
+  INT_POW_EQ_1 : thm =
+    |- !x n. x pow n = &1 <=> abs x = &1 /\ (x < &0 ==> EVEN n) \/ n = 0
+
+  INT_POW_EQ_1_IMP : thm =
+   |- !x n. ~(n = 0) /\ x pow n = &1 ==> abs x = &1
+
+  INT_POW_EQ_EQ : thm =
+    |- !n x y.
+           x pow n = y pow n <=>
+           (if EVEN n then n = 0 \/ abs x = abs y else x = y)
+
+  INT_POW_EQ_ODD : thm =
+   |- !n x y. ODD n /\ x pow n = y pow n ==> x = y
+
+  INT_POW_EQ_ODD_EQ : thm =
+    |- !n x y. ODD n ==> (x pow n = y pow n <=> x = y)
+
+  INT_POW_LBOUND : thm =
+   |- !x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n
+
+  INT_POW_LE2_ODD_EQ : thm =
+    |- !n x y. ODD n ==> (x pow n <= y pow n <=> x <= y)
+
+  INT_POW_LT2_ODD : thm =
+   |- !n x y. x < y /\ ODD n ==> x pow n < y pow n
+
+  INT_POW_LT2_ODD_EQ : thm =
+    |- !n x y. ODD n ==> (x pow n < y pow n <=> x < y)
+
+Fri  8th Oct 2021       real.ml, int.ml
+
+Added integer and real forms of this simple lemma:
+
+  INT_EVENPOW_ABS =
+   |- !x n. EVEN n ==> abs x pow n = x pow n
+
+  REAL_EVENPOW_ABS =
+    |- !x n. EVEN n ==> abs x pow n = x pow n
+
+Wed  6th Oct 2021       int.ml
 
 Added a natural integer analog of MOD_UNIQUE:
 
@@ -17,7 +161,7 @@ Added a natural integer analog of MOD_UNIQUE:
          m rem n = p <=>
          (n = &0 /\ m = p \/ &0 <= p /\ p < abs n) /\ (m == p) (mod n)
 
-Tue  8th Oct 2021       Library/words.ml
+Tue  5th Oct 2021       Library/words.ml
 
 Added a few trivial theorems about unsigned word max/min:
 
@@ -65,11 +209,11 @@ proved automatically by WORD_ARITH_TAC.
   WORD_ADC_LE_EXACT =
     |- (!x y.
             val(word_add (word_add x y) (word 1)) <= val x <=>
-            val(word_add (word_add x y) (word 1)) + 2 EXP dimindex (:N) =
+            val(word_add (word_add x y) (word 1)) + 2 EXP dimindex(:N) =
             val x + val y + 1) /\
        (!x y.
             val(word_add (word_add x y) (word 1)) <= val y <=>
-            val(word_add (word_add x y) (word 1)) + 2 EXP dimindex (:N) =
+            val(word_add (word_add x y) (word 1)) + 2 EXP dimindex(:N) =
             val x + val y + 1)
 
   WORD_ADC_LE_INEXACT =
@@ -83,10 +227,10 @@ proved automatically by WORD_ARITH_TAC.
   WORD_ADD_LT_EXACT =
     |- (!x y.
             val(word_add x y) < val x <=>
-            val(word_add x y) + 2 EXP dimindex (:N) = val x + val y) /\
+            val(word_add x y) + 2 EXP dimindex(:N) = val x + val y) /\
        (!x y.
             val(word_add x y) < val y <=>
-            val(word_add x y) + 2 EXP dimindex (:N) = val x + val y)
+            val(word_add x y) + 2 EXP dimindex(:N) = val x + val y)
 
   WORD_ADD_LT_INEXACT =
     |- (!x y.
