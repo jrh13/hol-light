@@ -8,6 +8,74 @@
   * page: https://github.com/jrh13/hol-light/commits/master         *
   * *****************************************************************
 
+Fri  5th Nov 2021       Library/words.ml
+
+Added more word lemmas, mainly connected with selecting trailing bits and
+emulating ctz in terms of clz, very much in line with material in
+the "Manipulating Rightmost Bits" section of "Hacker's Delight":
+
+  BIT_WORD_XOR_ADD_1 =
+    |- !x i.
+           bit i (word_xor x (word_add x (word 1))) <=>
+           i < dimindex(:N) /\ (!j. j < i ==> bit j x)
+
+  BIT_WORD_XOR_NEG =
+    |- !x i.
+           bit i (word_xor x (word_neg x)) <=>
+           i < dimindex(:N) /\ (?j. j < i /\ bit j x)
+
+  BIT_WORD_XOR_SUB_1 =
+    |- !x i.
+           bit i (word_xor x (word_sub x (word 1))) <=>
+           i < dimindex(:N) /\ (!j. j < i ==> ~bit j x)
+
+  WORD_AND_NEG_CTZ =
+    |- !x. word_and x (word_neg x) = word_of_bits {word_ctz x}
+
+  WORD_AND_NOT_SUB_1_CTZ =
+    |- !x. word_and (word_not x) (word_sub x (word 1)) =
+           word(2 EXP word_ctz x - 1)
+
+  WORD_CLZ_BIT =
+    |- !k. word_clz (word_of_bits {k}) =
+           (if k < dimindex(:N) then dimindex(:N) - 1 - k else dimindex(:N))
+
+  WORD_CLZ_MASK_WORD =
+    |- !k. word_clz (word(2 EXP k - 1)) = dimindex(:N) - k
+
+  WORD_CTZ_BIT =
+    |- !k. word_ctz (word_of_bits {k}) = MIN k (dimindex(:N))
+
+  WORD_CTZ_EMULATION_AND_NEG =
+    |- !x. word_ctz x =
+           (if x = word 0
+            then dimindex(:N)
+            else dimindex(:N) - 1 - word_clz (word_and x (word_neg x)))
+
+  WORD_CTZ_EMULATION_AND_NEG_REV =
+    |- !x. word_clz (word_and x (word_neg x)) =
+           (if x = word 0
+            then dimindex(:N)
+            else dimindex(:N) - 1 - word_ctz x)
+
+  WORD_CTZ_EMULATION_XOR_SUB_1 =
+    |- !x. word_ctz x =
+           (if x = word 0
+            then dimindex(:N)
+            else dimindex(:N) -
+                 1 -
+                 word_clz (word_xor x (word_sub x (word 1))))
+
+  WORD_CTZ_EMULATION_XOR_SUB_1_REV =
+    |- !x. word_clz (word_xor x (word_sub x (word 1))) =
+           dimindex(:N) - 1 - word_ctz x
+
+  WORD_CTZ_MASK_WORD =
+    |- !k. word_ctz (word(2 EXP k - 1)) = (if k = 0 then dimindex(:N) else 0)
+
+  WORD_XOR_SUB_1_CTZ =
+    |- !x. word_xor x (word_sub x (word 1)) = word(2 EXP (word_ctz x + 1) - 1)
+
 Tue  2nd Nov 2021       Library/words.ml
 
 Added missing conversions WORD_JROL_CONV and WORD_JROR_CONV (for
